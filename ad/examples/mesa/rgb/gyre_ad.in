@@ -1,0 +1,29 @@
+&coeffs
+	coeffs_type = 'MESA'
+	file = 'dupret_model_B.mesa'
+/
+
+&shoot_grid
+	grid_type = 'DISPERSION'
+	alpha_osc = 0.5
+	alpha_exp = 0.1
+/
+
+&recon_grid
+/
+
+&eqns
+	l = 1
+	solver = 'FINDIFF'
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 38,
+	freq_max = 42,
+	freq_units = 'UHZ'
+	n_freq = 200,
+/
+
+&output
+/

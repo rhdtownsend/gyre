@@ -1,0 +1,27 @@
+&coeffs
+	coeffs_type = 'HOM'
+/
+
+&shoot_grid
+	grid_type = 'GEOM'
+	n_grid = 1000
+	s = 1000.
+/
+
+&recon_grid
+/
+
+&eqns
+	l = 0
+	solver = 'MAGNUS_GL6'
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 0.9
+	freq_max = 11.0
+	n_freq = 20
+/
+
+&output
+/

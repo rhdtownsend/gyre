@@ -1,0 +1,32 @@
+&coeffs
+        file = 'refmodel.h5'
+        coeffs_type = 'B3'
+        G = 6.6742800000e-08
+/
+
+&shoot_grid
+	grid_type = 'DISPERSION'
+	freq = 10.79
+	alpha_osc = 1.
+	alpha_exp = 0.5
+/
+
+&recon_grid
+/
+
+&eqns
+        l = 0
+        solver = 'MAGNUS_GL2'
+/
+
+&scan
+        grid_type = 'MIXED'
+        freq_min = 2.698807
+        freq_max = 10.795228
+        n_freq = 50
+/
+
+&output
+      eigval_file = 'eigvals.h5'
+      eigfunc_prefix = 'eigfunc-l0-'
+/

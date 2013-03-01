@@ -1,0 +1,44 @@
+! $Id$
+!
+! Inlist for mid-MS slowly pulsating B star model
+
+&star_job
+
+      eos_file_prefix = 'mesa'
+      kappa_file_prefix = 'gs98'
+      
+  ! write output
+      save_twnsnd_when_terminate = .true.
+      save_twnsnd_filename = 'spb.mesa'
+
+/
+
+&controls
+
+  ! starting specifications
+      initial_mass = 5d0 ! in Msun units
+      initial_Z = 0.02
+      initial_Y = 0.28
+   
+   ! output to files and terminal
+      photostep = 0
+      profile_interval = 0
+      history_interval = 0
+      terminal_interval = 10
+      write_header_frequency = 10
+
+  ! mass gain or loss
+      RGB_wind_scheme = 'Reimers'
+      AGB_wind_scheme = 'Blocker'
+      RGB_to_AGB_wind_switch = 1d-4
+      Reimers_wind_eta = 0.8d0  
+      Blocker_wind_eta = 0.5d0  
+
+  ! when to stop
+      xa_central_lower_limit_species(1) = 'h1'
+      xa_central_lower_limit(1) = 0.35
+
+/
+
+&pgstar
+/
