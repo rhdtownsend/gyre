@@ -10,6 +10,9 @@ module gyre_mode
   use core_kinds
   use core_parallel
 
+  use gyre_bvp
+  use gyre_ext_arith
+
   use ISO_FORTRAN_ENV
 
   ! No implicit typing
@@ -45,25 +48,18 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, omega, discrim, x, y)
+  subroutine init (this, bp, omega)
 
-    class(mode_t), intent(out) :: this
-    complex(WP), intent(in)    :: omega
-    complex(WP), intent(in)    :: discrim
-    real(WP), intent(in)       :: x(:)
-    complex(WP), intent(in)    :: y(:,:)
+    class(mode_t), intent(out)  :: this
+    class(bvp_t), intent(inout) :: bp
+    complex(WP), intent(in)     :: omega
 
-    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
-
-    ! Store the eigenfrequency and eigenfunction
+    ! Initialize the mode
 
     this%omega = omega
-    this%discrim = discrim
+    this%discrim = cmplx(bp%discrim(omega))
 
-    this%x = x
-    this%y = y
-
-    ! Classify the mode
+    call bp%recon(omega, this%x, this%y)
 
     call classify(this%x, REAL(this%y), this%n_p, this%n_g)
 
