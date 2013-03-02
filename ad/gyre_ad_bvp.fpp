@@ -1,5 +1,5 @@
 ! Module   : gyre_ad_bvp
-! Purpose  : Adiabatic BVP
+! Purpose  : solve adiabatic BVPs
 
 $include 'core.inc'
 
@@ -8,8 +8,8 @@ module gyre_ad_bvp
   ! Uses
 
   use core_kinds
-  use core_func
 
+  use gyre_bvp
   use gyre_ad_shooter
   use gyre_ad_bound
   use gyre_sysmtx
@@ -23,24 +23,19 @@ module gyre_ad_bvp
 
   ! Derived-type definitions
 
-  type, extends(func_t) :: ad_bvp_t
+  type, extends(bvp_t) :: ad_bvp_t
      private
      type(ad_shooter_t) :: sh
      type(ad_bound_t)   :: bd
      type(sysmtx_t)     :: sm
      integer, public    :: n
      integer, public    :: n_e
-     integer, public    :: e_norm
    contains 
      private
      procedure, public :: init
-     procedure, public :: eval_c
-     procedure         :: discrim_r
-     procedure         :: discrim_c
-     generic, public   :: discrim => discrim_r, discrim_c
-     procedure, public :: shoot
+     procedure, public :: discrim
+     procedure         :: shoot
      procedure, public :: recon
-     procedure, public :: set_norm
   end type ad_bvp_t
 
   ! Access specifiers
@@ -71,8 +66,6 @@ contains
     this%n = sh%n
     this%n_e = sh%n_e
 
-    this%e_norm = 0
-
     ! Finish
 
     return
@@ -81,52 +74,7 @@ contains
 
 !****
 
-  function eval_c (this, z) result (f_z)
-
-    class(ad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)        :: z
-    complex(WP)                    :: f_z
-
-    type(ext_complex_t) :: discrim
-
-    ! Evaluate the discriminant function
-
-    discrim = this%discrim(z)
-
-    ! Apply the exponent scaling
-
-    discrim%e = discrim%e - this%e_norm
-
-    f_z = cmplx(discrim)
-
-    ! Finish
-
-    return
-
-  end function eval_c
-
-!****
-
-  function discrim_r (this, omega) result (discrim)
-
-    class(ad_bvp_t), intent(inout) :: this
-    real(WP), intent(in)           :: omega
-    type(ext_real_t)               :: discrim
-
-    ! Evaluate the real discriminant based on the complex discriminant
-    ! this%discrim_c
-
-    discrim = ext_real(this%discrim_c(CMPLX(omega, KIND=WP)))
-
-    ! Finish
-
-    return
-
-  end function discrim_r
-  
-!****
-
-  function discrim_c (this, omega) result (discrim)
+  function discrim (this, omega)
 
     class(ad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)        :: omega
@@ -142,7 +90,7 @@ contains
 
     return
 
-  end function discrim_c
+  end function discrim
 
 !****
 
@@ -191,26 +139,4 @@ contains
 
   end subroutine recon
 
-!****
-
-  subroutine set_norm (this, omega)
-
-    class(ad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)        :: omega
-
-    type(ext_complex_t) :: discrim
-
-    ! Set the normalizing exponent, based on the exponent value at
-    ! omega
-
-    discrim = this%discrim(omega)
-    
-    this%e_norm = discrim%e
-
-    ! Finish
-
-    return
-
-  end subroutine set_norm
-    
 end module gyre_ad_bvp
