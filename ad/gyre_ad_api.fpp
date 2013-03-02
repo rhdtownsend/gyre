@@ -11,6 +11,7 @@ module gyre_ad_api
   use core_parallel
 
   use gyre_ad_bvp
+  use gyre_ad_discfunc
   use gyre_mode
   use gyre_util
   use gyre_ext_arith
@@ -48,6 +49,7 @@ contains
     $endif
     integer                  :: n_brack
     integer                  :: i_brack(SIZE(omega)-1)
+    type(ad_discfunc_t)      :: df
     integer                  :: n_iter
     complex(WP)              :: omega_root
     real(WP), allocatable    :: x(:)
@@ -66,7 +68,7 @@ contains
 
     discrim_loop : do i = i_part(MPI_RANK+1),i_part(MPI_RANK+2)-1
 
-       discrim(i) = bp%discrim(omega(i))
+       discrim(i) = ext_real(bp%discrim(CMPLX(omega(i), KIND=WP)))
 
        write(OUTPUT_UNIT, *) 'Eval:',omega(i),discrim(i)%f,discrim(i)%e
 
@@ -110,21 +112,18 @@ contains
 
     root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
-       ! Set up the normalizing exponent
-
-       call bp%set_norm(CMPLX(0.5_WP*(omega(i_brack(i)) + omega(i_brack(i)+1)), KIND=WP))
-
        ! Find the root
+
+       call df%init(bp, CMPLX(0.5_WP*(omega(i_brack(i)) + omega(i_brack(i)+1)), KIND=WP))
 
        n_iter = n_iter_max
 
-       omega_root = bp%root(omega(i_brack(i)), omega(i_brack(i)+1), 0._WP, n_iter=n_iter)
+       omega_root = df%root(omega(i_brack(i)), omega(i_brack(i)+1), 0._WP, n_iter=n_iter)
        $ASSERT(n_iter <= n_iter_max,Too many iterations)
 
        ! Set up the mode
 
-       call bp%recon(omega_root, x, y)
-       call md(i)%init(omega_root, bp%eval(omega_root), x, y)
+       call md(i)%init(bp, omega_root)
 
        ! Report
 
