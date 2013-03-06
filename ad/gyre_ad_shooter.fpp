@@ -139,8 +139,8 @@ contains
 
     ! Allocate the grid
 
-    call plan_dispersion_grid (this%x, this%mc, omega, this%l, &
-                               this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
+    call plan_dispersion_grid(this%x, this%mc, omega, this%l, &
+                              this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
 
     call build_oversamp_grid(this%x, dn, x)
 
