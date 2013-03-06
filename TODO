@@ -1,0 +1,13 @@
+*) Clean up access to data components
+   - shut down where necessary
+
+*) ivp_t
+   - turn into a class?
+
+*) Carry e_norm over to mode_t initialization, so discrim's are normalized?
+
+*) Start work on nad stuff...
+   - therm_coeffs
+
+*) split off evol readers in mech_grid stuff
+   - why? to allow different readers to be added without modding mech_grid
