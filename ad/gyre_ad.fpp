@@ -1,5 +1,5 @@
 ! Program  : gyre_ad
-! Purpose  : Adiabatic oscillations
+! Purpose  : adiabatic oscillation code
 
 $include 'core.inc'
 
@@ -12,7 +12,6 @@ program gyre_ad
   use core_parallel
   use core_hgroup
 
-  use gyre_input
   use gyre_mech_coeffs
   use gyre_mech_coeffs_evol
   use gyre_mech_coeffs_poly
@@ -93,7 +92,7 @@ contains
 
     integer, intent(in)                              :: unit
     real(WP), allocatable, intent(out)               :: x_mc(:)
-    $if($GFORTRAN_PR_56218)
+    $if($GFORTRAN_PR56218)
     class(mech_coeffs_t), allocatable, intent(inout) :: mc
     $else
     class(mech_coeffs_t), allocatable, intent(out)   :: mc
