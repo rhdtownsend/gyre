@@ -21,32 +21,24 @@ module gyre_ad_bound
 
   type :: ad_bound_t
      private
-     class(mech_coeffs_t), pointer             :: mc
-     real(WP)                                  :: lambda_0
-     integer                                   :: l
-     integer, public                           :: n_e
-     integer, public                           :: n_i
-     integer, public                           :: n_o 
-     procedure(outer_bound_i), pointer, public :: outer_bound
+     class(mech_coeffs_t), pointer :: mc
+     real(WP)                      :: lambda_0
+     integer                       :: l
+     integer, public               :: n_e
+     integer, public               :: n_i
+     integer, public               :: n_o
+!    character(LEN=:), allocatable :: outer_bound_type
+     character(LEN=256)            :: outer_bound_type
    contains 
      private
      procedure, public :: init
      procedure, public :: inner_bound
+     procedure, public :: outer_bound
+     procedure, public :: outer_bound_zero
+     procedure, public :: outer_bound_dziem
+     procedure, public :: outer_bound_unno
+     procedure, public :: outer_bound_jcd
   end type ad_bound_t
-
-  ! Interfaces
-
-  abstract interface
-
-     function outer_bound_i (this, omega) result (B_o)
-       use core_kinds
-       import ad_bound_t
-       class(ad_bound_t), intent(in) :: this
-       complex(WP), intent(in)       :: omega
-       complex(WP)                   :: B_o(this%n_o,this%n_e)
-     end function outer_bound_i
-
-  end interface
 
   ! Access specifiers
 
@@ -58,13 +50,13 @@ module gyre_ad_bound
 
 contains
 
-  subroutine init (this, mc, lambda_0, l, outer_bound)
+  subroutine init (this, mc, lambda_0, l, outer_bound_type)
 
     class(ad_bound_t), intent(out)           :: this
     class(mech_coeffs_t), intent(in), target :: mc
     real(WP), intent(in)                     :: lambda_0
     integer, intent(in)                      :: l
-    character(LEN=*), intent(in)             :: outer_bound
+    character(LEN=*), intent(in)             :: outer_bound_type
 
     ! Initialize the ad_bound
 
@@ -77,18 +69,7 @@ contains
     this%n_o = 2
     this%n_e = this%n_i + this%n_o
 
-    select case (outer_bound)
-    case ('ZERO')
-       this%outer_bound => outer_bound_zero
-    case ('DZIEM')
-       this%outer_bound => outer_bound_dziem
-    case ('UNNO')
-       this%outer_bound => outer_bound_unno
-    case ('JCD')
-       this%outer_bound => outer_bound_jcd
-    case default
-       $ABORT(Invalid outer_bound)
-    end select
+    this%outer_bound_type = outer_bound_type
 
     ! Finish
 
@@ -126,6 +107,35 @@ contains
     return
 
   end function inner_bound
+
+!****
+
+  function outer_bound (this, omega) result (B_o)
+
+    class(ad_bound_t), intent(in) :: this
+    complex(WP), intent(in)       :: omega
+    complex(WP)                   :: B_o(this%n_o,this%n_e)
+
+    ! Set the outer boundary conditions
+
+    select case (this%outer_bound_type)
+    case ('ZERO')
+       B_o = this%outer_bound_zero(omega)
+    case ('DZIEM')
+       B_o = this%outer_bound_dziem(omega)
+    case ('UNNO')
+       B_o = this%outer_bound_unno(omega)
+    case ('JCD')
+       B_o = this%outer_bound_jcd(omega)
+    case default
+       $ABORT(Invalid outer_bound_type)
+    end select
+
+    ! Finish
+
+    return
+
+  end function outer_bound
 
 !****
 
