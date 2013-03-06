@@ -31,9 +31,9 @@ module gyre_ivp
 
 contains
 
-  subroutine solve (solver, jc, omega, x_a, x_b, E_l, E_r, scale)
+  subroutine solve (solver_type, jc, omega, x_a, x_b, E_l, E_r, scale)
 
-    character(LEN=*), intent(in)     :: solver
+    character(LEN=*), intent(in)     :: solver_type
     class(jacobian_t), intent(in)    :: jc
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x_a
@@ -44,7 +44,7 @@ contains
 
     ! Solve the IVP across the interval x_a -> x_b
 
-    select case(solver)
+    select case(solver_type)
     case('FINDIFF')
        call solve_findiff(jc, omega, x_a, x_b, E_l, E_r, scale)
     case('MAGNUS_GL2')
@@ -54,7 +54,7 @@ contains
     case('MAGNUS_GL6')
        call solve_magnus_GL6(jc, omega, x_a, x_b, E_l, E_r, scale)
     case default
-       $ABORT(Invalid solver)
+       $ABORT(Invalid solver_type)
     end select
 
     ! Finish
@@ -65,9 +65,9 @@ contains
 
 !****
 
-  subroutine recon (solver, jc, omega, x_a, x_b, y_a, y_b, x, y)
+  subroutine recon (solver_type, jc, omega, x_a, x_b, y_a, y_b, x, y)
 
-    character(LEN=*), intent(in)  :: solver
+    character(LEN=*), intent(in)  :: solver_type
     class(jacobian_t), intent(in) :: jc
     complex(WP), intent(in)       :: omega
     real(WP), intent(in)          :: x_a
@@ -79,7 +79,7 @@ contains
 
     ! Reconstruct the IVP solution within the interval x_a -> x_b
 
-    select case(solver)
+    select case(solver_type)
     case('FINDIFF')
        call recon_findiff(jc, omega, x_a, x_b, y_a, y_b, x, y)
     case('MAGNUS_GL2')
@@ -89,7 +89,7 @@ contains
     case('MAGNUS_GL6')
        call recon_magnus_Gl6(jc, omega, x_a, x_b, y_a, y_b, x, y)
     case default
-       $ABORT(Invalid solver)
+       $ABORT(Invalid solver_type)
     end select
 
     ! Finish
