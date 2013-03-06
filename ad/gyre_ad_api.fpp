@@ -1,5 +1,5 @@
 ! Module   : gyre_ad_api
-! Purpose  : Adiabatic API
+! Purpose  : adiabatic API
 
 $include 'core.inc'
 
@@ -39,23 +39,21 @@ contains
     integer, intent(in)                    :: n_iter_max
     type(mode_t), allocatable, intent(out) :: md(:)
 
-    integer                  :: n_omega
-    integer                  :: i_part(MPI_SIZE+1)
-    integer                  :: i
-    type(ext_real_t)         :: discrim(SIZE(omega))
+    integer             :: n_omega
+    integer             :: i_part(MPI_SIZE+1)
+    integer             :: i
+    type(ext_real_t)    :: discrim(SIZE(omega))
     $if($MPI)
-    integer                  :: recvcounts(MPI_SIZE)
-    integer                  :: displs(MPI_SIZE)
+    integer             :: recvcounts(MPI_SIZE)
+    integer             :: displs(MPI_SIZE)
     $endif
-    integer                  :: n_brack
-    integer                  :: i_brack(SIZE(omega)-1)
-    type(ad_discfunc_t)      :: df
-    integer                  :: n_iter
-    complex(WP)              :: omega_root
-    real(WP), allocatable    :: x(:)
-    complex(WP), allocatable :: y(:,:)
+    integer             :: n_brack
+    integer             :: i_brack(SIZE(omega)-1)
+    type(ad_discfunc_t) :: df
+    integer             :: n_iter
+    complex(WP)         :: omega_root
     $if($MPI)
-    integer            :: p
+    integer             :: p
     $endif
 
     ! Calculate the discriminant on the omega abscissa
