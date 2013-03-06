@@ -1,0 +1,7 @@
+syntax: glob
+
+*.f90
+*.o
+*.mod
+.depend
+*~
