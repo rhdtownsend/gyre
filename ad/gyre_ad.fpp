@@ -155,6 +155,7 @@ contains
 
     $if($MPI)
     call mc%bcast(0)
+    call bcast(x_mc, 0, alloc=.TRUE.)
     $endif
 
     ! Finish
