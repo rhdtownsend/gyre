@@ -2,8 +2,7 @@
 
 # Variables
 
-#TARGETS=gyre_ad gyre_ad_map build_poly_hom time_gyre_ad dump_poly
-TARGETS=gyre_ad build_poly_hom #time_gyre_ad dump_poly
+TARGETS=gyre_ad build_poly_hom
 
 # Flags
 
@@ -12,10 +11,10 @@ OMP=true
 DEBUG=true
 DOUBLE_PRECISION=true
 
-LDFLAGS=`mesasdk_hdf5_link` `mesasdk_lapack95_link`
+LDFLAGS=`madsdk_hdf5_link` `madsdk_lapack95_link`
 
 # Include other makefiles
 
-SUBDIRS=core:common:ivp:coeffs
+SUBDIRS=../../core:../common:../ivp:../bvp:../coeffs:../matrix
 
-include ../Make.inc
+include ../../build/Make.inc
