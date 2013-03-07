@@ -366,8 +366,8 @@ contains
        n_center = 0
        n_floor = 0
 
-       s = 0._WP
-       n_grid = 0
+       s = 100._WP
+       n_grid = 100
 
        rewind(unit)
        read(unit, NML=shoot_grid)
@@ -457,14 +457,12 @@ contains
 
     namelist /output/ freq_units, eigval_file, eigfunc_prefix
 
-    ! Set defaults
+    ! Read output parameters
 
     freq_units = 'NONE'
 
     eigval_file = ''
     eigfunc_prefix = ''
-
-    ! Read parameters
 
     rewind(unit)
     read(unit, NML=output)
