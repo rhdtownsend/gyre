@@ -226,7 +226,7 @@ contains
     real(WP), intent(in)             :: alpha_exp
     integer, intent(in)              :: n_center
     integer, intent(in)              :: n_floor
-    integer, intent(out)             :: dn(:)
+    integer, intent(inout)           :: dn(:)
 
     integer     :: i
     complex(WP) :: k_r
@@ -236,10 +236,8 @@ contains
 
     $CHECK_BOUNDS(SIZE(dn),SIZE(x_mc)-1)
 
-    ! Plan an oversamp grid, setting up dn (see build_grid_oversamp)
+    ! Plan an oversamp grid, modifying dn (see build_grid_oversamp)
     ! with additional points based on a local dispersion analysis
-
-    dn = 0
 
     ! Place points based on the oscillatory (real) and exponential
     ! (imaginary) parts of the local radial wavenumber
