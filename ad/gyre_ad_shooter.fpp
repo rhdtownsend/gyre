@@ -10,7 +10,7 @@ module gyre_ad_shooter
   use core_kinds
 
   use gyre_mech_coeffs
-  use gyre_ad_params
+  use gyre_ad_oscpar
   use gyre_ad_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
@@ -28,7 +28,7 @@ module gyre_ad_shooter
   type :: ad_shooter_t
      private
      class(mech_coeffs_t), pointer :: mc => null()
-     class(ad_params_t), pointer   :: ap => null()
+     class(ad_oscpar_t), pointer   :: op => null()
      type(ad_jacobian_t)           :: jc
      real(WP), allocatable         :: x(:)
      real(WP)                      :: alpha_osc
@@ -55,11 +55,11 @@ module gyre_ad_shooter
 
 contains
 
-  subroutine init (this, mc, ap, jc, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
+  subroutine init (this, mc, op, jc, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
 
     class(ad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target :: mc
-    class(ad_params_t), intent(in), target   :: ap
+    class(ad_oscpar_t), intent(in), target   :: op
     type(ad_jacobian_t), intent(in)          :: jc
     real(WP), intent(in)                     :: x(:)
     real(WP), intent(in)                     :: alpha_osc
@@ -71,7 +71,7 @@ contains
     ! Initialize the ad_shooter
 
     this%mc => mc
-    this%ap => ap
+    this%op => op
     this%jc = jc
     
     this%x = x
@@ -140,7 +140,7 @@ contains
 
     ! Allocate the grid
 
-    call plan_dispersion_grid(this%x, this%mc, omega, this%ap%l, &
+    call plan_dispersion_grid(this%x, this%mc, omega, this%op%l, &
                               this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
 
     call build_oversamp_grid(this%x, dn, x)

@@ -10,7 +10,7 @@ module gyre_ad_bound
   use core_kinds
 
   use gyre_mech_coeffs
-  use gyre_ad_params
+  use gyre_ad_oscpar
 
   use ISO_FORTRAN_ENV
 
@@ -23,12 +23,10 @@ module gyre_ad_bound
   type :: ad_bound_t
      private
      class(mech_coeffs_t), pointer :: mc => null()
-     class(ad_params_t), pointer   :: ap => null()
+     class(ad_oscpar_t), pointer   :: op => null()
      integer, public               :: n_e
      integer, public               :: n_i
      integer, public               :: n_o
-!    character(LEN=:), allocatable :: outer_bound_type
-     character(LEN=256)            :: outer_bound_type
    contains 
      private
      procedure, public :: init
@@ -50,23 +48,20 @@ module gyre_ad_bound
 
 contains
 
-  subroutine init (this, mc, ap, outer_bound_type)
+  subroutine init (this, mc, op)
 
     class(ad_bound_t), intent(out)           :: this
     class(mech_coeffs_t), intent(in), target :: mc
-    class(ad_params_t), intent(in), target   :: ap
-    character(LEN=*), intent(in)             :: outer_bound_type
+    class(ad_oscpar_t), intent(in), target   :: op
 
     ! Initialize the ad_bound
 
     this%mc => mc
-    this%ap => ap
+    this%op => op
 
     this%n_i = 2
     this%n_o = 2
     this%n_e = this%n_i + this%n_o
-
-    this%outer_bound_type = outer_bound_type
 
     ! Finish
 
@@ -85,7 +80,7 @@ contains
     ! Set the inner boundary conditions to enforce non-diverging modes
 
     associate(c_1 => this%mc%c_1(0._WP), &
-              lambda_0 => this%ap%lambda_0, l => this%ap%l)
+              lambda_0 => this%op%lambda_0, l => this%op%l)
                  
       B_i(1,1) = c_1*omega**2
       B_i(1,2) = -l
@@ -115,7 +110,7 @@ contains
 
     ! Set the outer boundary conditions
 
-    select case (this%outer_bound_type)
+    select case (this%op%outer_bound_type)
     case ('ZERO')
        B_o = this%outer_bound_zero(omega)
     case ('DZIEM')
@@ -146,7 +141,7 @@ contains
     ! term in the gravitational bc is required for cases where the
     ! surface density remains finite (see Cox 1980, eqn. 17.71)
 
-    associate(U => this%mc%U(1._WP), l => this%ap%l)
+    associate(U => this%mc%U(1._WP), l => this%op%l)
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
@@ -178,7 +173,7 @@ contains
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere.
 
     associate(U => this%mc%U(1._WP), V => this%mc%V(1._WP), &
-              l => this%ap%l)
+              l => this%op%l)
 
       B_o(1,1) = 1 + (l*(l+1)/omega**2 - 4 - omega**2)/V
       B_o(1,2) = -1._WP
@@ -220,7 +215,7 @@ contains
     ! S18.1) formulation.
 
     associate(V_g => this%mc%V(1._WP)/this%mc%Gamma_1(1._WP), &
-              As => this%mc%As(1._WP), l => this%ap%l)
+              As => this%mc%As(1._WP), l => this%op%l)
 
       lambda = outer_wavenumber(V_g, As, omega, l)
       
@@ -270,7 +265,7 @@ contains
 
     associate(V_g => this%mc%V(1._WP)/this%mc%Gamma_1(1._WP), &
               As => this%mc%V(1._WP)*(1._WP-1._WP/this%mc%Gamma_1(1._WP)), &
-              l => this%ap%l)
+              l => this%op%l)
 
       b_11 = V_g - 3._WP
       b_12 = l*(l+1)/omega**2 - V_g
