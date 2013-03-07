@@ -10,6 +10,7 @@ module gyre_ad_shooter
   use core_kinds
 
   use gyre_mech_coeffs
+  use gyre_ad_params
   use gyre_ad_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
@@ -26,17 +27,17 @@ module gyre_ad_shooter
 
   type :: ad_shooter_t
      private
-     class(mech_coeffs_t), pointer :: mc
+     class(mech_coeffs_t), pointer :: mc => null()
+     class(ad_params_t), pointer   :: ap => null()
      type(ad_jacobian_t)           :: jc
      real(WP), allocatable         :: x(:)
      real(WP)                      :: alpha_osc
      real(WP)                      :: alpha_exp
      integer                       :: n_center
      integer                       :: n_floor
-     integer                       :: l
      integer, public               :: n
      integer, public               :: n_e
-     character(LEN=256)            :: solver
+     character(LEN=256)            :: solver_type
    contains
      private
      procedure, public :: init
@@ -54,27 +55,27 @@ module gyre_ad_shooter
 
 contains
 
-  subroutine init (this, mc, jc, x, l, alpha_osc, alpha_exp, n_center, n_floor, solver)
+  subroutine init (this, mc, ap, jc, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
 
     class(ad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target :: mc
+    class(ad_params_t), intent(in), target   :: ap
     type(ad_jacobian_t), intent(in)          :: jc
     real(WP), intent(in)                     :: x(:)
-    integer                                  :: l
     real(WP), intent(in)                     :: alpha_osc
     real(WP), intent(in)                     :: alpha_exp
     integer, intent(in)                      :: n_center
     integer, intent(in)                      :: n_floor
-    character(LEN=*), intent(in)             :: solver
+    character(LEN=*), intent(in)             :: solver_type
 
     ! Initialize the ad_shooter
 
     this%mc => mc
+    this%ap => ap
     this%jc = jc
     
     this%x = x
 
-    this%l = l
     this%alpha_osc = alpha_osc
     this%alpha_exp = alpha_exp
     this%n_center = n_center
@@ -83,7 +84,7 @@ contains
     this%n = SIZE(x)
     this%n_e = jc%n_e
 
-    this%solver = solver
+    this%solver_type = solver_type
 
     ! Finish
 
@@ -109,7 +110,7 @@ contains
 
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale)
     block_loop : do k = 1,this%n-1
-       call solve(this%solver, this%jc, omega, this%x(k), this%x(k+1), E_l, E_r, scale)
+       call solve(this%solver_type, this%jc, omega, this%x(k), this%x(k+1), E_l, E_r, scale)
        call sm%set_block(k, E_l, E_r, scale)
     end do block_loop
 
@@ -139,7 +140,7 @@ contains
 
     ! Allocate the grid
 
-    call plan_dispersion_grid(this%x, this%mc, omega, this%l, &
+    call plan_dispersion_grid(this%x, this%mc, omega, this%ap%l, &
                               this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
 
     call build_oversamp_grid(this%x, dn, x)
@@ -158,7 +159,7 @@ contains
 
     !$OMP PARALLEL DO
     recon_loop : do k = 1,this%n-1
-       call recon(this%solver, this%jc, omega, this%x(k), this%x(k+1), y_sh(:,k), y_sh(:,k+1), &
+       call recon(this%solver_type, this%jc, omega, this%x(k), this%x(k+1), y_sh(:,k), y_sh(:,k+1), &
                   x(i_a(k):i_b(k)), y(:,i_a(k):i_b(k)))
     end do recon_loop
     

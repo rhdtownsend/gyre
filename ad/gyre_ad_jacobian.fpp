@@ -11,6 +11,7 @@ module gyre_ad_jacobian
 
   use gyre_jacobian
   use gyre_mech_coeffs
+  use gyre_ad_params
 
   use ISO_FORTRAN_ENV
 
@@ -23,8 +24,7 @@ module gyre_ad_jacobian
   type, extends(jacobian_t) :: ad_jacobian_t
      private
      class(mech_coeffs_t), pointer :: mc => null()
-     real(WP)                      :: lambda_0
-     integer                       :: l
+     class(ad_params_t), pointer   :: ap => null()
    contains
      private
      procedure, public :: init
@@ -42,19 +42,16 @@ module gyre_ad_jacobian
 
 contains
 
-  subroutine init (this, mc, lambda_0, l)
+  subroutine init (this, mc, ap)
 
     class(ad_jacobian_t), intent(out)        :: this
     class(mech_coeffs_t), intent(in), target :: mc
-    real(WP), intent(in)                     :: lambda_0
-    integer, intent(in)                      :: l
+    class(ad_params_t), intent(in), target   :: ap
 
     ! Initialize the ad_jacobian
 
     this%mc => mc
-
-    this%lambda_0 = lambda_0
-    this%l = l
+    this%ap => ap
 
     this%n_e = 4
 
@@ -101,7 +98,7 @@ contains
 
     associate(V_g => this%mc%V(x)/this%mc%Gamma_1(x), U => this%mc%U(x), &
               As => this%mc%As(x), c_1 => this%mc%c_1(x), &
-              lambda_0 => this%lambda_0, l => this%l)
+              lambda_0 => this%ap%lambda_0, l => this%ap%l)
 
       A(1,1) = V_g - 3._WP - lambda_0
       A(1,2) = l*(l+1)/(c_1*omega**2) - V_g
