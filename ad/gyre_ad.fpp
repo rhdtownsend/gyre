@@ -16,6 +16,7 @@ program gyre_ad
   use gyre_mech_coeffs_evol
   use gyre_mech_coeffs_poly
   use gyre_mech_coeffs_hom
+  use gyre_ad_oscpar
   use gyre_ad_bvp
   use gyre_ad_api
   use gyre_ad_bound
@@ -36,7 +37,9 @@ program gyre_ad
   integer                           :: unit
   real(WP), allocatable             :: x_mc(:)
   class(mech_coeffs_t), allocatable :: mc
-  type(ad_bvp_t)                    :: bp
+  type(ad_oscpar_t)                 :: op
+  character(LEN=256)                :: ivp_solver_type
+  type(ad_bvp_t)                    :: bp 
   real(WP), allocatable             :: omega(:)
   integer                           :: n_iter_max
   type(mode_t), allocatable         :: md(:)
@@ -60,8 +63,10 @@ program gyre_ad
   call write_header('Initialization', '=')
 
   call init_coeffs(unit, x_mc, mc)
-  call init_bvp(unit, x_mc, mc, bp)
+  call init_oscpar(unit, op)
+  call init_numpar(unit, ivp_solver_type)
   call init_scan(unit, mc, omega, n_iter_max)
+  call init_bvp(unit, x_mc, mc, op, ivp_solver_type, bp)
 
   ! Find modes
 
@@ -72,14 +77,13 @@ program gyre_ad
   allocate(E(SIZE(md)))
 
   do i = 1,SIZE(md)
-!     E(i) = inertia(md(i), bp)
-     E(i) = 0._WP
+     E(i) = inertia(mc, op, md(i))
   end do
 
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_eigdata(unit, mc, md)
+     call write_eigdata(unit, mc, op, md)
   endif
 
   ! Finish
@@ -166,157 +170,73 @@ contains
 
 !****
 
-  subroutine init_bvp (unit, x_mc, mc, bp)
+  subroutine init_oscpar (unit, op)
 
-    integer, intent(in)                      :: unit
-    real(WP), intent(in), allocatable        :: x_mc(:)
-    class(mech_coeffs_t), intent(in), target :: mc
-    type(ad_bvp_t), intent(out)              :: bp
+    integer, intent(in)            :: unit
+    type(ad_oscpar_t), intent(out) :: op
 
-    integer               :: l
-    character(LEN=256)    :: outer_bound
-    character(LEN=256)    :: solver
-    real(WP)              :: lambda_0
-    type(ad_jacobian_t)   :: jc
-    type(ad_bound_t)      :: bd
-    character(LEN=256)    :: grid_type
-    real(WP)              :: freq
-    character(LEN=256)    :: freq_units
-    real(WP)              :: alpha_osc
-    real(WP)              :: alpha_exp
-    integer               :: n_center
-    integer               :: n_floor
-    real(WP)              :: s
-    integer               :: n_grid
-    integer               :: dn(SIZE(x_mc)-1)
-    complex(WP)           :: omega
-    real(WP), allocatable :: x_sh(:)
-    type(ad_shooter_t)    :: sh
+    integer            :: l
+    character(LEN=256) :: outer_bound_type
 
-    namelist /eqns/ l, outer_bound, solver
+    namelist /oscpar/ l, outer_bound_type
 
-    namelist /shoot_grid/ grid_type, freq, freq_units, alpha_osc, alpha_exp, &
-         n_center, n_floor, s, n_grid
-
-    namelist /recon_grid/ alpha_osc, alpha_exp, n_center, n_floor
-
-    ! Read equation parameters
+    ! Read oscillation parameters
 
     if(MPI_RANK == 0) then
 
        l = 0
 
-       outer_bound = 'ZERO'
-       solver = 'MAGNUS_GL2'
+       outer_bound_type = 'ZERO'
 
        rewind(unit)
-       read(unit, NML=eqns)
+       read(unit, NML=oscpar)
 
     endif
 
     $if($MPI)
     call bcast(l, 0)
-    call bcast(outer_bound, 0)
-    call bcast(solver, 0)
+    call bcast(outer_bound_type, 0)
     $endif
 
-    ! Initialize the Jacobian and boundary conditions
+    ! Initialize the oscilaltion parameters
 
-    if(l == 0) then
-       lambda_0 = 0._WP
-    else
-       lambda_0 = l - 2._WP
-    endif
-
-    call jc%init(mc, lambda_0, l)
-    call bd%init(mc, lambda_0, l, outer_bound)
-
-    ! Read shooting grid parameters
-
-    if(MPI_RANK == 0) then
-
-       grid_type = 'DISPERSION'
-
-       freq = 1._WP
-       freq_units = 'NONE'
-
-       alpha_osc = 0._WP
-       alpha_exp = 0._WP
-       
-       n_center = 0
-       n_floor = 0
-
-       s = 0._WP
-       n_grid = 0
-
-       rewind(unit)
-       read(unit, NML=shoot_grid)
-
-    endif
-
-    $if($MPI)
-    call bcast(grid_type, 0)
-    call bcast(freq, 0)
-    call bcast(freq_units, 0)
-    call bcast(alpha_osc, 0)
-    call bcast(alpha_exp, 0)
-    call bcast(n_center, 0)
-    call bcast(n_floor, 0)
-    call bcast(s, 0)
-    call bcast(n_grid, 0)
-    $endif
-
-    ! Initialize the shooting grid
-
-    select case(grid_type)
-    case('GEOM')
-       call build_geom_grid(s, n_grid, x_sh)
-    case('LOG')
-       call build_log_grid(s, n_grid, x_sh)
-    case('DISPERSION')
-       $ASSERT(ALLOCATED(x_mc),No input grid)
-       omega = mc%conv_freq(freq, freq_units, 'NONE')
-       call plan_dispersion_grid(x_mc, mc, omega, l, alpha_osc, alpha_exp, n_center, n_floor, dn)
-       call build_oversamp_grid(x_mc, dn, x_sh)
-    case default
-       $ABORT(Invalid grid_type)
-    end select
-
-    ! Read recon grid parameters
-
-    if(MPI_RANK == 0) then
-
-       alpha_osc = 0._WP
-       alpha_exp = 0._WP
-       
-       n_center = 0
-       n_floor = 0
-
-       rewind(unit)
-       read(unit, NML=recon_grid)
-
-    endif
-
-    $if($MPI)
-    call bcast(alpha_osc, 0)
-    call bcast(alpha_exp, 0)
-    call bcast(n_center, 0)
-    call bcast(n_floor, 0)
-    $endif
-
-    ! Initialize the shooter
-
-    call sh%init(mc, jc, x_sh, l, alpha_osc, alpha_exp, n_center, n_floor, solver)
-
-    ! Initialize the bvp
-
-    call bp%init(sh, bd)
+    call op%init(l, outer_bound_type)
 
     ! Finish
 
     return
 
-  end subroutine init_bvp
+  end subroutine init_oscpar
+
+!****
+
+  subroutine init_numpar (unit, ivp_solver_type)
+
+    integer, intent(in)           :: unit
+    character(LEN=*), intent(out) :: ivp_solver_type
+
+    namelist /numpar/ ivp_solver_type
+
+    ! Read numerical parameters
+
+    if(MPI_RANK == 0) then
+
+       ivp_solver_type = 'MAGNUS_GL2'
+
+       rewind(unit)
+       read(unit, NML=numpar)
+
+    endif
+
+    $if($MPI)
+    call bcast(ivp_solver_type, 0)
+    $endif
+
+    ! Finish
+
+    return
+
+  end subroutine init_numpar
 
 !****
 
@@ -396,10 +316,135 @@ contains
 
 !****
 
-  subroutine write_eigdata (unit, mc, md)
+  subroutine init_bvp (unit, x_mc, mc, op, ivp_solver_type, bp)
+
+    integer, intent(in)                      :: unit
+    real(WP), intent(in), allocatable        :: x_mc(:)
+    class(mech_coeffs_t), intent(in), target :: mc
+    type(ad_oscpar_t), intent(in)            :: op
+    character(LEN=*), intent(in)             :: ivp_solver_type
+    type(ad_bvp_t), intent(out)              :: bp
+
+    type(ad_jacobian_t)   :: jc
+    type(ad_bound_t)      :: bd
+    character(LEN=256)    :: grid_type
+    real(WP)              :: freq
+    character(LEN=256)    :: freq_units
+    real(WP)              :: alpha_osc
+    real(WP)              :: alpha_exp
+    integer               :: n_center
+    integer               :: n_floor
+    real(WP)              :: s
+    integer               :: n_grid
+    integer               :: dn(SIZE(x_mc)-1)
+    complex(WP)           :: omega
+    real(WP), allocatable :: x_sh(:)
+    type(ad_shooter_t)    :: sh
+
+    namelist /shoot_grid/ grid_type, freq, freq_units, alpha_osc, alpha_exp, &
+         n_center, n_floor, s, n_grid
+
+    namelist /recon_grid/ alpha_osc, alpha_exp, n_center, n_floor
+
+    ! Initialize the Jacobian and boundary conditions
+
+    call jc%init(mc, op)
+    call bd%init(mc, op)
+
+    ! Read shooting grid parameters
+
+    if(MPI_RANK == 0) then
+
+       grid_type = 'DISPERSION'
+
+       freq = 1._WP
+       freq_units = 'NONE'
+
+       alpha_osc = 0._WP
+       alpha_exp = 0._WP
+       
+       n_center = 0
+       n_floor = 0
+
+       s = 0._WP
+       n_grid = 0
+
+       rewind(unit)
+       read(unit, NML=shoot_grid)
+
+    endif
+
+    $if($MPI)
+    call bcast(grid_type, 0)
+    call bcast(freq, 0)
+    call bcast(freq_units, 0)
+    call bcast(alpha_osc, 0)
+    call bcast(alpha_exp, 0)
+    call bcast(n_center, 0)
+    call bcast(n_floor, 0)
+    call bcast(s, 0)
+    call bcast(n_grid, 0)
+    $endif
+
+    ! Initialize the shooting grid
+
+    select case(grid_type)
+    case('GEOM')
+       call build_geom_grid(s, n_grid, x_sh)
+    case('LOG')
+       call build_log_grid(s, n_grid, x_sh)
+    case('DISPERSION')
+       $ASSERT(ALLOCATED(x_mc),No input grid)
+       omega = mc%conv_freq(freq, freq_units, 'NONE')
+       call plan_dispersion_grid(x_mc, mc, omega, op%l, alpha_osc, alpha_exp, n_center, n_floor, dn)
+       call build_oversamp_grid(x_mc, dn, x_sh)
+    case default
+       $ABORT(Invalid grid_type)
+    end select
+
+    ! Read recon grid parameters
+
+    if(MPI_RANK == 0) then
+
+       alpha_osc = 0._WP
+       alpha_exp = 0._WP
+       
+       n_center = 0
+       n_floor = 0
+
+       rewind(unit)
+       read(unit, NML=recon_grid)
+
+    endif
+
+    $if($MPI)
+    call bcast(alpha_osc, 0)
+    call bcast(alpha_exp, 0)
+    call bcast(n_center, 0)
+    call bcast(n_floor, 0)
+    $endif
+
+    ! Initialize the shooter
+
+    call sh%init(mc, op, jc, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+
+    ! Initialize the bvp
+
+    call bp%init(sh, bd)
+
+    ! Finish
+
+    return
+
+  end subroutine init_bvp
+
+!****
+
+  subroutine write_eigdata (unit, mc, op, md)
 
     integer, intent(in)              :: unit
     class(mech_coeffs_t), intent(in) :: mc
+    class(ad_oscpar_t), intent(in)   :: op
     type(mode_t), intent(in)         :: md(:)
 
     character(LEN=256)               :: freq_units
@@ -439,7 +484,7 @@ contains
        call write_attr(hg, 'n', bp%n)
        call write_attr(hg, 'n_e', bp%n_e)
 
-!       call write_attr(hg, 'l', bp%l)
+       call write_attr(hg, 'l', op%l)
 
        call write_dset(hg, 'n_p', md%n_p)
        call write_dset(hg, 'n_g', md%n_g)
@@ -467,8 +512,8 @@ contains
           call write_attr(hg, 'n', bp%n)
           call write_attr(hg, 'n_e', bp%n_e)
 
-!          call write_attr(hg, 'l', bp%l)
-!          call write_attr(hg, 'lambda_0', bp%lambda_0)
+          call write_attr(hg, 'l', op%l)
+          call write_attr(hg, 'lambda_0', op%lambda_0)
 
           call write_attr(hg, 'n_p', md(i)%n_p)
           call write_attr(hg, 'n_g', md(i)%n_g)
@@ -490,5 +535,77 @@ contains
     return
 
   end subroutine write_eigdata
+
+!*****
+
+  function inertia (mc, op, md) result (E)
+
+    class(mech_coeffs_t), intent(in) :: mc
+    class(ad_oscpar_t), intent(in)   :: op
+    class(mode_t), intent(in)        :: md
+    real(WP)                         :: E
+
+    integer     :: i
+    real(WP)    :: dE_dx(md%n)
+    real(WP)    :: U
+    real(WP)    :: c_1
+    complex(WP) :: xi_r
+    complex(WP) :: xi_h
+    real(WP)    :: E_norm
+
+    ! Set up the inertia integrand
+
+    !$OMP PARALLEL DO PRIVATE (U, c_1, xi_r, xi_h)
+    do i = 1,md%n
+
+       U = mc%U(md%x(i))
+       c_1 = mc%c_1(md%x(i))
+
+       if(op%l == 0) then
+          xi_r = md%y(1,i)
+          xi_h = 0._WP
+       else
+          xi_r = md%y(1,i)
+          xi_h = md%y(2,i)/(c_1*md%omega**2)
+       endif
+
+       if(md%x(i) > 0._WP) then
+          xi_r = xi_r*md%x(i)**(op%lambda_0+1._WP)
+          xi_h = xi_h*md%x(i)**(op%lambda_0+1._WP)
+       else
+          if(op%lambda_0 /= -1._WP) then
+             xi_r = 0._WP
+             xi_h = 0._WP
+          endif
+       endif
+
+       dE_dx(i) = (ABS(xi_r)**2 + op%l*(op%l+1)*ABS(xi_h)**2)*U*md%x(i)**2/c_1
+
+    end do
+
+    ! Integrate via a tropezoidal rule
+
+    E = SUM(0.5_WP*(dE_dx(2:) + dE_dx(:md%n-1))*(md%x(2:) - md%x(:md%n-1)))
+
+    ! Normalize
+
+    if(op%l == 0) then
+       xi_r = md%y(1,md%n)
+       xi_h = 0._WP
+    else
+       xi_r = md%y(1,md%n)
+       xi_h = md%y(2,md%n)/md%omega**2
+    endif
+
+    E_norm = ABS(xi_r)**2 + op%l*(op%l+1)*ABS(xi_h)**2
+    $ASSERT(E_norm /= 0._WP,E_norm is zero)    
+    
+    E = E/E_norm
+
+    ! Finish
+
+    return
+
+  end function inertia
 
 end program gyre_ad
