@@ -43,7 +43,8 @@ program build_poly_hom
   read(INPUT_UNIT, NML=poly)
   
   grid_type = 'GEOM'
-  s = 10._WP
+
+  s = 100._WP
   n = 100
 
   read(INPUT_UNIT, NML=grid)
@@ -54,9 +55,9 @@ program build_poly_hom
 
   select case(grid_type)
   case('GEOM')
-     x = grid_geom(n, s)
+     call build_geom_grid(s, n, x)
   case('LOG')
-     x = grid_log(n, s)
+     call build_log_grid(s, n, x)
   case default
      $ABORT(Invalid grid_type)
   end select
