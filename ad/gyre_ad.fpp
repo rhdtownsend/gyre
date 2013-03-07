@@ -66,7 +66,7 @@ program gyre_ad
   call init_oscpar(unit, op)
   call init_numpar(unit, ivp_solver_type)
   call init_scan(unit, mc, omega, n_iter_max)
-  call init_bvp(unit, x_mc, mc, op, ivp_solver_type, bp)
+  call init_bvp(unit, x_mc, mc, op, omega, ivp_solver_type, bp)
 
   ! Find modes
 
@@ -316,20 +316,19 @@ contains
 
 !****
 
-  subroutine init_bvp (unit, x_mc, mc, op, ivp_solver_type, bp)
+  subroutine init_bvp (unit, x_mc, mc, op, omega, ivp_solver_type, bp)
 
     integer, intent(in)                      :: unit
     real(WP), intent(in), allocatable        :: x_mc(:)
     class(mech_coeffs_t), intent(in), target :: mc
     type(ad_oscpar_t), intent(in)            :: op
+    real(WP), intent(in)                     :: omega(:)
     character(LEN=*), intent(in)             :: ivp_solver_type
     type(ad_bvp_t), intent(out)              :: bp
 
     type(ad_jacobian_t)   :: jc
     type(ad_bound_t)      :: bd
     character(LEN=256)    :: grid_type
-    real(WP)              :: freq
-    character(LEN=256)    :: freq_units
     real(WP)              :: alpha_osc
     real(WP)              :: alpha_exp
     integer               :: n_center
@@ -337,11 +336,11 @@ contains
     real(WP)              :: s
     integer               :: n_grid
     integer               :: dn(SIZE(x_mc)-1)
-    complex(WP)           :: omega
+    integer               :: i
     real(WP), allocatable :: x_sh(:)
     type(ad_shooter_t)    :: sh
 
-    namelist /shoot_grid/ grid_type, freq, freq_units, alpha_osc, alpha_exp, &
+    namelist /shoot_grid/ grid_type, alpha_osc, alpha_exp, &
          n_center, n_floor, s, n_grid
 
     namelist /recon_grid/ alpha_osc, alpha_exp, n_center, n_floor
@@ -356,9 +355,6 @@ contains
     if(MPI_RANK == 0) then
 
        grid_type = 'DISPERSION'
-
-       freq = 1._WP
-       freq_units = 'NONE'
 
        alpha_osc = 0._WP
        alpha_exp = 0._WP
@@ -376,8 +372,6 @@ contains
 
     $if($MPI)
     call bcast(grid_type, 0)
-    call bcast(freq, 0)
-    call bcast(freq_units, 0)
     call bcast(alpha_osc, 0)
     call bcast(alpha_exp, 0)
     call bcast(n_center, 0)
@@ -395,8 +389,10 @@ contains
        call build_log_grid(s, n_grid, x_sh)
     case('DISPERSION')
        $ASSERT(ALLOCATED(x_mc),No input grid)
-       omega = mc%conv_freq(freq, freq_units, 'NONE')
-       call plan_dispersion_grid(x_mc, mc, omega, op%l, alpha_osc, alpha_exp, n_center, n_floor, dn)
+       dn = 0
+       do i = 1,SIZE(omega)
+          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op%l, alpha_osc, alpha_exp, n_center, n_floor, dn)
+       enddo
        call build_oversamp_grid(x_mc, dn, x_sh)
     case default
        $ABORT(Invalid grid_type)
