@@ -140,6 +140,8 @@ contains
 
     ! Allocate the grid
 
+    dn = 0
+
     call plan_dispersion_grid(this%x, this%mc, omega, this%op%l, &
                               this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
 
