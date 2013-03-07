@@ -16,6 +16,9 @@ program gyre_ad
   use gyre_mech_coeffs_evol
   use gyre_mech_coeffs_poly
   use gyre_mech_coeffs_hom
+  use gyre_mesa_file
+  use gyre_fgong_file
+  use gyre_b3_file
   use gyre_ad_oscpar
   use gyre_ad_bvp
   use gyre_ad_api
@@ -148,7 +151,14 @@ contains
 
        select type (mc)
        type is (mech_coeffs_evol_t)
-          call mc%read(coeffs_type, file, G, x_mc)
+          select case(coeffs_type)
+          case('MESA')
+             call read_mesa_file(file, G, mc, x_mc)
+          case('FGONG')
+             call read_fgong_file(file, G, mc, x_mc)
+          case('B3')
+             call read_b3_file(file, G, mc, x_mc)
+          end select
        type is (mech_coeffs_poly_t)
           call mc%read(file, x_mc)
        type is (mech_coeffs_hom_t)
