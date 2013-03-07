@@ -3,18 +3,12 @@
 	file = 'dupret_model_B.mesa'
 /
 
-&shoot_grid
-	grid_type = 'DISPERSION'
-	alpha_osc = 0.5
-	alpha_exp = 0.1
-/
-
-&recon_grid
-/
-
-&eqns
+&oscpar
 	l = 1
-	solver = 'FINDIFF'
+/
+
+&numpar
+	ivp_solver_type = 'FINDIFF'
 /
 
 &scan
@@ -23,6 +17,15 @@
 	freq_max = 42,
 	freq_units = 'UHZ'
 	n_freq = 200,
+/
+
+&shoot_grid
+	grid_type = 'DISPERSION'
+	alpha_osc = 0.5
+	alpha_exp = 0.1
+/
+
+&recon_grid
 /
 
 &output

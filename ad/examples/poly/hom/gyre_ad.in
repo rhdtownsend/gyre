@@ -3,18 +3,12 @@
 	file = 'poly_hom.h5'
 /
 
-&shoot_grid
-	grid_type = 'GEOM'
-	n_grid = 1000
-	s = 1000.
-/
-
-&recon_grid
-/
-
-&eqns
+&oscpar
 	l = 0
-	solver = 'MAGNUS_GL6'
+/
+
+&numpar
+	ivp_solver_type = 'MAGNUS_GL6'
 /
 
 &scan
@@ -22,6 +16,15 @@
 	freq_min = 0.9
 	freq_max = 11.0
 	n_freq = 20
+/
+
+&shoot_grid
+	grid_type = 'GEOM'
+	n_grid = 1000
+	s = 1000.
+/
+
+&recon_grid
 /
 
 &output

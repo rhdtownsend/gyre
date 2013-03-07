@@ -3,15 +3,12 @@
 	file = 'bcep.mesa'
 /
 
-&shoot_grid
-/
-
-&recon_grid
-/
-
-&eqns
+&oscpar
 	l = 0
-	solver = 'MAGNUS_GL2'
+/
+
+&numpar
+	ivp_solver_type = 'MAGNUS_GL2'
 /
 
 &scan
@@ -19,6 +16,12 @@
 	freq_min = 1
 	freq_max = 20.0
 	n_freq = 100
+/
+
+&shoot_grid
+/
+
+&recon_grid
 /
 
 &output
