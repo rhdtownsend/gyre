@@ -172,7 +172,7 @@ contains
     ! Set the outer boundary conditions, assuming Dziembowski's (1971)
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere.
 
-    associate(U => this%mc%U(1._WP), V => this%mc%V(1._WP), &
+    associate(V => this%mc%V(1._WP), &
               l => this%op%l)
 
       B_o(1,1) = 1 + (l*(l+1)/omega**2 - 4 - omega**2)/V
