@@ -1,0 +1,232 @@
+! Module   : gyre_nad_shooter
+! Purpose  : nonadiabatic multiple shooting
+
+$include 'core.inc'
+
+module gyre_nad_shooter
+
+  ! Uses
+
+  use core_kinds
+
+  use gyre_mech_coeffs
+  use gyre_therm_coeffs
+  use gyre_ad_oscpar
+  use gyre_nad_oscpar
+  use gyre_ad_jacobian
+  use gyre_nad_jacobian
+  use gyre_sysmtx
+  use gyre_ext_arith
+  use gyre_ivp
+  use gyre_grid
+
+  use ISO_FORTRAN_ENV
+
+  ! No implicit typing
+
+  implicit none
+
+  ! Derived-type definitions
+
+  type :: nad_shooter_t
+     private
+     class(mech_coeffs_t), pointer  :: mc => null()
+     class(therm_coeffs_t), pointer :: tc => null()
+     class(ad_oscpar_t), pointer    :: ad_op => null()
+     class(nad_oscpar_t), pointer   :: nad_op => null()
+     type(ad_jacobian_t)            :: ad_jc
+     type(nad_jacobian_t)           :: nad_jc
+     real(WP), allocatable          :: x(:)
+     real(WP)                       :: alpha_osc
+     real(WP)                       :: alpha_exp
+     integer                        :: n_center
+     integer                        :: n_floor
+     integer, public                :: n
+     integer, public                :: n_e
+     character(LEN=256)             :: solver_type
+   contains
+     private
+     procedure, public :: init
+     procedure, public :: shoot
+     procedure, public :: recon => recon_sh
+  end type nad_shooter_t
+
+  ! Access specifiers
+
+  private
+
+  public :: nad_shooter_t
+
+  ! Procedures
+
+contains
+
+  subroutine init (this, mc, tc, ad_op, nad_op, ad_jc, nad_jc, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
+
+    class(nad_shooter_t), intent(out)         :: this
+    class(mech_coeffs_t), intent(in), target  :: mc
+    class(therm_coeffs_t), intent(in), target :: tc
+    class(ad_oscpar_t), intent(in), target    :: ad_op
+    class(nad_oscpar_t), intent(in), target   :: nad_op
+    type(ad_jacobian_t), intent(in)           :: ad_jc
+    type(nad_jacobian_t), intent(in)          :: nad_jc
+    real(WP), intent(in)                      :: x(:)
+    real(WP), intent(in)                      :: alpha_osc
+    real(WP), intent(in)                      :: alpha_exp
+    integer, intent(in)                       :: n_center
+    integer, intent(in)                       :: n_floor
+    character(LEN=*), intent(in)              :: solver_type
+
+    ! Initialize the nad_shooter
+
+    this%mc => mc
+    this%tc => tc
+
+    this%ad_op => ad_op
+    this%nad_op => nad_op
+
+    this%ad_jc = ad_jc
+    this%nad_jc = nad_jc
+    
+    this%x = x
+
+    this%alpha_osc = alpha_osc
+    this%alpha_exp = alpha_exp
+    this%n_center = n_center
+    this%n_floor = n_floor
+
+    this%n = SIZE(x)
+    this%n_e = nad_jc%n_e
+
+    this%solver_type = solver_type
+
+    ! Finish
+
+    return
+
+  end subroutine init
+
+!****
+
+  subroutine shoot (this, omega, sm)
+
+    class(nad_shooter_t), intent(in) :: this
+    complex(WP), intent(in)          :: omega
+    class(sysmtx_t), intent(inout)   :: sm
+
+    integer             :: k
+    complex(WP)         :: E_l(this%n_e,this%n_e)
+    complex(WP)         :: E_r(this%n_e,this%n_e)
+    type(ext_complex_t) :: scale
+
+    ! Set the sysmtx equation blocks by solving IVPs across the
+    ! intervals x(k) -> x(k+1)
+
+    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale)
+    block_loop : do k = 1,this%n-1
+
+       ! Decide whether to shoot nonadiabatically or adiabatically
+
+       if(this%nad_op%force_ad .AND. this%x(k) < this%nad_op%ad_thresh) then
+
+          call solve(this%solver_type, this%ad_jc, omega, this%x(k), this%x(k+1), E_l(1:4,1:4), E_r(1:4,1:4), scale)
+
+          E_l(1:4,5:6) = 0._WP
+          E_r(1:4,5:6) = 0._WP
+
+          E_l(5,:) = this%nad_jc%rad_trans_coeffs(omega, this%x(k))
+          E_r(5,:) = 0._WP
+          
+          E_l(6,:) = -[0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
+          E_r(6,:) =  [0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
+
+       else
+
+          call solve(this%solver_type, this%nad_jc, omega, this%x(k), this%x(k+1), E_l, E_r, scale)
+
+       endif
+
+       call sm%set_block(k, E_l, E_r, scale)
+
+    end do block_loop
+
+    ! Finish
+
+  end subroutine shoot
+
+!****
+
+  subroutine recon_sh (this, omega, y_sh, x, y)
+
+    class(nad_shooter_t), intent(in)      :: this
+    complex(WP), intent(in)               :: omega
+    complex(WP), intent(in)               :: y_sh(:,:)
+    real(WP), intent(out), allocatable    :: x(:)
+    complex(WP), intent(out), allocatable :: y(:,:)
+
+    integer     :: dn(this%n-1)
+    integer     :: i_a(this%n-1)
+    integer     :: i_b(this%n-1)
+    integer     :: k
+    integer     :: i
+    complex(WP) :: C(this%n_e)
+
+    $CHECK_BOUNDS(SIZE(y_sh, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(y_sh, 2),this%n)
+
+    ! Reconstruct the eigenfunctions on a dynamically-allocated grid
+
+    ! Allocate the grid
+
+    dn = 0
+
+    call plan_dispersion_grid(this%x, this%mc, omega, this%ad_op%l, &
+                              this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
+
+    call build_oversamp_grid(this%x, dn, x)
+
+    allocate(y(this%n_e,SIZE(x)))
+
+    ! Reconstruct the eigenfunctions
+
+    i_a(1) = 1
+    i_b(1) = dn(1) + 2
+
+    index_loop : do k = 2,this%n-1
+       i_a(k) = i_b(k-1) + 1
+       i_b(k) = i_a(k) + dn(k)
+    end do index_loop
+
+    !$OMP PARALLEL DO
+    recon_loop : do k = 1,this%n-1
+
+       ! Decide whether to reconstruct adiabatically or nonadiabatically
+
+       if(this%nad_op%force_ad .AND. this%x(k) < this%nad_op%ad_thresh) then
+
+          call recon(this%solver_type, this%ad_jc, omega, this%x(k), this%x(k+1), y_sh(1:4,k), y_sh(1:4,k+1), &
+                     x(i_a(k):i_b(k)), y(1:4,i_a(k):i_b(k)))
+
+          y(5,i_a(k):i_b(k)) = y_sh(5,k)
+
+          do i = i_a(k),i_b(k)
+             C = this%nad_jc%rad_trans_coeffs(omega, x(i))
+             y(6,i) = -DOT_PRODUCT(y(1:5,i), C(1:5))/C(6)
+          end do
+          
+       else
+
+          call recon(this%solver_type, this%nad_jc, omega, this%x(k), this%x(k+1), y_sh(:,k), y_sh(:,k+1), &
+                     x(i_a(k):i_b(k)), y(:,i_a(k):i_b(k)))
+
+       endif
+
+    end do recon_loop
+    
+    ! Finish
+
+    return
+
+  end subroutine recon_sh
+
+end module gyre_nad_shooter

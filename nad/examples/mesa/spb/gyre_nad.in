@@ -1,0 +1,28 @@
+&coeffs
+	coeffs_type = 'MESA'
+	file = 'spb.mesa'
+/
+
+&oscpar
+	l = 1
+/
+
+&numpar
+	ivp_solver_type = 'MAGNUS_GL2'
+/
+
+&scan
+	grid_type = 'INVERSE'
+	freq_min = 0.1
+	freq_max = 1
+	n_freq = 100
+/
+
+&shoot_grid
+/
+
+&recon_grid
+/
+
+&output
+/

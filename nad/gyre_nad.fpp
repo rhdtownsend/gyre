@@ -1,0 +1,647 @@
+! Program  : gyre_nad
+! Purpose  : nonadiabatic oscillation code
+
+$include 'core.inc'
+
+program gyre_nad
+
+  ! Uses
+
+  use core_kinds
+  use core_constants
+  use core_parallel
+  use core_hgroup
+
+  use gyre_mech_coeffs
+  use gyre_therm_coeffs
+  use gyre_ad_oscpar
+  use gyre_ad_bvp
+  use gyre_ad_api
+  use gyre_nad_oscpar
+  use gyre_nad_bvp
+  use gyre_nad_api
+  use gyre_mode
+  use gyre_util
+  use gyre_grid
+
+  use ISO_FORTRAN_ENV
+
+  ! No implicit typing
+
+  implicit none
+
+  ! Variables
+
+  integer                            :: unit
+  real(WP), allocatable              :: x_mc(:)
+  class(mech_coeffs_t), allocatable  :: mc
+  class(therm_coeffs_t), allocatable :: tc
+  type(ad_oscpar_t)                  :: ad_op
+  type(nad_oscpar_t)                 :: nad_op
+  character(LEN=256)                 :: ivp_solver_type
+  type(ad_bvp_t)                     :: ad_bp
+  type(nad_bvp_t)                    :: nad_bp
+  real(WP), allocatable              :: omega(:)
+  integer                            :: n_iter_max
+  type(mode_t), allocatable          :: ad_md(:)
+  type(mode_t), allocatable          :: nad_md(:)
+  integer                            :: i
+  real(WP), allocatable              :: E(:)
+
+  ! Initialize
+
+  call init_parallel()
+
+  if(MPI_RANK == 0) then
+
+     write(OUTPUT_UNIT, '(A)') 'gyre_nad [hg]'
+     write(OUTPUT_UNIT, '(A,2X,I0)') 'OpenMP Threads :', OMP_SIZE_MAX
+     write(OUTPUT_UNIT, '(A,2X,I0)') 'MPI Processors :', MPI_SIZE
+     
+     call open_input(unit)
+
+  endif
+
+  call write_header('Initialization', '=')
+
+  call init_coeffs(unit, x_mc, mc, tc)
+  call init_oscpar(unit, ad_op, nad_op)
+  call init_numpar(unit, ivp_solver_type)
+  call init_scan(unit, mc, omega, n_iter_max)
+  call init_bvp(unit, x_mc, mc, tc, ad_op, nad_op, omega, ivp_solver_type, ad_bp, nad_bp)
+
+  ! Find modes
+
+  call find_ad_modes(ad_bp, omega, n_iter_max, ad_md)
+  call find_nad_modes(nad_bp, ad_md, n_iter_max, nad_md)
+
+  ! Calculate inertias
+
+  allocate(E(SIZE(nad_md)))
+
+  do i = 1,SIZE(nad_md)
+     E(i) = inertia(mc, ad_op, nad_md(i))
+  end do
+
+  ! Write output
+ 
+  if(MPI_RANK == 0) then
+     call write_eigdata(unit, mc, nad_op, nad_md)
+  endif
+
+  ! Finish
+
+  call final_parallel()
+
+contains
+
+  subroutine init_coeffs (unit, x_mc, mc, tc)
+
+    use gyre_mech_coeffs_evol
+    use gyre_mech_coeffs_poly
+    use gyre_mech_coeffs_hom
+    use gyre_therm_coeffs_evol
+    use gyre_mesa_file
+    use gyre_fgong_file
+    use gyre_b3_file
+  
+    integer, intent(in)                               :: unit
+    real(WP), allocatable, intent(out)                :: x_mc(:)
+    $if($GFORTRAN_PR56218)
+    class(mech_coeffs_t), allocatable, intent(inout)  :: mc
+    class(therm_coeffs_t), allocatable, intent(inout) :: tc
+    $else
+    class(mech_coeffs_t), allocatable, intent(out)    :: mc
+    class(therm_coeffs_t), allocatable, intent(out)   :: tc
+    $endif
+
+    character(LEN=256)          :: coeffs_type
+    character(LEN=FILENAME_LEN) :: file
+    real(WP)                    :: G
+    real(WP)                    :: Gamma_1
+
+    namelist /coeffs/ coeffs_type, file, G, Gamma_1
+
+    ! Read structure coefficients parameters
+
+    if(MPI_RANK == 0) then
+
+       coeffs_type = ''
+
+       file = ''
+
+       G = G_GRAVITY
+       Gamma_1 = 5._WP/3._WP
+
+       rewind(unit)
+       read(unit, NML=coeffs)
+
+    endif
+
+    $if($MPI)
+    call bcast(coeffs_type, 0)
+    $endif
+
+    ! Allocate the mech_coeffs and therm_coeffs
+
+    select case(coeffs_type)
+    case('MESA','FGONG','B3')
+       allocate(mech_coeffs_evol_t::mc)
+       allocate(therm_coeffs_evol_t::tc)
+    case default
+       $ABORT(Invalid coeffs_type)
+    end select
+
+    ! Read the mech_coeffs
+
+    if(MPI_RANK == 0) then
+
+       select type (mc)
+       type is (mech_coeffs_evol_t)
+          select type (tc)
+          type is (therm_coeffs_evol_t)
+             select case(coeffs_type)
+             case('MESA')
+                call read_mesa_file(file, G, mc, tc, x=x_mc)
+             case('B3')
+                call read_b3_file(file, G, mc, tc, x=x_mc)
+             end select
+          end select
+       end select
+
+    endif
+
+    $if($MPI)
+    call mc%bcast(0)
+    call tc%bcast(0)
+    call bcast(x_mc, 0, alloc=.TRUE.)
+    $endif
+
+    ! Finish
+
+    return
+
+  end subroutine init_coeffs
+
+!****
+
+  subroutine init_oscpar (unit, ad_op, nad_op)
+
+    integer, intent(in)             :: unit
+    type(ad_oscpar_t), intent(out)  :: ad_op
+    type(nad_oscpar_t), intent(out) :: nad_op
+
+    integer            :: l
+    character(LEN=256) :: outer_bound_type
+    logical            :: force_ad
+    real(WP)           :: ad_thresh
+
+    namelist /oscpar/ l, outer_bound_type, force_ad, ad_thresh
+
+    ! Read oscillation parameters
+
+    if(MPI_RANK == 0) then
+
+       l = 0
+
+       outer_bound_type = 'ZERO'
+
+       force_ad = .FALSE.
+       ad_thresh = 0._WP
+
+       rewind(unit)
+       read(unit, NML=oscpar)
+
+    endif
+
+    $if($MPI)
+    call bcast(l, 0)
+    call bcast(outer_bound_type, 0)
+    call bcast(force_ad, 0)
+    call bcast(ad_thresh, 0)
+    $endif
+
+    ! Initialize the oscilaltion parameters
+
+    call ad_op%init(l, outer_bound_type)
+    call nad_op%init(l, outer_bound_type, force_ad, ad_thresh)
+
+    ! Finish
+
+    return
+
+  end subroutine init_oscpar
+
+!****
+
+  subroutine init_numpar (unit, ivp_solver_type)
+
+    integer, intent(in)           :: unit
+    character(LEN=*), intent(out) :: ivp_solver_type
+
+    namelist /numpar/ ivp_solver_type
+
+    ! Read numerical parameters
+
+    if(MPI_RANK == 0) then
+
+       ivp_solver_type = 'MAGNUS_GL2'
+
+       rewind(unit)
+       read(unit, NML=numpar)
+
+    endif
+
+    $if($MPI)
+    call bcast(ivp_solver_type, 0)
+    $endif
+
+    ! Finish
+
+    return
+
+  end subroutine init_numpar
+
+!****
+
+  subroutine init_scan (unit, mc, omega, n_iter_max)
+
+    integer, intent(in)                :: unit
+    class(mech_coeffs_t), intent(in)   :: mc
+    real(WP), allocatable, intent(out) :: omega(:)
+    integer, intent(out)               :: n_iter_max
+
+    character(LEN=256) :: grid_type
+    real(WP)           :: freq_min
+    real(WP)           :: freq_mid
+    real(WP)           :: freq_max
+    integer            :: n_freq
+    character(LEN=256) :: freq_units
+    real(WP)           :: omega_min
+    real(WP)           :: omega_mid
+    real(WP)           :: omega_max
+    integer            :: i
+
+    namelist /scan/ grid_type, freq_min, freq_mid, freq_max, n_freq, freq_units, &
+                    n_iter_max
+
+    ! Read scan parameters
+
+    if(MPI_RANK == 0) then
+
+       grid_type = 'LINEAR'
+
+       freq_min = 1._WP
+       freq_mid = SQRT(10._WP)
+       freq_max = 10._WP
+       n_freq = 10
+    
+       freq_units = 'NONE'
+
+       n_iter_max = 50
+
+       rewind(unit)
+       read(unit, NML=scan)
+
+    endif
+
+    ! Set up the frequency grid
+
+    if(MPI_RANK == 0) then
+
+       omega_min = mc%conv_freq(freq_min, freq_units, 'NONE')
+       omega_mid = mc%conv_freq(freq_mid, freq_units, 'NONE')
+       omega_max = mc%conv_freq(freq_max, freq_units, 'NONE')
+
+       select case(grid_type)
+       case('LINEAR')
+          omega = [(((n_freq-i)*omega_min + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
+       case('INVERSE')
+          omega = [((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_max), i=1,n_freq)]
+       case('MIXED')
+          omega = [((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_mid), i=1,n_freq), &
+               (((n_freq-i)*omega_mid + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
+       case default
+          $ABORT(Invalid freq_grid)
+       end select
+
+    endif
+
+    $if($MPI)
+    call bcast(omega, 0, alloc=.TRUE.)
+    call bcast(n_iter_max, 0)
+    $endif
+
+    ! Finish
+
+    return
+
+  end subroutine init_scan
+
+!****
+
+  subroutine init_bvp (unit, x_mc, mc, tc, ad_op, nad_op, omega, ivp_solver_type, ad_bp, nad_bp)
+
+    use gyre_ad_jacobian
+    use gyre_ad_bound
+    use gyre_ad_shooter
+    use gyre_nad_jacobian
+    use gyre_nad_bound
+    use gyre_nad_shooter
+
+    integer, intent(in)                       :: unit
+    real(WP), intent(in), allocatable         :: x_mc(:)
+    class(mech_coeffs_t), intent(in), target  :: mc
+    class(therm_coeffs_t), intent(in), target :: tc
+    type(ad_oscpar_t), intent(in)             :: ad_op
+    type(nad_oscpar_t), intent(in)            :: nad_op
+    real(WP), intent(in)                      :: omega(:)
+    character(LEN=*), intent(in)              :: ivp_solver_type
+    type(ad_bvp_t), intent(out)               :: ad_bp
+    type(nad_bvp_t), intent(out)              :: nad_bp
+
+    type(ad_jacobian_t)   :: ad_jc
+    type(nad_jacobian_t)  :: nad_jc
+    type(ad_bound_t)      :: ad_bd
+    type(nad_bound_t)     :: nad_bd
+    character(LEN=256)    :: grid_type
+    real(WP)              :: alpha_osc
+    real(WP)              :: alpha_exp
+    integer               :: n_center
+    integer               :: n_floor
+    real(WP)              :: s
+    integer               :: n_grid
+    integer               :: dn(SIZE(x_mc)-1)
+    integer               :: i
+    real(WP), allocatable :: x_sh(:)
+    type(ad_shooter_t)    :: ad_sh
+    type(nad_shooter_t)   :: nad_sh
+
+    namelist /shoot_grid/ grid_type, alpha_osc, alpha_exp, &
+         n_center, n_floor, s, n_grid
+
+    namelist /recon_grid/ alpha_osc, alpha_exp, n_center, n_floor
+
+    ! Initialize the Jacobians and boundary conditions
+
+    call ad_jc%init(mc, ad_op)
+    call nad_jc%init(mc, tc, nad_op)
+
+    call ad_bd%init(mc, ad_op)
+    call nad_bd%init(mc, tc, nad_op)
+
+    ! Read shooting grid parameters
+
+    if(MPI_RANK == 0) then
+
+       grid_type = 'DISPERSION'
+
+       alpha_osc = 0._WP
+       alpha_exp = 0._WP
+       
+       n_center = 0
+       n_floor = 0
+
+       s = 100._WP
+       n_grid = 100
+
+       rewind(unit)
+       read(unit, NML=shoot_grid)
+
+    endif
+
+    $if($MPI)
+    call bcast(grid_type, 0)
+    call bcast(alpha_osc, 0)
+    call bcast(alpha_exp, 0)
+    call bcast(n_center, 0)
+    call bcast(n_floor, 0)
+    call bcast(s, 0)
+    call bcast(n_grid, 0)
+    $endif
+
+    ! Initialize the shooting grid
+
+    select case(grid_type)
+    case('GEOM')
+       call build_geom_grid(s, n_grid, x_sh)
+    case('LOG')
+       call build_log_grid(s, n_grid, x_sh)
+    case('DISPERSION')
+       $ASSERT(ALLOCATED(x_mc),No input grid)
+       dn = 0
+       do i = 1,SIZE(omega)
+          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), ad_op%l, alpha_osc, alpha_exp, n_center, n_floor, dn)
+       enddo
+       call build_oversamp_grid(x_mc, dn, x_sh)
+    case default
+       $ABORT(Invalid grid_type)
+    end select
+
+    ! Read recon grid parameters
+
+    if(MPI_RANK == 0) then
+
+       alpha_osc = 0._WP
+       alpha_exp = 0._WP
+       
+       n_center = 0
+       n_floor = 0
+
+       rewind(unit)
+       read(unit, NML=recon_grid)
+
+    endif
+
+    $if($MPI)
+    call bcast(alpha_osc, 0)
+    call bcast(alpha_exp, 0)
+    call bcast(n_center, 0)
+    call bcast(n_floor, 0)
+    $endif
+
+    ! Initialize the shooters
+
+    call ad_sh%init(mc, ad_op, ad_jc, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+    call nad_sh%init(mc, tc, ad_op, nad_op, ad_jc, nad_jc, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+
+    ! Initialize the bvps
+
+    call ad_bp%init(ad_sh, ad_bd)
+    call nad_bp%init(nad_sh, nad_bd)
+
+    ! Finish
+
+    return
+
+  end subroutine init_bvp
+
+!****
+
+  subroutine write_eigdata (unit, mc, op, md)
+
+    integer, intent(in)              :: unit
+    class(mech_coeffs_t), intent(in) :: mc
+    class(nad_oscpar_t), intent(in)  :: op
+    type(mode_t), intent(in)         :: md(:)
+
+    character(LEN=256)               :: freq_units
+    character(LEN=FILENAME_LEN)      :: eigval_file
+    character(LEN=FILENAME_LEN)      :: eigfunc_prefix
+    integer                          :: i
+    complex(WP)                      :: freq(SIZE(md))
+    type(hgroup_t)                   :: hg
+    character(LEN=FILENAME_LEN)      :: eigfunc_file
+
+    namelist /output/ freq_units, eigval_file, eigfunc_prefix
+
+    ! Read output parameters
+
+    freq_units = 'NONE'
+
+    eigval_file = ''
+    eigfunc_prefix = ''
+
+    rewind(unit)
+    read(unit, NML=output)
+
+    ! Write eigenvalues
+
+    freq_loop : do i = 1,SIZE(md)
+       freq(i) = mc%conv_freq(REAL(md(i)%omega), 'NONE', freq_units)
+    end do freq_loop
+
+    if(eigval_file /= '') then
+
+       call hg%init(eigval_file, CREATE_FILE)
+          
+       call write_attr(hg, 'n_md', SIZE(md))
+
+!       call write_attr(hg, 'n', bp%n)
+!       call write_attr(hg, 'n_e', bp%n_e)
+
+       call write_attr(hg, 'l', op%l)
+
+       call write_dset(hg, 'n_p', md%n_p)
+       call write_dset(hg, 'n_g', md%n_g)
+
+       call write_dset(hg, 'freq', freq)
+       call write_attr(hg, 'freq_units', freq_units)
+
+       call write_dset(hg, 'E', E)
+
+       call hg%final()
+
+    end if
+
+    ! Write eigenfunctions
+
+    if(eigfunc_prefix /= '') then
+
+       mode_loop : do i = 1,SIZE(md)
+
+          write(eigfunc_file, 100) TRIM(eigfunc_prefix), i, '.h5'
+100       format(A,I4.4,A)
+
+          call hg%init(eigfunc_file, CREATE_FILE)
+
+!          call write_attr(hg, 'n', bp%n)
+!          call write_attr(hg, 'n_e', bp%n_e)
+
+          call write_attr(hg, 'l', op%l)
+          call write_attr(hg, 'lambda_0', op%lambda_0)
+
+          call write_attr(hg, 'n_p', md(i)%n_p)
+          call write_attr(hg, 'n_g', md(i)%n_g)
+
+          call write_attr(hg, 'freq', freq(i))
+          call write_attr(hg, 'freq_units', freq_units)
+
+          call write_dset(hg, 'x', md(i)%x)
+          call write_dset(hg, 'y', md(i)%y)
+
+          call hg%final()
+
+       end do mode_loop
+
+    end if
+
+    ! Finish
+
+    return
+
+  end subroutine write_eigdata
+
+!*****
+
+  function inertia (mc, op, md) result (E)
+
+    class(mech_coeffs_t), intent(in) :: mc
+    class(ad_oscpar_t), intent(in)   :: op
+    class(mode_t), intent(in)        :: md
+    real(WP)                         :: E
+
+    integer     :: i
+    real(WP)    :: dE_dx(md%n)
+    real(WP)    :: U
+    real(WP)    :: c_1
+    complex(WP) :: xi_r
+    complex(WP) :: xi_h
+    real(WP)    :: E_norm
+
+    ! Set up the inertia integrand
+
+    !$OMP PARALLEL DO PRIVATE (U, c_1, xi_r, xi_h)
+    do i = 1,md%n
+
+       U = mc%U(md%x(i))
+       c_1 = mc%c_1(md%x(i))
+
+       if(op%l == 0) then
+          xi_r = md%y(1,i)
+          xi_h = 0._WP
+       else
+          xi_r = md%y(1,i)
+          xi_h = md%y(2,i)/(c_1*md%omega**2)
+       endif
+
+       if(md%x(i) > 0._WP) then
+          xi_r = xi_r*md%x(i)**(op%lambda_0+1._WP)
+          xi_h = xi_h*md%x(i)**(op%lambda_0+1._WP)
+       else
+          if(op%lambda_0 /= -1._WP) then
+             xi_r = 0._WP
+             xi_h = 0._WP
+          endif
+       endif
+
+       dE_dx(i) = (ABS(xi_r)**2 + op%l*(op%l+1)*ABS(xi_h)**2)*U*md%x(i)**2/c_1
+
+    end do
+
+    ! Integrate via a tropezoidal rule
+
+    E = SUM(0.5_WP*(dE_dx(2:) + dE_dx(:md%n-1))*(md%x(2:) - md%x(:md%n-1)))
+
+    ! Normalize
+
+    if(op%l == 0) then
+       xi_r = md%y(1,md%n)
+       xi_h = 0._WP
+    else
+       xi_r = md%y(1,md%n)
+       xi_h = md%y(2,md%n)/md%omega**2
+    endif
+
+    E_norm = ABS(xi_r)**2 + op%l*(op%l+1)*ABS(xi_h)**2
+    $ASSERT(E_norm /= 0._WP,E_norm is zero)    
+    
+    E = E/E_norm
+
+    ! Finish
+
+    return
+
+  end function inertia
+
+end program gyre_nad
