@@ -1,5 +1,5 @@
 ! Module   : gyre_ad_jacobian
-! Purpose  : Adiabatic Jacobian evaluation
+! Purpose  : adiabatic Jacobian evaluation
 
 $include 'core.inc'
 
