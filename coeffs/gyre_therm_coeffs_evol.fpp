@@ -35,7 +35,6 @@ module gyre_therm_coeffs_evol
   $endsub
 
   type, extends(therm_coeffs_t) :: therm_coeffs_evol_t
-     $VAR_DECL(V_x2)
      $VAR_DECL(c_rad)
      $VAR_DECL(c_gen)
      $VAR_DECL(c_thm)
@@ -52,7 +51,6 @@ module gyre_therm_coeffs_evol
      $if($MPI)
      procedure :: bcast => bcast_tc
      $endif
-     $PROC_DECL(V_x2)
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_gen)
@@ -170,7 +168,6 @@ contains
 
     ! Initialize the therm_coeffs
 
-    call this%sp_V_x2%init(x, V_x2, dy_dx_a=0._WP)
     call this%sp_c_rad%init(x, c_rad, dy_dx_a=0._WP)
     call this%sp_c_gen%init(x, c_gen, dy_dx_a=0._WP)
     call this%sp_c_thm%init(x, c_thm, dy_dx_a=0._WP)
@@ -182,6 +179,7 @@ contains
     call this%sp_epsilon_S%init(x, epsilon_S, dy_dx_a=0._WP)
     call this%sp_epsilon_ad%init(x, epsilon_ad, dy_dx_a=0._WP)
 
+    this%V_x2_0 = V_x2(1)
     this%t_thm = SQRT(G*M_star/R_star**3)
 
     ! Finish
@@ -201,7 +199,6 @@ contains
 
     ! Broadcast the therm_coeffs
 
-    call this%sp_V_x2%bcast(root_rank)
     call this%sp_c_rad%bcast(root_rank)
     call this%sp_c_gen%bcast(root_rank)
     call this%sp_c_thm%bcast(root_rank)
@@ -212,6 +209,9 @@ contains
     call this%sp_kappa_ad%bcast(root_rank)
     call this%sp_epsilon_S%bcast(root_rank)
     call this%sp_epsilon_ad%bcast(root_rank)
+
+    call bcast(this%V_x2_0, root_rank)
+    call bcast(this%t_thm, root_rank)
 
     ! Finish
 
@@ -263,7 +263,6 @@ contains
 
   $endsub
 
-  $PROC(V_x2)
   $PROC(c_rad)
   $PROC(c_gen)
   $PROC(c_thm)

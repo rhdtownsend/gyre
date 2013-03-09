@@ -23,12 +23,13 @@ module gyre_therm_coeffs
   $endsub
 
   type, abstract :: therm_coeffs_t
+     private
+     real(WP), public :: V_x2_0
    contains
      private
      $if($MPI)
      procedure(bcast_i), deferred, public :: bcast
      $endif
-     $PROC_DECL(V_x2)
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_gen)
