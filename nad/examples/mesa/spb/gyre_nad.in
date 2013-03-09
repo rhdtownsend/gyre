@@ -16,7 +16,6 @@
 	freq_min = 0.1
 	freq_max = 1
 	n_freq = 100
-	n_iter_max = 500
 /
 
 &shoot_grid
