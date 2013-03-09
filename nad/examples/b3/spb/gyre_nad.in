@@ -1,6 +1,6 @@
 &coeffs
-	coeffs_type = 'MESA'
-	file = 'spb.mesa'
+	coeffs_type = 'B3'
+	file = '00210.h5'
 /
 
 &oscpar
@@ -16,13 +16,15 @@
 	freq_min = 0.1
 	freq_max = 1
 	n_freq = 100
-	n_iter_max = 500
+	n_iter_max = 100
 /
 
 &shoot_grid
 /
 
 &recon_grid
+	alpha_osc = 2
+	alpha_exp = 0.5
 /
 
 &output

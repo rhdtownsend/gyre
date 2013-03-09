@@ -146,8 +146,8 @@ contains
       A(6,2) = epsilon_ad*V*c_gen - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2))
       A(6,3) = l*(l+1)*nabla_ad/nabla*c_rad - epsilon_ad*V*c_gen
       A(6,4) = 0._WP
-      A(6,5) = epsilon_S*c_gen*x**2 - l*(l+1)/(nabla*V_x2) - (0._WP,1._WP)*omega*c_thm*x**2
-      A(6,6) = -3._WP - lambda_0        
+      A(6,5) = epsilon_S*c_gen*x**2 - l*(l+1)*c_rad/(nabla*V_x2) - (0._WP,1._WP)*omega*c_thm*x**2
+      A(6,6) = -3._WP - lambda_0
 
     end associate
 

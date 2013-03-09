@@ -118,16 +118,19 @@ contains
     complex(WP)         :: E_l(this%n_e,this%n_e)
     complex(WP)         :: E_r(this%n_e,this%n_e)
     type(ext_complex_t) :: scale
+    complex(WP)         :: lambda
 
     ! Set the sysmtx equation blocks by solving IVPs across the
     ! intervals x(k) -> x(k+1)
 
-    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale)
+    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda)
     block_loop : do k = 1,this%n-1
 
-       ! Decide whether to shoot nonadiabatically or adiabatically
+       ! Decide whether to shoot adiabatically or nonadiabatically
 
        if(this%nad_op%force_ad .AND. this%x(k) < this%nad_op%ad_thresh) then
+
+          ! Adiabatic
 
           call solve(this%solver_type, this%ad_jc, omega, this%x(k), this%x(k+1), E_l(1:4,1:4), E_r(1:4,1:4), scale)
 
@@ -142,7 +145,20 @@ contains
 
        else
 
+          ! Nonadiabatic
+
           call solve(this%solver_type, this%nad_jc, omega, this%x(k), this%x(k+1), E_l, E_r, scale)
+
+          ! Apply the thermal-term rescaling, to assist the rootfinder
+
+          associate(x_mid => 0.5_WP*(this%x(k) + this%x(k+1)))
+            associate(V_x2 => this%tc%V_x2(x_mid), nabla => this%tc%nabla(x_mid), &
+                      c_rad => this%tc%c_rad(x_mid), c_thm => this%tc%c_thm(x_mid))
+              lambda = SQRT(V_x2*nabla/c_rad * (0._WP,1._WP)*omega*c_thm*x_mid**2)/x_mid
+            end associate
+          end associate
+
+          scale = scale*exp(ext_complex(-lambda*(this%x(k+1)-this%x(k))))
 
        endif
 

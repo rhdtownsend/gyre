@@ -65,6 +65,27 @@ program gyre_nad
   call write_header('Initialization', '=')
 
   call init_coeffs(unit, x_mc, mc, tc)
+
+!   do i = 1,SIZE(x_mc)
+!      write(OUTPUT_UNIT, 100) i, x_mc(i), &
+!           tc%V_x2(x_mc(i)), &
+!           tc%c_rad(x_mc(i)), &
+!           tc%dc_rad(x_mc(i)), &
+!           tc%c_gen(x_mc(i)), &
+!           tc%c_thm(x_mc(i)), &
+!           tc%nabla(x_mc(i)), &
+!           tc%nabla_ad(x_mc(i)), &
+!           tc%dnabla_ad(x_mc(i)), &
+!           tc%alpha_T(x_mc(i)), &
+!           tc%kappa_ad(x_mc(i)), &
+!           tc%kappa_S(x_mc(i)), &
+!           tc%epsilon_ad(x_mc(i)), &
+!           tc%epsilon_S(x_mc(i))
+! 100  format(I6,1X,999E16.8)
+!   end do
+
+!   stop
+     
   call init_oscpar(unit, ad_op, nad_op)
   call init_numpar(unit, ivp_solver_type)
   call init_scan(unit, mc, omega, n_iter_max)
@@ -377,6 +398,8 @@ contains
     type(ad_shooter_t)    :: ad_sh
     type(nad_shooter_t)   :: nad_sh
 
+    complex(WP)         :: A(6,6)
+
     namelist /shoot_grid/ grid_type, alpha_osc, alpha_exp, &
          n_center, n_floor, s, n_grid
 
@@ -459,6 +482,15 @@ contains
     call bcast(n_center, 0)
     call bcast(n_floor, 0)
     $endif
+
+ !     call nad_jc%eval_logx(CMPLX(0.1_WP, KIND=WP), 0.1_WP, A)
+
+ !     do i = 1,SIZE(A,1)
+ !        write(*, 999) A(i,:)
+ ! 999    format(999E16.8)
+ !     end do
+
+ !     stop
 
     ! Initialize the shooters
 
