@@ -156,9 +156,9 @@ contains
 
     nabla_ad = p*alpha_T/(rho*T*c_p)
 
-    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho)
-    c_gen = 4._WP*PI*rho*epsilon/L_star
-    c_thm = 4._WP*PI*rho*T*c_P*SQRT(G*M_star/R_star)/L_star
+    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho*L_star)
+    c_gen = 4._WP*PI*rho*epsilon*R_star**3/L_star
+    c_thm = 4._WP*PI*rho*T*c_P*SQRT(G*M_star/R_star**3)*R_star**3/L_star
 
     kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
     kappa_S = kappa_T - alpha_T*kappa_rho
