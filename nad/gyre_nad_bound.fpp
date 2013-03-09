@@ -83,7 +83,7 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%mc%c_1(0._WP), V_x2 => this%tc%V_x2(0._WP), &
+    associate(c_1 => this%mc%c_1(0._WP), V_x2 => this%tc%V_x2_0, &
               nabla => this%tc%nabla(0._WP), nabla_ad => this%tc%nabla_ad(0._WP), c_rad => this%tc%c_rad(0._WP), &
               lambda_0 => this%op%lambda_0, l => this%op%l, force_ad => this%op%force_ad)
 

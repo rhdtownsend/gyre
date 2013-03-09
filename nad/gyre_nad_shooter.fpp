@@ -118,6 +118,7 @@ contains
     complex(WP)         :: E_l(this%n_e,this%n_e)
     complex(WP)         :: E_r(this%n_e,this%n_e)
     type(ext_complex_t) :: scale
+    complex(WP)         :: A(this%n_e,this%n_e)
     complex(WP)         :: lambda
 
     ! Set the sysmtx equation blocks by solving IVPs across the
@@ -134,10 +135,14 @@ contains
 
           call solve(this%solver_type, this%ad_jc, omega, this%x(k), this%x(k+1), E_l(1:4,1:4), E_r(1:4,1:4), scale)
 
+          ! Fix up the thermal parts of the block
+
+          call this%nad_jc%eval_logx(omega, this%x(k), A)
+
           E_l(1:4,5:6) = 0._WP
           E_r(1:4,5:6) = 0._WP
 
-          E_l(5,:) = this%nad_jc%rad_trans_coeffs(omega, this%x(k))
+          E_l(5,:) = A(5,:)
           E_r(5,:) = 0._WP
           
           E_l(6,:) = -[0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
@@ -152,9 +157,9 @@ contains
           ! Apply the thermal-term rescaling, to assist the rootfinder
 
           associate(x_mid => 0.5_WP*(this%x(k) + this%x(k+1)))
-            associate(V_x2 => this%tc%V_x2(x_mid), nabla => this%tc%nabla(x_mid), &
+            associate(V => this%mc%V(x_mid), nabla => this%tc%nabla(x_mid), &
                       c_rad => this%tc%c_rad(x_mid), c_thm => this%tc%c_thm(x_mid))
-              lambda = SQRT(V_x2*nabla/c_rad * (0._WP,1._WP)*omega*c_thm*x_mid**2)/x_mid
+              lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x_mid
             end associate
           end associate
 
@@ -185,7 +190,7 @@ contains
     integer     :: i_b(this%n-1)
     integer     :: k
     integer     :: i
-    complex(WP) :: C(this%n_e)
+    complex(WP) :: A(this%n_e,this%n_e)
 
     $CHECK_BOUNDS(SIZE(y_sh, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(y_sh, 2),this%n)
@@ -226,8 +231,8 @@ contains
           y(5,i_a(k):i_b(k)) = y_sh(5,k)
 
           do i = i_a(k),i_b(k)
-             C = this%nad_jc%rad_trans_coeffs(omega, x(i))
-             y(6,i) = -DOT_PRODUCT(y(1:5,i), C(1:5))/C(6)
+             call this%nad_jc%eval_logx(omega, this%x(i), A)
+             y(6,i) = -DOT_PRODUCT(y(1:5,i), A(5,1:5))/A(5,6)
           end do
           
        else
