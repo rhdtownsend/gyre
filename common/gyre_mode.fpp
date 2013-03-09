@@ -48,16 +48,17 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, bp, omega)
+  subroutine init (this, bp, omega, discrim)
 
     class(mode_t), intent(out)  :: this
     class(bvp_t), intent(inout) :: bp
     complex(WP), intent(in)     :: omega
+    complex(WP), intent(in)     :: discrim
 
     ! Initialize the mode
 
     this%omega = omega
-    this%discrim = cmplx(bp%discrim(omega))
+    this%discrim = discrim
 
     call bp%recon(omega, this%x, this%y)
 

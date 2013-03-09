@@ -121,7 +121,7 @@ contains
 
        ! Set up the mode
 
-       call md(i)%init(bp, omega_root)
+       call md(i)%init(bp, omega_root, df%eval(omega_root))
 
        ! Report
 

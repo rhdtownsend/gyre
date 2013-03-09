@@ -74,7 +74,7 @@ contains
 
        ! Set up the mode
 
-       call nad_md(i)%init(bp, omega_root)
+       call nad_md(i)%init(bp, omega_root, df%eval(omega_root))
 
        ! Report
 
