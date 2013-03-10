@@ -37,13 +37,11 @@ module gyre_nad_shooter
      real(WP), allocatable          :: x(:)
      real(WP)                       :: alpha_osc
      real(WP)                       :: alpha_exp
-     real(WP)                       :: x_ad
      integer                        :: n_center
      integer                        :: n_floor
      integer, public                :: n
      integer, public                :: n_e
      character(LEN=256)             :: solver_type
-     logical                        :: force_ad
    contains
      private
      procedure, public :: init
@@ -106,12 +104,14 @@ contains
 
 !****
 
-  subroutine shoot (this, omega, sm)
+  subroutine shoot (this, omega, sm, x_ad)
 
     class(nad_shooter_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     class(sysmtx_t), intent(inout)   :: sm
+    real(WP), intent(in), optional   :: x_ad
 
+    real(WP)            :: x_ad_
     integer             :: k
     complex(WP)         :: E_l(this%n_e,this%n_e)
     complex(WP)         :: E_r(this%n_e,this%n_e)
@@ -119,17 +119,21 @@ contains
     complex(WP)         :: A(this%n_e,this%n_e)
     complex(WP)         :: lambda
 
+    if(PRESENT(x_ad)) then
+       x_ad_ = x_ad
+    else
+       x_ad_ = 0._WP
+    endif
+
     ! Set the sysmtx equation blocks by solving IVPs across the
     ! intervals x(k) -> x(k+1)
 
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda)
     block_loop : do k = 1,this%n-1
 
-       ! Decide whether to shoot adiabatically or nonadiabatically
+       if(this%x(k) <= x_ad_) then
 
-       if(this%force_ad .AND. this%x(k) < this%x_ad) then
-
-          ! Adiabatic
+          ! Shoot adiabatically
 
           call solve(this%solver_type, this%ad_jc, omega, this%x(k), this%x(k+1), E_l(1:4,1:4), E_r(1:4,1:4), scale)
 
@@ -148,7 +152,7 @@ contains
 
        else
 
-          ! Nonadiabatic
+          ! Shoot nonadiabatically
 
           call solve(this%solver_type, this%nad_jc, omega, this%x(k), this%x(k+1), E_l, E_r, scale)
 
@@ -175,14 +179,16 @@ contains
 
 !****
 
-  subroutine recon_sh (this, omega, y_sh, x, y)
+  subroutine recon_sh (this, omega, y_sh, x, y, x_ad)
 
     class(nad_shooter_t), intent(in)      :: this
     complex(WP), intent(in)               :: omega
     complex(WP), intent(in)               :: y_sh(:,:)
     real(WP), intent(out), allocatable    :: x(:)
     complex(WP), intent(out), allocatable :: y(:,:)
+    real(WP), intent(in), optional        :: x_ad
 
+    real(WP)    :: x_ad_
     integer     :: dn(this%n-1)
     integer     :: i_a(this%n-1)
     integer     :: i_b(this%n-1)
@@ -192,6 +198,12 @@ contains
 
     $CHECK_BOUNDS(SIZE(y_sh, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(y_sh, 2),this%n)
+
+    if(PRESENT(x_ad)) then
+       x_ad_ = x_ad
+    else
+       x_ad_ = 0._WP
+    endif
 
     ! Reconstruct the eigenfunctions on a dynamically-allocated grid
 
@@ -219,9 +231,9 @@ contains
     !$OMP PARALLEL DO
     recon_loop : do k = 1,this%n-1
 
-       ! Decide whether to reconstruct adiabatically or nonadiabatically
+       if(this%x(k) < x_ad_) then
 
-       if(this%force_ad .AND. this%x(k) < this%x_ad) then
+          ! Reconstruct adiabatically
 
           call recon(this%solver_type, this%ad_jc, omega, this%x(k), this%x(k+1), y_sh(1:4,k), y_sh(1:4,k+1), &
                      x(i_a(k):i_b(k)), y(1:4,i_a(k):i_b(k)))
@@ -234,6 +246,8 @@ contains
           end do
           
        else
+
+          ! Reconstruct nonadiabatically
 
           call recon(this%solver_type, this%nad_jc, omega, this%x(k), this%x(k+1), y_sh(:,k), y_sh(:,k+1), &
                      x(i_a(k):i_b(k)), y(:,i_a(k):i_b(k)))

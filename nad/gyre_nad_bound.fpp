@@ -75,11 +75,20 @@ contains
 
 !****
 
-  function inner_bound (this, omega) result (B_i)
+  function inner_bound (this, omega, x_ad) result (B_i)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
+    real(WP), intent(in), optional :: x_ad
     complex(WP)                    :: B_i(this%n_i,this%n_e)
+
+    real(WP) :: x_ad_
+
+    if(PRESENT(x_ad)) then
+       x_ad_ = x_ad
+    else
+       x_ad_ = 0._WP
+    endif
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
@@ -101,16 +110,16 @@ contains
       B_i(2,5) = 0._WP
       B_i(2,6) = 0._WP
 
-      ! if(force_ad_) then
+      if(0._WP < x_ad_) then
 
-      !    B_i(3,1) = 0._WP
-      !    B_i(3,2) = 0._WP
-      !    B_i(3,3) = 0._WP
-      !    B_i(3,4) = 0._WP
-      !    B_i(3,5) = 1._WP
-      !    B_i(3,6) = 0._WP
+          B_i(3,1) = 0._WP
+          B_i(3,2) = 0._WP
+          B_i(3,3) = 0._WP
+          B_i(3,4) = 0._WP
+          B_i(3,5) = 1._WP
+          B_i(3,6) = 0._WP
 
-      ! else
+       else
 
          B_i(3,1) = (c_1*omega**2 - l)*nabla_ad + (l-3)*nabla
          B_i(3,2) = 0._WP
@@ -119,7 +128,7 @@ contains
          B_i(3,5) = l/V_x2
          B_i(3,6) = nabla/c_rad
 
-!      endif
+      endif
 
     end associate
 
