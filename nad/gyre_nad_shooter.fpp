@@ -12,7 +12,6 @@ module gyre_nad_shooter
   use gyre_mech_coeffs
   use gyre_therm_coeffs
   use gyre_ad_oscpar
-  use gyre_nad_oscpar
   use gyre_ad_jacobian
   use gyre_nad_jacobian
   use gyre_sysmtx
@@ -32,18 +31,19 @@ module gyre_nad_shooter
      private
      class(mech_coeffs_t), pointer  :: mc => null()
      class(therm_coeffs_t), pointer :: tc => null()
-     class(ad_oscpar_t), pointer    :: ad_op => null()
-     class(nad_oscpar_t), pointer   :: nad_op => null()
+     class(ad_oscpar_t), pointer    :: op => null()
      type(ad_jacobian_t)            :: ad_jc
      type(nad_jacobian_t)           :: nad_jc
      real(WP), allocatable          :: x(:)
      real(WP)                       :: alpha_osc
      real(WP)                       :: alpha_exp
+     real(WP)                       :: x_ad
      integer                        :: n_center
      integer                        :: n_floor
      integer, public                :: n
      integer, public                :: n_e
      character(LEN=256)             :: solver_type
+     logical                        :: force_ad
    contains
      private
      procedure, public :: init
@@ -61,13 +61,12 @@ module gyre_nad_shooter
 
 contains
 
-  subroutine init (this, mc, tc, ad_op, nad_op, ad_jc, nad_jc, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
+  subroutine init (this, mc, tc, op, ad_jc, nad_jc, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
 
     class(nad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target  :: mc
     class(therm_coeffs_t), intent(in), target :: tc
-    class(ad_oscpar_t), intent(in), target    :: ad_op
-    class(nad_oscpar_t), intent(in), target   :: nad_op
+    class(ad_oscpar_t), intent(in), target    :: op
     type(ad_jacobian_t), intent(in)           :: ad_jc
     type(nad_jacobian_t), intent(in)          :: nad_jc
     real(WP), intent(in)                      :: x(:)
@@ -82,8 +81,7 @@ contains
     this%mc => mc
     this%tc => tc
 
-    this%ad_op => ad_op
-    this%nad_op => nad_op
+    this%op => op
 
     this%ad_jc = ad_jc
     this%nad_jc = nad_jc
@@ -129,7 +127,7 @@ contains
 
        ! Decide whether to shoot adiabatically or nonadiabatically
 
-       if(this%nad_op%force_ad .AND. this%x(k) < this%nad_op%ad_thresh) then
+       if(this%force_ad .AND. this%x(k) < this%x_ad) then
 
           ! Adiabatic
 
@@ -201,7 +199,7 @@ contains
 
     dn = 0
 
-    call plan_dispersion_grid(this%x, this%mc, omega, this%ad_op%l, &
+    call plan_dispersion_grid(this%x, this%mc, omega, this%op%l, &
                               this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
 
     call build_oversamp_grid(this%x, dn, x)
@@ -223,7 +221,7 @@ contains
 
        ! Decide whether to reconstruct adiabatically or nonadiabatically
 
-       if(this%nad_op%force_ad .AND. this%x(k) < this%nad_op%ad_thresh) then
+       if(this%force_ad .AND. this%x(k) < this%x_ad) then
 
           call recon(this%solver_type, this%ad_jc, omega, this%x(k), this%x(k+1), y_sh(1:4,k), y_sh(1:4,k+1), &
                      x(i_a(k):i_b(k)), y(1:4,i_a(k):i_b(k)))

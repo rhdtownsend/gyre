@@ -17,7 +17,6 @@ program gyre_nad
   use gyre_ad_oscpar
   use gyre_ad_bvp
   use gyre_ad_api
-  use gyre_nad_oscpar
   use gyre_nad_bvp
   use gyre_nad_api
   use gyre_mode
@@ -36,8 +35,7 @@ program gyre_nad
   real(WP), allocatable              :: x_mc(:)
   class(mech_coeffs_t), allocatable  :: mc
   class(therm_coeffs_t), allocatable :: tc
-  type(ad_oscpar_t)                  :: ad_op
-  type(nad_oscpar_t)                 :: nad_op
+  type(ad_oscpar_t)                  :: op
   character(LEN=256)                 :: ivp_solver_type
   type(ad_bvp_t)                     :: ad_bp
   type(nad_bvp_t)                    :: nad_bp
@@ -86,10 +84,10 @@ program gyre_nad
 
 !   stop
      
-  call init_oscpar(unit, ad_op, nad_op)
+  call init_oscpar(unit, op)
   call init_numpar(unit, ivp_solver_type)
   call init_scan(unit, mc, omega, n_iter_max)
-  call init_bvp(unit, x_mc, mc, tc, ad_op, nad_op, omega, ivp_solver_type, ad_bp, nad_bp)
+  call init_bvp(unit, x_mc, mc, tc, op, omega, ivp_solver_type, ad_bp, nad_bp)
 
   ! Find modes
 
@@ -101,13 +99,13 @@ program gyre_nad
   allocate(E(SIZE(nad_md)))
 
   do i = 1,SIZE(nad_md)
-     E(i) = inertia(mc, ad_op, nad_md(i))
+     E(i) = inertia(mc, op, nad_md(i))
   end do
 
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_eigdata(unit, mc, nad_op, nad_md)
+     call write_eigdata(unit, mc, op, nad_md)
   endif
 
   ! Finish
@@ -206,11 +204,10 @@ contains
 
 !****
 
-  subroutine init_oscpar (unit, ad_op, nad_op)
+  subroutine init_oscpar (unit, op)
 
     integer, intent(in)             :: unit
-    type(ad_oscpar_t), intent(out)  :: ad_op
-    type(nad_oscpar_t), intent(out) :: nad_op
+    type(ad_oscpar_t), intent(out)  :: op
 
     integer            :: l
     character(LEN=256) :: outer_bound_type
@@ -244,8 +241,7 @@ contains
 
     ! Initialize the oscilaltion parameters
 
-    call ad_op%init(l, outer_bound_type)
-    call nad_op%init(l, outer_bound_type, force_ad, ad_thresh)
+    call op%init(l, outer_bound_type)
 
     ! Finish
 
@@ -361,7 +357,7 @@ contains
 
 !****
 
-  subroutine init_bvp (unit, x_mc, mc, tc, ad_op, nad_op, omega, ivp_solver_type, ad_bp, nad_bp)
+  subroutine init_bvp (unit, x_mc, mc, tc, op, omega, ivp_solver_type, ad_bp, nad_bp)
 
     use gyre_ad_jacobian
     use gyre_ad_bound
@@ -374,8 +370,7 @@ contains
     real(WP), intent(in), allocatable         :: x_mc(:)
     class(mech_coeffs_t), intent(in), target  :: mc
     class(therm_coeffs_t), intent(in), target :: tc
-    type(ad_oscpar_t), intent(in)             :: ad_op
-    type(nad_oscpar_t), intent(in)            :: nad_op
+    type(ad_oscpar_t), intent(in)             :: op
     real(WP), intent(in)                      :: omega(:)
     character(LEN=*), intent(in)              :: ivp_solver_type
     type(ad_bvp_t), intent(out)               :: ad_bp
@@ -407,11 +402,11 @@ contains
 
     ! Initialize the Jacobians and boundary conditions
 
-    call ad_jc%init(mc, ad_op)
-    call nad_jc%init(mc, tc, nad_op)
+    call ad_jc%init(mc, op)
+    call nad_jc%init(mc, tc, op)
 
-    call ad_bd%init(mc, ad_op)
-    call nad_bd%init(mc, tc, nad_op)
+    call ad_bd%init(mc, op)
+    call nad_bd%init(mc, tc, op)
 
     ! Read shooting grid parameters
 
@@ -454,7 +449,7 @@ contains
        $ASSERT(ALLOCATED(x_mc),No input grid)
        dn = 0
        do i = 1,SIZE(omega)
-          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), ad_op%l, alpha_osc, alpha_exp, n_center, n_floor, dn)
+          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op%l, alpha_osc, alpha_exp, n_center, n_floor, dn)
        enddo
        call build_oversamp_grid(x_mc, dn, x_sh)
     case default
@@ -494,8 +489,8 @@ contains
 
     ! Initialize the shooters
 
-    call ad_sh%init(mc, ad_op, ad_jc, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
-    call nad_sh%init(mc, tc, ad_op, nad_op, ad_jc, nad_jc, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+    call ad_sh%init(mc, op, ad_jc, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+    call nad_sh%init(mc, tc, op, ad_jc, nad_jc, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
 
     ! Initialize the bvps
 
@@ -514,7 +509,7 @@ contains
 
     integer, intent(in)              :: unit
     class(mech_coeffs_t), intent(in) :: mc
-    class(nad_oscpar_t), intent(in)  :: op
+    class(ad_oscpar_t), intent(in)   :: op
     type(mode_t), intent(in)         :: md(:)
 
     character(LEN=256)               :: freq_units
