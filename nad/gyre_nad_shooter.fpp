@@ -128,7 +128,7 @@ contains
     ! Set the sysmtx equation blocks by solving IVPs across the
     ! intervals x(k) -> x(k+1)
 
-    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda)
+    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, A, lambda)
     block_loop : do k = 1,this%n-1
 
        if(this%x(k) <= x_ad_) then
