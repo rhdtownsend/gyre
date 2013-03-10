@@ -1,0 +1,28 @@
+&coeffs
+	coeffs_type = 'MESA'
+	file = 'bcep.mesa'
+/
+
+&oscpar
+	l = 0
+/
+
+&numpar
+	ivp_solver_type = 'MAGNUS_GL2'
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 1
+	freq_max = 20.0
+	n_freq = 100
+/
+
+&shoot_grid
+/
+
+&recon_grid
+/
+
+&output
+/
