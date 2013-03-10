@@ -4,19 +4,12 @@
         G = 6.6742800000e-08
 /
 
-&shoot_grid
-	grid_type = 'DISPERSION'
-	freq = 10.79
-	alpha_osc = 1.
-	alpha_exp = 0.5
-/
-
-&recon_grid
-/
-
-&eqns
+&oscpar
         l = 0
-        solver = 'MAGNUS_GL2'
+/
+
+&numpar
+        ivp_solver_type = 'MAGNUS_GL2'
 /
 
 &scan
@@ -26,7 +19,14 @@
         n_freq = 50
 /
 
+&shoot_grid
+	grid_type = 'DISPERSION'
+	alpha_osc = 1.
+	alpha_exp = 0.5
+/
+
+&recon_grid
+/
+
 &output
-      eigval_file = 'eigvals.h5'
-      eigfunc_prefix = 'eigfunc-l0-'
 /
