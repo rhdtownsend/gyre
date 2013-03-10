@@ -36,6 +36,7 @@ program gyre_nad
   class(mech_coeffs_t), allocatable  :: mc
   class(therm_coeffs_t), allocatable :: tc
   type(ad_oscpar_t)                  :: op
+  real(WP)                           :: psi_ad
   character(LEN=256)                 :: ivp_solver_type
   type(ad_bvp_t)                     :: ad_bp
   type(nad_bvp_t)                    :: nad_bp
@@ -63,31 +64,10 @@ program gyre_nad
   call write_header('Initialization', '=')
 
   call init_coeffs(unit, x_mc, mc, tc)
-
-!   do i = 1,SIZE(x_mc)
-!      write(OUTPUT_UNIT, 100) i, x_mc(i), &
-!           tc%V_x2(x_mc(i)), &
-!           tc%c_rad(x_mc(i)), &
-!           tc%dc_rad(x_mc(i)), &
-!           tc%c_gen(x_mc(i)), &
-!           tc%c_thm(x_mc(i)), &
-!           tc%nabla(x_mc(i)), &
-!           tc%nabla_ad(x_mc(i)), &
-!           tc%dnabla_ad(x_mc(i)), &
-!           tc%alpha_T(x_mc(i)), &
-!           tc%kappa_ad(x_mc(i)), &
-!           tc%kappa_S(x_mc(i)), &
-!           tc%epsilon_ad(x_mc(i)), &
-!           tc%epsilon_S(x_mc(i))
-! 100  format(I6,1X,999E16.8)
-!   end do
-
-!   stop
-     
   call init_oscpar(unit, op)
-  call init_numpar(unit, ivp_solver_type)
+  call init_numpar(unit, psi_ad, ivp_solver_type)
   call init_scan(unit, mc, omega, n_iter_max)
-  call init_bvp(unit, x_mc, mc, tc, op, omega, ivp_solver_type, ad_bp, nad_bp)
+  call init_bvp(unit, x_mc, mc, tc, op, omega, psi_ad, ivp_solver_type, ad_bp, nad_bp)
 
   ! Find modes
 
@@ -251,17 +231,19 @@ contains
 
 !****
 
-  subroutine init_numpar (unit, ivp_solver_type)
+  subroutine init_numpar (unit, psi_ad, ivp_solver_type)
 
     integer, intent(in)           :: unit
+    real(WP), intent(out)         :: psi_ad
     character(LEN=*), intent(out) :: ivp_solver_type
 
-    namelist /numpar/ ivp_solver_type
+    namelist /numpar/ psi_ad, ivp_solver_type
 
     ! Read numerical parameters
 
     if(MPI_RANK == 0) then
 
+       psi_ad = 0._WP
        ivp_solver_type = 'MAGNUS_GL2'
 
        rewind(unit)
@@ -270,6 +252,7 @@ contains
     endif
 
     $if($MPI)
+    call bcast(psi_ad, 0)
     call bcast(ivp_solver_type, 0)
     $endif
 
@@ -357,7 +340,7 @@ contains
 
 !****
 
-  subroutine init_bvp (unit, x_mc, mc, tc, op, omega, ivp_solver_type, ad_bp, nad_bp)
+  subroutine init_bvp (unit, x_mc, mc, tc, op, omega, psi_ad, ivp_solver_type, ad_bp, nad_bp)
 
     use gyre_ad_jacobian
     use gyre_ad_bound
@@ -372,6 +355,7 @@ contains
     class(therm_coeffs_t), intent(in), target :: tc
     type(ad_oscpar_t), intent(in)             :: op
     real(WP), intent(in)                      :: omega(:)
+    real(WP), intent(in)                      :: psi_ad
     character(LEN=*), intent(in)              :: ivp_solver_type
     type(ad_bvp_t), intent(out)               :: ad_bp
     type(nad_bvp_t), intent(out)              :: nad_bp
@@ -392,8 +376,6 @@ contains
     real(WP), allocatable :: x_sh(:)
     type(ad_shooter_t)    :: ad_sh
     type(nad_shooter_t)   :: nad_sh
-
-    complex(WP)         :: A(6,6)
 
     namelist /shoot_grid/ grid_type, alpha_osc, alpha_exp, &
          n_center, n_floor, s, n_grid
@@ -477,15 +459,6 @@ contains
     call bcast(n_center, 0)
     call bcast(n_floor, 0)
     $endif
-
- !     call nad_jc%eval_logx(CMPLX(0.1_WP, KIND=WP), 0.1_WP, A)
-
- !     do i = 1,SIZE(A,1)
- !        write(*, 999) A(i,:)
- ! 999    format(999E16.8)
- !     end do
-
- !     stop
 
     ! Initialize the shooters
 
