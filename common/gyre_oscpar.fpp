@@ -58,11 +58,11 @@ contains
 
     ! Initialize the ad_oscpar
 
-    if(l == 0) then
-       this%lambda_0 = 0._WP
-    else
+!    if(l == 0) then
+!       this%lambda_0 = 0._WP
+!    else
        this%lambda_0 = l - 2._WP
-    endif
+!    endif
 
     this%l = l
 
