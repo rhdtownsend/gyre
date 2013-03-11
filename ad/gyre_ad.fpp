@@ -27,7 +27,7 @@ program gyre_ad
   use core_hgroup
 
   use gyre_mech_coeffs
-  use gyre_ad_oscpar
+  use gyre_oscpar
   use gyre_ad_bvp
   use gyre_ad_api
   use gyre_ad_bound
@@ -48,7 +48,7 @@ program gyre_ad
   integer                           :: unit
   real(WP), allocatable             :: x_mc(:)
   class(mech_coeffs_t), allocatable :: mc
-  type(ad_oscpar_t)                 :: op
+  type(oscpar_t)                    :: op
   character(LEN=256)                :: ivp_solver_type
   type(ad_bvp_t)                    :: bp 
   real(WP), allocatable             :: omega(:)
@@ -200,8 +200,8 @@ contains
 
   subroutine init_oscpar (unit, op)
 
-    integer, intent(in)            :: unit
-    type(ad_oscpar_t), intent(out) :: op
+    integer, intent(in)         :: unit
+    type(oscpar_t), intent(out) :: op
 
     integer            :: l
     character(LEN=256) :: outer_bound_type
@@ -349,7 +349,7 @@ contains
     integer, intent(in)                      :: unit
     real(WP), intent(in), allocatable        :: x_mc(:)
     class(mech_coeffs_t), intent(in), target :: mc
-    type(ad_oscpar_t), intent(in)            :: op
+    type(oscpar_t), intent(in)               :: op
     real(WP), intent(in)                     :: omega(:)
     character(LEN=*), intent(in)             :: ivp_solver_type
     type(ad_bvp_t), intent(out)              :: bp
@@ -422,7 +422,7 @@ contains
        $ASSERT(ALLOCATED(x_mc),No input grid)
        dn = 0
        do i = 1,SIZE(omega)
-          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op%l, alpha_osc, alpha_exp, n_center, n_floor, dn)
+          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op, alpha_osc, alpha_exp, n_center, n_floor, dn)
        enddo
        call build_oversamp_grid(x_mc, dn, x_sh)
     case default
@@ -471,7 +471,7 @@ contains
 
     integer, intent(in)              :: unit
     class(mech_coeffs_t), intent(in) :: mc
-    class(ad_oscpar_t), intent(in)   :: op
+    class(oscpar_t), intent(in)      :: op
     type(mode_t), intent(in)         :: md(:)
 
     character(LEN=256)               :: freq_units
@@ -566,7 +566,7 @@ contains
   function inertia (mc, op, md) result (E)
 
     class(mech_coeffs_t), intent(in) :: mc
-    class(ad_oscpar_t), intent(in)   :: op
+    class(oscpar_t), intent(in)      :: op
     class(mode_t), intent(in)        :: md
     real(WP)                         :: E
 
