@@ -132,7 +132,7 @@ contains
 
     ! Initialize the mech_coeffs
 
-    if(PRESENT(mc)) call mc%init(G, M_star, R_star, r, m, p, rho, N2, Gamma_1)
+    if(PRESENT(mc)) call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
 
     ! Set up the grid
 
