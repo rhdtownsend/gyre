@@ -364,7 +364,7 @@ contains
 
     if(MPI_RANK == 0) then
 
-       grid_type = 'DISPERSION'
+       grid_type = 'INHERIT'
 
        alpha_osc = 0._WP
        alpha_exp = 0._WP
@@ -397,6 +397,9 @@ contains
        call build_geom_grid(s, n_grid, x_sh)
     case('LOG')
        call build_log_grid(s, n_grid, x_sh)
+    case('INHERIT')
+       $ASSERT(ALLOCATED(x_mc),No input grid)
+       x_sh = x_mc
     case('DISPERSION')
        $ASSERT(ALLOCATED(x_mc),No input grid)
        dn = 0
