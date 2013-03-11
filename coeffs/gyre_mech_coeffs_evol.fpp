@@ -102,11 +102,11 @@ contains
 
     n = SIZE(r)
 
-    $ASSERT(r(1) == 0._WP,Invalid radius range)
-    $ASSERT(r(n) == R_star,Invalid radius range)
+    $ASSERT(r(1) <= 0._WP,Invalid radius range)
+    $ASSERT(r(n) >= R_star,Invalid radius range)
 
-    $ASSERT(m(1) == 0._WP,Invalid mass range)
-    $ASSERT(m(n) == M_star,Invalid mass range)
+    $ASSERT(m(1) <= 0._WP,Invalid mass range)
+    $ASSERT(m(n) >= M_star,Invalid mass range)
 
     ! Calculate coefficients
 
