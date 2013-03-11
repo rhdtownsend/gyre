@@ -242,6 +242,7 @@ contains
     ! Place points based on the oscillatory (real) and exponential
     ! (imaginary) parts of the local radial wavenumber
 
+    !$OMP PARALLEL DO PRIVATE (k_r, dphi_osc, dphi_exp)
     cell_loop : do i = 1,SIZE(x_mc)-1
 
        ! Estimate the local radial wavenumber at the cell center
