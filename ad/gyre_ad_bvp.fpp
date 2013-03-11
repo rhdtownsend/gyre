@@ -34,7 +34,7 @@ module gyre_ad_bvp
      private
      procedure, public :: init
      procedure, public :: discrim
-     procedure         :: shoot
+     procedure         :: build
      procedure, public :: recon
   end type ad_bvp_t
 
@@ -82,7 +82,7 @@ contains
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
-    call this%shoot(omega)
+    call this%build(omega)
 
     discrim = this%sm%determinant()
 
@@ -94,7 +94,7 @@ contains
 
 !****
 
-  subroutine shoot (this, omega)
+  subroutine build (this, omega)
 
     class(ad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)        :: omega
@@ -110,7 +110,7 @@ contains
 
     return
 
-  end subroutine shoot
+  end subroutine build
 
 !****
 
@@ -125,7 +125,7 @@ contains
 
     ! Reconstruct the solution on the shooting grid
 
-    call this%shoot(omega)
+    call this%build(omega)
 
     y_sh = RESHAPE(this%sm%null_vector(), SHAPE(y_sh))
 
