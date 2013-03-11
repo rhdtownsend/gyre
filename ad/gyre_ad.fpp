@@ -27,12 +27,6 @@ program gyre_ad
   use core_hgroup
 
   use gyre_mech_coeffs
-  use gyre_mech_coeffs_evol
-  use gyre_mech_coeffs_poly
-  use gyre_mech_coeffs_hom
-  use gyre_mesa_file
-  use gyre_fgong_file
-  use gyre_b3_file
   use gyre_ad_oscpar
   use gyre_ad_bvp
   use gyre_ad_api
@@ -111,6 +105,14 @@ contains
 
   subroutine init_coeffs (unit, x_mc, mc)
 
+    use gyre_mech_coeffs_evol
+    use gyre_mech_coeffs_poly
+    use gyre_mech_coeffs_hom
+    use gyre_mesa_file
+    use gyre_fgong_file
+    use gyre_osc_file
+    use gyre_b3_file
+
     integer, intent(in)                              :: unit
     real(WP), allocatable, intent(out)               :: x_mc(:)
     $if($GFORTRAN_PR56218)
@@ -170,6 +172,8 @@ contains
              call read_mesa_file(file, G, mc, x=x_mc)
           case('FGONG')
              call read_fgong_file(file, G, mc, x=x_mc)
+          case('OSC')
+             call read_osc_file(file, G, mc, x=x_mc)
           case('B3')
              call read_b3_file(file, G, mc, x=x_mc)
           end select
