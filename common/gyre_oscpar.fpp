@@ -1,4 +1,4 @@
-! Module   : gyre_ad_oscpar
+! Module   : gyre_oscpar
 ! Purpose  : adiabatic oscillation parameters
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_ad_oscpar
+module gyre_oscpar
 
   ! Uses
 
@@ -29,7 +29,7 @@ module gyre_ad_oscpar
 
   ! Derived-type definitions
 
-  type :: ad_oscpar_t
+  type :: oscpar_t
      private
      real(WP), public              :: lambda_0
      integer, public               :: l
@@ -38,13 +38,13 @@ module gyre_ad_oscpar
    contains
      private
      procedure, public :: init
-  end type ad_oscpar_t
+  end type oscpar_t
 
  ! Access specifiers
 
   private
 
-  public :: ad_oscpar_t
+  public :: oscpar_t
 
   ! Procedures
 
@@ -52,11 +52,11 @@ contains
 
   subroutine init (this, l, outer_bound_type)
 
-    class(ad_oscpar_t), intent(out) :: this
-    integer, intent(in)             :: l
-    character(LEN=*), intent(in)    :: outer_bound_type
+    class(oscpar_t), intent(out) :: this
+    integer, intent(in)          :: l
+    character(LEN=*), intent(in) :: outer_bound_type
 
-    ! Initialize the ad_oscpar
+    ! Initialize the oscpar
 
 !    if(l == 0) then
 !       this%lambda_0 = 0._WP
@@ -74,4 +74,4 @@ contains
 
   end subroutine init
 
-end module gyre_ad_oscpar
+end module gyre_oscpar
