@@ -131,7 +131,7 @@ contains
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, A, lambda)
     block_loop : do k = 1,this%n-1
 
-       if(this%x(k) <= x_ad_) then
+       if(this%x(k) < x_ad_) then
 
           ! Shoot adiabatically
 
