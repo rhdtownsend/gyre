@@ -116,20 +116,6 @@ contains
 
     endif
 
-    ! If necessary, rescale the stellar radius and mass
-
-    n = SIZE(r)
-
-    if(r(n) /= R_star) then
-       R_star = r(n)
-       write(OUTPUT_UNIT, *) '  Forced R_star == r(n)'
-    endif
-
-    if(m(n) /= M_star) then
-       M_star = m(n)
-       write(OUTPUT_UNIT, *) '  Forced M_star == m(n)'
-    endif
-
     ! Initialize the mech_coeffs
 
     if(PRESENT(mc)) call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
@@ -167,4 +153,3 @@ contains
   end subroutine add_center
 
 end module gyre_fgong_file
-
