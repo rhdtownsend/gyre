@@ -12,6 +12,8 @@ module gyre_fgong_file
 
   use gyre_mech_coeffs_evol
 
+  use ISO_FORTRAN_ENV
+
   ! No implicit typing
 
   implicit none
@@ -56,9 +58,9 @@ contains
        G_ = G_GRAVITY
     endif
 
-    ! Perform basic validations
-
     ! Read the model from the FGONG-format file
+
+    write(OUTPUT_UNIT, *) 'Reading from FGONG file ', TRIM(file)
 
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
@@ -70,6 +72,9 @@ contains
     read(unit, *)
 
     read(unit, *) n, iconst, ivar, ivers
+
+    write(OUTPUT_UNIT, *) '  Initial points :', n
+    write(OUTPUT_UNIT, *) '  File version   :', ivers
 
     ! Read the data
 
@@ -107,6 +112,22 @@ contains
 
        r = [0._WP,r]
 
+       write(OUTPUT_UNIT, *) '  Added central point'
+
+    endif
+
+    ! If necessary, rescale the stellar radius and mass
+
+    n = SIZE(r)
+
+    if(r(n) /= R_star) then
+       R_star = r(n)
+       write(OUTPUT_UNIT, *) '  Forced R_star == r(n)'
+    endif
+
+    if(m(n) /= M_star) then
+       M_star = m(n)
+       write(OUTPUT_UNIT, *) '  Forced M_star == m(n)'
     endif
 
     ! Initialize the mech_coeffs
