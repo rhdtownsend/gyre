@@ -102,7 +102,10 @@ contains
 
     ! If necessary, add central data
 
-    if(r(1) > 0._WP) then
+    if(r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
+    if(m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
+
+    if(r(1) /= 0._WP) then
 
        m = [0._WP,m]
        call add_center(r, p)
