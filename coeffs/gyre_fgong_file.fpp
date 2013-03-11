@@ -90,8 +90,8 @@ contains
 
     var = var(:,n:1:-1)
 
-    R_star = glob(1)
-    M_star = glob(2)
+    M_star = glob(1)
+    R_star = glob(2)
 
     r = var(1,:)
     m = EXP(var(2,:))*M_star
