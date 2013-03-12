@@ -58,12 +58,7 @@ contains
 
     ! Initialize the oscpar
 
-!    if(l == 0) then
-!       this%lambda_0 = 0._WP
-!    else
-       this%lambda_0 = l - 2._WP
-!    endif
-
+    this%lambda_0 = l - 2._WP
     this%l = l
 
     this%outer_bound_type = outer_bound_type
