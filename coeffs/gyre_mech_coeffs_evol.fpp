@@ -141,7 +141,7 @@ contains
     ! Initialize the mech_coeffs
 
     call this%sp_V%init(x, V, dy_dx_a=0._WP)
-    call this%sp_As%init(x, As, dy_dx_a=0._WP, linear=.TRUE.)
+    call this%sp_As%init(x, As, dy_dx_a=0._WP)
     call this%sp_U%init(x, U, dy_dx_a=0._WP)
     call this%sp_c_1%init(x, c_1, dy_dx_a=0._WP)
     call this%sp_Gamma_1%init(x, Gamma_1, dy_dx_a=0._WP)
