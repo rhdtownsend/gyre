@@ -25,7 +25,7 @@ module gyre_nad_shooter
 
   use gyre_mech_coeffs
   use gyre_therm_coeffs
-  use gyre_ad_oscpar
+  use gyre_oscpar
   use gyre_ad_jacobian
   use gyre_nad_jacobian
   use gyre_sysmtx
@@ -45,7 +45,7 @@ module gyre_nad_shooter
      private
      class(mech_coeffs_t), pointer  :: mc => null()
      class(therm_coeffs_t), pointer :: tc => null()
-     class(ad_oscpar_t), pointer    :: op => null()
+     class(oscpar_t), pointer       :: op => null()
      type(ad_jacobian_t)            :: ad_jc
      type(nad_jacobian_t)           :: nad_jc
      real(WP), allocatable          :: x(:)
@@ -78,7 +78,7 @@ contains
     class(nad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target  :: mc
     class(therm_coeffs_t), intent(in), target :: tc
-    class(ad_oscpar_t), intent(in), target    :: op
+    class(oscpar_t), intent(in), target       :: op
     type(ad_jacobian_t), intent(in)           :: ad_jc
     type(nad_jacobian_t), intent(in)          :: nad_jc
     real(WP), intent(in)                      :: x(:)
@@ -225,7 +225,7 @@ contains
 
     dn = 0
 
-    call plan_dispersion_grid(this%x, this%mc, omega, this%op%l, &
+    call plan_dispersion_grid(this%x, this%mc, omega, this%op, &
                               this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
 
     call build_oversamp_grid(this%x, dn, x)

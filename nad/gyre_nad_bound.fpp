@@ -25,7 +25,7 @@ module gyre_nad_bound
 
   use gyre_mech_coeffs
   use gyre_therm_coeffs
-  use gyre_ad_oscpar
+  use gyre_oscpar
 
   use ISO_FORTRAN_ENV
 
@@ -39,7 +39,7 @@ module gyre_nad_bound
      private
      class(mech_coeffs_t), pointer  :: mc => null()
      class(therm_coeffs_t), pointer :: tc => null()
-     class(ad_oscpar_t), pointer    :: op => null()
+     class(oscpar_t), pointer       :: op => null()
      integer, public                :: n_e
      integer, public                :: n_i
      integer, public                :: n_o
@@ -69,7 +69,7 @@ contains
     class(nad_bound_t), intent(out)           :: this
     class(mech_coeffs_t), intent(in), target  :: mc
     class(therm_coeffs_t), intent(in), target :: tc
-    class(ad_oscpar_t), intent(in), target    :: op
+    class(oscpar_t), intent(in), target       :: op
 
     ! Initialize the nad_bound
 
