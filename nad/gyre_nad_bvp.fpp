@@ -42,11 +42,13 @@ module gyre_nad_bvp
      type(nad_shooter_t) :: sh
      type(nad_bound_t)   :: bd
      type(sysmtx_t)      :: sm
+     integer             :: e_norm
      integer, public     :: n
      integer, public     :: n_e
    contains 
      private
      procedure, public :: init
+     procedure, public :: set_norm
      procedure, public :: discrim
      procedure         :: build
      procedure, public :: recon
@@ -88,17 +90,53 @@ contains
 
 !****
 
-  function discrim (this, omega)
+  subroutine set_norm (this, omega)
 
     class(nad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)         :: omega
+
+    type(ext_complex_t) :: discrim
+
+    ! Evaluate the discriminant
+
+    discrim = this%discrim(omega)
+
+    ! Set the normalizing exponent based on this discriminant
+
+    this%e_norm = discrim%e
+
+    ! Finish
+
+    return
+
+  end subroutine set_norm
+
+!****
+
+  function discrim (this, omega, norm)
+
+    class(nad_bvp_t), intent(inout) :: this
+    complex(WP), intent(in)         :: omega
+    logical, intent(in), optional   :: norm
     type(ext_complex_t)             :: discrim
+
+    logical :: norm_
+
+    if(PRESENT(norm)) then
+       norm_ = norm
+    else
+       norm_ = .FALSE.
+    endif
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
     call this%build(omega)
 
     discrim = this%sm%determinant()
+
+    ! Apply the normalization
+
+    if(norm_) discrim%e = discrim%e - this%e_norm
 
     ! Finish
 

@@ -42,6 +42,16 @@ module gyre_bvp
 
   abstract interface
 
+     function discrim_i (this, omega, norm) result (discrim)
+       use core_kinds
+       use gyre_ext_arith
+       import bvp_t
+       class(bvp_t), intent(inout)   :: this
+       complex(WP), intent(in)       :: omega
+       logical, intent(in), optional :: norm
+       type(ext_complex_t)           :: discrim
+     end function discrim_i
+
      subroutine recon_i (this, omega, x, y)
        use core_kinds
        import bvp_t
@@ -51,15 +61,6 @@ module gyre_bvp
        complex(WP), allocatable, intent(out) :: y(:,:)
      end subroutine recon_i
        
-     function discrim_i (this, omega) result (discrim)
-       use core_kinds
-       use gyre_ext_arith
-       import bvp_t
-       class(bvp_t), intent(inout) :: this
-       complex(WP), intent(in)     :: omega
-       type(ext_complex_t)         :: discrim
-     end function discrim_i
-
   end interface
 
   ! Access specifiers

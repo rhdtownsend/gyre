@@ -67,6 +67,8 @@ contains
 
     call write_header('Non-Adiabatic Mode Finding', '=')
 
+    call df%init(bp)
+
     n_md = SIZE(ad_md)
 
     call partition_tasks(n_md, 1, i_part)
@@ -75,9 +77,12 @@ contains
 
     root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
-       ! Find the root
+       ! Set the discriminant normalization, based on the adiabatic
+       ! frequency
 
-       call df%init(bp, ad_md(i)%omega)
+       call bp%set_norm(ad_md(i)%omega)
+
+       ! Find the root
 
        n_iter = n_iter_max
 
@@ -88,7 +93,7 @@ contains
 
        ! Set up the mode
 
-       call nad_md(i)%init(bp, omega_root, df%eval(omega_root))
+       call nad_md(i)%init(bp, omega_root)
 
        ! Report
 

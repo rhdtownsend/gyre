@@ -118,15 +118,20 @@ contains
 
     call write_header('Adiabatic Mode Finding', '=')
 
+    call df%init(bp)
+
     call partition_tasks(n_brack, 1, i_part)
 
     allocate(md(n_brack))
 
     root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
-       ! Find the root
+       ! Set the discriminant normalization, based on the mid-bracket
+       ! frequency
 
-       call df%init(bp, CMPLX(0.5_WP*(omega(i_brack(i)) + omega(i_brack(i)+1)), KIND=WP))
+       call bp%set_norm(CMPLX(0.5_WP*(omega(i_brack(i)) + omega(i_brack(i)+1)), KIND=WP))
+
+       ! Find the root
 
        n_iter = n_iter_max
 
@@ -135,7 +140,7 @@ contains
 
        ! Set up the mode
 
-       call md(i)%init(bp, omega_root, df%eval(omega_root))
+       call md(i)%init(bp, omega_root)
 
        ! Report
 
