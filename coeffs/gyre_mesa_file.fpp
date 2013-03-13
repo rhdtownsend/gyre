@@ -109,8 +109,13 @@ contains
     kappa_T = var(14,:)
     kappa_rho = var(15,:)
     epsilon = var(16,:)
-    epsilon_T = var(17,:)/var(16,:)
-    epsilon_rho = var(18,:)/var(16,:)
+    where(var(16,:) /= 0._WP)
+       epsilon_T = var(17,:)/var(16,:)
+       epsilon_rho = var(18,:)/var(16,:)
+    elsewhere
+       epsilon_T = 0._WP
+       epsilon_rho = 0._WP
+    endwhere
 
     ! If necessary, add central data
 
