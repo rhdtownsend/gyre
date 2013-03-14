@@ -109,6 +109,10 @@ contains
     kappa_T = var(14,:)
     kappa_rho = var(15,:)
     epsilon = var(16,:)
+
+    allocate(epsilon_T(n))
+    allocate(epsilon_rho(n))
+
     where(var(16,:) /= 0._WP)
        epsilon_T = var(17,:)/var(16,:)
        epsilon_rho = var(18,:)/var(16,:)
