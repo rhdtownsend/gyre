@@ -1,5 +1,19 @@
 ! Module   : gyre_bvp
 ! Purpose  : solve boundary-value problems (interface)
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -28,6 +42,16 @@ module gyre_bvp
 
   abstract interface
 
+     function discrim_i (this, omega, norm) result (discrim)
+       use core_kinds
+       use gyre_ext_arith
+       import bvp_t
+       class(bvp_t), intent(inout)   :: this
+       complex(WP), intent(in)       :: omega
+       logical, intent(in), optional :: norm
+       type(ext_complex_t)           :: discrim
+     end function discrim_i
+
      subroutine recon_i (this, omega, x, y)
        use core_kinds
        import bvp_t
@@ -37,15 +61,6 @@ module gyre_bvp
        complex(WP), allocatable, intent(out) :: y(:,:)
      end subroutine recon_i
        
-     function discrim_i (this, omega) result (discrim)
-       use core_kinds
-       use gyre_ext_arith
-       import bvp_t
-       class(bvp_t), intent(inout) :: this
-       complex(WP), intent(in)     :: omega
-       type(ext_complex_t)         :: discrim
-     end function discrim_i
-
   end interface
 
   ! Access specifiers

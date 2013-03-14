@@ -1,5 +1,19 @@
 ! Module   : gyre_ad_bvp
 ! Purpose  : solve adiabatic BVPs
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -28,13 +42,15 @@ module gyre_ad_bvp
      type(ad_shooter_t) :: sh
      type(ad_bound_t)   :: bd
      type(sysmtx_t)     :: sm
+     integer            :: e_norm
      integer, public    :: n
      integer, public    :: n_e
    contains 
      private
      procedure, public :: init
+     procedure, public :: set_norm
      procedure, public :: discrim
-     procedure         :: shoot
+     procedure         :: build
      procedure, public :: recon
   end type ad_bvp_t
 
@@ -63,6 +79,8 @@ contains
 
     call this%sm%init(sh%n-1, sh%n_e, bd%n_i, bd%n_o)
 
+    this%e_norm = 0
+
     this%n = sh%n
     this%n_e = sh%n_e
 
@@ -74,17 +92,53 @@ contains
 
 !****
 
-  function discrim (this, omega)
+  subroutine set_norm (this, omega)
 
     class(ad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)        :: omega
+
+    type(ext_complex_t) :: discrim
+
+    ! Evaluate the discriminant
+
+    discrim = this%discrim(omega)
+
+    ! Set the normalizing exponent based on this discriminant
+
+    this%e_norm = discrim%e
+
+    ! Finish
+
+    return
+
+  end subroutine set_norm
+
+!****
+
+  function discrim (this, omega, norm)
+
+    class(ad_bvp_t), intent(inout) :: this
+    complex(WP), intent(in)        :: omega
+    logical, intent(in), optional  :: norm
     type(ext_complex_t)            :: discrim
+
+    logical :: norm_
+
+    if(PRESENT(norm)) then
+       norm_ = norm
+    else
+       norm_ = .FALSE.
+    endif
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
-    call this%shoot(omega)
+    call this%build(omega)
 
     discrim = this%sm%determinant()
+
+    ! Apply the normalization
+
+    if(norm_) discrim%e = discrim%e - this%e_norm
 
     ! Finish
 
@@ -94,7 +148,7 @@ contains
 
 !****
 
-  subroutine shoot (this, omega)
+  subroutine build (this, omega)
 
     class(ad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)        :: omega
@@ -110,7 +164,7 @@ contains
 
     return
 
-  end subroutine shoot
+  end subroutine build
 
 !****
 
@@ -125,7 +179,7 @@ contains
 
     ! Reconstruct the solution on the shooting grid
 
-    call this%shoot(omega)
+    call this%build(omega)
 
     y_sh = RESHAPE(this%sm%null_vector(), SHAPE(y_sh))
 

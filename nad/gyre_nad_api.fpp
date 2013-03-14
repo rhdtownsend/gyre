@@ -1,5 +1,19 @@
 ! Module   : gyre_nad_api
 ! Purpose  : nonadiabatic API
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -53,6 +67,8 @@ contains
 
     call write_header('Non-Adiabatic Mode Finding', '=')
 
+    call df%init(bp)
+
     n_md = SIZE(ad_md)
 
     call partition_tasks(n_md, 1, i_part)
@@ -61,9 +77,12 @@ contains
 
     root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
-       ! Find the root
+       ! Set the discriminant normalization, based on the adiabatic
+       ! frequency
 
-       call df%init(bp, ad_md(i)%omega)
+       call bp%set_norm(ad_md(i)%omega)
+
+       ! Find the root
 
        n_iter = n_iter_max
 
@@ -74,7 +93,7 @@ contains
 
        ! Set up the mode
 
-       call nad_md(i)%init(bp, omega_root, df%eval(omega_root))
+       call nad_md(i)%init(bp, omega_root)
 
        ! Report
 

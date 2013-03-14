@@ -1,5 +1,19 @@
 ! Program  : gyre_ad
 ! Purpose  : adiabatic oscillation code
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -13,13 +27,7 @@ program gyre_ad
   use core_hgroup
 
   use gyre_mech_coeffs
-  use gyre_mech_coeffs_evol
-  use gyre_mech_coeffs_poly
-  use gyre_mech_coeffs_hom
-  use gyre_mesa_file
-  use gyre_fgong_file
-  use gyre_b3_file
-  use gyre_ad_oscpar
+  use gyre_oscpar
   use gyre_ad_bvp
   use gyre_ad_api
   use gyre_ad_bound
@@ -40,7 +48,7 @@ program gyre_ad
   integer                           :: unit
   real(WP), allocatable             :: x_mc(:)
   class(mech_coeffs_t), allocatable :: mc
-  type(ad_oscpar_t)                 :: op
+  type(oscpar_t)                    :: op
   character(LEN=256)                :: ivp_solver_type
   type(ad_bvp_t)                    :: bp 
   real(WP), allocatable             :: omega(:)
@@ -96,6 +104,14 @@ program gyre_ad
 contains
 
   subroutine init_coeffs (unit, x_mc, mc)
+
+    use gyre_mech_coeffs_evol
+    use gyre_mech_coeffs_poly
+    use gyre_mech_coeffs_hom
+    use gyre_mesa_file
+    use gyre_fgong_file
+    use gyre_osc_file
+    use gyre_b3_file
 
     integer, intent(in)                              :: unit
     real(WP), allocatable, intent(out)               :: x_mc(:)
@@ -156,6 +172,8 @@ contains
              call read_mesa_file(file, G, mc, x=x_mc)
           case('FGONG')
              call read_fgong_file(file, G, mc, x=x_mc)
+          case('OSC')
+             call read_osc_file(file, G, mc, x=x_mc)
           case('B3')
              call read_b3_file(file, G, mc, x=x_mc)
           end select
@@ -182,8 +200,8 @@ contains
 
   subroutine init_oscpar (unit, op)
 
-    integer, intent(in)            :: unit
-    type(ad_oscpar_t), intent(out) :: op
+    integer, intent(in)         :: unit
+    type(oscpar_t), intent(out) :: op
 
     integer            :: l
     character(LEN=256) :: outer_bound_type
@@ -334,7 +352,7 @@ contains
     integer, intent(in)                      :: unit
     real(WP), intent(in), allocatable        :: x_mc(:)
     class(mech_coeffs_t), intent(in), target :: mc
-    type(ad_oscpar_t), intent(in)            :: op
+    type(oscpar_t), intent(in)               :: op
     real(WP), intent(in)                     :: omega(:)
     character(LEN=*), intent(in)             :: ivp_solver_type
     type(ad_bvp_t), intent(out)              :: bp
@@ -367,7 +385,7 @@ contains
 
     if(MPI_RANK == 0) then
 
-       grid_type = 'DISPERSION'
+       grid_type = 'INHERIT'
 
        alpha_osc = 0._WP
        alpha_exp = 0._WP
@@ -400,11 +418,14 @@ contains
        call build_geom_grid(s, n_grid, x_sh)
     case('LOG')
        call build_log_grid(s, n_grid, x_sh)
+    case('INHERIT')
+       $ASSERT(ALLOCATED(x_mc),No input grid)
+       x_sh = x_mc
     case('DISPERSION')
        $ASSERT(ALLOCATED(x_mc),No input grid)
        dn = 0
        do i = 1,SIZE(omega)
-          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op%l, alpha_osc, alpha_exp, n_center, n_floor, dn)
+          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op, alpha_osc, alpha_exp, n_center, n_floor, dn)
        enddo
        call build_oversamp_grid(x_mc, dn, x_sh)
     case default
@@ -453,7 +474,7 @@ contains
 
     integer, intent(in)              :: unit
     class(mech_coeffs_t), intent(in) :: mc
-    class(ad_oscpar_t), intent(in)   :: op
+    class(oscpar_t), intent(in)      :: op
     type(mode_t), intent(in)         :: md(:)
 
     character(LEN=256)               :: freq_units
@@ -548,7 +569,7 @@ contains
   function inertia (mc, op, md) result (E)
 
     class(mech_coeffs_t), intent(in) :: mc
-    class(ad_oscpar_t), intent(in)   :: op
+    class(oscpar_t), intent(in)      :: op
     class(mode_t), intent(in)        :: md
     real(WP)                         :: E
 

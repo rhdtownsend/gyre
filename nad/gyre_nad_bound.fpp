@@ -1,5 +1,19 @@
 ! Module   : gyre_nad_bound
 ! Purpose  : nonadiabatic boundary conditions
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -11,7 +25,7 @@ module gyre_nad_bound
 
   use gyre_mech_coeffs
   use gyre_therm_coeffs
-  use gyre_nad_oscpar
+  use gyre_oscpar
 
   use ISO_FORTRAN_ENV
 
@@ -25,7 +39,7 @@ module gyre_nad_bound
      private
      class(mech_coeffs_t), pointer  :: mc => null()
      class(therm_coeffs_t), pointer :: tc => null()
-     class(nad_oscpar_t), pointer   :: op => null()
+     class(oscpar_t), pointer       :: op => null()
      integer, public                :: n_e
      integer, public                :: n_i
      integer, public                :: n_o
@@ -55,7 +69,7 @@ contains
     class(nad_bound_t), intent(out)           :: this
     class(mech_coeffs_t), intent(in), target  :: mc
     class(therm_coeffs_t), intent(in), target :: tc
-    class(nad_oscpar_t), intent(in), target   :: op
+    class(oscpar_t), intent(in), target       :: op
 
     ! Initialize the nad_bound
 
@@ -75,17 +89,26 @@ contains
 
 !****
 
-  function inner_bound (this, omega) result (B_i)
+  function inner_bound (this, omega, x_ad) result (B_i)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
+    real(WP), intent(in), optional :: x_ad
     complex(WP)                    :: B_i(this%n_i,this%n_e)
+
+    real(WP) :: x_ad_
+
+    if(PRESENT(x_ad)) then
+       x_ad_ = x_ad
+    else
+       x_ad_ = 0._WP
+    endif
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
     associate(c_1 => this%mc%c_1(0._WP), V_x2 => this%tc%V_x2_0, &
               nabla => this%tc%nabla(0._WP), nabla_ad => this%tc%nabla_ad(0._WP), c_rad => this%tc%c_rad(0._WP), &
-              lambda_0 => this%op%lambda_0, l => this%op%l, force_ad => this%op%force_ad)
+              lambda_0 => this%op%lambda_0, l => this%op%l)
 
       B_i(1,1) = c_1*omega**2
       B_i(1,2) = -l
@@ -101,16 +124,16 @@ contains
       B_i(2,5) = 0._WP
       B_i(2,6) = 0._WP
 
-      if(force_ad) then
+      if(0._WP < x_ad_) then
 
-         B_i(3,1) = 0._WP
-         B_i(3,2) = 0._WP
-         B_i(3,3) = 0._WP
-         B_i(3,4) = 0._WP
-         B_i(3,5) = 1._WP
-         B_i(3,6) = 0._WP
+          B_i(3,1) = 0._WP
+          B_i(3,2) = 0._WP
+          B_i(3,3) = 0._WP
+          B_i(3,4) = 0._WP
+          B_i(3,5) = 1._WP
+          B_i(3,6) = 0._WP
 
-      else
+       else
 
          B_i(3,1) = (c_1*omega**2 - l)*nabla_ad + (l-3)*nabla
          B_i(3,2) = 0._WP

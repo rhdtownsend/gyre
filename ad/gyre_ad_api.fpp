@@ -1,5 +1,19 @@
 ! Module   : gyre_ad_api
 ! Purpose  : adiabatic API
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -104,15 +118,20 @@ contains
 
     call write_header('Adiabatic Mode Finding', '=')
 
+    call df%init(bp)
+
     call partition_tasks(n_brack, 1, i_part)
 
     allocate(md(n_brack))
 
     root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
-       ! Find the root
+       ! Set the discriminant normalization, based on the mid-bracket
+       ! frequency
 
-       call df%init(bp, CMPLX(0.5_WP*(omega(i_brack(i)) + omega(i_brack(i)+1)), KIND=WP))
+       call bp%set_norm(CMPLX(0.5_WP*(omega(i_brack(i)) + omega(i_brack(i)+1)), KIND=WP))
+
+       ! Find the root
 
        n_iter = n_iter_max
 
@@ -121,7 +140,7 @@ contains
 
        ! Set up the mode
 
-       call md(i)%init(bp, omega_root, df%eval(omega_root))
+       call md(i)%init(bp, omega_root)
 
        ! Report
 

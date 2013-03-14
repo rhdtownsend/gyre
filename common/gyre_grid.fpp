@@ -1,5 +1,19 @@
 ! Module   : gyre_grid
 ! Purpose  : grid construction
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -11,6 +25,7 @@ module gyre_grid
   use core_constants
 
   use gyre_mech_coeffs
+  use gyre_oscpar
 
   use ISO_FORTRAN_ENV
 
@@ -216,22 +231,27 @@ contains
 
 !****
 
-  subroutine plan_dispersion_grid (x_mc, mc, omega, l, alpha_osc, alpha_exp, n_center, n_floor, dn)
+  subroutine plan_dispersion_grid (x_mc, mc, omega, op, alpha_osc, alpha_exp, n_center, n_floor, dn)
 
     real(WP), intent(in)             :: x_mc(:)
     class(mech_coeffs_t), intent(in) :: mc
     complex(WP), intent(in)          :: omega
-    integer, intent(in)              :: l
+    class(oscpar_t), intent(in)      :: op
     real(WP), intent(in)             :: alpha_osc
     real(WP), intent(in)             :: alpha_exp
     integer, intent(in)              :: n_center
     integer, intent(in)              :: n_floor
     integer, intent(inout)           :: dn(:)
 
+    integer     :: n
     integer     :: i
-    complex(WP) :: k_r
+    complex(WP) :: b
+    complex(WP) :: c
+    complex(WP) :: k_r_pos(SIZE(x_mc))
+    complex(WP) :: k_r_neg(SIZE(x_mc))
     real(WP)    :: dphi_osc
     real(WP)    :: dphi_exp
+    integer     :: i_turn
     real(WP)    :: x_turn
 
     $CHECK_BOUNDS(SIZE(dn),SIZE(x_mc)-1)
@@ -239,50 +259,94 @@ contains
     ! Plan an oversamp grid, modifying dn (see build_grid_oversamp)
     ! with additional points based on a local dispersion analysis
 
-    ! Place points based on the oscillatory (real) and exponential
-    ! (imaginary) parts of the local radial wavenumber
+    n = SIZE(x_mc)
 
-    cell_loop : do i = 1,SIZE(x_mc)-1
+    ! Estimate local radial wavenumbers (note that only the real part
+    ! of omega is used)
 
-       ! Estimate the local radial wavenumber at the cell center
+    k_r_pos(1) = 0._WP
+    k_r_neg(1) = 0._WP
 
-       associate(x_mid => 0.5_WP*(x_mc(i)+x_mc(i+1)))
-          associate(V_g => mc%V(x_mid)/mc%Gamma_1(x_mid), As => mc%As(x_mid), c_1 => mc%c_1(x_mid))
-            k_r = SQRT(-(l*(l+1)/(c_1*omega**2) - V_g)*(c_1*omega**2 - As))/x_mid
-          end associate
+    wave_loop : do i = 2,n
+
+       associate(x => x_mc(i))
+         associate(V_g => mc%V(x)/mc%Gamma_1(x), As => mc%As(x), U => mc%U(x), c_1 => mc%c_1(x), &
+                   lambda_0 => op%lambda_0, l => op%l, omega_re => REAL(omega))
+
+           b = CMPLX(0._WP, 1._WP, WP)*(V_g + As - U - 2._WP - 2._WP*lambda_0)
+           c = -(l*(l+1)/(c_1*omega_re**2) - V_g)*(c_1*omega_re**2 - As)
+
+           k_r_pos(i) = (0.5_WP*(-b + SQRT(b**2 - 4._WP*c)))/x
+           k_r_neg(i) = (0.5_WP*(-b - SQRT(b**2 - 4._WP*c)))/x
+
+         end associate
        end associate
 
-       ! Place points to ensure a given ratio between cell cell size and
-       ! wavelength
-       
-       dphi_osc = ABS(REAL(k_r))*(x_mc(i+1) - x_mc(i))
-       dphi_exp = ABS(AIMAG(k_r))*(x_mc(i+1) - x_mc(i))
+    end do wave_loop
 
-       dn(i) = MAX(dn(i), FLOOR((alpha_osc*dphi_osc + alpha_exp*dphi_exp)/PI))
+    ! Place points to ensure a given sampling of
+    ! oscillatory/exponential scale lengths
 
-    end do cell_loop
+    !$OMP PARALLEL DO PRIVATE (dphi_osc, dphi_exp)
+    samp_loop : do i = 1,n-1
+
+       dphi_osc = SQRT(MAX(ABS(AIMAG(k_r_pos(i))), ABS(AIMAG(k_r_pos(i+1))), &
+                           ABS(AIMAG(k_r_neg(i))), ABS(AIMAG(k_r_neg(i+1)))))*(x_mc(i+1) - x_mc(i))
+       dphi_exp = SQRT(MAX(ABS(REAL(k_r_pos(i))), ABS(REAL(k_r_pos(i+1))), &
+                           ABS(REAL(k_r_neg(i))), ABS(REAL(k_r_neg(i+1)))))*(x_mc(i+1) - x_mc(i))
+
+       dn(i) = MAX(dn(i), FLOOR((alpha_osc*dphi_osc)/PI), FLOOR((alpha_exp*dphi_exp)/PI))
+
+    end do samp_loop
 
     ! Place points to ensure the central evanescent zone has at least
     ! n_center points in it
 
-    if(l > 0) then
-       
-       associate(x_2 => x_mc(2))
+    ! First, locate the innermost turning point
 
-         associate(V_g => mc%V(x_2)/mc%Gamma_1(x_2), As => mc%As(x_2), c_1 => mc%c_1(x_2))
+    i_turn = 1
 
-           if(As > 0._WP) then
-              x_turn = MIN(ABS(REAL(SQRT(c_1*omega**2/As))), &
-                           ABS(REAL(SQRT(l*(l+1)/(c_1*omega**2*V_g)))))*x_2
+    turn_loop : do i = 2,n
+       if(REAL(k_r_pos(i)) == 0._WP .AND. REAL(k_r_neg(i)) == 0._WP) then
+          i_turn = i
+       else
+          exit turn_loop
+       endif
+    end do turn_loop
+
+    ! Place points
+
+    if(i_turn == 1) then
+
+       ! Turning point is in innermost cell; assume V_g, As ~ x^2 to
+       ! interpolate its position
+
+       associate(x => x_mc(2))
+
+         associate(V_g => mc%V(x)/mc%Gamma_1(x), As => mc%As(x), c_1 => mc%c_1(x), &
+                   l => op%l, omega_re => REAL(omega))
+           if(l /= 0._WP) then
+              if(As > 0._WP) then
+                 x_turn = SQRT(MIN(c_1*omega_re**2/As, l*(l+1)/(c_1*omega_re**2*V_g)))*x
+              else
+                 x_turn = SQRT(l*(l+1)/(c_1*omega_re**2*V_g))*x
+              endif
            else
-              x_turn = ABS(REAL(SQRT(l*(l+1)/(c_1*omega**2*V_g))))*x_2
+              if(As > 0._WP) then
+                 x_turn = SQRT(c_1*omega_re**2/As)
+              else
+                 x_turn = HUGE(0._WP)
+              endif
            endif
-
          end associate
 
-         dn(1) = MAX(dn(1), CEILING(x_2/x_turn*n_center))
+         dn(1) = MAX(dn(1), CEILING(x/x_turn*n_center))
 
        end associate
+
+    else
+
+       dn(:i_turn-1) = MAX(dn(:i_turn-1), CEILING(REAL(n_center, WP)/(i_turn-1)))
 
     endif
 

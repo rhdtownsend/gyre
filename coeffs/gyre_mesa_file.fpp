@@ -1,5 +1,19 @@
 ! Module   : gyre_mesa_file
 ! Purpose  : read MESA files
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -95,8 +109,17 @@ contains
     kappa_T = var(14,:)
     kappa_rho = var(15,:)
     epsilon = var(16,:)
-    epsilon_T = var(17,:)/var(16,:)
-    epsilon_rho = var(18,:)/var(16,:)
+
+    allocate(epsilon_T(n))
+    allocate(epsilon_rho(n))
+
+    where(var(16,:) /= 0._WP)
+       epsilon_T = var(17,:)/var(16,:)
+       epsilon_rho = var(18,:)/var(16,:)
+    elsewhere
+       epsilon_T = 0._WP
+       epsilon_rho = 0._WP
+    endwhere
 
     ! If necessary, add central data
 

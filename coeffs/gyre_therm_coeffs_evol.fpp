@@ -1,5 +1,19 @@
 ! Module   : gyre_therm_coeffs_evol
 ! Purpose  : thermal structure coefficients for evolutionary models
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -138,11 +152,11 @@ contains
 
     n = SIZE(r)
 
-    $ASSERT(r(1) == 0._WP,Invalid radius range)
-    $ASSERT(r(n) == R_star,Invalid radius range)
+    $ASSERT(r(1) <= 0._WP,Invalid radius range)
+    $ASSERT(r(n) >= R_star,Invalid radius range)
 
-    $ASSERT(m(1) == 0._WP,Invalid mass range)
-    $ASSERT(m(n) == M_star,Invalid mass range)
+    $ASSERT(m(1) <= 0._WP,Invalid mass range)
+    $ASSERT(m(n) >= M_star,Invalid mass range)
 
     ! Calculate coefficients
 

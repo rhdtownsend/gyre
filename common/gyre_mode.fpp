@@ -1,5 +1,19 @@
 ! Module   : gyre_mode
 ! Purpose  : mode classification
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -48,17 +62,16 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, bp, omega, discrim)
+  subroutine init (this, bp, omega)
 
     class(mode_t), intent(out)  :: this
     class(bvp_t), intent(inout) :: bp
     complex(WP), intent(in)     :: omega
-    complex(WP), intent(in)     :: discrim
 
     ! Initialize the mode
 
     this%omega = omega
-    this%discrim = discrim
+    this%discrim = cmplx(bp%discrim(omega, norm=.TRUE.))
 
     call bp%recon(omega, this%x, this%y)
 

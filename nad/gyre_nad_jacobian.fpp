@@ -1,5 +1,19 @@
 ! Module   : gyre_nad_jacobian
 ! Purpose  : nonadiabatic Jacobian evaluation
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -12,7 +26,7 @@ module gyre_nad_jacobian
   use gyre_jacobian
   use gyre_mech_coeffs
   use gyre_therm_coeffs
-  use gyre_nad_oscpar
+  use gyre_oscpar
 
   use ISO_FORTRAN_ENV
 
@@ -26,7 +40,7 @@ module gyre_nad_jacobian
      private
      class(mech_coeffs_t), pointer  :: mc => null()
      class(therm_coeffs_t), pointer :: tc => null()
-     class(nad_oscpar_t), pointer   :: op => null()
+     class(oscpar_t), pointer       :: op => null()
    contains
      private
      procedure, public :: init
@@ -49,7 +63,7 @@ contains
     class(nad_jacobian_t), intent(out)        :: this
     class(mech_coeffs_t), intent(in), target  :: mc
     class(therm_coeffs_t), intent(in), target :: tc
-    class(nad_oscpar_t), intent(in), target   :: op
+    class(oscpar_t), intent(in), target       :: op
 
     ! Initialize the nad_jacobian
 

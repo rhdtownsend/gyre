@@ -1,5 +1,19 @@
 ! Module   : gyre_ad_bound
 ! Purpose  : adiabatic boundary conditions
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -10,7 +24,7 @@ module gyre_ad_bound
   use core_kinds
 
   use gyre_mech_coeffs
-  use gyre_ad_oscpar
+  use gyre_oscpar
 
   use ISO_FORTRAN_ENV
 
@@ -23,7 +37,7 @@ module gyre_ad_bound
   type :: ad_bound_t
      private
      class(mech_coeffs_t), pointer :: mc => null()
-     class(ad_oscpar_t), pointer   :: op => null()
+     class(oscpar_t), pointer      :: op => null()
      integer, public               :: n_e
      integer, public               :: n_i
      integer, public               :: n_o
@@ -52,7 +66,7 @@ contains
 
     class(ad_bound_t), intent(out)           :: this
     class(mech_coeffs_t), intent(in), target :: mc
-    class(ad_oscpar_t), intent(in), target   :: op
+    class(oscpar_t), intent(in), target      :: op
 
     ! Initialize the ad_bound
 

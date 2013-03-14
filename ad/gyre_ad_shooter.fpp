@@ -1,5 +1,19 @@
 ! Module   : gyre_ad_shooter
 ! Purpose  : adiabatic multiple shooting
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -10,7 +24,7 @@ module gyre_ad_shooter
   use core_kinds
 
   use gyre_mech_coeffs
-  use gyre_ad_oscpar
+  use gyre_oscpar
   use gyre_ad_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
@@ -28,7 +42,7 @@ module gyre_ad_shooter
   type :: ad_shooter_t
      private
      class(mech_coeffs_t), pointer :: mc => null()
-     class(ad_oscpar_t), pointer   :: op => null()
+     class(oscpar_t), pointer      :: op => null()
      type(ad_jacobian_t)           :: jc
      real(WP), allocatable         :: x(:)
      real(WP)                      :: alpha_osc
@@ -59,7 +73,7 @@ contains
 
     class(ad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target :: mc
-    class(ad_oscpar_t), intent(in), target   :: op
+    class(oscpar_t), intent(in), target      :: op
     type(ad_jacobian_t), intent(in)          :: jc
     real(WP), intent(in)                     :: x(:)
     real(WP), intent(in)                     :: alpha_osc
@@ -142,7 +156,7 @@ contains
 
     dn = 0
 
-    call plan_dispersion_grid(this%x, this%mc, omega, this%op%l, &
+    call plan_dispersion_grid(this%x, this%mc, omega, this%op, &
                               this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
 
     call build_oversamp_grid(this%x, dn, x)

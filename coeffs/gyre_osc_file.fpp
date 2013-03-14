@@ -1,5 +1,5 @@
-! Module   : gyre_fgong_file
-! Purpose  : read FGONG files
+! Module   : gyre_osc_file
+! Purpose  : read OSC files
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_fgong_file
+module gyre_osc_file
 
   ! Uses
 
@@ -36,13 +36,13 @@ module gyre_fgong_file
 
   private
 
-  public :: read_fgong_file
+  public :: read_osc_file
 
   ! Procedures
 
 contains
 
-  subroutine read_fgong_file (file, G, mc, x)
+  subroutine read_osc_file (file, G, mc, x)
 
     character(LEN=*), intent(in)                     :: file
     real(WP), intent(in), optional                   :: G
@@ -54,6 +54,7 @@ contains
     integer               :: n
     integer               :: iconst
     integer               :: ivar
+    integer               :: iabund
     integer               :: ivers
     real(WP), allocatable :: glob(:)
     real(WP), allocatable :: var(:,:)
@@ -72,9 +73,9 @@ contains
        G_ = G_GRAVITY
     endif
 
-    ! Read the model from the FGONG-format file
+    ! Read the model from the OSC-format file
 
-    write(OUTPUT_UNIT, *) 'Reading from FGONG file ', TRIM(file)
+    write(OUTPUT_UNIT, *) 'Reading from OSC file ', TRIM(file)
 
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
@@ -84,8 +85,9 @@ contains
     read(unit, *)
     read(unit, *)
     read(unit, *)
+    read(unit, *)
 
-    read(unit, *) n, iconst, ivar, ivers
+    read(unit, *) n, iconst, ivar, iabund, ivers
 
     write(OUTPUT_UNIT, *) '  Initial points :', n
     write(OUTPUT_UNIT, *) '  File version   :', ivers
@@ -98,7 +100,7 @@ contains
     read(unit, 100) glob
     read(unit, 100) var
 
-100 format(1P5E16.9)
+100 format(1P5E19.12)
 
     close(unit)
 
@@ -145,7 +147,7 @@ contains
 
     return
 
-  end subroutine read_fgong_file
+  end subroutine read_osc_file
 
 !****
 
@@ -169,4 +171,4 @@ contains
 
   end subroutine add_center
 
-end module gyre_fgong_file
+end module gyre_osc_file

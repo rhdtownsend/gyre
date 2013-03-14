@@ -1,5 +1,19 @@
 ! Module   : gyre_nad_shooter
 ! Purpose  : nonadiabatic multiple shooting
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
 
@@ -11,8 +25,7 @@ module gyre_nad_shooter
 
   use gyre_mech_coeffs
   use gyre_therm_coeffs
-  use gyre_ad_oscpar
-  use gyre_nad_oscpar
+  use gyre_oscpar
   use gyre_ad_jacobian
   use gyre_nad_jacobian
   use gyre_sysmtx
@@ -32,8 +45,7 @@ module gyre_nad_shooter
      private
      class(mech_coeffs_t), pointer  :: mc => null()
      class(therm_coeffs_t), pointer :: tc => null()
-     class(ad_oscpar_t), pointer    :: ad_op => null()
-     class(nad_oscpar_t), pointer   :: nad_op => null()
+     class(oscpar_t), pointer       :: op => null()
      type(ad_jacobian_t)            :: ad_jc
      type(nad_jacobian_t)           :: nad_jc
      real(WP), allocatable          :: x(:)
@@ -61,13 +73,12 @@ module gyre_nad_shooter
 
 contains
 
-  subroutine init (this, mc, tc, ad_op, nad_op, ad_jc, nad_jc, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
+  subroutine init (this, mc, tc, op, ad_jc, nad_jc, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
 
     class(nad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target  :: mc
     class(therm_coeffs_t), intent(in), target :: tc
-    class(ad_oscpar_t), intent(in), target    :: ad_op
-    class(nad_oscpar_t), intent(in), target   :: nad_op
+    class(oscpar_t), intent(in), target       :: op
     type(ad_jacobian_t), intent(in)           :: ad_jc
     type(nad_jacobian_t), intent(in)          :: nad_jc
     real(WP), intent(in)                      :: x(:)
@@ -82,8 +93,7 @@ contains
     this%mc => mc
     this%tc => tc
 
-    this%ad_op => ad_op
-    this%nad_op => nad_op
+    this%op => op
 
     this%ad_jc = ad_jc
     this%nad_jc = nad_jc
@@ -108,12 +118,14 @@ contains
 
 !****
 
-  subroutine shoot (this, omega, sm)
+  subroutine shoot (this, omega, sm, x_ad)
 
     class(nad_shooter_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     class(sysmtx_t), intent(inout)   :: sm
+    real(WP), intent(in), optional   :: x_ad
 
+    real(WP)            :: x_ad_
     integer             :: k
     complex(WP)         :: E_l(this%n_e,this%n_e)
     complex(WP)         :: E_r(this%n_e,this%n_e)
@@ -121,17 +133,21 @@ contains
     complex(WP)         :: A(this%n_e,this%n_e)
     complex(WP)         :: lambda
 
+    if(PRESENT(x_ad)) then
+       x_ad_ = x_ad
+    else
+       x_ad_ = 0._WP
+    endif
+
     ! Set the sysmtx equation blocks by solving IVPs across the
     ! intervals x(k) -> x(k+1)
 
-    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda)
+    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, A, lambda)
     block_loop : do k = 1,this%n-1
 
-       ! Decide whether to shoot adiabatically or nonadiabatically
+       if(this%x(k) < x_ad_) then
 
-       if(this%nad_op%force_ad .AND. this%x(k) < this%nad_op%ad_thresh) then
-
-          ! Adiabatic
+          ! Shoot adiabatically
 
           call solve(this%solver_type, this%ad_jc, omega, this%x(k), this%x(k+1), E_l(1:4,1:4), E_r(1:4,1:4), scale)
 
@@ -150,7 +166,7 @@ contains
 
        else
 
-          ! Nonadiabatic
+          ! Shoot nonadiabatically
 
           call solve(this%solver_type, this%nad_jc, omega, this%x(k), this%x(k+1), E_l, E_r, scale)
 
@@ -177,14 +193,16 @@ contains
 
 !****
 
-  subroutine recon_sh (this, omega, y_sh, x, y)
+  subroutine recon_sh (this, omega, y_sh, x, y, x_ad)
 
     class(nad_shooter_t), intent(in)      :: this
     complex(WP), intent(in)               :: omega
     complex(WP), intent(in)               :: y_sh(:,:)
     real(WP), intent(out), allocatable    :: x(:)
     complex(WP), intent(out), allocatable :: y(:,:)
+    real(WP), intent(in), optional        :: x_ad
 
+    real(WP)    :: x_ad_
     integer     :: dn(this%n-1)
     integer     :: i_a(this%n-1)
     integer     :: i_b(this%n-1)
@@ -195,13 +213,19 @@ contains
     $CHECK_BOUNDS(SIZE(y_sh, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(y_sh, 2),this%n)
 
+    if(PRESENT(x_ad)) then
+       x_ad_ = x_ad
+    else
+       x_ad_ = 0._WP
+    endif
+
     ! Reconstruct the eigenfunctions on a dynamically-allocated grid
 
     ! Allocate the grid
 
     dn = 0
 
-    call plan_dispersion_grid(this%x, this%mc, omega, this%ad_op%l, &
+    call plan_dispersion_grid(this%x, this%mc, omega, this%op, &
                               this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
 
     call build_oversamp_grid(this%x, dn, x)
@@ -221,9 +245,9 @@ contains
     !$OMP PARALLEL DO
     recon_loop : do k = 1,this%n-1
 
-       ! Decide whether to reconstruct adiabatically or nonadiabatically
+       if(this%x(k) < x_ad_) then
 
-       if(this%nad_op%force_ad .AND. this%x(k) < this%nad_op%ad_thresh) then
+          ! Reconstruct adiabatically
 
           call recon(this%solver_type, this%ad_jc, omega, this%x(k), this%x(k+1), y_sh(1:4,k), y_sh(1:4,k+1), &
                      x(i_a(k):i_b(k)), y(1:4,i_a(k):i_b(k)))
@@ -236,6 +260,8 @@ contains
           end do
           
        else
+
+          ! Reconstruct nonadiabatically
 
           call recon(this%solver_type, this%nad_jc, omega, this%x(k), this%x(k+1), y_sh(:,k), y_sh(:,k+1), &
                      x(i_a(k):i_b(k)), y(:,i_a(k):i_b(k)))
