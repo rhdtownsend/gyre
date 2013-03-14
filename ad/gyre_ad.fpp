@@ -25,6 +25,7 @@ program gyre_ad
   use core_constants
   use core_parallel
   use core_hgroup
+  use core_order
 
   use gyre_mech_coeffs
   use gyre_oscpar
@@ -331,6 +332,10 @@ contains
        end do read_loop
 
 100    continue
+
+       ! Sort the frequencies
+
+       omega = omega(index(omega))
 
     endif
 
