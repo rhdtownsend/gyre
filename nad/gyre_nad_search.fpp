@@ -55,6 +55,9 @@ contains
 
     integer              :: n_md
     integer              :: i_part(MPI_SIZE+1)
+    integer              :: c_beg
+    integer              :: c_end
+    integer              :: c_rate
     integer              :: i
     type(nad_discfunc_t) :: df
     integer              :: n_iter
@@ -74,6 +77,8 @@ contains
     call partition_tasks(n_md, 1, i_part)
 
     allocate(nad_md(n_md))
+
+    call SYSTEM_CLOCK(c_beg, c_rate)
 
     root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
@@ -101,6 +106,12 @@ contains
             nad_md(i)%omega, ABS(nad_md(i)%discrim), n_iter
 
     end do root_loop
+
+    call SYSTEM_CLOCK(c_end)
+    if(MPI_RANK == 0) then
+       write(OUTPUT_UNIT, 100) 'Completed nad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+100    format(/A,1X,F10.3,1X,A)
+    endif
 
     ! Broadcast data
 

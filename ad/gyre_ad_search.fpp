@@ -55,6 +55,9 @@ contains
 
     integer             :: n_omega
     integer             :: i_part(MPI_SIZE+1)
+    integer             :: c_beg
+    integer             :: c_end
+    integer             :: c_rate
     integer             :: i
     type(ext_real_t)    :: discrim(SIZE(omega))
     $if($MPI)
@@ -78,13 +81,22 @@ contains
 
     call partition_tasks(n_omega, 1, i_part)
 
+    call SYSTEM_CLOCK(c_beg, c_rate)
+
     discrim_loop : do i = i_part(MPI_RANK+1),i_part(MPI_RANK+2)-1
 
        discrim(i) = ext_real(bp%discrim(CMPLX(omega(i), KIND=WP)))
 
-       write(OUTPUT_UNIT, *) 'Eval:',omega(i),discrim(i)%f,discrim(i)%e
+       write(OUTPUT_UNIT, 100) 'Eval:', omega(i), discrim(i)%f, discrim(i)%e
+100    format(A,2X,E23.16,2X,F19.16,2X,I7)
 
     end do discrim_loop
+
+    call SYSTEM_CLOCK(c_end)
+    if(MPI_RANK == 0) then
+       write(OUTPUT_UNIT, 110) 'Completed ad scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+110    format(/A,1X,F10.3,1X,A)
+    endif
 
     ! Gather data
 
@@ -124,6 +136,8 @@ contains
 
     allocate(md(n_brack))
 
+    call SYSTEM_CLOCK(c_beg, c_rate)
+
     root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
        ! Set the discriminant normalization, based on the mid-bracket
@@ -148,6 +162,11 @@ contains
             md(i)%omega, ABS(md(i)%discrim), n_iter
 
     end do root_loop
+
+    call SYSTEM_CLOCK(c_end)
+    if(MPI_RANK == 0) then
+       write(OUTPUT_UNIT, 110) 'Completed ad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+    endif
 
     ! Broadcast data
 
