@@ -30,7 +30,7 @@ program gyre_ad
   use gyre_mech_coeffs
   use gyre_oscpar
   use gyre_ad_bvp
-  use gyre_ad_api
+  use gyre_ad_search
   use gyre_ad_bound
   use gyre_ad_shooter
   use gyre_ad_jacobian
@@ -82,7 +82,7 @@ program gyre_ad
 
   ! Find modes
 
-  call find_ad_modes(bp, omega, n_iter_max, md)
+  call ad_scan_search(bp, omega, n_iter_max, md)
 
   ! Calculate inertias
 
@@ -335,7 +335,7 @@ contains
 
        ! Sort the frequencies
 
-       omega = omega(index(omega))
+       omega = omega(sort_indices(omega))
 
     endif
 

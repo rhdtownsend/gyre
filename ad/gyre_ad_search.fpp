@@ -1,5 +1,5 @@
-! Module   : gyre_ad_api
-! Purpose  : adiabatic API
+! Module   : gyre_ad_search
+! Purpose  : adiabatic mode searching
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_ad_api
+module gyre_ad_search
 
   ! Uses
 
@@ -40,13 +40,13 @@ module gyre_ad_api
 
   private
 
-  public :: find_ad_modes
+  public :: ad_scan_search
 
   ! Procedures
 
 contains
 
-  subroutine find_ad_modes (bp, omega, n_iter_max, md)
+  subroutine ad_scan_search (bp, omega, n_iter_max, md)
 
     type(ad_bvp_t), target, intent(inout)  :: bp
     real(WP), intent(in)                   :: omega(:)
@@ -97,7 +97,7 @@ contains
 
     $endif
 
-    ! Search for root brackets
+    ! Scan for root brackets
 
     n_brack = 0
 
@@ -165,6 +165,6 @@ contains
 
     return
 
-  end subroutine find_ad_modes
+  end subroutine ad_scan_search
 
-end module gyre_ad_api
+end module gyre_ad_search
