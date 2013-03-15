@@ -1,5 +1,5 @@
-! Module   : gyre_nad_api
-! Purpose  : nonadiabatic API
+! Module   : gyre_nad_search
+! Purpose  : nonadiabatic mode search
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_nad_api
+module gyre_nad_search
 
   ! Uses
 
@@ -40,13 +40,13 @@ module gyre_nad_api
 
   private
 
-  public :: find_nad_modes
+  public :: nad_prox_search
 
   ! Procedures
 
 contains
 
-  subroutine find_nad_modes (bp, ad_md, n_iter_max, nad_md)
+  subroutine nad_prox_search (bp, ad_md, n_iter_max, nad_md)
 
     type(nad_bvp_t), target, intent(inout)  :: bp
     type(mode_t), intent(in)                :: ad_md(:)
@@ -118,6 +118,6 @@ contains
 
     return
 
-  end subroutine find_nad_modes
+  end subroutine nad_prox_search
 
-end module gyre_nad_api
+end module gyre_nad_search

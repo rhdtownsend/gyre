@@ -25,14 +25,15 @@ program gyre_nad
   use core_constants
   use core_parallel
   use core_hgroup
+  use core_order
 
   use gyre_mech_coeffs
   use gyre_therm_coeffs
   use gyre_oscpar
   use gyre_ad_bvp
-  use gyre_ad_api
+  use gyre_ad_search
   use gyre_nad_bvp
-  use gyre_nad_api
+  use gyre_nad_search
   use gyre_mode
   use gyre_util
   use gyre_grid
@@ -50,12 +51,12 @@ program gyre_nad
   class(mech_coeffs_t), allocatable  :: mc
   class(therm_coeffs_t), allocatable :: tc
   type(oscpar_t)                     :: op
+  integer                            :: n_iter_max
   real(WP)                           :: psi_ad
   character(LEN=256)                 :: ivp_solver_type
   type(ad_bvp_t)                     :: ad_bp
   type(nad_bvp_t)                    :: nad_bp
   real(WP), allocatable              :: omega(:)
-  integer                            :: n_iter_max
   type(mode_t), allocatable          :: ad_md(:)
   type(mode_t), allocatable          :: nad_md(:)
   integer                            :: i
@@ -79,14 +80,14 @@ program gyre_nad
 
   call init_coeffs(unit, x_mc, mc, tc)
   call init_oscpar(unit, op)
-  call init_numpar(unit, psi_ad, ivp_solver_type)
-  call init_scan(unit, mc, omega, n_iter_max)
+  call init_numpar(unit, n_iter_max, psi_ad, ivp_solver_type)
+  call init_scan(unit, mc, omega)
   call init_bvp(unit, x_mc, mc, tc, op, omega, psi_ad, ivp_solver_type, ad_bp, nad_bp)
 
-  ! Find modes
+  ! Search for modes
 
-  call find_ad_modes(ad_bp, omega, n_iter_max, ad_md)
-  call find_nad_modes(nad_bp, ad_md, n_iter_max, nad_md)
+  call ad_scan_search(ad_bp, omega, n_iter_max, ad_md)
+  call nad_prox_search(nad_bp, ad_md, n_iter_max, nad_md)
 
   ! Calculate inertias
 
@@ -245,19 +246,22 @@ contains
 
 !****
 
-  subroutine init_numpar (unit, psi_ad, ivp_solver_type)
+  subroutine init_numpar (unit, n_iter_max, psi_ad, ivp_solver_type)
 
     integer, intent(in)           :: unit
+    integer, intent(out)          :: n_iter_max
     real(WP), intent(out)         :: psi_ad
     character(LEN=*), intent(out) :: ivp_solver_type
 
-    namelist /numpar/ psi_ad, ivp_solver_type
+    namelist /numpar/ n_iter_max, psi_ad, ivp_solver_type
 
     ! Read numerical parameters
 
     if(MPI_RANK == 0) then
 
+       n_iter_max = 50
        psi_ad = 0._WP
+
        ivp_solver_type = 'MAGNUS_GL2'
 
        rewind(unit)
@@ -266,6 +270,7 @@ contains
     endif
 
     $if($MPI)
+    call bcast(n_iter_max, 0)
     call bcast(psi_ad, 0)
     call bcast(ivp_solver_type, 0)
     $endif
@@ -278,12 +283,11 @@ contains
 
 !****
 
-  subroutine init_scan (unit, mc, omega, n_iter_max)
+  subroutine init_scan (unit, mc, omega)
 
     integer, intent(in)                :: unit
     class(mech_coeffs_t), intent(in)   :: mc
     real(WP), allocatable, intent(out) :: omega(:)
-    integer, intent(out)               :: n_iter_max
 
     character(LEN=256) :: grid_type
     real(WP)           :: freq_min
@@ -303,41 +307,45 @@ contains
 
     if(MPI_RANK == 0) then
 
-       grid_type = 'LINEAR'
-
-       freq_min = 1._WP
-       freq_mid = SQRT(10._WP)
-       freq_max = 10._WP
-       n_freq = 10
-    
-       freq_units = 'NONE'
-
-       n_iter_max = 50
-
        rewind(unit)
-       read(unit, NML=scan)
 
-    endif
+       allocate(omega(0))
 
-    ! Set up the frequency grid
+       read_loop : do 
 
-    if(MPI_RANK == 0) then
+          grid_type = 'LINEAR'
 
-       omega_min = mc%conv_freq(freq_min, freq_units, 'NONE')
-       omega_mid = mc%conv_freq(freq_mid, freq_units, 'NONE')
-       omega_max = mc%conv_freq(freq_max, freq_units, 'NONE')
+          freq_min = 1._WP
+          freq_mid = SQRT(10._WP)
+          freq_max = 10._WP
+          n_freq = 10
+          
+          freq_units = 'NONE'
 
-       select case(grid_type)
-       case('LINEAR')
-          omega = [(((n_freq-i)*omega_min + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
-       case('INVERSE')
-          omega = [((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_max), i=1,n_freq)]
-       case('MIXED')
-          omega = [((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_mid), i=1,n_freq), &
-               (((n_freq-i)*omega_mid + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
-       case default
-          $ABORT(Invalid freq_grid)
-       end select
+          read(unit, NML=scan, end=100)
+          
+          ! Set up the frequency grid
+
+          omega_min = mc%conv_freq(freq_min, freq_units, 'NONE')
+          omega_mid = mc%conv_freq(freq_mid, freq_units, 'NONE')
+          omega_max = mc%conv_freq(freq_max, freq_units, 'NONE')
+       
+          select case(grid_type)
+          case('LINEAR')
+             omega = [omega,(((n_freq-i)*omega_min + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
+          case('INVERSE')
+             omega = [omega,((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_max), i=1,n_freq)]
+          case default
+             $ABORT(Invalid freq_grid)
+          end select
+
+       end do read_loop
+
+100    continue
+
+       ! Sort the frequencies
+
+       omega = omega(sort_indices(omega))
 
     endif
 
