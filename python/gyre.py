@@ -20,9 +20,9 @@
 import h5py
 import numpy as np
 
-# Read GYRE eigenfrequency file
+# Read GYRE eigenvalue file
 
-def read_gyre_freq (filename) :
+def read_eigval (filename) :
 
     file = h5py.File(filename, 'r')
 
