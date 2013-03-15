@@ -341,7 +341,6 @@ contains
 
     $if($MPI)
     call bcast(omega, 0, alloc=.TRUE.)
-    call bcast(n_iter_max, 0)
     $endif
 
     ! Finish
