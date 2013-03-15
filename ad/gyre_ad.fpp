@@ -31,9 +31,6 @@ program gyre_ad
   use gyre_oscpar
   use gyre_ad_bvp
   use gyre_ad_search
-  use gyre_ad_bound
-  use gyre_ad_shooter
-  use gyre_ad_jacobian
   use gyre_mode
   use gyre_util
   use gyre_grid
@@ -352,6 +349,10 @@ contains
 !****
 
   subroutine init_bvp (unit, x_mc, mc, op, omega, ivp_solver_type, bp)
+
+    use gyre_ad_bound
+    use gyre_ad_shooter
+    use gyre_ad_jacobian
 
     integer, intent(in)                      :: unit
     real(WP), intent(in), allocatable        :: x_mc(:)
