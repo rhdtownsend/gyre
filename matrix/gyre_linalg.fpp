@@ -622,7 +622,7 @@ contains
     ! (Possibly) sort
 
     if(sort_) then
-       ind = index(REAL(lambda))
+       ind = sort_indices(REAL(lambda))
        lambda = lambda(ind)
        if(PRESENT(V_l)) V_l = V_l(ind,:)
        if(PRESENT(V_r)) V_r = V_r(:,ind)
@@ -750,7 +750,7 @@ contains
     ! (Possibly) sort
 
     if(sort_) then
-       ind = index(REAL(lambda))
+       ind = sort_indices(REAL(lambda))
        lambda = lambda(ind)
        if(PRESENT(V_l)) V_l = V_l(ind,:)
        if(PRESENT(V_r)) V_r = V_r(:,ind)
