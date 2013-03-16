@@ -52,8 +52,6 @@ program gyre_ad
   real(WP), allocatable             :: omega(:)
   integer                           :: n_iter_max
   type(mode_t), allocatable         :: md(:)
-  integer                           :: i
-  real(WP), allocatable             :: E(:)
 
   ! Initialize
 
@@ -80,14 +78,6 @@ program gyre_ad
   ! Find modes
 
   call ad_scan_search(bp, omega, n_iter_max, md)
-
-  ! Calculate inertias
-
-  allocate(E(SIZE(md)))
-
-  do i = 1,SIZE(md)
-     E(i) = inertia(mc, op, md(i))
-  end do
 
   ! Write output
  
@@ -486,6 +476,7 @@ contains
     character(LEN=FILENAME_LEN)      :: eigval_file
     character(LEN=FILENAME_LEN)      :: eigfunc_prefix
     integer                          :: i
+    real(WP)                         :: E(SIZE(md))
     complex(WP)                      :: freq(SIZE(md))
     type(hgroup_t)                   :: hg
     character(LEN=FILENAME_LEN)      :: eigfunc_file
@@ -501,6 +492,12 @@ contains
 
     rewind(unit)
     read(unit, NML=output)
+
+    ! Calculate inertias
+
+    do i = 1,SIZE(md)
+       E(i) = inertia(mc, op, md(i))
+    end do
 
     ! Write eigenvalues
 
@@ -557,6 +554,8 @@ contains
           call write_dset(hg, 'x', md(i)%x)
           call write_dset(hg, 'y', md(i)%y)
 
+          call write_dset(hg, 'dE_dx', kinetic(mc, op, md(i)))
+
           call hg%final()
 
        end do mode_loop
@@ -578,15 +577,52 @@ contains
     class(mode_t), intent(in)        :: md
     real(WP)                         :: E
 
-    integer     :: i
     real(WP)    :: dE_dx(md%n)
-    real(WP)    :: U
-    real(WP)    :: c_1
     complex(WP) :: xi_r
     complex(WP) :: xi_h
     real(WP)    :: E_norm
 
-    ! Set up the inertia integrand
+    ! Calculate the normalized inertia
+
+    dE_dx = kinetic(mc, op, md)
+
+    E = SUM(0.5_WP*(dE_dx(2:) + dE_dx(:md%n-1))*(md%x(2:) - md%x(:md%n-1)))
+
+    if(op%l == 0) then
+       xi_r = md%y(1,md%n)
+       xi_h = 0._WP
+    else
+       xi_r = md%y(1,md%n)
+       xi_h = md%y(2,md%n)/md%omega**2
+    endif
+
+    E_norm = ABS(xi_r)**2 + op%l*(op%l+1)*ABS(xi_h)**2
+    $ASSERT(E_norm /= 0._WP,E_norm is zero)    
+    
+    E = E/E_norm
+
+    ! Finish
+
+    return
+
+  end function inertia
+
+!*****
+
+  function kinetic (mc, op, md) result (dE_dx)
+
+    class(mech_coeffs_t), intent(in) :: mc
+    class(oscpar_t), intent(in)      :: op
+    class(mode_t), intent(in)        :: md
+    real(WP)                         :: dE_dx(md%n)
+
+    integer     :: i
+    real(WP)    :: U
+    real(WP)    :: c_1
+    complex(WP) :: xi_r
+    complex(WP) :: xi_h
+
+    ! Calculate the kinetic energy density
 
     !$OMP PARALLEL DO PRIVATE (U, c_1, xi_r, xi_h)
     do i = 1,md%n
@@ -616,29 +652,10 @@ contains
 
     end do
 
-    ! Integrate via a tropezoidal rule
-
-    E = SUM(0.5_WP*(dE_dx(2:) + dE_dx(:md%n-1))*(md%x(2:) - md%x(:md%n-1)))
-
-    ! Normalize
-
-    if(op%l == 0) then
-       xi_r = md%y(1,md%n)
-       xi_h = 0._WP
-    else
-       xi_r = md%y(1,md%n)
-       xi_h = md%y(2,md%n)/md%omega**2
-    endif
-
-    E_norm = ABS(xi_r)**2 + op%l*(op%l+1)*ABS(xi_h)**2
-    $ASSERT(E_norm /= 0._WP,E_norm is zero)    
-    
-    E = E/E_norm
-
     ! Finish
 
     return
 
-  end function inertia
+  end function kinetic
 
 end program gyre_ad
