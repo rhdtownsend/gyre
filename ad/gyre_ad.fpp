@@ -380,7 +380,7 @@ contains
 
     if(MPI_RANK == 0) then
 
-       grid_type = 'INHERIT'
+       grid_type = 'DISPERSION'
 
        alpha_osc = 0._WP
        alpha_exp = 0._WP
