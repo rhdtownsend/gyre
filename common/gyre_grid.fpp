@@ -274,7 +274,7 @@ contains
                    lambda_0 => op%lambda_0, l => op%l, omega_re => REAL(omega))
 
            b = CMPLX(0._WP, 1._WP, WP)*(V_g + As - U - 2._WP - 2._WP*lambda_0)
-           c = -(l*(l+1)/(c_1*omega_re**2) - V_g)*(c_1*omega_re**2 - As)
+           c = (l*(l+1)/(c_1*omega_re**2) - V_g)*(c_1*omega_re**2 - As)
 
            k_r_pos(i) = (0.5_WP*(-b + SQRT(b**2 - 4._WP*c)))/x
            k_r_neg(i) = (0.5_WP*(-b - SQRT(b**2 - 4._WP*c)))/x
@@ -290,10 +290,10 @@ contains
     !$OMP PARALLEL DO PRIVATE (dphi_osc, dphi_exp)
     samp_loop : do i = 1,n-1
 
-       dphi_osc = SQRT(MAX(ABS(AIMAG(k_r_pos(i))), ABS(AIMAG(k_r_pos(i+1))), &
-                           ABS(AIMAG(k_r_neg(i))), ABS(AIMAG(k_r_neg(i+1)))))*(x_mc(i+1) - x_mc(i))
-       dphi_exp = SQRT(MAX(ABS(REAL(k_r_pos(i))), ABS(REAL(k_r_pos(i+1))), &
-                           ABS(REAL(k_r_neg(i))), ABS(REAL(k_r_neg(i+1)))))*(x_mc(i+1) - x_mc(i))
+       dphi_osc = MAX(ABS(REAL(k_r_pos(i))), ABS(REAL(k_r_pos(i+1))), &
+                      ABS(REAL(k_r_neg(i))), ABS(REAL(k_r_neg(i+1))))*(x_mc(i+1) - x_mc(i))
+       dphi_exp = MAX(ABS(AIMAG(k_r_pos(i))), ABS(AIMAG(k_r_pos(i+1))), &
+                      ABS(AIMAG(k_r_neg(i))), ABS(AIMAG(k_r_neg(i+1))))*(x_mc(i+1) - x_mc(i))
 
        dn(i) = MAX(dn(i), FLOOR((alpha_osc*dphi_osc)/PI), FLOOR((alpha_exp*dphi_exp)/PI))
 
