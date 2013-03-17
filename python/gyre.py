@@ -20,9 +20,11 @@
 import h5py
 import numpy as np
 
-# Read GYRE eigenvalue file
+# Read a GYRE eigenvalue file
 
 def read_eigval (filename) :
+
+    # Read the data
 
     file = h5py.File(filename, 'r')
 
@@ -60,5 +62,50 @@ def read_eigval (filename) :
             'n_g'        : n_g,
             'n_cowl'     : n_p-n_g,
             'E'          : E}
+
+#
+
+
+# Read a GYRE eigenfunction file
+
+def read_eigfunc (filename) :
+
+    # Read the data
+
+    file = h5py.File(filename, 'r')
+
+    n = file.attrs['n']
+    n_e = file.attrs['n_e']
+
+    n_p = file.attrs['n_p']
+    n_g = file.attrs['n_g']
+
+    lambda_0 = file.attrs['lambda_0']
+    l = file.attrs['l']
+
+    freq = file.attrs['freq']
+    freq_units = file.attrs['freq_units']
+    
+    x = file['x'][:]
+    y = file['y'][:].astype(complex)
+
+    dE_dx = file['dE_dx'][:]
+
+    file.close()
+
+    # Return the data
+
+    return {'n'          : n,
+            'n_e'        : n_e,
+            'n_p'        : n_p,
+            'n_g'        : n_g,
+            'n_cowl'     : n_p-n_g,
+            'lambda_0'   : lambda_0,
+            'l'          : l,
+            'freq'       : freq,
+            'freq_units' : freq_units,
+            'x'          : x,
+            'y'          : y,
+            'dE_dx'      : dE_dx}
 
 #
