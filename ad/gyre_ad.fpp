@@ -275,7 +275,7 @@ contains
     real(WP)           :: omega_max
     integer            :: i
 
-    namelist /scan/ grid_type, freq_min, freq_mid, freq_max, n_freq, freq_units, &
+    namelist /scan/ grid_type, freq_min, freq_max, n_freq, freq_units, &
                     n_iter_max
 
     ! Read scan parameters
@@ -498,7 +498,7 @@ contains
     ! Write eigenvalues
 
     freq_loop : do i = 1,SIZE(md)
-       freq(i) = mc%conv_freq(REAL(md(i)%omega), 'NONE', freq_units)
+       freq(i) = mc%conv_freq(md(i)%omega, 'NONE', freq_units)
     end do freq_loop
 
     if(eigval_file /= '') then
