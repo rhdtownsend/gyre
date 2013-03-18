@@ -414,10 +414,10 @@ contains
   function conv_freq (this, freq, from_units, to_units)
 
     class(mech_coeffs_poly_t), intent(in) :: this
-    real(WP), intent(in)                  :: freq
+    complex(WP), intent(in)               :: freq
     character(LEN=*), intent(in)          :: from_units
     character(LEN=*), intent(in)          :: to_units
-    real(WP)                              :: conv_freq
+    complex(WP)                           :: conv_freq
 
     ! Convert the frequency
 

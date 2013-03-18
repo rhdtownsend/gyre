@@ -268,12 +268,10 @@ contains
 
     character(LEN=256) :: grid_type
     real(WP)           :: freq_min
-    real(WP)           :: freq_mid
     real(WP)           :: freq_max
     integer            :: n_freq
     character(LEN=256) :: freq_units
     real(WP)           :: omega_min
-    real(WP)           :: omega_mid
     real(WP)           :: omega_max
     integer            :: i
 
@@ -293,7 +291,6 @@ contains
           grid_type = 'LINEAR'
 
           freq_min = 1._WP
-          freq_mid = SQRT(10._WP)
           freq_max = 10._WP
           n_freq = 10
           
@@ -303,9 +300,8 @@ contains
           
           ! Set up the frequency grid
 
-          omega_min = mc%conv_freq(freq_min, freq_units, 'NONE')
-          omega_mid = mc%conv_freq(freq_mid, freq_units, 'NONE')
-          omega_max = mc%conv_freq(freq_max, freq_units, 'NONE')
+          omega_min = REAL(mc%conv_freq(CMPLX(freq_min, KIND=WP), freq_units, 'NONE'))
+          omega_max = REAL(mc%conv_freq(CMPLX(freq_max, KIND=WP), freq_units, 'NONE'))
        
           select case(grid_type)
           case('LINEAR')

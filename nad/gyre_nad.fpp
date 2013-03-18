@@ -296,7 +296,6 @@ contains
     integer            :: n_freq
     character(LEN=256) :: freq_units
     real(WP)           :: omega_min
-    real(WP)           :: omega_mid
     real(WP)           :: omega_max
     integer            :: i
 
@@ -326,9 +325,8 @@ contains
           
           ! Set up the frequency grid
 
-          omega_min = mc%conv_freq(freq_min, freq_units, 'NONE')
-          omega_mid = mc%conv_freq(freq_mid, freq_units, 'NONE')
-          omega_max = mc%conv_freq(freq_max, freq_units, 'NONE')
+          omega_min = REAL(mc%conv_freq(CMPLX(freq_min, KIND=WP), freq_units, 'NONE'))
+          omega_max = REAL(mc%conv_freq(CMPLX(freq_max, KIND=WP), freq_units, 'NONE'))
        
           select case(grid_type)
           case('LINEAR')
@@ -530,7 +528,7 @@ contains
     ! Write eigenvalues
 
     freq_loop : do i = 1,SIZE(md)
-       freq(i) = mc%conv_freq(REAL(md(i)%omega), 'NONE', freq_units)
+       freq(i) = mc%conv_freq(md(i)%omega, 'NONE', freq_units)
     end do freq_loop
 
     if(eigval_file /= '') then
