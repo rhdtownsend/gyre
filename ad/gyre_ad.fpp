@@ -544,7 +544,7 @@ contains
           call write_attr(hg, 'n_p', md(i)%n_p)
           call write_attr(hg, 'n_g', md(i)%n_g)
 
-          call write_attr(hg, 'freq', freq(i))
+          call write_dset(hg, 'freq', freq(i))
           call write_attr(hg, 'freq_units', freq_units)
 
           call write_dset(hg, 'x', md(i)%x)
