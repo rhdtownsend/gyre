@@ -13,6 +13,8 @@ DOUBLE_PRECISION=true
 
 LDFLAGS=`madsdk_hdf5_link` `madsdk_lapack95_link`
 
+FPX3FLAGS=-DGFORTRAN_PR_56052
+
 # Include other makefiles
 
 SUBDIRS=../../core:../common:../ivp:../bvp:../coeffs:../matrix
