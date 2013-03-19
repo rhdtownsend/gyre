@@ -281,6 +281,8 @@ contains
               As => this%mc%V(1._WP)*(1._WP-1._WP/this%mc%Gamma_1(1._WP)), &
               l => this%op%l)
 
+      lambda = outer_wavenumber(V_g, As, omega, l)
+
       b_11 = V_g - 3._WP
       b_12 = l*(l+1)/omega**2 - V_g
 
