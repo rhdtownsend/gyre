@@ -267,6 +267,9 @@ contains
     k_r_pos(1) = 0._WP
     k_r_neg(1) = 0._WP
 
+    $if(!$GFORTRAN_PR_56052)
+    !$OMP PARALLEL DO PRIVATE (b, c)
+    $endif
     wave_loop : do i = 2,n
 
        associate(x => x_mc(i))
