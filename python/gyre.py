@@ -52,6 +52,13 @@ def read_eigval (filename) :
 
     E = E[i]
 
+    # Calculate n_cowl (fixing if l is 0)
+
+    n_cowl = n_p - n_g
+
+    if(l == 0) :
+        n_cowl += 1
+
     # Return the data
 
     return {'n'          : n,
@@ -60,7 +67,7 @@ def read_eigval (filename) :
             'freq_units' : freq_units,
             'n_p'        : n_p,
             'n_g'        : n_g,
-            'n_cowl'     : n_p-n_g,
+            'n_cowl'     : n_cowl,
             'E'          : E}
 
 #
