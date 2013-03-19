@@ -357,6 +357,8 @@ contains
               nabla_ad => this%tc%nabla_ad(1._WP), &
               l => this%op%l)
 
+      lambda = outer_wavenumber(V_g, As, omega, l)
+      
       b_11 = V_g - 3._WP
       b_12 = l*(l+1)/omega**2 - V_g
 
