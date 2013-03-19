@@ -4,10 +4,9 @@
 *) ivp_t
    - turn into a class?
 
-*) Carry e_norm over to mode_t initialization, so discrim's are normalized?
+*) Get force_ad functionality working properly
+  *) Must be done in bvp, as that's the only one which can access shoot
+     and b/c
+  *) Do we actually need a different b/c?
 
-*) Start work on nad stuff...
-   - therm_coeffs
-
-*) split off evol readers in mech_grid stuff
-   - why? to allow different readers to be added without modding mech_grid
+*) Add Coriolis support
