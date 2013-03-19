@@ -111,8 +111,15 @@ contains
     m = EXP(var(2,:))*M_star
     p = var(4,:)
     rho = var(5,:)
-    N2 = G_*m*var(15,:)/r**3
     Gamma_1 = var(10,:)
+
+    allocate(N2(n))
+
+    where(r/R_star >= EPSILON(0._WP))
+       N2 = G_*m*var(15,:)/r**3
+    elsewhere
+       N2 = 0._WP
+    endwhere
 
     ! If necessary, add central data
 
