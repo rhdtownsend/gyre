@@ -181,9 +181,9 @@ contains
     endif
 
     $if($MPI)
-    call alloc_bcast(mc, 0)
-    if(PRESENT(tc)) call alloc_bcast(tc, 0)
-    call alloc_bcast(x_mc, 0)
+    call bcast_alloc(mc, 0)
+    if(PRESENT(tc)) call bcast_alloc(tc, 0)
+    call bcast_alloc(x_mc, 0)
     $endif
 
     ! Finish
@@ -296,7 +296,7 @@ contains
     endif
 
     $if($MPI)
-    call alloc_bcast(omega, 0)
+    call bcast_alloc(omega, 0)
     $endif
 
     ! Finish
