@@ -126,17 +126,20 @@ module gyre_ext_arith
      module procedure bcast_ec_2
      module procedure bcast_ec_3
      module procedure bcast_ec_4
-     module procedure bcast_er_0_alloc
-     module procedure bcast_er_1_alloc
-     module procedure bcast_er_2_alloc
-     module procedure bcast_er_3_alloc
-     module procedure bcast_er_4_alloc
-     module procedure bcast_ec_0_alloc
-     module procedure bcast_ec_1_alloc
-     module procedure bcast_ec_2_alloc
-     module procedure bcast_ec_3_alloc
-     module procedure bcast_ec_4_alloc
   end interface bcast
+
+  interface bcast_alloc
+     module procedure bcast_alloc_er_0
+     module procedure bcast_alloc_er_1
+     module procedure bcast_alloc_er_2
+     module procedure bcast_alloc_er_3
+     module procedure bcast_alloc_er_4
+     module procedure bcast_alloc_ec_0
+     module procedure bcast_alloc_ec_1
+     module procedure bcast_alloc_ec_2
+     module procedure bcast_alloc_ec_3
+     module procedure bcast_alloc_ec_4
+  end interface bcast_alloc
 
   interface gatherv
      module procedure gatherv_er_0
@@ -212,6 +215,7 @@ module gyre_ext_arith
   public :: recv
   public :: recv_any
   public :: bcast
+  public :: bcast_alloc
   public :: gatherv
   public :: allgatherv
   $endif
@@ -393,15 +397,26 @@ contains
   $local $BUFFER_TYPE $2
   $local $BUFFER_RANK $3
 
-  subroutine bcast_${INFIX}_${BUFFER_RANK}_alloc (buffer, root_rank, alloc)
+  subroutine bcast_alloc_${INFIX}_${BUFFER_RANK} (buffer, root_rank)
 
     $BUFFER_TYPE, allocatable, intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
     integer, intent(in)                      :: root_rank
-    logical, intent(in)                      :: alloc
 
+    logical :: alloc
     $if($BUFFER_RANK > 0)
     integer :: s(SIZE(SHAPE(buffer)))
     $endif
+
+    ! Deallocate the buffer on non-root processors
+
+    if(MPI_RANK /= root_rank .AND. ALLOCATED(buffer)) then
+       deallocate(buffer)
+    endif
+
+    ! Check if the buffer is allocated on the root processor
+
+    if(MPI_RANK == root_rank) alloc = ALLOCATED(buffer)
+    call bcast(alloc, root_rank)
 
     if(alloc) then
 
@@ -433,17 +448,17 @@ contains
        
        $endif
 
+       ! Broadcast the buffer
+
+       call bcast(buffer, root_rank)
+
     endif
-
-    ! Broadcast the buffer
-
-    call bcast(buffer, root_rank)
 
     ! Finish
 
     return
 
-  end subroutine bcast_${INFIX}_${BUFFER_RANK}_alloc
+  end subroutine bcast_alloc_${INFIX}_${BUFFER_RANK}
 
   $endsub
 
