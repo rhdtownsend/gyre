@@ -238,13 +238,9 @@ contains
     call bcast(n_floor, 0)
     $endif
 
-    ! Initialize the shooter
-
-    call sh%init(mc, op, jc, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
-
     ! Initialize the bvp
 
-    call bp%init(sh, bd)
+    call bp%init(mc, op, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
 
     ! Finish
 
