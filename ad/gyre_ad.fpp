@@ -32,7 +32,7 @@ program gyre_ad
   use gyre_ad_bvp
   use gyre_ad_search
   use gyre_mode
-  use gyre_util
+  use gyre_frontend
   use gyre_grid
 
   use ISO_FORTRAN_ENV
@@ -90,127 +90,6 @@ program gyre_ad
   call final_parallel()
 
 contains
-
-  subroutine init_coeffs (unit, x_mc, mc)
-
-    use gyre_mesa_file
-    use gyre_fgong_file
-    use gyre_osc_file
-    use gyre_b3_file
-    use gyre_mech_coeffs_poly
-    use gyre_mech_coeffs_hom
-    use gyre_mech_coeffs_mpi
-
-    integer, intent(in)                              :: unit
-    real(WP), allocatable, intent(out)               :: x_mc(:)
-    $if($GFORTRAN_PR56218)
-    class(mech_coeffs_t), allocatable, intent(inout) :: mc
-    $else
-    class(mech_coeffs_t), allocatable, intent(out)   :: mc
-    $endif
-
-    character(LEN=256)          :: coeffs_type
-    character(LEN=FILENAME_LEN) :: file
-    real(WP)                    :: G
-    real(WP)                    :: Gamma_1
-
-    namelist /coeffs/ coeffs_type, file, G, Gamma_1
-
-    ! Read structure coefficients parameters
-
-    if(MPI_RANK == 0) then
-
-       coeffs_type = ''
-
-       file = ''
-
-       G = G_GRAVITY
-       Gamma_1 = 5._WP/3._WP
-
-       rewind(unit)
-       read(unit, NML=coeffs)
-
-    endif
-
-    ! Read/initialize the mech_coeffs
-
-    if(MPI_RANK == 0) then
-
-       select case(coeffs_type)
-       case('MESA')
-          call read_mesa_file(file, G, mc, x=x_mc)
-       case('B3')
-          call read_b3_file(file, G, mc, x=x_mc)
-       case('FGONG')
-          call read_fgong_file(file, G, mc, x=x_mc) 
-       case('OSC')
-          call read_osc_file(file, G, mc, x=x_mc)
-       case('POLY')
-          allocate(mech_coeffs_poly_t::mc)
-          select type (mc)
-          type is (mech_coeffs_poly_t)
-             call mc%read(file, x_mc)
-          end select
-       case('HOM')
-          allocate(mech_coeffs_hom_t::mc)
-          select type (mc)
-          type is (mech_coeffs_hom_t)
-             call mc%init(Gamma_1)
-          end select
-       end select
-
-    endif
-
-    $if($MPI)
-    call alloc_bcast(mc, 0)
-    call alloc_bcast(x_mc, 0)
-    $endif
-
-    ! Finish
-
-    return
-
-  end subroutine init_coeffs
-
-!****
-
-  subroutine init_oscpar (unit, op)
-
-    integer, intent(in)         :: unit
-    type(oscpar_t), intent(out) :: op
-
-    integer            :: l
-    character(LEN=256) :: outer_bound_type
-
-    namelist /oscpar/ l, outer_bound_type
-
-    ! Read oscillation parameters
-
-    if(MPI_RANK == 0) then
-
-       l = 0
-
-       outer_bound_type = 'ZERO'
-
-       rewind(unit)
-       read(unit, NML=oscpar)
-
-    endif
-
-    $if($MPI)
-    call bcast(l, 0)
-    call bcast(outer_bound_type, 0)
-    $endif
-
-    ! Initialize the oscilaltion parameters
-
-    call op%init(l, outer_bound_type)
-
-    ! Finish
-
-    return
-
-  end subroutine init_oscpar
 
 !****
 
