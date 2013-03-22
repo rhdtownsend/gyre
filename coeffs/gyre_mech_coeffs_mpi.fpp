@@ -37,9 +37,9 @@ module gyre_mech_coeffs_mpi
   ! Interfaces
 
   $if($MPI)
-  interface alloc_bcast
-     module procedure alloc_bcast_mc
-  end interface alloc_bcast
+  interface bcast_alloc
+     module procedure bcast_alloc_mc
+  end interface bcast_alloc
   $endif
 
   ! Access specifiers
@@ -47,7 +47,7 @@ module gyre_mech_coeffs_mpi
   private
 
   $if($MPI)
-  public :: alloc_bcast
+  public :: bcast_alloc
   $endif
 
   ! Procedures
@@ -56,7 +56,7 @@ contains
 
   $if($MPI)
 
-  subroutine alloc_bcast_mc (mc, root_rank)
+  subroutine bcast_alloc_mc (mc, root_rank)
 
     class(mech_coeffs_t), allocatable, intent(inout) :: mc
     integer, intent(in)                              :: root_rank
@@ -123,7 +123,7 @@ contains
 
     ! Finish
 
-  end subroutine alloc_bcast_mc
+  end subroutine bcast_alloc_mc
 
   $endif
 
