@@ -96,8 +96,8 @@ contains
 
     ! Broadcast the mode
 
-    call bcast(this%x, root_rank, alloc=.TRUE.)
-    call bcast(this%y, root_rank, alloc=.TRUE.)
+    call alloc_bcast(this%x, root_rank)
+    call alloc_bcast(this%y, root_rank)
 
     call bcast(this%omega, root_rank)
 
