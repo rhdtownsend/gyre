@@ -55,7 +55,6 @@ module gyre_mech_coeffs_poly
      $if($MPI)
      procedure, public :: bcast => bcast_mc
      $endif
-     procedure, public :: read
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -129,50 +128,6 @@ contains
   end subroutine bcast_mc
 
   $endif
-
-!****
-
-  subroutine read (this, file, x)
-
-    class(mech_coeffs_poly_t), intent(out)       :: this
-    character(LEN=*), intent(in)                 :: file
-    real(WP), allocatable, intent(out), optional :: x(:)
-
-    type(hgroup_t)        :: hg
-    real(WP)              :: n_poly
-    real(WP)              :: Gamma_1
-    real(WP), allocatable :: xi(:)
-    real(WP), allocatable :: Theta(:)
-    real(WP), allocatable :: dTheta(:)
-
-    ! Read the mech_coeffs from the file
-
-    call hg%init(file, OPEN_FILE)
-
-    call read_attr(hg, 'n_poly', n_poly)
-    call read_attr(hg, 'Gamma_1', Gamma_1)
-
-    call read_dset(hg, 'xi', xi, alloc=.TRUE.)
-    call read_dset(hg, 'Theta', Theta, alloc=.TRUE.)
-    call read_dset(hg, 'dTheta', dTheta, alloc=.TRUE.)
-
-    call hg%final()
-
-    ! Initialize the ad_coeffs
-
-    call this%init(xi, Theta, dTheta, n_poly, Gamma_1)
-
-    ! If necessary, return the grid
-
-    if(PRESENT(x)) then
-       x = xi/xi(SIZE(xi))
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine read
 
 !****
 
