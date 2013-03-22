@@ -33,7 +33,6 @@ module gyre_oscpar
      private
      real(WP), public              :: lambda_0
      integer, public               :: l
-!    character(LEN=:), allocatable :: outer_bound_type
      character(LEN=256), public    :: outer_bound_type
    contains
      private
