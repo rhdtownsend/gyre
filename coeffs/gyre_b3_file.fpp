@@ -46,7 +46,7 @@ contains
 
     character(LEN=*), intent(in)                      :: file
     real(WP), intent(in), optional                    :: G
-    class(mech_coeffs_evol_t), intent(out), optional  :: mc
+    class(mech_coeffs_evol_t), intent(out)            :: mc
     class(therm_coeffs_evol_t), intent(out), optional :: tc
     real(WP), allocatable, intent(out), optional      :: x(:)
 
@@ -154,7 +154,7 @@ contains
 
     ! Initialize the mech_coeffs
 
-    if(PRESENT(mc)) call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
+    call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
 
     ! Initialize the therm_coeffs
 
