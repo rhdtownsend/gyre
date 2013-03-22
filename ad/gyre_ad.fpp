@@ -93,13 +93,13 @@ contains
 
   subroutine init_coeffs (unit, x_mc, mc)
 
-    use gyre_mech_coeffs_evol
-    use gyre_mech_coeffs_poly
-    use gyre_mech_coeffs_hom
     use gyre_mesa_file
     use gyre_fgong_file
     use gyre_osc_file
     use gyre_b3_file
+    use gyre_mech_coeffs_poly
+    use gyre_mech_coeffs_hom
+    use gyre_mech_coeffs_mpi
 
     integer, intent(in)                              :: unit
     real(WP), allocatable, intent(out)               :: x_mc(:)
@@ -132,50 +132,38 @@ contains
 
     endif
 
-    $if($MPI)
-    call bcast(coeffs_type, 0)
-    $endif
-
-    ! Allocate the mech_coeffs
-
-    select case(coeffs_type)
-    case('MESA','FGONG','B3')
-       allocate(mech_coeffs_evol_t::mc)
-    case('POLY')
-       allocate(mech_coeffs_poly_t::mc)
-    case('HOM')
-       allocate(mech_coeffs_hom_t::mc)
-    case default
-       $ABORT(Invalid coeffs_type)
-    end select
-
-    ! Read the mech_coeffs
+    ! Read/initialize the mech_coeffs
 
     if(MPI_RANK == 0) then
 
-       select type (mc)
-       type is (mech_coeffs_evol_t)
-          select case(coeffs_type)
-          case('MESA')
-             call read_mesa_file(file, G, mc, x=x_mc)
-          case('FGONG')
-             call read_fgong_file(file, G, mc, x=x_mc)
-          case('OSC')
-             call read_osc_file(file, G, mc, x=x_mc)
-          case('B3')
-             call read_b3_file(file, G, mc, x=x_mc)
+       select case(coeffs_type)
+       case('MESA')
+          call read_mesa_file(file, G, mc, x=x_mc)
+       case('B3')
+          call read_b3_file(file, G, mc, x=x_mc)
+       case('FGONG')
+          call read_fgong_file(file, G, mc, x=x_mc) 
+       case('OSC')
+          call read_osc_file(file, G, mc, x=x_mc)
+       case('POLY')
+          allocate(mech_coeffs_poly_t::mc)
+          select type (mc)
+          type is (mech_coeffs_poly_t)
+             call mc%read(file, x_mc)
           end select
-       type is (mech_coeffs_poly_t)
-          call mc%read(file, x_mc)
-       type is (mech_coeffs_hom_t)
-          call mc%init(Gamma_1)
+       case('HOM')
+          allocate(mech_coeffs_hom_t::mc)
+          select type (mc)
+          type is (mech_coeffs_hom_t)
+             call mc%init(Gamma_1)
+          end select
        end select
 
     endif
 
     $if($MPI)
-    call mc%bcast(0)
-    call bcast(x_mc, 0, alloc=.TRUE.)
+    call alloc_bcast(mc, 0)
+    call alloc_bcast(x_mc, 0)
     $endif
 
     ! Finish
@@ -323,7 +311,7 @@ contains
     endif
 
     $if($MPI)
-    call bcast(omega, 0, alloc=.TRUE.)
+    call alloc_bcast(omega, 0)
     $endif
 
     ! Finish
