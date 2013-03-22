@@ -24,6 +24,8 @@ module gyre_ad_bvp
   use core_kinds
 
   use gyre_bvp
+  use gyre_mech_coeffs
+  use gyre_oscpar
   use gyre_ad_shooter
   use gyre_ad_bound
   use gyre_sysmtx
@@ -39,12 +41,14 @@ module gyre_ad_bvp
 
   type, extends(bvp_t) :: ad_bvp_t
      private
-     type(ad_shooter_t) :: sh
-     type(ad_bound_t)   :: bd
-     type(sysmtx_t)     :: sm
-     integer            :: e_norm
-     integer, public    :: n
-     integer, public    :: n_e
+     class(mech_coeffs_t), allocatable, public :: mc
+     type(oscpar_t), public                    :: op
+     type(ad_shooter_t)                        :: sh
+     type(ad_bound_t)                          :: bd
+     type(sysmtx_t)                            :: sm
+     integer                                   :: e_norm
+     integer, public                           :: n
+     integer, public                           :: n_e
    contains 
      private
      procedure, public :: init
@@ -64,25 +68,32 @@ module gyre_ad_bvp
 
 contains
 
-  subroutine init (this, sh, bd)
+  subroutine init (this, mc, op, x, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
 
-    class(ad_bvp_t), intent(out)   :: this
-    type(ad_shooter_t), intent(in) :: sh
-    type(ad_bound_t), intent(in)   :: bd
-
-    $CHECK_BOUNDS(bd%n_e,sh%n_e)
+    class(ad_bvp_t), intent(out)     :: this
+    class(mech_coeffs_t), intent(in) :: mc
+    type(oscpar_t), intent(in)       :: op
+    real(WP), intent(in)             :: x(:)
+    real(WP), intent(in)             :: alpha_osc
+    real(WP), intent(in)             :: alpha_exp
+    integer, intent(in)              :: n_center
+    integer, intent(in)              :: n_floor
+    character(LEN=*), intent(in)     :: ivp_solver_type
 
     ! Initialize the ad_bvp
 
-    this%sh = sh
-    this%bd = bd
+    allocate(this%mc, SOURCE=mc)
+    this%op = op
 
-    call this%sm%init(sh%n-1, sh%n_e, bd%n_i, bd%n_o)
+    call this%sh%init(this%mc, this%op, x, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+    call this%bd%init(this%mc, this%op)
+
+    call this%sm%init(this%sh%n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
 
     this%e_norm = 0
 
-    this%n = sh%n
-    this%n_e = sh%n_e
+    this%n = this%sh%n
+    this%n_e = this%sh%n_e
 
     ! Finish
 
