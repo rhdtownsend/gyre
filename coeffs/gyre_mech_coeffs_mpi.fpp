@@ -36,9 +36,11 @@ module gyre_mech_coeffs_mpi
 
   ! Interfaces
 
+  $if($MPI)
   interface alloc_bcast
      module procedure alloc_bcast_mc
   end interface alloc_bcast
+  $endif
 
   ! Access specifiers
 
