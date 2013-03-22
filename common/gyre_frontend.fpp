@@ -23,8 +23,11 @@ module gyre_frontend
 
   use core_kinds
   use core_constants
+  use core_order
   use core_parallel
 
+  use gyre_mech_coeffs
+  use gyre_therm_coeffs
   use gyre_oscpar
 
   use ISO_FORTRAN_ENV
@@ -41,6 +44,7 @@ module gyre_frontend
   public :: write_header
   public :: init_coeffs
   public :: init_oscpar
+  public :: init_scan
 
 contains
 
@@ -105,8 +109,6 @@ contains
 
   subroutine init_coeffs (unit, x_mc, mc, tc)
 
-    use gyre_mech_coeffs
-    use gyre_therm_coeffs
     use gyre_mech_coeffs_mpi
     use gyre_therm_coeffs_mpi
     use gyre_mesa_file
@@ -233,5 +235,78 @@ contains
     return
 
   end subroutine init_oscpar
+
+!****
+
+  subroutine init_scan (unit, mc, omega)
+
+    integer, intent(in)                :: unit
+    class(mech_coeffs_t), intent(in)   :: mc
+    real(WP), allocatable, intent(out) :: omega(:)
+
+    character(LEN=256) :: grid_type
+    real(WP)           :: freq_min
+    real(WP)           :: freq_max
+    integer            :: n_freq
+    character(LEN=256) :: freq_units
+    real(WP)           :: omega_min
+    real(WP)           :: omega_max
+    integer            :: i
+
+    namelist /scan/ grid_type, freq_min, freq_max, n_freq, freq_units
+
+    ! Read scan parameters
+
+    if(MPI_RANK == 0) then
+
+       rewind(unit)
+
+       allocate(omega(0))
+
+       read_loop : do 
+
+          grid_type = 'LINEAR'
+
+          freq_min = 1._WP
+          freq_max = 10._WP
+          n_freq = 10
+          
+          freq_units = 'NONE'
+
+          read(unit, NML=scan, end=100)
+          
+          ! Set up the frequency grid
+
+          omega_min = REAL(mc%conv_freq(CMPLX(freq_min, KIND=WP), freq_units, 'NONE'))
+          omega_max = REAL(mc%conv_freq(CMPLX(freq_max, KIND=WP), freq_units, 'NONE'))
+       
+          select case(grid_type)
+          case('LINEAR')
+             omega = [omega,(((n_freq-i)*omega_min + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
+          case('INVERSE')
+             omega = [omega,((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_max), i=1,n_freq)]
+          case default
+             $ABORT(Invalid freq_grid)
+          end select
+
+       end do read_loop
+
+100    continue
+
+       ! Sort the frequencies
+
+       omega = omega(sort_indices(omega))
+
+    endif
+
+    $if($MPI)
+    call alloc_bcast(omega, 0)
+    $endif
+
+    ! Finish
+
+    return
+
+  end subroutine init_scan
 
 end module gyre_frontend
