@@ -25,8 +25,12 @@ module gyre_b3_file
   use core_constants
   use core_hgroup
 
+  use gyre_mech_coeffs
   use gyre_mech_coeffs_evol
+  use gyre_therm_coeffs
   use gyre_therm_coeffs_evol
+
+  use ISO_FORTRAN_ENV
 
   ! No implicit typing
 
@@ -44,11 +48,11 @@ contains
 
   subroutine read_b3_file (file, G, mc, tc, x)
 
-    character(LEN=*), intent(in)                      :: file
-    real(WP), intent(in), optional                    :: G
-    class(mech_coeffs_evol_t), intent(out)            :: mc
-    class(therm_coeffs_evol_t), intent(out), optional :: tc
-    real(WP), allocatable, intent(out), optional      :: x(:)
+    character(LEN=*), intent(in)                              :: file
+    real(WP), intent(in), optional                            :: G
+    class(mech_coeffs_t), allocatable, intent(out)            :: mc
+    class(therm_coeffs_t), allocatable, intent(out), optional :: tc
+    real(WP), allocatable, intent(out), optional              :: x(:)
 
     type(hgroup_t)        :: hg
     integer               :: n
@@ -154,13 +158,31 @@ contains
 
     ! Initialize the mech_coeffs
 
-    call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
+    allocate(mech_coeffs_evol_t::mc)
+
+    select type (mc)
+    type is (mech_coeffs_evol_t)
+       call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
+    class default
+       $ABORT(Invalid mc type)
+    end select
 
     ! Initialize the therm_coeffs
 
-    if(PRESENT(tc)) call tc%init(G, R_star, M_star, L_star, r, m, p, T, rho, &
-                                 nabla, Gamma_1, alpha_T, c_p, &
-                                 kappa, kappa_T, kappa_rho, epsilon, epsilon_T, epsilon_rho)
+    if(PRESENT(tc)) then
+
+       allocate(therm_coeffs_evol_t::tc)
+
+       select type (tc)
+       type is (therm_coeffs_evol_t)
+          call tc%init(G, R_star, M_star, L_star, r, m, p, T, rho, &
+                       nabla, Gamma_1, alpha_T, c_p, &
+                       kappa, kappa_T, kappa_rho, epsilon, epsilon_T, epsilon_rho)
+       class default
+          $ABORT(Invalid tc type)
+       end select
+
+    endif
 
     ! Set up the grid
 

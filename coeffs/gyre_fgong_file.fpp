@@ -24,6 +24,7 @@ module gyre_fgong_file
   use core_kinds
   use core_constants
 
+  use gyre_mech_coeffs
   use gyre_mech_coeffs_evol
 
   use ISO_FORTRAN_ENV
@@ -44,10 +45,10 @@ contains
 
   subroutine read_fgong_file (file, G, mc, x)
 
-    character(LEN=*), intent(in)                     :: file
-    real(WP), intent(in), optional                   :: G
-    class(mech_coeffs_evol_t), intent(out), optional :: mc
-    real(WP), allocatable, intent(out), optional     :: x(:)
+    character(LEN=*), intent(in)                   :: file
+    real(WP), intent(in), optional                 :: G
+    class(mech_coeffs_t), allocatable, intent(out) :: mc
+    real(WP), allocatable, intent(out), optional   :: x(:)
 
     real(WP)              :: G_
     integer               :: unit
@@ -142,7 +143,14 @@ contains
 
     ! Initialize the mech_coeffs
 
-    if(PRESENT(mc)) call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
+    allocate(mech_coeffs_evol_t::mc)
+
+    select type (mc)
+    type is (mech_coeffs_evol_t)
+       call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
+    class default
+       $ABORT(Invalid mc type)
+    end select
 
     ! Set up the grid
 
