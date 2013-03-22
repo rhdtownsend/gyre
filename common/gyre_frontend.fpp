@@ -115,7 +115,7 @@ contains
     use gyre_fgong_file
     use gyre_osc_file
     use gyre_b3_file
-    use gyre_mech_coeffs_poly
+    use gyre_poly_file
     use gyre_mech_coeffs_hom
 
     integer, intent(in)                                         :: unit
@@ -169,11 +169,7 @@ contains
        case('OSC')
           call read_osc_file(file, G, mc, x=x_mc)
        case('POLY')
-          allocate(mech_coeffs_poly_t::mc)
-          select type (mc)
-          type is (mech_coeffs_poly_t)
-             call mc%read(file, x_mc)
-          end select
+          call read_poly_file(file, mc, x=x_mc)
        case('HOM')
           allocate(mech_coeffs_hom_t::mc)
           select type (mc)
