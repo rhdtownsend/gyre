@@ -69,12 +69,11 @@ module gyre_ad_shooter
 
 contains
 
-  subroutine init (this, mc, op, jc, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
+  subroutine init (this, mc, op, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
 
     class(ad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target :: mc
     class(oscpar_t), intent(in), target      :: op
-    type(ad_jacobian_t), intent(in)          :: jc
     real(WP), intent(in)                     :: x(:)
     real(WP), intent(in)                     :: alpha_osc
     real(WP), intent(in)                     :: alpha_exp
@@ -86,7 +85,8 @@ contains
 
     this%mc => mc
     this%op => op
-    this%jc = jc
+
+    call this%jc%init(mc, op)
     
     this%x = x
 
@@ -96,7 +96,7 @@ contains
     this%n_floor = n_floor
 
     this%n = SIZE(x)
-    this%n_e = jc%n_e
+    this%n_e = this%jc%n_e
 
     this%solver_type = solver_type
 
