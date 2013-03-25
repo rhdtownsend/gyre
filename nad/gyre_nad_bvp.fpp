@@ -24,6 +24,9 @@ module gyre_nad_bvp
   use core_kinds
 
   use gyre_bvp
+  use gyre_mech_coeffs
+  use gyre_therm_coeffs
+  use gyre_oscpar
   use gyre_nad_shooter
   use gyre_nad_bound
   use gyre_sysmtx
@@ -39,12 +42,15 @@ module gyre_nad_bvp
 
   type, extends(bvp_t) :: nad_bvp_t
      private
-     type(nad_shooter_t) :: sh
-     type(nad_bound_t)   :: bd
-     type(sysmtx_t)      :: sm
-     integer             :: e_norm
-     integer, public     :: n
-     integer, public     :: n_e
+     class(mech_coeffs_t), allocatable, public  :: mc
+     class(therm_coeffs_t), allocatable, public :: tc
+     type(oscpar_t), public                     :: op
+     type(nad_shooter_t)                        :: sh
+     type(nad_bound_t)                          :: bd
+     type(sysmtx_t)                             :: sm
+     integer                                    :: e_norm
+     integer, public                            :: n
+     integer, public                            :: n_e
    contains 
      private
      procedure, public :: init
@@ -64,23 +70,34 @@ module gyre_nad_bvp
 
 contains
 
-  subroutine init (this, sh, bd)
+  subroutine init (this, mc, tc, op, x, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
 
-    class(nad_bvp_t), intent(out)   :: this
-    type(nad_shooter_t), intent(in) :: sh
-    type(nad_bound_t), intent(in)   :: bd
-
-    $CHECK_BOUNDS(bd%n_e,sh%n_e)
+    class(nad_bvp_t), intent(out)     :: this
+    class(mech_coeffs_t), intent(in)  :: mc
+    class(therm_coeffs_t), intent(in) :: tc
+    type(oscpar_t), intent(in)        :: op
+    real(WP), intent(in)              :: x(:)
+    real(WP), intent(in)              :: alpha_osc
+    real(WP), intent(in)              :: alpha_exp
+    integer, intent(in)               :: n_center
+    integer, intent(in)               :: n_floor
+    character(LEN=*), intent(in)      :: ivp_solver_type
 
     ! Initialize the nad_bvp
 
-    this%sh = sh
-    this%bd = bd
+    allocate(this%mc, SOURCE=mc)
+    allocate(this%tc, SOURCE=tc)
+    this%op = op
 
-    call this%sm%init(sh%n-1, sh%n_e, bd%n_i, bd%n_o)
+    call this%sh%init(this%mc, this%tc, this%op, x, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+    call this%bd%init(this%mc, this%tc, this%op)
 
-    this%n = sh%n
-    this%n_e = sh%n_e
+    call this%sm%init(this%sh%n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
+
+    this%e_norm = 0
+
+    this%n = this%sh%n
+    this%n_e = this%sh%n_e
 
     ! Finish
 
