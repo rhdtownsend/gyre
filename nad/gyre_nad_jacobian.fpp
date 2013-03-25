@@ -133,7 +133,7 @@ contains
          V_x2 = this%tc%V_x2_0
       endif
 
-      c_2 = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad+V)
+      c_kap = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad+V)
 
       A(1,1) = V_g - 3._WP - lambda_0
       A(1,2) = l*(l+1)/(c_1*omega**2) - V_g
@@ -163,7 +163,7 @@ contains
       A(4,5) = -U*alpha_T*x**2
       A(4,6) = 0._WP
 
-      A(5,1) = V_x2*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_2)
+      A(5,1) = V_x2*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_kap)
       A(5,2) = V_x2*(l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_2)
       A(5,3) = V_x2*c_2
       A(5,4) = V_x2*nabla_ad
