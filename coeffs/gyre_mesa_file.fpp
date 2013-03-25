@@ -48,7 +48,7 @@ contains
   subroutine read_mesa_file (file, G, mc, tc, x)
 
     character(LEN=*), intent(in)                              :: file
-    real(WP), intent(in), optional                            :: G
+    real(WP), intent(in)                                      :: G
     class(mech_coeffs_t), allocatable, intent(out)            :: mc
     class(therm_coeffs_t), allocatable, intent(out), optional :: tc
     real(WP), allocatable, intent(out), optional              :: x(:)

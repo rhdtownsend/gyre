@@ -82,7 +82,7 @@ contains
   subroutine init (this, G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
 
     class(mech_coeffs_evol_t), intent(out) :: this
-    real(WP), intent(in), optional         :: G
+    real(WP), intent(in)                   :: G
     real(WP), intent(in)                   :: R_star
     real(WP), intent(in)                   :: M_star
     real(WP), intent(in)                   :: r(:)
@@ -92,7 +92,6 @@ contains
     real(WP), intent(in)                   :: N2(:)
     real(WP), intent(in)                   :: Gamma_1(:)
 
-    real(WP) :: G_
     integer  :: n
     real(WP) :: V(SIZE(r))
     real(WP) :: As(SIZE(r))
@@ -105,12 +104,6 @@ contains
     $CHECK_BOUNDS(SIZE(rho),SIZE(r))
     $CHECK_BOUNDS(SIZE(N2),SIZE(r))
     $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(r))
-
-    if(PRESENT(G)) then
-       G_ = G
-    else
-       G_ = G_GRAVITY
-    endif
 
     ! Perform basic validations
 
@@ -125,8 +118,8 @@ contains
     ! Calculate coefficients
 
     where(r /= 0._WP)
-       V = G_*m*rho/(p*r)
-       As = r**3*N2/(G_*m)
+       V = G*m*rho/(p*r)
+       As = r**3*N2/(G*m)
        U = 4._WP*PI*rho*r**3/m
        c_1 = (r/R_star)**3/(m/M_star)
     elsewhere

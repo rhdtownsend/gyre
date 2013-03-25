@@ -46,11 +46,10 @@ contains
   subroutine read_osc_file (file, G, mc, x)
 
     character(LEN=*), intent(in)                   :: file
-    real(WP), intent(in), optional                 :: G
+    real(WP), intent(in)                           :: G
     class(mech_coeffs_t), allocatable, intent(out) :: mc
     real(WP), allocatable, intent(out), optional   :: x(:)
 
-    real(WP)              :: G_
     integer               :: unit
     integer               :: n
     integer               :: iconst
@@ -67,12 +66,6 @@ contains
     real(WP), allocatable :: rho(:) 
     real(WP), allocatable :: N2(:)
     real(WP), allocatable :: Gamma_1(:)
-
-    if(PRESENT(G)) then
-       G_ = G
-    else
-       G_ = G_GRAVITY
-    endif
 
     ! Read the model from the OSC-format file
 
@@ -114,7 +107,7 @@ contains
     m = EXP(var(2,:))*M_star
     p = var(4,:)
     rho = var(5,:)
-    N2 = G_*m*var(15,:)/r**3
+    N2 = G*m*var(15,:)/r**3
     Gamma_1 = var(10,:)
 
     ! If necessary, add central data

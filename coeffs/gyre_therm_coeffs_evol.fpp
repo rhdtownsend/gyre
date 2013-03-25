@@ -94,7 +94,7 @@ contains
                    kappa, kappa_T, kappa_rho, epsilon, epsilon_T, epsilon_rho)
 
     class(therm_coeffs_evol_t), intent(out) :: this
-    real(WP), intent(in), optional          :: G
+    real(WP), intent(in)                    :: G
     real(WP), intent(in)                    :: R_star
     real(WP), intent(in)                    :: M_star
     real(WP), intent(in)                    :: L_star
@@ -114,7 +114,6 @@ contains
     real(WP), intent(in)                    :: epsilon_T(:)
     real(WP), intent(in)                    :: epsilon_rho(:)
 
-    real(WP) :: G_
     integer  :: n
     real(WP) :: V_x2(SIZE(r))
     real(WP) :: nabla_ad(SIZE(r))
@@ -142,12 +141,6 @@ contains
     $CHECK_BOUNDS(SIZE(epsilon_T),SIZE(r))
     $CHECK_BOUNDS(SIZE(epsilon_rho),SIZE(r))
 
-    if(PRESENT(G)) then
-       G_ = G
-    else
-       G_ = G_GRAVITY
-    endif
-
     ! Perform basic validations
 
     n = SIZE(r)
@@ -161,9 +154,9 @@ contains
     ! Calculate coefficients
 
     where(r /= 0._WP)
-       V_x2 = G_*m*rho/(p*r*(r/R_star)**2)
+       V_x2 = G*m*rho/(p*r*(r/R_star)**2)
     elsewhere
-       V_x2 = 4._WP*PI*G_*rho**2*R_star**2/(3._WP*p)
+       V_x2 = 4._WP*PI*G*rho**2*R_star**2/(3._WP*p)
     end where
 
     nabla_ad = p*alpha_T/(rho*T*c_p)
