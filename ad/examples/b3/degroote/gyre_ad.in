@@ -13,7 +13,7 @@
 /
 
 &scan
-        grid_type = 'MIXED'
+        grid_type = 'LINEAR'
         freq_min = 2.698807
         freq_max = 10.795228
         n_freq = 50
