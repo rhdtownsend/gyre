@@ -129,10 +129,6 @@ contains
 
   subroutine init_bvp (unit, x_mc, mc, op, omega, ivp_solver_type, bp)
 
-    use gyre_ad_bound
-    use gyre_ad_shooter
-    use gyre_ad_jacobian
-
     integer, intent(in)                      :: unit
     real(WP), intent(in), allocatable        :: x_mc(:)
     class(mech_coeffs_t), intent(in), target :: mc
@@ -141,8 +137,6 @@ contains
     character(LEN=*), intent(in)             :: ivp_solver_type
     type(ad_bvp_t), intent(out)              :: bp
 
-    type(ad_jacobian_t)   :: jc
-    type(ad_bound_t)      :: bd
     character(LEN=256)    :: grid_type
     real(WP)              :: alpha_osc
     real(WP)              :: alpha_exp
@@ -153,17 +147,11 @@ contains
     integer               :: dn(SIZE(x_mc)-1)
     integer               :: i
     real(WP), allocatable :: x_sh(:)
-    type(ad_shooter_t)    :: sh
 
     namelist /shoot_grid/ grid_type, alpha_osc, alpha_exp, &
          n_center, n_floor, s, n_grid
 
     namelist /recon_grid/ alpha_osc, alpha_exp, n_center, n_floor
-
-    ! Initialize the Jacobian and boundary conditions
-
-    call jc%init(mc, op)
-    call bd%init(mc, op)
 
     ! Read shooting grid parameters
 
