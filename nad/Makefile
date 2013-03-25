@@ -11,7 +11,7 @@ OMP=true
 DEBUG=true
 DOUBLE_PRECISION=true
 
-LDFLAGS=`madsdk_hdf5_link` `madsdk_lapack95_link`
+LDFLAGS=`mesasdk_hdf5_link` `mesasdk_lapack95_link`
 
 FPX3FLAGS=-DGFORTRAN_PR_56052
 
