@@ -110,7 +110,7 @@ contains
     complex(WP), intent(out)         :: A(:,:)
 
     real(WP) :: V_x2
-    real(WP) :: c_2
+    real(WP) :: c_kap
     
     $CHECK_BOUNDS(SIZE(A, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(A, 2),this%n_e)
@@ -164,8 +164,8 @@ contains
       A(4,6) = 0._WP
 
       A(5,1) = V_x2*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_kap)
-      A(5,2) = V_x2*(l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_2)
-      A(5,3) = V_x2*c_2
+      A(5,2) = V_x2*(l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_kap)
+      A(5,3) = V_x2*c_kap
       A(5,4) = V_x2*nabla_ad
       A(5,5) = V*nabla*(4._WP - kappa_S) - 2._WP - lambda_0
       A(5,6) = -V_x2*nabla/c_rad
