@@ -1,0 +1,245 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% Page size
+
+\special{papersize=8.5in,11in}
+\setlength{\pdfpageheight}{\paperheight}
+\setlength{\pdfpagewidth}{\paperwidth}
+
+\setlength{\textwidth}{6.5in} 
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0in} 
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in} 
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in} 
+\setlength{\hoffset}{0in}
+\setlength{\voffset}{0in}
+
+\setlength{\abovecaptionskip}{0pt}
+\setlength{\belowcaptionskip}{0pt} 
+
+% Macros
+
+\newcommand{\diff}{\ensuremath{\mathrm{d}}}
+\newcommand{\ii}{\ensuremath{\mathrm{i}}}
+
+\newcommand{\lz}{\ensuremath{\lambda_{0}}}
+
+\newcommand{\Vg}{\ensuremath{\frac{V}{\Gamma_{1}}}}
+\newcommand{\As}{\ensuremath{A^{\ast}}}
+\newcommand{\aT}{\ensuremath{\alpha_{T}}}
+
+\newcommand{\nabad}{\ensuremath{\nabla_{\rm ad}}}
+
+\newcommand{\kapad}{\ensuremath{\kappa_{\rm ad}}}
+\newcommand{\kapS}{\ensuremath{\kappa_{S}}}
+\newcommand{\epsad}{\ensuremath{\epsilon_{\rm ad}}}
+\newcommand{\epsS}{\ensuremath{\epsilon_{S}}}
+
+\newcommand{\crad}{\ensuremath{c_{\rm rad}}}
+\newcommand{\cgen}{\ensuremath{c_{\rm gen}}}
+\newcommand{\cthm}{\ensuremath{c_{\rm thm}}}
+\newcommand{\ckap}{\ensuremath{c_{\rm kap}}}
+
+\newcommand{\Rstar}{\ensuremath{R_{\ast}}}
+\newcommand{\Mstar}{\ensuremath{M_{\ast}}}
+\newcommand{\Lrad}{\ensuremath{L_{\rm rad}}}
+\newcommand{\Lstar}{\ensuremath{L_{\ast}}}
+
+\begin{document}
+
+\section*{Variables}
+
+\begin{align*}
+x     &= \frac{r}{\Rstar} \\
+y_{1} &= x^{-\lz} \frac{\xi_{r}}{r} \\
+y_{2} &= x^{-\lz} \frac{1}{gr} \left( \frac{p'}{\rho} + \Phi' \right)\\
+y_{3} &= x^{-\lz} \frac{\Phi'}{gr}\\
+y_{4} &= x^{-\lz} \frac{1}{g} \frac{\diff \Phi'}{\diff r}\\
+y_{5} &= x^{2-\lz} \frac{\delta S}{c_{p}}\\
+y_{6} &= x^{-\lz} \frac{\delta \Lrad}{\Lstar}
+\end{align*}
+
+%%
+
+\section*{Differential Equations}
+
+%%
+
+\subsection*{Adiabatic}
+
+\begin{align*}
+x \frac{\diff y_{1}}{\diff x} &=
+\left(\Vg - 3 - \lz \right) y_{1} +
+\left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - \Vg \right) y_{2} +
+\Vg y_{3} \\
+x \frac{\diff y_{2}}{\diff x} &=
+(c_{1} \omega^{2} - \As ) y_{1} +
+(1 - U + \As - \lz) y_{2} -
+\As y_{3} \\
+x \frac{\diff y_{3}}{\diff x} &=
+(1 - U - \lz) y_{3} +
+y_{4} \\
+x \frac{\diff y_{4}}{\diff x} &=
+\As U y_{1} +
+\Vg U y_{2} +
+\left[ \ell(\ell+1) - \Vg U \right] y_{3} -
+(U + \lz) y_{4}
+\end{align*}
+
+%%
+
+\subsection*{Non-Adiabatic}
+
+\begin{align*}
+x \frac{\diff y_{1}}{\diff x} &=
+\left(\Vg - 3 - \lz \right) y_{1} +
+\left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - \Vg \right) y_{2} +
+\Vg y_{3} +
+\aT y_{5} \\
+x \frac{\diff y_{2}}{\diff x} &=
+(c_{1} \omega^{2} - \As ) y_{1} +
+(1 - U + \As - \lz) y_{2} -
+\As y_{3} +
+\aT y_{5} \\
+x \frac{\diff y_{3}}{\diff x} &=
+(1 - U - \lz) y_{3} +
+y_{4} \\
+x \frac{\diff y_{4}}{\diff x} &=
+\As U y_{1} +
+\Vg U y_{2} +
+\left[ \ell(\ell+1) - \Vg U \right] y_{3} -
+(U + \lz) y_{4}
+- \aT U y_{5} \\
+x \frac{\diff y_{5}}{\diff x} &=
+V \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \ckap \right] x^{-2} y_{1} + 
+V \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} (\nabad - \nabla) - \ckap \right] x^{-2} y_{2} + \mbox{} \\
+& 
+V \ckap x^{-2} y_{3} + 
+V \nabad x^{-2} y_{4} + 
+\left[ V \nabla (4 - \kapS) - 2 - \lz \right] y_{5} -
+\frac{V \nabla}{\crad} x^{-2} y_{6} \\
+x \frac{\diff y_{6}}{\diff x} &=
+\left[ \ell(\ell+1)\left( \frac{\nabad}{\nabla} - 1 \right) \crad - \epsad V \cgen \right] y_{1} +
+\left[ \epsad V \cgen - \ell(\ell+1)\crad \left( \frac{\nabad}{\nabla} - \frac{3 + \crad'}{c_{1}\omega^{2}} \right) \right] y_{2} + \mbox{} \\
+&
+\left[ \ell(\ell+1) \frac{\nabad}{\nabla} \crad - \epsad V \cgen \right] y_{3} +
+\left[ \epsS \cgen - \frac{\ell(\ell+1)\crad}{\nabla V} - \ii \omega \cthm\right] x^{2} y_{5} -
+\left[ 3 + \lz \right] y_{6}
+\end{align*}
+
+%%
+
+\section*{Boundary Conditions}
+
+\subsection*{Adiabatic}
+
+\subsubsection*{Inner}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
+\ell y_{3} - y_{4} &= 0
+\end{aligned}
+\right\}
+\end{equation*}
+
+\subsubsection*{Outer}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+y_{1} - y_{2} + y_{3} &= 0 \\
+U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0
+\end{aligned}
+\right\} \qquad \text{(Zero)}
+\end{equation*}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
+y_{2} +
+\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
+(\ell + 1) y_{3} + y_{4} &= 0
+\end{aligned}
+\right\} \qquad \text{(Dziembowski)}
+\end{equation*}
+
+\subsection*{Non-Adiabatic}
+
+\subsubsection*{Inner}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
+\ell y_{3} - y_{4} &= 0 \\
+\left[ (c_{1} \omega^{2} - \ell) \nabad + (\ell-3) \nabla \right] y_{1} -
+\ell \nabad y_{3} + \frac{\ell}{V} x^{2} y_{5} + \frac{\nabla}{\crad} y_{6} &= 0
+\end{aligned}
+\right\}
+\end{equation*}
+
+\subsubsection*{Outer}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+y_{1} - y_{2} + y_{3} &= 0 \\
+U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0 \\
+(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
+\end{aligned}
+\right\} \qquad \text{(Zero)}
+\end{equation*}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
+y_{2} +
+\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
+(\ell + 1) y_{3} + y_{4} &= 0 \\
+(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
+\end{aligned}
+\right\} \qquad \text{(Dziembowski)}
+\end{equation*}
+
+%%
+
+\section*{Structure Coefficients}
+
+\subsection*{Mechanical}
+
+\begin{gather*}
+V = -\frac{\diff \ln p}{\diff \ln r} \qquad
+\As = \frac{1}{\Gamma_{1}} \frac{\diff \ln p}{\diff \ln r} - \frac{\diff \ln \rho}{\diff \ln r} \qquad
+U = \frac{\diff \ln M_{r}}{\diff \ln r} \qquad
+c_1 = \frac{r^{3}}{\Rstar^{3}} \frac{\Mstar}{M_{r}} \qquad
+\Gamma_{1} = \left( \frac{\partial \ln p}{\partial \ln \rho} \right)_{S}
+\end{gather*}
+
+\subsection*{Thermal}
+
+\begin{gather*}
+\nabla = \frac{\diff \ln T}{\diff \ln p} \qquad
+\nabad = \left( \frac{\partial \ln T}{\partial \ln p} \right)_{S} \qquad
+\aT = \left( \frac{\partial \ln \rho}{\partial \ln T} \right)_{p} \qquad \\
+\crad = x^{-3} \frac{\Lrad}{\Lstar} \qquad
+\crad' = \frac{\diff \ln \crad}{\diff \ln r} \qquad
+\cgen = x^{-3} \frac{4\pi r^{3} \epsilon \rho}{\Lstar} \qquad
+\cthm = x^{-3} \frac{4\pi r^{3} c_{p} T \rho}{\Lstar} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \\
+\ckap = \left( \kapad - 4 \nabad \right) V \nabla + \nabad \left( \frac{\diff \ln \nabad}{\diff \ln r} + V \right) \\
+\kapad = \left( \frac{\partial \ln \kappa}{\partial \ln p} \right)_{S} \qquad
+\kapS = c_{p} T \left( \frac{\partial \ln \kappa}{\partial S} \right)_{p} \\
+\epsad = \left( \frac{\partial \ln \epsilon}{\partial \ln p} \right)_{S} \qquad
+\epsS = c_{p} T \left( \frac{\partial \ln \epsilon}{\partial S} \right)_{p}
+\end{gather*}
+
+\end{document}
+
