@@ -73,14 +73,12 @@ module gyre_nad_shooter
 
 contains
 
-  subroutine init (this, mc, tc, op, ad_jc, nad_jc, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
+  subroutine init (this, mc, tc, op, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
 
     class(nad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target  :: mc
     class(therm_coeffs_t), intent(in), target :: tc
     class(oscpar_t), intent(in), target       :: op
-    type(ad_jacobian_t), intent(in)           :: ad_jc
-    type(nad_jacobian_t), intent(in)          :: nad_jc
     real(WP), intent(in)                      :: x(:)
     real(WP), intent(in)                      :: alpha_osc
     real(WP), intent(in)                      :: alpha_exp
@@ -92,11 +90,10 @@ contains
 
     this%mc => mc
     this%tc => tc
-
     this%op => op
 
-    this%ad_jc = ad_jc
-    this%nad_jc = nad_jc
+    call this%ad_jc%init(mc, op)
+    call this%nad_jc%init(mc, tc, op)
     
     this%x = x
 
@@ -106,7 +103,7 @@ contains
     this%n_floor = n_floor
 
     this%n = SIZE(x)
-    this%n_e = nad_jc%n_e
+    this%n_e = this%nad_jc%n_e
 
     this%solver_type = solver_type
 
