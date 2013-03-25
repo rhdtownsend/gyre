@@ -129,17 +129,19 @@ contains
     $endif
 
     character(LEN=256)          :: coeffs_type
+    character(LEN=256)          :: deriv_type
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: G
     real(WP)                    :: Gamma_1
 
-    namelist /coeffs/ coeffs_type, file, G, Gamma_1
+    namelist /coeffs/ coeffs_type, deriv_type, file, G, Gamma_1
 
     ! Read structure coefficients parameters
 
     if(MPI_RANK == 0) then
 
        coeffs_type = ''
+       deriv_type = 'MONO'
 
        file = ''
 
@@ -161,15 +163,15 @@ contains
 
        select case(coeffs_type)
        case('MESA')
-          call read_mesa_file(file, G, mc, tc, x=x_mc)
+          call read_mesa_file(file, G, deriv_type, mc, tc, x=x_mc)
        case('B3')
-          call read_b3_file(file, G, mc, tc, x=x_mc)
+          call read_b3_file(file, G, deriv_type, mc, tc, x=x_mc)
        case('FGONG')
-          call read_fgong_file(file, G, mc, x=x_mc) 
+          call read_fgong_file(file, G, deriv_type, mc, x=x_mc) 
        case('OSC')
-          call read_osc_file(file, G, mc, x=x_mc)
+          call read_osc_file(file, G, deriv_type, mc, x=x_mc)
        case('POLY')
-          call read_poly_file(file, mc, x=x_mc)
+          call read_poly_file(file, deriv_type, mc, x=x_mc)
        case('HOM')
           allocate(mech_coeffs_hom_t::mc)
           select type (mc)
