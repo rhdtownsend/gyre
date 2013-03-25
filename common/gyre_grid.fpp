@@ -236,7 +236,7 @@ contains
     real(WP), intent(in)             :: x_mc(:)
     class(mech_coeffs_t), intent(in) :: mc
     complex(WP), intent(in)          :: omega
-    class(oscpar_t), intent(in)      :: op
+    type(oscpar_t), intent(in)       :: op
     real(WP), intent(in)             :: alpha_osc
     real(WP), intent(in)             :: alpha_exp
     integer, intent(in)              :: n_center
