@@ -131,7 +131,9 @@ contains
        ivp_solver_type = 'MAGNUS_GL2'
 
        rewind(unit)
-       read(unit, NML=numpar)
+       read(unit, NML=numpar, END=100)
+
+100    continue
 
     endif
 
@@ -201,7 +203,9 @@ contains
        n_grid = 100
 
        rewind(unit)
-       read(unit, NML=shoot_grid)
+       read(unit, NML=shoot_grid, END=100)
+
+100    continue
 
     endif
 
@@ -244,7 +248,9 @@ contains
        n_floor = 0
 
        rewind(unit)
-       read(unit, NML=recon_grid)
+       read(unit, NML=recon_grid, END=200)
+
+200    continue
 
     endif
 
@@ -293,7 +299,9 @@ contains
     eigfunc_prefix = ''
 
     rewind(unit)
-    read(unit, NML=output)
+    read(unit, NML=output, END=100)
+
+100 continue
 
     ! Write eigenvalues
 
@@ -330,8 +338,8 @@ contains
 
        mode_loop : do i = 1,SIZE(md)
 
-          write(eigfunc_file, 100) TRIM(eigfunc_prefix), i, '.h5'
-100       format(A,I4.4,A)
+          write(eigfunc_file, 200) TRIM(eigfunc_prefix), i, '.h5'
+200       format(A,I4.4,A)
 
           call hg%init(eigfunc_file, CREATE_FILE)
 

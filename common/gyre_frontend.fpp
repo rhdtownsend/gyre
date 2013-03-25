@@ -149,7 +149,7 @@ contains
        Gamma_1 = 5._WP/3._WP
 
        rewind(unit)
-       read(unit, NML=coeffs)
+       read(unit, NML=coeffs, END=100)
 
     endif
 
@@ -192,6 +192,12 @@ contains
 
     return
 
+    ! Jump-in point for end-of-file
+
+100 continue
+
+    $ABORT(No &coeffs namelist in input file)
+
   end subroutine init_coeffs
 
 !****
@@ -215,7 +221,9 @@ contains
        outer_bound_type = 'ZERO'
 
        rewind(unit)
-       read(unit, NML=oscpar)
+       read(unit, NML=oscpar, END=100)
+
+100    continue
 
     endif
 
@@ -271,7 +279,7 @@ contains
           
           freq_units = 'NONE'
 
-          read(unit, NML=scan, end=100)
+          read(unit, NML=scan, END=100)
           
           ! Set up the frequency grid
 
