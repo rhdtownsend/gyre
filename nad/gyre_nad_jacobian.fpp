@@ -40,7 +40,7 @@ module gyre_nad_jacobian
      private
      class(mech_coeffs_t), pointer  :: mc => null()
      class(therm_coeffs_t), pointer :: tc => null()
-     class(oscpar_t), pointer       :: op => null()
+     type(oscpar_t), pointer        :: op => null()
    contains
      private
      procedure, public :: init
@@ -63,7 +63,7 @@ contains
     class(nad_jacobian_t), intent(out)        :: this
     class(mech_coeffs_t), intent(in), target  :: mc
     class(therm_coeffs_t), intent(in), target :: tc
-    class(oscpar_t), intent(in), target       :: op
+    type(oscpar_t), intent(in), target        :: op
 
     ! Initialize the nad_jacobian
 

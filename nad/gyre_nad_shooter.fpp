@@ -45,7 +45,7 @@ module gyre_nad_shooter
      private
      class(mech_coeffs_t), pointer  :: mc => null()
      class(therm_coeffs_t), pointer :: tc => null()
-     class(oscpar_t), pointer       :: op => null()
+     type(oscpar_t), pointer        :: op => null()
      type(ad_jacobian_t)            :: ad_jc
      type(nad_jacobian_t)           :: nad_jc
      real(WP), allocatable          :: x(:)
@@ -78,7 +78,7 @@ contains
     class(nad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target  :: mc
     class(therm_coeffs_t), intent(in), target :: tc
-    class(oscpar_t), intent(in), target       :: op
+    type(oscpar_t), intent(in), target        :: op
     real(WP), intent(in)                      :: x(:)
     real(WP), intent(in)                      :: alpha_osc
     real(WP), intent(in)                      :: alpha_exp
