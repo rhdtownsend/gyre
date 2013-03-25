@@ -79,6 +79,9 @@ program gyre_nad
   call write_header('Initialization', '=')
 
   call init_coeffs(unit, x_mc, mc, tc)
+
+  $ASSERT(ALLOCATED(tc),No therm_coeffs found)
+
   call init_oscpar(unit, op)
   call init_numpar(unit, n_iter_max, psi_ad, ivp_solver_type)
   call init_scan(unit, mc, omega)
@@ -166,10 +169,6 @@ contains
     type(ad_bvp_t), intent(out)               :: ad_bp
     type(nad_bvp_t), intent(out)              :: nad_bp
 
-    type(ad_jacobian_t)   :: ad_jc
-    type(nad_jacobian_t)  :: nad_jc
-    type(ad_bound_t)      :: ad_bd
-    type(nad_bound_t)     :: nad_bd
     character(LEN=256)    :: grid_type
     real(WP)              :: alpha_osc
     real(WP)              :: alpha_exp
@@ -180,21 +179,11 @@ contains
     integer               :: dn(SIZE(x_mc)-1)
     integer               :: i
     real(WP), allocatable :: x_sh(:)
-    type(ad_shooter_t)    :: ad_sh
-    type(nad_shooter_t)   :: nad_sh
 
     namelist /shoot_grid/ grid_type, alpha_osc, alpha_exp, &
          n_center, n_floor, s, n_grid
 
     namelist /recon_grid/ alpha_osc, alpha_exp, n_center, n_floor
-
-    ! Initialize the Jacobians and boundary conditions
-
-    call ad_jc%init(mc, op)
-    call nad_jc%init(mc, tc, op)
-
-    call ad_bd%init(mc, op)
-    call nad_bd%init(mc, tc, op)
 
     ! Read shooting grid parameters
 
@@ -266,15 +255,10 @@ contains
     call bcast(n_floor, 0)
     $endif
 
-    ! Initialize the shooters
-
-    call ad_sh%init(mc, op, ad_jc, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
-    call nad_sh%init(mc, tc, op, ad_jc, nad_jc, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
-
     ! Initialize the bvps
 
-    call ad_bp%init(ad_sh, ad_bd)
-    call nad_bp%init(nad_sh, nad_bd)
+    call ad_bp%init(mc, op, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+    call nad_bp%init(mc, tc, op, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
 
     ! Finish
 
