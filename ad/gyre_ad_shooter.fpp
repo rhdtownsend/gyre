@@ -42,7 +42,7 @@ module gyre_ad_shooter
   type :: ad_shooter_t
      private
      class(mech_coeffs_t), pointer :: mc => null()
-     class(oscpar_t), pointer      :: op => null()
+     type(oscpar_t), pointer       :: op => null()
      type(ad_jacobian_t)           :: jc
      real(WP), allocatable         :: x(:)
      real(WP)                      :: alpha_osc
@@ -73,7 +73,7 @@ contains
 
     class(ad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target :: mc
-    class(oscpar_t), intent(in), target      :: op
+    type(oscpar_t), intent(in), target       :: op
     real(WP), intent(in)                     :: x(:)
     real(WP), intent(in)                     :: alpha_osc
     real(WP), intent(in)                     :: alpha_exp

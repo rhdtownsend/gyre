@@ -38,7 +38,7 @@ module gyre_ad_jacobian
   type, extends(jacobian_t) :: ad_jacobian_t
      private
      class(mech_coeffs_t), pointer :: mc => null()
-     class(oscpar_t), pointer      :: op => null()
+     type(oscpar_t), pointer       :: op => null()
    contains
      private
      procedure, public :: init
@@ -60,7 +60,7 @@ contains
 
     class(ad_jacobian_t), intent(out)        :: this
     class(mech_coeffs_t), intent(in), target :: mc
-    class(oscpar_t), intent(in), target      :: op
+    type(oscpar_t), intent(in), target       :: op
 
     ! Initialize the ad_jacobian
 

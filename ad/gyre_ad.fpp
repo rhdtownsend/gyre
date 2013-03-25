@@ -248,7 +248,7 @@ contains
 
     integer, intent(in)              :: unit
     class(mech_coeffs_t), intent(in) :: mc
-    class(oscpar_t), intent(in)      :: op
+    type(oscpar_t), intent(in)       :: op
     type(mode_t), intent(in)         :: md(:)
 
     character(LEN=256)               :: freq_units
@@ -354,7 +354,7 @@ contains
   function inertia (mc, op, md) result (E)
 
     class(mech_coeffs_t), intent(in) :: mc
-    class(oscpar_t), intent(in)      :: op
+    type(oscpar_t), intent(in)       :: op
     class(mode_t), intent(in)        :: md
     real(WP)                         :: E
 
@@ -393,7 +393,7 @@ contains
   function kinetic (mc, op, md) result (dE_dx)
 
     class(mech_coeffs_t), intent(in) :: mc
-    class(oscpar_t), intent(in)      :: op
+    type(oscpar_t), intent(in)       :: op
     class(mode_t), intent(in)        :: md
     real(WP)                         :: dE_dx(md%n)
 
