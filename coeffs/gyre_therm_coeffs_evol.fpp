@@ -91,7 +91,8 @@ contains
 
   subroutine init (this, G, R_star, M_star, L_star, r, m, p, T, rho, &
                    nabla, Gamma_1, alpha_T, c_p, &
-                   kappa, kappa_T, kappa_rho, epsilon, epsilon_T, epsilon_rho)
+                   kappa, kappa_T, kappa_rho, &
+                   epsilon, epsilon_T, epsilon_rho, deriv_type)
 
     class(therm_coeffs_evol_t), intent(out) :: this
     real(WP), intent(in)                    :: G
@@ -113,6 +114,7 @@ contains
     real(WP), intent(in)                    :: epsilon(:)
     real(WP), intent(in)                    :: epsilon_T(:)
     real(WP), intent(in)                    :: epsilon_rho(:)
+    character(LEN=*), intent(in)            :: deriv_type
 
     integer  :: n
     real(WP) :: V_x2(SIZE(r))
@@ -175,16 +177,16 @@ contains
 
     ! Initialize the therm_coeffs
 
-    call this%sp_c_rad%init(x, c_rad, dy_dx_a=0._WP)
-    call this%sp_c_gen%init(x, c_gen, dy_dx_a=0._WP)
-    call this%sp_c_thm%init(x, c_thm, dy_dx_a=0._WP)
-    call this%sp_nabla%init(x, nabla, dy_dx_a=0._WP)
-    call this%sp_nabla_ad%init(x, nabla_ad, dy_dx_a=0._WP)
-    call this%sp_alpha_T%init(x, alpha_T, dy_dx_a=0._WP)
-    call this%sp_kappa_S%init(x, kappa_S, dy_dx_a=0._WP)
-    call this%sp_kappa_ad%init(x, kappa_ad, dy_dx_a=0._WP)
-    call this%sp_epsilon_S%init(x, epsilon_S, dy_dx_a=0._WP)
-    call this%sp_epsilon_ad%init(x, epsilon_ad, dy_dx_a=0._WP)
+    call this%sp_c_rad%init(x, c_rad, deriv_type, dy_dx_a=0._WP)
+    call this%sp_c_gen%init(x, c_gen, deriv_type, dy_dx_a=0._WP)
+    call this%sp_c_thm%init(x, c_thm, deriv_type, dy_dx_a=0._WP)
+    call this%sp_nabla%init(x, nabla, deriv_type, dy_dx_a=0._WP)
+    call this%sp_nabla_ad%init(x, nabla_ad, deriv_type, dy_dx_a=0._WP)
+    call this%sp_alpha_T%init(x, alpha_T, deriv_type, dy_dx_a=0._WP)
+    call this%sp_kappa_S%init(x, kappa_S, deriv_type, dy_dx_a=0._WP)
+    call this%sp_kappa_ad%init(x, kappa_ad, deriv_type, dy_dx_a=0._WP)
+    call this%sp_epsilon_S%init(x, epsilon_S, deriv_type, dy_dx_a=0._WP)
+    call this%sp_epsilon_ad%init(x, epsilon_ad, deriv_type, dy_dx_a=0._WP)
 
     this%V_x2_0 = V_x2(1)
     this%t_thm = SQRT(G*M_star/R_star**3)

@@ -79,7 +79,7 @@ module gyre_mech_coeffs_evol
 
 contains
 
-  subroutine init (this, G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
+  subroutine init (this, G, R_star, M_star, r, m, p, rho, N2, Gamma_1, deriv_type)
 
     class(mech_coeffs_evol_t), intent(out) :: this
     real(WP), intent(in)                   :: G
@@ -91,6 +91,7 @@ contains
     real(WP), intent(in)                   :: rho(:)
     real(WP), intent(in)                   :: N2(:)
     real(WP), intent(in)                   :: Gamma_1(:)
+    character(LEN=*), intent(in)           :: deriv_type
 
     integer  :: n
     real(WP) :: V(SIZE(r))
@@ -133,11 +134,11 @@ contains
 
     ! Initialize the mech_coeffs
 
-    call this%sp_V%init(x, V, dy_dx_a=0._WP)
-    call this%sp_As%init(x, As, dy_dx_a=0._WP)
-    call this%sp_U%init(x, U, dy_dx_a=0._WP)
-    call this%sp_c_1%init(x, c_1, dy_dx_a=0._WP)
-    call this%sp_Gamma_1%init(x, Gamma_1, dy_dx_a=0._WP)
+    call this%sp_V%init(x, V, deriv_type, dy_dx_a=0._WP)
+    call this%sp_As%init(x, As, deriv_type, dy_dx_a=0._WP)
+    call this%sp_U%init(x, U, deriv_type, dy_dx_a=0._WP)
+    call this%sp_c_1%init(x, c_1, deriv_type, dy_dx_a=0._WP)
+    call this%sp_Gamma_1%init(x, Gamma_1, deriv_type, dy_dx_a=0._WP)
 
     this%t_dyn = SQRT(R_star**3/(G*M_star))
 

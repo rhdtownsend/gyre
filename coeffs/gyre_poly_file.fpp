@@ -43,9 +43,10 @@ module gyre_poly_file
 
 contains
 
-  subroutine read_poly_file (file, mc, x)
+  subroutine read_poly_file (file, deriv_type, mc, x)
 
     character(LEN=*), intent(in)                   :: file
+    character(LEN=*), intent(in)                   :: deriv_type
     class(mech_coeffs_t), allocatable, intent(out) :: mc
     real(WP), allocatable, intent(out), optional   :: x(:)
 
@@ -75,7 +76,7 @@ contains
 
     select type (mc)
     type is (mech_coeffs_poly_t)
-       call mc%init(xi,Theta, dTheta, n_poly, Gamma_1)
+       call mc%init(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
     class default
        $ABORT(Invalid mc type)
     end select

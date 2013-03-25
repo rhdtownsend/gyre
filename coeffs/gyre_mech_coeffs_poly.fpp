@@ -73,7 +73,7 @@ module gyre_mech_coeffs_poly
 
 contains
 
-  subroutine init (this, xi, Theta, dTheta, n_poly, Gamma_1)
+  subroutine init (this, xi, Theta, dTheta, n_poly, Gamma_1, deriv_type)
 
     class(mech_coeffs_poly_t), intent(out) :: this
     real(WP), intent(in)                   :: xi(:)
@@ -81,6 +81,7 @@ contains
     real(WP), intent(in)                   :: dTheta(:)
     real(WP), intent(in)                   :: n_poly
     real(WP), intent(in)                   :: Gamma_1
+    character(LEN=*), intent(in)           :: deriv_type
 
     integer :: n
 
@@ -90,8 +91,10 @@ contains
 
     n = SIZE(xi)
 
-    call this%sp_Theta%init(xi, Theta, dy_dx_a=0._WP, dy_dx_b=dTheta(n))
-    call this%sp_dTheta%init(xi, dTheta, dy_dx_a=-1._WP/3._WP, dy_dx_b=-2._WP*dTheta(n)/xi(n))
+    call this%sp_Theta%init(xi, Theta, deriv_type, &
+                            dy_dx_a=0._WP, dy_dx_b=dTheta(n))
+    call this%sp_dTheta%init(xi, dTheta, deriv_type, &
+                             dy_dx_a=-1._WP/3._WP, dy_dx_b=-2._WP*dTheta(n)/xi(n))
 
     this%n_poly = n_poly
     this%dt_Gamma_1 = Gamma_1

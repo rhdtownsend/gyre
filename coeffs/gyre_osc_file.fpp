@@ -43,10 +43,11 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_file (file, G, mc, x)
+  subroutine read_osc_file (file, G, deriv_type, mc, x)
 
     character(LEN=*), intent(in)                   :: file
     real(WP), intent(in)                           :: G
+    character(LEN=*), intent(in)                   :: deriv_type
     class(mech_coeffs_t), allocatable, intent(out) :: mc
     real(WP), allocatable, intent(out), optional   :: x(:)
 
@@ -135,7 +136,7 @@ contains
 
     select type (mc)
     type is (mech_coeffs_evol_t)
-       call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
+       call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1, deriv_type)
     class default
        $ABORT(Invalid mc type)
     end select

@@ -46,10 +46,11 @@ module gyre_b3_file
 
 contains
 
-  subroutine read_b3_file (file, G, mc, tc, x)
+  subroutine read_b3_file (file, G, deriv_type, mc, tc, x)
 
     character(LEN=*), intent(in)                              :: file
     real(WP), intent(in)                                      :: G
+    character(LEN=*), intent(in)                              :: deriv_type
     class(mech_coeffs_t), allocatable, intent(out)            :: mc
     class(therm_coeffs_t), allocatable, intent(out), optional :: tc
     real(WP), allocatable, intent(out), optional              :: x(:)
@@ -162,7 +163,7 @@ contains
 
     select type (mc)
     type is (mech_coeffs_evol_t)
-       call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1)
+       call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1, deriv_type)
     class default
        $ABORT(Invalid mc type)
     end select
@@ -177,7 +178,8 @@ contains
        type is (therm_coeffs_evol_t)
           call tc%init(G, R_star, M_star, L_star, r, m, p, T, rho, &
                        nabla, Gamma_1, alpha_T, c_p, &
-                       kappa, kappa_T, kappa_rho, epsilon, epsilon_T, epsilon_rho)
+                       kappa, kappa_T, kappa_rho, &
+                       epsilon, epsilon_T, epsilon_rho, deriv_type)
        class default
           $ABORT(Invalid tc type)
        end select
