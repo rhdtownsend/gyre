@@ -1,5 +1,5 @@
 ! Module   : gyre_oscpar
-! Purpose  : adiabatic oscillation parameters
+! Purpose  : oscillation parameters
 !
 ! Copyright 2013 Rich Townsend
 !
