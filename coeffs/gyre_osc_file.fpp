@@ -25,7 +25,7 @@ module gyre_osc_file
   use core_constants
 
   use gyre_mech_coeffs
-  use gyre_mech_coeffs_evol
+  use gyre_evol_mech_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -132,10 +132,10 @@ contains
 
     ! Initialize the mech_coeffs
 
-    allocate(mech_coeffs_evol_t::mc)
+    allocate(evol_mech_coeffs_t::mc)
 
     select type (mc)
-    type is (mech_coeffs_evol_t)
+    type is (evol_mech_coeffs_t)
        call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1, deriv_type)
     class default
        $ABORT(Invalid mc type)

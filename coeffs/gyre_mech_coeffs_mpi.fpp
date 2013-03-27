@@ -24,9 +24,9 @@ module gyre_mech_coeffs_mpi
   use core_parallel
 
   use gyre_mech_coeffs
-  use gyre_mech_coeffs_evol
-  use gyre_mech_coeffs_poly
-  use gyre_mech_coeffs_hom
+  use gyre_evol_mech_coeffs
+  use gyre_poly_mech_coeffs
+  use gyre_hom_mech_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -86,11 +86,11 @@ contains
        if(MPI_RANK == root_rank) then
 
           select type (mc)
-          type is (mech_coeffs_evol_t)
+          type is (evol_mech_coeffs_t)
              type = EVOL_TYPE
-          type is (mech_coeffs_poly_t)
+          type is (poly_mech_coeffs_t)
              type = POLY_TYPE
-          type is (mech_coeffs_hom_t)
+          type is (hom_mech_coeffs_t)
              type = HOM_TYPE
           class default
              $ABORT(Unsupported type)
@@ -105,11 +105,11 @@ contains
        if(MPI_RANK /= root_rank) then
           select case (type)
           case (EVOL_TYPE)
-             allocate(mech_coeffs_evol_t::mc)
+             allocate(evol_mech_coeffs_t::mc)
           case (POLY_TYPE)
-             allocate(mech_coeffs_poly_t::mc)
+             allocate(poly_mech_coeffs_t::mc)
           case(HOM_TYPE)
-             allocate(mech_coeffs_hom_t::mc)
+             allocate(hom_mech_coeffs_t::mc)
           case default
              $ABORT(Unsupported type)
           end select

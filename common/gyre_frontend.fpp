@@ -116,7 +116,7 @@ contains
     use gyre_osc_file
     use gyre_b3_file
     use gyre_poly_file
-    use gyre_mech_coeffs_hom
+    use gyre_hom_mech_coeffs
 
     integer, intent(in)                                         :: unit
     real(WP), allocatable, intent(out)                          :: x_mc(:)
@@ -173,9 +173,9 @@ contains
        case('POLY')
           call read_poly_file(file, deriv_type, mc, x=x_mc)
        case('HOM')
-          allocate(mech_coeffs_hom_t::mc)
+          allocate(hom_mech_coeffs_t::mc)
           select type (mc)
-          type is (mech_coeffs_hom_t)
+          type is (hom_mech_coeffs_t)
              call mc%init(Gamma_1)
           end select
        end select

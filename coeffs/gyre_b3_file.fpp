@@ -26,9 +26,9 @@ module gyre_b3_file
   use core_hgroup
 
   use gyre_mech_coeffs
-  use gyre_mech_coeffs_evol
   use gyre_therm_coeffs
-  use gyre_therm_coeffs_evol
+  use gyre_evol_mech_coeffs
+  use gyre_evol_therm_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -159,10 +159,10 @@ contains
 
     ! Initialize the mech_coeffs
 
-    allocate(mech_coeffs_evol_t::mc)
+    allocate(evol_mech_coeffs_t::mc)
 
     select type (mc)
-    type is (mech_coeffs_evol_t)
+    type is (evol_mech_coeffs_t)
        call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1, deriv_type)
     class default
        $ABORT(Invalid mc type)
@@ -172,10 +172,10 @@ contains
 
     if(PRESENT(tc)) then
 
-       allocate(therm_coeffs_evol_t::tc)
+       allocate(evol_therm_coeffs_t::tc)
 
        select type (tc)
-       type is (therm_coeffs_evol_t)
+       type is (evol_therm_coeffs_t)
           call tc%init(G, R_star, M_star, L_star, r, m, p, T, rho, &
                        nabla, Gamma_1, alpha_T, c_p, &
                        kappa, kappa_T, kappa_rho, &

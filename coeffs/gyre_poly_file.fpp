@@ -25,7 +25,7 @@ module gyre_poly_file
   use core_hgroup
 
   use gyre_mech_coeffs
-  use gyre_mech_coeffs_poly
+  use gyre_poly_mech_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -72,10 +72,10 @@ contains
 
     ! Initialize the mech_coeffs
 
-    allocate(mech_coeffs_poly_t::mc)
+    allocate(poly_mech_coeffs_t::mc)
 
     select type (mc)
-    type is (mech_coeffs_poly_t)
+    type is (poly_mech_coeffs_t)
        call mc%init(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
     class default
        $ABORT(Invalid mc type)

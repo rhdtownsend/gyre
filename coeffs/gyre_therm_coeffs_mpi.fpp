@@ -24,7 +24,7 @@ module gyre_therm_coeffs_mpi
   use core_parallel
 
   use gyre_therm_coeffs
-  use gyre_therm_coeffs_evol
+  use gyre_evol_therm_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -82,7 +82,7 @@ contains
        if(MPI_RANK == root_rank) then
 
           select type (tc)
-          type is (therm_coeffs_evol_t)
+          type is (evol_therm_coeffs_t)
              type = EVOL_TYPE
           class default
              $ABORT(Unsupported type)
@@ -97,7 +97,7 @@ contains
        if(MPI_RANK /= root_rank) then
           select case (type)
           case (EVOL_TYPE)
-             allocate(therm_coeffs_evol_t::tc)
+             allocate(evol_therm_coeffs_t::tc)
           case default
              $ABORT(Unsupported type)
           end select
