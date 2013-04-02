@@ -64,9 +64,9 @@ contains
     call read_attr(hg, 'n_poly', n_poly)
     call read_attr(hg, 'Gamma_1', Gamma_1)
 
-    call read_dset(hg, 'xi', xi, alloc=.TRUE.)
-    call read_dset(hg, 'Theta', Theta, alloc=.TRUE.)
-    call read_dset(hg, 'dTheta', dTheta, alloc=.TRUE.)
+    call read_dset_alloc(hg, 'xi', xi)
+    call read_dset_alloc(hg, 'Theta', Theta)
+    call read_dset_alloc(hg, 'dTheta', dTheta)
 
     call hg%final()
 
