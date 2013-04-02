@@ -105,8 +105,13 @@ contains
 
        ! Broadcast the therm_coeffs
 
-       call tc%bcast(root_rank)
-
+       select type (tc)
+       type is (evol_therm_coeffs_t)
+          call bcast(tc, root_rank)
+       class default
+          $ABORT(Unsupported type)
+       end select
+       
     endif
 
     ! Finish

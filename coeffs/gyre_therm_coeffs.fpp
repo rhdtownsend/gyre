@@ -41,9 +41,6 @@ module gyre_therm_coeffs
      real(WP), public :: V_x2_0
    contains
      private
-     $if($MPI)
-     procedure(bcast_i), deferred, public :: bcast
-     $endif
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_gen)
@@ -61,12 +58,6 @@ module gyre_therm_coeffs
   ! Interfaces
 
   abstract interface
-
-     subroutine bcast_i (this, root_rank)
-       import therm_coeffs_t
-       class(therm_coeffs_t), intent(inout) :: this
-       integer, intent(in)                  :: root_rank
-     end subroutine bcast_i
 
      function get_1_i (this, x) result (y)
        use core_kinds

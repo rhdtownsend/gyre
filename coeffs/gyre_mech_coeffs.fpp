@@ -39,9 +39,6 @@ module gyre_mech_coeffs
   type, abstract :: mech_coeffs_t
    contains
      private
-     $if($MPI)
-     procedure(bcast_i), deferred, public :: bcast
-     $endif
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -53,12 +50,6 @@ module gyre_mech_coeffs
   ! Interfaces
 
   abstract interface
-
-     subroutine bcast_i (this, root_rank)
-       import mech_coeffs_t
-       class(mech_coeffs_t), intent(inout) :: this
-       integer, intent(in)                 :: root_rank
-     end subroutine bcast_i
 
      function get_1_i (this, x) result (y)
        use core_kinds

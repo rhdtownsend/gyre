@@ -194,7 +194,7 @@ contains
     endif
 
     $if($MPI)
-    call bcast(bp, root_rank)
+    call bcast(bp, 0)
     $endif
 
     ! Finish

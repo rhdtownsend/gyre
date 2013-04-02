@@ -75,6 +75,9 @@ module gyre_poly_mech_coeffs
   private
 
   public :: poly_mech_coeffs_t
+  $if($MPI)
+  public :: bcast
+  $endif
 
   ! Procedures
 

@@ -81,7 +81,7 @@ module gyre_evol_therm_coeffs
   $if($MPI)
 
   interface bcast
-     module procedure bcast_mc
+     module procedure bcast_tc
   end interface bcast
 
   $endif

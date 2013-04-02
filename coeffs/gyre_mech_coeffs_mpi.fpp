@@ -117,8 +117,17 @@ contains
 
        ! Broadcast the mech_coeffs
 
-       call mc%bcast(root_rank)
-
+       select type (mc)
+       type is (evol_mech_coeffs_t)
+          call bcast(mc, root_rank)
+       type is (poly_mech_coeffs_t)
+          call bcast(mc, root_rank)
+       type is (hom_mech_coeffs_t)
+          call bcast(mc, root_rank)
+       class default
+          $ABORT(Unsupported type)
+       end select
+          
     endif
 
     ! Finish

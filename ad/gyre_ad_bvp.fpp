@@ -22,9 +22,11 @@ module gyre_ad_bvp
   ! Uses
 
   use core_kinds
+  use core_parallel
 
   use gyre_bvp
   use gyre_mech_coeffs
+  use gyre_mech_coeffs_mpi
   use gyre_oscpar
   use gyre_gridpar
   use gyre_numpar

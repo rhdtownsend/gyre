@@ -83,6 +83,10 @@ contains
 
     call SYSTEM_CLOCK(c_beg, c_rate)
 
+    $if($MPI)
+    call barrier()
+    $endif
+
     discrim_loop : do i = i_part(MPI_RANK+1),i_part(MPI_RANK+2)-1
 
        discrim(i) = ext_real(bp%discrim(CMPLX(omega(i), KIND=WP)))
@@ -91,6 +95,10 @@ contains
 100    format(A,2X,E23.16,2X,F19.16,2X,I7)
 
     end do discrim_loop
+
+    $if($MPI)
+    call barrier()
+    $endif
 
     call SYSTEM_CLOCK(c_end)
     if(MPI_RANK == 0) then
@@ -138,6 +146,10 @@ contains
 
     call SYSTEM_CLOCK(c_beg, c_rate)
 
+    $if($MPI)
+    call barrier()
+    $endif
+
     root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
        ! Set the discriminant normalization, based on the mid-bracket
@@ -162,6 +174,10 @@ contains
             md(i)%omega, ABS(md(i)%discrim), n_iter
 
     end do root_loop
+
+    $if($MPI)
+    call barrier()
+    $endif
 
     call SYSTEM_CLOCK(c_end)
     if(MPI_RANK == 0) then

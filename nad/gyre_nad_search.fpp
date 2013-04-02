@@ -79,6 +79,10 @@ contains
 
     call SYSTEM_CLOCK(c_beg, c_rate)
 
+    $if($MPI)
+    call barrier()
+    $endif
+
     root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
        ! Set the discriminant normalization, based on the adiabatic
@@ -105,6 +109,10 @@ contains
             nad_md(i)%omega, ABS(nad_md(i)%discrim), n_iter
 
     end do root_loop
+
+    $if($MPI)
+    call barrier()
+    $endif
 
     call SYSTEM_CLOCK(c_end)
     if(MPI_RANK == 0) then

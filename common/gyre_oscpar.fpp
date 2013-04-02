@@ -91,15 +91,15 @@ contains
     type(oscpar_t), intent(inout) :: op
     integer, intent(in)           :: root_rank
 
-    integer                                   :: l
-    character(LEN=LEN(this%outer_bound_type)) :: outer_bound_type
+    integer                                 :: l
+    character(LEN=LEN(op%outer_bound_type)) :: outer_bound_type
 
     ! Broadcast the oscpar
 
     if(MPI_RANK == root_rank) then
 
-       call bcast(this%l, root_rank)
-       call bcast(this%outer_bound_type, root_rank)
+       call bcast(op%l, root_rank)
+       call bcast(op%outer_bound_type, root_rank)
 
     else
 

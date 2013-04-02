@@ -22,10 +22,13 @@ module gyre_nad_bvp
   ! Uses
 
   use core_kinds
+  use core_parallel
 
   use gyre_bvp
   use gyre_mech_coeffs
+  use gyre_mech_coeffs_mpi
   use gyre_therm_coeffs
+  use gyre_therm_coeffs_mpi
   use gyre_oscpar
   use gyre_gridpar
   use gyre_numpar
@@ -66,11 +69,24 @@ module gyre_nad_bvp
      procedure, public :: recon
   end type nad_bvp_t
 
+  ! Interfaces
+
+  $if($MPI)
+
+  interface bcast
+     module procedure bcast_bp
+  end interface bcast
+
+  $endif
+
   ! Access specifiers
 
   private
 
   public :: nad_bvp_t
+  $if($MPI)
+  public :: bcast
+  $endif
 
   ! Procedures
 
@@ -127,7 +143,7 @@ contains
     integer, intent(in)             :: root_rank
 
     class(mech_coeffs_t), allocatable  :: mc
-    class(therm_coeffs_t), allocatable :: mc
+    class(therm_coeffs_t), allocatable :: tc
     type(oscpar_t)                     :: op
     type(gridpar_t)                    :: gp
     type(numpar_t)                     :: np
