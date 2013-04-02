@@ -25,11 +25,11 @@ module gyre_ad_shooter
 
   use gyre_mech_coeffs
   use gyre_oscpar
+  use gyre_numpar
   use gyre_ad_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_ivp
-  use gyre_grid
 
   use ISO_FORTRAN_ENV
 
@@ -43,15 +43,9 @@ module gyre_ad_shooter
      private
      class(mech_coeffs_t), pointer :: mc => null()
      type(oscpar_t), pointer       :: op => null()
+     type(numpar_t), pointer       :: np => null()
      type(ad_jacobian_t)           :: jc
-     real(WP), allocatable         :: x(:)
-     real(WP)                      :: alpha_osc
-     real(WP)                      :: alpha_exp
-     integer                       :: n_center
-     integer                       :: n_floor
-     integer, public               :: n
      integer, public               :: n_e
-     character(LEN=256)            :: solver_type
    contains
      private
      procedure, public :: init
@@ -69,36 +63,22 @@ module gyre_ad_shooter
 
 contains
 
-  subroutine init (this, mc, op, x, alpha_osc, alpha_exp, n_center, n_floor, solver_type)
+  subroutine init (this, mc, op, np)
 
     class(ad_shooter_t), intent(out)         :: this
     class(mech_coeffs_t), intent(in), target :: mc
     type(oscpar_t), intent(in), target       :: op
-    real(WP), intent(in)                     :: x(:)
-    real(WP), intent(in)                     :: alpha_osc
-    real(WP), intent(in)                     :: alpha_exp
-    integer, intent(in)                      :: n_center
-    integer, intent(in)                      :: n_floor
-    character(LEN=*), intent(in)             :: solver_type
+    type(numpar_t), intent(in), target       :: np
 
     ! Initialize the ad_shooter
 
     this%mc => mc
     this%op => op
+    this%np => np
 
     call this%jc%init(mc, op)
     
-    this%x = x
-
-    this%alpha_osc = alpha_osc
-    this%alpha_exp = alpha_exp
-    this%n_center = n_center
-    this%n_floor = n_floor
-
-    this%n = SIZE(x)
     this%n_e = this%jc%n_e
-
-    this%solver_type = solver_type
 
     ! Finish
 
@@ -108,10 +88,11 @@ contains
 
 !****
 
-  subroutine shoot (this, omega, sm)
+  subroutine shoot (this, omega, x, sm)
 
     class(ad_shooter_t), intent(in) :: this
     complex(WP), intent(in)         :: omega
+    real(WP), intent(in)            :: x(:)
     class(sysmtx_t), intent(inout)  :: sm
 
     integer             :: k
@@ -123,8 +104,8 @@ contains
     ! intervals x(k) -> x(k+1)
 
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale)
-    block_loop : do k = 1,this%n-1
-       call solve(this%solver_type, this%jc, omega, this%x(k), this%x(k+1), E_l, E_r, scale)
+    block_loop : do k = 1,SIZE(x)-1
+       call solve(this%np%ivp_solver_type, this%jc, omega, x(k), x(k+1), E_l, E_r, scale)
        call sm%set_block(k, E_l, E_r, scale)
     end do block_loop
 
@@ -134,49 +115,59 @@ contains
 
 !****
 
-  subroutine recon_sh (this, omega, y_sh, x, y)
+  subroutine recon_sh (this, omega, x_sh, y_sh, x, y)
 
-    class(ad_shooter_t), intent(in)       :: this
-    complex(WP), intent(in)               :: omega
-    complex(WP), intent(in)               :: y_sh(:,:)
-    real(WP), intent(out), allocatable    :: x(:)
-    complex(WP), intent(out), allocatable :: y(:,:)
+    class(ad_shooter_t), intent(in) :: this
+    complex(WP), intent(in)         :: omega
+    real(WP), intent(in)            :: x_sh(:)
+    complex(WP), intent(in)         :: y_sh(:,:)
+    real(WP), intent(in)            :: x(:)
+    complex(WP), intent(out)        :: y(:,:)
 
-    integer :: dn(this%n-1)
-    integer :: i_a(this%n-1)
-    integer :: i_b(this%n-1)
-    integer :: k
+    integer                  :: n_sh
+    integer                  :: n
+    integer                  :: k
+    logical                  :: mask(SIZE(x))
+    integer, allocatable     :: i(:)
+    integer                  :: j
+    complex(WP), allocatable :: y_pck(:,:)
 
     $CHECK_BOUNDS(SIZE(y_sh, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(y_sh, 2),this%n)
+    $CHECK_BOUNDS(SIZE(y_sh, 2),SIZE(x_sh))
 
-    ! Reconstruct the eigenfunctions on a dynamically-allocated grid
+    $CHECK_BOUNDS(SIZE(y, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
 
-    ! Allocate the grid
+    ! Reconstruct the eigenfunctions on the supplied grid
 
-    dn = 0
+    n_sh = SIZE(x_sh)
+    n = SIZE(x)
 
-    call plan_dispersion_grid(this%x, this%mc, omega, this%op, &
-                              this%alpha_osc, this%alpha_exp, this%n_center, this%n_floor, dn)
+    !$OMP PARALLEL DO PRIVATE (mask, i, y_pck)
+    recon_loop : do k = 1,n_sh-1
 
-    call build_oversamp_grid(this%x, dn, x)
+       ! Select those points which fall in the current interval
 
-    allocate(y(this%n_e,SIZE(x)))
+       if(k == 1) then
+          mask = x < x_sh(k+1)
+       elseif(k == n_sh-1) then
+          mask = x >= x_sh(k)
+       else
+          mask = x >= x_sh(k) .AND. x < x_sh(k+1)
+       endif
 
-    ! Reconstruct the eigenfunctions
+       i = PACK([(j,j=1,n)], MASK=mask)
 
-    i_a(1) = 1
-    i_b(1) = dn(1) + 2
+       ! Reconstruct in the interval
 
-    index_loop : do k = 2,this%n-1
-       i_a(k) = i_b(k-1) + 1
-       i_b(k) = i_a(k) + dn(k)
-    end do index_loop
+       if(allocated(y_pck)) deallocate(y_pck)
+       allocate(y_pck(this%n_e,SIZE(i)))
 
-    !$OMP PARALLEL DO
-    recon_loop : do k = 1,this%n-1
-       call recon(this%solver_type, this%jc, omega, this%x(k), this%x(k+1), y_sh(:,k), y_sh(:,k+1), &
-                  x(i_a(k):i_b(k)), y(:,i_a(k):i_b(k)))
+       call recon(this%np%ivp_solver_type, this%jc, omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
+            x(i), y_pck)
+
+       y(:,i) = y_pck
+
     end do recon_loop
     
     ! Finish

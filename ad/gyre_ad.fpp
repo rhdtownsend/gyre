@@ -29,6 +29,8 @@ program gyre_ad
 
   use gyre_mech_coeffs
   use gyre_oscpar
+  use gyre_numpar
+  use gyre_gridpar
   use gyre_ad_bvp
   use gyre_ad_search
   use gyre_mode
@@ -47,10 +49,9 @@ program gyre_ad
   real(WP), allocatable             :: x_mc(:)
   class(mech_coeffs_t), allocatable :: mc
   type(oscpar_t)                    :: op
-  character(LEN=256)                :: ivp_solver_type
+  type(numpar_t)                    :: np
   type(ad_bvp_t)                    :: bp 
   real(WP), allocatable             :: omega(:)
-  integer                           :: n_iter_max
   type(mode_t), allocatable         :: md(:)
 
   ! Initialize
@@ -71,13 +72,13 @@ program gyre_ad
 
   call init_coeffs(unit, x_mc, mc)
   call init_oscpar(unit, op)
-  call init_numpar(unit, n_iter_max, ivp_solver_type)
+  call init_numpar(unit, np)
   call init_scan(unit, mc, omega)
-  call init_bvp(unit, x_mc, mc, op, omega, ivp_solver_type, bp)
+  call init_bvp(unit, x_mc, mc, op, np, omega, bp)
 
   ! Find modes
 
-  call ad_scan_search(bp, omega, n_iter_max, md)
+  call ad_scan_search(bp, omega, md)
 
   ! Write output
  
@@ -93,50 +94,14 @@ contains
 
 !****
 
-  subroutine init_numpar (unit, n_iter_max, ivp_solver_type)
-
-    integer, intent(in)           :: unit
-    integer, intent(out)          :: n_iter_max
-    character(LEN=*), intent(out) :: ivp_solver_type
-
-    namelist /numpar/ n_iter_max, ivp_solver_type
-
-    ! Read numerical parameters
-
-    if(MPI_RANK == 0) then
-
-       n_iter_max = 50
-
-       ivp_solver_type = 'MAGNUS_GL2'
-
-       rewind(unit)
-       read(unit, NML=numpar, END=100)
-
-100    continue
-
-    endif
-
-    $if($MPI)
-    call bcast(n_iter_max, 0)
-    call bcast(ivp_solver_type, 0)
-    $endif
-
-    ! Finish
-
-    return
-
-  end subroutine init_numpar
-
-!****
-
-  subroutine init_bvp (unit, x_mc, mc, op, omega, ivp_solver_type, bp)
+  subroutine init_bvp (unit, x_mc, mc, op, np, omega, bp)
 
     integer, intent(in)                      :: unit
     real(WP), intent(in), allocatable        :: x_mc(:)
     class(mech_coeffs_t), intent(in), target :: mc
     type(oscpar_t), intent(in)               :: op
+    type(numpar_t), intent(in)               :: np
     real(WP), intent(in)                     :: omega(:)
-    character(LEN=*), intent(in)             :: ivp_solver_type
     type(ad_bvp_t), intent(out)              :: bp
 
     character(LEN=256)    :: grid_type
@@ -149,6 +114,7 @@ contains
     integer               :: dn(SIZE(x_mc)-1)
     integer               :: i
     real(WP), allocatable :: x_sh(:)
+    type(gridpar_t)       :: gp
 
     namelist /shoot_grid/ grid_type, alpha_osc, alpha_exp, &
          n_center, n_floor, s, n_grid
@@ -177,36 +143,30 @@ contains
 
     endif
 
-    $if($MPI)
-    call bcast(grid_type, 0)
-    call bcast(alpha_osc, 0)
-    call bcast(alpha_exp, 0)
-    call bcast(n_center, 0)
-    call bcast(n_floor, 0)
-    call bcast(s, 0)
-    call bcast(n_grid, 0)
-    $endif
-
     ! Initialize the shooting grid
 
-    select case(grid_type)
-    case('GEOM')
-       call build_geom_grid(s, n_grid, x_sh)
-    case('LOG')
-       call build_log_grid(s, n_grid, x_sh)
-    case('INHERIT')
-       $ASSERT(ALLOCATED(x_mc),No input grid)
-       x_sh = x_mc
-    case('DISPERSION')
-       $ASSERT(ALLOCATED(x_mc),No input grid)
-       dn = 0
-       do i = 1,SIZE(omega)
-          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op, alpha_osc, alpha_exp, n_center, n_floor, dn)
-       enddo
-       call build_oversamp_grid(x_mc, dn, x_sh)
-    case default
-       $ABORT(Invalid grid_type)
-    end select
+    if(MPI_RANK == 0) then
+       
+       select case(grid_type)
+       case('GEOM')
+          call build_geom_grid(s, n_grid, x_sh)
+       case('LOG')
+          call build_log_grid(s, n_grid, x_sh)
+       case('INHERIT')
+          $ASSERT(ALLOCATED(x_mc),No input grid)
+          x_sh = x_mc
+       case('DISPERSION')
+          $ASSERT(ALLOCATED(x_mc),No input grid)
+          dn = 0
+          do i = 1,SIZE(omega)
+             call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op, alpha_osc, alpha_exp, n_center, n_floor, dn)
+          enddo
+          call build_oversamp_grid(x_mc, dn, x_sh)
+       case default
+          $ABORT(Invalid grid_type)
+       end select
+
+    endif
 
     ! Read recon grid parameters
 
@@ -223,18 +183,17 @@ contains
 
 200    continue
 
-    endif
+       call gp%init(alpha_osc, alpha_exp, n_center, n_floor, 0._WP, 0, 'DISP')
 
-    $if($MPI)
-    call bcast(alpha_osc, 0)
-    call bcast(alpha_exp, 0)
-    call bcast(n_center, 0)
-    call bcast(n_floor, 0)
-    $endif
+    endif
 
     ! Initialize the bvp
 
-    call bp%init(mc, op, x_sh, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+    call bp%init(mc, op, gp, np, x_sh)
+
+    $if($MPI)
+    call bcast(bp, root_rank)
+    $endif
 
     ! Finish
 

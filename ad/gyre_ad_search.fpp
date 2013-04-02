@@ -24,6 +24,7 @@ module gyre_ad_search
   use core_kinds
   use core_parallel
 
+  use gyre_numpar
   use gyre_ad_bvp
   use gyre_ad_discfunc
   use gyre_mode
@@ -46,11 +47,10 @@ module gyre_ad_search
 
 contains
 
-  subroutine ad_scan_search (bp, omega, n_iter_max, md)
+  subroutine ad_scan_search (bp, omega, md)
 
     type(ad_bvp_t), target, intent(inout)  :: bp
     real(WP), intent(in)                   :: omega(:)
-    integer, intent(in)                    :: n_iter_max
     type(mode_t), allocatable, intent(out) :: md(:)
 
     integer             :: n_omega
@@ -147,10 +147,10 @@ contains
 
        ! Find the root
 
-       n_iter = n_iter_max
+       n_iter = bp%np%n_iter_max
 
        omega_root = df%root(omega(i_brack(i)), omega(i_brack(i)+1), 0._WP, n_iter=n_iter)
-       $ASSERT(n_iter <= n_iter_max,Too many iterations)
+       $ASSERT(n_iter <= bp%np%n_iter_max,Too many iterations)
 
        ! Set up the mode
 

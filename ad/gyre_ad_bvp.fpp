@@ -26,10 +26,13 @@ module gyre_ad_bvp
   use gyre_bvp
   use gyre_mech_coeffs
   use gyre_oscpar
+  use gyre_gridpar
+  use gyre_numpar
   use gyre_ad_shooter
   use gyre_ad_bound
   use gyre_sysmtx
   use gyre_ext_arith
+  use gyre_grid
 
   use ISO_FORTRAN_ENV
 
@@ -43,9 +46,12 @@ module gyre_ad_bvp
      private
      class(mech_coeffs_t), allocatable, public :: mc
      type(oscpar_t), public                    :: op
+     type(gridpar_t), public                   :: gp
+     type(numpar_t), public                    :: np
      type(ad_shooter_t)                        :: sh
      type(ad_bound_t)                          :: bd
      type(sysmtx_t)                            :: sm
+     real(WP), allocatable                     :: x(:)
      integer                                   :: e_norm
      integer, public                           :: n
      integer, public                           :: n_e
@@ -58,41 +64,59 @@ module gyre_ad_bvp
      procedure, public :: recon
   end type ad_bvp_t
 
+  ! Interfaces
+
+  $if($MPI)
+
+  interface bcast
+     module procedure bcast_bp
+  end interface bcast
+
+  $endif
+
   ! Access specifiers
 
   private
 
   public :: ad_bvp_t
+  $if($MPI)
+  public :: bcast
+  $endif
 
   ! Procedures
 
 contains
 
-  subroutine init (this, mc, op, x, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+  subroutine init (this, mc, op, gp, np, x)
 
     class(ad_bvp_t), intent(out)     :: this
     class(mech_coeffs_t), intent(in) :: mc
     type(oscpar_t), intent(in)       :: op
+    type(gridpar_t), intent(in)      :: gp
+    type(numpar_t), intent(in)       :: np
     real(WP), intent(in)             :: x(:)
-    real(WP), intent(in)             :: alpha_osc
-    real(WP), intent(in)             :: alpha_exp
-    integer, intent(in)              :: n_center
-    integer, intent(in)              :: n_floor
-    character(LEN=*), intent(in)     :: ivp_solver_type
+
+    integer :: n
 
     ! Initialize the ad_bvp
 
     allocate(this%mc, SOURCE=mc)
     this%op = op
+    this%gp = gp
+    this%np = np
 
-    call this%sh%init(this%mc, this%op, x, alpha_osc, alpha_exp, n_center, n_floor, ivp_solver_type)
+    call this%sh%init(this%mc, this%op, this%np)
     call this%bd%init(this%mc, this%op)
 
-    call this%sm%init(this%sh%n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
+    n = SIZE(x)
+
+    call this%sm%init(n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
+
+    this%x = x
 
     this%e_norm = 0
 
-    this%n = this%sh%n
+    this%n = n
     this%n_e = this%sh%n_e
 
     ! Finish
@@ -100,6 +124,55 @@ contains
     return
 
   end subroutine init
+
+!****
+
+  $if($MPI)
+
+  subroutine bcast_bp (this, root_rank)
+
+    class(ad_bvp_t), intent(inout) :: this
+    integer, intent(in)            :: root_rank
+
+    class(mech_coeffs_t), allocatable :: mc
+    type(oscpar_t)                    :: op
+    type(gridpar_t)                   :: gp
+    type(numpar_t)                    :: np
+    real(WP), allocatable             :: x(:)
+
+    ! Broadcast the bvp
+
+    if(MPI_RANK == root_rank) then
+
+       call bcast_alloc(this%mc, root_rank)
+      
+       call bcast(this%op, root_rank)
+       call bcast(this%gp, root_rank)
+       call bcast(this%np, root_rank)
+
+       call bcast_alloc(this%x, root_rank)
+
+    else
+
+       call bcast_alloc(mc, root_rank)
+
+       call bcast(op, root_rank)
+       call bcast(gp, root_rank)
+       call bcast(np, root_rank)
+    
+       call bcast_alloc(x, root_rank)
+
+       call this%init(mc, op, gp, np, x)
+
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_bp
+
+  $endif
 
 !****
 
@@ -169,7 +242,7 @@ contains
     call this%sm%set_inner_bound(this%bd%inner_bound(omega))
     call this%sm%set_outer_bound(this%bd%outer_bound(omega))
 
-    call this%sh%shoot(omega, this%sm)
+    call this%sh%shoot(omega, this%x, this%sm)
 
     ! Finish
 
@@ -187,6 +260,7 @@ contains
     complex(WP), allocatable, intent(out) :: y(:,:)
 
     complex(WP) :: y_sh(this%n_e,this%n)
+    integer     :: dn(this%n-1)
 
     ! Reconstruct the solution on the shooting grid
 
@@ -194,9 +268,29 @@ contains
 
     y_sh = RESHAPE(this%sm%null_vector(), SHAPE(y_sh))
 
+    ! Set up the grid
+
+    select case (this%gp%grid_type)
+    case ('GEOM')
+       call build_geom_grid(this%gp%s, this%gp%n_grid, x)
+    case ('LOG')
+       call build_geom_grid(this%gp%s, this%gp%n_grid, x)
+    case ('CLONE')
+       x = this%x
+    case ('DISP')
+       dn = 0
+       call plan_dispersion_grid(this%x, this%mc, omega, this%op, &
+                                 this%gp%alpha_osc, this%gp%alpha_exp, this%gp%n_center, this%gp%n_floor, dn)
+       call build_oversamp_grid(this%x, dn, x)
+    case default
+       $ABORT(Invalid grid_type)
+    end select
+
     ! Reconstruct the full solution
 
-    call this%sh%recon(omega, y_sh, x, y)
+    allocate(y(this%n_e,SIZE(x)))
+
+    call this%sh%recon(omega, this%x, y_sh, x, y)
 
     ! Finish
 
