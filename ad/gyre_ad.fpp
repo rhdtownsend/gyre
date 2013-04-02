@@ -92,7 +92,7 @@ program gyre_ad
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_eigdata(unit, mc, op, md)
+     call write_eigdata(unit, bp, md)
   endif
 
   ! Finish
@@ -196,12 +196,11 @@ contains
 
 !****
 
-  subroutine write_eigdata (unit, mc, op, md)
+  subroutine write_eigdata (unit, bp, md)
 
-    integer, intent(in)              :: unit
-    class(mech_coeffs_t), intent(in) :: mc
-    type(oscpar_t), intent(in)       :: op
-    type(mode_t), intent(in)         :: md(:)
+    integer, intent(in)        :: unit
+    type(ad_bvp_t), intent(in) :: bp
+    type(mode_t), intent(in)   :: md(:)
 
     character(LEN=256)               :: freq_units
     character(LEN=FILENAME_LEN)      :: eigval_file
@@ -229,13 +228,13 @@ contains
     ! Calculate inertias
 
     do i = 1,SIZE(md)
-       E(i) = inertia(mc, op, md(i))
+       E(i) = inertia(bp%mc, bp%op, md(i))
     end do
 
     ! Write eigenvalues
 
     freq_loop : do i = 1,SIZE(md)
-       freq(i) = mc%conv_freq(md(i)%omega, 'NONE', freq_units)
+       freq(i) = bp%mc%conv_freq(md(i)%omega, 'NONE', freq_units)
     end do freq_loop
 
     if(eigval_file /= '') then
@@ -247,7 +246,7 @@ contains
        call write_attr(hg, 'n', bp%n)
        call write_attr(hg, 'n_e', bp%n_e)
 
-       call write_attr(hg, 'l', op%l)
+       call write_attr(hg, 'l', bp%op%l)
 
        call write_dset(hg, 'n_p', md%n_p)
        call write_dset(hg, 'n_g', md%n_g)
@@ -275,8 +274,8 @@ contains
           call write_attr(hg, 'n', bp%n)
           call write_attr(hg, 'n_e', bp%n_e)
 
-          call write_attr(hg, 'l', op%l)
-          call write_attr(hg, 'lambda_0', op%lambda_0)
+          call write_attr(hg, 'l', bp%op%l)
+          call write_attr(hg, 'lambda_0', bp%op%lambda_0)
 
           call write_attr(hg, 'n_p', md(i)%n_p)
           call write_attr(hg, 'n_g', md(i)%n_g)
@@ -287,7 +286,7 @@ contains
           call write_dset(hg, 'x', md(i)%x)
           call write_dset(hg, 'y', md(i)%y)
 
-          call write_dset(hg, 'dE_dx', kinetic(mc, op, md(i)))
+          call write_dset(hg, 'dE_dx', kinetic(bp%mc, bp%op, md(i)))
 
           call hg%final()
 

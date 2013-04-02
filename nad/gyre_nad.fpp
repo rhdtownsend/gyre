@@ -58,8 +58,6 @@ program gyre_nad
   real(WP), allocatable              :: omega(:)
   type(mode_t), allocatable          :: ad_md(:)
   type(mode_t), allocatable          :: nad_md(:)
-  integer                            :: i
-  real(WP), allocatable              :: E(:)
 
   ! Initialize
 
@@ -101,18 +99,10 @@ program gyre_nad
   call ad_scan_search(ad_bp, omega, ad_md)
   call nad_prox_search(nad_bp, ad_md, nad_md)
 
-  ! Calculate inertias
-
-  allocate(E(SIZE(nad_md)))
-
-  do i = 1,SIZE(nad_md)
-     E(i) = inertia(mc, op, nad_md(i))
-  end do
-
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_eigdata(unit, mc, op, nad_md)
+     call write_eigdata(unit, nad_bp, nad_md)
   endif
 
   ! Finish
@@ -217,17 +207,17 @@ contains
 
 !****
 
-  subroutine write_eigdata (unit, mc, op, md)
+  subroutine write_eigdata (unit, bp, md)
 
-    integer, intent(in)              :: unit
-    class(mech_coeffs_t), intent(in) :: mc
-    type(oscpar_t), intent(in)       :: op
-    type(mode_t), intent(in)         :: md(:)
+    integer, intent(in)         :: unit
+    type(nad_bvp_t), intent(in) :: bp
+    type(mode_t), intent(in)    :: md(:)
 
     character(LEN=256)               :: freq_units
     character(LEN=FILENAME_LEN)      :: eigval_file
     character(LEN=FILENAME_LEN)      :: eigfunc_prefix
     integer                          :: i
+    real(WP)                         :: E(SIZE(md))
     complex(WP)                      :: freq(SIZE(md))
     type(hgroup_t)                   :: hg
     character(LEN=FILENAME_LEN)      :: eigfunc_file
@@ -246,10 +236,16 @@ contains
 
 100 continue
 
+    ! Calculate inertias
+
+    do i = 1,SIZE(md)
+       E(i) = inertia(bp%mc, bp%op, md(i))
+    end do
+
     ! Write eigenvalues
 
     freq_loop : do i = 1,SIZE(md)
-       freq(i) = mc%conv_freq(md(i)%omega, 'NONE', freq_units)
+       freq(i) = bp%mc%conv_freq(md(i)%omega, 'NONE', freq_units)
     end do freq_loop
 
     if(eigval_file /= '') then
@@ -258,10 +254,10 @@ contains
           
        call write_attr(hg, 'n_md', SIZE(md))
 
-!       call write_attr(hg, 'n', bp%n)
-!       call write_attr(hg, 'n_e', bp%n_e)
+       call write_attr(hg, 'n', bp%n)
+       call write_attr(hg, 'n_e', bp%n_e)
 
-       call write_attr(hg, 'l', op%l)
+       call write_attr(hg, 'l', bp%op%l)
 
        call write_dset(hg, 'n_p', md%n_p)
        call write_dset(hg, 'n_g', md%n_g)
@@ -286,20 +282,22 @@ contains
 
           call hg%init(eigfunc_file, CREATE_FILE)
 
-!          call write_attr(hg, 'n', bp%n)
-!          call write_attr(hg, 'n_e', bp%n_e)
+          call write_attr(hg, 'n', bp%n)
+          call write_attr(hg, 'n_e', bp%n_e)
 
-          call write_attr(hg, 'l', op%l)
-          call write_attr(hg, 'lambda_0', op%lambda_0)
+          call write_attr(hg, 'l', bp%op%l)
+          call write_attr(hg, 'lambda_0', bp%op%lambda_0)
 
           call write_attr(hg, 'n_p', md(i)%n_p)
           call write_attr(hg, 'n_g', md(i)%n_g)
 
-          call write_dset(hg, 'freq', freq(i))
+          call write_attr(hg, 'freq', freq(i))
           call write_attr(hg, 'freq_units', freq_units)
 
           call write_dset(hg, 'x', md(i)%x)
           call write_dset(hg, 'y', md(i)%y)
+
+          call write_dset(hg, 'dE_dx', kinetic(bp%mc, bp%op, md(i)))
 
           call hg%final()
 
@@ -322,15 +320,52 @@ contains
     class(mode_t), intent(in)        :: md
     real(WP)                         :: E
 
-    integer     :: i
     real(WP)    :: dE_dx(md%n)
-    real(WP)    :: U
-    real(WP)    :: c_1
     complex(WP) :: xi_r
     complex(WP) :: xi_h
     real(WP)    :: E_norm
 
-    ! Set up the inertia integrand
+    ! Calculate the normalized inertia
+
+    dE_dx = kinetic(mc, op, md)
+
+    E = SUM(0.5_WP*(dE_dx(2:) + dE_dx(:md%n-1))*(md%x(2:) - md%x(:md%n-1)))
+
+    if(op%l == 0) then
+       xi_r = md%y(1,md%n)
+       xi_h = 0._WP
+    else
+       xi_r = md%y(1,md%n)
+       xi_h = md%y(2,md%n)/md%omega**2
+    endif
+
+    E_norm = ABS(xi_r)**2 + op%l*(op%l+1)*ABS(xi_h)**2
+    $ASSERT(E_norm /= 0._WP,E_norm is zero)    
+    
+    E = E/E_norm
+
+    ! Finish
+
+    return
+
+  end function inertia
+
+!*****
+
+  function kinetic (mc, op, md) result (dE_dx)
+
+    class(mech_coeffs_t), intent(in) :: mc
+    type(oscpar_t), intent(in)       :: op
+    class(mode_t), intent(in)        :: md
+    real(WP)                         :: dE_dx(md%n)
+
+    integer     :: i
+    real(WP)    :: U
+    real(WP)    :: c_1
+    complex(WP) :: xi_r
+    complex(WP) :: xi_h
+
+    ! Calculate the kinetic energy density
 
     !$OMP PARALLEL DO PRIVATE (U, c_1, xi_r, xi_h)
     do i = 1,md%n
@@ -360,29 +395,10 @@ contains
 
     end do
 
-    ! Integrate via a tropezoidal rule
-
-    E = SUM(0.5_WP*(dE_dx(2:) + dE_dx(:md%n-1))*(md%x(2:) - md%x(:md%n-1)))
-
-    ! Normalize
-
-    if(op%l == 0) then
-       xi_r = md%y(1,md%n)
-       xi_h = 0._WP
-    else
-       xi_r = md%y(1,md%n)
-       xi_h = md%y(2,md%n)/md%omega**2
-    endif
-
-    E_norm = ABS(xi_r)**2 + op%l*(op%l+1)*ABS(xi_h)**2
-    $ASSERT(E_norm /= 0._WP,E_norm is zero)    
-    
-    E = E/E_norm
-
     ! Finish
 
     return
 
-  end function inertia
+  end function kinetic
 
 end program gyre_nad
