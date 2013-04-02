@@ -22,6 +22,7 @@ module gyre_oscpar
   ! Uses
 
   use core_kinds
+  use core_parallel
 
   ! No implicit typing
 
@@ -31,19 +32,32 @@ module gyre_oscpar
 
   type :: oscpar_t
      private
-     real(WP), public              :: lambda_0
-     integer, public               :: l
-     character(LEN=256), public    :: outer_bound_type
+     real(WP), public          :: lambda_0
+     integer, public           :: l
+     character(LEN=64), public :: outer_bound_type
    contains
      private
      procedure, public :: init
   end type oscpar_t
+
+  ! Interfaces
+
+  $if($MPI)
+
+  interface bcast
+     module procedure bcast_op
+  end interface bcast
+
+  $endif
 
  ! Access specifiers
 
   private
 
   public :: oscpar_t
+  $if($MPI)
+  public :: bcast
+  $endif
 
   ! Procedures
 
@@ -67,5 +81,41 @@ contains
     return
 
   end subroutine init
+
+!****
+
+  $if($MPI)
+
+  subroutine bcast_op (op, root_rank)
+
+    type(oscpar_t), intent(inout) :: op
+    integer, intent(in)           :: root_rank
+
+    integer                                   :: l
+    character(LEN=LEN(this%outer_bound_type)) :: outer_bound_type
+
+    ! Broadcast the oscpar
+
+    if(MPI_RANK == root_rank) then
+
+       call bcast(this%l, root_rank)
+       call bcast(this%outer_bound_type, root_rank)
+
+    else
+
+       call bcast(l, root_rank)
+       call bcast(outer_bound_type, root_rank)
+
+       call op%init(l, outer_bound_type)
+
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_op
+
+  $endif
 
 end module gyre_oscpar
