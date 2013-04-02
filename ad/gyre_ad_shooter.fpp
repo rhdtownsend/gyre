@@ -124,13 +124,15 @@ contains
     real(WP), intent(in)            :: x(:)
     complex(WP), intent(out)        :: y(:,:)
 
-    integer                  :: n_sh
-    integer                  :: n
-    integer                  :: k
-    logical                  :: mask(SIZE(x))
-    integer, allocatable     :: i(:)
-    integer                  :: j
-    complex(WP), allocatable :: y_pck(:,:)
+    integer     :: n_sh
+    integer     :: n
+    integer     :: k
+    logical     :: mask(SIZE(x))
+    integer     :: n_in
+    integer     :: i
+    integer     :: i_in(SIZE(x))
+    real(WP)    :: x_in(SIZE(x))
+    complex(WP) :: y_in(this%n_e,SIZE(x))
 
     $CHECK_BOUNDS(SIZE(y_sh, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(y_sh, 2),SIZE(x_sh))
@@ -143,7 +145,7 @@ contains
     n_sh = SIZE(x_sh)
     n = SIZE(x)
 
-    !$OMP PARALLEL DO PRIVATE (mask, i, y_pck)
+    !$OMP PARALLEL DO PRIVATE (mask, n_in, i_in, x_in, y_in)
     recon_loop : do k = 1,n_sh-1
 
        ! Select those points which fall in the current interval
@@ -156,17 +158,22 @@ contains
           mask = x >= x_sh(k) .AND. x < x_sh(k+1)
        endif
 
-       i = PACK([(j,j=1,n)], MASK=mask)
+       n_in = COUNT(mask)
 
-       ! Reconstruct in the interval
+       if(n_in > 0) then
 
-       if(allocated(y_pck)) deallocate(y_pck)
-       allocate(y_pck(this%n_e,SIZE(i)))
+          ! Reconstruct in the interval
 
-       call recon(this%np%ivp_solver_type, this%jc, omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
-            x(i), y_pck)
+          i_in(:n_in) = PACK([(i,i=1,n)], MASK=mask)
 
-       y(:,i) = y_pck
+          x_in(:n_in) = x(i_in(:n_in))
+
+          call recon(this%np%ivp_solver_type, this%jc, omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
+               x_in(:n_in), y_in(:,:n_in))
+
+          y(:,i_in(:n_in)) = y_in(:,:n_in)
+
+       endif
 
     end do recon_loop
     
