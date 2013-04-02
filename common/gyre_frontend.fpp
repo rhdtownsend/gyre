@@ -29,6 +29,7 @@ module gyre_frontend
   use gyre_mech_coeffs
   use gyre_therm_coeffs
   use gyre_oscpar
+  use gyre_numpar
 
   use ISO_FORTRAN_ENV
 
@@ -44,6 +45,7 @@ module gyre_frontend
   public :: write_header
   public :: init_coeffs
   public :: init_oscpar
+  public :: init_numpar
   public :: init_scan
 
 contains
@@ -207,8 +209,8 @@ contains
     integer, intent(in)         :: unit
     type(oscpar_t), intent(out) :: op
 
-    integer            :: l
-    character(LEN=256) :: outer_bound_type
+    integer           :: l
+    character(LEN=64) :: outer_bound_type
 
     namelist /oscpar/ l, outer_bound_type
 
@@ -225,22 +227,58 @@ contains
 
 100    continue
 
+       call op%init(l, outer_bound_type)
+
     endif
 
     $if($MPI)
-    call bcast(l, 0)
-    call bcast(outer_bound_type, 0)
+    call bcast(op, 0)
     $endif
-
-    ! Initialize the oscilaltion parameters
-
-    call op%init(l, outer_bound_type)
 
     ! Finish
 
     return
 
   end subroutine init_oscpar
+
+!****
+
+  subroutine init_numpar (unit, np)
+
+    integer, intent(in)         :: unit
+    type(numpar_t), intent(out) :: np
+
+    integer           :: n_iter_max
+    character(LEN=64) :: ivp_solver_type
+
+    namelist /numpar/ n_iter_max, ivp_solver_type
+
+    ! Read numerical parameters
+
+    if(MPI_RANK == 0) then
+
+       n_iter_max = 50
+
+       ivp_solver_type = 'MAGNUS_GL2'
+
+       rewind(unit)
+       read(unit, NML=numpar, END=100)
+
+100    continue
+
+       call np%init(n_iter_max, ivp_solver_type)
+
+    endif
+
+    $if($MPI)
+    call bcast(np, 0)
+    $endif
+
+    ! Finish
+
+    return
+
+  end subroutine init_numpar
 
 !****
 
