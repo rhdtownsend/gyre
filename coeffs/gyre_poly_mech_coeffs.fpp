@@ -52,9 +52,6 @@ module gyre_poly_mech_coeffs
    contains
      private
      procedure, public :: init
-     $if($MPI)
-     procedure, public :: bcast => bcast_mc
-     $endif
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -62,6 +59,16 @@ module gyre_poly_mech_coeffs
      $PROC_DECL(Gamma_1)
      procedure, public :: conv_freq
   end type poly_mech_coeffs_t
+
+  ! Interfaces
+
+  $if($MPI)
+
+  interface bcast
+     module procedure bcast_mc
+  end interface bcast
+
+  $endif
 
   ! Access specifiers
 
@@ -110,19 +117,19 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_mc (this, root_rank)
+  subroutine bcast_mc (mc, root_rank)
 
-    class(poly_mech_coeffs_t), intent(inout) :: this
+    class(poly_mech_coeffs_t), intent(inout) :: mc
     integer, intent(in)                      :: root_rank
 
     ! Broadcast the mech_coeffs
 
-    call this%sp_Theta%bcast(root_rank)
-    call this%sp_dTheta%bcast(root_rank)
+    call bcast(mc%sp_Theta, root_rank)
+    call bcast(mc%sp_dTheta, root_rank)
 
-    call bcast(this%n_poly, root_rank)
-    call bcast(this%dt_Gamma_1, root_rank)
-    call bcast(this%xi_1, root_rank)
+    call bcast(mc%n_poly, root_rank)
+    call bcast(mc%dt_Gamma_1, root_rank)
+    call bcast(mc%xi_1, root_rank)
 
     ! Finish
 

@@ -62,9 +62,6 @@ module gyre_evol_therm_coeffs
      real(WP) :: t_thm
    contains
      procedure :: init
-     $if($MPI)
-     procedure :: bcast => bcast_tc
-     $endif
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_gen)
@@ -79,11 +76,24 @@ module gyre_evol_therm_coeffs
      $PROC_DECL(epsilon_S)
   end type evol_therm_coeffs_t
 
+  ! Interfaces
+
+  $if($MPI)
+
+  interface bcast
+     module procedure bcast_mc
+  end interface bcast
+
+  $endif
+
   ! Access specifiers
 
   private
 
   public :: evol_therm_coeffs_t
+  $if($MPI)
+  public :: bcast
+  $endif
 
   ! Procedures
 
@@ -201,26 +211,26 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_tc (this, root_rank)
+  subroutine bcast_tc (tc, root_rank)
 
-    class(evol_therm_coeffs_t), intent(inout) :: this
+    class(evol_therm_coeffs_t), intent(inout) :: tc
     integer, intent(in)                       :: root_rank
 
     ! Broadcast the therm_coeffs
 
-    call this%sp_c_rad%bcast(root_rank)
-    call this%sp_c_gen%bcast(root_rank)
-    call this%sp_c_thm%bcast(root_rank)
-    call this%sp_nabla%bcast(root_rank)
-    call this%sp_nabla_ad%bcast(root_rank)
-    call this%sp_alpha_T%bcast(root_rank)
-    call this%sp_kappa_S%bcast(root_rank)
-    call this%sp_kappa_ad%bcast(root_rank)
-    call this%sp_epsilon_S%bcast(root_rank)
-    call this%sp_epsilon_ad%bcast(root_rank)
+    call bcast(tc%sp_c_rad, root_rank)
+    call bcast(tc%sp_c_gen, root_rank)
+    call bcast(tc%sp_c_thm, root_rank)
+    call bcast(tc%sp_nabla, root_rank)
+    call bcast(tc%sp_nabla_ad, root_rank)
+    call bcast(tc%sp_alpha_T, root_rank)
+    call bcast(tc%sp_kappa_S, root_rank)
+    call bcast(tc%sp_kappa_ad, root_rank)
+    call bcast(tc%sp_epsilon_S, root_rank)
+    call bcast(tc%sp_epsilon_ad, root_rank)
 
-    call bcast(this%V_x2_0, root_rank)
-    call bcast(this%t_thm, root_rank)
+    call bcast(tc%V_x2_0, root_rank)
+    call bcast(tc%t_thm, root_rank)
 
     ! Finish
 
