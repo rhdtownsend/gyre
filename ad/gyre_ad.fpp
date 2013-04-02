@@ -81,6 +81,7 @@ program gyre_ad
   end if
 
   $if($MPI)
+  call bcast_alloc(omega, 0)
   call bcast(bp, 0)
   $endif
 

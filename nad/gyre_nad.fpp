@@ -91,6 +91,7 @@ program gyre_nad
   endif
 
   $if($MPI)
+  call bcast_alloc(omega, 0)
   call bcast(ad_bp, 0)
   call bcast(nad_bp, 0)
   $endif
