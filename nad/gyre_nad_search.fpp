@@ -46,11 +46,10 @@ module gyre_nad_search
 
 contains
 
-  subroutine nad_prox_search (bp, ad_md, n_iter_max, nad_md)
+  subroutine nad_prox_search (bp, ad_md, nad_md)
 
     type(nad_bvp_t), target, intent(inout)  :: bp
     type(mode_t), intent(in)                :: ad_md(:)
-    integer, intent(in)                     :: n_iter_max
     type(mode_t), allocatable, intent(out)  :: nad_md(:)
 
     integer              :: n_md
@@ -89,12 +88,12 @@ contains
 
        ! Find the root
 
-       n_iter = n_iter_max
+       n_iter = bp%np%n_iter_max
 
        omega_root = df%root(ad_md(i)%omega*CMPLX(1._WP, SQRT(EPSILON(0._WP)), WP), &
                             ad_md(i)%omega*CMPLX(1._WP, -SQRT(EPSILON(0._WP)), WP), &
                             0._WP, n_iter=n_iter)
-       $ASSERT(n_iter <= n_iter_max,Too many iterations)
+       $ASSERT(n_iter <= bp%np%n_iter_max,Too many iterations)
 
        ! Set up the mode
 
