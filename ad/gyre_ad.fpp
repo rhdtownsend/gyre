@@ -189,7 +189,9 @@ contains
 
     ! Initialize the bvp
 
-    call bp%init(mc, op, gp, np, x_sh)
+    if(MPI_RANK == 0) then
+       call bp%init(mc, op, gp, np, x_sh)
+    endif
 
     $if($MPI)
     call bcast(bp, root_rank)
