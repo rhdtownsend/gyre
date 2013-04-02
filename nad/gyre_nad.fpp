@@ -25,7 +25,6 @@ program gyre_nad
   use core_constants
   use core_parallel
   use core_hgroup
-  use core_order
 
   use gyre_mech_coeffs
   use gyre_therm_coeffs
@@ -78,14 +77,23 @@ program gyre_nad
 
   call write_header('Initialization', '=')
 
-  call init_coeffs(unit, x_mc, mc, tc)
+  if(MPI_RANK == 0) then
 
-  $ASSERT(ALLOCATED(tc),No therm_coeffs found)
+     call init_coeffs(unit, x_mc, mc, tc)
 
-  call init_oscpar(unit, op)
-  call init_numpar(unit, np)
-  call init_scan(unit, mc, omega)
-  call init_bvp(unit, x_mc, mc, tc, op, np, omega, ad_bp, nad_bp)
+     $ASSERT(ALLOCATED(tc),No therm_coeffs found)
+
+     call init_oscpar(unit, op)
+     call init_numpar(unit, np)
+     call init_scan(unit, mc, omega)
+     call init_bvp(unit, x_mc, mc, tc, op, np, omega, ad_bp, nad_bp)
+
+  endif
+
+  $if($MPI)
+  call bcast(ad_bp, 0)
+  call bcast(nad_bp, 0)
+  $endif
 
   ! Search for modes
 
@@ -113,13 +121,6 @@ program gyre_nad
 contains
 
   subroutine init_bvp (unit, x_mc, mc, tc, op, np, omega, ad_bp, nad_bp)
-
-    use gyre_ad_jacobian
-    use gyre_ad_bound
-    use gyre_ad_shooter
-    use gyre_nad_jacobian
-    use gyre_nad_bound
-    use gyre_nad_shooter
 
     integer, intent(in)                       :: unit
     real(WP), intent(in), allocatable         :: x_mc(:)
@@ -150,81 +151,62 @@ contains
 
     ! Read shooting grid parameters
 
-    if(MPI_RANK == 0) then
+    grid_type = 'DISPERSION'
 
-       grid_type = 'DISPERSION'
-
-       alpha_osc = 0._WP
-       alpha_exp = 0._WP
+    alpha_osc = 0._WP
+    alpha_exp = 0._WP
        
-       n_center = 0
-       n_floor = 0
+    n_center = 0
+    n_floor = 0
 
-       s = 100._WP
-       n_grid = 100
+    s = 100._WP
+    n_grid = 100
 
-       rewind(unit)
-       read(unit, NML=shoot_grid, END=100)
+    rewind(unit)
+    read(unit, NML=shoot_grid, END=100)
 
-100    continue
-
-    endif
+100 continue
 
     ! Initialize the shooting grid
 
-    if(MPI_RANK == 0) then
-       
-       select case(grid_type)
-       case('GEOM')
-          call build_geom_grid(s, n_grid, x_sh)
-       case('LOG')
-          call build_log_grid(s, n_grid, x_sh)
-       case('INHERIT')
-          $ASSERT(ALLOCATED(x_mc),No input grid)
-          x_sh = x_mc
-       case('DISPERSION')
-          $ASSERT(ALLOCATED(x_mc),No input grid)
-          dn = 0
-          do i = 1,SIZE(omega)
-             call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op, alpha_osc, alpha_exp, n_center, n_floor, dn)
-          enddo
-          call build_oversamp_grid(x_mc, dn, x_sh)
-       case default
-          $ABORT(Invalid grid_type)
-       end select
-
-    endif
+    select case(grid_type)
+    case('GEOM')
+       call build_geom_grid(s, n_grid, x_sh)
+    case('LOG')
+       call build_log_grid(s, n_grid, x_sh)
+    case('INHERIT')
+       $ASSERT(ALLOCATED(x_mc),No input grid)
+       x_sh = x_mc
+    case('DISPERSION')
+       $ASSERT(ALLOCATED(x_mc),No input grid)
+       dn = 0
+       do i = 1,SIZE(omega)
+          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op, alpha_osc, alpha_exp, n_center, n_floor, dn)
+       enddo
+       call build_oversamp_grid(x_mc, dn, x_sh)
+    case default
+       $ABORT(Invalid grid_type)
+    end select
 
     ! Read recon grid parameters
 
-    if(MPI_RANK == 0) then
-
-       alpha_osc = 0._WP
-       alpha_exp = 0._WP
+    alpha_osc = 0._WP
+    alpha_exp = 0._WP
        
-       n_center = 0
-       n_floor = 0
+    n_center = 0
+    n_floor = 0
 
-       rewind(unit)
-       read(unit, NML=recon_grid, END=200)
+    rewind(unit)
+    read(unit, NML=recon_grid, END=200)
+       
+200 continue
 
-200    continue
-
-       call gp%init(alpha_osc, alpha_exp, n_center, n_floor, 0._WP, 0, 'DISP')
-
-    endif
+    call gp%init(alpha_osc, alpha_exp, n_center, n_floor, 0._WP, 0, 'DISP')
 
     ! Initialize the bvps
 
-    if(MPI_RANK == 0) then
-       call ad_bp%init(mc, op, gp, np, x_sh)
-       call nad_bp%init(mc, tc, op, gp, np, x_sh)
-    endif
-
-    $if($MPI)
-    call bcast(ad_bp, 0)
-    call bcast(nad_bp, 0)
-    $endif
+    call ad_bp%init(mc, op, gp, np, x_sh)
+    call nad_bp%init(mc, tc, op, gp, np, x_sh)
 
     ! Finish
 

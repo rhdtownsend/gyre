@@ -23,8 +23,8 @@ module gyre_frontend
 
   use core_kinds
   use core_constants
-  use core_order
   use core_parallel
+  use core_order
 
   use gyre_mech_coeffs
   use gyre_therm_coeffs
@@ -111,8 +111,6 @@ contains
 
   subroutine init_coeffs (unit, x_mc, mc, tc)
 
-    use gyre_mech_coeffs_mpi
-    use gyre_therm_coeffs_mpi
     use gyre_mesa_file
     use gyre_fgong_file
     use gyre_osc_file
@@ -140,55 +138,37 @@ contains
 
     ! Read structure coefficients parameters
 
-    if(MPI_RANK == 0) then
+    coeffs_type = ''
+    deriv_type = 'MONO'
 
-       coeffs_type = ''
-       deriv_type = 'MONO'
+    file = ''
 
-       file = ''
+    G = G_GRAVITY
+    Gamma_1 = 5._WP/3._WP
 
-       G = G_GRAVITY
-       Gamma_1 = 5._WP/3._WP
-
-       rewind(unit)
-       read(unit, NML=coeffs, END=100)
-
-    endif
-
-    $if($MPI)
-    call bcast(coeffs_type, 0)
-    $endif
+    rewind(unit)
+    read(unit, NML=coeffs, END=100)
 
     ! Read/initialize the mech_coeffs
 
-    if(MPI_RANK == 0) then
-
-       select case(coeffs_type)
-       case('MESA')
-          call read_mesa_file(file, G, deriv_type, mc, tc, x=x_mc)
-       case('B3')
-          call read_b3_file(file, G, deriv_type, mc, tc, x=x_mc)
-       case('FGONG')
-          call read_fgong_file(file, G, deriv_type, mc, x=x_mc) 
-       case('OSC')
-          call read_osc_file(file, G, deriv_type, mc, x=x_mc)
-       case('POLY')
-          call read_poly_file(file, deriv_type, mc, x=x_mc)
-       case('HOM')
-          allocate(hom_mech_coeffs_t::mc)
-          select type (mc)
-          type is (hom_mech_coeffs_t)
-             call mc%init(Gamma_1)
-          end select
+    select case(coeffs_type)
+    case('MESA')
+       call read_mesa_file(file, G, deriv_type, mc, tc, x=x_mc)
+    case('B3')
+       call read_b3_file(file, G, deriv_type, mc, tc, x=x_mc)
+    case('FGONG')
+       call read_fgong_file(file, G, deriv_type, mc, x=x_mc) 
+    case('OSC')
+       call read_osc_file(file, G, deriv_type, mc, x=x_mc)
+    case('POLY')
+       call read_poly_file(file, deriv_type, mc, x=x_mc)
+    case('HOM')
+       allocate(hom_mech_coeffs_t::mc)
+       select type (mc)
+       type is (hom_mech_coeffs_t)
+          call mc%init(Gamma_1)
        end select
-
-    endif
-
-    $if($MPI)
-    call bcast_alloc(mc, 0)
-    if(PRESENT(tc)) call bcast_alloc(tc, 0)
-    call bcast_alloc(x_mc, 0)
-    $endif
+    end select
 
     ! Finish
 
@@ -216,24 +196,18 @@ contains
 
     ! Read oscillation parameters
 
-    if(MPI_RANK == 0) then
+    l = 0
 
-       l = 0
+    outer_bound_type = 'ZERO'
 
-       outer_bound_type = 'ZERO'
+    rewind(unit)
+    read(unit, NML=oscpar, END=100)
 
-       rewind(unit)
-       read(unit, NML=oscpar, END=100)
+100 continue
 
-100    continue
+    ! Initialize the oscpar
 
-       call op%init(l, outer_bound_type)
-
-    endif
-
-    $if($MPI)
-    call bcast(op, 0)
-    $endif
+    call op%init(l, outer_bound_type)
 
     ! Finish
 
@@ -255,24 +229,18 @@ contains
 
     ! Read numerical parameters
 
-    if(MPI_RANK == 0) then
+    n_iter_max = 50
 
-       n_iter_max = 50
+    ivp_solver_type = 'MAGNUS_GL2'
 
-       ivp_solver_type = 'MAGNUS_GL2'
+    rewind(unit)
+    read(unit, NML=numpar, END=100)
 
-       rewind(unit)
-       read(unit, NML=numpar, END=100)
+100 continue
 
-100    continue
+    ! Initialize the numpar
 
-       call np%init(n_iter_max, ivp_solver_type)
-
-    endif
-
-    $if($MPI)
-    call bcast(np, 0)
-    $endif
+    call np%init(n_iter_max, ivp_solver_type)
 
     ! Finish
 
@@ -301,51 +269,43 @@ contains
 
     ! Read scan parameters
 
-    if(MPI_RANK == 0) then
+    rewind(unit)
 
-       rewind(unit)
+    allocate(omega(0))
 
-       allocate(omega(0))
+    read_loop : do 
 
-       read_loop : do 
+       grid_type = 'LINEAR'
 
-          grid_type = 'LINEAR'
-
-          freq_min = 1._WP
-          freq_max = 10._WP
-          n_freq = 10
+       freq_min = 1._WP
+       freq_max = 10._WP
+       n_freq = 10
           
-          freq_units = 'NONE'
+       freq_units = 'NONE'
 
-          read(unit, NML=scan, END=100)
+       read(unit, NML=scan, END=100)
           
-          ! Set up the frequency grid
+       ! Set up the frequency grid
 
-          omega_min = REAL(mc%conv_freq(CMPLX(freq_min, KIND=WP), freq_units, 'NONE'))
-          omega_max = REAL(mc%conv_freq(CMPLX(freq_max, KIND=WP), freq_units, 'NONE'))
+       omega_min = REAL(mc%conv_freq(CMPLX(freq_min, KIND=WP), freq_units, 'NONE'))
+       omega_max = REAL(mc%conv_freq(CMPLX(freq_max, KIND=WP), freq_units, 'NONE'))
        
-          select case(grid_type)
-          case('LINEAR')
-             omega = [omega,(((n_freq-i)*omega_min + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
-          case('INVERSE')
-             omega = [omega,((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_max), i=1,n_freq)]
-          case default
-             $ABORT(Invalid freq_grid)
-          end select
+       select case(grid_type)
+       case('LINEAR')
+          omega = [omega,(((n_freq-i)*omega_min + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
+       case('INVERSE')
+          omega = [omega,((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_max), i=1,n_freq)]
+       case default
+          $ABORT(Invalid freq_grid)
+       end select
 
-       end do read_loop
+    end do read_loop
 
-100    continue
+100 continue
 
-       ! Sort the frequencies
+    ! Sort the frequencies
 
-       omega = omega(sort_indices(omega))
-
-    endif
-
-    $if($MPI)
-    call bcast_alloc(omega, 0)
-    $endif
+    omega = omega(sort_indices(omega))
 
     ! Finish
 
