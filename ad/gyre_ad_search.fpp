@@ -55,29 +55,135 @@ contains
     real(WP), intent(in)                   :: omega(:)
     type(mode_t), allocatable, intent(out) :: md(:)
 
-    integer                       :: n_omega
+    real(WP), allocatable         :: omega_a(:)
+    real(WP), allocatable         :: omega_b(:)
+    integer                       :: n_brack
     integer                       :: i_part(MPI_SIZE+1)
     integer                       :: c_beg
     integer                       :: c_end
     integer                       :: c_rate
-    integer                       :: i
-    type(ext_real_t)              :: discrim(SIZE(omega))
-    $if($MPI)
-    integer                       :: recvcounts(MPI_SIZE)
-    integer                       :: displs(MPI_SIZE)
-    integer                       :: p
-    $endif
-    integer                       :: n_brack
-    integer                       :: i_brack(SIZE(omega)-1)
     type(ad_discfunc_t)           :: df
     class(mech_coeffs_t), pointer :: mc
     type(oscpar_t), pointer       :: op
     type(numpar_t), pointer       :: np
+    integer                       :: i
     integer                       :: n_iter
     complex(WP)                   :: omega_root
     complex(WP)                   :: discrim_root
     real(WP), allocatable         :: x(:)
     complex(WP), allocatable      :: y(:,:)
+    $if($MPI)
+    integer                       :: p
+    $endif
+
+    ! Scan for discriminant root brackets
+
+    call scan(bp, omega, omega_a, omega_b)
+
+    n_brack = SIZE(omega_a)
+
+    ! Process each bracket to find modes
+
+    call write_header('Adiabatic Mode Finding', '=')
+
+    call df%init(bp)
+
+    mc => bp%get_mc()
+    op => bp%get_op()
+    np => bp%get_np()
+
+    call partition_tasks(n_brack, 1, i_part)
+
+    allocate(md(n_brack))
+
+    call SYSTEM_CLOCK(c_beg, c_rate)
+
+    $if($MPI)
+    call barrier()
+    $endif
+
+    root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
+
+       ! Set the discriminant normalization, based on the mid-bracket
+       ! frequency
+
+       call bp%set_norm(CMPLX(0.5_WP*(omega_a(i) + omega_b(i)), KIND=WP))
+
+       ! Find the root
+
+       n_iter = np%n_iter_max
+
+       omega_root = df%root(omega_a(i), omega_b(i), 0._WP, n_iter=n_iter)
+       $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
+
+       discrim_root = df%eval(omega_root)
+
+       ! Reconstruct the eigenfunction
+
+       call bp%recon(omega_root, x, y)
+
+       ! Set up the mode
+
+       call md(i)%init(mc, op, omega_root, discrim_root, x, y)
+
+       ! Report
+
+       write(OUTPUT_UNIT, 100) 'Mode :', md(i)%n_p-md(i)%n_g, md(i)%n_p, md(i)%n_g, &
+            omega_root, ABS(discrim_root), n_iter
+100    format(A,3(2X,I6),3(2X,E23.16),2X,I4)
+
+    end do root_loop
+
+    $if($MPI)
+    call barrier()
+    $endif
+
+    call SYSTEM_CLOCK(c_end)
+    if(MPI_RANK == 0) then
+       write(OUTPUT_UNIT, 110) 'Completed ad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+110    format(/A,1X,F10.3,1X,A)
+    endif
+
+    ! Broadcast data
+
+    $if($MPI)
+
+    do p = 0, MPI_SIZE-1
+       do i = i_part(p+1), i_part(p+2)-1
+          call bcast(md(i), p)
+       end do
+    enddo
+
+    $endif
+
+    ! Finish
+
+    return
+
+  end subroutine ad_scan_search
+
+!****
+
+  subroutine scan (bp, omega, omega_a, omega_b)
+
+    type(ad_bvp_t), target, intent(inout) :: bp
+    real(WP), intent(in)                  :: omega(:)
+    real(WP), allocatable, intent(out)    :: omega_a(:)
+    real(WP), allocatable, intent(out)    :: omega_b(:)
+
+    integer          :: n_omega
+    integer          :: i_part(MPI_SIZE+1)
+    integer          :: c_beg
+    integer          :: c_end
+    integer          :: c_rate
+    integer          :: i
+    type(ext_real_t) :: discrim(SIZE(omega))
+    $if($MPI)
+    integer          :: recvcounts(MPI_SIZE)
+    integer          :: displs(MPI_SIZE)
+    $endif
+    integer          :: n_brack
+    integer          :: i_brack(SIZE(omega))
 
     ! Calculate the discriminant on the omega abscissa
 
@@ -106,14 +212,6 @@ contains
     call barrier()
     $endif
 
-    call SYSTEM_CLOCK(c_end)
-    if(MPI_RANK == 0) then
-       write(OUTPUT_UNIT, 110) 'Completed ad scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-110    format(/A,1X,F10.3,1X,A)
-    endif
-
-    ! Gather data
-
     $if($MPI)
 
     recvcounts = i_part(2:)-i_part(:MPI_SIZE)
@@ -123,6 +221,12 @@ contains
 
     $endif
 
+    call SYSTEM_CLOCK(c_end)
+    if(MPI_RANK == 0) then
+       write(OUTPUT_UNIT, 110) 'Completed ad scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+110    format(/A,1X,F10.3,1X,A)
+    endif
+
     ! Scan for root brackets
 
     n_brack = 0
@@ -130,92 +234,21 @@ contains
     bracket_loop : do i = 1, n_omega-1
 
        if(discrim(i)*discrim(i+1) <= ext_real(0._WP)) then
-
-          ! Store the bracket location
-
           n_brack = n_brack + 1
           i_brack(n_brack) = i
-
        end if
 
     end do bracket_loop
 
-    ! Process each bracket to find modes
+    ! Set up the bracket frequencies
 
-    call write_header('Adiabatic Mode Finding', '=')
-
-    call df%init(bp)
-
-    mc => bp%get_mc()
-    op => bp%get_op()
-    np => bp%get_np()
-
-    call partition_tasks(n_brack, 1, i_part)
-
-    allocate(md(n_brack))
-
-    call SYSTEM_CLOCK(c_beg, c_rate)
-
-    $if($MPI)
-    call barrier()
-    $endif
-
-    root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
-
-       ! Set the discriminant normalization, based on the mid-bracket
-       ! frequency
-
-       call bp%set_norm(CMPLX(0.5_WP*(omega(i_brack(i)) + omega(i_brack(i)+1)), KIND=WP))
-
-       ! Find the root
-
-       n_iter = np%n_iter_max
-
-       omega_root = df%root(omega(i_brack(i)), omega(i_brack(i)+1), 0._WP, n_iter=n_iter)
-       $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
-
-       discrim_root = df%eval(omega_root)
-
-       ! Reconstruct the eigenfunction
-
-       call bp%recon(omega_root, x, y)
-
-       ! Set up the mode
-
-       call md(i)%init(mc, op, omega_root, discrim_root, x, y)
-
-       ! Report
-
-       write(OUTPUT_UNIT, '(A,3(2X,I6),3(2X,E23.16),2X,I4)') 'Mode :', md(i)%n_p-md(i)%n_g, md(i)%n_p, md(i)%n_g, &
-            omega_root, ABS(discrim_root), n_iter
-
-    end do root_loop
-
-    $if($MPI)
-    call barrier()
-    $endif
-
-    call SYSTEM_CLOCK(c_end)
-    if(MPI_RANK == 0) then
-       write(OUTPUT_UNIT, 110) 'Completed ad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-    endif
-
-    ! Broadcast data
-
-    $if($MPI)
-
-    do p = 0, MPI_SIZE-1
-       do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p)
-       end do
-    enddo
-
-    $endif
+    omega_a = omega(i_brack(:n_brack))
+    omega_b = omega(i_brack(:n_brack)+1)
 
     ! Finish
 
     return
 
-  end subroutine ad_scan_search
+  end subroutine scan
 
 end module gyre_ad_search
