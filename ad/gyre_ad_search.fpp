@@ -24,6 +24,8 @@ module gyre_ad_search
   use core_kinds
   use core_parallel
 
+  use gyre_mech_coeffs
+  use gyre_oscpar
   use gyre_numpar
   use gyre_ad_bvp
   use gyre_ad_discfunc
@@ -53,26 +55,29 @@ contains
     real(WP), intent(in)                   :: omega(:)
     type(mode_t), allocatable, intent(out) :: md(:)
 
-    integer                  :: n_omega
-    integer                  :: i_part(MPI_SIZE+1)
-    integer                  :: c_beg
-    integer                  :: c_end
-    integer                  :: c_rate
-    integer                  :: i
-    type(ext_real_t)         :: discrim(SIZE(omega))
+    integer                       :: n_omega
+    integer                       :: i_part(MPI_SIZE+1)
+    integer                       :: c_beg
+    integer                       :: c_end
+    integer                       :: c_rate
+    integer                       :: i
+    type(ext_real_t)              :: discrim(SIZE(omega))
     $if($MPI)
-    integer                  :: recvcounts(MPI_SIZE)
-    integer                  :: displs(MPI_SIZE)
-    integer                  :: p
+    integer                       :: recvcounts(MPI_SIZE)
+    integer                       :: displs(MPI_SIZE)
+    integer                       :: p
     $endif
-    integer                  :: n_brack
-    integer                  :: i_brack(SIZE(omega)-1)
-    type(ad_discfunc_t)      :: df
-    integer                  :: n_iter
-    complex(WP)              :: omega_root
-    complex(WP)              :: discrim_root
-    real(WP), allocatable    :: x(:)
-    complex(WP), allocatable :: y(:,:)
+    integer                       :: n_brack
+    integer                       :: i_brack(SIZE(omega)-1)
+    type(ad_discfunc_t)           :: df
+    class(mech_coeffs_t), pointer :: mc
+    type(oscpar_t), pointer       :: op
+    type(numpar_t), pointer       :: np
+    integer                       :: n_iter
+    complex(WP)                   :: omega_root
+    complex(WP)                   :: discrim_root
+    real(WP), allocatable         :: x(:)
+    complex(WP), allocatable      :: y(:,:)
 
     ! Calculate the discriminant on the omega abscissa
 
@@ -141,6 +146,10 @@ contains
 
     call df%init(bp)
 
+    mc => bp%get_mc()
+    op => bp%get_op()
+    np => bp%get_np()
+
     call partition_tasks(n_brack, 1, i_part)
 
     allocate(md(n_brack))
@@ -160,10 +169,10 @@ contains
 
        ! Find the root
 
-       n_iter = bp%np%n_iter_max
+       n_iter = np%n_iter_max
 
        omega_root = df%root(omega(i_brack(i)), omega(i_brack(i)+1), 0._WP, n_iter=n_iter)
-       $ASSERT(n_iter <= bp%np%n_iter_max,Too many iterations)
+       $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
 
        discrim_root = df%eval(omega_root)
 
@@ -173,7 +182,7 @@ contains
 
        ! Set up the mode
 
-       call md(i)%init(bp%mc, bp%op, omega_root, discrim_root, x, y)
+       call md(i)%init(mc, op, omega_root, discrim_root, x, y)
 
        ! Report
 

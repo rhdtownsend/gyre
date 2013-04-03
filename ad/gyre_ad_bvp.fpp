@@ -46,20 +46,24 @@ module gyre_ad_bvp
 
   type, extends(bvp_t) :: ad_bvp_t
      private
-     class(mech_coeffs_t), allocatable, public :: mc
-     type(oscpar_t), public                    :: op
-     type(gridpar_t), public                   :: gp
-     type(numpar_t), public                    :: np
-     type(ad_shooter_t)                        :: sh
-     type(ad_bound_t)                          :: bd
-     type(sysmtx_t)                            :: sm
-     real(WP), allocatable                     :: x(:)
-     integer                                   :: e_norm
-     integer, public                           :: n
-     integer, public                           :: n_e
+     class(mech_coeffs_t), allocatable :: mc
+     type(oscpar_t)                    :: op
+     type(gridpar_t)                   :: gp
+     type(numpar_t)                    :: np
+     type(ad_shooter_t)                :: sh
+     type(ad_bound_t)                  :: bd
+     type(sysmtx_t)                    :: sm
+     real(WP), allocatable             :: x(:)
+     integer                           :: e_norm
+     integer, public                   :: n
+     integer, public                   :: n_e
    contains 
      private
      procedure, public :: init
+     procedure, public :: get_mc
+     procedure, public :: get_op
+     procedure, public :: get_gp
+     procedure, public :: get_np
      procedure, public :: set_norm
      procedure, public :: discrim
      procedure         :: build
@@ -177,6 +181,35 @@ contains
 
   $endif
 
+!****
+
+  $define $GET $sub
+
+  $local $ITEM_NAME $1
+  $local $ITEM_TYPE $2
+
+  function get_$ITEM_NAME (this) result (item)
+
+    class(ad_bvp_t), intent(in), target :: this
+    $ITEM_TYPE, pointer                 :: item
+
+    ! Get a pointer to the item
+
+    item => this%$ITEM_NAME
+
+    ! Finish
+
+    return
+
+  end function get_$ITEM_NAME
+  
+  $endsub
+
+  $GET(mc,class(mech_coeffs_t))
+  $GET(op,type(oscpar_t))
+  $GET(gp,type(gridpar_t))
+  $GET(np,type(numpar_t))
+    
 !****
 
   subroutine set_norm (this, omega)

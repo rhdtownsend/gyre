@@ -199,12 +199,14 @@ contains
   subroutine write_eigdata (unit, bp, md)
 
     integer, intent(in)        :: unit
-    type(ad_bvp_t), intent(in) :: bp
-    type(mode_t), intent(in)   :: md(:)
+    type(ad_bvp_t), intent(in), target :: bp
+    type(mode_t), intent(in)           :: md(:)
 
     character(LEN=256)               :: freq_units
     character(LEN=FILENAME_LEN)      :: eigval_file
     character(LEN=FILENAME_LEN)      :: eigfunc_prefix
+    class(mech_coeffs_t), pointer    :: mc
+    type(oscpar_t), pointer          :: op
     integer                          :: i
     complex(WP)                      :: freq(SIZE(md))
     type(hgroup_t)                   :: hg
@@ -226,8 +228,11 @@ contains
 
     ! Write eigenvalues
 
+    mc => bp%get_mc()
+    op => bp%get_op()
+
     freq_loop : do i = 1,SIZE(md)
-       freq(i) = bp%mc%conv_freq(md(i)%omega, 'NONE', freq_units)
+       freq(i) = mc%conv_freq(md(i)%omega, 'NONE', freq_units)
     end do freq_loop
 
     if(eigval_file /= '') then
@@ -239,7 +244,7 @@ contains
        call write_attr(hg, 'n', bp%n)
        call write_attr(hg, 'n_e', bp%n_e)
 
-       call write_attr(hg, 'l', bp%op%l)
+       call write_attr(hg, 'l', op%l)
 
        call write_dset(hg, 'n_p', md%n_p)
        call write_dset(hg, 'n_g', md%n_g)
