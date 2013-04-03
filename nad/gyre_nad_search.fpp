@@ -52,17 +52,20 @@ contains
     type(mode_t), intent(in)                :: ad_md(:)
     type(mode_t), allocatable, intent(out)  :: nad_md(:)
 
-    integer              :: n_md
-    integer              :: i_part(MPI_SIZE+1)
-    integer              :: c_beg
-    integer              :: c_end
-    integer              :: c_rate
-    integer              :: i
-    type(nad_discfunc_t) :: df
-    integer              :: n_iter
-    complex(WP)          :: omega_root
+    integer                  :: n_md
+    integer                  :: i_part(MPI_SIZE+1)
+    integer                  :: c_beg
+    integer                  :: c_end
+    integer                  :: c_rate
+    integer                  :: i
+    type(nad_discfunc_t)     :: df
+    integer                  :: n_iter
+    complex(WP)              :: omega_root
+    complex(WP)              :: discrim_root
+    real(WP), allocatable    :: x(:)
+    complex(WP), allocatable :: y(:,:)
     $if($MPI)
-    integer              :: p
+    integer                  :: p
     $endif
 
     ! Process each adiabatic mode to find non-adiabatic modes
@@ -99,14 +102,20 @@ contains
                             0._WP, n_iter=n_iter)
        $ASSERT(n_iter <= bp%np%n_iter_max,Too many iterations)
 
+       discrim_root = df%eval(omega_root)
+
+       ! Reconstruct the eigenfunction
+
+       call bp%recon(omega_root, x, y)
+
        ! Set up the mode
 
-       call nad_md(i)%init(bp, omega_root)
+       call nad_md(i)%init(bp%mc, bp%op, omega_root, discrim_root, x, y)
 
        ! Report
 
        write(OUTPUT_UNIT, '(A,3(2X,I6),3(2X,E23.16),2X,I4)') 'Mode :', nad_md(i)%n_p-nad_md(i)%n_g, nad_md(i)%n_p, nad_md(i)%n_g, &
-            nad_md(i)%omega, ABS(nad_md(i)%discrim), n_iter
+            omega_root, ABS(discrim_root), n_iter
 
     end do root_loop
 
@@ -126,7 +135,7 @@ contains
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call nad_md(i)%bcast(p)
+          call bcast(nad_md(i), p)
        end do
     enddo
 

@@ -53,25 +53,26 @@ contains
     real(WP), intent(in)                   :: omega(:)
     type(mode_t), allocatable, intent(out) :: md(:)
 
-    integer             :: n_omega
-    integer             :: i_part(MPI_SIZE+1)
-    integer             :: c_beg
-    integer             :: c_end
-    integer             :: c_rate
-    integer             :: i
-    type(ext_real_t)    :: discrim(SIZE(omega))
+    integer                  :: n_omega
+    integer                  :: i_part(MPI_SIZE+1)
+    integer                  :: c_beg
+    integer                  :: c_end
+    integer                  :: c_rate
+    integer                  :: i
+    type(ext_real_t)         :: discrim(SIZE(omega))
     $if($MPI)
-    integer             :: recvcounts(MPI_SIZE)
-    integer             :: displs(MPI_SIZE)
+    integer                  :: recvcounts(MPI_SIZE)
+    integer                  :: displs(MPI_SIZE)
+    integer                  :: p
     $endif
-    integer             :: n_brack
-    integer             :: i_brack(SIZE(omega)-1)
-    type(ad_discfunc_t) :: df
-    integer             :: n_iter
-    complex(WP)         :: omega_root
-    $if($MPI)
-    integer             :: p
-    $endif
+    integer                  :: n_brack
+    integer                  :: i_brack(SIZE(omega)-1)
+    type(ad_discfunc_t)      :: df
+    integer                  :: n_iter
+    complex(WP)              :: omega_root
+    complex(WP)              :: discrim_root
+    real(WP), allocatable    :: x(:)
+    complex(WP), allocatable :: y(:,:)
 
     ! Calculate the discriminant on the omega abscissa
 
@@ -164,14 +165,20 @@ contains
        omega_root = df%root(omega(i_brack(i)), omega(i_brack(i)+1), 0._WP, n_iter=n_iter)
        $ASSERT(n_iter <= bp%np%n_iter_max,Too many iterations)
 
+       discrim_root = df%eval(omega_root)
+
+       ! Reconstruct the eigenfunction
+
+       call bp%recon(omega_root, x, y)
+
        ! Set up the mode
 
-       call md(i)%init(bp, omega_root)
+       call md(i)%init(bp%mc, bp%op, omega_root, discrim_root, x, y)
 
        ! Report
 
        write(OUTPUT_UNIT, '(A,3(2X,I6),3(2X,E23.16),2X,I4)') 'Mode :', md(i)%n_p-md(i)%n_g, md(i)%n_p, md(i)%n_g, &
-            md(i)%omega, ABS(md(i)%discrim), n_iter
+            omega_root, ABS(discrim_root), n_iter
 
     end do root_loop
 
@@ -190,7 +197,7 @@ contains
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call md(i)%bcast(p)
+          call bcast(md(i), p)
        end do
     enddo
 
