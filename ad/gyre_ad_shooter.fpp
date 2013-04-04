@@ -98,15 +98,15 @@ contains
     integer             :: k
     complex(WP)         :: E_l(this%n_e,this%n_e)
     complex(WP)         :: E_r(this%n_e,this%n_e)
-    type(ext_complex_t) :: scale
+    type(ext_complex_t) :: S
 
     ! Set the sysmtx equation blocks by solving IVPs across the
     ! intervals x(k) -> x(k+1)
 
-    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale)
+    !$OMP PARALLEL DO PRIVATE (E_l, E_r, S)
     block_loop : do k = 1,SIZE(x)-1
-       call solve(this%np%ivp_solver_type, this%jc, omega, x(k), x(k+1), E_l, E_r, scale)
-       call sm%set_block(k, E_l, E_r, scale)
+       call solve(this%np%ivp_solver_type, this%jc, omega, x(k), x(k+1), E_l, E_r, S)
+       call sm%set_block(k, E_l, E_r, S)
     end do block_loop
 
     ! Finish

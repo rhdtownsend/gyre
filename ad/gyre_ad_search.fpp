@@ -203,7 +203,7 @@ contains
 
        discrim(i) = ext_real(bp%discrim(CMPLX(omega(i), KIND=WP)))
 
-       write(OUTPUT_UNIT, 100) 'Eval:', omega(i), discrim(i)%f, discrim(i)%e
+       write(OUTPUT_UNIT, 100) 'Eval:', omega(i), fraction(discrim(i)), exponent(discrim(i))
 100    format(A,2X,E23.16,2X,F19.16,2X,I7)
 
     end do discrim_loop

@@ -225,7 +225,7 @@ contains
 
     ! Set the normalizing exponent based on this discriminant
 
-    this%e_norm = discrim%e
+    this%e_norm = exponent(discrim)
 
     ! Finish
 
@@ -258,7 +258,7 @@ contains
 
     ! Apply the normalization
 
-    if(norm_) discrim%e = discrim%e - this%e_norm
+    if(norm_) discrim = scale(discrim, -this%e_norm)
 
     ! Finish
 
