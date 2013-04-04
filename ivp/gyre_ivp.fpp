@@ -45,7 +45,7 @@ module gyre_ivp
 
 contains
 
-  subroutine solve (solver_type, jc, omega, x_a, x_b, E_l, E_r, scale)
+  subroutine solve (solver_type, jc, omega, x_a, x_b, E_l, E_r, S)
 
     character(LEN=*), intent(in)     :: solver_type
     class(jacobian_t), intent(in)    :: jc
@@ -54,19 +54,19 @@ contains
     real(WP), intent(in)             :: x_b
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
-    type(ext_complex_t), intent(out) :: scale
+    type(ext_complex_t), intent(out) :: S
 
     ! Solve the IVP across the interval x_a -> x_b
 
     select case(solver_type)
     case('FINDIFF')
-       call solve_findiff(jc, omega, x_a, x_b, E_l, E_r, scale)
+       call solve_findiff(jc, omega, x_a, x_b, E_l, E_r, S)
     case('MAGNUS_GL2')
-       call solve_magnus_GL2(jc, omega, x_a, x_b, E_l, E_r, scale)
+       call solve_magnus_GL2(jc, omega, x_a, x_b, E_l, E_r, S)
     case('MAGNUS_GL4')
-       call solve_magnus_GL4(jc, omega, x_a, x_b, E_l, E_r, scale)
+       call solve_magnus_GL4(jc, omega, x_a, x_b, E_l, E_r, S)
     case('MAGNUS_GL6')
-       call solve_magnus_GL6(jc, omega, x_a, x_b, E_l, E_r, scale)
+       call solve_magnus_GL6(jc, omega, x_a, x_b, E_l, E_r, S)
     case default
        $ABORT(Invalid solver_type)
     end select

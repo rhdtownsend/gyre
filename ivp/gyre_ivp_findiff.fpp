@@ -44,7 +44,7 @@ module gyre_ivp_findiff
 
 contains
 
-  subroutine solve_findiff (jc, omega, x_a, x_b, E_l, E_r, scale)
+  subroutine solve_findiff (jc, omega, x_a, x_b, E_l, E_r, S)
 
     class(jacobian_t), intent(in)    :: jc
     complex(WP), intent(in)          :: omega
@@ -52,7 +52,7 @@ contains
     real(WP), intent(in)             :: x_b
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
-    type(ext_complex_t), intent(out) :: scale
+    type(ext_complex_t), intent(out) :: S
 
     real(WP)    :: x
     real(WP)    :: dx
@@ -79,7 +79,7 @@ contains
     E_l = 0.5_WP*dx*A + identity_matrix(jc%n_e)
     E_r = 0.5_WP*dx*A - identity_matrix(jc%n_e)
 
-    scale = ext_complex(1._WP)
+    S = ext_complex(1._WP)
 
     ! Finish
 

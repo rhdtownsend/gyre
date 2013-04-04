@@ -49,7 +49,7 @@ module gyre_ivp_magnus
 
 contains
 
-  subroutine solve_magnus_GL2 (jc, omega, x_a, x_b, E_l, E_r, scale)
+  subroutine solve_magnus_GL2 (jc, omega, x_a, x_b, E_l, E_r, S)
 
     class(jacobian_t), intent(in)    :: jc
     complex(WP), intent(in)          :: omega
@@ -57,7 +57,7 @@ contains
     real(WP), intent(in)             :: x_b
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
-    type(ext_complex_t), intent(out) :: scale
+    type(ext_complex_t), intent(out) :: S
 
     complex(WP) :: dOmega(jc%n_e,jc%n_e)
 
@@ -71,7 +71,7 @@ contains
     ! Gauss-Legendre Magnus scheme
 
     call eval_dOmega_GL2(jc, omega, x_a, x_b, dOmega)
-    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, scale)
+    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, S)
 
     ! Finish
     
@@ -79,7 +79,7 @@ contains
 
 !****
   
-  subroutine solve_magnus_GL4 (jc, omega, x_a, x_b, E_l, E_r, scale)
+  subroutine solve_magnus_GL4 (jc, omega, x_a, x_b, E_l, E_r, S)
 
     class(jacobian_t), intent(in)    :: jc
     complex(WP), intent(in)          :: omega
@@ -87,7 +87,7 @@ contains
     real(WP), intent(in)             :: x_b
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
-    type(ext_complex_t), intent(out) :: scale
+    type(ext_complex_t), intent(out) :: S
 
     complex(WP) :: dOmega(jc%n_e,jc%n_e)
 
@@ -101,7 +101,7 @@ contains
     ! Gauss-Legendre Magnus scheme
 
     call eval_dOmega_GL4(jc, omega, x_a, x_b, dOmega)
-    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, scale)
+    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, S)
 
     ! Finish
     
@@ -109,7 +109,7 @@ contains
   
 !****
   
-  subroutine solve_magnus_GL6 (jc, omega, x_a, x_b, E_l, E_r, scale)
+  subroutine solve_magnus_GL6 (jc, omega, x_a, x_b, E_l, E_r, S)
 
     class(jacobian_t), intent(in)    :: jc
     complex(WP), intent(in)          :: omega
@@ -117,7 +117,7 @@ contains
     real(WP), intent(in)             :: x_b
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
-    type(ext_complex_t), intent(out) :: scale
+    type(ext_complex_t), intent(out) :: S
 
     complex(WP) :: dOmega(jc%n_e,jc%n_e)
 
@@ -131,7 +131,7 @@ contains
     ! Gauss-Legendre Magnus scheme
 
     call eval_dOmega_GL6(jc, omega, x_a, x_b, dOmega)
-    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, scale)
+    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, S)
 
     ! Finish
     
@@ -139,13 +139,13 @@ contains
   
 !****
 
-  subroutine solve_magnus (dOmega, dx, E_l, E_r, scale)
+  subroutine solve_magnus (dOmega, dx, E_l, E_r, S)
 
     complex(WP), intent(in)          :: dOmega(:,:)
     real(WP), intent(in)             :: dx
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
-    type(ext_complex_t), intent(out) :: scale
+    type(ext_complex_t), intent(out) :: S
 
     complex(WP) :: lambda(SIZE(dOmega, 1))
     complex(WP) :: V_l(SIZE(dOmega, 1),SIZE(dOmega, 1))
@@ -172,7 +172,7 @@ contains
     E_l =  MATMUL(V_r, MATMUL(diagonal_matrix(EXP( lambda_dx_neg)), V_l))
     E_r = -MATMUL(V_r, MATMUL(diagonal_matrix(EXP(-lambda_dx_pos)), V_l))
 
-    scale = exp(ext_complex(SUM(lambda_dx_pos)))
+    S = exp(ext_complex(SUM(lambda_dx_pos)))
 
     ! Finish
 
