@@ -37,39 +37,43 @@ module gyre_ext_arith
   ! Derived-type definitions
 
   type ext_real_t
+     private
      real(WP) :: f ! Fractional part
      integer  :: e ! Exponent
    contains
-     procedure :: unary_minus_er
-     procedure :: binary_times_er
-     procedure :: binary_eq_er
-     procedure :: binary_neq_er
-     procedure :: binary_lt_er
-     procedure :: binary_gt_er
-     procedure :: binary_le_er
-     procedure :: binary_ge_er
-     generic   :: operator(-) => unary_minus_er
-     generic   :: operator(*) => binary_times_er
-     generic   :: operator(==) => binary_eq_er
-     generic   :: operator(/=) => binary_neq_er
-     generic   :: operator(<) => binary_lt_er
-     generic   :: operator(>) => binary_gt_er
-     generic   :: operator(<=) => binary_le_er
-     generic   :: operator(>=) => binary_ge_er
+     private
+     procedure       :: unary_minus_er
+     procedure       :: binary_times_er
+     procedure       :: binary_eq_er
+     procedure       :: binary_neq_er
+     procedure       :: binary_lt_er
+     procedure       :: binary_gt_er
+     procedure       :: binary_le_er
+     procedure       :: binary_ge_er
+     generic, public :: operator(-) => unary_minus_er
+     generic, public :: operator(*) => binary_times_er
+     generic, public :: operator(==) => binary_eq_er
+     generic, public :: operator(/=) => binary_neq_er
+     generic, public :: operator(<) => binary_lt_er
+     generic, public :: operator(>) => binary_gt_er
+     generic, public :: operator(<=) => binary_le_er
+     generic, public :: operator(>=) => binary_ge_er
   end type ext_real_t
 
   type ext_complex_t
+     private
      complex(WP) :: f ! Fractional part
      integer     :: e ! Exponent
    contains
-     procedure :: unary_minus_ec
-     procedure :: binary_times_ec
-     procedure :: binary_eq_ec
-     procedure :: binary_neq_ec
-     generic   :: operator(-) => unary_minus_ec
-     generic   :: operator(*) => binary_times_ec
-     generic   :: operator(==) => binary_eq_ec
-     generic   :: operator(/=) => binary_neq_ec
+     private
+     procedure       :: unary_minus_ec
+     procedure       :: binary_times_ec
+     procedure       :: binary_eq_ec
+     procedure       :: binary_neq_ec
+     generic, public :: operator(-) => unary_minus_ec
+     generic, public :: operator(*) => binary_times_ec
+     generic, public :: operator(==) => binary_eq_ec
+     generic, public :: operator(/=) => binary_neq_ec
   end type ext_complex_t
 
   ! Interface blocks
@@ -206,6 +210,21 @@ module gyre_ext_arith
      module procedure exp_c
   end interface exp
 
+  interface fraction
+     module procedure fraction_r
+     module procedure fraction_c
+  end interface fraction
+
+  interface exponent
+     module procedure exponent_r
+     module procedure exponent_c
+  end interface exponent
+
+  interface scale
+     module procedure scale_r
+     module procedure scale_c
+  end interface scale
+
   ! Access specifiers
 
   private
@@ -228,6 +247,9 @@ module gyre_ext_arith
   public :: valid
   public :: product
   public :: exp
+  public :: fraction
+  public :: exponent
+  public :: scale
 
   ! Procedures
 
@@ -871,6 +893,112 @@ contains
     return
 
   end function exp_c
+
+!****
+
+  elemental function fraction_r (ex) result (fraction_ex)
+
+    type(ext_real_t), intent(in) :: ex
+    real(WP)                     :: fraction_ex
+
+    ! Return the fraction part of ex
+
+    fraction_ex = ex%f
+
+    ! Finish
+
+    return
+
+  end function fraction_r
+
+!****
+
+  elemental function fraction_c (ez) result (fraction_ez)
+
+    type(ext_complex_t), intent(in) :: ez
+    complex(WP)                     :: fraction_ez
+
+    ! Return the fraction part of ez
+
+    fraction_ez = ez%f
+
+    ! Finish
+
+    return
+
+  end function fraction_c
+
+!****
+
+  elemental function exponent_r (ex) result (exponent_ex)
+
+    type(ext_real_t), intent(in) :: ex
+    integer                      :: exponent_ex
+
+    ! Return the exponent part of ex
+
+    exponent_ex = ex%e
+
+    ! Finish
+
+    return
+
+  end function exponent_r
+
+!****
+
+  elemental function exponent_c (ez) result (exponent_ez)
+
+    type(ext_complex_t), intent(in) :: ez
+    integer                         :: exponent_ez
+
+    ! Return the exponent part of ez
+
+    exponent_ez = ez%e
+
+    ! Finish
+
+    return
+
+  end function exponent_c
+
+!****
+
+  elemental function scale_r (ex, de) result (scale_ex)
+
+    class(ext_real_t), intent(in) :: ex
+    integer, intent(in)           :: de
+    type(ext_real_t)              :: scale_ex
+
+    ! Scale ex by 2**de
+
+    scale_ex%f = ex%f
+    scale_ex%e = ex%e + de
+
+    ! Finish
+
+    return
+
+  end function scale_r
+
+!****
+
+  elemental function scale_c (ez, de) result (scale_ez)
+
+    class(ext_complex_t), intent(in) :: ez
+    integer, intent(in)              :: de
+    type(ext_complex_t)              :: scale_ez
+
+    ! Scale ez by 2**de
+
+    scale_ez%f = ez%f
+    scale_ez%e = ez%e + de
+
+    ! Finish
+
+    return
+
+  end function scale_c
 
 !****
 
