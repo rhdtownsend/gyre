@@ -41,7 +41,7 @@ module gyre_sysmtx
      complex(WP), allocatable         :: B_o(:,:)   ! Outer boundary conditions
      complex(WP), allocatable         :: E_l(:,:,:) ! Left equation blocks
      complex(WP), allocatable         :: E_r(:,:,:) ! Right equation blocks
-     type(ext_complex_t), allocatable :: scale(:)   ! Block scales
+     type(ext_complex_t), allocatable :: S(:)       ! Block scales
      integer, allocatable             :: k_part(:)  ! Block partitioning indices
      integer                          :: n          ! Number of equation blocks
      integer                          :: n_e        ! Number of equations per block
@@ -84,7 +84,7 @@ contains
     allocate(this%B_i(n_i,n_e))
     allocate(this%B_o(n_o,n_e))
 
-    allocate(this%scale(n))
+    allocate(this%S(n))
 
     allocate(this%k_part(OMP_SIZE_MAX+1))
 
@@ -143,13 +143,13 @@ contains
 
 !****
 
-  subroutine set_block (this, k, E_l, E_r, scale)
+  subroutine set_block (this, k, E_l, E_r, S)
 
     class(sysmtx_t), intent(inout)  :: this
     integer, intent(in)             :: k
     complex(WP), intent(in)         :: E_l(:,:)
     complex(WP), intent(in)         :: E_r(:,:)
-    type(ext_complex_t), intent(in) :: scale
+    type(ext_complex_t), intent(in) :: S
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -165,7 +165,7 @@ contains
     this%E_l(:,:,k) = E_l
     this%E_r(:,:,k) = E_r
 
-    this%scale(k) = scale
+    this%S(k) = S
 
     ! Finish
 
@@ -228,7 +228,7 @@ contains
 
              sm%E_l(:,:,k_dest) = this%E_l(:,:,k_src)
              sm%E_r(:,:,k_dest) = this%E_r(:,:,k_src)
-             sm%scale(k_dest) = product(this%scale(this%k_part(t):this%k_part(t+1)-1))
+             sm%S(k_dest) = product(this%S(this%k_part(t):this%k_part(t+1)-1))
 
           endif
 
@@ -290,7 +290,7 @@ contains
 
     ! Add in the block scales
 
-    det = product([det,this%scale])
+    det = product([det,this%S])
 
     ! Finish
 
