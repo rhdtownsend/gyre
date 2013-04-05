@@ -192,7 +192,7 @@ contains
     integer           :: l
     character(LEN=64) :: outer_bound_type
 
-    namelist /oscpar/ l, outer_bound_type
+    namelist /osc/ l, outer_bound_type
 
     ! Read oscillation parameters
 
@@ -201,7 +201,7 @@ contains
     outer_bound_type = 'ZERO'
 
     rewind(unit)
-    read(unit, NML=oscpar, END=100)
+    read(unit, NML=osc, END=100)
 
 100 continue
 
@@ -225,7 +225,7 @@ contains
     integer           :: n_iter_max
     character(LEN=64) :: ivp_solver_type
 
-    namelist /numpar/ n_iter_max, ivp_solver_type
+    namelist /num/ n_iter_max, ivp_solver_type
 
     ! Read numerical parameters
 
@@ -234,7 +234,7 @@ contains
     ivp_solver_type = 'MAGNUS_GL2'
 
     rewind(unit)
-    read(unit, NML=numpar, END=100)
+    read(unit, NML=num, END=100)
 
 100 continue
 
