@@ -35,7 +35,6 @@ module gyre_bvp
    contains 
      private
      procedure(discrim_i), deferred, public :: discrim
-     procedure(recon_i), deferred, public   :: recon
   end type bvp_t
 
   ! Interfaces
@@ -52,15 +51,6 @@ module gyre_bvp
        type(ext_complex_t)           :: discrim
      end function discrim_i
 
-     subroutine recon_i (this, omega, x, y)
-       use core_kinds
-       import bvp_t
-       class(bvp_t), intent(inout)           :: this
-       complex(WP), intent(in)               :: omega
-       real(WP), allocatable, intent(out)    :: x(:)
-       complex(WP), allocatable, intent(out) :: y(:,:)
-     end subroutine recon_i
-       
   end interface
 
   ! Access specifiers
