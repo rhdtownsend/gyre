@@ -37,6 +37,7 @@ module gyre_nad_bvp
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
+  use gyre_eigfunc
 
   use ISO_FORTRAN_ENV
 
@@ -48,25 +49,31 @@ module gyre_nad_bvp
 
   type, extends(bvp_t) :: nad_bvp_t
      private
-     class(mech_coeffs_t), allocatable, public  :: mc
-     class(therm_coeffs_t), allocatable, public :: tc
-     type(oscpar_t), public                     :: op
-     type(gridpar_t), public                    :: gp
-     type(numpar_t), public                     :: np
-     type(nad_shooter_t)                        :: sh
-     type(nad_bound_t)                          :: bd
-     type(sysmtx_t)                             :: sm
-     real(WP), allocatable                      :: x(:)
-     integer                                    :: e_norm
-     integer, public                            :: n
-     integer, public                            :: n_e
+     class(mech_coeffs_t), allocatable  :: mc
+     class(therm_coeffs_t), allocatable :: tc
+     type(oscpar_t)                     :: op
+     type(gridpar_t)                    :: gp
+     type(numpar_t)                     :: np
+     type(nad_shooter_t)                :: sh
+     type(nad_bound_t)                  :: bd
+     type(sysmtx_t)                     :: sm
+     real(WP), allocatable              :: x(:)
+     integer                            :: e_norm
+     integer, public                    :: n
+     integer, public                    :: n_e
    contains 
      private
      procedure, public :: init
+     procedure, public :: get_mc
+     procedure, public :: get_tc
+     procedure, public :: get_op
+     procedure, public :: get_gp
+     procedure, public :: get_np
      procedure, public :: set_norm
      procedure, public :: discrim
      procedure         :: build
-     procedure, public :: recon
+     procedure         :: recon
+     procedure, public :: eigfunc
   end type nad_bvp_t
 
   ! Interfaces
@@ -187,6 +194,36 @@ contains
 
 !****
 
+  $define $GET $sub
+
+  $local $ITEM_NAME $1
+  $local $ITEM_TYPE $2
+
+  function get_$ITEM_NAME (this) result (item)
+
+    class(nad_bvp_t), intent(in), target :: this
+    $ITEM_TYPE, pointer                  :: item
+
+    ! Get a pointer to the item
+
+    item => this%$ITEM_NAME
+
+    ! Finish
+
+    return
+
+  end function get_$ITEM_NAME
+  
+  $endsub
+
+  $GET(mc,class(mech_coeffs_t))
+  $GET(tc,class(therm_coeffs_t))
+  $GET(op,type(oscpar_t))
+  $GET(gp,type(gridpar_t))
+  $GET(np,type(numpar_t))
+    
+!****
+
   subroutine set_norm (this, omega)
 
     class(nad_bvp_t), intent(inout) :: this
@@ -200,7 +237,7 @@ contains
 
     ! Set the normalizing exponent based on this discriminant
 
-    this%e_norm = discrim%e
+    this%e_norm = exponent(discrim)
 
     ! Finish
 
@@ -233,7 +270,7 @@ contains
 
     ! Apply the normalization
 
-    if(norm_) discrim%e = discrim%e - this%e_norm
+    if(norm_) discrim = scale(discrim, -this%e_norm)
 
     ! Finish
 
@@ -308,5 +345,87 @@ contains
     return
 
   end subroutine recon
+
+!****
+
+  function eigfunc (this, omega) result (ef)
+
+    class(nad_bvp_t), intent(inout) :: this
+    complex(WP), intent(in)         :: omega
+    type(eigfunc_t)                 :: ef
+
+    real(WP), allocatable    :: x(:)
+    complex(WP), allocatable :: y(:,:)
+    integer                  :: n
+    complex(WP), allocatable :: xi_r(:)
+    complex(WP), allocatable :: xi_h(:)
+    complex(WP), allocatable :: phi_pri(:)
+    complex(WP), allocatable :: dphi_pri(:)
+    complex(WP), allocatable :: del_S(:)
+    complex(WP), allocatable :: del_L(:)
+    integer                  :: i
+
+    ! Reconstruct the solution
+
+    call this%recon(omega, x, y)
+
+    ! Calculate eigenfunctions
+
+    n = SIZE(x)
+
+    allocate(xi_r(n))
+    allocate(xi_h(n))
+    allocate(phi_pri(n))
+    allocate(dphi_pri(n))
+    allocate(del_S(n))
+    allocate(del_L(n))
+
+    do i = 1, n
+
+       associate(c_1 => this%mc%c_1(x(i)))
+
+         ! Scale the solution
+
+         if(x(i) > 0._WP) then
+            y(:,i) = y(:,i)*x(i)**(this%op%lambda_0+1._WP)
+         else
+            if(this%op%lambda_0 /= -1._WP) then
+               y(:,i) = 0._WP
+            endif
+         endif
+       
+         ! Calculate radial & horizontal displacements
+
+         if(this%op%l == 0) then
+            xi_r(i) = y(1,i)
+            xi_h(i) = 0._WP
+         else
+            xi_r(i) = y(1,i)
+            xi_h(i) = y(2,i)/(c_1*omega**2)
+         endif
+
+         ! Calculate gravitational perturbations
+
+         phi_pri(i) = x(i)*y(3,i)/c_1
+         dphi_pri(i) = y(4,i)/c_1
+
+         ! Calculate thermal perturbations
+
+         del_S(i) = x(i)*y(5,i)
+         del_L(i) = x(i)**2*y(6,i)
+
+       end associate
+
+    end do
+
+    ! Initialize the eigfunc
+    
+    call ef%init(this%op, omega, x, xi_r, xi_h, phi_pri, dphi_pri, del_S, del_L)
+
+    ! Finish
+
+    return
+
+  end function eigfunc
 
 end module gyre_nad_bvp
