@@ -118,13 +118,9 @@ contains
 
        discrim_root = df%eval(omega_root)
 
-       ! Reconstruct the eigenfunction
-
-       call bp%recon(omega_root, x, y)
-
        ! Set up the mode
 
-       call md(i)%init(mc, op, omega_root, discrim_root, x, y)
+       call bp%recon_mode(omega_root, discrim_root, md(i))
 
        ! Report
 

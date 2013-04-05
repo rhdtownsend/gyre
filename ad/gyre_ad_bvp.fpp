@@ -35,6 +35,7 @@ module gyre_ad_bvp
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
+  use gyre_mode
 
   use ISO_FORTRAN_ENV
 
@@ -68,6 +69,7 @@ module gyre_ad_bvp
      procedure, public :: discrim
      procedure         :: build
      procedure, public :: recon
+     procedure, public :: recon_mode
   end type ad_bvp_t
 
   ! Interfaces
@@ -333,5 +335,79 @@ contains
     return
 
   end subroutine recon
+
+!****
+
+  subroutine recon_mode (this, omega, discrim, mode)
+
+    class(ad_bvp_t), intent(inout) :: this
+    complex(WP), intent(in)        :: omega
+    complex(WP), intent(in)        :: discrim
+    type(mode_t), intent(out)      :: mode
+
+    real(WP), allocatable    :: x(:)
+    complex(WP), allocatable :: y(:,:)
+    integer                  :: n
+    complex(WP), allocatable :: xi_r(:)
+    complex(WP), allocatable :: xi_h(:)
+    complex(WP), allocatable :: phi_pri(:)
+    complex(WP), allocatable :: dphi_pri(:)
+    integer                  :: i
+
+    ! Reconstruct the solution
+
+    call this%recon(omega, x, y)
+
+    ! Extract eigenfunctions
+
+    n = SIZE(x)
+
+    allocate(xi_r(n))
+    allocate(xi_h(n))
+    allocate(phi_pri(n))
+    allocate(dphi_pri(n))
+
+    do i = 1, n
+
+       associate(c_1 => this%mc%c_1(x(i)))
+
+         ! Scale the solution
+
+         if(x(i) > 0._WP) then
+            y(:,i) = y(:,i)*x(i)**(this%op%lambda_0+1._WP)
+         else
+            if(this%op%lambda_0 /= -1._WP) then
+               y(:,i) = 0._WP
+            endif
+         endif
+       
+         ! Calculate radial & horizontal displacements
+
+         if(this%op%l == 0) then
+            xi_r(i) = y(1,i)
+            xi_h(i) = 0._WP
+         else
+            xi_r(i) = y(1,i)
+            xi_h(i) = y(2,i)/(c_1*omega**2)
+         endif
+
+         ! Calculate gravitational perturbations
+
+         phi_pri(i) = x(i)*y(3,i)/c_1
+         dphi_pri(i) = y(4,i)/c_1
+
+       end associate
+
+    end do
+
+    ! Initialize the mode
+    
+    call mode%init(this%mc, this%op, omega, discrim, x, xi_r, xi_h, phi_pri, dphi_pri)
+
+    ! Finish
+
+    return
+
+  end subroutine recon_mode
 
 end module gyre_ad_bvp
