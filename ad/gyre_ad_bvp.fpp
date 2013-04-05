@@ -35,7 +35,7 @@ module gyre_ad_bvp
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
-  use gyre_mode
+  use gyre_eigfunc
 
   use ISO_FORTRAN_ENV
 
@@ -68,8 +68,8 @@ module gyre_ad_bvp
      procedure, public :: set_norm
      procedure, public :: discrim
      procedure         :: build
-     procedure, public :: recon
-     procedure, public :: recon_mode
+     procedure         :: recon
+     procedure, public :: eigfunc
   end type ad_bvp_t
 
   ! Interfaces
@@ -338,12 +338,11 @@ contains
 
 !****
 
-  subroutine recon_mode (this, omega, discrim, mode)
+  function eigfunc (this, omega) result (ef)
 
     class(ad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)        :: omega
-    complex(WP), intent(in)        :: discrim
-    type(mode_t), intent(out)      :: mode
+    type(eigfunc_t)                :: ef
 
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
@@ -352,13 +351,15 @@ contains
     complex(WP), allocatable :: xi_h(:)
     complex(WP), allocatable :: phi_pri(:)
     complex(WP), allocatable :: dphi_pri(:)
+    complex(WP), allocatable :: del_T(:)
+    complex(WP), allocatable :: del_L(:)
     integer                  :: i
 
     ! Reconstruct the solution
 
     call this%recon(omega, x, y)
 
-    ! Extract eigenfunctions
+    ! Calculate eigenfunctions
 
     n = SIZE(x)
 
@@ -366,6 +367,8 @@ contains
     allocate(xi_h(n))
     allocate(phi_pri(n))
     allocate(dphi_pri(n))
+    allocate(del_T(n))
+    allocate(del_L(n))
 
     do i = 1, n
 
@@ -396,18 +399,23 @@ contains
          phi_pri(i) = x(i)*y(3,i)/c_1
          dphi_pri(i) = y(4,i)/c_1
 
+         ! Calculate thermal perturbations
+
+         del_T(i) = 0._WP
+         del_L(i) = 0._WP
+
        end associate
 
     end do
 
-    ! Initialize the mode
+    ! Initialize the eigfunc
     
-    call mode%init(this%mc, this%op, omega, discrim, x, xi_r, xi_h, phi_pri, dphi_pri)
+    call ef%init(this%op, omega, x, xi_r, xi_h, phi_pri, dphi_pri, del_T, del_L)
 
     ! Finish
 
     return
 
-  end subroutine recon_mode
+  end function eigfunc
 
 end module gyre_ad_bvp

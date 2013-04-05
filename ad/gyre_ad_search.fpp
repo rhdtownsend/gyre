@@ -29,7 +29,7 @@ module gyre_ad_search
   use gyre_numpar
   use gyre_ad_bvp
   use gyre_ad_discfunc
-  use gyre_mode
+  use gyre_eigfunc
   use gyre_frontend
   use gyre_ext_arith
 
@@ -49,11 +49,11 @@ module gyre_ad_search
 
 contains
 
-  subroutine ad_scan_search (bp, omega, md)
+  subroutine ad_scan_search (bp, omega, ef)
 
-    type(ad_bvp_t), target, intent(inout)  :: bp
-    real(WP), intent(in)                   :: omega(:)
-    type(mode_t), allocatable, intent(out) :: md(:)
+    type(ad_bvp_t), target, intent(inout)     :: bp
+    real(WP), intent(in)                      :: omega(:)
+    type(eigfunc_t), allocatable, intent(out) :: ef(:)
 
     real(WP), allocatable         :: omega_a(:)
     real(WP), allocatable         :: omega_b(:)
@@ -63,15 +63,13 @@ contains
     integer                       :: c_end
     integer                       :: c_rate
     type(ad_discfunc_t)           :: df
-    class(mech_coeffs_t), pointer :: mc
-    type(oscpar_t), pointer       :: op
     type(numpar_t), pointer       :: np
     integer                       :: i
     integer                       :: n_iter
     complex(WP)                   :: omega_root
     complex(WP)                   :: discrim_root
-    real(WP), allocatable         :: x(:)
-    complex(WP), allocatable      :: y(:,:)
+    integer                       :: n_p
+    integer                       :: n_g
     $if($MPI)
     integer                       :: p
     $endif
@@ -82,19 +80,17 @@ contains
 
     n_brack = SIZE(omega_a)
 
-    ! Process each bracket to find modes
+    ! Process each bracket to find roots
 
     call write_header('Adiabatic Mode Finding', '=')
 
     call df%init(bp)
 
-    mc => bp%get_mc()
-    op => bp%get_op()
     np => bp%get_np()
 
     call partition_tasks(n_brack, 1, i_part)
 
-    allocate(md(n_brack))
+    allocate(ef(n_brack))
 
     call SYSTEM_CLOCK(c_beg, c_rate)
 
@@ -118,14 +114,15 @@ contains
 
        discrim_root = df%eval(omega_root)
 
-       ! Set up the mode
+       ! Set up the eigfunction
 
-       call bp%recon_mode(omega_root, discrim_root, md(i))
+       ef = bp%eigfunc(omega_root)
 
        ! Report
 
-       write(OUTPUT_UNIT, 100) 'Mode :', md(i)%n_p-md(i)%n_g, md(i)%n_p, md(i)%n_g, &
-            omega_root, ABS(discrim_root), n_iter
+       call ef(i)%classify(n_p, n_g)
+
+       write(OUTPUT_UNIT, 100) 'Mode :', n_p-n_g, n_p, n_g, omega_root, ABS(discrim_root), n_iter
 100    format(A,3(2X,I6),3(2X,E23.16),2X,I4)
 
     end do root_loop
@@ -146,7 +143,7 @@ contains
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p)
+          call bcast(ef(i), p)
        end do
     enddo
 
