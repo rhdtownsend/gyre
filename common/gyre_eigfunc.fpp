@@ -1,5 +1,5 @@
-! Module   : gyre_mode
-! Purpose  : mode classification
+! Module   : gyre_eigfunc
+! Purpose  : eigenfunction data
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_mode
+module gyre_eigfunc
 
   ! Uses
 
@@ -37,34 +37,33 @@ module gyre_mode
 
   ! Derived-type definitions
 
-  type :: mode_t
-     private
+  type :: eigfunc_t
      type(oscpar_t)           :: op
      real(WP), allocatable    :: x(:)
      complex(WP), allocatable :: xi_r(:)
      complex(WP), allocatable :: xi_h(:)
      complex(WP), allocatable :: phi_pri(:)
      complex(WP), allocatable :: dphi_pri(:)
-     real(WP), allocatable    :: dE_dx(:)
-     complex(WP), public      :: omega
-     complex(WP), public      :: discrim
-     real(WP), public         :: E
+     complex(WP), allocatable :: del_T(:)
+     complex(WP), allocatable :: del_L(:)
+     complex(WP)              :: omega
      integer                  :: n
-     integer, public          :: n_p
-     integer, public          :: n_g
    contains
      private
      procedure, public :: init
      procedure, public :: write
      procedure         :: write_gyre
-  end type mode_t
+     procedure, public :: classify
+     procedure, public :: kinetic
+     procedure, public :: inertia
+  end type eigfunc_t
 
   ! Interfaces
 
   $if($MPI)
 
   interface bcast
-     module procedure bcast_md
+     module procedure bcast_ef
   end interface bcast
 
   $endif
@@ -73,7 +72,7 @@ module gyre_mode
 
   private
 
-  public :: mode_t
+  public :: eigfunc_t
   $if($MPI)
   public :: bcast
   $endif
@@ -82,42 +81,42 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, mc, op, omega, discrim, x, xi_r, xi_h, phi_pri, dphi_pri)
+  subroutine init (this, op, omega, x, xi_r, xi_h, phi_pri, dphi_pri, del_T, del_L)
 
-    class(mode_t), intent(out)       :: this
-    class(mech_coeffs_t), intent(in) :: mc
+    class(eigfunc_t), intent(out)    :: this
     type(oscpar_t), intent(in)       :: op
     complex(WP), intent(in)          :: omega
-    complex(WP), intent(in)          :: discrim
     real(WP), intent(in)             :: x(:)
     complex(WP), intent(in)          :: xi_r(:)
     complex(WP), intent(in)          :: xi_h(:)
     complex(WP), intent(in)          :: phi_pri(:)
     complex(WP), intent(in)          :: dphi_pri(:)
+    complex(WP), intent(in)          :: del_T(:)
+    complex(WP), intent(in)          :: del_L(:)
 
     $CHECK_BOUNDS(SIZE(xi_r),SIZE(x))
     $CHECK_BOUNDS(SIZE(xi_h),SIZE(x))
     $CHECK_BOUNDS(SIZE(phi_pri),SIZE(x))
     $CHECK_BOUNDS(SIZE(dphi_pri),SIZE(x))
+    $CHECK_BOUNDS(SIZE(del_T),SIZE(x))
+    $CHECK_BOUNDS(SIZE(del_L),SIZE(x))
 
-    ! Initialize the mode
+    ! Initialize the eigfunc
 
     this%op = op
+
+    this%x = x
 
     this%xi_r = xi_r
     this%xi_h = xi_h
     this%phi_pri = phi_pri
     this%dphi_pri = dphi_pri
+    this%del_T = del_T
+    this%del_L = del_L
 
     this%omega = omega
-    this%discrim = discrim
-
-    this%dE_dx = kinetic(mc, this%op, omega, this%x, this%xi_r, this%xi_h)
-    this%E = inertia(mc, this%op, omega, this%x, this%xi_r, this%xi_h, this%dE_dx)
 
     this%n = SIZE(this%x)
-
-    call classify(this%x, REAL(this%xi_r), REAL(this%xi_h), this%n_p, this%n_g)
 
     ! Finish
 
@@ -129,12 +128,12 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_md (this, root_rank)
+  subroutine bcast_ef (this, root_rank)
 
-    class(mode_t), intent(inout) :: this
-    integer, intent(in)          :: root_rank
+    class(eigfunc_t), intent(inout) :: this
+    integer, intent(in)             :: root_rank
 
-    ! Broadcast the mode
+    ! Broadcast the eigfunc
 
     call bcast(this%op, root_rank)
 
@@ -144,17 +143,10 @@ contains
     call bcast_alloc(this%xi_h, root_rank)
     call bcast_alloc(this%phi_pri, root_rank)
     call bcast_alloc(this%dphi_pri, root_rank)
-
-    call bcast_alloc(this%dE_dx, root_rank)
-
-    call bcast(this%omega, root_rank)
-    call bcast(this%discrim, root_rank)
-    call bcast(this%E, root_rank)
+    call bcast_alloc(this%del_T, root_rank)
+    call bcast_alloc(this%del_L, root_rank)
 
     call bcast(this%n, root_rank)
-
-    call bcast(this%n_p, root_rank)
-    call bcast(this%n_g, root_rank)
 
   end subroutine bcast_md
 
@@ -164,11 +156,11 @@ contains
 
   subroutine write (this, file, file_type)
 
-    class(mode_t), intent(in)    :: this
+    class(eigfunc_t), intent(in) :: this
     character(LEN=*), intent(in) :: file
     character(LEN=*), intent(in) :: file_type
 
-    ! Write the mode
+    ! Write the eigfunc
 
     select case (file_type)
     case ('GYRE')
@@ -187,34 +179,29 @@ contains
 
   subroutine write_gyre (this, file)
 
-    class(mode_t), intent(in)    :: this
+    class(eigfunc_t), intent(in) :: this
     character(LEN=*), intent(in) :: file
 
     type(hgroup_t) :: hg
 
-    ! Write the mode to a GYRE eigenfunction HDF5 file
+    ! Write the eigfunc to a GYRE eigenfunction HDF5 file
 
     call hg%init(file, CREATE_FILE)
 
     call write_attr(hg, 'l', this%op%l)
-    call write_attr(hg, 'lambda_0', this%op%lambda_0)
 
     call write_attr(hg, 'omega', this%omega)
-    call write_attr(hg, 'discrim', this%discrim)
 
     call write_attr(hg, 'n', this%n)
     
-    call write_attr(hg, 'n_p', this%n_p)
-    call write_attr(hg, 'n_g', this%n_g)
-
     call write_dset(hg, 'x', this%x)
 
     call write_dset(hg, 'xi_r', this%xi_r)
     call write_dset(hg, 'xi_h', this%xi_h)
     call write_dset(hg, 'phi_pri', this%phi_pri)
     call write_dset(hg, 'dphi_pri', this%dphi_pri)
-
-    call write_dset(hg, 'dE_dx', this%dE_dx)
+    call write_dset(hg, 'del_T', this%del_T)
+    call write_dset(hg, 'del_L', this%del_L)
 
     call hg%final()
     
@@ -226,30 +213,29 @@ contains
 
 !****
 
-  subroutine classify (x, xi_r, xi_h, n_p, n_g)
+  subroutine classify (this, n_p, n_g)
 
-    real(WP), intent(in) :: x(:)
-    real(WP), intent(in) :: xi_r(:)
-    real(WP), intent(in) :: xi_h(:)
-    integer, intent(out) :: n_p
-    integer, intent(out) :: n_g
+    class(eigfunc_t), intent(in) :: this
+    integer, intent(out)         :: n_p
+    integer, intent(out)         :: n_g
 
+    real(WP) :: xi_r(this%n)
+    real(WP) :: xi_h(this%n)
     logical  :: inner_ext
     integer  :: i
     real(WP) :: y_2_cross
 
-    $CHECK_BOUNDS(SIZE(xi_r),SIZE(x))
-    $CHECK_BOUNDS(SIZE(xi_h),SIZE(x))
+    ! Classify the eigenfunction using the Cowling-Scuflaire scheme
 
-    ! Classify the non-radial eigenfunction using the
-    ! Cowling-Scuflaire scheme
+    xi_r = REAL(this%xi_r)
+    xi_h = REAL(this%xi_h)
 
     n_p = 0
     n_g = 0
  
-    inner_ext = ABS(xi_r(1)) > ABS(xi_r(2))
+    inner_ext = ABS(xi_r(1)) > ABS(this%xi_r(2))
 
-    x_loop : do i = 2,SIZE(x)-1
+    x_loop : do i = 2,this%n-1
 
        ! If the innermost extremum in y_1 hasn't yet been reached,
        ! skip
@@ -293,31 +279,20 @@ contains
 
 !*****
 
-  function kinetic (mc, op, omega, x, xi_r, xi_h) result (dE_dx)
+  function kinetic (this, mc) result (dE_dx)
 
+    class(eigfunc_t), intent(in)     :: this
     class(mech_coeffs_t), intent(in) :: mc
-    type(oscpar_t), intent(in)       :: op
-    complex(WP), intent(in)          :: omega
-    real(WP), intent(in)             :: x(:)
-    complex(WP), intent(in)          :: xi_r(:)
-    complex(WP), intent(in)          :: xi_h(:)
-    real(WP)                         :: dE_dx(SIZE(x))
+    real(WP)                         :: dE_dx(this%n)
     
     integer     :: i
 
-    $CHECK_BOUNDS(SIZE(xi_r),SIZE(x))
-    $CHECK_BOUNDS(SIZE(xi_h),SIZE(x))
-
     ! Calculate the kinetic energy density
 
-    do i = 1,SIZE(x)
-
-       associate(U => mc%U(x(i)), c_1 => mc%c_1(x(i)))
-
-         dE_dx(i) = (ABS(xi_r(i))**2 + op%l*(op%l+1)*ABS(xi_h(i))**2)*U*x(i)**2/c_1
-
+    do i = 1,this%n
+       associate(U => mc%U(this%x(i)), c_1 => mc%c_1(this%x(i)))
+         dE_dx(i) = (ABS(this%xi_r(i))**2 + this%op%l*(this%op%l+1)*ABS(this%xi_h(i))**2)*U*this%x(i)**2/c_1
        end associate
-
     end do
 
     ! Finish
@@ -328,32 +303,26 @@ contains
 
 !*****
 
-  function inertia (mc, op, omega, x, xi_r, xi_h, dE_dx) result (E)
+  function inertia (this, mc) result (E)
 
+    class(eigfunc_t), intent(in)     :: this
     class(mech_coeffs_t), intent(in) :: mc
-    type(oscpar_t), intent(in)       :: op
-    complex(WP), intent(in)          :: omega
-    real(WP), intent(in)             :: x(:)
-    complex(WP), intent(in)          :: xi_r(:)
-    complex(WP), intent(in)          :: xi_h(:)
-    real(WP), intent(in)             :: dE_dx(:)
     real(WP)                         :: E
 
-    integer     :: n
-    real(WP)    :: E_norm
+    real(WP) :: dE_dx(this%n)
+    real(WP) :: E_norm
 
-    $CHECK_BOUNDS(SIZE(xi_r),SIZE(x))
-    $CHECK_BOUNDS(SIZE(xi_h),SIZE(x))
+    ! Calculate the kinetic energy density
 
-    $CHECK_BOUNDS(SIZE(dE_dx),SIZE(x))
+    dE_dx = this%kinetic(mc)
 
-    ! Calculate the normalized inertia using trapezoidal integration
+    ! Integrate it to obtain the mode inertia
 
-    n = SIZE(x)
+    E = SUM(0.5_WP*(dE_dx(2:) + dE_dx(:this%n-1))*(this%x(2:) - this%x(:this%n-1)))
 
-    E = SUM(0.5_WP*(dE_dx(2:) + dE_dx(:n-1))*(x(2:) - x(:n-1)))
+    ! Normalize
 
-    E_norm = ABS(xi_r(n))**2 + op%l*(op%l+1)*ABS(xi_h(n))**2
+    E_norm = ABS(this%xi_r(this%n))**2 + this%op%l*(this%op%l+1)*ABS(this%xi_h(this%n))**2
 
     if(E_norm == 0._WP) then
        $WARN(E_norm is zero, not normalizing inertia)
@@ -367,4 +336,4 @@ contains
 
   end function inertia
 
-end module gyre_mode
+end module gyre_eigfunc
