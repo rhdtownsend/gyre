@@ -5,3 +5,7 @@ syntax: glob
 *.mod
 .depend
 *~
+ad/regress
+ad/gyre_ad
+ad/build_poly_hom
+nad/gyre_nad
