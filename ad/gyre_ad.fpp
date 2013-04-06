@@ -28,6 +28,7 @@ program gyre_ad
   use core_order
 
   use gyre_mech_coeffs
+  use gyre_therm_coeffs
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -45,14 +46,15 @@ program gyre_ad
 
   ! Variables
 
-  integer                           :: unit
-  real(WP), allocatable             :: x_mc(:)
-  class(mech_coeffs_t), allocatable :: mc
-  type(oscpar_t)                    :: op
-  type(numpar_t)                    :: np
-  type(ad_bvp_t)                    :: bp 
-  real(WP), allocatable             :: omega(:)
-  type(eigfunc_t), allocatable      :: ef(:)
+  integer                            :: unit
+  real(WP), allocatable              :: x_mc(:)
+  class(mech_coeffs_t), allocatable  :: mc
+  class(therm_coeffs_t), allocatable :: tc
+  type(oscpar_t)                     :: op
+  type(numpar_t)                     :: np
+  type(ad_bvp_t)                     :: bp 
+  real(WP), allocatable              :: omega(:)
+  type(eigfunc_t), allocatable       :: ef(:)
 
   ! Initialize
 
@@ -72,11 +74,11 @@ program gyre_ad
 
   if(MPI_RANK == 0) then
 
-     call init_coeffs(unit, x_mc, mc)
+     call init_coeffs(unit, x_mc, mc, tc)
      call init_oscpar(unit, op)
      call init_numpar(unit, np)
      call init_scan(unit, mc, omega)
-     call init_bvp(unit, x_mc, mc, op, np, omega, bp)
+     call init_bvp(unit, x_mc, mc, tc, op, np, omega, bp)
 
   end if
 
@@ -103,11 +105,12 @@ contains
 
 !****
 
-  subroutine init_bvp (unit, x_mc, mc, op, np, omega, bp)
+  subroutine init_bvp (unit, x_mc, mc, tc, op, np, omega, bp)
 
     integer, intent(in)                      :: unit
     real(WP), intent(in), allocatable        :: x_mc(:)
-    class(mech_coeffs_t), intent(in), target :: mc
+    class(mech_coeffs_t), allocatable, intent(inout) :: mc
+    class(therm_coeffs_t), allocatable, intent(inout) :: tc
     type(oscpar_t), intent(in)               :: op
     type(numpar_t), intent(in)               :: np
     real(WP), intent(in)                     :: omega(:)
@@ -186,7 +189,7 @@ contains
 
     ! Initialize the bvp
 
-    call bp%init(mc, op, gp, np, x_sh)
+    call bp%init(mc, tc, op, gp, np, x_sh)
 
     ! Finish
 

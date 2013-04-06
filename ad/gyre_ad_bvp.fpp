@@ -26,7 +26,9 @@ module gyre_ad_bvp
 
   use gyre_bvp
   use gyre_mech_coeffs
+  use gyre_therm_coeffs
   use gyre_mech_coeffs_mpi
+  use gyre_therm_coeffs_mpi
   use gyre_oscpar
   use gyre_gridpar
   use gyre_numpar
@@ -47,17 +49,18 @@ module gyre_ad_bvp
 
   type, extends(bvp_t) :: ad_bvp_t
      private
-     class(mech_coeffs_t), allocatable :: mc
-     type(oscpar_t)                    :: op
-     type(gridpar_t)                   :: gp
-     type(numpar_t)                    :: np
-     type(ad_shooter_t)                :: sh
-     type(ad_bound_t)                  :: bd
-     type(sysmtx_t)                    :: sm
-     real(WP), allocatable             :: x(:)
-     integer                           :: e_norm
-     integer, public                   :: n
-     integer, public                   :: n_e
+     class(mech_coeffs_t), allocatable  :: mc
+     class(therm_coeffs_t), allocatable :: tc
+     type(oscpar_t)                     :: op
+     type(gridpar_t)                    :: gp
+     type(numpar_t)                     :: np
+     type(ad_shooter_t)                 :: sh
+     type(ad_bound_t)                   :: bd
+     type(sysmtx_t)                     :: sm
+     real(WP), allocatable              :: x(:)
+     integer                            :: e_norm
+     integer, public                    :: n
+     integer, public                    :: n_e
    contains 
      private
      procedure, public :: init
@@ -95,20 +98,22 @@ module gyre_ad_bvp
 
 contains
 
-  subroutine init (this, mc, op, gp, np, x)
+  subroutine init (this, mc, tc, op, gp, np, x)
 
-    class(ad_bvp_t), intent(out)     :: this
-    class(mech_coeffs_t), intent(in) :: mc
-    type(oscpar_t), intent(in)       :: op
-    type(gridpar_t), intent(in)      :: gp
-    type(numpar_t), intent(in)       :: np
-    real(WP), intent(in)             :: x(:)
+    class(ad_bvp_t), intent(out)                   :: this
+    class(mech_coeffs_t), intent(in)               :: mc
+    class(therm_coeffs_t), allocatable, intent(in) :: tc
+    type(oscpar_t), intent(in)                     :: op
+    type(gridpar_t), intent(in)                    :: gp
+    type(numpar_t), intent(in)                     :: np
+    real(WP), intent(in)                           :: x(:)
 
     integer :: n
 
     ! Initialize the ad_bvp
-
+    
     allocate(this%mc, SOURCE=mc)
+    if(ALLOCATED(tc)) allocate(this%tc, SOURCE=tc)
 
     this%op = op
     this%gp = gp
@@ -143,17 +148,19 @@ contains
     class(ad_bvp_t), intent(inout) :: this
     integer, intent(in)            :: root_rank
 
-    class(mech_coeffs_t), allocatable :: mc
-    type(oscpar_t)                    :: op
-    type(gridpar_t)                   :: gp
-    type(numpar_t)                    :: np
-    real(WP), allocatable             :: x(:)
+    class(mech_coeffs_t), allocatable  :: mc
+    class(therm_coeffs_t), allocatable :: tc
+    type(oscpar_t)                     :: op
+    type(gridpar_t)                    :: gp
+    type(numpar_t)                     :: np
+    real(WP), allocatable              :: x(:)
 
     ! Broadcast the bvp
 
     if(MPI_RANK == root_rank) then
 
        call bcast_alloc(this%mc, root_rank)
+       call bcast_alloc(this%tc, root_rank)
       
        call bcast(this%op, root_rank)
        call bcast(this%gp, root_rank)
@@ -164,6 +171,7 @@ contains
     else
 
        call bcast_alloc(mc, root_rank)
+       call bcast_alloc(tc, root_rank)
 
        call bcast(op, root_rank)
        call bcast(gp, root_rank)
@@ -171,7 +179,7 @@ contains
     
        call bcast_alloc(x, root_rank)
 
-       call this%init(mc, op, gp, np, x)
+       call this%init(mc, tc, op, gp, np, x)
 
     endif
 
@@ -354,6 +362,7 @@ contains
     complex(WP), allocatable :: del_S(:)
     complex(WP), allocatable :: del_L(:)
     integer                  :: i
+    real(WP)                 :: c_kap
 
     ! Reconstruct the solution
 
@@ -372,21 +381,22 @@ contains
 
     do i = 1, n
 
-       associate(c_1 => this%mc%c_1(x(i)))
+       associate(c_1 => this%mc%c_1(x(i)), &
+                 lambda_0 => this%op%lambda_0, l => this%op%l)
 
          ! Scale the solution
 
          if(x(i) > 0._WP) then
-            y(:,i) = y(:,i)*x(i)**(this%op%lambda_0+1._WP)
+            y(:,i) = y(:,i)*x(i)**(lambda_0+1._WP)
          else
-            if(this%op%lambda_0 /= -1._WP) then
+            if(lambda_0 /= -1._WP) then
                y(:,i) = 0._WP
             endif
          endif
        
          ! Calculate radial & horizontal displacements
 
-         if(this%op%l == 0) then
+         if(l == 0) then
             xi_r(i) = y(1,i)
             xi_h(i) = 0._WP
          else
@@ -402,7 +412,28 @@ contains
          ! Calculate thermal perturbations
 
          del_S(i) = 0._WP
-         del_L(i) = 0._WP ! Not correct, need qad expression
+
+         if(ALLOCATED(this%tc)) then
+
+            associate(V => this%mc%V(x(i)), U => this%mc%U(x(i)), nabla => this%tc%nabla(x(i)), &
+                      nabla_ad => this%tc%nabla_ad(x(i)), dnabla_ad => this%tc%dnabla_ad(x(i)), &
+                      c_rad => this%tc%c_rad(x(i)), kappa_ad => this%tc%kappa_ad(x(i)))
+
+              c_kap = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad+V)
+
+
+              del_L(i) = ((nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_kap)*x(i)**2*y(1,i) + &
+                          (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_kap)*x(i)**2*y(2,i) + &
+                          c_kap*x(i)**2*y(3,i) + &
+                          nabla_ad*x(i)**2*y(4,i))*c_rad/nabla
+
+            end associate
+
+         else
+
+            del_L(i) = 0._WP
+
+         endif
 
        end associate
 
