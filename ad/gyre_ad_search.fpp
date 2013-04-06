@@ -25,7 +25,6 @@ module gyre_ad_search
   use core_parallel
 
   use gyre_mech_coeffs
-  use gyre_oscpar
   use gyre_numpar
   use gyre_ad_bvp
   use gyre_ad_discfunc
@@ -55,30 +54,28 @@ contains
     real(WP), intent(in)                      :: omega(:)
     type(eigfunc_t), allocatable, intent(out) :: ef(:)
 
-    real(WP), allocatable         :: omega_a(:)
-    real(WP), allocatable         :: omega_b(:)
-    integer                       :: n_brack
-    integer                       :: i_part(MPI_SIZE+1)
-    integer                       :: c_beg
-    integer                       :: c_end
-    integer                       :: c_rate
-    type(ad_discfunc_t)           :: df
-    type(numpar_t), pointer       :: np
-    integer                       :: i
-    integer                       :: n_iter
-    complex(WP)                   :: omega_root
-    complex(WP)                   :: discrim_root
-    integer                       :: n_p
-    integer                       :: n_g
+    real(WP), allocatable   :: omega_a(:)
+    real(WP), allocatable   :: omega_b(:)
+    integer                 :: n_brack
+    integer                 :: i_part(MPI_SIZE+1)
+    integer                 :: c_beg
+    integer                 :: c_end
+    integer                 :: c_rate
+    type(ad_discfunc_t)     :: df
+    type(numpar_t), pointer :: np
+    integer                 :: i
+    integer                 :: n_iter
+    complex(WP)             :: omega_root
+    complex(WP)             :: discrim_root
+    integer                 :: n_p
+    integer                 :: n_g
     $if($MPI)
-    integer                       :: p
+    integer                 :: p
     $endif
 
     ! Scan for discriminant root brackets
 
     call scan(bp, omega, omega_a, omega_b)
-
-    n_brack = SIZE(omega_a)
 
     ! Process each bracket to find roots
 
@@ -86,11 +83,13 @@ contains
 
     call df%init(bp)
 
-    np => bp%get_np()
+    n_brack = SIZE(omega_a)
 
     call partition_tasks(n_brack, 1, i_part)
 
     allocate(ef(n_brack))
+
+    np => bp%get_np()
 
     call SYSTEM_CLOCK(c_beg, c_rate)
 
@@ -116,7 +115,7 @@ contains
 
        ! Set up the eigfunction
 
-       ef = bp%eigfunc(omega_root)
+       ef(i) = bp%eigfunc(omega_root)
 
        ! Report
 
