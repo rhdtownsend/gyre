@@ -101,15 +101,17 @@ contains
 
   subroutine init (this, mc, tc, op, gp, np, x)
 
-    class(nad_bvp_t), intent(out)     :: this
-    class(mech_coeffs_t), intent(in)  :: mc
-    class(therm_coeffs_t), intent(in) :: tc
-    type(oscpar_t), intent(in)        :: op
-    type(gridpar_t), intent(in)       :: gp
-    type(numpar_t), intent(in)        :: np
-    real(WP), intent(in)              :: x(:)
+    class(nad_bvp_t), intent(out)                  :: this
+    class(mech_coeffs_t), intent(in)               :: mc
+    class(therm_coeffs_t), allocatable, intent(in) :: tc
+    type(oscpar_t), intent(in)                     :: op
+    type(gridpar_t), intent(in)                    :: gp
+    type(numpar_t), intent(in)                     :: np
+    real(WP), intent(in)                           :: x(:)
 
     integer :: n
+
+    $ASSERT(ALLOCATED(tc),Coefficients missing)
 
     ! Initialize the nad_bvp
 

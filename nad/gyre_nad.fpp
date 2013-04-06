@@ -78,9 +78,6 @@ program gyre_nad
   if(MPI_RANK == 0) then
 
      call init_coeffs(unit, x_mc, mc, tc)
-
-     $ASSERT(ALLOCATED(tc),No therm_coeffs found)
-
      call init_oscpar(unit, op)
      call init_numpar(unit, np)
      call init_scan(unit, mc, omega)
@@ -113,15 +110,15 @@ contains
 
   subroutine init_bvp (unit, x_mc, mc, tc, op, np, omega, ad_bp, nad_bp)
 
-    integer, intent(in)                       :: unit
-    real(WP), intent(in), allocatable         :: x_mc(:)
-    class(mech_coeffs_t), intent(in), target  :: mc
-    class(therm_coeffs_t), intent(in), target :: tc
-    type(oscpar_t), intent(in)                :: op
-    type(numpar_t), intent(in)                :: np
-    real(WP), intent(in)                      :: omega(:)
-    type(ad_bvp_t), intent(out)               :: ad_bp
-    type(nad_bvp_t), intent(out)              :: nad_bp
+    integer, intent(in)                            :: unit
+    real(WP), intent(in), allocatable              :: x_mc(:)
+    class(mech_coeffs_t), intent(in)               :: mc
+    class(therm_coeffs_t), allocatable, intent(in) :: tc
+    type(oscpar_t), intent(in)                     :: op
+    type(numpar_t), intent(in)                     :: np
+    real(WP), intent(in)                           :: omega(:)
+    type(ad_bvp_t), intent(out)                    :: ad_bp
+    type(nad_bvp_t), intent(out)                   :: nad_bp
 
     character(LEN=256)    :: grid_type
     real(WP)              :: alpha_osc
@@ -196,7 +193,7 @@ contains
 
     ! Initialize the bvps
 
-    call ad_bp%init(mc, op, gp, np, x_sh)
+    call ad_bp%init(mc, tc, op, gp, np, x_sh)
     call nad_bp%init(mc, tc, op, gp, np, x_sh)
 
     ! Finish
