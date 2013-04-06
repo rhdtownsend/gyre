@@ -351,7 +351,7 @@ contains
     complex(WP), allocatable :: xi_h(:)
     complex(WP), allocatable :: phi_pri(:)
     complex(WP), allocatable :: dphi_pri(:)
-    complex(WP), allocatable :: del_T(:)
+    complex(WP), allocatable :: del_S(:)
     complex(WP), allocatable :: del_L(:)
     integer                  :: i
 
@@ -367,7 +367,7 @@ contains
     allocate(xi_h(n))
     allocate(phi_pri(n))
     allocate(dphi_pri(n))
-    allocate(del_T(n))
+    allocate(del_S(n))
     allocate(del_L(n))
 
     do i = 1, n
@@ -401,8 +401,8 @@ contains
 
          ! Calculate thermal perturbations
 
-         del_T(i) = 0._WP
-         del_L(i) = 0._WP
+         del_S(i) = 0._WP
+         del_L(i) = 0._WP ! Not correct, need qad expression
 
        end associate
 
@@ -410,7 +410,7 @@ contains
 
     ! Initialize the eigfunc
     
-    call ef%init(this%op, omega, x, xi_r, xi_h, phi_pri, dphi_pri, del_T, del_L)
+    call ef%init(this%op, omega, x, xi_r, xi_h, phi_pri, dphi_pri, del_S, del_L)
 
     ! Finish
 
