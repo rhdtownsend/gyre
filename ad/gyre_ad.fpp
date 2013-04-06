@@ -105,14 +105,14 @@ contains
 
   subroutine init_bvp (unit, x_mc, mc, tc, op, np, omega, bp)
 
-    integer, intent(in)                      :: unit
-    real(WP), intent(in), allocatable        :: x_mc(:)
-    class(mech_coeffs_t), allocatable, intent(inout) :: mc
-    class(therm_coeffs_t), allocatable, intent(inout) :: tc
-    type(oscpar_t), intent(in)               :: op
-    type(numpar_t), intent(in)               :: np
-    real(WP), intent(in)                     :: omega(:)
-    type(ad_bvp_t), intent(out)              :: bp
+    integer, intent(in)                            :: unit
+    real(WP), intent(in), allocatable              :: x_mc(:)
+    class(mech_coeffs_t), allocatable, intent(in)  :: mc
+    class(therm_coeffs_t), allocatable, intent(in) :: tc
+    type(oscpar_t), intent(in)                     :: op
+    type(numpar_t), intent(in)                     :: np
+    real(WP), intent(in)                           :: omega(:)
+    type(ad_bvp_t), intent(out)                    :: bp
 
     character(LEN=256)    :: grid_type
     real(WP)              :: alpha_osc
