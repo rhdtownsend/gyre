@@ -44,7 +44,7 @@ module gyre_eigfunc
      complex(WP), allocatable :: xi_h(:)
      complex(WP), allocatable :: phi_pri(:)
      complex(WP), allocatable :: dphi_pri(:)
-     complex(WP), allocatable :: del_T(:)
+     complex(WP), allocatable :: del_S(:)
      complex(WP), allocatable :: del_L(:)
      complex(WP)              :: omega
      integer                  :: n
@@ -81,7 +81,7 @@ module gyre_eigfunc
 
 contains
 
-  subroutine init (this, op, omega, x, xi_r, xi_h, phi_pri, dphi_pri, del_T, del_L)
+  subroutine init (this, op, omega, x, xi_r, xi_h, phi_pri, dphi_pri, del_S, del_L)
 
     class(eigfunc_t), intent(out)    :: this
     type(oscpar_t), intent(in)       :: op
@@ -91,14 +91,14 @@ contains
     complex(WP), intent(in)          :: xi_h(:)
     complex(WP), intent(in)          :: phi_pri(:)
     complex(WP), intent(in)          :: dphi_pri(:)
-    complex(WP), intent(in)          :: del_T(:)
+    complex(WP), intent(in)          :: del_S(:)
     complex(WP), intent(in)          :: del_L(:)
 
     $CHECK_BOUNDS(SIZE(xi_r),SIZE(x))
     $CHECK_BOUNDS(SIZE(xi_h),SIZE(x))
     $CHECK_BOUNDS(SIZE(phi_pri),SIZE(x))
     $CHECK_BOUNDS(SIZE(dphi_pri),SIZE(x))
-    $CHECK_BOUNDS(SIZE(del_T),SIZE(x))
+    $CHECK_BOUNDS(SIZE(del_S),SIZE(x))
     $CHECK_BOUNDS(SIZE(del_L),SIZE(x))
 
     ! Initialize the eigfunc
@@ -111,7 +111,7 @@ contains
     this%xi_h = xi_h
     this%phi_pri = phi_pri
     this%dphi_pri = dphi_pri
-    this%del_T = del_T
+    this%del_S = del_S
     this%del_L = del_L
 
     this%omega = omega
@@ -143,12 +143,12 @@ contains
     call bcast_alloc(this%xi_h, root_rank)
     call bcast_alloc(this%phi_pri, root_rank)
     call bcast_alloc(this%dphi_pri, root_rank)
-    call bcast_alloc(this%del_T, root_rank)
+    call bcast_alloc(this%del_S, root_rank)
     call bcast_alloc(this%del_L, root_rank)
 
     call bcast(this%n, root_rank)
 
-  end subroutine bcast_md
+  end subroutine bcast_ef
 
   $endif
 
@@ -200,7 +200,7 @@ contains
     call write_dset(hg, 'xi_h', this%xi_h)
     call write_dset(hg, 'phi_pri', this%phi_pri)
     call write_dset(hg, 'dphi_pri', this%dphi_pri)
-    call write_dset(hg, 'del_T', this%del_T)
+    call write_dset(hg, 'del_S', this%del_S)
     call write_dset(hg, 'del_L', this%del_L)
 
     call hg%final()
