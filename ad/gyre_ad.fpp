@@ -243,7 +243,7 @@ contains
 
        call ef(i)%classify(n_p(i), n_g(i))
 
-       E(i) = ef(i)%inertia(mc)
+       E(i) = ef(i)%E(mc)
 
     end do ef_loop
        
