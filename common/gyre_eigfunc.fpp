@@ -54,8 +54,9 @@ module gyre_eigfunc
      procedure, public :: write
      procedure         :: write_gyre
      procedure, public :: classify
-     procedure, public :: kinetic
-     procedure, public :: inertia
+     procedure, public :: K
+     procedure, public :: dK_dx
+     procedure, public :: E
   end type eigfunc_t
 
   ! Interfaces
@@ -279,11 +280,11 @@ contains
 
 !*****
 
-  function kinetic (this, mc) result (dE_dx)
+  function dK_dx (this, mc)
 
     class(eigfunc_t), intent(in)     :: this
     class(mech_coeffs_t), intent(in) :: mc
-    real(WP)                         :: dE_dx(this%n)
+    real(WP)                         :: dK_dx(this%n)
     
     integer     :: i
 
@@ -291,7 +292,7 @@ contains
 
     do i = 1,this%n
        associate(U => mc%U(this%x(i)), c_1 => mc%c_1(this%x(i)))
-         dE_dx(i) = (ABS(this%xi_r(i))**2 + this%op%l*(this%op%l+1)*ABS(this%xi_h(i))**2)*U*this%x(i)**2/c_1
+         dK_dx(i) = (ABS(this%xi_r(i))**2 + this%op%l*(this%op%l+1)*ABS(this%xi_h(i))**2)*U*this%x(i)**2/c_1
        end associate
     end do
 
@@ -299,41 +300,74 @@ contains
 
     return
 
-  end function kinetic
+  end function dK_dx
 
 !*****
 
-  function inertia (this, mc) result (E)
+  function K (this, mc)
+
+    class(eigfunc_t), intent(in)     :: this
+    class(mech_coeffs_t), intent(in) :: mc
+    real(WP)                         :: K
+    
+    ! Calculate the kinetic energy
+
+    K = integrate(this%x, this%dK_dx(mc))
+
+    ! Finish
+
+    return
+
+  end function K
+
+!*****
+
+  function E (this, mc)
 
     class(eigfunc_t), intent(in)     :: this
     class(mech_coeffs_t), intent(in) :: mc
     real(WP)                         :: E
 
-    real(WP) :: dE_dx(this%n)
-    real(WP) :: E_norm
+    real(WP) :: A2
 
-    ! Calculate the kinetic energy density
+    ! Calculate the normalized mode inertia, using the expression given by XXXXX
 
-    dE_dx = this%kinetic(mc)
+    A2 = ABS(this%xi_r(this%n))**2 + this%op%l*(this%op%l+1)*ABS(this%xi_h(this%n))**2
 
-    ! Integrate it to obtain the mode inertia
-
-    E = SUM(0.5_WP*(dE_dx(2:) + dE_dx(:this%n-1))*(this%x(2:) - this%x(:this%n-1)))
-
-    ! Normalize
-
-    E_norm = ABS(this%xi_r(this%n))**2 + this%op%l*(this%op%l+1)*ABS(this%xi_h(this%n))**2
-
-    if(E_norm == 0._WP) then
-       $WARN(E_norm is zero, not normalizing inertia)
+    if(A2 == 0._WP) then
+       $WARN(Surface amplitude is zero, not normalizing inertia)
     else
-       E = E/E_norm
+       E = this%K(mc)/A2
     endif
 
     ! Finish
 
     return
 
-  end function inertia
+  end function E
+
+!****
+
+  function integrate (x, y) result (int_y)
+
+    real(WP), intent(in) :: x(:)
+    real(WP), intent(in) :: y(:)
+    real(WP)             :: int_y
+
+    integer :: n
+
+    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+    ! Integrate y(x) using trapezoidal quadrature
+
+    n = SIZE(x)
+
+    int_y = SUM(0.5_WP*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)))
+
+    ! Finish
+
+    return
+
+  end function integrate
 
 end module gyre_eigfunc
