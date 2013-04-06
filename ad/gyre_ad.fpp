@@ -103,8 +103,6 @@ program gyre_ad
 
 contains
 
-!****
-
   subroutine init_bvp (unit, x_mc, mc, tc, op, np, omega, bp)
 
     integer, intent(in)                      :: unit
@@ -147,9 +145,7 @@ contains
     n_grid = 100
 
     rewind(unit)
-    read(unit, NML=shoot_grid, END=100)
-
-100 continue
+    read(unit, NML=shoot_grid, END=900)
 
     ! Initialize the shooting grid
 
@@ -181,9 +177,7 @@ contains
     n_floor = 0
 
     rewind(unit)
-    read(unit, NML=recon_grid, END=200)
-
-200 continue
+    read(unit, NML=recon_grid, END=910)
 
     call gp%init(alpha_osc, alpha_exp, n_center, n_floor, 0._WP, 0, 'DISP')
 
@@ -194,6 +188,16 @@ contains
     ! Finish
 
     return
+
+    ! Jump-in points for end-of-file
+
+900 continue
+
+    $ABORT(No &shoot_grid namelist in input file)
+
+910 continue
+
+    $ABORT(No &recon_grid namelist in input file)
 
   end subroutine init_bvp
 
@@ -227,9 +231,7 @@ contains
     eigfunc_prefix = ''
 
     rewind(unit)
-    read(unit, NML=output, END=100)
-
-100 continue
+    read(unit, NML=output, END=900)
 
     ! Calculate summary data
 
@@ -288,6 +290,12 @@ contains
     ! Finish
 
     return
+
+    ! Jump-in point for end-of-file
+
+900 continue
+
+    $ABORT(No &output namelist in input file)
 
   end subroutine write_eigdata
 

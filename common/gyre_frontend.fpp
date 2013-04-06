@@ -147,7 +147,7 @@ contains
     Gamma_1 = 5._WP/3._WP
 
     rewind(unit)
-    read(unit, NML=coeffs, END=100)
+    read(unit, NML=coeffs, END=900)
 
     ! Read/initialize the mech_coeffs
 
@@ -176,7 +176,7 @@ contains
 
     ! Jump-in point for end-of-file
 
-100 continue
+900 continue
 
     $ABORT(No &coeffs namelist in input file)
 
@@ -201,9 +201,7 @@ contains
     outer_bound_type = 'ZERO'
 
     rewind(unit)
-    read(unit, NML=osc, END=100)
-
-100 continue
+    read(unit, NML=osc, END=900)
 
     ! Initialize the oscpar
 
@@ -212,6 +210,12 @@ contains
     ! Finish
 
     return
+
+    ! Jump-in point for end-of-file
+
+900 continue
+
+    $ABORT(No &osc namelist in input file)
 
   end subroutine init_oscpar
 
@@ -234,9 +238,7 @@ contains
     ivp_solver_type = 'MAGNUS_GL2'
 
     rewind(unit)
-    read(unit, NML=num, END=100)
-
-100 continue
+    read(unit, NML=num, END=900)
 
     ! Initialize the numpar
 
@@ -245,6 +247,12 @@ contains
     ! Finish
 
     return
+
+    ! Jump-in point for end-of-file
+
+900 continue
+
+    $ABORT(No &num namelist in input file)
 
   end subroutine init_numpar
 
