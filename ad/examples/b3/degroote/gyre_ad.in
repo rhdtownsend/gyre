@@ -4,11 +4,11 @@
         G = 6.6742800000e-08
 /
 
-&oscpar
+&osc
         l = 0
 /
 
-&numpar
+&num
         ivp_solver_type = 'MAGNUS_GL2'
 /
 

@@ -2,11 +2,11 @@
 	coeffs_type = 'HOM'
 /
 
-&oscpar
+&osc
 	l = 0
 /
 
-&numpar
+&num
 	ivp_solver_type = 'MAGNUS_GL6'
 /
 

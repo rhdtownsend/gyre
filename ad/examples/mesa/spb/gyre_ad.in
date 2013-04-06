@@ -3,11 +3,11 @@
 	file = 'spb.mesa'
 /
 
-&oscpar
+&osc
 	l = 1
 /
 
-&numpar
+&num
 	ivp_solver_type = 'MAGNUS_GL2'
 /
 

@@ -3,11 +3,11 @@
 	file = 'poly_hom.h5'
 /
 
-&oscpar
+&osc
 	l = 0
 /
 
-&numpar
+&num
 	ivp_solver_type = 'MAGNUS_GL6'
 /
 

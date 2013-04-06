@@ -3,16 +3,16 @@
 	file = 'dupret_model_B.mesa'
 /
 
-&oscpar
+&osc
 	l = 1
 /
 
-&numpar
-	ivp_solver_type = 'FINDIFF'
+&num
+	ivp_solver_type = 'MAGNUS_GL2'
 /
 
 &scan
-	grid_type = 'LINEAR'
+	grid_type = 'INVERSE'
 	freq_min = 38,
 	freq_max = 42,
 	freq_units = 'UHZ'
@@ -21,8 +21,9 @@
 
 &shoot_grid
 	grid_type = 'DISPERSION'
-	alpha_osc = 0.5
-	alpha_exp = 0.1
+	alpha_osc = 5
+	alpha_exp = 1
+	n_center = 5
 /
 
 &recon_grid
