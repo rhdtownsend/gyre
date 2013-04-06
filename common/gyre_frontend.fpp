@@ -112,9 +112,10 @@ contains
   subroutine init_coeffs (unit, x_mc, mc, tc)
 
     use gyre_mesa_file
+    use gyre_b3_file
+    use gyre_gsm_file
     use gyre_fgong_file
     use gyre_osc_file
-    use gyre_b3_file
     use gyre_poly_file
     use gyre_hom_mech_coeffs
 
@@ -156,6 +157,8 @@ contains
        call read_mesa_file(file, G, deriv_type, mc, tc, x=x_mc)
     case('B3')
        call read_b3_file(file, G, deriv_type, mc, tc, x=x_mc)
+    case('GSM')
+       call read_gsm_file(file, G, deriv_type, mc, tc, x=x_mc)
     case('FGONG')
        call read_fgong_file(file, G, deriv_type, mc, x=x_mc) 
     case('OSC')
