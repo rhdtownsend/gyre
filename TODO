@@ -1,5 +1,6 @@
 *) Clean up access to data components
    - shut down where necessary
+   (mostly done, but needs more work)
 
 *) ivp_t
    - turn into a class?
@@ -10,3 +11,10 @@
   *) Do we actually need a different b/c?
 
 *) Add Coriolis support
+
+*) Add support for ASCII (ADIPLS?) output
+   - add write() methods for modes
+
+*) Add support for auto frequency setting
+
+*) Add flexible output support
