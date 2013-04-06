@@ -6,7 +6,7 @@ for d in \
     poly/* \
     hom; do
 
-    cd $d
+    cd $d && pwd
 
     ./gyre_ad < gyre_ad.in | tee gyre_ad.out
 
