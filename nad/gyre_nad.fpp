@@ -35,7 +35,7 @@ program gyre_nad
   use gyre_ad_search
   use gyre_nad_bvp
   use gyre_nad_search
-  use gyre_mode
+  use gyre_eigfunc
   use gyre_frontend
   use gyre_grid
 
@@ -56,8 +56,8 @@ program gyre_nad
   type(ad_bvp_t)                     :: ad_bp
   type(nad_bvp_t)                    :: nad_bp
   real(WP), allocatable              :: omega(:)
-  type(mode_t), allocatable          :: ad_md(:)
-  type(mode_t), allocatable          :: nad_md(:)
+  type(eigfunc_t), allocatable       :: ad_ef(:)
+  type(eigfunc_t), allocatable       :: nad_ef(:)
 
   ! Initialize
 
@@ -96,13 +96,13 @@ program gyre_nad
 
   ! Search for modes
 
-  call ad_scan_search(ad_bp, omega, ad_md)
-  call nad_prox_search(nad_bp, ad_md, nad_md)
+  call ad_scan_search(ad_bp, omega, ad_ef)
+  call nad_prox_search(nad_bp, ad_ef, nad_ef)
 
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_eigdata(unit, nad_bp, nad_md)
+     call write_eigdata(unit, nad_bp, nad_ef)
   endif
 
   ! Finish
@@ -207,17 +207,21 @@ contains
 
 !****
 
-  subroutine write_eigdata (unit, bp, md)
+  subroutine write_eigdata (unit, bp, ef)
 
-    integer, intent(in)         :: unit
-    type(nad_bvp_t), intent(in) :: bp
-    type(mode_t), intent(in)    :: md(:)
+    integer, intent(in)                 :: unit
+    type(nad_bvp_t), intent(in), target :: bp
+    type(eigfunc_t), intent(in)         :: ef(:)
 
     character(LEN=256)               :: freq_units
     character(LEN=FILENAME_LEN)      :: eigval_file
     character(LEN=FILENAME_LEN)      :: eigfunc_prefix
+    class(mech_coeffs_t), pointer    :: mc
     integer                          :: i
-    complex(WP)                      :: freq(SIZE(md))
+    complex(WP)                      :: freq(SIZE(ef))
+    integer                          :: n_p(SIZE(ef))
+    integer                          :: n_g(SIZE(ef))
+    real(WP)                         :: E(SIZE(ef))
     type(hgroup_t)                   :: hg
     character(LEN=FILENAME_LEN)      :: eigfunc_file
 
@@ -235,30 +239,40 @@ contains
 
 100 continue
 
-    ! Write eigenvalues
+    ! Calculate summary data
 
-    freq_loop : do i = 1,SIZE(md)
-       freq(i) = bp%mc%conv_freq(md(i)%omega, 'NONE', freq_units)
-    end do freq_loop
+    mc => bp%get_mc()
+
+    ef_loop : do i = 1,SIZE(ef)
+
+       freq(i) = mc%conv_freq(ef(i)%omega, 'NONE', freq_units)
+
+       call ef(i)%classify(n_p(i), n_g(i))
+
+       E(i) = ef(i)%inertia(mc)
+
+    end do ef_loop
+       
+    ! Write it
 
     if(eigval_file /= '') then
 
        call hg%init(eigval_file, CREATE_FILE)
           
-       call write_attr(hg, 'n_md', SIZE(md))
+       call write_attr(hg, 'n_ef', SIZE(ef))
 
        call write_attr(hg, 'n', bp%n)
        call write_attr(hg, 'n_e', bp%n_e)
 
-       call write_attr(hg, 'l', bp%op%l)
+       call write_dset(hg, 'l', ef%op%l)
 
-       call write_dset(hg, 'n_p', md%n_p)
-       call write_dset(hg, 'n_g', md%n_g)
+       call write_dset(hg, 'n_p', n_p)
+       call write_dset(hg, 'n_g', n_g)
 
        call write_dset(hg, 'freq', freq)
        call write_attr(hg, 'freq_units', freq_units)
 
-       call write_dset(hg, 'E', md%E)
+       call write_dset(hg, 'E', E)
 
        call hg%final()
 
@@ -268,14 +282,14 @@ contains
 
     if(eigfunc_prefix /= '') then
 
-       mode_loop : do i = 1,SIZE(md)
+       eigfunc_loop : do i = 1,SIZE(ef)
 
           write(eigfunc_file, 200) TRIM(eigfunc_prefix), i, '.h5'
 200       format(A,I4.4,A)
 
-          call md(i)%write(eigfunc_file, 'GYRE')
+          call ef(i)%write(eigfunc_file, 'GYRE')
 
-       end do mode_loop
+       end do eigfunc_loop
 
     end if
 
