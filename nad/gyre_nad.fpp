@@ -214,7 +214,7 @@ contains
     type(eigfunc_t), intent(in)         :: ef(:)
 
     character(LEN=256)               :: freq_units
-    character(LEN=FILENAME_LEN)      :: eigval_file
+    character(LEN=FILENAME_LEN)      :: summary_file
     character(LEN=FILENAME_LEN)      :: eigfunc_prefix
     class(mech_coeffs_t), pointer    :: mc
     integer                          :: i
@@ -225,13 +225,13 @@ contains
     type(hgroup_t)                   :: hg
     character(LEN=FILENAME_LEN)      :: eigfunc_file
 
-    namelist /output/ freq_units, eigval_file, eigfunc_prefix
+    namelist /output/ freq_units, summary_file, eigfunc_prefix
 
     ! Read output parameters
 
     freq_units = 'NONE'
 
-    eigval_file = ''
+    summary_file = ''
     eigfunc_prefix = ''
 
     rewind(unit)
@@ -255,9 +255,9 @@ contains
        
     ! Write it
 
-    if(eigval_file /= '') then
+    if(summary_file /= '') then
 
-       call hg%init(eigval_file, CREATE_FILE)
+       call hg%init(summary_file, CREATE_FILE)
           
        call write_attr(hg, 'n_ef', SIZE(ef))
 
