@@ -24,7 +24,6 @@ module gyre_ad_search
   use core_kinds
   use core_parallel
 
-  use gyre_mech_coeffs
   use gyre_numpar
   use gyre_ad_bvp
   use gyre_ad_discfunc
