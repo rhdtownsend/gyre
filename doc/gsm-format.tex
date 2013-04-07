@@ -1,0 +1,80 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% Page size
+
+\special{papersize=8.5in,11in}
+\setlength{\pdfpageheight}{\paperheight}
+\setlength{\pdfpagewidth}{\paperwidth}
+
+\setlength{\textwidth}{6.5in} 
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0in} 
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in} 
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in} 
+\setlength{\hoffset}{0in}
+\setlength{\voffset}{0in}
+
+\setlength{\abovecaptionskip}{0pt}
+\setlength{\belowcaptionskip}{0pt} 
+
+% Macros
+
+\newcommand{\diff}{\ensuremath{{\rm d}}}
+
+\newcommand{\Rstar}{\ensuremath{R_{\ast}}}
+\newcommand{\Mstar}{\ensuremath{M_{\ast}}}
+\newcommand{\Lrad}{\ensuremath{L_{\rm rad}}}
+\newcommand{\Lstar}{\ensuremath{L_{\ast}}}
+
+\newcommand{\cm}{\ensuremath{{\rm cm}}}
+\newcommand{\gram}{\ensuremath{{\rm g}}}
+\newcommand{\second}{\ensuremath{{\rm s}}}
+\newcommand{\dyne}{\ensuremath{{\rm dyn}}}
+\newcommand{\erg}{\ensuremath{{\rm erg}}}
+\newcommand{\kelvin}{\ensuremath{{\rm K}}}
+
+\begin{document}
+
+\section*{GYRE Stellar Model (GSM) Format}
+
+GSM-format files store data describing a stellar model in an
+HDF5-format file. The attributes of the root group contain global
+stellar parameters, while 1-D datasets contained within the root group
+specify the structure data on a grid of $n$ points extending from
+center to surface. These attributes and datasets are defined as
+follows:
+
+\begin{table}[h!]
+\begin{tabular}{|c|l|c|l|l|} \hline
+Variable & Object name & (A)ttribute / & Object datatype & Definition \\
+         &             & (D)ataset     &                 &            \\ \hline
+\Rstar            & \texttt{R\_star}      & A & \texttt{H5T\_IEEE\_F64LE} & Stellar radius ($\cm$) \\
+\Mstar            & \texttt{M\_star}      & A & \texttt{H5T\_IEEE\_F64LE} & Stellar mass ($\gram$) \\
+\Lstar            & \texttt{L\_star}      & A & \texttt{H5T\_IEEE\_F64LE} & Stellar luminosity ($\erg\,\second^{-1}$) \\
+n                 & \texttt{n}            & A &\texttt{H5T\_STD\_I64LE}  & Number of grid points \\ 
+$r$               & \texttt{r}            & D & \texttt{H5T\_IEEE\_F64LE} & Radius ($\cm$) \\
+$w$               & \texttt{w}            & D & \texttt{H5T\_IEEE\_F64LE} & $M_{r}/(\Mstar-M_{r})$ \\
+$p$               & \texttt{p}            & D & \texttt{H5T\_IEEE\_F64LE} & Total pressure ($\dyne\,\cm^{-2}$) \\
+$T$               & \texttt{T}            & D & \texttt{H5T\_IEEE\_F64LE} & Temperature ($\kelvin$) \\
+$\rho$            & \texttt{rho}          & D & \texttt{H5T\_IEEE\_F64LE} & Density ($\gram\,\cm^{-2}$) \\
+$\nabla$          & \texttt{nabla}        & D & \texttt{H5T\_IEEE\_F64LE} & $\diff \ln p/\diff \ln T$ \\
+$N^{2}$           & \texttt{N2}           & D & \texttt{H5T\_IEEE\_F64LE} & Brunt-V\"ais\"al\"a frequency squared ($\second^{-2}$) \\
+$\Gamma_{1}$      & \texttt{Gamma\_1}      & D & \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln p/\partial \ln \rho)_{\rm ad}$ \\
+$\alpha_{T}$      & \texttt{alpha\_T}      & D & \texttt{H5T\_IEEE\_F64LE} & $-(\partial \ln \rho/\partial \ln T)_{p}$  \\
+$c_{p}$           & \texttt{c\_p}          & D &  \texttt{H5T\_IEEE\_F64LE} & Specific heat at constant pressure ($\erg\,\kelvin^{-1}\,\gram^{-1}$) \\
+$\epsilon$        & \texttt{epsilon}      & D &  \texttt{H5T\_IEEE\_F64LE} & energy generation rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
+$\epsilon_{T}$    & \texttt{epsilon\_T}   & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln \epsilon/\partial \ln T)_{\rho}$ \\
+$\epsilon_{\rho}$ & \texttt{epsilon\_rho} & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln \epsilon/\partial \ln \rho)_{T}$ \\
+$\kappa$          & \texttt{kappa}       & D &  \texttt{H5T\_IEEE\_F64LE} & opacity ($\cm^{2}\,\gram^{-1}$) \\
+$\kappa_{T}$      & \texttt{kappa\_T}     & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln \kappa/\partial \ln T)_{\rho}$ \\
+$\kappa_{\rho}$   & \texttt{kappa\_rho}   & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln \kappa/\partial \ln \rho)_{T}$ \\
+$\Omega_{\rm rot}$ & \texttt{Omega\_rot}   & D & \texttt{H5T\_IEEE\_F64LE} & Rotation angular velocity (${\rm rad}\,\second^{-1}$) \\  \hline
+\end{tabular}
+\end{table}
+
+\end{document}
