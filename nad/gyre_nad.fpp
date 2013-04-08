@@ -99,7 +99,7 @@ program gyre_nad
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_eigdata(unit, nad_bp, nad_ef)
+     call write_data(unit, nad_ef, mc)
   endif
 
   ! Finish
@@ -207,103 +207,5 @@ contains
     $ABORT(No &recon_grid namelist in input file)
 
   end subroutine init_bvp
-
-!****
-
-  subroutine write_eigdata (unit, bp, ef)
-
-    integer, intent(in)                 :: unit
-    type(nad_bvp_t), intent(in), target :: bp
-    type(eigfunc_t), intent(in)         :: ef(:)
-
-    character(LEN=256)               :: freq_units
-    character(LEN=FILENAME_LEN)      :: summary_file
-    character(LEN=FILENAME_LEN)      :: eigfunc_prefix
-    class(mech_coeffs_t), pointer    :: mc
-    integer                          :: i
-    complex(WP)                      :: freq(SIZE(ef))
-    integer                          :: n_p(SIZE(ef))
-    integer                          :: n_g(SIZE(ef))
-    real(WP)                         :: E(SIZE(ef))
-    type(hgroup_t)                   :: hg
-    character(LEN=FILENAME_LEN)      :: eigfunc_file
-
-    namelist /output/ freq_units, summary_file, eigfunc_prefix
-
-    ! Read output parameters
-
-    freq_units = 'NONE'
-
-    summary_file = ''
-    eigfunc_prefix = ''
-
-    rewind(unit)
-    read(unit, NML=output, END=900)
-
-    ! Calculate summary data
-
-    mc => bp%get_mc()
-
-    ef_loop : do i = 1,SIZE(ef)
-
-       freq(i) = mc%conv_freq(ef(i)%omega, 'NONE', freq_units)
-
-       call ef(i)%classify(n_p(i), n_g(i))
-
-       E(i) = ef(i)%E(mc)
-
-    end do ef_loop
-       
-    ! Write it
-
-    if(summary_file /= '') then
-
-       call hg%init(summary_file, CREATE_FILE)
-          
-       call write_attr(hg, 'n_ef', SIZE(ef))
-
-       call write_attr(hg, 'n', bp%n)
-       call write_attr(hg, 'n_e', bp%n_e)
-
-       call write_dset(hg, 'l', ef%op%l)
-
-       call write_dset(hg, 'n_p', n_p)
-       call write_dset(hg, 'n_g', n_g)
-
-       call write_dset(hg, 'freq', freq)
-       call write_attr(hg, 'freq_units', freq_units)
-
-       call write_dset(hg, 'E', E)
-
-       call hg%final()
-
-    end if
-
-    ! Write eigenfunctions
-
-    if(eigfunc_prefix /= '') then
-
-       eigfunc_loop : do i = 1,SIZE(ef)
-
-          write(eigfunc_file, 200) TRIM(eigfunc_prefix), i, '.h5'
-200       format(A,I4.4,A)
-
-          call ef(i)%write(eigfunc_file, 'GYRE')
-
-       end do eigfunc_loop
-
-    end if
-
-    ! Finish
-
-    return
-
-    ! Jump-in point for end-of-file
-
-900 continue
-
-    $ABORT(No &output namelist in input file)
-
-  end subroutine write_eigdata
 
 end program gyre_nad
