@@ -70,8 +70,13 @@ contains
 
        m = n/2
 
+       $if($GFORTRAN_PR_56872)
+       dx_1 = 0.5_WP/(SUM(s**[(REAL(k-1, WP)/REAL(m-1, WP),k=1,m)]) - &
+                      0.5_WP*s)
+       $else
        dx_1 = 0.5_WP/(SUM([(s**(REAL(k-1, WP)/REAL(m-1, WP)),k=1,m)]) - &
                       0.5_WP*s)
+       $endif
 
        ! Set up the inner part of the grid
 
@@ -93,7 +98,11 @@ contains
 
        m = (n-1)/2
 
+       $if($GFORTRAN_PR_56872)
+       dx_1 = 0.5_WP/(SUM(s**[(REAL(k-1, WP)/REAL(m-1, WP),k=1,m)]))
+       $else
        dx_1 = 0.5_WP/(SUM([(s**(REAL(k-1, WP)/REAL(m-1, WP)),k=1,m)]))
+       $endif
 
        ! Set up the inner part of the grid
 
