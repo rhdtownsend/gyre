@@ -11,10 +11,9 @@ OMP=true
 DEBUG=true
 DOUBLE_PRECISION=true
 
-FFLAGS=-fno-frontend-optimize
 LDFLAGS=`mesasdk_hdf5_link` `mesasdk_lapack95_link`
 
-FPX3FLAGS=-DGFORTRAN_PR_56052
+FPX3FLAGS=-DGFORTRAN_PR_56052 -DGFORTRAN_PR_56872
 
 # Include other makefiles
 
