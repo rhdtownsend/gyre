@@ -29,9 +29,10 @@ def read_summary (filename) :
     file = h5py.File(filename, 'r')
 
     n = file.attrs['n']
-    l = file.attrs['l']
 
     freq_units = file.attrs['freq_units']
+
+    l = file['l'][:]
 
     freq = file['freq'][:].astype(complex)
     n_p = file['n_p'][:]
@@ -45,13 +46,12 @@ def read_summary (filename) :
 
     n_cowl = n_p - n_g
 
-    if(l == 0) :
-        n_cowl += 1
+    n_cowl[np.where(l == 0)] += 1
 
     # Return the data
 
     return {'n'          : n,
-            'l'          : np.array([l for i in range(0,freq.size)]),
+            'l'          : l,
             'freq'       : freq,
             'freq_units' : freq_units,
             'n_p'        : n_p,
