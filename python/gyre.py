@@ -41,17 +41,6 @@ def read_summary (filename) :
 
     file.close()
 
-    # Sort the data by re(omega) (this is because gyre/MPI can produce
-    # data out-of-order)
-
-    i = np.argsort(np.real(freq))
-
-    freq = freq[i]
-    n_p = n_p[i]
-    n_g = n_g[i]
-
-    E = E[i]
-
     # Calculate n_cowl (fixing if l is 0)
 
     n_cowl = n_p - n_g
