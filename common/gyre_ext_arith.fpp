@@ -1096,11 +1096,13 @@ contains
        that_s = SIGN(1._WP, that%f)
 
        if(this_s == that_s) then
-          if(this_s == 1._WP) then
+          if(this_s > 0._WP) then
              lt = (this%e < that%e .OR. (this%e == that%e .AND. this%f < that%f))
           else
              lt = (this%e > that%e .OR. (this%e == that%e .AND. this%f < that%f))
           endif
+       else
+          lt = this_s < 0._WP
        endif
 
     endif
