@@ -25,11 +25,14 @@ module gyre_frontend
   use core_constants
   use core_parallel
   use core_order
+  use core_memory
 
   use gyre_mech_coeffs
   use gyre_therm_coeffs
   use gyre_oscpar
   use gyre_numpar
+  use gyre_eigfunc
+  use gyre_output
 
   use ISO_FORTRAN_ENV
 
@@ -47,6 +50,7 @@ module gyre_frontend
   public :: init_oscpar
   public :: init_numpar
   public :: init_scan
+  public :: write_data
 
 contains
 
@@ -323,5 +327,127 @@ contains
     return
 
   end subroutine init_scan
+
+!****
+
+  subroutine write_data (unit, ef, mc)
+
+    integer, intent(in)              :: unit
+    type(eigfunc_t), intent(in)      :: ef(:)
+    class(mech_coeffs_t), intent(in) :: mc
+
+    character(LEN=256)          :: freq_units
+    character(LEN=FILENAME_LEN) :: summary_file
+    character(LEN=2048)         :: summary_items
+    character(LEN=FILENAME_LEN) :: eigfunc_prefix
+    character(LEN=2048)         :: eigfunc_items
+    character(LEN=FILENAME_LEN) :: eigfunc_file
+    integer                     :: j
+
+    namelist /output/ freq_units, summary_file, summary_items, eigfunc_prefix, eigfunc_items
+
+    ! Read output parameters
+
+    freq_units = 'NONE'
+
+    summary_file = ''
+    summary_items = 'l,omega,freq,freq_units,n_p,n_g'
+
+    eigfunc_prefix = ''
+    eigfunc_items = TRIM(summary_items)//',x,xi_r,xi_h'
+
+    rewind(unit)
+    read(unit, NML=output, END=900)
+
+    ! Write output files
+
+    if(summary_file /= '') call write_summary(summary_file, ef, mc, split_items(summary_items), freq_units)
+
+    if(eigfunc_prefix /= '') then
+
+       eigfunc_loop : do j = 1,SIZE(ef)
+
+          write(eigfunc_file, 100) TRIM(eigfunc_prefix), j, '.h5'
+100       format(A,I4.4,A)
+
+          call write_eigfunc(eigfunc_file, ef(j), mc, split_items(eigfunc_items), freq_units)
+
+       end do eigfunc_loop
+       
+    end if
+
+    ! Finish
+
+    return
+
+    ! Jump-in point for end-of-file
+
+900 continue
+
+    $ABORT(No &output namelist in input file)
+
+  end subroutine write_data
+
+!****
+
+  function split_items (items) result (item_list)
+
+    character(LEN=*), intent(in)           :: items
+    character(LEN=LEN(items)), allocatable :: item_list(:)
+
+    character(LEN=LEN(items)) :: items_
+    integer                   :: d
+    integer                   :: n
+    integer                   :: j
+    
+    ! Split the comma-sepated items into an list of individual items
+ 
+    d = 16
+
+    allocate(item_list(d))
+
+    n = 0
+
+    ! Repeatedly split on commas
+
+    items_ = items
+
+    split_loop : do
+
+       if(items_ == ' ') exit split_loop
+
+       j = INDEX(items_, ',')
+
+       if(j <= 0) then
+          n = n + 1
+          item_list(n) = items_
+          exit split_loop
+       endif
+
+       n = n + 1
+
+       ! Chop out the item name
+
+       item_list(n) = items_(:j-1)
+       items_ = items_(j+1:)
+
+       ! If necessary, expand the list
+          
+       if(n >= d) then
+          d = 2*d
+          call reallocate(item_list, [d])
+       end if
+
+    end do split_loop
+
+    ! Reallocate item_list to the correct length
+
+    call reallocate(item_list, [n])
+
+    ! Finish
+
+    return
+
+  end function split_items
 
 end module gyre_frontend
