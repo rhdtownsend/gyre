@@ -43,20 +43,19 @@ module gyre_output
 
 contains
 
-  subroutine write_summary (file, ef, mc, freq_units, item_list)
+  subroutine write_summary (file, ef, mc, item_list, freq_units)
 
     character(LEN=*), intent(in)     :: file
     type(eigfunc_t), intent(in)      :: ef(:)
     class(mech_coeffs_t), intent(in) :: mc
-    character(LEN=*), intent(in)     :: freq_units
     character(LEN=*), intent(in)     :: item_list(:)
+    character(LEN=*), intent(in)     :: freq_units
 
     integer        :: i
     complex(WP)    :: freq(SIZE(ef))
     integer        :: n_p(SIZE(ef))
     integer        :: n_g(SIZE(ef))
     real(WP)       :: E(SIZE(ef))
-    real(WP)       :: W(SIZE(ef))
     integer        :: j
     type(hgroup_t) :: hg
 
@@ -69,7 +68,6 @@ contains
        call ef(i)%classify(n_p(i), n_g(i))
 
        E(i) = ef(i)%E(mc)
-       W(i) = ef(i)%W(mc)
 
     end do ef_loop
 
@@ -92,7 +90,7 @@ contains
        case('omega')
           call write_dset(hg, 'omega', ef%omega)
        case ('freq')
-          call write_dset(hg, 'freq', mc%conv_freq(ef%omega, 'NONE', freq_units)
+          call write_dset(hg, 'freq', freq)
           call write_attr(hg, 'freq_units', freq_units)
        case('n_p')
           call write_attr(hg, 'n_p', n_p)
@@ -100,8 +98,6 @@ contains
           call write_attr(hg, 'n_g', n_g)
        case('E')
           call write_attr(hg, 'E', E)
-       case('W')
-          call write_attr(hg, 'W', W)
        case default
           write(ERROR_UNIT, *) 'item:', item_list(j)
           $ABORT(Invalid item)
@@ -121,16 +117,16 @@ contains
 
 !****
 
-  subroutine write_eigfunc (file, ef, mc, freq_units, item_list)
+  subroutine write_eigfunc (file, ef, mc, item_list, freq_units)
 
     character(LEN=*), intent(in)     :: file
     type(eigfunc_t), intent(in)      :: ef
     class(mech_coeffs_t), intent(in) :: mc
-    character(LEN=*), intent(in)     :: freq_units
     character(LEN=*), intent(in)     :: item_list(:)
+    character(LEN=*), intent(in)     :: freq_units
 
-    type(hgroup_t) :: hg
     integer        :: j
+    type(hgroup_t) :: hg
 
     ! Open the file
 
@@ -140,7 +136,7 @@ contains
 
     item_loop : do j = 1,SIZE(item_list)
 
-       select case (item_list(i))
+       select case (item_list(j))
 
        ! Attributes
 
@@ -149,7 +145,7 @@ contains
        case('omega')
           call write_attr(hg, 'omega', ef%omega)
        case ('freq')
-          call write_attr(hg, 'freq', mc%conv_freq(ef%omega, 'NONE', freq_units)
+          call write_attr(hg, 'freq', mc%conv_freq(ef%omega, 'NONE', freq_units))
           call write_attr(hg, 'freq_units', freq_units)
        case('n')
           call write_attr(hg, 'n', ef%n)
@@ -161,42 +157,40 @@ contains
        case ('xi_r')
           call write_dset(hg, 'xi_r', ef%xi_r)
        case ('xi_h')
-          call write_dset(hg, 'xi_r', ef%xi_h)
+          call write_dset(hg, 'xi_h', ef%xi_h)
        case ('phi_pri')
-          call write_dset(hg, 'xi_r', ef%phi_pri)
+          call write_dset(hg, 'phi_pri', ef%phi_pri)
        case ('dphi_pri')
-          call write_dset(hg, 'xi_r', ef%dphi_pri)
+          call write_dset(hg, 'dphi_pri', ef%dphi_pri)
        case ('del_S')
-          call write_dset(hg, 'xi_r', ef%del_S)
+          call write_dset(hg, 'del_S', ef%del_S)
        case ('del_L')
-          call write_dset(hg, 'xi_r', ef%del_L)
+          call write_dset(hg, 'del_L', ef%del_L)
        case ('dK_dx')
           call write_dset(hg, 'dK_dx', ef%dK_dx(mc))
-       case ('dW_dx')
-          call write_dset(hg, 'dW_dx', ef%dW_dx(mc))
+       case ('Gamma_1')
+          call write_dset(hg, 'Gamma_1', mc%Gamma_1(ef%x))
        case default
 
           ! Evolutionary model datasets
 
           select type (mc)
           class is (evol_mech_coeffs_t)
-             select case (dset_list(i))
-             case ('m')
-                call write_dset(hg, 'm', mc%m(ef%x))
-             case ('p')
-                call write_dset(hg, 'p', mc%p(ef%x))
-             case ('rho')
-                call write_dset(hg, 'rho', mc%rho(ef%x))
-             case ('T')
-                call write_dset(hg, 'T', mc%T(ef%x))
-             case ('N2')
-                call write_dset(hg, 'N2', mc%N2(ef%x))
-             case ('Gamma_1')
-                call write_dset(hg, 'Gamma_1', mc%Gamma_1(ef%x))
-             case default
-                write(ERROR_UNIT, *) 'item:', item_list(j)
-                $ABORT(Invalid item)
-             end select
+             ! select case (item_list(j))
+             ! case ('m')
+             !    call write_dset(hg, 'm', mc%m(ef%x))
+             ! case ('p')
+             !    call write_dset(hg, 'p', mc%p(ef%x))
+             ! case ('rho')
+             !    call write_dset(hg, 'rho', mc%rho(ef%x))
+             ! case ('T')
+             !    call write_dset(hg, 'T', mc%T(ef%x))
+             ! case ('N2')
+             !    call write_dset(hg, 'N2', mc%N2(ef%x))
+             ! case default
+             !    write(ERROR_UNIT, *) 'item:', item_list(j)
+             !    $ABORT(Invalid item)
+             ! end select
           class default
              write(ERROR_UNIT, *) 'item:', item_list(j)
              $ABORT(Invalid item)
