@@ -331,7 +331,9 @@ contains
     real(WP) :: A2
     real(WP) :: K
 
-    ! Calculate the normalized mode inertia, using the expression given by XXXXX
+    ! Calculate the normalized mode inertia, using the expression
+    ! given by Christensen-Dalsgaard (2011, arXiv:1106.5946, his
+    ! eqn. 2.32)
 
     A2 = ABS(this%xi_r(this%n))**2 + this%op%l*(this%op%l+1)*ABS(this%xi_h(this%n))**2
 
