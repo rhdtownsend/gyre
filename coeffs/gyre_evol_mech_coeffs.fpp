@@ -54,7 +54,6 @@ module gyre_evol_mech_coeffs
      $VAR_DECL(rho)
      $VAR_DECL(T)
      $VAR_DECL(N2)
-     $VAR_DECL(S2)
      $VAR_DECL(V)
      $VAR_DECL(As)
      $VAR_DECL(U)
@@ -69,7 +68,6 @@ module gyre_evol_mech_coeffs
      $PROC_DECL(rho)
      $PROC_DECL(T)
      $PROC_DECL(N2)
-     $PROC_DECL(S2)
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -121,7 +119,6 @@ contains
     real(WP) :: As(SIZE(r))
     real(WP) :: U(SIZE(r))
     real(WP) :: c_1(SIZE(r))
-    real(WP) :: S2(SIZE(r))
     real(WP) :: x(SIZE(r))
 
     $CHECK_BOUNDS(SIZE(m),SIZE(r))
@@ -148,13 +145,11 @@ contains
        As = r**3*N2/(G*m)
        U = 4._WP*PI*rho*r**3/m
        c_1 = (r/R_star)**3/(m/M_star)
-       S2 = Gamma_1*p/(rho*r**2)
     elsewhere
        V = 0._WP
        As = 0._WP
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
-       S2 = HUGE(0._WP)
     end where
 
     x = r/R_star
@@ -166,7 +161,6 @@ contains
     call this%sp_rho%init(x, rho, deriv_type, dy_dx_a=0._WP)
     call this%sp_T%init(x, T, deriv_type, dy_dx_a=0._WP)
     call this%sp_N2%init(x, N2, deriv_type, dy_dx_a=0._WP)
-    call this%sp_S2%init(x, S2, deriv_type, dy_dx_a=0._WP)
 
     call this%sp_V%init(x, V, deriv_type, dy_dx_a=0._WP)
     call this%sp_As%init(x, As, deriv_type, dy_dx_a=0._WP)
@@ -198,7 +192,6 @@ contains
     call bcast(mc%sp_rho, root_rank)
     call bcast(mc%sp_T, root_rank)
     call bcast(mc%sp_N2, root_rank)
-    call bcast(mc%sp_S2, root_rank)
 
     call bcast(mc%sp_V, root_rank)
     call bcast(mc%sp_As, root_rank)
@@ -263,7 +256,6 @@ contains
   $PROC(rho)
   $PROC(T)
   $PROC(N2)
-  $PROC(S2)
   $PROC(V)
   $PROC(As)
   $PROC(U)
