@@ -163,7 +163,7 @@ contains
 
     select type (mc)
     type is (evol_mech_coeffs_t)
-       call mc%init(G, R_star, M_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
+       call mc%init(G, M_star, R_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
     class default
        $ABORT(Invalid mc type)
     end select
@@ -176,7 +176,7 @@ contains
 
        select type (tc)
        type is (evol_therm_coeffs_t)
-          call tc%init(G, R_star, M_star, L_star, r, m, p, T, rho, &
+          call tc%init(G, M_star, R_star, L_star, r, m, p, T, rho, &
                        nabla, Gamma_1, delta, c_p, &
                        kappa, kappa_T, kappa_rho, &
                        epsilon, epsilon_T, epsilon_rho, deriv_type)

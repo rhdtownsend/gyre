@@ -58,8 +58,8 @@ contains
     integer               :: ivers
     real(WP), allocatable :: glob(:)
     real(WP), allocatable :: var(:,:)
-    real(WP)              :: R_star
     real(WP)              :: M_star
+    real(WP)              :: R_star
     real(WP), allocatable :: r(:)
     real(WP), allocatable :: m(:)
     real(WP), allocatable :: p(:)
@@ -143,7 +143,7 @@ contains
 
     select type (mc)
     type is (evol_mech_coeffs_t)
-       call mc%init(G, R_star, M_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
+       call mc%init(G, M_star, R_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
     class default
        $ABORT(Invalid mc type)
     end select
