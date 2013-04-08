@@ -70,7 +70,7 @@ contains
     real(WP), allocatable :: nabla(:)
     real(WP), allocatable :: N2(:)
     real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: alpha_T(:)
+    real(WP), allocatable :: delta(:)
     real(WP), allocatable :: c_p(:)
     real(WP), allocatable :: kappa(:)
     real(WP), allocatable :: kappa_T(:)
@@ -106,7 +106,7 @@ contains
     nabla = var(7,:)
     N2 = var(8,:)
     Gamma_1 = var(12,:)*var(10,:)/var(9,:)
-    alpha_T = var(11,:)/var(12,:)
+    delta = var(11,:)/var(12,:)
     c_p = var(10,:)
     kappa = var(13,:)
     kappa_T = var(14,:)
@@ -136,7 +136,7 @@ contains
        call add_center(r, rho)
        call add_center(r, nabla)
        call add_center(r, Gamma_1)
-       call add_center(r, alpha_T)
+       call add_center(r, delta)
        call add_center(r, c_p)
        call add_center(r, kappa)
        call add_center(r, kappa_T)
@@ -169,7 +169,7 @@ contains
        select type (tc)
        type is (evol_therm_coeffs_t)
           call tc%init(G, R_star, M_star, L_star, r, m, p, T, rho, &
-                       nabla, Gamma_1, alpha_T, c_p, &
+                       nabla, Gamma_1, delta, c_p, &
                        kappa, kappa_T, kappa_rho, &
                        epsilon, epsilon_T, epsilon_rho, deriv_type)
        class default

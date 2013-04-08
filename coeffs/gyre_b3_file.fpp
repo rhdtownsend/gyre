@@ -79,7 +79,7 @@ contains
     real(WP), allocatable :: epsilon_rho(:)
     real(WP), allocatable :: m(:)
     real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: alpha_T(:)
+    real(WP), allocatable :: delta(:)
 
     ! Read the model from the B3-format file
 
@@ -130,7 +130,7 @@ contains
     m = [w(:n-1)/(1._WP+w(:n-1))*M_star,M_star]
 
     Gamma_1 = chi_rho*c_p/c_V
-    alpha_T = chi_T/chi_rho
+    delta = chi_T/chi_rho
 
     ! If necessary, add central data
 
@@ -144,7 +144,7 @@ contains
        call add_center(r, rho)
        call add_center(r, nabla)
        call add_center(r, Gamma_1)
-       call add_center(r, alpha_T)
+       call add_center(r, delta)
        call add_center(r, c_p)
        call add_center(r, kappa)
        call add_center(r, kappa_T)
@@ -177,7 +177,7 @@ contains
        select type (tc)
        type is (evol_therm_coeffs_t)
           call tc%init(G, R_star, M_star, L_star, r, m, p, T, rho, &
-                       nabla, Gamma_1, alpha_T, c_p, &
+                       nabla, Gamma_1, delta, c_p, &
                        kappa, kappa_T, kappa_rho, &
                        epsilon, epsilon_T, epsilon_rho, deriv_type)
        class default

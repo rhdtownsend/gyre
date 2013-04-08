@@ -48,7 +48,7 @@ module gyre_therm_coeffs
      $PROC_DECL(nabla)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(dnabla_ad)
-     $PROC_DECL(alpha_T)
+     $PROC_DECL(delta)
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
      $PROC_DECL(epsilon_ad)

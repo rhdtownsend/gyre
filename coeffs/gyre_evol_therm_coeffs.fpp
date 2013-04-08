@@ -54,7 +54,7 @@ module gyre_evol_therm_coeffs
      $VAR_DECL(c_thm)
      $VAR_DECL(nabla)
      $VAR_DECL(nabla_ad)
-     $VAR_DECL(alpha_T)
+     $VAR_DECL(delta)
      $VAR_DECL(kappa_ad)
      $VAR_DECL(kappa_S)
      $VAR_DECL(epsilon_ad)
@@ -69,7 +69,7 @@ module gyre_evol_therm_coeffs
      $PROC_DECL(nabla)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(dnabla_ad)
-     $PROC_DECL(alpha_T)
+     $PROC_DECL(delta)
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
      $PROC_DECL(epsilon_ad)
@@ -100,7 +100,7 @@ module gyre_evol_therm_coeffs
 contains 
 
   subroutine init (this, G, R_star, M_star, L_star, r, m, p, T, rho, &
-                   nabla, Gamma_1, alpha_T, c_p, &
+                   nabla, Gamma_1, delta, c_p, &
                    kappa, kappa_T, kappa_rho, &
                    epsilon, epsilon_T, epsilon_rho, deriv_type)
 
@@ -116,7 +116,7 @@ contains
     real(WP), intent(in)                    :: rho(:)
     real(WP), intent(in)                    :: nabla(:)
     real(WP), intent(in)                    :: Gamma_1(:)
-    real(WP), intent(in)                    :: alpha_T(:)
+    real(WP), intent(in)                    :: delta(:)
     real(WP), intent(in)                    :: c_p(:)
     real(WP), intent(in)                    :: kappa(:)
     real(WP), intent(in)                    :: kappa_T(:)
@@ -144,7 +144,7 @@ contains
     $CHECK_BOUNDS(SIZE(T),SIZE(r))
     $CHECK_BOUNDS(SIZE(nabla),SIZE(r))
     $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(r))
-    $CHECK_BOUNDS(SIZE(alpha_T),SIZE(r))
+    $CHECK_BOUNDS(SIZE(delta),SIZE(r))
     $CHECK_BOUNDS(SIZE(c_p),SIZE(r))
     $CHECK_BOUNDS(SIZE(kappa),SIZE(r))
     $CHECK_BOUNDS(SIZE(kappa_T),SIZE(r))
@@ -171,17 +171,17 @@ contains
        V_x2 = 4._WP*PI*G*rho**2*R_star**2/(3._WP*p)
     end where
 
-    nabla_ad = p*alpha_T/(rho*T*c_p)
+    nabla_ad = p*delta/(rho*T*c_p)
 
     c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho*L_star)
     c_gen = 4._WP*PI*rho*epsilon*R_star**3/L_star
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G*M_star/R_star**3)*R_star**3/L_star
 
     kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
-    kappa_S = kappa_T - alpha_T*kappa_rho
+    kappa_S = kappa_T - delta*kappa_rho
 
     epsilon_ad = nabla_ad*epsilon_T + epsilon_rho/Gamma_1
-    epsilon_S = epsilon_T - alpha_T*epsilon_rho
+    epsilon_S = epsilon_T - delta*epsilon_rho
 
     x = r/R_star
 
@@ -192,7 +192,7 @@ contains
     call this%sp_c_thm%init(x, c_thm, deriv_type, dy_dx_a=0._WP)
     call this%sp_nabla%init(x, nabla, deriv_type, dy_dx_a=0._WP)
     call this%sp_nabla_ad%init(x, nabla_ad, deriv_type, dy_dx_a=0._WP)
-    call this%sp_alpha_T%init(x, alpha_T, deriv_type, dy_dx_a=0._WP)
+    call this%sp_delta%init(x, delta, deriv_type, dy_dx_a=0._WP)
     call this%sp_kappa_S%init(x, kappa_S, deriv_type, dy_dx_a=0._WP)
     call this%sp_kappa_ad%init(x, kappa_ad, deriv_type, dy_dx_a=0._WP)
     call this%sp_epsilon_S%init(x, epsilon_S, deriv_type, dy_dx_a=0._WP)
@@ -223,7 +223,7 @@ contains
     call bcast(tc%sp_c_thm, root_rank)
     call bcast(tc%sp_nabla, root_rank)
     call bcast(tc%sp_nabla_ad, root_rank)
-    call bcast(tc%sp_alpha_T, root_rank)
+    call bcast(tc%sp_delta, root_rank)
     call bcast(tc%sp_kappa_S, root_rank)
     call bcast(tc%sp_kappa_ad, root_rank)
     call bcast(tc%sp_epsilon_S, root_rank)
@@ -287,7 +287,7 @@ contains
   $PROC(c_thm)
   $PROC(nabla)
   $PROC(nabla_ad)
-  $PROC(alpha_T)
+  $PROC(delta)
   $PROC(kappa_S)
   $PROC(kappa_ad)
   $PROC(epsilon_S)

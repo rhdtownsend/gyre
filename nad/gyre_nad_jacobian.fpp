@@ -122,7 +122,7 @@ contains
               c_rad => this%tc%c_rad(x), dc_rad => this%tc%dc_rad(x), &
               c_gen => this%tc%c_gen(x), c_thm => this%tc%c_thm(x), &
               nabla => this%tc%nabla(x), nabla_ad => this%tc%nabla_ad(x), dnabla_ad => this%tc%dnabla_ad(x), &
-              alpha_T => this%tc%alpha_T(x), &
+              delta => this%tc%delta(x), &
               kappa_ad => this%tc%kappa_ad(x), kappa_S => this%tc%kappa_S(x), &
               epsilon_ad => this%tc%epsilon_ad(x), epsilon_S => this%tc%epsilon_S(x), &
               lambda_0 => this%op%lambda_0, l => this%op%l)
@@ -139,14 +139,14 @@ contains
       A(1,2) = l*(l+1)/(c_1*omega**2) - V_g
       A(1,3) = V_g
       A(1,4) = 0._WP
-      A(1,5) = alpha_T*x**2
+      A(1,5) = delta*x**2
       A(1,6) = 0._WP
 
       A(2,1) = c_1*omega**2 - As
       A(2,2) = As - U + 1 - lambda_0
       A(2,3) = -As
       A(2,4) = 0._WP
-      A(2,5) = alpha_T*x**2
+      A(2,5) = delta*x**2
       A(2,6) = 0._WP
 
       A(3,1) = 0._WP
@@ -160,7 +160,7 @@ contains
       A(4,2) = U*V_g
       A(4,3) = l*(l+1) - U*V_g
       A(4,4) = -U - lambda_0
-      A(4,5) = -U*alpha_T*x**2
+      A(4,5) = -U*delta*x**2
       A(4,6) = 0._WP
 
       A(5,1) = V_x2*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_kap)
