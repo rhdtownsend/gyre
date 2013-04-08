@@ -51,8 +51,6 @@ module gyre_eigfunc
    contains
      private
      procedure, public :: init
-     procedure, public :: write
-     procedure         :: write_gyre
      procedure, public :: classify
      procedure, public :: K
      procedure, public :: dK_dx
