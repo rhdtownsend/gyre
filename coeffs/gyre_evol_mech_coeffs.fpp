@@ -49,6 +49,12 @@ module gyre_evol_mech_coeffs
 
   type, extends(mech_coeffs_t) :: evol_mech_coeffs_t
      private
+     $VAR_DECL(m)
+     $VAR_DECL(p)
+     $VAR_DECL(rho)
+     $VAR_DECL(T)
+     $VAR_DECL(N2)
+     $VAR_DECL(S2)
      $VAR_DECL(V)
      $VAR_DECL(As)
      $VAR_DECL(U)
@@ -58,6 +64,12 @@ module gyre_evol_mech_coeffs
    contains
      private
      procedure, public :: init
+     $PROC_DECL(m)
+     $PROC_DECL(p)
+     $PROC_DECL(rho)
+     $PROC_DECL(T)
+     $PROC_DECL(N2)
+     $PROC_DECL(S2)
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -89,7 +101,7 @@ module gyre_evol_mech_coeffs
 
 contains
 
-  subroutine init (this, G, R_star, M_star, r, m, p, rho, N2, Gamma_1, deriv_type)
+  subroutine init (this, G, R_star, M_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
 
     class(evol_mech_coeffs_t), intent(out) :: this
     real(WP), intent(in)                   :: G
@@ -99,6 +111,7 @@ contains
     real(WP), intent(in)                   :: m(:)
     real(WP), intent(in)                   :: p(:)
     real(WP), intent(in)                   :: rho(:)
+    real(WP), intent(in)                   :: T(:)
     real(WP), intent(in)                   :: N2(:)
     real(WP), intent(in)                   :: Gamma_1(:)
     character(LEN=*), intent(in)           :: deriv_type
@@ -108,11 +121,13 @@ contains
     real(WP) :: As(SIZE(r))
     real(WP) :: U(SIZE(r))
     real(WP) :: c_1(SIZE(r))
+    real(WP) :: S2(SIZE(r))
     real(WP) :: x(SIZE(r))
 
     $CHECK_BOUNDS(SIZE(m),SIZE(r))
     $CHECK_BOUNDS(SIZE(p),SIZE(r))
     $CHECK_BOUNDS(SIZE(rho),SIZE(r))
+    $CHECK_BOUNDS(SIZE(T),SIZE(r))
     $CHECK_BOUNDS(SIZE(N2),SIZE(r))
     $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(r))
 
@@ -133,16 +148,25 @@ contains
        As = r**3*N2/(G*m)
        U = 4._WP*PI*rho*r**3/m
        c_1 = (r/R_star)**3/(m/M_star)
+       S2 = Gamma_1*p/(rho*r**2)
     elsewhere
        V = 0._WP
        As = 0._WP
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+       S2 = HUGE(0._WP)
     end where
 
     x = r/R_star
 
     ! Initialize the mech_coeffs
+
+    call this%sp_m%init(x, m, deriv_type, dy_dx_a=0._WP)
+    call this%sp_p%init(x, p, deriv_type, dy_dx_a=0._WP)
+    call this%sp_rho%init(x, rho, deriv_type, dy_dx_a=0._WP)
+    call this%sp_T%init(x, T, deriv_type, dy_dx_a=0._WP)
+    call this%sp_N2%init(x, N2, deriv_type, dy_dx_a=0._WP)
+    call this%sp_S2%init(x, S2, deriv_type, dy_dx_a=0._WP)
 
     call this%sp_V%init(x, V, deriv_type, dy_dx_a=0._WP)
     call this%sp_As%init(x, As, deriv_type, dy_dx_a=0._WP)
@@ -168,6 +192,13 @@ contains
     integer, intent(in)                      :: root_rank
 
     ! Broadcast the mech_coeffs
+
+    call bcast(mc%sp_m, root_rank)
+    call bcast(mc%sp_p, root_rank)
+    call bcast(mc%sp_rho, root_rank)
+    call bcast(mc%sp_T, root_rank)
+    call bcast(mc%sp_N2, root_rank)
+    call bcast(mc%sp_S2, root_rank)
 
     call bcast(mc%sp_V, root_rank)
     call bcast(mc%sp_As, root_rank)
@@ -227,6 +258,12 @@ contains
 
   $endsub
 
+  $PROC(m)
+  $PROC(p)
+  $PROC(rho)
+  $PROC(T)
+  $PROC(N2)
+  $PROC(S2)
   $PROC(V)
   $PROC(As)
   $PROC(U)

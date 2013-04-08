@@ -65,6 +65,7 @@ contains
     real(WP), allocatable :: m(:)
     real(WP), allocatable :: p(:)
     real(WP), allocatable :: rho(:) 
+    real(WP), allocatable :: T(:) 
     real(WP), allocatable :: N2(:)
     real(WP), allocatable :: Gamma_1(:)
 
@@ -106,6 +107,7 @@ contains
 
     r = var(1,:)
     m = EXP(var(2,:))*M_star
+    T = var(3,:)
     p = var(4,:)
     rho = var(5,:)
     N2 = G*m*var(15,:)/r**3
@@ -136,7 +138,7 @@ contains
 
     select type (mc)
     type is (evol_mech_coeffs_t)
-       call mc%init(G, R_star, M_star, r, m, p, rho, N2, Gamma_1, deriv_type)
+       call mc%init(G, R_star, M_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
     class default
        $ABORT(Invalid mc type)
     end select
