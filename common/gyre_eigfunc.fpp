@@ -155,65 +155,6 @@ contains
 
 !****
 
-  subroutine write (this, file, file_type)
-
-    class(eigfunc_t), intent(in) :: this
-    character(LEN=*), intent(in) :: file
-    character(LEN=*), intent(in) :: file_type
-
-    ! Write the eigfunc
-
-    select case (file_type)
-    case ('GYRE')
-       call write_gyre(this, file)
-    case default
-       $ABORT(Invalid file_type)
-    end select
-
-    ! Finish
-
-    return
-
-  end subroutine write
-
-!****
-
-  subroutine write_gyre (this, file)
-
-    class(eigfunc_t), intent(in) :: this
-    character(LEN=*), intent(in) :: file
-
-    type(hgroup_t) :: hg
-
-    ! Write the eigfunc to a GYRE eigenfunction HDF5 file
-
-    call hg%init(file, CREATE_FILE)
-
-    call write_attr(hg, 'l', this%op%l)
-
-    call write_attr(hg, 'omega', this%omega)
-
-    call write_attr(hg, 'n', this%n)
-    
-    call write_dset(hg, 'x', this%x)
-
-    call write_dset(hg, 'xi_r', this%xi_r)
-    call write_dset(hg, 'xi_h', this%xi_h)
-    call write_dset(hg, 'phi_pri', this%phi_pri)
-    call write_dset(hg, 'dphi_pri', this%dphi_pri)
-    call write_dset(hg, 'del_S', this%del_S)
-    call write_dset(hg, 'del_L', this%del_L)
-
-    call hg%final()
-    
-    ! Finish
-
-    return
-
-  end subroutine write_gyre
-
-!****
-
   subroutine classify (this, n_p, n_g)
 
     class(eigfunc_t), intent(in) :: this
