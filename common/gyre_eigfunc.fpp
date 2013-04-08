@@ -329,15 +329,19 @@ contains
     real(WP)                         :: E
 
     real(WP) :: A2
+    real(WP) :: K
 
     ! Calculate the normalized mode inertia, using the expression given by XXXXX
 
     A2 = ABS(this%xi_r(this%n))**2 + this%op%l*(this%op%l+1)*ABS(this%xi_h(this%n))**2
 
+    K = this%K(mc)
+
     if(A2 == 0._WP) then
-       $WARN(Surface amplitude is zero, not normalizing inertia)
+       $WARN(Surface amplitude is zero; not normalizing inertia)
+       E = K
     else
-       E = this%K(mc)/A2
+       E = K/A2
     endif
 
     ! Finish
