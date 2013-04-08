@@ -20,9 +20,9 @@
 import h5py
 import numpy as np
 
-# Read a GYRE eigenvalue file
+# Read a GYRE summary file
 
-def read_eigval (filename) :
+def read_summary (filename) :
 
     # Read the data
 
