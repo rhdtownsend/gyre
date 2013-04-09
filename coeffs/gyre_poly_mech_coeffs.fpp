@@ -44,11 +44,11 @@ module gyre_poly_mech_coeffs
 
   type, extends(mech_coeffs_t) :: poly_mech_coeffs_t
      private
-     type(spline_t) :: sp_Theta
-     type(spline_t) :: sp_dTheta
-     real(WP)       :: n_poly
-     real(WP)       :: dt_Gamma_1
-     real(WP)       :: xi_1
+     type(spline_t)   :: sp_Theta
+     type(spline_t)   :: sp_dTheta
+     real(WP)         :: dt_Gamma_1
+     real(WP), public :: n_poly
+     real(WP), public :: xi_1
    contains
      private
      procedure, public :: init
