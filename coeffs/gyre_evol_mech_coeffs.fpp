@@ -47,6 +47,13 @@ module gyre_evol_mech_coeffs
     procedure :: get_${NAME}_v
   $endsub
 
+  $define $PROC_DECL_GEN $sub
+    $local $NAME $1
+    procedure       :: get_${NAME}_1
+    procedure       :: get_${NAME}_v
+    generic, public :: ${NAME} => get_${NAME}_1, get_${NAME}_v
+  $endsub
+
   type, extends(mech_coeffs_t) :: evol_mech_coeffs_t
      private
      $VAR_DECL(m)
@@ -59,15 +66,17 @@ module gyre_evol_mech_coeffs
      $VAR_DECL(U)
      $VAR_DECL(c_1)
      $VAR_DECL(Gamma_1)
-     real(WP) :: t_dyn
+     real(WP), public :: M_star
+     real(WP), public :: R_star
+     real(WP)         :: t_dyn
    contains
      private
      procedure, public :: init
-     $PROC_DECL(m)
-     $PROC_DECL(p)
-     $PROC_DECL(rho)
-     $PROC_DECL(T)
-     $PROC_DECL(N2)
+     $PROC_DECL_GEN(m)
+     $PROC_DECL_GEN(p)
+     $PROC_DECL_GEN(rho)
+     $PROC_DECL_GEN(T)
+     $PROC_DECL_GEN(N2)
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -99,12 +108,12 @@ module gyre_evol_mech_coeffs
 
 contains
 
-  subroutine init (this, G, R_star, M_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
+  subroutine init (this, G, M_star, R_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
 
     class(evol_mech_coeffs_t), intent(out) :: this
     real(WP), intent(in)                   :: G
-    real(WP), intent(in)                   :: R_star
     real(WP), intent(in)                   :: M_star
+    real(WP), intent(in)                   :: R_star
     real(WP), intent(in)                   :: r(:)
     real(WP), intent(in)                   :: m(:)
     real(WP), intent(in)                   :: p(:)
@@ -168,6 +177,9 @@ contains
     call this%sp_c_1%init(x, c_1, deriv_type, dy_dx_a=0._WP)
     call this%sp_Gamma_1%init(x, Gamma_1, deriv_type, dy_dx_a=0._WP)
 
+    this%M_star = M_star
+    this%R_star = R_star
+
     this%t_dyn = SQRT(R_star**3/(G*M_star))
 
     ! Finish
@@ -198,6 +210,9 @@ contains
     call bcast(mc%sp_U, root_rank)
     call bcast(mc%sp_c_1, root_rank)
     call bcast(mc%sp_Gamma_1, root_rank)
+
+    call bcast(mc%M_star, root_rank)
+    call bcast(mc%R_star, root_rank)
 
     call bcast(mc%t_dyn, root_rank)
 
