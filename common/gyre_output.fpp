@@ -24,9 +24,10 @@ module gyre_output
   use core_kinds
   use core_hgroup
 
-  use gyre_eigfunc
   use gyre_mech_coeffs
   use gyre_evol_mech_coeffs
+  use gyre_poly_mech_coeffs
+  use gyre_eigfunc
 
   use ISO_FORTRAN_ENV
 
@@ -175,24 +176,28 @@ contains
           ! Evolutionary model datasets
 
           select type (mc)
-          class is (evol_mech_coeffs_t)
-             ! select case (item_list(j))
-             ! case ('m')
-             !    call write_dset(hg, 'm', mc%m(ef%x))
-             ! case ('p')
-             !    call write_dset(hg, 'p', mc%p(ef%x))
-             ! case ('rho')
-             !    call write_dset(hg, 'rho', mc%rho(ef%x))
-             ! case ('T')
-             !    call write_dset(hg, 'T', mc%T(ef%x))
-             ! case ('N2')
-             !    call write_dset(hg, 'N2', mc%N2(ef%x))
-             ! case default
-             !    write(ERROR_UNIT, *) 'item:', item_list(j)
-             !    $ABORT(Invalid item)
-             ! end select
+          type is (evol_mech_coeffs_t)
+             select case (item_list(j))
+             case ('M_star')
+                call write_attr(hg, 'M_star', mc%M_star)
+             case ('R_star')
+                call write_attr(hg, 'R_star', mc%R_star)
+             case ('m')
+                call write_dset(hg, 'm', mc%m(ef%x))
+             case ('p')
+                call write_dset(hg, 'p', mc%p(ef%x))
+             case ('rho')
+                call write_dset(hg, 'rho', mc%rho(ef%x))
+             case ('T')
+                call write_dset(hg, 'T', mc%T(ef%x))
+             case ('N2')
+                call write_dset(hg, 'N2', mc%N2(ef%x))
+             case default
+                write(ERROR_UNIT, *) 'item:', TRIM(item_list(j))
+                $ABORT(Invalid item)
+             end select
           class default
-             write(ERROR_UNIT, *) 'item:', item_list(j)
+             write(ERROR_UNIT, *) 'item:', TRIM(item_list(j))
              $ABORT(Invalid item)
           end select
 
