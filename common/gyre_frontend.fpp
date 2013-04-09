@@ -339,12 +339,12 @@ contains
     character(LEN=256)          :: freq_units
     character(LEN=FILENAME_LEN) :: summary_file
     character(LEN=2048)         :: summary_items
-    character(LEN=FILENAME_LEN) :: eigfunc_prefix
-    character(LEN=2048)         :: eigfunc_items
-    character(LEN=FILENAME_LEN) :: eigfunc_file
+    character(LEN=FILENAME_LEN) :: mode_prefix
+    character(LEN=2048)         :: mode_items
+    character(LEN=FILENAME_LEN) :: mode_file
     integer                     :: j
 
-    namelist /output/ freq_units, summary_file, summary_items, eigfunc_prefix, eigfunc_items
+    namelist /output/ freq_units, summary_file, summary_items, mode_prefix, mode_items
 
     ! Read output parameters
 
@@ -353,8 +353,8 @@ contains
     summary_file = ''
     summary_items = 'l,omega,freq,freq_units,n_p,n_g'
 
-    eigfunc_prefix = ''
-    eigfunc_items = TRIM(summary_items)//',x,xi_r,xi_h'
+    mode_prefix = ''
+    mode_items = TRIM(summary_items)//',x,xi_r,xi_h'
 
     rewind(unit)
     read(unit, NML=output, END=900)
@@ -363,16 +363,16 @@ contains
 
     if(summary_file /= '') call write_summary(summary_file, ef, mc, split_items(summary_items), freq_units)
 
-    if(eigfunc_prefix /= '') then
+    if(mode_prefix /= '') then
 
-       eigfunc_loop : do j = 1,SIZE(ef)
+       mode_loop : do j = 1,SIZE(ef)
 
-          write(eigfunc_file, 100) TRIM(eigfunc_prefix), j, '.h5'
+          write(mode_file, 100) TRIM(mode_prefix), j, '.h5'
 100       format(A,I4.4,A)
 
-          call write_eigfunc(eigfunc_file, ef(j), mc, split_items(eigfunc_items), freq_units)
+          call write_mode(mode_file, ef(j), mc, split_items(mode_items), freq_units)
 
-       end do eigfunc_loop
+       end do mode_loop
        
     end if
 
