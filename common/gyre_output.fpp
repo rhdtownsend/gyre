@@ -233,8 +233,6 @@ contains
          call write_dset(hg, 'rho', mc%rho(ef%x))
       case ('T')
          call write_dset(hg, 'T', mc%T(ef%x))
-      case ('N2')
-         call write_dset(hg, 'N2', mc%N2(ef%x))
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
