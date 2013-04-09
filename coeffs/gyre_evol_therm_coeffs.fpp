@@ -99,15 +99,15 @@ module gyre_evol_therm_coeffs
 
 contains 
 
-  subroutine init (this, G, R_star, M_star, L_star, r, m, p, T, rho, &
+  subroutine init (this, G, M_star, R_star, L_star, r, m, p, T, rho, &
                    nabla, Gamma_1, delta, c_p, &
                    kappa, kappa_T, kappa_rho, &
                    epsilon, epsilon_T, epsilon_rho, deriv_type)
 
     class(evol_therm_coeffs_t), intent(out) :: this
     real(WP), intent(in)                    :: G
-    real(WP), intent(in)                    :: R_star
     real(WP), intent(in)                    :: M_star
+    real(WP), intent(in)                    :: R_star
     real(WP), intent(in)                    :: L_star
     real(WP), intent(in)                    :: r(:)
     real(WP), intent(in)                    :: m(:)
