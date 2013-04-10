@@ -338,30 +338,30 @@ contains
 
     character(LEN=256)          :: freq_units
     character(LEN=FILENAME_LEN) :: summary_file
-    character(LEN=2048)         :: summary_items
+    character(LEN=2048)         :: summary_item_list
     character(LEN=FILENAME_LEN) :: mode_prefix
-    character(LEN=2048)         :: mode_items
+    character(LEN=2048)         :: mode_item_list
     character(LEN=FILENAME_LEN) :: mode_file
     integer                     :: j
 
-    namelist /output/ freq_units, summary_file, summary_items, mode_prefix, mode_items
+    namelist /output/ freq_units, summary_file, summary_item_list, mode_prefix, mode_item_list
 
     ! Read output parameters
 
     freq_units = 'NONE'
 
     summary_file = ''
-    summary_items = 'l,omega,freq,freq_units,n_p,n_g'
+    summary_item_list = 'l,n_p,n_g,omega,freq,freq_units'
 
     mode_prefix = ''
-    mode_items = TRIM(summary_items)//',x,xi_r,xi_h'
+    mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
 
     rewind(unit)
     read(unit, NML=output, END=900)
 
     ! Write output files
 
-    if(summary_file /= '') call write_summary(summary_file, ef, mc, split_items(summary_items), freq_units)
+    if(summary_file /= '') call write_summary(summary_file, ef, mc, split_item_list(summary_item_list), freq_units)
 
     if(mode_prefix /= '') then
 
@@ -370,7 +370,7 @@ contains
           write(mode_file, 100) TRIM(mode_prefix), j, '.h5'
 100       format(A,I4.4,A)
 
-          call write_mode(mode_file, ef(j), mc, split_items(mode_items), freq_units)
+          call write_mode(mode_file, ef(j), mc, split_item_list(mode_item_list), freq_units)
 
        end do mode_loop
        
@@ -390,37 +390,38 @@ contains
 
 !****
 
-  function split_items (items) result (item_list)
+  function split_item_list (item_list) result (items)
 
-    character(LEN=*), intent(in)           :: items
-    character(LEN=LEN(items)), allocatable :: item_list(:)
+    character(LEN=*), intent(in)               :: item_list
+    character(LEN=LEN(item_list)), allocatable :: items(:)
 
-    character(LEN=LEN(items)) :: items_
-    integer                   :: d
-    integer                   :: n
-    integer                   :: j
+    character(LEN=LEN(item_list)) :: item_list_
+    integer                       :: d
+    integer                       :: n
+    integer                       :: j
     
-    ! Split the comma-sepated items into an list of individual items
+    ! Split the comma-sepated list of items into an array of
+    ! individual items
  
     d = 16
 
-    allocate(item_list(d))
+    allocate(items(d))
 
     n = 0
 
     ! Repeatedly split on commas
 
-    items_ = items
+    item_list_ = item_list
 
     split_loop : do
 
-       if(items_ == ' ') exit split_loop
+       if(item_list_ == ' ') exit split_loop
 
-       j = INDEX(items_, ',')
+       j = INDEX(item_list_, ',')
 
        if(j <= 0) then
           n = n + 1
-          item_list(n) = items_
+          items(n) = item_list_
           exit split_loop
        endif
 
@@ -428,26 +429,26 @@ contains
 
        ! Chop out the item name
 
-       item_list(n) = items_(:j-1)
-       items_ = items_(j+1:)
+       items(n) = item_list_(:j-1)
+       item_list_ = item_list_(j+1:)
 
        ! If necessary, expand the list
           
        if(n >= d) then
           d = 2*d
-          call reallocate(item_list, [d])
+          call reallocate(items, [d])
        end if
 
     end do split_loop
 
     ! Reallocate item_list to the correct length
 
-    call reallocate(item_list, [n])
+    call reallocate(items, [n])
 
     ! Finish
 
     return
 
-  end function split_items
+  end function split_item_list
 
 end module gyre_frontend
