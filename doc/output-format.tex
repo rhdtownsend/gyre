@@ -1,0 +1,148 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{natbib}
+\usepackage{longtable}
+\usepackage{cleveref}
+
+\crefformat{footnote}{#2\footnotemark[#1]#3}
+\crefmultiformat{footnote}{#2\footnotemark[#1]#3}
+                          {$^,$#2\footnotemark[#1]#3}
+                          {$^,$#2\footnotemark[#1]#3}
+                          {$^,$#2\footnotemark[#1]#3}
+
+% Page size
+
+\special{papersize=8.5in,11in}
+\setlength{\pdfpageheight}{\paperheight}
+\setlength{\pdfpagewidth}{\paperwidth}
+
+\setlength{\textwidth}{6.5in} 
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0in} 
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in} 
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in} 
+\setlength{\hoffset}{0in}
+\setlength{\voffset}{0in}
+
+\setlength{\abovecaptionskip}{0pt}
+\setlength{\belowcaptionskip}{0pt} 
+
+\setlength{\tabcolsep}{1em}
+
+% Macros
+
+\newcommand{\diff}{\ensuremath{{\rm d}}}
+
+\newcommand{\Rstar}{\ensuremath{R_{\ast}}}
+\newcommand{\Mstar}{\ensuremath{M_{\ast}}}
+\newcommand{\Lrad}{\ensuremath{L_{\rm rad}}}
+\newcommand{\Lstar}{\ensuremath{L_{\ast}}}
+
+\newcommand{\cm}{\ensuremath{{\rm cm}}}
+\newcommand{\gram}{\ensuremath{{\rm g}}}
+\newcommand{\second}{\ensuremath{{\rm s}}}
+\newcommand{\dyne}{\ensuremath{{\rm dyn}}}
+\newcommand{\erg}{\ensuremath{{\rm erg}}}
+\newcommand{\kelvin}{\ensuremath{{\rm K}}}
+
+\begin{document}
+
+\section*{Output File Formats}
+
+\subsection*{Summary Files}
+
+Summary data for all modes found by GYRE are stored in an HDF5-format
+file. The \texttt{summary\_item\_names} parameter controls which variables
+are written to the file; it is a comma-separated list of item names
+drawn from the table below. Scalar items are stored as attributes,
+while 1-D array items are stored as datasets.
+
+\begin{center}
+\begin{longtable}{cllll} \hline
+Variable & Units & Item Name & Item type\footnote{%
+\label{foot:data-type}
+Real attributes and datasets are written with type \texttt{H5T\_IEEE\_F64LE}. 
+Integer attributes and datasets are written with type \texttt{H5T\_STD\_I64LE}. 
+Complex attributes and datasets are written as a compound type, composed of a real component \texttt{re} and an imaginary component \texttt{im}, both with type \texttt{H5T\_IEEE\_F64LE}.} & 
+Definition \\ \hline
+$\ell$ & --- & \texttt{l} & integer dataset & Harmonic degrees \\
+$n_{\rm p}$ & --- & \texttt{n\_p} & integer dataset & p-mode radial orders \\
+$n_{\rm g}$ & --- & \texttt{n\_g} & integer dataset & g-mode radial orders \\
+$\omega$ & ---   & \texttt{omega} & complex dataset & Dimensionless angular eigenfrequencies \\
+$f$      & \emph{varies}\footnote{%
+\label{foot:freq-units}
+The units of $f$ depend on the value of the
+\texttt{freq\_units} field in the \texttt{\&output} namelist.} & 
+\texttt{freq} & complex dataset & Generic eigenfrequencies \\
+$E$ & --- & \texttt{E} & real dataset & Normalized mode inertias\footnote{\label{foot:inertia}See \citet[][his eqn.~13]{ChrDal2012}.} \\
+$K$ & $G\Mstar^{2}/\Rstar$ & \texttt{K} & real dataset & Kinetic energies \\
+$W$ & $G\Mstar^{2}/\Rstar$ & \texttt{W} & real dataset & Works \\
+\Mstar\footnote{%
+\label{foot:coeffs-evol}
+Only available when \texttt{coeffs\_type} is \texttt{EVOL}.} & 
+\gram & \texttt{M\_star} & real attribute & Stellar mass \\
+\Rstar\cref{foot:coeffs-evol} & \cm & \texttt{R\_star} & real attribute & Stellar radius \\
+\Lstar\cref{foot:coeffs-evol} & $\erg\,\second^{-1}$ & \texttt{L\_star} & real attribute & Stellar luminosity \\
+$n_{\rm poly}$\footnote{%
+\label{foot:coeffs-poly}
+Only available when \texttt{coeffs\_type} is \texttt{POLY}.} & 
+--- & \texttt{n\_poly} & real attribute & Polytropic index \\ \hline
+\caption{Output data for summary files}
+\end{longtable}
+\end{center}
+
+\newpage
+
+\subsection*{Mode Files}
+
+Detailed data for each individual mode found by GYRE are stored in HDF5-format
+files. The \texttt{mode\_item\_names} parameter controls which variables
+are written to the files; it is a comma-separated list of item names
+drawn from the table below. Scalar items are stored as attributes,
+while 1-D array items are stored as datasets.
+
+\begin{center}
+\begin{longtable}{cllll} \hline
+Variable & Units & Item Name & Item type\cref{foot:data-type} & Definition \\ \hline
+$n$ & --- & \texttt{n} & integer attribute & Number of grid points \\
+$\ell$ & --- & \texttt{l} & integer attribute & Harmonic degree \\
+$n_{\rm p}$ & --- & \texttt{n\_p} & integer attribute & p-mode radial order \\
+$n_{\rm g}$ & --- & \texttt{n\_g} & integer attribute & g-mode radial order \\
+$\omega$ & ---   & \texttt{omega} & complex attribute & Dimensionless angular eigenfrequency \\
+$f$      & \emph{varies}\cref{foot:freq-units} & \texttt{freq} & complex attribute & Generic eigenfrequency \\
+$E$ & --- & \texttt{E} & real attribute & Normalized mode inertia\cref{foot:inertia} \\
+$K$ & $G\Mstar^{2}/\Rstar$ & \texttt{K} & real attribute & Kinetic energy \\ 
+$W$ & $G\Mstar^{2}/\Rstar$ & \texttt{dW\_dx} & real attribute & Work \\
+$x$ & --- & \texttt{x} & real dataset & $r/\Rstar$ \\
+$V$ & --- & \texttt{V} & real dataset & $-\diff \ln p/\diff \ln r$ \\
+$A^{\ast}$ & --- & \texttt{As} & real dataset & $\Gamma_{1}^{-1} \diff \ln p/\diff \ln r - \diff \ln \rho/\diff \ln r$ \\
+$U$ & --- & \texttt{U} & real dataset & $\diff \ln M_{r}/\diff \ln r$ \\
+$c_{1}$ & --- & \texttt{c\_1} & real dataset & $(r/\Rstar)^{3} (\Mstar/M_{r})$ \\
+$\Gamma_{1}$ & --- & \texttt{Gamma\_1} & real dataset & $(\partial \ln p/\partial \ln \rho)_{\rm ad}$ \\
+$\xi_{r}$ & \Rstar & \texttt{xi\_r} & complex dataset & Radial displacement perturbation \\
+$\xi_{h}$ & \Rstar & \texttt{xi\_h} & complex dataset & Horizontal displacement perturbation \\
+$\phi'$ & $G\Mstar/\Rstar$ & \texttt{phip} & complex dataset & Eulerian potential perturbation \\
+$\diff\phi'/\diff x$ & $G\Mstar/\Rstar$ & \texttt{dphip\_dx} & complex dataset & Eulerian radial gravity perturbation \\
+$\delta S$\cref{foot:coeffs-evol} & $c_{p}$ & \texttt{delS} & complex dataset & Lagrangian specific entropy perturbation \\
+$\delta L$\cref{foot:coeffs-evol,foot:coeffs-poly} & \Lstar & \texttt{delL} & complex dataset & Lagrangian luminosity perturbation \\
+$\diff K/\diff x$ & $G\Mstar^{2}/\Rstar$ & \texttt{dK\_dx} & real dataset & Differential kinetic energy \\
+$\diff W/\diff x$ & $G\Mstar^{2}/\Rstar$ & \texttt{dW\_dx} & real dataset & Differential work \\ 
+\Mstar\cref{foot:coeffs-evol} & \gram & \texttt{M\_star} & real attribute & Stellar mass \\
+\Rstar\cref{foot:coeffs-evol} & \cm & \texttt{R\_star} & real attribute & Stellar radius \\
+\Lstar\cref{foot:coeffs-evol} & $\erg\,\second^{-1}$ & \texttt{L\_star} & real attribute & Stellar luminosity \\
+$w$\cref{foot:coeffs-evol} & --- & \texttt{w} & real dataset & $M_{r}/(\Mstar-M_{r})$ \\
+$p$\cref{foot:coeffs-evol} & $\dyne\,\cm^{-2}$ & \texttt{p} & real dataset & Total pressure \\
+$\rho$\cref{foot:coeffs-evol} & $\gram\,\cm^{-3}$ & \texttt{rho} & real dataset & Density \\
+$T$\cref{foot:coeffs-evol} & $\kelvin$ & \texttt{T} & real dataset & Temperature \\ \hline
+\caption{Output data for mode files}
+\end{longtable}
+\end{center}
+
+\bibliographystyle{gyre}
+\bibliography{output-format}
+
+\end{document}
