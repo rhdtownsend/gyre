@@ -32,7 +32,6 @@ module gyre_oscpar
 
   type :: oscpar_t
      private
-     real(WP), public          :: lambda_0
      integer, public           :: l
      character(LEN=64), public :: outer_bound_type
    contains
@@ -71,7 +70,6 @@ contains
 
     ! Initialize the oscpar
 
-    this%lambda_0 = l - 2._WP
     this%l = l
 
     this%outer_bound_type = outer_bound_type

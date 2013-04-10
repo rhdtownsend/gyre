@@ -283,9 +283,9 @@ contains
 
        associate(x => x_mc(i))
          associate(V_g => mc%V(x)/mc%Gamma_1(x), As => mc%As(x), U => mc%U(x), c_1 => mc%c_1(x), &
-                   lambda_0 => op%lambda_0, l => op%l, omega_re => REAL(omega))
+                   l => op%l, omega_re => REAL(omega))
 
-           b = CMPLX(0._WP, 1._WP, WP)*(V_g + As - U - 2._WP - 2._WP*lambda_0)
+           b = CMPLX(0._WP, 1._WP, WP)*(V_g + As - U - 2._WP - 2._WP*(l-2))
            c = (l*(l+1)/(c_1*omega_re**2) - V_g)*(c_1*omega_re**2 - As)
 
            k_r_pos(i) = (0.5_WP*(-b + SQRT(b**2 - 4._WP*c)))/x
