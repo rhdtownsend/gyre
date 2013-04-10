@@ -351,7 +351,7 @@ contains
     freq_units = 'NONE'
 
     summary_file = ''
-    summary_item_list = 'l,n_p,n_g,omega,freq,freq_units'
+    summary_item_list = 'l,n_p,n_g,omega,freq'
 
     mode_prefix = ''
     mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
