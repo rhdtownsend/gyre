@@ -155,7 +155,7 @@ contains
 
     select type (mc)
     type is (evol_mech_coeffs_t)
-       call mc%init(G, M_star, R_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
+       call mc%init(G, M_star, R_star, L_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
     class default
        $ABORT(Invalid mc type)
     end select
