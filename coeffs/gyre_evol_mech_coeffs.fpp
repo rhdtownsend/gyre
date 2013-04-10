@@ -67,6 +67,7 @@ module gyre_evol_mech_coeffs
      $VAR_DECL(Gamma_1)
      real(WP), public :: M_star
      real(WP), public :: R_star
+     real(WP), public :: L_star
      real(WP)         :: t_dyn
    contains
      private
@@ -106,12 +107,13 @@ module gyre_evol_mech_coeffs
 
 contains
 
-  subroutine init (this, G, M_star, R_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
+  subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
 
     class(evol_mech_coeffs_t), intent(out) :: this
     real(WP), intent(in)                   :: G
     real(WP), intent(in)                   :: M_star
     real(WP), intent(in)                   :: R_star
+    real(WP), intent(in)                   :: L_star
     real(WP), intent(in)                   :: r(:)
     real(WP), intent(in)                   :: m(:)
     real(WP), intent(in)                   :: p(:)
@@ -176,6 +178,7 @@ contains
 
     this%M_star = M_star
     this%R_star = R_star
+    this%L_star = L_star
 
     this%t_dyn = SQRT(R_star**3/(G*M_star))
 
@@ -209,6 +212,7 @@ contains
 
     call bcast(mc%M_star, root_rank)
     call bcast(mc%R_star, root_rank)
+    call bcast(mc%L_star, root_rank)
 
     call bcast(mc%t_dyn, root_rank)
 
