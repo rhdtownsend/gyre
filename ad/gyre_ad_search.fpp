@@ -200,16 +200,16 @@ contains
     end do discrim_loop
 
     $if($MPI)
-    call barrier()
-    $endif
-
-    $if($MPI)
 
     recvcounts = i_part(2:)-i_part(:MPI_SIZE)
     displs = i_part(:MPI_SIZE)-1
 
     call allgatherv(discrim, recvcounts, displs)
 
+    $endif
+
+    $if($MPI)
+    call barrier()
     $endif
 
     call SYSTEM_CLOCK(c_end)
