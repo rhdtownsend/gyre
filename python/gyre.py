@@ -20,88 +20,33 @@
 import h5py
 import numpy as np
 
-# Read a GYRE summary file
+# Read a GYRE HDF5-format output file
 
-def read_summary (filename) :
+def read_output (filename) :
 
-    # Read the data
-
-    file = h5py.File(filename, 'r')
-
-    n = file.attrs['n']
-
-    freq_units = file.attrs['freq_units']
-
-    l = file['l'][:]
-
-    freq = file['freq'][:].astype(complex)
-    n_p = file['n_p'][:]
-    n_g = file['n_g'][:]
-
-    E = file['E'][:]
-
-    file.close()
-
-    # Calculate n_cowl (fixing if l is 0)
-
-    n_cowl = n_p - n_g
-
-    n_cowl[np.where(l == 0)] += 1
-
-    # Return the data
-
-    return {'n'          : n,
-            'l'          : l,
-            'freq'       : freq,
-            'freq_units' : freq_units,
-            'n_p'        : n_p,
-            'n_g'        : n_g,
-            'n_cowl'     : n_cowl,
-            'E'          : E}
-
-#
-
-
-# Read a GYRE eigenfunction file
-
-def read_eigfunc (filename) :
-
-    # Read the data
+    # Open the file
 
     file = h5py.File(filename, 'r')
 
-    n = file.attrs['n']
-    n_e = file.attrs['n_e']
+    # Read attributes
 
-    n_p = file.attrs['n_p']
-    n_g = file.attrs['n_g']
+    data = dict(zip(file.attrs.keys(),file.attrs.values()))
 
-    lambda_0 = file.attrs['lambda_0']
-    l = file.attrs['l']
+    # Read datasets
 
-    freq = file.attrs['freq']
-    freq_units = file.attrs['freq_units']
-    
-    x = file['x'][:]
-    y = file['y'][:].astype(complex)
+    for k in file.keys() :
+        data[k] = file[k][...]
 
-    dE_dx = file['dE_dx'][:]
+    # Convert items to complex
 
-    file.close()
+    complex_dtype = np.dtype([('re', '<f8'), ('im', '<f4')])
+
+    for k in data.keys() :
+        if(np.issubdtype(data[k].dtype, complex_dtype)) :
+               data[k] = data[k].astype(complex)
 
     # Return the data
 
-    return {'n'          : n,
-            'n_e'        : n_e,
-            'n_p'        : n_p,
-            'n_g'        : n_g,
-            'n_cowl'     : n_p-n_g,
-            'lambda_0'   : lambda_0,
-            'l'          : l,
-            'freq'       : freq,
-            'freq_units' : freq_units,
-            'x'          : x,
-            'y'          : y,
-            'dE_dx'      : dE_dx}
+    return data
 
 #
