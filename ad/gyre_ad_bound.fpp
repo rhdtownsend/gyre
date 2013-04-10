@@ -93,8 +93,7 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%mc%c_1(0._WP), &
-              lambda_0 => this%op%lambda_0, l => this%op%l)
+    associate(c_1 => this%mc%c_1(0._WP), l => this%op%l)
                  
       B_i(1,1) = c_1*omega**2
       B_i(1,2) = -l

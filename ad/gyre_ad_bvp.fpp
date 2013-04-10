@@ -381,15 +381,14 @@ contains
 
     do i = 1, n
 
-       associate(c_1 => this%mc%c_1(x(i)), &
-                 lambda_0 => this%op%lambda_0, l => this%op%l)
+       associate(c_1 => this%mc%c_1(x(i)), l => this%op%l)
 
          ! Scale the solution
 
          if(x(i) > 0._WP) then
-            y(:,i) = y(:,i)*x(i)**(lambda_0+1._WP)
+            y(:,i) = y(:,i)*x(i)**(l-1)
          else
-            if(lambda_0 /= -1._WP) then
+            if(l /= 1) then
                y(:,i) = 0._WP
             endif
          endif
