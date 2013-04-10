@@ -145,6 +145,8 @@ contains
     call bcast_alloc(this%delS, root_rank)
     call bcast_alloc(this%delL, root_rank)
 
+    call bcast(this%omega, root_rank)
+
     call bcast(this%n, root_rank)
 
   end subroutine bcast_ef
