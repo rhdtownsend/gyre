@@ -361,10 +361,10 @@ contains
     integer                  :: n
     complex(WP), allocatable :: xi_r(:)
     complex(WP), allocatable :: xi_h(:)
-    complex(WP), allocatable :: phi_pri(:)
-    complex(WP), allocatable :: dphi_pri(:)
-    complex(WP), allocatable :: del_S(:)
-    complex(WP), allocatable :: del_L(:)
+    complex(WP), allocatable :: phip(:)
+    complex(WP), allocatable :: dphip_dx(:)
+    complex(WP), allocatable :: delS(:)
+    complex(WP), allocatable :: delL(:)
     integer                  :: i
 
     ! Reconstruct the solution
@@ -377,10 +377,10 @@ contains
 
     allocate(xi_r(n))
     allocate(xi_h(n))
-    allocate(phi_pri(n))
-    allocate(dphi_pri(n))
-    allocate(del_S(n))
-    allocate(del_L(n))
+    allocate(phip(n))
+    allocate(dphip_dx(n))
+    allocate(delS(n))
+    allocate(delL(n))
 
     do i = 1, n
 
@@ -408,13 +408,13 @@ contains
 
          ! Calculate gravitational perturbations
 
-         phi_pri(i) = x(i)*y(3,i)/c_1
-         dphi_pri(i) = y(4,i)/c_1
+         phip(i) = x(i)*y(3,i)/c_1
+         dphip_dx(i) = y(4,i)/c_1
 
          ! Calculate thermal perturbations
 
-         del_S(i) = x(i)*y(5,i)
-         del_L(i) = x(i)**2*y(6,i)
+         delS(i) = x(i)*y(5,i)
+         delL(i) = x(i)**2*y(6,i)
 
        end associate
 
@@ -422,7 +422,7 @@ contains
 
     ! Initialize the eigfunc
     
-    call ef%init(this%op, omega, x, xi_r, xi_h, phi_pri, dphi_pri, del_S, del_L)
+    call ef%init(this%op, omega, x, xi_r, xi_h, phip, dphip_dx, delS, delL)
 
     ! Finish
 
