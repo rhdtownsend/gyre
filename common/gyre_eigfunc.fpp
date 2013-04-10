@@ -42,18 +42,18 @@ module gyre_eigfunc
      real(WP), allocatable    :: x(:)
      complex(WP), allocatable :: xi_r(:)
      complex(WP), allocatable :: xi_h(:)
-     complex(WP), allocatable :: phi_pri(:)
-     complex(WP), allocatable :: dphi_pri(:)
-     complex(WP), allocatable :: del_S(:)
-     complex(WP), allocatable :: del_L(:)
+     complex(WP), allocatable :: phip(:)
+     complex(WP), allocatable :: dphip_dx(:)
+     complex(WP), allocatable :: delS(:)
+     complex(WP), allocatable :: delL(:)
      complex(WP)              :: omega
      integer                  :: n
    contains
      private
      procedure, public :: init
      procedure, public :: classify
-     procedure, public :: K
      procedure, public :: dK_dx
+     procedure, public :: K
      procedure, public :: E
   end type eigfunc_t
 
@@ -80,7 +80,7 @@ module gyre_eigfunc
 
 contains
 
-  subroutine init (this, op, omega, x, xi_r, xi_h, phi_pri, dphi_pri, del_S, del_L)
+  subroutine init (this, op, omega, x, xi_r, xi_h, phip, dphip_dx, delS, delL)
 
     class(eigfunc_t), intent(out)    :: this
     type(oscpar_t), intent(in)       :: op
@@ -88,17 +88,17 @@ contains
     real(WP), intent(in)             :: x(:)
     complex(WP), intent(in)          :: xi_r(:)
     complex(WP), intent(in)          :: xi_h(:)
-    complex(WP), intent(in)          :: phi_pri(:)
-    complex(WP), intent(in)          :: dphi_pri(:)
-    complex(WP), intent(in)          :: del_S(:)
-    complex(WP), intent(in)          :: del_L(:)
+    complex(WP), intent(in)          :: phip(:)
+    complex(WP), intent(in)          :: dphip_dx(:)
+    complex(WP), intent(in)          :: delS(:)
+    complex(WP), intent(in)          :: delL(:)
 
     $CHECK_BOUNDS(SIZE(xi_r),SIZE(x))
     $CHECK_BOUNDS(SIZE(xi_h),SIZE(x))
-    $CHECK_BOUNDS(SIZE(phi_pri),SIZE(x))
-    $CHECK_BOUNDS(SIZE(dphi_pri),SIZE(x))
-    $CHECK_BOUNDS(SIZE(del_S),SIZE(x))
-    $CHECK_BOUNDS(SIZE(del_L),SIZE(x))
+    $CHECK_BOUNDS(SIZE(phip),SIZE(x))
+    $CHECK_BOUNDS(SIZE(dphip_dx),SIZE(x))
+    $CHECK_BOUNDS(SIZE(delS),SIZE(x))
+    $CHECK_BOUNDS(SIZE(delL),SIZE(x))
 
     ! Initialize the eigfunc
 
@@ -108,10 +108,10 @@ contains
 
     this%xi_r = xi_r
     this%xi_h = xi_h
-    this%phi_pri = phi_pri
-    this%dphi_pri = dphi_pri
-    this%del_S = del_S
-    this%del_L = del_L
+    this%phip = phip
+    this%dphip_dx = dphip_dx
+    this%delS = delS
+    this%delL = delL
 
     this%omega = omega
 
@@ -140,10 +140,10 @@ contains
 
     call bcast_alloc(this%xi_r, root_rank)
     call bcast_alloc(this%xi_h, root_rank)
-    call bcast_alloc(this%phi_pri, root_rank)
-    call bcast_alloc(this%dphi_pri, root_rank)
-    call bcast_alloc(this%del_S, root_rank)
-    call bcast_alloc(this%del_L, root_rank)
+    call bcast_alloc(this%phip, root_rank)
+    call bcast_alloc(this%dphip_dx, root_rank)
+    call bcast_alloc(this%delS, root_rank)
+    call bcast_alloc(this%delL, root_rank)
 
     call bcast(this%n, root_rank)
 
@@ -227,7 +227,7 @@ contains
     
     integer     :: i
 
-    ! Calculate the kinetic energy density
+    ! Calculate the differential kinetic energy in units of GM^2/R
 
     do i = 1,this%n
        associate(U => mc%U(this%x(i)), c_1 => mc%c_1(this%x(i)))
