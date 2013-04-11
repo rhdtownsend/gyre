@@ -222,6 +222,8 @@ contains
           call write_attr(hg, 'E', ef%E())
        case ('K')
           call write_attr(hg, 'K', ef%K())
+       case ('W')
+          call write_attr(hg, 'W', ef%W())
        case ('x')
           call write_dset(hg, 'x', ef%x)
        case('V')
@@ -256,6 +258,8 @@ contains
           call write_dset(hg, 'delT', ef%delp())
        case ('dK_dx')
           call write_dset(hg, 'dK_dx', ef%dK_dx())
+       case ('dW_dx')
+          call write_dset(hg, 'dW_dx', ef%dW_dx())
        case default
           select type (bc)
           type is (evol_base_coeffs_t)

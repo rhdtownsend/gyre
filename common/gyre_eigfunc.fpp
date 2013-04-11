@@ -22,6 +22,7 @@ module gyre_eigfunc
   ! Uses
 
   use core_kinds
+  use core_constants
   use core_parallel
   use core_hgroup
 
@@ -63,8 +64,10 @@ module gyre_eigfunc
      procedure, public :: delp
      procedure, public :: delT
      procedure, public :: dK_dx
-     procedure, public :: K
+     procedure, public :: dW_dx
      procedure, public :: E
+     procedure, public :: K
+     procedure, public :: W
   end type eigfunc_t
 
   ! Interfaces
@@ -459,29 +462,38 @@ contains
 
   end function dK_dx
 
-!*****
+!****
 
-  function K (this)
+  function dW_dx (this)
 
-    class(eigfunc_t), intent(in)     :: this
-    real(WP)                         :: K
-    
-    ! Calculate the kinetic energy
+    class(eigfunc_t), intent(in) :: this
+    real(WP)                     :: dW_dx(this%n)
 
-    K = integrate(this%x, this%dK_dx())
+    $ASSERT(ALLOCATED(this%tc),No therm_coeffs data)
+
+    ! Calculate the differential work in units of G M_star^2/R_star
+    ! t_dyn/t_KH.  The entropy-based expression for the work is used
+    ! (cf. Unno et al.  1989, eqn. 25.9); the additional factor of 4
+    ! pi in the denominator comes from averaging over solid angle
+
+    associate(c_thm => this%tc%c_thm(this%x))
+
+      dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI)
+
+    end associate
 
     ! Finish
 
     return
 
-  end function K
+  end function dW_dx
 
 !*****
 
   function E (this)
 
-    class(eigfunc_t), intent(in)     :: this
-    real(WP)                         :: E
+    class(eigfunc_t), intent(in) :: this
+    real(WP)                     :: E
 
     real(WP)    :: K
     complex(WP) :: xi_r(this%n)
@@ -515,6 +527,40 @@ contains
     return
 
   end function E
+
+!*****
+
+  function K (this)
+
+    class(eigfunc_t), intent(in) :: this
+    real(WP)                     :: K
+    
+    ! Calculate the kinetic energy
+
+    K = integrate(this%x, this%dK_dx())
+
+    ! Finish
+
+    return
+
+  end function K
+
+!*****
+
+  function W (this)
+
+    class(eigfunc_t), intent(in) :: this
+    real(WP)                     :: W
+    
+    ! Calculate the total work
+
+    W = integrate(this%x, this%dW_dx())
+
+    ! Finish
+
+    return
+
+  end function W
 
 !****
 
