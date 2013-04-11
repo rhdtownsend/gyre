@@ -37,6 +37,10 @@ def read_output (filename) :
     for k in file.keys() :
         data[k] = file[k][...]
 
+    # Close the file
+
+    file.close()
+
     # Convert items to complex
 
     complex_dtype = np.dtype([('re', '<f8'), ('im', '<f8')])
