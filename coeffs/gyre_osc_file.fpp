@@ -25,7 +25,9 @@ module gyre_osc_file
   use core_constants
 
   use gyre_base_coeffs
+  use gyre_therm_coeffs
   use gyre_evol_base_coeffs
+  use gyre_evol_therm_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -43,13 +45,14 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_file (file, G, deriv_type, bc, x)
+  subroutine read_osc_file (file, G, deriv_type, bc, tc, x)
 
-    character(LEN=*), intent(in)                   :: file
-    real(WP), intent(in)                           :: G
-    character(LEN=*), intent(in)                   :: deriv_type
-    class(base_coeffs_t), allocatable, intent(out) :: bc
-    real(WP), allocatable, intent(out), optional   :: x(:)
+    character(LEN=*), intent(in)                              :: file
+    real(WP), intent(in)                                      :: G
+    character(LEN=*), intent(in)                              :: deriv_type
+    class(base_coeffs_t), allocatable, intent(out)            :: bc
+    class(therm_coeffs_t), allocatable, intent(out), optional :: tc
+    real(WP), allocatable, intent(out), optional              :: x(:)
 
     integer               :: unit
     integer               :: n
@@ -65,12 +68,19 @@ contains
     real(WP), allocatable :: r(:)
     real(WP), allocatable :: m(:)
     real(WP), allocatable :: p(:)
-    real(WP), allocatable :: rho(:) 
     real(WP), allocatable :: T(:) 
+    real(WP), allocatable :: rho(:) 
     real(WP), allocatable :: N2(:)
     real(WP), allocatable :: Gamma_1(:)
     real(WP), allocatable :: nabla_ad(:)
     real(WP), allocatable :: delta(:)
+    real(WP), allocatable :: nabla(:)
+    real(WP), allocatable :: kappa(:)
+    real(WP), allocatable :: kappa_T(:)
+    real(WP), allocatable :: kappa_rho(:)
+    real(WP), allocatable :: epsilon_(:)
+    real(WP), allocatable :: epsilon_T(:)
+    real(WP), allocatable :: epsilon_rho(:)
 
     ! Read the model from the OSC-format file
 
@@ -118,6 +128,22 @@ contains
     Gamma_1 = var(10,:)
     nabla_ad = var(11,:)
     delta = var(12,:)
+    nabla = var(6,:)
+    kappa = var(8,:)
+    kappa_T = var(17,:)
+    kappa_rho = var(18,:)
+    epsilon_ = var(9,:)
+
+    allocate(epsilon_T(n))
+    allocate(epsilon_rho(n))
+
+    where(var(9,:) /= 0._WP)
+       epsilon_T = var(19,:)/var(9,:)
+       epsilon_rho = var(20,:)/var(9,:)
+    elsewhere
+       epsilon_T = 0._WP
+       epsilon_rho = 0._WP
+    endwhere
 
     ! If necessary, add central data
 
@@ -127,12 +153,21 @@ contains
     if(r(1) /= 0._WP) then
 
        m = [0._WP,m]
-       call add_center(r, p)
-       call add_center(r, rho)
        N2 = [0._WP,N2]
+
+       call add_center(r, p)
+       call add_center(r, T)
+       call add_center(r, rho)
        call add_center(r, Gamma_1)
        call add_center(r, nabla_ad)
        call add_center(r, delta)
+       call add_center(r, nabla)
+       call add_center(r, kappa)
+       call add_center(r, kappa_T)
+       call add_center(r, kappa_rho)
+       call add_center(r, epsilon_)
+       call add_center(r, epsilon_T)
+       call add_center(r, epsilon_rho)
 
        r = [0._WP,r]
 
@@ -151,6 +186,24 @@ contains
     class default
        $ABORT(Invalid bc type)
     end select
+
+    ! Initialize the therm_coeffs
+
+    if(PRESENT(tc)) then
+
+       allocate(evol_therm_coeffs_t::tc)
+
+       select type (tc)
+       type is (evol_therm_coeffs_t)
+          call tc%init(G, M_star, R_star, L_star, r, m, p, T, rho, &
+                       Gamma_1, nabla_ad, delta, nabla,  &
+                       kappa, kappa_T, kappa_rho, &
+                       epsilon_, epsilon_T, epsilon_rho, deriv_type)
+       class default
+          $ABORT(Invalid tc type)
+       end select
+
+    endif
 
     ! Set up the grid
 
