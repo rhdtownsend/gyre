@@ -23,7 +23,7 @@ module gyre_ad_bound
 
   use core_kinds
 
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
   use gyre_oscpar
 
   use ISO_FORTRAN_ENV
@@ -36,7 +36,7 @@ module gyre_ad_bound
 
   type :: ad_bound_t
      private
-     class(mech_coeffs_t), pointer :: mc => null()
+     class(base_coeffs_t), pointer :: bc => null()
      type(oscpar_t), pointer       :: op => null()
      integer, public               :: n_e
      integer, public               :: n_i
@@ -62,15 +62,15 @@ module gyre_ad_bound
 
 contains
 
-  subroutine init (this, mc, op)
+  subroutine init (this, bc, op)
 
     class(ad_bound_t), intent(out)           :: this
-    class(mech_coeffs_t), intent(in), target :: mc
+    class(base_coeffs_t), intent(in), target :: bc
     type(oscpar_t), intent(in), target       :: op
 
     ! Initialize the ad_bound
 
-    this%mc => mc
+    this%bc => bc
     this%op => op
 
     this%n_i = 2
@@ -93,7 +93,7 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%mc%c_1(0._WP), l => this%op%l)
+    associate(c_1 => this%bc%c_1(0._WP), l => this%op%l)
                  
       B_i(1,1) = c_1*omega**2
       B_i(1,2) = -l
@@ -154,7 +154,7 @@ contains
     ! term in the gravitational bc is required for cases where the
     ! surface density remains finite (see Cox 1980, eqn. 17.71)
 
-    associate(U => this%mc%U(1._WP), l => this%op%l)
+    associate(U => this%bc%U(1._WP), l => this%op%l)
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
@@ -185,7 +185,7 @@ contains
     ! Set the outer boundary conditions, assuming Dziembowski's (1971)
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere.
 
-    associate(V => this%mc%V(1._WP), &
+    associate(V => this%bc%V(1._WP), &
               l => this%op%l)
 
       B_o(1,1) = 1 + (l*(l+1)/omega**2 - 4 - omega**2)/V
@@ -227,8 +227,8 @@ contains
     ! Set the outer boundary conditions, assuming Unno et al.'s (1989,
     ! S18.1) formulation.
 
-    associate(V_g => this%mc%V(1._WP)/this%mc%Gamma_1(1._WP), &
-              As => this%mc%As(1._WP), l => this%op%l)
+    associate(V_g => this%bc%V(1._WP)/this%bc%Gamma_1(1._WP), &
+              As => this%bc%As(1._WP), l => this%op%l)
 
       lambda = outer_wavenumber(V_g, As, omega, l)
       
@@ -276,8 +276,8 @@ contains
     ! Set the outer boundary conditions, assuming
     ! Christensen-Dalsgaard's formulation (see ADIPLS documentation)
 
-    associate(V_g => this%mc%V(1._WP)/this%mc%Gamma_1(1._WP), &
-              As => this%mc%V(1._WP)*(1._WP-1._WP/this%mc%Gamma_1(1._WP)), &
+    associate(V_g => this%bc%V(1._WP)/this%bc%Gamma_1(1._WP), &
+              As => this%bc%V(1._WP)*(1._WP-1._WP/this%bc%Gamma_1(1._WP)), &
               l => this%op%l)
 
       lambda = outer_wavenumber(V_g, As, omega, l)

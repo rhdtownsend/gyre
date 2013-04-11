@@ -24,8 +24,8 @@ module gyre_poly_file
   use core_kinds
   use core_hgroup
 
-  use gyre_mech_coeffs
-  use gyre_poly_mech_coeffs
+  use gyre_base_coeffs
+  use gyre_poly_base_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -43,11 +43,11 @@ module gyre_poly_file
 
 contains
 
-  subroutine read_poly_file (file, deriv_type, mc, x)
+  subroutine read_poly_file (file, deriv_type, bc, x)
 
     character(LEN=*), intent(in)                   :: file
     character(LEN=*), intent(in)                   :: deriv_type
-    class(mech_coeffs_t), allocatable, intent(out) :: mc
+    class(base_coeffs_t), allocatable, intent(out) :: bc
     real(WP), allocatable, intent(out), optional   :: x(:)
 
     type(hgroup_t)        :: hg
@@ -70,15 +70,15 @@ contains
 
     call hg%final()
 
-    ! Initialize the mech_coeffs
+    ! Initialize the base_coeffs
 
-    allocate(poly_mech_coeffs_t::mc)
+    allocate(poly_base_coeffs_t::bc)
 
-    select type (mc)
-    type is (poly_mech_coeffs_t)
-       call mc%init(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
+    select type (bc)
+    type is (poly_base_coeffs_t)
+       call bc%init(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
     class default
-       $ABORT(Invalid mc type)
+       $ABORT(Invalid bc type)
     end select
 
     ! If necessary, return the grid

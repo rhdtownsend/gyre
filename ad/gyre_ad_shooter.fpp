@@ -23,7 +23,7 @@ module gyre_ad_shooter
 
   use core_kinds
 
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
   use gyre_oscpar
   use gyre_numpar
   use gyre_ad_jacobian
@@ -41,7 +41,7 @@ module gyre_ad_shooter
 
   type :: ad_shooter_t
      private
-     class(mech_coeffs_t), pointer :: mc => null()
+     class(base_coeffs_t), pointer :: bc => null()
      type(oscpar_t), pointer       :: op => null()
      type(numpar_t), pointer       :: np => null()
      type(ad_jacobian_t)           :: jc
@@ -63,20 +63,20 @@ module gyre_ad_shooter
 
 contains
 
-  subroutine init (this, mc, op, np)
+  subroutine init (this, bc, op, np)
 
     class(ad_shooter_t), intent(out)         :: this
-    class(mech_coeffs_t), intent(in), target :: mc
+    class(base_coeffs_t), intent(in), target :: bc
     type(oscpar_t), intent(in), target       :: op
     type(numpar_t), intent(in), target       :: np
 
     ! Initialize the ad_shooter
 
-    this%mc => mc
+    this%bc => bc
     this%op => op
     this%np => np
 
-    call this%jc%init(mc, op)
+    call this%jc%init(bc, op)
     
     this%n_e = this%jc%n_e
 

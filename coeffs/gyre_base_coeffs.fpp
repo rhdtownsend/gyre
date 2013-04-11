@@ -1,5 +1,5 @@
-! Module   : gyre_therm_coeffs
-! Purpose  : thermal structure coefficients (interface)
+! Module   : gyre_base_coeffs
+! Purpose  : base structure coefficients (interface)
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_therm_coeffs
+module gyre_base_coeffs
 
   ! Uses
 
@@ -36,21 +36,19 @@ module gyre_therm_coeffs
     generic, public              :: ${NAME} => get_${NAME}_1, get_${NAME}_v
   $endsub
 
-  type, abstract :: therm_coeffs_t
-     private
+  type, abstract :: base_coeffs_t
    contains
      private
-     $PROC_DECL(c_rad)
-     $PROC_DECL(dc_rad)
-     $PROC_DECL(c_gen)
-     $PROC_DECL(c_thm)
-     $PROC_DECL(nabla)
-     $PROC_DECL(dnabla_ad)
-     $PROC_DECL(kappa_ad)
-     $PROC_DECL(kappa_S)
-     $PROC_DECL(epsilon_ad)
-     $PROC_DECL(epsilon_S)
-  end type therm_coeffs_t
+     $PROC_DECL(V)
+     $PROC_DECL(V_x2)
+     $PROC_DECL(As)
+     $PROC_DECL(U)
+     $PROC_DECL(c_1)
+     $PROC_DECL(Gamma_1)
+     $PROC_DECL(nabla_ad)
+     $PROC_DECL(delta)
+     procedure(conv_freq_i), deferred, public :: conv_freq
+  end type base_coeffs_t
 
   ! Interfaces
 
@@ -58,19 +56,29 @@ module gyre_therm_coeffs
 
      function get_1_i (this, x) result (y)
        use core_kinds
-       import therm_coeffs_t
-       class(therm_coeffs_t), intent(in) :: this
-       real(WP), intent(in)              :: x
-       real(WP)                          :: y
+       import base_coeffs_t
+       class(base_coeffs_t), intent(in) :: this
+       real(WP), intent(in)             :: x
+       real(WP)                         :: y
      end function get_1_i
 
      function get_v_i (this, x) result (y)
        use core_kinds
-       import therm_coeffs_t
-       class(therm_coeffs_t), intent(in) :: this
-       real(WP), intent(in)              :: x(:)
-       real(WP)                          :: y(SIZE(x))
+       import base_coeffs_t
+       class(base_coeffs_t), intent(in) :: this
+       real(WP), intent(in)             :: x(:)
+       real(WP)                         :: y(SIZE(x))
      end function get_v_i
+
+     function conv_freq_i (this, freq, from_units, to_units) result (conv_freq)
+       use core_kinds
+       import base_coeffs_t
+       class(base_coeffs_t), intent(in) :: this
+       complex(WP), intent(in)          :: freq
+       character(LEN=*), intent(in)     :: from_units
+       character(LEN=*), intent(in)     :: to_units
+       complex(WP)                      :: conv_freq
+     end function conv_freq_i
 
   end interface
 
@@ -78,6 +86,6 @@ module gyre_therm_coeffs
 
   private
 
-  public :: therm_coeffs_t
+  public :: base_coeffs_t
 
-end module gyre_therm_coeffs
+end module gyre_base_coeffs

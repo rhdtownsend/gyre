@@ -26,7 +26,7 @@ program gyre_nad
   use core_parallel
   use core_hgroup
 
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
   use gyre_therm_coeffs
   use gyre_oscpar
   use gyre_gridpar
@@ -48,8 +48,8 @@ program gyre_nad
   ! Variables
 
   integer                            :: unit
-  real(WP), allocatable              :: x_mc(:)
-  class(mech_coeffs_t), allocatable  :: mc
+  real(WP), allocatable              :: x_bc(:)
+  class(base_coeffs_t), allocatable  :: bc
   class(therm_coeffs_t), allocatable :: tc
   type(oscpar_t)                     :: op
   type(numpar_t)                     :: np
@@ -77,11 +77,14 @@ program gyre_nad
 
   if(MPI_RANK == 0) then
 
-     call init_coeffs(unit, x_mc, mc, tc)
+     call init_coeffs(unit, x_bc, bc, tc)
+
+     $ASSERT(ALLOCATED(tc),No therm_coeffs data)
+
      call init_oscpar(unit, op)
      call init_numpar(unit, np)
-     call init_scan(unit, mc, omega)
-     call init_bvp(unit, x_mc, mc, tc, op, np, omega, ad_bp, nad_bp)
+     call init_scan(unit, bc, omega)
+     call init_bvp(unit, x_bc, bc, tc, op, np, omega, ad_bp, nad_bp)
 
   endif
 
@@ -99,7 +102,7 @@ program gyre_nad
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_data(unit, nad_ef, mc)
+     call write_data(unit, nad_ef, bc)
   endif
 
   ! Finish
@@ -108,11 +111,11 @@ program gyre_nad
 
 contains
 
-  subroutine init_bvp (unit, x_mc, mc, tc, op, np, omega, ad_bp, nad_bp)
+  subroutine init_bvp (unit, x_bc, bc, tc, op, np, omega, ad_bp, nad_bp)
 
     integer, intent(in)                            :: unit
-    real(WP), intent(in), allocatable              :: x_mc(:)
-    class(mech_coeffs_t), intent(in)               :: mc
+    real(WP), intent(in), allocatable              :: x_bc(:)
+    class(base_coeffs_t), intent(in)               :: bc
     class(therm_coeffs_t), allocatable, intent(in) :: tc
     type(oscpar_t), intent(in)                     :: op
     type(numpar_t), intent(in)                     :: np
@@ -127,7 +130,7 @@ contains
     integer               :: n_floor
     real(WP)              :: s
     integer               :: n_grid
-    integer               :: dn(SIZE(x_mc)-1)
+    integer               :: dn(SIZE(x_bc)-1)
     integer               :: i
     real(WP), allocatable :: x_sh(:)
     type(gridpar_t)       :: gp
@@ -161,15 +164,15 @@ contains
     case('LOG')
        call build_log_grid(s, n_grid, x_sh)
     case('INHERIT')
-       $ASSERT(ALLOCATED(x_mc),No input grid)
-       x_sh = x_mc
+       $ASSERT(ALLOCATED(x_bc),No input grid)
+       x_sh = x_bc
     case('DISPERSION')
-       $ASSERT(ALLOCATED(x_mc),No input grid)
+       $ASSERT(ALLOCATED(x_bc),No input grid)
        dn = 0
        do i = 1,SIZE(omega)
-          call plan_dispersion_grid(x_mc, mc, CMPLX(omega(i), KIND=WP), op, alpha_osc, alpha_exp, n_center, n_floor, dn)
+          call plan_dispersion_grid(x_bc, bc, CMPLX(omega(i), KIND=WP), op, alpha_osc, alpha_exp, n_center, n_floor, dn)
        enddo
-       call build_oversamp_grid(x_mc, dn, x_sh)
+       call build_oversamp_grid(x_bc, dn, x_sh)
     case default
        $ABORT(Invalid grid_type)
     end select
@@ -189,8 +192,8 @@ contains
 
     ! Initialize the bvps
 
-    call ad_bp%init(mc, tc, op, gp, np, x_sh)
-    call nad_bp%init(mc, tc, op, gp, np, x_sh)
+    call ad_bp%init(bc, tc, op, gp, np, x_sh)
+    call nad_bp%init(bc, tc, op, gp, np, x_sh)
 
     ! Finish
 

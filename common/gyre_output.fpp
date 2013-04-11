@@ -24,9 +24,9 @@ module gyre_output
   use core_kinds
   use core_hgroup
 
-  use gyre_mech_coeffs
-  use gyre_evol_mech_coeffs
-  use gyre_poly_mech_coeffs
+  use gyre_base_coeffs
+  use gyre_evol_base_coeffs
+  use gyre_poly_base_coeffs
   use gyre_eigfunc
 
   use ISO_FORTRAN_ENV
@@ -44,11 +44,11 @@ module gyre_output
 
 contains
 
-  subroutine write_summary (file, ef, mc, items, freq_units)
+  subroutine write_summary (file, ef, bc, items, freq_units)
 
     character(LEN=*), intent(in)     :: file
     type(eigfunc_t), intent(in)      :: ef(:)
-    class(mech_coeffs_t), intent(in) :: mc
+    class(base_coeffs_t), intent(in) :: bc
     character(LEN=*), intent(in)     :: items(:)
     character(LEN=*), intent(in)     :: freq_units
 
@@ -65,12 +65,12 @@ contains
 
     ef_loop : do i = 1,SIZE(ef)
 
-       freq(i) = mc%conv_freq(ef(i)%omega, 'NONE', freq_units)
+       freq(i) = bc%conv_freq(ef(i)%omega, 'NONE', freq_units)
 
        call ef(i)%classify(n_p(i), n_g(i))
 
-       E(i) = ef(i)%E(mc)
-       K(i) = ef(i)%K(mc)
+       E(i) = ef(i)%E()
+       K(i) = ef(i)%K()
 
     end do ef_loop
 
@@ -104,11 +104,11 @@ contains
        case('K')
           call write_dset(hg, 'K', K)
        case default
-          select type (mc)
-          type is (evol_mech_coeffs_t)
-             call write_summary_evol(hg, mc, items(j))
-          type is (poly_mech_coeffs_t)
-             call write_summary_poly(hg, mc, items(j))
+          select type (bc)
+          type is (evol_base_coeffs_t)
+             call write_summary_evol(hg, bc, items(j))
+          type is (poly_base_coeffs_t)
+             call write_summary_poly(hg, bc, items(j))
           class default
              write(ERROR_UNIT, *) 'item:', TRIM(items(j))
              $ABORT(Invalid item)
@@ -127,21 +127,21 @@ contains
 
   contains
 
-    subroutine write_summary_evol (hg, mc, item)
+    subroutine write_summary_evol (hg, bc, item)
 
       type(hgroup_t), intent(inout)        :: hg
-      type(evol_mech_coeffs_t), intent(in) :: mc
+      type(evol_base_coeffs_t), intent(in) :: bc
       character(LEN=*), intent(in)         :: item
 
       ! Write the item
 
       select case (item)
       case ('M_star')
-         call write_attr(hg, 'M_star', mc%M_star)
+         call write_attr(hg, 'M_star', bc%M_star)
       case ('R_star')
-         call write_attr(hg, 'R_star', mc%R_star)
+         call write_attr(hg, 'R_star', bc%R_star)
       case ('L_star')
-         call write_attr(hg, 'L_star', mc%L_star)
+         call write_attr(hg, 'L_star', bc%L_star)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -153,17 +153,17 @@ contains
 
     end subroutine write_summary_evol
 
-    subroutine write_summary_poly (hg, mc, item)
+    subroutine write_summary_poly (hg, bc, item)
 
       type(hgroup_t), intent(inout)        :: hg
-      type(poly_mech_coeffs_t), intent(in) :: mc
+      type(poly_base_coeffs_t), intent(in) :: bc
       character(LEN=*), intent(in)         :: item
 
       ! Write the item
 
       select case (item)
       case ('n_poly')
-         call write_attr(hg, 'n_poly', mc%n_poly)
+         call write_attr(hg, 'n_poly', bc%n_poly)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -179,18 +179,16 @@ contains
 
 !****
 
-  subroutine write_mode (file, ef, mc, items, freq_units)
+  subroutine write_mode (file, ef, bc, items, freq_units)
 
     character(LEN=*), intent(in)     :: file
     type(eigfunc_t), intent(in)      :: ef
-    class(mech_coeffs_t), intent(in) :: mc
+    class(base_coeffs_t), intent(in) :: bc
     character(LEN=*), intent(in)     :: items(:)
     character(LEN=*), intent(in)     :: freq_units
 
     integer        :: n_p
     integer        :: n_g
-    real(WP)       :: E
-    real(WP)       :: K
     type(hgroup_t) :: hg
     integer        :: j
 
@@ -198,9 +196,6 @@ contains
 
     call ef%classify(n_p, n_g)
     
-    E = ef%E(mc)
-    K = ef%K(mc)
-
     ! Open the file
 
     call hg%init(file, CREATE_FILE)
@@ -221,44 +216,52 @@ contains
        case ('omega')
           call write_attr(hg, 'omega', ef%omega)
        case ('freq')
-          call write_attr(hg, 'freq', mc%conv_freq(ef%omega, 'NONE', freq_units))
+          call write_attr(hg, 'freq', bc%conv_freq(ef%omega, 'NONE', freq_units))
           call write_attr(hg, 'freq_units', freq_units)
        case ('E')
-          call write_attr(hg, 'E', E)
+          call write_attr(hg, 'E', ef%E())
        case ('K')
-          call write_attr(hg, 'K', K)
+          call write_attr(hg, 'K', ef%K())
        case ('x')
           call write_dset(hg, 'x', ef%x)
        case('V')
-          call write_dset(hg, 'V', mc%V(ef%x))
+          call write_dset(hg, 'V', bc%V(ef%x))
        case('As')
-          call write_dset(hg, 'As', mc%As(ef%x))
+          call write_dset(hg, 'As', bc%As(ef%x))
        case('U')
-          call write_dset(hg, 'U', mc%U(ef%x))
+          call write_dset(hg, 'U', bc%U(ef%x))
        case('c_1')
-          call write_dset(hg, 'c_1', mc%c_1(ef%x))
+          call write_dset(hg, 'c_1', bc%c_1(ef%x))
        case ('Gamma_1')
-          call write_dset(hg, 'Gamma_1', mc%Gamma_1(ef%x))
+          call write_dset(hg, 'Gamma_1', bc%Gamma_1(ef%x))
+       case ('nabla_ad')
+          call write_dset(hg, 'nabla_ad', bc%nabla_ad(ef%x))
+       case ('delta')
+          call write_dset(hg, 'delta', bc%delta(ef%x))
        case ('xi_r')
-          call write_dset(hg, 'xi_r', ef%xi_r)
+          call write_dset(hg, 'xi_r', ef%xi_r())
        case ('xi_h')
-          call write_dset(hg, 'xi_h', ef%xi_h)
+          call write_dset(hg, 'xi_h', ef%xi_h())
        case ('phip')
-          call write_dset(hg, 'phip', ef%phip)
+          call write_dset(hg, 'phip', ef%phip())
        case ('dphip_dx')
-          call write_dset(hg, 'dphip_dx', ef%dphip_dx)
+          call write_dset(hg, 'dphip_dx', ef%dphip_dx())
        case ('delS')
-          call write_dset(hg, 'delS', ef%delS)
+          call write_dset(hg, 'delS', ef%delS())
        case ('delL')
-          call write_dset(hg, 'delL', ef%delL)
+          call write_dset(hg, 'delL', ef%delL())
+       case ('delp')
+          call write_dset(hg, 'delp', ef%delT())
+       case ('delT')
+          call write_dset(hg, 'delT', ef%delp())
        case ('dK_dx')
-          call write_dset(hg, 'dK_dx', ef%dK_dx(mc))
+          call write_dset(hg, 'dK_dx', ef%dK_dx())
        case default
-          select type (mc)
-          type is (evol_mech_coeffs_t)
-             call write_mode_evol(hg, mc, items(j))
-          type is (poly_mech_coeffs_t)
-             call write_mode_poly(hg, mc, items(j))
+          select type (bc)
+          type is (evol_base_coeffs_t)
+             call write_mode_evol(hg, bc, items(j))
+          type is (poly_base_coeffs_t)
+             call write_mode_poly(hg, bc, items(j))
           class default
              write(ERROR_UNIT, *) 'item:', TRIM(items(j))
              $ABORT(Invalid item)
@@ -277,29 +280,29 @@ contains
 
   contains
 
-    subroutine write_mode_evol (hg, mc, item)
+    subroutine write_mode_evol (hg, bc, item)
 
       type(hgroup_t), intent(inout)        :: hg
-      type(evol_mech_coeffs_t), intent(in) :: mc
+      type(evol_base_coeffs_t), intent(in) :: bc
       character(LEN=*), intent(in)         :: item
 
       ! Write the item
 
       select case (item)
       case ('M_star')
-         call write_attr(hg, 'M_star', mc%M_star)
+         call write_attr(hg, 'M_star', bc%M_star)
       case ('R_star')
-         call write_attr(hg, 'R_star', mc%R_star)
+         call write_attr(hg, 'R_star', bc%R_star)
       case ('L_star')
-         call write_attr(hg, 'L_star', mc%L_star)
+         call write_attr(hg, 'L_star', bc%L_star)
       case ('m')
-         call write_dset(hg, 'm', mc%m(ef%x))
+         call write_dset(hg, 'm', bc%m(ef%x))
       case ('p')
-         call write_dset(hg, 'p', mc%p(ef%x))
+         call write_dset(hg, 'p', bc%p(ef%x))
       case ('rho')
-         call write_dset(hg, 'rho', mc%rho(ef%x))
+         call write_dset(hg, 'rho', bc%rho(ef%x))
       case ('T')
-         call write_dset(hg, 'T', mc%T(ef%x))
+         call write_dset(hg, 'T', bc%T(ef%x))
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -311,17 +314,17 @@ contains
 
     end subroutine write_mode_evol
 
-    subroutine write_mode_poly (hg, mc, item)
+    subroutine write_mode_poly (hg, bc, item)
 
       type(hgroup_t), intent(inout)        :: hg
-      type(poly_mech_coeffs_t), intent(in) :: mc
+      type(poly_base_coeffs_t), intent(in) :: bc
       character(LEN=*), intent(in)         :: item
 
       ! Write the item
 
       select case (item)
       case ('n_poly')
-         call write_attr(hg, 'n_poly', mc%n_poly)
+         call write_attr(hg, 'n_poly', bc%n_poly)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)

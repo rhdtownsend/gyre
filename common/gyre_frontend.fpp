@@ -27,7 +27,7 @@ module gyre_frontend
   use core_order
   use core_memory
 
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
   use gyre_therm_coeffs
   use gyre_oscpar
   use gyre_numpar
@@ -113,7 +113,7 @@ contains
 
 !****
 
-  subroutine init_coeffs (unit, x_mc, mc, tc)
+  subroutine init_coeffs (unit, x_bc, bc, tc)
 
     use gyre_mesa_file
     use gyre_b3_file
@@ -121,15 +121,15 @@ contains
     use gyre_fgong_file
     use gyre_osc_file
     use gyre_poly_file
-    use gyre_hom_mech_coeffs
+    use gyre_hom_base_coeffs
 
     integer, intent(in)                                         :: unit
-    real(WP), allocatable, intent(out)                          :: x_mc(:)
+    real(WP), allocatable, intent(out)                          :: x_bc(:)
     $if($GFORTRAN_PR56218)
-    class(mech_coeffs_t), allocatable, intent(inout)            :: mc
+    class(base_coeffs_t), allocatable, intent(inout)            :: bc
     class(therm_coeffs_t), allocatable, intent(inout), optional :: tc
     $else
-    class(mech_coeffs_t), allocatable, intent(out)              :: mc
+    class(base_coeffs_t), allocatable, intent(out)              :: bc
     class(therm_coeffs_t), allocatable, intent(out), optional   :: tc
     $endif
 
@@ -154,26 +154,26 @@ contains
     rewind(unit)
     read(unit, NML=coeffs, END=900)
 
-    ! Read/initialize the mech_coeffs
+    ! Read/initialize the base_coeffs
 
     select case(coeffs_type)
     case('MESA')
-       call read_mesa_file(file, G, deriv_type, mc, tc, x=x_mc)
+       call read_mesa_file(file, G, deriv_type, bc, tc, x=x_bc)
     case('B3')
-       call read_b3_file(file, G, deriv_type, mc, tc, x=x_mc)
+       call read_b3_file(file, G, deriv_type, bc, tc, x=x_bc)
     case('GSM')
-       call read_gsm_file(file, G, deriv_type, mc, tc, x=x_mc)
+       call read_gsm_file(file, G, deriv_type, bc, tc, x=x_bc)
     case('FGONG')
-       call read_fgong_file(file, G, deriv_type, mc, x=x_mc) 
+       call read_fgong_file(file, G, deriv_type, bc, x=x_bc) 
     case('OSC')
-       call read_osc_file(file, G, deriv_type, mc, x=x_mc)
+       call read_osc_file(file, G, deriv_type, bc, x=x_bc)
     case('POLY')
-       call read_poly_file(file, deriv_type, mc, x=x_mc)
+       call read_poly_file(file, deriv_type, bc, x=x_bc)
     case('HOM')
-       allocate(hom_mech_coeffs_t::mc)
-       select type (mc)
-       type is (hom_mech_coeffs_t)
-          call mc%init(Gamma_1)
+       allocate(hom_base_coeffs_t::bc)
+       select type (bc)
+       type is (hom_base_coeffs_t)
+          call bc%init(Gamma_1)
        end select
     end select
 
@@ -265,10 +265,10 @@ contains
 
 !****
 
-  subroutine init_scan (unit, mc, omega)
+  subroutine init_scan (unit, bc, omega)
 
     integer, intent(in)                :: unit
-    class(mech_coeffs_t), intent(in)   :: mc
+    class(base_coeffs_t), intent(in)   :: bc
     real(WP), allocatable, intent(out) :: omega(:)
 
     character(LEN=256) :: grid_type
@@ -302,8 +302,8 @@ contains
           
        ! Set up the frequency grid
 
-       omega_min = REAL(mc%conv_freq(CMPLX(freq_min, KIND=WP), freq_units, 'NONE'))
-       omega_max = REAL(mc%conv_freq(CMPLX(freq_max, KIND=WP), freq_units, 'NONE'))
+       omega_min = REAL(bc%conv_freq(CMPLX(freq_min, KIND=WP), freq_units, 'NONE'))
+       omega_max = REAL(bc%conv_freq(CMPLX(freq_max, KIND=WP), freq_units, 'NONE'))
        
        select case(grid_type)
        case('LINEAR')
@@ -330,11 +330,11 @@ contains
 
 !****
 
-  subroutine write_data (unit, ef, mc)
+  subroutine write_data (unit, ef, bc)
 
     integer, intent(in)              :: unit
     type(eigfunc_t), intent(in)      :: ef(:)
-    class(mech_coeffs_t), intent(in) :: mc
+    class(base_coeffs_t), intent(in) :: bc
 
     character(LEN=256)          :: freq_units
     character(LEN=FILENAME_LEN) :: summary_file
@@ -361,7 +361,7 @@ contains
 
     ! Write output files
 
-    if(summary_file /= '') call write_summary(summary_file, ef, mc, split_item_list(summary_item_list), freq_units)
+    if(summary_file /= '') call write_summary(summary_file, ef, bc, split_item_list(summary_item_list), freq_units)
 
     if(mode_prefix /= '') then
 
@@ -370,7 +370,7 @@ contains
           write(mode_file, 100) TRIM(mode_prefix), j, '.h5'
 100       format(A,I4.4,A)
 
-          call write_mode(mode_file, ef(j), mc, split_item_list(mode_item_list), freq_units)
+          call write_mode(mode_file, ef(j), bc, split_item_list(mode_item_list), freq_units)
 
        end do mode_loop
        

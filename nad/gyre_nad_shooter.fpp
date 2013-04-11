@@ -23,7 +23,7 @@ module gyre_nad_shooter
 
   use core_kinds
 
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
   use gyre_therm_coeffs
   use gyre_oscpar
   use gyre_numpar
@@ -44,7 +44,7 @@ module gyre_nad_shooter
 
   type :: nad_shooter_t
      private
-     class(mech_coeffs_t), pointer  :: mc => null()
+     class(base_coeffs_t), pointer  :: bc => null()
      class(therm_coeffs_t), pointer :: tc => null()
      type(oscpar_t), pointer        :: op => null()
      type(numpar_t), pointer        :: np => null()
@@ -68,24 +68,24 @@ module gyre_nad_shooter
 
 contains
 
-  subroutine init (this, mc, tc, op, np)
+  subroutine init (this, bc, tc, op, np)
 
     class(nad_shooter_t), intent(out)         :: this
-    class(mech_coeffs_t), intent(in), target  :: mc
+    class(base_coeffs_t), intent(in), target  :: bc
     class(therm_coeffs_t), intent(in), target :: tc
     type(oscpar_t), intent(in), target        :: op
     type(numpar_t), intent(in), target        :: np
 
     ! Initialize the nad_shooter
 
-    this%mc => mc
+    this%bc => bc
     this%tc => tc
 
     this%op => op
     this%np => np
 
-    call this%ad_jc%init(mc, op)
-    call this%nad_jc%init(mc, tc, op)
+    call this%ad_jc%init(bc, op)
+    call this%nad_jc%init(bc, tc, op)
     
     this%n_e = this%nad_jc%n_e
 
@@ -153,7 +153,7 @@ contains
           ! Apply the thermal-term rescaling, to assist the rootfinder
 
           associate(x_mid => 0.5_WP*(x(k) + x(k+1)))
-            associate(V => this%mc%V(x_mid), nabla => this%tc%nabla(x_mid), &
+            associate(V => this%bc%V(x_mid), nabla => this%tc%nabla(x_mid), &
                       c_rad => this%tc%c_rad(x_mid), c_thm => this%tc%c_thm(x_mid))
               lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x_mid
             end associate

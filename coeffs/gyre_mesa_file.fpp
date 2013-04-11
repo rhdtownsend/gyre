@@ -24,9 +24,9 @@ module gyre_mesa_file
   use core_kinds
   use core_constants
 
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
   use gyre_therm_coeffs
-  use gyre_evol_mech_coeffs
+  use gyre_evol_base_coeffs
   use gyre_evol_therm_coeffs
 
   use ISO_FORTRAN_ENV
@@ -45,12 +45,12 @@ module gyre_mesa_file
 
 contains
 
-  subroutine read_mesa_file (file, G, deriv_type, mc, tc, x)
+  subroutine read_mesa_file (file, G, deriv_type, bc, tc, x)
 
     character(LEN=*), intent(in)                              :: file
     real(WP), intent(in)                                      :: G
     character(LEN=*), intent(in)                              :: deriv_type 
-    class(mech_coeffs_t), allocatable, intent(out)            :: mc
+    class(base_coeffs_t), allocatable, intent(out)            :: bc
     class(therm_coeffs_t), allocatable, intent(out), optional :: tc
     real(WP), allocatable, intent(out), optional              :: x(:)
 
@@ -67,17 +67,18 @@ contains
     real(WP), allocatable :: p(:)
     real(WP), allocatable :: T(:)
     real(WP), allocatable :: rho(:)
-    real(WP), allocatable :: nabla(:)
     real(WP), allocatable :: N2(:)
+    real(WP), allocatable :: nabla(:)
     real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: delta(:)
     real(WP), allocatable :: c_p(:)
+    real(WP), allocatable :: delta(:)
     real(WP), allocatable :: kappa(:)
     real(WP), allocatable :: kappa_T(:)
     real(WP), allocatable :: kappa_rho(:)
     real(WP), allocatable :: epsilon(:)
     real(WP), allocatable :: epsilon_T(:)
     real(WP), allocatable :: epsilon_rho(:)
+    real(WP), allocatable :: nabla_ad(:)
 
     ! Read the model from the MESA-format file
 
@@ -106,8 +107,8 @@ contains
     nabla = var(7,:)
     N2 = var(8,:)
     Gamma_1 = var(12,:)*var(10,:)/var(9,:)
-    delta = var(11,:)/var(12,:)
     c_p = var(10,:)
+    delta = var(11,:)/var(12,:)
     kappa = var(13,:)
     kappa_T = var(14,:)
     kappa_rho = var(15,:)
@@ -124,6 +125,8 @@ contains
        epsilon_rho = 0._WP
     endwhere
 
+    nabla_ad = p*delta/(rho*T*var(10,:))
+
     ! If necessary, add central data
 
     if(r(1) > 0._WP) then
@@ -134,10 +137,10 @@ contains
        call add_center(r, p)
        call add_center(r, T)
        call add_center(r, rho)
-       call add_center(r, nabla)
        call add_center(r, Gamma_1)
+       call add_center(r, nabla_ad)
        call add_center(r, delta)
-       call add_center(r, c_p)
+       call add_center(r, nabla)
        call add_center(r, kappa)
        call add_center(r, kappa_T)
        call add_center(r, kappa_rho)
@@ -149,15 +152,16 @@ contains
 
     endif
 
-    ! Initialize the mech_coeffs
+    ! Initialize the base_coeffs
 
-    allocate(evol_mech_coeffs_t::mc)
+    allocate(evol_base_coeffs_t::bc)
 
-    select type (mc)
-    type is (evol_mech_coeffs_t)
-       call mc%init(G, M_star, R_star, L_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
+    select type (bc)
+    type is (evol_base_coeffs_t)
+       call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                    N2, Gamma_1, nabla_ad, delta, deriv_type)
     class default
-       $ABORT(Invalid mc type)
+       $ABORT(Invalid bc type)
     end select
 
     ! Initialize the therm_coeffs
@@ -169,7 +173,7 @@ contains
        select type (tc)
        type is (evol_therm_coeffs_t)
           call tc%init(G, M_star, R_star, L_star, r, m, p, T, rho, &
-                       nabla, Gamma_1, delta, c_p, &
+                       Gamma_1, nabla_ad, delta, nabla,  &
                        kappa, kappa_T, kappa_rho, &
                        epsilon, epsilon_T, epsilon_rho, deriv_type)
        class default

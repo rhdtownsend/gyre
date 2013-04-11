@@ -24,7 +24,7 @@ module gyre_ad_jacobian
   use core_kinds
 
   use gyre_jacobian
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
   use gyre_oscpar
 
   use ISO_FORTRAN_ENV
@@ -37,7 +37,7 @@ module gyre_ad_jacobian
 
   type, extends(jacobian_t) :: ad_jacobian_t
      private
-     class(mech_coeffs_t), pointer :: mc => null()
+     class(base_coeffs_t), pointer :: bc => null()
      type(oscpar_t), pointer       :: op => null()
    contains
      private
@@ -56,15 +56,15 @@ module gyre_ad_jacobian
 
 contains
 
-  subroutine init (this, mc, op)
+  subroutine init (this, bc, op)
 
     class(ad_jacobian_t), intent(out)        :: this
-    class(mech_coeffs_t), intent(in), target :: mc
+    class(base_coeffs_t), intent(in), target :: bc
     type(oscpar_t), intent(in), target       :: op
 
     ! Initialize the ad_jacobian
 
-    this%mc => mc
+    this%bc => bc
     this%op => op
 
     this%n_e = 4
@@ -110,29 +110,29 @@ contains
 
     ! Evaluate the log(x)-space Jacobian matrix
 
-    associate(V_g => this%mc%V(x)/this%mc%Gamma_1(x), U => this%mc%U(x), &
-              As => this%mc%As(x), c_1 => this%mc%c_1(x), &
-              lambda_0 => this%op%lambda_0, l => this%op%l)
+    associate(V_g => this%bc%V(x)/this%bc%Gamma_1(x), U => this%bc%U(x), &
+              As => this%bc%As(x), c_1 => this%bc%c_1(x), &
+              l => this%op%l)
 
-      A(1,1) = V_g - 3._WP - lambda_0
+      A(1,1) = V_g - 1._WP - l
       A(1,2) = l*(l+1)/(c_1*omega**2) - V_g
       A(1,3) = V_g
       A(1,4) = 0._WP
       
       A(2,1) = c_1*omega**2 - As
-      A(2,2) = As - U + 1._WP - lambda_0
+      A(2,2) = As - U + 3._WP - l
       A(2,3) = -As
       A(2,4) = 0._WP
       
       A(3,1) = 0._WP
       A(3,2) = 0._WP
-      A(3,3) = 1._WP - U - lambda_0
+      A(3,3) = 3._WP - U - l
       A(3,4) = 1._WP
       
       A(4,1) = U*As
       A(4,2) = U*V_g
       A(4,3) = l*(l+1) - U*V_g
-      A(4,4) = -U - lambda_0
+      A(4,4) = -U - l + 2._WP
 
     end associate
 
