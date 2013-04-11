@@ -26,9 +26,11 @@ module gyre_nad_bvp
 
   use gyre_bvp
   use gyre_base_coeffs
-  use gyre_base_coeffs_mpi
   use gyre_therm_coeffs
+  $if($MPI)
+  use gyre_base_coeffs_mpi
   use gyre_therm_coeffs_mpi
+  $endif
   use gyre_oscpar
   use gyre_gridpar
   use gyre_numpar

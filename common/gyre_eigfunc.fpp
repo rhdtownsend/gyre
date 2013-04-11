@@ -28,6 +28,10 @@ module gyre_eigfunc
   use gyre_bvp
   use gyre_base_coeffs
   use gyre_therm_coeffs
+  $if($MPI)
+  use gyre_base_coeffs_mpi
+  use gyre_therm_coeffs_mpi
+  $endif
   use gyre_oscpar
 
   use ISO_FORTRAN_ENV
