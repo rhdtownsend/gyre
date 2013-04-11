@@ -24,7 +24,7 @@ module gyre_grid
   use core_kinds
   use core_constants
 
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
   use gyre_oscpar
 
   use ISO_FORTRAN_ENV
@@ -240,10 +240,10 @@ contains
 
 !****
 
-  subroutine plan_dispersion_grid (x_mc, mc, omega, op, alpha_osc, alpha_exp, n_center, n_floor, dn)
+  subroutine plan_dispersion_grid (x_bc, bc, omega, op, alpha_osc, alpha_exp, n_center, n_floor, dn)
 
-    real(WP), intent(in)             :: x_mc(:)
-    class(mech_coeffs_t), intent(in) :: mc
+    real(WP), intent(in)             :: x_bc(:)
+    class(base_coeffs_t), intent(in) :: bc
     complex(WP), intent(in)          :: omega
     type(oscpar_t), intent(in)       :: op
     real(WP), intent(in)             :: alpha_osc
@@ -256,19 +256,19 @@ contains
     integer     :: i
     complex(WP) :: b
     complex(WP) :: c
-    complex(WP) :: k_r_pos(SIZE(x_mc))
-    complex(WP) :: k_r_neg(SIZE(x_mc))
+    complex(WP) :: k_r_pos(SIZE(x_bc))
+    complex(WP) :: k_r_neg(SIZE(x_bc))
     real(WP)    :: dphi_osc
     real(WP)    :: dphi_exp
     integer     :: i_turn
     real(WP)    :: x_turn
 
-    $CHECK_BOUNDS(SIZE(dn),SIZE(x_mc)-1)
+    $CHECK_BOUNDS(SIZE(dn),SIZE(x_bc)-1)
 
     ! Plan an oversamp grid, modifying dn (see build_grid_oversamp)
     ! with additional points based on a local dispersion analysis
 
-    n = SIZE(x_mc)
+    n = SIZE(x_bc)
 
     ! Estimate local radial wavenumbers (note that only the real part
     ! of omega is used)
@@ -279,13 +279,13 @@ contains
     $if(!$GFORTRAN_PR_56052)
     !$OMP PARALLEL DO PRIVATE (b, c)
     $endif
-    wave_loop : do i = 2,n
+    wave_loop : do i = 2,n-1
 
-       associate(x => x_mc(i))
-         associate(V_g => mc%V(x)/mc%Gamma_1(x), As => mc%As(x), U => mc%U(x), c_1 => mc%c_1(x), &
-                   lambda_0 => op%lambda_0, l => op%l, omega_re => REAL(omega))
+       associate(x => x_bc(i))
+         associate(V_g => bc%V(x)/bc%Gamma_1(x), As => bc%As(x), U => bc%U(x), c_1 => bc%c_1(x), &
+                   l => op%l, omega_re => REAL(omega))
 
-           b = CMPLX(0._WP, 1._WP, WP)*(V_g + As - U - 2._WP - 2._WP*lambda_0)
+           b = CMPLX(0._WP, 1._WP, WP)*(V_g + As - U - 2._WP - 2._WP*(l-2))
            c = (l*(l+1)/(c_1*omega_re**2) - V_g)*(c_1*omega_re**2 - As)
 
            k_r_pos(i) = (0.5_WP*(-b + SQRT(b**2 - 4._WP*c)))/x
@@ -296,6 +296,9 @@ contains
 
     end do wave_loop
 
+    k_r_pos(n) = 0._WP
+    k_r_neg(n) = 0._WP
+
     ! Place points to ensure a given sampling of
     ! oscillatory/exponential scale lengths
 
@@ -303,9 +306,9 @@ contains
     samp_loop : do i = 1,n-1
 
        dphi_osc = MAX(ABS(REAL(k_r_pos(i))), ABS(REAL(k_r_pos(i+1))), &
-                      ABS(REAL(k_r_neg(i))), ABS(REAL(k_r_neg(i+1))))*(x_mc(i+1) - x_mc(i))
+                      ABS(REAL(k_r_neg(i))), ABS(REAL(k_r_neg(i+1))))*(x_bc(i+1) - x_bc(i))
        dphi_exp = MAX(ABS(AIMAG(k_r_pos(i))), ABS(AIMAG(k_r_pos(i+1))), &
-                      ABS(AIMAG(k_r_neg(i))), ABS(AIMAG(k_r_neg(i+1))))*(x_mc(i+1) - x_mc(i))
+                      ABS(AIMAG(k_r_neg(i))), ABS(AIMAG(k_r_neg(i+1))))*(x_bc(i+1) - x_bc(i))
 
        dn(i) = MAX(dn(i), FLOOR((alpha_osc*dphi_osc)/PI), FLOOR((alpha_exp*dphi_exp)/PI))
 
@@ -333,9 +336,9 @@ contains
        ! Turning point is in innermost cell; assume V_g, As ~ x^2 to
        ! interpolate its position
 
-       associate(x => x_mc(2))
+       associate(x => x_bc(2))
 
-         associate(V_g => mc%V(x)/mc%Gamma_1(x), As => mc%As(x), c_1 => mc%c_1(x), &
+         associate(V_g => bc%V(x)/bc%Gamma_1(x), As => bc%As(x), c_1 => bc%c_1(x), &
                    l => op%l, omega_re => REAL(omega))
            if(l /= 0._WP) then
               if(As > 0._WP) then

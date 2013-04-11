@@ -25,10 +25,12 @@ module gyre_ad_bvp
   use core_parallel
 
   use gyre_bvp
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
   use gyre_therm_coeffs
-  use gyre_mech_coeffs_mpi
+  $if($MPI)
+  use gyre_base_coeffs_mpi
   use gyre_therm_coeffs_mpi
+  $endif
   use gyre_oscpar
   use gyre_gridpar
   use gyre_numpar
@@ -49,7 +51,7 @@ module gyre_ad_bvp
 
   type, extends(bvp_t) :: ad_bvp_t
      private
-     class(mech_coeffs_t), allocatable  :: mc
+     class(base_coeffs_t), allocatable  :: bc
      class(therm_coeffs_t), allocatable :: tc
      type(oscpar_t)                     :: op
      type(gridpar_t)                    :: gp
@@ -64,7 +66,7 @@ module gyre_ad_bvp
    contains 
      private
      procedure, public :: init
-     procedure, public :: get_mc
+     procedure, public :: get_bc
      procedure, public :: get_op
      procedure, public :: get_gp
      procedure, public :: get_np
@@ -98,10 +100,10 @@ module gyre_ad_bvp
 
 contains
 
-  subroutine init (this, mc, tc, op, gp, np, x)
+  subroutine init (this, bc, tc, op, gp, np, x)
 
     class(ad_bvp_t), intent(out)                   :: this
-    class(mech_coeffs_t), intent(in)               :: mc
+    class(base_coeffs_t), intent(in)               :: bc
     class(therm_coeffs_t), allocatable, intent(in) :: tc
     type(oscpar_t), intent(in)                     :: op
     type(gridpar_t), intent(in)                    :: gp
@@ -112,15 +114,15 @@ contains
 
     ! Initialize the ad_bvp
     
-    allocate(this%mc, SOURCE=mc)
+    allocate(this%bc, SOURCE=bc)
     if(ALLOCATED(tc)) allocate(this%tc, SOURCE=tc)
 
     this%op = op
     this%gp = gp
     this%np = np
 
-    call this%sh%init(this%mc, this%op, this%np)
-    call this%bd%init(this%mc, this%op)
+    call this%sh%init(this%bc, this%op, this%np)
+    call this%bd%init(this%bc, this%op)
 
     n = SIZE(x)
 
@@ -148,7 +150,7 @@ contains
     class(ad_bvp_t), intent(inout) :: this
     integer, intent(in)            :: root_rank
 
-    class(mech_coeffs_t), allocatable  :: mc
+    class(base_coeffs_t), allocatable  :: bc
     class(therm_coeffs_t), allocatable :: tc
     type(oscpar_t)                     :: op
     type(gridpar_t)                    :: gp
@@ -159,7 +161,7 @@ contains
 
     if(MPI_RANK == root_rank) then
 
-       call bcast_alloc(this%mc, root_rank)
+       call bcast_alloc(this%bc, root_rank)
        call bcast_alloc(this%tc, root_rank)
       
        call bcast(this%op, root_rank)
@@ -170,7 +172,7 @@ contains
 
     else
 
-       call bcast_alloc(mc, root_rank)
+       call bcast_alloc(bc, root_rank)
        call bcast_alloc(tc, root_rank)
 
        call bcast(op, root_rank)
@@ -179,7 +181,7 @@ contains
     
        call bcast_alloc(x, root_rank)
 
-       call this%init(mc, tc, op, gp, np, x)
+       call this%init(bc, tc, op, gp, np, x)
 
     endif
 
@@ -215,7 +217,7 @@ contains
   
   $endsub
 
-  $GET(mc,class(mech_coeffs_t))
+  $GET(bc,class(base_coeffs_t))
   $GET(op,type(oscpar_t))
   $GET(gp,type(gridpar_t))
   $GET(np,type(numpar_t))
@@ -325,7 +327,7 @@ contains
        x = this%x
     case ('DISP')
        dn = 0
-       call plan_dispersion_grid(this%x, this%mc, omega, this%op, &
+       call plan_dispersion_grid(this%x, this%bc, omega, this%op, &
                                  this%gp%alpha_osc, this%gp%alpha_exp, this%gp%n_center, this%gp%n_floor, dn)
        call build_oversamp_grid(this%x, dn, x)
     case default
@@ -355,92 +357,22 @@ contains
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
     integer                  :: n
-    complex(WP), allocatable :: xi_r(:)
-    complex(WP), allocatable :: xi_h(:)
-    complex(WP), allocatable :: phip(:)
-    complex(WP), allocatable :: dphip_dx(:)
-    complex(WP), allocatable :: delS(:)
-    complex(WP), allocatable :: delL(:)
-    integer                  :: i
-    real(WP)                 :: c_kap
+    complex(WP), allocatable :: y_6(:,:)
 
     ! Reconstruct the solution
 
     call this%recon(omega, x, y)
 
-    ! Calculate eigenfunctions
-
     n = SIZE(x)
 
-    allocate(xi_r(n))
-    allocate(xi_h(n))
-    allocate(phip(n))
-    allocate(dphip_dx(n))
-    allocate(delS(n))
-    allocate(delL(n))
+    allocate(y_6(6,n))
 
-    do i = 1, n
-
-       associate(c_1 => this%mc%c_1(x(i)), &
-                 lambda_0 => this%op%lambda_0, l => this%op%l)
-
-         ! Scale the solution
-
-         if(x(i) > 0._WP) then
-            y(:,i) = y(:,i)*x(i)**(lambda_0+1._WP)
-         else
-            if(lambda_0 /= -1._WP) then
-               y(:,i) = 0._WP
-            endif
-         endif
-       
-         ! Calculate radial & horizontal displacements
-
-         if(l == 0) then
-            xi_r(i) = y(1,i)
-            xi_h(i) = 0._WP
-         else
-            xi_r(i) = y(1,i)
-            xi_h(i) = y(2,i)/(c_1*omega**2)
-         endif
-
-         ! Calculate gravitational perturbations
-
-         phip(i) = x(i)*y(3,i)/c_1
-         dphip_dx(i) = y(4,i)/c_1
-
-         ! Calculate thermal perturbations
-
-         delS(i) = 0._WP
-
-         if(ALLOCATED(this%tc)) then
-
-            associate(V => this%mc%V(x(i)), U => this%mc%U(x(i)), nabla => this%tc%nabla(x(i)), &
-                      nabla_ad => this%tc%nabla_ad(x(i)), dnabla_ad => this%tc%dnabla_ad(x(i)), &
-                      c_rad => this%tc%c_rad(x(i)), kappa_ad => this%tc%kappa_ad(x(i)))
-
-              c_kap = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad+V)
-
-              delL(i) = ((nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_kap)*x(i)**2*y(1,i) + &
-                         (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_kap)*x(i)**2*y(2,i) + &
-                         c_kap*x(i)**2*y(3,i) + &
-                         nabla_ad*x(i)**2*y(4,i))*c_rad/nabla
-
-            end associate
-
-         else
-
-            delL(i) = 0._WP
-
-         endif
-
-       end associate
-
-    end do
+    y_6(1:4,:) = y
+    y_6(5:6,:) = 0._WP
 
     ! Initialize the eigfunc
     
-    call ef%init(this%op, omega, x, xi_r, xi_h, phip, dphip_dx, delS, delL)
+    call ef%init(this%bc, this%tc, this%op, omega, x, y_6)
 
     ! Finish
 

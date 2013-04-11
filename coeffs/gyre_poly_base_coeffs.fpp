@@ -1,5 +1,5 @@
-! Module   : gyre_poly_mech_coeffs
-! Purpose  : Adiabatic structure coefficients for polytropic models
+! Module   : gyre_poly_base_coeffs
+! Purpose  : base structure coefficients for polytropic models
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_poly_mech_coeffs
+module gyre_poly_base_coeffs
 
   ! Uses
 
@@ -26,7 +26,7 @@ module gyre_poly_mech_coeffs
   use core_spline
   use core_hgroup
 
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -42,7 +42,7 @@ module gyre_poly_mech_coeffs
     procedure :: get_${NAME}_v
   $endsub
 
-  type, extends(mech_coeffs_t) :: poly_mech_coeffs_t
+  type, extends(base_coeffs_t) :: poly_base_coeffs_t
      private
      type(spline_t)   :: sp_Theta
      type(spline_t)   :: sp_dTheta
@@ -53,19 +53,22 @@ module gyre_poly_mech_coeffs
      private
      procedure, public :: init
      $PROC_DECL(V)
+     $PROC_DECL(V_x2)
      $PROC_DECL(As)
      $PROC_DECL(U)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
+     $PROC_DECL(nabla_ad)
+     $PROC_DECL(delta)
      procedure, public :: conv_freq
-  end type poly_mech_coeffs_t
+  end type poly_base_coeffs_t
 
   ! Interfaces
 
   $if($MPI)
 
   interface bcast
-     module procedure bcast_mc
+     module procedure bcast_bc
   end interface bcast
 
   $endif
@@ -74,7 +77,7 @@ module gyre_poly_mech_coeffs
 
   private
 
-  public :: poly_mech_coeffs_t
+  public :: poly_base_coeffs_t
   $if($MPI)
   public :: bcast
   $endif
@@ -85,7 +88,7 @@ contains
 
   subroutine init (this, xi, Theta, dTheta, n_poly, Gamma_1, deriv_type)
 
-    class(poly_mech_coeffs_t), intent(out) :: this
+    class(poly_base_coeffs_t), intent(out) :: this
     real(WP), intent(in)                   :: xi(:)
     real(WP), intent(in)                   :: Theta(:)
     real(WP), intent(in)                   :: dTheta(:)
@@ -97,7 +100,7 @@ contains
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
 
-    ! Initialize the mech_coeffs
+    ! Initialize the base_coeffs
 
     n = SIZE(xi)
 
@@ -120,25 +123,25 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_mc (mc, root_rank)
+  subroutine bcast_bc (bc, root_rank)
 
-    class(poly_mech_coeffs_t), intent(inout) :: mc
+    class(poly_base_coeffs_t), intent(inout) :: bc
     integer, intent(in)                      :: root_rank
 
-    ! Broadcast the mech_coeffs
+    ! Broadcast the base_coeffs
 
-    call bcast(mc%sp_Theta, root_rank)
-    call bcast(mc%sp_dTheta, root_rank)
+    call bcast(bc%sp_Theta, root_rank)
+    call bcast(bc%sp_dTheta, root_rank)
 
-    call bcast(mc%n_poly, root_rank)
-    call bcast(mc%dt_Gamma_1, root_rank)
-    call bcast(mc%xi_1, root_rank)
+    call bcast(bc%n_poly, root_rank)
+    call bcast(bc%dt_Gamma_1, root_rank)
+    call bcast(bc%xi_1, root_rank)
 
     ! Finish
 
     return
 
-  end subroutine bcast_mc
+  end subroutine bcast_bc
 
   $endif
 
@@ -146,22 +149,13 @@ contains
 
   function get_V_1 (this, x) result (V)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     real(WP)                              :: V
 
-    real(WP) :: xi
-    real(WP) :: Theta
-    real(WP) :: dTheta
-
     ! Calculate V
 
-    xi = x*this%xi_1
-
-    Theta = this%sp_Theta%interp(xi)
-    dTheta = this%sp_dTheta%interp(xi)
-
-    V = -(this%n_poly + 1._WP)*xi*dTheta/Theta
+    V = this%V_x2(x)*x**2
 
     ! Finish
 
@@ -173,7 +167,7 @@ contains
 
   function get_V_v (this, x) result (V)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
     real(WP)                              :: V(SIZE(x))
 
@@ -193,9 +187,62 @@ contains
 
 !****
 
+  function get_V_x2_1 (this, x) result (V_x2)
+
+    class(poly_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x
+    real(WP)                              :: V_x2
+
+    real(WP) :: xi
+    real(WP) :: Theta
+    real(WP) :: dTheta
+
+    ! Calculate V_x2
+
+    xi = x*this%xi_1
+
+    Theta = this%sp_Theta%interp(xi)
+    dTheta = this%sp_dTheta%interp(xi)
+
+    if(x /= 0._WP) then
+       V_x2 = -(this%n_poly + 1._WP)*xi*dTheta/(x**2*Theta)
+    else
+       V_x2 = (this%n_poly + 1._WP)*this%xi_1**2/3._WP
+    endif
+
+    ! Finish
+
+    return
+
+  end function get_V_x2_1
+
+!****
+
+  function get_V_x2_v (this, x) result (V_x2)
+
+    class(poly_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x(:)
+    real(WP)                              :: V_x2(SIZE(x))
+
+    integer :: i
+
+    ! Calculate V_x2
+
+    x_loop : do i = 1,SIZE(x)
+       V_x2(i) = this%V_x2(x(i))
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  end function get_V_x2_v
+
+!****
+
   function get_As_1 (this, x) result (As)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     real(WP)                              :: As
 
@@ -213,7 +260,7 @@ contains
 
   function get_As_v (this, x) result (As)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
     real(WP)                              :: As(SIZE(x))
 
@@ -235,7 +282,7 @@ contains
 
   function get_U_1 (this, x) result (U)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     real(WP)                              :: U
 
@@ -266,7 +313,7 @@ contains
 
   function get_U_v (this, x) result (U)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
     real(WP)                              :: U(SIZE(x))
 
@@ -288,7 +335,7 @@ contains
 
   function get_c_1_1 (this, x) result (c_1)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     real(WP)                              :: c_1
 
@@ -319,7 +366,7 @@ contains
 
   function get_c_1_v (this, x) result (c_1)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
     real(WP)                              :: c_1(SIZE(x))
 
@@ -341,7 +388,7 @@ contains
 
   function get_Gamma_1_1 (this, x) result (Gamma_1)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     real(WP)                              :: Gamma_1
 
@@ -359,7 +406,7 @@ contains
   
   function get_Gamma_1_v (this, x) result (Gamma_1)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
     real(WP)                              :: Gamma_1(SIZE(x))
 
@@ -379,9 +426,89 @@ contains
 
 !****
 
+  function get_nabla_ad_1 (this, x) result (nabla_ad)
+
+    class(poly_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x
+    real(WP)                              :: nabla_ad
+
+    ! Calculate nabla_ad (assume ideal gas)
+
+    nabla_ad = 2._WP/5._WP
+
+    ! Finish
+
+    return
+
+  end function get_nabla_ad_1
+
+!****
+  
+  function get_nabla_ad_v (this, x) result (nabla_ad)
+
+    class(poly_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x(:)
+    real(WP)                              :: nabla_ad(SIZE(x))
+
+    integer :: i
+
+    ! Calculate nabla_ad
+    
+    x_loop : do i = 1,SIZE(x)
+       nabla_ad(i) = this%nabla_ad(x(i))
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  end function get_nabla_ad_v
+
+!****
+
+  function get_delta_1 (this, x) result (delta)
+
+    class(poly_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x
+    real(WP)                              :: delta
+
+    ! Calculate delta (assume ideal gas)
+
+    delta = 1._WP
+
+    ! Finish
+
+    return
+
+  end function get_delta_1
+
+!****
+  
+  function get_delta_v (this, x) result (delta)
+
+    class(poly_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x(:)
+    real(WP)                              :: delta(SIZE(x))
+
+    integer :: i
+
+    ! Calculate delta
+    
+    x_loop : do i = 1,SIZE(x)
+       delta(i) = this%delta(x(i))
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  end function get_delta_v
+
+!****
+
   function conv_freq (this, freq, from_units, to_units)
 
-    class(poly_mech_coeffs_t), intent(in) :: this
+    class(poly_base_coeffs_t), intent(in) :: this
     complex(WP), intent(in)               :: freq
     character(LEN=*), intent(in)          :: from_units
     character(LEN=*), intent(in)          :: to_units
@@ -420,4 +547,4 @@ contains
 
   end function conv_freq
 
-end module gyre_poly_mech_coeffs
+end module gyre_poly_base_coeffs

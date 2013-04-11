@@ -24,8 +24,8 @@ module gyre_fgong_file
   use core_kinds
   use core_constants
 
-  use gyre_mech_coeffs
-  use gyre_evol_mech_coeffs
+  use gyre_base_coeffs
+  use gyre_evol_base_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -43,12 +43,12 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_file (file, G, deriv_type, mc, x)
+  subroutine read_fgong_file (file, G, deriv_type, bc, x)
 
     character(LEN=*), intent(in)                   :: file
     real(WP), intent(in)                           :: G
     character(LEN=*), intent(in)                   :: deriv_type
-    class(mech_coeffs_t), allocatable, intent(out) :: mc
+    class(base_coeffs_t), allocatable, intent(out) :: bc
     real(WP), allocatable, intent(out), optional   :: x(:)
 
     integer               :: unit
@@ -68,6 +68,8 @@ contains
     real(WP), allocatable :: T(:) 
     real(WP), allocatable :: N2(:)
     real(WP), allocatable :: Gamma_1(:)
+    real(WP), allocatable :: nabla_ad(:)
+    real(WP), allocatable :: delta(:)
 
     ! Read the model from the FGONG-format file
 
@@ -111,6 +113,8 @@ contains
     p = var(4,:)
     rho = var(5,:)
     Gamma_1 = var(10,:)
+    nabla_ad = var(11,:)
+    delta = var(12,:)
 
     allocate(N2(n))
 
@@ -132,6 +136,8 @@ contains
        call add_center(r, rho)
        N2 = [0._WP,N2]
        call add_center(r, Gamma_1)
+       call add_center(r, nabla_ad)
+       call add_center(r, delta)
 
        r = [0._WP,r]
 
@@ -139,15 +145,16 @@ contains
 
     endif
 
-    ! Initialize the mech_coeffs
+    ! Initialize the base_coeffs
 
-    allocate(evol_mech_coeffs_t::mc)
+    allocate(evol_base_coeffs_t::bc)
 
-    select type (mc)
-    type is (evol_mech_coeffs_t)
-       call mc%init(G, M_star, R_star, L_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
+    select type (bc)
+    type is (evol_base_coeffs_t)
+       call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                    N2, Gamma_1, nabla_ad, delta, deriv_type)
     class default
-       $ABORT(Invalid mc type)
+       $ABORT(Invalid bc type)
     end select
 
     ! Set up the grid

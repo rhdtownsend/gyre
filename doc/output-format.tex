@@ -80,10 +80,12 @@ The units of $f$ depend on the value of the
 \texttt{freq} & complex dataset & Generic eigenfrequencies \\
 $E$ & --- & \texttt{E} & real dataset & Normalized mode inertias\footnote{\label{foot:inertia}See \citet[][his eqn.~13]{ChrDal2012}.} \\
 $K$ & $G\Mstar^{2}/\Rstar$ & \texttt{K} & real dataset & Kinetic energies \\
-$W$ & $G\Mstar^{2}/\Rstar$ & \texttt{W} & real dataset & Works \\
+$W$\footnote{%
+\label{foot:coeffs-nad}
+Only available from \texttt{gyre\_nad}} & $\Lstar \sqrt{\Rstar^{3}/G\Mstar}$ & \texttt{W} & real dataset & Works \\
 \Mstar\footnote{%
 \label{foot:coeffs-evol}
-Only available when \texttt{coeffs\_type} is \texttt{EVOL}.} & 
+Available when \texttt{coeffs\_type} is \texttt{EVOL}} & 
 \gram & \texttt{M\_star} & real attribute & Stellar mass \\
 \Rstar\cref{foot:coeffs-evol} & \cm & \texttt{R\_star} & real attribute & Stellar radius \\
 \Lstar\cref{foot:coeffs-evol} & $\erg\,\second^{-1}$ & \texttt{L\_star} & real attribute & Stellar luminosity \\
@@ -129,8 +131,11 @@ $\phi'$ & $G\Mstar/\Rstar$ & \texttt{phip} & complex dataset & Eulerian potentia
 $\diff\phi'/\diff x$ & $G\Mstar/\Rstar$ & \texttt{dphip\_dx} & complex dataset & Eulerian radial gravity perturbation \\
 $\delta S$\cref{foot:coeffs-evol} & $c_{p}$ & \texttt{delS} & complex dataset & Lagrangian specific entropy perturbation \\
 $\delta L$\cref{foot:coeffs-evol,foot:coeffs-poly} & \Lstar & \texttt{delL} & complex dataset & Lagrangian luminosity perturbation \\
+$\delta p$\cref{foot:coeffs-evol,foot:coeffs-poly} & $p$ & \texttt{delp} & complex dataset & Lagrangian pressure perturbation \\
+$\delta \rho$\cref{foot:coeffs-evol,foot:coeffs-poly} & $\rho$ & \texttt{delrho} & complex dataset & Lagrangian density perturbation \\
+$\delta T$\cref{foot:coeffs-evol,foot:coeffs-poly} & $T$ & \texttt{delT} & complex dataset & Lagrangian temperature perturbation \\
 $\diff K/\diff x$ & $G\Mstar^{2}/\Rstar$ & \texttt{dK\_dx} & real dataset & Differential kinetic energy \\
-$\diff W/\diff x$ & $G\Mstar^{2}/\Rstar$ & \texttt{dW\_dx} & real dataset & Differential work \\ 
+$\diff W/\diff x$\cref{foot:coeffs-nad} & $\Lstar \sqrt{\Rstar^{3}/G\Mstar}$ & \texttt{dW\_dx} & real dataset & Differential work \\ 
 \Mstar\cref{foot:coeffs-evol} & \gram & \texttt{M\_star} & real attribute & Stellar mass \\
 \Rstar\cref{foot:coeffs-evol} & \cm & \texttt{R\_star} & real attribute & Stellar radius \\
 \Lstar\cref{foot:coeffs-evol} & $\erg\,\second^{-1}$ & \texttt{L\_star} & real attribute & Stellar luminosity \\

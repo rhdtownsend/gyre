@@ -1,5 +1,5 @@
-! Module   : gyre_mech_coeffs_mpi
-! Purpose  : MPI support for gyre_mech_coeffs
+! Module   : gyre_base_coeffs_mpi
+! Purpose  : MPI support for gyre_base_coeffs
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,16 +17,16 @@
 
 $include 'core.inc'
 
-module gyre_mech_coeffs_mpi
+module gyre_base_coeffs_mpi
 
   ! Uses
 
   use core_parallel
 
-  use gyre_mech_coeffs
-  use gyre_evol_mech_coeffs
-  use gyre_poly_mech_coeffs
-  use gyre_hom_mech_coeffs
+  use gyre_base_coeffs
+  use gyre_evol_base_coeffs
+  use gyre_poly_base_coeffs
+  use gyre_hom_base_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -38,7 +38,7 @@ module gyre_mech_coeffs_mpi
 
   $if($MPI)
   interface bcast_alloc
-     module procedure bcast_alloc_mc
+     module procedure bcast_alloc_bc
   end interface bcast_alloc
   $endif
 
@@ -56,9 +56,9 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_alloc_mc (mc, root_rank)
+  subroutine bcast_alloc_bc (bc, root_rank)
 
-    class(mech_coeffs_t), allocatable, intent(inout) :: mc
+    class(base_coeffs_t), allocatable, intent(inout) :: bc
     integer, intent(in)                              :: root_rank
 
     integer, parameter :: EVOL_TYPE = 1
@@ -68,15 +68,15 @@ contains
     logical :: alloc
     integer :: type
 
-    ! Deallocate the mech_coeffs on non-root processors
+    ! Deallocate the base_coeffs on non-root processors
 
-    if(MPI_RANK /= root_rank .AND. ALLOCATED(mc)) then
-       deallocate(mc)
+    if(MPI_RANK /= root_rank .AND. ALLOCATED(bc)) then
+       deallocate(bc)
     endif
 
-    ! Check if the mech_coeffs is allocated on the root processor
+    ! Check if the base_coeffs is allocated on the root processor
 
-    if(MPI_RANK == root_rank) alloc = ALLOCATED(mc)
+    if(MPI_RANK == root_rank) alloc = ALLOCATED(bc)
     call bcast(alloc, root_rank)
 
     if(alloc) then
@@ -85,12 +85,12 @@ contains
 
        if(MPI_RANK == root_rank) then
 
-          select type (mc)
-          type is (evol_mech_coeffs_t)
+          select type (bc)
+          type is (evol_base_coeffs_t)
              type = EVOL_TYPE
-          type is (poly_mech_coeffs_t)
+          type is (poly_base_coeffs_t)
              type = POLY_TYPE
-          type is (hom_mech_coeffs_t)
+          type is (hom_base_coeffs_t)
              type = HOM_TYPE
           class default
              $ABORT(Unsupported type)
@@ -100,30 +100,30 @@ contains
 
        call bcast(type, root_rank)
 
-       ! Allocate the mech_coeffs
+       ! Allocate the base_coeffs
 
        if(MPI_RANK /= root_rank) then
           select case (type)
           case (EVOL_TYPE)
-             allocate(evol_mech_coeffs_t::mc)
+             allocate(evol_base_coeffs_t::bc)
           case (POLY_TYPE)
-             allocate(poly_mech_coeffs_t::mc)
+             allocate(poly_base_coeffs_t::bc)
           case(HOM_TYPE)
-             allocate(hom_mech_coeffs_t::mc)
+             allocate(hom_base_coeffs_t::bc)
           case default
              $ABORT(Unsupported type)
           end select
        endif
 
-       ! Broadcast the mech_coeffs
+       ! Broadcast the base_coeffs
 
-       select type (mc)
-       type is (evol_mech_coeffs_t)
-          call bcast(mc, root_rank)
-       type is (poly_mech_coeffs_t)
-          call bcast(mc, root_rank)
-       type is (hom_mech_coeffs_t)
-          call bcast(mc, root_rank)
+       select type (bc)
+       type is (evol_base_coeffs_t)
+          call bcast(bc, root_rank)
+       type is (poly_base_coeffs_t)
+          call bcast(bc, root_rank)
+       type is (hom_base_coeffs_t)
+          call bcast(bc, root_rank)
        class default
           $ABORT(Unsupported type)
        end select
@@ -132,8 +132,8 @@ contains
 
     ! Finish
 
-  end subroutine bcast_alloc_mc
+  end subroutine bcast_alloc_bc
 
   $endif
 
-end module gyre_mech_coeffs_mpi
+end module gyre_base_coeffs_mpi

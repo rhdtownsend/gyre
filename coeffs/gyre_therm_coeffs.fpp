@@ -38,17 +38,14 @@ module gyre_therm_coeffs
 
   type, abstract :: therm_coeffs_t
      private
-     real(WP), public :: V_x2_0
    contains
      private
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_gen)
      $PROC_DECL(c_thm)
+     $PROC_DECL(c_dif)
      $PROC_DECL(nabla)
-     $PROC_DECL(nabla_ad)
-     $PROC_DECL(dnabla_ad)
-     $PROC_DECL(delta)
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
      $PROC_DECL(epsilon_ad)

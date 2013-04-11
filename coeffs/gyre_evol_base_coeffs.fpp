@@ -1,5 +1,5 @@
-! Module   : gyre_evol_mech_coeffs
-! Purpose  : mechanical structure coefficients for evolutionary models
+! Module   : gyre_evol_base_coeffs
+! Purpose  : base structure coefficients for evolutionary models
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_evol_mech_coeffs
+module gyre_evol_base_coeffs
 
   ! Uses
 
@@ -26,7 +26,7 @@ module gyre_evol_mech_coeffs
   use core_parallel
   use core_spline
 
-  use gyre_mech_coeffs
+  use gyre_base_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -54,17 +54,19 @@ module gyre_evol_mech_coeffs
     generic, public :: ${NAME} => get_${NAME}_1, get_${NAME}_v
   $endsub
 
-  type, extends(mech_coeffs_t) :: evol_mech_coeffs_t
+  type, extends(base_coeffs_t) :: evol_base_coeffs_t
      private
      $VAR_DECL(m)
      $VAR_DECL(p)
      $VAR_DECL(rho)
      $VAR_DECL(T)
-     $VAR_DECL(V)
+     $VAR_DECL(V_x2)
      $VAR_DECL(As)
      $VAR_DECL(U)
      $VAR_DECL(c_1)
      $VAR_DECL(Gamma_1)
+     $VAR_DECL(nabla_ad)
+     $VAR_DECL(delta)
      real(WP), public :: M_star
      real(WP), public :: R_star
      real(WP), public :: L_star
@@ -77,19 +79,22 @@ module gyre_evol_mech_coeffs
      $PROC_DECL_GEN(rho)
      $PROC_DECL_GEN(T)
      $PROC_DECL(V)
+     $PROC_DECL(V_x2)
      $PROC_DECL(As)
      $PROC_DECL(U)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
+     $PROC_DECL(nabla_ad)
+     $PROC_DECL(delta)
      procedure, public :: conv_freq
-  end type evol_mech_coeffs_t
+  end type evol_base_coeffs_t
  
   ! Interfaces
 
   $if($MPI)
 
   interface bcast
-     module procedure bcast_mc
+     module procedure bcast_bc
   end interface bcast
 
   $endif
@@ -98,7 +103,7 @@ module gyre_evol_mech_coeffs
 
   private
 
-  public :: evol_mech_coeffs_t
+  public :: evol_base_coeffs_t
   $if($MPI)
   public :: bcast
   $endif
@@ -107,9 +112,9 @@ module gyre_evol_mech_coeffs
 
 contains
 
-  subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, N2, Gamma_1, deriv_type)
+  subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, N2, Gamma_1, nabla_ad, delta, deriv_type)
 
-    class(evol_mech_coeffs_t), intent(out) :: this
+    class(evol_base_coeffs_t), intent(out) :: this
     real(WP), intent(in)                   :: G
     real(WP), intent(in)                   :: M_star
     real(WP), intent(in)                   :: R_star
@@ -121,10 +126,12 @@ contains
     real(WP), intent(in)                   :: T(:)
     real(WP), intent(in)                   :: N2(:)
     real(WP), intent(in)                   :: Gamma_1(:)
+    real(WP), intent(in)                   :: nabla_ad(:)
+    real(WP), intent(in)                   :: delta(:)
     character(LEN=*), intent(in)           :: deriv_type
 
     integer  :: n
-    real(WP) :: V(SIZE(r))
+    real(WP) :: V_x2(SIZE(r))
     real(WP) :: As(SIZE(r))
     real(WP) :: U(SIZE(r))
     real(WP) :: c_1(SIZE(r))
@@ -136,6 +143,8 @@ contains
     $CHECK_BOUNDS(SIZE(T),SIZE(r))
     $CHECK_BOUNDS(SIZE(N2),SIZE(r))
     $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(r))
+    $CHECK_BOUNDS(SIZE(nabla_ad),SIZE(r))
+    $CHECK_BOUNDS(SIZE(delta),SIZE(r))
 
     ! Perform basic validations
 
@@ -150,12 +159,12 @@ contains
     ! Calculate coefficients
 
     where(r /= 0._WP)
-       V = G*m*rho/(p*r)
+       V_x2 = G*m*rho/(p*r*(r/R_star)**2)
        As = r**3*N2/(G*m)
        U = 4._WP*PI*rho*r**3/m
        c_1 = (r/R_star)**3/(m/M_star)
     elsewhere
-       V = 0._WP
+       V_x2 = 4._WP*PI*G*rho**2*R_star**2/(3._WP*p)
        As = 0._WP
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
@@ -163,18 +172,20 @@ contains
 
     x = r/R_star
 
-    ! Initialize the mech_coeffs
+    ! Initialize the base_coeffs
 
     call this%sp_m%init(x, m, deriv_type, dy_dx_a=0._WP)
     call this%sp_p%init(x, p, deriv_type, dy_dx_a=0._WP)
     call this%sp_rho%init(x, rho, deriv_type, dy_dx_a=0._WP)
     call this%sp_T%init(x, T, deriv_type, dy_dx_a=0._WP)
 
-    call this%sp_V%init(x, V, deriv_type, dy_dx_a=0._WP)
+    call this%sp_V_x2%init(x, V_x2, deriv_type, dy_dx_a=0._WP)
     call this%sp_As%init(x, As, deriv_type, dy_dx_a=0._WP)
     call this%sp_U%init(x, U, deriv_type, dy_dx_a=0._WP)
     call this%sp_c_1%init(x, c_1, deriv_type, dy_dx_a=0._WP)
     call this%sp_Gamma_1%init(x, Gamma_1, deriv_type, dy_dx_a=0._WP)
+    call this%sp_nabla_ad%init(x, nabla_ad, deriv_type, dy_dx_a=0._WP)
+    call this%sp_delta%init(x, delta, deriv_type, dy_dx_a=0._WP)
 
     this%M_star = M_star
     this%R_star = R_star
@@ -192,37 +203,75 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_mc (mc, root_rank)
+  subroutine bcast_bc (bc, root_rank)
 
-    class(evol_mech_coeffs_t), intent(inout) :: mc
+    class(evol_base_coeffs_t), intent(inout) :: bc
     integer, intent(in)                      :: root_rank
 
-    ! Broadcast the mech_coeffs
+    ! Broadcast the base_coeffs
 
-    call bcast(mc%sp_m, root_rank)
-    call bcast(mc%sp_p, root_rank)
-    call bcast(mc%sp_rho, root_rank)
-    call bcast(mc%sp_T, root_rank)
+    call bcast(bc%sp_m, root_rank)
+    call bcast(bc%sp_p, root_rank)
+    call bcast(bc%sp_rho, root_rank)
+    call bcast(bc%sp_T, root_rank)
 
-    call bcast(mc%sp_V, root_rank)
-    call bcast(mc%sp_As, root_rank)
-    call bcast(mc%sp_U, root_rank)
-    call bcast(mc%sp_c_1, root_rank)
-    call bcast(mc%sp_Gamma_1, root_rank)
+    call bcast(bc%sp_V_x2, root_rank)
+    call bcast(bc%sp_As, root_rank)
+    call bcast(bc%sp_U, root_rank)
+    call bcast(bc%sp_c_1, root_rank)
+    call bcast(bc%sp_Gamma_1, root_rank)
+    call bcast(bc%sp_nabla_ad, root_rank)
+    call bcast(bc%sp_delta, root_rank)
 
-    call bcast(mc%M_star, root_rank)
-    call bcast(mc%R_star, root_rank)
-    call bcast(mc%L_star, root_rank)
+    call bcast(bc%M_star, root_rank)
+    call bcast(bc%R_star, root_rank)
+    call bcast(bc%L_star, root_rank)
 
-    call bcast(mc%t_dyn, root_rank)
+    call bcast(bc%t_dyn, root_rank)
 
     ! Finish
 
     return
 
-  end subroutine bcast_mc
+  end subroutine bcast_bc
 
   $endif
+
+!****
+
+  function get_V_1 (this, x) result (V)
+
+    class(evol_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x
+    real(WP)                              :: V
+
+    ! Calculate V
+
+    V = this%V_x2(x)*x**2
+
+    ! Finish
+
+    return
+
+  end function get_V_1
+
+!****
+
+  function get_V_v (this, x) result (V)
+
+    class(evol_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x(:)
+    real(WP)                              :: V(SIZE(x))
+
+    ! Calculate V
+
+    V = this%V_x2(x)*x**2
+
+    ! Finish
+
+    return
+
+  end function get_V_v
 
 !****
 
@@ -232,7 +281,7 @@ contains
 
   function get_${NAME}_1 (this, x) result ($NAME)
 
-    class(evol_mech_coeffs_t), intent(in) :: this
+    class(evol_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     real(WP)                              :: $NAME
 
@@ -250,7 +299,7 @@ contains
 
   function get_${NAME}_v (this, x) result ($NAME)
 
-    class(evol_mech_coeffs_t), intent(in) :: this
+    class(evol_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
     real(WP)                              :: $NAME(SIZE(x))
 
@@ -270,17 +319,19 @@ contains
   $PROC(p)
   $PROC(rho)
   $PROC(T)
-  $PROC(V)
+  $PROC(V_x2)
   $PROC(As)
   $PROC(U)
   $PROC(c_1)
   $PROC(Gamma_1)
+  $PROC(nabla_ad)
+  $PROC(delta)
 
 !****
 
   function conv_freq (this, freq, from_units, to_units)
 
-    class(evol_mech_coeffs_t), intent(in) :: this
+    class(evol_base_coeffs_t), intent(in) :: this
     complex(WP), intent(in)               :: freq
     character(LEN=*), intent(in)          :: from_units
     character(LEN=*), intent(in)          :: to_units
@@ -323,4 +374,4 @@ contains
 
   end function conv_freq
 
-end module gyre_evol_mech_coeffs
+end module gyre_evol_base_coeffs
