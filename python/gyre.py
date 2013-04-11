@@ -39,11 +39,11 @@ def read_output (filename) :
 
     # Convert items to complex
 
-    complex_dtype = np.dtype([('re', '<f8'), ('im', '<f4')])
+    complex_dtype = np.dtype([('re', '<f8'), ('im', '<f8')])
 
     for k in data.keys() :
-        if(np.issubdtype(data[k].dtype, complex_dtype)) :
-               data[k] = data[k].astype(complex)
+        if(data[k].dtype == complex_dtype) :
+            data[k] = data[k].astype(complex)
 
     # Return the data
 
