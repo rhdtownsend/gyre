@@ -62,6 +62,7 @@ module gyre_eigfunc
      procedure, public :: delS
      procedure, public :: delL
      procedure, public :: delp
+     procedure, public :: delrho
      procedure, public :: delT
      procedure, public :: dK_dx
      procedure, public :: dW_dx
@@ -414,6 +415,27 @@ contains
     return
 
   end function delp
+
+!****
+
+  function delrho (this)
+
+    class(eigfunc_t), intent(in) :: this
+    complex(WP)                  :: delrho(this%n)
+
+    ! Calculate the Lagrangian pressure perturbation in units of rho
+
+    associate (Gamma_1 => this%bc%Gamma_1(this%x))
+
+      delrho = this%delp()/Gamma_1 - this%delS()
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function delrho
 
 !****
 
