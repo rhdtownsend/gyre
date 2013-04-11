@@ -472,9 +472,10 @@ contains
     $ASSERT(ALLOCATED(this%tc),No therm_coeffs data)
 
     ! Calculate the differential work in units of G M_star^2/R_star
-    ! t_dyn/t_KH.  The entropy-based expression for the work is used
-    ! (cf. Unno et al.  1989, eqn. 25.9); the additional factor of 4
-    ! pi in the denominator comes from averaging over solid angle
+    ! t_dyn/t_KH = t_dyn L_*.  The entropy-based expression for the
+    ! work is used (cf. Unno et al.  1989, eqn. 25.9); the additional
+    ! factor of 4 pi in the denominator comes from averaging over
+    ! solid angle
 
     associate(c_thm => this%tc%c_thm(this%x))
 
