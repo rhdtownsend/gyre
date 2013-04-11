@@ -200,7 +200,7 @@ contains
     call this%sp_epsilon_S%init(x, epsilon_S, deriv_type, dy_dx_a=0._WP)
     call this%sp_epsilon_ad%init(x, epsilon_ad, deriv_type, dy_dx_a=0._WP)
 
-    this%t_thm = SQRT(G*M_star/R_star**3)
+    this%t_thm = (G*M_star**2/R_star)/L_star
 
     ! Finish
 
