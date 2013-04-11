@@ -368,36 +368,7 @@ contains
     allocate(y_6(6,n))
 
     y_6(1:4,:) = y
-
-    ! Calculate thermal perturbations
-
     y_6(5:6,:) = 0._WP
-
-    ! if(ALLOCATED(this%tc)) then
-
-    !    do i = 1,n
-
-    !       associate(V => this%bc%V(x(i)), U => this%bc%U(x(i)), c_1 => this%bc%c_1(x(i)), &
-    !                 nabla => this%tc%nabla(x(i)), nabla_ad => this%tc%nabla_ad(x(i)), dnabla_ad => this%tc%dnabla_ad(x(i)), &
-    !                 c_rad => this%tc%c_rad(x(i)), kappa_ad => this%tc%kappa_ad(x(i)), &
-    !                 l => this%op%l)
-
-    !         c_kap = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad+V)
-
-    !         y_6(6,i) = ((nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_kap)*y(1,i) + &
-    !                     (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_kap)*y(2,i) + &
-    !                     c_kap*y(3,i) + &
-    !                     nabla_ad*y(4,i))*c_rad/nabla
-
-    !       end associate
-
-    !    end do
-
-    ! else
-
-    !    y_6(6,:) = 0._WP
-
-    ! endif
 
     ! Initialize the eigfunc
     
