@@ -279,7 +279,7 @@ contains
     $if(!$GFORTRAN_PR_56052)
     !$OMP PARALLEL DO PRIVATE (b, c)
     $endif
-    wave_loop : do i = 2,n
+    wave_loop : do i = 2,n-1
 
        associate(x => x_bc(i))
          associate(V_g => bc%V(x)/bc%Gamma_1(x), As => bc%As(x), U => bc%U(x), c_1 => bc%c_1(x), &
@@ -295,6 +295,9 @@ contains
        end associate
 
     end do wave_loop
+
+    k_r_pos(n) = 0._WP
+    k_r_neg(n) = 0._WP
 
     ! Place points to ensure a given sampling of
     ! oscillatory/exponential scale lengths
