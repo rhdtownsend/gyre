@@ -437,8 +437,8 @@ contains
 
   function dK_dx (this)
 
-    class(eigfunc_t), intent(in)     :: this
-    real(WP)                         :: dK_dx(this%n)
+    class(eigfunc_t), intent(in) :: this
+    real(WP)                     :: dK_dx(this%n)
 
     complex(WP) :: xi_r(this%n)
     complex(WP) :: xi_h(this%n)
@@ -495,7 +495,7 @@ contains
     K = this%K()
 
     xi_r = this%xi_r()
-    xi_r = this%xi_h()
+    xi_h = this%xi_h()
 
     associate(l => this%op%l)
 
