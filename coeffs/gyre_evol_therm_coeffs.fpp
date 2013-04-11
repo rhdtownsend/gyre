@@ -58,7 +58,6 @@ module gyre_evol_therm_coeffs
      $VAR_DECL(kappa_S)
      $VAR_DECL(epsilon_ad)
      $VAR_DECL(epsilon_S)
-     real(WP) :: t_thm
    contains
      procedure :: init
      $PROC_DECL(c_rad)
@@ -200,8 +199,6 @@ contains
     call this%sp_epsilon_S%init(x, epsilon_S, deriv_type, dy_dx_a=0._WP)
     call this%sp_epsilon_ad%init(x, epsilon_ad, deriv_type, dy_dx_a=0._WP)
 
-    this%t_thm = (G*M_star**2/R_star)/L_star
-
     ! Finish
 
     return
@@ -257,8 +254,6 @@ contains
     call bcast(tc%sp_kappa_ad, root_rank)
     call bcast(tc%sp_epsilon_S, root_rank)
     call bcast(tc%sp_epsilon_ad, root_rank)
-
-    call bcast(tc%t_thm, root_rank)
 
     ! Finish
 
