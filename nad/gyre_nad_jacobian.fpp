@@ -109,8 +109,6 @@ contains
     real(WP), intent(in)             :: x
     complex(WP), intent(out)         :: A(:,:)
 
-    real(WP) :: c_kap
-    
     $CHECK_BOUNDS(SIZE(A, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(A, 2),this%n_e)
 
@@ -121,12 +119,10 @@ contains
               nabla_ad => this%bc%nabla_ad(x), delta => this%bc%delta(x), &
               c_rad => this%tc%c_rad(x), dc_rad => this%tc%dc_rad(x), &
               c_gen => this%tc%c_gen(x), c_thm => this%tc%c_thm(x), &
-              dnabla_ad => this%tc%dnabla_ad(x), nabla => this%tc%nabla(x), &
+              c_dif => this%tc%c_dif(x), nabla => this%tc%nabla(x), &
               kappa_ad => this%tc%kappa_ad(x), kappa_S => this%tc%kappa_S(x), &
               epsilon_ad => this%tc%epsilon_ad(x), epsilon_S => this%tc%epsilon_S(x), &
               l => this%op%l)
-
-      c_kap = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad+V)
 
       A(1,1) = V_g - 1._WP - l
       A(1,2) = l*(l+1)/(c_1*omega**2) - V_g
@@ -156,9 +152,9 @@ contains
       A(4,5) = -U*delta*x**2
       A(4,6) = 0._WP
 
-      A(5,1) = V_x2*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_kap)
-      A(5,2) = V_x2*(l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_kap)
-      A(5,3) = V_x2*c_kap
+      A(5,1) = V_x2*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+      A(5,2) = V_x2*(l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
+      A(5,3) = V_x2*c_dif
       A(5,4) = V_x2*nabla_ad
       A(5,5) = V*nabla*(4._WP - kappa_S) - l
       A(5,6) = -V_x2*nabla/c_rad

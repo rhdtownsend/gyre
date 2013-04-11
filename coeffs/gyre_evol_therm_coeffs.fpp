@@ -52,7 +52,7 @@ module gyre_evol_therm_coeffs
      $VAR_DECL(c_rad)
      $VAR_DECL(c_gen)
      $VAR_DECL(c_thm)
-     $VAR_DECL(nabla_ad)
+     $VAR_DECL(c_dif)
      $VAR_DECL(nabla)
      $VAR_DECL(kappa_ad)
      $VAR_DECL(kappa_S)
@@ -65,7 +65,7 @@ module gyre_evol_therm_coeffs
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_gen)
      $PROC_DECL(c_thm)
-     $PROC_DECL(dnabla_ad)
+     $PROC_DECL(c_dif)
      $PROC_DECL(nabla)
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
@@ -125,10 +125,12 @@ contains
 
     integer  :: n
     real(WP) :: V_x2(SIZE(r))
+    real(WP) :: V(SIZE(r))
     real(WP) :: c_p(SIZE(r))
     real(WP) :: c_rad(SIZE(r))
     real(WP) :: c_gen(SIZE(r))
     real(WP) :: c_thm(SIZE(r))
+    real(WP) :: c_dif(SIZE(r))
     real(WP) :: kappa_ad(SIZE(r))
     real(WP) :: kappa_S(SIZE(r))
     real(WP) :: epsilon_ad(SIZE(r))
@@ -168,6 +170,10 @@ contains
        V_x2 = 4._WP*PI*G*rho**2*R_star**2/(3._WP*p)
     end where
 
+    x = r/R_star
+
+    V = V_x2*x**2
+
     c_p = p*delta/(rho*T*nabla_ad)
 
     c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho*L_star)
@@ -180,14 +186,14 @@ contains
     epsilon_ad = nabla_ad*epsilon_T + epsilon_rho/Gamma_1
     epsilon_S = epsilon_T - delta*epsilon_rho
 
-    x = r/R_star
+    c_dif = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dlny_dlnx(x, nabla_ad)+V)
 
     ! Initialize the therm_coeffs
 
     call this%sp_c_rad%init(x, c_rad, deriv_type, dy_dx_a=0._WP)
     call this%sp_c_gen%init(x, c_gen, deriv_type, dy_dx_a=0._WP)
     call this%sp_c_thm%init(x, c_thm, deriv_type, dy_dx_a=0._WP)
-    call this%sp_nabla_ad%init(x, nabla_ad, deriv_type, dy_dx_a=0._WP)
+    call this%sp_c_dif%init(x, c_dif, deriv_type, dy_dx_a=0._WP)
     call this%sp_nabla%init(x, nabla, deriv_type, dy_dx_a=0._WP)
     call this%sp_kappa_S%init(x, kappa_S, deriv_type, dy_dx_a=0._WP)
     call this%sp_kappa_ad%init(x, kappa_ad, deriv_type, dy_dx_a=0._WP)
@@ -199,6 +205,35 @@ contains
     ! Finish
 
     return
+
+  contains
+
+    function dlny_dlnx (x, y)
+
+      real(WP), intent(in) :: x(:)
+      real(WP), intent(in) :: y(:)
+      real(WP)             :: dlny_dlnx(SIZE(x))
+
+      integer :: n
+      integer :: i
+
+      $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+      ! Calculate the logarithmic derivative of y wrt x
+
+      n = SIZE(x)
+
+      dlny_dlnx(1) = 0._WP
+
+      do i = 2,n-1
+         dlny_dlnx(i) = x(i)*0.5_WP*((y(i)-y(i-1))/(x(i)-x(i-1)) + (y(i+1)-y(i))/(x(i+1)-x(i)))/y(i)
+      end do
+
+      dlny_dlnx(n) = x(n)*(y(n)-y(n-1))/(x(n)-x(n-1))/y(n)
+
+      ! Finish
+
+    end function dlny_dlnx
 
   end subroutine init
 
@@ -216,7 +251,7 @@ contains
     call bcast(tc%sp_c_rad, root_rank)
     call bcast(tc%sp_c_gen, root_rank)
     call bcast(tc%sp_c_thm, root_rank)
-    call bcast(tc%sp_nabla_ad, root_rank)
+    call bcast(tc%sp_c_dif, root_rank)
     call bcast(tc%sp_nabla, root_rank)
     call bcast(tc%sp_kappa_S, root_rank)
     call bcast(tc%sp_kappa_ad, root_rank)
@@ -278,6 +313,7 @@ contains
   $PROC(c_rad)
   $PROC(c_gen)
   $PROC(c_thm)
+  $PROC(c_dif)
   $PROC(nabla)
   $PROC(kappa_S)
   $PROC(kappa_ad)
@@ -335,6 +371,5 @@ contains
   $endsub
 
   $DPROC(c_rad)
-  $DPROC(nabla_ad)
 
 end module gyre_evol_therm_coeffs
