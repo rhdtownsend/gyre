@@ -356,8 +356,6 @@ contains
     complex(WP), allocatable :: y(:,:)
     integer                  :: n
     complex(WP), allocatable :: y_6(:,:)
-    integer                  :: i
-    real(WP)                 :: c_kap
 
     ! Reconstruct the solution
 
