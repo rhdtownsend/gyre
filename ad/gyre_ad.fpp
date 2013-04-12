@@ -60,11 +60,17 @@ program gyre_ad
 
   call init_parallel()
 
+  call write_header('gyre_ad ['//TRIM(version)//']', '=')
+
   if(MPI_RANK == 0) then
 
-     write(OUTPUT_UNIT, '(A)') 'gyre_ad ['//TRIM(version)//']'
-     write(OUTPUT_UNIT, '(A,2X,I0)') 'OpenMP Threads :', OMP_SIZE_MAX
-     write(OUTPUT_UNIT, '(A,2X,I0)') 'MPI Processors :', MPI_SIZE
+     write(OUTPUT_UNIT, 100) 'Compler         : ', COMPILER_VERSION()
+     write(OUTPUT_UNIT, 100) 'Compler options : ', COMPILER_OPTIONS()
+100  format(3A)
+
+     write(OUTPUT_UNIT, 110) 'OpenMP Threads  : ', OMP_SIZE_MAX
+     write(OUTPUT_UNIT, 110) 'MPI Processors  : ', MPI_SIZE
+110  format(A,I0)
      
      call open_input(unit)
 
