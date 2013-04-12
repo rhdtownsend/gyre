@@ -26,6 +26,7 @@ program gyre_nad
   use core_parallel
   use core_hgroup
 
+  use gyre_version
   use gyre_base_coeffs
   use gyre_therm_coeffs
   use gyre_oscpar
@@ -65,7 +66,7 @@ program gyre_nad
 
   if(MPI_RANK == 0) then
 
-     write(OUTPUT_UNIT, '(A)') 'gyre_nad [hg]'
+     write(OUTPUT_UNIT, '(A)') 'gyre_ad ['//TRIM(version)//']'
      write(OUTPUT_UNIT, '(A,2X,I0)') 'OpenMP Threads :', OMP_SIZE_MAX
      write(OUTPUT_UNIT, '(A,2X,I0)') 'MPI Processors :', MPI_SIZE
      
