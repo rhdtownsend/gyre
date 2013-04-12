@@ -121,8 +121,6 @@ contains
     integer               :: n_floor
     real(WP)              :: s
     integer               :: n_grid
-    integer               :: dn(SIZE(x_bc)-1)
-    integer               :: i
     real(WP), allocatable :: x_sh(:)
     type(gridpar_t)       :: gp
 
@@ -159,11 +157,7 @@ contains
        x_sh = x_bc
     case ('DISPERSION')
        $ASSERT(ALLOCATED(x_bc),No input grid)
-       dn = 0
-       do i = 1,SIZE(omega)
-          call plan_dispersion_grid(x_bc, bc, CMPLX(omega(i), KIND=WP), op, alpha_osc, alpha_exp, n_center, n_floor, dn)
-       enddo
-       call build_oversamp_grid(x_bc, dn, x_sh)
+       call build_dispersion_grid(x_bc, bc, op, MINVAL(omega), MAXVAL(omega), alpha_osc, alpha_exp, n_center, n_floor, x_sh)
     case default
        $ABORT(Invalid grid_type)
     end select
