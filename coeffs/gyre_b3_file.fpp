@@ -131,8 +131,8 @@ contains
     m = [w(:n-1)/(1._WP+w(:n-1))*M_star,M_star]
 
     Gamma_1 = chi_rho*c_p/c_V
-    nabla_ad = p*delta/(rho*T*c_p)
     delta = chi_T/chi_rho
+    nabla_ad = p*delta/(rho*T*c_p)
 
     ! If necessary, add central data
 

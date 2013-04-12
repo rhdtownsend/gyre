@@ -341,7 +341,7 @@ contains
        omega2_c_1 = (-b + SQRT(b**2 - 4._WP*a*c))/(2._WP*a)
        omega2_c_2 = (-b - SQRT(b**2 - 4._WP*a*c))/(2._WP*a)
 
-       $ASSERT(omega2_c_2 > omega2_c_1,Incorrect cutoff frequency ordering)
+       $ASSERT(omega2_c_2 >= omega2_c_1,Incorrect cutoff frequency ordering)
 
        ! Evaluate the wavenumber
 

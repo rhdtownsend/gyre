@@ -9,5 +9,8 @@ ad/regress
 ad/gyre_ad
 ad/build_poly_hom
 nad/gyre_nad
+
 doc/*.log
 doc/*.aux
+doc/*.bbl
+doc/*.blg

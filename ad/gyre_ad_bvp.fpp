@@ -308,7 +308,6 @@ contains
     complex(WP), allocatable, intent(out) :: y(:,:)
 
     complex(WP) :: y_sh(this%n_e,this%n)
-    integer     :: dn(this%n-1)
 
     ! Reconstruct the solution on the shooting grid
 
@@ -326,10 +325,8 @@ contains
     case ('CLONE')
        x = this%x
     case ('DISP')
-       dn = 0
-       call plan_dispersion_grid(this%x, this%bc, omega, this%op, &
-                                 this%gp%alpha_osc, this%gp%alpha_exp, this%gp%n_center, this%gp%n_floor, dn)
-       call build_oversamp_grid(this%x, dn, x)
+       call build_dispersion_grid(this%x, this%bc, this%op, REAL(omega), REAL(omega), &
+                                  this%gp%alpha_osc, this%gp%alpha_exp, this%gp%n_center, this%gp%n_floor, x)
     case default
        $ABORT(Invalid grid_type)
     end select

@@ -26,6 +26,7 @@ program gyre_nad
   use core_parallel
   use core_hgroup
 
+  use gyre_version
   use gyre_base_coeffs
   use gyre_therm_coeffs
   use gyre_oscpar
@@ -63,11 +64,17 @@ program gyre_nad
 
   call init_parallel()
 
+  call write_header('gyre_nad ['//TRIM(version)//']', '=')
+
   if(MPI_RANK == 0) then
 
-     write(OUTPUT_UNIT, '(A)') 'gyre_nad [hg]'
-     write(OUTPUT_UNIT, '(A,2X,I0)') 'OpenMP Threads :', OMP_SIZE_MAX
-     write(OUTPUT_UNIT, '(A,2X,I0)') 'MPI Processors :', MPI_SIZE
+     write(OUTPUT_UNIT, 100) 'Compler         : ', COMPILER_VERSION()
+     write(OUTPUT_UNIT, 100) 'Compler options : ', COMPILER_OPTIONS()
+100  format(3A)
+
+     write(OUTPUT_UNIT, 110) 'OpenMP Threads  : ', OMP_SIZE_MAX
+     write(OUTPUT_UNIT, 110) 'MPI Processors  : ', MPI_SIZE
+110  format(A,I0)
      
      call open_input(unit)
 
@@ -130,8 +137,6 @@ contains
     integer               :: n_floor
     real(WP)              :: s
     integer               :: n_grid
-    integer               :: dn(SIZE(x_bc)-1)
-    integer               :: i
     real(WP), allocatable :: x_sh(:)
     type(gridpar_t)       :: gp
 
@@ -168,11 +173,7 @@ contains
        x_sh = x_bc
     case('DISPERSION')
        $ASSERT(ALLOCATED(x_bc),No input grid)
-       dn = 0
-       do i = 1,SIZE(omega)
-          call plan_dispersion_grid(x_bc, bc, CMPLX(omega(i), KIND=WP), op, alpha_osc, alpha_exp, n_center, n_floor, dn)
-       enddo
-       call build_oversamp_grid(x_bc, dn, x_sh)
+       call build_dispersion_grid(x_bc, bc, op, MINVAL(omega), MAXVAL(omega), alpha_osc, alpha_exp, n_center, n_floor, x_sh)
     case default
        $ABORT(Invalid grid_type)
     end select
