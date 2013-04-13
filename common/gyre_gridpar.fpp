@@ -38,7 +38,7 @@ module gyre_gridpar
      real(WP), public          :: omega_b = 0._WP
      real(WP), public          :: s = 0
      integer, public           :: n = 0
-     character(LEN=64), public :: op_type = 'CREATE_CLONE'
+     character(LEN=64), public :: op_type = ''
   end type gridpar_t
 
   ! Interfaces

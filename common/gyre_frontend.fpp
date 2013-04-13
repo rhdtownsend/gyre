@@ -206,12 +206,15 @@ contains
 
     ! Read oscillation parameters
 
+    l = 0
+    outer_bound_type = 'ZERO'
+
     rewind(unit)
     read(unit, NML=osc, END=900)
 
     ! Initialize the oscpar
 
-    op = oscpar_t(l=l, outer_bound_type = outer_bound_type)
+    op = oscpar_t(l=l, outer_bound_type=outer_bound_type)
 
     ! Finish
 
@@ -238,6 +241,9 @@ contains
     namelist /num/ n_iter_max, ivp_solver_type
 
     ! Read numerical parameters
+
+    n_iter_max = 50
+    ivp_solver_type = 'MAGNUS_GL2'
 
     rewind(unit)
     read(unit, NML=num, END=900)
@@ -368,6 +374,8 @@ contains
     allocate(gp(n_grid))
 
     read_loop : do i = 1,n_grid
+
+       op_type = 'CREATE_CLONE'
 
        read(unit, NML=${NAME}_grid)
 
