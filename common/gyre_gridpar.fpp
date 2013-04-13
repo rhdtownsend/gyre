@@ -32,16 +32,13 @@ module gyre_gridpar
 
   type :: gridpar_t
      private
-     real(WP), public          :: alpha_osc
-     real(WP), public          :: alpha_exp
-     integer, public           :: n_center
-     integer, public           :: n_floor
-     real(WP), public          :: s
-     integer, public           :: n_grid 
-     character(LEN=64), public :: grid_type
-   contains
-     private
-     procedure, public :: init
+     real(WP), public          :: alpha_osc = 0._WP
+     real(WP), public          :: alpha_exp = 0._WP
+     real(WP), public          :: omega_a = 0._WP
+     real(WP), public          :: omega_b = 0._WP
+     real(WP), public          :: s = 0
+     integer, public           :: n = 0
+     character(LEN=64), public :: op_type = 'CREATE_CLONE'
   end type gridpar_t
 
   ! Interfaces
@@ -49,8 +46,14 @@ module gyre_gridpar
   $if($MPI)
 
   interface bcast
-     module procedure bcast_gp
+     module procedure bcast_gp_0
+     module procedure bcast_gp_1
   end interface bcast
+
+  interface bcast_alloc
+     module procedure bcast_alloc_gp_0
+     module procedure bcast_alloc_gp_1
+  end interface bcast_alloc
 
   $endif
 
@@ -61,49 +64,22 @@ module gyre_gridpar
   public :: gridpar_t
   $if($MPI)
   public :: bcast
+  public :: bcast_alloc
   $endif
 
   ! Procedures
 
 contains
 
-  subroutine init (this, alpha_osc, alpha_exp, n_center, n_floor, s, n_grid, grid_type)
-
-    class(gridpar_t), intent(out) :: this
-    real(WP), intent(in)          :: alpha_osc
-    real(WP), intent(in)          :: alpha_exp
-    integer, intent(in)           :: n_center
-    integer, intent(in)           :: n_floor
-    real(WP), intent(in)          :: s
-    integer, intent(in)           :: n_grid
-    character(LEN=*), intent(in)  :: grid_type
-
-    ! Initialize the gridpar
-
-    this%alpha_osc = alpha_osc
-    this%alpha_exp = alpha_exp
-
-    this%n_center = n_center
-    this%n_floor = n_floor
-
-    this%s = s
-    this%n_grid = n_grid
-
-    this%grid_type = grid_type
-
-    ! Finish
-
-    return
-
-  end subroutine init
-
-!****
-
   $if($MPI)
 
-  subroutine bcast_gp (gp, root_rank)
+  $define $BCAST $sub
 
-    type(gridpar_t), intent(inout) :: gp
+  $local $RANK $1
+
+  subroutine bcast_gp_$RANK (gp, root_rank)
+
+    type(gridpar_t), intent(inout) :: gp$ARRAY_SPEC($RANK)
     integer, intent(in)            :: root_rank
 
     ! Broadcast the gridpar
@@ -111,19 +87,99 @@ contains
     call bcast(gp%alpha_osc, root_rank)
     call bcast(gp%alpha_exp, root_rank)
 
-    call bcast(gp%n_center, root_rank)
-    call bcast(gp%n_floor, root_rank)
+    call bcast(gp%omega_a, root_rank)
+    call bcast(gp%omega_b, root_rank)
 
     call bcast(gp%s, root_rank)
-    call bcast(gp%n_grid, root_rank)
 
-    call bcast(gp%grid_type, root_rank)
+    call bcast(gp%n, root_rank)
+
+    call bcast(gp%op_type, root_rank)
 
     ! Finish
 
     return
 
-  end subroutine bcast_gp
+  end subroutine bcast_gp_$RANK
+
+  $endsub
+
+  $BCAST(0)
+  $BCAST(1)
+
+!****
+
+  $define $BCAST_ALLOC $sub
+
+  $local $RANK $1
+
+  subroutine bcast_alloc_gp_$RANK (gp, root_rank)
+
+    type(gridpar_t), allocatable, intent(inout) :: gp$ARRAY_SPEC($RANK)
+    integer, intent(in)                         :: root_rank
+
+    logical :: alloc
+    $if($RANK > 0)
+    integer :: s(SIZE(SHAPE(gp)))
+    $endif
+
+    ! Deallocate the gridpar on non-root processors
+
+    if(MPI_RANK /= root_rank .AND. ALLOCATED(gp)) then
+       deallocate(gp)
+    endif
+
+    ! Check if the gridpar is allocated on the root processor
+
+    if(MPI_RANK == root_rank) alloc = ALLOCATED(gp)
+    call bcast(alloc, root_rank)
+
+    if(alloc) then
+
+       ! Broadcast the shape
+
+       $if($RANK > 0)
+
+       if(MPI_RANK == root_rank) s = SHAPE(gp)
+
+       call bcast(s, root_rank)
+
+       $endif
+
+       ! Allocate the buffer
+
+       $if($RANK > 0)
+
+       if(MPI_RANK /= root_rank) then
+          if(ALLOCATED(gp)) deallocate(gp)
+          allocate(gp($ARRAY_EXPAND(s,$RANK)))
+       endif
+
+       $else
+
+       if(MPI_RANK /= root_rank) then
+          if(ALLOCATED(gp)) deallocate(gp)
+          allocate(gp)
+       endif
+       
+       $endif
+
+       ! Broadcast the gridpar
+
+       call bcast(gp, root_rank)
+
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_alloc_gp_$RANK
+
+  $endsub
+
+  $BCAST_ALLOC(0)
+  $BCAST_ALLOC(1)
 
   $endif
 

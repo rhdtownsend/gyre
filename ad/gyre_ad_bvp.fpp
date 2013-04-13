@@ -54,11 +54,13 @@ module gyre_ad_bvp
      class(base_coeffs_t), allocatable  :: bc
      class(therm_coeffs_t), allocatable :: tc
      type(oscpar_t)                     :: op
-     type(gridpar_t)                    :: gp
      type(numpar_t)                     :: np
+     type(gridpar_t), allocatable       :: shoot_gp(:)
+     type(gridpar_t), allocatable       :: recon_gp(:)
      type(ad_shooter_t)                 :: sh
      type(ad_bound_t)                   :: bd
      type(sysmtx_t)                     :: sm
+     real(WP), allocatable              :: x_in(:)
      real(WP), allocatable              :: x(:)
      integer                            :: e_norm
      integer, public                    :: n
@@ -66,10 +68,11 @@ module gyre_ad_bvp
    contains 
      private
      procedure, public :: init
-     procedure, public :: get_bc
-     procedure, public :: get_op
-     procedure, public :: get_gp
+!     procedure, public :: get_bc
+!     procedure, public :: get_op
      procedure, public :: get_np
+!     procedure, public :: get_shoot_gp
+!     procedure, public :: get_recon_gp
      procedure, public :: set_norm
      procedure, public :: discrim
      procedure         :: build
@@ -100,35 +103,44 @@ module gyre_ad_bvp
 
 contains
 
-  subroutine init (this, bc, tc, op, gp, np, x)
+  subroutine init (this, bc, tc, op, np, shoot_gp, recon_gp, x_in)
 
     class(ad_bvp_t), intent(out)                   :: this
     class(base_coeffs_t), intent(in)               :: bc
     class(therm_coeffs_t), allocatable, intent(in) :: tc
     type(oscpar_t), intent(in)                     :: op
-    type(gridpar_t), intent(in)                    :: gp
     type(numpar_t), intent(in)                     :: np
-    real(WP), intent(in)                           :: x(:)
+    type(gridpar_t), intent(in)                    :: shoot_gp(:)
+    type(gridpar_t), intent(in)                    :: recon_gp(:)
+    real(WP), allocatable, intent(in)              :: x_in(:)
 
-    integer :: n
+    integer               :: n
 
     ! Initialize the ad_bvp
+
+    ! Create the shooting grid
+
+    call build_grid(shoot_gp, bc, op, x_in, this%x)
+
+    n = SIZE(this%x)
+
+    ! Set up components
     
     allocate(this%bc, SOURCE=bc)
     if(ALLOCATED(tc)) allocate(this%tc, SOURCE=tc)
 
     this%op = op
-    this%gp = gp
     this%np = np
+
+    this%shoot_gp = shoot_gp
+    this%recon_gp = recon_gp
 
     call this%sh%init(this%bc, this%op, this%np)
     call this%bd%init(this%bc, this%op)
 
-    n = SIZE(x)
-
     call this%sm%init(n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
 
-    this%x = x
+    this%x_in = x_in
 
     this%e_norm = 0
 
@@ -153,9 +165,10 @@ contains
     class(base_coeffs_t), allocatable  :: bc
     class(therm_coeffs_t), allocatable :: tc
     type(oscpar_t)                     :: op
-    type(gridpar_t)                    :: gp
     type(numpar_t)                     :: np
-    real(WP), allocatable              :: x(:)
+    type(gridpar_t), allocatable       :: shoot_gp(:)
+    type(gridpar_t), allocatable       :: recon_gp(:)
+    real(WP), allocatable              :: x_in(:)
 
     ! Broadcast the bvp
 
@@ -165,10 +178,12 @@ contains
        call bcast_alloc(this%tc, root_rank)
       
        call bcast(this%op, root_rank)
-       call bcast(this%gp, root_rank)
        call bcast(this%np, root_rank)
 
-       call bcast_alloc(this%x, root_rank)
+       call bcast_alloc(this%shoot_gp, root_rank)
+       call bcast_alloc(this%recon_gp, root_rank)
+
+       call bcast_alloc(this%x_in, root_rank)
 
     else
 
@@ -176,12 +191,14 @@ contains
        call bcast_alloc(tc, root_rank)
 
        call bcast(op, root_rank)
-       call bcast(gp, root_rank)
        call bcast(np, root_rank)
-    
-       call bcast_alloc(x, root_rank)
 
-       call this%init(bc, tc, op, gp, np, x)
+       call bcast_alloc(shoot_gp, root_rank)
+       call bcast_alloc(recon_gp, root_rank)
+
+       call bcast_alloc(x_in, root_rank)
+
+       call this%init(bc, tc, op, np, shoot_gp, recon_gp, x_in)
 
     endif
 
@@ -217,10 +234,11 @@ contains
   
   $endsub
 
-  $GET(bc,class(base_coeffs_t))
-  $GET(op,type(oscpar_t))
-  $GET(gp,type(gridpar_t))
+!  $GET(bc,class(base_coeffs_t))
+!  $GET(op,type(oscpar_t))
   $GET(np,type(numpar_t))
+!  $GET(shoot_gp,type(gridpar_t))
+!  $GET(recon_gp,type(gridpar_t))
     
 !****
 
@@ -315,21 +333,12 @@ contains
 
     y_sh = RESHAPE(this%sm%null_vector(), SHAPE(y_sh))
 
-    ! Set up the grid
+    ! Build the recon grid
 
-    select case (this%gp%grid_type)
-    case ('GEOM')
-       call build_geom_grid(this%gp%s, this%gp%n_grid, x)
-    case ('LOG')
-       call build_geom_grid(this%gp%s, this%gp%n_grid, x)
-    case ('CLONE')
-       x = this%x
-    case ('DISP')
-       call build_dispersion_grid(this%x, this%bc, this%op, REAL(omega), REAL(omega), &
-                                  this%gp%alpha_osc, this%gp%alpha_exp, this%gp%n_center, this%gp%n_floor, x)
-    case default
-       $ABORT(Invalid grid_type)
-    end select
+    this%recon_gp%omega_a = REAL(omega)
+    this%recon_gp%omega_b = REAL(omega)
+
+    call build_grid(this%recon_gp, this%bc, this%op, this%x_in, x)
 
     ! Reconstruct the full solution
 

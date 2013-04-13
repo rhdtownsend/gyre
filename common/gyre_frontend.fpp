@@ -31,6 +31,7 @@ module gyre_frontend
   use gyre_therm_coeffs
   use gyre_oscpar
   use gyre_numpar
+  use gyre_gridpar
   use gyre_eigfunc
   use gyre_output
 
@@ -50,6 +51,8 @@ module gyre_frontend
   public :: init_oscpar
   public :: init_numpar
   public :: init_scan
+  public :: init_shoot_grid
+  public :: init_recon_grid
   public :: write_data
 
 contains
@@ -212,7 +215,8 @@ contains
 
     ! Initialize the oscpar
 
-    call op%init(l, outer_bound_type)
+    op%l = l
+    op%outer_bound_type = outer_bound_type
 
     ! Finish
 
@@ -249,7 +253,8 @@ contains
 
     ! Initialize the numpar
 
-    call np%init(n_iter_max, ivp_solver_type)
+    np%n_iter_max = n_iter_max
+    np%ivp_solver_type = ivp_solver_type
 
     ! Finish
 
@@ -327,6 +332,72 @@ contains
     return
 
   end subroutine init_scan
+
+!****
+
+  $define $INIT_GRID $sub
+
+  $local $NAME $1
+
+  subroutine init_${NAME}_grid (unit, omega_a, omega_b, gp)
+
+    integer, intent(in)                       :: unit
+    real(WP), intent(in)                      :: omega_a
+    real(WP), intent(in)                      :: omega_b
+    type(gridpar_t), allocatable, intent(out) :: gp(:)
+
+    character(LEN=256) :: op_type
+    real(WP)           :: alpha_osc
+    real(WP)           :: alpha_exp
+    real(WP)           :: s
+    integer            :: n
+    integer            :: n_grid
+    integer            :: i
+
+    namelist /${NAME}_grid/ op_type, alpha_osc, alpha_exp, s, n
+
+    ! Count the number of grid namelists
+
+    rewind(unit)
+
+    n_grid = 0
+
+    count_loop : do
+       read(unit, NML=${NAME}_grid, END=100)
+       n_grid = n_grid + 1
+    end do count_loop
+
+100 continue
+
+    $ASSERT(n_grid >= 1,At least one ${NAME}_grid namelist is required)
+
+    ! Read grid parameters
+
+    rewind(unit)
+
+    allocate(gp(n_grid))
+
+    read_loop : do i = 1,n_grid
+
+       read(unit, NML=${NAME}_grid)
+
+       gp(i) = gridpar_t(op_type=op_type, &
+                         alpha_osc=alpha_osc, &
+                         alpha_exp=alpha_exp, &
+                         n=n)
+
+    end do read_loop
+
+    ! Finish
+
+    return
+
+  end subroutine init_${NAME}_grid
+
+  $endsub
+
+  $INIT_GRID(shoot)
+  $INIT_GRID(recon)
 
 !****
 
