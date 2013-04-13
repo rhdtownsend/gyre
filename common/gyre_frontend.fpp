@@ -382,7 +382,7 @@ contains
        gp(i) = gridpar_t(op_type=op_type, &
                          alpha_osc=alpha_osc, alpha_exp=alpha_exp, &
                          omega_a=omega_a, omega_b=omega_b, &
-                         n=n)
+                         s=s, n=n)
 
     end do read_loop
 
@@ -439,7 +439,7 @@ contains
           write(mode_file, 100) TRIM(mode_prefix), j, '.h5'
 100       format(A,I4.4,A)
 
-          call write_mode(mode_file, ef(j), bc, split_item_list(mode_item_list), freq_units)
+          call write_mode(mode_file, ef(j), bc, split_item_list(mode_item_list), freq_units, j)
 
        end do mode_loop
        
