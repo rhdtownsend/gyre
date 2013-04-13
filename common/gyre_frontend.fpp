@@ -380,8 +380,8 @@ contains
        read(unit, NML=${NAME}_grid)
 
        gp(i) = gridpar_t(op_type=op_type, &
-                         alpha_osc=alpha_osc, &
-                         alpha_exp=alpha_exp, &
+                         alpha_osc=alpha_osc, alpha_exp=alpha_exp, &
+                         omega_a=omega_a, omega_b=omega_b, &
                          n=n)
 
     end do read_loop
