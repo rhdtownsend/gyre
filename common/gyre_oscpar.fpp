@@ -32,8 +32,8 @@ module gyre_oscpar
 
   type :: oscpar_t
      private
-     integer, public           :: l
-     character(LEN=64), public :: outer_bound_type
+     integer, public           :: l = 0
+     character(LEN=64), public :: outer_bound_type = 'ZERO_OUTER_BOUND_TYPE'
   end type oscpar_t
 
   ! Interfaces

@@ -32,8 +32,8 @@ module gyre_numpar
 
   type :: numpar_t
      private
-     integer, public           :: n_iter_max
-     character(LEN=64), public :: ivp_solver_type
+     integer, public           :: n_iter_max = 50
+     character(LEN=64), public :: ivp_solver_type = 'MAGNUS_GL2'
   end type numpar_t
 
   ! Interfaces
