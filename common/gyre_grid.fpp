@@ -51,6 +51,8 @@ module gyre_grid
   private
 
   public :: build_grid
+  public :: create_geom
+  public :: create_log
 
   ! Procedures
 
