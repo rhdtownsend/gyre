@@ -34,9 +34,6 @@ module gyre_oscpar
      private
      integer, public           :: l
      character(LEN=64), public :: outer_bound_type
-   contains
-     private
-     procedure, public :: init
   end type oscpar_t
 
   ! Interfaces
@@ -62,26 +59,6 @@ module gyre_oscpar
 
 contains
 
-  subroutine init (this, l, outer_bound_type)
-
-    class(oscpar_t), intent(out) :: this
-    integer, intent(in)          :: l
-    character(LEN=*), intent(in) :: outer_bound_type
-
-    ! Initialize the oscpar
-
-    this%l = l
-
-    this%outer_bound_type = outer_bound_type
-
-    ! Finish
-
-    return
-
-  end subroutine init
-
-!****
-
   $if($MPI)
 
   subroutine bcast_op (op, root_rank)
@@ -89,24 +66,10 @@ contains
     type(oscpar_t), intent(inout) :: op
     integer, intent(in)           :: root_rank
 
-    integer                                 :: l
-    character(LEN=LEN(op%outer_bound_type)) :: outer_bound_type
-
     ! Broadcast the oscpar
 
-    if(MPI_RANK == root_rank) then
-
-       call bcast(op%l, root_rank)
-       call bcast(op%outer_bound_type, root_rank)
-
-    else
-
-       call bcast(l, root_rank)
-       call bcast(outer_bound_type, root_rank)
-
-       call op%init(l, outer_bound_type)
-
-    endif
+    call bcast(op%l, root_rank)
+    call bcast(op%outer_bound_type, root_rank)
 
     ! Finish
 
