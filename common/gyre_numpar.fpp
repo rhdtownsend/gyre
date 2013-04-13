@@ -32,11 +32,8 @@ module gyre_numpar
 
   type :: numpar_t
      private
-     integer, public           :: n_iter_max
-     character(LEN=64), public :: ivp_solver_type
-   contains
-     private
-     procedure, public :: init
+     integer, public           :: n_iter_max = 50
+     character(LEN=64), public :: ivp_solver_type = 'MAGNUS_GL2'
   end type numpar_t
 
   ! Interfaces
@@ -61,26 +58,6 @@ module gyre_numpar
   ! Procedures
 
 contains
-
-  subroutine init (this, n_iter_max, ivp_solver_type)
-
-    class(numpar_t), intent(out) :: this
-    integer, intent(in)          :: n_iter_max
-    character(LEN=*), intent(in) :: ivp_solver_type
-
-    ! Initialize the numpar
-
-    this%n_iter_max = n_iter_max
-
-    this%ivp_solver_type = ivp_solver_type
-    
-    ! Finish
-
-    return
-
-  end subroutine init
-
-!****
 
   $if($MPI)
 
