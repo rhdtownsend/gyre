@@ -140,7 +140,7 @@ contains
 
     call this%sm%init(n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
 
-    this%x_in = x_in
+    if(ALLOCATED(x_in)) this%x_in = x_in
 
     this%e_norm = 0
 
