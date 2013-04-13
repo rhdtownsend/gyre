@@ -206,12 +206,15 @@ contains
 
     ! Read oscillation parameters
 
+    l = 0
+    outer_bound_type = 'ZERO'
+
     rewind(unit)
     read(unit, NML=osc, END=900)
 
     ! Initialize the oscpar
 
-    op = oscpar_t(l=l, outer_bound_type = outer_bound_type)
+    op = oscpar_t(l=l, outer_bound_type=outer_bound_type)
 
     ! Finish
 
@@ -238,6 +241,9 @@ contains
     namelist /num/ n_iter_max, ivp_solver_type
 
     ! Read numerical parameters
+
+    n_iter_max = 50
+    ivp_solver_type = 'MAGNUS_GL2'
 
     rewind(unit)
     read(unit, NML=num, END=900)
@@ -369,12 +375,14 @@ contains
 
     read_loop : do i = 1,n_grid
 
+       op_type = 'CREATE_CLONE'
+
        read(unit, NML=${NAME}_grid)
 
        gp(i) = gridpar_t(op_type=op_type, &
-                         alpha_osc=alpha_osc, &
-                         alpha_exp=alpha_exp, &
-                         n=n)
+                         alpha_osc=alpha_osc, alpha_exp=alpha_exp, &
+                         omega_a=omega_a, omega_b=omega_b, &
+                         s=s, n=n)
 
     end do read_loop
 
@@ -431,7 +439,7 @@ contains
           write(mode_file, 100) TRIM(mode_prefix), j, '.h5'
 100       format(A,I4.4,A)
 
-          call write_mode(mode_file, ef(j), bc, split_item_list(mode_item_list), freq_units)
+          call write_mode(mode_file, ef(j), bc, split_item_list(mode_item_list), freq_units, j)
 
        end do mode_loop
        

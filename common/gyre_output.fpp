@@ -179,13 +179,14 @@ contains
 
 !****
 
-  subroutine write_mode (file, ef, bc, items, freq_units)
+  subroutine write_mode (file, ef, bc, items, freq_units, i)
 
     character(LEN=*), intent(in)     :: file
     type(eigfunc_t), intent(in)      :: ef
     class(base_coeffs_t), intent(in) :: bc
     character(LEN=*), intent(in)     :: items(:)
     character(LEN=*), intent(in)     :: freq_units
+    integer, intent(in)              :: i
 
     integer        :: n_p
     integer        :: n_g
@@ -201,6 +202,8 @@ contains
     call hg%init(file, CREATE_FILE)
 
     ! Write items
+
+    call write_attr(hg, 'i', i)
 
     item_loop : do j = 1,SIZE(items)
 

@@ -20,13 +20,24 @@
 /
 
 &shoot_grid
-	grid_type = 'DISPERSION'
+	op_type = 'CREATE_CLONE'
+/
+
+&shoot_grid
+	op_type = 'RESAMP_DISPERSION'
 	alpha_osc = 5
 	alpha_exp = 1
-	n_center = 5
+/
+
+&shoot_grid
+	op_type = 'RESAMP_CENTER'
+	alpha_osc = 5
+	alpha_exp = 1
+	n = 5
 /
 
 &recon_grid
+	op_type = 'CREATE_CLONE'
 /
 
 &output

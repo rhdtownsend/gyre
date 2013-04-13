@@ -69,9 +69,9 @@ program build_poly_hom
 
   select case(grid_type)
   case('GEOM')
-     call build_geom_grid(s, n, x)
+     call create_geom(s, n, x)
   case('LOG')
-     call build_log_grid(s, n, x)
+     call create_log(s, n, x)
   case default
      $ABORT(Invalid grid_type)
   end select

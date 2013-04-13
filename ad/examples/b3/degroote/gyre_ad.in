@@ -20,7 +20,11 @@
 /
 
 &shoot_grid
-	grid_type = 'DISPERSION'
+	op_type = 'CREATE_CLONE'
+/
+
+&shoot_grid
+	op_type = 'RESAMP_DISPERSION'
 	alpha_osc = 1.
 	alpha_exp = 0.5
 /

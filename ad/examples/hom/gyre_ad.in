@@ -18,9 +18,9 @@
 /
 
 &shoot_grid
-	grid_type = 'GEOM'
-	n_grid = 1000
+	op_type = 'CREATE_GEOM'
 	s = 1000.
+	n = 1000
 /
 
 &recon_grid
