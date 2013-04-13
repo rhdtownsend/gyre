@@ -344,7 +344,7 @@ contains
     this%recon_gp%omega_a = REAL(omega)
     this%recon_gp%omega_b = REAL(omega)
 
-    call build_grid(this%recon_gp, this%bc, this%op, this%x_in, x)
+    call build_grid(this%recon_gp, this%bc, this%op, this%x, x)
 
     ! Reconstruct the full solution
 
