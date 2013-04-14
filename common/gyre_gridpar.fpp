@@ -32,14 +32,13 @@ module gyre_gridpar
   ! Derived-type definitions
 
   type :: gridpar_t
-     private
-     real(WP), public          :: alpha_osc = 0._WP
-     real(WP), public          :: alpha_exp = 0._WP
-     real(WP), public          :: omega_a = 0._WP
-     real(WP), public          :: omega_b = 0._WP
-     real(WP), public          :: s = 0
-     integer, public           :: n = 0
-     character(LEN=64), public :: op_type = ''
+     real(WP)          :: alpha_osc = 0._WP
+     real(WP)          :: alpha_exp = 0._WP
+     real(WP)          :: omega_a = 0._WP
+     real(WP)          :: omega_b = 0._WP
+     real(WP)          :: s = 0
+     integer           :: n = 0
+     character(LEN=64) :: op_type = ''
   end type gridpar_t
 
   ! Interfaces
