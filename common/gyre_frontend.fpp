@@ -236,13 +236,16 @@ contains
     type(numpar_t), intent(out) :: np
 
     integer           :: n_iter_max
+    real(WP)          :: theta_ad
     character(LEN=64) :: ivp_solver_type
 
-    namelist /num/ n_iter_max, ivp_solver_type
+    namelist /num/ n_iter_max, theta_ad, ivp_solver_type
 
     ! Read numerical parameters
 
     n_iter_max = 50
+    theta_ad = 0._WP
+
     ivp_solver_type = 'MAGNUS_GL2'
 
     rewind(unit)
@@ -250,7 +253,7 @@ contains
 
     ! Initialize the numpar
 
-    np = numpar_t(n_iter_max=n_iter_max, ivp_solver_type=ivp_solver_type)
+    np = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, ivp_solver_type=ivp_solver_type)
 
     ! Finish
 
