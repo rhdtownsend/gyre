@@ -31,9 +31,8 @@ module gyre_oscpar
   ! Derived-type definitions
 
   type :: oscpar_t
-     private
-     integer, public           :: l = 0
-     character(LEN=64), public :: outer_bound_type = ''
+     integer           :: l
+     character(LEN=64) :: outer_bound_type
   end type oscpar_t
 
   ! Interfaces
