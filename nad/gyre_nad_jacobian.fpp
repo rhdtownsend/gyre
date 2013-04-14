@@ -114,7 +114,7 @@ contains
 
     ! Evaluate the log(x)-space Jacobian matrix
 
-    associate(V => this%bc%V(x), V_x2 => this%bc%V_x2(x), V_g => this%bc%V(x)/this%bc%Gamma_1(x), &
+    associate(V => this%bc%V(x), V_g => this%bc%V(x)/this%bc%Gamma_1(x), &
               U => this%bc%U(x), As => this%bc%As(x), c_1 => this%bc%c_1(x), &
               nabla_ad => this%bc%nabla_ad(x), delta => this%bc%delta(x), &
               c_rad => this%tc%c_rad(x), dc_rad => this%tc%dc_rad(x), &
@@ -128,14 +128,14 @@ contains
       A(1,2) = l*(l+1)/(c_1*omega**2) - V_g
       A(1,3) = V_g
       A(1,4) = 0._WP
-      A(1,5) = delta*x**2
+      A(1,5) = delta
       A(1,6) = 0._WP
 
       A(2,1) = c_1*omega**2 - As
       A(2,2) = As - U + 3._WP - l
       A(2,3) = -As
       A(2,4) = 0._WP
-      A(2,5) = delta*x**2
+      A(2,5) = delta
       A(2,6) = 0._WP
 
       A(3,1) = 0._WP
@@ -149,21 +149,21 @@ contains
       A(4,2) = U*V_g
       A(4,3) = l*(l+1) - U*V_g
       A(4,4) = -U - l + 2._WP
-      A(4,5) = -U*delta*x**2
+      A(4,5) = -U*delta
       A(4,6) = 0._WP
 
-      A(5,1) = V_x2*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-      A(5,2) = V_x2*(l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
-      A(5,3) = V_x2*c_dif
-      A(5,4) = V_x2*nabla_ad
-      A(5,5) = V*nabla*(4._WP - kappa_S) - l
-      A(5,6) = -V_x2*nabla/c_rad
+      A(5,1) = V*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+      A(5,2) = V*(l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
+      A(5,3) = V*c_dif
+      A(5,4) = V*nabla_ad
+      A(5,5) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
+      A(5,6) = -V*nabla/c_rad
 
       A(6,1) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - epsilon_ad*V*c_gen
       A(6,2) = epsilon_ad*V*c_gen - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2))
       A(6,3) = l*(l+1)*nabla_ad/nabla*c_rad - epsilon_ad*V*c_gen
       A(6,4) = 0._WP
-      A(6,5) = epsilon_S*c_gen*x**2 - l*(l+1)*c_rad/(nabla*V_x2) - (0._WP,1._WP)*omega*c_thm*x**2
+      A(6,5) = epsilon_S*c_gen - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega*c_thm
       A(6,6) = -1._WP - l
 
     end associate
