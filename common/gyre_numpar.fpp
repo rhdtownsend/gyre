@@ -31,9 +31,9 @@ module gyre_numpar
   ! Derived-type definitions
 
   type :: numpar_t
-     private
-     integer, public           :: n_iter_max = 0
-     character(LEN=64), public :: ivp_solver_type = ''
+     integer           :: n_iter_max
+     real(WP)          :: theta_ad
+     character(LEN=64) :: ivp_solver_type
   end type numpar_t
 
   ! Interfaces
@@ -69,6 +69,8 @@ contains
     ! Broadcast the numpar
 
     call bcast(np%n_iter_max, root_rank)
+    call bcast(np%theta_ad, root_rank)
+
     call bcast(np%ivp_solver_type, root_rank)
 
     ! Finish
