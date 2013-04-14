@@ -53,7 +53,6 @@ module gyre_poly_base_coeffs
      private
      procedure, public :: init
      $PROC_DECL(V)
-     $PROC_DECL(V_x2)
      $PROC_DECL(As)
      $PROC_DECL(U)
      $PROC_DECL(c_1)
@@ -153,9 +152,18 @@ contains
     real(WP), intent(in)                  :: x
     real(WP)                              :: V
 
+    real(WP) :: xi
+    real(WP) :: Theta
+    real(WP) :: dTheta
+
     ! Calculate V
 
-    V = this%V_x2(x)*x**2
+    xi = x*this%xi_1
+
+    Theta = this%sp_Theta%interp(xi)
+    dTheta = this%sp_dTheta%interp(xi)
+
+    V = -(this%n_poly + 1._WP)*xi*dTheta/Theta
 
     ! Finish
 
@@ -184,59 +192,6 @@ contains
     return
 
   end function get_V_v
-
-!****
-
-  function get_V_x2_1 (this, x) result (V_x2)
-
-    class(poly_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                  :: x
-    real(WP)                              :: V_x2
-
-    real(WP) :: xi
-    real(WP) :: Theta
-    real(WP) :: dTheta
-
-    ! Calculate V_x2
-
-    xi = x*this%xi_1
-
-    Theta = this%sp_Theta%interp(xi)
-    dTheta = this%sp_dTheta%interp(xi)
-
-    if(x /= 0._WP) then
-       V_x2 = -(this%n_poly + 1._WP)*xi*dTheta/(x**2*Theta)
-    else
-       V_x2 = (this%n_poly + 1._WP)*this%xi_1**2/3._WP
-    endif
-
-    ! Finish
-
-    return
-
-  end function get_V_x2_1
-
-!****
-
-  function get_V_x2_v (this, x) result (V_x2)
-
-    class(poly_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                  :: x(:)
-    real(WP)                              :: V_x2(SIZE(x))
-
-    integer :: i
-
-    ! Calculate V_x2
-
-    x_loop : do i = 1,SIZE(x)
-       V_x2(i) = this%V_x2(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function get_V_x2_v
 
 !****
 

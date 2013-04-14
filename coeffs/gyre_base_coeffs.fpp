@@ -40,7 +40,6 @@ module gyre_base_coeffs
    contains
      private
      $PROC_DECL(V)
-     $PROC_DECL(V_x2)
      $PROC_DECL(As)
      $PROC_DECL(U)
      $PROC_DECL(c_1)

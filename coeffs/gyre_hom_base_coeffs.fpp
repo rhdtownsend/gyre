@@ -47,7 +47,6 @@ module gyre_hom_base_coeffs
      private
      procedure, public :: init
      $PROC_DECL(V)
-     $PROC_DECL(V_x2)
      $PROC_DECL(As)
      $PROC_DECL(U)
      $PROC_DECL(c_1)
@@ -126,7 +125,7 @@ contains
 
     ! Calculate V
 
-    V = this%V_x2(x)*x**2
+    V = 2._WP*x**2/(1._WP - x**2)
 
     ! Finish
 
@@ -135,7 +134,7 @@ contains
   end function get_V_1
 
 !****
-
+  
   function get_V_v (this, x) result (V)
 
     class(hom_base_coeffs_t), intent(in) :: this
@@ -155,46 +154,6 @@ contains
     return
 
   end function get_V_v
-
-!****
-
-  function get_V_x2_1 (this, x) result (V_x2)
-
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x
-    real(WP)                             :: V_x2
-
-    ! Calculate V_x2
-
-    V_x2 = 2._WP/(1._WP - x**2)
-
-    ! Finish
-
-    return
-
-  end function get_V_x2_1
-
-!****
-  
-  function get_V_x2_v (this, x) result (V_x2)
-
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x(:)
-    real(WP)                             :: V_x2(SIZE(x))
-
-    integer :: i
-
-    ! Calculate V_x2
-
-    x_loop : do i = 1,SIZE(x)
-       V_x2(i) = this%V_x2(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function get_V_x2_v
 
 !****
 
