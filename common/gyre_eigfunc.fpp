@@ -364,7 +364,11 @@ contains
 
     associate (l => this%op%l)
 
-      delS = this%y(5,:)*this%x**l
+      where (this%x /= 0._WP)
+         delS = this%y(5,:)*this%x**(l-2)
+      elsewhere
+         delS = 0._WP
+      end where
 
     end associate
 
@@ -404,9 +408,9 @@ contains
 
     ! Calculate the Lagrangian pressure perturbation in units of p
 
-    associate (V_x2 => this%bc%V_x2(this%x), l => this%op%l)
+    associate (V => this%bc%V(this%x), l => this%op%l)
 
-      delp = V_x2*(this%y(2,:) - this%y(1,:) - this%y(3,:))*this%x**l
+      delp = V*(this%y(2,:) - this%y(1,:) - this%y(3,:))*this%x**(l-2)
 
     end associate
 
