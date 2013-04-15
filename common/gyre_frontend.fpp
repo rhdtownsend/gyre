@@ -345,12 +345,12 @@ contains
     real(WP), intent(in)                      :: omega_b
     type(gridpar_t), allocatable, intent(out) :: gp(:)
 
+    integer            :: n_gp
     character(LEN=256) :: op_type
     real(WP)           :: alpha_osc
     real(WP)           :: alpha_exp
     real(WP)           :: s
     integer            :: n
-    integer            :: n_grid
     integer            :: i
 
     namelist /${NAME}_grid/ op_type, alpha_osc, alpha_exp, s, n
@@ -359,26 +359,33 @@ contains
 
     rewind(unit)
 
-    n_grid = 0
+    n_gp = 0
 
     count_loop : do
        read(unit, NML=${NAME}_grid, END=100)
-       n_grid = n_grid + 1
+       n_gp = n_gp + 1
     end do count_loop
 
 100 continue
 
-    $ASSERT(n_grid >= 1,At least one ${NAME}_grid namelist is required)
+    $ASSERT(n_gp >= 1,At least one ${NAME}_grid namelist is required)
 
     ! Read grid parameters
 
     rewind(unit)
 
-    allocate(gp(n_grid))
+    allocate(gp(n_gp))
 
-    read_loop : do i = 1,n_grid
+    read_loop : do i = 1,n_gp
 
        op_type = 'CREATE_CLONE'
+
+       alpha_osc = 0._WP
+       alpha_exp = 0._WP
+
+       s = 0._WP
+
+       n = 0
 
        read(unit, NML=${NAME}_grid)
 
