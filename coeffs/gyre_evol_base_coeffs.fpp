@@ -43,15 +43,15 @@ module gyre_evol_base_coeffs
   
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure :: get_${NAME}_1
-    procedure :: get_${NAME}_v
+    procedure :: ${NAME}_1
+    procedure :: ${NAME}_v
   $endsub
 
   $define $PROC_DECL_GEN $sub
     $local $NAME $1
-    procedure       :: get_${NAME}_1
-    procedure       :: get_${NAME}_v
-    generic, public :: ${NAME} => get_${NAME}_1, get_${NAME}_v
+    procedure       :: ${NAME}_1
+    procedure       :: ${NAME}_v
+    generic, public :: ${NAME} => ${NAME}_1, ${NAME}_v
   $endsub
 
   type, extends(base_coeffs_t) :: evol_base_coeffs_t
@@ -251,7 +251,7 @@ contains
 
   $local $NAME $1
 
-  function get_${NAME}_1 (this, x) result ($NAME)
+  function ${NAME}_1 (this, x) result ($NAME)
 
     class(evol_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
@@ -265,11 +265,11 @@ contains
 
     return
 
-  end function get_${NAME}_1
+  end function ${NAME}_1
 
 !****
 
-  function get_${NAME}_v (this, x) result ($NAME)
+  function ${NAME}_v (this, x) result ($NAME)
 
     class(evol_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
@@ -283,7 +283,7 @@ contains
 
     return
 
-  end function get_${NAME}_v
+  end function ${NAME}_v
 
   $endsub
 
