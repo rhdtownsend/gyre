@@ -408,9 +408,25 @@ contains
 
     ! Calculate the Lagrangian pressure perturbation in units of p
 
-    associate (V => this%bc%V(this%x), l => this%op%l)
+    associate (V => this%bc%V(this%x), pi_c => this%bc%pi_c(), l => this%op%l)
 
-      delp = V*(this%y(2,:) - this%y(1,:) - this%y(3,:))*this%x**(l-2)
+      if(l > 0) then
+
+         where (this%x /= 0._WP)
+            delp = V*(this%y(2,:) - this%y(1,:) - this%y(3,:))*this%x**(l-2)
+         elsewhere
+            delp = 0._WP
+         endwhere
+
+      else
+
+         where (this%x /= 0._WP)
+            delp = V*(this%y(2,:) - this%y(1,:) - this%y(3,:))*this%x**(l-2)
+         elsewhere
+            delp = pi_c*(this%y(2,:) - this%y(1,:) - this%y(3,:))
+         endwhere
+
+      endif
 
     end associate
 
