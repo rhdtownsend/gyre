@@ -264,21 +264,21 @@ contains
     ! Calculate the radial displacement perturbation in units of
     ! R_star
 
-    associate (c_1 => this%bc%c_1(this%x), l => this%op%l)
+    associate (c_1 => this%bc%c_1(this%x), l => this%op%l, omega => this%omega)
 
       if(l /= 0) then
 
          if(l /= 1) then
 
             where (this%x > 0._WP)
-               xi_h = this%y(2,:)*this%x**(l-1)/(c_1*this%omega**2)
+               xi_h = this%y(2,:)*this%x**(l-1)/(c_1*omega**2)
             elsewhere
                xi_h = 0._WP
             end where
 
          else
 
-            xi_h = this%y(2,:)/(c_1*this%omega**2)
+            xi_h = this%y(2,:)/(c_1*omega**2)
 
          endif
 
@@ -356,9 +356,9 @@ contains
 
   function delS (this)
 
-    class(eigfunc_t), intent(in) :: this
-    complex(WP)                  :: delS(this%n)
-    
+    class(eigfunc_t), intent(in)  :: this
+    complex(WP)                   :: delS(this%n)
+
     ! Calculate the Lagrangian specific entropy perturbation in units
     ! of c_p
 
@@ -369,7 +369,7 @@ contains
       elsewhere
          delS = 0._WP
       end where
-
+         
     end associate
 
     ! Finish
@@ -380,18 +380,50 @@ contains
 
 !****
 
-  function delL (this)
+  function delL (this, qad)
 
-    class(eigfunc_t), intent(in) :: this
-    complex(WP)                  :: delL(this%n)
+    class(eigfunc_t), intent(in)  :: this
+    complex(WP)                   :: delL(this%n)
+    logical, intent(in), optional :: qad
+
+    logical :: qad_
+    
+    if(PRESENT(qad)) then
+       qad_ = qad
+    else
+       qad_ = .FALSE.
+    endif
     
     ! Calculate the Lagrangian luminosity perturbation in units of R_star
 
-    associate (l => this%op%l)
+    if(qad_) then
 
-      delL = this%y(6,:)*this%x**(l+1)
+       ! Quasi-adiabatic expression (from the adiabatic diffusion
+       ! equation)
 
-    end associate
+       associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+                 nabla_ad => this%bc%nabla_ad(this%x), &
+                 c_rad => this%tc%c_rad(this%x), c_dif => this%tc%c_dif(this%x), nabla => this%tc%nabla(this%x), &
+                 l => this%op%l, omega => this%omega)
+
+         delL = nabla/c_rad*((nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)*this%y(1,:) + &
+                             (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)*this%y(2,:) + &
+                             c_dif*this%y(3,:) + &
+                             nabla_ad*this%y(4,:))*this%x**(l+1)
+
+       end associate
+
+    else
+
+       ! Non-adiabatic expression
+
+       associate (l => this%op%l)
+
+         delL = this%y(6,:)*this%x**(l+1)
+
+       end associate
+
+    endif
 
     ! Finish
 
@@ -531,7 +563,7 @@ contains
 
   end function dW_dx
 
-!*****
+!****
 
   function E (this)
 
@@ -604,6 +636,38 @@ contains
     return
 
   end function W
+
+!****
+
+  function deriv (x, y) result (dy_dx)
+
+    real(WP), intent(in) :: x(:)
+    real(WP), intent(in) :: y(:)
+    real(WP)             :: dy_dx(SIZE(x))
+
+    integer :: n
+    integer :: i
+
+    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+    ! Differentiate y(x) using centered finite differences
+
+    n = SIZE(x)
+
+    dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
+
+    do i = 2,n-1
+       dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
+                          (y(i+1) - y(i))/(x(i+1) - x(i)))
+    end do
+
+    dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
+
+    ! Finish
+
+    return
+
+  end function deriv
 
 !****
 
