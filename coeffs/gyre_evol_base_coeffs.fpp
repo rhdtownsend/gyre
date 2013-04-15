@@ -70,7 +70,9 @@ module gyre_evol_base_coeffs
      real(WP), public :: M_star
      real(WP), public :: R_star
      real(WP), public :: L_star
-     real(WP)         :: t_dyn
+     real(WP)         :: p_c
+     real(WP)         :: rho_c
+     real(WP)         :: G
    contains
      private
      procedure, public :: init
@@ -85,6 +87,7 @@ module gyre_evol_base_coeffs
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     procedure, public :: pi_c
      procedure, public :: conv_freq
   end type evol_base_coeffs_t
  
@@ -190,7 +193,10 @@ contains
     this%R_star = R_star
     this%L_star = L_star
 
-    this%t_dyn = SQRT(R_star**3/(G*M_star))
+    this%p_c = p(1)
+    this%rho_c = rho(1)
+
+    this%G = G
 
     ! Finish
 
@@ -226,7 +232,10 @@ contains
     call bcast(bc%R_star, root_rank)
     call bcast(bc%L_star, root_rank)
 
-    call bcast(bc%t_dyn, root_rank)
+    call bcast(bc%p_c, root_rank)
+    call bcast(bc%rho_c, root_rank)
+
+    call bcast(bc%G, root_rank)
 
     ! Finish
 
@@ -292,6 +301,23 @@ contains
 
 !****
 
+  function pi_c (this)
+
+    class(evol_base_coeffs_t), intent(in) :: this
+    real(WP)                              :: pi_c
+
+    ! Calculate pi_c = V/x^2 as x -> 0
+
+    pi_c = 4._WP*PI*this%G*this%rho_c**2*this%R_star**2/(3._WP*this%p_c)
+
+    ! Finish
+
+    return
+
+  end function pi_c
+
+!****
+
   function conv_freq (this, freq, from_units, to_units)
 
     class(evol_base_coeffs_t), intent(in) :: this
@@ -322,9 +348,9 @@ contains
       case('NONE')
          freq_scale = 1._WP
       case('HZ')
-         freq_scale = 1._WP/(TWOPI*this%t_dyn)
+         freq_scale = 1._WP/(TWOPI*SQRT(this%R_star**3/(this%G*this%M_star)))
       case('UHZ')
-         freq_scale = 1.E6_WP/(TWOPI*this%t_dyn)
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(this%R_star**3/(this%G*this%M_star)))
       case default
          $ABORT(Invalid units)
       end select

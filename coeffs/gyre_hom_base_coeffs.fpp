@@ -53,6 +53,7 @@ module gyre_hom_base_coeffs
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     procedure, public :: pi_c
      procedure, public :: conv_freq
   end type hom_base_coeffs_t
 
@@ -394,6 +395,23 @@ contains
     return
 
   end function get_delta_v
+
+!****
+
+  function pi_c (this)
+
+    class(hom_base_coeffs_t), intent(in) :: this
+    real(WP)                             :: pi_c
+
+    ! Calculate pi_c = V/x^2 as x -> 0
+
+    pi_c = 2._WP
+
+    ! Finish
+
+    return
+
+  end function pi_c
 
 !****
 

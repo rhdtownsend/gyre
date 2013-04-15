@@ -46,6 +46,7 @@ module gyre_base_coeffs
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     procedure(pi_c_i), deferred, public      :: pi_c
      procedure(conv_freq_i), deferred, public :: conv_freq
   end type base_coeffs_t
 
@@ -68,6 +69,13 @@ module gyre_base_coeffs
        real(WP), intent(in)             :: x(:)
        real(WP)                         :: y(SIZE(x))
      end function get_v_i
+
+     function pi_c_i (this) result (pi_c)
+       use core_kinds
+       import base_coeffs_t
+       class(base_coeffs_t), intent(in) :: this
+       real(WP)                         :: pi_c
+     end function pi_c_i
 
      function conv_freq_i (this, freq, from_units, to_units) result (conv_freq)
        use core_kinds

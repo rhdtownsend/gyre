@@ -59,6 +59,7 @@ module gyre_poly_base_coeffs
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     procedure, public :: pi_c
      procedure, public :: conv_freq
   end type poly_base_coeffs_t
 
@@ -458,6 +459,23 @@ contains
     return
 
   end function get_delta_v
+
+!****
+
+  function pi_c (this)
+
+    class(poly_base_coeffs_t), intent(in) :: this
+    real(WP)                              :: pi_c
+
+    ! Calculate pi_c = V/x^2 as x -> 0
+
+    pi_c =  (this%n_poly + 1._WP)*this%xi_1**2/3._WP
+
+    ! Finish
+
+    return
+
+  end function pi_c
 
 !****
 
