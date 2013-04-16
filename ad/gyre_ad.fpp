@@ -45,6 +45,7 @@ program gyre_ad
 
   ! Variables
 
+  character(LEN=:), allocatable      :: filename
   integer                            :: unit
   real(WP), allocatable              :: x_bc(:)
   class(base_coeffs_t), allocatable  :: bc
@@ -72,8 +73,10 @@ program gyre_ad
      write(OUTPUT_UNIT, 110) 'OpenMP Threads  : ', OMP_SIZE_MAX
      write(OUTPUT_UNIT, 110) 'MPI Processors  : ', MPI_SIZE
 110  format(A,I0)
+
+     call parse_args(filename)
      
-     call open_input(unit)
+     open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
   endif
 
@@ -108,6 +111,8 @@ program gyre_ad
   endif
 
   ! Finish
+
+  close(unit)
 
   call final_parallel()
 
