@@ -47,7 +47,7 @@ def read_output (filename) :
 
     for k in data.keys() :
         if(data[k].dtype == complex_dtype) :
-            data[k] = data[k].astype(complex)
+            data[k] = data[k]['re'] + 1j*data[k]['im']
 
     # Return the data
 
