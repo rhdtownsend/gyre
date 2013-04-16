@@ -45,7 +45,7 @@ module gyre_frontend
 
   private
 
-  public :: open_input
+  public :: parse_args
   public :: write_header
   public :: init_coeffs
   public :: init_oscpar
@@ -57,29 +57,29 @@ module gyre_frontend
 
 contains
 
-  subroutine open_input (unit)
+  subroutine parse_args (filename)
 
-    integer, intent(out) :: unit
+    character(LEN=:), allocatable, intent(out) :: filename
 
-    character(LEN=1024) :: line
+    integer :: n
+    integer :: length
 
-    ! Make standard input available through a scratch file
+    ! Parse the command-line arguments
 
-    open(NEWUNIT=unit, STATUS='SCRATCH')
+    n = COMMAND_ARGUMENT_COUNT()
 
-    do
-       read(INPUT_UNIT, 100, END=200) line
-100    format(A)
-       write(unit, *) line
-    end do
+    $ASSERT(n == 1,Invalid number of arguments)
 
-200 continue
+    call GET_COMMAND_ARGUMENT(1, LENGTH=length)
+    allocate(character(LEN=length) :: filename)
+
+    call GET_COMMAND_ARGUMENT(1, VALUE=filename)
 
     ! Finish
 
     return
 
-  end subroutine open_input
+  end subroutine parse_args
 
 !****
 
