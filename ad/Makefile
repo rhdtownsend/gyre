@@ -2,7 +2,7 @@
 
 # Variables
 
-TARGETS=gyre_ad build_poly_hom
+TARGETS=gyre_ad
 
 # Flags
 

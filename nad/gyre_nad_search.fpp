@@ -95,6 +95,7 @@ contains
        ! Set the discriminant normalization, based on the adiabatic
        ! frequency
 
+       call bp%set_x_ad(ad_ef(i)%omega)
        call bp%set_norm(ad_ef(i)%omega)
 
        ! Find the root

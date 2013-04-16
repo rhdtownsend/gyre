@@ -9,6 +9,7 @@
 
 &num
 	ivp_solver_type = 'MAGNUS_GL2'
+	theta_ad = 1E-8
 /
 
 &scan

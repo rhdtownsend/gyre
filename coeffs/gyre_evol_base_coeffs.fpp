@@ -43,15 +43,15 @@ module gyre_evol_base_coeffs
   
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure :: get_${NAME}_1
-    procedure :: get_${NAME}_v
+    procedure :: ${NAME}_1
+    procedure :: ${NAME}_v
   $endsub
 
   $define $PROC_DECL_GEN $sub
     $local $NAME $1
-    procedure       :: get_${NAME}_1
-    procedure       :: get_${NAME}_v
-    generic, public :: ${NAME} => get_${NAME}_1, get_${NAME}_v
+    procedure       :: ${NAME}_1
+    procedure       :: ${NAME}_v
+    generic, public :: ${NAME} => ${NAME}_1, ${NAME}_v
   $endsub
 
   type, extends(base_coeffs_t) :: evol_base_coeffs_t
@@ -60,7 +60,7 @@ module gyre_evol_base_coeffs
      $VAR_DECL(p)
      $VAR_DECL(rho)
      $VAR_DECL(T)
-     $VAR_DECL(V_x2)
+     $VAR_DECL(V)
      $VAR_DECL(As)
      $VAR_DECL(U)
      $VAR_DECL(c_1)
@@ -70,7 +70,9 @@ module gyre_evol_base_coeffs
      real(WP), public :: M_star
      real(WP), public :: R_star
      real(WP), public :: L_star
-     real(WP)         :: t_dyn
+     real(WP)         :: p_c
+     real(WP)         :: rho_c
+     real(WP)         :: G
    contains
      private
      procedure, public :: init
@@ -79,13 +81,13 @@ module gyre_evol_base_coeffs
      $PROC_DECL_GEN(rho)
      $PROC_DECL_GEN(T)
      $PROC_DECL(V)
-     $PROC_DECL(V_x2)
      $PROC_DECL(As)
      $PROC_DECL(U)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     procedure, public :: pi_c
      procedure, public :: conv_freq
   end type evol_base_coeffs_t
  
@@ -131,7 +133,7 @@ contains
     character(LEN=*), intent(in)           :: deriv_type
 
     integer  :: n
-    real(WP) :: V_x2(SIZE(r))
+    real(WP) :: V(SIZE(r))
     real(WP) :: As(SIZE(r))
     real(WP) :: U(SIZE(r))
     real(WP) :: c_1(SIZE(r))
@@ -159,12 +161,12 @@ contains
     ! Calculate coefficients
 
     where(r /= 0._WP)
-       V_x2 = G*m*rho/(p*r*(r/R_star)**2)
+       V = G*m*rho/(p*r)
        As = r**3*N2/(G*m)
        U = 4._WP*PI*rho*r**3/m
        c_1 = (r/R_star)**3/(m/M_star)
     elsewhere
-       V_x2 = 4._WP*PI*G*rho**2*R_star**2/(3._WP*p)
+       V = 0._WP
        As = 0._WP
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
@@ -179,7 +181,7 @@ contains
     call this%sp_rho%init(x, rho, deriv_type, dy_dx_a=0._WP)
     call this%sp_T%init(x, T, deriv_type, dy_dx_a=0._WP)
 
-    call this%sp_V_x2%init(x, V_x2, deriv_type, dy_dx_a=0._WP)
+    call this%sp_V%init(x, V, deriv_type, dy_dx_a=0._WP)
     call this%sp_As%init(x, As, deriv_type, dy_dx_a=0._WP)
     call this%sp_U%init(x, U, deriv_type, dy_dx_a=0._WP)
     call this%sp_c_1%init(x, c_1, deriv_type, dy_dx_a=0._WP)
@@ -191,7 +193,10 @@ contains
     this%R_star = R_star
     this%L_star = L_star
 
-    this%t_dyn = SQRT(R_star**3/(G*M_star))
+    this%p_c = p(1)
+    this%rho_c = rho(1)
+
+    this%G = G
 
     ! Finish
 
@@ -215,7 +220,7 @@ contains
     call bcast(bc%sp_rho, root_rank)
     call bcast(bc%sp_T, root_rank)
 
-    call bcast(bc%sp_V_x2, root_rank)
+    call bcast(bc%sp_V, root_rank)
     call bcast(bc%sp_As, root_rank)
     call bcast(bc%sp_U, root_rank)
     call bcast(bc%sp_c_1, root_rank)
@@ -227,7 +232,10 @@ contains
     call bcast(bc%R_star, root_rank)
     call bcast(bc%L_star, root_rank)
 
-    call bcast(bc%t_dyn, root_rank)
+    call bcast(bc%p_c, root_rank)
+    call bcast(bc%rho_c, root_rank)
+
+    call bcast(bc%G, root_rank)
 
     ! Finish
 
@@ -239,47 +247,11 @@ contains
 
 !****
 
-  function get_V_1 (this, x) result (V)
-
-    class(evol_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                  :: x
-    real(WP)                              :: V
-
-    ! Calculate V
-
-    V = this%V_x2(x)*x**2
-
-    ! Finish
-
-    return
-
-  end function get_V_1
-
-!****
-
-  function get_V_v (this, x) result (V)
-
-    class(evol_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                  :: x(:)
-    real(WP)                              :: V(SIZE(x))
-
-    ! Calculate V
-
-    V = this%V_x2(x)*x**2
-
-    ! Finish
-
-    return
-
-  end function get_V_v
-
-!****
-
   $define $PROC $sub
 
   $local $NAME $1
 
-  function get_${NAME}_1 (this, x) result ($NAME)
+  function ${NAME}_1 (this, x) result ($NAME)
 
     class(evol_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
@@ -293,11 +265,11 @@ contains
 
     return
 
-  end function get_${NAME}_1
+  end function ${NAME}_1
 
 !****
 
-  function get_${NAME}_v (this, x) result ($NAME)
+  function ${NAME}_v (this, x) result ($NAME)
 
     class(evol_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
@@ -311,7 +283,7 @@ contains
 
     return
 
-  end function get_${NAME}_v
+  end function ${NAME}_v
 
   $endsub
 
@@ -319,13 +291,30 @@ contains
   $PROC(p)
   $PROC(rho)
   $PROC(T)
-  $PROC(V_x2)
+  $PROC(V)
   $PROC(As)
   $PROC(U)
   $PROC(c_1)
   $PROC(Gamma_1)
   $PROC(nabla_ad)
   $PROC(delta)
+
+!****
+
+  function pi_c (this)
+
+    class(evol_base_coeffs_t), intent(in) :: this
+    real(WP)                              :: pi_c
+
+    ! Calculate pi_c = V/x^2 as x -> 0
+
+    pi_c = 4._WP*PI*this%G*this%rho_c**2*this%R_star**2/(3._WP*this%p_c)
+
+    ! Finish
+
+    return
+
+  end function pi_c
 
 !****
 
@@ -359,9 +348,9 @@ contains
       case('NONE')
          freq_scale = 1._WP
       case('HZ')
-         freq_scale = 1._WP/(TWOPI*this%t_dyn)
+         freq_scale = 1._WP/(TWOPI*SQRT(this%R_star**3/(this%G*this%M_star)))
       case('UHZ')
-         freq_scale = 1.E6_WP/(TWOPI*this%t_dyn)
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(this%R_star**3/(this%G*this%M_star)))
       case default
          $ABORT(Invalid units)
       end select

@@ -38,8 +38,8 @@ module gyre_poly_base_coeffs
 
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure :: get_${NAME}_1
-    procedure :: get_${NAME}_v
+    procedure :: ${NAME}_1
+    procedure :: ${NAME}_v
   $endsub
 
   type, extends(base_coeffs_t) :: poly_base_coeffs_t
@@ -53,13 +53,13 @@ module gyre_poly_base_coeffs
      private
      procedure, public :: init
      $PROC_DECL(V)
-     $PROC_DECL(V_x2)
      $PROC_DECL(As)
      $PROC_DECL(U)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     procedure, public :: pi_c
      procedure, public :: conv_freq
   end type poly_base_coeffs_t
 
@@ -147,25 +147,34 @@ contains
 
 !****
 
-  function get_V_1 (this, x) result (V)
+  function V_1 (this, x) result (V)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     real(WP)                              :: V
 
+    real(WP) :: xi
+    real(WP) :: Theta
+    real(WP) :: dTheta
+
     ! Calculate V
 
-    V = this%V_x2(x)*x**2
+    xi = x*this%xi_1
+
+    Theta = this%sp_Theta%interp(xi)
+    dTheta = this%sp_dTheta%interp(xi)
+
+    V = -(this%n_poly + 1._WP)*xi*dTheta/Theta
 
     ! Finish
 
     return
 
-  end function get_V_1
+  end function V_1
 
 !****
 
-  function get_V_v (this, x) result (V)
+  function V_v (this, x) result (V)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
@@ -183,64 +192,11 @@ contains
 
     return
 
-  end function get_V_v
+  end function V_v
 
 !****
 
-  function get_V_x2_1 (this, x) result (V_x2)
-
-    class(poly_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                  :: x
-    real(WP)                              :: V_x2
-
-    real(WP) :: xi
-    real(WP) :: Theta
-    real(WP) :: dTheta
-
-    ! Calculate V_x2
-
-    xi = x*this%xi_1
-
-    Theta = this%sp_Theta%interp(xi)
-    dTheta = this%sp_dTheta%interp(xi)
-
-    if(x /= 0._WP) then
-       V_x2 = -(this%n_poly + 1._WP)*xi*dTheta/(x**2*Theta)
-    else
-       V_x2 = (this%n_poly + 1._WP)*this%xi_1**2/3._WP
-    endif
-
-    ! Finish
-
-    return
-
-  end function get_V_x2_1
-
-!****
-
-  function get_V_x2_v (this, x) result (V_x2)
-
-    class(poly_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                  :: x(:)
-    real(WP)                              :: V_x2(SIZE(x))
-
-    integer :: i
-
-    ! Calculate V_x2
-
-    x_loop : do i = 1,SIZE(x)
-       V_x2(i) = this%V_x2(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function get_V_x2_v
-
-!****
-
-  function get_As_1 (this, x) result (As)
+  function As_1 (this, x) result (As)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
@@ -254,11 +210,11 @@ contains
 
     return
 
-  end function get_As_1
+  end function As_1
 
 !****
 
-  function get_As_v (this, x) result (As)
+  function As_v (this, x) result (As)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
@@ -276,11 +232,11 @@ contains
 
     return
 
-  end function get_As_v
+  end function As_v
 
 !****
 
-  function get_U_1 (this, x) result (U)
+  function U_1 (this, x) result (U)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
@@ -307,11 +263,11 @@ contains
 
     return
 
-  end function get_U_1
+  end function U_1
 
 !****
 
-  function get_U_v (this, x) result (U)
+  function U_v (this, x) result (U)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
@@ -329,11 +285,11 @@ contains
 
     return
 
-  end function get_U_v
+  end function U_v
 
 !****
 
-  function get_c_1_1 (this, x) result (c_1)
+  function c_1_1 (this, x) result (c_1)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
@@ -360,11 +316,11 @@ contains
 
     return
 
-  end function get_c_1_1
+  end function c_1_1
 
 !****
 
-  function get_c_1_v (this, x) result (c_1)
+  function c_1_v (this, x) result (c_1)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
@@ -382,11 +338,11 @@ contains
 
     return
     
-  end function get_c_1_v
+  end function c_1_v
 
 !****
 
-  function get_Gamma_1_1 (this, x) result (Gamma_1)
+  function Gamma_1_1 (this, x) result (Gamma_1)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
@@ -400,11 +356,11 @@ contains
 
     return
 
-  end function get_Gamma_1_1
+  end function Gamma_1_1
 
 !****
   
-  function get_Gamma_1_v (this, x) result (Gamma_1)
+  function Gamma_1_v (this, x) result (Gamma_1)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
@@ -422,11 +378,11 @@ contains
 
     return
 
-  end function get_Gamma_1_v
+  end function Gamma_1_v
 
 !****
 
-  function get_nabla_ad_1 (this, x) result (nabla_ad)
+  function nabla_ad_1 (this, x) result (nabla_ad)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
@@ -440,11 +396,11 @@ contains
 
     return
 
-  end function get_nabla_ad_1
+  end function nabla_ad_1
 
 !****
   
-  function get_nabla_ad_v (this, x) result (nabla_ad)
+  function nabla_ad_v (this, x) result (nabla_ad)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
@@ -462,11 +418,11 @@ contains
 
     return
 
-  end function get_nabla_ad_v
+  end function nabla_ad_v
 
 !****
 
-  function get_delta_1 (this, x) result (delta)
+  function delta_1 (this, x) result (delta)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x
@@ -480,11 +436,11 @@ contains
 
     return
 
-  end function get_delta_1
+  end function delta_1
 
 !****
   
-  function get_delta_v (this, x) result (delta)
+  function delta_v (this, x) result (delta)
 
     class(poly_base_coeffs_t), intent(in) :: this
     real(WP), intent(in)                  :: x(:)
@@ -502,7 +458,24 @@ contains
 
     return
 
-  end function get_delta_v
+  end function delta_v
+
+!****
+
+  function pi_c (this)
+
+    class(poly_base_coeffs_t), intent(in) :: this
+    real(WP)                              :: pi_c
+
+    ! Calculate pi_c = V/x^2 as x -> 0
+
+    pi_c =  (this%n_poly + 1._WP)*this%xi_1**2/3._WP
+
+    ! Finish
+
+    return
+
+  end function pi_c
 
 !****
 

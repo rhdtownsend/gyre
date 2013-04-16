@@ -255,6 +255,8 @@ contains
           call write_dset(hg, 'delS', ef%delS())
        case ('delL')
           call write_dset(hg, 'delL', ef%delL())
+       case ('delL_qad')
+          call write_dset(hg, 'delL_qad', ef%delL(qad=.TRUE.))
        case ('delp')
           call write_dset(hg, 'delp', ef%delp())
        case ('delrho')

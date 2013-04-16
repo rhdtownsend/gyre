@@ -110,7 +110,6 @@ contains
     complex(WP)         :: E_l(this%n_e,this%n_e)
     complex(WP)         :: E_r(this%n_e,this%n_e)
     type(ext_complex_t) :: scale
-    complex(WP)         :: A(this%n_e,this%n_e)
     complex(WP)         :: lambda
 
     if(PRESENT(x_ad)) then
@@ -122,7 +121,7 @@ contains
     ! Set the sysmtx equation blocks by solving IVPs across the
     ! intervals x(k) -> x(k+1)
 
-    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, A, lambda)
+    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda)
     block_loop : do k = 1,SIZE(x)-1
 
        if(x(k) < x_ad_) then
@@ -133,12 +132,10 @@ contains
 
           ! Fix up the thermal parts of the block
 
-          call this%nad_jc%eval_logx(omega, x(k), A)
-
           E_l(1:4,5:6) = 0._WP
           E_r(1:4,5:6) = 0._WP
 
-          E_l(5,:) = A(5,:)
+          E_l(5,:) = diff_coeffs(this%bc, this%tc, this%op, omega, x(k))
           E_r(5,:) = 0._WP
           
           E_l(6,:) = -[0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
@@ -168,6 +165,40 @@ contains
     end do block_loop
 
     ! Finish
+
+  contains
+
+    function diff_coeffs (bc, tc, op, omega, x) result (a)
+
+      class(base_coeffs_t), intent(in)  :: bc
+      class(therm_coeffs_t), intent(in) :: tc
+      type(oscpar_t), intent(in)        :: op
+      complex(WP), intent(in)           :: omega
+      real(WP), intent(in)              :: x
+      complex(WP)                       :: a(6)
+
+      ! Calculate the coefficients of the (algebraic) adiabatic
+      ! diffusion equation
+
+      associate(U => bc%U(x), c_1 => bc%c_1(x), &
+                nabla_ad => bc%nabla_ad(x), &
+                c_rad => this%tc%c_rad(x), c_dif => tc%c_dif(x), nabla => tc%nabla(x), &
+                l => op%l)
+
+        a(1) = (nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+        a(2) = (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
+        a(3) = c_dif
+        a(4) = nabla_ad
+        a(5) = 0._WP
+        a(6) = -nabla/c_rad
+
+      end associate
+
+      ! Finish
+
+      return
+
+    end function diff_coeffs
 
   end subroutine shoot
 

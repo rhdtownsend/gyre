@@ -10,6 +10,7 @@
 &num
 	ivp_solver_type = 'MAGNUS_GL2'
 	n_iter_max = 100
+	theta_ad = 1E-6
 /
 
 &scan

@@ -36,6 +36,7 @@ module gyre_nad_bvp
   use gyre_gridpar
   use gyre_nad_shooter
   use gyre_nad_bound
+  use gyre_nad_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
@@ -62,6 +63,7 @@ module gyre_nad_bvp
      type(sysmtx_t)                     :: sm
      real(WP), allocatable              :: x_in(:)
      real(WP), allocatable              :: x(:)
+     real(WP)                           :: x_ad
      integer                            :: e_norm
      integer, public                    :: n
      integer, public                    :: n_e
@@ -74,6 +76,7 @@ module gyre_nad_bvp
      procedure, public :: get_np
 !     procedure, public :: get_gp
      procedure, public :: set_norm
+     procedure, public :: set_x_ad
      procedure, public :: discrim
      procedure         :: build
      procedure         :: recon
@@ -141,6 +144,8 @@ contains
     call this%sm%init(n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
 
     if(ALLOCATED(x_in)) this%x_in = x_in
+
+    this%x_ad = 0._WP
 
     this%e_norm = 0
 
@@ -265,6 +270,41 @@ contains
 
 !****
 
+  subroutine set_x_ad (this, omega)
+
+    class(nad_bvp_t), intent(inout) :: this
+    complex(WP), intent(in)         :: omega
+
+    type(nad_jacobian_t) :: jc
+    integer              :: k
+    complex(WP)          :: A(this%n_e,this%n_e)
+
+    ! Decide where to switch from the adiabatic equations (interior)
+    ! to the non-adiabastic ones (exterior)
+
+    call jc%init(this%bc, this%tc, this%op)
+
+    this%x_ad = 0._WP
+
+    x_ad_loop : do k = this%n,2,-1
+
+       call jc%eval_logx(omega, this%x(k), A)
+
+       if(MAXVAL(ABS([A(6,1:4),A(6,6)]))/ABS(A(6,5)) < this%np%theta_ad) then
+          this%x_ad = this%x(k)
+          exit x_ad_loop
+       endif
+
+    end do x_ad_loop
+
+    ! Finish
+
+    return
+
+  end subroutine set_x_ad
+
+!****
+
   function discrim (this, omega, norm)
 
     class(nad_bvp_t), intent(inout) :: this
@@ -308,7 +348,7 @@ contains
     call this%sm%set_inner_bound(this%bd%inner_bound(omega))
     call this%sm%set_outer_bound(this%bd%outer_bound(omega))
 
-    call this%sh%shoot(omega, this%x, this%sm)
+    call this%sh%shoot(omega, this%x, this%sm, this%x_ad)
 
     ! Finish
 
