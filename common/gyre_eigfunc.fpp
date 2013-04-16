@@ -104,6 +104,8 @@ contains
     real(WP), intent(in)                           :: x(:)
     complex(WP), intent(in)                        :: y(:,:)
 
+    real(WP) :: phase
+
     $CHECK_BOUNDS(SIZE(y, 1),6)
     $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
 
@@ -120,6 +122,12 @@ contains
     this%omega = omega
 
     this%n = SIZE(this%x)
+
+    ! Normalize by the kinetic energy, and so that y(1,n) is real
+
+    phase = ATAN2(AIMAG(this%y(1,this%n)), REAL(this%y(1,this%n)))
+
+    this%y = this%y/SQRT(this%K())*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
     ! Finish
 
