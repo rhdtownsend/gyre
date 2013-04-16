@@ -527,7 +527,7 @@ contains
 
     associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
               l => this%op%l)
-      dK_dx = (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h))*U*this%x**2/c_1
+      dK_dx = (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*this%x**2/c_1
     end associate
 
     ! Finish
