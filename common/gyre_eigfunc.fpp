@@ -69,6 +69,7 @@ module gyre_eigfunc
      procedure, public :: E
      procedure, public :: K
      procedure, public :: W
+     procedure, public :: omega_im
   end type eigfunc_t
 
   ! Interfaces
@@ -529,7 +530,7 @@ contains
 
     associate(c_thm => this%tc%c_thm(this%x))
 
-      dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI)
+      dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI*REAL(this%omega))
 
     end associate
 
@@ -612,6 +613,56 @@ contains
     return
 
   end function W
+
+!****
+
+  function omega_im (this)
+
+    class(eigfunc_t), intent(in) :: this
+    real(WP)                     :: omega_im
+
+    integer  :: i_trans
+    integer  :: i
+    real(WP) :: dW_dx(this%n)
+    real(WP) :: W
+    
+    ! Estimate the imaginary part of omega by integrating the work
+    ! function out to the thermal transition point
+
+    ! First locate the point
+
+    i_trans = this%n
+
+    do i = this%n-1,1,-1
+
+       associate(c_thm => this%tc%c_thm(this%x(i)), c_rad => this%tc%c_rad(this%x(i)))
+
+         if(REAL(this%omega)*c_thm > c_rad) then
+            i_trans = i
+            exit
+         endif
+
+       end associate
+
+    enddo
+
+    print *,'Truncating at:',this%x(i_trans)
+
+    ! Do the integration
+
+    dW_dx = this%dW_dx()
+
+    W = integrate(this%x(:i_trans), dW_dx(:i_trans))
+
+    ! Calculate omega_im
+
+    omega_im = -REAL(this%omega)*W/(4._WP*PI*this%K())
+
+    ! Finish
+
+    return
+
+  end function omega_im
 
 !****
 
