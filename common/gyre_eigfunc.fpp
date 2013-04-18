@@ -69,6 +69,7 @@ module gyre_eigfunc
      procedure, public :: E
      procedure, public :: K
      procedure, public :: W
+     procedure, public :: omega_im
   end type eigfunc_t
 
   ! Interfaces
@@ -370,16 +371,16 @@ contains
     ! Calculate the Lagrangian specific entropy perturbation in units
     ! of c_p
 
-    associate (l => this%op%l)
+    associate(l => this%op%l)
 
       where (this%x /= 0._WP)
          delS = this%y(5,:)*this%x**(l-2)
       elsewhere
          delS = 0._WP
       end where
-         
-    end associate
 
+    end associate
+         
     ! Finish
 
     return
@@ -388,50 +389,18 @@ contains
 
 !****
 
-  function delL (this, qad)
+  function delL (this)
 
     class(eigfunc_t), intent(in)  :: this
     complex(WP)                   :: delL(this%n)
-    logical, intent(in), optional :: qad
 
-    logical :: qad_
-    
-    if(PRESENT(qad)) then
-       qad_ = qad
-    else
-       qad_ = .FALSE.
-    endif
-    
     ! Calculate the Lagrangian luminosity perturbation in units of R_star
 
-    if(qad_) then
+    associate (l => this%op%l)
 
-       ! Quasi-adiabatic expression (from the adiabatic diffusion
-       ! equation)
+      delL = this%y(6,:)*this%x**(l+1)
 
-       associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
-                 nabla_ad => this%bc%nabla_ad(this%x), &
-                 c_rad => this%tc%c_rad(this%x), c_dif => this%tc%c_dif(this%x), nabla => this%tc%nabla(this%x), &
-                 l => this%op%l, omega => this%omega)
-
-         delL = nabla/c_rad*((nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)*this%y(1,:) + &
-                             (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)*this%y(2,:) + &
-                             c_dif*this%y(3,:) + &
-                             nabla_ad*this%y(4,:))*this%x**(l+1)
-
-       end associate
-
-    else
-
-       ! Non-adiabatic expression
-
-       associate (l => this%op%l)
-
-         delL = this%y(6,:)*this%x**(l+1)
-
-       end associate
-
-    endif
+    end associate
 
     ! Finish
 
@@ -561,7 +530,7 @@ contains
 
     associate(c_thm => this%tc%c_thm(this%x))
 
-      dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI)
+      dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI*REAL(this%omega))
 
     end associate
 
@@ -647,35 +616,53 @@ contains
 
 !****
 
-  function deriv (x, y) result (dy_dx)
+  function omega_im (this)
 
-    real(WP), intent(in) :: x(:)
-    real(WP), intent(in) :: y(:)
-    real(WP)             :: dy_dx(SIZE(x))
+    class(eigfunc_t), intent(in) :: this
+    real(WP)                     :: omega_im
 
-    integer :: n
-    integer :: i
+    integer  :: i_trans
+    integer  :: i
+    real(WP) :: dW_dx(this%n)
+    real(WP) :: W
+    
+    ! Estimate the imaginary part of omega by integrating the work
+    ! function out to the thermal transition point
 
-    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+    ! First locate the point
 
-    ! Differentiate y(x) using centered finite differences
+    i_trans = this%n
 
-    n = SIZE(x)
+    do i = this%n-1,1,-1
 
-    dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
+       associate(c_thm => this%tc%c_thm(this%x(i)), c_rad => this%tc%c_rad(this%x(i)))
 
-    do i = 2,n-1
-       dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
-                          (y(i+1) - y(i))/(x(i+1) - x(i)))
-    end do
+         if(REAL(this%omega)*c_thm > c_rad) then
+            i_trans = i
+            exit
+         endif
 
-    dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
+       end associate
+
+    enddo
+
+    print *,'Truncating at:',this%x(i_trans)
+
+    ! Do the integration
+
+    dW_dx = this%dW_dx()
+
+    W = integrate(this%x(:i_trans), dW_dx(:i_trans))
+
+    ! Calculate omega_im
+
+    omega_im = -REAL(this%omega)*W/(4._WP*PI*this%K())
 
     ! Finish
 
     return
 
-  end function deriv
+  end function omega_im
 
 !****
 
