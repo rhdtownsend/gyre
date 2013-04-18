@@ -96,7 +96,8 @@ contains
     real(WP), intent(in)                   :: Gamma_1
     character(LEN=*), intent(in)           :: deriv_type
 
-    integer :: n
+    integer  :: n
+    real(WP) :: d2Theta(SIZE(xi))
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
 
@@ -104,10 +105,22 @@ contains
 
     n = SIZE(xi)
 
-    call this%sp_Theta%init(xi, Theta, deriv_type, &
-                            dy_dx_a=0._WP, dy_dx_b=dTheta(n))
-    call this%sp_dTheta%init(xi, dTheta, deriv_type, &
-                             dy_dx_a=-1._WP/3._WP, dy_dx_b=-2._WP*dTheta(n)/xi(n))
+    if(n_poly /= 0._WP) then
+
+       where (xi /= 0._WP)
+          d2Theta = -2._WP*dTheta/xi - Theta**n_poly
+       elsewhere
+          d2Theta = -1._WP/3._WP
+       end where
+
+    else
+
+       d2Theta = -1._WP/3._WP
+
+    endif
+
+    call this%sp_Theta%init(xi, Theta, dTheta)
+    call this%sp_dTheta%init(xi, dTheta, d2Theta)
 
     this%n_poly = n_poly
     this%dt_Gamma_1 = Gamma_1
