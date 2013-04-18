@@ -58,6 +58,8 @@ contains
     integer        :: n_g(SIZE(ef))
     real(WP)       :: E(SIZE(ef))
     real(WP)       :: K(SIZE(ef))
+    real(WP)       :: W(SIZE(ef))
+    real(WP)       :: omega_im(SIZE(ef))
     integer        :: j
     type(hgroup_t) :: hg
 
@@ -71,6 +73,9 @@ contains
 
        E(i) = ef(i)%E()
        K(i) = ef(i)%K()
+
+       W(i) = ef(i)%W()
+       omega_im(i) = ef(i)%omega_im()
 
     end do ef_loop
 
@@ -103,6 +108,10 @@ contains
           call write_dset(hg, 'E', E)
        case('K')
           call write_dset(hg, 'K', K)
+       case('W')
+          call write_dset(hg, 'W', W)
+       case('omega_im')
+          call write_dset(hg, 'omega_im', omega_im)
        case default
           select type (bc)
           type is (evol_base_coeffs_t)
@@ -227,6 +236,8 @@ contains
           call write_attr(hg, 'K', ef%K())
        case ('W')
           call write_attr(hg, 'W', ef%W())
+       case('omega_im')
+          call write_attr(hg, 'omega_im', ef%omega_im())
        case ('x')
           call write_dset(hg, 'x', ef%x)
        case('V')
