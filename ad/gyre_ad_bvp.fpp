@@ -379,8 +379,8 @@ contains
        call recon_y_6(this, omega, x, y_6)
        call recon_y_5(this, omega, x, y_6)
     else
-       y(5,:) = 0._WP
-       y(6,:) = 0._WP
+       y_6(5,:) = 0._WP
+       y_6(6,:) = 0._WP
     end if
 
     ! Initialize the eigfunc
