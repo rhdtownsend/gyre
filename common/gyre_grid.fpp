@@ -39,7 +39,7 @@ module gyre_grid
   ! Derived-type definitions (used internally for root-finding)
 
   type, extends (func_t) :: geom_func_t
-     real(WP) :: dx_1
+     real(WP) :: s
      integer  :: n
    contains
      procedure :: eval_c => eval_geom_func
@@ -149,63 +149,83 @@ contains
     integer, intent(in)                :: n
     real(WP), allocatable, intent(out) :: x(:)
 
-    real(WP)          :: dx_1
-    real(WP)          :: g_a
-    real(WP)          :: g_b
-    real(WP)          :: g
+    integer           :: m
+    real(WP)          :: sigma_a
+    real(WP)          :: sigma_b
+    real(WP)          :: sigma
     type(geom_func_t) :: gf
+    real(WP)          :: dx
     integer           :: k
 
-    ! Create an n-point grid where the points follow a geometric
-    ! progression in each half of the [0,1] interval. The parameter s
-    ! controls the ratio between the boundary cell size and the
-    ! average cell size 1/(n-1)
+    ! Create an n-point grid with geometric spacing in each half of the
+    ! [0,1] interval. The parameter s controls the ratio between the
+    ! boundary cell size and the average cell size 1/(n-1)
 
     allocate(x(n))
-
-    dx_1 = 1._WP/(s*(n-1))
 
     if(MOD(n, 2) == 0) then
 
        ! Even number of grid points / odd number of cells
 
-       ! Solve for the growth factor g
+       ! Solve for the growth factor sigma. The upper bound is derived
+       ! by applying a Taylor expansion to the equation for sigma
 
-       gf%dx_1 = dx_1
+       m = n/2-1
+
        gf%n = n
+       gf%s = s
 
-       g_a = 1._WP
-       g_b = (0.5_WP/dx_1)**(1._WP/(n/2-1))
+       sigma_a = EPSILON(0._WP)
+       sigma_b = (s*(n-1)-2*m-1)/m
 
-       g = gf%root(g_a, g_b, 0._WP)
+       sigma = gf%root(sigma_a, sigma_b, 0._WP)
 
        ! Set up the inner part of the grid
 
        x(1) = 0._WP
-       x(2:n/2) = [(dx_1*g**(k-1),k=2,n/2)]
+       dx = 1._WP/(s*(n-1))
+       
+       even_grid_loop : do k = 1,m
+          x(k+1) = x(k) + dx
+          dx = (1._WP+sigma)*dx
+       end do even_grid_loop
 
        ! Reflect to get the outer part of the grid
 
-       x(n/2+1:) = 1._WP - x(n/2:1:-1)
+       x(m+2:) = 1._WP - x(m+1:1:-1)
 
     else
 
        ! Odd number of grid points / even number of cells
 
-       ! Solve for the growth factor g
+       ! Solve for the growth factor sigma. The upper bound is derived
+       ! by applying a Taylor expansion to the equation for sigma
 
-       g = (0.5_WP/dx_1)**(1._WP/((n-1)/2))
+       m = (n-1)/2
+
+       gf%n = n
+       gf%s = s
+
+       sigma_a = EPSILON(0._WP)
+       sigma_b = (s*(n-1)-2*m)/(m*(m-1))
+
+       sigma = gf%root(sigma_a, sigma_b, 0._WP)
 
        ! Set up the inner part of the grid
 
        x(1) = 0._WP
-       x(2:(n-1)/2) = [(dx_1*g**(k-1),k=2,(n-1)/2)]
-
-       x((n+1)/2) = 0.5_WP
+       dx = 1._WP/(s*(n-1))
+       
+       odd_grid_loop : do k = 1,m-1
+          x(k+1) = x(k) + dx
+          dx = (1._WP+sigma)*dx
+       end do odd_grid_loop
 
        ! Reflect to get the outer part of the grid
 
-       x((n+3)/2:) = 1._WP - x((n-1)/2:1:-1)
+       x(m+1:) = 0.5_WP
+
+       x(m+2:) = 1._WP - x(m:1:-1)
 
     end if
 
@@ -223,13 +243,34 @@ contains
     complex(WP), intent(in)           :: z
     complex(WP)                       :: f_z
 
-    real(WP) :: g
+    real(WP) :: sigma
+    integer  :: m
 
     ! Calcuate the discriminant for the geom grid growth factor
 
-    g = REAL(z)
+    sigma = REAL(z)
 
-    f_z = g**(this%n/2-1) + g**(this%n/2) - 1._WP/this%dx_1
+    if(MOD(this%n, 2) == 0) then
+
+       m = this%n/2-1
+
+       if(1._WP+sigma > HUGE(0._WP)**(1._WP/m)) then
+          f_z = - (2._WP + sigma)
+       else
+          f_z = (2._WP + this%s*(this%n-1)*sigma)/(1._WP + sigma)**m - (2._WP + sigma)
+       endif
+
+    else
+
+       m = (this%n-1)/2
+
+       if(1._WP+sigma > HUGE(0._WP)**(1._WP/m)) then
+          f_z = -2._WP
+       else
+          f_z = (2._WP + this%s*(this%n-1)*sigma)/(1._WP + sigma)**m - 2._WP
+       endif
+
+    endif
 
     ! Finish
 
