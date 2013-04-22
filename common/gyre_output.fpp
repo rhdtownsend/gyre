@@ -52,30 +52,23 @@ contains
     character(LEN=*), intent(in)     :: items(:)
     character(LEN=*), intent(in)     :: freq_units
 
+    integer        :: n_ef
     integer        :: i
     complex(WP)    :: freq(SIZE(ef))
     integer        :: n_p(SIZE(ef))
     integer        :: n_g(SIZE(ef))
-    real(WP)       :: E(SIZE(ef))
-    real(WP)       :: K(SIZE(ef))
-    real(WP)       :: W(SIZE(ef))
-    real(WP)       :: omega_im(SIZE(ef))
     integer        :: j
     type(hgroup_t) :: hg
 
     ! Calculate summary data
 
-    ef_loop : do i = 1,SIZE(ef)
+    n_ef = SIZE(ef)
+
+    ef_loop : do i = 1,n_ef
 
        freq(i) = bc%conv_freq(ef(i)%omega, 'NONE', freq_units)
 
        call ef(i)%classify(n_p(i), n_g(i))
-
-       E(i) = ef(i)%E()
-       K(i) = ef(i)%K()
-
-       W(i) = ef(i)%W()
-       omega_im(i) = ef(i)%omega_im()
 
     end do ef_loop
 
@@ -105,13 +98,13 @@ contains
           call write_dset(hg, 'freq', freq)
           call write_attr(hg, 'freq_units', freq_units)
        case('E')
-          call write_dset(hg, 'E', E)
+          call write_dset(hg, 'E', [(ef(i)%E(), i=1,n_ef)])
        case('K')
-          call write_dset(hg, 'K', K)
+          call write_dset(hg, 'K', [(ef(i)%K(), i=1,n_ef)])
        case('W')
-          call write_dset(hg, 'W', W)
+          call write_dset(hg, 'W', [(ef(i)%W(), i=1,n_ef)])
        case('omega_im')
-          call write_dset(hg, 'omega_im', omega_im)
+          call write_dset(hg, 'omega_im', [(ef(i)%omega_im(), i=1,n_ef)])
        case default
           select type (bc)
           type is (evol_base_coeffs_t)
