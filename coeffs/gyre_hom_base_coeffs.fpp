@@ -54,7 +54,6 @@ module gyre_hom_base_coeffs
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
      procedure, public :: pi_c
-     procedure, public :: conv_freq
   end type hom_base_coeffs_t
 
   ! Interfaces
@@ -412,48 +411,5 @@ contains
     return
 
   end function pi_c
-
-!****
-
-  function conv_freq (this, freq, from_units, to_units)
-
-    class(hom_base_coeffs_t), intent(in) :: this
-    complex(WP), intent(in)              :: freq
-    character(LEN=*), intent(in)         :: from_units
-    character(LEN=*), intent(in)         :: to_units
-    complex(WP)                          :: conv_freq
-
-    ! Convert the frequency
-
-    conv_freq = freq/freq_scale(from_units)*freq_scale(to_units)
-
-    ! Finish
-
-    return
-
-  contains
-
-    function freq_scale (units)
-
-      character(LEN=*), intent(in) :: units
-      real(WP)                     :: freq_scale
-
-      ! Calculate the scale factor to convert a dimensionless angular
-      ! frequency to a dimensioned frequency
-
-      select case (units)
-      case ('NONE')
-         freq_scale = 1._WP
-      case default
-         $ABORT(Invalid units)
-      end select
-
-      ! Finish
-
-      return
-
-    end function freq_scale
-
-  end function conv_freq
 
 end module gyre_hom_base_coeffs
