@@ -87,7 +87,7 @@ program gyre_ad
      call init_coeffs(unit, x_bc, bc, tc)
      call init_oscpar(unit, op)
      call init_numpar(unit, np)
-     call init_scan(unit, bc, omega)
+     call init_scan(unit, bc, op, omega)
      call init_shoot_grid(unit, MINVAL(omega), MAXVAL(omega), shoot_gp)
      call init_recon_grid(unit, 0._WP, 0._WP, recon_gp)
 
@@ -107,7 +107,7 @@ program gyre_ad
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_data(unit, ef, bc)
+     call write_data(unit, ef)
   endif
 
   ! Finish
