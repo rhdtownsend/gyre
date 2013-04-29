@@ -50,7 +50,6 @@ module gyre_ad_bound
      procedure, public :: outer_bound_dziem
      procedure, public :: outer_bound_unno
      procedure, public :: outer_bound_jcd
-     procedure, public :: eval_cutoffs
   end type ad_bound_t
 
   ! Access specifiers
@@ -58,6 +57,7 @@ module gyre_ad_bound
   private
 
   public :: ad_bound_t
+  public :: eval_cutoffs
 
   ! Procedures
 
@@ -444,33 +444,34 @@ contains
 
 !****
 
-  subroutine eval_cutoffs (this, omega_cutoff_lo, omega_cutoff_hi)
+  subroutine eval_cutoffs (bc, op, omega_cutoff_lo, omega_cutoff_hi)
 
-    class(ad_bound_t), intent(in) :: this
-    real(WP), intent(out)         :: omega_cutoff_lo
-    real(WP), intent(out)         :: omega_cutoff_hi
+    class(base_coeffs_t), intent(in) :: bc
+    type(oscpar_t), intent(in)       :: op
+    real(WP), intent(out)            :: omega_cutoff_lo
+    real(WP), intent(out)            :: omega_cutoff_hi
 
     real(WP) :: V_g
     real(WP) :: As
 
     ! Calculate coefficients at the outer boundary
 
-    select case (this%op%outer_bound_type)
+    select case (op%outer_bound_type)
     case ('ZERO')
        $ABORT(Cutoff frequencies are undefined for ZERO outer_bound_type)
     case ('DZIEM')
        $ABORT(Cutoff frequencies are undefined for DZIEM outer_bound_type)
     case ('UNNO')
-       call eval_outer_coeffs_unno(this%bc, V_g, As)
+       call eval_outer_coeffs_unno(bc, V_g, As)
     case('JCD')
-       call eval_outer_coeffs_jcd(this%bc, V_g, As)
+       call eval_outer_coeffs_jcd(bc, V_g, As)
     case default
        $ABORT(Invalid outer_bound_type)
     end select
 
     ! Evaluate the cutoff freqs
 
-    call eval_cutoffs_from_coeffs(V_g, As, this%op%l, omega_cutoff_lo, omega_cutoff_hi)
+    call eval_cutoffs_from_coeffs(V_g, As, op%l, omega_cutoff_lo, omega_cutoff_hi)
 
     ! Finish
 
