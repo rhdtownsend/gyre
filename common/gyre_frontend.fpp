@@ -567,10 +567,15 @@ contains
 
     function evol_freq_scale (bc, op, freq_units) result (freq_scale)
 
+      use gyre_ad_bound
+
       class(evol_base_coeffs_t), intent(in) :: bc
       type(oscpar_t), intent(in)            :: op
       character(LEN=*), intent(in)          :: freq_units
       real(WP)                              :: freq_scale
+
+      real(WP) :: omega_cutoff_lo
+      real(WP) :: omega_cutoff_hi
 
       ! Calculate the scale factor to convert a dimensionless angular
       ! frequency to a dimensioned frequency
@@ -582,6 +587,12 @@ contains
          freq_scale = 1._WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
       case('UHZ')
          freq_scale = 1.E6_WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
+      case('ACOUSTIC_CUTOFF')
+         call eval_cutoffs(bc, op, omega_cutoff_lo, omega_cutoff_hi)
+         freq_scale = 1._WP/omega_cutoff_hi
+      case('GRAVITY_CUTOFF')
+         call eval_cutoffs(bc, op, omega_cutoff_lo, omega_cutoff_hi)
+         freq_scale = 1._WP/omega_cutoff_lo
       case default
          $ABORT(Invalid freq_units)
       end select
