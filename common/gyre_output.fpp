@@ -44,13 +44,12 @@ module gyre_output
 
 contains
 
-  subroutine write_summary (file, ef, bc, items, freq_units)
+  subroutine write_summary (file, ef, items, freq_scale)
 
-    character(LEN=*), intent(in)     :: file
-    type(eigfunc_t), intent(in)      :: ef(:)
-    class(base_coeffs_t), intent(in) :: bc
-    character(LEN=*), intent(in)     :: items(:)
-    character(LEN=*), intent(in)     :: freq_units
+    character(LEN=*), intent(in) :: file
+    type(eigfunc_t), intent(in)  :: ef(:)
+    character(LEN=*), intent(in) :: items(:)
+    real(WP), intent(in)         :: freq_scale
 
     integer        :: n_ef
     integer        :: i
@@ -66,7 +65,7 @@ contains
 
     ef_loop : do i = 1,n_ef
 
-       freq(i) = bc%conv_freq(ef(i)%omega, 'NONE', freq_units)
+       freq(i) = ef(i)%omega*freq_scale
 
        call ef(i)%classify(n_p(i), n_g(i))
 
@@ -96,7 +95,6 @@ contains
           call write_dset(hg, 'omega', ef%omega)
        case ('freq')
           call write_dset(hg, 'freq', freq)
-          call write_attr(hg, 'freq_units', freq_units)
        case('E')
           call write_dset(hg, 'E', [(ef(i)%E(), i=1,n_ef)])
        case('K')
@@ -106,7 +104,7 @@ contains
        case('omega_im')
           call write_dset(hg, 'omega_im', [(ef(i)%omega_im(), i=1,n_ef)])
        case default
-          select type (bc)
+          select type (bc => ef(i)%bc)
           type is (evol_base_coeffs_t)
              call write_summary_evol(hg, bc, items(j))
           type is (poly_base_coeffs_t)
@@ -181,14 +179,13 @@ contains
 
 !****
 
-  subroutine write_mode (file, ef, bc, items, freq_units, i)
+  subroutine write_mode (file, ef, items, freq_scale, i)
 
-    character(LEN=*), intent(in)     :: file
-    type(eigfunc_t), intent(in)      :: ef
-    class(base_coeffs_t), intent(in) :: bc
-    character(LEN=*), intent(in)     :: items(:)
-    character(LEN=*), intent(in)     :: freq_units
-    integer, intent(in)              :: i
+    character(LEN=*), intent(in) :: file
+    type(eigfunc_t), intent(in)  :: ef
+    character(LEN=*), intent(in) :: items(:)
+    real(WP), intent(in)         :: freq_scale
+    integer, intent(in)          :: i
 
     integer        :: n_p
     integer        :: n_g
@@ -221,8 +218,7 @@ contains
        case ('omega')
           call write_attr(hg, 'omega', ef%omega)
        case ('freq')
-          call write_attr(hg, 'freq', bc%conv_freq(ef%omega, 'NONE', freq_units))
-          call write_attr(hg, 'freq_units', freq_units)
+          call write_attr(hg, 'freq', ef%omega*freq_scale)
        case ('E')
           call write_attr(hg, 'E', ef%E())
        case ('K')
@@ -234,19 +230,19 @@ contains
        case ('x')
           call write_dset(hg, 'x', ef%x)
        case('V')
-          call write_dset(hg, 'V', bc%V(ef%x))
+          call write_dset(hg, 'V', ef%bc%V(ef%x))
        case('As')
-          call write_dset(hg, 'As', bc%As(ef%x))
+          call write_dset(hg, 'As', ef%bc%As(ef%x))
        case('U')
-          call write_dset(hg, 'U', bc%U(ef%x))
+          call write_dset(hg, 'U', ef%bc%U(ef%x))
        case('c_1')
-          call write_dset(hg, 'c_1', bc%c_1(ef%x))
+          call write_dset(hg, 'c_1', ef%bc%c_1(ef%x))
        case ('Gamma_1')
-          call write_dset(hg, 'Gamma_1', bc%Gamma_1(ef%x))
+          call write_dset(hg, 'Gamma_1', ef%bc%Gamma_1(ef%x))
        case ('nabla_ad')
-          call write_dset(hg, 'nabla_ad', bc%nabla_ad(ef%x))
+          call write_dset(hg, 'nabla_ad', ef%bc%nabla_ad(ef%x))
        case ('delta')
-          call write_dset(hg, 'delta', bc%delta(ef%x))
+          call write_dset(hg, 'delta', ef%bc%delta(ef%x))
        case ('xi_r')
           call write_dset(hg, 'xi_r', ef%xi_r())
        case ('xi_h')
@@ -270,7 +266,7 @@ contains
        case ('dW_dx')
           call write_dset(hg, 'dW_dx', ef%dW_dx())
        case default
-          select type (bc)
+          select type (bc => ef%bc)
           type is (evol_base_coeffs_t)
              call write_mode_evol(hg, bc, items(j))
           type is (poly_base_coeffs_t)
