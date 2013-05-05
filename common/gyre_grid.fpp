@@ -150,9 +150,9 @@ contains
     real(WP), allocatable, intent(out) :: x(:)
 
     integer           :: m
-    real(WP)          :: sigma_a
-    real(WP)          :: sigma_b
-    real(WP)          :: sigma
+    real(WP)          :: g_a
+    real(WP)          :: g_b
+    real(WP)          :: g
     type(geom_func_t) :: gf
     real(WP)          :: dx
     integer           :: k
@@ -167,18 +167,18 @@ contains
 
        ! Even number of grid points / odd number of cells
 
-       ! Solve for the growth factor sigma. The upper bound is derived
-       ! by applying a Taylor expansion to the equation for sigma
+       ! Solve for the growth factor g. The upper bound is derived
+       ! by applying a Taylor expansion to the equation for g
 
        m = n/2-1
 
        gf%n = n
        gf%s = s
 
-       sigma_a = EPSILON(0._WP)
-       sigma_b = (s*(n-1)-2*m-1)/m
+       g_a = EPSILON(0._WP)
+       g_b = (s*(n-1)-2*m-1)/m
 
-       sigma = gf%root(sigma_a, sigma_b, 0._WP)
+       g = gf%root(g_a, g_b, 0._WP)
 
        ! Set up the inner part of the grid
 
@@ -187,7 +187,7 @@ contains
        
        even_grid_loop : do k = 1,m
           x(k+1) = x(k) + dx
-          dx = (1._WP+sigma)*dx
+          dx = (1._WP+g)*dx
        end do even_grid_loop
 
        ! Reflect to get the outer part of the grid
@@ -198,18 +198,18 @@ contains
 
        ! Odd number of grid points / even number of cells
 
-       ! Solve for the growth factor sigma. The upper bound is derived
-       ! by applying a Taylor expansion to the equation for sigma
+       ! Solve for the growth factor g. The upper bound is derived
+       ! by applying a Taylor expansion to the equation for g
 
        m = (n-1)/2
 
        gf%n = n
        gf%s = s
 
-       sigma_a = EPSILON(0._WP)
-       sigma_b = (s*(n-1)-2*m)/(m*(m-1))
+       g_a = EPSILON(0._WP)
+       g_b = (s*(n-1)-2*m)/(m*(m-1))
 
-       sigma = gf%root(sigma_a, sigma_b, 0._WP)
+       g = gf%root(g_a, g_b, 0._WP)
 
        ! Set up the inner part of the grid
 
@@ -218,7 +218,7 @@ contains
        
        odd_grid_loop : do k = 1,m-1
           x(k+1) = x(k) + dx
-          dx = (1._WP+sigma)*dx
+          dx = (1._WP+g)*dx
        end do odd_grid_loop
 
        ! Reflect to get the outer part of the grid
@@ -243,31 +243,31 @@ contains
     complex(WP), intent(in)           :: z
     complex(WP)                       :: f_z
 
-    real(WP) :: sigma
+    real(WP) :: g
     integer  :: m
 
     ! Calcuate the discriminant for the geom grid growth factor
 
-    sigma = REAL(z)
+    g = REAL(z)
 
     if(MOD(this%n, 2) == 0) then
 
        m = this%n/2-1
 
-       if(1._WP+sigma > HUGE(0._WP)**(1._WP/m)) then
-          f_z = - (2._WP + sigma)
+       if(1._WP+g > HUGE(0._WP)**(1._WP/m)) then
+          f_z = - (2._WP + g)
        else
-          f_z = (2._WP + this%s*(this%n-1)*sigma)/(1._WP + sigma)**m - (2._WP + sigma)
+          f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - (2._WP + g)
        endif
 
     else
 
        m = (this%n-1)/2
 
-       if(1._WP+sigma > HUGE(0._WP)**(1._WP/m)) then
+       if(1._WP+g > HUGE(0._WP)**(1._WP/m)) then
           f_z = -2._WP
        else
-          f_z = (2._WP + this%s*(this%n-1)*sigma)/(1._WP + sigma)**m - 2._WP
+          f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - 2._WP
        endif
 
     endif
