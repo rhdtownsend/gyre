@@ -64,10 +64,10 @@ module gyre_eigfunc
      procedure, public :: delp
      procedure, public :: delrho
      procedure, public :: delT
-     procedure, public :: dK_dx
+     procedure, public :: dE_dx
      procedure, public :: dW_dx
      procedure, public :: E
-     procedure, public :: K
+     procedure, public :: E_norm
      procedure, public :: W
      procedure, public :: omega_im
   end type eigfunc_t
@@ -124,11 +124,11 @@ contains
 
     this%n = SIZE(this%x)
 
-    ! Normalize by the kinetic energy, and so that y(1,n) is real
+    ! Normalize by the mode inertia, and so that y(1,n) is real
 
     phase = ATAN2(AIMAG(this%y(1,this%n)), REAL(this%y(1,this%n)))
 
-    this%y = this%y/SQRT(this%K())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+    this%y = this%y/SQRT(this%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
     ! Finish
 
@@ -494,29 +494,30 @@ contains
 
 !****
 
-  function dK_dx (this)
+  function dE_dx (this)
 
     class(eigfunc_t), intent(in) :: this
-    real(WP)                     :: dK_dx(this%n)
+    real(WP)                     :: dE_dx(this%n)
 
     complex(WP) :: xi_r(this%n)
     complex(WP) :: xi_h(this%n)
     
-    ! Calculate the differential kinetic energy in units of G M_star^2/R_star
+    ! Calculate the differential mode inertia (Aerts et al. 2010,
+    ! eqn. 3.139) in units of M_star R_star**2
 
     xi_r = this%xi_r()
     xi_h = this%xi_h()
 
     associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
               l => this%op%l)
-      dK_dx = (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*this%x**2/c_1
+      dE_dx = 4._WP*PI*(ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*this%x**2/c_1
     end associate
 
     ! Finish
 
     return
 
-  end function dK_dx
+  end function dE_dx
 
 !****
 
@@ -545,23 +546,40 @@ contains
 
   end function dW_dx
 
-!****
+!*****
 
   function E (this)
 
     class(eigfunc_t), intent(in) :: this
     real(WP)                     :: E
+    
+    ! Calculate the total mode inertia (Aerts et al. 2010, eqn. 3.139)
+    ! in units of M_star R_star**2
 
-    real(WP)    :: K
+    E = integrate(this%x, this%dE_dx())
+
+    ! Finish
+
+    return
+
+  end function E
+
+!****
+
+  function E_norm (this)
+
+    class(eigfunc_t), intent(in) :: this
+    real(WP)                     :: E_norm
+
+    real(WP)    :: E
     complex(WP) :: xi_r(this%n)
     complex(WP) :: xi_h(this%n)
     real(WP)    :: A2
 
-    ! Calculate the normalized mode inertia, using the expression
-    ! given by Christensen-Dalsgaard (2011, arXiv:1106.5946, his
-    ! eqn. 2.32)
+    ! Calculate the normalized mode inertia (Aerts et al. 2010,
+    ! eqn. 3.140)
 
-    K = this%K()
+    E = this%E()
 
     xi_r = this%xi_r()
     xi_h = this%xi_h()
@@ -572,9 +590,9 @@ contains
 
       if(A2 == 0._WP) then
          $WARN(Surface amplitude is zero; not normalizing inertia)
-         E = K
+         E_norm = E
       else
-         E = K/A2
+         E_norm = E/A2
       endif
 
     end associate
@@ -583,24 +601,7 @@ contains
 
     return
 
-  end function E
-
-!*****
-
-  function K (this)
-
-    class(eigfunc_t), intent(in) :: this
-    real(WP)                     :: K
-    
-    ! Calculate the kinetic energy
-
-    K = integrate(this%x, this%dK_dx())
-
-    ! Finish
-
-    return
-
-  end function K
+  end function E_norm
 
 !*****
 
@@ -661,7 +662,7 @@ contains
 
     ! Calculate omega_im
 
-    omega_im = -REAL(this%omega)*W/(4._WP*PI*this%K())
+    omega_im = -REAL(this%omega)*W/this%E()
 
     ! Finish
 
