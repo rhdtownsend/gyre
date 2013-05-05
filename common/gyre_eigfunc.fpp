@@ -177,24 +177,29 @@ contains
     integer  :: i
     real(WP) :: y_2_cross
 
-    ! Classify the eigenfunction using the Cowling-Scuflaire scheme
+    ! Classify the eigenfunction using the Eckart-Scuflaire-Osaki scheme
 
     y_1 = REAL(this%y(1,:))
     y_2 = REAL(this%y(2,:))
 
-    n_p = 0
-    n_g = 0
+    if(this%op%l == 0) then
+       n_p = 1
+       n_g = 0
+       inner_ext = .FALSE.
+    else
+       n_p = 0
+       n_g = 0
+    endif
  
-    inner_ext = ABS(y_1(1)) > ABS(y_1(2))
+    x_loop : do i = 1,this%n-1
 
-    x_loop : do i = 2,this%n-1
+       ! If this is a radial mode, and extremum in y_1 hasn't yet been
+       ! reached, skip (this is to deal with noisy near-zero solutions
+       ! at the origin)
 
-       ! If the innermost extremum in y_1 hasn't yet been reached,
-       ! skip
-
-       if(.NOT. inner_ext) then
-          inner_ext = ABS(y_1(i)) > ABS(y_1(i-1)) .AND. ABS(y_1(i)) > ABS(y_1(i+1))
-          cycle x_loop
+       if(this%op%l == 0) then
+          if(i > 1 .AND. .NOT. inner_ext) inner_ext = ABS(y_1(i)) > ABS(y_1(i-1)) .AND. ABS(y_1(i)) > ABS(y_1(i+1))
+          if(.NOT. inner_ext) cycle x_loop
        endif
 
        ! Look for a node in xi_r
