@@ -104,7 +104,7 @@ contains
        case('omega_im')
           call write_dset(hg, 'omega_im', [(ef(i)%omega_im(), i=1,n_ef)])
        case default
-          select type (bc => ef(i)%bc)
+          select type (bc => ef(1)%bc)
           type is (evol_base_coeffs_t)
              call write_summary_evol(hg, bc, items(j))
           type is (poly_base_coeffs_t)
