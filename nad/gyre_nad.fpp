@@ -47,6 +47,7 @@ program gyre_nad
 
   ! Variables
 
+  character(LEN=:), allocatable      :: filename
   integer                            :: unit
   real(WP), allocatable              :: x_bc(:)
   class(base_coeffs_t), allocatable  :: bc
@@ -77,7 +78,9 @@ program gyre_nad
      write(OUTPUT_UNIT, 110) 'MPI Processors  : ', MPI_SIZE
 110  format(A,I0)
      
-     call open_input(unit)
+     call parse_args(filename)
+     
+     open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
   endif
 
@@ -118,6 +121,8 @@ program gyre_nad
   endif
 
   ! Finish
+
+  close(unit)
 
   call final_parallel()
 

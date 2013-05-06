@@ -36,15 +36,22 @@ module gyre_grid
 
   implicit none
 
-  ! Derived-type definitions
+  ! Derived-type definitions (used internally for root-finding)
 
-  type, extends (func_t) :: gamma_t
+  type, extends (func_t) :: geom_func_t
+     real(WP) :: s
+     integer  :: n
+   contains
+     procedure :: eval_c => eval_geom_func
+  end type geom_func_t
+
+  type, extends (func_t) :: gamma_func_t
      class(base_coeffs_t), pointer :: bc => null()
      type(oscpar_t), pointer       :: op => null()
      real(WP)                      :: omega
    contains
-     procedure :: eval_c => eval_gamma
-  end type gamma_t
+     procedure :: eval_c => eval_gamma_func
+  end type gamma_func_t
 
   ! Access specifiers
 
@@ -73,8 +80,11 @@ contains
     select case (gp(1)%op_type)
     case ('CREATE_CLONE')
        x = x_in
+    case ('CREATE_UNIFORM')
+       call create_uniform(gp(1)%n, x)
     case ('CREATE_GEOM')
        call create_geom(gp(1)%s, gp(1)%n, x)
+       x = 1._WP - x(gp(1)%n:1:-1)
     case ('CREATE_LOG')
        call create_log(gp(1)%s, gp(1)%n, x)
     case default
@@ -105,19 +115,51 @@ contains
           
 !****
 
+  subroutine create_uniform (n, x)
+
+    integer, intent(in)                :: n
+    real(WP), allocatable, intent(out) :: x(:)
+
+    integer :: i
+
+    ! Create an n-point grid with uniform spacing across the [0,1]
+    ! interval
+
+    allocate(x(n))
+
+    x(1) = 0._WP
+
+    grid_loop : do i = 2,n-1
+       x(i) = (i-1._WP)/(n-1._WP)
+    end do grid_loop
+
+    x(n) = 1._WP
+
+    ! Finish
+
+    return
+
+  end subroutine create_uniform
+
+!****
+
   subroutine create_geom (s, n, x)
 
     real(WP), intent(in)               :: s
     integer, intent(in)                :: n
     real(WP), allocatable, intent(out) :: x(:)
 
-    integer  :: m
-    integer  :: k
-    real(WP) :: dx_1
+    integer           :: m
+    real(WP)          :: g_a
+    real(WP)          :: g_b
+    real(WP)          :: g
+    type(geom_func_t) :: gf
+    real(WP)          :: dx
+    integer           :: k
 
     ! Create an n-point grid with geometric spacing in each half of the
     ! [0,1] interval. The parameter s controls the ratio between the
-    ! central cell size and the boundary cell size
+    ! boundary cell size and the average cell size 1/(n-1)
 
     allocate(x(n))
 
@@ -125,55 +167,63 @@ contains
 
        ! Even number of grid points / odd number of cells
 
-       ! Solve for the size of the boundary cells
+       ! Solve for the growth factor g. The upper bound is derived
+       ! by applying a Taylor expansion to the equation for g
 
-       m = n/2
+       m = n/2-1
 
-       $if($GFORTRAN_PR_56872)
-       dx_1 = 0.5_WP/(SUM(s**[(REAL(k-1, WP)/REAL(m-1, WP),k=1,m)]) - &
-                      0.5_WP*s)
-       $else
-       dx_1 = 0.5_WP/(SUM([(s**(REAL(k-1, WP)/REAL(m-1, WP)),k=1,m)]) - &
-                      0.5_WP*s)
-       $endif
+       gf%n = n
+       gf%s = s
+
+       g_a = EPSILON(0._WP)
+       g_b = (s*(n-1)-2*m-1)/m
+
+       g = gf%root(g_a, g_b, 0._WP)
 
        ! Set up the inner part of the grid
 
        x(1) = 0._WP
+       dx = 1._WP/(s*(n-1))
        
-       even_grid_loop : do k = 2,m
-          x(k) = x(k-1) + dx_1*s**(REAL(k-2, WP)/REAL(m-1, WP))
+       even_grid_loop : do k = 1,m
+          x(k+1) = x(k) + dx
+          dx = (1._WP+g)*dx
        end do even_grid_loop
 
        ! Reflect to get the outer part of the grid
 
-       x(m+1:) = 1._WP - x(m:1:-1)
+       x(m+2:) = 1._WP - x(m+1:1:-1)
 
     else
 
        ! Odd number of grid points / even number of cells
 
-       ! Solve for the size of the boundary cells
+       ! Solve for the growth factor g. The upper bound is derived
+       ! by applying a Taylor expansion to the equation for g
 
        m = (n-1)/2
 
-       $if($GFORTRAN_PR_56872)
-       dx_1 = 0.5_WP/(SUM(s**[(REAL(k-1, WP)/REAL(m-1, WP),k=1,m)]))
-       $else
-       dx_1 = 0.5_WP/(SUM([(s**(REAL(k-1, WP)/REAL(m-1, WP)),k=1,m)]))
-       $endif
+       gf%n = n
+       gf%s = s
+
+       g_a = EPSILON(0._WP)
+       g_b = (s*(n-1)-2*m)/(m*(m-1))
+
+       g = gf%root(g_a, g_b, 0._WP)
 
        ! Set up the inner part of the grid
 
        x(1) = 0._WP
+       dx = 1._WP/(s*(n-1))
        
-       odd_grid_loop : do k = 2,m
-          x(k) = x(k-1) + dx_1*s**(REAL(k-2, WP)/REAL(m-1, WP))
+       odd_grid_loop : do k = 1,m-1
+          x(k+1) = x(k) + dx
+          dx = (1._WP+g)*dx
        end do odd_grid_loop
 
-       x(m+1) = 0.5_WP
-
        ! Reflect to get the outer part of the grid
+
+       x(m+1:) = 0.5_WP
 
        x(m+2:) = 1._WP - x(m:1:-1)
 
@@ -184,6 +234,49 @@ contains
     return
 
   end subroutine create_geom
+
+!****
+
+  function eval_geom_func (this, z) result (f_z)
+
+    class(geom_func_t), intent(inout) :: this
+    complex(WP), intent(in)           :: z
+    complex(WP)                       :: f_z
+
+    real(WP) :: g
+    integer  :: m
+
+    ! Calcuate the discriminant for the geom grid growth factor
+
+    g = REAL(z)
+
+    if(MOD(this%n, 2) == 0) then
+
+       m = this%n/2-1
+
+       if(1._WP+g > HUGE(0._WP)**(1._WP/m)) then
+          f_z = - (2._WP + g)
+       else
+          f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - (2._WP + g)
+       endif
+
+    else
+
+       m = (this%n-1)/2
+
+       if(1._WP+g > HUGE(0._WP)**(1._WP/m)) then
+          f_z = -2._WP
+       else
+          f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - 2._WP
+       endif
+
+    endif
+
+    ! Finish
+
+    return
+
+  end function eval_geom_func
 
 !****
 
@@ -521,21 +614,21 @@ contains
     real(WP), intent(in)                     :: omega
     real(WP)                                 :: x_turn
 
-    type(gamma_t) :: gamma
-    integer       :: i
+    type(gamma_func_t) :: gf
+    integer            :: i
 
     ! Find the inner turning point at frequency omega
 
-    gamma%bc => bc
-    gamma%op => op
+    gf%bc => bc
+    gf%op => op
 
-    gamma%omega = omega
+    gf%omega = omega
 
     x_turn = HUGE(0._WP)
 
     turn_loop : do i = 1,SIZE(x)-1
-       if(gamma%eval(x(i)) > 0._WP .AND. gamma%eval(x(i+1)) <= 0._WP) then
-          x_turn = gamma%root(x(i), x(i+1), 0._WP)
+       if(gf%eval(x(i)) > 0._WP .AND. gf%eval(x(i+1)) <= 0._WP) then
+          x_turn = gf%root(x(i), x(i+1), 0._WP)
           exit turn_loop
        end if
     end do turn_loop
@@ -548,11 +641,11 @@ contains
 
 !****
 
-  function eval_gamma (this, z) result (gamma)
+  function eval_gamma_func (this, z) result (gamma)
 
-    class(gamma_t), intent(inout) :: this
-    complex(WP), intent(in)      :: z
-    complex(WP)                  :: gamma
+    class(gamma_func_t), intent(inout) :: this
+    complex(WP), intent(in)            :: z
+    complex(WP)                        :: gamma
 
     real(WP) :: x
     real(WP) :: g_4
@@ -579,6 +672,6 @@ contains
 
     return
 
-  end function eval_gamma
+  end function eval_gamma_func
 
 end module gyre_grid

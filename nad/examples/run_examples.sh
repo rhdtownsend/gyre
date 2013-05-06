@@ -5,7 +5,7 @@ for d in \
 
     cd $d && pwd
 
-    ./gyre_nad < gyre_nad.in | tee gyre_nad.out
+    ./gyre_nad gyre_nad.in | tee gyre_nad.out
 
     cd -
 

@@ -8,7 +8,7 @@ for d in \
 
     cd $d && pwd
 
-    ./gyre_ad < gyre_ad.in | tee gyre_ad.out
+    ./gyre_ad gyre_ad.in | tee gyre_ad.out
 
     cd -
 

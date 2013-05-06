@@ -121,7 +121,7 @@ contains
     ! Set the sysmtx equation blocks by solving IVPs across the
     ! intervals x(k) -> x(k+1)
 
-    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda)
+    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
 
        if(x(k) < x_ad_) then
@@ -243,7 +243,7 @@ contains
     n_sh = SIZE(x_sh)
     n = SIZE(x)
 
-    !$OMP PARALLEL DO PRIVATE (mask, n_in, i_in, x_in, y_in)
+    !$OMP PARALLEL DO PRIVATE (mask, n_in, i_in, x_in, y_in) SCHEDULE (DYNAMIC)
     recon_loop : do k = 1,n_sh-1
 
        ! Select those points which fall in the current interval

@@ -45,7 +45,7 @@ module gyre_frontend
 
   private
 
-  public :: open_input
+  public :: parse_args
   public :: write_header
   public :: init_coeffs
   public :: init_oscpar
@@ -57,29 +57,29 @@ module gyre_frontend
 
 contains
 
-  subroutine open_input (unit)
+  subroutine parse_args (filename)
 
-    integer, intent(out) :: unit
+    character(LEN=:), allocatable, intent(out) :: filename
 
-    character(LEN=1024) :: line
+    integer :: n
+    integer :: length
 
-    ! Make standard input available through a scratch file
+    ! Parse the command-line arguments
 
-    open(NEWUNIT=unit, STATUS='SCRATCH')
+    n = COMMAND_ARGUMENT_COUNT()
 
-    do
-       read(INPUT_UNIT, 100, END=200) line
-100    format(A)
-       write(unit, *) line
-    end do
+    $ASSERT(n == 1,Invalid number of arguments)
 
-200 continue
+    call GET_COMMAND_ARGUMENT(1, LENGTH=length)
+    allocate(character(LEN=length) :: filename)
+
+    call GET_COMMAND_ARGUMENT(1, VALUE=filename)
 
     ! Finish
 
     return
 
-  end subroutine open_input
+  end subroutine parse_args
 
 !****
 
@@ -269,10 +269,11 @@ contains
 
 !****
 
-  subroutine init_scan (unit, bc, omega)
+  subroutine init_scan (unit, bc, op, omega)
 
     integer, intent(in)                :: unit
     class(base_coeffs_t), intent(in)   :: bc
+    type(oscpar_t), intent(in)         :: op
     real(WP), allocatable, intent(out) :: omega(:)
 
     character(LEN=256) :: grid_type
@@ -306,8 +307,8 @@ contains
           
        ! Set up the frequency grid
 
-       omega_min = REAL(bc%conv_freq(CMPLX(freq_min, KIND=WP), freq_units, 'NONE'))
-       omega_max = REAL(bc%conv_freq(CMPLX(freq_max, KIND=WP), freq_units, 'NONE'))
+       omega_min = freq_min/freq_scale(bc, op, freq_units)
+       omega_max = freq_max/freq_scale(bc, op, freq_units)
        
        select case(grid_type)
        case('LINEAR')
@@ -409,11 +410,10 @@ contains
 
 !****
 
-  subroutine write_data (unit, ef, bc)
+  subroutine write_data (unit, ef)
 
     integer, intent(in)              :: unit
     type(eigfunc_t), intent(in)      :: ef(:)
-    class(base_coeffs_t), intent(in) :: bc
 
     character(LEN=256)          :: freq_units
     character(LEN=FILENAME_LEN) :: summary_file
@@ -440,7 +440,8 @@ contains
 
     ! Write output files
 
-    if(summary_file /= '') call write_summary(summary_file, ef, bc, split_item_list(summary_item_list), freq_units)
+    if(summary_file /= '') call write_summary(summary_file, ef, split_item_list(summary_item_list), &
+                                              freq_scale(ef(1)%bc, ef(1)%op, freq_units))
 
     if(mode_prefix /= '') then
 
@@ -449,7 +450,8 @@ contains
           write(mode_file, 100) TRIM(mode_prefix), j, '.h5'
 100       format(A,I4.4,A)
 
-          call write_mode(mode_file, ef(j), bc, split_item_list(mode_item_list), freq_units, j)
+          call write_mode(mode_file, ef(j), split_item_list(mode_item_list), &
+                          freq_scale(ef(j)%bc, ef(j)%op, freq_units), j)
 
        end do mode_loop
        
@@ -530,4 +532,123 @@ contains
 
   end function split_item_list
 
+!****
+
+  function freq_scale (bc, op, freq_units)
+
+    use gyre_evol_base_coeffs
+    use gyre_poly_base_coeffs
+    use gyre_hom_base_coeffs
+
+    class(base_coeffs_t), intent(in) :: bc
+    type(oscpar_t), intent(in)       :: op
+    character(LEN=*), intent(in)     :: freq_units
+    real(WP)                         :: freq_scale
+
+    ! Calculate the scale factor to convert a dimensionless angular
+    ! frequency to a dimensioned frequency
+
+    select type (bc)
+    class is (evol_base_coeffs_t)
+       freq_scale = evol_freq_scale(bc, op, freq_units)
+    class is (poly_base_coeffs_t)
+       freq_scale = poly_freq_scale(freq_units)
+    class is (hom_base_coeffs_t)
+       freq_scale = hom_freq_scale(freq_units)
+    class default
+       $ABORT(Invalid bc type)
+    end select
+
+    ! Finish
+
+    return
+
+  contains
+
+    function evol_freq_scale (bc, op, freq_units) result (freq_scale)
+
+      use gyre_ad_bound
+
+      class(evol_base_coeffs_t), intent(in) :: bc
+      type(oscpar_t), intent(in)            :: op
+      character(LEN=*), intent(in)          :: freq_units
+      real(WP)                              :: freq_scale
+
+      real(WP) :: omega_cutoff_lo
+      real(WP) :: omega_cutoff_hi
+
+      ! Calculate the scale factor to convert a dimensionless angular
+      ! frequency to a dimensioned frequency
+
+      select case(freq_units)
+      case('NONE')
+         freq_scale = 1._WP
+      case('HZ')
+         freq_scale = 1._WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
+      case('UHZ')
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
+      case('ACOUSTIC_CUTOFF')
+         call eval_cutoffs(bc, op, omega_cutoff_lo, omega_cutoff_hi)
+         freq_scale = 1._WP/omega_cutoff_hi
+      case('GRAVITY_CUTOFF')
+         call eval_cutoffs(bc, op, omega_cutoff_lo, omega_cutoff_hi)
+         freq_scale = 1._WP/omega_cutoff_lo
+      case default
+         $ABORT(Invalid freq_units)
+      end select
+
+      ! Finish
+
+      return
+
+    end function evol_freq_scale
+
+!****
+
+    function poly_freq_scale (freq_units) result (freq_scale)
+
+      character(LEN=*), intent(in) :: freq_units
+      real(WP)                     :: freq_scale
+
+      ! Calculate the scale factor to convert a dimensionless angular
+      ! frequency to a dimensioned frequency
+
+      select case (freq_units)
+      case ('NONE')
+         freq_scale = 1._WP
+      case default
+         $ABORT(Invalid freq_units)
+      end select
+
+      ! Finish
+
+      return
+
+    end function poly_freq_scale
+
+!****
+
+    function hom_freq_scale (freq_units) result (freq_scale)
+
+      character(LEN=*), intent(in) :: freq_units
+      real(WP)                     :: freq_scale
+
+      ! Calculate the scale factor to convert a dimensionless angular
+      ! frequency to a dimensioned frequency
+
+      select case (freq_units)
+      case ('NONE')
+         freq_scale = 1._WP
+      case default
+         $ABORT(Invalid freq_units)
+      end select
+
+      ! Finish
+
+      return
+
+    end function hom_freq_scale
+
+  end function freq_scale
+    
 end module gyre_frontend

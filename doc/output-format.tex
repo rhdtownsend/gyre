@@ -5,6 +5,7 @@
 \usepackage{natbib}
 \usepackage{longtable}
 \usepackage{cleveref}
+\usepackage{lscape}
 
 \crefformat{footnote}{#2\footnotemark[#1]#3}
 \crefmultiformat{footnote}{#2\footnotemark[#1]#3}
@@ -79,10 +80,10 @@ The units of $f$ depend on the value of the
 \texttt{freq\_units} field in the \texttt{\&output} namelist.} & 
 \texttt{freq} & complex dataset & Generic eigenfrequencies \\
 $E$ & --- & \texttt{E} & real dataset & Normalized mode inertias\footnote{\label{foot:inertia}See \citet[][his eqn.~13]{ChrDal2012}.} \\
-$K$ & $G\Mstar^{2}/\Rstar$ & \texttt{K} & real dataset & Kinetic energies \\
+$K$ & $G\Mstar^{2}/\Rstar$ & \texttt{K} & real dataset & Total kinetic energies \\
 $W$\footnote{%
 \label{foot:coeffs-nad}
-Only available from \texttt{gyre\_nad}} & $\Lstar \sqrt{\Rstar^{3}/G\Mstar}$ & \texttt{W} & real dataset & Works \\
+Only available from \texttt{gyre\_nad}} & $\Lstar \sqrt{\Rstar^{3}/G\Mstar}$ & \texttt{W} & real dataset & Total works \\
 \Mstar\footnote{%
 \label{foot:coeffs-evol}
 Available when \texttt{coeffs\_type} is \texttt{EVOL}} & 
@@ -107,6 +108,7 @@ are written to the files; it is a comma-separated list of item names
 drawn from the table below. Scalar items are stored as attributes,
 while 1-D array items are stored as datasets.
 
+\begin{landscape}
 \begin{center}
 \begin{longtable}{cllll} \hline
 Variable & Units & Item Name & Item type\cref{foot:data-type} & Definition \\ \hline
@@ -131,6 +133,7 @@ $\phi'$ & $G\Mstar/\Rstar$ & \texttt{phip} & complex dataset & Eulerian potentia
 $\diff\phi'/\diff x$ & $G\Mstar/\Rstar$ & \texttt{dphip\_dx} & complex dataset & Eulerian radial gravity perturbation \\
 $\delta S$\cref{foot:coeffs-evol} & $c_{p}$ & \texttt{delS} & complex dataset & Lagrangian specific entropy perturbation \\
 $\delta L$\cref{foot:coeffs-evol,foot:coeffs-poly} & \Lstar & \texttt{delL} & complex dataset & Lagrangian luminosity perturbation \\
+$\delta L_{\rm qad}$\cref{foot:coeffs-evol,foot:coeffs-poly} & \Lstar & \texttt{delL\_qad} & complex dataset & quasi-adiabatic Lagrangian luminosity perturbation \\
 $\delta p$\cref{foot:coeffs-evol,foot:coeffs-poly} & $p$ & \texttt{delp} & complex dataset & Lagrangian pressure perturbation \\
 $\delta \rho$\cref{foot:coeffs-evol,foot:coeffs-poly} & $\rho$ & \texttt{delrho} & complex dataset & Lagrangian density perturbation \\
 $\delta T$\cref{foot:coeffs-evol,foot:coeffs-poly} & $T$ & \texttt{delT} & complex dataset & Lagrangian temperature perturbation \\
@@ -146,6 +149,7 @@ $T$\cref{foot:coeffs-evol} & $\kelvin$ & \texttt{T} & real dataset & Temperature
 \caption{Output data for mode files}
 \end{longtable}
 \end{center}
+\end{landscape}
 
 \bibliographystyle{gyre}
 \bibliography{output-format}

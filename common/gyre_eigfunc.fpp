@@ -64,11 +64,12 @@ module gyre_eigfunc
      procedure, public :: delp
      procedure, public :: delrho
      procedure, public :: delT
-     procedure, public :: dK_dx
+     procedure, public :: dE_dx
      procedure, public :: dW_dx
      procedure, public :: E
-     procedure, public :: K
+     procedure, public :: E_norm
      procedure, public :: W
+     procedure, public :: omega_im
   end type eigfunc_t
 
   ! Interfaces
@@ -123,11 +124,11 @@ contains
 
     this%n = SIZE(this%x)
 
-    ! Normalize by the kinetic energy, and so that y(1,n) is real
+    ! Normalize by the mode inertia, and so that y(1,n) is real
 
     phase = ATAN2(AIMAG(this%y(1,this%n)), REAL(this%y(1,this%n)))
 
-    this%y = this%y/SQRT(this%K())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+    this%y = this%y/SQRT(this%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
     ! Finish
 
@@ -176,24 +177,29 @@ contains
     integer  :: i
     real(WP) :: y_2_cross
 
-    ! Classify the eigenfunction using the Cowling-Scuflaire scheme
+    ! Classify the eigenfunction using the Eckart-Scuflaire-Osaki scheme
 
     y_1 = REAL(this%y(1,:))
     y_2 = REAL(this%y(2,:))
 
-    n_p = 0
-    n_g = 0
+    if(this%op%l == 0) then
+       n_p = 1
+       n_g = 0
+       inner_ext = .FALSE.
+    else
+       n_p = 0
+       n_g = 0
+    endif
  
-    inner_ext = ABS(y_1(1)) > ABS(y_1(2))
+    x_loop : do i = 1,this%n-1
 
-    x_loop : do i = 2,this%n-1
+       ! If this is a radial mode, and extremum in y_1 hasn't yet been
+       ! reached, skip (this is to deal with noisy near-zero solutions
+       ! at the origin)
 
-       ! If the innermost extremum in y_1 hasn't yet been reached,
-       ! skip
-
-       if(.NOT. inner_ext) then
-          inner_ext = ABS(y_1(i)) > ABS(y_1(i-1)) .AND. ABS(y_1(i)) > ABS(y_1(i+1))
-          cycle x_loop
+       if(this%op%l == 0) then
+          if(i > 1 .AND. .NOT. inner_ext) inner_ext = ABS(y_1(i)) > ABS(y_1(i-1)) .AND. ABS(y_1(i)) > ABS(y_1(i+1))
+          if(.NOT. inner_ext) cycle x_loop
        endif
 
        ! Look for a node in xi_r
@@ -370,16 +376,16 @@ contains
     ! Calculate the Lagrangian specific entropy perturbation in units
     ! of c_p
 
-    associate (l => this%op%l)
+    associate(l => this%op%l)
 
       where (this%x /= 0._WP)
          delS = this%y(5,:)*this%x**(l-2)
       elsewhere
          delS = 0._WP
       end where
-         
-    end associate
 
+    end associate
+         
     ! Finish
 
     return
@@ -388,50 +394,18 @@ contains
 
 !****
 
-  function delL (this, qad)
+  function delL (this)
 
     class(eigfunc_t), intent(in)  :: this
     complex(WP)                   :: delL(this%n)
-    logical, intent(in), optional :: qad
 
-    logical :: qad_
-    
-    if(PRESENT(qad)) then
-       qad_ = qad
-    else
-       qad_ = .FALSE.
-    endif
-    
     ! Calculate the Lagrangian luminosity perturbation in units of R_star
 
-    if(qad_) then
+    associate (l => this%op%l)
 
-       ! Quasi-adiabatic expression (from the adiabatic diffusion
-       ! equation)
+      delL = this%y(6,:)*this%x**(l+1)
 
-       associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
-                 nabla_ad => this%bc%nabla_ad(this%x), &
-                 c_rad => this%tc%c_rad(this%x), c_dif => this%tc%c_dif(this%x), nabla => this%tc%nabla(this%x), &
-                 l => this%op%l, omega => this%omega)
-
-         delL = nabla/c_rad*((nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)*this%y(1,:) + &
-                             (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)*this%y(2,:) + &
-                             c_dif*this%y(3,:) + &
-                             nabla_ad*this%y(4,:))*this%x**(l+1)
-
-       end associate
-
-    else
-
-       ! Non-adiabatic expression
-
-       associate (l => this%op%l)
-
-         delL = this%y(6,:)*this%x**(l+1)
-
-       end associate
-
-    endif
+    end associate
 
     ! Finish
 
@@ -520,29 +494,30 @@ contains
 
 !****
 
-  function dK_dx (this)
+  function dE_dx (this)
 
     class(eigfunc_t), intent(in) :: this
-    real(WP)                     :: dK_dx(this%n)
+    real(WP)                     :: dE_dx(this%n)
 
     complex(WP) :: xi_r(this%n)
     complex(WP) :: xi_h(this%n)
     
-    ! Calculate the differential kinetic energy in units of G M_star^2/R_star
+    ! Calculate the differential mode inertia (Aerts et al. 2010,
+    ! eqn. 3.139) in units of M_star R_star**2
 
     xi_r = this%xi_r()
     xi_h = this%xi_h()
 
     associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
               l => this%op%l)
-      dK_dx = (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*this%x**2/c_1
+      dE_dx = 4._WP*PI*(ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*this%x**2/c_1
     end associate
 
     ! Finish
 
     return
 
-  end function dK_dx
+  end function dE_dx
 
 !****
 
@@ -561,7 +536,7 @@ contains
 
     associate(c_thm => this%tc%c_thm(this%x))
 
-      dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI)
+      dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI*REAL(this%omega))
 
     end associate
 
@@ -571,23 +546,40 @@ contains
 
   end function dW_dx
 
-!****
+!*****
 
   function E (this)
 
     class(eigfunc_t), intent(in) :: this
     real(WP)                     :: E
+    
+    ! Calculate the total mode inertia (Aerts et al. 2010, eqn. 3.139)
+    ! in units of M_star R_star**2
 
-    real(WP)    :: K
+    E = integrate(this%x, this%dE_dx())
+
+    ! Finish
+
+    return
+
+  end function E
+
+!****
+
+  function E_norm (this)
+
+    class(eigfunc_t), intent(in) :: this
+    real(WP)                     :: E_norm
+
+    real(WP)    :: E
     complex(WP) :: xi_r(this%n)
     complex(WP) :: xi_h(this%n)
     real(WP)    :: A2
 
-    ! Calculate the normalized mode inertia, using the expression
-    ! given by Christensen-Dalsgaard (2011, arXiv:1106.5946, his
-    ! eqn. 2.32)
+    ! Calculate the normalized mode inertia (Aerts et al. 2010,
+    ! eqn. 3.140)
 
-    K = this%K()
+    E = this%E()
 
     xi_r = this%xi_r()
     xi_h = this%xi_h()
@@ -598,9 +590,9 @@ contains
 
       if(A2 == 0._WP) then
          $WARN(Surface amplitude is zero; not normalizing inertia)
-         E = K
+         E_norm = E
       else
-         E = K/A2
+         E_norm = E/A2
       endif
 
     end associate
@@ -609,24 +601,7 @@ contains
 
     return
 
-  end function E
-
-!*****
-
-  function K (this)
-
-    class(eigfunc_t), intent(in) :: this
-    real(WP)                     :: K
-    
-    ! Calculate the kinetic energy
-
-    K = integrate(this%x, this%dK_dx())
-
-    ! Finish
-
-    return
-
-  end function K
+  end function E_norm
 
 !*****
 
@@ -647,35 +622,53 @@ contains
 
 !****
 
-  function deriv (x, y) result (dy_dx)
+  function omega_im (this)
 
-    real(WP), intent(in) :: x(:)
-    real(WP), intent(in) :: y(:)
-    real(WP)             :: dy_dx(SIZE(x))
+    class(eigfunc_t), intent(in) :: this
+    real(WP)                     :: omega_im
 
-    integer :: n
-    integer :: i
+    integer  :: i_trans
+    integer  :: i
+    real(WP) :: dW_dx(this%n)
+    real(WP) :: W
+    
+    ! Estimate the imaginary part of omega by integrating the work
+    ! function out to the thermal transition point
 
-    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+    ! First locate the point
 
-    ! Differentiate y(x) using centered finite differences
+    i_trans = this%n
 
-    n = SIZE(x)
+    do i = this%n-1,1,-1
 
-    dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
+       associate(c_thm => this%tc%c_thm(this%x(i)), c_rad => this%tc%c_rad(this%x(i)))
 
-    do i = 2,n-1
-       dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
-                          (y(i+1) - y(i))/(x(i+1) - x(i)))
-    end do
+         if(REAL(this%omega)*c_thm > c_rad) then
+            i_trans = i
+            exit
+         endif
 
-    dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
+       end associate
+
+    enddo
+
+    print *,'Truncating at:',this%x(i_trans)
+
+    ! Do the integration
+
+    dW_dx = this%dW_dx()
+
+    W = integrate(this%x(:i_trans), dW_dx(:i_trans))
+
+    ! Calculate omega_im
+
+    omega_im = -REAL(this%omega)*W/this%E()
 
     ! Finish
 
     return
 
-  end function deriv
+  end function omega_im
 
 !****
 

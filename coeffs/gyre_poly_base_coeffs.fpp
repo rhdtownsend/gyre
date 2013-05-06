@@ -60,7 +60,6 @@ module gyre_poly_base_coeffs
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
      procedure, public :: pi_c
-     procedure, public :: conv_freq
   end type poly_base_coeffs_t
 
   ! Interfaces
@@ -96,7 +95,8 @@ contains
     real(WP), intent(in)                   :: Gamma_1
     character(LEN=*), intent(in)           :: deriv_type
 
-    integer :: n
+    integer  :: n
+    real(WP) :: d2Theta(SIZE(xi))
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
 
@@ -104,10 +104,22 @@ contains
 
     n = SIZE(xi)
 
-    call this%sp_Theta%init(xi, Theta, deriv_type, &
-                            dy_dx_a=0._WP, dy_dx_b=dTheta(n))
-    call this%sp_dTheta%init(xi, dTheta, deriv_type, &
-                             dy_dx_a=-1._WP/3._WP, dy_dx_b=-2._WP*dTheta(n)/xi(n))
+    if(n_poly /= 0._WP) then
+
+       where (xi /= 0._WP)
+          d2Theta = -2._WP*dTheta/xi - Theta**n_poly
+       elsewhere
+          d2Theta = -1._WP/3._WP
+       end where
+
+    else
+
+       d2Theta = -1._WP/3._WP
+
+    endif
+
+    call this%sp_Theta%init(xi, Theta, dTheta)
+    call this%sp_dTheta%init(xi, dTheta, d2Theta)
 
     this%n_poly = n_poly
     this%dt_Gamma_1 = Gamma_1
@@ -476,48 +488,5 @@ contains
     return
 
   end function pi_c
-
-!****
-
-  function conv_freq (this, freq, from_units, to_units)
-
-    class(poly_base_coeffs_t), intent(in) :: this
-    complex(WP), intent(in)               :: freq
-    character(LEN=*), intent(in)          :: from_units
-    character(LEN=*), intent(in)          :: to_units
-    complex(WP)                           :: conv_freq
-
-    ! Convert the frequency
-
-    conv_freq = freq/freq_scale(from_units)*freq_scale(to_units)
-
-    ! Finish
-
-    return
-
-  contains
-
-    function freq_scale (units)
-
-      character(LEN=*), intent(in) :: units
-      real(WP)                     :: freq_scale
-
-      ! Calculate the scale factor to convert a dimensionless angular
-      ! frequency to a dimensioned frequency
-
-      select case (units)
-      case ('NONE')
-         freq_scale = 1._WP
-      case default
-         $ABORT(Invalid units)
-      end select
-
-      ! Finish
-
-      return
-
-    end function freq_scale
-
-  end function conv_freq
 
 end module gyre_poly_base_coeffs
