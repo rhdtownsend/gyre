@@ -27,6 +27,8 @@ module gyre_sysmtx
   use gyre_ext_arith
   use gyre_linalg
 
+  use f77_lapack
+
   use ISO_FORTRAN_ENV
 
   ! No implicit typing
@@ -202,7 +204,7 @@ contains
        elim_loop : do t = 1,OMP_SIZE_MAX
           call elim_partition(this%E_l(:,:,this%k_part(t):this%k_part(t+1)-1), &
                               this%E_r(:,:,this%k_part(t):this%k_part(t+1)-1), &
-                              elim_det(t))
+                              elim_det=elim_det(t))
        end do elim_loop
 
        ! Initialize the reduced sysmtx
@@ -300,94 +302,135 @@ contains
 
 !****
 
-  subroutine elim_partition (A, C, elim_det)
+  subroutine elim_partition (A, C, E, elim_det)
 
-    complex(WP), intent(inout)       :: A(:,:,:)
-    complex(WP), intent(inout)       :: C(:,:,:)
-    type(ext_complex_t), intent(out) :: elim_det
+    complex(WP), intent(inout)                 :: A(:,:,:)
+    complex(WP), intent(inout)                 :: C(:,:,:)
+    complex(WP), intent(out), optional         :: E(:,:,:)
+    type(ext_complex_t), intent(out), optional :: elim_det
       
     integer     :: n_e
     integer     :: n
-    complex(WP) :: G(SIZE(A, 1),SIZE(A, 1),SIZE(A, 3))
+    complex(WP) :: M_G(2*SIZE(A, 1),SIZE(A, 1))
+    complex(WP) :: M_U(2*SIZE(A, 1),SIZE(A, 1))
+    complex(WP) :: M_E(2*SIZE(A, 1),SIZE(A, 1))
     integer     :: k
-    complex(WP) :: V(2*SIZE(A, 1),SIZE(A, 1))
-    integer     :: i
-    complex(WP) :: W(2*SIZE(A, 1),SIZE(A, 1))
     integer     :: ipiv(SIZE(A, 1))
+    integer     :: info
+    integer     :: i
 
     $ASSERT(SIZE(A, 2) == SIZE(A, 1),Dimension mismatch)
 
     $ASSERT(SIZE(C, 1) == SIZE(A, 1),Dimension mismatch)
     $ASSERT(SIZE(C, 2) == SIZE(A, 1),Dimension mismatch)
+    $ASSERT(SIZE(C, 3) == SIZE(A, 3),Dimension mismatch)
+
+    if(PRESENT(E)) then
+       $ASSERT(SIZE(E, 1) == SIZE(A, 1),Dimension mismatch)
+       $ASSERT(SIZE(E, 2) == SIZE(A, 1),Dimension mismatch)
+       $ASSERT(SIZE(E, 3) == SIZE(A, 3)-1,Dimension mismatch)
+    endif
 
     ! Perform the Gaussian elimination steps described in Section 2 of
-    ! Wright (1994)
+    ! Wright (1994). A is overwritten by G and C by U
 
     n_e = SIZE(A, 1)
     n = SIZE(A, 3)
 
-    elim_det = ext_complex(1._WP)
+    if(PRESENT(elim_det)) elim_det = ext_complex(1._WP)
 
     if(n > 0) then
 
-       G(:,:,1) = A(:,:,1)
+       M_G(n_e+1:,:) = A(:,:,1)
+       M_E(n_e+1:,:) = C(:,:,1)
 
-       block_loop : do k = 1, n-1
+       block_loop : do k = 1,n-1
        
-          ! Set up the current double-height block and Gaussian eliminate it
+          ! Set up matrices (see expressions following eqn. 2.5 of
+          ! Wright 1994)
 
-          V(:n_e,:) = C(:,:,k)
-          V(n_e+1:,:) = A(:,:,k+1)
+          M_G(:n_e,:) = M_G(n_e+1:,:)
+          M_G(n_e+1:,:) = 0._WP
 
-          call gaussian_elim(V, ipiv)
+          M_U(:n_e,:) = M_E(n_e+1:,:)
+          M_U(n_e+1:,:) = A(:,:,k+1)
+
+          M_E(:n_e,:) = 0._WP
+          M_E(n_e+1:,:) = C(:,:,k+1)
+
+          ! Transform the block by LU factoring M_U, and then
+          ! multiplying the block by L^-1
+
+          call LA_GETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
+          $ASSERT(info == 0, Non-zero return from LA_GETRF)
+
+          $if($DOUBLE_PRECISION)
+
+          call ZLASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
+
+          call ZTRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
+          call ZGEMM('N', 'N', n_e, n_e, n_e, &
+                     CMPLX(-1._WP, KIND=WP), M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, &
+                     CMPLX(1._WP, KIND=WP), M_G(n_e+1,1), 2*n_e)
+
+          call ZLASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
+
+          call ZTRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
+          call ZGEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                     M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                     M_E(n_e+1,1), 2*n_e)
+
+          $else
+
+          call CLASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
+
+          call CTRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
+          call CGEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                     M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                     M_G(n_e+1,1), 2*n_e)
+
+          call CLASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
+
+          call CTRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
+          call CGEMM('N', 'N', n_e, n_e, n_e, &
+                     CMPLX(-1._WP, KIND=WP), M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, &
+                     CMPLX(1._WP, KIND=WP), M_E(n_e+1,1), 2*n_e)
+
+          $endif
+
+          ! Store results
+
+          A(:,:,k) = M_G(:n_e,:)
+          C(:,:,k) = M_U(:n_e,:)
+
+          if(PRESENT(E)) E(:,:,k) = M_E(:n_e,:)
 
           ! Update the elimination determinant
 
-          elim_det = product([ext_complex(diagonal(V)),elim_det])
+          if(PRESENT(elim_det)) then
 
-          do i = 1,n_e
-             if(ipiv(i) /= i) elim_det = -elim_det
-          end do
+             elim_det = product([ext_complex(diagonal(M_U)),elim_det])
+
+             do i = 1,n_e
+                if(ipiv(i) /= i) elim_det = -elim_det
+             end do
           
-          ! Update the appropriate blocks
-
-          associate(R => A, E => C)
-
-            ! R
-
-            do i = 1,n_e
-               R(i,:i-1,k) = 0._WP
-               R(i,i:,k) = V(i,i:)
-            end do
-            
-            ! C & E
-
-            W(:n_e,:) = 0._WP
-            W(n_e+1:,:) = C(:,:,k+1)
-
-            call gaussian_mod(V, ipiv, W)
-
-            E(:,:,k) = W(:n_e,:)
-            C(:,:,k+1) = W(n_e+1:,:)
-
-            ! G
-
-            W(:n_e,:) = G(:,:,k)
-            W(n_e+1:,:) = 0._WP
-
-            call gaussian_mod(V, ipiv, W)
-
-            G(:,:,k) = W(:n_e,:)
-            G(:,:,k+1) = W(n_e+1:,:)
-
-          end associate
+          endif
 
        end do block_loop
 
-       ! Extract the results
-      
-       A(:,:,n) = G(:,:,n)
-       C(:,:,n) = C(:,:,n)
+       ! Store final results
+
+       A(:,:,n) = M_G(n_e+1:,:)
+       C(:,:,n) = M_E(n_e+1:,:)
+
+       ! Finish
+
+       return
 
     endif
 
@@ -396,6 +439,105 @@ contains
     return
 
   end subroutine elim_partition
+
+! !****
+
+!   subroutine elim_partition_old (A, C, elim_det)
+
+!     complex(WP), intent(inout)       :: A(:,:,:)
+!     complex(WP), intent(inout)       :: C(:,:,:)
+!     type(ext_complex_t), intent(out) :: elim_det
+      
+!     integer     :: n_e
+!     integer     :: n
+!     complex(WP) :: G(SIZE(A, 1),SIZE(A, 1),SIZE(A, 3))
+!     integer     :: k
+!     complex(WP) :: V(2*SIZE(A, 1),SIZE(A, 1))
+!     integer     :: i
+!     complex(WP) :: W(2*SIZE(A, 1),SIZE(A, 1))
+!     integer     :: ipiv(SIZE(A, 1))
+
+!     $ASSERT(SIZE(A, 2) == SIZE(A, 1),Dimension mismatch)
+
+!     $ASSERT(SIZE(C, 1) == SIZE(A, 1),Dimension mismatch)
+!     $ASSERT(SIZE(C, 2) == SIZE(A, 1),Dimension mismatch)
+
+!     ! Perform the Gaussian elimination steps described in Section 2 of
+!     ! Wright (1994)
+
+!     n_e = SIZE(A, 1)
+!     n = SIZE(A, 3)
+
+!     elim_det = ext_complex(1._WP)
+
+!     if(n > 0) then
+
+!        G(:,:,1) = A(:,:,1)
+
+!        block_loop : do k = 1, n-1
+       
+!           ! Set up the current double-height block and Gaussian eliminate it
+
+!           V(:n_e,:) = C(:,:,k)
+!           V(n_e+1:,:) = A(:,:,k+1)
+
+!           call gaussian_elim(V, ipiv)
+
+!           ! Update the elimination determinant
+
+!           elim_det = product([ext_complex(diagonal(V)),elim_det])
+
+!           do i = 1,n_e
+!              if(ipiv(i) /= i) elim_det = -elim_det
+!           end do
+          
+!           ! Update the appropriate blocks
+
+!           associate(R => A, E => C)
+
+!             ! R
+
+!             do i = 1,n_e
+!                R(i,:i-1,k) = 0._WP
+!                R(i,i:,k) = V(i,i:)
+!             end do
+            
+!             ! C & E
+
+!             W(:n_e,:) = 0._WP
+!             W(n_e+1:,:) = C(:,:,k+1)
+
+!             call gaussian_mod(V, ipiv, W)
+
+!             E(:,:,k) = W(:n_e,:)
+!             C(:,:,k+1) = W(n_e+1:,:)
+
+!             ! G
+
+!             W(:n_e,:) = G(:,:,k)
+!             W(n_e+1:,:) = 0._WP
+
+!             call gaussian_mod(V, ipiv, W)
+
+!             G(:,:,k) = W(:n_e,:)
+!             G(:,:,k+1) = W(n_e+1:,:)
+
+!           end associate
+
+!        end do block_loop
+
+!        ! Extract the results
+      
+!        A(:,:,n) = G(:,:,n)
+!        C(:,:,n) = C(:,:,n)
+
+!     endif
+
+!     ! Finish
+
+!     return
+
+!   end subroutine elim_partition_old
 
 !****
 
