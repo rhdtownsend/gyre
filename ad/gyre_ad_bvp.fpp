@@ -422,7 +422,7 @@ contains
               l => bp%op%l)
 
       ! Calculate Jacobian coefficients. (cf. gyre_nad_jacobian; A_6
-      ! has been implicitly multiplied by V)
+      ! has been multiplied by V)
 
       A_6(:,1) = V*(l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - epsilon_ad*V*c_gen)
       A_6(:,2) = V*(epsilon_ad*V*c_gen - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2)))
@@ -430,11 +430,15 @@ contains
       A_6(:,4) = 0._WP
       A_6(:,5) = V*epsilon_S*c_gen - l*(l+1)*c_rad/nabla - V*(0._WP,1._WP)*omega*c_thm
       A_6(:,6) = V*(-1._WP - l)
-        
+
       ! Set up y_5
 
-      y(5,:) = (x*V*dy_6_dx - (A_6(:,1)*y(1,:) + A_6(:,2)*y(2,:) + &
-                               A_6(:,3)*y(3,:) + A_6(:,4)*y(4,:) + A_6(:,6)*y(6,:)))/A_6(:,5)
+      where(A_6(:,5) /= 0._WP)
+         y(5,:) = (x*V*dy_6_dx - (A_6(:,1)*y(1,:) + A_6(:,2)*y(2,:) + &
+                                  A_6(:,3)*y(3,:) + A_6(:,4)*y(4,:) + A_6(:,6)*y(6,:)))/A_6(:,5)
+      elsewhere
+         y(5,:) = 0._WP
+      end where
 
     end associate
 
