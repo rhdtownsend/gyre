@@ -137,16 +137,18 @@ contains
     $endif
 
     character(LEN=256)          :: coeffs_type
+    character(LEN=256)          :: file_format
     character(LEN=256)          :: deriv_type
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: G
     real(WP)                    :: Gamma_1
 
-    namelist /coeffs/ coeffs_type, deriv_type, file, G, Gamma_1
+    namelist /coeffs/ coeffs_type, file_format, deriv_type, file, G, Gamma_1
 
     ! Read structure coefficients parameters
 
     coeffs_type = ''
+    file_format = ''
     deriv_type = 'MONO'
 
     file = ''
@@ -159,25 +161,32 @@ contains
 
     ! Read/initialize the base_coeffs
 
-    select case(coeffs_type)
-    case('MESA')
-       call read_mesa_file(file, G, deriv_type, bc, tc, x=x_bc)
-    case('B3')
-       call read_b3_file(file, G, deriv_type, bc, tc, x=x_bc)
-    case('GSM')
-       call read_gsm_file(file, G, deriv_type, bc, tc, x=x_bc)
-    case('OSC')
-       call read_osc_file(file, G, deriv_type, bc, tc, x=x_bc)
-    case('FGONG')
-       call read_fgong_file(file, G, deriv_type, bc, x=x_bc) 
-    case('POLY')
+    select case (coeffs_type)
+    case ('EVOL')
+       select case (file_format)
+       case ('MESA')
+          call read_mesa_file(file, G, deriv_type, bc, tc, x=x_bc)
+       case('B3')
+          call read_b3_file(file, G, deriv_type, bc, tc, x=x_bc)
+       case ('GSM')
+          call read_gsm_file(file, G, deriv_type, bc, tc, x=x_bc)
+       case ('OSC')
+          call read_osc_file(file, G, deriv_type, bc, tc, x=x_bc)
+       case ('FGONG')
+          call read_fgong_file(file, G, deriv_type, bc, x=x_bc) 
+       case default
+          $ABORT(Invalid file_format)
+       end select
+    case ('POLY')
        call read_poly_file(file, deriv_type, bc, x=x_bc)
-    case('HOM')
+    case ('HOM')
        allocate(hom_base_coeffs_t::bc)
        select type (bc)
        type is (hom_base_coeffs_t)
           call bc%init(Gamma_1)
        end select
+    case default
+       $ABORT(Invalid coeffs_type)
     end select
 
     ! Finish
