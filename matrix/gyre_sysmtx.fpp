@@ -196,16 +196,19 @@ contains
        ! Reduce the matrix using the structured factorization (SLU)
        ! algorithm by Wright (1994)
 
-       n_part = this%k_part(2:) - this%k_part(:OMP_SIZE_MAX)
-
-       ! Apply Gaussian elimination to the partitions
+       ! Gaussian eliminate the partitions
 
        !$OMP PARALLEL PRIVATE (t)
+
        t = omp_rank() + 1
+
        call elim_partition(this, t, elim_det=elim_det(t))
+
        !$OMP END PARALLEL
 
        ! Initialize the reduced sysmtx
+
+       n_part = this%k_part(2:) - this%k_part(:OMP_SIZE_MAX)
 
        call sm%init(COUNT(n_part > 0), this%n_e, this%n_i, this%n_o)
 
@@ -214,25 +217,26 @@ contains
 
        ! Copy blocks to the reduced sysmtx
 
-       !$OMP PARALLEL DO PRIVATE(k_src, k_dest)
-       xfer_loop : do t = 1, OMP_SIZE_MAX
+       !$OMP PARALLEL PRIVATE (t, k_src, k_dest)
 
-          if(n_part(t) > 0) then
+       t = omp_rank() + 1
 
-             ! Determine the source and destination indices
+       if(n_part(t) > 0) then
 
-             k_src = this%k_part(t+1)-1
-             k_dest = COUNT(n_part(:t) > 0)
+          ! Determine the source and destination indices
 
-             ! Copy the blocks
+          k_src = this%k_part(t+1)-1
+          k_dest = COUNT(n_part(:t) > 0)
 
-             sm%E_l(:,:,k_dest) = this%E_l(:,:,k_src)
-             sm%E_r(:,:,k_dest) = this%E_r(:,:,k_src)
-             sm%S(k_dest) = product(this%S(this%k_part(t):this%k_part(t+1)-1))
+          ! Copy the blocks
 
-          endif
+          sm%E_l(:,:,k_dest) = this%E_l(:,:,k_src)
+          sm%E_r(:,:,k_dest) = this%E_r(:,:,k_src)
+          sm%S(k_dest) = product(this%S(this%k_part(t):this%k_part(t+1)-1))
 
-       end do xfer_loop
+       endif
+
+       !$OMP END PARALLEL
 
        ! Combine the elimination determinants with the determinant of
        ! the reduced matrix
