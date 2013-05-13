@@ -192,9 +192,6 @@ contains
     this%R_star = R_star
     this%L_star = L_star
 
-    this%p_c = p(1)
-    this%rho_c = rho(1)
-
     this%G = G
 
     ! Finish
@@ -230,9 +227,6 @@ contains
     call bcast(bc%M_star, root_rank)
     call bcast(bc%R_star, root_rank)
     call bcast(bc%L_star, root_rank)
-
-    call bcast(bc%p_c, root_rank)
-    call bcast(bc%rho_c, root_rank)
 
     call bcast(bc%G, root_rank)
 
@@ -307,7 +301,7 @@ contains
 
     ! Calculate pi_c = V/x^2 as x -> 0
 
-    pi_c = 4._WP*PI*this%G*this%rho_c**2*this%R_star**2/(3._WP*this%p_c)
+    pi_c = 4._WP*PI*this%G*this%rho(0._WP)**2*this%R_star**2/(3._WP*this%p(0._WP))
 
     ! Finish
 
