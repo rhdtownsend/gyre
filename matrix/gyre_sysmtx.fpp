@@ -364,43 +364,35 @@ contains
           call LA_GETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
           $ASSERT(info == 0, Non-zero return from LA_GETRF)
 
+          ! This nasty fpx3 stuff is to ensure the correct LAPACK/BLAS
+          ! routines are called (can't use generics, since we're then
+          ! not allowed to pass array elements into assumed-size
+          ! arrays; see, e.g., p. 268 of Metcalfe & Reid, "Fortran
+          ! 90/95 Explained")
+
+          $block
+
           $if($DOUBLE_PRECISION)
-
-          call ZLASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
-
-          call ZTRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
-          call ZGEMM('N', 'N', n_e, n_e, n_e, &
-                     CMPLX(-1._WP, KIND=WP), M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, &
-                     CMPLX(1._WP, KIND=WP), M_G(n_e+1,1), 2*n_e)
-
-          call ZLASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
-
-          call ZTRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
-          call ZGEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                     M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                     M_E(n_e+1,1), 2*n_e)
-
+          $local $X Z
           $else
-
-          call CLASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
-
-          call CTRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
-          call CGEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                     M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                     M_G(n_e+1,1), 2*n_e)
-
-          call CLASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
-
-          call CTRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
-          call CGEMM('N', 'N', n_e, n_e, n_e, &
-                     CMPLX(-1._WP, KIND=WP), M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, &
-                     CMPLX(1._WP, KIND=WP), M_E(n_e+1,1), 2*n_e)
-
+          $local $X C
           $endif
+
+          call ${X}LASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
+          call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
+          call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                      M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                      M_G(n_e+1,1), 2*n_e)
+
+          call ${X}LASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
+          call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
+          call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                      M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                      M_E(n_e+1,1), 2*n_e)
+
+          $endblock
 
           ! Store results
 
