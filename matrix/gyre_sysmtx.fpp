@@ -200,12 +200,10 @@ contains
 
        ! Apply Gaussian elimination to the partitions
 
-       !$OMP PARALLEL DO
-       elim_loop : do t = 1,OMP_SIZE_MAX
-          call elim_partition(this%E_l(:,:,this%k_part(t):this%k_part(t+1)-1), &
-                              this%E_r(:,:,this%k_part(t):this%k_part(t+1)-1), &
-                              elim_det=elim_det(t))
-       end do elim_loop
+       !$OMP PARALLEL PRIVATE (t)
+       t = omp_rank() + 1
+       call elim_partition(this, t, elim_det=elim_det(t))
+       !$OMP END PARALLEL
 
        ! Initialize the reduced sysmtx
 
@@ -302,61 +300,53 @@ contains
 
 !****
 
-  subroutine elim_partition (A, C, E, elim_det)
+  subroutine elim_partition (this, t, E, elim_det)
 
-    complex(WP), intent(inout)                 :: A(:,:,:)
-    complex(WP), intent(inout)                 :: C(:,:,:)
+    class(sysmtx_t), intent(inout)             :: this
+    integer, intent(in)                        :: t
     complex(WP), intent(out), optional         :: E(:,:,:)
     type(ext_complex_t), intent(out), optional :: elim_det
       
     integer     :: n_e
-    integer     :: n
-    complex(WP) :: M_G(2*SIZE(A, 1),SIZE(A, 1))
-    complex(WP) :: M_U(2*SIZE(A, 1),SIZE(A, 1))
-    complex(WP) :: M_E(2*SIZE(A, 1),SIZE(A, 1))
+    complex(WP) :: M_G(2*this%n_e,this%n_e)
+    complex(WP) :: M_U(2*this%n_e,this%n_e)
+    complex(WP) :: M_E(2*this%n_e,this%n_e)
     integer     :: k
-    integer     :: ipiv(SIZE(A, 1))
+    integer     :: ipiv(this%n_e)
     integer     :: info
     integer     :: i
 
-    $ASSERT(SIZE(A, 2) == SIZE(A, 1),Dimension mismatch)
-
-    $ASSERT(SIZE(C, 1) == SIZE(A, 1),Dimension mismatch)
-    $ASSERT(SIZE(C, 2) == SIZE(A, 1),Dimension mismatch)
-    $ASSERT(SIZE(C, 3) == SIZE(A, 3),Dimension mismatch)
-
     if(PRESENT(E)) then
-       $ASSERT(SIZE(E, 1) == SIZE(A, 1),Dimension mismatch)
-       $ASSERT(SIZE(E, 2) == SIZE(A, 1),Dimension mismatch)
-       $ASSERT(SIZE(E, 3) == SIZE(A, 3)-1,Dimension mismatch)
+       $ASSERT(SIZE(E, 1) == this%n_e,Dimension mismatch)
+       $ASSERT(SIZE(E, 2) == this%n_e,Dimension mismatch)
+       $ASSERT(SIZE(E, 3) == this%n,Dimension mismatch)
     endif
 
     ! Perform the Gaussian elimination steps described in Section 2 of
-    ! Wright (1994). A is overwritten by G and C by U
-
-    n_e = SIZE(A, 1)
-    n = SIZE(A, 3)
+    ! Wright (1994). E_l is overwritten by G and E_r by U
 
     if(PRESENT(elim_det)) elim_det = ext_complex(1._WP)
 
-    if(n > 0) then
+    n_e = this%n_e
 
-       M_G(n_e+1:,:) = A(:,:,1)
-       M_E(n_e+1:,:) = C(:,:,1)
+    if(this%k_part(t+1)-this%k_part(t) > 1) then
 
-       block_loop : do k = 1,n-1
+       M_G(n_e+1:,:) = this%E_l(:,:,this%k_part(t))
+       M_E(n_e+1:,:) = this%E_r(:,:,this%k_part(t))
+
+       block_loop : do k = this%k_part(t), this%k_part(t+1)-2
        
-          ! Set up matrices (see expressions following eqn. 2.5 of
-          ! Wright 1994)
+          ! Set up double-block matrices (see expressions following
+          ! eqn. 2.5 of Wright 1994)
 
           M_G(:n_e,:) = M_G(n_e+1:,:)
           M_G(n_e+1:,:) = 0._WP
 
           M_U(:n_e,:) = M_E(n_e+1:,:)
-          M_U(n_e+1:,:) = A(:,:,k+1)
+          M_U(n_e+1:,:) = this%E_l(:,:,k+1)
 
           M_E(:n_e,:) = 0._WP
-          M_E(n_e+1:,:) = C(:,:,k+1)
+          M_E(n_e+1:,:) = this%E_r(:,:,k+1)
 
           ! Transform the block by LU factoring M_U, and then
           ! multiplying the block by L^-1
@@ -396,8 +386,8 @@ contains
 
           ! Store results
 
-          A(:,:,k) = M_G(:n_e,:)
-          C(:,:,k) = M_U(:n_e,:)
+          this%E_l(:,:,k) = M_G(:n_e,:)
+          this%E_r(:,:,k) = M_U(:n_e,:)
 
           if(PRESENT(E)) E(:,:,k) = M_E(:n_e,:)
 
@@ -417,12 +407,8 @@ contains
 
        ! Store final results
 
-       A(:,:,n) = M_G(n_e+1:,:)
-       C(:,:,n) = M_E(n_e+1:,:)
-
-       ! Finish
-
-       return
+       this%E_l(:,:,this%k_part(t+1)-1) = M_G(n_e+1:,:)
+       this%E_r(:,:,this%k_part(t+1)-1) = M_E(n_e+1:,:)
 
     endif
 
