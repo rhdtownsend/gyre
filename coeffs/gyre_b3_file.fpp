@@ -63,20 +63,20 @@ contains
     real(WP), allocatable :: r(:)
     real(WP), allocatable :: w(:)
     real(WP), allocatable :: p(:)
-    real(WP), allocatable :: T(:)
     real(WP), allocatable :: rho(:)
+    real(WP), allocatable :: T(:)
     real(WP), allocatable :: N2(:)
     real(WP), allocatable :: c_V(:)
     real(WP), allocatable :: c_p(:)
-    real(WP), allocatable :: chi_T(:)
     real(WP), allocatable :: chi_rho(:)
+    real(WP), allocatable :: chi_T(:)
     real(WP), allocatable :: nabla(:)
     real(WP), allocatable :: kappa(:)
-    real(WP), allocatable :: kappa_T(:)
     real(WP), allocatable :: kappa_rho(:)
+    real(WP), allocatable :: kappa_T(:)
     real(WP), allocatable :: epsilon(:)
-    real(WP), allocatable :: epsilon_T(:)
     real(WP), allocatable :: epsilon_rho(:)
+    real(WP), allocatable :: epsilon_T(:)
     real(WP), allocatable :: m(:)
     real(WP), allocatable :: Gamma_1(:)
     real(WP), allocatable :: nabla_ad(:)
@@ -99,20 +99,20 @@ contains
     call read_dset_alloc(hg, 'r', r)
     call read_dset_alloc(hg, 'w', w)
     call read_dset_alloc(hg, 'p', p)
-    call read_dset_alloc(hg, 'T', T)
     call read_dset_alloc(hg, 'rho', rho)
+    call read_dset_alloc(hg, 'T', T)
     call read_dset_alloc(hg, 'nabla', nabla)
     call read_dset_alloc(hg, 'N2', N2)
     call read_dset_alloc(hg, 'c_V', c_V)
     call read_dset_alloc(hg, 'c_p', c_p)
-    call read_dset_alloc(hg, 'chi_T', chi_T)
     call read_dset_alloc(hg, 'chi_rho', chi_rho)
+    call read_dset_alloc(hg, 'chi_T', chi_T)
     call read_dset_alloc(hg, 'epsilon', epsilon)
-    call read_dset_alloc(hg, 'epsilon_T', epsilon_T)
     call read_dset_alloc(hg, 'epsilon_rho', epsilon_rho)
+    call read_dset_alloc(hg, 'epsilon_T', epsilon_T)
     call read_dset_alloc(hg, 'kappa', kappa)
-    call read_dset_alloc(hg, 'kappa_T', kappa_T)
     call read_dset_alloc(hg, 'kappa_rho', kappa_rho)
+    call read_dset_alloc(hg, 'kappa_T', kappa_T)
 
     call hg%final()
 
@@ -142,18 +142,18 @@ contains
        N2 = [0._WP,N2]
 
        call add_center(r, p)
-       call add_center(r, T)
        call add_center(r, rho)
+       call add_center(r, T)
        call add_center(r, Gamma_1)
        call add_center(r, nabla_ad)
        call add_center(r, delta)
        call add_center(r, nabla)
        call add_center(r, kappa)
-       call add_center(r, kappa_T)
        call add_center(r, kappa_rho)
+       call add_center(r, kappa_T)
        call add_center(r, epsilon)
-       call add_center(r, epsilon_T)
        call add_center(r, epsilon_rho)
+       call add_center(r, epsilon_T)
 
        r = [0._WP,r]
 
@@ -179,10 +179,10 @@ contains
 
        select type (tc)
        type is (evol_therm_coeffs_t)
-          call tc%init(G, M_star, R_star, L_star, r, m, p, T, rho, &
+          call tc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                        Gamma_1, nabla_ad, c_p, nabla, &
-                       kappa, kappa_T, kappa_rho, &
-                       epsilon, epsilon_T, epsilon_rho, deriv_type)
+                       kappa, kappa_rho, kappa_T, &
+                       epsilon, epsilon_rho, epsilon_T, deriv_type)
        class default
           $ABORT(Invalid tc type)
        end select
