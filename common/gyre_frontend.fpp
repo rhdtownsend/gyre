@@ -54,6 +54,7 @@ module gyre_frontend
   public :: init_shoot_grid
   public :: init_recon_grid
   public :: write_data
+  public :: freq_scale
 
 contains
 
@@ -325,7 +326,7 @@ contains
        case('INVERSE')
           omega = [omega,((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_max), i=1,n_freq)]
        case default
-          $ABORT(Invalid freq_grid)
+          $ABORT(Invalid grid_type)
        end select
 
     end do read_loop
