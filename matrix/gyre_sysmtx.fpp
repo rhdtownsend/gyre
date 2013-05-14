@@ -213,81 +213,71 @@ contains
 
        ! Reduce pairs of blocks to single blocks
 
-       !OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (P, Q, R, ipiv, info, i)
-       reduce_loop : do k = 1, n, 2
+       !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (P, Q, R, ipiv, info, i)
+       reduce_loop : do k = 1, n-1, 2
 
-          if(k < n) then
+          ! Set up matrices (see expressions following eqn. 2.5 of
+          ! Wright 1994)
 
-             ! Double block; reduce
+          P(:n_e,:) = C(:,:,k)
+          P(n_e+1:,:) = A(:,:,k+1)
 
-             ! Set up matrices (see expressions following eqn. 2.5 of
-             ! Wright 1994)
+          Q(:n_e,:) = 0._WP
+          Q(n_e+1:,:) = C(:,:,k+1)
 
-             P(:n_e,:) = C(:,:,k)
-             P(n_e+1:,:) = A(:,:,k+1)
+          R(:n_e,:) = A(:,:,k)
+          R(n_e+1:,:) = 0._WP
 
-             Q(:n_e,:) = 0._WP
-             Q(n_e+1:,:) = C(:,:,k+1)
+          ! Calculate the LU factorization of P, and use it to reduce
+          ! Q and R. The nasty fpx3 stuff is to ensure the correct
+          ! LAPACK/BLAS routines are called (can't use generics, since
+          ! we're then not allowed to pass array elements into
+          ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
+          ! "Fortran 90/95 Explained")
 
-             R(:n_e,:) = A(:,:,k)
-             R(n_e+1:,:) = 0._WP
+          call LA_GETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
+          $ASSERT(info == 0, Non-zero return from LA_GETRF)
 
-             ! Calculate the LU factorization of P, and use it to reduce
-             ! Q and R. The nasty fpx3 stuff is to ensure the correct
-             ! LAPACK/BLAS routines are called (can't use generics, since
-             ! we're then not allowed to pass array elements into
-             ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
-             ! "Fortran 90/95 Explained")
+          $block
 
-             call LA_GETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
-             $ASSERT(info == 0, Non-zero return from LA_GETRF)
-
-             $block
-
-             $if($DOUBLE_PRECISION)
-             $local $X Z
-             $else
-             $local $X C
-             $endif
-             
-             call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
-             call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                           CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, Q(1,1), 2*n_e)
-             call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                           P(n_e+1,1), 2*n_e, Q(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                           Q(n_e+1,1), 2*n_e)
-
-             call ${X}LASWP(n_e, R, 2*n_e, 1, n_e, ipiv, 1)
-             call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                           CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, R(1,1), 2*n_e)
-             call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                           P(n_e+1,1), 2*n_e, R(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                           R(n_e+1,1), 2*n_e)
-
-             $endblock
-
-             ! Calculate the block determinant
-
-             block_det(k) = product(ext_complex(diagonal(P)))
+          $if($DOUBLE_PRECISION)
+          $local $X Z
+          $else
+          $local $X C
+          $endif
           
-             do i = 1,n_e
-                if(ipiv(i) /= i) block_det(k) = -block_det(k)
-             end do
+          call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
+          call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                        CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, Q(1,1), 2*n_e)
+          call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                        P(n_e+1,1), 2*n_e, Q(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                        Q(n_e+1,1), 2*n_e)
 
-             ! Store results
+          call ${X}LASWP(n_e, R, 2*n_e, 1, n_e, ipiv, 1)
+          call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                        CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, R(1,1), 2*n_e)
+          call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                        P(n_e+1,1), 2*n_e, R(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                        R(n_e+1,1), 2*n_e)
 
-             C(:,:,k) = Q(n_e+1:,:)
-             A(:,:,k) = R(n_e+1:,:)
+          $endblock
 
-          else
+          ! Calculate the block determinant
 
-             ! Single final block; don't reduce
+          block_det(k) = product(ext_complex(diagonal(P)))
+          
+          do i = 1,n_e
+             if(ipiv(i) /= i) block_det(k) = -block_det(k)
+          end do
+             
+          ! Store results
 
-             block_det(k) = ext_complex(1._WP)
-
-          end if
+          C(:,:,k) = Q(n_e+1:,:)
+          A(:,:,k) = R(n_e+1:,:)
 
        end do reduce_loop
+
+       if(MOD(n, 2) /= 0) block_det(n) = ext_complex(1._WP)
 
        ! Update the determinant
 
