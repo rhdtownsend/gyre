@@ -56,7 +56,6 @@ module gyre_sysmtx
      procedure, public :: set_outer_bound
      procedure, public :: set_block
      procedure, public :: determinant => determinant_slu
-     procedure         :: determinant_banded
      procedure, public :: null_vector => null_vector_banded
   end type sysmtx_t
 
@@ -245,9 +244,9 @@ contains
 
     else
 
-       ! Calculate the determinant using the banded algorithm
+       ! Calculate the determinant using single-threaded elimination
 
-       det = this%determinant_banded()
+       call elim(this, elim_det=det)
 
     endif
 
@@ -259,48 +258,117 @@ contains
 
 !****
 
-  function determinant_banded (this) result (det)
+  subroutine elim (this, U, E, elim_det)
 
-    class(sysmtx_t), intent(inout) :: this
-    type(ext_complex_t)            :: det
+    class(sysmtx_t), intent(in)                :: this
+    complex(WP), intent(out), optional         :: U(:,:,:)
+    complex(WP), intent(out), optional         :: E(:,:,:)
+    type(ext_complex_t), intent(out), optional :: elim_det
 
-    complex(WP), allocatable :: A_b(:,:)
-    integer, allocatable     :: ipiv(:)
-    integer                  :: n_l
-    integer                  :: n_u
-    integer                  :: i
+    integer     :: n_e
+    integer     :: n_i
+    complex(WP) :: P(this%n_e+this%n_i,this%n_e)
+    complex(WP) :: Q(this%n_e+this%n_i,this%n_e)
+    complex(WP) :: P_f(this%n_e,this%n_e)
+    integer     :: k
+    integer     :: ipiv(this%n_e)
+    integer     :: info
+    integer     :: i
 
-    ! Pack the sysmtx into banded format
+    if(PRESENT(U)) then
+       $ASSERT(SIZE(U, 1) == this%n_e,Dimension mismatch)
+       $ASSERT(SIZE(U, 2) == this%n_e,Dimension mismatch)
+       $ASSERT(SIZE(U, 3) == this%n+1,Dimension mismatch)
+    endif
 
-    call pack_banded(this, A_b)
+    if(PRESENT(E)) then
+       $ASSERT(SIZE(E, 1) == this%n_e,Dimension mismatch)
+       $ASSERT(SIZE(E, 2) == this%n_e,Dimension mismatch)
+       $ASSERT(SIZE(E, 3) == this%n,Dimension mismatch)
+    endif
 
-    n_l = this%n_e + this%n_i - 1
-    n_u = this%n_e + this%n_i - 1
+    ! Gaussian eliminate the sysmtx, storing the reduced blocks in
+    ! (the upper triangular part of) U and E and the elimination
+    ! determinant in elim_det
 
-    ! LU decompose the banded matrix
+    if(PRESENT(elim_det)) elim_det = ext_complex(1._WP)
 
-    allocate(ipiv(SIZE(A_b, 2)))
+    n_e = this%n_e
+    n_i = this%n_i
 
-    call lu_decompose(A_b, n_l, n_u, ipiv)
+    Q(n_e+1:,:) = this%B_i
 
-    ! Calculate the determinant as the product of the diagonals (with
-    ! sign flips to account for permutations)
+    block_loop : do k = 1, this%n
+       
+       ! Set up block matrices
 
-    det = product(ext_complex(A_b(n_l+n_u+1,:)))
+       P(:n_i,:) = Q(n_e+1:,:)
+       P(n_i+1:,:) = this%E_l(:,:,k)
 
-    do i = 1,SIZE(A_b, 2)
-       if(ipiv(i) /= i) det = -det
-    end do
+       Q(:n_i,:) = 0._WP
+       Q(n_i+1:,:) = this%E_r(:,:,k)
 
-    ! Add in the block scales
+       ! Calculate the LU factorization of P, and use it to reduce
+       ! Q. The nasty fpx3 stuff is to ensure the correct LAPACK/BLAS
+       ! routines are called (see below in elim_partition)
 
-    det = product([det,this%S])
+       call LA_GETRF(n_e+n_i, n_e, P, n_e+n_i, ipiv, info)
+       $ASSERT(info == 0, Non-zero return from LA_GETRF)
+
+       if(PRESENT(U)) U(:,:,k) = P(:n_e,:)
+
+       $block
+
+       $if($DOUBLE_PRECISION)
+       $local $X Z
+       $else
+       $local $X C
+       $endif
+
+       call ${X}LASWP(n_e, Q, n_e+n_i, 1, n_e, ipiv, 1)
+       call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                     CMPLX(1._WP, KIND=WP), P(1,1), n_e+n_i, Q(1,1), n_e+n_i)
+       call ${X}GEMM('N', 'N', n_i, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                      P(n_e+1,1), n_e+n_i, Q(1,1), n_e+n_i, CMPLX(1._WP, KIND=WP), &
+                      Q(n_e+1,1), n_e+n_i)
+
+       $endblock
+
+       if(PRESENT(E)) E(:,:,k) = Q(:n_e,:)
+
+       ! Update the elimination determinant
+
+       if(PRESENT(elim_det)) then
+          elim_det = product([ext_complex(diagonal(P)),elim_det])
+          do i = 1,n_e
+             if(ipiv(i) /= i) elim_det = -elim_det
+          end do
+       endif
+
+    end do block_loop
+    
+    ! Process the final block
+
+    P_f(:n_i,:) = Q(n_e+1:,:)
+    P_f(n_i+1:,:) = this%B_o
+
+    call LA_GETRF(n_e, n_e, P_f, n_e, ipiv, info)
+    $ASSERT(info == 0, Non-zero return from LA_GETRF)
+
+    if(PRESENT(U)) U(:,:,this%n+1) = P_f
+
+    if(PRESENT(elim_det)) then
+       elim_det = product([ext_complex(diagonal(P_f)),elim_det])
+       do i = 1,n_e
+          if(ipiv(i) /= i) elim_det = -elim_det
+       end do
+    endif
 
     ! Finish
 
     return
 
-  end function determinant_banded
+  end subroutine elim
 
 !****
 
@@ -352,17 +420,16 @@ contains
           M_E(:n_e,:) = 0._WP
           M_E(n_e+1:,:) = this%E_r(:,:,k+1)
 
-          ! Transform the block by LU factoring M_U, and then
-          ! multiplying the block by L^-1
+          ! Calculate the LU factorization of M_U
 
           call LA_GETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
           $ASSERT(info == 0, Non-zero return from LA_GETRF)
 
-          ! This nasty fpx3 stuff is to ensure the correct LAPACK/BLAS
-          ! routines are called (can't use generics, since we're then
-          ! not allowed to pass array elements into assumed-size
-          ! arrays; see, e.g., p. 268 of Metcalfe & Reid, "Fortran
-          ! 90/95 Explained")
+          ! Multiply M_G and M_E by L^-1. This nasty fpx3 stuff is to
+          ! ensure the correct LAPACK/BLAS routines are called (can't
+          ! use generics, since we're then not allowed to pass array
+          ! elements into assumed-size arrays; see, e.g., p. 268 of
+          ! Metcalfe & Reid, "Fortran 90/95 Explained")
 
           $block
 
