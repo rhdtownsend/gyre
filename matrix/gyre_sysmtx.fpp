@@ -244,6 +244,8 @@ contains
        ! Calculate the determinant using single-threaded elimination
 
        call elim(this, elim_det=det)
+       det = product([det,this%S])
+
 !       det = determinant_banded(this)
 
     endif
