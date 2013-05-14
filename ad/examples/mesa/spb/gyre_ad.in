@@ -1,6 +1,7 @@
 &coeffs
-	coeffs_type = 'MESA'
+	coeffs_type = 'EVOL'
 	file = 'spb.mesa'
+	file_format = 'MESA'
 /
 
 &osc
