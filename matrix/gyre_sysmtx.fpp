@@ -44,7 +44,6 @@ module gyre_sysmtx
      complex(WP), allocatable         :: E_l(:,:,:) ! Left equation blocks
      complex(WP), allocatable         :: E_r(:,:,:) ! Right equation blocks
      type(ext_complex_t), allocatable :: S(:)       ! Block scales
-     integer, allocatable             :: k_part(:)  ! Block partitioning indices
      integer                          :: n          ! Number of equation blocks
      integer                          :: n_e        ! Number of equations per block
      integer                          :: n_i        ! Number of inner boundary conditions
@@ -86,10 +85,6 @@ contains
     allocate(this%B_o(n_o,n_e))
 
     allocate(this%S(n))
-
-    allocate(this%k_part(OMP_SIZE_MAX+1))
-
-    call partition_tasks(n, 2, this%k_part)
 
     this%n = n
     this%n_e = n_e
