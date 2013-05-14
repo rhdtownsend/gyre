@@ -1,6 +1,7 @@
 &coeffs
-	coeffs_type = 'MESA'
+	coeffs_type = 'EVOL'
 	file = 'bcep.mesa'
+	file_format = 'MESA'
 /
 
 &osc
@@ -10,7 +11,7 @@
 &num
 	ivp_solver_type = 'MAGNUS_GL2'
 	n_iter_max = 100
-	theta_ad = 1E-6
+!	theta_ad = 1E-6
 /
 
 &scan

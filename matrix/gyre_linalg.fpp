@@ -35,16 +35,6 @@ module gyre_linalg
 
   ! Interfaces
 
-  interface gaussian_elim
-     module procedure gaussian_elim_r
-     module procedure gaussian_elim_c
-  end interface gaussian_elim
-
-  interface gaussian_mod
-     module procedure gaussian_mod_r
-     module procedure gaussian_mod_c
-  end interface gaussian_mod
-
   interface lu_decompose
      module procedure lu_decompose_r
      module procedure lu_decompose_c
@@ -122,8 +112,6 @@ module gyre_linalg
 
   private
 
-  public :: gaussian_elim
-  public :: gaussian_mod
   public :: lu_decompose
   public :: lu_backsub
   public :: lu_null_vector
@@ -143,156 +131,6 @@ module gyre_linalg
   ! Procedures
 
 contains
-
-  $define $GAUSSIAN_ELIM $sub
-
-  $local $SUFFIX $1
-  $local $TYPE $2
-
-  subroutine gaussian_elim_$SUFFIX (A, ipiv, scale_rows)
-      
-    $TYPE(WP), intent(inout)      :: A(:,:)
-    integer, intent(out)          :: ipiv(:)
-    logical, intent(in), optional :: scale_rows
-
-    real(WP)  :: s(SIZE(A, 1))
-    integer   :: k
-    $TYPE(WP) :: A_tmp(SIZE(A, 2))
-    real(WP)  :: s_tmp
-
-    $ASSERT(SIZE(ipiv) == MIN(SIZE(A, 1), SIZE(A, 2)),Dimension mismatch)
-
-    ! Perform Gaussian elimination on (generally, non-square) A, using
-    ! algorithm 3.4.1 of Golub & Van Loan
-
-    ! Determine row scale factors
-
-    if(PRESENT(scale_rows)) then
-
-       if(scale_rows) then
-
-          s = MAXVAL(ABS(A), DIM=2)
-          $ASSERT(ALL(s /= 0._WP),Singular matrix)
-
-          s = 1._WP/s
-
-       else
-
-          s = 1._WP
-
-       endif
-
-    else
-
-       s = 1._WP
-
-    endif
-
-    ! Loop down the diagonal
-
-    do k = 1,MIN(SIZE(A, 1), SIZE(A, 2))
-
-       ! Find the pivot row
-         
-       ipiv(k) = (k - 1) + MAXLOC(s(k:)*ABS(A(k:,k)), DIM=1)
-
-       ! If required, swap rows
-
-       if(ipiv(k) /= k) then
-
-          A_tmp = A(k,:)
-          A(k,:) = A(ipiv(k),:)
-          A(ipiv(k),:) = A_tmp
-
-          s_tmp = s(k)
-          s(k) = s(ipiv(k))
-          s(ipiv(k)) = s_tmp
-
-       endif
-
-       ! Update the matrix
-
-       A(k+1:,k) = A(k+1:,k)/A(k,k)
-
-       A(k+1:,k+1:) = A(k+1:,k+1:) - outer_product(A(k+1:,k), A(k,k+1:))
-
-    end do
-
-    ! Finish
-
-    return
-
-  end subroutine gaussian_elim_$SUFFIX
-
-  $endsub
-
-  $GAUSSIAN_ELIM(r,real)
-  $GAUSSIAN_ELIM(c,complex)
-
-!****
-
-  $define $GAUSSIAN_MOD $sub
-
-  $local $SUFFIX $1
-  $local $TYPE $2
-
-  subroutine gaussian_mod_$SUFFIX (A, ipiv, B)
-      
-    $TYPE(WP), intent(in)    :: A(:,:)
-    integer, intent(in)      :: ipiv(:)
-    $TYPE(WP), intent(inout) :: B(:,:)
-
-    integer   :: k
-    $TYPE(WP) :: B_tmp(SIZE(B, 2))
-    integer   :: j
-
-    $ASSERT(SIZE(ipiv) == MIN(SIZE(A, 1), SIZE(A, 2)),Dimension mismatch)
-
-    $ASSERT(SIZE(B, 1) == SIZE(A, 1),Dimension mismatch)
-
-    ! Perform Gaussian modification on B, using
-    ! algorithm 3.4.1 of Golub & Van Loan
-
-    ! Apply the permutation
-
-    do k = 1,MIN(SIZE(A, 1), SIZE(A,2))
-
-       if(ipiv(k) /= k) then
-
-          B_tmp = B(k,:)
-          B(k,:) = B(ipiv(k),:)
-          B(ipiv(k),:) = B_tmp
-          
-       endif
-
-    end do
-
-    ! Do the forward sub
-
-    do j = 1,SIZE(B, 2)
-
-       do k = 1,MIN(SIZE(A, 1), SIZE(A, 2))
-
-          ! Update the matrix
-
-          B(k+1:,j) = B(k+1:,j) - B(k,j)*A(k+1:,k)
-
-       end do
-
-    end do
-
-    ! Finish
-
-    return
-
-  end subroutine gaussian_mod_$SUFFIX
-
-  $endsub
-
-  $GAUSSIAN_MOD(r,real)
-  $GAUSSIAN_MOD(c,complex)
-
-!****
 
   $define $LU_DECOMPOSE $sub
 

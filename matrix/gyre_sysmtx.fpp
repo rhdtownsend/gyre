@@ -27,6 +27,8 @@ module gyre_sysmtx
   use gyre_ext_arith
   use gyre_linalg
 
+  use f77_lapack
+
   use ISO_FORTRAN_ENV
 
   ! No implicit typing
@@ -42,7 +44,6 @@ module gyre_sysmtx
      complex(WP), allocatable         :: E_l(:,:,:) ! Left equation blocks
      complex(WP), allocatable         :: E_r(:,:,:) ! Right equation blocks
      type(ext_complex_t), allocatable :: S(:)       ! Block scales
-     integer, allocatable             :: k_part(:)  ! Block partitioning indices
      integer                          :: n          ! Number of equation blocks
      integer                          :: n_e        ! Number of equations per block
      integer                          :: n_i        ! Number of inner boundary conditions
@@ -54,7 +55,6 @@ module gyre_sysmtx
      procedure, public :: set_outer_bound
      procedure, public :: set_block
      procedure, public :: determinant => determinant_slu
-     procedure         :: determinant_banded
      procedure, public :: null_vector => null_vector_banded
   end type sysmtx_t
 
@@ -85,10 +85,6 @@ contains
     allocate(this%B_o(n_o,n_e))
 
     allocate(this%S(n))
-
-    allocate(this%k_part(OMP_SIZE_MAX+1))
-
-    call partition_tasks(n, 2, this%k_part)
 
     this%n = n
     this%n_e = n_e
@@ -175,227 +171,158 @@ contains
 
 !****
 
-  recursive function determinant_slu (this) result (det)
+  function determinant_slu (this) result (det)
 
-    class(sysmtx_t), intent(inout) :: this
-    type(ext_complex_t)            :: det
+    class(sysmtx_t), intent(in) :: this
+    type(ext_complex_t)         :: det
 
-    integer             :: n_part(OMP_SIZE_MAX)
-    integer             :: t
-    type(ext_complex_t) :: elim_det(OMP_SIZE_MAX)
-    type(sysmtx_t)      :: sm
-    integer             :: k_src
-    integer             :: k_dest
+    complex(WP)         :: A(this%n_e,this%n_e,this%n)
+    complex(WP)         :: C(this%n_e,this%n_e,this%n)
+    integer             :: n
+    integer             :: n_e
+    integer             :: k
+    complex(WP)         :: P(2*this%n_e,this%n_e)
+    complex(WP)         :: Q(2*this%n_e,this%n_e)
+    complex(WP)         :: R(2*this%n_e,this%n_e)
+    integer             :: ipiv(this%n_e)
+    integer             :: info
+    integer             :: i
+    type(ext_complex_t) :: block_det(this%n)
+    integer             :: n_red
+    integer             :: n_i
+    complex(WP)         :: M(2*this%n_e,2*this%n_e)
+    integer             :: ipiv2(2*this%n_e)
 
-    ! Decide on the strategy
+    det = ext_complex(1._WP)
 
-    if(this%n > 2) then
+    ! Extract interior blocks from the sysmtx
 
-       ! Reduce the matrix using the structured factorization (SLU)
-       ! algorithm by Wright (1994)
+    A = this%E_l
+    C = this%E_r
 
-       n_part = this%k_part(2:) - this%k_part(:OMP_SIZE_MAX)
+    ! Repeatedly halve the number of these blocks by using the
+    ! structured factorization (SLU) algorithm (Wright 1994) with a
+    ! partition size of one or two
 
-       ! Apply Gaussian elimination to the partitions
+    n = this%n
+    n_e = this%n_e
 
-       !$OMP PARALLEL DO
-       elim_loop : do t = 1,OMP_SIZE_MAX
-          call elim_partition(this%E_l(:,:,this%k_part(t):this%k_part(t+1)-1), &
-                              this%E_r(:,:,this%k_part(t):this%k_part(t+1)-1), &
-                              elim_det(t))
-       end do elim_loop
+    factor_loop : do
 
-       ! Initialize the reduced sysmtx
+       if (n==1) exit factor_loop
 
-       call sm%init(COUNT(n_part > 0), this%n_e, this%n_i, this%n_o)
+       ! Reduce pairs of blocks to single blocks
 
-       sm%B_i = this%B_i
-       sm%B_o = this%B_o
+       !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (P, Q, R, ipiv, info, i)
+       reduce_loop : do k = 1, n-1, 2
 
-       ! Copy blocks to the reduced sysmtx
+          ! Set up matrices (see expressions following eqn. 2.5 of
+          ! Wright 1994)
 
-       !$OMP PARALLEL DO PRIVATE(k_src, k_dest)
-       xfer_loop : do t = 1, OMP_SIZE_MAX
+          P(:n_e,:) = C(:,:,k)
+          P(n_e+1:,:) = A(:,:,k+1)
 
-          if(n_part(t) > 0) then
+          Q(:n_e,:) = 0._WP
+          Q(n_e+1:,:) = C(:,:,k+1)
 
-             ! Determine the source and destination indices
+          R(:n_e,:) = A(:,:,k)
+          R(n_e+1:,:) = 0._WP
 
-             k_src = this%k_part(t+1)-1
-             k_dest = COUNT(n_part(:t) > 0)
+          ! Calculate the LU factorization of P, and use it to reduce
+          ! Q and R. The nasty fpx3 stuff is to ensure the correct
+          ! LAPACK/BLAS routines are called (can't use generics, since
+          ! we're then not allowed to pass array elements into
+          ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
+          ! "Fortran 90/95 Explained")
 
-             ! Copy the blocks
+          call LA_GETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
+          $ASSERT(info == 0, Non-zero return from LA_GETRF)
 
-             sm%E_l(:,:,k_dest) = this%E_l(:,:,k_src)
-             sm%E_r(:,:,k_dest) = this%E_r(:,:,k_src)
-             sm%S(k_dest) = product(this%S(this%k_part(t):this%k_part(t+1)-1))
+          $block
 
-          endif
+          $if($DOUBLE_PRECISION)
+          $local $X Z
+          $else
+          $local $X C
+          $endif
+          
+          call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
+          call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                        CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, Q(1,1), 2*n_e)
+          call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                        P(n_e+1,1), 2*n_e, Q(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                        Q(n_e+1,1), 2*n_e)
 
-       end do xfer_loop
+          call ${X}LASWP(n_e, R, 2*n_e, 1, n_e, ipiv, 1)
+          call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                        CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, R(1,1), 2*n_e)
+          call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                        P(n_e+1,1), 2*n_e, R(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                        R(n_e+1,1), 2*n_e)
 
-       ! Combine the elimination determinants with the determinant of
-       ! the reduced matrix
+          $endblock
 
-       det = product([elim_det,sm%determinant()])
+          ! Calculate the block determinant
 
-    else
+          block_det(k) = product(ext_complex(diagonal(P)))
+          
+          do i = 1,n_e
+             if(ipiv(i) /= i) block_det(k) = -block_det(k)
+          end do
+             
+          ! Store results
 
-       ! Calculate the determinant using the banded algorithm
+          C(:,:,k) = Q(n_e+1:,:)
+          A(:,:,k) = R(n_e+1:,:)
 
-       det = this%determinant_banded()
+       end do reduce_loop
 
-    endif
+       if(MOD(n, 2) /= 0) block_det(n) = ext_complex(1._WP)
+
+       ! Update the determinant
+
+       det = product([block_det(:n:2),det])
+
+       ! Repack the reduced matrix
+
+       n_red = (n+1)/2
+
+       A(:,:,:n_red) = A(:,:,:n:2)
+       C(:,:,:n_red) = C(:,:,:n:2)
+
+       n = n_red
+
+       ! Loop around
+
+    end do factor_loop
+
+    ! Process the final matrix, consisting of the boundary conditions
+    ! plus a single internal block
+
+    n_i = this%n_i
+
+    M(:n_i,:n_e) = this%B_i
+    M(n_i+1:n_i+n_e,:n_e) = A(:,:,1)
+    M(n_i+n_e+1:,:n_e) = 0._WP
+
+    M(:n_i,n_e+1:) = 0._WP
+    M(n_i+1:n_i+n_e,n_e+1:) = C(:,:,1)
+    M(n_i+n_e+1:,n_e+1:) = this%B_o
+
+    call LA_GETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
+    $ASSERT(info == 0, Non-zero return from LA_GETRF)
+
+    det = product([ext_complex(diagonal(M)),det,this%S])
+    
+    do i = 1,2*n_e
+       if(ipiv2(i) /= i) det = -det
+    end do
 
     ! Finish
 
     return
 
   end function determinant_slu
-
-!****
-
-  function determinant_banded (this) result (det)
-
-    class(sysmtx_t), intent(inout) :: this
-    type(ext_complex_t)            :: det
-
-    complex(WP), allocatable :: A_b(:,:)
-    integer, allocatable     :: ipiv(:)
-    integer                  :: n_l
-    integer                  :: n_u
-    integer                  :: i
-
-    ! Pack the sysmtx into banded format
-
-    call pack_banded(this, A_b)
-
-    n_l = this%n_e + this%n_i - 1
-    n_u = this%n_e + this%n_i - 1
-
-    ! LU decompose the banded matrix
-
-    allocate(ipiv(SIZE(A_b, 2)))
-
-    call lu_decompose(A_b, n_l, n_u, ipiv)
-
-    ! Calculate the determinant as the product of the diagonals (with
-    ! sign flips to account for permutations)
-
-    det = product(ext_complex(A_b(n_l+n_u+1,:)))
-
-    do i = 1,SIZE(A_b, 2)
-       if(ipiv(i) /= i) det = -det
-    end do
-
-    ! Add in the block scales
-
-    det = product([det,this%S])
-
-    ! Finish
-
-    return
-
-  end function determinant_banded
-
-!****
-
-  subroutine elim_partition (A, C, elim_det)
-
-    complex(WP), intent(inout)       :: A(:,:,:)
-    complex(WP), intent(inout)       :: C(:,:,:)
-    type(ext_complex_t), intent(out) :: elim_det
-      
-    integer     :: n_e
-    integer     :: n
-    complex(WP) :: G(SIZE(A, 1),SIZE(A, 1),SIZE(A, 3))
-    integer     :: k
-    complex(WP) :: V(2*SIZE(A, 1),SIZE(A, 1))
-    integer     :: i
-    complex(WP) :: W(2*SIZE(A, 1),SIZE(A, 1))
-    integer     :: ipiv(SIZE(A, 1))
-
-    $ASSERT(SIZE(A, 2) == SIZE(A, 1),Dimension mismatch)
-
-    $ASSERT(SIZE(C, 1) == SIZE(A, 1),Dimension mismatch)
-    $ASSERT(SIZE(C, 2) == SIZE(A, 1),Dimension mismatch)
-
-    ! Perform the Gaussian elimination steps described in Section 2 of
-    ! Wright (1994)
-
-    n_e = SIZE(A, 1)
-    n = SIZE(A, 3)
-
-    elim_det = ext_complex(1._WP)
-
-    if(n > 0) then
-
-       G(:,:,1) = A(:,:,1)
-
-       block_loop : do k = 1, n-1
-       
-          ! Set up the current double-height block and Gaussian eliminate it
-
-          V(:n_e,:) = C(:,:,k)
-          V(n_e+1:,:) = A(:,:,k+1)
-
-          call gaussian_elim(V, ipiv)
-
-          ! Update the elimination determinant
-
-          elim_det = product([ext_complex(diagonal(V)),elim_det])
-
-          do i = 1,n_e
-             if(ipiv(i) /= i) elim_det = -elim_det
-          end do
-          
-          ! Update the appropriate blocks
-
-          associate(R => A, E => C)
-
-            ! R
-
-            do i = 1,n_e
-               R(i,:i-1,k) = 0._WP
-               R(i,i:,k) = V(i,i:)
-            end do
-            
-            ! C & E
-
-            W(:n_e,:) = 0._WP
-            W(n_e+1:,:) = C(:,:,k+1)
-
-            call gaussian_mod(V, ipiv, W)
-
-            E(:,:,k) = W(:n_e,:)
-            C(:,:,k+1) = W(n_e+1:,:)
-
-            ! G
-
-            W(:n_e,:) = G(:,:,k)
-            W(n_e+1:,:) = 0._WP
-
-            call gaussian_mod(V, ipiv, W)
-
-            G(:,:,k) = W(:n_e,:)
-            G(:,:,k+1) = W(n_e+1:,:)
-
-          end associate
-
-       end do block_loop
-
-       ! Extract the results
-      
-       A(:,:,n) = G(:,:,n)
-       C(:,:,n) = C(:,:,n)
-
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine elim_partition
 
 !****
 

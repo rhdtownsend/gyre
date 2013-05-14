@@ -95,10 +95,10 @@ module gyre_evol_therm_coeffs
 
 contains 
 
-  subroutine init (this, G, M_star, R_star, L_star, r, m, p, T, rho, &
+  subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, &
                    Gamma_1, nabla_ad, delta, nabla, &
-                   kappa, kappa_T, kappa_rho, &
-                   epsilon, epsilon_T, epsilon_rho, deriv_type)
+                   kappa, kappa_rho, kappa_T, &
+                   epsilon, epsilon_rho, epsilon_T, deriv_type)
 
     class(evol_therm_coeffs_t), intent(out) :: this
     real(WP), intent(in)                    :: G
@@ -108,18 +108,18 @@ contains
     real(WP), intent(in)                    :: r(:)
     real(WP), intent(in)                    :: m(:)
     real(WP), intent(in)                    :: p(:)
-    real(WP), intent(in)                    :: T(:)
     real(WP), intent(in)                    :: rho(:)
+    real(WP), intent(in)                    :: T(:)
     real(WP), intent(in)                    :: Gamma_1(:)
     real(WP), intent(in)                    :: nabla_ad(:)
     real(WP), intent(in)                    :: delta(:)
     real(WP), intent(in)                    :: nabla(:)
     real(WP), intent(in)                    :: kappa(:)
-    real(WP), intent(in)                    :: kappa_T(:)
     real(WP), intent(in)                    :: kappa_rho(:)
+    real(WP), intent(in)                    :: kappa_T(:)
     real(WP), intent(in)                    :: epsilon(:)
-    real(WP), intent(in)                    :: epsilon_T(:)
     real(WP), intent(in)                    :: epsilon_rho(:)
+    real(WP), intent(in)                    :: epsilon_T(:)
     character(LEN=*), intent(in)            :: deriv_type
 
     integer  :: n

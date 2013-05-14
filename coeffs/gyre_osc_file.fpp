@@ -68,19 +68,19 @@ contains
     real(WP), allocatable :: r(:)
     real(WP), allocatable :: m(:)
     real(WP), allocatable :: p(:)
-    real(WP), allocatable :: T(:) 
     real(WP), allocatable :: rho(:) 
+    real(WP), allocatable :: T(:) 
     real(WP), allocatable :: N2(:)
     real(WP), allocatable :: Gamma_1(:)
     real(WP), allocatable :: nabla_ad(:)
     real(WP), allocatable :: delta(:)
     real(WP), allocatable :: nabla(:)
     real(WP), allocatable :: kappa(:)
-    real(WP), allocatable :: kappa_T(:)
     real(WP), allocatable :: kappa_rho(:)
+    real(WP), allocatable :: kappa_T(:)
     real(WP), allocatable :: epsilon_(:)
-    real(WP), allocatable :: epsilon_T(:)
     real(WP), allocatable :: epsilon_rho(:)
+    real(WP), allocatable :: epsilon_T(:)
 
     ! Read the model from the OSC-format file
 
@@ -156,18 +156,18 @@ contains
        N2 = [0._WP,N2]
 
        call add_center(r, p)
-       call add_center(r, T)
        call add_center(r, rho)
+       call add_center(r, T)
        call add_center(r, Gamma_1)
        call add_center(r, nabla_ad)
        call add_center(r, delta)
        call add_center(r, nabla)
        call add_center(r, kappa)
-       call add_center(r, kappa_T)
        call add_center(r, kappa_rho)
+       call add_center(r, kappa_T)
        call add_center(r, epsilon_)
-       call add_center(r, epsilon_T)
        call add_center(r, epsilon_rho)
+       call add_center(r, epsilon_T)
 
        r = [0._WP,r]
 
@@ -195,10 +195,10 @@ contains
 
        select type (tc)
        type is (evol_therm_coeffs_t)
-          call tc%init(G, M_star, R_star, L_star, r, m, p, T, rho, &
+          call tc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                        Gamma_1, nabla_ad, delta, nabla,  &
-                       kappa, kappa_T, kappa_rho, &
-                       epsilon_, epsilon_T, epsilon_rho, deriv_type)
+                       kappa, kappa_rho, kappa_T, &
+                       epsilon_, epsilon_rho, epsilon_T, deriv_type)
        class default
           $ABORT(Invalid tc type)
        end select

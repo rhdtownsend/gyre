@@ -1,6 +1,7 @@
 &coeffs
+        coeffs_type = 'EVOL'
         file = 'refmodel.h5'
-        coeffs_type = 'B3'
+	file_format = 'B3'
         G = 6.6742800000e-08
 /
 
