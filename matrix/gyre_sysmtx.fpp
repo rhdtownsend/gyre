@@ -184,8 +184,9 @@ contains
     integer             :: n_part(OMP_SIZE_MAX)
     integer             :: t
     type(ext_complex_t) :: elim_det(OMP_SIZE_MAX)
+    complex(WP)         :: C(this%n_e,this%n_e,OMP_SIZE_MAX)
+    complex(WP)         :: A(this%n_e,this%n_e,OMP_SIZE_MAX)
     type(sysmtx_t)      :: sm
-    integer             :: k_src
     integer             :: k_dest
 
     ! Decide on the strategy
@@ -201,7 +202,7 @@ contains
 
        t = omp_rank() + 1
 
-       call elim_partition(this, t, elim_det=elim_det(t))
+       call elim_partition(this, t, C(:,:,t), A(:,:,t), elim_det=elim_det(t))
 
        !$OMP END PARALLEL
 
@@ -216,21 +217,17 @@ contains
 
        ! Copy blocks to the reduced sysmtx
 
-       !$OMP PARALLEL PRIVATE (t, k_src, k_dest)
+       !$OMP PARALLEL PRIVATE (t, k_dest)
 
        t = omp_rank() + 1
 
        if(n_part(t) > 0) then
 
-          ! Determine the source and destination indices
-
-          k_src = this%k_part(t+1)-1
           k_dest = COUNT(n_part(:t) > 0)
 
-          ! Copy the blocks
+          sm%E_l(:,:,k_dest) = A(:,:,t)
+          sm%E_r(:,:,k_dest) = C(:,:,t)
 
-          sm%E_l(:,:,k_dest) = this%E_l(:,:,k_src)
-          sm%E_r(:,:,k_dest) = this%E_r(:,:,k_src)
           sm%S(k_dest) = product(this%S(this%k_part(t):this%k_part(t+1)-1))
 
        endif
@@ -247,6 +244,7 @@ contains
        ! Calculate the determinant using single-threaded elimination
 
        call elim(this, elim_det=det)
+!       det = determinant_banded(this)
 
     endif
 
@@ -255,6 +253,51 @@ contains
     return
 
   end function determinant_slu
+
+!****
+
+  function determinant_banded (this) result (det)
+
+    class(sysmtx_t), intent(inout) :: this
+    type(ext_complex_t)            :: det
+
+    complex(WP), allocatable :: A_b(:,:)
+    integer, allocatable     :: ipiv(:)
+    integer                  :: n_l
+    integer                  :: n_u
+    integer                  :: i
+
+    ! Pack the sysmtx into banded format
+
+    call pack_banded(this, A_b)
+
+    n_l = this%n_e + this%n_i - 1
+    n_u = this%n_e + this%n_i - 1
+
+    ! LU decompose the banded matrix
+
+    allocate(ipiv(SIZE(A_b, 2)))
+
+    call lu_decompose(A_b, n_l, n_u, ipiv)
+
+    ! Calculate the determinant as the product of the diagonals (with
+    ! sign flips to account for permutations)
+
+    det = product(ext_complex(A_b(n_l+n_u+1,:)))
+
+    do i = 1,SIZE(A_b, 2)
+       if(ipiv(i) /= i) det = -det
+    end do
+
+    ! Add in the block scales
+
+    det = product([det,this%S])
+
+    ! Finish
+
+    return
+
+  end function determinant_banded
 
 !****
 
@@ -287,9 +330,9 @@ contains
        $ASSERT(SIZE(E, 3) == this%n,Dimension mismatch)
     endif
 
-    ! Gaussian eliminate the sysmtx, storing the reduced blocks in
-    ! (the upper triangular part of) U and E and the elimination
-    ! determinant in elim_det
+    ! Gaussian eliminate the sysmtx, storing the results in (the upper
+    ! triangular part of) U and E, and the elimination determinant in
+    ! elim_det
 
     if(PRESENT(elim_det)) elim_det = ext_complex(1._WP)
 
@@ -372,64 +415,66 @@ contains
 
 !****
 
-  subroutine elim_partition (this, t, E, elim_det)
+  subroutine elim_partition (this, t, C, A, elim_det)
 
-    class(sysmtx_t), intent(inout)             :: this
-    integer, intent(in)                        :: t
-    complex(WP), intent(out), optional         :: E(:,:,:)
-    type(ext_complex_t), intent(out), optional :: elim_det
+    class(sysmtx_t), intent(in)      :: this
+    integer, intent(in)              :: t
+    complex(WP), intent(out)         :: C(:,:)
+    complex(WP), intent(out)         :: A(:,:)
+    type(ext_complex_t), intent(out) :: elim_det
       
     integer     :: n_e
-    complex(WP) :: M_G(2*this%n_e,this%n_e)
-    complex(WP) :: M_U(2*this%n_e,this%n_e)
-    complex(WP) :: M_E(2*this%n_e,this%n_e)
+    complex(WP) :: P(2*this%n_e,this%n_e)
+    complex(WP) :: Q(2*this%n_e,this%n_e)
+    complex(WP) :: R(2*this%n_e,this%n_e)
     integer     :: k
     integer     :: ipiv(this%n_e)
     integer     :: info
     integer     :: i
 
-    if(PRESENT(E)) then
-       $ASSERT(SIZE(E, 1) == this%n_e,Dimension mismatch)
-       $ASSERT(SIZE(E, 2) == this%n_e,Dimension mismatch)
-       $ASSERT(SIZE(E, 3) == this%n,Dimension mismatch)
-    endif
+    $ASSERT(SIZE(C, 1) == this%n_e,Dimension mismatch)
+    $ASSERT(SIZE(C, 2) == this%n_e,Dimension mismatch)
 
-    ! Perform the Gaussian elimination steps described in Section 2 of
-    ! Wright (1994). E_l is overwritten by G and E_r by U
+    $ASSERT(SIZE(A, 1) == this%n_e,Dimension mismatch)
+    $ASSERT(SIZE(A, 2) == this%n_e,Dimension mismatch)
 
-    if(PRESENT(elim_det)) elim_det = ext_complex(1._WP)
+    ! Gaussian eliminate the sysmtx partition (see Section 2 of Wright
+    ! 1994), storing the results in (the upper triangular part of) C
+    ! and A, and the elimination determinant in elim_det. The
+    ! intermediate G and U matrices are not kept
 
+    elim_det = ext_complex(1._WP)
+ 
     n_e = this%n_e
 
-    if(this%k_part(t+1)-this%k_part(t) > 1) then
+    if(this%k_part(t+1)-this%k_part(t) > 0) then
 
-       M_G(n_e+1:,:) = this%E_l(:,:,this%k_part(t))
-       M_E(n_e+1:,:) = this%E_r(:,:,this%k_part(t))
+       Q(n_e+1:,:) = this%E_r(:,:,this%k_part(t))
+       R(n_e+1:,:) = this%E_l(:,:,this%k_part(t))
 
        block_loop : do k = this%k_part(t), this%k_part(t+1)-2
        
-          ! Set up double-block matrices (see expressions following
-          ! eqn. 2.5 of Wright 1994)
+          ! Set up block matrices (see expressions following eqn. 2.5
+          ! of Wright 1994)
 
-          M_G(:n_e,:) = M_G(n_e+1:,:)
-          M_G(n_e+1:,:) = 0._WP
+          P(:n_e,:) = Q(n_e+1:,:)
+          P(n_e+1:,:) = this%E_l(:,:,k+1)
 
-          M_U(:n_e,:) = M_E(n_e+1:,:)
-          M_U(n_e+1:,:) = this%E_l(:,:,k+1)
+          Q(:n_e,:) = 0._WP
+          Q(n_e+1:,:) = this%E_r(:,:,k+1)
 
-          M_E(:n_e,:) = 0._WP
-          M_E(n_e+1:,:) = this%E_r(:,:,k+1)
+          R(:n_e,:) = R(n_e+1:,:)
+          R(n_e+1:,:) = 0._WP
 
-          ! Calculate the LU factorization of M_U
+          ! Calculate the LU factorization of P, and use it to reduce
+          ! Q and R. The nasty fpx3 stuff is to ensure the correct
+          ! LAPACK/BLAS routines are called (can't use generics, since
+          ! we're then not allowed to pass array elements into
+          ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
+          ! "Fortran 90/95 Explained")
 
-          call LA_GETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
+          call LA_GETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
           $ASSERT(info == 0, Non-zero return from LA_GETRF)
-
-          ! Multiply M_G and M_E by L^-1. This nasty fpx3 stuff is to
-          ! ensure the correct LAPACK/BLAS routines are called (can't
-          ! use generics, since we're then not allowed to pass array
-          ! elements into assumed-size arrays; see, e.g., p. 268 of
-          ! Metcalfe & Reid, "Fortran 90/95 Explained")
 
           $block
 
@@ -439,47 +484,36 @@ contains
           $local $X C
           $endif
 
-          call ${X}LASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
+          call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
           call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
+                     CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, Q(1,1), 2*n_e)
           call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                      M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                      M_G(n_e+1,1), 2*n_e)
+                      P(n_e+1,1), 2*n_e, Q(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                      Q(n_e+1,1), 2*n_e)
 
-          call ${X}LASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
+          call ${X}LASWP(n_e, R, 2*n_e, 1, n_e, ipiv, 1)
           call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                     CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
+                     CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, R(1,1), 2*n_e)
           call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                      M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                      M_E(n_e+1,1), 2*n_e)
+                      P(n_e+1,1), 2*n_e, R(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                      R(n_e+1,1), 2*n_e)
 
           $endblock
 
-          ! Store results
-
-          this%E_l(:,:,k) = M_G(:n_e,:)
-          this%E_r(:,:,k) = M_U(:n_e,:)
-
-          if(PRESENT(E)) E(:,:,k) = M_E(:n_e,:)
-
           ! Update the elimination determinant
 
-          if(PRESENT(elim_det)) then
-
-             elim_det = product([ext_complex(diagonal(M_U)),elim_det])
-
-             do i = 1,n_e
-                if(ipiv(i) /= i) elim_det = -elim_det
-             end do
+          elim_det = product([ext_complex(diagonal(P)),elim_det])
           
-          endif
+          do i = 1,n_e
+             if(ipiv(i) /= i) elim_det = -elim_det
+          end do
 
        end do block_loop
 
-       ! Store final results
+       ! Store results
 
-       this%E_l(:,:,this%k_part(t+1)-1) = M_G(n_e+1:,:)
-       this%E_r(:,:,this%k_part(t+1)-1) = M_E(n_e+1:,:)
+       C = Q(n_e+1:,:)
+       A = R(n_e+1:,:)
 
     endif
 
