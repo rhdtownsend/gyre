@@ -33,7 +33,7 @@ module gyre_mesa
   use gyre_gridpar
   use gyre_numpar
   use gyre_ad_search
-  use gyre_eigfunc
+  use gyre_mode
   use gyre_frontend
 
   use ISO_FORTRAN_ENV
@@ -52,6 +52,8 @@ module gyre_mesa
 
   private
 
+  public :: WP
+  public :: mode_t
   public :: gyre_init
   public :: gyre_set_model
   public :: gyre_get_modes
@@ -112,7 +114,7 @@ contains
     select type (bc_m)
     type is (evol_base_coeffs_t)
        call bc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, deriv_type)
+                      N2, Gamma_1, nabla_ad, delta, deriv_type)
     class default
        $ABORT(Invalid bc_m type)
     end select
@@ -120,9 +122,9 @@ contains
     select type (tc_m)
     type is (evol_therm_coeffs_t)
        call tc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    Gamma_1, nabla_ad, delta, nabla,  &
-                    kappa, kappa_rho, kappa_T, &
-                    epsilon, epsilon_rho, epsilon_T, deriv_type)
+                      Gamma_1, nabla_ad, delta, nabla,  &
+                      kappa, kappa_rho, kappa_T, &
+                      epsilon, epsilon_rho, epsilon_T, deriv_type)
     class default
        $ABORT(Invalid tc_m type)
     end select
@@ -137,18 +139,21 @@ contains
 
 !****
 
-  subroutine gyre_get_modes (file, user_sub)
+  subroutine gyre_get_modes (file, user_sub, ipar, rpar)
 
     character(LEN=*), intent(in) :: file
     interface
-       subroutine user_sub (freq, n_p, n_g, E_norm)
-         use core_kinds
-         real(WP), intent(in) :: freq
-         integer, intent(in)  :: n_p
-         integer, intent(in)  :: n_g
-         real(WP), intent(in) :: E_norm
+       subroutine user_sub (md, ipar, rpar, retcode)
+         import mode_t
+         import WP
+         type(mode_t), intent(in) :: md
+         integer, intent(inout)   :: ipar(:)
+         real(WP), intent(inout)  :: rpar(:)
+         integer, intent(out)     :: retcode
        end subroutine user_sub
     end interface
+    integer, intent(inout)  :: ipar
+    real(WP), intent(inout) :: rpar
 
     integer                      :: unit
     type(oscpar_t)               :: op
@@ -157,10 +162,9 @@ contains
     type(gridpar_t), allocatable :: shoot_gp(:)
     type(gridpar_t), allocatable :: recon_gp(:)
     type(ad_bvp_t)               :: bp
-    type(eigfunc_t), allocatable :: ef(:)
+    type(mode_t), allocatable    :: md(:)
     integer                      :: j
-    integer                      :: n_p
-    integer                      :: n_g
+    integer                      :: retcode
 
     ! Read parameters
 
@@ -168,9 +172,9 @@ contains
 
     call init_oscpar(unit, op)
     call init_numpar(unit, np)
-    call init_scan(unit, bc_m, op, omega)
-    call init_shoot_grid(unit, MINVAL(omega), MAXVAL(omega), shoot_gp)
-    call init_recon_grid(unit, 0._WP, 0._WP, recon_gp)
+    call init_shoot_grid(unit, shoot_gp)
+    call init_recon_grid(unit, recon_gp)
+    call init_scan(unit, bc_m, op, shoot_gp, x_bc_m, omega)
 
     close(unit)
 
@@ -180,13 +184,13 @@ contains
 
     ! Find modes
 
-    call ad_scan_search(bp, omega, ef)
+    call ad_scan_search(bp, omega, md)
 
     ! Process the modes
 
-    mode_loop : do j = 1,SIZE(ef)
-       call ef(j)%classify(n_p, n_g)
-       call user_func(REAL(ef%omega, WP)*freq_scale(bc_m, op, 'UHZ'), n_p, n_g, ef(j)%E_norm())
+    mode_loop : do j = 1,SIZE(md)
+       call user_func(md(j), ipar, rpar, retcode)
+       if(retcode /= 0) exit mode_loop
     end do mode_loop
 
     ! Finish
