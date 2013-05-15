@@ -27,7 +27,7 @@ module gyre_output
   use gyre_base_coeffs
   use gyre_evol_base_coeffs
   use gyre_poly_base_coeffs
-  use gyre_eigfunc
+  use gyre_mode
 
   use ISO_FORTRAN_ENV
 
@@ -44,32 +44,32 @@ module gyre_output
 
 contains
 
-  subroutine write_summary (file, ef, items, freq_scale)
+  subroutine write_summary (file, md, items, freq_scale)
 
     character(LEN=*), intent(in) :: file
-    type(eigfunc_t), intent(in)  :: ef(:)
+    type(mode_t), intent(in)     :: md(:)
     character(LEN=*), intent(in) :: items(:)
     real(WP), intent(in)         :: freq_scale
 
-    integer        :: n_ef
+    integer        :: n_md
     integer        :: i
-    complex(WP)    :: freq(SIZE(ef))
-    integer        :: n_p(SIZE(ef))
-    integer        :: n_g(SIZE(ef))
+    complex(WP)    :: freq(SIZE(md))
+    integer        :: n_p(SIZE(md))
+    integer        :: n_g(SIZE(md))
     integer        :: j
     type(hgroup_t) :: hg
 
     ! Calculate summary data
 
-    n_ef = SIZE(ef)
+    n_md = SIZE(md)
 
-    ef_loop : do i = 1,n_ef
+    mode_loop : do i = 1,n_md
 
-       freq(i) = ef(i)%omega*freq_scale
+       freq(i) = md(i)%omega*freq_scale
 
-       call ef(i)%classify(n_p(i), n_g(i))
+       call md(i)%classify(n_p(i), n_g(i))
 
-    end do ef_loop
+    end do mode_loop
 
     ! Open the file
 
@@ -86,25 +86,25 @@ contains
        ! Datasets
 
        case('l')
-          call write_dset(hg, 'l', ef%op%l)
+          call write_dset(hg, 'l', md%op%l)
        case('n_p')
           call write_dset(hg, 'n_p', n_p)
        case('n_g')
           call write_dset(hg, 'n_g', n_g)
        case('omega')
-          call write_dset(hg, 'omega', ef%omega)
+          call write_dset(hg, 'omega', md%omega)
        case ('freq')
           call write_dset(hg, 'freq', freq)
        case('E')
-          call write_dset(hg, 'E', [(ef(i)%E(), i=1,n_ef)])
+          call write_dset(hg, 'E', [(md(i)%E(), i=1,n_md)])
        case('E_norm')
-          call write_dset(hg, 'E_norm', [(ef(i)%E_norm(), i=1,n_ef)])
+          call write_dset(hg, 'E_norm', [(md(i)%E_norm(), i=1,n_md)])
        case('W')
-          call write_dset(hg, 'W', [(ef(i)%W(), i=1,n_ef)])
+          call write_dset(hg, 'W', [(md(i)%W(), i=1,n_md)])
        case('omega_im')
-          call write_dset(hg, 'omega_im', [(ef(i)%omega_im(), i=1,n_ef)])
+          call write_dset(hg, 'omega_im', [(md(i)%omega_im(), i=1,n_md)])
        case default
-          select type (bc => ef(1)%bc)
+          select type (bc => md(1)%bc)
           type is (evol_base_coeffs_t)
              call write_summary_evol(hg, bc, items(j))
           type is (poly_base_coeffs_t)
@@ -179,10 +179,10 @@ contains
 
 !****
 
-  subroutine write_mode (file, ef, items, freq_scale, i)
+  subroutine write_mode (file, md, items, freq_scale, i)
 
     character(LEN=*), intent(in) :: file
-    type(eigfunc_t), intent(in)  :: ef
+    type(mode_t), intent(in)     :: md
     character(LEN=*), intent(in) :: items(:)
     real(WP), intent(in)         :: freq_scale
     integer, intent(in)          :: i
@@ -194,7 +194,7 @@ contains
 
     ! Calculate mode data
 
-    call ef%classify(n_p, n_g)
+    call md%classify(n_p, n_g)
     
     ! Open the file
 
@@ -208,65 +208,65 @@ contains
 
        select case (items(j))
        case ('n')
-          call write_attr(hg, 'n', ef%n)
+          call write_attr(hg, 'n', md%n)
        case ('l')
-          call write_attr(hg, 'l', ef%op%l)
+          call write_attr(hg, 'l', md%op%l)
        case ('n_p')
           call write_attr(hg, 'n_p', n_p)
        case ('n_g')
           call write_attr(hg, 'n_g', n_g)
        case ('omega')
-          call write_attr(hg, 'omega', ef%omega)
+          call write_attr(hg, 'omega', md%omega)
        case ('freq')
-          call write_attr(hg, 'freq', ef%omega*freq_scale)
+          call write_attr(hg, 'freq', md%omega*freq_scale)
        case ('E')
-          call write_attr(hg, 'E', ef%E())
+          call write_attr(hg, 'E', md%E())
        case ('E_norm')
-          call write_attr(hg, 'E_norm', ef%E_norm())
+          call write_attr(hg, 'E_norm', md%E_norm())
        case ('W')
-          call write_attr(hg, 'W', ef%W())
+          call write_attr(hg, 'W', md%W())
        case('omega_im')
-          call write_attr(hg, 'omega_im', ef%omega_im())
+          call write_attr(hg, 'omega_im', md%omega_im())
        case ('x')
-          call write_dset(hg, 'x', ef%x)
+          call write_dset(hg, 'x', md%x)
        case('V')
-          call write_dset(hg, 'V', ef%bc%V(ef%x))
+          call write_dset(hg, 'V', md%bc%V(md%x))
        case('As')
-          call write_dset(hg, 'As', ef%bc%As(ef%x))
+          call write_dset(hg, 'As', md%bc%As(md%x))
        case('U')
-          call write_dset(hg, 'U', ef%bc%U(ef%x))
+          call write_dset(hg, 'U', md%bc%U(md%x))
        case('c_1')
-          call write_dset(hg, 'c_1', ef%bc%c_1(ef%x))
+          call write_dset(hg, 'c_1', md%bc%c_1(md%x))
        case ('Gamma_1')
-          call write_dset(hg, 'Gamma_1', ef%bc%Gamma_1(ef%x))
+          call write_dset(hg, 'Gamma_1', md%bc%Gamma_1(md%x))
        case ('nabla_ad')
-          call write_dset(hg, 'nabla_ad', ef%bc%nabla_ad(ef%x))
+          call write_dset(hg, 'nabla_ad', md%bc%nabla_ad(md%x))
        case ('delta')
-          call write_dset(hg, 'delta', ef%bc%delta(ef%x))
+          call write_dset(hg, 'delta', md%bc%delta(md%x))
        case ('xi_r')
-          call write_dset(hg, 'xi_r', ef%xi_r())
+          call write_dset(hg, 'xi_r', md%xi_r())
        case ('xi_h')
-          call write_dset(hg, 'xi_h', ef%xi_h())
+          call write_dset(hg, 'xi_h', md%xi_h())
        case ('phip')
-          call write_dset(hg, 'phip', ef%phip())
+          call write_dset(hg, 'phip', md%phip())
        case ('dphip_dx')
-          call write_dset(hg, 'dphip_dx', ef%dphip_dx())
+          call write_dset(hg, 'dphip_dx', md%dphip_dx())
        case ('delS')
-          call write_dset(hg, 'delS', ef%delS())
+          call write_dset(hg, 'delS', md%delS())
        case ('delL')
-          call write_dset(hg, 'delL', ef%delL())
+          call write_dset(hg, 'delL', md%delL())
        case ('delp')
-          call write_dset(hg, 'delp', ef%delp())
+          call write_dset(hg, 'delp', md%delp())
        case ('delrho')
-          call write_dset(hg, 'delrho', ef%delrho())
+          call write_dset(hg, 'delrho', md%delrho())
        case ('delT')
-          call write_dset(hg, 'delT', ef%delT())
+          call write_dset(hg, 'delT', md%delT())
        case ('dE_dx')
-          call write_dset(hg, 'dE_dx', ef%dE_dx())
+          call write_dset(hg, 'dE_dx', md%dE_dx())
        case ('dW_dx')
-          call write_dset(hg, 'dW_dx', ef%dW_dx())
+          call write_dset(hg, 'dW_dx', md%dW_dx())
        case default
-          select type (bc => ef%bc)
+          select type (bc => md%bc)
           type is (evol_base_coeffs_t)
              call write_mode_evol(hg, bc, items(j))
           type is (poly_base_coeffs_t)
@@ -305,13 +305,13 @@ contains
       case ('L_star')
          call write_attr(hg, 'L_star', bc%L_star)
       case ('m')
-         call write_dset(hg, 'm', bc%m(ef%x))
+         call write_dset(hg, 'm', bc%m(md%x))
       case ('p')
-         call write_dset(hg, 'p', bc%p(ef%x))
+         call write_dset(hg, 'p', bc%p(md%x))
       case ('rho')
-         call write_dset(hg, 'rho', bc%rho(ef%x))
+         call write_dset(hg, 'rho', bc%rho(md%x))
       case ('T')
-         call write_dset(hg, 'T', bc%T(ef%x))
+         call write_dset(hg, 'T', bc%T(md%x))
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)

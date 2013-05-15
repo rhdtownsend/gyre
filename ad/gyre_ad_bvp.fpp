@@ -39,7 +39,7 @@ module gyre_ad_bvp
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
-  use gyre_eigfunc
+  use gyre_mode
 
   use ISO_FORTRAN_ENV
 
@@ -77,7 +77,7 @@ module gyre_ad_bvp
      procedure, public :: discrim
      procedure         :: build
      procedure         :: recon
-     procedure, public :: eigfunc
+     procedure, public :: mode
   end type ad_bvp_t
 
   ! Interfaces
@@ -354,11 +354,11 @@ contains
 
 !****
 
-  function eigfunc (this, omega) result (ef)
+  function mode (this, omega) result (md)
 
     class(ad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)        :: omega
-    type(eigfunc_t)                :: ef
+    type(mode_t)                   :: md
 
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
@@ -383,15 +383,15 @@ contains
        y_6(6,:) = 0._WP
     end if
 
-    ! Initialize the eigfunc
+    ! Initialize the mode
     
-    call ef%init(this%bc, this%tc, this%op, omega, x, y_6)
+    call md%init(this%bc, this%tc, this%op, omega, x, y_6)
 
     ! Finish
 
     return
 
-  end function eigfunc
+  end function mode
 
 !****
 

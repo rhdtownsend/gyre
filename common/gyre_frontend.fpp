@@ -32,7 +32,7 @@ module gyre_frontend
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
-  use gyre_eigfunc
+  use gyre_mode
   use gyre_output
 
   use ISO_FORTRAN_ENV
@@ -420,10 +420,10 @@ contains
 
 !****
 
-  subroutine write_data (unit, ef)
+  subroutine write_data (unit, md)
 
-    integer, intent(in)              :: unit
-    type(eigfunc_t), intent(in)      :: ef(:)
+    integer, intent(in)         :: unit
+    type(mode_t), intent(in)    :: md(:)
 
     character(LEN=256)          :: freq_units
     character(LEN=FILENAME_LEN) :: summary_file
@@ -450,18 +450,18 @@ contains
 
     ! Write output files
 
-    if(summary_file /= '') call write_summary(summary_file, ef, split_item_list(summary_item_list), &
-                                              freq_scale(ef(1)%bc, ef(1)%op, freq_units))
+    if(summary_file /= '') call write_summary(summary_file, md, split_item_list(summary_item_list), &
+                                              freq_scale(md(1)%bc, md(1)%op, freq_units))
 
     if(mode_prefix /= '') then
 
-       mode_loop : do j = 1,SIZE(ef)
+       mode_loop : do j = 1,SIZE(md)
 
           write(mode_file, 100) TRIM(mode_prefix), j, '.h5'
 100       format(A,I4.4,A)
 
-          call write_mode(mode_file, ef(j), split_item_list(mode_item_list), &
-                          freq_scale(ef(j)%bc, ef(j)%op, freq_units), j)
+          call write_mode(mode_file, md(j), split_item_list(mode_item_list), &
+                          freq_scale(md(j)%bc, md(j)%op, freq_units), j)
 
        end do mode_loop
        

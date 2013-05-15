@@ -27,7 +27,7 @@ module gyre_nad_search
   use gyre_numpar
   use gyre_nad_bvp
   use gyre_nad_discfunc
-  use gyre_eigfunc
+  use gyre_mode
   use gyre_frontend
   use gyre_ext_arith
 
@@ -47,13 +47,13 @@ module gyre_nad_search
 
 contains
 
-  subroutine nad_prox_search (bp, ad_ef, nad_ef)
+  subroutine nad_prox_search (bp, ad_md, nad_md)
 
-    type(nad_bvp_t), target, intent(inout)    :: bp
-    type(eigfunc_t), intent(in)               :: ad_ef(:)
-    type(eigfunc_t), allocatable, intent(out) :: nad_ef(:)
+    type(nad_bvp_t), target, intent(inout) :: bp
+    type(mode_t), intent(in)               :: ad_md(:)
+    type(mode_t), allocatable, intent(out) :: nad_md(:)
 
-    integer                 :: n_ef
+    integer                 :: n_md
     integer                 :: i_part(MPI_SIZE+1)
     integer                 :: c_beg
     integer                 :: c_end
@@ -76,11 +76,11 @@ contains
 
     call df%init(bp)
 
-    n_ef = SIZE(ad_ef)
+    n_md = SIZE(ad_md)
 
-    call partition_tasks(n_ef, 1, i_part)
+    call partition_tasks(n_md, 1, i_part)
 
-    allocate(nad_ef(n_ef))
+    allocate(nad_md(n_md))
 
     np => bp%get_np()
 
@@ -95,27 +95,27 @@ contains
        ! Set the discriminant normalization, based on the adiabatic
        ! frequency
 
-       call bp%set_x_ad(ad_ef(i)%omega)
-       call bp%set_norm(ad_ef(i)%omega)
+       call bp%set_x_ad(ad_md(i)%omega)
+       call bp%set_norm(ad_md(i)%omega)
 
        ! Find the root
 
        n_iter = np%n_iter_max
 
-       omega_root = df%root(ad_ef(i)%omega*CMPLX(1._WP, SQRT(EPSILON(0._WP)), WP), &
-                            ad_ef(i)%omega*CMPLX(1._WP, -SQRT(EPSILON(0._WP)), WP), &
+       omega_root = df%root(ad_md(i)%omega*CMPLX(1._WP, SQRT(EPSILON(0._WP)), WP), &
+                            ad_md(i)%omega*CMPLX(1._WP, -SQRT(EPSILON(0._WP)), WP), &
                             0._WP, n_iter=n_iter)
        $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
 
        discrim_root = df%eval(omega_root)
 
-       ! Set up the eigfunction
+       ! Set up the mode
 
-       nad_ef(i) = bp%eigfunc(omega_root)
+       nad_md(i) = bp%mode(omega_root)
 
        ! Report
 
-       call nad_ef(i)%classify(n_p, n_g)
+       call nad_md(i)%classify(n_p, n_g)
 
        write(OUTPUT_UNIT, 100) 'Mode :', n_p-n_g, n_p, n_g, omega_root, ABS(discrim_root), n_iter
 100    format(A,3(2X,I6),3(2X,E23.16),2X,I4)
@@ -138,7 +138,7 @@ contains
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call bcast(nad_ef(i), p)
+          call bcast(nad_md(i), p)
        end do
     enddo
 

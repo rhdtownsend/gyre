@@ -1,5 +1,5 @@
-! Module   : gyre_eigfunc
-! Purpose  : eigenfunction data
+! Module   : gyre_mode
+! Purpose  : mode data
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_eigfunc
+module gyre_mode
 
   ! Uses
 
@@ -43,7 +43,7 @@ module gyre_eigfunc
 
   ! Derived-type definitions
 
-  type :: eigfunc_t
+  type :: mode_t
      class(base_coeffs_t), allocatable  :: bc
      class(therm_coeffs_t), allocatable :: tc
      type(oscpar_t)                     :: op
@@ -70,7 +70,7 @@ module gyre_eigfunc
      procedure, public :: E_norm
      procedure, public :: W
      procedure, public :: omega_im
-  end type eigfunc_t
+  end type mode_t
 
   ! Interfaces
 
@@ -86,7 +86,7 @@ module gyre_eigfunc
 
   private
 
-  public :: eigfunc_t
+  public :: mode_t
   $if($MPI)
   public :: bcast
   $endif
@@ -97,7 +97,7 @@ contains
 
   subroutine init (this, bc, tc, op, omega, x, y)
 
-    class(eigfunc_t), intent(out)                  :: this
+    class(mode_t), intent(out)                     :: this
     class(base_coeffs_t), intent(in)               :: bc
     class(therm_coeffs_t), intent(in), allocatable :: tc
     type(oscpar_t), intent(in)                     :: op
@@ -110,7 +110,7 @@ contains
     $CHECK_BOUNDS(SIZE(y, 1),6)
     $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
 
-    ! Initialize the eigfunc
+    ! Initialize the mode
 
     allocate(this%bc, SOURCE=bc)
     if(ALLOCATED(tc)) allocate(this%tc, SOURCE=tc)
@@ -142,10 +142,10 @@ contains
 
   subroutine bcast_ef (this, root_rank)
 
-    class(eigfunc_t), intent(inout) :: this
-    integer, intent(in)             :: root_rank
+    class(mode_t), intent(inout) :: this
+    integer, intent(in)          :: root_rank
 
-    ! Broadcast the eigfunc
+    ! Broadcast the mode
 
     call bcast_alloc(this%bc, root_rank)
     call bcast_alloc(this%tc, root_rank)
@@ -167,9 +167,9 @@ contains
 
   subroutine classify (this, n_p, n_g)
 
-    class(eigfunc_t), intent(in) :: this
-    integer, intent(out)         :: n_p
-    integer, intent(out)         :: n_g
+    class(mode_t), intent(in) :: this
+    integer, intent(out)      :: n_p
+    integer, intent(out)      :: n_g
 
     real(WP) :: y_1(this%n)
     real(WP) :: y_2(this%n)
@@ -177,7 +177,7 @@ contains
     integer  :: i
     real(WP) :: y_2_cross
 
-    ! Classify the eigenfunction using the Eckart-Scuflaire-Osaki scheme
+    ! Classify the mode using the Eckart-Scuflaire-Osaki scheme
 
     y_1 = REAL(this%y(1,:))
     y_2 = REAL(this%y(2,:))
@@ -238,8 +238,8 @@ contains
 
   function xi_r (this)
 
-    class(eigfunc_t), intent(in) :: this
-    complex(WP)                  :: xi_r(this%n)
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: xi_r(this%n)
     
     ! Calculate the radial displacement perturbation in units of
     ! R_star
@@ -272,8 +272,8 @@ contains
 
   function xi_h (this)
 
-    class(eigfunc_t), intent(in) :: this
-    complex(WP)                  :: xi_h(this%n)
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: xi_h(this%n)
     
     ! Calculate the radial displacement perturbation in units of
     ! R_star
@@ -314,8 +314,8 @@ contains
 
   function phip (this)
 
-    class(eigfunc_t), intent(in) :: this
-    complex(WP)                  :: phip(this%n)
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: phip(this%n)
     
     ! Calculate the Eulerian gravitational potential perturbation in units of
     ! G M_star / R_star
@@ -336,8 +336,8 @@ contains
 
   function dphip_dx (this)
 
-    class(eigfunc_t), intent(in) :: this
-    complex(WP)                  :: dphip_dx(this%n)
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: dphip_dx(this%n)
     
     ! Calculate the Eulerian gravity perturbation in units of G M_star
     ! / R_star
@@ -370,8 +370,8 @@ contains
 
   function delS (this)
 
-    class(eigfunc_t), intent(in)  :: this
-    complex(WP)                   :: delS(this%n)
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delS(this%n)
 
     ! Calculate the Lagrangian specific entropy perturbation in units
     ! of c_p
@@ -396,8 +396,8 @@ contains
 
   function delL (this)
 
-    class(eigfunc_t), intent(in)  :: this
-    complex(WP)                   :: delL(this%n)
+    class(mode_t), intent(in)  :: this
+    complex(WP)                :: delL(this%n)
 
     ! Calculate the Lagrangian luminosity perturbation in units of R_star
 
@@ -417,8 +417,8 @@ contains
 
   function delp (this)
 
-    class(eigfunc_t), intent(in) :: this
-    complex(WP)                  :: delp(this%n)
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delp(this%n)
 
     ! Calculate the Lagrangian pressure perturbation in units of p
 
@@ -454,10 +454,10 @@ contains
 
   function delrho (this)
 
-    class(eigfunc_t), intent(in) :: this
-    complex(WP)                  :: delrho(this%n)
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delrho(this%n)
 
-    ! Calculate the Lagrangian pressure perturbation in units of rho
+    ! Calculate the Lagrangian density perturbation in units of rho
 
     associate (Gamma_1 => this%bc%Gamma_1(this%x))
 
@@ -475,8 +475,8 @@ contains
 
   function delT (this)
 
-    class(eigfunc_t), intent(in) :: this
-    complex(WP)                  :: delT(this%n)
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delT(this%n)
 
     ! Calculate the Lagrangian temperature perturbation in units of T
 
@@ -496,8 +496,8 @@ contains
 
   function dE_dx (this)
 
-    class(eigfunc_t), intent(in) :: this
-    real(WP)                     :: dE_dx(this%n)
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: dE_dx(this%n)
 
     complex(WP) :: xi_r(this%n)
     complex(WP) :: xi_h(this%n)
@@ -523,8 +523,8 @@ contains
 
   function dW_dx (this)
 
-    class(eigfunc_t), intent(in) :: this
-    real(WP)                     :: dW_dx(this%n)
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: dW_dx(this%n)
 
     $ASSERT(ALLOCATED(this%tc),No therm_coeffs data)
 
@@ -550,8 +550,8 @@ contains
 
   function E (this)
 
-    class(eigfunc_t), intent(in) :: this
-    real(WP)                     :: E
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: E
     
     ! Calculate the total mode inertia (Aerts et al. 2010, eqn. 3.139)
     ! in units of M_star R_star**2
@@ -568,8 +568,8 @@ contains
 
   function E_norm (this)
 
-    class(eigfunc_t), intent(in) :: this
-    real(WP)                     :: E_norm
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: E_norm
 
     real(WP)    :: E
     complex(WP) :: xi_r(this%n)
@@ -607,8 +607,8 @@ contains
 
   function W (this)
 
-    class(eigfunc_t), intent(in) :: this
-    real(WP)                     :: W
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: W
     
     ! Calculate the total work
 
@@ -624,8 +624,8 @@ contains
 
   function omega_im (this)
 
-    class(eigfunc_t), intent(in) :: this
-    real(WP)                     :: omega_im
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: omega_im
 
     integer  :: i_trans
     integer  :: i
@@ -694,4 +694,4 @@ contains
 
   end function integrate
 
-end module gyre_eigfunc
+end module gyre_mode

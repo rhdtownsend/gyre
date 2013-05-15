@@ -27,7 +27,7 @@ module gyre_ad_search
   use gyre_numpar
   use gyre_ad_bvp
   use gyre_ad_discfunc
-  use gyre_eigfunc
+  use gyre_mode
   use gyre_frontend
   use gyre_ext_arith
 
@@ -47,11 +47,11 @@ module gyre_ad_search
 
 contains
 
-  subroutine ad_scan_search (bp, omega, ef)
+  subroutine ad_scan_search (bp, omega, md)
 
-    type(ad_bvp_t), target, intent(inout)     :: bp
-    real(WP), intent(in)                      :: omega(:)
-    type(eigfunc_t), allocatable, intent(out) :: ef(:)
+    type(ad_bvp_t), target, intent(inout)  :: bp
+    real(WP), intent(in)                   :: omega(:)
+    type(mode_t), allocatable, intent(out) :: md(:)
 
     real(WP), allocatable   :: omega_a(:)
     real(WP), allocatable   :: omega_b(:)
@@ -86,7 +86,7 @@ contains
 
     call partition_tasks(n_brack, 1, i_part)
 
-    allocate(ef(n_brack))
+    allocate(md(n_brack))
 
     np => bp%get_np()
 
@@ -112,13 +112,13 @@ contains
 
        discrim_root = df%eval(omega_root)
 
-       ! Set up the eigfunction
+       ! Set up the mode
 
-       ef(i) = bp%eigfunc(omega_root)
+       md(i) = bp%mode(omega_root)
 
        ! Report
 
-       call ef(i)%classify(n_p, n_g)
+       call md(i)%classify(n_p, n_g)
 
        write(OUTPUT_UNIT, 100) 'Mode :', n_p-n_g, n_p, n_g, omega_root, ABS(discrim_root), n_iter
 100    format(A,3(2X,I6),3(2X,E23.16),2X,I4)
@@ -141,7 +141,7 @@ contains
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call bcast(ef(i), p)
+          call bcast(md(i), p)
        end do
     enddo
 
