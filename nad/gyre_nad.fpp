@@ -94,9 +94,9 @@ program gyre_nad
 
      call init_oscpar(unit, op)
      call init_numpar(unit, np)
-     call init_scan(unit, bc, op, omega)
-     call init_shoot_grid(unit, MINVAL(omega), MAXVAL(omega), shoot_gp)
-     call init_recon_grid(unit, 0._WP, 0._WP, recon_gp)
+     call init_shoot_grid(unit, shoot_gp)
+     call init_recon_grid(unit, recon_gp)
+     call init_scan(unit, bc, op, shoot_gp, x_bc, omega)
 
      call ad_bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)
      call nad_bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)

@@ -57,6 +57,9 @@ module gyre_ad_bound
   private
 
   public :: ad_bound_t
+  public :: eval_outer_coeffs_unno
+  public :: eval_outer_coeffs_jcd
+  public :: outer_wavenumber
   public :: eval_cutoffs
 
   ! Procedures

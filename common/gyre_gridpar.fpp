@@ -32,6 +32,8 @@ module gyre_gridpar
   ! Derived-type definitions
 
   type :: gridpar_t
+     real(WP)          :: x_i = 0._WP
+     real(WP)          :: x_o = 1._WP
      real(WP)          :: alpha_osc = 0._WP
      real(WP)          :: alpha_exp = 0._WP
      real(WP)          :: omega_a = 0._WP
@@ -83,6 +85,9 @@ contains
     integer, intent(in)            :: root_rank
 
     ! Broadcast the gridpar
+
+    call bcast(gp%x_i, root_rank)
+    call bcast(gp%x_o, root_rank)
 
     call bcast(gp%alpha_osc, root_rank)
     call bcast(gp%alpha_exp, root_rank)

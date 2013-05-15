@@ -345,8 +345,8 @@ contains
 
     ! Set up the sysmtx
 
-    call this%sm%set_inner_bound(this%bd%inner_bound(omega))
-    call this%sm%set_outer_bound(this%bd%outer_bound(omega))
+    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
+    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
 
     call this%sh%shoot(omega, this%x, this%sm, this%x_ad)
 

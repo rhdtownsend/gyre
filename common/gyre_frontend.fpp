@@ -32,6 +32,7 @@ module gyre_frontend
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
+  use gyre_grid
   use gyre_mode
   use gyre_output
 
@@ -279,81 +280,13 @@ contains
 
 !****
 
-  subroutine init_scan (unit, bc, op, omega)
-
-    integer, intent(in)                :: unit
-    class(base_coeffs_t), intent(in)   :: bc
-    type(oscpar_t), intent(in)         :: op
-    real(WP), allocatable, intent(out) :: omega(:)
-
-    character(LEN=256) :: grid_type
-    real(WP)           :: freq_min
-    real(WP)           :: freq_max
-    integer            :: n_freq
-    character(LEN=256) :: freq_units
-    real(WP)           :: omega_min
-    real(WP)           :: omega_max
-    integer            :: i
-
-    namelist /scan/ grid_type, freq_min, freq_max, n_freq, freq_units
-
-    ! Read scan parameters
-
-    rewind(unit)
-
-    allocate(omega(0))
-
-    read_loop : do 
-
-       grid_type = 'LINEAR'
-
-       freq_min = 1._WP
-       freq_max = 10._WP
-       n_freq = 10
-          
-       freq_units = 'NONE'
-
-       read(unit, NML=scan, END=100)
-          
-       ! Set up the frequency grid
-
-       omega_min = freq_min/freq_scale(bc, op, freq_units)
-       omega_max = freq_max/freq_scale(bc, op, freq_units)
-       
-       select case(grid_type)
-       case('LINEAR')
-          omega = [omega,(((n_freq-i)*omega_min + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
-       case('INVERSE')
-          omega = [omega,((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_max), i=1,n_freq)]
-       case default
-          $ABORT(Invalid grid_type)
-       end select
-
-    end do read_loop
-
-100 continue
-
-    ! Sort the frequencies
-
-    omega = omega(sort_indices(omega))
-
-    ! Finish
-
-    return
-
-  end subroutine init_scan
-
-!****
-
   $define $INIT_GRID $sub
 
   $local $NAME $1
 
-  subroutine init_${NAME}_grid (unit, omega_a, omega_b, gp)
+  subroutine init_${NAME}_grid (unit, gp)
 
     integer, intent(in)                       :: unit
-    real(WP), intent(in)                      :: omega_a
-    real(WP), intent(in)                      :: omega_b
     type(gridpar_t), allocatable, intent(out) :: gp(:)
 
     integer            :: n_gp
@@ -402,7 +335,7 @@ contains
 
        gp(i) = gridpar_t(op_type=op_type, &
                          alpha_osc=alpha_osc, alpha_exp=alpha_exp, &
-                         omega_a=omega_a, omega_b=omega_b, &
+                         omega_a=0._WP, omega_b=0._WP, &
                          s=s, n=n)
 
     end do read_loop
@@ -417,6 +350,85 @@ contains
 
   $INIT_GRID(shoot)
   $INIT_GRID(recon)
+
+!****
+
+  subroutine init_scan (unit, bc, op, gp, x_in, omega)
+
+    integer, intent(in)                :: unit
+    class(base_coeffs_t), intent(in)   :: bc
+    type(oscpar_t), intent(in)         :: op
+    type(gridpar_t), intent(inout)     :: gp(:)
+    real(WP), allocatable, intent(in)  :: x_in(:)
+    real(WP), allocatable, intent(out) :: omega(:)
+
+    character(LEN=256) :: grid_type
+    real(WP)           :: freq_min
+    real(WP)           :: freq_max
+    integer            :: n_freq
+    character(LEN=256) :: freq_units
+    real(WP)           :: x_i
+    real(WP)           :: x_o
+    real(WP)           :: omega_min
+    real(WP)           :: omega_max
+    integer            :: i
+
+    namelist /scan/ grid_type, freq_min, freq_max, n_freq, freq_units
+
+    ! Determine the grid range
+
+    call grid_range(gp, bc, op, x_in, x_i, x_o)
+
+    ! Read scan parameters
+
+    rewind(unit)
+
+    allocate(omega(0))
+
+    read_loop : do 
+
+       grid_type = 'LINEAR'
+
+       freq_min = 1._WP
+       freq_max = 10._WP
+       n_freq = 10
+          
+       freq_units = 'NONE'
+
+       read(unit, NML=scan, END=100)
+          
+       ! Set up the frequency grid
+
+       omega_min = freq_min/freq_scale(bc, op, x_o, freq_units)
+       omega_max = freq_max/freq_scale(bc, op, x_o, freq_units)
+       
+       select case(grid_type)
+       case('LINEAR')
+          omega = [omega,(((n_freq-i)*omega_min + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
+       case('INVERSE')
+          omega = [omega,((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_max), i=1,n_freq)]
+       case default
+          $ABORT(Invalid grid_type)
+       end select
+
+    end do read_loop
+
+100 continue
+
+    ! Sort the frequencies
+
+    omega = omega(sort_indices(omega))
+
+    ! Store the frequency range in gp
+
+    gp%omega_a = MINVAL(omega)
+    gp%omega_b = MAXVAL(omega)
+
+    ! Finish
+
+    return
+
+  end subroutine init_scan
 
 !****
 
@@ -451,7 +463,7 @@ contains
     ! Write output files
 
     if(summary_file /= '') call write_summary(summary_file, md, split_item_list(summary_item_list), &
-                                              freq_scale(md(1)%bc, md(1)%op, freq_units))
+                                              freq_scale(md(1)%bc, md(1)%op, md(1)%x(md(1)%n), freq_units))
 
     if(mode_prefix /= '') then
 
@@ -461,7 +473,7 @@ contains
 100       format(A,I4.4,A)
 
           call write_mode(mode_file, md(j), split_item_list(mode_item_list), &
-                          freq_scale(md(j)%bc, md(j)%op, freq_units), j)
+                          freq_scale(md(j)%bc, md(j)%op, md(j)%x(md(j)%n), freq_units), j)
 
        end do mode_loop
        
@@ -544,7 +556,7 @@ contains
 
 !****
 
-  function freq_scale (bc, op, freq_units)
+  function freq_scale (bc, op, x_o, freq_units)
 
     use gyre_evol_base_coeffs
     use gyre_poly_base_coeffs
@@ -552,6 +564,7 @@ contains
 
     class(base_coeffs_t), intent(in) :: bc
     type(oscpar_t), intent(in)       :: op
+    real(WP), intent(in)             :: x_o
     character(LEN=*), intent(in)     :: freq_units
     real(WP)                         :: freq_scale
 
@@ -560,7 +573,7 @@ contains
 
     select type (bc)
     class is (evol_base_coeffs_t)
-       freq_scale = evol_freq_scale(bc, op, freq_units)
+       freq_scale = evol_freq_scale(bc, op, x_o, freq_units)
     class is (poly_base_coeffs_t)
        freq_scale = poly_freq_scale(freq_units)
     class is (hom_base_coeffs_t)
@@ -575,12 +588,13 @@ contains
 
   contains
 
-    function evol_freq_scale (bc, op, freq_units) result (freq_scale)
+    function evol_freq_scale (bc, op, x_o, freq_units) result (freq_scale)
 
       use gyre_ad_bound
 
       class(evol_base_coeffs_t), intent(in) :: bc
       type(oscpar_t), intent(in)            :: op
+      real(WP), intent(in)                  :: x_o
       character(LEN=*), intent(in)          :: freq_units
       real(WP)                              :: freq_scale
 
@@ -598,10 +612,10 @@ contains
       case('UHZ')
          freq_scale = 1.E6_WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
       case('ACOUSTIC_CUTOFF')
-         call eval_cutoffs(bc, op, omega_cutoff_lo, omega_cutoff_hi)
+         call eval_cutoffs(bc, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
          freq_scale = 1._WP/omega_cutoff_hi
       case('GRAVITY_CUTOFF')
-         call eval_cutoffs(bc, op, omega_cutoff_lo, omega_cutoff_hi)
+         call eval_cutoffs(bc, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
          freq_scale = 1._WP/omega_cutoff_lo
       case default
          $ABORT(Invalid freq_units)

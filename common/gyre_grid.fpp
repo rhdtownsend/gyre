@@ -58,6 +58,7 @@ module gyre_grid
   private
 
   public :: build_grid
+  public :: grid_range
   public :: create_geom
   public :: create_log
 
@@ -79,12 +80,12 @@ contains
 
     select case (gp(1)%op_type)
     case ('CREATE_CLONE')
+       $ASSERT(ALLOCATED(x_in),No grid to clone)
        x = x_in
     case ('CREATE_UNIFORM')
        call create_uniform(gp(1)%n, x)
     case ('CREATE_GEOM')
        call create_geom(gp(1)%s, gp(1)%n, x)
-       x = 1._WP - x(gp(1)%n:1:-1)
     case ('CREATE_LOG')
        call create_log(gp(1)%s, gp(1)%n, x)
     case default
@@ -112,6 +113,43 @@ contains
     return
 
   end subroutine build_grid
+
+!****
+          
+  subroutine grid_range (gp, bc, op, x_in, x_i, x_o)
+
+    type(gridpar_t), intent(in)        :: gp(:)
+    class(base_coeffs_t), intent(in)   :: bc
+    type(oscpar_t), intent(in)         :: op
+    real(WP), allocatable, intent(in)  :: x_in(:)
+    real(WP), intent(out)              :: x_i
+    real(WP), intent(out)              :: x_o
+
+    ! Determine the range spanned by the grid
+
+    select case (gp(1)%op_type)
+    case ('CREATE_CLONE')
+       $ASSERT(ALLOCATED(x_in),No grid to clone)
+       x_i = x_in(1)
+       x_o = x_in(SIZE(x_in))
+    case ('CREATE_UNIFORM')
+       x_i = 0._WP
+       x_o = 1._WP
+    case ('CREATE_GEOM')
+       x_i = 0._WP
+       x_o = 1._WP
+    case ('CREATE_LOG')
+       x_i = 0._WP
+       x_o = 1._WP
+    case default
+       $ABORT(Invalid op_type (the first op_type must be CREATE_*))
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine grid_range
           
 !****
 

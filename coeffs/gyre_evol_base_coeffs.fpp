@@ -131,7 +131,6 @@ contains
     real(WP), intent(in)                   :: delta(:)
     character(LEN=*), intent(in)           :: deriv_type
 
-    integer  :: n
     real(WP) :: V(SIZE(r))
     real(WP) :: As(SIZE(r))
     real(WP) :: U(SIZE(r))
@@ -149,13 +148,8 @@ contains
 
     ! Perform basic validations
 
-    n = SIZE(r)
-
-    $ASSERT(r(1) <= 0._WP,Invalid radius range)
-    $ASSERT(r(n) >= R_star,Invalid radius range)
-
-    $ASSERT(m(1) <= 0._WP,Invalid mass range)
-    $ASSERT(m(n) >= M_star,Invalid mass range)
+    $ASSERT(r(1) == 0._WP,First grid point not at center)
+    $ASSERT(m(1) == 0._WP,First grid point not at center)
 
     ! Calculate coefficients
 

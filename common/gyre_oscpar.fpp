@@ -68,6 +68,7 @@ contains
     ! Broadcast the oscpar
 
     call bcast(op%l, root_rank)
+
     call bcast(op%outer_bound_type, root_rank)
 
     ! Finish
