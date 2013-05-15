@@ -236,7 +236,7 @@ contains
           ! "Fortran 90/95 Explained")
 
           call LA_GETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
-          $ASSERT(info == 0, Non-zero return from LA_GETRF)
+          $ASSERT(info >= 0, Negative return from LA_GETRF)
 
           $block
 
@@ -310,7 +310,7 @@ contains
     M(n_i+n_e+1:,n_e+1:) = this%B_o
 
     call LA_GETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
-    $ASSERT(info == 0, Non-zero return from LA_GETRF)
+    $ASSERT(info >= 0, Negative return from LA_GETRF)
 
     det = product([ext_complex(diagonal(M)),det,this%S])
     
