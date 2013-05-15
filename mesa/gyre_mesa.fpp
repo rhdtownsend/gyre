@@ -76,8 +76,8 @@ contains
 
   subroutine gyre_set_model (G, M_star, R_star, L_star, r, m, p, rho, T, &
                              N2, Gamma_1, nabla_ad, delta, nabla,  &
-                             kappa, kappa_T, kappa_rho, &
-                             epsilon, epsilon_T, epsilon_rho, deriv_type)
+                             kappa, kappa_rho, kappa_T, &
+                             epsilon, epsilon_rho, epsilon_T, deriv_type)
 
     real(WP), intent(in)         :: G
     real(WP), intent(in)         :: M_star
@@ -94,11 +94,11 @@ contains
     real(WP), intent(in)         :: delta(:)
     real(WP), intent(in)         :: nabla(:)
     real(WP), intent(in)         :: kappa(:)
-    real(WP), intent(in)         :: kappa_T(:)
     real(WP), intent(in)         :: kappa_rho(:)
+    real(WP), intent(in)         :: kappa_T(:)
     real(WP), intent(in)         :: epsilon(:)
-    real(WP), intent(in)         :: epsilon_T(:)
     real(WP), intent(in)         :: epsilon_rho(:)
+    real(WP), intent(in)         :: epsilon_T(:)
     character(LEN=*), intent(in) :: deriv_type
 
     ! Set the model by storing coefficients
@@ -111,7 +111,7 @@ contains
 
     select type (bc_m)
     type is (evol_base_coeffs_t)
-       call bc_m%init(G, M_star, R_star, L_star, r, m, p, T, rho, &
+       call bc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                     N2, Gamma_1, nabla_ad, delta, deriv_type)
     class default
        $ABORT(Invalid bc_m type)
@@ -119,10 +119,10 @@ contains
 
     select type (tc_m)
     type is (evol_therm_coeffs_t)
-       call tc_m%init(G, M_star, R_star, L_star, r, m, p, T, rho, &
+       call tc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                     Gamma_1, nabla_ad, delta, nabla,  &
-                    kappa, kappa_T, kappa_rho, &
-                    epsilon, epsilon_T, epsilon_rho, deriv_type)
+                    kappa, kappa_rho, kappa_T, &
+                    epsilon, epsilon_rho, epsilon_T, deriv_type)
     class default
        $ABORT(Invalid tc_m type)
     end select
