@@ -58,6 +58,7 @@ module gyre_evol_therm_coeffs
      $VAR_DECL(kappa_S)
      $VAR_DECL(epsilon_ad)
      $VAR_DECL(epsilon_S)
+     $VAR_DECL(tau_thm)
    contains
      procedure :: init
      $PROC_DECL(c_rad)
@@ -70,6 +71,7 @@ module gyre_evol_therm_coeffs
      $PROC_DECL(kappa_S)
      $PROC_DECL(epsilon_ad)
      $PROC_DECL(epsilon_S)
+     $PROC_DECL(tau_thm)
   end type evol_therm_coeffs_t
 
   ! Interfaces
@@ -122,6 +124,7 @@ contains
     real(WP), intent(in)                    :: epsilon_T(:)
     character(LEN=*), intent(in)            :: deriv_type
 
+    integer  :: n
     real(WP) :: V_x2(SIZE(r))
     real(WP) :: V(SIZE(r))
     real(WP) :: c_p(SIZE(r))
@@ -134,6 +137,9 @@ contains
     real(WP) :: epsilon_ad(SIZE(r))
     real(WP) :: epsilon_S(SIZE(r))
     real(WP) :: x(SIZE(r))
+    real(WP) :: dtau_thm(SIZE(r))
+    real(WP) :: tau_thm(SIZE(r))
+    integer  :: i
 
     $CHECK_BOUNDS(SIZE(m),SIZE(r))
     $CHECK_BOUNDS(SIZE(p),SIZE(r))
@@ -156,6 +162,8 @@ contains
     $ASSERT(m(1) == 0._WP,First grid point not at center)
 
     ! Calculate coefficients
+
+    n = SIZE(r)
 
     where(r /= 0._WP)
        V_x2 = G*m*rho/(p*r*(r/R_star)**2)
@@ -181,6 +189,15 @@ contains
 
     c_dif = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dlny_dlnx(x, nabla_ad)+V)
 
+    dtau_thm = 4._WP*PI*rho*r**2*T*c_p*SQRT(G*M_star/R_star**3)/L_star
+
+    tau_thm(n) = 0._WP
+
+    do i = n-1,1,-1
+       tau_thm(i) = tau_thm(i+1) + &
+            0.5_WP*(dtau_thm(i+1) + dtau_thm(i))*(r(i+1) - r(i))
+    end do
+
     ! Initialize the therm_coeffs
 
     call this%sp_c_rad%init(x, c_rad, deriv_type, dy_dx_a=0._WP)
@@ -192,6 +209,7 @@ contains
     call this%sp_kappa_ad%init(x, kappa_ad, deriv_type, dy_dx_a=0._WP)
     call this%sp_epsilon_S%init(x, epsilon_S, deriv_type, dy_dx_a=0._WP)
     call this%sp_epsilon_ad%init(x, epsilon_ad, deriv_type, dy_dx_a=0._WP)
+    call this%sp_tau_thm%init(x, tau_thm, deriv_type, dy_dx_a=0._WP)
 
     ! Finish
 
@@ -248,6 +266,7 @@ contains
     call bcast(tc%sp_kappa_ad, root_rank)
     call bcast(tc%sp_epsilon_S, root_rank)
     call bcast(tc%sp_epsilon_ad, root_rank)
+    call bcast(tc%sp_tau_thm, root_rank)
 
     ! Finish
 
@@ -308,6 +327,7 @@ contains
   $PROC(kappa_ad)
   $PROC(epsilon_S)
   $PROC(epsilon_ad)
+  $PROC(tau_thm)
 
 !****
 
