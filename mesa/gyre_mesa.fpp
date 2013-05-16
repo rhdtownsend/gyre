@@ -76,7 +76,7 @@ contains
 
 !****
 
-  subroutine gyre_set_model (G, M_star, R_star, L_star, r, m, p, rho, T, &
+  subroutine gyre_set_model (G, M_star, R_star, L_star, r, w, p, rho, T, &
                              N2, Gamma_1, nabla_ad, delta, nabla,  &
                              kappa, kappa_rho, kappa_T, &
                              epsilon, epsilon_rho, epsilon_T, deriv_type)
@@ -86,7 +86,7 @@ contains
     real(WP), intent(in)         :: R_star
     real(WP), intent(in)         :: L_star
     real(WP), intent(in)         :: r(:)
-    real(WP), intent(in)         :: m(:)
+    real(WP), intent(in)         :: w(:)
     real(WP), intent(in)         :: p(:)
     real(WP), intent(in)         :: rho(:)
     real(WP), intent(in)         :: T(:)
@@ -103,6 +103,10 @@ contains
     real(WP), intent(in)         :: epsilon_T(:)
     character(LEN=*), intent(in) :: deriv_type
 
+    real(WP), allocatable :: m(:)
+    real(WP), allocatable :: epsilon_rho_(:)
+    real(WP), allocatable :: epsilon_T_(:)
+
     ! Set the model by storing coefficients
 
     if(ALLOCATED(bc_m)) deallocate(bc_m)
@@ -110,6 +114,21 @@ contains
 
     allocate(evol_base_coeffs_t::bc_m)
     allocate(evol_therm_coeffs_t::tc_m)
+
+    m = w/(1._WP+w)*M_star
+
+    if(ABS(epsilon_rho(1)) > 1E-3*epsilon(1)) then
+       where(epsilon /= 0._WP)
+          epsilon_rho_ = epsilon_rho/epsilon
+          epsilon_T_ = epsilon_T/epsilon
+       elsewhere
+          epsilon_rho_ = 0._WP
+          epsilon_T_ = 0._WP
+       endwhere
+    else
+       epsilon_rho_ = epsilon_rho
+       epsilon_T_ = epsilon_T
+    endif
 
     select type (bc_m)
     type is (evol_base_coeffs_t)
@@ -124,7 +143,7 @@ contains
        call tc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                       Gamma_1, nabla_ad, delta, nabla,  &
                       kappa, kappa_rho, kappa_T, &
-                      epsilon, epsilon_rho, epsilon_T, deriv_type)
+                      epsilon, epsilon_rho_, epsilon_T_, deriv_type)
     class default
        $ABORT(Invalid tc_m type)
     end select
