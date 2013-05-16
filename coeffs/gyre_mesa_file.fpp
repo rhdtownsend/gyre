@@ -117,13 +117,18 @@ contains
     allocate(epsilon_T(n))
     allocate(epsilon_rho(n))
 
-    where(var(16,:) /= 0._WP)
-       epsilon_T = var(17,:)/var(16,:)
-       epsilon_rho = var(18,:)/var(16,:)
-    elsewhere
-       epsilon_T = 0._WP
-       epsilon_rho = 0._WP
-    endwhere
+    if(ABS(var(18,1)) > 1E-3*var(16,1)) then
+       where(var(16,:) /= 0._WP)
+          epsilon_T = var(17,:)/var(16,:)
+          epsilon_rho = var(18,:)/var(16,:)
+       elsewhere
+          epsilon_T = 0._WP
+          epsilon_rho = 0._WP
+       endwhere
+    else
+       epsilon_T = var(17,:)
+       epsilon_rho = var(18,:)
+    endif
 
     nabla_ad = p*delta/(rho*T*var(10,:))
 
