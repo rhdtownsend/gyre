@@ -536,7 +536,7 @@ contains
 
     associate(c_thm => this%tc%c_thm(this%x))
 
-      dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI*REAL(this%omega))
+      dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI)
 
     end associate
 
@@ -641,9 +641,9 @@ contains
 
     do i = this%n-1,1,-1
 
-       associate(c_thm => this%tc%c_thm(this%x(i)), c_rad => this%tc%c_rad(this%x(i)))
+       associate(tau_thm => this%tc%tau_thm(this%x(i)))
 
-         if(REAL(this%omega)*c_thm > c_rad) then
+         if(REAL(this%omega)*tau_thm/TWOPI > 1._WP) then
             i_trans = i
             exit
          endif
@@ -652,7 +652,7 @@ contains
 
     enddo
 
-    print *,'Truncating at:',this%x(i_trans)
+    i_trans = this%n
 
     ! Do the integration
 
