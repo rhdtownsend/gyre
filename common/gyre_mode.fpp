@@ -66,6 +66,7 @@ module gyre_mode
      procedure, public :: delT
      procedure, public :: dE_dx
      procedure, public :: dW_dx
+     procedure, public :: C
      procedure, public :: E
      procedure, public :: E_norm
      procedure, public :: W
@@ -546,7 +547,37 @@ contains
 
   end function dW_dx
 
-!*****
+!****
+
+  function C (this)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: C
+
+    complex(WP) :: xi_r(this%n)
+    complex(WP) :: xi_h(this%n)
+
+    ! Calculate the first-order rotational splitting coefficient (Unno
+    ! et al. 1989, eqn. 19.46)
+
+    xi_r = this%xi_r()
+    xi_h = this%xi_h()
+
+    associate(x => this%x, U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+              l => this%op%l)
+
+      C = integrate(this%x, (2._WP*REAL(xi_r*CONJG(xi_h)) + ABS(xi_h)**2)*U*x**2/c_1)/ &
+          integrate(this%x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function C
+
+!****
 
   function E (this)
 
