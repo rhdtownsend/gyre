@@ -180,6 +180,7 @@ contains
     complex(WP)         :: C(this%n_e,this%n_e,this%n)
     integer             :: n
     integer             :: n_e
+    integer             :: l
     integer             :: k
     complex(WP)         :: P(2*this%n_e,this%n_e)
     complex(WP)         :: Q(2*this%n_e,this%n_e)
@@ -207,23 +208,25 @@ contains
     n = this%n
     n_e = this%n_e
 
+    l = 1
+
     factor_loop : do
 
-       if (n==1) exit factor_loop
+       if (l >= n) exit factor_loop
 
        ! Reduce pairs of blocks to single blocks
 
        !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (P, Q, R, ipiv, info, i)
-       reduce_loop : do k = 1, n-1, 2
+       reduce_loop : do k = 1, n-l, 2*l
 
           ! Set up matrices (see expressions following eqn. 2.5 of
           ! Wright 1994)
 
           P(:n_e,:) = C(:,:,k)
-          P(n_e+1:,:) = A(:,:,k+1)
+          P(n_e+1:,:) = A(:,:,k+l)
 
           Q(:n_e,:) = 0._WP
-          Q(n_e+1:,:) = C(:,:,k+1)
+          Q(n_e+1:,:) = C(:,:,k+l)
 
           R(:n_e,:) = A(:,:,k)
           R(n_e+1:,:) = 0._WP
@@ -277,22 +280,13 @@ contains
 
        end do reduce_loop
 
-       if(MOD(n, 2) /= 0) block_det(n) = ext_complex(1._WP)
-
        ! Update the determinant
 
-       det = product([block_det(:n:2),det])
-
-       ! Repack the reduced matrix
-
-       n_red = (n+1)/2
-
-       A(:,:,:n_red) = A(:,:,:n:2)
-       C(:,:,:n_red) = C(:,:,:n:2)
-
-       n = n_red
+       det = product([block_det(:n-l:2*l),det])
 
        ! Loop around
+
+       l = 2*l
 
     end do factor_loop
 
