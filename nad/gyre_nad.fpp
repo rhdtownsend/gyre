@@ -36,7 +36,7 @@ program gyre_nad
   use gyre_nad_bvp
   use gyre_ad_search
   use gyre_nad_search
-  use gyre_eigfunc
+  use gyre_mode
   use gyre_frontend
 
   use ISO_FORTRAN_ENV
@@ -59,8 +59,8 @@ program gyre_nad
   type(gridpar_t), allocatable       :: recon_gp(:)
   type(ad_bvp_t)                     :: ad_bp
   type(nad_bvp_t)                    :: nad_bp
-  type(eigfunc_t), allocatable       :: ad_ef(:)
-  type(eigfunc_t), allocatable       :: nad_ef(:)
+  type(mode_t), allocatable          :: ad_md(:)
+  type(mode_t), allocatable          :: nad_md(:)
 
   ! Initialize
 
@@ -94,9 +94,9 @@ program gyre_nad
 
      call init_oscpar(unit, op)
      call init_numpar(unit, np)
-     call init_scan(unit, bc, op, omega)
-     call init_shoot_grid(unit, MINVAL(omega), MAXVAL(omega), shoot_gp)
-     call init_recon_grid(unit, 0._WP, 0._WP, recon_gp)
+     call init_shoot_grid(unit, shoot_gp)
+     call init_recon_grid(unit, recon_gp)
+     call init_scan(unit, bc, op, shoot_gp, x_bc, omega)
 
      call ad_bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)
      call nad_bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)
@@ -111,13 +111,13 @@ program gyre_nad
 
   ! Search for modes
 
-  call ad_scan_search(ad_bp, omega, ad_ef)
-  call nad_prox_search(nad_bp, ad_ef, nad_ef)
+  call ad_scan_search(ad_bp, omega, ad_md)
+  call nad_prox_search(nad_bp, ad_md, nad_md)
 
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_data(unit, nad_ef)
+     call write_data(unit, nad_md)
   endif
 
   ! Finish

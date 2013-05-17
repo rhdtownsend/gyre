@@ -50,6 +50,7 @@ module gyre_therm_coeffs
      $PROC_DECL(kappa_S)
      $PROC_DECL(epsilon_ad)
      $PROC_DECL(epsilon_S)
+     $PROC_DECL(tau_thm)
   end type therm_coeffs_t
 
   ! Interfaces

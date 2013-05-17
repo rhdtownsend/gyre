@@ -34,7 +34,7 @@ program gyre_ad
   use gyre_gridpar
   use gyre_ad_bvp
   use gyre_ad_search
-  use gyre_eigfunc
+  use gyre_mode
   use gyre_frontend
 
   use ISO_FORTRAN_ENV
@@ -56,7 +56,7 @@ program gyre_ad
   type(gridpar_t), allocatable       :: shoot_gp(:)
   type(gridpar_t), allocatable       :: recon_gp(:)
   type(ad_bvp_t)                     :: bp
-  type(eigfunc_t), allocatable       :: ef(:)
+  type(mode_t), allocatable          :: md(:)
 
   ! Initialize
 
@@ -87,9 +87,9 @@ program gyre_ad
      call init_coeffs(unit, x_bc, bc, tc)
      call init_oscpar(unit, op)
      call init_numpar(unit, np)
-     call init_scan(unit, bc, op, omega)
-     call init_shoot_grid(unit, MINVAL(omega), MAXVAL(omega), shoot_gp)
-     call init_recon_grid(unit, 0._WP, 0._WP, recon_gp)
+     call init_shoot_grid(unit, shoot_gp)
+     call init_recon_grid(unit, recon_gp)
+     call init_scan(unit, bc, op, shoot_gp, x_bc, omega)
 
      call bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)
 
@@ -102,12 +102,12 @@ program gyre_ad
 
   ! Find modes
 
-  call ad_scan_search(bp, omega, ef)
+  call ad_scan_search(bp, omega, md)
 
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_data(unit, ef)
+     call write_data(unit, md)
   endif
 
   ! Finish

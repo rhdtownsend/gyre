@@ -211,6 +211,11 @@ module gyre_ext_arith
      module procedure exp_c
   end interface exp
 
+  interface abs
+     module procedure abs_r
+     module procedure abs_c
+  end interface abs
+
   interface fraction
      module procedure fraction_r
      module procedure fraction_c
@@ -247,6 +252,7 @@ module gyre_ext_arith
   public :: cmplx
   public :: valid
   public :: product
+  public :: abs
   public :: exp
   public :: fraction
   public :: exponent
@@ -776,6 +782,42 @@ contains
     return
 
   end function product_c
+
+!****
+
+  elemental function abs_r (ex) result (abs_ex)
+
+    type(ext_real_t), intent(in) :: ex
+    type(ext_real_t)             :: abs_ex
+
+    ! Calculate the absolute value of ex
+
+    abs_ex%f = ABS(ex%f)
+    abs_ex%e = ex%e
+
+    ! Finish
+
+    return
+
+  end function abs_r
+
+!****
+
+  elemental function abs_c (ez) result (abs_ez)
+
+    type(ext_complex_t), intent(in) :: ez
+    type(ext_real_t)                :: abs_ez
+
+    ! Calculate the absolute value of ez
+
+    abs_ez%f = ABS(ez%f)
+    abs_ez%e = ez%e
+
+    ! Finish
+
+    return
+
+  end function abs_c
 
 !****
 

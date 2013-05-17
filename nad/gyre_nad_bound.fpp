@@ -26,6 +26,7 @@ module gyre_nad_bound
   use gyre_base_coeffs
   use gyre_therm_coeffs
   use gyre_oscpar
+  use gyre_ad_bound
 
   use ISO_FORTRAN_ENV
 
@@ -89,15 +90,18 @@ contains
 
 !****
 
-  function inner_bound (this, omega) result (B_i)
+  function inner_bound (this, x_i, omega) result (B_i)
 
     class(nad_bound_t), intent(in) :: this
+    real(WP), intent(in)           :: x_i
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_i(this%n_i,this%n_e)
 
+    $ASSERT(x_i == 0._WP,Boundary condition invalid for x_i /= 0)
+
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%bc%c_1(0._WP), l => this%op%l)
+    associate(c_1 => this%bc%c_1(x_i), l => this%op%l)
 
       B_i(1,1) = c_1*omega**2
       B_i(1,2) = -l
@@ -130,9 +134,10 @@ contains
 
 !****
 
-  function outer_bound (this, omega) result (B_o)
+  function outer_bound (this, x_o, omega) result (B_o)
 
     class(nad_bound_t), intent(in) :: this
+    real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
 
@@ -140,13 +145,13 @@ contains
 
     select case (this%op%outer_bound_type)
     case ('ZERO')
-       B_o = this%outer_bound_zero(omega)
+       B_o = this%outer_bound_zero(x_o, omega)
     case ('DZIEM')
-       B_o = this%outer_bound_dziem(omega)
+       B_o = this%outer_bound_dziem(x_o, omega)
     case ('UNNO')
-       B_o = this%outer_bound_unno(omega)
+       B_o = this%outer_bound_unno(x_o, omega)
     case ('JCD')
-       B_o = this%outer_bound_jcd(omega)
+       B_o = this%outer_bound_jcd(x_o, omega)
     case default
        $ABORT(Invalid outer_bound_type)
     end select
@@ -159,9 +164,10 @@ contains
 
 !****
 
-  function outer_bound_zero (this, omega) result (B_o)
+  function outer_bound_zero (this, x_o, omega) result (B_o)
 
     class(nad_bound_t), intent(in) :: this
+    real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
 
@@ -169,7 +175,7 @@ contains
     ! term in the gravitational bc is required for cases where the
     ! surface density remains finite (see Cox 1980, eqn. 17.71)
 
-    associate(V => this%bc%V(1._WP), U => this%bc%U(1._WP), nabla_ad => this%bc%nabla_ad(1._WP), &
+    associate(V => this%bc%V(x_o), U => this%bc%U(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
               l => this%op%l)
 
       B_o(1,1) = 1._WP
@@ -203,16 +209,17 @@ contains
 
 !****
 
-  function outer_bound_dziem (this, omega) result (B_o)
+  function outer_bound_dziem (this, x_o, omega) result (B_o)
 
     class(nad_bound_t), intent(in) :: this
+    real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
 
     ! Set the outer boundary conditions, assuming Dziembowski's (1971)
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere.
 
-    associate(V => this%bc%V(1._WP), nabla_ad => this%bc%nabla_ad(1._WP), &
+    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
               l => this%op%l)
 
       B_o(1,1) = 1 + (l*(l+1)/omega**2 - 4 - omega**2)/V
@@ -246,12 +253,16 @@ contains
 
 !****
 
-  function outer_bound_unno (this, omega) result (B_o)
+  function outer_bound_unno (this, x_o, omega) result (B_o)
 
     class(nad_bound_t), intent(in) :: this
+    real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
 
+    real(WP)    :: V_g
+    real(WP)    :: As
+    real(WP)    :: c_1
     complex(WP) :: lambda
     complex(WP) :: b_11
     complex(WP) :: b_12
@@ -265,17 +276,17 @@ contains
     ! Set the outer boundary conditions, assuming Unno et al.'s (1989,
     ! S18.1) formulation.
 
-    associate(V => this%bc%V(1._WP), V_g => this%bc%V(1._WP)/this%bc%Gamma_1(1._WP), &
-              As => this%bc%As(1._WP), nabla_ad => this%bc%nabla_ad(1._WP), &
-              l => this%op%l)
+    call eval_outer_coeffs_unno(this%bc, x_o, V_g, As, c_1)
 
-      lambda = outer_wavenumber(V_g, As, omega, l)
+    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), l => this%op%l)
+
+      lambda = outer_wavenumber(V_g, As, c_1, omega, l)
       
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/omega**2 - V_g
+      b_12 = l*(l+1)/(c_1*omega**2) - V_g
       b_13 = V_g
 
-      b_21 = omega**2 - As
+      b_21 = c_1*omega**2 - As
       b_22 = 1._WP + As
       b_23 = -As
     
@@ -313,12 +324,16 @@ contains
 
 !****
 
-  function outer_bound_jcd (this, omega) result (B_o)
+  function outer_bound_jcd (this, x_o, omega) result (B_o)
 
     class(nad_bound_t), intent(in) :: this
+    real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
 
+    real(WP)    :: V_g
+    real(WP)    :: As
+    real(WP)    :: c_1
     complex(WP) :: lambda
     complex(WP) :: b_11
     complex(WP) :: b_12
@@ -326,20 +341,19 @@ contains
     ! Set the outer boundary conditions, assuming
     ! Christensen-Dalsgaard's formulation (see ADIPLS documentation)
 
-    associate(V => this%bc%V(1._WP), V_g => this%bc%V(1._WP)/this%bc%Gamma_1(1._WP), &
-              As => this%bc%V(1._WP)*(1._WP-1._WP/this%bc%Gamma_1(1._WP)), &
-              nabla_ad => this%bc%nabla_ad(1._WP), &
-              l => this%op%l)
+    call eval_outer_coeffs_jcd(this%bc, x_o, V_g, As, c_1)
 
-      lambda = outer_wavenumber(V_g, As, omega, l)
-      
+    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), l => this%op%l)
+
+      lambda = outer_wavenumber(V_g, As, c_1, omega, l)
+
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/omega**2 - V_g
+      b_12 = l*(l+1)/(c_1*omega**2) - V_g
 
       if(l /= 0) then
          B_o(1,1) = (lambda - b_11)/b_12
          B_o(1,2) = -1._WP
-         B_o(1,3) = 1._WP + (l*(l+1)/omega**2 - l - 1._WP)/(V_g + As)
+         B_o(1,3) = 1._WP + (l*(l+1)/(c_1*omega**2) - l - 1._WP)/(V_g + As)
          B_o(1,4) = 0._WP
          B_o(1,5) = 0._WP
          B_o(1,6) = 0._WP
@@ -373,101 +387,5 @@ contains
     return
 
   end function outer_bound_jcd
-
-!****
-
-  function outer_wavenumber (V_g, As, omega, l) result (lambda)
-
-    real(WP)                :: V_g
-    real(WP), intent(in)    :: As
-    complex(WP), intent(in) :: omega
-    integer, intent(in)     :: l
-    complex(WP)             :: lambda
-
-    real(WP)    :: a
-    real(WP)    :: b
-    real(WP)    :: c
-    real(WP)    :: omega2_c_1
-    real(WP)    :: omega2_c_2
-    complex(WP) :: gamma
-    complex(WP) :: sgamma
-
-    ! Calculate the wavenumber at the outer boundary
-
-    if(AIMAG(omega) == 0._WP) then
-
-       ! Calculate cutoff frequencies
-
-       a = -4._WP*V_g
-       b = (As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1)
-       c = -4._WP*l*(l+1)*As
-
-       omega2_c_1 = (-b + SQRT(b**2 - 4._WP*a*c))/(2._WP*a)
-       omega2_c_2 = (-b - SQRT(b**2 - 4._WP*a*c))/(2._WP*a)
-
-       $ASSERT(omega2_c_2 > omega2_c_1,Incorrect cutoff frequency ordering)
-
-       ! Evaluate the wavenumber
-
-       gamma = -4._WP*V_g*(omega**2 - omega2_c_1)*(omega**2 - omega2_c_2)/omega**2
-
-       if(REAL(omega**2) > omega2_c_2) then
-
-          ! Acoustic waves
-
-          lambda = 0.5_WP*((V_g + As - 2._WP) - SQRT(gamma))
-
-       elseif(REAL(omega**2) < omega2_c_1) then
-
-          ! Gravity waves
-
-          lambda = 0.5_WP*((V_g + As - 2._WP) + SQRT(gamma))
-
-       else
-
-          ! Evanescent
-
-          lambda = 0.5_WP*((V_g + As - 2._WP) - SQRT(gamma))
-
-       endif
-
-    else
-
-       ! Evaluate the wavenumber
-
-       gamma = (As - V_g + 4._WP)**2 + 4*(l*(l+1)/omega**2 - V_g)*(omega**2 - As)
-       sgamma = SQRT(gamma)
-
-       if(AIMAG(omega) > 0._WP) then
-
-          ! Decaying oscillations; choose the wave with diverging
-          ! energy density (see Townsend 2000b)
-
-          if(REAL(sgamma) > 0._WP) then
-             lambda = 0.5_WP*((V_g + As - 2._WP) + sgamma)
-          else
-             lambda = 0.5_WP*((V_g + As - 2._WP) - sgamma)
-          endif
-
-       else
-
-          ! Growing oscillations; choose the wave with non-diverging
-          ! energy density (see Townsend 2000b)
-
-          if(REAL(sgamma) > 0._WP) then
-             lambda = 0.5_WP*((V_g + As - 2._WP) - sgamma)
-          else
-             lambda = 0.5_WP*((V_g + As - 2._WP) + sgamma)
-          endif
-
-       endif
-
-    end if
-
-    ! Finish
-
-    return
-
-  end function outer_wavenumber
 
 end module gyre_nad_bound

@@ -40,7 +40,7 @@ module gyre_nad_bvp
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
-  use gyre_eigfunc
+  use gyre_mode
 
   use ISO_FORTRAN_ENV
 
@@ -80,7 +80,7 @@ module gyre_nad_bvp
      procedure, public :: discrim
      procedure         :: build
      procedure         :: recon
-     procedure, public :: eigfunc
+     procedure, public :: mode
   end type nad_bvp_t
 
   ! Interfaces
@@ -275,22 +275,16 @@ contains
     class(nad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)         :: omega
 
-    type(nad_jacobian_t) :: jc
-    integer              :: k
-    complex(WP)          :: A(this%n_e,this%n_e)
+    integer :: k
 
     ! Decide where to switch from the adiabatic equations (interior)
     ! to the non-adiabastic ones (exterior)
-
-    call jc%init(this%bc, this%tc, this%op)
 
     this%x_ad = 0._WP
 
     x_ad_loop : do k = this%n,2,-1
 
-       call jc%eval_logx(omega, this%x(k), A)
-
-       if(MAXVAL(ABS([A(6,1:4),A(6,6)]))/ABS(A(6,5)) < this%np%theta_ad) then
+       if(this%tc%tau_thm(this%x(k))*REAL(omega) > this%np%theta_ad) then
           this%x_ad = this%x(k)
           exit x_ad_loop
        endif
@@ -345,8 +339,8 @@ contains
 
     ! Set up the sysmtx
 
-    call this%sm%set_inner_bound(this%bd%inner_bound(omega))
-    call this%sm%set_outer_bound(this%bd%outer_bound(omega))
+    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
+    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
 
     call this%sh%shoot(omega, this%x, this%sm, this%x_ad)
 
@@ -390,7 +384,7 @@ contains
 
     allocate(y(this%n_e,SIZE(x)))
 
-    call this%sh%recon(omega, this%x, y_sh, x, y)
+    call this%sh%recon(omega, this%x, y_sh, x, y, this%x_ad)
 
     ! Finish
 
@@ -404,11 +398,11 @@ contains
 
 !****
 
-  function eigfunc (this, omega) result (ef)
+  function mode (this, omega) result (md)
 
     class(nad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)         :: omega
-    type(eigfunc_t)                 :: ef
+    type(mode_t)                    :: md
 
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
@@ -417,14 +411,14 @@ contains
 
     call this%recon(omega, x, y)
 
-    ! Initialize the eigfunc
+    ! Initialize the mode
     
-    call ef%init(this%bc, this%tc, this%op, omega, x, y)
+    call md%init(this%bc, this%tc, this%op, omega, x, y)
 
     ! Finish
 
     return
 
-  end function eigfunc
+  end function mode
 
 end module gyre_nad_bvp

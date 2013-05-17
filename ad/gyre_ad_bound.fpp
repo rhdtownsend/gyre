@@ -57,6 +57,9 @@ module gyre_ad_bound
   private
 
   public :: ad_bound_t
+  public :: eval_outer_coeffs_unno
+  public :: eval_outer_coeffs_jcd
+  public :: outer_wavenumber
   public :: eval_cutoffs
 
   ! Procedures
@@ -86,26 +89,29 @@ contains
 
 !****
 
-  function inner_bound (this, omega) result (B_i)
+  function inner_bound (this, x_i, omega) result (B_i)
 
     class(ad_bound_t), intent(in) :: this
+    real(WP), intent(in)          :: x_i
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_i(this%n_i,this%n_e)
 
+    $ASSERT(x_i == 0._WP,Boundary condition invalid for x_i /= 0)
+
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%bc%c_1(0._WP), l => this%op%l)
+    associate(c_1 => this%bc%c_1(x_i), l => this%op%l)
                  
       B_i(1,1) = c_1*omega**2
       B_i(1,2) = -l
       B_i(1,3) = 0._WP
       B_i(1,4) = 0._WP
-
+        
       B_i(2,1) = 0._WP
       B_i(2,2) = 0._WP
       B_i(2,3) = l
       B_i(2,4) = -1._WP
-
+      
     end associate
 
     ! Finish
@@ -116,9 +122,10 @@ contains
 
 !****
 
-  function outer_bound (this, omega) result (B_o)
+  function outer_bound (this, x_o, omega) result (B_o)
 
     class(ad_bound_t), intent(in) :: this
+    real(WP), intent(in)          :: x_o
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_o(this%n_o,this%n_e)
 
@@ -126,13 +133,13 @@ contains
 
     select case (this%op%outer_bound_type)
     case ('ZERO')
-       B_o = this%outer_bound_zero(omega)
+       B_o = this%outer_bound_zero(x_o, omega)
     case ('DZIEM')
-       B_o = this%outer_bound_dziem(omega)
+       B_o = this%outer_bound_dziem(x_o, omega)
     case ('UNNO')
-       B_o = this%outer_bound_unno(omega)
+       B_o = this%outer_bound_unno(x_o, omega)
     case ('JCD')
-       B_o = this%outer_bound_jcd(omega)
+       B_o = this%outer_bound_jcd(x_o, omega)
     case default
        $ABORT(Invalid outer_bound_type)
     end select
@@ -145,17 +152,16 @@ contains
 
 !****
 
-  function outer_bound_zero (this, omega) result (B_o)
+  function outer_bound_zero (this, x_o, omega) result (B_o)
 
     class(ad_bound_t), intent(in) :: this
+    real(WP)                      :: x_o
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_o(this%n_o,this%n_e)
 
-    ! Set the outer boundary conditions, assuming delta p -> 0. The U
-    ! term in the gravitational bc is required for cases where the
-    ! surface density remains finite (see Cox 1980, eqn. 17.71)
+    ! Set the outer boundary conditions, assuming delta p -> 0
 
-    associate(U => this%bc%U(1._WP), l => this%op%l)
+    associate(U => this%bc%U(x_o), l => this%op%l)
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
@@ -177,23 +183,24 @@ contains
 
 !****
 
-  function outer_bound_dziem (this, omega) result (B_o)
+  function outer_bound_dziem (this, x_o, omega) result (B_o)
 
     class(ad_bound_t), intent(in) :: this
+    real(WP), intent(in)          :: x_o
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_o(this%n_o,this%n_e)
 
     ! Set the outer boundary conditions, assuming Dziembowski's (1971)
-    ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere.
+    ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere
 
-    associate(V => this%bc%V(1._WP), &
+    associate(V => this%bc%V(x_o), c_1 => this%bc%V(x_o), &
               l => this%op%l)
-
-      B_o(1,1) = 1 + (l*(l+1)/omega**2 - 4 - omega**2)/V
+        
+      B_o(1,1) = 1 + (l*(l+1)/(c_1*omega**2) - 4._WP - c_1*omega**2)/V
       B_o(1,2) = -1._WP
-      B_o(1,3) = 1 + (l*(l+1)/omega**2 - l - 1)/V
+      B_o(1,3) = 1 + (l*(l+1)/(c_1*omega**2) - l - 1._WP)/V
       B_o(1,4) = 0._WP
-     
+      
       B_o(2,1) = 0._WP
       B_o(2,2) = 0._WP
       B_o(2,3) = l + 1._WP
@@ -209,14 +216,16 @@ contains
 
 !****
 
-  function outer_bound_unno (this, omega) result (B_o)
+  function outer_bound_unno (this, x_o, omega) result (B_o)
 
     class(ad_bound_t), intent(in) :: this
+    real(WP), intent(in)          :: x_o
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_o(this%n_o,this%n_e)
 
     real(WP)    :: V_g
     real(WP)    :: As
+    real(WP)    :: c_1
     complex(WP) :: lambda
     complex(WP) :: b_11
     complex(WP) :: b_12
@@ -230,17 +239,17 @@ contains
     ! Set the outer boundary conditions, assuming Unno et al.'s (1989,
     ! S18.1) formulation.
 
-    call eval_outer_coeffs_unno(this%bc, V_g, As)
+    call eval_outer_coeffs_unno(this%bc, x_o, V_g, As, c_1)
 
     associate(l => this%op%l)
 
-      lambda = outer_wavenumber(V_g, As, omega, l)
+      lambda = outer_wavenumber(V_g, As, c_1, omega, l)
       
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/omega**2 - V_g
+      b_12 = l*(l+1)/(c_1*omega**2) - V_g
       b_13 = V_g
 
-      b_21 = omega**2 - As
+      b_21 = c_1*omega**2 - As
       b_22 = 1._WP + As
       b_23 = -As
     
@@ -267,14 +276,16 @@ contains
 
 !****
 
-  function outer_bound_jcd (this, omega) result (B_o)
+  function outer_bound_jcd (this, x_o, omega) result (B_o)
 
     class(ad_bound_t), intent(in) :: this
+    real(WP), intent(in)          :: x_o
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_o(this%n_o,this%n_e)
 
     real(WP)    :: V_g
     real(WP)    :: As
+    real(WP)    :: c_1
     complex(WP) :: lambda
     complex(WP) :: b_11
     complex(WP) :: b_12
@@ -282,19 +293,19 @@ contains
     ! Set the outer boundary conditions, assuming
     ! Christensen-Dalsgaard's formulation (see ADIPLS documentation)
 
-    call eval_outer_coeffs_jcd(this%bc, V_g, As)
+    call eval_outer_coeffs_jcd(this%bc, x_o, V_g, As, c_1)
 
     associate(l => this%op%l)
 
-      lambda = outer_wavenumber(V_g, As, omega, l)
+      lambda = outer_wavenumber(V_g, As, c_1, omega, l)
 
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/omega**2 - V_g
+      b_12 = l*(l+1)/(c_1*omega**2) - V_g
 
       if(l /= 0) then
          B_o(1,1) = (lambda - b_11)/b_12
          B_o(1,2) = -1._WP
-         B_o(1,3) = 1._WP + (l*(l+1)/omega**2 - l - 1._WP)/(V_g + As)
+         B_o(1,3) = 1._WP + (l*(l+1)/(c_1*omega**2) - l - 1._WP)/(V_g + As)
          B_o(1,4) = 0._WP
       else
          B_o(1,1) = (lambda - b_11)/b_12
@@ -318,17 +329,20 @@ contains
 
 !****
 
-  subroutine eval_outer_coeffs_unno (bc, V_g, As)
+  subroutine eval_outer_coeffs_unno (bc, x_o, V_g, As, c_1)
 
     class(base_coeffs_t), intent(in) :: bc
+    real(WP), intent(in)             :: x_o
     real(WP), intent(out)            :: V_g
     real(WP), intent(out)            :: As
+    real(WP), intent(out)            :: c_1
 
     ! Calculate coefficients at the outer boundary, for use in the
     ! Unno boundary prescription
 
-    V_g = bc%V(1._WP)/bc%Gamma_1(1._WP)
-    As = bc%As(1._WP)
+    V_g = bc%V(x_o)/bc%Gamma_1(x_o)
+    As = bc%As(x_o)
+    c_1 = bc%c_1(x_o)
 
     ! Finish
 
@@ -338,17 +352,20 @@ contains
     
 !****
 
-  subroutine eval_outer_coeffs_jcd (bc, V_g, As)
+  subroutine eval_outer_coeffs_jcd (bc, x_o, V_g, As, c_1)
 
     class(base_coeffs_t), intent(in) :: bc
+    real(WP), intent(in)             :: x_o
     real(WP), intent(out)            :: V_g
     real(WP), intent(out)            :: As
+    real(WP), intent(out)            :: c_1
 
     ! Calculate coefficients at the outer boundary, for use in the
     ! JCD boundary prescription
 
-    V_g = bc%V(1._WP)/bc%Gamma_1(1._WP)
-    As = bc%V(1._WP)*(1._WP-1._WP/bc%Gamma_1(1._WP))
+    V_g = bc%V(x_o)/bc%Gamma_1(x_o)
+    As = bc%V(x_o)*(1._WP-1._WP/bc%Gamma_1(x_o))
+    c_1 = bc%c_1(x_o)
 
     ! Finish
 
@@ -358,10 +375,11 @@ contains
   
 !****
 
-  function outer_wavenumber (V_g, As, omega, l) result (lambda)
+  function outer_wavenumber (V_g, As, c_1, omega, l) result (lambda)
 
     real(WP)                :: V_g
     real(WP), intent(in)    :: As
+    real(WP), intent(in)    :: c_1
     complex(WP), intent(in) :: omega
     integer, intent(in)     :: l
     complex(WP)             :: lambda
@@ -377,11 +395,11 @@ contains
 
        ! Calculate cutoff frequencies
 
-       call eval_cutoffs_from_coeffs(V_g, As, l, omega_cutoff_lo, omega_cutoff_hi)
+       call eval_cutoffs_from_coeffs(V_g, As, c_1, l, omega_cutoff_lo, omega_cutoff_hi)
 
        ! Evaluate the wavenumber
 
-       gamma = -4._WP*V_g*(omega**2 - omega_cutoff_lo**2)*(omega**2 - omega_cutoff_hi**2)/omega**2
+       gamma = -4._WP*V_g*c_1*(omega**2 - omega_cutoff_lo**2)*(omega**2 - omega_cutoff_hi**2)/omega**2
 
        if(ABS(REAL(omega)) > omega_cutoff_hi) then
 
@@ -407,7 +425,7 @@ contains
 
        ! Evaluate the wavenumber
 
-       gamma = (As - V_g + 4._WP)**2 + 4*(l*(l+1)/omega**2 - V_g)*(omega**2 - As)
+       gamma = (As - V_g + 4._WP)**2 + 4*(l*(l+1)/(c_1*omega**2) - V_g)*(c_1*omega**2 - As)
        sgamma = SQRT(gamma)
 
        if(AIMAG(omega) > 0._WP) then
@@ -444,15 +462,17 @@ contains
 
 !****
 
-  subroutine eval_cutoffs (bc, op, omega_cutoff_lo, omega_cutoff_hi)
+  subroutine eval_cutoffs (bc, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
 
     class(base_coeffs_t), intent(in) :: bc
     type(oscpar_t), intent(in)       :: op
+    real(WP), intent(in)             :: x_o
     real(WP), intent(out)            :: omega_cutoff_lo
     real(WP), intent(out)            :: omega_cutoff_hi
 
     real(WP) :: V_g
     real(WP) :: As
+    real(WP) :: c_1
 
     ! Calculate coefficients at the outer boundary
 
@@ -462,16 +482,16 @@ contains
     case ('DZIEM')
        $ABORT(Cutoff frequencies are undefined for DZIEM outer_bound_type)
     case ('UNNO')
-       call eval_outer_coeffs_unno(bc, V_g, As)
+       call eval_outer_coeffs_unno(bc, x_o, V_g, As, c_1)
     case('JCD')
-       call eval_outer_coeffs_jcd(bc, V_g, As)
+       call eval_outer_coeffs_jcd(bc, x_o, V_g, As, c_1)
     case default
        $ABORT(Invalid outer_bound_type)
     end select
 
     ! Evaluate the cutoff freqs
 
-    call eval_cutoffs_from_coeffs(V_g, As, op%l, omega_cutoff_lo, omega_cutoff_hi)
+    call eval_cutoffs_from_coeffs(V_g, As, c_1, op%l, omega_cutoff_lo, omega_cutoff_hi)
 
     ! Finish
 
@@ -481,10 +501,11 @@ contains
 
 !****
 
-  subroutine eval_cutoffs_from_coeffs (V_g, As, l, omega_cutoff_lo, omega_cutoff_hi)
+  subroutine eval_cutoffs_from_coeffs (V_g, As, c_1, l, omega_cutoff_lo, omega_cutoff_hi)
 
     real(WP), intent(in)  :: V_g
     real(WP), intent(in)  :: As
+    real(WP), intent(in)  :: c_1
     integer, intent(in)   :: l
     real(WP), intent(out) :: omega_cutoff_lo
     real(WP), intent(out) :: omega_cutoff_hi
@@ -495,9 +516,9 @@ contains
 
     ! Evaluate the cutoff frequencies from the coefficients at the
     ! outer boundary
-    
-    a = -4._WP*V_g
-    b = (As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1)
+
+    a = -4._WP*V_g*c_1**2
+    b = ((As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1))*c_1
     c = -4._WP*l*(l+1)*As
 
     omega_cutoff_lo = SQRT((-b + SQRT(b**2 - 4._WP*a*c))/(2._WP*a))

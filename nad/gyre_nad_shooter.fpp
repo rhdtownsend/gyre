@@ -166,40 +166,6 @@ contains
 
     ! Finish
 
-  contains
-
-    function diff_coeffs (bc, tc, op, omega, x) result (a)
-
-      class(base_coeffs_t), intent(in)  :: bc
-      class(therm_coeffs_t), intent(in) :: tc
-      type(oscpar_t), intent(in)        :: op
-      complex(WP), intent(in)           :: omega
-      real(WP), intent(in)              :: x
-      complex(WP)                       :: a(6)
-
-      ! Calculate the coefficients of the (algebraic) adiabatic
-      ! diffusion equation
-
-      associate(U => bc%U(x), c_1 => bc%c_1(x), &
-                nabla_ad => bc%nabla_ad(x), &
-                c_rad => this%tc%c_rad(x), c_dif => tc%c_dif(x), nabla => tc%nabla(x), &
-                l => op%l)
-
-        a(1) = (nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-        a(2) = (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
-        a(3) = c_dif
-        a(4) = nabla_ad
-        a(5) = 0._WP
-        a(6) = -nabla/c_rad
-
-      end associate
-
-      ! Finish
-
-      return
-
-    end function diff_coeffs
-
   end subroutine shoot
 
 !****
@@ -224,7 +190,7 @@ contains
     integer     :: i_in(SIZE(x))
     real(WP)    :: x_in(SIZE(x))
     complex(WP) :: y_in(this%n_e,SIZE(x))
-    complex(WP) :: A(this%n_e,this%n_e)
+    complex(WP) :: A_5(this%n_e)
 
     $CHECK_BOUNDS(SIZE(y_sh, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(y_sh, 2),SIZE(x_sh))
@@ -243,7 +209,7 @@ contains
     n_sh = SIZE(x_sh)
     n = SIZE(x)
 
-    !$OMP PARALLEL DO PRIVATE (mask, n_in, i_in, x_in, y_in) SCHEDULE (DYNAMIC)
+    !$OMP PARALLEL DO PRIVATE (mask, n_in, i_in, x_in, y_in, A_5) SCHEDULE (DYNAMIC)
     recon_loop : do k = 1,n_sh-1
 
        ! Select those points which fall in the current interval
@@ -276,8 +242,8 @@ contains
              y_in(5,:n_in) = y_sh(5,k)
 
              do i = 1,n_in
-                call this%nad_jc%eval_logx(omega, x_in(i), A)
-                y_in(6,i) = -DOT_PRODUCT(y_in(1:5,i), A(5,1:5))/A(5,6)
+                A_5 = diff_coeffs(this%bc, this%tc, this%op, omega, x(k))
+                y_in(6,i) = -DOT_PRODUCT(y_in(1:5,i), A_5(1:5))/A_5(6)
              end do
           
           else
@@ -300,5 +266,39 @@ contains
     return
 
   end subroutine recon_sh
+
+!****
+
+  function diff_coeffs (bc, tc, op, omega, x) result (a)
+
+    class(base_coeffs_t), intent(in)  :: bc
+    class(therm_coeffs_t), intent(in) :: tc
+    type(oscpar_t), intent(in)        :: op
+    complex(WP), intent(in)           :: omega
+    real(WP), intent(in)              :: x
+    complex(WP)                       :: a(6)
+
+    ! Calculate the coefficients of the (algebraic) adiabatic
+    ! diffusion equation
+
+    associate(U => bc%U(x), c_1 => bc%c_1(x), &
+              nabla_ad => bc%nabla_ad(x), &
+              c_rad => tc%c_rad(x), c_dif => tc%c_dif(x), nabla => tc%nabla(x), &
+              l => op%l)
+
+      a(1) = (nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+      a(2) = (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
+      a(3) = c_dif
+      a(4) = nabla_ad
+      a(5) = 0._WP
+      a(6) = -nabla/c_rad
+      
+    end associate
+
+    ! Finish
+
+    return
+
+  end function diff_coeffs
 
 end module gyre_nad_shooter
