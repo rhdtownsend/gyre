@@ -275,22 +275,16 @@ contains
     class(nad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)         :: omega
 
-    type(nad_jacobian_t) :: jc
-    integer              :: k
-    complex(WP)          :: A(this%n_e,this%n_e)
+    integer :: k
 
     ! Decide where to switch from the adiabatic equations (interior)
     ! to the non-adiabastic ones (exterior)
-
-    call jc%init(this%bc, this%tc, this%op)
 
     this%x_ad = 0._WP
 
     x_ad_loop : do k = this%n,2,-1
 
-       call jc%eval_logx(omega, this%x(k), A)
-
-       if(MAXVAL(ABS([A(6,1:4),A(6,6)]))/ABS(A(6,5)) < this%np%theta_ad) then
+       if(this%tc%tau_thm(this%x(k))*REAL(omega) > this%np%theta_ad) then
           this%x_ad = this%x(k)
           exit x_ad_loop
        endif
@@ -390,7 +384,7 @@ contains
 
     allocate(y(this%n_e,SIZE(x)))
 
-    call this%sh%recon(omega, this%x, y_sh, x, y)
+    call this%sh%recon(omega, this%x, y_sh, x, y, this%x_ad)
 
     ! Finish
 
