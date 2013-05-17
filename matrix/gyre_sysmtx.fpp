@@ -189,7 +189,6 @@ contains
     integer             :: info
     integer             :: i
     type(ext_complex_t) :: block_det(this%n)
-    integer             :: n_red
     integer             :: n_i
     complex(WP)         :: M(2*this%n_e,2*this%n_e)
     integer             :: ipiv2(2*this%n_e)
