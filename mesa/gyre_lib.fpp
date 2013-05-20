@@ -34,7 +34,8 @@ module gyre_lib
   use gyre_numpar
   use gyre_ad_search
   use gyre_mode
-  use gyre_frontend
+  use gyre_input
+  use gyre_output
 
   use ISO_FORTRAN_ENV
 
@@ -191,9 +192,9 @@ contains
 
     call init_oscpar(unit, op)
     call init_numpar(unit, np)
-    call init_shoot_grid(unit, shoot_gp)
-    call init_recon_grid(unit, recon_gp)
-    call init_scan(unit, bc_m, op, shoot_gp, x_bc_m, omega)
+    call init_shoot_gridpar(unit, shoot_gp)
+    call init_recon_gridpar(unit, recon_gp)
+    call init_scanpar(unit, bc_m, op, shoot_gp, x_bc_m, omega)
 
     close(unit)
 
