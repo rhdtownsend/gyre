@@ -17,6 +17,6 @@ FPX3FLAGS=-DGFORTRAN_PR_56052 -DGFORTRAN_PR_56872
 
 # Include other makefiles
 
-SUBDIRS=../../core:../common:../ivp:../bvp:../coeffs:../matrix
+SUBDIRS=../../core:../common:../ivp:../bvp:../coeffs:../matrix:../frontend
 
 include ../../build/Make.inc

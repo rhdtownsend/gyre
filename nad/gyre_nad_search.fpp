@@ -28,8 +28,8 @@ module gyre_nad_search
   use gyre_nad_bvp
   use gyre_nad_discfunc
   use gyre_mode
-  use gyre_frontend
   use gyre_ext_arith
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 

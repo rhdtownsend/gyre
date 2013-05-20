@@ -22,12 +22,14 @@ module gyre_output
   ! Uses
 
   use core_kinds
+  use core_constants
   use core_hgroup
 
   use gyre_base_coeffs
   use gyre_evol_base_coeffs
   use gyre_poly_base_coeffs
   use gyre_mode
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -39,10 +41,70 @@ module gyre_output
 
   private
 
-  public :: write_summary
-  public :: write_mode
+  public :: write_data
 
 contains
+
+  subroutine write_data (unit, md)
+
+    integer, intent(in)         :: unit
+    type(mode_t), intent(in)    :: md(:)
+
+    character(LEN=256)          :: freq_units
+    character(LEN=FILENAME_LEN) :: summary_file
+    character(LEN=2048)         :: summary_item_list
+    character(LEN=FILENAME_LEN) :: mode_prefix
+    character(LEN=2048)         :: mode_item_list
+    character(LEN=FILENAME_LEN) :: mode_file
+    integer                     :: j
+
+    namelist /output/ freq_units, summary_file, summary_item_list, mode_prefix, mode_item_list
+
+    ! Read output parameters
+
+    freq_units = 'NONE'
+
+    summary_file = ''
+    summary_item_list = 'l,n_p,n_g,omega,freq'
+
+    mode_prefix = ''
+    mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
+
+    rewind(unit)
+    read(unit, NML=output, END=900)
+
+    ! Write output files
+
+    if(summary_file /= '') call write_summary(summary_file, md, split_item_list(summary_item_list), &
+                                              freq_scale(md(1)%bc, md(1)%op, md(1)%x(md(1)%n), freq_units))
+
+    if(mode_prefix /= '') then
+
+       mode_loop : do j = 1,SIZE(md)
+
+          write(mode_file, 100) TRIM(mode_prefix), j, '.h5'
+100       format(A,I4.4,A)
+
+          call write_mode(mode_file, md(j), split_item_list(mode_item_list), &
+                          freq_scale(md(j)%bc, md(j)%op, md(j)%x(md(j)%n), freq_units), j)
+
+       end do mode_loop
+       
+    end if
+
+    ! Finish
+
+    return
+
+    ! Jump-in point for end-of-file
+
+900 continue
+
+    $ABORT(No &output namelist in input file)
+
+  end subroutine write_data
+
+!****
 
   subroutine write_summary (file, md, items, freq_scale)
 

@@ -35,7 +35,10 @@ program gyre_ad
   use gyre_ad_bvp
   use gyre_ad_search
   use gyre_mode
-  use gyre_frontend
+  use gyre_input
+  use gyre_input_coeffs
+  use gyre_output
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -84,12 +87,12 @@ program gyre_ad
 
   if(MPI_RANK == 0) then
 
-     call init_coeffs(unit, x_bc, bc, tc)
-     call init_oscpar(unit, op)
-     call init_numpar(unit, np)
-     call init_shoot_grid(unit, shoot_gp)
-     call init_recon_grid(unit, recon_gp)
-     call init_scan(unit, bc, op, shoot_gp, x_bc, omega)
+     call read_coeffs(unit, x_bc, bc, tc)
+     call read_oscpar(unit, op)
+     call read_numpar(unit, np)
+     call read_shoot_gridpar(unit, shoot_gp)
+     call read_recon_gridpar(unit, recon_gp)
+     call read_scanpar(unit, bc, op, shoot_gp, x_bc, omega)
 
      call bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)
 
