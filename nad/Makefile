@@ -8,6 +8,7 @@ TARGETS=gyre_nad
 
 OMP=true
 #MPI=true
+HDF5=true
 DEBUG=true
 DOUBLE_PRECISION=true
 
