@@ -191,8 +191,8 @@ contains
          integer, intent(out)     :: retcode
        end subroutine user_sub
     end interface
-    integer, intent(inout)  :: ipar
-    real(WP), intent(inout) :: rpar
+    integer, intent(inout)  :: ipar(:)
+    real(WP), intent(inout) :: rpar(:)
 
     integer                      :: unit
     type(oscpar_t)               :: op
