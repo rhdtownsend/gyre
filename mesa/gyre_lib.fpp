@@ -228,7 +228,7 @@ contains
     ! Process the modes
 
     mode_loop : do j = 1,SIZE(md)
-       call user_func(md(j), ipar, rpar, retcode)
+       call user_sub(md(j), ipar, rpar, retcode)
        if(retcode /= 0) exit mode_loop
     end do mode_loop
 
