@@ -209,11 +209,11 @@ contains
 
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
-    call init_oscpar(unit, op)
-    call init_numpar(unit, np)
-    call init_shoot_gridpar(unit, shoot_gp)
-    call init_recon_gridpar(unit, recon_gp)
-    call init_scanpar(unit, bc_m, op, shoot_gp, x_bc_m, omega)
+    call read_oscpar(unit, op)
+    call read_numpar(unit, np)
+    call read_shoot_gridpar(unit, shoot_gp)
+    call read_recon_gridpar(unit, recon_gp)
+    call read_scanpar(unit, bc_m, op, shoot_gp, x_bc_m, omega)
 
     close(unit)
 
