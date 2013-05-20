@@ -23,6 +23,7 @@ module gyre_sysmtx
 
   use core_kinds
   use core_parallel
+  use core_linalg
 
   use gyre_ext_arith
   use gyre_linalg
@@ -235,6 +236,9 @@ contains
           ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
           ! "Fortran 90/95 Explained")
 
+          call XGETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
+          $ASSERT(info >= 0, Negative return from XGETRF)
+
           $block
 
           $if($DOUBLE_PRECISION)
@@ -243,9 +247,6 @@ contains
           $local $X C
           $endif
           
-          call ${X}GETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
-          $ASSERT(info >= 0, Negative return from LA_GETRF)
-
           call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
           call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
                         CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, Q(1,1), 2*n_e)
@@ -300,13 +301,7 @@ contains
     M(n_i+1:n_i+n_e,n_e+1:) = C(:,:,1)
     M(n_i+n_e+1:,n_e+1:) = this%B_o
 
-    $if($DOUBLE_PRECISION)
-    $define $PREFIX Z
-    $else
-    $define $PREFIX C
-    $endif
-
-    call ${PREFIX}GETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
+    call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
     $ASSERT(info >= 0, Negative return from XGETRF)
 
     det = product([ext_complex(diagonal(M)),det,this%S])
@@ -409,27 +404,22 @@ contains
     integer                  :: info
     integer                  :: i
     complex(WP), allocatable :: A_r(:,:)
+    complex(WP), allocatable :: Mb(:,:)
     integer                  :: j
     integer                  :: n_lu
-
+    
     ! Pack the smatrix into banded form
 
     call pack_banded(this, A_b)
 
     ! LU decompose it
 
-    $if($DOUBLE_PRECISION)
-    $define $PREFIX Z
-    $else
-    $define $PREFIX C
-    $endif
-
     n_l = this%n_e + this%n_i - 1
     n_u = this%n_e + this%n_i - 1
 
     allocate(ipiv(SIZE(A_b, 2)))
 
-    call ${PREFIX}GBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
+    call XGBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
     $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from LA_GBTRF)
 
     ! Locate the smallest diagonal element
@@ -443,6 +433,7 @@ contains
     ! Backsubstitute to solve the banded linear system A_b b = 0
 
     allocate(A_r(2*n_l+n_u+1,i-1))
+    allocate(Mb(i-1,1))
 
     deallocate(ipiv)
     allocate(ipiv(i-1))
@@ -467,11 +458,13 @@ contains
 
        n_lu = MIN(n_l+n_u, i-1)
 
-       b(:i-n_lu-1) = 0._WP
-       b(i-n_lu:i-1) = -A_b(n_l+n_u+1-n_lu:n_l+n_u,i)
+       Mb(:i-n_lu-1,1) = 0._WP
+       Mb(i-n_lu:,1) = -A_b(n_l+n_u+1-n_lu:n_l+n_u,i)
 
-       call ${PREFIX}GBTRS('N', SIZE(A_r, 2), n_l, n_u, 1, A_r, SIZE(A_r, 1), ipiv, b(:i-1), i-1, info)
+       call XGBTRS('N', SIZE(A_r, 2), n_l, n_u, 1, A_r, SIZE(A_r, 1), ipiv, Mb, SIZE(Mb, 1), info)
        $ASSERT(info == 0,Non-zero return from XGBTRS)
+
+       b(:i-1) = Mb(:,1)
 
     end if
        

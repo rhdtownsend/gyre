@@ -22,6 +22,7 @@ module gyre_linalg
   ! Uses
 
   use core_kinds
+  use core_linalg
   use core_order
 
   use ISO_FORTRAN_ENV
@@ -142,19 +143,13 @@ contains
 
     ! Perform the eigendecomposition of A
 
-    $if($DOUBLE_PRECISION)
-    $define $X D
-    $else
-    $define $X S
-    $endif
-
     A_ = A
 
     if(PRESENT(V_l) .OR. PRESENT(V_r)) then
 
-       call ${X}GEEV('V', 'V', SIZE(A, 1), A_, SIZE(A, 1), lambda_re, lambda_im, &
-                     V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
-                     work, SIZE(work), info)
+       call XGEEV('V', 'V', SIZE(A, 1), A_, SIZE(A, 1), lambda_re, lambda_im, &
+                  V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
+                  work, SIZE(work), info)
        $ASSERT(info == 0,Non-zero return from XGEEV)
 
        call reconstruct_eigenvector(lambda_re, lambda_im, V_l_r, V_l_c)
@@ -179,9 +174,9 @@ contains
 
     else
 
-       call ${X}GEEV('N', 'N', SIZE(A, 1), A_, SIZE(A, 1), lambda_re, lambda_im, &
-                     V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
-                     work, SIZE(work), info)
+       call XGEEV('N', 'N', SIZE(A, 1), A_, SIZE(A, 1), lambda_re, lambda_im, &
+                  V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
+                  work, SIZE(work), info)
        $ASSERT(info == 0,Non-zero return from XGEEV)
 
     endif
@@ -290,19 +285,13 @@ contains
 
     ! Perform the eigendecomposition of A
 
-    $if($DOUBLE_PRECISION)
-    $define $X Z
-    $else
-    $define $X C
-    $endif
-
     A_ = A
 
     if(PRESENT(V_l) .OR. PRESENT(V_r)) then
 
-       call ${X}GEEV('V', 'V', SIZE(A, 1), A_, SIZE(A, 1), lambda, &
-                     V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
-                     work, SIZE(work, 1), rwork, info)
+       call XGEEV('V', 'V', SIZE(A, 1), A_, SIZE(A, 1), lambda, &
+                  V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
+                  work, SIZE(work, 1), rwork, info)
        $ASSERT(info == 0,Non-zero return from XGEEV)
 
        V_l_c = CONJG(TRANSPOSE(V_l_c))
@@ -324,9 +313,9 @@ contains
        
     else
 
-       call ${X}GEEV('N', 'N', SIZE(A, 1), A_, SIZE(A, 1), lambda, &
-                     V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
-                     work, SIZE(work, 1), rwork, info)
+       call XGEEV('N', 'N', SIZE(A, 1), A_, SIZE(A, 1), lambda, &
+                  V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
+                  work, SIZE(work, 1), rwork, info)
        $ASSERT(info == 0,Non-zero return from XGEEV)
 
     endif
@@ -359,34 +348,17 @@ contains
     $TYPE(WP), intent(in) :: b(:)
     $TYPE(WP)             :: x(SIZE(A, 2))
 
-    $TYPE(WP) :: A_(SIZE(A, 1),SIZE(A, 2))
-    integer   :: ipiv(SIZE(A, 1))
-    integer   :: info
+    $TYPE(WP) :: Mx(SIZE(x), 1)
+    $TYPE(WP) :: Mb(SIZE(b), 1)
 
     $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
     $ASSERT(SIZE(b) == SIZE(A, 1))
 
     ! Solve the linear system A x = b
 
-    $if($SUFFIX eq 'r')
-    $if($DOUBLE_PRECISION)
-    $define $X D
-    $else
-    $define $X S
-    $endif
-    $else
-    $if($DOUBLE_PRECISION)
-    $define $X Z
-    $else
-    $define $X C
-    $endif
-    $endif
+    Mx = linear_solve(A, Mb)
 
-    A_ = A
-    x = b
-
-    call ${X}GESV(SIZE(A, 1), 1, A_, SIZE(A, 1), ipiv, x, SIZE(b, 1), info)
-    $ASSERT(info == 0,Non-zero return from XGESV)
+    x = Mx(:,1)
 
     ! Finish
 
@@ -409,24 +381,10 @@ contains
 
     ! Solve the linear system A X = B
 
-    $if($SUFFIX eq 'r')
-    $if($DOUBLE_PRECISION)
-    $define $X D
-    $else
-    $define $X S
-    $endif
-    $else
-    $if($DOUBLE_PRECISION)
-    $define $X Z
-    $else
-    $define $X C
-    $endif
-    $endif
-
     A_ = A
     X = B
 
-    call ${X}GESV(SIZE(A, 1), SIZE(B, 2), A_, SIZE(A, 1), ipiv, X, SIZE(B, 1), info)
+    call XGESV(SIZE(A, 1), SIZE(B, 2), A_, SIZE(A, 1), ipiv, X, SIZE(B, 1), info)
     $ASSERT(info == 0,Non-zero return from XGESV)
 
     ! Finish
