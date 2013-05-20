@@ -24,7 +24,6 @@ module gyre_mode
   use core_kinds
   use core_constants
   use core_parallel
-  use core_hgroup
 
   use gyre_bvp
   use gyre_base_coeffs
