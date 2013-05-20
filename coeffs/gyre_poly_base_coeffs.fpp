@@ -24,7 +24,6 @@ module gyre_poly_base_coeffs
   use core_kinds
   use core_parallel
   use core_spline
-  use core_hgroup
 
   use gyre_base_coeffs
 
