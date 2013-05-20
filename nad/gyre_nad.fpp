@@ -37,7 +37,6 @@ program gyre_nad
   use gyre_nad_search
   use gyre_mode
   use gyre_input
-  use gyre_input_coeffs
   use gyre_output
   use gyre_util
 

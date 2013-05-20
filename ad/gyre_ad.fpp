@@ -36,7 +36,6 @@ program gyre_ad
   use gyre_ad_search
   use gyre_mode
   use gyre_input
-  use gyre_input_coeffs
   use gyre_output
   use gyre_util
 
