@@ -29,6 +29,7 @@ module gyre_lib
   use gyre_evol_base_coeffs
   use gyre_therm_coeffs
   use gyre_evol_therm_coeffs
+  use gyre_mesa_file
   use gyre_oscpar
   use gyre_gridpar
   use gyre_numpar
@@ -55,6 +56,7 @@ module gyre_lib
   public :: WP
   public :: mode_t
   public :: gyre_init
+  public :: gyre_read_model
   public :: gyre_set_model
   public :: gyre_get_modes
 
@@ -74,6 +76,24 @@ contains
 
   end subroutine gyre_init
 
+!****
+
+  subroutine gyre_read_model (file, G, deriv_type)
+
+    character(LEN=*), intent(in) :: file
+    real(WP), intent(in)         :: G
+    character(LEN=*), intent(in) :: deriv_type
+
+    ! Read the model
+
+    call read_mesa_file(file, G, deriv_type, bc_m, tc_m, x_bc_m)
+
+    ! Finish
+
+    return
+
+  end subroutine gyre_read_model
+  
 !****
 
   subroutine gyre_set_model (G, M_star, R_star, L_star, r, w, p, rho, T, &
