@@ -1,5 +1,5 @@
-! Module   : gyre_mesa
-! Purpose  : interface for use in MESA
+! Module   : gyre_lib
+! Purpose  : library interface for use in MESA
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_mesa
+module gyre_lib
 
   ! Uses
 
@@ -218,4 +218,4 @@ contains
 
   end subroutine gyre_get_modes
 
-end module gyre_mesa
+end module gyre_lib
