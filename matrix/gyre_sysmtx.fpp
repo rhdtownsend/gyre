@@ -27,8 +27,6 @@ module gyre_sysmtx
   use gyre_ext_arith
   use gyre_linalg
 
-  use f77_lapack
-
   use ISO_FORTRAN_ENV
 
   ! No implicit typing
@@ -237,9 +235,6 @@ contains
           ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
           ! "Fortran 90/95 Explained")
 
-          call LA_GETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
-          $ASSERT(info >= 0, Negative return from LA_GETRF)
-
           $block
 
           $if($DOUBLE_PRECISION)
@@ -248,6 +243,9 @@ contains
           $local $X C
           $endif
           
+          call ${X}GETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
+          $ASSERT(info >= 0, Negative return from LA_GETRF)
+
           call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
           call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
                         CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, Q(1,1), 2*n_e)
@@ -302,8 +300,14 @@ contains
     M(n_i+1:n_i+n_e,n_e+1:) = C(:,:,1)
     M(n_i+n_e+1:,n_e+1:) = this%B_o
 
-    call LA_GETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
-    $ASSERT(info >= 0, Negative return from LA_GETRF)
+    $if($DOUBLE_PRECISION)
+    $define $PREFIX Z
+    $else
+    $define $PREFIX C
+    $endif
+
+    call ${PREFIX}GETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
+    $ASSERT(info >= 0, Negative return from XGETRF)
 
     det = product([ext_complex(diagonal(M)),det,this%S])
     
@@ -399,10 +403,14 @@ contains
     complex(WP)                 :: b(this%n_e*(this%n+1))
 
     complex(WP), allocatable :: A_b(:,:)
-    integer, allocatable     :: ipiv(:)
     integer                  :: n_l
     integer                  :: n_u
+    integer, allocatable     :: ipiv(:)
+    integer                  :: info
     integer                  :: i
+    complex(WP), allocatable :: A_r(:,:)
+    integer                  :: j
+    integer                  :: n_lu
 
     ! Pack the smatrix into banded form
 
@@ -410,12 +418,19 @@ contains
 
     ! LU decompose it
 
-    allocate(ipiv(SIZE(A_b, 2)))
+    $if($DOUBLE_PRECISION)
+    $define $PREFIX Z
+    $else
+    $define $PREFIX C
+    $endif
 
     n_l = this%n_e + this%n_i - 1
     n_u = this%n_e + this%n_i - 1
 
-    call lu_decompose(A_b, n_l, n_u, ipiv)
+    allocate(ipiv(SIZE(A_b, 2)))
+
+    call ${PREFIX}GBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
+    $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from LA_GBTRF)
 
     ! Locate the smallest diagonal element
 
@@ -425,7 +440,45 @@ contains
        $WARN(Smallest element not in final block)
     endif
 
-    call lu_null_vector(A_b, n_l, n_u, i, b)
+    ! Backsubstitute to solve the banded linear system A_b b = 0
+
+    allocate(A_r(2*n_l+n_u+1,i-1))
+
+    deallocate(ipiv)
+    allocate(ipiv(i-1))
+
+    if(i > 1) then 
+
+       ! Set up the reduced LU system
+
+       A_r(:n_l+n_u+1,:) = A_b(:n_l+n_u+1,:i-1)
+       A_r(n_l+n_u+2:,:) = 0._WP
+
+       ! The following line seems to cause out-of-memory errors when
+       ! compiled with gfortran 4.8.0 on MVAPICH systems. Very puzzling!
+       !
+       ! ipiv = [(j,j=1,i-1)]
+
+       do j = 1,i-1
+          ipiv(j) = j
+       enddo
+
+       ! Solve for the 1:i-1 components of b
+
+       n_lu = MIN(n_l+n_u, i-1)
+
+       b(:i-n_lu-1) = 0._WP
+       b(i-n_lu:i-1) = -A_b(n_l+n_u+1-n_lu:n_l+n_u,i)
+
+       call ${PREFIX}GBTRS('N', SIZE(A_r, 2), n_l, n_u, 1, A_r, SIZE(A_r, 1), ipiv, b(:i-1), i-1, info)
+       $ASSERT(info == 0,Non-zero return from XGBTRS)
+
+    end if
+       
+    ! Fill in the other parts of b
+    
+    b(i) = 1._WP
+    b(i+1:) = 0._WP
 
     ! Finish
 
