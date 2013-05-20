@@ -24,7 +24,6 @@ module gyre_evol_therm_coeffs
   use core_kinds
   use core_constants
   use core_parallel
-  use core_hgroup
   use core_spline
 
   use gyre_therm_coeffs
