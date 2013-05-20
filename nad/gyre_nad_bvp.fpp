@@ -284,7 +284,7 @@ contains
 
     x_ad_loop : do k = this%n,2,-1
 
-       if(this%tc%tau_thm(this%x(k))*REAL(omega) > this%np%theta_ad) then
+       if(this%tc%tau_thm(this%x(k))*REAL(omega)*this%np%theta_ad > 1._WP) then
           this%x_ad = this%x(k)
           exit x_ad_loop
        endif
