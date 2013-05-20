@@ -24,7 +24,6 @@ program gyre_nad
   use core_kinds
   use core_constants
   use core_parallel
-  use core_hgroup
 
   use gyre_version
   use gyre_base_coeffs
