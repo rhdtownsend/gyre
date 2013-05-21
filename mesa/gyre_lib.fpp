@@ -36,6 +36,7 @@ module gyre_lib
   use gyre_ad_search
   use gyre_mode
   use gyre_input
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
