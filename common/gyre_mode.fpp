@@ -33,6 +33,7 @@ module gyre_mode
   use gyre_therm_coeffs_mpi
   $endif
   use gyre_oscpar
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -54,6 +55,7 @@ module gyre_mode
      private
      procedure, public :: init
      procedure, public :: classify
+     procedure, public :: freq
      procedure, public :: xi_r
      procedure, public :: xi_h
      procedure, public :: phip
@@ -233,6 +235,24 @@ contains
     return
 
   end subroutine classify
+
+!****
+
+  function freq (this, freq_units)
+
+    class(mode_t), intent(in)    :: this
+    character(LEN=*), intent(in) :: freq_units
+    complex(WP)                  :: freq
+
+    ! Calculate the frequency
+
+    freq = this%omega*freq_scale(this%bc, this%op, this%x(this%n), freq_units)
+
+    ! Finish
+    
+    return
+
+  end function freq
 
 !****
 

@@ -75,8 +75,7 @@ contains
 
     ! Write output files
 
-    if(summary_file /= '') call write_summary(summary_file, md, split_item_list(summary_item_list), &
-                                              freq_scale(md(1)%bc, md(1)%op, md(1)%x(md(1)%n), freq_units))
+    if(summary_file /= '') call write_summary(summary_file, md, split_item_list(summary_item_list), freq_units)
 
     if(mode_prefix /= '') then
 
@@ -85,8 +84,7 @@ contains
           write(mode_file, 100) TRIM(mode_prefix), j, '.h5'
 100       format(A,I4.4,A)
 
-          call write_mode(mode_file, md(j), split_item_list(mode_item_list), &
-                          freq_scale(md(j)%bc, md(j)%op, md(j)%x(md(j)%n), freq_units), j)
+          call write_mode(mode_file, md(j), split_item_list(mode_item_list), freq_units, j)
 
        end do mode_loop
        
@@ -106,16 +104,15 @@ contains
 
 !****
 
-  subroutine write_summary (file, md, items, freq_scale)
+  subroutine write_summary (file, md, items, freq_units)
 
     character(LEN=*), intent(in) :: file
     type(mode_t), intent(in)     :: md(:)
     character(LEN=*), intent(in) :: items(:)
-    real(WP), intent(in)         :: freq_scale
+    character(LEN=*), intent(in) :: freq_units
 
     integer        :: n_md
     integer        :: i
-    complex(WP)    :: freq(SIZE(md))
     integer        :: n_p(SIZE(md))
     integer        :: n_g(SIZE(md))
     integer        :: j
@@ -126,11 +123,7 @@ contains
     n_md = SIZE(md)
 
     mode_loop : do i = 1,n_md
-
-       freq(i) = md(i)%omega*freq_scale
-
        call md(i)%classify(n_p(i), n_g(i))
-
     end do mode_loop
 
     ! Open the file
@@ -155,8 +148,8 @@ contains
           call write_dset(hg, 'n_g', n_g)
        case('omega')
           call write_dset(hg, 'omega', md%omega)
-       case ('freq')
-          call write_dset(hg, 'freq', freq)
+       case('freq')
+          call write_dset(hg, 'freq', [(md(i)%freq(freq_units), i=1,n_md)])
        case('C')
           call write_dset(hg, 'C', [(md(i)%C(), i=1,n_md)])
        case('E')
@@ -243,12 +236,12 @@ contains
 
 !****
 
-  subroutine write_mode (file, md, items, freq_scale, i)
+  subroutine write_mode (file, md, items, freq_units, i)
 
     character(LEN=*), intent(in) :: file
     type(mode_t), intent(in)     :: md
     character(LEN=*), intent(in) :: items(:)
-    real(WP), intent(in)         :: freq_scale
+    character(LEN=*), intent(in) :: freq_units
     integer, intent(in)          :: i
 
     integer        :: n_p
@@ -282,7 +275,7 @@ contains
        case ('omega')
           call write_attr(hg, 'omega', md%omega)
        case ('freq')
-          call write_attr(hg, 'freq', md%omega*freq_scale)
+          call write_attr(hg, 'freq', md%freq(freq_units))
        case ('C')
           call write_attr(hg, 'E', md%C())
        case ('E')
