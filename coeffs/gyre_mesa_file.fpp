@@ -132,6 +132,11 @@ contains
 
     nabla_ad = p*delta/(rho*T*var(10,:))
 
+    ! Check for monotonicity
+
+    $ASSERT(ALL(r(2:) >= r(:n-1)),Non-monotonic radius data)
+    $ASSERT(ALL(m(2:) >= m(:n-1)),Non-monotonic mass data)
+
     ! If necessary, add central data
 
     if(r(1) > 0._WP) then
