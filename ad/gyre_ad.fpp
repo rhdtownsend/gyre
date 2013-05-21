@@ -64,27 +64,32 @@ program gyre_ad
 
   call init_parallel()
 
-  call write_header('gyre_ad ['//TRIM(version)//']', '=')
+  call set_log_level($str($LOG_LEVEL))
+
+  if(check_log_level('INFO')) then
+
+     write(OUTPUT_UNIT, 100) form_header('gyre_ad ['//TRIM(version)//']', '=')
+100  format(A)
+
+     write(OUTPUT_UNIT, 110) 'Compler         : ', COMPILER_VERSION()
+     write(OUTPUT_UNIT, 110) 'Compler options : ', COMPILER_OPTIONS()
+110  format(2A)
+
+     write(OUTPUT_UNIT, 120) 'OpenMP Threads  : ', OMP_SIZE_MAX
+     write(OUTPUT_UNIT, 120) 'MPI Processors  : ', MPI_SIZE
+120  format(A,I0)
+
+     write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
+
+  endif
+
+  ! Process arguments
 
   if(MPI_RANK == 0) then
-
-     write(OUTPUT_UNIT, 100) 'Compler         : ', COMPILER_VERSION()
-     write(OUTPUT_UNIT, 100) 'Compler options : ', COMPILER_OPTIONS()
-100  format(3A)
-
-     write(OUTPUT_UNIT, 110) 'OpenMP Threads  : ', OMP_SIZE_MAX
-     write(OUTPUT_UNIT, 110) 'MPI Processors  : ', MPI_SIZE
-110  format(A,I0)
 
      call parse_args(filename)
      
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
-
-  endif
-
-  call write_header('Initialization', '=')
-
-  if(MPI_RANK == 0) then
 
      call read_coeffs(unit, x_bc, bc, tc)
      call read_oscpar(unit, op)

@@ -39,38 +39,120 @@ module gyre_util
 
   implicit none
 
+  ! Module variables
+
+  character(LEN=64), save :: log_level_m
+
   ! Access specifiers
 
   private
 
-  public :: write_header
+  public :: form_header
+  public :: set_log_level
+  public :: check_log_level
   public :: freq_scale
   public :: split_item_list
 
 contains
 
-  subroutine write_header (header, underchar)
+  function form_header (header, underchar)
 
     character(LEN=*), intent(in)           :: header
     character(LEN=*), intent(in), optional :: underchar
+    character(LEN=:), allocatable          :: form_header
 
-    ! Write out the header
+    ! Format the header string
 
-    if(MPI_RANK == 0) then
+    if(PRESENT(underchar)) then
 
-       write(OUTPUT_UNIT, '()')
+       if(underchar == '') then
 
-       write(OUTPUT_UNIT, '(A)') header
+          form_header = NEW_LINE('') // &
+                        TRIM(header) // NEW_LINE('') // &
+                        REPEAT(' ', LEN(header)) // NEW_LINE('')
 
-       if(PRESENT(underchar)) then
-          if(underchar == '') then
-             write(OUTPUT_UNIT, '(A)') REPEAT(' ', LEN_TRIM(header))
-          else
-             write(OUTPUT_UNIT, '(A)') REPEAT(underchar, LEN_TRIM(header)/LEN_TRIM(underchar))
-          endif
+       else
+
+          form_header = NEW_LINE('') // &
+                        TRIM(header) // NEW_LINE('') // &
+                        REPEAT(underchar, LEN(header)/LEN(underchar)) // NEW_LINE('')
+
        endif
 
-       write(OUTPUT_UNIT, '()')
+    else
+       
+       form_header = NEW_LINE('') // &
+                     TRIM(header) // NEW_LINE('')
+       
+    endif
+
+    ! Finish
+
+    return
+
+  end function form_header
+
+!****
+
+  subroutine set_log_level (log_level)
+
+    character(LEN=*), intent(in) :: log_level
+    
+    ! Set the log level
+
+    select case (log_level)
+    case ('DEBUG')
+    case ('INFO')
+    case ('WARN')
+    case default
+       $ABORT(Invalid log_level)
+    end select
+
+    log_level_m = log_level
+
+    ! Finish
+
+    return
+
+  end subroutine set_log_level
+
+!****
+
+  function check_log_level (log_level, rank)
+
+    character(LEN=*), intent(in)  :: log_level
+    integer, intent(in), optional :: rank
+    logical                       :: check_log_level
+
+    integer :: rank_
+
+    if(PRESENT(rank)) then
+       rank_ = rank
+    else
+       rank_ = 0
+    endif
+
+    ! Check whether we should write log output
+
+    if(MPI_RANK == rank_) then
+       
+       select case (log_level)
+       case ('DEBUG')
+          check_log_level = log_level_m == 'DEBUG'
+       case ('INFO')
+          check_log_level = log_level_m == 'INFO' .OR. &
+                            log_level_m == 'DEBUG'
+       case ('WARN')
+          check_log_level = log_level_m == 'WARN' .OR. &
+                            log_level_m == 'INFO' .OR. &
+                            log_level_m == 'DEBUG'
+       case default
+          $ABORT(Invalid log_level)
+       end select
+
+    else
+
+       check_log_level = .FALSE.
 
     endif
 
@@ -78,7 +160,7 @@ contains
 
     return
 
-  end subroutine write_header
+  end function check_log_level
 
 !****
 

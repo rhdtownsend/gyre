@@ -70,6 +70,8 @@ contains
 
     call init_parallel()
 
+    call set_log_level('WARN')
+
     ! Finish
 
     return

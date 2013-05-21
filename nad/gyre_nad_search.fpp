@@ -81,7 +81,10 @@ contains
 
     ! Process each bracket to find roots
 
-    call write_header('Non-Adiabatic Mode Finding', '=')
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) form_header('Non-Adiabatic Mode Finding', '=')
+100    format(A)
+    endif
 
     call df%init(bp)
 
@@ -129,8 +132,10 @@ contains
 
        call md(i)%classify(n_p, n_g)
 
-       write(OUTPUT_UNIT, 100) 'Mode :', n_p-n_g, n_p, n_g, omega_root, ABS(discrim_root), n_iter
-100    format(A,3(2X,I6),3(2X,E23.16),2X,I4)
+       if(check_log_level('INFO', MPI_RANK)) then
+          write(OUTPUT_UNIT, 110) 'Mode :', n_p-n_g, n_p, n_g, omega_root, ABS(discrim_root), n_iter
+110       format(A,3(2X,I6),3(2X,E23.16),2X,I4)
+       endif
 
     end do root_loop
 
@@ -139,9 +144,10 @@ contains
     $endif
 
     call SYSTEM_CLOCK(c_end)
-    if(MPI_RANK == 0) then
-       write(OUTPUT_UNIT, 110) 'Completed ad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-110    format(/A,1X,F10.3,1X,A)
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Completed ad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+120    format(/A,1X,F10.3,1X,A)
     endif
 
     ! Broadcast data
@@ -188,7 +194,10 @@ contains
 
     ! Calculate the discriminant on the omega abscissa
 
-    call write_header('Non-Adiabatic Discriminant Scan', '=')
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) form_header('Non-Adiabatic Discriminant Scan', '=')
+100    format(A)
+    endif
 
     n_omega = SIZE(omega)
 
@@ -204,8 +213,10 @@ contains
 
        discrim(i) = abs(bp%discrim(CMPLX(omega(i), KIND=WP)))
 
-       write(OUTPUT_UNIT, 100) 'Eval:', omega(i), fraction(discrim(i)), exponent(discrim(i))
-100    format(A,2X,E23.16,2X,F19.16,2X,I7)
+       if(check_log_level('DEBUG', MPI_RANK)) then
+          write(OUTPUT_UNIT, 110) 'Eval:', omega(i), fraction(discrim(i)), exponent(discrim(i))
+110       format(A,2X,E23.16,2X,F19.16,2X,I7)
+       endif
 
     end do discrim_loop
 
@@ -223,9 +234,10 @@ contains
     $endif
 
     call SYSTEM_CLOCK(c_end)
-    if(MPI_RANK == 0) then
-       write(OUTPUT_UNIT, 110) 'Completed ad scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-110    format(/A,1X,F10.3,1X,A)
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Completed nad scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+120    format(/A,1X,F10.3,1X,A)
     endif
 
     ! Scan for minima brackets
@@ -280,7 +292,10 @@ contains
 
     ! Process each adiabatic root to find non-adiabatic root
 
-    call write_header('Non-Adiabatic Mode Finding', '=')
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) form_header('Non-Adiabatic Mode Finding', '=')
+100    format(A)
+    endif
 
     call df%init(bp)
 
@@ -325,8 +340,10 @@ contains
 
        call nad_md(i)%classify(n_p, n_g)
 
-       write(OUTPUT_UNIT, 100) 'Mode :', n_p-n_g, n_p, n_g, omega_root, ABS(discrim_root), n_iter
-100    format(A,3(2X,I6),3(2X,E23.16),2X,I4)
+       if(check_log_level('INFO', MPI_RANK)) then
+          write(OUTPUT_UNIT, 110) 'Mode :', n_p-n_g, n_p, n_g, omega_root, ABS(discrim_root), n_iter
+110       format(A,3(2X,I6),3(2X,E23.16),2X,I4)
+       endif
 
     end do root_loop
 
@@ -335,9 +352,10 @@ contains
     $endif
 
     call SYSTEM_CLOCK(c_end)
-    if(MPI_RANK == 0) then
-       write(OUTPUT_UNIT, 110) 'Completed nad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-110    format(/A,1X,F10.3,1X,A)
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Completed nad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+120    format(/A,1X,F10.3,1X,A)
     endif
 
     ! Broadcast data
