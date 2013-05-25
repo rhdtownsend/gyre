@@ -45,42 +45,51 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_file (file, G, deriv_type, bc, tc, x)
+  subroutine read_osc_file (file, G, deriv_type, data_format, bc, tc, x)
 
     character(LEN=*), intent(in)                              :: file
     real(WP), intent(in)                                      :: G
     character(LEN=*), intent(in)                              :: deriv_type
+    character(LEN=*), intent(in)                              :: data_format
     class(base_coeffs_t), allocatable, intent(out)            :: bc
     class(therm_coeffs_t), allocatable, intent(out), optional :: tc
     real(WP), allocatable, intent(out), optional              :: x(:)
 
-    integer               :: unit
-    integer               :: n
-    integer               :: iconst
-    integer               :: ivar
-    integer               :: iabund
-    integer               :: ivers
-    real(WP), allocatable :: glob(:)
-    real(WP), allocatable :: var(:,:)
-    real(WP)              :: M_star
-    real(WP)              :: R_star
-    real(WP)              :: L_star
-    real(WP), allocatable :: r(:)
-    real(WP), allocatable :: m(:)
-    real(WP), allocatable :: p(:)
-    real(WP), allocatable :: rho(:) 
-    real(WP), allocatable :: T(:) 
-    real(WP), allocatable :: N2(:)
-    real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: nabla_ad(:)
-    real(WP), allocatable :: delta(:)
-    real(WP), allocatable :: nabla(:)
-    real(WP), allocatable :: kappa(:)
-    real(WP), allocatable :: kappa_rho(:)
-    real(WP), allocatable :: kappa_T(:)
-    real(WP), allocatable :: epsilon_(:)
-    real(WP), allocatable :: epsilon_rho(:)
-    real(WP), allocatable :: epsilon_T(:)
+    character(LEN=:), allocatable :: data_format_
+    integer                       :: unit
+    integer                       :: n
+    integer                       :: iconst
+    integer                       :: ivar
+    integer                       :: iabund
+    integer                       :: ivers
+    real(WP), allocatable         :: glob(:)
+    real(WP), allocatable         :: var(:,:)
+    integer                      :: i
+    real(WP)                      :: M_star
+    real(WP)                      :: R_star
+    real(WP)                      :: L_star
+    real(WP), allocatable         :: r(:)
+    real(WP), allocatable         :: m(:)
+    real(WP), allocatable         :: p(:)
+    real(WP), allocatable         :: rho(:) 
+    real(WP), allocatable         :: T(:) 
+    real(WP), allocatable         :: N2(:)
+    real(WP), allocatable         :: Gamma_1(:)
+    real(WP), allocatable         :: nabla_ad(:)
+    real(WP), allocatable         :: delta(:)
+    real(WP), allocatable         :: nabla(:)
+    real(WP), allocatable         :: kappa(:)
+    real(WP), allocatable         :: kappa_rho(:)
+    real(WP), allocatable         :: kappa_T(:)
+    real(WP), allocatable         :: epsilon_(:)
+    real(WP), allocatable         :: epsilon_rho(:)
+    real(WP), allocatable         :: epsilon_T(:)
+
+    if(data_format /= '') then
+       data_format_ = data_format
+    else
+       data_format_ = '(1P5E19.12)'
+    endif
 
     ! Read the model from the OSC-format file
 
@@ -104,12 +113,13 @@ contains
     ! Read the data
 
     allocate(glob(iconst))
-    allocate(var(ivar,n))
+    allocate(var(ivar+iabund,n))
 
-    read(unit, 100) glob
-    read(unit, 100) var
+    read(unit, data_format_) glob
 
-100 format(1P5E19.12)
+    read_loop : do i = 1,n
+       read(unit, data_format_) var(:,i)
+    end do read_loop
 
     close(unit)
 
@@ -124,7 +134,6 @@ contains
     T = var(3,:)
     p = var(4,:)
     rho = var(5,:)
-    N2 = G*m*var(15,:)/r**3
     Gamma_1 = var(10,:)
     nabla_ad = var(11,:)
     delta = var(12,:)
@@ -133,6 +142,14 @@ contains
     kappa_T = var(17,:)
     kappa_rho = var(18,:)
     epsilon_ = var(9,:)
+
+    allocate(N2(n))
+
+    where(r /= 0._WP)
+       N2 = G*m*var(15,:)/r**3
+    elsewhere
+       N2 = 0._WP
+    end where
 
     allocate(epsilon_T(n))
     allocate(epsilon_rho(n))
@@ -150,7 +167,7 @@ contains
     if(r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
     if(m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
 
-    if(r(1) /= 0._WP) then
+    if(r(1) /= 0._WP .OR. m(1) /= 0._WP) then
 
        m = [0._WP,m]
        N2 = [0._WP,N2]

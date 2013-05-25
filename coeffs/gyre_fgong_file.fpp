@@ -43,33 +43,42 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_file (file, G, deriv_type, bc, x)
+  subroutine read_fgong_file (file, G, deriv_type, data_format, bc, x)
 
     character(LEN=*), intent(in)                   :: file
     real(WP), intent(in)                           :: G
     character(LEN=*), intent(in)                   :: deriv_type
+    character(LEN=*), intent(in)                   :: data_format
     class(base_coeffs_t), allocatable, intent(out) :: bc
     real(WP), allocatable, intent(out), optional   :: x(:)
 
-    integer               :: unit
-    integer               :: n
-    integer               :: iconst
-    integer               :: ivar
-    integer               :: ivers
-    real(WP), allocatable :: glob(:)
-    real(WP), allocatable :: var(:,:)
-    real(WP)              :: M_star
-    real(WP)              :: R_star
-    real(WP)              :: L_star
-    real(WP), allocatable :: r(:)
-    real(WP), allocatable :: m(:)
-    real(WP), allocatable :: p(:)
-    real(WP), allocatable :: rho(:) 
-    real(WP), allocatable :: T(:) 
-    real(WP), allocatable :: N2(:)
-    real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: nabla_ad(:)
-    real(WP), allocatable :: delta(:)
+    character(LEN=:), allocatable :: data_format_
+    integer                       :: unit
+    integer                       :: n
+    integer                       :: iconst
+    integer                       :: ivar
+    integer                       :: ivers
+    real(WP), allocatable         :: glob(:)
+    real(WP), allocatable         :: var(:,:)
+    integer                       :: i
+    real(WP)                      :: M_star
+    real(WP)                      :: R_star
+    real(WP)                      :: L_star
+    real(WP), allocatable         :: r(:)
+    real(WP), allocatable         :: m(:)
+    real(WP), allocatable         :: p(:)
+    real(WP), allocatable         :: rho(:) 
+    real(WP), allocatable         :: T(:) 
+    real(WP), allocatable         :: N2(:)
+    real(WP), allocatable         :: Gamma_1(:)
+    real(WP), allocatable         :: nabla_ad(:)
+    real(WP), allocatable         :: delta(:)
+
+    if(data_format /= '') then
+       data_format_ = data_format
+    else
+       data_format_ = '(1P5E16.9)'
+    endif
 
     ! Read the model from the FGONG-format file
 
@@ -94,10 +103,11 @@ contains
     allocate(glob(iconst))
     allocate(var(ivar,n))
 
-    read(unit, 100) glob
-    read(unit, 100) var
+    read(unit, data_format) glob
 
-100 format(1P5E16.9)
+    read_loop : do i = 1,n
+       read(unit, data_format) var(:,i)
+    end do read_loop
 
     close(unit)
 

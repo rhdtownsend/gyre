@@ -105,17 +105,19 @@ contains
 
     character(LEN=256)          :: coeffs_type
     character(LEN=256)          :: file_format
+    character(LEN=256)          :: data_format
     character(LEN=256)          :: deriv_type
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: G
     real(WP)                    :: Gamma_1
 
-    namelist /coeffs/ coeffs_type, file_format, deriv_type, file, G, Gamma_1
+    namelist /coeffs/ coeffs_type, file_format, data_format, deriv_type, file, G, Gamma_1
 
     ! Read structure coefficients parameters
 
     coeffs_type = ''
     file_format = ''
+    data_format = ''
     deriv_type = 'MONO'
 
     file = ''
@@ -146,9 +148,9 @@ contains
           $ABORT(No HDF5 support, therefore cannot read GSM-format files)
           $endif
        case ('OSC')
-          call read_osc_file(file, G, deriv_type, bc, tc, x=x_bc)
+          call read_osc_file(file, G, deriv_type, data_format, bc, tc, x=x_bc)
        case ('FGONG')
-          call read_fgong_file(file, G, deriv_type, bc, x=x_bc) 
+          call read_fgong_file(file, G, deriv_type, data_format, bc, x=x_bc) 
        case default
           $ABORT(Invalid file_format)
        end select
