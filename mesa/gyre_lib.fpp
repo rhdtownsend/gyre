@@ -129,8 +129,6 @@ contains
     character(LEN=*), intent(in) :: deriv_type
 
     real(WP), allocatable :: m(:)
-    real(WP), allocatable :: epsilon_rho_(:)
-    real(WP), allocatable :: epsilon_T_(:)
 
     ! Set the model by storing coefficients
 
@@ -155,7 +153,7 @@ contains
        call tc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                       Gamma_1, nabla_ad, delta, nabla,  &
                       kappa, kappa_rho, kappa_T, &
-                      epsilon, epsilon_rho_, epsilon_T_, deriv_type)
+                      epsilon, epsilon_rho, epsilon_T, deriv_type)
     class default
        $ABORT(Invalid tc_m type)
     end select
