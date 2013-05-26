@@ -28,6 +28,7 @@ module gyre_mesa_file
   use gyre_therm_coeffs
   use gyre_evol_base_coeffs
   use gyre_evol_therm_coeffs
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -83,6 +84,11 @@ contains
 
     ! Read the model from the MESA-format file
 
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from MESA file', TRIM(file)
+100    format(A,1X,A)
+    endif
+
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
     ! Read the header
@@ -97,7 +103,10 @@ contains
 
        backspace(unit)
 
-       write(OUTPUT_UNIT, *) '  Detected old-format file'
+       if(check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 110) 'Detected old-format file'
+110       format(2X,A)
+       endif
 
     endif
 
@@ -131,7 +140,7 @@ contains
 
     nabla_ad = p*delta/(rho*T*var(10,:))
 
-    ! Decide whether epsilon_T and epsilon_rho need scaling
+    ! Decide whether epsilon_T and epsilon_rho need rescaling
 
     k = MAXLOC(ABS(epsilon_T), DIM=1)
 
@@ -140,7 +149,9 @@ contains
        epsilon_T = epsilon_T*epsilon
        epsilon_rho = epsilon_rho*epsilon
 
-       write(OUTPUT_UNIT, *) '  Rescaled epsilons'
+       if(check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 110) 'Rescaled epsilon derivatives'
+       endif
 
     endif
 
@@ -167,7 +178,9 @@ contains
 
        r = [0._WP,r]
 
-       write(OUTPUT_UNIT, *) '  Added central point'
+       if(check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 110) 'Added central point'
+       endif
 
     endif
 

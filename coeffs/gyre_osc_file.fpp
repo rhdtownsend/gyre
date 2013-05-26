@@ -28,6 +28,7 @@ module gyre_osc_file
   use gyre_therm_coeffs
   use gyre_evol_base_coeffs
   use gyre_evol_therm_coeffs
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -93,8 +94,11 @@ contains
 
     ! Read the model from the OSC-format file
 
-    write(OUTPUT_UNIT, *) 'Reading from OSC file ', TRIM(file)
-
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from OSC file', TRIM(file)
+100    format(A,1X,A)
+    endif
+          
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
     ! Read the header
@@ -107,8 +111,11 @@ contains
 
     read(unit, *) n, iconst, ivar, iabund, ivers
 
-    write(OUTPUT_UNIT, *) '  Initial points :', n
-    write(OUTPUT_UNIT, *) '  File version   :', ivers
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Initial points :', n
+       write(OUTPUT_UNIT, 110) 'File version   :', ivers
+110    format(2X,A,1X,I0)
+    endif
 
     ! Read the data
 
@@ -179,7 +186,9 @@ contains
 
        r = [0._WP,r]
 
-       write(OUTPUT_UNIT, *) '  Added central point'
+       if(check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 110) 'Added central point'
+       endif
 
     endif
 

@@ -26,6 +26,7 @@ module gyre_poly_file
 
   use gyre_base_coeffs
   use gyre_poly_base_coeffs
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -58,6 +59,11 @@ contains
     real(WP), allocatable :: dTheta(:)
 
     ! Read the Lane-Emden solution from the POLY-format file
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from POLY file', TRIM(file)
+100    format(A,1X,A)
+    endif
 
     call hg%init(file, OPEN_FILE)
 

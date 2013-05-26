@@ -26,6 +26,7 @@ module gyre_fgong_file
 
   use gyre_base_coeffs
   use gyre_evol_base_coeffs
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -82,7 +83,10 @@ contains
 
     ! Read the model from the FGONG-format file
 
-    write(OUTPUT_UNIT, *) 'Reading from FGONG file ', TRIM(file)
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from FGONG file', TRIM(file)
+100    format(A,1X,A)
+    endif
 
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
@@ -95,8 +99,11 @@ contains
 
     read(unit, *) n, iconst, ivar, ivers
 
-    write(OUTPUT_UNIT, *) '  Initial points :', n
-    write(OUTPUT_UNIT, *) '  File version   :', ivers
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Initial points :', n
+       write(OUTPUT_UNIT, 110) 'File version   :', ivers
+110    format(2X,A,1X,I0)
+    endif
 
     ! Read the data
 
@@ -151,7 +158,9 @@ contains
 
        r = [0._WP,r]
 
-       write(OUTPUT_UNIT, *) '  Added central point'
+       if(check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 110) 'Added central point'
+       endif
 
     endif
 

@@ -29,6 +29,7 @@ module gyre_gsm_file
   use gyre_therm_coeffs
   use gyre_evol_base_coeffs
   use gyre_evol_therm_coeffs
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -80,6 +81,11 @@ contains
     real(WP), allocatable :: m(:)
 
     ! Read the model from the GSM-format file
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from GSM file', TRIM(file)
+100    format(A,1X,A)
+    endif
 
     call hg%init(file, OPEN_FILE)
 
@@ -137,6 +143,11 @@ contains
        call add_center(r, epsilon_T)
 
        r = [0._WP,r]
+
+       if(check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 110) 'Added central point'
+110       format(2X,A)
+       endif
 
     endif
 
