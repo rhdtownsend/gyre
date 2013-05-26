@@ -64,7 +64,7 @@ contains
     integer                       :: ivers
     real(WP), allocatable         :: glob(:)
     real(WP), allocatable         :: var(:,:)
-    integer                      :: i
+    integer                       :: i
     real(WP)                      :: M_star
     real(WP)                      :: R_star
     real(WP)                      :: L_star
@@ -142,6 +142,8 @@ contains
     kappa_T = var(17,:)
     kappa_rho = var(18,:)
     epsilon_ = var(9,:)
+    epsilon_T = var(19,:)
+    epsilon_rho = var(20,:)
 
     allocate(N2(n))
 
@@ -150,17 +152,6 @@ contains
     elsewhere
        N2 = 0._WP
     end where
-
-    allocate(epsilon_T(n))
-    allocate(epsilon_rho(n))
-
-    where(var(9,:) /= 0._WP)
-       epsilon_T = var(19,:)/var(9,:)
-       epsilon_rho = var(20,:)/var(9,:)
-    elsewhere
-       epsilon_T = 0._WP
-       epsilon_rho = 0._WP
-    endwhere
 
     ! If necessary, add central data
 

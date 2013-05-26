@@ -414,21 +414,20 @@ contains
     dy_6_dx = deriv(x, y(6,:))
     
     associate(V => bp%bc%V(x), c_1 => bp%bc%c_1(x), &
-              nabla_ad => bp%bc%nabla_ad(x), &
+              nabla_ad => bp%bc%nabla_ad(x), nabla => bp%tc%nabla(x), &
               c_rad => bp%tc%c_rad(x), dc_rad => bp%tc%dc_rad(x), &
-              c_gen => bp%tc%c_gen(x), c_thm => bp%tc%c_thm(x), &
-              nabla => bp%tc%nabla(x), &
-              epsilon_ad => bp%tc%epsilon_ad(x), epsilon_S => bp%tc%epsilon_S(x), &
+              c_thm => bp%tc%c_thm(x), &
+              c_eps_ad => bp%tc%c_eps_ad(x), c_eps_S => bp%tc%c_eps_S(x), &
               l => bp%op%l)
 
       ! Calculate Jacobian coefficients. (cf. gyre_nad_jacobian; A_6
       ! has been multiplied by V)
 
-      A_6(:,1) = V*(l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - epsilon_ad*V*c_gen)
-      A_6(:,2) = V*(epsilon_ad*V*c_gen - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2)))
-      A_6(:,3) = V*(l*(l+1)*nabla_ad/nabla*c_rad - epsilon_ad*V*c_gen)
+      A_6(:,1) = V*(l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad)
+      A_6(:,2) = V*(V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2)))
+      A_6(:,3) = V*(l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad)
       A_6(:,4) = 0._WP
-      A_6(:,5) = V*epsilon_S*c_gen - l*(l+1)*c_rad/nabla - V*(0._WP,1._WP)*omega*c_thm
+      A_6(:,5) = V*c_eps_S - l*(l+1)*c_rad/nabla - V*(0._WP,1._WP)*omega*c_thm
       A_6(:,6) = V*(-1._WP - l)
 
       ! Set up y_5

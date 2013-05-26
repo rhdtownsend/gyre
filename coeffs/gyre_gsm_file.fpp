@@ -76,6 +76,7 @@ contains
     real(WP), allocatable :: epsilon(:)
     real(WP), allocatable :: epsilon_rho(:)
     real(WP), allocatable :: epsilon_T(:)
+    real(WP), allocatable :: Omega_rot(:)
     real(WP), allocatable :: m(:)
 
     ! Read the model from the GSM-format file
@@ -108,6 +109,7 @@ contains
     call read_dset_alloc(hg, 'kappa', kappa)
     call read_dset_alloc(hg, 'kappa_rho', kappa_rho)
     call read_dset_alloc(hg, 'kappa_T', kappa_T)
+    call read_dset_alloc(hg, 'Omega_rot', Omega_rot)
 
     call hg%final()
 

@@ -42,9 +42,10 @@ module gyre_therm_coeffs
      private
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
-     $PROC_DECL(c_gen)
      $PROC_DECL(c_thm)
      $PROC_DECL(c_dif)
+     $PROC_DECL(c_eps_ad)
+     $PROC_DECL(c_eps_S)
      $PROC_DECL(nabla)
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)

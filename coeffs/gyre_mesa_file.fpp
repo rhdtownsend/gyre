@@ -59,6 +59,7 @@ contains
     real(WP)              :: M_star
     real(WP)              :: R_star
     real(WP)              :: L_star
+    integer               :: n_cols
     real(WP), allocatable :: var(:,:)
     integer               :: k
     integer               :: k_chk
@@ -86,11 +87,23 @@ contains
 
     ! Read the header
 
-    read(unit, *) n, M_star, R_star, L_star
+    read(unit, *) n, M_star, R_star, L_star, n_cols
+
+    if(n_cols == 1) then
+
+       ! Handle older file formats which didn't have n_cols
+
+       n_cols = 18
+
+       backspace(unit)
+
+       write(OUTPUT_UNIT, *) '  Detected old-format file'
+
+    endif
 
     ! Read the data
 
-    allocate(var(18,n))
+    allocate(var(n_cols,n))
 
     read_loop : do k = 1,n
        read(unit, *) k_chk, var(:,k)
@@ -113,24 +126,23 @@ contains
     kappa_T = var(14,:)
     kappa_rho = var(15,:)
     epsilon = var(16,:)
-
-    allocate(epsilon_T(n))
-    allocate(epsilon_rho(n))
-
-    if(ABS(var(18,1)) > 1E-3*var(16,1)) then
-       where(var(16,:) /= 0._WP)
-          epsilon_T = var(17,:)/var(16,:)
-          epsilon_rho = var(18,:)/var(16,:)
-       elsewhere
-          epsilon_T = 0._WP
-          epsilon_rho = 0._WP
-       endwhere
-    else
-       epsilon_T = var(17,:)
-       epsilon_rho = var(18,:)
-    endif
+    epsilon_T = var(17,:)
+    epsilon_rho = var(18,:)
 
     nabla_ad = p*delta/(rho*T*var(10,:))
+
+    ! Decide whether epsilon_T and epsilon_rho need scaling
+
+    k = MAXLOC(ABS(epsilon_T), DIM=1)
+
+    if(ABS(epsilon_T(k)) < 1E-3*ABS(epsilon(k))) then
+
+       epsilon_T = epsilon_T*epsilon
+       epsilon_rho = epsilon_rho*epsilon
+
+       write(OUTPUT_UNIT, *) '  Rescaled epsilons'
+
+    endif
 
     ! If necessary, add central data
 
@@ -154,6 +166,8 @@ contains
        call add_center(r, epsilon_T)
 
        r = [0._WP,r]
+
+       write(OUTPUT_UNIT, *) '  Added central point'
 
     endif
 
