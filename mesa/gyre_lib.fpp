@@ -102,7 +102,8 @@ contains
   subroutine gyre_set_model (G, M_star, R_star, L_star, r, w, p, rho, T, &
                              N2, Gamma_1, nabla_ad, delta, nabla,  &
                              kappa, kappa_rho, kappa_T, &
-                             epsilon, epsilon_rho, epsilon_T, deriv_type)
+                             epsilon, epsilon_rho, epsilon_T, &
+                             Omega_rot, deriv_type)
 
     real(WP), intent(in)         :: G
     real(WP), intent(in)         :: M_star
@@ -124,6 +125,7 @@ contains
     real(WP), intent(in)         :: epsilon(:)
     real(WP), intent(in)         :: epsilon_rho(:)
     real(WP), intent(in)         :: epsilon_T(:)
+    real(WP), intent(in)         :: Omega_rot(:)
     character(LEN=*), intent(in) :: deriv_type
 
     real(WP), allocatable :: m(:)
@@ -139,19 +141,6 @@ contains
     allocate(evol_therm_coeffs_t::tc_m)
 
     m = w/(1._WP+w)*M_star
-
-    if(ABS(epsilon_rho(1)) > 1E-3*epsilon(1)) then
-       where(epsilon /= 0._WP)
-          epsilon_rho_ = epsilon_rho/epsilon
-          epsilon_T_ = epsilon_T/epsilon
-       elsewhere
-          epsilon_rho_ = 0._WP
-          epsilon_T_ = 0._WP
-       endwhere
-    else
-       epsilon_rho_ = epsilon_rho
-       epsilon_T_ = epsilon_T
-    endif
 
     select type (bc_m)
     type is (evol_base_coeffs_t)
