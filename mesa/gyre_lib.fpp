@@ -195,7 +195,11 @@ contains
        $ABORT(Invalid tc_m type)
     end select
 
-    x_bc_m = r/R_star
+    if(add_center) then
+       x_bc_m = [0._WP,r]/R_star
+    else
+       x_bc_m = r/R_star
+    endif
 
     ! Finish
 
