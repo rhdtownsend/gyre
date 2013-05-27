@@ -129,6 +129,7 @@ contains
     character(LEN=*), intent(in) :: deriv_type
 
     real(WP), allocatable :: m(:)
+    logical               :: add_center
 
     ! Set the model by storing coefficients
 
@@ -140,20 +141,56 @@ contains
 
     m = w/(1._WP+w)*M_star
 
+    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
+
     select type (bc_m)
     type is (evol_base_coeffs_t)
-       call bc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                      N2, Gamma_1, nabla_ad, delta, deriv_type)
+       if(add_center) then
+          call bc_m%init(G, M_star, R_star, L_star, &
+                         [0._WP,r], &
+                         [0._WP,m], &
+                         [interp_center(r, p),p], &
+                         [interp_center(r, rho),rho], &
+                         [interp_center(r, T),T], &
+                         [0._WP, N2], &
+                         [interp_center(r, Gamma_1),Gamma_1], &
+                         [interp_center(r, nabla_ad),nabla_ad], &
+                         [interp_center(r, delta),delta], &
+                         deriv_type)
+       else
+          call bc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                         N2, Gamma_1, nabla_ad, delta, deriv_type)
+       endif
     class default
        $ABORT(Invalid bc_m type)
     end select
 
     select type (tc_m)
     type is (evol_therm_coeffs_t)
-       call tc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                      Gamma_1, nabla_ad, delta, nabla,  &
-                      kappa, kappa_rho, kappa_T, &
-                      epsilon, epsilon_rho, epsilon_T, deriv_type)
+       if(add_center) then
+          call tc_m%init(G, M_star, R_star, L_star, &
+                         [0._WP,r], &
+                         [0._WP,m], &
+                         [interp_center(r, p),p], &
+                         [interp_center(r, rho),rho], &
+                         [interp_center(r, T),T], &
+                         [interp_center(r, Gamma_1),Gamma_1], &
+                         [interp_center(r, nabla_ad),nabla_ad], &
+                         [interp_center(r, delta),delta], &
+                         [interp_center(r, nabla),nabla], &
+                         [interp_center(r, kappa),kappa], &
+                         [interp_center(r, kappa_rho),kappa_rho], &
+                         [interp_center(r, kappa_T),kappa_T], &
+                         [interp_center(r, epsilon),epsilon], &
+                         [interp_center(r, epsilon_rho),epsilon_rho], &
+                         [interp_center(r, epsilon_T),epsilon_T], &
+                         deriv_type)
+       else
+          call tc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                         Gamma_1, nabla_ad, delta, nabla,  &
+                         kappa, kappa_rho, kappa_T, &
+                         epsilon, epsilon_rho, epsilon_T, deriv_type)
+       endif
     class default
        $ABORT(Invalid tc_m type)
     end select
@@ -163,6 +200,24 @@ contains
     ! Finish
 
     return
+
+  contains
+
+    function interp_center (x, y) result (y_0)
+
+      real(WP), intent(in) :: x(:)
+      real(WP), intent(in) :: y(:)
+      real(WP)             :: y_0
+
+      ! Interpolate the center (x=0) data
+
+      y_0 = (x(2)**2*y(1) - x(1)**2*y(2))/(x(2)**2 - x(1)**2)
+
+      ! Finish
+
+      return
+
+    end function interp_center
 
   end subroutine gyre_set_model
 
