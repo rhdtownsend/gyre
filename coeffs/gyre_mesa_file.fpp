@@ -244,6 +244,10 @@ contains
 
       endif
 
+      ! Finish
+
+      return
+
     end subroutine read_mesa_data_old
 
     subroutine read_mesa_data_new ()
