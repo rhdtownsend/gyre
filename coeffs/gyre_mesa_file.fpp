@@ -124,7 +124,7 @@ contains
 
     ! If necessary, add central data
 
-    if(r(1) > 0._WP) then
+    if(r(1) /= 0._WP .OR. m(1) /= 0._WP) then
 
        m = [0._WP,m]
        N2 = [0._WP,N2]
