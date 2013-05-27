@@ -98,10 +98,10 @@ module gyre_evol_therm_coeffs
 
 contains 
 
-  subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, &
-                   Gamma_1, nabla_ad, delta, nabla, &
-                   kappa, kappa_rho, kappa_T, &
-                   epsilon, epsilon_rho, epsilon_T, deriv_type)
+  recursive subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, &
+                             Gamma_1, nabla_ad, delta, nabla, &
+                             kappa, kappa_rho, kappa_T, &
+                             epsilon, epsilon_rho, epsilon_T, deriv_type, add_center)
 
     class(evol_therm_coeffs_t), intent(out) :: this
     real(WP), intent(in)                    :: G
@@ -124,7 +124,9 @@ contains
     real(WP), intent(in)                    :: epsilon_rho(:)
     real(WP), intent(in)                    :: epsilon_T(:)
     character(LEN=*), intent(in)            :: deriv_type
+    logical, intent(in), optional           :: add_center
 
+    logical  :: add_center_
     integer  :: n
     real(WP) :: V_x2(SIZE(r))
     real(WP) :: V(SIZE(r))
@@ -158,72 +160,121 @@ contains
     $CHECK_BOUNDS(SIZE(epsilon_T),SIZE(r))
     $CHECK_BOUNDS(SIZE(epsilon_rho),SIZE(r))
 
-    ! Perform basic validations
+    if(PRESENT(add_center)) then
+       add_center_ = add_center
+    else
+       add_center_ = .FALSE.
+    endif
 
-    $ASSERT(r(1) == 0._WP,First grid point not at center)
-    $ASSERT(m(1) == 0._WP,First grid point not at center)
+    ! See if we need a central point
 
-    $ASSERT(ALL(r(2:) >= r(:SIZE(r)-1)),Non-monotonic radius data)
-    $ASSERT(ALL(m(2:) >= m(:SIZE(m)-1)),Non-monotonic mass data)
+    if(add_center_) then
 
-    ! Calculate coefficients
+       ! Add a central point and initialize using recursion
+       
+       call this%init(G, M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
+                      y_centered(r, p), y_centered(r, rho), y_centered(r, T), &
+                      y_centered(r, Gamma_1), y_centered(r, nabla_ad), y_centered(r, delta), y_centered(r, nabla), &
+                      y_centered(r, kappa), y_centered(r, kappa_rho), y_centered(r, kappa_T), &
+                      y_centered(r, epsilon), y_centered(r, epsilon_rho), y_centered(r, epsilon_T), &
+                      deriv_type, .FALSE.)
 
-    n = SIZE(r)
+    else
 
-    where(r /= 0._WP)
-       V_x2 = G*m*rho/(p*r*(r/R_star)**2)
-    elsewhere
-       V_x2 = 4._WP*PI*G*rho**2*R_star**2/(3._WP*p)
-    end where
+       ! Perform basic validations
 
-    x = r/R_star
+       $ASSERT(r(1) == 0._WP,First grid point not at center)
+       $ASSERT(m(1) == 0._WP,First grid point not at center)
 
-    V = V_x2*x**2
+       $ASSERT(ALL(r(2:) >= r(:SIZE(r)-1)),Non-monotonic radius data)
+       $ASSERT(ALL(m(2:) >= m(:SIZE(m)-1)),Non-monotonic mass data)
 
-    c_p = p*delta/(rho*T*nabla_ad)
+       ! Calculate coefficients
 
-    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho*L_star)
-    c_thm = 4._WP*PI*rho*T*c_p*SQRT(G*M_star/R_star**3)*R_star**3/L_star
+       n = SIZE(r)
 
-    kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
-    kappa_S = kappa_T - delta*kappa_rho
+       where(r /= 0._WP)
+          V_x2 = G*m*rho/(p*r*(r/R_star)**2)
+       elsewhere
+          V_x2 = 4._WP*PI*G*rho**2*R_star**2/(3._WP*p)
+       end where
 
-    c_dif = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dlny_dlnx(x, nabla_ad)+V)
+       x = r/R_star
 
-    epsilon_ad = nabla_ad*epsilon_T + epsilon_rho/Gamma_1
-    epsilon_S = epsilon_T - delta*epsilon_rho
+       V = V_x2*x**2
 
-    c_eps_ad = 4._WP*PI*rho*epsilon_ad*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*epsilon_S*R_star**3/L_star
+       c_p = p*delta/(rho*T*nabla_ad)
 
-    dtau_thm = 4._WP*PI*rho*r**2*T*c_p*SQRT(G*M_star/R_star**3)/L_star
+       c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho*L_star)
+       c_thm = 4._WP*PI*rho*T*c_p*SQRT(G*M_star/R_star**3)*R_star**3/L_star
 
-    tau_thm(n) = 0._WP
+       kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
+       kappa_S = kappa_T - delta*kappa_rho
 
-    do i = n-1,1,-1
-       tau_thm(i) = tau_thm(i+1) + &
-            0.5_WP*(dtau_thm(i+1) + dtau_thm(i))*(r(i+1) - r(i))
-    end do
+       c_dif = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dlny_dlnx(x, nabla_ad)+V)
 
-    ! Initialize the therm_coeffs
+       epsilon_ad = nabla_ad*epsilon_T + epsilon_rho/Gamma_1
+       epsilon_S = epsilon_T - delta*epsilon_rho
 
-    call this%sp_c_rad%init(x, c_rad, deriv_type, dy_dx_a=0._WP)
-    call this%sp_c_thm%init(x, c_thm, deriv_type, dy_dx_a=0._WP)
-    call this%sp_c_dif%init(x, c_dif, deriv_type, dy_dx_a=0._WP)
-    call this%sp_c_eps_ad%init(x, c_eps_ad, deriv_type, dy_dx_a=0._WP)
-    call this%sp_c_eps_S%init(x, c_eps_S, deriv_type, dy_dx_a=0._WP)
-    call this%sp_nabla%init(x, nabla, deriv_type, dy_dx_a=0._WP)
-    call this%sp_kappa_S%init(x, kappa_S, deriv_type, dy_dx_a=0._WP)
-    call this%sp_kappa_ad%init(x, kappa_ad, deriv_type, dy_dx_a=0._WP)
-    call this%sp_epsilon_S%init(x, epsilon_S, deriv_type, dy_dx_a=0._WP)
-    call this%sp_epsilon_ad%init(x, epsilon_ad, deriv_type, dy_dx_a=0._WP)
-    call this%sp_tau_thm%init(x, tau_thm, deriv_type, dy_dx_a=0._WP)
+       c_eps_ad = 4._WP*PI*rho*epsilon_ad*R_star**3/L_star
+       c_eps_S = 4._WP*PI*rho*epsilon_S*R_star**3/L_star
+
+       dtau_thm = 4._WP*PI*rho*r**2*T*c_p*SQRT(G*M_star/R_star**3)/L_star
+
+       tau_thm(n) = 0._WP
+
+       do i = n-1,1,-1
+          tau_thm(i) = tau_thm(i+1) + &
+               0.5_WP*(dtau_thm(i+1) + dtau_thm(i))*(r(i+1) - r(i))
+       end do
+
+       ! Initialize the therm_coeffs
+
+       call this%sp_c_rad%init(x, c_rad, deriv_type, dy_dx_a=0._WP)
+       call this%sp_c_thm%init(x, c_thm, deriv_type, dy_dx_a=0._WP)
+       call this%sp_c_dif%init(x, c_dif, deriv_type, dy_dx_a=0._WP)
+       call this%sp_c_eps_ad%init(x, c_eps_ad, deriv_type, dy_dx_a=0._WP)
+       call this%sp_c_eps_S%init(x, c_eps_S, deriv_type, dy_dx_a=0._WP)
+       call this%sp_nabla%init(x, nabla, deriv_type, dy_dx_a=0._WP)
+       call this%sp_kappa_S%init(x, kappa_S, deriv_type, dy_dx_a=0._WP)
+       call this%sp_kappa_ad%init(x, kappa_ad, deriv_type, dy_dx_a=0._WP)
+       call this%sp_epsilon_S%init(x, epsilon_S, deriv_type, dy_dx_a=0._WP)
+       call this%sp_epsilon_ad%init(x, epsilon_ad, deriv_type, dy_dx_a=0._WP)
+       call this%sp_tau_thm%init(x, tau_thm, deriv_type, dy_dx_a=0._WP)
+
+    endif
 
     ! Finish
 
     return
 
   contains
+
+    function y_centered (x, y)
+      
+      real(WP), intent(in) :: x(:)
+      real(WP), intent(in) :: y(:)
+      real(WP)             :: y_centered(SIZE(y)+1)
+
+      real(WP) :: y_center
+
+      $CHECK_BOUNDS(SIZE(x),SIZE(y))
+
+      $ASSERT(SIZE(y) >= 2,Insufficient grid points)
+
+      ! Use parabola fitting to interpolate y at the center
+      
+      y_center = (x(2)**2*y(1) - x(1)**2*y(2))/(x(2)**2 - x(1)**2)
+
+      ! Create the centered array
+
+      y_centered = [y_center,y]
+
+      ! Finish
+
+      return
+
+    end function y_centered
 
     function dlny_dlnx (x, y)
 

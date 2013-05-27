@@ -113,7 +113,8 @@ module gyre_evol_base_coeffs
 
 contains
 
-  subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, N2, Gamma_1, nabla_ad, delta, deriv_type)
+  recursive subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
+                             Gamma_1, nabla_ad, delta, deriv_type, add_center)
 
     class(evol_base_coeffs_t), intent(out) :: this
     real(WP), intent(in)                   :: G
@@ -130,12 +131,14 @@ contains
     real(WP), intent(in)                   :: nabla_ad(:)
     real(WP), intent(in)                   :: delta(:)
     character(LEN=*), intent(in)           :: deriv_type
+    logical, intent(in), optional          :: add_center
 
-    real(WP) :: V(SIZE(r))
-    real(WP) :: As(SIZE(r))
-    real(WP) :: U(SIZE(r))
-    real(WP) :: c_1(SIZE(r))
-    real(WP) :: x(SIZE(r))
+    logical           :: add_center_
+    real(WP)          :: V(SIZE(r))
+    real(WP)          :: As(SIZE(r))
+    real(WP)          :: U(SIZE(r))
+    real(WP)          :: c_1(SIZE(r))
+    real(WP)          :: x(SIZE(r))
 
     $CHECK_BOUNDS(SIZE(m),SIZE(r))
     $CHECK_BOUNDS(SIZE(p),SIZE(r))
@@ -146,54 +149,103 @@ contains
     $CHECK_BOUNDS(SIZE(nabla_ad),SIZE(r))
     $CHECK_BOUNDS(SIZE(delta),SIZE(r))
 
-    ! Perform basic validations
+    if(PRESENT(add_center)) then
+       add_center_ = add_center
+    else
+       add_center_ = .FALSE.
+    endif
 
-    $ASSERT(r(1) == 0._WP,First grid point not at center)
-    $ASSERT(m(1) == 0._WP,First grid point not at center)
+    ! See if we need a central point
 
-    $ASSERT(ALL(r(2:) >= r(:SIZE(r)-1)),Non-monotonic radius data)
-    $ASSERT(ALL(m(2:) >= m(:SIZE(m)-1)),Non-monotonic mass data)
+    if(add_center_) then
 
-    ! Calculate coefficients
+       ! Add a central point and initialize using recursion
 
-    where(r /= 0._WP)
-       V = G*m*rho/(p*r)
-       As = r**3*N2/(G*m)
-       U = 4._WP*PI*rho*r**3/m
-       c_1 = (r/R_star)**3/(m/M_star)
-    elsewhere
-       V = 0._WP
-       As = 0._WP
-       U = 3._WP
-       c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
-    end where
+       call this%init(G, M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
+                      y_centered(r, p), y_centered(r, rho), y_centered(r, T), &
+                      [0._WP,N2], y_centered(r, Gamma_1), y_centered(r, nabla_ad), y_centered(r, delta), &
+                      deriv_type, .FALSE.)
 
-    x = r/R_star
+    else
 
-    ! Initialize the base_coeffs
+       ! Perform basic validations
+       
+       $ASSERT(r(1) == 0._WP,First grid point not at center)
+       $ASSERT(m(1) == 0._WP,First grid point not at center)
 
-    call this%sp_m%init(x, m, deriv_type, dy_dx_a=0._WP)
-    call this%sp_p%init(x, p, deriv_type, dy_dx_a=0._WP)
-    call this%sp_rho%init(x, rho, deriv_type, dy_dx_a=0._WP)
-    call this%sp_T%init(x, T, deriv_type, dy_dx_a=0._WP)
+       $ASSERT(ALL(r(2:) >= r(:SIZE(r)-1)),Non-monotonic radius data)
+       $ASSERT(ALL(m(2:) >= m(:SIZE(m)-1)),Non-monotonic mass data)
 
-    call this%sp_V%init(x, V, deriv_type, dy_dx_a=0._WP)
-    call this%sp_As%init(x, As, deriv_type, dy_dx_a=0._WP)
-    call this%sp_U%init(x, U, deriv_type, dy_dx_a=0._WP)
-    call this%sp_c_1%init(x, c_1, deriv_type, dy_dx_a=0._WP)
-    call this%sp_Gamma_1%init(x, Gamma_1, deriv_type, dy_dx_a=0._WP)
-    call this%sp_nabla_ad%init(x, nabla_ad, deriv_type, dy_dx_a=0._WP)
-    call this%sp_delta%init(x, delta, deriv_type, dy_dx_a=0._WP)
+       ! Calculate coefficients
 
-    this%M_star = M_star
-    this%R_star = R_star
-    this%L_star = L_star
+       where(r /= 0._WP)
+          V = G*m*rho/(p*r)
+          As = r**3*N2/(G*m)
+          U = 4._WP*PI*rho*r**3/m
+          c_1 = (r/R_star)**3/(m/M_star)
+       elsewhere
+          V = 0._WP
+          As = 0._WP
+          U = 3._WP
+          c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+       end where
 
-    this%G = G
+       x = r/R_star
+
+       ! Initialize the base_coeffs
+
+       call this%sp_m%init(x, m, deriv_type, dy_dx_a=0._WP)
+       call this%sp_p%init(x, p, deriv_type, dy_dx_a=0._WP)
+       call this%sp_rho%init(x, rho, deriv_type, dy_dx_a=0._WP)
+       call this%sp_T%init(x, T, deriv_type, dy_dx_a=0._WP)
+
+       call this%sp_V%init(x, V, deriv_type, dy_dx_a=0._WP)
+       call this%sp_As%init(x, As, deriv_type, dy_dx_a=0._WP)
+       call this%sp_U%init(x, U, deriv_type, dy_dx_a=0._WP)
+       call this%sp_c_1%init(x, c_1, deriv_type, dy_dx_a=0._WP)
+       call this%sp_Gamma_1%init(x, Gamma_1, deriv_type, dy_dx_a=0._WP)
+       call this%sp_nabla_ad%init(x, nabla_ad, deriv_type, dy_dx_a=0._WP)
+       call this%sp_delta%init(x, delta, deriv_type, dy_dx_a=0._WP)
+
+       this%M_star = M_star
+       this%R_star = R_star
+       this%L_star = L_star
+
+       this%G = G
+
+    endif
 
     ! Finish
 
     return
+
+  contains
+
+    function y_centered (x, y)
+      
+      real(WP), intent(in) :: x(:)
+      real(WP), intent(in) :: y(:)
+      real(WP)             :: y_centered(SIZE(y)+1)
+
+      real(WP) :: y_center
+
+      $CHECK_BOUNDS(SIZE(x),SIZE(y))
+
+      $ASSERT(SIZE(y) >= 2,Insufficient grid points)
+
+      ! Use parabola fitting to interpolate y at the center
+      
+      y_center = (x(2)**2*y(1) - x(1)**2*y(2))/(x(2)**2 - x(1)**2)
+
+      ! Create the centered array
+
+      y_centered = [y_center,y]
+
+      ! Finish
+
+      return
+
+    end function y_centered
 
   end subroutine init
 

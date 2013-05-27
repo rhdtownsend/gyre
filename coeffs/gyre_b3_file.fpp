@@ -29,6 +29,7 @@ module gyre_b3_file
   use gyre_therm_coeffs
   use gyre_evol_base_coeffs
   use gyre_evol_therm_coeffs
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -81,8 +82,14 @@ contains
     real(WP), allocatable :: Gamma_1(:)
     real(WP), allocatable :: nabla_ad(:)
     real(WP), allocatable :: delta(:)
+    logical               :: add_center
 
     ! Read the model from the B3-format file
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from B3 file', TRIM(file)
+100    format(A,1X,A)
+    endif
 
     call hg%init(file, OPEN_FILE)
 
@@ -134,29 +141,11 @@ contains
     delta = chi_T/chi_rho
     nabla_ad = p*delta/(rho*T*c_p)
 
-    ! If necessary, add central data
+    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    if(r(1) > 0._WP) then
-
-       m = [0._WP,m]
-       N2 = [0._WP,N2]
-
-       call add_center(r, p)
-       call add_center(r, rho)
-       call add_center(r, T)
-       call add_center(r, Gamma_1)
-       call add_center(r, nabla_ad)
-       call add_center(r, delta)
-       call add_center(r, nabla)
-       call add_center(r, kappa)
-       call add_center(r, kappa_rho)
-       call add_center(r, kappa_T)
-       call add_center(r, epsilon)
-       call add_center(r, epsilon_rho)
-       call add_center(r, epsilon_T)
-
-       r = [0._WP,r]
-
+    if(add_center .AND. check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Adding central point'
+110    format(2X,A)
     endif
 
     ! Initialize the base_coeffs
@@ -166,7 +155,7 @@ contains
     select type (bc)
     type is (evol_base_coeffs_t)
        call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, deriv_type)
+                    N2, Gamma_1, nabla_ad, delta, deriv_type, add_center)
     class default
        $ABORT(Invalid bc type)
     end select
@@ -182,7 +171,7 @@ contains
           call tc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                        Gamma_1, nabla_ad, c_p, nabla, &
                        kappa, kappa_rho, kappa_T, &
-                       epsilon, epsilon_rho, epsilon_T, deriv_type)
+                       epsilon, epsilon_rho, epsilon_T, deriv_type, add_center)
        class default
           $ABORT(Invalid tc type)
        end select
@@ -191,34 +180,18 @@ contains
 
     ! Set up the grid
 
-    if(PRESENT(x)) x = r/R_star
+    if(PRESENT(x)) then
+       if(add_center) then
+          x = [0._WP,r/R_star]
+       else
+          x = r/R_star
+       endif
+    endif
 
     ! Finish
 
     return
 
   end subroutine read_b3_file
-
-!****
-
-  subroutine add_center (x, y)
-
-    real(WP), intent(in)                 :: x(:)
-    real(WP), intent(inout), allocatable :: y(:)
-
-    real(WP) :: y_0
-
-    ! Add center (x=0) data to the array y(x), incrementing the
-    ! dimension of y by 1. x is not altered.
-
-    y_0 = (x(2)**2*y(1) - x(1)**2*y(2))/(x(2)**2 - x(1)**2)
-
-    y = [y_0,y]
-
-    ! Finish
-
-    return
-
-  end subroutine add_center
 
 end module gyre_b3_file

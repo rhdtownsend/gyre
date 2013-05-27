@@ -74,6 +74,7 @@ contains
     real(WP), allocatable         :: Gamma_1(:)
     real(WP), allocatable         :: nabla_ad(:)
     real(WP), allocatable         :: delta(:)
+    logical                       :: add_center
 
     if(data_format /= '') then
        data_format_ = data_format
@@ -141,27 +142,13 @@ contains
        N2 = 0._WP
     endwhere
 
-    ! If necessary, add central data
-
     if(r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
     if(m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
 
-    if(r(1) /= 0._WP) then
+    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-       m = [0._WP,m]
-       call add_center(r, p)
-       call add_center(r, rho)
-       N2 = [0._WP,N2]
-       call add_center(r, Gamma_1)
-       call add_center(r, nabla_ad)
-       call add_center(r, delta)
-
-       r = [0._WP,r]
-
-       if(check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 110) 'Added central point'
-       endif
-
+    if(add_center .AND. check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
     ! Initialize the base_coeffs
@@ -171,41 +158,25 @@ contains
     select type (bc)
     type is (evol_base_coeffs_t)
        call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, deriv_type)
+                    N2, Gamma_1, nabla_ad, delta, deriv_type, add_center)
     class default
        $ABORT(Invalid bc type)
     end select
 
     ! Set up the grid
 
-    if(PRESENT(x)) x = r/R_star
+    if(PRESENT(x)) then
+       if(add_center) then
+          x = [0._WP,r/R_star]
+       else
+          x = r/R_star
+       endif
+    endif
 
     ! Finish
 
     return
 
   end subroutine read_fgong_file
-
-!****
-
-  subroutine add_center (x, y)
-
-    real(WP), intent(in)                 :: x(:)
-    real(WP), intent(inout), allocatable :: y(:)
-
-    real(WP) :: y_0
-
-    ! Add center (x=0) data to the array y(x), incrementing the
-    ! dimension of y by 1. x is not altered.
-
-    y_0 = (x(2)**2*y(1) - x(1)**2*y(2))/(x(2)**2 - x(1)**2)
-
-    y = [y_0,y]
-
-    ! Finish
-
-    return
-
-  end subroutine add_center
 
 end module gyre_fgong_file
