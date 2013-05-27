@@ -48,7 +48,7 @@ differentiated by their header lines.
 
 \subsection*{Old Variant}
 
-The first line of old-variant MES files is a header with the following
+The first line of old-variant MESA files is a header with the following
 columns:
 
 \begin{table}[h!]
@@ -61,7 +61,7 @@ Column & Variable & Datatype & Definition \\ \hline
 \end{tabular}
 \end{table}
 
-The following $n$ lines contain the model data, one line per
+The subsequent $n$ lines contain the model data, one line per
 grid point extending from the center to the surface, with the following columns:
 
 \begin{table}[h!]
@@ -76,14 +76,14 @@ Column & Name & Datatype & Definition \\ \hline
 7      & $\rho$ & real & Density ($\gram\,\cm^{-2}$) \\
 8      & $\nabla$ & real & $\diff \ln T/\diff \ln p$ \\
 9      & $N^{2}$ & real & Brunt-V\"ais\"al\"a frequency squared ($\second^{-2}$) \\
-10      & $c_{V}$ & real & Specific heat at constant volume ($erg\,\gram^{-1}\,\kelvin^{-1}$) \\
-11     & $c_{p}$ & real & Specific heat at constant pressure ($erg\,\gram^{-1}\,\kelvin^{-1}$) \\
+10      & $c_{V}$ & real & Specific heat at constant volume ($\erg\,\gram^{-1}\,\kelvin^{-1}$) \\
+11     & $c_{p}$ & real & Specific heat at constant pressure ($\erg\,\gram^{-1}\,\kelvin^{-1}$) \\
 12     & $\chi_{T}$ & real & $(\partial \ln p/\partial \ln T)_{\rho} $ \\
 13     & $\chi_{\rho}$ & real & $(\partial \ln p/\partial \ln \rho)_{T} $ \\
-14     & $\kappa$ & real & opacity ($\cm^{2}\,\gram^{-1}$) \\
+14     & $\kappa$ & real & Opacity ($\cm^{2}\,\gram^{-1}$) \\
 15     & $\kappa_{T}$ & real & $(\partial \ln \kappa/\partial \ln T)_{\rho}$ \\
 16     & $\kappa_{\rho}$ & real & $(\partial \ln \kappa/\partial \ln \rho)_{T}$ \\
-17     & $\epsilon$ & real & energy generation/loss rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
+17     & $\epsilon$ & real & Energy generation/loss rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
 18     & $\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
 19     & $\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\ \hline
 \end{tabular}
@@ -91,7 +91,7 @@ Column & Name & Datatype & Definition \\ \hline
 
 \subsection*{New Variant}
 
-The first line of new-variant MES files is a header with the following
+The first line of new-variant MESA files is a header with the following
 columns:
 
 \begin{table}[h!]
@@ -105,7 +105,7 @@ Column & Variable & Datatype & Definition \\ \hline
 \end{tabular}
 \end{table}
 
-The following $n$ lines contain the model data, one line per
+The subsequent $n$ lines contain the model data, one line per
 grid point extending from the center to the surface, with the following columns:
 
 \begin{table}[h!]
@@ -123,10 +123,10 @@ Column & Name & Datatype & Definition \\ \hline
 10     & $\Gamma_{1}$ & real & $(\partial \ln p/\partial \ln \rho)_{\rm ad}$ \\
 11     & $\nabla_{\rm ad}$ & real & $(\diff \ln T/\diff \ln p)_{\rm ad}$ \\
 12     & $\delta$ & real & $-(\partial \ln \rho/\partial \ln T)_{p}$  \\
-13     & $\kappa$ & real & opacity ($\cm^{2}\,\gram^{-1}$) \\
+13     & $\kappa$ & real & Opacity ($\cm^{2}\,\gram^{-1}$) \\
 14     & $\kappa_{T}$ & real & $(\partial \ln \kappa/\partial \ln T)_{\rho}$ \\
 15     & $\kappa_{\rho}$ & real & $(\partial \ln \kappa/\partial \ln \rho)_{T}$ \\
-16     & $\epsilon$ & real & energy generation/loss rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
+16     & $\epsilon$ & real & Energy generation/loss rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
 17     & $\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
 18     & $\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
 19     & $\Omega_{\rm rot}$ & real & Rotation angular velocity (${\rm rad}\,\second^{-1}$) \\  \hline
