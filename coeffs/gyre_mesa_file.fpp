@@ -62,25 +62,23 @@ contains
     real(WP)              :: L_star
     integer               :: n_cols
     real(WP), allocatable :: var(:,:)
-    integer               :: k
-    integer               :: k_chk
     real(WP), allocatable :: r(:)
     real(WP), allocatable :: m(:)
     real(WP), allocatable :: p(:)
     real(WP), allocatable :: rho(:)
     real(WP), allocatable :: T(:)
     real(WP), allocatable :: N2(:)
-    real(WP), allocatable :: nabla(:)
     real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: c_p(:)
+    real(WP), allocatable :: nabla_ad(:)
     real(WP), allocatable :: delta(:)
+    real(WP), allocatable :: nabla(:)
     real(WP), allocatable :: kappa(:)
     real(WP), allocatable :: kappa_rho(:)
     real(WP), allocatable :: kappa_T(:)
     real(WP), allocatable :: epsilon(:)
     real(WP), allocatable :: epsilon_rho(:)
     real(WP), allocatable :: epsilon_T(:)
-    real(WP), allocatable :: nabla_ad(:)
+    real(WP), allocatable :: Omega_rot(:)
 
     ! Read the model from the MESA-format file
 
@@ -95,63 +93,32 @@ contains
 
     read(unit, *) n, M_star, R_star, L_star, n_cols
 
+    ! Determine the file variant, and read the data
+
     if(n_cols == 1) then
 
-       ! Handle older file formats which didn't have n_cols
+       ! Old variant (n_cols not specified)
 
        n_cols = 18
 
        backspace(unit)
 
        if(check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 110) 'Detected old-format file'
+          write(OUTPUT_UNIT, 110) 'Detected old-variant file'
 110       format(2X,A)
        endif
 
-    endif
+       call read_mesa_data_old()
 
-    ! Read the data
+    else
 
-    allocate(var(n_cols,n))
-
-    read_loop : do k = 1,n
-       read(unit, *) k_chk, var(:,k)
-       $ASSERT(k == k_chk,Index mismatch)
-    end do read_loop
-
-    close(unit)
-
-    r = var(1,:)
-    m = var(2,:)/(1._WP+var(2,:))*M_star
-    p = var(4,:)
-    T = var(5,:)
-    rho = var(6,:)
-    nabla = var(7,:)
-    N2 = var(8,:)
-    Gamma_1 = var(12,:)*var(10,:)/var(9,:)
-    c_p = var(10,:)
-    delta = var(11,:)/var(12,:)
-    kappa = var(13,:)
-    kappa_T = var(14,:)
-    kappa_rho = var(15,:)
-    epsilon = var(16,:)
-    epsilon_T = var(17,:)
-    epsilon_rho = var(18,:)
-
-    nabla_ad = p*delta/(rho*T*var(10,:))
-
-    ! Decide whether epsilon_T and epsilon_rho need rescaling
-
-    k = MAXLOC(ABS(epsilon_T), DIM=1)
-
-    if(ABS(epsilon_T(k)) < 1E-3*ABS(epsilon(k))) then
-
-       epsilon_T = epsilon_T*epsilon
-       epsilon_rho = epsilon_rho*epsilon
+       ! New variant (n_cols specified)
 
        if(check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 110) 'Rescaled epsilon derivatives'
+          write(OUTPUT_UNIT, 110) 'Detected new-variant file'
        endif
+
+       call read_mesa_data_new()
 
     endif
 
@@ -221,6 +188,105 @@ contains
     ! Finish
 
     return
+
+  contains
+
+    subroutine read_mesa_data_old ()
+
+      integer :: k
+      integer :: k_chk
+
+      ! Read data from the old-variant file
+
+      allocate(var(18,n))
+
+      read_loop : do k = 1,n
+         read(unit, *) k_chk, var(:,k)
+         $ASSERT(k == k_chk,Index mismatch)
+      end do read_loop
+
+      close(unit)
+
+      r = var(1,:)
+      m = var(2,:)/(1._WP+var(2,:))*M_star
+      p = var(4,:)
+      T = var(5,:)
+      rho = var(6,:)
+      nabla = var(7,:)
+      N2 = var(8,:)
+      Gamma_1 = var(12,:)*var(10,:)/var(9,:)
+      delta = var(11,:)/var(12,:)
+      kappa = var(13,:)
+      kappa_T = var(14,:)
+      kappa_rho = var(15,:)
+      epsilon = var(16,:)
+      epsilon_T = var(17,:)
+      epsilon_rho = var(18,:)
+
+      nabla_ad = p*delta/(rho*T*var(10,:))
+
+      allocate(Omega_rot(n))
+      Omega_rot = 0._WP
+
+      ! Decide whether epsilon_T and epsilon_rho need rescaling
+
+      k = MAXLOC(ABS(epsilon_T), DIM=1)
+
+      if(ABS(epsilon_T(k)) < 1E-3*ABS(epsilon(k))) then
+
+         epsilon_T = epsilon_T*epsilon
+         epsilon_rho = epsilon_rho*epsilon
+
+         if(check_log_level('INFO')) then
+            write(OUTPUT_UNIT, 100) 'Rescaled epsilon derivatives'
+100       format(2X,A)
+         endif
+
+      endif
+
+    end subroutine read_mesa_data_old
+
+    subroutine read_mesa_data_new ()
+
+      integer :: k
+      integer :: k_chk
+
+      $ASSERT(n_cols >= 18,Too few columns)
+
+      ! Read data from the new-variant file
+
+      allocate(var(n_cols-1,n))
+
+      read_loop : do k = 1,n
+         read(unit, *) k_chk, var(:,k)
+         $ASSERT(k == k_chk,Index mismatch)
+      end do read_loop
+
+      close(unit)
+
+      r = var(1,:)
+      m = var(2,:)/(1._WP+var(2,:))*M_star
+      p = var(4,:)
+      T = var(5,:)
+      rho = var(6,:)
+      nabla = var(7,:)
+      N2 = var(8,:)
+      Gamma_1 = var(9,:)
+      nabla_ad = var(10,:)
+      delta = var(11,:)
+      kappa = var(12,:)
+      kappa_T = var(13,:)
+      kappa_rho = var(14,:)
+      epsilon = var(15,:)
+      epsilon_T = var(16,:)
+      epsilon_rho = var(17,:)
+      Omega_rot = var(18,:)
+
+      ! Finish
+
+      return
+
+    end subroutine read_mesa_data_new
 
   end subroutine read_mesa_file
 
