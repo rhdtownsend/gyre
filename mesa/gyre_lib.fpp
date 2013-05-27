@@ -144,6 +144,7 @@ contains
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
     select type (bc_m)
+    type is (evol_base_coeffs_t)
        call bc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                       N2, Gamma_1, nabla_ad, delta, deriv_type, add_center)
     class default
