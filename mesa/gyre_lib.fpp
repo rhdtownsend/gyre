@@ -25,6 +25,7 @@ module gyre_lib
   use core_parallel
 
   use gyre_ad_bvp
+  use gyre_rad_bvp
   use gyre_base_coeffs
   use gyre_evol_base_coeffs
   use gyre_therm_coeffs
@@ -34,6 +35,7 @@ module gyre_lib
   use gyre_gridpar
   use gyre_numpar
   use gyre_ad_search
+  use gyre_rad_search
   use gyre_mode
   use gyre_input
   use gyre_util
@@ -60,6 +62,7 @@ module gyre_lib
   public :: gyre_read_model
   public :: gyre_set_model
   public :: gyre_get_modes
+  public :: gyre_get_radial_modes
 
   ! Procedures
 
@@ -234,5 +237,67 @@ contains
     return
 
   end subroutine gyre_get_modes
+
+!****
+
+  subroutine gyre_get_radial_modes (file, user_sub, ipar, rpar)
+
+    character(LEN=*), intent(in) :: file
+    interface
+       subroutine user_sub (md, ipar, rpar, retcode)
+         import mode_t
+         import WP
+         type(mode_t), intent(in) :: md
+         integer, intent(inout)   :: ipar(:)
+         real(WP), intent(inout)  :: rpar(:)
+         integer, intent(out)     :: retcode
+       end subroutine user_sub
+    end interface
+    integer, intent(inout)  :: ipar(:)
+    real(WP), intent(inout) :: rpar(:)
+
+    integer                      :: unit
+    type(oscpar_t)               :: op
+    type(numpar_t)               :: np
+    real(WP), allocatable        :: omega(:)
+    type(gridpar_t), allocatable :: shoot_gp(:)
+    type(gridpar_t), allocatable :: recon_gp(:)
+    type(rad_bvp_t)              :: bp
+    type(mode_t), allocatable    :: md(:)
+    integer                      :: j
+    integer                      :: retcode
+
+    ! Read parameters
+
+    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+
+    call read_oscpar(unit, op)
+    call read_numpar(unit, np)
+    call read_shoot_gridpar(unit, shoot_gp)
+    call read_recon_gridpar(unit, recon_gp)
+    call read_scanpar(unit, bc_m, op, shoot_gp, x_bc_m, omega)
+
+    close(unit)
+
+    ! Set up bp
+
+    call bp%init(bc_m, tc_m, op, np, shoot_gp, recon_gp, x_bc_m)
+
+    ! Find modes
+
+    call rad_scan_search(bp, omega, md)
+
+    ! Process the modes
+
+    mode_loop : do j = 1,SIZE(md)
+       call user_sub(md(j), ipar, rpar, retcode)
+       if(retcode /= 0) exit mode_loop
+    end do mode_loop
+
+    ! Finish
+
+    return
+
+  end subroutine gyre_get_radial_modes
 
 end module gyre_lib
