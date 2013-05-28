@@ -111,10 +111,10 @@ contains
     allocate(glob(iconst))
     allocate(var(ivar,n))
 
-    read(unit, data_format) glob
+    read(unit, data_format_) glob
 
     read_loop : do i = 1,n
-       read(unit, data_format) var(:,i)
+       read(unit, data_format_) var(:,i)
     end do read_loop
 
     close(unit)
