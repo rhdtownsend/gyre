@@ -120,6 +120,7 @@ contains
     integer     :: info
     complex(WP) :: V_l_c(SIZE(A, 1),SIZE(A, 2))
     complex(WP) :: V_r_c(SIZE(A, 1),SIZE(A, 2))
+    integer     :: i
     integer     :: ind(SIZE(A, 1))
 
     $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
@@ -157,17 +158,12 @@ contains
 
        V_l_c = CONJG(TRANSPOSE(V_l_c))
 
-       ! Commented out because the LAPACK left/right eigenvectors
-       ! don't seem to be proper inverses
-
        ! Renormalize the left eigenvectors so they are orthonormal to
        ! the right eigenvectors
 
-       ! do i = 1,SIZE(A,1)
-       !    V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
-       ! enddo
-
-       V_r_c = linear_solve(V_l_c, CMPLX(identity_matrix(SIZE(A, 1)), 0._WP, WP))
+       do i = 1,SIZE(A,1)
+          V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
+       enddo
 
        if(PRESENT(V_l)) V_l = V_l_c
        if(PRESENT(V_r)) V_r = V_r_c
@@ -262,6 +258,7 @@ contains
     complex(WP) :: work(2*SIZE(A, 1))
     real(WP)    :: rwork(2*SIZE(A, 1))
     integer     :: info
+    integer     :: i
     integer     :: ind(SIZE(A, 1))
 
     $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
@@ -296,17 +293,12 @@ contains
 
        V_l_c = CONJG(TRANSPOSE(V_l_c))
 
-       ! Commented out because the LAPACK left/right eigenvectors
-       ! don't seem to be proper inverses
-
        ! Renormalize the left eigenvectors so they are orthonormal to
        ! the right eigenvectors
 
-       ! do i = 1,SIZE(A, 1)
-       !    V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
-       ! enddo
-
-       V_r_c = linear_solve(V_l_c, CMPLX(identity_matrix(SIZE(A, 1)), 0._WP, WP))
+       do i = 1,SIZE(A, 1)
+          V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
+       enddo
 
        if(PRESENT(V_r)) V_r = V_r_c
        if(PRESENT(V_l)) V_l = V_l_c
