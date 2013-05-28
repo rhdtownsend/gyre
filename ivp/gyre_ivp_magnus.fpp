@@ -156,7 +156,7 @@ contains
 
     ! Decompose the Magnus slope matrix
 
-    call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r, sort=.TRUE.)
+    call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
 
     ! Set up the exponents
 
@@ -303,7 +303,7 @@ contains
 
     ! Decompose the matrix
 
-    call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r, sort=.TRUE.)
+    call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
 
     ! Do the stabilized (both-boundaries) Magnus reconstruction
 
