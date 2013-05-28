@@ -1,0 +1,12 @@
+&poly
+/
+
+&grid
+	n = 1000
+	s = 1000.
+	grid_type = 'GEOM'
+/
+
+&output
+	file = 'poly_hom.h5'
+/

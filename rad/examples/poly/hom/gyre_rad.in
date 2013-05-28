@@ -1,0 +1,28 @@
+&coeffs
+	coeffs_type = 'POLY'
+	file = 'poly_hom.h5'
+/
+
+&osc
+	l = 0
+/
+
+&num
+	ivp_solver_type = 'MAGNUS_GL6'
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 0.9
+	freq_max = 11.0
+	n_freq = 20
+/
+
+&shoot_grid
+/
+
+&recon_grid
+/
+
+&output
+/
