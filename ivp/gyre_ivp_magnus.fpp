@@ -156,7 +156,11 @@ contains
 
     ! Decompose the Magnus slope matrix
 
-    call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
+    if(ALL(AIMAG(dOmega) == 0._WP)) then
+       call eigen_decompose(REAL(dOmega), lambda, V_l=V_l, V_r=V_r)
+    else
+       call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
+    endif
 
     ! Set up the exponents
 
@@ -303,7 +307,11 @@ contains
 
     ! Decompose the matrix
 
-    call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
+    if(ALL(AIMAG(dOmega) == 0._WP)) then
+       call eigen_decompose(REAL(dOmega), lambda, V_l=V_l, V_r=V_r)
+    else
+       call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
+    endif
 
     ! Do the stabilized (both-boundaries) Magnus reconstruction
 
