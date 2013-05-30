@@ -150,9 +150,10 @@ contains
     complex(WP) :: lambda(SIZE(dOmega, 1))
     complex(WP) :: V_l(SIZE(dOmega, 1),SIZE(dOmega, 1))
     complex(WP) :: V_r(SIZE(dOmega, 1),SIZE(dOmega, 1))
-    complex(WP) :: lambda_dx(SIZE(dOmega, 1))
-    complex(WP) :: lambda_dx_neg(SIZE(dOmega, 1))
-    complex(WP) :: lambda_dx_pos(SIZE(dOmega, 1))
+    integer     :: n_e
+    integer     :: i
+    complex(WP) :: V_pos(SIZE(dOmega, 1),SIZE(dOmega, 1))
+    complex(WP) :: V_neg(SIZE(dOmega, 1),SIZE(dOmega, 1))
 
     ! Decompose the Magnus slope matrix
 
@@ -162,21 +163,44 @@ contains
        call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
     endif
 
-    ! Set up the exponents
 
-    lambda_dx = lambda*dx
+    ! Set up the solution matrices and scales, using 'upwinding' for stability
 
-    ! Split into positive and negative components
+    n_e = SIZE(dOmega, 1)
 
-    lambda_dx_pos = MERGE(lambda_dx, CMPLX(0._WP, KIND=WP), REAL(lambda_dx) >= 0._WP)
-    lambda_dx_neg = MERGE(lambda_dx, CMPLX(0._WP, KIND=WP), REAL(lambda_dx) < 0._WP)
+    $block
 
-    ! Set up the solution matrices and scales
+    $if($DOUBLE_PRECISION)
+    $local $X Z
+    $else
+    $local $X C
+    $endif
 
-    E_l =  MATMUL(V_r, MATMUL(diagonal_matrix(EXP( lambda_dx_neg)), V_l))
-    E_r = -MATMUL(V_r, MATMUL(diagonal_matrix(EXP(-lambda_dx_pos)), V_l))
+    do i = 1,n_e
+       call ${X}COPY(n_e, V_r(1,i), 1, V_pos(1,i), 1)
+       if(REAL(lambda(i)) >= 0._WP) then
+          call ${X}SCAL(n_e, EXP(-lambda(i)*dx), V_pos(1,i), 1)
+       endif
+    end do
+    
+    do i = 1,n_e
+       call ${X}COPY(n_e, V_r(1,i), 1, V_neg(1,i), 1)
+       if(REAL(lambda(i)) < 0._WP) then
+          call ${X}SCAL(n_e, EXP(lambda(i)*dx), V_neg(1,i), 1)
+       endif
+    end do
+    
+    call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(1._WP, KIND=WP), &
+                  V_neg, n_e, V_l, n_e, CMPLX(0._WP, KIND=WP), &
+                  E_l, n_e)
 
-    S = exp(ext_complex(SUM(lambda_dx_pos)))
+    call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                  V_pos, n_e, V_l, n_e, CMPLX(0._WP, KIND=WP), &
+                  E_r, n_e)
+
+    $endblock
+
+    S = exp(ext_complex(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*dx))
 
     ! Finish
 
