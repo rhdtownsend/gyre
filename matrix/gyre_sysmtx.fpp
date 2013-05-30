@@ -53,7 +53,9 @@ module gyre_sysmtx
      procedure, public :: set_inner_bound
      procedure, public :: set_outer_bound
      procedure, public :: set_block
-     procedure, public :: determinant => determinant_slu
+     procedure, public :: determinant
+     procedure, public :: determinant_slu_r
+     procedure, public :: determinant_slu_c
      procedure, public :: null_vector => null_vector_banded
   end type sysmtx_t
 
@@ -170,13 +172,41 @@ contains
 
 !****
 
-  function determinant_slu (this) result (det)
+  function determinant (this, use_real) result (det)
 
-    class(sysmtx_t), intent(in) :: this
-    type(ext_complex_t)         :: det
+    class(sysmtx_t), intent(inout) :: this
+    type(ext_complex_t)            :: det
+    logical, intent(in), optional  :: use_real
 
-    complex(WP)         :: A(this%n_e,this%n_e,this%n)
-    complex(WP)         :: C(this%n_e,this%n_e,this%n)
+    logical :: use_real_
+
+    if(PRESENT(use_real)) then
+       use_real_ = use_real
+    else
+       use_real_ = .FALSE.
+    endif
+
+    ! Calculate the sysmtx determinant
+
+    if(use_real_) then
+       det = ext_complex(this%determinant_slu_r())
+    else
+       det = this%determinant_slu_c()
+    end if
+
+    ! Finish
+    
+    return
+
+  end function determinant
+
+!****
+
+  function determinant_slu_c (this) result (det)
+
+    class(sysmtx_t), intent(inout) :: this
+    type(ext_complex_t)            :: det
+
     integer             :: n
     integer             :: n_e
     integer             :: l
@@ -192,129 +222,278 @@ contains
     complex(WP)         :: M(2*this%n_e,2*this%n_e)
     integer             :: ipiv2(2*this%n_e)
 
+    ! Calculate the determinant of the sysmtx using the structured
+    ! factorization (SLU) algorithm by Wright (1994)
+
     det = ext_complex(1._WP)
 
-    ! Extract interior blocks from the sysmtx
+    associate(A => this%E_l, C => this%E_r)
 
-    A = this%E_l
-    C = this%E_r
+      ! Repeatedly halve the number of these blocks using SLU with a
+      ! partition size of one or two
 
-    ! Repeatedly halve the number of these blocks by using the
-    ! structured factorization (SLU) algorithm (Wright 1994) with a
-    ! partition size of one or two
+      n = this%n
+      n_e = this%n_e
 
-    n = this%n
-    n_e = this%n_e
+      l = 1
 
-    l = 1
+      factor_loop : do
 
-    factor_loop : do
+         if (l >= n) exit factor_loop
 
-       if (l >= n) exit factor_loop
+         ! Reduce pairs of blocks to single blocks
 
-       ! Reduce pairs of blocks to single blocks
+         !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (P, Q, R, ipiv, info, i)
+         reduce_loop : do k = 1, n-l, 2*l
 
-       !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (P, Q, R, ipiv, info, i)
-       reduce_loop : do k = 1, n-l, 2*l
+            ! Set up matrices (see expressions following eqn. 2.5 of
+            ! Wright 1994)
 
-          ! Set up matrices (see expressions following eqn. 2.5 of
-          ! Wright 1994)
+            P(:n_e,:) = C(:,:,k)
+            P(n_e+1:,:) = A(:,:,k+l)
 
-          P(:n_e,:) = C(:,:,k)
-          P(n_e+1:,:) = A(:,:,k+l)
+            Q(:n_e,:) = 0._WP
+            Q(n_e+1:,:) = C(:,:,k+l)
 
-          Q(:n_e,:) = 0._WP
-          Q(n_e+1:,:) = C(:,:,k+l)
+            R(:n_e,:) = A(:,:,k)
+            R(n_e+1:,:) = 0._WP
 
-          R(:n_e,:) = A(:,:,k)
-          R(n_e+1:,:) = 0._WP
+            ! Calculate the LU factorization of P, and use it to reduce
+            ! Q and R. The nasty fpx3 stuff is to ensure the correct
+            ! LAPACK/BLAS routines are called (can't use generics, since
+            ! we're then not allowed to pass array elements into
+            ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
+            ! "Fortran 90/95 Explained")
 
-          ! Calculate the LU factorization of P, and use it to reduce
-          ! Q and R. The nasty fpx3 stuff is to ensure the correct
-          ! LAPACK/BLAS routines are called (can't use generics, since
-          ! we're then not allowed to pass array elements into
-          ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
-          ! "Fortran 90/95 Explained")
+            call XGETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
+            $ASSERT(info >= 0, Negative return from XGETRF)
 
-          call XGETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
-          $ASSERT(info >= 0, Negative return from XGETRF)
+            $block
 
-          $block
+            $if($DOUBLE_PRECISION)
+            $local $X Z
+            $else
+            $local $X C
+            $endif
 
-          $if($DOUBLE_PRECISION)
-          $local $X Z
-          $else
-          $local $X C
-          $endif
-          
-          call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
-          call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                        CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, Q(1,1), 2*n_e)
-          call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                        P(n_e+1,1), 2*n_e, Q(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                        Q(n_e+1,1), 2*n_e)
+            call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
+            call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                 CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, Q(1,1), 2*n_e)
+            call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                 P(n_e+1,1), 2*n_e, Q(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                 Q(n_e+1,1), 2*n_e)
 
-          call ${X}LASWP(n_e, R, 2*n_e, 1, n_e, ipiv, 1)
-          call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                        CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, R(1,1), 2*n_e)
-          call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                        P(n_e+1,1), 2*n_e, R(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                        R(n_e+1,1), 2*n_e)
+            call ${X}LASWP(n_e, R, 2*n_e, 1, n_e, ipiv, 1)
+            call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                 CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, R(1,1), 2*n_e)
+            call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                 P(n_e+1,1), 2*n_e, R(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                 R(n_e+1,1), 2*n_e)
 
-          $endblock
+            $endblock
 
-          ! Calculate the block determinant
+            ! Calculate the block determinant
 
-          block_det(k) = product(ext_complex(diagonal(P)))
-          
-          do i = 1,n_e
-             if(ipiv(i) /= i) block_det(k) = -block_det(k)
-          end do
-             
-          ! Store results
+            block_det(k) = product(ext_complex(diagonal(P)))
 
-          C(:,:,k) = Q(n_e+1:,:)
-          A(:,:,k) = R(n_e+1:,:)
+            do i = 1,n_e
+               if(ipiv(i) /= i) block_det(k) = -block_det(k)
+            end do
 
-       end do reduce_loop
+            ! Store results
 
-       ! Update the determinant
+            C(:,:,k) = Q(n_e+1:,:)
+            A(:,:,k) = R(n_e+1:,:)
 
-       det = product([block_det(:n-l:2*l),det])
+         end do reduce_loop
 
-       ! Loop around
+         ! Update the determinant
 
-       l = 2*l
+         det = product([block_det(:n-l:2*l),det])
 
-    end do factor_loop
+         ! Loop around
 
-    ! Process the final matrix, consisting of the boundary conditions
-    ! plus a single internal block
+         l = 2*l
 
-    n_i = this%n_i
+      end do factor_loop
 
-    M(:n_i,:n_e) = this%B_i
-    M(n_i+1:n_i+n_e,:n_e) = A(:,:,1)
-    M(n_i+n_e+1:,:n_e) = 0._WP
+      ! Process the final matrix, consisting of the boundary conditions
+      ! plus a single internal block
 
-    M(:n_i,n_e+1:) = 0._WP
-    M(n_i+1:n_i+n_e,n_e+1:) = C(:,:,1)
-    M(n_i+n_e+1:,n_e+1:) = this%B_o
+      n_i = this%n_i
 
-    call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
-    $ASSERT(info >= 0, Negative return from XGETRF)
+      M(:n_i,:n_e) = this%B_i
+      M(n_i+1:n_i+n_e,:n_e) = A(:,:,1)
+      M(n_i+n_e+1:,:n_e) = 0._WP
 
-    det = product([ext_complex(diagonal(M)),det,this%S])
-    
-    do i = 1,2*n_e
-       if(ipiv2(i) /= i) det = -det
-    end do
+      M(:n_i,n_e+1:) = 0._WP
+      M(n_i+1:n_i+n_e,n_e+1:) = C(:,:,1)
+      M(n_i+n_e+1:,n_e+1:) = this%B_o
+
+      call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
+      $ASSERT(info >= 0, Negative return from XGETRF)
+
+      det = product([ext_complex(diagonal(M)),det,this%S])
+
+      do i = 1,2*n_e
+         if(ipiv2(i) /= i) det = -det
+      end do
+
+    end associate
 
     ! Finish
 
     return
 
-  end function determinant_slu
+  end function determinant_slu_c
+
+!****
+
+  function determinant_slu_r (this) result (det)
+
+    class(sysmtx_t), intent(inout) :: this
+    type(ext_real_t)               :: det
+
+    integer          :: n
+    integer          :: n_e
+    integer          :: l
+    integer          :: k
+    real(WP)         :: P(2*this%n_e,this%n_e)
+    real(WP)         :: Q(2*this%n_e,this%n_e)
+    real(WP)         :: R(2*this%n_e,this%n_e)
+    integer          :: ipiv(this%n_e)
+    integer          :: info
+    integer          :: i
+    type(ext_real_t) :: block_det(this%n)
+    integer          :: n_i
+    real(WP)         :: M(2*this%n_e,2*this%n_e)
+    integer          :: ipiv2(2*this%n_e)
+
+    ! Calculate the determinant of the sysmtx using the structured
+    ! factorization (SLU) algorithm by Wright (1994), assuming that
+    ! the imaginary parts can be discarded
+
+    det = ext_real(1._WP)
+
+    associate(A => this%E_l, C => this%E_r)
+
+      ! Repeatedly halve the number of these blocks using SLU with a
+      ! partition size of one or two
+
+      n = this%n
+      n_e = this%n_e
+
+      l = 1
+
+      factor_loop : do
+       
+         if (l >= n) exit factor_loop
+
+         ! Reduce pairs of blocks to single blocks
+
+         !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (P, Q, R, ipiv, info, i)
+         reduce_loop : do k = 1, n-l, 2*l
+
+            ! Set up matrices (see expressions following eqn. 2.5 of
+            ! Wright 1994)
+
+            P(:n_e,:) = REAL(C(:,:,k))
+            P(n_e+1:,:) = REAL(A(:,:,k+l))
+
+            Q(:n_e,:) = 0._WP
+            Q(n_e+1:,:) = REAL(C(:,:,k+l))
+            
+            R(:n_e,:) = REAL(A(:,:,k))
+            R(n_e+1:,:) = 0._WP
+
+            ! Calculate the LU factorization of P, and use it to reduce
+            ! Q and R. The nasty fpx3 stuff is to ensure the correct
+            ! LAPACK/BLAS routines are called (can't use generics, since
+            ! we're then not allowed to pass array elements into
+            ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
+            ! "Fortran 90/95 Explained")
+
+            call XGETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
+            $ASSERT(info >= 0, Negative return from XGETRF)
+
+            $block
+
+            $if($DOUBLE_PRECISION)
+            $local $X D
+            $else
+            $local $X S
+            $endif
+
+            call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
+            call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                 1._WP, P(1,1), 2*n_e, Q(1,1), 2*n_e)
+            call ${X}GEMM('N', 'N', n_e, n_e, n_e, -1._WP, &
+                 P(n_e+1,1), 2*n_e, Q(1,1), 2*n_e, 1._WP, &
+                 Q(n_e+1,1), 2*n_e)
+
+            call ${X}LASWP(n_e, R, 2*n_e, 1, n_e, ipiv, 1)
+            call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+                 1._WP, P(1,1), 2*n_e, R(1,1), 2*n_e)
+            call ${X}GEMM('N', 'N', n_e, n_e, n_e, -1._WP, &
+                 P(n_e+1,1), 2*n_e, R(1,1), 2*n_e, 1._WP, &
+                 R(n_e+1,1), 2*n_e)
+
+            $endblock
+
+            ! Calculate the block determinant
+
+            block_det(k) = product(ext_real(diagonal(P)))
+
+            do i = 1,n_e
+               if(ipiv(i) /= i) block_det(k) = -block_det(k)
+            end do
+
+            ! Store results
+
+            C(:,:,k) = Q(n_e+1:,:)
+            A(:,:,k) = R(n_e+1:,:)
+
+         end do reduce_loop
+
+         ! Update the determinant
+
+         det = product([block_det(:n-l:2*l),det])
+
+         ! Loop around
+
+         l = 2*l
+
+      end do factor_loop
+
+      ! Process the final matrix, consisting of the boundary conditions
+      ! plus a single internal block
+
+      n_i = this%n_i
+
+      M(:n_i,:n_e) = REAL(this%B_i)
+      M(n_i+1:n_i+n_e,:n_e) = REAL(A(:,:,1))
+      M(n_i+n_e+1:,:n_e) = 0._WP
+
+      M(:n_i,n_e+1:) = 0._WP
+      M(n_i+1:n_i+n_e,n_e+1:) = REAL(C(:,:,1))
+      M(n_i+n_e+1:,n_e+1:) = REAL(this%B_o)
+
+      call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
+      $ASSERT(info >= 0, Negative return from XGETRF)
+
+      det = product([ext_real(diagonal(M)),det,ext_real(this%S)])
+
+      do i = 1,2*n_e
+         if(ipiv2(i) /= i) det = -det
+      end do
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function determinant_slu_r
 
 !****
 
