@@ -40,6 +40,7 @@ module gyre_ivp
 
   public :: solve
   public :: recon
+  public :: abscissa
 
   ! Procedures
 
@@ -111,5 +112,36 @@ contains
     return
 
   end subroutine recon
+
+!****
+
+  function abscissa (solver_type, x_a, x_b) result (x)
+
+    character(LEN=*), intent(in) :: solver_type
+    real(WP), intent(in)         :: x_a
+    real(WP), intent(in)         :: x_b
+    real(WP), allocatable        :: x(:)
+
+    ! Determine the abscissa used for solving/reconstructing across
+    ! the interval x_a -> x_b
+
+    select case(solver_type)
+    case('FINDIFF')
+       x = abscissa_findiff(x_a, x_b)
+    case('MAGNUS_GL2')
+       x = abscissa_magnus_GL2(x_a, x_b)
+    case('MAGNUS_GL4')
+       x = abscissa_magnus_GL4(x_a, x_b)
+    case('MAGNUS_GL6')
+       x = abscissa_magnus_GL6(x_a, x_b)
+    case default
+       $ABORT(Invalid solver_type)
+    end select
+
+    ! Finish
+
+    return
+
+  end function abscissa
 
 end module gyre_ivp

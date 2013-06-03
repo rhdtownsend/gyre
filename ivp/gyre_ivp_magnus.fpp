@@ -44,6 +44,9 @@ module gyre_ivp_magnus
   public :: recon_magnus_GL2
   public :: recon_magnus_GL4
   public :: recon_magnus_GL6
+  public :: abscissa_magnus_GL2
+  public :: abscissa_magnus_GL4
+  public :: abscissa_magnus_GL6
 
   ! Procedures
 
@@ -366,7 +369,7 @@ contains
     complex(WP), intent(out)      :: dOmega(:,:)
 
     real(WP)    :: dx
-    real(WP)    :: x
+    real(WP)    :: x(1)
     complex(WP) :: A(jc%n_e,jc%n_e)
 
     $CHECK_BOUNDS(SIZE(dOmega, 1),jc%n_e)
@@ -378,9 +381,9 @@ contains
     ! Evaluate the Jacobian
 
     dx = x_b - x_a
-    x = x_a + 0.5_WP*dx
+    x = abscissa_magnus_GL2(x_a, x_b)
 
-    call jc%eval(omega, x, A)
+    call jc%eval(omega, x(1), A)
 
     ! Evaluate the slope matrix
 
@@ -402,8 +405,6 @@ contains
     real(WP), intent(in)          :: x_b
     complex(WP), intent(out)      :: dOmega(:,:)
 
-    real(WP), parameter :: QUAD_NODES(2) = 0.5_WP+[-1._WP,1._WP]*SQRT(3._WP)/6._WP
-
     real(WP)    :: dx
     real(WP)    :: x(2)
     complex(WP) :: A(jc%n_e,jc%n_e,2)
@@ -418,7 +419,7 @@ contains
     ! Evaluate the Jacobian
 
     dx = x_b - x_a
-    x = x_a + QUAD_NODES*dx
+    x = abscissa_magnus_GL4(x_a, x_b)
 
     call jc%eval(omega, x(1), A(:,:,1))
     call jc%eval(omega, x(2), A(:,:,2))
@@ -448,8 +449,6 @@ contains
     real(WP), intent(in)          :: x_b
     complex(WP), intent(out)      :: dOmega(:,:)
 
-    real(WP), parameter :: QUAD_NODES(3) = 0.5_WP+[-1._WP,0._WP,1._WP]*SQRT(15._WP)/10._WP
-
     real(WP)    :: dx
     real(WP)    :: x(3)
     complex(WP) :: A(jc%n_e,jc%n_e,3)
@@ -465,7 +464,7 @@ contains
     ! Evaluate Jacobians
 
     dx = x_b - x_a
-    x = x_a + QUAD_NODES*dx
+    x = abscissa_magnus_GL6(x_a, x_b)
 
     call jc%eval(omega, x(1), A(:,:,1))
     call jc%eval(omega, x(2), A(:,:,2))
@@ -488,5 +487,71 @@ contains
     return
 
   end subroutine eval_dOmega_GL6
+
+!****
+
+  function abscissa_magnus_GL2 (x_a, x_b) result (x)
+
+    real(WP), intent(in) :: x_a
+    real(WP), intent(in) :: x_b
+    real(WP)             :: x(1)
+
+    real(WP) :: dx
+
+    ! Set up the abscissa for a 2nd-order Gauss-Legendre Magnus scheme
+
+    dx = x_b - x_a
+
+    x = x_a + [0.5_WP]*dx
+
+    ! Finish
+
+    return
+    
+  end function abscissa_magnus_GL2
+
+!****
+
+  function abscissa_magnus_GL4 (x_a, x_b) result (x)
+
+    real(WP), intent(in) :: x_a
+    real(WP), intent(in) :: x_b
+    real(WP)             :: x(2)
+
+    real(WP) :: dx
+
+    ! Set up the abscissa for a 4th-order Gauss-Legendre Magnus scheme
+
+    dx = x_b - x_a
+
+    x = x_a + (0.5_WP+[-1._WP,1._WP]*SQRT(3._WP)/6._WP)*dx
+
+    ! Finish
+
+    return
+
+  end function abscissa_magnus_GL4
+
+!****
+
+  function abscissa_magnus_GL6 (x_a, x_b) result (x)
+
+    real(WP), intent(in) :: x_a
+    real(WP), intent(in) :: x_b
+    real(WP)             :: x(3)
+
+    real(WP) :: dx
+
+    ! Set up the abscissa for a 6nd-order Gauss-Legendre Magnus scheme
+
+    dx = x_b - x_a
+
+    x = x_a + (0.5_WP+[-1._WP,0._WP,1._WP]*SQRT(15._WP)/10._WP)*dx
+
+    ! Finish
+
+    return
+
+  end function abscissa_magnus_GL6
 
 end module gyre_ivp_magnus
