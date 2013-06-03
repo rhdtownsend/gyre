@@ -144,40 +144,50 @@ contains
 
     ! Perform the eigendecomposition of A
 
-    A_ = A
+    if(SIZE(A, 1) == 2) then
 
-    if(PRESENT(V_l) .OR. PRESENT(V_r)) then
+       ! Special case: n == 2
 
-       call XGEEV('V', 'V', SIZE(A, 1), A_, SIZE(A, 1), lambda_re, lambda_im, &
-                  V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
-                  work, SIZE(work), info)
-       $ASSERT(info == 0,Non-zero return from XGEEV)
-
-       call reconstruct_eigenvector(lambda_re, lambda_im, V_l_r, V_l_c)
-       call reconstruct_eigenvector(lambda_re, lambda_im, V_r_r, V_r_c)
-
-       V_l_c = CONJG(TRANSPOSE(V_l_c))
-
-       ! Renormalize the left eigenvectors so they are orthonormal to
-       ! the right eigenvectors
-
-       do i = 1,SIZE(A,1)
-          V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
-       enddo
-
-       if(PRESENT(V_l)) V_l = V_l_c
-       if(PRESENT(V_r)) V_r = V_r_c
+       call eigen_decompose_2_r(A, lambda, V_l, V_r)
 
     else
 
-       call XGEEV('N', 'N', SIZE(A, 1), A_, SIZE(A, 1), lambda_re, lambda_im, &
-                  V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
-                  work, SIZE(work), info)
-       $ASSERT(info == 0,Non-zero return from XGEEV)
+       A_ = A
 
-    endif
+       if(PRESENT(V_l) .OR. PRESENT(V_r)) then
 
-    lambda = CMPLX(lambda_re, lambda_im, KIND=WP)
+          call XGEEV('V', 'V', SIZE(A, 1), A_, SIZE(A, 1), lambda_re, lambda_im, &
+               V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
+               work, SIZE(work), info)
+          $ASSERT(info == 0,Non-zero return from XGEEV)
+
+          call reconstruct_eigenvector(lambda_re, lambda_im, V_l_r, V_l_c)
+          call reconstruct_eigenvector(lambda_re, lambda_im, V_r_r, V_r_c)
+
+          V_l_c = CONJG(TRANSPOSE(V_l_c))
+
+          ! Renormalize the left eigenvectors so they are orthonormal to
+          ! the right eigenvectors
+
+          do i = 1,SIZE(A, 1)
+             V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
+          enddo
+
+          if(PRESENT(V_l)) V_l = V_l_c
+          if(PRESENT(V_r)) V_r = V_r_c
+
+       else
+
+          call XGEEV('N', 'N', SIZE(A, 1), A_, SIZE(A, 1), lambda_re, lambda_im, &
+               V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
+               work, SIZE(work), info)
+          $ASSERT(info == 0,Non-zero return from XGEEV)
+
+       endif
+
+       lambda = CMPLX(lambda_re, lambda_im, KIND=WP)
+
+    end if
 
     ! (Possibly) sort
 
@@ -282,35 +292,47 @@ contains
 
     ! Perform the eigendecomposition of A
 
-    A_ = A
+    ! Perform the eigendecomposition of A
 
-    if(PRESENT(V_l) .OR. PRESENT(V_r)) then
+    if(SIZE(A, 1) == 2) then
 
-       call XGEEV('V', 'V', SIZE(A, 1), A_, SIZE(A, 1), lambda, &
-                  V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
-                  work, SIZE(work, 1), rwork, info)
-       $ASSERT(info == 0,Non-zero return from XGEEV)
+       ! Special case: n == 2
 
-       V_l_c = CONJG(TRANSPOSE(V_l_c))
+       call eigen_decompose_2_c(A, lambda, V_l, V_r)
 
-       ! Renormalize the left eigenvectors so they are orthonormal to
-       ! the right eigenvectors
-
-       do i = 1,SIZE(A, 1)
-          V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
-       enddo
-
-       if(PRESENT(V_r)) V_r = V_r_c
-       if(PRESENT(V_l)) V_l = V_l_c
-       
     else
 
-       call XGEEV('N', 'N', SIZE(A, 1), A_, SIZE(A, 1), lambda, &
-                  V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
-                  work, SIZE(work, 1), rwork, info)
-       $ASSERT(info == 0,Non-zero return from XGEEV)
+       A_ = A
 
-    endif
+       if(PRESENT(V_l) .OR. PRESENT(V_r)) then
+
+          call XGEEV('V', 'V', SIZE(A, 1), A_, SIZE(A, 1), lambda, &
+               V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
+               work, SIZE(work, 1), rwork, info)
+          $ASSERT(info == 0,Non-zero return from XGEEV)
+
+          V_l_c = CONJG(TRANSPOSE(V_l_c))
+
+          ! Renormalize the left eigenvectors so they are orthonormal to
+          ! the right eigenvectors
+
+          do i = 1,SIZE(A, 1)
+             V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
+          enddo
+
+          if(PRESENT(V_r)) V_r = V_r_c
+          if(PRESENT(V_l)) V_l = V_l_c
+
+       else
+
+          call XGEEV('N', 'N', SIZE(A, 1), A_, SIZE(A, 1), lambda, &
+               V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
+               work, SIZE(work, 1), rwork, info)
+          $ASSERT(info == 0,Non-zero return from XGEEV)
+
+       endif
+
+    end if
 
     ! (Possibly) sort
 
@@ -326,6 +348,102 @@ contains
     return
 
   end subroutine eigen_decompose_c
+
+!****
+
+  $define $EIGEN_DECOMPOSE_2 $sub
+
+  $local $SUFFIX $1
+  $local $TYPE $2
+
+  subroutine eigen_decompose_2_$SUFFIX (A, lambda, V_l, V_r)
+
+    $TYPE(WP), intent(in)              :: A(:,:)
+    complex(WP), intent(out)           :: lambda(:)
+    complex(WP), intent(out), optional :: V_l(:,:)
+    complex(WP), intent(out), optional :: V_r(:,:)
+
+    $TYPE(WP)   :: b
+    $TYPE(WP)   :: c
+    complex(WP) :: s
+    complex(WP) :: q
+    complex(WP) :: V_l_(2,2)
+    complex(WP) :: V_r_(2,2)
+    integer     :: i
+
+    $CHECK_BOUNDS(SIZE(A, 1),2)
+    $CHECK_BOUNDS(SIZE(A, 2),2)
+
+    $CHECK_BOUNDS(SIZE(lambda),SIZE(A, 1))
+
+    if(PRESENT(V_l)) then
+       $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(A, 2))
+    endif
+    
+    if(PRESENT(V_r)) then
+       $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(A, 2))
+    endif
+
+    ! Perform the eigendecomposition of the 2x2 matrix A
+
+    ! Solve the quadratic for the eigenvalues
+
+    b = -A(1,1) - A(2,2)
+    c = A(1,1)*A(2,2) - A(1,2)*A(2,1)
+
+    $if($SUFFIX eq 'r')
+    s = SQRT(CMPLX(b**2 - 4._WP*c, KIND=KIND(0._WP)))
+    q = -0.5_WP*(b + SIGN(1._WP, b)*s)
+    $else
+    s = SQRT(b**2 - 4._WP*c)
+    q = -0.5_WP*(b + SIGN(1._WP, REAL(CONJG(b)*s))*s)
+    $endif
+
+    lambda(1) = q
+    lambda(2) = c/q
+
+    ! Calculate eigenvectors
+
+    if(PRESENT(V_l) .OR. PRESENT(V_r)) then
+
+       V_l_(1,1) = A(2,1)
+       V_l_(1,2) = lambda(1) - A(1,1)
+
+       V_l_(2,1) = A(2,1)
+       V_l_(2,2) = lambda(2) - A(1,1)
+    
+       V_r_(1,1) = A(1,2)
+       V_r_(2,1) = lambda(1) - A(1,1)
+    
+       V_r_(1,2) = A(1,2)
+       V_r_(2,2) = lambda(2) - A(1,1)
+       
+       do i = 1,SIZE(A, 1)
+          V_l_(i,:) = V_l_(i,:)/SUM(V_l_(i,:)*V_r_(:,i))
+       enddo
+
+       if(PRESENT(V_l)) then
+          V_l = V_l_
+       endif
+
+       if(PRESENT(V_r)) then
+          V_r = V_r_
+       endif
+
+    end if
+
+    ! Finish
+
+    return
+
+  end subroutine eigen_decompose_2_$SUFFIX
+
+  $endsub
+
+  $EIGEN_DECOMPOSE_2(r,real)
+  $EIGEN_DECOMPOSE_2(c,complex)
 
 !****
 
