@@ -52,7 +52,7 @@ module gyre_ivp_magnus
 
 contains
 
-  subroutine solve_magnus_GL2 (jc, omega, x_a, x_b, E_l, E_r, S)
+  subroutine solve_magnus_GL2 (jc, omega, x_a, x_b, E_l, E_r, S, use_real)
 
     class(jacobian_t), intent(in)    :: jc
     complex(WP), intent(in)          :: omega
@@ -61,6 +61,7 @@ contains
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
     type(ext_complex_t), intent(out) :: S
+    logical, intent(in), optional    :: use_real
 
     complex(WP) :: dOmega(jc%n_e,jc%n_e)
 
@@ -74,7 +75,7 @@ contains
     ! Gauss-Legendre Magnus scheme
 
     call eval_dOmega_GL2(jc, omega, x_a, x_b, dOmega)
-    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, S)
+    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, S, use_real)
 
     ! Finish
     
@@ -82,7 +83,7 @@ contains
 
 !****
   
-  subroutine solve_magnus_GL4 (jc, omega, x_a, x_b, E_l, E_r, S)
+  subroutine solve_magnus_GL4 (jc, omega, x_a, x_b, E_l, E_r, S, use_real)
 
     class(jacobian_t), intent(in)    :: jc
     complex(WP), intent(in)          :: omega
@@ -91,6 +92,7 @@ contains
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
     type(ext_complex_t), intent(out) :: S
+    logical, intent(in), optional    :: use_real
 
     complex(WP) :: dOmega(jc%n_e,jc%n_e)
 
@@ -104,7 +106,7 @@ contains
     ! Gauss-Legendre Magnus scheme
 
     call eval_dOmega_GL4(jc, omega, x_a, x_b, dOmega)
-    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, S)
+    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, S, use_real)
 
     ! Finish
     
@@ -112,7 +114,7 @@ contains
   
 !****
   
-  subroutine solve_magnus_GL6 (jc, omega, x_a, x_b, E_l, E_r, S)
+  subroutine solve_magnus_GL6 (jc, omega, x_a, x_b, E_l, E_r, S, use_real)
 
     class(jacobian_t), intent(in)    :: jc
     complex(WP), intent(in)          :: omega
@@ -121,6 +123,7 @@ contains
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
     type(ext_complex_t), intent(out) :: S
+    logical, intent(in), optional    :: use_real
 
     complex(WP) :: dOmega(jc%n_e,jc%n_e)
 
@@ -134,7 +137,7 @@ contains
     ! Gauss-Legendre Magnus scheme
 
     call eval_dOmega_GL6(jc, omega, x_a, x_b, dOmega)
-    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, S)
+    call solve_magnus(dOmega, x_b-x_a, E_l, E_r, S, use_real)
 
     ! Finish
     
@@ -142,14 +145,16 @@ contains
   
 !****
 
-  subroutine solve_magnus (dOmega, dx, E_l, E_r, S)
+  subroutine solve_magnus (dOmega, dx, E_l, E_r, S, use_real)
 
     complex(WP), intent(in)          :: dOmega(:,:)
     real(WP), intent(in)             :: dx
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
     type(ext_complex_t), intent(out) :: S
+    logical, intent(in), optional    :: use_real
 
+    logical     :: use_real_
     complex(WP) :: lambda(SIZE(dOmega, 1))
     complex(WP) :: V_l(SIZE(dOmega, 1),SIZE(dOmega, 1))
     complex(WP) :: V_r(SIZE(dOmega, 1),SIZE(dOmega, 1))
@@ -158,14 +163,19 @@ contains
     complex(WP) :: V_pos(SIZE(dOmega, 1),SIZE(dOmega, 1))
     complex(WP) :: V_neg(SIZE(dOmega, 1),SIZE(dOmega, 1))
 
+    if(PRESENT(use_real)) then
+       use_real_ = use_real
+    else
+       use_real_ = .FALSE.
+    endif
+
     ! Decompose the Magnus slope matrix
 
-    if(ALL(AIMAG(dOmega) == 0._WP)) then
+    if(use_real_) then
        call eigen_decompose(REAL(dOmega), lambda, V_l=V_l, V_r=V_r)
     else
        call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
     endif
-
 
     ! Set up the solution matrices and scales, using 'upwinding' for stability
 
@@ -213,7 +223,7 @@ contains
 
 !****
 
-  subroutine recon_magnus_GL2 (jc, omega, x_a, x_b, y_a, y_b, x, y)
+  subroutine recon_magnus_GL2 (jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
 
     class(jacobian_t), intent(in) :: jc
     complex(WP), intent(in)       :: omega
@@ -223,6 +233,7 @@ contains
     complex(WP), intent(in)       :: y_b(:)
     real(WP), intent(in)          :: x(:)
     complex(WP), intent(out)      :: y(:,:)
+    logical, intent(in), optional :: use_real
 
     complex(WP) :: dOmega(jc%n_e,jc%n_e)
 
@@ -236,7 +247,7 @@ contains
     ! scheme
 
     call eval_dOmega_GL2(jc, omega, x_a, x_b, dOmega)
-    call recon_magnus (dOmega, x_a, x_b, y_a, y_b, x, y)
+    call recon_magnus (dOmega, x_a, x_b, y_a, y_b, x, y, use_real)
 
     ! Finish
 
@@ -246,7 +257,7 @@ contains
 
 !****
 
-  subroutine recon_magnus_GL4 (jc, omega, x_a, x_b, y_a, y_b, x, y)
+  subroutine recon_magnus_GL4 (jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
 
     class(jacobian_t), intent(in) :: jc
     complex(WP), intent(in)       :: omega
@@ -256,6 +267,7 @@ contains
     complex(WP), intent(in)       :: y_b(:)
     real(WP), intent(in)          :: x(:)
     complex(WP), intent(out)      :: y(:,:)
+    logical, intent(in), optional :: use_real
 
     complex(WP) :: dOmega(jc%n_e,jc%n_e)
 
@@ -269,7 +281,7 @@ contains
     ! scheme
 
     call eval_dOmega_GL4(jc, omega, x_a, x_b, dOmega)
-    call recon_magnus (dOmega, x_a, x_b, y_a, y_b, x, y)
+    call recon_magnus (dOmega, x_a, x_b, y_a, y_b, x, y, use_real)
 
     ! Finish
 
@@ -279,7 +291,7 @@ contains
 
 !****
 
-  subroutine recon_magnus_GL6 (jc, omega, x_a, x_b, y_a, y_b, x, y)
+  subroutine recon_magnus_GL6 (jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
 
     class(jacobian_t), intent(in) :: jc
     complex(WP), intent(in)       :: omega
@@ -289,6 +301,7 @@ contains
     complex(WP), intent(in)       :: y_b(:)
     real(WP), intent(in)          :: x(:)
     complex(WP), intent(out)      :: y(:,:)
+    logical, intent(in), optional :: use_real
 
     complex(WP) :: dOmega(jc%n_e,jc%n_e)
 
@@ -302,7 +315,7 @@ contains
     ! scheme
 
     call eval_dOmega_GL6(jc, omega, x_a, x_b, dOmega)
-    call recon_magnus (dOmega, x_a, x_b, y_a, y_b, x, y)
+    call recon_magnus (dOmega, x_a, x_b, y_a, y_b, x, y, use_real)
 
     ! Finish
 
@@ -312,16 +325,18 @@ contains
 
 !****
 
-  subroutine recon_magnus (dOmega, x_a, x_b, y_a, y_b, x, y)
+  subroutine recon_magnus (dOmega, x_a, x_b, y_a, y_b, x, y, use_real)
 
-    complex(WP), intent(in)   :: dOmega(:,:)
-    real(WP), intent(in)      :: x_a
-    real(WP), intent(in)      :: x_b
-    complex(WP), intent(in)   :: y_a(:)
-    complex(WP), intent(in)   :: y_b(:)
-    real(WP), intent(in)      :: x(:)
-    complex(WP), intent(out)  :: y(:,:)
+    complex(WP), intent(in)       :: dOmega(:,:)
+    real(WP), intent(in)          :: x_a
+    real(WP), intent(in)          :: x_b
+    complex(WP), intent(in)       :: y_a(:)
+    complex(WP), intent(in)       :: y_b(:)
+    real(WP), intent(in)          :: x(:)
+    complex(WP), intent(out)      :: y(:,:)
+    logical, intent(in), optional :: use_real
 
+    logical     :: use_real_
     complex(WP) :: lambda(SIZE(dOmega, 1))
     complex(WP) :: V_l(SIZE(dOmega, 1),SIZE(dOmega, 1))
     complex(WP) :: V_r(SIZE(dOmega, 1),SIZE(dOmega, 1))
@@ -329,12 +344,19 @@ contains
     complex(WP) :: exp_a(SIZE(dOmega,1))
     complex(WP) :: exp_b(SIZE(dOmega,1))
 
+    if(PRESENT(use_real)) then
+       use_real_ = use_real
+    else
+       use_real_ = .FALSE.
+    endif
+
+
     ! Reconstruct the solution within the interval x_a -> x_b using
     ! the Magnus slope matrix
 
     ! Decompose the matrix
 
-    if(ALL(AIMAG(dOmega) == 0._WP)) then
+    if(use_real_) then
        call eigen_decompose(REAL(dOmega), lambda, V_l=V_l, V_r=V_r)
     else
        call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)

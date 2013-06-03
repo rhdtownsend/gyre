@@ -46,7 +46,7 @@ module gyre_ivp
 
 contains
 
-  subroutine solve (solver_type, jc, omega, x_a, x_b, E_l, E_r, S)
+  subroutine solve (solver_type, jc, omega, x_a, x_b, E_l, E_r, S, use_real)
 
     character(LEN=*), intent(in)     :: solver_type
     class(jacobian_t), intent(in)    :: jc
@@ -56,6 +56,7 @@ contains
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
     type(ext_complex_t), intent(out) :: S
+    logical, intent(in), optional    :: use_real
 
     ! Solve the IVP across the interval x_a -> x_b
 
@@ -63,11 +64,11 @@ contains
     case('FINDIFF')
        call solve_findiff(jc, omega, x_a, x_b, E_l, E_r, S)
     case('MAGNUS_GL2')
-       call solve_magnus_GL2(jc, omega, x_a, x_b, E_l, E_r, S)
+       call solve_magnus_GL2(jc, omega, x_a, x_b, E_l, E_r, S, use_real)
     case('MAGNUS_GL4')
-       call solve_magnus_GL4(jc, omega, x_a, x_b, E_l, E_r, S)
+       call solve_magnus_GL4(jc, omega, x_a, x_b, E_l, E_r, S, use_real)
     case('MAGNUS_GL6')
-       call solve_magnus_GL6(jc, omega, x_a, x_b, E_l, E_r, S)
+       call solve_magnus_GL6(jc, omega, x_a, x_b, E_l, E_r, S, use_real)
     case default
        $ABORT(Invalid solver_type)
     end select
@@ -80,7 +81,7 @@ contains
 
 !****
 
-  subroutine recon (solver_type, jc, omega, x_a, x_b, y_a, y_b, x, y)
+  subroutine recon (solver_type, jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
 
     character(LEN=*), intent(in)  :: solver_type
     class(jacobian_t), intent(in) :: jc
@@ -91,6 +92,7 @@ contains
     complex(WP), intent(in)       :: y_b(:)
     real(WP), intent(in)          :: x(:)
     complex(WP), intent(out)      :: y(:,:)
+    logical, intent(in), optional :: use_real
 
     ! Reconstruct the IVP solution within the interval x_a -> x_b
 
@@ -98,11 +100,11 @@ contains
     case('FINDIFF')
        call recon_findiff(jc, omega, x_a, x_b, y_a, y_b, x, y)
     case('MAGNUS_GL2')
-       call recon_magnus_GL2(jc, omega, x_a, x_b, y_a, y_b, x, y)
+       call recon_magnus_GL2(jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
     case('MAGNUS_GL4')
-       call recon_magnus_GL4(jc, omega, x_a, x_b, y_a, y_b, x, y)
+       call recon_magnus_GL4(jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
     case('MAGNUS_GL6')
-       call recon_magnus_Gl6(jc, omega, x_a, x_b, y_a, y_b, x, y)
+       call recon_magnus_Gl6(jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
     case default
        $ABORT(Invalid solver_type)
     end select
