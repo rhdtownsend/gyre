@@ -57,6 +57,7 @@ module gyre_sysmtx
      procedure, public :: determinant_slu_r
      procedure, public :: determinant_slu_c
      procedure, public :: null_vector => null_vector_banded
+!     procedure, public :: null_vector => null_vector_inviter
   end type sysmtx_t
 
   ! Access specifiers
@@ -657,5 +658,83 @@ contains
     return
 
   end function null_vector_banded
+
+!****
+
+  function null_vector_inviter (this) result(b)
+
+    class(sysmtx_t), intent(in) :: this
+    complex(WP)                 :: b(this%n_e*(this%n+1))
+
+    integer, parameter  :: MAX_ITER = 25
+    real(WP), parameter :: EPS = 4._WP*EPSILON(0._WP)
+
+    complex(WP), allocatable :: A_b(:,:)
+    integer, allocatable     :: ipiv(:)
+    integer                  :: n_l
+    integer                  :: n_u
+    integer                  :: info
+    integer                  :: i
+    complex(WP)              :: y(this%n_e*(this%n+1),1)
+    complex(WP)              :: v(this%n_e*(this%n+1),1)
+    complex(WP)              :: w(this%n_e*(this%n+1))
+    complex(WP)              :: theta
+!    integer                  :: j
+
+    ! **** NOTE: THIS ROUTINE IS CURRENTLY OUT-OF-ACTION; IT GIVES
+    ! **** MUCH POORER RESULTS THAN null_vector_banded, AND IT'S NOT
+    ! **** CLEAR WHY
+
+    ! Pack the sysmtx into banded form
+
+    call pack_banded(this, A_b)
+
+    ! LU decompose it
+
+    n_l = this%n_e + this%n_i - 1
+    n_u = this%n_e + this%n_i - 1
+
+    allocate(ipiv(SIZE(A_b, 2)))
+
+    call XGBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
+    $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from LA_GBTRF)
+
+    ! Locate the smallest diagonal element
+
+    i = MINLOC(ABS(A_b(n_l+n_u+1,:)), DIM=1)
+
+    if(SIZE(A_b, 2)-i > this%n_e) then
+       $WARN(Smallest element not in final block)
+    endif
+
+    ! Use inverse iteration to converge on the null vector
+
+!    tol = EPS*SQRT(REAL(SIZE(x), WP))
+
+    y = 1._WP/SQRT(REAL(SIZE(b), WP))
+
+    iter_loop : do i = 1,MAX_ITER
+
+       v(:,1) = y(:,1)/SQRT(DOT_PRODUCT(y(:,1), y(:,1)))
+
+       y = v
+       call XGBTRS('N', SIZE(A_b, 2), n_l, n_u, 1, A_b, SIZE(A_b, 1), ipiv, y, SIZE(y, 1), info)
+       $ASSERT(info == 0,Non-zero return from XGBTRS)
+
+       theta = DOT_PRODUCT(v(:,1), y(:,1))
+
+       w = y(:,1) - theta*v(:,1)
+
+       if(ABS(SQRT(DOT_PRODUCT(w, w))) < 4.*EPSILON(0._WP)*ABS(theta)) exit iter_loop
+
+    end do iter_loop
+
+    b = y(:,1)/theta
+
+    ! Finish
+
+    ! return
+
+  end function null_vector_inviter
 
 end module gyre_sysmtx
