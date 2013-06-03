@@ -27,6 +27,7 @@ module gyre_evol_base_coeffs
   use core_spline
 
   use gyre_base_coeffs
+  use gyre_cocache
 
   use ISO_FORTRAN_ENV
 
@@ -56,6 +57,7 @@ module gyre_evol_base_coeffs
 
   type, extends(base_coeffs_t) :: evol_base_coeffs_t
      private
+     type(cocache_t) :: cc
      $VAR_DECL(m)
      $VAR_DECL(p)
      $VAR_DECL(rho)
@@ -73,6 +75,7 @@ module gyre_evol_base_coeffs
      real(WP), public :: G
      real(WP)         :: p_c
      real(WP)         :: rho_c
+     logical          :: cc_enabled
    contains
      private
      procedure, public :: init
@@ -88,6 +91,9 @@ module gyre_evol_base_coeffs
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
      procedure, public :: pi_c
+     procedure, public :: enable_cache
+     procedure, public :: disable_cache
+     procedure, public :: fill_cache
   end type evol_base_coeffs_t
  
   ! Interfaces
@@ -213,6 +219,8 @@ contains
 
        this%G = G
 
+       this%cc_enabled = .FALSE.
+
     endif
 
     ! Finish
@@ -260,6 +268,8 @@ contains
 
     ! Broadcast the base_coeffs
 
+    call bcast(bc%cc, root_rank)
+
     call bcast(bc%sp_m, root_rank)
     call bcast(bc%sp_p, root_rank)
     call bcast(bc%sp_rho, root_rank)
@@ -279,6 +289,11 @@ contains
 
     call bcast(bc%G, root_rank)
 
+    call bcast(bc%p_c, root_rank)
+    call bcast(bc%rho_c, root_rank)
+
+    call bcast(bc%cc_enabled, root_rank)
+
     ! Finish
 
     return
@@ -292,6 +307,7 @@ contains
   $define $PROC $sub
 
   $local $NAME $1
+  $local $I_CC $2
 
   function ${NAME}_1 (this, x) result ($NAME)
 
@@ -301,8 +317,12 @@ contains
 
     ! Interpolate $NAME
 
-    $NAME = this%sp_$NAME%interp(x)
-
+    if(this%cc_enabled) then
+       $NAME = this%cc%lookup($I_CC, x)
+    else
+       $NAME = this%sp_$NAME%interp(x)
+    endif
+       
     ! Finish
 
     return
@@ -329,17 +349,17 @@ contains
 
   $endsub
 
-  $PROC(m)
-  $PROC(p)
-  $PROC(rho)
-  $PROC(T)
-  $PROC(V)
-  $PROC(As)
-  $PROC(U)
-  $PROC(c_1)
-  $PROC(Gamma_1)
-  $PROC(nabla_ad)
-  $PROC(delta)
+  $PROC(m,1)
+  $PROC(p,2)
+  $PROC(rho,3)
+  $PROC(T,4)
+  $PROC(V,5)
+  $PROC(As,6)
+  $PROC(U,7)
+  $PROC(c_1,8)
+  $PROC(Gamma_1,9)
+  $PROC(nabla_ad,10)
+  $PROC(delta,11)
 
 !****
 
@@ -357,5 +377,69 @@ contains
     return
 
   end function pi_c
+
+!****
+
+  subroutine enable_cache (this)
+
+    class(evol_base_coeffs_t), intent(inout) :: this
+
+    ! Enable the coefficient cache
+
+    this%cc_enabled = .TRUE.
+
+    ! Finish
+
+    return
+
+  end subroutine enable_cache
+
+!****
+
+  subroutine disable_cache (this)
+
+    class(evol_base_coeffs_t), intent(inout) :: this
+
+    ! Disable the coefficient cache
+
+    this%cc_enabled = .FALSE.
+
+    ! Finish
+
+    return
+
+  end subroutine disable_cache
+
+!****
+
+  subroutine fill_cache (this, x)
+
+    class(evol_base_coeffs_t), intent(inout) :: this
+    real(WP), intent(in)                     :: x(:)
+
+    real(WP) :: c(11,SIZE(x))
+
+    ! Fill the coefficient cache
+
+    c(1,:) = this%m(x)
+    c(2,:) = this%p(x)
+    c(3,:) = this%rho(x)
+    c(4,:) = this%T(x)
+       
+    c(5,:) = this%V(x)
+    c(6,:) = this%As(x)
+    c(7,:) = this%U(x)
+    c(8,:) = this%c_1(x)
+    c(9,:) = this%Gamma_1(x)
+    c(10,:) = this%nabla_ad(x)
+    c(11,:) = this%delta(x)
+
+    call this%cc%init(x, c)
+
+    ! Finish
+
+    return
+
+  end subroutine fill_cache
 
 end module gyre_evol_base_coeffs

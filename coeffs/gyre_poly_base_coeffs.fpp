@@ -59,6 +59,9 @@ module gyre_poly_base_coeffs
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
      procedure, public :: pi_c
+     procedure, public :: enable_cache
+     procedure, public :: disable_cache
+     procedure, public :: fill_cache
   end type poly_base_coeffs_t
 
   ! Interfaces
@@ -487,5 +490,48 @@ contains
     return
 
   end function pi_c
+
+!****
+
+  subroutine enable_cache (this)
+
+    class(poly_base_coeffs_t), intent(inout) :: this
+
+    ! Enable the coefficient cache (no-op, since we don't cache)
+
+    ! Finish
+
+    return
+
+  end subroutine enable_cache
+
+!****
+
+  subroutine disable_cache (this)
+
+    class(poly_base_coeffs_t), intent(inout) :: this
+
+    ! Disable the coefficient cache (no-op, since we don't cache)
+
+    ! Finish
+
+    return
+
+  end subroutine disable_cache
+
+!****
+
+  subroutine fill_cache (this, x)
+
+    class(poly_base_coeffs_t), intent(inout) :: this
+    real(WP), intent(in)                     :: x(:)
+
+    ! Fill the coefficient cache (no-op, since we don't cache)
+
+    ! Finish
+
+    return
+
+  end subroutine fill_cache
 
 end module gyre_poly_base_coeffs

@@ -27,6 +27,7 @@ module gyre_evol_therm_coeffs
   use core_spline
 
   use gyre_therm_coeffs
+  use gyre_cocache
 
   use ISO_FORTRAN_ENV
 
@@ -43,11 +44,12 @@ module gyre_evol_therm_coeffs
   
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure :: get_${NAME}_1
-    procedure :: get_${NAME}_v
+    procedure :: ${NAME}_1
+    procedure :: ${NAME}_v
   $endsub
 
   type, extends(therm_coeffs_t) :: evol_therm_coeffs_t
+     type(cocache_t) :: cc
      $VAR_DECL(c_rad)
      $VAR_DECL(c_thm)
      $VAR_DECL(c_dif)
@@ -59,6 +61,7 @@ module gyre_evol_therm_coeffs
      $VAR_DECL(epsilon_ad)
      $VAR_DECL(epsilon_S)
      $VAR_DECL(tau_thm)
+     logical :: cc_enabled
    contains
      procedure :: init
      $PROC_DECL(c_rad)
@@ -73,6 +76,9 @@ module gyre_evol_therm_coeffs
      $PROC_DECL(epsilon_ad)
      $PROC_DECL(epsilon_S)
      $PROC_DECL(tau_thm)
+     procedure, public :: enable_cache
+     procedure, public :: disable_cache
+     procedure, public :: fill_cache
   end type evol_therm_coeffs_t
 
   ! Interfaces
@@ -242,6 +248,8 @@ contains
        call this%sp_epsilon_ad%init(x, epsilon_ad, deriv_type, dy_dx_a=0._WP)
        call this%sp_tau_thm%init(x, tau_thm, deriv_type, dy_dx_a=0._WP)
 
+       this%cc_enabled = .FALSE.
+
     endif
 
     ! Finish
@@ -316,6 +324,8 @@ contains
 
     ! Broadcast the therm_coeffs
 
+    call bcast(tc%cc, root_rank)
+
     call bcast(tc%sp_c_rad, root_rank)
     call bcast(tc%sp_c_thm, root_rank)
     call bcast(tc%sp_c_dif, root_rank)
@@ -327,6 +337,8 @@ contains
     call bcast(tc%sp_epsilon_S, root_rank)
     call bcast(tc%sp_epsilon_ad, root_rank)
     call bcast(tc%sp_tau_thm, root_rank)
+
+    call bcast(tc%cc_enabled, root_rank)
 
     ! Finish
 
@@ -341,8 +353,9 @@ contains
   $define $PROC $sub
 
   $local $NAME $1
+  $local $I_CC $2
 
-  function get_${NAME}_1 (this, x) result ($NAME)
+  function ${NAME}_1 (this, x) result ($NAME)
 
     class(evol_therm_coeffs_t), intent(in) :: this
     real(WP), intent(in)                   :: x
@@ -350,17 +363,21 @@ contains
 
     ! Interpolate $NAME
 
-    $NAME = this%sp_$NAME%interp(x)
+    if(this%cc_enabled) then
+       $NAME = this%cc%lookup($I_CC, x)
+    else
+       $NAME = this%sp_$NAME%interp(x)
+    endif
 
     ! Finish
 
     return
 
-  end function get_${NAME}_1
+  end function ${NAME}_1
 
 !****
 
-  function get_${NAME}_v (this, x) result ($NAME)
+  function ${NAME}_v (this, x) result ($NAME)
 
     class(evol_therm_coeffs_t), intent(in) :: this
     real(WP), intent(in)                   :: x(:)
@@ -374,29 +391,30 @@ contains
 
     return
 
-  end function get_${NAME}_v
+  end function ${NAME}_v
 
   $endsub
 
-  $PROC(c_rad)
-  $PROC(c_thm)
-  $PROC(c_dif)
-  $PROC(c_eps_ad)
-  $PROC(c_eps_S)
-  $PROC(nabla)
-  $PROC(kappa_S)
-  $PROC(kappa_ad)
-  $PROC(epsilon_S)
-  $PROC(epsilon_ad)
-  $PROC(tau_thm)
+  $PROC(c_rad,1)
+  $PROC(c_thm,2)
+  $PROC(c_dif,3)
+  $PROC(c_eps_ad,4)
+  $PROC(c_eps_S,5)
+  $PROC(nabla,6)
+  $PROC(kappa_S,7)
+  $PROC(kappa_ad,8)
+  $PROC(epsilon_S,9)
+  $PROC(epsilon_ad,10)
+  $PROC(tau_thm,11)
 
 !****
 
   $define $DPROC $sub
 
   $local $NAME $1
+  $local $I_CC $2
 
-  function get_d${NAME}_1 (this, x) result (d$NAME)
+  function d${NAME}_1 (this, x) result (d$NAME)
 
     class(evol_therm_coeffs_t), intent(in) :: this
     real(WP), intent(in)                   :: x
@@ -404,21 +422,25 @@ contains
 
     ! Evaluate dln$NAME/dlnx
 
-    if(x > 0._WP) then
-       d$NAME = x*this%sp_$NAME%deriv(x)/this%sp_$NAME%interp(x)
+    if(this%cc_enabled) then
+       d$NAME = this%cc%lookup($I_CC, x)
     else
-       d$NAME = 0._WP
+       if(x > 0._WP) then
+          d$NAME = x*this%sp_$NAME%deriv(x)/this%sp_$NAME%interp(x)
+       else
+          d$NAME = 0._WP
+       endif
     endif
 
     ! Finish
 
     return
 
-  end function get_d${NAME}_1
+  end function d${NAME}_1
 
 !****
 
-  function get_d${NAME}_v (this, x) result (d$NAME)
+  function d${NAME}_v (this, x) result (d$NAME)
 
     class(evol_therm_coeffs_t), intent(in) :: this
     real(WP), intent(in)                   :: x(:)
@@ -436,10 +458,74 @@ contains
 
     return
 
-  end function get_d${NAME}_v
+  end function d${NAME}_v
 
   $endsub
 
-  $DPROC(c_rad)
+  $DPROC(c_rad,12)
+
+!****
+
+  subroutine enable_cache (this)
+
+    class(evol_therm_coeffs_t), intent(inout) :: this
+
+    ! Enable the coefficient cache
+
+    this%cc_enabled = .TRUE.
+
+    ! Finish
+
+    return
+
+  end subroutine enable_cache
+
+!****
+
+  subroutine disable_cache (this)
+
+    class(evol_therm_coeffs_t), intent(inout) :: this
+
+    ! Disable the coefficient cache
+
+    this%cc_enabled = .FALSE.
+
+    ! Finish
+
+    return
+
+  end subroutine disable_cache
+
+!****
+
+  subroutine fill_cache (this, x)
+
+    class(evol_therm_coeffs_t), intent(inout) :: this
+    real(WP), intent(in)                      :: x(:)
+
+    real(WP) :: c(12,SIZE(x))
+
+    ! Fill the coefficient cache
+
+    c(1,:) = this%c_rad(x)
+    c(2,:) = this%c_thm(x)
+    c(3,:) = this%c_dif(x)
+    c(4,:) = this%c_eps_ad(x)
+    c(5,:) = this%c_eps_S(x)
+    c(6,:) = this%nabla(x)
+    c(7,:) = this%kappa_S(x)
+    c(8,:) = this%kappa_ad(x)
+    c(9,:) = this%epsilon_S(x)
+    c(10,:) = this%epsilon_ad(x)
+    c(11,:) = this%tau_thm(x)
+
+    c(12,:) = this%dc_rad(x)
+
+    call this%cc%init(x, c)
+
+    ! Finish
+
+    return
+  end subroutine fill_cache
 
 end module gyre_evol_therm_coeffs
