@@ -104,14 +104,13 @@ contains
 
   subroutine eigen_decompose_r (A, lambda, V_l, V_r, sort)
 
-    real(WP), intent(in)               :: A(:,:)
+    real(WP), intent(inout)            :: A(:,:)
     complex(WP), intent(out)           :: lambda(:)
     complex(WP), intent(out), optional :: V_l(:,:)
     complex(WP), intent(out), optional :: V_r(:,:)
     logical, intent(in), optional      :: sort
 
     logical     :: sort_
-    real(WP)    :: A_(SIZE(A, 1),SIZE(A, 2))
     real(WP)    :: lambda_re(SIZE(lambda))
     real(WP)    :: lambda_im(SIZE(lambda))
     real(WP)    :: V_l_r(SIZE(A, 1),SIZE(A, 2))
@@ -152,11 +151,9 @@ contains
 
     else
 
-       A_ = A
-
        if(PRESENT(V_l) .OR. PRESENT(V_r)) then
 
-          call XGEEV('V', 'V', SIZE(A, 1), A_, SIZE(A, 1), lambda_re, lambda_im, &
+          call XGEEV('V', 'V', SIZE(A, 1), A, SIZE(A, 1), lambda_re, lambda_im, &
                V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
                work, SIZE(work), info)
           $ASSERT(info == 0,Non-zero return from XGEEV)
@@ -178,7 +175,7 @@ contains
 
        else
 
-          call XGEEV('N', 'N', SIZE(A, 1), A_, SIZE(A, 1), lambda_re, lambda_im, &
+          call XGEEV('N', 'N', SIZE(A, 1), A, SIZE(A, 1), lambda_re, lambda_im, &
                V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
                work, SIZE(work), info)
           $ASSERT(info == 0,Non-zero return from XGEEV)
@@ -255,14 +252,13 @@ contains
 
   subroutine eigen_decompose_c (A, lambda, V_l, V_r, sort)
 
-    complex(WP), intent(in)            :: A(:,:)
+    complex(WP), intent(inout)         :: A(:,:)
     complex(WP), intent(out)           :: lambda(:)
     complex(WP), intent(out), optional :: V_l(:,:)
     complex(WP), intent(out), optional :: V_r(:,:)
     logical, intent(in), optional      :: sort
 
     logical     :: sort_
-    complex(WP) :: A_(SIZE(A, 1),SIZE(A, 2))
     complex(WP) :: V_l_c(SIZE(A, 1),SIZE(A, 2))
     complex(WP) :: V_r_c(SIZE(A, 1),SIZE(A, 2))
     complex(WP) :: work(2*SIZE(A, 1))
@@ -302,11 +298,9 @@ contains
 
     else
 
-       A_ = A
-
        if(PRESENT(V_l) .OR. PRESENT(V_r)) then
 
-          call XGEEV('V', 'V', SIZE(A, 1), A_, SIZE(A, 1), lambda, &
+          call XGEEV('V', 'V', SIZE(A, 1), A, SIZE(A, 1), lambda, &
                V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
                work, SIZE(work, 1), rwork, info)
           $ASSERT(info == 0,Non-zero return from XGEEV)
@@ -325,7 +319,7 @@ contains
 
        else
 
-          call XGEEV('N', 'N', SIZE(A, 1), A_, SIZE(A, 1), lambda, &
+          call XGEEV('N', 'N', SIZE(A, 1), A, SIZE(A, 1), lambda, &
                V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
                work, SIZE(work, 1), rwork, info)
           $ASSERT(info == 0,Non-zero return from XGEEV)
@@ -393,7 +387,7 @@ contains
     b = -A(1,1) - A(2,2)
     c = A(1,1)*A(2,2) - A(1,2)*A(2,1)
 
-    $if($SUFFIX eq 'r')
+    $if($TYPE eq 'real')
     s = SQRT(CMPLX(b**2 - 4._WP*c, KIND=KIND(0._WP)))
     q = -0.5_WP*(b + SIGN(1._WP, b)*s)
     $else
@@ -739,17 +733,20 @@ contains
 
     integer, parameter :: IDEG = 6
 
-    complex(WP) :: lambda(SIZE(A,1))
-    complex(WP) :: V_l(SIZE(A,1),SIZE(A,2))
-    complex(WP) :: V_r(SIZE(A,1),SIZE(A,2))
+    $TYPE(WP)   :: A_(SIZE(A, 1),SIZE(A, 2))
+    complex(WP) :: lambda(SIZE(A, 1))
+    complex(WP) :: V_l(SIZE(A, 1),SIZE(A, 2))
+    complex(WP) :: V_r(SIZE(A, 1),SIZE(A, 2))
 
     $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
 
     ! Calculate the matrix exponential exp(A*t)
 
-    call eigen_decompose_$SUFFIX(A, lambda, V_l=V_l, V_r=V_r)
+    A_ = A
 
-    $if($TYPE eq "real")
+    call eigen_decompose_$SUFFIX(A_, lambda, V_l=V_l, V_r=V_r)
+
+    $if($TYPE eq 'real')
     exp_At = REAL(matrix_exp_eigen(lambda, V_l, V_r, t))
     $else
     exp_At = matrix_exp_eigen(lambda, V_l, V_r, t)
