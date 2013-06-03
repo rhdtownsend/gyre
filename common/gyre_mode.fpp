@@ -132,6 +132,11 @@ contains
 
     this%y = this%y/SQRT(this%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
+    ! Set up the coefficient cache
+
+    call this%bc%fill_cache(x)
+    call this%bc%enable_cache()
+
     ! Finish
 
     return
