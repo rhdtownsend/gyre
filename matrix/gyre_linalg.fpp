@@ -123,17 +123,17 @@ contains
     integer     :: i
     integer     :: ind(SIZE(A, 1))
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-    $ASSERT(SIZE(lambda) == SIZE(A, 1),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(lambda),SIZE(A, 1))
 
     if(PRESENT(V_l)) then
-       $ASSERT(SIZE(V_l, 1) == SIZE(A, 1),Dimension mismatch)
-       $ASSERT(SIZE(V_l, 2) == SIZE(A, 2),Dimension mismatch)
+       $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(A, 2))
     endif
     
     if(PRESENT(V_r)) then
-       $ASSERT(SIZE(V_r, 1) == SIZE(A, 1),Dimension mismatch)
-       $ASSERT(SIZE(V_r, 2) == SIZE(A, 2),Dimension mismatch)
+       $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(A, 2))
     endif
 
     if(PRESENT(sort)) then
@@ -261,17 +261,17 @@ contains
     integer     :: i
     integer     :: ind(SIZE(A, 1))
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-    $ASSERT(SIZE(lambda) == SIZE(A, 1),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(lambda),SIZE(A, 1))
 
     if(PRESENT(V_l)) then
-       $ASSERT(SIZE(V_l, 1) == SIZE(A, 1),Dimension mismatch)
-       $ASSERT(SIZE(V_l, 2) == SIZE(A, 2),Dimension mismatch)
+       $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(A, 2))
     endif
     
     if(PRESENT(V_r)) then
-       $ASSERT(SIZE(V_r, 1) == SIZE(A, 1),Dimension mismatch)
-       $ASSERT(SIZE(V_r, 2) == SIZE(A, 2),Dimension mismatch)
+       $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(A, 2))
     endif
 
     if(PRESENT(sort)) then
@@ -343,8 +343,8 @@ contains
     $TYPE(WP) :: Mx(SIZE(x), 1)
     $TYPE(WP) :: Mb(SIZE(b), 1)
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-    $ASSERT(SIZE(b) == SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(b),SIZE(A, 1))
 
     ! Solve the linear system A x = b
 
@@ -368,8 +368,8 @@ contains
     integer   :: ipiv(SIZE(A, 1))
     integer   :: info
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-    $ASSERT(SIZE(B, 1) == SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(B, 1),SIZE(A, 1))
 
     ! Solve the linear system A X = B
 
@@ -403,10 +403,10 @@ contains
     $TYPE(WP), intent(in) :: B(:,:)
     $TYPE(WP)             :: C(SIZE(A, 1),SIZE(A, 2))
     
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
 
-    $ASSERT(SIZE(B, 1) == SIZE(B, 2),Dimension mismatch)
-    $ASSERT(SIZE(B, 1) == SIZE(A, 1),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(B, 1),SIZE(B, 2))
+    $CHECK_BOUNDS(SIZE(B, 1),SIZE(A, 1))
 
     ! Calculate the commutator [A,B]
 
@@ -444,7 +444,7 @@ contains
     integer :: i_max
     integer :: k
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
 
     ! Measure the lower bandwidth
 
@@ -625,7 +625,7 @@ contains
     complex(WP) :: V_l(SIZE(A,1),SIZE(A,2))
     complex(WP) :: V_r(SIZE(A,1),SIZE(A,2))
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
 
     ! Calculate the matrix exponential exp(A*t)
 
@@ -660,11 +660,11 @@ contains
 
     integer :: i
 
-    $ASSERT(SIZE(V_l, 2) == SIZE(V_l, 1),Dimension mismatch)
-    $ASSERT(SIZE(V_r, 2) == SIZE(V_r, 1),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(V_l, 1))
+    $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(V_r, 1))
 
-    $ASSERT(SIZE(V_l, 1) == SIZE(lambda),Dimension mismatch)
-    $ASSERT(SIZE(V_r, 1) == SIZE(lambda),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(lambda))
+    $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(lambda))
 
     ! Calculate the matrix exponential exp(At) from the
     ! eigendecomposition of A
@@ -741,11 +741,11 @@ contains
     logical, intent(in)    :: mask_c(:)
     $TYPE(WP), intent(out) :: A_part(:,:)
 
-    $ASSERT(SIZE(mask_r) == SIZE(A, 1),Dimension mismatch)
-    $ASSERT(SIZE(mask_c) == SIZE(A, 2),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(mask_r),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(mask_c),SIZE(A, 2))
 
-    $ASSERT(COUNT(mask_r) == SIZE(A_part, 1),Dimension mismatch)
-    $ASSERT(COUNT(mask_c) == SIZE(A_part, 2),Dimension mismatch)
+    $CHECK_BOUNDS(COUNT(mask_r),SIZE(A_part, 1))
+    $CHECK_BOUNDS(COUNT(mask_c),SIZE(A_part, 2))
 
     ! Partition A according to the row and column masks
 
