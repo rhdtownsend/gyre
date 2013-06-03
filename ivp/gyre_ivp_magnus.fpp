@@ -147,7 +147,7 @@ contains
 
   subroutine solve_magnus (dOmega, dx, E_l, E_r, S, use_real)
 
-    complex(WP), intent(in)          :: dOmega(:,:)
+    complex(WP), intent(inout)       :: dOmega(:,:)
     real(WP), intent(in)             :: dx
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
@@ -155,6 +155,7 @@ contains
     logical, intent(in), optional    :: use_real
 
     logical     :: use_real_
+    real(WP)    :: dOmega_r(SIZE(dOmega, 1),SIZE(dOmega, 2))
     complex(WP) :: lambda(SIZE(dOmega, 1))
     complex(WP) :: V_l(SIZE(dOmega, 1),SIZE(dOmega, 1))
     complex(WP) :: V_r(SIZE(dOmega, 1),SIZE(dOmega, 1))
@@ -172,7 +173,8 @@ contains
     ! Decompose the Magnus slope matrix
 
     if(use_real_) then
-       call eigen_decompose(REAL(dOmega), lambda, V_l=V_l, V_r=V_r)
+       dOmega_r = REAL(dOmega)
+       call eigen_decompose(dOmega_r, lambda, V_l=V_l, V_r=V_r)
     else
        call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
     endif
@@ -327,7 +329,7 @@ contains
 
   subroutine recon_magnus (dOmega, x_a, x_b, y_a, y_b, x, y, use_real)
 
-    complex(WP), intent(in)       :: dOmega(:,:)
+    complex(WP), intent(inout)    :: dOmega(:,:)
     real(WP), intent(in)          :: x_a
     real(WP), intent(in)          :: x_b
     complex(WP), intent(in)       :: y_a(:)
@@ -337,6 +339,7 @@ contains
     logical, intent(in), optional :: use_real
 
     logical     :: use_real_
+    real(WP)    :: dOmega_r(SIZE(dOmega, 1),SIZE(dOmega, 2))
     complex(WP) :: lambda(SIZE(dOmega, 1))
     complex(WP) :: V_l(SIZE(dOmega, 1),SIZE(dOmega, 1))
     complex(WP) :: V_r(SIZE(dOmega, 1),SIZE(dOmega, 1))
@@ -350,14 +353,14 @@ contains
        use_real_ = .FALSE.
     endif
 
-
     ! Reconstruct the solution within the interval x_a -> x_b using
     ! the Magnus slope matrix
 
     ! Decompose the matrix
 
     if(use_real_) then
-       call eigen_decompose(REAL(dOmega), lambda, V_l=V_l, V_r=V_r)
+       dOmega_r = REAL(dOmega)
+       call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
     else
        call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
     endif
