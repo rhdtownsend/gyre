@@ -286,7 +286,7 @@ contains
 
     call this%build(omega)
 
-    discrim = this%sm%determinant()
+    discrim = this%sm%determinant(use_real=.TRUE.)
 
     ! Apply the normalization
 

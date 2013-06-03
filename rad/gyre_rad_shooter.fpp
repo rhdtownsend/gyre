@@ -105,7 +105,7 @@ contains
 
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, S) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
-       call solve(this%np%ivp_solver_type, this%jc, omega, x(k), x(k+1), E_l, E_r, S)
+       call solve(this%np%ivp_solver_type, this%jc, omega, x(k), x(k+1), E_l, E_r, S, use_real=.TRUE.)
        call sm%set_block(k, E_l, E_r, S)
     end do block_loop
 
@@ -169,7 +169,7 @@ contains
           x_in(:n_in) = x(i_in(:n_in))
 
           call recon(this%np%ivp_solver_type, this%jc, omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
-               x_in(:n_in), y_in(:,:n_in))
+               x_in(:n_in), y_in(:,:n_in), use_real=.TRUE.)
 
           y(:,i_in(:n_in)) = y_in(:,:n_in)
 
