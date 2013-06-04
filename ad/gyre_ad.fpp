@@ -35,7 +35,9 @@ program gyre_ad
   use gyre_ad_bvp
   use gyre_ad_search
   use gyre_mode
-  use gyre_frontend
+  use gyre_input
+  use gyre_output
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -62,36 +64,45 @@ program gyre_ad
 
   call init_parallel()
 
-  call write_header('gyre_ad ['//TRIM(version)//']', '=')
+  call set_log_level($str($LOG_LEVEL))
+
+  if(check_log_level('INFO')) then
+
+     write(OUTPUT_UNIT, 100) form_header('gyre_ad ['//TRIM(version)//']', '=')
+100  format(A)
+
+     write(OUTPUT_UNIT, 110) 'Compler         : ', COMPILER_VERSION()
+     write(OUTPUT_UNIT, 110) 'Compler options : ', COMPILER_OPTIONS()
+110  format(2A)
+
+     write(OUTPUT_UNIT, 120) 'OpenMP Threads  : ', OMP_SIZE_MAX
+     write(OUTPUT_UNIT, 120) 'MPI Processors  : ', MPI_SIZE
+120  format(A,I0)
+
+     write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
+
+  endif
+
+  ! Process arguments
 
   if(MPI_RANK == 0) then
-
-     write(OUTPUT_UNIT, 100) 'Compler         : ', COMPILER_VERSION()
-     write(OUTPUT_UNIT, 100) 'Compler options : ', COMPILER_OPTIONS()
-100  format(3A)
-
-     write(OUTPUT_UNIT, 110) 'OpenMP Threads  : ', OMP_SIZE_MAX
-     write(OUTPUT_UNIT, 110) 'MPI Processors  : ', MPI_SIZE
-110  format(A,I0)
 
      call parse_args(filename)
      
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-  endif
+     call read_coeffs(unit, x_bc, bc, tc)
+     call read_oscpar(unit, op)
+     call read_numpar(unit, np)
+     call read_shoot_gridpar(unit, shoot_gp)
+     call read_recon_gridpar(unit, recon_gp)
+     call read_scanpar(unit, bc, op, shoot_gp, x_bc, omega)
 
-  call write_header('Initialization', '=')
-
-  if(MPI_RANK == 0) then
-
-     call init_coeffs(unit, x_bc, bc, tc)
-     call init_oscpar(unit, op)
-     call init_numpar(unit, np)
-     call init_shoot_grid(unit, shoot_gp)
-     call init_recon_grid(unit, recon_gp)
-     call init_scan(unit, bc, op, shoot_gp, x_bc, omega)
-
-     call bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)
+     if (ALLOCATED(tc)) then
+        call bp%init(bc, op, np, shoot_gp, recon_gp, x_bc, tc)
+     else
+        call bp%init(bc, op, np, shoot_gp, recon_gp, x_bc)
+     endif
 
   end if
 

@@ -2,14 +2,14 @@
 
 # Variables
 
-TARGETS=gyre_mesa
+TARGETS=gyre_lib
 
 # Rules
 
-gyre_mesa.a : gyre_mesa.o
-	@echo AR gyre_mesa.a
-	@rm -f gyre_mesa.a
-	@ar cr gyre_mesa.a *.o
+gyre_lib.a : gyre_lib.o
+	@echo AR gyre_lib.a
+	@rm -f gyre_lib.a
+	@ar cr gyre_lib.a *.o
 
 # Flags
 
@@ -22,6 +22,6 @@ FPX3FLAGS=-DGFORTRAN_PR_56052 -DGFORTRAN_PR_56872
 
 # Include other makefiles
 
-SUBDIRS=../../core:../common:../ivp:../bvp:../coeffs:../matrix:../ad
+SUBDIRS=../../core:../common:../ivp:../bvp:../coeffs:../matrix:../ad:../rad:../frontend
 
 include ../../build/Make.inc

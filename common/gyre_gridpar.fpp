@@ -36,6 +36,7 @@ module gyre_gridpar
      real(WP)          :: x_o = 1._WP
      real(WP)          :: alpha_osc = 0._WP
      real(WP)          :: alpha_exp = 0._WP
+     real(WP)          :: alpha_thm = 0._WP
      real(WP)          :: omega_a = 0._WP
      real(WP)          :: omega_b = 0._WP
      real(WP)          :: s = 0
@@ -91,6 +92,7 @@ contains
 
     call bcast(gp%alpha_osc, root_rank)
     call bcast(gp%alpha_exp, root_rank)
+    call bcast(gp%alpha_thm, root_rank)
 
     call bcast(gp%omega_a, root_rank)
     call bcast(gp%omega_b, root_rank)

@@ -24,7 +24,6 @@ module gyre_mode
   use core_kinds
   use core_constants
   use core_parallel
-  use core_hgroup
 
   use gyre_bvp
   use gyre_base_coeffs
@@ -34,6 +33,7 @@ module gyre_mode
   use gyre_therm_coeffs_mpi
   $endif
   use gyre_oscpar
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -55,6 +55,7 @@ module gyre_mode
      private
      procedure, public :: init
      procedure, public :: classify
+     procedure, public :: freq
      procedure, public :: xi_r
      procedure, public :: xi_h
      procedure, public :: phip
@@ -66,6 +67,7 @@ module gyre_mode
      procedure, public :: delT
      procedure, public :: dE_dx
      procedure, public :: dW_dx
+     procedure, public :: C
      procedure, public :: E
      procedure, public :: E_norm
      procedure, public :: W
@@ -129,6 +131,11 @@ contains
     phase = ATAN2(AIMAG(this%y(1,this%n)), REAL(this%y(1,this%n)))
 
     this%y = this%y/SQRT(this%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+
+    ! Set up the coefficient cache
+
+    call this%bc%fill_cache(x)
+    call this%bc%enable_cache()
 
     ! Finish
 
@@ -233,6 +240,24 @@ contains
     return
 
   end subroutine classify
+
+!****
+
+  function freq (this, freq_units)
+
+    class(mode_t), intent(in)    :: this
+    character(LEN=*), intent(in) :: freq_units
+    complex(WP)                  :: freq
+
+    ! Calculate the frequency
+
+    freq = this%omega*freq_scale(this%bc, this%op, this%x(this%n), freq_units)
+
+    ! Finish
+    
+    return
+
+  end function freq
 
 !****
 
@@ -546,7 +571,37 @@ contains
 
   end function dW_dx
 
-!*****
+!****
+
+  function C (this)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: C
+
+    complex(WP) :: xi_r(this%n)
+    complex(WP) :: xi_h(this%n)
+
+    ! Calculate the first-order rotational splitting coefficient (Unno
+    ! et al. 1989, eqn. 19.46)
+
+    xi_r = this%xi_r()
+    xi_h = this%xi_h()
+
+    associate(x => this%x, U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+              l => this%op%l)
+
+      C = integrate(this%x, (2._WP*REAL(xi_r*CONJG(xi_h)) + ABS(xi_h)**2)*U*x**2/c_1)/ &
+          integrate(this%x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function C
+
+!****
 
   function E (this)
 

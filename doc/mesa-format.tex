@@ -1,0 +1,136 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% Page size
+
+\special{papersize=8.5in,11in}
+\setlength{\pdfpageheight}{\paperheight}
+\setlength{\pdfpagewidth}{\paperwidth}
+
+\setlength{\textwidth}{6.5in} 
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0in} 
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in} 
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in} 
+\setlength{\hoffset}{0in}
+\setlength{\voffset}{0in}
+
+\setlength{\abovecaptionskip}{0pt}
+\setlength{\belowcaptionskip}{0pt} 
+
+% Macros
+
+\newcommand{\diff}{\ensuremath{{\rm d}}}
+
+\newcommand{\Rstar}{\ensuremath{R_{\ast}}}
+\newcommand{\Mstar}{\ensuremath{M_{\ast}}}
+\newcommand{\Lrad}{\ensuremath{L_{\rm rad}}}
+\newcommand{\Lstar}{\ensuremath{L_{\ast}}}
+
+\newcommand{\cm}{\ensuremath{{\rm cm}}}
+\newcommand{\gram}{\ensuremath{{\rm g}}}
+\newcommand{\second}{\ensuremath{{\rm s}}}
+\newcommand{\dyne}{\ensuremath{{\rm dyn}}}
+\newcommand{\erg}{\ensuremath{{\rm erg}}}
+\newcommand{\kelvin}{\ensuremath{{\rm K}}}
+
+\begin{document}
+
+\section*{MESA Stellar Model Format}
+
+MESA-format files store data describing a stellar model in an ASCII
+text file. There are two variants of this format, `old' and `new',
+differentiated by their header lines.
+
+\subsection*{Old Variant}
+
+The first line of old-variant MESA files is a header with the following
+columns:
+
+\begin{table}[h!]
+\begin{tabular}{|l|c|l|l|} \hline
+Column & Variable & Datatype & Definition \\ \hline
+1      & $n$ & integer & Number of grid points \\
+2      & \Mstar & real & Stellar mass ($\gram$) \\
+3      & \Rstar & real & Stellar radius ($\cm$) \\
+4      & \Lstar & real & Stellar luminosity ($\erg\,\second^{-1}$) \\ \hline
+\end{tabular}
+\end{table}
+
+The subsequent $n$ lines contain the model data, one line per
+grid point extending from the center to the surface, with the following columns:
+
+\begin{table}[h!]
+\begin{tabular}{|l|c|l|l|} \hline
+Column & Name & Datatype & Definition \\ \hline
+1      & $k$ & integer & Grid point index ($k=1,\ldots,n$) \\
+2      & $r$ & real    & Radius ($\cm$) \\
+3      & $w$ & real    & $M_{r}/(\Mstar-M_{r})$ \\
+4      & $L_{r}$ & real & Luminosity ($\erg\,\second^{-1}$) \\
+5      & $p$ & real    & Total pressure ($\dyne\,\cm^{-2}$) \\
+6      & $T$ & real    & Temperature ($\kelvin$) \\
+7      & $\rho$ & real & Density ($\gram\,\cm^{-2}$) \\
+8      & $\nabla$ & real & $\diff \ln T/\diff \ln p$ \\
+9      & $N^{2}$ & real & Brunt-V\"ais\"al\"a frequency squared ($\second^{-2}$) \\
+10      & $c_{V}$ & real & Specific heat at constant volume ($\erg\,\gram^{-1}\,\kelvin^{-1}$) \\
+11     & $c_{p}$ & real & Specific heat at constant pressure ($\erg\,\gram^{-1}\,\kelvin^{-1}$) \\
+12     & $\chi_{T}$ & real & $(\partial \ln p/\partial \ln T)_{\rho} $ \\
+13     & $\chi_{\rho}$ & real & $(\partial \ln p/\partial \ln \rho)_{T} $ \\
+14     & $\kappa$ & real & Opacity ($\cm^{2}\,\gram^{-1}$) \\
+15     & $\kappa_{T}$ & real & $(\partial \ln \kappa/\partial \ln T)_{\rho}$ \\
+16     & $\kappa_{\rho}$ & real & $(\partial \ln \kappa/\partial \ln \rho)_{T}$ \\
+17     & $\epsilon$ & real & Energy generation/loss rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
+18     & $\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+19     & $\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection*{New Variant}
+
+The first line of new-variant MESA files is a header with the following
+columns:
+
+\begin{table}[h!]
+\begin{tabular}{|l|c|l|l|} \hline
+Column & Variable & Datatype & Definition \\ \hline
+1      & $n$ & integer & Number of grid points \\
+2      & \Mstar & real & Stellar mass ($\gram$) \\
+3      & \Rstar & real & Stellar radius ($\cm$) \\
+4      & \Lstar & real & Stellar luminosity ($\erg\,\second^{-1}$) \\
+5      & $n_{\rm col}$ & integer & Number of columns in subsequent lines \\ \hline
+\end{tabular}
+\end{table}
+
+The subsequent $n$ lines contain the model data, one line per
+grid point extending from the center to the surface, with the following columns:
+
+\begin{table}[h!]
+\begin{tabular}{|l|c|l|l|} \hline
+Column & Name & Datatype & Definition \\ \hline
+1      & $k$ & integer & Grid point index ($k=1,\ldots,n$) \\
+2      & $r$ & real    & Radius ($\cm$) \\
+3      & $w$ & real    & $M_{r}/(\Mstar-M_{r})$ \\
+4      & $L_{r}$ & real & Luminosity ($\erg\,\second^{-1}$) \\
+5      & $p$ & real    & Total pressure ($\dyne\,\cm^{-2}$) \\
+6      & $T$ & real    & Temperature ($\kelvin$) \\
+7      & $\rho$ & real & Density ($\gram\,\cm^{-2}$) \\
+8      & $\nabla$ & real & $\diff \ln T/\diff \ln p$ \\
+9      & $N^{2}$ & real & Brunt-V\"ais\"al\"a frequency squared ($\second^{-2}$) \\
+10     & $\Gamma_{1}$ & real & $(\partial \ln p/\partial \ln \rho)_{\rm ad}$ \\
+11     & $\nabla_{\rm ad}$ & real & $(\diff \ln T/\diff \ln p)_{\rm ad}$ \\
+12     & $\delta$ & real & $-(\partial \ln \rho/\partial \ln T)_{p}$  \\
+13     & $\kappa$ & real & Opacity ($\cm^{2}\,\gram^{-1}$) \\
+14     & $\kappa_{T}$ & real & $(\partial \ln \kappa/\partial \ln T)_{\rho}$ \\
+15     & $\kappa_{\rho}$ & real & $(\partial \ln \kappa/\partial \ln \rho)_{T}$ \\
+16     & $\epsilon$ & real & Energy generation/loss rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
+17     & $\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+18     & $\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+19     & $\Omega_{\rm rot}$ & real & Rotation angular velocity (${\rm rad}\,\second^{-1}$) \\  \hline
+\end{tabular}
+\end{table}
+
+\end{document}

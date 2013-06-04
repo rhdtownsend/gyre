@@ -24,10 +24,10 @@ module gyre_evol_therm_coeffs
   use core_kinds
   use core_constants
   use core_parallel
-  use core_hgroup
   use core_spline
 
   use gyre_therm_coeffs
+  use gyre_cocache
 
   use ISO_FORTRAN_ENV
 
@@ -44,34 +44,41 @@ module gyre_evol_therm_coeffs
   
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure :: get_${NAME}_1
-    procedure :: get_${NAME}_v
+    procedure :: ${NAME}_1
+    procedure :: ${NAME}_v
   $endsub
 
   type, extends(therm_coeffs_t) :: evol_therm_coeffs_t
+     type(cocache_t) :: cc
      $VAR_DECL(c_rad)
-     $VAR_DECL(c_gen)
      $VAR_DECL(c_thm)
      $VAR_DECL(c_dif)
+     $VAR_DECL(c_eps_ad)
+     $VAR_DECL(c_eps_S)
      $VAR_DECL(nabla)
      $VAR_DECL(kappa_ad)
      $VAR_DECL(kappa_S)
      $VAR_DECL(epsilon_ad)
      $VAR_DECL(epsilon_S)
      $VAR_DECL(tau_thm)
+     logical :: cc_enabled
    contains
      procedure :: init
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
-     $PROC_DECL(c_gen)
      $PROC_DECL(c_thm)
      $PROC_DECL(c_dif)
+     $PROC_DECL(c_eps_ad)
+     $PROC_DECL(c_eps_S)
      $PROC_DECL(nabla)
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
      $PROC_DECL(epsilon_ad)
      $PROC_DECL(epsilon_S)
      $PROC_DECL(tau_thm)
+     procedure, public :: enable_cache
+     procedure, public :: disable_cache
+     procedure, public :: fill_cache
   end type evol_therm_coeffs_t
 
   ! Interfaces
@@ -97,10 +104,10 @@ module gyre_evol_therm_coeffs
 
 contains 
 
-  subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, &
-                   Gamma_1, nabla_ad, delta, nabla, &
-                   kappa, kappa_rho, kappa_T, &
-                   epsilon, epsilon_rho, epsilon_T, deriv_type)
+  recursive subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, &
+                             Gamma_1, nabla_ad, delta, nabla, &
+                             kappa, kappa_rho, kappa_T, &
+                             epsilon, epsilon_rho, epsilon_T, deriv_type, add_center)
 
     class(evol_therm_coeffs_t), intent(out) :: this
     real(WP), intent(in)                    :: G
@@ -123,19 +130,22 @@ contains
     real(WP), intent(in)                    :: epsilon_rho(:)
     real(WP), intent(in)                    :: epsilon_T(:)
     character(LEN=*), intent(in)            :: deriv_type
+    logical, intent(in), optional           :: add_center
 
+    logical  :: add_center_
     integer  :: n
     real(WP) :: V_x2(SIZE(r))
     real(WP) :: V(SIZE(r))
     real(WP) :: c_p(SIZE(r))
     real(WP) :: c_rad(SIZE(r))
-    real(WP) :: c_gen(SIZE(r))
     real(WP) :: c_thm(SIZE(r))
     real(WP) :: c_dif(SIZE(r))
     real(WP) :: kappa_ad(SIZE(r))
     real(WP) :: kappa_S(SIZE(r))
     real(WP) :: epsilon_ad(SIZE(r))
     real(WP) :: epsilon_S(SIZE(r))
+    real(WP) :: c_eps_ad(SIZE(r))
+    real(WP) :: c_eps_S(SIZE(r))
     real(WP) :: x(SIZE(r))
     real(WP) :: dtau_thm(SIZE(r))
     real(WP) :: tau_thm(SIZE(r))
@@ -156,66 +166,123 @@ contains
     $CHECK_BOUNDS(SIZE(epsilon_T),SIZE(r))
     $CHECK_BOUNDS(SIZE(epsilon_rho),SIZE(r))
 
-    ! Perform basic validations
+    if(PRESENT(add_center)) then
+       add_center_ = add_center
+    else
+       add_center_ = .FALSE.
+    endif
 
-    $ASSERT(r(1) == 0._WP,First grid point not at center)
-    $ASSERT(m(1) == 0._WP,First grid point not at center)
+    ! See if we need a central point
 
-    ! Calculate coefficients
+    if(add_center_) then
 
-    n = SIZE(r)
+       ! Add a central point and initialize using recursion
+       
+       call this%init(G, M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
+                      y_centered(r, p), y_centered(r, rho), y_centered(r, T), &
+                      y_centered(r, Gamma_1), y_centered(r, nabla_ad), y_centered(r, delta), y_centered(r, nabla), &
+                      y_centered(r, kappa), y_centered(r, kappa_rho), y_centered(r, kappa_T), &
+                      y_centered(r, epsilon), y_centered(r, epsilon_rho), y_centered(r, epsilon_T), &
+                      deriv_type, .FALSE.)
 
-    where(r /= 0._WP)
-       V_x2 = G*m*rho/(p*r*(r/R_star)**2)
-    elsewhere
-       V_x2 = 4._WP*PI*G*rho**2*R_star**2/(3._WP*p)
-    end where
+    else
 
-    x = r/R_star
+       ! Perform basic validations
 
-    V = V_x2*x**2
+       $ASSERT(r(1) == 0._WP,First grid point not at center)
+       $ASSERT(m(1) == 0._WP,First grid point not at center)
 
-    c_p = p*delta/(rho*T*nabla_ad)
+       $ASSERT(ALL(r(2:) >= r(:SIZE(r)-1)),Non-monotonic radius data)
+       $ASSERT(ALL(m(2:) >= m(:SIZE(m)-1)),Non-monotonic mass data)
 
-    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho*L_star)
-    c_gen = 4._WP*PI*rho*epsilon*R_star**3/L_star
-    c_thm = 4._WP*PI*rho*T*c_p*SQRT(G*M_star/R_star**3)*R_star**3/L_star
+       ! Calculate coefficients
 
-    kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
-    kappa_S = kappa_T - delta*kappa_rho
+       n = SIZE(r)
 
-    epsilon_ad = nabla_ad*epsilon_T + epsilon_rho/Gamma_1
-    epsilon_S = epsilon_T - delta*epsilon_rho
+       where(r /= 0._WP)
+          V_x2 = G*m*rho/(p*r*(r/R_star)**2)
+       elsewhere
+          V_x2 = 4._WP*PI*G*rho**2*R_star**2/(3._WP*p)
+       end where
 
-    c_dif = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dlny_dlnx(x, nabla_ad)+V)
+       x = r/R_star
 
-    dtau_thm = 4._WP*PI*rho*r**2*T*c_p*SQRT(G*M_star/R_star**3)/L_star
+       V = V_x2*x**2
 
-    tau_thm(n) = 0._WP
+       c_p = p*delta/(rho*T*nabla_ad)
 
-    do i = n-1,1,-1
-       tau_thm(i) = tau_thm(i+1) + &
-            0.5_WP*(dtau_thm(i+1) + dtau_thm(i))*(r(i+1) - r(i))
-    end do
+       c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho*L_star)
+       c_thm = 4._WP*PI*rho*T*c_p*SQRT(G*M_star/R_star**3)*R_star**3/L_star
 
-    ! Initialize the therm_coeffs
+       kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
+       kappa_S = kappa_T - delta*kappa_rho
 
-    call this%sp_c_rad%init(x, c_rad, deriv_type, dy_dx_a=0._WP)
-    call this%sp_c_gen%init(x, c_gen, deriv_type, dy_dx_a=0._WP)
-    call this%sp_c_thm%init(x, c_thm, deriv_type, dy_dx_a=0._WP)
-    call this%sp_c_dif%init(x, c_dif, deriv_type, dy_dx_a=0._WP)
-    call this%sp_nabla%init(x, nabla, deriv_type, dy_dx_a=0._WP)
-    call this%sp_kappa_S%init(x, kappa_S, deriv_type, dy_dx_a=0._WP)
-    call this%sp_kappa_ad%init(x, kappa_ad, deriv_type, dy_dx_a=0._WP)
-    call this%sp_epsilon_S%init(x, epsilon_S, deriv_type, dy_dx_a=0._WP)
-    call this%sp_epsilon_ad%init(x, epsilon_ad, deriv_type, dy_dx_a=0._WP)
-    call this%sp_tau_thm%init(x, tau_thm, deriv_type, dy_dx_a=0._WP)
+       c_dif = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dlny_dlnx(x, nabla_ad)+V)
+
+       epsilon_ad = nabla_ad*epsilon_T + epsilon_rho/Gamma_1
+       epsilon_S = epsilon_T - delta*epsilon_rho
+
+       c_eps_ad = 4._WP*PI*rho*epsilon_ad*R_star**3/L_star
+       c_eps_S = 4._WP*PI*rho*epsilon_S*R_star**3/L_star
+
+       dtau_thm = 4._WP*PI*rho*r**2*T*c_p*SQRT(G*M_star/R_star**3)/L_star
+
+       tau_thm(n) = 0._WP
+
+       do i = n-1,1,-1
+          tau_thm(i) = tau_thm(i+1) + &
+               0.5_WP*(dtau_thm(i+1) + dtau_thm(i))*(r(i+1) - r(i))
+       end do
+
+       ! Initialize the therm_coeffs
+
+       call this%sp_c_rad%init(x, c_rad, deriv_type, dy_dx_a=0._WP)
+       call this%sp_c_thm%init(x, c_thm, deriv_type, dy_dx_a=0._WP)
+       call this%sp_c_dif%init(x, c_dif, deriv_type, dy_dx_a=0._WP)
+       call this%sp_c_eps_ad%init(x, c_eps_ad, deriv_type, dy_dx_a=0._WP)
+       call this%sp_c_eps_S%init(x, c_eps_S, deriv_type, dy_dx_a=0._WP)
+       call this%sp_nabla%init(x, nabla, deriv_type, dy_dx_a=0._WP)
+       call this%sp_kappa_S%init(x, kappa_S, deriv_type, dy_dx_a=0._WP)
+       call this%sp_kappa_ad%init(x, kappa_ad, deriv_type, dy_dx_a=0._WP)
+       call this%sp_epsilon_S%init(x, epsilon_S, deriv_type, dy_dx_a=0._WP)
+       call this%sp_epsilon_ad%init(x, epsilon_ad, deriv_type, dy_dx_a=0._WP)
+       call this%sp_tau_thm%init(x, tau_thm, deriv_type, dy_dx_a=0._WP)
+
+       this%cc_enabled = .FALSE.
+
+    endif
 
     ! Finish
 
     return
 
   contains
+
+    function y_centered (x, y)
+      
+      real(WP), intent(in) :: x(:)
+      real(WP), intent(in) :: y(:)
+      real(WP)             :: y_centered(SIZE(y)+1)
+
+      real(WP) :: y_center
+
+      $CHECK_BOUNDS(SIZE(x),SIZE(y))
+
+      $ASSERT(SIZE(y) >= 2,Insufficient grid points)
+
+      ! Use parabola fitting to interpolate y at the center
+      
+      y_center = (x(2)**2*y(1) - x(1)**2*y(2))/(x(2)**2 - x(1)**2)
+
+      ! Create the centered array
+
+      y_centered = [y_center,y]
+
+      ! Finish
+
+      return
+
+    end function y_centered
 
     function dlny_dlnx (x, y)
 
@@ -257,16 +324,21 @@ contains
 
     ! Broadcast the therm_coeffs
 
+    call bcast(tc%cc, root_rank)
+
     call bcast(tc%sp_c_rad, root_rank)
-    call bcast(tc%sp_c_gen, root_rank)
     call bcast(tc%sp_c_thm, root_rank)
     call bcast(tc%sp_c_dif, root_rank)
+    call bcast(tc%sp_c_eps_ad, root_rank)
+    call bcast(tc%sp_c_eps_S, root_rank)
     call bcast(tc%sp_nabla, root_rank)
     call bcast(tc%sp_kappa_S, root_rank)
     call bcast(tc%sp_kappa_ad, root_rank)
     call bcast(tc%sp_epsilon_S, root_rank)
     call bcast(tc%sp_epsilon_ad, root_rank)
     call bcast(tc%sp_tau_thm, root_rank)
+
+    call bcast(tc%cc_enabled, root_rank)
 
     ! Finish
 
@@ -281,8 +353,9 @@ contains
   $define $PROC $sub
 
   $local $NAME $1
+  $local $I_CC $2
 
-  function get_${NAME}_1 (this, x) result ($NAME)
+  function ${NAME}_1 (this, x) result ($NAME)
 
     class(evol_therm_coeffs_t), intent(in) :: this
     real(WP), intent(in)                   :: x
@@ -290,17 +363,21 @@ contains
 
     ! Interpolate $NAME
 
-    $NAME = this%sp_$NAME%interp(x)
+    if(this%cc_enabled) then
+       $NAME = this%cc%lookup($I_CC, x)
+    else
+       $NAME = this%sp_$NAME%interp(x)
+    endif
 
     ! Finish
 
     return
 
-  end function get_${NAME}_1
+  end function ${NAME}_1
 
 !****
 
-  function get_${NAME}_v (this, x) result ($NAME)
+  function ${NAME}_v (this, x) result ($NAME)
 
     class(evol_therm_coeffs_t), intent(in) :: this
     real(WP), intent(in)                   :: x(:)
@@ -314,28 +391,30 @@ contains
 
     return
 
-  end function get_${NAME}_v
+  end function ${NAME}_v
 
   $endsub
 
-  $PROC(c_rad)
-  $PROC(c_gen)
-  $PROC(c_thm)
-  $PROC(c_dif)
-  $PROC(nabla)
-  $PROC(kappa_S)
-  $PROC(kappa_ad)
-  $PROC(epsilon_S)
-  $PROC(epsilon_ad)
-  $PROC(tau_thm)
+  $PROC(c_rad,1)
+  $PROC(c_thm,2)
+  $PROC(c_dif,3)
+  $PROC(c_eps_ad,4)
+  $PROC(c_eps_S,5)
+  $PROC(nabla,6)
+  $PROC(kappa_S,7)
+  $PROC(kappa_ad,8)
+  $PROC(epsilon_S,9)
+  $PROC(epsilon_ad,10)
+  $PROC(tau_thm,11)
 
 !****
 
   $define $DPROC $sub
 
   $local $NAME $1
+  $local $I_CC $2
 
-  function get_d${NAME}_1 (this, x) result (d$NAME)
+  function d${NAME}_1 (this, x) result (d$NAME)
 
     class(evol_therm_coeffs_t), intent(in) :: this
     real(WP), intent(in)                   :: x
@@ -343,21 +422,25 @@ contains
 
     ! Evaluate dln$NAME/dlnx
 
-    if(x > 0._WP) then
-       d$NAME = x*this%sp_$NAME%deriv(x)/this%sp_$NAME%interp(x)
+    if(this%cc_enabled) then
+       d$NAME = this%cc%lookup($I_CC, x)
     else
-       d$NAME = 0._WP
+       if(x > 0._WP) then
+          d$NAME = x*this%sp_$NAME%deriv(x)/this%sp_$NAME%interp(x)
+       else
+          d$NAME = 0._WP
+       endif
     endif
 
     ! Finish
 
     return
 
-  end function get_d${NAME}_1
+  end function d${NAME}_1
 
 !****
 
-  function get_d${NAME}_v (this, x) result (d$NAME)
+  function d${NAME}_v (this, x) result (d$NAME)
 
     class(evol_therm_coeffs_t), intent(in) :: this
     real(WP), intent(in)                   :: x(:)
@@ -375,10 +458,74 @@ contains
 
     return
 
-  end function get_d${NAME}_v
+  end function d${NAME}_v
 
   $endsub
 
-  $DPROC(c_rad)
+  $DPROC(c_rad,12)
+
+!****
+
+  subroutine enable_cache (this)
+
+    class(evol_therm_coeffs_t), intent(inout) :: this
+
+    ! Enable the coefficient cache
+
+    this%cc_enabled = .TRUE.
+
+    ! Finish
+
+    return
+
+  end subroutine enable_cache
+
+!****
+
+  subroutine disable_cache (this)
+
+    class(evol_therm_coeffs_t), intent(inout) :: this
+
+    ! Disable the coefficient cache
+
+    this%cc_enabled = .FALSE.
+
+    ! Finish
+
+    return
+
+  end subroutine disable_cache
+
+!****
+
+  subroutine fill_cache (this, x)
+
+    class(evol_therm_coeffs_t), intent(inout) :: this
+    real(WP), intent(in)                      :: x(:)
+
+    real(WP) :: c(12,SIZE(x))
+
+    ! Fill the coefficient cache
+
+    c(1,:) = this%c_rad(x)
+    c(2,:) = this%c_thm(x)
+    c(3,:) = this%c_dif(x)
+    c(4,:) = this%c_eps_ad(x)
+    c(5,:) = this%c_eps_S(x)
+    c(6,:) = this%nabla(x)
+    c(7,:) = this%kappa_S(x)
+    c(8,:) = this%kappa_ad(x)
+    c(9,:) = this%epsilon_S(x)
+    c(10,:) = this%epsilon_ad(x)
+    c(11,:) = this%tau_thm(x)
+
+    c(12,:) = this%dc_rad(x)
+
+    call this%cc%init(x, c)
+
+    ! Finish
+
+    return
+  end subroutine fill_cache
 
 end module gyre_evol_therm_coeffs

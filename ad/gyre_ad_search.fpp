@@ -28,8 +28,8 @@ module gyre_ad_search
   use gyre_ad_bvp
   use gyre_ad_discfunc
   use gyre_mode
-  use gyre_frontend
   use gyre_ext_arith
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -78,7 +78,10 @@ contains
 
     ! Process each bracket to find roots
 
-    call write_header('Adiabatic Mode Finding', '=')
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) form_header('Adiabatic Mode Finding', '=')
+100    format(A)
+    endif
 
     call df%init(bp)
 
@@ -120,8 +123,10 @@ contains
 
        call md(i)%classify(n_p, n_g)
 
-       write(OUTPUT_UNIT, 100) 'Mode :', n_p-n_g, n_p, n_g, omega_root, ABS(discrim_root), n_iter
-100    format(A,3(2X,I6),3(2X,E23.16),2X,I4)
+       if(check_log_level('INFO', MPI_RANK)) then
+          write(OUTPUT_UNIT, 110) 'Mode :', n_p-n_g, n_p, n_g, omega_root, ABS(discrim_root), n_iter
+110       format(A,3(2X,I6),3(2X,E23.16),2X,I4)
+       endif
 
     end do root_loop
 
@@ -130,9 +135,10 @@ contains
     $endif
 
     call SYSTEM_CLOCK(c_end)
-    if(MPI_RANK == 0) then
-       write(OUTPUT_UNIT, 110) 'Completed ad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-110    format(/A,1X,F10.3,1X,A)
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Completed ad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+120    format(/A,1X,F10.3,1X,A)
     endif
 
     ! Broadcast data
@@ -178,7 +184,10 @@ contains
 
     ! Calculate the discriminant on the omega abscissa
 
-    call write_header('Adiabatic Discriminant Scan', '=')
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) form_header('Adiabatic Discriminant Scan', '=')
+100    format(A)
+    endif
 
     n_omega = SIZE(omega)
 
@@ -194,8 +203,10 @@ contains
 
        discrim(i) = ext_real(bp%discrim(CMPLX(omega(i), KIND=WP)))
 
-       write(OUTPUT_UNIT, 100) 'Eval:', omega(i), fraction(discrim(i)), exponent(discrim(i))
-100    format(A,2X,E23.16,2X,F19.16,2X,I7)
+       if(check_log_level('DEBUG', MPI_RANK)) then
+          write(OUTPUT_UNIT, 110) 'Eval:', omega(i), fraction(discrim(i)), exponent(discrim(i))
+110       format(A,2X,E23.16,2X,F19.16,2X,I7)
+       endif
 
     end do discrim_loop
 
@@ -213,9 +224,10 @@ contains
     $endif
 
     call SYSTEM_CLOCK(c_end)
-    if(MPI_RANK == 0) then
-       write(OUTPUT_UNIT, 110) 'Completed ad scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-110    format(/A,1X,F10.3,1X,A)
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Completed ad scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+120    format(/A,1X,F10.3,1X,A)
     endif
 
     ! Scan for root brackets

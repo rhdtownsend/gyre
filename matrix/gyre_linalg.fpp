@@ -22,10 +22,8 @@ module gyre_linalg
   ! Uses
 
   use core_kinds
+  use core_linalg
   use core_order
-
-  use f77_lapack
-  use f95_lapack
 
   use ISO_FORTRAN_ENV
 
@@ -34,25 +32,6 @@ module gyre_linalg
   implicit none
 
   ! Interfaces
-
-  interface lu_decompose
-     module procedure lu_decompose_r
-     module procedure lu_decompose_c
-     module procedure lu_decompose_banded_r
-     module procedure lu_decompose_banded_c
-  end interface lu_decompose
-
-  interface lu_backsub
-     module procedure lu_backsub_r
-     module procedure lu_backsub_c
-     module procedure lu_backsub_banded_r
-     module procedure lu_backsub_banded_c
-  end interface lu_backsub
-
-  interface lu_null_vector
-     module procedure lu_null_vector_banded_r
-     module procedure lu_null_vector_banded_c
-  end interface lu_null_vector
 
   interface eigen_decompose
      module procedure eigen_decompose_r
@@ -65,11 +44,6 @@ module gyre_linalg
      module procedure linear_solve_mat_r
      module procedure linear_solve_mat_c
   end interface linear_solve
-
-  interface determinant
-     module procedure determinant_r
-     module procedure determinant_c
-  end interface determinant
 
   interface commutator
      module procedure commutator_r
@@ -112,12 +86,8 @@ module gyre_linalg
 
   private
 
-  public :: lu_decompose
-  public :: lu_backsub
-  public :: lu_null_vector
   public :: eigen_decompose
   public :: linear_solve
-  public :: determinant
   public :: commutator
   public :: measure_bandwidth
   public :: diagonal
@@ -132,287 +102,37 @@ module gyre_linalg
 
 contains
 
-  $define $LU_DECOMPOSE $sub
-
-  $local $SUFFIX $1
-  $local $TYPE $2
-
-  subroutine lu_decompose_$SUFFIX (A, ipiv, allow_singular)
-
-    $TYPE(WP), intent(inout)       :: A(:,:)
-    integer, intent(out), optional :: ipiv(:)
-    logical, intent(in), optional  :: allow_singular
-
-    logical :: allow_singular_
-    integer :: ipiv_(SIZE(A, 1))
-    integer :: info
-
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-
-    if(PRESENT(ipiv)) then
-       $ASSERT(SIZE(ipiv) == SIZE(A, 1),Dimension mismatch)
-    endif
-
-    if(PRESENT(allow_singular)) then
-       allow_singular_ = allow_singular
-    else
-       allow_singular_ = .FALSE.
-    endif
-
-    ! LU decompose A
-
-    call LA_GETRF(SIZE(A, 1), SIZE(A, 2), A, SIZE(A, 1), ipiv_, info)
-    if(allow_singular_) then
-       $ASSERT(info >= 0,Negative return from LA_GETRF)
-    else
-       $ASSERT(info == 0,Non-zero return from LA_GETRF)
-    endif
-
-    if(PRESENT(ipiv)) then
-       ipiv = ipiv_
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine lu_decompose_$SUFFIX
-
-  $endsub
-
-  $LU_DECOMPOSE(r,real)
-  $LU_DECOMPOSE(c,complex)
-
-!****
-
-  $define $LU_DECOMPOSE_BANDED $sub
-
-  $local $SUFFIX $1
-  $local $TYPE $2
-
-  subroutine lu_decompose_banded_$SUFFIX (A_b, n_l, n_u, ipiv)
-
-    $TYPE(WP), intent(inout)       :: A_b(:,:)
-    integer, intent(in)            :: n_l
-    integer, intent(in)            :: n_u
-    integer, intent(out), optional :: ipiv(:)
-
-    integer :: ipiv_(SIZE(A_b, 2))
-    integer :: info
-
-    $ASSERT(SIZE(A_b, 1) == 2*n_l+n_u+1,Dimension mismatch)
-
-    if(PRESENT(ipiv)) then
-       $ASSERT(SIZE(ipiv) == SIZE(A_b, 2),Dimension mismatch)
-    endif
-
-    ! LU decompose the banded (assumed-square) A_b
-
-    call LA_GBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv_, info)
-    $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from LA_GBTRF)
-
-    if(PRESENT(ipiv)) then
-       ipiv = ipiv_
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine lu_decompose_banded_$SUFFIX
-
-  $endsub
-
-  $LU_DECOMPOSE_BANDED(r,real)
-  $LU_DECOMPOSE_BANDED(c,complex)
-
-!****
-
-  $define $LU_BACKSUB $sub
-
-  $local $SUFFIX $1
-  $local $TYPE $2
-
-  subroutine lu_backsub_$SUFFIX (A, ipiv, B)
-
-    $TYPE(WP), intent(in)    :: A(:,:)
-    integer, intent(in)      :: ipiv(:)
-    $TYPE(WP), intent(inout) :: B(:,:)
-
-    $TYPE(WP) :: A_(SIZE(A, 1),SIZE(A, 2))
-    integer   :: info
-
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-    $ASSERT(SIZE(ipiv) == SIZE(A, 1),Dimension mismatch)
-
-    $ASSERT(SIZE(B, 1) == SIZE(A, 2),Dimension mismatch)
-
-    ! Backsubstitute to solve the linear system A X = B
-
-    A_ = A
-
-    call LA_GETRS('N', SIZE(A_, 1), SIZE(B, 2), A_, SIZE(A_, 1), ipiv, B, SIZE(B, 1), info)
-    $ASSERT(info == 0,Non-zero return from LA_GETRS)
-
-    ! Finish
-
-    return
-
-  end subroutine lu_backsub_$SUFFIX
-
-  $endsub
-
-  $LU_BACKSUB(r, real)
-  $LU_BACKSUB(c, complex)
-
-!****
-
-  $define $LU_BACKSUB_BANDED $sub
-
-  $local $SUFFIX $1
-  $local $TYPE $2
-
-  subroutine lu_backsub_banded_$SUFFIX (A_b, n_l, n_u, ipiv, B)
-
-    $TYPE(WP), intent(in)    :: A_b(:,:)
-    integer, intent(in)      :: n_l
-    integer, intent(in)      :: n_u
-    integer, intent(in)      :: ipiv(:)
-    $TYPE(WP), intent(inout) :: B(:,:)
-
-    $TYPE(WP) :: A_b_(SIZE(A_b, 1),SIZE(A_b, 2))
-    integer   :: info
-
-    $ASSERT(SIZE(A_b, 1) == 2*n_l+n_u+1,Dimension mismatch)
-
-    $ASSERT(SIZE(ipiv) == SIZE(A_b, 2),Dimension mismatch)
-
-    $ASSERT(SIZE(B, 1) == SIZE(A_b, 2),Dimension mismatch)
-
-    ! Backsubstitute to solve the banded linear system A_b B = B'
-
-    A_b_ = A_b
-
-    call LA_GBTRS('N', SIZE(A_b_, 2), n_l, n_u, SIZE(B, 2), A_b_, SIZE(A_b_, 1), ipiv, B, SIZE(B, 1), info)
-    $ASSERT(info == 0,Non-zero return from LA_GBTRS)
-
-    ! Finish
-
-    return
-
-  end subroutine lu_backsub_banded_$SUFFIX
-
-  $endsub
-
-  $LU_BACKSUB_BANDED(r, real)
-  $LU_BACKSUB_BANDED(c, complex)
-
-!****
-
-  $define $LU_NULL_VECTOR_BANDED $sub
-
-  $local $SUFFIX $1
-  $local $TYPE $2
-
-  subroutine lu_null_vector_banded_$SUFFIX (A_b, n_l, n_u, i, b)
-
-    $TYPE(WP), intent(in)  :: A_b(:,:)
-    integer, intent(in)    :: n_l
-    integer, intent(in)    :: n_u
-    integer, intent(in)    :: i
-    $TYPE(WP), intent(out) :: b(:)
-
-    $TYPE(WP) :: A_r(2*n_l+n_u+1,i-1)
-    integer   :: j
-    integer   :: ipiv(i-1)
-    integer   :: n_lu
-    integer   :: info
-
-    $ASSERT(SIZE(A_b, 1) == 2*n_l+n_u+1,Dimension mismatch)
-
-    $ASSERT(SIZE(b) == SIZE(A_b, 2),Dimension mismatch)
-
-    ! Backsubstitute to solve the banded linear system A_b b = 0, for
-    ! singular (rank = n-1) A (i.e., find the null vector of A_b). The
-    ! singularity lies in the U(i,i) element of the (banded) LU
-    ! decomposition of A; this element is not actually used, and
-    ! assumed (without checking) to be zero
-
-    if(i > 1) then 
-
-       ! Set up the reduced LU system
-
-       A_r(:n_l+n_u+1,:) = A_b(:n_l+n_u+1,:i-1)
-       A_r(n_l+n_u+2:,:) = 0._WP
-
-       ! The following line seems to cause out-of-memory errors when
-       ! compiled with gfortran 4.8.0 on MVAPICH systems. Very puzzling!
-       !
-       ! ipiv = [(j,j=1,i-1)]
-
-       do j = 1,i-1
-          ipiv(j) = j
-       enddo
-
-       ! Solve for the 1:i-1 components of b
-
-       n_lu = MIN(n_l+n_u, i-1)
-
-       b(:i-n_lu-1) = 0._WP
-       b(i-n_lu:i-1) = -A_b(n_l+n_u+1-n_lu:n_l+n_u,i)
-
-       call LA_GBTRS('N', SIZE(A_r, 2), n_l, n_u, 1, A_r, SIZE(A_r, 1), ipiv, b(:i-1), i-1, info)
-       $ASSERT(info == 0,Non-zero return from LA_GBTRS)
-
-    end if
-       
-    ! Fill in the other parts of b
-    
-    b(i) = 1._WP
-    b(i+1:) = 0._WP
-
-    ! Finish
-
-    return
-
-  end subroutine lu_null_vector_banded_$SUFFIX
-
-  $endsub
-
-  $LU_NULL_VECTOR_BANDED(r,real)
-  $LU_NULL_VECTOR_BANDED(c,complex)
-
-!****
-
   subroutine eigen_decompose_r (A, lambda, V_l, V_r, sort)
 
-    real(WP), intent(in)               :: A(:,:)
+    real(WP), intent(inout)            :: A(:,:)
     complex(WP), intent(out)           :: lambda(:)
     complex(WP), intent(out), optional :: V_l(:,:)
     complex(WP), intent(out), optional :: V_r(:,:)
     logical, intent(in), optional      :: sort
 
     logical     :: sort_
-    real(WP)    :: A_(SIZE(A, 1),SIZE(A, 2))
     real(WP)    :: lambda_re(SIZE(lambda))
     real(WP)    :: lambda_im(SIZE(lambda))
     real(WP)    :: V_l_r(SIZE(A, 1),SIZE(A, 2))
     real(WP)    :: V_r_r(SIZE(A, 1),SIZE(A, 2))
+    real(WP)    :: work(4*SIZE(A,1))
+    integer     :: info
     complex(WP) :: V_l_c(SIZE(A, 1),SIZE(A, 2))
     complex(WP) :: V_r_c(SIZE(A, 1),SIZE(A, 2))
+    integer     :: i
     integer     :: ind(SIZE(A, 1))
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-    $ASSERT(SIZE(lambda) == SIZE(A, 1),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(lambda),SIZE(A, 1))
 
     if(PRESENT(V_l)) then
-       $ASSERT(SIZE(V_l, 1) == SIZE(A, 1),Dimension mismatch)
-       $ASSERT(SIZE(V_l, 2) == SIZE(A, 2),Dimension mismatch)
+       $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(A, 2))
     endif
     
     if(PRESENT(V_r)) then
-       $ASSERT(SIZE(V_r, 1) == SIZE(A, 1),Dimension mismatch)
-       $ASSERT(SIZE(V_r, 2) == SIZE(A, 2),Dimension mismatch)
+       $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(A, 2))
     endif
 
     if(PRESENT(sort)) then
@@ -423,39 +143,48 @@ contains
 
     ! Perform the eigendecomposition of A
 
-    A_ = A
+    if(SIZE(A, 1) == 2) then
 
-    if(PRESENT(V_l) .OR. PRESENT(V_r)) then
+       ! Special case: n == 2
 
-       call LA_GEEV(A_, lambda_re, lambda_im, VL=V_l_r, VR=V_r_r)
-
-       call reconstruct_eigenvector(lambda_re, lambda_im, V_l_r, V_l_c)
-       call reconstruct_eigenvector(lambda_re, lambda_im, V_r_r, V_r_c)
-
-       V_l_c = CONJG(TRANSPOSE(V_l_c))
-
-       ! Commented out because the LAPACK left/right eigenvectors
-       ! don't seem to be proper inverses
-
-       ! Renormalize the left eigenvectors so they are orthonormal to
-       ! the right eigenvectors
-
-       ! do i = 1,SIZE(A,1)
-       !    V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
-       ! enddo
-
-       V_r_c = linear_solve(V_l_c, CMPLX(identity_matrix(SIZE(A, 1)), 0._WP, WP))
-
-       if(PRESENT(V_l)) V_l = V_l_c
-       if(PRESENT(V_r)) V_r = V_r_c
+       call eigen_decompose_2_r(A, lambda, V_l, V_r)
 
     else
 
-       call LA_GEEV(A_, lambda_re, lambda_im)
+       if(PRESENT(V_l) .OR. PRESENT(V_r)) then
 
-    endif
+          call XGEEV('V', 'V', SIZE(A, 1), A, SIZE(A, 1), lambda_re, lambda_im, &
+               V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
+               work, SIZE(work), info)
+          $ASSERT(info == 0,Non-zero return from XGEEV)
 
-    lambda = CMPLX(lambda_re, lambda_im, KIND=WP)
+          call reconstruct_eigenvector(lambda_re, lambda_im, V_l_r, V_l_c)
+          call reconstruct_eigenvector(lambda_re, lambda_im, V_r_r, V_r_c)
+
+          V_l_c = CONJG(TRANSPOSE(V_l_c))
+
+          ! Renormalize the left eigenvectors so they are orthonormal to
+          ! the right eigenvectors
+
+          do i = 1,SIZE(A, 1)
+             V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
+          enddo
+
+          if(PRESENT(V_l)) V_l = V_l_c
+          if(PRESENT(V_r)) V_r = V_r_c
+
+       else
+
+          call XGEEV('N', 'N', SIZE(A, 1), A, SIZE(A, 1), lambda_re, lambda_im, &
+               V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
+               work, SIZE(work), info)
+          $ASSERT(info == 0,Non-zero return from XGEEV)
+
+       endif
+
+       lambda = CMPLX(lambda_re, lambda_im, KIND=WP)
+
+    end if
 
     ! (Possibly) sort
 
@@ -523,29 +252,32 @@ contains
 
   subroutine eigen_decompose_c (A, lambda, V_l, V_r, sort)
 
-    complex(WP), intent(in)            :: A(:,:)
+    complex(WP), intent(inout)         :: A(:,:)
     complex(WP), intent(out)           :: lambda(:)
     complex(WP), intent(out), optional :: V_l(:,:)
     complex(WP), intent(out), optional :: V_r(:,:)
     logical, intent(in), optional      :: sort
 
     logical     :: sort_
-    complex(WP) :: A_(SIZE(A, 1),SIZE(A, 2))
     complex(WP) :: V_l_c(SIZE(A, 1),SIZE(A, 2))
     complex(WP) :: V_r_c(SIZE(A, 1),SIZE(A, 2))
+    complex(WP) :: work(2*SIZE(A, 1))
+    real(WP)    :: rwork(2*SIZE(A, 1))
+    integer     :: info
+    integer     :: i
     integer     :: ind(SIZE(A, 1))
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-    $ASSERT(SIZE(lambda) == SIZE(A, 1),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(lambda),SIZE(A, 1))
 
     if(PRESENT(V_l)) then
-       $ASSERT(SIZE(V_l, 1) == SIZE(A, 1),Dimension mismatch)
-       $ASSERT(SIZE(V_l, 2) == SIZE(A, 2),Dimension mismatch)
+       $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(A, 2))
     endif
     
     if(PRESENT(V_r)) then
-       $ASSERT(SIZE(V_r, 1) == SIZE(A, 1),Dimension mismatch)
-       $ASSERT(SIZE(V_r, 2) == SIZE(A, 2),Dimension mismatch)
+       $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(A, 2))
     endif
 
     if(PRESENT(sort)) then
@@ -556,34 +288,45 @@ contains
 
     ! Perform the eigendecomposition of A
 
-    A_ = A
+    ! Perform the eigendecomposition of A
 
-    if(PRESENT(V_l) .OR. PRESENT(V_r)) then
+    if(SIZE(A, 1) == 2) then
 
-       call LA_GEEV(A_, lambda, VL=V_l_c, VR=V_r_c)
+       ! Special case: n == 2
 
-       V_l_c = CONJG(TRANSPOSE(V_l_c))
+       call eigen_decompose_2_c(A, lambda, V_l, V_r)
 
-       ! Commented out because the LAPACK left/right eigenvectors
-       ! don't seem to be proper inverses
-
-       ! Renormalize the left eigenvectors so they are orthonormal to
-       ! the right eigenvectors
-
-       ! do i = 1,SIZE(A, 1)
-       !    V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
-       ! enddo
-
-       V_r_c = linear_solve(V_l_c, CMPLX(identity_matrix(SIZE(A, 1)), 0._WP, WP))
-
-       if(PRESENT(V_r)) V_r = V_r_c
-       if(PRESENT(V_l)) V_l = V_l_c
-       
     else
 
-       call LA_GEEV(A_, lambda)
+       if(PRESENT(V_l) .OR. PRESENT(V_r)) then
 
-    endif
+          call XGEEV('V', 'V', SIZE(A, 1), A, SIZE(A, 1), lambda, &
+               V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
+               work, SIZE(work, 1), rwork, info)
+          $ASSERT(info == 0,Non-zero return from XGEEV)
+
+          V_l_c = CONJG(TRANSPOSE(V_l_c))
+
+          ! Renormalize the left eigenvectors so they are orthonormal to
+          ! the right eigenvectors
+
+          do i = 1,SIZE(A, 1)
+             V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
+          enddo
+
+          if(PRESENT(V_r)) V_r = V_r_c
+          if(PRESENT(V_l)) V_l = V_l_c
+
+       else
+
+          call XGEEV('N', 'N', SIZE(A, 1), A, SIZE(A, 1), lambda, &
+               V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
+               work, SIZE(work, 1), rwork, info)
+          $ASSERT(info == 0,Non-zero return from XGEEV)
+
+       endif
+
+    end if
 
     ! (Possibly) sort
 
@@ -602,6 +345,102 @@ contains
 
 !****
 
+  $define $EIGEN_DECOMPOSE_2 $sub
+
+  $local $SUFFIX $1
+  $local $TYPE $2
+
+  subroutine eigen_decompose_2_$SUFFIX (A, lambda, V_l, V_r)
+
+    $TYPE(WP), intent(in)              :: A(:,:)
+    complex(WP), intent(out)           :: lambda(:)
+    complex(WP), intent(out), optional :: V_l(:,:)
+    complex(WP), intent(out), optional :: V_r(:,:)
+
+    $TYPE(WP)   :: b
+    $TYPE(WP)   :: c
+    complex(WP) :: s
+    complex(WP) :: q
+    complex(WP) :: V_l_(2,2)
+    complex(WP) :: V_r_(2,2)
+    integer     :: i
+
+    $CHECK_BOUNDS(SIZE(A, 1),2)
+    $CHECK_BOUNDS(SIZE(A, 2),2)
+
+    $CHECK_BOUNDS(SIZE(lambda),SIZE(A, 1))
+
+    if(PRESENT(V_l)) then
+       $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(A, 2))
+    endif
+    
+    if(PRESENT(V_r)) then
+       $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(A, 1))
+       $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(A, 2))
+    endif
+
+    ! Perform the eigendecomposition of the 2x2 matrix A
+
+    ! Solve the quadratic for the eigenvalues
+
+    b = -A(1,1) - A(2,2)
+    c = A(1,1)*A(2,2) - A(1,2)*A(2,1)
+
+    $if($TYPE eq 'real')
+    s = SQRT(CMPLX(b**2 - 4._WP*c, KIND=KIND(0._WP)))
+    q = -0.5_WP*(b + SIGN(1._WP, b)*s)
+    $else
+    s = SQRT(b**2 - 4._WP*c)
+    q = -0.5_WP*(b + SIGN(1._WP, REAL(CONJG(b)*s))*s)
+    $endif
+
+    lambda(1) = q
+    lambda(2) = c/q
+
+    ! Calculate eigenvectors
+
+    if(PRESENT(V_l) .OR. PRESENT(V_r)) then
+
+       V_l_(1,1) = A(2,1)
+       V_l_(1,2) = lambda(1) - A(1,1)
+
+       V_l_(2,1) = A(2,1)
+       V_l_(2,2) = lambda(2) - A(1,1)
+    
+       V_r_(1,1) = A(1,2)
+       V_r_(2,1) = lambda(1) - A(1,1)
+    
+       V_r_(1,2) = A(1,2)
+       V_r_(2,2) = lambda(2) - A(1,1)
+       
+       do i = 1,SIZE(A, 1)
+          V_l_(i,:) = V_l_(i,:)/SUM(V_l_(i,:)*V_r_(:,i))
+       enddo
+
+       if(PRESENT(V_l)) then
+          V_l = V_l_
+       endif
+
+       if(PRESENT(V_r)) then
+          V_r = V_r_
+       endif
+
+    end if
+
+    ! Finish
+
+    return
+
+  end subroutine eigen_decompose_2_$SUFFIX
+
+  $endsub
+
+  $EIGEN_DECOMPOSE_2(r,real)
+  $EIGEN_DECOMPOSE_2(c,complex)
+
+!****
+
   $define $LINEAR_SOLVE $sub
 
   $local $SUFFIX $1
@@ -613,17 +452,17 @@ contains
     $TYPE(WP), intent(in) :: b(:)
     $TYPE(WP)             :: x(SIZE(A, 2))
 
-    $TYPE(WP) :: A_(SIZE(A, 1),SIZE(A, 2))
+    $TYPE(WP) :: Mx(SIZE(x), 1)
+    $TYPE(WP) :: Mb(SIZE(b), 1)
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-    $ASSERT(SIZE(b) == SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(b),SIZE(A, 1))
 
     ! Solve the linear system A x = b
 
-    A_ = A
-    x = b
+    Mx = linear_solve(A, Mb)
 
-    call LA_GESV(A_, x)
+    x = Mx(:,1)
 
     ! Finish
 
@@ -638,16 +477,19 @@ contains
     $TYPE(WP)             :: X(SIZE(A, 2), SIZE(B, 2))
 
     $TYPE(WP) :: A_(SIZE(A, 1),SIZE(A, 2))
+    integer   :: ipiv(SIZE(A, 1))
+    integer   :: info
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-    $ASSERT(SIZE(B, 1) == SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(B, 1),SIZE(A, 1))
 
     ! Solve the linear system A X = B
 
     A_ = A
     X = B
 
-    call LA_GESV(A_, X)
+    call XGESV(SIZE(A, 1), SIZE(B, 2), A_, SIZE(A, 1), ipiv, X, SIZE(B, 1), info)
+    $ASSERT(info == 0,Non-zero return from XGESV)
 
     ! Finish
 
@@ -662,50 +504,6 @@ contains
 
 !****
 
-  $define $DETERMINANT $sub
-
-  $local $SUFFIX $1
-  $local $TYPE $2
-
-  function determinant_$SUFFIX (A) result (det_A)
-
-    $TYPE(WP), intent(in) :: A(:,:)
-    $TYPE(WP)             :: det_A
-
-    $TYPE(WP) :: A_(SIZE(A, 1),SIZE(A, 2))
-    integer   :: ipiv(SIZE(A, 1))
-    integer   :: i
-
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
-
-    ! LU decompose A
-
-    A_ = A
-
-    call lu_decompose(A_, ipiv, allow_singular=.TRUE.)
-
-    ! Calculate the determinant from the diagonal
-
-    det_A = 1._WP
-
-    do i = 1,SIZE(A_, 1)
-       det_A = det_A*A_(i,i)
-       if(ipiv(i) /= i) det_A = -det_A
-    end do
-
-    ! Finish
-
-    return
-
-  end function determinant_$SUFFIX
-
-  $endsub
-
-  $DETERMINANT(r,real)
-  $DETERMINANT(c,complex)
-
-!****
-
   $define $COMMUTATOR $sub
 
   $local $SUFFIX $1
@@ -717,10 +515,10 @@ contains
     $TYPE(WP), intent(in) :: B(:,:)
     $TYPE(WP)             :: C(SIZE(A, 1),SIZE(A, 2))
     
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
 
-    $ASSERT(SIZE(B, 1) == SIZE(B, 2),Dimension mismatch)
-    $ASSERT(SIZE(B, 1) == SIZE(A, 1),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(B, 1),SIZE(B, 2))
+    $CHECK_BOUNDS(SIZE(B, 1),SIZE(A, 1))
 
     ! Calculate the commutator [A,B]
 
@@ -758,7 +556,7 @@ contains
     integer :: i_max
     integer :: k
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
 
     ! Measure the lower bandwidth
 
@@ -935,17 +733,20 @@ contains
 
     integer, parameter :: IDEG = 6
 
-    complex(WP) :: lambda(SIZE(A,1))
-    complex(WP) :: V_l(SIZE(A,1),SIZE(A,2))
-    complex(WP) :: V_r(SIZE(A,1),SIZE(A,2))
+    $TYPE(WP)   :: A_(SIZE(A, 1),SIZE(A, 2))
+    complex(WP) :: lambda(SIZE(A, 1))
+    complex(WP) :: V_l(SIZE(A, 1),SIZE(A, 2))
+    complex(WP) :: V_r(SIZE(A, 1),SIZE(A, 2))
 
-    $ASSERT(SIZE(A, 1) == SIZE(A, 2),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
 
     ! Calculate the matrix exponential exp(A*t)
 
-    call eigen_decompose_$SUFFIX(A, lambda, V_l=V_l, V_r=V_r)
+    A_ = A
 
-    $if($TYPE eq "real")
+    call eigen_decompose_$SUFFIX(A_, lambda, V_l=V_l, V_r=V_r)
+
+    $if($TYPE eq 'real')
     exp_At = REAL(matrix_exp_eigen(lambda, V_l, V_r, t))
     $else
     exp_At = matrix_exp_eigen(lambda, V_l, V_r, t)
@@ -974,11 +775,11 @@ contains
 
     integer :: i
 
-    $ASSERT(SIZE(V_l, 2) == SIZE(V_l, 1),Dimension mismatch)
-    $ASSERT(SIZE(V_r, 2) == SIZE(V_r, 1),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(V_l, 1))
+    $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(V_r, 1))
 
-    $ASSERT(SIZE(V_l, 1) == SIZE(lambda),Dimension mismatch)
-    $ASSERT(SIZE(V_r, 1) == SIZE(lambda),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(lambda))
+    $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(lambda))
 
     ! Calculate the matrix exponential exp(At) from the
     ! eigendecomposition of A
@@ -1055,11 +856,11 @@ contains
     logical, intent(in)    :: mask_c(:)
     $TYPE(WP), intent(out) :: A_part(:,:)
 
-    $ASSERT(SIZE(mask_r) == SIZE(A, 1),Dimension mismatch)
-    $ASSERT(SIZE(mask_c) == SIZE(A, 2),Dimension mismatch)
+    $CHECK_BOUNDS(SIZE(mask_r),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(mask_c),SIZE(A, 2))
 
-    $ASSERT(COUNT(mask_r) == SIZE(A_part, 1),Dimension mismatch)
-    $ASSERT(COUNT(mask_c) == SIZE(A_part, 2),Dimension mismatch)
+    $CHECK_BOUNDS(COUNT(mask_r),SIZE(A_part, 1))
+    $CHECK_BOUNDS(COUNT(mask_c),SIZE(A_part, 2))
 
     ! Partition A according to the row and column masks
 

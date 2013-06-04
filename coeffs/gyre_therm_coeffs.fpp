@@ -31,9 +31,9 @@ module gyre_therm_coeffs
 
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure(get_1_i), deferred :: get_${NAME}_1
-    procedure(get_v_i), deferred :: get_${NAME}_v
-    generic, public              :: ${NAME} => get_${NAME}_1, get_${NAME}_v
+    procedure(c_1_i), deferred :: ${NAME}_1
+    procedure(c_v_i), deferred :: ${NAME}_v
+    generic, public            :: ${NAME} => ${NAME}_1, ${NAME}_v
   $endsub
 
   type, abstract :: therm_coeffs_t
@@ -42,36 +42,52 @@ module gyre_therm_coeffs
      private
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
-     $PROC_DECL(c_gen)
      $PROC_DECL(c_thm)
      $PROC_DECL(c_dif)
+     $PROC_DECL(c_eps_ad)
+     $PROC_DECL(c_eps_S)
      $PROC_DECL(nabla)
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
      $PROC_DECL(epsilon_ad)
      $PROC_DECL(epsilon_S)
      $PROC_DECL(tau_thm)
+     procedure(enable_cache_i), deferred, public :: enable_cache
+     procedure(enable_cache_i), deferred, public :: disable_cache
+     procedure(fill_cache_i), deferred, public   :: fill_cache
   end type therm_coeffs_t
 
   ! Interfaces
 
   abstract interface
 
-     function get_1_i (this, x) result (y)
+     function c_1_i (this, x) result (c)
        use core_kinds
        import therm_coeffs_t
        class(therm_coeffs_t), intent(in) :: this
        real(WP), intent(in)              :: x
-       real(WP)                          :: y
-     end function get_1_i
+       real(WP)                          :: c
+     end function c_1_i
 
-     function get_v_i (this, x) result (y)
+     function c_v_i (this, x) result (c)
        use core_kinds
        import therm_coeffs_t
        class(therm_coeffs_t), intent(in) :: this
        real(WP), intent(in)              :: x(:)
-       real(WP)                          :: y(SIZE(x))
-     end function get_v_i
+       real(WP)                          :: c(SIZE(x))
+     end function c_v_i
+
+     subroutine enable_cache_i (this)
+       import therm_coeffs_t
+       class(therm_coeffs_t), intent(inout) :: this
+     end subroutine enable_cache_i
+
+     subroutine fill_cache_i (this, x)
+       use core_kinds
+       import therm_coeffs_t
+       class(therm_coeffs_t), intent(inout) :: this
+       real(WP), intent(in)                 :: x(:)
+     end subroutine fill_cache_i
 
   end interface
 

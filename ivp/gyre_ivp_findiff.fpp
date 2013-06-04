@@ -39,6 +39,7 @@ module gyre_ivp_findiff
 
   public :: solve_findiff
   public :: recon_findiff
+  public :: abscissa_findiff
 
   ! Procedures
 
@@ -54,8 +55,8 @@ contains
     complex(WP), intent(out)         :: E_r(:,:)
     type(ext_complex_t), intent(out) :: S
 
-    real(WP)    :: x
     real(WP)    :: dx
+    real(WP)    :: x(1)
     complex(WP) :: A(jc%n_e,jc%n_e)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),jc%n_e)
@@ -69,10 +70,10 @@ contains
 
     ! Evaluate the Jacobian
 
-    x = 0.5_WP*(x_a + x_b)
+    x = abscissa_findiff(x_a, x_b)
     dx = x_b - x_a
 
-    call jc%eval(omega, x, A)
+    call jc%eval(omega, x(1), A)
 
     ! Set up the solution matrices and scales
 
@@ -123,5 +124,27 @@ contains
     return
 
   end subroutine recon_findiff
+
+!****
+
+  function abscissa_findiff (x_a, x_b) result (x)
+
+    real(WP), intent(in) :: x_a
+    real(WP), intent(in) :: x_b
+    real(WP)             :: x(1)
+
+    real(WP) :: dx
+
+    ! Set up the abscissa for centered finite-differences
+
+    dx = x_b - x_a
+
+    x = x_a + [0.5_WP]*dx
+
+    ! Finish
+
+    return
+
+  end function abscissa_findiff
 
 end module gyre_ivp_findiff

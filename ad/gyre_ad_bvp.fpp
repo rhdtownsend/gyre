@@ -39,6 +39,7 @@ module gyre_ad_bvp
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
+  use gyre_ivp, only: abscissa
   use gyre_mode
 
   use ISO_FORTRAN_ENV
@@ -103,31 +104,33 @@ module gyre_ad_bvp
 
 contains
 
-  subroutine init (this, bc, tc, op, np, shoot_gp, recon_gp, x_in)
+  subroutine init (this, bc, op, np, shoot_gp, recon_gp, x_in, tc)
 
-    class(ad_bvp_t), intent(out)                   :: this
-    class(base_coeffs_t), intent(in)               :: bc
-    class(therm_coeffs_t), allocatable, intent(in) :: tc
-    type(oscpar_t), intent(in)                     :: op
-    type(numpar_t), intent(in)                     :: np
-    type(gridpar_t), intent(in)                    :: shoot_gp(:)
-    type(gridpar_t), intent(in)                    :: recon_gp(:)
-    real(WP), allocatable, intent(in)              :: x_in(:)
+    class(ad_bvp_t), intent(out)                :: this
+    class(base_coeffs_t), intent(in)            :: bc
+    type(oscpar_t), intent(in)                  :: op
+    type(numpar_t), intent(in)                  :: np
+    type(gridpar_t), intent(in)                 :: shoot_gp(:)
+    type(gridpar_t), intent(in)                 :: recon_gp(:)
+    real(WP), allocatable, intent(in)           :: x_in(:)
+    class(therm_coeffs_t), intent(in), optional :: tc
 
-    integer :: n
+    integer               :: n
+    real(WP), allocatable :: x_cc(:)
+    integer               :: k
 
     ! Initialize the ad_bvp
 
     ! Create the shooting grid
 
-    call build_grid(shoot_gp, bc, op, x_in, this%x)
+    call build_grid(shoot_gp, bc, op, x_in, this%x, tc)
 
     n = SIZE(this%x)
 
     ! Set up components
     
     allocate(this%bc, SOURCE=bc)
-    if(ALLOCATED(tc)) allocate(this%tc, SOURCE=tc)
+    if(PRESENT(tc)) allocate(this%tc, SOURCE=tc)
 
     this%op = op
     this%np = np
@@ -146,6 +149,19 @@ contains
 
     this%n = n
     this%n_e = this%sh%n_e
+
+    ! Set up the coefficient caches
+
+    x_cc = [this%x(1)]
+
+    abscissa_loop : do k = 1,n-1
+       x_cc = [x_cc,abscissa(this%np%ivp_solver_type, this%x(k),this%x(k+1))]
+    end do abscissa_loop
+
+    x_cc = [x_cc,this%x(this%n)]
+
+    call this%bc%fill_cache(x_cc)
+    call this%tc%fill_cache(x_cc)
 
     ! Finish
 
@@ -284,7 +300,7 @@ contains
 
     call this%build(omega)
 
-    discrim = this%sm%determinant()
+    discrim = this%sm%determinant(use_real=.TRUE.)
 
     ! Apply the normalization
 
@@ -305,10 +321,16 @@ contains
 
     ! Set up the sysmtx
 
+    call this%bc%enable_cache()
+    call this%tc%enable_cache()
+
     call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
     call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
 
     call this%sh%shoot(omega, this%x, this%sm)
+
+    call this%bc%disable_cache()
+    call this%tc%disable_cache()
 
     ! Finish
 
@@ -414,21 +436,20 @@ contains
     dy_6_dx = deriv(x, y(6,:))
     
     associate(V => bp%bc%V(x), c_1 => bp%bc%c_1(x), &
-              nabla_ad => bp%bc%nabla_ad(x), &
+              nabla_ad => bp%bc%nabla_ad(x), nabla => bp%tc%nabla(x), &
               c_rad => bp%tc%c_rad(x), dc_rad => bp%tc%dc_rad(x), &
-              c_gen => bp%tc%c_gen(x), c_thm => bp%tc%c_thm(x), &
-              nabla => bp%tc%nabla(x), &
-              epsilon_ad => bp%tc%epsilon_ad(x), epsilon_S => bp%tc%epsilon_S(x), &
+              c_thm => bp%tc%c_thm(x), &
+              c_eps_ad => bp%tc%c_eps_ad(x), c_eps_S => bp%tc%c_eps_S(x), &
               l => bp%op%l)
 
       ! Calculate Jacobian coefficients. (cf. gyre_nad_jacobian; A_6
       ! has been multiplied by V)
 
-      A_6(:,1) = V*(l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - epsilon_ad*V*c_gen)
-      A_6(:,2) = V*(epsilon_ad*V*c_gen - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2)))
-      A_6(:,3) = V*(l*(l+1)*nabla_ad/nabla*c_rad - epsilon_ad*V*c_gen)
+      A_6(:,1) = V*(l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad)
+      A_6(:,2) = V*(V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2)))
+      A_6(:,3) = V*(l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad)
       A_6(:,4) = 0._WP
-      A_6(:,5) = V*epsilon_S*c_gen - l*(l+1)*c_rad/nabla - V*(0._WP,1._WP)*omega*c_thm
+      A_6(:,5) = V*c_eps_S - l*(l+1)*c_rad/nabla - V*(0._WP,1._WP)*omega*c_thm
       A_6(:,6) = V*(-1._WP - l)
 
       ! Set up y_5

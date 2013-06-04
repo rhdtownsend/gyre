@@ -22,12 +22,14 @@ module gyre_output
   ! Uses
 
   use core_kinds
+  use core_constants
   use core_hgroup
 
   use gyre_base_coeffs
   use gyre_evol_base_coeffs
   use gyre_poly_base_coeffs
   use gyre_mode
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -39,21 +41,78 @@ module gyre_output
 
   private
 
-  public :: write_summary
-  public :: write_mode
+  public :: write_data
 
 contains
 
-  subroutine write_summary (file, md, items, freq_scale)
+  subroutine write_data (unit, md)
+
+    integer, intent(in)         :: unit
+    type(mode_t), intent(in)    :: md(:)
+
+    character(LEN=256)          :: freq_units
+    character(LEN=FILENAME_LEN) :: summary_file
+    character(LEN=2048)         :: summary_item_list
+    character(LEN=FILENAME_LEN) :: mode_prefix
+    character(LEN=2048)         :: mode_item_list
+    character(LEN=FILENAME_LEN) :: mode_file
+    integer                     :: j
+
+    namelist /output/ freq_units, summary_file, summary_item_list, mode_prefix, mode_item_list
+
+    ! Read output parameters
+
+    freq_units = 'NONE'
+
+    summary_file = ''
+    summary_item_list = 'l,n_p,n_g,omega,freq'
+
+    mode_prefix = ''
+    mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
+
+    rewind(unit)
+    read(unit, NML=output, END=900)
+
+    ! Write output files
+
+    if(summary_file /= '') call write_summary(summary_file, md, split_item_list(summary_item_list), freq_units)
+
+    if(mode_prefix /= '') then
+
+       mode_loop : do j = 1,SIZE(md)
+
+          write(mode_file, 100) TRIM(mode_prefix), j, '.h5'
+100       format(A,I4.4,A)
+
+          call write_mode(mode_file, md(j), split_item_list(mode_item_list), freq_units, j)
+
+       end do mode_loop
+       
+    end if
+
+    ! Finish
+
+    return
+
+    ! Jump-in point for end-of-file
+
+900 continue
+
+    $ABORT(No &output namelist in input file)
+
+  end subroutine write_data
+
+!****
+
+  subroutine write_summary (file, md, items, freq_units)
 
     character(LEN=*), intent(in) :: file
     type(mode_t), intent(in)     :: md(:)
     character(LEN=*), intent(in) :: items(:)
-    real(WP), intent(in)         :: freq_scale
+    character(LEN=*), intent(in) :: freq_units
 
     integer        :: n_md
     integer        :: i
-    complex(WP)    :: freq(SIZE(md))
     integer        :: n_p(SIZE(md))
     integer        :: n_g(SIZE(md))
     integer        :: j
@@ -64,11 +123,7 @@ contains
     n_md = SIZE(md)
 
     mode_loop : do i = 1,n_md
-
-       freq(i) = md(i)%omega*freq_scale
-
        call md(i)%classify(n_p(i), n_g(i))
-
     end do mode_loop
 
     ! Open the file
@@ -93,8 +148,10 @@ contains
           call write_dset(hg, 'n_g', n_g)
        case('omega')
           call write_dset(hg, 'omega', md%omega)
-       case ('freq')
-          call write_dset(hg, 'freq', freq)
+       case('freq')
+          call write_dset(hg, 'freq', [(md(i)%freq(freq_units), i=1,n_md)])
+       case('C')
+          call write_dset(hg, 'C', [(md(i)%C(), i=1,n_md)])
        case('E')
           call write_dset(hg, 'E', [(md(i)%E(), i=1,n_md)])
        case('E_norm')
@@ -179,12 +236,12 @@ contains
 
 !****
 
-  subroutine write_mode (file, md, items, freq_scale, i)
+  subroutine write_mode (file, md, items, freq_units, i)
 
     character(LEN=*), intent(in) :: file
     type(mode_t), intent(in)     :: md
     character(LEN=*), intent(in) :: items(:)
-    real(WP), intent(in)         :: freq_scale
+    character(LEN=*), intent(in) :: freq_units
     integer, intent(in)          :: i
 
     integer        :: n_p
@@ -218,7 +275,9 @@ contains
        case ('omega')
           call write_attr(hg, 'omega', md%omega)
        case ('freq')
-          call write_attr(hg, 'freq', md%omega*freq_scale)
+          call write_attr(hg, 'freq', md%freq(freq_units))
+       case ('C')
+          call write_attr(hg, 'E', md%C())
        case ('E')
           call write_attr(hg, 'E', md%E())
        case ('E_norm')

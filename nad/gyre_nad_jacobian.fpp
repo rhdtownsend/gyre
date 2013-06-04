@@ -117,11 +117,11 @@ contains
     associate(V => this%bc%V(x), V_g => this%bc%V(x)/this%bc%Gamma_1(x), &
               U => this%bc%U(x), As => this%bc%As(x), c_1 => this%bc%c_1(x), &
               nabla_ad => this%bc%nabla_ad(x), delta => this%bc%delta(x), &
+              nabla => this%tc%nabla(x), &
               c_rad => this%tc%c_rad(x), dc_rad => this%tc%dc_rad(x), &
-              c_gen => this%tc%c_gen(x), c_thm => this%tc%c_thm(x), &
-              c_dif => this%tc%c_dif(x), nabla => this%tc%nabla(x), &
+              c_thm => this%tc%c_thm(x), c_dif => this%tc%c_dif(x), &
+              c_eps_ad => this%tc%c_eps_ad(x), c_eps_S => this%tc%c_eps_S(x), &
               kappa_ad => this%tc%kappa_ad(x), kappa_S => this%tc%kappa_S(x), &
-              epsilon_ad => this%tc%epsilon_ad(x), epsilon_S => this%tc%epsilon_S(x), &
               l => this%op%l)
 
       A(1,1) = V_g - 1._WP - l
@@ -159,11 +159,11 @@ contains
       A(5,5) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
       A(5,6) = -V*nabla/c_rad
 
-      A(6,1) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - epsilon_ad*V*c_gen
-      A(6,2) = epsilon_ad*V*c_gen - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2))
-      A(6,3) = l*(l+1)*nabla_ad/nabla*c_rad - epsilon_ad*V*c_gen
+      A(6,1) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+      A(6,2) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2))
+      A(6,3) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
       A(6,4) = 0._WP
-      A(6,5) = epsilon_S*c_gen - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega*c_thm
+      A(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega*c_thm
       A(6,6) = -1._WP - l
 
     end associate

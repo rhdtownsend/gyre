@@ -26,6 +26,7 @@ module gyre_fgong_file
 
   use gyre_base_coeffs
   use gyre_evol_base_coeffs
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -43,37 +44,50 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_file (file, G, deriv_type, bc, x)
+  subroutine read_fgong_file (file, G, deriv_type, data_format, bc, x)
 
     character(LEN=*), intent(in)                   :: file
     real(WP), intent(in)                           :: G
     character(LEN=*), intent(in)                   :: deriv_type
+    character(LEN=*), intent(in)                   :: data_format
     class(base_coeffs_t), allocatable, intent(out) :: bc
     real(WP), allocatable, intent(out), optional   :: x(:)
 
-    integer               :: unit
-    integer               :: n
-    integer               :: iconst
-    integer               :: ivar
-    integer               :: ivers
-    real(WP), allocatable :: glob(:)
-    real(WP), allocatable :: var(:,:)
-    real(WP)              :: M_star
-    real(WP)              :: R_star
-    real(WP)              :: L_star
-    real(WP), allocatable :: r(:)
-    real(WP), allocatable :: m(:)
-    real(WP), allocatable :: p(:)
-    real(WP), allocatable :: rho(:) 
-    real(WP), allocatable :: T(:) 
-    real(WP), allocatable :: N2(:)
-    real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: nabla_ad(:)
-    real(WP), allocatable :: delta(:)
+    character(LEN=:), allocatable :: data_format_
+    integer                       :: unit
+    integer                       :: n
+    integer                       :: iconst
+    integer                       :: ivar
+    integer                       :: ivers
+    real(WP), allocatable         :: glob(:)
+    real(WP), allocatable         :: var(:,:)
+    integer                       :: i
+    real(WP)                      :: M_star
+    real(WP)                      :: R_star
+    real(WP)                      :: L_star
+    real(WP), allocatable         :: r(:)
+    real(WP), allocatable         :: m(:)
+    real(WP), allocatable         :: p(:)
+    real(WP), allocatable         :: rho(:) 
+    real(WP), allocatable         :: T(:) 
+    real(WP), allocatable         :: N2(:)
+    real(WP), allocatable         :: Gamma_1(:)
+    real(WP), allocatable         :: nabla_ad(:)
+    real(WP), allocatable         :: delta(:)
+    logical                       :: add_center
+
+    if(data_format /= '') then
+       data_format_ = data_format
+    else
+       data_format_ = '(1P5E16.9)'
+    endif
 
     ! Read the model from the FGONG-format file
 
-    write(OUTPUT_UNIT, *) 'Reading from FGONG file ', TRIM(file)
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from FGONG file', TRIM(file)
+100    format(A,1X,A)
+    endif
 
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
@@ -86,18 +100,22 @@ contains
 
     read(unit, *) n, iconst, ivar, ivers
 
-    write(OUTPUT_UNIT, *) '  Initial points :', n
-    write(OUTPUT_UNIT, *) '  File version   :', ivers
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Initial points :', n
+       write(OUTPUT_UNIT, 110) 'File version   :', ivers
+110    format(2X,A,1X,I0)
+    endif
 
     ! Read the data
 
     allocate(glob(iconst))
     allocate(var(ivar,n))
 
-    read(unit, 100) glob
-    read(unit, 100) var
+    read(unit, data_format_) glob
 
-100 format(1P5E16.9)
+    read_loop : do i = 1,n
+       read(unit, data_format_) var(:,i)
+    end do read_loop
 
     close(unit)
 
@@ -124,25 +142,13 @@ contains
        N2 = 0._WP
     endwhere
 
-    ! If necessary, add central data
-
     if(r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
     if(m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
 
-    if(r(1) /= 0._WP) then
+    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-       m = [0._WP,m]
-       call add_center(r, p)
-       call add_center(r, rho)
-       N2 = [0._WP,N2]
-       call add_center(r, Gamma_1)
-       call add_center(r, nabla_ad)
-       call add_center(r, delta)
-
-       r = [0._WP,r]
-
-       write(OUTPUT_UNIT, *) '  Added central point'
-
+    if(add_center .AND. check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
     ! Initialize the base_coeffs
@@ -152,41 +158,25 @@ contains
     select type (bc)
     type is (evol_base_coeffs_t)
        call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, deriv_type)
+                    N2, Gamma_1, nabla_ad, delta, deriv_type, add_center)
     class default
        $ABORT(Invalid bc type)
     end select
 
     ! Set up the grid
 
-    if(PRESENT(x)) x = r/R_star
+    if(PRESENT(x)) then
+       if(add_center) then
+          x = [0._WP,r/R_star]
+       else
+          x = r/R_star
+       endif
+    endif
 
     ! Finish
 
     return
 
   end subroutine read_fgong_file
-
-!****
-
-  subroutine add_center (x, y)
-
-    real(WP), intent(in)                 :: x(:)
-    real(WP), intent(inout), allocatable :: y(:)
-
-    real(WP) :: y_0
-
-    ! Add center (x=0) data to the array y(x), incrementing the
-    ! dimension of y by 1. x is not altered.
-
-    y_0 = (x(2)**2*y(1) - x(1)**2*y(2))/(x(2)**2 - x(1)**2)
-
-    y = [y_0,y]
-
-    ! Finish
-
-    return
-
-  end subroutine add_center
 
 end module gyre_fgong_file

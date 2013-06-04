@@ -28,6 +28,7 @@ module gyre_osc_file
   use gyre_therm_coeffs
   use gyre_evol_base_coeffs
   use gyre_evol_therm_coeffs
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -45,47 +46,60 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_file (file, G, deriv_type, bc, tc, x)
+  subroutine read_osc_file (file, G, deriv_type, data_format, bc, tc, x)
 
     character(LEN=*), intent(in)                              :: file
     real(WP), intent(in)                                      :: G
     character(LEN=*), intent(in)                              :: deriv_type
+    character(LEN=*), intent(in)                              :: data_format
     class(base_coeffs_t), allocatable, intent(out)            :: bc
     class(therm_coeffs_t), allocatable, intent(out), optional :: tc
     real(WP), allocatable, intent(out), optional              :: x(:)
 
-    integer               :: unit
-    integer               :: n
-    integer               :: iconst
-    integer               :: ivar
-    integer               :: iabund
-    integer               :: ivers
-    real(WP), allocatable :: glob(:)
-    real(WP), allocatable :: var(:,:)
-    real(WP)              :: M_star
-    real(WP)              :: R_star
-    real(WP)              :: L_star
-    real(WP), allocatable :: r(:)
-    real(WP), allocatable :: m(:)
-    real(WP), allocatable :: p(:)
-    real(WP), allocatable :: rho(:) 
-    real(WP), allocatable :: T(:) 
-    real(WP), allocatable :: N2(:)
-    real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: nabla_ad(:)
-    real(WP), allocatable :: delta(:)
-    real(WP), allocatable :: nabla(:)
-    real(WP), allocatable :: kappa(:)
-    real(WP), allocatable :: kappa_rho(:)
-    real(WP), allocatable :: kappa_T(:)
-    real(WP), allocatable :: epsilon_(:)
-    real(WP), allocatable :: epsilon_rho(:)
-    real(WP), allocatable :: epsilon_T(:)
+    character(LEN=:), allocatable :: data_format_
+    integer                       :: unit
+    integer                       :: n
+    integer                       :: iconst
+    integer                       :: ivar
+    integer                       :: iabund
+    integer                       :: ivers
+    real(WP), allocatable         :: glob(:)
+    real(WP), allocatable         :: var(:,:)
+    integer                       :: i
+    real(WP)                      :: M_star
+    real(WP)                      :: R_star
+    real(WP)                      :: L_star
+    real(WP), allocatable         :: r(:)
+    real(WP), allocatable         :: m(:)
+    real(WP), allocatable         :: p(:)
+    real(WP), allocatable         :: rho(:) 
+    real(WP), allocatable         :: T(:) 
+    real(WP), allocatable         :: N2(:)
+    real(WP), allocatable         :: Gamma_1(:)
+    real(WP), allocatable         :: nabla_ad(:)
+    real(WP), allocatable         :: delta(:)
+    real(WP), allocatable         :: nabla(:)
+    real(WP), allocatable         :: kappa(:)
+    real(WP), allocatable         :: kappa_rho(:)
+    real(WP), allocatable         :: kappa_T(:)
+    real(WP), allocatable         :: epsilon_(:)
+    real(WP), allocatable         :: epsilon_rho(:)
+    real(WP), allocatable         :: epsilon_T(:)
+    logical                       :: add_center
+
+    if(data_format /= '') then
+       data_format_ = data_format
+    else
+       data_format_ = '(1P5E19.12)'
+    endif
 
     ! Read the model from the OSC-format file
 
-    write(OUTPUT_UNIT, *) 'Reading from OSC file ', TRIM(file)
-
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from OSC file', TRIM(file)
+100    format(A,1X,A)
+    endif
+          
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
     ! Read the header
@@ -98,18 +112,22 @@ contains
 
     read(unit, *) n, iconst, ivar, iabund, ivers
 
-    write(OUTPUT_UNIT, *) '  Initial points :', n
-    write(OUTPUT_UNIT, *) '  File version   :', ivers
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Initial points :', n
+       write(OUTPUT_UNIT, 110) 'File version   :', ivers
+110    format(2X,A,1X,I0)
+    endif
 
     ! Read the data
 
     allocate(glob(iconst))
-    allocate(var(ivar,n))
+    allocate(var(ivar+iabund,n))
 
-    read(unit, 100) glob
-    read(unit, 100) var
+    read(unit, data_format_) glob
 
-100 format(1P5E19.12)
+    read_loop : do i = 1,n
+       read(unit, data_format_) var(:,i)
+    end do read_loop
 
     close(unit)
 
@@ -124,7 +142,6 @@ contains
     T = var(3,:)
     p = var(4,:)
     rho = var(5,:)
-    N2 = G*m*var(15,:)/r**3
     Gamma_1 = var(10,:)
     nabla_ad = var(11,:)
     delta = var(12,:)
@@ -133,46 +150,24 @@ contains
     kappa_T = var(17,:)
     kappa_rho = var(18,:)
     epsilon_ = var(9,:)
+    epsilon_T = var(19,:)
+    epsilon_rho = var(20,:)
 
-    allocate(epsilon_T(n))
-    allocate(epsilon_rho(n))
+    allocate(N2(n))
 
-    where(var(9,:) /= 0._WP)
-       epsilon_T = var(19,:)/var(9,:)
-       epsilon_rho = var(20,:)/var(9,:)
+    where(r /= 0._WP)
+       N2 = G*m*var(15,:)/r**3
     elsewhere
-       epsilon_T = 0._WP
-       epsilon_rho = 0._WP
-    endwhere
-
-    ! If necessary, add central data
+       N2 = 0._WP
+    end where
 
     if(r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
     if(m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
 
-    if(r(1) /= 0._WP) then
+    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-       m = [0._WP,m]
-       N2 = [0._WP,N2]
-
-       call add_center(r, p)
-       call add_center(r, rho)
-       call add_center(r, T)
-       call add_center(r, Gamma_1)
-       call add_center(r, nabla_ad)
-       call add_center(r, delta)
-       call add_center(r, nabla)
-       call add_center(r, kappa)
-       call add_center(r, kappa_rho)
-       call add_center(r, kappa_T)
-       call add_center(r, epsilon_)
-       call add_center(r, epsilon_rho)
-       call add_center(r, epsilon_T)
-
-       r = [0._WP,r]
-
-       write(OUTPUT_UNIT, *) '  Added central point'
-
+    if(add_center .AND. check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
     ! Initialize the base_coeffs
@@ -182,7 +177,7 @@ contains
     select type (bc)
     type is (evol_base_coeffs_t)
        call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, deriv_type)
+                    N2, Gamma_1, nabla_ad, delta, deriv_type, add_center)
     class default
        $ABORT(Invalid bc type)
     end select
@@ -198,7 +193,7 @@ contains
           call tc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                        Gamma_1, nabla_ad, delta, nabla,  &
                        kappa, kappa_rho, kappa_T, &
-                       epsilon_, epsilon_rho, epsilon_T, deriv_type)
+                       epsilon_, epsilon_rho, epsilon_T, deriv_type, add_center)
        class default
           $ABORT(Invalid tc type)
        end select
@@ -207,34 +202,18 @@ contains
 
     ! Set up the grid
 
-    if(PRESENT(x)) x = r/R_star
+    if(PRESENT(x)) then
+       if(add_center) then
+          x = [0._WP,r/R_star]
+       else
+          x = r/R_star
+       endif
+    endif
 
     ! Finish
 
     return
 
   end subroutine read_osc_file
-
-!****
-
-  subroutine add_center (x, y)
-
-    real(WP), intent(in)                 :: x(:)
-    real(WP), intent(inout), allocatable :: y(:)
-
-    real(WP) :: y_0
-
-    ! Add center (x=0) data to the array y(x), incrementing the
-    ! dimension of y by 1. x is not altered.
-
-    y_0 = (x(2)**2*y(1) - x(1)**2*y(2))/(x(2)**2 - x(1)**2)
-
-    y = [y_0,y]
-
-    ! Finish
-
-    return
-
-  end subroutine add_center
 
 end module gyre_osc_file

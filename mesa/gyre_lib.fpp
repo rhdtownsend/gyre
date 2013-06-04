@@ -1,5 +1,5 @@
-! Module   : gyre_mesa
-! Purpose  : interface for use in MESA
+! Module   : gyre_lib
+! Purpose  : library interface for use in MESA
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_mesa
+module gyre_lib
 
   ! Uses
 
@@ -25,16 +25,20 @@ module gyre_mesa
   use core_parallel
 
   use gyre_ad_bvp
+  use gyre_rad_bvp
   use gyre_base_coeffs
   use gyre_evol_base_coeffs
   use gyre_therm_coeffs
   use gyre_evol_therm_coeffs
+  use gyre_mesa_file
   use gyre_oscpar
   use gyre_gridpar
   use gyre_numpar
   use gyre_ad_search
+  use gyre_rad_search
   use gyre_mode
-  use gyre_frontend
+  use gyre_input
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -55,8 +59,10 @@ module gyre_mesa
   public :: WP
   public :: mode_t
   public :: gyre_init
+  public :: gyre_read_model
   public :: gyre_set_model
   public :: gyre_get_modes
+  public :: gyre_get_radial_modes
 
   ! Procedures
 
@@ -68,6 +74,8 @@ contains
 
     call init_parallel()
 
+    call set_log_level('WARN')
+
     ! Finish
 
     return
@@ -76,10 +84,29 @@ contains
 
 !****
 
+  subroutine gyre_read_model (file, G, deriv_type)
+
+    character(LEN=*), intent(in) :: file
+    real(WP), intent(in)         :: G
+    character(LEN=*), intent(in) :: deriv_type
+
+    ! Read the model
+
+    call read_mesa_file(file, G, deriv_type, bc_m, tc_m, x_bc_m)
+
+    ! Finish
+
+    return
+
+  end subroutine gyre_read_model
+  
+!****
+
   subroutine gyre_set_model (G, M_star, R_star, L_star, r, w, p, rho, T, &
                              N2, Gamma_1, nabla_ad, delta, nabla,  &
                              kappa, kappa_rho, kappa_T, &
-                             epsilon, epsilon_rho, epsilon_T, deriv_type)
+                             epsilon, epsilon_rho, epsilon_T, &
+                             Omega_rot, deriv_type)
 
     real(WP), intent(in)         :: G
     real(WP), intent(in)         :: M_star
@@ -101,11 +128,11 @@ contains
     real(WP), intent(in)         :: epsilon(:)
     real(WP), intent(in)         :: epsilon_rho(:)
     real(WP), intent(in)         :: epsilon_T(:)
+    real(WP), intent(in)         :: Omega_rot(:)
     character(LEN=*), intent(in) :: deriv_type
 
     real(WP), allocatable :: m(:)
-    real(WP), allocatable :: epsilon_rho_(:)
-    real(WP), allocatable :: epsilon_T_(:)
+    logical               :: add_center
 
     ! Set the model by storing coefficients
 
@@ -117,23 +144,12 @@ contains
 
     m = w/(1._WP+w)*M_star
 
-    if(ABS(epsilon_rho(1)) > 1E-3*epsilon(1)) then
-       where(epsilon /= 0._WP)
-          epsilon_rho_ = epsilon_rho/epsilon
-          epsilon_T_ = epsilon_T/epsilon
-       elsewhere
-          epsilon_rho_ = 0._WP
-          epsilon_T_ = 0._WP
-       endwhere
-    else
-       epsilon_rho_ = epsilon_rho
-       epsilon_T_ = epsilon_T
-    endif
+    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
     select type (bc_m)
     type is (evol_base_coeffs_t)
        call bc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                      N2, Gamma_1, nabla_ad, delta, deriv_type)
+                      N2, Gamma_1, nabla_ad, delta, deriv_type, add_center)
     class default
        $ABORT(Invalid bc_m type)
     end select
@@ -143,12 +159,16 @@ contains
        call tc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                       Gamma_1, nabla_ad, delta, nabla,  &
                       kappa, kappa_rho, kappa_T, &
-                      epsilon, epsilon_rho_, epsilon_T_, deriv_type)
+                      epsilon, epsilon_rho, epsilon_T, deriv_type, add_center)
     class default
        $ABORT(Invalid tc_m type)
     end select
 
-    x_bc_m = r/R_star
+    if(add_center) then
+       x_bc_m = [0._WP,r/R_star]
+    else
+       x_bc_m = r/R_star
+    endif
 
     ! Finish
 
@@ -171,8 +191,8 @@ contains
          integer, intent(out)     :: retcode
        end subroutine user_sub
     end interface
-    integer, intent(inout)  :: ipar
-    real(WP), intent(inout) :: rpar
+    integer, intent(inout)  :: ipar(:)
+    real(WP), intent(inout) :: rpar(:)
 
     integer                      :: unit
     type(oscpar_t)               :: op
@@ -189,17 +209,17 @@ contains
 
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
-    call init_oscpar(unit, op)
-    call init_numpar(unit, np)
-    call init_shoot_grid(unit, shoot_gp)
-    call init_recon_grid(unit, recon_gp)
-    call init_scan(unit, bc_m, op, shoot_gp, x_bc_m, omega)
+    call read_oscpar(unit, op)
+    call read_numpar(unit, np)
+    call read_shoot_gridpar(unit, shoot_gp)
+    call read_recon_gridpar(unit, recon_gp)
+    call read_scanpar(unit, bc_m, op, shoot_gp, x_bc_m, omega)
 
     close(unit)
 
     ! Set up bp
 
-    call bp%init(bc_m, tc_m, op, np, shoot_gp, recon_gp, x_bc_m)
+    call bp%init(bc_m, op, np, shoot_gp, recon_gp, x_bc_m, tc_m)
 
     ! Find modes
 
@@ -208,7 +228,7 @@ contains
     ! Process the modes
 
     mode_loop : do j = 1,SIZE(md)
-       call user_func(md(j), ipar, rpar, retcode)
+       call user_sub(md(j), ipar, rpar, retcode)
        if(retcode /= 0) exit mode_loop
     end do mode_loop
 
@@ -218,4 +238,66 @@ contains
 
   end subroutine gyre_get_modes
 
-end module gyre_mesa
+!****
+
+  subroutine gyre_get_radial_modes (file, user_sub, ipar, rpar)
+
+    character(LEN=*), intent(in) :: file
+    interface
+       subroutine user_sub (md, ipar, rpar, retcode)
+         import mode_t
+         import WP
+         type(mode_t), intent(in) :: md
+         integer, intent(inout)   :: ipar(:)
+         real(WP), intent(inout)  :: rpar(:)
+         integer, intent(out)     :: retcode
+       end subroutine user_sub
+    end interface
+    integer, intent(inout)  :: ipar(:)
+    real(WP), intent(inout) :: rpar(:)
+
+    integer                      :: unit
+    type(oscpar_t)               :: op
+    type(numpar_t)               :: np
+    real(WP), allocatable        :: omega(:)
+    type(gridpar_t), allocatable :: shoot_gp(:)
+    type(gridpar_t), allocatable :: recon_gp(:)
+    type(rad_bvp_t)              :: bp
+    type(mode_t), allocatable    :: md(:)
+    integer                      :: j
+    integer                      :: retcode
+
+    ! Read parameters
+
+    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+
+    call read_oscpar(unit, op)
+    call read_numpar(unit, np)
+    call read_shoot_gridpar(unit, shoot_gp)
+    call read_recon_gridpar(unit, recon_gp)
+    call read_scanpar(unit, bc_m, op, shoot_gp, x_bc_m, omega)
+
+    close(unit)
+
+    ! Set up bp
+
+    call bp%init(bc_m, op, np, shoot_gp, recon_gp, x_bc_m, tc_m)
+
+    ! Find modes
+
+    call rad_scan_search(bp, omega, md)
+
+    ! Process the modes
+
+    mode_loop : do j = 1,SIZE(md)
+       call user_sub(md(j), ipar, rpar, retcode)
+       if(retcode /= 0) exit mode_loop
+    end do mode_loop
+
+    ! Finish
+
+    return
+
+  end subroutine gyre_get_radial_modes
+
+end module gyre_lib
