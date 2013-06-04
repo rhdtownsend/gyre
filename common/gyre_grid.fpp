@@ -27,6 +27,7 @@ module gyre_grid
   use core_order
 
   use gyre_base_coeffs
+  use gyre_therm_coeffs
   use gyre_oscpar
   use gyre_gridpar
 
@@ -66,13 +67,14 @@ module gyre_grid
 
 contains
 
-  subroutine build_grid (gp, bc, op, x_in, x)
+  subroutine build_grid (gp, bc, op, x_in, x, tc)
 
-    type(gridpar_t), intent(in)        :: gp(:)
-    class(base_coeffs_t), intent(in)   :: bc
-    type(oscpar_t), intent(in)         :: op
-    real(WP), allocatable, intent(in)  :: x_in(:)
-    real(WP), allocatable, intent(out) :: x(:)
+    type(gridpar_t), intent(in)                 :: gp(:)
+    class(base_coeffs_t), intent(in)            :: bc
+    type(oscpar_t), intent(in)                  :: op
+    real(WP), allocatable, intent(in)           :: x_in(:)
+    real(WP), allocatable, intent(out)          :: x(:)
+    class(therm_coeffs_t), intent(in), optional :: tc
 
     integer :: i
 
@@ -98,6 +100,10 @@ contains
        case ('RESAMP_DISPERSION')
           call resample_dispersion(bc, op, gp(i)%omega_a, gp(i)%omega_b, &
                                    gp(i)%alpha_osc, gp(i)%alpha_exp, x)
+       case ('RESAMP_THERMAL')
+          $ASSERT(PRESENT(tc),No thermal coeffs)
+          call resample_thermal(bc, tc, gp(i)%omega_a, gp(i)%omega_b, &
+                                   gp(i)%alpha_thm, x)
        case ('RESAMP_CENTER')
           call resample_center(bc, op, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
        case ('RESAMP_UNIFORM')
@@ -553,6 +559,77 @@ contains
     return
 
   end subroutine resample_dispersion
+
+!****
+
+  subroutine resample_thermal (bc, tc, omega_a, omega_b, alpha_thm, x)
+
+    class(base_coeffs_t), intent(in)     :: bc
+    class(therm_coeffs_t), intent(in)    :: tc
+    real(WP), intent(in)                 :: omega_a
+    real(WP), intent(in)                 :: omega_b
+    real(WP), intent(in)                 :: alpha_thm
+    real(WP), allocatable, intent(inout) :: x(:)
+
+    integer               :: n_x
+    real(WP), allocatable :: k_thm(:)
+    integer               :: i
+    integer, allocatable  :: dn(:)
+    real(WP)              :: dphi_thm
+
+    $ASSERT(ALLOCATED(x),No input grid)
+
+    $ASSERT(omega_b >= omega_a,Invalid frequency interval)
+
+    ! Resample x by adding points to each cell, such that there are at
+    ! least alpha_thm points per thermal length c_thm
+
+    ! First, determine thermal wavenumbers at each point of x
+
+    n_x = SIZE(x)
+
+    allocate(k_thm(n_x))
+
+    k_thm(1) = 0._WP
+
+    wavenumber_loop : do i = 2,n_x-1
+
+       associate(V => bc%V(x(i)), nabla => tc%nabla(x(i)), &
+                 c_rad => tc%c_rad(x(i)), c_thm => tc%c_thm(x(i)))
+
+         k_thm(i) = SQRT(ABS(V*nabla/c_rad * (0._WP,1._WP)*omega_b*c_thm))/x(i)
+
+       end associate
+
+    end do wavenumber_loop
+
+    k_thm(n_x) = 0._WP
+
+    ! Determine how many points to add to each cell
+
+    allocate(dn(n_x-1))
+
+    sample_loop : do i = 1,n_x-1
+
+       ! Calculate the thermal phase change across the cell
+
+       dphi_thm = MAX(k_thm(i), k_thm(i+1))*(x(i+1) - x(i))
+
+       ! Set up dn
+
+       dn(i) = FLOOR((alpha_thm*dphi_thm)/TWOPI)
+
+    end do sample_loop
+
+    ! Perform the resampling
+
+    call resample(x, dn)
+
+    ! Finish
+
+    return
+
+  end subroutine resample_thermal
 
 !****
 

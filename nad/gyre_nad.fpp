@@ -104,8 +104,8 @@ program gyre_nad
      call read_recon_gridpar(unit, recon_gp)
      call read_scanpar(unit, bc, op, shoot_gp, x_bc, omega)
 
-     call ad_bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)
-     call nad_bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)
+     call ad_bp%init(bc, op, np, shoot_gp, recon_gp, x_bc, tc)
+     call nad_bp%init(bc, op, np, shoot_gp, recon_gp, x_bc, tc)
 
   endif
 

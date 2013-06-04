@@ -272,11 +272,12 @@ contains
     character(LEN=256) :: op_type
     real(WP)           :: alpha_osc
     real(WP)           :: alpha_exp
+    real(WP)           :: alpha_thm
     real(WP)           :: s
     integer            :: n
     integer            :: i
 
-    namelist /${NAME}_grid/ op_type, alpha_osc, alpha_exp, s, n
+    namelist /${NAME}_grid/ op_type, alpha_osc, alpha_exp, alpha_thm, s, n
 
     ! Count the number of grid namelists
 
@@ -305,6 +306,7 @@ contains
 
        alpha_osc = 0._WP
        alpha_exp = 0._WP
+       alpha_thm = 0._WP
 
        s = 0._WP
 
@@ -313,7 +315,7 @@ contains
        read(unit, NML=${NAME}_grid)
 
        gp(i) = gridpar_t(op_type=op_type, &
-                         alpha_osc=alpha_osc, alpha_exp=alpha_exp, &
+                         alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, &
                          omega_a=0._WP, omega_b=0._WP, &
                          s=s, n=n)
 

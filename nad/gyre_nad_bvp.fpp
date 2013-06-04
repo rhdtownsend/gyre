@@ -107,16 +107,16 @@ module gyre_nad_bvp
 
 contains
 
-  subroutine init (this, bc, tc, op, np, shoot_gp, recon_gp, x_in)
+  subroutine init (this, bc, op, np, shoot_gp, recon_gp, x_in, tc)
 
     class(nad_bvp_t), intent(out)     :: this
     class(base_coeffs_t), intent(in)  :: bc
-    class(therm_coeffs_t), intent(in) :: tc
     type(oscpar_t), intent(in)        :: op
     type(numpar_t), intent(in)        :: np
     type(gridpar_t), intent(in)       :: shoot_gp(:)
     type(gridpar_t), intent(in)       :: recon_gp(:)
     real(WP), allocatable, intent(in) :: x_in(:)
+    class(therm_coeffs_t), intent(in) :: tc
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
@@ -126,7 +126,7 @@ contains
 
     ! Create the shooting grid
 
-    call build_grid(shoot_gp, bc, op, x_in, this%x)
+    call build_grid(shoot_gp, bc, op, x_in, this%x, tc)
 
     n = SIZE(this%x)
 

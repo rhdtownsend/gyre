@@ -98,7 +98,11 @@ program gyre_ad
      call read_recon_gridpar(unit, recon_gp)
      call read_scanpar(unit, bc, op, shoot_gp, x_bc, omega)
 
-     call bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)
+     if (ALLOCATED(tc)) then
+        call bp%init(bc, op, np, shoot_gp, recon_gp, x_bc, tc)
+     else
+        call bp%init(bc, op, np, shoot_gp, recon_gp, x_bc)
+     endif
 
   end if
 

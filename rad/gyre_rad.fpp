@@ -100,7 +100,11 @@ program gyre_rad
 
      $ASSERT(op%l==0,Invalid harmonic degree)
 
-     call bp%init(bc, tc, op, np, shoot_gp, recon_gp, x_bc)
+     if(ALLOCATED(tc)) then
+        call bp%init(bc, op, np, shoot_gp, recon_gp, x_bc, tc)
+     else
+        call bp%init(bc, op, np, shoot_gp, recon_gp, x_bc)
+     endif
 
   end if
 

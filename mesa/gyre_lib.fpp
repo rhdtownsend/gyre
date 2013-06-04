@@ -219,7 +219,7 @@ contains
 
     ! Set up bp
 
-    call bp%init(bc_m, tc_m, op, np, shoot_gp, recon_gp, x_bc_m)
+    call bp%init(bc_m, op, np, shoot_gp, recon_gp, x_bc_m, tc_m)
 
     ! Find modes
 
@@ -281,7 +281,7 @@ contains
 
     ! Set up bp
 
-    call bp%init(bc_m, tc_m, op, np, shoot_gp, recon_gp, x_bc_m)
+    call bp%init(bc_m, op, np, shoot_gp, recon_gp, x_bc_m, tc_m)
 
     ! Find modes
 

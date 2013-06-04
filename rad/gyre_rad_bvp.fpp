@@ -104,16 +104,16 @@ module gyre_rad_bvp
 
 contains
 
-  subroutine init (this, bc, tc, op, np, shoot_gp, recon_gp, x_in)
+  subroutine init (this, bc, op, np, shoot_gp, recon_gp, x_in, tc)
 
-    class(rad_bvp_t), intent(out)                  :: this
-    class(base_coeffs_t), intent(in)               :: bc
-    class(therm_coeffs_t), allocatable, intent(in) :: tc
-    type(oscpar_t), intent(in)                     :: op
-    type(numpar_t), intent(in)                     :: np
-    type(gridpar_t), intent(in)                    :: shoot_gp(:)
-    type(gridpar_t), intent(in)                    :: recon_gp(:)
-    real(WP), allocatable, intent(in)              :: x_in(:)
+    class(rad_bvp_t), intent(out)               :: this
+    class(base_coeffs_t), intent(in)            :: bc
+    type(oscpar_t), intent(in)                  :: op
+    type(numpar_t), intent(in)                  :: np
+    type(gridpar_t), intent(in)                 :: shoot_gp(:)
+    type(gridpar_t), intent(in)                 :: recon_gp(:)
+    real(WP), allocatable, intent(in)           :: x_in(:)
+    class(therm_coeffs_t), intent(in), optional :: tc
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
@@ -132,7 +132,7 @@ contains
     ! Set up components
     
     allocate(this%bc, SOURCE=bc)
-    if(ALLOCATED(tc)) allocate(this%tc, SOURCE=tc)
+    if(PRESENT(tc)) allocate(this%tc, SOURCE=tc)
 
     this%op = op
     this%np = np
