@@ -429,7 +429,7 @@ contains
 
     ! Initialize the mode
     
-    call md%init(this%bc, this%tc, this%op, omega, x, y)
+    call md%init(this%bc, this%op, omega, x, y, this%tc)
 
     ! Finish
 

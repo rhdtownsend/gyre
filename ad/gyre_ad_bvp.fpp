@@ -153,7 +153,7 @@ contains
     x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
     call this%bc%fill_cache(x_cc)
-    if(PRESENT(tc)) call this%tc%fill_cache(x_cc)
+    if(ALLOCATED(this%tc)) call this%tc%fill_cache(x_cc)
 
     ! Finish
 
@@ -399,7 +399,11 @@ contains
 
     ! Initialize the mode
     
-    call md%init(this%bc, this%tc, this%op, omega, x, y_6)
+    if(ALLOCATED(this%tc)) then
+       call md%init(this%bc, this%op, omega, x, y_6, this%tc)
+    else
+       call md%init(this%bc, this%op, omega, x, y_6)
+    endif
 
     ! Finish
 

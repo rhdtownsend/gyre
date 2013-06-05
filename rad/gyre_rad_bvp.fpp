@@ -155,7 +155,7 @@ contains
     x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
     call this%bc%fill_cache(x_cc)
-    if(PRESENT(tc)) call this%tc%fill_cache(x_cc)
+    if(ALLOCATED(this%tc)) call this%tc%fill_cache(x_cc)
 
     ! Finish
 
