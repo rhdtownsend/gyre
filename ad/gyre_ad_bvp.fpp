@@ -39,7 +39,6 @@ module gyre_ad_bvp
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
-  use gyre_ivp, only: abscissa
   use gyre_mode
 
   use ISO_FORTRAN_ENV
@@ -117,7 +116,6 @@ contains
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
-    integer               :: k
 
     ! Initialize the ad_bvp
 
@@ -152,16 +150,10 @@ contains
 
     ! Set up the coefficient caches
 
-    x_cc = [this%x(1)]
-
-    abscissa_loop : do k = 1,n-1
-       x_cc = [x_cc,abscissa(this%np%ivp_solver_type, this%x(k),this%x(k+1))]
-    end do abscissa_loop
-
-    x_cc = [x_cc,this%x(this%n)]
+    x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
     call this%bc%fill_cache(x_cc)
-    call this%tc%fill_cache(x_cc)
+    if(ALLOCATED(this%tc)) call this%tc%fill_cache(x_cc)
 
     ! Finish
 
@@ -322,7 +314,7 @@ contains
     ! Set up the sysmtx
 
     call this%bc%enable_cache()
-    call this%tc%enable_cache()
+    if(ALLOCATED(this%tc)) call this%tc%enable_cache()
 
     call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
     call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
@@ -330,7 +322,7 @@ contains
     call this%sh%shoot(omega, this%x, this%sm)
 
     call this%bc%disable_cache()
-    call this%tc%disable_cache()
+    if(ALLOCATED(this%tc)) call this%tc%disable_cache()
 
     ! Finish
 
@@ -407,7 +399,11 @@ contains
 
     ! Initialize the mode
     
-    call md%init(this%bc, this%tc, this%op, omega, x, y_6)
+    if(ALLOCATED(this%tc)) then
+       call md%init(this%bc, this%op, omega, x, y_6, this%tc)
+    else
+       call md%init(this%bc, this%op, omega, x, y_6)
+    endif
 
     ! Finish
 
