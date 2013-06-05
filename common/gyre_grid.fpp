@@ -597,7 +597,7 @@ contains
        associate(V => bc%V(x(i)), nabla => tc%nabla(x(i)), &
                  c_rad => tc%c_rad(x(i)), c_thm => tc%c_thm(x(i)))
 
-         k_thm(i) = SQRT(ABS(V*nabla/c_rad * (0._WP,1._WP)*omega_b*c_thm))/x(i)
+         k_thm(i) = SQRT(ABS(V*nabla*omega_b*c_thm/c_rad))/x(i)
 
        end associate
 
