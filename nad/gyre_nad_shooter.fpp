@@ -31,7 +31,7 @@ module gyre_nad_shooter
   use gyre_nad_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
-  use gyre_ivp
+  use gyre_ivp, ivp_abscissa => abscissa
   use gyre_grid
 
   use ISO_FORTRAN_ENV
@@ -56,6 +56,7 @@ module gyre_nad_shooter
      procedure, public :: init
      procedure, public :: shoot
      procedure, public :: recon => recon_sh
+     procedure, public :: abscissa
   end type nad_shooter_t
 
   ! Access specifiers
@@ -266,6 +267,80 @@ contains
     return
 
   end subroutine recon_sh
+
+!****
+
+!****
+
+  function abscissa (this, x_sh) result (x)
+
+    class(ad_shooter_t), intent(in) :: this
+    real(WP), intent(in)            :: x_sh(:)
+    real(WP), allocatable           :: x(:)
+
+    integer :: k
+    integer :: n_cell(SIZE(x_sh))
+    integer :: i
+
+    ! Determine the abscissa used for shooting on the grid x_sh
+
+    !$OMP PARALLEL DO SCHEDULE (DYNAMIC)
+    count_loop : do k = 1,SIZE(x_sh)-1
+       n_cell(k) = SIZE(ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1)))
+    end do count_loop
+
+    allocate(x(SUM(n_cell)))
+
+    i = 1
+
+    cell_loop : do k = 1,SIZE(x_sh)-1
+       x(i:i+n_cell(k)-1) = ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1))
+       i = i + n_cell(k)
+    end do cell_loop
+
+    $CHECK_BOUNDS(i,SIZE(x)+1)
+
+    ! Finish
+
+    return
+
+  end function abscissa
+
+!****
+
+  function abscissa (this, x_sh) result (x)
+
+    class(nad_shooter_t), intent(in) :: this
+    real(WP), intent(in)             :: x_sh(:)
+    real(WP), allocatable            :: x(:)
+
+    integer :: k
+    integer :: n_cell(SIZE(x_sh))
+    integer :: i
+
+    ! Determine the abscissa used for shooting on the grid x_sh
+
+    !$OMP PARALLEL DO SCHEDULE (DYNAMIC)
+    count_loop : do k = 1,SIZE(x_sh)-1
+       n_cell(k) = SIZE(ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1)))
+    end do count_loop
+
+    allocate(x(SUM(n_cell)))
+
+    i = 1
+
+    cell_loop : do k = 1,SIZE(x_sh)-1
+       x(i:i+n_cell(k)-1) = ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1))
+       i = i + n_cell(k)
+    end do cell_loop
+
+    $CHECK_BOUNDS(i,SIZE(x)+1)
+
+    ! Finish
+
+    return
+
+  end function abscissa
 
 !****
 

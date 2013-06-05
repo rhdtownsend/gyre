@@ -40,7 +40,6 @@ module gyre_nad_bvp
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
-  use gyre_ivp, only: abscissa
   use gyre_mode
 
   use ISO_FORTRAN_ENV
@@ -120,7 +119,6 @@ contains
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
-    integer               :: k
 
     ! Initialize the nad_bvp
 
@@ -157,13 +155,9 @@ contains
 
     ! Set up the coefficient caches
 
-    x_cc = [this%x(1)]
+    ! Set up the coefficient caches
 
-    abscissa_loop : do k = 1,n-1
-       x_cc = [x_cc,abscissa(this%np%ivp_solver_type, this%x(k),this%x(k+1))]
-    end do abscissa_loop
-
-    x_cc = [x_cc,this%x(this%n)]
+    x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
     call this%bc%fill_cache(x_cc)
     call this%tc%fill_cache(x_cc)
