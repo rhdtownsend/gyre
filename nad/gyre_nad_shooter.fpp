@@ -315,7 +315,7 @@ contains
     real(WP), allocatable            :: x(:)
 
     integer :: k
-    integer :: n_cell(SIZE(x_sh))
+    integer :: n_cell(SIZE(x_sh)-1)
     integer :: i
 
     ! Determine the abscissa used for shooting on the grid x_sh

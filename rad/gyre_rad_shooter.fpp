@@ -51,6 +51,7 @@ module gyre_rad_shooter
      procedure, public :: init
      procedure, public :: shoot
      procedure, public :: recon => recon_sh
+     procedure, public :: abscissa
   end type rad_shooter_t
 
   ! Access specifiers
@@ -194,7 +195,7 @@ contains
     real(WP), allocatable            :: x(:)
 
     integer :: k
-    integer :: n_cell(SIZE(x_sh))
+    integer :: n_cell(SIZE(x_sh)-1)
     integer :: i
 
     ! Determine the abscissa used for shooting on the grid x_sh
