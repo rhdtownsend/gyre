@@ -97,15 +97,15 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, bc, tc, op, omega, x, y)
+  subroutine init (this, bc, op, omega, x, y, tc)
 
-    class(mode_t), intent(out)                     :: this
-    class(base_coeffs_t), intent(in)               :: bc
-    class(therm_coeffs_t), intent(in), allocatable :: tc
-    type(oscpar_t), intent(in)                     :: op
-    complex(WP), intent(in)                        :: omega
-    real(WP), intent(in)                           :: x(:)
-    complex(WP), intent(in)                        :: y(:,:)
+    class(mode_t), intent(out)                  :: this
+    class(base_coeffs_t), intent(in)            :: bc
+    type(oscpar_t), intent(in)                  :: op
+    complex(WP), intent(in)                     :: omega
+    real(WP), intent(in)                        :: x(:)
+    complex(WP), intent(in)                     :: y(:,:)
+    class(therm_coeffs_t), optional, intent(in) :: tc
 
     real(WP) :: phase
 
@@ -115,7 +115,7 @@ contains
     ! Initialize the mode
 
     allocate(this%bc, SOURCE=bc)
-    if(ALLOCATED(tc)) allocate(this%tc, SOURCE=tc)
+    if(PRESENT(tc)) allocate(this%tc, SOURCE=tc)
 
     this%op = op
 
