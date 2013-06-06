@@ -212,9 +212,9 @@ contains
     integer             :: n_e
     integer             :: l
     integer             :: k
-    complex(WP)         :: P(2*this%n_e,this%n_e)
-    complex(WP)         :: Q(2*this%n_e,this%n_e)
-    complex(WP)         :: R(2*this%n_e,this%n_e)
+    complex(WP)         :: M_G(2*this%n_e,this%n_e)
+    complex(WP)         :: M_U(2*this%n_e,this%n_e)
+    complex(WP)         :: M_E(2*this%n_e,this%n_e)
     integer             :: ipiv(this%n_e)
     integer             :: info
     integer             :: i
@@ -244,29 +244,29 @@ contains
 
          ! Reduce pairs of blocks to single blocks
 
-         !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (P, Q, R, ipiv, info, i)
+         !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (M_G, M_U, M_E, ipiv, info, i)
          reduce_loop : do k = 1, n-l, 2*l
 
             ! Set up matrices (see expressions following eqn. 2.5 of
             ! Wright 1994)
 
-            P(:n_e,:) = C(:,:,k)
-            P(n_e+1:,:) = A(:,:,k+l)
+            M_G(:n_e,:) = A(:,:,k)
+            M_G(n_e+1:,:) = 0._WP
 
-            Q(:n_e,:) = 0._WP
-            Q(n_e+1:,:) = C(:,:,k+l)
+            M_U(:n_e,:) = C(:,:,k)
+            M_U(n_e+1:,:) = A(:,:,k+l)
 
-            R(:n_e,:) = A(:,:,k)
-            R(n_e+1:,:) = 0._WP
+            M_E(:n_e,:) = 0._WP
+            M_E(n_e+1:,:) = C(:,:,k+l)
 
-            ! Calculate the LU factorization of P, and use it to reduce
-            ! Q and R. The nasty fpx3 stuff is to ensure the correct
+            ! Calculate the LU factorization of M_U, and use it to reduce
+            ! M_E and M_G. The nasty fpx3 stuff is to ensure the correct
             ! LAPACK/BLAS routines are called (can't use generics, since
             ! we're then not allowed to pass array elements into
             ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
             ! "Fortran 90/95 Explained")
 
-            call XGETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
+            call XGETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
             $ASSERT(info >= 0, Negative return from XGETRF)
 
             $block
@@ -277,25 +277,25 @@ contains
             $local $X C
             $endif
 
-            call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
+            call ${X}LASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
             call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                 CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, Q(1,1), 2*n_e)
+                 CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
             call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                 P(n_e+1,1), 2*n_e, Q(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                 Q(n_e+1,1), 2*n_e)
+                 M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                 M_E(n_e+1,1), 2*n_e)
 
-            call ${X}LASWP(n_e, R, 2*n_e, 1, n_e, ipiv, 1)
+            call ${X}LASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
             call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                 CMPLX(1._WP, KIND=WP), P(1,1), 2*n_e, R(1,1), 2*n_e)
+                 CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
             call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                 P(n_e+1,1), 2*n_e, R(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                 R(n_e+1,1), 2*n_e)
+                 M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
+                 M_G(n_e+1,1), 2*n_e)
 
             $endblock
 
             ! Calculate the block determinant
 
-            block_det(k) = product(ext_complex(diagonal(P)))
+            block_det(k) = product(ext_complex(diagonal(M_U)))
 
             do i = 1,n_e
                if(ipiv(i) /= i) block_det(k) = -block_det(k)
@@ -303,8 +303,8 @@ contains
 
             ! Store results
 
-            C(:,:,k) = Q(n_e+1:,:)
-            A(:,:,k) = R(n_e+1:,:)
+            C(:,:,k) = M_E(n_e+1:,:)
+            A(:,:,k) = M_G(n_e+1:,:)
 
          end do reduce_loop
 
@@ -359,9 +359,9 @@ contains
     integer          :: n_e
     integer          :: l
     integer          :: k
-    real(WP)         :: P(2*this%n_e,this%n_e)
-    real(WP)         :: Q(2*this%n_e,this%n_e)
-    real(WP)         :: R(2*this%n_e,this%n_e)
+    real(WP)         :: M_G(2*this%n_e,this%n_e)
+    real(WP)         :: M_U(2*this%n_e,this%n_e)
+    real(WP)         :: M_E(2*this%n_e,this%n_e)
     integer          :: ipiv(this%n_e)
     integer          :: info
     integer          :: i
@@ -392,29 +392,29 @@ contains
 
          ! Reduce pairs of blocks to single blocks
 
-         !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (P, Q, R, ipiv, info, i)
+         !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (M_G, M_U, M_E, ipiv, info, i)
          reduce_loop : do k = 1, n-l, 2*l
 
             ! Set up matrices (see expressions following eqn. 2.5 of
             ! Wright 1994)
 
-            P(:n_e,:) = REAL(C(:,:,k))
-            P(n_e+1:,:) = REAL(A(:,:,k+l))
+            M_G(:n_e,:) = REAL(A(:,:,k))
+            M_G(n_e+1:,:) = 0._WP
 
-            Q(:n_e,:) = 0._WP
-            Q(n_e+1:,:) = REAL(C(:,:,k+l))
+            M_U(:n_e,:) = REAL(C(:,:,k))
+            M_U(n_e+1:,:) = REAL(A(:,:,k+l))
+
+            M_E(:n_e,:) = 0._WP
+            M_E(n_e+1:,:) = REAL(C(:,:,k+l))
             
-            R(:n_e,:) = REAL(A(:,:,k))
-            R(n_e+1:,:) = 0._WP
-
-            ! Calculate the LU factorization of P, and use it to reduce
-            ! Q and R. The nasty fpx3 stuff is to ensure the correct
+            ! Calculate the LU factorization of M_U, and use it to reduce
+            ! M_E and M_G. The nasty fpx3 stuff is to ensure the correct
             ! LAPACK/BLAS routines are called (can't use generics, since
             ! we're then not allowed to pass array elements into
             ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
             ! "Fortran 90/95 Explained")
 
-            call XGETRF(2*n_e, n_e, P, 2*n_e, ipiv, info)
+            call XGETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
             $ASSERT(info >= 0, Negative return from XGETRF)
 
             $block
@@ -425,25 +425,25 @@ contains
             $local $X S
             $endif
 
-            call ${X}LASWP(n_e, Q, 2*n_e, 1, n_e, ipiv, 1)
+            call ${X}LASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
             call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                 1._WP, P(1,1), 2*n_e, Q(1,1), 2*n_e)
+                 1._WP, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
             call ${X}GEMM('N', 'N', n_e, n_e, n_e, -1._WP, &
-                 P(n_e+1,1), 2*n_e, Q(1,1), 2*n_e, 1._WP, &
-                 Q(n_e+1,1), 2*n_e)
+                 M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, 1._WP, &
+                 M_G(n_e+1,1), 2*n_e)
 
-            call ${X}LASWP(n_e, R, 2*n_e, 1, n_e, ipiv, 1)
+            call ${X}LASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
             call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                 1._WP, P(1,1), 2*n_e, R(1,1), 2*n_e)
+                 1._WP, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
             call ${X}GEMM('N', 'N', n_e, n_e, n_e, -1._WP, &
-                 P(n_e+1,1), 2*n_e, R(1,1), 2*n_e, 1._WP, &
-                 R(n_e+1,1), 2*n_e)
+                 M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, 1._WP, &
+                 M_E(n_e+1,1), 2*n_e)
 
             $endblock
 
             ! Calculate the block determinant
 
-            block_det(k) = product(ext_real(diagonal(P)))
+            block_det(k) = product(ext_real(diagonal(M_U)))
 
             do i = 1,n_e
                if(ipiv(i) /= i) block_det(k) = -block_det(k)
@@ -451,8 +451,8 @@ contains
 
             ! Store results
 
-            C(:,:,k) = Q(n_e+1:,:)
-            A(:,:,k) = R(n_e+1:,:)
+            A(:,:,k) = M_G(n_e+1:,:)
+            C(:,:,k) = M_E(n_e+1:,:)
 
          end do reduce_loop
 
