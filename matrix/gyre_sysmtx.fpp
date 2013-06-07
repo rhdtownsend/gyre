@@ -175,13 +175,14 @@ contains
 
 !****
 
-  function determinant (this, use_real) result (det)
+  subroutine determinant (this, det, use_real)
 
-    class(sysmtx_t), intent(inout) :: this
-    type(ext_complex_t)            :: det
-    logical, intent(in), optional  :: use_real
+    class(sysmtx_t), intent(inout)   :: this
+    type(ext_complex_t), intent(out) :: det
+    logical, intent(in), optional    :: use_real
 
-    logical :: use_real_
+    logical          :: use_real_
+    type(ext_real_t) :: det_r
 
     if(PRESENT(use_real)) then
        use_real_ = use_real
@@ -192,16 +193,17 @@ contains
     ! Calculate the sysmtx determinant
 
     if(use_real_) then
-       det = ext_complex(determinant_slu_r(this))
+       call determinant_slu_r(this, det_r)
+       det = ext_complex(det_r)
     else
-       det = determinant_slu_c(this)
+       call determinant_slu_c(this, det)
     end if
 
     ! Finish
     
     return
 
-  end function determinant
+  end subroutine determinant
 
 !****
 
@@ -210,10 +212,10 @@ contains
   $local $SUFFIX $1
   $local $TYPE $2
 
-  function determinant_slu_$SUFFIX (sm) result (det)
+  subroutine determinant_slu_$SUFFIX (sm, det)
 
-    class(sysmtx_t), intent(inout) :: sm
-    type(ext_${TYPE}_t)            :: det
+    class(sysmtx_t), intent(inout)   :: sm
+    type(ext_${TYPE}_t), intent(out) :: det
 
     integer   :: n_e
     integer   :: n_i
@@ -272,7 +274,7 @@ contains
 
     return
 
-  end function determinant_slu_$SUFFIX
+  end subroutine determinant_slu_$SUFFIX
 
   $endsub
 
@@ -281,14 +283,16 @@ contains
 
 !****
 
-  function null_vector (this, use_real) result (b)
+  subroutine null_vector (this, b, use_real)
 
     class(sysmtx_t), intent(inout) :: this
-    complex(WP)                    :: b(this%n_e*(this%n+1))
-
+    complex(WP), intent(out)       :: b(:)
     logical, intent(in), optional  :: use_real
 
-    logical :: use_real_
+    logical  :: use_real_
+    real(WP) :: b_r(SIZE(b))
+
+    $CHECK_BOUNDS(SIZE(b),this%n_e*(this%n+1))
 
     if(PRESENT(use_real)) then
        use_real_ = use_real
@@ -299,16 +303,17 @@ contains
     ! Calculate the null vector
 
     if(use_real_) then
-       b = null_vector_slu_r(this)
+       call null_vector_slu_r(this, b_r)
+       b = REAL(b_r)
     else
-       b = null_vector_slu_c(this)
+       call null_vector_slu_c(this, b)
     end if
 
     ! Finish
 
     return
 
-  end function null_vector
+  end subroutine null_vector
 
 !****
 
@@ -317,10 +322,10 @@ contains
   $local $SUFFIX $1
   $local $TYPE $2
 
-  function null_vector_slu_$SUFFIX (this) result (b)
+  subroutine null_vector_slu_$SUFFIX (this, b)
 
     class(sysmtx_t), intent(inout) :: this
-    $TYPE(WP)                      :: b(this%n_e*(this%n+1))
+    $TYPE(WP)                      :: b(:)
 
     $TYPE(WP), parameter :: ZERO = 0._WP
     $TYPE(WP), parameter :: ONE = 1._WP
@@ -339,6 +344,8 @@ contains
     integer             :: i_a
     integer             :: i_b
     integer             :: i_c
+
+    $CHECK_BOUNDS(SIZE(b),this%n_e*(this%n+1))
 
     ! Factorize the matrix
 
@@ -454,7 +461,7 @@ contains
 
     return
 
-  end function null_vector_slu_$SUFFIX
+  end subroutine null_vector_slu_$SUFFIX
 
   $endsub
 
