@@ -37,15 +37,18 @@ module gyre_ivp_findiff
 
   private
 
-  public :: solve_findiff
-  public :: recon_findiff
-  public :: abscissa_findiff
+  public :: solve_findiff_GL2
+  public :: solve_findiff_GL4
+  public :: recon_findiff_GL2
+  public :: recon_findiff_GL4
+  public :: abscissa_findiff_GL2
+  public :: abscissa_findiff_GL4
 
   ! Procedures
 
 contains
 
-  subroutine solve_findiff (jc, omega, x_a, x_b, E_l, E_r, S)
+  subroutine solve_findiff_GL2 (jc, omega, x_a, x_b, E_l, E_r, S)
 
     class(jacobian_t), intent(in)    :: jc
     complex(WP), intent(in)          :: omega
@@ -70,7 +73,7 @@ contains
 
     ! Evaluate the Jacobian
 
-    x = abscissa_findiff(x_a, x_b)
+    x = abscissa_findiff_GL2(x_a, x_b)
     dx = x_b - x_a
 
     call jc%eval(omega, x(1), A)
@@ -84,11 +87,86 @@ contains
 
     ! Finish
 
-  end subroutine solve_findiff
+  end subroutine solve_findiff_GL2
 
 !****
 
-  subroutine recon_findiff (jc, omega, x_a, x_b, y_a, y_b, x, y)
+  subroutine solve_findiff_GL4 (jc, omega, x_a, x_b, E_l, E_r, S)
+
+    class(jacobian_t), intent(in)    :: jc
+    complex(WP), intent(in)          :: omega
+    real(WP), intent(in)             :: x_a
+    real(WP), intent(in)             :: x_b
+    complex(WP), intent(out)         :: E_l(:,:)
+    complex(WP), intent(out)         :: E_r(:,:)
+    type(ext_complex_t), intent(out) :: S
+
+    real(WP), parameter :: ALPHA_11 = 0.25_WP
+    real(WP), parameter :: ALPHA_21 = 0.25_WP + SQRT(3._WP)/6._WP
+    real(WP), parameter :: ALPHA_12 = 0.25_WP - SQRT(3._WP)/6._WP
+    real(WP), parameter :: ALPHA_22 = 0.25_WP
+    real(WP), parameter :: BETA_1 = 0.5_WP
+    real(WP), parameter :: BETA_2 = 0.5_WP
+
+    real(WP)    :: dx
+    real(WP)    :: x(2)
+    complex(WP) :: A(jc%n_e,jc%n_e,2)
+    integer     :: n_e
+    complex(WP) :: W(2*jc%n_e,2*jc%n_e)
+    complex(WP) :: V(2*jc%n_e,jc%n_e)
+    complex(WP) :: D(jc%n_e,2*jc%n_e)
+    complex(WP) :: Gamma(jc%n_e,jc%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_l, 1),jc%n_e)
+    $CHECK_BOUNDS(SIZE(E_l, 2),jc%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_r, 1),jc%n_e)
+    $CHECK_BOUNDS(SIZE(E_r, 2),jc%n_e)
+
+    ! Solve the IVP across the interval x_a -> x_b using 4th-order
+    ! Gauss-Legendre finite diffferences (see Ascher et al. 1995,
+    ! Chap. 5)
+
+    ! Evaluate the Jacobian
+
+    x = abscissa_findiff_GL4(x_a, x_b)
+    dx = x_b - x_a
+
+    call jc%eval(omega, x(1), A(:,:,1))
+    call jc%eval(omega, x(2), A(:,:,2))
+
+    ! Set up the solution matrices and scales
+
+    n_e = jc%n_e
+
+    W(:n_e,:n_e) = identity_matrix(n_e) - dx*ALPHA_11*A(:,:,1)
+    W(n_e+1:,:n_e) = -dx*ALPHA_21*A(:,:,2)
+
+    W(:n_e,n_e+1:) = -dx*ALPHA_12*A(:,:,1)
+    W(n_e+1:,n_e+1:) = identity_matrix(n_e) - dx*ALPHA_22*A(:,:,2)
+
+    V(:n_e,:) = A(:,:,1)
+    V(n_e+1:,:) = A(:,:,2)
+
+    D(:,:n_e) = BETA_1*identity_matrix(n_e)
+    D(:,n_e+1:) = BETA_2*identity_matrix(n_e)
+
+    Gamma = identity_matrix(n_e) + dx*MATMUL(D, linear_solve(W, V))
+
+    ! Set up the solution matrices and scales
+
+    E_l = -Gamma
+    E_r = identity_matrix(n_e)
+
+    S = ext_complex(1._WP)
+
+    ! Finish
+
+  end subroutine solve_findiff_GL4
+
+!****
+
+  subroutine recon_findiff_GL2 (jc, omega, x_a, x_b, y_a, y_b, x, y)
 
     class(jacobian_t), intent(in) :: jc
     complex(WP), intent(in)       :: omega
@@ -123,11 +201,38 @@ contains
 
     return
 
-  end subroutine recon_findiff
+  end subroutine recon_findiff_GL2
 
 !****
 
-  function abscissa_findiff (x_a, x_b) result (x)
+  subroutine recon_findiff_GL4 (jc, omega, x_a, x_b, y_a, y_b, x, y)
+
+    class(jacobian_t), intent(in) :: jc
+    complex(WP), intent(in)       :: omega
+    real(WP), intent(in)          :: x_a
+    real(WP), intent(in)          :: x_b
+    complex(WP), intent(in)       :: y_a(:)
+    complex(WP), intent(in)       :: y_b(:)
+    real(WP), intent(in)          :: x(:)
+    complex(WP), intent(out)      :: y(:,:)
+
+    $CHECK_BOUNDS(SIZE(y_a),jc%n_e)
+    $CHECK_BOUNDS(SIZE(y_b),jc%n_e)
+    
+    $CHECK_BOUNDS(SIZE(y, 1),jc%n_e)
+    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
+
+    call recon_findiff_GL2(jc, omega, x_a, x_b, y_a, y_b, x, y)
+
+    ! Finish
+
+    return
+
+  end subroutine recon_findiff_GL4
+
+!****
+
+  function abscissa_findiff_GL2 (x_a, x_b) result (x)
 
     real(WP), intent(in) :: x_a
     real(WP), intent(in) :: x_b
@@ -145,6 +250,28 @@ contains
 
     return
 
-  end function abscissa_findiff
+  end function abscissa_findiff_GL2
+
+!****
+
+  function abscissa_findiff_GL4 (x_a, x_b) result (x)
+
+    real(WP), intent(in) :: x_a
+    real(WP), intent(in) :: x_b
+    real(WP)             :: x(2)
+
+    real(WP) :: dx
+
+    ! Set up the abscissa for centered finite-differences
+
+    dx = x_b - x_a
+
+    x = x_a + (0.5_WP+[-1._WP,1._WP]*SQRT(3._WP)/6._WP)*dx
+
+    ! Finish
+
+    return
+
+  end function abscissa_findiff_GL4
 
 end module gyre_ivp_findiff

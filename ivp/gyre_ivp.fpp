@@ -61,8 +61,10 @@ contains
     ! Solve the IVP across the interval x_a -> x_b
 
     select case(solver_type)
-    case('FINDIFF')
-       call solve_findiff(jc, omega, x_a, x_b, E_l, E_r, S)
+    case('FINDIFF','FINDIFF_GL2')
+       call solve_findiff_GL2(jc, omega, x_a, x_b, E_l, E_r, S)
+    case('FINDIFF_GL4')
+       call solve_findiff_GL4(jc, omega, x_a, x_b, E_l, E_r, S)
     case('MAGNUS_GL2')
        call solve_magnus_GL2(jc, omega, x_a, x_b, E_l, E_r, S, use_real)
     case('MAGNUS_GL4')
@@ -97,8 +99,10 @@ contains
     ! Reconstruct the IVP solution within the interval x_a -> x_b
 
     select case(solver_type)
-    case('FINDIFF')
-       call recon_findiff(jc, omega, x_a, x_b, y_a, y_b, x, y)
+    case('FINDIFF','FINDIFF_GL2')
+       call recon_findiff_GL2(jc, omega, x_a, x_b, y_a, y_b, x, y)
+    case('FINDIFF_GL4')
+       call recon_findiff_GL4(jc, omega, x_a, x_b, y_a, y_b, x, y)
     case('MAGNUS_GL2')
        call recon_magnus_GL2(jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
     case('MAGNUS_GL4')
@@ -128,8 +132,10 @@ contains
     ! the interval x_a -> x_b
 
     select case(solver_type)
-    case('FINDIFF')
-       x = abscissa_findiff(x_a, x_b)
+    case('FINDIFF','FINDIFF_GL2')
+       x = abscissa_findiff_GL2(x_a, x_b)
+    case('FINDIFF_GL4')
+       x = abscissa_findiff_GL4(x_a, x_b)
     case('MAGNUS_GL2')
        x = abscissa_magnus_GL2(x_a, x_b)
     case('MAGNUS_GL4')
