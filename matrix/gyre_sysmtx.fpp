@@ -325,9 +325,9 @@ contains
   $local $SUFFIX $1
   $local $TYPE $2
 
-  subroutine null_vector_slu_$SUFFIX (this, b, det)
+  subroutine null_vector_slu_$SUFFIX (sm, b, det)
 
-    class(sysmtx_t), intent(inout)   :: this
+    class(sysmtx_t), intent(inout)   :: sm
     $TYPE(WP), intent(out)           :: b(:)
     type(ext_${TYPE}_t), intent(out) :: det
 
@@ -337,55 +337,67 @@ contains
     integer             :: n
     integer             :: n_e
     integer             :: n_i
-    $TYPE(WP)           :: M(2*this%n_e,2*this%n_e)
-    integer             :: ipiv(2*this%n_e)
+    $TYPE(WP)           :: M(2*sm%n_e,2*sm%n_e)
+    integer             :: ipiv(2*sm%n_e)
     integer             :: info
     integer             :: i
-    $TYPE(WP)           :: b_bound(2*this%n_e)
+    $TYPE(WP)           :: b_bound(2*sm%n_e)
     integer             :: l
     integer             :: k
     integer             :: i_a
     integer             :: i_b
     integer             :: i_c
 
-    $CHECK_BOUNDS(SIZE(b),this%n_e*(this%n+1))
+    $CHECK_BOUNDS(SIZE(b),sm%n_e*(sm%n+1))
 
     ! Factorize the matrix
 
-    call factorize_slu_$SUFFIX(this, det, recon_mtx=.TRUE.)
+    call factorize_slu_$SUFFIX(sm, det, recon_mtx=.TRUE.)
 
     ! Set up the reduced 2x2-block matrix
 
-    n = this%n
-    n_e = this%n_e
-    n_i = this%n_i
+    n = sm%n
+    n_e = sm%n_e
+    n_i = sm%n_i
 
     $if($SUFFIX eq 'r')
 
-    M(:n_i,:n_e) = REAL(this%B_i)
-    M(n_i+1:n_i+n_e,:n_e) = REAL(this%E_l(:,:,1))
+    M(:n_i,:n_e) = REAL(sm%B_i)
+    M(n_i+1:n_i+n_e,:n_e) = REAL(sm%E_l(:,:,1))
     M(n_i+n_e+1:,:n_e) = 0._WP
 
     M(:n_i,n_e+1:) = 0._WP
-    M(n_i+1:n_i+n_e,n_e+1:) = REAL(this%E_r(:,:,1))
-    M(n_i+n_e+1:,n_e+1:) = REAL(this%B_o)
+    M(n_i+1:n_i+n_e,n_e+1:) = REAL(sm%E_r(:,:,1))
+    M(n_i+n_e+1:,n_e+1:) = REAL(sm%B_o)
 
     $else
 
-    M(:n_i,:n_e) = this%B_i
-    M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
+    M(:n_i,:n_e) = sm%B_i
+    M(n_i+1:n_i+n_e,:n_e) = sm%E_l(:,:,1)
     M(n_i+n_e+1:,:n_e) = 0._WP
 
     M(:n_i,n_e+1:) = 0._WP
-    M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
-    M(n_i+n_e+1:,n_e+1:) = this%B_o
+    M(n_i+1:n_i+n_e,n_e+1:) = sm%E_r(:,:,1)
+    M(n_i+n_e+1:,n_e+1:) = sm%B_o
 
     $endif
 
-    ! Decompose it and find the (near-) zero element
+    ! Add in its contribution to the determinant
 
     call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
-    $ASSERT(info >= 0,Negative return from XGETRF)
+    $ASSERT(info >= 0, Negative return from XGETRF)
+
+    $if($SUFFIX eq 'r')
+    det = product([ext_real(diagonal(M)),det,ext_real(sm%S)])
+    $else
+    det = product([ext_complex(diagonal(M)),det,sm%S])
+    $endif
+
+    do i = 1,2*n_e
+       if(ipiv(i) /= i) det = -det
+    end do
+
+    ! Find the (near-)zero element 
 
     i = MINLOC(ABS(diagonal(M)), DIM=1)
 
@@ -447,11 +459,11 @@ contains
           b(i_b:i_b+n_e-1) = ZERO
 
           $if($SUFFIX eq 'r')
-          call ${X}GEMV('N', n_e, n_e, -ONE, REAL(this%E_l(:,:,k+l)), n_e, b(i_a:i_a+n_e-1), 1, ZERO, b(i_b:i_b+n_e-1), 1)
-          call ${X}GEMV('N', n_e, n_e, -ONE, REAL(this%E_r(:,:,k+l)), n_e, b(i_c:i_c+n_e-1), 1, ONE, b(i_b:i_b+n_e-1), 1)
+          call ${X}GEMV('N', n_e, n_e, -ONE, REAL(sm%E_l(:,:,k+l)), n_e, b(i_a:i_a+n_e-1), 1, ZERO, b(i_b:i_b+n_e-1), 1)
+          call ${X}GEMV('N', n_e, n_e, -ONE, REAL(sm%E_r(:,:,k+l)), n_e, b(i_c:i_c+n_e-1), 1, ONE, b(i_b:i_b+n_e-1), 1)
           $else
-          call ${X}GEMV('N', n_e, n_e, -ONE, this%E_l(:,:,k+l), n_e, b(i_a:i_a+n_e-1), 1, ZERO, b(i_b:i_b+n_e-1), 1)
-          call ${X}GEMV('N', n_e, n_e, -ONE, this%E_r(:,:,k+l), n_e, b(i_c:i_c+n_e-1), 1, ONE, b(i_b:i_b+n_e-1), 1)
+          call ${X}GEMV('N', n_e, n_e, -ONE, sm%E_l(:,:,k+l), n_e, b(i_a:i_a+n_e-1), 1, ZERO, b(i_b:i_b+n_e-1), 1)
+          call ${X}GEMV('N', n_e, n_e, -ONE, sm%E_r(:,:,k+l), n_e, b(i_c:i_c+n_e-1), 1, ONE, b(i_b:i_b+n_e-1), 1)
           $endif
 
        end do backsub_loop
