@@ -341,14 +341,15 @@ contains
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
 
-    complex(WP) :: b(this%n_e*this%n)
-    complex(WP) :: y_sh(this%n_e,this%n)
+    complex(WP)         :: b(this%n_e*this%n)
+    type(ext_complex_t) :: det
+    complex(WP)         :: y_sh(this%n_e,this%n)
 
     ! Reconstruct the solution on the shooting grid
 
     call this%build(omega)
 
-    call this%sm%null_vector(b, use_real=.TRUE.)
+    call this%sm%null_vector(b, det, use_real=.TRUE.)
 
     y_sh = RESHAPE(b, SHAPE(y_sh))
 

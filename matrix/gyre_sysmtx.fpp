@@ -283,14 +283,16 @@ contains
 
 !****
 
-  subroutine null_vector (this, b, use_real)
+  subroutine null_vector (this, b, det, use_real)
 
-    class(sysmtx_t), intent(inout) :: this
-    complex(WP), intent(out)       :: b(:)
-    logical, intent(in), optional  :: use_real
+    class(sysmtx_t), intent(inout)   :: this
+    complex(WP), intent(out)         :: b(:)
+    type(ext_complex_t), intent(out) :: det
+    logical, intent(in), optional    :: use_real
 
-    logical  :: use_real_
-    real(WP) :: b_r(SIZE(b))
+    logical          :: use_real_
+    real(WP)         :: b_r(SIZE(b))
+    type(ext_real_t) :: det_r
 
     $CHECK_BOUNDS(SIZE(b),this%n_e*(this%n+1))
 
@@ -303,10 +305,11 @@ contains
     ! Calculate the null vector
 
     if(use_real_) then
-       call null_vector_slu_r(this, b_r)
-       b = REAL(b_r)
+       call null_vector_slu_r(this, b_r, det_r)
+       b = b_r
+       det = ext_complex(det_r)
     else
-       call null_vector_slu_c(this, b)
+       call null_vector_slu_c(this, b, det)
     end if
 
     ! Finish
@@ -322,15 +325,15 @@ contains
   $local $SUFFIX $1
   $local $TYPE $2
 
-  subroutine null_vector_slu_$SUFFIX (this, b)
+  subroutine null_vector_slu_$SUFFIX (this, b, det)
 
-    class(sysmtx_t), intent(inout) :: this
-    $TYPE(WP)                      :: b(:)
+    class(sysmtx_t), intent(inout)   :: this
+    $TYPE(WP), intent(out)           :: b(:)
+    type(ext_${TYPE}_t), intent(out) :: det
 
     $TYPE(WP), parameter :: ZERO = 0._WP
     $TYPE(WP), parameter :: ONE = 1._WP
 
-    type(ext_${TYPE}_t) :: det
     integer             :: n
     integer             :: n_e
     integer             :: n_i
@@ -349,7 +352,7 @@ contains
 
     ! Factorize the matrix
 
-    call factorize_slu_$SUFFIX(this, det)
+    call factorize_slu_$SUFFIX(this, det, recon_mtx=.TRUE.)
 
     ! Set up the reduced 2x2-block matrix
 
@@ -475,13 +478,15 @@ contains
   $local $SUFFIX $1
   $local $TYPE $2
 
-  subroutine factorize_slu_$SUFFIX (sm, det)
+  subroutine factorize_slu_$SUFFIX (sm, det, recon_mtx)
 
     class(sysmtx_t), intent(inout)   :: sm
     type(ext_${TYPE}_t), intent(out) :: det
+    logical, optional, intent(in)    :: recon_mtx
 
     $TYPE(WP), parameter :: ONE = 1._WP
 
+    logical             :: recon_mtx_
     integer             :: n
     integer             :: n_e
     integer             :: l
@@ -494,11 +499,18 @@ contains
     integer             :: i
     type(ext_${TYPE}_t) :: block_det(sm%n)
 
+    if(PRESENT(recon_mtx)) then
+       recon_mtx_ = recon_mtx
+    else
+       recon_mtx_ = .FALSE.
+    endif
+
     ! Factorize the sysmtx using the cyclic structured (SLU) algorithm
     ! by Wright (1994). The factorization is done in place, with
     ! E_l(:,:,1) and E_r(:,:,1) containing the final reduced blocks,
-    ! and the other blocks of E_l and E_r containing the U^-1 G and
-    ! U^-1 E matrices needed to reconstruct solutions
+    ! and the other blocks of E_l and E_r (optionally) containing the
+    ! U^-1 G and U^-1 E matrices needed to reconstruct solutions. The
+    ! factorization determinant is also returned
 
     det = ext_$TYPE(ONE)
 
@@ -571,21 +583,27 @@ contains
 
           call ${X}LASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
           call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-               ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
+                        ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
           call ${X}GEMM('N', 'N', n_e, n_e, n_e, -ONE, &
-               M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, ONE, &
-               M_E(n_e+1,1), 2*n_e)
-          call ${X}TRSM('L', 'U', 'N', 'N', n_e, n_e, &
-               ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
+                        M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, ONE, &
+                        M_E(n_e+1,1), 2*n_e)
+
+          if(recon_mtx_) then
+             call ${X}TRSM('L', 'U', 'N', 'N', n_e, n_e, &
+                           ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
+          endif
 
           call ${X}LASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
           call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-               ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
+                        ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
           call ${X}GEMM('N', 'N', n_e, n_e, n_e, -ONE, &
-               M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, ONE, &
-               M_G(n_e+1,1), 2*n_e)
-          call ${X}TRSM('L', 'U', 'N', 'N', n_e, n_e, &
-               ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
+                        M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, ONE, &
+                        M_G(n_e+1,1), 2*n_e)
+
+          if(recon_mtx_) then
+             call ${X}TRSM('L', 'U', 'N', 'N', n_e, n_e, &
+                           ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
+          endif
 
           $endblock
 
@@ -602,8 +620,10 @@ contains
           sm%E_l(:,:,k) = M_G(n_e+1:,:)
           sm%E_r(:,:,k) = M_E(n_e+1:,:)
 
-          sm%E_l(:,:,k+l) = M_G(:n_e,:)
-          sm%E_r(:,:,k+l) = M_E(:n_e,:)
+          if(recon_mtx_) then
+             sm%E_l(:,:,k+l) = M_G(:n_e,:)
+             sm%E_r(:,:,k+l) = M_E(:n_e,:)
+          endif
 
        end do reduce_loop
 
