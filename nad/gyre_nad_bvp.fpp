@@ -378,6 +378,7 @@ contains
     complex(WP)         :: b(this%n_e*this%n)
     type(ext_complex_t) :: det
     complex(WP)         :: y_sh(this%n_e,this%n)
+    logical             :: same_grid
 
     ! Reconstruct the solution on the shooting grid
 
@@ -394,15 +395,25 @@ contains
 
     call build_grid(this%recon_gp, this%bc, this%op, this%x, x)
 
+    if(SIZE(x) == SIZE(this%x)) then
+       same_grid = ALL(x == this%x)
+    else
+       same_grid = .FALSE.
+    endif
+
     ! Reconstruct the full solution
 
-    allocate(y(this%n_e,SIZE(x)))
+    if(same_grid) then
 
-    call this%sh%recon(omega, this%x, y_sh, x, y, this%x_ad)
+       y = y_sh
 
-    ! Finish
+    else
 
-    return
+       allocate(y(this%n_e,SIZE(x)))
+
+       call this%sh%recon(omega, this%x, y_sh, x, y, this%x_ad)
+
+    endif
 
     ! Finish
 
