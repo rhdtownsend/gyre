@@ -32,6 +32,7 @@ module gyre_mode
   use gyre_base_coeffs_mpi
   use gyre_therm_coeffs_mpi
   $endif
+  use gyre_ext_arith
   use gyre_oscpar
   use gyre_util
 
@@ -47,6 +48,7 @@ module gyre_mode
      class(base_coeffs_t), allocatable  :: bc
      class(therm_coeffs_t), allocatable :: tc
      type(oscpar_t)                     :: op
+     type(ext_complex_t)                :: discrim
      real(WP), allocatable              :: x(:)
      complex(WP), allocatable           :: y(:,:)
      complex(WP)                        :: omega
@@ -98,7 +100,7 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, bc, op, omega, x, y, tc)
+  subroutine init (this, bc, op, omega, x, y, discrim, tc)
 
     class(mode_t), intent(out)                  :: this
     class(base_coeffs_t), intent(in)            :: bc
@@ -106,6 +108,7 @@ contains
     complex(WP), intent(in)                     :: omega
     real(WP), intent(in)                        :: x(:)
     complex(WP), intent(in)                     :: y(:,:)
+    type(ext_complex_t), intent(in)             :: discrim
     class(therm_coeffs_t), optional, intent(in) :: tc
 
     real(WP) :: phase
@@ -119,6 +122,8 @@ contains
     if(PRESENT(tc)) allocate(this%tc, SOURCE=tc)
 
     this%op = op
+
+    this%discrim = discrim
 
     this%x = x
     this%y = y

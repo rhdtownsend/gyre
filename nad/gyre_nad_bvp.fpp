@@ -368,12 +368,13 @@ contains
 
 !****
 
-  subroutine recon (this, omega, x, y)
+  subroutine recon (this, omega, x, y, discrim)
 
     class(nad_bvp_t), intent(inout)       :: this
     complex(WP), intent(in)               :: omega
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
+    type(ext_complex_t), intent(out)      :: discrim
 
     complex(WP)         :: b(this%n_e*this%n)
     type(ext_complex_t) :: det
@@ -387,6 +388,8 @@ contains
     call this%sm%null_vector(b, det)
 
     y_sh = RESHAPE(b, SHAPE(y_sh))
+
+    discrim = scale(det, -this%e_norm)    
 
     ! Build the recon grid
 
@@ -431,14 +434,15 @@ contains
 
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
+    type(ext_complex_t)      :: discrim
 
     ! Reconstruct the solution
 
-    call this%recon(omega, x, y)
+    call this%recon(omega, x, y, discrim)
 
     ! Initialize the mode
     
-    call md%init(this%bc, this%op, omega, x, y, this%tc)
+    call md%init(this%bc, this%op, omega, x, y, discrim, this%tc)
 
     ! Finish
 
