@@ -460,6 +460,8 @@ contains
 
     ! Solve the linear system A x = b
 
+    Mb(:,1) = b
+
     Mx = linear_solve(A, Mb)
 
     x = Mx(:,1)

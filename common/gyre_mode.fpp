@@ -61,6 +61,7 @@ module gyre_mode
      procedure, public :: phip
      procedure, public :: dphip_dx
      procedure, public :: delS
+     procedure, public :: delS_en
      procedure, public :: delL
      procedure, public :: delp
      procedure, public :: delrho
@@ -421,6 +422,96 @@ contains
     return
 
   end function delS
+
+!****
+
+  function delS_en (this)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delS_en(this%n)
+
+    complex(WP) :: A_6(6,this%n)
+    complex(WP) :: dy_6(this%n)
+    complex(WP) :: y_5(this%n)
+
+    ! Calculate the Lagrangian specific entropy perturbation in units
+    ! of c_p, from the energy equation
+
+    associate(V => this%bc%V(this%x), c_1 => this%bc%c_1(this%x), &
+              nabla_ad => this%bc%nabla_ad(this%x), nabla => this%tc%nabla(this%x), &
+              c_rad => this%tc%c_rad(this%x), dc_rad => this%tc%dc_rad(this%x), c_thm => this%tc%c_thm(this%x), &
+              c_eps_ad => this%tc%c_eps_ad(this%x), c_eps_S => this%tc%c_eps_S(this%x), &              
+              l => this%op%l, omega => this%omega)
+
+      where(this%x /= 0)
+         A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2))
+         A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
+         A_6(4,:) = 0._WP
+         A_6(5,:) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega*c_thm
+         A_6(6,:) = -1._WP - l
+      elsewhere
+         A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2))
+         A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
+         A_6(4,:) = 0._WP
+         A_6(5,:) = -HUGE(0._WP)
+         A_6(6,:) = -1._WP - l
+      endwhere
+
+      dy_6 = this%x*deriv(this%x, this%y(6,:))
+
+      y_5 = (dy_6 - (A_6(1,:)*this%y(1,:) + &
+                     A_6(2,:)*this%y(2,:) + &
+                     A_6(3,:)*this%y(3,:) + &
+                     A_6(4,:)*this%y(4,:) + &
+                     A_6(6,:)*this%y(6,:)))/A_6(5,:)
+
+      where(this%x /= 0._WP)
+         delS_en = y_5*this%x**(l-2)
+      elsewhere
+         delS_en = 0._WP
+      end where
+
+    end associate
+         
+    ! Finish
+
+    return
+
+  contains
+
+    function deriv (x, y) result (dy_dx)
+
+      real(WP), intent(in)    :: x(:)
+      complex(WP), intent(in) :: y(:)
+      complex(WP)             :: dy_dx(SIZE(x))
+      
+      integer :: n
+      integer :: i
+
+      $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+      ! Differentiate y(x) using centered finite differences
+
+      n = SIZE(x)
+
+      dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
+
+      do i = 2,n-1
+         dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
+                            (y(i+1) - y(i))/(x(i+1) - x(i)))
+      end do
+
+      dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
+
+      ! Finish
+
+      return
+
+    end function deriv
+
+  end function delS_en
 
 !****
 

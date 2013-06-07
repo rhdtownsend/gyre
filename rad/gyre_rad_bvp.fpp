@@ -294,7 +294,7 @@ contains
 
     call this%build(omega)
 
-    discrim = this%sm%determinant(use_real=.TRUE.)
+    call this%sm%determinant(discrim, use_real=.TRUE.)
 
     ! Apply the normalization
 
@@ -341,13 +341,17 @@ contains
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
 
-    complex(WP) :: y_sh(this%n_e,this%n)
+    complex(WP)         :: b(this%n_e*this%n)
+    type(ext_complex_t) :: det
+    complex(WP)         :: y_sh(this%n_e,this%n)
 
     ! Reconstruct the solution on the shooting grid
 
     call this%build(omega)
 
-    y_sh = RESHAPE(this%sm%null_vector(), SHAPE(y_sh))
+    call this%sm%null_vector(b, det, use_real=.TRUE.)
+
+    y_sh = RESHAPE(b, SHAPE(y_sh))
 
     ! Build the recon grid
 
@@ -404,7 +408,7 @@ contains
 
     ! Initialize the mode
     
-    call md%init(this%bc, this%tc, this%op, omega, x, y_6)
+    call md%init(this%bc, this%op, omega, x, y_6)
 
     ! Finish
 
