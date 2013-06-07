@@ -54,10 +54,12 @@ module gyre_sysmtx
      procedure, public :: set_outer_bound
      procedure, public :: set_block
      procedure, public :: determinant
-     procedure, public :: determinant_slu_r
-     procedure, public :: determinant_slu_c
-     procedure, public :: null_vector => null_vector_banded
+!     procedure, public :: determinant_slu_r
+!     procedure, public :: determinant_slu_c
+!     procedure, public :: null_vector => null_vector_banded
+!     procedure, public :: null_vector => null_vector_slu_c
 !     procedure, public :: null_vector => null_vector_inviter
+     procedure, public :: null_vector
   end type sysmtx_t
 
   ! Access specifiers
@@ -190,9 +192,9 @@ contains
     ! Calculate the sysmtx determinant
 
     if(use_real_) then
-       det = ext_complex(this%determinant_slu_r())
+       det = ext_complex(determinant_slu_r(this))
     else
-       det = this%determinant_slu_c()
+       det = determinant_slu_c(this)
     end if
 
     ! Finish
@@ -203,538 +205,661 @@ contains
 
 !****
 
-  function determinant_slu_c (this) result (det)
+  $define $DETERMINANT_SLU $sub
+
+  $local $SUFFIX $1
+  $local $TYPE $2
+
+  function determinant_slu_$SUFFIX (sm) result (det)
+
+    class(sysmtx_t), intent(inout) :: sm
+    type(ext_${TYPE}_t)            :: det
+
+    integer   :: n_e
+    integer   :: n_i
+    $TYPE(WP) :: M(2*sm%n_e,2*sm%n_e)
+    integer   :: ipiv(2*sm%n_e)
+    integer   :: info
+    integer   :: i
+
+    ! Factorize the matrix
+
+    call factorize_slu_$SUFFIX(sm, det)
+
+    ! Set up the reduced 2x2-block matrix
+
+    n_e = sm%n_e
+    n_i = sm%n_i
+
+    $if($SUFFIX eq 'r')
+
+    M(:n_i,:n_e) = REAL(sm%B_i)
+    M(n_i+1:n_i+n_e,:n_e) = REAL(sm%E_l(:,:,1))
+    M(n_i+n_e+1:,:n_e) = 0._WP
+
+    M(:n_i,n_e+1:) = 0._WP
+    M(n_i+1:n_i+n_e,n_e+1:) = REAL(sm%E_r(:,:,1))
+    M(n_i+n_e+1:,n_e+1:) = REAL(sm%B_o)
+
+    $else
+
+    M(:n_i,:n_e) = sm%B_i
+    M(n_i+1:n_i+n_e,:n_e) = sm%E_l(:,:,1)
+    M(n_i+n_e+1:,:n_e) = 0._WP
+
+    M(:n_i,n_e+1:) = 0._WP
+    M(n_i+1:n_i+n_e,n_e+1:) = sm%E_r(:,:,1)
+    M(n_i+n_e+1:,n_e+1:) = sm%B_o
+
+    $endif
+
+    ! Add in its contribution to the determinant
+
+    call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
+    $ASSERT(info >= 0, Negative return from XGETRF)
+
+    $if($SUFFIX eq 'r')
+    det = product([ext_real(diagonal(M)),det,ext_real(sm%S)])
+    $else
+    det = product([ext_complex(diagonal(M)),det,sm%S])
+    $endif
+
+    do i = 1,2*n_e
+       if(ipiv(i) /= i) det = -det
+    end do
+
+    ! Finish
+
+    return
+
+  end function determinant_slu_$SUFFIX
+
+  $endsub
+
+  $DETERMINANT_SLU(r,real)
+  $DETERMINANT_SLU(c,complex)
+
+!****
+
+  function null_vector (this, use_real) result (b)
 
     class(sysmtx_t), intent(inout) :: this
-    type(ext_complex_t)            :: det
+    complex(WP)                    :: b(this%n_e*(this%n+1))
+
+    logical, intent(in), optional  :: use_real
+
+    logical :: use_real_
+
+    if(PRESENT(use_real)) then
+       use_real_ = use_real
+    else
+       use_real_ = .FALSE.
+    endif
+
+    ! Calculate the null vector
+
+    if(use_real_) then
+       b = null_vector_slu_r(this)
+    else
+       b = null_vector_slu_c(this)
+    end if
+
+    ! Finish
+
+    return
+
+  end function null_vector
+
+!****
+
+  $define $NULL_VECTOR_SLU $sub
+
+  $local $SUFFIX $1
+  $local $TYPE $2
+
+  function null_vector_slu_$SUFFIX (this) result (b)
+
+    class(sysmtx_t), intent(inout) :: this
+    $TYPE(WP)                      :: b(this%n_e*(this%n+1))
+
+    $TYPE(WP), parameter :: ZERO = 0._WP
+    $TYPE(WP), parameter :: ONE = 1._WP
+
+    type(ext_${TYPE}_t) :: det
+    integer             :: n
+    integer             :: n_e
+    integer             :: n_i
+    $TYPE(WP)           :: M(2*this%n_e,2*this%n_e)
+    integer             :: ipiv(2*this%n_e)
+    integer             :: info
+    integer             :: i
+    $TYPE(WP)           :: b_bound(2*this%n_e)
+    integer             :: l
+    integer             :: k
+    integer             :: i_a
+    integer             :: i_b
+    integer             :: i_c
+
+    ! Factorize the matrix
+
+    call factorize_slu_$SUFFIX(this, det)
+
+    ! Set up the reduced 2x2-block matrix
+
+    n = this%n
+    n_e = this%n_e
+    n_i = this%n_i
+
+    $if($SUFFIX eq 'r')
+
+    M(:n_i,:n_e) = REAL(this%B_i)
+    M(n_i+1:n_i+n_e,:n_e) = REAL(this%E_l(:,:,1))
+    M(n_i+n_e+1:,:n_e) = 0._WP
+
+    M(:n_i,n_e+1:) = 0._WP
+    M(n_i+1:n_i+n_e,n_e+1:) = REAL(this%E_r(:,:,1))
+    M(n_i+n_e+1:,n_e+1:) = REAL(this%B_o)
+
+    $else
+
+    M(:n_i,:n_e) = this%B_i
+    M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
+    M(n_i+n_e+1:,:n_e) = 0._WP
+
+    M(:n_i,n_e+1:) = 0._WP
+    M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
+    M(n_i+n_e+1:,n_e+1:) = this%B_o
+
+    $endif
+
+    ! Decompose it and find the (near-) zero element
+
+    call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
+    $ASSERT(info >= 0,Negative return from XGETRF)
+
+    i = MINLOC(ABS(diagonal(M)), DIM=1)
+
+    if(i <= n_e) then
+       $WARN(Smallest element not in outer block)
+    endif
+
+    ! Calculate the solutions at the two boundaries
+
+    b_bound(:i-1) = -M(:i-1,i)
+
+    $block
+
+    $if($DOUBLE_PRECISION)
+    $if($SUFFIX eq 'r')
+    $local $X D
+    $else
+    $local $X Z
+    $endif
+    $else
+    $if($SUFFIX eq 'r')
+    $local $X S
+    $else
+    $local $X C
+    $endif
+    $endif
+
+    call ${X}TRSM('L', 'U', 'N', 'N', i-1, 1, &
+         ONE, M, 2*n_e, b_bound, 2*n_e)
+
+    b_bound(i) = 1._WP
+    b_bound(i+1:) = 0._WP
+
+    ! Now construct the full solution vector
+
+    b(:n_e) = b_bound(:n_e)
+    b(n_e*n+1:) = b_bound(n_e+1:)
+
+    l = 1
+
+    do
+       if(l >= n) exit
+       l = 2*l
+    end do
+
+    recon_loop : do
+
+       l = l/2
+
+       if (l == 0) exit recon_loop
+
+       !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (i_a, i_b, i_c)
+       backsub_loop : do k = 1, n-l, 2*l
+
+          i_a = (k-1)*n_e + 1
+          i_b = i_a + l*n_e
+          i_c = MIN(i_b + l*n_e, n_e*n+1)
+
+          b(i_b:i_b+n_e-1) = ZERO
+
+          $if($SUFFIX eq 'r')
+          call ${X}GEMV('N', n_e, n_e, -ONE, REAL(this%E_l(:,:,k+l)), n_e, b(i_a:i_a+n_e-1), 1, ZERO, b(i_b:i_b+n_e-1), 1)
+          call ${X}GEMV('N', n_e, n_e, -ONE, REAL(this%E_r(:,:,k+l)), n_e, b(i_c:i_c+n_e-1), 1, ONE, b(i_b:i_b+n_e-1), 1)
+          $else
+          call ${X}GEMV('N', n_e, n_e, -ONE, this%E_l(:,:,k+l), n_e, b(i_a:i_a+n_e-1), 1, ZERO, b(i_b:i_b+n_e-1), 1)
+          call ${X}GEMV('N', n_e, n_e, -ONE, this%E_r(:,:,k+l), n_e, b(i_c:i_c+n_e-1), 1, ONE, b(i_b:i_b+n_e-1), 1)
+          $endif
+
+       end do backsub_loop
+
+    end do recon_loop
+
+    $endblock
+
+    ! Finish
+
+    return
+
+  end function null_vector_slu_$SUFFIX
+
+  $endsub
+
+  $NULL_VECTOR_SLU(r,real)
+  $NULL_VECTOR_SLU(c,complex)
+
+!****
+
+  $define $FACTORIZE_SLU $sub
+
+  $local $SUFFIX $1
+  $local $TYPE $2
+
+  subroutine factorize_slu_$SUFFIX (sm, det)
+
+    class(sysmtx_t), intent(inout)   :: sm
+    type(ext_${TYPE}_t), intent(out) :: det
+
+    $TYPE(WP), parameter :: ONE = 1._WP
 
     integer             :: n
     integer             :: n_e
     integer             :: l
     integer             :: k
-    complex(WP)         :: M_G(2*this%n_e,this%n_e)
-    complex(WP)         :: M_U(2*this%n_e,this%n_e)
-    complex(WP)         :: M_E(2*this%n_e,this%n_e)
-    integer             :: ipiv(this%n_e)
+    $TYPE(WP)           :: M_G(2*sm%n_e,sm%n_e)
+    $TYPE(WP)           :: M_U(2*sm%n_e,sm%n_e)
+    $TYPE(WP)           :: M_E(2*sm%n_e,sm%n_e)
+    integer             :: ipiv(sm%n_e)
     integer             :: info
     integer             :: i
-    type(ext_complex_t) :: block_det(this%n)
-    integer             :: n_i
-    complex(WP)         :: M(2*this%n_e,2*this%n_e)
-    integer             :: ipiv2(2*this%n_e)
+    type(ext_${TYPE}_t) :: block_det(sm%n)
 
-    ! Calculate the determinant of the sysmtx using the structured
-    ! factorization (SLU) algorithm by Wright (1994)
+    ! Factorize the sysmtx using the cyclic structured (SLU) algorithm
+    ! by Wright (1994). The factorization is done in place, with
+    ! E_l(:,:,1) and E_r(:,:,1) containing the final reduced blocks,
+    ! and the other blocks of E_l and E_r containing the U^-1 G and
+    ! U^-1 E matrices needed to reconstruct solutions
 
-    det = ext_complex(1._WP)
+    det = ext_$TYPE(ONE)
 
-    associate(A => this%E_l, C => this%E_r)
+    n = sm%n
+    n_e = sm%n_e
 
-      ! Repeatedly halve the number of these blocks using SLU with a
-      ! partition size of one or two
+    l = 1
 
-      n = this%n
-      n_e = this%n_e
+    factor_loop : do
 
-      l = 1
+       if (l >= n) exit factor_loop
 
-      factor_loop : do
+       ! Reduce pairs of blocks to single blocks
 
-         if (l >= n) exit factor_loop
+       !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (M_G, M_U, M_E, ipiv, info, i)
+       reduce_loop : do k = 1, n-l, 2*l
 
-         ! Reduce pairs of blocks to single blocks
+          ! Set up matrices (see expressions following eqn. 2.5 of
+          ! Wright 1994)
 
-         !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (M_G, M_U, M_E, ipiv, info, i)
-         reduce_loop : do k = 1, n-l, 2*l
+          $if($SUFFIX eq 'r')
 
-            ! Set up matrices (see expressions following eqn. 2.5 of
-            ! Wright 1994)
+          M_G(:n_e,:) = REAL(sm%E_l(:,:,k))
+          M_G(n_e+1:,:) = 0._WP
 
-            M_G(:n_e,:) = A(:,:,k)
-            M_G(n_e+1:,:) = 0._WP
+          M_U(:n_e,:) = REAL(sm%E_r(:,:,k))
+          M_U(n_e+1:,:) = REAL(sm%E_l(:,:,k+l))
 
-            M_U(:n_e,:) = C(:,:,k)
-            M_U(n_e+1:,:) = A(:,:,k+l)
+          M_E(:n_e,:) = 0._WP
+          M_E(n_e+1:,:) = REAL(sm%E_r(:,:,k+l))
 
-            M_E(:n_e,:) = 0._WP
-            M_E(n_e+1:,:) = C(:,:,k+l)
+          $else
 
-            ! Calculate the LU factorization of M_U, and use it to reduce
-            ! M_E and M_G. The nasty fpx3 stuff is to ensure the correct
-            ! LAPACK/BLAS routines are called (can't use generics, since
-            ! we're then not allowed to pass array elements into
-            ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
-            ! "Fortran 90/95 Explained")
+          M_G(:n_e,:) = sm%E_l(:,:,k)
+          M_G(n_e+1:,:) = 0._WP
 
-            call XGETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
-            $ASSERT(info >= 0, Negative return from XGETRF)
+          M_U(:n_e,:) = sm%E_r(:,:,k)
+          M_U(n_e+1:,:) = sm%E_l(:,:,k+l)
 
-            $block
+          M_E(:n_e,:) = 0._WP
+          M_E(n_e+1:,:) = sm%E_r(:,:,k+l)
 
-            $if($DOUBLE_PRECISION)
-            $local $X Z
-            $else
-            $local $X C
-            $endif
+          $endif
 
-            call ${X}LASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
-            call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                 CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
-            call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                 M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                 M_E(n_e+1,1), 2*n_e)
+          ! Calculate the LU factorization of M_U, and use it to reduce
+          ! M_E and M_G. The nasty fpx3 stuff is to ensure the correct
+          ! LAPACK/BLAS routines are called (can't use generics, since
+          ! we're then not allowed to pass array elements into
+          ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
+          ! "Fortran 90/95 Explained")
 
-            call ${X}LASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
-            call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                 CMPLX(1._WP, KIND=WP), M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
-            call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                 M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, CMPLX(1._WP, KIND=WP), &
-                 M_G(n_e+1,1), 2*n_e)
+          call XGETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
+          $ASSERT(info >= 0, Negative return from XGETRF)
 
-            $endblock
+          $block
 
-            ! Calculate the block determinant
+          $if($DOUBLE_PRECISION)
+          $if($SUFFIX eq 'r')
+          $local $X D
+          $else
+          $local $X Z
+          $endif
+          $else
+          $if($SUFFIX eq 'r')
+          $local $X S
+          $else
+          $local $X C
+          $endif
+          $endif
 
-            block_det(k) = product(ext_complex(diagonal(M_U)))
+          call ${X}LASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
+          call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+               ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
+          call ${X}GEMM('N', 'N', n_e, n_e, n_e, -ONE, &
+               M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, ONE, &
+               M_E(n_e+1,1), 2*n_e)
+          call ${X}TRSM('L', 'U', 'N', 'N', n_e, n_e, &
+               ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
 
-            do i = 1,n_e
-               if(ipiv(i) /= i) block_det(k) = -block_det(k)
-            end do
+          call ${X}LASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
+          call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
+               ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
+          call ${X}GEMM('N', 'N', n_e, n_e, n_e, -ONE, &
+               M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, ONE, &
+               M_G(n_e+1,1), 2*n_e)
+          call ${X}TRSM('L', 'U', 'N', 'N', n_e, n_e, &
+               ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
 
-            ! Store results
+          $endblock
 
-            C(:,:,k) = M_E(n_e+1:,:)
-            A(:,:,k) = M_G(n_e+1:,:)
+          ! Calculate the block determinant
 
-         end do reduce_loop
+          block_det(k) = product(ext_$TYPE(diagonal(M_U)))
 
-         ! Update the determinant
-
-         det = product([block_det(:n-l:2*l),det])
-
-         ! Loop around
-
-         l = 2*l
-
-      end do factor_loop
-
-      ! Process the final matrix, consisting of the boundary conditions
-      ! plus a single internal block
-
-      n_i = this%n_i
-
-      M(:n_i,:n_e) = this%B_i
-      M(n_i+1:n_i+n_e,:n_e) = A(:,:,1)
-      M(n_i+n_e+1:,:n_e) = 0._WP
-
-      M(:n_i,n_e+1:) = 0._WP
-      M(n_i+1:n_i+n_e,n_e+1:) = C(:,:,1)
-      M(n_i+n_e+1:,n_e+1:) = this%B_o
-
-      call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
-      $ASSERT(info >= 0, Negative return from XGETRF)
-
-      det = product([ext_complex(diagonal(M)),det,this%S])
-
-      do i = 1,2*n_e
-         if(ipiv2(i) /= i) det = -det
-      end do
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function determinant_slu_c
-
-!****
-
-  function determinant_slu_r (this) result (det)
-
-    class(sysmtx_t), intent(inout) :: this
-    type(ext_real_t)               :: det
-
-    integer          :: n
-    integer          :: n_e
-    integer          :: l
-    integer          :: k
-    real(WP)         :: M_G(2*this%n_e,this%n_e)
-    real(WP)         :: M_U(2*this%n_e,this%n_e)
-    real(WP)         :: M_E(2*this%n_e,this%n_e)
-    integer          :: ipiv(this%n_e)
-    integer          :: info
-    integer          :: i
-    type(ext_real_t) :: block_det(this%n)
-    integer          :: n_i
-    real(WP)         :: M(2*this%n_e,2*this%n_e)
-    integer          :: ipiv2(2*this%n_e)
-
-    ! Calculate the determinant of the sysmtx using the structured
-    ! factorization (SLU) algorithm by Wright (1994), assuming that
-    ! the imaginary parts can be discarded
-
-    det = ext_real(1._WP)
-
-    associate(A => this%E_l, C => this%E_r)
-
-      ! Repeatedly halve the number of these blocks using SLU with a
-      ! partition size of one or two
-
-      n = this%n
-      n_e = this%n_e
-
-      l = 1
-
-      factor_loop : do
-       
-         if (l >= n) exit factor_loop
-
-         ! Reduce pairs of blocks to single blocks
-
-         !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (M_G, M_U, M_E, ipiv, info, i)
-         reduce_loop : do k = 1, n-l, 2*l
-
-            ! Set up matrices (see expressions following eqn. 2.5 of
-            ! Wright 1994)
-
-            M_G(:n_e,:) = REAL(A(:,:,k))
-            M_G(n_e+1:,:) = 0._WP
-
-            M_U(:n_e,:) = REAL(C(:,:,k))
-            M_U(n_e+1:,:) = REAL(A(:,:,k+l))
-
-            M_E(:n_e,:) = 0._WP
-            M_E(n_e+1:,:) = REAL(C(:,:,k+l))
-            
-            ! Calculate the LU factorization of M_U, and use it to reduce
-            ! M_E and M_G. The nasty fpx3 stuff is to ensure the correct
-            ! LAPACK/BLAS routines are called (can't use generics, since
-            ! we're then not allowed to pass array elements into
-            ! assumed-size arrays; see, e.g., p. 268 of Metcalfe & Reid,
-            ! "Fortran 90/95 Explained")
-
-            call XGETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
-            $ASSERT(info >= 0, Negative return from XGETRF)
-
-            $block
-
-            $if($DOUBLE_PRECISION)
-            $local $X D
-            $else
-            $local $X S
-            $endif
-
-            call ${X}LASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
-            call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                 1._WP, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
-            call ${X}GEMM('N', 'N', n_e, n_e, n_e, -1._WP, &
-                 M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, 1._WP, &
-                 M_G(n_e+1,1), 2*n_e)
-
-            call ${X}LASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
-            call ${X}TRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                 1._WP, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
-            call ${X}GEMM('N', 'N', n_e, n_e, n_e, -1._WP, &
-                 M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, 1._WP, &
-                 M_E(n_e+1,1), 2*n_e)
-
-            $endblock
-
-            ! Calculate the block determinant
-
-            block_det(k) = product(ext_real(diagonal(M_U)))
-
-            do i = 1,n_e
-               if(ipiv(i) /= i) block_det(k) = -block_det(k)
-            end do
-
-            ! Store results
-
-            A(:,:,k) = M_G(n_e+1:,:)
-            C(:,:,k) = M_E(n_e+1:,:)
-
-         end do reduce_loop
-
-         ! Update the determinant
-
-         det = product([block_det(:n-l:2*l),det])
-
-         ! Loop around
-
-         l = 2*l
-
-      end do factor_loop
-
-      ! Process the final matrix, consisting of the boundary conditions
-      ! plus a single internal block
-
-      n_i = this%n_i
-
-      M(:n_i,:n_e) = REAL(this%B_i)
-      M(n_i+1:n_i+n_e,:n_e) = REAL(A(:,:,1))
-      M(n_i+n_e+1:,:n_e) = 0._WP
-
-      M(:n_i,n_e+1:) = 0._WP
-      M(n_i+1:n_i+n_e,n_e+1:) = REAL(C(:,:,1))
-      M(n_i+n_e+1:,n_e+1:) = REAL(this%B_o)
-
-      call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv2, info)
-      $ASSERT(info >= 0, Negative return from XGETRF)
-
-      det = product([ext_real(diagonal(M)),det,ext_real(this%S)])
-
-      do i = 1,2*n_e
-         if(ipiv2(i) /= i) det = -det
-      end do
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function determinant_slu_r
-
-!****
-
-  subroutine pack_banded (sm, A_b)
-
-    class(sysmtx_t), intent(in)           :: sm
-    complex(WP), allocatable, intent(out) :: A_b(:,:)
-
-    integer :: n_l
-    integer :: n_u
-    integer :: k
-    integer :: i_b
-    integer :: j_b
-    integer :: i
-    integer :: j
-
-    ! Pack the sysmtx into LAPACK's banded-matrix sparse format
-
-    n_l = sm%n_e + sm%n_i - 1
-    n_u = sm%n_e + sm%n_i - 1
-
-    allocate(A_b(2*n_l+n_u+1,sm%n_e*(sm%n+1)))
-
-    ! Inner boundary conditions
-    
-    A_b = 0._WP
-
-    do j_b = 1, sm%n_e
-       j = j_b
-       do i_b = 1, sm%n_i
-          i = i_b
-          A_b(n_l+n_u+1+i-j,j) = sm%B_i(i_b,j_b)
-       end do
-    end do
-
-    ! Left equation blocks
-
-    do k = 1, sm%n
-       do j_b = 1, sm%n_e
-          j = (k-1)*sm%n_e + j_b
-          do i_b = 1, sm%n_e
-             i = (k-1)*sm%n_e + i_b + sm%n_i
-             A_b(n_l+n_u+1+i-j,j) = sm%E_l(i_b,j_b,k)
+          do i = 1,n_e
+             if(ipiv(i) /= i) block_det(k) = -block_det(k)
           end do
-       end do
-    end do
 
-    ! Right equation blocks
+          ! Store results
 
-    do k = 1, sm%n
-       do j_b = 1, sm%n_e
-          j = k*sm%n_e + j_b
-          do i_b = 1, sm%n_e
-             i = (k-1)*sm%n_e + sm%n_i + i_b
-             A_b(n_l+n_u+1+i-j,j) = sm%E_r(i_b,j_b,k)
-          end do
-       end do
-    end do
+          sm%E_l(:,:,k) = M_G(n_e+1:,:)
+          sm%E_r(:,:,k) = M_E(n_e+1:,:)
 
-    ! Outer boundary conditions
+          sm%E_l(:,:,k+l) = M_G(:n_e,:)
+          sm%E_r(:,:,k+l) = M_E(:n_e,:)
 
-    do j_b = 1, sm%n_e
-       j = sm%n*sm%n_e + j_b
-       do i_b = 1, sm%n_o
-          i = sm%n*sm%n_e + sm%n_i + i_b
-          A_b(n_l+n_u+1+i-j,j) = sm%B_o(i_b,j_b)
-       end do
-    end do
+       end do reduce_loop
+
+       ! Update the determinant
+
+       det = product([block_det(:n-l:2*l),det])
+
+       ! Loop around
+
+       l = 2*l
+
+    end do factor_loop
 
     ! Finish
 
     return
 
-  end subroutine pack_banded
+  end subroutine factorize_slu_$SUFFIX
 
-!****
+  $endsub
 
-  function null_vector_banded (this) result(b)
+  $FACTORIZE_SLU(r,real)
+  $FACTORIZE_SLU(c,complex)
 
-    class(sysmtx_t), intent(in) :: this
-    complex(WP)                 :: b(this%n_e*(this%n+1))
+! !****
 
-    complex(WP), allocatable :: A_b(:,:)
-    integer                  :: n_l
-    integer                  :: n_u
-    integer, allocatable     :: ipiv(:)
-    integer                  :: info
-    integer                  :: i
-    complex(WP), allocatable :: A_r(:,:)
-    complex(WP), allocatable :: Mb(:,:)
-    integer                  :: j
-    integer                  :: n_lu
+!   subroutine pack_banded (sm, A_b)
+
+!     class(sysmtx_t), intent(in)           :: sm
+!     complex(WP), allocatable, intent(out) :: A_b(:,:)
+
+!     integer :: n_l
+!     integer :: n_u
+!     integer :: k
+!     integer :: i_b
+!     integer :: j_b
+!     integer :: i
+!     integer :: j
+
+!     ! Pack the sysmtx into LAPACK's banded-matrix sparse format
+
+!     n_l = sm%n_e + sm%n_i - 1
+!     n_u = sm%n_e + sm%n_i - 1
+
+!     allocate(A_b(2*n_l+n_u+1,sm%n_e*(sm%n+1)))
+
+!     ! Inner boundary conditions
     
-    ! Pack the smatrix into banded form
+!     A_b = 0._WP
 
-    call pack_banded(this, A_b)
+!     do j_b = 1, sm%n_e
+!        j = j_b
+!        do i_b = 1, sm%n_i
+!           i = i_b
+!           A_b(n_l+n_u+1+i-j,j) = sm%B_i(i_b,j_b)
+!        end do
+!     end do
 
-    ! LU decompose it
+!     ! Left equation blocks
 
-    n_l = this%n_e + this%n_i - 1
-    n_u = this%n_e + this%n_i - 1
+!     do k = 1, sm%n
+!        do j_b = 1, sm%n_e
+!           j = (k-1)*sm%n_e + j_b
+!           do i_b = 1, sm%n_e
+!              i = (k-1)*sm%n_e + i_b + sm%n_i
+!              A_b(n_l+n_u+1+i-j,j) = sm%E_l(i_b,j_b,k)
+!           end do
+!        end do
+!     end do
 
-    allocate(ipiv(SIZE(A_b, 2)))
+!     ! Right equation blocks
 
-    call XGBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
-    $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from LA_GBTRF)
+!     do k = 1, sm%n
+!        do j_b = 1, sm%n_e
+!           j = k*sm%n_e + j_b
+!           do i_b = 1, sm%n_e
+!              i = (k-1)*sm%n_e + sm%n_i + i_b
+!              A_b(n_l+n_u+1+i-j,j) = sm%E_r(i_b,j_b,k)
+!           end do
+!        end do
+!     end do
 
-    ! Locate the smallest diagonal element
+!     ! Outer boundary conditions
 
-    i = MINLOC(ABS(A_b(n_l+n_u+1,:)), DIM=1)
+!     do j_b = 1, sm%n_e
+!        j = sm%n*sm%n_e + j_b
+!        do i_b = 1, sm%n_o
+!           i = sm%n*sm%n_e + sm%n_i + i_b
+!           A_b(n_l+n_u+1+i-j,j) = sm%B_o(i_b,j_b)
+!        end do
+!     end do
 
-    if(SIZE(A_b, 2)-i > this%n_e) then
-       $WARN(Smallest element not in final block)
-    endif
+!     ! Finish
 
-    ! Backsubstitute to solve the banded linear system A_b b = 0
+!     return
 
-    allocate(A_r(2*n_l+n_u+1,i-1))
-    allocate(Mb(i-1,1))
+!   end subroutine pack_banded
 
-    deallocate(ipiv)
-    allocate(ipiv(i-1))
+! !****
 
-    if(i > 1) then 
+!   function null_vector_banded (this) result(b)
 
-       ! Set up the reduced LU system
+!     class(sysmtx_t), intent(in) :: this
+!     complex(WP)                 :: b(this%n_e*(this%n+1))
 
-       A_r(:n_l+n_u+1,:) = A_b(:n_l+n_u+1,:i-1)
-       A_r(n_l+n_u+2:,:) = 0._WP
+!     complex(WP), allocatable :: A_b(:,:)
+!     integer                  :: n_l
+!     integer                  :: n_u
+!     integer, allocatable     :: ipiv(:)
+!     integer                  :: info
+!     integer                  :: i
+!     complex(WP), allocatable :: A_r(:,:)
+!     complex(WP), allocatable :: Mb(:,:)
+!     integer                  :: j
+!     integer                  :: n_lu
+    
+!     ! Pack the smatrix into banded form
 
-       ! The following line seems to cause out-of-memory errors when
-       ! compiled with gfortran 4.8.0 on MVAPICH systems. Very puzzling!
-       !
-       ! ipiv = [(j,j=1,i-1)]
+!     call pack_banded(this, A_b)
 
-       do j = 1,i-1
-          ipiv(j) = j
-       enddo
+!     ! LU decompose it
 
-       ! Solve for the 1:i-1 components of b
+!     n_l = this%n_e + this%n_i - 1
+!     n_u = this%n_e + this%n_i - 1
 
-       n_lu = MIN(n_l+n_u, i-1)
+!     allocate(ipiv(SIZE(A_b, 2)))
 
-       Mb(:i-n_lu-1,1) = 0._WP
-       Mb(i-n_lu:,1) = -A_b(n_l+n_u+1-n_lu:n_l+n_u,i)
+!     call XGBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
+!     $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from LA_GBTRF)
 
-       call XGBTRS('N', SIZE(A_r, 2), n_l, n_u, 1, A_r, SIZE(A_r, 1), ipiv, Mb, SIZE(Mb, 1), info)
-       $ASSERT(info == 0,Non-zero return from XGBTRS)
+!     ! Locate the smallest diagonal element
 
-       b(:i-1) = Mb(:,1)
+!     i = MINLOC(ABS(A_b(n_l+n_u+1,:)), DIM=1)
 
-    end if
+!     if(SIZE(A_b, 2)-i > this%n_e) then
+!        $WARN(Smallest element not in final block)
+!     endif
+
+!     ! Backsubstitute to solve the banded linear system A_b b = 0
+
+!     allocate(A_r(2*n_l+n_u+1,i-1))
+!     allocate(Mb(i-1,1))
+
+!     deallocate(ipiv)
+!     allocate(ipiv(i-1))
+
+!     if(i > 1) then 
+
+!        ! Set up the reduced LU system
+
+!        A_r(:n_l+n_u+1,:) = A_b(:n_l+n_u+1,:i-1)
+!        A_r(n_l+n_u+2:,:) = 0._WP
+
+!        ! The following line seems to cause out-of-memory errors when
+!        ! compiled with gfortran 4.8.0 on MVAPICH systems. Very puzzling!
+!        !
+!        ! ipiv = [(j,j=1,i-1)]
+
+!        do j = 1,i-1
+!           ipiv(j) = j
+!        enddo
+
+!        ! Solve for the 1:i-1 components of b
+
+!        n_lu = MIN(n_l+n_u, i-1)
+
+!        Mb(:i-n_lu-1,1) = 0._WP
+!        Mb(i-n_lu:,1) = -A_b(n_l+n_u+1-n_lu:n_l+n_u,i)
+
+!        call XGBTRS('N', SIZE(A_r, 2), n_l, n_u, 1, A_r, SIZE(A_r, 1), ipiv, Mb, SIZE(Mb, 1), info)
+!        $ASSERT(info == 0,Non-zero return from XGBTRS)
+
+!        b(:i-1) = Mb(:,1)
+
+!     end if
        
-    ! Fill in the other parts of b
+!     ! Fill in the other parts of b
     
-    b(i) = 1._WP
-    b(i+1:) = 0._WP
+!     b(i) = 1._WP
+!     b(i+1:) = 0._WP
 
-    ! Finish
+!     ! Finish
 
-    return
+!     return
 
-  end function null_vector_banded
+!   end function null_vector_banded
 
-!****
+! !****
 
-  function null_vector_inviter (this) result(b)
+!   function null_vector_inviter (this) result(b)
 
-    class(sysmtx_t), intent(in) :: this
-    complex(WP)                 :: b(this%n_e*(this%n+1))
+!     class(sysmtx_t), intent(in) :: this
+!     complex(WP)                 :: b(this%n_e*(this%n+1))
 
-    integer, parameter  :: MAX_ITER = 25
-    real(WP), parameter :: EPS = 4._WP*EPSILON(0._WP)
+!     integer, parameter  :: MAX_ITER = 25
+!     real(WP), parameter :: EPS = 4._WP*EPSILON(0._WP)
 
-    complex(WP), allocatable :: A_b(:,:)
-    integer, allocatable     :: ipiv(:)
-    integer                  :: n_l
-    integer                  :: n_u
-    integer                  :: info
-    integer                  :: i
-    complex(WP)              :: y(this%n_e*(this%n+1),1)
-    complex(WP)              :: v(this%n_e*(this%n+1),1)
-    complex(WP)              :: w(this%n_e*(this%n+1))
-    complex(WP)              :: theta
-!    integer                  :: j
+!     complex(WP), allocatable :: A_b(:,:)
+!     integer, allocatable     :: ipiv(:)
+!     integer                  :: n_l
+!     integer                  :: n_u
+!     integer                  :: info
+!     integer                  :: i
+!     complex(WP)              :: y(this%n_e*(this%n+1),1)
+!     complex(WP)              :: v(this%n_e*(this%n+1),1)
+!     complex(WP)              :: w(this%n_e*(this%n+1))
+!     complex(WP)              :: theta
+! !    integer                  :: j
 
-    ! **** NOTE: THIS ROUTINE IS CURRENTLY OUT-OF-ACTION; IT GIVES
-    ! **** MUCH POORER RESULTS THAN null_vector_banded, AND IT'S NOT
-    ! **** CLEAR WHY
+!     ! **** NOTE: THIS ROUTINE IS CURRENTLY OUT-OF-ACTION; IT GIVES
+!     ! **** MUCH POORER RESULTS THAN null_vector_banded, AND IT'S NOT
+!     ! **** CLEAR WHY
 
-    ! Pack the sysmtx into banded form
+!     ! Pack the sysmtx into banded form
 
-    call pack_banded(this, A_b)
+!     call pack_banded(this, A_b)
 
-    ! LU decompose it
+!     ! LU decompose it
 
-    n_l = this%n_e + this%n_i - 1
-    n_u = this%n_e + this%n_i - 1
+!     n_l = this%n_e + this%n_i - 1
+!     n_u = this%n_e + this%n_i - 1
 
-    allocate(ipiv(SIZE(A_b, 2)))
+!     allocate(ipiv(SIZE(A_b, 2)))
 
-    call XGBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
-    $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from LA_GBTRF)
+!     call XGBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
+!     $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from LA_GBTRF)
 
-    ! Locate the smallest diagonal element
+!     ! Locate the smallest diagonal element
 
-    i = MINLOC(ABS(A_b(n_l+n_u+1,:)), DIM=1)
+!     i = MINLOC(ABS(A_b(n_l+n_u+1,:)), DIM=1)
 
-    if(SIZE(A_b, 2)-i > this%n_e) then
-       $WARN(Smallest element not in final block)
-    endif
+!     if(SIZE(A_b, 2)-i > this%n_e) then
+!        $WARN(Smallest element not in final block)
+!     endif
 
-    ! Use inverse iteration to converge on the null vector
+!     ! Use inverse iteration to converge on the null vector
 
-!    tol = EPS*SQRT(REAL(SIZE(x), WP))
+! !    tol = EPS*SQRT(REAL(SIZE(x), WP))
 
-    y = 1._WP/SQRT(REAL(SIZE(b), WP))
+!     y = 1._WP/SQRT(REAL(SIZE(b), WP))
 
-    iter_loop : do i = 1,MAX_ITER
+!     iter_loop : do i = 1,MAX_ITER
 
-       v(:,1) = y(:,1)/SQRT(DOT_PRODUCT(y(:,1), y(:,1)))
+!        v(:,1) = y(:,1)/SQRT(DOT_PRODUCT(y(:,1), y(:,1)))
 
-       y = v
-       call XGBTRS('N', SIZE(A_b, 2), n_l, n_u, 1, A_b, SIZE(A_b, 1), ipiv, y, SIZE(y, 1), info)
-       $ASSERT(info == 0,Non-zero return from XGBTRS)
+!        y = v
+!        call XGBTRS('N', SIZE(A_b, 2), n_l, n_u, 1, A_b, SIZE(A_b, 1), ipiv, y, SIZE(y, 1), info)
+!        $ASSERT(info == 0,Non-zero return from XGBTRS)
 
-       theta = DOT_PRODUCT(v(:,1), y(:,1))
+!        theta = DOT_PRODUCT(v(:,1), y(:,1))
 
-       w = y(:,1) - theta*v(:,1)
+!        w = y(:,1) - theta*v(:,1)
 
-       if(ABS(SQRT(DOT_PRODUCT(w, w))) < 4.*EPSILON(0._WP)*ABS(theta)) exit iter_loop
+!        if(ABS(SQRT(DOT_PRODUCT(w, w))) < 4.*EPSILON(0._WP)*ABS(theta)) exit iter_loop
 
-    end do iter_loop
+!     end do iter_loop
 
-    b = y(:,1)/theta
+!     b = y(:,1)/theta
 
-    ! Finish
+!     ! Finish
 
-    ! return
+!     ! return
 
-  end function null_vector_inviter
+!   end function null_vector_inviter
 
 end module gyre_sysmtx
