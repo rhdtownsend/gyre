@@ -200,18 +200,30 @@ contains
 
        ! Initialize the base_coeffs
 
+       !$OMP PARALLEL SECTIONS
+       !$OMP SECTION
        call this%sp_m%init(x, m, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_p%init(x, p, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_rho%init(x, rho, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_T%init(x, T, deriv_type, dy_dx_a=0._WP)
-
+       !$OMP SECTION
        call this%sp_V%init(x, V, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_As%init(x, As, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_U%init(x, U, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_c_1%init(x, c_1, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_Gamma_1%init(x, Gamma_1, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_nabla_ad%init(x, nabla_ad, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_delta%init(x, delta, deriv_type, dy_dx_a=0._WP)
+       !$OMP END PARALLEL SECTIONS
 
        this%M_star = M_star
        this%R_star = R_star
@@ -421,18 +433,30 @@ contains
 
     ! Fill the coefficient cache
 
+    !$OMP PARALLEL SECTIONS
+    !$OMP SECTION
     c(1,:) = this%m(x)
+    !$OMP SECTION
     c(2,:) = this%p(x)
+    !$OMP SECTION
     c(3,:) = this%rho(x)
+    !$OMP SECTION
     c(4,:) = this%T(x)
-       
+    !$OMP SECTION
     c(5,:) = this%V(x)
+    !$OMP SECTION
     c(6,:) = this%As(x)
+    !$OMP SECTION
     c(7,:) = this%U(x)
+    !$OMP SECTION
     c(8,:) = this%c_1(x)
+    !$OMP SECTION
     c(9,:) = this%Gamma_1(x)
+    !$OMP SECTION
     c(10,:) = this%nabla_ad(x)
+    !$OMP SECTION
     c(11,:) = this%delta(x)
+    !$OMP END PARALLEL SECTIONS
 
     call this%cc%init(x, c)
 

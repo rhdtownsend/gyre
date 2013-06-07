@@ -236,17 +236,30 @@ contains
 
        ! Initialize the therm_coeffs
 
+       !$OMP PARALLEL SECTIONS
+       !$OMP SECTION
        call this%sp_c_rad%init(x, c_rad, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_c_thm%init(x, c_thm, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_c_dif%init(x, c_dif, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_c_eps_ad%init(x, c_eps_ad, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_c_eps_S%init(x, c_eps_S, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_nabla%init(x, nabla, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_kappa_S%init(x, kappa_S, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_kappa_ad%init(x, kappa_ad, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_epsilon_S%init(x, epsilon_S, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_epsilon_ad%init(x, epsilon_ad, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
        call this%sp_tau_thm%init(x, tau_thm, deriv_type, dy_dx_a=0._WP)
+       !$OMP END PARALLEL SECTIONS
 
        this%cc_enabled = .FALSE.
 
@@ -507,19 +520,32 @@ contains
 
     ! Fill the coefficient cache
 
+    !$OMP PARALLEL SECTIONS
+    !$OMP SECTION
     c(1,:) = this%c_rad(x)
+    !$OMP SECTION
     c(2,:) = this%c_thm(x)
+    !$OMP SECTION
     c(3,:) = this%c_dif(x)
+    !$OMP SECTION
     c(4,:) = this%c_eps_ad(x)
+    !$OMP SECTION
     c(5,:) = this%c_eps_S(x)
+    !$OMP SECTION
     c(6,:) = this%nabla(x)
+    !$OMP SECTION
     c(7,:) = this%kappa_S(x)
+    !$OMP SECTION
     c(8,:) = this%kappa_ad(x)
+    !$OMP SECTION
     c(9,:) = this%epsilon_S(x)
+    !$OMP SECTION
     c(10,:) = this%epsilon_ad(x)
+    !$OMP SECTION
     c(11,:) = this%tau_thm(x)
-
+    !$OMP SECTION
     c(12,:) = this%dc_rad(x)
+    !$OMP END PARALLEL SECTIONS
 
     call this%cc%init(x, c)
 
