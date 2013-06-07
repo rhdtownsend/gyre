@@ -629,7 +629,11 @@ contains
 
     ! Convert ext_real to real
 
-    x = ex%f*RADIX_WP**ex%e
+    if(ex%f /= 0._WP) then
+       x = ex%f*RADIX_WP**ex%e
+    else
+       x = 0._WP
+    endif
 
     ! Finish
 
@@ -680,7 +684,11 @@ contains
 
     ! Convert ext_complex to complex
 
-    z = CMPLX(ez%f, KIND=WP)*RADIX_WP**ez%e
+    if(ez%f /= 0._WP) then
+       z = ez%f*RADIX_WP**ez%e
+    else
+       z = 0._WP
+    endif
 
     ! Finish
 
