@@ -113,9 +113,9 @@ contains
     complex(WP) :: A(jc%n_e,jc%n_e,2)
     integer     :: n_e
     complex(WP) :: W(2*jc%n_e,2*jc%n_e)
+    integer     :: i
     complex(WP) :: V(2*jc%n_e,jc%n_e)
-    complex(WP) :: D(jc%n_e,2*jc%n_e)
-    complex(WP) :: Gamma(jc%n_e,jc%n_e)
+    complex(WP) :: W_V(2*jc%n_e,jc%n_e)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),jc%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),jc%n_e)
@@ -139,24 +139,30 @@ contains
 
     n_e = jc%n_e
 
-    W(:n_e,:n_e) = identity_matrix(n_e) - dx*ALPHA_11*A(:,:,1)
+    W(:n_e,:n_e) = -dx*ALPHA_11*A(:,:,1)
     W(n_e+1:,:n_e) = -dx*ALPHA_21*A(:,:,2)
 
     W(:n_e,n_e+1:) = -dx*ALPHA_12*A(:,:,1)
-    W(n_e+1:,n_e+1:) = identity_matrix(n_e) - dx*ALPHA_22*A(:,:,2)
+    W(n_e+1:,n_e+1:) = -dx*ALPHA_22*A(:,:,2)
+
+    do i = 1,2*n_e
+       W(i,i) = W(i,i) + 1._WP
+    end do
 
     V(:n_e,:) = A(:,:,1)
     V(n_e+1:,:) = A(:,:,2)
 
-    D(:,:n_e) = BETA_1*identity_matrix(n_e)
-    D(:,n_e+1:) = BETA_2*identity_matrix(n_e)
-
-    Gamma = identity_matrix(n_e) + dx*MATMUL(D, linear_solve(W, V))
+    W_V = linear_solve(W, V)
 
     ! Set up the solution matrices and scales
 
-    E_l = -Gamma
-    E_r = identity_matrix(n_e)
+    E_l = -dx*(BETA_1*W_V(:n_e,:) + BETA_2*W_V(n_e+1:,:))
+    E_r = 0._WP
+
+    do i = 1,n_e
+       E_l(i,i) = E_l(i,i) - 1._WP
+       E_r(i,i) = E_r(i,i) + 1._WP
+    end do
 
     S = ext_complex(1._WP)
 
