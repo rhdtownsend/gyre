@@ -22,6 +22,7 @@ module gyre_ivp_findiff
   ! Uses
 
   use core_kinds
+  use core_linalg
 
   use gyre_jacobian
   use gyre_ext_arith
@@ -115,7 +116,8 @@ contains
     complex(WP) :: W(2*jc%n_e,2*jc%n_e)
     integer     :: i
     complex(WP) :: V(2*jc%n_e,jc%n_e)
-    complex(WP) :: W_V(2*jc%n_e,jc%n_e)
+    integer     :: ipiv(2*jc%n_e)
+    integer     :: info
 
     $CHECK_BOUNDS(SIZE(E_l, 1),jc%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),jc%n_e)
@@ -152,11 +154,12 @@ contains
     V(:n_e,:) = A(:,:,1)
     V(n_e+1:,:) = A(:,:,2)
 
-    W_V = linear_solve(W, V)
-
+    call XGESV(2*n_e, n_e, W, 2*n_e, ipiv, V, 2*n_e, info)
+    $ASSERT(info == 0,Non-zero return from XGESV)
+    
     ! Set up the solution matrices and scales
 
-    E_l = -dx*(BETA_1*W_V(:n_e,:) + BETA_2*W_V(n_e+1:,:))
+    E_l = -dx*(BETA_1*V(:n_e,:) + BETA_2*V(n_e+1:,:))
     E_r = 0._WP
 
     do i = 1,n_e
