@@ -53,27 +53,29 @@ contains
     real(WP), intent(in)                   :: omega(:)
     type(mode_t), allocatable, intent(out) :: md(:)
 
-    real(WP), allocatable   :: omega_a(:)
-    real(WP), allocatable   :: omega_b(:)
-    integer                 :: n_brack
-    integer                 :: i_part(MPI_SIZE+1)
-    integer                 :: c_beg
-    integer                 :: c_end
-    integer                 :: c_rate
-    type(ad_discfunc_t)     :: df
-    type(numpar_t), pointer :: np
-    integer                 :: i
-    integer                 :: n_iter
-    complex(WP)             :: omega_root
-    integer                 :: n_p
-    integer                 :: n_g
+    real(WP), allocatable         :: omega_a(:)
+    real(WP), allocatable         :: omega_b(:)
+    type(ext_real_t), allocatable :: discrim_a(:)
+    type(ext_real_t), allocatable :: discrim_b(:)
+    integer                       :: n_brack
+    integer                       :: i_part(MPI_SIZE+1)
+    integer                       :: c_beg
+    integer                       :: c_end
+    integer                       :: c_rate
+    type(ad_discfunc_t)           :: df
+    type(numpar_t), pointer       :: np
+    integer                       :: i
+    integer                       :: n_iter
+    complex(WP)                   :: omega_root
+    integer                       :: n_p
+    integer                       :: n_g
     $if($MPI)
-    integer                 :: p
+    integer                       :: p
     $endif
 
     ! Scan for discriminant root brackets
 
-    call scan(bp, omega, omega_a, omega_b)
+    call scan(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
 
     ! Process each bracket to find roots
 
@@ -105,11 +107,17 @@ contains
 
        call bp%set_norm(CMPLX(0.5_WP*(omega_a(i) + omega_b(i)), KIND=WP))
 
+       ! Rescale the bracket discriminants
+
+       discrim_a(i) = scale(discrim_a(i), bp%e_norm)
+       discrim_b(i) = scale(discrim_b(i), bp%e_norm)
+
        ! Find the root
 
        n_iter = np%n_iter_max
 
-       omega_root = df%root(omega_a(i), omega_b(i), 0._WP, n_iter=n_iter)
+       omega_root = df%root(omega_a(i), omega_b(i), 0._WP, &
+                            f_x_a=real(discrim_a(i)), f_x_b=real(discrim_b(i)), n_iter=n_iter)
        $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
 
        ! Set up the mode
@@ -158,12 +166,14 @@ contains
 
 !****
 
-  subroutine scan (bp, omega, omega_a, omega_b)
+  subroutine scan (bp, omega, omega_a, omega_b, discrim_a, discrim_b)
 
-    type(ad_bvp_t), target, intent(inout) :: bp
-    real(WP), intent(in)                  :: omega(:)
-    real(WP), allocatable, intent(out)    :: omega_a(:)
-    real(WP), allocatable, intent(out)    :: omega_b(:)
+    type(ad_bvp_t), target, intent(inout)      :: bp
+    real(WP), intent(in)                       :: omega(:)
+    real(WP), allocatable, intent(out)         :: omega_a(:)
+    real(WP), allocatable, intent(out)         :: omega_b(:)
+    type(ext_real_t), allocatable, intent(out) :: discrim_a(:)
+    type(ext_real_t), allocatable, intent(out) :: discrim_b(:)
 
     integer          :: n_omega
     integer          :: i_part(MPI_SIZE+1)
@@ -244,6 +254,9 @@ contains
 
     omega_a = omega(i_brack(:n_brack))
     omega_b = omega(i_brack(:n_brack)+1)
+
+    discrim_a = discrim(i_brack(:n_brack))
+    discrim_b = discrim(i_brack(:n_brack)+1)
 
     ! Finish
 

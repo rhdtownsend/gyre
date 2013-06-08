@@ -62,7 +62,7 @@ module gyre_ad_bvp
      type(sysmtx_t)                     :: sm
      real(WP), allocatable              :: x_in(:)
      real(WP), allocatable              :: x(:)
-     integer                            :: e_norm
+     integer, public                    :: e_norm
      integer, public                    :: n
      integer, public                    :: n_e
    contains 
