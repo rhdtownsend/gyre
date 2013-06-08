@@ -104,36 +104,31 @@ contains
 
   subroutine eigen_decompose_r (A, lambda, V_l, V_r, sort)
 
-    real(WP), intent(inout)            :: A(:,:)
-    complex(WP), intent(out)           :: lambda(:)
-    complex(WP), intent(out), optional :: V_l(:,:)
-    complex(WP), intent(out), optional :: V_r(:,:)
+    real(WP), intent(inout)       :: A(:,:)
+    complex(WP), intent(out)      :: lambda(:)
+    complex(WP), intent(out)      :: V_l(:,:)
+    complex(WP), intent(out)      :: V_r(:,:)
     logical, intent(in), optional      :: sort
 
-    logical     :: sort_
-    real(WP)    :: lambda_re(SIZE(lambda))
-    real(WP)    :: lambda_im(SIZE(lambda))
-    real(WP)    :: V_l_r(SIZE(A, 1),SIZE(A, 2))
-    real(WP)    :: V_r_r(SIZE(A, 1),SIZE(A, 2))
-    real(WP)    :: work(4*SIZE(A,1))
-    integer     :: info
-    complex(WP) :: V_l_c(SIZE(A, 1),SIZE(A, 2))
-    complex(WP) :: V_r_c(SIZE(A, 1),SIZE(A, 2))
-    integer     :: i
-    integer     :: ind(SIZE(A, 1))
+    logical  :: sort_
+    integer  :: n
+    real(WP) :: lambda_re(SIZE(lambda))
+    real(WP) :: lambda_im(SIZE(lambda))
+    real(WP) :: V_l_r(SIZE(A, 1),SIZE(A, 2))
+    real(WP) :: V_r_r(SIZE(A, 1),SIZE(A, 2))
+    real(WP) :: work(4*SIZE(A,1))
+    integer  :: info
+    integer  :: i
+    integer  :: ind(SIZE(A, 1))
 
     $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
     $CHECK_BOUNDS(SIZE(lambda),SIZE(A, 1))
 
-    if(PRESENT(V_l)) then
-       $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(A, 1))
-       $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(A, 2))
-    endif
+    $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(A, 2))
     
-    if(PRESENT(V_r)) then
-       $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(A, 1))
-       $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(A, 2))
-    endif
+    $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(A, 2))
 
     if(PRESENT(sort)) then
        sort_ = sort
@@ -143,7 +138,9 @@ contains
 
     ! Perform the eigendecomposition of A
 
-    if(SIZE(A, 1) == 2) then
+    n = SIZE(A, 1)
+
+    if(n == 2) then
 
        ! Special case: n == 2
 
@@ -151,48 +148,37 @@ contains
 
     else
 
-       if(PRESENT(V_l) .OR. PRESENT(V_r)) then
+       call XGEEV('V', 'V', n, A, n, lambda_re, lambda_im, &
+                  V_l_r, n, V_r_r, n, work, SIZE(work), info)
+       $ASSERT(info == 0,Non-zero return from XGEEV)
 
-          call XGEEV('V', 'V', SIZE(A, 1), A, SIZE(A, 1), lambda_re, lambda_im, &
-               V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
-               work, SIZE(work), info)
-          $ASSERT(info == 0,Non-zero return from XGEEV)
+       lambda = CMPLX(lambda_re, lambda_im, WP)
 
-          call reconstruct_eigenvector(lambda_re, lambda_im, V_l_r, V_l_c)
-          call reconstruct_eigenvector(lambda_re, lambda_im, V_r_r, V_r_c)
+       call reconstruct_eigenvector(lambda_re, lambda_im, V_l_r, V_l)
+       call reconstruct_eigenvector(lambda_re, lambda_im, V_r_r, V_r)
 
-          V_l_c = CONJG(TRANSPOSE(V_l_c))
+       V_l = CONJG(TRANSPOSE(V_l))
 
-          ! Renormalize the left eigenvectors so they are orthonormal to
-          ! the right eigenvectors
+       ! Renormalize the left eigenvectors so they are orthonormal to
+       ! the right eigenvectors
 
-          do i = 1,SIZE(A, 1)
-             V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
-          enddo
+       do i = 1, n
+          V_l(i,:) = V_l(i,:)/SUM(V_l(i,:)*V_r(:,i))
+       enddo
 
-          if(PRESENT(V_l)) V_l = V_l_c
-          if(PRESENT(V_r)) V_r = V_r_c
-
-       else
-
-          call XGEEV('N', 'N', SIZE(A, 1), A, SIZE(A, 1), lambda_re, lambda_im, &
-               V_l_r, SIZE(V_l_r, 1), V_r_r, SIZE(V_r_r, 1), &
-               work, SIZE(work), info)
-          $ASSERT(info == 0,Non-zero return from XGEEV)
-
-       endif
-
-       lambda = CMPLX(lambda_re, lambda_im, KIND=WP)
-
-    end if
+    endif
 
     ! (Possibly) sort
 
     if(sort_) then
-       ind = sort_indices(REAL(lambda))
+
+       ind = sort_indices(lambda_re)
+
        lambda = lambda(ind)
-       if(PRESENT(V_l)) V_l = V_l(ind,:)
-       if(PRESENT(V_r)) V_r = V_r(:,ind)
+       
+       V_l = V_l(ind,:)
+       V_r = V_r(:,ind)
+
     endif
 
     ! Finish
@@ -201,12 +187,12 @@ contains
 
   contains
 
-    subroutine reconstruct_eigenvector (lambda_re, lambda_im, V, V_c)
+    subroutine reconstruct_eigenvector (lambda_re, lambda_im, V_r, V)
 
       real(WP), intent(in)     :: lambda_re(:)
       real(WP), intent(in)     :: lambda_im(:)
-      real(WP), intent(in)     :: V(:,:)
-      complex(WP), intent(out) :: V_c(:,:)
+      real(WP), intent(in)     :: V_r(:,:)
+      complex(WP), intent(out) :: V(:,:)
 
       integer :: i
 
@@ -214,19 +200,19 @@ contains
 
       i = 1
  
-      do
+      recon_loop : do
 
          if(lambda_im(i) == 0._WP) then
 
-            V_c(:,i) = V(:,i)
+            V(:,i) = V_r(:,i)
 
             i = i + 1
 
          elseif(lambda_re(i) == lambda_re(i+1) .AND. &
                 lambda_im(i) == -lambda_im(i+1)) then
 
-            V_c(:,i) = CMPLX(V(:,i), V(:,i+1), KIND=WP)
-            V_c(:,i+1) = CONJG(V_c(:,i))
+            V(:,i) = CMPLX(V_r(:,i), V_r(:,i+1), KIND=WP)
+            V(:,i+1) = CONJG(V(:,i))
 
             i = i + 2
 
@@ -236,9 +222,9 @@ contains
 
          endif
 
-         if(i > SIZE(V, 2)) exit
+         if(i > SIZE(V_r, 2)) exit recon_loop
 
-      end do
+      end do recon_loop
 
     ! Finish
 
@@ -252,15 +238,14 @@ contains
 
   subroutine eigen_decompose_c (A, lambda, V_l, V_r, sort)
 
-    complex(WP), intent(inout)         :: A(:,:)
-    complex(WP), intent(out)           :: lambda(:)
-    complex(WP), intent(out), optional :: V_l(:,:)
-    complex(WP), intent(out), optional :: V_r(:,:)
-    logical, intent(in), optional      :: sort
+    complex(WP), intent(inout)    :: A(:,:)
+    complex(WP), intent(out)      :: lambda(:)
+    complex(WP), intent(out)      :: V_l(:,:)
+    complex(WP), intent(out)      :: V_r(:,:)
+    logical, intent(in), optional :: sort
 
     logical     :: sort_
-    complex(WP) :: V_l_c(SIZE(A, 1),SIZE(A, 2))
-    complex(WP) :: V_r_c(SIZE(A, 1),SIZE(A, 2))
+    integer     :: n
     complex(WP) :: work(2*SIZE(A, 1))
     real(WP)    :: rwork(2*SIZE(A, 1))
     integer     :: info
@@ -270,15 +255,11 @@ contains
     $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
     $CHECK_BOUNDS(SIZE(lambda),SIZE(A, 1))
 
-    if(PRESENT(V_l)) then
-       $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(A, 1))
-       $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(A, 2))
-    endif
+    $CHECK_BOUNDS(SIZE(V_l, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(V_l, 2),SIZE(A, 2))
     
-    if(PRESENT(V_r)) then
-       $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(A, 1))
-       $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(A, 2))
-    endif
+    $CHECK_BOUNDS(SIZE(V_r, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(V_r, 2),SIZE(A, 2))
 
     if(PRESENT(sort)) then
        sort_ = sort
@@ -288,9 +269,9 @@ contains
 
     ! Perform the eigendecomposition of A
 
-    ! Perform the eigendecomposition of A
+    n = SIZE(A, 1)
 
-    if(SIZE(A, 1) == 2) then
+    if(n == 2) then
 
        ! Special case: n == 2
 
@@ -298,43 +279,32 @@ contains
 
     else
 
-       if(PRESENT(V_l) .OR. PRESENT(V_r)) then
+       call XGEEV('V', 'V', n, A, n, lambda, &
+                   V_l, n, V_r, n, work, SIZE(work, 1), rwork, info)
+       $ASSERT(info == 0,Non-zero return from XGEEV)
 
-          call XGEEV('V', 'V', SIZE(A, 1), A, SIZE(A, 1), lambda, &
-               V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
-               work, SIZE(work, 1), rwork, info)
-          $ASSERT(info == 0,Non-zero return from XGEEV)
+       V_l = CONJG(TRANSPOSE(V_l))
 
-          V_l_c = CONJG(TRANSPOSE(V_l_c))
+       ! Renormalize the left eigenvectors so they are orthonormal to
+       ! the right eigenvectors
 
-          ! Renormalize the left eigenvectors so they are orthonormal to
-          ! the right eigenvectors
-
-          do i = 1,SIZE(A, 1)
-             V_l_c(i,:) = V_l_c(i,:)/SUM(V_l_c(i,:)*V_r_c(:,i))
-          enddo
-
-          if(PRESENT(V_r)) V_r = V_r_c
-          if(PRESENT(V_l)) V_l = V_l_c
-
-       else
-
-          call XGEEV('N', 'N', SIZE(A, 1), A, SIZE(A, 1), lambda, &
-               V_l_c, SIZE(V_l_c, 1), V_r_c, SIZE(V_r_c, 1), &
-               work, SIZE(work, 1), rwork, info)
-          $ASSERT(info == 0,Non-zero return from XGEEV)
-
-       endif
+       do i = 1,SIZE(A, 1)
+          V_l(i,:) = V_l(i,:)/SUM(V_l(i,:)*V_r(:,i))
+       enddo
 
     end if
 
     ! (Possibly) sort
 
     if(sort_) then
+
        ind = sort_indices(REAL(lambda))
+
        lambda = lambda(ind)
-       if(PRESENT(V_l)) V_l = V_l(ind,:)
-       if(PRESENT(V_r)) V_r = V_r(:,ind)
+
+       V_l = V_l(ind,:)
+       V_r = V_r(:,ind)
+
     endif
 
     ! Finish
