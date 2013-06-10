@@ -190,13 +190,16 @@ contains
     type(oscpar_t), intent(out) :: op
 
     integer           :: l
+    integer           :: m
     character(LEN=64) :: outer_bound_type
 
-    namelist /osc/ l, outer_bound_type
+    namelist /osc/ l, m, outer_bound_type
 
     ! Read oscillation parameters
 
     l = 0
+    m = 0
+
     outer_bound_type = 'ZERO'
 
     rewind(unit)
@@ -204,7 +207,7 @@ contains
 
     ! Initialize the oscpar
 
-    op = oscpar_t(l=l, outer_bound_type=outer_bound_type)
+    op = oscpar_t(l=l, m=m, outer_bound_type=outer_bound_type)
 
     ! Finish
 
