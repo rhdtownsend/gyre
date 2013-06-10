@@ -27,10 +27,8 @@ module gyre_gsm_file
 
   use gyre_base_coeffs
   use gyre_therm_coeffs
-  use gyre_rot_coeffs
   use gyre_evol_base_coeffs
   use gyre_evol_therm_coeffs
-  use gyre_evol_rot_coeffs
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -49,14 +47,13 @@ module gyre_gsm_file
 
 contains
 
-  subroutine read_gsm_file (file, G, deriv_type, bc, tc, rc, x)
+  subroutine read_gsm_file (file, G, deriv_type, bc, tc, x)
 
     character(LEN=*), intent(in)                              :: file
     real(WP), intent(in)                                      :: G
     character(LEN=*), intent(in)                              :: deriv_type
     class(base_coeffs_t), allocatable, intent(out)            :: bc
     class(therm_coeffs_t), allocatable, optional, intent(out) :: tc
-    class(rot_coeffs_t), allocatable, optional, intent(out)   :: rc
     real(WP), allocatable, optional, intent(out)              :: x(:)
 
     type(hgroup_t)        :: hg
@@ -139,7 +136,8 @@ contains
     select type (bc)
     type is (evol_base_coeffs_t)
        call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, deriv_type, add_center)
+                    N2, Gamma_1, nabla_ad, delta, &
+                    Omega_rot, deriv_type, add_center)
     class default
        $ABORT(Invalid bc type)
     end select
@@ -161,21 +159,6 @@ contains
        end select
 
     endif
-
-    ! Initialize the rot_coeffs
-
-    if(PRESENT(rc)) then
-
-       allocate(evol_rot_coeffs_t::rc)
-
-       select type (rc)
-       type is (evol_rot_coeffs_t)
-          call rc%init(G, M_star, R_star, r, Omega_rot, deriv_type, add_center)
-       class default
-          $ABORT(Invalid rc type)
-       end select
-
-    end if
 
     ! Set up the grid
 

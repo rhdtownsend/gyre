@@ -26,10 +26,8 @@ module gyre_osc_file
 
   use gyre_base_coeffs
   use gyre_therm_coeffs
-  use gyre_rot_coeffs
   use gyre_evol_base_coeffs
   use gyre_evol_therm_coeffs
-  use gyre_evol_rot_coeffs
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -48,7 +46,7 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_file (file, G, deriv_type, data_format, bc, tc, rc, x)
+  subroutine read_osc_file (file, G, deriv_type, data_format, bc, tc, x)
 
     character(LEN=*), intent(in)                              :: file
     real(WP), intent(in)                                      :: G
@@ -56,7 +54,6 @@ contains
     character(LEN=*), intent(in)                              :: data_format
     class(base_coeffs_t), allocatable, intent(out)            :: bc
     class(therm_coeffs_t), allocatable, optional, intent(out) :: tc
-    class(rot_coeffs_t), allocatable, optional, intent(out)   :: rc
     real(WP), allocatable, optional, intent(out)              :: x(:)
 
     character(LEN=:), allocatable :: data_format_
@@ -183,7 +180,8 @@ contains
     select type (bc)
     type is (evol_base_coeffs_t)
        call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, deriv_type, add_center)
+                    N2, Gamma_1, nabla_ad, delta, &
+                    SPREAD(Omega_rot, DIM=1, NCOPIES=n), deriv_type, add_center)
     class default
        $ABORT(Invalid bc type)
     end select
@@ -199,27 +197,13 @@ contains
           call tc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                        Gamma_1, nabla_ad, delta, nabla,  &
                        kappa, kappa_rho, kappa_T, &
-                       epsilon_, epsilon_rho, epsilon_T, deriv_type, add_center)
+                       epsilon_, epsilon_rho, epsilon_T, &
+                       deriv_type, add_center)
        class default
           $ABORT(Invalid tc type)
        end select
 
     endif
-
-    ! Initialize the rot_coeffs
-
-    if(PRESENT(rc)) then
-
-       allocate(evol_rot_coeffs_t::rc)
-
-       select type (rc)
-       type is (evol_rot_coeffs_t)
-          call rc%init(G, M_star, R_star, r, SPREAD(Omega_rot, DIM=1, NCOPIES=n), deriv_type, add_center)
-       class default
-          $ABORT(Invalid rc type)
-       end select
-
-    end if
 
     ! Set up the grid
 

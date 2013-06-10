@@ -155,7 +155,8 @@ contains
     select type (bc)
     type is (evol_base_coeffs_t)
        call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, deriv_type, add_center)
+                    N2, Gamma_1, nabla_ad, delta, &
+                    SPREAD(0._WP, DIM=1, NCOPIES=n), deriv_type, add_center)
     class default
        $ABORT(Invalid bc type)
     end select
