@@ -69,6 +69,7 @@ module gyre_evol_base_coeffs
      $VAR_DECL(Gamma_1)
      $VAR_DECL(nabla_ad)
      $VAR_DECL(delta)
+     $VAR_DECL(Omega_rot)
      real(WP), public :: M_star
      real(WP), public :: R_star
      real(WP), public :: L_star
@@ -90,6 +91,7 @@ module gyre_evol_base_coeffs
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     $PROC_DECL(Omega_rot)
      procedure, public :: pi_c
      procedure, public :: enable_cache
      procedure, public :: disable_cache
@@ -120,7 +122,7 @@ module gyre_evol_base_coeffs
 contains
 
   recursive subroutine init (this, G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                             Gamma_1, nabla_ad, delta, deriv_type, add_center)
+                             Gamma_1, nabla_ad, delta, Omega_rot, deriv_type, add_center)
 
     class(evol_base_coeffs_t), intent(out) :: this
     real(WP), intent(in)                   :: G
@@ -136,6 +138,7 @@ contains
     real(WP), intent(in)                   :: Gamma_1(:)
     real(WP), intent(in)                   :: nabla_ad(:)
     real(WP), intent(in)                   :: delta(:)
+    real(WP), intent(in)                   :: Omega_rot(:)
     character(LEN=*), intent(in)           :: deriv_type
     logical, intent(in), optional          :: add_center
 
@@ -144,6 +147,7 @@ contains
     real(WP) :: As(SIZE(r))
     real(WP) :: U(SIZE(r))
     real(WP) :: c_1(SIZE(r))
+    real(WP) :: Omega_rot_(SIZE(r))
     real(WP) :: x(SIZE(r))
 
     $CHECK_BOUNDS(SIZE(m),SIZE(r))
@@ -154,6 +158,7 @@ contains
     $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(r))
     $CHECK_BOUNDS(SIZE(nabla_ad),SIZE(r))
     $CHECK_BOUNDS(SIZE(delta),SIZE(r))
+    $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(r))
 
     if(PRESENT(add_center)) then
        add_center_ = add_center
@@ -170,7 +175,7 @@ contains
        call this%init(G, M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
                       y_centered(r, p), y_centered(r, rho), y_centered(r, T), &
                       [0._WP,N2], y_centered(r, Gamma_1), y_centered(r, nabla_ad), y_centered(r, delta), &
-                      deriv_type, .FALSE.)
+                      y_centered(r, Omega_rot), deriv_type, .FALSE.)
 
     else
 
@@ -195,6 +200,8 @@ contains
           U = 3._WP
           c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
        end where
+
+       Omega_rot_ = SQRT(R_star**3/(G*M_star))*Omega_rot
 
        x = r/R_star
 
@@ -223,6 +230,8 @@ contains
        call this%sp_nabla_ad%init(x, nabla_ad, deriv_type, dy_dx_a=0._WP)
        !$OMP SECTION
        call this%sp_delta%init(x, delta, deriv_type, dy_dx_a=0._WP)
+       !$OMP SECTION
+       call this%sp_Omega_rot%init(x, Omega_rot_, deriv_type, dy_dx_a=0._WP)
        !$OMP END PARALLEL SECTIONS
 
        this%M_star = M_star
@@ -294,6 +303,7 @@ contains
     call bcast(bc%sp_Gamma_1, root_rank)
     call bcast(bc%sp_nabla_ad, root_rank)
     call bcast(bc%sp_delta, root_rank)
+    call bcast(bc%sp_Omega_rot, root_rank)
 
     call bcast(bc%M_star, root_rank)
     call bcast(bc%R_star, root_rank)
@@ -372,6 +382,7 @@ contains
   $PROC(Gamma_1,9)
   $PROC(nabla_ad,10)
   $PROC(delta,11)
+  $PROC(Omega_rot,12)
 
 !****
 
@@ -429,7 +440,7 @@ contains
     class(evol_base_coeffs_t), intent(inout) :: this
     real(WP), intent(in)                     :: x(:)
 
-    real(WP) :: c(11,SIZE(x))
+    real(WP) :: c(12,SIZE(x))
 
     ! Fill the coefficient cache
 
@@ -456,6 +467,8 @@ contains
     c(10,:) = this%nabla_ad(x)
     !$OMP SECTION
     c(11,:) = this%delta(x)
+    !$OMP SECTION
+    c(12,:) = this%Omega_rot(x)
     !$OMP END PARALLEL SECTIONS
 
     call this%cc%init(x, c)

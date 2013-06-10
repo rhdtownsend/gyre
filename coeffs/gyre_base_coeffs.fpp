@@ -46,10 +46,13 @@ module gyre_base_coeffs
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     $PROC_DECL(Omega_rot)
      procedure(pi_c_i), deferred, public         :: pi_c
      procedure(enable_cache_i), deferred, public :: enable_cache
      procedure(enable_cache_i), deferred, public :: disable_cache
      procedure(fill_cache_i), deferred, public   :: fill_cache
+     procedure, public                           :: omega
+     procedure, public                           :: omega_c
   end type base_coeffs_t
 
   ! Interfaces
@@ -98,5 +101,47 @@ module gyre_base_coeffs
   private
 
   public :: base_coeffs_t
+
+  ! Procedures
+
+contains
+
+  function omega (this, x, m, omega_c)
+
+    class(base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)             :: x
+    integer, intent(in)              :: m
+    complex(WP), intent(in)          :: omega_c
+    complex(WP)                      :: omega
+
+    ! Calculate the intertial frequency from the co-rotating frequency
+
+    omega = omega_c + m*this%Omega_rot(x)
+
+    ! Finish
+
+    return
+
+  end function omega
+
+!****
+
+  function omega_c (this, x, m, omega)
+
+    class(base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)             :: x
+    integer, intent(in)              :: m
+    complex(WP), intent(in)          :: omega
+    complex(WP)                      :: omega_c
+
+    ! Calculate the co-rotating frequency from the inertial frequency
+
+    omega_c = omega - m*this%Omega_rot(x)
+
+    ! Finish
+
+    return
+
+  end function omega_c
 
 end module gyre_base_coeffs

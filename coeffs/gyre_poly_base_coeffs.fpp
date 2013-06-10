@@ -58,6 +58,7 @@ module gyre_poly_base_coeffs
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     $PROC_DECL(Omega_rot)
      procedure, public :: pi_c
      procedure, public :: enable_cache
      procedure, public :: disable_cache
@@ -473,6 +474,46 @@ contains
     return
 
   end function delta_v
+
+!****
+
+  function Omega_rot_1 (this, x) result (Omega_rot)
+
+    class(poly_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x
+    real(WP)                              :: Omega_rot
+
+    ! Calculate Omega_rot (no rotation)
+
+    Omega_rot = 0._WP
+
+    ! Finish
+
+    return
+
+  end function Omega_rot_1
+
+!****
+  
+  function Omega_rot_v (this, x) result (Omega_rot)
+
+    class(poly_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x(:)
+    real(WP)                              :: Omega_rot(SIZE(x))
+
+    integer :: i
+
+    ! Calculate Omega_rot
+    
+    x_loop : do i = 1,SIZE(x)
+       Omega_rot(i) = this%Omega_rot(x(i))
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  end function Omega_rot_v
 
 !****
 
