@@ -100,9 +100,9 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%bc%c_1(x_i), l => this%op%l)
+    associate(c_1 => this%bc%c_1(x_i), l => this%op%l, omega_c => this%bc%omega_c(x_i, this%op%m, omega))
                  
-      B_i(1,1) = c_1*omega**2
+      B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l
       B_i(1,3) = 0._WP
       B_i(1,4) = 0._WP
@@ -194,11 +194,11 @@ contains
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere
 
     associate(V => this%bc%V(x_o), c_1 => this%bc%V(x_o), &
-              l => this%op%l)
+              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
         
-      B_o(1,1) = 1 + (l*(l+1)/(c_1*omega**2) - 4._WP - c_1*omega**2)/V
+      B_o(1,1) = 1 + (l*(l+1)/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
       B_o(1,2) = -1._WP
-      B_o(1,3) = 1 + (l*(l+1)/(c_1*omega**2) - l - 1._WP)/V
+      B_o(1,3) = 1 + (l*(l+1)/(c_1*omega_c**2) - l - 1._WP)/V
       B_o(1,4) = 0._WP
       
       B_o(2,1) = 0._WP
@@ -241,15 +241,15 @@ contains
 
     call eval_outer_coeffs_unno(this%bc, x_o, V_g, As, c_1)
 
-    associate(l => this%op%l)
+    associate(l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
 
-      lambda = outer_wavenumber(V_g, As, c_1, omega, l)
+      lambda = outer_wavenumber(V_g, As, c_1, omega_c, l)
       
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/(c_1*omega**2) - V_g
+      b_12 = l*(l+1)/(c_1*omega_c**2) - V_g
       b_13 = V_g
 
-      b_21 = c_1*omega**2 - As
+      b_21 = c_1*omega_c**2 - As
       b_22 = 1._WP + As
       b_23 = -As
     
@@ -295,17 +295,17 @@ contains
 
     call eval_outer_coeffs_jcd(this%bc, x_o, V_g, As, c_1)
 
-    associate(l => this%op%l)
+    associate(l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
 
-      lambda = outer_wavenumber(V_g, As, c_1, omega, l)
+      lambda = outer_wavenumber(V_g, As, c_1, omega_c, l)
 
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/(c_1*omega**2) - V_g
+      b_12 = l*(l+1)/(c_1*omega_c**2) - V_g
 
       if(l /= 0) then
          B_o(1,1) = (lambda - b_11)/b_12
          B_o(1,2) = -1._WP
-         B_o(1,3) = 1._WP + (l*(l+1)/(c_1*omega**2) - l - 1._WP)/(V_g + As)
+         B_o(1,3) = 1._WP + (l*(l+1)/(c_1*omega_c**2) - l - 1._WP)/(V_g + As)
          B_o(1,4) = 0._WP
       else
          B_o(1,1) = (lambda - b_11)/b_12
@@ -375,39 +375,39 @@ contains
   
 !****
 
-  function outer_wavenumber (V_g, As, c_1, omega, l) result (lambda)
+  function outer_wavenumber (V_g, As, c_1, omega_c, l) result (lambda)
 
     real(WP)                :: V_g
     real(WP), intent(in)    :: As
     real(WP), intent(in)    :: c_1
-    complex(WP), intent(in) :: omega
+    complex(WP), intent(in) :: omega_c
     integer, intent(in)     :: l
     complex(WP)             :: lambda
 
-    real(WP)    :: omega_cutoff_lo
-    real(WP)    :: omega_cutoff_hi
+    real(WP)    :: omega_c_cutoff_lo
+    real(WP)    :: omega_c_cutoff_hi
     complex(WP) :: gamma
     complex(WP) :: sgamma
 
     ! Calculate the wavenumber at the outer boundary
 
-    if(AIMAG(omega) == 0._WP) then
+    if(AIMAG(omega_c) == 0._WP) then
 
        ! Calculate cutoff frequencies
 
-       call eval_cutoffs_from_coeffs(V_g, As, c_1, l, omega_cutoff_lo, omega_cutoff_hi)
+       call eval_cutoffs_from_coeffs(V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
        ! Evaluate the wavenumber
 
-       gamma = -4._WP*V_g*c_1*(omega**2 - omega_cutoff_lo**2)*(omega**2 - omega_cutoff_hi**2)/omega**2
+       gamma = -4._WP*V_g*c_1*(omega_c**2 - omega_c_cutoff_lo**2)*(omega_c**2 - omega_c_cutoff_hi**2)/omega_c**2
 
-       if(ABS(REAL(omega)) > omega_cutoff_hi) then
+       if(ABS(REAL(omega_c)) > omega_c_cutoff_hi) then
 
           ! Acoustic waves
 
           lambda = 0.5_WP*((V_g + As - 2._WP) - SQRT(gamma))
 
-       elseif(ABS(REAL(omega)) < omega_cutoff_lo) then
+       elseif(ABS(REAL(omega_c)) < omega_c_cutoff_lo) then
 
           ! Gravity waves
 
@@ -425,10 +425,10 @@ contains
 
        ! Evaluate the wavenumber
 
-       gamma = (As - V_g + 4._WP)**2 + 4*(l*(l+1)/(c_1*omega**2) - V_g)*(c_1*omega**2 - As)
+       gamma = (As - V_g + 4._WP)**2 + 4*(l*(l+1)/(c_1*omega_c**2) - V_g)*(c_1*omega_c**2 - As)
        sgamma = SQRT(gamma)
 
-       if(AIMAG(omega) > 0._WP) then
+       if(AIMAG(omega_c) > 0._WP) then
 
           ! Decaying oscillations; choose the wave with diverging
           ! energy density (see Townsend 2000b)
@@ -473,6 +473,8 @@ contains
     real(WP) :: V_g
     real(WP) :: As
     real(WP) :: c_1
+    real(WP) :: omega_c_cutoff_lo
+    real(WP) :: omega_c_cutoff_hi
 
     ! Calculate coefficients at the outer boundary
 
@@ -491,7 +493,10 @@ contains
 
     ! Evaluate the cutoff freqs
 
-    call eval_cutoffs_from_coeffs(V_g, As, c_1, op%l, omega_cutoff_lo, omega_cutoff_hi)
+    call eval_cutoffs_from_coeffs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+
+    omega_cutoff_lo = REAL(bc%omega(x_o, op%m, CMPLX(omega_c_cutoff_lo, KIND=WP)))
+    omega_cutoff_hi = REAL(bc%omega(x_o, op%m, CMPLX(omega_c_cutoff_hi, KIND=WP)))
 
     ! Finish
 
@@ -501,14 +506,14 @@ contains
 
 !****
 
-  subroutine eval_cutoffs_from_coeffs (V_g, As, c_1, l, omega_cutoff_lo, omega_cutoff_hi)
+  subroutine eval_cutoffs_from_coeffs (V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
     real(WP), intent(in)  :: V_g
     real(WP), intent(in)  :: As
     real(WP), intent(in)  :: c_1
     integer, intent(in)   :: l
-    real(WP), intent(out) :: omega_cutoff_lo
-    real(WP), intent(out) :: omega_cutoff_hi
+    real(WP), intent(out) :: omega_c_cutoff_lo
+    real(WP), intent(out) :: omega_c_cutoff_hi
 
     real(WP) :: a
     real(WP) :: b
@@ -521,10 +526,10 @@ contains
     b = ((As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1))*c_1
     c = -4._WP*l*(l+1)*As
 
-    omega_cutoff_lo = SQRT((-b + SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
-    omega_cutoff_hi = SQRT((-b - SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
+    omega_c_cutoff_lo = SQRT((-b + SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
+    omega_c_cutoff_hi = SQRT((-b - SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
     
-    $ASSERT(omega_cutoff_hi >= omega_cutoff_lo,Incorrect cutoff frequency ordering)
+    $ASSERT(omega_c_cutoff_hi >= omega_c_cutoff_lo,Incorrect cutoff frequency ordering)
 
     ! Finish
 

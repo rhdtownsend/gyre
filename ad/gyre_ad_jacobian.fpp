@@ -112,14 +112,14 @@ contains
 
     associate(V_g => this%bc%V(x)/this%bc%Gamma_1(x), U => this%bc%U(x), &
               As => this%bc%As(x), c_1 => this%bc%c_1(x), &
-              l => this%op%l)
+              l => this%op%l, omega_c => this%bc%omega_c(x, this%op%m, omega))
 
       A(1,1) = V_g - 1._WP - l
-      A(1,2) = l*(l+1)/(c_1*omega**2) - V_g
+      A(1,2) = l*(l+1)/(c_1*omega_c**2) - V_g
       A(1,3) = V_g
       A(1,4) = 0._WP
       
-      A(2,1) = c_1*omega**2 - As
+      A(2,1) = c_1*omega_c**2 - As
       A(2,2) = As - U + 3._WP - l
       A(2,3) = -As
       A(2,4) = 0._WP
