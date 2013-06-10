@@ -101,9 +101,10 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%bc%c_1(x_i), l => this%op%l)
+    associate(c_1 => this%bc%c_1(x_i), l => this%op%l, &
+              omega_c => this%bc%omega_c(x_i, this%op%m, omega))
 
-      B_i(1,1) = c_1*omega**2
+      B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l
       B_i(1,3) = 0._WP
       B_i(1,4) = 0._WP
@@ -176,7 +177,7 @@ contains
     ! surface density remains finite (see Cox 1980, eqn. 17.71)
 
     associate(V => this%bc%V(x_o), U => this%bc%U(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
-              l => this%op%l)
+              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
@@ -220,11 +221,11 @@ contains
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere.
 
     associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
-              l => this%op%l)
+              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
 
-      B_o(1,1) = 1 + (l*(l+1)/omega**2 - 4 - omega**2)/V
+      B_o(1,1) = 1 + (l*(l+1)/omega_c**2 - 4 - omega_c**2)/V
       B_o(1,2) = -1._WP
-      B_o(1,3) = 1 + (l*(l+1)/omega**2 - l - 1)/V
+      B_o(1,3) = 1 + (l*(l+1)/omega_c**2 - l - 1)/V
       B_o(1,4) = 0._WP
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
@@ -278,15 +279,16 @@ contains
 
     call eval_outer_coeffs_unno(this%bc, x_o, V_g, As, c_1)
 
-    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), l => this%op%l)
+    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
 
-      lambda = outer_wavenumber(V_g, As, c_1, omega, l)
+      lambda = outer_wavenumber(V_g, As, c_1, omega_c, l)
       
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/(c_1*omega**2) - V_g
+      b_12 = l*(l+1)/(c_1*omega_c**2) - V_g
       b_13 = V_g
 
-      b_21 = c_1*omega**2 - As
+      b_21 = c_1*omega_c**2 - As
       b_22 = 1._WP + As
       b_23 = -As
     
@@ -343,17 +345,18 @@ contains
 
     call eval_outer_coeffs_jcd(this%bc, x_o, V_g, As, c_1)
 
-    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), l => this%op%l)
+    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
 
-      lambda = outer_wavenumber(V_g, As, c_1, omega, l)
+      lambda = outer_wavenumber(V_g, As, c_1, omega_c, l)
 
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/(c_1*omega**2) - V_g
+      b_12 = l*(l+1)/(c_1*omega_c**2) - V_g
 
       if(l /= 0) then
          B_o(1,1) = (lambda - b_11)/b_12
          B_o(1,2) = -1._WP
-         B_o(1,3) = 1._WP + (l*(l+1)/(c_1*omega**2) - l - 1._WP)/(V_g + As)
+         B_o(1,3) = 1._WP + (l*(l+1)/(c_1*omega_c**2) - l - 1._WP)/(V_g + As)
          B_o(1,4) = 0._WP
          B_o(1,5) = 0._WP
          B_o(1,6) = 0._WP

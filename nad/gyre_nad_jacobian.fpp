@@ -122,16 +122,16 @@ contains
               c_thm => this%tc%c_thm(x), c_dif => this%tc%c_dif(x), &
               c_eps_ad => this%tc%c_eps_ad(x), c_eps_S => this%tc%c_eps_S(x), &
               kappa_ad => this%tc%kappa_ad(x), kappa_S => this%tc%kappa_S(x), &
-              l => this%op%l)
+              l => this%op%l, omega_c => this%bc%omega_c(x, this%op%m, omega))
 
       A(1,1) = V_g - 1._WP - l
-      A(1,2) = l*(l+1)/(c_1*omega**2) - V_g
+      A(1,2) = l*(l+1)/(c_1*omega_c**2) - V_g
       A(1,3) = V_g
       A(1,4) = 0._WP
       A(1,5) = delta
       A(1,6) = 0._WP
 
-      A(2,1) = c_1*omega**2 - As
+      A(2,1) = c_1*omega_c**2 - As
       A(2,2) = As - U + 3._WP - l
       A(2,3) = -As
       A(2,4) = 0._WP
@@ -152,18 +152,18 @@ contains
       A(4,5) = -U*delta
       A(4,6) = 0._WP
 
-      A(5,1) = V*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-      A(5,2) = V*(l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
+      A(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+      A(5,2) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
       A(5,3) = V*c_dif
       A(5,4) = V*nabla_ad
       A(5,5) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
       A(5,6) = -V*nabla/c_rad
 
       A(6,1) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-      A(6,2) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2))
+      A(6,2) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
       A(6,3) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
       A(6,4) = 0._WP
-      A(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega*c_thm
+      A(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
       A(6,6) = -1._WP - l
 
     end associate

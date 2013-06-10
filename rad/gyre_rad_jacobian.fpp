@@ -111,12 +111,13 @@ contains
     ! Evaluate the log(x)-space Jacobian matrix
 
     associate(V_g => this%bc%V(x)/this%bc%Gamma_1(x), U => this%bc%U(x), &
-              As => this%bc%As(x), c_1 => this%bc%c_1(x))
+              As => this%bc%As(x), c_1 => this%bc%c_1(x), &
+              omega_c => omega)
 
       A(1,1) = V_g - 1._WP
       A(1,2) = -V_g
       
-      A(2,1) = c_1*omega**2 + U - As
+      A(2,1) = c_1*omega_c**2 + U - As
       A(2,2) = As - U + 3._WP
 
     end associate

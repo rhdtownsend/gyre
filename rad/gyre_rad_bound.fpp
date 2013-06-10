@@ -168,9 +168,10 @@ contains
     ! Set the outer boundary conditions, assuming Dziembowski's (1971)
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere
 
-    associate(V => this%bc%V(x_o), c_1 => this%bc%V(x_o))
+    associate(V => this%bc%V(x_o), c_1 => this%bc%V(x_o), &
+              omega_c => omega)
         
-      B_o(1,1) = 1 - (4._WP + c_1*omega**2)/V
+      B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
       B_o(1,2) = -1._WP
 
     end associate
@@ -202,13 +203,17 @@ contains
 
     call eval_outer_coeffs_unno(this%bc, x_o, V_g, As, c_1)
 
-    lambda = outer_wavenumber(V_g, As, c_1, omega, 0)
-      
-    b_11 = V_g - 3._WP
-    b_12 = -V_g
+    associate(omega_c => omega)
 
-    B_o(1,1) = (lambda - b_11)/b_12
-    B_o(1,2) = -1._WP
+      lambda = outer_wavenumber(V_g, As, c_1, omega_c, 0)
+      
+      b_11 = V_g - 3._WP
+      b_12 = -V_g
+
+      B_o(1,1) = (lambda - b_11)/b_12
+      B_o(1,2) = -1._WP
+
+    end associate
 
     ! Finish
 
@@ -237,13 +242,17 @@ contains
 
     call eval_outer_coeffs_jcd(this%bc, x_o, V_g, As, c_1)
 
-    lambda = outer_wavenumber(V_g, As, c_1, omega, 0)
+    associate(omega_c => omega)
 
-    b_11 = V_g - 3._WP
-    b_12 = -V_g
+      lambda = outer_wavenumber(V_g, As, c_1, omega, 0)
 
-    B_o(1,1) = (lambda - b_11)/b_12
-    B_o(1,2) = -1._WP
+      b_11 = V_g - 3._WP
+      b_12 = -V_g
+      
+      B_o(1,1) = (lambda - b_11)/b_12
+      B_o(1,2) = -1._WP
+
+    end associate
 
     ! Finish
 
