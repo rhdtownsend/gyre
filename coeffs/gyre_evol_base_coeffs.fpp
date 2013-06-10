@@ -139,12 +139,12 @@ contains
     character(LEN=*), intent(in)           :: deriv_type
     logical, intent(in), optional          :: add_center
 
-    logical           :: add_center_
-    real(WP)          :: V(SIZE(r))
-    real(WP)          :: As(SIZE(r))
-    real(WP)          :: U(SIZE(r))
-    real(WP)          :: c_1(SIZE(r))
-    real(WP)          :: x(SIZE(r))
+    logical  :: add_center_
+    real(WP) :: V(SIZE(r))
+    real(WP) :: As(SIZE(r))
+    real(WP) :: U(SIZE(r))
+    real(WP) :: c_1(SIZE(r))
+    real(WP) :: x(SIZE(r))
 
     $CHECK_BOUNDS(SIZE(m),SIZE(r))
     $CHECK_BOUNDS(SIZE(p),SIZE(r))
