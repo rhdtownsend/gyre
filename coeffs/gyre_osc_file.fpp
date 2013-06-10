@@ -26,8 +26,10 @@ module gyre_osc_file
 
   use gyre_base_coeffs
   use gyre_therm_coeffs
+  use gyre_rot_coeffs
   use gyre_evol_base_coeffs
   use gyre_evol_therm_coeffs
+  use gyre_evol_rot_coeffs
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -46,15 +48,16 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_file (file, G, deriv_type, data_format, bc, tc, x)
+  subroutine read_osc_file (file, G, deriv_type, data_format, bc, tc, rc, x)
 
     character(LEN=*), intent(in)                              :: file
     real(WP), intent(in)                                      :: G
     character(LEN=*), intent(in)                              :: deriv_type
     character(LEN=*), intent(in)                              :: data_format
     class(base_coeffs_t), allocatable, intent(out)            :: bc
-    class(therm_coeffs_t), allocatable, intent(out), optional :: tc
-    real(WP), allocatable, intent(out), optional              :: x(:)
+    class(therm_coeffs_t), allocatable, optional, intent(out) :: tc
+    class(rot_coeffs_t), allocatable, optional, intent(out)   :: rc
+    real(WP), allocatable, optional, intent(out)              :: x(:)
 
     character(LEN=:), allocatable :: data_format_
     integer                       :: unit
@@ -69,6 +72,7 @@ contains
     real(WP)                      :: M_star
     real(WP)                      :: R_star
     real(WP)                      :: L_star
+    real(WP)                      :: Omega_rot
     real(WP), allocatable         :: r(:)
     real(WP), allocatable         :: m(:)
     real(WP), allocatable         :: p(:)
@@ -137,6 +141,8 @@ contains
     R_star = glob(2)
     L_star = glob(3)
 
+    Omega_rot = glob(12)
+
     r = var(1,:)
     m = EXP(var(2,:))*M_star
     T = var(3,:)
@@ -199,6 +205,21 @@ contains
        end select
 
     endif
+
+    ! Initialize the rot_coeffs
+
+    if(PRESENT(rc)) then
+
+       allocate(evol_rot_coeffs_t::rc)
+
+       select type (rc)
+       type is (evol_rot_coeffs_t)
+          call rc%init(G, M_star, R_star, r, SPREAD(Omega_rot, DIM=1, NCOPIES=n), deriv_type, add_center)
+       class default
+          $ABORT(Invalid rc type)
+       end select
+
+    end if
 
     ! Set up the grid
 
