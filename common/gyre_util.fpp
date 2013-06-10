@@ -213,6 +213,8 @@ contains
          freq_scale = 1._WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
       case('UHZ')
          freq_scale = 1.E6_WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
+      case('PER_DAY')
+         freq_scale = 86400._WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
       case('ACOUSTIC_CUTOFF')
          call eval_cutoffs(bc, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
          freq_scale = 1._WP/omega_cutoff_hi
