@@ -154,6 +154,8 @@ contains
     type(ext_complex_t), intent(out) :: S
     logical, intent(in), optional    :: use_real
 
+    logical :: UPWIND = .TRUE.
+
     logical     :: use_real_
     real(WP)    :: dOmega_r(SIZE(dOmega, 1),SIZE(dOmega, 2))
     complex(WP) :: lambda(SIZE(dOmega, 1))
@@ -191,31 +193,53 @@ contains
     $local $X C
     $endif
 
-    do i = 1,n_e
-       call ${X}COPY(n_e, V_r(1,i), 1, V_pos(1,i), 1)
-       if(REAL(lambda(i)) >= 0._WP) then
-          call ${X}SCAL(n_e, EXP(-lambda(i)*dx), V_pos(1,i), 1)
-       endif
-    end do
+    if(UPWIND) then
+
+       do i = 1,n_e
+          call ${X}COPY(n_e, V_r(1,i), 1, V_pos(1,i), 1)
+          if(REAL(lambda(i)) >= 0._WP) then
+             call ${X}SCAL(n_e, EXP(-lambda(i)*dx), V_pos(1,i), 1)
+          endif
+       end do
     
-    do i = 1,n_e
-       call ${X}COPY(n_e, V_r(1,i), 1, V_neg(1,i), 1)
-       if(REAL(lambda(i)) < 0._WP) then
+       do i = 1,n_e
+          call ${X}COPY(n_e, V_r(1,i), 1, V_neg(1,i), 1)
+          if(REAL(lambda(i)) < 0._WP) then
+             call ${X}SCAL(n_e, EXP(lambda(i)*dx), V_neg(1,i), 1)
+          endif
+       end do
+    
+       call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
+                     V_neg, n_e, V_l, n_e, CMPLX(0._WP, KIND=WP), &
+                     E_l, n_e)
+
+       call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(1._WP, KIND=WP), &
+                     V_pos, n_e, V_l, n_e, CMPLX(0._WP, KIND=WP), &
+                     E_r, n_e)
+
+       S = exp(ext_complex(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*dx))
+
+    else
+
+       do i = 1,n_e
+          call ${X}COPY(n_e, V_r(1,i), 1, V_neg(1,i), 1)
           call ${X}SCAL(n_e, EXP(lambda(i)*dx), V_neg(1,i), 1)
-       endif
-    end do
+       end do
     
-    call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(1._WP, KIND=WP), &
-                  V_neg, n_e, V_l, n_e, CMPLX(0._WP, KIND=WP), &
-                  E_l, n_e)
+       call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(1._WP, KIND=WP), &
+                     V_neg, n_e, V_l, n_e, CMPLX(0._WP, KIND=WP), &
+                     E_l, n_e)
 
-    call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
-                  V_pos, n_e, V_l, n_e, CMPLX(0._WP, KIND=WP), &
-                  E_r, n_e)
+       do i = 1,n_e
+          E_r(:,i) = 0._WP
+          E_r(i,i) = -1._WP
+       end do
 
+       S = ext_complex(1._WP)
+
+    endif
+    
     $endblock
-
-    S = exp(ext_complex(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*dx))
 
     ! Finish
 
