@@ -108,7 +108,7 @@ contains
     case('MAGNUS_GL4')
        call recon_magnus_GL4(jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
     case('MAGNUS_GL6')
-       call recon_magnus_Gl6(jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
+       call recon_magnus_GL6(jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
     case default
        $ABORT(Invalid solver_type)
     end select
