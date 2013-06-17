@@ -37,12 +37,13 @@ module gyre_sysmtx
   ! Derived-type definitions
 
   type sysmtx_t
-     private
+!     private
      complex(WP), allocatable         :: B_i(:,:)   ! Inner boundary conditions
      complex(WP), allocatable         :: B_o(:,:)   ! Outer boundary conditions
      complex(WP), allocatable         :: E_l(:,:,:) ! Left equation blocks
      complex(WP), allocatable         :: E_r(:,:,:) ! Right equation blocks
      type(ext_complex_t), allocatable :: S(:)       ! Block scales
+     real(WP), allocatable            :: V(:)       ! Variable scales
      integer                          :: n          ! Number of equation blocks
      integer                          :: n_e        ! Number of equations per block
      integer                          :: n_i        ! Number of inner boundary conditions
@@ -53,6 +54,8 @@ module gyre_sysmtx
      procedure, public :: set_inner_bound
      procedure, public :: set_outer_bound
      procedure, public :: set_block
+     procedure, public :: balance
+     procedure, public :: unbalance
      procedure, public :: determinant
 !     procedure, public :: determinant_slu_r
 !     procedure, public :: determinant_slu_c
@@ -89,6 +92,7 @@ contains
     allocate(this%B_o(n_o,n_e))
 
     allocate(this%S(n))
+    allocate(this%V(n_e*(n+1)))
 
     this%n = n
     this%n_e = n_e
@@ -172,6 +176,93 @@ contains
     return
 
   end subroutine set_block
+
+!****
+
+  subroutine balance (this)
+
+    class(sysmtx_t), intent(inout) :: this
+
+    real(WP) :: r
+    real(WP) :: c
+    integer  :: i
+    integer  :: j
+    integer  :: k
+
+    ! Scale rows
+
+    do i = 1,this%n_i
+       r = SUM(ABS(this%B_i(i,:)))
+       this%B_i(i,:) = this%B_i(i,:)/r
+    end do
+
+    do k = 1, this%n
+       do i = 1, this%n_e
+          r = SUM(ABS(this%E_l(i,:,k))) + SUM(ABS(this%E_r(i,:,k)))
+          this%E_l(i,:,k) = this%E_l(i,:,k)/r
+          this%E_r(i,:,k) = this%E_r(i,:,k)/r
+       end do
+    end do
+
+    do i = 1,this%n_o
+       r = SUM(ABS(this%B_o(i,:)))
+       this%B_o(i,:) = this%B_o(i,:)/r
+    end do
+
+    ! Scale columns
+
+    j = 1
+
+    do i = 1,this%n_e
+       c = SUM(ABS(this%B_i(:,i))) + SUM(ABS(this%E_l(:,i,1)))
+       this%B_i(:,i) = this%B_i(:,i)/c
+       this%E_l(:,i,1) = this%E_l(:,i,1)/c
+       this%V(j) = c
+       j = j + 1
+    end do
+
+    do k = 1,this%n-1
+       do i = 1,this%n_e
+          c = SUM(ABS(this%E_r(:,i,k))) + SUM(ABS(this%E_l(:,i,k+1)))
+          this%E_r(:,i,k) = this%E_r(:,i,k)/c
+          this%E_l(:,i,k+1) = this%E_l(:,i,k+1)/c
+          this%V(j) = c
+          j = j + 1
+       end do
+    end do
+
+    do i = 1,this%n_e
+       c = SUM(ABS(this%E_r(:,i,this%n))) + SUM(ABS(this%B_o(:,i)))
+       this%E_r(:,i,this%n) = this%E_r(:,i,this%n)/c
+       this%B_o(:,i) = this%B_o(:,i)/c
+       this%V(j) = c
+       j = j + 1
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine balance
+
+!****
+
+  subroutine unbalance (this, b)
+
+    class(sysmtx_t), intent(in) :: this
+    complex(WP), intent(inout)  :: b(:)
+
+    $CHECK_BOUNDS(SIZE(b),this%n_e*(this%n+1))
+
+    ! Modify b to 'undo' the effects of a prior call to balance()
+
+    b = b*this%V
+
+    ! Finish
+
+    return
+
+  end subroutine unbalance
 
 !****
 
