@@ -176,9 +176,9 @@ contains
 
     if(use_real_) then
        dOmega_r = REAL(dOmega)
-       call eigen_decompose(dOmega_r, lambda, V_l=V_l, V_r=V_r)
+       call eigen_decompose(dOmega_r, lambda, V_l, V_r)
     else
-       call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
+       call eigen_decompose(dOmega, lambda, V_l, V_r)
     endif
 
     ! Set up the solution matrices and scales, using 'upwinding' for stability
@@ -208,7 +208,7 @@ contains
              call ${X}SCAL(n_e, EXP(lambda(i)*dx), V_neg(1,i), 1)
           endif
        end do
-    
+
        call ${X}GEMM('N', 'N', n_e, n_e, n_e, CMPLX(-1._WP, KIND=WP), &
                      V_neg, n_e, V_l, n_e, CMPLX(0._WP, KIND=WP), &
                      E_l, n_e)
@@ -384,9 +384,9 @@ contains
 
     if(use_real_) then
        dOmega_r = REAL(dOmega)
-       call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
+       call eigen_decompose(dOmega_r, lambda, V_l, V_r)
     else
-       call eigen_decompose(dOmega, lambda, V_l=V_l, V_r=V_r)
+       call eigen_decompose(dOmega, lambda, V_l, V_r)
     endif
 
     ! Do the stabilized (both-boundaries) Magnus reconstruction
@@ -478,7 +478,7 @@ contains
     ! for alpha_2 is erroneous)
 
     dalpha(:,:,1) = 0.5_WP*(A(:,:,1) + A(:,:,2))
-    dalpha(:,:,2) = SQRT(3._WP)*(A(:,:,2) - A(:,:,1))
+    dalpha(:,:,2) = SQRT(3._WP)*(A(:,:,2) - A(:,:,1))/12._WP
 
     dOmega = dalpha(:,:,1) - dx*commutator(dalpha(:,:,1), dalpha(:,:,2))/12._WP
     
