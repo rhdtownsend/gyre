@@ -303,7 +303,7 @@ contains
 
     end do cell_loop
 
-    $CHECK_BOUNDS(i,SIZE(x)+1)
+    $CHECK_BOUNDS(i,SIZE(x_)+1)
 
     x = x_(unique_indices(x_))
 
