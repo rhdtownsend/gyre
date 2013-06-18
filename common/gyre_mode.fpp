@@ -65,6 +65,7 @@ module gyre_mode
      procedure, public :: delS
      procedure, public :: delS_en
      procedure, public :: delL
+     procedure, public :: delL_rd
      procedure, public :: delp
      procedure, public :: delrho
      procedure, public :: delT
@@ -538,6 +539,91 @@ contains
     return
 
   end function delL
+
+!****
+
+  function delL_rd (this)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delL_rd(this%n)
+
+    complex(WP) :: A_5(6,this%n)
+    complex(WP) :: dy_5(this%n)
+    complex(WP) :: y_6(this%n)
+
+    ! Calculate the Lagrangian luminosity perturbation in units of L_star, 
+    ! from the radiative diffusion equation
+
+    associate(V => this%bc%V(this%x), U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+              nabla_ad => this%bc%nabla_ad(this%x), nabla => this%tc%nabla(this%x), &
+              c_dif => this%tc%c_dif(this%x), c_rad => this%tc%c_rad(this%x), &
+              kappa_S => this%tc%kappa_S(this%x), &
+              l => this%op%l, omega => this%omega)
+
+      A_5(1,:) = V*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+      A_5(2,:) = V*(l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
+      A_5(3,:) = V*c_dif
+      A_5(4,:) = V*nabla_ad
+      A_5(5,:) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
+      A_5(6,:) = -V*nabla/c_rad
+
+      dy_5 = this%x*deriv(this%x, this%y(5,:))
+
+      where(this%x /= 0._WP)
+
+         y_6 = (dy_5 - (A_5(1,:)*this%y(1,:) + &
+                        A_5(2,:)*this%y(2,:) + &
+                        A_5(3,:)*this%y(3,:) + &
+                        A_5(4,:)*this%y(4,:) + &
+                        A_5(5,:)*this%y(5,:)))/A_5(6,:)
+
+      elsewhere
+
+         y_6 = 0._WP
+
+      endwhere
+
+      delL_rd = y_6*this%x**(l+1)
+
+    end associate
+         
+    ! Finish
+
+    return
+
+  contains
+
+    function deriv (x, y) result (dy_dx)
+
+      real(WP), intent(in)    :: x(:)
+      complex(WP), intent(in) :: y(:)
+      complex(WP)             :: dy_dx(SIZE(x))
+      
+      integer :: n
+      integer :: i
+
+      $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+      ! Differentiate y(x) using centered finite differences
+
+      n = SIZE(x)
+
+      dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
+
+      do i = 2,n-1
+         dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
+                            (y(i+1) - y(i))/(x(i+1) - x(i)))
+      end do
+
+      dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
+
+      ! Finish
+
+      return
+
+    end function deriv
+
+  end function delL_rd
 
 !****
 

@@ -22,6 +22,7 @@ module gyre_nad_shooter
   ! Uses
 
   use core_kinds
+  use core_order
 
   use gyre_base_coeffs
   use gyre_therm_coeffs
@@ -125,7 +126,7 @@ contains
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
 
-       if(x(k) < x_ad_) then
+       if(x(k) < x_ad_ .AND. .FALSE.) then
 
           ! Shoot adiabatically
 
@@ -276,27 +277,35 @@ contains
     real(WP), intent(in)             :: x_sh(:)
     real(WP), allocatable            :: x(:)
 
-    integer :: k
-    integer :: n_cell(SIZE(x_sh)-1)
-    integer :: i
+    integer               :: k
+    integer               :: n_cell(SIZE(x_sh)-1)
+    real(WP), allocatable :: x_(:)
+    integer               :: i
 
     ! Determine the abscissa used for shooting on the grid x_sh
 
     !$OMP PARALLEL DO SCHEDULE (DYNAMIC)
     count_loop : do k = 1,SIZE(x_sh)-1
-       n_cell(k) = SIZE(ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1)))
+       n_cell(k) = 1 + SIZE(ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1)))
     end do count_loop
 
-    allocate(x(SUM(n_cell)))
+    allocate(x_(SUM(n_cell)))
 
     i = 1
 
     cell_loop : do k = 1,SIZE(x_sh)-1
-       x(i:i+n_cell(k)-1) = ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1))
+
+       x_(i) = 0.5_WP*(x_sh(k) + x_sh(k+1))
+
+       x_(i+1:i+n_cell(k)-1) = ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1))
+
        i = i + n_cell(k)
+
     end do cell_loop
 
     $CHECK_BOUNDS(i,SIZE(x)+1)
+
+    x = x_(unique_indices(x_))
 
     ! Finish
 

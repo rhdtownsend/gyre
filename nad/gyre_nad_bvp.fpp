@@ -155,8 +155,6 @@ contains
 
     ! Set up the coefficient caches
 
-    ! Set up the coefficient caches
-
     x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
     call this%bc%fill_cache(x_cc)

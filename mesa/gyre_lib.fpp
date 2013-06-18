@@ -149,7 +149,8 @@ contains
     select type (bc_m)
     type is (evol_base_coeffs_t)
        call bc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                      N2, Gamma_1, nabla_ad, delta, deriv_type, add_center)
+                      N2, Gamma_1, nabla_ad, delta, &
+                      Omega_rot, deriv_type, add_center)
     class default
        $ABORT(Invalid bc_m type)
     end select

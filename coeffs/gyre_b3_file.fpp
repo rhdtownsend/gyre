@@ -135,6 +135,9 @@ contains
     kappa = kappa*1.E1_WP
     epsilon = epsilon*1.E4_WP
     
+    epsilon_rho = epsilon_rho*epsilon
+    epsilon_T = epsilon_T*epsilon
+
     m = [w(:n-1)/(1._WP+w(:n-1))*M_star,M_star]
 
     Gamma_1 = chi_rho*c_p/c_V
@@ -170,7 +173,7 @@ contains
        select type (tc)
        type is (evol_therm_coeffs_t)
           call tc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                       Gamma_1, nabla_ad, c_p, nabla, &
+                       Gamma_1, nabla_ad, delta, nabla,  &
                        kappa, kappa_rho, kappa_T, &
                        epsilon, epsilon_rho, epsilon_T, deriv_type, add_center)
        class default
