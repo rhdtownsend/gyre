@@ -69,7 +69,6 @@ contains
     real(WP)                      :: M_star
     real(WP)                      :: R_star
     real(WP)                      :: L_star
-    real(WP)                      :: Omega_rot
     real(WP), allocatable         :: r(:)
     real(WP), allocatable         :: m(:)
     real(WP), allocatable         :: p(:)
@@ -86,6 +85,7 @@ contains
     real(WP), allocatable         :: epsilon_(:)
     real(WP), allocatable         :: epsilon_rho(:)
     real(WP), allocatable         :: epsilon_T(:)
+    real(WP), allocatable         :: Omega_rot(:)
     logical                       :: add_center
 
     if(data_format /= '') then
@@ -138,8 +138,6 @@ contains
     R_star = glob(2)
     L_star = glob(3)
 
-    Omega_rot = glob(12)
-
     r = var(1,:)
     m = EXP(var(2,:))*M_star
     T = var(3,:)
@@ -155,6 +153,7 @@ contains
     epsilon_ = var(9,:)
     epsilon_T = var(19,:)
     epsilon_rho = var(20,:)
+    Omega_rot = var(16,:)
 
     allocate(N2(n))
 
@@ -181,7 +180,7 @@ contains
     type is (evol_base_coeffs_t)
        call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                     N2, Gamma_1, nabla_ad, delta, &
-                    SPREAD(Omega_rot, DIM=1, NCOPIES=n), deriv_type, add_center)
+                    Omega_rot, deriv_type, add_center)
     class default
        $ABORT(Invalid bc type)
     end select
