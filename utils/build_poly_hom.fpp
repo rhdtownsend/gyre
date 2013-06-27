@@ -67,10 +67,12 @@ program build_poly_hom
 
   ! Set up the grid
 
-  select case(grid_type)
-  case('GEOM')
+  select case (grid_type)
+  case ('UNIFORM')
+     call create_uniform(n, x)
+  case ('GEOM')
      call create_geom(s, n, x)
-  case('LOG')
+  case ('LOG')
      call create_log(s, n, x)
   case default
      $ABORT(Invalid grid_type)
