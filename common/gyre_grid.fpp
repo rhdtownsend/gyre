@@ -60,6 +60,7 @@ module gyre_grid
 
   public :: build_grid
   public :: grid_range
+  public :: create_uniform
   public :: create_geom
   public :: create_log
 
