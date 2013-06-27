@@ -478,7 +478,7 @@ contains
     ! for alpha_2 is erroneous)
 
     dalpha(:,:,1) = 0.5_WP*(A(:,:,1) + A(:,:,2))
-    dalpha(:,:,2) = SQRT(3._WP)*(A(:,:,2) - A(:,:,1))/12._WP
+    dalpha(:,:,2) = SQRT(3._WP)*(A(:,:,2) - A(:,:,1))
 
     dOmega = dalpha(:,:,1) - dx*commutator(dalpha(:,:,1), dalpha(:,:,2))/12._WP
     
