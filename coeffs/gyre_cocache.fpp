@@ -22,6 +22,7 @@ module gyre_cocache
   ! Uses
 
   use core_kinds
+  use core_order
 
   use ISO_FORTRAN_ENV
 
@@ -70,16 +71,18 @@ contains
     real(WP), intent(in)          :: x(:)
     real(WP), intent(in)          :: c(:,:)
 
-    $CHECK_BOUNDS(SIZE(c, 2),SIZE(x))
+    integer, allocatable :: i(:)
 
-    $ASSERT(ALL(x(2:) > x(:SIZE(x)-1)),x must be monotonic-increasing)
+    $CHECK_BOUNDS(SIZE(c, 2),SIZE(x))
 
     ! Initialize the cocache
 
-    this%x = x
-    this%c = c
+    i = unique_indices(x)
 
-    this%n = SIZE(x)
+    this%x = x(i)
+    this%c = c(:,i)
+
+    this%n = SIZE(i)
     this%n_c = SIZE(c, 1)
 
     ! Finish
