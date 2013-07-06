@@ -71,7 +71,7 @@ program gyre_nad
 
   if(check_log_level('INFO')) then
 
-     write(OUTPUT_UNIT, 100) form_header('gyre_ad ['//TRIM(version)//']', '=')
+     write(OUTPUT_UNIT, 100) form_header('gyre_nad ['//TRIM(version)//']', '=')
 100  format(A)
 
      write(OUTPUT_UNIT, 110) 'Compler         : ', COMPILER_VERSION()
