@@ -71,12 +71,12 @@ program gyre_ad
      write(OUTPUT_UNIT, 100) form_header('gyre_ad ['//TRIM(version)//']', '=')
 100  format(A)
 
-     write(OUTPUT_UNIT, 110) 'Compler         : ', COMPILER_VERSION()
-     write(OUTPUT_UNIT, 110) 'Compler options : ', COMPILER_OPTIONS()
+     write(OUTPUT_UNIT, 110) 'Compiler         : ', COMPILER_VERSION()
+     write(OUTPUT_UNIT, 110) 'Compiler options : ', COMPILER_OPTIONS()
 110  format(2A)
 
-     write(OUTPUT_UNIT, 120) 'OpenMP Threads  : ', OMP_SIZE_MAX
-     write(OUTPUT_UNIT, 120) 'MPI Processors  : ', MPI_SIZE
+     write(OUTPUT_UNIT, 120) 'OpenMP Threads   : ', OMP_SIZE_MAX
+     write(OUTPUT_UNIT, 120) 'MPI Processors   : ', MPI_SIZE
 120  format(A,I0)
 
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
