@@ -71,7 +71,8 @@ module gyre_mode
      procedure, public :: delT
      procedure, public :: dE_dx
      procedure, public :: dW_dx
-     procedure, public :: C
+     procedure, public :: K
+     procedure, public :: beta
      procedure, public :: E
      procedure, public :: E_norm
      procedure, public :: W
@@ -760,16 +761,15 @@ contains
 
 !****
 
-  function C (this)
+  function K (this)
 
     class(mode_t), intent(in) :: this
-    real(WP)                  :: C
+    real(WP)                  :: K(this%n)
 
     complex(WP) :: xi_r(this%n)
     complex(WP) :: xi_h(this%n)
 
-    ! Calculate the first-order rotational splitting coefficient (Unno
-    ! et al. 1989, eqn. 19.46)
+    ! Calculate the rotation splitting kernel
 
     xi_r = this%xi_r()
     xi_h = this%xi_h()
@@ -777,8 +777,9 @@ contains
     associate(x => this%x, U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
               l => this%op%l)
 
-      C = integrate(this%x, (2._WP*REAL(xi_r*CONJG(xi_h)) + ABS(xi_h)**2)*U*x**2/c_1)/ &
-          integrate(this%x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
+      K = (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*ABS(xi_r*xi_h))*U*x**2/c_1
+
+      K = K/integrate(x, K)
 
     end associate
 
@@ -786,7 +787,36 @@ contains
 
     return
 
-  end function C
+  end function K
+
+!****
+
+  function beta (this)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: beta
+
+    complex(WP) :: xi_r(this%n)
+    complex(WP) :: xi_h(this%n)
+
+    ! Calculate the rotation splitting scale
+
+    xi_r = this%xi_r()
+    xi_h = this%xi_h()
+
+    associate(x => this%x, U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+              Omega_rot => this%bc%Omega_rot(this%x), l => this%op%l)
+
+      beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*ABS(xi_r*xi_h))*U*x**2/c_1) / &
+             integrate(x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function beta
 
 !****
 
@@ -845,7 +875,7 @@ contains
 
   end function E_norm
 
-!*****
+!****
 
   function W (this)
 
