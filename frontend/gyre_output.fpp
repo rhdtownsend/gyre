@@ -328,6 +328,8 @@ contains
           call write_dset(hg, 'dE_dx', md%dE_dx())
        case ('dW_dx')
           call write_dset(hg, 'dW_dx', md%dW_dx())
+       case ('prop_type')
+          call write_dset(hg, 'prop_type', md%prop_type())
        case ('K')
           call write_dset(hg, 'K', md%K())
        case default
