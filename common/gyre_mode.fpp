@@ -71,6 +71,7 @@ module gyre_mode
      procedure, public :: delT
      procedure, public :: dE_dx
      procedure, public :: dW_dx
+     procedure, public :: prop_type
      procedure, public :: K
      procedure, public :: beta
      procedure, public :: E
@@ -758,6 +759,30 @@ contains
     return
 
   end function dW_dx
+
+!****
+
+  function prop_type (this)
+
+    class(mode_t), intent(in) :: this
+    integer                   :: prop_type(this%n)
+
+    ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
+
+    associate(x => this%x, V_g => this%bc%V(this%x)/this%bc%Gamma_1(this%x), &
+              As => this%bc%As(this%x), c_1 => this%bc%c_1(this%x), &
+              l => this%op%l, omega => REAL(this%omega))
+
+      prop_type = MERGE(1, 0, c_1*omega**2 > As) + &
+                  MERGE(-1, 0, l*(l+1)/(c_1*omega**2) > V_g)
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function prop_type
 
 !****
 
