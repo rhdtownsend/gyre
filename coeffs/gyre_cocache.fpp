@@ -96,7 +96,7 @@ contains
 
 !****
 
-!****
+  $if($GFORTRAN_PR57922)
 
   subroutine final (this)
 

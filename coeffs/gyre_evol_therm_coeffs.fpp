@@ -67,6 +67,7 @@ module gyre_evol_therm_coeffs
      procedure, public :: init
      $if($GFORTRAN_PR57922)
      procedure, public :: final
+     $endif
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_thm)
