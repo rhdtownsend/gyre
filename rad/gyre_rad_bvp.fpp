@@ -68,6 +68,9 @@ module gyre_rad_bvp
    contains 
      private
      procedure, public :: init
+     $if($GFORTRAN_PR57922)
+     procedure, public :: final
+     $endif
 !     procedure, public :: get_bc
 !     procedure, public :: get_op
      procedure, public :: get_np
@@ -162,6 +165,27 @@ contains
     return
 
   end subroutine init
+
+!****
+
+  $if($GFORTRAN_PR57922)
+
+  subroutine final (this)
+
+    class(rad_bvp_t), intent(inout) :: this
+
+    ! Finalize the ad_bvp
+
+    call this%bc%final()
+    if(ALLOCATED(this%tc)) call this%tc%final()
+
+    ! Finish
+
+    return
+
+  end subroutine final
+
+  $endif
 
 !****
 
