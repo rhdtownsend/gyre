@@ -136,8 +136,19 @@ contains
 
     ! Set the model by storing coefficients
 
-    if(ALLOCATED(bc_m)) deallocate(bc_m)
-    if(ALLOCATED(tc_m)) deallocate(tc_m)
+    if(ALLOCATED(bc_m)) then
+       $if($GFORTRAN_PR57922)
+       call bc_m%final()
+       $endif
+       deallocate(bc_m)
+    endif
+
+    if(ALLOCATED(tc_m)) then
+       $if($GFORTRAN_PR57922)
+       call tc_m%final()
+       $endif
+       deallocate(tc_m)
+    endif
 
     allocate(evol_base_coeffs_t::bc_m)
     allocate(evol_therm_coeffs_t::tc_m)
@@ -231,6 +242,9 @@ contains
     mode_loop : do j = 1,SIZE(md)
        call user_sub(md(j), ipar, rpar, retcode)
        if(retcode /= 0) exit mode_loop
+       $if($GFORTRAN_PR57922)
+       call md(j)%final()
+       $endif
     end do mode_loop
 
     ! Finish
