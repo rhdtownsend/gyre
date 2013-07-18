@@ -40,7 +40,7 @@ module gyre_therm_coeffs
      private
    contains
      private
-     $if($GFORTRAN_PR_57922)
+     $if($GFORTRAN_PR57922)
      procedure, public :: final
      $endif
      $PROC_DECL(c_rad)
