@@ -39,6 +39,9 @@ module gyre_base_coeffs
   type, abstract :: base_coeffs_t
    contains
      private
+     $if($GFORTRAN_PR57922)
+     procedure, public :: final
+     $endif
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -105,6 +108,24 @@ module gyre_base_coeffs
   ! Procedures
 
 contains
+
+  $if($GFORTRAN_PR57922)
+
+  subroutine final (this)
+
+    class(base_coeffs_t), intent(inout) :: this
+
+    ! Finalize the base_coeffs
+
+    ! Finish
+
+    return
+
+  end subroutine final
+
+  $endif
+
+!****
 
   function omega (this, x, m, omega_c)
 

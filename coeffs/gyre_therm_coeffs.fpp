@@ -40,6 +40,9 @@ module gyre_therm_coeffs
      private
    contains
      private
+     $if($GFORTRAN_PR_57922)
+     procedure, public :: final
+     $endif
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_thm)
@@ -96,5 +99,23 @@ module gyre_therm_coeffs
   private
 
   public :: therm_coeffs_t
+
+contains
+
+  $if($GFORTRAN_PR57922)
+
+  subroutine final (this)
+
+    class(therm_coeffs_t), intent(inout) :: this
+
+    ! Finalize the therm_coeffs
+
+    ! Finish
+
+    return
+
+  end subroutine final
+
+  $endif
 
 end module gyre_therm_coeffs

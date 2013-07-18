@@ -51,6 +51,9 @@ module gyre_poly_base_coeffs
    contains
      private
      procedure, public :: init
+     $if($GFORTRAN_PR57922)
+     procedure, public :: final
+     $endif
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -133,6 +136,27 @@ contains
     return
 
   end subroutine init
+
+!****
+
+  $if($GFORTRAN_PR57922)
+
+  subroutine final (this)
+
+    class(poly_base_coeffs_t), intent(inout) :: this
+
+    ! Finalize the base_coeffs
+
+    call this%sp_Theta%final()
+    call this%sp_dTheta%final()
+
+    ! Finish
+
+    return
+
+  end subroutine final
+
+  $endif
 
 !****
 

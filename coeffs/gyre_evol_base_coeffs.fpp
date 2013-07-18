@@ -80,6 +80,9 @@ module gyre_evol_base_coeffs
    contains
      private
      procedure, public :: init
+     $if($GFORTRAN_PR57922)
+     procedure, public :: final
+     $endif
      $PROC_DECL_GEN(m)
      $PROC_DECL_GEN(p)
      $PROC_DECL_GEN(rho)
@@ -277,6 +280,39 @@ contains
     end function y_centered
 
   end subroutine init
+
+!****
+
+  $if($GFORTRAN_PR57922)
+
+  subroutine final (this)
+
+    class(evol_base_coeffs_t), intent(inout) :: this
+
+    ! Finalize the base_coeffs
+
+     call this%sp_m%final()
+     call this%sp_p%final()
+     call this%sp_rho%final()
+     call this%sp_T%final()
+     call this%sp_V%final()
+     call this%sp_As%final()
+     call this%sp_U%final()
+     call this%sp_c_1%final()
+     call this%sp_Gamma_1%final()
+     call this%sp_nabla_ad%final()
+     call this%sp_delta%final()
+     call this%sp_Omega_rot%final()
+
+     if(this%cc_enabled) call this%cc%final()
+
+     ! Finish
+
+     return
+
+   end subroutine final
+
+   $endif
 
 !****
 

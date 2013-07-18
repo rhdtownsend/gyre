@@ -63,7 +63,10 @@ module gyre_evol_therm_coeffs
      $VAR_DECL(tau_thm)
      logical :: cc_enabled
    contains
-     procedure :: init
+     private
+     procedure, public :: init
+     $if($GFORTRAN_PR57922)
+     procedure, public :: final
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_thm)
@@ -325,6 +328,38 @@ contains
     end function dlny_dlnx
 
   end subroutine init
+
+!****
+
+  $if($GFORTRAN_PR57922)
+  
+  subroutine final (this)
+
+    class(evol_therm_coeffs_t), intent(inout) :: this
+
+    ! Finalize the therm_coeffs
+
+    call this%sp_c_rad%final()
+    call this%sp_c_thm%final()
+    call this%sp_c_dif%final()
+    call this%sp_c_eps_ad%final()
+    call this%sp_c_eps_S%final()
+    call this%sp_nabla%final()
+    call this%sp_kappa_ad%final()
+    call this%sp_kappa_S%final()
+    call this%sp_epsilon_ad%final()
+    call this%sp_epsilon_S%final()
+    call this%sp_tau_thm%final()
+
+    if(this%cc_enabled) call this%cc%final()
+
+    ! Finish
+
+    return
+
+  end subroutine final
+
+  $endif
 
 !****
 

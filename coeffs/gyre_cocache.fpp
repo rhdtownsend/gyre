@@ -41,6 +41,9 @@ module gyre_cocache
    contains
      private
      procedure, public :: init
+     $if($GFORTRAN_PR57922)
+     procedure, public :: final
+     $endif
      procedure, public :: lookup
   end type cocache_t
 
@@ -90,6 +93,27 @@ contains
     return
 
   end subroutine init
+
+!****
+
+!****
+
+  subroutine final (this)
+
+    class(cocache_t), intent(inout) :: this
+
+    ! Finalize the cocache
+
+    deallocate(this%x)
+    deallocate(this%c)
+
+    ! Finish
+
+    return
+
+  end subroutine final
+
+  $endif
 
 !****
 
