@@ -352,7 +352,7 @@ contains
     call this%sp_epsilon_S%final()
     call this%sp_tau_thm%final()
 
-    if(this%cc_enabled) call this%cc%final()
+    call this%cc%final()
 
     ! Finish
 

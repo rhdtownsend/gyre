@@ -304,7 +304,7 @@ contains
      call this%sp_delta%final()
      call this%sp_Omega_rot%final()
 
-     if(this%cc_enabled) call this%cc%final()
+     call this%cc%final()
 
      ! Finish
 

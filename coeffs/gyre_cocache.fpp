@@ -104,8 +104,8 @@ contains
 
     ! Finalize the cocache
 
-    deallocate(this%x)
-    deallocate(this%c)
+    if(ALLOCATED(this%x)) deallocate(this%x)
+    if(ALLOCATED(this%c)) deallocate(this%c)
 
     ! Finish
 
