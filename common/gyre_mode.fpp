@@ -56,6 +56,9 @@ module gyre_mode
    contains
      private
      procedure, public :: init
+     $if($GFORTRAN_PR57922)
+     procedure, public :: final
+     $endif
      procedure, public :: classify
      procedure, public :: freq
      procedure, public :: xi_r
@@ -156,6 +159,28 @@ contains
     return
 
   end subroutine init
+
+!****
+
+  $if($GFORTRAN_PR57922)
+
+  subroutine final (this)
+
+    class(mode_t), intent(inout) :: this
+
+    ! Finalize the mode
+
+    call bc%final()
+    if(ALLOCATED(tc)) call tc%final()
+
+    deallocate(this%x)
+    deallocate(this%y)
+
+    ! Finish
+
+  end subroutine final
+
+  $endif
 
 !****
 
