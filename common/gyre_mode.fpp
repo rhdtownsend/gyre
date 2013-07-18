@@ -170,8 +170,8 @@ contains
 
     ! Finalize the mode
 
-    call bc%final()
-    if(ALLOCATED(tc)) call tc%final()
+    call this%bc%final()
+    if(ALLOCATED(this%tc)) call this%tc%final()
 
     deallocate(this%x)
     deallocate(this%y)
