@@ -237,21 +237,24 @@ contains
 
     call ad_scan_search(bp, omega, md)
 
+    $if($GFORTRAN_PR57922)
+    call bp%final()
+    $endif
+
     ! Process the modes
 
+    retcode = 0
+
     mode_loop : do j = 1,SIZE(md)
-       call user_sub(md(j), ipar, rpar, retcode)
-       if(retcode /= 0) exit mode_loop
+       if(retcode == 0) then
+          call user_sub(md(j), ipar, rpar, retcode)
+       endif
        $if($GFORTRAN_PR57922)
        call md(j)%final()
        $endif
     end do mode_loop
 
     ! Finish
-
-    $if($GFORTRAN_PR57922)
-    call bp%final()
-    $endif
 
     return
 
@@ -306,21 +309,24 @@ contains
 
     call rad_scan_search(bp, omega, md)
 
+    $if($GFORTRAN_PR57922)
+    call bp%final()
+    $endif
+
     ! Process the modes
 
+    retcode = 0
+
     mode_loop : do j = 1,SIZE(md)
-       call user_sub(md(j), ipar, rpar, retcode)
-       if(retcode /= 0) exit mode_loop
+       if(retcode == 0) then
+          call user_sub(md(j), ipar, rpar, retcode)
+       endif
        $if($GFORTRAN_PR57922)
        call md(j)%final()
        $endif
     end do mode_loop
 
     ! Finish
-
-    $if($GFORTRAN_PR57922)
-    call bp%final()
-    $endif
 
     return
 
