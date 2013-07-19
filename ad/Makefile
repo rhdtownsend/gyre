@@ -6,17 +6,17 @@ TARGETS=gyre_ad
 
 # Flags
 
-OMP=true
-#MPI=true
-HDF5=true
-DEBUG=true
-DOUBLE_PRECISION=true
+OMP=yes
+MPI=no
+HDF5=yes
+DEBUG=yes
+DOUBLE_PRECISION=yes
 
 LDFLAGS=`mesasdk_hdf5_link` `mesasdk_lapack95_link`
 
 FPX3FLAGS=-DGFORTRAN_PR_56052 -DGFORTRAN_PR_56872
 
-ifdef DEBUG
+ifeq (DEBUG,yes)
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG
 else
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO
