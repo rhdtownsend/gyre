@@ -2,21 +2,21 @@
 
 # Variables
 
-TARGETS=gyre_nad
+TARGETS=gyre_nad gyre_nad_map
 
 # Flags
 
-OMP=true
-#MPI=true
-HDF5=true
-DEBUG=true
-DOUBLE_PRECISION=true
+OMP=yes
+MPI=no
+HDF5=yes
+DEBUG=yes
+DOUBLE_PRECISION=yes
 
 LDFLAGS=`mesasdk_hdf5_link` `mesasdk_lapack95_link`
 
 FPX3FLAGS=-DGFORTRAN_PR_56052 -DGFORTRAN_PR_56872
 
-ifdef DEBUG
+ifdef ($DEBUG,yes)
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG
 else
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO
