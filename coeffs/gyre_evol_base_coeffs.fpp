@@ -35,6 +35,11 @@ module gyre_evol_base_coeffs
 
   implicit none
 
+  ! Parameters
+
+  logical, parameter :: IMPLICIT_U = .FALSE.
+  logical, parameter :: IMPLICIT_GAMMA_1 = .FALSE.
+
   ! Derived-type definitions
 
   $define $VAR_DECL $sub
@@ -413,13 +418,133 @@ contains
   $PROC(T,4)
   $PROC(V,5)
   $PROC(As,6)
-  $PROC(U,7)
   $PROC(c_1,8)
-  $PROC(Gamma_1,9)
   $PROC(nabla_ad,10)
   $PROC(delta,11)
   $PROC(Omega_rot,12)
 
+!****
+
+  function U_1 (this, x) result (U)
+
+    class(evol_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x
+    real(WP)                              :: U
+
+    ! Calculate U. If implicit_U is .TRUE., use the c_1 based
+    ! expression; this ensures that the correct relation between U and
+    ! c_1 is preserved (see, e.g., eqn. 18 of Takata 2006, Proc. SOHO
+    ! 18/GONG 2006/HELAS I, p. 26)
+
+    if(this%cc_enabled) then
+
+       U = this%cc%lookup(7, x)
+
+    else
+
+       if(implicit_U) then
+          U = 3._WP - x*this%sp_c_1%deriv(x)/this%sp_c_1%interp(x)
+       else
+          U =  this%sp_U%interp(x)
+       endif
+
+    endif
+
+    ! Finish
+
+    return
+
+  end function U_1
+
+!****
+
+  function U_v (this, x) result (U)
+
+    class(evol_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x(:)
+    real(WP)                              :: U(SIZE(x))
+
+    ! Calculate U. If implicit_U is .TRUE., use the c_1 based
+    ! expression; this ensures that the correct relation between U and
+    ! c_1 is preserved (see, e.g., eqn. 18 of Takata 2006, Proc. SOHO
+    ! 18/GONG 2006/HELAS I, p. 26)
+
+    if(implicit_U) then
+       U = 3._WP - x*this%sp_c_1%deriv(x)/this%sp_c_1%interp(x)
+    else
+       U =  this%sp_U%interp(x)
+    endif
+
+    ! Finish
+
+    return
+
+  end function U_v
+
+!****
+
+  function Gamma_1_1 (this, x) result (Gamma_1)
+
+    class(evol_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x
+    real(WP)                              :: Gamma_1
+
+    ! Calculate Gamma_1. If implicit_Gamma_1 is .TRUE., derive from
+    ! other structure coefficients
+
+    if(this%cc_enabled) then
+
+       Gamma_1 = this%cc%lookup(9, x)
+
+    else
+
+       if(implicit_Gamma_1 .AND. x /= 0._WP) then
+
+          Gamma_1 = this%V(x)/(-this%As(x) + this%U(x) + this%V(x) - 1._WP - &
+                               x*this%sp_V%deriv(x)/this%V(x))
+
+       else
+       
+          Gamma_1 = this%sp_Gamma_1%interp(x)
+
+       endif
+
+    endif
+
+    ! Finish
+
+    return
+
+  end function Gamma_1_1
+
+!****
+
+  function Gamma_1_v (this, x) result (Gamma_1)
+
+    class(evol_base_coeffs_t), intent(in) :: this
+    real(WP), intent(in)                  :: x(:)
+    real(WP)                              :: Gamma_1(SIZE(x))
+
+    ! Calculate Gamma_1. If implicit_Gamma_1 is .TRUE., derive from
+    ! other structure coefficients
+
+    where(implicit_Gamma_1 .AND. x /= 0._WP)
+
+       Gamma_1 = this%V(x)/(-this%As(x) + this%U(x) + this%V(x) - 1._WP - &
+                            x*this%sp_V%deriv(x)/this%V(x))
+
+    elsewhere
+
+       Gamma_1 = this%sp_Gamma_1%interp(x)
+
+    end where
+
+    ! Finish
+
+    return
+
+  end function Gamma_1_v
+       
 !****
 
   function pi_c (this)
