@@ -65,7 +65,7 @@ contains
     freq_units = 'NONE'
 
     summary_file = ''
-    summary_item_list = 'l,n_p,n_g,omega,freq'
+    summary_item_list = 'l,n_pg,omega,freq'
 
     mode_prefix = ''
     mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
@@ -115,6 +115,7 @@ contains
     integer        :: i
     integer        :: n_p(SIZE(md))
     integer        :: n_g(SIZE(md))
+    integer        :: n_pg(SIZE(md))
     integer        :: j
     type(hgroup_t) :: hg
 
@@ -123,7 +124,7 @@ contains
     n_md = SIZE(md)
 
     mode_loop : do i = 1,n_md
-       call md(i)%classify(n_p(i), n_g(i))
+       call md(i)%classify(n_p(i), n_g(i), n_pg(i))
     end do mode_loop
 
     ! Open the file
@@ -146,6 +147,8 @@ contains
           call write_dset(hg, 'n_p', n_p)
        case('n_g')
           call write_dset(hg, 'n_g', n_g)
+       case('n_pg')
+          call write_dset(hg, 'n_pg', n_pg)
        case('omega')
           call write_dset(hg, 'omega', md%omega)
        case('freq')
@@ -246,12 +249,13 @@ contains
 
     integer        :: n_p
     integer        :: n_g
+    integer        :: n_pg
     type(hgroup_t) :: hg
     integer        :: j
 
     ! Calculate mode data
 
-    call md%classify(n_p, n_g)
+    call md%classify(n_p, n_g, n_pg)
     
     ! Open the file
 
@@ -272,6 +276,8 @@ contains
           call write_attr(hg, 'n_p', n_p)
        case ('n_g')
           call write_attr(hg, 'n_g', n_g)
+       case ('n_pg')
+          call write_attr(hg, 'n_pg', n_pg)
        case ('omega')
           call write_attr(hg, 'omega', md%omega)
        case ('freq')
@@ -306,6 +312,10 @@ contains
           call write_dset(hg, 'xi_r', md%xi_r())
        case ('xi_h')
           call write_dset(hg, 'xi_h', md%xi_h())
+       case ('Ya_1')
+          call write_dset(hg, 'Ya_1', md%Ya_1())
+       case ('Ya_2')
+          call write_dset(hg, 'Ya_2', md%Ya_2())
        case ('phip')
           call write_dset(hg, 'phip', md%phip())
        case ('dphip_dx')
