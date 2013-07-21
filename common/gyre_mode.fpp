@@ -63,6 +63,8 @@ module gyre_mode
      procedure, public :: freq
      procedure, public :: xi_r
      procedure, public :: xi_h
+     procedure, public :: Ya_1
+     procedure, public :: Ya_2
      procedure, public :: phip
      procedure, public :: dphip_dx
      procedure, public :: delS
@@ -211,72 +213,151 @@ contains
 
 !****
 
-  subroutine classify (this, n_p, n_g)
+  subroutine classify (this, n_p, n_g, n_pg)
 
     class(mode_t), intent(in) :: this
     integer, intent(out)      :: n_p
     integer, intent(out)      :: n_g
+    integer, intent(out)      :: n_pg
 
     real(WP) :: y_1(this%n)
     real(WP) :: y_2(this%n)
-    logical  :: inner_ext
     integer  :: i
-    real(WP) :: y_2_cross
+    integer  :: n_c
+    integer  :: n_a
 
-    ! Classify the mode using the Eckart-Scuflaire-Osaki scheme
+    ! Classify the mode based on its eigenfunctions
 
-    y_1 = REAL(this%y(1,:))
-    y_2 = REAL(this%y(2,:))
+    select case (this%op%l)
 
-    if(this%op%l == 0) then
-       n_p = 1
-       n_g = 0
-       inner_ext = .FALSE.
-    else
-       n_p = 0
-       n_g = 0
-    endif
- 
-    x_loop : do i = 1,this%n-1
+    case (0)
 
-       ! If this is a radial mode, and extremum in y_1 hasn't yet been
-       ! reached, skip (this is to deal with noisy near-zero solutions
-       ! at the origin)
+       ! Radial modes
+       
+       ! Look for the first extremum in y_1 (this is to deal with
+       ! noisy near-zero solutions at the origin)
 
-       if(this%op%l == 0) then
-          if(i > 1 .AND. .NOT. inner_ext) inner_ext = ABS(y_1(i)) > ABS(y_1(i-1)) .AND. ABS(y_1(i)) > ABS(y_1(i+1))
-          if(.NOT. inner_ext) cycle x_loop
+       y_1 = REAL(this%y(1,:))
+       y_2 = REAL(this%y(2,:))
+
+       extrem_loop : do i = 2,this%n-1
+          if((y_1(i) >= y_1(i-1) .AND. y_1(i) > y_1(i+1)) .OR. &
+             (y_1(i) < y_1(i-1) .AND. y_1(i) <= y_1(i+1))) exit extrem_loop
+       end do extrem_loop
+
+       ! Count winding numbers
+
+       call count_windings(y_1(i:), y_2(i:), n_c, n_a)
+
+       ! Classify (the additional 1 is for the node at the center)
+
+       n_p = n_a + 1
+       n_g = n_c
+
+       n_pg = n_p - n_g
+
+    case (1)
+
+       ! Dipole modes
+
+       ! Set up the Takata Y^a_1 and Y^a_2 functions
+
+       y_1 = REAL(this%Ya_1())
+       y_2 = REAL(this%Ya_2())
+
+       ! Count winding numbers
+
+       call count_windings(y_1(2:), y_2(2:), n_c, n_a)
+
+       n_p = n_a
+       n_g = n_c
+
+       if(n_p >= n_g) then
+          n_pg = n_p - n_g + 1
+       else
+          n_pg = n_p - n_g
        endif
 
-       ! Look for a node in xi_r
+    case default
 
-       if(y_1(i) >= 0._WP .AND. y_1(i+1) < 0._WP) then
+       ! Other modes
 
-          y_2_cross = y_2(i) - y_1(i)*(y_2(i+1) - y_2(i))/(y_1(i+1) - y_1(i))
+       y_1 = REAL(this%y(1,:))
+       y_2 = REAL(this%y(2,:))
 
-          if(y_2_cross >= 0._WP) then
-             n_p = n_p + 1
-          else
-             n_g = n_g + 1
-          endif
+       ! Count winding numbers
 
-       elseif(y_1(i) <= 0._WP .AND. y_1(i+1) > 0._WP) then
+       call count_windings(y_1, y_2, n_c, n_a)
 
-         y_2_cross = y_2(i) - y_1(i)*(y_2(i+1) - y_2(i))/(y_1(i+1) - y_1(i))
+       ! Classify
 
-          if(y_2_cross <= 0._WP) then
-             n_p = n_p + 1
-          else
-             n_g = n_g + 1
-          endif
+       n_p = n_a
+       n_g = n_c
 
-       endif
+       n_pg = n_p - n_g
 
-    end do x_loop
+    end select
 
     ! Finish
 
     return
+
+  contains
+
+    subroutine count_windings (y_1, y_2, n_c, n_a)
+
+      real(WP), intent(in) :: y_1(:)
+      real(WP), intent(in) :: y_2(:)
+      integer, intent(out) :: n_c
+      integer, intent(out) :: n_a
+
+      integer  :: i
+      real(WP) :: y_2_cross
+
+      $CHECK_BOUNDS(SIZE(y_2),SIZE(y_1))
+
+      ! Count clockwise (n_c) and anticlockwise (n_a) windings in the (y_1,y_2) plane
+
+      n_c = 0
+      n_a = 0
+
+      do i = 1,SIZE(y_1)-1
+
+         ! Look for a node in y_1
+
+         if(y_1(i) >= 0._WP .AND. y_1(i+1) < 0._WP) then
+
+            ! Solve for the crossing ordinate
+
+            y_2_cross = y_2(i) - y_1(i)*(y_2(i+1) - y_2(i))/(y_1(i+1) - y_1(i))
+
+            if(y_2_cross >= 0._WP) then
+               n_a = n_a + 1
+            else
+               n_c = n_c + 1
+            endif
+
+         elseif(y_1(i) <= 0._WP .AND. y_1(i+1) > 0._WP) then
+
+            ! Solve for the crossing ordinate
+
+            y_2_cross = y_2(i) - y_1(i)*(y_2(i+1) - y_2(i))/(y_1(i+1) - y_1(i))
+
+            if(y_2_cross <= 0._WP) then
+               n_a = n_a + 1
+            else
+               n_c = n_c + 1
+            endif
+
+         endif
+
+      end do
+
+      ! Finish
+
+      return
+
+    end subroutine count_windings
 
   end subroutine classify
 
@@ -373,6 +454,48 @@ contains
     return
 
   end function xi_h
+
+!****
+
+  function Ya_1 (this)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: Ya_1(this%n)
+
+    ! Calculate the Y^a_1 function (see eqn. 9 of Takata 2006, Proc. SOHO
+    ! 18/GONG 2006/HELAS I, p. 26)
+
+    associate (J => 1._WP - this%bc%U(this%x)/3._WP)
+
+      Ya_1 = J*this%y(1,:) + (this%y(3,:) - this%y(4,:))/3._WP
+      
+    end associate
+
+    ! Finish
+
+    return
+
+  end function Ya_1
+
+!****
+
+  function Ya_2 (this)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: Ya_2(this%n)
+
+    ! Calculate the Y^a_2 function (see eqn. 10 of Takata 2006,
+    ! Proc. SOHO 18/GONG 2006/HELAS I, p. 26)
+
+    associate (J => 1._WP - this%bc%U(this%x)/3._WP)
+
+       Ya_2 = J*(this%y(2,:) - this%y(3,:)) + (this%y(3,:) - this%y(4,:))/3._WP
+      
+    end associate
+
+    ! Finish
+
+  end function Ya_2
 
 !****
 
