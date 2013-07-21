@@ -69,6 +69,7 @@ contains
     complex(WP)                   :: omega_root
     integer                       :: n_p
     integer                       :: n_g
+    integer                       :: n_pg
     $if($MPI)
     integer                       :: p
     $endif
@@ -126,10 +127,10 @@ contains
 
        ! Report
 
-       call md(i)%classify(n_p, n_g)
+       call md(i)%classify(n_p, n_g, n_pg)
 
        if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 110) 'Mode :', n_p-n_g, n_p, n_g, omega_root, ABS(cmplx(md(i)%discrim)), n_iter
+          write(OUTPUT_UNIT, 110) 'Mode :', n_pg, n_p, n_g, omega_root, ABS(cmplx(md(i)%discrim)), n_iter
 110       format(A,3(2X,I6),3(2X,E23.16),2X,I4)
        endif
 
