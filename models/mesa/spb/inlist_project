@@ -8,8 +8,8 @@
       kappa_file_prefix = 'gs98'
       
   ! write output
-      save_twnsnd_when_terminate = .true.
-      save_twnsnd_filename = 'spb.mesa'
+      save_pulsation_info_when_terminate = .true.
+      save_pulsation_info_filename = 'spb.mesa'
 
 /
 
@@ -37,6 +37,9 @@
   ! when to stop
       xa_central_lower_limit_species(1) = 'h1'
       xa_central_lower_limit(1) = 0.35
+
+  ! Pulsation output
+      pulse_info_format = 'GYRE'
 
 /
 
