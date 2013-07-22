@@ -32,8 +32,6 @@
 
 &shoot_grid
 	op_type = 'RESAMP_CENTER'
-	alpha_osc = 5
-	alpha_exp = 1
 	n = 5
 /
 
