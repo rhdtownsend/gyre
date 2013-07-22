@@ -1,6 +1,4 @@
-! $Id$
-!
-! Inlist for mid-MS slowly pulsating B star model
+! Inlist for Beta Cephei model
 
 &star_job
 
@@ -8,9 +6,8 @@
       kappa_file_prefix = 'gs98'
       
   ! write output
-      save_twnsnd_when_terminate = .true.
-      save_twnsnd_filename = 'bcep.mesa'
-
+      save_pulsation_info_when_terminate = .true.
+      save_pulsation_info_filename = 'bcep.mesa'
 /
 
 &controls
@@ -26,6 +23,9 @@
       history_interval = 0
       terminal_interval = 10
       write_header_frequency = 10
+
+  ! Pulsation output
+      pulse_info_format = 'GYRE'
 
   ! mass gain or loss
       RGB_wind_scheme = 'Reimers'
