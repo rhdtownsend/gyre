@@ -16,6 +16,13 @@
 	grid_type = 'INVERSE'
 	freq_min = 0.1
 	freq_max = 1
+	n_freq = 200
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 1
+	freq_max = 10
 	n_freq = 100
 /
 
