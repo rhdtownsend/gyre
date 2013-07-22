@@ -30,8 +30,7 @@ module gyre_input
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
-  use gyre_grid
-  use gyre_util
+  use gyre_scanpar
 
   use ISO_FORTRAN_ENV
 
@@ -186,38 +185,56 @@ contains
 
   subroutine read_oscpar (unit, op)
 
-    integer, intent(in)         :: unit
-    type(oscpar_t), intent(out) :: op
+    integer, intent(in)                      :: unit
+    type(oscpar_t), allocatable, intent(out) :: op(:)
 
+    integer           :: n_op
+    integer           :: i
     integer           :: l
     integer           :: m
     character(LEN=64) :: outer_bound_type
 
     namelist /osc/ l, m, outer_bound_type
 
-    ! Read oscillation parameters
-
-    l = 0
-    m = 0
-
-    outer_bound_type = 'ZERO'
+    ! Count the number of grid namelists
 
     rewind(unit)
-    read(unit, NML=osc, END=900)
 
-    ! Initialize the oscpar
+    n_op = 0
 
-    op = oscpar_t(l=l, m=m, outer_bound_type=outer_bound_type)
+    count_loop : do
+       read(unit, NML=osc, END=100)
+       n_op = n_op + 1
+    end do count_loop
+
+100 continue
+
+    $ASSERT(n_op >= 1,At least one osc namelist is required)
+
+    ! Read oscillation parameters
+
+    rewind(unit)
+
+    allocate(op(n_op))
+
+    read_loop : do i = 1,n_op
+
+       l = 0
+       m = 0
+
+       outer_bound_type = 'ZERO'
+
+       read(unit, NML=osc)
+
+       ! Initialize the oscpar
+
+       op(i) = oscpar_t(l=l, m=m, outer_bound_type=outer_bound_type)
+
+    end do read_loop
 
     ! Finish
 
     return
-
-    ! Jump-in point for end-of-file
-
-900 continue
-
-    $ABORT(No &osc namelist in input file)
 
   end subroutine read_oscpar
 
@@ -317,6 +334,8 @@ contains
 
        read(unit, NML=${NAME}_grid)
 
+       ! Initialize the gridpar
+
        gp(i) = gridpar_t(op_type=op_type, &
                          alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, &
                          omega_a=0._WP, omega_b=0._WP, &
@@ -337,76 +356,58 @@ contains
 
 !****
 
-  subroutine read_scanpar (unit, bc, op, gp, x_in, omega)
+  subroutine read_scanpar (unit, sp)
 
-    integer, intent(in)                :: unit
-    class(base_coeffs_t), intent(in)   :: bc
-    type(oscpar_t), intent(in)         :: op
-    type(gridpar_t), intent(inout)     :: gp(:)
-    real(WP), allocatable, intent(in)  :: x_in(:)
-    real(WP), allocatable, intent(out) :: omega(:)
+    integer, intent(in)                       :: unit
+    type(scanpar_t), allocatable, intent(out) :: sp(:)
 
-    character(LEN=256) :: grid_type
-    real(WP)           :: freq_min
-    real(WP)           :: freq_max
-    integer            :: n_freq
-    character(LEN=256) :: freq_units
-    real(WP)           :: x_i
-    real(WP)           :: x_o
-    real(WP)           :: omega_min
-    real(WP)           :: omega_max
-    integer            :: i
+    integer           :: n_sp
+    integer           :: i
+    real(WP)          :: freq_min
+    real(WP)          :: freq_max
+    integer           :: n_freq
+    character(LEN=64) :: freq_units
+    character(LEN=64) :: grid_type
 
-    namelist /scan/ grid_type, freq_min, freq_max, n_freq, freq_units
+    namelist /scan/ freq_min, freq_max, n_freq, freq_units, grid_type
 
-    ! Determine the grid range
+    ! Count the number of scan namelists
 
-    call grid_range(gp, bc, op, x_in, x_i, x_o)
+    rewind(unit)
+
+    n_sp = 0
+
+    count_loop : do
+       read(unit, NML=scan, END=100)
+       n_sp = n_sp + 1
+    end do count_loop
+
+100 continue
+
+    $ASSERT(n_sp >= 1,At least one osc namelist is required)
 
     ! Read scan parameters
 
     rewind(unit)
 
-    allocate(omega(0))
+    allocate(sp(n_sp))
 
-    read_loop : do 
-
-       grid_type = 'LINEAR'
+    read_loop : do i = 1,n_sp
 
        freq_min = 1._WP
        freq_max = 10._WP
        n_freq = 10
           
        freq_units = 'NONE'
+       grid_type = 'LINEAR'
 
-       read(unit, NML=scan, END=100)
-          
-       ! Set up the frequency grid
+       read(unit, NML=scan)
 
-       omega_min = freq_min/freq_scale(bc, op, x_o, freq_units)
-       omega_max = freq_max/freq_scale(bc, op, x_o, freq_units)
-       
-       select case(grid_type)
-       case('LINEAR')
-          omega = [omega,(((n_freq-i)*omega_min + (i-1)*omega_max)/(n_freq-1), i=1,n_freq)]
-       case('INVERSE')
-          omega = [omega,((n_freq-1)/((n_freq-i)/omega_min + (i-1)/omega_max), i=1,n_freq)]
-       case default
-          $ABORT(Invalid grid_type)
-       end select
+       ! Initialize the scanpar
+
+       sp(i) = scanpar_t(freq_min=freq_min, freq_max=freq_max, n_freq=n_freq, freq_units=freq_units, grid_type=grid_type)
 
     end do read_loop
-
-100 continue
-
-    ! Sort the frequencies
-
-    omega = omega(sort_indices(omega))
-
-    ! Store the frequency range in gp
-
-    gp%omega_a = MINVAL(omega)
-    gp%omega_b = MAXVAL(omega)
 
     ! Finish
 
