@@ -81,8 +81,13 @@ contains
     ! Process each bracket to find roots
 
     if(check_log_level('INFO')) then
+
        write(OUTPUT_UNIT, 100) form_header('Adiabatic Mode Finding', '=')
 100    format(A)
+
+       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', '|D|', 'n_iter'
+110    format(4(2X,A6),3(2X,A23),2X,A4)
+       
     endif
 
     call df%init(bp)
@@ -130,8 +135,8 @@ contains
        call md(i)%classify(n_p, n_g, n_pg)
 
        if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 110) 'Mode :', n_pg, n_p, n_g, omega_root, ABS(cmplx(md(i)%discrim)), n_iter
-110       format(A,3(2X,I6),3(2X,E23.16),2X,I4)
+          write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, omega_root, ABS(cmplx(md(i)%discrim)), n_iter
+120       format(4(2X,I6),3(2X,E23.16),2X,I4)
        endif
 
     end do root_loop
@@ -143,8 +148,8 @@ contains
     call SYSTEM_CLOCK(c_end)
 
     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Completed ad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-120    format(/A,1X,F10.3,1X,A)
+       write(OUTPUT_UNIT, 130) 'Completed ad find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+130    format(/A,1X,F10.3,1X,A)
     endif
 
     ! Broadcast data
