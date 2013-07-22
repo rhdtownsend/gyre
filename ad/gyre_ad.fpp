@@ -21,7 +21,7 @@ program gyre_ad
 
   ! Uses
 
-  use core_kinds
+  use core_kinds, SP_ => SP
   use core_constants
   use core_parallel
   use core_memory
@@ -31,12 +31,14 @@ program gyre_ad
   use gyre_therm_coeffs
   use gyre_oscpar
   use gyre_numpar
+  use gyre_scanpar
   use gyre_gridpar
   use gyre_ad_bvp
   use gyre_ad_search
   use gyre_mode
   use gyre_input
   use gyre_output
+  use gyre_scan
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -52,13 +54,16 @@ program gyre_ad
   real(WP), allocatable              :: x_bc(:)
   class(base_coeffs_t), allocatable  :: bc
   class(therm_coeffs_t), allocatable :: tc
-  type(oscpar_t)                     :: op
+  type(oscpar_t), allocatable        :: op(:)
   type(numpar_t)                     :: np
-  real(WP), allocatable              :: omega(:)
   type(gridpar_t), allocatable       :: shoot_gp(:)
   type(gridpar_t), allocatable       :: recon_gp(:)
+  type(scanpar_t), allocatable       :: sp(:)
+  integer                            :: i
+  real(WP), allocatable              :: omega(:)
   type(ad_bvp_t)                     :: bp
   type(mode_t), allocatable          :: md(:)
+  type(mode_t), allocatable          :: md_all(:)
 
   ! Initialize
 
@@ -96,29 +101,56 @@ program gyre_ad
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
      call read_recon_gridpar(unit, recon_gp)
-     call read_scanpar(unit, bc, op, shoot_gp, x_bc, omega)
-
-     if (ALLOCATED(tc)) then
-        call bp%init(bc, op, np, shoot_gp, recon_gp, x_bc, tc)
-     else
-        call bp%init(bc, op, np, shoot_gp, recon_gp, x_bc)
-     endif
+     call read_scanpar(unit, sp)
 
   end if
 
   $if($MPI)
-  call bcast_alloc(omega, 0)
-  call bcast(bp, 0)
+  call bcast_alloc(x_bc, 0)
+  call bcast_alloc(bc, 0)
+  call bcast_alloc(tc, 0)
+  call bcast_alloc(op, 0)
+  call bcast(np, 0)
+  call bcast_alloc(shoot_gp, 0)
+  call bcast_alloc(recon_gp, 0)
+  call bcast_alloc(sp, 0)
   $endif
 
-  ! Find modes
+  ! Loop through oscpars
 
-  call ad_scan_search(bp, omega, md)
+  allocate(md_all(0))
+
+  op_loop : do i = 1, SIZE(op)
+
+     ! Set up the frequency array
+
+     call build_scan(sp, bc, op(i), shoot_gp, x_bc, omega)
+
+     ! Store the frequency range in shoot_gp
+
+     shoot_gp%omega_a = MINVAL(omega)
+     shoot_gp%omega_b = MAXVAL(omega)
+
+     ! Set up bp
+
+     if (ALLOCATED(tc)) then
+        call bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc, tc)
+     else
+        call bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc)
+     endif
+
+     ! Find modes
+
+     call ad_scan_search(bp, omega, md)
+
+     md_all = [md_all,md]
+
+  end do op_loop
 
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_data(unit, md)
+     call write_data(unit, md_all)
   endif
 
   ! Finish
