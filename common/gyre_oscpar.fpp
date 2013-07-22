@@ -16,6 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_parallel.inc'
 
 module gyre_oscpar
 
@@ -41,8 +42,14 @@ module gyre_oscpar
   $if($MPI)
 
   interface bcast
-     module procedure bcast_op
+     module procedure bcast_op_0
+     module procedure bcast_op_1
   end interface bcast
+
+  interface bcast_alloc
+     module procedure bcast_alloc_op_0
+     module procedure bcast_alloc_op_1
+  end interface bcast_alloc
 
   $endif
 
@@ -61,9 +68,13 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_op (op, root_rank)
+  $define $BCAST $sub
 
-    type(oscpar_t), intent(inout) :: op
+  $local $RANK $1
+
+  subroutine bcast_op_$RANK (op, root_rank)
+
+    type(oscpar_t), intent(inout) :: op$ARRAY_SPEC($RANK)
     integer, intent(in)           :: root_rank
 
     ! Broadcast the oscpar
@@ -77,7 +88,17 @@ contains
 
     return
 
-  end subroutine bcast_op
+  end subroutine bcast_op_$RANK
+
+  $endsub
+
+  $BCAST(0)
+  $BCAST(1)
+
+!****
+
+  $BCAST_ALLOC(op,type(oscpar_t),0)
+  $BCAST_ALLOC(op,type(oscpar_t),1)
 
   $endif
 
