@@ -34,6 +34,11 @@ module gyre_sysmtx
 
   implicit none
 
+  ! Parameter definitions
+
+    logical :: USE_BANDED = .TRUE.
+!    logical :: USE_BANDED = .FALSE.
+
   ! Derived-type definitions
 
   type sysmtx_t
@@ -59,7 +64,6 @@ module gyre_sysmtx
      procedure, public :: determinant
 !     procedure, public :: determinant_slu_r
 !     procedure, public :: determinant_slu_c
-!     procedure, public :: null_vector => null_vector_banded
 !     procedure, public :: null_vector => null_vector_slu_c
 !     procedure, public :: null_vector => null_vector_inviter
      procedure, public :: null_vector
@@ -284,11 +288,19 @@ contains
     ! Calculate the sysmtx determinant
 
     if(use_real_) then
-       call determinant_slu_r(this, det_r)
+       if(USE_BANDED) then
+          call determinant_banded_r(this, det_r)
+       else
+          call determinant_slu_r(this, det_r)
+       endif
        det = ext_complex(det_r)
     else
-       call determinant_slu_c(this, det)
-    end if
+       if(USE_BANDED) then
+          call determinant_banded_c(this, det)
+       else
+          call determinant_slu_c(this, det)
+       end if
+    endif
 
     ! Finish
     
@@ -374,6 +386,80 @@ contains
 
 !****
 
+  $define $DETERMINANT_BANDED $sub
+
+  $local $SUFFIX $1
+  $local $TYPE $2
+
+  subroutine determinant_banded_$SUFFIX (sm, det)
+
+    class(sysmtx_t), intent(inout)   :: sm
+    type(ext_${TYPE}_t), intent(out) :: det
+
+     $TYPE(WP), allocatable :: A_b(:,:)
+    integer                 :: n_l
+    integer                 :: n_u
+    integer, allocatable    :: ipiv(:)
+    integer                 :: info
+    integer                 :: j
+
+    ! Pack the smatrix into banded form
+
+    call pack_banded_${SUFFIX}(sm, A_b)
+
+    ! LU decompose it
+
+    n_l = sm%n_e + sm%n_i - 1
+    n_u = sm%n_e + sm%n_i - 1
+
+    allocate(ipiv(SIZE(A_b, 2)))
+
+    $block
+
+    $if($DOUBLE_PRECISION)
+    $if($SUFFIX eq 'r')
+    $local $X D
+    $else
+    $local $X Z
+    $endif
+    $else
+    $if($SUFFIX eq 'r')
+    $local $X S
+    $else
+    $local $X C
+    $endif
+    $endif
+
+    call ${X}GBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
+    $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from XGBTRF)
+
+    $endblock
+
+    ! Calculate the determinant
+
+    $if($SUFFIX eq 'r')
+    det = product([ext_real(A_b(n_l+n_u+1,:)),ext_real(sm%S)])
+    $else
+    det = product([ext_complex(A_b(n_l+n_u+1,:)),sm%S])
+    $endif
+ 
+    do j = 1,SIZE(A_b, 2)
+       if(ipiv(j) /= j) det = -det
+    enddo
+
+    ! Finish
+
+    return
+
+  end subroutine determinant_banded_$SUFFIX
+
+  $endsub
+
+  $DETERMINANT_BANDED(r,real)
+  $DETERMINANT_BANDED(c,complex)
+
+!****
+
   subroutine null_vector (this, b, det, use_real)
 
     class(sysmtx_t), intent(inout)   :: this
@@ -396,11 +482,19 @@ contains
     ! Calculate the null vector
 
     if(use_real_) then
-       call null_vector_slu_r(this, b_r, det_r)
+       if(USE_BANDED) then
+          call null_vector_banded_r(this, b_r, det_r)
+       else
+          call null_vector_slu_r(this, b_r, det_r)
+       endif
        b = b_r
        det = ext_complex(det_r)
     else
-       call null_vector_slu_c(this, b, det)
+       if(USE_BANDED) then
+          call null_vector_banded_c(this, b, det)
+       else
+          call null_vector_slu_c(this, b, det)
+       endif
     end if
 
     ! Finish
@@ -409,7 +503,7 @@ contains
 
   end subroutine null_vector
 
-!****
+ !****
 
   $define $NULL_VECTOR_SLU $sub
 
@@ -751,168 +845,255 @@ contains
   $FACTORIZE_SLU(r,real)
   $FACTORIZE_SLU(c,complex)
 
-! !****
+!****
 
-!   subroutine pack_banded (sm, A_b)
+  $define $PACK_BANDED $sub
 
-!     class(sysmtx_t), intent(in)           :: sm
-!     complex(WP), allocatable, intent(out) :: A_b(:,:)
+  $local $SUFFIX $1
+  $local $TYPE $2
 
-!     integer :: n_l
-!     integer :: n_u
-!     integer :: k
-!     integer :: i_b
-!     integer :: j_b
-!     integer :: i
-!     integer :: j
+  subroutine pack_banded_$SUFFIX (sm, A_b)
 
-!     ! Pack the sysmtx into LAPACK's banded-matrix sparse format
+    class(sysmtx_t), intent(in)         :: sm
+    $TYPE(WP), allocatable, intent(out) :: A_b(:,:)
 
-!     n_l = sm%n_e + sm%n_i - 1
-!     n_u = sm%n_e + sm%n_i - 1
+    integer :: n_l
+    integer :: n_u
+    integer :: k
+    integer :: i_b
+    integer :: j_b
+    integer :: i
+    integer :: j
 
-!     allocate(A_b(2*n_l+n_u+1,sm%n_e*(sm%n+1)))
+    ! Pack the sysmtx into LAPACK's banded-matrix sparse format
 
-!     ! Inner boundary conditions
+    n_l = sm%n_e + sm%n_i - 1
+    n_u = sm%n_e + sm%n_i - 1
+
+    allocate(A_b(2*n_l+n_u+1,sm%n_e*(sm%n+1)))
+
+    ! Inner boundary conditions
     
-!     A_b = 0._WP
+    A_b = 0._WP
 
-!     do j_b = 1, sm%n_e
-!        j = j_b
-!        do i_b = 1, sm%n_i
-!           i = i_b
-!           A_b(n_l+n_u+1+i-j,j) = sm%B_i(i_b,j_b)
-!        end do
-!     end do
+    do j_b = 1, sm%n_e
+       j = j_b
+       do i_b = 1, sm%n_i
+          i = i_b
+          $if($SUFFIX eq 'r')
+          A_b(n_l+n_u+1+i-j,j) = REAL(sm%B_i(i_b,j_b))
+          $else
+          A_b(n_l+n_u+1+i-j,j) = sm%B_i(i_b,j_b)
+          $endif
+       end do
+    end do
 
-!     ! Left equation blocks
+    ! Left equation blocks
 
-!     do k = 1, sm%n
-!        do j_b = 1, sm%n_e
-!           j = (k-1)*sm%n_e + j_b
-!           do i_b = 1, sm%n_e
-!              i = (k-1)*sm%n_e + i_b + sm%n_i
-!              A_b(n_l+n_u+1+i-j,j) = sm%E_l(i_b,j_b,k)
-!           end do
-!        end do
-!     end do
+    do k = 1, sm%n
+       do j_b = 1, sm%n_e
+          j = (k-1)*sm%n_e + j_b
+          do i_b = 1, sm%n_e
+             i = (k-1)*sm%n_e + i_b + sm%n_i
+             $if($SUFFIX eq 'r')
+             A_b(n_l+n_u+1+i-j,j) = REAL(sm%E_l(i_b,j_b,k))
+             $else
+             A_b(n_l+n_u+1+i-j,j) = sm%E_l(i_b,j_b,k)
+             $endif
+          end do
+       end do
+    end do
 
-!     ! Right equation blocks
+    ! Right equation blocks
 
-!     do k = 1, sm%n
-!        do j_b = 1, sm%n_e
-!           j = k*sm%n_e + j_b
-!           do i_b = 1, sm%n_e
-!              i = (k-1)*sm%n_e + sm%n_i + i_b
-!              A_b(n_l+n_u+1+i-j,j) = sm%E_r(i_b,j_b,k)
-!           end do
-!        end do
-!     end do
+    do k = 1, sm%n
+       do j_b = 1, sm%n_e
+          j = k*sm%n_e + j_b
+          do i_b = 1, sm%n_e
+             i = (k-1)*sm%n_e + sm%n_i + i_b
+             $if($SUFFIX eq 'r')
+             A_b(n_l+n_u+1+i-j,j) = REAL(sm%E_r(i_b,j_b,k))
+             $else
+             A_b(n_l+n_u+1+i-j,j) = sm%E_r(i_b,j_b,k)
+             $endif
+          end do
+       end do
+    end do
 
-!     ! Outer boundary conditions
+    ! Outer boundary conditions
 
-!     do j_b = 1, sm%n_e
-!        j = sm%n*sm%n_e + j_b
-!        do i_b = 1, sm%n_o
-!           i = sm%n*sm%n_e + sm%n_i + i_b
-!           A_b(n_l+n_u+1+i-j,j) = sm%B_o(i_b,j_b)
-!        end do
-!     end do
+    do j_b = 1, sm%n_e
+       j = sm%n*sm%n_e + j_b
+       do i_b = 1, sm%n_o
+          i = sm%n*sm%n_e + sm%n_i + i_b
+          $if($SUFFIX eq 'r')
+          A_b(n_l+n_u+1+i-j,j) = REAL(sm%B_o(i_b,j_b))
+          $else
+          A_b(n_l+n_u+1+i-j,j) = sm%B_o(i_b,j_b)
+          $endif
+       end do
+    end do
 
-!     ! Finish
+    ! Finish
 
-!     return
+    return
 
-!   end subroutine pack_banded
+  end subroutine pack_banded_$SUFFIX
 
-! !****
+  $endsub
 
-!   function null_vector_banded (this) result(b)
+  $PACK_BANDED(r,real)
+  $PACK_BANDED(c,complex)
 
-!     class(sysmtx_t), intent(in) :: this
-!     complex(WP)                 :: b(this%n_e*(this%n+1))
+!****
 
-!     complex(WP), allocatable :: A_b(:,:)
-!     integer                  :: n_l
-!     integer                  :: n_u
-!     integer, allocatable     :: ipiv(:)
-!     integer                  :: info
-!     integer                  :: i
-!     complex(WP), allocatable :: A_r(:,:)
-!     complex(WP), allocatable :: Mb(:,:)
-!     integer                  :: j
-!     integer                  :: n_lu
+  $define $NULL_VECTOR_BANDED $sub
+
+  $local $SUFFIX $1
+  $local $TYPE $2
+
+  subroutine null_vector_banded_$SUFFIX (sm, b, det)
+  
+    class(sysmtx_t), intent(inout)   :: sm
+    $TYPE(WP), intent(out)           :: b(:)
+    type(ext_${TYPE}_t), intent(out) :: det
+
+    $TYPE(WP), allocatable :: A_b(:,:)
+    integer                :: n_l
+    integer                :: n_u
+    integer, allocatable   :: ipiv(:)
+    integer                :: info
+    integer                :: i
+    $TYPE(WP), allocatable :: A_r(:,:)
+    $TYPE(WP), allocatable :: Mb(:,:)
+    integer                :: j
+    integer                :: n_lu
+
+    $CHECK_BOUNDS(SIZE(b),sm%n_e*(sm%n+1))
     
-!     ! Pack the smatrix into banded form
+    ! Pack the smatrix into banded form
 
-!     call pack_banded(this, A_b)
+    call pack_banded_${SUFFIX}(sm, A_b)
 
-!     ! LU decompose it
+    ! LU decompose it
 
-!     n_l = this%n_e + this%n_i - 1
-!     n_u = this%n_e + this%n_i - 1
+    n_l = sm%n_e + sm%n_i - 1
+    n_u = sm%n_e + sm%n_i - 1
 
-!     allocate(ipiv(SIZE(A_b, 2)))
+    allocate(ipiv(SIZE(A_b, 2)))
 
-!     call XGBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
-!     $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from LA_GBTRF)
+    $block
 
-!     ! Locate the smallest diagonal element
+    $if($DOUBLE_PRECISION)
+    $if($SUFFIX eq 'r')
+    $local $X D
+    $else
+    $local $X Z
+    $endif
+    $else
+    $if($SUFFIX eq 'r')
+    $local $X S
+    $else
+    $local $X C
+    $endif
+    $endif
 
-!     i = MINLOC(ABS(A_b(n_l+n_u+1,:)), DIM=1)
+    call ${X}GBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
+    $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from XGBTRF)
 
-!     if(SIZE(A_b, 2)-i > this%n_e) then
-!        $WARN(Smallest element not in final block)
-!     endif
+    $endblock
 
-!     ! Backsubstitute to solve the banded linear system A_b b = 0
+    ! Calculate the determinant
 
-!     allocate(A_r(2*n_l+n_u+1,i-1))
-!     allocate(Mb(i-1,1))
+    $if($SUFFIX eq 'r')
+    det = product([ext_real(A_b(n_l+n_u+1,:)),ext_real(sm%S)])
+    $else
+    det = product([ext_complex(A_b(n_l+n_u+1,:)),sm%S])
+    $endif
+ 
+    do j = 1,SIZE(A_b, 2)
+       if(ipiv(j) /= j) det = -det
+    enddo
 
-!     deallocate(ipiv)
-!     allocate(ipiv(i-1))
+    ! Locate the smallest diagonal element
 
-!     if(i > 1) then 
+    i = MINLOC(ABS(A_b(n_l+n_u+1,:)), DIM=1)
 
-!        ! Set up the reduced LU system
+    if(SIZE(A_b, 2)-i > sm%n_e) then
+       $WARN(Smallest element not in final block)
+    endif
 
-!        A_r(:n_l+n_u+1,:) = A_b(:n_l+n_u+1,:i-1)
-!        A_r(n_l+n_u+2:,:) = 0._WP
+    ! Backsubstitute to solve the banded linear system A_b b = 0
 
-!        ! The following line seems to cause out-of-memory errors when
-!        ! compiled with gfortran 4.8.0 on MVAPICH systems. Very puzzling!
-!        !
-!        ! ipiv = [(j,j=1,i-1)]
+    allocate(A_r(2*n_l+n_u+1,i-1))
+    allocate(Mb(i-1,1))
 
-!        do j = 1,i-1
-!           ipiv(j) = j
-!        enddo
+    deallocate(ipiv)
+    allocate(ipiv(i-1))
 
-!        ! Solve for the 1:i-1 components of b
+    if(i > 1) then 
 
-!        n_lu = MIN(n_l+n_u, i-1)
+       ! Set up the reduced LU system
 
-!        Mb(:i-n_lu-1,1) = 0._WP
-!        Mb(i-n_lu:,1) = -A_b(n_l+n_u+1-n_lu:n_l+n_u,i)
+       A_r(:n_l+n_u+1,:) = A_b(:n_l+n_u+1,:i-1)
+       A_r(n_l+n_u+2:,:) = 0._WP
 
-!        call XGBTRS('N', SIZE(A_r, 2), n_l, n_u, 1, A_r, SIZE(A_r, 1), ipiv, Mb, SIZE(Mb, 1), info)
-!        $ASSERT(info == 0,Non-zero return from XGBTRS)
+       ! The following line seems to cause out-of-memory errors when
+       ! compiled with gfortran 4.8.0 on MVAPICH systems. Very puzzling!
+       !
+       ! ipiv = [(j,j=1,i-1)]
 
-!        b(:i-1) = Mb(:,1)
+       do j = 1,i-1
+          ipiv(j) = j
+       enddo
 
-!     end if
+       ! Solve for the 1:i-1 components of b
+
+       n_lu = MIN(n_l+n_u, i-1)
+
+       Mb(:i-n_lu-1,1) = 0._WP
+       Mb(i-n_lu:,1) = -A_b(n_l+n_u+1-n_lu:n_l+n_u,i)
+
+       $block
+
+       $if($DOUBLE_PRECISION)
+       $if($SUFFIX eq 'r')
+       $local $X D
+       $else
+       $local $X Z
+       $endif
+       $else
+       $if($SUFFIX eq 'r')
+       $local $X S
+       $else
+       $local $X C
+       $endif
+       $endif
+
+       call ${X}GBTRS('N', SIZE(A_r, 2), n_l, n_u, 1, A_r, SIZE(A_r, 1), ipiv, Mb, SIZE(Mb, 1), info)
+       $ASSERT(info == 0,Non-zero return from XGBTRS)
+
+       $endblock
+
+       b(:i-1) = Mb(:,1)
+
+    end if
        
-!     ! Fill in the other parts of b
+    ! Fill in the other parts of b
     
-!     b(i) = 1._WP
-!     b(i+1:) = 0._WP
+    b(i) = 1._WP
+    b(i+1:) = 0._WP
 
-!     ! Finish
+    ! Finish
 
-!     return
+    return
 
-!   end function null_vector_banded
+  end subroutine null_vector_banded_$SUFFIX
+
+  $endsub
+
+  $NULL_VECTOR_BANDED(r,real)
+  $NULL_VECTOR_BANDED(c,complex)
 
 ! !****
 
