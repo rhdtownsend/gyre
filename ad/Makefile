@@ -16,7 +16,7 @@ LDFLAGS=`mesasdk_hdf5_link` `mesasdk_lapack95_link`
 
 FPX3FLAGS=-DGFORTRAN_PR_56052 -DGFORTRAN_PR_56872
 
-ifeq (DEBUG,yes)
+ifeq (${DEBUG},yes)
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG
 else
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO
@@ -24,6 +24,6 @@ endif
 
 # Include other makefiles
 
-SUBDIRS=../../core:../common:../ivp:../bvp:../coeffs:../matrix:../frontend
+SUBDIRS=../../core:../common:../ivp:../bvp:../coeffs:../matrix:../frontend:../rad
 
 include ../../build/Make.inc
