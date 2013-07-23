@@ -39,10 +39,13 @@ module gyre_ivp_findiff
   private
 
   public :: solve_findiff_GL2
+  public :: solve_findiff_nad
   public :: solve_findiff_GL4
   public :: recon_findiff_GL2
+  public :: recon_findiff_nad
   public :: recon_findiff_GL4
   public :: abscissa_findiff_GL2
+  public :: abscissa_findiff_nad
   public :: abscissa_findiff_GL4
 
   ! Procedures
@@ -89,6 +92,93 @@ contains
     ! Finish
 
   end subroutine solve_findiff_GL2
+
+!****
+
+  subroutine solve_findiff_nad (jc, omega, x_a, x_b, E_l, E_r, S)
+
+    class(jacobian_t), intent(in)    :: jc
+    complex(WP), intent(in)          :: omega
+    real(WP), intent(in)             :: x_a
+    real(WP), intent(in)             :: x_b
+    complex(WP), intent(out)         :: E_l(:,:)
+    complex(WP), intent(out)         :: E_r(:,:)
+    type(ext_complex_t), intent(out) :: S
+
+    real(WP)    :: dx
+    real(WP)    :: x(3)
+    complex(WP) :: A(jc%n_e,jc%n_e,3)
+
+    $CHECK_BOUNDS(SIZE(E_l, 1),jc%n_e)
+    $CHECK_BOUNDS(SIZE(E_l, 2),jc%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_r, 1),jc%n_e)
+    $CHECK_BOUNDS(SIZE(E_r, 2),jc%n_e)
+
+    $ASSERT(jc%n_e == 6,FINDIFF_NAD only for non-adiabatic)
+
+    ! Solve the IVP across the interval x_a -> x_b using centered
+    ! (2nd-order) finite diffferences
+
+    ! Evaluate the Jacobian
+
+    x = abscissa_findiff_nad(x_a, x_b)
+    dx = x_b - x_a
+
+    call jc%eval_logx(omega, x(1), A(:,:,1))
+    call jc%eval_logx(omega, x(2), A(:,:,2))
+    call jc%eval_logx(omega, x(3), A(:,:,3))
+
+    ! Set up the solution matrices and scales
+
+    E_l(1:4,:) = 0.5_WP*dx*A(1:4,:,2)
+    E_r(1:4,:) = 0.5_WP*dx*A(1:4,:,2)
+
+    E_l(5,:) = dx*A(5,:,1)
+    E_r(5,:) = 0._WP
+
+    E_l(6,:) = 0._WP
+    E_r(6,:) = dx*A(6,:,3)
+
+    E_l(1,1) = E_l(1,1) + x(2)
+    E_l(2,2) = E_l(2,2) + x(2)
+    E_l(3,3) = E_l(3,3) + x(2)
+    E_l(4,4) = E_l(4,4) + x(2)
+    E_l(5,5) = E_l(5,5) + x(1)
+    E_l(6,6) = E_l(6,6) + x(3)
+
+    E_r(1,1) = E_r(1,1) - x(2)
+    E_r(2,2) = E_r(2,2) - x(2)
+    E_r(3,3) = E_r(3,3) - x(2)
+    E_r(4,4) = E_r(4,4) - x(2)
+    E_r(5,5) = E_r(5,5) - x(1)
+    E_r(6,6) = E_r(6,6) - x(3)
+
+    ! E_l(5,:) = 0._WP
+    ! E_r(5,:) = dx*A(5,:,3)
+
+    ! E_l(6,:) = dx*A(6,:,1)
+    ! E_r(6,:) = 0._WP
+
+    ! E_l(1,1) = E_l(1,1) + x(2)
+    ! E_l(2,2) = E_l(2,2) + x(2)
+    ! E_l(3,3) = E_l(3,3) + x(2)
+    ! E_l(4,4) = E_l(4,4) + x(2)
+    ! E_l(5,5) = E_l(5,5) + x(3)
+    ! E_l(6,6) = E_l(6,6) + x(1)
+
+    ! E_r(1,1) = E_r(1,1) - x(2)
+    ! E_r(2,2) = E_r(2,2) - x(2)
+    ! E_r(3,3) = E_r(3,3) - x(2)
+    ! E_r(4,4) = E_r(4,4) - x(2)
+    ! E_r(5,5) = E_r(5,5) - x(3)
+    ! E_r(6,6) = E_r(6,6) - x(1)
+
+    S = ext_complex(1._WP)
+
+    ! Finish
+
+  end subroutine solve_findiff_nad
 
 !****
 
@@ -214,6 +304,33 @@ contains
 
 !****
 
+  subroutine recon_findiff_nad (jc, omega, x_a, x_b, y_a, y_b, x, y)
+
+    class(jacobian_t), intent(in) :: jc
+    complex(WP), intent(in)       :: omega
+    real(WP), intent(in)          :: x_a
+    real(WP), intent(in)          :: x_b
+    complex(WP), intent(in)       :: y_a(:)
+    complex(WP), intent(in)       :: y_b(:)
+    real(WP), intent(in)          :: x(:)
+    complex(WP), intent(out)      :: y(:,:)
+
+    $CHECK_BOUNDS(SIZE(y_a),jc%n_e)
+    $CHECK_BOUNDS(SIZE(y_b),jc%n_e)
+    
+    $CHECK_BOUNDS(SIZE(y, 1),jc%n_e)
+    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
+
+    call recon_findiff_GL2(jc, omega, x_a, x_b, y_a, y_b, x, y)
+
+    ! Finish
+
+    return
+
+  end subroutine recon_findiff_nad
+
+!****
+
   subroutine recon_findiff_GL4 (jc, omega, x_a, x_b, y_a, y_b, x, y)
 
     class(jacobian_t), intent(in) :: jc
@@ -260,6 +377,28 @@ contains
     return
 
   end function abscissa_findiff_GL2
+
+!****
+
+  function abscissa_findiff_nad (x_a, x_b) result (x)
+
+    real(WP), intent(in) :: x_a
+    real(WP), intent(in) :: x_b
+    real(WP)             :: x(3)
+
+    real(WP) :: dx
+
+    ! Set up the abscissa for non-adiabatic finite-differences
+
+    dx = x_b - x_a
+
+    x = [x_a,x_a+0.5_WP*dx,x_b]
+
+    ! Finish
+
+    return
+
+  end function abscissa_findiff_nad
 
 !****
 
