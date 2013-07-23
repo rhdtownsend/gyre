@@ -59,12 +59,13 @@ module gyre_bvp
        class(therm_coeffs_t), intent(in), optional :: tc
      end subroutine init_i
 
-     function discrim_i (this, omega) result (discrim)
+     function discrim_i (this, omega, use_real) result (discrim)
        use core_kinds
        use gyre_ext_arith
        import bvp_t
        class(bvp_t), intent(inout)   :: this
        complex(WP), intent(in)       :: omega
+       logical, intent(in), optional :: use_real
        type(ext_complex_t)           :: discrim
      end function discrim_i
 

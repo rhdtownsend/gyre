@@ -241,17 +241,18 @@ contains
 
 !****
 
-  function discrim (this, omega)
+  function discrim (this, omega, use_real)
 
     class(rad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)         :: omega
+    logical, intent(in), optional   :: use_real
     type(ext_complex_t)             :: discrim
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
     call this%build(omega)
 
-    call this%sm%determinant(discrim, use_real=.TRUE.)
+    call this%sm%determinant(discrim, use_real)
 
     ! Scale the discriminant using the normalizing exponent
 
@@ -291,13 +292,14 @@ contains
 
 !****
 
-  subroutine recon (this, omega, x, y, discrim)
+  subroutine recon (this, omega, x, y, discrim, use_real)
 
     class(rad_bvp_t), intent(inout)       :: this
     complex(WP), intent(in)               :: omega
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
     type(ext_complex_t), intent(out)      :: discrim
+    logical, intent(in), optional         :: use_real
 
     complex(WP)         :: b(this%n_e*this%n)
     type(ext_complex_t) :: det
@@ -308,7 +310,7 @@ contains
 
     call this%build(omega)
 
-    call this%sm%null_vector(b, det, use_real=.TRUE.)
+    call this%sm%null_vector(b, det, use_real)
 
     discrim = scale(det, -this%e_norm)    
 
