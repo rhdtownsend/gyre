@@ -33,8 +33,9 @@ program gyre_ad
   use gyre_numpar
   use gyre_scanpar
   use gyre_gridpar
+  use gyre_bvp
   use gyre_ad_bvp
-  use gyre_ad_search
+  use gyre_rad_bvp
   use gyre_mode
   use gyre_input
   use gyre_output
@@ -61,7 +62,7 @@ program gyre_ad
   type(scanpar_t), allocatable       :: sp(:)
   integer                            :: i
   real(WP), allocatable              :: omega(:)
-  type(ad_bvp_t)                     :: bp
+  class(bvp_t), allocatable          :: bp
   type(mode_t), allocatable          :: md(:)
   type(mode_t), allocatable          :: md_all(:)
 
@@ -133,6 +134,14 @@ program gyre_ad
 
      ! Set up bp
 
+     if(ALLOCATED(bp)) deallocate(bp)
+
+     if(op(i)%l == 0) then
+        allocate(rad_bvp_t::bp)
+     else
+        allocate(ad_bvp_t::bp)
+     endif
+
      if (ALLOCATED(tc)) then
         call bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc, tc)
      else
@@ -141,7 +150,7 @@ program gyre_ad
 
      ! Find modes
 
-     call ad_scan_search(bp, omega, md)
+     call scan_search(bp, omega, md)
 
      md_all = [md_all,md]
 
