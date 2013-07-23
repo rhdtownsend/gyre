@@ -234,7 +234,7 @@ contains
     ! Calculate the discriminant on the omega abscissa
 
     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) form_header('Adiabatic Discriminant Scan', '=')
+       write(OUTPUT_UNIT, 100) form_header('Discriminant Scan', '=')
 100    format(A)
     endif
 
@@ -275,7 +275,7 @@ contains
     call SYSTEM_CLOCK(c_end)
 
     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Completed ad scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+       write(OUTPUT_UNIT, 120) 'Completed scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
 120    format(/A,1X,F10.3,1X,A)
     endif
 
