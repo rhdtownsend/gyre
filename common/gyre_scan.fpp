@@ -25,12 +25,18 @@ module gyre_scan
   use core_constants
   use core_func
   use core_order
+  use core_parallel
 
+  use gyre_bvp
   use gyre_base_coeffs
   use gyre_oscpar
+  use gyre_numpar
   use gyre_gridpar
   use gyre_scanpar
+  use gyre_ad_bvp
+  use gyre_mode
   use gyre_grid
+  use gyre_ext_arith
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -44,6 +50,7 @@ module gyre_scan
   private
 
   public :: build_scan
+  public :: scan_search
 
 contains
 
@@ -98,5 +105,205 @@ contains
     return
 
   end subroutine build_scan
+
+!****
+
+  subroutine scan_search (bp, omega, md)
+
+    class(bvp_t), target, intent(inout)    :: bp
+    real(WP), intent(in)                   :: omega(:)
+    type(mode_t), allocatable, intent(out) :: md(:)
+
+    real(WP), allocatable         :: omega_a(:)
+    real(WP), allocatable         :: omega_b(:)
+    type(ext_real_t), allocatable :: discrim_a(:)
+    type(ext_real_t), allocatable :: discrim_b(:)
+    integer                       :: n_brack
+    integer                       :: i_part(MPI_SIZE+1)
+    integer                       :: c_beg
+    integer                       :: c_end
+    integer                       :: c_rate
+    integer                       :: i
+    integer                       :: n_p
+    integer                       :: n_g
+    integer                       :: n_pg
+    $if($MPI)
+    integer                       :: p
+    $endif
+
+    ! Scan for discriminant root brackets
+
+    call scan_brackets(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+
+    ! Process each bracket to find modes
+
+    if(check_log_level('INFO')) then
+
+       write(OUTPUT_UNIT, 100) form_header('Mode Finding', '=')
+100    format(A)
+
+       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', '|D|', 'n_iter'
+110    format(4(2X,A6),3(2X,A23),2X,A4)
+       
+    endif
+
+    n_brack = SIZE(omega_a)
+
+    call partition_tasks(n_brack, 1, i_part)
+
+    allocate(md(n_brack))
+
+    call SYSTEM_CLOCK(c_beg, c_rate)
+
+    $if($MPI)
+    call barrier()
+    $endif
+
+    root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
+
+       ! Find the mode
+
+       md(i) = bp%mode(CMPLX([omega_a(i),omega_b(i)], KIND=WP), &
+                       ext_complex([discrim_a(i),discrim_b(i)]), use_real=.TRUE.)
+
+       ! Report
+
+       call md(i)%classify(n_p, n_g, n_pg)
+
+       if(check_log_level('INFO', MPI_RANK)) then
+          write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, ABS(cmplx(md(i)%discrim)), md(i)%n_iter
+120       format(4(2X,I6),3(2X,E23.16),2X,I4)
+       endif
+
+    end do root_loop
+
+    $if($MPI)
+    call barrier()
+    $endif
+
+    call SYSTEM_CLOCK(c_end)
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 130) 'Completed mode find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+130    format(/A,1X,F10.3,1X,A)
+    endif
+
+    ! Broadcast data
+
+    $if($MPI)
+
+    do p = 0, MPI_SIZE-1
+       do i = i_part(p+1), i_part(p+2)-1
+          call bcast(md(i), p)
+       end do
+    enddo
+
+    $endif
+
+    ! Finish
+
+    return
+
+  end subroutine scan_search
+
+!****
+
+  subroutine scan_brackets (bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+
+    class(bvp_t), target, intent(inout)        :: bp
+    real(WP), intent(in)                       :: omega(:)
+    real(WP), allocatable, intent(out)         :: omega_a(:)
+    real(WP), allocatable, intent(out)         :: omega_b(:)
+    type(ext_real_t), allocatable, intent(out) :: discrim_a(:)
+    type(ext_real_t), allocatable, intent(out) :: discrim_b(:)
+
+    integer          :: n_omega
+    integer          :: i_part(MPI_SIZE+1)
+    integer          :: c_beg
+    integer          :: c_end
+    integer          :: c_rate
+    integer          :: i
+    type(ext_real_t) :: discrim(SIZE(omega))
+    $if($MPI)
+    integer          :: recvcounts(MPI_SIZE)
+    integer          :: displs(MPI_SIZE)
+    $endif
+    integer          :: n_brack
+    integer          :: i_brack(SIZE(omega))
+
+    ! Calculate the discriminant on the omega abscissa
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) form_header('Adiabatic Discriminant Scan', '=')
+100    format(A)
+    endif
+
+    n_omega = SIZE(omega)
+
+    call partition_tasks(n_omega, 1, i_part)
+
+    call SYSTEM_CLOCK(c_beg, c_rate)
+
+    $if($MPI)
+    call barrier()
+    $endif
+
+    discrim_loop : do i = i_part(MPI_RANK+1),i_part(MPI_RANK+2)-1
+
+       discrim(i) = ext_real(bp%discrim(CMPLX(omega(i), KIND=WP)))
+
+       if(check_log_level('DEBUG', MPI_RANK)) then
+          write(OUTPUT_UNIT, 110) 'Eval:', omega(i), fraction(discrim(i)), exponent(discrim(i))
+110       format(A,2X,E23.16,2X,F19.16,2X,I7)
+       endif
+
+    end do discrim_loop
+
+    $if($MPI)
+
+    recvcounts = i_part(2:)-i_part(:MPI_SIZE)
+    displs = i_part(:MPI_SIZE)-1
+
+    call allgatherv(discrim, recvcounts, displs)
+
+    $endif
+
+    $if($MPI)
+    call barrier()
+    $endif
+
+    call SYSTEM_CLOCK(c_end)
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Completed ad scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+120    format(/A,1X,F10.3,1X,A)
+    endif
+
+    ! Scan for root brackets
+
+    n_brack = 0
+
+    bracket_loop : do i = 1, n_omega-1
+
+       if(discrim(i)*discrim(i+1) <= ext_real(0._WP)) then
+          n_brack = n_brack + 1
+          i_brack(n_brack) = i
+       end if
+
+    end do bracket_loop
+
+    ! Set up the bracket frequencies
+
+    omega_a = omega(i_brack(:n_brack))
+    omega_b = omega(i_brack(:n_brack)+1)
+
+    discrim_a = discrim(i_brack(:n_brack))
+    discrim_b = discrim(i_brack(:n_brack)+1)
+
+    ! Finish
+
+    return
+
+  end subroutine scan_brackets
 
 end module gyre_scan
