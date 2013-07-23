@@ -25,7 +25,7 @@ module gyre_mode
   use core_constants
   use core_parallel
 
-  use gyre_bvp
+!  use gyre_bvp
   use gyre_base_coeffs
   use gyre_therm_coeffs
   $if($MPI)
@@ -53,6 +53,7 @@ module gyre_mode
      complex(WP), allocatable           :: y(:,:)
      complex(WP)                        :: omega
      integer                            :: n
+     integer                            :: n_iter
    contains
      private
      procedure, public :: init
@@ -108,7 +109,7 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, bc, op, omega, x, y, discrim, tc)
+  subroutine init (this, bc, op, omega, x, y, discrim, n_iter, tc)
 
     class(mode_t), intent(out)                  :: this
     class(base_coeffs_t), intent(in)            :: bc
@@ -117,6 +118,7 @@ contains
     real(WP), intent(in)                        :: x(:)
     complex(WP), intent(in)                     :: y(:,:)
     type(ext_complex_t), intent(in)             :: discrim
+    integer, intent(in)                         :: n_iter
     class(therm_coeffs_t), optional, intent(in) :: tc
 
     real(WP) :: phase
@@ -139,6 +141,7 @@ contains
     this%omega = omega
 
     this%n = SIZE(this%x)
+    this%n_iter = n_iter
 
     ! Normalize by the mode inertia, and so that y(1,n) is real
 
@@ -206,6 +209,7 @@ contains
     call bcast(this%omega, root_rank)
 
     call bcast(this%n, root_rank)
+    call bcast(this%n_iter, root_rank)
 
   end subroutine bcast_ef
 
@@ -261,7 +265,7 @@ contains
        ! Dipole modes
 
        ! Set up the Takata Y^a_1 and Y^a_2 functions
-
+       
        y_1 = REAL(this%Ya_1())
        y_2 = REAL(this%Ya_2())
 
