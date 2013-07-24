@@ -5,7 +5,19 @@
 /
 
 &osc
+	l = 0
+/
+
+&osc
 	l = 1
+/
+
+&osc
+	l = 2
+/
+
+&osc
+	l = 3
 /
 
 &num
@@ -14,8 +26,8 @@
 
 &scan
 	grid_type = 'INVERSE'
-	freq_min = 38,
-	freq_max = 42,
+	freq_min = 39,
+	freq_max = 41,
 	freq_units = 'UHZ'
 	n_freq = 200,
 /

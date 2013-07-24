@@ -8,6 +8,18 @@
 	l = 0
 /
 
+&osc
+	l = 1
+/
+
+&osc
+	l = 2
+/
+
+&osc
+	l = 3
+/
+
 &num
 	ivp_solver_type = 'MAGNUS_GL2'
 /
