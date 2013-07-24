@@ -9,6 +9,18 @@
         l = 0
 /
 
+&osc
+        l = 1
+/
+
+&osc
+        l = 2
+/
+
+&osc
+        l = 3
+/
+
 &num
         ivp_solver_type = 'MAGNUS_GL2'
 /
@@ -26,8 +38,8 @@
 
 &shoot_grid
 	op_type = 'RESAMP_DISPERSION'
-	alpha_osc = 1.
-	alpha_exp = 0.5
+	alpha_osc = 5
+	alpha_exp = 1
 /
 
 &recon_grid
