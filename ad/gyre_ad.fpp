@@ -24,22 +24,21 @@ program gyre_ad
   use core_kinds, SP_ => SP
   use core_constants
   use core_parallel
-  use core_memory
 
   use gyre_version
   use gyre_base_coeffs
   use gyre_therm_coeffs
   use gyre_oscpar
   use gyre_numpar
-  use gyre_scanpar
   use gyre_gridpar
+  use gyre_scanpar
   use gyre_bvp
   use gyre_ad_bvp
   use gyre_rad_bvp
+  use gyre_search
   use gyre_mode
   use gyre_input
   use gyre_output
-  use gyre_scan
   use gyre_util
 
   use ISO_FORTRAN_ENV
