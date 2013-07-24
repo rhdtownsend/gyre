@@ -34,9 +34,9 @@ module gyre_nad_bvp
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
+  use gyre_discfunc
   use gyre_nad_shooter
   use gyre_nad_bound
-  use gyre_nad_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
@@ -70,12 +70,6 @@ module gyre_nad_bvp
    contains 
      private
      procedure, public :: init
-!     procedure, public :: get_bc
-!     procedure, public :: get_tc
-!     procedure, public :: get_op
-     procedure, public :: get_np
-!     procedure, public :: get_gp
-     procedure, public :: set_norm
      procedure, public :: set_x_ad
      procedure, public :: discrim
      procedure         :: build
@@ -108,17 +102,19 @@ contains
 
   subroutine init (this, bc, op, np, shoot_gp, recon_gp, x_in, tc)
 
-    class(nad_bvp_t), intent(out)     :: this
-    class(base_coeffs_t), intent(in)  :: bc
-    type(oscpar_t), intent(in)        :: op
-    type(numpar_t), intent(in)        :: np
-    type(gridpar_t), intent(in)       :: shoot_gp(:)
-    type(gridpar_t), intent(in)       :: recon_gp(:)
-    real(WP), allocatable, intent(in) :: x_in(:)
-    class(therm_coeffs_t), intent(in) :: tc
+    class(nad_bvp_t), intent(out)               :: this
+    class(base_coeffs_t), intent(in)            :: bc
+    type(oscpar_t), intent(in)                  :: op
+    type(numpar_t), intent(in)                  :: np
+    type(gridpar_t), intent(in)                 :: shoot_gp(:)
+    type(gridpar_t), intent(in)                 :: recon_gp(:)
+    real(WP), allocatable, intent(in)           :: x_in(:)
+    class(therm_coeffs_t), intent(in), optional :: tc
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
+
+    $ASSERT(PRESENT(tc),Missing tc)
 
     ! Initialize the nad_bvp
 
@@ -225,59 +221,6 @@ contains
 
 !****
 
-  $define $GET $sub
-
-  $local $ITEM_NAME $1
-  $local $ITEM_TYPE $2
-
-  function get_$ITEM_NAME (this) result (item)
-
-    class(nad_bvp_t), intent(in), target :: this
-    $ITEM_TYPE, pointer                  :: item
-
-    ! Get a pointer to the item
-
-    item => this%$ITEM_NAME
-
-    ! Finish
-
-    return
-
-  end function get_$ITEM_NAME
-  
-  $endsub
-
-!  $GET(bc,class(base_coeffs_t))
-!  $GET(tc,class(therm_coeffs_t))
-!  $GET(op,type(oscpar_t))
-!  $GET(gp,type(gridpar_t))
-  $GET(np,type(numpar_t))
-    
-!****
-
-  subroutine set_norm (this, omega)
-
-    class(nad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)         :: omega
-
-    type(ext_complex_t) :: discrim
-
-    ! Evaluate the discriminant
-
-    discrim = this%discrim(omega)
-
-    ! Set the normalizing exponent based on this discriminant
-
-    this%e_norm = exponent(discrim)
-
-    ! Finish
-
-    return
-
-  end subroutine set_norm
-
-!****
-
   subroutine set_x_ad (this, omega)
 
     class(nad_bvp_t), intent(inout) :: this
@@ -307,30 +250,22 @@ contains
 
 !****
 
-  function discrim (this, omega, norm)
+  function discrim (this, omega, use_real)
 
     class(nad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)         :: omega
-    logical, intent(in), optional   :: norm
+    logical, intent(in), optional   :: use_real
     type(ext_complex_t)             :: discrim
-
-    logical :: norm_
-
-    if(PRESENT(norm)) then
-       norm_ = norm
-    else
-       norm_ = .FALSE.
-    endif
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
     call this%build(omega)
 
-    call this%sm%determinant(discrim)
+    call this%sm%determinant(discrim, use_real)
 
-    ! Apply the normalization
+    ! Scale the discriminant using the normalizing exponent
 
-    if(norm_) discrim = scale(discrim, -this%e_norm)
+    discrim = scale(discrim, -this%e_norm)
 
     ! Finish
 
@@ -385,9 +320,9 @@ contains
 
     call this%sm%null_vector(b, det)
 
-    y_sh = RESHAPE(b, SHAPE(y_sh))
-
     discrim = scale(det, -this%e_norm)    
+
+    y_sh = RESHAPE(b, SHAPE(y_sh))
 
     ! Build the recon grid
 
@@ -424,23 +359,88 @@ contains
 
 !****
 
-  function mode (this, omega) result (md)
+  function mode (this, omega, discrim, use_real) result (md)
 
-    class(nad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)         :: omega
-    type(mode_t)                    :: md
+    class(nad_bvp_t), intent(inout)           :: this
+    complex(WP), intent(in)                   :: omega(:)
+    type(ext_complex_t), intent(in), optional :: discrim(:)
+    logical, intent(in), optional             :: use_real
+    type(mode_t)                              :: md
 
+    logical                  :: use_real_
+    complex(WP)              :: omega_a
+    complex(WP)              :: omega_b
+    type(ext_complex_t)      :: discrim_a
+    type(ext_complex_t)      :: discrim_b
+    type(discfunc_t)         :: df
+    integer                  :: n_iter
+    complex(WP)              :: omega_root
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
-    type(ext_complex_t)      :: discrim
+    type(ext_complex_t)      :: discrim_root
+    integer                  :: n
+
+    $CHECK_BOUNDS(SIZE(omega),2)
+    
+    if(PRESENT(discrim)) then
+       $CHECK_BOUNDS(SIZE(discrim),2)
+    endif
+
+    if(PRESENT(use_real)) then
+       use_real_ = use_real
+    else
+       use_real_ = .FALSE.
+    endif
+
+    ! Unpack arguments
+
+    omega_a = omega(1)
+    omega_b = omega(2)
+
+    if(PRESENT(discrim)) then
+       discrim_a = discrim(1)
+       discrim_b = discrim(2)
+    else
+       discrim_a = this%discrim(omega_a)
+       discrim_b = this%discrim(omega_b)
+    endif
+
+    ! Set the normalizing exponent
+
+    this%e_norm = MAX(exponent(discrim_a), exponent(discrim_b))
+
+    discrim_a = scale(discrim_a, -this%e_norm)
+    discrim_b = scale(discrim_b, -this%e_norm)
+
+    ! Set up the discriminant function
+
+    call df%init(this)
+
+    ! Find the discriminant root
+
+    n_iter = this%np%n_iter_max
+
+    if(use_real_) then
+       omega_root = df%root(REAL(omega_a), REAL(omega_b), 0._WP, &
+                            f_x_a=real(discrim_a), f_x_b=real(discrim_b), n_iter=n_iter)
+    else
+       omega_root = df%root(omega_a, omega_b, 0._WP, &
+                            f_z_a=cmplx(discrim_a), f_z_b=cmplx(discrim_b), n_iter=n_iter)
+    endif
+
+    $ASSERT(n_iter <= this%np%n_iter_max,Too many iterations)
 
     ! Reconstruct the solution
 
-    call this%recon(omega, x, y, discrim)
+    call this%recon(omega_root, x, y, discrim_root)
 
     ! Initialize the mode
     
-    call md%init(this%bc, this%op, omega, x, y, discrim, this%tc)
+    call md%init(this%bc, this%op, omega_root, x, y, discrim_root, n_iter, this%tc)
+
+    ! Reset the normalizing exponent
+
+    this%e_norm = 0
 
     ! Finish
 
