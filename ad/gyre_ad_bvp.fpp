@@ -32,8 +32,8 @@ module gyre_ad_bvp
   use gyre_therm_coeffs_mpi
   $endif
   use gyre_oscpar
-  use gyre_gridpar
   use gyre_numpar
+  use gyre_gridpar
   use gyre_discfunc
   use gyre_ad_shooter
   use gyre_ad_bound
