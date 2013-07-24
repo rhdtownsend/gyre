@@ -25,7 +25,6 @@ module gyre_mode
   use core_constants
   use core_parallel
 
-!  use gyre_bvp
   use gyre_base_coeffs
   use gyre_therm_coeffs
   $if($MPI)
@@ -64,8 +63,8 @@ module gyre_mode
      procedure, public :: freq
      procedure, public :: xi_r
      procedure, public :: xi_h
-     procedure, public :: Ya_1
-     procedure, public :: Ya_2
+     procedure, public :: Yb_1
+     procedure, public :: Yb_2
      procedure, public :: phip
      procedure, public :: dphip_dx
      procedure, public :: delS
@@ -266,8 +265,8 @@ contains
 
        ! Set up the Takata Y^a_1 and Y^a_2 functions
        
-       y_1 = REAL(this%Ya_1())
-       y_2 = REAL(this%Ya_2())
+       y_1 = REAL(this%Yb_1())
+       y_2 = REAL(this%Yb_2())
 
        ! Count winding numbers
 
@@ -461,17 +460,17 @@ contains
 
 !****
 
-  function Ya_1 (this)
+  function Yb_1 (this)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: Ya_1(this%n)
+    complex(WP)               :: Yb_1(this%n)
 
-    ! Calculate the Y^a_1 function (see eqn. 9 of Takata 2006, Proc. SOHO
-    ! 18/GONG 2006/HELAS I, p. 26)
+    ! Calculate the Y^b_1 function (see eqn. 69 of Takata 2006,
+    ! PASJ, 58, 839)
 
     associate (J => 1._WP - this%bc%U(this%x)/3._WP)
 
-      Ya_1 = J*this%y(1,:) + (this%y(3,:) - this%y(4,:))/3._WP
+      Yb_1 = J*this%y(1,:) + (this%y(3,:) - this%y(4,:))/3._WP
       
     end associate
 
@@ -479,27 +478,23 @@ contains
 
     return
 
-  end function Ya_1
+  end function Yb_1
 
 !****
 
-  function Ya_2 (this)
+  function Yb_2 (this)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: Ya_2(this%n)
+    complex(WP)               :: Yb_2(this%n)
 
-    ! Calculate the Y^a_2 function (see eqn. 10 of Takata 2006,
-    ! Proc. SOHO 18/GONG 2006/HELAS I, p. 26)
+    ! Calculate the Y^b_2 function (see eqn. 70 of Takata 2006,
+    ! PASJ, 58, 839)
 
-    associate (J => 1._WP - this%bc%U(this%x)/3._WP)
-
-       Ya_2 = J*(this%y(2,:) - this%y(3,:)) + (this%y(3,:) - this%y(4,:))/3._WP
-      
-    end associate
+    Yb_2 = this%delp()
 
     ! Finish
 
-  end function Ya_2
+  end function Yb_2
 
 !****
 
