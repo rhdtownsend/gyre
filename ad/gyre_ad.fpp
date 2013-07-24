@@ -64,6 +64,7 @@ program gyre_ad
   class(bvp_t), allocatable          :: bp
   type(mode_t), allocatable          :: md(:)
   type(mode_t), allocatable          :: md_all(:)
+  type(mode_t), allocatable          :: md_tmp(:)
 
   ! Initialize
 
@@ -151,7 +152,11 @@ program gyre_ad
 
      call scan_search(bp, omega, md)
 
-     md_all = [md_all,md]
+     ! (The following could be simpler, but this is a workaround for a
+     ! gfortran issue, likely PR 57839)
+
+     md_tmp = [md_all, md]
+     call MOVE_ALLOC(md_tmp, md_all)
 
   end do op_loop
 

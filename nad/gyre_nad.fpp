@@ -66,6 +66,7 @@ program gyre_nad
   type(nad_bvp_t)                    :: nad_bp
   type(mode_t), allocatable          :: md(:)
   type(mode_t), allocatable          :: md_all(:)
+  type(mode_t), allocatable          :: md_tmp(:)
 
   ! Initialize
 
@@ -155,7 +156,11 @@ program gyre_nad
      call scan_search(ad_bp, omega, md)
      call prox_search(nad_bp, md)
 
-     md_all = [md_all,md]
+     ! (The following could be simpler, but this is a workaround for a
+     ! gfortran issue, likely PR 57839)
+
+     md_tmp = [md_all, md]
+     call MOVE_ALLOC(md_tmp, md_all)
 
   end do op_loop
 
