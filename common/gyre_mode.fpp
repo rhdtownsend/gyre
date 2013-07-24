@@ -237,16 +237,16 @@ contains
 
        ! Radial modes
        
-       ! Look for the first extremum in y_1 (this is to deal with
+       ! Look for the first monotonic segment in y_1 (this is to deal with
        ! noisy near-zero solutions at the origin)
 
        y_1 = REAL(this%y(1,:))
        y_2 = REAL(this%y(2,:))
 
-       extrem_loop : do i = 2,this%n-1
-          if((y_1(i) >= y_1(i-1) .AND. y_1(i) > y_1(i+1)) .OR. &
-             (y_1(i) < y_1(i-1) .AND. y_1(i) <= y_1(i+1))) exit extrem_loop
-       end do extrem_loop
+       mono_loop : do i = 2,this%n-1
+          if((y_1(i) >= y_1(i-1) .AND. y_1(i+1) >= y_1(i)) .OR. &
+             (y_1(i) <= y_1(i-1) .AND. y_1(i+1) <= y_1(i))) exit mono_loop
+       end do mono_loop
 
        ! Count winding numbers
 
@@ -268,9 +268,17 @@ contains
        y_1 = REAL(this%Yb_1())
        y_2 = REAL(this%Yb_2())
 
+       ! Look for the first monotonic segment in y_1 (this is to deal with
+       ! noisy near-zero solutions at the origin)
+
+       mono_dip_loop : do i = 2,this%n-1
+          if((y_1(i) >= y_1(i-1) .AND. y_1(i+1) >= y_1(i)) .OR. &
+             (y_1(i) <= y_1(i-1) .AND. y_1(i+1) <= y_1(i))) exit mono_dip_loop
+       end do mono_dip_loop
+
        ! Count winding numbers
 
-       call count_windings(y_1(2:), y_2(2:), n_c, n_a)
+       call count_windings(y_1(i:), y_2(i:), n_c, n_a)
 
        n_p = n_a
        n_g = n_c
