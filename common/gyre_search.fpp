@@ -1,5 +1,5 @@
-! Module   : gyre_scan
-! Purpose  : scan frequencies construction
+! Module   : gyre_search
+! Purpose  : mode searching
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_scan
+module gyre_search
 
   ! Uses
 
@@ -33,7 +33,6 @@ module gyre_scan
   use gyre_numpar
   use gyre_gridpar
   use gyre_scanpar
-  use gyre_ad_bvp
   use gyre_mode
   use gyre_grid
   use gyre_ext_arith
@@ -51,6 +50,7 @@ module gyre_scan
 
   public :: build_scan
   public :: scan_search
+  public :: prox_search
 
 contains
 
@@ -131,15 +131,15 @@ contains
     integer                       :: p
     $endif
 
-    ! Scan for discriminant root brackets
+    ! Find discriminant root brackets
 
-    call scan_brackets(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+    call find_brackets(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
 
     ! Process each bracket to find modes
 
     if(check_log_level('INFO')) then
 
-       write(OUTPUT_UNIT, 100) form_header('Mode Finding', '=')
+       write(OUTPUT_UNIT, 100) form_header('Scan Mode Search', '=')
 100    format(A)
 
        write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', '|D|', 'n_iter'
@@ -159,7 +159,7 @@ contains
     call barrier()
     $endif
 
-    root_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
+    mode_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
        ! Find the mode
 
@@ -175,7 +175,7 @@ contains
 120       format(4(2X,I6),3(2X,E23.16),2X,I4)
        endif
 
-    end do root_loop
+    end do mode_loop
 
     $if($MPI)
     call barrier()
@@ -184,7 +184,7 @@ contains
     call SYSTEM_CLOCK(c_end)
 
     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 130) 'Completed mode find; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+       write(OUTPUT_UNIT, 130) 'Completed mode search; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
 130    format(/A,1X,F10.3,1X,A)
     endif
 
@@ -208,7 +208,100 @@ contains
 
 !****
 
-  subroutine scan_brackets (bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+  subroutine prox_search (bp, md)
+
+    class(bvp_t), target, intent(inout) :: bp
+    type(mode_t), intent(inout)         :: md(:)
+
+    integer     :: n_md
+    integer     :: i_part(MPI_SIZE+1)
+    integer     :: c_beg
+    integer     :: c_end
+    integer     :: c_rate
+    integer     :: i
+    complex(WP) :: omega_a
+    complex(WP) :: omega_b
+    integer     :: n_p
+    integer     :: n_g
+    integer     :: n_pg
+    $if($MPI)
+    integer     :: p
+    $endif
+
+    ! Process each mode to find a proximate mode
+
+    if(check_log_level('INFO')) then
+
+       write(OUTPUT_UNIT, 100) form_header('Proximity Mode Search', '=')
+100    format(A)
+
+       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', '|D|', 'n_iter'
+110    format(4(2X,A6),3(2X,A23),2X,A4)
+       
+    endif
+
+    n_md = SIZE(md)
+
+    call partition_tasks(n_md, 1, i_part)
+
+    call SYSTEM_CLOCK(c_beg, c_rate)
+
+    $if($MPI)
+    call barrier()
+    $endif
+
+    mode_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
+
+       ! Find the mode
+
+       omega_a = md(i)%omega*CMPLX(1._WP,  SQRT(EPSILON(0._WP)), WP)
+       omega_b = md(i)%omega*CMPLX(1._WP, -SQRT(EPSILON(0._WP)), WP)
+
+       md(i) = bp%mode([omega_a,omega_b])
+
+       ! Report
+
+       call md(i)%classify(n_p, n_g, n_pg)
+
+       if(check_log_level('INFO', MPI_RANK)) then
+          write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, ABS(cmplx(md(i)%discrim)), md(i)%n_iter
+120       format(4(2X,I6),3(2X,E23.16),2X,I4)
+       endif
+
+    end do mode_loop
+
+    $if($MPI)
+    call barrier()
+    $endif
+
+    call SYSTEM_CLOCK(c_end)
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 130) 'Completed mode search; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
+130    format(/A,1X,F10.3,1X,A)
+    endif
+
+    ! Broadcast data
+
+    $if($MPI)
+
+    do p = 0, MPI_SIZE-1
+       do i = i_part(p+1), i_part(p+2)-1
+          call bcast(md(i), p)
+       end do
+    enddo
+
+    $endif
+
+    ! Finish
+
+    return
+
+  end subroutine prox_search
+
+!****
+
+  subroutine find_brackets (bp, omega, omega_a, omega_b, discrim_a, discrim_b)
 
     class(bvp_t), target, intent(inout)        :: bp
     real(WP), intent(in)                       :: omega(:)
@@ -279,7 +372,7 @@ contains
 120    format(/A,1X,F10.3,1X,A)
     endif
 
-    ! Scan for root brackets
+    ! Find root brackets
 
     n_brack = 0
 
@@ -304,6 +397,6 @@ contains
 
     return
 
-  end subroutine scan_brackets
+  end subroutine find_brackets
 
-end module gyre_scan
+end module gyre_search
