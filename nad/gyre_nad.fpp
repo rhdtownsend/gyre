@@ -141,7 +141,7 @@ program gyre_nad
 
      if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
-     if(op(i)%l == 0) then
+     if(op(i)%l == 0 .AND. np%reduce_order) then
         allocate(rad_bvp_t::ad_bp)
      else
         allocate(ad_bvp_t::ad_bp)

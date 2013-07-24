@@ -33,6 +33,7 @@ module gyre_numpar
   type :: numpar_t
      integer           :: n_iter_max
      real(WP)          :: theta_ad
+     logical           :: reduce_order
      character(LEN=64) :: ivp_solver_type
   end type numpar_t
 
@@ -70,6 +71,8 @@ contains
 
     call bcast(np%n_iter_max, root_rank)
     call bcast(np%theta_ad, root_rank)
+
+    call bcast(np%reduce_order, root_rank)
 
     call bcast(np%ivp_solver_type, root_rank)
 
