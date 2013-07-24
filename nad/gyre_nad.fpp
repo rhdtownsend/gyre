@@ -21,7 +21,7 @@ program gyre_nad
 
   ! Uses
 
-  use core_kinds
+  use core_kinds, SP_ => SP
   use core_constants
   use core_parallel
 
@@ -31,10 +31,12 @@ program gyre_nad
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
+  use gyre_scanpar
+  use gyre_bvp
   use gyre_ad_bvp
+  use gyre_rad_bvp
   use gyre_nad_bvp
-  use gyre_ad_search
-  use gyre_nad_search
+  use gyre_search
   use gyre_mode
   use gyre_input
   use gyre_output
@@ -53,15 +55,17 @@ program gyre_nad
   real(WP), allocatable              :: x_bc(:)
   class(base_coeffs_t), allocatable  :: bc
   class(therm_coeffs_t), allocatable :: tc
-  type(oscpar_t)                     :: op
+  type(oscpar_t), allocatable        :: op(:)
   type(numpar_t)                     :: np
-  real(WP), allocatable              :: omega(:)
   type(gridpar_t), allocatable       :: shoot_gp(:)
   type(gridpar_t), allocatable       :: recon_gp(:)
-  type(ad_bvp_t)                     :: ad_bp
+  type(scanpar_t), allocatable       :: sp(:)
+  integer                            :: i
+  real(WP), allocatable              :: omega(:)
+  class(bvp_t), allocatable          :: ad_bp
   type(nad_bvp_t)                    :: nad_bp
-  type(mode_t), allocatable          :: ad_md(:)
-  type(mode_t), allocatable          :: nad_md(:)
+  type(mode_t), allocatable          :: md(:)
+  type(mode_t), allocatable          :: md_all(:)
 
   ! Initialize
 
@@ -98,32 +102,67 @@ program gyre_nad
 
      $ASSERT(ALLOCATED(tc),No therm_coeffs data)
 
+     call read_coeffs(unit, x_bc, bc, tc)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
      call read_recon_gridpar(unit, recon_gp)
-     call read_scanpar(unit, bc, op, shoot_gp, x_bc, omega)
-
-     call ad_bp%init(bc, op, np, shoot_gp, recon_gp, x_bc, tc)
-     call nad_bp%init(bc, op, np, shoot_gp, recon_gp, x_bc, tc)
+     call read_scanpar(unit, sp)
 
   endif
 
   $if($MPI)
-  call bcast_alloc(omega, 0)
-  call bcast(ad_bp, 0)
-  call bcast(nad_bp, 0)
+  call bcast_alloc(x_bc, 0)
+  call bcast_alloc(bc, 0)
+  call bcast_alloc(tc, 0)
+  call bcast_alloc(op, 0)
+  call bcast(np, 0)
+  call bcast_alloc(shoot_gp, 0)
+  call bcast_alloc(recon_gp, 0)
+  call bcast_alloc(sp, 0)
   $endif
 
-  ! Search for modes
+  ! Loop through oscpars
 
-  call ad_scan_search(ad_bp, omega, ad_md)
-  call nad_prox_search(nad_bp, ad_md, nad_md)
+  allocate(md_all(0))
+
+  op_loop : do i = 1, SIZE(op)
+
+     ! Set up the frequency array
+
+     call build_scan(sp, bc, op(i), shoot_gp, x_bc, omega)
+
+     ! Store the frequency range in shoot_gp
+
+     shoot_gp%omega_a = MINVAL(omega)
+     shoot_gp%omega_b = MAXVAL(omega)
+
+     ! Set up bp
+
+     if(ALLOCATED(ad_bp)) deallocate(ad_bp)
+
+     if(op(i)%l == 0) then
+        allocate(rad_bvp_t::ad_bp)
+     else
+        allocate(ad_bvp_t::ad_bp)
+     endif
+
+     call ad_bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc, tc)
+     call nad_bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc, tc)
+
+     ! Find modes
+
+     call scan_search(ad_bp, omega, md)
+     call prox_search(nad_bp, md)
+
+     md_all = [md_all,md]
+
+  end do op_loop
 
   ! Write output
  
   if(MPI_RANK == 0) then
-     call write_data(unit, nad_md)
+     call write_data(unit, md_all)
   endif
 
   ! Finish
