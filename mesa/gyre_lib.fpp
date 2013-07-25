@@ -24,6 +24,7 @@ module gyre_lib
   use core_kinds
   use core_parallel
 
+  use gyre_bvp
   use gyre_ad_bvp
   use gyre_rad_bvp
   use gyre_base_coeffs
@@ -34,8 +35,8 @@ module gyre_lib
   use gyre_oscpar
   use gyre_gridpar
   use gyre_numpar
-  use gyre_ad_search
-  use gyre_rad_search
+  use gyre_scanpar
+  use gyre_search
   use gyre_mode
   use gyre_input
   use gyre_util
@@ -62,7 +63,6 @@ module gyre_lib
   public :: gyre_read_model
   public :: gyre_set_model
   public :: gyre_get_modes
-  public :: gyre_get_radial_modes
 
   ! Procedures
 
@@ -207,12 +207,14 @@ contains
     real(WP), intent(inout) :: rpar(:)
 
     integer                      :: unit
-    type(oscpar_t)               :: op
+    type(oscpar_t), allocatable  :: op(:)
     type(numpar_t)               :: np
-    real(WP), allocatable        :: omega(:)
+    type(scanpar_t), allocatable :: sp(:)
     type(gridpar_t), allocatable :: shoot_gp(:)
     type(gridpar_t), allocatable :: recon_gp(:)
-    type(ad_bvp_t)               :: bp
+    integer                      :: i
+    real(WP), allocatable        :: omega(:)
+    class(bvp_t), allocatable    :: bp
     type(mode_t), allocatable    :: md(:)
     integer                      :: j
     integer                      :: retcode
@@ -225,111 +227,73 @@ contains
     call read_numpar(unit, np)
     call read_shoot_gridpar(unit, shoot_gp)
     call read_recon_gridpar(unit, recon_gp)
-    call read_scanpar(unit, bc_m, op, shoot_gp, x_bc_m, omega)
+    call read_scanpar(unit, sp)
 
     close(unit)
 
-    ! Set up bp
+    ! Loop through oscpars
 
-    call bp%init(bc_m, op, np, shoot_gp, recon_gp, x_bc_m, tc_m)
+    op_loop : do i = 1, SIZE(op)
 
-    ! Find modes
+       ! Set up the frequency array
 
-    call ad_scan_search(bp, omega, md)
+       call build_scan(sp, bc_m, op(i), shoot_gp, x_bc_m, omega)
 
-    $if($GFORTRAN_PR57922)
-    call bp%final()
-    $endif
+       ! Store the frequency range in shoot_gp
 
-    ! Process the modes
+       shoot_gp%omega_a = MINVAL(omega)
+       shoot_gp%omega_b = MAXVAL(omega)
 
-    retcode = 0
+       ! Set up bp
 
-    mode_loop : do j = 1,SIZE(md)
-       if(retcode == 0) then
-          call user_sub(md(j), ipar, rpar, retcode)
+       if(ALLOCATED(bp)) deallocate(bp)
+
+       if(op(i)%l == 0 .AND. np%reduce_order) then
+          allocate(rad_bvp_t::bp)
+       else
+          allocate(ad_bvp_t::bp)
        endif
+
+       if (ALLOCATED(tc_m)) then
+          call bp%init(bc_m, op(i), np, shoot_gp, recon_gp, x_bc_m, tc_m)
+       else
+          call bp%init(bc_m, op(i), np, shoot_gp, recon_gp, x_bc_m)
+       endif
+
+       ! Find modes
+
+       call scan_search(bp, omega, md)
+
        $if($GFORTRAN_PR57922)
-       call md(j)%final()
+       select type (bp)
+       type is (rad_bvp_t)
+          call bp%final()
+       type is (ad_bvp_t)
+          call bp%final()
+       class default
+          $ABORT(Invalid type)
+       end select
        $endif
-    end do mode_loop
+
+       ! Process the modes
+
+       retcode = 0
+
+       mode_loop : do j = 1,SIZE(md)
+          if(retcode == 0) then
+             call user_sub(md(j), ipar, rpar, retcode)
+          endif
+          $if($GFORTRAN_PR57922)
+          call md(j)%final()
+          $endif
+       end do mode_loop
+
+    end do op_loop
 
     ! Finish
 
     return
 
   end subroutine gyre_get_modes
-
-!****
-
-  subroutine gyre_get_radial_modes (file, user_sub, ipar, rpar)
-
-    character(LEN=*), intent(in) :: file
-    interface
-       subroutine user_sub (md, ipar, rpar, retcode)
-         import mode_t
-         import WP
-         type(mode_t), intent(in) :: md
-         integer, intent(inout)   :: ipar(:)
-         real(WP), intent(inout)  :: rpar(:)
-         integer, intent(out)     :: retcode
-       end subroutine user_sub
-    end interface
-    integer, intent(inout)  :: ipar(:)
-    real(WP), intent(inout) :: rpar(:)
-
-    integer                      :: unit
-    type(oscpar_t)               :: op
-    type(numpar_t)               :: np
-    real(WP), allocatable        :: omega(:)
-    type(gridpar_t), allocatable :: shoot_gp(:)
-    type(gridpar_t), allocatable :: recon_gp(:)
-    type(rad_bvp_t)              :: bp
-    type(mode_t), allocatable    :: md(:)
-    integer                      :: j
-    integer                      :: retcode
-
-    ! Read parameters
-
-    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
-
-    call read_oscpar(unit, op)
-    call read_numpar(unit, np)
-    call read_shoot_gridpar(unit, shoot_gp)
-    call read_recon_gridpar(unit, recon_gp)
-    call read_scanpar(unit, bc_m, op, shoot_gp, x_bc_m, omega)
-
-    close(unit)
-
-    ! Set up bp
-
-    call bp%init(bc_m, op, np, shoot_gp, recon_gp, x_bc_m, tc_m)
-
-    ! Find modes
-
-    call rad_scan_search(bp, omega, md)
-
-    $if($GFORTRAN_PR57922)
-    call bp%final()
-    $endif
-
-    ! Process the modes
-
-    retcode = 0
-
-    mode_loop : do j = 1,SIZE(md)
-       if(retcode == 0) then
-          call user_sub(md(j), ipar, rpar, retcode)
-       endif
-       $if($GFORTRAN_PR57922)
-       call md(j)%final()
-       $endif
-    end do mode_loop
-
-    ! Finish
-
-    return
-
-  end subroutine gyre_get_radial_modes
 
 end module gyre_lib
