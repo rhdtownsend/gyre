@@ -63,8 +63,8 @@ module gyre_mode
      procedure, public :: freq
      procedure, public :: xi_r
      procedure, public :: xi_h
-     procedure, public :: Yb_1
-     procedure, public :: Yb_2
+     procedure, public :: Yt_1
+     procedure, public :: Yt_2
      procedure, public :: phip
      procedure, public :: dphip_dx
      procedure, public :: delS
@@ -265,8 +265,8 @@ contains
 
        ! Set up the Takata Y^a_1 and Y^a_2 functions
        
-       y_1 = REAL(this%Yb_1())
-       y_2 = REAL(this%Yb_2())
+       y_1 = REAL(this%Yt_1())
+       y_2 = REAL(this%Yt_2())
 
        ! Look for the first monotonic segment in y_1 (this is to deal with
        ! noisy near-zero solutions at the origin)
@@ -468,17 +468,17 @@ contains
 
 !****
 
-  function Yb_1 (this)
+  function Yt_1 (this)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: Yb_1(this%n)
+    complex(WP)               :: Yt_1(this%n)
 
-    ! Calculate the Y^b_1 function (see eqn. 69 of Takata 2006,
-    ! PASJ, 58, 839)
+    ! Calculate the Takata Y_1 function; this is based on eqn. 69 of
+    ! Takata (2006, PASJ, 58, 839)
 
     associate (J => 1._WP - this%bc%U(this%x)/3._WP)
 
-      Yb_1 = J*this%y(1,:) + (this%y(3,:) - this%y(4,:))/3._WP
+      Yt_1 = J*this%y(1,:) + (this%y(3,:) - this%y(4,:))/3._WP
       
     end associate
 
@@ -486,23 +486,23 @@ contains
 
     return
 
-  end function Yb_1
+  end function Yt_1
 
 !****
 
-  function Yb_2 (this)
+  function Yt_2 (this)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: Yb_2(this%n)
+    complex(WP)               :: Yt_2(this%n)
 
-    ! Calculate the Y^b_2 function (see eqn. 70 of Takata 2006,
-    ! PASJ, 58, 839)
+    ! Calculate the Takata Y_2 function; this is based on eqn. 70 of
+    ! Takata (2006, PASJ, 58, 839), divided by V
 
-    Yb_2 = this%delp()
+     Yt_2 = this%y(2,:) - this%y(1,:) - this%y(3,:)
 
     ! Finish
 
-  end function Yb_2
+  end function Yt_2
 
 !****
 
