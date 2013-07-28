@@ -14,6 +14,10 @@
 	l = 2
 /
 
+&osc
+	l = 3
+/
+
 &num
 	ivp_solver_type = 'MAGNUS_GL6'
 /
