@@ -110,16 +110,17 @@ contains
     complex(WP), intent(out)      :: V_r(:,:)
     logical, intent(in), optional      :: sort
 
-    logical  :: sort_
-    integer  :: n
-    real(WP) :: lambda_re(SIZE(lambda))
-    real(WP) :: lambda_im(SIZE(lambda))
-    real(WP) :: V_l_r(SIZE(A, 1),SIZE(A, 2))
-    real(WP) :: V_r_r(SIZE(A, 1),SIZE(A, 2))
-    real(WP) :: work(4*SIZE(A,1))
-    integer  :: info
-    integer  :: i
-    integer  :: ind(SIZE(A, 1))
+    logical     :: sort_
+    integer     :: n
+    real(WP)    :: lambda_re(SIZE(lambda))
+    real(WP)    :: lambda_im(SIZE(lambda))
+    real(WP)    :: V_l_r(SIZE(A, 1),SIZE(A, 2))
+    real(WP)    :: V_r_r(SIZE(A, 1),SIZE(A, 2))
+    real(WP)    :: work(4*SIZE(A,1))
+    integer     :: info
+    integer     :: i
+    complex(WP) :: norm
+    integer     :: ind(SIZE(A, 1))
 
     $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
     $CHECK_BOUNDS(SIZE(lambda),SIZE(A, 1))
@@ -163,7 +164,9 @@ contains
        ! the right eigenvectors
 
        do i = 1, n
-          V_l(i,:) = V_l(i,:)/SUM(V_l(i,:)*V_r(:,i))
+          norm = SUM(V_l(i,:)*V_r(:,i))
+          $ASSERT(ABS(norm) > n*EPSILON(0._WP),Near-defective matrix)
+          V_l(i,:) = V_l(i,:)/norm
        enddo
 
     endif
@@ -250,6 +253,7 @@ contains
     real(WP)    :: rwork(2*SIZE(A, 1))
     integer     :: info
     integer     :: i
+    complex(WP) :: norm
     integer     :: ind(SIZE(A, 1))
 
     $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
@@ -288,8 +292,10 @@ contains
        ! Renormalize the left eigenvectors so they are orthonormal to
        ! the right eigenvectors
 
-       do i = 1,SIZE(A, 1)
-          V_l(i,:) = V_l(i,:)/SUM(V_l(i,:)*V_r(:,i))
+       do i = 1,n
+          norm = SUM(V_l(i,:)*V_r(:,i))
+          $ASSERT(ABS(norm) > n*EPSILON(0._WP),Near-defective matrix)
+          V_l(i,:) = V_l(i,:)/norm
        enddo
 
     end if
