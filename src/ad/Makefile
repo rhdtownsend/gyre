@@ -1,4 +1,5 @@
-# $Id: Makefile 121 2011-06-19 03:40:55Z townsend $
+# File     : Makefile
+# Purpose  : makefile for src/ad subdir
 
 # Variables
 
@@ -6,24 +7,12 @@ TARGETS=gyre_ad
 
 # Flags
 
-OMP=yes
-MPI=no
 HDF5=yes
-DEBUG=no
-DOUBLE_PRECISION=yes
 
-LDFLAGS=`mesasdk_hdf5_link` `mesasdk_lapack95_link`
-
-FPX3FLAGS=-DGFORTRAN_PR_56052 -DGFORTRAN_PR_56872
-
-ifeq (${DEBUG},yes)
-  FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG
-else
-  FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO
-endif
+LDFLAGS=`mesasdk_hdf5_link`
 
 # Include other makefiles
 
-SUBDIRS=../core:../common:../ivp:../bvp:../coeffs:../matrix:../frontend:../rad
+SUBDIRS=../../extern/core:../common:../ivp:../bvp:../coeffs:../matrix:../frontend:../rad
 
-include ../build/Make.inc
+include ../../Make.inc
