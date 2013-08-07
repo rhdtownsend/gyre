@@ -25,3 +25,5 @@ clean :
             make -w -C $${DIR} clean; \
         done
 	@rm -f ${BINDIR}/*
+
+.PHONY: all test clean
