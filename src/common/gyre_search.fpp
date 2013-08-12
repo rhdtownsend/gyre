@@ -172,7 +172,7 @@ contains
 
        if(check_log_level('INFO', MPI_RANK)) then
           write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, ABS(cmplx(md(i)%discrim)), md(i)%n_iter
-120       format(4(2X,I6),3(2X,E23.16),2X,I4)
+120       format(4(2X,I6),3(2X,E24.16),2X,I4)
        endif
 
     end do mode_loop
@@ -265,7 +265,7 @@ contains
 
        if(check_log_level('INFO', MPI_RANK)) then
           write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, ABS(cmplx(md(i)%discrim)), md(i)%n_iter
-120       format(4(2X,I6),3(2X,E23.16),2X,I4)
+120       format(4(2X,I6),3(2X,E24.16),2X,I4)
        endif
 
     end do mode_loop
@@ -347,7 +347,7 @@ contains
 
        if(check_log_level('DEBUG', MPI_RANK)) then
           write(OUTPUT_UNIT, 110) 'Eval:', omega(i), fraction(discrim(i)), exponent(discrim(i))
-110       format(A,2X,E23.16,2X,F19.16,2X,I7)
+110       format(A,2X,E24.16,2X,F19.16,2X,I7)
        endif
 
     end do discrim_loop
