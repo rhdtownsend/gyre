@@ -43,6 +43,12 @@ module gyre_util
 
   character(LEN=64), save :: log_level_m
 
+  ! Interfaces
+
+  interface sprint
+     module procedure sprint_i
+  end interface sprint
+
   ! Access specifiers
 
   private
@@ -52,6 +58,9 @@ module gyre_util
   public :: check_log_level
   public :: freq_scale
   public :: split_item_list
+  public :: join_fmts
+  public :: sprint
+  public :: rjust
 
 contains
 
@@ -341,5 +350,99 @@ contains
     return
 
   end function split_item_list
+
+!****
+
+  function join_fmts (fmts, n) result (fmt)
+    
+    character(LEN=*), intent(in)  :: fmts(:)
+    integer, intent(in)           :: n(:)
+    character(LEN=:), allocatable :: fmt
+
+    integer :: i
+
+    $CHECK_BOUNDS(SIZE(n),SIZE(fmts))
+
+    ! Join format strings with the appropriate repeat counts
+
+    if(SUM(n) > 0) then
+
+       do i = 1, SIZE(fmts)
+
+          if(ALLOCATED(fmt)) then
+             fmt = fmt//','//sprint(n(i))//fmts(i)
+          else
+             fmt = sprint(n(i))//fmts(i)
+          endif
+
+       end do
+
+    else
+
+       fmt = ''
+
+    endif
+
+    ! Add wrap-around parens
+
+    fmt = '('//fmt//')'
+
+    ! Finish
+
+    return
+
+  end function join_fmts
+
+!****
+
+  function sprint_i (i) result (a)
+
+    integer, intent(in)           :: i
+    character(LEN=:), allocatable :: a
+
+    integer :: n
+
+    ! Print an integer into a character
+
+    ! First, determine the length
+
+    if(i > 0) then
+       n = FLOOR(LOG10(REAL(i))) + 1
+    elseif(i < 0) then
+       n = FLOOR(LOG10(REAL(ABS(i)))) + 2
+    else
+       n = 1
+    endif
+
+    allocate(character(LEN=n)::a)
+
+    ! Do the conversion
+
+    write(a, 100) i
+100 format(I0)
+
+    ! Finish
+
+    return
+
+  end function sprint_i
+
+!****
+
+  function rjust (a, n) result (a_just)
+
+    character(LEN=*), intent(in) :: a
+    integer, intent(in)          :: n
+    character(LEN=n)             :: a_just
+
+    ! Right-justify a in a field width of n
+
+    a_just = REPEAT(' ', MAX(n-LEN_TRIM(a), 0))//a
+
+    ! Finish
+
+    return
+
+  end function rjust
 
 end module gyre_util
