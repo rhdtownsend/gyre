@@ -8,17 +8,28 @@
 	l = 0
 /
 
+&osc
+	l = 1
+/
+
+&osc
+	l = 2
+/
+
+&osc
+	l = 3
+/
+
 &num
 	ivp_solver_type = 'MAGNUS_GL2'
 	n_iter_max = 100
-!	theta_ad = 1E-6
 /
 
 &scan
 	grid_type = 'LINEAR'
 	freq_min = 1
 	freq_max = 20.0
-	n_freq = 100
+	n_freq = 200
 /
 
 &shoot_grid
@@ -28,4 +39,10 @@
 /
 
 &output
+	summary_file = 'gyre_ad.txt'
+	summary_file_format = 'TXT'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega'
+	mode_prefix = 'gyre_ad-'
+	mode_file_format = 'TXT'
+	mode_item_list = 'l,n_pg,n_p,n_g,omega,xi_r,xi_h,phip,dphip_dx'
 /
