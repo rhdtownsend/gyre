@@ -40,7 +40,4 @@
 	summary_file = 'gyre_ad.txt'
 	summary_file_format = 'TXT'
 	summary_item_list = 'l,n_pg,n_p,n_g,omega'
-	mode_prefix = 'gyre_ad-'
-	mode_file_format = 'TXT'
-	mode_item_list = 'l,n_pg,n_p,n_g,omega,xi_r,xi_h,phip,dphip_dx'
 /

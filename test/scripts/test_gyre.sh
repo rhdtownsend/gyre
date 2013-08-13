@@ -25,7 +25,7 @@ for ref_file in ref/*.txt; do
 
     file=${ref_file##ref/}
 
-    ndiff $file $ref_file
+    ndiff -quiet -relerr 5E-14 $file $ref_file
 
     if [ $? -ne 0 ]; then
 	echo " ...failed when comparing $file and $ref_file"
