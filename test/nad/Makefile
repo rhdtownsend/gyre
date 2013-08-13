@@ -1,20 +1,20 @@
 # File     : Makefile
-# Purpose  : makefile for test/ad subdir
+# Purpose  : makefile for test/nad subdir
 
 # Variables
 
-TESTDIRS=mesa/bcep mesa/rgb mesa/spb
+TESTDIRS=mesa/bcep mesa/spb
 
 # Rules
 
 test :
 	@for DIR in ${TESTDIRS}; do \
             cd $$DIR; \
-            ${TOPDIR}/test/scripts/test_gyre.sh ${BINDIR}/gyre_nad gyre_nad.in; \
+            ${TOPDIR}/test/scripts/test_gyre.sh ${BINDIR}/gyre_nad ${CURDIR}/$$DIR/gyre_nad.in; \
             if [ $$? -ne 0 ]; then \
                 exit 1; \
             fi; \
-            cd -; \
+            cd ${CURDIR}; \
         done
 
 .PHONY: test

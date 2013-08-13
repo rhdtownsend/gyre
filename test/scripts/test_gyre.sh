@@ -10,10 +10,12 @@ FILE=$2
 
 # Run GYRE
 
-$EXEC $FILE
+echo -n "TEST $FILE"
+
+$EXEC $FILE > /dev/null
 
 if [ $? -ne 0 ]; then
-    echo "Failed to run $EXEC"
+    echo " ...failed during execution"
     exit 1
 fi
 
@@ -26,7 +28,7 @@ for ref_file in ref/*.txt; do
     ndiff $file $ref_file
 
     if [ $? -ne 0 ]; then
-	echo "Failed when comparing $file and $ref_file"
+	echo " ...failed when comparing $file and $ref_file"
 	exit 1
     fi
 
@@ -38,4 +40,5 @@ rm -f *.txt
 
 # Finish
 
-echo "Tests passed"
+echo " ...succeeded"
+
