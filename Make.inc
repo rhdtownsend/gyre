@@ -4,7 +4,7 @@
 # The following flags can be edited (set to either yes or no)
 
 # Enable debugging (with a performance penalty)
-DEBUG=yes
+#DEBUG=yes
 
 # Enable OpenMP parallelization
 OMP=yes
@@ -43,7 +43,7 @@ ifeq (${DEBUG},yes)
   FFLAGS:=${FFLAGS} -fcheck=all -Wall -Wno-unused-dummy-argument -finline-limit=0 -g
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG
 else
-  FFLAGS:=${FFLAGS} -O2 -march=native
+  FFLAGS:=${FFLAGS} -O2 -march=native -mno-avx -mno-bmi2
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO
 endif
 
