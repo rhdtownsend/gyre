@@ -95,11 +95,10 @@ vpath %.f ${SUBDIRS}
 	@${F9XC} ${F9XFLAGS} -o $@ $^ ${LDFLAGS}
 
 all : ${TARGETS}
-
-install : ${TARGETS}
-	for t in ${TARGETS}; do
-	    cp ${TARGETS} ${DESTDIR}
-	done
+	@for t in ${TARGETS}; do \
+            echo CP $${t} ${BINDIR}; \
+            cp $${t} ${BINDIR}; \
+        done
 
 clean :
 	rm -f ${TARGETS} $(addsuffix .f90,${TARGETS}) *.o *.mod .depend *.f90

@@ -3,27 +3,18 @@
 
 # Variables
 
-MAKEDIRS=ad nad
-
 TOPDIR=${CURDIR}
 BINDIR=${TOPDIR}/bin
 
 # Rules
 
 all :
-	@for DIR in $(addprefix src/,${MAKEDIRS}); do \
-            make BINDIR=$${BINDIR} -w -C $${DIR}; \
-        done
-
-test :
-	@for DIR in $(addprefix test/,${MAKEDIRS}); do \
-            make BINDIR=$${BINDIR} -w -C $${DIR}; \
-        done
+	make TOPDIR=${TOPDIR} BINDIR=${BINDIR} -w -C src
 
 clean :
-	@for DIR in $(addprefix src/,${MAKEDIRS}); do \
-            make -w -C $${DIR} clean; \
-        done
-	@rm -f ${BINDIR}/*
+	make TOPDIR=${TOPDIR} -w -C src clean
+
+test :
+	make TOPDIR=${TOPDIR} BINDIR=${BINDIR} -w -C test
 
 .PHONY: all test clean
