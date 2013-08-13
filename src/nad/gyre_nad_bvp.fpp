@@ -378,7 +378,6 @@ contains
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
     type(ext_complex_t)      :: discrim_root
-    integer                  :: n
 
     $CHECK_BOUNDS(SIZE(omega),2)
     
