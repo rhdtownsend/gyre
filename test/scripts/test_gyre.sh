@@ -7,15 +7,16 @@
 
 EXEC=$1
 FILE=$2
+LABEL=$3
 
 # Run GYRE
 
-echo -n "TEST $FILE"
+echo -n "TEST $LABEL"
 
 $EXEC $FILE > /dev/null
 
 if [ $? -ne 0 ]; then
-    echo " ...failed during execution"
+    echo " ...failed during execution of $EXEC"
     exit 1
 fi
 
@@ -41,4 +42,3 @@ rm -f *.txt
 # Finish
 
 echo " ...succeeded"
-
