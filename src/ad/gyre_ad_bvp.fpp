@@ -250,7 +250,7 @@ contains
 
     call this%build(omega)
 
-    call this%sm%determinant(discrim, use_real)
+    call this%sm%determinant(discrim, use_real, this%np%use_banded)
 
     ! Scale the discriminant using the normalizing exponent
 
@@ -308,7 +308,7 @@ contains
 
     call this%build(omega)
 
-    call this%sm%null_vector(b, det, use_real)
+    call this%sm%null_vector(b, det, use_real, this%np%use_banded)
 
     discrim = scale(det, -this%e_norm)
 
