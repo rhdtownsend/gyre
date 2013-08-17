@@ -16,4 +16,6 @@ doc/*.aux
 doc/*.bbl
 doc/*.blg
 
+work/*
+
 .DS_Store
