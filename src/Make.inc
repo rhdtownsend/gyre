@@ -95,6 +95,8 @@ vpath %.f ${SUBDIRS}
 	@${F9XC} ${F9XFLAGS} -o $@ $^ ${LDFLAGS}
 
 all : ${TARGETS}
+
+install : ${TARGETS}
 	@for t in ${TARGETS}; do \
             echo CP $${t} ${BINDIR}; \
             cp $${t} ${BINDIR}; \

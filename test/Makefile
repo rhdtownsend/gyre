@@ -9,7 +9,7 @@ SUBDIRS=ad nad
 
 test :
 	@for DIR in ${SUBDIRS}; do \
-            make TOPDIR=${TOPDIR} BINDIR=${BINDIR} -w -C $${DIR}; \
+            make BINDIR=${BINDIR} -w -C $${DIR}; \
             if [ $$? -ne 0 ]; then \
                 exit $$?; \
             fi; \
@@ -17,8 +17,7 @@ test :
 
 build_ref :
 	@for DIR in ${SUBDIRS}; do \
-            make TOPDIR=${TOPDIR} BINDIR=${BINDIR} -w -C $${DIR} build_ref; \
+            make BINDIR=${BINDIR} -w -C $${DIR} build_ref; \
         done
 
 .PHONY: test build_ref
-

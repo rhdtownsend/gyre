@@ -10,7 +10,7 @@ TESTDIRS=mesa/bcep mesa/spb
 test :
 	@for DIR in ${TESTDIRS}; do \
             cd $$DIR; \
-            ${TOPDIR}/test/scripts/test_gyre.sh ${BINDIR}/gyre_nad ${CURDIR}/$$DIR/gyre_nad.in "`cat label`"; \
+            ${CURDIR}/../scripts/test_gyre.sh ${BINDIR}/gyre_nad gyre_nad.in "`cat label`"; \
             if [ $$? -ne 0 ]; then \
                 exit $$?; \
             fi; \

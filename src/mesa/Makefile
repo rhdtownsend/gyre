@@ -1,4 +1,5 @@
-# $Id: Makefile 121 2011-06-19 03:40:55Z townsend $
+# File     : Makefile
+# Purpose  : makefile for src/mesa subdir
 
 # Variables
 
@@ -9,19 +10,10 @@ TARGETS=gyre_lib
 gyre_lib.a : gyre_lib.o
 	@echo AR gyre_lib.a
 	@rm -f gyre_lib.a
-	@ar cr gyre_lib.a *.o
-
-# Flags
-
-OMP=true
-#MPI=true
-DEBUG=true
-DOUBLE_PRECISION=true
-
-FPX3FLAGS=-DGFORTRAN_PR_56052 -DGFORTRAN_PR_56872
+	@ar crs gyre_lib.a *.o
 
 # Include other makefiles
 
-SUBDIRS=../../core:../common:../ivp:../bvp:../coeffs:../matrix:../ad:../rad:../frontend
+SUBDIRS=../extern/core:../common:../ivp:../bvp:../coeffs:../matrix:../frontend:../ad:../rad
 
-include ../../build/Make.inc
+include ../Make.inc

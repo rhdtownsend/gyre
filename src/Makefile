@@ -9,12 +9,17 @@ SUBDIRS=ad nad
 
 all :
 	@for DIR in ${SUBDIRS}; do \
-            make TOPDIR=${TOPDIR} BINDIR=${BINDIR} -w -C $${DIR}; \
+            make -w -C $${DIR}; \
+        done
+
+install :
+	@for DIR in ${SUBDIRS}; do \
+            make BINDIR=${BINDIR} -w -C $${DIR} install; \
         done
 
 clean :
 	@for DIR in ${SUBDIRS}; do \
-            make TOPDIR=${TOPDIR} -w -C $${DIR} clean; \
+            make -w -C $${DIR} clean; \
         done
 
 .PHONY: all clean

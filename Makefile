@@ -3,21 +3,21 @@
 
 # Variables
 
-TOPDIR=${CURDIR}
-BINDIR=${TOPDIR}/bin
+BINDIR=${CURDIR}/bin
 
 # Rules
 
 all :
-	make TOPDIR=${TOPDIR} BINDIR=${BINDIR} -w -C src
-
-clean :
-	make TOPDIR=${TOPDIR} -w -C src clean
+	@make BINDIR=${BINDIR} -w -C src install
 
 test :
-	make TOPDIR=${TOPDIR} BINDIR=${BINDIR} -w -C test
+	@make BINDIR=${BINDIR} -w -C test
 
 build_ref :
-	make TOPDIR=${TOPDIR} BINDIR=${BINDIR} -w -C test build_ref
+	@make BINDIR=${BINDIR} -w -C test build_ref
 
-.PHONY: all test clean
+clean :
+	@make -w -C src clean
+	rm -f ${BINDIR}/*
+
+.PHONY: all test build_ref clean
