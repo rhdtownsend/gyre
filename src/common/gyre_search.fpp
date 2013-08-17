@@ -143,7 +143,7 @@ contains
 100    format(A)
 
        write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', '|D|', 'n_iter'
-110    format(4(2X,A6),3(2X,A23),2X,A4)
+110    format(4(2X,A6),3(2X,A24),2X,A6)
        
     endif
 
@@ -172,7 +172,7 @@ contains
 
        if(check_log_level('INFO', MPI_RANK)) then
           write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, ABS(cmplx(md(i)%discrim)), md(i)%n_iter
-120       format(4(2X,I6),3(2X,E24.16),2X,I4)
+120       format(4(2X,I6),3(2X,E24.16),2X,I6)
        endif
 
     end do mode_loop
