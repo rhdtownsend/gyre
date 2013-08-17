@@ -1,6 +1,6 @@
 &coeffs
 	coeffs_type = 'EVOL'
-	file = 'dupret_model_B.mesa'
+	file = 'rgb.mesa'
 	file_format = 'MESA'
 /
 
