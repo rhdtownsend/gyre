@@ -34,15 +34,10 @@ module gyre_sysmtx
 
   implicit none
 
-  ! Parameter definitions
-
-    logical :: USE_BANDED = .TRUE.
-!    logical :: USE_BANDED = .FALSE.
-
   ! Derived-type definitions
 
   type sysmtx_t
-!     private
+     private
      complex(WP), allocatable         :: B_i(:,:)   ! Inner boundary conditions
      complex(WP), allocatable         :: B_o(:,:)   ! Outer boundary conditions
      complex(WP), allocatable         :: E_l(:,:,:) ! Left equation blocks
@@ -270,13 +265,15 @@ contains
 
 !****
 
-  subroutine determinant (this, det, use_real)
+  subroutine determinant (this, det, use_real, use_banded)
 
     class(sysmtx_t), intent(inout)   :: this
     type(ext_complex_t), intent(out) :: det
     logical, intent(in), optional    :: use_real
+    logical, intent(in), optional    :: use_banded
 
     logical          :: use_real_
+    logical          :: use_banded_
     type(ext_real_t) :: det_r
 
     if(PRESENT(use_real)) then
@@ -285,17 +282,23 @@ contains
        use_real_ = .FALSE.
     endif
 
+    if(PRESENT(use_banded)) then
+       use_banded_ = use_banded
+    else
+       use_banded_ = .FALSE.
+    endif
+
     ! Calculate the sysmtx determinant
 
     if(use_real_) then
-       if(USE_BANDED) then
+       if(use_banded_) then
           call determinant_banded_r(this, det_r)
        else
           call determinant_slu_r(this, det_r)
        endif
        det = ext_complex(det_r)
     else
-       if(USE_BANDED) then
+       if(use_banded_) then
           call determinant_banded_c(this, det)
        else
           call determinant_slu_c(this, det)
@@ -460,14 +463,16 @@ contains
 
 !****
 
-  subroutine null_vector (this, b, det, use_real)
+  subroutine null_vector (this, b, det, use_real, use_banded)
 
     class(sysmtx_t), intent(inout)   :: this
     complex(WP), intent(out)         :: b(:)
     type(ext_complex_t), intent(out) :: det
     logical, intent(in), optional    :: use_real
+    logical, intent(in), optional    :: use_banded
 
     logical          :: use_real_
+    logical          :: use_banded_
     real(WP)         :: b_r(SIZE(b))
     type(ext_real_t) :: det_r
 
@@ -479,10 +484,16 @@ contains
        use_real_ = .FALSE.
     endif
 
+    if(PRESENT(use_banded)) then
+       use_banded_ = use_banded
+    else
+       use_banded_ = .FALSE.
+    endif
+
     ! Calculate the null vector
 
     if(use_real_) then
-       if(USE_BANDED) then
+       if(use_banded_) then
           call null_vector_banded_r(this, b_r, det_r)
        else
           call null_vector_slu_r(this, b_r, det_r)
@@ -490,7 +501,7 @@ contains
        b = b_r
        det = ext_complex(det_r)
     else
-       if(USE_BANDED) then
+       if(use_banded_) then
           call null_vector_banded_c(this, b, det)
        else
           call null_vector_slu_c(this, b, det)
