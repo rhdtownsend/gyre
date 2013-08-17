@@ -4,7 +4,7 @@
 # The following flags can be edited (set to either yes or no)
 
 # Enable debugging (with a performance penalty)
-#DEBUG=yes
+DEBUG=no
 
 # Enable OpenMP parallelization
 OMP=yes
