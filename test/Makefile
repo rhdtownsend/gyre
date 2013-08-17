@@ -10,6 +10,15 @@ SUBDIRS=ad nad
 test :
 	@for DIR in ${SUBDIRS}; do \
             make TOPDIR=${TOPDIR} BINDIR=${BINDIR} -w -C $${DIR}; \
+            if [ $$? -ne 0 ]; then \
+                exit $$?; \
+            fi; \
         done
 
-.PHONY: test
+build_ref :
+	@for DIR in ${SUBDIRS}; do \
+            make TOPDIR=${TOPDIR} BINDIR=${BINDIR} -w -C $${DIR} build_ref; \
+        done
+
+.PHONY: test build_ref
+
