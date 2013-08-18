@@ -5,12 +5,17 @@ syntax: glob
 *.mod
 .depend
 *~
-ad/regress
-ad/gyre_ad
-ad/build_poly_hom
-nad/gyre_nad
+
+bin/*
+
+src/ad/gyre_ad
+src/nad/gyre_nad
 
 doc/*.log
 doc/*.aux
 doc/*.bbl
 doc/*.blg
+
+work/*
+
+.DS_Store

@@ -38,7 +38,8 @@
 \newcommand{\epsS}{\ensuremath{\epsilon_{S}}}
 
 \newcommand{\crad}{\ensuremath{c_{\rm rad}}}
-\newcommand{\cgen}{\ensuremath{c_{\rm gen}}}
+\newcommand{\cepsad}{\ensuremath{c_{\epsilon,{\rm ad}}}}
+\newcommand{\cepsS}{\ensuremath{c_{\epsilon,S}}}
 \newcommand{\cthm}{\ensuremath{c_{\rm thm}}}
 \newcommand{\ckap}{\ensuremath{c_{\rm kap}}}
 
@@ -121,11 +122,11 @@ V \nabad y_{4} +
 \left[ V \nabla (4 - \kapS) + 2 - \ell \right] y_{5} -
 \frac{V \nabla}{\crad} y_{6} \\
 x \frac{\diff y_{6}}{\diff x} &=
-\left[ \ell(\ell+1)\left( \frac{\nabad}{\nabla} - 1 \right) \crad - \epsad V \cgen \right] y_{1} +
-\left[ \epsad V \cgen - \ell(\ell+1)\crad \left( \frac{\nabad}{\nabla} - \frac{3 + \crad'}{c_{1}\omega^{2}} \right) \right] y_{2} + \mbox{} \\
+\left[ \ell(\ell+1)\left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} +
+\left[ V \cepsad - \ell(\ell+1)\crad \left( \frac{\nabad}{\nabla} - \frac{3 + \crad'}{c_{1}\omega^{2}} \right) \right] y_{2} + \mbox{} \\
 &
-\left[ \ell(\ell+1) \frac{\nabad}{\nabla} \crad - \epsad V \cgen \right] y_{3} +
-\left[ \epsS \cgen - \frac{\ell(\ell+1)\crad}{\nabla V} - \ii \omega \cthm\right] y_{5} -
+\left[ \ell(\ell+1) \frac{\nabad}{\nabla} \crad - V \cepsad \right] y_{3} +
+\left[ \cepsS - \frac{\ell(\ell+1)\crad}{\nabla V} - \ii \omega \cthm\right] y_{5} -
 \left[ 1 + \ell \right] y_{6}
 \end{align*}
 
@@ -229,13 +230,14 @@ c_1 = \frac{r^{3}}{\Rstar^{3}} \frac{\Mstar}{M_{r}} \qquad
 \delta = - \left( \frac{\partial \ln \rho}{\partial \ln T} \right)_{p} \qquad \\
 \crad = x^{-3} \frac{\Lrad}{\Lstar} \qquad
 \crad' = \frac{\diff \ln \crad}{\diff \ln r} \qquad
-\cgen = x^{-3} \frac{4\pi r^{3} \epsilon \rho}{\Lstar} \qquad
+\cepsad = x^{-3} \frac{4\pi r^{3} \epsad \rho}{\Lstar} \qquad
+\cepsS = x^{-3} \frac{4\pi r^{3} \epsS \rho}{\Lstar} \qquad
 \cthm = x^{-3} \frac{4\pi r^{3} c_{p} T \rho}{\Lstar} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \\
 \ckap = \left( \kapad - 4 \nabad \right) V \nabla + \nabad \left( \frac{\diff \ln \nabad}{\diff \ln r} + V \right) \\
 \kapad = \left( \frac{\partial \ln \kappa}{\partial \ln p} \right)_{S} \qquad
 \kapS = c_{p} T \left( \frac{\partial \ln \kappa}{\partial S} \right)_{p} \\
-\epsad = \left( \frac{\partial \ln \epsilon}{\partial \ln p} \right)_{S} \qquad
-\epsS = c_{p} T \left( \frac{\partial \ln \epsilon}{\partial S} \right)_{p}
+\epsad = \left( \frac{\partial \epsilon}{\partial \ln p} \right)_{S} \qquad
+\epsS = c_{p} T \left( \frac{\partial \epsilon}{\partial S} \right)_{p}
 \end{gather*}
 
 \end{document}

@@ -1,4 +1,6 @@
-! Inlist for Beta Cephei model
+! $Id$
+!
+! Inlist for mid-MS slowly pulsating B star model
 
 &star_job
 
@@ -7,13 +9,14 @@
       
   ! write output
       save_pulsation_info_when_terminate = .true.
-      save_pulsation_info_filename = 'bcep.mesa'
+      save_pulsation_info_filename = 'rgb.mesa'
+
 /
 
 &controls
 
   ! starting specifications
-      initial_mass = 20d0 ! in Msun units
+      initial_mass = 2d0 ! in Msun units
       initial_Z = 0.02
       initial_Y = 0.28
    
@@ -24,9 +27,6 @@
       terminal_interval = 10
       write_header_frequency = 10
 
-  ! Pulsation output
-      pulse_info_format = 'GYRE'
-
   ! mass gain or loss
       RGB_wind_scheme = 'Reimers'
       AGB_wind_scheme = 'Blocker'
@@ -35,8 +35,10 @@
       Blocker_wind_eta = 0.5d0  
 
   ! when to stop
-      xa_central_lower_limit_species(1) = 'h1'
-      xa_central_lower_limit(1) = 0.25
+      log_L_upper_limit = 1.8
+
+  ! Pulsation output
+      pulse_info_format = 'GYRE'
 
 /
 
