@@ -8,6 +8,7 @@ BINDIR=${CURDIR}/bin
 # Rules
 
 all :
+	@mkdir -p ${BINDIR}
 	@make BINDIR=${BINDIR} -w -C src install
 
 test :
