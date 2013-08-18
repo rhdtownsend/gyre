@@ -66,7 +66,7 @@ contains
 
     ! Initialize the hdf_writer
 
-    call this%hg%init(file_name, OPEN_FILE)
+    call this%hg%init(file_name, CREATE_FILE)
 
     ! Finish
 
