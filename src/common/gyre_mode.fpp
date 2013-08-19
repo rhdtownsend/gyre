@@ -76,6 +76,8 @@ module gyre_mode
      procedure, public :: delT
      procedure, public :: dE_dx
      procedure, public :: dW_dx
+     procedure, public :: I_0
+     procedure, public :: I_1
      procedure, public :: prop_type
      procedure, public :: K
      procedure, public :: beta
@@ -914,6 +916,53 @@ contains
     return
 
   end function dW_dx
+
+!****
+
+  function I_0 (this)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: I_0(this%n)
+
+    ! Calculate the I_0 integral (eqn. 42 of Takata 2006, multiplied
+    ! by x^[2-l]). This should vanish for radial modes
+
+    associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+              omega => this%omega, x => this%x, y => this%y)
+
+      I_0 = x**3*(U*y(1,:) + y(4,:))/c_1
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function I_0
+
+!****
+
+  function I_1 (this)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: I_1(this%n)
+
+    ! Calculate the I_1 integral (eqn. 43 of Takata 2006, multiplied
+    ! by x^[2-l]). This should vanish for dipole modes
+
+    associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+              omega => this%omega, x => this%x, y => this%y)
+
+      I_1 = x**4*(c_1*omega**2*U*y(1,:) - U*y(2,:) + &
+                  (U - c_1*omega**2 - 2._WP)*y(3,:) + (c_1*omega**2 - 1._WP)*y(4,:))/c_1**2
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function I_1
 
 !****
 

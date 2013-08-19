@@ -195,15 +195,17 @@ contains
        case('omega_im')
           call wr%write('omega_im', [(md(i)%omega_im(), i=1,n_md)])
        case default
-          select type (bc => md(1)%bc)
-          type is (evol_base_coeffs_t)
-             call write_summary_evol(wr, bc, items(j))
-          type is (poly_base_coeffs_t)
-             call write_summary_poly(wr, bc, items(j))
-          class default
-             write(ERROR_UNIT, *) 'item:', TRIM(items(j))
-             $ABORT(Invalid item)
+          if(n_md >= 1) then
+             select type (bc => md(1)%bc)
+             type is (evol_base_coeffs_t)
+                call write_summary_evol(wr, bc, items(j))
+             type is (poly_base_coeffs_t)
+                call write_summary_poly(wr, bc, items(j))
+             class default
+                write(ERROR_UNIT, *) 'item:', TRIM(items(j))
+                $ABORT(Invalid item)
           end select
+       endif
        end select
 
     end do item_loop
@@ -360,6 +362,10 @@ contains
           call wr%write('dE_dx', md%dE_dx())
        case ('dW_dx')
           call wr%write('dW_dx', md%dW_dx())
+       case ('I_0')
+          call wr%write('I_0', md%I_0())
+       case ('I_1')
+          call wr%write('I_1', md%I_1())
        case ('prop_type')
           call wr%write('prop_type', md%prop_type())
        case ('K')
