@@ -24,7 +24,7 @@ module gyre_rad_jacobian
   use core_kinds
 
   use gyre_jacobian
-  use gyre_base_coeffs
+  use gyre_coeffs
   use gyre_oscpar
 
   use ISO_FORTRAN_ENV
@@ -37,8 +37,8 @@ module gyre_rad_jacobian
 
   type, extends(jacobian_t) :: rad_jacobian_t
      private
-     class(base_coeffs_t), pointer :: bc => null()
-     type(oscpar_t), pointer       :: op => null()
+     class(coeffs_t), pointer :: cf => null()
+     type(oscpar_t), pointer  :: op => null()
    contains
      private
      procedure, public :: init
@@ -56,15 +56,15 @@ module gyre_rad_jacobian
 
 contains
 
-  subroutine init (this, bc, op)
+  subroutine init (this, cf, op)
 
-    class(rad_jacobian_t), intent(out)       :: this
-    class(base_coeffs_t), intent(in), target :: bc
-    type(oscpar_t), intent(in), target       :: op
+    class(rad_jacobian_t), intent(out)  :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in), target  :: op
 
     ! Initialize the ad_jacobian
 
-    this%bc => bc
+    this%cf => cf
     this%op => op
 
     this%n_e = 2
@@ -110,8 +110,8 @@ contains
 
     ! Evaluate the log(x)-space Jacobian matrix
 
-    associate(V_g => this%bc%V(x)/this%bc%Gamma_1(x), U => this%bc%U(x), &
-              As => this%bc%As(x), c_1 => this%bc%c_1(x), &
+    associate(V_g => this%cf%V(x)/this%cf%Gamma_1(x), U => this%cf%U(x), &
+              As => this%cf%As(x), c_1 => this%cf%c_1(x), &
               omega_c => omega)
 
       A(1,1) = V_g - 1._WP

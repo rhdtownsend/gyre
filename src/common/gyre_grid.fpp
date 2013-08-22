@@ -26,8 +26,7 @@ module gyre_grid
   use core_func
   use core_order
 
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   use gyre_oscpar
   use gyre_gridpar
 
@@ -47,9 +46,9 @@ module gyre_grid
   end type geom_func_t
 
   type, extends (func_t) :: gamma_func_t
-     class(base_coeffs_t), pointer :: bc => null()
-     type(oscpar_t), pointer       :: op => null()
-     real(WP)                      :: omega
+     class(coeffs_t), pointer :: cf => null()
+     type(oscpar_t), pointer  :: op => null()
+     real(WP)                 :: omega
    contains
      procedure :: eval_c => eval_gamma_func
   end type gamma_func_t
@@ -68,14 +67,13 @@ module gyre_grid
 
 contains
 
-  subroutine build_grid (gp, bc, op, x_in, x, tc)
+  subroutine build_grid (gp, cf, op, x_in, x)
 
-    type(gridpar_t), intent(in)                 :: gp(:)
-    class(base_coeffs_t), intent(in)            :: bc
-    type(oscpar_t), intent(in)                  :: op
-    real(WP), allocatable, intent(in)           :: x_in(:)
-    real(WP), allocatable, intent(out)          :: x(:)
-    class(therm_coeffs_t), intent(in), optional :: tc
+    type(gridpar_t), intent(in)        :: gp(:)
+    class(coeffs_t), intent(in)        :: cf
+    type(oscpar_t), intent(in)         :: op
+    real(WP), allocatable, intent(in)  :: x_in(:)
+    real(WP), allocatable, intent(out) :: x(:)
 
     integer :: i
 
@@ -99,14 +97,13 @@ contains
 
        select case (gp(i)%op_type)
        case ('RESAMP_DISPERSION')
-          call resample_dispersion(bc, op, gp(i)%omega_a, gp(i)%omega_b, &
+          call resample_dispersion(cf, op, gp(i)%omega_a, gp(i)%omega_b, &
                                    gp(i)%alpha_osc, gp(i)%alpha_exp, x)
        case ('RESAMP_THERMAL')
-          $ASSERT(PRESENT(tc),No thermal coeffs)
-          call resample_thermal(bc, tc, gp(i)%omega_a, gp(i)%omega_b, &
+          call resample_thermal(cf, gp(i)%omega_a, gp(i)%omega_b, &
                                    gp(i)%alpha_thm, x)
        case ('RESAMP_CENTER')
-          call resample_center(bc, op, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
+          call resample_center(cf, op, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
        case ('RESAMP_UNIFORM')
           call resample_uniform(gp(i)%n, x)
        case default
@@ -123,14 +120,14 @@ contains
 
 !****
           
-  subroutine grid_range (gp, bc, op, x_in, x_i, x_o)
+  subroutine grid_range (gp, cf, op, x_in, x_i, x_o)
 
-    type(gridpar_t), intent(in)        :: gp(:)
-    class(base_coeffs_t), intent(in)   :: bc
-    type(oscpar_t), intent(in)         :: op
-    real(WP), allocatable, intent(in)  :: x_in(:)
-    real(WP), intent(out)              :: x_i
-    real(WP), intent(out)              :: x_o
+    type(gridpar_t), intent(in)       :: gp(:)
+    class(coeffs_t), intent(in)       :: cf
+    type(oscpar_t), intent(in)        :: op
+    real(WP), allocatable, intent(in) :: x_in(:)
+    real(WP), intent(out)             :: x_i
+    real(WP), intent(out)             :: x_o
 
     ! Determine the range spanned by the grid
 
@@ -438,9 +435,9 @@ contains
 
 !****
 
-  subroutine resample_dispersion (bc, op, omega_a, omega_b, alpha_osc, alpha_exp, x)
+  subroutine resample_dispersion (cf, op, omega_a, omega_b, alpha_osc, alpha_exp, x)
 
-    class(base_coeffs_t), intent(in)     :: bc
+    class(coeffs_t), intent(in)          :: cf
     type(oscpar_t), intent(in)           :: op
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
@@ -486,8 +483,8 @@ contains
 
     wavenumber_loop : do i = 2,n_x-1
 
-       associate(V_g => bc%V(x(i))/bc%Gamma_1(x(i)), As => bc%As(x(i)), &
-                 U => bc%U(x(i)), c_1 => bc%c_1(x(i)), &
+       associate(V_g => cf%V(x(i))/cf%Gamma_1(x(i)), As => cf%As(x(i)), &
+                 U => cf%U(x(i)), c_1 => cf%c_1(x(i)), &
                  l => op%l)
 
          ! Look for an extremum of the propagation discriminant ]
@@ -563,10 +560,9 @@ contains
 
 !****
 
-  subroutine resample_thermal (bc, tc, omega_a, omega_b, alpha_thm, x)
+  subroutine resample_thermal (cf, omega_a, omega_b, alpha_thm, x)
 
-    class(base_coeffs_t), intent(in)     :: bc
-    class(therm_coeffs_t), intent(in)    :: tc
+    class(coeffs_t), intent(in)          :: cf
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
     real(WP), intent(in)                 :: alpha_thm
@@ -595,8 +591,8 @@ contains
 
     wavenumber_loop : do i = 2,n_x-1
 
-       associate(V => bc%V(x(i)), nabla => tc%nabla(x(i)), &
-                 c_rad => tc%c_rad(x(i)), c_thm => tc%c_thm(x(i)))
+       associate(V => cf%V(x(i)), nabla => cf%nabla(x(i)), &
+                 c_rad => cf%c_rad(x(i)), c_thm => cf%c_thm(x(i)))
 
          k_thm(i) = SQRT(ABS(V*nabla*omega_b*c_thm/c_rad))/x(i)
 
@@ -634,9 +630,9 @@ contains
 
 !****
 
-  subroutine resample_center (bc, op, omega_a, omega_b, n, x)
+  subroutine resample_center (cf, op, omega_a, omega_b, n, x)
 
-    class(base_coeffs_t), intent(in)     :: bc
+    class(coeffs_t), intent(in)          :: cf
     type(oscpar_t), intent(in)           :: op
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
@@ -662,8 +658,8 @@ contains
 
     ! First, locate the innermost turning point at both omega_a and omega_b
 
-    call find_x_turn(x, bc, op, omega_a, x_turn_a)
-    call find_x_turn(x, bc, op, omega_b, x_turn_b)
+    call find_x_turn(x, cf, op, omega_a, x_turn_a)
+    call find_x_turn(x, cf, op, omega_b, x_turn_b)
 
     x_turn = MIN(x_turn_a, x_turn_b)
     call locate(x, x_turn, i_turn)
@@ -722,20 +718,20 @@ contains
 
 !****
 
-  subroutine find_x_turn (x, bc, op, omega, x_turn)
+  subroutine find_x_turn (x, cf, op, omega, x_turn)
 
-    real(WP), intent(in)                     :: x(:)
-    class(base_coeffs_t), target, intent(in) :: bc
-    type(oscpar_t), target, intent(in)       :: op
-    real(WP), intent(in)                     :: omega
-    real(WP)                                 :: x_turn
+    real(WP), intent(in)                :: x(:)
+    class(coeffs_t), target, intent(in) :: cf
+    type(oscpar_t), target, intent(in)  :: op
+    real(WP), intent(in)                :: omega
+    real(WP)                            :: x_turn
 
     type(gamma_func_t) :: gf
     integer            :: i
 
     ! Find the inner turning point at frequency omega
 
-    gf%bc => bc
+    gf%cf => cf
     gf%op => op
 
     gf%omega = omega
@@ -772,8 +768,8 @@ contains
 
     x = REAL(z)
 
-    associate(V_g => this%bc%V(x)/this%bc%Gamma_1(x), As => this%bc%As(x), &
-              U => this%bc%U(x), c_1 => this%bc%c_1(x), &
+    associate(V_g => this%cf%V(x)/this%cf%Gamma_1(x), As => this%cf%As(x), &
+              U => this%cf%U(x), c_1 => this%cf%c_1(x), &
               l => this%op%l)
 
       g_4 = -4._WP*V_g*c_1

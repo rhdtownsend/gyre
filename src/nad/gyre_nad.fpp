@@ -26,8 +26,7 @@ program gyre_nad
   use core_parallel
 
   use gyre_version
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -50,23 +49,22 @@ program gyre_nad
 
   ! Variables
 
-  character(LEN=:), allocatable      :: filename
-  integer                            :: unit
-  real(WP), allocatable              :: x_bc(:)
-  class(base_coeffs_t), allocatable  :: bc
-  class(therm_coeffs_t), allocatable :: tc
-  type(oscpar_t), allocatable        :: op(:)
-  type(numpar_t)                     :: np
-  type(gridpar_t), allocatable       :: shoot_gp(:)
-  type(gridpar_t), allocatable       :: recon_gp(:)
-  type(scanpar_t), allocatable       :: sp(:)
-  integer                            :: i
-  real(WP), allocatable              :: omega(:)
-  class(bvp_t), allocatable          :: ad_bp
-  type(nad_bvp_t)                    :: nad_bp
-  type(mode_t), allocatable          :: md(:)
-  type(mode_t), allocatable          :: md_all(:)
-  type(mode_t), allocatable          :: md_tmp(:)
+  character(LEN=:), allocatable :: filename
+  integer                       :: unit
+  real(WP), allocatable         :: x_cf(:)
+  class(coeffs_t), allocatable  :: cf
+  type(oscpar_t), allocatable   :: op(:)
+  type(numpar_t)                :: np
+  type(gridpar_t), allocatable  :: shoot_gp(:)
+  type(gridpar_t), allocatable  :: recon_gp(:)
+  type(scanpar_t), allocatable  :: sp(:)
+  integer                       :: i
+  real(WP), allocatable         :: omega(:)
+  class(bvp_t), allocatable     :: ad_bp
+  type(nad_bvp_t)               :: nad_bp
+  type(mode_t), allocatable     :: md(:)
+  type(mode_t), allocatable     :: md_all(:)
+  type(mode_t), allocatable     :: md_tmp(:)
 
   ! Initialize
 
@@ -99,11 +97,7 @@ program gyre_nad
      
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-     call read_coeffs(unit, x_bc, bc, tc)
-
-     $ASSERT(ALLOCATED(tc),No therm_coeffs data)
-
-     call read_coeffs(unit, x_bc, bc, tc)
+     call read_coeffs(unit, x_cf, cf)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
@@ -113,9 +107,8 @@ program gyre_nad
   endif
 
   $if($MPI)
-  call bcast_alloc(x_bc, 0)
-  call bcast_alloc(bc, 0)
-  call bcast_alloc(tc, 0)
+  call bcast_alloc(x_cf, 0)
+  call bcast_alloc(cf, 0)
   call bcast_alloc(op, 0)
   call bcast(np, 0)
   call bcast_alloc(shoot_gp, 0)
@@ -131,7 +124,7 @@ program gyre_nad
 
      ! Set up the frequency array
 
-     call build_scan(sp, bc, op(i), shoot_gp, x_bc, omega)
+     call build_scan(sp, cf, op(i), shoot_gp, x_cf, omega)
 
      ! Store the frequency range in shoot_gp
 
@@ -148,8 +141,8 @@ program gyre_nad
         allocate(ad_bvp_t::ad_bp)
      endif
 
-     call ad_bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc, tc)
-     call nad_bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc, tc)
+     call ad_bp%init(cf, op(i), np, shoot_gp, recon_gp, x_cf)
+     call nad_bp%init(cf, op(i), np, shoot_gp, recon_gp, x_cf)
 
      ! Find modes
 

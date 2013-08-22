@@ -28,7 +28,7 @@ module gyre_search
   use core_parallel
 
   use gyre_bvp
-  use gyre_base_coeffs
+  use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -54,12 +54,12 @@ module gyre_search
 
 contains
 
-  subroutine build_scan (sp, bc, op, gp, x_in, omega)
+  subroutine build_scan (sp, cf, op, gp, x_in, omega)
 
     type(scanpar_t), intent(in)        :: sp(:)
-    type(gridpar_t), intent(in)        :: gp(:)
-    class(base_coeffs_t), intent(in)   :: bc
+    class(coeffs_t), intent(in)        :: cf
     type(oscpar_t), intent(in)         :: op
+    type(gridpar_t), intent(in)        :: gp(:)
     real(WP), allocatable, intent(in)  :: x_in(:)
     real(WP), allocatable, intent(out) :: omega(:)
 
@@ -72,7 +72,7 @@ contains
 
     ! Determine the grid range
 
-    call grid_range(gp, bc, op, x_in, x_i, x_o)
+    call grid_range(gp, cf, op, x_in, x_i, x_o)
 
     ! Loop through scanpars
 
@@ -82,8 +82,8 @@ contains
 
        ! Set up the frequency grid
 
-       omega_min = sp(i)%freq_min/freq_scale(bc, op, x_o, sp(i)%freq_units)
-       omega_max = sp(i)%freq_max/freq_scale(bc, op, x_o, sp(i)%freq_units)
+       omega_min = sp(i)%freq_min/freq_scale(cf, op, x_o, sp(i)%freq_units)
+       omega_max = sp(i)%freq_max/freq_scale(cf, op, x_o, sp(i)%freq_units)
        
        select case(sp(i)%grid_type)
        case('LINEAR')

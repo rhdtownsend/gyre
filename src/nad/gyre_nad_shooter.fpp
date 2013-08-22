@@ -24,8 +24,7 @@ module gyre_nad_shooter
   use core_kinds
   use core_order
 
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
   use gyre_ad_jacobian
@@ -45,13 +44,12 @@ module gyre_nad_shooter
 
   type :: nad_shooter_t
      private
-     class(base_coeffs_t), pointer  :: bc => null()
-     class(therm_coeffs_t), pointer :: tc => null()
-     type(oscpar_t), pointer        :: op => null()
-     type(numpar_t), pointer        :: np => null()
-     type(ad_jacobian_t)            :: ad_jc
-     type(nad_jacobian_t)           :: nad_jc
-     integer, public                :: n_e
+     class(coeffs_t), pointer :: cf => null()
+     type(oscpar_t), pointer  :: op => null()
+     type(numpar_t), pointer  :: np => null()
+     type(ad_jacobian_t)      :: ad_jc
+     type(nad_jacobian_t)     :: nad_jc
+     integer, public          :: n_e
    contains
      private
      procedure, public :: init
@@ -70,24 +68,22 @@ module gyre_nad_shooter
 
 contains
 
-  subroutine init (this, bc, tc, op, np)
+  subroutine init (this, cf, op, np)
 
-    class(nad_shooter_t), intent(out)         :: this
-    class(base_coeffs_t), intent(in), target  :: bc
-    class(therm_coeffs_t), intent(in), target :: tc
-    type(oscpar_t), intent(in), target        :: op
-    type(numpar_t), intent(in), target        :: np
+    class(nad_shooter_t), intent(out)   :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in), target  :: op
+    type(numpar_t), intent(in), target  :: np
 
     ! Initialize the nad_shooter
 
-    this%bc => bc
-    this%tc => tc
+    this%cf => cf
 
     this%op => op
     this%np => np
 
-    call this%ad_jc%init(bc, op)
-    call this%nad_jc%init(bc, tc, op)
+    call this%ad_jc%init(cf, op)
+    call this%nad_jc%init(cf, op)
     
     this%n_e = this%nad_jc%n_e
 
@@ -137,7 +133,7 @@ contains
           E_l(1:4,5:6) = 0._WP
           E_r(1:4,5:6) = 0._WP
 
-          E_l(5,:) = diff_coeffs(this%bc, this%tc, this%op, omega, x(k))
+          E_l(5,:) = diff_coeffs(this%cf, this%op, omega, x(k))
           E_r(5,:) = 0._WP
           
           E_l(6,:) = -[0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
@@ -152,8 +148,8 @@ contains
           ! Apply the thermal-term rescaling, to assist the rootfinder
 
           associate(x_mid => 0.5_WP*(x(k) + x(k+1)))
-            associate(V => this%bc%V(x_mid), nabla => this%tc%nabla(x_mid), &
-                      c_rad => this%tc%c_rad(x_mid), c_thm => this%tc%c_thm(x_mid))
+            associate(V => this%cf%V(x_mid), nabla => this%cf%nabla(x_mid), &
+                      c_rad => this%cf%c_rad(x_mid), c_thm => this%cf%c_thm(x_mid))
               lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x_mid
             end associate
           end associate
@@ -244,7 +240,7 @@ contains
              y_in(5,:n_in) = y_sh(5,k)
 
              do i = 1,n_in
-                A_5 = diff_coeffs(this%bc, this%tc, this%op, omega, x(k))
+                A_5 = diff_coeffs(this%cf, this%op, omega, x(k))
                 y_in(6,i) = -DOT_PRODUCT(y_in(1:5,i), A_5(1:5))/A_5(6)
              end do
           
@@ -315,21 +311,20 @@ contains
 
 !****
 
-  function diff_coeffs (bc, tc, op, omega, x) result (a)
+  function diff_coeffs (cf, op, omega, x) result (a)
 
-    class(base_coeffs_t), intent(in)  :: bc
-    class(therm_coeffs_t), intent(in) :: tc
-    type(oscpar_t), intent(in)        :: op
-    complex(WP), intent(in)           :: omega
-    real(WP), intent(in)              :: x
-    complex(WP)                       :: a(6)
+    class(coeffs_t), intent(in) :: cf
+    type(oscpar_t), intent(in)  :: op
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP)                 :: a(6)
 
     ! Calculate the coefficients of the (algebraic) adiabatic
     ! diffusion equation
 
-    associate(U => bc%U(x), c_1 => bc%c_1(x), &
-              nabla_ad => bc%nabla_ad(x), &
-              c_rad => tc%c_rad(x), c_dif => tc%c_dif(x), nabla => tc%nabla(x), &
+    associate(U => cf%U(x), c_1 => cf%c_1(x), &
+              nabla_ad => cf%nabla_ad(x), &
+              c_rad => cf%c_rad(x), c_dif => cf%c_dif(x), nabla => cf%nabla(x), &
               l => op%l)
 
       a(1) = (nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)

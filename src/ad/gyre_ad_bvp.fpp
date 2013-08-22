@@ -25,11 +25,9 @@ module gyre_ad_bvp
   use core_parallel
 
   use gyre_bvp
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   $if($MPI)
-  use gyre_base_coeffs_mpi
-  use gyre_therm_coeffs_mpi
+  use gyre_coeffs_mpi
   $endif
   use gyre_oscpar
   use gyre_numpar
@@ -52,20 +50,19 @@ module gyre_ad_bvp
 
   type, extends(bvp_t) :: ad_bvp_t
      private
-     class(base_coeffs_t), allocatable  :: bc
-     class(therm_coeffs_t), allocatable :: tc
-     type(oscpar_t)                     :: op
-     type(numpar_t)                     :: np
-     type(gridpar_t), allocatable       :: shoot_gp(:)
-     type(gridpar_t), allocatable       :: recon_gp(:)
-     type(ad_shooter_t)                 :: sh
-     type(ad_bound_t)                   :: bd
-     type(sysmtx_t)                     :: sm
-     real(WP), allocatable              :: x_in(:)
-     real(WP), allocatable              :: x(:)
-     integer                            :: e_norm
-     integer, public                    :: n
-     integer, public                    :: n_e
+     class(coeffs_t), allocatable :: cf
+     type(oscpar_t)               :: op
+     type(numpar_t)               :: np
+     type(gridpar_t), allocatable :: shoot_gp(:)
+     type(gridpar_t), allocatable :: recon_gp(:)
+     type(ad_shooter_t)           :: sh
+     type(ad_bound_t)             :: bd
+     type(sysmtx_t)               :: sm
+     real(WP), allocatable        :: x_in(:)
+     real(WP), allocatable        :: x(:)
+     integer                      :: e_norm
+     integer, public              :: n
+     integer, public              :: n_e
    contains 
      private
      procedure, public :: init
@@ -101,16 +98,15 @@ module gyre_ad_bvp
 
 contains
 
-  subroutine init (this, bc, op, np, shoot_gp, recon_gp, x_in, tc)
+  subroutine init (this, cf, op, np, shoot_gp, recon_gp, x_in)
 
-    class(ad_bvp_t), intent(out)                :: this
-    class(base_coeffs_t), intent(in)            :: bc
-    type(oscpar_t), intent(in)                  :: op
-    type(numpar_t), intent(in)                  :: np
-    type(gridpar_t), intent(in)                 :: shoot_gp(:)
-    type(gridpar_t), intent(in)                 :: recon_gp(:)
-    real(WP), allocatable, intent(in)           :: x_in(:)
-    class(therm_coeffs_t), intent(in), optional :: tc
+    class(ad_bvp_t), intent(out)      :: this
+    class(coeffs_t), intent(in)       :: cf
+    type(oscpar_t), intent(in)        :: op
+    type(numpar_t), intent(in)        :: np
+    type(gridpar_t), intent(in)       :: shoot_gp(:)
+    type(gridpar_t), intent(in)       :: recon_gp(:)
+    real(WP), allocatable, intent(in) :: x_in(:)
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
@@ -119,14 +115,13 @@ contains
 
     ! Create the shooting grid
 
-    call build_grid(shoot_gp, bc, op, x_in, this%x, tc)
+    call build_grid(shoot_gp, cf, op, x_in, this%x)
 
     n = SIZE(this%x)
 
     ! Set up components
     
-    allocate(this%bc, SOURCE=bc)
-    if(PRESENT(tc)) allocate(this%tc, SOURCE=tc)
+    allocate(this%cf, SOURCE=cf)
 
     this%op = op
     this%np = np
@@ -134,8 +129,8 @@ contains
     this%shoot_gp = shoot_gp
     this%recon_gp = recon_gp
 
-    call this%sh%init(this%bc, this%op, this%np)
-    call this%bd%init(this%bc, this%op)
+    call this%sh%init(this%cf, this%op, this%np)
+    call this%bd%init(this%cf, this%op)
 
     call this%sm%init(n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
 
@@ -150,8 +145,8 @@ contains
 
     x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
-    call this%bc%fill_cache(x_cc)
-    if(ALLOCATED(this%tc)) call this%tc%fill_cache(x_cc)
+    call this%cf%fill_cache(x_cc)
+    if(ALLOCATED(this%cf)) call this%cf%fill_cache(x_cc)
 
     ! Finish
 
@@ -169,8 +164,7 @@ contains
 
     ! Finalize the ad_bvp
 
-    call this%bc%final()
-    if(ALLOCATED(this%tc)) call this%tc%final()
+    call this%cf%final()
 
     ! Finish
 
@@ -189,20 +183,18 @@ contains
     class(ad_bvp_t), intent(inout) :: this
     integer, intent(in)            :: root_rank
 
-    class(base_coeffs_t), allocatable  :: bc
-    class(therm_coeffs_t), allocatable :: tc
-    type(oscpar_t)                     :: op
-    type(numpar_t)                     :: np
-    type(gridpar_t), allocatable       :: shoot_gp(:)
-    type(gridpar_t), allocatable       :: recon_gp(:)
-    real(WP), allocatable              :: x_in(:)
+    class(coeffs_t), allocatable :: cf
+    type(oscpar_t)               :: op
+    type(numpar_t)               :: np
+    type(gridpar_t), allocatable :: shoot_gp(:)
+    type(gridpar_t), allocatable :: recon_gp(:)
+    real(WP), allocatable        :: x_in(:)
 
     ! Broadcast the bvp
 
     if(MPI_RANK == root_rank) then
 
-       call bcast_alloc(this%bc, root_rank)
-       call bcast_alloc(this%tc, root_rank)
+       call bcast_alloc(this%cf, root_rank)
       
        call bcast(this%op, root_rank)
        call bcast(this%np, root_rank)
@@ -214,8 +206,7 @@ contains
 
     else
 
-       call bcast_alloc(bc, root_rank)
-       call bcast_alloc(tc, root_rank)
+       call bcast_alloc(cf, root_rank)
 
        call bcast(op, root_rank)
        call bcast(np, root_rank)
@@ -225,7 +216,7 @@ contains
 
        call bcast_alloc(x_in, root_rank)
 
-       call this%init(bc, tc, op, np, shoot_gp, recon_gp, x_in)
+       call this%init(cf, op, np, shoot_gp, recon_gp, x_in)
 
     endif
 
@@ -271,16 +262,14 @@ contains
 
     ! Set up the sysmtx
 
-    call this%bc%enable_cache()
-    if(ALLOCATED(this%tc)) call this%tc%enable_cache()
+    call this%cf%enable_cache()
 
     call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
     call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
 
     call this%sh%shoot(omega, this%x, this%sm)
 
-    call this%bc%disable_cache()
-    if(ALLOCATED(this%tc)) call this%tc%disable_cache()
+    call this%cf%disable_cache()
 
     ! Finish
 
@@ -319,7 +308,7 @@ contains
     this%recon_gp%omega_a = REAL(omega)
     this%recon_gp%omega_b = REAL(omega)
 
-    call build_grid(this%recon_gp, this%bc, this%op, this%x, x)
+    call build_grid(this%recon_gp, this%cf, this%op, this%x, x)
 
     if(SIZE(x) == SIZE(this%x)) then
        same_grid = ALL(x == this%x)
@@ -346,137 +335,6 @@ contains
     return
 
   end subroutine recon
-
-!****
-
-  subroutine recon_y_5 (bp, omega, x, y)
-
-    class(ad_bvp_t), intent(in) :: bp
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x(:)
-    complex(WP), intent(inout)  :: y(:,:)
-
-    complex(WP) :: dy_6_dx(SIZE(x))
-    complex(WP) :: A_6(SIZE(x),6)
-
-    $CHECK_BOUNDS(SIZE(y, 1),6)
-    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
-
-    ! Reconstruct y_5 (the entropy perturbation) using the
-    ! energy equation
-
-    dy_6_dx = deriv(x, y(6,:))
-    
-    associate(V => bp%bc%V(x), c_1 => bp%bc%c_1(x), &
-              nabla_ad => bp%bc%nabla_ad(x), nabla => bp%tc%nabla(x), &
-              c_rad => bp%tc%c_rad(x), dc_rad => bp%tc%dc_rad(x), &
-              c_thm => bp%tc%c_thm(x), &
-              c_eps_ad => bp%tc%c_eps_ad(x), c_eps_S => bp%tc%c_eps_S(x), &
-              l => bp%op%l)
-
-      ! Calculate Jacobian coefficients. (cf. gyre_nad_jacobian; A_6
-      ! has been multiplied by V)
-
-      A_6(:,1) = V*(l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad)
-      A_6(:,2) = V*(V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2)))
-      A_6(:,3) = V*(l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad)
-      A_6(:,4) = 0._WP
-      A_6(:,5) = V*c_eps_S - l*(l+1)*c_rad/nabla - V*(0._WP,1._WP)*omega*c_thm
-      A_6(:,6) = V*(-1._WP - l)
-
-      ! Set up y_5
-
-      where(x /= 0._WP)
-         y(5,:) = (x*V*dy_6_dx - (A_6(:,1)*y(1,:) + A_6(:,2)*y(2,:) + &
-                                  A_6(:,3)*y(3,:) + A_6(:,4)*y(4,:) + A_6(:,6)*y(6,:)))/A_6(:,5)
-      elsewhere
-         y(5,:) = 0._WP
-      end where
-
-    end associate
-
-    ! Finish
-
-    return
-
-  contains
-
-    function deriv (x, y) result (dy_dx)
-
-      real(WP), intent(in)    :: x(:)
-      complex(WP), intent(in) :: y(:)
-      complex(WP)             :: dy_dx(SIZE(x))
-      
-      integer :: n
-      integer :: i
-
-      $CHECK_BOUNDS(SIZE(y),SIZE(x))
-
-      ! Differentiate y(x) using centered finite differences
-
-      n = SIZE(x)
-
-      dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
-
-      do i = 2,n-1
-         dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
-                            (y(i+1) - y(i))/(x(i+1) - x(i)))
-      end do
-
-      dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
-
-      ! Finish
-
-      return
-
-    end function deriv
-
-  end subroutine recon_y_5
-
-!****
-
-  subroutine recon_y_6 (bp, omega, x, y)
-
-    class(ad_bvp_t), intent(in) :: bp
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x(:)
-    complex(WP), intent(inout)  :: y(:,:)
-
-    complex(WP) :: A_5(SIZE(x),6)
-
-    $CHECK_BOUNDS(SIZE(y, 1),6)
-    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
-
-    ! Reconstruct y_6 (the luminosity perturbation) using the
-    ! quasi-adiabatic diffusion equation
-
-    associate(U => bp%bc%U(x), c_1 => bp%bc%c_1(x), &
-              nabla_ad => bp%bc%nabla_ad(x), &
-              c_rad => bp%tc%c_rad(x), &
-              c_dif => bp%tc%c_dif(x), nabla => bp%tc%nabla(x), &
-              l => bp%op%l)
-
-      ! Calculate Jacobian coefficients. (cf. gyre_nad_jacobian; A_5
-      ! has been implicitly divided by V)
-
-      A_5(:,1) = nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif
-      A_5(:,2) = l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif
-      A_5(:,3) = c_dif
-      A_5(:,4) = nabla_ad
-      A_5(:,5) = 0._WP
-      A_5(:,6) = -nabla/c_rad
-
-      ! Set up y_6
-
-      y(6,:) = -(A_5(:,1)*y(1,:) + A_5(:,2)*y(2,:) + A_5(:,3)*y(3,:) + A_5(:,4)*y(4,:))/A_5(:,6)
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end subroutine recon_y_6
 
 !****
 
@@ -561,22 +419,11 @@ contains
     allocate(y_6(6,n))
 
     y_6(1:4,:) = y
-
-    if(ALLOCATED(this%tc)) then
-       call recon_y_6(this, omega_root, x, y_6)
-       call recon_y_5(this, omega_root, x, y_6)
-    else
-       y_6(5,:) = 0._WP
-       y_6(6,:) = 0._WP
-    end if
+    y_6(5:6,:) = 0._WP
 
     ! Initialize the mode
     
-    if(ALLOCATED(this%tc)) then
-       call md%init(this%bc, this%op, omega_root, x, y_6, discrim_root, n_iter, this%tc)
-    else
-       call md%init(this%bc, this%op, omega_root, x, y_6, discrim_root, n_iter)
-    endif
+    call md%init(this%cf, this%op, omega_root, x, y_6, discrim_root, n_iter)
 
     ! Reset the normalizing exponent
 

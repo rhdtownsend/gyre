@@ -41,22 +41,20 @@ module gyre_bvp
 
   abstract interface
 
-     subroutine init_i (this, bc, op, np, shoot_gp, recon_gp, x_in, tc)
+     subroutine init_i (this, cf, op, np, shoot_gp, recon_gp, x_in)
        use core_kinds
-       use gyre_base_coeffs
-       use gyre_therm_coeffs
+       use gyre_coeffs
        use gyre_oscpar
        use gyre_numpar
        use gyre_gridpar
        import bvp_t
-       class(bvp_t), intent(out)                   :: this
-       class(base_coeffs_t), intent(in)            :: bc
-       type(oscpar_t), intent(in)                  :: op
-       type(numpar_t), intent(in)                  :: np
-       type(gridpar_t), intent(in)                 :: shoot_gp(:)
-       type(gridpar_t), intent(in)                 :: recon_gp(:)
-       real(WP), allocatable, intent(in)           :: x_in(:)
-       class(therm_coeffs_t), intent(in), optional :: tc
+       class(bvp_t), intent(out)         :: this
+       class(coeffs_t), intent(in)       :: cf
+       type(oscpar_t), intent(in)        :: op
+       type(numpar_t), intent(in)        :: np
+       type(gridpar_t), intent(in)       :: shoot_gp(:)
+       type(gridpar_t), intent(in)       :: recon_gp(:)
+       real(WP), allocatable, intent(in) :: x_in(:)
      end subroutine init_i
 
      function discrim_i (this, omega, use_real) result (discrim)

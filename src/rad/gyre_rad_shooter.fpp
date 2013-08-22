@@ -23,7 +23,7 @@ module gyre_rad_shooter
 
   use core_kinds
 
-  use gyre_base_coeffs
+  use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
   use gyre_rad_jacobian
@@ -41,11 +41,11 @@ module gyre_rad_shooter
 
   type :: rad_shooter_t
      private
-     class(base_coeffs_t), pointer :: bc => null()
-     type(oscpar_t), pointer       :: op => null()
-     type(numpar_t), pointer       :: np => null()
-     type(rad_jacobian_t)          :: jc
-     integer, public               :: n_e
+     class(coeffs_t), pointer :: cf => null()
+     type(oscpar_t), pointer  :: op => null()
+     type(numpar_t), pointer  :: np => null()
+     type(rad_jacobian_t)     :: jc
+     integer, public          :: n_e
    contains
      private
      procedure, public :: init
@@ -64,20 +64,20 @@ module gyre_rad_shooter
 
 contains
 
-  subroutine init (this, bc, op, np)
+  subroutine init (this, cf, op, np)
 
-    class(rad_shooter_t), intent(out)        :: this
-    class(base_coeffs_t), intent(in), target :: bc
-    type(oscpar_t), intent(in), target       :: op
-    type(numpar_t), intent(in), target       :: np
+    class(rad_shooter_t), intent(out)   :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in), target  :: op
+    type(numpar_t), intent(in), target  :: np
 
-    ! Initialize the ad_shooter
+    ! Initialize the rad_shooter
 
-    this%bc => bc
+    this%cf => cf
     this%op => op
     this%np => np
 
-    call this%jc%init(bc, op)
+    call this%jc%init(cf, op)
     
     this%n_e = this%jc%n_e
 

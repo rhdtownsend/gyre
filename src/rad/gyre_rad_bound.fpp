@@ -23,7 +23,7 @@ module gyre_rad_bound
 
   use core_kinds
 
-  use gyre_base_coeffs
+  use gyre_coeffs
   use gyre_oscpar
   use gyre_ad_bound
 
@@ -37,11 +37,11 @@ module gyre_rad_bound
 
   type :: rad_bound_t
      private
-     class(base_coeffs_t), pointer :: bc => null()
-     type(oscpar_t), pointer       :: op => null()
-     integer, public               :: n_e
-     integer, public               :: n_i
-     integer, public               :: n_o
+     class(coeffs_t), pointer :: cf => null()
+     type(oscpar_t), pointer  :: op => null()
+     integer, public          :: n_e
+     integer, public          :: n_i
+     integer, public          :: n_o
    contains 
      private
      procedure, public :: init
@@ -63,15 +63,15 @@ module gyre_rad_bound
 
 contains
 
-  subroutine init (this, bc, op)
+  subroutine init (this, cf, op)
 
-    class(rad_bound_t), intent(out)          :: this
-    class(base_coeffs_t), intent(in), target :: bc
-    type(oscpar_t), intent(in), target       :: op
+    class(rad_bound_t), intent(out)     :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in), target  :: op
 
     ! Initialize the ad_bound
 
-    this%bc => bc
+    this%cf => cf
     this%op => op
 
     this%n_i = 1
@@ -168,7 +168,7 @@ contains
     ! Set the outer boundary conditions, assuming Dziembowski's (1971)
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere
 
-    associate(V => this%bc%V(x_o), c_1 => this%bc%V(x_o), &
+    associate(V => this%cf%V(x_o), c_1 => this%cf%V(x_o), &
               omega_c => omega)
         
       B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
@@ -201,7 +201,7 @@ contains
     ! Set the outer boundary conditions, assuming Unno et al.'s (1989,
     ! S18.1) formulation.
 
-    call eval_outer_coeffs_unno(this%bc, x_o, V_g, As, c_1)
+    call eval_outer_coeffs_unno(this%cf, x_o, V_g, As, c_1)
 
     associate(omega_c => omega)
 
@@ -240,7 +240,7 @@ contains
     ! Set the outer boundary conditions, assuming
     ! Christensen-Dalsgaard's formulation (see ADIPLS documentation)
 
-    call eval_outer_coeffs_jcd(this%bc, x_o, V_g, As, c_1)
+    call eval_outer_coeffs_jcd(this%cf, x_o, V_g, As, c_1)
 
     associate(omega_c => omega)
 

@@ -24,8 +24,7 @@ module gyre_nad_jacobian
   use core_kinds
 
   use gyre_jacobian
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   use gyre_oscpar
 
   use ISO_FORTRAN_ENV
@@ -38,9 +37,8 @@ module gyre_nad_jacobian
 
   type, extends(jacobian_t) :: nad_jacobian_t
      private
-     class(base_coeffs_t), pointer  :: bc => null()
-     class(therm_coeffs_t), pointer :: tc => null()
-     type(oscpar_t), pointer        :: op => null()
+     class(coeffs_t), pointer :: cf => null()
+     type(oscpar_t), pointer  :: op => null()
    contains
      private
      procedure, public :: init
@@ -58,17 +56,15 @@ module gyre_nad_jacobian
 
 contains
 
-  subroutine init (this, bc, tc, op)
+  subroutine init (this, cf, op)
 
-    class(nad_jacobian_t), intent(out)        :: this
-    class(base_coeffs_t), intent(in), target  :: bc
-    class(therm_coeffs_t), intent(in), target :: tc
-    type(oscpar_t), intent(in), target        :: op
+    class(nad_jacobian_t), intent(out)  :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in), target  :: op
 
     ! Initialize the nad_jacobian
 
-    this%bc => bc
-    this%tc => tc
+    this%cf => cf
     this%op => op
 
     this%n_e = 6
@@ -84,9 +80,9 @@ contains
   subroutine eval (this, omega, x, A)
 
     class(nad_jacobian_t), intent(in) :: this
-    complex(WP), intent(in)          :: omega
-    real(WP), intent(in)             :: x
-    complex(WP), intent(out)         :: A(:,:)
+    complex(WP), intent(in)           :: omega
+    real(WP), intent(in)              :: x
+    complex(WP), intent(out)          :: A(:,:)
     
     ! Evaluate the Jacobian matrix
 
@@ -114,15 +110,15 @@ contains
 
     ! Evaluate the log(x)-space Jacobian matrix
 
-    associate(V => this%bc%V(x), V_g => this%bc%V(x)/this%bc%Gamma_1(x), &
-              U => this%bc%U(x), As => this%bc%As(x), c_1 => this%bc%c_1(x), &
-              nabla_ad => this%bc%nabla_ad(x), delta => this%bc%delta(x), &
-              nabla => this%tc%nabla(x), &
-              c_rad => this%tc%c_rad(x), dc_rad => this%tc%dc_rad(x), &
-              c_thm => this%tc%c_thm(x), c_dif => this%tc%c_dif(x), &
-              c_eps_ad => this%tc%c_eps_ad(x), c_eps_S => this%tc%c_eps_S(x), &
-              kappa_ad => this%tc%kappa_ad(x), kappa_S => this%tc%kappa_S(x), &
-              l => this%op%l, omega_c => this%bc%omega_c(x, this%op%m, omega))
+    associate(V => this%cf%V(x), V_g => this%cf%V(x)/this%cf%Gamma_1(x), &
+              U => this%cf%U(x), As => this%cf%As(x), c_1 => this%cf%c_1(x), &
+              nabla_ad => this%cf%nabla_ad(x), delta => this%cf%delta(x), &
+              nabla => this%cf%nabla(x), &
+              c_rad => this%cf%c_rad(x), dc_rad => this%cf%dc_rad(x), &
+              c_thm => this%cf%c_thm(x), c_dif => this%cf%c_dif(x), &
+              c_eps_ad => this%cf%c_eps_ad(x), c_eps_S => this%cf%c_eps_S(x), &
+              kappa_ad => this%cf%kappa_ad(x), kappa_S => this%cf%kappa_S(x), &
+              l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
 
       A(1,1) = V_g - 1._WP - l
       A(1,2) = l*(l+1)/(c_1*omega_c**2) - V_g

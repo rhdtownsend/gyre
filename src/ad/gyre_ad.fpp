@@ -26,8 +26,10 @@ program gyre_ad
   use core_parallel
 
   use gyre_version
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
+  $if($MPI)
+  use gyre_coeffs_mpi
+  $endif
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -49,22 +51,21 @@ program gyre_ad
 
   ! Variables
 
-  character(LEN=:), allocatable      :: filename
-  integer                            :: unit
-  real(WP), allocatable              :: x_bc(:)
-  class(base_coeffs_t), allocatable  :: bc
-  class(therm_coeffs_t), allocatable :: tc
-  type(oscpar_t), allocatable        :: op(:)
-  type(numpar_t)                     :: np
-  type(gridpar_t), allocatable       :: shoot_gp(:)
-  type(gridpar_t), allocatable       :: recon_gp(:)
-  type(scanpar_t), allocatable       :: sp(:)
-  integer                            :: i
-  real(WP), allocatable              :: omega(:)
-  class(bvp_t), allocatable          :: bp
-  type(mode_t), allocatable          :: md(:)
-  type(mode_t), allocatable          :: md_all(:)
-  type(mode_t), allocatable          :: md_tmp(:)
+  character(LEN=:), allocatable :: filename
+  integer                       :: unit
+  real(WP), allocatable         :: x_cf(:)
+  class(coeffs_t), allocatable  :: cf
+  type(oscpar_t), allocatable   :: op(:)
+  type(numpar_t)                :: np
+  type(gridpar_t), allocatable  :: shoot_gp(:)
+  type(gridpar_t), allocatable  :: recon_gp(:)
+  type(scanpar_t), allocatable  :: sp(:)
+  integer                       :: i
+  real(WP), allocatable         :: omega(:)
+  class(bvp_t), allocatable     :: bp
+  type(mode_t), allocatable     :: md(:)
+  type(mode_t), allocatable     :: md_all(:)
+  type(mode_t), allocatable     :: md_tmp(:)
 
   ! Initialize
 
@@ -97,7 +98,7 @@ program gyre_ad
      
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-     call read_coeffs(unit, x_bc, bc, tc)
+     call read_coeffs(unit, x_cf, cf)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
@@ -107,9 +108,8 @@ program gyre_ad
   end if
 
   $if($MPI)
-  call bcast_alloc(x_bc, 0)
-  call bcast_alloc(bc, 0)
-  call bcast_alloc(tc, 0)
+  call bcast_alloc(x_cf, 0)
+  call bcast_alloc(cf, 0)
   call bcast_alloc(op, 0)
   call bcast(np, 0)
   call bcast_alloc(shoot_gp, 0)
@@ -125,7 +125,7 @@ program gyre_ad
 
      ! Set up the frequency array
 
-     call build_scan(sp, bc, op(i), shoot_gp, x_bc, omega)
+     call build_scan(sp, cf, op(i), shoot_gp, x_cf, omega)
 
      ! Store the frequency range in shoot_gp
 
@@ -142,11 +142,7 @@ program gyre_ad
         allocate(ad_bvp_t::bp)
      endif
 
-     if (ALLOCATED(tc)) then
-        call bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc, tc)
-     else
-        call bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc)
-     endif
+     call bp%init(cf, op(i), np, shoot_gp, recon_gp, x_cf)
 
      ! Find modes
 

@@ -25,11 +25,9 @@ module gyre_nad_bvp
   use core_parallel
 
   use gyre_bvp
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   $if($MPI)
-  use gyre_base_coeffs_mpi
-  use gyre_therm_coeffs_mpi
+  use gyre_coeffs_mpi
   $endif
   use gyre_oscpar
   use gyre_numpar
@@ -52,21 +50,20 @@ module gyre_nad_bvp
 
   type, extends(bvp_t) :: nad_bvp_t
      private
-     class(base_coeffs_t), allocatable  :: bc
-     class(therm_coeffs_t), allocatable :: tc
-     type(oscpar_t)                     :: op
-     type(numpar_t)                     :: np
-     type(gridpar_t), allocatable       :: shoot_gp(:)
-     type(gridpar_t), allocatable       :: recon_gp(:)
-     type(nad_shooter_t)                :: sh
-     type(nad_bound_t)                  :: bd
-     type(sysmtx_t)                     :: sm
-     real(WP), allocatable              :: x_in(:)
-     real(WP), allocatable              :: x(:)
-     real(WP)                           :: x_ad
-     integer                            :: e_norm
-     integer, public                    :: n
-     integer, public                    :: n_e
+     class(coeffs_t), allocatable :: cf
+     type(oscpar_t)               :: op
+     type(numpar_t)               :: np
+     type(gridpar_t), allocatable :: shoot_gp(:)
+     type(gridpar_t), allocatable :: recon_gp(:)
+     type(nad_shooter_t)          :: sh
+     type(nad_bound_t)            :: bd
+     type(sysmtx_t)               :: sm
+     real(WP), allocatable        :: x_in(:)
+     real(WP), allocatable        :: x(:)
+     real(WP)                     :: x_ad
+     integer                      :: e_norm
+     integer, public              :: n
+     integer, public              :: n_e
    contains 
      private
      procedure, public :: init
@@ -100,34 +97,30 @@ module gyre_nad_bvp
 
 contains
 
-  subroutine init (this, bc, op, np, shoot_gp, recon_gp, x_in, tc)
+  subroutine init (this, cf, op, np, shoot_gp, recon_gp, x_in)
 
-    class(nad_bvp_t), intent(out)               :: this
-    class(base_coeffs_t), intent(in)            :: bc
-    type(oscpar_t), intent(in)                  :: op
-    type(numpar_t), intent(in)                  :: np
-    type(gridpar_t), intent(in)                 :: shoot_gp(:)
-    type(gridpar_t), intent(in)                 :: recon_gp(:)
-    real(WP), allocatable, intent(in)           :: x_in(:)
-    class(therm_coeffs_t), intent(in), optional :: tc
+    class(nad_bvp_t), intent(out)     :: this
+    class(coeffs_t), intent(in)       :: cf
+    type(oscpar_t), intent(in)        :: op
+    type(numpar_t), intent(in)        :: np
+    type(gridpar_t), intent(in)       :: shoot_gp(:)
+    type(gridpar_t), intent(in)       :: recon_gp(:)
+    real(WP), allocatable, intent(in) :: x_in(:)
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
-
-    $ASSERT(PRESENT(tc),Missing tc)
 
     ! Initialize the nad_bvp
 
     ! Create the shooting grid
 
-    call build_grid(shoot_gp, bc, op, x_in, this%x, tc)
+    call build_grid(shoot_gp, cf, op, x_in, this%x)
 
     n = SIZE(this%x)
 
     ! Set up components
     
-    allocate(this%bc, SOURCE=bc)
-    allocate(this%tc, SOURCE=tc)
+    allocate(this%cf, SOURCE=cf)
 
     this%op = op
     this%np = np
@@ -135,8 +128,8 @@ contains
     this%shoot_gp = shoot_gp
     this%recon_gp = recon_gp
 
-    call this%sh%init(this%bc, this%tc, this%op, this%np)
-    call this%bd%init(this%bc, this%tc, this%op)
+    call this%sh%init(this%cf, this%op, this%np)
+    call this%bd%init(this%cf, this%op)
 
     call this%sm%init(n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
 
@@ -153,8 +146,7 @@ contains
 
     x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
-    call this%bc%fill_cache(x_cc)
-    call this%tc%fill_cache(x_cc)
+    call this%cf%fill_cache(x_cc)
 
     ! Finish
 
@@ -171,20 +163,18 @@ contains
     class(nad_bvp_t), intent(inout) :: this
     integer, intent(in)             :: root_rank
 
-    class(base_coeffs_t), allocatable  :: bc
-    class(therm_coeffs_t), allocatable :: tc
-    type(oscpar_t)                     :: op
-    type(numpar_t)                     :: np
-    type(gridpar_t), allocatable       :: shoot_gp(:)
-    type(gridpar_t), allocatable       :: recon_gp(:)
-    real(WP), allocatable              :: x_in(:)
+    class(coeffs_t), allocatable :: cf
+    type(oscpar_t)               :: op
+    type(numpar_t)               :: np
+    type(gridpar_t), allocatable :: shoot_gp(:)
+    type(gridpar_t), allocatable :: recon_gp(:)
+    real(WP), allocatable        :: x_in(:)
 
     ! Broadcast the bvp
 
     if(MPI_RANK == root_rank) then
 
-       call bcast_alloc(this%bc, root_rank)
-       call bcast_alloc(this%tc, root_rank)
+       call bcast_alloc(this%cf, root_rank)
       
        call bcast(this%op, root_rank)
        call bcast(this%np, root_rank)
@@ -196,8 +186,7 @@ contains
 
     else
 
-       call bcast_alloc(bc, root_rank)
-       call bcast_alloc(tc, root_rank)
+       call bcast_alloc(cf, root_rank)
 
        call bcast(op, root_rank)
        call bcast(np, root_rank)
@@ -207,7 +196,7 @@ contains
 
        call bcast_alloc(x_in, root_rank)
 
-       call this%init(bc, tc, op, np, shoot_gp, recon_gp, x_in)
+       call this%init(cf, op, np, shoot_gp, recon_gp, x_in)
 
     endif
 
@@ -235,7 +224,7 @@ contains
 
     x_ad_loop : do k = this%n,2,-1
 
-       if(this%tc%tau_thm(this%x(k))*REAL(omega)*this%np%theta_ad > 1._WP) then
+       if(this%cf%tau_thm(this%x(k))*REAL(omega)*this%np%theta_ad > 1._WP) then
           this%x_ad = this%x(k)
           exit x_ad_loop
        endif
@@ -282,16 +271,14 @@ contains
 
     ! Set up the sysmtx
 
-    call this%bc%enable_cache()
-    call this%tc%enable_cache()
+    call this%cf%enable_cache()
 
     call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
     call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
 
     call this%sh%shoot(omega, this%x, this%sm, this%x_ad)
 
-    call this%bc%disable_cache()
-    call this%tc%disable_cache()
+    call this%cf%disable_cache()
 
     ! Finish
 
@@ -329,7 +316,7 @@ contains
     this%recon_gp%omega_a = REAL(omega)
     this%recon_gp%omega_b = REAL(omega)
 
-    call build_grid(this%recon_gp, this%bc, this%op, this%x, x)
+    call build_grid(this%recon_gp, this%cf, this%op, this%x, x)
 
     if(SIZE(x) == SIZE(this%x)) then
        same_grid = ALL(x == this%x)
@@ -435,7 +422,7 @@ contains
 
     ! Initialize the mode
     
-    call md%init(this%bc, this%op, omega_root, x, y, discrim_root, n_iter, this%tc)
+    call md%init(this%cf, this%op, omega_root, x, y, discrim_root, n_iter)
 
     ! Reset the normalizing exponent
 

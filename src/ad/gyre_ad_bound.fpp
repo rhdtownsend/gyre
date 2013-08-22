@@ -23,7 +23,7 @@ module gyre_ad_bound
 
   use core_kinds
 
-  use gyre_base_coeffs
+  use gyre_coeffs
   use gyre_oscpar
 
   use ISO_FORTRAN_ENV
@@ -36,11 +36,11 @@ module gyre_ad_bound
 
   type :: ad_bound_t
      private
-     class(base_coeffs_t), pointer :: bc => null()
-     type(oscpar_t), pointer       :: op => null()
-     integer, public               :: n_e
-     integer, public               :: n_i
-     integer, public               :: n_o
+     class(coeffs_t), pointer :: cf => null()
+     type(oscpar_t), pointer  :: op => null()
+     integer, public          :: n_e
+     integer, public          :: n_i
+     integer, public          :: n_o
    contains 
      private
      procedure, public :: init
@@ -66,15 +66,15 @@ module gyre_ad_bound
 
 contains
 
-  subroutine init (this, bc, op)
+  subroutine init (this, cf, op)
 
-    class(ad_bound_t), intent(out)           :: this
-    class(base_coeffs_t), intent(in), target :: bc
-    type(oscpar_t), intent(in), target       :: op
+    class(ad_bound_t), intent(out)      :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in), target  :: op
 
     ! Initialize the ad_bound
 
-    this%bc => bc
+    this%cf => cf
     this%op => op
 
     this%n_i = 2
@@ -100,8 +100,8 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%bc%c_1(x_i), l => this%op%l, &
-              omega_c => this%bc%omega_c(x_i, this%op%m, omega))
+    associate(c_1 => this%cf%c_1(x_i), l => this%op%l, &
+              omega_c => this%cf%omega_c(x_i, this%op%m, omega))
                  
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l
@@ -162,7 +162,7 @@ contains
 
     ! Set the outer boundary conditions, assuming delta p -> 0
 
-    associate(U => this%bc%U(x_o), l => this%op%l)
+    associate(U => this%cf%U(x_o), l => this%op%l)
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
@@ -194,8 +194,8 @@ contains
     ! Set the outer boundary conditions, assuming Dziembowski's (1971)
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere
 
-    associate(V => this%bc%V(x_o), c_1 => this%bc%V(x_o), &
-              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(V => this%cf%V(x_o), c_1 => this%cf%V(x_o), &
+              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
         
       B_o(1,1) = 1 + (l*(l+1)/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
       B_o(1,2) = -1._WP
@@ -240,9 +240,9 @@ contains
     ! Set the outer boundary conditions, assuming Unno et al.'s (1989,
     ! S18.1) formulation.
 
-    call eval_outer_coeffs_unno(this%bc, x_o, V_g, As, c_1)
+    call eval_outer_coeffs_unno(this%cf, x_o, V_g, As, c_1)
 
-    associate(l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
 
       lambda = outer_wavenumber(V_g, As, c_1, omega_c, l)
       
@@ -294,9 +294,9 @@ contains
     ! Set the outer boundary conditions, assuming
     ! Christensen-Dalsgaard's formulation (see ADIPLS documentation)
 
-    call eval_outer_coeffs_jcd(this%bc, x_o, V_g, As, c_1)
+    call eval_outer_coeffs_jcd(this%cf, x_o, V_g, As, c_1)
 
-    associate(l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
 
       lambda = outer_wavenumber(V_g, As, c_1, omega_c, l)
 
@@ -330,20 +330,20 @@ contains
 
 !****
 
-  subroutine eval_outer_coeffs_unno (bc, x_o, V_g, As, c_1)
+  subroutine eval_outer_coeffs_unno (cf, x_o, V_g, As, c_1)
 
-    class(base_coeffs_t), intent(in) :: bc
-    real(WP), intent(in)             :: x_o
-    real(WP), intent(out)            :: V_g
-    real(WP), intent(out)            :: As
-    real(WP), intent(out)            :: c_1
+    class(coeffs_t), intent(in) :: cf
+    real(WP), intent(in)        :: x_o
+    real(WP), intent(out)       :: V_g
+    real(WP), intent(out)       :: As
+    real(WP), intent(out)       :: c_1
 
     ! Calculate coefficients at the outer boundary, for use in the
     ! Unno boundary prescription
 
-    V_g = bc%V(x_o)/bc%Gamma_1(x_o)
-    As = bc%As(x_o)
-    c_1 = bc%c_1(x_o)
+    V_g = cf%V(x_o)/cf%Gamma_1(x_o)
+    As = cf%As(x_o)
+    c_1 = cf%c_1(x_o)
 
     ! Finish
 
@@ -353,20 +353,20 @@ contains
     
 !****
 
-  subroutine eval_outer_coeffs_jcd (bc, x_o, V_g, As, c_1)
+  subroutine eval_outer_coeffs_jcd (cf, x_o, V_g, As, c_1)
 
-    class(base_coeffs_t), intent(in) :: bc
-    real(WP), intent(in)             :: x_o
-    real(WP), intent(out)            :: V_g
-    real(WP), intent(out)            :: As
-    real(WP), intent(out)            :: c_1
+    class(coeffs_t), intent(in) :: cf
+    real(WP), intent(in)        :: x_o
+    real(WP), intent(out)       :: V_g
+    real(WP), intent(out)       :: As
+    real(WP), intent(out)       :: c_1
 
     ! Calculate coefficients at the outer boundary, for use in the
     ! JCD boundary prescription
 
-    V_g = bc%V(x_o)/bc%Gamma_1(x_o)
-    As = bc%V(x_o)*(1._WP-1._WP/bc%Gamma_1(x_o))
-    c_1 = bc%c_1(x_o)
+    V_g = cf%V(x_o)/cf%Gamma_1(x_o)
+    As = cf%V(x_o)*(1._WP-1._WP/cf%Gamma_1(x_o))
+    c_1 = cf%c_1(x_o)
 
     ! Finish
 
@@ -463,13 +463,13 @@ contains
 
 !****
 
-  subroutine eval_cutoffs (bc, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+  subroutine eval_cutoffs (cf, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
 
-    class(base_coeffs_t), intent(in) :: bc
-    type(oscpar_t), intent(in)       :: op
-    real(WP), intent(in)             :: x_o
-    real(WP), intent(out)            :: omega_cutoff_lo
-    real(WP), intent(out)            :: omega_cutoff_hi
+    class(coeffs_t), intent(in) :: cf
+    type(oscpar_t), intent(in)  :: op
+    real(WP), intent(in)        :: x_o
+    real(WP), intent(out)       :: omega_cutoff_lo
+    real(WP), intent(out)       :: omega_cutoff_hi
 
     real(WP) :: V_g
     real(WP) :: As
@@ -485,9 +485,9 @@ contains
     case ('DZIEM')
        $ABORT(Cutoff frequencies are undefined for DZIEM outer_bound_type)
     case ('UNNO')
-       call eval_outer_coeffs_unno(bc, x_o, V_g, As, c_1)
+       call eval_outer_coeffs_unno(cf, x_o, V_g, As, c_1)
     case('JCD')
-       call eval_outer_coeffs_jcd(bc, x_o, V_g, As, c_1)
+       call eval_outer_coeffs_jcd(cf, x_o, V_g, As, c_1)
     case default
        $ABORT(Invalid outer_bound_type)
     end select
@@ -496,8 +496,8 @@ contains
 
     call eval_cutoffs_from_coeffs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
-    omega_cutoff_lo = REAL(bc%omega(x_o, op%m, CMPLX(omega_c_cutoff_lo, KIND=WP)))
-    omega_cutoff_hi = REAL(bc%omega(x_o, op%m, CMPLX(omega_c_cutoff_hi, KIND=WP)))
+    omega_cutoff_lo = REAL(cf%omega(x_o, op%m, CMPLX(omega_c_cutoff_lo, KIND=WP)))
+    omega_cutoff_hi = REAL(cf%omega(x_o, op%m, CMPLX(omega_c_cutoff_hi, KIND=WP)))
 
     ! Finish
 

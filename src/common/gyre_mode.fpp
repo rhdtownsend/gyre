@@ -25,11 +25,9 @@ module gyre_mode
   use core_constants
   use core_parallel
 
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   $if($MPI)
-  use gyre_base_coeffs_mpi
-  use gyre_therm_coeffs_mpi
+  use gyre_coeffs_mpi
   $endif
   use gyre_ext_arith
   use gyre_oscpar
@@ -44,15 +42,14 @@ module gyre_mode
   ! Derived-type definitions
 
   type :: mode_t
-     class(base_coeffs_t), allocatable  :: bc
-     class(therm_coeffs_t), allocatable :: tc
-     type(oscpar_t)                     :: op
-     type(ext_complex_t)                :: discrim
-     real(WP), allocatable              :: x(:)
-     complex(WP), allocatable           :: y(:,:)
-     complex(WP)                        :: omega
-     integer                            :: n
-     integer                            :: n_iter
+     class(coeffs_t), allocatable :: cf
+     type(oscpar_t)               :: op
+     type(ext_complex_t)          :: discrim
+     real(WP), allocatable        :: x(:)
+     complex(WP), allocatable     :: y(:,:)
+     complex(WP)                  :: omega
+     integer                      :: n
+     integer                      :: n_iter
    contains
      private
      procedure, public :: init
@@ -90,7 +87,7 @@ module gyre_mode
   $if($MPI)
 
   interface bcast
-     module procedure bcast_ef
+     module procedure bcast_md
   end interface bcast
 
   $endif
@@ -108,17 +105,16 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, bc, op, omega, x, y, discrim, n_iter, tc)
+  subroutine init (this, cf, op, omega, x, y, discrim, n_iter)
 
-    class(mode_t), intent(out)                  :: this
-    class(base_coeffs_t), intent(in)            :: bc
-    type(oscpar_t), intent(in)                  :: op
-    complex(WP), intent(in)                     :: omega
-    real(WP), intent(in)                        :: x(:)
-    complex(WP), intent(in)                     :: y(:,:)
-    type(ext_complex_t), intent(in)             :: discrim
-    integer, intent(in)                         :: n_iter
-    class(therm_coeffs_t), optional, intent(in) :: tc
+    class(mode_t), intent(out)      :: this
+    class(coeffs_t), intent(in)     :: cf
+    type(oscpar_t), intent(in)      :: op
+    complex(WP), intent(in)         :: omega
+    real(WP), intent(in)            :: x(:)
+    complex(WP), intent(in)         :: y(:,:)
+    type(ext_complex_t), intent(in) :: discrim
+    integer, intent(in)             :: n_iter
 
     real(WP) :: phase
 
@@ -127,8 +123,7 @@ contains
 
     ! Initialize the mode
 
-    allocate(this%bc, SOURCE=bc)
-    if(PRESENT(tc)) allocate(this%tc, SOURCE=tc)
+    allocate(this%cf, SOURCE=cf)
 
     this%op = op
 
@@ -150,13 +145,8 @@ contains
 
     ! Set up the coefficient caches
 
-    call this%bc%fill_cache(x)
-    call this%bc%enable_cache()
-
-    if(ALLOCATED(this%tc)) then
-       call this%tc%fill_cache(x)
-       call this%tc%enable_cache()
-    endif
+    call this%cf%fill_cache(x)
+    call this%cf%enable_cache()
 
     ! Finish
 
@@ -174,8 +164,7 @@ contains
 
     ! Finalize the mode
 
-    call this%bc%final()
-    if(ALLOCATED(this%tc)) call this%tc%final()
+    call this%cf%final()
 
     deallocate(this%x)
     deallocate(this%y)
@@ -190,15 +179,14 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_ef (this, root_rank)
+  subroutine bcast_md (this, root_rank)
 
     class(mode_t), intent(inout) :: this
     integer, intent(in)          :: root_rank
 
     ! Broadcast the mode
 
-    call bcast_alloc(this%bc, root_rank)
-    call bcast_alloc(this%tc, root_rank)
+    call bcast_alloc(this%cf, root_rank)
 
     call bcast(this%op, root_rank)
 
@@ -210,7 +198,7 @@ contains
     call bcast(this%n, root_rank)
     call bcast(this%n_iter, root_rank)
 
-  end subroutine bcast_ef
+  end subroutine bcast_md
 
   $endif
 
@@ -382,7 +370,7 @@ contains
 
     ! Calculate the frequency
 
-    freq = this%omega*freq_scale(this%bc, this%op, this%x(this%n), freq_units)
+    freq = this%omega*freq_scale(this%cf, this%op, this%x(this%n), freq_units)
 
     ! Finish
     
@@ -434,7 +422,7 @@ contains
     ! Calculate the radial displacement perturbation in units of
     ! R_star
 
-    associate (c_1 => this%bc%c_1(this%x), l => this%op%l, omega => this%omega)
+    associate (c_1 => this%cf%c_1(this%x), l => this%op%l, omega => this%omega)
 
       if(l /= 0) then
 
@@ -476,7 +464,7 @@ contains
     ! Calculate the Takata Y_1 function; this is based on eqn. 69 of
     ! Takata (2006, PASJ, 58, 839)
 
-    associate (J => 1._WP - this%bc%U(this%x)/3._WP)
+    associate (J => 1._WP - this%cf%U(this%x)/3._WP)
 
       Yt_1 = J*this%y(1,:) + (this%y(3,:) - this%y(4,:))/3._WP
       
@@ -514,7 +502,7 @@ contains
     ! Calculate the Eulerian gravitational potential perturbation in units of
     ! G M_star / R_star
 
-    associate (c_1 => this%bc%c_1(this%x), l => this%op%l)
+    associate (c_1 => this%cf%c_1(this%x), l => this%op%l)
 
       phip = this%y(3,:)*this%x**l/c_1
 
@@ -536,7 +524,7 @@ contains
     ! Calculate the Eulerian gravity perturbation in units of G M_star
     ! / R_star
 
-    associate (c_1 => this%bc%c_1(this%x), l => this%op%l)
+    associate (c_1 => this%cf%c_1(this%x), l => this%op%l)
 
       if(l /= 1) then
 
@@ -600,10 +588,10 @@ contains
     ! Calculate the Lagrangian specific entropy perturbation in units
     ! of c_p, from the energy equation
 
-    associate(V => this%bc%V(this%x), c_1 => this%bc%c_1(this%x), &
-              nabla_ad => this%bc%nabla_ad(this%x), nabla => this%tc%nabla(this%x), &
-              c_rad => this%tc%c_rad(this%x), dc_rad => this%tc%dc_rad(this%x), c_thm => this%tc%c_thm(this%x), &
-              c_eps_ad => this%tc%c_eps_ad(this%x), c_eps_S => this%tc%c_eps_S(this%x), &              
+    associate(V => this%cf%V(this%x), c_1 => this%cf%c_1(this%x), &
+              nabla_ad => this%cf%nabla_ad(this%x), nabla => this%cf%nabla(this%x), &
+              c_rad => this%cf%c_rad(this%x), dc_rad => this%cf%dc_rad(this%x), c_thm => this%cf%c_thm(this%x), &
+              c_eps_ad => this%cf%c_eps_ad(this%x), c_eps_S => this%cf%c_eps_S(this%x), &              
               l => this%op%l, omega => this%omega)
 
       where(this%x /= 0)
@@ -711,10 +699,10 @@ contains
     ! Calculate the Lagrangian luminosity perturbation in units of L_star, 
     ! from the radiative diffusion equation
 
-    associate(V => this%bc%V(this%x), U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
-              nabla_ad => this%bc%nabla_ad(this%x), nabla => this%tc%nabla(this%x), &
-              c_dif => this%tc%c_dif(this%x), c_rad => this%tc%c_rad(this%x), &
-              kappa_S => this%tc%kappa_S(this%x), &
+    associate(V => this%cf%V(this%x), U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
+              nabla_ad => this%cf%nabla_ad(this%x), nabla => this%cf%nabla(this%x), &
+              c_dif => this%cf%c_dif(this%x), c_rad => this%cf%c_rad(this%x), &
+              kappa_S => this%cf%kappa_S(this%x), &
               l => this%op%l, omega => this%omega)
 
       A_5(1,:) = V*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
@@ -791,7 +779,7 @@ contains
 
     ! Calculate the Lagrangian pressure perturbation in units of p
 
-    associate (V => this%bc%V(this%x), pi_c => this%bc%pi_c(), l => this%op%l)
+    associate (V => this%cf%V(this%x), pi_c => this%cf%pi_c(), l => this%op%l)
 
       if(l > 0) then
 
@@ -828,7 +816,7 @@ contains
 
     ! Calculate the Lagrangian density perturbation in units of rho
 
-    associate (Gamma_1 => this%bc%Gamma_1(this%x))
+    associate (Gamma_1 => this%cf%Gamma_1(this%x))
 
       delrho = this%delp()/Gamma_1 - this%delS()
 
@@ -849,7 +837,7 @@ contains
 
     ! Calculate the Lagrangian temperature perturbation in units of T
 
-    associate (nabla_ad => this%bc%nabla_ad(this%x))
+    associate (nabla_ad => this%cf%nabla_ad(this%x))
 
       delT = nabla_ad*this%delp() + this%delS()
 
@@ -877,7 +865,7 @@ contains
     xi_r = this%xi_r()
     xi_h = this%xi_h()
 
-    associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+    associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
               l => this%op%l)
       dE_dx = 4._WP*PI*(ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*this%x**2/c_1
     end associate
@@ -895,15 +883,13 @@ contains
     class(mode_t), intent(in) :: this
     real(WP)                  :: dW_dx(this%n)
 
-    $ASSERT(ALLOCATED(this%tc),No therm_coeffs data)
-
     ! Calculate the differential work in units of G M_star^2/R_star
     ! t_dyn/t_KH = t_dyn L_*.  The entropy-based expression for the
     ! work is used (cf. Unno et al.  1989, eqn. 25.9); the additional
     ! factor of 4 pi in the denominator comes from averaging over
     ! solid angle
 
-    associate(c_thm => this%tc%c_thm(this%x))
+    associate(c_thm => this%cf%c_thm(this%x))
 
       dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI)
 
@@ -924,8 +910,8 @@ contains
 
     ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
-    associate(x => this%x, V_g => this%bc%V(this%x)/this%bc%Gamma_1(this%x), &
-              As => this%bc%As(this%x), c_1 => this%bc%c_1(this%x), &
+    associate(x => this%x, V_g => this%cf%V(this%x)/this%cf%Gamma_1(this%x), &
+              As => this%cf%As(this%x), c_1 => this%cf%c_1(this%x), &
               l => this%op%l, omega => REAL(this%omega))
 
       prop_type = MERGE(1, 0, c_1*omega**2 > As) + &
@@ -954,7 +940,7 @@ contains
     xi_r = this%xi_r()
     xi_h = this%xi_h()
 
-    associate(x => this%x, U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+    associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
               l => this%op%l)
 
       K = (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*ABS(xi_r*xi_h))*U*x**2/c_1
@@ -984,8 +970,8 @@ contains
     xi_r = this%xi_r()
     xi_h = this%xi_h()
 
-    associate(x => this%x, U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
-              Omega_rot => this%bc%Omega_rot(this%x), l => this%op%l)
+    associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
+              Omega_rot => this%cf%Omega_rot(this%x), l => this%op%l)
 
       beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*ABS(xi_r*xi_h))*U*x**2/c_1) / &
              integrate(x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
@@ -1093,7 +1079,7 @@ contains
 
     do i = this%n-1,1,-1
 
-       associate(tau_thm => this%tc%tau_thm(this%x(i)))
+       associate(tau_thm => this%cf%tau_thm(this%x(i)))
 
          if(REAL(this%omega)*tau_thm/TWOPI > 1._WP) then
             i_trans = i

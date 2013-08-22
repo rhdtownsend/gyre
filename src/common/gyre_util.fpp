@@ -26,10 +26,10 @@ module gyre_util
   use core_parallel
   use core_memory
 
-  use gyre_base_coeffs
-  use gyre_evol_base_coeffs
-  use gyre_poly_base_coeffs
-  use gyre_hom_base_coeffs
+  use gyre_coeffs
+  use gyre_evol_coeffs
+  use gyre_poly_coeffs
+  use gyre_hom_coeffs
   use gyre_oscpar
   use gyre_ad_bound
 
@@ -173,26 +173,26 @@ contains
 
 !****
 
-  function freq_scale (bc, op, x_o, freq_units)
+  function freq_scale (cf, op, x_o, freq_units)
 
-    class(base_coeffs_t), intent(in) :: bc
-    type(oscpar_t), intent(in)       :: op
-    real(WP), intent(in)             :: x_o
-    character(LEN=*), intent(in)     :: freq_units
-    real(WP)                         :: freq_scale
+    class(coeffs_t), intent(in)  :: cf
+    type(oscpar_t), intent(in)   :: op
+    real(WP), intent(in)         :: x_o
+    character(LEN=*), intent(in) :: freq_units
+    real(WP)                     :: freq_scale
 
     ! Calculate the scale factor to convert a dimensionless angular
     ! frequency to a dimensioned frequency
 
-    select type (bc)
-    class is (evol_base_coeffs_t)
-       freq_scale = evol_freq_scale(bc, op, x_o, freq_units)
-    class is (poly_base_coeffs_t)
+    select type (cf)
+    class is (evol_coeffs_t)
+       freq_scale = evol_freq_scale(cf, op, x_o, freq_units)
+    class is (poly_coeffs_t)
        freq_scale = poly_freq_scale(freq_units)
-    class is (hom_base_coeffs_t)
+    class is (hom_coeffs_t)
        freq_scale = hom_freq_scale(freq_units)
     class default
-       $ABORT(Invalid bc type)
+       $ABORT(Invalid cf type)
     end select
 
     ! Finish
@@ -201,13 +201,13 @@ contains
 
   contains
 
-    function evol_freq_scale (bc, op, x_o, freq_units) result (freq_scale)
+    function evol_freq_scale (ec, op, x_o, freq_units) result (freq_scale)
 
-      class(evol_base_coeffs_t), intent(in) :: bc
-      type(oscpar_t), intent(in)            :: op
-      real(WP), intent(in)                  :: x_o
-      character(LEN=*), intent(in)          :: freq_units
-      real(WP)                              :: freq_scale
+      class(evol_coeffs_t), intent(in) :: ec
+      type(oscpar_t), intent(in)       :: op
+      real(WP), intent(in)             :: x_o
+      character(LEN=*), intent(in)     :: freq_units
+      real(WP)                         :: freq_scale
 
       real(WP) :: omega_cutoff_lo
       real(WP) :: omega_cutoff_hi
@@ -219,16 +219,16 @@ contains
       case('NONE')
          freq_scale = 1._WP
       case('HZ')
-         freq_scale = 1._WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
+         freq_scale = 1._WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
       case('UHZ')
-         freq_scale = 1.E6_WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
       case('PER_DAY')
-         freq_scale = 86400._WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
+         freq_scale = 86400._WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
       case('ACOUSTIC_CUTOFF')
-         call eval_cutoffs(bc, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+         call eval_cutoffs(ec, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
          freq_scale = 1._WP/omega_cutoff_hi
       case('GRAVITY_CUTOFF')
-         call eval_cutoffs(bc, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+         call eval_cutoffs(ec, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
          freq_scale = 1._WP/omega_cutoff_lo
       case default
          $ABORT(Invalid freq_units)

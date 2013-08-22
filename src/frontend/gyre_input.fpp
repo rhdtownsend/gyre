@@ -26,7 +26,6 @@ module gyre_input
   use core_order
   use core_parallel
 
-  use gyre_base_coeffs
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -78,11 +77,12 @@ contains
 
 !****
 
-  subroutine read_coeffs (unit, x_bc, bc, tc)
+  subroutine read_coeffs (unit, x_bc, cf)
 
-    use gyre_base_coeffs
-    use gyre_hom_base_coeffs
-    use gyre_therm_coeffs
+    use gyre_coeffs
+    use gyre_evol_coeffs
+    use gyre_poly_coeffs
+    use gyre_hom_coeffs
     use gyre_mesa_file
     use gyre_fgong_file
     use gyre_osc_file
@@ -92,14 +92,12 @@ contains
     use gyre_poly_file
     $endif
 
-    integer, intent(in)                                         :: unit
-    real(WP), allocatable, intent(out)                          :: x_bc(:)
+    integer, intent(in)                                   :: unit
+    real(WP), allocatable, intent(out)                    :: x_bc(:)
     $if($GFORTRAN_PR56218)
-    class(base_coeffs_t), allocatable, intent(inout)            :: bc
-    class(therm_coeffs_t), allocatable, intent(inout), optional :: tc
+    class(coeffs_t), allocatable, intent(inout)           :: cf
     $else
-    class(base_coeffs_t), allocatable, intent(out)              :: bc
-    class(therm_coeffs_t), allocatable, intent(out), optional   :: tc
+    class(coeffs_t), allocatable, intent(out), optional   :: cf
     $endif
 
     character(LEN=256)          :: coeffs_type
@@ -109,6 +107,9 @@ contains
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: G
     real(WP)                    :: Gamma_1
+    type(evol_coeffs_t)         :: ec
+    type(poly_coeffs_t)         :: pc
+    type(hom_coeffs_t)          :: hc
 
     namelist /coeffs/ coeffs_type, file_format, data_format, deriv_type, file, G, Gamma_1
 
@@ -131,42 +132,52 @@ contains
 
     select case (coeffs_type)
     case ('EVOL')
+
        select case (file_format)
        case ('MESA')
-          call read_mesa_file(file, G, deriv_type, bc, tc, x=x_bc)
+          call read_mesa_file(file, G, deriv_type, ec, x=x_bc)
        case('B3')
           $if($HDF5)
-          call read_b3_file(file, G, deriv_type, bc, tc, x=x_bc)
+          call read_b3_file(file, G, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
        case ('GSM')
           $if($HDF5)
-          call read_gsm_file(file, G, deriv_type, bc, tc, x=x_bc)
+          call read_gsm_file(file, G, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read GSM-format files)
           $endif
        case ('OSC')
-          call read_osc_file(file, G, deriv_type, data_format, bc, tc, x=x_bc)
+          call read_osc_file(file, G, deriv_type, data_format, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_file(file, G, deriv_type, data_format, bc, x=x_bc) 
+          call read_fgong_file(file, G, deriv_type, data_format, ec, x=x_bc) 
        case default
           $ABORT(Invalid file_format)
        end select
+
+       allocate(cf, SOURCE=ec)
+       
     case ('POLY')
+
        $if($HDF5)
-       call read_poly_file(file, deriv_type, bc, x=x_bc)
+       call read_poly_file(file, deriv_type, pc, x=x_bc)
        $else
        $ABORT(No HDF5 support, therefore cannot read POLY files)
        $endif
+
+       allocate(cf, SOURCE=pc)
+
     case ('HOM')
-       allocate(hom_base_coeffs_t::bc)
-       select type (bc)
-       type is (hom_base_coeffs_t)
-          call bc%init(Gamma_1)
-       end select
+
+       call hc%init(Gamma_1)
+
+       allocate(cf, SOURCE=hc)
+
     case default
+
        $ABORT(Invalid coeffs_type)
+
     end select
 
     ! Finish

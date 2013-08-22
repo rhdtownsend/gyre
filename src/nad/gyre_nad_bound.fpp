@@ -23,8 +23,7 @@ module gyre_nad_bound
 
   use core_kinds
 
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   use gyre_oscpar
   use gyre_ad_bound
 
@@ -38,12 +37,11 @@ module gyre_nad_bound
 
   type :: nad_bound_t
      private
-     class(base_coeffs_t), pointer  :: bc => null()
-     class(therm_coeffs_t), pointer :: tc => null()
-     type(oscpar_t), pointer        :: op => null()
-     integer, public                :: n_e
-     integer, public                :: n_i
-     integer, public                :: n_o
+     class(coeffs_t), pointer :: cf => null()
+     type(oscpar_t), pointer  :: op => null()
+     integer, public          :: n_e
+     integer, public          :: n_i
+     integer, public          :: n_o
    contains 
      private
      procedure, public :: init
@@ -65,17 +63,15 @@ module gyre_nad_bound
 
 contains
 
-  subroutine init (this, bc, tc, op)
+  subroutine init (this, cf, op)
 
-    class(nad_bound_t), intent(out)           :: this
-    class(base_coeffs_t), intent(in), target  :: bc
-    class(therm_coeffs_t), intent(in), target :: tc
-    type(oscpar_t), intent(in), target        :: op
+    class(nad_bound_t), intent(out)     :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in), target  :: op
 
     ! Initialize the nad_bound
 
-    this%bc => bc
-    this%tc => tc
+    this%cf => cf
     this%op => op
 
     this%n_i = 3
@@ -101,8 +97,8 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%bc%c_1(x_i), l => this%op%l, &
-              omega_c => this%bc%omega_c(x_i, this%op%m, omega))
+    associate(c_1 => this%cf%c_1(x_i), l => this%op%l, &
+              omega_c => this%cf%omega_c(x_i, this%op%m, omega))
 
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l
@@ -176,8 +172,8 @@ contains
     ! term in the gravitational bc is required for cases where the
     ! surface density remains finite (see Cox 1980, eqn. 17.71)
 
-    associate(V => this%bc%V(x_o), U => this%bc%U(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(V => this%cf%V(x_o), U => this%cf%U(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
@@ -220,8 +216,8 @@ contains
     ! Set the outer boundary conditions, assuming Dziembowski's (1971)
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere.
 
-    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(V => this%cf%V(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
 
       B_o(1,1) = 1 + (l*(l+1)/omega_c**2 - 4 - omega_c**2)/V
       B_o(1,2) = -1._WP
@@ -277,10 +273,10 @@ contains
     ! Set the outer boundary conditions, assuming Unno et al.'s (1989,
     ! S18.1) formulation.
 
-    call eval_outer_coeffs_unno(this%bc, x_o, V_g, As, c_1)
+    call eval_outer_coeffs_unno(this%cf, x_o, V_g, As, c_1)
 
-    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(V => this%cf%V(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
 
       lambda = outer_wavenumber(V_g, As, c_1, omega_c, l)
       
@@ -343,10 +339,10 @@ contains
     ! Set the outer boundary conditions, assuming
     ! Christensen-Dalsgaard's formulation (see ADIPLS documentation)
 
-    call eval_outer_coeffs_jcd(this%bc, x_o, V_g, As, c_1)
+    call eval_outer_coeffs_jcd(this%cf, x_o, V_g, As, c_1)
 
-    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(V => this%cf%V(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
 
       lambda = outer_wavenumber(V_g, As, c_1, omega_c, l)
 
