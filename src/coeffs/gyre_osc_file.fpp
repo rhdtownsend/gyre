@@ -24,10 +24,8 @@ module gyre_osc_file
   use core_kinds
   use core_constants
 
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
-  use gyre_evol_base_coeffs
-  use gyre_evol_therm_coeffs
+  use gyre_coeffs
+  use gyre_evol_coeffs
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -46,15 +44,14 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_file (file, G, deriv_type, data_format, bc, tc, x)
+  subroutine read_osc_file (file, G, deriv_type, data_format, ec, x)
 
-    character(LEN=*), intent(in)                              :: file
-    real(WP), intent(in)                                      :: G
-    character(LEN=*), intent(in)                              :: deriv_type
-    character(LEN=*), intent(in)                              :: data_format
-    class(base_coeffs_t), allocatable, intent(out)            :: bc
-    class(therm_coeffs_t), allocatable, optional, intent(out) :: tc
-    real(WP), allocatable, optional, intent(out)              :: x(:)
+    character(LEN=*), intent(in)                 :: file
+    real(WP), intent(in)                         :: G
+    character(LEN=*), intent(in)                 :: deriv_type
+    character(LEN=*), intent(in)                 :: data_format
+    class(evol_coeffs_t), intent(out)            :: ec
+    real(WP), allocatable, optional, intent(out) :: x(:)
 
     character(LEN=:), allocatable :: data_format_
     integer                       :: unit
@@ -172,37 +169,13 @@ contains
        write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
-    ! Initialize the base_coeffs
+    ! Initialize the evol_coeffs
 
-    allocate(evol_base_coeffs_t::bc)
-
-    select type (bc)
-    type is (evol_base_coeffs_t)
-       call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, &
-                    Omega_rot, deriv_type, add_center)
-    class default
-       $ABORT(Invalid bc type)
-    end select
-
-    ! Initialize the therm_coeffs
-
-    if(PRESENT(tc)) then
-
-       allocate(evol_therm_coeffs_t::tc)
-
-       select type (tc)
-       type is (evol_therm_coeffs_t)
-          call tc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                       Gamma_1, nabla_ad, delta, nabla,  &
-                       kappa, kappa_rho, kappa_T, &
-                       epsilon_, epsilon_rho, epsilon_T, &
-                       deriv_type, add_center)
-       class default
-          $ABORT(Invalid tc type)
-       end select
-
-    endif
+    call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                 N2, Gamma_1, nabla_ad, delta, Omega_rot, &
+                 nabla, kappa, kappa_rho, kappa_T, &
+                 epsilon_, epsilon_rho, epsilon_T, &
+                 deriv_type, add_center)
 
     ! Set up the grid
 
