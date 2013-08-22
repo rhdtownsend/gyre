@@ -913,7 +913,7 @@ contains
     ! Calculate the I_0 integral (eqn. 42 of Takata 2006, multiplied
     ! by x^[2-l]). This should vanish for radial modes
 
-    associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+    associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
               omega => this%omega, x => this%x, y => this%y)
 
       I_0 = x**3*(U*y(1,:) + y(4,:))/c_1
@@ -936,7 +936,7 @@ contains
     ! Calculate the I_1 integral (eqn. 43 of Takata 2006, multiplied
     ! by x^[2-l]). This should vanish for dipole modes
 
-    associate(U => this%bc%U(this%x), c_1 => this%bc%c_1(this%x), &
+    associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
               omega => this%omega, x => this%x, y => this%y)
 
       I_1 = x**4*(c_1*omega**2*U*y(1,:) - U*y(2,:) + &
