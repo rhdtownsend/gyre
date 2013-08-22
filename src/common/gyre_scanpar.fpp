@@ -16,6 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_parallel.inc'
 
 module gyre_scanpar
 
@@ -61,6 +62,7 @@ module gyre_scanpar
   public :: scanpar_t
   $if($MPI)
   public :: bcast
+  public :: bcast_alloc
   $endif
 
   ! Procedures
@@ -71,11 +73,11 @@ contains
 
   $define $BCAST $sub
 
-  $local $RANK $0
+  $local $RANK $1
 
   subroutine bcast_sp_$RANK (sp, root_rank)
 
-    type(scanpar_t), intent(inout) :: np$ARRAY_SPEC($RANK)
+    type(scanpar_t), intent(inout) :: sp$ARRAY_SPEC($RANK)
     integer, intent(in)            :: root_rank
 
     ! Broadcast the scanpar

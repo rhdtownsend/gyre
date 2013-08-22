@@ -60,6 +60,7 @@ module gyre_oscpar
   public :: oscpar_t
   $if($MPI)
   public :: bcast
+  public :: bcast_alloc
   $endif
 
   ! Procedures
