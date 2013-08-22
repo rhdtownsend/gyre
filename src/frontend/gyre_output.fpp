@@ -196,7 +196,7 @@ contains
           call wr%write('omega_im', [(md(i)%omega_im(), i=1,n_md)])
        case default
           if(n_md >= 1) then
-             select type (cf => md(1)%bc)
+             select type (cf => md(1)%cf)
              type is (evol_coeffs_t)
                 call write_summary_evol(wr, cf, items(j))
              type is (poly_coeffs_t)
