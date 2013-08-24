@@ -13,6 +13,6 @@ LDFLAGS=`mesasdk_hdf5_link`
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../common:../ivp:../bvp:../coeffs:../matrix:../frontend:../rad
+SUBDIRS=../extern/core:../common:../ivp:../bvp:../coeffs:../matrix:../ext:../frontend:../rad
 
 include ../Make.inc
