@@ -22,7 +22,7 @@ module gyre_ext_arith
 
   ! Uses
 
-  use gyre_ext_arith_real
-  use gyre_ext_arith_complex
+  use gyre_ext_real
+  use gyre_ext_complex
 
 end module gyre_ext_arith

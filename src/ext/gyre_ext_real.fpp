@@ -1,4 +1,4 @@
-! Module   : gyre_ext_arith_real
+! Module   : gyre_ext_real
 ! Purpose  : extented-range arithmetic (real)
 !
 ! Copyright 2013 Rich Townsend
@@ -18,7 +18,7 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_ext_arith_real
+module gyre_ext_real
 
   ! Uses
 
@@ -1024,4 +1024,4 @@ contains
 
   end subroutine split_r
 
-end module gyre_ext_arith_real
+end module gyre_ext_real

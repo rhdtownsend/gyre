@@ -1,4 +1,4 @@
-! Module   : gyre_ext_arith_complex
+! Module   : gyre_ext_complex
 ! Purpose  : extented-range arithmetic (complex)
 !
 ! Copyright 2013 Rich Townsend
@@ -18,14 +18,14 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_ext_arith_complex
+module gyre_ext_complex
 
   ! Uses
 
   use core_kinds
   use core_parallel
 
-  use gyre_ext_arith_real
+  use gyre_ext_real
 
   use ISO_FORTRAN_ENV
 
@@ -1124,4 +1124,4 @@ contains
 
   end subroutine split_c
 
-end module gyre_ext_arith_complex
+end module gyre_ext_complex
