@@ -365,7 +365,8 @@ contains
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
     type(ext_complex_t)      :: discrim_root
-
+    type(ext_real_t)         :: chi 
+    
     $CHECK_BOUNDS(SIZE(omega),2)
     
     if(PRESENT(discrim)) then
@@ -407,11 +408,11 @@ contains
     n_iter = this%np%n_iter_max
 
     if(use_real_) then
-       omega_root = df%root(REAL(omega_a), REAL(omega_b), 0._WP, &
-                            f_x_a=real(discrim_a), f_x_b=real(discrim_b), n_iter=n_iter)
+       omega_root = real(df%root(ext_real(omega_a), ext_real(omega_b), ext_real(0._WP), &
+                            f_ex_a=ext_real(discrim_a), f_ex_b=ext_real(discrim_b), n_iter=n_iter))
     else
-       omega_root = df%root(omega_a, omega_b, 0._WP, &
-                            f_z_a=cmplx(discrim_a), f_z_b=cmplx(discrim_b), n_iter=n_iter)
+       omega_root = cmplx(df%root(ext_complex(omega_a), ext_complex(omega_b), ext_real(0._WP), &
+                            f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
     endif
 
     $ASSERT(n_iter <= this%np%n_iter_max,Too many iterations)
@@ -422,7 +423,9 @@ contains
 
     ! Initialize the mode
     
-    call md%init(this%cf, this%op, omega_root, x, y, discrim_root, n_iter)
+    chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
+    
+    call md%init(this%cf, this%op, omega_root, x, y, chi, n_iter)
 
     ! Reset the normalizing exponent
 
