@@ -44,7 +44,7 @@ module gyre_mode
   type :: mode_t
      class(coeffs_t), allocatable :: cf
      type(oscpar_t)               :: op
-     type(ext_complex_t)          :: discrim
+     type(ext_real_t)             :: chi
      real(WP), allocatable        :: x(:)
      complex(WP), allocatable     :: y(:,:)
      complex(WP)                  :: omega
@@ -107,16 +107,16 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, cf, op, omega, x, y, discrim, n_iter)
+  subroutine init (this, cf, op, omega, x, y, chi, n_iter)
 
-    class(mode_t), intent(out)      :: this
-    class(coeffs_t), intent(in)     :: cf
-    type(oscpar_t), intent(in)      :: op
-    complex(WP), intent(in)         :: omega
-    real(WP), intent(in)            :: x(:)
-    complex(WP), intent(in)         :: y(:,:)
-    type(ext_complex_t), intent(in) :: discrim
-    integer, intent(in)             :: n_iter
+    class(mode_t), intent(out)   :: this
+    class(coeffs_t), intent(in)  :: cf
+    type(oscpar_t), intent(in)   :: op
+    complex(WP), intent(in)      :: omega
+    real(WP), intent(in)         :: x(:)
+    complex(WP), intent(in)      :: y(:,:)
+    type(ext_real_t), intent(in) :: chi
+    integer, intent(in)          :: n_iter
 
     real(WP) :: phase
 
@@ -129,7 +129,7 @@ contains
 
     this%op = op
 
-    this%discrim = discrim
+    this%chi = chi
 
     this%x = x
     this%y = y
