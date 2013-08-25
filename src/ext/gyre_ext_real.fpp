@@ -170,6 +170,14 @@ module gyre_ext_real
      module procedure exponent_er
   end interface exponent
 
+  interface max
+     module procedure max_er
+  end interface max
+
+  interface min
+     module procedure min_er
+  end interface min
+
   interface scale
      module procedure scale_er
   end interface scale
@@ -196,6 +204,8 @@ module gyre_ext_real
   public :: exp
   public :: fraction
   public :: exponent
+  public :: max
+  public :: min
   public :: scale
 
   ! Procedures
@@ -469,16 +479,30 @@ contains
 
     ! Apply the op plus operator
 
-    if(this%e > that%e) then
-       f = this%f + that%f*2**(that%e - this%e)
-       e = this%e
-    else
-       f = this%f*2**(that%e - this%e) + that%e
-       e = that%e
-    endif
+    if(this%f == 0._WP) then
 
-    call split_r(f, ex%f, ex%e)
-    ex = scale(ex, e)
+       ex%f = that%f
+       ex%e = that%e
+
+    elseif(that%f == 0._WP) then
+
+       ex%f = this%f
+       ex%e = this%e
+
+    else
+
+       if(this%e > that%e) then
+          f = this%f + that%f*RADIX_WP**(that%e - this%e)
+          e = this%e
+       else
+          f = this%f*RADIX_WP**(this%e - that%e) + that%f
+          e = that%e
+       endif
+
+       call split_r(f, ex%f, ex%e)
+       ex = scale(ex, e)
+
+    endif
 
     ! Finish
 
@@ -517,16 +541,30 @@ contains
 
     ! Apply the minus operator
 
-    if(this%e > that%e) then
-       f = this%f - that%f*2**(that%e - this%e)
-       e = this%e
-    else
-       f = this%f*2**(that%e - this%e) - that%e
-       e = that%e
-    endif
+    if(this%f == 0._WP) then
+       
+       ex%f = -that%f
+       ex%e = that%e
 
-    call split_r(f, ex%f, ex%e)
-    ex = scale(ex, e)
+    elseif(that%f == 0._WP) then
+
+       ex%f = this%f
+       ex%e = this%e
+
+    else
+
+       if(this%e > that%e) then
+          f = this%f - that%f*RADIX_WP**(that%e - this%e)
+          e = this%e
+       else
+          f = this%f*RADIX_WP**(this%e - that%e) - that%f
+          e = that%e
+       endif
+       
+       call split_r(f, ex%f, ex%e)
+       ex = scale(ex, e)
+
+    endif
 
     ! Finish
 
@@ -547,11 +585,19 @@ contains
 
     ! Apply the times operator
 
-    f = this%f*that%f
-    e = this%e + that%e
+    if(this%f == 0._WP .OR. that%f == 0._WP) then
 
-    call split_r(f, ex%f, ex%e)
-    ex = scale(ex, e)
+       ex = ext_real(0._WP)
+
+    else
+
+       f = this%f*that%f
+       e = this%e + that%e
+
+       call split_r(f, ex%f, ex%e)
+       ex = scale(ex, e)
+
+    endif
 
     ! Finish
 
@@ -572,11 +618,19 @@ contains
 
     ! Apply the divide operator
 
-    f = this%f/that%f
-    e = this%e - that%e
+    if(this%f == 0._WP .AND. that%f /= 0._WP) then
 
-    call split_r(f, ex%f, ex%e)
-    ex = scale(ex, e)
+       ex = ext_real(0._WP)
+
+    else
+
+       f = this%f/that%f
+       e = this%e - that%e
+
+       call split_r(f, ex%f, ex%e)
+       ex = scale(ex, e)
+
+    endif
 
     ! Finish
 
@@ -988,13 +1042,70 @@ contains
 
 !****
 
+  elemental function max_er (ex_a, ex_b) result (max_ex)
+
+    type(ext_real_t), intent(in) :: ex_a
+    type(ext_real_t), intent(in) :: ex_b
+    type(ext_real_t)             :: max_ex
+
+    real(WP) :: ex_a_s
+    real(WP) :: ex_b_s
+
+    ! Return the maximum of ex_a and ex_b
+
+    ex_a_s = SIGN(1._WP, ex_a%f)
+    ex_b_s = SIGN(1._WP, ex_b%f)
+
+    if(ex_a_s == ex_b_s) then
+       if(ex_a%e > ex_b%e .EQV. ex_a_s > 0._WP) then
+          max_ex = ex_a
+       elseif(ex_b%e > ex_a%e .EQV. ex_a_s > 0._WP) then
+          max_ex = ex_b
+       else
+          max_ex%f = MAX(ex_a%f, ex_b%f)
+          max_ex%e = ex_a%e
+       endif
+    else
+       if(ex_a_s > 0._WP) then
+          max_ex = ex_a
+       else
+          max_ex = ex_b
+       endif
+    endif
+
+    ! Finish
+
+    return
+
+  end function max_er
+
+!****
+
+  elemental function min_er (ex_a, ex_b) result (min_ex)
+
+    type(ext_real_t), intent(in) :: ex_a
+    type(ext_real_t), intent(in) :: ex_b
+    type(ext_real_t)             :: min_ex
+
+    ! Return the minimum of ex_a and ex_b
+
+    min_ex = -MAX(-ex_a, -ex_b)
+
+    ! Finish
+
+    return
+
+  end function min_er
+
+!****
+
   elemental function scale_er (ex, de) result (scale_ex)
 
     class(ext_real_t), intent(in) :: ex
     integer, intent(in)           :: de
     type(ext_real_t)              :: scale_ex
 
-    ! Scale ex by 2**de
+    ! Scale ex by RADIX_WP**de
 
     scale_ex%f = ex%f
     scale_ex%e = ex%e + de
