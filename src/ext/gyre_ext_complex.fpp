@@ -1,4 +1,4 @@
-! Module   : gyre_ext_complex
+! Module   : gyre_ezt_complex
 ! Purpose  : extented-range arithmetic (complex)
 !
 ! Copyright 2013 Rich Townsend
@@ -447,16 +447,30 @@ contains
 
     ! Apply the plus operator
 
-    if(this%e > that%e) then
-       f = this%f + that%f*2**(that%e - this%e)
-       e = this%e
-    else
-       f = this%f*2**(that%e - this%e) + that%e
-       e = that%e
-    endif
+    if(this%f == 0._WP) then
 
-    call split_c(f, ez%f, ez%e)
-    ez%e = ez%e + e
+       ez%f = that%f
+       ez%e = that%e
+
+    elseif(that%f == 0._WP) then
+
+       ez%f = this%f
+       ez%e = this%e
+
+    else
+
+       if(this%e > that%e) then
+          f = this%f + that%f*RADIX_WP**(that%e - this%e)
+          e = this%e
+       else
+          f = this%f*RADIX_WP**(this%e - that%e) + that%f
+          e = that%e
+       endif
+
+       call split_c(f, ez%f, ez%e)
+       ez%e = ez%e + e
+
+    endif
 
     ! Finish
 
@@ -495,16 +509,30 @@ contains
 
     ! Apply the minus operator
 
-    if(this%e > that%e) then
-       f = this%f - that%f*2**(that%e - this%e)
-       e = this%e
-    else
-       f = this%f*2**(that%e - this%e) - that%e
-       e = that%e
-    endif
+    if(this%f == 0._WP) then
+       
+       ez%f = -that%f
+       ez%e = that%e
 
-    call split_c(f, ez%f, ez%e)
-    ez = scale(ez, e)
+    elseif(that%f == 0._WP) then
+
+       ez%f = this%f
+       ez%e = this%e
+
+    else
+
+       if(this%e > that%e) then
+          f = this%f - that%f*RADIX_WP**(that%e - this%e)
+          e = this%e
+       else
+          f = this%f*RADIX_WP**(this%e - that%e) - that%f
+          e = that%e
+       endif
+
+       call split_c(f, ez%f, ez%e)
+       ez = scale(ez, e)
+
+    endif
 
     ! Finish
 
@@ -525,11 +553,19 @@ contains
 
     ! Apply the times operator
 
-    f = this%f*that%f
-    e = this%e + that%e
+    if(this%f == 0._WP .OR. that%f == 0._WP) then
 
-    call split_c(f, ez%f, ez%e)
-    ez = scale(ez, e)
+       ez = ext_complex(0._WP)
+
+    else
+
+       f = this%f*that%f
+       e = this%e + that%e
+
+       call split_c(f, ez%f, ez%e)
+       ez = scale(ez, e)
+
+    endif
 
     ! Finish
 
@@ -550,11 +586,19 @@ contains
 
     ! Apply the divide operator
 
-    f = this%f/that%f
-    e = this%e - that%e
+    if(this%f == 0._WP .AND. that%f /= 0._WP) then
 
-    call split_c(f, ez%f, ez%e)
-    ez = scale(ez, e)
+       ez = ext_complex(0._WP)
+
+    else
+
+       f = this%f/that%f
+       e = this%e - that%e
+
+       call split_c(f, ez%f, ez%e)
+       ez = scale(ez, e)
+
+    endif
 
     ! Finish
 
@@ -977,12 +1021,12 @@ contains
   elemental function abs_ec (ez) result (abs_ez)
 
     type(ext_complex_t), intent(in) :: ez
-    type(ext_complex_t)             :: abs_ez
+    type(ext_real_t)               :: abs_ez
 
     ! Calculate the absolute value of ez
 
-    abs_ez%f = ABS(ez%f)
-    abs_ez%e = ez%e
+    abs_ez = ext_real(ABS(ez%f))
+    abs_ez = scale(abs_ez, ez%e)
 
     ! Finish
 
@@ -1054,7 +1098,7 @@ contains
     integer, intent(in)              :: de
     type(ext_complex_t)              :: scale_ez
 
-    ! Scale ez by 2**de
+    ! Scale ez by RADIX_WP**de
 
     scale_ez%f = ez%f
     scale_ez%e = ez%e + de

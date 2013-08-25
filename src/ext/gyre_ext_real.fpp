@@ -477,7 +477,7 @@ contains
     real(WP) :: f
     integer  :: e
 
-    ! Apply the op plus operator
+    ! Apply the plus operator
 
     if(this%f == 0._WP) then
 
