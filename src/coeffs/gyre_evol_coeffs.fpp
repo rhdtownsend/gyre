@@ -939,6 +939,46 @@ contains
 
 !****
 
+  function omega (this, x, m, omega_c)
+
+    class(coeffs_t), intent(in) :: this
+    real(WP), intent(in)        :: x
+    integer, intent(in)         :: m
+    complex(WP), intent(in)     :: omega_c
+    complex(WP)                 :: omega
+
+    ! Calculate the intertial frequency from the co-rotating frequency
+
+    omega = omega_c + m*this%Omega_rot(x)
+
+    ! Finish
+
+    return
+
+  end function omega
+
+!****
+
+  function omega_c (this, x, m, omega)
+
+    class(coeffs_t), intent(in) :: this
+    real(WP), intent(in)        :: x
+    integer, intent(in)         :: m
+    complex(WP), intent(in)     :: omega
+    complex(WP)                 :: omega_c
+
+    ! Calculate the co-rotating frequency from the inertial frequency
+
+    omega_c = omega - m*this%Omega_rot(x)
+
+    ! Finish
+
+    return
+
+  end function omega_c
+
+!****
+
   subroutine enable_cache (this)
 
     class(evol_coeffs_t), intent(inout) :: this
@@ -982,49 +1022,49 @@ contains
 
     !$OMP PARALLEL SECTIONS
     !$OMP SECTION
-    c(J_M,:) = this%m(x)
+    if(this%sp_def(J_M)) c(J_M,:) = this%m(x)
     !$OMP SECTION
-    c(J_P,:) = this%p(x)
+    if(this%sp_def(J_P)) c(J_P,:) = this%p(x)
     !$OMP SECTION
-    c(J_RHO,:) = this%rho(x)
+    if(this%sp_def(J_RHO)) c(J_RHO,:) = this%rho(x)
     !$OMP SECTION
-    c(J_T,:) = this%T(x)
+    if(this%sp_def(J_T)) c(J_T,:) = this%T(x)
     !$OMP SECTION
-    c(J_V,:) = this%V(x)
+    if(this%sp_def(J_V)) c(J_V,:) = this%V(x)
     !$OMP SECTION
-    c(J_AS,:) = this%As(x)
+    if(this%sp_def(J_AS)) c(J_AS,:) = this%As(x)
     !$OMP SECTION
-    c(J_U,:) = this%U(x)
+    if(this%sp_def(J_U)) c(J_U,:) = this%U(x)
     !$OMP SECTION
-    c(J_C_1,:) = this%c_1(x)
+    if(this%sp_def(J_C_1)) c(J_C_1,:) = this%c_1(x)
     !$OMP SECTION
-    c(J_GAMMA_1,:) = this%Gamma_1(x)
+    if(this%sp_def(J_GAMMA_1)) c(J_GAMMA_1,:) = this%Gamma_1(x)
     !$OMP SECTION
-    c(J_NABLA_AD,:) = this%nabla_ad(x)
+    if(this%sp_def(J_NABLA_AD)) c(J_NABLA_AD,:) = this%nabla_ad(x)
     !$OMP SECTION
-    c(J_DELTA,:) = this%delta(x)
+    if(this%sp_def(J_DELTA)) c(J_DELTA,:) = this%delta(x)
     !$OMP SECTION
-    c(J_OMEGA_ROT,:) = this%Omega_rot(x)
+    if(this%sp_def(J_OMEGA_ROT)) c(J_OMEGA_ROT,:) = this%Omega_rot(x)
     !$OMP SECTION
-    c(J_NABLA,:) = this%nabla(x)
+    if(this%sp_def(J_NABLA)) c(J_NABLA,:) = this%nabla(x)
     !$OMP SECTION
-    c(J_C_RAD,:) = this%c_rad(x)
+    if(this%sp_def(J_C_RAD)) c(J_C_RAD,:) = this%c_rad(x)
     !$OMP SECTION
-    c(J_DC_RAD,:) = this%dc_rad(x)
+    if(this%sp_def(J_DC_RAD)) c(J_DC_RAD,:) = this%dc_rad(x)
     !$OMP SECTION
-    c(J_C_THM,:) = this%c_thm(x)
+    if(this%sp_def(J_C_THM)) c(J_C_THM,:) = this%c_thm(x)
     !$OMP SECTION
-    c(J_C_DIF,:) = this%c_dif(x)
+    if(this%sp_def(J_C_DIF)) c(J_C_DIF,:) = this%c_dif(x)
     !$OMP SECTION
-    c(J_C_EPS_AD,:) = this%c_eps_ad(x)
+    if(this%sp_def(J_C_EPS_AD)) c(J_C_EPS_AD,:) = this%c_eps_ad(x)
     !$OMP SECTION
-    c(J_C_EPS_S,:) = this%c_eps_S(x)
+    if(this%sp_def(J_C_EPS_S)) c(J_C_EPS_S,:) = this%c_eps_S(x)
     !$OMP SECTION
-    c(J_KAPPA_S,:) = this%kappa_S(x)
+    if(this%sp_def(J_KAPPA_S)) c(J_KAPPA_S,:) = this%kappa_S(x)
     !$OMP SECTION
-    c(J_KAPPA_AD,:) = this%kappa_ad(x)
+    if(this%sp_def(J_KAPPA_AD)) c(J_KAPPA_AD,:) = this%kappa_ad(x)
     !$OMP SECTION
-    c(J_TAU_THM,:) = this%tau_thm(x)
+    if(this%sp_def(J_TAU_THM)) c(J_TAU_THM,:) = this%tau_thm(x)
     !$OMP END PARALLEL SECTIONS
 
     call this%cc%init(x, c)
