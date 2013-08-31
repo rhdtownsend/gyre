@@ -35,6 +35,7 @@ module gyre_numpar
      real(WP)          :: theta_ad
      logical           :: reduce_order
      logical           :: use_banded
+     logical           :: use_trad_approx
      character(LEN=64) :: ivp_solver_type
   end type numpar_t
 
@@ -75,6 +76,7 @@ contains
 
     call bcast(np%reduce_order, root_rank)
     call bcast(np%use_banded, root_rank)
+    call bcast(np%use_trad_approx, root_rank)
 
     call bcast(np%ivp_solver_type, root_rank)
 
