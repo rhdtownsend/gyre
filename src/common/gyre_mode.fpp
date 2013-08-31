@@ -268,6 +268,7 @@ contains
 
        ! Count winding numbers
 
+!       call count_windings(y_1(i:), y_2(i:), n_c, n_a, this%x)
        call count_windings(y_1(i:), y_2(i:), n_c, n_a)
 
        n_p = n_a
@@ -305,17 +306,22 @@ contains
 
   contains
 
-    subroutine count_windings (y_1, y_2, n_c, n_a)
+    subroutine count_windings (y_1, y_2, n_c, n_a, x)
 
-      real(WP), intent(in) :: y_1(:)
-      real(WP), intent(in) :: y_2(:)
-      integer, intent(out) :: n_c
-      integer, intent(out) :: n_a
+      real(WP), intent(in)           :: y_1(:)
+      real(WP), intent(in)           :: y_2(:)
+      integer, intent(out)           :: n_c
+      integer, intent(out)           :: n_a
+      real(WP), intent(in), optional :: x(:)
 
       integer  :: i
       real(WP) :: y_2_cross
 
       $CHECK_BOUNDS(SIZE(y_2),SIZE(y_1))
+
+      if(PRESENT(x)) then
+         $CHECK_BOUNDS(SIZE(x),SIZE(y_1))
+      endif
 
       ! Count clockwise (n_c) and anticlockwise (n_a) windings in the (y_1,y_2) plane
 
@@ -334,8 +340,10 @@ contains
 
             if(y_2_cross >= 0._WP) then
                n_a = n_a + 1
+               if(PRESENT(x)) print *,'A node:',x(i),x(i+1)
             else
                n_c = n_c + 1
+               if(PRESENT(x)) print *,'C node:',x(i),x(i+1)
             endif
 
          elseif(y_1(i) <= 0._WP .AND. y_1(i+1) > 0._WP) then
@@ -346,8 +354,10 @@ contains
 
             if(y_2_cross <= 0._WP) then
                n_a = n_a + 1
+               if(PRESENT(x)) print *,'A node:',x(i),x(i+1)
             else
                n_c = n_c + 1
+               if(PRESENT(x)) print *,'C node:',x(i),x(i+1)
             endif
 
          endif
@@ -488,7 +498,13 @@ contains
     ! Calculate the Takata Y_2 function; this is based on eqn. 70 of
     ! Takata (2006, PASJ, 58, 839), divided by V
 
-     Yt_2 = this%y(2,:) - this%y(1,:) - this%y(3,:)
+!     Yt_2 = this%y(2,:) - this%y(1,:) - this%y(3,:)
+
+    associate (J => 1._WP - this%cf%U(this%x)/3._WP)
+
+      Yt_2 = J*(this%y(2,:) - this%y(3,:)) + (this%y(3,:) - this%y(4,:))/3._WP
+      
+    end associate
 
     ! Finish
 
@@ -910,13 +926,14 @@ contains
     class(mode_t), intent(in) :: this
     complex(WP)               :: I_0(this%n)
 
-    ! Calculate the I_0 integral (eqn. 42 of Takata 2006, multiplied
-    ! by x^[2-l]). This should vanish for radial modes
+    ! Calculate the I_0 integral (eqn. 42 of Takata 2006, PASJ, 58,
+    ! 759). This should vanish for radial modes
 
     associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              omega => this%omega, x => this%x, y => this%y)
+              omega => this%omega, l => this%op%l, &
+              x => this%x, y => this%y)
 
-      I_0 = x**3*(U*y(1,:) + y(4,:))/c_1
+      I_0 = x**(l+1)*(U*y(1,:) + y(4,:))/c_1
 
     end associate
 
@@ -933,13 +950,14 @@ contains
     class(mode_t), intent(in) :: this
     complex(WP)               :: I_1(this%n)
 
-    ! Calculate the I_1 integral (eqn. 43 of Takata 2006, multiplied
-    ! by x^[2-l]). This should vanish for dipole modes
+    ! Calculate the I_1 integral (eqn. 43 of Takata 2006, PASJ, 58,
+    ! 759). This should vanish for dipole modes
 
     associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              omega => this%omega, x => this%x, y => this%y)
+              omega => this%omega, l => this%op%l, &
+              x => this%x, y => this%y)
 
-      I_1 = x**4*(c_1*omega**2*U*y(1,:) - U*y(2,:) + &
+      I_1 = x**(l+2)*(c_1*omega**2*U*y(1,:) - U*y(2,:) + &
                   (U - c_1*omega**2 - 2._WP)*y(3,:) + (c_1*omega**2 - 1._WP)*y(4,:))/c_1**2
 
     end associate
