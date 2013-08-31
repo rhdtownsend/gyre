@@ -260,10 +260,11 @@ contains
     real(WP)          :: theta_ad
     logical           :: reduce_order
     logical           :: use_banded
+    logical           :: use_trad_approx
     character(LEN=64) :: ivp_solver_type
 
     namelist /num/ n_iter_max, theta_ad, &
-         reduce_order, use_banded, ivp_solver_type
+         reduce_order, use_banded, use_trad_approx, ivp_solver_type
 
     ! Read numerical parameters
 
@@ -272,6 +273,7 @@ contains
 
     reduce_order = .TRUE.
     use_banded = .FALSE.
+    use_trad_approx = .FALSE.
 
     ivp_solver_type = 'MAGNUS_GL2'
 
@@ -281,7 +283,7 @@ contains
     ! Initialize the numpar
 
     np = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, &
-                  reduce_order=reduce_order, use_banded=use_banded, &
+                  reduce_order=reduce_order, use_banded=use_banded, use_trad_approx=use_trad_approx, &
                   ivp_solver_type=ivp_solver_type)
 
     ! Finish
