@@ -86,6 +86,7 @@ contains
     use gyre_mesa_file
     use gyre_osc_file
     use gyre_fgong_file
+    use gyre_famdl_file
     $if($HDF5)
     use gyre_b3_file
     use gyre_gsm_file
@@ -152,6 +153,8 @@ contains
           call read_osc_file(file, G, deriv_type, data_format, ec, x=x_bc)
        case ('FGONG')
           call read_fgong_file(file, G, deriv_type, data_format, ec, x=x_bc) 
+       case ('FAMDL')
+          call read_famdl_file(file, G, deriv_type, ec, x=x_bc) 
        case default
           $ABORT(Invalid file_format)
        end select
