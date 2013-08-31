@@ -84,8 +84,8 @@ contains
     use gyre_poly_coeffs
     use gyre_hom_coeffs
     use gyre_mesa_file
-    use gyre_fgong_file
     use gyre_osc_file
+    use gyre_fgong_file
     $if($HDF5)
     use gyre_b3_file
     use gyre_gsm_file
@@ -262,7 +262,8 @@ contains
     logical           :: use_banded
     character(LEN=64) :: ivp_solver_type
 
-    namelist /num/ n_iter_max, theta_ad, reduce_order, use_banded, ivp_solver_type
+    namelist /num/ n_iter_max, theta_ad, &
+         reduce_order, use_banded, ivp_solver_type
 
     ! Read numerical parameters
 
@@ -280,7 +281,8 @@ contains
     ! Initialize the numpar
 
     np = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, &
-                  reduce_order=reduce_order, use_banded=use_banded, ivp_solver_type=ivp_solver_type)
+                  reduce_order=reduce_order, use_banded=use_banded, &
+                  ivp_solver_type=ivp_solver_type)
 
     ! Finish
 
@@ -305,16 +307,17 @@ contains
     integer, intent(in)                       :: unit
     type(gridpar_t), allocatable, intent(out) :: gp(:)
 
-    integer            :: n_gp
-    character(LEN=256) :: op_type
-    real(WP)           :: alpha_osc
-    real(WP)           :: alpha_exp
-    real(WP)           :: alpha_thm
-    real(WP)           :: s
-    integer            :: n
-    integer            :: i
+    integer                     :: n_gp
+    character(LEN=256)          :: op_type
+    real(WP)                    :: alpha_osc
+    real(WP)                    :: alpha_exp
+    real(WP)                    :: alpha_thm
+    real(WP)                    :: s
+    integer                     :: n
+    character(LEN=FILENAME_LEN) :: file
+    integer                     :: i
 
-    namelist /${NAME}_grid/ op_type, alpha_osc, alpha_exp, alpha_thm, s, n
+    namelist /${NAME}_grid/ op_type, alpha_osc, alpha_exp, alpha_thm, s, n, file
 
     ! Count the number of grid namelists
 
@@ -349,6 +352,8 @@ contains
 
        n = 0
 
+       file = ''
+
        read(unit, NML=${NAME}_grid)
 
        ! Initialize the gridpar
@@ -356,7 +361,7 @@ contains
        gp(i) = gridpar_t(op_type=op_type, &
                          alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, &
                          omega_a=0._WP, omega_b=0._WP, &
-                         s=s, n=n)
+                         s=s, n=n, file=file)
 
     end do read_loop
 
