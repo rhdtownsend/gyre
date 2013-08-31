@@ -941,15 +941,19 @@ contains
 
   function omega (this, x, m, omega_c)
 
-    class(coeffs_t), intent(in) :: this
-    real(WP), intent(in)        :: x
-    integer, intent(in)         :: m
-    complex(WP), intent(in)     :: omega_c
-    complex(WP)                 :: omega
+    class(evol_coeffs_t), intent(in) :: this
+    real(WP), intent(in)             :: x
+    integer, intent(in)              :: m
+    complex(WP), intent(in)          :: omega_c
+    complex(WP)                      :: omega
 
     ! Calculate the intertial frequency from the co-rotating frequency
 
-    omega = omega_c + m*this%Omega_rot(x)
+    if(this%sp_def(J_OMEGA_ROT)) then
+       omega = omega_c + m*this%Omega_rot(x)
+    else
+       omega = omega_c
+    endif
 
     ! Finish
 
@@ -961,15 +965,19 @@ contains
 
   function omega_c (this, x, m, omega)
 
-    class(coeffs_t), intent(in) :: this
-    real(WP), intent(in)        :: x
-    integer, intent(in)         :: m
-    complex(WP), intent(in)     :: omega
-    complex(WP)                 :: omega_c
+    class(evol_coeffs_t), intent(in) :: this
+    real(WP), intent(in)             :: x
+    integer, intent(in)              :: m
+    complex(WP), intent(in)          :: omega
+    complex(WP)                      :: omega_c
 
     ! Calculate the co-rotating frequency from the inertial frequency
 
-    omega_c = omega - m*this%Omega_rot(x)
+    if(this%sp_def(J_OMEGA_ROT)) then
+       omega_c = omega - m*this%Omega_rot(x)
+    else
+       omega_c = omega
+    endif
 
     ! Finish
 
