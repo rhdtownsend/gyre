@@ -89,6 +89,8 @@ contains
        call create_geom(gp(1)%s, gp(1)%n, x)
     case ('CREATE_LOG')
        call create_log(gp(1)%s, gp(1)%n, x)
+    case ('CREATE_FROM_FILE')
+       call create_from_file(gp(1)%file, x)
     case default
        $ABORT(Invalid op_type (the first op_type must be CREATE_*))
     end select
@@ -143,6 +145,9 @@ contains
        x_i = 0._WP
        x_o = 1._WP
     case ('CREATE_LOG')
+       x_i = 0._WP
+       x_o = 1._WP
+    case ('CREATE_FROM_FILE')
        x_i = 0._WP
        x_o = 1._WP
     case default
@@ -392,6 +397,50 @@ contains
     return
 
   end subroutine create_log
+
+!****
+
+  subroutine create_from_file (file, x)
+
+    character(LEN=*), intent(in)       :: file
+    real(WP), allocatable, intent(out) :: x(:)
+
+    integer :: unit
+    integer :: n
+    integer :: k
+
+    ! Create a grid by reading from the file
+
+    ! Count lines
+
+    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+
+    n = 0
+
+    count_loop : do
+       read(unit, *, END=100)
+       n = n + 1
+    end do count_loop
+
+100 continue
+
+    ! Read data
+
+    rewind(unit)
+
+    allocate(x(n))
+
+    read_loop : do k = 1,n
+       read(unit, *) x(k)
+    end do read_loop
+
+    close(unit)
+
+    ! Finish
+
+    return
+
+  end subroutine create_from_file
 
 !****
 
