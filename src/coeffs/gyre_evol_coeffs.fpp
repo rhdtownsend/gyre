@@ -97,8 +97,9 @@ module gyre_evol_coeffs
      private
      procedure         :: init_base
      procedure         :: init_mech
+     procedure         :: init_mech_coeffs
      procedure         :: init_full
-     generic, public   :: init => init_mech, init_full
+     generic, public   :: init => init_mech, init_mech_coeffs, init_full
      $if($GFORTRAN_PR57922)
      procedure, public :: final
      $endif
@@ -307,6 +308,85 @@ contains
     return
 
   end subroutine init_mech
+
+!****
+
+  recursive subroutine init_mech_coeffs (this, G, M_star, R_star, L_star, x, V, As, U, c_1, Gamma_1, deriv_type, add_center)
+
+    class(evol_coeffs_t), intent(out) :: this
+    real(WP), intent(in)              :: G
+    real(WP), intent(in)              :: M_star
+    real(WP), intent(in)              :: R_star
+    real(WP), intent(in)              :: L_star
+    real(WP), intent(in)              :: x(:)
+    real(WP), intent(in)              :: V(:)
+    real(WP), intent(in)              :: As(:)
+    real(WP), intent(in)              :: U(:)
+    real(WP), intent(in)              :: c_1(:)
+    real(WP), intent(in)              :: Gamma_1(:)
+    character(LEN=*), intent(in)      :: deriv_type
+    logical, intent(in), optional     :: add_center
+
+    logical  :: add_center_
+
+    $CHECK_BOUNDS(SIZE(V),SIZE(x))
+    $CHECK_BOUNDS(SIZE(As),SIZE(x))
+    $CHECK_BOUNDS(SIZE(U),SIZE(x))
+    $CHECK_BOUNDS(SIZE(c_1),SIZE(x))
+    $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(x))
+
+    if(PRESENT(add_center)) then
+       add_center_ = add_center
+    else
+       add_center_ = .FALSE.
+    endif
+
+    ! See if we need a central point
+
+    if(add_center_) then
+
+       ! Add a central point and initialize using recursion
+
+       call this%init_mech_coeffs(G, M_star, R_star, L_star, &
+                                  [0._WP,x], [0._WP,V], [0._WP,As], [3._WP,U], &
+                                  prep_center(x, c_1), prep_center(x, Gamma_1), deriv_type, .FALSE.)
+
+    else
+
+       ! Initialize the coeffs
+
+       call this%init_base()
+
+       !$OMP PARALLEL SECTIONS
+       !$OMP SECTION
+       call this%set_sp(x, V, deriv_type, J_V)
+       !$OMP SECTION
+       call this%set_sp(x, As, deriv_type, J_AS)
+       !$OMP SECTION
+       call this%set_sp(x, U, deriv_type, J_U)
+       !$OMP SECTION
+       call this%set_sp(x, c_1, deriv_type, J_C_1)
+       !$OMP SECTION
+       call this%set_sp(x, Gamma_1, deriv_type, J_GAMMA_1)
+       !$OMP SECTION
+       call this%set_sp(x, SPREAD(0._WP, 1, SIZE(x)), deriv_type, J_OMEGA_ROT)
+       !$OMP END PARALLEL SECTIONS
+
+       this%M_star = M_star
+       this%R_star = R_star
+       this%L_star = L_star
+
+       this%G = G
+
+       this%cc_enabled = .FALSE.
+
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine init_mech_coeffs
 
 !****
 
