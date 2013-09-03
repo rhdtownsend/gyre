@@ -903,12 +903,24 @@ contains
     type(ext_real_t), intent(in) :: ex
     real(WP)                     :: x
 
+    integer :: e_min
+
     ! Convert ext_real to real
 
     if(ex%f /= 0._WP) then
-       x = ex%f*RADIX_WP**ex%e
+
+       e_min = MINEXPONENT(0._WP)
+
+       if(ex%e >= e_min) then
+          x = ex%f*RADIX_WP**ex%e
+       else
+          x = (ex%f*RADIX_WP**MAX(ex%e-e_min, -DIGITS(0._WP)-1))*RADIX_WP**e_min
+       endif
+
     else
+
        x = 0._WP
+
     endif
 
     ! Finish

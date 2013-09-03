@@ -954,12 +954,24 @@ contains
     type(ext_complex_t), intent(in) :: ez
     complex(WP)                     :: z
 
+    integer :: e_min
+
     ! Convert ext_complex to complex
 
     if(ez%f /= 0._WP) then
-       z = ez%f*RADIX_WP**ez%e
+
+       e_min = MINEXPONENT(0._WP)
+
+       if(ez%e >= e_min) then
+          z = ez%f*RADIX_WP**ez%e
+       else
+          z = (ez%f*RADIX_WP**MAX(ez%e-e_min, -DIGITS(0._WP)-1))*RADIX_WP**e_min
+       endif
+
     else
+
        z = 0._WP
+
     endif
 
     ! Finish
