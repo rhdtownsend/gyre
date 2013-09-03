@@ -1138,7 +1138,7 @@ contains
     !$OMP SECTION
     if(this%sp_def(J_C_RAD)) c(J_C_RAD,:) = this%c_rad(x)
     !$OMP SECTION
-    if(this%sp_def(J_DC_RAD)) c(J_DC_RAD,:) = this%dc_rad(x)
+    if(this%sp_def(J_C_RAD)) c(J_DC_RAD,:) = this%dc_rad(x)
     !$OMP SECTION
     if(this%sp_def(J_C_THM)) c(J_C_THM,:) = this%c_thm(x)
     !$OMP SECTION
