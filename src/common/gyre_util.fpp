@@ -27,11 +27,11 @@ module gyre_util
   use core_memory
 
   use gyre_coeffs
-  use gyre_evol_coeffs
-  use gyre_poly_coeffs
-  use gyre_hom_coeffs
+  use gyre_coeffs_evol
+  use gyre_coeffs_poly
+  use gyre_coeffs_hom
   use gyre_oscpar
-  use gyre_ad_bound
+  use gyre_bound_ad
 
   use ISO_FORTRAN_ENV
 
@@ -185,11 +185,11 @@ contains
     ! frequency to a dimensioned frequency
 
     select type (cf)
-    class is (evol_coeffs_t)
+    class is (coeffs_evol_t)
        freq_scale = evol_freq_scale(cf, op, x_o, freq_units)
-    class is (poly_coeffs_t)
+    class is (coeffs_poly_t)
        freq_scale = poly_freq_scale(freq_units)
-    class is (hom_coeffs_t)
+    class is (coeffs_hom_t)
        freq_scale = hom_freq_scale(freq_units)
     class default
        $ABORT(Invalid cf type)
@@ -203,7 +203,7 @@ contains
 
     function evol_freq_scale (ec, op, x_o, freq_units) result (freq_scale)
 
-      class(evol_coeffs_t), intent(in) :: ec
+      class(coeffs_evol_t), intent(in) :: ec
       type(oscpar_t), intent(in)       :: op
       real(WP), intent(in)             :: x_o
       character(LEN=*), intent(in)     :: freq_units

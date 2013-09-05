@@ -80,9 +80,9 @@ contains
   subroutine read_coeffs (unit, x_bc, cf)
 
     use gyre_coeffs
-    use gyre_evol_coeffs
-    use gyre_poly_coeffs
-    use gyre_hom_coeffs
+    use gyre_coeffs_evol
+    use gyre_coeffs_poly
+    use gyre_coeffs_hom
     use gyre_mesa_file
     use gyre_osc_file
     use gyre_fgong_file
@@ -108,9 +108,9 @@ contains
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: G
     real(WP)                    :: Gamma_1
-    type(evol_coeffs_t)         :: ec
-    type(poly_coeffs_t)         :: pc
-    type(hom_coeffs_t)          :: hc
+    type(coeffs_evol_t)         :: ec
+    type(coeffs_poly_t)         :: pc
+    type(coeffs_hom_t)          :: hc
 
     namelist /coeffs/ coeffs_type, file_format, data_format, deriv_type, file, G, Gamma_1
 

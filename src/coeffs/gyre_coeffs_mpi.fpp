@@ -24,9 +24,9 @@ module gyre_coeffs_mpi
   use core_parallel
 
   use gyre_coeffs
-  use gyre_evol_coeffs
-  use gyre_poly_coeffs
-  use gyre_hom_coeffs
+  use gyre_coeffs_evol
+  use gyre_coeffs_poly
+  use gyre_coeffs_hom
 
   use ISO_FORTRAN_ENV
 
@@ -86,11 +86,11 @@ contains
        if(MPI_RANK == root_rank) then
 
           select type (cf)
-          type is (evol_coeffs_t)
+          type is (coeffs_evol_t)
              type = EVOL_TYPE
-          type is (poly_coeffs_t)
+          type is (coeffs_poly_t)
              type = POLY_TYPE
-          type is (hom_coeffs_t)
+          type is (coeffs_hom_t)
              type = HOM_TYPE
           class default
              $ABORT(Unsupported type)
@@ -105,11 +105,11 @@ contains
        if(MPI_RANK /= root_rank) then
           select case (type)
           case (EVOL_TYPE)
-             allocate(evol_coeffs_t::cf)
+             allocate(coeffs_evol_t::cf)
           case (POLY_TYPE)
-             allocate(poly_coeffs_t::cf)
+             allocate(coeffs_poly_t::cf)
           case(HOM_TYPE)
-             allocate(hom_coeffs_t::cf)
+             allocate(coeffs_hom_t::cf)
           case default
              $ABORT(Unsupported type)
           end select
@@ -118,11 +118,11 @@ contains
        ! Broadcast the coeffs
 
        select type (cf)
-       type is (evol_coeffs_t)
+       type is (coeffs_evol_t)
           call bcast(cf, root_rank)
-       type is (poly_coeffs_t)
+       type is (coeffs_poly_t)
           call bcast(cf, root_rank)
-       type is (hom_coeffs_t)
+       type is (coeffs_hom_t)
           call bcast(cf, root_rank)
        class default
           $ABORT(Unsupported type)

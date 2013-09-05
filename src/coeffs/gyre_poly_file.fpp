@@ -25,7 +25,7 @@ module gyre_poly_file
   use core_hgroup
 
   use gyre_coeffs
-  use gyre_poly_coeffs
+  use gyre_coeffs_poly
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -48,7 +48,7 @@ contains
 
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
-    class(poly_coeffs_t), intent(out)            :: pc
+    class(coeffs_poly_t), intent(out)            :: pc
     real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
@@ -76,7 +76,7 @@ contains
 
     call hg%final()
 
-    ! Initialize the poly_coeffs
+    ! Initialize the coeffs_poly
 
     call pc%init(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
 

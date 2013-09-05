@@ -35,8 +35,8 @@ program gyre_ad
   use gyre_gridpar
   use gyre_scanpar
   use gyre_bvp
-  use gyre_ad_bvp
-  use gyre_rad_bvp
+  use gyre_bvp_ad
+  use gyre_bvp_rad
   use gyre_search
   use gyre_mode
   use gyre_input
@@ -137,9 +137,9 @@ program gyre_ad
      if(ALLOCATED(bp)) deallocate(bp)
 
      if(op(i)%l == 0 .AND. np%reduce_order) then
-        allocate(rad_bvp_t::bp)
+        allocate(bvp_rad_t::bp)
      else
-        allocate(ad_bvp_t::bp)
+        allocate(bvp_ad_t::bp)
      endif
 
      call bp%init(cf, op(i), np, shoot_gp, recon_gp, x_cf)

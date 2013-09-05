@@ -1,4 +1,4 @@
-! Module   : gyre_poly_coeffs
+! Module   : gyre_coeffs_poly
 ! Purpose  : structure coefficients for polytropic models
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_poly_coeffs
+module gyre_coeffs_poly
 
   ! Uses
 
@@ -41,7 +41,7 @@ module gyre_poly_coeffs
     procedure :: ${NAME}_v
   $endsub
 
-  type, extends(coeffs_t) :: poly_coeffs_t
+  type, extends(coeffs_t) :: coeffs_poly_t
      private
      type(spline_t)   :: sp_Theta
      type(spline_t)   :: sp_dTheta
@@ -76,7 +76,7 @@ module gyre_poly_coeffs
      procedure, public :: enable_cache
      procedure, public :: disable_cache
      procedure, public :: fill_cache
-  end type poly_coeffs_t
+  end type coeffs_poly_t
 
   ! Interfaces
 
@@ -92,7 +92,7 @@ module gyre_poly_coeffs
 
   private
 
-  public :: poly_coeffs_t
+  public :: coeffs_poly_t
   $if($MPI)
   public :: bcast
   $endif
@@ -103,7 +103,7 @@ contains
 
   subroutine init (this, xi, Theta, dTheta, n_poly, Gamma_1, deriv_type)
 
-    class(poly_coeffs_t), intent(out) :: this
+    class(coeffs_poly_t), intent(out) :: this
     real(WP), intent(in)              :: xi(:)
     real(WP), intent(in)              :: Theta(:)
     real(WP), intent(in)              :: dTheta(:)
@@ -153,7 +153,7 @@ contains
 
   subroutine final (this)
 
-    class(poly_coeffs_t), intent(inout) :: this
+    class(coeffs_poly_t), intent(inout) :: this
 
     ! Finalize the coeffs
 
@@ -174,7 +174,7 @@ contains
 
   subroutine bcast_bc (bc, root_rank)
 
-    class(poly_coeffs_t), intent(inout) :: bc
+    class(coeffs_poly_t), intent(inout) :: bc
     integer, intent(in)                 :: root_rank
 
     ! Broadcast the coeffs
@@ -198,7 +198,7 @@ contains
 
   function V_1 (this, x) result (V)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: V
 
@@ -225,7 +225,7 @@ contains
 
   function V_v (this, x) result (V)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: V(SIZE(x))
 
@@ -247,7 +247,7 @@ contains
 
   function As_1 (this, x) result (As)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: As
 
@@ -265,7 +265,7 @@ contains
 
   function As_v (this, x) result (As)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: As(SIZE(x))
 
@@ -287,7 +287,7 @@ contains
 
   function U_1 (this, x) result (U)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: U
 
@@ -318,7 +318,7 @@ contains
 
   function U_v (this, x) result (U)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: U(SIZE(x))
 
@@ -340,7 +340,7 @@ contains
 
   function c_1_1 (this, x) result (c_1)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: c_1
 
@@ -371,7 +371,7 @@ contains
 
   function c_1_v (this, x) result (c_1)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: c_1(SIZE(x))
 
@@ -393,7 +393,7 @@ contains
 
   function Gamma_1_1 (this, x) result (Gamma_1)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: Gamma_1
 
@@ -411,7 +411,7 @@ contains
   
   function Gamma_1_v (this, x) result (Gamma_1)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: Gamma_1(SIZE(x))
 
@@ -433,7 +433,7 @@ contains
 
   function nabla_ad_1 (this, x) result (nabla_ad)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: nabla_ad
 
@@ -451,7 +451,7 @@ contains
   
   function nabla_ad_v (this, x) result (nabla_ad)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: nabla_ad(SIZE(x))
 
@@ -473,7 +473,7 @@ contains
 
   function delta_1 (this, x) result (delta)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: delta
 
@@ -491,7 +491,7 @@ contains
   
   function delta_v (this, x) result (delta)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: delta(SIZE(x))
 
@@ -517,7 +517,7 @@ contains
 
   function ${NAME}_1 (this, x) result ($NAME)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: $NAME
 
@@ -535,7 +535,7 @@ contains
 
   function ${NAME}_v (this, x) result ($NAME)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: $NAME(SIZE(x))
 
@@ -566,7 +566,7 @@ contains
 
   function Omega_rot_1 (this, x) result (Omega_rot)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: Omega_rot
 
@@ -584,7 +584,7 @@ contains
   
   function Omega_rot_v (this, x) result (Omega_rot)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: Omega_rot(SIZE(x))
 
@@ -606,7 +606,7 @@ contains
 
   function pi_c (this)
 
-    class(poly_coeffs_t), intent(in) :: this
+    class(coeffs_poly_t), intent(in) :: this
     real(WP)                         :: pi_c
 
     ! Calculate pi_c = V/x^2 as x -> 0
@@ -623,7 +623,7 @@ contains
 
   subroutine enable_cache (this)
 
-    class(poly_coeffs_t), intent(inout) :: this
+    class(coeffs_poly_t), intent(inout) :: this
 
     ! Enable the coefficient cache (no-op, since we don't cache)
 
@@ -637,7 +637,7 @@ contains
 
   subroutine disable_cache (this)
 
-    class(poly_coeffs_t), intent(inout) :: this
+    class(coeffs_poly_t), intent(inout) :: this
 
     ! Disable the coefficient cache (no-op, since we don't cache)
 
@@ -651,7 +651,7 @@ contains
 
   subroutine fill_cache (this, x)
 
-    class(poly_coeffs_t), intent(inout) :: this
+    class(coeffs_poly_t), intent(inout) :: this
     real(WP), intent(in)                :: x(:)
 
     ! Fill the coefficient cache (no-op, since we don't cache)
@@ -662,4 +662,4 @@ contains
 
   end subroutine fill_cache
 
-end module gyre_poly_coeffs
+end module gyre_coeffs_poly

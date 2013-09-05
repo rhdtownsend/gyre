@@ -25,7 +25,7 @@ module gyre_fgong_file
   use core_constants
 
   use gyre_coeffs
-  use gyre_evol_coeffs
+  use gyre_coeffs_evol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -50,7 +50,7 @@ contains
     real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
     character(LEN=*), intent(in)                 :: data_format
-    class(evol_coeffs_t), intent(out)            :: ec
+    class(coeffs_evol_t), intent(out)            :: ec
     real(WP), allocatable, intent(out), optional :: x(:)
 
     character(LEN=:), allocatable :: data_format_

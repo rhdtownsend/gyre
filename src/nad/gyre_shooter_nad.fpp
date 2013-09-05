@@ -1,4 +1,4 @@
-! Module   : gyre_nad_shooter
+! Module   : gyre_shooter_nad
 ! Purpose  : nonadiabatic multiple shooting
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_nad_shooter
+module gyre_shooter_nad
 
   ! Uses
 
@@ -27,8 +27,8 @@ module gyre_nad_shooter
   use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
-  use gyre_ad_jacobian
-  use gyre_nad_jacobian
+  use gyre_jacobian_ad
+  use gyre_jacobian_nad
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_ivp, ivp_abscissa => abscissa
@@ -42,13 +42,13 @@ module gyre_nad_shooter
 
   ! Derived-type definitions
 
-  type :: nad_shooter_t
+  type :: shooter_nad_t
      private
      class(coeffs_t), pointer :: cf => null()
      type(oscpar_t), pointer  :: op => null()
      type(numpar_t), pointer  :: np => null()
-     type(ad_jacobian_t)      :: ad_jc
-     type(nad_jacobian_t)     :: nad_jc
+     type(jacobian_ad_t)      :: ad_jc
+     type(jacobian_nad_t)     :: nad_jc
      integer, public          :: n_e
    contains
      private
@@ -56,13 +56,13 @@ module gyre_nad_shooter
      procedure, public :: shoot
      procedure, public :: recon => recon_sh
      procedure, public :: abscissa
-  end type nad_shooter_t
+  end type shooter_nad_t
 
   ! Access specifiers
 
   private
 
-  public :: nad_shooter_t
+  public :: shooter_nad_t
 
   ! Procedures
 
@@ -70,12 +70,12 @@ contains
 
   subroutine init (this, cf, op, np)
 
-    class(nad_shooter_t), intent(out)   :: this
+    class(shooter_nad_t), intent(out)   :: this
     class(coeffs_t), intent(in), target :: cf
     type(oscpar_t), intent(in), target  :: op
     type(numpar_t), intent(in), target  :: np
 
-    ! Initialize the nad_shooter
+    ! Initialize the shooter_nad
 
     this%cf => cf
 
@@ -97,7 +97,7 @@ contains
 
   subroutine shoot (this, omega, x, sm, x_ad)
 
-    class(nad_shooter_t), intent(in) :: this
+    class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x(:)
     class(sysmtx_t), intent(inout)   :: sm
@@ -170,7 +170,7 @@ contains
 
   subroutine recon_sh (this, omega, x_sh, y_sh, x, y, x_ad)
 
-    class(nad_shooter_t), intent(in) :: this
+    class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x_sh(:)
     complex(WP), intent(in)          :: y_sh(:,:)
@@ -269,7 +269,7 @@ contains
 
   function abscissa (this, x_sh) result (x)
 
-    class(nad_shooter_t), intent(in) :: this
+    class(shooter_nad_t), intent(in) :: this
     real(WP), intent(in)             :: x_sh(:)
     real(WP), allocatable            :: x(:)
 
@@ -342,4 +342,4 @@ contains
 
   end function diff_coeffs
 
-end module gyre_nad_shooter
+end module gyre_shooter_nad

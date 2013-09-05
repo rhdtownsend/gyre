@@ -26,7 +26,7 @@ module gyre_gsm_file
   use core_hgroup
 
   use gyre_coeffs
-  use gyre_evol_coeffs
+  use gyre_coeffs_evol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -50,7 +50,7 @@ contains
     character(LEN=*), intent(in)                 :: file
     real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
-    class(evol_coeffs_t), intent(out)            :: ec
+    class(coeffs_evol_t), intent(out)            :: ec
     real(WP), allocatable, optional, intent(out) :: x(:)
 
     type(hgroup_t)        :: hg
@@ -126,7 +126,7 @@ contains
 110    format(2X,A)
     endif
 
-    ! Initialize the evol_coeffs
+    ! Initialize the coeffs_evol
 
     call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
                  N2, Gamma_1, nabla_ad, delta, Omega_rot, &

@@ -1,4 +1,4 @@
-! Module   : gyre_nad_bound
+! Module   : gyre_bound_nad
 ! Purpose  : nonadiabatic boundary conditions
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_nad_bound
+module gyre_bound_nad
 
   ! Uses
 
@@ -25,7 +25,7 @@ module gyre_nad_bound
 
   use gyre_coeffs
   use gyre_oscpar
-  use gyre_ad_bound
+  use gyre_bound_ad
 
   use ISO_FORTRAN_ENV
 
@@ -35,7 +35,7 @@ module gyre_nad_bound
 
   ! Derived-type definitions
 
-  type :: nad_bound_t
+  type :: bound_nad_t
      private
      class(coeffs_t), pointer :: cf => null()
      type(oscpar_t), pointer  :: op => null()
@@ -51,13 +51,13 @@ module gyre_nad_bound
      procedure, public :: outer_bound_dziem
      procedure, public :: outer_bound_unno
      procedure, public :: outer_bound_jcd
-  end type nad_bound_t
+  end type bound_nad_t
 
   ! Access specifiers
 
   private
 
-  public :: nad_bound_t
+  public :: bound_nad_t
 
   ! Procedures
 
@@ -65,11 +65,11 @@ contains
 
   subroutine init (this, cf, op)
 
-    class(nad_bound_t), intent(out)     :: this
+    class(bound_nad_t), intent(out)     :: this
     class(coeffs_t), intent(in), target :: cf
     type(oscpar_t), intent(in), target  :: op
 
-    ! Initialize the nad_bound
+    ! Initialize the bound_nad
 
     this%cf => cf
     this%op => op
@@ -88,7 +88,7 @@ contains
 
   function inner_bound (this, x_i, omega) result (B_i)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_i
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_i(this%n_i,this%n_e)
@@ -133,7 +133,7 @@ contains
 
   function outer_bound (this, x_o, omega) result (B_o)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
@@ -163,7 +163,7 @@ contains
 
   function outer_bound_zero (this, x_o, omega) result (B_o)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
@@ -208,7 +208,7 @@ contains
 
   function outer_bound_dziem (this, x_o, omega) result (B_o)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
@@ -252,7 +252,7 @@ contains
 
   function outer_bound_unno (this, x_o, omega) result (B_o)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
@@ -324,7 +324,7 @@ contains
 
   function outer_bound_jcd (this, x_o, omega) result (B_o)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
@@ -387,4 +387,4 @@ contains
 
   end function outer_bound_jcd
 
-end module gyre_nad_bound
+end module gyre_bound_nad

@@ -25,8 +25,8 @@ module gyre_output
   use core_constants
 
   use gyre_coeffs
-  use gyre_evol_coeffs
-  use gyre_poly_coeffs
+  use gyre_coeffs_evol
+  use gyre_coeffs_poly
   use gyre_mode
   use gyre_util
   use gyre_writer
@@ -197,9 +197,9 @@ contains
        case default
           if(n_md >= 1) then
              select type (cf => md(1)%cf)
-             type is (evol_coeffs_t)
+             type is (coeffs_evol_t)
                 call write_summary_evol(wr, cf, items(j))
-             type is (poly_coeffs_t)
+             type is (coeffs_poly_t)
                 call write_summary_poly(wr, cf, items(j))
              class default
                 write(ERROR_UNIT, *) 'item:', TRIM(items(j))
@@ -219,7 +219,7 @@ contains
     subroutine write_summary_evol (wr, ec, item)
 
       class(writer_t), intent(inout)  :: wr
-      type(evol_coeffs_t), intent(in) :: ec
+      type(coeffs_evol_t), intent(in) :: ec
       character(LEN=*), intent(in)    :: item
 
       ! Write the item
@@ -245,7 +245,7 @@ contains
     subroutine write_summary_poly (wr, pc, item)
 
       class(writer_t), intent(inout)  :: wr
-      type(poly_coeffs_t), intent(in) :: pc
+      type(coeffs_poly_t), intent(in) :: pc
       character(LEN=*), intent(in)    :: item
 
       ! Write the item
@@ -372,9 +372,9 @@ contains
           call wr%write('K', md%K())
        case default
           select type (cf => md%cf)
-          type is (evol_coeffs_t)
+          type is (coeffs_evol_t)
              call write_mode_evol(wr, cf, items(j))
-          type is (poly_coeffs_t)
+          type is (coeffs_poly_t)
              call write_mode_poly(wr, cf, items(j))
           class default
              write(ERROR_UNIT, *) 'item:', TRIM(items(j))
@@ -393,7 +393,7 @@ contains
     subroutine write_mode_evol (wr, ec, item)
 
       class(writer_t), intent(inout)  :: wr
-      type(evol_coeffs_t), intent(in) :: ec
+      type(coeffs_evol_t), intent(in) :: ec
       character(LEN=*), intent(in)    :: item
 
       ! Write the item
@@ -427,7 +427,7 @@ contains
     subroutine write_mode_poly (wr, pc, item)
 
       class(writer_t), intent(inout)  :: wr
-      type(poly_coeffs_t), intent(in) :: pc
+      type(coeffs_poly_t), intent(in) :: pc
       character(LEN=*), intent(in)    :: item
 
       ! Write the item

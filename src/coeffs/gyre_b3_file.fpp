@@ -26,7 +26,7 @@ module gyre_b3_file
   use core_hgroup
 
   use gyre_coeffs
-  use gyre_evol_coeffs
+  use gyre_coeffs_evol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -50,7 +50,7 @@ contains
     character(LEN=*), intent(in)                 :: file
     real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
-    class(evol_coeffs_t), intent(out)            :: ec
+    class(coeffs_evol_t), intent(out)            :: ec
     real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg

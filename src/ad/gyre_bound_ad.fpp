@@ -1,4 +1,4 @@
-! Module   : gyre_ad_bound
+! Module   : gyre_bound_ad
 ! Purpose  : adiabatic boundary conditions
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_ad_bound
+module gyre_bound_ad
 
   ! Uses
 
@@ -34,7 +34,7 @@ module gyre_ad_bound
 
   ! Derived-type definitions
 
-  type :: ad_bound_t
+  type :: bound_ad_t
      private
      class(coeffs_t), pointer :: cf => null()
      type(oscpar_t), pointer  :: op => null()
@@ -50,13 +50,13 @@ module gyre_ad_bound
      procedure, public :: outer_bound_dziem
      procedure, public :: outer_bound_unno
      procedure, public :: outer_bound_jcd
-  end type ad_bound_t
+  end type bound_ad_t
 
   ! Access specifiers
 
   private
 
-  public :: ad_bound_t
+  public :: bound_ad_t
   public :: eval_outer_coeffs_unno
   public :: eval_outer_coeffs_jcd
   public :: outer_wavenumber
@@ -68,11 +68,11 @@ contains
 
   subroutine init (this, cf, op)
 
-    class(ad_bound_t), intent(out)      :: this
+    class(bound_ad_t), intent(out)      :: this
     class(coeffs_t), intent(in), target :: cf
     type(oscpar_t), intent(in), target  :: op
 
-    ! Initialize the ad_bound
+    ! Initialize the bound_ad
 
     this%cf => cf
     this%op => op
@@ -91,7 +91,7 @@ contains
 
   function inner_bound (this, x_i, omega) result (B_i)
 
-    class(ad_bound_t), intent(in) :: this
+    class(bound_ad_t), intent(in) :: this
     real(WP), intent(in)          :: x_i
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_i(this%n_i,this%n_e)
@@ -125,7 +125,7 @@ contains
 
   function outer_bound (this, x_o, omega) result (B_o)
 
-    class(ad_bound_t), intent(in) :: this
+    class(bound_ad_t), intent(in) :: this
     real(WP), intent(in)          :: x_o
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_o(this%n_o,this%n_e)
@@ -155,7 +155,7 @@ contains
 
   function outer_bound_zero (this, x_o, omega) result (B_o)
 
-    class(ad_bound_t), intent(in) :: this
+    class(bound_ad_t), intent(in) :: this
     real(WP)                      :: x_o
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_o(this%n_o,this%n_e)
@@ -186,7 +186,7 @@ contains
 
   function outer_bound_dziem (this, x_o, omega) result (B_o)
 
-    class(ad_bound_t), intent(in) :: this
+    class(bound_ad_t), intent(in) :: this
     real(WP), intent(in)          :: x_o
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_o(this%n_o,this%n_e)
@@ -219,7 +219,7 @@ contains
 
   function outer_bound_unno (this, x_o, omega) result (B_o)
 
-    class(ad_bound_t), intent(in) :: this
+    class(bound_ad_t), intent(in) :: this
     real(WP), intent(in)          :: x_o
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_o(this%n_o,this%n_e)
@@ -279,7 +279,7 @@ contains
 
   function outer_bound_jcd (this, x_o, omega) result (B_o)
 
-    class(ad_bound_t), intent(in) :: this
+    class(bound_ad_t), intent(in) :: this
     real(WP), intent(in)          :: x_o
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: B_o(this%n_o,this%n_e)
@@ -538,4 +538,4 @@ contains
 
   end subroutine eval_cutoffs_from_coeffs
 
-end module gyre_ad_bound
+end module gyre_bound_ad

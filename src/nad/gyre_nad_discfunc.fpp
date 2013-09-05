@@ -24,7 +24,7 @@ module gyre_nad_discfunc
   use core_kinds
   use core_func
 
-  use gyre_nad_bvp
+  use gyre_bvp_nad
   use gyre_ext_arith
 
   use ISO_FORTRAN_ENV
@@ -37,7 +37,7 @@ module gyre_nad_discfunc
 
   type, extends(func_t) :: nad_discfunc_t
      private
-     type(nad_bvp_t), pointer :: bp
+     type(bvp_nad_t), pointer :: bp
    contains 
      private
      procedure, public :: init
@@ -57,7 +57,7 @@ contains
   subroutine init (this, bp)
     
     class(nad_discfunc_t), intent(out)     :: this
-    type(nad_bvp_t), intent(inout), target :: bp
+    type(bvp_nad_t), intent(inout), target :: bp
 
     ! Initialize the nad_discfunc
 

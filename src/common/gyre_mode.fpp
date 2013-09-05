@@ -498,13 +498,7 @@ contains
     ! Calculate the Takata Y_2 function; this is based on eqn. 70 of
     ! Takata (2006, PASJ, 58, 839), divided by V
 
-!     Yt_2 = this%y(2,:) - this%y(1,:) - this%y(3,:)
-
-    associate (J => 1._WP - this%cf%U(this%x)/3._WP)
-
-      Yt_2 = J*(this%y(2,:) - this%y(3,:)) + (this%y(3,:) - this%y(4,:))/3._WP
-      
-    end associate
+    Yt_2 = this%y(2,:) - this%y(1,:) - this%y(3,:)
 
     ! Finish
 

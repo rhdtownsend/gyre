@@ -1,4 +1,4 @@
-! Module   : gyre_nad_jacobian
+! Module   : gyre_jacobian_nad
 ! Purpose  : nonadiabatic Jacobian evaluation
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_nad_jacobian
+module gyre_jacobian_nad
 
   ! Uses
 
@@ -35,7 +35,7 @@ module gyre_nad_jacobian
 
   ! Derived-type definitions
 
-  type, extends(jacobian_t) :: nad_jacobian_t
+  type, extends(jacobian_t) :: jacobian_nad_t
      private
      class(coeffs_t), pointer :: cf => null()
      type(oscpar_t), pointer  :: op => null()
@@ -44,13 +44,13 @@ module gyre_nad_jacobian
      procedure, public :: init
      procedure, public :: eval
      procedure, public :: eval_logx
-  end type nad_jacobian_t
+  end type jacobian_nad_t
 
   ! Access specifiers
 
   private
 
-  public :: nad_jacobian_t
+  public :: jacobian_nad_t
 
   ! Procedures
 
@@ -58,11 +58,11 @@ contains
 
   subroutine init (this, cf, op)
 
-    class(nad_jacobian_t), intent(out)  :: this
+    class(jacobian_nad_t), intent(out)  :: this
     class(coeffs_t), intent(in), target :: cf
     type(oscpar_t), intent(in), target  :: op
 
-    ! Initialize the nad_jacobian
+    ! Initialize the jacobian_nad
 
     this%cf => cf
     this%op => op
@@ -79,7 +79,7 @@ contains
 
   subroutine eval (this, omega, x, A)
 
-    class(nad_jacobian_t), intent(in) :: this
+    class(jacobian_nad_t), intent(in) :: this
     complex(WP), intent(in)           :: omega
     real(WP), intent(in)              :: x
     complex(WP), intent(out)          :: A(:,:)
@@ -100,7 +100,7 @@ contains
 
   subroutine eval_logx (this, omega, x, A)
 
-    class(nad_jacobian_t), intent(in) :: this
+    class(jacobian_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x
     complex(WP), intent(out)         :: A(:,:)
@@ -170,4 +170,4 @@ contains
 
   end subroutine eval_logx
 
-end module gyre_nad_jacobian
+end module gyre_jacobian_nad

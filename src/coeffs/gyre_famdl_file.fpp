@@ -25,7 +25,7 @@ module gyre_famdl_file
   use core_constants
 
   use gyre_coeffs
-  use gyre_evol_coeffs
+  use gyre_coeffs_evol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -49,7 +49,7 @@ contains
     character(LEN=*), intent(in)                 :: file
     real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
-    class(evol_coeffs_t), intent(out)            :: ec
+    class(coeffs_evol_t), intent(out)            :: ec
     real(WP), allocatable, intent(out), optional :: x(:)
 
     integer                       :: unit
@@ -116,7 +116,7 @@ contains
        write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
-    ! Initialize the evol_coeffs
+    ! Initialize the coeffs_evol
 
     call ec%init(G, M_star, R_star, L_star, x_, V_g*Gamma_1, As, U, c_1, Gamma_1, &
                  deriv_type, add_center)

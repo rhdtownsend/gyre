@@ -32,9 +32,9 @@ program gyre_nad
   use gyre_gridpar
   use gyre_scanpar
   use gyre_bvp
-  use gyre_ad_bvp
-  use gyre_rad_bvp
-  use gyre_nad_bvp
+  use gyre_bvp_ad
+  use gyre_bvp_rad
+  use gyre_bvp_nad
   use gyre_search
   use gyre_mode
   use gyre_input
@@ -61,7 +61,7 @@ program gyre_nad
   integer                       :: i
   real(WP), allocatable         :: omega(:)
   class(bvp_t), allocatable     :: ad_bp
-  type(nad_bvp_t)               :: nad_bp
+  type(bvp_nad_t)               :: nad_bp
   type(mode_t), allocatable     :: md(:)
   type(mode_t), allocatable     :: md_all(:)
   type(mode_t), allocatable     :: md_tmp(:)
@@ -136,9 +136,9 @@ program gyre_nad
      if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
      if(op(i)%l == 0 .AND. np%reduce_order) then
-        allocate(rad_bvp_t::ad_bp)
+        allocate(bvp_rad_t::ad_bp)
      else
-        allocate(ad_bvp_t::ad_bp)
+        allocate(bvp_ad_t::ad_bp)
      endif
 
      call ad_bp%init(cf, op(i), np, shoot_gp, recon_gp, x_cf)

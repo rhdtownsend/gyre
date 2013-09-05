@@ -1,5 +1,5 @@
-! Module   : gyre_ad_bvp
-! Purpose  : solve adiabatic BVPs
+! Module   : gyre_bvp_rad
+! Purpose  : solve radial adiabatic BVPs
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_ad_bvp
+module gyre_bvp_rad
 
   ! Uses
 
@@ -30,11 +30,11 @@ module gyre_ad_bvp
   use gyre_coeffs_mpi
   $endif
   use gyre_oscpar
-  use gyre_numpar
   use gyre_gridpar
+  use gyre_numpar
   use gyre_discfunc
-  use gyre_ad_shooter
-  use gyre_ad_bound
+  use gyre_shooter_rad
+  use gyre_bound_rad
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
@@ -48,19 +48,19 @@ module gyre_ad_bvp
 
   ! Derived-type definitions
 
-  type, extends(bvp_t) :: ad_bvp_t
+  type, extends(bvp_t) :: bvp_rad_t
      private
      class(coeffs_t), allocatable :: cf
      type(oscpar_t)               :: op
      type(numpar_t)               :: np
      type(gridpar_t), allocatable :: shoot_gp(:)
      type(gridpar_t), allocatable :: recon_gp(:)
-     type(ad_shooter_t)           :: sh
-     type(ad_bound_t)             :: bd
+     type(shooter_rad_t)          :: sh
+     type(bound_rad_t)            :: bd
      type(sysmtx_t)               :: sm
      real(WP), allocatable        :: x_in(:)
      real(WP), allocatable        :: x(:)
-     integer                      :: e_norm
+     integer, public              :: e_norm
      integer, public              :: n
      integer, public              :: n_e
    contains 
@@ -73,7 +73,7 @@ module gyre_ad_bvp
      procedure         :: build
      procedure         :: recon
      procedure, public :: mode
-  end type ad_bvp_t
+  end type bvp_rad_t
 
   ! Interfaces
 
@@ -89,7 +89,7 @@ module gyre_ad_bvp
 
   private
 
-  public :: ad_bvp_t
+  public :: bvp_rad_t
   $if($MPI)
   public :: bcast
   $endif
@@ -100,7 +100,7 @@ contains
 
   subroutine init (this, cf, op, np, shoot_gp, recon_gp, x_in)
 
-    class(ad_bvp_t), intent(out)      :: this
+    class(bvp_rad_t), intent(out)     :: this
     class(coeffs_t), intent(in)       :: cf
     type(oscpar_t), intent(in)        :: op
     type(numpar_t), intent(in)        :: np
@@ -111,7 +111,9 @@ contains
     integer               :: n
     real(WP), allocatable :: x_cc(:)
 
-    ! Initialize the ad_bvp
+    $ASSERT(op%l == 0,Invalid harmonic degree)
+
+    ! Initialize the bvp_rad
 
     ! Create the shooting grid
 
@@ -146,7 +148,6 @@ contains
     x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
     call this%cf%fill_cache(x_cc)
-    if(ALLOCATED(this%cf)) call this%cf%fill_cache(x_cc)
 
     ! Finish
 
@@ -160,7 +161,7 @@ contains
 
   subroutine final (this)
 
-    class(ad_bvp_t), intent(inout) :: this
+    class(bvp_rad_t), intent(inout) :: this
 
     ! Finalize the ad_bvp
 
@@ -180,15 +181,15 @@ contains
 
   subroutine bcast_bp (this, root_rank)
 
-    class(ad_bvp_t), intent(inout) :: this
-    integer, intent(in)            :: root_rank
+    class(bvp_rad_t), intent(inout) :: this
+    integer, intent(in)             :: root_rank
 
-    class(coeffs_t), allocatable :: cf
-    type(oscpar_t)               :: op
-    type(numpar_t)               :: np
-    type(gridpar_t), allocatable :: shoot_gp(:)
-    type(gridpar_t), allocatable :: recon_gp(:)
-    real(WP), allocatable        :: x_in(:)
+    class(coeffs_t), allocatable  :: cf
+    type(oscpar_t)                :: op
+    type(numpar_t)                :: np
+    type(gridpar_t), allocatable  :: shoot_gp(:)
+    type(gridpar_t), allocatable  :: recon_gp(:)
+    real(WP), allocatable         :: x_in(:)
 
     ! Broadcast the bvp
 
@@ -232,16 +233,16 @@ contains
 
   function discrim (this, omega, use_real)
 
-    class(ad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)        :: omega
-    logical, intent(in), optional  :: use_real
-    type(ext_complex_t)            :: discrim
+    class(bvp_rad_t), intent(inout) :: this
+    complex(WP), intent(in)         :: omega
+    logical, intent(in), optional   :: use_real
+    type(ext_complex_t)             :: discrim
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
     call this%build(omega)
 
-    call this%sm%determinant(discrim, use_real, this%np%use_banded)
+    call this%sm%determinant(discrim, use_real)
 
     ! Scale the discriminant using the normalizing exponent
 
@@ -257,8 +258,8 @@ contains
 
   subroutine build (this, omega)
 
-    class(ad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)        :: omega
+    class(bvp_rad_t), intent(inout) :: this
+    complex(WP), intent(in)         :: omega
 
     ! Set up the sysmtx
 
@@ -281,7 +282,7 @@ contains
 
   subroutine recon (this, omega, x, y, discrim, use_real)
 
-    class(ad_bvp_t), intent(inout)        :: this
+    class(bvp_rad_t), intent(inout)       :: this
     complex(WP), intent(in)               :: omega
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
@@ -297,9 +298,9 @@ contains
 
     call this%build(omega)
 
-    call this%sm%null_vector(b, det, use_real, this%np%use_banded)
+    call this%sm%null_vector(b, det, use_real)
 
-    discrim = scale(det, -this%e_norm)
+    discrim = scale(det, -this%e_norm)    
 
     y_sh = RESHAPE(b, SHAPE(y_sh))
 
@@ -340,7 +341,7 @@ contains
 
   function mode (this, omega, discrim, use_real) result (md)
 
-    class(ad_bvp_t), intent(inout)            :: this
+    class(bvp_rad_t), intent(inout)           :: this
     complex(WP), intent(in)                   :: omega(:)
     type(ext_complex_t), intent(in), optional :: discrim(:)
     logical, intent(in), optional             :: use_real
@@ -386,6 +387,13 @@ contains
        discrim_b = this%discrim(omega_b)
     endif
 
+    ! Set the normalizing exponent
+
+    this%e_norm = MAX(exponent(discrim_a), exponent(discrim_b))
+
+    discrim_a = scale(discrim_a, -this%e_norm)
+    discrim_b = scale(discrim_b, -this%e_norm)
+
     ! Set up the discriminant function
 
     call df%init(this)
@@ -412,13 +420,18 @@ contains
 
     allocate(y_6(6,n))
 
-    y_6(1:4,:) = y
-    y_6(5:6,:) = 0._WP
+    y_6(1,:) = y(1,:)
+    y_6(2,:) = y(2,:)
+    y_6(3,:) = 0._WP
+    y_6(4,:) = -y(1,:)*this%cf%U(x)
+
+    y_6(5,:) = 0._WP
+    y_6(6,:) = 0._WP
 
     ! Initialize the mode
-
+    
     chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
-
+    
     call md%init(this%cf, this%op, omega_root, x, y_6, chi, n_iter)
 
     ! Reset the normalizing exponent
@@ -431,5 +444,4 @@ contains
 
   end function mode
 
-end module gyre_ad_bvp
-
+end module gyre_bvp_rad

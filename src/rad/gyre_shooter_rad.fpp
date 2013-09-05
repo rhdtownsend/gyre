@@ -1,5 +1,5 @@
-! Module   : gyre_ad_shooter
-! Purpose  : adiabatic multiple shooting
+! Module   : gyre_shooter_rad
+! Purpose  : radial adiabatic multiple shooting
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_ad_shooter
+module gyre_shooter_rad
 
   ! Uses
 
@@ -26,7 +26,7 @@ module gyre_ad_shooter
   use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
-  use gyre_ad_jacobian
+  use gyre_jacobian_rad
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_ivp, ivp_abscissa => abscissa
@@ -39,12 +39,12 @@ module gyre_ad_shooter
 
   ! Derived-type definitions
 
-  type :: ad_shooter_t
+  type :: shooter_rad_t
      private
      class(coeffs_t), pointer :: cf => null()
      type(oscpar_t), pointer  :: op => null()
      type(numpar_t), pointer  :: np => null()
-     type(ad_jacobian_t)      :: jc
+     type(jacobian_rad_t)     :: jc
      integer, public          :: n_e
    contains
      private
@@ -52,13 +52,13 @@ module gyre_ad_shooter
      procedure, public :: shoot
      procedure, public :: recon => recon_sh
      procedure, public :: abscissa
-  end type ad_shooter_t
+  end type shooter_rad_t
 
   ! Access specifiers
 
   private
 
-  public :: ad_shooter_t
+  public :: shooter_rad_t
 
   ! Procedures
 
@@ -66,12 +66,12 @@ contains
 
   subroutine init (this, cf, op, np)
 
-    class(ad_shooter_t), intent(out)    :: this
+    class(shooter_rad_t), intent(out)   :: this
     class(coeffs_t), intent(in), target :: cf
     type(oscpar_t), intent(in), target  :: op
     type(numpar_t), intent(in), target  :: np
 
-    ! Initialize the ad_shooter
+    ! Initialize the shooter_rad
 
     this%cf => cf
     this%op => op
@@ -91,10 +91,10 @@ contains
 
   subroutine shoot (this, omega, x, sm)
 
-    class(ad_shooter_t), intent(in) :: this
-    complex(WP), intent(in)         :: omega
-    real(WP), intent(in)            :: x(:)
-    class(sysmtx_t), intent(inout)  :: sm
+    class(shooter_rad_t), intent(in) :: this
+    complex(WP), intent(in)          :: omega
+    real(WP), intent(in)             :: x(:)
+    class(sysmtx_t), intent(inout)   :: sm
 
     integer             :: k
     complex(WP)         :: E_l(this%n_e,this%n_e)
@@ -118,12 +118,12 @@ contains
 
   subroutine recon_sh (this, omega, x_sh, y_sh, x, y)
 
-    class(ad_shooter_t), intent(in) :: this
-    complex(WP), intent(in)         :: omega
-    real(WP), intent(in)            :: x_sh(:)
-    complex(WP), intent(in)         :: y_sh(:,:)
-    real(WP), intent(in)            :: x(:)
-    complex(WP), intent(out)        :: y(:,:)
+    class(shooter_rad_t), intent(in) :: this
+    complex(WP), intent(in)          :: omega
+    real(WP), intent(in)             :: x_sh(:)
+    complex(WP), intent(in)          :: y_sh(:,:)
+    real(WP), intent(in)             :: x(:)
+    complex(WP), intent(out)         :: y(:,:)
 
     integer     :: n_sh
     integer     :: n
@@ -186,11 +186,13 @@ contains
 
 !****
 
+!****
+
   function abscissa (this, x_sh) result (x)
 
-    class(ad_shooter_t), intent(in) :: this
-    real(WP), intent(in)            :: x_sh(:)
-    real(WP), allocatable           :: x(:)
+    class(shooter_rad_t), intent(in) :: this
+    real(WP), intent(in)             :: x_sh(:)
+    real(WP), allocatable            :: x(:)
 
     integer :: k
     integer :: n_cell(SIZE(x_sh)-1)
@@ -220,4 +222,4 @@ contains
 
   end function abscissa
 
-end module gyre_ad_shooter
+end module gyre_shooter_rad

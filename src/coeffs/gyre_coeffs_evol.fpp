@@ -1,4 +1,4 @@
-! Module   : gyre_evol_coeffs
+! Module   : gyre_coeffs_evol
 ! Purpose  : structure coefficients for evolutionary models
 !
 ! Copyright 2013 Rich Townsend
@@ -18,7 +18,7 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_evol_coeffs
+module gyre_coeffs_evol
 
   ! Uses
 
@@ -81,7 +81,7 @@ module gyre_evol_coeffs
     generic, public :: ${NAME} => ${NAME}_1, ${NAME}_v
   $endsub
 
-  type, extends(coeffs_t) :: evol_coeffs_t
+  type, extends(coeffs_t) :: coeffs_evol_t
      private
      type(spline_t), allocatable :: sp(:)
      logical, allocatable        :: sp_def(:)
@@ -130,7 +130,7 @@ module gyre_evol_coeffs
      procedure, public :: enable_cache
      procedure, public :: disable_cache
      procedure, public :: fill_cache
-  end type evol_coeffs_t
+  end type coeffs_evol_t
  
   ! Interfaces
 
@@ -146,7 +146,7 @@ module gyre_evol_coeffs
 
   private
 
-  public :: evol_coeffs_t
+  public :: coeffs_evol_t
   $if($MPI)
   public :: bcast
   $endif
@@ -157,9 +157,9 @@ contains
 
   subroutine init_base (this)
 
-    class(evol_coeffs_t), intent(out) :: this
+    class(coeffs_evol_t), intent(out) :: this
 
-    ! Initialize the evol_coeffs
+    ! Initialize the coeffs_evol
 
     allocate(this%sp(N_J))
 
@@ -178,7 +178,7 @@ contains
                                   Gamma_1, nabla_ad, delta, Omega_rot, &
                                   deriv_type, add_center)
 
-    class(evol_coeffs_t), intent(out) :: this
+    class(coeffs_evol_t), intent(out) :: this
     real(WP), intent(in)              :: G
     real(WP), intent(in)              :: M_star
     real(WP), intent(in)              :: R_star
@@ -313,7 +313,7 @@ contains
 
   recursive subroutine init_mech_coeffs (this, G, M_star, R_star, L_star, x, V, As, U, c_1, Gamma_1, deriv_type, add_center)
 
-    class(evol_coeffs_t), intent(out) :: this
+    class(coeffs_evol_t), intent(out) :: this
     real(WP), intent(in)              :: G
     real(WP), intent(in)              :: M_star
     real(WP), intent(in)              :: R_star
@@ -396,7 +396,7 @@ contains
                                   epsilon, epsilon_rho, epsilon_T, &
                                   deriv_type, add_center)
 
-    class(evol_coeffs_t), intent(out) :: this
+    class(coeffs_evol_t), intent(out) :: this
     real(WP), intent(in)              :: G
     real(WP), intent(in)              :: M_star
     real(WP), intent(in)              :: R_star
@@ -595,11 +595,11 @@ contains
 
   subroutine final (this)
 
-    class(evol_coeffs_t), intent(inout) :: this
+    class(coeffs_evol_t), intent(inout) :: this
 
     integer :: j
 
-    ! Finalize the evol_coeffs
+    ! Finalize the coeffs_evol
 
     call this%cc%final()
 
@@ -626,7 +626,7 @@ contains
 
   subroutine bcast_ec (ec, root_rank)
 
-    class(evol_coeffs_t), intent(inout) :: ec
+    class(coeffs_evol_t), intent(inout) :: ec
     integer, intent(in)                 :: root_rank
 
     ! Broadcast the coeffs
@@ -658,7 +658,7 @@ contains
 
   subroutine set_sp (this, x, y, deriv_type, i)
 
-    class(evol_coeffs_t), intent(inout) :: this
+    class(coeffs_evol_t), intent(inout) :: this
     real(WP), intent(in)                :: x(:)
     real(WP), intent(in)                :: y(:)
     character(LEN=*), intent(in)        :: deriv_type
@@ -714,7 +714,7 @@ contains
 
   function ${NAME}_1 (this, x) result ($NAME)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: $NAME
 
@@ -748,7 +748,7 @@ contains
 
   function ${NAME}_v (this, x) result ($NAME)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: $NAME(SIZE(x))
 
@@ -804,7 +804,7 @@ contains
 
   function d${NAME}_1 (this, x) result (d$NAME)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: d$NAME
 
@@ -844,7 +844,7 @@ contains
 
   function d${NAME}_v (this, x) result (d$NAME)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: d$NAME(SIZE(x))
 
@@ -882,7 +882,7 @@ contains
 
   function U_1 (this, x) result (U)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: U
 
@@ -915,7 +915,7 @@ contains
 
   function U_v (this, x) result (U)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: U(SIZE(x))
 
@@ -940,7 +940,7 @@ contains
 
   function Gamma_1_1 (this, x) result (Gamma_1)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
     real(WP)                         :: Gamma_1
 
@@ -976,7 +976,7 @@ contains
 
   function Gamma_1_v (this, x) result (Gamma_1)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     real(WP)                         :: Gamma_1(SIZE(x))
 
@@ -1004,7 +1004,7 @@ contains
 
   function pi_c (this)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP)                         :: pi_c
 
     ! Calculate pi_c = V/x^2 as x -> 0
@@ -1021,7 +1021,7 @@ contains
 
   function omega (this, x, m, omega_c)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
     integer, intent(in)              :: m
     complex(WP), intent(in)          :: omega_c
@@ -1045,7 +1045,7 @@ contains
 
   function omega_c (this, x, m, omega)
 
-    class(evol_coeffs_t), intent(in) :: this
+    class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
     integer, intent(in)              :: m
     complex(WP), intent(in)          :: omega
@@ -1069,7 +1069,7 @@ contains
 
   subroutine enable_cache (this)
 
-    class(evol_coeffs_t), intent(inout) :: this
+    class(coeffs_evol_t), intent(inout) :: this
 
     ! Enable the coefficient cache
 
@@ -1085,7 +1085,7 @@ contains
 
   subroutine disable_cache (this)
 
-    class(evol_coeffs_t), intent(inout) :: this
+    class(coeffs_evol_t), intent(inout) :: this
 
     ! Disable the coefficient cache
 
@@ -1101,7 +1101,7 @@ contains
 
   subroutine fill_cache (this, x)
 
-    class(evol_coeffs_t), intent(inout) :: this
+    class(coeffs_evol_t), intent(inout) :: this
     real(WP), intent(in)                :: x(:)
 
     real(WP) :: c(N_J,SIZE(x))
@@ -1163,4 +1163,4 @@ contains
 
   end subroutine fill_cache
 
-end module gyre_evol_coeffs
+end module gyre_coeffs_evol
