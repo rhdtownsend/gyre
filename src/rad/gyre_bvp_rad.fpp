@@ -149,10 +149,10 @@ contains
        allocate(bound_rad_zero_t::this%bd)
     case ('DZIEM')
        allocate(bound_rad_dziem_t::this%bd)
-    ! case ('UNNO')
-    !    allocate(bound_rad_unno_t::this%bd)
-    ! case ('JCD')
-    !    allocate(bound_rad_jcd_t::this%bd)
+    case ('UNNO')
+       allocate(bound_rad_unno_t::this%bd)
+    case ('JCD')
+       allocate(bound_rad_jcd_t::this%bd)
     case default
        $ABORT(Invalid bound_type)
     end select
