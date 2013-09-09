@@ -31,7 +31,7 @@ module gyre_util
   use gyre_coeffs_poly
   use gyre_coeffs_hom
   use gyre_oscpar
-  use gyre_bound_ad
+  use gyre_atmos
 
   use ISO_FORTRAN_ENV
 
@@ -209,8 +209,8 @@ contains
       character(LEN=*), intent(in)     :: freq_units
       real(WP)                         :: freq_scale
 
-      real(WP) :: omega_cutoff_lo
-      real(WP) :: omega_cutoff_hi
+      real(WP) :: omega_c_cutoff_lo
+      real(WP) :: omega_c_cutoff_hi
 
       ! Calculate the scale factor to convert a dimensionless angular
       ! frequency to a dimensioned frequency
@@ -225,11 +225,11 @@ contains
       case('PER_DAY')
          freq_scale = 86400._WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
       case('ACOUSTIC_CUTOFF')
-         call eval_cutoffs(ec, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-         freq_scale = 1._WP/omega_cutoff_hi
+         call eval_cutoff_freqs_(ec, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         freq_scale = 1._WP/omega_c_cutoff_hi
       case('GRAVITY_CUTOFF')
-         call eval_cutoffs(ec, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-         freq_scale = 1._WP/omega_cutoff_lo
+         call eval_cutoff_freqs_(ec, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         freq_scale = 1._WP/omega_c_cutoff_lo
       case default
          $ABORT(Invalid freq_units)
       end select
@@ -287,6 +287,43 @@ contains
     end function hom_freq_scale
 
   end function freq_scale
+
+ !****
+
+  subroutine eval_cutoff_freqs_ (cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+
+    class(coeffs_t), intent(in) :: cf
+    type(oscpar_t), intent(in)  :: op
+    real(WP), intent(in)        :: x_o
+    real(WP), intent(out)       :: omega_c_cutoff_lo
+    real(WP), intent(out)       :: omega_c_cutoff_hi
+
+    real(WP) :: V_g
+    real(WP) :: As
+    real(WP) :: c_1
+
+     ! Evaluate the cutoff frequencies
+
+     select case (op%outer_bound_type)
+     case ('ZERO')
+        $ABORT(Cutoff frequencies are undefined for ZERO outer_bound_type)
+     case ('DZIEM')
+        $ABORT(Cutoff frequencies are undefined for DZIEM outer_bound_type)
+     case ('UNNO')
+        call eval_atmos_coeffs_unno(cf, x_o, V_g, As, c_1)
+     case('JCD')
+        call eval_atmos_coeffs_jcd(cf, x_o, V_g, As, c_1)
+     case default
+        $ABORT(Invalid outer_bound_type)
+     end select
+
+     call eval_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+
+     ! Finish
+
+     return
+
+   end subroutine eval_cutoff_freqs_
 
 !****
 

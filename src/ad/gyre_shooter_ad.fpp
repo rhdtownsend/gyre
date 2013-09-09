@@ -26,7 +26,7 @@ module gyre_shooter_ad
   use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
-  use gyre_jacobian_ad
+  use gyre_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_ivp, ivp_abscissa => abscissa
@@ -41,11 +41,11 @@ module gyre_shooter_ad
 
   type :: shooter_ad_t
      private
-     class(coeffs_t), pointer :: cf => null()
-     type(oscpar_t), pointer  :: op => null()
-     type(numpar_t), pointer  :: np => null()
-     type(jacobian_ad_t)      :: jc
-     integer, public          :: n_e
+     class(coeffs_t), pointer   :: cf => null()
+     class(jacobian_t), pointer :: jc => null()
+     type(oscpar_t), pointer    :: op => null()
+     type(numpar_t), pointer    :: np => null()
+     integer, public            :: n_e
    contains
      private
      procedure, public :: init
@@ -64,21 +64,21 @@ module gyre_shooter_ad
 
 contains
 
-  subroutine init (this, cf, op, np)
+  subroutine init (this, cf, jc, op, np)
 
-    class(shooter_ad_t), intent(out)    :: this
-    class(coeffs_t), intent(in), target :: cf
-    type(oscpar_t), intent(in), target  :: op
-    type(numpar_t), intent(in), target  :: np
+    class(shooter_ad_t), intent(out)      :: this
+    class(coeffs_t), intent(in), target   :: cf
+    class(jacobian_t), intent(in), target :: jc
+    type(oscpar_t), intent(in), target    :: op
+    type(numpar_t), intent(in), target    :: np
 
     ! Initialize the shooter_ad
 
     this%cf => cf
+    this%jc => jc
     this%op => op
     this%np => np
 
-    call this%jc%init(cf, op)
-    
     this%n_e = this%jc%n_e
 
     ! Finish

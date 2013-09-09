@@ -1,5 +1,5 @@
-! Module   : gyre_jacobian_rad
-! Purpose  : radial adiabatic Jacobian evaluation
+! Module   : gyre_jacobian_rad_dziem
+! Purpose  : radial adiabatic Jacobian evaluation (Dziembowski variables)
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_jacobian_rad
+module gyre_jacobian_rad_dziem
 
   ! Uses
 
@@ -26,6 +26,7 @@ module gyre_jacobian_rad
   use gyre_jacobian
   use gyre_coeffs
   use gyre_oscpar
+  use gyre_linalg
 
   use ISO_FORTRAN_ENV
 
@@ -35,7 +36,7 @@ module gyre_jacobian_rad
 
   ! Derived-type definitions
 
-  type, extends(jacobian_t) :: jacobian_rad_t
+  type, extends (jacobian_t) :: jacobian_rad_dziem_t
      private
      class(coeffs_t), pointer :: cf => null()
      type(oscpar_t), pointer  :: op => null()
@@ -44,13 +45,14 @@ module gyre_jacobian_rad
      procedure, public :: init
      procedure, public :: eval
      procedure, public :: eval_logx
-  end type jacobian_rad_t
+     procedure, public :: trans_matrix
+  end type jacobian_rad_dziem_t
 
   ! Access specifiers
 
   private
 
-  public :: jacobian_rad_t
+  public :: jacobian_rad_dziem_t
 
   ! Procedures
 
@@ -58,11 +60,11 @@ contains
 
   subroutine init (this, cf, op)
 
-    class(jacobian_rad_t), intent(out)  :: this
-    class(coeffs_t), intent(in), target :: cf
-    type(oscpar_t), intent(in), target  :: op
+    class(jacobian_rad_dziem_t), intent(out) :: this
+    class(coeffs_t), intent(in), target      :: cf
+    type(oscpar_t), intent(in), target       :: op
 
-    ! Initialize the ad_jacobian
+    ! Initialize the jacobian
 
     this%cf => cf
     this%op => op
@@ -77,16 +79,16 @@ contains
 
 !****
 
-  subroutine eval (this, omega, x, A)
+  subroutine eval (this, x, omega, A)
 
-    class(jacobian_rad_t), intent(in) :: this
-    complex(WP), intent(in)           :: omega
-    real(WP), intent(in)              :: x
-    complex(WP), intent(out)          :: A(:,:)
+    class(jacobian_rad_dziem_t), intent(in) :: this
+    real(WP), intent(in)                    :: x
+    complex(WP), intent(in)                 :: omega
+    complex(WP), intent(out)                :: A(:,:)
     
     ! Evaluate the Jacobian matrix
 
-    call this%eval_logx(omega, x, A)
+    call this%eval_logx(x, omega, A)
 
     A = A/x
 
@@ -98,12 +100,12 @@ contains
 
 !****
 
-  subroutine eval_logx (this, omega, x, A)
+  subroutine eval_logx (this, x, omega, A)
 
-    class(jacobian_rad_t), intent(in) :: this
-    complex(WP), intent(in)           :: omega
-    real(WP), intent(in)              :: x
-    complex(WP), intent(out)          :: A(:,:)
+    class(jacobian_rad_dziem_t), intent(in) :: this
+    real(WP), intent(in)                    :: x
+    complex(WP), intent(in)                 :: omega
+    complex(WP), intent(out)                :: A(:,:)
     
     $CHECK_BOUNDS(SIZE(A, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(A, 2),this%n_e)
@@ -128,4 +130,29 @@ contains
 
   end subroutine eval_logx
 
-end module gyre_jacobian_rad
+!****
+
+  function trans_matrix (this, x, omega, to_canonical)
+
+    class(jacobian_rad_dziem_t), intent(in) :: this
+    real(WP), intent(in)                    :: x
+    complex(WP), intent(in)                 :: omega
+    logical, intent(in)                     :: to_canonical
+    complex(WP)                             :: trans_matrix(this%n_e,this%n_e)
+
+    ! Calculate the transformation matrix to convert variables between the
+    ! canonical formulation and the Dziembowski formulation
+
+    if (to_canonical) then
+       trans_matrix = identity_matrix(this%n_e)
+    else
+       trans_matrix = identity_matrix(this%n_e)
+    endif
+
+    ! Finish
+
+    return
+
+  end function trans_matrix
+
+end module gyre_jacobian_rad_dziem

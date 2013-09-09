@@ -34,7 +34,8 @@ module gyre_bvp_ad
   use gyre_gridpar
   use gyre_discfunc
   use gyre_shooter_ad
-  use gyre_bound_ad
+  use gyre_jacobian
+  use gyre_bound
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
@@ -50,19 +51,20 @@ module gyre_bvp_ad
 
   type, extends(bvp_t) :: bvp_ad_t
      private
-     class(coeffs_t), allocatable :: cf
-     type(oscpar_t)               :: op
-     type(numpar_t)               :: np
-     type(gridpar_t), allocatable :: shoot_gp(:)
-     type(gridpar_t), allocatable :: recon_gp(:)
-     type(shooter_ad_t)           :: sh
-     type(bound_ad_t)             :: bd
-     type(sysmtx_t)               :: sm
-     real(WP), allocatable        :: x_in(:)
-     real(WP), allocatable        :: x(:)
-     integer                      :: e_norm
-     integer, public              :: n
-     integer, public              :: n_e
+     class(coeffs_t), allocatable   :: cf
+     class(jacobian_t), allocatable :: jc
+     class(bound_t), allocatable    :: bd
+     type(shooter_ad_t)             :: sh
+     type(sysmtx_t)                 :: sm
+     type(oscpar_t)                 :: op
+     type(numpar_t)                 :: np
+     type(gridpar_t), allocatable   :: shoot_gp(:)
+     type(gridpar_t), allocatable   :: recon_gp(:)
+     real(WP), allocatable          :: x_in(:)
+     real(WP), allocatable          :: x(:)
+     integer                        :: e_norm
+     integer, public                :: n
+     integer, public                :: n_e
    contains 
      private
      procedure, public :: init
@@ -100,6 +102,8 @@ contains
 
   subroutine init (this, cf, op, np, shoot_gp, recon_gp, x_in)
 
+    use gyre_bvp_ad_initmods
+
     class(bvp_ad_t), intent(out)      :: this
     class(coeffs_t), intent(in)       :: cf
     type(oscpar_t), intent(in)        :: op
@@ -113,15 +117,7 @@ contains
 
     ! Initialize the bvp_ad
 
-    ! Create the shooting grid
-
-    call build_grid(shoot_gp, cf, op, x_in, this%x)
-
-    n = SIZE(this%x)
-
-    ! Set up components
-    
-    allocate(this%cf, SOURCE=cf)
+    ! Store parameters
 
     this%op = op
     this%np = np
@@ -129,10 +125,55 @@ contains
     this%shoot_gp = shoot_gp
     this%recon_gp = recon_gp
 
-    call this%sh%init(this%cf, this%op, this%np)
-    call this%bd%init(this%cf, this%op)
+    ! Copy coefficients
+    
+    allocate(this%cf, SOURCE=cf)
 
-    call this%sm%init(n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
+    ! Initialize the jacobian
+
+    select case (this%op%variables_type)
+    case ('DZIEM')
+       allocate(jacobian_ad_dziem_t::this%jc)
+    case ('JCD')
+       allocate(jacobian_ad_jcd_t::this%jc)
+    case default
+       $ABORT(Invalid variables_type)
+    end select
+
+    call this%jc%init(this%cf, this%op)
+
+    ! Initialize the boundary conditions
+
+    select case (this%op%outer_bound_type)
+    case ('ZERO')
+       allocate(bound_ad_zero_t::this%bd)
+    case ('DZIEM')
+       allocate(bound_ad_dziem_t::this%bd)
+    case ('UNNO')
+       allocate(bound_ad_unno_t::this%bd)
+    case ('JCD')
+       allocate(bound_ad_jcd_t::this%bd)
+    case default
+       $ABORT(Invalid bound_type)
+    end select
+
+    call this%bd%init(this%cf, this%jc, this%op)
+
+    ! Initialize the shooter
+
+    call this%sh%init(this%cf, this%jc, this%op, this%np)
+
+    ! Build the shooting grid
+
+    call build_grid(this%shoot_gp, this%cf, this%op, x_in, this%x)
+
+    n = SIZE(this%x)
+
+    ! Initialize the system matrix
+
+    call this%sm%init(n-1, this%jc%n_e, this%bd%n_i, this%bd%n_o)
+
+    ! Other stuff
 
     if(ALLOCATED(x_in)) this%x_in = x_in
 
@@ -358,7 +399,8 @@ contains
     complex(WP), allocatable :: y(:,:)
     type(ext_complex_t)      :: discrim_root
     integer                  :: n
-    complex(WP), allocatable :: y_6(:,:)
+    integer                  :: i
+    complex(WP), allocatable :: y_c(:,:)
     type(ext_real_t)         :: chi
 
     $CHECK_BOUNDS(SIZE(omega),2)
@@ -408,18 +450,23 @@ contains
 
     call this%recon(omega_root, x, y, discrim_root)
 
+    ! Calculate canonical variables
+
     n = SIZE(x)
 
-    allocate(y_6(6,n))
+    allocate(y_c(6,n))
 
-    y_6(1:4,:) = y
-    y_6(5:6,:) = 0._WP
+    !$OMP PARALLEL DO 
+    do i = 1,n
+       y_c(1:4,i) = MATMUL(this%jc%trans_matrix(x(i), omega_root, .TRUE.), y(:,i))
+       y_c(5:6,i) = 0._WP
+    end do
 
     ! Initialize the mode
 
     chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
 
-    call md%init(this%cf, this%op, omega_root, x, y_6, chi, n_iter)
+    call md%init(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
 
     ! Reset the normalizing exponent
 

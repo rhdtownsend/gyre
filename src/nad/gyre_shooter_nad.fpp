@@ -27,8 +27,7 @@ module gyre_shooter_nad
   use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
-  use gyre_jacobian_ad
-  use gyre_jacobian_nad
+  use gyre_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_ivp, ivp_abscissa => abscissa
@@ -44,12 +43,12 @@ module gyre_shooter_nad
 
   type :: shooter_nad_t
      private
-     class(coeffs_t), pointer :: cf => null()
-     type(oscpar_t), pointer  :: op => null()
-     type(numpar_t), pointer  :: np => null()
-     type(jacobian_ad_t)      :: ad_jc
-     type(jacobian_nad_t)     :: nad_jc
-     integer, public          :: n_e
+     class(coeffs_t), pointer   :: cf => null()
+     class(jacobian_t), pointer :: ad_jc => null()
+     class(jacobian_t), pointer :: nad_jc => null()
+     type(oscpar_t), pointer    :: op => null()
+     type(numpar_t), pointer    :: np => null()
+     integer, public            :: n_e
    contains
      private
      procedure, public :: init
@@ -68,22 +67,23 @@ module gyre_shooter_nad
 
 contains
 
-  subroutine init (this, cf, op, np)
+  subroutine init (this, cf, jc, op, np)
 
-    class(shooter_nad_t), intent(out)   :: this
-    class(coeffs_t), intent(in), target :: cf
-    type(oscpar_t), intent(in), target  :: op
-    type(numpar_t), intent(in), target  :: np
+    class(shooter_nad_t), intent(out)     :: this
+    class(coeffs_t), intent(in), target   :: cf
+    class(jacobian_t), intent(in), target :: jc
+    type(oscpar_t), intent(in), target    :: op
+    type(numpar_t), intent(in), target    :: np
 
     ! Initialize the shooter_nad
 
     this%cf => cf
-
+    this%nad_jc => jc
     this%op => op
     this%np => np
 
-    call this%ad_jc%init(cf, op)
-    call this%nad_jc%init(cf, op)
+!    call this%ad_jc%init(cf, op)
+!    call this%nad_jc%init(cf, op)
     
     this%n_e = this%nad_jc%n_e
 
@@ -122,24 +122,24 @@ contains
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
 
-       if(x(k) < x_ad_ .AND. .FALSE.) then
+       ! if(x(k) < x_ad_ .AND. .FALSE.) then
 
-          ! Shoot adiabatically
+       !    ! Shoot adiabatically
 
-          call solve(this%np%ivp_solver_type, this%ad_jc, omega, x(k), x(k+1), E_l(1:4,1:4), E_r(1:4,1:4), scale)
+       !    call solve(this%np%ivp_solver_type, this%ad_jc, omega, x(k), x(k+1), E_l(1:4,1:4), E_r(1:4,1:4), scale)
 
-          ! Fix up the thermal parts of the block
+       !    ! Fix up the thermal parts of the block
 
-          E_l(1:4,5:6) = 0._WP
-          E_r(1:4,5:6) = 0._WP
+       !    E_l(1:4,5:6) = 0._WP
+       !    E_r(1:4,5:6) = 0._WP
 
-          E_l(5,:) = diff_coeffs(this%cf, this%op, omega, x(k))
-          E_r(5,:) = 0._WP
+       !    E_l(5,:) = diff_coeffs(this%cf, this%op, omega, x(k))
+       !    E_r(5,:) = 0._WP
           
-          E_l(6,:) = -[0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
-          E_r(6,:) =  [0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
+       !    E_l(6,:) = -[0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
+       !    E_r(6,:) =  [0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
 
-       else
+       ! else
 
           ! Shoot nonadiabatically
 
@@ -156,7 +156,7 @@ contains
 
           scale = scale*exp(ext_complex(-lambda*(x(k+1)-x(k))))
 
-       endif
+!       endif
 
        call sm%set_block(k, E_l, E_r, scale)
 

@@ -206,9 +206,10 @@ contains
     integer           :: i
     integer           :: l
     integer           :: m
+    character(LEN=64) :: variables_type
     character(LEN=64) :: outer_bound_type
 
-    namelist /osc/ l, m, outer_bound_type
+    namelist /osc/ l, m, outer_bound_type, variables_type
 
     ! Count the number of grid namelists
 
@@ -236,13 +237,14 @@ contains
        l = 0
        m = 0
 
+       variables_type = 'DZIEM'
        outer_bound_type = 'ZERO'
 
        read(unit, NML=osc)
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(l=l, m=m, outer_bound_type=outer_bound_type)
+       op(i) = oscpar_t(l=l, m=m, variables_type=variables_type, outer_bound_type=outer_bound_type)
 
     end do read_loop
 

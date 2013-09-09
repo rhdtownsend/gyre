@@ -19,3 +19,6 @@ doc/*.blg
 work/*
 
 .DS_Store
+
+regress
+

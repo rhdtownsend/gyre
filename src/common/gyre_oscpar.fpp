@@ -34,6 +34,7 @@ module gyre_oscpar
   type :: oscpar_t
      integer           :: l
      integer           :: m
+     character(LEN=64) :: variables_type
      character(LEN=64) :: outer_bound_type
   end type oscpar_t
 
@@ -83,6 +84,7 @@ contains
     call bcast(op%l, root_rank)
     call bcast(op%m, root_rank)
 
+    call bcast(op%variables_type, root_rank)
     call bcast(op%outer_bound_type, root_rank)
 
     ! Finish
