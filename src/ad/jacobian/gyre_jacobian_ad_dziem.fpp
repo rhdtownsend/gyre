@@ -146,18 +146,18 @@ contains
 
 !****
 
-  function trans_matrix (this, x, omega, to_canonical)
+  function trans_matrix (this, x, omega, to_canon)
 
     class(jacobian_ad_dziem_t), intent(in) :: this
     real(WP), intent(in)                   :: x
     complex(WP), intent(in)                :: omega
-    logical, intent(in)                    :: to_canonical
+    logical, intent(in)                    :: to_canon
     complex(WP)                            :: trans_matrix(this%n_e,this%n_e)
 
     ! Calculate the transformation matrix to convert variables between
     ! the canonical formulation and the Dziembowski formulation
 
-    if (to_canonical) then
+    if (to_canon) then
        trans_matrix = identity_matrix(this%n_e)
     else
        trans_matrix = identity_matrix(this%n_e)

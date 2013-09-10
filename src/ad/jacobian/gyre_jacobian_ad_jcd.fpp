@@ -145,18 +145,18 @@ contains
 
 !****
 
-  function trans_matrix (this, x, omega, to_canonical)
+  function trans_matrix (this, x, omega, to_canon)
 
     class(jacobian_ad_jcd_t), intent(in) :: this
     real(WP), intent(in)                 :: x
     complex(WP), intent(in)              :: omega
-    logical, intent(in)                  :: to_canonical
+    logical, intent(in)                  :: to_canon
     complex(WP)                          :: trans_matrix(this%n_e,this%n_e)
 
     ! Calculate the transformation matrix to convert variables between the
     ! canonical formulation and the JCD formulation
 
-    if (to_canonical) then
+    if (to_canon) then
 
        associate(U => this%cf%U(x), c_1 => this%cf%c_1(x), &
                  l => this%op%l)
