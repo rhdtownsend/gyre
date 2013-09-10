@@ -101,10 +101,7 @@ contains
 
   subroutine init (this, cf, op, np, shoot_gp, recon_gp, x_in)
 
-    use gyre_jacobian_nad_dziem
-!    use gyre_jacobian_nad_jcd
-    use gyre_bound_nad_dziem
-    use gyre_bound_nad_zero
+    use gyre_bvp_nad_initmods
 
     class(bvp_nad_t), intent(out)     :: this
     class(coeffs_t), intent(in)       :: cf
@@ -136,8 +133,8 @@ contains
     select case (this%op%variables_type)
     case ('DZIEM')
        allocate(jacobian_nad_dziem_t::this%jc)
-!    case ('JCD')
-!       allocate(jacobian_ad_jcd_t::this%jc)
+    case ('JCD')
+       allocate(jacobian_nad_jcd_t::this%jc)
     case default
        $ABORT(Invalid variables_type)
     end select
