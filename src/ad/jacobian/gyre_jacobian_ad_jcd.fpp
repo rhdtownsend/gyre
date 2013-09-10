@@ -60,8 +60,8 @@ contains
   subroutine init (this, cf, op)
 
     class(jacobian_ad_jcd_t), intent(out) :: this
-    class(coeffs_t), intent(in), target     :: cf
-    type(oscpar_t), intent(in), target      :: op
+    class(coeffs_t), intent(in), target   :: cf
+    type(oscpar_t), intent(in), target    :: op
 
     ! Initialize the jacobian
 
