@@ -63,13 +63,13 @@ module gyre_jacobian
        complex(WP), intent(out)      :: A(:,:)
      end subroutine eval_i
 
-     function trans_matrix_i (this, x, omega, to_canonical)
+     function trans_matrix_i (this, x, omega, to_canon)
        use core_kinds
        import jacobian_t
        class(jacobian_t), intent(in) :: this
        real(WP), intent(in)          :: x
        complex(WP), intent(in)       :: omega
-       logical, intent(in)           :: to_canonical
+       logical, intent(in)           :: to_canon
        complex(WP)                   :: trans_matrix_i(this%n_e,this%n_e)
      end function trans_matrix_i
 
