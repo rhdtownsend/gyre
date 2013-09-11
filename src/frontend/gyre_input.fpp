@@ -225,8 +225,6 @@ contains
 
 100 continue
 
-    $ASSERT(n_op >= 1,At least one osc namelist is required)
-
     ! Read oscillation parameters
 
     rewind(unit)
@@ -261,9 +259,10 @@ contains
 
   subroutine read_numpar (unit, np)
 
-    integer, intent(in)         :: unit
-    type(numpar_t), intent(out) :: np
+    integer, intent(in)                      :: unit
+    type(numpar_t), allocatable, intent(out) :: np(:)
 
+    integer             :: n_np
     integer             :: n_iter_max
     real(WP)            :: theta_ad
     logical             :: reduce_order
@@ -275,36 +274,51 @@ contains
     namelist /num/ n_iter_max, theta_ad, &
          reduce_order, use_banded, use_trad_approx, ivp_solver_type, tag_list
 
-    ! Read numerical parameters
-
-    n_iter_max = 50
-    theta_ad = 0._WP
-
-    reduce_order = .TRUE.
-    use_banded = .FALSE.
-    use_trad_approx = .FALSE.
-
-    ivp_solver_type = 'MAGNUS_GL2'
-    tag_list = ''
+    ! Count the number of num namelists
 
     rewind(unit)
-    read(unit, NML=num, END=900)
 
-    ! Initialize the numpar
+    n_np = 0
 
-    np = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, &
-                  reduce_order=reduce_order, use_banded=use_banded, use_trad_approx=use_trad_approx, &
-                  ivp_solver_type=ivp_solver_type, tag_list=tag_list)
+    count_loop : do
+       read(unit, NML=num, END=100)
+       n_np = n_np + 1
+    end do count_loop
+
+100 continue
+
+    ! Read numerical parameters
+
+    rewind(unit)
+
+    allocate(np(n_np))
+
+    read_loop : do i = 1,n_np
+
+       n_iter_max = 50
+       theta_ad = 0._WP
+
+       reduce_order = .TRUE.
+       use_banded = .FALSE.
+       use_trad_approx = .FALSE.
+
+       ivp_solver_type = 'MAGNUS_GL2'
+       tag_list = ''
+
+       rewind(unit)
+       read(unit, NML=num, END=900)
+
+       ! Initialize the numpar
+
+       np(i) = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, &
+                        reduce_order=reduce_order, use_banded=use_banded, use_trad_approx=use_trad_approx, &
+                       ivp_solver_type=ivp_solver_type, tag_list=tag_list)
+
+    end do read_loop
 
     ! Finish
 
     return
-
-    ! Jump-in point for end-of-file
-
-900 continue
-
-    $ABORT(No &num namelist in input file)
 
   end subroutine read_numpar
 
@@ -344,8 +358,6 @@ contains
     end do count_loop
 
 100 continue
-
-    $ASSERT(n_gp >= 1,At least one ${NAME}_grid namelist is required)
 
     ! Read grid parameters
 
@@ -419,8 +431,6 @@ contains
     end do count_loop
 
 100 continue
-
-    $ASSERT(n_sp >= 1,At least one osc namelist is required)
 
     ! Read scan parameters
 
