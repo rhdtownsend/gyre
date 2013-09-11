@@ -57,7 +57,7 @@ module gyre_util
   public :: set_log_level
   public :: check_log_level
   public :: freq_scale
-  public :: split_item_list
+  public :: split_list
   public :: join_fmts
   public :: sprint
   public :: rjust
@@ -327,66 +327,66 @@ contains
 
 !****
 
-  function split_item_list (item_list) result (items)
+  function split_list (list, delim) result (elems)
 
-    character(LEN=*), intent(in)               :: item_list
-    character(LEN=LEN(item_list)), allocatable :: items(:)
+    character(LEN=*), intent(in)          :: list
+    character(LEN=1), intent(in)          :: delim
+    character(LEN=LEN(list)), allocatable :: elems(:)
 
-    character(LEN=LEN(item_list)) :: item_list_
-    integer                       :: d
-    integer                       :: n
-    integer                       :: j
+    character(LEN=LEN(list)) :: list_
+    integer                  :: d
+    integer                  :: n
+    integer                  :: j
     
-    ! Split the comma-sepated list of items into an array of
-    ! individual items
+    ! Split the delimited list into an array of elements
  
     d = 16
 
-    allocate(items(d))
+    allocate(elems(d))
 
     n = 0
 
-    ! Repeatedly split on commas
+    ! Repeatedly split on delimiters
 
-    item_list_ = item_list
+    list_ = list
 
     split_loop : do
 
-       if(item_list_ == ' ') exit split_loop
+       if(list_ == '') exit split_loop
 
-       j = INDEX(item_list_, ',')
+       j = INDEX(list_, delim)
 
        if(j <= 0) then
           n = n + 1
-          items(n) = item_list_
+          elems(n) = list_
           exit split_loop
        endif
 
        n = n + 1
 
-       ! Chop out the item name
+       ! Chop out the element
 
-       items(n) = item_list_(:j-1)
-       item_list_ = item_list_(j+1:)
+       elems(n) = list_(:j-1)
+       list_ = list_(j+1:)
 
-       ! If necessary, expand the list
+       ! If necessary, expand the array
           
        if(n >= d) then
           d = 2*d
-          call reallocate(items, [d])
+          call reallocate(elems, [d])
        end if
 
     end do split_loop
 
-    ! Reallocate item_list to the correct length
+    ! Reallocate elems to the correct length
 
-    call reallocate(items, [n])
+    call reallocate(elems, [n])
 
     ! Finish
 
     return
 
-  end function split_item_list
+  end function split_list
 
 !****
 
