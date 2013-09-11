@@ -69,6 +69,8 @@ contains
     real(WP) :: omega_max
     integer  :: j
 
+    $ASSERT(SIZE(sp) >=1,Empty scanpars)
+
     ! Determine the grid range
 
     call grid_range(gp, cf, op, x_in, x_i, x_o)
