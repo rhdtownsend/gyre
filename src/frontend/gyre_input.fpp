@@ -208,6 +208,7 @@ contains
     integer           :: m
     character(LEN=64) :: variables_type
     character(LEN=64) :: outer_bound_type
+    character(LEN=64) :: tag
 
     namelist /osc/ l, m, outer_bound_type, variables_type
 
@@ -239,12 +240,14 @@ contains
 
        variables_type = 'DZIEM'
        outer_bound_type = 'ZERO'
+       tag = ''
 
        read(unit, NML=osc)
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(l=l, m=m, variables_type=variables_type, outer_bound_type=outer_bound_type)
+       op(i) = oscpar_t(l=l, m=m, variables_type=variables_type, &
+                        outer_bound_type=outer_bound_type, tag=tag)
 
     end do read_loop
 
@@ -261,15 +264,16 @@ contains
     integer, intent(in)         :: unit
     type(numpar_t), intent(out) :: np
 
-    integer           :: n_iter_max
-    real(WP)          :: theta_ad
-    logical           :: reduce_order
-    logical           :: use_banded
-    logical           :: use_trad_approx
-    character(LEN=64) :: ivp_solver_type
+    integer             :: n_iter_max
+    real(WP)            :: theta_ad
+    logical             :: reduce_order
+    logical             :: use_banded
+    logical             :: use_trad_approx
+    character(LEN=64)   :: ivp_solver_type
+    character(LEN=2048) :: tag_list
 
     namelist /num/ n_iter_max, theta_ad, &
-         reduce_order, use_banded, use_trad_approx, ivp_solver_type
+         reduce_order, use_banded, use_trad_approx, ivp_solver_type, tag_list
 
     ! Read numerical parameters
 
@@ -281,6 +285,7 @@ contains
     use_trad_approx = .FALSE.
 
     ivp_solver_type = 'MAGNUS_GL2'
+    tag_list = ''
 
     rewind(unit)
     read(unit, NML=num, END=900)
@@ -289,7 +294,7 @@ contains
 
     np = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, &
                   reduce_order=reduce_order, use_banded=use_banded, use_trad_approx=use_trad_approx, &
-                  ivp_solver_type=ivp_solver_type)
+                  ivp_solver_type=ivp_solver_type, tag_list=tag_list)
 
     ! Finish
 
@@ -315,16 +320,17 @@ contains
     type(gridpar_t), allocatable, intent(out) :: gp(:)
 
     integer                     :: n_gp
-    character(LEN=256)          :: op_type
     real(WP)                    :: alpha_osc
     real(WP)                    :: alpha_exp
     real(WP)                    :: alpha_thm
     real(WP)                    :: s
     integer                     :: n
     character(LEN=FILENAME_LEN) :: file
+    character(LEN=64)           :: op_type
+    character(LEN=2048)         :: tag_list
     integer                     :: i
 
-    namelist /${NAME}_grid/ op_type, alpha_osc, alpha_exp, alpha_thm, s, n, file
+    namelist /${NAME}_grid/ alpha_osc, alpha_exp, alpha_thm, s, n, file, op_type, tag_list
 
     ! Count the number of grid namelists
 
@@ -349,8 +355,6 @@ contains
 
     read_loop : do i = 1,n_gp
 
-       op_type = 'CREATE_CLONE'
-
        alpha_osc = 0._WP
        alpha_exp = 0._WP
        alpha_thm = 0._WP
@@ -361,14 +365,16 @@ contains
 
        file = ''
 
+       op_type = 'CREATE_CLONE'
+       tag_list = ''
+
        read(unit, NML=${NAME}_grid)
 
        ! Initialize the gridpar
 
-       gp(i) = gridpar_t(op_type=op_type, &
-                         alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, &
+       gp(i) = gridpar_t(alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, &
                          omega_a=0._WP, omega_b=0._WP, &
-                         s=s, n=n, file=file)
+                         s=s, n=n, file=file, op_type=op_type, tag_list=tag_list)
 
     end do read_loop
 
@@ -390,15 +396,16 @@ contains
     integer, intent(in)                       :: unit
     type(scanpar_t), allocatable, intent(out) :: sp(:)
 
-    integer           :: n_sp
-    integer           :: i
-    real(WP)          :: freq_min
-    real(WP)          :: freq_max
-    integer           :: n_freq
-    character(LEN=64) :: freq_units
-    character(LEN=64) :: grid_type
+    integer             :: n_sp
+    integer             :: i
+    real(WP)            :: freq_min
+    real(WP)            :: freq_max
+    integer             :: n_freq
+    character(LEN=64)   :: freq_units
+    character(LEN=64)   :: grid_type
+    character(LEN=2048) :: tag_list
 
-    namelist /scan/ freq_min, freq_max, n_freq, freq_units, grid_type
+    namelist /scan/ freq_min, freq_max, n_freq, freq_units, grid_type, tag_list
 
     ! Count the number of scan namelists
 
@@ -429,12 +436,14 @@ contains
           
        freq_units = 'NONE'
        grid_type = 'LINEAR'
+       tag_list = ''
 
        read(unit, NML=scan)
 
        ! Initialize the scanpar
 
-       sp(i) = scanpar_t(freq_min=freq_min, freq_max=freq_max, n_freq=n_freq, freq_units=freq_units, grid_type=grid_type)
+       sp(i) = scanpar_t(freq_min=freq_min, freq_max=freq_max, n_freq=n_freq, &
+                         freq_units=freq_units, grid_type=grid_type, tag_list=tag_list)
 
     end do read_loop
 
