@@ -95,7 +95,7 @@ contains
        end select
 
        call wr%init(summary_file)
-       call write_summary(wr, md, split_item_list(summary_item_list), freq_units)
+       call write_summary(wr, md, split_list(summary_item_list, ','), freq_units)
        call wr%final()
 
        deallocate(wr)
@@ -121,7 +121,7 @@ contains
 100       format(A,I4.4,A)
 
           call wr%init(mode_file)
-          call write_mode(wr, md(j), split_item_list(mode_item_list), freq_units, j)
+          call write_mode(wr, md(j), split_list(mode_item_list, ','), freq_units, j)
           call wr%final()
 
        end do mode_loop
