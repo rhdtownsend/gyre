@@ -138,7 +138,15 @@ contains
     real(WP), intent(in)                    :: x
     complex(WP), intent(in)                 :: omega
     logical, intent(in)                     :: to_canon
+    $if($GFORTRAN_PR_58007)
+    complex(WP), allocatable                :: trans_matrix(:,:)
+    $else
     complex(WP)                             :: trans_matrix(this%n_e,this%n_e)
+    $endif
+
+    $if($GFORTRAN_PR_58007)
+    allocate(trans_matrix(this%n_e,this%n_e))
+    $endif
 
     ! Calculate the transformation matrix to convert variables between the
     ! canonical formulation and the Dziembowski formulation

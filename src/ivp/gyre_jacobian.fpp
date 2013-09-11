@@ -70,7 +70,11 @@ module gyre_jacobian
        real(WP), intent(in)          :: x
        complex(WP), intent(in)       :: omega
        logical, intent(in)           :: to_canon
+       $if($GFORTRAN_PR_58007)
+       complex(WP), allocatable      :: trans_matrix_i(:,:)
+       $else
        complex(WP)                   :: trans_matrix_i(this%n_e,this%n_e)
+       $endif
      end function trans_matrix_i
 
   end interface

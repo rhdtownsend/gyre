@@ -102,7 +102,12 @@ contains
 
   subroutine init (this, cf, op, np, shoot_gp, recon_gp, x_in)
 
-    use gyre_bvp_rad_initmods
+    use gyre_jacobian_rad_dziem
+    use gyre_jacobian_rad_jcd
+    use gyre_bound_rad_zero
+    use gyre_bound_rad_dziem
+    use gyre_bound_rad_unno
+    use gyre_bound_rad_jcd
 
     class(bvp_rad_t), intent(out)     :: this
     class(coeffs_t), intent(in)       :: cf

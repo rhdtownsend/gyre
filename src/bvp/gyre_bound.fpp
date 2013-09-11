@@ -63,7 +63,11 @@ module gyre_bound
        class(bound_t), intent(in) :: this
        real(WP), intent(in)       :: x_i
        complex(WP), intent(in)    :: omega
+       $if($GFORTRAN_PR_58007)
+       complex(WP), allocatable   :: B_i(:,:)
+       $else
        complex(WP)                :: B_i(this%n_i,this%n_e)
+       $endif
      end function inner_bound_i
 
      function outer_bound_i (this, x_o, omega) result (B_o)
@@ -72,7 +76,11 @@ module gyre_bound
        class(bound_t), intent(in) :: this
        real(WP), intent(in)       :: x_o
        complex(WP), intent(in)    :: omega
+       $if($GFORTRAN_PR_58007)
+       complex(WP), allocatable   :: B_o(:,:)
+       $else
        complex(WP)                :: B_o(this%n_o,this%n_e)
+       $endif
      end function outer_bound_i
 
   end interface
