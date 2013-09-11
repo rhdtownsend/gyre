@@ -42,8 +42,9 @@ module gyre_gridpar
      real(WP)                    :: omega_b = 0._WP
      real(WP)                    :: s = 0
      integer                     :: n = 0
-     character(LEN=64)           :: op_type = ''
      character(LEN=FILENAME_LEN) :: file
+     character(LEN=64)           :: op_type
+     character(LEN=2048)         :: tag_list
   end type gridpar_t
 
   ! Interfaces
@@ -103,7 +104,10 @@ contains
 
     call bcast(gp%n, root_rank)
 
+    call bcast(gp%file, root_rank)
+
     call bcast(gp%op_type, root_rank)
+    call bcast(gp%tag_list, root_rank)
 
     ! Finish
 

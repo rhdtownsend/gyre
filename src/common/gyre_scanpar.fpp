@@ -32,11 +32,12 @@ module gyre_scanpar
   ! Derived-type definitions
 
   type :: scanpar_t
-     real(WP)          :: freq_min
-     real(WP)          :: freq_max
-     integer           :: n_freq
-     character(LEN=64) :: grid_type
-     character(LEN=64) :: freq_units
+     real(WP)            :: freq_min
+     real(WP)            :: freq_max
+     integer             :: n_freq
+     character(LEN=64)   :: grid_type
+     character(LEN=64)   :: freq_units
+     character(LEN=2048) :: tag_list
   end type scanpar_t
 
   ! Interfaces
@@ -88,6 +89,7 @@ contains
 
     call bcast(sp%grid_type, root_rank)
     call bcast(sp%freq_units, root_rank)
+    call bcast(sp%tag_list, root_rank)
 
     ! Finish
 
