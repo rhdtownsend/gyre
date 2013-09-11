@@ -16,6 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_parallel.inc'
 
 module gyre_numpar
 
@@ -31,12 +32,13 @@ module gyre_numpar
   ! Derived-type definitions
 
   type :: numpar_t
-     integer           :: n_iter_max
-     real(WP)          :: theta_ad
-     logical           :: reduce_order
-     logical           :: use_banded
-     logical           :: use_trad_approx
-     character(LEN=64) :: ivp_solver_type
+     integer             :: n_iter_max
+     real(WP)            :: theta_ad
+     logical             :: reduce_order
+     logical             :: use_banded
+     logical             :: use_trad_approx
+     character(LEN=64)   :: ivp_solver_type
+     character(LEN=2048) :: tag_list
   end type numpar_t
 
   ! Interfaces
@@ -44,8 +46,14 @@ module gyre_numpar
   $if($MPI)
 
   interface bcast
-     module procedure bcast_np
+     module procedure bcast_np_0
+     module procedure bcast_np_1
   end interface bcast
+
+  interface bcast_alloc
+     module procedure bcast_alloc_np_0
+     module procedure bcast_alloc_np_1
+  end interface bcast_alloc
 
   $endif
 
@@ -56,6 +64,7 @@ module gyre_numpar
   public :: numpar_t
   $if($MPI)
   public :: bcast
+  public :: bcast_alloc
   $endif
 
   ! Procedures
@@ -64,9 +73,13 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_np (np, root_rank)
+  $define $BCAST $sub
 
-    type(numpar_t), intent(inout) :: np
+  $local $RANK $1
+
+  subroutine bcast_np_$RANK (np, root_rank)
+
+    type(numpar_t), intent(inout) :: np$ARRAY_SPEC($RANK)
     integer, intent(in)           :: root_rank
 
     ! Broadcast the numpar
@@ -79,12 +92,23 @@ contains
     call bcast(np%use_trad_approx, root_rank)
 
     call bcast(np%ivp_solver_type, root_rank)
+    call bcast(np%tag_list, root_rank)
 
     ! Finish
 
     return
 
-  end subroutine bcast_np
+  end subroutine bcast_np_$RANK
+
+  $endsub
+
+  $BCAST(0)
+  $BCAST(1)
+
+!****
+
+  $BCAST_ALLOC(np,type(numpar_t),0)
+  $BCAST_ALLOC(np,type(numpar_t),1)
 
   $endif
 
