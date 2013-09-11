@@ -36,6 +36,7 @@ module gyre_oscpar
      integer           :: m
      character(LEN=64) :: variables_type
      character(LEN=64) :: outer_bound_type
+     character(LEN=64) :: tag
   end type oscpar_t
 
   ! Interfaces
@@ -86,6 +87,7 @@ contains
 
     call bcast(op%variables_type, root_rank)
     call bcast(op%outer_bound_type, root_rank)
+    call bcast(op%tag, root_rank)
 
     ! Finish
 
