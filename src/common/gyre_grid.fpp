@@ -77,6 +77,8 @@ contains
 
     integer :: i
 
+    $ASSERT(SIZE(gp) >= 1,Empty gridpars)
+
     ! Build a grid using the supplied list of gridpars
 
     select case (gp(1)%op_type)
@@ -130,6 +132,8 @@ contains
     real(WP), allocatable, intent(in) :: x_in(:)
     real(WP), intent(out)             :: x_i
     real(WP), intent(out)             :: x_o
+
+    $ASSERT(SIZE(gp) >= 1,Empty gridpars)
 
     ! Determine the range spanned by the grid
 
