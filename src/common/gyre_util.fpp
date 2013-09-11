@@ -31,6 +31,9 @@ module gyre_util
   use gyre_coeffs_poly
   use gyre_coeffs_hom
   use gyre_oscpar
+  use gyre_numpar
+  use gyre_gridpar
+  use gyre_scanpar
   use gyre_atmos
 
   use ISO_FORTRAN_ENV
@@ -45,6 +48,12 @@ module gyre_util
 
   ! Interfaces
 
+  interface select_par
+     module procedure select_par_np
+     module procedure select_par_gp
+     module procedure select_par_sp
+  end interface select_par
+
   interface sprint
      module procedure sprint_i
   end interface sprint
@@ -57,6 +66,7 @@ module gyre_util
   public :: set_log_level
   public :: check_log_level
   public :: freq_scale
+  public :: select_par
   public :: split_list
   public :: join_fmts
   public :: sprint
@@ -324,6 +334,52 @@ contains
      return
 
    end subroutine eval_cutoff_freqs_
+
+!****
+   
+   $define $SELECT_PAR $sub
+
+   $local $SUFFIX $1
+   $local $PAR_TYPE $2
+
+   subroutine select_par_$SUFFIX (par, tag, par_sel)
+
+     type($PAR_TYPE), intent(in)  :: par(:)
+     character(LEN=*), intent(in) :: tag
+     type($PAR_TYPE), allocatable :: par_sel(:)
+
+     integer :: i
+     logical :: mask(SIZE(par))
+     integer :: j
+
+     ! Select parameters whose tag_list matches tag
+
+     mask_loop : do i = 1,SIZE(par)
+        mask(i) = par(i)%tag_list == '' .OR. ANY(split_list(par(i)%tag_list, ',') == tag)
+    end do mask_loop
+
+    allocate(par_sel(COUNT(mask)))
+
+    j = 0
+
+    select_loop : do i = 1,SIZE(par)
+       if(mask(i)) then
+          j = j + 1
+          par_sel(j) = par(i)
+       endif
+    end do select_loop
+
+    ! Finish
+
+    return
+
+  end subroutine select_par_$SUFFIX
+
+  $endsub
+
+  $SELECT_PAR(np,numpar_t)
+  $SELECT_PAR(gp,gridpar_t)
+  $SELECT_PAR(sp,scanpar_t)
 
 !****
 
