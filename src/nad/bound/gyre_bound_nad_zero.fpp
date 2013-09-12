@@ -90,9 +90,17 @@ contains
     class(bound_nad_zero_t), intent(in) :: this
     real(WP), intent(in)                :: x_i
     complex(WP), intent(in)             :: omega
+    $if($GFORTRAN_PR_58007)
+    complex(WP), allocatable            :: B_i(:,:)
+    $else
     complex(WP)                         :: B_i(this%n_i,this%n_e)
+    $endif
 
     $ASSERT(x_i == 0._WP,Boundary condition invalid for x_i /= 0)
+
+    $if($GFORTRAN_PR_58007)
+    allocate(B_i(this%n_i,this%n_e))
+    $endif
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
@@ -137,7 +145,15 @@ contains
     class(bound_nad_zero_t), intent(in) :: this
     real(WP), intent(in)                :: x_o
     complex(WP), intent(in)             :: omega
+    $if($GFORTRAN_PR_58007)
+    complex(WP), allocatable            :: B_o(:,:)
+    $else
     complex(WP)                         :: B_o(this%n_o,this%n_e)
+    $endif
+
+    $if($GFORTRAN_PR_58007)
+    allocate(B_o(this%n_o,this%n_e))
+    $endif
 
     ! Set the outer boundary conditions
 
