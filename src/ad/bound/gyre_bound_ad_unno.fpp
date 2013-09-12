@@ -177,9 +177,9 @@ contains
       alpha_1 = (b_12*b_23 - b_13*(b_22+l))/((b_11+l)*(b_22+l) - b_12*b_21)
       alpha_2 = (b_21*b_13 - b_23*(b_11+l))/((b_11+l)*(b_22+l) - b_12*b_21)
 
-      B_o(1,1) = (lambda - b_11)/b_12
-      B_o(1,2) = -1._WP
-      B_o(1,3) = -(alpha_1*(lambda - b_11)/b_12 - alpha_2)
+      B_o(1,1) = (lambda - b_11)
+      B_o(1,2) = -b_12
+      B_o(1,3) = -(alpha_1*(lambda - b_11) - alpha_2*b_12)
       B_o(1,4) = 0._WP
 
       B_o(2,1) = 0._WP
