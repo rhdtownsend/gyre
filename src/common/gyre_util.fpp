@@ -342,23 +342,34 @@ contains
    $local $SUFFIX $1
    $local $PAR_TYPE $2
 
-   subroutine select_par_$SUFFIX (par, tag, par_sel)
+   subroutine select_par_$SUFFIX (par, tag, par_sel, last)
 
-     type($PAR_TYPE), intent(in)  :: par(:)
-     character(LEN=*), intent(in) :: tag
-     type($PAR_TYPE), allocatable :: par_sel(:)
+     type($PAR_TYPE), intent(in)               :: par(:)
+     character(LEN=*), intent(in)              :: tag
+     type($PAR_TYPE), allocatable, intent(out) :: par_sel(:)
+     logical, intent(in), optional             :: last
 
+     logical :: last_
      integer :: i
      logical :: mask(SIZE(par))
+     integer :: n_par_sel
      integer :: j
 
-     ! Select parameters whose tag_list matches tag
+     if(PRESENT(last)) then
+        last_ = last
+     else
+        last_ = .FALSE.
+     endif
+
+     ! Select all parameters whose tag_list matches tag
 
      mask_loop : do i = 1,SIZE(par)
         mask(i) = par(i)%tag_list == '' .OR. ANY(split_list(par(i)%tag_list, ',') == tag)
     end do mask_loop
 
-    allocate(par_sel(COUNT(mask)))
+    n_par_sel = COUNT(mask)
+
+    allocate(par_sel(n_par_sel))
 
     j = 0
 
@@ -368,6 +379,12 @@ contains
           par_sel(j) = par(i)
        endif
     end do select_loop
+
+    ! If necessary, shrink par_sel to contain only the last element
+
+    if(last_ .AND. n_par_sel > 1) then
+       par_sel = par_sel(1:1)
+    endif
 
     ! Finish
 
