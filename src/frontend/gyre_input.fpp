@@ -210,7 +210,7 @@ contains
     character(LEN=64) :: outer_bound_type
     character(LEN=64) :: tag
 
-    namelist /osc/ l, m, outer_bound_type, variables_type
+    namelist /osc/ l, m, outer_bound_type, variables_type, tag
 
     ! Count the number of grid namelists
 
