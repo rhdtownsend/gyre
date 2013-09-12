@@ -364,7 +364,8 @@ contains
      ! Select all parameters whose tag_list matches tag
 
      mask_loop : do i = 1,SIZE(par)
-        mask(i) = par(i)%tag_list == '' .OR. ANY(split_list(par(i)%tag_list, ',') == tag)
+        mask(i) = (par(i)%tag_list == '') .OR. &
+                  (tag /= '' .AND. ANY(split_list(par(i)%tag_list, ',') == tag))
     end do mask_loop
 
     n_par_sel = COUNT(mask)
