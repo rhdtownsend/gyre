@@ -158,12 +158,6 @@ contains
     complex(WP) :: lambda
     complex(WP) :: b_11
     complex(WP) :: b_12
-    complex(WP) :: b_13
-    complex(WP) :: b_21
-    complex(WP) :: b_22
-    complex(WP) :: b_23
-    complex(WP) :: alpha_1
-    complex(WP) :: alpha_2
 
     $if($GFORTRAN_PR_58007)
     allocate(B_o(this%n_o,this%n_e))
@@ -181,9 +175,9 @@ contains
       b_11 = V_g - 3._WP
       b_12 = l*(l+1)/(c_1*omega_c**2) - V_g
 
-      B_o(1,1) = (lambda - b_11)/b_12
-      B_o(1,2) = -1._WP
-      B_o(1,3) = 1._WP + (l*(l+1)/(c_1*omega_c**2) - l - 1._WP)/(V_g + As)
+      B_o(1,1) = lambda - b_11
+      B_o(1,2) = -b_12
+      B_o(1,3) = b_12 + (l*(l+1)/(c_1*omega_c**2) - l - 1._WP)*b_12/(V_g + As)
       B_o(1,4) = 0._WP
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
