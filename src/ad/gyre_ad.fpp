@@ -143,7 +143,7 @@ program gyre_ad
 
      call build_scan(sp_sel, cf, op(i), shoot_gp_sel, x_cf, omega)
 
-     ! Store the frequency range in shoot_gp
+     ! Store the frequency range in shoot_gp_sel
 
      shoot_gp_sel%omega_a = MINVAL(omega)
      shoot_gp_sel%omega_b = MAXVAL(omega)
