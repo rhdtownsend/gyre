@@ -44,14 +44,16 @@ module gyre_famdl_file
 
 contains
 
-  subroutine read_famdl_file (file, G, deriv_type, ec, x)
+  subroutine read_famdl_file (file, G, deriv_type, data_format, ec, x)
 
     character(LEN=*), intent(in)                 :: file
     real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
+    character(LEN=*), intent(in)                 :: data_format
     class(coeffs_evol_t), intent(out)            :: ec
     real(WP), allocatable, intent(out), optional :: x(:)
 
+    character(LEN=:), allocatable :: data_format_
     integer                       :: unit
     integer                       :: nmod
     integer                       :: n
@@ -68,6 +70,12 @@ contains
     real(WP), allocatable         :: As(:) 
     real(WP), allocatable         :: U(:)
     logical                       :: add_center
+
+    if(data_format /= '') then
+       data_format_ = data_format
+    else
+       data_format_ = '(1P4E20.13)'
+    endif
 
     ! Read the model from the formatted AMDL-format file
 
@@ -93,8 +101,7 @@ contains
     allocate(glob(8))
     allocate(var(ivar+1,n))
 
-    read(unit, 130) glob, var
-130 format(1P4E20.13)
+    read(unit, data_format_) glob, var
 
     close(unit)
 

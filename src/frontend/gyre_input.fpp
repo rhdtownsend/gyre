@@ -154,7 +154,7 @@ contains
        case ('FGONG')
           call read_fgong_file(file, G, deriv_type, data_format, ec, x=x_bc) 
        case ('FAMDL')
-          call read_famdl_file(file, G, deriv_type, ec, x=x_bc) 
+          call read_famdl_file(file, G, deriv_type, data_format, ec, x=x_bc) 
        case default
           $ABORT(Invalid file_format)
        end select
