@@ -270,6 +270,7 @@ contains
     logical             :: use_trad_approx
     character(LEN=64)   :: ivp_solver_type
     character(LEN=2048) :: tag_list
+    integer             :: i
 
     namelist /num/ n_iter_max, theta_ad, &
          reduce_order, use_banded, use_trad_approx, ivp_solver_type, tag_list
@@ -306,7 +307,7 @@ contains
        tag_list = ''
 
        rewind(unit)
-       read(unit, NML=num, END=900)
+       read(unit, NML=num)
 
        ! Initialize the numpar
 
