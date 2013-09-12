@@ -101,7 +101,12 @@ contains
 
   subroutine init (this, cf, op, np, shoot_gp, recon_gp, x_in)
 
-    use gyre_bvp_nad_initmods
+    use gyre_jacobian_nad_dziem
+    use gyre_jacobian_nad_jcd
+    use gyre_bound_nad_zero
+    use gyre_bound_nad_dziem
+    use gyre_bound_nad_unno
+    use gyre_bound_nad_jcd
 
     class(bvp_nad_t), intent(out)     :: this
     class(coeffs_t), intent(in)       :: cf
@@ -148,10 +153,10 @@ contains
        allocate(bound_nad_zero_t::this%bd)
     case ('DZIEM')
        allocate(bound_nad_dziem_t::this%bd)
-    ! case ('UNNO')
-    !    allocate(bound_nad_unno_t::this%bd)
-    ! case ('JCD')
-    !    allocate(bound_nad_jcd_t::this%bd)
+    case ('UNNO')
+        allocate(bound_nad_unno_t::this%bd)
+    case ('JCD')
+       allocate(bound_nad_jcd_t::this%bd)
     case default
        $ABORT(Invalid bound_type)
     end select
