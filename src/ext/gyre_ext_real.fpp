@@ -246,12 +246,6 @@ contains
   $SEND(er,type(ext_real_t),3)
   $SEND(er,type(ext_real_t),4)
 
-  $SEND(ec,type(ext_complex_t),0)
-  $SEND(ec,type(ext_complex_t),1)
-  $SEND(ec,type(ext_complex_t),2)
-  $SEND(ec,type(ext_complex_t),3)
-  $SEND(ec,type(ext_complex_t),4)
-
 !****
   
   $define $RECV $sub
@@ -285,12 +279,6 @@ contains
   $RECV(er,type(ext_real_t),3)
   $RECV(er,type(ext_real_t),4)
 
-  $RECV(ec,type(ext_complex_t),0)
-  $RECV(ec,type(ext_complex_t),1)
-  $RECV(ec,type(ext_complex_t),2)
-  $RECV(ec,type(ext_complex_t),3)
-  $RECV(ec,type(ext_complex_t),4)
-  
 !****
   
   $define $RECV_ANY $sub
@@ -324,12 +312,6 @@ contains
   $RECV_ANY(er,type(ext_real_t),3)
   $RECV_ANY(er,type(ext_real_t),4)
 
-  $RECV_ANY(ec,type(ext_complex_t),0)
-  $RECV_ANY(ec,type(ext_complex_t),1)
-  $RECV_ANY(ec,type(ext_complex_t),2)
-  $RECV_ANY(ec,type(ext_complex_t),3)
-  $RECV_ANY(ec,type(ext_complex_t),4)
-  
 !****
 
   $define $BCAST $sub
@@ -362,12 +344,6 @@ contains
   $BCAST(er,type(ext_real_t),3)
   $BCAST(er,type(ext_real_t),4)
 
-  $BCAST(ec,type(ext_complex_t),0)
-  $BCAST(ec,type(ext_complex_t),1)
-  $BCAST(ec,type(ext_complex_t),2)
-  $BCAST(ec,type(ext_complex_t),3)
-  $BCAST(ec,type(ext_complex_t),4)
-  
 !****
 
   $BCAST_ALLOC(er,type(ext_real_t),0)
@@ -375,12 +351,6 @@ contains
   $BCAST_ALLOC(er,type(ext_real_t),2)
   $BCAST_ALLOC(er,type(ext_real_t),3)
   $BCAST_ALLOC(er,type(ext_real_t),4)
-
-  $BCAST_ALLOC(ec,type(ext_complex_t),0)
-  $BCAST_ALLOC(ec,type(ext_complex_t),1)
-  $BCAST_ALLOC(ec,type(ext_complex_t),2)
-  $BCAST_ALLOC(ec,type(ext_complex_t),3)
-  $BCAST_ALLOC(ec,type(ext_complex_t),4)
 
 !****
 
@@ -419,12 +389,6 @@ contains
   $GATHERV(er,type(ext_real_t),real,3)
   $GATHERV(er,type(ext_real_t),real,4)
 
-  $GATHERV(ec,type(ext_complex_t),complex,0)
-  $GATHERV(ec,type(ext_complex_t),complex,1)
-  $GATHERV(ec,type(ext_complex_t),complex,2)
-  $GATHERV(ec,type(ext_complex_t),complex,3)
-  $GATHERV(ec,type(ext_complex_t),complex,4)
-  
 !****
 
   $define $ALLGATHERV $sub
@@ -458,12 +422,6 @@ contains
   $ALLGATHERV(er,type(ext_real_t),3)
   $ALLGATHERV(er,type(ext_real_t),4)
 
-  $ALLGATHERV(ec,type(ext_complex_t),0)
-  $ALLGATHERV(ec,type(ext_complex_t),1)
-  $ALLGATHERV(ec,type(ext_complex_t),2)
-  $ALLGATHERV(ec,type(ext_complex_t),3)
-  $ALLGATHERV(ec,type(ext_complex_t),4)
-  
   $endif
 
 !****

@@ -27,6 +27,9 @@ program gyre_nad
 
   use gyre_version
   use gyre_coeffs
+  $if($MPI)
+  use gyre_coeffs_mpi
+  $endif
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
