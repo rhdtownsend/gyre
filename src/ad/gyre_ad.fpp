@@ -56,11 +56,15 @@ program gyre_ad
   real(WP), allocatable         :: x_cf(:)
   class(coeffs_t), allocatable  :: cf
   type(oscpar_t), allocatable   :: op(:)
-  type(numpar_t)                :: np
+  type(numpar_t), allocatable   :: np(:)
   type(gridpar_t), allocatable  :: shoot_gp(:)
   type(gridpar_t), allocatable  :: recon_gp(:)
   type(scanpar_t), allocatable  :: sp(:)
   integer                       :: i
+  type(numpar_t), allocatable   :: np_sel(:)
+  type(gridpar_t), allocatable  :: shoot_gp_sel(:)
+  type(gridpar_t), allocatable  :: recon_gp_sel(:)
+  type(scanpar_t), allocatable  :: sp_sel(:)
   real(WP), allocatable         :: omega(:)
   class(bvp_t), allocatable     :: bp
   type(mode_t), allocatable     :: md(:)
@@ -111,7 +115,7 @@ program gyre_ad
   call bcast_alloc(x_cf, 0)
   call bcast_alloc(cf, 0)
   call bcast_alloc(op, 0)
-  call bcast(np, 0)
+  call bcast_alloc(np, 0)
   call bcast_alloc(shoot_gp, 0)
   call bcast_alloc(recon_gp, 0)
   call bcast_alloc(sp, 0)
@@ -123,26 +127,38 @@ program gyre_ad
 
   op_loop : do i = 1, SIZE(op)
 
+     ! Select parameters according to tags
+
+     call select_par(np, op(i)%tag, np_sel, last=.TRUE.)
+     call select_par(shoot_gp, op(i)%tag, shoot_gp_sel)
+     call select_par(recon_gp, op(i)%tag, recon_gp_sel)
+     call select_par(sp, op(i)%tag, sp_sel)
+
+     $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
+     $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
+     $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
+     $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
+
      ! Set up the frequency array
 
-     call build_scan(sp, cf, op(i), shoot_gp, x_cf, omega)
+     call build_scan(sp_sel, cf, op(i), shoot_gp_sel, x_cf, omega)
 
      ! Store the frequency range in shoot_gp
 
-     shoot_gp%omega_a = MINVAL(omega)
-     shoot_gp%omega_b = MAXVAL(omega)
+     shoot_gp_sel%omega_a = MINVAL(omega)
+     shoot_gp_sel%omega_b = MAXVAL(omega)
 
      ! Set up bp
 
      if(ALLOCATED(bp)) deallocate(bp)
 
-     if(op(i)%l == 0 .AND. np%reduce_order) then
+     if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
         allocate(bvp_rad_t::bp)
      else
         allocate(bvp_ad_t::bp)
      endif
 
-     call bp%init(cf, op(i), np, shoot_gp, recon_gp, x_cf)
+     call bp%init(cf, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf)
 
      ! Find modes
 
