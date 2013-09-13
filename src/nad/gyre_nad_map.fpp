@@ -33,7 +33,7 @@ program gyre_nad_map
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
-  use gyre_nad_bvp
+  use gyre_bvp_nad
   use gyre_mode
   use gyre_input
   use gyre_output
@@ -60,7 +60,7 @@ program gyre_nad_map
   real(WP), allocatable              :: omega_im(:)
   type(gridpar_t), allocatable       :: shoot_gp(:)
   type(gridpar_t), allocatable       :: recon_gp(:)
-  type(nad_bvp_t)                    :: nad_bp
+  type(bvp_nad_t)                    :: nad_bp
   character(LEN=FILENAME_LEN)        :: map_file
   
   integer                   :: n_omega_re

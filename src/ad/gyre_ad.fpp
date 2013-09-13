@@ -26,15 +26,17 @@ program gyre_ad
   use core_parallel
 
   use gyre_version
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
+  $if($MPI)
+  use gyre_coeffs_mpi
+  $endif
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
   use gyre_scanpar
   use gyre_bvp
-  use gyre_ad_bvp
-  use gyre_rad_bvp
+  use gyre_bvp_ad
+  use gyre_bvp_rad
   use gyre_search
   use gyre_mode
   use gyre_input
@@ -49,22 +51,25 @@ program gyre_ad
 
   ! Variables
 
-  character(LEN=:), allocatable      :: filename
-  integer                            :: unit
-  real(WP), allocatable              :: x_bc(:)
-  class(base_coeffs_t), allocatable  :: bc
-  class(therm_coeffs_t), allocatable :: tc
-  type(oscpar_t), allocatable        :: op(:)
-  type(numpar_t)                     :: np
-  type(gridpar_t), allocatable       :: shoot_gp(:)
-  type(gridpar_t), allocatable       :: recon_gp(:)
-  type(scanpar_t), allocatable       :: sp(:)
-  integer                            :: i
-  real(WP), allocatable              :: omega(:)
-  class(bvp_t), allocatable          :: bp
-  type(mode_t), allocatable          :: md(:)
-  type(mode_t), allocatable          :: md_all(:)
-  type(mode_t), allocatable          :: md_tmp(:)
+  character(LEN=:), allocatable :: filename
+  integer                       :: unit
+  real(WP), allocatable         :: x_cf(:)
+  class(coeffs_t), allocatable  :: cf
+  type(oscpar_t), allocatable   :: op(:)
+  type(numpar_t), allocatable   :: np(:)
+  type(gridpar_t), allocatable  :: shoot_gp(:)
+  type(gridpar_t), allocatable  :: recon_gp(:)
+  type(scanpar_t), allocatable  :: sp(:)
+  integer                       :: i
+  type(numpar_t), allocatable   :: np_sel(:)
+  type(gridpar_t), allocatable  :: shoot_gp_sel(:)
+  type(gridpar_t), allocatable  :: recon_gp_sel(:)
+  type(scanpar_t), allocatable  :: sp_sel(:)
+  real(WP), allocatable         :: omega(:)
+  class(bvp_t), allocatable     :: bp
+  type(mode_t), allocatable     :: md(:)
+  type(mode_t), allocatable     :: md_all(:)
+  type(mode_t), allocatable     :: md_tmp(:)
 
   ! Initialize
 
@@ -97,7 +102,7 @@ program gyre_ad
      
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-     call read_coeffs(unit, x_bc, bc, tc)
+     call read_coeffs(unit, x_cf, cf)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
@@ -107,11 +112,10 @@ program gyre_ad
   end if
 
   $if($MPI)
-  call bcast_alloc(x_bc, 0)
-  call bcast_alloc(bc, 0)
-  call bcast_alloc(tc, 0)
+  call bcast_alloc(x_cf, 0)
+  call bcast_alloc(cf, 0)
   call bcast_alloc(op, 0)
-  call bcast(np, 0)
+  call bcast_alloc(np, 0)
   call bcast_alloc(shoot_gp, 0)
   call bcast_alloc(recon_gp, 0)
   call bcast_alloc(sp, 0)
@@ -123,30 +127,38 @@ program gyre_ad
 
   op_loop : do i = 1, SIZE(op)
 
+     ! Select parameters according to tags
+
+     call select_par(np, op(i)%tag, np_sel, last=.TRUE.)
+     call select_par(shoot_gp, op(i)%tag, shoot_gp_sel)
+     call select_par(recon_gp, op(i)%tag, recon_gp_sel)
+     call select_par(sp, op(i)%tag, sp_sel)
+
+     $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
+     $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
+     $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
+     $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
+
      ! Set up the frequency array
 
-     call build_scan(sp, bc, op(i), shoot_gp, x_bc, omega)
+     call build_scan(sp_sel, cf, op(i), shoot_gp_sel, x_cf, omega)
 
-     ! Store the frequency range in shoot_gp
+     ! Store the frequency range in shoot_gp_sel
 
-     shoot_gp%omega_a = MINVAL(omega)
-     shoot_gp%omega_b = MAXVAL(omega)
+     shoot_gp_sel%omega_a = MINVAL(omega)
+     shoot_gp_sel%omega_b = MAXVAL(omega)
 
      ! Set up bp
 
      if(ALLOCATED(bp)) deallocate(bp)
 
-     if(op(i)%l == 0 .AND. np%reduce_order) then
-        allocate(rad_bvp_t::bp)
+     if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
+        allocate(bvp_rad_t::bp)
      else
-        allocate(ad_bvp_t::bp)
+        allocate(bvp_ad_t::bp)
      endif
 
-     if (ALLOCATED(tc)) then
-        call bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc, tc)
-     else
-        call bp%init(bc, op(i), np, shoot_gp, recon_gp, x_bc)
-     endif
+     call bp%init(cf, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf)
 
      ! Find modes
 

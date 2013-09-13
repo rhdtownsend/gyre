@@ -1,4 +1,4 @@
-! Module   : gyre_hom_base_coeffs
+! Module   : gyre_coeffs_hom
 ! Purpose  : base structure coefficients for homogeneous compressible models
 !
 ! Copyright 2013 Rich Townsend
@@ -17,14 +17,14 @@
 
 $include 'core.inc'
 
-module gyre_hom_base_coeffs
+module gyre_coeffs_hom
 
   ! Uses
 
   use core_kinds
   use core_parallel
 
-  use gyre_base_coeffs
+  use gyre_coeffs
 
   use ISO_FORTRAN_ENV
 
@@ -40,7 +40,7 @@ module gyre_hom_base_coeffs
     procedure :: ${NAME}_v
   $endsub
 
-  type, extends(base_coeffs_t) :: hom_base_coeffs_t
+  type, extends(coeffs_t) :: coeffs_hom_t
      private
      real(WP) :: dt_Gamma_1
    contains
@@ -53,12 +53,22 @@ module gyre_hom_base_coeffs
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     $PROC_DECL(c_rad)
+     $PROC_DECL(dc_rad)
+     $PROC_DECL(c_thm)
+     $PROC_DECL(c_dif)
+     $PROC_DECL(c_eps_ad)
+     $PROC_DECL(c_eps_S)
+     $PROC_DECL(nabla)
+     $PROC_DECL(kappa_ad)
+     $PROC_DECL(kappa_S)
+     $PROC_DECL(tau_thm)
      $PROC_DECL(Omega_rot)
      procedure, public :: pi_c
      procedure, public :: enable_cache
      procedure, public :: disable_cache
      procedure, public :: fill_cache
-  end type hom_base_coeffs_t
+  end type coeffs_hom_t
 
   ! Interfaces
 
@@ -74,7 +84,7 @@ module gyre_hom_base_coeffs
 
   private
 
-  public :: hom_base_coeffs_t
+  public :: coeffs_hom_t
   $if($MPI)
   public :: bcast
   $endif
@@ -85,10 +95,10 @@ contains
 
   subroutine init (this, Gamma_1)
 
-    class(hom_base_coeffs_t), intent(out) :: this
-    real(WP), intent(in)                  :: Gamma_1
+    class(coeffs_hom_t), intent(out) :: this
+    real(WP), intent(in)             :: Gamma_1
 
-    ! Initialize the base_coeffs
+    ! Initialize the coeffs
 
     this%dt_Gamma_1 = Gamma_1
 
@@ -104,10 +114,10 @@ contains
 
   subroutine bcast_bc (bc, root_rank)
 
-    class(hom_base_coeffs_t), intent(inout) :: bc
-    integer, intent(in)                     :: root_rank
+    class(coeffs_hom_t), intent(inout) :: bc
+    integer, intent(in)                :: root_rank
 
-    ! Broadcast the base_coeffs
+    ! Broadcast the coeffs
 
     call bcast(bc%dt_Gamma_1, root_rank)
 
@@ -123,9 +133,9 @@ contains
 
   function V_1 (this, x) result (V)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x
-    real(WP)                             :: V
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: V
 
     ! Calculate V
 
@@ -141,9 +151,9 @@ contains
   
   function V_v (this, x) result (V)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x(:)
-    real(WP)                             :: V(SIZE(x))
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: V(SIZE(x))
 
     integer :: i
 
@@ -163,9 +173,9 @@ contains
 
   function As_1 (this, x) result (As)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x
-    real(WP)                             :: As
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: As
 
     ! Calculate As
 
@@ -181,9 +191,9 @@ contains
   
   function As_v (this, x) result (As)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x(:)
-    real(WP)                             :: As(SIZE(x))
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: As(SIZE(x))
 
     integer :: i
 
@@ -203,9 +213,9 @@ contains
 
   function U_1 (this, x) result (U)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x
-    real(WP)                             :: U
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: U
 
     ! Calculate U
 
@@ -221,9 +231,9 @@ contains
   
   function U_v (this, x) result (U)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x(:)
-    real(WP)                             :: U(SIZE(x))
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: U(SIZE(x))
 
     integer :: i
 
@@ -243,9 +253,9 @@ contains
 
   function c_1_1 (this, x) result (c_1)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x
-    real(WP)                             :: c_1
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: c_1
 
     ! Calculate c_1
 
@@ -261,9 +271,9 @@ contains
   
   function c_1_v (this, x) result (c_1)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x(:)
-    real(WP)                             :: c_1(SIZE(x))
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: c_1(SIZE(x))
 
     integer :: i
 
@@ -283,9 +293,9 @@ contains
 
   function Gamma_1_1 (this, x) result (Gamma_1)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x
-    real(WP)                             :: Gamma_1
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: Gamma_1
 
     ! Calculate Gamma_1
 
@@ -301,9 +311,9 @@ contains
   
   function Gamma_1_v (this, x) result (Gamma_1)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x(:)
-    real(WP)                             :: Gamma_1(SIZE(x))
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: Gamma_1(SIZE(x))
 
     integer :: i
 
@@ -323,9 +333,9 @@ contains
 
   function nabla_ad_1 (this, x) result (nabla_ad)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x
-    real(WP)                             :: nabla_ad
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: nabla_ad
 
     ! Calculate nabla_ad (assume ideal gas)
 
@@ -341,9 +351,9 @@ contains
   
   function nabla_ad_v (this, x) result (nabla_ad)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x(:)
-    real(WP)                             :: nabla_ad(SIZE(x))
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: nabla_ad(SIZE(x))
 
     integer :: i
 
@@ -363,9 +373,9 @@ contains
 
   function delta_1 (this, x) result (delta)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x
-    real(WP)                             :: delta
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: delta
 
     ! Calculate delta (assume ideal gas)
 
@@ -381,9 +391,9 @@ contains
   
   function delta_v (this, x) result (delta)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x(:)
-    real(WP)                             :: delta(SIZE(x))
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: delta(SIZE(x))
 
     integer :: i
 
@@ -401,11 +411,64 @@ contains
 
 !****
 
+  $define $PROC $sub
+
+  $local $NAME $1
+
+  function ${NAME}_1 (this, x) result ($NAME)
+
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: $NAME
+
+    ! Abort with $NAME undefined
+
+    $ABORT($NAME is undefined)
+
+    ! Finish
+
+    return
+
+  end function ${NAME}_1
+
+!****
+
+  function ${NAME}_v (this, x) result ($NAME)
+
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: $NAME(SIZE(x))
+
+    ! Abort with $NAME undefined
+
+    $ABORT($NAME is undefined)
+
+    ! Finish
+
+    return
+
+  end function ${NAME}_v
+
+  $endsub
+
+  $PROC(c_rad)
+  $PROC(dc_rad)
+  $PROC(c_thm)
+  $PROC(c_dif)
+  $PROC(c_eps_ad)
+  $PROC(c_eps_S)
+  $PROC(nabla)
+  $PROC(kappa_S)
+  $PROC(kappa_ad)
+  $PROC(tau_thm)
+
+!****
+
   function Omega_rot_1 (this, x) result (Omega_rot)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x
-    real(WP)                             :: Omega_rot
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: Omega_rot
 
     ! Calculate Omega_rot (no rotation)
 
@@ -421,9 +484,9 @@ contains
   
   function Omega_rot_v (this, x) result (Omega_rot)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP), intent(in)                 :: x(:)
-    real(WP)                             :: Omega_rot(SIZE(x))
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: Omega_rot(SIZE(x))
 
     integer :: i
 
@@ -443,8 +506,8 @@ contains
 
   function pi_c (this)
 
-    class(hom_base_coeffs_t), intent(in) :: this
-    real(WP)                             :: pi_c
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP)                        :: pi_c
 
     ! Calculate pi_c = V/x^2 as x -> 0
 
@@ -460,7 +523,7 @@ contains
 
   subroutine enable_cache (this)
 
-    class(hom_base_coeffs_t), intent(inout) :: this
+    class(coeffs_hom_t), intent(inout) :: this
 
     ! Enable the coefficient cache (no-op, since we don't cache)
 
@@ -474,7 +537,7 @@ contains
 
   subroutine disable_cache (this)
 
-    class(hom_base_coeffs_t), intent(inout) :: this
+    class(coeffs_hom_t), intent(inout) :: this
 
     ! Disable the coefficient cache (no-op, since we don't cache)
 
@@ -488,8 +551,8 @@ contains
 
   subroutine fill_cache (this, x)
 
-    class(hom_base_coeffs_t), intent(inout) :: this
-    real(WP), intent(in)                    :: x(:)
+    class(coeffs_hom_t), intent(inout) :: this
+    real(WP), intent(in)               :: x(:)
 
     ! Fill the coefficient cache (no-op, since we don't cache)
 
@@ -499,4 +562,4 @@ contains
 
   end subroutine fill_cache
 
-end module gyre_hom_base_coeffs
+end module gyre_coeffs_hom

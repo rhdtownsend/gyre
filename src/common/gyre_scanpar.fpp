@@ -16,6 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_parallel.inc'
 
 module gyre_scanpar
 
@@ -31,11 +32,12 @@ module gyre_scanpar
   ! Derived-type definitions
 
   type :: scanpar_t
-     real(WP)          :: freq_min
-     real(WP)          :: freq_max
-     integer           :: n_freq
-     character(LEN=64) :: grid_type
-     character(LEN=64) :: freq_units
+     real(WP)            :: freq_min
+     real(WP)            :: freq_max
+     integer             :: n_freq
+     character(LEN=64)   :: grid_type
+     character(LEN=64)   :: freq_units
+     character(LEN=2048) :: tag_list
   end type scanpar_t
 
   ! Interfaces
@@ -61,6 +63,7 @@ module gyre_scanpar
   public :: scanpar_t
   $if($MPI)
   public :: bcast
+  public :: bcast_alloc
   $endif
 
   ! Procedures
@@ -71,11 +74,11 @@ contains
 
   $define $BCAST $sub
 
-  $local $RANK $0
+  $local $RANK $1
 
   subroutine bcast_sp_$RANK (sp, root_rank)
 
-    type(scanpar_t), intent(inout) :: np$ARRAY_SPEC($RANK)
+    type(scanpar_t), intent(inout) :: sp$ARRAY_SPEC($RANK)
     integer, intent(in)            :: root_rank
 
     ! Broadcast the scanpar
@@ -86,6 +89,7 @@ contains
 
     call bcast(sp%grid_type, root_rank)
     call bcast(sp%freq_units, root_rank)
+    call bcast(sp%tag_list, root_rank)
 
     ! Finish
 

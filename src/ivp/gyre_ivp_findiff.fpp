@@ -80,7 +80,7 @@ contains
     x = abscissa_findiff_GL2(x_a, x_b)
     dx = x_b - x_a
 
-    call jc%eval(omega, x(1), A)
+    call jc%eval(x(1), omega, A)
 
     ! Set up the solution matrices and scales
 
@@ -125,9 +125,9 @@ contains
     x = abscissa_findiff_nad(x_a, x_b)
     dx = x_b - x_a
 
-    call jc%eval_logx(omega, x(1), A(:,:,1))
-    call jc%eval_logx(omega, x(2), A(:,:,2))
-    call jc%eval_logx(omega, x(3), A(:,:,3))
+    call jc%eval_logx(x(1), omega, A(:,:,1))
+    call jc%eval_logx(x(2), omega, A(:,:,2))
+    call jc%eval_logx(x(3), omega, A(:,:,3))
 
     ! Set up the solution matrices and scales
 
@@ -224,8 +224,8 @@ contains
     x = abscissa_findiff_GL4(x_a, x_b)
     dx = x_b - x_a
 
-    call jc%eval(omega, x(1), A(:,:,1))
-    call jc%eval(omega, x(2), A(:,:,2))
+    call jc%eval(x(1), omega, A(:,:,1))
+    call jc%eval(x(2), omega, A(:,:,2))
 
     ! Set up the solution matrices and scales
 

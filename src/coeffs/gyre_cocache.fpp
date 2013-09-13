@@ -22,6 +22,7 @@ module gyre_cocache
   ! Uses
 
   use core_kinds
+  use core_parallel
   use core_order
 
   use ISO_FORTRAN_ENV
@@ -129,8 +130,8 @@ contains
     call bcast_alloc(this%x, root_rank)
     call bcast_alloc(this%c, root_rank)
 
-    call bcast(this%n)
-    call bcast(this%n_c)
+    call bcast(this%n, root_rank)
+    call bcast(this%n_c, root_rank)
 
     ! Finish
 

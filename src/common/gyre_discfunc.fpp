@@ -22,10 +22,10 @@ module gyre_discfunc
   ! Uses
 
   use core_kinds
-  use core_func
 
   use gyre_bvp
   use gyre_ext_arith
+  use gyre_ext_func
 
   ! This should not be needed, but it solves unresolved symbol issues
   ! with gfortran
@@ -39,14 +39,13 @@ module gyre_discfunc
 
   ! Derived-type definitions
 
-  type, extends(func_t) :: discfunc_t
+  type, extends(ext_func_t) :: discfunc_t
      private
      class(bvp_t), pointer :: bp
-     integer               :: e_norm
    contains 
      private
      procedure, public :: init
-     procedure, public :: eval_c
+     procedure, public :: eval_ec
   end type discfunc_t
 
   ! Access specifiers
@@ -76,20 +75,20 @@ contains
 
 !****
 
-  function eval_c (this, z) result (f_z)
+  function eval_ec (this, ez) result (f_ez)
 
     class(discfunc_t), intent(inout) :: this
-    complex(WP), intent(in)          :: z
-    complex(WP)                      :: f_z
+    type(ext_complex_t), intent(in)  :: ez
+    type(ext_complex_t)              :: f_ez
 
     ! Evaluate the discriminant
 
-    f_z = cmplx(this%bp%discrim(z))
+    f_ez = this%bp%discrim(CMPLX(ez))
 
     ! Finish
 
     return
 
-  end function eval_c
+  end function eval_ec
 
 end module gyre_discfunc

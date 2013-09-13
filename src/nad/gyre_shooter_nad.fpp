@@ -1,4 +1,4 @@
-! Module   : gyre_nad_shooter
+! Module   : gyre_shooter_nad
 ! Purpose  : nonadiabatic multiple shooting
 !
 ! Copyright 2013 Rich Townsend
@@ -17,19 +17,17 @@
 
 $include 'core.inc'
 
-module gyre_nad_shooter
+module gyre_shooter_nad
 
   ! Uses
 
   use core_kinds
   use core_order
 
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
-  use gyre_ad_jacobian
-  use gyre_nad_jacobian
+  use gyre_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_ivp, ivp_abscissa => abscissa
@@ -43,51 +41,49 @@ module gyre_nad_shooter
 
   ! Derived-type definitions
 
-  type :: nad_shooter_t
+  type :: shooter_nad_t
      private
-     class(base_coeffs_t), pointer  :: bc => null()
-     class(therm_coeffs_t), pointer :: tc => null()
-     type(oscpar_t), pointer        :: op => null()
-     type(numpar_t), pointer        :: np => null()
-     type(ad_jacobian_t)            :: ad_jc
-     type(nad_jacobian_t)           :: nad_jc
-     integer, public                :: n_e
+     class(coeffs_t), pointer   :: cf => null()
+     class(jacobian_t), pointer :: ad_jc => null()
+     class(jacobian_t), pointer :: nad_jc => null()
+     type(oscpar_t), pointer    :: op => null()
+     type(numpar_t), pointer    :: np => null()
+     integer, public            :: n_e
    contains
      private
      procedure, public :: init
      procedure, public :: shoot
      procedure, public :: recon => recon_sh
      procedure, public :: abscissa
-  end type nad_shooter_t
+  end type shooter_nad_t
 
   ! Access specifiers
 
   private
 
-  public :: nad_shooter_t
+  public :: shooter_nad_t
 
   ! Procedures
 
 contains
 
-  subroutine init (this, bc, tc, op, np)
+  subroutine init (this, cf, jc, op, np)
 
-    class(nad_shooter_t), intent(out)         :: this
-    class(base_coeffs_t), intent(in), target  :: bc
-    class(therm_coeffs_t), intent(in), target :: tc
-    type(oscpar_t), intent(in), target        :: op
-    type(numpar_t), intent(in), target        :: np
+    class(shooter_nad_t), intent(out)     :: this
+    class(coeffs_t), intent(in), target   :: cf
+    class(jacobian_t), intent(in), target :: jc
+    type(oscpar_t), intent(in), target    :: op
+    type(numpar_t), intent(in), target    :: np
 
-    ! Initialize the nad_shooter
+    ! Initialize the shooter_nad
 
-    this%bc => bc
-    this%tc => tc
-
+    this%cf => cf
+    this%nad_jc => jc
     this%op => op
     this%np => np
 
-    call this%ad_jc%init(bc, op)
-    call this%nad_jc%init(bc, tc, op)
+!    call this%ad_jc%init(cf, op)
+!    call this%nad_jc%init(cf, op)
     
     this%n_e = this%nad_jc%n_e
 
@@ -101,7 +97,7 @@ contains
 
   subroutine shoot (this, omega, x, sm, x_ad)
 
-    class(nad_shooter_t), intent(in) :: this
+    class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x(:)
     class(sysmtx_t), intent(inout)   :: sm
@@ -126,24 +122,24 @@ contains
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
 
-       if(x(k) < x_ad_ .AND. .FALSE.) then
+       ! if(x(k) < x_ad_ .AND. .FALSE.) then
 
-          ! Shoot adiabatically
+       !    ! Shoot adiabatically
 
-          call solve(this%np%ivp_solver_type, this%ad_jc, omega, x(k), x(k+1), E_l(1:4,1:4), E_r(1:4,1:4), scale)
+       !    call solve(this%np%ivp_solver_type, this%ad_jc, omega, x(k), x(k+1), E_l(1:4,1:4), E_r(1:4,1:4), scale)
 
-          ! Fix up the thermal parts of the block
+       !    ! Fix up the thermal parts of the block
 
-          E_l(1:4,5:6) = 0._WP
-          E_r(1:4,5:6) = 0._WP
+       !    E_l(1:4,5:6) = 0._WP
+       !    E_r(1:4,5:6) = 0._WP
 
-          E_l(5,:) = diff_coeffs(this%bc, this%tc, this%op, omega, x(k))
-          E_r(5,:) = 0._WP
+       !    E_l(5,:) = diff_coeffs(this%cf, this%op, omega, x(k))
+       !    E_r(5,:) = 0._WP
           
-          E_l(6,:) = -[0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
-          E_r(6,:) =  [0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
+       !    E_l(6,:) = -[0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
+       !    E_r(6,:) =  [0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
 
-       else
+       ! else
 
           ! Shoot nonadiabatically
 
@@ -152,15 +148,15 @@ contains
           ! Apply the thermal-term rescaling, to assist the rootfinder
 
           associate(x_mid => 0.5_WP*(x(k) + x(k+1)))
-            associate(V => this%bc%V(x_mid), nabla => this%tc%nabla(x_mid), &
-                      c_rad => this%tc%c_rad(x_mid), c_thm => this%tc%c_thm(x_mid))
+            associate(V => this%cf%V(x_mid), nabla => this%cf%nabla(x_mid), &
+                      c_rad => this%cf%c_rad(x_mid), c_thm => this%cf%c_thm(x_mid))
               lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x_mid
             end associate
           end associate
 
           scale = scale*exp(ext_complex(-lambda*(x(k+1)-x(k))))
 
-       endif
+!       endif
 
        call sm%set_block(k, E_l, E_r, scale)
 
@@ -174,7 +170,7 @@ contains
 
   subroutine recon_sh (this, omega, x_sh, y_sh, x, y, x_ad)
 
-    class(nad_shooter_t), intent(in) :: this
+    class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x_sh(:)
     complex(WP), intent(in)          :: y_sh(:,:)
@@ -244,7 +240,7 @@ contains
              y_in(5,:n_in) = y_sh(5,k)
 
              do i = 1,n_in
-                A_5 = diff_coeffs(this%bc, this%tc, this%op, omega, x(k))
+                A_5 = diff_coeffs(this%cf, this%op, omega, x(k))
                 y_in(6,i) = -DOT_PRODUCT(y_in(1:5,i), A_5(1:5))/A_5(6)
              end do
           
@@ -273,7 +269,7 @@ contains
 
   function abscissa (this, x_sh) result (x)
 
-    class(nad_shooter_t), intent(in) :: this
+    class(shooter_nad_t), intent(in) :: this
     real(WP), intent(in)             :: x_sh(:)
     real(WP), allocatable            :: x(:)
 
@@ -315,21 +311,20 @@ contains
 
 !****
 
-  function diff_coeffs (bc, tc, op, omega, x) result (a)
+  function diff_coeffs (cf, op, omega, x) result (a)
 
-    class(base_coeffs_t), intent(in)  :: bc
-    class(therm_coeffs_t), intent(in) :: tc
-    type(oscpar_t), intent(in)        :: op
-    complex(WP), intent(in)           :: omega
-    real(WP), intent(in)              :: x
-    complex(WP)                       :: a(6)
+    class(coeffs_t), intent(in) :: cf
+    type(oscpar_t), intent(in)  :: op
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP)                 :: a(6)
 
     ! Calculate the coefficients of the (algebraic) adiabatic
     ! diffusion equation
 
-    associate(U => bc%U(x), c_1 => bc%c_1(x), &
-              nabla_ad => bc%nabla_ad(x), &
-              c_rad => tc%c_rad(x), c_dif => tc%c_dif(x), nabla => tc%nabla(x), &
+    associate(U => cf%U(x), c_1 => cf%c_1(x), &
+              nabla_ad => cf%nabla_ad(x), &
+              c_rad => cf%c_rad(x), c_dif => cf%c_dif(x), nabla => cf%nabla(x), &
               l => op%l)
 
       a(1) = (nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
@@ -347,4 +342,4 @@ contains
 
   end function diff_coeffs
 
-end module gyre_nad_shooter
+end module gyre_shooter_nad

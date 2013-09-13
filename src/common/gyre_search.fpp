@@ -23,12 +23,11 @@ module gyre_search
 
   use core_kinds
   use core_constants
-  use core_func
   use core_order
   use core_parallel
 
   use gyre_bvp
-  use gyre_base_coeffs
+  use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -54,12 +53,12 @@ module gyre_search
 
 contains
 
-  subroutine build_scan (sp, bc, op, gp, x_in, omega)
+  subroutine build_scan (sp, cf, op, gp, x_in, omega)
 
     type(scanpar_t), intent(in)        :: sp(:)
-    type(gridpar_t), intent(in)        :: gp(:)
-    class(base_coeffs_t), intent(in)   :: bc
+    class(coeffs_t), intent(in)        :: cf
     type(oscpar_t), intent(in)         :: op
+    type(gridpar_t), intent(in)        :: gp(:)
     real(WP), allocatable, intent(in)  :: x_in(:)
     real(WP), allocatable, intent(out) :: omega(:)
 
@@ -70,9 +69,11 @@ contains
     real(WP) :: omega_max
     integer  :: j
 
+    $ASSERT(SIZE(sp) >=1,Empty scanpars)
+
     ! Determine the grid range
 
-    call grid_range(gp, bc, op, x_in, x_i, x_o)
+    call grid_range(gp, cf, op, x_in, x_i, x_o)
 
     ! Loop through scanpars
 
@@ -82,8 +83,8 @@ contains
 
        ! Set up the frequency grid
 
-       omega_min = sp(i)%freq_min/freq_scale(bc, op, x_o, sp(i)%freq_units)
-       omega_max = sp(i)%freq_max/freq_scale(bc, op, x_o, sp(i)%freq_units)
+       omega_min = sp(i)%freq_min/freq_scale(cf, op, x_o, sp(i)%freq_units)
+       omega_max = sp(i)%freq_max/freq_scale(cf, op, x_o, sp(i)%freq_units)
        
        select case(sp(i)%grid_type)
        case('LINEAR')
@@ -142,7 +143,7 @@ contains
        write(OUTPUT_UNIT, 100) form_header('Scan Mode Search', '=')
 100    format(A)
 
-       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', '|D|', 'n_iter'
+       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
 110    format(4(2X,A6),3(2X,A24),2X,A6)
        
     endif
@@ -171,7 +172,7 @@ contains
        call md(i)%classify(n_p, n_g, n_pg)
 
        if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, ABS(cmplx(md(i)%discrim)), md(i)%n_iter
+          write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
 120       format(4(2X,I6),3(2X,E24.16),2X,I6)
        endif
 
@@ -235,7 +236,7 @@ contains
        write(OUTPUT_UNIT, 100) form_header('Proximity Mode Search', '=')
 100    format(A)
 
-       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', '|D|', 'n_iter'
+       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
 110    format(4(2X,A6),3(2X,A23),2X,A4)
        
     endif
@@ -264,7 +265,7 @@ contains
        call md(i)%classify(n_p, n_g, n_pg)
 
        if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, ABS(cmplx(md(i)%discrim)), md(i)%n_iter
+          write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
 120       format(4(2X,I6),3(2X,E24.16),2X,I4)
        endif
 

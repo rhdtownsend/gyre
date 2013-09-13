@@ -25,10 +25,8 @@ module gyre_b3_file
   use core_constants
   use core_hgroup
 
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
-  use gyre_evol_base_coeffs
-  use gyre_evol_therm_coeffs
+  use gyre_coeffs
+  use gyre_coeffs_evol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -47,14 +45,13 @@ module gyre_b3_file
 
 contains
 
-  subroutine read_b3_file (file, G, deriv_type, bc, tc, x)
+  subroutine read_b3_file (file, G, deriv_type, ec, x)
 
-    character(LEN=*), intent(in)                              :: file
-    real(WP), intent(in)                                      :: G
-    character(LEN=*), intent(in)                              :: deriv_type
-    class(base_coeffs_t), allocatable, intent(out)            :: bc
-    class(therm_coeffs_t), allocatable, intent(out), optional :: tc
-    real(WP), allocatable, intent(out), optional              :: x(:)
+    character(LEN=*), intent(in)                 :: file
+    real(WP), intent(in)                         :: G
+    character(LEN=*), intent(in)                 :: deriv_type
+    class(coeffs_evol_t), intent(out)            :: ec
+    real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
     integer               :: n
@@ -153,34 +150,11 @@ contains
 
     ! Initialize the base_coeffs
 
-    allocate(evol_base_coeffs_t::bc)
-
-    select type (bc)
-    type is (evol_base_coeffs_t)
-       call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, &
-                    SPREAD(0._WP, DIM=1, NCOPIES=n), deriv_type, add_center)
-    class default
-       $ABORT(Invalid bc type)
-    end select
-
-    ! Initialize the therm_coeffs
-
-    if(PRESENT(tc)) then
-
-       allocate(evol_therm_coeffs_t::tc)
-
-       select type (tc)
-       type is (evol_therm_coeffs_t)
-          call tc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                       Gamma_1, nabla_ad, delta, nabla,  &
-                       kappa, kappa_rho, kappa_T, &
-                       epsilon, epsilon_rho, epsilon_T, deriv_type, add_center)
-       class default
-          $ABORT(Invalid tc type)
-       end select
-
-    endif
+    call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                 N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
+                 nabla, kappa, kappa_rho, kappa_T, &
+                 epsilon, epsilon_rho, epsilon_T, &
+                 deriv_type, add_center)
 
     ! Set up the grid
 

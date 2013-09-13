@@ -23,6 +23,7 @@ module gyre_gridpar
   ! Uses
 
   use core_kinds
+  use core_constants
   use core_parallel
 
   ! No implicit typing
@@ -32,16 +33,18 @@ module gyre_gridpar
   ! Derived-type definitions
 
   type :: gridpar_t
-     real(WP)          :: x_i = 0._WP
-     real(WP)          :: x_o = 1._WP
-     real(WP)          :: alpha_osc = 0._WP
-     real(WP)          :: alpha_exp = 0._WP
-     real(WP)          :: alpha_thm = 0._WP
-     real(WP)          :: omega_a = 0._WP
-     real(WP)          :: omega_b = 0._WP
-     real(WP)          :: s = 0
-     integer           :: n = 0
-     character(LEN=64) :: op_type = ''
+     real(WP)                    :: x_i = 0._WP
+     real(WP)                    :: x_o = 1._WP
+     real(WP)                    :: alpha_osc = 0._WP
+     real(WP)                    :: alpha_exp = 0._WP
+     real(WP)                    :: alpha_thm = 0._WP
+     real(WP)                    :: omega_a = 0._WP
+     real(WP)                    :: omega_b = 0._WP
+     real(WP)                    :: s = 0
+     integer                     :: n = 0
+     character(LEN=FILENAME_LEN) :: file
+     character(LEN=64)           :: op_type
+     character(LEN=2048)         :: tag_list
   end type gridpar_t
 
   ! Interfaces
@@ -101,7 +104,10 @@ contains
 
     call bcast(gp%n, root_rank)
 
+    call bcast(gp%file, root_rank)
+
     call bcast(gp%op_type, root_rank)
+    call bcast(gp%tag_list, root_rank)
 
     ! Finish
 

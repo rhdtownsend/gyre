@@ -26,7 +26,6 @@ module gyre_input
   use core_order
   use core_parallel
 
-  use gyre_base_coeffs
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -78,28 +77,28 @@ contains
 
 !****
 
-  subroutine read_coeffs (unit, x_bc, bc, tc)
+  subroutine read_coeffs (unit, x_bc, cf)
 
-    use gyre_base_coeffs
-    use gyre_hom_base_coeffs
-    use gyre_therm_coeffs
+    use gyre_coeffs
+    use gyre_coeffs_evol
+    use gyre_coeffs_poly
+    use gyre_coeffs_hom
     use gyre_mesa_file
-    use gyre_fgong_file
     use gyre_osc_file
+    use gyre_fgong_file
+    use gyre_famdl_file
     $if($HDF5)
     use gyre_b3_file
     use gyre_gsm_file
     use gyre_poly_file
     $endif
 
-    integer, intent(in)                                         :: unit
-    real(WP), allocatable, intent(out)                          :: x_bc(:)
+    integer, intent(in)                                   :: unit
+    real(WP), allocatable, intent(out)                    :: x_bc(:)
     $if($GFORTRAN_PR56218)
-    class(base_coeffs_t), allocatable, intent(inout)            :: bc
-    class(therm_coeffs_t), allocatable, intent(inout), optional :: tc
+    class(coeffs_t), allocatable, intent(inout)           :: cf
     $else
-    class(base_coeffs_t), allocatable, intent(out)              :: bc
-    class(therm_coeffs_t), allocatable, intent(out), optional   :: tc
+    class(coeffs_t), allocatable, intent(out), optional   :: cf
     $endif
 
     character(LEN=256)          :: coeffs_type
@@ -109,6 +108,9 @@ contains
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: G
     real(WP)                    :: Gamma_1
+    type(coeffs_evol_t)         :: ec
+    type(coeffs_poly_t)         :: pc
+    type(coeffs_hom_t)          :: hc
 
     namelist /coeffs/ coeffs_type, file_format, data_format, deriv_type, file, G, Gamma_1
 
@@ -131,42 +133,54 @@ contains
 
     select case (coeffs_type)
     case ('EVOL')
+
        select case (file_format)
        case ('MESA')
-          call read_mesa_file(file, G, deriv_type, bc, tc, x=x_bc)
+          call read_mesa_file(file, G, deriv_type, ec, x=x_bc)
        case('B3')
           $if($HDF5)
-          call read_b3_file(file, G, deriv_type, bc, tc, x=x_bc)
+          call read_b3_file(file, G, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
        case ('GSM')
           $if($HDF5)
-          call read_gsm_file(file, G, deriv_type, bc, tc, x=x_bc)
+          call read_gsm_file(file, G, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read GSM-format files)
           $endif
        case ('OSC')
-          call read_osc_file(file, G, deriv_type, data_format, bc, tc, x=x_bc)
+          call read_osc_file(file, G, deriv_type, data_format, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_file(file, G, deriv_type, data_format, bc, x=x_bc) 
+          call read_fgong_file(file, G, deriv_type, data_format, ec, x=x_bc) 
+       case ('FAMDL')
+          call read_famdl_file(file, G, deriv_type, data_format, ec, x=x_bc) 
        case default
           $ABORT(Invalid file_format)
        end select
+
+       allocate(cf, SOURCE=ec)
+       
     case ('POLY')
+
        $if($HDF5)
-       call read_poly_file(file, deriv_type, bc, x=x_bc)
+       call read_poly_file(file, deriv_type, pc, x=x_bc)
        $else
        $ABORT(No HDF5 support, therefore cannot read POLY files)
        $endif
+
+       allocate(cf, SOURCE=pc)
+
     case ('HOM')
-       allocate(hom_base_coeffs_t::bc)
-       select type (bc)
-       type is (hom_base_coeffs_t)
-          call bc%init(Gamma_1)
-       end select
+
+       call hc%init(Gamma_1)
+
+       allocate(cf, SOURCE=hc)
+
     case default
+
        $ABORT(Invalid coeffs_type)
+
     end select
 
     ! Finish
@@ -192,9 +206,11 @@ contains
     integer           :: i
     integer           :: l
     integer           :: m
+    character(LEN=64) :: variables_type
     character(LEN=64) :: outer_bound_type
+    character(LEN=64) :: tag
 
-    namelist /osc/ l, m, outer_bound_type
+    namelist /osc/ l, m, outer_bound_type, variables_type, tag
 
     ! Count the number of grid namelists
 
@@ -209,8 +225,6 @@ contains
 
 100 continue
 
-    $ASSERT(n_op >= 1,At least one osc namelist is required)
-
     ! Read oscillation parameters
 
     rewind(unit)
@@ -222,13 +236,16 @@ contains
        l = 0
        m = 0
 
+       variables_type = 'DZIEM'
        outer_bound_type = 'ZERO'
+       tag = ''
 
        read(unit, NML=osc)
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(l=l, m=m, outer_bound_type=outer_bound_type)
+       op(i) = oscpar_t(l=l, m=m, variables_type=variables_type, &
+                        outer_bound_type=outer_bound_type, tag=tag)
 
     end do read_loop
 
@@ -242,44 +259,67 @@ contains
 
   subroutine read_numpar (unit, np)
 
-    integer, intent(in)         :: unit
-    type(numpar_t), intent(out) :: np
+    integer, intent(in)                      :: unit
+    type(numpar_t), allocatable, intent(out) :: np(:)
 
-    integer           :: n_iter_max
-    real(WP)          :: theta_ad
-    logical           :: reduce_order
-    logical           :: use_banded
-    character(LEN=64) :: ivp_solver_type
+    integer             :: n_np
+    integer             :: n_iter_max
+    real(WP)            :: theta_ad
+    logical             :: reduce_order
+    logical             :: use_banded
+    logical             :: use_trad_approx
+    character(LEN=64)   :: ivp_solver_type
+    character(LEN=2048) :: tag_list
+    integer             :: i
 
-    namelist /num/ n_iter_max, theta_ad, reduce_order, use_banded, ivp_solver_type
+    namelist /num/ n_iter_max, theta_ad, &
+         reduce_order, use_banded, use_trad_approx, ivp_solver_type, tag_list
+
+    ! Count the number of num namelists
+
+    rewind(unit)
+
+    n_np = 0
+
+    count_loop : do
+       read(unit, NML=num, END=100)
+       n_np = n_np + 1
+    end do count_loop
+
+100 continue
 
     ! Read numerical parameters
 
-    n_iter_max = 50
-    theta_ad = 0._WP
-
-    reduce_order = .TRUE.
-    use_banded = .FALSE.
-
-    ivp_solver_type = 'MAGNUS_GL2'
-
     rewind(unit)
-    read(unit, NML=num, END=900)
 
-    ! Initialize the numpar
+    allocate(np(n_np))
 
-    np = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, &
-                  reduce_order=reduce_order, use_banded=use_banded, ivp_solver_type=ivp_solver_type)
+    read_loop : do i = 1,n_np
+
+       n_iter_max = 50
+       theta_ad = 0._WP
+
+       reduce_order = .TRUE.
+       use_banded = .FALSE.
+       use_trad_approx = .FALSE.
+
+       ivp_solver_type = 'MAGNUS_GL2'
+       tag_list = ''
+
+       rewind(unit)
+       read(unit, NML=num)
+
+       ! Initialize the numpar
+
+       np(i) = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, &
+                        reduce_order=reduce_order, use_banded=use_banded, use_trad_approx=use_trad_approx, &
+                       ivp_solver_type=ivp_solver_type, tag_list=tag_list)
+
+    end do read_loop
 
     ! Finish
 
     return
-
-    ! Jump-in point for end-of-file
-
-900 continue
-
-    $ABORT(No &num namelist in input file)
 
   end subroutine read_numpar
 
@@ -294,16 +334,18 @@ contains
     integer, intent(in)                       :: unit
     type(gridpar_t), allocatable, intent(out) :: gp(:)
 
-    integer            :: n_gp
-    character(LEN=256) :: op_type
-    real(WP)           :: alpha_osc
-    real(WP)           :: alpha_exp
-    real(WP)           :: alpha_thm
-    real(WP)           :: s
-    integer            :: n
-    integer            :: i
+    integer                     :: n_gp
+    real(WP)                    :: alpha_osc
+    real(WP)                    :: alpha_exp
+    real(WP)                    :: alpha_thm
+    real(WP)                    :: s
+    integer                     :: n
+    character(LEN=FILENAME_LEN) :: file
+    character(LEN=64)           :: op_type
+    character(LEN=2048)         :: tag_list
+    integer                     :: i
 
-    namelist /${NAME}_grid/ op_type, alpha_osc, alpha_exp, alpha_thm, s, n
+    namelist /${NAME}_grid/ alpha_osc, alpha_exp, alpha_thm, s, n, file, op_type, tag_list
 
     ! Count the number of grid namelists
 
@@ -318,8 +360,6 @@ contains
 
 100 continue
 
-    $ASSERT(n_gp >= 1,At least one ${NAME}_grid namelist is required)
-
     ! Read grid parameters
 
     rewind(unit)
@@ -327,8 +367,6 @@ contains
     allocate(gp(n_gp))
 
     read_loop : do i = 1,n_gp
-
-       op_type = 'CREATE_CLONE'
 
        alpha_osc = 0._WP
        alpha_exp = 0._WP
@@ -338,14 +376,18 @@ contains
 
        n = 0
 
+       file = ''
+
+       op_type = 'CREATE_CLONE'
+       tag_list = ''
+
        read(unit, NML=${NAME}_grid)
 
        ! Initialize the gridpar
 
-       gp(i) = gridpar_t(op_type=op_type, &
-                         alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, &
+       gp(i) = gridpar_t(alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, &
                          omega_a=0._WP, omega_b=0._WP, &
-                         s=s, n=n)
+                         s=s, n=n, file=file, op_type=op_type, tag_list=tag_list)
 
     end do read_loop
 
@@ -367,15 +409,16 @@ contains
     integer, intent(in)                       :: unit
     type(scanpar_t), allocatable, intent(out) :: sp(:)
 
-    integer           :: n_sp
-    integer           :: i
-    real(WP)          :: freq_min
-    real(WP)          :: freq_max
-    integer           :: n_freq
-    character(LEN=64) :: freq_units
-    character(LEN=64) :: grid_type
+    integer             :: n_sp
+    integer             :: i
+    real(WP)            :: freq_min
+    real(WP)            :: freq_max
+    integer             :: n_freq
+    character(LEN=64)   :: freq_units
+    character(LEN=64)   :: grid_type
+    character(LEN=2048) :: tag_list
 
-    namelist /scan/ freq_min, freq_max, n_freq, freq_units, grid_type
+    namelist /scan/ freq_min, freq_max, n_freq, freq_units, grid_type, tag_list
 
     ! Count the number of scan namelists
 
@@ -389,8 +432,6 @@ contains
     end do count_loop
 
 100 continue
-
-    $ASSERT(n_sp >= 1,At least one osc namelist is required)
 
     ! Read scan parameters
 
@@ -406,12 +447,14 @@ contains
           
        freq_units = 'NONE'
        grid_type = 'LINEAR'
+       tag_list = ''
 
        read(unit, NML=scan)
 
        ! Initialize the scanpar
 
-       sp(i) = scanpar_t(freq_min=freq_min, freq_max=freq_max, n_freq=n_freq, freq_units=freq_units, grid_type=grid_type)
+       sp(i) = scanpar_t(freq_min=freq_min, freq_max=freq_max, n_freq=n_freq, &
+                         freq_units=freq_units, grid_type=grid_type, tag_list=tag_list)
 
     end do read_loop
 

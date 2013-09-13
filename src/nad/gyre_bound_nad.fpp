@@ -1,4 +1,4 @@
-! Module   : gyre_nad_bound
+! Module   : gyre_bound_nad
 ! Purpose  : nonadiabatic boundary conditions
 !
 ! Copyright 2013 Rich Townsend
@@ -17,16 +17,15 @@
 
 $include 'core.inc'
 
-module gyre_nad_bound
+module gyre_bound_nad
 
   ! Uses
 
   use core_kinds
 
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   use gyre_oscpar
-  use gyre_ad_bound
+  use gyre_bound_ad
 
   use ISO_FORTRAN_ENV
 
@@ -36,14 +35,13 @@ module gyre_nad_bound
 
   ! Derived-type definitions
 
-  type :: nad_bound_t
+  type :: bound_nad_t
      private
-     class(base_coeffs_t), pointer  :: bc => null()
-     class(therm_coeffs_t), pointer :: tc => null()
-     type(oscpar_t), pointer        :: op => null()
-     integer, public                :: n_e
-     integer, public                :: n_i
-     integer, public                :: n_o
+     class(coeffs_t), pointer :: cf => null()
+     type(oscpar_t), pointer  :: op => null()
+     integer, public          :: n_e
+     integer, public          :: n_i
+     integer, public          :: n_o
    contains 
      private
      procedure, public :: init
@@ -53,29 +51,27 @@ module gyre_nad_bound
      procedure, public :: outer_bound_dziem
      procedure, public :: outer_bound_unno
      procedure, public :: outer_bound_jcd
-  end type nad_bound_t
+  end type bound_nad_t
 
   ! Access specifiers
 
   private
 
-  public :: nad_bound_t
+  public :: bound_nad_t
 
   ! Procedures
 
 contains
 
-  subroutine init (this, bc, tc, op)
+  subroutine init (this, cf, op)
 
-    class(nad_bound_t), intent(out)           :: this
-    class(base_coeffs_t), intent(in), target  :: bc
-    class(therm_coeffs_t), intent(in), target :: tc
-    type(oscpar_t), intent(in), target        :: op
+    class(bound_nad_t), intent(out)     :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in), target  :: op
 
-    ! Initialize the nad_bound
+    ! Initialize the bound_nad
 
-    this%bc => bc
-    this%tc => tc
+    this%cf => cf
     this%op => op
 
     this%n_i = 3
@@ -92,7 +88,7 @@ contains
 
   function inner_bound (this, x_i, omega) result (B_i)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_i
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_i(this%n_i,this%n_e)
@@ -101,8 +97,8 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%bc%c_1(x_i), l => this%op%l, &
-              omega_c => this%bc%omega_c(x_i, this%op%m, omega))
+    associate(c_1 => this%cf%c_1(x_i), l => this%op%l, &
+              omega_c => this%cf%omega_c(x_i, this%op%m, omega))
 
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l
@@ -137,7 +133,7 @@ contains
 
   function outer_bound (this, x_o, omega) result (B_o)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
@@ -167,7 +163,7 @@ contains
 
   function outer_bound_zero (this, x_o, omega) result (B_o)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
@@ -176,8 +172,8 @@ contains
     ! term in the gravitational bc is required for cases where the
     ! surface density remains finite (see Cox 1980, eqn. 17.71)
 
-    associate(V => this%bc%V(x_o), U => this%bc%U(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(V => this%cf%V(x_o), U => this%cf%U(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
@@ -212,7 +208,7 @@ contains
 
   function outer_bound_dziem (this, x_o, omega) result (B_o)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
@@ -220,8 +216,8 @@ contains
     ! Set the outer boundary conditions, assuming Dziembowski's (1971)
     ! condition: d(delta p)/dr -> 0 for an isothermal atmosphere.
 
-    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(V => this%cf%V(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
 
       B_o(1,1) = 1 + (l*(l+1)/omega_c**2 - 4 - omega_c**2)/V
       B_o(1,2) = -1._WP
@@ -256,7 +252,7 @@ contains
 
   function outer_bound_unno (this, x_o, omega) result (B_o)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
@@ -277,10 +273,10 @@ contains
     ! Set the outer boundary conditions, assuming Unno et al.'s (1989,
     ! S18.1) formulation.
 
-    call eval_outer_coeffs_unno(this%bc, x_o, V_g, As, c_1)
+    call eval_outer_coeffs_unno(this%cf, x_o, V_g, As, c_1)
 
-    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(V => this%cf%V(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
 
       lambda = outer_wavenumber(V_g, As, c_1, omega_c, l)
       
@@ -328,7 +324,7 @@ contains
 
   function outer_bound_jcd (this, x_o, omega) result (B_o)
 
-    class(nad_bound_t), intent(in) :: this
+    class(bound_nad_t), intent(in) :: this
     real(WP), intent(in)           :: x_o
     complex(WP), intent(in)        :: omega
     complex(WP)                    :: B_o(this%n_o,this%n_e)
@@ -343,10 +339,10 @@ contains
     ! Set the outer boundary conditions, assuming
     ! Christensen-Dalsgaard's formulation (see ADIPLS documentation)
 
-    call eval_outer_coeffs_jcd(this%bc, x_o, V_g, As, c_1)
+    call eval_outer_coeffs_jcd(this%cf, x_o, V_g, As, c_1)
 
-    associate(V => this%bc%V(x_o), nabla_ad => this%bc%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%bc%omega_c(x_o, this%op%m, omega))
+    associate(V => this%cf%V(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
 
       lambda = outer_wavenumber(V_g, As, c_1, omega_c, l)
 
@@ -391,4 +387,4 @@ contains
 
   end function outer_bound_jcd
 
-end module gyre_nad_bound
+end module gyre_bound_nad

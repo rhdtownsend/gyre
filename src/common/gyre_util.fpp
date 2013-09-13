@@ -26,12 +26,15 @@ module gyre_util
   use core_parallel
   use core_memory
 
-  use gyre_base_coeffs
-  use gyre_evol_base_coeffs
-  use gyre_poly_base_coeffs
-  use gyre_hom_base_coeffs
+  use gyre_coeffs
+  use gyre_coeffs_evol
+  use gyre_coeffs_poly
+  use gyre_coeffs_hom
   use gyre_oscpar
-  use gyre_ad_bound
+  use gyre_numpar
+  use gyre_gridpar
+  use gyre_scanpar
+  use gyre_atmos
 
   use ISO_FORTRAN_ENV
 
@@ -45,6 +48,12 @@ module gyre_util
 
   ! Interfaces
 
+  interface select_par
+     module procedure select_par_np
+     module procedure select_par_gp
+     module procedure select_par_sp
+  end interface select_par
+
   interface sprint
      module procedure sprint_i
   end interface sprint
@@ -57,7 +66,8 @@ module gyre_util
   public :: set_log_level
   public :: check_log_level
   public :: freq_scale
-  public :: split_item_list
+  public :: select_par
+  public :: split_list
   public :: join_fmts
   public :: sprint
   public :: rjust
@@ -173,26 +183,26 @@ contains
 
 !****
 
-  function freq_scale (bc, op, x_o, freq_units)
+  function freq_scale (cf, op, x_o, freq_units)
 
-    class(base_coeffs_t), intent(in) :: bc
-    type(oscpar_t), intent(in)       :: op
-    real(WP), intent(in)             :: x_o
-    character(LEN=*), intent(in)     :: freq_units
-    real(WP)                         :: freq_scale
+    class(coeffs_t), intent(in)  :: cf
+    type(oscpar_t), intent(in)   :: op
+    real(WP), intent(in)         :: x_o
+    character(LEN=*), intent(in) :: freq_units
+    real(WP)                     :: freq_scale
 
     ! Calculate the scale factor to convert a dimensionless angular
     ! frequency to a dimensioned frequency
 
-    select type (bc)
-    class is (evol_base_coeffs_t)
-       freq_scale = evol_freq_scale(bc, op, x_o, freq_units)
-    class is (poly_base_coeffs_t)
+    select type (cf)
+    class is (coeffs_evol_t)
+       freq_scale = evol_freq_scale(cf, op, x_o, freq_units)
+    class is (coeffs_poly_t)
        freq_scale = poly_freq_scale(freq_units)
-    class is (hom_base_coeffs_t)
+    class is (coeffs_hom_t)
        freq_scale = hom_freq_scale(freq_units)
     class default
-       $ABORT(Invalid bc type)
+       $ABORT(Invalid cf type)
     end select
 
     ! Finish
@@ -201,16 +211,16 @@ contains
 
   contains
 
-    function evol_freq_scale (bc, op, x_o, freq_units) result (freq_scale)
+    function evol_freq_scale (ec, op, x_o, freq_units) result (freq_scale)
 
-      class(evol_base_coeffs_t), intent(in) :: bc
-      type(oscpar_t), intent(in)            :: op
-      real(WP), intent(in)                  :: x_o
-      character(LEN=*), intent(in)          :: freq_units
-      real(WP)                              :: freq_scale
+      class(coeffs_evol_t), intent(in) :: ec
+      type(oscpar_t), intent(in)       :: op
+      real(WP), intent(in)             :: x_o
+      character(LEN=*), intent(in)     :: freq_units
+      real(WP)                         :: freq_scale
 
-      real(WP) :: omega_cutoff_lo
-      real(WP) :: omega_cutoff_hi
+      real(WP) :: omega_c_cutoff_lo
+      real(WP) :: omega_c_cutoff_hi
 
       ! Calculate the scale factor to convert a dimensionless angular
       ! frequency to a dimensioned frequency
@@ -219,17 +229,17 @@ contains
       case('NONE')
          freq_scale = 1._WP
       case('HZ')
-         freq_scale = 1._WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
+         freq_scale = 1._WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
       case('UHZ')
-         freq_scale = 1.E6_WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
       case('PER_DAY')
-         freq_scale = 86400._WP/(TWOPI*SQRT(bc%R_star**3/(bc%G*bc%M_star)))
+         freq_scale = 86400._WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
       case('ACOUSTIC_CUTOFF')
-         call eval_cutoffs(bc, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-         freq_scale = 1._WP/omega_cutoff_hi
+         call eval_cutoff_freqs_(ec, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         freq_scale = 1._WP/omega_c_cutoff_hi
       case('GRAVITY_CUTOFF')
-         call eval_cutoffs(bc, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-         freq_scale = 1._WP/omega_cutoff_lo
+         call eval_cutoff_freqs_(ec, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         freq_scale = 1._WP/omega_c_cutoff_lo
       case default
          $ABORT(Invalid freq_units)
       end select
@@ -288,68 +298,169 @@ contains
 
   end function freq_scale
 
+ !****
+
+  subroutine eval_cutoff_freqs_ (cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+
+    class(coeffs_t), intent(in) :: cf
+    type(oscpar_t), intent(in)  :: op
+    real(WP), intent(in)        :: x_o
+    real(WP), intent(out)       :: omega_c_cutoff_lo
+    real(WP), intent(out)       :: omega_c_cutoff_hi
+
+    real(WP) :: V_g
+    real(WP) :: As
+    real(WP) :: c_1
+
+     ! Evaluate the cutoff frequencies
+
+     select case (op%outer_bound_type)
+     case ('ZERO')
+        $ABORT(Cutoff frequencies are undefined for ZERO outer_bound_type)
+     case ('DZIEM')
+        $ABORT(Cutoff frequencies are undefined for DZIEM outer_bound_type)
+     case ('UNNO')
+        call eval_atmos_coeffs_unno(cf, x_o, V_g, As, c_1)
+     case('JCD')
+        call eval_atmos_coeffs_jcd(cf, x_o, V_g, As, c_1)
+     case default
+        $ABORT(Invalid outer_bound_type)
+     end select
+
+     call eval_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+
+     ! Finish
+
+     return
+
+   end subroutine eval_cutoff_freqs_
+
 !****
+   
+   $define $SELECT_PAR $sub
 
-  function split_item_list (item_list) result (items)
+   $local $SUFFIX $1
+   $local $PAR_TYPE $2
 
-    character(LEN=*), intent(in)               :: item_list
-    character(LEN=LEN(item_list)), allocatable :: items(:)
+   subroutine select_par_$SUFFIX (par, tag, par_sel, last)
 
-    character(LEN=LEN(item_list)) :: item_list_
-    integer                       :: d
-    integer                       :: n
-    integer                       :: j
-    
-    ! Split the comma-sepated list of items into an array of
-    ! individual items
- 
-    d = 16
+     type($PAR_TYPE), intent(in)               :: par(:)
+     character(LEN=*), intent(in)              :: tag
+     type($PAR_TYPE), allocatable, intent(out) :: par_sel(:)
+     logical, intent(in), optional             :: last
 
-    allocate(items(d))
+     logical :: last_
+     integer :: i
+     logical :: mask(SIZE(par))
+     integer :: n_par_sel
+     integer :: j
 
-    n = 0
+     if(PRESENT(last)) then
+        last_ = last
+     else
+        last_ = .FALSE.
+     endif
 
-    ! Repeatedly split on commas
+     ! Select all parameters whose tag_list matches tag
 
-    item_list_ = item_list
+     mask_loop : do i = 1,SIZE(par)
+        mask(i) = (par(i)%tag_list == '') .OR. &
+                  (tag /= '' .AND. ANY(split_list(par(i)%tag_list, ',') == tag))
+    end do mask_loop
 
-    split_loop : do
+    n_par_sel = COUNT(mask)
 
-       if(item_list_ == ' ') exit split_loop
+    allocate(par_sel(n_par_sel))
 
-       j = INDEX(item_list_, ',')
+    j = 0
 
-       if(j <= 0) then
-          n = n + 1
-          items(n) = item_list_
-          exit split_loop
+    select_loop : do i = 1,SIZE(par)
+       if(mask(i)) then
+          j = j + 1
+          par_sel(j) = par(i)
        endif
+    end do select_loop
 
-       n = n + 1
+    ! If necessary, shrink par_sel to contain only the last element
 
-       ! Chop out the item name
-
-       items(n) = item_list_(:j-1)
-       item_list_ = item_list_(j+1:)
-
-       ! If necessary, expand the list
-          
-       if(n >= d) then
-          d = 2*d
-          call reallocate(items, [d])
-       end if
-
-    end do split_loop
-
-    ! Reallocate item_list to the correct length
-
-    call reallocate(items, [n])
+    if(last_ .AND. n_par_sel > 1) then
+       par_sel = par_sel(1:1)
+    endif
 
     ! Finish
 
     return
 
-  end function split_item_list
+  end subroutine select_par_$SUFFIX
+
+  $endsub
+
+  $SELECT_PAR(np,numpar_t)
+  $SELECT_PAR(gp,gridpar_t)
+  $SELECT_PAR(sp,scanpar_t)
+
+!****
+
+  function split_list (list, delim) result (elems)
+
+    character(LEN=*), intent(in)          :: list
+    character(LEN=1), intent(in)          :: delim
+    character(LEN=LEN(list)), allocatable :: elems(:)
+
+    character(LEN=LEN(list)) :: list_
+    integer                  :: d
+    integer                  :: n
+    integer                  :: j
+    
+    ! Split the delimited list into an array of elements
+ 
+    d = 16
+
+    allocate(elems(d))
+
+    n = 0
+
+    ! Repeatedly split on delimiters
+
+    list_ = list
+
+    split_loop : do
+
+       if(list_ == '') exit split_loop
+
+       j = INDEX(list_, delim)
+
+       if(j <= 0) then
+          n = n + 1
+          elems(n) = list_
+          exit split_loop
+       endif
+
+       n = n + 1
+
+       ! Chop out the element
+
+       elems(n) = list_(:j-1)
+       list_ = list_(j+1:)
+
+       ! If necessary, expand the array
+          
+       if(n >= d) then
+          d = 2*d
+          call reallocate(elems, [d])
+       end if
+
+    end do split_loop
+
+    ! Reallocate elems to the correct length
+
+    call reallocate(elems, [n])
+
+    ! Finish
+
+    return
+
+  end function split_list
 
 !****
 

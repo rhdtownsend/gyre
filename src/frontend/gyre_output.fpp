@@ -24,9 +24,9 @@ module gyre_output
   use core_kinds
   use core_constants
 
-  use gyre_base_coeffs
-  use gyre_evol_base_coeffs
-  use gyre_poly_base_coeffs
+  use gyre_coeffs
+  use gyre_coeffs_evol
+  use gyre_coeffs_poly
   use gyre_mode
   use gyre_util
   use gyre_writer
@@ -95,7 +95,7 @@ contains
        end select
 
        call wr%init(summary_file)
-       call write_summary(wr, md, split_item_list(summary_item_list), freq_units)
+       call write_summary(wr, md, split_list(summary_item_list, ','), freq_units)
        call wr%final()
 
        deallocate(wr)
@@ -121,7 +121,7 @@ contains
 100       format(A,I4.4,A)
 
           call wr%init(mode_file)
-          call write_mode(wr, md(j), split_item_list(mode_item_list), freq_units, j)
+          call write_mode(wr, md(j), split_list(mode_item_list, ','), freq_units, j)
           call wr%final()
 
        end do mode_loop
@@ -196,16 +196,16 @@ contains
           call wr%write('omega_im', [(md(i)%omega_im(), i=1,n_md)])
        case default
           if(n_md >= 1) then
-             select type (bc => md(1)%bc)
-             type is (evol_base_coeffs_t)
-                call write_summary_evol(wr, bc, items(j))
-             type is (poly_base_coeffs_t)
-                call write_summary_poly(wr, bc, items(j))
+             select type (cf => md(1)%cf)
+             type is (coeffs_evol_t)
+                call write_summary_evol(wr, cf, items(j))
+             type is (coeffs_poly_t)
+                call write_summary_poly(wr, cf, items(j))
              class default
                 write(ERROR_UNIT, *) 'item:', TRIM(items(j))
                 $ABORT(Invalid item)
-          end select
-       endif
+             end select
+          endif
        end select
 
     end do item_loop
@@ -216,21 +216,21 @@ contains
 
   contains
 
-    subroutine write_summary_evol (wr, bc, item)
+    subroutine write_summary_evol (wr, ec, item)
 
-      class(writer_t), intent(inout)       :: wr
-      type(evol_base_coeffs_t), intent(in) :: bc
-      character(LEN=*), intent(in)         :: item
+      class(writer_t), intent(inout)  :: wr
+      type(coeffs_evol_t), intent(in) :: ec
+      character(LEN=*), intent(in)    :: item
 
       ! Write the item
 
       select case (item)
       case ('M_star')
-         call wr%write('M_star', bc%M_star)
+         call wr%write('M_star', ec%M_star)
       case ('R_star')
-         call wr%write('R_star', bc%R_star)
+         call wr%write('R_star', ec%R_star)
       case ('L_star')
-         call wr%write('L_star', bc%L_star)
+         call wr%write('L_star', ec%L_star)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -242,17 +242,17 @@ contains
 
     end subroutine write_summary_evol
 
-    subroutine write_summary_poly (wr, bc, item)
+    subroutine write_summary_poly (wr, pc, item)
 
-      class(writer_t), intent(inout)       :: wr
-      type(poly_base_coeffs_t), intent(in) :: bc
-      character(LEN=*), intent(in)         :: item
+      class(writer_t), intent(inout)  :: wr
+      type(coeffs_poly_t), intent(in) :: pc
+      character(LEN=*), intent(in)    :: item
 
       ! Write the item
 
       select case (item)
       case ('n_poly')
-         call wr%write('n_poly', bc%n_poly)
+         call wr%write('n_poly', pc%n_poly)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -319,19 +319,19 @@ contains
        case ('x')
           call wr%write('x', md%x)
        case('V')
-          call wr%write('V', md%bc%V(md%x))
+          call wr%write('V', md%cf%V(md%x))
        case('As')
-          call wr%write('As', md%bc%As(md%x))
+          call wr%write('As', md%cf%As(md%x))
        case('U')
-          call wr%write('U', md%bc%U(md%x))
+          call wr%write('U', md%cf%U(md%x))
        case('c_1')
-          call wr%write('c_1', md%bc%c_1(md%x))
+          call wr%write('c_1', md%cf%c_1(md%x))
        case ('Gamma_1')
-          call wr%write('Gamma_1', md%bc%Gamma_1(md%x))
+          call wr%write('Gamma_1', md%cf%Gamma_1(md%x))
        case ('nabla_ad')
-          call wr%write('nabla_ad', md%bc%nabla_ad(md%x))
+          call wr%write('nabla_ad', md%cf%nabla_ad(md%x))
        case ('delta')
-          call wr%write('delta', md%bc%delta(md%x))
+          call wr%write('delta', md%cf%delta(md%x))
        case ('xi_r')
           call wr%write('xi_r', md%xi_r())
        case ('xi_h')
@@ -371,11 +371,11 @@ contains
        case ('K')
           call wr%write('K', md%K())
        case default
-          select type (bc => md%bc)
-          type is (evol_base_coeffs_t)
-             call write_mode_evol(wr, bc, items(j))
-          type is (poly_base_coeffs_t)
-             call write_mode_poly(wr, bc, items(j))
+          select type (cf => md%cf)
+          type is (coeffs_evol_t)
+             call write_mode_evol(wr, cf, items(j))
+          type is (coeffs_poly_t)
+             call write_mode_poly(wr, cf, items(j))
           class default
              write(ERROR_UNIT, *) 'item:', TRIM(items(j))
              $ABORT(Invalid item)
@@ -390,29 +390,29 @@ contains
 
   contains
 
-    subroutine write_mode_evol (wr, bc, item)
+    subroutine write_mode_evol (wr, ec, item)
 
-      class(writer_t), intent(inout)       :: wr
-      type(evol_base_coeffs_t), intent(in) :: bc
-      character(LEN=*), intent(in)         :: item
+      class(writer_t), intent(inout)  :: wr
+      type(coeffs_evol_t), intent(in) :: ec
+      character(LEN=*), intent(in)    :: item
 
       ! Write the item
 
       select case (item)
       case ('M_star')
-         call wr%write('M_star', bc%M_star)
+         call wr%write('M_star', ec%M_star)
       case ('R_star')
-         call wr%write('R_star', bc%R_star)
+         call wr%write('R_star', ec%R_star)
       case ('L_star')
-         call wr%write('L_star', bc%L_star)
+         call wr%write('L_star', ec%L_star)
       case ('m')
-         call wr%write('m', bc%m(md%x))
+         call wr%write('m', ec%m(md%x))
       case ('p')
-         call wr%write('p', bc%p(md%x))
+         call wr%write('p', ec%p(md%x))
       case ('rho')
-         call wr%write('rho', bc%rho(md%x))
+         call wr%write('rho', ec%rho(md%x))
       case ('T')
-         call wr%write('T', bc%T(md%x))
+         call wr%write('T', ec%T(md%x))
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -424,17 +424,17 @@ contains
 
     end subroutine write_mode_evol
 
-    subroutine write_mode_poly (wr, bc, item)
+    subroutine write_mode_poly (wr, pc, item)
 
-      class(writer_t), intent(inout)       :: wr
-      type(poly_base_coeffs_t), intent(in) :: bc
-      character(LEN=*), intent(in)         :: item
+      class(writer_t), intent(inout)  :: wr
+      type(coeffs_poly_t), intent(in) :: pc
+      character(LEN=*), intent(in)    :: item
 
       ! Write the item
 
       select case (item)
       case ('n_poly')
-         call wr%write('n_poly', bc%n_poly)
+         call wr%write('n_poly', pc%n_poly)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)

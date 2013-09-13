@@ -432,7 +432,7 @@ contains
     dx = x_b - x_a
     x = abscissa_magnus_GL2(x_a, x_b)
 
-    call jc%eval(omega, x(1), A)
+    call jc%eval(x(1), omega, A)
 
     ! Evaluate the slope matrix
 
@@ -470,8 +470,8 @@ contains
     dx = x_b - x_a
     x = abscissa_magnus_GL4(x_a, x_b)
 
-    call jc%eval(omega, x(1), A(:,:,1))
-    call jc%eval(omega, x(2), A(:,:,2))
+    call jc%eval(x(1), omega, A(:,:,1))
+    call jc%eval(x(2), omega, A(:,:,2))
 
     ! Evaluate the Magnus slope matrix (Blanes et al. 2009, eqns. 243
     ! and 253; note that the 12 in the denominator of their expression
@@ -515,9 +515,9 @@ contains
     dx = x_b - x_a
     x = abscissa_magnus_GL6(x_a, x_b)
 
-    call jc%eval(omega, x(1), A(:,:,1))
-    call jc%eval(omega, x(2), A(:,:,2))
-    call jc%eval(omega, x(3), A(:,:,3))
+    call jc%eval(x(1), omega, A(:,:,1))
+    call jc%eval(x(2), omega, A(:,:,2))
+    call jc%eval(x(3), omega, A(:,:,3))
 
     ! Evaluate the Magnus slope matrix (Blanes et al. 2009, eqns. 251 and 257)
 

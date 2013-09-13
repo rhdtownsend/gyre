@@ -24,8 +24,8 @@ module gyre_poly_file
   use core_kinds
   use core_hgroup
 
-  use gyre_base_coeffs
-  use gyre_poly_base_coeffs
+  use gyre_coeffs
+  use gyre_coeffs_poly
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -44,12 +44,12 @@ module gyre_poly_file
 
 contains
 
-  subroutine read_poly_file (file, deriv_type, bc, x)
+  subroutine read_poly_file (file, deriv_type, pc, x)
 
-    character(LEN=*), intent(in)                   :: file
-    character(LEN=*), intent(in)                   :: deriv_type
-    class(base_coeffs_t), allocatable, intent(out) :: bc
-    real(WP), allocatable, intent(out), optional   :: x(:)
+    character(LEN=*), intent(in)                 :: file
+    character(LEN=*), intent(in)                 :: deriv_type
+    class(coeffs_poly_t), intent(out)            :: pc
+    real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
     real(WP)              :: n_poly
@@ -76,20 +76,13 @@ contains
 
     call hg%final()
 
-    ! Initialize the base_coeffs
+    ! Initialize the coeffs_poly
 
-    allocate(poly_base_coeffs_t::bc)
-
-    select type (bc)
-    type is (poly_base_coeffs_t)
-       call bc%init(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
-    class default
-       $ABORT(Invalid bc type)
-    end select
+    call pc%init(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
 
     ! If necessary, return the grid
 
-    if(PRESENT(x)) then
+    if (PRESENT(x)) then
        x = xi/xi(SIZE(xi))
     endif
 

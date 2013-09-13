@@ -24,8 +24,8 @@ module gyre_fgong_file
   use core_kinds
   use core_constants
 
-  use gyre_base_coeffs
-  use gyre_evol_base_coeffs
+  use gyre_coeffs
+  use gyre_coeffs_evol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -44,14 +44,14 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_file (file, G, deriv_type, data_format, bc, x)
+  subroutine read_fgong_file (file, G, deriv_type, data_format, ec, x)
 
-    character(LEN=*), intent(in)                   :: file
-    real(WP), intent(in)                           :: G
-    character(LEN=*), intent(in)                   :: deriv_type
-    character(LEN=*), intent(in)                   :: data_format
-    class(base_coeffs_t), allocatable, intent(out) :: bc
-    real(WP), allocatable, intent(out), optional   :: x(:)
+    character(LEN=*), intent(in)                 :: file
+    real(WP), intent(in)                         :: G
+    character(LEN=*), intent(in)                 :: deriv_type
+    character(LEN=*), intent(in)                 :: data_format
+    class(coeffs_evol_t), intent(out)            :: ec
+    real(WP), allocatable, intent(out), optional :: x(:)
 
     character(LEN=:), allocatable :: data_format_
     integer                       :: unit
@@ -153,16 +153,9 @@ contains
 
     ! Initialize the base_coeffs
 
-    allocate(evol_base_coeffs_t::bc)
-
-    select type (bc)
-    type is (evol_base_coeffs_t)
-       call bc%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                    N2, Gamma_1, nabla_ad, delta, &
-                    SPREAD(0._WP, DIM=1, NCOPIES=n), deriv_type, add_center)
-    class default
-       $ABORT(Invalid bc type)
-    end select
+    call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                 N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
+                 deriv_type, add_center)
 
     ! Set up the grid
 

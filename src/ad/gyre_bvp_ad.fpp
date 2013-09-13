@@ -1,5 +1,5 @@
-! Module   : gyre_nad_bvp
-! Purpose  : solve nonadiabatic BVPs
+! Module   : gyre_bvp_ad
+! Purpose  : solve adiabatic BVPs
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_nad_bvp
+module gyre_bvp_ad
 
   ! Uses
 
@@ -25,18 +25,17 @@ module gyre_nad_bvp
   use core_parallel
 
   use gyre_bvp
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_coeffs
   $if($MPI)
-  use gyre_base_coeffs_mpi
-  use gyre_therm_coeffs_mpi
+  use gyre_coeffs_mpi
   $endif
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
   use gyre_discfunc
-  use gyre_nad_shooter
-  use gyre_nad_bound
+  use gyre_shooter_ad
+  use gyre_jacobian
+  use gyre_bound
   use gyre_sysmtx
   use gyre_ext_arith
   use gyre_grid
@@ -50,32 +49,33 @@ module gyre_nad_bvp
 
   ! Derived-type definitions
 
-  type, extends(bvp_t) :: nad_bvp_t
+  type, extends(bvp_t) :: bvp_ad_t
      private
-     class(base_coeffs_t), allocatable  :: bc
-     class(therm_coeffs_t), allocatable :: tc
-     type(oscpar_t)                     :: op
-     type(numpar_t)                     :: np
-     type(gridpar_t), allocatable       :: shoot_gp(:)
-     type(gridpar_t), allocatable       :: recon_gp(:)
-     type(nad_shooter_t)                :: sh
-     type(nad_bound_t)                  :: bd
-     type(sysmtx_t)                     :: sm
-     real(WP), allocatable              :: x_in(:)
-     real(WP), allocatable              :: x(:)
-     real(WP)                           :: x_ad
-     integer                            :: e_norm
-     integer, public                    :: n
-     integer, public                    :: n_e
+     class(coeffs_t), allocatable   :: cf
+     class(jacobian_t), allocatable :: jc
+     class(bound_t), allocatable    :: bd
+     type(shooter_ad_t)             :: sh
+     type(sysmtx_t)                 :: sm
+     type(oscpar_t)                 :: op
+     type(numpar_t)                 :: np
+     type(gridpar_t), allocatable   :: shoot_gp(:)
+     type(gridpar_t), allocatable   :: recon_gp(:)
+     real(WP), allocatable          :: x_in(:)
+     real(WP), allocatable          :: x(:)
+     integer                        :: e_norm
+     integer, public                :: n
+     integer, public                :: n_e
    contains 
      private
      procedure, public :: init
-     procedure, public :: set_x_ad
+     $if($GFORTRAN_PR57922)
+     procedure, public :: final
+     $endif
      procedure, public :: discrim
      procedure         :: build
      procedure         :: recon
      procedure, public :: mode
-  end type nad_bvp_t
+  end type bvp_ad_t
 
   ! Interfaces
 
@@ -91,7 +91,7 @@ module gyre_nad_bvp
 
   private
 
-  public :: nad_bvp_t
+  public :: bvp_ad_t
   $if($MPI)
   public :: bcast
   $endif
@@ -100,34 +100,29 @@ module gyre_nad_bvp
 
 contains
 
-  subroutine init (this, bc, op, np, shoot_gp, recon_gp, x_in, tc)
+  subroutine init (this, cf, op, np, shoot_gp, recon_gp, x_in)
 
-    class(nad_bvp_t), intent(out)               :: this
-    class(base_coeffs_t), intent(in)            :: bc
-    type(oscpar_t), intent(in)                  :: op
-    type(numpar_t), intent(in)                  :: np
-    type(gridpar_t), intent(in)                 :: shoot_gp(:)
-    type(gridpar_t), intent(in)                 :: recon_gp(:)
-    real(WP), allocatable, intent(in)           :: x_in(:)
-    class(therm_coeffs_t), intent(in), optional :: tc
+    use gyre_jacobian_ad_dziem
+    use gyre_jacobian_ad_jcd
+    use gyre_bound_ad_zero
+    use gyre_bound_ad_dziem
+    use gyre_bound_ad_unno
+    use gyre_bound_ad_jcd
+
+    class(bvp_ad_t), intent(out)      :: this
+    class(coeffs_t), intent(in)       :: cf
+    type(oscpar_t), intent(in)        :: op
+    type(numpar_t), intent(in)        :: np
+    type(gridpar_t), intent(in)       :: shoot_gp(:)
+    type(gridpar_t), intent(in)       :: recon_gp(:)
+    real(WP), allocatable, intent(in) :: x_in(:)
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
 
-    $ASSERT(PRESENT(tc),Missing tc)
+    ! Initialize the bvp_ad
 
-    ! Initialize the nad_bvp
-
-    ! Create the shooting grid
-
-    call build_grid(shoot_gp, bc, op, x_in, this%x, tc)
-
-    n = SIZE(this%x)
-
-    ! Set up components
-    
-    allocate(this%bc, SOURCE=bc)
-    allocate(this%tc, SOURCE=tc)
+    ! Store parameters
 
     this%op = op
     this%np = np
@@ -135,14 +130,57 @@ contains
     this%shoot_gp = shoot_gp
     this%recon_gp = recon_gp
 
-    call this%sh%init(this%bc, this%tc, this%op, this%np)
-    call this%bd%init(this%bc, this%tc, this%op)
+    ! Copy coefficients
+    
+    allocate(this%cf, SOURCE=cf)
 
-    call this%sm%init(n-1, this%sh%n_e, this%bd%n_i, this%bd%n_o)
+    ! Initialize the jacobian
+
+    select case (this%op%variables_type)
+    case ('DZIEM')
+       allocate(jacobian_ad_dziem_t::this%jc)
+    case ('JCD')
+       allocate(jacobian_ad_jcd_t::this%jc)
+    case default
+       $ABORT(Invalid variables_type)
+    end select
+
+    call this%jc%init(this%cf, this%op)
+
+    ! Initialize the boundary conditions
+
+    select case (this%op%outer_bound_type)
+    case ('ZERO')
+       allocate(bound_ad_zero_t::this%bd)
+    case ('DZIEM')
+       allocate(bound_ad_dziem_t::this%bd)
+    case ('UNNO')
+       allocate(bound_ad_unno_t::this%bd)
+    case ('JCD')
+       allocate(bound_ad_jcd_t::this%bd)
+    case default
+       $ABORT(Invalid bound_type)
+    end select
+
+    call this%bd%init(this%cf, this%jc, this%op)
+
+    ! Initialize the shooter
+
+    call this%sh%init(this%cf, this%jc, this%op, this%np)
+
+    ! Build the shooting grid
+
+    call build_grid(this%shoot_gp, this%cf, this%op, x_in, this%x)
+
+    n = SIZE(this%x)
+
+    ! Initialize the system matrix
+
+    call this%sm%init(n-1, this%jc%n_e, this%bd%n_i, this%bd%n_o)
+
+    ! Other stuff
 
     if(ALLOCATED(x_in)) this%x_in = x_in
-
-    this%x_ad = 0._WP
 
     this%e_norm = 0
 
@@ -153,8 +191,8 @@ contains
 
     x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
-    call this%bc%fill_cache(x_cc)
-    call this%tc%fill_cache(x_cc)
+    call this%cf%fill_cache(x_cc)
+    if(ALLOCATED(this%cf)) call this%cf%fill_cache(x_cc)
 
     ! Finish
 
@@ -164,27 +202,45 @@ contains
 
 !****
 
+  $if($GFORTRAN_PR57922)
+
+  subroutine final (this)
+
+    class(bvp_ad_t), intent(inout) :: this
+
+    ! Finalize the bvp_ad
+
+    call this%cf%final()
+
+    ! Finish
+
+    return
+
+  end subroutine final
+
+  $endif
+
+!****
+
   $if($MPI)
 
   subroutine bcast_bp (this, root_rank)
 
-    class(nad_bvp_t), intent(inout) :: this
-    integer, intent(in)             :: root_rank
+    class(bvp_ad_t), intent(inout) :: this
+    integer, intent(in)            :: root_rank
 
-    class(base_coeffs_t), allocatable  :: bc
-    class(therm_coeffs_t), allocatable :: tc
-    type(oscpar_t)                     :: op
-    type(numpar_t)                     :: np
-    type(gridpar_t), allocatable       :: shoot_gp(:)
-    type(gridpar_t), allocatable       :: recon_gp(:)
-    real(WP), allocatable              :: x_in(:)
+    class(coeffs_t), allocatable :: cf
+    type(oscpar_t)               :: op
+    type(numpar_t)               :: np
+    type(gridpar_t), allocatable :: shoot_gp(:)
+    type(gridpar_t), allocatable :: recon_gp(:)
+    real(WP), allocatable        :: x_in(:)
 
     ! Broadcast the bvp
 
     if(MPI_RANK == root_rank) then
 
-       call bcast_alloc(this%bc, root_rank)
-       call bcast_alloc(this%tc, root_rank)
+       call bcast_alloc(this%cf, root_rank)
       
        call bcast(this%op, root_rank)
        call bcast(this%np, root_rank)
@@ -196,8 +252,7 @@ contains
 
     else
 
-       call bcast_alloc(bc, root_rank)
-       call bcast_alloc(tc, root_rank)
+       call bcast_alloc(cf, root_rank)
 
        call bcast(op, root_rank)
        call bcast(np, root_rank)
@@ -207,7 +262,7 @@ contains
 
        call bcast_alloc(x_in, root_rank)
 
-       call this%init(bc, tc, op, np, shoot_gp, recon_gp, x_in)
+       call this%init(cf, op, np, shoot_gp, recon_gp, x_in)
 
     endif
 
@@ -221,41 +276,12 @@ contains
 
 !****
 
-  subroutine set_x_ad (this, omega)
-
-    class(nad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)         :: omega
-
-    integer :: k
-
-    ! Decide where to switch from the adiabatic equations (interior)
-    ! to the non-adiabastic ones (exterior)
-
-    this%x_ad = 0._WP
-
-    x_ad_loop : do k = this%n,2,-1
-
-       if(this%tc%tau_thm(this%x(k))*REAL(omega)*this%np%theta_ad > 1._WP) then
-          this%x_ad = this%x(k)
-          exit x_ad_loop
-       endif
-
-    end do x_ad_loop
-
-    ! Finish
-
-    return
-
-  end subroutine set_x_ad
-
-!****
-
   function discrim (this, omega, use_real)
 
-    class(nad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)         :: omega
-    logical, intent(in), optional   :: use_real
-    type(ext_complex_t)             :: discrim
+    class(bvp_ad_t), intent(inout) :: this
+    complex(WP), intent(in)        :: omega
+    logical, intent(in), optional  :: use_real
+    type(ext_complex_t)            :: discrim
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
@@ -277,21 +303,19 @@ contains
 
   subroutine build (this, omega)
 
-    class(nad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)         :: omega
+    class(bvp_ad_t), intent(inout) :: this
+    complex(WP), intent(in)        :: omega
 
     ! Set up the sysmtx
 
-    call this%bc%enable_cache()
-    call this%tc%enable_cache()
+    call this%cf%enable_cache()
 
     call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
     call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
 
-    call this%sh%shoot(omega, this%x, this%sm, this%x_ad)
+    call this%sh%shoot(omega, this%x, this%sm)
 
-    call this%bc%disable_cache()
-    call this%tc%disable_cache()
+    call this%cf%disable_cache()
 
     ! Finish
 
@@ -301,13 +325,14 @@ contains
 
 !****
 
-  subroutine recon (this, omega, x, y, discrim)
+  subroutine recon (this, omega, x, y, discrim, use_real)
 
-    class(nad_bvp_t), intent(inout)       :: this
+    class(bvp_ad_t), intent(inout)        :: this
     complex(WP), intent(in)               :: omega
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
     type(ext_complex_t), intent(out)      :: discrim
+    logical, intent(in), optional         :: use_real
 
     complex(WP)         :: b(this%n_e*this%n)
     type(ext_complex_t) :: det
@@ -318,9 +343,9 @@ contains
 
     call this%build(omega)
 
-    call this%sm%null_vector(b, det, this%np%use_banded)
+    call this%sm%null_vector(b, det, use_real, this%np%use_banded)
 
-    discrim = scale(det, -this%e_norm)    
+    discrim = scale(det, -this%e_norm)
 
     y_sh = RESHAPE(b, SHAPE(y_sh))
 
@@ -329,7 +354,7 @@ contains
     this%recon_gp%omega_a = REAL(omega)
     this%recon_gp%omega_b = REAL(omega)
 
-    call build_grid(this%recon_gp, this%bc, this%op, this%x, x)
+    call build_grid(this%recon_gp, this%cf, this%op, this%x, x)
 
     if(SIZE(x) == SIZE(this%x)) then
        same_grid = ALL(x == this%x)
@@ -347,7 +372,7 @@ contains
 
        allocate(y(this%n_e,SIZE(x)))
 
-       call this%sh%recon(omega, this%x, y_sh, x, y, this%x_ad)
+       call this%sh%recon(omega, this%x, y_sh, x, y)
 
     endif
 
@@ -361,7 +386,7 @@ contains
 
   function mode (this, omega, discrim, use_real) result (md)
 
-    class(nad_bvp_t), intent(inout)           :: this
+    class(bvp_ad_t), intent(inout)            :: this
     complex(WP), intent(in)                   :: omega(:)
     type(ext_complex_t), intent(in), optional :: discrim(:)
     logical, intent(in), optional             :: use_real
@@ -378,6 +403,10 @@ contains
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
     type(ext_complex_t)      :: discrim_root
+    integer                  :: n
+    integer                  :: i
+    complex(WP), allocatable :: y_c(:,:)
+    type(ext_real_t)         :: chi
 
     $CHECK_BOUNDS(SIZE(omega),2)
     
@@ -404,13 +433,6 @@ contains
        discrim_b = this%discrim(omega_b)
     endif
 
-    ! Set the normalizing exponent
-
-    this%e_norm = MAX(exponent(discrim_a), exponent(discrim_b))
-
-    discrim_a = scale(discrim_a, -this%e_norm)
-    discrim_b = scale(discrim_b, -this%e_norm)
-
     ! Set up the discriminant function
 
     call df%init(this)
@@ -420,11 +442,11 @@ contains
     n_iter = this%np%n_iter_max
 
     if(use_real_) then
-       omega_root = df%root(REAL(omega_a), REAL(omega_b), 0._WP, &
-                            f_x_a=real(discrim_a), f_x_b=real(discrim_b), n_iter=n_iter)
+       omega_root = real(df%root(ext_real(omega_a), ext_real(omega_b), ext_real(0._WP), &
+                            f_ex_a=ext_real(discrim_a), f_ex_b=ext_real(discrim_b), n_iter=n_iter))
     else
-       omega_root = df%root(omega_a, omega_b, 0._WP, &
-                            f_z_a=cmplx(discrim_a), f_z_b=cmplx(discrim_b), n_iter=n_iter)
+       omega_root = cmplx(df%root(ext_complex(omega_a), ext_complex(omega_b), ext_real(0._WP), &
+                            f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
     endif
 
     $ASSERT(n_iter <= this%np%n_iter_max,Too many iterations)
@@ -433,9 +455,23 @@ contains
 
     call this%recon(omega_root, x, y, discrim_root)
 
+    ! Calculate canonical variables
+
+    n = SIZE(x)
+
+    allocate(y_c(6,n))
+
+    !$OMP PARALLEL DO 
+    do i = 1,n
+       y_c(1:4,i) = MATMUL(this%jc%trans_matrix(x(i), omega_root, .TRUE.), y(:,i))
+       y_c(5:6,i) = 0._WP
+    end do
+
     ! Initialize the mode
-    
-    call md%init(this%bc, this%op, omega_root, x, y, discrim_root, n_iter, this%tc)
+
+    chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
+
+    call md%init(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
 
     ! Reset the normalizing exponent
 
@@ -447,4 +483,5 @@ contains
 
   end function mode
 
-end module gyre_nad_bvp
+end module gyre_bvp_ad
+
