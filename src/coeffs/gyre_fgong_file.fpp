@@ -145,6 +145,14 @@ contains
     if(r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
     if(m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
 
+    if(m(1) == 0._WP .AND. r(1) /= 0._WP) then
+       r(1) = 0._WP
+       write(OUTPUT_UNIT, 110) 'Forcing central r == 0'
+    elseif(r(1) == 0._WP .AND. m(1) /= 0._WP) then
+       m(1) = 0._WP
+       write(OUTPUT_UNIT, 110) 'Forcing central m == 0'
+    endif
+
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
     if(add_center .AND. check_log_level('INFO')) then
