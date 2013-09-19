@@ -450,10 +450,10 @@ contains
     else
 
        if(this%e > that%e) then
-          f = this%f + that%f*RADIX_WP**(that%e - this%e)
+          f = this%f + real(ext_real_t(that%f, that%e - this%e))
           e = this%e
        else
-          f = this%f*RADIX_WP**(this%e - that%e) + that%f
+          f = real(ext_real_t(this%f, this%e - that%e)) + that%f
           e = that%e
        endif
 
@@ -512,10 +512,10 @@ contains
     else
 
        if(this%e > that%e) then
-          f = this%f - that%f*RADIX_WP**(that%e - this%e)
+          f = this%f - real(ext_real_t(that%f, that%e - this%e))
           e = this%e
        else
-          f = this%f*RADIX_WP**(this%e - that%e) - that%f
+          f = real(ext_real_t(this%f, this%e - that%e)) - that%f
           e = that%e
        endif
        
