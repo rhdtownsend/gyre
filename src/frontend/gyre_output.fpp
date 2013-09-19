@@ -153,20 +153,11 @@ contains
 
     integer            :: n_md
     integer            :: i
-    integer            :: n_p(SIZE(md))
-    integer            :: n_g(SIZE(md))
-    integer            :: n_pg(SIZE(md))
     integer            :: j
 
-    ! Calculate summary data
+    ! Write items
 
     n_md = SIZE(md)
-
-    mode_loop : do i = 1,n_md
-       call md(i)%classify(n_p(i), n_g(i), n_pg(i))
-    end do mode_loop
-
-    ! Write items
 
     item_loop : do j = 1,SIZE(items)
 
@@ -175,11 +166,11 @@ contains
        case('l')
           call wr%write('l', md%op%l)
        case('n_p')
-          call wr%write('n_p', n_p)
+          call wr%write('n_p', md%n_p)
        case('n_g')
-          call wr%write('n_g', n_g)
+          call wr%write('n_g', md%n_g)
        case('n_pg')
-          call wr%write('n_pg', n_pg)
+          call wr%write('n_pg', md%n_pg)
        case('omega')
           call wr%write('omega', md%omega)
        case('freq')
@@ -276,15 +267,8 @@ contains
     character(LEN=*), intent(in)   :: freq_units
     integer, intent(in)            :: i
 
-    integer        :: n_p
-    integer        :: n_g
-    integer        :: n_pg
-    integer        :: j
+    integer :: j
 
-    ! Calculate mode data
-
-    call md%classify(n_p, n_g, n_pg)
-    
     ! Write items
 
     call wr%write('i', i)
@@ -297,11 +281,11 @@ contains
        case ('l')
           call wr%write('l', md%op%l)
        case ('n_p')
-          call wr%write('n_p', n_p)
+          call wr%write('n_p', md%n_p)
        case ('n_g')
-          call wr%write('n_g', n_g)
+          call wr%write('n_g', md%n_g)
        case ('n_pg')
-          call wr%write('n_pg', n_pg)
+          call wr%write('n_pg', md%n_pg)
        case ('omega')
           call wr%write('omega', md%omega)
        case ('freq')

@@ -125,9 +125,6 @@ contains
     integer                       :: c_end
     integer                       :: c_rate
     integer                       :: i
-    integer                       :: n_p
-    integer                       :: n_g
-    integer                       :: n_pg
     $if($MPI)
     integer                       :: p
     $endif
@@ -169,10 +166,9 @@ contains
 
        ! Report
 
-       call md(i)%classify(n_p, n_g, n_pg)
-
-       if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
+       if(check_log_level('INFO', MPI_RANK) .AND. &
+          (md(i)%n_pg > md(i)%op%n_pg_min .AND. md(i)%n_pg <= md(i)%op%n_pg_max)) then
+          write(OUTPUT_UNIT, 120) md(i)%op%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
 120       format(4(2X,I6),3(2X,E24.16),2X,I6)
        endif
 
@@ -262,9 +258,8 @@ contains
 
        ! Report
 
-       call md(i)%classify(n_p, n_g, n_pg)
-
-       if(check_log_level('INFO', MPI_RANK)) then
+       if(check_log_level('INFO', MPI_RANK) .AND. &
+          (md(i)%n_pg > md(i)%op%n_pg_min .AND. md(i)%n_pg <= md(i)%op%n_pg_max)) then
           write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
 120       format(4(2X,I6),3(2X,E24.16),2X,I4)
        endif
