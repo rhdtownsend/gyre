@@ -110,8 +110,6 @@ contains
                  
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l
-      B_i(1,3) = 0._WP
-      B_i(1,4) = 0._WP
         
     end associate
 
@@ -160,8 +158,6 @@ contains
 
       B_o(1,1) = lambda - b_11
       B_o(1,2) = -b_12
-      B_o(1,3) = b_12 + (l*(l+1)/(c_1*omega_c**2) - l - 1._WP)*b_12/(V_g + As)
-      B_o(1,4) = 0._WP
 
     end associate
 

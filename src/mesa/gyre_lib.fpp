@@ -25,12 +25,10 @@ module gyre_lib
   use core_parallel
 
   use gyre_bvp
-  use gyre_ad_bvp
-  use gyre_rad_bvp
-  use gyre_base_coeffs
-  use gyre_evol_base_coeffs
-  use gyre_therm_coeffs
-  use gyre_evol_therm_coeffs
+  use gyre_bvp_ad
+  use gyre_bvp_rad
+  use gyre_coeffs
+  use gyre_coeffs_evol
   use gyre_mesa_file
   use gyre_oscpar
   use gyre_gridpar
@@ -49,9 +47,8 @@ module gyre_lib
 
   ! Module variables
 
-  class(base_coeffs_t), allocatable, save  :: bc_m
-  class(therm_coeffs_t), allocatable, save :: tc_m
-  real(WP), allocatable, save              :: x_bc_m(:)
+  type(coeffs_evol_t), save   :: ec_m
+  real(WP), allocatable, save :: x_ec_m(:)
 
   ! Access specifiers
 
@@ -92,7 +89,7 @@ contains
 
     ! Read the model
 
-    call read_mesa_file(file, G, deriv_type, bc_m, tc_m, x_bc_m)
+    call read_mesa_file(file, G, deriv_type, ec_m, x_ec_m)
 
     ! Finish
 
@@ -136,50 +133,20 @@ contains
 
     ! Set the model by storing coefficients
 
-    if(ALLOCATED(bc_m)) then
-       $if($GFORTRAN_PR57922)
-       call bc_m%final()
-       $endif
-       deallocate(bc_m)
-    endif
-
-    if(ALLOCATED(tc_m)) then
-       $if($GFORTRAN_PR57922)
-       call tc_m%final()
-       $endif
-       deallocate(tc_m)
-    endif
-
-    allocate(evol_base_coeffs_t::bc_m)
-    allocate(evol_therm_coeffs_t::tc_m)
-
     m = w/(1._WP+w)*M_star
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    select type (bc_m)
-    type is (evol_base_coeffs_t)
-       call bc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                      N2, Gamma_1, nabla_ad, delta, &
-                      Omega_rot, deriv_type, add_center)
-    class default
-       $ABORT(Invalid bc_m type)
-    end select
-
-    select type (tc_m)
-    type is (evol_therm_coeffs_t)
-       call tc_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                      Gamma_1, nabla_ad, delta, nabla,  &
-                      kappa, kappa_rho, kappa_T, &
-                      epsilon, epsilon_rho, epsilon_T, deriv_type, add_center)
-    class default
-       $ABORT(Invalid tc_m type)
-    end select
+    call ec_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
+                   Gamma_1, nabla_ad, delta, Omega_rot, &
+                   nabla, kappa, kappa_rho, kappa_T, &
+                   epsilon, epsilon_rho, epsilon_T, &
+                   deriv_type, add_center)
 
     if(add_center) then
-       x_bc_m = [0._WP,r/R_star]
+       x_ec_m = [0._WP,r/R_star]
     else
-       x_bc_m = r/R_star
+       x_ec_m = r/R_star
     endif
 
     ! Finish
@@ -208,11 +175,15 @@ contains
 
     integer                      :: unit
     type(oscpar_t), allocatable  :: op(:)
-    type(numpar_t)               :: np
+    type(numpar_t), allocatable  :: np(:)
     type(scanpar_t), allocatable :: sp(:)
     type(gridpar_t), allocatable :: shoot_gp(:)
     type(gridpar_t), allocatable :: recon_gp(:)
     integer                      :: i
+    type(numpar_t), allocatable  :: np_sel(:)
+    type(gridpar_t), allocatable :: shoot_gp_sel(:)
+    type(gridpar_t), allocatable :: recon_gp_sel(:)
+    type(scanpar_t), allocatable :: sp_sel(:)
     real(WP), allocatable        :: omega(:)
     class(bvp_t), allocatable    :: bp
     type(mode_t), allocatable    :: md(:)
@@ -235,30 +206,38 @@ contains
 
     op_loop : do i = 1, SIZE(op)
 
+       ! Select parameters according to tags
+
+       call select_par(np, op(i)%tag, np_sel, last=.TRUE.)
+       call select_par(shoot_gp, op(i)%tag, shoot_gp_sel)
+       call select_par(recon_gp, op(i)%tag, recon_gp_sel)
+       call select_par(sp, op(i)%tag, sp_sel)
+
+       $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
+       $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
+       $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
+       $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
+
        ! Set up the frequency array
 
-       call build_scan(sp, bc_m, op(i), shoot_gp, x_bc_m, omega)
+       call build_scan(sp_sel, ec_m, op(i), shoot_gp_sel, x_ec_m, omega)
 
-       ! Store the frequency range in shoot_gp
+       ! Store the frequency range in shoot_gp_sel
 
-       shoot_gp%omega_a = MINVAL(omega)
-       shoot_gp%omega_b = MAXVAL(omega)
+       shoot_gp_sel%omega_a = MINVAL(omega)
+       shoot_gp_sel%omega_b = MAXVAL(omega)
 
        ! Set up bp
 
        if(ALLOCATED(bp)) deallocate(bp)
 
-       if(op(i)%l == 0 .AND. np%reduce_order) then
-          allocate(rad_bvp_t::bp)
+       if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
+          allocate(bvp_rad_t::bp)
        else
-          allocate(ad_bvp_t::bp)
+          allocate(bvp_ad_t::bp)
        endif
 
-       if (ALLOCATED(tc_m)) then
-          call bp%init(bc_m, op(i), np, shoot_gp, recon_gp, x_bc_m, tc_m)
-       else
-          call bp%init(bc_m, op(i), np, shoot_gp, recon_gp, x_bc_m)
-       endif
+       call bp%init(ec_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ec_m)
 
        ! Find modes
 
@@ -266,9 +245,9 @@ contains
 
        $if($GFORTRAN_PR57922)
        select type (bp)
-       type is (rad_bvp_t)
+       type is (bvp_rad_t)
           call bp%final()
-       type is (ad_bvp_t)
+       type is (bvp_ad_t)
           call bp%final()
        class default
           $ABORT(Invalid type)
