@@ -14,6 +14,6 @@ gyre_lib.a : gyre_lib.o
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../common:../ivp:../bvp:../coeffs:../matrix:../frontend:../ad:../rad
+SUBDIRS=../extern/core:../common:../ivp:../bvp:../coeffs:../matrix:../ext:../frontend:../rad:../rad/bound:../rad/jacobian:../ad:../ad/bound:../ad/jacobian
 
 include ../Make.inc
