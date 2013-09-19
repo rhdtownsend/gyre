@@ -48,6 +48,9 @@ module gyre_mode
      real(WP), allocatable        :: x(:)
      complex(WP), allocatable     :: y(:,:)
      complex(WP)                  :: omega
+     integer                      :: n_pg
+     integer                      :: n_p
+     integer                      :: n_g
      integer                      :: n
      integer                      :: n_iter
    contains
@@ -56,7 +59,6 @@ module gyre_mode
      $if($GFORTRAN_PR57922)
      procedure, public :: final
      $endif
-     procedure, public :: classify
      procedure, public :: freq
      procedure, public :: xi_r
      procedure, public :: xi_h
@@ -119,6 +121,9 @@ contains
     integer, intent(in)          :: n_iter
 
     real(WP) :: phase
+    integer  :: n_p
+    integer  :: n_g
+    integer  :: n_pg
 
     $CHECK_BOUNDS(SIZE(y, 1),6)
     $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
@@ -149,6 +154,14 @@ contains
 
     call this%cf%fill_cache(x)
     call this%cf%enable_cache()
+
+    ! Classify the mode
+
+    call classify(this, n_p, n_g, n_pg)
+
+    this%n_p = n_p
+    this%n_g = n_g
+    this%n_pg = n_pg
 
     ! Finish
 
@@ -197,180 +210,16 @@ contains
 
     call bcast(this%omega, root_rank)
 
+    call bcast(this%n_p, root_rank)
+    call bcast(this%n_g, root_rank)
+    call bcast(this%n_pg, root_rank)
+
     call bcast(this%n, root_rank)
     call bcast(this%n_iter, root_rank)
 
   end subroutine bcast_md
 
   $endif
-
-!****
-
-  subroutine classify (this, n_p, n_g, n_pg)
-
-    class(mode_t), intent(in) :: this
-    integer, intent(out)      :: n_p
-    integer, intent(out)      :: n_g
-    integer, intent(out)      :: n_pg
-
-    real(WP) :: y_1(this%n)
-    real(WP) :: y_2(this%n)
-    integer  :: i
-    integer  :: n_c
-    integer  :: n_a
-
-    ! Classify the mode based on its eigenfunctions
-
-    select case (this%op%l)
-
-    case (0)
-
-       ! Radial modes
-       
-       ! Look for the first monotonic segment in y_1 (this is to deal with
-       ! noisy near-zero solutions at the origin)
-
-       y_1 = REAL(this%y(1,:))
-       y_2 = REAL(this%y(2,:))
-
-       mono_loop : do i = 2,this%n-1
-          if((y_1(i) >= y_1(i-1) .AND. y_1(i+1) >= y_1(i)) .OR. &
-             (y_1(i) <= y_1(i-1) .AND. y_1(i+1) <= y_1(i))) exit mono_loop
-       end do mono_loop
-
-       ! Count winding numbers
-
-       call count_windings(y_1(i:), y_2(i:), n_c, n_a)
-
-       ! Classify (the additional 1 is for the node at the center)
-
-       n_p = n_a + 1
-       n_g = n_c
-
-       n_pg = n_p - n_g
-
-    case (1)
-
-       ! Dipole modes
-
-       ! Set up the Takata Y^a_1 and Y^a_2 functions
-       
-       y_1 = REAL(this%Yt_1())
-       y_2 = REAL(this%Yt_2())
-
-       ! Look for the first monotonic segment in y_1 (this is to deal with
-       ! noisy near-zero solutions at the origin)
-
-       mono_dip_loop : do i = 2,this%n-1
-          if((y_1(i) >= y_1(i-1) .AND. y_1(i+1) >= y_1(i)) .OR. &
-             (y_1(i) <= y_1(i-1) .AND. y_1(i+1) <= y_1(i))) exit mono_dip_loop
-       end do mono_dip_loop
-
-       ! Count winding numbers
-
-!       call count_windings(y_1(i:), y_2(i:), n_c, n_a, this%x)
-       call count_windings(y_1(i:), y_2(i:), n_c, n_a)
-
-       n_p = n_a
-       n_g = n_c
-
-       if(n_p >= n_g) then
-          n_pg = n_p - n_g + 1
-       else
-          n_pg = n_p - n_g
-       endif
-
-    case default
-
-       ! Other modes
-
-       y_1 = REAL(this%y(1,:))
-       y_2 = REAL(this%y(2,:))
-
-       ! Count winding numbers
-
-       call count_windings(y_1, y_2, n_c, n_a)
-
-       ! Classify
-
-       n_p = n_a
-       n_g = n_c
-
-       n_pg = n_p - n_g
-
-    end select
-
-    ! Finish
-
-    return
-
-  contains
-
-    subroutine count_windings (y_1, y_2, n_c, n_a, x)
-
-      real(WP), intent(in)           :: y_1(:)
-      real(WP), intent(in)           :: y_2(:)
-      integer, intent(out)           :: n_c
-      integer, intent(out)           :: n_a
-      real(WP), intent(in), optional :: x(:)
-
-      integer  :: i
-      real(WP) :: y_2_cross
-
-      $CHECK_BOUNDS(SIZE(y_2),SIZE(y_1))
-
-      if(PRESENT(x)) then
-         $CHECK_BOUNDS(SIZE(x),SIZE(y_1))
-      endif
-
-      ! Count clockwise (n_c) and anticlockwise (n_a) windings in the (y_1,y_2) plane
-
-      n_c = 0
-      n_a = 0
-
-      do i = 1,SIZE(y_1)-1
-
-         ! Look for a node in y_1
-
-         if(y_1(i) >= 0._WP .AND. y_1(i+1) < 0._WP) then
-
-            ! Solve for the crossing ordinate
-
-            y_2_cross = y_2(i) - y_1(i)*(y_2(i+1) - y_2(i))/(y_1(i+1) - y_1(i))
-
-            if(y_2_cross >= 0._WP) then
-               n_a = n_a + 1
-               if(PRESENT(x)) print *,'A node:',x(i),x(i+1)
-            else
-               n_c = n_c + 1
-               if(PRESENT(x)) print *,'C node:',x(i),x(i+1)
-            endif
-
-         elseif(y_1(i) <= 0._WP .AND. y_1(i+1) > 0._WP) then
-
-            ! Solve for the crossing ordinate
-
-            y_2_cross = y_2(i) - y_1(i)*(y_2(i+1) - y_2(i))/(y_1(i+1) - y_1(i))
-
-            if(y_2_cross <= 0._WP) then
-               n_a = n_a + 1
-               if(PRESENT(x)) print *,'A node:',x(i),x(i+1)
-            else
-               n_c = n_c + 1
-               if(PRESENT(x)) print *,'C node:',x(i),x(i+1)
-            endif
-
-         endif
-
-      end do
-
-      ! Finish
-
-      return
-
-    end subroutine count_windings
-
-  end subroutine classify
 
 !****
 
@@ -1168,6 +1017,174 @@ contains
     return
 
   end function omega_im
+
+!****
+
+  subroutine classify (md, n_p, n_g, n_pg)
+
+    class(mode_t), intent(in) :: md
+    integer, intent(out)      :: n_p
+    integer, intent(out)      :: n_g
+    integer, intent(out)      :: n_pg
+
+    real(WP) :: y_1(md%n)
+    real(WP) :: y_2(md%n)
+    integer  :: i
+    integer  :: n_c
+    integer  :: n_a
+
+    ! Classify the mode based on its eigenfunctions
+
+    select case (md%op%l)
+
+    case (0)
+
+       ! Radial modes
+       
+       ! Look for the first monotonic segment in y_1 (this is to deal with
+       ! noisy near-zero solutions at the origin)
+
+       y_1 = REAL(md%y(1,:))
+       y_2 = REAL(md%y(2,:))
+
+       mono_loop : do i = 2,md%n-1
+          if((y_1(i) >= y_1(i-1) .AND. y_1(i+1) >= y_1(i)) .OR. &
+             (y_1(i) <= y_1(i-1) .AND. y_1(i+1) <= y_1(i))) exit mono_loop
+       end do mono_loop
+
+       ! Count winding numbers
+
+       call count_windings(y_1(i:), y_2(i:), n_c, n_a)
+
+       ! Classify (the additional 1 is for the node at the center)
+
+       n_p = n_a + 1
+       n_g = n_c
+
+       n_pg = n_p - n_g
+
+    case (1)
+
+       ! Dipole modes
+
+       ! Set up the Takata Y^a_1 and Y^a_2 functions
+       
+       y_1 = REAL(md%Yt_1())
+       y_2 = REAL(md%Yt_2())
+
+       ! Look for the first monotonic segment in y_1 (this is to deal with
+       ! noisy near-zero solutions at the origin)
+
+       mono_dip_loop : do i = 2,md%n-1
+          if((y_1(i) >= y_1(i-1) .AND. y_1(i+1) >= y_1(i)) .OR. &
+             (y_1(i) <= y_1(i-1) .AND. y_1(i+1) <= y_1(i))) exit mono_dip_loop
+       end do mono_dip_loop
+
+       ! Count winding numbers
+
+!       call count_windings(y_1(i:), y_2(i:), n_c, n_a, md%x)
+       call count_windings(y_1(i:), y_2(i:), n_c, n_a)
+
+       n_p = n_a
+       n_g = n_c
+
+       if(n_p >= n_g) then
+          n_pg = n_p - n_g + 1
+       else
+          n_pg = n_p - n_g
+       endif
+
+    case default
+
+       ! Other modes
+
+       y_1 = REAL(md%y(1,:))
+       y_2 = REAL(md%y(2,:))
+
+       ! Count winding numbers
+
+       call count_windings(y_1, y_2, n_c, n_a)
+
+       ! Classify
+
+       n_p = n_a
+       n_g = n_c
+
+       n_pg = n_p - n_g
+
+    end select
+
+    ! Finish
+
+    return
+
+  contains
+
+    subroutine count_windings (y_1, y_2, n_c, n_a, x)
+
+      real(WP), intent(in)           :: y_1(:)
+      real(WP), intent(in)           :: y_2(:)
+      integer, intent(out)           :: n_c
+      integer, intent(out)           :: n_a
+      real(WP), intent(in), optional :: x(:)
+
+      integer  :: i
+      real(WP) :: y_2_cross
+
+      $CHECK_BOUNDS(SIZE(y_2),SIZE(y_1))
+
+      if(PRESENT(x)) then
+         $CHECK_BOUNDS(SIZE(x),SIZE(y_1))
+      endif
+
+      ! Count clockwise (n_c) and anticlockwise (n_a) windings in the (y_1,y_2) plane
+
+      n_c = 0
+      n_a = 0
+
+      do i = 1,SIZE(y_1)-1
+
+         ! Look for a node in y_1
+
+         if(y_1(i) >= 0._WP .AND. y_1(i+1) < 0._WP) then
+
+            ! Solve for the crossing ordinate
+
+            y_2_cross = y_2(i) - y_1(i)*(y_2(i+1) - y_2(i))/(y_1(i+1) - y_1(i))
+
+            if(y_2_cross >= 0._WP) then
+               n_a = n_a + 1
+               if(PRESENT(x)) print *,'A node:',x(i),x(i+1)
+            else
+               n_c = n_c + 1
+               if(PRESENT(x)) print *,'C node:',x(i),x(i+1)
+            endif
+
+         elseif(y_1(i) <= 0._WP .AND. y_1(i+1) > 0._WP) then
+
+            ! Solve for the crossing ordinate
+
+            y_2_cross = y_2(i) - y_1(i)*(y_2(i+1) - y_2(i))/(y_1(i+1) - y_1(i))
+
+            if(y_2_cross <= 0._WP) then
+               n_a = n_a + 1
+               if(PRESENT(x)) print *,'A node:',x(i),x(i+1)
+            else
+               n_c = n_c + 1
+               if(PRESENT(x)) print *,'C node:',x(i),x(i+1)
+            endif
+
+         endif
+
+      end do
+
+      ! Finish
+
+      return
+
+    end subroutine count_windings
+
+  end subroutine classify
 
 !****
 
