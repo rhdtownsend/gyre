@@ -1,5 +1,5 @@
 ! Module   : gyre_ivp
-! Purpose  : solve initial-value problems across single intervals
+! Purpose  : solve initial-value problems (interface)
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -23,133 +23,80 @@ module gyre_ivp
 
   use core_kinds
 
-  use gyre_jacobian
-  use gyre_ext_arith
-  use gyre_ivp_magnus
-  use gyre_ivp_findiff
-
-  use ISO_FORTRAN_ENV
-
   ! No implicit typing
 
   implicit none
+
+  ! Derived-type definitions
+
+  type, abstract :: ivp_t
+     private
+     integer, public :: n_e
+   contains
+     private
+     procedure(init_i), deferred, public     :: init
+     procedure(solve_i), deferred, public    :: solve
+     procedure(recon_i), deferred, public    :: recon
+     procedure(abscissa_i), deferred, public :: abscissa
+  end type ivp_t
+
+  ! Interfaces
+
+  abstract interface
+
+     subroutine init_i (this, jc)
+       use core_kinds
+       use gyre_jacobian
+       import ivp_t
+       class(ivp_t), intent(out)             :: this
+       class(jacobian_t), intent(in), target :: jc
+     end subroutine init_i
+
+     subroutine solve_i (this, omega, x_a, x_b, E_l, E_r, S, use_real)
+       use core_kinds
+       use gyre_jacobian
+       use gyre_ext_arith
+       import ivp_t
+       class(ivp_t), intent(in)         :: this
+       complex(WP), intent(in)          :: omega
+       real(WP), intent(in)             :: x_a
+       real(WP), intent(in)             :: x_b
+       complex(WP), intent(out)         :: E_l(:,:)
+       complex(WP), intent(out)         :: E_r(:,:)
+       type(ext_complex_t), intent(out) :: S
+       logical, intent(in), optional    :: use_real
+     end subroutine solve_i
+
+     subroutine recon_i (this, omega, x_a, x_b, y_a, y_b, x, y, use_real)
+       use core_kinds
+       use gyre_jacobian
+       import ivp_t
+       class(ivp_t), intent(in)      :: this
+       complex(WP), intent(in)       :: omega
+       real(WP), intent(in)          :: x_a
+       real(WP), intent(in)          :: x_b
+       complex(WP), intent(in)       :: y_a(:)
+       complex(WP), intent(in)       :: y_b(:)
+       real(WP), intent(in)          :: x(:)
+       complex(WP), intent(out)      :: y(:,:)
+       logical, intent(in), optional :: use_real
+     end subroutine recon_i
+
+     function abscissa_i (this, x_a, x_b) result (x)
+       use core_kinds
+       import ivp_t
+       class(ivp_t), intent(in) :: this
+       real(WP), intent(in)     :: x_a
+       real(WP), intent(in)     :: x_b
+       real(WP), allocatable    :: x(:)
+     end function abscissa_i
+
+  end interface
 
   ! Access specifiers
 
   private
 
-  public :: solve
-  public :: recon
-  public :: abscissa
-
-  ! Procedures
-
-contains
-
-  subroutine solve (solver_type, jc, omega, x_a, x_b, E_l, E_r, S, use_real)
-
-    character(LEN=*), intent(in)     :: solver_type
-    class(jacobian_t), intent(in)    :: jc
-    complex(WP), intent(in)          :: omega
-    real(WP), intent(in)             :: x_a
-    real(WP), intent(in)             :: x_b
-    complex(WP), intent(out)         :: E_l(:,:)
-    complex(WP), intent(out)         :: E_r(:,:)
-    type(ext_complex_t), intent(out) :: S
-    logical, intent(in), optional    :: use_real
-
-    ! Solve the IVP across the interval x_a -> x_b
-
-    select case(solver_type)
-    case('FINDIFF','FINDIFF_GL2')
-       call solve_findiff_GL2(jc, omega, x_a, x_b, E_l, E_r, S)
-    case('FINDIFF_GL4')
-       call solve_findiff_GL4(jc, omega, x_a, x_b, E_l, E_r, S)
-    case('MAGNUS_GL2')
-       call solve_magnus_GL2(jc, omega, x_a, x_b, E_l, E_r, S, use_real)
-    case('MAGNUS_GL4')
-       call solve_magnus_GL4(jc, omega, x_a, x_b, E_l, E_r, S, use_real)
-    case('MAGNUS_GL6')
-       call solve_magnus_GL6(jc, omega, x_a, x_b, E_l, E_r, S, use_real)
-    case default
-       $ABORT(Invalid solver_type)
-    end select
-
-    ! Finish
-
-    return
-
-  end subroutine solve
-
-!****
-
-  subroutine recon (solver_type, jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
-
-    character(LEN=*), intent(in)  :: solver_type
-    class(jacobian_t), intent(in) :: jc
-    complex(WP), intent(in)       :: omega
-    real(WP), intent(in)          :: x_a
-    real(WP), intent(in)          :: x_b
-    complex(WP), intent(in)       :: y_a(:)
-    complex(WP), intent(in)       :: y_b(:)
-    real(WP), intent(in)          :: x(:)
-    complex(WP), intent(out)      :: y(:,:)
-    logical, intent(in), optional :: use_real
-
-    ! Reconstruct the IVP solution within the interval x_a -> x_b
-
-    select case(solver_type)
-    case('FINDIFF','FINDIFF_GL2')
-       call recon_findiff_GL2(jc, omega, x_a, x_b, y_a, y_b, x, y)
-    case('FINDIFF_GL4')
-       call recon_findiff_GL4(jc, omega, x_a, x_b, y_a, y_b, x, y)
-    case('MAGNUS_GL2')
-       call recon_magnus_GL2(jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
-    case('MAGNUS_GL4')
-       call recon_magnus_GL4(jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
-    case('MAGNUS_GL6')
-       call recon_magnus_GL6(jc, omega, x_a, x_b, y_a, y_b, x, y, use_real)
-    case default
-       $ABORT(Invalid solver_type)
-    end select
-
-    ! Finish
-
-    return
-
-  end subroutine recon
-
-!****
-
-  function abscissa (solver_type, x_a, x_b) result (x)
-
-    character(LEN=*), intent(in) :: solver_type
-    real(WP), intent(in)         :: x_a
-    real(WP), intent(in)         :: x_b
-    real(WP), allocatable        :: x(:)
-
-    ! Determine the abscissa used for solving/reconstructing across
-    ! the interval x_a -> x_b
-
-    select case(solver_type)
-    case('FINDIFF','FINDIFF_GL2')
-       x = abscissa_findiff_GL2(x_a, x_b)
-    case('FINDIFF_GL4')
-       x = abscissa_findiff_GL4(x_a, x_b)
-    case('MAGNUS_GL2')
-       x = abscissa_magnus_GL2(x_a, x_b)
-    case('MAGNUS_GL4')
-       x = abscissa_magnus_GL4(x_a, x_b)
-    case('MAGNUS_GL6')
-       x = abscissa_magnus_GL6(x_a, x_b)
-    case default
-       $ABORT(Invalid solver_type)
-    end select
-
-    ! Finish
-
-    return
-
-  end function abscissa
+  public :: ivp_t
 
 end module gyre_ivp

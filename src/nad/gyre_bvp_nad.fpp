@@ -35,6 +35,7 @@ module gyre_bvp_nad
   use gyre_discfunc
   use gyre_shooter_nad
   use gyre_jacobian
+  use gyre_ivp
   use gyre_bound
   use gyre_sysmtx
   use gyre_ext_arith
@@ -53,6 +54,7 @@ module gyre_bvp_nad
      private
      class(coeffs_t), allocatable   :: cf
      class(jacobian_t), allocatable :: jc
+     class(ivp_t), allocatable      :: iv
      class(bound_t), allocatable    :: bd
      type(shooter_nad_t)            :: sh
      type(sysmtx_t)                 :: sm
@@ -103,10 +105,17 @@ contains
 
     use gyre_jacobian_nad_dziem
     use gyre_jacobian_nad_jcd
+
     use gyre_bound_nad_zero
     use gyre_bound_nad_dziem
     use gyre_bound_nad_unno
     use gyre_bound_nad_jcd
+
+    use gyre_ivp_magnus_GL2
+    use gyre_ivp_magnus_GL4
+    use gyre_ivp_magnus_GL6
+    use gyre_ivp_colloc_GL2
+    use gyre_ivp_colloc_GL4
 
     class(bvp_nad_t), intent(out)     :: this
     class(coeffs_t), intent(in)       :: cf
@@ -163,9 +172,28 @@ contains
 
     call this%bd%init(this%cf, this%jc, this%op)
 
+    ! Initialize the IVP solver
+
+    select case (this%np%ivp_solver_type)
+    case ('MAGNUS_GL2')
+       allocate(ivp_magnus_GL2_t::this%iv)
+    case ('MAGNUS_GL4')
+       allocate(ivp_magnus_GL4_t::this%iv)
+    case ('MAGNUS_GL6')
+       allocate(ivp_magnus_GL6_t::this%iv)
+    case ('FINDIFF_GL2')
+       allocate(ivp_colloc_GL2_t::this%iv)
+    case ('FINDIFF_GL4')
+       allocate(ivp_colloc_GL4_t::this%iv)
+    case default
+       $ABORT(Invalid ivp_solver_type)
+    end select
+
+    call this%iv%init(this%jc)
+
     ! Initialize the shooter
 
-    call this%sh%init(this%cf, this%jc, this%op, this%np)
+    call this%sh%init(this%cf, this%iv, this%op, this%np)
 
     ! Build the shooting grid
 

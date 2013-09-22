@@ -30,7 +30,7 @@ module gyre_shooter_nad
   use gyre_jacobian
   use gyre_sysmtx
   use gyre_ext_arith
-  use gyre_ivp, ivp_abscissa => abscissa
+  use gyre_ivp
   use gyre_grid
 
   use ISO_FORTRAN_ENV
@@ -43,12 +43,12 @@ module gyre_shooter_nad
 
   type :: shooter_nad_t
      private
-     class(coeffs_t), pointer   :: cf => null()
-     class(jacobian_t), pointer :: ad_jc => null()
-     class(jacobian_t), pointer :: nad_jc => null()
-     type(oscpar_t), pointer    :: op => null()
-     type(numpar_t), pointer    :: np => null()
-     integer, public            :: n_e
+     class(coeffs_t), pointer :: cf => null()
+     class(ivp_t), pointer    :: iv_ad => null()
+     class(ivp_t), pointer    :: iv_nad => null()
+     type(oscpar_t), pointer  :: op => null()
+     type(numpar_t), pointer  :: np => null()
+     integer, public          :: n_e
    contains
      private
      procedure, public :: init
@@ -67,25 +67,22 @@ module gyre_shooter_nad
 
 contains
 
-  subroutine init (this, cf, jc, op, np)
+  subroutine init (this, cf, iv, op, np)
 
-    class(shooter_nad_t), intent(out)     :: this
-    class(coeffs_t), intent(in), target   :: cf
-    class(jacobian_t), intent(in), target :: jc
-    type(oscpar_t), intent(in), target    :: op
-    type(numpar_t), intent(in), target    :: np
+    class(shooter_nad_t), intent(out)   :: this
+    class(coeffs_t), intent(in), target :: cf
+    class(ivp_t), intent(in), target    :: iv
+    type(oscpar_t), intent(in), target  :: op
+    type(numpar_t), intent(in), target  :: np
 
     ! Initialize the shooter_nad
 
     this%cf => cf
-    this%nad_jc => jc
+    this%iv_nad => iv
     this%op => op
     this%np => np
 
-!    call this%ad_jc%init(cf, op)
-!    call this%nad_jc%init(cf, op)
-    
-    this%n_e = this%nad_jc%n_e
+    this%n_e = this%iv_nad%n_e
 
     ! Finish
 
@@ -143,7 +140,7 @@ contains
 
           ! Shoot nonadiabatically
 
-          call solve(this%np%ivp_solver_type, this%nad_jc, omega, x(k), x(k+1), E_l, E_r, scale)
+          call this%iv_nad%solve(omega, x(k), x(k+1), E_l, E_r, scale)
 
           ! Apply the thermal-term rescaling, to assist the rootfinder
 
@@ -230,28 +227,28 @@ contains
 
           x_in(:n_in) = x(i_in(:n_in))
 
-          if(x_sh(k) < x_ad_) then
+          ! if(x_sh(k) < x_ad_) then
 
-             ! Reconstruct adiabatically
+          !    ! Reconstruct adiabatically
 
-             call recon(this%np%ivp_solver_type, this%ad_jc, omega, x_sh(k), x_sh(k+1), y_sh(1:4,k), y_sh(1:4,k+1), &
-                        x_in(:n_in), y_in(1:4,:n_in))
+          !    call recon(this%np%ivp_solver_type, this%ad_jc, omega, x_sh(k), x_sh(k+1), y_sh(1:4,k), y_sh(1:4,k+1), &
+          !               x_in(:n_in), y_in(1:4,:n_in))
 
-             y_in(5,:n_in) = y_sh(5,k)
+          !    y_in(5,:n_in) = y_sh(5,k)
 
-             do i = 1,n_in
-                A_5 = diff_coeffs(this%cf, this%op, omega, x(k))
-                y_in(6,i) = -DOT_PRODUCT(y_in(1:5,i), A_5(1:5))/A_5(6)
-             end do
+          !    do i = 1,n_in
+          !       A_5 = diff_coeffs(this%cf, this%op, omega, x(k))
+          !       y_in(6,i) = -DOT_PRODUCT(y_in(1:5,i), A_5(1:5))/A_5(6)
+          !    end do
           
-          else
+          ! else
 
              ! Reconstruct nonadiabatically
 
-             call recon(this%np%ivp_solver_type, this%nad_jc, omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
+             call this%iv_nad%recon(omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
                         x_in(:n_in), y_in(:,:n_in))
 
-          endif
+!          endif
 
           y(:,i_in(:n_in)) = y_in(:,:n_in)
 
@@ -282,7 +279,7 @@ contains
 
     !$OMP PARALLEL DO SCHEDULE (DYNAMIC)
     count_loop : do k = 1,SIZE(x_sh)-1
-       n_cell(k) = 1 + SIZE(ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1)))
+       n_cell(k) = 1 + SIZE(this%iv_nad%abscissa(x_sh(k), x_sh(k+1)))
     end do count_loop
 
     allocate(x_(SUM(n_cell)))
@@ -293,7 +290,7 @@ contains
 
        x_(i) = 0.5_WP*(x_sh(k) + x_sh(k+1))
 
-       x_(i+1:i+n_cell(k)-1) = ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1))
+       x_(i+1:i+n_cell(k)-1) = this%iv_nad%abscissa(x_sh(k), x_sh(k+1))
 
        i = i + n_cell(k)
 
@@ -309,37 +306,37 @@ contains
 
   end function abscissa
 
-!****
+! !****
 
-  function diff_coeffs (cf, op, omega, x) result (a)
+!   function diff_coeffs (cf, op, omega, x) result (a)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP)                 :: a(6)
+!     class(coeffs_t), intent(in) :: cf
+!     type(oscpar_t), intent(in)  :: op
+!     complex(WP), intent(in)     :: omega
+!     real(WP), intent(in)        :: x
+!     complex(WP)                 :: a(6)
 
-    ! Calculate the coefficients of the (algebraic) adiabatic
-    ! diffusion equation
+!     ! Calculate the coefficients of the (algebraic) adiabatic
+!     ! diffusion equation
 
-    associate(U => cf%U(x), c_1 => cf%c_1(x), &
-              nabla_ad => cf%nabla_ad(x), &
-              c_rad => cf%c_rad(x), c_dif => cf%c_dif(x), nabla => cf%nabla(x), &
-              l => op%l)
+!     associate(U => cf%U(x), c_1 => cf%c_1(x), &
+!               nabla_ad => cf%nabla_ad(x), &
+!               c_rad => cf%c_rad(x), c_dif => cf%c_dif(x), nabla => cf%nabla(x), &
+!               l => op%l)
 
-      a(1) = (nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-      a(2) = (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
-      a(3) = c_dif
-      a(4) = nabla_ad
-      a(5) = 0._WP
-      a(6) = -nabla/c_rad
+!       a(1) = (nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+!       a(2) = (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
+!       a(3) = c_dif
+!       a(4) = nabla_ad
+!       a(5) = 0._WP
+!       a(6) = -nabla/c_rad
       
-    end associate
+!     end associate
 
-    ! Finish
+!     ! Finish
 
-    return
+!     return
 
-  end function diff_coeffs
+!   end function diff_coeffs
 
 end module gyre_shooter_nad
