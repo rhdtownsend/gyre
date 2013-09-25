@@ -536,7 +536,7 @@ contains
     $TYPE(WP) :: M(2*sm%n_e,2*sm%n_e)
     integer   :: ipiv(2*sm%n_e)
     integer   :: info
-    $TYPE(WP) :: D(2*sm%n_e)
+    $TYPE(WP) :: D(sm%n_e)
     integer   :: i
     $TYPE(WP) :: b_bound(2*sm%n_e)
     integer   :: l
@@ -594,19 +594,15 @@ contains
        if(ipiv(i) /= i) det = -det
     end do
 
-    ! Extract the diagonal elements & scale them
+    ! Find the (near-)zero element on the diagonal of the final block
+    ! (we assume that it *is* in the final block)
 
-    D = diagonal(M)
+    D = diagonal(M(n_e+1:,n_e+1:))
 
-    D(:n_e) = D(:n_e)/MAXVAL(ABS(D(:n_e)))
-    D(n_e+1:) = D(n_e+1:)/MAXVAL(ABS(D(n_e+1:)))
-
-    ! Find the (near-)zero element
-
-    i = MINLOC(ABS(D), DIM=1)
+    i = n_e + MINLOC(ABS(D), DIM=1)
 
     if(i <= n_e) then
-       $WARN(Smallest element not in outer block)
+       $WARN(Smallest element not in final block)
     endif
 
     ! Calculate the solutions at the two boundaries
