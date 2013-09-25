@@ -150,6 +150,8 @@ contains
     select case (op%variables_type)
     case ('DZIEM')
        allocate(jacobian_rad_dziem_t::this%jc)
+    case ('JCD')
+       allocate(jacobian_rad_jcd_t::this%jc)
     case default
        $ABORT(Invalid variables_type)
     end select
