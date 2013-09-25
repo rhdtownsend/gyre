@@ -21,7 +21,6 @@
 /
 
 &num
-	use_banded = .TRUE.
 	ivp_solver_type = 'MAGNUS_GL2'
 /
 
