@@ -26,6 +26,7 @@ module gyre_bvp_rad
 
   use gyre_bvp
   use gyre_coeffs
+  use gyre_cocache
   $if($MPI)
   use gyre_coeffs_mpi
   $endif
@@ -53,6 +54,7 @@ module gyre_bvp_rad
   type, extends(bvp_t) :: bvp_rad_t
      private
      class(coeffs_t), pointer       :: cf => null()
+     type(cocache_t)                :: cc
      class(jacobian_t), allocatable :: jc
      class(ivp_t), allocatable      :: iv
      class(bound_t), allocatable    :: bd
@@ -217,11 +219,13 @@ contains
     this%n = n
     this%n_e = this%sh%n_e
 
-    ! Set up the coefficient caches
+    ! Set up the coefficient cache
 
     x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
+    call this%cf%attach_cache(this%cc)
     call this%cf%fill_cache(x_cc)
+    call this%cf%detach_cache()
 
     ! Finish
 
@@ -334,14 +338,14 @@ contains
 
     ! Set up the sysmtx
 
-    call this%cf%enable_cache()
+    call this%cf%attach_cache(this%cc)
 
     call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
     call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
 
     call this%sh%shoot(omega, this%x, this%sm)
 
-    call this%cf%disable_cache()
+    call this%cf%detach_cache()
 
     ! Finish
 
