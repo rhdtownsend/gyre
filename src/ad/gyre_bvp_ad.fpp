@@ -52,7 +52,7 @@ module gyre_bvp_ad
 
   type, extends(bvp_t) :: bvp_ad_t
      private
-     class(coeffs_t), allocatable   :: cf
+     class(coeffs_t), pointer       :: cf => null()
      class(jacobian_t), allocatable :: jc
      class(ivp_t), allocatable      :: iv
      class(bound_t), allocatable    :: bd
@@ -118,13 +118,13 @@ contains
     use gyre_ivp_colloc_GL2
     use gyre_ivp_colloc_GL4
 
-    class(bvp_ad_t), intent(out)      :: this
-    class(coeffs_t), intent(in)       :: cf
-    type(oscpar_t), intent(in)        :: op
-    type(numpar_t), intent(in)        :: np
-    type(gridpar_t), intent(in)       :: shoot_gp(:)
-    type(gridpar_t), intent(in)       :: recon_gp(:)
-    real(WP), allocatable, intent(in) :: x_in(:)
+    class(bvp_ad_t), intent(out)        :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in)          :: op
+    type(numpar_t), intent(in)          :: np
+    type(gridpar_t), intent(in)         :: shoot_gp(:)
+    type(gridpar_t), intent(in)         :: recon_gp(:)
+    real(WP), allocatable, intent(in)   :: x_in(:)
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
@@ -139,9 +139,9 @@ contains
     this%shoot_gp = shoot_gp
     this%recon_gp = recon_gp
 
-    ! Copy coefficients
+    ! Set up the coefficients pointer
     
-    allocate(this%cf, SOURCE=cf)
+    this%cf => cf
 
     ! Initialize the jacobian
 
@@ -220,7 +220,6 @@ contains
     x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
 
     call this%cf%fill_cache(x_cc)
-    if(ALLOCATED(this%cf)) call this%cf%fill_cache(x_cc)
 
     ! Finish
 
@@ -252,12 +251,12 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_bp (this, root_rank)
+  subroutine bcast_bp (this, root_rank, cf)
 
-    class(bvp_ad_t), intent(inout) :: this
-    integer, intent(in)            :: root_rank
+    class(bvp_ad_t), intent(inout)      :: this
+    integer, intent(in)                 :: root_rank
+    class(coeffs_t), intent(in), target :: cf
 
-    class(coeffs_t), allocatable :: cf
     type(oscpar_t)               :: op
     type(numpar_t)               :: np
     type(gridpar_t), allocatable :: shoot_gp(:)
@@ -268,8 +267,6 @@ contains
 
     if(MPI_RANK == root_rank) then
 
-       call bcast_alloc(this%cf, root_rank)
-      
        call bcast(this%op, root_rank)
        call bcast(this%np, root_rank)
 
@@ -279,8 +276,6 @@ contains
        call bcast_alloc(this%x_in, root_rank)
 
     else
-
-       call bcast_alloc(cf, root_rank)
 
        call bcast(op, root_rank)
        call bcast(np, root_rank)

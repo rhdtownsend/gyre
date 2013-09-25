@@ -52,7 +52,7 @@ module gyre_bvp_rad
 
   type, extends(bvp_t) :: bvp_rad_t
      private
-     class(coeffs_t), allocatable   :: cf
+     class(coeffs_t), pointer       :: cf => null()
      class(jacobian_t), allocatable :: jc
      class(ivp_t), allocatable      :: iv
      class(bound_t), allocatable    :: bd
@@ -118,13 +118,13 @@ contains
     use gyre_ivp_colloc_GL2
     use gyre_ivp_colloc_GL4
 
-    class(bvp_rad_t), intent(out)     :: this
-    class(coeffs_t), intent(in)       :: cf
-    type(oscpar_t), intent(in)        :: op
-    type(numpar_t), intent(in)        :: np
-    type(gridpar_t), intent(in)       :: shoot_gp(:)
-    type(gridpar_t), intent(in)       :: recon_gp(:)
-    real(WP), allocatable, intent(in) :: x_in(:)
+    class(bvp_rad_t), intent(out)       :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in)          :: op
+    type(numpar_t), intent(in)          :: np
+    type(gridpar_t), intent(in)         :: shoot_gp(:)
+    type(gridpar_t), intent(in)         :: recon_gp(:)
+    real(WP), allocatable, intent(in)   :: x_in(:)
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
@@ -141,9 +141,9 @@ contains
     this%shoot_gp = shoot_gp
     this%recon_gp = recon_gp
 
-    ! Copy coefficients
+    ! Set up the coefficient pointer
     
-    allocate(this%cf, SOURCE=cf)
+    this%cf => cf
 
     ! Initialize the jacobian
 
@@ -253,10 +253,11 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_bp (this, root_rank)
+  subroutine bcast_bp (this, root_rank, cf)
 
-    class(bvp_rad_t), intent(inout) :: this
-    integer, intent(in)             :: root_rank
+    class(bvp_rad_t), intent(inout)     :: this
+    integer, intent(in)                 :: root_rank
+    class(coeffs_t), intent(in), target :: cf
 
     class(coeffs_t), allocatable  :: cf
     type(oscpar_t)                :: op
@@ -269,8 +270,6 @@ contains
 
     if(MPI_RANK == root_rank) then
 
-       call bcast_alloc(this%cf, root_rank)
-      
        call bcast(this%op, root_rank)
        call bcast(this%np, root_rank)
 
@@ -280,8 +279,6 @@ contains
        call bcast_alloc(this%x_in, root_rank)
 
     else
-
-       call bcast_alloc(cf, root_rank)
 
        call bcast(op, root_rank)
        call bcast(np, root_rank)

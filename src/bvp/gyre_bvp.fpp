@@ -48,13 +48,13 @@ module gyre_bvp
        use gyre_numpar
        use gyre_gridpar
        import bvp_t
-       class(bvp_t), intent(out)         :: this
-       class(coeffs_t), intent(in)       :: cf
-       type(oscpar_t), intent(in)        :: op
-       type(numpar_t), intent(in)        :: np
-       type(gridpar_t), intent(in)       :: shoot_gp(:)
-       type(gridpar_t), intent(in)       :: recon_gp(:)
-       real(WP), allocatable, intent(in) :: x_in(:)
+       class(bvp_t), intent(out)           :: this
+       class(coeffs_t), intent(in), target :: cf
+       type(oscpar_t), intent(in)          :: op
+       type(numpar_t), intent(in)          :: np
+       type(gridpar_t), intent(in)         :: shoot_gp(:)
+       type(gridpar_t), intent(in)         :: recon_gp(:)
+       real(WP), allocatable, intent(in)   :: x_in(:)
      end subroutine init_i
 
      function discrim_i (this, omega, use_real) result (discrim)
