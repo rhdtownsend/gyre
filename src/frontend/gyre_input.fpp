@@ -312,7 +312,6 @@ contains
        ivp_solver_type = 'MAGNUS_GL2'
        tag_list = ''
 
-       rewind(unit)
        read(unit, NML=num)
 
        ! Initialize the numpar
