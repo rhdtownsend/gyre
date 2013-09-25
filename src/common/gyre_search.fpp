@@ -229,7 +229,7 @@ contains
 100    format(A)
 
        write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110    format(4(2X,A6),3(2X,A23),2X,A4)
+110    format(4(2X,A6),3(2X,A24),2X,A6)
        
     endif
 
