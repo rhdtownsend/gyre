@@ -530,19 +530,20 @@ contains
     $TYPE(WP), parameter :: ZERO = 0._WP
     $TYPE(WP), parameter :: ONE = 1._WP
 
-    integer             :: n
-    integer             :: n_e
-    integer             :: n_i
-    $TYPE(WP)           :: M(2*sm%n_e,2*sm%n_e)
-    integer             :: ipiv(2*sm%n_e)
-    integer             :: info
-    integer             :: i
-    $TYPE(WP)           :: b_bound(2*sm%n_e)
-    integer             :: l
-    integer             :: k
-    integer             :: i_a
-    integer             :: i_b
-    integer             :: i_c
+    integer   :: n
+    integer   :: n_e
+    integer   :: n_i
+    $TYPE(WP) :: M(2*sm%n_e,2*sm%n_e)
+    integer   :: ipiv(2*sm%n_e)
+    integer   :: info
+    $TYPE(WP) :: D(2*sm%n_e)
+    integer   :: i
+    $TYPE(WP) :: b_bound(2*sm%n_e)
+    integer   :: l
+    integer   :: k
+    integer   :: i_a
+    integer   :: i_b
+    integer   :: i_c
 
     $CHECK_BOUNDS(SIZE(b),sm%n_e*(sm%n+1))
 
@@ -593,9 +594,16 @@ contains
        if(ipiv(i) /= i) det = -det
     end do
 
-    ! Find the (near-)zero element 
+    ! Extract the diagonal elements & scale them
 
-    i = MINLOC(ABS(diagonal(M)), DIM=1)
+    D = diagonal(M)
+
+    D(:n_e) = D(:n_e)/MAXVAL(ABS(D(:n_e)))
+    D(n_e+1:) = D(n_e+1:)/MAXVAL(ABS(D(n_e+1:)))
+
+    ! Find the (near-)zero element
+
+    i = MINLOC(ABS(D), DIM=1)
 
     if(i <= n_e) then
        $WARN(Smallest element not in outer block)
