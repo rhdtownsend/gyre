@@ -61,8 +61,8 @@ module gyre_coeffs
      $PROC_DECL(tau_thm)
      $PROC_DECL(Omega_rot)
      procedure(pi_c_i), deferred, public         :: pi_c
-     procedure(enable_cache_i), deferred, public :: enable_cache
-     procedure(enable_cache_i), deferred, public :: disable_cache
+     procedure(attach_cache_i), deferred, public :: attach_cache
+     procedure(detach_cache_i), deferred, public :: detach_cache
      procedure(fill_cache_i), deferred, public   :: fill_cache
      procedure, public                           :: omega
      procedure, public                           :: omega_c
@@ -95,10 +95,17 @@ module gyre_coeffs
        real(WP)                    :: pi_c
      end function pi_c_i
 
-     subroutine enable_cache_i (this)
+     subroutine attach_cache_i (this, cc)
+       use gyre_cocache
+       import coeffs_t
+       class(coeffs_t), intent(inout)       :: this
+       class(cocache_t), intent(in), target :: cc
+     end subroutine attach_cache_i
+
+     subroutine detach_cache_i (this)
        import coeffs_t
        class(coeffs_t), intent(inout) :: this
-     end subroutine enable_cache_i
+     end subroutine detach_cache_i
 
      subroutine fill_cache_i (this, x)
        use core_kinds

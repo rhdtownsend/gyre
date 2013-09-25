@@ -25,6 +25,7 @@ module gyre_coeffs_hom
   use core_parallel
 
   use gyre_coeffs
+  use gyre_cocache
 
   use ISO_FORTRAN_ENV
 
@@ -65,8 +66,8 @@ module gyre_coeffs_hom
      $PROC_DECL(tau_thm)
      $PROC_DECL(Omega_rot)
      procedure, public :: pi_c
-     procedure, public :: enable_cache
-     procedure, public :: disable_cache
+     procedure, public :: attach_cache
+     procedure, public :: detach_cache
      procedure, public :: fill_cache
   end type coeffs_hom_t
 
@@ -521,31 +522,32 @@ contains
 
 !****
 
-  subroutine enable_cache (this)
+  subroutine attach_cache (this, cc)
 
-    class(coeffs_hom_t), intent(inout) :: this
+    class(coeffs_hom_t), intent(inout)   :: this
+    class(cocache_t), intent(in), target :: cc
 
-    ! Enable the coefficient cache (no-op, since we don't cache)
+    ! Attach a coefficient cache (no-op, since we don't cache)
 
     ! Finish
 
     return
 
-  end subroutine enable_cache
+  end subroutine attach_cache
 
 !****
 
-  subroutine disable_cache (this)
+  subroutine detach_cache (this)
 
     class(coeffs_hom_t), intent(inout) :: this
 
-    ! Disable the coefficient cache (no-op, since we don't cache)
+    ! Detach the coefficient cache (no-op, since we don't cache)
 
     ! Finish
 
     return
 
-  end subroutine disable_cache
+  end subroutine detach_cache
 
 !****
 
