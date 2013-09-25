@@ -42,17 +42,17 @@ module gyre_mode
   ! Derived-type definitions
 
   type :: mode_t
-     class(coeffs_t), allocatable :: cf
-     type(oscpar_t)               :: op
-     type(ext_real_t)             :: chi
-     real(WP), allocatable        :: x(:)
-     complex(WP), allocatable     :: y(:,:)
-     complex(WP)                  :: omega
-     integer                      :: n_pg
-     integer                      :: n_p
-     integer                      :: n_g
-     integer                      :: n
-     integer                      :: n_iter
+     class(coeffs_t), pointer :: cf => null()
+     type(oscpar_t)           :: op
+     type(ext_real_t)         :: chi
+     real(WP), allocatable    :: x(:)
+     complex(WP), allocatable :: y(:,:)
+     complex(WP)              :: omega
+     integer                  :: n_pg
+     integer                  :: n_p
+     integer                  :: n_g
+     integer                  :: n
+     integer                  :: n_iter
    contains
      private
      procedure, public :: init
@@ -111,14 +111,14 @@ contains
 
   subroutine init (this, cf, op, omega, x, y, chi, n_iter)
 
-    class(mode_t), intent(out)   :: this
-    class(coeffs_t), intent(in)  :: cf
-    type(oscpar_t), intent(in)   :: op
-    complex(WP), intent(in)      :: omega
-    real(WP), intent(in)         :: x(:)
-    complex(WP), intent(in)      :: y(:,:)
-    type(ext_real_t), intent(in) :: chi
-    integer, intent(in)          :: n_iter
+    class(mode_t), intent(out)          :: this
+    class(coeffs_t), intent(in), target :: cf
+    type(oscpar_t), intent(in)          :: op
+    complex(WP), intent(in)             :: omega
+    real(WP), intent(in)                :: x(:)
+    complex(WP), intent(in)             :: y(:,:)
+    type(ext_real_t), intent(in)        :: chi
+    integer, intent(in)                 :: n_iter
 
     real(WP) :: phase
     integer  :: n_p
@@ -130,7 +130,7 @@ contains
 
     ! Initialize the mode
 
-    allocate(this%cf, SOURCE=cf)
+    this%cf => cf
 
     this%op = op
 
@@ -149,11 +149,6 @@ contains
     phase = ATAN2(AIMAG(this%y(1,this%n)), REAL(this%y(1,this%n)))
 
     this%y = this%y/SQRT(this%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
-
-    ! Set up the coefficient caches
-
-    call this%cf%fill_cache(x)
-    call this%cf%enable_cache()
 
     ! Classify the mode
 
@@ -179,8 +174,6 @@ contains
 
     ! Finalize the mode
 
-    call this%cf%final()
-
     deallocate(this%x)
     deallocate(this%y)
 
@@ -194,14 +187,17 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_md (this, root_rank)
+  subroutine bcast_md (this, root_rank, cf)
 
-    class(mode_t), intent(inout) :: this
-    integer, intent(in)          :: root_rank
+    class(mode_t), intent(inout)        :: this
+    integer, intent(in)                 :: root_rank
+    class(coeffs_t), intent(in), target :: cf
 
     ! Broadcast the mode
 
-    call bcast_alloc(this%cf, root_rank)
+    if(MPI_RANK /= root_rank) then
+       this%cf => cf
+    endif
 
     call bcast(this%op, root_rank)
 
@@ -216,6 +212,10 @@ contains
 
     call bcast(this%n, root_rank)
     call bcast(this%n_iter, root_rank)
+
+    ! Finish
+
+    return
 
   end subroutine bcast_md
 
