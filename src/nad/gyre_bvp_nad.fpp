@@ -364,7 +364,6 @@ contains
     type(ext_complex_t), intent(out)      :: discrim
 
     complex(WP)         :: b(this%n_e*this%n)
-    type(ext_complex_t) :: det
     complex(WP)         :: y_sh(this%n_e,this%n)
     logical             :: same_grid
 
@@ -372,7 +371,7 @@ contains
 
     call this%build(omega)
 
-    call this%sm%null_vector(b, det, this%np%use_banded)
+    call this%sm%null_vector(b, discrim, this%np%use_banded)
 
     y_sh = RESHAPE(b, SHAPE(y_sh))
 
@@ -411,12 +410,13 @@ contains
 
 !****
 
-  function mode (this, omega, discrim, use_real) result (md)
+  function mode (this, omega, discrim, use_real, omega_def) result (md)
 
     class(bvp_nad_t), intent(inout)           :: this
     complex(WP), intent(in)                   :: omega(:)
     type(ext_complex_t), intent(in), optional :: discrim(:)
     logical, intent(in), optional             :: use_real
+    complex(WP), intent(in), optional         :: omega_def(:)
     type(mode_t)                              :: md
 
     logical                  :: use_real_
@@ -463,6 +463,8 @@ contains
     ! Set up the discriminant function
 
     call df%init(this)
+
+    if(PRESENT(omega_def)) df%omega_def = omega_def
 
     ! Find the discriminant root
 

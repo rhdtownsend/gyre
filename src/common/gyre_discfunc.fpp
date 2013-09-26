@@ -41,7 +41,8 @@ module gyre_discfunc
 
   type, extends(ext_func_t) :: discfunc_t
      private
-     class(bvp_t), pointer :: bp
+     class(bvp_t), pointer    :: bp
+     complex(WP), allocatable, public :: omega_def(:)
    contains 
      private
      procedure, public :: init
@@ -84,6 +85,10 @@ contains
     ! Evaluate the discriminant
 
     f_ez = this%bp%discrim(CMPLX(ez))
+
+    if(ALLOCATED(this%omega_def)) then
+       f_ez = f_ez/PRODUCT(CMPLX(ez)-this%omega_def)
+    endif
 
     ! Finish
 

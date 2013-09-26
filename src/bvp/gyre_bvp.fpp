@@ -67,7 +67,7 @@ module gyre_bvp
        type(ext_complex_t)           :: discrim
      end function discrim_i
 
-     function mode_i (this, omega, discrim, use_real) result (mode)
+     function mode_i (this, omega, discrim, use_real, omega_def) result (mode)
        use core_kinds
        use gyre_mode
        use gyre_ext_arith
@@ -76,6 +76,7 @@ module gyre_bvp
        complex(WP), intent(in)                   :: omega(:)
        type(ext_complex_t), intent(in), optional :: discrim(:)
        logical, intent(in), optional             :: use_real
+       complex(WP), intent(in), optional         :: omega_def(:)
        type(mode_t)                              :: mode
      end function mode_i
 

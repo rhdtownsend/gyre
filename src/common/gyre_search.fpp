@@ -250,7 +250,7 @@ contains
        omega_a = md(i)%omega*CMPLX(1._WP,  SQRT(EPSILON(0._WP)), WP)
        omega_b = md(i)%omega*CMPLX(1._WP, -SQRT(EPSILON(0._WP)), WP)
 
-       md(i) = bp%mode([omega_a,omega_b])
+       md(i) = bp%mode([omega_a,omega_b], omega_def=md(:i-1)%omega)
 
        ! Report
 
