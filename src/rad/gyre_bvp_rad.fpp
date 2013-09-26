@@ -66,7 +66,6 @@ module gyre_bvp_rad
      type(gridpar_t), allocatable   :: recon_gp(:)
      real(WP), allocatable          :: x_in(:)
      real(WP), allocatable          :: x(:)
-     integer, public                :: e_norm
      integer, public                :: n
      integer, public                :: n_e
    contains 
@@ -214,8 +213,6 @@ contains
 
     if(ALLOCATED(x_in)) this%x_in = x_in
 
-    this%e_norm = 0
-
     this%n = n
     this%n_e = this%sh%n_e
 
@@ -319,10 +316,6 @@ contains
 
     call this%sm%determinant(discrim, use_real)
 
-    ! Scale the discriminant using the normalizing exponent
-
-    discrim = scale(discrim, -this%e_norm)
-
     ! Finish
 
     return
@@ -374,8 +367,6 @@ contains
     call this%build(omega)
 
     call this%sm%null_vector(b, det, use_real)
-
-    discrim = scale(det, -this%e_norm)    
 
     y_sh = RESHAPE(b, SHAPE(y_sh))
 
@@ -463,13 +454,6 @@ contains
        discrim_b = this%discrim(omega_b)
     endif
 
-    ! Set the normalizing exponent
-
-    this%e_norm = MAX(exponent(discrim_a), exponent(discrim_b))
-
-    discrim_a = scale(discrim_a, -this%e_norm)
-    discrim_b = scale(discrim_b, -this%e_norm)
-
     ! Set up the discriminant function
 
     call df%init(this)
@@ -511,10 +495,6 @@ contains
     chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
     
     call md%init(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
-
-    ! Reset the normalizing exponent
-
-    this%e_norm = 0
 
     ! Finish
 
