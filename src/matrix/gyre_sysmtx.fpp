@@ -536,7 +536,7 @@ contains
     $TYPE(WP) :: M(2*sm%n_e,2*sm%n_e)
     integer   :: ipiv(2*sm%n_e)
     integer   :: info
-    $TYPE(WP) :: D(sm%n_e)
+    $TYPE(WP) :: D(2*sm%n_e)
     integer   :: i
     $TYPE(WP) :: b_bound(2*sm%n_e)
     integer   :: l
@@ -594,15 +594,15 @@ contains
        if(ipiv(i) /= i) det = -det
     end do
 
-    ! Find the (near-)zero element on the diagonal of the final block
-    ! (we assume that it *is* in the final block)
+    ! Locate the singular element on the diagonal
 
-    D = diagonal(M(n_e+1:,n_e+1:))
+    D = diagonal(M)
 
-    i = n_e + MINLOC(ABS(D), DIM=1)
-
-    if(i <= n_e) then
-       $WARN(Smallest element not in final block)
+    if(ANY(D(:2*n_e-1) == 0._WP)) then
+       i = MINLOC(ABS(D(:2*n_e-1)), DIM=1)
+       $WARN(Singular element not at outer point)
+    else
+       i = 2*n_e
     endif
 
     ! Calculate the solutions at the two boundaries
@@ -973,6 +973,7 @@ contains
     $TYPE(WP), intent(out)           :: b(:)
     type(ext_${TYPE}_t), intent(out) :: det
 
+    integer                :: m
     $TYPE(WP), allocatable :: A_b(:,:)
     integer                :: n_l
     integer                :: n_u
@@ -995,7 +996,9 @@ contains
     n_l = sm%n_e + sm%n_i - 1
     n_u = sm%n_e + sm%n_i - 1
 
-    allocate(ipiv(SIZE(A_b, 2)))
+    m = SIZE(A_b, 2)
+
+    allocate(ipiv(m))
 
     $block
 
@@ -1013,8 +1016,8 @@ contains
     $endif
     $endif
 
-    call ${X}GBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
-    $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from XGBTRF)
+    call ${X}GBTRF(m, m, n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
+    $ASSERT(info == 0 .OR. info == m,Non-zero return from XGBTRF)
 
     $endblock
 
@@ -1026,17 +1029,22 @@ contains
     det = product([ext_complex(A_b(n_l+n_u+1,:)),sm%S])
     $endif
  
-    do j = 1,SIZE(A_b, 2)
+    do j = 1, m
        if(ipiv(j) /= j) det = -det
     enddo
 
-    ! Locate the smallest diagonal element
+    ! Locate the singular element on the diagonal
 
-    i = MINLOC(ABS(A_b(n_l+n_u+1,:)), DIM=1)
+    associate (D => A_b(n_l+n_u+1,:))
 
-    if(SIZE(A_b, 2)-i > sm%n_e) then
-       $WARN(Smallest element not in final block)
-    endif
+      if(ANY(D(:m-1) == 0._WP)) then
+         i = MINLOC(ABS(D(:m-1)), DIM=1)
+         $WARN(Singular element not at outer point)
+      else
+         i = m
+      endif
+
+    end associate
 
     ! Backsubstitute to solve the banded linear system A_b b = 0
 
