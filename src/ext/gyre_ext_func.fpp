@@ -40,6 +40,7 @@ module gyre_ext_func
      generic                        :: eval => eval_er, eval_ec
      procedure                      :: expand_bracket
      procedure                      :: narrow_bracket
+     procedure                      :: narrow_pair
      procedure                      :: root_r
      procedure                      :: root_c
      generic                        :: root => root_r, root_c
@@ -363,63 +364,16 @@ contains
 
 !****
 
-  function root_r (this, ex_a, ex_b, ex_tol, f_ex_a, f_ex_b, n_iter, relative_tol) result (ex)
+  subroutine narrow_pair (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol)
 
-    class(ext_func_t), intent(inout)       :: this
-    type(ext_real_t), intent(in)           :: ex_a
-    type(ext_real_t), intent(in)           :: ex_b
-    type(ext_real_t), intent(in)           :: ex_tol
-    type(ext_real_t), optional, intent(in) :: f_ex_a
-    type(ext_real_t), optional, intent(in) :: f_ex_b
-    integer, optional, intent(inout)       :: n_iter
-    logical, optional, intent(in)          :: relative_tol
-    type(ext_real_t)                       :: ex
-
-    type(ext_real_t) :: a
-    type(ext_real_t) :: b
-    type(ext_real_t) :: f_a
-    type(ext_real_t) :: f_b
-
-    ! Find a root of the real function this%eval_r(x)
-
-    a = ex_a
-    b = ex_b
-
-    if(PRESENT(f_ex_a)) then
-       f_a = f_ex_a
-    else
-       f_a = this%eval(a)
-    endif
-
-    if(PRESENT(f_ex_b)) then
-       f_b = f_ex_b
-    else
-       f_b = this%eval(b)
-    endif
-
-    call this%narrow_bracket(a, b, ex_tol, f_a, f_b, n_iter, relative_tol)
-
-    ex = b
-
-    ! Finish
-
-    return
-
-  end function root_r
-
-!****
-
-  function root_c (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol) result (ez)
-
-    class(ext_func_t), intent(inout)          :: this
-    type(ext_complex_t), intent(in)           :: ez_a
-    type(ext_complex_t), intent(in)           :: ez_b
-    type(ext_real_t), intent(in)              :: ez_tol
-    type(ext_complex_t), optional, intent(in) :: f_ez_a
-    type(ext_complex_t), optional, intent(in) :: f_ez_b
-    integer, optional, intent(inout)          :: n_iter
-    logical, optional, intent(in)             :: relative_tol
-    type(ext_complex_t)                       :: ez
+    class(ext_func_t), intent(inout)             :: this
+    type(ext_complex_t), intent(inout)           :: ez_a
+    type(ext_complex_t), intent(inout)           :: ez_b
+    type(ext_real_t), intent(in)                 :: ez_tol
+    type(ext_complex_t), optional, intent(inout) :: f_ez_a
+    type(ext_complex_t), optional, intent(inout) :: f_ez_b
+    integer, optional, intent(inout)             :: n_iter
+    logical, optional, intent(in)                :: relative_tol
 
     integer             :: n_iter_
     logical             :: relative_tol_
@@ -446,8 +400,8 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    ! Use the secant method to find a complex root of the function
-    ! this%eval_c(z)
+    ! Use the secant method to narrow the pair [z_a,z_b] on a root of
+    ! the complex function this%eval_c(z)
 
     ! Set up the initial state
 
@@ -521,11 +475,107 @@ contains
        $ASSERT(i <= n_iter_,Too many iterations)
     endif
 
-    ! Store the result
+    ! Store the results
+
+    ez_a = a
+    ez_b = b
+
+    if(PRESENT(f_ez_a)) f_ez_a = f_a
+    if(PRESENT(f_ez_b)) f_ez_b = f_b
+
+    ! Finish
+
+  end subroutine narrow_pair
+
+!****
+
+  function root_r (this, ex_a, ex_b, ex_tol, f_ex_a, f_ex_b, n_iter, relative_tol) result (ex)
+
+    class(ext_func_t), intent(inout)       :: this
+    type(ext_real_t), intent(in)           :: ex_a
+    type(ext_real_t), intent(in)           :: ex_b
+    type(ext_real_t), intent(in)           :: ex_tol
+    type(ext_real_t), optional, intent(in) :: f_ex_a
+    type(ext_real_t), optional, intent(in) :: f_ex_b
+    integer, optional, intent(inout)       :: n_iter
+    logical, optional, intent(in)          :: relative_tol
+    type(ext_real_t)                       :: ex
+
+    type(ext_real_t) :: a
+    type(ext_real_t) :: b
+    type(ext_real_t) :: f_a
+    type(ext_real_t) :: f_b
+
+    ! Find a root of the real function this%eval_r(x)
+
+    a = ex_a
+    b = ex_b
+
+    if(PRESENT(f_ex_a)) then
+       f_a = f_ex_a
+    else
+       f_a = this%eval(a)
+    endif
+
+    if(PRESENT(f_ex_b)) then
+       f_b = f_ex_b
+    else
+       f_b = this%eval(b)
+    endif
+
+    call this%narrow_bracket(a, b, ex_tol, f_a, f_b, n_iter, relative_tol)
+
+    ex = b
+
+    ! Finish
+
+    return
+
+  end function root_r
+
+!****
+
+  function root_c (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol) result (ez)
+
+    class(ext_func_t), intent(inout)          :: this
+    type(ext_complex_t), intent(in)           :: ez_a
+    type(ext_complex_t), intent(in)           :: ez_b
+    type(ext_real_t), intent(in)              :: ez_tol
+    type(ext_complex_t), optional, intent(in) :: f_ez_a
+    type(ext_complex_t), optional, intent(in) :: f_ez_b
+    integer, optional, intent(inout)          :: n_iter
+    logical, optional, intent(in)             :: relative_tol
+    type(ext_complex_t)                       :: ez
+
+    type(ext_complex_t) :: a
+    type(ext_complex_t) :: b
+    type(ext_complex_t) :: f_a
+    type(ext_complex_t) :: f_b
+
+    ! Find a root of the real function this%eval_r(x)
+
+    a = ez_a
+    b = ez_b
+
+    if(PRESENT(f_ez_a)) then
+       f_a = f_ez_a
+    else
+       f_a = this%eval(a)
+    endif
+
+    if(PRESENT(f_ez_b)) then
+       f_b = f_ez_b
+    else
+       f_b = this%eval(b)
+    endif
+
+    call this%narrow_pair(a, b, ez_tol, f_a, f_b, n_iter, relative_tol)
 
     ez = b
 
     ! Finish
+
+    return
 
   end function root_c
 
