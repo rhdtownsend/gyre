@@ -400,6 +400,8 @@ contains
        relative_tol_ = .FALSE.
     endif
 
+    $ASSERT(ez_a /= ez_b,Coincident starting pair)
+
     ! Use the secant method to narrow the pair [z_a,z_b] on a root of
     ! the complex function this%eval_c(z)
 
