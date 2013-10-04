@@ -455,8 +455,6 @@ contains
 
     call df%init(this)
 
-    if(PRESENT(omega_def)) df%omega_def = omega_def
-
     ! Find the discriminant root
 
     n_iter = this%np%n_iter_max
