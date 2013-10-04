@@ -420,11 +420,13 @@ contains
     type(mode_t)                              :: md
 
     logical                  :: use_real_
-    complex(WP)              :: omega_a
-    complex(WP)              :: omega_b
+    type(ext_complex_t)      :: omega_a
+    type(ext_complex_t)      :: omega_b
     type(ext_complex_t)      :: discrim_a
     type(ext_complex_t)      :: discrim_b
+    type(ext_real_t)         :: discrim_norm
     type(discfunc_t)         :: df
+    integer                  :: n_iter_def
     integer                  :: n_iter
     complex(WP)              :: omega_root
     real(WP), allocatable    :: x(:)
@@ -449,33 +451,62 @@ contains
 
     ! Unpack arguments
 
-    omega_a = omega(1)
-    omega_b = omega(2)
+    omega_a = ext_complex(omega(1))
+    omega_b = ext_complex(omega(2))
 
     if(PRESENT(discrim)) then
        discrim_a = discrim(1)
        discrim_b = discrim(2)
     else
-       discrim_a = this%discrim(omega_a)
-       discrim_b = this%discrim(omega_b)
+       discrim_a = this%discrim(cmplx(omega_a))
+       discrim_b = this%discrim(cmplx(omega_b))
     endif
+    
+    discrim_norm = MAX(ABS(discrim_a), ABS(discrim_b))
 
     ! Set up the discriminant function
 
     call df%init(this)
 
-    if(PRESENT(omega_def)) df%omega_def = omega_def
+    ! If omega_def is provided, do a preliminary root find using the
+    ! deflated discriminant
+
+    if(.FALSE. AND. PRESENT(omega_def)) then
+
+       ! (Don't pass discrim_a and discrim_b in/out, because they
+       ! haven't been deflated)
+
+       df%omega_def = omega_def
+
+       n_iter_def = this%np%n_iter_max
+
+       call df%narrow_pair(omega_a, omega_b, ext_real(0._WP), n_iter=n_iter_def)
+
+       $ASSERT(n_iter_def <= this%np%n_iter_max,Too many iterations)
+
+       deallocate(df%omega_def)
+
+       ! If necessary, reset omega_a and omega_b so they are not
+       ! coincident
+
+       if(omega_b == omega_a) then
+          omega_b = omega_a + TINY(0._WP)*(omega_a/ABS(omega_a))
+       endif
+
+       call df%expand_pair(omega_a, omega_b, ext_real(0._WP), discrim_a, discrim_b)
+
+    endif
 
     ! Find the discriminant root
 
     n_iter = this%np%n_iter_max
-
-    if(use_real_) then
+ 
+   if(use_real_) then
        omega_root = real(df%root(ext_real(omega_a), ext_real(omega_b), ext_real(0._WP), &
-                            f_ex_a=ext_real(discrim_a), f_ex_b=ext_real(discrim_b), n_iter=n_iter))
+                                 f_ex_a=ext_real(discrim_a), f_ex_b=ext_real(discrim_b), n_iter=n_iter))
     else
-       omega_root = cmplx(df%root(ext_complex(omega_a), ext_complex(omega_b), ext_real(0._WP), &
-                            f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
+       omega_root = cmplx(df%root(omega_a, omega_b, ext_real(0._WP), &
+                                  f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
     endif
 
     $ASSERT(n_iter <= this%np%n_iter_max,Too many iterations)
@@ -497,9 +528,13 @@ contains
 
     ! Initialize the mode
     
-    chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
+    chi = ABS(discrim_root)/discrim_norm
     
-    call md%init(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
+    if(PRESENT(omega_def)) then
+       call md%init(this%cf, this%op, omega_root, x, y_c, chi, n_iter+n_iter_def)
+    else
+       call md%init(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
+    endif
 
     ! Finish
 
