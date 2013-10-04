@@ -471,7 +471,7 @@ contains
     ! If omega_def is provided, do a preliminary root find using the
     ! deflated discriminant
 
-    if(.FALSE. AND. PRESENT(omega_def)) then
+    if(.FALSE. .AND. PRESENT(omega_def)) then
 
        ! (Don't pass discrim_a and discrim_b in/out, because they
        ! haven't been deflated)
