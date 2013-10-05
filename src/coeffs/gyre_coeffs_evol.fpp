@@ -598,7 +598,7 @@ contains
 
     ! Finalize the coeffs_evol
 
-    call this%cc%final()
+    call this%detach_cache()
 
     do j = 1, N_J
        if(this%sp_def(j)) then
