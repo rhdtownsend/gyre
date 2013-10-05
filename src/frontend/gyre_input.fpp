@@ -206,13 +206,13 @@ contains
     integer           :: i
     integer           :: l
     integer           :: m
-    integer           :: n_pg_min
-    integer           :: n_pg_max
+    integer           :: X_n_pg_min
+    integer           :: X_n_pg_max
     character(LEN=64) :: variables_type
     character(LEN=64) :: outer_bound_type
     character(LEN=64) :: tag
 
-    namelist /osc/ l, m, n_pg_min, n_pg_max, outer_bound_type, variables_type, tag
+    namelist /osc/ l, m, X_n_pg_min, X_n_pg_max, outer_bound_type, variables_type, tag
 
     ! Count the number of grid namelists
 
@@ -238,8 +238,8 @@ contains
        l = 0
        m = 0
 
-       n_pg_min = -HUGE(0)
-       n_pg_max = HUGE(0)
+       X_n_pg_min = -HUGE(0)
+       X_n_pg_max = HUGE(0)
 
        variables_type = 'DZIEM'
        outer_bound_type = 'ZERO'
@@ -249,7 +249,7 @@ contains
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(l=l, m=m, n_pg_min=n_pg_min, n_pg_max=n_pg_max, &
+       op(i) = oscpar_t(l=l, m=m, X_n_pg_min=X_n_pg_min, X_n_pg_max=X_n_pg_max, &
                         variables_type=variables_type, &
                         outer_bound_type=outer_bound_type, tag=tag)
 

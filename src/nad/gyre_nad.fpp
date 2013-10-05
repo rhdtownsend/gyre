@@ -167,7 +167,7 @@ program gyre_nad
 
      call scan_search(ad_bp, omega, md)
 
-     call filter_md(md, md%n_pg >= op(i)%n_pg_min .AND. md%n_pg <= op(i)%n_pg_max)
+     call filter_md(md, md%n_pg >= op(i)%X_n_pg_min .AND. md%n_pg <= op(i)%X_n_pg_max)
 
      call prox_search(nad_bp, md)
 

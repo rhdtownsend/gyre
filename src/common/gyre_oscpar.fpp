@@ -34,8 +34,8 @@ module gyre_oscpar
   type :: oscpar_t
      integer           :: l
      integer           :: m
-     integer           :: n_pg_min
-     integer           :: n_pg_max
+     integer           :: X_n_pg_min
+     integer           :: X_n_pg_max
      character(LEN=64) :: variables_type
      character(LEN=64) :: outer_bound_type
      character(LEN=64) :: tag
@@ -87,8 +87,8 @@ contains
     call bcast(op%l, root_rank)
     call bcast(op%m, root_rank)
 
-    call bcast(op%n_pg_min, root_rank)
-    call bcast(op%n_pg_max, root_rank)
+    call bcast(op%X_n_pg_min, root_rank)
+    call bcast(op%X_n_pg_max, root_rank)
 
     call bcast(op%variables_type, root_rank)
     call bcast(op%outer_bound_type, root_rank)
