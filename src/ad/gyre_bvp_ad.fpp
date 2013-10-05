@@ -238,8 +238,10 @@ contains
 
     ! Finalize the bvp_ad
 
-    call this%cf%final()
-
+    deallocate(this%jc)
+    deallocate(this%iv)
+    deallocate(this%bd)
+    
     ! Finish
 
     return
