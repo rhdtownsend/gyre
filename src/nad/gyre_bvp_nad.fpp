@@ -72,6 +72,9 @@ module gyre_bvp_nad
    contains 
      private
      procedure, public :: init
+     $if($GFORTRAN_PR57922)
+     procedure, public :: final
+     $endif
      procedure, public :: set_x_ad
      procedure, public :: discrim
      procedure         :: build
@@ -228,6 +231,28 @@ contains
     return
 
   end subroutine init
+
+!****
+
+  $if($GFORTRAN_PR57922)
+
+  subroutine final (this)
+
+    class(bvp_nad_t), intent(inout) :: this
+
+    ! Finalize the bvp_nad
+
+    deallocate(this%jc)
+    deallocate(this%iv)
+    deallocate(this%bd)
+    
+    ! Finish
+
+    return
+
+  end subroutine final
+
+  $endif
 
 !****
 
