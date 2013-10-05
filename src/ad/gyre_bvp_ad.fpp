@@ -78,6 +78,7 @@ module gyre_bvp_ad
      procedure         :: build
      procedure         :: recon
      procedure, public :: mode
+     procedure, public :: coeffs
   end type bvp_ad_t
 
   ! Interfaces
@@ -498,6 +499,23 @@ contains
     return
 
   end function mode
+
+!****
+
+  function coeffs (this) result (cf)
+
+    class(bvp_ad_t), intent(in) :: this
+    class(coeffs_t), pointer    :: cf
+
+    ! Return the coefficients pointer
+
+    cf => this%cf
+
+    ! Finish
+
+    return
+
+  end function coeffs
 
 end module gyre_bvp_ad
 

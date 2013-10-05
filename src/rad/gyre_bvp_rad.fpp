@@ -78,6 +78,7 @@ module gyre_bvp_rad
      procedure         :: build
      procedure         :: recon
      procedure, public :: mode
+     procedure, public :: coeffs
   end type bvp_rad_t
 
   ! Interfaces
@@ -262,7 +263,6 @@ contains
     integer, intent(in)                 :: root_rank
     class(coeffs_t), intent(in), target :: cf
 
-    class(coeffs_t), allocatable  :: cf
     type(oscpar_t)                :: op
     type(numpar_t)                :: np
     type(gridpar_t), allocatable  :: shoot_gp(:)
@@ -505,5 +505,22 @@ contains
     return
 
   end function mode
+
+!****
+
+  function coeffs (this) result (cf)
+
+    class(bvp_rad_t), intent(in) :: this
+    class(coeffs_t), pointer     :: cf
+
+    ! Return the coefficients pointer
+
+    cf => this%cf
+
+    ! Finish
+
+    return
+
+  end function coeffs
 
 end module gyre_bvp_rad

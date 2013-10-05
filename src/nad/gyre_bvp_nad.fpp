@@ -80,6 +80,7 @@ module gyre_bvp_nad
      procedure         :: build
      procedure         :: recon
      procedure, public :: mode
+     procedure, public :: coeffs
   end type bvp_nad_t
 
   ! Interfaces
@@ -258,7 +259,7 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_bp (this, root_rank)
+  subroutine bcast_bp (this, root_rank, cf)
 
     class(bvp_nad_t), intent(inout)     :: this
     integer, intent(in)                 :: root_rank
@@ -566,5 +567,22 @@ contains
     return
 
   end function mode
+
+!****
+
+  function coeffs (this) result (cf)
+
+    class(bvp_nad_t), intent(in) :: this
+    class(coeffs_t), pointer     :: cf
+
+    ! Return the coefficients pointer
+
+    cf => this%cf
+
+    ! Finish
+
+    return
+
+  end function coeffs
 
 end module gyre_bvp_nad

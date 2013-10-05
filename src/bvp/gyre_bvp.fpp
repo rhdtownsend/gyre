@@ -35,6 +35,7 @@ module gyre_bvp
      procedure(init_i), deferred, public    :: init
      procedure(discrim_i), deferred, public :: discrim
      procedure(mode_i), deferred, public    :: mode
+     procedure(coeffs_i), deferred, public  :: coeffs
   end type bvp_t
 
   ! Interfaces
@@ -79,6 +80,13 @@ module gyre_bvp
        complex(WP), intent(in), optional         :: omega_def(:)
        type(mode_t)                              :: mode
      end function mode_i
+
+     function coeffs_i (this) result (cf)
+       use gyre_coeffs
+       import bvp_t
+       class(bvp_t), intent(in) :: this
+       class(coeffs_t), pointer :: cf
+     end function coeffs_i
 
   end interface
 
