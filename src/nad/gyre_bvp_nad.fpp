@@ -557,7 +557,7 @@ contains
     chi = ABS(discrim_root)/discrim_norm
     
     if(PRESENT(omega_def)) then
-       call md%init(this%cf, this%op, omega_root, x, y_c, chi, n_iter+n_iter_def)
+       call md%init(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
     else
        call md%init(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
     endif
