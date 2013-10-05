@@ -238,10 +238,12 @@ contains
 
     class(bvp_rad_t), intent(inout) :: this
 
-    ! Finalize the ad_bvp
+    ! Finalize the bvp_rad
 
-    call this%cf%final()
-
+    deallocate(this%jc)
+    deallocate(this%iv)
+    deallocate(this%bd)
+    
     ! Finish
 
     return
