@@ -80,6 +80,8 @@ contains
 
   subroutine eval (this, x, omega, A)
 
+    use omp_lib
+
     class(jacobian_nad_jcd_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     complex(WP), intent(in)               :: omega
@@ -125,16 +127,22 @@ contains
       A(1,2) = 1._WP - V_g*c_1*omega**2/(l*(l+1))
       A(1,3) = -V_g
       A(1,4) = 0._WP
+      A(1,5) = delta
+      A(1,6) = 0._WP
       
       A(2,1) = l*(l+1) - As*l*(l+1)/(c_1*omega**2)
       A(2,2) = As - l
       A(2,3) = As*l*(l+1)/(c_1*omega**2)
       A(2,4) = 0._WP
+      A(2,5) = delta*l*(l+1)/(c_1*omega**2)
+      A(2,6) = 0._WP
       
       A(3,1) = 0._WP
       A(3,2) = 0._WP
       A(3,3) = 2._WP - l
       A(3,4) = 1._WP
+      A(3,5) = 0._WP
+      A(3,6) = 0._WP
       
       A(4,1) = -U*As
       A(4,2) = -U*V_g*c_1*omega**2/(l*(l+1))

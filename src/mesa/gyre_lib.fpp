@@ -47,8 +47,8 @@ module gyre_lib
 
   ! Module variables
 
-  type(coeffs_evol_t), save   :: ec_m
-  real(WP), allocatable, save :: x_ec_m(:)
+  type(coeffs_evol_t), allocatable, save :: cf_m
+  real(WP), allocatable, save            :: x_cf_m(:)
 
   ! Access specifiers
 
@@ -81,15 +81,45 @@ contains
 
 !****
 
+  subroutine gyre_final()
+
+    ! Finalize
+
+    if(ALLOCATED(cf_m)) then
+       call cf_m%final()
+       deallocate(cf_m)
+    endif
+
+    if(ALLOCATED(x_cf_m)) deallocate(x_cf_m)
+
+    call final_parallel()
+
+    ! Finish
+
+    return
+
+  end subroutine gyre_final
+
+!****
+
   subroutine gyre_read_model (file, G, deriv_type)
 
     character(LEN=*), intent(in) :: file
     real(WP), intent(in)         :: G
     character(LEN=*), intent(in) :: deriv_type
 
+    ! Allocate the model
+
+    if(ALLOCATED(cf_m)) then
+       call cf_m%final()
+       deallocate(cf_m)
+    endif
+
+    allocate(coeffs_evol_t::cf_m)
+
     ! Read the model
 
-    call read_mesa_file(file, G, deriv_type, ec_m, x_ec_m)
+    call read_mesa_file(file, G, deriv_type, cf_m, x_cf_m)
 
     ! Finish
 
@@ -131,22 +161,31 @@ contains
     real(WP), allocatable :: m(:)
     logical               :: add_center
 
+    ! Allocate the model
+
+    if(ALLOCATED(cf_m)) then
+       call cf_m%final()
+       deallocate(cf_m)
+    endif
+
+    allocate(coeffs_evol_t::cf_m)
+
     ! Set the model by storing coefficients
 
     m = w/(1._WP+w)*M_star
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    call ec_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
+    call cf_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
                    Gamma_1, nabla_ad, delta, Omega_rot, &
                    nabla, kappa, kappa_rho, kappa_T, &
                    epsilon, epsilon_rho, epsilon_T, &
                    deriv_type, add_center)
 
     if(add_center) then
-       x_ec_m = [0._WP,r/R_star]
+       x_cf_m = [0._WP,r/R_star]
     else
-       x_ec_m = r/R_star
+       x_cf_m = r/R_star
     endif
 
     ! Finish
@@ -190,6 +229,8 @@ contains
     integer                      :: j
     integer                      :: retcode
 
+    $ASSERT(ALLOCATED(cf_m),No model provided)
+
     ! Read parameters
 
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
@@ -220,7 +261,7 @@ contains
 
        ! Set up the frequency array
 
-       call build_scan(sp_sel, ec_m, op(i), shoot_gp_sel, x_ec_m, omega)
+       call build_scan(sp_sel, cf_m, op(i), shoot_gp_sel, x_cf_m, omega)
 
        ! Store the frequency range in shoot_gp_sel
 
@@ -229,15 +270,13 @@ contains
 
        ! Set up bp
 
-       if(ALLOCATED(bp)) deallocate(bp)
-
        if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
           allocate(bvp_rad_t::bp)
        else
           allocate(bvp_ad_t::bp)
        endif
 
-       call bp%init(ec_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ec_m)
+       call bp%init(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf_m)
 
        ! Find modes
 
@@ -266,6 +305,10 @@ contains
           call md(j)%final()
           $endif
        end do mode_loop
+
+       ! Loop around
+
+       if(ALLOCATED(bp)) deallocate(bp)
 
     end do op_loop
 

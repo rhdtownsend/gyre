@@ -85,14 +85,13 @@ module gyre_coeffs_evol
      private
      type(spline_t), allocatable :: sp(:)
      logical, allocatable        :: sp_def(:)
-     type(cocache_t)             :: cc
+     class(cocache_t), pointer   :: cc => null()
      real(WP), public            :: M_star
      real(WP), public            :: R_star
      real(WP), public            :: L_star
      real(WP), public            :: G
      real(WP)                    :: p_c
      real(WP)                    :: rho_c
-     logical                     :: cc_enabled
    contains
      private
      procedure         :: init_base
@@ -127,8 +126,8 @@ module gyre_coeffs_evol
      $PROC_DECL(kappa_S)
      $PROC_DECL(tau_thm)
      procedure, public :: pi_c
-     procedure, public :: enable_cache
-     procedure, public :: disable_cache
+     procedure, public :: attach_cache
+     procedure, public :: detach_cache
      procedure, public :: fill_cache
   end type coeffs_evol_t
  
@@ -165,6 +164,8 @@ contains
 
     allocate(this%sp_def(N_J))
     this%sp_def = .FALSE.
+
+    this%cc => null()
 
     ! Finish
 
@@ -299,8 +300,6 @@ contains
 
        this%G = G
 
-       this%cc_enabled = .FALSE.
-
     endif
 
     ! Finish
@@ -377,8 +376,6 @@ contains
        this%L_star = L_star
 
        this%G = G
-
-       this%cc_enabled = .FALSE.
 
     endif
 
@@ -601,7 +598,7 @@ contains
 
     ! Finalize the coeffs_evol
 
-    call this%cc%final()
+    call this%detach_cache()
 
     do j = 1, N_J
        if(this%sp_def(j)) then
@@ -643,8 +640,7 @@ contains
     call bcast(ec%p_c, root_rank)
     call bcast(ec%rho_c, root_rank)
 
-    call bcast(ec%cc_enabled, root_rank)
-    call bcast(ec%cc, root_rank)
+    if(MPI_RANK /= root_rank) ec%cc => null()
 
     ! Finish
 
@@ -726,7 +722,7 @@ contains
 
     if(this%sp_def(j)) then
 
-       if(this%cc_enabled) then
+       if(ASSOCIATED(this%cc)) then
           $NAME = this%cc%lookup(j, x)
        else
           $NAME = this%sp(j)%interp(x)
@@ -818,7 +814,7 @@ contains
 
     if(this%sp_def(j)) then
     
-       if(this%cc_enabled) then
+       if(ASSOCIATED(this%cc)) then
           d$NAME = this%cc%lookup(j_d, x)
        else
           if(x > 0._WP) then
@@ -891,7 +887,7 @@ contains
     ! c_1 is preserved (see, e.g., eqn. 18 of Takata 2006, Proc. SOHO
     ! 18/GONG 2006/HELAS I, p. 26)
 
-    if(this%cc_enabled) then
+    if(ASSOCIATED(this%cc)) then
 
        U = this%cc%lookup(J_U, x)
 
@@ -947,7 +943,7 @@ contains
     ! Calculate Gamma_1. If implicit_Gamma_1 is .TRUE., derive from
     ! other structure coefficients
 
-    if(this%cc_enabled) then
+    if(ASSOCIATED(this%cc)) then
 
        Gamma_1 = this%cc%lookup(J_GAMMA_1, x)
 
@@ -1067,35 +1063,36 @@ contains
 
 !****
 
-  subroutine enable_cache (this)
+  subroutine attach_cache (this, cc)
 
-    class(coeffs_evol_t), intent(inout) :: this
+    class(coeffs_evol_t), intent(inout)  :: this
+    class(cocache_t), intent(in), target :: cc
 
-    ! Enable the coefficient cache
+    ! Attach a coefficient cache
 
-    this%cc_enabled = .TRUE.
+    this%cc => cc
 
     ! Finish
 
     return
 
-  end subroutine enable_cache
+  end subroutine attach_cache
 
 !****
 
-  subroutine disable_cache (this)
+  subroutine detach_cache (this)
 
     class(coeffs_evol_t), intent(inout) :: this
 
-    ! Disable the coefficient cache
+    ! Detach the coefficient cache
 
-    this%cc_enabled = .FALSE.
+    this%cc => null()
 
     ! Finish
 
     return
 
-  end subroutine disable_cache
+  end subroutine detach_cache
 
 !****
 
@@ -1105,6 +1102,8 @@ contains
     real(WP), intent(in)                :: x(:)
 
     real(WP) :: c(N_J,SIZE(x))
+
+    $ASSERT_DEBUG(ASSOCIATED(this%cc),No cache attached)
 
     ! Fill the coefficient cache
 

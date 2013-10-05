@@ -125,10 +125,8 @@ contains
     integer                       :: c_end
     integer                       :: c_rate
     integer                       :: i
-    integer                       :: n_p
-    integer                       :: n_g
-    integer                       :: n_pg
     $if($MPI)
+    class(coeffs_t), pointer      :: cf
     integer                       :: p
     $endif
 
@@ -169,10 +167,8 @@ contains
 
        ! Report
 
-       call md(i)%classify(n_p, n_g, n_pg)
-
        if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
+          write(OUTPUT_UNIT, 120) md(i)%op%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
 120       format(4(2X,I6),3(2X,E24.16),2X,I6)
        endif
 
@@ -193,9 +189,11 @@ contains
 
     $if($MPI)
 
+    cf => bp%coeffs()
+
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p)
+          call bcast(md(i), p, cf)
        end do
     enddo
 
@@ -214,19 +212,17 @@ contains
     class(bvp_t), target, intent(inout) :: bp
     type(mode_t), intent(inout)         :: md(:)
 
-    integer     :: n_md
-    integer     :: i_part(MPI_SIZE+1)
-    integer     :: c_beg
-    integer     :: c_end
-    integer     :: c_rate
-    integer     :: i
-    complex(WP) :: omega_a
-    complex(WP) :: omega_b
-    integer     :: n_p
-    integer     :: n_g
-    integer     :: n_pg
+    integer                  :: n_md
+    integer                  :: i_part(MPI_SIZE+1)
+    integer                  :: c_beg
+    integer                  :: c_end
+    integer                  :: c_rate
+    integer                  :: i
+    complex(WP)              :: omega_a
+    complex(WP)              :: omega_b
     $if($MPI)
-    integer     :: p
+    class(coeffs_t), pointer :: cf
+    integer                  :: p
     $endif
 
     ! Process each mode to find a proximate mode
@@ -237,7 +233,7 @@ contains
 100    format(A)
 
        write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110    format(4(2X,A6),3(2X,A23),2X,A4)
+110    format(4(2X,A6),3(2X,A24),2X,A6)
        
     endif
 
@@ -253,19 +249,19 @@ contains
 
     mode_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
-       ! Find the mode
+       ! Initial guesses
 
        omega_a = md(i)%omega*CMPLX(1._WP,  SQRT(EPSILON(0._WP)), WP)
        omega_b = md(i)%omega*CMPLX(1._WP, -SQRT(EPSILON(0._WP)), WP)
 
-       md(i) = bp%mode([omega_a,omega_b])
+       ! Find the mode
+
+       md(i) = bp%mode([omega_a,omega_b], omega_def=md(:i-1)%omega)
 
        ! Report
 
-       call md(i)%classify(n_p, n_g, n_pg)
-
        if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%op%l, n_pg, n_p, n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
+          write(OUTPUT_UNIT, 120) md(i)%op%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
 120       format(4(2X,I6),3(2X,E24.16),2X,I4)
        endif
 
@@ -286,9 +282,11 @@ contains
 
     $if($MPI)
 
+    cf => bp%coeffs()
+
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p)
+          call bcast(md(i), p, cf)
        end do
     enddo
 

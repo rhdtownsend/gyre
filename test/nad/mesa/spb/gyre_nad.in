@@ -14,10 +14,12 @@
 
 &osc
 	l = 2
+	X_n_pg_min = -50
 /
 
 &osc
 	l = 3
+	X_n_pg_min = -50
 /
 
 &num

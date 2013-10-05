@@ -166,6 +166,9 @@ program gyre_nad
      ! Find modes
 
      call scan_search(ad_bp, omega, md)
+
+     call filter_md(md, md%n_pg >= op(i)%X_n_pg_min .AND. md%n_pg <= op(i)%X_n_pg_max)
+
      call prox_search(nad_bp, md)
 
      ! (The following could be simpler, but this is a workaround for a
@@ -187,5 +190,42 @@ program gyre_nad
   close(unit)
 
   call final_parallel()
+
+contains
+
+  subroutine filter_md (md, mask)
+
+    type(mode_t), intent(inout), allocatable :: md(:)
+    logical, intent(in)                      :: mask(:)
+
+    integer                   :: n_md_filt
+    type(mode_t), allocatable :: md_filt(:)
+    integer                   :: i
+    integer                   :: j
+
+    $CHECK_BOUNDS(SIZE(md),SIZE(mask))
+
+    ! Filter the modes according to mask
+
+    n_md_filt = COUNT(mask)
+
+    allocate(md_filt(n_md_filt))
+
+    j = 0
+
+    filter_loop : do i = 1,SIZE(md)
+       if(mask(i)) then
+          j = j + 1
+          md_filt(j) = md(i)
+       endif
+    end do filter_loop
+
+    call MOVE_ALLOC(md_filt, md)
+
+    ! Finish
+
+    return
+
+  end subroutine filter_md
 
 end program gyre_nad

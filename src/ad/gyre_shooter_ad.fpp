@@ -26,10 +26,10 @@ module gyre_shooter_ad
   use gyre_coeffs
   use gyre_oscpar
   use gyre_numpar
-  use gyre_jacobian
+  use gyre_ivp
   use gyre_sysmtx
   use gyre_ext_arith
-  use gyre_ivp, ivp_abscissa => abscissa
+  use gyre_ivp
 
   use ISO_FORTRAN_ENV
 
@@ -41,11 +41,11 @@ module gyre_shooter_ad
 
   type :: shooter_ad_t
      private
-     class(coeffs_t), pointer   :: cf => null()
-     class(jacobian_t), pointer :: jc => null()
-     type(oscpar_t), pointer    :: op => null()
-     type(numpar_t), pointer    :: np => null()
-     integer, public            :: n_e
+     class(coeffs_t), pointer :: cf => null()
+     class(ivp_t), pointer    :: iv => null()
+     type(oscpar_t), pointer  :: op => null()
+     type(numpar_t), pointer  :: np => null()
+     integer, public          :: n_e
    contains
      private
      procedure, public :: init
@@ -64,22 +64,22 @@ module gyre_shooter_ad
 
 contains
 
-  subroutine init (this, cf, jc, op, np)
+  subroutine init (this, cf, iv, op, np)
 
-    class(shooter_ad_t), intent(out)      :: this
-    class(coeffs_t), intent(in), target   :: cf
-    class(jacobian_t), intent(in), target :: jc
-    type(oscpar_t), intent(in), target    :: op
-    type(numpar_t), intent(in), target    :: np
+    class(shooter_ad_t), intent(out)    :: this
+    class(coeffs_t), intent(in), target :: cf
+    class(ivp_t), intent(in), target    :: iv
+    type(oscpar_t), intent(in), target  :: op
+    type(numpar_t), intent(in), target  :: np
 
     ! Initialize the shooter_ad
 
     this%cf => cf
-    this%jc => jc
+    this%iv => iv
     this%op => op
     this%np => np
 
-    this%n_e = this%jc%n_e
+    this%n_e = this%iv%n_e
 
     ! Finish
 
@@ -106,7 +106,7 @@ contains
 
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, S) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
-       call solve(this%np%ivp_solver_type, this%jc, omega, x(k), x(k+1), E_l, E_r, S, use_real=.TRUE.)
+       call this%iv%solve(omega, x(k), x(k+1), E_l, E_r, S, use_real=.TRUE.)
        call sm%set_block(k, E_l, E_r, S)
     end do block_loop
 
@@ -169,7 +169,7 @@ contains
 
           x_in(:n_in) = x(i_in(:n_in))
 
-          call recon(this%np%ivp_solver_type, this%jc, omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
+          call this%iv%recon(omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
                x_in(:n_in), y_in(:,:n_in), use_real=.TRUE.)
 
           y(:,i_in(:n_in)) = y_in(:,:n_in)
@@ -200,7 +200,7 @@ contains
 
     !$OMP PARALLEL DO SCHEDULE (DYNAMIC)
     count_loop : do k = 1,SIZE(x_sh)-1
-       n_cell(k) = SIZE(ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1)))
+       n_cell(k) = SIZE(this%iv%abscissa(x_sh(k), x_sh(k+1)))
     end do count_loop
 
     allocate(x(SUM(n_cell)))
@@ -208,7 +208,7 @@ contains
     i = 1
 
     cell_loop : do k = 1,SIZE(x_sh)-1
-       x(i:i+n_cell(k)-1) = ivp_abscissa(this%np%ivp_solver_type, x_sh(k), x_sh(k+1))
+       x(i:i+n_cell(k)-1) = this%iv%abscissa(x_sh(k), x_sh(k+1))
        i = i + n_cell(k)
     end do cell_loop
 

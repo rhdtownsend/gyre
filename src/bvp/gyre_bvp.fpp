@@ -35,6 +35,7 @@ module gyre_bvp
      procedure(init_i), deferred, public    :: init
      procedure(discrim_i), deferred, public :: discrim
      procedure(mode_i), deferred, public    :: mode
+     procedure(coeffs_i), deferred, public  :: coeffs
   end type bvp_t
 
   ! Interfaces
@@ -48,13 +49,13 @@ module gyre_bvp
        use gyre_numpar
        use gyre_gridpar
        import bvp_t
-       class(bvp_t), intent(out)         :: this
-       class(coeffs_t), intent(in)       :: cf
-       type(oscpar_t), intent(in)        :: op
-       type(numpar_t), intent(in)        :: np
-       type(gridpar_t), intent(in)       :: shoot_gp(:)
-       type(gridpar_t), intent(in)       :: recon_gp(:)
-       real(WP), allocatable, intent(in) :: x_in(:)
+       class(bvp_t), intent(out)           :: this
+       class(coeffs_t), intent(in), target :: cf
+       type(oscpar_t), intent(in)          :: op
+       type(numpar_t), intent(in)          :: np
+       type(gridpar_t), intent(in)         :: shoot_gp(:)
+       type(gridpar_t), intent(in)         :: recon_gp(:)
+       real(WP), allocatable, intent(in)   :: x_in(:)
      end subroutine init_i
 
      function discrim_i (this, omega, use_real) result (discrim)
@@ -67,7 +68,7 @@ module gyre_bvp
        type(ext_complex_t)           :: discrim
      end function discrim_i
 
-     function mode_i (this, omega, discrim, use_real) result (mode)
+     function mode_i (this, omega, discrim, use_real, omega_def) result (mode)
        use core_kinds
        use gyre_mode
        use gyre_ext_arith
@@ -76,8 +77,16 @@ module gyre_bvp
        complex(WP), intent(in)                   :: omega(:)
        type(ext_complex_t), intent(in), optional :: discrim(:)
        logical, intent(in), optional             :: use_real
+       complex(WP), intent(in), optional         :: omega_def(:)
        type(mode_t)                              :: mode
      end function mode_i
+
+     function coeffs_i (this) result (cf)
+       use gyre_coeffs
+       import bvp_t
+       class(bvp_t), intent(in) :: this
+       class(coeffs_t), pointer :: cf
+     end function coeffs_i
 
   end interface
 

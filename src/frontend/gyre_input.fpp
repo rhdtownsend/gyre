@@ -206,11 +206,13 @@ contains
     integer           :: i
     integer           :: l
     integer           :: m
+    integer           :: X_n_pg_min
+    integer           :: X_n_pg_max
     character(LEN=64) :: variables_type
     character(LEN=64) :: outer_bound_type
     character(LEN=64) :: tag
 
-    namelist /osc/ l, m, outer_bound_type, variables_type, tag
+    namelist /osc/ l, m, X_n_pg_min, X_n_pg_max, outer_bound_type, variables_type, tag
 
     ! Count the number of grid namelists
 
@@ -236,6 +238,9 @@ contains
        l = 0
        m = 0
 
+       X_n_pg_min = -HUGE(0)
+       X_n_pg_max = HUGE(0)
+
        variables_type = 'DZIEM'
        outer_bound_type = 'ZERO'
        tag = ''
@@ -244,7 +249,8 @@ contains
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(l=l, m=m, variables_type=variables_type, &
+       op(i) = oscpar_t(l=l, m=m, X_n_pg_min=X_n_pg_min, X_n_pg_max=X_n_pg_max, &
+                        variables_type=variables_type, &
                         outer_bound_type=outer_bound_type, tag=tag)
 
     end do read_loop
@@ -306,7 +312,6 @@ contains
        ivp_solver_type = 'MAGNUS_GL2'
        tag_list = ''
 
-       rewind(unit)
        read(unit, NML=num)
 
        ! Initialize the numpar
