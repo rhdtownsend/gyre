@@ -934,7 +934,16 @@ contains
 
     associate(l => this%op%l)
 
-      A2 = ABS(xi_r(this%n))**2 + l*(l+1)*ABS(xi_h(this%n))**2
+      select case (this%op%inertia_norm_type)
+      case ('RADIAL')
+         A2 = ABS(xi_r(this%n))**2
+      case ('HORIZ')
+         A2 = l*(l+1)*ABS(xi_h(this%n))**2
+      case ('BOTH')
+         A2 = ABS(xi_r(this%n))**2 + l*(l+1)*ABS(xi_h(this%n))**2
+      case default
+         $ABORT(Invalid inertia_norm_type)
+      end select
 
       if(A2 == 0._WP) then
          $WARN(Surface amplitude is zero; not normalizing inertia)
