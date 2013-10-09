@@ -108,6 +108,7 @@ contains
 
     use gyre_jacobian_ad_dziem
     use gyre_jacobian_ad_jcd
+    use gyre_jacobian_ad_mix
 
     use gyre_bound_ad_zero
     use gyre_bound_ad_dziem
@@ -152,6 +153,8 @@ contains
        allocate(jacobian_ad_dziem_t::this%jc)
     case ('JCD')
        allocate(jacobian_ad_jcd_t::this%jc)
+    case ('MIX')
+       allocate(jacobian_ad_mix_t::this%jc)
     case default
        $ABORT(Invalid variables_type)
     end select
