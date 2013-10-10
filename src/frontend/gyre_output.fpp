@@ -185,6 +185,8 @@ contains
           call wr%write('W', [(md(i)%W(), i=1,n_md)])
        case('omega_im')
           call wr%write('omega_im', [(md(i)%omega_im(), i=1,n_md)])
+       case('freq_units')
+          call wr%write('freq_units', freq_units)
        case default
           if(n_md >= 1) then
              select type (cf => md(1)%cf)
@@ -354,6 +356,8 @@ contains
           call wr%write('prop_type', md%prop_type())
        case ('K')
           call wr%write('K', md%K())
+       case('freq_units')
+          call wr%write('freq_units', freq_units)
        case default
           select type (cf => md%cf)
           type is (coeffs_evol_t)
