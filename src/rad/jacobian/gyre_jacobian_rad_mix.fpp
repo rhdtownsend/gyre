@@ -26,6 +26,7 @@ module gyre_jacobian_rad_mix
   use gyre_jacobian
   use gyre_coeffs
   use gyre_oscpar
+  use gyre_linalg
 
   use ISO_FORTRAN_ENV
 
@@ -148,34 +149,12 @@ contains
     $endif
 
     ! Calculate the transformation matrix to convert variables between the
-    ! canonical formulation and the Dziembowski formulation
+    ! canonical formulation and the mixed formulation
 
     if (to_canon) then
-
-       associate(c_1 => this%cf%c_1(x), &
-                 l => this%op%l)
-
-         trans_matrix(1,1) = 1._WP
-         trans_matrix(1,2) = 0._WP
-
-         trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = 1._WP
-
-       end associate
-
+       trans_matrix = identity_matrix(this%n_e)
     else
-
-       associate(c_1 => this%cf%c_1(x), &
-                 l => this%op%l)
-
-         trans_matrix(1,1) = 1._WP
-         trans_matrix(1,2) = 0._WP
-
-         trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = 1._WP
-
-       end associate
-
+       trans_matrix = identity_matrix(this%n_e)
     endif
 
     ! Finish
