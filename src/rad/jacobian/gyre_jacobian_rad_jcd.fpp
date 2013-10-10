@@ -119,7 +119,7 @@ contains
       A(1,2) = -V_g*c_1*omega_c**2
       
       A(2,1) = 1._WP - (As - U)/(c_1*omega_c**2)
-      A(2,2) = As + 1._WP
+      A(2,2) = As
 
     end associate
 
@@ -148,12 +148,11 @@ contains
     $endif
 
     ! Calculate the transformation matrix to convert variables between the
-    ! canonical formulation and the Dziembowski formulation
+    ! canonical formulation and the JCD formulation
 
     if (to_canon) then
 
-       associate(c_1 => this%cf%c_1(x), &
-                 l => this%op%l)
+       associate(c_1 => this%cf%c_1(x))
 
          trans_matrix(1,1) = 1._WP
          trans_matrix(1,2) = 0._WP
@@ -165,8 +164,7 @@ contains
 
     else
 
-       associate(c_1 => this%cf%c_1(x), &
-                 l => this%op%l)
+       associate(c_1 => this%cf%c_1(x))
 
          trans_matrix(1,1) = 1._WP
          trans_matrix(1,2) = 0._WP
