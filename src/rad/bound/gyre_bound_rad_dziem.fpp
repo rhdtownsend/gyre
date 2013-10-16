@@ -68,6 +68,7 @@ contains
     ! Initialize the bound
 
     this%cf => cf
+    this%jc => jc
     this%op => op
 
     this%n_i = 1
