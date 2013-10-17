@@ -840,7 +840,7 @@ contains
   function K (this)
 
     class(mode_t), intent(in) :: this
-    real(WP)                  :: K(this%n)
+    complex(WP)               :: K(this%n)
 
     complex(WP) :: xi_r(this%n)
     complex(WP) :: xi_h(this%n)
@@ -853,7 +853,7 @@ contains
     associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
               l => this%op%l)
 
-      K = (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*ABS(xi_r*xi_h))*U*x**2/c_1
+      K = (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
 
       K = K/integrate(x, K)
 
@@ -1194,29 +1194,5 @@ contains
     end subroutine count_windings
 
   end subroutine classify
-
-!****
-
-  function integrate (x, y) result (int_y)
-
-    real(WP), intent(in) :: x(:)
-    real(WP), intent(in) :: y(:)
-    real(WP)             :: int_y
-
-    integer :: n
-
-    $CHECK_BOUNDS(SIZE(y),SIZE(x))
-
-    ! Integrate y(x) using trapezoidal quadrature
-
-    n = SIZE(x)
-
-    int_y = SUM(0.5_WP*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)))
-
-    ! Finish
-
-    return
-
-  end function integrate
 
 end module gyre_mode
