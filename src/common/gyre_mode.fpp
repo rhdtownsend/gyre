@@ -870,7 +870,7 @@ contains
   function beta (this)
 
     class(mode_t), intent(in) :: this
-    real(WP)                  :: beta
+    complex(WP)               :: beta
 
     complex(WP) :: xi_r(this%n)
     complex(WP) :: xi_h(this%n)
@@ -883,7 +883,7 @@ contains
     associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
               Omega_rot => this%cf%Omega_rot(this%x), l => this%op%l)
 
-      beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*ABS(xi_r*xi_h))*U*x**2/c_1) / &
+      beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
              integrate(x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
 
     end associate
