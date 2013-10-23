@@ -124,17 +124,17 @@ contains
               l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
 
       A(1,1) = V_g - 1._WP - l
-      A(1,2) = 1._WP - V_g*c_1*omega**2/(l*(l+1))
+      A(1,2) = 1._WP - V_g*c_1*omega_c**2/(l*(l+1))
       A(1,3) = -V_g
       A(1,4) = 0._WP
       A(1,5) = delta
       A(1,6) = 0._WP
       
-      A(2,1) = l*(l+1) - As*l*(l+1)/(c_1*omega**2)
+      A(2,1) = l*(l+1) - As*l*(l+1)/(c_1*omega_c**2)
       A(2,2) = As - l
-      A(2,3) = As*l*(l+1)/(c_1*omega**2)
+      A(2,3) = As*l*(l+1)/(c_1*omega_c**2)
       A(2,4) = 0._WP
-      A(2,5) = delta*l*(l+1)/(c_1*omega**2)
+      A(2,5) = delta*l*(l+1)/(c_1*omega_c**2)
       A(2,6) = 0._WP
       
       A(3,1) = 0._WP
@@ -145,21 +145,21 @@ contains
       A(3,6) = 0._WP
       
       A(4,1) = -U*As
-      A(4,2) = -U*V_g*c_1*omega**2/(l*(l+1))
+      A(4,2) = -U*V_g*c_1*omega_c**2/(l*(l+1))
       A(4,3) = l*(l+1) + U*(As - 2._WP)
       A(4,4) = 2._WP*(1._WP-U) - (l - 1._WP)
       A(4,5) = U*delta
       A(4,6) = 0._WP
 
       A(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-      A(5,2) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)*c_1*omega**2/(l*(l+1))
+      A(5,2) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)*c_1*omega_c**2/(l*(l+1))
       A(5,3) = -V*c_dif + V*nabla_ad*(1._WP-U)
       A(5,4) = -V*nabla_ad
       A(5,5) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
       A(5,6) = -V*nabla/c_rad
 
       A(6,1) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-      A(6,2) = (V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2)))*c_1*omega**2/(l*(l+1))
+      A(6,2) = (V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2)))*c_1*omega_c**2/(l*(l+1))
       A(6,3) = -(l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad)
       A(6,4) = 0._WP
       A(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
@@ -197,7 +197,7 @@ contains
     if (to_canon) then
 
        associate(U => this%cf%U(x), c_1 => this%cf%c_1(x), &
-                 l => this%op%l)
+                 l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
 
          trans_matrix(1,1) = 1._WP
          trans_matrix(1,2) = 0._WP
@@ -207,7 +207,7 @@ contains
          trans_matrix(1,6) = 0._WP
 
          trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = c_1*omega**2/(l*(l+1))
+         trans_matrix(2,2) = c_1*omega_c**2/(l*(l+1))
          trans_matrix(2,3) = 0._WP
          trans_matrix(2,4) = 0._WP
          trans_matrix(2,5) = 0._WP
@@ -246,7 +246,7 @@ contains
     else
 
        associate(U => this%cf%U(x), c_1 => this%cf%c_1(x), &
-                 l => this%op%l)
+                 l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
 
          trans_matrix(1,1) = 1._WP
          trans_matrix(1,2) = 0._WP
@@ -256,7 +256,7 @@ contains
          trans_matrix(1,6) = 0._WP
 
          trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = l*(l+1)/(c_1*omega**2)
+         trans_matrix(2,2) = l*(l+1)/(c_1*omega_c**2)
          trans_matrix(2,3) = 0._WP
          trans_matrix(2,4) = 0._WP
          trans_matrix(2,5) = 0._WP
