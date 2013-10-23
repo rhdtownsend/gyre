@@ -113,7 +113,7 @@ contains
 
     associate(V_g => this%cf%V(x)/this%cf%Gamma_1(x), U => this%cf%U(x), &
               As => this%cf%As(x), c_1 => this%cf%c_1(x), &
-              omega_c => omega)
+              omega_c => this%cf%omega_c(x, this%op%m, omega))
 
       A(1,1) = V_g - 1._WP
       A(1,2) = -V_g*c_1*omega_c**2
@@ -152,25 +152,27 @@ contains
 
     if (to_canon) then
 
-       associate(c_1 => this%cf%c_1(x))
+       associate(c_1 => this%cf%c_1(x), &
+                 omega_c => this%cf%omega_c(x, this%op%m, omega))
 
          trans_matrix(1,1) = 1._WP
          trans_matrix(1,2) = 0._WP
 
          trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = c_1*omega**2
+         trans_matrix(2,2) = c_1*omega_c**2
 
        end associate
 
     else
 
-       associate(c_1 => this%cf%c_1(x))
+       associate(c_1 => this%cf%c_1(x), &
+                 omega_c => this%cf%omega_c(x, this%op%m, omega))
 
          trans_matrix(1,1) = 1._WP
          trans_matrix(1,2) = 0._WP
 
          trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = 1._WP/(c_1*omega**2)
+         trans_matrix(2,2) = 1._WP/(c_1*omega_c**2)
 
        end associate
 
