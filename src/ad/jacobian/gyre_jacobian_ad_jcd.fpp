@@ -167,7 +167,7 @@ contains
     if (to_canon) then
 
        associate(U => this%cf%U(x), c_1 => this%cf%c_1(x), &
-                 l => this%op%l)
+                 l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
 
          trans_matrix(1,1) = 1._WP
          trans_matrix(1,2) = 0._WP
@@ -175,7 +175,7 @@ contains
          trans_matrix(1,4) = 0._WP
 
          trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = c_1*omega**2/(l*(l+1))
+         trans_matrix(2,2) = c_1*omega_c**2/(l*(l+1))
          trans_matrix(2,3) = 0._WP
          trans_matrix(2,4) = 0._WP
 
@@ -194,7 +194,7 @@ contains
     else
 
        associate(U => this%cf%U(x), c_1 => this%cf%c_1(x), &
-                 l => this%op%l)
+                 l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
 
          trans_matrix(1,1) = 1._WP
          trans_matrix(1,2) = 0._WP
@@ -202,7 +202,7 @@ contains
          trans_matrix(1,4) = 0._WP
 
          trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = l*(l+1)/(c_1*omega**2)
+         trans_matrix(2,2) = l*(l+1)/(c_1*omega_c**2)
          trans_matrix(2,3) = 0._WP
          trans_matrix(2,4) = 0._WP
 
