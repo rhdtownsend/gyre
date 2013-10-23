@@ -135,7 +135,7 @@ contains
     ! Set the outer boundary conditions
 
     associate(V => this%cf%V(x_o), c_1 => this%cf%c_1(x_o), &
-              omega_c => omega)
+              omega_c => this%cf%omega_c(x, this%op%m, omega))
         
       B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
       B_o(1,2) = -1._WP
