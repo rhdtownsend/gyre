@@ -107,8 +107,8 @@ contains
     associate(c_1 => this%cf%c_1(x_i), l => this%op%l, &
               omega_c => this%cf%omega_c(x_i, this%op%m, omega))
 
-      B_i(1,1) = 1._WP
-      B_i(1,2) = -l/(c_1*omega_c**2)
+      B_i(1,1) = c_1*omega_c**2
+      B_i(1,2) = -l
       B_i(1,3) = 0._WP
       B_i(1,4) = 0._WP
       B_i(1,5) = 0._WP
