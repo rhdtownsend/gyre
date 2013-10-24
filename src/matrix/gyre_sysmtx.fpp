@@ -56,6 +56,7 @@ module gyre_sysmtx
      procedure, public :: set_inner_bound
      procedure, public :: set_outer_bound
      procedure, public :: set_block
+     procedure, public :: scale_rows
      procedure, public :: balance
      procedure, public :: unbalance
      procedure, public :: determinant
@@ -181,6 +182,45 @@ contains
     return
 
   end subroutine set_block
+
+!****
+
+  subroutine scale_rows (this)
+
+    class(sysmtx_t), intent(inout) :: this
+
+    real(WP) :: scale
+    integer  :: i
+    integer  :: k
+
+    ! Scale the rows of the sysmtx to have maximum absolute value of unity
+
+    do i = 1,this%n_i
+       scale = MAXVAL(ABS(this%B_i(i,:)))
+       this%B_i(i,:) = this%B_i(i,:)/scale
+       this%S_i = this%S_i*scale
+    end do
+
+    do k = 1, this%n
+       do i = 1, this%n_e
+          scale = MAX(MAXVAL(ABS(this%E_l(i,:,k))), MAXVAL(ABS(this%E_r(i,:,k))))
+          this%E_l(i,:,k) = this%E_l(i,:,k)/scale
+          this%E_r(i,:,k) = this%E_r(i,:,k)/scale
+          this%S(k) = this%S(k)*scale
+       end do
+    end do
+
+    do i = 1,this%n_o
+       scale = MAXVAL(ABS(this%B_o(i,:)))
+       this%B_o(i,:) = this%B_o(i,:)/scale
+       this%S_o = this%S_o*scale
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine scale_rows
 
 !****
 
