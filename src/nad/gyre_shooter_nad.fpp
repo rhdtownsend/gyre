@@ -44,8 +44,8 @@ module gyre_shooter_nad
   type :: shooter_nad_t
      private
      class(coeffs_t), pointer :: cf => null()
-     class(ivp_t), pointer    :: iv_ad => null()
-     class(ivp_t), pointer    :: iv_nad => null()
+     class(ivp_t), pointer    :: iv => null()
+     class(ivp_t), pointer    :: iv_upw => null()
      type(oscpar_t), pointer  :: op => null()
      type(numpar_t), pointer  :: np => null()
      integer, public          :: n_e
@@ -67,22 +67,26 @@ module gyre_shooter_nad
 
 contains
 
-  subroutine init (this, cf, iv, op, np)
+  subroutine init (this, cf, iv, iv_upw, op, np)
 
     class(shooter_nad_t), intent(out)   :: this
     class(coeffs_t), intent(in), target :: cf
     class(ivp_t), intent(in), target    :: iv
+    class(ivp_t), intent(in), target    :: iv_upw
     type(oscpar_t), intent(in), target  :: op
     type(numpar_t), intent(in), target  :: np
 
     ! Initialize the shooter_nad
 
     this%cf => cf
-    this%iv_nad => iv
+
+    this%iv => iv
+    this%iv_upw => iv_upw
+
     this%op => op
     this%np => np
 
-    this%n_e = this%iv_nad%n_e
+    this%n_e = this%iv%n_e
 
     ! Finish
 
@@ -92,25 +96,25 @@ contains
 
 !****
 
-  subroutine shoot (this, omega, x, sm, x_ad)
+  subroutine shoot (this, omega, x, sm, x_upw)
 
     class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x(:)
     class(sysmtx_t), intent(inout)   :: sm
-    real(WP), intent(in), optional   :: x_ad
+    real(WP), intent(in), optional   :: x_upw
 
-    real(WP)            :: x_ad_
+    real(WP)            :: x_upw_
     integer             :: k
     complex(WP)         :: E_l(this%n_e,this%n_e)
     complex(WP)         :: E_r(this%n_e,this%n_e)
     type(ext_complex_t) :: scale
     complex(WP)         :: lambda
 
-    if(PRESENT(x_ad)) then
-       x_ad_ = x_ad
+    if(PRESENT(x_upw)) then
+       x_upw_ = x_upw
     else
-       x_ad_ = 0._WP
+       x_upw_ = 0._WP
     endif
 
     ! Set the sysmtx equation blocks by solving IVPs across the
@@ -119,28 +123,17 @@ contains
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
 
-       ! if(x(k) < x_ad_ .AND. .FALSE.) then
+       if(k > 1 .AND. x(k) < x_upw_) then
 
-       !    ! Shoot adiabatically
+          ! Shoot using upwinded finite differences
 
-       !    call solve(this%np%ivp_solver_type, this%ad_jc, omega, x(k), x(k+1), E_l(1:4,1:4), E_r(1:4,1:4), scale)
+          call this%iv_upw%solve(omega, x(k), x(k+1), E_l, E_r, scale)
 
-       !    ! Fix up the thermal parts of the block
+       else
 
-       !    E_l(1:4,5:6) = 0._WP
-       !    E_r(1:4,5:6) = 0._WP
+          ! Shoot
 
-       !    E_l(5,:) = diff_coeffs(this%cf, this%op, omega, x(k))
-       !    E_r(5,:) = 0._WP
-          
-       !    E_l(6,:) = -[0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
-       !    E_r(6,:) =  [0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
-
-       ! else
-
-          ! Shoot nonadiabatically
-
-          call this%iv_nad%solve(omega, x(k), x(k+1), E_l, E_r, scale)
+          call this%iv%solve(omega, x(k), x(k+1), E_l, E_r, scale)
 
           ! Apply the thermal-term rescaling, to assist the rootfinder
 
@@ -153,7 +146,7 @@ contains
 
           scale = scale*exp(ext_complex(-lambda*(x(k+1)-x(k))))
 
-!       endif
+       endif
 
        call sm%set_block(k, E_l, E_r, scale)
 
@@ -165,7 +158,7 @@ contains
 
 !****
 
-  subroutine recon_sh (this, omega, x_sh, y_sh, x, y, x_ad)
+  subroutine recon_sh (this, omega, x_sh, y_sh, x, y, x_upw)
 
     class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
@@ -173,9 +166,9 @@ contains
     complex(WP), intent(in)          :: y_sh(:,:)
     real(WP), intent(in)             :: x(:)
     complex(WP), intent(out)         :: y(:,:)
-    real(WP), intent(in), optional   :: x_ad
+    real(WP), intent(in), optional   :: x_upw
 
-    real(WP)    :: x_ad_
+    real(WP)    :: x_upw_
     integer     :: n_sh
     integer     :: n
     integer     :: k
@@ -193,10 +186,10 @@ contains
     $CHECK_BOUNDS(SIZE(y, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
 
-    if(PRESENT(x_ad)) then
-       x_ad_ = x_ad
+    if(PRESENT(x_upw)) then
+       x_upw_ = x_upw
     else
-       x_ad_ = 0._WP
+       x_upw_ = 0._WP
     endif
 
     ! Reconstruct the eigenfunctions on the supplied grid
@@ -227,28 +220,21 @@ contains
 
           x_in(:n_in) = x(i_in(:n_in))
 
-          ! if(x_sh(k) < x_ad_) then
+          if(k > 1 .AND. x_sh(k) < x_upw_) then
 
-          !    ! Reconstruct adiabatically
+             ! Reconstruct using upwinded finite differences
 
-          !    call recon(this%np%ivp_solver_type, this%ad_jc, omega, x_sh(k), x_sh(k+1), y_sh(1:4,k), y_sh(1:4,k+1), &
-          !               x_in(:n_in), y_in(1:4,:n_in))
+             call this%iv_upw%recon(omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
+                                    x_in(:n_in), y_in(:,:n_in))
 
-          !    y_in(5,:n_in) = y_sh(5,k)
+          else
 
-          !    do i = 1,n_in
-          !       A_5 = diff_coeffs(this%cf, this%op, omega, x(k))
-          !       y_in(6,i) = -DOT_PRODUCT(y_in(1:5,i), A_5(1:5))/A_5(6)
-          !    end do
-          
-          ! else
+             ! Reconstruct
 
-             ! Reconstruct nonadiabatically
+             call this%iv%recon(omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
+                                x_in(:n_in), y_in(:,:n_in))
 
-             call this%iv_nad%recon(omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
-                        x_in(:n_in), y_in(:,:n_in))
-
-!          endif
+          endif
 
           y(:,i_in(:n_in)) = y_in(:,:n_in)
 
@@ -272,6 +258,7 @@ contains
 
     integer               :: k
     integer               :: n_cell(SIZE(x_sh)-1)
+    integer               :: n_cell_upw(SIZE(x_sh)-1)
     real(WP), allocatable :: x_(:)
     integer               :: i
 
@@ -279,20 +266,20 @@ contains
 
     !$OMP PARALLEL DO SCHEDULE (DYNAMIC)
     count_loop : do k = 1,SIZE(x_sh)-1
-       n_cell(k) = 1 + SIZE(this%iv_nad%abscissa(x_sh(k), x_sh(k+1)))
+       n_cell(k) = SIZE(this%iv%abscissa(x_sh(k), x_sh(k+1)))
+       n_cell_upw(k) = SIZE(this%iv_upw%abscissa(x_sh(k), x_sh(k+1)))
     end do count_loop
 
-    allocate(x_(SUM(n_cell)))
+    allocate(x_(SUM(n_cell+n_cell_upw)))
 
     i = 1
 
     cell_loop : do k = 1,SIZE(x_sh)-1
 
-       x_(i) = 0.5_WP*(x_sh(k) + x_sh(k+1))
+       x_(i:i+n_cell(k)-1) = this%iv%abscissa(x_sh(k), x_sh(k+1))
+       x_(i+n_cell(k):i+n_cell_upw(k)-1) = this%iv_upw%abscissa(x_sh(k), x_sh(k+1))
 
-       x_(i+1:i+n_cell(k)-1) = this%iv_nad%abscissa(x_sh(k), x_sh(k+1))
-
-       i = i + n_cell(k)
+       i = i + n_cell(k) + n_cell_upw(k)
 
     end do cell_loop
 
