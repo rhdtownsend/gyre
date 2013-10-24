@@ -57,6 +57,7 @@ module gyre_bvp_nad
      type(cocache_t)                :: cc
      class(jacobian_t), allocatable :: jc
      class(ivp_t), allocatable      :: iv
+     class(ivp_t), allocatable      :: iv_upw
      class(bound_t), allocatable    :: bd
      type(shooter_nad_t)            :: sh
      type(sysmtx_t)                 :: sm
@@ -66,7 +67,7 @@ module gyre_bvp_nad
      type(gridpar_t), allocatable   :: recon_gp(:)
      real(WP), allocatable          :: x_in(:)
      real(WP), allocatable          :: x(:)
-     real(WP)                       :: x_ad
+     real(WP)                       :: x_upw
      integer, public                :: n
      integer, public                :: n_e
    contains 
@@ -75,7 +76,7 @@ module gyre_bvp_nad
      $if($GFORTRAN_PR57922)
      procedure, public :: final
      $endif
-     procedure, public :: set_x_ad
+     procedure, public :: set_x_upw
      procedure, public :: discrim
      procedure         :: build
      procedure         :: recon
@@ -121,6 +122,7 @@ contains
     use gyre_ivp_magnus_GL6
     use gyre_ivp_colloc_GL2
     use gyre_ivp_colloc_GL4
+    use gyre_ivp_findiff_upw
 
     class(bvp_nad_t), intent(out)       :: this
     class(coeffs_t), intent(in), target :: cf
@@ -177,7 +179,7 @@ contains
 
     call this%bd%init(this%cf, this%jc, this%op)
 
-    ! Initialize the IVP solver
+    ! Initialize the IVP solvers
 
     select case (this%np%ivp_solver_type)
     case ('MAGNUS_GL2')
@@ -196,9 +198,18 @@ contains
 
     call this%iv%init(this%jc)
 
+    allocate(ivp_findiff_upw_t::this%iv_upw)
+
+    call this%iv_upw%init(this%jc)
+
+    select type (iv => this%iv_upw)
+    class is (ivp_findiff_upw_t)
+       iv%stencil = [0,0,0,0,1,-1]
+    end select
+
     ! Initialize the shooter
 
-    call this%sh%init(this%cf, this%iv, this%op, this%np)
+    call this%sh%init(this%cf, this%iv, this%iv_upw, this%op, this%np)
 
     ! Build the shooting grid
 
@@ -214,7 +225,7 @@ contains
 
     if(ALLOCATED(x_in)) this%x_in = x_in
 
-    this%x_ad = 0._WP
+    this%x_upw = 0._WP
 
     this%n = n
     this%n_e = this%sh%n_e
@@ -307,32 +318,34 @@ contains
 
 !****
 
-  subroutine set_x_ad (this, omega)
+  subroutine set_x_upw (this, omega)
 
     class(bvp_nad_t), intent(inout) :: this
     complex(WP), intent(in)         :: omega
 
     integer :: k
 
-    ! Decide where to switch from the adiabatic equations (interior)
-    ! to the non-adiabastic ones (exterior)
+    ! Decide where to switch from the upwinded equations (interior)
+    ! to the non-upwinded ones ones (exterior)
 
-    this%x_ad = 0._WP
+    this%x_upw = 0._WP
 
-    x_ad_loop : do k = this%n,2,-1
+    x_upw_loop : do k = this%n,2,-1
 
        if(this%cf%tau_thm(this%x(k))*REAL(omega)*this%np%theta_ad > 1._WP) then
-          this%x_ad = this%x(k)
-          exit x_ad_loop
+          this%x_upw = this%x(k)
+          exit x_upw_loop
        endif
 
-    end do x_ad_loop
+    end do x_upw_loop
+
+    this%x_upw = 0.
 
     ! Finish
 
     return
 
-  end subroutine set_x_ad
+  end subroutine set_x_upw
 
 !****
 
@@ -369,7 +382,7 @@ contains
     call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
     call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
 
-    call this%sh%shoot(omega, this%x, this%sm, this%x_ad)
+    call this%sh%shoot(omega, this%x, this%sm, this%x_upw)
 
     call this%cf%detach_cache()
 
@@ -424,7 +437,7 @@ contains
 
        allocate(y(this%n_e,SIZE(x)))
 
-       call this%sh%recon(omega, this%x, y_sh, x, y, this%x_ad)
+       call this%sh%recon(omega, this%x, y_sh, x, y, this%x_upw)
 
     endif
 
@@ -479,6 +492,8 @@ contains
 
     omega_a = ext_complex(omega(1))
     omega_b = ext_complex(omega(2))
+
+    call this%set_x_upw(cmplx(0.5_WP*(omega_a+omega_b)))
 
     if(PRESENT(discrim)) then
        discrim_a = discrim(1)
