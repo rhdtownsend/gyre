@@ -22,7 +22,9 @@ run_gyre ()
     local file=$2
     local label=$3
 
-    echo -n "TEST $label"
+    if [ -n "$label" ]; then
+	echo -n "TEST $label"
+    fi
 
     $exec $file > /dev/null
     retval=$?
@@ -40,23 +42,33 @@ run_gyre ()
 check_output ()
 {
 
-    local file=$1
-    local relerr=$2
-    local fields=$3
+    local relerr=$1
+    local fields=$2
+    local file_a=$3
+    local file_b=$4
 
-    local arch=$(get_arch)
+    if [ ! -e "$file_b" ]; then
 
-    ref_file="ref/${file}.${arch}"
+        local arch=$(get_arch)
 
-    if [ ! -e $ref_file ]; then
-	ref_file="ref/${file}"
+    	file_b="ref/${file_a}.${arch}"
+
+	if [ ! -e "$file_b" ]; then
+	    file_b="ref/${file_a}"
+	fi
+
     fi
 
-    ndiff -quiet -relerr $relerr -fields $fields $file $ref_file
-    retval=$?
+    if [ -z "$relerr" ]; then
+	ndiff -quiet -fields $fields $file_a $file_b
+	retval=$?
+    else
+	ndiff -quiet -relerr $relerr -fields $fields $file_a $file_b
+	retval=$?
+    fi	
 
     if [ $retval -ne 0 ]; then
-	echo " ...failed when comparing $file and $ref_file"
+	echo " ...failed when comparing $file_a and $file_b"
     fi
 
     return $retval

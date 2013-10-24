@@ -15,9 +15,9 @@ test :
             fi; \
         done
 
-build_ref :
+build_ref build_ref_arch :
 	@for DIR in ${SUBDIRS}; do \
-            make -C $${DIR} build_ref; \
+            make -C $${DIR} $@; \
         done
 
 .PHONY: test build_ref

@@ -24,14 +24,14 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output $OUT_FILE $RELERR $FIELDS
+check_output $RELERR $FIELDS $OUT_FILE
 if [ $? -ne 0 ]; then
     exit 1;
 fi
 
 # Clean up output files
 
-rm -f *.txt
+rm -f $OUT_FILE
 
 # Finish
 

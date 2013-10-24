@@ -15,7 +15,7 @@ IN_FILE_1=gyre_ad.1.in
 OUT_FILE_N=gyre_ad.n.txt
 OUT_FILE_1=gyre_ad.1.txt
 
-RELERR=0
+RELERR=
 FIELDS=1-5
 
 # Do the tests
