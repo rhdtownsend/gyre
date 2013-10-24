@@ -347,7 +347,7 @@ contains
 
     call this%sm%scale_rows()
 
-    call this%cf%detach_cache()    ! Finish
+    ! Finish
 
     return
 
