@@ -14,7 +14,7 @@ OUT_FILE=gyre_ad.txt
 
 LABEL="MESA model for RGB star"
 
-RELERR=1E-15
+RELERR=3E-12
 FIELDS=1-5
 
 # Do the tests
