@@ -3,7 +3,7 @@
 
 # Variables
 
-TESTDIRS=hom poly/hom mesa/bcep mesa/rgb mesa/spb omp
+TESTDIRS=hom poly/hom omp mesa/bcep mesa/rgb mesa/spb
 
 # Rules
 
