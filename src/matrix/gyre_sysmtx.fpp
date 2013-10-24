@@ -42,6 +42,8 @@ module gyre_sysmtx
      complex(WP), allocatable         :: B_o(:,:)   ! Outer boundary conditions
      complex(WP), allocatable         :: E_l(:,:,:) ! Left equation blocks
      complex(WP), allocatable         :: E_r(:,:,:) ! Right equation blocks
+     type(ext_complex_t)              :: S_i        ! Inner boundary scale
+     type(ext_complex_t)              :: S_o        ! Outer boundary scale
      type(ext_complex_t), allocatable :: S(:)       ! Block scales
      real(WP), allocatable            :: V(:)       ! Variable scales
      integer                          :: n          ! Number of equation blocks
@@ -106,17 +108,19 @@ contains
 
 !****
 
-  subroutine set_inner_bound (this, B_i)
+  subroutine set_inner_bound (this, B_i, S_i)
 
     class(sysmtx_t), intent(inout)  :: this
     complex(WP), intent(in)         :: B_i(:,:)
-
+    type(ext_complex_t), intent(in) :: S_i
+    
     $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
 
     ! Set the inner boundary conditions
 
     this%B_i = B_i
+    this%S_i = S_i
 
     ! Finish
 
@@ -126,10 +130,11 @@ contains
 
 !****
 
-  subroutine set_outer_bound (this, B_o)
+  subroutine set_outer_bound (this, B_o, S_o)
 
     class(sysmtx_t), intent(inout)  :: this
     complex(WP), intent(in)         :: B_o(:,:)
+    type(ext_complex_t), intent(in) :: S_o
 
     $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
@@ -137,6 +142,7 @@ contains
     ! Set the outer boundary conditions
 
     this%B_o = B_o
+    this%S_o = S_o
 
     ! Finish
 
@@ -367,9 +373,9 @@ contains
     $ASSERT(info >= 0, Negative return from XGETRF)
 
     $if($SUFFIX eq 'r')
-    det = product([ext_real(diagonal(M)),det,ext_real(sm%S)])
+    det = product([ext_real(diagonal(M)),det,ext_real(sm%S_i),ext_real(sm%S),ext_real(sm%S_o)])
     $else
-    det = product([ext_complex(diagonal(M)),det,sm%S])
+    det = product([ext_complex(diagonal(M)),det,sm%S_i,sm%S,sm%S_o])
     $endif
 
     do i = 1,2*n_e
@@ -441,9 +447,9 @@ contains
     ! Calculate the determinant
 
     $if($SUFFIX eq 'r')
-    det = product([ext_real(A_b(n_l+n_u+1,:)),ext_real(sm%S)])
+    det = product([ext_real(A_b(n_l+n_u+1,:)),ext_real(sm%S_i),ext_real(sm%S),ext_real(sm%S_o)])
     $else
-    det = product([ext_complex(A_b(n_l+n_u+1,:)),sm%S])
+    det = product([ext_complex(A_b(n_l+n_u+1,:)),sm%S_i,sm%S,sm%S_o])
     $endif
  
     do j = 1,SIZE(A_b, 2)
