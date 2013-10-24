@@ -283,21 +283,22 @@ contains
     ! Calculate the radial displacement perturbation in units of
     ! R_star
 
-    associate (c_1 => this%cf%c_1(this%x), l => this%op%l, omega => this%omega)
+    associate (c_1 => this%cf%c_1(this%x), &
+               l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega))
 
       if(l /= 0) then
 
          if(l /= 1) then
 
             where (this%x > 0._WP)
-               xi_h = this%y(2,:)*this%x**(l-1)/(c_1*omega**2)
+               xi_h = this%y(2,:)*this%x**(l-1)/(c_1*omega_c**2)
             elsewhere
                xi_h = 0._WP
             end where
 
          else
 
-            xi_h = this%y(2,:)/(c_1*omega**2)
+            xi_h = this%y(2,:)/(c_1*omega_c**2)
 
          endif
 
@@ -453,18 +454,18 @@ contains
               nabla_ad => this%cf%nabla_ad(this%x), nabla => this%cf%nabla(this%x), &
               c_rad => this%cf%c_rad(this%x), dc_rad => this%cf%dc_rad(this%x), c_thm => this%cf%c_thm(this%x), &
               c_eps_ad => this%cf%c_eps_ad(this%x), c_eps_S => this%cf%c_eps_S(this%x), &              
-              l => this%op%l, omega => this%omega)
+              l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega))
 
       where(this%x /= 0)
          A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2))
+         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
          A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
          A_6(4,:) = 0._WP
-         A_6(5,:) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega*c_thm
+         A_6(5,:) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
          A_6(6,:) = -1._WP - l
       elsewhere
          A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega**2))
+         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
          A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
          A_6(4,:) = 0._WP
          A_6(5,:) = -HUGE(0._WP)
@@ -564,10 +565,10 @@ contains
               nabla_ad => this%cf%nabla_ad(this%x), nabla => this%cf%nabla(this%x), &
               c_dif => this%cf%c_dif(this%x), c_rad => this%cf%c_rad(this%x), &
               kappa_S => this%cf%kappa_S(this%x), &
-              l => this%op%l, omega => this%omega)
+              l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega))
 
-      A_5(1,:) = V*(nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-      A_5(2,:) = V*(l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
+      A_5(1,:) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+      A_5(2,:) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
       A_5(3,:) = V*c_dif
       A_5(4,:) = V*nabla_ad
       A_5(5,:) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
@@ -773,8 +774,7 @@ contains
     ! 759). This should vanish for radial modes
 
     associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              omega => this%omega, l => this%op%l, &
-              x => this%x, y => this%y)
+              l => this%op%l, x => this%x, y => this%y)
 
       I_0 = x**(l+1)*(U*y(1,:) + y(4,:))/c_1
 
@@ -797,11 +797,11 @@ contains
     ! 759). This should vanish for dipole modes
 
     associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              omega => this%omega, l => this%op%l, &
+              l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega), &
               x => this%x, y => this%y)
 
-      I_1 = x**(l+2)*(c_1*omega**2*U*y(1,:) - U*y(2,:) + &
-                  (U - c_1*omega**2 - 2._WP)*y(3,:) + (c_1*omega**2 - 1._WP)*y(4,:))/c_1**2
+      I_1 = x**(l+2)*(c_1*omega_c**2*U*y(1,:) - U*y(2,:) + &
+                  (U - c_1*omega_c**2 - 2._WP)*y(3,:) + (c_1*omega_c**2 - 1._WP)*y(4,:))/c_1**2
 
     end associate
 
@@ -822,10 +822,10 @@ contains
 
     associate(x => this%x, V_g => this%cf%V(this%x)/this%cf%Gamma_1(this%x), &
               As => this%cf%As(this%x), c_1 => this%cf%c_1(this%x), &
-              l => this%op%l, omega => REAL(this%omega))
+              l => this%op%l, omega_c => REAL(this%cf%omega_c(this%x, this%op%m, this%omega)))
 
-      prop_type = MERGE(1, 0, c_1*omega**2 > As) + &
-                  MERGE(-1, 0, l*(l+1)/(c_1*omega**2) > V_g)
+      prop_type = MERGE(1, 0, c_1*omega_c**2 > As) + &
+                  MERGE(-1, 0, l*(l+1)/(c_1*omega_c**2) > V_g)
 
     end associate
 
@@ -881,7 +881,7 @@ contains
     xi_h = this%xi_h()
 
     associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              Omega_rot => this%cf%Omega_rot(this%x), l => this%op%l)
+              l => this%op%l)
 
       beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
              integrate(x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
@@ -998,9 +998,10 @@ contains
 
     do i = this%n-1,1,-1
 
-       associate(tau_thm => this%cf%tau_thm(this%x(i)))
+       associate(tau_thm => this%cf%tau_thm(this%x(i)), &
+                 omega_c => this%cf%omega_c(this%x(i), this%op%m, this%omega))
 
-         if(REAL(this%omega)*tau_thm/TWOPI > 1._WP) then
+         if(REAL(omega_c)*tau_thm/TWOPI > 1._WP) then
             i_trans = i
             exit
          endif
