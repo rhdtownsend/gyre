@@ -10,7 +10,7 @@ TESTDIRS=hom poly/hom mesa/bcep mesa/rgb mesa/spb
 test :
 	@for DIR in ${TESTDIRS}; do \
             cd $$DIR; \
-            ${CURDIR}/../scripts/test_gyre.sh ${BINDIR}/gyre_ad gyre_ad.in "`cat label`"; \
+            ./test.sh; \
             if [ $$? -ne 0 ]; then \
                 exit $$?; \
             fi; \
@@ -20,7 +20,7 @@ test :
 build_ref :
 	@for DIR in ${TESTDIRS}; do \
             cd $$DIR; \
-            ${BINDIR}/gyre_ad gyre_ad.in; \
+            ./gyre_ad gyre_ad.in; \
             mv *.txt ref/; \
             cd ${CURDIR}; \
         done
