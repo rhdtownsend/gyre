@@ -332,12 +332,37 @@ contains
     class(bvp_ad_t), intent(inout) :: this
     complex(WP), intent(in)        :: omega
 
+    complex(WP)         :: B_i(this%bd%n_i,this%n_e)
+    complex(WP)         :: B_o(this%bd%n_o,this%n_e)
+    type(ext_complex_t) :: S_i
+    type(ext_complex_t) :: S_o
+    integer             :: i
+    real(WP)            :: scale
+
     ! Set up the sysmtx
 
     call this%cf%attach_cache(this%cc)
 
-    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
-    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
+    B_i = this%bd%inner_bound(this%x(1), omega)
+    B_o = this%bd%outer_bound(this%x(this%n), omega)
+
+    S_i = ext_complex(1._WP)
+    S_o = ext_complex(1._WP)
+
+    scale_inner_loop : do i = 1, this%bd%n_i
+       scale = MAXVAL(ABS(B_i(i,:)))
+       B_i(i,:) = B_i(i,:)/scale
+       S_i = S_i*scale
+    end do scale_inner_loop
+
+    scale_outer_loop : do i = 1, this%bd%n_o
+       scale = MAXVAL(ABS(B_o(i,:)))
+       B_o(i,:) = B_o(i,:)/scale
+       S_o = S_o*scale
+    end do scale_outer_loop
+
+    call this%sm%set_inner_bound(B_i, S_i)
+    call this%sm%set_outer_bound(B_o, S_o)
 
     call this%sh%shoot(omega, this%x, this%sm)
 
