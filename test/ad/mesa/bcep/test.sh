@@ -14,7 +14,7 @@ OUT_FILE=gyre_ad.txt
 
 LABEL="MESA model for beta Cephei star"
 
-RELERR=1E-15
+RELERR=6E-15
 FIELDS=1-5
 
 # Do the tests

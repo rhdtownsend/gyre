@@ -15,12 +15,11 @@ IN_FILE_1=gyre_ad.1.in
 OUT_FILE_N=gyre_ad.n.txt
 OUT_FILE_1=gyre_ad.1.txt
 
-RELERR=
 FIELDS=1-5
 
 # Do the tests
 
-run_gyre $EXEC $IN_FILE_N "OpenMP test using homogeneous compressible model"
+run_gyre $EXEC $IN_FILE_N "homogeneous compressible model (OpenMP)"
 if [ $? -ne 0 ]; then
     exit 1;
 fi
@@ -32,7 +31,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output $RELERR $FIELDS $OUT_FILE_N $OUT_FILE_1
+check_output "" $FIELDS $OUT_FILE_N $OUT_FILE_1
 if [ $? -ne 0 ]; then
     exit 1;
 fi
