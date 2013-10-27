@@ -65,7 +65,9 @@ module gyre_coeffs
      procedure(detach_cache_i), deferred, public :: detach_cache
      procedure(fill_cache_i), deferred, public   :: fill_cache
      procedure, public                           :: omega
-     procedure, public                           :: omega_c
+     procedure                                   :: omega_c_1
+     procedure                                   :: omega_c_v
+     generic, public                             :: omega_c => omega_c_1, omega_c_v
   end type coeffs_t
 
   ! Interfaces
@@ -164,7 +166,7 @@ contains
 
 !****
 
-  function omega_c (this, x, m, omega)
+  function omega_c_1 (this, x, m, omega) result (omega_c)
 
     class(coeffs_t), intent(in) :: this
     real(WP), intent(in)        :: x
@@ -180,6 +182,26 @@ contains
 
     return
 
-  end function omega_c
+  end function omega_c_1
+
+!****
+
+  function omega_c_v (this, x, m, omega) result (omega_c)
+
+    class(coeffs_t), intent(in) :: this
+    real(WP), intent(in)        :: x(:)
+    integer, intent(in)         :: m
+    complex(WP), intent(in)     :: omega
+    complex(WP)                 :: omega_c(SIZE(x))
+
+    ! Calculate the co-rotating frequency from the inertial frequency
+
+    omega_c = omega - m*this%Omega_rot(x)
+
+    ! Finish
+
+    return
+
+  end function omega_c_v
 
 end module gyre_coeffs

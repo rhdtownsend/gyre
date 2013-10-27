@@ -1,5 +1,5 @@
-! Module   : gyre_jacobian_rad_jcd
-! Purpose  : radial adiabatic Jacobian evaluation (JCD variables)
+! Module   : gyre_jacobian_rad_mix
+! Purpose  : radial adiabatic Jacobian evaluation (mixed JCD/Dziem variables)
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_jacobian_rad_jcd
+module gyre_jacobian_rad_mix
 
   ! Uses
 
@@ -26,6 +26,7 @@ module gyre_jacobian_rad_jcd
   use gyre_jacobian
   use gyre_coeffs
   use gyre_oscpar
+  use gyre_linalg
 
   use ISO_FORTRAN_ENV
 
@@ -35,7 +36,7 @@ module gyre_jacobian_rad_jcd
 
   ! Derived-type definitions
 
-  type, extends (jacobian_t) :: jacobian_rad_jcd_t
+  type, extends (jacobian_t) :: jacobian_rad_mix_t
      private
      class(coeffs_t), pointer :: cf => null()
      type(oscpar_t), pointer  :: op => null()
@@ -45,13 +46,13 @@ module gyre_jacobian_rad_jcd
      procedure, public :: eval
      procedure, public :: eval_logx
      procedure, public :: trans_matrix
-  end type jacobian_rad_jcd_t
+  end type jacobian_rad_mix_t
 
   ! Access specifiers
 
   private
 
-  public :: jacobian_rad_jcd_t
+  public :: jacobian_rad_mix_t
 
   ! Procedures
 
@@ -59,7 +60,7 @@ contains
 
   subroutine init (this, cf, op)
 
-    class(jacobian_rad_jcd_t), intent(out) :: this
+    class(jacobian_rad_mix_t), intent(out) :: this
     class(coeffs_t), intent(in), target    :: cf
     type(oscpar_t), intent(in), target     :: op
 
@@ -80,7 +81,7 @@ contains
 
   subroutine eval (this, x, omega, A)
 
-    class(jacobian_rad_jcd_t), intent(in) :: this
+    class(jacobian_rad_mix_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     complex(WP), intent(in)               :: omega
     complex(WP), intent(out)              :: A(:,:)
@@ -101,7 +102,7 @@ contains
 
   subroutine eval_logx (this, x, omega, A)
 
-    class(jacobian_rad_jcd_t), intent(in) :: this
+    class(jacobian_rad_mix_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     complex(WP), intent(in)               :: omega
     complex(WP), intent(out)              :: A(:,:)
@@ -116,10 +117,10 @@ contains
               omega_c => this%cf%omega_c(x, this%op%m, omega))
 
       A(1,1) = V_g - 1._WP
-      A(1,2) = -V_g*c_1*omega_c**2
+      A(1,2) = -V_g
       
-      A(2,1) = 1._WP - (As - U)/(c_1*omega_c**2)
-      A(2,2) = As
+      A(2,1) = c_1*omega**2 + U - As
+      A(2,2) = As - U + 3._WP
 
     end associate
 
@@ -133,7 +134,7 @@ contains
 
   function trans_matrix (this, x, omega, to_canon)
 
-    class(jacobian_rad_jcd_t), intent(in) :: this
+    class(jacobian_rad_mix_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     complex(WP), intent(in)               :: omega
     logical, intent(in)                   :: to_canon
@@ -148,34 +149,12 @@ contains
     $endif
 
     ! Calculate the transformation matrix to convert variables between the
-    ! canonical formulation and the JCD formulation
+    ! canonical formulation and the mixed formulation
 
     if (to_canon) then
-
-       associate(c_1 => this%cf%c_1(x), &
-                 omega_c => this%cf%omega_c(x, this%op%m, omega))
-
-         trans_matrix(1,1) = 1._WP
-         trans_matrix(1,2) = 0._WP
-
-         trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = c_1*omega_c**2
-
-       end associate
-
+       trans_matrix = identity_matrix(this%n_e)
     else
-
-       associate(c_1 => this%cf%c_1(x), &
-                 omega_c => this%cf%omega_c(x, this%op%m, omega))
-
-         trans_matrix(1,1) = 1._WP
-         trans_matrix(1,2) = 0._WP
-
-         trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = 1._WP/(c_1*omega_c**2)
-
-       end associate
-
+       trans_matrix = identity_matrix(this%n_e)
     endif
 
     ! Finish
@@ -184,4 +163,4 @@ contains
 
   end function trans_matrix
 
-end module gyre_jacobian_rad_jcd
+end module gyre_jacobian_rad_mix

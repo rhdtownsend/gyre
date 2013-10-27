@@ -108,6 +108,7 @@ contains
 
     use gyre_jacobian_ad_dziem
     use gyre_jacobian_ad_jcd
+    use gyre_jacobian_ad_mix
 
     use gyre_bound_ad_zero
     use gyre_bound_ad_dziem
@@ -152,6 +153,8 @@ contains
        allocate(jacobian_ad_dziem_t::this%jc)
     case ('JCD')
        allocate(jacobian_ad_jcd_t::this%jc)
+    case ('MIX')
+       allocate(jacobian_ad_mix_t::this%jc)
     case default
        $ABORT(Invalid variables_type)
     end select
@@ -333,12 +336,14 @@ contains
 
     call this%cf%attach_cache(this%cc)
 
-    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega))
-    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega))
+    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega), ext_complex(1._WP))
+    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega), ext_complex(1._WP))
 
     call this%sh%shoot(omega, this%x, this%sm)
 
     call this%cf%detach_cache()
+
+    call this%sm%scale_rows()
 
     ! Finish
 

@@ -1,5 +1,5 @@
-! Module   : gyre_jacobian_ad_jcd
-! Purpose  : adiabatic Jacobian evaluation (JCD variables)
+! Module   : gyre_jacobian_ad_mix
+! Purpose  : adiabatic Jacobian evaluation (mixed JCD/Dziem variables)
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_jacobian_ad_jcd
+module gyre_jacobian_ad_mix
 
   ! Uses
 
@@ -35,7 +35,7 @@ module gyre_jacobian_ad_jcd
 
   ! Derived-type definitions
 
-  type, extends (jacobian_t) :: jacobian_ad_jcd_t
+  type, extends (jacobian_t) :: jacobian_ad_mix_t
      private
      class(coeffs_t), pointer :: cf => null()
      type(oscpar_t), pointer  :: op => null()
@@ -45,13 +45,13 @@ module gyre_jacobian_ad_jcd
      procedure, public :: eval
      procedure, public :: eval_logx
      procedure, public :: trans_matrix
-  end type jacobian_ad_jcd_t
+  end type jacobian_ad_mix_t
 
   ! Access specifiers
 
   private
 
-  public :: jacobian_ad_jcd_t
+  public :: jacobian_ad_mix_t
 
   ! Procedures
 
@@ -59,7 +59,7 @@ contains
 
   subroutine init (this, cf, op)
 
-    class(jacobian_ad_jcd_t), intent(out) :: this
+    class(jacobian_ad_mix_t), intent(out) :: this
     class(coeffs_t), intent(in), target   :: cf
     type(oscpar_t), intent(in), target    :: op
 
@@ -80,7 +80,7 @@ contains
 
   subroutine eval (this, x, omega, A)
 
-    class(jacobian_ad_jcd_t), intent(in) :: this
+    class(jacobian_ad_mix_t), intent(in) :: this
     real(WP), intent(in)                 :: x
     complex(WP), intent(in)              :: omega
     complex(WP), intent(out)             :: A(:,:)
@@ -101,7 +101,7 @@ contains
 
   subroutine eval_logx (this, x, omega, A)
 
-    class(jacobian_ad_jcd_t), intent(in) :: this
+    class(jacobian_ad_mix_t), intent(in) :: this
     real(WP), intent(in)                 :: x
     complex(WP), intent(in)              :: omega
     complex(WP), intent(out)             :: A(:,:)
@@ -116,13 +116,13 @@ contains
               l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
 
       A(1,1) = V_g - 1._WP - l
-      A(1,2) = 1._WP - V_g*c_1*omega**2/(l*(l+1))
+      A(1,2) = l*(l+1)/(c_1*omega**2) - V_g
       A(1,3) = -V_g
       A(1,4) = 0._WP
       
-      A(2,1) = l*(l+1) - As*l*(l+1)/(c_1*omega**2)
-      A(2,2) = As - l
-      A(2,3) = As*l*(l+1)/(c_1*omega**2)
+      A(2,1) = c_1*omega**2 - As
+      A(2,2) = As - U + 3._WP - l
+      A(2,3) = As
       A(2,4) = 0._WP
       
       A(3,1) = 0._WP
@@ -131,7 +131,7 @@ contains
       A(3,4) = 1._WP
       
       A(4,1) = -U*As
-      A(4,2) = -U*V_g*c_1*omega**2/(l*(l+1))
+      A(4,2) = -U*V_g
       A(4,3) = l*(l+1) + U*(As - 2._WP)
       A(4,4) = 2._WP*(1._WP-U) - (l - 1._WP)
 
@@ -147,7 +147,7 @@ contains
 
   function trans_matrix (this, x, omega, to_canon)
 
-    class(jacobian_ad_jcd_t), intent(in) :: this
+    class(jacobian_ad_mix_t), intent(in) :: this
     real(WP), intent(in)                 :: x
     complex(WP), intent(in)              :: omega
     logical, intent(in)                  :: to_canon
@@ -162,12 +162,12 @@ contains
     $endif
 
     ! Calculate the transformation matrix to convert variables between the
-    ! canonical formulation and the JCD formulation
+    ! canonical formulation and the MIX formulation
 
     if (to_canon) then
 
        associate(U => this%cf%U(x), c_1 => this%cf%c_1(x), &
-                 l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
+                 l => this%op%l)
 
          trans_matrix(1,1) = 1._WP
          trans_matrix(1,2) = 0._WP
@@ -175,7 +175,7 @@ contains
          trans_matrix(1,4) = 0._WP
 
          trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = c_1*omega_c**2/(l*(l+1))
+         trans_matrix(2,2) = 1._WP
          trans_matrix(2,3) = 0._WP
          trans_matrix(2,4) = 0._WP
 
@@ -194,7 +194,7 @@ contains
     else
 
        associate(U => this%cf%U(x), c_1 => this%cf%c_1(x), &
-                 l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
+                 l => this%op%l)
 
          trans_matrix(1,1) = 1._WP
          trans_matrix(1,2) = 0._WP
@@ -202,7 +202,7 @@ contains
          trans_matrix(1,4) = 0._WP
 
          trans_matrix(2,1) = 0._WP
-         trans_matrix(2,2) = l*(l+1)/(c_1*omega_c**2)
+         trans_matrix(2,2) = 1._WP
          trans_matrix(2,3) = 0._WP
          trans_matrix(2,4) = 0._WP
 
@@ -226,4 +226,4 @@ contains
 
   end function trans_matrix
 
-end module gyre_jacobian_ad_jcd
+end module gyre_jacobian_ad_mix

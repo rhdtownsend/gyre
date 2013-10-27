@@ -38,6 +38,7 @@ module gyre_oscpar
      integer           :: X_n_pg_max
      character(LEN=64) :: variables_type
      character(LEN=64) :: outer_bound_type
+     character(LEN=64) :: inertia_norm_type
      character(LEN=64) :: tag
   end type oscpar_t
 
@@ -92,6 +93,7 @@ contains
 
     call bcast(op%variables_type, root_rank)
     call bcast(op%outer_bound_type, root_rank)
+    call bcast(op%inertia_norm_type, root_rank)
     call bcast(op%tag, root_rank)
 
     ! Finish

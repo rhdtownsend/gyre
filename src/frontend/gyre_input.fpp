@@ -210,9 +210,12 @@ contains
     integer           :: X_n_pg_max
     character(LEN=64) :: variables_type
     character(LEN=64) :: outer_bound_type
+    character(LEN=64) :: inertia_norm_type
     character(LEN=64) :: tag
 
-    namelist /osc/ l, m, X_n_pg_min, X_n_pg_max, outer_bound_type, variables_type, tag
+    namelist /osc/ l, m, X_n_pg_min, X_n_pg_max, &
+         outer_bound_type, variables_type, &
+         inertia_norm_type, tag
 
     ! Count the number of grid namelists
 
@@ -243,6 +246,7 @@ contains
 
        variables_type = 'DZIEM'
        outer_bound_type = 'ZERO'
+       inertia_norm_type = 'BOTH'
        tag = ''
 
        read(unit, NML=osc)
@@ -250,8 +254,8 @@ contains
        ! Initialize the oscpar
 
        op(i) = oscpar_t(l=l, m=m, X_n_pg_min=X_n_pg_min, X_n_pg_max=X_n_pg_max, &
-                        variables_type=variables_type, &
-                        outer_bound_type=outer_bound_type, tag=tag)
+                        variables_type=variables_type, outer_bound_type=outer_bound_type, &
+                        inertia_norm_type=inertia_norm_type, tag=tag)
 
     end do read_loop
 

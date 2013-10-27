@@ -105,14 +105,14 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%cf%c_1(x_i), l => this%op%l, &
+    associate(c_1 => this%cf%c_1(x_i), &
               omega_c => this%cf%omega_c(x_i, this%op%m, omega))
-                 
-      B_i(1,1) = c_1*omega_c**2
-      B_i(1,2) = -l
-        
-    end associate
 
+      B_i(1,1) = c_1*omega_c**2
+      B_i(1,2) = 0._WP
+
+    end associate
+        
     B_i = MATMUL(B_i, this%jc%trans_matrix(x_i, omega, .TRUE.))
 
     ! Finish

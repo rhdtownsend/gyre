@@ -42,8 +42,9 @@ module gyre_sysmtx
      complex(WP), allocatable         :: B_o(:,:)   ! Outer boundary conditions
      complex(WP), allocatable         :: E_l(:,:,:) ! Left equation blocks
      complex(WP), allocatable         :: E_r(:,:,:) ! Right equation blocks
+     type(ext_complex_t)              :: S_i        ! Inner boundary scale
+     type(ext_complex_t)              :: S_o        ! Outer boundary scale
      type(ext_complex_t), allocatable :: S(:)       ! Block scales
-     real(WP), allocatable            :: V(:)       ! Variable scales
      integer                          :: n          ! Number of equation blocks
      integer                          :: n_e        ! Number of equations per block
      integer                          :: n_i        ! Number of inner boundary conditions
@@ -54,8 +55,7 @@ module gyre_sysmtx
      procedure, public :: set_inner_bound
      procedure, public :: set_outer_bound
      procedure, public :: set_block
-     procedure, public :: balance
-     procedure, public :: unbalance
+     procedure, public :: scale_rows
      procedure, public :: determinant
 !     procedure, public :: determinant_slu_r
 !     procedure, public :: determinant_slu_c
@@ -91,7 +91,6 @@ contains
     allocate(this%B_o(n_o,n_e))
 
     allocate(this%S(n))
-    allocate(this%V(n_e*(n+1)))
 
     this%n = n
     this%n_e = n_e
@@ -106,17 +105,19 @@ contains
 
 !****
 
-  subroutine set_inner_bound (this, B_i)
+  subroutine set_inner_bound (this, B_i, S_i)
 
     class(sysmtx_t), intent(inout)  :: this
     complex(WP), intent(in)         :: B_i(:,:)
-
+    type(ext_complex_t), intent(in) :: S_i
+    
     $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
 
     ! Set the inner boundary conditions
 
     this%B_i = B_i
+    this%S_i = S_i
 
     ! Finish
 
@@ -126,10 +127,11 @@ contains
 
 !****
 
-  subroutine set_outer_bound (this, B_o)
+  subroutine set_outer_bound (this, B_o, S_o)
 
     class(sysmtx_t), intent(inout)  :: this
     complex(WP), intent(in)         :: B_o(:,:)
+    type(ext_complex_t), intent(in) :: S_o
 
     $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
@@ -137,6 +139,7 @@ contains
     ! Set the outer boundary conditions
 
     this%B_o = B_o
+    this%S_o = S_o
 
     ! Finish
 
@@ -178,90 +181,42 @@ contains
 
 !****
 
-  subroutine balance (this)
+  subroutine scale_rows (this)
 
     class(sysmtx_t), intent(inout) :: this
 
-    real(WP) :: r
-    real(WP) :: c
+    real(WP) :: scale
     integer  :: i
-    integer  :: j
     integer  :: k
 
-    ! Scale rows
+    ! Scale the rows of the sysmtx to have maximum absolute value of unity
 
     do i = 1,this%n_i
-       r = SUM(ABS(this%B_i(i,:)))
-       this%B_i(i,:) = this%B_i(i,:)/r
+       scale = MAXVAL(ABS(this%B_i(i,:)))
+       this%B_i(i,:) = this%B_i(i,:)/scale
+       this%S_i = this%S_i*scale
     end do
 
     do k = 1, this%n
        do i = 1, this%n_e
-          r = SUM(ABS(this%E_l(i,:,k))) + SUM(ABS(this%E_r(i,:,k)))
-          this%E_l(i,:,k) = this%E_l(i,:,k)/r
-          this%E_r(i,:,k) = this%E_r(i,:,k)/r
+          scale = MAX(MAXVAL(ABS(this%E_l(i,:,k))), MAXVAL(ABS(this%E_r(i,:,k))))
+          this%E_l(i,:,k) = this%E_l(i,:,k)/scale
+          this%E_r(i,:,k) = this%E_r(i,:,k)/scale
+          this%S(k) = this%S(k)*scale
        end do
     end do
 
     do i = 1,this%n_o
-       r = SUM(ABS(this%B_o(i,:)))
-       this%B_o(i,:) = this%B_o(i,:)/r
-    end do
-
-    ! Scale columns
-
-    j = 1
-
-    do i = 1,this%n_e
-       c = SUM(ABS(this%B_i(:,i))) + SUM(ABS(this%E_l(:,i,1)))
-       this%B_i(:,i) = this%B_i(:,i)/c
-       this%E_l(:,i,1) = this%E_l(:,i,1)/c
-       this%V(j) = c
-       j = j + 1
-    end do
-
-    do k = 1,this%n-1
-       do i = 1,this%n_e
-          c = SUM(ABS(this%E_r(:,i,k))) + SUM(ABS(this%E_l(:,i,k+1)))
-          this%E_r(:,i,k) = this%E_r(:,i,k)/c
-          this%E_l(:,i,k+1) = this%E_l(:,i,k+1)/c
-          this%V(j) = c
-          j = j + 1
-       end do
-    end do
-
-    do i = 1,this%n_e
-       c = SUM(ABS(this%E_r(:,i,this%n))) + SUM(ABS(this%B_o(:,i)))
-       this%E_r(:,i,this%n) = this%E_r(:,i,this%n)/c
-       this%B_o(:,i) = this%B_o(:,i)/c
-       this%V(j) = c
-       j = j + 1
+       scale = MAXVAL(ABS(this%B_o(i,:)))
+       this%B_o(i,:) = this%B_o(i,:)/scale
+       this%S_o = this%S_o*scale
     end do
 
     ! Finish
 
     return
 
-  end subroutine balance
-
-!****
-
-  subroutine unbalance (this, b)
-
-    class(sysmtx_t), intent(in) :: this
-    complex(WP), intent(inout)  :: b(:)
-
-    $CHECK_BOUNDS(SIZE(b),this%n_e*(this%n+1))
-
-    ! Modify b to 'undo' the effects of a prior call to balance()
-
-    b = b*this%V
-
-    ! Finish
-
-    return
-
-  end subroutine unbalance
+  end subroutine scale_rows
 
 !****
 
@@ -367,9 +322,9 @@ contains
     $ASSERT(info >= 0, Negative return from XGETRF)
 
     $if($SUFFIX eq 'r')
-    det = product([ext_real(diagonal(M)),det,ext_real(sm%S)])
+    det = product([ext_real(diagonal(M)),det,ext_real(sm%S_i),ext_real(sm%S),ext_real(sm%S_o)])
     $else
-    det = product([ext_complex(diagonal(M)),det,sm%S])
+    det = product([ext_complex(diagonal(M)),det,sm%S_i,sm%S,sm%S_o])
     $endif
 
     do i = 1,2*n_e
@@ -441,9 +396,9 @@ contains
     ! Calculate the determinant
 
     $if($SUFFIX eq 'r')
-    det = product([ext_real(A_b(n_l+n_u+1,:)),ext_real(sm%S)])
+    det = product([ext_real(A_b(n_l+n_u+1,:)),ext_real(sm%S_i),ext_real(sm%S),ext_real(sm%S_o)])
     $else
-    det = product([ext_complex(A_b(n_l+n_u+1,:)),sm%S])
+    det = product([ext_complex(A_b(n_l+n_u+1,:)),sm%S_i,sm%S,sm%S_o])
     $endif
  
     do j = 1,SIZE(A_b, 2)

@@ -68,6 +68,7 @@ contains
     ! Initialize the bound
 
     this%cf => cf
+    this%jc => jc
     this%op => op
 
     this%n_i = 1
@@ -103,8 +104,13 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    B_i(1,1) = 1._WP
-    B_i(1,2) = 0._WP
+    associate(c_1 => this%cf%c_1(x_i), &
+              omega_c => this%cf%omega_c(x_i, this%op%m, omega))
+
+      B_i(1,1) = c_1*omega_c**2
+      B_i(1,2) = 0._WP
+
+    end associate
 
     B_i = MATMUL(B_i, this%jc%trans_matrix(x_i, omega, .TRUE.))
 
@@ -134,7 +140,7 @@ contains
     ! Set the outer boundary conditions
 
     associate(V => this%cf%V(x_o), c_1 => this%cf%c_1(x_o), &
-              omega_c => omega)
+              omega_c => this%cf%omega_c(x_o, this%op%m, omega))
         
       B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
       B_o(1,2) = -1._WP

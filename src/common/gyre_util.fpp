@@ -58,6 +58,11 @@ module gyre_util
      module procedure sprint_i
   end interface sprint
 
+  interface integrate
+     module procedure integrate_r
+     module procedure Integrate_c
+  end interface integrate
+
   ! Access specifiers
 
   private
@@ -71,6 +76,7 @@ module gyre_util
   public :: join_fmts
   public :: sprint
   public :: rjust
+  public :: integrate
 
 contains
 
@@ -555,5 +561,39 @@ contains
     return
 
   end function rjust
+
+!****
+
+  $define $INTEGRATE $sub
+
+  $local $SUFFIX $1
+  $local $TYPE $2
+
+  function integrate_$SUFFIX (x, y) result (int_y)
+
+    real(WP), intent(in)  :: x(:)
+    $TYPE(WP), intent(in) :: y(:)
+    $TYPE(WP)             :: int_y
+
+    integer :: n
+
+    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+    ! Integrate y(x) using trapezoidal quadrature
+
+    n = SIZE(x)
+
+    int_y = SUM(0.5_WP*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)))
+
+    ! Finish
+
+    return
+
+  end function integrate_$SUFFIX
+
+  $endsub
+
+  $INTEGRATE(r,real)
+  $INTEGRATE(c,complex)
 
 end module gyre_util

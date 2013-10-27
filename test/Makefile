@@ -9,15 +9,15 @@ SUBDIRS=ad nad
 
 test :
 	@for DIR in ${SUBDIRS}; do \
-            make BINDIR=${BINDIR} -w -C $${DIR}; \
+            make -C $${DIR}; \
             if [ $$? -ne 0 ]; then \
                 exit $$?; \
             fi; \
         done
 
-build_ref :
+build_ref build_ref_arch :
 	@for DIR in ${SUBDIRS}; do \
-            make BINDIR=${BINDIR} -w -C $${DIR} build_ref; \
+            make -C $${DIR} $@; \
         done
 
 .PHONY: test build_ref

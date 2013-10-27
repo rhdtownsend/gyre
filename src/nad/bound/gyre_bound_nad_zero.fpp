@@ -158,7 +158,7 @@ contains
     ! Set the outer boundary conditions
 
     associate(V => this%cf%V(x_o), U => this%cf%U(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
+              l => this%op%l)
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
