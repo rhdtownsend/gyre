@@ -14,7 +14,7 @@ OUT_FILE=gyre_ad.txt
 
 LABEL="homogeneous compressible model (polytropic structure)"
 
-RELERR=1E-15
+RELERR=3E-14
 FIELDS=1-5
 
 # Do the tests
