@@ -1,22 +1,18 @@
-# $Id: Makefile 121 2011-06-19 03:40:55Z townsend $
+# File     : Makefile
+# Purpose  : makefile for src/ad subdir
 
 # Variables
 
-TARGETS=build_poly_hom
+TARGETS=build_poly_hom build_poly
 
 # Flags
 
-OMP=true
-#MPI=true
-DEBUG=true
-DOUBLE_PRECISION=true
+HDF5=yes
 
-LDFLAGS=`mesasdk_hdf5_link` `mesasdk_lapack95_link`
-
-FPX3FLAGS=-DGFORTRAN_PR_56052 -DGFORTRAN_PR_56872
+LDFLAGS=`mesasdk_hdf5_link` `madsdk_odepack_link`
 
 # Include other makefiles
 
-SUBDIRS=../../core:../common:../ivp:../bvp:../coeffs:../matrix
+SUBDIRS=../extern/core:../common:../coeffs
 
-include ../../build/Make.inc
+include ../Make.inc
