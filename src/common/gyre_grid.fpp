@@ -29,6 +29,7 @@ module gyre_grid
   use gyre_coeffs
   use gyre_oscpar
   use gyre_gridpar
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -67,19 +68,34 @@ module gyre_grid
 
 contains
 
-  subroutine build_grid (gp, cf, op, x_in, x)
+  subroutine build_grid (gp, cf, op, x_in, x, verbose)
 
     type(gridpar_t), intent(in)        :: gp(:)
     class(coeffs_t), intent(in)        :: cf
     type(oscpar_t), intent(in)         :: op
     real(WP), allocatable, intent(in)  :: x_in(:)
     real(WP), allocatable, intent(out) :: x(:)
+    logical, intent(in), optional      :: verbose
 
+    logical :: write_info
     integer :: i
 
     $ASSERT(SIZE(gp) >= 1,Empty gridpars)
 
+    if(PRESENT(verbose)) then
+       write_info = verbose .AND. check_log_level('INFO')
+    else
+       write_info = check_log_level('DEBUG')
+    endif
+
     ! Build a grid using the supplied list of gridpars
+
+    if(write_info) then
+
+       write(OUTPUT_UNIT, 100) 'Building x grid'
+100    format(A,1X,A)
+
+    endif
 
     select case (gp(1)%op_type)
     case ('CREATE_CLONE')
@@ -96,6 +112,11 @@ contains
     case default
        $ABORT(Invalid op_type (the first op_type must be CREATE_*))
     end select
+
+    if(write_info) then
+          write(OUTPUT_UNIT, 110) 'x points :', SIZE(x), '[after', TRIM(gp(1)%op_type), 'op]'
+110    format(2X,A,1X,I0,1X,A,1X,A,1X,A)
+    endif
 
     gp_loop : do i = 2,SIZE(gp)
 
@@ -114,7 +135,20 @@ contains
           $ABORT(Invalid op_type (the second and subsequent op_types must be RESAMPLE_*))
        end select
 
+       if(write_info) then
+          write(OUTPUT_UNIT, 110) 'x points :', SIZE(x), '[after', TRIM(gp(i)%op_type), 'op]'
+       endif
+
     end do gp_loop
+
+    if(write_info) then
+
+       write(OUTPUT_UNIT, 120) 'x range  :', MINVAL(x), '->', MAXVAL(x)
+120    format(2X,A,E24.16,1X,A,1X,E24.16)
+
+       write(OUTPUT_UNIT, *)
+
+    endif
 
     ! Finish
 

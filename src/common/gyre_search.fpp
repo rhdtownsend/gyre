@@ -73,6 +73,11 @@ contains
 
     ! Determine the grid range
 
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Building omega grid'
+100    format(A)
+    endif
+
     call grid_range(gp, cf, op, x_in, x_i, x_o)
 
     ! Loop through scanpars
@@ -100,6 +105,18 @@ contains
     ! Sort the frequencies
 
     omega = omega(sort_indices(omega))
+
+    if(check_log_level('INFO')) then
+
+       write(OUTPUT_UNIT, 120) 'omega points :', SIZE(omega)
+120    format(2X,A,1X,I0)
+
+       write(OUTPUT_UNIT, 110) 'omega range  :', MINVAL(omega), '->',  MAXVAL(omega)
+110    format(2X,A,1X,E24.16,1X,A,1X,E24.16)
+
+       write(OUTPUT_UNIT, *)
+
+    endif
 
     ! Finish
 
@@ -138,11 +155,11 @@ contains
 
     if(check_log_level('INFO')) then
 
-       write(OUTPUT_UNIT, 100) form_header('Scan Mode Search', '=')
+       write(OUTPUT_UNIT, 100) 'Root Solving'
 100    format(A)
 
-       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110    format(4(2X,A6),3(2X,A24),2X,A6)
+       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
+110    format(4(2X,A6),3(2X,A24),2X,A6,2X,A7)
        
     endif
 
@@ -168,8 +185,8 @@ contains
        ! Report
 
        if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%op%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
-120       format(4(2X,I6),3(2X,E24.16),2X,I6)
+          write(OUTPUT_UNIT, 120) md(i)%op%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter, md(i)%n
+120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
        endif
 
     end do mode_loop
@@ -181,8 +198,8 @@ contains
     call SYSTEM_CLOCK(c_end)
 
     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 130) 'Completed mode search; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-130    format(/A,1X,F10.3,1X,A)
+       write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+130    format(2X,A,1X,F10.3,1X,A)
     endif
 
     ! Broadcast data
@@ -229,11 +246,11 @@ contains
 
     if(check_log_level('INFO')) then
 
-       write(OUTPUT_UNIT, 100) form_header('Proximity Mode Search', '=')
+       write(OUTPUT_UNIT, 100) 'Root Solving'
 100    format(A)
 
-       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110    format(4(2X,A6),3(2X,A24),2X,A6)
+       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
+110    format(4(2X,A6),3(2X,A24),2X,A6,2X,A7)
        
     endif
 
@@ -261,8 +278,8 @@ contains
        ! Report
 
        if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%op%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter
-120       format(4(2X,I6),3(2X,E24.16),2X,I4)
+          write(OUTPUT_UNIT, 120) md(i)%op%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter, md(i)%n
+120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
        endif
 
     end do mode_loop
@@ -274,8 +291,8 @@ contains
     call SYSTEM_CLOCK(c_end)
 
     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 130) 'Completed mode search; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-130    format(/A,1X,F10.3,1X,A)
+       write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+130    format(2X,A,1X,F10.3,1X,A)
     endif
 
     ! Broadcast data
@@ -326,7 +343,7 @@ contains
     ! Calculate the discriminant on the omega abscissa
 
     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) form_header('Discriminant Scan', '=')
+       write(OUTPUT_UNIT, 100) 'Root bracketing'
 100    format(A)
     endif
 
@@ -345,8 +362,8 @@ contains
        discrim(i) = ext_real(bp%discrim(CMPLX(omega(i), KIND=WP)))
 
        if(check_log_level('DEBUG', MPI_RANK)) then
-          write(OUTPUT_UNIT, 110) 'Eval:', omega(i), fraction(discrim(i)), exponent(discrim(i))
-110       format(A,2X,E24.16,2X,F19.16,2X,I7)
+          write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
+110       format(2X,E24.16,2X,F19.16,2X,I7)
        endif
 
     end do discrim_loop
@@ -367,8 +384,8 @@ contains
     call SYSTEM_CLOCK(c_end)
 
     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Completed scan; time elapsed:', REAL(c_end-c_beg, WP)/c_rate, 's'
-120    format(/A,1X,F10.3,1X,A)
+       write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+120    format(2X,A,F10.3,1X,A/)
     endif
 
     ! Find root brackets
