@@ -205,7 +205,7 @@ contains
 
     ! Build the shooting grid
 
-    call build_grid(this%shoot_gp, this%cf, this%op, x_in, this%x)
+    call build_grid(this%shoot_gp, this%cf, this%op, x_in, this%x, verbose=.TRUE.)
 
     n = SIZE(this%x)
 
