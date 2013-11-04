@@ -814,22 +814,19 @@ contains
     real(WP), intent(in)                :: omega
     real(WP)                            :: x_turn
 
-    integer            :: n
     type(gamma_func_t) :: gf
     integer            :: i
 
     ! Find the inner turning point at frequency omega
 
-    n = SIZE(x)
-
-    x_turn = x(n)
+    x_turn = HUGE(0._WP)
 
     gf%cf => cf
     gf%op => op
 
     gf%omega = omega
 
-    turn_loop : do i = 1,n-1
+    turn_loop : do i = 1,SIZE(x)-1
        if(.NOT. (cf%is_zero(x(i)) .OR. cf%is_zero(x(i+1)))) then
           if(gf%eval(x(i)) > 0._WP .AND. gf%eval(x(i+1)) <= 0._WP) then
              x_turn = gf%root(x(i), x(i+1), 0._WP)
