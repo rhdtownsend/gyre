@@ -66,6 +66,7 @@ module gyre_coeffs_hom
      $PROC_DECL(tau_thm)
      $PROC_DECL(Omega_rot)
      procedure, public :: pi_c
+     procedure, public :: is_zero
      procedure, public :: attach_cache
      procedure, public :: detach_cache
      procedure, public :: fill_cache
@@ -519,6 +520,24 @@ contains
     return
 
   end function pi_c
+
+!****
+
+  function is_zero (this, x)
+
+    class(coeffs_hom_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    logical                         :: is_zero
+
+    ! Determine whether the point at x has a vanishing pressure and/or density
+
+    is_zero = x >= 1._WP
+
+    ! Finish
+
+    return
+
+  end function is_zero
 
 !****
 
