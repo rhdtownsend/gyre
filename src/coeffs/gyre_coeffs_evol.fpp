@@ -1022,9 +1022,24 @@ contains
     real(WP), intent(in)             :: x
     logical                          :: is_zero
 
+    logical :: p_zero
+    logical :: rho_zero
+
     ! Determine whether the point at x has a vanishing pressure and/or density
 
-    is_zero = this%p(x) == 0._WP .OR. this%rho(x) == 0._WP
+    if(this%sp_def(J_P)) then
+       p_zero = this%p(x) == 0._WP
+    else
+       p_zero = .FALSE.
+    endif
+
+    if(this%sp_def(J_RHO)) then
+       rho_zero = this%rho(x) == 0._WP
+    else
+       rho_zero = .FALSE.
+    endif
+
+    is_zero = P_ZERO .OR. RHO_ZERO
 
     ! Finish
 
