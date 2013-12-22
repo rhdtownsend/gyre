@@ -244,9 +244,18 @@ contains
 
     ! Finalize the bvp_rad
 
+    call this%cc%final()
+    call this%sm%final()
+
     deallocate(this%jc)
     deallocate(this%iv)
     deallocate(this%bd)
+
+    deallocate(this%shoot_gp)
+    deallocate(this%recon_gp)
+
+    deallocate(this%x)
+    deallocate(this%x_in)
     
     ! Finish
 
