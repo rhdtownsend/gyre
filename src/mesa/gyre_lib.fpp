@@ -294,6 +294,8 @@ contains
        end select
        $endif
 
+       if(ALLOCATED(bp)) deallocate(bp)
+
        ! Process the modes
 
        retcode = 0
@@ -308,8 +310,6 @@ contains
        end do mode_loop
 
        ! Loop around
-
-       if(ALLOCATED(bp)) deallocate(bp)
 
     end do op_loop
 
