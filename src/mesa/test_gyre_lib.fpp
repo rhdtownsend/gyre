@@ -48,7 +48,7 @@ program test_gyre_lib
 
   ! Repeatedy find modes
 
-  do i = 1,1000
+  do i = 1,100
      call gyre_get_modes('gyre_ad.in', user_sub, ipar, rpar, .FALSE.)
   end do
 
