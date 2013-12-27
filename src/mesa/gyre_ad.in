@@ -1,0 +1,34 @@
+&coeffs
+	coeffs_type = 'EVOL'
+	file = 'bcep.mesa'
+	file_format = 'MESA'
+/
+
+&osc
+	l = 0
+/
+
+&osc
+	l = 1
+/
+
+&osc
+	l = 2
+/
+
+&num
+	ivp_solver_type = 'MAGNUS_GL2'
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 1
+	freq_max = 20.0
+	n_freq = 200
+/
+
+&shoot_grid
+/
+
+&recon_grid
+/

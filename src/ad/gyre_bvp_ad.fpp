@@ -203,7 +203,7 @@ contains
 
     ! Build the shooting grid
 
-    call build_grid(this%shoot_gp, this%cf, this%op, x_in, this%x)
+    call build_grid(this%shoot_gp, this%cf, this%op, x_in, this%x, verbose=.TRUE.)
 
     n = SIZE(this%x)
 
@@ -242,9 +242,18 @@ contains
 
     ! Finalize the bvp_ad
 
+    call this%cc%final()
+    call this%sm%final()
+
     deallocate(this%jc)
     deallocate(this%iv)
     deallocate(this%bd)
+
+    deallocate(this%shoot_gp)
+    deallocate(this%recon_gp)
+
+    deallocate(this%x)
+    deallocate(this%x_in)
     
     ! Finish
 

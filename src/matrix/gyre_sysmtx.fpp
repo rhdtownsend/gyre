@@ -52,6 +52,7 @@ module gyre_sysmtx
    contains
      private
      procedure, public :: init
+     procedure, public :: final
      procedure, public :: set_inner_bound
      procedure, public :: set_outer_bound
      procedure, public :: set_block
@@ -102,6 +103,32 @@ contains
     return
 
   end subroutine init
+
+!****
+
+  $if($GFORTRAN_PR57922)
+
+  subroutine final (this)
+
+    class(sysmtx_t), intent(inout) :: this
+
+    ! Finalize the sysmtx
+
+    deallocate(this%E_l)
+    deallocate(this%E_r)
+
+    deallocate(this%B_i)
+    deallocate(this%B_o)
+
+    deallocate(this%S)
+
+    ! Finish
+
+    return
+
+  end subroutine final
+
+  $endif
 
 !****
 

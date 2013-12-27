@@ -82,13 +82,13 @@ program gyre_ad
      write(OUTPUT_UNIT, 100) form_header('gyre_ad ['//TRIM(version)//']', '=')
 100  format(A)
 
-     write(OUTPUT_UNIT, 110) 'Compiler         : ', COMPILER_VERSION()
-     write(OUTPUT_UNIT, 110) 'Compiler options : ', COMPILER_OPTIONS()
-110  format(2A)
+     write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
+     write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
+110  format(A,1X,A)
 
-     write(OUTPUT_UNIT, 120) 'OpenMP Threads   : ', OMP_SIZE_MAX
-     write(OUTPUT_UNIT, 120) 'MPI Processors   : ', MPI_SIZE
-120  format(A,I0)
+     write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
+     write(OUTPUT_UNIT, 120) 'MPI Processors   :', MPI_SIZE
+120  format(A,1X,I0)
 
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
 
@@ -126,6 +126,20 @@ program gyre_ad
   allocate(md_all(0))
 
   op_loop : do i = 1, SIZE(op)
+
+     if(check_log_level('INFO')) then
+
+        write(OUTPUT_UNIT, 100) form_header('Mode Search', '=')
+
+        write(OUTPUT_UNIT, 100) 'Mode parameters'
+
+        write(OUTPUT_UNIT, 130) 'l :', op(i)%l
+        write(OUTPUT_UNIT, 130) 'm :', op(i)%m
+130     format(2X,A,1X,I0)
+
+        write(OUTPUT_UNIT, *)
+
+     endif
 
      ! Select parameters according to tags
 

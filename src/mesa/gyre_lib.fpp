@@ -196,7 +196,7 @@ contains
 
 !****
 
-  subroutine gyre_get_modes (file, user_sub, ipar, rpar)
+  subroutine gyre_get_modes (file, user_sub, ipar, rpar, dummy)
 
     character(LEN=*), intent(in) :: file
     interface
@@ -211,6 +211,7 @@ contains
     end interface
     integer, intent(inout)  :: ipar(:)
     real(WP), intent(inout) :: rpar(:)
+    logical, intent(in), optional :: dummy
 
     integer                      :: unit
     type(oscpar_t), allocatable  :: op(:)
@@ -293,6 +294,8 @@ contains
        end select
        $endif
 
+       if(ALLOCATED(bp)) deallocate(bp)
+
        ! Process the modes
 
        retcode = 0
@@ -307,8 +310,6 @@ contains
        end do mode_loop
 
        ! Loop around
-
-       if(ALLOCATED(bp)) deallocate(bp)
 
     end do op_loop
 

@@ -126,6 +126,7 @@ module gyre_coeffs_evol
      $PROC_DECL(kappa_S)
      $PROC_DECL(tau_thm)
      procedure, public :: pi_c
+     procedure, public :: is_zero
      procedure, public :: attach_cache
      procedure, public :: detach_cache
      procedure, public :: fill_cache
@@ -1012,6 +1013,39 @@ contains
     return
 
   end function pi_c
+
+!****
+
+  function is_zero (this,x )
+
+    class(coeffs_evol_t), intent(in) :: this
+    real(WP), intent(in)             :: x
+    logical                          :: is_zero
+
+    logical :: p_zero
+    logical :: rho_zero
+
+    ! Determine whether the point at x has a vanishing pressure and/or density
+
+    if(this%sp_def(J_P)) then
+       p_zero = this%p(x) == 0._WP
+    else
+       p_zero = .FALSE.
+    endif
+
+    if(this%sp_def(J_RHO)) then
+       rho_zero = this%rho(x) == 0._WP
+    else
+       rho_zero = .FALSE.
+    endif
+
+    is_zero = P_ZERO .OR. RHO_ZERO
+
+    ! Finish
+
+    return
+
+  end function is_zero
 
 !****
 

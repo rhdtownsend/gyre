@@ -31,6 +31,7 @@ module gyre_mode
   $endif
   use gyre_ext_arith
   use gyre_oscpar
+  use gyre_grid
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -1039,6 +1040,7 @@ contains
 
     real(WP) :: y_1(md%n)
     real(WP) :: y_2(md%n)
+    real(WP) :: x_turn
     integer  :: i
     integer  :: n_c
     integer  :: n_a
@@ -1082,13 +1084,14 @@ contains
        y_1 = REAL(md%Yt_1())
        y_2 = REAL(md%Yt_2())
 
-       ! Look for the first monotonic segment in y_1 (this is to deal with
-       ! noisy near-zero solutions at the origin)
+       ! Find the inner turning point (this is to deal with noisy
+       ! near-zero solutions at the origin)
 
-       mono_dip_loop : do i = 2,md%n-1
-          if((y_1(i) >= y_1(i-1) .AND. y_1(i+1) >= y_1(i)) .OR. &
-             (y_1(i) <= y_1(i-1) .AND. y_1(i+1) <= y_1(i))) exit mono_dip_loop
-       end do mono_dip_loop
+       call find_x_turn(md%x, md%cf, md%op, REAL(md%omega), x_turn)
+
+       x_turn_loop : do i = 1,md%n-1
+          if(md%x(i) > x_turn) exit x_turn_loop
+       end do x_turn_loop
 
        ! Count winding numbers
 
