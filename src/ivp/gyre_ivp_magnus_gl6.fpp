@@ -38,13 +38,18 @@ module gyre_ivp_magnus_GL6
 
   type, extends (ivp_magnus_t) :: ivp_magnus_GL6_t
      private
-     class(jacobian_t), pointer :: jc => null()
+     class(jacobian_t), allocatable :: jc
    contains
      private
-     procedure, public :: init
      procedure, public :: eval_dOmega
      procedure, public :: abscissa
   end type ivp_magnus_GL6_t
+
+  ! Interfaces
+
+  interface ivp_magnus_GL6_t
+     module procedure init_iv
+  end interface ivp_magnus_GL6_t
 
   ! Access specifiers
 
@@ -56,22 +61,22 @@ module gyre_ivp_magnus_GL6
 
 contains
 
-  subroutine init (this, jc)
+  function init_iv (jc) result (iv)
 
-    class(ivp_magnus_GL6_t), intent(out)  :: this
-    class(jacobian_t), intent(in), target :: jc
+    class(jacobian_t), intent(in) :: jc
+    type(ivp_magnus_GL6_t)        :: iv
 
-    ! Initialize the ivp_t
+    ! Construct the ivp_magnus_GL6
 
-    this%jc => jc
+    allocate(iv%jc, SOURCE=jc)
 
-    this%n_e = jc%n_e
+    iv%n_e = jc%n_e
 
     ! Finish
 
     return
     
-  end subroutine init
+  end function init_iv
 
 !****
 

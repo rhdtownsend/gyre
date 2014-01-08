@@ -44,13 +44,13 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_file (file, G, deriv_type, data_format, ec, x)
+  subroutine read_fgong_file (file, G, deriv_type, data_format, cf, x)
 
     character(LEN=*), intent(in)                 :: file
     real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
     character(LEN=*), intent(in)                 :: data_format
-    class(coeffs_evol_t), intent(out)            :: ec
+    type(coeffs_evol_t), intent(out)             :: cf
     real(WP), allocatable, intent(out), optional :: x(:)
 
     character(LEN=:), allocatable :: data_format_
@@ -159,11 +159,11 @@ contains
        write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
-    ! Initialize the base_coeffs
+    ! Initialize the coeffs
 
-    call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                 N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
-                 deriv_type, add_center)
+    cf = coeffs_evol_t(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
+                       deriv_type, add_center)
 
     ! Set up the grid
 

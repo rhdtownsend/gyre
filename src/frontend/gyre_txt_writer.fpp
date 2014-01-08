@@ -55,7 +55,6 @@ module gyre_txt_writer
      integer                               :: n
    contains
      private
-     procedure, public :: init
      procedure, public :: final
      procedure         :: write_i_0
      procedure         :: write_i_1
@@ -67,6 +66,12 @@ module gyre_txt_writer
      procedure         :: write_a_1
   end type txt_writer_t
 
+  ! Interfaces
+
+  interface txt_writer_t
+     module procedure init_wr
+  end interface txt_writer_t
+
   ! Access specifiers
 
   private
@@ -77,25 +82,25 @@ module gyre_txt_writer
 
 contains
 
-  subroutine init (this, file_name)
+  function init_wr (file_name) result (wr)
 
-    class(txt_writer_t), intent(out) :: this
-    character(LEN=*), intent(in)     :: file_name
+    character(LEN=*), intent(in) :: file_name
+    type(txt_writer_t)           :: wr
 
-    ! Initialize the txt_writer
+    ! Construct the txt_writer
 
-    open(NEWUNIT=this%unit, FILE=file_name, STATUS='REPLACE', FORM='FORMATTED', ACCESS='STREAM')
+    open(NEWUNIT=wr%unit, FILE=file_name, STATUS='REPLACE', FORM='FORMATTED', ACCESS='STREAM')
     
-    this%n_s = 0
-    this%n_v = 0
+    wr%n_s = 0
+    wr%n_v = 0
 
-    this%n = 0
+    wr%n = 0
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_wr
 
 !****
 

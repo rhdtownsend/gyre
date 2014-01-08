@@ -32,7 +32,6 @@ module gyre_writer
   type, abstract :: writer_t
    contains
      private
-     procedure(init_i), deferred, public  :: init
      procedure(final_i), deferred, public :: final
      procedure(write_i_0_i), deferred     :: write_i_0
      procedure(write_i_1_i), deferred     :: write_i_1
@@ -49,12 +48,6 @@ module gyre_writer
   ! Interfaces
 
   abstract interface
-
-     subroutine init_i (this, file_name)
-       import writer_t
-       class(writer_t), intent(out) :: this
-       character(LEN=*), intent(in) :: file_name
-     end subroutine init_i
 
      subroutine final_i (this)
        import writer_t

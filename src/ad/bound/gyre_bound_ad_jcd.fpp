@@ -39,15 +39,20 @@ module gyre_bound_ad_jcd
 
   type, extends (bound_t) :: bound_ad_jcd_t
      private
-     class(coeffs_t), pointer   :: cf => null()
-     class(jacobian_t), pointer :: jc => null()
-     type(oscpar_t), pointer    :: op => null()
+     class(coeffs_t), pointer       :: cf => null()
+     class(jacobian_t), allocatable :: jc
+     type(oscpar_t)                 :: op
    contains 
      private
-     procedure, public :: init
      procedure, public :: inner_bound
      procedure, public :: outer_bound
   end type bound_ad_jcd_t
+
+  ! Interfaces
+
+  interface bound_ad_jcd_t
+     module procedure init_bd
+  end interface bound_ad_jcd_t
 
   ! Access specifiers
 
@@ -59,30 +64,30 @@ module gyre_bound_ad_jcd
 
 contains
 
-  subroutine init (this, cf, jc, op)
+  function init_bd (cf, jc, op) result (bd)
 
-    class(bound_ad_jcd_t), intent(out)    :: this
-    class(coeffs_t), intent(in), target   :: cf
-    class(jacobian_t), intent(in), target :: jc
-    type(oscpar_t), intent(in), target    :: op
+    class(coeffs_t), pointer, intent(in) :: cf
+    class(jacobian_t), intent(in)        :: jc
+    type(oscpar_t), intent(in)           :: op
+    type(bound_ad_jcd_t)                 :: bd
 
-    ! Initialize the bound
+    ! Construct the bound_ad_jcd
 
-    this%cf => cf
-    this%jc => jc
-    this%op => op
+    bd%cf => cf
+    allocate(bd%jc, SOURCE=jc)
+    bd%op = op
 
-    this%n_i = 2
-    this%n_o = 2
-    this%n_e = this%n_i + this%n_o
+    bd%n_i = 2
+    bd%n_o = 2
+    bd%n_e = bd%n_i + bd%n_o
 
-    $CHECK_BOUNDS(this%n_e,this%jc%n_e)
+    $CHECK_BOUNDS(bd%n_e,bd%jc%n_e)
 
     ! Finish
 
     return
     
-  end subroutine init
+  end function init_bd
 
 !****
 

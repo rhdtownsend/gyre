@@ -109,8 +109,8 @@ module gyre_coeffs
      subroutine attach_cache_i (this, cc)
        use gyre_cocache
        import coeffs_t
-       class(coeffs_t), intent(inout)       :: this
-       class(cocache_t), intent(in), target :: cc
+       class(coeffs_t), intent(inout)        :: this
+       class(cocache_t), pointer, intent(in) :: cc
      end subroutine attach_cache_i
 
      subroutine detach_cache_i (this)

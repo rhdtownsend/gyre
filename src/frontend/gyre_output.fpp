@@ -59,6 +59,7 @@ contains
     character(LEN=FILENAME_LEN)  :: mode_prefix
     character(LEN=256)           :: mode_file_format
     character(LEN=2048)          :: mode_item_list
+    character(LEN=5)             :: infix
     character(LEN=FILENAME_LEN)  :: mode_file
     class(writer_t), allocatable :: wr
     character(LEN=16)            :: ext
@@ -87,14 +88,13 @@ contains
 
        select case (summary_file_format)
        case ('HDF')
-          allocate(hdf_writer_t::wr)
+          allocate(wr, SOURCE=hdf_writer_t(summary_file))
        case ('TXT')
-          allocate(txt_writer_t::wr)
+          allocate(wr, SOURCE=txt_writer_t(summary_file))
        case default
           $ABORT(Invalid summary_file_format)
        end select
 
-       call wr%init(summary_file)
        call write_summary(wr, md, split_list(summary_item_list, ','), freq_units)
        call wr%final()
 
@@ -104,30 +104,27 @@ contains
 
     if(mode_prefix /= '') then
 
-       select case (mode_file_format)
-       case ('HDF')
-          allocate(hdf_writer_t::wr)
-          ext = '.h5'
-       case ('TXT')
-          allocate(txt_writer_t::wr)
-          ext = '.txt'
-       case default
-          $ABORT(Invalid mode_file_format)
-       end select
-
        mode_loop : do j = 1,SIZE(md)
 
-          write(mode_file, 100) TRIM(mode_prefix), j, TRIM(ext)
-100       format(A,I4.4,A)
+          write(infix, 100) j
+100       format(I5.5)
 
-          call wr%init(mode_file)
+          select case (mode_file_format)
+          case ('HDF')
+             allocate(wr, SOURCE=hdf_writer_t(TRIM(mode_prefix)//infix//'.h5'))
+          case ('TXT')
+             allocate(wr, SOURCE=txt_writer_t(TRIM(mode_prefix)//infix//'.txt'))
+         case default
+            $ABORT(Invalid mode_file_format)
+         end select
+
           call write_mode(wr, md(j), split_list(mode_item_list, ','), freq_units, j)
           call wr%final()
 
+          deallocate(wr)
+
        end do mode_loop
 
-       deallocate(wr)
-       
     end if
 
     ! Finish

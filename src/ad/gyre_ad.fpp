@@ -54,7 +54,7 @@ program gyre_ad
   character(LEN=:), allocatable :: filename
   integer                       :: unit
   real(WP), allocatable         :: x_cf(:)
-  class(coeffs_t), allocatable  :: cf
+  class(coeffs_t), pointer      :: cf => null()
   type(oscpar_t), allocatable   :: op(:)
   type(numpar_t), allocatable   :: np(:)
   type(gridpar_t), allocatable  :: shoot_gp(:)
@@ -167,12 +167,10 @@ program gyre_ad
      if(ALLOCATED(bp)) deallocate(bp)
 
      if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(bvp_rad_t::bp)
+        allocate(bp, SOURCE=bvp_rad_t(cf, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf))
      else
-        allocate(bvp_ad_t::bp)
+        allocate(bp, SOURCE=bvp_ad_t(cf, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf))
      endif
-
-     call bp%init(cf, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf)
 
      ! Find modes
 
@@ -183,6 +181,8 @@ program gyre_ad
 
      md_tmp = [md_all, md]
      call MOVE_ALLOC(md_tmp, md_all)
+
+     deallocate(bp)
 
   end do op_loop
 

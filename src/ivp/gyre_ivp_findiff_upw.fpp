@@ -39,15 +39,20 @@ module gyre_ivp_findiff_upw
 
   type, extends (ivp_colloc_t) :: ivp_findiff_upw_t
      private
-     integer, allocatable, public :: stencil(:)
-     class(jacobian_t), pointer   :: jc => null()
+     integer, allocatable, public   :: stencil(:)
+     class(jacobian_t), allocatable :: jc
    contains
      private
-     procedure, public :: init
      procedure, public :: solve
      procedure, public :: recon
      procedure, public :: abscissa
   end type ivp_findiff_upw_t
+
+  ! Interfaces
+
+  interface ivp_findiff_upw_t
+     module procedure init_iv
+  end interface ivp_findiff_upw_t
 
   ! Access specifiers
 
@@ -57,24 +62,24 @@ module gyre_ivp_findiff_upw
 
 contains
 
-  subroutine init (this, jc)
+  function init_iv (jc) result (iv)
 
-    class(ivp_findiff_upw_t), intent(out)  :: this
-    class(jacobian_t), intent(in), target :: jc
+    class(jacobian_t), intent(in) :: jc
+    type(ivp_findiff_upw_t)       :: iv
 
-    ! Initialize the ivp_t
+    ! Construct the ivp_findiff_upw
 
-    this%jc => jc
+    allocate(iv%jc, SOURCE=jc)
 
-    allocate(this%stencil(jc%n_e))
+    allocate(iv%stencil(jc%n_e))
 
-    this%n_e = jc%n_e
+    iv%n_e = jc%n_e
 
     ! Finish
 
     return
     
-  end subroutine init
+  end function init_iv
 
 !****
 

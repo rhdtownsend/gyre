@@ -51,7 +51,6 @@ module gyre_coeffs_poly
      real(WP), public :: xi_1
    contains
      private
-     procedure, public :: init
      $if($GFORTRAN_PR57922)
      procedure, public :: final
      $endif
@@ -82,12 +81,14 @@ module gyre_coeffs_poly
 
   ! Interfaces
 
+  interface coeffs_poly_t
+     module procedure init_cf
+  end interface coeffs_poly_t
+
   $if($MPI)
-
   interface bcast
-     module procedure bcast_bc
+     module procedure bcast_cf
   end interface bcast
-
   $endif
 
   ! Access specifiers
@@ -103,22 +104,22 @@ module gyre_coeffs_poly
 
 contains
 
-  subroutine init (this, xi, Theta, dTheta, n_poly, Gamma_1, deriv_type)
+  function init_cf (xi, Theta, dTheta, n_poly, Gamma_1, deriv_type) result (cf)
 
-    class(coeffs_poly_t), intent(out) :: this
-    real(WP), intent(in)              :: xi(:)
-    real(WP), intent(in)              :: Theta(:)
-    real(WP), intent(in)              :: dTheta(:)
-    real(WP), intent(in)              :: n_poly
-    real(WP), intent(in)              :: Gamma_1
-    character(LEN=*), intent(in)      :: deriv_type
+    real(WP), intent(in)         :: xi(:)
+    real(WP), intent(in)         :: Theta(:)
+    real(WP), intent(in)         :: dTheta(:)
+    real(WP), intent(in)         :: n_poly
+    real(WP), intent(in)         :: Gamma_1
+    character(LEN=*), intent(in) :: deriv_type
+    type(coeffs_poly_t)          :: cf
 
     integer  :: n
     real(WP) :: d2Theta(SIZE(xi))
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
 
-    ! Initialize the coeffs
+    ! Construct the coeffs_poly from the polytrope functions
 
     n = SIZE(xi)
 
@@ -136,28 +137,28 @@ contains
 
     endif
 
-    call this%sp_Theta%init(xi, Theta, dTheta)
-    call this%sp_dTheta%init(xi, dTheta, d2Theta)
+    cf%sp_Theta = spline_t(xi, Theta, dTheta)
+    cf%sp_dTheta = spline_t(xi, dTheta, d2Theta)
 
-    this%n_poly = n_poly
-    this%dt_Gamma_1 = Gamma_1
-    this%xi_1 = xi(n)
+    cf%n_poly = n_poly
+    cf%dt_Gamma_1 = Gamma_1
+    cf%xi_1 = xi(n)
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_cf
 
 !****
 
-  $if($GFORTRAN_PR57922)
+  $if ($GFORTRAN_PR57922)
 
   subroutine final (this)
 
     class(coeffs_poly_t), intent(inout) :: this
 
-    ! Finalize the coeffs
+    ! Finalize the coeffs_poly
 
     call this%sp_Theta%final()
     call this%sp_dTheta%final()
@@ -172,27 +173,27 @@ contains
 
 !****
 
-  $if($MPI)
+  $if ($MPI)
 
-  subroutine bcast_bc (bc, root_rank)
+  subroutine bcast_cf (bc, root_rank)
 
-    class(coeffs_poly_t), intent(inout) :: bc
-    integer, intent(in)                 :: root_rank
+    type(coeffs_poly_t), intent(inout) :: cf
+    integer, intent(in)                :: root_rank
 
-    ! Broadcast the coeffs
+    ! Broadcast the coeffs_poly
 
-    call bcast(bc%sp_Theta, root_rank)
-    call bcast(bc%sp_dTheta, root_rank)
+    call bcast(cf%sp_Theta, root_rank)
+    call bcast(cf%sp_dTheta, root_rank)
 
-    call bcast(bc%n_poly, root_rank)
-    call bcast(bc%dt_Gamma_1, root_rank)
-    call bcast(bc%xi_1, root_rank)
+    call bcast(cf%n_poly, root_rank)
+    call bcast(cf%dt_Gamma_1, root_rank)
+    call bcast(cf%xi_1, root_rank)
 
     ! Finish
 
     return
 
-  end subroutine bcast_bc
+  end subroutine bcast_cf
 
   $endif
 
@@ -647,8 +648,8 @@ contains
 
   subroutine attach_cache (this, cc)
 
-    class(coeffs_poly_t), intent(inout)  :: this
-    class(cocache_t), intent(in), target :: cc
+    class(coeffs_poly_t), intent(inout)   :: this
+    class(cocache_t), pointer, intent(in) :: cc
 
     ! Enable a coefficient cache (no-op, since we don't cache)
 

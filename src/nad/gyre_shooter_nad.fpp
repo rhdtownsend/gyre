@@ -43,19 +43,24 @@ module gyre_shooter_nad
 
   type :: shooter_nad_t
      private
-     class(coeffs_t), pointer :: cf => null()
-     class(ivp_t), pointer    :: iv => null()
-     class(ivp_t), pointer    :: iv_upw => null()
-     type(oscpar_t), pointer  :: op => null()
-     type(numpar_t), pointer  :: np => null()
-     integer, public          :: n_e
+     class(coeffs_t), pointer  :: cf => null()
+     class(ivp_t), allocatable :: iv
+     class(ivp_t), allocatable :: iv_upw
+     type(oscpar_t)            :: op
+     type(numpar_t)            :: np
+     integer, public           :: n_e
    contains
      private
-     procedure, public :: init
      procedure, public :: shoot
      procedure, public :: recon => recon_sh
      procedure, public :: abscissa
   end type shooter_nad_t
+
+  ! Interfaces
+
+  interface shooter_nad_t
+     module procedure init_sh
+  end interface shooter_nad_t
 
   ! Access specifiers
 
@@ -67,32 +72,30 @@ module gyre_shooter_nad
 
 contains
 
-  subroutine init (this, cf, iv, iv_upw, op, np)
+  function init_sh (cf, iv, iv_upw, op, np) result (sh)
 
-    class(shooter_nad_t), intent(out)   :: this
-    class(coeffs_t), intent(in), target :: cf
-    class(ivp_t), intent(in), target    :: iv
-    class(ivp_t), intent(in), target    :: iv_upw
-    type(oscpar_t), intent(in), target  :: op
-    type(numpar_t), intent(in), target  :: np
+    class(coeffs_t), pointer, intent(in) :: cf
+    class(ivp_t), intent(in)             :: iv
+    class(ivp_t), intent(in)             :: iv_upw
+    type(oscpar_t), intent(in)           :: op
+    type(numpar_t), intent(in)           :: np
+    type(shooter_nad_t)                  :: sh
 
-    ! Initialize the shooter_nad
+    ! Construct the shooter_nad
 
-    this%cf => cf
+    sh%cf => cf
+    allocate(sh%iv, SOURCE=iv)
+    allocate(sh%iv_upw, SOURCE=iv_upw)
+    sh%op = op
+    sh%np = np
 
-    this%iv => iv
-    this%iv_upw => iv_upw
-
-    this%op => op
-    this%np => np
-
-    this%n_e = this%iv%n_e
+    sh%n_e = sh%iv%n_e
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_sh
 
 !****
 

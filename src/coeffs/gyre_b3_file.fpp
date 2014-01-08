@@ -45,12 +45,12 @@ module gyre_b3_file
 
 contains
 
-  subroutine read_b3_file (file, G, deriv_type, ec, x)
+  subroutine read_b3_file (file, G, deriv_type, cf, x)
 
     character(LEN=*), intent(in)                 :: file
     real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
-    class(coeffs_evol_t), intent(out)            :: ec
+    type(coeffs_evol_t), intent(out)             :: cf
     real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
@@ -88,7 +88,7 @@ contains
 100    format(A,1X,A)
     endif
 
-    call hg%init(file, OPEN_FILE)
+    hg = hgroup_t(file, OPEN_FILE)
 
     ! Read the header
 
@@ -148,13 +148,13 @@ contains
 110    format(2X,A)
     endif
 
-    ! Initialize the base_coeffs
+    ! Initialize the coeffs
 
-    call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                 N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
-                 nabla, kappa, kappa_rho, kappa_T, &
-                 epsilon, epsilon_rho, epsilon_T, &
-                 deriv_type, add_center)
+    cf = coeffs_evol_t(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
+                       nabla, kappa, kappa_rho, kappa_T, &
+                       epsilon, epsilon_rho, epsilon_T, &
+                       deriv_type, add_center)
 
     ! Set up the grid
 

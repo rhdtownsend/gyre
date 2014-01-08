@@ -46,7 +46,6 @@ module gyre_coeffs_hom
      real(WP) :: dt_Gamma_1
    contains
      private
-     procedure, public :: init
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -74,12 +73,14 @@ module gyre_coeffs_hom
 
   ! Interfaces
 
-  $if($MPI)
+  interface coeffs_hom_t
+     module procedure init_cf
+  end interface coeffs_hom_t
 
+  $if ($MPI)
   interface bcast
-     module procedure bcast_bc
+     module procedure bcast_cf
   end interface bcast
-
   $endif
 
   ! Access specifiers
@@ -95,39 +96,39 @@ module gyre_coeffs_hom
 
 contains
 
-  subroutine init (this, Gamma_1)
+  function init_cf (Gamma_1) result (cf)
 
-    class(coeffs_hom_t), intent(out) :: this
-    real(WP), intent(in)             :: Gamma_1
+    real(WP), intent(in) :: Gamma_1
+    type(coeffs_hom_t)   :: cf
 
-    ! Initialize the coeffs
+    ! Construct the coeffs_hom
 
-    this%dt_Gamma_1 = Gamma_1
+    cf%dt_Gamma_1 = Gamma_1
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_cf
 
 !****
 
   $if($MPI)
 
-  subroutine bcast_bc (bc, root_rank)
+  subroutine bcast_cf (cf, root_rank)
 
-    class(coeffs_hom_t), intent(inout) :: bc
+    class(coeffs_hom_t), intent(inout) :: cf
     integer, intent(in)                :: root_rank
 
-    ! Broadcast the coeffs
+    ! Broadcast the coeffs_hom
 
-    call bcast(bc%dt_Gamma_1, root_rank)
+    call bcast(cf%dt_Gamma_1, root_rank)
 
     ! Finish
 
     return
 
-  end subroutine bcast_bc
+  end subroutine bcast_cf
 
   $endif
 
@@ -543,8 +544,8 @@ contains
 
   subroutine attach_cache (this, cc)
 
-    class(coeffs_hom_t), intent(inout)   :: this
-    class(cocache_t), intent(in), target :: cc
+    class(coeffs_hom_t), intent(inout)    :: this
+    class(cocache_t), pointer, intent(in) :: cc
 
     ! Attach a coefficient cache (no-op, since we don't cache)
 

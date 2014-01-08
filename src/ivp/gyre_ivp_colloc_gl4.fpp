@@ -38,14 +38,19 @@ module gyre_ivp_colloc_GL4
 
   type, extends (ivp_colloc_t) :: ivp_colloc_GL4_t
      private
-     class(jacobian_t), pointer :: jc => null()
+     class(jacobian_t), allocatable :: jc
    contains
      private
-     procedure, public :: init
      procedure, public :: solve
      procedure, public :: recon
      procedure, public :: abscissa
   end type ivp_colloc_GL4_t
+
+  ! Interfaces
+
+  interface ivp_colloc_GL4_t
+     module procedure init_iv
+  end interface ivp_colloc_GL4_t
 
   ! Access specifiers
 
@@ -55,22 +60,22 @@ module gyre_ivp_colloc_GL4
 
 contains
 
-  subroutine init (this, jc)
+  function init_iv (jc) result (iv)
 
-    class(ivp_colloc_GL4_t), intent(out)  :: this
-    class(jacobian_t), intent(in), target :: jc
+    class(jacobian_t), intent(in) :: jc
+    type(ivp_colloc_GL4_t)        :: iv
+    
+    ! Construct the ivp_colloc_GL4
 
-    ! Initialize the ivp_t
+    allocate(iv%jc, SOURCE=jc)
 
-    this%jc => jc
-
-    this%n_e = jc%n_e
+    iv%n_e = jc%n_e
 
     ! Finish
 
     return
     
-  end subroutine init
+  end function init_iv
 
 !****
 

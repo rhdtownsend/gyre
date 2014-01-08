@@ -41,18 +41,23 @@ module gyre_shooter_rad
 
   type :: shooter_rad_t
      private
-     class(coeffs_t), pointer :: cf => null()
-     class(ivp_t), pointer    :: iv => null()
-     type(oscpar_t), pointer  :: op => null()
-     type(numpar_t), pointer  :: np => null()
-     integer, public          :: n_e
+     class(coeffs_t), pointer  :: cf => null()
+     class(ivp_t), allocatable :: iv
+     type(oscpar_t)            :: op
+     type(numpar_t)            :: np
+     integer, public           :: n_e
    contains
      private
-     procedure, public :: init
      procedure, public :: shoot
      procedure, public :: recon => recon_sh
      procedure, public :: abscissa
   end type shooter_rad_t
+
+  ! Interfaces
+
+  interface shooter_rad_t
+     module procedure init_sh
+  end interface shooter_rad_t
 
   ! Access specifiers
 
@@ -64,28 +69,28 @@ module gyre_shooter_rad
 
 contains
 
-  subroutine init (this, cf, iv, op, np)
+  function init_sh (cf, iv, op, np) result (sh)
 
-    class(shooter_rad_t), intent(out)   :: this
-    class(coeffs_t), intent(in), target :: cf
-    class(ivp_t), intent(in), target    :: iv
-    type(oscpar_t), intent(in), target  :: op
-    type(numpar_t), intent(in), target  :: np
+    class(coeffs_t), pointer, intent(in) :: cf
+    class(ivp_t), intent(in)             :: iv
+    type(oscpar_t), intent(in)           :: op
+    type(numpar_t), intent(in)           :: np
+    type(shooter_rad_t)                  :: sh
 
-    ! Initialize the shooter_rad
+    ! Construct the shooter_rad
 
-    this%cf => cf
-    this%iv => iv
-    this%op => op
-    this%np => np
+    sh%cf => cf
+    allocate(sh%iv, SOURCE=iv)
+    sh%op = op
+    sh%np = np
 
-    this%n_e = this%iv%n_e
+    sh%n_e = sh%iv%n_e
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_sh
 
 !****
 

@@ -77,7 +77,7 @@ module gyre_ext_real
 
   ! Interface blocks
 
-  $if($MPI)
+  $if ($MPI)
 
   interface send
      module procedure send_er_0

@@ -34,7 +34,6 @@ module gyre_ivp
      integer, public :: n_e
    contains
      private
-     procedure(init_i), deferred, public     :: init
      procedure(solve_i), deferred, public    :: solve
      procedure(recon_i), deferred, public    :: recon
      procedure(abscissa_i), deferred, public :: abscissa
@@ -43,14 +42,6 @@ module gyre_ivp
   ! Interfaces
 
   abstract interface
-
-     subroutine init_i (this, jc)
-       use core_kinds
-       use gyre_jacobian
-       import ivp_t
-       class(ivp_t), intent(out)             :: this
-       class(jacobian_t), intent(in), target :: jc
-     end subroutine init_i
 
      subroutine solve_i (this, omega, x_a, x_b, E_l, E_r, S, use_real)
        use core_kinds

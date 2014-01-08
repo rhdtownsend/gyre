@@ -87,19 +87,15 @@ contains
     use gyre_osc_file
     use gyre_fgong_file
     use gyre_famdl_file
-    $if($HDF5)
+    $if ($HDF5)
     use gyre_b3_file
     use gyre_gsm_file
     use gyre_poly_file
     $endif
 
-    integer, intent(in)                                   :: unit
-    real(WP), allocatable, intent(out)                    :: x_bc(:)
-    $if($GFORTRAN_PR56218)
-    class(coeffs_t), allocatable, intent(inout)           :: cf
-    $else
-    class(coeffs_t), allocatable, intent(out), optional   :: cf
-    $endif
+    integer, intent(in)                   :: unit
+    real(WP), allocatable, intent(out)    :: x_bc(:)
+    class(coeffs_t), pointer, intent(out) :: cf
 
     character(LEN=256)          :: coeffs_type
     character(LEN=256)          :: file_format
@@ -173,7 +169,7 @@ contains
 
     case ('HOM')
 
-       call hc%init(Gamma_1)
+       hc = coeffs_hom_t(Gamma_1)
 
        allocate(cf, SOURCE=hc)
 

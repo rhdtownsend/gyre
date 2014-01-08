@@ -36,7 +36,7 @@ module gyre_coeffs_mpi
 
   ! Interfaces
 
-  $if($MPI)
+  $if ($MPI)
   interface bcast_alloc
      module procedure bcast_alloc_cf
   end interface bcast_alloc

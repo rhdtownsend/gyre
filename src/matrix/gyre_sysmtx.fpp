@@ -51,7 +51,6 @@ module gyre_sysmtx
      integer                          :: n_o        ! Number of outer boundary conditions
    contains
      private
-     procedure, public :: init
      procedure, public :: final
      procedure, public :: set_inner_bound
      procedure, public :: set_outer_bound
@@ -65,6 +64,12 @@ module gyre_sysmtx
      procedure, public :: null_vector
   end type sysmtx_t
 
+  ! Interfaces
+
+  interface sysmtx_t
+     module procedure init_sm
+  end interface sysmtx_t
+
   ! Access specifiers
 
   private
@@ -75,34 +80,34 @@ module gyre_sysmtx
 
 contains
 
-  subroutine init (this, n, n_e, n_i, n_o)
+  function init_sm (n, n_e, n_i, n_o) result (sm)
 
-    class(sysmtx_t), intent(out) :: this
-    integer, intent(in)          :: n
-    integer, intent(in)          :: n_e
-    integer, intent(in)          :: n_i
-    integer, intent(in)          :: n_o
+    integer, intent(in) :: n
+    integer, intent(in) :: n_e
+    integer, intent(in) :: n_i
+    integer, intent(in) :: n_o
+    type(sysmtx_t)      :: sm
 
-    ! Initialize the sysmtx
+    ! Construct the sysmtx
 
-    allocate(this%E_l(n_e,n_e,n))
-    allocate(this%E_r(n_e,n_e,n))
+    allocate(sm%E_l(n_e,n_e,n))
+    allocate(sm%E_r(n_e,n_e,n))
 
-    allocate(this%B_i(n_i,n_e))
-    allocate(this%B_o(n_o,n_e))
+    allocate(sm%B_i(n_i,n_e))
+    allocate(sm%B_o(n_o,n_e))
 
-    allocate(this%S(n))
+    allocate(sm%S(n))
 
-    this%n = n
-    this%n_e = n_e
-    this%n_i = n_i
-    this%n_o = n_o
+    sm%n = n
+    sm%n_e = n_e
+    sm%n_i = n_i
+    sm%n_o = n_o
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_sm
 
 !****
 

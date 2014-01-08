@@ -45,12 +45,12 @@ module gyre_gsm_file
 
 contains
 
-  subroutine read_gsm_file (file, G, deriv_type, ec, x)
+  subroutine read_gsm_file (file, G, deriv_type, cf, x)
 
     character(LEN=*), intent(in)                 :: file
     real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
-    class(coeffs_evol_t), intent(out)            :: ec
+    type(coeffs_evol_t), intent(out)             :: cf
     real(WP), allocatable, optional, intent(out) :: x(:)
 
     type(hgroup_t)        :: hg
@@ -85,7 +85,7 @@ contains
 100    format(A,1X,A)
     endif
 
-    call hg%init(file, OPEN_FILE)
+    hg = hgroup_t(file, OPEN_FILE)
 
     ! Read the header
 
@@ -126,13 +126,13 @@ contains
 110    format(2X,A)
     endif
 
-    ! Initialize the coeffs_evol
+    ! Initialize the coeffs
 
-    call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                 N2, Gamma_1, nabla_ad, delta, Omega_rot, &
-                 nabla, kappa, kappa_rho, kappa_T, &
-                 epsilon, epsilon_rho, epsilon_T, &
-                 deriv_type, add_center)
+    cf = coeffs_evol_t(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                       N2, Gamma_1, nabla_ad, delta, Omega_rot, &
+                       nabla, kappa, kappa_rho, kappa_T, &
+                       epsilon, epsilon_rho, epsilon_T, &
+                       deriv_type, add_center)
 
     ! Set up the grid
 

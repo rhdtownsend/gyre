@@ -44,12 +44,12 @@ module gyre_mesa_file
 
 contains
 
-  subroutine read_mesa_file (file, G, deriv_type, ec, x)
+  subroutine read_mesa_file (file, G, deriv_type, cf, x)
 
     character(LEN=*), intent(in)                 :: file
     real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type 
-    class(coeffs_evol_t), intent(out)            :: ec
+    type(coeffs_evol_t), intent(out)             :: cf
     real(WP), allocatable, optional, intent(out) :: x(:)
 
     integer               :: unit
@@ -126,13 +126,13 @@ contains
        write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
-    ! Initialize the coeffs_evol
+    ! Initialize the coeffs
 
-    call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                 N2, Gamma_1, nabla_ad, delta, Omega_rot, &
-                 nabla, kappa, kappa_rho, kappa_T, &
-                 epsilon, epsilon_rho, epsilon_T, &
-                 deriv_type, add_center)
+    cf = coeffs_evol_t(G, M_star, R_star, L_star, r, m, p, rho, T, &
+                       N2, Gamma_1, nabla_ad, delta, Omega_rot, &
+                       nabla, kappa, kappa_rho, kappa_T, &
+                       epsilon, epsilon_rho, epsilon_T, &
+                       deriv_type, add_center)
 
     ! Set up the grid
 

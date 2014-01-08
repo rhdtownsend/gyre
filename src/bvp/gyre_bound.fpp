@@ -36,7 +36,6 @@ module gyre_bound
      integer, public :: n_o
    contains
      private
-     procedure(init_i), deferred, public        :: init
      procedure(inner_bound_i), deferred, public :: inner_bound
      procedure(outer_bound_i), deferred, public :: outer_bound
   end type bound_t
@@ -44,18 +43,6 @@ module gyre_bound
   ! Interfaces
 
   abstract interface
-
-     subroutine init_i (this, cf, jc, op)
-       use core_kinds
-       use gyre_coeffs
-       use gyre_jacobian
-       use gyre_oscpar
-       import bound_t
-       class(bound_t), intent(out)           :: this
-       class(coeffs_t), intent(in), target   :: cf
-       class(jacobian_t), intent(in), target :: jc
-       type(oscpar_t), intent(in), target    :: op
-     end subroutine init_i
 
      function inner_bound_i (this, x_i, omega) result (B_i)
        use core_kinds

@@ -44,11 +44,11 @@ module gyre_poly_file
 
 contains
 
-  subroutine read_poly_file (file, deriv_type, pc, x)
+  subroutine read_poly_file (file, deriv_type, cf, x)
 
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
-    class(coeffs_poly_t), intent(out)            :: pc
+    type(coeffs_poly_t), intent(out)             :: cf
     real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
@@ -65,7 +65,7 @@ contains
 100    format(A,1X,A)
     endif
 
-    call hg%init(file, OPEN_FILE)
+    hg = hgroup_t(file, OPEN_FILE)
 
     call read_attr(hg, 'n_poly', n_poly)
     call read_attr(hg, 'Gamma_1', Gamma_1)
@@ -78,7 +78,7 @@ contains
 
     ! Initialize the coeffs_poly
 
-    call pc%init(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
+    cf = coeffs_poly_t(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
 
     ! If necessary, return the grid
 

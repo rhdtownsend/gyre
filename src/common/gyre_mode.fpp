@@ -56,7 +56,6 @@ module gyre_mode
      integer                  :: n_iter
    contains
      private
-     procedure, public :: init
      $if($GFORTRAN_PR57922)
      procedure, public :: final
      $endif
@@ -89,12 +88,14 @@ module gyre_mode
 
   ! Interfaces
 
-  $if($MPI)
+  interface mode_t
+     module procedure init_md
+  end interface mode_t
 
+  $if ($MPI)
   interface bcast
      module procedure bcast_md
   end interface bcast
-
   $endif
 
   ! Access specifiers
@@ -110,16 +111,16 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, cf, op, omega, x, y, chi, n_iter)
+  function init_md (cf, op, omega, x, y, chi, n_iter) result (md)
 
-    class(mode_t), intent(out)          :: this
-    class(coeffs_t), intent(in), target :: cf
-    type(oscpar_t), intent(in)          :: op
-    complex(WP), intent(in)             :: omega
-    real(WP), intent(in)                :: x(:)
-    complex(WP), intent(in)             :: y(:,:)
-    type(ext_real_t), intent(in)        :: chi
-    integer, intent(in)                 :: n_iter
+    class(coeffs_t), pointer, intent(in) :: cf
+    type(oscpar_t), intent(in)           :: op
+    complex(WP), intent(in)              :: omega
+    real(WP), intent(in)                 :: x(:)
+    complex(WP), intent(in)              :: y(:,:)
+    type(ext_real_t), intent(in)         :: chi
+    integer, intent(in)                  :: n_iter
+    type(mode_t)                         :: md
 
     real(WP) :: phase
     integer  :: n_p
@@ -129,41 +130,41 @@ contains
     $CHECK_BOUNDS(SIZE(y, 1),6)
     $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
 
-    ! Initialize the mode
+    ! Construct the mode
 
-    this%cf => cf
+    md%cf => cf
 
-    this%op = op
+    md%op = op
 
-    this%chi = chi
+    md%chi = chi
 
-    this%x = x
-    this%y = y
+    md%x = x
+    md%y = y
 
-    this%omega = omega
+    md%omega = omega
 
-    this%n = SIZE(this%x)
-    this%n_iter = n_iter
+    md%n = SIZE(md%x)
+    md%n_iter = n_iter
 
     ! Normalize by the mode inertia, and so that y(1,n) is real
 
-    phase = ATAN2(AIMAG(this%y(1,this%n)), REAL(this%y(1,this%n)))
+    phase = ATAN2(AIMAG(md%y(1,md%n)), REAL(md%y(1,md%n)))
 
-    this%y = this%y/SQRT(this%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+    md%y = md%y/SQRT(md%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
     ! Classify the mode
 
-    call classify(this, n_p, n_g, n_pg)
+    call classify(md, n_p, n_g, n_pg)
 
-    this%n_p = n_p
-    this%n_g = n_g
-    this%n_pg = n_pg
+    md%n_p = n_p
+    md%n_g = n_g
+    md%n_pg = n_pg
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_md
 
 !****
 
@@ -188,31 +189,31 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_md (this, root_rank, cf)
+  subroutine bcast_md (md, root_rank, cf)
 
-    class(mode_t), intent(inout)        :: this
+    class(mode_t), intent(inout)        :: md
     integer, intent(in)                 :: root_rank
     class(coeffs_t), intent(in), target :: cf
 
     ! Broadcast the mode
 
     if(MPI_RANK /= root_rank) then
-       this%cf => cf
+       md%cf => cf
     endif
 
-    call bcast(this%op, root_rank)
+    call bcast(md%op, root_rank)
 
-    call bcast_alloc(this%x, root_rank)
-    call bcast_alloc(this%y, root_rank)
+    call bcast_alloc(md%x, root_rank)
+    call bcast_alloc(md%y, root_rank)
 
-    call bcast(this%omega, root_rank)
+    call bcast(md%omega, root_rank)
 
-    call bcast(this%n_p, root_rank)
-    call bcast(this%n_g, root_rank)
-    call bcast(this%n_pg, root_rank)
+    call bcast(md%n_p, root_rank)
+    call bcast(md%n_g, root_rank)
+    call bcast(md%n_pg, root_rank)
 
-    call bcast(this%n, root_rank)
-    call bcast(this%n_iter, root_rank)
+    call bcast(md%n, root_rank)
+    call bcast(md%n_iter, root_rank)
 
     ! Finish
 

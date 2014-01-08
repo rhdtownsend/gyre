@@ -41,8 +41,7 @@ module gyre_cocache
      integer               :: n_c
    contains
      private
-     procedure, public :: init
-     $if($GFORTRAN_PR57922)
+     $if ($GFORTRAN_PR57922)
      procedure, public :: final
      $endif
      procedure, public :: lookup
@@ -50,12 +49,14 @@ module gyre_cocache
 
   ! Interfaces
 
-  $if($MPI)
+  interface cocache_t
+     module procedure init_cc
+  end interface cocache_t
 
+  $if ($MPI)
   interface bcast
      module procedure bcast_cc
   end interface bcast
-
   $endif
 
   ! Access specifiers
@@ -63,41 +64,41 @@ module gyre_cocache
   private
 
   public :: cocache_t
-  $if($MPI)
+  $if ($MPI)
   public :: bcast
   $endif
 
 contains
 
-  subroutine init (this, x, c)
+  function init_cc (x, c) result (cc)
 
-    class(cocache_t), intent(out) :: this
-    real(WP), intent(in)          :: x(:)
-    real(WP), intent(in)          :: c(:,:)
+    real(WP), intent(in) :: x(:)
+    real(WP), intent(in) :: c(:,:)
+    type(cocache_t)      :: cc
 
     integer, allocatable :: i(:)
 
     $CHECK_BOUNDS(SIZE(c, 2),SIZE(x))
 
-    ! Initialize the cocache
+    ! Construct the cocache
 
     i = unique_indices(x)
 
-    this%x = x(i)
-    this%c = c(:,i)
+    cc%x = x(i)
+    cc%c = c(:,i)
 
-    this%n = SIZE(i)
-    this%n_c = SIZE(c, 1)
+    cc%n = SIZE(i)
+    cc%n_c = SIZE(c, 1)
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_cc
 
 !****
 
-  $if($GFORTRAN_PR57922)
+  $if ($GFORTRAN_PR57922)
 
   subroutine final (this)
 
@@ -118,7 +119,7 @@ contains
 
 !****
 
-  $if($MPI)
+  $if ($MPI)
 
   subroutine bcast_cc (this, root_rank)
 

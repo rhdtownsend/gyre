@@ -32,7 +32,6 @@ module gyre_bvp
   type, abstract :: bvp_t
    contains 
      private
-     procedure(init_i), deferred, public    :: init
      procedure(discrim_i), deferred, public :: discrim
      procedure(mode_i), deferred, public    :: mode
      procedure(coeffs_i), deferred, public  :: coeffs
@@ -41,22 +40,6 @@ module gyre_bvp
   ! Interfaces
 
   abstract interface
-
-     subroutine init_i (this, cf, op, np, shoot_gp, recon_gp, x_in)
-       use core_kinds
-       use gyre_coeffs
-       use gyre_oscpar
-       use gyre_numpar
-       use gyre_gridpar
-       import bvp_t
-       class(bvp_t), intent(out)           :: this
-       class(coeffs_t), intent(in), target :: cf
-       type(oscpar_t), intent(in)          :: op
-       type(numpar_t), intent(in)          :: np
-       type(gridpar_t), intent(in)         :: shoot_gp(:)
-       type(gridpar_t), intent(in)         :: recon_gp(:)
-       real(WP), allocatable, intent(in)   :: x_in(:)
-     end subroutine init_i
 
      function discrim_i (this, omega, use_real) result (discrim)
        use core_kinds
@@ -73,7 +56,7 @@ module gyre_bvp
        use gyre_mode
        use gyre_ext_arith
        import bvp_t
-       class(bvp_t), intent(inout)               :: this
+       class(bvp_t), target, intent(inout)       :: this
        complex(WP), intent(in)                   :: omega(:)
        type(ext_complex_t), intent(in), optional :: discrim(:)
        logical, intent(in), optional             :: use_real

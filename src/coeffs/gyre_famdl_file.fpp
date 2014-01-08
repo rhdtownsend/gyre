@@ -44,13 +44,13 @@ module gyre_famdl_file
 
 contains
 
-  subroutine read_famdl_file (file, G, deriv_type, data_format, ec, x)
+  subroutine read_famdl_file (file, G, deriv_type, data_format, cf, x)
 
     character(LEN=*), intent(in)                 :: file
     real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
     character(LEN=*), intent(in)                 :: data_format
-    class(coeffs_evol_t), intent(out)            :: ec
+    type(coeffs_evol_t), intent(out)             :: cf
     real(WP), allocatable, intent(out), optional :: x(:)
 
     character(LEN=:), allocatable :: data_format_
@@ -123,10 +123,10 @@ contains
        write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
-    ! Initialize the coeffs_evol
+    ! Initialize the coeffs
 
-    call ec%init(G, M_star, R_star, L_star, x_, V_g*Gamma_1, As, U, c_1, Gamma_1, &
-                 deriv_type, add_center)
+    cf = coeffs_evol_t(G, M_star, R_star, L_star, x_, V_g*Gamma_1, As, U, c_1, Gamma_1, &
+                       deriv_type, add_center)
 
     ! Set up the grid
 

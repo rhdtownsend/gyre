@@ -37,7 +37,6 @@ module gyre_hdf_writer
      type(hgroup_t) :: hg
    contains
      private
-     procedure, public :: init
      procedure, public :: final
      procedure         :: write_i_0
      procedure         :: write_i_1
@@ -49,6 +48,12 @@ module gyre_hdf_writer
      procedure         :: write_a_1
   end type hdf_writer_t
 
+  ! Interfaces
+
+  interface hdf_writer_t
+     module procedure init_wr
+  end interface hdf_writer_t
+
   ! Access specifiers
 
   private
@@ -59,20 +64,20 @@ module gyre_hdf_writer
 
 contains
 
-  subroutine init (this, file_name)
+  function init_wr (file_name) result (wr)
 
-    class(hdf_writer_t), intent(out) :: this
-    character(LEN=*), intent(in)     :: file_name
+    character(LEN=*), intent(in) :: file_name
+    type(hdf_writer_t)           :: wr
 
-    ! Initialize the hdf_writer
+    ! Construct the hdf_writer
 
-    call this%hg%init(file_name, CREATE_FILE)
+    wr%hg = hgroup_t(file_name, CREATE_FILE)
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_wr
 
 !****
 

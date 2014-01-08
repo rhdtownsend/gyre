@@ -45,9 +45,14 @@ module gyre_discfunc
      complex(WP), allocatable, public :: omega_def(:)
    contains 
      private
-     procedure, public :: init
      procedure, public :: eval_ec
   end type discfunc_t
+
+  ! Interfaces
+
+  interface discfunc_t
+     module procedure init_df
+  end interface discfunc_t
 
   ! Access specifiers
 
@@ -59,20 +64,20 @@ module gyre_discfunc
 
 contains
 
-  subroutine init (this, bp)
+  function init_df (bp) result (df)
 
-    class(discfunc_t), intent(out)   :: this
-    class(bvp_t), intent(in), target :: bp
+    class(bvp_t), pointer, intent(in) :: bp
+    type(discfunc_t)                  :: df
 
-    ! Initialize the discfunc
+    ! Construct the discfunc
 
-    this%bp => bp
+    df%bp => bp
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_df
 
 !****
 

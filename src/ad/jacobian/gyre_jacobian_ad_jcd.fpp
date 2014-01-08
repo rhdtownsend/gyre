@@ -38,14 +38,19 @@ module gyre_jacobian_ad_jcd
   type, extends (jacobian_t) :: jacobian_ad_jcd_t
      private
      class(coeffs_t), pointer :: cf => null()
-     type(oscpar_t), pointer  :: op => null()
+     type(oscpar_t)           :: op
    contains
      private
-     procedure, public :: init
      procedure, public :: eval
      procedure, public :: eval_logx
      procedure, public :: trans_matrix
   end type jacobian_ad_jcd_t
+
+  ! Interfaces
+
+  interface jacobian_ad_jcd_t
+     module procedure init_jc
+  end interface jacobian_ad_jcd_t
 
   ! Access specifiers
 
@@ -57,24 +62,24 @@ module gyre_jacobian_ad_jcd
 
 contains
 
-  subroutine init (this, cf, op)
+  function init_jc (cf, op) result (jc)
 
-    class(jacobian_ad_jcd_t), intent(out) :: this
-    class(coeffs_t), intent(in), target   :: cf
-    type(oscpar_t), intent(in), target    :: op
+    class(coeffs_t), pointer, intent(in) :: cf
+    type(oscpar_t), intent(in)           :: op
+    type(jacobian_ad_jcd_t)              :: jc
 
-    ! Initialize the jacobian
+    ! Construct the jacobian_ad_jcd
 
-    this%cf => cf
-    this%op => op
+    jc%cf => cf
+    jc%op = op
 
-    this%n_e = 4
+    jc%n_e = 4
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function init_jc
 
 !****
 

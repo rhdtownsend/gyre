@@ -128,7 +128,7 @@ contains
 
   subroutine scan_search (bp, omega, md)
 
-    class(bvp_t), target, intent(inout)    :: bp
+    class(bvp_t), intent(inout)            :: bp
     real(WP), intent(in)                   :: omega(:)
     type(mode_t), allocatable, intent(out) :: md(:)
 
