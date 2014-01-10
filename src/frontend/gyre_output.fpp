@@ -156,7 +156,7 @@ contains
 
     n_md = SIZE(md)
 
-    item_loop : do j = 1,SIZE(items)
+    item_loop : do j = 1, SIZE(items)
 
        select case (items(j))
 
@@ -182,6 +182,10 @@ contains
           call wr%write('W', [(md(i)%W(), i=1,n_md)])
        case('omega_im')
           call wr%write('omega_im', [(md(i)%omega_im(), i=1,n_md)])
+       case ('xi_r_1')
+          call wr%write('xi_r_1', md(i)%xi_r_1())
+       case ('xi_h_1')
+          call wr%write('xi_h_1', md(i)%xi_h_1())
        case('freq_units')
           call wr%write('freq_units', freq_units)
        case default
@@ -272,7 +276,7 @@ contains
 
     call wr%write('i', i)
 
-    item_loop : do j = 1,SIZE(items)
+    item_loop : do j = 1, SIZE(items)
 
        select case (items(j))
        case ('n')
@@ -319,6 +323,10 @@ contains
           call wr%write('xi_r', md%xi_r())
        case ('xi_h')
           call wr%write('xi_h', md%xi_h())
+       case ('xi_r_1')
+          call wr%write('xi_r_1', md%xi_r_1())
+       case ('xi_h_1')
+          call wr%write('xi_h_1', md%xi_h_1())
        case ('Yt_1')
           call wr%write('Yt_1', md%Yt_1())
        case ('Yt_2')
