@@ -48,6 +48,7 @@ module gyre_mode
      type(ext_real_t)         :: chi
      real(WP), allocatable    :: x(:)
      complex(WP), allocatable :: y(:,:)
+     complex(WP), allocatable :: y_1(:)
      complex(WP)              :: omega
      integer                  :: n_pg
      integer                  :: n_p
@@ -62,6 +63,8 @@ module gyre_mode
      procedure, public :: freq
      procedure, public :: xi_r
      procedure, public :: xi_h
+     procedure, public :: xi_r_1
+     procedure, public :: xi_h_1
      procedure, public :: Yt_1
      procedure, public :: Yt_2
      procedure, public :: phip
@@ -111,24 +114,28 @@ module gyre_mode
 
 contains
 
-  function init_md (cf, op, omega, x, y, chi, n_iter) result (md)
+  function init_md (cf, op, omega, x, y, y_1, chi, n_iter) result (md)
 
     class(coeffs_t), pointer, intent(in) :: cf
     type(oscpar_t), intent(in)           :: op
     complex(WP), intent(in)              :: omega
     real(WP), intent(in)                 :: x(:)
     complex(WP), intent(in)              :: y(:,:)
+    complex(WP), intent(in)              :: y_1(:)
     type(ext_real_t), intent(in)         :: chi
     integer, intent(in)                  :: n_iter
     type(mode_t)                         :: md
 
-    real(WP) :: phase
-    integer  :: n_p
-    integer  :: n_g
-    integer  :: n_pg
+    real(WP)    :: phase
+    complex(WP) :: norm_fac
+    integer     :: n_p
+    integer     :: n_g
+    integer     :: n_pg
 
     $CHECK_BOUNDS(SIZE(y, 1),6)
     $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
+
+    $CHECK_BOUNDS(SIZE(y_1),6)
 
     ! Construct the mode
 
@@ -140,6 +147,7 @@ contains
 
     md%x = x
     md%y = y
+    md%y_1 = y_1
 
     md%omega = omega
 
@@ -150,7 +158,10 @@ contains
 
     phase = ATAN2(AIMAG(md%y(1,md%n)), REAL(md%y(1,md%n)))
 
-    md%y = md%y/SQRT(md%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+    norm_fac = 1._WP/SQRT(md%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+
+    md%y = norm_fac*md%y
+    md%y_1 = norm_fac*md%y_1
 
     ! Classify the mode
 
@@ -178,6 +189,7 @@ contains
 
     deallocate(this%x)
     deallocate(this%y)
+    deallocate(this%y_1)
 
     ! Finish
 
@@ -317,6 +329,55 @@ contains
     return
 
   end function xi_h
+
+!****
+
+  function xi_r_1 (this)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: xi_r_1
+    
+    ! Calculate the radial displacement perturbation at x=1 in units of
+    ! R_star
+
+    xi_r_1 = this%y_1(1)
+
+    ! Finish
+
+    return
+
+  end function xi_r_1
+
+!****
+
+  function xi_h_1 (this)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: xi_h_1
+    
+    ! Calculate the radial displacement perturbation at x=1 in units
+    ! of R_star
+
+    associate (c_1 => this%cf%c_1(1._WP), &
+               l => this%op%l, omega_c => this%cf%omega_c(1._WP, this%op%m, this%omega))
+
+      if(l /= 0) then
+
+         xi_h_1 = this%y_1(2)/(c_1*omega_c**2)
+
+      else
+
+         xi_h_1 = 0._WP
+
+      end if
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function xi_h_1
 
 !****
 
@@ -924,6 +985,8 @@ contains
     real(WP)    :: E
     complex(WP) :: xi_r(this%n)
     complex(WP) :: xi_h(this%n)
+    complex(WP) :: xi_r_1
+    complex(WP) :: xi_h_1
     real(WP)    :: A2
 
     ! Calculate the normalized mode inertia (Aerts et al. 2010,
@@ -934,6 +997,9 @@ contains
     xi_r = this%xi_r()
     xi_h = this%xi_h()
 
+    xi_r_1 = this%xi_r_1()
+    xi_h_1 = this%xi_h_1()
+
     associate(l => this%op%l)
 
       select case (this%op%inertia_norm_type)
@@ -943,6 +1009,8 @@ contains
          A2 = l*(l+1)*ABS(xi_h(this%n))**2
       case ('BOTH')
          A2 = ABS(xi_r(this%n))**2 + l*(l+1)*ABS(xi_h(this%n))**2
+      case ('JCD')
+         A2 = ABS(xi_r_1)**2 + l*(l+1)*ABS(xi_h_1)**2
       case default
          $ABORT(Invalid inertia_norm_type)
       end select
