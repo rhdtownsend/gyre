@@ -357,18 +357,20 @@ contains
 
 !****
 
-  subroutine recon (this, omega, x, y, discrim, use_real)
+  subroutine recon (this, omega, x, y, y_1, discrim, use_real)
 
     class(bvp_ad_t), intent(inout)        :: this
     complex(WP), intent(in)               :: omega
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
+    complex(WP), allocatable, intent(out) :: y_1(:)
     type(ext_complex_t), intent(out)      :: discrim
     logical, intent(in), optional         :: use_real
 
-    complex(WP)         :: b(this%n_e*this%n)
-    complex(WP)         :: y_sh(this%n_e,this%n)
-    logical             :: same_grid
+    complex(WP) :: b(this%n_e*this%n)
+    complex(WP) :: y_sh(this%n_e,this%n)
+    logical     :: same_grid
+    complex(WP) :: y_1_(this%n_e,1)
 
     ! Reconstruct the solution on the shooting grid
 
@@ -405,6 +407,12 @@ contains
 
     endif
 
+    ! Reconstruct the solution at x == 1
+    
+    call this%sh%recon(omega, this%x, y_sh, [1._WP], y_1_)
+
+    y_1 = y_1_(:,1)
+
     ! Finish
 
     return
@@ -432,10 +440,12 @@ contains
     complex(WP)              :: omega_root
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
+    complex(WP), allocatable :: y_1(:)
     type(ext_complex_t)      :: discrim_root
     integer                  :: n
     integer                  :: i
     complex(WP), allocatable :: y_c(:,:)
+    complex(WP), allocatable :: y_c_1(:)
     type(ext_real_t)         :: chi
 
     $CHECK_BOUNDS(SIZE(omega),2)
@@ -483,7 +493,7 @@ contains
 
     ! Reconstruct the solution
 
-    call this%recon(omega_root, x, y, discrim_root)
+    call this%recon(omega_root, x, y, y_1, discrim_root)
 
     ! Calculate canonical variables
 
@@ -497,11 +507,16 @@ contains
        y_c(5:6,i) = 0._WP
     end do
 
+    allocate(y_c_1(6))
+
+    y_c_1(1:4) = MATMUL(this%jc%trans_matrix(1._WP, omega_root, .TRUE.), y_1)
+    y_c_1(5:6) = 0._WP
+
     ! Initialize the mode
 
     chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
 
-    md = mode_t(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
+    md = mode_t(this%cf, this%op, omega_root, x, y_c, y_c_1, chi, n_iter)
 
     ! Finish
 
