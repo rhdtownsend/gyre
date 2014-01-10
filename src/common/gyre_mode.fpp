@@ -731,7 +731,7 @@ contains
 
     associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
               l => this%op%l)
-      dE_dx = 4._WP*PI*(ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*this%x**2/c_1
+      dE_dx = (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*this%x**2/c_1
     end associate
 
     ! Finish
