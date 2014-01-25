@@ -337,6 +337,8 @@ contains
     class(mode_t), intent(in) :: this
     complex(WP)               :: xi_r_1
     
+    $ASSERT(this%x(this%n) >= 1._WP,Model does not extend to x=1)
+
     ! Calculate the radial displacement perturbation at x=1 in units of
     ! R_star
 
@@ -355,6 +357,8 @@ contains
     class(mode_t), intent(in) :: this
     complex(WP)               :: xi_h_1
     
+    $ASSERT(this%x(this%n) >= 1._WP,Model does not extend to x=1)
+
     ! Calculate the radial displacement perturbation at x=1 in units
     ! of R_star
 
@@ -994,22 +998,22 @@ contains
 
     E = this%E()
 
-    xi_r = this%xi_r()
-    xi_h = this%xi_h()
-
-    xi_r_1 = this%xi_r_1()
-    xi_h_1 = this%xi_h_1()
-
     associate(l => this%op%l)
 
       select case (this%op%inertia_norm_type)
       case ('RADIAL')
+         xi_r = this%xi_r()
          A2 = ABS(xi_r(this%n))**2
       case ('HORIZ')
+         xi_h = this%xi_h()
          A2 = l*(l+1)*ABS(xi_h(this%n))**2
       case ('BOTH')
+         xi_r = this%xi_r()
+         xi_h = this%xi_h()
          A2 = ABS(xi_r(this%n))**2 + l*(l+1)*ABS(xi_h(this%n))**2
       case ('JCD')
+         xi_r_1 = this%xi_r_1()
+         xi_h_1 = this%xi_h_1()
          A2 = ABS(xi_r_1)**2 + l*(l+1)*ABS(xi_h_1)**2
       case default
          $ABORT(Invalid inertia_norm_type)
