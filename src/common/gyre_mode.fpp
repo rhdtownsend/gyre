@@ -360,7 +360,7 @@ contains
     ! of R_star
 
     associate (c_1 => this%cf%c_1(this%x_ref), &
-               l => this%op%l, omega_c => this%cf%omega_c(1._WP, this%op%m, this%omega))
+               l => this%op%l, omega_c => this%cf%omega_c(this%x_ref, this%op%m, this%omega))
 
       if(l /= 0) then
 
