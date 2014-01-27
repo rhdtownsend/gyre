@@ -67,6 +67,8 @@ contains
     integer  :: i
     real(WP) :: omega_min
     real(WP) :: omega_max
+    real(WP) :: omega_c_cutoff_lo
+    real(WP) :: omega_c_cutoff_hi
     integer  :: j
 
     $ASSERT(SIZE(sp) >=1,Empty scanpars)
@@ -86,11 +88,13 @@ contains
 
     sp_loop : do i = 1,SIZE(sp)
 
-       ! Set up the frequency grid
+       ! Determine the frequency range
 
        omega_min = sp(i)%freq_min/freq_scale(cf, op, x_o, sp(i)%freq_units)
        omega_max = sp(i)%freq_max/freq_scale(cf, op, x_o, sp(i)%freq_units)
-       
+
+       ! Add points to the frequency grid
+
        select case(sp(i)%grid_type)
        case('LINEAR')
           omega = [omega,(((sp(i)%n_freq-j)*omega_min + (j-1)*omega_max)/(sp(i)%n_freq-1), j=1,sp(i)%n_freq)]
@@ -106,17 +110,34 @@ contains
 
     omega = omega(sort_indices(omega))
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
 
-       write(OUTPUT_UNIT, 120) 'omega points :', SIZE(omega)
-120    format(2X,A,1X,I0)
+       write(OUTPUT_UNIT, 110) 'omega points :', SIZE(omega)
+110    format(2X,A,1X,I0)
 
-       write(OUTPUT_UNIT, 110) 'omega range  :', MINVAL(omega), '->',  MAXVAL(omega)
-110    format(2X,A,1X,E24.16,1X,A,1X,E24.16)
-
-       write(OUTPUT_UNIT, *)
+       write(OUTPUT_UNIT, 120) 'omega range  :', MINVAL(omega), '->',  MAXVAL(omega)
+120    format(2X,A,1X,E24.16,1X,A,1X,E24.16)
 
     endif
+
+    ! Perform checks
+
+    if (check_log_level('WARN')) then
+
+       call eval_cutoff_freqs(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+
+       if (MINVAL(omega) < omega_c_cutoff_lo) then
+          write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends below atmospheric gravity cutoff frequency'
+130       format(2X,A)
+       end if
+
+       if (MAXVAL(omega) > omega_c_cutoff_hi) then
+          write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends above atmospheric acoustic cutoff frequency'
+       end if
+
+    endif
+
+    write(OUTPUT_UNIT, *)
 
     ! Finish
 

@@ -71,6 +71,7 @@ module gyre_util
   public :: set_log_level
   public :: check_log_level
   public :: freq_scale
+  public :: eval_cutoff_freqs
   public :: select_par
   public :: split_list
   public :: join_fmts
@@ -241,10 +242,10 @@ contains
       case('PER_DAY')
          freq_scale = 86400._WP/(TWOPI*SQRT(cf%R_star**3/(cf%G*cf%M_star)))
       case('ACOUSTIC_CUTOFF')
-         call eval_cutoff_freqs_(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         call eval_cutoff_freqs(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
          freq_scale = 1._WP/omega_c_cutoff_hi
       case('GRAVITY_CUTOFF')
-         call eval_cutoff_freqs_(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         call eval_cutoff_freqs(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
          freq_scale = 1._WP/omega_c_cutoff_lo
       case default
          $ABORT(Invalid freq_units)
@@ -306,7 +307,7 @@ contains
 
  !****
 
-  subroutine eval_cutoff_freqs_ (cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+  subroutine eval_cutoff_freqs (cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
     class(coeffs_t), intent(in) :: cf
     type(oscpar_t), intent(in)  :: op
@@ -333,13 +334,13 @@ contains
         $ABORT(Invalid outer_bound_type)
      end select
 
-     call eval_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+     call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
      ! Finish
 
      return
 
-   end subroutine eval_cutoff_freqs_
+   end subroutine eval_cutoff_freqs
 
 !****
    

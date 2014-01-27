@@ -34,7 +34,7 @@ module gyre_atmos
   private
 
   public :: atmos_wavenumber
-  public :: eval_cutoff_freqs
+  public :: eval_atmos_cutoff_freqs
   public :: eval_atmos_coeffs_unno
   public :: eval_atmos_coeffs_jcd
 
@@ -62,7 +62,7 @@ contains
 
        ! Calculate cutoff frequencies
 
-       call eval_cutoff_freqs(V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+       call eval_atmos_cutoff_freqs(V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
        ! Evaluate the wavenumber
 
@@ -129,7 +129,7 @@ contains
 
 !****
 
-  subroutine eval_cutoff_freqs (V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+  subroutine eval_atmos_cutoff_freqs (V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
     real(WP), intent(in)  :: V_g
     real(WP), intent(in)  :: As
@@ -142,7 +142,7 @@ contains
     real(WP) :: b
     real(WP) :: c
 
-    ! Evaluate the cutoff frequencies from the supplied atmosphere coefficients
+    ! Evaluate the atmospheric cutoff frequencies from the supplied coefficients
 
     a = -4._WP*V_g*c_1**2
     b = ((As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1))*c_1
@@ -157,7 +157,7 @@ contains
 
     return
 
-  end subroutine eval_cutoff_freqs
+  end subroutine eval_atmos_cutoff_freqs
 
 !****
   
