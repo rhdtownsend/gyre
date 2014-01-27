@@ -323,18 +323,20 @@ contains
 
      select case (op%outer_bound_type)
      case ('ZERO')
-        $ABORT(Cutoff frequencies are undefined for ZERO outer_bound_type)
+        omega_c_cutoff_lo = 0._WP
+        omega_c_cutoff_hi = HUGE(0._WP)
      case ('DZIEM')
-        $ABORT(Cutoff frequencies are undefined for DZIEM outer_bound_type)
+        omega_c_cutoff_lo = 0._WP
+        omega_c_cutoff_hi = HUGE(0._WP)
      case ('UNNO')
         call eval_atmos_coeffs_unno(cf, x_o, V_g, As, c_1)
+        call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
      case('JCD')
         call eval_atmos_coeffs_jcd(cf, x_o, V_g, As, c_1)
+        call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
      case default
         $ABORT(Invalid outer_bound_type)
      end select
-
-     call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
      ! Finish
 
