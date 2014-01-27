@@ -217,9 +217,9 @@ contains
 
   contains
 
-    function evol_freq_scale (ec, op, x_o, freq_units) result (freq_scale)
+    function evol_freq_scale (cf, op, x_o, freq_units) result (freq_scale)
 
-      class(coeffs_evol_t), intent(in) :: ec
+      class(coeffs_evol_t), intent(in) :: cf
       type(oscpar_t), intent(in)       :: op
       real(WP), intent(in)             :: x_o
       character(LEN=*), intent(in)     :: freq_units
@@ -235,16 +235,16 @@ contains
       case('NONE')
          freq_scale = 1._WP
       case('HZ')
-         freq_scale = 1._WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
+         freq_scale = 1._WP/(TWOPI*SQRT(cf%R_star**3/(cf%G*cf%M_star)))
       case('UHZ')
-         freq_scale = 1.E6_WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(cf%R_star**3/(cf%G*cf%M_star)))
       case('PER_DAY')
-         freq_scale = 86400._WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
+         freq_scale = 86400._WP/(TWOPI*SQRT(cf%R_star**3/(cf%G*cf%M_star)))
       case('ACOUSTIC_CUTOFF')
-         call eval_cutoff_freqs_(ec, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         call eval_cutoff_freqs_(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
          freq_scale = 1._WP/omega_c_cutoff_hi
       case('GRAVITY_CUTOFF')
-         call eval_cutoff_freqs_(ec, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         call eval_cutoff_freqs_(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
          freq_scale = 1._WP/omega_c_cutoff_lo
       case default
          $ABORT(Invalid freq_units)
