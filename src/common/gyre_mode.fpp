@@ -156,9 +156,9 @@ contains
     md%n = SIZE(md%x)
     md%n_iter = n_iter
 
-    ! Normalize by the mode inertia, and so that y(1,n) is real
+    ! Normalize by the mode inertia, and so that y_ref(1) is real
 
-    phase = ATAN2(AIMAG(md%y(1,md%n)), REAL(md%y(1,md%n)))
+    phase = ATAN2(AIMAG(md%y_ref(1)), REAL(md%y_ref(1)))
 
     norm_fac = 1._WP/SQRT(md%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
