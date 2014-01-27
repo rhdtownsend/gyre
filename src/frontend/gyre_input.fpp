@@ -208,10 +208,11 @@ contains
     character(LEN=64) :: outer_bound_type
     character(LEN=64) :: inertia_norm_type
     character(LEN=64) :: tag
+    real(WP)          :: x_ref
 
-    namelist /osc/ l, m, X_n_pg_min, X_n_pg_max, &
+    namelist /osc/ x_ref, l, m, X_n_pg_min, X_n_pg_max, &
          outer_bound_type, variables_type, &
-         inertia_norm_type, tag
+         inertia_norm_type, tag, x_ref
 
     ! Count the number of grid namelists
 
@@ -245,13 +246,15 @@ contains
        inertia_norm_type = 'BOTH'
        tag = ''
 
+       x_ref = HUGE(0._WP)
+
        read(unit, NML=osc)
 
        ! Initialize the oscpar
 
        op(i) = oscpar_t(l=l, m=m, X_n_pg_min=X_n_pg_min, X_n_pg_max=X_n_pg_max, &
                         variables_type=variables_type, outer_bound_type=outer_bound_type, &
-                        inertia_norm_type=inertia_norm_type, tag=tag)
+                        inertia_norm_type=inertia_norm_type, tag=tag, x_ref=x_ref)
 
     end do read_loop
 

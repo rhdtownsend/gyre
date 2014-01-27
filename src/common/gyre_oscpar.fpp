@@ -32,6 +32,7 @@ module gyre_oscpar
   ! Derived-type definitions
 
   type :: oscpar_t
+     real(WP)          :: x_ref
      integer           :: l
      integer           :: m
      integer           :: X_n_pg_min
@@ -84,6 +85,8 @@ contains
     integer, intent(in)           :: root_rank
 
     ! Broadcast the oscpar
+
+    call bcast(op%x_ref, root_rank)
 
     call bcast(op%l, root_rank)
     call bcast(op%m, root_rank)

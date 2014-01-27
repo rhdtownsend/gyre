@@ -391,17 +391,22 @@ contains
 
 !****
 
-  subroutine recon (this, omega, x, y, discrim)
+  subroutine recon (this, omega, x, y, x_ref, y_ref, discrim)
 
     class(bvp_nad_t), intent(inout)       :: this
     complex(WP), intent(in)               :: omega
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
+    real(WP), intent(out)                 :: x_ref
+    complex(WP), intent(out)              :: y_ref(:)
     type(ext_complex_t), intent(out)      :: discrim
 
-    complex(WP)         :: b(this%n_e*this%n)
-    complex(WP)         :: y_sh(this%n_e,this%n)
-    logical             :: same_grid
+    complex(WP) :: b(this%n_e*this%n)
+    complex(WP) :: y_sh(this%n_e,this%n)
+    logical     :: same_grid
+    complex(WP) :: y_ref_(this%n_e,1)
+
+    $CHECK_BOUNDS(SIZE(y_ref),this%n_e)
 
     ! Reconstruct the solution on the shooting grid
 
@@ -438,6 +443,14 @@ contains
 
     endif
 
+    ! Reconstruct the solution at x_ref
+    
+    x_ref = MIN(MAX(this%op%x_ref, this%x(1)), this%x(this%n))
+    
+    call this%sh%recon(omega, this%x, y_sh, [x_ref], y_ref_)
+
+    y_ref = y_ref_(:,1)
+
     ! Finish
 
     return
@@ -467,10 +480,13 @@ contains
     complex(WP)               :: omega_root
     real(WP), allocatable     :: x(:)
     complex(WP), allocatable  :: y(:,:)
+    real(WP)                  :: x_ref
+    complex(WP)               :: y_ref(this%n_e)
     type(ext_complex_t)       :: discrim_root
     integer                   :: n
     integer                   :: i
     complex(WP), allocatable  :: y_c(:,:)
+    complex(WP)               :: y_c_ref(6)
     type(ext_real_t)          :: chi 
     
     $CHECK_BOUNDS(SIZE(omega),2)
@@ -551,7 +567,7 @@ contains
 
     ! Reconstruct the solution
 
-    call this%recon(omega_root, x, y, discrim_root)
+    call this%recon(omega_root, x, y, x_ref, y_ref, discrim_root)
 
     ! Calculate canonical variables
 
@@ -564,14 +580,16 @@ contains
        y_c(:,i) = MATMUL(this%jc%trans_matrix(x(i), omega_root, .TRUE.), y(:,i))
     end do
 
+    y_c_ref = MATMUL(this%jc%trans_matrix(x_ref, omega_root, .TRUE.), y_ref)
+
     ! Initialize the mode
     
     chi = ABS(discrim_root)/discrim_norm
     
     if(PRESENT(omega_def)) then
-       md = mode_t(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
+       md = mode_t(this%cf, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
     else
-       md = mode_t(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
+       md = mode_t(this%cf, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
     endif
 
     ! Finish

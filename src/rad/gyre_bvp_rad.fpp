@@ -359,20 +359,23 @@ contains
 
 !****
 
-  subroutine recon (this, omega, x, y, y_1, discrim, use_real)
+  subroutine recon (this, omega, x, y, x_ref, y_ref, discrim, use_real)
 
     class(bvp_rad_t), intent(inout)       :: this
     complex(WP), intent(in)               :: omega
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
-    complex(WP), allocatable, intent(out) :: y_1(:)
+    real(WP), intent(out)                 :: x_ref
+    complex(WP), intent(out)              :: y_ref(:)
     type(ext_complex_t), intent(out)      :: discrim
     logical, intent(in), optional         :: use_real
 
     complex(WP) :: b(this%n_e*this%n)
     complex(WP) :: y_sh(this%n_e,this%n)
     logical     :: same_grid
-    complex(WP) :: y_1_(this%n_e,1)
+    complex(WP) :: y_ref_(this%n_e,1)
+
+    $CHECK_BOUNDS(SIZE(y_ref),this%n_e)
 
     ! Reconstruct the solution on the shooting grid
 
@@ -409,11 +412,13 @@ contains
 
     endif
 
-    ! Reconstruct the solution at x == 1
+    ! Reconstruct the solution at x_ref
     
-    call this%sh%recon(omega, this%x, y_sh, [1._WP], y_1_)
+    x_ref = MIN(MAX(this%op%x_ref, this%x(1)), this%x(this%n))
 
-    y_1 = y_1_(:,1)
+    call this%sh%recon(omega, this%x, y_sh, [x_ref], y_ref_)
+
+    y_ref = y_ref_(:,1)
 
     ! Finish
 
@@ -442,12 +447,13 @@ contains
     complex(WP)              :: omega_root
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
-    complex(WP), allocatable :: y_1(:)
+    real(WP)                 :: x_ref
+    complex(WP)              :: y_ref(this%n_e)
     type(ext_complex_t)      :: discrim_root
     integer                  :: n
     integer                  :: i
     complex(WP), allocatable :: y_c(:,:)
-    complex(WP), allocatable :: y_c_1(:)
+    complex(WP)              :: y_c_ref(6)
     type(ext_real_t)         :: chi
 
     $CHECK_BOUNDS(SIZE(omega),2)
@@ -497,7 +503,7 @@ contains
 
     ! Reconstruct the solution
 
-    call this%recon(omega_root, x, y, y_1, discrim_root)
+    call this%recon(omega_root, x, y, x_ref, y_ref, discrim_root)
 
     ! Calculate canonical variables
 
@@ -513,18 +519,16 @@ contains
        y_c(5:6,i) = 0._WP
     end do
 
-    allocate(y_c_1(6))
-
-    y_c_1(1:2) = MATMUL(this%jc%trans_matrix(1._WP, omega_root, .TRUE.), y_1)
-    y_c_1(3) = 0._WP
-    y_c_1(4) = -y_c_1(1)*this%cf%U(1._WP)
-    y_c_1(5:6) = 0._WP
+    y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega_root, .TRUE.), y_ref)
+    y_c_ref(3) = 0._WP
+    y_c_ref(4) = -y_c_ref(1)*this%cf%U(x_ref)
+    y_c_ref(5:6) = 0._WP
 
     ! Initialize the mode
     
     chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
     
-    md = mode_t(this%cf, this%op, omega_root, x, y_c, y_c_1, chi, n_iter)
+    md = mode_t(this%cf, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
 
     ! Finish
 

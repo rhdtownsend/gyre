@@ -48,7 +48,8 @@ module gyre_mode
      type(ext_real_t)         :: chi
      real(WP), allocatable    :: x(:)
      complex(WP), allocatable :: y(:,:)
-     complex(WP), allocatable :: y_1(:)
+     real(WP)                 :: x_ref
+     complex(WP)              :: y_ref(6)
      complex(WP)              :: omega
      integer                  :: n_pg
      integer                  :: n_p
@@ -63,8 +64,8 @@ module gyre_mode
      procedure, public :: freq
      procedure, public :: xi_r
      procedure, public :: xi_h
-     procedure, public :: xi_r_1
-     procedure, public :: xi_h_1
+     procedure, public :: xi_r_ref
+     procedure, public :: xi_h_ref
      procedure, public :: Yt_1
      procedure, public :: Yt_2
      procedure, public :: phip
@@ -114,14 +115,15 @@ module gyre_mode
 
 contains
 
-  function init_md (cf, op, omega, x, y, y_1, chi, n_iter) result (md)
+  function init_md (cf, op, omega, x, y, x_ref, y_ref, chi, n_iter) result (md)
 
     class(coeffs_t), pointer, intent(in) :: cf
     type(oscpar_t), intent(in)           :: op
     complex(WP), intent(in)              :: omega
     real(WP), intent(in)                 :: x(:)
     complex(WP), intent(in)              :: y(:,:)
-    complex(WP), intent(in)              :: y_1(:)
+    real(WP), intent(in)                 :: x_ref
+    complex(WP), intent(in)              :: y_ref(:)
     type(ext_real_t), intent(in)         :: chi
     integer, intent(in)                  :: n_iter
     type(mode_t)                         :: md
@@ -135,8 +137,6 @@ contains
     $CHECK_BOUNDS(SIZE(y, 1),6)
     $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
 
-    $CHECK_BOUNDS(SIZE(y_1),6)
-
     ! Construct the mode
 
     md%cf => cf
@@ -147,7 +147,9 @@ contains
 
     md%x = x
     md%y = y
-    md%y_1 = y_1
+
+    md%x_ref = x_ref
+    md%y_ref = y_ref
 
     md%omega = omega
 
@@ -161,7 +163,7 @@ contains
     norm_fac = 1._WP/SQRT(md%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
     md%y = norm_fac*md%y
-    md%y_1 = norm_fac*md%y_1
+    md%y_ref = norm_fac*md%y_ref
 
     ! Classify the mode
 
@@ -189,7 +191,6 @@ contains
 
     deallocate(this%x)
     deallocate(this%y)
-    deallocate(this%y_1)
 
     ! Finish
 
@@ -332,46 +333,42 @@ contains
 
 !****
 
-  function xi_r_1 (this)
+  function xi_r_ref (this)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: xi_r_1
+    complex(WP)               :: xi_r_ref
     
-    $ASSERT(this%x(this%n) >= 1._WP,Model does not extend to x=1)
+    ! Calculate the radial displacement perturbation at x_ref in units
+    ! of R_star
 
-    ! Calculate the radial displacement perturbation at x=1 in units of
-    ! R_star
-
-    xi_r_1 = this%y_1(1)
+    xi_r_ref = this%y_ref(1)
 
     ! Finish
 
     return
 
-  end function xi_r_1
+  end function xi_r_ref
 
 !****
 
-  function xi_h_1 (this)
+  function xi_h_ref (this)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: xi_h_1
+    complex(WP)               :: xi_h_ref
     
-    $ASSERT(this%x(this%n) >= 1._WP,Model does not extend to x=1)
-
-    ! Calculate the radial displacement perturbation at x=1 in units
+    ! Calculate the radial displacement perturbation at x_ref in units
     ! of R_star
 
-    associate (c_1 => this%cf%c_1(1._WP), &
+    associate (c_1 => this%cf%c_1(this%x_ref), &
                l => this%op%l, omega_c => this%cf%omega_c(1._WP, this%op%m, this%omega))
 
       if(l /= 0) then
 
-         xi_h_1 = this%y_1(2)/(c_1*omega_c**2)
+         xi_h_ref = this%y_ref(2)/(c_1*omega_c**2)
 
       else
 
-         xi_h_1 = 0._WP
+         xi_h_ref = 0._WP
 
       end if
 
@@ -381,7 +378,7 @@ contains
 
     return
 
-  end function xi_h_1
+  end function xi_h_ref
 
 !****
 
@@ -1002,25 +999,17 @@ contains
 
       select case (this%op%inertia_norm_type)
       case ('RADIAL')
-         xi_r = this%xi_r()
-         A2 = ABS(xi_r(this%n))**2
+         A2 = ABS(this%xi_r_ref())**2
       case ('HORIZ')
-         xi_h = this%xi_h()
-         A2 = l*(l+1)*ABS(xi_h(this%n))**2
+         A2 = l*(l+1)*ABS(this%xi_h_ref())**2
       case ('BOTH')
-         xi_r = this%xi_r()
-         xi_h = this%xi_h()
-         A2 = ABS(xi_r(this%n))**2 + l*(l+1)*ABS(xi_h(this%n))**2
-      case ('JCD')
-         xi_r_1 = this%xi_r_1()
-         xi_h_1 = this%xi_h_1()
-         A2 = ABS(xi_r_1)**2 + l*(l+1)*ABS(xi_h_1)**2
+         A2 = ABS(this%xi_r_ref())**2 + l*(l+1)*ABS(this%xi_h_ref())**2
       case default
          $ABORT(Invalid inertia_norm_type)
       end select
 
       if(A2 == 0._WP) then
-         $WARN(Surface amplitude is zero; not normalizing inertia)
+         $WARN(Amplitude at x_ref is zero; not normalizing inertia)
          E_norm = E
       else
          E_norm = E/A2
