@@ -64,8 +64,6 @@ module gyre_mode
      procedure, public :: freq
      procedure, public :: xi_r
      procedure, public :: xi_h
-     procedure, public :: xi_r_ref
-     procedure, public :: xi_h_ref
      procedure, public :: Yt_1
      procedure, public :: Yt_2
      procedure, public :: phip
@@ -88,6 +86,8 @@ module gyre_mode
      procedure, public :: E_norm
      procedure, public :: W
      procedure, public :: omega_im
+     procedure, public :: xi_r_ref
+     procedure, public :: xi_h_ref
   end type mode_t
 
   ! Interfaces
@@ -333,62 +333,13 @@ contains
 
 !****
 
-  function xi_r_ref (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: xi_r_ref
-    
-    ! Calculate the radial displacement perturbation at x_ref in units
-    ! of R_star
-
-    xi_r_ref = this%y_ref(1)
-
-    ! Finish
-
-    return
-
-  end function xi_r_ref
-
-!****
-
-  function xi_h_ref (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: xi_h_ref
-    
-    ! Calculate the radial displacement perturbation at x_ref in units
-    ! of R_star
-
-    associate (c_1 => this%cf%c_1(this%x_ref), &
-               l => this%op%l, omega_c => this%cf%omega_c(this%x_ref, this%op%m, this%omega))
-
-      if(l /= 0) then
-
-         xi_h_ref = this%y_ref(2)/(c_1*omega_c**2)
-
-      else
-
-         xi_h_ref = 0._WP
-
-      end if
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function xi_h_ref
-
-!****
-
   function Yt_1 (this)
 
     class(mode_t), intent(in) :: this
     complex(WP)               :: Yt_1(this%n)
 
-    ! Calculate the Takata Y_1 function; this is based on eqn. 69 of
-    ! Takata (2006, PASJ, 58, 839)
+    ! Calculate the Takata Y_1 function; this is based on [Tak2006,
+    ! his eqn. 69]
 
     associate (J => 1._WP - this%cf%U(this%x)/3._WP)
 
@@ -409,8 +360,8 @@ contains
     class(mode_t), intent(in) :: this
     complex(WP)               :: Yt_2(this%n)
 
-    ! Calculate the Takata Y_2 function; this is based on eqn. 70 of
-    ! Takata (2006, PASJ, 58, 839), divided by V
+    ! Calculate the Takata Y_2 function; this is based on [Tak2006,
+    ! his eqn. 70], divided by V
 
     Yt_2 = this%y(2,:) - this%y(1,:) - this%y(3,:)
 
@@ -965,8 +916,8 @@ contains
     class(mode_t), intent(in) :: this
     real(WP)                  :: E
     
-    ! Calculate the total mode inertia (Aerts et al. 2010, eqn. 3.139)
-    ! in units of M_star R_star**2
+    ! Calculate the total mode inertia [Aer2010, eqn. 3.139] in units
+    ! of M_star R_star**2
 
     E = integrate(this%x, this%dE_dx())
 
@@ -1090,6 +1041,55 @@ contains
     return
 
   end function omega_im
+
+!****
+
+  function xi_r_ref (this)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: xi_r_ref
+    
+    ! Calculate the radial displacement perturbation at x_ref in units
+    ! of R_star
+
+    xi_r_ref = this%y_ref(1)
+
+    ! Finish
+
+    return
+
+  end function xi_r_ref
+
+!****
+
+  function xi_h_ref (this)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: xi_h_ref
+    
+    ! Calculate the radial displacement perturbation at x_ref in units
+    ! of R_star
+
+    associate (c_1 => this%cf%c_1(this%x_ref), &
+               l => this%op%l, omega_c => this%cf%omega_c(this%x_ref, this%op%m, this%omega))
+
+      if(l /= 0) then
+
+         xi_h_ref = this%y_ref(2)/(c_1*omega_c**2)
+
+      else
+
+         xi_h_ref = 0._WP
+
+      end if
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function xi_h_ref
 
 !****
 
