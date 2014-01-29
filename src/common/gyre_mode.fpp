@@ -65,8 +65,6 @@ module gyre_mode
      procedure, public :: freq => freq_
      procedure, public :: xi_r => xi_r_
      procedure, public :: xi_h => xi_h_
-     procedure, public :: xi_r_ref => xi_r_ref_
-     procedure, public :: xi_h_ref => xi_h_ref_
      procedure, public :: phip => phip_
      procedure, public :: dphip_dx => dphip_dx_
      procedure, public :: delS => delS_
@@ -80,13 +78,20 @@ module gyre_mode
      procedure, public :: Yt_2 => Yt_2_
      procedure, public :: I_0 => I_0_
      procedure, public :: I_1 => I_1_
-     procedure, public :: prop_type => prop_type_
+     procedure, public :: xi_r_ref => xi_r_ref_
+     procedure, public :: xi_h_ref => xi_h_ref_
+     procedure, public :: delT_eff => delT_eff_
+     procedure, public :: delg_eff => delg_eff_
+     procedure, public :: f_T => f_T_
+     procedure, public :: psi_T => psi_T_
+     procedure, public :: f_g => f_g_
      procedure, public :: E => E_
      procedure, public :: E_norm => E_norm_
      procedure, public :: W => W_
      procedure, public :: K => K_
      procedure, public :: beta => beta_
      procedure, public :: omega_im => omega_im_
+     procedure, public :: prop_type => prop_type_
      procedure         :: classify_
   end type mode_t
 
@@ -290,86 +295,109 @@ contains
 
 !****
 
-  function prop_type_ (this) result (prop_type)
+  function delT_eff_ (this) result (delT_eff)
 
     class(mode_t), intent(in) :: this
-    integer                   :: prop_type(this%n)
+    complex(WP)               :: delT_eff
 
-    ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
+    ! Calculate the effective temperature perturbation at x_ref
+    ! (assumed to correspond to the photosphere), in units of
+    ! T_eff. This expression is based on the standard definition of
+    ! effective temperature
 
-    associate(x => this%x, V_g => this%cf%V(this%x)/this%cf%Gamma_1(this%x), &
-              As => this%cf%As(this%x), c_1 => this%cf%c_1(this%x), &
-              l => this%op%l, omega_c => REAL(this%cf%omega_c(this%x, this%op%m, this%omega)))
-
-      prop_type = MERGE(1, 0, c_1*omega_c**2 > As) + &
-                   MERGE(-1, 0, l*(l+1)/(c_1*omega_c**2) > V_g)
-
-    end associate
+    delT_eff = 0.25_WP*(delL(this%cf, this%op, this%omega, this%x_ref, this%y_ref) - &
+                  2._WP*xi_r(this%cf, this%op, this%omega, this%x_ref, this%y_ref))
 
     ! Finish
 
     return
 
-  end function prop_type_
+  end function delT_eff_
 
 !****
 
-  function K_ (this) result (K)
+  function delg_eff_ (this) result (delg_eff)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: K(this%n)
+    complex(WP)               :: delg_eff
 
-    complex(WP) :: xi_r(this%n)
-    complex(WP) :: xi_h(this%n)
+    ! Calculate the effective gravity perturbation at x_ref (assumed
+    ! to correspond to the photosphere), in units of the gravity. This
+    ! expression is based on eqns. 6 & 22 of [Dup2003]
 
-    ! Calculate the rotation splitting kernel
-
-    xi_r = this%xi_r()
-    xi_h = this%xi_h()
-
-    associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              l => this%op%l)
-
-      K = (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
-
-      K = K/integrate(x, K)
-
-    end associate
+    delg_eff = -(2._WP + this%cf%c_1(this%x_ref)*this%omega**2)*this%xi_r_ref()
 
     ! Finish
 
     return
 
-  end function K_
+  end function delg_eff_
 
 !****
 
-  function beta_ (this) result (beta)
+  function f_T_ (this) result (f_T)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: beta
+    real(WP)                  :: f_T
 
-    complex(WP) :: xi_r(this%n)
-    complex(WP) :: xi_h(this%n)
+    complex(WP) :: C_T
 
-    ! Calculate the rotation splitting scale
+    ! Calculate the non-adiabatic f_T parameter. This is expression is
+    ! based on eqn. 5 of [Dup2003]
 
-    xi_r = this%xi_r()
-    xi_h = this%xi_h()
+    C_T = this%delT_eff()/this%xi_r_ref()
 
-    associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              l => this%op%l)
-
-      beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
-             integrate(x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
-
-    end associate
+    f_T = ABS(C_T)
 
     ! Finish
 
     return
 
-  end function beta_
+  end function f_T_
+
+!****
+
+  function psi_T_ (this) result (psi_T)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: psi_T
+
+    complex(WP) :: C_T
+
+    ! Calculate the non-adiabatic psi_T parameter, in radians. This is
+    ! expression is based on eqn. 5 of [Dup2003]
+
+    C_T = this%delT_eff()/this%xi_r_ref()
+
+    psi_T = ATAN2(AIMAG(C_T), REAL(C_T))
+
+    ! Finish
+
+    return
+
+  end function psi_T_
+
+!****
+
+  function f_g_ (this) result (f_g)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: f_g
+
+    complex(WP) :: C_g
+
+    ! Calculate the non-adiabatic f_g parameter. This is expression is
+    ! based on eqn. 6 of [Dup2003]
+
+    C_g = this%delg_eff()/this%xi_r_ref()
+
+    f_g = -ABS(C_g)
+
+    ! Finish
+
+    return
+
+  end function f_g_
 
 !****
 
@@ -455,6 +483,65 @@ contains
 
 !****
 
+  function K_ (this) result (K)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: K(this%n)
+
+    complex(WP) :: xi_r(this%n)
+    complex(WP) :: xi_h(this%n)
+
+    ! Calculate the rotation splitting kernel
+
+    xi_r = this%xi_r()
+    xi_h = this%xi_h()
+
+    associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
+              l => this%op%l)
+
+      K = (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
+
+      K = K/integrate(x, K)
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function K_
+
+!****
+
+  function beta_ (this) result (beta)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: beta
+
+    complex(WP) :: xi_r(this%n)
+    complex(WP) :: xi_h(this%n)
+
+    ! Calculate the rotation splitting scale
+
+    xi_r = this%xi_r()
+    xi_h = this%xi_h()
+
+    associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
+              l => this%op%l)
+
+      beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
+             integrate(x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function beta_
+
+!****
+
   function omega_im_ (this) result (omega_im)
 
     class(mode_t), intent(in) :: this
@@ -503,6 +590,30 @@ contains
     return
 
   end function omega_im_
+
+!****
+
+  function prop_type_ (this) result (prop_type)
+
+    class(mode_t), intent(in) :: this
+    integer                   :: prop_type(this%n)
+
+    ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
+
+    associate(x => this%x, V_g => this%cf%V(this%x)/this%cf%Gamma_1(this%x), &
+              As => this%cf%As(this%x), c_1 => this%cf%c_1(this%x), &
+              l => this%op%l, omega_c => REAL(this%cf%omega_c(this%x, this%op%m, this%omega)))
+
+      prop_type = MERGE(1, 0, c_1*omega_c**2 > As) + &
+                   MERGE(-1, 0, l*(l+1)/(c_1*omega_c**2) > V_g)
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function prop_type_
 
 !****
 
