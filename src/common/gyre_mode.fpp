@@ -32,7 +32,7 @@ module gyre_mode
   use gyre_ext_arith
   use gyre_oscpar
   use gyre_grid
-  use gyre_ptb_funcs
+  use gyre_mode_funcs
   use gyre_util
 
   use ISO_FORTRAN_ENV

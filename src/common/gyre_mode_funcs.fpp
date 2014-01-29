@@ -1,5 +1,5 @@
-! Module   : gyre_ptb_funcs
-! Purpose  : perturbation-related functions
+! Module   : gyre_mode_funcs
+! Purpose  : support functions for gyre_mode
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_ptb_funcs
+module gyre_mode_funcs
 
   ! Uses
 
@@ -538,4 +538,4 @@ contains
 
   end function I_1
 
-end module gyre_ptb_funcs
+end module gyre_mode_funcs
