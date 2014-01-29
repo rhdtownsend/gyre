@@ -41,17 +41,17 @@ module gyre_discfunc
 
   type, extends(ext_func_t) :: discfunc_t
      private
-     class(bvp_t), pointer    :: bp
+     class(bvp_t), pointer            :: bp
      complex(WP), allocatable, public :: omega_def(:)
    contains 
      private
-     procedure, public :: eval_ec
+     procedure, public :: eval_ec_
   end type discfunc_t
 
   ! Interfaces
 
   interface discfunc_t
-     module procedure init_df
+     module procedure discfunc_t_
   end interface discfunc_t
 
   ! Access specifiers
@@ -64,12 +64,12 @@ module gyre_discfunc
 
 contains
 
-  function init_df (bp) result (df)
+  function discfunc_t_ (bp) result (df)
 
     class(bvp_t), pointer, intent(in) :: bp
     type(discfunc_t)                  :: df
 
-    ! Construct the discfunc
+    ! Construct the discfunc_t
 
     df%bp => bp
 
@@ -77,11 +77,11 @@ contains
 
     return
 
-  end function init_df
+  end function discfunc_t_
 
 !****
 
-  function eval_ec (this, ez) result (f_ez)
+  function eval_ec_ (this, ez) result (f_ez)
 
     class(discfunc_t), intent(inout) :: this
     type(ext_complex_t), intent(in)  :: ez
@@ -99,6 +99,6 @@ contains
 
     return
 
-  end function eval_ec
+  end function eval_ec_
 
 end module gyre_discfunc

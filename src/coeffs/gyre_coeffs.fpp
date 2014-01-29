@@ -31,9 +31,9 @@ module gyre_coeffs
 
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure(y_1_i), deferred :: ${NAME}_1
-    procedure(y_v_i), deferred :: ${NAME}_v
-    generic, public            :: ${NAME} => ${NAME}_1, ${NAME}_v
+    procedure(y_1_), deferred :: ${NAME}_1_
+    procedure(y_v_), deferred :: ${NAME}_v_
+    generic, public           :: ${NAME} => ${NAME}_1_, ${NAME}_v_
   $endsub
 
   type, abstract :: coeffs_t
@@ -60,70 +60,70 @@ module gyre_coeffs
      $PROC_DECL(kappa_S)
      $PROC_DECL(tau_thm)
      $PROC_DECL(Omega_rot)
-     procedure(pi_c_i), deferred, public         :: pi_c
-     procedure(is_zero), deferred, public        :: is_zero
-     procedure(attach_cache_i), deferred, public :: attach_cache
-     procedure(detach_cache_i), deferred, public :: detach_cache
-     procedure(fill_cache_i), deferred, public   :: fill_cache
-     procedure, public                           :: omega
-     procedure                                   :: omega_c_1
-     procedure                                   :: omega_c_v
-     generic, public                             :: omega_c => omega_c_1, omega_c_v
+     procedure(pi_c_), deferred, public         :: pi_c
+     procedure(is_zero_), deferred, public      :: is_zero
+     procedure(attach_cache_), deferred, public :: attach_cache
+     procedure(detach_cache_), deferred, public :: detach_cache
+     procedure(fill_cache_), deferred, public   :: fill_cache
+     procedure, public                          :: omega => omega_
+     procedure                                  :: omega_c_1_
+     procedure                                  :: omega_c_v_
+     generic, public                            :: omega_c => omega_c_1_, omega_c_v_
   end type coeffs_t
 
   ! Interfaces
 
   abstract interface
 
-     function y_1_i (this, x) result (y)
+     function y_1_ (this, x) result (y)
        use core_kinds
        import coeffs_t
        class(coeffs_t), intent(in) :: this
        real(WP), intent(in)        :: x
        real(WP)                    :: y
-     end function y_1_i
+     end function y_1_
 
-     function y_v_i (this, x) result (y)
+     function y_v_ (this, x) result (y)
        use core_kinds
        import coeffs_t
        class(coeffs_t), intent(in) :: this
        real(WP), intent(in)        :: x(:)
        real(WP)                    :: y(SIZE(x))
-     end function y_v_i
+     end function y_v_
 
-     function pi_c_i (this) result (pi_c)
+     function pi_c_ (this) result (pi_c)
        use core_kinds
        import coeffs_t
        class(coeffs_t), intent(in) :: this
        real(WP)                    :: pi_c
-     end function pi_c_i
+     end function pi_c_
 
-     function is_zero (this, x)
+     function is_zero_ (this, x) result (is_zero)
        use core_kinds
        import coeffs_t
        class(coeffs_t), intent(in) :: this
        real(WP), intent(in)        :: x
        logical                     :: is_zero
-     end function is_zero
+     end function is_zero_
 
-     subroutine attach_cache_i (this, cc)
+     subroutine attach_cache_ (this, cc)
        use gyre_cocache
        import coeffs_t
        class(coeffs_t), intent(inout)        :: this
        class(cocache_t), pointer, intent(in) :: cc
-     end subroutine attach_cache_i
+     end subroutine attach_cache_
 
-     subroutine detach_cache_i (this)
+     subroutine detach_cache_ (this)
        import coeffs_t
        class(coeffs_t), intent(inout) :: this
-     end subroutine detach_cache_i
+     end subroutine detach_cache_
 
-     subroutine fill_cache_i (this, x)
+     subroutine fill_cache_ (this, x)
        use core_kinds
        import coeffs_t
        class(coeffs_t), intent(inout) :: this
        real(WP), intent(in)           :: x(:)
-     end subroutine fill_cache_i
+     end subroutine fill_cache_
 
   end interface
 
@@ -155,7 +155,7 @@ contains
 
 !****
 
-  function omega (this, x, m, omega_c)
+  function omega_ (this, x, m, omega_c) result (omega)
 
     class(coeffs_t), intent(in) :: this
     real(WP), intent(in)        :: x
@@ -171,11 +171,11 @@ contains
 
     return
 
-  end function omega
+  end function omega_
 
 !****
 
-  function omega_c_1 (this, x, m, omega) result (omega_c)
+  function omega_c_1_ (this, x, m, omega) result (omega_c)
 
     class(coeffs_t), intent(in) :: this
     real(WP), intent(in)        :: x
@@ -191,11 +191,11 @@ contains
 
     return
 
-  end function omega_c_1
+  end function omega_c_1_
 
 !****
 
-  function omega_c_v (this, x, m, omega) result (omega_c)
+  function omega_c_v_ (this, x, m, omega) result (omega_c)
 
     class(coeffs_t), intent(in) :: this
     real(WP), intent(in)        :: x(:)
@@ -211,6 +211,6 @@ contains
 
     return
 
-  end function omega_c_v
+  end function omega_c_v_
 
 end module gyre_coeffs

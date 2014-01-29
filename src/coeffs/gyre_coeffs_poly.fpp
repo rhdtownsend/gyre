@@ -38,8 +38,8 @@ module gyre_coeffs_poly
 
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure :: ${NAME}_1
-    procedure :: ${NAME}_v
+    procedure :: ${NAME}_1_
+    procedure :: ${NAME}_v_
   $endsub
 
   type, extends(coeffs_t) :: coeffs_poly_t
@@ -51,8 +51,8 @@ module gyre_coeffs_poly
      real(WP), public :: xi_1
    contains
      private
-     $if($GFORTRAN_PR57922)
-     procedure, public :: final
+     $if ($GFORTRAN_PR57922)
+     procedure, public :: final => final_
      $endif
      $PROC_DECL(V)
      $PROC_DECL(As)
@@ -72,22 +72,22 @@ module gyre_coeffs_poly
      $PROC_DECL(kappa_S)
      $PROC_DECL(tau_thm)
      $PROC_DECL(Omega_rot)
-     procedure, public :: pi_c
-     procedure, public :: is_zero
-     procedure, public :: attach_cache
-     procedure, public :: detach_cache
-     procedure, public :: fill_cache
+     procedure, public :: pi_c => pi_c_
+     procedure, public :: is_zero => is_zero_
+     procedure, public :: attach_cache => attach_cache_
+     procedure, public :: detach_cache => detach_cache_
+     procedure, public :: fill_cache => fill_cache_
   end type coeffs_poly_t
 
   ! Interfaces
 
   interface coeffs_poly_t
-     module procedure init_cf
+     module procedure coeffs_poly_t_
   end interface coeffs_poly_t
 
-  $if($MPI)
+  $if ($MPI)
   interface bcast
-     module procedure bcast_cf
+     module procedure bcast_
   end interface bcast
   $endif
 
@@ -96,7 +96,7 @@ module gyre_coeffs_poly
   private
 
   public :: coeffs_poly_t
-  $if($MPI)
+  $if ($MPI)
   public :: bcast
   $endif
 
@@ -104,7 +104,7 @@ module gyre_coeffs_poly
 
 contains
 
-  function init_cf (xi, Theta, dTheta, n_poly, Gamma_1, deriv_type) result (cf)
+  function coeffs_poly_t_ (xi, Theta, dTheta, n_poly, Gamma_1, deriv_type) result (cf)
 
     real(WP), intent(in)         :: xi(:)
     real(WP), intent(in)         :: Theta(:)
@@ -119,7 +119,7 @@ contains
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
 
-    ! Construct the coeffs_poly from the polytrope functions
+    ! Construct the coeffs_poly_t from the polytrope functions
 
     n = SIZE(xi)
 
@@ -148,17 +148,17 @@ contains
 
     return
 
-  end function init_cf
+  end function coeffs_poly_t_
 
 !****
 
   $if ($GFORTRAN_PR57922)
 
-  subroutine final (this)
+  subroutine final_ (this)
 
     class(coeffs_poly_t), intent(inout) :: this
 
-    ! Finalize the coeffs_poly
+    ! Finalize the coeffs_poly_t
 
     call this%sp_Theta%final()
     call this%sp_dTheta%final()
@@ -167,39 +167,13 @@ contains
 
     return
 
-  end subroutine final
+  end subroutine final_
 
   $endif
 
 !****
 
-  $if ($MPI)
-
-  subroutine bcast_cf (bc, root_rank)
-
-    type(coeffs_poly_t), intent(inout) :: cf
-    integer, intent(in)                :: root_rank
-
-    ! Broadcast the coeffs_poly
-
-    call bcast(cf%sp_Theta, root_rank)
-    call bcast(cf%sp_dTheta, root_rank)
-
-    call bcast(cf%n_poly, root_rank)
-    call bcast(cf%dt_Gamma_1, root_rank)
-    call bcast(cf%xi_1, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_cf
-
-  $endif
-
-!****
-
-  function V_1 (this, x) result (V)
+  function V_1_ (this, x) result (V)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -222,11 +196,11 @@ contains
 
     return
 
-  end function V_1
+  end function V_1_
 
 !****
 
-  function V_v (this, x) result (V)
+  function V_v_ (this, x) result (V)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -244,11 +218,11 @@ contains
 
     return
 
-  end function V_v
+  end function V_v_
 
 !****
 
-  function As_1 (this, x) result (As)
+  function As_1_ (this, x) result (As)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -262,11 +236,11 @@ contains
 
     return
 
-  end function As_1
+  end function As_1_
 
 !****
 
-  function As_v (this, x) result (As)
+  function As_v_ (this, x) result (As)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -284,11 +258,11 @@ contains
 
     return
 
-  end function As_v
+  end function As_v_
 
 !****
 
-  function U_1 (this, x) result (U)
+  function U_1_ (this, x) result (U)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -315,11 +289,11 @@ contains
 
     return
 
-  end function U_1
+  end function U_1_
 
 !****
 
-  function U_v (this, x) result (U)
+  function U_v_ (this, x) result (U)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -337,11 +311,11 @@ contains
 
     return
 
-  end function U_v
+  end function U_v_
 
 !****
 
-  function c_1_1 (this, x) result (c_1)
+  function c_1_1_ (this, x) result (c_1)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -368,11 +342,11 @@ contains
 
     return
 
-  end function c_1_1
+  end function c_1_1_
 
 !****
 
-  function c_1_v (this, x) result (c_1)
+  function c_1_v_ (this, x) result (c_1)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -390,11 +364,11 @@ contains
 
     return
     
-  end function c_1_v
+  end function c_1_v_
 
 !****
 
-  function Gamma_1_1 (this, x) result (Gamma_1)
+  function Gamma_1_1_ (this, x) result (Gamma_1)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -408,11 +382,11 @@ contains
 
     return
 
-  end function Gamma_1_1
+  end function Gamma_1_1_
 
 !****
   
-  function Gamma_1_v (this, x) result (Gamma_1)
+  function Gamma_1_v_ (this, x) result (Gamma_1)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -430,11 +404,11 @@ contains
 
     return
 
-  end function Gamma_1_v
+  end function Gamma_1_v_
 
 !****
 
-  function nabla_ad_1 (this, x) result (nabla_ad)
+  function nabla_ad_1_ (this, x) result (nabla_ad)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -448,11 +422,11 @@ contains
 
     return
 
-  end function nabla_ad_1
+  end function nabla_ad_1_
 
 !****
   
-  function nabla_ad_v (this, x) result (nabla_ad)
+  function nabla_ad_v_ (this, x) result (nabla_ad)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -470,11 +444,11 @@ contains
 
     return
 
-  end function nabla_ad_v
+  end function nabla_ad_v_
 
 !****
 
-  function delta_1 (this, x) result (delta)
+  function delta_1_ (this, x) result (delta)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -488,11 +462,11 @@ contains
 
     return
 
-  end function delta_1
+  end function delta_1_
 
 !****
   
-  function delta_v (this, x) result (delta)
+  function delta_v_ (this, x) result (delta)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -510,7 +484,7 @@ contains
 
     return
 
-  end function delta_v
+  end function delta_v_
 
 !****
 
@@ -518,7 +492,7 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_1 (this, x) result ($NAME)
+  function ${NAME}_1_ (this, x) result ($NAME)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -532,11 +506,11 @@ contains
 
     return
 
-  end function ${NAME}_1
+  end function ${NAME}_1_
 
 !****
 
-  function ${NAME}_v (this, x) result ($NAME)
+  function ${NAME}_v_ (this, x) result ($NAME)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -550,7 +524,7 @@ contains
 
     return
 
-  end function ${NAME}_v
+  end function ${NAME}_v_
 
   $endsub
 
@@ -567,7 +541,7 @@ contains
 
 !****
 
-  function Omega_rot_1 (this, x) result (Omega_rot)
+  function Omega_rot_1_ (this, x) result (Omega_rot)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -581,11 +555,11 @@ contains
 
     return
 
-  end function Omega_rot_1
+  end function Omega_rot_1_
 
 !****
   
-  function Omega_rot_v (this, x) result (Omega_rot)
+  function Omega_rot_v_ (this, x) result (Omega_rot)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -603,11 +577,11 @@ contains
 
     return
 
-  end function Omega_rot_v
+  end function Omega_rot_v_
 
 !****
 
-  function pi_c (this)
+  function pi_c_ (this) result (pi_c)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP)                         :: pi_c
@@ -620,11 +594,11 @@ contains
 
     return
 
-  end function pi_c
+  end function pi_c_
 
 !****
 
-  function is_zero (this, x)
+  function is_zero_ (this, x) result (is_zero)
 
     class(coeffs_poly_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -642,11 +616,11 @@ contains
 
     return
 
-  end function is_zero
+  end function is_zero_
 
 !****
 
-  subroutine attach_cache (this, cc)
+  subroutine attach_cache_ (this, cc)
 
     class(coeffs_poly_t), intent(inout)   :: this
     class(cocache_t), pointer, intent(in) :: cc
@@ -657,11 +631,11 @@ contains
 
     return
 
-  end subroutine attach_cache
+  end subroutine attach_cache_
 
 !****
 
-  subroutine detach_cache (this)
+  subroutine detach_cache_ (this)
 
     class(coeffs_poly_t), intent(inout) :: this
 
@@ -671,11 +645,11 @@ contains
 
     return
 
-  end subroutine detach_cache
+  end subroutine detach_cache_
 
 !****
 
-  subroutine fill_cache (this, x)
+  subroutine fill_cache_ (this, x)
 
     class(coeffs_poly_t), intent(inout) :: this
     real(WP), intent(in)                :: x(:)
@@ -686,6 +660,32 @@ contains
 
     return
 
-  end subroutine fill_cache
+  end subroutine fill_cache_
+
+!****
+
+  $if ($MPI)
+
+  subroutine bcast_ (bc, root_rank)
+
+    type(coeffs_poly_t), intent(inout) :: cf
+    integer, intent(in)                :: root_rank
+
+    ! Broadcast the coeffs_poly_t
+
+    call bcast(cf%sp_Theta, root_rank)
+    call bcast(cf%sp_dTheta, root_rank)
+
+    call bcast(cf%n_poly, root_rank)
+    call bcast(cf%dt_Gamma_1, root_rank)
+    call bcast(cf%xi_1, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_
+
+  $endif
 
 end module gyre_coeffs_poly

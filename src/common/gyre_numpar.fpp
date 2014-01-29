@@ -43,16 +43,16 @@ module gyre_numpar
 
   ! Interfaces
 
-  $if($MPI)
+  $if ($MPI)
 
   interface bcast
-     module procedure bcast_np_0
-     module procedure bcast_np_1
+     module procedure bcast_0_
+     module procedure bcast_1_
   end interface bcast
 
   interface bcast_alloc
-     module procedure bcast_alloc_np_0
-     module procedure bcast_alloc_np_1
+     module procedure bcast_alloc_0_
+     module procedure bcast_alloc_1_
   end interface bcast_alloc
 
   $endif
@@ -62,7 +62,7 @@ module gyre_numpar
   private
 
   public :: numpar_t
-  $if($MPI)
+  $if ($MPI)
   public :: bcast
   public :: bcast_alloc
   $endif
@@ -71,18 +71,18 @@ module gyre_numpar
 
 contains
 
-  $if($MPI)
+  $if ($MPI)
 
   $define $BCAST $sub
 
   $local $RANK $1
 
-  subroutine bcast_np_$RANK (np, root_rank)
+  subroutine bcast_${RANK}_ (np, root_rank)
 
     type(numpar_t), intent(inout) :: np$ARRAY_SPEC($RANK)
     integer, intent(in)           :: root_rank
 
-    ! Broadcast the numpar
+    ! Broadcast the numpar_t
 
     call bcast(np%n_iter_max, root_rank)
     call bcast(np%theta_ad, root_rank)
@@ -98,7 +98,7 @@ contains
 
     return
 
-  end subroutine bcast_np_$RANK
+  end subroutine bcast_${RANK}_
 
   $endsub
 
@@ -107,8 +107,8 @@ contains
 
 !****
 
-  $BCAST_ALLOC(np,type(numpar_t),0)
-  $BCAST_ALLOC(np,type(numpar_t),1)
+  $BCAST_ALLOC(type(numpar_t),0)
+  $BCAST_ALLOC(type(numpar_t),1)
 
   $endif
 

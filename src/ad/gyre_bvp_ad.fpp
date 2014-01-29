@@ -70,25 +70,25 @@ module gyre_bvp_ad
      integer, public                :: n_e
    contains 
      private
-     $if($GFORTRAN_PR57922)
-     procedure, public :: final
+     $if ($GFORTRAN_PR57922)
+     procedure, public :: final => final_
      $endif
-     procedure, public :: discrim
-     procedure         :: build
-     procedure         :: recon
-     procedure, public :: mode
-     procedure, public :: coeffs
+     procedure, public :: discrim => discrim_
+     procedure         :: build_
+     procedure         :: recon_
+     procedure, public :: mode => mode_
+     procedure, public :: coeffs => coeffs_
   end type bvp_ad_t
 
   ! Interfaces
 
   interface bvp_ad_t
-     module procedure init_bp
+     module procedure bvp_ad_t_
   end interface bvp_ad_t
 
   $if ($MPI)
   interface bcast
-     module procedure bcast_bp
+     module procedure bcast_
   end interface bcast
   $endif
 
@@ -105,7 +105,7 @@ module gyre_bvp_ad
 
 contains
 
-  function init_bp (cf, op, np, shoot_gp, recon_gp, x_in) result (bp)
+  function bvp_ad_t_ (cf, op, np, shoot_gp, recon_gp, x_in) result (bp)
 
     use gyre_jacobian_ad_dziem
     use gyre_jacobian_ad_jcd
@@ -133,7 +133,7 @@ contains
     integer               :: n
     real(WP), allocatable :: x_cc(:)
 
-    ! Construct the bvp_ad
+    ! Construct the bvp_ad_t
 
     ! Store parameters
 
@@ -225,17 +225,17 @@ contains
 
     return
 
-  end function init_bp
+  end function bvp_ad_t_
 
 !****
 
-  $if($GFORTRAN_PR57922)
+  $if ($GFORTRAN_PR57922)
 
-  subroutine final (this)
+  subroutine final_ (this)
 
     class(bvp_ad_t), intent(inout) :: this
 
-    ! Finalize the bvp_ad
+    ! Finalize the bvp_ad_t
 
     call this%cc%final()
     call this%sm%final()
@@ -254,84 +254,34 @@ contains
 
     return
 
-  end subroutine final
+  end subroutine final_
 
   $endif
 
 !****
 
-  $if ($MPI)
-
-  subroutine bcast_bp (bp, root_rank, cf)
-
-    type(bvp_ad_t), intent(inout)       :: bp
-    integer, intent(in)                 :: root_rank
-    class(coeffs_t), intent(in), target :: cf
-
-    type(oscpar_t)               :: op
-    type(numpar_t)               :: np
-    type(gridpar_t), allocatable :: shoot_gp(:)
-    type(gridpar_t), allocatable :: recon_gp(:)
-    real(WP), allocatable        :: x_in(:)
-
-    ! Broadcast the bvp_ad
-
-    if(MPI_RANK == root_rank) then
-
-       call bcast(bp%op, root_rank)
-       call bcast(bp%np, root_rank)
-
-       call bcast_alloc(bp%shoot_gp, root_rank)
-       call bcast_alloc(bp%recon_gp, root_rank)
-
-       call bcast_alloc(bp%x_in, root_rank)
-
-    else
-
-       call bcast(op, root_rank)
-       call bcast(np, root_rank)
-
-       call bcast_alloc(shoot_gp, root_rank)
-       call bcast_alloc(recon_gp, root_rank)
-
-       call bcast_alloc(x_in, root_rank)
-
-       bp = bvp_ad_t(cf, op, np, shoot_gp, recon_gp, x_in)
- 
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_bp
-
-  $endif
-
-!****
-
-  function discrim (this, omega, use_real)
+  function discrim_ (this, omega, use_real)
 
     class(bvp_ad_t), intent(inout) :: this
     complex(WP), intent(in)        :: omega
-    logical, intent(in), optional  :: use_real
-    type(ext_complex_t)            :: discrim
+    logical, optional, intent(in)  :: use_real
+    type(ext_complex_t)            :: discrim_
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
-    call this%build(omega)
+    call this%build_(omega)
 
-    call this%sm%determinant(discrim, use_real, this%np%use_banded)
+    call this%sm%determinant(discrim_, use_real, this%np%use_banded)
 
     ! Finish
 
     return
 
-  end function discrim
+  end function discrim_
 
 !****
 
-  subroutine build (this, omega)
+  subroutine build_ (this, omega)
 
     class(bvp_ad_t), target, intent(inout) :: this
     complex(WP), intent(in)                :: omega
@@ -340,8 +290,8 @@ contains
 
     call this%cf%attach_cache(this%cc)
 
-    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega), ext_complex(1._WP))
-    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega), ext_complex(1._WP))
+    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega), ext_complex_t(1._WP))
+    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega), ext_complex_t(1._WP))
 
     call this%sh%shoot(omega, this%x, this%sm)
 
@@ -353,11 +303,11 @@ contains
 
     return
 
-  end subroutine build
+  end subroutine build_
 
 !****
 
-  subroutine recon (this, omega, x, y, x_ref, y_ref, discrim, use_real)
+  subroutine recon_ (this, omega, x, y, x_ref, y_ref, discrim, use_real)
 
     class(bvp_ad_t), intent(inout)        :: this
     complex(WP), intent(in)               :: omega
@@ -366,7 +316,7 @@ contains
     real(WP), intent(out)                 :: x_ref
     complex(WP), intent(out)              :: y_ref(:)
     type(ext_complex_t), intent(out)      :: discrim
-    logical, intent(in), optional         :: use_real
+    logical, optional, intent(in)         :: use_real
 
     complex(WP) :: b(this%n_e*this%n)
     complex(WP) :: y_sh(this%n_e,this%n)
@@ -377,7 +327,7 @@ contains
 
     ! Reconstruct the solution on the shooting grid
 
-    call this%build(omega)
+    call this%build_(omega)
 
     call this%sm%null_vector(b, discrim, use_real, this%np%use_banded)
 
@@ -422,17 +372,17 @@ contains
 
     return
 
-  end subroutine recon
+  end subroutine recon_
 
 !****
 
-  function mode (this, omega, discrim, use_real, omega_def) result (md)
+  function mode_ (this, omega, discrim, use_real, omega_def) result (md)
 
     class(bvp_ad_t), target, intent(inout)    :: this
     complex(WP), intent(in)                   :: omega(:)
-    type(ext_complex_t), intent(in), optional :: discrim(:)
-    logical, intent(in), optional             :: use_real
-    complex(WP), intent(in), optional         :: omega_def(:)
+    type(ext_complex_t), optional, intent(in) :: discrim(:)
+    logical, optional, intent(in)             :: use_real
+    complex(WP), optional, intent(in)         :: omega_def(:)
     type(mode_t)                              :: md
 
     logical                  :: use_real_
@@ -488,10 +438,10 @@ contains
     n_iter = this%np%n_iter_max
 
     if(use_real_) then
-       omega_root = real(df%root(ext_real(omega_a), ext_real(omega_b), ext_real(0._WP), &
-                            f_ex_a=ext_real(discrim_a), f_ex_b=ext_real(discrim_b), n_iter=n_iter))
+       omega_root = real(df%root(ext_real_t(omega_a), ext_real_t(omega_b), ext_real_t(0._WP), &
+                            f_ex_a=ext_real_t(discrim_a), f_ex_b=ext_real_t(discrim_b), n_iter=n_iter))
     else
-       omega_root = cmplx(df%root(ext_complex(omega_a), ext_complex(omega_b), ext_real(0._WP), &
+       omega_root = cmplx(df%root(ext_complex_t(omega_a), ext_complex_t(omega_b), ext_real_t(0._WP), &
                             f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
     endif
 
@@ -499,7 +449,7 @@ contains
 
     ! Reconstruct the solution
 
-    call this%recon(omega_root, x, y, x_ref, y_ref, discrim_root)
+    call this%recon_(omega_root, x, y, x_ref, y_ref, discrim_root)
 
     ! Calculate canonical variables
 
@@ -526,11 +476,11 @@ contains
 
     return
 
-  end function mode
+  end function mode_
 
 !****
 
-  function coeffs (this) result (cf)
+  function coeffs_ (this) result (cf)
 
     class(bvp_ad_t), intent(in) :: this
     class(coeffs_t), pointer    :: cf
@@ -543,7 +493,57 @@ contains
 
     return
 
-  end function coeffs
+  end function coeffs_
+
+!****
+
+  $if ($MPI)
+
+  subroutine bcast_ (bp, root_rank, cf)
+
+    type(bvp_ad_t), intent(inout)       :: bp
+    integer, intent(in)                 :: root_rank
+    class(coeffs_t), intent(in), target :: cf
+
+    type(oscpar_t)               :: op
+    type(numpar_t)               :: np
+    type(gridpar_t), allocatable :: shoot_gp(:)
+    type(gridpar_t), allocatable :: recon_gp(:)
+    real(WP), allocatable        :: x_in(:)
+
+    ! Broadcast the bvp_ad_t
+
+    if(MPI_RANK == root_rank) then
+
+       call bcast(bp%op, root_rank)
+       call bcast(bp%np, root_rank)
+
+       call bcast_alloc(bp%shoot_gp, root_rank)
+       call bcast_alloc(bp%recon_gp, root_rank)
+
+       call bcast_alloc(bp%x_in, root_rank)
+
+    else
+
+       call bcast(op, root_rank)
+       call bcast(np, root_rank)
+
+       call bcast_alloc(shoot_gp, root_rank)
+       call bcast_alloc(recon_gp, root_rank)
+
+       call bcast_alloc(x_in, root_rank)
+
+       bp = bvp_ad_t(cf, op, np, shoot_gp, recon_gp, x_in)
+ 
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_
+
+  $endif
 
 end module gyre_bvp_ad
 

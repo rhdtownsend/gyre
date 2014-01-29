@@ -42,31 +42,31 @@ module gyre_ext_complex
   $define $ARITH_DECL $sub
     $local $INFIX $1
     $local $OP $2
-    procedure             :: arith_${INFIX}_ec_ec
-    procedure             :: arith_${INFIX}_ec_er
-    procedure, pass(that) :: arith_${INFIX}_er_ec
-    procedure             :: arith_${INFIX}_ec_r
-    procedure, pass(that) :: arith_${INFIX}_r_ec
-    procedure             :: arith_${INFIX}_ec_c
-    procedure, pass(that) :: arith_${INFIX}_c_ec
-    generic, public       :: operator($OP) => arith_${INFIX}_ec_ec, arith_${INFIX}_ec_er, arith_${INFIX}_er_ec, &
-                                              arith_${INFIX}_ec_r, arith_${INFIX}_r_ec, &
-                                              arith_${INFIX}_ec_c, arith_${INFIX}_c_ec
+    procedure             :: arith_${INFIX}_ec_ec_
+    procedure             :: arith_${INFIX}_ec_er_
+    procedure, pass(that) :: arith_${INFIX}_er_ec_
+    procedure             :: arith_${INFIX}_ec_r_
+    procedure, pass(that) :: arith_${INFIX}_r_ec_
+    procedure             :: arith_${INFIX}_ec_c_
+    procedure, pass(that) :: arith_${INFIX}_c_ec_
+    generic, public       :: operator($OP) => arith_${INFIX}_ec_ec_, arith_${INFIX}_ec_er_, arith_${INFIX}_er_ec_, &
+                                              arith_${INFIX}_ec_r_, arith_${INFIX}_r_ec_, &
+                                              arith_${INFIX}_ec_c_, arith_${INFIX}_c_ec_
   $endsub
 
   $define $CMP_DECL $sub
     $local $INFIX $1
     $local $OP $2
-    procedure             :: cmp_${INFIX}_ec_ec
-    procedure             :: cmp_${INFIX}_ec_er
-    procedure, pass(that) :: cmp_${INFIX}_er_ec
-    procedure             :: cmp_${INFIX}_ec_r
-    procedure, pass(that) :: cmp_${INFIX}_r_ec
-    procedure             :: cmp_${INFIX}_ec_c
-    procedure, pass(that) :: cmp_${INFIX}_c_ec
-    generic, public       :: operator($OP) => cmp_${INFIX}_ec_ec, cmp_${INFIX}_ec_er, cmp_${INFIX}_er_ec, &
-                                              cmp_${INFIX}_ec_r, cmp_${INFIX}_r_ec, &
-                                              cmp_${INFIX}_ec_c, cmp_${INFIX}_c_ec
+    procedure             :: cmp_${INFIX}_ec_ec_
+    procedure             :: cmp_${INFIX}_ec_er_
+    procedure, pass(that) :: cmp_${INFIX}_er_ec_
+    procedure             :: cmp_${INFIX}_ec_r_
+    procedure, pass(that) :: cmp_${INFIX}_r_ec_
+    procedure             :: cmp_${INFIX}_ec_c_
+    procedure, pass(that) :: cmp_${INFIX}_c_ec_
+    generic, public       :: operator($OP) => cmp_${INFIX}_ec_ec_, cmp_${INFIX}_ec_er_, cmp_${INFIX}_er_ec_, &
+                                              cmp_${INFIX}_ec_r_, cmp_${INFIX}_r_ec_, &
+                                              cmp_${INFIX}_ec_c_, cmp_${INFIX}_c_ec_
   $endsub
 
   type ext_complex_t
@@ -75,8 +75,8 @@ module gyre_ext_complex
      integer     :: e ! Exponent
    contains
      $ARITH_DECL(plus,+)
-     procedure       :: arith_minus_ec
-     generic, public :: operator(-) => arith_minus_ec
+     procedure       :: arith_minus_ec_
+     generic, public :: operator(-) => arith_minus_ec_
      $ARITH_DECL(minus,-)
      $ARITH_DECL(times,*)
      $ARITH_DECL(divide,/)
@@ -86,128 +86,118 @@ module gyre_ext_complex
 
   ! Interface blocks
 
-  $if ($MPI)
+  interface ext_complex_t
+     module procedure ext_complex_t_r_
+     module procedure ext_complex_t_c_
+     module procedure ext_complex_t_er_
+  end interface ext_complex_t
 
-  interface send
-     module procedure send_ec_0
-     module procedure send_ec_1
-     module procedure send_ec_2
-     module procedure send_ec_3
-     module procedure send_ec_4
-  end interface send
-
-  interface recv
-     module procedure recv_ec_0
-     module procedure recv_ec_1
-     module procedure recv_ec_2
-     module procedure recv_ec_3
-     module procedure recv_ec_4
-  end interface recv
-
-  interface recv_any
-     module procedure recv_any_ec_0
-     module procedure recv_any_ec_1
-     module procedure recv_any_ec_2
-     module procedure recv_any_ec_3
-     module procedure recv_any_ec_4
-  end interface recv_any
-
-  interface bcast
-     module procedure bcast_ec_0
-     module procedure bcast_ec_1
-     module procedure bcast_ec_2
-     module procedure bcast_ec_3
-     module procedure bcast_ec_4
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_ec_0
-     module procedure bcast_alloc_ec_1
-     module procedure bcast_alloc_ec_2
-     module procedure bcast_alloc_ec_3
-     module procedure bcast_alloc_ec_4
-  end interface bcast_alloc
-
-  interface gatherv
-     module procedure gatherv_ec_0
-     module procedure gatherv_ec_1
-     module procedure gatherv_ec_2
-     module procedure gatherv_ec_3
-     module procedure gatherv_ec_4
-  end interface gatherv
-
-  interface allgatherv
-     module procedure allgatherv_ec_0
-     module procedure allgatherv_ec_1
-     module procedure allgatherv_ec_2
-     module procedure allgatherv_ec_3
-     module procedure allgatherv_ec_4
-  end interface allgatherv
-
-  $endif
-
-  interface ext_real
-     module procedure ext_real_ec
-  end interface ext_real
-
-  interface ext_complex
-     module procedure ext_complex_r
-     module procedure ext_complex_er
-     module procedure ext_complex_c
-  end interface ext_complex
+  interface ext_real_t
+     module procedure ext_real_t_ec_
+  end interface ext_real_t
 
   interface real
-     module procedure real_ec
+     module procedure real_
   end interface real
 
   interface cmplx
-     module procedure cmplx_ec
+     module procedure cmplx_
   end interface cmplx
 
   interface valid
-     module procedure valid_ec
+     module procedure valid_
   end interface valid
 
   interface product
-     module procedure product_ec
+     module procedure product_
   end interface product
 
   interface exp
-     module procedure exp_ec
+     module procedure exp_
   end interface exp
 
   interface abs
-     module procedure abs_ec
+     module procedure abs_
   end interface abs
 
   interface fraction
-     module procedure fraction_ec
+     module procedure fraction_
   end interface fraction
 
   interface exponent
-     module procedure exponent_ec
+     module procedure exponent_
   end interface exponent
 
   interface scale
-     module procedure scale_ec
+     module procedure scale_
   end interface scale
+
+  $if ($MPI)
+
+  interface send
+     module procedure send_0_
+     module procedure send_1_
+     module procedure send_2_
+     module procedure send_3_
+     module procedure send_4_
+  end interface send
+
+  interface recv
+     module procedure recv_0_
+     module procedure recv_1_
+     module procedure recv_2_
+     module procedure recv_3_
+     module procedure recv_4_
+  end interface recv
+
+  interface recv_any
+     module procedure recv_any_0_
+     module procedure recv_any_1_
+     module procedure recv_any_2_
+     module procedure recv_any_3_
+     module procedure recv_any_4_
+  end interface recv_any
+
+  interface bcast
+     module procedure bcast_0_
+     module procedure bcast_1_
+     module procedure bcast_2_
+     module procedure bcast_3_
+     module procedure bcast_4_
+  end interface bcast
+
+  interface bcast_alloc
+     module procedure bcast_alloc_0_
+     module procedure bcast_alloc_1_
+     module procedure bcast_alloc_2_
+     module procedure bcast_alloc_3_
+     module procedure bcast_alloc_4_
+  end interface bcast_alloc
+
+  interface gatherv
+     module procedure gatherv_0_
+     module procedure gatherv_1_
+     module procedure gatherv_2_
+     module procedure gatherv_3_
+     module procedure gatherv_4_
+  end interface gatherv
+
+  interface allgatherv
+     module procedure allgatherv_0_
+     module procedure allgatherv_1_
+     module procedure allgatherv_2_
+     module procedure allgatherv_3_
+     module procedure allgatherv_4_
+  end interface allgatherv
+
+  $endif
 
   ! Access specifiers
 
   private
 
-  $if($MPI)
-  public :: send
-  public :: recv
-  public :: recv_any
-  public :: bcast
-  public :: bcast_alloc
-  public :: gatherv
-  public :: allgatherv
-  $endif
   public :: ext_complex_t
-  public :: ext_real
-  public :: ext_complex
+  public :: ext_real_t
   public :: real
   public :: cmplx
   public :: valid
@@ -217,226 +207,73 @@ module gyre_ext_complex
   public :: fraction
   public :: exponent
   public :: scale
+  $if($MPI)
+  public :: send
+  public :: recv
+  public :: recv_any
+  public :: bcast
+  public :: bcast_alloc
+  public :: gatherv
+  public :: allgatherv
+  $endif
 
   ! Procedures
 
 contains
 
-  $if($MPI)
+  elemental function ext_complex_t_r_ (x) result (ez)
 
-  $define $SEND $sub
+    real(WP), intent(in) :: x
+    type(ext_complex_t)  :: ez
 
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $BUFFER_RANK $3
+    ! Construct the ext_complex_t from the real x
 
-  subroutine send_${INFIX}_${BUFFER_RANK} (buffer, dest_rank, tag, sync)
-
-    $BUFFER_TYPE, intent(in)      :: buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)           :: dest_rank
-    integer, intent(in), optional :: tag
-    logical, intent(in), optional :: sync
-
-    ! Send the buffer
-
-    call send(buffer%f, dest_rank, tag, sync)
-    call send(buffer%e, dest_rank, tag, sync)
+    call split_(CMPLX(x, KIND=WP), ez%f, ez%e)
 
     ! Finish
 
     return
 
-  end subroutine send_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $SEND(ec,type(ext_complex_t),0)
-  $SEND(ec,type(ext_complex_t),1)
-  $SEND(ec,type(ext_complex_t),2)
-  $SEND(ec,type(ext_complex_t),3)
-  $SEND(ec,type(ext_complex_t),4)
+  end function ext_complex_t_r_
 
 !****
-  
-  $define $RECV $sub
 
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $BUFFER_RANK $3
+  elemental function ext_complex_t_c_ (z) result (ez)
 
-  subroutine recv_${INFIX}_${BUFFER_RANK} (buffer, src_rank, tag)
+    complex(WP), intent(in) :: z
+    type(ext_complex_t)     :: ez
 
-    $BUFFER_TYPE, intent(out)     :: buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)           :: src_rank
-    integer, intent(in), optional :: tag
+    ! Construct the ext_complex_t from the complex z
 
-    ! Receive the buffer
-
-    call recv(buffer%f, src_rank, tag)
-    call recv(buffer%e, src_rank, tag)
+    call split_(z, ez%f, ez%e)
 
     ! Finish
 
     return
 
-  end subroutine recv_${INFIX}_${BUFFER_RANK}
+  end function ext_complex_t_c_
 
-  $endsub
-
-  $RECV(ec,type(ext_complex_t),0)
-  $RECV(ec,type(ext_complex_t),1)
-  $RECV(ec,type(ext_complex_t),2)
-  $RECV(ec,type(ext_complex_t),3)
-  $RECV(ec,type(ext_complex_t),4)
-  
 !****
-  
-  $define $RECV_ANY $sub
 
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $BUFFER_RANK $3
+  elemental function ext_complex_t_er_ (ex) result (ez)
 
-  subroutine recv_any_${INFIX}_${BUFFER_RANK} (buffer, src_rank, tag)
+    type(ext_real_t), intent(in) :: ex
+    type(ext_complex_t)          :: ez
 
-    $BUFFER_TYPE, intent(out)     :: buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(out)          :: src_rank
-    integer, intent(in), optional :: tag
+    ! Construct the ext_complex_t from the ext_real_t ex
 
-    ! Receive the buffer
-
-    call recv(buffer%f, src_rank, tag)
-    call recv(buffer%e, src_rank, tag)
+    call split_(CMPLX(FRACTION(ex), KIND=WP), ez%f, ez%e)
+    ez = scale(ez, EXPONENT(ex))
 
     ! Finish
 
     return
 
-  end subroutine recv_any_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $RECV_ANY(ec,type(ext_complex_t),0)
-  $RECV_ANY(ec,type(ext_complex_t),1)
-  $RECV_ANY(ec,type(ext_complex_t),2)
-  $RECV_ANY(ec,type(ext_complex_t),3)
-  $RECV_ANY(ec,type(ext_complex_t),4)
-  
-!****
-
-  $define $BCAST $sub
-
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $BUFFER_RANK $3
-
-  subroutine bcast_${INFIX}_${BUFFER_RANK} (buffer, root_rank)
-
-    $BUFFER_TYPE, intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)         :: root_rank
-
-    ! Broadcast the buffer
-
-    call bcast(buffer%f, root_rank)
-    call bcast(buffer%e, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $BCAST(ec,type(ext_complex_t),0)
-  $BCAST(ec,type(ext_complex_t),1)
-  $BCAST(ec,type(ext_complex_t),2)
-  $BCAST(ec,type(ext_complex_t),3)
-  $BCAST(ec,type(ext_complex_t),4)
-  
-!****
-
-  $BCAST_ALLOC(ec,type(ext_complex_t),0)
-  $BCAST_ALLOC(ec,type(ext_complex_t),1)
-  $BCAST_ALLOC(ec,type(ext_complex_t),2)
-  $BCAST_ALLOC(ec,type(ext_complex_t),3)
-  $BCAST_ALLOC(ec,type(ext_complex_t),4)
+  end function ext_complex_t_er_
 
 !****
 
-  $define $GATHERV $sub
-
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $TYPE $3
-  $local $BUFFER_RANK $4
-
-  subroutine gatherv_${INFIX}_${BUFFER_RANK} (send_buffer, sendcount, recv_buffer, recvcounts, displs, root_rank)
-
-    $BUFFER_TYPE, intent(in)    :: send_buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)         :: sendcount
-    $BUFFER_TYPE, intent(inout) :: recv_buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)         :: recvcounts(:)
-    integer, intent(in)         :: displs(:)
-    integer, intent(in)         :: root_rank
-
-    ! Gather the buffers
-
-    call gatherv(send_buffer%f, sendcount, recv_buffer%f, recvcounts, displs, root_rank)
-    call gatherv(send_buffer%e, sendcount, recv_buffer%e, recvcounts, displs, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine gatherv_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $GATHERV(ec,type(ext_complex_t),complex,0)
-  $GATHERV(ec,type(ext_complex_t),complex,1)
-  $GATHERV(ec,type(ext_complex_t),complex,2)
-  $GATHERV(ec,type(ext_complex_t),complex,3)
-  $GATHERV(ec,type(ext_complex_t),complex,4)
-  
-!****
-
-  $define $ALLGATHERV $sub
-
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $BUFFER_RANK $3
-
-  subroutine allgatherv_${INFIX}_${BUFFER_RANK} (buffer, recvcounts, displs)
-
-    $BUFFER_TYPE, intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)         :: recvcounts(:)
-    integer, intent(in)         :: displs(:)
-
-    ! Gather and share the buffers
-
-    call allgatherv(buffer%f, recvcounts, displs)
-    call allgatherv(buffer%e, recvcounts, displs)
-
-    ! Finish
-
-    return
-
-  end subroutine allgatherv_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $ALLGATHERV(ec,type(ext_complex_t),0)
-  $ALLGATHERV(ec,type(ext_complex_t),1)
-  $ALLGATHERV(ec,type(ext_complex_t),2)
-  $ALLGATHERV(ec,type(ext_complex_t),3)
-  $ALLGATHERV(ec,type(ext_complex_t),4)
-  
-  $endif
-
-!****
-
-  elemental function arith_plus_ec_ec (this, that) result (ez)
+  elemental function arith_plus_ec_ec_ (this, that) result (ez)
 
     class(ext_complex_t), intent(in) :: this
     class(ext_complex_t), intent(in) :: that
@@ -467,7 +304,7 @@ contains
           e = that%e
        endif
 
-       call split_c(f, ez%f, ez%e)
+       call split_(f, ez%f, ez%e)
        ez%e = ez%e + e
 
     endif
@@ -476,11 +313,11 @@ contains
 
     return
 
-  end function arith_plus_ec_ec
+  end function arith_plus_ec_ec_
 
 !****
 
-  elemental function arith_minus_ec (this) result (ez)
+  elemental function arith_minus_ec_ (this) result (ez)
 
     class(ext_complex_t), intent(in) :: this
     type(ext_complex_t)              :: ez
@@ -494,11 +331,11 @@ contains
 
     return
 
-  end function arith_minus_ec
+  end function arith_minus_ec_
 
 !****
 
-  elemental function arith_minus_ec_ec (this, that) result (ez)
+  elemental function arith_minus_ec_ec_ (this, that) result (ez)
 
     class(ext_complex_t), intent(in) :: this
     class(ext_complex_t), intent(in) :: that
@@ -529,7 +366,7 @@ contains
           e = that%e
        endif
 
-       call split_c(f, ez%f, ez%e)
+       call split_(f, ez%f, ez%e)
        ez = scale(ez, e)
 
     endif
@@ -538,11 +375,11 @@ contains
 
     return
 
-  end function arith_minus_ec_ec
+  end function arith_minus_ec_ec_
 
 !****
 
-  elemental function arith_times_ec_ec (this, that) result (ez)
+  elemental function arith_times_ec_ec_ (this, that) result (ez)
 
     class(ext_complex_t), intent(in) :: this
     class(ext_complex_t), intent(in) :: that
@@ -555,14 +392,14 @@ contains
 
     if(this%f == 0._WP .OR. that%f == 0._WP) then
 
-       ez = ext_complex(0._WP)
+       ez = ext_complex_t(0._WP)
 
     else
 
        f = this%f*that%f
        e = this%e + that%e
 
-       call split_c(f, ez%f, ez%e)
+       call split_(f, ez%f, ez%e)
        ez = scale(ez, e)
 
     endif
@@ -571,11 +408,11 @@ contains
 
     return
 
-  end function arith_times_ec_ec
+  end function arith_times_ec_ec_
 
 !****
 
-  elemental function arith_divide_ec_ec (this, that) result (ez)
+  elemental function arith_divide_ec_ec_ (this, that) result (ez)
 
     class(ext_complex_t), intent(in) :: this
     class(ext_complex_t), intent(in) :: that
@@ -588,14 +425,14 @@ contains
 
     if(this%f == 0._WP .AND. that%f /= 0._WP) then
 
-       ez = ext_complex(0._WP)
+       ez = ext_complex_t(0._WP)
 
     else
 
        f = this%f/that%f
        e = this%e - that%e
 
-       call split_c(f, ez%f, ez%e)
+       call split_(f, ez%f, ez%e)
        ez = scale(ez, e)
 
     endif
@@ -604,7 +441,7 @@ contains
 
     return
 
-  end function arith_divide_ec_ec
+  end function arith_divide_ec_ec_
 
 !****
 
@@ -613,7 +450,7 @@ contains
   $local $INFIX $1
   $local $OP $2
 
-  elemental function arith_${INFIX}_ec_er (this, that) result ($INFIX)
+  elemental function arith_${INFIX}_ec_er_ (this, that) result ($INFIX)
 
     class(ext_complex_t), intent(in) :: this
     class(ext_real_t), intent(in)    :: that
@@ -621,15 +458,15 @@ contains
 
     ! Apply the arithmetic operator
 
-    $INFIX = this $OP ext_complex(that)
+    $INFIX = this $OP ext_complex_t(that)
 
     ! Finish
 
     return
 
-  end function arith_${INFIX}_ec_er
+  end function arith_${INFIX}_ec_er_
 
-  elemental function arith_${INFIX}_er_ec (this, that) result ($INFIX)
+  elemental function arith_${INFIX}_er_ec_ (this, that) result ($INFIX)
 
     class(ext_real_t), intent(in)    :: this
     class(ext_complex_t), intent(in) :: that
@@ -637,15 +474,15 @@ contains
 
     ! Apply the arithmetic operator
 
-    $INFIX = ext_complex(this) $OP that
+    $INFIX = ext_complex_t(this) $OP that
 
     ! Finish
 
     return
 
-  end function arith_${INFIX}_er_ec
+  end function arith_${INFIX}_er_ec_
 
-  elemental function arith_${INFIX}_ec_c (this, that) result ($INFIX)
+  elemental function arith_${INFIX}_ec_c_ (this, that) result ($INFIX)
 
     class(ext_complex_t), intent(in) :: this
     complex(WP), intent(in)          :: that
@@ -653,15 +490,15 @@ contains
 
     ! Apply the arithmetic operator
 
-    $INFIX = this $OP ext_complex(that)
+    $INFIX = this $OP ext_complex_t(that)
 
     ! Finish
 
     return
 
-  end function arith_${INFIX}_ec_c
+  end function arith_${INFIX}_ec_c_
 
-  elemental function arith_${INFIX}_c_ec (this, that) result ($INFIX)
+  elemental function arith_${INFIX}_c_ec_ (this, that) result ($INFIX)
 
     complex(WP), intent(in)          :: this
     class(ext_complex_t), intent(in) :: that
@@ -669,15 +506,15 @@ contains
 
     ! Apply the arithmetic operator
 
-    $INFIX = ext_complex(this) $OP that
+    $INFIX = ext_complex_t(this) $OP that
 
     ! Finish
 
     return
 
-  end function arith_${INFIX}_c_ec
+  end function arith_${INFIX}_c_ec_
 
-  elemental function arith_${INFIX}_ec_r (this, that) result ($INFIX)
+  elemental function arith_${INFIX}_ec_r_ (this, that) result ($INFIX)
 
     class(ext_complex_t), intent(in) :: this
     real(WP), intent(in)             :: that
@@ -685,15 +522,15 @@ contains
 
     ! Apply the arithmetic operator
 
-    $INFIX = this $OP ext_complex(that)
+    $INFIX = this $OP ext_complex_t(that)
 
     ! Finish
 
     return
 
-  end function arith_${INFIX}_ec_r
+  end function arith_${INFIX}_ec_r_
 
-  elemental function arith_${INFIX}_r_ec (this, that) result ($INFIX)
+  elemental function arith_${INFIX}_r_ec_ (this, that) result ($INFIX)
 
     real(WP), intent(in)             :: this
     class(ext_complex_t), intent(in) :: that
@@ -701,13 +538,13 @@ contains
 
     ! Apply the arithmetic operator
 
-    $INFIX = ext_complex(this) $OP that
+    $INFIX = ext_complex_t(this) $OP that
 
     ! Finish
 
     return
 
-  end function arith_${INFIX}_r_ec
+  end function arith_${INFIX}_r_ec_
 
   $endsub
 
@@ -718,7 +555,7 @@ contains
 
 !****
 
-  elemental function cmp_eq_ec_ec (this, that) result (eq)
+  elemental function cmp_eq_ec_ec_ (this, that) result (eq)
 
     class(ext_complex_t), intent(in) :: this
     class(ext_complex_t), intent(in) :: that
@@ -732,11 +569,11 @@ contains
 
     return
 
-  end function cmp_eq_ec_ec
+  end function cmp_eq_ec_ec_
 
 !****
 
-  elemental function cmp_neq_ec_ec (this, that) result (neq)
+  elemental function cmp_neq_ec_ec_ (this, that) result (neq)
 
     class(ext_complex_t), intent(in) :: this
     class(ext_complex_t), intent(in) :: that
@@ -750,7 +587,7 @@ contains
 
     return
 
-  end function cmp_neq_ec_ec
+  end function cmp_neq_ec_ec_
 
 !****
 
@@ -759,7 +596,7 @@ contains
   $local $INFIX $1
   $local $OP $2
 
-  elemental function cmp_${INFIX}_ec_er (this, that) result ($INFIX)
+  elemental function cmp_${INFIX}_ec_er_ (this, that) result ($INFIX)
 
     class(ext_complex_t), intent(in) :: this
     class(ext_real_t), intent(in)    :: that
@@ -767,15 +604,15 @@ contains
 
     ! Apply the comparison operator
 
-    $INFIX = this $OP ext_complex(that)
+    $INFIX = this $OP ext_complex_t(that)
 
     ! Finish
 
     return
 
-  end function cmp_${INFIX}_ec_er
+  end function cmp_${INFIX}_ec_er_
 
-  elemental function cmp_${INFIX}_er_ec (this, that) result ($INFIX)
+  elemental function cmp_${INFIX}_er_ec_ (this, that) result ($INFIX)
 
     class(ext_real_t), intent(in)    :: this
     class(ext_complex_t), intent(in) :: that
@@ -783,15 +620,15 @@ contains
 
     ! Apply the comparison operator
 
-    $INFIX = ext_complex(this) $OP that
+    $INFIX = ext_complex_t(this) $OP that
 
     ! Finish
 
     return
 
-  end function cmp_${INFIX}_er_ec
+  end function cmp_${INFIX}_er_ec_
 
-  elemental function cmp_${INFIX}_ec_r (this, that) result ($INFIX)
+  elemental function cmp_${INFIX}_ec_r_ (this, that) result ($INFIX)
 
     class(ext_complex_t), intent(in) :: this
     real(WP), intent(in)             :: that
@@ -799,15 +636,15 @@ contains
 
     ! Apply the comparison operator
 
-    $INFIX = this $OP ext_complex(that)
+    $INFIX = this $OP ext_complex_t(that)
 
     ! Finish
 
     return
 
-  end function cmp_${INFIX}_ec_r
+  end function cmp_${INFIX}_ec_r_
 
-  elemental function cmp_${INFIX}_r_ec (this, that) result ($INFIX)
+  elemental function cmp_${INFIX}_r_ec_ (this, that) result ($INFIX)
 
     real(WP), intent(in)             :: this
     class(ext_complex_t), intent(in) :: that
@@ -815,15 +652,15 @@ contains
 
     ! Apply the comparison operator
 
-    $INFIX = ext_complex(this) $OP that
+    $INFIX = ext_complex_t(this) $OP that
 
     ! Finish
 
     return
 
-  end function cmp_${INFIX}_r_ec
+  end function cmp_${INFIX}_r_ec_
 
-  elemental function cmp_${INFIX}_ec_c (this, that) result ($INFIX)
+  elemental function cmp_${INFIX}_ec_c_ (this, that) result ($INFIX)
 
     class(ext_complex_t), intent(in) :: this
     complex(WP), intent(in)          :: that
@@ -831,15 +668,15 @@ contains
 
     ! Apply the comparison operator
 
-    $INFIX = this $OP ext_complex(that)
+    $INFIX = this $OP ext_complex_t(that)
 
     ! Finish
 
     return
 
-  end function cmp_${INFIX}_ec_c
+  end function cmp_${INFIX}_ec_c_
 
-  elemental function cmp_${INFIX}_c_ec (this, that) result ($INFIX)
+  elemental function cmp_${INFIX}_c_ec_ (this, that) result ($INFIX)
 
     complex(WP), intent(in)          :: this
     class(ext_complex_t), intent(in) :: that
@@ -847,13 +684,13 @@ contains
 
     ! Apply the comparison operator
 
-    $INFIX = ext_complex(this) $OP that
+    $INFIX = ext_complex_t(this) $OP that
 
     ! Finish
 
     return
 
-  end function cmp_${INFIX}_c_ec
+  end function cmp_${INFIX}_c_ec_
 
   $endsub
 
@@ -862,82 +699,30 @@ contains
 
 !****
 
-  elemental function ext_real_ec (ez) result (ex)
+  elemental function ext_real_t_ec_ (ez) result (ex)
 
     type(ext_complex_t), intent(in) :: ez
     type(ext_real_t)                :: ex
 
-    ! Convert ext_complex to ext_real
+    ! Construct the ext_real_t from the ext_complex_t ez
 
-    ex = ext_real(REAL(ez%f))
+    ex = ext_real_t(REAL(ez%f))
     ex = scale(ex, ez%e)
 
     ! Finish
 
     return
 
-  end function ext_real_ec
-
-!****
-
-  elemental function ext_complex_r (x) result (ez)
-
-    real(WP), intent(in) :: x
-    type(ext_complex_t)  :: ez
-
-    ! Convert real to ext_complex
-
-    call split_c(CMPLX(x, KIND=WP), ez%f, ez%e)
-
-    ! Finish
-
-    return
-
-  end function ext_complex_r
-
-!****
-
-  elemental function ext_complex_er (ex) result (ez)
-
-    type(ext_real_t), intent(in) :: ex
-    type(ext_complex_t)          :: ez
-
-    ! Convert ext_real to ext_complex
-
-    call split_c(CMPLX(FRACTION(ex), KIND=WP), ez%f, ez%e)
-    ez = scale(ez, EXPONENT(ex))
-
-    ! Finish
-
-    return
-
-  end function ext_complex_er
-
-!****
-
-  elemental function ext_complex_c (z) result (ez)
-
-    complex(WP), intent(in) :: z
-    type(ext_complex_t)     :: ez
-
-    ! Convert complex to ext_complex
-
-    call split_c(z, ez%f, ez%e)
-
-    ! Finish
-
-    return
-
-  end function ext_complex_c
+  end function ext_real_t_ec_
 
 !****
     
-  elemental function real_ec (ez) result (x)
+  elemental function real_ (ez) result (x)
 
     type(ext_complex_t), intent(in) :: ez
     real(WP)                        :: x
 
-    ! Convert ext_complex to real
+    ! Convert ext_complex_t to real
 
     x = REAL(cmplx(ez))
 
@@ -945,18 +730,18 @@ contains
 
     return
 
-  end function real_ec
+  end function real_
 
 !****
     
-  elemental function cmplx_ec (ez) result (z)
+  elemental function cmplx_ (ez) result (z)
 
     type(ext_complex_t), intent(in) :: ez
     complex(WP)                     :: z
 
     integer :: e_min
 
-    ! Convert ext_complex to complex
+    ! Convert ext_complex_t to complex
 
     if(ez%f /= 0._WP) then
 
@@ -978,16 +763,16 @@ contains
 
     return
 
-  end function cmplx_ec
+  end function cmplx_
 
 !****
 
-  elemental function valid_ec (ez) result (valid)
+  elemental function valid_ (ez) result (valid)
 
     type(ext_complex_t), intent(in) :: ez
     logical                         :: valid
 
-    ! Determine if ext_complex is valid
+    ! Determine if ez is valid
 
     valid = ABS(REAL(ez%f)) >= RADIX_WP**(-1) .AND. ABS(REAL(ez%f)) < 1._WP
 
@@ -995,11 +780,11 @@ contains
 
     return
 
-  end function valid_ec
+  end function valid_
 
 !****
 
-  function product_ec (ez) result (prod_ez)
+  function product_ (ez) result (prod_ez)
 
     type(ext_complex_t), intent(in) :: ez(:)
     type(ext_complex_t)             :: prod_ez
@@ -1015,7 +800,7 @@ contains
 
     do i = 1,SIZE(ez)
        
-       call split_c(prod_ez%f*ez(i)%f, f, e)
+       call split_(prod_ez%f*ez(i)%f, f, e)
 
        prod_ez%f = f
        prod_ez = scale(prod_ez, e)
@@ -1026,29 +811,29 @@ contains
 
     return
 
-  end function product_ec
+  end function product_
 
 !****
 
-  elemental function abs_ec (ez) result (abs_ez)
+  elemental function abs_ (ez) result (abs_ez)
 
     type(ext_complex_t), intent(in) :: ez
     type(ext_real_t)               :: abs_ez
 
     ! Calculate the absolute value of ez
 
-    abs_ez = ext_real(ABS(ez%f))
+    abs_ez = ext_real_t(ABS(ez%f))
     abs_ez = scale(abs_ez, ez%e)
 
     ! Finish
 
     return
 
-  end function abs_ec
+  end function abs_
 
 !****
 
-  elemental function exp_ec (ez) result (exp_ez)
+  elemental function exp_ (ez) result (exp_ez)
 
     type(ext_complex_t), intent(in) :: ez
     type(ext_complex_t)             :: exp_ez
@@ -1057,7 +842,7 @@ contains
 
     ! Calculate the exponential of ez
 
-    exp_ex = exp(ext_real(ez))
+    exp_ex = exp(ext_real_t(ez))
 
     exp_ez%f = FRACTION(exp_ex)*EXP((0._WP,1._WP)*AIMAG(cmplx(ez)))
     exp_ez%e = EXPONENT(exp_ex)
@@ -1066,11 +851,11 @@ contains
 
     return
 
-  end function exp_ec
+  end function exp_
 
 !****
 
-  elemental function fraction_ec (ez) result (fraction_ez)
+  elemental function fraction_ (ez) result (fraction_ez)
 
     type(ext_complex_t), intent(in) :: ez
     complex(WP)                     :: fraction_ez
@@ -1083,11 +868,11 @@ contains
 
     return
 
-  end function fraction_ec
+  end function fraction_
 
 !****
 
-  elemental function exponent_ec (ez) result (exponent_ez)
+  elemental function exponent_ (ez) result (exponent_ez)
 
     type(ext_complex_t), intent(in) :: ez
     integer                         :: exponent_ez
@@ -1100,11 +885,11 @@ contains
 
     return
 
-  end function exponent_ec
+  end function exponent_
 
 !****
 
-  elemental function scale_ec (ez, de) result (scale_ez)
+  elemental function scale_ (ez, de) result (scale_ez)
 
     class(ext_complex_t), intent(in) :: ez
     integer, intent(in)              :: de
@@ -1119,11 +904,11 @@ contains
 
     return
 
-  end function scale_ec
+  end function scale_
 
 !****
 
-  elemental subroutine split_c (z, f, e)
+  elemental subroutine split_ (z, f, e)
 
     complex(WP), intent(in)  :: z
     complex(WP), intent(out) :: f
@@ -1178,6 +963,207 @@ contains
 
     return
 
-  end subroutine split_c
+  end subroutine split_
+
+!****
+
+  $if($MPI)
+
+  $define $SEND $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine send_${BUFFER_RANK}_ (buffer, dest_rank, tag, sync)
+
+    type(ext_complex_t), intent(in) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)             :: dest_rank
+    integer, optional, intent(in)   :: tag
+    logical, optional, intent(in)   :: sync
+
+    ! Send the buffer
+
+    call send(buffer%f, dest_rank, tag, sync)
+    call send(buffer%e, dest_rank, tag, sync)
+
+    ! Finish
+
+    return
+
+  end subroutine send_${BUFFER_RANK}_
+
+  $endsub
+
+  $SEND(0)
+  $SEND(1)
+  $SEND(2)
+  $SEND(3)
+  $SEND(4)
+
+!****
+  
+  $define $RECV $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine recv_${BUFFER_RANK}_ (buffer, src_rank, tag)
+
+    type(ext_complex_t), intent(out) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)              :: src_rank
+    integer, optional, intent(in)    :: tag
+
+    ! Receive the buffer
+
+    call recv(buffer%f, src_rank, tag)
+    call recv(buffer%e, src_rank, tag)
+
+    ! Finish
+
+    return
+
+  end subroutine recv_${BUFFER_RANK}_
+
+  $endsub
+
+  $RECV(0)
+  $RECV(1)
+  $RECV(2)
+  $RECV(3)
+  $RECV(4)
+  
+!****
+  
+  $define $RECV_ANY $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine recv_any_${BUFFER_RANK}_ (buffer, src_rank, tag)
+
+    type(ext_complex_t), intent(out) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(out)             :: src_rank
+    integer, optional, intent(in)    :: tag
+
+    ! Receive the buffer
+
+    call recv(buffer%f, src_rank, tag)
+    call recv(buffer%e, src_rank, tag)
+
+    ! Finish
+
+    return
+
+  end subroutine recv_any_${BUFFER_RANK}_
+
+  $endsub
+
+  $RECV_ANY(0)
+  $RECV_ANY(1)
+  $RECV_ANY(2)
+  $RECV_ANY(3)
+  $RECV_ANY(4)
+  
+!****
+
+  $define $BCAST $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine bcast_${BUFFER_RANK}_ (buffer, root_rank)
+
+    type(ext_complex_t), intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)                :: root_rank
+
+    ! Broadcast the buffer
+
+    call bcast(buffer%f, root_rank)
+    call bcast(buffer%e, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_${BUFFER_RANK}_
+
+  $endsub
+
+  $BCAST(0)
+  $BCAST(1)
+  $BCAST(2)
+  $BCAST(3)
+  $BCAST(4)
+  
+!****
+
+  $BCAST_ALLOC(type(ext_complex_t),0)
+  $BCAST_ALLOC(type(ext_complex_t),1)
+  $BCAST_ALLOC(type(ext_complex_t),2)
+  $BCAST_ALLOC(type(ext_complex_t),3)
+  $BCAST_ALLOC(type(ext_complex_t),4)
+
+!****
+
+  $define $GATHERV $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine gatherv_${BUFFER_RANK}_ (send_buffer, sendcount, recv_buffer, recvcounts, displs, root_rank)
+
+    type(ext_complex_t), intent(in)    :: send_buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)                :: sendcount
+    type(ext_complex_t), intent(inout) :: recv_buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)                :: recvcounts(:)
+    integer, intent(in)                :: displs(:)
+    integer, intent(in)                :: root_rank
+
+    ! Gather the buffers
+
+    call gatherv(send_buffer%f, sendcount, recv_buffer%f, recvcounts, displs, root_rank)
+    call gatherv(send_buffer%e, sendcount, recv_buffer%e, recvcounts, displs, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine gatherv_${BUFFER_RANK}_
+
+  $endsub
+
+  $GATHERV(0)
+  $GATHERV(1)
+  $GATHERV(2)
+  $GATHERV(3)
+  $GATHERV(4)
+  
+!****
+
+  $define $ALLGATHERV $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine allgatherv_${BUFFER_RANK}_ (buffer, recvcounts, displs)
+
+    type(ext_complex_t), intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)                :: recvcounts(:)
+    integer, intent(in)                :: displs(:)
+
+    ! Gather and share the buffers
+
+    call allgatherv(buffer%f, recvcounts, displs)
+    call allgatherv(buffer%e, recvcounts, displs)
+
+    ! Finish
+
+    return
+
+  end subroutine allgatherv_${BUFFER_RANK}_
+
+  $endsub
+
+  $ALLGATHERV(0)
+  $ALLGATHERV(1)
+  $ALLGATHERV(2)
+  $ALLGATHERV(3)
+  $ALLGATHERV(4)
+  
+  $endif
 
 end module gyre_ext_complex

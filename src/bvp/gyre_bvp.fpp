@@ -32,44 +32,44 @@ module gyre_bvp
   type, abstract :: bvp_t
    contains 
      private
-     procedure(discrim_i), deferred, public :: discrim
-     procedure(mode_i), deferred, public    :: mode
-     procedure(coeffs_i), deferred, public  :: coeffs
+     procedure(discrim_), deferred, public :: discrim
+     procedure(mode_), deferred, public    :: mode
+     procedure(coeffs_), deferred, public  :: coeffs
   end type bvp_t
 
   ! Interfaces
 
   abstract interface
 
-     function discrim_i (this, omega, use_real) result (discrim)
+     function discrim_ (this, omega, use_real) result (discrim)
        use core_kinds
        use gyre_ext_arith
        import bvp_t
        class(bvp_t), intent(inout)   :: this
        complex(WP), intent(in)       :: omega
-       logical, intent(in), optional :: use_real
+       logical, optional, intent(in) :: use_real
        type(ext_complex_t)           :: discrim
-     end function discrim_i
+     end function discrim_
 
-     function mode_i (this, omega, discrim, use_real, omega_def) result (mode)
+     function mode_ (this, omega, discrim, use_real, omega_def) result (mode)
        use core_kinds
        use gyre_mode
        use gyre_ext_arith
        import bvp_t
        class(bvp_t), target, intent(inout)       :: this
        complex(WP), intent(in)                   :: omega(:)
-       type(ext_complex_t), intent(in), optional :: discrim(:)
-       logical, intent(in), optional             :: use_real
-       complex(WP), intent(in), optional         :: omega_def(:)
+       type(ext_complex_t), optional, intent(in) :: discrim(:)
+       logical, optional, intent(in)             :: use_real
+       complex(WP), optional, intent(in)         :: omega_def(:)
        type(mode_t)                              :: mode
-     end function mode_i
+     end function mode_
 
-     function coeffs_i (this) result (cf)
+     function coeffs_ (this) result (cf)
        use gyre_coeffs
        import bvp_t
        class(bvp_t), intent(in) :: this
        class(coeffs_t), pointer :: cf
-     end function coeffs_i
+     end function coeffs_
 
   end interface
 

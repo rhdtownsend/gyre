@@ -201,7 +201,7 @@ contains
        ! Find the mode
 
        md(i) = bp%mode(CMPLX([omega_a(i),omega_b(i)], KIND=WP), &
-                       ext_complex([discrim_a(i),discrim_b(i)]), use_real=.TRUE.)
+                       ext_complex_t([discrim_a(i),discrim_b(i)]), use_real=.TRUE.)
 
        ! Report
 
@@ -380,7 +380,7 @@ contains
 
     discrim_loop : do i = i_part(MPI_RANK+1),i_part(MPI_RANK+2)-1
 
-       discrim(i) = ext_real(bp%discrim(CMPLX(omega(i), KIND=WP)))
+       discrim(i) = ext_real_t(bp%discrim(CMPLX(omega(i), KIND=WP)))
 
        if(check_log_level('DEBUG', MPI_RANK)) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
@@ -415,7 +415,7 @@ contains
 
     bracket_loop : do i = 1, n_omega-1
 
-       if(discrim(i)*discrim(i+1) <= ext_real(0._WP)) then
+       if(discrim(i)*discrim(i+1) <= ext_real_t(0._WP)) then
           n_brack = n_brack + 1
           i_brack(n_brack) = i
        end if

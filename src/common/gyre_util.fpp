@@ -49,18 +49,18 @@ module gyre_util
   ! Interfaces
 
   interface select_par
-     module procedure select_par_np
-     module procedure select_par_gp
-     module procedure select_par_sp
+     module procedure select_par_np_
+     module procedure select_par_gp_
+     module procedure select_par_sp_
   end interface select_par
 
   interface sprint
-     module procedure sprint_i
+     module procedure sprint_
   end interface sprint
 
   interface integrate
-     module procedure integrate_r
-     module procedure Integrate_c
+     module procedure integrate_r_
+     module procedure Integrate_c_
   end interface integrate
 
   ! Access specifiers
@@ -84,7 +84,7 @@ contains
   function form_header (header, underchar)
 
     character(LEN=*), intent(in)           :: header
-    character(LEN=*), intent(in), optional :: underchar
+    character(LEN=*), optional, intent(in) :: underchar
     character(LEN=:), allocatable          :: form_header
 
     ! Format the header string
@@ -147,7 +147,7 @@ contains
   function check_log_level (log_level, rank)
 
     character(LEN=*), intent(in)  :: log_level
-    integer, intent(in), optional :: rank
+    integer, optional, intent(in) :: rank
     logical                       :: check_log_level
 
     integer :: rank_
@@ -203,11 +203,11 @@ contains
 
     select type (cf)
     class is (coeffs_evol_t)
-       freq_scale = evol_freq_scale(cf, op, x_o, freq_units)
+       freq_scale = evol_freq_scale_(cf, op, x_o, freq_units)
     class is (coeffs_poly_t)
-       freq_scale = poly_freq_scale(freq_units)
+       freq_scale = poly_freq_scale_(freq_units)
     class is (coeffs_hom_t)
-       freq_scale = hom_freq_scale(freq_units)
+       freq_scale = hom_freq_scale_(freq_units)
     class default
        $ABORT(Invalid cf type)
     end select
@@ -218,7 +218,7 @@ contains
 
   contains
 
-    function evol_freq_scale (cf, op, x_o, freq_units) result (freq_scale)
+    function evol_freq_scale_ (cf, op, x_o, freq_units) result (freq_scale)
 
       class(coeffs_evol_t), intent(in) :: cf
       type(oscpar_t), intent(in)       :: op
@@ -255,11 +255,9 @@ contains
 
       return
 
-    end function evol_freq_scale
+    end function evol_freq_scale_
 
-!****
-
-    function poly_freq_scale (freq_units) result (freq_scale)
+    function poly_freq_scale_ (freq_units) result (freq_scale)
 
       character(LEN=*), intent(in) :: freq_units
       real(WP)                     :: freq_scale
@@ -278,11 +276,9 @@ contains
 
       return
 
-    end function poly_freq_scale
+    end function poly_freq_scale_
 
-!****
-
-    function hom_freq_scale (freq_units) result (freq_scale)
+    function hom_freq_scale_ (freq_units) result (freq_scale)
 
       character(LEN=*), intent(in) :: freq_units
       real(WP)                     :: freq_scale
@@ -301,7 +297,7 @@ contains
 
       return
 
-    end function hom_freq_scale
+    end function hom_freq_scale_
 
   end function freq_scale
 
@@ -348,15 +344,15 @@ contains
    
    $define $SELECT_PAR $sub
 
-   $local $SUFFIX $1
+   $local $INFIX $1
    $local $PAR_TYPE $2
 
-   subroutine select_par_$SUFFIX (par, tag, par_sel, last)
+   subroutine select_par_${INFIX}_ (par, tag, par_sel, last)
 
      type($PAR_TYPE), intent(in)               :: par(:)
      character(LEN=*), intent(in)              :: tag
      type($PAR_TYPE), allocatable, intent(out) :: par_sel(:)
-     logical, intent(in), optional             :: last
+     logical, optional, intent(in)             :: last
 
      logical :: last_
      integer :: i
@@ -400,7 +396,7 @@ contains
 
     return
 
-  end subroutine select_par_$SUFFIX
+  end subroutine select_par_${INFIX}_
 
   $endsub
 
@@ -515,7 +511,7 @@ contains
 
 !****
 
-  function sprint_i (i) result (a)
+  function sprint_ (i) result (a)
 
     integer, intent(in)           :: i
     character(LEN=:), allocatable :: a
@@ -545,7 +541,7 @@ contains
 
     return
 
-  end function sprint_i
+  end function sprint_
 
 !****
 
@@ -569,10 +565,10 @@ contains
 
   $define $INTEGRATE $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  function integrate_$SUFFIX (x, y) result (int_y)
+  function integrate_${INFIX}_ (x, y) result (int_y)
 
     real(WP), intent(in)  :: x(:)
     $TYPE(WP), intent(in) :: y(:)
@@ -592,7 +588,7 @@ contains
 
     return
 
-  end function integrate_$SUFFIX
+  end function integrate_${INFIX}_
 
   $endsub
 

@@ -43,7 +43,7 @@ module gyre_grid
      real(WP) :: s
      integer  :: n
    contains
-     procedure :: eval_c => eval_geom_func
+     procedure :: eval_c_ => eval_geom_func_
   end type geom_func_t
 
   type, extends (func_t) :: gamma_func_t
@@ -51,7 +51,7 @@ module gyre_grid
      type(oscpar_t), pointer  :: op => null()
      real(WP)                 :: omega
    contains
-     procedure :: eval_c => eval_gamma_func
+     procedure :: eval_c_ => eval_gamma_func_
   end type gamma_func_t
 
   ! Access specifiers
@@ -60,9 +60,6 @@ module gyre_grid
 
   public :: build_grid
   public :: grid_range
-  public :: create_uniform
-  public :: create_geom
-  public :: create_log
   public :: find_x_turn
 
   ! Procedures
@@ -76,7 +73,7 @@ contains
     type(oscpar_t), intent(in)         :: op
     real(WP), allocatable, intent(in)  :: x_in(:)
     real(WP), allocatable, intent(out) :: x(:)
-    logical, intent(in), optional      :: verbose
+    logical, optional, intent(in)      :: verbose
 
     logical :: write_info
     integer :: i
@@ -103,13 +100,13 @@ contains
        $ASSERT(ALLOCATED(x_in),No grid to clone)
        x = x_in
     case ('CREATE_UNIFORM')
-       call create_uniform(gp(1)%n, x)
+       call create_uniform_(gp(1)%n, x)
     case ('CREATE_GEOM')
-       call create_geom(gp(1)%s, gp(1)%n, x)
+       call create_geom_(gp(1)%s, gp(1)%n, x)
     case ('CREATE_LOG')
-       call create_log(gp(1)%s, gp(1)%n, x)
+       call create_log_(gp(1)%s, gp(1)%n, x)
     case ('CREATE_FROM_FILE')
-       call create_from_file(gp(1)%file, x)
+       call create_from_file_(gp(1)%file, x)
     case default
        $ABORT(Invalid op_type (the first op_type must be CREATE_*))
     end select
@@ -123,15 +120,15 @@ contains
 
        select case (gp(i)%op_type)
        case ('RESAMP_DISPERSION')
-          call resample_dispersion(cf, op, gp(i)%omega_a, gp(i)%omega_b, &
-                                   gp(i)%alpha_osc, gp(i)%alpha_exp, x)
+          call resample_dispersion_(cf, op, gp(i)%omega_a, gp(i)%omega_b, &
+                                    gp(i)%alpha_osc, gp(i)%alpha_exp, x)
        case ('RESAMP_THERMAL')
-          call resample_thermal(cf, gp(i)%omega_a, gp(i)%omega_b, &
-                                   gp(i)%alpha_thm, x)
+          call resample_thermal_(cf, gp(i)%omega_a, gp(i)%omega_b, &
+                                 gp(i)%alpha_thm, x)
        case ('RESAMP_CENTER')
-          call resample_center(cf, op, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
+          call resample_center_(cf, op, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
        case ('RESAMP_UNIFORM')
-          call resample_uniform(gp(i)%n, x)
+          call resample_uniform_(gp(i)%n, x)
        case default
           $ABORT(Invalid op_type (the second and subsequent op_types must be RESAMPLE_*))
        end select
@@ -201,7 +198,7 @@ contains
           
 !****
 
-  subroutine create_uniform (n, x)
+  subroutine create_uniform_ (n, x)
 
     integer, intent(in)                :: n
     real(WP), allocatable, intent(out) :: x(:)
@@ -225,11 +222,11 @@ contains
 
     return
 
-  end subroutine create_uniform
+  end subroutine create_uniform_
 
 !****
 
-  subroutine create_geom (s, n, x)
+  subroutine create_geom_ (s, n, x)
 
     real(WP), intent(in)               :: s
     integer, intent(in)                :: n
@@ -319,11 +316,11 @@ contains
 
     return
 
-  end subroutine create_geom
+  end subroutine create_geom_
 
 !****
 
-  function eval_geom_func (this, z) result (f_z)
+  function eval_geom_func_ (this, z) result (f_z)
 
     class(geom_func_t), intent(inout) :: this
     complex(WP), intent(in)           :: z
@@ -362,11 +359,11 @@ contains
 
     return
 
-  end function eval_geom_func
+  end function eval_geom_func_
 
 !****
 
-  subroutine create_log (s, n, x)
+  subroutine create_log_ (s, n, x)
 
     real(WP), intent(in)               :: s
     integer, intent(in)                :: n
@@ -435,11 +432,11 @@ contains
 
     return
 
-  end subroutine create_log
+  end subroutine create_log_
 
 !****
 
-  subroutine create_from_file (file, x)
+  subroutine create_from_file_ (file, x)
 
     character(LEN=*), intent(in)       :: file
     real(WP), allocatable, intent(out) :: x(:)
@@ -479,11 +476,11 @@ contains
 
     return
 
-  end subroutine create_from_file
+  end subroutine create_from_file_
 
 !****
 
-  subroutine resample (x, dn)
+  subroutine resample_ (x, dn)
 
     real(WP), allocatable, intent(inout) :: x(:)
     integer, intent(in)                  :: dn(:)
@@ -519,11 +516,11 @@ contains
 
     return
 
-  end subroutine resample
+  end subroutine resample_
 
 !****
 
-  subroutine resample_dispersion (cf, op, omega_a, omega_b, alpha_osc, alpha_exp, x)
+  subroutine resample_dispersion_ (cf, op, omega_a, omega_b, alpha_osc, alpha_exp, x)
 
     class(coeffs_t), intent(in)          :: cf
     type(oscpar_t), intent(in)           :: op
@@ -638,17 +635,17 @@ contains
 
     ! Perform the resampling
 
-    call resample(x, dn)
+    call resample_(x, dn)
 
     ! Finish
 
     return
 
-  end subroutine resample_dispersion
+  end subroutine resample_dispersion_
 
 !****
 
-  subroutine resample_thermal (cf, omega_a, omega_b, alpha_thm, x)
+  subroutine resample_thermal_ (cf, omega_a, omega_b, alpha_thm, x)
 
     class(coeffs_t), intent(in)          :: cf
     real(WP), intent(in)                 :: omega_a
@@ -708,17 +705,17 @@ contains
 
     ! Perform the resampling
 
-    call resample(x, dn)
+    call resample_(x, dn)
 
     ! Finish
 
     return
 
-  end subroutine resample_thermal
+  end subroutine resample_thermal_
 
 !****
 
-  subroutine resample_center (cf, op, omega_a, omega_b, n, x)
+  subroutine resample_center_ (cf, op, omega_a, omega_b, n, x)
 
     class(coeffs_t), intent(in)          :: cf
     type(oscpar_t), intent(in)           :: op
@@ -766,17 +763,17 @@ contains
     
     ! Perform the resampling
 
-    call resample(x, dn)
+    call resample_(x, dn)
 
     ! Finish
 
     return
 
-  end subroutine resample_center
+  end subroutine resample_center_
 
 !****
 
-  subroutine resample_uniform (n, x)
+  subroutine resample_uniform_ (n, x)
 
     integer, intent(in)                  :: n
     real(WP), allocatable, intent(inout) :: x(:)
@@ -796,13 +793,13 @@ contains
 
     ! Perform the resampling
 
-    call resample(x, dn)
+    call resample_(x, dn)
 
     ! Finish
 
     return
 
-  end subroutine resample_uniform
+  end subroutine resample_uniform_
 
 !****
 
@@ -843,7 +840,7 @@ contains
 
 !****
 
-  function eval_gamma_func (this, z) result (gamma)
+  function eval_gamma_func_ (this, z) result (gamma)
 
     class(gamma_func_t), intent(inout) :: this
     complex(WP), intent(in)            :: z
@@ -874,6 +871,6 @@ contains
 
     return
 
-  end function eval_gamma_func
+  end function eval_gamma_func_
 
 end module gyre_grid

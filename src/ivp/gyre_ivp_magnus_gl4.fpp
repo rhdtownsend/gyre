@@ -41,14 +41,14 @@ module gyre_ivp_magnus_GL4
      class(jacobian_t), allocatable :: jc
    contains
      private
-     procedure, public :: eval_dOmega
-     procedure, public :: abscissa
+     procedure, public :: eval_dOmega => eval_dOmega_
+     procedure, public :: abscissa => abscissa_
   end type ivp_magnus_GL4_t
 
   ! Interfaces
 
   interface ivp_magnus_GL4_t
-     module procedure init_iv
+     module procedure ivp_magnus_GL4_t_
   end interface ivp_magnus_GL4_t
 
   ! Access specifiers
@@ -61,12 +61,12 @@ module gyre_ivp_magnus_GL4
 
 contains
 
-  function init_iv (jc) result (iv)
+  function ivp_magnus_GL4_t_ (jc) result (iv)
 
     class(jacobian_t), intent(in) :: jc
     type(ivp_magnus_GL4_t)        :: iv
 
-    ! Construct the ivp_magnus_GL4
+    ! Construct the ivp_magnus_GL4_t
 
     allocate(iv%jc, SOURCE=jc)
 
@@ -76,11 +76,11 @@ contains
 
     return
     
-  end function init_iv
+  end function ivp_magnus_GL4_t_
 
 !****
 
-  subroutine eval_dOmega (this, omega, x_a, x_b, dOmega)
+  subroutine eval_dOmega_ (this, omega, x_a, x_b, dOmega)
 
     class(ivp_magnus_GL4_t), intent(in) :: this
     complex(WP), intent(in)             :: omega
@@ -119,11 +119,11 @@ contains
 
     return
 
-  end subroutine eval_dOmega
+  end subroutine eval_dOmega_
 
 !****
 
-  function abscissa (this, x_a, x_b) result (x)
+  function abscissa_ (this, x_a, x_b) result (x)
 
     class(ivp_magnus_GL4_t), intent(in) :: this
     real(WP), intent(in)                :: x_a
@@ -142,6 +142,6 @@ contains
 
     return
 
-  end function abscissa
+  end function abscissa_
 
 end module gyre_ivp_magnus_GL4

@@ -47,8 +47,8 @@ module gyre_lib
 
   ! Module variables
 
-  type(coeffs_evol_t), allocatable, save :: cf_m
-  real(WP), allocatable, save            :: x_cf_m(:)
+  class(coeffs_t), pointer, save :: cf_m => null()
+  real(WP), allocatable, save    :: x_cf_m(:)
 
   ! Access specifiers
 
@@ -85,7 +85,7 @@ contains
 
     ! Finalize
 
-    if(ALLOCATED(cf_m)) then
+    if(ASSOCIATED(cf_m)) then
        call cf_m%final()
        deallocate(cf_m)
     endif
@@ -108,18 +108,18 @@ contains
     real(WP), intent(in)         :: G
     character(LEN=*), intent(in) :: deriv_type
 
-    ! Allocate the model
+    type(coeffs_evol_t) :: ec
 
-    if(ALLOCATED(cf_m)) then
+    ! Read the model
+
+    if(ASSOCIATED(cf_m)) then
        call cf_m%final()
        deallocate(cf_m)
     endif
 
-    allocate(coeffs_evol_t::cf_m)
+    call read_mesa_file(file, G, deriv_type, ec, x_cf_m)
 
-    ! Read the model
-
-    call read_mesa_file(file, G, deriv_type, cf_m, x_cf_m)
+    allocate(cf_m, SOURCE=ec)
 
     ! Finish
 
@@ -163,7 +163,7 @@ contains
 
     ! Allocate the model
 
-    if(ALLOCATED(cf_m)) then
+    if(ASSOCIATED(cf_m)) then
        call cf_m%final()
        deallocate(cf_m)
     endif
@@ -176,11 +176,11 @@ contains
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    call cf_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                   Gamma_1, nabla_ad, delta, Omega_rot, &
-                   nabla, kappa, kappa_rho, kappa_T, &
-                   epsilon, epsilon_rho, epsilon_T, &
-                   deriv_type, add_center)
+    allocate(cf_m, SOURCE=coeffs_evol_t(G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
+                                        Gamma_1, nabla_ad, delta, Omega_rot, &
+                                        nabla, kappa, kappa_rho, kappa_T, &
+                                        epsilon, epsilon_rho, epsilon_T, &
+                                        deriv_type, add_center))
 
     if(add_center) then
        x_cf_m = [0._WP,r/R_star]
@@ -211,7 +211,7 @@ contains
     end interface
     integer, intent(inout)  :: ipar(:)
     real(WP), intent(inout) :: rpar(:)
-    logical, intent(in), optional :: dummy
+    logical, optional, intent(in) :: dummy
 
     integer                      :: unit
     type(oscpar_t), allocatable  :: op(:)
@@ -230,7 +230,7 @@ contains
     integer                      :: j
     integer                      :: retcode
 
-    $ASSERT(ALLOCATED(cf_m),No model provided)
+    $ASSERT(ASSOCIATED(cf_m),No model provided)
 
     ! Read parameters
 
@@ -272,18 +272,16 @@ contains
        ! Set up bp
 
        if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-          allocate(bvp_rad_t::bp)
+          allocate(bp, SOURCE=bvp_rad_t(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf_m))
        else
-          allocate(bvp_ad_t::bp)
+          allocate(bp, SOURCE=bvp_ad_t(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf_m))
        endif
-
-       call bp%init(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf_m)
 
        ! Find modes
 
        call scan_search(bp, omega, md)
 
-       $if($GFORTRAN_PR57922)
+       $if ($GFORTRAN_PR57922)
        select type (bp)
        type is (bvp_rad_t)
           call bp%final()

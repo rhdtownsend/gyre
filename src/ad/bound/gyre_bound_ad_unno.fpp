@@ -44,14 +44,14 @@ module gyre_bound_ad_unno
      type(oscpar_t)                 :: op
    contains 
      private
-     procedure, public :: inner_bound
-     procedure, public :: outer_bound
+     procedure, public :: inner_bound => inner_bound_
+     procedure, public :: outer_bound => outer_bound_
   end type bound_ad_unno_t
 
   ! Interfaces
 
   interface bound_ad_unno_t
-     module procedure init_bd
+     module procedure bound_ad_unno_t_
   end interface bound_ad_unno_t
 
   ! Access specifiers
@@ -64,14 +64,14 @@ module gyre_bound_ad_unno
 
 contains
 
-  function init_bd (cf, jc, op) result (bd)
+  function bound_ad_unno_t_ (cf, jc, op) result (bd)
 
     class(coeffs_t), pointer, intent(in) :: cf
     class(jacobian_t), intent(in)        :: jc
     type(oscpar_t), intent(in)           :: op
     type(bound_ad_unno_t)                :: bd
 
-    ! Construct the bound_ad_unno
+    ! Construct the bound_ad_unno_t
 
     bd%cf => cf
     allocate(bd%jc, SOURCE=jc)
@@ -87,16 +87,16 @@ contains
 
     return
     
-  end function init_bd
+  end function bound_ad_unno_t_
 
 !****
 
-  function inner_bound (this, x_i, omega) result (B_i)
+  function inner_bound_ (this, x_i, omega) result (B_i)
 
     class(bound_ad_unno_t), intent(in) :: this
     real(WP), intent(in)               :: x_i
     complex(WP), intent(in)            :: omega
-    $if($GFORTRAN_PR_58007)
+    $if ($GFORTRAN_PR_58007)
     complex(WP), allocatable           :: B_i(:,:)
     $else
     complex(WP)                        :: B_i(this%n_i,this%n_e)
@@ -104,7 +104,7 @@ contains
 
     $ASSERT(x_i == 0._WP,Boundary condition invalid for x_i /= 0)
 
-    $if($GFORTRAN_PR_58007)
+    $if ($GFORTRAN_PR_58007)
     allocate(B_i(this%n_i,this%n_e))
     $endif
 
@@ -131,16 +131,16 @@ contains
 
     return
 
-  end function inner_bound
+  end function inner_bound_
 
 !****
 
-  function outer_bound (this, x_o, omega) result (B_o)
+  function outer_bound_ (this, x_o, omega) result (B_o)
 
     class(bound_ad_unno_t), intent(in) :: this
     real(WP), intent(in)               :: x_o
     complex(WP), intent(in)            :: omega
-    $if($GFORTRAN_PR_58007)
+    $if ($GFORTRAN_PR_58007)
     complex(WP), allocatable           :: B_o(:,:)
     $else
     complex(WP)                        :: B_o(this%n_o,this%n_e)
@@ -159,7 +159,7 @@ contains
     complex(WP) :: alpha_1
     complex(WP) :: alpha_2
 
-    $if($GFORTRAN_PR_58007)
+    $if ($GFORTRAN_PR_58007)
     allocate(B_o(this%n_o,this%n_e))
     $endif
 
@@ -200,6 +200,6 @@ contains
 
     return
 
-  end function outer_bound
+  end function outer_bound_
 
 end module gyre_bound_ad_unno

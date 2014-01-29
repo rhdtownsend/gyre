@@ -35,28 +35,29 @@ module gyre_ext_func
 
   type, abstract :: ext_func_t
    contains
-     procedure                      :: eval_er
-     procedure(eval_ec_i), deferred :: eval_ec
-     generic                        :: eval => eval_er, eval_ec
-     procedure                      :: expand_bracket
-     procedure                      :: expand_pair
-     procedure                      :: narrow_bracket
-     procedure                      :: narrow_pair
-     procedure                      :: root_r
-     procedure                      :: root_c
-     generic                        :: root => root_r, root_c
+     private
+     procedure                     :: eval_er_
+     procedure(eval_ec_), deferred :: eval_ec_
+     generic, public               :: eval => eval_er_, eval_ec_
+     procedure, public             :: expand_bracket => expand_bracket_
+     procedure, public             :: expand_pair => expand_pair_
+     procedure, public             :: narrow_bracket => narrow_bracket_
+     procedure, public             :: narrow_pair => narrow_pair_
+     procedure                     :: root_r_
+     procedure                     :: root_c_
+     generic, public               :: root => root_r_, root_c_
   end type ext_func_t 
 
   ! Interfaces
 
   abstract interface
-    function eval_ec_i (this, ez) result (f_ez)
+    function eval_ec_ (this, ez) result (f_ez)
       use gyre_ext_arith
       import ext_func_t
       class(ext_func_t), intent(inout) :: this
       type(ext_complex_t), intent(in)  :: ez
       type(ext_complex_t)              :: f_ez
-    end function eval_ec_i
+    end function eval_ec_
   end interface
 
   ! Access specifiers
@@ -69,34 +70,34 @@ module gyre_ext_func
 
 contains
 
-  function eval_er (this, ex) result (f_ex)
+  function eval_er_ (this, ex) result (f_ex)
 
     class(ext_func_t), intent(inout) :: this
     type(ext_real_t), intent(in)     :: ex
     type(ext_real_t)                 :: f_ex
 
     ! Evaluate the real function based on the complex function
-    ! this%eval_c
+    ! this%eval()
 
-    f_ex = ext_real(this%eval(ext_complex(ex)))
+    f_ex = ext_real_t(this%eval(ext_complex_t(ex)))
 
     ! Finish
 
     return
 
-  end function eval_er
+  end function eval_er_
 
 !****
 
-  subroutine expand_bracket (this, ex_a, ex_b, f_ex_a, f_ex_b, clamp_a, clamp_b)
+  subroutine expand_bracket_ (this, ex_a, ex_b, f_ex_a, f_ex_b, clamp_a, clamp_b)
 
     class(ext_func_t), intent(inout)        :: this
     type(ext_real_t), intent(inout)         :: ex_a
     type(ext_real_t), intent(inout)         :: ex_b
-    type(ext_real_t), intent(out), optional :: f_ex_a
-    type(ext_real_t), intent(out), optional :: f_ex_b
-    logical, intent(in), optional           :: clamp_a
-    logical, intent(in), optional           :: clamp_b
+    type(ext_real_t), optional, intent(out) :: f_ex_a
+    type(ext_real_t), optional, intent(out) :: f_ex_b
+    logical, optional, intent(in)           :: clamp_a
+    logical, optional, intent(in)           :: clamp_b
 
     real(WP), parameter :: EXPAND_FACTOR = 1.6_WP
 
@@ -160,21 +161,21 @@ contains
 
     return
 
-  end subroutine expand_bracket
+  end subroutine expand_bracket_
 
 !****
 
-  subroutine expand_pair (this, ez_a, ez_b, f_ez_tol, f_ez_a, f_ez_b, clamp_a, clamp_b, relative_tol)
+  subroutine expand_pair_ (this, ez_a, ez_b, f_ez_tol, f_ez_a, f_ez_b, clamp_a, clamp_b, relative_tol)
 
     class(ext_func_t), intent(inout)           :: this
     type(ext_complex_t), intent(inout)         :: ez_a
     type(ext_complex_t), intent(inout)         :: ez_b
     type(ext_real_t), intent(in)               :: f_ez_tol
-    type(ext_complex_t), intent(out), optional :: f_ez_a
-    type(ext_complex_t), intent(out), optional :: f_ez_b
-    logical, intent(in), optional              :: clamp_a
-    logical, intent(in), optional              :: clamp_b
-    logical, intent(in), optional              :: relative_tol
+    type(ext_complex_t), optional, intent(out) :: f_ez_a
+    type(ext_complex_t), optional, intent(out) :: f_ez_b
+    logical, optional, intent(in)              :: clamp_a
+    logical, optional, intent(in)              :: clamp_b
+    logical, optional, intent(in)              :: relative_tol
 
     real(WP), parameter :: EXPAND_FACTOR = 1.6_WP
 
@@ -251,11 +252,11 @@ contains
 
     return
 
-  end subroutine expand_pair
+  end subroutine expand_pair_
 
 !****
 
-  subroutine narrow_bracket (this, ex_a, ex_b, ex_tol, f_ex_a, f_ex_b, n_iter, relative_tol)
+  subroutine narrow_bracket_ (this, ex_a, ex_b, ex_tol, f_ex_a, f_ex_b, n_iter, relative_tol)
 
     class(ext_func_t), intent(inout)          :: this
     type(ext_real_t), intent(inout)           :: ex_a
@@ -452,11 +453,11 @@ contains
 
     return
 
-  end subroutine narrow_bracket
+  end subroutine narrow_bracket_
 
 !****
 
-  subroutine narrow_pair (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol)
+  subroutine narrow_pair_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol)
 
     class(ext_func_t), intent(inout)             :: this
     type(ext_complex_t), intent(inout)           :: ez_a
@@ -579,11 +580,11 @@ contains
 
     ! Finish
 
-  end subroutine narrow_pair
+  end subroutine narrow_pair_
 
 !****
 
-  function root_r (this, ex_a, ex_b, ex_tol, f_ex_a, f_ex_b, n_iter, relative_tol) result (ex)
+  function root_r_ (this, ex_a, ex_b, ex_tol, f_ex_a, f_ex_b, n_iter, relative_tol) result (ex)
 
     class(ext_func_t), intent(inout)       :: this
     type(ext_real_t), intent(in)           :: ex_a
@@ -625,11 +626,11 @@ contains
 
     return
 
-  end function root_r
+  end function root_r_
 
 !****
 
-  function root_c (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol) result (ez)
+  function root_c_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol) result (ez)
 
     class(ext_func_t), intent(inout)          :: this
     type(ext_complex_t), intent(in)           :: ez_a
@@ -671,6 +672,6 @@ contains
 
     return
 
-  end function root_c
+  end function root_c_
 
 end module gyre_ext_func

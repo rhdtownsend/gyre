@@ -95,7 +95,7 @@ contains
           $ABORT(Invalid summary_file_format)
        end select
 
-       call write_summary(wr, md, split_list(summary_item_list, ','), freq_units)
+       call write_summary_(wr, md, split_list(summary_item_list, ','), freq_units)
        call wr%final()
 
        deallocate(wr)
@@ -118,7 +118,7 @@ contains
             $ABORT(Invalid mode_file_format)
          end select
 
-          call write_mode(wr, md(j), split_list(mode_item_list, ','), freq_units, j)
+          call write_mode_(wr, md(j), split_list(mode_item_list, ','), freq_units, j)
           call wr%final()
 
           deallocate(wr)
@@ -141,7 +141,7 @@ contains
 
 !****
 
-  subroutine write_summary (wr, md, items, freq_units)
+  subroutine write_summary_ (wr, md, items, freq_units)
 
     class(writer_t), intent(inout) :: wr
     type(mode_t), intent(in)       :: md(:)
@@ -192,9 +192,9 @@ contains
           if(n_md >= 1) then
              select type (cf => md(1)%cf)
              type is (coeffs_evol_t)
-                call write_summary_evol(wr, cf, items(j))
+                call write_summary_evol_(wr, cf, items(j))
              type is (coeffs_poly_t)
-                call write_summary_poly(wr, cf, items(j))
+                call write_summary_poly_(wr, cf, items(j))
              class default
                 write(ERROR_UNIT, *) 'item:', TRIM(items(j))
                 $ABORT(Invalid item)
@@ -210,7 +210,7 @@ contains
 
   contains
 
-    subroutine write_summary_evol (wr, ec, item)
+    subroutine write_summary_evol_ (wr, ec, item)
 
       class(writer_t), intent(inout)  :: wr
       type(coeffs_evol_t), intent(in) :: ec
@@ -234,9 +234,9 @@ contains
 
       return
 
-    end subroutine write_summary_evol
+    end subroutine write_summary_evol_
 
-    subroutine write_summary_poly (wr, pc, item)
+    subroutine write_summary_poly_ (wr, pc, item)
 
       class(writer_t), intent(inout)  :: wr
       type(coeffs_poly_t), intent(in) :: pc
@@ -256,13 +256,13 @@ contains
 
       return
 
-    end subroutine write_summary_poly
+    end subroutine write_summary_poly_
 
-  end subroutine write_summary
+  end subroutine write_summary_
 
 !****
 
-  subroutine write_mode (wr, md, items, freq_units, i)
+  subroutine write_mode_ (wr, md, items, freq_units, i)
 
     class(writer_t), intent(inout) :: wr
     type(mode_t), intent(in)       :: md
@@ -366,9 +366,9 @@ contains
        case default
           select type (cf => md%cf)
           type is (coeffs_evol_t)
-             call write_mode_evol(wr, cf, items(j))
+             call write_mode_evol_(wr, cf, items(j))
           type is (coeffs_poly_t)
-             call write_mode_poly(wr, cf, items(j))
+             call write_mode_poly_(wr, cf, items(j))
           class default
              write(ERROR_UNIT, *) 'item:', TRIM(items(j))
              $ABORT(Invalid item)
@@ -383,7 +383,7 @@ contains
 
   contains
 
-    subroutine write_mode_evol (wr, ec, item)
+    subroutine write_mode_evol_ (wr, ec, item)
 
       class(writer_t), intent(inout)  :: wr
       type(coeffs_evol_t), intent(in) :: ec
@@ -415,9 +415,9 @@ contains
 
       return
 
-    end subroutine write_mode_evol
+    end subroutine write_mode_evol_
 
-    subroutine write_mode_poly (wr, pc, item)
+    subroutine write_mode_poly_ (wr, pc, item)
 
       class(writer_t), intent(inout)  :: wr
       type(coeffs_poly_t), intent(in) :: pc
@@ -437,8 +437,8 @@ contains
 
       return
 
-    end subroutine write_mode_poly
-
-  end subroutine write_mode
+    end subroutine write_mode_poly_
+    
+  end subroutine write_mode_
 
 end module gyre_output

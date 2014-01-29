@@ -48,15 +48,15 @@ module gyre_shooter_ad
      integer, public           :: n_e
    contains
      private
-     procedure, public :: shoot
-     procedure, public :: recon => recon_sh
-     procedure, public :: abscissa
+     procedure, public :: shoot => shoot_
+     procedure, public :: recon => recon_
+     procedure, public :: abscissa => abscissa_
   end type shooter_ad_t
 
   ! Interfaces
 
   interface shooter_ad_t
-     module procedure init_sh
+     module procedure shooter_ad_t_
   end interface shooter_ad_t
 
   ! Access specifiers
@@ -69,7 +69,7 @@ module gyre_shooter_ad
 
 contains
 
-  function init_sh (cf, iv, op, np) result (sh)
+  function shooter_ad_t_ (cf, iv, op, np) result (sh)
 
     class(coeffs_t), pointer, intent(in) :: cf
     class(ivp_t), intent(in)             :: iv
@@ -90,11 +90,11 @@ contains
 
     return
 
-  end function init_sh
+  end function shooter_ad_t_
 
 !****
 
-  subroutine shoot (this, omega, x, sm)
+  subroutine shoot_ (this, omega, x, sm)
 
     class(shooter_ad_t), intent(in) :: this
     complex(WP), intent(in)         :: omega
@@ -117,11 +117,11 @@ contains
 
     ! Finish
 
-  end subroutine shoot
+  end subroutine shoot_
 
 !****
 
-  subroutine recon_sh (this, omega, x_sh, y_sh, x, y)
+  subroutine recon_ (this, omega, x_sh, y_sh, x, y)
 
     class(shooter_ad_t), intent(in) :: this
     complex(WP), intent(in)         :: omega
@@ -187,11 +187,11 @@ contains
 
     return
 
-  end subroutine recon_sh
+  end subroutine recon_
 
 !****
 
-  function abscissa (this, x_sh) result (x)
+  function abscissa_ (this, x_sh) result (x)
 
     class(shooter_ad_t), intent(in) :: this
     real(WP), intent(in)            :: x_sh(:)
@@ -223,6 +223,6 @@ contains
 
     return
 
-  end function abscissa
+  end function abscissa_
 
 end module gyre_shooter_ad

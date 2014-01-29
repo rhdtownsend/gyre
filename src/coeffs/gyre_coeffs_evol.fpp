@@ -70,15 +70,15 @@ module gyre_coeffs_evol
 
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure :: ${NAME}_1
-    procedure :: ${NAME}_v
+    procedure :: ${NAME}_1_
+    procedure :: ${NAME}_v_
   $endsub
 
   $define $PROC_DECL_GEN $sub
     $local $NAME $1
-    procedure       :: ${NAME}_1
-    procedure       :: ${NAME}_v
-    generic, public :: ${NAME} => ${NAME}_1, ${NAME}_v
+    procedure       :: ${NAME}_1_
+    procedure       :: ${NAME}_v_
+    generic, public :: ${NAME} => ${NAME}_1_, ${NAME}_v_
   $endsub
 
   type, extends (coeffs_t) :: coeffs_evol_t
@@ -94,10 +94,10 @@ module gyre_coeffs_evol
      real(WP)                    :: rho_c
    contains
      private
-     $if($GFORTRAN_PR57922)
-     procedure, public :: final
+     $if ($GFORTRAN_PR57922)
+     procedure, public :: final => final_
      $endif
-     procedure         :: set_sp
+     procedure         :: set_sp_
      $PROC_DECL_GEN(m)
      $PROC_DECL_GEN(p)
      $PROC_DECL_GEN(rho)
@@ -120,25 +120,25 @@ module gyre_coeffs_evol
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
      $PROC_DECL(tau_thm)
-     procedure, public :: pi_c
-     procedure, public :: is_zero
-     procedure, public :: attach_cache
-     procedure, public :: detach_cache
-     procedure, public :: fill_cache
+     procedure, public :: pi_c => pi_c_
+     procedure, public :: is_zero => is_zero_
+     procedure, public :: attach_cache => attach_cache_
+     procedure, public :: detach_cache => detach_cache_
+     procedure, public :: fill_cache => fill_cache_
   end type coeffs_evol_t
  
   ! Interfaces
 
   interface coeffs_evol_t
-     module procedure init_cf
-     module procedure init_cf_mech
-     module procedure init_cf_mech_coeffs
-     module procedure init_cf_full
+     module procedure coeffs_evol_t_
+     module procedure coeffs_evol_t_mech_
+     module procedure coeffs_evol_t_mech_coeffs_
+     module procedure coeffs_evol_t_full_
   end interface coeffs_evol_t
 
   $if ($MPI)
   interface bcast
-     module procedure bcast_cf
+     module procedure bcast_
   end interface bcast
   $endif
 
@@ -147,7 +147,7 @@ module gyre_coeffs_evol
   private
 
   public :: coeffs_evol_t
-  $if($MPI)
+  $if ($MPI)
   public :: bcast
   $endif
 
@@ -155,11 +155,11 @@ module gyre_coeffs_evol
 
 contains
 
-  function init_cf () result (cf)
+  function coeffs_evol_t_ () result (cf)
 
     type(coeffs_evol_t) :: cf
 
-    ! Construct the coeffs_evol
+    ! Construct the coeffs_evol_t
 
     allocate(cf%sp(N_J))
 
@@ -172,13 +172,13 @@ contains
 
     return
 
-  end function init_cf
+  end function coeffs_evol_t_
 
 !****
 
-  recursive function init_cf_mech (G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                                   Gamma_1, nabla_ad, delta, Omega_rot, &
-                                   deriv_type, add_center) result (cf)
+  recursive function coeffs_evol_t_mech_ (G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
+                                          Gamma_1, nabla_ad, delta, Omega_rot, &
+                                          deriv_type, add_center) result (cf)
 
     real(WP), intent(in)          :: G
     real(WP), intent(in)          :: M_star
@@ -195,7 +195,7 @@ contains
     real(WP), intent(in)          :: delta(:)
     real(WP), intent(in)          :: Omega_rot(:)
     character(LEN=*), intent(in)  :: deriv_type
-    logical, intent(in), optional :: add_center
+    logical, optional, intent(in) :: add_center
     type(coeffs_evol_t)           :: cf
 
     logical  :: add_center_
@@ -223,7 +223,7 @@ contains
        add_center_ = .FALSE.
     endif
 
-    ! Construct the coeffs_evol using the mechanical structure data
+    ! Construct the coeffs_evol_t using the mechanical structure data
 
     ! See if we need a central point
 
@@ -232,9 +232,9 @@ contains
        ! Add a central point and initialize using recursion
 
        cf = coeffs_evol_t(G, M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
-                          prep_center(r, p), prep_center(r, rho), prep_center(r, T), &
-                          [0._WP,N2], prep_center(r, Gamma_1), prep_center(r, nabla_ad), prep_center(r, delta), &
-                          prep_center(r, Omega_rot), deriv_type, .FALSE.)
+                          prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), &
+                          [0._WP,N2], prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), &
+                          prep_center_(r, Omega_rot), deriv_type, .FALSE.)
 
     else
 
@@ -272,29 +272,29 @@ contains
 
        !$OMP PARALLEL SECTIONS
        !$OMP SECTION
-       call cf%set_sp(x, m, deriv_type, J_M)
+       call cf%set_sp_(x, m, deriv_type, J_M)
        !$OMP SECTION
-       call cf%set_sp(x, p, deriv_type, J_P)
+       call cf%set_sp_(x, p, deriv_type, J_P)
        !$OMP SECTION
-       call cf%set_sp(x, rho, deriv_type, J_RHO)
+       call cf%set_sp_(x, rho, deriv_type, J_RHO)
        !$OMP SECTION
-       call cf%set_sp(x, T, deriv_type, J_T)
+       call cf%set_sp_(x, T, deriv_type, J_T)
        !$OMP SECTION
-       call cf%set_sp(x, V, deriv_type, J_V)
+       call cf%set_sp_(x, V, deriv_type, J_V)
        !$OMP SECTION
-       call cf%set_sp(x, As, deriv_type, J_AS)
+       call cf%set_sp_(x, As, deriv_type, J_AS)
        !$OMP SECTION
-       call cf%set_sp(x, U, deriv_type, J_U)
+       call cf%set_sp_(x, U, deriv_type, J_U)
        !$OMP SECTION
-       call cf%set_sp(x, c_1, deriv_type, J_C_1)
+       call cf%set_sp_(x, c_1, deriv_type, J_C_1)
        !$OMP SECTION
-       call cf%set_sp(x, Gamma_1, deriv_type, J_GAMMA_1)
+       call cf%set_sp_(x, Gamma_1, deriv_type, J_GAMMA_1)
        !$OMP SECTION
-       call cf%set_sp(x, nabla_ad, deriv_type, J_NABLA_AD)
+       call cf%set_sp_(x, nabla_ad, deriv_type, J_NABLA_AD)
        !$OMP SECTION
-       call cf%set_sp(x, delta, deriv_type, J_DELTA)
+       call cf%set_sp_(x, delta, deriv_type, J_DELTA)
        !$OMP SECTION
-       call cf%set_sp(x, Omega_rot_, deriv_type, J_OMEGA_ROT)
+       call cf%set_sp_(x, Omega_rot_, deriv_type, J_OMEGA_ROT)
        !$OMP END PARALLEL SECTIONS
 
        cf%M_star = M_star
@@ -309,13 +309,13 @@ contains
 
     return
 
-  end function init_cf_mech
+  end function coeffs_evol_t_mech_
 
 !****
 
-  recursive function init_cf_mech_coeffs (G, M_star, R_star, L_star, x, &
-                                          V, As, U, c_1, Gamma_1, &
-                                          deriv_type, add_center) result (cf)
+  recursive function coeffs_evol_t_mech_coeffs_ (G, M_star, R_star, L_star, x, &
+                                                 V, As, U, c_1, Gamma_1, &
+                                                 deriv_type, add_center) result (cf)
 
     real(WP), intent(in)          :: G
     real(WP), intent(in)          :: M_star
@@ -328,7 +328,7 @@ contains
     real(WP), intent(in)          :: c_1(:)
     real(WP), intent(in)          :: Gamma_1(:)
     character(LEN=*), intent(in)  :: deriv_type
-    logical, intent(in), optional :: add_center
+    logical, optional, intent(in) :: add_center
     type(coeffs_evol_t)           :: cf
 
     logical  :: add_center_
@@ -345,7 +345,7 @@ contains
        add_center_ = .FALSE.
     endif
 
-    ! Construct the coeffs_evol using the dimensionless coefficients
+    ! Construct the coeffs_evol_t using the dimensionless coefficients
 
     ! See if we need a central point
 
@@ -355,7 +355,7 @@ contains
        
        cf = coeffs_evol_t(G, M_star, R_star, L_star, &
                           [0._WP,x], [0._WP,V], [0._WP,As], [3._WP,U], &
-                          prep_center(x, c_1), prep_center(x, Gamma_1), deriv_type, .FALSE.)
+                          prep_center_(x, c_1), prep_center_(x, Gamma_1), deriv_type, .FALSE.)
 
     else
 
@@ -365,17 +365,17 @@ contains
 
        !$OMP PARALLEL SECTIONS
        !$OMP SECTION
-       call cf%set_sp(x, V, deriv_type, J_V)
+       call cf%set_sp_(x, V, deriv_type, J_V)
        !$OMP SECTION
-       call cf%set_sp(x, As, deriv_type, J_AS)
+       call cf%set_sp_(x, As, deriv_type, J_AS)
        !$OMP SECTION
-       call cf%set_sp(x, U, deriv_type, J_U)
+       call cf%set_sp_(x, U, deriv_type, J_U)
        !$OMP SECTION
-       call cf%set_sp(x, c_1, deriv_type, J_C_1)
+       call cf%set_sp_(x, c_1, deriv_type, J_C_1)
        !$OMP SECTION
-       call cf%set_sp(x, Gamma_1, deriv_type, J_GAMMA_1)
+       call cf%set_sp_(x, Gamma_1, deriv_type, J_GAMMA_1)
        !$OMP SECTION
-       call cf%set_sp(x, SPREAD(0._WP, 1, SIZE(x)), deriv_type, J_OMEGA_ROT)
+       call cf%set_sp_(x, SPREAD(0._WP, 1, SIZE(x)), deriv_type, J_OMEGA_ROT)
        !$OMP END PARALLEL SECTIONS
 
        cf%M_star = M_star
@@ -390,15 +390,15 @@ contains
 
     return
 
-  end function init_cf_mech_coeffs
+  end function coeffs_evol_t_mech_coeffs_
 
 !****
 
-  recursive function init_cf_full (G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                                   Gamma_1, nabla_ad, delta, Omega_rot, &
-                                   nabla, kappa, kappa_rho, kappa_T, &
-                                   epsilon, epsilon_rho, epsilon_T, &
-                                   deriv_type, add_center) result (cf)
+  recursive function coeffs_evol_t_full_ (G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
+                                          Gamma_1, nabla_ad, delta, Omega_rot, &
+                                          nabla, kappa, kappa_rho, kappa_T, &
+                                          epsilon, epsilon_rho, epsilon_T, &
+                                          deriv_type, add_center) result (cf)
 
     real(WP), intent(in)          :: G
     real(WP), intent(in)          :: M_star
@@ -422,7 +422,7 @@ contains
     real(WP), intent(in)          :: epsilon_rho(:)
     real(WP), intent(in)          :: epsilon_T(:)
     character(LEN=*), intent(in)  :: deriv_type
-    logical, intent(in), optional :: add_center
+    logical, optional, intent(in) :: add_center
     type(coeffs_evol_t)           :: cf
 
     logical  :: add_center_
@@ -476,10 +476,10 @@ contains
        ! Add a central point and initialize using recursion
 
        cf = coeffs_evol_t(G, M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
-                          prep_center(r, p), prep_center(r, rho), prep_center(r, T), [0._WP,N2], &
-                          prep_center(r, Gamma_1), prep_center(r, nabla_ad), prep_center(r, delta), prep_center(r, Omega_rot), &
-                          prep_center(r, nabla), prep_center(r, kappa), prep_center(r, kappa_rho), prep_center(r, kappa_T), &
-                          prep_center(r, epsilon), prep_center(r, epsilon_rho), prep_center(r, epsilon_T), &
+                          prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), [0._WP,N2], &
+                          prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), prep_center_(r, Omega_rot), &
+                          prep_center_(r, nabla), prep_center_(r, kappa), prep_center_(r, kappa_rho), prep_center_(r, kappa_T), &
+                          prep_center_(r, epsilon), prep_center_(r, epsilon_rho), prep_center_(r, epsilon_T), &
                           deriv_type, .FALSE.)
 
     else
@@ -514,7 +514,7 @@ contains
        kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
        kappa_S = kappa_T - delta*kappa_rho
 
-       c_dif = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dlny_dlnx(x, nabla_ad)+V)
+       c_dif = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dlny_dlnx_(x, nabla_ad)+V)
 
        epsilon_ad = nabla_ad*epsilon_T + epsilon_rho/Gamma_1
        epsilon_S = epsilon_T - delta*epsilon_rho
@@ -539,23 +539,23 @@ contains
 
        !$OMP PARALLEL SECTIONS
        !$OMP SECTION
-       call cf%set_sp(x, c_rad, deriv_type, J_C_RAD)
+       call cf%set_sp_(x, c_rad, deriv_type, J_C_RAD)
        !$OMP SECTION
-       call cf%set_sp(x, c_thm, deriv_type, J_C_THM)
+       call cf%set_sp_(x, c_thm, deriv_type, J_C_THM)
        !$OMP SECTION
-       call cf%set_sp(x, c_dif, deriv_type, J_C_DIF)
+       call cf%set_sp_(x, c_dif, deriv_type, J_C_DIF)
        !$OMP SECTION
-       call cf%set_sp(x, c_eps_ad, deriv_type, J_C_EPS_AD)
+       call cf%set_sp_(x, c_eps_ad, deriv_type, J_C_EPS_AD)
        !$OMP SECTION
-       call cf%set_sp(x, c_eps_S, deriv_type, J_C_EPS_S)
+       call cf%set_sp_(x, c_eps_S, deriv_type, J_C_EPS_S)
        !$OMP SECTION
-       call cf%set_sp(x, nabla, deriv_type, J_NABLA)
+       call cf%set_sp_(x, nabla, deriv_type, J_NABLA)
        !$OMP SECTION
-       call cf%set_sp(x, kappa_S, deriv_type, J_KAPPA_S)
+       call cf%set_sp_(x, kappa_S, deriv_type, J_KAPPA_S)
        !$OMP SECTION
-       call cf%set_sp(x, kappa_ad, deriv_type, J_KAPPA_AD)
+       call cf%set_sp_(x, kappa_ad, deriv_type, J_KAPPA_AD)
        !$OMP SECTION
-       call cf%set_sp(x, tau_thm, deriv_type, J_TAU_THM)
+       call cf%set_sp_(x, tau_thm, deriv_type, J_TAU_THM)
        !$OMP END PARALLEL SECTIONS
 
     endif
@@ -566,11 +566,11 @@ contains
 
   contains
 
-    function dlny_dlnx (x, y)
+    function dlny_dlnx_ (x, y)
 
       real(WP), intent(in) :: x(:)
       real(WP), intent(in) :: y(:)
-      real(WP)             :: dlny_dlnx(SIZE(x))
+      real(WP)             :: dlny_dlnx_(SIZE(x))
 
       integer :: n
       integer :: i
@@ -581,31 +581,31 @@ contains
 
       n = SIZE(x)
 
-      dlny_dlnx(1) = 0._WP
+      dlny_dlnx_(1) = 0._WP
 
       do i = 2,n-1
-         dlny_dlnx(i) = x(i)*0.5_WP*((y(i)-y(i-1))/(x(i)-x(i-1)) + (y(i+1)-y(i))/(x(i+1)-x(i)))/y(i)
+         dlny_dlnx_(i) = x(i)*0.5_WP*((y(i)-y(i-1))/(x(i)-x(i-1)) + (y(i+1)-y(i))/(x(i+1)-x(i)))/y(i)
       end do
 
-      dlny_dlnx(n) = x(n)*(y(n)-y(n-1))/(x(n)-x(n-1))/y(n)
+      dlny_dlnx_(n) = x(n)*(y(n)-y(n-1))/(x(n)-x(n-1))/y(n)
 
       ! Finish
 
-    end function dlny_dlnx
+    end function dlny_dlnx_
 
-  end function init_cf_full
+  end function coeffs_evol_t_full_
 
 !****
 
   $if ($GFORTRAN_PR57922)
 
-  subroutine final (this)
+  subroutine final_ (this)
 
     class(coeffs_evol_t), intent(inout) :: this
 
     integer :: j
 
-    ! Finalize the coeffs_evol
+    ! Finalize the coeffs_evol_t
 
     call this%detach_cache()
 
@@ -622,46 +622,13 @@ contains
 
     return
 
-  end subroutine final
+  end subroutine final_
 
   $endif
 
 !****
 
-  $if ($MPI)
-
-  subroutine bcast_cf (cf, root_rank)
-
-    type(coeffs_evol_t), intent(inout) :: cf
-    integer, intent(in)                :: root_rank
-
-    ! Broadcast the coeffs
-
-    call bcast_alloc(cf%sp, root_rank)
-    call bcast_alloc(cf%sp_def, root_rank)
-
-    call bcast(cf%M_star, root_rank)
-    call bcast(cf%R_star, root_rank)
-    call bcast(cf%L_star, root_rank)
-
-    call bcast(cf%G, root_rank)
-
-    call bcast(cf%p_c, root_rank)
-    call bcast(cf%rho_c, root_rank)
-
-    if(MPI_RANK /= root_rank) cf%cc => null()
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_cf
-
-  $endif
-
-!****
-
-  subroutine set_sp (this, x, y, deriv_type, i)
+  subroutine set_sp_ (this, x, y, deriv_type, i)
 
     class(coeffs_evol_t), intent(inout) :: this
     real(WP), intent(in)                :: x(:)
@@ -681,11 +648,11 @@ contains
 
     return
 
-  end subroutine set_sp
+  end subroutine set_sp_
 
 !****
   
-  function prep_center (x, y) result (y_prep)
+  function prep_center_ (x, y) result (y_prep)
       
     real(WP), intent(in) :: x(:)
     real(WP), intent(in) :: y(:)
@@ -709,7 +676,7 @@ contains
 
     return
 
-  end function prep_center
+  end function prep_center_
 
 !****
 
@@ -717,7 +684,7 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_1 (this, x) result ($NAME)
+  function ${NAME}_1_ (this, x) result ($NAME)
 
     class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -747,11 +714,9 @@ contains
 
     return
 
-  end function ${NAME}_1
+  end function ${NAME}_1_
 
-!****
-
-  function ${NAME}_v (this, x) result ($NAME)
+  function ${NAME}_v_ (this, x) result ($NAME)
 
     class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -777,7 +742,7 @@ contains
 
     return
 
-  end function ${NAME}_v
+  end function ${NAME}_v_
 
   $endsub
 
@@ -807,7 +772,7 @@ contains
 
   $local $NAME $1
 
-  function d${NAME}_1 (this, x) result (d$NAME)
+  function d${NAME}_1_ (this, x) result (d$NAME)
 
     class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -843,11 +808,9 @@ contains
 
     return
 
-  end function d${NAME}_1
+  end function d${NAME}_1_
 
-!****
-
-  function d${NAME}_v (this, x) result (d$NAME)
+  function d${NAME}_v_ (this, x) result (d$NAME)
 
     class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -877,7 +840,7 @@ contains
 
     return
 
-  end function d${NAME}_v
+  end function d${NAME}_v_
 
   $endsub
 
@@ -885,7 +848,7 @@ contains
 
 !****
 
-  function U_1 (this, x) result (U)
+  function U_1_ (this, x) result (U)
 
     class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -914,11 +877,11 @@ contains
 
     return
 
-  end function U_1
+  end function U_1_
 
 !****
 
-  function U_v (this, x) result (U)
+  function U_v_ (this, x) result (U)
 
     class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -939,11 +902,11 @@ contains
 
     return
 
-  end function U_v
+  end function U_v_
 
 !****
 
-  function Gamma_1_1 (this, x) result (Gamma_1)
+  function Gamma_1_1_ (this, x) result (Gamma_1)
 
     class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -975,11 +938,11 @@ contains
 
     return
 
-  end function Gamma_1_1
+  end function Gamma_1_1_
 
 !****
 
-  function Gamma_1_v (this, x) result (Gamma_1)
+  function Gamma_1_v_ (this, x) result (Gamma_1)
 
     class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
@@ -1003,11 +966,11 @@ contains
 
     return
 
-  end function Gamma_1_v
+  end function Gamma_1_v_
        
 !****
 
-  function pi_c (this)
+  function pi_c_ (this) result (pi_c)
 
     class(coeffs_evol_t), intent(in) :: this
     real(WP)                         :: pi_c
@@ -1020,11 +983,11 @@ contains
 
     return
 
-  end function pi_c
+  end function pi_c_
 
 !****
 
-  function is_zero (this,x )
+  function is_zero_ (this, x) result (is_zero)
 
     class(coeffs_evol_t), intent(in) :: this
     real(WP), intent(in)             :: x
@@ -1033,7 +996,8 @@ contains
     logical :: p_zero
     logical :: rho_zero
 
-    ! Determine whether the point at x has a vanishing pressure and/or density
+    ! Determine whether the point at x has a vanishing pressure and/or
+    ! density
 
     if(this%sp_def(J_P)) then
        p_zero = this%p(x) == 0._WP
@@ -1053,59 +1017,11 @@ contains
 
     return
 
-  end function is_zero
+  end function is_zero_
 
 !****
 
-  function omega (this, x, m, omega_c)
-
-    class(coeffs_evol_t), intent(in) :: this
-    real(WP), intent(in)             :: x
-    integer, intent(in)              :: m
-    complex(WP), intent(in)          :: omega_c
-    complex(WP)                      :: omega
-
-    ! Calculate the intertial frequency from the co-rotating frequency
-
-    if(this%sp_def(J_OMEGA_ROT)) then
-       omega = omega_c + m*this%Omega_rot(x)
-    else
-       omega = omega_c
-    endif
-
-    ! Finish
-
-    return
-
-  end function omega
-
-!****
-
-  function omega_c (this, x, m, omega)
-
-    class(coeffs_evol_t), intent(in) :: this
-    real(WP), intent(in)             :: x
-    integer, intent(in)              :: m
-    complex(WP), intent(in)          :: omega
-    complex(WP)                      :: omega_c
-
-    ! Calculate the co-rotating frequency from the inertial frequency
-
-    if(this%sp_def(J_OMEGA_ROT)) then
-       omega_c = omega - m*this%Omega_rot(x)
-    else
-       omega_c = omega
-    endif
-
-    ! Finish
-
-    return
-
-  end function omega_c
-
-!****
-
-  subroutine attach_cache (this, cc)
+  subroutine attach_cache_ (this, cc)
 
     class(coeffs_evol_t), intent(inout)   :: this
     class(cocache_t), pointer, intent(in) :: cc
@@ -1118,11 +1034,11 @@ contains
 
     return
 
-  end subroutine attach_cache
+  end subroutine attach_cache_
 
 !****
 
-  subroutine detach_cache (this)
+  subroutine detach_cache_ (this)
 
     class(coeffs_evol_t), intent(inout) :: this
 
@@ -1134,11 +1050,11 @@ contains
 
     return
 
-  end subroutine detach_cache
+  end subroutine detach_cache_
 
 !****
 
-  subroutine fill_cache (this, x)
+  subroutine fill_cache_ (this, x)
 
     class(coeffs_evol_t), intent(inout) :: this
     real(WP), intent(in)                :: x(:)
@@ -1202,6 +1118,39 @@ contains
 
     return
 
-  end subroutine fill_cache
+  end subroutine fill_cache_
+
+!****
+
+  $if ($MPI)
+
+  subroutine bcast_ (cf, root_rank)
+
+    type(coeffs_evol_t), intent(inout) :: cf
+    integer, intent(in)                :: root_rank
+
+    ! Broadcast the coeffs_evol_t
+
+    call bcast_alloc(cf%sp, root_rank)
+    call bcast_alloc(cf%sp_def, root_rank)
+
+    call bcast(cf%M_star, root_rank)
+    call bcast(cf%R_star, root_rank)
+    call bcast(cf%L_star, root_rank)
+
+    call bcast(cf%G, root_rank)
+
+    call bcast(cf%p_c, root_rank)
+    call bcast(cf%rho_c, root_rank)
+
+    if(MPI_RANK /= root_rank) cf%cc => null()
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_
+
+  $endif
 
 end module gyre_coeffs_evol

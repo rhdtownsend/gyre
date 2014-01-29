@@ -32,55 +32,55 @@ module gyre_writer
   type, abstract :: writer_t
    contains
      private
-     procedure(final_i), deferred, public :: final
-     procedure(write_i_0_i), deferred     :: write_i_0
-     procedure(write_i_1_i), deferred     :: write_i_1
-     procedure(write_r_0_i), deferred     :: write_r_0
-     procedure(write_r_1_i), deferred     :: write_r_1
-     procedure(write_c_0_i), deferred     :: write_c_0
-     procedure(write_c_1_i), deferred     :: write_c_1
-     procedure(write_a_0_i), deferred     :: write_a_0
-     procedure(write_a_1_i), deferred     :: write_a_1
-     generic, public                      :: write => write_i_0, write_i_1, write_r_0, write_r_1, &
-                                                      write_c_0, write_c_1, write_a_0, write_a_1
+     procedure(final_), deferred, public :: final
+     procedure(write_i_0_), deferred     :: write_i_0_
+     procedure(write_i_1_), deferred     :: write_i_1_
+     procedure(write_r_0_), deferred     :: write_r_0_
+     procedure(write_r_1_), deferred     :: write_r_1_
+     procedure(write_c_0_), deferred     :: write_c_0_
+     procedure(write_c_1_), deferred     :: write_c_1_
+     procedure(write_a_0_), deferred     :: write_a_0_
+     procedure(write_a_1_), deferred     :: write_a_1_
+     generic, public                     :: write => write_i_0_, write_i_1_, write_r_0_, write_r_1_, &
+                                                     write_c_0_, write_c_1_, write_a_0_, write_a_1_
   end type writer_t
 
   ! Interfaces
 
   abstract interface
 
-     subroutine final_i (this)
+     subroutine final_ (this)
        import writer_t
        class(writer_t), intent(inout) :: this
-     end subroutine final_i
+     end subroutine final_
 
-     $define $WRITE_I $sub
+     $define $WRITE_ $sub
 
      $local $INFIX $1
      $local $DATA_TYPE $2
      $local $DATA_RANK $3
 
-     subroutine write_${INFIX}_${DATA_RANK}_i (this, name, data)
+     subroutine write_${INFIX}_${DATA_RANK}_ (this, name, data)
        use core_kinds
        import writer_t
        class(writer_t), intent(inout) :: this
        character(LEN=*), intent(in)   :: name
        $DATA_TYPE, intent(in)         :: data$ARRAY_SPEC($DATA_RANK)
-     end subroutine write_${INFIX}_${DATA_RANK}_i
+     end subroutine write_${INFIX}_${DATA_RANK}_
 
      $endsub
 
-     $WRITE_I(i,integer,0)
-     $WRITE_I(i,integer,1)
+     $WRITE_(i,integer,0)
+     $WRITE_(i,integer,1)
 
-     $WRITE_I(r,real(WP),0)
-     $WRITE_I(r,real(WP),1)
+     $WRITE_(r,real(WP),0)
+     $WRITE_(r,real(WP),1)
 
-     $WRITE_I(c,complex(WP),0)
-     $WRITE_I(c,complex(WP),1)
+     $WRITE_(c,complex(WP),0)
+     $WRITE_(c,complex(WP),1)
 
-     $WRITE_I(a,character(LEN=*),0)
-     $WRITE_I(a,character(LEN=*),1)
+     $WRITE_(a,character(LEN=*),0)
+     $WRITE_(a,character(LEN=*),1)
 
   end interface
 

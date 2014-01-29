@@ -1201,7 +1201,7 @@ contains
       real(WP), intent(in)           :: y_2(:)
       integer, intent(out)           :: n_c
       integer, intent(out)           :: n_a
-      real(WP), intent(in), optional :: x(:)
+      real(WP), optional, intent(in) :: x(:)
 
       integer  :: i
       real(WP) :: y_2_cross

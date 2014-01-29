@@ -51,15 +51,15 @@ module gyre_shooter_nad
      integer, public           :: n_e
    contains
      private
-     procedure, public :: shoot
-     procedure, public :: recon => recon_sh
-     procedure, public :: abscissa
+     procedure, public :: shoot => shoot_
+     procedure, public :: recon => recon_
+     procedure, public :: abscissa => abscissa_
   end type shooter_nad_t
 
   ! Interfaces
 
   interface shooter_nad_t
-     module procedure init_sh
+     module procedure shooter_nad_t_
   end interface shooter_nad_t
 
   ! Access specifiers
@@ -72,7 +72,7 @@ module gyre_shooter_nad
 
 contains
 
-  function init_sh (cf, iv, iv_upw, op, np) result (sh)
+  function shooter_nad_t_ (cf, iv, iv_upw, op, np) result (sh)
 
     class(coeffs_t), pointer, intent(in) :: cf
     class(ivp_t), intent(in)             :: iv
@@ -81,7 +81,7 @@ contains
     type(numpar_t), intent(in)           :: np
     type(shooter_nad_t)                  :: sh
 
-    ! Construct the shooter_nad
+    ! Construct the shooter_nad_t
 
     sh%cf => cf
     allocate(sh%iv, SOURCE=iv)
@@ -95,17 +95,17 @@ contains
 
     return
 
-  end function init_sh
+  end function shooter_nad_t_
 
 !****
 
-  subroutine shoot (this, omega, x, sm, x_upw)
+  subroutine shoot_ (this, omega, x, sm, x_upw)
 
     class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x(:)
     class(sysmtx_t), intent(inout)   :: sm
-    real(WP), intent(in), optional   :: x_upw
+    real(WP), optional, intent(in)   :: x_upw
 
     real(WP)            :: x_upw_
     integer             :: k
@@ -147,7 +147,7 @@ contains
             end associate
           end associate
 
-          scale = scale*exp(ext_complex(-lambda*(x(k+1)-x(k))))
+          scale = scale*exp(ext_complex_t(-lambda*(x(k+1)-x(k))))
 
        endif
 
@@ -157,11 +157,11 @@ contains
 
     ! Finish
 
-  end subroutine shoot
+  end subroutine shoot_
 
 !****
 
-  subroutine recon_sh (this, omega, x_sh, y_sh, x, y, x_upw)
+  subroutine recon_ (this, omega, x_sh, y_sh, x, y, x_upw)
 
     class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
@@ -169,7 +169,7 @@ contains
     complex(WP), intent(in)          :: y_sh(:,:)
     real(WP), intent(in)             :: x(:)
     complex(WP), intent(out)         :: y(:,:)
-    real(WP), intent(in), optional   :: x_upw
+    real(WP), optional, intent(in)   :: x_upw
 
     real(WP)    :: x_upw_
     integer     :: n_sh
@@ -249,11 +249,11 @@ contains
 
     return
 
-  end subroutine recon_sh
+  end subroutine recon_
 
 !****
 
-  function abscissa (this, x_sh) result (x)
+  function abscissa_ (this, x_sh) result (x)
 
     class(shooter_nad_t), intent(in) :: this
     real(WP), intent(in)             :: x_sh(:)
@@ -294,7 +294,7 @@ contains
 
     return
 
-  end function abscissa
+  end function abscissa_
 
 ! !****
 

@@ -38,7 +38,7 @@ module gyre_coeffs_mpi
 
   $if ($MPI)
   interface bcast_alloc
-     module procedure bcast_alloc_cf
+     module procedure bcast_alloc_
   end interface bcast_alloc
   $endif
 
@@ -46,7 +46,7 @@ module gyre_coeffs_mpi
 
   private
 
-  $if($MPI)
+  $if ($MPI)
   public :: bcast_alloc
   $endif
 
@@ -54,9 +54,9 @@ module gyre_coeffs_mpi
 
 contains
 
-  $if($MPI)
+  $if ($MPI)
 
-  subroutine bcast_alloc_cf (cf, root_rank)
+  subroutine bcast_alloc_ (cf, root_rank)
 
     class(coeffs_t), allocatable, intent(inout) :: cf
     integer, intent(in)                         :: root_rank
@@ -132,7 +132,7 @@ contains
 
     ! Finish
 
-  end subroutine bcast_alloc_cf
+  end subroutine bcast_alloc_
 
   $endif
 

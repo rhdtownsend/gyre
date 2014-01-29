@@ -106,7 +106,7 @@ contains
 110       format(2X,A)
        endif
 
-       call read_mesa_data_old()
+       call read_mesa_data_old_()
 
     else
 
@@ -116,7 +116,7 @@ contains
           write(OUTPUT_UNIT, 110) 'Detected new-variant file'
        endif
 
-       call read_mesa_data_new()
+       call read_mesa_data_new_()
 
     endif
 
@@ -150,7 +150,7 @@ contains
 
   contains
 
-    subroutine read_mesa_data_old ()
+    subroutine read_mesa_data_old_ ()
 
       integer :: k
       integer :: k_chk
@@ -207,9 +207,9 @@ contains
 
       return
 
-    end subroutine read_mesa_data_old
+    end subroutine read_mesa_data_old_
 
-    subroutine read_mesa_data_new ()
+    subroutine read_mesa_data_new_ ()
 
       integer :: k
       integer :: k_chk
@@ -249,7 +249,7 @@ contains
 
       return
 
-    end subroutine read_mesa_data_new
+    end subroutine read_mesa_data_new_
 
   end subroutine read_mesa_file
 

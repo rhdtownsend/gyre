@@ -34,52 +34,52 @@ module gyre_linalg
   ! Interfaces
 
   interface eigen_decompose
-     module procedure eigen_decompose_r
-     module procedure eigen_decompose_c
+     module procedure eigen_decompose_r_
+     module procedure eigen_decompose_c_
   end interface eigen_decompose
 
   interface linear_solve
-     module procedure linear_solve_vec_r
-     module procedure linear_solve_vec_c
-     module procedure linear_solve_mat_r
-     module procedure linear_solve_mat_c
+     module procedure linear_solve_vec_r_
+     module procedure linear_solve_vec_c_
+     module procedure linear_solve_mat_r_
+     module procedure linear_solve_mat_c_
   end interface linear_solve
 
   interface commutator
-     module procedure commutator_r
-     module procedure commutator_c
+     module procedure commutator_r_
+     module procedure commutator_c_
   end interface commutator
 
   interface measure_bandwidth
-     module procedure measure_bandwidth_full_r
-     module procedure measure_bandwidth_full_c
+     module procedure measure_bandwidth_full_r_
+     module procedure measure_bandwidth_full_c_
   end interface measure_bandwidth
 
   interface diagonal
-     module procedure diagonal_r
-     module procedure diagonal_c
+     module procedure diagonal_r_
+     module procedure diagonal_c_
   end interface diagonal
 
   interface diagonal_matrix
-     module procedure diagonal_matrix_r
-     module procedure diagonal_matrix_c
+     module procedure diagonal_matrix_r_
+     module procedure diagonal_matrix_c_
   end interface diagonal_matrix
 
   interface matrix_exp
-     module procedure matrix_exp_r
-     module procedure matrix_exp_c
-     module procedure matrix_exp_eigen
+     module procedure matrix_exp_r_
+     module procedure matrix_exp_c_
+     module procedure matrix_exp_eigen_
   end interface matrix_exp
 
   interface outer_product
-     module procedure outer_product_r
-     module procedure outer_product_c
-     module procedure outer_product_l
+     module procedure outer_product_r_
+     module procedure outer_product_c_
+     module procedure outer_product_l_
   end interface outer_product
 
   interface partition
-     module procedure partition_r
-     module procedure partition_c
+     module procedure partition_r_
+     module procedure partition_c_
   end interface partition
 
   ! Access specifiers
@@ -102,13 +102,13 @@ module gyre_linalg
 
 contains
 
-  subroutine eigen_decompose_r (A, lambda, V_l, V_r, sort)
+  subroutine eigen_decompose_r_ (A, lambda, V_l, V_r, sort)
 
     real(WP), intent(inout)       :: A(:,:)
     complex(WP), intent(out)      :: lambda(:)
     complex(WP), intent(out)      :: V_l(:,:)
     complex(WP), intent(out)      :: V_r(:,:)
-    logical, intent(in), optional      :: sort
+    logical, optional, intent(in)      :: sort
 
     logical     :: sort_
     integer     :: n
@@ -145,7 +145,7 @@ contains
 
        ! Special case: n == 2
 
-       call eigen_decompose_2_r(A, lambda, V_l, V_r)
+       call eigen_decompose_2_r_(A, lambda, V_l, V_r)
 
     else
 
@@ -155,8 +155,8 @@ contains
 
        lambda = CMPLX(lambda_re, lambda_im, WP)
 
-       call reconstruct_eigenvector(lambda_re, lambda_im, V_l_r, V_l)
-       call reconstruct_eigenvector(lambda_re, lambda_im, V_r_r, V_r)
+       call reconstruct_eigenvector_(lambda_re, lambda_im, V_l_r, V_l)
+       call reconstruct_eigenvector_(lambda_re, lambda_im, V_r_r, V_r)
 
        V_l = CONJG(TRANSPOSE(V_l))
 
@@ -190,7 +190,7 @@ contains
 
   contains
 
-    subroutine reconstruct_eigenvector (lambda_re, lambda_im, V_r, V)
+    subroutine reconstruct_eigenvector_ (lambda_re, lambda_im, V_r, V)
 
       real(WP), intent(in)     :: lambda_re(:)
       real(WP), intent(in)     :: lambda_im(:)
@@ -233,19 +233,19 @@ contains
 
       return
 
-    end subroutine reconstruct_eigenvector
+    end subroutine reconstruct_eigenvector_
 
-  end subroutine eigen_decompose_r
+  end subroutine eigen_decompose_r_
 
 !****
 
-  subroutine eigen_decompose_c (A, lambda, V_l, V_r, sort)
+  subroutine eigen_decompose_c_ (A, lambda, V_l, V_r, sort)
 
     complex(WP), intent(inout)    :: A(:,:)
     complex(WP), intent(out)      :: lambda(:)
     complex(WP), intent(out)      :: V_l(:,:)
     complex(WP), intent(out)      :: V_r(:,:)
-    logical, intent(in), optional :: sort
+    logical, optional, intent(in) :: sort
 
     logical     :: sort_
     integer     :: n
@@ -279,7 +279,7 @@ contains
 
        ! Special case: n == 2
 
-       call eigen_decompose_2_c(A, lambda, V_l, V_r)
+       call eigen_decompose_2_c_(A, lambda, V_l, V_r)
 
     else
 
@@ -317,16 +317,16 @@ contains
 
     return
 
-  end subroutine eigen_decompose_c
+  end subroutine eigen_decompose_c_
 
 !****
 
   $define $EIGEN_DECOMPOSE_2 $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  subroutine eigen_decompose_2_$SUFFIX (A, lambda, V_l, V_r)
+  subroutine eigen_decompose_2_${INFIX}_ (A, lambda, V_l, V_r)
 
     $TYPE(WP), intent(in)              :: A(:,:)
     complex(WP), intent(out)           :: lambda(:)
@@ -408,7 +408,7 @@ contains
 
     return
 
-  end subroutine eigen_decompose_2_$SUFFIX
+  end subroutine eigen_decompose_2_${INFIX}_
 
   $endsub
 
@@ -419,10 +419,10 @@ contains
 
   $define $LINEAR_SOLVE $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  function linear_solve_vec_$SUFFIX (A, b) result (x)
+  function linear_solve_vec_${INFIX}_ (A, b) result (x)
 
     $TYPE(WP), intent(in) :: A(:,:)
     $TYPE(WP), intent(in) :: b(:)
@@ -446,9 +446,9 @@ contains
 
     return
 
-  end function linear_solve_vec_$SUFFIX
+  end function linear_solve_vec_${INFIX}_
 
-  function linear_solve_mat_$SUFFIX (A, B) result (X)
+  function linear_solve_mat_${INFIX}_ (A, B) result (X)
 
     $TYPE(WP), intent(in) :: A(:,:)
     $TYPE(WP), intent(in) :: B(:,:)
@@ -473,7 +473,7 @@ contains
 
     return
 
-  end function linear_solve_mat_$SUFFIX
+  end function linear_solve_mat_${INFIX}_
 
   $endsub
 
@@ -484,10 +484,10 @@ contains
 
   $define $COMMUTATOR $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  function commutator_$SUFFIX (A, B) result (C)
+  function commutator_${INFIX}_ (A, B) result (C)
 
     $TYPE(WP), intent(in) :: A(:,:)
     $TYPE(WP), intent(in) :: B(:,:)
@@ -506,7 +506,7 @@ contains
 
     return
 
-  end function commutator_$SUFFIX
+  end function commutator_${INFIX}_
 
   $endsub
 
@@ -517,11 +517,11 @@ contains
 
   $define $MEASURE_BANDWIDTH_FULL $sub
   
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
   $local $ZERO $3
 
-  subroutine measure_bandwidth_full_$SUFFIX (A, n_l, n_u)
+  subroutine measure_bandwidth_full_${INFIX}_ (A, n_l, n_u)
 
     $TYPE(WP), intent(in) :: A(:,:)
     integer, intent(out)  :: n_l
@@ -574,7 +574,7 @@ contains
 
     return
 
-  end subroutine measure_bandwidth_full_$SUFFIX
+  end subroutine measure_bandwidth_full_${INFIX}_
 
   $endsub
 
@@ -585,10 +585,10 @@ contains
 
   $define $DIAGONAL $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  pure function diagonal_$SUFFIX (A) result (D)
+  pure function diagonal_${INFIX}_ (A) result (D)
 
     $TYPE(WP), intent(in) :: A(:,:)
     $TYPE(WP)             :: d(MIN(SIZE(A, 1),SIZE(A, 2)))
@@ -605,7 +605,7 @@ contains
 
     return
 
-  end function diagonal_$SUFFIX
+  end function diagonal_${INFIX}_
 
   $endsub
 
@@ -616,10 +616,10 @@ contains
 
   $define $DIAGONAL_MATRIX $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  pure function diagonal_matrix_$SUFFIX (x) result (D)
+  pure function diagonal_matrix_${INFIX}_ (x) result (D)
 
     $TYPE(WP), intent(in) :: x(:)
     $TYPE(WP)             :: D(SIZE(x), SIZE(x))
@@ -638,7 +638,7 @@ contains
 
     return
 
-  end function diagonal_matrix_$SUFFIX
+  end function diagonal_matrix_${INFIX}_
 
   $endsub
 
@@ -700,10 +700,10 @@ contains
 
   $define $MATRIX_EXP $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  function matrix_exp_$SUFFIX (A, t) result (exp_At)
+  function matrix_exp_${INFIX}_ (A, t) result (exp_At)
 
     $TYPE(WP), intent(in) :: A(:,:)
     real(WP), intent(in)  :: t
@@ -722,19 +722,19 @@ contains
 
     A_ = A
 
-    call eigen_decompose_$SUFFIX(A_, lambda, V_l=V_l, V_r=V_r)
+    call eigen_decompose_${INFIX}_(A_, lambda, V_l=V_l, V_r=V_r)
 
     $if($TYPE eq 'real')
-    exp_At = REAL(matrix_exp_eigen(lambda, V_l, V_r, t))
+    exp_At = REAL(matrix_exp_eigen_(lambda, V_l, V_r, t))
     $else
-    exp_At = matrix_exp_eigen(lambda, V_l, V_r, t)
+    exp_At = matrix_exp_eigen_(lambda, V_l, V_r, t)
     $endif
 
     ! Finish
 
     return
 
-  end function matrix_exp_$SUFFIX
+  end function matrix_exp_${INFIX}_
 
   $endsub
 
@@ -743,7 +743,7 @@ contains
 
 !****
 
-  function matrix_exp_eigen (lambda, V_l, V_r, t) result (exp_At)
+  function matrix_exp_eigen_ (lambda, V_l, V_r, t) result (exp_At)
 
     complex(WP), intent(in) :: lambda(:)
     complex(WP), intent(in) :: V_l(:,:)
@@ -772,16 +772,16 @@ contains
 
     return
 
-  end function matrix_exp_eigen
+  end function matrix_exp_eigen_
 
 !****
 
   $define $OUTER_PRODUCT $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  function outer_product_$SUFFIX (v, w) result (A)
+  function outer_product_${INFIX}_ (v, w) result (A)
 
     $TYPE(WP), intent(in) :: v(:)
     $TYPE(WP), intent(in) :: w(:)
@@ -795,7 +795,7 @@ contains
 
     return
 
-  end function outer_product_$SUFFIX
+  end function outer_product_${INFIX}_
 
   $endsub
 
@@ -804,7 +804,7 @@ contains
 
 !****
 
-  function outer_product_l (v, w) result (A)
+  function outer_product_l_ (v, w) result (A)
 
     logical, intent(in) :: v(:)
     logical, intent(in) :: w(:)
@@ -818,16 +818,16 @@ contains
 
     return
 
-  end function outer_product_l
+  end function outer_product_l_
 
 !****
 
   $define $PARTITION $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  subroutine partition_$SUFFIX (A, mask_r, mask_c, A_part)
+  subroutine partition_${INFIX}_ (A, mask_r, mask_c, A_part)
 
     $TYPE(WP), intent(in)  :: A(:,:)
     logical, intent(in)    :: mask_r(:)
@@ -848,7 +848,7 @@ contains
 
     return
 
-  end subroutine partition_$SUFFIX
+  end subroutine partition_${INFIX}_
 
   $endsub
 

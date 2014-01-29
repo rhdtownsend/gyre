@@ -37,8 +37,8 @@ module gyre_coeffs_hom
 
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure :: ${NAME}_1
-    procedure :: ${NAME}_v
+    procedure :: ${NAME}_1_
+    procedure :: ${NAME}_v_
   $endsub
 
   type, extends(coeffs_t) :: coeffs_hom_t
@@ -64,22 +64,22 @@ module gyre_coeffs_hom
      $PROC_DECL(kappa_S)
      $PROC_DECL(tau_thm)
      $PROC_DECL(Omega_rot)
-     procedure, public :: pi_c
-     procedure, public :: is_zero
-     procedure, public :: attach_cache
-     procedure, public :: detach_cache
-     procedure, public :: fill_cache
+     procedure, public :: pi_c => pi_c_
+     procedure, public :: is_zero => is_zero_
+     procedure, public :: attach_cache => attach_cache_
+     procedure, public :: detach_cache => detach_cache_
+     procedure, public :: fill_cache => fill_cache_
   end type coeffs_hom_t
 
   ! Interfaces
 
   interface coeffs_hom_t
-     module procedure init_cf
+     module procedure coeffs_hom_t_
   end interface coeffs_hom_t
 
   $if ($MPI)
   interface bcast
-     module procedure bcast_cf
+     module procedure bcast_
   end interface bcast
   $endif
 
@@ -88,7 +88,7 @@ module gyre_coeffs_hom
   private
 
   public :: coeffs_hom_t
-  $if($MPI)
+  $if ($MPI)
   public :: bcast
   $endif
 
@@ -96,12 +96,12 @@ module gyre_coeffs_hom
 
 contains
 
-  function init_cf (Gamma_1) result (cf)
+  function coeffs_hom_t_ (Gamma_1) result (cf)
 
     real(WP), intent(in) :: Gamma_1
     type(coeffs_hom_t)   :: cf
 
-    ! Construct the coeffs_hom
+    ! Construct the coeffs_hom_t
 
     cf%dt_Gamma_1 = Gamma_1
 
@@ -109,32 +109,11 @@ contains
 
     return
 
-  end function init_cf
+  end function coeffs_hom_t_
 
 !****
 
-  $if($MPI)
-
-  subroutine bcast_cf (cf, root_rank)
-
-    class(coeffs_hom_t), intent(inout) :: cf
-    integer, intent(in)                :: root_rank
-
-    ! Broadcast the coeffs_hom
-
-    call bcast(cf%dt_Gamma_1, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_cf
-
-  $endif
-
-!****
-
-  function V_1 (this, x) result (V)
+  function V_1_ (this, x) result (V)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x
@@ -148,11 +127,11 @@ contains
 
     return
 
-  end function V_1
+  end function V_1_
 
 !****
   
-  function V_v (this, x) result (V)
+  function V_v_ (this, x) result (V)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
@@ -170,11 +149,11 @@ contains
 
     return
 
-  end function V_v
+  end function V_v_
 
 !****
 
-  function As_1 (this, x) result (As)
+  function As_1_ (this, x) result (As)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x
@@ -188,11 +167,11 @@ contains
 
     return
 
-  end function As_1
+  end function As_1_
 
 !****
   
-  function As_v (this, x) result (As)
+  function As_v_ (this, x) result (As)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
@@ -210,11 +189,11 @@ contains
 
     return
 
-  end function As_v
+  end function As_v_
 
 !****
 
-  function U_1 (this, x) result (U)
+  function U_1_ (this, x) result (U)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x
@@ -228,11 +207,11 @@ contains
 
     return
 
-  end function U_1
+  end function U_1_
 
 !****
   
-  function U_v (this, x) result (U)
+  function U_v_ (this, x) result (U)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
@@ -250,11 +229,11 @@ contains
 
     return
 
-  end function U_v
+  end function U_v_
 
 !****
 
-  function c_1_1 (this, x) result (c_1)
+  function c_1_1_ (this, x) result (c_1)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x
@@ -268,11 +247,11 @@ contains
 
     return
 
-  end function c_1_1
+  end function c_1_1_
 
 !****
   
-  function c_1_v (this, x) result (c_1)
+  function c_1_v_ (this, x) result (c_1)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
@@ -290,11 +269,11 @@ contains
 
     return
 
-  end function c_1_v
+  end function c_1_v_
 
 !****
 
-  function Gamma_1_1 (this, x) result (Gamma_1)
+  function Gamma_1_1_ (this, x) result (Gamma_1)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x
@@ -308,11 +287,11 @@ contains
 
     return
 
-  end function Gamma_1_1
+  end function Gamma_1_1_
 
 !****
   
-  function Gamma_1_v (this, x) result (Gamma_1)
+  function Gamma_1_v_ (this, x) result (Gamma_1)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
@@ -330,11 +309,11 @@ contains
 
     return
 
-  end function Gamma_1_v
+  end function Gamma_1_v_
 
 !****
 
-  function nabla_ad_1 (this, x) result (nabla_ad)
+  function nabla_ad_1_ (this, x) result (nabla_ad)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x
@@ -348,11 +327,11 @@ contains
 
     return
 
-  end function nabla_ad_1
+  end function nabla_ad_1_
 
 !****
   
-  function nabla_ad_v (this, x) result (nabla_ad)
+  function nabla_ad_v_ (this, x) result (nabla_ad)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
@@ -370,11 +349,11 @@ contains
 
     return
 
-  end function nabla_ad_v
+  end function nabla_ad_v_
 
 !****
 
-  function delta_1 (this, x) result (delta)
+  function delta_1_ (this, x) result (delta)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x
@@ -388,11 +367,11 @@ contains
 
     return
 
-  end function delta_1
+  end function delta_1_
 
 !****
   
-  function delta_v (this, x) result (delta)
+  function delta_v_ (this, x) result (delta)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
@@ -410,7 +389,7 @@ contains
 
     return
 
-  end function delta_v
+  end function delta_v_
 
 !****
 
@@ -418,7 +397,7 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_1 (this, x) result ($NAME)
+  function ${NAME}_1_ (this, x) result ($NAME)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x
@@ -432,11 +411,11 @@ contains
 
     return
 
-  end function ${NAME}_1
+  end function ${NAME}_1_
 
 !****
 
-  function ${NAME}_v (this, x) result ($NAME)
+  function ${NAME}_v_ (this, x) result ($NAME)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
@@ -450,7 +429,7 @@ contains
 
     return
 
-  end function ${NAME}_v
+  end function ${NAME}_v_
 
   $endsub
 
@@ -467,7 +446,7 @@ contains
 
 !****
 
-  function Omega_rot_1 (this, x) result (Omega_rot)
+  function Omega_rot_1_ (this, x) result (Omega_rot)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x
@@ -481,11 +460,11 @@ contains
 
     return
 
-  end function Omega_rot_1
+  end function Omega_rot_1_
 
 !****
   
-  function Omega_rot_v (this, x) result (Omega_rot)
+  function Omega_rot_v_ (this, x) result (Omega_rot)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
@@ -503,11 +482,11 @@ contains
 
     return
 
-  end function Omega_rot_v
+  end function Omega_rot_v_
 
 !****
 
-  function pi_c (this)
+  function pi_c_ (this) result (pi_c)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP)                        :: pi_c
@@ -520,11 +499,11 @@ contains
 
     return
 
-  end function pi_c
+  end function pi_c_
 
 !****
 
-  function is_zero (this, x)
+  function is_zero_ (this, x) result (is_zero)
 
     class(coeffs_hom_t), intent(in) :: this
     real(WP), intent(in)            :: x
@@ -538,11 +517,11 @@ contains
 
     return
 
-  end function is_zero
+  end function is_zero_
 
 !****
 
-  subroutine attach_cache (this, cc)
+  subroutine attach_cache_ (this, cc)
 
     class(coeffs_hom_t), intent(inout)    :: this
     class(cocache_t), pointer, intent(in) :: cc
@@ -553,11 +532,11 @@ contains
 
     return
 
-  end subroutine attach_cache
+  end subroutine attach_cache_
 
 !****
 
-  subroutine detach_cache (this)
+  subroutine detach_cache_ (this)
 
     class(coeffs_hom_t), intent(inout) :: this
 
@@ -567,11 +546,11 @@ contains
 
     return
 
-  end subroutine detach_cache
+  end subroutine detach_cache_
 
 !****
 
-  subroutine fill_cache (this, x)
+  subroutine fill_cache_ (this, x)
 
     class(coeffs_hom_t), intent(inout) :: this
     real(WP), intent(in)               :: x(:)
@@ -582,6 +561,27 @@ contains
 
     return
 
-  end subroutine fill_cache
+  end subroutine fill_cache_
+
+!****
+
+  $if ($MPI)
+
+  subroutine bcast_ (cf, root_rank)
+
+    class(coeffs_hom_t), intent(inout) :: cf
+    integer, intent(in)                :: root_rank
+
+    ! Broadcast the coeffs_hom_t
+
+    call bcast(cf%dt_Gamma_1, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_
+
+  $endif
 
 end module gyre_coeffs_hom
