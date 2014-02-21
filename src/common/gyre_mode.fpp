@@ -44,7 +44,7 @@ module gyre_mode
   ! Derived-type definitions
 
   type :: mode_t
-     class(model_t), pointer  :: cf => null()
+     class(model_t), pointer  :: ml => null()
      type(oscpar_t)           :: op
      type(ext_real_t)         :: chi
      real(WP), allocatable    :: x(:)
@@ -122,9 +122,9 @@ module gyre_mode
 
 contains
 
-  function mode_t_ (cf, op, omega, x, y, x_ref, y_ref, chi, n_iter) result (md)
+  function mode_t_ (ml, op, omega, x, y, x_ref, y_ref, chi, n_iter) result (md)
 
-    class(model_t), pointer, intent(in) :: cf
+    class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
     complex(WP), intent(in)             :: omega
     real(WP), intent(in)                :: x(:)
@@ -146,7 +146,7 @@ contains
 
     ! Construct the mode_t
 
-    md%cf => cf
+    md%ml => ml
 
     md%op = op
 
@@ -215,7 +215,7 @@ contains
 
     ! Calculate the frequency
 
-    freq = this%omega*freq_scale(this%cf, this%op, this%x(this%n), freq_units)
+    freq = this%omega*freq_scale(this%ml, this%op, this%x(this%n), freq_units)
 
     ! Finish
     
@@ -240,7 +240,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, this%n
-       ${NAME}_(k) = ${NAME}(this%cf, this%op, this%omega, this%x(k), this%y(:,k))
+       ${NAME}_(k) = ${NAME}(this%ml, this%op, this%omega, this%x(k), this%y(:,k))
     end do
     
     ! Finish
@@ -282,7 +282,7 @@ contains
     
     ! Calculate $NAME at x_ref
 
-    ${NAME}_ref_ = ${NAME}(this%cf, this%op, this%omega, this%x_ref, this%y_ref)
+    ${NAME}_ref_ = ${NAME}(this%ml, this%op, this%omega, this%x_ref, this%y_ref)
     
     ! Finish
 
@@ -307,8 +307,8 @@ contains
     ! T_eff. This expression is based on the standard definition of
     ! effective temperature
 
-    delT_eff = 0.25_WP*(delL(this%cf, this%op, this%omega, this%x_ref, this%y_ref) - &
-                  2._WP*xi_r(this%cf, this%op, this%omega, this%x_ref, this%y_ref))
+    delT_eff = 0.25_WP*(delL(this%ml, this%op, this%omega, this%x_ref, this%y_ref) - &
+                  2._WP*xi_r(this%ml, this%op, this%omega, this%x_ref, this%y_ref))
 
     ! Finish
 
@@ -327,7 +327,7 @@ contains
     ! to correspond to the photosphere), in units of the gravity. This
     ! expression is based on eqns. 6 & 22 of [Dup2003]
 
-    delg_eff = -(2._WP + this%cf%c_1(this%x_ref)*this%omega**2)*this%xi_r_ref()
+    delg_eff = -(2._WP + this%ml%c_1(this%x_ref)*this%omega**2)*this%xi_r_ref()
 
     ! Finish
 
@@ -498,7 +498,7 @@ contains
     xi_r = this%xi_r()
     xi_h = this%xi_h()
 
-    associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
+    associate(x => this%x, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
               l => this%op%l)
 
       K = (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
@@ -528,7 +528,7 @@ contains
     xi_r = this%xi_r()
     xi_h = this%xi_h()
 
-    associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
+    associate(x => this%x, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
               l => this%op%l)
 
       beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
@@ -563,8 +563,8 @@ contains
 
     do i = this%n-1,1,-1
 
-       associate(tau_thm => this%cf%tau_thm(this%x(i)), &
-                 omega_c => this%cf%omega_c(this%x(i), this%op%m, this%omega))
+       associate(tau_thm => this%ml%tau_thm(this%x(i)), &
+                 omega_c => this%ml%omega_c(this%x(i), this%op%m, this%omega))
 
          if(REAL(omega_c)*tau_thm/TWOPI > 1._WP) then
             i_trans = i
@@ -602,9 +602,9 @@ contains
 
     ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
-    associate(x => this%x, V_g => this%cf%V(this%x)/this%cf%Gamma_1(this%x), &
-              As => this%cf%As(this%x), c_1 => this%cf%c_1(this%x), &
-              l => this%op%l, omega_c => REAL(this%cf%omega_c(this%x, this%op%m, this%omega)))
+    associate(x => this%x, V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
+              As => this%ml%As(this%x), c_1 => this%ml%c_1(this%x), &
+              l => this%op%l, omega_c => REAL(this%ml%omega_c(this%x, this%op%m, this%omega)))
 
       prop_type = MERGE(1, 0, c_1*omega_c**2 > As) + &
                    MERGE(-1, 0, l*(l+1)/(c_1*omega_c**2) > V_g)
@@ -675,7 +675,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the origin)
 
-       call find_x_turn(md%x, md%cf, md%op, REAL(md%omega), x_turn)
+       call find_x_turn(md%x, md%ml, md%op, REAL(md%omega), x_turn)
 
        x_turn_loop : do i = 1,md%n-1
           if(md%x(i) > x_turn) exit x_turn_loop
@@ -801,11 +801,11 @@ contains
     ! Calculate the Lagrangian specific entropy perturbation in units
     ! of c_p, from the energy equation
 
-    associate(V => this%cf%V(this%x), c_1 => this%cf%c_1(this%x), &
-              nabla_ad => this%cf%nabla_ad(this%x), nabla => this%cf%nabla(this%x), &
-              c_rad => this%cf%c_rad(this%x), dc_rad => this%cf%dc_rad(this%x), c_thm => this%cf%c_thm(this%x), &
-              c_eps_ad => this%cf%c_eps_ad(this%x), c_eps_S => this%cf%c_eps_S(this%x), &              
-              l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega))
+    associate(V => this%ml%V(this%x), c_1 => this%ml%c_1(this%x), &
+              nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
+              c_rad => this%ml%c_rad(this%x), dc_rad => this%ml%dc_rad(this%x), c_thm => this%ml%c_thm(this%x), &
+              c_eps_ad => this%ml%c_eps_ad(this%x), c_eps_S => this%ml%c_eps_S(this%x), &              
+              l => this%op%l, omega_c => this%ml%omega_c(this%x, this%op%m, this%omega))
 
       where(this%x /= 0)
          A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
@@ -891,11 +891,11 @@ contains
     ! Calculate the Lagrangian luminosity perturbation in units of L_star, 
     ! from the radiative diffusion equation
 
-    associate(V => this%cf%V(this%x), U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              nabla_ad => this%cf%nabla_ad(this%x), nabla => this%cf%nabla(this%x), &
-              c_dif => this%cf%c_dif(this%x), c_rad => this%cf%c_rad(this%x), &
-              kappa_S => this%cf%kappa_S(this%x), &
-              l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega))
+    associate(V => this%ml%V(this%x), U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
+              nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
+              c_dif => this%ml%c_dif(this%x), c_rad => this%ml%c_rad(this%x), &
+              kappa_S => this%ml%kappa_S(this%x), &
+              l => this%op%l, omega_c => this%ml%omega_c(this%x, this%op%m, this%omega))
 
       A_5(1,:) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
       A_5(2,:) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
@@ -966,16 +966,16 @@ contains
 
   $if($MPI)
 
-  subroutine bcast_ (md, root_rank, cf)
+  subroutine bcast_ (md, root_rank, ml)
 
     class(mode_t), intent(inout)       :: md
     integer, intent(in)                :: root_rank
-    class(model_t), intent(in), target :: cf
+    class(model_t), intent(in), target :: ml
 
     ! Broadcast the mode_t
 
     if(MPI_RANK /= root_rank) then
-       md%cf => cf
+       md%ml => ml
     endif
 
     call bcast(md%op, root_rank)

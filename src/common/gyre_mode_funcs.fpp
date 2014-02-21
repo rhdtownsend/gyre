@@ -57,9 +57,9 @@ module gyre_mode_funcs
 
 contains
 
-  function xi_r (cf, op, omega, x, y)
+  function xi_r (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -97,9 +97,9 @@ contains
 
 !****
 
-  function xi_h (cf, op, omega, x, y)
+  function xi_h (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -111,7 +111,7 @@ contains
     ! Calculate the horizontal displacement perturbation at x, in
     ! units of R_star
 
-    associate (c_1 => cf%c_1(x), l => op%l, omega_c => cf%omega_c(x, op%m, omega))
+    associate (c_1 => ml%c_1(x), l => op%l, omega_c => ml%omega_c(x, op%m, omega))
 
       if (l /= 0) then
 
@@ -145,9 +145,9 @@ contains
 
 !****
 
-  function phip (cf, op, omega, x, y)
+  function phip (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -159,7 +159,7 @@ contains
     ! Calculate the Eulerian gravitational potential perturbation at
     ! x, in units of G M_star / R_star
 
-    associate (c_1 => cf%c_1(x), l => op%l)
+    associate (c_1 => ml%c_1(x), l => op%l)
 
       phip = y(3)*x**l/c_1
 
@@ -173,9 +173,9 @@ contains
 
 !****
 
-  function dphip_dx (cf, op, omega, x, y)
+  function dphip_dx (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -187,7 +187,7 @@ contains
     ! Calculate the Eulerian gravity perturbation at x, in units of G
     ! M_star / R_star**2
 
-    associate (c_1 => cf%c_1(x), l => op%l)
+    associate (c_1 => ml%c_1(x), l => op%l)
 
       if (l /= 1) then
 
@@ -213,9 +213,9 @@ contains
 
 !****
 
-  function delS (cf, op, omega, x, y)
+  function delS (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -245,9 +245,9 @@ contains
 
 !****
 
-  function delL (cf, op, omega, x, y)
+  function delL (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -273,9 +273,9 @@ contains
 
 !****
 
-  function delp (cf, op, omega, x, y)
+  function delp (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -287,7 +287,7 @@ contains
     ! Calculate the Lagrangian pressure perturbation at x, in units of
     ! p
 
-    associate (V => cf%V(x), pi_c => cf%pi_c(), l => op%l)
+    associate (V => ml%V(x), pi_c => ml%pi_c(), l => op%l)
 
       if(l > 0) then
 
@@ -317,9 +317,9 @@ contains
 
 !****
 
-  function delrho (cf, op, omega, x, y)
+  function delrho (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -331,9 +331,9 @@ contains
     ! Calculate the Lagrangian density perturbation at x, in units of
     ! rho. This expression implements eqn. 13.83 of [Unn1989]
 
-    associate (Gamma_1 => cf%Gamma_1(x), delta => cf%delta(x))
+    associate (Gamma_1 => ml%Gamma_1(x), delta => ml%delta(x))
 
-      delrho = delp(cf, op, omega, x, y)/Gamma_1 - delta*delS(cf, op, omega, x, y)
+      delrho = delp(ml, op, omega, x, y)/Gamma_1 - delta*delS(ml, op, omega, x, y)
 
     end associate
 
@@ -345,9 +345,9 @@ contains
 
 !****
 
-  function delT (cf, op, omega, x, y)
+  function delT (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -359,9 +359,9 @@ contains
     ! Calculate the Lagrangian temperature perturbation at x, in units
     ! of T. This expression implements eqn. 13.84 of [Unn1989]
 
-    associate (nabla_ad => cf%nabla_ad(x))
+    associate (nabla_ad => ml%nabla_ad(x))
       
-      delT = nabla_ad*delp(cf, op, omega, x, y) + delS(cf, op, omega, x, y)
+      delT = nabla_ad*delp(ml, op, omega, x, y) + delS(ml, op, omega, x, y)
 
     end associate
 
@@ -373,9 +373,9 @@ contains
 
 !****
 
-  function dE_dx (cf, op, omega, x, y)
+  function dE_dx (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -387,8 +387,8 @@ contains
     ! Calculate the differential mode inertia at x, in units of M_star
     ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010]
 
-    associate(xi_r => xi_r(cf, op, omega, x, y), xi_h => xi_h(cf, op, omega, x, y), &
-              U => cf%U(x), c_1 => cf%c_1(x), l => op%l)
+    associate(xi_r => xi_r(ml, op, omega, x, y), xi_h => xi_h(ml, op, omega, x, y), &
+              U => ml%U(x), c_1 => ml%c_1(x), l => op%l)
       dE_dx = (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1
     end associate
 
@@ -400,9 +400,9 @@ contains
 
 !****
 
-  function dW_dx (cf, op, omega, x, y)
+  function dW_dx (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -416,9 +416,9 @@ contains
     ! based on eqn. 25.9 of [Unn1989]; the additional factor of 4 pi
     ! in the denominator comes from averaging over solid angle
 
-    associate(c_thm => cf%c_thm(x))
+    associate(c_thm => ml%c_thm(x))
 
-      dW_dx = -PI*AIMAG(CONJG(delT(cf, op, omega, x, y))*delS(cf, op, omega, x, y))*c_thm*x**2/(4._WP*PI)
+      dW_dx = -PI*AIMAG(CONJG(delT(ml, op, omega, x, y))*delS(ml, op, omega, x, y))*c_thm*x**2/(4._WP*PI)
 
     end associate
 
@@ -430,9 +430,9 @@ contains
 
 !****
 
-  function Yt_1 (cf, op, omega, x, y)
+  function Yt_1 (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -444,7 +444,7 @@ contains
     ! Calculate the Takata Y_1 function at x. This expression is based
     ! on eqn. 69 of [Tak2006b]
 
-    associate (J => 1._WP-cf%U(x)/3._WP)
+    associate (J => 1._WP-ml%U(x)/3._WP)
 
       Yt_1 = J*y(1) + (y(3) - y(4))/3._WP
       
@@ -458,9 +458,9 @@ contains
 
 !****
 
-  function Yt_2 (cf, op, omega, x, y)
+  function Yt_2 (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -482,9 +482,9 @@ contains
 
 !****
 
-  function I_0 (cf, op, omega, x, y)
+  function I_0 (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -496,7 +496,7 @@ contains
     ! Calculate the I_0 integral at x, which should be zero for radial
     ! modes. This expression is based on eqn. 42 of [Tak2006a]
 
-    associate(U => cf%U(x), c_1 => cf%c_1(x), l => op%l)
+    associate(U => ml%U(x), c_1 => ml%c_1(x), l => op%l)
 
       I_0 = x**(l+1)*(U*y(1) + y(4))/c_1
 
@@ -510,9 +510,9 @@ contains
 
 !****
 
-  function I_1 (cf, op, omega, x, y)
+  function I_1 (ml, op, omega, x, y)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
@@ -524,8 +524,8 @@ contains
     ! Calculate the I_0 integral at x, which should be zero for dipole
     ! modes. This expression is based on eqn. 43 of [Tak2006a]
 
-    associate(U => cf%U(x), c_1 => cf%c_1(x), l => op%l, &
-              omega_c => cf%omega_c(x, op%m, omega))
+    associate(U => ml%U(x), c_1 => ml%c_1(x), l => op%l, &
+              omega_c => ml%omega_c(x, op%m, omega))
 
       I_1 = x**(l+2)*(c_1*omega_c**2*U*y(1) - U*y(2) + &
                   (U - c_1*omega_c**2 - 2._WP)*y(3) + (c_1*omega_c**2 - 1._WP)*y(4))/c_1**2

@@ -39,7 +39,7 @@ module gyre_bound_nad_unno
 
   type, extends (bound_t) :: bound_nad_unno_t
      private
-     class(model_t), pointer        :: cf => null()
+     class(model_t), pointer        :: ml => null()
      class(jacobian_t), allocatable :: jc
      type(oscpar_t)                 :: op
    contains 
@@ -64,16 +64,16 @@ module gyre_bound_nad_unno
 
 contains
 
-  function bound_nad_unno_t_ (cf, jc, op) result (bd)
+  function bound_nad_unno_t_ (ml, jc, op) result (bd)
 
-    class(model_t), pointer, intent(in) :: cf
+    class(model_t), pointer, intent(in) :: ml
     class(jacobian_t), intent(in)       :: jc
     type(oscpar_t), intent(in)          :: op
     type(bound_nad_unno_t)              :: bd
 
     ! Construct the bound_nad_unno_t
 
-    bd%cf => cf
+    bd%ml => ml
     allocate(bd%jc, SOURCE=jc)
     bd%op = op
 
@@ -110,8 +110,8 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%cf%c_1(x_i), l => this%op%l, &
-              omega_c => this%cf%omega_c(x_i, this%op%m, omega))
+    associate(c_1 => this%ml%c_1(x_i), l => this%op%l, &
+              omega_c => this%ml%omega_c(x_i, this%op%m, omega))
 
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l
@@ -176,10 +176,10 @@ contains
 
     ! Set the outer boundary conditions
 
-    call eval_atmos_coeffs_unno(this%cf, x_o, V_g, As, c_1)
+    call eval_atmos_coeffs_unno(this%ml, x_o, V_g, As, c_1)
 
-    associate(V => this%cf%V(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
+    associate(V => this%ml%V(x_o), nabla_ad => this%ml%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%ml%omega_c(x_o, this%op%m, omega))
 
       lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l)
       

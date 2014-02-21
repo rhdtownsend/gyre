@@ -43,7 +43,7 @@ module gyre_shooter_nad
 
   type :: shooter_nad_t
      private
-     class(model_t), pointer   :: cf => null()
+     class(model_t), pointer   :: ml => null()
      class(ivp_t), allocatable :: iv
      class(ivp_t), allocatable :: iv_upw
      type(oscpar_t)            :: op
@@ -72,9 +72,9 @@ module gyre_shooter_nad
 
 contains
 
-  function shooter_nad_t_ (cf, iv, iv_upw, op, np) result (sh)
+  function shooter_nad_t_ (ml, iv, iv_upw, op, np) result (sh)
 
-    class(model_t), pointer, intent(in) :: cf
+    class(model_t), pointer, intent(in) :: ml
     class(ivp_t), intent(in)            :: iv
     class(ivp_t), intent(in)            :: iv_upw
     type(oscpar_t), intent(in)          :: op
@@ -83,7 +83,7 @@ contains
 
     ! Construct the shooter_nad_t
 
-    sh%cf => cf
+    sh%ml => ml
     allocate(sh%iv, SOURCE=iv)
     allocate(sh%iv_upw, SOURCE=iv_upw)
     sh%op = op
@@ -141,8 +141,8 @@ contains
           ! Apply the thermal-term rescaling, to assist the rootfinder
 
           associate(x_mid => 0.5_WP*(x(k) + x(k+1)))
-            associate(V => this%cf%V(x_mid), nabla => this%cf%nabla(x_mid), &
-                      c_rad => this%cf%c_rad(x_mid), c_thm => this%cf%c_thm(x_mid))
+            associate(V => this%ml%V(x_mid), nabla => this%ml%nabla(x_mid), &
+                      c_rad => this%ml%c_rad(x_mid), c_thm => this%ml%c_thm(x_mid))
               lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x_mid
             end associate
           end associate
@@ -298,9 +298,9 @@ contains
 
 ! !****
 
-!   function diff_coeffs (cf, op, omega, x) result (a)
+!   function diff_coeffs (ml, op, omega, x) result (a)
 
-!     class(model_t), intent(in) :: cf
+!     class(model_t), intent(in) :: ml
 !     type(oscpar_t), intent(in) :: op
 !     complex(WP), intent(in)    :: omega
 !     real(WP), intent(in)       :: x
@@ -309,9 +309,9 @@ contains
 !     ! Calculate the coefficients of the (algebraic) adiabatic
 !     ! diffusion equation
 
-!     associate(U => cf%U(x), c_1 => cf%c_1(x), &
-!               nabla_ad => cf%nabla_ad(x), &
-!               c_rad => cf%c_rad(x), c_dif => cf%c_dif(x), nabla => cf%nabla(x), &
+!     associate(U => ml%U(x), c_1 => ml%c_1(x), &
+!               nabla_ad => ml%nabla_ad(x), &
+!               c_rad => ml%c_rad(x), c_dif => ml%c_dif(x), nabla => ml%nabla(x), &
 !               l => op%l)
 
 !       a(1) = (nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)

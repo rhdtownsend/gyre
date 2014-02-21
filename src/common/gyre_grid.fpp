@@ -47,7 +47,7 @@ module gyre_grid
   end type geom_func_t
 
   type, extends (func_t) :: gamma_func_t
-     class(model_t), pointer :: cf => null()
+     class(model_t), pointer :: ml => null()
      type(oscpar_t), pointer :: op => null()
      real(WP)                :: omega
    contains
@@ -66,10 +66,10 @@ module gyre_grid
 
 contains
 
-  subroutine build_grid (gp, cf, op, x_in, x, verbose)
+  subroutine build_grid (gp, ml, op, x_in, x, verbose)
 
     type(gridpar_t), intent(in)        :: gp(:)
-    class(model_t), intent(in)         :: cf
+    class(model_t), intent(in)         :: ml
     type(oscpar_t), intent(in)         :: op
     real(WP), allocatable, intent(in)  :: x_in(:)
     real(WP), allocatable, intent(out) :: x(:)
@@ -120,13 +120,13 @@ contains
 
        select case (gp(i)%op_type)
        case ('RESAMP_DISPERSION')
-          call resample_dispersion_(cf, op, gp(i)%omega_a, gp(i)%omega_b, &
+          call resample_dispersion_(ml, op, gp(i)%omega_a, gp(i)%omega_b, &
                                     gp(i)%alpha_osc, gp(i)%alpha_exp, x)
        case ('RESAMP_THERMAL')
-          call resample_thermal_(cf, gp(i)%omega_a, gp(i)%omega_b, &
+          call resample_thermal_(ml, gp(i)%omega_a, gp(i)%omega_b, &
                                  gp(i)%alpha_thm, x)
        case ('RESAMP_CENTER')
-          call resample_center_(cf, op, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
+          call resample_center_(ml, op, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
        case ('RESAMP_UNIFORM')
           call resample_uniform_(gp(i)%n, x)
        case default
@@ -156,10 +156,10 @@ contains
 
 !****
           
-  subroutine grid_range (gp, cf, op, x_in, x_i, x_o)
+  subroutine grid_range (gp, ml, op, x_in, x_i, x_o)
 
     type(gridpar_t), intent(in)       :: gp(:)
-    class(model_t), intent(in)        :: cf
+    class(model_t), intent(in)        :: ml
     type(oscpar_t), intent(in)        :: op
     real(WP), allocatable, intent(in) :: x_in(:)
     real(WP), intent(out)             :: x_i
@@ -520,9 +520,9 @@ contains
 
 !****
 
-  subroutine resample_dispersion_ (cf, op, omega_a, omega_b, alpha_osc, alpha_exp, x)
+  subroutine resample_dispersion_ (ml, op, omega_a, omega_b, alpha_osc, alpha_exp, x)
 
-    class(model_t), intent(in)           :: cf
+    class(model_t), intent(in)           :: ml
     type(oscpar_t), intent(in)           :: op
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
@@ -568,8 +568,8 @@ contains
 
     wavenumber_loop : do i = 2,n_x-1
 
-       associate(V_g => cf%V(x(i))/cf%Gamma_1(x(i)), As => cf%As(x(i)), &
-                 U => cf%U(x(i)), c_1 => cf%c_1(x(i)), &
+       associate(V_g => ml%V(x(i))/ml%Gamma_1(x(i)), As => ml%As(x(i)), &
+                 U => ml%U(x(i)), c_1 => ml%c_1(x(i)), &
                  l => op%l)
 
          ! Look for an extremum of the propagation discriminant ]
@@ -645,9 +645,9 @@ contains
 
 !****
 
-  subroutine resample_thermal_ (cf, omega_a, omega_b, alpha_thm, x)
+  subroutine resample_thermal_ (ml, omega_a, omega_b, alpha_thm, x)
 
-    class(model_t), intent(in)           :: cf
+    class(model_t), intent(in)           :: ml
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
     real(WP), intent(in)                 :: alpha_thm
@@ -676,8 +676,8 @@ contains
 
     wavenumber_loop : do i = 2,n_x-1
 
-       associate(V => cf%V(x(i)), nabla => cf%nabla(x(i)), &
-                 c_rad => cf%c_rad(x(i)), c_thm => cf%c_thm(x(i)))
+       associate(V => ml%V(x(i)), nabla => ml%nabla(x(i)), &
+                 c_rad => ml%c_rad(x(i)), c_thm => ml%c_thm(x(i)))
 
          k_thm(i) = SQRT(ABS(V*nabla*omega_b*c_thm/c_rad))/x(i)
 
@@ -715,9 +715,9 @@ contains
 
 !****
 
-  subroutine resample_center_ (cf, op, omega_a, omega_b, n, x)
+  subroutine resample_center_ (ml, op, omega_a, omega_b, n, x)
 
-    class(model_t), intent(in)           :: cf
+    class(model_t), intent(in)           :: ml
     type(oscpar_t), intent(in)           :: op
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
@@ -743,8 +743,8 @@ contains
 
     ! First, locate the innermost turning point at both omega_a and omega_b
 
-    call find_x_turn(x, cf, op, omega_a, x_turn_a)
-    call find_x_turn(x, cf, op, omega_b, x_turn_b)
+    call find_x_turn(x, ml, op, omega_a, x_turn_a)
+    call find_x_turn(x, ml, op, omega_b, x_turn_b)
 
     x_turn = MIN(x_turn_a, x_turn_b)
     call locate(x, x_turn, i_turn)
@@ -803,10 +803,10 @@ contains
 
 !****
 
-  subroutine find_x_turn (x, cf, op, omega, x_turn)
+  subroutine find_x_turn (x, ml, op, omega, x_turn)
 
     real(WP), intent(in)               :: x(:)
-    class(model_t), target, intent(in) :: cf
+    class(model_t), target, intent(in) :: ml
     type(oscpar_t), target, intent(in) :: op
     real(WP), intent(in)               :: omega
     real(WP)                           :: x_turn
@@ -818,13 +818,13 @@ contains
 
     x_turn = HUGE(0._WP)
 
-    gf%cf => cf
+    gf%ml => ml
     gf%op => op
 
     gf%omega = omega
 
     turn_loop : do i = 1,SIZE(x)-1
-       if(.NOT. (cf%is_zero(x(i)) .OR. cf%is_zero(x(i+1)))) then
+       if(.NOT. (ml%is_zero(x(i)) .OR. ml%is_zero(x(i+1)))) then
           if(gf%eval(x(i)) > 0._WP .AND. gf%eval(x(i+1)) <= 0._WP) then
              x_turn = gf%root(x(i), x(i+1), 0._WP)
              exit turn_loop
@@ -855,8 +855,8 @@ contains
 
     x = REAL(z)
 
-    associate(V_g => this%cf%V(x)/this%cf%Gamma_1(x), As => this%cf%As(x), &
-              U => this%cf%U(x), c_1 => this%cf%c_1(x), &
+    associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), As => this%ml%As(x), &
+              U => this%ml%U(x), c_1 => this%ml%c_1(x), &
               l => this%op%l)
 
       g_4 = -4._WP*V_g*c_1

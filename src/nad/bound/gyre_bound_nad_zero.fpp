@@ -38,7 +38,7 @@ module gyre_bound_nad_zero
 
   type, extends (bound_t) :: bound_nad_zero_t
      private
-     class(model_t), pointer        :: cf => null()
+     class(model_t), pointer        :: ml => null()
      class(jacobian_t), allocatable :: jc
      type(oscpar_t)                 :: op
     contains 
@@ -63,16 +63,16 @@ module gyre_bound_nad_zero
 
 contains
 
-  function bound_nad_zero_t_ (cf, jc, op) result (bd)
+  function bound_nad_zero_t_ (ml, jc, op) result (bd)
 
-    class(model_t), pointer, intent(in) :: cf
+    class(model_t), pointer, intent(in) :: ml
     class(jacobian_t), intent(in)       :: jc
     type(oscpar_t), intent(in)          :: op
     type(bound_nad_zero_t)              :: bd
 
     ! Construct the bound_nad_zero_t
 
-    bd%cf => cf
+    bd%ml => ml
     allocate(bd%jc, SOURCE=jc)
     bd%op = op
 
@@ -109,8 +109,8 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%cf%c_1(x_i), l => this%op%l, &
-              omega_c => this%cf%omega_c(x_i, this%op%m, omega))
+    associate(c_1 => this%ml%c_1(x_i), l => this%op%l, &
+              omega_c => this%ml%omega_c(x_i, this%op%m, omega))
 
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l
@@ -162,7 +162,7 @@ contains
 
     ! Set the outer boundary conditions
 
-    associate(V => this%cf%V(x_o), U => this%cf%U(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
+    associate(V => this%ml%V(x_o), U => this%ml%U(x_o), nabla_ad => this%ml%nabla_ad(x_o), &
               l => this%op%l)
 
       B_o(1,1) = 1._WP

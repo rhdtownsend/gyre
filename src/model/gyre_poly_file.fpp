@@ -44,11 +44,11 @@ module gyre_poly_file
 
 contains
 
-  subroutine read_poly_file (file, deriv_type, cf, x)
+  subroutine read_poly_file (file, deriv_type, ml, x)
 
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
-    type(model_poly_t), intent(out)              :: cf
+    type(model_poly_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
@@ -78,7 +78,7 @@ contains
 
     ! Initialize the model_poly
 
-    cf = model_poly_t(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
+    ml = model_poly_t(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
 
     ! If necessary, return the grid
 

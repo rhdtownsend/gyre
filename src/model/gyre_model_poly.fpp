@@ -104,7 +104,7 @@ module gyre_model_poly
 
 contains
 
-  function model_poly_t_ (xi, Theta, dTheta, n_poly, Gamma_1, deriv_type) result (cf)
+  function model_poly_t_ (xi, Theta, dTheta, n_poly, Gamma_1, deriv_type) result (ml)
 
     real(WP), intent(in)         :: xi(:)
     real(WP), intent(in)         :: Theta(:)
@@ -112,7 +112,7 @@ contains
     real(WP), intent(in)         :: n_poly
     real(WP), intent(in)         :: Gamma_1
     character(LEN=*), intent(in) :: deriv_type
-    type(model_poly_t)           :: cf
+    type(model_poly_t)           :: ml
 
     integer  :: n
     real(WP) :: d2Theta(SIZE(xi))
@@ -137,12 +137,12 @@ contains
 
     endif
 
-    cf%sp_Theta = spline_t(xi, Theta, dTheta)
-    cf%sp_dTheta = spline_t(xi, dTheta, d2Theta)
+    ml%sp_Theta = spline_t(xi, Theta, dTheta)
+    ml%sp_dTheta = spline_t(xi, dTheta, d2Theta)
 
-    cf%n_poly = n_poly
-    cf%dt_Gamma_1 = Gamma_1
-    cf%xi_1 = xi(n)
+    ml%n_poly = n_poly
+    ml%dt_Gamma_1 = Gamma_1
+    ml%xi_1 = xi(n)
 
     ! Finish
 
@@ -668,17 +668,17 @@ contains
 
   subroutine bcast_ (bc, root_rank)
 
-    type(model_poly_t), intent(inout) :: cf
+    type(model_poly_t), intent(inout) :: ml
     integer, intent(in)               :: root_rank
 
     ! Broadcast the model_poly_t
 
-    call bcast(cf%sp_Theta, root_rank)
-    call bcast(cf%sp_dTheta, root_rank)
+    call bcast(ml%sp_Theta, root_rank)
+    call bcast(ml%sp_dTheta, root_rank)
 
-    call bcast(cf%n_poly, root_rank)
-    call bcast(cf%dt_Gamma_1, root_rank)
-    call bcast(cf%xi_1, root_rank)
+    call bcast(ml%n_poly, root_rank)
+    call bcast(ml%dt_Gamma_1, root_rank)
+    call bcast(ml%xi_1, root_rank)
 
     ! Finish
 

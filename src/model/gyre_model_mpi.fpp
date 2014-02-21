@@ -56,9 +56,9 @@ contains
 
   $if ($MPI)
 
-  subroutine bcast_alloc_ (cf, root_rank)
+  subroutine bcast_alloc_ (ml, root_rank)
 
-    class(model_t), allocatable, intent(inout) :: cf
+    class(model_t), allocatable, intent(inout) :: ml
     integer, intent(in)                        :: root_rank
 
     integer, parameter :: EVOL_TYPE = 1
@@ -70,13 +70,13 @@ contains
 
     ! Deallocate the model on non-root processors
 
-    if(MPI_RANK /= root_rank .AND. ALLOCATED(cf)) then
-       deallocate(cf)
+    if(MPI_RANK /= root_rank .AND. ALLOCATED(ml)) then
+       deallocate(ml)
     endif
 
     ! Check if the model is allocated on the root processor
 
-    if(MPI_RANK == root_rank) alloc = ALLOCATED(cf)
+    if(MPI_RANK == root_rank) alloc = ALLOCATED(ml)
     call bcast(alloc, root_rank)
 
     if(alloc) then
@@ -85,7 +85,7 @@ contains
 
        if(MPI_RANK == root_rank) then
 
-          select type (cf)
+          select type (ml)
           type is (model_evol_t)
              type = EVOL_TYPE
           type is (model_poly_t)
@@ -117,13 +117,13 @@ contains
 
        ! Broadcast the model
 
-       select type (cf)
+       select type (ml)
        type is (model_evol_t)
-          call bcast(cf, root_rank)
+          call bcast(ml, root_rank)
        type is (model_poly_t)
-          call bcast(cf, root_rank)
+          call bcast(ml, root_rank)
        type is (model_hom_t)
-          call bcast(cf, root_rank)
+          call bcast(ml, root_rank)
        class default
           $ABORT(Unsupported type)
        end select

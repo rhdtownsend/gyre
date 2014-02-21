@@ -53,10 +53,10 @@ module gyre_search
 
 contains
 
-  subroutine build_scan (sp, cf, op, gp, x_in, omega)
+  subroutine build_scan (sp, ml, op, gp, x_in, omega)
 
     type(scanpar_t), intent(in)        :: sp(:)
-    class(model_t), intent(in)         :: cf
+    class(model_t), intent(in)         :: ml
     type(oscpar_t), intent(in)         :: op
     type(gridpar_t), intent(in)        :: gp(:)
     real(WP), allocatable, intent(in)  :: x_in(:)
@@ -80,7 +80,7 @@ contains
 100    format(A)
     endif
 
-    call grid_range(gp, cf, op, x_in, x_i, x_o)
+    call grid_range(gp, ml, op, x_in, x_i, x_o)
 
     ! Loop through scanpars
 
@@ -90,8 +90,8 @@ contains
 
        ! Determine the frequency range
 
-       omega_min = sp(i)%freq_min/freq_scale(cf, op, x_o, sp(i)%freq_units)
-       omega_max = sp(i)%freq_max/freq_scale(cf, op, x_o, sp(i)%freq_units)
+       omega_min = sp(i)%freq_min/freq_scale(ml, op, x_o, sp(i)%freq_units)
+       omega_max = sp(i)%freq_max/freq_scale(ml, op, x_o, sp(i)%freq_units)
 
        ! Add points to the frequency grid
 
@@ -124,7 +124,7 @@ contains
 
     if (check_log_level('WARN')) then
 
-       call eval_cutoff_freqs(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+       call eval_cutoff_freqs(ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
        if (MINVAL(omega) < omega_c_cutoff_lo) then
           write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends below atmospheric gravity cutoff frequency'
@@ -164,7 +164,7 @@ contains
     integer                       :: c_rate
     integer                       :: i
     $if($MPI)
-    class(model_t), pointer       :: cf
+    class(model_t), pointer       :: ml
     integer                       :: p
     $endif
 
@@ -227,11 +227,11 @@ contains
 
     $if($MPI)
 
-    cf => bp%model()
+    ml => bp%model()
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p, cf)
+          call bcast(md(i), p, ml)
        end do
     enddo
 
@@ -259,7 +259,7 @@ contains
     complex(WP)             :: omega_a
     complex(WP)             :: omega_b
     $if($MPI)
-    class(model_t), pointer :: cf
+    class(model_t), pointer :: ml
     integer                 :: p
     $endif
 
@@ -320,11 +320,11 @@ contains
 
     $if($MPI)
 
-    cf => bp%model()
+    ml => bp%model()
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p, cf)
+          call bcast(md(i), p, ml)
        end do
     enddo
 

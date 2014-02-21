@@ -53,7 +53,7 @@ module gyre_bvp_nad
 
   type, extends (bvp_t) :: bvp_nad_t
      private
-     class(model_t), pointer        :: cf => null()
+     class(model_t), pointer        :: ml => null()
      type(cocache_t)                :: cc
      class(jacobian_t), allocatable :: jc
      class(ivp_t), allocatable      :: iv
@@ -108,7 +108,7 @@ module gyre_bvp_nad
 
 contains
 
-  function bvp_nad_t_ (cf, op, np, shoot_gp, recon_gp, x_in) result (bp)
+  function bvp_nad_t_ (ml, op, np, shoot_gp, recon_gp, x_in) result (bp)
 
     use gyre_jacobian_nad_dziem
     use gyre_jacobian_nad_jcd
@@ -125,7 +125,7 @@ contains
     use gyre_ivp_colloc_GL4
     use gyre_ivp_findiff_upw
 
-    class(model_t), pointer, intent(in) :: cf
+    class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
     type(numpar_t), intent(in)          :: np
     type(gridpar_t), intent(in)         :: shoot_gp(:)
@@ -148,15 +148,15 @@ contains
 
     ! Set up the coefficient pointer
     
-    bp%cf => cf
+    bp%ml => ml
 
     ! Initialize the jacobian
 
     select case (bp%op%variables_type)
     case ('DZIEM')
-       allocate(bp%jc, SOURCE=jacobian_nad_dziem_t(bp%cf, bp%op))
+       allocate(bp%jc, SOURCE=jacobian_nad_dziem_t(bp%ml, bp%op))
     case ('JCD')
-       allocate(bp%jc, SOURCE=jacobian_nad_jcd_t(bp%cf, bp%op))
+       allocate(bp%jc, SOURCE=jacobian_nad_jcd_t(bp%ml, bp%op))
     case default
        $ABORT(Invalid variables_type)
     end select
@@ -165,13 +165,13 @@ contains
 
     select case (bp%op%outer_bound_type)
     case ('ZERO')
-       allocate(bp%bd, SOURCE=bound_nad_zero_t(bp%cf, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=bound_nad_zero_t(bp%ml, bp%jc, bp%op))
     case ('DZIEM')
-       allocate(bp%bd, SOURCE=bound_nad_dziem_t(bp%cf, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=bound_nad_dziem_t(bp%ml, bp%jc, bp%op))
     case ('UNNO')
-       allocate(bp%bd, SOURCE=bound_nad_unno_t(bp%cf, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=bound_nad_unno_t(bp%ml, bp%jc, bp%op))
     case ('JCD')
-       allocate(bp%bd, SOURCE=bound_nad_jcd_t(bp%cf, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=bound_nad_jcd_t(bp%ml, bp%jc, bp%op))
     case default
        $ABORT(Invalid bound_type)
     end select
@@ -202,11 +202,11 @@ contains
 
     ! Initialize the shooter
 
-    bp%sh = shooter_nad_t(bp%cf, bp%iv, bp%iv_upw, bp%op, bp%np)
+    bp%sh = shooter_nad_t(bp%ml, bp%iv, bp%iv_upw, bp%op, bp%np)
 
     ! Build the shooting grid
 
-    call build_grid(bp%shoot_gp, bp%cf, bp%op, x_in, bp%x)
+    call build_grid(bp%shoot_gp, bp%ml, bp%op, x_in, bp%x)
 
     n = SIZE(bp%x)
 
@@ -227,9 +227,9 @@ contains
 
     x_cc = [bp%x(1),bp%sh%abscissa(bp%x),bp%x(n)]
 
-    call bp%cf%attach_cache(bp%cc)
-    call bp%cf%fill_cache(x_cc)
-    call bp%cf%detach_cache()
+    call bp%ml%attach_cache(bp%cc)
+    call bp%ml%fill_cache(x_cc)
+    call bp%ml%detach_cache()
 
     ! Finish
 
@@ -275,7 +275,7 @@ contains
 
     x_upw_loop : do k = this%n,2,-1
 
-       if(this%cf%tau_thm(this%x(k))*REAL(omega)*this%np%theta_ad > 1._WP) then
+       if(this%ml%tau_thm(this%x(k))*REAL(omega)*this%np%theta_ad > 1._WP) then
           this%x_upw = this%x(k)
           exit x_upw_loop
        endif
@@ -322,14 +322,14 @@ contains
 
     ! Set up the sysmtx
 
-    call this%cf%attach_cache(this%cc)
+    call this%ml%attach_cache(this%cc)
 
     call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega), ext_complex_t(1._WP))
     call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega), ext_complex_t(1._WP))
  
     call this%sh%shoot(omega, this%x, this%sm, this%x_upw)
 
-    call this%cf%detach_cache()
+    call this%ml%detach_cache()
 
     call this%sm%scale_rows()
 
@@ -371,7 +371,7 @@ contains
     this%recon_gp%omega_a = REAL(omega)
     this%recon_gp%omega_b = REAL(omega)
 
-    call build_grid(this%recon_gp, this%cf, this%op, this%x, x)
+    call build_grid(this%recon_gp, this%ml, this%op, this%x, x)
 
     if(SIZE(x) == SIZE(this%x)) then
        same_grid = ALL(x == this%x)
@@ -537,9 +537,9 @@ contains
     chi = ABS(discrim_root)/discrim_norm
     
     if(PRESENT(omega_def)) then
-       md = mode_t(this%cf, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
+       md = mode_t(this%ml, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
     else
-       md = mode_t(this%cf, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
+       md = mode_t(this%ml, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
     endif
 
     ! Finish
@@ -550,14 +550,14 @@ contains
 
 !****
 
-  function model_ (this) result (cf)
+  function model_ (this) result (ml)
 
     class(bvp_nad_t), intent(in) :: this
-    class(model_t), pointer      :: cf
+    class(model_t), pointer      :: ml
 
     ! Return the model pointer
 
-    cf => this%cf
+    ml => this%ml
 
     ! Finish
 
@@ -569,11 +569,11 @@ contains
 
   $if ($MPI)
 
-  subroutine bcast_ (bp, root_rank, cf)
+  subroutine bcast_ (bp, root_rank, ml)
 
     type(bvp_nad_t), intent(inout)     :: bp
     integer, intent(in)                :: root_rank
-    class(model_t), intent(in), target :: cf
+    class(model_t), intent(in), target :: ml
 
     type(oscpar_t)               :: op
     type(numpar_t)               :: np
@@ -603,7 +603,7 @@ contains
 
        call bcast_alloc(x_in, root_rank)
 
-       bp = bvp_nad_t(cf, op, np, shoot_gp, recon_gp, x_in)
+       bp = bvp_nad_t(ml, op, np, shoot_gp, recon_gp, x_in)
 
     endif
 

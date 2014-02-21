@@ -37,7 +37,7 @@ module gyre_jacobian_ad_jcd
 
   type, extends (jacobian_t) :: jacobian_ad_jcd_t
      private
-     class(model_t), pointer :: cf => null()
+     class(model_t), pointer :: ml => null()
      type(oscpar_t)          :: op
    contains
      private
@@ -62,15 +62,15 @@ module gyre_jacobian_ad_jcd
 
 contains
 
-  function jacobian_ad_jcd_t_ (cf, op) result (jc)
+  function jacobian_ad_jcd_t_ (ml, op) result (jc)
 
-    class(model_t), pointer, intent(in) :: cf
+    class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
     type(jacobian_ad_jcd_t)             :: jc
 
     ! Construct the jacobian_ad_jcd_t
 
-    jc%cf => cf
+    jc%ml => ml
     jc%op = op
 
     jc%n_e = 4
@@ -116,9 +116,9 @@ contains
 
     ! Evaluate the log(x)-space Jacobian matrix
  
-    associate(V_g => this%cf%V(x)/this%cf%Gamma_1(x), U => this%cf%U(x), &
-              As => this%cf%As(x), c_1 => this%cf%c_1(x), &
-              l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
+    associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
+              As => this%ml%As(x), c_1 => this%ml%c_1(x), &
+              l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
 
       if(l /= 0) then
 
@@ -197,8 +197,8 @@ contains
 
     if (to_canon) then
 
-       associate(U => this%cf%U(x), c_1 => this%cf%c_1(x), &
-                 l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
+       associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
+                 l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
 
          if(l /= 0) then
 
@@ -250,8 +250,8 @@ contains
 
     else
 
-       associate(U => this%cf%U(x), c_1 => this%cf%c_1(x), &
-                 l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
+       associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
+                 l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
 
          if(l /= 0) then
 

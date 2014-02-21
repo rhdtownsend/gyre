@@ -96,14 +96,14 @@ module gyre_model_hom
 
 contains
 
-  function model_hom_t_ (Gamma_1) result (cf)
+  function model_hom_t_ (Gamma_1) result (ml)
 
     real(WP), intent(in) :: Gamma_1
-    type(model_hom_t)    :: cf
+    type(model_hom_t)    :: ml
 
     ! Construct the model_hom_t
 
-    cf%dt_Gamma_1 = Gamma_1
+    ml%dt_Gamma_1 = Gamma_1
 
     ! Finish
 
@@ -567,14 +567,14 @@ contains
 
   $if ($MPI)
 
-  subroutine bcast_ (cf, root_rank)
+  subroutine bcast_ (ml, root_rank)
 
-    class(model_hom_t), intent(inout) :: cf
+    class(model_hom_t), intent(inout) :: ml
     integer, intent(in)               :: root_rank
 
     ! Broadcast the model_hom_t
 
-    call bcast(cf%dt_Gamma_1, root_rank)
+    call bcast(ml%dt_Gamma_1, root_rank)
 
     ! Finish
 

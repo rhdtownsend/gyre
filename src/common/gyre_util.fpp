@@ -190,9 +190,9 @@ contains
 
 !****
 
-  function freq_scale (cf, op, x_o, freq_units)
+  function freq_scale (ml, op, x_o, freq_units)
 
-    class(model_t), intent(in)   :: cf
+    class(model_t), intent(in)   :: ml
     type(oscpar_t), intent(in)   :: op
     real(WP), intent(in)         :: x_o
     character(LEN=*), intent(in) :: freq_units
@@ -201,15 +201,15 @@ contains
     ! Calculate the scale factor to convert a dimensionless angular
     ! frequency to a dimensioned frequency
 
-    select type (cf)
+    select type (ml)
     class is (model_evol_t)
-       freq_scale = evol_freq_scale_(cf, op, x_o, freq_units)
+       freq_scale = evol_freq_scale_(ml, op, x_o, freq_units)
     class is (model_poly_t)
        freq_scale = poly_freq_scale_(freq_units)
     class is (model_hom_t)
        freq_scale = hom_freq_scale_(freq_units)
     class default
-       $ABORT(Invalid cf type)
+       $ABORT(Invalid ml type)
     end select
 
     ! Finish
@@ -218,9 +218,9 @@ contains
 
   contains
 
-    function evol_freq_scale_ (cf, op, x_o, freq_units) result (freq_scale)
+    function evol_freq_scale_ (ml, op, x_o, freq_units) result (freq_scale)
 
-      class(model_evol_t), intent(in) :: cf
+      class(model_evol_t), intent(in) :: ml
       type(oscpar_t), intent(in)      :: op
       real(WP), intent(in)            :: x_o
       character(LEN=*), intent(in)    :: freq_units
@@ -236,16 +236,16 @@ contains
       case('NONE')
          freq_scale = 1._WP
       case('HZ')
-         freq_scale = 1._WP/(TWOPI*SQRT(cf%R_star**3/(G_GRAVITY*cf%M_star)))
+         freq_scale = 1._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
       case('UHZ')
-         freq_scale = 1.E6_WP/(TWOPI*SQRT(cf%R_star**3/(G_GRAVITY*cf%M_star)))
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
       case('PER_DAY')
-         freq_scale = 86400._WP/(TWOPI*SQRT(cf%R_star**3/(G_GRAVITY*cf%M_star)))
+         freq_scale = 86400._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
       case('ACOUSTIC_CUTOFF')
-         call eval_cutoff_freqs(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         call eval_cutoff_freqs(ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
          freq_scale = 1._WP/omega_c_cutoff_hi
       case('GRAVITY_CUTOFF')
-         call eval_cutoff_freqs(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         call eval_cutoff_freqs(ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
          freq_scale = 1._WP/omega_c_cutoff_lo
       case default
          $ABORT(Invalid freq_units)
@@ -303,9 +303,9 @@ contains
 
  !****
 
-  subroutine eval_cutoff_freqs (cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+  subroutine eval_cutoff_freqs (ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     real(WP), intent(in)       :: x_o
     real(WP), intent(out)      :: omega_c_cutoff_lo
@@ -325,10 +325,10 @@ contains
         omega_c_cutoff_lo = 0._WP
         omega_c_cutoff_hi = HUGE(0._WP)
      case ('UNNO')
-        call eval_atmos_coeffs_unno(cf, x_o, V_g, As, c_1)
+        call eval_atmos_coeffs_unno(ml, x_o, V_g, As, c_1)
         call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
      case('JCD')
-        call eval_atmos_coeffs_jcd(cf, x_o, V_g, As, c_1)
+        call eval_atmos_coeffs_jcd(ml, x_o, V_g, As, c_1)
         call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
      case default
         $ABORT(Invalid outer_bound_type)

@@ -64,11 +64,11 @@ module gyre_bvp
        type(mode_t)                              :: mode
      end function mode_
 
-     function model_ (this) result (cf)
+     function model_ (this) result (ml)
        use gyre_model
        import bvp_t
        class(bvp_t), intent(in) :: this
-       class(model_t), pointer  :: cf
+       class(model_t), pointer  :: ml
      end function model_
 
   end interface

@@ -47,8 +47,8 @@ module gyre_lib
 
   ! Module variables
 
-  class(model_t), pointer, save :: cf_m => null()
-  real(WP), allocatable, save   :: x_cf_m(:)
+  class(model_t), pointer, save :: ml_m => null()
+  real(WP), allocatable, save   :: x_ml_m(:)
 
   ! Access specifiers
 
@@ -90,7 +90,7 @@ contains
        deallocate(cf_m)
     endif
 
-    if(ALLOCATED(x_cf_m)) deallocate(x_cf_m)
+    if(ALLOCATED(x_ml_m)) deallocate(x_cf_m)
 
     call final_parallel()
 
@@ -116,7 +116,7 @@ contains
        deallocate(cf_m)
     endif
 
-    call read_mesa_file(file, deriv_type, ec, x_cf_m)
+    call read_mesa_file(file, deriv_type, ec, x_ml_m)
 
     allocate(cf_m, SOURCE=ec)
 
@@ -181,9 +181,9 @@ contains
                                        deriv_type, add_center))
 
     if(add_center) then
-       x_cf_m = [0._WP,r/R_star]
+       x_ml_m = [0._WP,r/R_star]
     else
-       x_cf_m = r/R_star
+       x_ml_m = r/R_star
     endif
 
     ! Finish
@@ -260,7 +260,7 @@ contains
 
        ! Set up the frequency array
 
-       call build_scan(sp_sel, cf_m, op(i), shoot_gp_sel, x_cf_m, omega)
+       call build_scan(sp_sel, ml_m, op(i), shoot_gp_sel, x_ml_m, omega)
 
        ! Store the frequency range in shoot_gp_sel
 
@@ -270,9 +270,9 @@ contains
        ! Set up bp
 
        if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-          allocate(bp, SOURCE=bvp_rad_t(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf_m))
+          allocate(bp, SOURCE=bvp_rad_t(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
        else
-          allocate(bp, SOURCE=bvp_ad_t(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf_m))
+          allocate(bp, SOURCE=bvp_ad_t(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
        endif
 
        ! Find modes

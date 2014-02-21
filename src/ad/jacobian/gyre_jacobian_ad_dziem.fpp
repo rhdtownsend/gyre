@@ -38,7 +38,7 @@ module gyre_jacobian_ad_dziem
 
   type, extends (jacobian_t) :: jacobian_ad_dziem_t
      private
-     class(model_t), pointer :: cf => null()
+     class(model_t), pointer :: ml => null()
      type(oscpar_t)          :: op
    contains
      private
@@ -63,15 +63,15 @@ module gyre_jacobian_ad_dziem
 
 contains
 
-  function jacobian_ad_dziem_t_ (cf, op) result (jc)
+  function jacobian_ad_dziem_t_ (ml, op) result (jc)
 
-    class(model_t), pointer, intent(in) :: cf
+    class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
     type(jacobian_ad_dziem_t)           :: jc
 
     ! Construct the jacobian_ad_dziem_t
 
-    jc%cf => cf
+    jc%ml => ml
     jc%op = op
 
     jc%n_e = 4
@@ -117,9 +117,9 @@ contains
 
     ! Evaluate the log(x)-space Jacobian matrix
 
-    associate(V_g => this%cf%V(x)/this%cf%Gamma_1(x), U => this%cf%U(x), &
-              As => this%cf%As(x), c_1 => this%cf%c_1(x), &
-              l => this%op%l, omega_c => this%cf%omega_c(x, this%op%m, omega))
+    associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
+              As => this%ml%As(x), c_1 => this%ml%c_1(x), &
+              l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
 
       A(1,1) = V_g - 1._WP - l
       A(1,2) = l*(l+1)/(c_1*omega_c**2) - V_g

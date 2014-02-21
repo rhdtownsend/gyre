@@ -41,7 +41,7 @@ module gyre_shooter_ad
 
   type :: shooter_ad_t
      private
-     class(model_t), pointer   :: cf => null()
+     class(model_t), pointer   :: ml => null()
      class(ivp_t), allocatable :: iv
      type(oscpar_t), pointer   :: op
      type(numpar_t), pointer   :: np
@@ -69,9 +69,9 @@ module gyre_shooter_ad
 
 contains
 
-  function shooter_ad_t_ (cf, iv, op, np) result (sh)
+  function shooter_ad_t_ (ml, iv, op, np) result (sh)
 
-    class(model_t), pointer, intent(in) :: cf
+    class(model_t), pointer, intent(in) :: ml
     class(ivp_t), intent(in)            :: iv
     type(oscpar_t), intent(in)          :: op
     type(numpar_t), intent(in)          :: np
@@ -79,7 +79,7 @@ contains
 
     ! Construct the shooter_ad
 
-    sh%cf => cf
+    sh%ml => ml
     allocate(sh%iv, SOURCE=iv)
     sh%op = op
     sh%np = np

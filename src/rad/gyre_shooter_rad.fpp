@@ -41,7 +41,7 @@ module gyre_shooter_rad
 
   type :: shooter_rad_t
      private
-     class(model_t), pointer   :: cf => null()
+     class(model_t), pointer   :: ml => null()
      class(ivp_t), allocatable :: iv
      type(oscpar_t)            :: op
      type(numpar_t)            :: np
@@ -69,9 +69,9 @@ module gyre_shooter_rad
 
 contains
 
-  function shooter_rad_t_ (cf, iv, op, np) result (sh)
+  function shooter_rad_t_ (ml, iv, op, np) result (sh)
 
-    class(model_t), pointer, intent(in) :: cf
+    class(model_t), pointer, intent(in) :: ml
     class(ivp_t), intent(in)            :: iv
     type(oscpar_t), intent(in)          :: op
     type(numpar_t), intent(in)          :: np
@@ -79,7 +79,7 @@ contains
 
     ! Construct the shooter_rad_t
 
-    sh%cf => cf
+    sh%ml => ml
     allocate(sh%iv, SOURCE=iv)
     sh%op = op
     sh%np = np

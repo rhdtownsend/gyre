@@ -45,11 +45,11 @@ module gyre_b3_file
 
 contains
 
-  subroutine read_b3_file (file, deriv_type, cf, x)
+  subroutine read_b3_file (file, deriv_type, ml, x)
 
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
-    type(model_evol_t), intent(out)              :: cf
+    type(model_evol_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
@@ -149,7 +149,7 @@ contains
 
     ! Initialize the model
 
-    cf = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
+    ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
                       nabla, kappa, kappa_rho, kappa_T, &
                       epsilon, epsilon_rho, epsilon_T, &

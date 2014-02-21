@@ -104,7 +104,7 @@ contains
 
 !****
 
-  subroutine read_model (unit, x_bc, cf)
+  subroutine read_model (unit, x_bc, ml)
 
     use gyre_model
     use gyre_model_evol
@@ -122,7 +122,7 @@ contains
 
     integer, intent(in)                  :: unit
     real(WP), allocatable, intent(out)   :: x_bc(:)
-    class(model_t), pointer, intent(out) :: cf
+    class(model_t), pointer, intent(out) :: ml
 
     character(LEN=256)          :: model_type
     character(LEN=256)          :: file_format
@@ -181,7 +181,7 @@ contains
           $ABORT(Invalid file_format)
        end select
 
-       allocate(cf, SOURCE=ec)
+       allocate(ml, SOURCE=ec)
        
     case ('POLY')
 
@@ -191,13 +191,13 @@ contains
        $ABORT(No HDF5 support, therefore cannot read POLY files)
        $endif
 
-       allocate(cf, SOURCE=pc)
+       allocate(ml, SOURCE=pc)
 
     case ('HOM')
 
        hc = model_hom_t(Gamma_1)
 
-       allocate(cf, SOURCE=hc)
+       allocate(ml, SOURCE=hc)
 
     case default
 

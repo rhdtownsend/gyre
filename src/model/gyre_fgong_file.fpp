@@ -44,12 +44,12 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_file (file, deriv_type, data_format, cf, x)
+  subroutine read_fgong_file (file, deriv_type, data_format, ml, x)
 
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
     character(LEN=*), intent(in)                 :: data_format
-    type(model_evol_t), intent(out)              :: cf
+    type(model_evol_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
     character(LEN=:), allocatable :: data_format_
@@ -160,7 +160,7 @@ contains
 
     ! Initialize the model
 
-    cf = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
+    ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
                       deriv_type, add_center)
 

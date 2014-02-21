@@ -154,18 +154,18 @@ module gyre_model_evol
 
 contains
 
-  function model_evol_t_ () result (cf)
+  function model_evol_t_ () result (ml)
 
-    type(model_evol_t) :: cf
+    type(model_evol_t) :: ml
 
     ! Construct the model_evol_t
 
-    allocate(cf%sp(N_J))
+    allocate(ml%sp(N_J))
 
-    allocate(cf%sp_def(N_J))
-    cf%sp_def = .FALSE.
+    allocate(ml%sp_def(N_J))
+    ml%sp_def = .FALSE.
 
-    cf%cc => null()
+    ml%cc => null()
 
     ! Finish
 
@@ -177,7 +177,7 @@ contains
 
   recursive function model_evol_t_mech_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                         Gamma_1, nabla_ad, delta, Omega_rot, &
-                                        deriv_type, add_center) result (cf)
+                                        deriv_type, add_center) result (ml)
 
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
@@ -194,7 +194,7 @@ contains
     real(WP), intent(in)          :: Omega_rot(:)
     character(LEN=*), intent(in)  :: deriv_type
     logical, optional, intent(in) :: add_center
-    type(model_evol_t)            :: cf
+    type(model_evol_t)            :: ml
 
     logical  :: add_center_
     integer  :: n
@@ -229,7 +229,7 @@ contains
 
        ! Add a central point and initialize using recursion
 
-       cf = model_evol_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
+       ml = model_evol_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
                          prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), &
                          [0._WP,N2], prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), &
                          prep_center_(r, Omega_rot), deriv_type, .FALSE.)
@@ -266,38 +266,38 @@ contains
 
        ! Initialize the model
 
-       cf = model_evol_t()
+       ml = model_evol_t()
 
        !$OMP PARALLEL SECTIONS
        !$OMP SECTION
-       call cf%set_sp_(x, m, deriv_type, J_M)
+       call ml%set_sp_(x, m, deriv_type, J_M)
        !$OMP SECTION
-       call cf%set_sp_(x, p, deriv_type, J_P)
+       call ml%set_sp_(x, p, deriv_type, J_P)
        !$OMP SECTION
-       call cf%set_sp_(x, rho, deriv_type, J_RHO)
+       call ml%set_sp_(x, rho, deriv_type, J_RHO)
        !$OMP SECTION
-       call cf%set_sp_(x, T, deriv_type, J_T)
+       call ml%set_sp_(x, T, deriv_type, J_T)
        !$OMP SECTION
-       call cf%set_sp_(x, V, deriv_type, J_V)
+       call ml%set_sp_(x, V, deriv_type, J_V)
        !$OMP SECTION
-       call cf%set_sp_(x, As, deriv_type, J_AS)
+       call ml%set_sp_(x, As, deriv_type, J_AS)
        !$OMP SECTION
-       call cf%set_sp_(x, U, deriv_type, J_U)
+       call ml%set_sp_(x, U, deriv_type, J_U)
        !$OMP SECTION
-       call cf%set_sp_(x, c_1, deriv_type, J_C_1)
+       call ml%set_sp_(x, c_1, deriv_type, J_C_1)
        !$OMP SECTION
-       call cf%set_sp_(x, Gamma_1, deriv_type, J_GAMMA_1)
+       call ml%set_sp_(x, Gamma_1, deriv_type, J_GAMMA_1)
        !$OMP SECTION
-       call cf%set_sp_(x, nabla_ad, deriv_type, J_NABLA_AD)
+       call ml%set_sp_(x, nabla_ad, deriv_type, J_NABLA_AD)
        !$OMP SECTION
-       call cf%set_sp_(x, delta, deriv_type, J_DELTA)
+       call ml%set_sp_(x, delta, deriv_type, J_DELTA)
        !$OMP SECTION
-       call cf%set_sp_(x, Omega_rot_, deriv_type, J_OMEGA_ROT)
+       call ml%set_sp_(x, Omega_rot_, deriv_type, J_OMEGA_ROT)
        !$OMP END PARALLEL SECTIONS
 
-       cf%M_star = M_star
-       cf%R_star = R_star
-       cf%L_star = L_star
+       ml%M_star = M_star
+       ml%R_star = R_star
+       ml%L_star = L_star
 
     endif
 
@@ -311,7 +311,7 @@ contains
 
   recursive function model_evol_t_mech_coeffs_ (M_star, R_star, L_star, x, &
                                                 V, As, U, c_1, Gamma_1, &
-                                                deriv_type, add_center) result (cf)
+                                                deriv_type, add_center) result (ml)
 
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
@@ -324,7 +324,7 @@ contains
     real(WP), intent(in)          :: Gamma_1(:)
     character(LEN=*), intent(in)  :: deriv_type
     logical, optional, intent(in) :: add_center
-    type(model_evol_t)            :: cf
+    type(model_evol_t)            :: ml
 
     logical  :: add_center_
 
@@ -348,7 +348,7 @@ contains
 
        ! Add a central point and initialize using recursion
        
-       cf = model_evol_t(M_star, R_star, L_star, &
+       ml = model_evol_t(M_star, R_star, L_star, &
                          [0._WP,x], [0._WP,V], [0._WP,As], [3._WP,U], &
                          prep_center_(x, c_1), prep_center_(x, Gamma_1), deriv_type, .FALSE.)
 
@@ -356,26 +356,26 @@ contains
 
        ! Initialize the model
 
-       cf = model_evol_t()
+       ml = model_evol_t()
 
        !$OMP PARALLEL SECTIONS
        !$OMP SECTION
-       call cf%set_sp_(x, V, deriv_type, J_V)
+       call ml%set_sp_(x, V, deriv_type, J_V)
        !$OMP SECTION
-       call cf%set_sp_(x, As, deriv_type, J_AS)
+       call ml%set_sp_(x, As, deriv_type, J_AS)
        !$OMP SECTION
-       call cf%set_sp_(x, U, deriv_type, J_U)
+       call ml%set_sp_(x, U, deriv_type, J_U)
        !$OMP SECTION
-       call cf%set_sp_(x, c_1, deriv_type, J_C_1)
+       call ml%set_sp_(x, c_1, deriv_type, J_C_1)
        !$OMP SECTION
-       call cf%set_sp_(x, Gamma_1, deriv_type, J_GAMMA_1)
+       call ml%set_sp_(x, Gamma_1, deriv_type, J_GAMMA_1)
        !$OMP SECTION
-       call cf%set_sp_(x, SPREAD(0._WP, 1, SIZE(x)), deriv_type, J_OMEGA_ROT)
+       call ml%set_sp_(x, SPREAD(0._WP, 1, SIZE(x)), deriv_type, J_OMEGA_ROT)
        !$OMP END PARALLEL SECTIONS
 
-       cf%M_star = M_star
-       cf%R_star = R_star
-       cf%L_star = L_star
+       ml%M_star = M_star
+       ml%R_star = R_star
+       ml%L_star = L_star
 
     endif
 
@@ -391,7 +391,7 @@ contains
                                          Gamma_1, nabla_ad, delta, Omega_rot, &
                                          nabla, kappa, kappa_rho, kappa_T, &
                                          epsilon, epsilon_rho, epsilon_T, &
-                                         deriv_type, add_center) result (cf)
+                                         deriv_type, add_center) result (ml)
 
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
@@ -415,7 +415,7 @@ contains
     real(WP), intent(in)          :: epsilon_T(:)
     character(LEN=*), intent(in)  :: deriv_type
     logical, optional, intent(in) :: add_center
-    type(model_evol_t)            :: cf
+    type(model_evol_t)            :: ml
 
     logical  :: add_center_
     integer  :: n
@@ -467,7 +467,7 @@ contains
 
        ! Add a central point and initialize using recursion
 
-       cf = model_evol_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
+       ml = model_evol_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
                          prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), [0._WP,N2], &
                          prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), prep_center_(r, Omega_rot), &
                          prep_center_(r, nabla), prep_center_(r, kappa), prep_center_(r, kappa_rho), prep_center_(r, kappa_T), &
@@ -525,29 +525,29 @@ contains
 
        ! Initialize the model
 
-       cf = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
+       ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
                          Gamma_1, nabla_ad, delta, Omega_rot, &
                          deriv_type, .FALSE.)
 
        !$OMP PARALLEL SECTIONS
        !$OMP SECTION
-       call cf%set_sp_(x, c_rad, deriv_type, J_C_RAD)
+       call ml%set_sp_(x, c_rad, deriv_type, J_C_RAD)
        !$OMP SECTION
-       call cf%set_sp_(x, c_thm, deriv_type, J_C_THM)
+       call ml%set_sp_(x, c_thm, deriv_type, J_C_THM)
        !$OMP SECTION
-       call cf%set_sp_(x, c_dif, deriv_type, J_C_DIF)
+       call ml%set_sp_(x, c_dif, deriv_type, J_C_DIF)
        !$OMP SECTION
-       call cf%set_sp_(x, c_eps_ad, deriv_type, J_C_EPS_AD)
+       call ml%set_sp_(x, c_eps_ad, deriv_type, J_C_EPS_AD)
        !$OMP SECTION
-       call cf%set_sp_(x, c_eps_S, deriv_type, J_C_EPS_S)
+       call ml%set_sp_(x, c_eps_S, deriv_type, J_C_EPS_S)
        !$OMP SECTION
-       call cf%set_sp_(x, nabla, deriv_type, J_NABLA)
+       call ml%set_sp_(x, nabla, deriv_type, J_NABLA)
        !$OMP SECTION
-       call cf%set_sp_(x, kappa_S, deriv_type, J_KAPPA_S)
+       call ml%set_sp_(x, kappa_S, deriv_type, J_KAPPA_S)
        !$OMP SECTION
-       call cf%set_sp_(x, kappa_ad, deriv_type, J_KAPPA_AD)
+       call ml%set_sp_(x, kappa_ad, deriv_type, J_KAPPA_AD)
        !$OMP SECTION
-       call cf%set_sp_(x, tau_thm, deriv_type, J_TAU_THM)
+       call ml%set_sp_(x, tau_thm, deriv_type, J_TAU_THM)
        !$OMP END PARALLEL SECTIONS
 
     endif
@@ -1116,24 +1116,24 @@ contains
 
   $if ($MPI)
 
-  subroutine bcast_ (cf, root_rank)
+  subroutine bcast_ (ml, root_rank)
 
-    type(model_evol_t), intent(inout) :: cf
+    type(model_evol_t), intent(inout) :: ml
     integer, intent(in)               :: root_rank
 
     ! Broadcast the model_evol_t
 
-    call bcast_alloc(cf%sp, root_rank)
-    call bcast_alloc(cf%sp_def, root_rank)
+    call bcast_alloc(ml%sp, root_rank)
+    call bcast_alloc(ml%sp_def, root_rank)
 
-    call bcast(cf%M_star, root_rank)
-    call bcast(cf%R_star, root_rank)
-    call bcast(cf%L_star, root_rank)
+    call bcast(ml%M_star, root_rank)
+    call bcast(ml%R_star, root_rank)
+    call bcast(ml%L_star, root_rank)
 
-    call bcast(cf%p_c, root_rank)
-    call bcast(cf%rho_c, root_rank)
+    call bcast(ml%p_c, root_rank)
+    call bcast(ml%rho_c, root_rank)
 
-    if(MPI_RANK /= root_rank) cf%cc => null()
+    if(MPI_RANK /= root_rank) ml%cc => null()
 
     ! Finish
 

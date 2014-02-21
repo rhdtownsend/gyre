@@ -44,12 +44,12 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_file (file, deriv_type, data_format, cf, x)
+  subroutine read_osc_file (file, deriv_type, data_format, ml, x)
 
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
     character(LEN=*), intent(in)                 :: data_format
-    type(model_evol_t), intent(out)              :: cf
+    type(model_evol_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
 
     character(LEN=:), allocatable :: data_format_
@@ -170,7 +170,7 @@ contains
 
     ! Initialize the model
 
-    cf = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
+    ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
                       N2, Gamma_1, nabla_ad, delta, Omega_rot, &
                       nabla, kappa, kappa_rho, kappa_T, &
                       epsilon_, epsilon_rho, epsilon_T, &

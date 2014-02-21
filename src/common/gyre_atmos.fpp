@@ -161,9 +161,9 @@ contains
 
 !****
   
-  subroutine eval_atmos_coeffs_unno (cf, x_o, V_g, As, c_1)
+  subroutine eval_atmos_coeffs_unno (ml, x_o, V_g, As, c_1)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     real(WP), intent(in)       :: x_o
     real(WP), intent(out)      :: V_g
     real(WP), intent(out)      :: As
@@ -171,9 +171,9 @@ contains
 
     ! Evaluate atmosphere coefficients (Unno et al. formulation)
 
-    V_g = cf%V(x_o)/cf%Gamma_1(x_o)
-    As = cf%As(x_o)
-    c_1 = cf%c_1(x_o)
+    V_g = ml%V(x_o)/ml%Gamma_1(x_o)
+    As = ml%As(x_o)
+    c_1 = ml%c_1(x_o)
 
     ! Finish
 
@@ -183,9 +183,9 @@ contains
 
 !****
   
-  subroutine eval_atmos_coeffs_jcd (cf, x_o, V_g, As, c_1)
+  subroutine eval_atmos_coeffs_jcd (ml, x_o, V_g, As, c_1)
 
-    class(model_t), intent(in) :: cf
+    class(model_t), intent(in) :: ml
     real(WP), intent(in)       :: x_o
     real(WP), intent(out)      :: V_g
     real(WP), intent(out)      :: As
@@ -193,9 +193,9 @@ contains
 
     ! Evaluate atmosphere coefficients (JCD formulation)
 
-    V_g = cf%V(x_o)/cf%Gamma_1(x_o)
-    As = cf%V(x_o)*(1._WP-1._WP/cf%Gamma_1(x_o))
-    c_1 = cf%c_1(x_o)
+    V_g = ml%V(x_o)/ml%Gamma_1(x_o)
+    As = ml%V(x_o)*(1._WP-1._WP/ml%Gamma_1(x_o))
+    c_1 = ml%c_1(x_o)
 
     ! Finish
 

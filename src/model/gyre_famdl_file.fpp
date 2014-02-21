@@ -44,12 +44,12 @@ module gyre_famdl_file
 
 contains
 
-  subroutine read_famdl_file (file, deriv_type, data_format, cf, x)
+  subroutine read_famdl_file (file, deriv_type, data_format, ml, x)
 
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
     character(LEN=*), intent(in)                 :: data_format
-    type(model_evol_t), intent(out)              :: cf
+    type(model_evol_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
     character(LEN=:), allocatable :: data_format_
@@ -124,7 +124,7 @@ contains
 
     ! Initialize the model
 
-    cf = model_evol_t(M_star, R_star, L_star, x_, V_g*Gamma_1, As, U, c_1, Gamma_1, &
+    ml = model_evol_t(M_star, R_star, L_star, x_, V_g*Gamma_1, As, U, c_1, Gamma_1, &
                       deriv_type, add_center)
 
     ! Set up the grid
