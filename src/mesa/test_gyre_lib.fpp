@@ -22,7 +22,7 @@ program test_gyre_lib
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
 
   use gyre_lib
 
