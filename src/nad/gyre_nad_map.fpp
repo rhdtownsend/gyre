@@ -22,7 +22,7 @@ program gyre_nad_map
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
   use core_parallel
   use core_order
   use core_hgroup
@@ -124,6 +124,7 @@ program gyre_nad_map
   endif
 
   $if($MPI)
+  call bcast_constants(0)
   call bcast_alloc(omega_re, 0)
   call bcast_alloc(omega_im, 0)
   call bcast(nad_bp, 0)

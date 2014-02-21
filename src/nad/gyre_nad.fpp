@@ -22,7 +22,7 @@ program gyre_nad
   ! Uses
 
   use core_kinds, SP_ => SP
-  use core_constants
+  use gyre_constants
   use core_parallel
 
   use gyre_version
@@ -104,6 +104,7 @@ program gyre_nad
      
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
+     call read_constants(unit)
      call read_coeffs(unit, x_cf, cf)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
@@ -114,6 +115,7 @@ program gyre_nad
   endif
 
   $if($MPI)
+  call bcast_constants(0)
   call bcast_alloc(x_cf, 0)
   call bcast_alloc(cf, 0)
   call bcast_alloc(op, 0)
