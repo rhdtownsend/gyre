@@ -44,7 +44,7 @@ program test_gyre_lib
 
   ! Read the model
 
-  call gyre_read_model('bcep.mesa', G_GRAVITY, 'MONO')
+  call gyre_read_model('bcep.mesa', 'MONO')
 
   ! Repeatedy find modes
 

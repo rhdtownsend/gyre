@@ -27,8 +27,8 @@ module gyre_lib
   use gyre_bvp
   use gyre_bvp_ad
   use gyre_bvp_rad
-  use gyre_coeffs
-  use gyre_coeffs_evol
+  use gyre_model
+  use gyre_model_evol
   use gyre_mesa_file
   use gyre_oscpar
   use gyre_gridpar
@@ -47,8 +47,8 @@ module gyre_lib
 
   ! Module variables
 
-  class(coeffs_t), pointer, save :: cf_m => null()
-  real(WP), allocatable, save    :: x_cf_m(:)
+  class(model_t), pointer, save :: cf_m => null()
+  real(WP), allocatable, save   :: x_cf_m(:)
 
   ! Access specifiers
 
@@ -102,13 +102,12 @@ contains
 
 !****
 
-  subroutine gyre_read_model (file, G, deriv_type)
+  subroutine gyre_read_model (file, deriv_type)
 
     character(LEN=*), intent(in) :: file
-    real(WP), intent(in)         :: G
     character(LEN=*), intent(in) :: deriv_type
 
-    type(coeffs_evol_t) :: ec
+    type(model_evol_t) :: ec
 
     ! Read the model
 
@@ -117,7 +116,7 @@ contains
        deallocate(cf_m)
     endif
 
-    call read_mesa_file(file, G, deriv_type, ec, x_cf_m)
+    call read_mesa_file(file, deriv_type, ec, x_cf_m)
 
     allocate(cf_m, SOURCE=ec)
 
@@ -129,13 +128,12 @@ contains
   
 !****
 
-  subroutine gyre_set_model (G, M_star, R_star, L_star, r, w, p, rho, T, &
+  subroutine gyre_set_model (M_star, R_star, L_star, r, w, p, rho, T, &
                              N2, Gamma_1, nabla_ad, delta, nabla,  &
                              kappa, kappa_rho, kappa_T, &
                              epsilon, epsilon_rho, epsilon_T, &
                              Omega_rot, deriv_type)
 
-    real(WP), intent(in)         :: G
     real(WP), intent(in)         :: M_star
     real(WP), intent(in)         :: R_star
     real(WP), intent(in)         :: L_star
@@ -168,7 +166,7 @@ contains
        deallocate(cf_m)
     endif
 
-    allocate(coeffs_evol_t::cf_m)
+    allocate(model_evol_t::cf_m)
 
     ! Set the model by storing coefficients
 
@@ -176,11 +174,11 @@ contains
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    allocate(cf_m, SOURCE=coeffs_evol_t(G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                                        Gamma_1, nabla_ad, delta, Omega_rot, &
-                                        nabla, kappa, kappa_rho, kappa_T, &
-                                        epsilon, epsilon_rho, epsilon_T, &
-                                        deriv_type, add_center))
+    allocate(cf_m, SOURCE=model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
+                                       Gamma_1, nabla_ad, delta, Omega_rot, &
+                                       nabla, kappa, kappa_rho, kappa_T, &
+                                       epsilon, epsilon_rho, epsilon_T, &
+                                       deriv_type, add_center))
 
     if(add_center) then
        x_cf_m = [0._WP,r/R_star]
