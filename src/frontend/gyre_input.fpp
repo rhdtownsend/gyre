@@ -22,10 +22,10 @@ module gyre_input
   ! Uses
 
   use core_kinds
-  use core_constants
   use core_order
   use core_parallel
 
+  use gyre_constants
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -42,6 +42,7 @@ module gyre_input
   private
 
   public :: parse_args
+  public :: read_constants
   public :: read_coeffs
   public :: read_oscpar
   public :: read_numpar
@@ -77,6 +78,32 @@ contains
 
 !****
 
+  subroutine read_constants (unit)
+
+    integer, intent(in) :: unit
+
+    namelist /constants/ G_GRAVITY, C_LIGHT, A_RADIATION, &
+                         M_SUN, R_SUN, L_SUN
+
+    ! Read constants
+
+    rewind(unit)
+    read(unit, NML=constants, END=900)
+
+    ! Finish
+
+    return
+
+    ! Jump-in point for end-of-file
+
+900 continue
+
+    $ABORT(No &constants namelist in input file)
+
+  end subroutine read_constants
+
+!****
+
   subroutine read_coeffs (unit, x_bc, cf)
 
     use gyre_coeffs
@@ -108,7 +135,7 @@ contains
     type(coeffs_poly_t)         :: pc
     type(coeffs_hom_t)          :: hc
 
-    namelist /coeffs/ coeffs_type, file_format, data_format, deriv_type, file, G, Gamma_1
+    namelist /coeffs/ coeffs_type, file_format, data_format, deriv_type, file, Gamma_1
 
     ! Read structure coefficients parameters
 
@@ -119,7 +146,6 @@ contains
 
     file = ''
 
-    G = G_GRAVITY
     Gamma_1 = 5._WP/3._WP
 
     rewind(unit)
@@ -132,25 +158,25 @@ contains
 
        select case (file_format)
        case ('MESA')
-          call read_mesa_file(file, G, deriv_type, ec, x=x_bc)
+          call read_mesa_file(file, deriv_type, ec, x=x_bc)
        case('B3')
           $if($HDF5)
-          call read_b3_file(file, G, deriv_type, ec, x=x_bc)
+          call read_b3_file(file, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
        case ('GSM')
           $if($HDF5)
-          call read_gsm_file(file, G, deriv_type, ec, x=x_bc)
+          call read_gsm_file(file, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read GSM-format files)
           $endif
        case ('OSC')
-          call read_osc_file(file, G, deriv_type, data_format, ec, x=x_bc)
+          call read_osc_file(file, deriv_type, data_format, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_file(file, G, deriv_type, data_format, ec, x=x_bc) 
+          call read_fgong_file(file, deriv_type, data_format, ec, x=x_bc) 
        case ('FAMDL')
-          call read_famdl_file(file, G, deriv_type, data_format, ec, x=x_bc) 
+          call read_famdl_file(file, deriv_type, data_format, ec, x=x_bc) 
        case default
           $ABORT(Invalid file_format)
        end select
