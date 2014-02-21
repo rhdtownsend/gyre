@@ -22,7 +22,7 @@ module gyre_ivp_magnus_GL4
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
 
   use gyre_jacobian
   use gyre_linalg
