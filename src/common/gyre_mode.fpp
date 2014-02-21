@@ -22,7 +22,7 @@ module gyre_mode
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
   use core_parallel
 
   use gyre_coeffs
@@ -93,6 +93,8 @@ module gyre_mode
      procedure, public :: omega_im => omega_im_
      procedure, public :: prop_type => prop_type_
      procedure         :: classify_
+     procedure, public :: delS_en => delS_en_
+     procedure, public :: delL_rd => delL_rd_
   end type mode_t
 
   ! Interfaces
@@ -784,6 +786,181 @@ contains
     end subroutine count_windings_
 
   end subroutine classify_
+
+!****
+
+  function delS_en_ (this) result (delS_en)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delS_en(this%n)
+
+    complex(WP) :: A_6(6,this%n)
+    complex(WP) :: dy_6(this%n)
+    complex(WP) :: y_5(this%n)
+
+    ! Calculate the Lagrangian specific entropy perturbation in units
+    ! of c_p, from the energy equation
+
+    associate(V => this%cf%V(this%x), c_1 => this%cf%c_1(this%x), &
+              nabla_ad => this%cf%nabla_ad(this%x), nabla => this%cf%nabla(this%x), &
+              c_rad => this%cf%c_rad(this%x), dc_rad => this%cf%dc_rad(this%x), c_thm => this%cf%c_thm(this%x), &
+              c_eps_ad => this%cf%c_eps_ad(this%x), c_eps_S => this%cf%c_eps_S(this%x), &              
+              l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega))
+
+      where(this%x /= 0)
+         A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+         A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
+         A_6(4,:) = 0._WP
+         A_6(5,:) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+         A_6(6,:) = -1._WP - l
+      elsewhere
+         A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+         A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
+         A_6(4,:) = 0._WP
+         A_6(5,:) = -HUGE(0._WP)
+         A_6(6,:) = -1._WP - l
+      endwhere
+
+      dy_6 = this%x*deriv_(this%x, this%y(6,:))
+
+      y_5 = (dy_6 - (A_6(1,:)*this%y(1,:) + &
+                     A_6(2,:)*this%y(2,:) + &
+                     A_6(3,:)*this%y(3,:) + &
+                     A_6(4,:)*this%y(4,:) + &
+                     A_6(6,:)*this%y(6,:)))/A_6(5,:)
+
+      where(this%x /= 0._WP)
+         delS_en = y_5*this%x**(l-2)
+      elsewhere
+         delS_en = 0._WP
+      end where
+
+    end associate
+         
+    ! Finish
+
+    return
+
+  contains
+
+    function deriv_ (x, y) result (dy_dx)
+
+      real(WP), intent(in)    :: x(:)
+      complex(WP), intent(in) :: y(:)
+      complex(WP)             :: dy_dx(SIZE(x))
+      
+      integer :: n
+      integer :: i
+
+      $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+      ! Differentiate y(x) using centered finite differences
+
+      n = SIZE(x)
+
+      dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
+
+      do i = 2,n-1
+         dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
+                            (y(i+1) - y(i))/(x(i+1) - x(i)))
+      end do
+
+      dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
+
+      ! Finish
+
+      return
+
+    end function deriv_
+
+  end function delS_en_
+
+!****
+
+  function delL_rd_ (this) result (delL_rd)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delL_rd(this%n)
+
+    complex(WP) :: A_5(6,this%n)
+    complex(WP) :: dy_5(this%n)
+    complex(WP) :: y_6(this%n)
+
+    ! Calculate the Lagrangian luminosity perturbation in units of L_star, 
+    ! from the radiative diffusion equation
+
+    associate(V => this%cf%V(this%x), U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
+              nabla_ad => this%cf%nabla_ad(this%x), nabla => this%cf%nabla(this%x), &
+              c_dif => this%cf%c_dif(this%x), c_rad => this%cf%c_rad(this%x), &
+              kappa_S => this%cf%kappa_S(this%x), &
+              l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega))
+
+      A_5(1,:) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+      A_5(2,:) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
+      A_5(3,:) = V*c_dif
+      A_5(4,:) = V*nabla_ad
+      A_5(5,:) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
+      A_5(6,:) = -V*nabla/c_rad
+
+      dy_5 = this%x*deriv_(this%x, this%y(5,:))
+
+      where(this%x /= 0._WP)
+
+         y_6 = (dy_5 - (A_5(1,:)*this%y(1,:) + &
+                        A_5(2,:)*this%y(2,:) + &
+                        A_5(3,:)*this%y(3,:) + &
+                        A_5(4,:)*this%y(4,:) + &
+                        A_5(5,:)*this%y(5,:)))/A_5(6,:)
+
+      elsewhere
+
+         y_6 = 0._WP
+
+      endwhere
+
+      delL_rd = y_6*this%x**(l+1)
+
+    end associate
+         
+    ! Finish
+
+    return
+
+  contains
+
+    function deriv_ (x, y) result (dy_dx)
+
+      real(WP), intent(in)    :: x(:)
+      complex(WP), intent(in) :: y(:)
+      complex(WP)             :: dy_dx(SIZE(x))
+      
+      integer :: n
+      integer :: i
+
+      $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+      ! Differentiate y(x) using centered finite differences
+
+      n = SIZE(x)
+
+      dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
+
+      do i = 2,n-1
+         dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
+                            (y(i+1) - y(i))/(x(i+1) - x(i)))
+      end do
+
+      dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
+
+      ! Finish
+
+      return
+
+    end function deriv_
+
+  end function delL_rd_
 
 !****
 

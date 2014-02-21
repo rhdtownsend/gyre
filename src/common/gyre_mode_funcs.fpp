@@ -22,7 +22,7 @@ module gyre_mode_funcs
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
 
   use gyre_coeffs
   use gyre_oscpar

@@ -22,7 +22,7 @@ module gyre_grid
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
   use core_func
   use core_order
 

@@ -23,7 +23,7 @@ module gyre_gridpar
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
   use core_parallel
 
   ! No implicit typing

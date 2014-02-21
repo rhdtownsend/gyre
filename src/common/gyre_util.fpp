@@ -22,10 +22,10 @@ module gyre_util
   ! Uses
 
   use core_kinds
-  use core_constants
   use core_parallel
   use core_memory
 
+  use gyre_constants
   use gyre_coeffs
   use gyre_coeffs_evol
   use gyre_coeffs_poly
@@ -236,11 +236,11 @@ contains
       case('NONE')
          freq_scale = 1._WP
       case('HZ')
-         freq_scale = 1._WP/(TWOPI*SQRT(cf%R_star**3/(cf%G*cf%M_star)))
+         freq_scale = 1._WP/(TWOPI*SQRT(cf%R_star**3/(G_GRAVITY*cf%M_star)))
       case('UHZ')
-         freq_scale = 1.E6_WP/(TWOPI*SQRT(cf%R_star**3/(cf%G*cf%M_star)))
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(cf%R_star**3/(G_GRAVITY*cf%M_star)))
       case('PER_DAY')
-         freq_scale = 86400._WP/(TWOPI*SQRT(cf%R_star**3/(cf%G*cf%M_star)))
+         freq_scale = 86400._WP/(TWOPI*SQRT(cf%R_star**3/(G_GRAVITY*cf%M_star)))
       case('ACOUSTIC_CUTOFF')
          call eval_cutoff_freqs(cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
          freq_scale = 1._WP/omega_c_cutoff_hi
