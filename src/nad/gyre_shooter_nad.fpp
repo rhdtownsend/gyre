@@ -24,7 +24,7 @@ module gyre_shooter_nad
   use core_kinds
   use core_order
 
-  use gyre_coeffs
+  use gyre_model
   use gyre_oscpar
   use gyre_numpar
   use gyre_jacobian
@@ -43,7 +43,7 @@ module gyre_shooter_nad
 
   type :: shooter_nad_t
      private
-     class(coeffs_t), pointer  :: cf => null()
+     class(model_t), pointer   :: cf => null()
      class(ivp_t), allocatable :: iv
      class(ivp_t), allocatable :: iv_upw
      type(oscpar_t)            :: op
@@ -74,12 +74,12 @@ contains
 
   function shooter_nad_t_ (cf, iv, iv_upw, op, np) result (sh)
 
-    class(coeffs_t), pointer, intent(in) :: cf
-    class(ivp_t), intent(in)             :: iv
-    class(ivp_t), intent(in)             :: iv_upw
-    type(oscpar_t), intent(in)           :: op
-    type(numpar_t), intent(in)           :: np
-    type(shooter_nad_t)                  :: sh
+    class(model_t), pointer, intent(in) :: cf
+    class(ivp_t), intent(in)            :: iv
+    class(ivp_t), intent(in)            :: iv_upw
+    type(oscpar_t), intent(in)          :: op
+    type(numpar_t), intent(in)          :: np
+    type(shooter_nad_t)                 :: sh
 
     ! Construct the shooter_nad_t
 
@@ -300,11 +300,11 @@ contains
 
 !   function diff_coeffs (cf, op, omega, x) result (a)
 
-!     class(coeffs_t), intent(in) :: cf
-!     type(oscpar_t), intent(in)  :: op
-!     complex(WP), intent(in)     :: omega
-!     real(WP), intent(in)        :: x
-!     complex(WP)                 :: a(6)
+!     class(model_t), intent(in) :: cf
+!     type(oscpar_t), intent(in) :: op
+!     complex(WP), intent(in)    :: omega
+!     real(WP), intent(in)       :: x
+!     complex(WP)                :: a(6)
 
 !     ! Calculate the coefficients of the (algebraic) adiabatic
 !     ! diffusion equation

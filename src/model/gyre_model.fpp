@@ -1,5 +1,5 @@
-! Module   : gyre_coeffs
-! Purpose  : structure coefficients (interface)
+! Module   : gyre_model
+! Purpose  : stellar model (interface)
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_coeffs
+module gyre_model
 
   ! Uses
 
@@ -36,7 +36,7 @@ module gyre_coeffs
     generic, public           :: ${NAME} => ${NAME}_1_, ${NAME}_v_
   $endsub
 
-  type, abstract :: coeffs_t
+  type, abstract :: model_t
    contains
      private
      $if($GFORTRAN_PR57922)
@@ -69,7 +69,7 @@ module gyre_coeffs
      procedure                                  :: omega_c_1_
      procedure                                  :: omega_c_v_
      generic, public                            :: omega_c => omega_c_1_, omega_c_v_
-  end type coeffs_t
+  end type model_t
 
   ! Interfaces
 
@@ -77,52 +77,52 @@ module gyre_coeffs
 
      function y_1_ (this, x) result (y)
        use core_kinds
-       import coeffs_t
-       class(coeffs_t), intent(in) :: this
-       real(WP), intent(in)        :: x
-       real(WP)                    :: y
+       import model_t
+       class(model_t), intent(in) :: this
+       real(WP), intent(in)       :: x
+       real(WP)                   :: y
      end function y_1_
 
      function y_v_ (this, x) result (y)
        use core_kinds
-       import coeffs_t
-       class(coeffs_t), intent(in) :: this
-       real(WP), intent(in)        :: x(:)
-       real(WP)                    :: y(SIZE(x))
+       import model_t
+       class(model_t), intent(in) :: this
+       real(WP), intent(in)       :: x(:)
+       real(WP)                   :: y(SIZE(x))
      end function y_v_
 
      function pi_c_ (this) result (pi_c)
        use core_kinds
-       import coeffs_t
-       class(coeffs_t), intent(in) :: this
-       real(WP)                    :: pi_c
+       import model_t
+       class(model_t), intent(in) :: this
+       real(WP)                   :: pi_c
      end function pi_c_
 
      function is_zero_ (this, x) result (is_zero)
        use core_kinds
-       import coeffs_t
-       class(coeffs_t), intent(in) :: this
-       real(WP), intent(in)        :: x
-       logical                     :: is_zero
+       import model_t
+       class(model_t), intent(in) :: this
+       real(WP), intent(in)       :: x
+       logical                    :: is_zero
      end function is_zero_
 
      subroutine attach_cache_ (this, cc)
        use gyre_cocache
-       import coeffs_t
-       class(coeffs_t), intent(inout)        :: this
+       import model_t
+       class(model_t), intent(inout)         :: this
        class(cocache_t), pointer, intent(in) :: cc
      end subroutine attach_cache_
 
      subroutine detach_cache_ (this)
-       import coeffs_t
-       class(coeffs_t), intent(inout) :: this
+       import model_t
+       class(model_t), intent(inout) :: this
      end subroutine detach_cache_
 
      subroutine fill_cache_ (this, x)
        use core_kinds
-       import coeffs_t
-       class(coeffs_t), intent(inout) :: this
-       real(WP), intent(in)           :: x(:)
+       import model_t
+       class(model_t), intent(inout) :: this
+       real(WP), intent(in)          :: x(:)
      end subroutine fill_cache_
 
   end interface
@@ -131,7 +131,7 @@ module gyre_coeffs
 
   private
 
-  public :: coeffs_t
+  public :: model_t
 
   ! Procedures
 
@@ -141,9 +141,9 @@ contains
 
   subroutine final (this)
 
-    class(coeffs_t), intent(inout) :: this
+    class(model_t), intent(inout) :: this
 
-    ! Finalize the coeffs
+    ! Finalize the model_t
 
     ! Finish
 
@@ -157,11 +157,11 @@ contains
 
   function omega_ (this, x, m, omega_c) result (omega)
 
-    class(coeffs_t), intent(in) :: this
-    real(WP), intent(in)        :: x
-    integer, intent(in)         :: m
-    complex(WP), intent(in)     :: omega_c
-    complex(WP)                 :: omega
+    class(model_t), intent(in) :: this
+    real(WP), intent(in)       :: x
+    integer, intent(in)        :: m
+    complex(WP), intent(in)    :: omega_c
+    complex(WP)                :: omega
 
     ! Calculate the intertial frequency from the co-rotating frequency
 
@@ -177,11 +177,11 @@ contains
 
   function omega_c_1_ (this, x, m, omega) result (omega_c)
 
-    class(coeffs_t), intent(in) :: this
-    real(WP), intent(in)        :: x
-    integer, intent(in)         :: m
-    complex(WP), intent(in)     :: omega
-    complex(WP)                 :: omega_c
+    class(model_t), intent(in) :: this
+    real(WP), intent(in)       :: x
+    integer, intent(in)        :: m
+    complex(WP), intent(in)    :: omega
+    complex(WP)                :: omega_c
 
     ! Calculate the co-rotating frequency from the inertial frequency
 
@@ -197,11 +197,11 @@ contains
 
   function omega_c_v_ (this, x, m, omega) result (omega_c)
 
-    class(coeffs_t), intent(in) :: this
-    real(WP), intent(in)        :: x(:)
-    integer, intent(in)         :: m
-    complex(WP), intent(in)     :: omega
-    complex(WP)                 :: omega_c(SIZE(x))
+    class(model_t), intent(in) :: this
+    real(WP), intent(in)       :: x(:)
+    integer, intent(in)        :: m
+    complex(WP), intent(in)    :: omega
+    complex(WP)                :: omega_c(SIZE(x))
 
     ! Calculate the co-rotating frequency from the inertial frequency
 
@@ -213,4 +213,4 @@ contains
 
   end function omega_c_v_
 
-end module gyre_coeffs
+end module gyre_model

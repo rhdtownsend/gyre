@@ -1,8 +1,8 @@
 &constants
 /
 
-&coeffs
-	coeffs_type = 'EVOL'
+&model
+	model_type = 'EVOL'
 	file = 'spb.mesa'
 	file_format = 'MESA'
 /

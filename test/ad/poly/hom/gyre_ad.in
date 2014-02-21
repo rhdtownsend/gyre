@@ -1,8 +1,8 @@
 &constants
 /
 
-&coeffs
-	coeffs_type = 'POLY'
+&model
+	model_type = 'POLY'
 	file = 'poly_hom.h5'
 /
 

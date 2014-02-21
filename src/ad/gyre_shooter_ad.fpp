@@ -23,7 +23,7 @@ module gyre_shooter_ad
 
   use core_kinds
 
-  use gyre_coeffs
+  use gyre_model
   use gyre_oscpar
   use gyre_numpar
   use gyre_ivp
@@ -41,7 +41,7 @@ module gyre_shooter_ad
 
   type :: shooter_ad_t
      private
-     class(coeffs_t), pointer  :: cf => null()
+     class(model_t), pointer   :: cf => null()
      class(ivp_t), allocatable :: iv
      type(oscpar_t), pointer   :: op
      type(numpar_t), pointer   :: np
@@ -71,11 +71,11 @@ contains
 
   function shooter_ad_t_ (cf, iv, op, np) result (sh)
 
-    class(coeffs_t), pointer, intent(in) :: cf
-    class(ivp_t), intent(in)             :: iv
-    type(oscpar_t), intent(in)           :: op
-    type(numpar_t), intent(in)           :: np
-    type(shooter_ad_t)                   :: sh
+    class(model_t), pointer, intent(in) :: cf
+    class(ivp_t), intent(in)            :: iv
+    type(oscpar_t), intent(in)          :: op
+    type(numpar_t), intent(in)          :: np
+    type(shooter_ad_t)                  :: sh
 
     ! Construct the shooter_ad
 

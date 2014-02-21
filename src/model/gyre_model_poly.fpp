@@ -1,5 +1,5 @@
-! Module   : gyre_coeffs_hom
-! Purpose  : base structure coefficients for homogeneous compressible models
+! Module   : gyre_model_poly
+! Purpose  : stellar polytropic model
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,14 +17,15 @@
 
 $include 'core.inc'
 
-module gyre_coeffs_hom
+module gyre_model_poly
 
   ! Uses
 
   use core_kinds
   use core_parallel
+  use core_spline
 
-  use gyre_coeffs
+  use gyre_model
   use gyre_cocache
 
   use ISO_FORTRAN_ENV
@@ -41,11 +42,18 @@ module gyre_coeffs_hom
     procedure :: ${NAME}_v_
   $endsub
 
-  type, extends(coeffs_t) :: coeffs_hom_t
+  type, extends(model_t) :: model_poly_t
      private
-     real(WP) :: dt_Gamma_1
+     type(spline_t)   :: sp_Theta
+     type(spline_t)   :: sp_dTheta
+     real(WP)         :: dt_Gamma_1
+     real(WP), public :: n_poly
+     real(WP), public :: xi_1
    contains
      private
+     $if ($GFORTRAN_PR57922)
+     procedure, public :: final => final_
+     $endif
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -69,13 +77,13 @@ module gyre_coeffs_hom
      procedure, public :: attach_cache => attach_cache_
      procedure, public :: detach_cache => detach_cache_
      procedure, public :: fill_cache => fill_cache_
-  end type coeffs_hom_t
+  end type model_poly_t
 
   ! Interfaces
 
-  interface coeffs_hom_t
-     module procedure coeffs_hom_t_
-  end interface coeffs_hom_t
+  interface model_poly_t
+     module procedure model_poly_t_
+  end interface model_poly_t
 
   $if ($MPI)
   interface bcast
@@ -87,7 +95,7 @@ module gyre_coeffs_hom
 
   private
 
-  public :: coeffs_hom_t
+  public :: model_poly_t
   $if ($MPI)
   public :: bcast
   $endif
@@ -96,32 +104,93 @@ module gyre_coeffs_hom
 
 contains
 
-  function coeffs_hom_t_ (Gamma_1) result (cf)
+  function model_poly_t_ (xi, Theta, dTheta, n_poly, Gamma_1, deriv_type) result (cf)
 
-    real(WP), intent(in) :: Gamma_1
-    type(coeffs_hom_t)   :: cf
+    real(WP), intent(in)         :: xi(:)
+    real(WP), intent(in)         :: Theta(:)
+    real(WP), intent(in)         :: dTheta(:)
+    real(WP), intent(in)         :: n_poly
+    real(WP), intent(in)         :: Gamma_1
+    character(LEN=*), intent(in) :: deriv_type
+    type(model_poly_t)           :: cf
 
-    ! Construct the coeffs_hom_t
+    integer  :: n
+    real(WP) :: d2Theta(SIZE(xi))
 
+    $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
+
+    ! Construct the model_poly_t from the polytrope functions
+
+    n = SIZE(xi)
+
+    if(n_poly /= 0._WP) then
+
+       where (xi /= 0._WP)
+          d2Theta = -2._WP*dTheta/xi - Theta**n_poly
+       elsewhere
+          d2Theta = -1._WP/3._WP
+       end where
+
+    else
+
+       d2Theta = -1._WP/3._WP
+
+    endif
+
+    cf%sp_Theta = spline_t(xi, Theta, dTheta)
+    cf%sp_dTheta = spline_t(xi, dTheta, d2Theta)
+
+    cf%n_poly = n_poly
     cf%dt_Gamma_1 = Gamma_1
+    cf%xi_1 = xi(n)
 
     ! Finish
 
     return
 
-  end function coeffs_hom_t_
+  end function model_poly_t_
+
+!****
+
+  $if ($GFORTRAN_PR57922)
+
+  subroutine final_ (this)
+
+    class(model_poly_t), intent(inout) :: this
+
+    ! Finalize the model_poly_t
+
+    call this%sp_Theta%final()
+    call this%sp_dTheta%final()
+
+    ! Finish
+
+    return
+
+  end subroutine final_
+
+  $endif
 
 !****
 
   function V_1_ (this, x) result (V)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: V
 
+    real(WP) :: xi
+    real(WP) :: Theta
+    real(WP) :: dTheta
+
     ! Calculate V
 
-    V = 2._WP*x**2/(1._WP - x**2)
+    xi = x*this%xi_1
+
+    Theta = this%sp_Theta%interp(xi)
+    dTheta = this%sp_dTheta%interp(xi)
+
+    V = -(this%n_poly + 1._WP)*xi*dTheta/Theta
 
     ! Finish
 
@@ -130,12 +199,12 @@ contains
   end function V_1_
 
 !****
-  
+
   function V_v_ (this, x) result (V)
 
-    class(coeffs_hom_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: V(SIZE(x))
+    class(model_poly_t), intent(in) :: this
+    real(WP), intent(in)             :: x(:)
+    real(WP)                         :: V(SIZE(x))
 
     integer :: i
 
@@ -155,13 +224,13 @@ contains
 
   function As_1_ (this, x) result (As)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: As
 
     ! Calculate As
 
-    As = -this%V(x)/this%dt_Gamma_1
+    As = this%V(x)*(this%n_poly/(this%n_poly + 1._WP) - 1._WP/this%Gamma_1(x))
 
     ! Finish
 
@@ -170,10 +239,10 @@ contains
   end function As_1_
 
 !****
-  
+
   function As_v_ (this, x) result (As)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: As(SIZE(x))
 
@@ -195,13 +264,26 @@ contains
 
   function U_1_ (this, x) result (U)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: U
 
+    real(WP) :: xi
+    real(WP) :: Theta
+    real(WP) :: dTheta
+
     ! Calculate U
 
-    U = 3._WP
+    xi = x*this%xi_1
+
+    Theta = this%sp_Theta%interp(xi)
+    dTheta = this%sp_dTheta%interp(xi)
+
+    if(x /= 0._WP) then
+       U = -xi*Theta**this%n_poly/dTheta
+    else
+       U = 3._WP
+    endif
 
     ! Finish
 
@@ -210,10 +292,10 @@ contains
   end function U_1_
 
 !****
-  
+
   function U_v_ (this, x) result (U)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: U(SIZE(x))
 
@@ -235,13 +317,26 @@ contains
 
   function c_1_1_ (this, x) result (c_1)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: c_1
 
+    real(WP) :: xi
+    real(WP) :: dTheta
+    real(WP) :: dTheta_1
+
     ! Calculate c_1
 
-    c_1 = 1._WP
+    xi = x*this%xi_1
+
+    dTheta = this%sp_dTheta%interp(xi)
+    dTheta_1 = this%sp_dTheta%interp(this%xi_1)
+
+    if(x /= 0._WP) then
+       c_1 = x*dTheta_1/dTheta
+    else
+       c_1 = -3._WP*dTheta_1/this%xi_1
+    endif
 
     ! Finish
 
@@ -250,10 +345,10 @@ contains
   end function c_1_1_
 
 !****
-  
+
   function c_1_v_ (this, x) result (c_1)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: c_1(SIZE(x))
 
@@ -268,14 +363,14 @@ contains
     ! Finish
 
     return
-
+    
   end function c_1_v_
 
 !****
 
   function Gamma_1_1_ (this, x) result (Gamma_1)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: Gamma_1
 
@@ -293,7 +388,7 @@ contains
   
   function Gamma_1_v_ (this, x) result (Gamma_1)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: Gamma_1(SIZE(x))
 
@@ -315,7 +410,7 @@ contains
 
   function nabla_ad_1_ (this, x) result (nabla_ad)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: nabla_ad
 
@@ -333,7 +428,7 @@ contains
   
   function nabla_ad_v_ (this, x) result (nabla_ad)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: nabla_ad(SIZE(x))
 
@@ -355,7 +450,7 @@ contains
 
   function delta_1_ (this, x) result (delta)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: delta
 
@@ -373,7 +468,7 @@ contains
   
   function delta_v_ (this, x) result (delta)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: delta(SIZE(x))
 
@@ -399,7 +494,7 @@ contains
 
   function ${NAME}_1_ (this, x) result ($NAME)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: $NAME
 
@@ -417,7 +512,7 @@ contains
 
   function ${NAME}_v_ (this, x) result ($NAME)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: $NAME(SIZE(x))
 
@@ -448,7 +543,7 @@ contains
 
   function Omega_rot_1_ (this, x) result (Omega_rot)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: Omega_rot
 
@@ -466,7 +561,7 @@ contains
   
   function Omega_rot_v_ (this, x) result (Omega_rot)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: Omega_rot(SIZE(x))
 
@@ -488,12 +583,12 @@ contains
 
   function pi_c_ (this) result (pi_c)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP)                        :: pi_c
 
     ! Calculate pi_c = V/x^2 as x -> 0
 
-    pi_c = 2._WP
+    pi_c =  (this%n_poly + 1._WP)*this%xi_1**2/3._WP
 
     ! Finish
 
@@ -505,13 +600,17 @@ contains
 
   function is_zero_ (this, x) result (is_zero)
 
-    class(coeffs_hom_t), intent(in) :: this
+    class(model_poly_t), intent(in) :: this
     real(WP), intent(in)            :: x
     logical                         :: is_zero
 
+    real(WP) :: xi
+
     ! Determine whether the point at x has a vanishing pressure and/or density
 
-    is_zero = x >= 1._WP
+    xi = x*this%xi_1
+
+    is_zero = this%sp_Theta%interp(xi) == 0._WP
 
     ! Finish
 
@@ -523,10 +622,10 @@ contains
 
   subroutine attach_cache_ (this, cc)
 
-    class(coeffs_hom_t), intent(inout)    :: this
+    class(model_poly_t), intent(inout)    :: this
     class(cocache_t), pointer, intent(in) :: cc
 
-    ! Attach a coefficient cache (no-op, since we don't cache)
+    ! Enable a coefficient cache (no-op, since we don't cache)
 
     ! Finish
 
@@ -538,7 +637,7 @@ contains
 
   subroutine detach_cache_ (this)
 
-    class(coeffs_hom_t), intent(inout) :: this
+    class(model_poly_t), intent(inout) :: this
 
     ! Detach the coefficient cache (no-op, since we don't cache)
 
@@ -552,7 +651,7 @@ contains
 
   subroutine fill_cache_ (this, x)
 
-    class(coeffs_hom_t), intent(inout) :: this
+    class(model_poly_t), intent(inout) :: this
     real(WP), intent(in)               :: x(:)
 
     ! Fill the coefficient cache (no-op, since we don't cache)
@@ -567,14 +666,19 @@ contains
 
   $if ($MPI)
 
-  subroutine bcast_ (cf, root_rank)
+  subroutine bcast_ (bc, root_rank)
 
-    class(coeffs_hom_t), intent(inout) :: cf
-    integer, intent(in)                :: root_rank
+    type(model_poly_t), intent(inout) :: cf
+    integer, intent(in)               :: root_rank
 
-    ! Broadcast the coeffs_hom_t
+    ! Broadcast the model_poly_t
 
+    call bcast(cf%sp_Theta, root_rank)
+    call bcast(cf%sp_dTheta, root_rank)
+
+    call bcast(cf%n_poly, root_rank)
     call bcast(cf%dt_Gamma_1, root_rank)
+    call bcast(cf%xi_1, root_rank)
 
     ! Finish
 
@@ -584,4 +688,4 @@ contains
 
   $endif
 
-end module gyre_coeffs_hom
+end module gyre_model_poly

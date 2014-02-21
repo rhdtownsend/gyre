@@ -23,7 +23,7 @@ module gyre_atmos
 
   use core_kinds
 
-  use gyre_coeffs
+  use gyre_model
 
   use ISO_FORTRAN_ENV
 
@@ -163,11 +163,11 @@ contains
   
   subroutine eval_atmos_coeffs_unno (cf, x_o, V_g, As, c_1)
 
-    class(coeffs_t), intent(in) :: cf
-    real(WP), intent(in)        :: x_o
-    real(WP), intent(out)       :: V_g
-    real(WP), intent(out)       :: As
-    real(WP), intent(out)       :: c_1
+    class(model_t), intent(in) :: cf
+    real(WP), intent(in)       :: x_o
+    real(WP), intent(out)      :: V_g
+    real(WP), intent(out)      :: As
+    real(WP), intent(out)      :: c_1
 
     ! Evaluate atmosphere coefficients (Unno et al. formulation)
 
@@ -185,11 +185,11 @@ contains
   
   subroutine eval_atmos_coeffs_jcd (cf, x_o, V_g, As, c_1)
 
-    class(coeffs_t), intent(in) :: cf
-    real(WP), intent(in)        :: x_o
-    real(WP), intent(out)       :: V_g
-    real(WP), intent(out)       :: As
-    real(WP), intent(out)       :: c_1
+    class(model_t), intent(in) :: cf
+    real(WP), intent(in)       :: x_o
+    real(WP), intent(out)      :: V_g
+    real(WP), intent(out)      :: As
+    real(WP), intent(out)      :: c_1
 
     ! Evaluate atmosphere coefficients (JCD formulation)
 

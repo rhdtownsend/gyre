@@ -24,7 +24,7 @@ module gyre_bound_nad_unno
   use core_kinds
 
   use gyre_bound
-  use gyre_coeffs
+  use gyre_model
   use gyre_jacobian
   use gyre_oscpar
   use gyre_atmos
@@ -39,7 +39,7 @@ module gyre_bound_nad_unno
 
   type, extends (bound_t) :: bound_nad_unno_t
      private
-     class(coeffs_t), pointer       :: cf => null()
+     class(model_t), pointer        :: cf => null()
      class(jacobian_t), allocatable :: jc
      type(oscpar_t)                 :: op
    contains 
@@ -66,10 +66,10 @@ contains
 
   function bound_nad_unno_t_ (cf, jc, op) result (bd)
 
-    class(coeffs_t), pointer, intent(in) :: cf
-    class(jacobian_t), intent(in)        :: jc
-    type(oscpar_t), intent(in)           :: op
-    type(bound_nad_unno_t)               :: bd
+    class(model_t), pointer, intent(in) :: cf
+    class(jacobian_t), intent(in)       :: jc
+    type(oscpar_t), intent(in)          :: op
+    type(bound_nad_unno_t)              :: bd
 
     ! Construct the bound_nad_unno_t
 
@@ -94,12 +94,12 @@ contains
   function inner_bound_ (this, x_i, omega) result (B_i)
 
     class(bound_nad_unno_t), intent(in) :: this
-    real(WP), intent(in)                 :: x_i
-    complex(WP), intent(in)              :: omega
+    real(WP), intent(in)                :: x_i
+    complex(WP), intent(in)             :: omega
     $if ($GFORTRAN_PR_58007)
-    complex(WP), allocatable             :: B_i(:,:)
+    complex(WP), allocatable            :: B_i(:,:)
     $else
-    complex(WP)                          :: B_i(this%n_i,this%n_e)
+    complex(WP)                         :: B_i(this%n_i,this%n_e)
     $endif
 
     $ASSERT(x_i == 0._WP,Boundary condition invalid for x_i /= 0)

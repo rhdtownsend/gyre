@@ -26,7 +26,7 @@ module gyre_grid
   use core_func
   use core_order
 
-  use gyre_coeffs
+  use gyre_model
   use gyre_oscpar
   use gyre_gridpar
   use gyre_util
@@ -47,9 +47,9 @@ module gyre_grid
   end type geom_func_t
 
   type, extends (func_t) :: gamma_func_t
-     class(coeffs_t), pointer :: cf => null()
-     type(oscpar_t), pointer  :: op => null()
-     real(WP)                 :: omega
+     class(model_t), pointer :: cf => null()
+     type(oscpar_t), pointer :: op => null()
+     real(WP)                :: omega
    contains
      procedure :: eval_c_ => eval_gamma_func_
   end type gamma_func_t
@@ -69,7 +69,7 @@ contains
   subroutine build_grid (gp, cf, op, x_in, x, verbose)
 
     type(gridpar_t), intent(in)        :: gp(:)
-    class(coeffs_t), intent(in)        :: cf
+    class(model_t), intent(in)         :: cf
     type(oscpar_t), intent(in)         :: op
     real(WP), allocatable, intent(in)  :: x_in(:)
     real(WP), allocatable, intent(out) :: x(:)
@@ -159,7 +159,7 @@ contains
   subroutine grid_range (gp, cf, op, x_in, x_i, x_o)
 
     type(gridpar_t), intent(in)       :: gp(:)
-    class(coeffs_t), intent(in)       :: cf
+    class(model_t), intent(in)        :: cf
     type(oscpar_t), intent(in)        :: op
     real(WP), allocatable, intent(in) :: x_in(:)
     real(WP), intent(out)             :: x_i
@@ -522,7 +522,7 @@ contains
 
   subroutine resample_dispersion_ (cf, op, omega_a, omega_b, alpha_osc, alpha_exp, x)
 
-    class(coeffs_t), intent(in)          :: cf
+    class(model_t), intent(in)           :: cf
     type(oscpar_t), intent(in)           :: op
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
@@ -647,7 +647,7 @@ contains
 
   subroutine resample_thermal_ (cf, omega_a, omega_b, alpha_thm, x)
 
-    class(coeffs_t), intent(in)          :: cf
+    class(model_t), intent(in)           :: cf
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
     real(WP), intent(in)                 :: alpha_thm
@@ -717,7 +717,7 @@ contains
 
   subroutine resample_center_ (cf, op, omega_a, omega_b, n, x)
 
-    class(coeffs_t), intent(in)          :: cf
+    class(model_t), intent(in)           :: cf
     type(oscpar_t), intent(in)           :: op
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
@@ -805,11 +805,11 @@ contains
 
   subroutine find_x_turn (x, cf, op, omega, x_turn)
 
-    real(WP), intent(in)                :: x(:)
-    class(coeffs_t), target, intent(in) :: cf
-    type(oscpar_t), target, intent(in)  :: op
-    real(WP), intent(in)                :: omega
-    real(WP)                            :: x_turn
+    real(WP), intent(in)               :: x(:)
+    class(model_t), target, intent(in) :: cf
+    type(oscpar_t), target, intent(in) :: op
+    real(WP), intent(in)               :: omega
+    real(WP)                           :: x_turn
 
     type(gamma_func_t) :: gf
     integer            :: i

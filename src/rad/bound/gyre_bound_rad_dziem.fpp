@@ -24,7 +24,7 @@ module gyre_bound_rad_dziem
   use core_kinds
 
   use gyre_bound
-  use gyre_coeffs
+  use gyre_model
   use gyre_jacobian
   use gyre_oscpar
 
@@ -38,7 +38,7 @@ module gyre_bound_rad_dziem
 
   type, extends (bound_t) :: bound_rad_dziem_t
      private
-     class(coeffs_t), pointer       :: cf => null()
+     class(model_t), pointer        :: cf => null()
      class(jacobian_t), allocatable :: jc
      type(oscpar_t)                 :: op
    contains 
@@ -65,10 +65,10 @@ contains
 
   function bound_rad_dziem_t_ (cf, jc, op) result (bd)
 
-    class(coeffs_t), pointer, intent(in) :: cf
-    class(jacobian_t), intent(in)        :: jc
-    type(oscpar_t), intent(in)           :: op
-    type(bound_rad_dziem_t)              :: bd
+    class(model_t), pointer, intent(in) :: cf
+    class(jacobian_t), intent(in)       :: jc
+    type(oscpar_t), intent(in)          :: op
+    type(bound_rad_dziem_t)             :: bd
 
     ! Construct the bound_rad_dziem_t
 

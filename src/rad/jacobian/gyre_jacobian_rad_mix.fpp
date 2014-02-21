@@ -24,7 +24,7 @@ module gyre_jacobian_rad_mix
   use core_kinds
 
   use gyre_jacobian
-  use gyre_coeffs
+  use gyre_model
   use gyre_oscpar
   use gyre_linalg
 
@@ -38,8 +38,8 @@ module gyre_jacobian_rad_mix
 
   type, extends (jacobian_t) :: jacobian_rad_mix_t
      private
-     class(coeffs_t), pointer :: cf => null()
-     type(oscpar_t)           :: op
+     class(model_t), pointer :: cf => null()
+     type(oscpar_t)          :: op
    contains
      private
      procedure, public :: eval => eval_
@@ -65,9 +65,9 @@ contains
 
   function jacobian_rad_mix_t_ (cf, op) result (jc)
 
-    class(coeffs_t), pointer, intent(in) :: cf
-    type(oscpar_t), intent(in)           :: op
-    type(jacobian_rad_mix_t)             :: jc
+    class(model_t), pointer, intent(in) :: cf
+    type(oscpar_t), intent(in)          :: op
+    type(jacobian_rad_mix_t)            :: jc
 
     ! Construct the jacobian_rad_mix_t
 

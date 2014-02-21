@@ -34,7 +34,7 @@ module gyre_bvp
      private
      procedure(discrim_), deferred, public :: discrim
      procedure(mode_), deferred, public    :: mode
-     procedure(coeffs_), deferred, public  :: coeffs
+     procedure(model_), deferred, public   :: model
   end type bvp_t
 
   ! Interfaces
@@ -64,12 +64,12 @@ module gyre_bvp
        type(mode_t)                              :: mode
      end function mode_
 
-     function coeffs_ (this) result (cf)
-       use gyre_coeffs
+     function model_ (this) result (cf)
+       use gyre_model
        import bvp_t
        class(bvp_t), intent(in) :: this
-       class(coeffs_t), pointer :: cf
-     end function coeffs_
+       class(model_t), pointer  :: cf
+     end function model_
 
   end interface
 

@@ -24,8 +24,8 @@ module gyre_poly_file
   use core_kinds
   use core_hgroup
 
-  use gyre_coeffs
-  use gyre_coeffs_poly
+  use gyre_model
+  use gyre_model_poly
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -48,7 +48,7 @@ contains
 
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
-    type(coeffs_poly_t), intent(out)             :: cf
+    type(model_poly_t), intent(out)              :: cf
     real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
@@ -76,9 +76,9 @@ contains
 
     call hg%final()
 
-    ! Initialize the coeffs_poly
+    ! Initialize the model_poly
 
-    cf = coeffs_poly_t(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
+    cf = model_poly_t(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
 
     ! If necessary, return the grid
 

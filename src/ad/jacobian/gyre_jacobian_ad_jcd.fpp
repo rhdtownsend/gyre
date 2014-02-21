@@ -24,7 +24,7 @@ module gyre_jacobian_ad_jcd
   use core_kinds
 
   use gyre_jacobian
-  use gyre_coeffs
+  use gyre_model
   use gyre_oscpar
 
   use ISO_FORTRAN_ENV
@@ -37,8 +37,8 @@ module gyre_jacobian_ad_jcd
 
   type, extends (jacobian_t) :: jacobian_ad_jcd_t
      private
-     class(coeffs_t), pointer :: cf => null()
-     type(oscpar_t)           :: op
+     class(model_t), pointer :: cf => null()
+     type(oscpar_t)          :: op
    contains
      private
      procedure, public :: eval => eval_
@@ -64,9 +64,9 @@ contains
 
   function jacobian_ad_jcd_t_ (cf, op) result (jc)
 
-    class(coeffs_t), pointer, intent(in) :: cf
-    type(oscpar_t), intent(in)           :: op
-    type(jacobian_ad_jcd_t)              :: jc
+    class(model_t), pointer, intent(in) :: cf
+    type(oscpar_t), intent(in)          :: op
+    type(jacobian_ad_jcd_t)             :: jc
 
     ! Construct the jacobian_ad_jcd_t
 

@@ -27,7 +27,7 @@ module gyre_search
   use core_parallel
 
   use gyre_bvp
-  use gyre_coeffs
+  use gyre_model
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -56,7 +56,7 @@ contains
   subroutine build_scan (sp, cf, op, gp, x_in, omega)
 
     type(scanpar_t), intent(in)        :: sp(:)
-    class(coeffs_t), intent(in)        :: cf
+    class(model_t), intent(in)         :: cf
     type(oscpar_t), intent(in)         :: op
     type(gridpar_t), intent(in)        :: gp(:)
     real(WP), allocatable, intent(in)  :: x_in(:)
@@ -164,7 +164,7 @@ contains
     integer                       :: c_rate
     integer                       :: i
     $if($MPI)
-    class(coeffs_t), pointer      :: cf
+    class(model_t), pointer       :: cf
     integer                       :: p
     $endif
 
@@ -227,7 +227,7 @@ contains
 
     $if($MPI)
 
-    cf => bp%coeffs()
+    cf => bp%model()
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
@@ -250,17 +250,17 @@ contains
     class(bvp_t), target, intent(inout) :: bp
     type(mode_t), intent(inout)         :: md(:)
 
-    integer                  :: n_md
-    integer                  :: i_part(MPI_SIZE+1)
-    integer                  :: c_beg
-    integer                  :: c_end
-    integer                  :: c_rate
-    integer                  :: i
-    complex(WP)              :: omega_a
-    complex(WP)              :: omega_b
+    integer                 :: n_md
+    integer                 :: i_part(MPI_SIZE+1)
+    integer                 :: c_beg
+    integer                 :: c_end
+    integer                 :: c_rate
+    integer                 :: i
+    complex(WP)             :: omega_a
+    complex(WP)             :: omega_b
     $if($MPI)
-    class(coeffs_t), pointer :: cf
-    integer                  :: p
+    class(model_t), pointer :: cf
+    integer                 :: p
     $endif
 
     ! Process each mode to find a proximate mode
@@ -320,7 +320,7 @@ contains
 
     $if($MPI)
 
-    cf => bp%coeffs()
+    cf => bp%model()
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1

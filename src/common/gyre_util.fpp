@@ -26,10 +26,10 @@ module gyre_util
   use core_memory
 
   use gyre_constants
-  use gyre_coeffs
-  use gyre_coeffs_evol
-  use gyre_coeffs_poly
-  use gyre_coeffs_hom
+  use gyre_model
+  use gyre_model_evol
+  use gyre_model_poly
+  use gyre_model_hom
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -192,7 +192,7 @@ contains
 
   function freq_scale (cf, op, x_o, freq_units)
 
-    class(coeffs_t), intent(in)  :: cf
+    class(model_t), intent(in)   :: cf
     type(oscpar_t), intent(in)   :: op
     real(WP), intent(in)         :: x_o
     character(LEN=*), intent(in) :: freq_units
@@ -202,11 +202,11 @@ contains
     ! frequency to a dimensioned frequency
 
     select type (cf)
-    class is (coeffs_evol_t)
+    class is (model_evol_t)
        freq_scale = evol_freq_scale_(cf, op, x_o, freq_units)
-    class is (coeffs_poly_t)
+    class is (model_poly_t)
        freq_scale = poly_freq_scale_(freq_units)
-    class is (coeffs_hom_t)
+    class is (model_hom_t)
        freq_scale = hom_freq_scale_(freq_units)
     class default
        $ABORT(Invalid cf type)
@@ -220,11 +220,11 @@ contains
 
     function evol_freq_scale_ (cf, op, x_o, freq_units) result (freq_scale)
 
-      class(coeffs_evol_t), intent(in) :: cf
-      type(oscpar_t), intent(in)       :: op
-      real(WP), intent(in)             :: x_o
-      character(LEN=*), intent(in)     :: freq_units
-      real(WP)                         :: freq_scale
+      class(model_evol_t), intent(in) :: cf
+      type(oscpar_t), intent(in)      :: op
+      real(WP), intent(in)            :: x_o
+      character(LEN=*), intent(in)    :: freq_units
+      real(WP)                        :: freq_scale
 
       real(WP) :: omega_c_cutoff_lo
       real(WP) :: omega_c_cutoff_hi
@@ -305,11 +305,11 @@ contains
 
   subroutine eval_cutoff_freqs (cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    real(WP), intent(in)        :: x_o
-    real(WP), intent(out)       :: omega_c_cutoff_lo
-    real(WP), intent(out)       :: omega_c_cutoff_hi
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    real(WP), intent(in)       :: x_o
+    real(WP), intent(out)      :: omega_c_cutoff_lo
+    real(WP), intent(out)      :: omega_c_cutoff_hi
 
     real(WP) :: V_g
     real(WP) :: As

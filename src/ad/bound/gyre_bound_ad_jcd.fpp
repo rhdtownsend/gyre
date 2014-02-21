@@ -24,7 +24,7 @@ module gyre_bound_ad_jcd
   use core_kinds
 
   use gyre_bound
-  use gyre_coeffs
+  use gyre_model
   use gyre_jacobian
   use gyre_oscpar
   use gyre_atmos
@@ -39,7 +39,7 @@ module gyre_bound_ad_jcd
 
   type, extends (bound_t) :: bound_ad_jcd_t
      private
-     class(coeffs_t), pointer       :: cf => null()
+     class(model_t), pointer        :: cf => null()
      class(jacobian_t), allocatable :: jc
      type(oscpar_t)                 :: op
    contains 
@@ -66,10 +66,10 @@ contains
 
   function bound_ad_jcd_t_ (cf, jc, op) result (bd)
 
-    class(coeffs_t), pointer, intent(in) :: cf
-    class(jacobian_t), intent(in)        :: jc
-    type(oscpar_t), intent(in)           :: op
-    type(bound_ad_jcd_t)                 :: bd
+    class(model_t), pointer, intent(in) :: cf
+    class(jacobian_t), intent(in)       :: jc
+    type(oscpar_t), intent(in)          :: op
+    type(bound_ad_jcd_t)                :: bd
 
     ! Construct the bound_ad_jcd_t
 

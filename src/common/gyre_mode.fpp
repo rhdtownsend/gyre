@@ -25,9 +25,9 @@ module gyre_mode
   use gyre_constants
   use core_parallel
 
-  use gyre_coeffs
+  use gyre_model
   $if($MPI)
-  use gyre_coeffs_mpi
+  use gyre_model_mpi
   $endif
   use gyre_ext_arith
   use gyre_oscpar
@@ -44,7 +44,7 @@ module gyre_mode
   ! Derived-type definitions
 
   type :: mode_t
-     class(coeffs_t), pointer :: cf => null()
+     class(model_t), pointer  :: cf => null()
      type(oscpar_t)           :: op
      type(ext_real_t)         :: chi
      real(WP), allocatable    :: x(:)
@@ -124,16 +124,16 @@ contains
 
   function mode_t_ (cf, op, omega, x, y, x_ref, y_ref, chi, n_iter) result (md)
 
-    class(coeffs_t), pointer, intent(in) :: cf
-    type(oscpar_t), intent(in)           :: op
-    complex(WP), intent(in)              :: omega
-    real(WP), intent(in)                 :: x(:)
-    complex(WP), intent(in)              :: y(:,:)
-    real(WP), intent(in)                 :: x_ref
-    complex(WP), intent(in)              :: y_ref(:)
-    type(ext_real_t), intent(in)         :: chi
-    integer, intent(in)                  :: n_iter
-    type(mode_t)                         :: md
+    class(model_t), pointer, intent(in) :: cf
+    type(oscpar_t), intent(in)          :: op
+    complex(WP), intent(in)             :: omega
+    real(WP), intent(in)                :: x(:)
+    complex(WP), intent(in)             :: y(:,:)
+    real(WP), intent(in)                :: x_ref
+    complex(WP), intent(in)             :: y_ref(:)
+    type(ext_real_t), intent(in)        :: chi
+    integer, intent(in)                 :: n_iter
+    type(mode_t)                        :: md
 
     real(WP)    :: phase
     complex(WP) :: norm_fac
@@ -968,9 +968,9 @@ contains
 
   subroutine bcast_ (md, root_rank, cf)
 
-    class(mode_t), intent(inout)        :: md
-    integer, intent(in)                 :: root_rank
-    class(coeffs_t), intent(in), target :: cf
+    class(mode_t), intent(inout)       :: md
+    integer, intent(in)                :: root_rank
+    class(model_t), intent(in), target :: cf
 
     ! Broadcast the mode_t
 

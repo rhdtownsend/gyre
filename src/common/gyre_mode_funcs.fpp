@@ -24,7 +24,7 @@ module gyre_mode_funcs
   use core_kinds
   use gyre_constants
 
-  use gyre_coeffs
+  use gyre_model
   use gyre_oscpar
 
   use ISO_FORTRAN_ENV
@@ -59,12 +59,12 @@ contains
 
   function xi_r (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: xi_r
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: xi_r
 
     $CHECK_BOUNDS(SIZE(y),6)
     
@@ -99,12 +99,12 @@ contains
 
   function xi_h (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: xi_h
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: xi_h
 
     $CHECK_BOUNDS(SIZE(y),6)
     
@@ -147,12 +147,12 @@ contains
 
   function phip (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: phip
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: phip
 
     $CHECK_BOUNDS(SIZE(y),6)
     
@@ -175,12 +175,12 @@ contains
 
   function dphip_dx (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: dphip_dx
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: dphip_dx
 
     $CHECK_BOUNDS(SIZE(y),6)
     
@@ -215,12 +215,12 @@ contains
 
   function delS (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: delS
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: delS
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -247,12 +247,12 @@ contains
 
   function delL (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: delL
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: delL
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -275,12 +275,12 @@ contains
 
   function delp (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: delp
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: delp
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -319,12 +319,12 @@ contains
 
   function delrho (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: delrho
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: delrho
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -347,12 +347,12 @@ contains
 
   function delT (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: delT
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: delT
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -375,12 +375,12 @@ contains
 
   function dE_dx (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: dE_dx
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: dE_dx
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -402,12 +402,12 @@ contains
 
   function dW_dx (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: dW_dx
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: dW_dx
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -432,12 +432,12 @@ contains
 
   function Yt_1 (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: Yt_1
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: Yt_1
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -460,12 +460,12 @@ contains
 
   function Yt_2 (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: Yt_2
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: Yt_2
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -484,12 +484,12 @@ contains
 
   function I_0 (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: I_0
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: I_0
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -512,12 +512,12 @@ contains
 
   function I_1 (cf, op, omega, x, y)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    complex(WP), intent(in)     :: omega
-    real(WP), intent(in)        :: x
-    complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: I_1
+    class(model_t), intent(in) :: cf
+    type(oscpar_t), intent(in) :: op
+    complex(WP), intent(in)    :: omega
+    real(WP), intent(in)       :: x
+    complex(WP), intent(in)    :: y(:)
+    complex(WP)                :: I_1
 
     $CHECK_BOUNDS(SIZE(y),6)
 

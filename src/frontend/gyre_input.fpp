@@ -43,7 +43,7 @@ module gyre_input
 
   public :: parse_args
   public :: read_constants
-  public :: read_coeffs
+  public :: read_model
   public :: read_oscpar
   public :: read_numpar
   public :: read_scanpar
@@ -104,12 +104,12 @@ contains
 
 !****
 
-  subroutine read_coeffs (unit, x_bc, cf)
+  subroutine read_model (unit, x_bc, cf)
 
-    use gyre_coeffs
-    use gyre_coeffs_evol
-    use gyre_coeffs_poly
-    use gyre_coeffs_hom
+    use gyre_model
+    use gyre_model_evol
+    use gyre_model_poly
+    use gyre_model_hom
     use gyre_mesa_file
     use gyre_osc_file
     use gyre_fgong_file
@@ -120,26 +120,26 @@ contains
     use gyre_poly_file
     $endif
 
-    integer, intent(in)                   :: unit
-    real(WP), allocatable, intent(out)    :: x_bc(:)
-    class(coeffs_t), pointer, intent(out) :: cf
+    integer, intent(in)                  :: unit
+    real(WP), allocatable, intent(out)   :: x_bc(:)
+    class(model_t), pointer, intent(out) :: cf
 
-    character(LEN=256)          :: coeffs_type
+    character(LEN=256)          :: model_type
     character(LEN=256)          :: file_format
     character(LEN=256)          :: data_format
     character(LEN=256)          :: deriv_type
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: G
     real(WP)                    :: Gamma_1
-    type(coeffs_evol_t)         :: ec
-    type(coeffs_poly_t)         :: pc
-    type(coeffs_hom_t)          :: hc
+    type(model_evol_t)          :: ec
+    type(model_poly_t)          :: pc
+    type(model_hom_t)           :: hc
 
-    namelist /coeffs/ coeffs_type, file_format, data_format, deriv_type, file, Gamma_1
+    namelist /model/ model_type, file_format, data_format, deriv_type, file, Gamma_1
 
-    ! Read structure coefficients parameters
+    ! Read model parameters
 
-    coeffs_type = ''
+    model_type = ''
     file_format = ''
     data_format = ''
     deriv_type = 'MONO'
@@ -149,11 +149,11 @@ contains
     Gamma_1 = 5._WP/3._WP
 
     rewind(unit)
-    read(unit, NML=coeffs, END=900)
+    read(unit, NML=model, END=900)
 
-    ! Read/initialize the base_coeffs
+    ! Read/initialize the model
 
-    select case (coeffs_type)
+    select case (model_type)
     case ('EVOL')
 
        select case (file_format)
@@ -195,13 +195,13 @@ contains
 
     case ('HOM')
 
-       hc = coeffs_hom_t(Gamma_1)
+       hc = model_hom_t(Gamma_1)
 
        allocate(cf, SOURCE=hc)
 
     case default
 
-       $ABORT(Invalid coeffs_type)
+       $ABORT(Invalid model_type)
 
     end select
 
@@ -213,9 +213,9 @@ contains
 
 900 continue
 
-    $ABORT(No &coeffs namelist in input file)
+    $ABORT(No &model namelist in input file)
 
-  end subroutine read_coeffs
+  end subroutine read_model
 
 !****
 

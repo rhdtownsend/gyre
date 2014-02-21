@@ -25,10 +25,10 @@ module gyre_bvp_nad
   use core_parallel
 
   use gyre_bvp
-  use gyre_coeffs
+  use gyre_model
   use gyre_cocache
   $if ($MPI)
-  use gyre_coeffs_mpi
+  use gyre_model_mpi
   $endif
   use gyre_oscpar
   use gyre_numpar
@@ -53,7 +53,7 @@ module gyre_bvp_nad
 
   type, extends (bvp_t) :: bvp_nad_t
      private
-     class(coeffs_t), pointer       :: cf => null()
+     class(model_t), pointer        :: cf => null()
      type(cocache_t)                :: cc
      class(jacobian_t), allocatable :: jc
      class(ivp_t), allocatable      :: iv
@@ -80,7 +80,7 @@ module gyre_bvp_nad
      procedure         :: build_
      procedure         :: recon_
      procedure, public :: mode => mode_
-     procedure, public :: coeffs => coeffs_
+     procedure, public :: model => model_
   end type bvp_nad_t
 
   ! Interfaces
@@ -125,13 +125,13 @@ contains
     use gyre_ivp_colloc_GL4
     use gyre_ivp_findiff_upw
 
-    class(coeffs_t), pointer, intent(in) :: cf
-    type(oscpar_t), intent(in)           :: op
-    type(numpar_t), intent(in)           :: np
-    type(gridpar_t), intent(in)          :: shoot_gp(:)
-    type(gridpar_t), intent(in)          :: recon_gp(:)
-    real(WP), allocatable, intent(in)    :: x_in(:)
-    type(bvp_nad_t), target              :: bp
+    class(model_t), pointer, intent(in) :: cf
+    type(oscpar_t), intent(in)          :: op
+    type(numpar_t), intent(in)          :: np
+    type(gridpar_t), intent(in)         :: shoot_gp(:)
+    type(gridpar_t), intent(in)         :: recon_gp(:)
+    real(WP), allocatable, intent(in)   :: x_in(:)
+    type(bvp_nad_t), target             :: bp
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
@@ -550,12 +550,12 @@ contains
 
 !****
 
-  function coeffs_ (this) result (cf)
+  function model_ (this) result (cf)
 
     class(bvp_nad_t), intent(in) :: this
-    class(coeffs_t), pointer     :: cf
+    class(model_t), pointer      :: cf
 
-    ! Return the coefficients pointer
+    ! Return the model pointer
 
     cf => this%cf
 
@@ -563,7 +563,7 @@ contains
 
     return
 
-  end function coeffs_
+  end function model_
 
 !****
 
@@ -571,9 +571,9 @@ contains
 
   subroutine bcast_ (bp, root_rank, cf)
 
-    type(bvp_nad_t), intent(inout)      :: bp
-    integer, intent(in)                 :: root_rank
-    class(coeffs_t), intent(in), target :: cf
+    type(bvp_nad_t), intent(inout)     :: bp
+    integer, intent(in)                :: root_rank
+    class(model_t), intent(in), target :: cf
 
     type(oscpar_t)               :: op
     type(numpar_t)               :: np

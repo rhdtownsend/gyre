@@ -26,9 +26,9 @@ program gyre_nad
   use core_parallel
 
   use gyre_version
-  use gyre_coeffs
+  use gyre_model
   $if($MPI)
-  use gyre_coeffs_mpi
+  use gyre_model_mpi
   $endif
   use gyre_oscpar
   use gyre_numpar
@@ -55,7 +55,7 @@ program gyre_nad
   character(LEN=:), allocatable :: filename
   integer                       :: unit
   real(WP), allocatable         :: x_cf(:)
-  class(coeffs_t), pointer      :: cf => null()
+  class(model_t), pointer       :: cf => null()
   type(oscpar_t), allocatable   :: op(:)
   type(numpar_t), allocatable   :: np(:)
   type(gridpar_t), allocatable  :: shoot_gp(:)
@@ -105,7 +105,7 @@ program gyre_nad
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
      call read_constants(unit)
-     call read_coeffs(unit, x_cf, cf)
+     call read_model(unit, x_cf, cf)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)

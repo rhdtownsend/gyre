@@ -24,8 +24,8 @@ module gyre_fgong_file
   use core_kinds
 
   use gyre_constants
-  use gyre_coeffs
-  use gyre_coeffs_evol
+  use gyre_model
+  use gyre_model_evol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -49,7 +49,7 @@ contains
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
     character(LEN=*), intent(in)                 :: data_format
-    type(coeffs_evol_t), intent(out)             :: cf
+    type(model_evol_t), intent(out)              :: cf
     real(WP), allocatable, intent(out), optional :: x(:)
 
     character(LEN=:), allocatable :: data_format_
@@ -158,11 +158,11 @@ contains
        write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
-    ! Initialize the coeffs
+    ! Initialize the model
 
-    cf = coeffs_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
-                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
-                       deriv_type, add_center)
+    cf = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
+                      N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
+                      deriv_type, add_center)
 
     ! Set up the grid
 
