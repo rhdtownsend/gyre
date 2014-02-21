@@ -23,10 +23,10 @@ module gyre_coeffs_evol
   ! Uses
 
   use core_kinds
-  use core_constants
   use core_parallel
   use core_spline
 
+  use gyre_constants
   use gyre_coeffs
   use gyre_cocache
 
@@ -89,7 +89,6 @@ module gyre_coeffs_evol
      real(WP), public            :: M_star
      real(WP), public            :: R_star
      real(WP), public            :: L_star
-     real(WP), public            :: G
      real(WP)                    :: p_c
      real(WP)                    :: rho_c
    contains
@@ -176,11 +175,10 @@ contains
 
 !****
 
-  recursive function coeffs_evol_t_mech_ (G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
+  recursive function coeffs_evol_t_mech_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                           Gamma_1, nabla_ad, delta, Omega_rot, &
                                           deriv_type, add_center) result (cf)
 
-    real(WP), intent(in)          :: G
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
     real(WP), intent(in)          :: L_star
@@ -231,7 +229,7 @@ contains
 
        ! Add a central point and initialize using recursion
 
-       cf = coeffs_evol_t(G, M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
+       cf = coeffs_evol_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
                           prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), &
                           [0._WP,N2], prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), &
                           prep_center_(r, Omega_rot), deriv_type, .FALSE.)
@@ -251,8 +249,8 @@ contains
        ! Calculate coefficients
 
        where(r /= 0._WP)
-          V = G*m*rho/(p*r)
-          As = r**3*N2/(G*m)
+          V = G_GRAVITY*m*rho/(p*r)
+          As = r**3*N2/(G_GRAVITY*m)
           U = 4._WP*PI*rho*r**3/m
           c_1 = (r/R_star)**3/(m/M_star)
        elsewhere
@@ -262,7 +260,7 @@ contains
           c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
        end where
 
-       Omega_rot_ = SQRT(R_star**3/(G*M_star))*Omega_rot
+       Omega_rot_ = SQRT(R_star**3/(G_GRAVITY*M_star))*Omega_rot
 
        x = r/R_star
 
@@ -301,8 +299,6 @@ contains
        cf%R_star = R_star
        cf%L_star = L_star
 
-       cf%G = G
-
     endif
 
     ! Finish
@@ -313,11 +309,10 @@ contains
 
 !****
 
-  recursive function coeffs_evol_t_mech_coeffs_ (G, M_star, R_star, L_star, x, &
+  recursive function coeffs_evol_t_mech_coeffs_ (M_star, R_star, L_star, x, &
                                                  V, As, U, c_1, Gamma_1, &
                                                  deriv_type, add_center) result (cf)
 
-    real(WP), intent(in)          :: G
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
     real(WP), intent(in)          :: L_star
@@ -353,7 +348,7 @@ contains
 
        ! Add a central point and initialize using recursion
        
-       cf = coeffs_evol_t(G, M_star, R_star, L_star, &
+       cf = coeffs_evol_t(M_star, R_star, L_star, &
                           [0._WP,x], [0._WP,V], [0._WP,As], [3._WP,U], &
                           prep_center_(x, c_1), prep_center_(x, Gamma_1), deriv_type, .FALSE.)
 
@@ -382,8 +377,6 @@ contains
        cf%R_star = R_star
        cf%L_star = L_star
 
-       cf%G = G
-
     endif
 
     ! Finish
@@ -394,13 +387,12 @@ contains
 
 !****
 
-  recursive function coeffs_evol_t_full_ (G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
+  recursive function coeffs_evol_t_full_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                           Gamma_1, nabla_ad, delta, Omega_rot, &
                                           nabla, kappa, kappa_rho, kappa_T, &
                                           epsilon, epsilon_rho, epsilon_T, &
                                           deriv_type, add_center) result (cf)
 
-    real(WP), intent(in)          :: G
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
     real(WP), intent(in)          :: L_star
@@ -475,7 +467,7 @@ contains
 
        ! Add a central point and initialize using recursion
 
-       cf = coeffs_evol_t(G, M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
+       cf = coeffs_evol_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
                           prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), [0._WP,N2], &
                           prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), prep_center_(r, Omega_rot), &
                           prep_center_(r, nabla), prep_center_(r, kappa), prep_center_(r, kappa_rho), prep_center_(r, kappa_T), &
@@ -499,9 +491,9 @@ contains
        x = r/R_star
 
        where(r /= 0._WP)
-          V_x2 = G*m*rho/(p*r*x**2)
+          V_x2 = G_GRAVITY*m*rho/(p*r*x**2)
        elsewhere
-          V_x2 = 4._WP*PI*G*rho**2*R_star**2/(3._WP*p)
+          V_x2 = 4._WP*PI*G_GRAVITY*rho**2*R_star**2/(3._WP*p)
        end where
 
        V = V_x2*x**2
@@ -509,7 +501,7 @@ contains
        c_p = p*delta/(rho*T*nabla_ad)
 
        c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho*L_star)
-       c_thm = 4._WP*PI*rho*T*c_p*SQRT(G*M_star/R_star**3)*R_star**3/L_star
+       c_thm = 4._WP*PI*rho*T*c_p*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
 
        kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
        kappa_S = kappa_T - delta*kappa_rho
@@ -522,7 +514,7 @@ contains
        c_eps_ad = 4._WP*PI*rho*epsilon_ad*R_star**3/L_star
        c_eps_S = 4._WP*PI*rho*epsilon_S*R_star**3/L_star
 
-       dtau_thm = 4._WP*PI*rho*r**2*T*c_p*SQRT(G*M_star/R_star**3)/L_star
+       dtau_thm = 4._WP*PI*rho*r**2*T*c_p*SQRT(G_GRAVITY*M_star/R_star**3)/L_star
 
        tau_thm(n) = 0._WP
 
@@ -533,7 +525,7 @@ contains
 
        ! Initialize the coeffs
 
-       cf = coeffs_evol_t(G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
+       cf = coeffs_evol_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
                           Gamma_1, nabla_ad, delta, Omega_rot, &
                           deriv_type, .FALSE.)
 
@@ -977,7 +969,7 @@ contains
 
     ! Calculate pi_c = V/x^2 as x -> 0
 
-    pi_c = 4._WP*PI*this%G*this%rho(0._WP)**2*this%R_star**2/(3._WP*this%p(0._WP))
+    pi_c = 4._WP*PI*G_GRAVITY*this%rho(0._WP)**2*this%R_star**2/(3._WP*this%p(0._WP))
 
     ! Finish
 
@@ -1137,8 +1129,6 @@ contains
     call bcast(cf%M_star, root_rank)
     call bcast(cf%R_star, root_rank)
     call bcast(cf%L_star, root_rank)
-
-    call bcast(cf%G, root_rank)
 
     call bcast(cf%p_c, root_rank)
     call bcast(cf%rho_c, root_rank)

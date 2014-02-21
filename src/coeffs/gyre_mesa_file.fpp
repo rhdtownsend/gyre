@@ -22,8 +22,8 @@ module gyre_mesa_file
   ! Uses
 
   use core_kinds
-  use core_constants
 
+  use gyre_constants
   use gyre_coeffs
   use gyre_coeffs_evol
   use gyre_util
@@ -44,10 +44,9 @@ module gyre_mesa_file
 
 contains
 
-  subroutine read_mesa_file (file, G, deriv_type, cf, x)
+  subroutine read_mesa_file (file, deriv_type, cf, x)
 
     character(LEN=*), intent(in)                 :: file
-    real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type 
     type(coeffs_evol_t), intent(out)             :: cf
     real(WP), allocatable, optional, intent(out) :: x(:)
@@ -128,7 +127,7 @@ contains
 
     ! Initialize the coeffs
 
-    cf = coeffs_evol_t(G, M_star, R_star, L_star, r, m, p, rho, T, &
+    cf = coeffs_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
                        N2, Gamma_1, nabla_ad, delta, Omega_rot, &
                        nabla, kappa, kappa_rho, kappa_T, &
                        epsilon, epsilon_rho, epsilon_T, &

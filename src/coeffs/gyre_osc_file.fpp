@@ -22,8 +22,8 @@ module gyre_osc_file
   ! Uses
 
   use core_kinds
-  use core_constants
 
+  use gyre_constants
   use gyre_coeffs
   use gyre_coeffs_evol
   use gyre_util
@@ -44,10 +44,9 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_file (file, G, deriv_type, data_format, cf, x)
+  subroutine read_osc_file (file, deriv_type, data_format, cf, x)
 
     character(LEN=*), intent(in)                 :: file
-    real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
     character(LEN=*), intent(in)                 :: data_format
     type(coeffs_evol_t), intent(out)             :: cf
@@ -155,7 +154,7 @@ contains
     allocate(N2(n))
 
     where(r /= 0._WP)
-       N2 = G*m*var(15,:)/r**3
+       N2 = G_GRAVITY*m*var(15,:)/r**3
     elsewhere
        N2 = 0._WP
     end where
@@ -171,7 +170,7 @@ contains
 
     ! Initialize the coeffs
 
-    cf = coeffs_evol_t(G, M_star, R_star, L_star, r, m, p, rho, T, &
+    cf = coeffs_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
                        N2, Gamma_1, nabla_ad, delta, Omega_rot, &
                        nabla, kappa, kappa_rho, kappa_T, &
                        epsilon_, epsilon_rho, epsilon_T, &
