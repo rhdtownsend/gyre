@@ -1,3 +1,6 @@
+&constants
+/
+
 &coeffs
 	coeffs_type = 'EVOL'
 	file = 'rgb.mesa'
