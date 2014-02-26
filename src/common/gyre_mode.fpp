@@ -546,64 +546,18 @@ contains
 
 !****
 
-  function omega_im_ (this, truncate) result (omega_im)
+  function omega_im_ (this) result (omega_im)
 
     use gyre_model_evol
 
     class(mode_t), intent(in)     :: this
     real(WP)                      :: omega_im
-    logical, optional, intent(in) :: truncate
 
-    logical  :: truncate_
-    integer  :: i_trans
-    integer  :: i
-    real(WP) :: dW_dx(this%n)
-    real(WP) :: W
     real(WP) :: t_dyn
     real(WP) :: t_kh
 
-    if (PRESENT(truncate)) then
-       truncate_ = truncate
-    else
-       truncate_ = .FALSE.
-    endif
-    
     ! Estimate the imaginary part of omega by integrating the work
-    ! function (possibly truncating at the thermal transition point)
-
-    if (truncate_) then
-
-       ! Locate the truncation point
-
-       i_trans = this%n
-
-       do i = this%n-1,1,-1
-          
-          associate(tau_thm => this%ml%tau_thm(this%x(i)), &
-                    omega_c => this%ml%omega_c(this%x(i), this%op%m, this%omega))
-
-            if(REAL(omega_c)*tau_thm/TWOPI > 1._WP) then
-               i_trans = i
-               exit
-            endif
-            
-          end associate
-
-       enddo
-
-    else
-
-       i_trans = this%n
-
-    endif
-
-    ! Do the integration
-
-    dW_dx = this%dW_dx()
-
-    W = integrate(this%x(:i_trans), dW_dx(:i_trans))
-
-    ! Calculate omega_im
+    ! function
 
     select type (ml => This%ml)
     class is (model_evol_t)
@@ -614,7 +568,7 @@ contains
        t_kh = 1._WP
     end select
 
-    omega_im = -t_dyn*W/(TWOPI*t_kh*REAL(this%omega)*this%E())
+    omega_im = -t_dyn*this%W()/(TWOPI*t_kh*REAL(this%omega)*this%E())
 
     ! Finish
 
