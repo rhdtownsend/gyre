@@ -73,7 +73,7 @@ module gyre_mode
      procedure, public :: delrho => delrho_
      procedure, public :: delT => delT_
      procedure, public :: dE_dx => dE_dx_
-     procedure, public :: dW_dx => dE_dx_
+     procedure, public :: dW_dx => dW_dx_
      procedure, public :: Yt_1 => Yt_1_
      procedure, public :: Yt_2 => Yt_2_
      procedure, public :: I_0 => I_0_
@@ -228,11 +228,12 @@ contains
   $define $CALC_GRID $sub
 
   $local $NAME $1
+  $local $TYPE $2
 
   function ${NAME}_ (this)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: ${NAME}_(this%n)
+    $TYPE(WP)                 :: ${NAME}_(this%n)
 
     integer :: k
     
@@ -251,32 +252,33 @@ contains
 
   $endsub
 
-  $CALC_GRID(xi_r)
-  $CALC_GRID(xi_h)
-  $CALC_GRID(phip)
-  $CALC_GRID(dphip_dx)
-  $CALC_GRID(delS)
-  $CALC_GRID(delL)
-  $CALC_GRID(delp)
-  $CALC_GRID(delrho)
-  $CALC_GRID(delT)
-  $CALC_GRID(dE_dx)
-  $CALC_GRID(dW_dx)
-  $CALC_GRID(Yt_1)
-  $CALC_GRID(Yt_2)
-  $CALC_GRID(I_0)
-  $CALC_GRID(I_1)
+  $CALC_GRID(xi_r,complex)
+  $CALC_GRID(xi_h,complex)
+  $CALC_GRID(phip,complex)
+  $CALC_GRID(dphip_dx,complex)
+  $CALC_GRID(delS,complex)
+  $CALC_GRID(delL,complex)
+  $CALC_GRID(delp,complex)
+  $CALC_GRID(delrho,complex)
+  $CALC_GRID(delT,complex)
+  $CALC_GRID(dE_dx,real)
+  $CALC_GRID(dW_dx,real)
+  $CALC_GRID(Yt_1,complex)
+  $CALC_GRID(Yt_2,complex)
+  $CALC_GRID(I_0,complex)
+  $CALC_GRID(I_1,complex)
 
 !****
 
   $define $CALC_REF $sub
 
   $local $NAME $1
+  $local $TYPE $2
 
   function ${NAME}_ref_ (this)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: ${NAME}_ref_
+    $TYPE(WP)                 :: ${NAME}_ref_
 
     integer :: k
     
@@ -292,8 +294,8 @@ contains
 
   $endsub
 
-  $CALC_REF(xi_r)
-  $CALC_REF(xi_h)
+  $CALC_REF(xi_r,complex)
+  $CALC_REF(xi_h,complex)
 
 !****
 

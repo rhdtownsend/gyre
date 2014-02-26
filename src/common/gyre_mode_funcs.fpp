@@ -380,7 +380,7 @@ contains
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
     complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: dE_dx
+    real(WP)                   :: dE_dx
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -407,7 +407,7 @@ contains
     complex(WP), intent(in)    :: omega
     real(WP), intent(in)       :: x
     complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: dW_dx
+    real(WP)                   :: dW_dx
 
     $CHECK_BOUNDS(SIZE(y),6)
 
