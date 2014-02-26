@@ -413,12 +413,11 @@ contains
 
     ! Calculate the differential work at x, in units of G
     ! M_star**2/R_star t_dyn/t_KH = t_dyn L_star.  This expression is
-    ! based on eqn. 25.9 of [Unn1989]; the additional factor of 4 pi
-    ! in the denominator comes from averaging over solid angle
+    ! based on eqn. 25.9 of [Unn1989]
 
     associate(c_thm => ml%c_thm(x))
 
-      dW_dx = -PI*AIMAG(CONJG(delT(ml, op, omega, x, y))*delS(ml, op, omega, x, y))*c_thm*x**2/(4._WP*PI)
+      dW_dx = -PI*AIMAG(CONJG(delT(ml, op, omega, x, y))*delS(ml, op, omega, x, y))*c_thm*x**2
 
     end associate
 

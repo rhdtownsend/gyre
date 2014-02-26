@@ -546,38 +546,56 @@ contains
 
 !****
 
-  function omega_im_ (this) result (omega_im)
+  function omega_im_ (this, truncate) result (omega_im)
 
-    class(mode_t), intent(in) :: this
-    real(WP)                  :: omega_im
+    use gyre_model_evol
 
+    class(mode_t), intent(in)     :: this
+    real(WP)                      :: omega_im
+    logical, optional, intent(in) :: truncate
+
+    logical  :: truncate_
     integer  :: i_trans
     integer  :: i
     real(WP) :: dW_dx(this%n)
     real(WP) :: W
+    real(WP) :: t_dyn
+    real(WP) :: t_kh
+
+    if (PRESENT(truncate)) then
+       truncate_ = truncate
+    else
+       truncate_ = .FALSE.
+    endif
     
     ! Estimate the imaginary part of omega by integrating the work
-    ! function out to the thermal transition point
+    ! function (possibly truncating at the thermal transition point)
 
-    ! First locate the point
+    if (truncate_) then
 
-    i_trans = this%n
+       ! Locate the truncation point
 
-    do i = this%n-1,1,-1
+       i_trans = this%n
 
-       associate(tau_thm => this%ml%tau_thm(this%x(i)), &
-                 omega_c => this%ml%omega_c(this%x(i), this%op%m, this%omega))
+       do i = this%n-1,1,-1
+          
+          associate(tau_thm => this%ml%tau_thm(this%x(i)), &
+                    omega_c => this%ml%omega_c(this%x(i), this%op%m, this%omega))
 
-         if(REAL(omega_c)*tau_thm/TWOPI > 1._WP) then
-            i_trans = i
-            exit
-         endif
+            if(REAL(omega_c)*tau_thm/TWOPI > 1._WP) then
+               i_trans = i
+               exit
+            endif
+            
+          end associate
 
-       end associate
+       enddo
 
-    enddo
+    else
 
-    i_trans = this%n
+       i_trans = this%n
+
+    endif
 
     ! Do the integration
 
@@ -587,7 +605,16 @@ contains
 
     ! Calculate omega_im
 
-    omega_im = -REAL(this%omega)*W/this%E()
+    select type (ml => This%ml)
+    class is (model_evol_t)
+       t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
+    class default
+       t_dyn = 1._WP
+       t_kh = 1._WP
+    end select
+
+    omega_im = -t_dyn*W/(TWOPI*t_kh*REAL(this%omega)*this%E())
 
     ! Finish
 
