@@ -76,6 +76,7 @@ contains
     logical, optional, intent(in)      :: verbose
 
     logical :: write_info
+    integer :: n_in
     integer :: i
 
     $ASSERT(SIZE(gp) >= 1,Empty gridpars)
@@ -99,6 +100,10 @@ contains
     case ('CREATE_CLONE')
        $ASSERT(ALLOCATED(x_in),No grid to clone)
        x = x_in
+    case ('CREATE_MIDPOINT')
+       $ASSERT(ALLOCATED(x_in),No grid to clone)
+       n_in = SIZE(x_in)
+       x = [x_in(1),0.5_WP*(x_in(:n_in-1)+x_in(2:)),x_in(n_in)]
     case ('CREATE_UNIFORM')
        call create_uniform_(gp(1)%n, x)
     case ('CREATE_GEOM')
