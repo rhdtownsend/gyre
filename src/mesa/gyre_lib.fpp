@@ -85,12 +85,12 @@ contains
 
     ! Finalize
 
-    if(ASSOCIATED(cf_m)) then
-       call cf_m%final()
-       deallocate(cf_m)
+    if(ASSOCIATED(ml_m)) then
+       call ml_m%final()
+       deallocate(ml_m)
     endif
 
-    if(ALLOCATED(x_ml_m)) deallocate(x_cf_m)
+    if(ALLOCATED(x_ml_m)) deallocate(x_ml_m)
 
     call final_parallel()
 
@@ -111,14 +111,14 @@ contains
 
     ! Read the model
 
-    if(ASSOCIATED(cf_m)) then
-       call cf_m%final()
-       deallocate(cf_m)
+    if(ASSOCIATED(ml_m)) then
+       call ml_m%final()
+       deallocate(ml_m)
     endif
 
     call read_mesa_file(file, deriv_type, ec, x_ml_m)
 
-    allocate(cf_m, SOURCE=ec)
+    allocate(ml_m, SOURCE=ec)
 
     ! Finish
 
@@ -161,12 +161,12 @@ contains
 
     ! Allocate the model
 
-    if(ASSOCIATED(cf_m)) then
-       call cf_m%final()
-       deallocate(cf_m)
+    if(ASSOCIATED(ml_m)) then
+       call ml_m%final()
+       deallocate(ml_m)
     endif
 
-    allocate(model_evol_t::cf_m)
+    allocate(model_evol_t::ml_m)
 
     ! Set the model by storing coefficients
 
@@ -174,7 +174,7 @@ contains
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    allocate(cf_m, SOURCE=model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
+    allocate(ml_m, SOURCE=model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                        Gamma_1, nabla_ad, delta, Omega_rot, &
                                        nabla, kappa, kappa_rho, kappa_T, &
                                        epsilon, epsilon_rho, epsilon_T, &
@@ -228,7 +228,7 @@ contains
     integer                      :: j
     integer                      :: retcode
 
-    $ASSERT(ASSOCIATED(cf_m),No model provided)
+    $ASSERT(ASSOCIATED(ml_m),No model provided)
 
     ! Read parameters
 
@@ -270,9 +270,9 @@ contains
        ! Set up bp
 
        if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-          allocate(bp, SOURCE=bvp_rad_t(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+          allocate(bp, SOURCE=bvp_rad_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
        else
-          allocate(bp, SOURCE=bvp_ad_t(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+          allocate(bp, SOURCE=bvp_ad_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
        endif
 
        ! Find modes
