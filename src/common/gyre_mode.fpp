@@ -80,11 +80,10 @@ module gyre_mode
      procedure, public :: I_1 => I_1_
      procedure, public :: xi_r_ref => xi_r_ref_
      procedure, public :: xi_h_ref => xi_h_ref_
+     procedure, public :: phip_ref => phip_ref_
+     procedure, public :: dphip_dx_ref => dphip_dx_ref_
      procedure, public :: delT_eff => delT_eff_
      procedure, public :: delg_eff => delg_eff_
-     procedure, public :: f_T => f_T_
-     procedure, public :: psi_T => psi_T_
-     procedure, public :: f_g => f_g_
      procedure, public :: E => E_
      procedure, public :: E_norm => E_norm_
      procedure, public :: W => W_
@@ -270,6 +269,72 @@ contains
 
 !****
 
+  function f_T_ (this) result (f_T)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: f_T
+
+    complex(WP) :: C_T
+
+    ! Calculate the non-adiabatic f_T parameter. This is expression is
+    ! based on eqn. 5 of [Dup2003]
+
+    C_T = this%delT_eff()/this%xi_r_ref()
+
+    f_T = ABS(C_T)
+
+    ! Finish
+
+    return
+
+  end function f_T_
+
+!****
+
+  function f_g_ (this) result (f_g)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: f_g
+
+    complex(WP) :: C_g
+
+    ! Calculate the non-adiabatic f_g parameter. This is expression is
+    ! based on eqn. 6 of [Dup2003]
+
+    C_g = this%delg_eff()/this%xi_r_ref()
+
+    f_g = -ABS(C_g)
+
+    ! Finish
+
+    return
+
+  end function f_g_
+
+!****
+
+  function psi_T_ (this) result (psi_T)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: psi_T
+
+    complex(WP) :: C_T
+
+    ! Calculate the non-adiabatic psi_T parameter, in radians. This is
+    ! expression is based on eqn. 5 of [Dup2003]
+
+    C_T = this%delT_eff()/this%xi_r_ref()
+
+    psi_T = ATAN2(AIMAG(C_T), REAL(C_T))
+
+    ! Finish
+
+    return
+
+  end function psi_T_
+
+!****
+
   $define $CALC_REF $sub
 
   $local $NAME $1
@@ -296,6 +361,8 @@ contains
 
   $CALC_REF(xi_r,complex)
   $CALC_REF(xi_h,complex)
+  $CALC_REF(phip,complex)
+  $CALC_REF(dphip_dx,complex)
 
 !****
 
@@ -327,81 +394,20 @@ contains
 
     ! Calculate the effective gravity perturbation at x_ref (assumed
     ! to correspond to the photosphere), in units of the gravity. This
-    ! expression is based on eqns. 6 & 22 of [Dup2003]
+    ! expression is based on eqn. 24 of [Dup2002]
 
-    delg_eff = -(2._WP + this%ml%c_1(this%x_ref)*this%omega**2)*this%xi_r_ref()
+    associate (c_1 => this%ml%c_1(this%x_ref), U => this%ml%U(this%x_ref), &
+               x => this%x_ref)
+
+      delg_eff = (c_1/x)*this%dphip_dx_ref() + (U - (2._WP + c_1*this%omega**2))*this%xi_r_ref()/x
+
+    end associate
 
     ! Finish
 
     return
 
   end function delg_eff_
-
-!****
-
-  function f_T_ (this) result (f_T)
-
-    class(mode_t), intent(in) :: this
-    real(WP)                  :: f_T
-
-    complex(WP) :: C_T
-
-    ! Calculate the non-adiabatic f_T parameter. This is expression is
-    ! based on eqn. 5 of [Dup2003]
-
-    C_T = this%delT_eff()/this%xi_r_ref()
-
-    f_T = ABS(C_T)
-
-    ! Finish
-
-    return
-
-  end function f_T_
-
-!****
-
-  function psi_T_ (this) result (psi_T)
-
-    class(mode_t), intent(in) :: this
-    real(WP)                  :: psi_T
-
-    complex(WP) :: C_T
-
-    ! Calculate the non-adiabatic psi_T parameter, in radians. This is
-    ! expression is based on eqn. 5 of [Dup2003]
-
-    C_T = this%delT_eff()/this%xi_r_ref()
-
-    psi_T = ATAN2(AIMAG(C_T), REAL(C_T))
-
-    ! Finish
-
-    return
-
-  end function psi_T_
-
-!****
-
-  function f_g_ (this) result (f_g)
-
-    class(mode_t), intent(in) :: this
-    real(WP)                  :: f_g
-
-    complex(WP) :: C_g
-
-    ! Calculate the non-adiabatic f_g parameter. This is expression is
-    ! based on eqn. 6 of [Dup2003]
-
-    C_g = this%delg_eff()/this%xi_r_ref()
-
-    f_g = -ABS(C_g)
-
-    ! Finish
-
-    return
-
-  end function f_g_
 
 !****
 
