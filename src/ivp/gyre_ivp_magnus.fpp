@@ -22,7 +22,7 @@ module gyre_ivp_magnus
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
 
   use gyre_jacobian
   use gyre_ext_arith
@@ -40,16 +40,16 @@ module gyre_ivp_magnus
   type, abstract, extends (ivp_t) :: ivp_magnus_t
    contains
      private
-     procedure, public                          :: solve
-     procedure, public                          :: recon
-     procedure(eval_dOmega_i), deferred, public :: eval_dOmega
+     procedure, public                         :: solve => solve_
+     procedure, public                         :: recon => recon_
+     procedure(eval_dOmega_), deferred, public :: eval_dOmega
   end type ivp_magnus_t
 
   ! Interfaces
 
   abstract interface
 
-     subroutine eval_dOmega_i (this, omega, x_a, x_b, dOmega)
+     subroutine eval_dOmega_ (this, omega, x_a, x_b, dOmega)
        use core_kinds
        import ivp_magnus_t
        class(ivp_magnus_t), intent(in) :: this
@@ -57,7 +57,7 @@ module gyre_ivp_magnus
        real(WP), intent(in)            :: x_a
        real(WP), intent(in)            :: x_b
        complex(WP), intent(out)        :: dOmega(:,:)
-     end subroutine eval_dOmega_i
+     end subroutine eval_dOmega_
 
   end interface
 
@@ -71,7 +71,7 @@ module gyre_ivp_magnus
 
 contains
 
-  subroutine solve (this, omega, x_a, x_b, E_l, E_r, S, use_real)
+  subroutine solve_ (this, omega, x_a, x_b, E_l, E_r, S, use_real)
 
     class(ivp_magnus_t), intent(in)  :: this
     complex(WP), intent(in)          :: omega
@@ -80,7 +80,7 @@ contains
     complex(WP), intent(out)         :: E_l(:,:)
     complex(WP), intent(out)         :: E_r(:,:)
     type(ext_complex_t), intent(out) :: S
-    logical, intent(in), optional    :: use_real
+    logical, optional, intent(in)    :: use_real
 
     logical :: UPWIND = .TRUE.
 
@@ -150,7 +150,7 @@ contains
                      V_pos, this%n_e, V_l, this%n_e, CMPLX(0._WP, KIND=WP), &
                      E_r, this%n_e)
 
-       S = exp(ext_complex(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*dx))
+       S = exp(ext_complex_t(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*dx))
 
     else
 
@@ -168,7 +168,7 @@ contains
           E_r(i,i) = -1._WP
        end do
 
-       S = ext_complex(1._WP)
+       S = ext_complex_t(1._WP)
 
     endif
     
@@ -178,11 +178,11 @@ contains
 
     return
 
-  end subroutine solve
+  end subroutine solve_
 
 !****
 
-  subroutine recon (this, omega, x_a, x_b, y_a, y_b, x, y, use_real)
+  subroutine recon_ (this, omega, x_a, x_b, y_a, y_b, x, y, use_real)
 
     class(ivp_magnus_t), intent(in) :: this
     complex(WP), intent(in)         :: omega
@@ -192,7 +192,7 @@ contains
     complex(WP), intent(in)         :: y_b(:)
     real(WP), intent(in)            :: x(:)
     complex(WP), intent(out)        :: y(:,:)
-    logical, intent(in), optional   :: use_real
+    logical, optional, intent(in)   :: use_real
 
     logical     :: use_real_
     complex(WP) :: dOmega(this%n_e,this%n_e)
@@ -239,6 +239,6 @@ contains
 
     return
 
-  end subroutine recon
+  end subroutine recon_
 
 end module gyre_ivp_magnus

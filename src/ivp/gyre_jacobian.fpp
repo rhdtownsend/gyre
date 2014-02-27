@@ -34,7 +34,6 @@ module gyre_jacobian
      integer, public :: n_e
    contains
      private
-     procedure(init_i), deferred, public         :: init
      procedure(eval_i), deferred, public         :: eval
      procedure(eval_i), deferred, public         :: eval_logx
      procedure(trans_matrix_i), deferred, public :: trans_matrix
@@ -43,16 +42,6 @@ module gyre_jacobian
   ! Interfaces
 
   abstract interface
-
-     subroutine init_i (this, cf, op)
-       use core_kinds
-       use gyre_coeffs
-       use gyre_oscpar
-       import jacobian_t
-       class(jacobian_t), intent(out)      :: this
-       class(coeffs_t), intent(in), target :: cf
-       type(oscpar_t), intent(in), target  :: op
-     end subroutine init_i
 
      subroutine eval_i (this, x, omega, A)
        use core_kinds

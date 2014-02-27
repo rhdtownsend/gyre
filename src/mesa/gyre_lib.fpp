@@ -27,8 +27,8 @@ module gyre_lib
   use gyre_bvp
   use gyre_bvp_ad
   use gyre_bvp_rad
-  use gyre_coeffs
-  use gyre_coeffs_evol
+  use gyre_model
+  use gyre_model_evol
   use gyre_mesa_file
   use gyre_oscpar
   use gyre_gridpar
@@ -47,8 +47,8 @@ module gyre_lib
 
   ! Module variables
 
-  type(coeffs_evol_t), allocatable, save :: cf_m
-  real(WP), allocatable, save            :: x_cf_m(:)
+  class(model_t), pointer, save :: ml_m => null()
+  real(WP), allocatable, save   :: x_ml_m(:)
 
   ! Access specifiers
 
@@ -85,12 +85,12 @@ contains
 
     ! Finalize
 
-    if(ALLOCATED(cf_m)) then
-       call cf_m%final()
-       deallocate(cf_m)
+    if(ASSOCIATED(ml_m)) then
+       call ml_m%final()
+       deallocate(ml_m)
     endif
 
-    if(ALLOCATED(x_cf_m)) deallocate(x_cf_m)
+    if(ALLOCATED(x_ml_m)) deallocate(x_ml_m)
 
     call final_parallel()
 
@@ -102,24 +102,23 @@ contains
 
 !****
 
-  subroutine gyre_read_model (file, G, deriv_type)
+  subroutine gyre_read_model (file, deriv_type)
 
     character(LEN=*), intent(in) :: file
-    real(WP), intent(in)         :: G
     character(LEN=*), intent(in) :: deriv_type
 
-    ! Allocate the model
-
-    if(ALLOCATED(cf_m)) then
-       call cf_m%final()
-       deallocate(cf_m)
-    endif
-
-    allocate(coeffs_evol_t::cf_m)
+    type(model_evol_t) :: ec
 
     ! Read the model
 
-    call read_mesa_file(file, G, deriv_type, cf_m, x_cf_m)
+    if(ASSOCIATED(ml_m)) then
+       call ml_m%final()
+       deallocate(ml_m)
+    endif
+
+    call read_mesa_file(file, deriv_type, ec, x_ml_m)
+
+    allocate(ml_m, SOURCE=ec)
 
     ! Finish
 
@@ -129,13 +128,12 @@ contains
   
 !****
 
-  subroutine gyre_set_model (G, M_star, R_star, L_star, r, w, p, rho, T, &
+  subroutine gyre_set_model (M_star, R_star, L_star, r, w, p, rho, T, &
                              N2, Gamma_1, nabla_ad, delta, nabla,  &
                              kappa, kappa_rho, kappa_T, &
                              epsilon, epsilon_rho, epsilon_T, &
                              Omega_rot, deriv_type)
 
-    real(WP), intent(in)         :: G
     real(WP), intent(in)         :: M_star
     real(WP), intent(in)         :: R_star
     real(WP), intent(in)         :: L_star
@@ -163,12 +161,12 @@ contains
 
     ! Allocate the model
 
-    if(ALLOCATED(cf_m)) then
-       call cf_m%final()
-       deallocate(cf_m)
+    if(ASSOCIATED(ml_m)) then
+       call ml_m%final()
+       deallocate(ml_m)
     endif
 
-    allocate(coeffs_evol_t::cf_m)
+    allocate(model_evol_t::ml_m)
 
     ! Set the model by storing coefficients
 
@@ -176,16 +174,16 @@ contains
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    call cf_m%init(G, M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                   Gamma_1, nabla_ad, delta, Omega_rot, &
-                   nabla, kappa, kappa_rho, kappa_T, &
-                   epsilon, epsilon_rho, epsilon_T, &
-                   deriv_type, add_center)
+    allocate(ml_m, SOURCE=model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
+                                       Gamma_1, nabla_ad, delta, Omega_rot, &
+                                       nabla, kappa, kappa_rho, kappa_T, &
+                                       epsilon, epsilon_rho, epsilon_T, &
+                                       deriv_type, add_center))
 
     if(add_center) then
-       x_cf_m = [0._WP,r/R_star]
+       x_ml_m = [0._WP,r/R_star]
     else
-       x_cf_m = r/R_star
+       x_ml_m = r/R_star
     endif
 
     ! Finish
@@ -211,7 +209,7 @@ contains
     end interface
     integer, intent(inout)  :: ipar(:)
     real(WP), intent(inout) :: rpar(:)
-    logical, intent(in), optional :: dummy
+    logical, optional, intent(in) :: dummy
 
     integer                      :: unit
     type(oscpar_t), allocatable  :: op(:)
@@ -230,7 +228,7 @@ contains
     integer                      :: j
     integer                      :: retcode
 
-    $ASSERT(ALLOCATED(cf_m),No model provided)
+    $ASSERT(ASSOCIATED(ml_m),No model provided)
 
     ! Read parameters
 
@@ -262,7 +260,7 @@ contains
 
        ! Set up the frequency array
 
-       call build_scan(sp_sel, cf_m, op(i), shoot_gp_sel, x_cf_m, omega)
+       call build_scan(sp_sel, ml_m, op(i), shoot_gp_sel, x_ml_m, omega)
 
        ! Store the frequency range in shoot_gp_sel
 
@@ -272,18 +270,16 @@ contains
        ! Set up bp
 
        if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-          allocate(bvp_rad_t::bp)
+          allocate(bp, SOURCE=bvp_rad_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
        else
-          allocate(bvp_ad_t::bp)
+          allocate(bp, SOURCE=bvp_ad_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
        endif
-
-       call bp%init(cf_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf_m)
 
        ! Find modes
 
        call scan_search(bp, omega, md)
 
-       $if($GFORTRAN_PR57922)
+       $if ($GFORTRAN_PR57922)
        select type (bp)
        type is (bvp_rad_t)
           call bp%final()

@@ -1,5 +1,8 @@
-&coeffs
-	coeffs_type = 'EVOL'
+&constants
+/
+
+&model
+	model_type = 'EVOL'
 	file = 'spb.mesa'
 	file_format = 'MESA'
 /
@@ -45,10 +48,11 @@
 /
 
 &recon_grid
+	op_type = 'CREATE_MIDPOINT'
 /
 
 &output
 	summary_file = 'gyre_nad.txt'
 	summary_file_format = 'TXT'
-	summary_item_list = 'l,n_pg,n_p,n_g,omega'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_im'
 /

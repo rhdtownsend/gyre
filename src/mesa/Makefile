@@ -7,7 +7,7 @@ TARGETS=gyre_lib.a test_gyre_lib
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../common:../ivp:../bvp:../coeffs:../matrix:../ext:../frontend:../rad:../rad/bound:../rad/jacobian:../ad:../ad/bound:../ad/jacobian
+SUBDIRS=../extern/core:../common:../ivp:../bvp:../matrix:../model:../ext:../frontend:../rad:../rad/bound:../rad/jacobian:../ad:../ad/bound:../ad/jacobian
 
 include ../Make.inc
 

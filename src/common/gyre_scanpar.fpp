@@ -42,16 +42,16 @@ module gyre_scanpar
 
   ! Interfaces
 
-  $if($MPI)
+  $if ($MPI)
 
   interface bcast
-     module procedure bcast_sp_0
-     module procedure bcast_sp_1
+     module procedure bcast_0_
+     module procedure bcast_1_
   end interface bcast
 
   interface bcast_alloc
-     module procedure bcast_alloc_sp_0
-     module procedure bcast_alloc_sp_1
+     module procedure bcast_alloc_0_
+     module procedure bcast_alloc_1_
   end interface bcast_alloc
 
   $endif
@@ -61,7 +61,7 @@ module gyre_scanpar
   private
 
   public :: scanpar_t
-  $if($MPI)
+  $if ($MPI)
   public :: bcast
   public :: bcast_alloc
   $endif
@@ -70,18 +70,18 @@ module gyre_scanpar
 
 contains
 
-  $if($MPI)
+  $if ($MPI)
 
   $define $BCAST $sub
 
   $local $RANK $1
 
-  subroutine bcast_sp_$RANK (sp, root_rank)
+  subroutine bcast_${RANK}_ (sp, root_rank)
 
     type(scanpar_t), intent(inout) :: sp$ARRAY_SPEC($RANK)
     integer, intent(in)            :: root_rank
 
-    ! Broadcast the scanpar
+    ! Broadcast the scanpar_t
 
     call bcast(sp%freq_min, root_rank)
     call bcast(sp%freq_max, root_rank)
@@ -95,7 +95,7 @@ contains
 
     return
 
-  end subroutine bcast_sp_$RANK
+  end subroutine bcast_${RANK}_
 
   $endsub
 
@@ -104,8 +104,8 @@ contains
 
 !****
 
-  $BCAST_ALLOC(sp,type(scanpar_t),0)
-  $BCAST_ALLOC(sp,type(scanpar_t),1)
+  $BCAST_ALLOC(type(scanpar_t),0)
+  $BCAST_ALLOC(type(scanpar_t),1)
 
   $endif
 

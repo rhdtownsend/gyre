@@ -1,5 +1,8 @@
-&coeffs
-	coeffs_type = 'EVOL'
+&constants
+/
+
+&model
+	model_type = 'EVOL'
 	file = 'rgb.mesa'
 	file_format = 'MESA'
 /

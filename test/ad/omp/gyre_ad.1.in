@@ -1,5 +1,8 @@
-&coeffs
-	coeffs_type = 'HOM'
+&constants
+/
+
+&model
+	model_type = 'HOM'
 /
 
 &osc

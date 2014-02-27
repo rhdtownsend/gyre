@@ -24,8 +24,8 @@ module gyre_poly_file
   use core_kinds
   use core_hgroup
 
-  use gyre_coeffs
-  use gyre_coeffs_poly
+  use gyre_model
+  use gyre_model_poly
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -44,11 +44,11 @@ module gyre_poly_file
 
 contains
 
-  subroutine read_poly_file (file, deriv_type, pc, x)
+  subroutine read_poly_file (file, deriv_type, ml, x)
 
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
-    class(coeffs_poly_t), intent(out)            :: pc
+    type(model_poly_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
@@ -65,7 +65,7 @@ contains
 100    format(A,1X,A)
     endif
 
-    call hg%init(file, OPEN_FILE)
+    hg = hgroup_t(file, OPEN_FILE)
 
     call read_attr(hg, 'n_poly', n_poly)
     call read_attr(hg, 'Gamma_1', Gamma_1)
@@ -76,9 +76,9 @@ contains
 
     call hg%final()
 
-    ! Initialize the coeffs_poly
+    ! Initialize the model_poly
 
-    call pc%init(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
+    ml = model_poly_t(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
 
     ! If necessary, return the grid
 

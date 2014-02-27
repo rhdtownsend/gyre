@@ -22,10 +22,10 @@ module gyre_mesa_file
   ! Uses
 
   use core_kinds
-  use core_constants
 
-  use gyre_coeffs
-  use gyre_coeffs_evol
+  use gyre_constants
+  use gyre_model
+  use gyre_model_evol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -44,12 +44,11 @@ module gyre_mesa_file
 
 contains
 
-  subroutine read_mesa_file (file, G, deriv_type, ec, x)
+  subroutine read_mesa_file (file, deriv_type, ml, x)
 
     character(LEN=*), intent(in)                 :: file
-    real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type 
-    class(coeffs_evol_t), intent(out)            :: ec
+    type(model_evol_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
 
     integer               :: unit
@@ -106,7 +105,7 @@ contains
 110       format(2X,A)
        endif
 
-       call read_mesa_data_old()
+       call read_mesa_data_old_()
 
     else
 
@@ -116,7 +115,7 @@ contains
           write(OUTPUT_UNIT, 110) 'Detected new-variant file'
        endif
 
-       call read_mesa_data_new()
+       call read_mesa_data_new_()
 
     endif
 
@@ -126,13 +125,13 @@ contains
        write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
-    ! Initialize the coeffs_evol
+    ! Initialize the model
 
-    call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                 N2, Gamma_1, nabla_ad, delta, Omega_rot, &
-                 nabla, kappa, kappa_rho, kappa_T, &
-                 epsilon, epsilon_rho, epsilon_T, &
-                 deriv_type, add_center)
+    ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
+                      N2, Gamma_1, nabla_ad, delta, Omega_rot, &
+                      nabla, kappa, kappa_rho, kappa_T, &
+                      epsilon, epsilon_rho, epsilon_T, &
+                      deriv_type, add_center)
 
     ! Set up the grid
 
@@ -150,7 +149,7 @@ contains
 
   contains
 
-    subroutine read_mesa_data_old ()
+    subroutine read_mesa_data_old_ ()
 
       integer :: k
       integer :: k_chk
@@ -207,9 +206,9 @@ contains
 
       return
 
-    end subroutine read_mesa_data_old
+    end subroutine read_mesa_data_old_
 
-    subroutine read_mesa_data_new ()
+    subroutine read_mesa_data_new_ ()
 
       integer :: k
       integer :: k_chk
@@ -249,7 +248,7 @@ contains
 
       return
 
-    end subroutine read_mesa_data_new
+    end subroutine read_mesa_data_new_
 
   end subroutine read_mesa_file
 

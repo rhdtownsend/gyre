@@ -24,7 +24,7 @@ module gyre_shooter_nad
   use core_kinds
   use core_order
 
-  use gyre_coeffs
+  use gyre_model
   use gyre_oscpar
   use gyre_numpar
   use gyre_jacobian
@@ -43,19 +43,24 @@ module gyre_shooter_nad
 
   type :: shooter_nad_t
      private
-     class(coeffs_t), pointer :: cf => null()
-     class(ivp_t), pointer    :: iv => null()
-     class(ivp_t), pointer    :: iv_upw => null()
-     type(oscpar_t), pointer  :: op => null()
-     type(numpar_t), pointer  :: np => null()
-     integer, public          :: n_e
+     class(model_t), pointer   :: ml => null()
+     class(ivp_t), allocatable :: iv
+     class(ivp_t), allocatable :: iv_upw
+     type(oscpar_t)            :: op
+     type(numpar_t)            :: np
+     integer, public           :: n_e
    contains
      private
-     procedure, public :: init
-     procedure, public :: shoot
-     procedure, public :: recon => recon_sh
-     procedure, public :: abscissa
+     procedure, public :: shoot => shoot_
+     procedure, public :: recon => recon_
+     procedure, public :: abscissa => abscissa_
   end type shooter_nad_t
+
+  ! Interfaces
+
+  interface shooter_nad_t
+     module procedure shooter_nad_t_
+  end interface shooter_nad_t
 
   ! Access specifiers
 
@@ -67,42 +72,40 @@ module gyre_shooter_nad
 
 contains
 
-  subroutine init (this, cf, iv, iv_upw, op, np)
+  function shooter_nad_t_ (ml, iv, iv_upw, op, np) result (sh)
 
-    class(shooter_nad_t), intent(out)   :: this
-    class(coeffs_t), intent(in), target :: cf
-    class(ivp_t), intent(in), target    :: iv
-    class(ivp_t), intent(in), target    :: iv_upw
-    type(oscpar_t), intent(in), target  :: op
-    type(numpar_t), intent(in), target  :: np
+    class(model_t), pointer, intent(in) :: ml
+    class(ivp_t), intent(in)            :: iv
+    class(ivp_t), intent(in)            :: iv_upw
+    type(oscpar_t), intent(in)          :: op
+    type(numpar_t), intent(in)          :: np
+    type(shooter_nad_t)                 :: sh
 
-    ! Initialize the shooter_nad
+    ! Construct the shooter_nad_t
 
-    this%cf => cf
+    sh%ml => ml
+    allocate(sh%iv, SOURCE=iv)
+    allocate(sh%iv_upw, SOURCE=iv_upw)
+    sh%op = op
+    sh%np = np
 
-    this%iv => iv
-    this%iv_upw => iv_upw
-
-    this%op => op
-    this%np => np
-
-    this%n_e = this%iv%n_e
+    sh%n_e = sh%iv%n_e
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function shooter_nad_t_
 
 !****
 
-  subroutine shoot (this, omega, x, sm, x_upw)
+  subroutine shoot_ (this, omega, x, sm, x_upw)
 
     class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x(:)
     class(sysmtx_t), intent(inout)   :: sm
-    real(WP), intent(in), optional   :: x_upw
+    real(WP), optional, intent(in)   :: x_upw
 
     real(WP)            :: x_upw_
     integer             :: k
@@ -138,13 +141,13 @@ contains
           ! Apply the thermal-term rescaling, to assist the rootfinder
 
           associate(x_mid => 0.5_WP*(x(k) + x(k+1)))
-            associate(V => this%cf%V(x_mid), nabla => this%cf%nabla(x_mid), &
-                      c_rad => this%cf%c_rad(x_mid), c_thm => this%cf%c_thm(x_mid))
+            associate(V => this%ml%V(x_mid), nabla => this%ml%nabla(x_mid), &
+                      c_rad => this%ml%c_rad(x_mid), c_thm => this%ml%c_thm(x_mid))
               lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x_mid
             end associate
           end associate
 
-          scale = scale*exp(ext_complex(-lambda*(x(k+1)-x(k))))
+          scale = scale*exp(ext_complex_t(-lambda*(x(k+1)-x(k))))
 
        endif
 
@@ -154,11 +157,11 @@ contains
 
     ! Finish
 
-  end subroutine shoot
+  end subroutine shoot_
 
 !****
 
-  subroutine recon_sh (this, omega, x_sh, y_sh, x, y, x_upw)
+  subroutine recon_ (this, omega, x_sh, y_sh, x, y, x_upw)
 
     class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
@@ -166,7 +169,7 @@ contains
     complex(WP), intent(in)          :: y_sh(:,:)
     real(WP), intent(in)             :: x(:)
     complex(WP), intent(out)         :: y(:,:)
-    real(WP), intent(in), optional   :: x_upw
+    real(WP), optional, intent(in)   :: x_upw
 
     real(WP)    :: x_upw_
     integer     :: n_sh
@@ -246,11 +249,11 @@ contains
 
     return
 
-  end subroutine recon_sh
+  end subroutine recon_
 
 !****
 
-  function abscissa (this, x_sh) result (x)
+  function abscissa_ (this, x_sh) result (x)
 
     class(shooter_nad_t), intent(in) :: this
     real(WP), intent(in)             :: x_sh(:)
@@ -291,24 +294,24 @@ contains
 
     return
 
-  end function abscissa
+  end function abscissa_
 
 ! !****
 
-!   function diff_coeffs (cf, op, omega, x) result (a)
+!   function diff_coeffs (ml, op, omega, x) result (a)
 
-!     class(coeffs_t), intent(in) :: cf
-!     type(oscpar_t), intent(in)  :: op
-!     complex(WP), intent(in)     :: omega
-!     real(WP), intent(in)        :: x
-!     complex(WP)                 :: a(6)
+!     class(model_t), intent(in) :: ml
+!     type(oscpar_t), intent(in) :: op
+!     complex(WP), intent(in)    :: omega
+!     real(WP), intent(in)       :: x
+!     complex(WP)                :: a(6)
 
 !     ! Calculate the coefficients of the (algebraic) adiabatic
 !     ! diffusion equation
 
-!     associate(U => cf%U(x), c_1 => cf%c_1(x), &
-!               nabla_ad => cf%nabla_ad(x), &
-!               c_rad => cf%c_rad(x), c_dif => cf%c_dif(x), nabla => cf%nabla(x), &
+!     associate(U => ml%U(x), c_1 => ml%c_1(x), &
+!               nabla_ad => ml%nabla_ad(x), &
+!               c_rad => ml%c_rad(x), c_dif => ml%c_dif(x), nabla => ml%nabla(x), &
 !               l => op%l)
 
 !       a(1) = (nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)

@@ -23,7 +23,7 @@ module gyre_shooter_ad
 
   use core_kinds
 
-  use gyre_coeffs
+  use gyre_model
   use gyre_oscpar
   use gyre_numpar
   use gyre_ivp
@@ -41,18 +41,23 @@ module gyre_shooter_ad
 
   type :: shooter_ad_t
      private
-     class(coeffs_t), pointer :: cf => null()
-     class(ivp_t), pointer    :: iv => null()
-     type(oscpar_t), pointer  :: op => null()
-     type(numpar_t), pointer  :: np => null()
-     integer, public          :: n_e
+     class(model_t), pointer   :: ml => null()
+     class(ivp_t), allocatable :: iv
+     type(oscpar_t), pointer   :: op
+     type(numpar_t), pointer   :: np
+     integer, public           :: n_e
    contains
      private
-     procedure, public :: init
-     procedure, public :: shoot
-     procedure, public :: recon => recon_sh
-     procedure, public :: abscissa
+     procedure, public :: shoot => shoot_
+     procedure, public :: recon => recon_
+     procedure, public :: abscissa => abscissa_
   end type shooter_ad_t
+
+  ! Interfaces
+
+  interface shooter_ad_t
+     module procedure shooter_ad_t_
+  end interface shooter_ad_t
 
   ! Access specifiers
 
@@ -64,32 +69,32 @@ module gyre_shooter_ad
 
 contains
 
-  subroutine init (this, cf, iv, op, np)
+  function shooter_ad_t_ (ml, iv, op, np) result (sh)
 
-    class(shooter_ad_t), intent(out)    :: this
-    class(coeffs_t), intent(in), target :: cf
-    class(ivp_t), intent(in), target    :: iv
-    type(oscpar_t), intent(in), target  :: op
-    type(numpar_t), intent(in), target  :: np
+    class(model_t), pointer, intent(in) :: ml
+    class(ivp_t), intent(in)            :: iv
+    type(oscpar_t), intent(in)          :: op
+    type(numpar_t), intent(in)          :: np
+    type(shooter_ad_t)                  :: sh
 
-    ! Initialize the shooter_ad
+    ! Construct the shooter_ad
 
-    this%cf => cf
-    this%iv => iv
-    this%op => op
-    this%np => np
+    sh%ml => ml
+    allocate(sh%iv, SOURCE=iv)
+    sh%op = op
+    sh%np = np
 
-    this%n_e = this%iv%n_e
+    sh%n_e = sh%iv%n_e
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function shooter_ad_t_
 
 !****
 
-  subroutine shoot (this, omega, x, sm)
+  subroutine shoot_ (this, omega, x, sm)
 
     class(shooter_ad_t), intent(in) :: this
     complex(WP), intent(in)         :: omega
@@ -112,11 +117,11 @@ contains
 
     ! Finish
 
-  end subroutine shoot
+  end subroutine shoot_
 
 !****
 
-  subroutine recon_sh (this, omega, x_sh, y_sh, x, y)
+  subroutine recon_ (this, omega, x_sh, y_sh, x, y)
 
     class(shooter_ad_t), intent(in) :: this
     complex(WP), intent(in)         :: omega
@@ -182,11 +187,11 @@ contains
 
     return
 
-  end subroutine recon_sh
+  end subroutine recon_
 
 !****
 
-  function abscissa (this, x_sh) result (x)
+  function abscissa_ (this, x_sh) result (x)
 
     class(shooter_ad_t), intent(in) :: this
     real(WP), intent(in)            :: x_sh(:)
@@ -218,6 +223,6 @@ contains
 
     return
 
-  end function abscissa
+  end function abscissa_
 
 end module gyre_shooter_ad

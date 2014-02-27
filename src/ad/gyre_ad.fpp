@@ -22,13 +22,13 @@ program gyre_ad
   ! Uses
 
   use core_kinds, SP_ => SP
-  use core_constants
+  use gyre_constants
   use core_parallel
 
   use gyre_version
-  use gyre_coeffs
+  use gyre_model
   $if($MPI)
-  use gyre_coeffs_mpi
+  use gyre_model_mpi
   $endif
   use gyre_oscpar
   use gyre_numpar
@@ -53,8 +53,8 @@ program gyre_ad
 
   character(LEN=:), allocatable :: filename
   integer                       :: unit
-  real(WP), allocatable         :: x_cf(:)
-  class(coeffs_t), allocatable  :: cf
+  real(WP), allocatable         :: x_ml(:)
+  class(model_t), pointer       :: ml => null()
   type(oscpar_t), allocatable   :: op(:)
   type(numpar_t), allocatable   :: np(:)
   type(gridpar_t), allocatable  :: shoot_gp(:)
@@ -102,7 +102,8 @@ program gyre_ad
      
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-     call read_coeffs(unit, x_cf, cf)
+     call read_constants(unit)
+     call read_model(unit, x_ml, ml)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
@@ -112,8 +113,9 @@ program gyre_ad
   end if
 
   $if($MPI)
-  call bcast_alloc(x_cf, 0)
-  call bcast_alloc(cf, 0)
+  call bcast_constants(0)
+  call bcast_alloc(x_ml, 0)
+  call bcast_alloc(ml, 0)
   call bcast_alloc(op, 0)
   call bcast_alloc(np, 0)
   call bcast_alloc(shoot_gp, 0)
@@ -155,7 +157,7 @@ program gyre_ad
 
      ! Set up the frequency array
 
-     call build_scan(sp_sel, cf, op(i), shoot_gp_sel, x_cf, omega)
+     call build_scan(sp_sel, ml, op(i), shoot_gp_sel, x_ml, omega)
 
      ! Store the frequency range in shoot_gp_sel
 
@@ -167,12 +169,10 @@ program gyre_ad
      if(ALLOCATED(bp)) deallocate(bp)
 
      if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(bvp_rad_t::bp)
+        allocate(bp, SOURCE=bvp_rad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      else
-        allocate(bvp_ad_t::bp)
+        allocate(bp, SOURCE=bvp_ad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
-
-     call bp%init(cf, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_cf)
 
      ! Find modes
 
@@ -183,6 +183,8 @@ program gyre_ad
 
      md_tmp = [md_all, md]
      call MOVE_ALLOC(md_tmp, md_all)
+
+     deallocate(bp)
 
   end do op_loop
 

@@ -1,5 +1,5 @@
-! Module   : gyre_b3_file
-! Purpose  : read B3 files
+! Module   : gyre_gsm_file
+! Purpose  : read GSM (GYRE Stellar Model) files
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,16 +17,16 @@
 
 $include 'core.inc'
 
-module gyre_b3_file
+module gyre_gsm_file
 
   ! Uses
 
   use core_kinds
-  use core_constants
   use core_hgroup
 
-  use gyre_coeffs
-  use gyre_coeffs_evol
+  use gyre_constants
+  use gyre_model
+  use gyre_model_evol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -39,19 +39,18 @@ module gyre_b3_file
 
   private
 
-  public :: read_b3_file
+  public :: read_gsm_file
 
   ! Procedures
 
 contains
 
-  subroutine read_b3_file (file, G, deriv_type, ec, x)
+  subroutine read_gsm_file (file, deriv_type, ml, x)
 
     character(LEN=*), intent(in)                 :: file
-    real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
-    class(coeffs_evol_t), intent(out)            :: ec
-    real(WP), allocatable, intent(out), optional :: x(:)
+    type(model_evol_t), intent(out)              :: ml
+    real(WP), allocatable, optional, intent(out) :: x(:)
 
     type(hgroup_t)        :: hg
     integer               :: n
@@ -64,10 +63,10 @@ contains
     real(WP), allocatable :: rho(:)
     real(WP), allocatable :: T(:)
     real(WP), allocatable :: N2(:)
-    real(WP), allocatable :: c_V(:)
-    real(WP), allocatable :: c_p(:)
-    real(WP), allocatable :: chi_rho(:)
-    real(WP), allocatable :: chi_T(:)
+    real(WP), allocatable :: Gamma_1(:)
+    real(WP), allocatable :: nabla_ad(:)
+    real(WP), allocatable :: delta(:)
+    real(WP), allocatable :: Omega_rot(:)
     real(WP), allocatable :: nabla(:)
     real(WP), allocatable :: kappa(:)
     real(WP), allocatable :: kappa_rho(:)
@@ -76,26 +75,23 @@ contains
     real(WP), allocatable :: epsilon_rho(:)
     real(WP), allocatable :: epsilon_T(:)
     real(WP), allocatable :: m(:)
-    real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: nabla_ad(:)
-    real(WP), allocatable :: delta(:)
     logical               :: add_center
 
-    ! Read the model from the B3-format file
+    ! Read the model from the GSM-format file
 
     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from B3 file', TRIM(file)
+       write(OUTPUT_UNIT, 100) 'Reading from GSM file', TRIM(file)
 100    format(A,1X,A)
     endif
 
-    call hg%init(file, OPEN_FILE)
+    hg = hgroup_t(file, OPEN_FILE)
 
     ! Read the header
 
-    call read_attr(hg, 'n_shells', n)
+    call read_attr(hg, 'n', n)
 
-    call read_attr(hg, 'R_star', R_star)
     call read_attr(hg, 'M_star', M_star)
+    call read_attr(hg, 'R_star', R_star)
     call read_attr(hg, 'L_star', L_star)
 
     ! Read the data
@@ -105,41 +101,22 @@ contains
     call read_dset_alloc(hg, 'p', p)
     call read_dset_alloc(hg, 'rho', rho)
     call read_dset_alloc(hg, 'T', T)
-    call read_dset_alloc(hg, 'nabla', nabla)
     call read_dset_alloc(hg, 'N2', N2)
-    call read_dset_alloc(hg, 'c_V', c_V)
-    call read_dset_alloc(hg, 'c_p', c_p)
-    call read_dset_alloc(hg, 'chi_rho', chi_rho)
-    call read_dset_alloc(hg, 'chi_T', chi_T)
+    call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
+    call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
+    call read_dset_alloc(hg, 'delta', delta)
+    call read_dset_alloc(hg, 'nabla', nabla)
     call read_dset_alloc(hg, 'epsilon', epsilon)
     call read_dset_alloc(hg, 'epsilon_rho', epsilon_rho)
     call read_dset_alloc(hg, 'epsilon_T', epsilon_T)
     call read_dset_alloc(hg, 'kappa', kappa)
     call read_dset_alloc(hg, 'kappa_rho', kappa_rho)
     call read_dset_alloc(hg, 'kappa_T', kappa_T)
+    call read_dset_alloc(hg, 'Omega_rot', Omega_rot)
 
     call hg%final()
 
-    R_star = R_star*1.E2_WP
-    M_star = M_star*1.E3_WP
-    L_star = L_star*1.E7_WP
-
-    r = r*1.E2_WP
-    p = p*1.E1_WP
-    rho = rho*1.E-3_WP
-    c_V = c_V*1.E4_WP
-    c_p = c_p*1.E4_WP
-    kappa = kappa*1.E1_WP
-    epsilon = epsilon*1.E4_WP
-    
-    epsilon_rho = epsilon_rho*epsilon
-    epsilon_T = epsilon_T*epsilon
-
     m = [w(:n-1)/(1._WP+w(:n-1))*M_star,M_star]
-
-    Gamma_1 = chi_rho*c_p/c_V
-    delta = chi_T/chi_rho
-    nabla_ad = p*delta/(rho*T*c_p)
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
@@ -148,13 +125,13 @@ contains
 110    format(2X,A)
     endif
 
-    ! Initialize the base_coeffs
+    ! Initialize the model
 
-    call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                 N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
-                 nabla, kappa, kappa_rho, kappa_T, &
-                 epsilon, epsilon_rho, epsilon_T, &
-                 deriv_type, add_center)
+    ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
+                      N2, Gamma_1, nabla_ad, delta, Omega_rot, &
+                      nabla, kappa, kappa_rho, kappa_T, &
+                      epsilon, epsilon_rho, epsilon_T, &
+                      deriv_type, add_center)
 
     ! Set up the grid
 
@@ -170,6 +147,6 @@ contains
 
     return
 
-  end subroutine read_b3_file
+  end subroutine read_gsm_file
 
-end module gyre_b3_file
+end module gyre_gsm_file

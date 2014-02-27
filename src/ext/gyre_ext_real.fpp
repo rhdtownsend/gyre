@@ -40,19 +40,19 @@ module gyre_ext_real
   $define $ARITH_DECL $sub
     $local $INFIX $1
     $local $OP $2
-    procedure             :: arith_${INFIX}_er_er
-    procedure             :: arith_${INFIX}_er_r
-    procedure, pass(that) :: arith_${INFIX}_r_er
-    generic, public       :: operator($OP) => arith_${INFIX}_er_er, arith_${INFIX}_er_r, arith_${INFIX}_r_er
+    procedure             :: arith_${INFIX}_er_er_
+    procedure             :: arith_${INFIX}_er_r_
+    procedure, pass(that) :: arith_${INFIX}_r_er_
+    generic, public       :: operator($OP) => arith_${INFIX}_er_er_, arith_${INFIX}_er_r_, arith_${INFIX}_r_er_
   $endsub
 
   $define $CMP_DECL $sub
     $local $INFIX $1
     $local $OP $2
-    procedure             :: cmp_${INFIX}_er_er
-    procedure             :: cmp_${INFIX}_er_r
-    procedure, pass(that) :: cmp_${INFIX}_r_er
-    generic, public       :: operator($OP) => cmp_${INFIX}_er_er, cmp_${INFIX}_er_r, cmp_${INFIX}_r_er
+    procedure             :: cmp_${INFIX}_er_er_
+    procedure             :: cmp_${INFIX}_er_r_
+    procedure, pass(that) :: cmp_${INFIX}_r_er_
+    generic, public       :: operator($OP) => cmp_${INFIX}_er_er_, cmp_${INFIX}_er_r_, cmp_${INFIX}_r_er_
   $endsub
 
   type ext_real_t
@@ -62,8 +62,8 @@ module gyre_ext_real
    contains
      private
      $ARITH_DECL(plus,+)
-     procedure       :: arith_minus_er
-     generic, public :: operator(-) => arith_minus_er
+     procedure       :: arith_minus_er_
+     generic, public :: operator(-) => arith_minus_er_
      $ARITH_DECL(minus,-)
      $ARITH_DECL(times,*)
      $ARITH_DECL(divide,/)
@@ -77,126 +77,108 @@ module gyre_ext_real
 
   ! Interface blocks
 
-  $if($MPI)
-
-  interface send
-     module procedure send_er_0
-     module procedure send_er_1
-     module procedure send_er_2
-     module procedure send_er_3
-     module procedure send_er_4
-  end interface send
-
-  interface recv
-     module procedure recv_er_0
-     module procedure recv_er_1
-     module procedure recv_er_2
-     module procedure recv_er_3
-     module procedure recv_er_4
-  end interface recv
-
-  interface recv_any
-     module procedure recv_any_er_0
-     module procedure recv_any_er_1
-     module procedure recv_any_er_2
-     module procedure recv_any_er_3
-     module procedure recv_any_er_4
-  end interface recv_any
-
-  interface bcast
-     module procedure bcast_er_0
-     module procedure bcast_er_1
-     module procedure bcast_er_2
-     module procedure bcast_er_3
-     module procedure bcast_er_4
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_er_0
-     module procedure bcast_alloc_er_1
-     module procedure bcast_alloc_er_2
-     module procedure bcast_alloc_er_3
-     module procedure bcast_alloc_er_4
-  end interface bcast_alloc
-
-  interface gatherv
-     module procedure gatherv_er_0
-     module procedure gatherv_er_1
-     module procedure gatherv_er_2
-     module procedure gatherv_er_3
-     module procedure gatherv_er_4
-  end interface gatherv
-
-  interface allgatherv
-     module procedure allgatherv_er_0
-     module procedure allgatherv_er_1
-     module procedure allgatherv_er_2
-     module procedure allgatherv_er_3
-     module procedure allgatherv_er_4
-  end interface allgatherv
-
-  $endif
-
-  interface ext_real
-     module procedure ext_real_r
-     module procedure ext_real_c
-  end interface ext_real
+  interface ext_real_t
+     module procedure ext_real_t_r_
+     module procedure ext_real_t_c_
+  end interface ext_real_t
 
   interface real
-     module procedure real_er
+     module procedure real_
   end interface real
 
   interface valid
-     module procedure valid_er
+     module procedure valid_
   end interface valid
 
   interface product
-     module procedure product_er
+     module procedure product_
   end interface product
 
   interface exp
-     module procedure exp_er
+     module procedure exp_
   end interface exp
 
   interface abs
-     module procedure abs_er
+     module procedure abs_
   end interface abs
 
   interface fraction
-     module procedure fraction_er
+     module procedure fraction_
   end interface fraction
 
   interface exponent
-     module procedure exponent_er
+     module procedure exponent_
   end interface exponent
 
   interface max
-     module procedure max_er
+     module procedure max_
   end interface max
 
   interface min
-     module procedure min_er
+     module procedure min_
   end interface min
 
   interface scale
-     module procedure scale_er
+     module procedure scale_
   end interface scale
+
+  $if ($MPI)
+  interface send
+     module procedure send_0_
+     module procedure send_1_
+     module procedure send_2_
+     module procedure send_3_
+     module procedure send_4_
+  end interface send
+  interface recv
+     module procedure recv_0_
+     module procedure recv_1_
+     module procedure recv_2_
+     module procedure recv_3_
+     module procedure recv_4_
+  end interface recv
+  interface recv_any
+     module procedure recv_any_0_
+     module procedure recv_any_1_
+     module procedure recv_any_2_
+     module procedure recv_any_3_
+     module procedure recv_any_4_
+  end interface recv_any
+  interface bcast
+     module procedure bcast_0_
+     module procedure bcast_1_
+     module procedure bcast_2_
+     module procedure bcast_3_
+     module procedure bcast_4_
+  end interface bcast
+  interface bcast_alloc
+     module procedure bcast_alloc_0_
+     module procedure bcast_alloc_1_
+     module procedure bcast_alloc_2_
+     module procedure bcast_alloc_3_
+     module procedure bcast_alloc_4_
+  end interface bcast_alloc
+  interface gatherv
+     module procedure gatherv_0_
+     module procedure gatherv_1_
+     module procedure gatherv_2_
+     module procedure gatherv_3_
+     module procedure gatherv_4_
+  end interface gatherv
+  interface allgatherv
+     module procedure allgatherv_0_
+     module procedure allgatherv_1_
+     module procedure allgatherv_2_
+     module procedure allgatherv_3_
+     module procedure allgatherv_4_
+  end interface allgatherv
+  $endif
 
   ! Access specifiers
 
   private
 
-  $if($MPI)
-  public :: send
-  public :: recv
-  public :: recv_any
-  public :: bcast
-  public :: bcast_alloc
-  public :: gatherv
-  public :: allgatherv
-  $endif
   public :: ext_real_t
-  public :: ext_real
   public :: real
   public :: valid
   public :: product
@@ -207,226 +189,55 @@ module gyre_ext_real
   public :: max
   public :: min
   public :: scale
+  $if ($MPI)
+  public :: send
+  public :: recv
+  public :: recv_any
+  public :: bcast
+  public :: bcast_alloc
+  public :: gatherv
+  public :: allgatherv
+  $endif
 
   ! Procedures
 
 contains
 
-  $if($MPI)
+  elemental function ext_real_t_r_ (x) result (ex)
 
-  $define $SEND $sub
+    real(WP), intent(in) :: x
+    type(ext_real_t)     :: ex
 
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $BUFFER_RANK $3
+    ! Construct the ext_real_t from the real x
 
-  subroutine send_${INFIX}_${BUFFER_RANK} (buffer, dest_rank, tag, sync)
-
-    $BUFFER_TYPE, intent(in)      :: buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)           :: dest_rank
-    integer, intent(in), optional :: tag
-    logical, intent(in), optional :: sync
-
-    ! Send the buffer
-
-    call send(buffer%f, dest_rank, tag, sync)
-    call send(buffer%e, dest_rank, tag, sync)
+    call split_(x, ex%f, ex%e)
 
     ! Finish
 
     return
 
-  end subroutine send_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $SEND(er,type(ext_real_t),0)
-  $SEND(er,type(ext_real_t),1)
-  $SEND(er,type(ext_real_t),2)
-  $SEND(er,type(ext_real_t),3)
-  $SEND(er,type(ext_real_t),4)
+  end function ext_real_t_r_
 
 !****
-  
-  $define $RECV $sub
 
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $BUFFER_RANK $3
+  elemental function ext_real_t_c_ (z) result (ex)
 
-  subroutine recv_${INFIX}_${BUFFER_RANK} (buffer, src_rank, tag)
+    complex(WP), intent(in) :: z
+    type(ext_real_t)        :: ex
 
-    $BUFFER_TYPE, intent(out)     :: buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)           :: src_rank
-    integer, intent(in), optional :: tag
+    ! Construct the ext_real_t from the complex z
 
-    ! Receive the buffer
-
-    call recv(buffer%f, src_rank, tag)
-    call recv(buffer%e, src_rank, tag)
+    call split_(REAL(z), ex%f, ex%e)
 
     ! Finish
 
     return
 
-  end subroutine recv_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $RECV(er,type(ext_real_t),0)
-  $RECV(er,type(ext_real_t),1)
-  $RECV(er,type(ext_real_t),2)
-  $RECV(er,type(ext_real_t),3)
-  $RECV(er,type(ext_real_t),4)
-
-!****
-  
-  $define $RECV_ANY $sub
-
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $BUFFER_RANK $3
-
-  subroutine recv_any_${INFIX}_${BUFFER_RANK} (buffer, src_rank, tag)
-
-    $BUFFER_TYPE, intent(out)     :: buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(out)          :: src_rank
-    integer, intent(in), optional :: tag
-
-    ! Receive the buffer
-
-    call recv(buffer%f, src_rank, tag)
-    call recv(buffer%e, src_rank, tag)
-
-    ! Finish
-
-    return
-
-  end subroutine recv_any_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $RECV_ANY(er,type(ext_real_t),0)
-  $RECV_ANY(er,type(ext_real_t),1)
-  $RECV_ANY(er,type(ext_real_t),2)
-  $RECV_ANY(er,type(ext_real_t),3)
-  $RECV_ANY(er,type(ext_real_t),4)
+  end function ext_real_t_c_
 
 !****
 
-  $define $BCAST $sub
-
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $BUFFER_RANK $3
-
-  subroutine bcast_${INFIX}_${BUFFER_RANK} (buffer, root_rank)
-
-    $BUFFER_TYPE, intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)         :: root_rank
-
-    ! Broadcast the buffer
-
-    call bcast(buffer%f, root_rank)
-    call bcast(buffer%e, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $BCAST(er,type(ext_real_t),0)
-  $BCAST(er,type(ext_real_t),1)
-  $BCAST(er,type(ext_real_t),2)
-  $BCAST(er,type(ext_real_t),3)
-  $BCAST(er,type(ext_real_t),4)
-
-!****
-
-  $BCAST_ALLOC(er,type(ext_real_t),0)
-  $BCAST_ALLOC(er,type(ext_real_t),1)
-  $BCAST_ALLOC(er,type(ext_real_t),2)
-  $BCAST_ALLOC(er,type(ext_real_t),3)
-  $BCAST_ALLOC(er,type(ext_real_t),4)
-
-!****
-
-  $define $GATHERV $sub
-
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $TYPE $3
-  $local $BUFFER_RANK $4
-
-  subroutine gatherv_${INFIX}_${BUFFER_RANK} (send_buffer, sendcount, recv_buffer, recvcounts, displs, root_rank)
-
-    $BUFFER_TYPE, intent(in)    :: send_buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)         :: sendcount
-    $BUFFER_TYPE, intent(inout) :: recv_buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)         :: recvcounts(:)
-    integer, intent(in)         :: displs(:)
-    integer, intent(in)         :: root_rank
-
-    ! Gather the buffers
-
-    call gatherv(send_buffer%f, sendcount, recv_buffer%f, recvcounts, displs, root_rank)
-    call gatherv(send_buffer%e, sendcount, recv_buffer%e, recvcounts, displs, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine gatherv_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $GATHERV(er,type(ext_real_t),real,0)
-  $GATHERV(er,type(ext_real_t),real,1)
-  $GATHERV(er,type(ext_real_t),real,2)
-  $GATHERV(er,type(ext_real_t),real,3)
-  $GATHERV(er,type(ext_real_t),real,4)
-
-!****
-
-  $define $ALLGATHERV $sub
-
-  $local $INFIX $1
-  $local $BUFFER_TYPE $2
-  $local $BUFFER_RANK $3
-
-  subroutine allgatherv_${INFIX}_${BUFFER_RANK} (buffer, recvcounts, displs)
-
-    $BUFFER_TYPE, intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
-    integer, intent(in)         :: recvcounts(:)
-    integer, intent(in)         :: displs(:)
-
-    ! Gather and share the buffers
-
-    call allgatherv(buffer%f, recvcounts, displs)
-    call allgatherv(buffer%e, recvcounts, displs)
-
-    ! Finish
-
-    return
-
-  end subroutine allgatherv_${INFIX}_${BUFFER_RANK}
-
-  $endsub
-
-  $ALLGATHERV(er,type(ext_real_t),0)
-  $ALLGATHERV(er,type(ext_real_t),1)
-  $ALLGATHERV(er,type(ext_real_t),2)
-  $ALLGATHERV(er,type(ext_real_t),3)
-  $ALLGATHERV(er,type(ext_real_t),4)
-
-  $endif
-
-!****
-
-  elemental function arith_plus_er_er (this, that) result (ex)
+  elemental function arith_plus_er_er_ (this, that) result (ex)
 
     class(ext_real_t), intent(in) :: this
     class(ext_real_t), intent(in) :: that
@@ -457,7 +268,7 @@ contains
           e = that%e
        endif
 
-       call split_r(f, ex%f, ex%e)
+       call split_(f, ex%f, ex%e)
        ex = scale(ex, e)
 
     endif
@@ -466,11 +277,11 @@ contains
 
     return
 
-  end function arith_plus_er_er
+  end function arith_plus_er_er_
 
 !****
 
-  elemental function arith_minus_er (this) result (ex)
+  elemental function arith_minus_er_ (this) result (ex)
 
     class(ext_real_t), intent(in) :: this
     type(ext_real_t)              :: ex
@@ -484,11 +295,11 @@ contains
 
     return
 
-  end function arith_minus_er
+  end function arith_minus_er_
 
 !****
 
-  elemental function arith_minus_er_er (this, that) result (ex)
+  elemental function arith_minus_er_er_ (this, that) result (ex)
 
     class(ext_real_t), intent(in) :: this
     class(ext_real_t), intent(in) :: that
@@ -519,7 +330,7 @@ contains
           e = that%e
        endif
        
-       call split_r(f, ex%f, ex%e)
+       call split_(f, ex%f, ex%e)
        ex = scale(ex, e)
 
     endif
@@ -528,11 +339,11 @@ contains
 
     return
 
-  end function arith_minus_er_er
+  end function arith_minus_er_er_
 
 !****
 
-  elemental function arith_times_er_er (this, that) result (ex)
+  elemental function arith_times_er_er_ (this, that) result (ex)
 
     class(ext_real_t), intent(in) :: this
     class(ext_real_t), intent(in) :: that
@@ -545,14 +356,14 @@ contains
 
     if(this%f == 0._WP .OR. that%f == 0._WP) then
 
-       ex = ext_real(0._WP)
+       ex = ext_real_t(0._WP)
 
     else
 
        f = this%f*that%f
        e = this%e + that%e
 
-       call split_r(f, ex%f, ex%e)
+       call split_(f, ex%f, ex%e)
        ex = scale(ex, e)
 
     endif
@@ -561,11 +372,11 @@ contains
 
     return
 
-  end function arith_times_er_er
+  end function arith_times_er_er_
 
 !****
 
-  elemental function arith_divide_er_er (this, that) result (ex)
+  elemental function arith_divide_er_er_ (this, that) result (ex)
 
     class(ext_real_t), intent(in) :: this
     class(ext_real_t), intent(in) :: that
@@ -578,14 +389,14 @@ contains
 
     if(this%f == 0._WP .AND. that%f /= 0._WP) then
 
-       ex = ext_real(0._WP)
+       ex = ext_real_t(0._WP)
 
     else
 
        f = this%f/that%f
        e = this%e - that%e
 
-       call split_r(f, ex%f, ex%e)
+       call split_(f, ex%f, ex%e)
        ex = scale(ex, e)
 
     endif
@@ -594,7 +405,7 @@ contains
 
     return
 
-  end function arith_divide_er_er
+  end function arith_divide_er_er_
 
 !****
 
@@ -603,7 +414,7 @@ contains
   $local $INFIX $1
   $local $OP $2
 
-  elemental function arith_${INFIX}_er_r (this, that) result ($INFIX)
+  elemental function arith_${INFIX}_er_r_ (this, that) result ($INFIX)
 
     class(ext_real_t), intent(in) :: this
     real(WP), intent(in)          :: that
@@ -611,15 +422,15 @@ contains
 
     ! Apply the arithmetic operator
 
-    $INFIX = this $OP ext_real(that)
+    $INFIX = this $OP ext_real_t(that)
 
     ! Finish
 
     return
 
-  end function arith_${INFIX}_er_r
+  end function arith_${INFIX}_er_r_
 
-  elemental function arith_${INFIX}_r_er (this, that) result ($INFIX)
+  elemental function arith_${INFIX}_r_er_ (this, that) result ($INFIX)
 
     real(WP), intent(in)          :: this
     class(ext_real_t), intent(in) :: that
@@ -627,13 +438,13 @@ contains
 
     ! Apply the arithmetic operator
 
-    $INFIX = ext_real(this) $OP that
+    $INFIX = ext_real_t(this) $OP that
 
     ! Finish
 
     return
 
-  end function arith_${INFIX}_r_er
+  end function arith_${INFIX}_r_er_
 
   $endsub
 
@@ -644,7 +455,7 @@ contains
 
 !****
 
-  elemental function cmp_eq_er_er (this, that) result (eq)
+  elemental function cmp_eq_er_er_ (this, that) result (eq)
 
     class(ext_real_t), intent(in) :: this
     class(ext_real_t), intent(in) :: that
@@ -658,11 +469,11 @@ contains
 
     return
 
-  end function cmp_eq_er_er
+  end function cmp_eq_er_er_
 
 !****
 
-  elemental function cmp_neq_er_er (this, that) result (neq)
+  elemental function cmp_neq_er_er_ (this, that) result (neq)
 
     class(ext_real_t), intent(in) :: this
     class(ext_real_t), intent(in) :: that
@@ -676,11 +487,11 @@ contains
 
     return
 
-  end function cmp_neq_er_er
+  end function cmp_neq_er_er_
 
 !****
 
-  elemental function cmp_lt_er_er (this, that) result (lt)
+  elemental function cmp_lt_er_er_ (this, that) result (lt)
 
     class(ext_real_t), intent(in) :: this
     class(ext_real_t), intent(in) :: that
@@ -716,11 +527,11 @@ contains
 
     return
 
-  end function cmp_lt_er_er
+  end function cmp_lt_er_er_
 
 !****
 
-  elemental function cmp_gt_er_er (this, that) result (gt)
+  elemental function cmp_gt_er_er_ (this, that) result (gt)
 
     class(ext_real_t), intent(in) :: this
     class(ext_real_t), intent(in) :: that
@@ -734,11 +545,11 @@ contains
 
     return
 
-  end function cmp_gt_er_er
+  end function cmp_gt_er_er_
 
 !****
 
-  elemental function cmp_le_er_er (this, that) result (le)
+  elemental function cmp_le_er_er_ (this, that) result (le)
 
     class(ext_real_t), intent(in) :: this
     class(ext_real_t), intent(in) :: that
@@ -752,11 +563,11 @@ contains
 
     return
 
-  end function cmp_le_er_er
+  end function cmp_le_er_er_
   
 !****
 
-  elemental function cmp_ge_er_er (this, that) result (ge)
+  elemental function cmp_ge_er_er_ (this, that) result (ge)
 
     class(ext_real_t), intent(in) :: this
     class(ext_real_t), intent(in) :: that
@@ -770,7 +581,7 @@ contains
 
     return
 
-  end function cmp_ge_er_er
+  end function cmp_ge_er_er_
 
 !****
 
@@ -779,7 +590,7 @@ contains
   $local $INFIX $1
   $local $OP $2
 
-  elemental function cmp_${INFIX}_er_r (this, that) result ($INFIX)
+  elemental function cmp_${INFIX}_er_r_ (this, that) result ($INFIX)
 
     class(ext_real_t), intent(in) :: this
     real(WP), intent(in)          :: that
@@ -787,15 +598,15 @@ contains
 
     ! Apply the comparison operator
 
-    $INFIX = this $OP ext_real(that)
+    $INFIX = this $OP ext_real_t(that)
 
     ! Finish
 
     return
 
-  end function cmp_${INFIX}_er_r
+  end function cmp_${INFIX}_er_r_
 
-  elemental function cmp_${INFIX}_r_er (this, that) result ($INFIX)
+  elemental function cmp_${INFIX}_r_er_ (this, that) result ($INFIX)
 
     real(WP), intent(in)          :: this
     class(ext_real_t), intent(in) :: that
@@ -803,13 +614,13 @@ contains
 
     ! Apply the comparison operator
 
-    $INFIX = ext_real(this) $OP that
+    $INFIX = ext_real_t(this) $OP that
 
     ! Finish
 
     return
 
-  end function cmp_${INFIX}_r_er
+  end function cmp_${INFIX}_r_er_
 
   $endsub
 
@@ -822,48 +633,14 @@ contains
 
 !****
 
-  elemental function ext_real_r (x) result (ex)
-
-    real(WP), intent(in) :: x
-    type(ext_real_t)     :: ex
-
-    ! Convert real to ext_real
-
-    call split_r(x, ex%f, ex%e)
-
-    ! Finish
-
-    return
-
-  end function ext_real_r
-
-!****
-
-  elemental function ext_real_c (z) result (ex)
-
-    complex(WP), intent(in) :: z
-    type(ext_real_t)        :: ex
-
-    ! Convert complex to ext_real
-
-    call split_r(REAL(z), ex%f, ex%e)
-
-    ! Finish
-
-    return
-
-  end function ext_real_c
-
-!****
-
-  elemental function real_er (ex) result (x)
+  elemental function real_ (ex) result (x)
 
     type(ext_real_t), intent(in) :: ex
     real(WP)                     :: x
 
     integer :: e_min
 
-    ! Convert ext_real to real
+    ! Convert the ext_real_t to real
 
     if(ex%f /= 0._WP) then
 
@@ -885,16 +662,16 @@ contains
 
     return
 
-  end function real_er
+  end function real_
 
 !****
 
-  elemental function valid_er (ex) result (valid)
+  elemental function valid_ (ex) result (valid)
 
     type(ext_real_t), intent(in) :: ex
     logical                      :: valid
 
-    ! Determine if ext_real is valid
+    ! Determine if ex is valid
 
     valid = ABS(ex%f) >= RADIX_WP**(-1) .AND. ABS(ex%f) < 1._WP
 
@@ -902,11 +679,11 @@ contains
 
     return
 
-  end function valid_er
+  end function valid_
 
 !****
 
-  function product_er (ex) result (prod_ex)
+  function product_ (ex) result (prod_ex)
 
     type(ext_real_t), intent(in) :: ex(:)
     type(ext_real_t)             :: prod_ex
@@ -932,11 +709,11 @@ contains
 
     return
 
-  end function product_er
+  end function product_
 
 !****
 
-  elemental function abs_er (ex) result (abs_ex)
+  elemental function abs_ (ex) result (abs_ex)
 
     type(ext_real_t), intent(in) :: ex
     type(ext_real_t)             :: abs_ex
@@ -950,11 +727,11 @@ contains
 
     return
 
-  end function abs_er
+  end function abs_
 
 !****
 
-  elemental function exp_er (ex) result (exp_ex)
+  elemental function exp_ (ex) result (exp_ex)
 
     type(ext_real_t), intent(in) :: ex
     type(ext_real_t)             :: exp_ex
@@ -967,18 +744,18 @@ contains
     g = real(ex)/LOG(RADIX_WP)
     e = FLOOR(g)
 
-    call split_r(RADIX_WP**(g-e), exp_ex%f, exp_ex%e)
+    call split_(RADIX_WP**(g-e), exp_ex%f, exp_ex%e)
     exp_ex = scale(exp_ex, e)
 
     ! Finish
 
     return
 
-  end function exp_er
+  end function exp_
 
 !****
 
-  elemental function fraction_er (ex) result (fraction_ex)
+  elemental function fraction_ (ex) result (fraction_ex)
 
     type(ext_real_t), intent(in) :: ex
     real(WP)                     :: fraction_ex
@@ -991,11 +768,11 @@ contains
 
     return
 
-  end function fraction_er
+  end function fraction_
 
 !****
 
-  elemental function exponent_er (ex) result (exponent_ex)
+  elemental function exponent_ (ex) result (exponent_ex)
 
     type(ext_real_t), intent(in) :: ex
     integer                      :: exponent_ex
@@ -1008,11 +785,11 @@ contains
 
     return
 
-  end function exponent_er
+  end function exponent_
 
 !****
 
-  elemental function max_er (ex_a, ex_b) result (max_ex)
+  elemental function max_ (ex_a, ex_b) result (max_ex)
 
     type(ext_real_t), intent(in) :: ex_a
     type(ext_real_t), intent(in) :: ex_b
@@ -1047,11 +824,11 @@ contains
 
     return
 
-  end function max_er
+  end function max_
 
 !****
 
-  elemental function min_er (ex_a, ex_b) result (min_ex)
+  elemental function min_ (ex_a, ex_b) result (min_ex)
 
     type(ext_real_t), intent(in) :: ex_a
     type(ext_real_t), intent(in) :: ex_b
@@ -1065,11 +842,11 @@ contains
 
     return
 
-  end function min_er
+  end function min_
 
 !****
 
-  elemental function scale_er (ex, de) result (scale_ex)
+  elemental function scale_ (ex, de) result (scale_ex)
 
     class(ext_real_t), intent(in) :: ex
     integer, intent(in)           :: de
@@ -1084,11 +861,11 @@ contains
 
     return
 
-  end function scale_er
+  end function scale_
 
 !****
 
-  elemental subroutine split_r (x, f, e)
+  elemental subroutine split_ (x, f, e)
 
     real(WP), intent(in)  :: x
     real(WP), intent(out) :: f
@@ -1103,6 +880,207 @@ contains
 
     return
 
-  end subroutine split_r
+  end subroutine split_
+
+!****
+
+  $if($MPI)
+
+  $define $SEND $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine send_${BUFFER_RANK}_ (buffer, dest_rank, tag, sync)
+
+    type(ext_real_t), intent(in)  :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)           :: dest_rank
+    integer, optional, intent(in) :: tag
+    logical, optional, intent(in) :: sync
+
+    ! Send the buffer
+
+    call send(buffer%f, dest_rank, tag, sync)
+    call send(buffer%e, dest_rank, tag, sync)
+
+    ! Finish
+
+    return
+
+  end subroutine send_${BUFFER_RANK}_
+
+  $endsub
+
+  $SEND(0)
+  $SEND(1)
+  $SEND(2)
+  $SEND(3)
+  $SEND(4)
+
+!****
+  
+  $define $RECV $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine recv_${BUFFER_RANK}_ (buffer, src_rank, tag)
+
+    type(ext_real_t), intent(out) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)           :: src_rank
+    integer, optional, intent(in) :: tag
+
+    ! Receive the buffer
+
+    call recv(buffer%f, src_rank, tag)
+    call recv(buffer%e, src_rank, tag)
+
+    ! Finish
+
+    return
+
+  end subroutine recv_${BUFFER_RANK}_
+
+  $endsub
+
+  $RECV(0)
+  $RECV(1)
+  $RECV(2)
+  $RECV(3)
+  $RECV(4)
+
+!****
+  
+  $define $RECV_ANY $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine recv_any_${BUFFER_RANK}_ (buffer, src_rank, tag)
+
+    type(ext_real_t), intent(out) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(out)          :: src_rank
+    integer, optional, intent(in) :: tag
+
+    ! Receive the buffer
+
+    call recv(buffer%f, src_rank, tag)
+    call recv(buffer%e, src_rank, tag)
+
+    ! Finish
+
+    return
+
+  end subroutine recv_any_${BUFFER_RANK}_
+
+  $endsub
+
+  $RECV_ANY(0)
+  $RECV_ANY(1)
+  $RECV_ANY(2)
+  $RECV_ANY(3)
+  $RECV_ANY(4)
+
+!****
+
+  $define $BCAST $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine bcast_${BUFFER_RANK}_ (buffer, root_rank)
+
+    type(ext_real_t), intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)             :: root_rank
+
+    ! Broadcast the buffer
+
+    call bcast(buffer%f, root_rank)
+    call bcast(buffer%e, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_${BUFFER_RANK}_
+
+  $endsub
+
+  $BCAST(0)
+  $BCAST(1)
+  $BCAST(2)
+  $BCAST(3)
+  $BCAST(4)
+
+!****
+
+  $BCAST_ALLOC(type(ext_real_t),0)
+  $BCAST_ALLOC(type(ext_real_t),1)
+  $BCAST_ALLOC(type(ext_real_t),2)
+  $BCAST_ALLOC(type(ext_real_t),3)
+  $BCAST_ALLOC(type(ext_real_t),4)
+
+!****
+
+  $define $GATHERV $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine gatherv_${BUFFER_RANK}_ (send_buffer, sendcount, recv_buffer, recvcounts, displs, root_rank)
+
+    type(ext_real_t), intent(in)    :: send_buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)             :: sendcount
+    type(ext_real_t), intent(inout) :: recv_buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)             :: recvcounts(:)
+    integer, intent(in)             :: displs(:)
+    integer, intent(in)             :: root_rank
+
+    ! Gather the buffers
+
+    call gatherv(send_buffer%f, sendcount, recv_buffer%f, recvcounts, displs, root_rank)
+    call gatherv(send_buffer%e, sendcount, recv_buffer%e, recvcounts, displs, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine gatherv_${BUFFER_RANK}_
+
+  $endsub
+
+  $GATHERV(0)
+  $GATHERV(1)
+  $GATHERV(2)
+  $GATHERV(3)
+  $GATHERV(4)
+
+!****
+
+  $define $ALLGATHERV $sub
+
+  $local $BUFFER_RANK $1
+
+  subroutine allgatherv_${BUFFER_RANK}_ (buffer, recvcounts, displs)
+
+    type(ext_real_t), intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    integer, intent(in)             :: recvcounts(:)
+    integer, intent(in)             :: displs(:)
+
+    ! Gather and share the buffers
+
+    call allgatherv(buffer%f, recvcounts, displs)
+    call allgatherv(buffer%e, recvcounts, displs)
+
+    ! Finish
+
+    return
+
+  end subroutine allgatherv_${BUFFER_RANK}_
+
+  $endsub
+
+  $ALLGATHERV(0)
+  $ALLGATHERV(1)
+  $ALLGATHERV(2)
+  $ALLGATHERV(3)
+  $ALLGATHERV(4)
+
+  $endif
 
 end module gyre_ext_real

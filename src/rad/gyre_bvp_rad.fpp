@@ -25,10 +25,10 @@ module gyre_bvp_rad
   use core_parallel
 
   use gyre_bvp
-  use gyre_coeffs
+  use gyre_model
   use gyre_cocache
   $if($MPI)
-  use gyre_coeffs_mpi
+  use gyre_model_mpi
   $endif
   use gyre_oscpar
   use gyre_gridpar
@@ -53,7 +53,7 @@ module gyre_bvp_rad
 
   type, extends(bvp_t) :: bvp_rad_t
      private
-     class(coeffs_t), pointer       :: cf => null()
+     class(model_t), pointer        :: ml => null()
      type(cocache_t)                :: cc
      class(jacobian_t), allocatable :: jc
      class(ivp_t), allocatable      :: iv
@@ -70,25 +70,26 @@ module gyre_bvp_rad
      integer, public                :: n_e
    contains 
      private
-     procedure, public :: init
-     $if($GFORTRAN_PR57922)
-     procedure, public :: final
+     $if ($GFORTRAN_PR57922)
+     procedure, public :: final => final_
      $endif
-     procedure, public :: discrim
-     procedure         :: build
-     procedure         :: recon
-     procedure, public :: mode
-     procedure, public :: coeffs
+     procedure, public :: discrim => discrim_
+     procedure         :: build_
+     procedure         :: recon_
+     procedure, public :: mode => mode_
+     procedure, public :: model => model_
   end type bvp_rad_t
 
   ! Interfaces
 
-  $if($MPI)
+  interface bvp_rad_t
+     module procedure bvp_rad_t_
+  end interface bvp_rad_t
 
+  $if ($MPI)
   interface bcast
-     module procedure bcast_bp
+     module procedure bcast_
   end interface bcast
-
   $endif
 
   ! Access specifiers
@@ -96,7 +97,7 @@ module gyre_bvp_rad
   private
 
   public :: bvp_rad_t
-  $if($MPI)
+  $if ($MPI)
   public :: bcast
   $endif
 
@@ -104,7 +105,7 @@ module gyre_bvp_rad
 
 contains
 
-  subroutine init (this, cf, op, np, shoot_gp, recon_gp, x_in)
+  function bvp_rad_t_ (ml, op, np, shoot_gp, recon_gp, x_in) result (bp)
 
     use gyre_jacobian_rad_dziem
     use gyre_jacobian_rad_jcd
@@ -121,128 +122,122 @@ contains
     use gyre_ivp_colloc_GL2
     use gyre_ivp_colloc_GL4
 
-    class(bvp_rad_t), intent(out)       :: this
-    class(coeffs_t), intent(in), target :: cf
+    class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
     type(numpar_t), intent(in)          :: np
     type(gridpar_t), intent(in)         :: shoot_gp(:)
     type(gridpar_t), intent(in)         :: recon_gp(:)
     real(WP), allocatable, intent(in)   :: x_in(:)
+    type(bvp_rad_t), target             :: bp
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
 
     $ASSERT(op%l == 0,Invalid harmonic degree)
 
-    ! Initialize the bvp_rad
+    ! Construct the bvp_rad_t
 
     ! Store parameters
 
-    this%op = op
-    this%np = np
+    bp%op = op
+    bp%np = np
 
-    this%shoot_gp = shoot_gp
-    this%recon_gp = recon_gp
+    bp%shoot_gp = shoot_gp
+    bp%recon_gp = recon_gp
 
     ! Set up the coefficient pointer
     
-    this%cf => cf
+    bp%ml => ml
 
     ! Initialize the jacobian
 
     select case (op%variables_type)
     case ('DZIEM')
-       allocate(jacobian_rad_dziem_t::this%jc)
+       allocate(bp%jc, SOURCE=jacobian_rad_dziem_t(bp%ml, bp%op))
     case ('JCD')
-       allocate(jacobian_rad_jcd_t::this%jc)
+       allocate(bp%jc, SOURCE=jacobian_rad_jcd_t(bp%ml, bp%op))
     case ('MIX')
-       allocate(jacobian_rad_mix_t::this%jc)
+       allocate(bp%jc, SOURCE=jacobian_rad_mix_t(bp%ml, bp%op))
     case default
        $ABORT(Invalid variables_type)
     end select
 
-    call this%jc%init(this%cf, this%op)
-
     ! Initialize the boundary conditions
 
-    select case (this%op%outer_bound_type)
+    select case (bp%op%outer_bound_type)
     case ('ZERO')
-       allocate(bound_rad_zero_t::this%bd)
+       allocate(bp%bd, SOURCE=bound_rad_zero_t(bp%ml, bp%jc, bp%op))
     case ('DZIEM')
-       allocate(bound_rad_dziem_t::this%bd)
+       allocate(bp%bd, SOURCE=bound_rad_dziem_t(bp%ml, bp%jc, bp%op))
     case ('UNNO')
-       allocate(bound_rad_unno_t::this%bd)
+       allocate(bp%bd, SOURCE=bound_rad_unno_t(bp%ml, bp%jc, bp%op))
     case ('JCD')
-       allocate(bound_rad_jcd_t::this%bd)
+       allocate(bp%bd, SOURCE=bound_rad_jcd_t(bp%ml, bp%jc, bp%op))
     case default
        $ABORT(Invalid bound_type)
     end select
 
-    call this%bd%init(this%cf, this%jc, this%op)
-
     ! Initialize the IVP solver
 
-    select case (this%np%ivp_solver_type)
+    select case (bp%np%ivp_solver_type)
     case ('MAGNUS_GL2')
-       allocate(ivp_magnus_GL2_t::this%iv)
+       allocate(bp%iv, SOURCE=ivp_magnus_GL2_t(bp%jc))
     case ('MAGNUS_GL4')
-       allocate(ivp_magnus_GL4_t::this%iv)
+       allocate(bp%iv, SOURCE=ivp_magnus_GL4_t(bp%jc))
     case ('MAGNUS_GL6')
-       allocate(ivp_magnus_GL6_t::this%iv)
+       allocate(bp%iv, SOURCE=ivp_magnus_GL6_t(bp%jc))
     case ('FINDIFF_GL2')
-       allocate(ivp_colloc_GL2_t::this%iv)
+       allocate(bp%iv, SOURCE=ivp_colloc_GL2_t(bp%jc))
     case ('FINDIFF_GL4')
-       allocate(ivp_colloc_GL4_t::this%iv)
+       allocate(bp%iv, SOURCE=ivp_colloc_GL4_t(bp%jc))
     case default
        $ABORT(Invalid ivp_solver_type)
     end select
 
-    call this%iv%init(this%jc)
-
     ! Initialize the shooter
 
-    call this%sh%init(this%cf, this%iv, this%op, this%np)
+    bp%sh = shooter_rad_t(bp%ml, bp%iv, bp%op, bp%np)
 
     ! Build the shooting grid
 
-    call build_grid(this%shoot_gp, this%cf, this%op, x_in, this%x, verbose=.TRUE.)
+    call build_grid(bp%shoot_gp, bp%ml, bp%op, x_in, bp%x, verbose=.TRUE.)
 
-    n = SIZE(this%x)
+    n = SIZE(bp%x)
 
     ! Initialize the system matrix
 
-    call this%sm%init(n-1, this%jc%n_e, this%bd%n_i, this%bd%n_o)
+    bp%sm = sysmtx_t(n-1, bp%jc%n_e, bp%bd%n_i, bp%bd%n_o)
 
     ! Other stuff
 
-    if(ALLOCATED(x_in)) this%x_in = x_in
+    if(ALLOCATED(x_in)) bp%x_in = x_in
 
-    this%n = n
-    this%n_e = this%sh%n_e
+    bp%n = n
+    bp%n_e = bp%sh%n_e
 
     ! Set up the coefficient cache
 
-    x_cc = [this%x(1),this%sh%abscissa(this%x),this%x(n)]
+    x_cc = [bp%x(1),bp%sh%abscissa(bp%x),bp%x(n)]
 
-    call this%cf%attach_cache(this%cc)
-    call this%cf%fill_cache(x_cc)
-    call this%cf%detach_cache()
+    call bp%ml%attach_cache(bp%cc)
+    call bp%ml%fill_cache(x_cc)
+    call bp%ml%detach_cache()
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function bvp_rad_t_
 
 !****
 
-  $if($GFORTRAN_PR57922)
+  $if ($GFORTRAN_PR57922)
 
-  subroutine final (this)
+  subroutine final_ (this)
 
     class(bvp_rad_t), intent(inout) :: this
 
-    ! Finalize the bvp_rad
+    ! Finalize the bvp_rad_t
 
     call this%cc%final()
     call this%sm%final()
@@ -261,98 +256,48 @@ contains
 
     return
 
-  end subroutine final
+  end subroutine final_
 
   $endif
 
 !****
 
-  $if($MPI)
-
-  subroutine bcast_bp (this, root_rank, cf)
-
-    class(bvp_rad_t), intent(inout)     :: this
-    integer, intent(in)                 :: root_rank
-    class(coeffs_t), intent(in), target :: cf
-
-    type(oscpar_t)                :: op
-    type(numpar_t)                :: np
-    type(gridpar_t), allocatable  :: shoot_gp(:)
-    type(gridpar_t), allocatable  :: recon_gp(:)
-    real(WP), allocatable         :: x_in(:)
-
-    ! Broadcast the bvp
-
-    if(MPI_RANK == root_rank) then
-
-       call bcast(this%op, root_rank)
-       call bcast(this%np, root_rank)
-
-       call bcast_alloc(this%shoot_gp, root_rank)
-       call bcast_alloc(this%recon_gp, root_rank)
-
-       call bcast_alloc(this%x_in, root_rank)
-
-    else
-
-       call bcast(op, root_rank)
-       call bcast(np, root_rank)
-
-       call bcast_alloc(shoot_gp, root_rank)
-       call bcast_alloc(recon_gp, root_rank)
-
-       call bcast_alloc(x_in, root_rank)
-
-       call this%init(cf, op, np, shoot_gp, recon_gp, x_in)
-
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_bp
-
-  $endif
-
-!****
-
-  function discrim (this, omega, use_real)
+  function discrim_ (this, omega, use_real)
 
     class(bvp_rad_t), intent(inout) :: this
     complex(WP), intent(in)         :: omega
-    logical, intent(in), optional   :: use_real
-    type(ext_complex_t)             :: discrim
+    logical, optional, intent(in)   :: use_real
+    type(ext_complex_t)             :: discrim_
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
-    call this%build(omega)
+    call this%build_(omega)
 
-    call this%sm%determinant(discrim, use_real, this%np%use_banded)
+    call this%sm%determinant(discrim_, use_real, this%np%use_banded)
 
     ! Finish
 
     return
 
-  end function discrim
+  end function discrim_
 
 !****
 
-  subroutine build (this, omega)
+  subroutine build_ (this, omega)
 
-    class(bvp_rad_t), intent(inout) :: this
-    complex(WP), intent(in)         :: omega
+    class(bvp_rad_t), target, intent(inout) :: this
+    complex(WP), intent(in)                 :: omega
 
     ! Set up the sysmtx
 
-    call this%cf%attach_cache(this%cc)
+    call this%ml%attach_cache(this%cc)
 
-    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega), ext_complex(1._WP))
-    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega), ext_complex(1._WP))
+    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega), ext_complex_t(1._WP))
+    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega), ext_complex_t(1._WP))
 
     call this%sh%shoot(omega, this%x, this%sm)
 
-    call this%cf%detach_cache()
+    call this%ml%detach_cache()
 
     call this%sm%scale_rows()
 
@@ -360,26 +305,31 @@ contains
 
     return
 
-  end subroutine build
+  end subroutine build_
 
 !****
 
-  subroutine recon (this, omega, x, y, discrim, use_real)
+  subroutine recon_ (this, omega, x, y, x_ref, y_ref, discrim, use_real)
 
     class(bvp_rad_t), intent(inout)       :: this
     complex(WP), intent(in)               :: omega
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
+    real(WP), intent(out)                 :: x_ref
+    complex(WP), intent(out)              :: y_ref(:)
     type(ext_complex_t), intent(out)      :: discrim
-    logical, intent(in), optional         :: use_real
+    logical, optional, intent(in)         :: use_real
 
-    complex(WP)         :: b(this%n_e*this%n)
-    complex(WP)         :: y_sh(this%n_e,this%n)
-    logical             :: same_grid
+    complex(WP) :: b(this%n_e*this%n)
+    complex(WP) :: y_sh(this%n_e,this%n)
+    logical     :: same_grid
+    complex(WP) :: y_ref_(this%n_e,1)
+
+    $CHECK_BOUNDS(SIZE(y_ref),this%n_e)
 
     ! Reconstruct the solution on the shooting grid
 
-    call this%build(omega)
+    call this%build_(omega)
 
     call this%sm%null_vector(b, discrim, use_real, this%np%use_banded)
 
@@ -390,7 +340,7 @@ contains
     this%recon_gp%omega_a = REAL(omega)
     this%recon_gp%omega_b = REAL(omega)
 
-    call build_grid(this%recon_gp, this%cf, this%op, this%x, x)
+    call build_grid(this%recon_gp, this%ml, this%op, this%x, x)
 
     if(SIZE(x) == SIZE(this%x)) then
        same_grid = ALL(x == this%x)
@@ -412,21 +362,29 @@ contains
 
     endif
 
+    ! Reconstruct the solution at x_ref
+    
+    x_ref = MIN(MAX(this%op%x_ref, this%x(1)), this%x(this%n))
+
+    call this%sh%recon(omega, this%x, y_sh, [x_ref], y_ref_)
+
+    y_ref = y_ref_(:,1)
+
     ! Finish
 
     return
 
-  end subroutine recon
+  end subroutine recon_
 
 !****
 
-  function mode (this, omega, discrim, use_real, omega_def) result (md)
+  function mode_ (this, omega, discrim, use_real, omega_def) result (md)
 
-    class(bvp_rad_t), intent(inout)           :: this
+    class(bvp_rad_t), target, intent(inout)   :: this
     complex(WP), intent(in)                   :: omega(:)
-    type(ext_complex_t), intent(in), optional :: discrim(:)
-    logical, intent(in), optional             :: use_real
-    complex(WP), intent(in), optional         :: omega_def(:)
+    type(ext_complex_t), optional, intent(in) :: discrim(:)
+    logical, optional, intent(in)             :: use_real
+    complex(WP), optional, intent(in)         :: omega_def(:)
     type(mode_t)                              :: md
 
     logical                  :: use_real_
@@ -439,10 +397,13 @@ contains
     complex(WP)              :: omega_root
     real(WP), allocatable    :: x(:)
     complex(WP), allocatable :: y(:,:)
+    real(WP)                 :: x_ref
+    complex(WP)              :: y_ref(this%n_e)
     type(ext_complex_t)      :: discrim_root
     integer                  :: n
     integer                  :: i
     complex(WP), allocatable :: y_c(:,:)
+    complex(WP)              :: y_c_ref(6)
     type(ext_real_t)         :: chi
 
     $CHECK_BOUNDS(SIZE(omega),2)
@@ -472,7 +433,7 @@ contains
 
     ! Set up the discriminant function
 
-    call df%init(this)
+    df = discfunc_t(this)
 
     if(PRESENT(omega_def)) df%omega_def = omega_def
 
@@ -481,10 +442,10 @@ contains
     n_iter = this%np%n_iter_max
 
     if(use_real_) then
-       omega_root = real(df%root(ext_real(omega_a), ext_real(omega_b), ext_real(0._WP), &
-                            f_ex_a=ext_real(discrim_a), f_ex_b=ext_real(discrim_b), n_iter=n_iter))
+       omega_root = real(df%root(ext_real_t(omega_a), ext_real_t(omega_b), ext_real_t(0._WP), &
+                            f_ex_a=ext_real_t(discrim_a), f_ex_b=ext_real_t(discrim_b), n_iter=n_iter))
     else
-       omega_root = cmplx(df%root(ext_complex(omega_a), ext_complex(omega_b), ext_real(0._WP), &
+       omega_root = cmplx(df%root(ext_complex_t(omega_a), ext_complex_t(omega_b), ext_real_t(0._WP), &
                             f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
     endif
 
@@ -492,7 +453,7 @@ contains
 
     ! Reconstruct the solution
 
-    call this%recon(omega_root, x, y, discrim_root)
+    call this%recon_(omega_root, x, y, x_ref, y_ref, discrim_root)
 
     ! Calculate canonical variables
 
@@ -504,37 +465,92 @@ contains
     do i = 1,n
        y_c(1:2,i) = MATMUL(this%jc%trans_matrix(x(i), omega_root, .TRUE.), y(:,i))
        y_c(3,i) = 0._WP
-       y_c(4,i) = -y_c(1,i)*this%cf%U(x(i))
+       y_c(4,i) = -y_c(1,i)*this%ml%U(x(i))
        y_c(5:6,i) = 0._WP
     end do
+
+    y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega_root, .TRUE.), y_ref)
+    y_c_ref(3) = 0._WP
+    y_c_ref(4) = -y_c_ref(1)*this%ml%U(x_ref)
+    y_c_ref(5:6) = 0._WP
 
     ! Initialize the mode
     
     chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
     
-    call md%init(this%cf, this%op, omega_root, x, y_c, chi, n_iter)
+    md = mode_t(this%ml, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
 
     ! Finish
 
     return
 
-  end function mode
+  end function mode_
 
 !****
 
-  function coeffs (this) result (cf)
+  function model_ (this) result (ml)
 
     class(bvp_rad_t), intent(in) :: this
-    class(coeffs_t), pointer     :: cf
+    class(model_t), pointer      :: ml
 
-    ! Return the coefficients pointer
+    ! Return the model pointer
 
-    cf => this%cf
+    ml => this%ml
 
     ! Finish
 
     return
 
-  end function coeffs
+  end function model_
+
+!****
+
+  $if ($MPI)
+
+  subroutine bcast_ (this, root_rank, ml)
+
+    class(bvp_rad_t), intent(inout)    :: bp
+    integer, intent(in)                :: root_rank
+    class(model_t), intent(in), target :: ml
+
+    type(oscpar_t)                :: op
+    type(numpar_t)                :: np
+    type(gridpar_t), allocatable  :: shoot_gp(:)
+    type(gridpar_t), allocatable  :: recon_gp(:)
+    real(WP), allocatable         :: x_in(:)
+
+    ! Broadcast the bvp_rad_t
+
+    if(MPI_RANK == root_rank) then
+
+       call bcast(bp%op, root_rank)
+       call bcast(bp%np, root_rank)
+
+       call bcast_alloc(bp%shoot_gp, root_rank)
+       call bcast_alloc(bp%recon_gp, root_rank)
+
+       call bcast_alloc(bp%x_in, root_rank)
+
+    else
+
+       call bcast(op, root_rank)
+       call bcast(np, root_rank)
+
+       call bcast_alloc(shoot_gp, root_rank)
+       call bcast_alloc(recon_gp, root_rank)
+
+       call bcast_alloc(x_in, root_rank)
+
+       call bp%init(ml, op, np, shoot_gp, recon_gp, x_in)
+
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_
+
+  $endif
 
 end module gyre_bvp_rad

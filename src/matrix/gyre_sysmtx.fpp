@@ -51,19 +51,22 @@ module gyre_sysmtx
      integer                          :: n_o        ! Number of outer boundary conditions
    contains
      private
-     procedure, public :: init
-     procedure, public :: final
-     procedure, public :: set_inner_bound
-     procedure, public :: set_outer_bound
-     procedure, public :: set_block
-     procedure, public :: scale_rows
-     procedure, public :: determinant
-!     procedure, public :: determinant_slu_r
-!     procedure, public :: determinant_slu_c
-!     procedure, public :: null_vector => null_vector_slu_c
-!     procedure, public :: null_vector => null_vector_inviter
-     procedure, public :: null_vector
+     $if ($GFORTRAN_PR57922)
+     procedure, public :: final => final_
+     $endif
+     procedure, public :: set_inner_bound => set_inner_bound_
+     procedure, public :: set_outer_bound => set_outer_bound_
+     procedure, public :: set_block => set_block_
+     procedure, public :: scale_rows => scale_rows_
+     procedure, public :: determinant => determinant_
+     procedure, public :: null_vector => null_vector_
   end type sysmtx_t
+
+  ! Interfaces
+
+  interface sysmtx_t
+     module procedure sysmtx_t_
+  end interface sysmtx_t
 
   ! Access specifiers
 
@@ -75,40 +78,40 @@ module gyre_sysmtx
 
 contains
 
-  subroutine init (this, n, n_e, n_i, n_o)
+  function sysmtx_t_ (n, n_e, n_i, n_o) result (sm)
 
-    class(sysmtx_t), intent(out) :: this
-    integer, intent(in)          :: n
-    integer, intent(in)          :: n_e
-    integer, intent(in)          :: n_i
-    integer, intent(in)          :: n_o
+    integer, intent(in) :: n
+    integer, intent(in) :: n_e
+    integer, intent(in) :: n_i
+    integer, intent(in) :: n_o
+    type(sysmtx_t)      :: sm
 
-    ! Initialize the sysmtx
+    ! Construct the sysmtx_t
 
-    allocate(this%E_l(n_e,n_e,n))
-    allocate(this%E_r(n_e,n_e,n))
+    allocate(sm%E_l(n_e,n_e,n))
+    allocate(sm%E_r(n_e,n_e,n))
 
-    allocate(this%B_i(n_i,n_e))
-    allocate(this%B_o(n_o,n_e))
+    allocate(sm%B_i(n_i,n_e))
+    allocate(sm%B_o(n_o,n_e))
 
-    allocate(this%S(n))
+    allocate(sm%S(n))
 
-    this%n = n
-    this%n_e = n_e
-    this%n_i = n_i
-    this%n_o = n_o
+    sm%n = n
+    sm%n_e = n_e
+    sm%n_i = n_i
+    sm%n_o = n_o
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function sysmtx_t_
 
 !****
 
-  $if($GFORTRAN_PR57922)
+  $if ($GFORTRAN_PR57922)
 
-  subroutine final (this)
+  subroutine final_ (this)
 
     class(sysmtx_t), intent(inout) :: this
 
@@ -126,13 +129,13 @@ contains
 
     return
 
-  end subroutine final
+  end subroutine final_
 
   $endif
 
 !****
 
-  subroutine set_inner_bound (this, B_i, S_i)
+  subroutine set_inner_bound_ (this, B_i, S_i)
 
     class(sysmtx_t), intent(inout)  :: this
     complex(WP), intent(in)         :: B_i(:,:)
@@ -150,11 +153,11 @@ contains
 
     return
 
-  end subroutine set_inner_bound
+  end subroutine set_inner_bound_
 
 !****
 
-  subroutine set_outer_bound (this, B_o, S_o)
+  subroutine set_outer_bound_ (this, B_o, S_o)
 
     class(sysmtx_t), intent(inout)  :: this
     complex(WP), intent(in)         :: B_o(:,:)
@@ -172,11 +175,11 @@ contains
 
     return
 
-  end subroutine set_outer_bound
+  end subroutine set_outer_bound_
 
 !****
 
-  subroutine set_block (this, k, E_l, E_r, S)
+  subroutine set_block_ (this, k, E_l, E_r, S)
 
     class(sysmtx_t), intent(inout)  :: this
     integer, intent(in)             :: k
@@ -204,11 +207,11 @@ contains
 
     return
 
-  end subroutine set_block
+  end subroutine set_block_
 
 !****
 
-  subroutine scale_rows (this)
+  subroutine scale_rows_ (this)
 
     class(sysmtx_t), intent(inout) :: this
 
@@ -243,16 +246,16 @@ contains
 
     return
 
-  end subroutine scale_rows
+  end subroutine scale_rows_
 
 !****
 
-  subroutine determinant (this, det, use_real, use_banded)
+  subroutine determinant_ (this, det, use_real, use_banded)
 
     class(sysmtx_t), intent(inout)   :: this
     type(ext_complex_t), intent(out) :: det
-    logical, intent(in), optional    :: use_real
-    logical, intent(in), optional    :: use_banded
+    logical, optional, intent(in)    :: use_real
+    logical, optional, intent(in)    :: use_banded
 
     logical          :: use_real_
     logical          :: use_banded_
@@ -274,16 +277,16 @@ contains
 
     if(use_real_) then
        if(use_banded_) then
-          call determinant_banded_r(this, det_r)
+          call determinant_banded_r_(this, det_r)
        else
-          call determinant_slu_r(this, det_r)
+          call determinant_slu_r_(this, det_r)
        endif
-       det = ext_complex(det_r)
+       det = ext_complex_t(det_r)
     else
        if(use_banded_) then
-          call determinant_banded_c(this, det)
+          call determinant_banded_c_(this, det)
        else
-          call determinant_slu_c(this, det)
+          call determinant_slu_c_(this, det)
        end if
     endif
 
@@ -291,16 +294,16 @@ contains
     
     return
 
-  end subroutine determinant
+  end subroutine determinant_
 
 !****
 
   $define $DETERMINANT_SLU $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  subroutine determinant_slu_$SUFFIX (sm, det)
+  subroutine determinant_slu_${INFIX}_ (sm, det)
 
     class(sysmtx_t), intent(inout)   :: sm
     type(ext_${TYPE}_t), intent(out) :: det
@@ -314,14 +317,14 @@ contains
 
     ! Factorize the matrix
 
-    call factorize_slu_$SUFFIX(sm, det)
+    call factorize_slu_${INFIX}_(sm, det)
 
     ! Set up the reduced 2x2-block matrix
 
     n_e = sm%n_e
     n_i = sm%n_i
 
-    $if($SUFFIX eq 'r')
+    $if ($INFIX eq 'r')
 
     M(:n_i,:n_e) = REAL(sm%B_i)
     M(n_i+1:n_i+n_e,:n_e) = REAL(sm%E_l(:,:,1))
@@ -348,10 +351,10 @@ contains
     call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
     $ASSERT(info >= 0, Negative return from XGETRF)
 
-    $if($SUFFIX eq 'r')
-    det = product([ext_real(diagonal(M)),det,ext_real(sm%S_i),ext_real(sm%S),ext_real(sm%S_o)])
+    $if ($INFIX eq 'r')
+    det = product([ext_real_t(diagonal(M)),det,ext_real_t(sm%S_i),ext_real_t(sm%S),ext_real_t(sm%S_o)])
     $else
-    det = product([ext_complex(diagonal(M)),det,sm%S_i,sm%S,sm%S_o])
+    det = product([ext_complex_t(diagonal(M)),det,sm%S_i,sm%S,sm%S_o])
     $endif
 
     do i = 1,2*n_e
@@ -362,7 +365,7 @@ contains
 
     return
 
-  end subroutine determinant_slu_$SUFFIX
+  end subroutine determinant_slu_${INFIX}_
 
   $endsub
 
@@ -373,10 +376,10 @@ contains
 
   $define $DETERMINANT_BANDED $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  subroutine determinant_banded_$SUFFIX (sm, det)
+  subroutine determinant_banded_${INFIX}_ (sm, det)
 
     class(sysmtx_t), intent(inout)   :: sm
     type(ext_${TYPE}_t), intent(out) :: det
@@ -390,7 +393,7 @@ contains
 
     ! Pack the smatrix into banded form
 
-    call pack_banded_${SUFFIX}(sm, A_b)
+    call pack_banded_${INFIX}_(sm, A_b)
 
     ! LU decompose it
 
@@ -401,14 +404,14 @@ contains
 
     $block
 
-    $if($DOUBLE_PRECISION)
-    $if($SUFFIX eq 'r')
+    $if ($DOUBLE_PRECISION)
+    $if ($INFIX eq 'r')
     $local $X D
     $else
     $local $X Z
     $endif
     $else
-    $if($SUFFIX eq 'r')
+    $if ($INFIX eq 'r')
     $local $X S
     $else
     $local $X C
@@ -422,10 +425,10 @@ contains
 
     ! Calculate the determinant
 
-    $if($SUFFIX eq 'r')
-    det = product([ext_real(A_b(n_l+n_u+1,:)),ext_real(sm%S_i),ext_real(sm%S),ext_real(sm%S_o)])
+    $if ($INFIX eq 'r')
+    det = product([ext_real_t(A_b(n_l+n_u+1,:)),ext_real_t(sm%S_i),ext_real_t(sm%S),ext_real_t(sm%S_o)])
     $else
-    det = product([ext_complex(A_b(n_l+n_u+1,:)),sm%S_i,sm%S,sm%S_o])
+    det = product([ext_complex_t(A_b(n_l+n_u+1,:)),sm%S_i,sm%S,sm%S_o])
     $endif
  
     do j = 1,SIZE(A_b, 2)
@@ -436,7 +439,7 @@ contains
 
     return
 
-  end subroutine determinant_banded_$SUFFIX
+  end subroutine determinant_banded_${INFIX}_
 
   $endsub
 
@@ -445,13 +448,13 @@ contains
 
 !****
 
-  subroutine null_vector (this, b, det, use_real, use_banded)
+  subroutine null_vector_ (this, b, det, use_real, use_banded)
 
     class(sysmtx_t), intent(inout)   :: this
     complex(WP), intent(out)         :: b(:)
     type(ext_complex_t), intent(out) :: det
-    logical, intent(in), optional    :: use_real
-    logical, intent(in), optional    :: use_banded
+    logical, optional, intent(in)    :: use_real
+    logical, optional, intent(in)    :: use_banded
 
     logical          :: use_real_
     logical          :: use_banded_
@@ -476,17 +479,17 @@ contains
 
     if(use_real_) then
        if(use_banded_) then
-          call null_vector_banded_r(this, b_r, det_r)
+          call null_vector_banded_r_(this, b_r, det_r)
        else
-          call null_vector_slu_r(this, b_r, det_r)
+          call null_vector_slu_r_(this, b_r, det_r)
        endif
        b = b_r
-       det = ext_complex(det_r)
+       det = ext_complex_t(det_r)
     else
        if(use_banded_) then
-          call null_vector_banded_c(this, b, det)
+          call null_vector_banded_c_(this, b, det)
        else
-          call null_vector_slu_c(this, b, det)
+          call null_vector_slu_c_(this, b, det)
        endif
     end if
 
@@ -494,16 +497,16 @@ contains
 
     return
 
-  end subroutine null_vector
+  end subroutine null_vector_
 
  !****
 
   $define $NULL_VECTOR_SLU $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  subroutine null_vector_slu_$SUFFIX (sm, b, det)
+  subroutine null_vector_slu_${INFIX}_ (sm, b, det)
 
     class(sysmtx_t), intent(inout)   :: sm
     $TYPE(WP), intent(out)           :: b(:)
@@ -531,7 +534,7 @@ contains
 
     ! Factorize the matrix
 
-    call factorize_slu_$SUFFIX(sm, det, recon_mtx=.TRUE.)
+    call factorize_slu_${INFIX}_(sm, det, recon_mtx=.TRUE.)
 
     ! Set up the reduced 2x2-block matrix
 
@@ -539,7 +542,7 @@ contains
     n_e = sm%n_e
     n_i = sm%n_i
 
-    $if($SUFFIX eq 'r')
+    $if ($INFIX eq 'r')
 
     M(:n_i,:n_e) = REAL(sm%B_i)
     M(n_i+1:n_i+n_e,:n_e) = REAL(sm%E_l(:,:,1))
@@ -566,10 +569,10 @@ contains
     call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
     $ASSERT(info >= 0, Negative return from XGETRF)
 
-    $if($SUFFIX eq 'r')
-    det = product([ext_real(diagonal(M)),det,ext_real(sm%S)])
+    $if ($INFIX eq 'r')
+    det = product([ext_real_t(diagonal(M)),det,ext_real_t(sm%S)])
     $else
-    det = product([ext_complex(diagonal(M)),det,sm%S])
+    det = product([ext_complex_t(diagonal(M)),det,sm%S])
     $endif
 
     do i = 1,2*n_e
@@ -593,14 +596,14 @@ contains
 
     $block
 
-    $if($DOUBLE_PRECISION)
-    $if($SUFFIX eq 'r')
+    $if ($DOUBLE_PRECISION)
+    $if ($INFIX eq 'r')
     $local $X D
     $else
     $local $X Z
     $endif
     $else
-    $if($SUFFIX eq 'r')
+    $if ($INFIX eq 'r')
     $local $X S
     $else
     $local $X C
@@ -640,7 +643,7 @@ contains
 
           b(i_b:i_b+n_e-1) = ZERO
 
-          $if($SUFFIX eq 'r')
+          $if ($INFIX eq 'r')
           call ${X}GEMV('N', n_e, n_e, -ONE, REAL(sm%E_l(:,:,k+l)), n_e, b(i_a:i_a+n_e-1), 1, ZERO, b(i_b:i_b+n_e-1), 1)
           call ${X}GEMV('N', n_e, n_e, -ONE, REAL(sm%E_r(:,:,k+l)), n_e, b(i_c:i_c+n_e-1), 1, ONE, b(i_b:i_b+n_e-1), 1)
           $else
@@ -658,7 +661,7 @@ contains
 
     return
 
-  end subroutine null_vector_slu_$SUFFIX
+  end subroutine null_vector_slu_${INFIX}_
 
   $endsub
 
@@ -669,10 +672,10 @@ contains
 
   $define $FACTORIZE_SLU $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  subroutine factorize_slu_$SUFFIX (sm, det, recon_mtx)
+  subroutine factorize_slu_${INFIX}_ (sm, det, recon_mtx)
 
     class(sysmtx_t), intent(inout)   :: sm
     type(ext_${TYPE}_t), intent(out) :: det
@@ -706,7 +709,7 @@ contains
     ! U^-1 G and U^-1 E matrices needed to reconstruct solutions. The
     ! factorization determinant is also returned
 
-    det = ext_$TYPE(ONE)
+    det = ext_${TYPE}_t(ONE)
 
     n = sm%n
     n_e = sm%n_e
@@ -725,7 +728,7 @@ contains
           ! Set up matrices (see expressions following eqn. 2.5 of
           ! Wright 1994)
 
-          $if($SUFFIX eq 'r')
+          $if ($INFIX eq 'r')
 
           M_G(:n_e,:) = REAL(sm%E_l(:,:,k))
           M_G(n_e+1:,:) = 0._WP
@@ -761,14 +764,14 @@ contains
 
           $block
 
-          $if($DOUBLE_PRECISION)
-          $if($SUFFIX eq 'r')
+          $if ($DOUBLE_PRECISION)
+          $if ($INFIX eq 'r')
           $local $X D
           $else
           $local $X Z
           $endif
           $else
-          $if($SUFFIX eq 'r')
+          $if ($INFIX eq 'r')
           $local $X S
           $else
           $local $X C
@@ -803,7 +806,7 @@ contains
 
           ! Calculate the block determinant
 
-          block_det(k) = product(ext_$TYPE(diagonal(M_U)))
+          block_det(k) = product(ext_${TYPE}_t(diagonal(M_U)))
 
           do i = 1,n_e
              if(ipiv(i) /= i) block_det(k) = -block_det(k)
@@ -835,7 +838,7 @@ contains
 
     return
 
-  end subroutine factorize_slu_$SUFFIX
+  end subroutine factorize_slu_${INFIX}_
 
   $endsub
 
@@ -846,10 +849,10 @@ contains
 
   $define $PACK_BANDED $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  subroutine pack_banded_$SUFFIX (sm, A_b)
+  subroutine pack_banded_${INFIX}_ (sm, A_b)
 
     class(sysmtx_t), intent(in)         :: sm
     $TYPE(WP), allocatable, intent(out) :: A_b(:,:)
@@ -877,7 +880,7 @@ contains
        j = j_b
        do i_b = 1, sm%n_i
           i = i_b
-          $if($SUFFIX eq 'r')
+          $if ($INFIX eq 'r')
           A_b(n_l+n_u+1+i-j,j) = REAL(sm%B_i(i_b,j_b))
           $else
           A_b(n_l+n_u+1+i-j,j) = sm%B_i(i_b,j_b)
@@ -892,7 +895,7 @@ contains
           j = (k-1)*sm%n_e + j_b
           do i_b = 1, sm%n_e
              i = (k-1)*sm%n_e + i_b + sm%n_i
-             $if($SUFFIX eq 'r')
+             $if ($INFIX eq 'r')
              A_b(n_l+n_u+1+i-j,j) = REAL(sm%E_l(i_b,j_b,k))
              $else
              A_b(n_l+n_u+1+i-j,j) = sm%E_l(i_b,j_b,k)
@@ -908,7 +911,7 @@ contains
           j = k*sm%n_e + j_b
           do i_b = 1, sm%n_e
              i = (k-1)*sm%n_e + sm%n_i + i_b
-             $if($SUFFIX eq 'r')
+             $if ($INFIX eq 'r')
              A_b(n_l+n_u+1+i-j,j) = REAL(sm%E_r(i_b,j_b,k))
              $else
              A_b(n_l+n_u+1+i-j,j) = sm%E_r(i_b,j_b,k)
@@ -923,7 +926,7 @@ contains
        j = sm%n*sm%n_e + j_b
        do i_b = 1, sm%n_o
           i = sm%n*sm%n_e + sm%n_i + i_b
-          $if($SUFFIX eq 'r')
+          $if ($INFIX eq 'r')
           A_b(n_l+n_u+1+i-j,j) = REAL(sm%B_o(i_b,j_b))
           $else
           A_b(n_l+n_u+1+i-j,j) = sm%B_o(i_b,j_b)
@@ -935,7 +938,7 @@ contains
 
     return
 
-  end subroutine pack_banded_$SUFFIX
+  end subroutine pack_banded_${INFIX}_
 
   $endsub
 
@@ -946,10 +949,10 @@ contains
 
   $define $NULL_VECTOR_BANDED $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  subroutine null_vector_banded_$SUFFIX (sm, b, det)
+  subroutine null_vector_banded_${INFIX}_ (sm, b, det)
   
     class(sysmtx_t), intent(inout)   :: sm
     $TYPE(WP), intent(out)           :: b(:)
@@ -971,7 +974,7 @@ contains
     
     ! Pack the smatrix into banded form
 
-    call pack_banded_${SUFFIX}(sm, A_b)
+    call pack_banded_${INFIX}_(sm, A_b)
 
     ! LU decompose it
 
@@ -984,14 +987,14 @@ contains
 
     $block
 
-    $if($DOUBLE_PRECISION)
-    $if($SUFFIX eq 'r')
+    $if ($DOUBLE_PRECISION)
+    $if ($INFIX eq 'r')
     $local $X D
     $else
     $local $X Z
     $endif
     $else
-    $if($SUFFIX eq 'r')
+    $if ($INFIX eq 'r')
     $local $X S
     $else
     $local $X C
@@ -1005,10 +1008,10 @@ contains
 
     ! Calculate the determinant
 
-    $if($SUFFIX eq 'r')
-    det = product([ext_real(A_b(n_l+n_u+1,:)),ext_real(sm%S)])
+    $if ($INFIX eq 'r')
+    det = product([ext_real_t(A_b(n_l+n_u+1,:)),ext_real_t(sm%S)])
     $else
-    det = product([ext_complex(A_b(n_l+n_u+1,:)),sm%S])
+    det = product([ext_complex_t(A_b(n_l+n_u+1,:)),sm%S])
     $endif
  
     do j = 1, m
@@ -1061,14 +1064,14 @@ contains
 
        $block
 
-       $if($DOUBLE_PRECISION)
-       $if($SUFFIX eq 'r')
+       $if ($DOUBLE_PRECISION)
+       $if ($INFIX eq 'r')
        $local $X D
        $else
        $local $X Z
        $endif
        $else
-       $if($SUFFIX eq 'r')
+       $if ($INFIX eq 'r')
        $local $X S
        $else
        $local $X C
@@ -1093,89 +1096,11 @@ contains
 
     return
 
-  end subroutine null_vector_banded_$SUFFIX
+  end subroutine null_vector_banded_${INFIX}_
 
   $endsub
 
   $NULL_VECTOR_BANDED(r,real)
   $NULL_VECTOR_BANDED(c,complex)
-
-! !****
-
-!   function null_vector_inviter (this) result(b)
-
-!     class(sysmtx_t), intent(in) :: this
-!     complex(WP)                 :: b(this%n_e*(this%n+1))
-
-!     integer, parameter  :: MAX_ITER = 25
-!     real(WP), parameter :: EPS = 4._WP*EPSILON(0._WP)
-
-!     complex(WP), allocatable :: A_b(:,:)
-!     integer, allocatable     :: ipiv(:)
-!     integer                  :: n_l
-!     integer                  :: n_u
-!     integer                  :: info
-!     integer                  :: i
-!     complex(WP)              :: y(this%n_e*(this%n+1),1)
-!     complex(WP)              :: v(this%n_e*(this%n+1),1)
-!     complex(WP)              :: w(this%n_e*(this%n+1))
-!     complex(WP)              :: theta
-! !    integer                  :: j
-
-!     ! **** NOTE: THIS ROUTINE IS CURRENTLY OUT-OF-ACTION; IT GIVES
-!     ! **** MUCH POORER RESULTS THAN null_vector_banded, AND IT'S NOT
-!     ! **** CLEAR WHY
-
-!     ! Pack the sysmtx into banded form
-
-!     call pack_banded(this, A_b)
-
-!     ! LU decompose it
-
-!     n_l = this%n_e + this%n_i - 1
-!     n_u = this%n_e + this%n_i - 1
-
-!     allocate(ipiv(SIZE(A_b, 2)))
-
-!     call XGBTRF(SIZE(A_b, 2), SIZE(A_b, 2), n_l, n_u, A_b, SIZE(A_b, 1), ipiv, info)
-!     $ASSERT(info == 0 .OR. info == SIZE(A_b,2),Non-zero return from LA_GBTRF)
-
-!     ! Locate the smallest diagonal element
-
-!     i = MINLOC(ABS(A_b(n_l+n_u+1,:)), DIM=1)
-
-!     if(SIZE(A_b, 2)-i > this%n_e) then
-!        $WARN(Smallest element not in final block)
-!     endif
-
-!     ! Use inverse iteration to converge on the null vector
-
-! !    tol = EPS*SQRT(REAL(SIZE(x), WP))
-
-!     y = 1._WP/SQRT(REAL(SIZE(b), WP))
-
-!     iter_loop : do i = 1,MAX_ITER
-
-!        v(:,1) = y(:,1)/SQRT(DOT_PRODUCT(y(:,1), y(:,1)))
-
-!        y = v
-!        call XGBTRS('N', SIZE(A_b, 2), n_l, n_u, 1, A_b, SIZE(A_b, 1), ipiv, y, SIZE(y, 1), info)
-!        $ASSERT(info == 0,Non-zero return from XGBTRS)
-
-!        theta = DOT_PRODUCT(v(:,1), y(:,1))
-
-!        w = y(:,1) - theta*v(:,1)
-
-!        if(ABS(SQRT(DOT_PRODUCT(w, w))) < 4.*EPSILON(0._WP)*ABS(theta)) exit iter_loop
-
-!     end do iter_loop
-
-!     b = y(:,1)/theta
-
-!     ! Finish
-
-!     ! return
-
-!   end function null_vector_inviter
 
 end module gyre_sysmtx

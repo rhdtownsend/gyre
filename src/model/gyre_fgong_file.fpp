@@ -22,10 +22,10 @@ module gyre_fgong_file
   ! Uses
 
   use core_kinds
-  use core_constants
 
-  use gyre_coeffs
-  use gyre_coeffs_evol
+  use gyre_constants
+  use gyre_model
+  use gyre_model_evol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -44,13 +44,12 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_file (file, G, deriv_type, data_format, ec, x)
+  subroutine read_fgong_file (file, deriv_type, data_format, ml, x)
 
     character(LEN=*), intent(in)                 :: file
-    real(WP), intent(in)                         :: G
     character(LEN=*), intent(in)                 :: deriv_type
     character(LEN=*), intent(in)                 :: data_format
-    class(coeffs_evol_t), intent(out)            :: ec
+    type(model_evol_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
     character(LEN=:), allocatable :: data_format_
@@ -137,7 +136,7 @@ contains
     allocate(N2(n))
 
     where(r/R_star >= EPSILON(0._WP))
-       N2 = G*m*var(15,:)/r**3
+       N2 = G_GRAVITY*m*var(15,:)/r**3
     elsewhere
        N2 = 0._WP
     endwhere
@@ -159,11 +158,11 @@ contains
        write(OUTPUT_UNIT, 110) 'Adding central point'
     endif
 
-    ! Initialize the base_coeffs
+    ! Initialize the model
 
-    call ec%init(G, M_star, R_star, L_star, r, m, p, rho, T, &
-                 N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
-                 deriv_type, add_center)
+    ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
+                      N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
+                      deriv_type, add_center)
 
     ! Set up the grid
 

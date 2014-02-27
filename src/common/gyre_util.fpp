@@ -22,14 +22,14 @@ module gyre_util
   ! Uses
 
   use core_kinds
-  use core_constants
   use core_parallel
   use core_memory
 
-  use gyre_coeffs
-  use gyre_coeffs_evol
-  use gyre_coeffs_poly
-  use gyre_coeffs_hom
+  use gyre_constants
+  use gyre_model
+  use gyre_model_evol
+  use gyre_model_poly
+  use gyre_model_hom
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -49,18 +49,18 @@ module gyre_util
   ! Interfaces
 
   interface select_par
-     module procedure select_par_np
-     module procedure select_par_gp
-     module procedure select_par_sp
+     module procedure select_par_np_
+     module procedure select_par_gp_
+     module procedure select_par_sp_
   end interface select_par
 
   interface sprint
-     module procedure sprint_i
+     module procedure sprint_
   end interface sprint
 
   interface integrate
-     module procedure integrate_r
-     module procedure Integrate_c
+     module procedure integrate_r_
+     module procedure Integrate_c_
   end interface integrate
 
   ! Access specifiers
@@ -71,11 +71,13 @@ module gyre_util
   public :: set_log_level
   public :: check_log_level
   public :: freq_scale
+  public :: eval_cutoff_freqs
   public :: select_par
   public :: split_list
   public :: join_fmts
   public :: sprint
   public :: rjust
+  public :: phase
   public :: integrate
 
 contains
@@ -83,7 +85,7 @@ contains
   function form_header (header, underchar)
 
     character(LEN=*), intent(in)           :: header
-    character(LEN=*), intent(in), optional :: underchar
+    character(LEN=*), optional, intent(in) :: underchar
     character(LEN=:), allocatable          :: form_header
 
     ! Format the header string
@@ -146,7 +148,7 @@ contains
   function check_log_level (log_level, rank)
 
     character(LEN=*), intent(in)  :: log_level
-    integer, intent(in), optional :: rank
+    integer, optional, intent(in) :: rank
     logical                       :: check_log_level
 
     integer :: rank_
@@ -189,9 +191,9 @@ contains
 
 !****
 
-  function freq_scale (cf, op, x_o, freq_units)
+  function freq_scale (ml, op, x_o, freq_units)
 
-    class(coeffs_t), intent(in)  :: cf
+    class(model_t), intent(in)   :: ml
     type(oscpar_t), intent(in)   :: op
     real(WP), intent(in)         :: x_o
     character(LEN=*), intent(in) :: freq_units
@@ -200,15 +202,15 @@ contains
     ! Calculate the scale factor to convert a dimensionless angular
     ! frequency to a dimensioned frequency
 
-    select type (cf)
-    class is (coeffs_evol_t)
-       freq_scale = evol_freq_scale(cf, op, x_o, freq_units)
-    class is (coeffs_poly_t)
-       freq_scale = poly_freq_scale(freq_units)
-    class is (coeffs_hom_t)
-       freq_scale = hom_freq_scale(freq_units)
+    select type (ml)
+    class is (model_evol_t)
+       freq_scale = evol_freq_scale_(ml, op, x_o, freq_units)
+    class is (model_poly_t)
+       freq_scale = poly_freq_scale_(freq_units)
+    class is (model_hom_t)
+       freq_scale = hom_freq_scale_(freq_units)
     class default
-       $ABORT(Invalid cf type)
+       $ABORT(Invalid ml type)
     end select
 
     ! Finish
@@ -217,13 +219,13 @@ contains
 
   contains
 
-    function evol_freq_scale (ec, op, x_o, freq_units) result (freq_scale)
+    function evol_freq_scale_ (ml, op, x_o, freq_units) result (freq_scale)
 
-      class(coeffs_evol_t), intent(in) :: ec
-      type(oscpar_t), intent(in)       :: op
-      real(WP), intent(in)             :: x_o
-      character(LEN=*), intent(in)     :: freq_units
-      real(WP)                         :: freq_scale
+      class(model_evol_t), intent(in) :: ml
+      type(oscpar_t), intent(in)      :: op
+      real(WP), intent(in)            :: x_o
+      character(LEN=*), intent(in)    :: freq_units
+      real(WP)                        :: freq_scale
 
       real(WP) :: omega_c_cutoff_lo
       real(WP) :: omega_c_cutoff_hi
@@ -235,16 +237,16 @@ contains
       case('NONE')
          freq_scale = 1._WP
       case('HZ')
-         freq_scale = 1._WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
+         freq_scale = 1._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
       case('UHZ')
-         freq_scale = 1.E6_WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
       case('PER_DAY')
-         freq_scale = 86400._WP/(TWOPI*SQRT(ec%R_star**3/(ec%G*ec%M_star)))
+         freq_scale = 86400._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
       case('ACOUSTIC_CUTOFF')
-         call eval_cutoff_freqs_(ec, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         call eval_cutoff_freqs(ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
          freq_scale = 1._WP/omega_c_cutoff_hi
       case('GRAVITY_CUTOFF')
-         call eval_cutoff_freqs_(ec, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+         call eval_cutoff_freqs(ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
          freq_scale = 1._WP/omega_c_cutoff_lo
       case default
          $ABORT(Invalid freq_units)
@@ -254,11 +256,9 @@ contains
 
       return
 
-    end function evol_freq_scale
+    end function evol_freq_scale_
 
-!****
-
-    function poly_freq_scale (freq_units) result (freq_scale)
+    function poly_freq_scale_ (freq_units) result (freq_scale)
 
       character(LEN=*), intent(in) :: freq_units
       real(WP)                     :: freq_scale
@@ -277,11 +277,9 @@ contains
 
       return
 
-    end function poly_freq_scale
+    end function poly_freq_scale_
 
-!****
-
-    function hom_freq_scale (freq_units) result (freq_scale)
+    function hom_freq_scale_ (freq_units) result (freq_scale)
 
       character(LEN=*), intent(in) :: freq_units
       real(WP)                     :: freq_scale
@@ -300,19 +298,19 @@ contains
 
       return
 
-    end function hom_freq_scale
+    end function hom_freq_scale_
 
   end function freq_scale
 
  !****
 
-  subroutine eval_cutoff_freqs_ (cf, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+  subroutine eval_cutoff_freqs (ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
-    class(coeffs_t), intent(in) :: cf
-    type(oscpar_t), intent(in)  :: op
-    real(WP), intent(in)        :: x_o
-    real(WP), intent(out)       :: omega_c_cutoff_lo
-    real(WP), intent(out)       :: omega_c_cutoff_hi
+    class(model_t), intent(in) :: ml
+    type(oscpar_t), intent(in) :: op
+    real(WP), intent(in)       :: x_o
+    real(WP), intent(out)      :: omega_c_cutoff_lo
+    real(WP), intent(out)      :: omega_c_cutoff_hi
 
     real(WP) :: V_g
     real(WP) :: As
@@ -322,38 +320,40 @@ contains
 
      select case (op%outer_bound_type)
      case ('ZERO')
-        $ABORT(Cutoff frequencies are undefined for ZERO outer_bound_type)
+        omega_c_cutoff_lo = 0._WP
+        omega_c_cutoff_hi = HUGE(0._WP)
      case ('DZIEM')
-        $ABORT(Cutoff frequencies are undefined for DZIEM outer_bound_type)
+        omega_c_cutoff_lo = 0._WP
+        omega_c_cutoff_hi = HUGE(0._WP)
      case ('UNNO')
-        call eval_atmos_coeffs_unno(cf, x_o, V_g, As, c_1)
+        call eval_atmos_coeffs_unno(ml, x_o, V_g, As, c_1)
+        call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
      case('JCD')
-        call eval_atmos_coeffs_jcd(cf, x_o, V_g, As, c_1)
+        call eval_atmos_coeffs_jcd(ml, x_o, V_g, As, c_1)
+        call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
      case default
         $ABORT(Invalid outer_bound_type)
      end select
-
-     call eval_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
      ! Finish
 
      return
 
-   end subroutine eval_cutoff_freqs_
+   end subroutine eval_cutoff_freqs
 
 !****
    
    $define $SELECT_PAR $sub
 
-   $local $SUFFIX $1
+   $local $INFIX $1
    $local $PAR_TYPE $2
 
-   subroutine select_par_$SUFFIX (par, tag, par_sel, last)
+   subroutine select_par_${INFIX}_ (par, tag, par_sel, last)
 
      type($PAR_TYPE), intent(in)               :: par(:)
      character(LEN=*), intent(in)              :: tag
      type($PAR_TYPE), allocatable, intent(out) :: par_sel(:)
-     logical, intent(in), optional             :: last
+     logical, optional, intent(in)             :: last
 
      logical :: last_
      integer :: i
@@ -397,7 +397,7 @@ contains
 
     return
 
-  end subroutine select_par_$SUFFIX
+  end subroutine select_par_${INFIX}_
 
   $endsub
 
@@ -512,7 +512,7 @@ contains
 
 !****
 
-  function sprint_i (i) result (a)
+  function sprint_ (i) result (a)
 
     integer, intent(in)           :: i
     character(LEN=:), allocatable :: a
@@ -542,7 +542,7 @@ contains
 
     return
 
-  end function sprint_i
+  end function sprint_
 
 !****
 
@@ -564,12 +564,29 @@ contains
 
 !****
 
+  function phase (z)
+
+    complex(WP), intent(in) :: z
+    real(WP)                :: phase
+
+    ! Calculate the phase (in radians) of the complex number z
+
+    phase = ATAN2(AIMAG(z), REAL(z))
+
+    ! Finish
+
+    return
+
+  end function phase
+
+!****
+
   $define $INTEGRATE $sub
 
-  $local $SUFFIX $1
+  $local $INFIX $1
   $local $TYPE $2
 
-  function integrate_$SUFFIX (x, y) result (int_y)
+  function integrate_${INFIX}_ (x, y) result (int_y)
 
     real(WP), intent(in)  :: x(:)
     $TYPE(WP), intent(in) :: y(:)
@@ -589,7 +606,7 @@ contains
 
     return
 
-  end function integrate_$SUFFIX
+  end function integrate_${INFIX}_
 
   $endsub
 

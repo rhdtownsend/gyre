@@ -37,17 +37,22 @@ module gyre_hdf_writer
      type(hgroup_t) :: hg
    contains
      private
-     procedure, public :: init
-     procedure, public :: final
-     procedure         :: write_i_0
-     procedure         :: write_i_1
-     procedure         :: write_r_0
-     procedure         :: write_r_1
-     procedure         :: write_c_0
-     procedure         :: write_c_1
-     procedure         :: write_a_0
-     procedure         :: write_a_1
+     procedure, public :: final => final_
+     procedure         :: write_i_0_
+     procedure         :: write_i_1_
+     procedure         :: write_r_0_
+     procedure         :: write_r_1_
+     procedure         :: write_c_0_
+     procedure         :: write_c_1_
+     procedure         :: write_a_0_
+     procedure         :: write_a_1_
   end type hdf_writer_t
+
+  ! Interfaces
+
+  interface hdf_writer_t
+     module procedure hdf_writer_t_
+  end interface hdf_writer_t
 
   ! Access specifiers
 
@@ -59,24 +64,24 @@ module gyre_hdf_writer
 
 contains
 
-  subroutine init (this, file_name)
+  function hdf_writer_t_ (file_name) result (wr)
 
-    class(hdf_writer_t), intent(out) :: this
-    character(LEN=*), intent(in)     :: file_name
+    character(LEN=*), intent(in) :: file_name
+    type(hdf_writer_t)           :: wr
 
-    ! Initialize the hdf_writer
+    ! Construct the hdf_writer_t
 
-    call this%hg%init(file_name, CREATE_FILE)
+    wr%hg = hgroup_t(file_name, CREATE_FILE)
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function hdf_writer_t_
 
 !****
 
-  subroutine final (this)
+  subroutine final_ (this)
 
     class(hdf_writer_t), intent(inout) :: this
 
@@ -88,7 +93,7 @@ contains
 
     return
 
-  end subroutine final
+  end subroutine final_
 
 !****
   
@@ -98,7 +103,7 @@ contains
   $local $DATA_TYPE $2
   $local $DATA_RANK $3
 
-  subroutine write_${INFIX}_${DATA_RANK} (this, name, data)
+  subroutine write_${INFIX}_${DATA_RANK}_ (this, name, data)
 
     class(hdf_writer_t), intent(inout) :: this
     character(LEN=*), intent(in)       :: name
@@ -116,7 +121,7 @@ contains
 
     return
 
-  end subroutine write_${INFIX}_${DATA_RANK}
+  end subroutine write_${INFIX}_${DATA_RANK}_
 
   $endsub
 

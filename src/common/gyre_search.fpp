@@ -22,12 +22,12 @@ module gyre_search
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
   use core_order
   use core_parallel
 
   use gyre_bvp
-  use gyre_coeffs
+  use gyre_model
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -53,10 +53,10 @@ module gyre_search
 
 contains
 
-  subroutine build_scan (sp, cf, op, gp, x_in, omega)
+  subroutine build_scan (sp, ml, op, gp, x_in, omega)
 
     type(scanpar_t), intent(in)        :: sp(:)
-    class(coeffs_t), intent(in)        :: cf
+    class(model_t), intent(in)         :: ml
     type(oscpar_t), intent(in)         :: op
     type(gridpar_t), intent(in)        :: gp(:)
     real(WP), allocatable, intent(in)  :: x_in(:)
@@ -67,6 +67,8 @@ contains
     integer  :: i
     real(WP) :: omega_min
     real(WP) :: omega_max
+    real(WP) :: omega_c_cutoff_lo
+    real(WP) :: omega_c_cutoff_hi
     integer  :: j
 
     $ASSERT(SIZE(sp) >=1,Empty scanpars)
@@ -78,7 +80,7 @@ contains
 100    format(A)
     endif
 
-    call grid_range(gp, cf, op, x_in, x_i, x_o)
+    call grid_range(gp, ml, op, x_in, x_i, x_o)
 
     ! Loop through scanpars
 
@@ -86,11 +88,13 @@ contains
 
     sp_loop : do i = 1,SIZE(sp)
 
-       ! Set up the frequency grid
+       ! Determine the frequency range
 
-       omega_min = sp(i)%freq_min/freq_scale(cf, op, x_o, sp(i)%freq_units)
-       omega_max = sp(i)%freq_max/freq_scale(cf, op, x_o, sp(i)%freq_units)
-       
+       omega_min = sp(i)%freq_min/freq_scale(ml, op, x_o, sp(i)%freq_units)
+       omega_max = sp(i)%freq_max/freq_scale(ml, op, x_o, sp(i)%freq_units)
+
+       ! Add points to the frequency grid
+
        select case(sp(i)%grid_type)
        case('LINEAR')
           omega = [omega,(((sp(i)%n_freq-j)*omega_min + (j-1)*omega_max)/(sp(i)%n_freq-1), j=1,sp(i)%n_freq)]
@@ -106,17 +110,34 @@ contains
 
     omega = omega(sort_indices(omega))
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
 
-       write(OUTPUT_UNIT, 120) 'omega points :', SIZE(omega)
-120    format(2X,A,1X,I0)
+       write(OUTPUT_UNIT, 110) 'omega points :', SIZE(omega)
+110    format(2X,A,1X,I0)
 
-       write(OUTPUT_UNIT, 110) 'omega range  :', MINVAL(omega), '->',  MAXVAL(omega)
-110    format(2X,A,1X,E24.16,1X,A,1X,E24.16)
-
-       write(OUTPUT_UNIT, *)
+       write(OUTPUT_UNIT, 120) 'omega range  :', MINVAL(omega), '->',  MAXVAL(omega)
+120    format(2X,A,1X,E24.16,1X,A,1X,E24.16)
 
     endif
+
+    ! Perform checks
+
+    if (check_log_level('WARN')) then
+
+       call eval_cutoff_freqs(ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+
+       if (MINVAL(omega) < omega_c_cutoff_lo) then
+          write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends below atmospheric gravity cutoff frequency'
+130       format(2X,A)
+       end if
+
+       if (MAXVAL(omega) > omega_c_cutoff_hi) then
+          write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends above atmospheric acoustic cutoff frequency'
+       end if
+
+    endif
+
+    write(OUTPUT_UNIT, *)
 
     ! Finish
 
@@ -128,7 +149,7 @@ contains
 
   subroutine scan_search (bp, omega, md)
 
-    class(bvp_t), target, intent(inout)    :: bp
+    class(bvp_t), intent(inout)            :: bp
     real(WP), intent(in)                   :: omega(:)
     type(mode_t), allocatable, intent(out) :: md(:)
 
@@ -143,7 +164,7 @@ contains
     integer                       :: c_rate
     integer                       :: i
     $if($MPI)
-    class(coeffs_t), pointer      :: cf
+    class(model_t), pointer       :: ml
     integer                       :: p
     $endif
 
@@ -180,7 +201,7 @@ contains
        ! Find the mode
 
        md(i) = bp%mode(CMPLX([omega_a(i),omega_b(i)], KIND=WP), &
-                       ext_complex([discrim_a(i),discrim_b(i)]), use_real=.TRUE.)
+                       ext_complex_t([discrim_a(i),discrim_b(i)]), use_real=.TRUE.)
 
        ! Report
 
@@ -206,11 +227,11 @@ contains
 
     $if($MPI)
 
-    cf => bp%coeffs()
+    ml => bp%model()
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p, cf)
+          call bcast(md(i), p, ml)
        end do
     enddo
 
@@ -229,17 +250,17 @@ contains
     class(bvp_t), target, intent(inout) :: bp
     type(mode_t), intent(inout)         :: md(:)
 
-    integer                  :: n_md
-    integer                  :: i_part(MPI_SIZE+1)
-    integer                  :: c_beg
-    integer                  :: c_end
-    integer                  :: c_rate
-    integer                  :: i
-    complex(WP)              :: omega_a
-    complex(WP)              :: omega_b
+    integer                 :: n_md
+    integer                 :: i_part(MPI_SIZE+1)
+    integer                 :: c_beg
+    integer                 :: c_end
+    integer                 :: c_rate
+    integer                 :: i
+    complex(WP)             :: omega_a
+    complex(WP)             :: omega_b
     $if($MPI)
-    class(coeffs_t), pointer :: cf
-    integer                  :: p
+    class(model_t), pointer :: ml
+    integer                 :: p
     $endif
 
     ! Process each mode to find a proximate mode
@@ -299,11 +320,11 @@ contains
 
     $if($MPI)
 
-    cf => bp%coeffs()
+    ml => bp%model()
 
     do p = 0, MPI_SIZE-1
        do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p, cf)
+          call bcast(md(i), p, ml)
        end do
     enddo
 
@@ -359,7 +380,7 @@ contains
 
     discrim_loop : do i = i_part(MPI_RANK+1),i_part(MPI_RANK+2)-1
 
-       discrim(i) = ext_real(bp%discrim(CMPLX(omega(i), KIND=WP)))
+       discrim(i) = ext_real_t(bp%discrim(CMPLX(omega(i), KIND=WP)))
 
        if(check_log_level('DEBUG', MPI_RANK)) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
@@ -394,7 +415,7 @@ contains
 
     bracket_loop : do i = 1, n_omega-1
 
-       if(discrim(i)*discrim(i+1) <= ext_real(0._WP)) then
+       if(discrim(i)*discrim(i+1) <= ext_real_t(0._WP)) then
           n_brack = n_brack + 1
           i_brack(n_brack) = i
        end if

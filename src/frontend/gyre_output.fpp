@@ -22,11 +22,11 @@ module gyre_output
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
 
-  use gyre_coeffs
-  use gyre_coeffs_evol
-  use gyre_coeffs_poly
+  use gyre_model
+  use gyre_model_evol
+  use gyre_model_poly
   use gyre_mode
   use gyre_util
   use gyre_writer
@@ -59,6 +59,7 @@ contains
     character(LEN=FILENAME_LEN)  :: mode_prefix
     character(LEN=256)           :: mode_file_format
     character(LEN=2048)          :: mode_item_list
+    character(LEN=5)             :: infix
     character(LEN=FILENAME_LEN)  :: mode_file
     class(writer_t), allocatable :: wr
     character(LEN=16)            :: ext
@@ -87,15 +88,14 @@ contains
 
        select case (summary_file_format)
        case ('HDF')
-          allocate(hdf_writer_t::wr)
+          allocate(wr, SOURCE=hdf_writer_t(summary_file))
        case ('TXT')
-          allocate(txt_writer_t::wr)
+          allocate(wr, SOURCE=txt_writer_t(summary_file))
        case default
           $ABORT(Invalid summary_file_format)
        end select
 
-       call wr%init(summary_file)
-       call write_summary(wr, md, split_list(summary_item_list, ','), freq_units)
+       call write_summary_(wr, md, split_list(summary_item_list, ','), freq_units)
        call wr%final()
 
        deallocate(wr)
@@ -104,30 +104,27 @@ contains
 
     if(mode_prefix /= '') then
 
-       select case (mode_file_format)
-       case ('HDF')
-          allocate(hdf_writer_t::wr)
-          ext = '.h5'
-       case ('TXT')
-          allocate(txt_writer_t::wr)
-          ext = '.txt'
-       case default
-          $ABORT(Invalid mode_file_format)
-       end select
-
        mode_loop : do j = 1,SIZE(md)
 
-          write(mode_file, 100) TRIM(mode_prefix), j, TRIM(ext)
-100       format(A,I4.4,A)
+          write(infix, 100) j
+100       format(I5.5)
 
-          call wr%init(mode_file)
-          call write_mode(wr, md(j), split_list(mode_item_list, ','), freq_units, j)
+          select case (mode_file_format)
+          case ('HDF')
+             allocate(wr, SOURCE=hdf_writer_t(TRIM(mode_prefix)//infix//'.h5'))
+          case ('TXT')
+             allocate(wr, SOURCE=txt_writer_t(TRIM(mode_prefix)//infix//'.txt'))
+         case default
+            $ABORT(Invalid mode_file_format)
+         end select
+
+          call write_mode_(wr, md(j), split_list(mode_item_list, ','), freq_units, j)
           call wr%final()
+
+          deallocate(wr)
 
        end do mode_loop
 
-       deallocate(wr)
-       
     end if
 
     ! Finish
@@ -144,7 +141,7 @@ contains
 
 !****
 
-  subroutine write_summary (wr, md, items, freq_units)
+  subroutine write_summary_ (wr, md, items, freq_units)
 
     class(writer_t), intent(inout) :: wr
     type(mode_t), intent(in)       :: md(:)
@@ -159,7 +156,7 @@ contains
 
     n_md = SIZE(md)
 
-    item_loop : do j = 1,SIZE(items)
+    item_loop : do j = 1, SIZE(items)
 
        select case (items(j))
 
@@ -175,6 +172,14 @@ contains
           call wr%write('omega', md%omega)
        case('freq')
           call wr%write('freq', [(md(i)%freq(freq_units), i=1,n_md)])
+       case ('f_T')
+          call wr%write('f_T', [(ABS(md(i)%delT_eff()/md(i)%xi_r_ref()), i=1,n_md)])
+       case ('f_g')
+          call wr%write('f_g', [(ABS(md(i)%delg_eff()/md(i)%xi_r_ref()), i=1,n_md)])
+       case ('psi_T')
+          call wr%write('psi_T', [(phase(md(i)%delT_eff()/md(i)%xi_r_ref()), i=1,n_md)])
+       case ('psi_g')
+          call wr%write('psi_g', [(phase(md(i)%delg_eff()/md(i)%xi_r_ref()), i=1,n_md)])
        case('beta')
           call wr%write('beta', [(md(i)%beta(), i=1,n_md)])
        case('E')
@@ -185,15 +190,19 @@ contains
           call wr%write('W', [(md(i)%W(), i=1,n_md)])
        case('omega_im')
           call wr%write('omega_im', [(md(i)%omega_im(), i=1,n_md)])
+       case ('xi_r_ref')
+          call wr%write('xi_r_ref', md(i)%xi_r_ref())
+       case ('xi_h_ref')
+          call wr%write('xi_h_ref', md(i)%xi_h_ref())
        case('freq_units')
           call wr%write('freq_units', freq_units)
        case default
           if(n_md >= 1) then
-             select type (cf => md(1)%cf)
-             type is (coeffs_evol_t)
-                call write_summary_evol(wr, cf, items(j))
-             type is (coeffs_poly_t)
-                call write_summary_poly(wr, cf, items(j))
+             select type (ml => md(1)%ml)
+             type is (model_evol_t)
+                call write_summary_evol_(wr, ml, items(j))
+             type is (model_poly_t)
+                call write_summary_poly_(wr, ml, items(j))
              class default
                 write(ERROR_UNIT, *) 'item:', TRIM(items(j))
                 $ABORT(Invalid item)
@@ -209,21 +218,21 @@ contains
 
   contains
 
-    subroutine write_summary_evol (wr, ec, item)
+    subroutine write_summary_evol_ (wr, ml, item)
 
-      class(writer_t), intent(inout)  :: wr
-      type(coeffs_evol_t), intent(in) :: ec
-      character(LEN=*), intent(in)    :: item
+      class(writer_t), intent(inout) :: wr
+      type(model_evol_t), intent(in) :: ml
+      character(LEN=*), intent(in)   :: item
 
       ! Write the item
 
       select case (item)
       case ('M_star')
-         call wr%write('M_star', ec%M_star)
+         call wr%write('M_star', ml%M_star)
       case ('R_star')
-         call wr%write('R_star', ec%R_star)
+         call wr%write('R_star', ml%R_star)
       case ('L_star')
-         call wr%write('L_star', ec%L_star)
+         call wr%write('L_star', ml%L_star)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -233,19 +242,19 @@ contains
 
       return
 
-    end subroutine write_summary_evol
+    end subroutine write_summary_evol_
 
-    subroutine write_summary_poly (wr, pc, item)
+    subroutine write_summary_poly_ (wr, ml, item)
 
-      class(writer_t), intent(inout)  :: wr
-      type(coeffs_poly_t), intent(in) :: pc
-      character(LEN=*), intent(in)    :: item
+      class(writer_t), intent(inout) :: wr
+      type(model_poly_t), intent(in) :: ml
+      character(LEN=*), intent(in)   :: item
 
       ! Write the item
 
       select case (item)
       case ('n_poly')
-         call wr%write('n_poly', pc%n_poly)
+         call wr%write('n_poly', ml%n_poly)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -255,13 +264,13 @@ contains
 
       return
 
-    end subroutine write_summary_poly
+    end subroutine write_summary_poly_
 
-  end subroutine write_summary
+  end subroutine write_summary_
 
 !****
 
-  subroutine write_mode (wr, md, items, freq_units, i)
+  subroutine write_mode_ (wr, md, items, freq_units, i)
 
     class(writer_t), intent(inout) :: wr
     type(mode_t), intent(in)       :: md
@@ -275,7 +284,7 @@ contains
 
     call wr%write('i', i)
 
-    item_loop : do j = 1,SIZE(items)
+    item_loop : do j = 1, SIZE(items)
 
        select case (items(j))
        case ('n')
@@ -292,6 +301,14 @@ contains
           call wr%write('omega', md%omega)
        case ('freq')
           call wr%write('freq', md%freq(freq_units))
+       case ('f_T')
+          call wr%write('f_T', ABS(md%delT_eff()/md%xi_r_ref()))
+       case ('f_g')
+          call wr%write('f_g', ABS(md%delg_eff()/md%xi_r_ref()))
+       case ('psi_T')
+          call wr%write('psi_T', phase(md%delT_eff()/md%xi_r_ref()))
+       case ('psi_g')
+          call wr%write('psi_g', phase(md%delg_eff()/md%xi_r_ref()))
        case ('beta')
           call wr%write('beta', md%beta())
        case ('E')
@@ -305,27 +322,27 @@ contains
        case ('x')
           call wr%write('x', md%x)
        case('V')
-          call wr%write('V', md%cf%V(md%x))
+          call wr%write('V', md%ml%V(md%x))
        case('As')
-          call wr%write('As', md%cf%As(md%x))
+          call wr%write('As', md%ml%As(md%x))
        case('U')
-          call wr%write('U', md%cf%U(md%x))
+          call wr%write('U', md%ml%U(md%x))
        case('c_1')
-          call wr%write('c_1', md%cf%c_1(md%x))
+          call wr%write('c_1', md%ml%c_1(md%x))
        case ('Gamma_1')
-          call wr%write('Gamma_1', md%cf%Gamma_1(md%x))
+          call wr%write('Gamma_1', md%ml%Gamma_1(md%x))
        case ('nabla_ad')
-          call wr%write('nabla_ad', md%cf%nabla_ad(md%x))
+          call wr%write('nabla_ad', md%ml%nabla_ad(md%x))
        case ('delta')
-          call wr%write('delta', md%cf%delta(md%x))
+          call wr%write('delta', md%ml%delta(md%x))
        case ('xi_r')
           call wr%write('xi_r', md%xi_r())
        case ('xi_h')
           call wr%write('xi_h', md%xi_h())
-       case ('Yt_1')
-          call wr%write('Yt_1', md%Yt_1())
-       case ('Yt_2')
-          call wr%write('Yt_2', md%Yt_2())
+       case ('xi_r_ref')
+          call wr%write('xi_r_ref', md%xi_r_ref())
+       case ('xi_h_ref')
+          call wr%write('xi_h_ref', md%xi_h_ref())
        case ('phip')
           call wr%write('phip', md%phip())
        case ('dphip_dx')
@@ -348,6 +365,10 @@ contains
           call wr%write('dE_dx', md%dE_dx())
        case ('dW_dx')
           call wr%write('dW_dx', md%dW_dx())
+       case ('Yt_1')
+          call wr%write('Yt_1', md%Yt_1())
+       case ('Yt_2')
+          call wr%write('Yt_2', md%Yt_2())
        case ('I_0')
           call wr%write('I_0', md%I_0())
        case ('I_1')
@@ -359,11 +380,11 @@ contains
        case('freq_units')
           call wr%write('freq_units', freq_units)
        case default
-          select type (cf => md%cf)
-          type is (coeffs_evol_t)
-             call write_mode_evol(wr, cf, items(j))
-          type is (coeffs_poly_t)
-             call write_mode_poly(wr, cf, items(j))
+          select type (ml => md%ml)
+          type is (model_evol_t)
+             call write_mode_evol_(wr, ml, items(j))
+          type is (model_poly_t)
+             call write_mode_poly_(wr, ml, items(j))
           class default
              write(ERROR_UNIT, *) 'item:', TRIM(items(j))
              $ABORT(Invalid item)
@@ -378,29 +399,29 @@ contains
 
   contains
 
-    subroutine write_mode_evol (wr, ec, item)
+    subroutine write_mode_evol_ (wr, ml, item)
 
-      class(writer_t), intent(inout)  :: wr
-      type(coeffs_evol_t), intent(in) :: ec
-      character(LEN=*), intent(in)    :: item
+      class(writer_t), intent(inout) :: wr
+      type(model_evol_t), intent(in) :: ml
+      character(LEN=*), intent(in)   :: item
 
       ! Write the item
 
       select case (item)
       case ('M_star')
-         call wr%write('M_star', ec%M_star)
+         call wr%write('M_star', ml%M_star)
       case ('R_star')
-         call wr%write('R_star', ec%R_star)
+         call wr%write('R_star', ml%R_star)
       case ('L_star')
-         call wr%write('L_star', ec%L_star)
+         call wr%write('L_star', ml%L_star)
       case ('m')
-         call wr%write('m', ec%m(md%x))
+         call wr%write('m', ml%m(md%x))
       case ('p')
-         call wr%write('p', ec%p(md%x))
+         call wr%write('p', ml%p(md%x))
       case ('rho')
-         call wr%write('rho', ec%rho(md%x))
+         call wr%write('rho', ml%rho(md%x))
       case ('T')
-         call wr%write('T', ec%T(md%x))
+         call wr%write('T', ml%T(md%x))
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -410,19 +431,19 @@ contains
 
       return
 
-    end subroutine write_mode_evol
+    end subroutine write_mode_evol_
 
-    subroutine write_mode_poly (wr, pc, item)
+    subroutine write_mode_poly_ (wr, ml, item)
 
-      class(writer_t), intent(inout)  :: wr
-      type(coeffs_poly_t), intent(in) :: pc
-      character(LEN=*), intent(in)    :: item
+      class(writer_t), intent(inout) :: wr
+      type(model_poly_t), intent(in) :: ml
+      character(LEN=*), intent(in)   :: item
 
       ! Write the item
 
       select case (item)
       case ('n_poly')
-         call wr%write('n_poly', pc%n_poly)
+         call wr%write('n_poly', ml%n_poly)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -432,8 +453,8 @@ contains
 
       return
 
-    end subroutine write_mode_poly
-
-  end subroutine write_mode
+    end subroutine write_mode_poly_
+    
+  end subroutine write_mode_
 
 end module gyre_output

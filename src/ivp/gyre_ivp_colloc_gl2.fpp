@@ -39,14 +39,19 @@ module gyre_ivp_colloc_GL2
 
   type, extends (ivp_colloc_t) :: ivp_colloc_GL2_t
      private
-     class(jacobian_t), pointer :: jc => null()
+     class(jacobian_t), allocatable :: jc
    contains
      private
-     procedure, public :: init
-     procedure, public :: solve
-     procedure, public :: recon
-     procedure, public :: abscissa
+     procedure, public :: solve => solve_
+     procedure, public :: recon => recon_
+     procedure, public :: abscissa => abscissa_
   end type ivp_colloc_GL2_t
+
+  ! Interfaces
+
+  interface ivp_colloc_GL2_t
+     module procedure ivp_colloc_GL2_t_
+  end interface ivp_colloc_GL2_t
 
   ! Access specifiers
 
@@ -56,26 +61,26 @@ module gyre_ivp_colloc_GL2
 
 contains
 
-  subroutine init (this, jc)
+  function ivp_colloc_GL2_t_ (jc) result (iv)
 
-    class(ivp_colloc_GL2_t), intent(out)  :: this
-    class(jacobian_t), intent(in), target :: jc
+    class(jacobian_t), intent(in) :: jc
+    type(ivp_colloc_GL2_t)        :: iv
 
-    ! Initialize the ivp_t
+    ! Construct the ivp_colloc_GL2_t
 
-    this%jc => jc
+    allocate(iv%jc, SOURCE=jc)
 
-    this%n_e = jc%n_e
+    iv%n_e = jc%n_e
 
     ! Finish
 
     return
     
-  end subroutine init
+  end function ivp_colloc_GL2_t_
 
 !****
 
-  subroutine solve (this, omega, x_a, x_b, E_l, E_r, S, use_real)
+  subroutine solve_ (this, omega, x_a, x_b, E_l, E_r, S, use_real)
 
     class(ivp_colloc_GL2_t), intent(in) :: this
     complex(WP), intent(in)             :: omega
@@ -84,7 +89,7 @@ contains
     complex(WP), intent(out)            :: E_l(:,:)
     complex(WP), intent(out)            :: E_r(:,:)
     type(ext_complex_t), intent(out)    :: S
-    logical, intent(in), optional       :: use_real
+    logical, optional, intent(in)       :: use_real
 
     real(WP)    :: dx
     real(WP)    :: x(1)
@@ -110,15 +115,15 @@ contains
     E_l = 0.5_WP*dx*A + identity_matrix(this%n_e)
     E_r = 0.5_WP*dx*A - identity_matrix(this%n_e)
 
-    S = ext_complex(1._WP)
+    S = ext_complex_t(1._WP)
 
     ! Finish
 
-  end subroutine solve
+  end subroutine solve_
 
 !****
 
-  subroutine recon (this, omega, x_a, x_b, y_a, y_b, x, y, use_real)
+  subroutine recon_ (this, omega, x_a, x_b, y_a, y_b, x, y, use_real)
 
     class(ivp_colloc_GL2_t), intent(in) :: this
     complex(WP), intent(in)             :: omega
@@ -128,7 +133,7 @@ contains
     complex(WP), intent(in)             :: y_b(:)
     real(WP), intent(in)                :: x(:)
     complex(WP), intent(out)            :: y(:,:)
-    logical, intent(in), optional       :: use_real
+    logical, optional, intent(in)       :: use_real
 
     integer  :: i
     real(WP) :: w
@@ -153,11 +158,11 @@ contains
 
     return
 
-  end subroutine recon
+  end subroutine recon_
 
 !****
 
-  function abscissa (this, x_a, x_b) result (x)
+  function abscissa_ (this, x_a, x_b) result (x)
 
     class(ivp_colloc_GL2_t), intent(in) :: this
     real(WP), intent(in)                :: x_a
@@ -176,6 +181,6 @@ contains
 
     return
 
-  end function abscissa
+  end function abscissa_
 
 end module gyre_ivp_colloc_GL2

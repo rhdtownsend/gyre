@@ -23,7 +23,7 @@ module gyre_atmos
 
   use core_kinds
 
-  use gyre_coeffs
+  use gyre_model
 
   use ISO_FORTRAN_ENV
 
@@ -34,7 +34,7 @@ module gyre_atmos
   private
 
   public :: atmos_wavenumber
-  public :: eval_cutoff_freqs
+  public :: eval_atmos_cutoff_freqs
   public :: eval_atmos_coeffs_unno
   public :: eval_atmos_coeffs_jcd
 
@@ -62,7 +62,7 @@ contains
 
        ! Calculate cutoff frequencies
 
-       call eval_cutoff_freqs(V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+       call eval_atmos_cutoff_freqs(V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
        ! Evaluate the wavenumber
 
@@ -129,7 +129,7 @@ contains
 
 !****
 
-  subroutine eval_cutoff_freqs (V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+  subroutine eval_atmos_cutoff_freqs (V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
 
     real(WP), intent(in)  :: V_g
     real(WP), intent(in)  :: As
@@ -142,7 +142,7 @@ contains
     real(WP) :: b
     real(WP) :: c
 
-    ! Evaluate the cutoff frequencies from the supplied atmosphere coefficients
+    ! Evaluate the atmospheric cutoff frequencies from the supplied coefficients
 
     a = -4._WP*V_g*c_1**2
     b = ((As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1))*c_1
@@ -157,23 +157,23 @@ contains
 
     return
 
-  end subroutine eval_cutoff_freqs
+  end subroutine eval_atmos_cutoff_freqs
 
 !****
   
-  subroutine eval_atmos_coeffs_unno (cf, x_o, V_g, As, c_1)
+  subroutine eval_atmos_coeffs_unno (ml, x_o, V_g, As, c_1)
 
-    class(coeffs_t), intent(in) :: cf
-    real(WP), intent(in)        :: x_o
-    real(WP), intent(out)       :: V_g
-    real(WP), intent(out)       :: As
-    real(WP), intent(out)       :: c_1
+    class(model_t), intent(in) :: ml
+    real(WP), intent(in)       :: x_o
+    real(WP), intent(out)      :: V_g
+    real(WP), intent(out)      :: As
+    real(WP), intent(out)      :: c_1
 
     ! Evaluate atmosphere coefficients (Unno et al. formulation)
 
-    V_g = cf%V(x_o)/cf%Gamma_1(x_o)
-    As = cf%As(x_o)
-    c_1 = cf%c_1(x_o)
+    V_g = ml%V(x_o)/ml%Gamma_1(x_o)
+    As = ml%As(x_o)
+    c_1 = ml%c_1(x_o)
 
     ! Finish
 
@@ -183,19 +183,19 @@ contains
 
 !****
   
-  subroutine eval_atmos_coeffs_jcd (cf, x_o, V_g, As, c_1)
+  subroutine eval_atmos_coeffs_jcd (ml, x_o, V_g, As, c_1)
 
-    class(coeffs_t), intent(in) :: cf
-    real(WP), intent(in)        :: x_o
-    real(WP), intent(out)       :: V_g
-    real(WP), intent(out)       :: As
-    real(WP), intent(out)       :: c_1
+    class(model_t), intent(in) :: ml
+    real(WP), intent(in)       :: x_o
+    real(WP), intent(out)      :: V_g
+    real(WP), intent(out)      :: As
+    real(WP), intent(out)      :: c_1
 
     ! Evaluate atmosphere coefficients (JCD formulation)
 
-    V_g = cf%V(x_o)/cf%Gamma_1(x_o)
-    As = cf%V(x_o)*(1._WP-1._WP/cf%Gamma_1(x_o))
-    c_1 = cf%c_1(x_o)
+    V_g = ml%V(x_o)/ml%Gamma_1(x_o)
+    As = ml%V(x_o)*(1._WP-1._WP/ml%Gamma_1(x_o))
+    c_1 = ml%c_1(x_o)
 
     ! Finish
 

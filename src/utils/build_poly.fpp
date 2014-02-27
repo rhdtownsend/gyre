@@ -22,7 +22,7 @@ program build_poly
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
   use core_hgroup
 
   use gyre_lane_emden

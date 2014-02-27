@@ -34,25 +34,16 @@ module gyre_ivp
      integer, public :: n_e
    contains
      private
-     procedure(init_i), deferred, public     :: init
-     procedure(solve_i), deferred, public    :: solve
-     procedure(recon_i), deferred, public    :: recon
-     procedure(abscissa_i), deferred, public :: abscissa
+     procedure(solve_), deferred, public    :: solve
+     procedure(recon_), deferred, public    :: recon
+     procedure(abscissa_), deferred, public :: abscissa
   end type ivp_t
 
   ! Interfaces
 
   abstract interface
 
-     subroutine init_i (this, jc)
-       use core_kinds
-       use gyre_jacobian
-       import ivp_t
-       class(ivp_t), intent(out)             :: this
-       class(jacobian_t), intent(in), target :: jc
-     end subroutine init_i
-
-     subroutine solve_i (this, omega, x_a, x_b, E_l, E_r, S, use_real)
+     subroutine solve_ (this, omega, x_a, x_b, E_l, E_r, S, use_real)
        use core_kinds
        use gyre_jacobian
        use gyre_ext_arith
@@ -64,10 +55,10 @@ module gyre_ivp
        complex(WP), intent(out)         :: E_l(:,:)
        complex(WP), intent(out)         :: E_r(:,:)
        type(ext_complex_t), intent(out) :: S
-       logical, intent(in), optional    :: use_real
-     end subroutine solve_i
+       logical, optional, intent(in)    :: use_real
+     end subroutine solve_
 
-     subroutine recon_i (this, omega, x_a, x_b, y_a, y_b, x, y, use_real)
+     subroutine recon_ (this, omega, x_a, x_b, y_a, y_b, x, y, use_real)
        use core_kinds
        use gyre_jacobian
        import ivp_t
@@ -79,17 +70,17 @@ module gyre_ivp
        complex(WP), intent(in)       :: y_b(:)
        real(WP), intent(in)          :: x(:)
        complex(WP), intent(out)      :: y(:,:)
-       logical, intent(in), optional :: use_real
-     end subroutine recon_i
+       logical, optional, intent(in) :: use_real
+     end subroutine recon_
 
-     function abscissa_i (this, x_a, x_b) result (x)
+     function abscissa_ (this, x_a, x_b) result (x)
        use core_kinds
        import ivp_t
        class(ivp_t), intent(in) :: this
        real(WP), intent(in)     :: x_a
        real(WP), intent(in)     :: x_b
        real(WP), allocatable    :: x(:)
-     end function abscissa_i
+     end function abscissa_
 
   end interface
 

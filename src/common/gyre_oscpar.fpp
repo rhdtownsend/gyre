@@ -32,6 +32,7 @@ module gyre_oscpar
   ! Derived-type definitions
 
   type :: oscpar_t
+     real(WP)          :: x_ref
      integer           :: l
      integer           :: m
      integer           :: X_n_pg_min
@@ -44,16 +45,16 @@ module gyre_oscpar
 
   ! Interfaces
 
-  $if($MPI)
+  $if ($MPI)
 
   interface bcast
-     module procedure bcast_op_0
-     module procedure bcast_op_1
+     module procedure bcast_0_
+     module procedure bcast_1_
   end interface bcast
 
   interface bcast_alloc
-     module procedure bcast_alloc_op_0
-     module procedure bcast_alloc_op_1
+     module procedure bcast_alloc_0_
+     module procedure bcast_alloc_1_
   end interface bcast_alloc
 
   $endif
@@ -63,7 +64,7 @@ module gyre_oscpar
   private
 
   public :: oscpar_t
-  $if($MPI)
+  $if ($MPI)
   public :: bcast
   public :: bcast_alloc
   $endif
@@ -72,18 +73,20 @@ module gyre_oscpar
 
 contains
 
-  $if($MPI)
+  $if ($MPI)
 
   $define $BCAST $sub
 
   $local $RANK $1
 
-  subroutine bcast_op_$RANK (op, root_rank)
+  subroutine bcast_${RANK}_ (op, root_rank)
 
     type(oscpar_t), intent(inout) :: op$ARRAY_SPEC($RANK)
     integer, intent(in)           :: root_rank
 
-    ! Broadcast the oscpar
+    ! Broadcast the oscpar_t
+
+    call bcast(op%x_ref, root_rank)
 
     call bcast(op%l, root_rank)
     call bcast(op%m, root_rank)
@@ -100,7 +103,7 @@ contains
 
     return
 
-  end subroutine bcast_op_$RANK
+  end subroutine bcast_${RANK}_
 
   $endsub
 
@@ -109,8 +112,8 @@ contains
 
 !****
 
-  $BCAST_ALLOC(op,type(oscpar_t),0)
-  $BCAST_ALLOC(op,type(oscpar_t),1)
+  $BCAST_ALLOC(type(oscpar_t),0)
+  $BCAST_ALLOC(type(oscpar_t),1)
 
   $endif
 

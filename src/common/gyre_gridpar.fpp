@@ -23,7 +23,7 @@ module gyre_gridpar
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
   use core_parallel
 
   ! No implicit typing
@@ -49,16 +49,16 @@ module gyre_gridpar
 
   ! Interfaces
 
-  $if($MPI)
+  $if ($MPI)
 
   interface bcast
-     module procedure bcast_gp_0
-     module procedure bcast_gp_1
+     module procedure bcast_0_
+     module procedure bcast_1_
   end interface bcast
 
   interface bcast_alloc
-     module procedure bcast_alloc_gp_0
-     module procedure bcast_alloc_gp_1
+     module procedure bcast_alloc_0_
+     module procedure bcast_alloc_1_
   end interface bcast_alloc
 
   $endif
@@ -68,7 +68,7 @@ module gyre_gridpar
   private
 
   public :: gridpar_t
-  $if($MPI)
+  $if ($MPI)
   public :: bcast
   public :: bcast_alloc
   $endif
@@ -77,18 +77,18 @@ module gyre_gridpar
 
 contains
 
-  $if($MPI)
+  $if ($MPI)
 
   $define $BCAST $sub
 
   $local $RANK $1
 
-  subroutine bcast_gp_$RANK (gp, root_rank)
+  subroutine bcast_${RANK}_ (gp, root_rank)
 
     type(gridpar_t), intent(inout) :: gp$ARRAY_SPEC($RANK)
     integer, intent(in)            :: root_rank
 
-    ! Broadcast the gridpar
+    ! Broadcast the gridpar_t
 
     call bcast(gp%x_i, root_rank)
     call bcast(gp%x_o, root_rank)
@@ -113,7 +113,7 @@ contains
 
     return
 
-  end subroutine bcast_gp_$RANK
+  end subroutine bcast_${RANK}_
 
   $endsub
 
@@ -122,8 +122,8 @@ contains
 
 !****
 
-  $BCAST_ALLOC(gp,type(gridpar_t),0)
-  $BCAST_ALLOC(gp,type(gridpar_t),1)
+  $BCAST_ALLOC(type(gridpar_t),0)
+  $BCAST_ALLOC(type(gridpar_t),1)
 
   $endif
 

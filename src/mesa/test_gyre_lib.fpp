@@ -22,7 +22,7 @@ program test_gyre_lib
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
 
   use gyre_lib
 
@@ -44,7 +44,7 @@ program test_gyre_lib
 
   ! Read the model
 
-  call gyre_read_model('model.mesa', G_GRAVITY, 'MONO')
+  call gyre_read_model('bcep.mesa', 'MONO')
 
   ! Repeatedy find modes
 

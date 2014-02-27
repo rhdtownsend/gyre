@@ -55,17 +55,22 @@ module gyre_txt_writer
      integer                               :: n
    contains
      private
-     procedure, public :: init
-     procedure, public :: final
-     procedure         :: write_i_0
-     procedure         :: write_i_1
-     procedure         :: write_r_0
-     procedure         :: write_r_1
-     procedure         :: write_c_0
-     procedure         :: write_c_1
-     procedure         :: write_a_0
-     procedure         :: write_a_1
+     procedure, public :: final => final_
+     procedure         :: write_i_0_
+     procedure         :: write_i_1_
+     procedure         :: write_r_0_
+     procedure         :: write_r_1_
+     procedure         :: write_c_0_
+     procedure         :: write_c_1_
+     procedure         :: write_a_0_
+     procedure         :: write_a_1_
   end type txt_writer_t
+
+  ! Interfaces
+
+  interface txt_writer_t
+     module procedure txt_writer_t_
+  end interface txt_writer_t
 
   ! Access specifiers
 
@@ -77,29 +82,29 @@ module gyre_txt_writer
 
 contains
 
-  subroutine init (this, file_name)
+  function txt_writer_t_ (file_name) result (wr)
 
-    class(txt_writer_t), intent(out) :: this
-    character(LEN=*), intent(in)     :: file_name
+    character(LEN=*), intent(in) :: file_name
+    type(txt_writer_t)           :: wr
 
-    ! Initialize the txt_writer
+    ! Construct the txt_writer_t
 
-    open(NEWUNIT=this%unit, FILE=file_name, STATUS='REPLACE', FORM='FORMATTED', ACCESS='STREAM')
+    open(NEWUNIT=wr%unit, FILE=file_name, STATUS='REPLACE', FORM='FORMATTED', ACCESS='STREAM')
     
-    this%n_s = 0
-    this%n_v = 0
+    wr%n_s = 0
+    wr%n_v = 0
 
-    this%n = 0
+    wr%n = 0
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function txt_writer_t_
 
 !****
 
-  subroutine final (this)
+  subroutine final_ (this)
 
     class(txt_writer_t), intent(inout) :: this
 
@@ -136,7 +141,7 @@ contains
 
     return
 
-  end subroutine final
+  end subroutine final_
 
 !****
   
@@ -146,7 +151,7 @@ contains
   $local $DATA_TYPE $2
   $local $FORMAT $3
 
-  subroutine write_${INFIX}_0 (this, name, data)
+  subroutine write_${INFIX}_0_ (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
     character(LEN=*), intent(in)       :: name
@@ -180,11 +185,11 @@ contains
 
     return
 
-  end subroutine write_${INFIX}_0
+  end subroutine write_${INFIX}_0_
 
 !****
 
-  subroutine write_${INFIX}_1 (this, name, data)
+  subroutine write_${INFIX}_1_ (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
     character(LEN=*), intent(in)       :: name
@@ -224,19 +229,17 @@ contains
 
     return
 
-  end subroutine write_${INFIX}_1
+  end subroutine write_${INFIX}_1_
 
   $endsub
 
   $WRITE(i,integer,I_FORMAT)
-
   $WRITE(r,real(WP),R_FORMAT)
-
   $WRITE(a,character(LEN=*),A_FORMAT)
 
 !****
   
-  subroutine write_c_0 (this, name, data)
+  subroutine write_c_0_ (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
     character(LEN=*), intent(in)       :: name
@@ -272,11 +275,11 @@ contains
 
     return
 
-  end subroutine write_c_0
+  end subroutine write_c_0_
 
 !****
 
-  subroutine write_c_1 (this, name, data)
+  subroutine write_c_1_ (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
     character(LEN=*), intent(in)       :: name
@@ -318,6 +321,6 @@ contains
 
     return
 
-  end subroutine write_c_1
+  end subroutine write_c_1_
 
 end module gyre_txt_writer

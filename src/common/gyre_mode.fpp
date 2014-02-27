@@ -22,16 +22,17 @@ module gyre_mode
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
   use core_parallel
 
-  use gyre_coeffs
+  use gyre_model
   $if($MPI)
-  use gyre_coeffs_mpi
+  use gyre_model_mpi
   $endif
   use gyre_ext_arith
   use gyre_oscpar
   use gyre_grid
+  use gyre_mode_funcs
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -43,11 +44,13 @@ module gyre_mode
   ! Derived-type definitions
 
   type :: mode_t
-     class(coeffs_t), pointer :: cf => null()
+     class(model_t), pointer  :: ml => null()
      type(oscpar_t)           :: op
      type(ext_real_t)         :: chi
      real(WP), allocatable    :: x(:)
      complex(WP), allocatable :: y(:,:)
+     real(WP)                 :: x_ref
+     complex(WP)              :: y_ref(6)
      complex(WP)              :: omega
      integer                  :: n_pg
      integer                  :: n_p
@@ -56,45 +59,53 @@ module gyre_mode
      integer                  :: n_iter
    contains
      private
-     procedure, public :: init
      $if($GFORTRAN_PR57922)
-     procedure, public :: final
+     procedure, public :: final => final_
      $endif
-     procedure, public :: freq
-     procedure, public :: xi_r
-     procedure, public :: xi_h
-     procedure, public :: Yt_1
-     procedure, public :: Yt_2
-     procedure, public :: phip
-     procedure, public :: dphip_dx
-     procedure, public :: delS
-     procedure, public :: delS_en
-     procedure, public :: delL
-     procedure, public :: delL_rd
-     procedure, public :: delp
-     procedure, public :: delrho
-     procedure, public :: delT
-     procedure, public :: dE_dx
-     procedure, public :: dW_dx
-     procedure, public :: I_0
-     procedure, public :: I_1
-     procedure, public :: prop_type
-     procedure, public :: K
-     procedure, public :: beta
-     procedure, public :: E
-     procedure, public :: E_norm
-     procedure, public :: W
-     procedure, public :: omega_im
+     procedure, public :: freq => freq_
+     procedure, public :: xi_r => xi_r_
+     procedure, public :: xi_h => xi_h_
+     procedure, public :: phip => phip_
+     procedure, public :: dphip_dx => dphip_dx_
+     procedure, public :: delS => delS_
+     procedure, public :: delL => delL_
+     procedure, public :: delp => delp_
+     procedure, public :: delrho => delrho_
+     procedure, public :: delT => delT_
+     procedure, public :: dE_dx => dE_dx_
+     procedure, public :: dW_dx => dW_dx_
+     procedure, public :: Yt_1 => Yt_1_
+     procedure, public :: Yt_2 => Yt_2_
+     procedure, public :: I_0 => I_0_
+     procedure, public :: I_1 => I_1_
+     procedure, public :: xi_r_ref => xi_r_ref_
+     procedure, public :: xi_h_ref => xi_h_ref_
+     procedure, public :: phip_ref => phip_ref_
+     procedure, public :: dphip_dx_ref => dphip_dx_ref_
+     procedure, public :: delT_eff => delT_eff_
+     procedure, public :: delg_eff => delg_eff_
+     procedure, public :: E => E_
+     procedure, public :: E_norm => E_norm_
+     procedure, public :: W => W_
+     procedure, public :: K => K_
+     procedure, public :: beta => beta_
+     procedure, public :: omega_im => omega_im_
+     procedure, public :: prop_type => prop_type_
+     procedure         :: classify_
+     procedure, public :: delS_en => delS_en_
+     procedure, public :: delL_rd => delL_rd_
   end type mode_t
 
   ! Interfaces
 
-  $if($MPI)
+  interface mode_t
+     module procedure mode_t_
+  end interface mode_t
 
+  $if ($MPI)
   interface bcast
-     module procedure bcast_md
+     module procedure bcast_
   end interface bcast
-
   $endif
 
   ! Access specifiers
@@ -110,121 +121,92 @@ module gyre_mode
 
 contains
 
-  subroutine init (this, cf, op, omega, x, y, chi, n_iter)
+  function mode_t_ (ml, op, omega, x, y, x_ref, y_ref, chi, n_iter) result (md)
 
-    class(mode_t), intent(out)          :: this
-    class(coeffs_t), intent(in), target :: cf
+    class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
     complex(WP), intent(in)             :: omega
     real(WP), intent(in)                :: x(:)
     complex(WP), intent(in)             :: y(:,:)
+    real(WP), intent(in)                :: x_ref
+    complex(WP), intent(in)             :: y_ref(:)
     type(ext_real_t), intent(in)        :: chi
     integer, intent(in)                 :: n_iter
+    type(mode_t)                        :: md
 
-    real(WP) :: phase
-    integer  :: n_p
-    integer  :: n_g
-    integer  :: n_pg
+    real(WP)    :: phase
+    complex(WP) :: norm_fac
+    integer     :: n_p
+    integer     :: n_g
+    integer     :: n_pg
 
     $CHECK_BOUNDS(SIZE(y, 1),6)
     $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
 
-    ! Initialize the mode
+    ! Construct the mode_t
 
-    this%cf => cf
+    md%ml => ml
 
-    this%op = op
+    md%op = op
 
-    this%chi = chi
+    md%chi = chi
 
-    this%x = x
-    this%y = y
+    md%x = x
+    md%y = y
 
-    this%omega = omega
+    md%x_ref = x_ref
+    md%y_ref = y_ref
 
-    this%n = SIZE(this%x)
-    this%n_iter = n_iter
+    md%omega = omega
 
-    ! Normalize by the mode inertia, and so that y(1,n) is real
+    md%n = SIZE(md%x)
+    md%n_iter = n_iter
 
-    phase = ATAN2(AIMAG(this%y(1,this%n)), REAL(this%y(1,this%n)))
+    ! Normalize by the mode inertia, and so that y_ref(1) is real
 
-    this%y = this%y/SQRT(this%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+    phase = ATAN2(AIMAG(md%y_ref(1)), REAL(md%y_ref(1)))
+
+    norm_fac = 1._WP/SQRT(md%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+
+    md%y = norm_fac*md%y
+    md%y_ref = norm_fac*md%y_ref
 
     ! Classify the mode
 
-    call classify(this, n_p, n_g, n_pg)
+    call classify_(md, n_p, n_g, n_pg)
 
-    this%n_p = n_p
-    this%n_g = n_g
-    this%n_pg = n_pg
+    md%n_p = n_p
+    md%n_g = n_g
+    md%n_pg = n_pg
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function mode_t_
 
 !****
 
   $if($GFORTRAN_PR57922)
 
-  subroutine final (this)
+  subroutine final_ (this)
 
     class(mode_t), intent(inout) :: this
 
-    ! Finalize the mode
+    ! Finalize the mode_t
 
     deallocate(this%x)
     deallocate(this%y)
 
     ! Finish
 
-  end subroutine final
+  end subroutine final_
 
   $endif
 
 !****
 
-  $if($MPI)
-
-  subroutine bcast_md (this, root_rank, cf)
-
-    class(mode_t), intent(inout)        :: this
-    integer, intent(in)                 :: root_rank
-    class(coeffs_t), intent(in), target :: cf
-
-    ! Broadcast the mode
-
-    if(MPI_RANK /= root_rank) then
-       this%cf => cf
-    endif
-
-    call bcast(this%op, root_rank)
-
-    call bcast_alloc(this%x, root_rank)
-    call bcast_alloc(this%y, root_rank)
-
-    call bcast(this%omega, root_rank)
-
-    call bcast(this%n_p, root_rank)
-    call bcast(this%n_g, root_rank)
-    call bcast(this%n_pg, root_rank)
-
-    call bcast(this%n, root_rank)
-    call bcast(this%n_iter, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_md
-
-  $endif
-
-!****
-
-  function freq (this, freq_units)
+  function freq_ (this, freq_units) result (freq)
 
     class(mode_t), intent(in)    :: this
     character(LEN=*), intent(in) :: freq_units
@@ -232,39 +214,192 @@ contains
 
     ! Calculate the frequency
 
-    freq = this%omega*freq_scale(this%cf, this%op, this%x(this%n), freq_units)
+    freq = this%omega*freq_scale(this%ml, this%op, this%x(this%n), freq_units)
 
     ! Finish
     
     return
 
-  end function freq
+  end function freq_
 
 !****
 
-  function xi_r (this)
+  $define $CALC_GRID $sub
+
+  $local $NAME $1
+  $local $TYPE $2
+
+  function ${NAME}_ (this)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: xi_r(this%n)
+    $TYPE(WP)                 :: ${NAME}_(this%n)
+
+    integer :: k
     
-    ! Calculate the radial displacement perturbation in units of
-    ! R_star
+    ! Calculate $NAME on the x grid
 
-    associate (l => this%op%l)
+    !$OMP PARALLEL DO
+    do k = 1, this%n
+       ${NAME}_(k) = ${NAME}(this%ml, this%op, this%omega, this%x(k), this%y(:,k))
+    end do
+    
+    ! Finish
 
-      if(l /= 1) then
+    return
 
-         where (this%x > 0._WP)
-            xi_r = this%y(1,:)*this%x**(l-1)
-         elsewhere
-            xi_r = 0._WP
-         end where
+  end function ${NAME}_
 
-      else
+  $endsub
 
-         xi_r = this%y(1,:)
+  $CALC_GRID(xi_r,complex)
+  $CALC_GRID(xi_h,complex)
+  $CALC_GRID(phip,complex)
+  $CALC_GRID(dphip_dx,complex)
+  $CALC_GRID(delS,complex)
+  $CALC_GRID(delL,complex)
+  $CALC_GRID(delp,complex)
+  $CALC_GRID(delrho,complex)
+  $CALC_GRID(delT,complex)
+  $CALC_GRID(dE_dx,real)
+  $CALC_GRID(dW_dx,real)
+  $CALC_GRID(Yt_1,complex)
+  $CALC_GRID(Yt_2,complex)
+  $CALC_GRID(I_0,complex)
+  $CALC_GRID(I_1,complex)
 
-      end if
+!****
+
+  function f_T_ (this) result (f_T)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: f_T
+
+    complex(WP) :: C_T
+
+    ! Calculate the non-adiabatic f_T parameter. This is expression is
+    ! based on eqn. 5 of [Dup2003]
+
+    C_T = this%delT_eff()/this%xi_r_ref()
+
+    f_T = ABS(C_T)
+
+    ! Finish
+
+    return
+
+  end function f_T_
+
+!****
+
+  function f_g_ (this) result (f_g)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: f_g
+
+    complex(WP) :: C_g
+
+    ! Calculate the non-adiabatic f_g parameter. This is expression is
+    ! based on eqn. 6 of [Dup2003]
+
+    C_g = this%delg_eff()/this%xi_r_ref()
+
+    f_g = -ABS(C_g)
+
+    ! Finish
+
+    return
+
+  end function f_g_
+
+!****
+
+  function psi_T_ (this) result (psi_T)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: psi_T
+
+    complex(WP) :: C_T
+
+    ! Calculate the non-adiabatic psi_T parameter, in radians. This is
+    ! expression is based on eqn. 5 of [Dup2003]
+
+    C_T = this%delT_eff()/this%xi_r_ref()
+
+    psi_T = ATAN2(AIMAG(C_T), REAL(C_T))
+
+    ! Finish
+
+    return
+
+  end function psi_T_
+
+!****
+
+  $define $CALC_REF $sub
+
+  $local $NAME $1
+  $local $TYPE $2
+
+  function ${NAME}_ref_ (this)
+
+    class(mode_t), intent(in) :: this
+    $TYPE(WP)                 :: ${NAME}_ref_
+
+    integer :: k
+    
+    ! Calculate $NAME at x_ref
+
+    ${NAME}_ref_ = ${NAME}(this%ml, this%op, this%omega, this%x_ref, this%y_ref)
+    
+    ! Finish
+
+    return
+
+  end function ${NAME}_ref_
+
+  $endsub
+
+  $CALC_REF(xi_r,complex)
+  $CALC_REF(xi_h,complex)
+  $CALC_REF(phip,complex)
+  $CALC_REF(dphip_dx,complex)
+
+!****
+
+  function delT_eff_ (this) result (delT_eff)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delT_eff
+
+    ! Calculate the effective temperature perturbation at x_ref
+    ! (assumed to correspond to the photosphere), in units of
+    ! T_eff. This expression is based on the standard definition of
+    ! effective temperature
+
+    delT_eff = 0.25_WP*(delL(this%ml, this%op, this%omega, this%x_ref, this%y_ref) - &
+                  2._WP*xi_r(this%ml, this%op, this%omega, this%x_ref, this%y_ref))
+
+    ! Finish
+
+    return
+
+  end function delT_eff_
+
+!****
+
+  function delg_eff_ (this) result (delg_eff)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delg_eff
+
+    ! Calculate the effective gravity perturbation at x_ref (assumed
+    ! to correspond to the photosphere), in units of the gravity. This
+    ! expression is based on eqn. 24 of [Dup2002]
+
+    associate (c_1 => this%ml%c_1(this%x_ref), U => this%ml%U(this%x_ref), &
+               x => this%x_ref)
+
+      delg_eff = (c_1/x)*this%dphip_dx_ref() + (U - (2._WP + c_1*this%omega**2))*this%xi_r_ref()/x
 
     end associate
 
@@ -272,394 +407,63 @@ contains
 
     return
 
-  end function xi_r
+  end function delg_eff_
 
 !****
 
-  function xi_h (this)
+  function E_ (this) result (E)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: xi_h(this%n)
+    real(WP)                  :: E
     
-    ! Calculate the radial displacement perturbation in units of
-    ! R_star
+    ! Calculate the total mode inertia, in units of M_star
+    ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010]
 
-    associate (c_1 => this%cf%c_1(this%x), &
-               l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega))
-
-      if(l /= 0) then
-
-         if(l /= 1) then
-
-            where (this%x > 0._WP)
-               xi_h = this%y(2,:)*this%x**(l-1)/(c_1*omega_c**2)
-            elsewhere
-               xi_h = 0._WP
-            end where
-
-         else
-
-            xi_h = this%y(2,:)/(c_1*omega_c**2)
-
-         endif
-
-      else
-
-         xi_h = 0._WP
-
-      end if
-
-    end associate
+    E = integrate(this%x, this%dE_dx())
 
     ! Finish
 
     return
 
-  end function xi_h
+  end function E_
 
 !****
 
-  function Yt_1 (this)
-
+  function E_norm_ (this) result (E_norm)
+ 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: Yt_1(this%n)
+    real(WP)                  :: E_norm
 
-    ! Calculate the Takata Y_1 function; this is based on eqn. 69 of
-    ! Takata (2006, PASJ, 58, 839)
+    real(WP)    :: E
+    complex(WP) :: xi_r(this%n)
+    complex(WP) :: xi_h(this%n)
+    complex(WP) :: xi_r_1
+    complex(WP) :: xi_h_1
+    real(WP)    :: A2
 
-    associate (J => 1._WP - this%cf%U(this%x)/3._WP)
+    ! Calculate the normalized mode inertia. This expression is based
+    ! on eqn. 3.140 of [Aer2010]
 
-      Yt_1 = J*this%y(1,:) + (this%y(3,:) - this%y(4,:))/3._WP
-      
-    end associate
-
-    ! Finish
-
-    return
-
-  end function Yt_1
-
-!****
-
-  function Yt_2 (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: Yt_2(this%n)
-
-    ! Calculate the Takata Y_2 function; this is based on eqn. 70 of
-    ! Takata (2006, PASJ, 58, 839), divided by V
-
-    Yt_2 = this%y(2,:) - this%y(1,:) - this%y(3,:)
-
-    ! Finish
-
-  end function Yt_2
-
-!****
-
-  function phip (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: phip(this%n)
-    
-    ! Calculate the Eulerian gravitational potential perturbation in units of
-    ! G M_star / R_star
-
-    associate (c_1 => this%cf%c_1(this%x), l => this%op%l)
-
-      phip = this%y(3,:)*this%x**l/c_1
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function phip
-
-!****
-
-  function dphip_dx (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: dphip_dx(this%n)
-    
-    ! Calculate the Eulerian gravity perturbation in units of G M_star
-    ! / R_star
-
-    associate (c_1 => this%cf%c_1(this%x), l => this%op%l)
-
-      if(l /= 1) then
-
-         where (this%x > 0._WP)
-            dphip_dx = this%y(4,:)*this%x**(l-1)/c_1
-         elsewhere
-            dphip_dx = 0._WP
-         end where
-
-      else
-
-         dphip_dx = this%y(4,:)/c_1
-
-      end if
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dphip_dx
-
-!****
-
-  function delS (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: delS(this%n)
-
-    ! Calculate the Lagrangian specific entropy perturbation in units
-    ! of c_p
+    E = this%E()
 
     associate(l => this%op%l)
 
-      where (this%x /= 0._WP)
-         delS = this%y(5,:)*this%x**(l-2)
-      elsewhere
-         delS = 0._WP
-      end where
-
-    end associate
-         
-    ! Finish
-
-    return
-
-  end function delS
-
-!****
-
-  function delS_en (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: delS_en(this%n)
-
-    complex(WP) :: A_6(6,this%n)
-    complex(WP) :: dy_6(this%n)
-    complex(WP) :: y_5(this%n)
-
-    ! Calculate the Lagrangian specific entropy perturbation in units
-    ! of c_p, from the energy equation
-
-    associate(V => this%cf%V(this%x), c_1 => this%cf%c_1(this%x), &
-              nabla_ad => this%cf%nabla_ad(this%x), nabla => this%cf%nabla(this%x), &
-              c_rad => this%cf%c_rad(this%x), dc_rad => this%cf%dc_rad(this%x), c_thm => this%cf%c_thm(this%x), &
-              c_eps_ad => this%cf%c_eps_ad(this%x), c_eps_S => this%cf%c_eps_S(this%x), &              
-              l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega))
-
-      where(this%x /= 0)
-         A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-         A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
-         A_6(4,:) = 0._WP
-         A_6(5,:) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
-         A_6(6,:) = -1._WP - l
-      elsewhere
-         A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-         A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
-         A_6(4,:) = 0._WP
-         A_6(5,:) = -HUGE(0._WP)
-         A_6(6,:) = -1._WP - l
-      endwhere
-
-      dy_6 = this%x*deriv(this%x, this%y(6,:))
-
-      y_5 = (dy_6 - (A_6(1,:)*this%y(1,:) + &
-                     A_6(2,:)*this%y(2,:) + &
-                     A_6(3,:)*this%y(3,:) + &
-                     A_6(4,:)*this%y(4,:) + &
-                     A_6(6,:)*this%y(6,:)))/A_6(5,:)
-
-      where(this%x /= 0._WP)
-         delS_en = y_5*this%x**(l-2)
-      elsewhere
-         delS_en = 0._WP
-      end where
-
-    end associate
-         
-    ! Finish
-
-    return
-
-  contains
-
-    function deriv (x, y) result (dy_dx)
-
-      real(WP), intent(in)    :: x(:)
-      complex(WP), intent(in) :: y(:)
-      complex(WP)             :: dy_dx(SIZE(x))
-      
-      integer :: n
-      integer :: i
-
-      $CHECK_BOUNDS(SIZE(y),SIZE(x))
-
-      ! Differentiate y(x) using centered finite differences
-
-      n = SIZE(x)
-
-      dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
-
-      do i = 2,n-1
-         dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
-                            (y(i+1) - y(i))/(x(i+1) - x(i)))
-      end do
-
-      dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
-
-      ! Finish
-
-      return
-
-    end function deriv
-
-  end function delS_en
-
-!****
-
-  function delL (this)
-
-    class(mode_t), intent(in)  :: this
-    complex(WP)                :: delL(this%n)
-
-    ! Calculate the Lagrangian luminosity perturbation in units of R_star
-
-    associate (l => this%op%l)
-
-      delL = this%y(6,:)*this%x**(l+1)
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function delL
-
-!****
-
-  function delL_rd (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: delL_rd(this%n)
-
-    complex(WP) :: A_5(6,this%n)
-    complex(WP) :: dy_5(this%n)
-    complex(WP) :: y_6(this%n)
-
-    ! Calculate the Lagrangian luminosity perturbation in units of L_star, 
-    ! from the radiative diffusion equation
-
-    associate(V => this%cf%V(this%x), U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              nabla_ad => this%cf%nabla_ad(this%x), nabla => this%cf%nabla(this%x), &
-              c_dif => this%cf%c_dif(this%x), c_rad => this%cf%c_rad(this%x), &
-              kappa_S => this%cf%kappa_S(this%x), &
-              l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega))
-
-      A_5(1,:) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-      A_5(2,:) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
-      A_5(3,:) = V*c_dif
-      A_5(4,:) = V*nabla_ad
-      A_5(5,:) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
-      A_5(6,:) = -V*nabla/c_rad
-
-      dy_5 = this%x*deriv(this%x, this%y(5,:))
-
-      where(this%x /= 0._WP)
-
-         y_6 = (dy_5 - (A_5(1,:)*this%y(1,:) + &
-                        A_5(2,:)*this%y(2,:) + &
-                        A_5(3,:)*this%y(3,:) + &
-                        A_5(4,:)*this%y(4,:) + &
-                        A_5(5,:)*this%y(5,:)))/A_5(6,:)
-
-      elsewhere
-
-         y_6 = 0._WP
-
-      endwhere
-
-      delL_rd = y_6*this%x**(l+1)
-
-    end associate
-         
-    ! Finish
-
-    return
-
-  contains
-
-    function deriv (x, y) result (dy_dx)
-
-      real(WP), intent(in)    :: x(:)
-      complex(WP), intent(in) :: y(:)
-      complex(WP)             :: dy_dx(SIZE(x))
-      
-      integer :: n
-      integer :: i
-
-      $CHECK_BOUNDS(SIZE(y),SIZE(x))
-
-      ! Differentiate y(x) using centered finite differences
-
-      n = SIZE(x)
-
-      dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
-
-      do i = 2,n-1
-         dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
-                            (y(i+1) - y(i))/(x(i+1) - x(i)))
-      end do
-
-      dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
-
-      ! Finish
-
-      return
-
-    end function deriv
-
-  end function delL_rd
-
-!****
-
-  function delp (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: delp(this%n)
-
-    ! Calculate the Lagrangian pressure perturbation in units of p
-
-    associate (V => this%cf%V(this%x), pi_c => this%cf%pi_c(), l => this%op%l)
-
-      if(l > 0) then
-
-         where (this%x /= 0._WP)
-            delp = V*(this%y(2,:) - this%y(1,:) - this%y(3,:))*this%x**(l-2)
-         elsewhere
-            delp = 0._WP
-         endwhere
-
+      select case (this%op%inertia_norm_type)
+      case ('RADIAL')
+         A2 = ABS(this%xi_r_ref())**2
+      case ('HORIZ')
+         A2 = l*(l+1)*ABS(this%xi_h_ref())**2
+      case ('BOTH')
+         A2 = ABS(this%xi_r_ref())**2 + l*(l+1)*ABS(this%xi_h_ref())**2
+      case default
+         $ABORT(Invalid inertia_norm_type)
+      end select
+
+      if(A2 == 0._WP) then
+         $WARN(Amplitude at x_ref is zero; not normalizing inertia)
+         E_norm = E
       else
-
-         where (this%x /= 0._WP)
-            delp = V*(this%y(2,:) - this%y(1,:) - this%y(3,:))*this%x**(l-2)
-         elsewhere
-            delp = pi_c*(this%y(2,:) - this%y(1,:) - this%y(3,:))
-         endwhere
-
+         E_norm = E/A2
       endif
 
     end associate
@@ -668,177 +472,28 @@ contains
 
     return
 
-  end function delp
+  end function E_norm_
 
 !****
 
-  function delrho (this)
+  function W_ (this) result (W)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: delrho(this%n)
-
-    ! Calculate the Lagrangian density perturbation in units of rho
-
-    associate (Gamma_1 => this%cf%Gamma_1(this%x))
-
-      delrho = this%delp()/Gamma_1 - this%delS()
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function delrho
-
-!****
-
-  function delT (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: delT(this%n)
-
-    ! Calculate the Lagrangian temperature perturbation in units of T
-
-    associate (nabla_ad => this%cf%nabla_ad(this%x))
-
-      delT = nabla_ad*this%delp() + this%delS()
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function delT
-
-!****
-
-  function dE_dx (this)
-
-    class(mode_t), intent(in) :: this
-    real(WP)                  :: dE_dx(this%n)
-
-    complex(WP) :: xi_r(this%n)
-    complex(WP) :: xi_h(this%n)
+    real(WP)                  :: W
     
-    ! Calculate the differential mode inertia (Aerts et al. 2010,
-    ! eqn. 3.139) in units of M_star R_star**2
+    ! Calculate the total work by integrating the differential work
 
-    xi_r = this%xi_r()
-    xi_h = this%xi_h()
-
-    associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              l => this%op%l)
-      dE_dx = 4._WP*PI*(ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*this%x**2/c_1
-    end associate
+    W = integrate(this%x, this%dW_dx())
 
     ! Finish
 
     return
 
-  end function dE_dx
+  end function W_
 
 !****
 
-  function dW_dx (this)
-
-    class(mode_t), intent(in) :: this
-    real(WP)                  :: dW_dx(this%n)
-
-    ! Calculate the differential work in units of G M_star^2/R_star
-    ! t_dyn/t_KH = t_dyn L_*.  The entropy-based expression for the
-    ! work is used (cf. Unno et al.  1989, eqn. 25.9); the additional
-    ! factor of 4 pi in the denominator comes from averaging over
-    ! solid angle
-
-    associate(c_thm => this%cf%c_thm(this%x))
-
-      dW_dx = -PI*AIMAG(CONJG(this%delT())*this%delS())*c_thm*this%x**2/(4._WP*PI)
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dW_dx
-
-!****
-
-  function I_0 (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: I_0(this%n)
-
-    ! Calculate the I_0 integral (eqn. 42 of Takata 2006, PASJ, 58,
-    ! 759). This should vanish for radial modes
-
-    associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              l => this%op%l, x => this%x, y => this%y)
-
-      I_0 = x**(l+1)*(U*y(1,:) + y(4,:))/c_1
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function I_0
-
-!****
-
-  function I_1 (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: I_1(this%n)
-
-    ! Calculate the I_1 integral (eqn. 43 of Takata 2006, PASJ, 58,
-    ! 759). This should vanish for dipole modes
-
-    associate(U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
-              l => this%op%l, omega_c => this%cf%omega_c(this%x, this%op%m, this%omega), &
-              x => this%x, y => this%y)
-
-      I_1 = x**(l+2)*(c_1*omega_c**2*U*y(1,:) - U*y(2,:) + &
-                  (U - c_1*omega_c**2 - 2._WP)*y(3,:) + (c_1*omega_c**2 - 1._WP)*y(4,:))/c_1**2
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function I_1
-
-!****
-
-  function prop_type (this)
-
-    class(mode_t), intent(in) :: this
-    integer                   :: prop_type(this%n)
-
-    ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
-
-    associate(x => this%x, V_g => this%cf%V(this%x)/this%cf%Gamma_1(this%x), &
-              As => this%cf%As(this%x), c_1 => this%cf%c_1(this%x), &
-              l => this%op%l, omega_c => REAL(this%cf%omega_c(this%x, this%op%m, this%omega)))
-
-      prop_type = MERGE(1, 0, c_1*omega_c**2 > As) + &
-                  MERGE(-1, 0, l*(l+1)/(c_1*omega_c**2) > V_g)
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function prop_type
-
-!****
-
-  function K (this)
+  function K_ (this) result (K)
 
     class(mode_t), intent(in) :: this
     complex(WP)               :: K(this%n)
@@ -851,7 +506,7 @@ contains
     xi_r = this%xi_r()
     xi_h = this%xi_h()
 
-    associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
+    associate(x => this%x, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
               l => this%op%l)
 
       K = (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
@@ -864,11 +519,11 @@ contains
 
     return
 
-  end function K
+  end function K_
 
 !****
 
-  function beta (this)
+  function beta_ (this) result (beta)
 
     class(mode_t), intent(in) :: this
     complex(WP)               :: beta
@@ -881,7 +536,7 @@ contains
     xi_r = this%xi_r()
     xi_h = this%xi_h()
 
-    associate(x => this%x, U => this%cf%U(this%x), c_1 => this%cf%c_1(this%x), &
+    associate(x => this%x, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
               l => this%op%l)
 
       beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
@@ -893,65 +548,55 @@ contains
 
     return
 
-  end function beta
+  end function beta_
 
 !****
 
-  function E (this)
+  function omega_im_ (this) result (omega_im)
 
-    class(mode_t), intent(in) :: this
-    real(WP)                  :: E
-    
-    ! Calculate the total mode inertia (Aerts et al. 2010, eqn. 3.139)
-    ! in units of M_star R_star**2
+    use gyre_model_evol
 
-    E = integrate(this%x, this%dE_dx())
+    class(mode_t), intent(in)     :: this
+    real(WP)                      :: omega_im
+
+    real(WP) :: t_dyn
+    real(WP) :: t_kh
+
+    ! Estimate the imaginary part of omega by integrating the work
+    ! function
+
+    select type (ml => This%ml)
+    class is (model_evol_t)
+       t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
+    class default
+       t_dyn = 1._WP
+       t_kh = 1._WP
+    end select
+
+    omega_im = -t_dyn*this%W()/(TWOPI*t_kh*REAL(this%omega)*this%E())
 
     ! Finish
 
     return
 
-  end function E
+  end function omega_im_
 
 !****
 
-  function E_norm (this)
+  function prop_type_ (this) result (prop_type)
 
     class(mode_t), intent(in) :: this
-    real(WP)                  :: E_norm
+    integer                   :: prop_type(this%n)
 
-    real(WP)    :: E
-    complex(WP) :: xi_r(this%n)
-    complex(WP) :: xi_h(this%n)
-    real(WP)    :: A2
+    ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
-    ! Calculate the normalized mode inertia (Aerts et al. 2010,
-    ! eqn. 3.140)
+    associate(x => this%x, V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
+              As => this%ml%As(this%x), c_1 => this%ml%c_1(this%x), &
+              l => this%op%l, omega_c => REAL(this%ml%omega_c(this%x, this%op%m, this%omega)))
 
-    E = this%E()
-
-    xi_r = this%xi_r()
-    xi_h = this%xi_h()
-
-    associate(l => this%op%l)
-
-      select case (this%op%inertia_norm_type)
-      case ('RADIAL')
-         A2 = ABS(xi_r(this%n))**2
-      case ('HORIZ')
-         A2 = l*(l+1)*ABS(xi_h(this%n))**2
-      case ('BOTH')
-         A2 = ABS(xi_r(this%n))**2 + l*(l+1)*ABS(xi_h(this%n))**2
-      case default
-         $ABORT(Invalid inertia_norm_type)
-      end select
-
-      if(A2 == 0._WP) then
-         $WARN(Surface amplitude is zero; not normalizing inertia)
-         E_norm = E
-      else
-         E_norm = E/A2
-      endif
+      prop_type = MERGE(1, 0, c_1*omega_c**2 > As) + &
+                   MERGE(-1, 0, l*(l+1)/(c_1*omega_c**2) > V_g)
 
     end associate
 
@@ -959,79 +604,11 @@ contains
 
     return
 
-  end function E_norm
+  end function prop_type_
 
 !****
 
-  function W (this)
-
-    class(mode_t), intent(in) :: this
-    real(WP)                  :: W
-    
-    ! Calculate the total work
-
-    W = integrate(this%x, this%dW_dx())
-
-    ! Finish
-
-    return
-
-  end function W
-
-!****
-
-  function omega_im (this)
-
-    class(mode_t), intent(in) :: this
-    real(WP)                  :: omega_im
-
-    integer  :: i_trans
-    integer  :: i
-    real(WP) :: dW_dx(this%n)
-    real(WP) :: W
-    
-    ! Estimate the imaginary part of omega by integrating the work
-    ! function out to the thermal transition point
-
-    ! First locate the point
-
-    i_trans = this%n
-
-    do i = this%n-1,1,-1
-
-       associate(tau_thm => this%cf%tau_thm(this%x(i)), &
-                 omega_c => this%cf%omega_c(this%x(i), this%op%m, this%omega))
-
-         if(REAL(omega_c)*tau_thm/TWOPI > 1._WP) then
-            i_trans = i
-            exit
-         endif
-
-       end associate
-
-    enddo
-
-    i_trans = this%n
-
-    ! Do the integration
-
-    dW_dx = this%dW_dx()
-
-    W = integrate(this%x(:i_trans), dW_dx(:i_trans))
-
-    ! Calculate omega_im
-
-    omega_im = -REAL(this%omega)*W/this%E()
-
-    ! Finish
-
-    return
-
-  end function omega_im
-
-!****
-
-  subroutine classify (md, n_p, n_g, n_pg)
+  subroutine classify_ (md, n_p, n_g, n_pg)
 
     class(mode_t), intent(in) :: md
     integer, intent(out)      :: n_p
@@ -1066,7 +643,7 @@ contains
 
        ! Count winding numbers
 
-       call count_windings(y_1(i:), y_2(i:), n_c, n_a)
+       call count_windings_(y_1(i:), y_2(i:), n_c, n_a)
 
        ! Classify (the additional 1 is for the node at the center)
 
@@ -1087,7 +664,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the origin)
 
-       call find_x_turn(md%x, md%cf, md%op, REAL(md%omega), x_turn)
+       call find_x_turn(md%x, md%ml, md%op, REAL(md%omega), x_turn)
 
        x_turn_loop : do i = 1,md%n-1
           if(md%x(i) > x_turn) exit x_turn_loop
@@ -1096,7 +673,7 @@ contains
        ! Count winding numbers
 
 !       call count_windings(y_1(i:), y_2(i:), n_c, n_a, md%x)
-       call count_windings(y_1(i:), y_2(i:), n_c, n_a)
+       call count_windings_(y_1(i:), y_2(i:), n_c, n_a)
 
        n_p = n_a
        n_g = n_c
@@ -1116,7 +693,7 @@ contains
 
        ! Count winding numbers
 
-       call count_windings(y_1, y_2, n_c, n_a)
+       call count_windings_(y_1, y_2, n_c, n_a)
 
        ! Classify
 
@@ -1133,13 +710,13 @@ contains
 
   contains
 
-    subroutine count_windings (y_1, y_2, n_c, n_a, x)
+    subroutine count_windings_ (y_1, y_2, n_c, n_a, x)
 
       real(WP), intent(in)           :: y_1(:)
       real(WP), intent(in)           :: y_2(:)
       integer, intent(out)           :: n_c
       integer, intent(out)           :: n_a
-      real(WP), intent(in), optional :: x(:)
+      real(WP), optional, intent(in) :: x(:)
 
       integer  :: i
       real(WP) :: y_2_cross
@@ -1195,8 +772,224 @@ contains
 
       return
 
-    end subroutine count_windings
+    end subroutine count_windings_
 
-  end subroutine classify
+  end subroutine classify_
+
+!****
+
+  function delS_en_ (this) result (delS_en)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delS_en(this%n)
+
+    complex(WP) :: A_6(6,this%n)
+    complex(WP) :: dy_6(this%n)
+    complex(WP) :: y_5(this%n)
+
+    ! Calculate the Lagrangian specific entropy perturbation in units
+    ! of c_p, from the energy equation
+
+    associate(V => this%ml%V(this%x), c_1 => this%ml%c_1(this%x), &
+              nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
+              c_rad => this%ml%c_rad(this%x), dc_rad => this%ml%dc_rad(this%x), c_thm => this%ml%c_thm(this%x), &
+              c_eps_ad => this%ml%c_eps_ad(this%x), c_eps_S => this%ml%c_eps_S(this%x), &              
+              l => this%op%l, omega_c => this%ml%omega_c(this%x, this%op%m, this%omega))
+
+      where(this%x /= 0)
+         A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+         A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
+         A_6(4,:) = 0._WP
+         A_6(5,:) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+         A_6(6,:) = -1._WP - l
+      elsewhere
+         A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+         A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
+         A_6(4,:) = 0._WP
+         A_6(5,:) = -HUGE(0._WP)
+         A_6(6,:) = -1._WP - l
+      endwhere
+
+      dy_6 = this%x*deriv_(this%x, this%y(6,:))
+
+      y_5 = (dy_6 - (A_6(1,:)*this%y(1,:) + &
+                     A_6(2,:)*this%y(2,:) + &
+                     A_6(3,:)*this%y(3,:) + &
+                     A_6(4,:)*this%y(4,:) + &
+                     A_6(6,:)*this%y(6,:)))/A_6(5,:)
+
+      where(this%x /= 0._WP)
+         delS_en = y_5*this%x**(l-2)
+      elsewhere
+         delS_en = 0._WP
+      end where
+
+    end associate
+         
+    ! Finish
+
+    return
+
+  contains
+
+    function deriv_ (x, y) result (dy_dx)
+
+      real(WP), intent(in)    :: x(:)
+      complex(WP), intent(in) :: y(:)
+      complex(WP)             :: dy_dx(SIZE(x))
+      
+      integer :: n
+      integer :: i
+
+      $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+      ! Differentiate y(x) using centered finite differences
+
+      n = SIZE(x)
+
+      dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
+
+      do i = 2,n-1
+         dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
+                            (y(i+1) - y(i))/(x(i+1) - x(i)))
+      end do
+
+      dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
+
+      ! Finish
+
+      return
+
+    end function deriv_
+
+  end function delS_en_
+
+!****
+
+  function delL_rd_ (this) result (delL_rd)
+
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: delL_rd(this%n)
+
+    complex(WP) :: A_5(6,this%n)
+    complex(WP) :: dy_5(this%n)
+    complex(WP) :: y_6(this%n)
+
+    ! Calculate the Lagrangian luminosity perturbation in units of L_star, 
+    ! from the radiative diffusion equation
+
+    associate(V => this%ml%V(this%x), U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
+              nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
+              c_dif => this%ml%c_dif(this%x), c_rad => this%ml%c_rad(this%x), &
+              kappa_S => this%ml%kappa_S(this%x), &
+              l => this%op%l, omega_c => this%ml%omega_c(this%x, this%op%m, this%omega))
+
+      A_5(1,:) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+      A_5(2,:) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
+      A_5(3,:) = V*c_dif
+      A_5(4,:) = V*nabla_ad
+      A_5(5,:) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
+      A_5(6,:) = -V*nabla/c_rad
+
+      dy_5 = this%x*deriv_(this%x, this%y(5,:))
+
+      where(this%x /= 0._WP)
+
+         y_6 = (dy_5 - (A_5(1,:)*this%y(1,:) + &
+                        A_5(2,:)*this%y(2,:) + &
+                        A_5(3,:)*this%y(3,:) + &
+                        A_5(4,:)*this%y(4,:) + &
+                        A_5(5,:)*this%y(5,:)))/A_5(6,:)
+
+      elsewhere
+
+         y_6 = 0._WP
+
+      endwhere
+
+      delL_rd = y_6*this%x**(l+1)
+
+    end associate
+         
+    ! Finish
+
+    return
+
+  contains
+
+    function deriv_ (x, y) result (dy_dx)
+
+      real(WP), intent(in)    :: x(:)
+      complex(WP), intent(in) :: y(:)
+      complex(WP)             :: dy_dx(SIZE(x))
+      
+      integer :: n
+      integer :: i
+
+      $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+      ! Differentiate y(x) using centered finite differences
+
+      n = SIZE(x)
+
+      dy_dx(1) = (y(2) - y(1))/(x(2) - x(1))
+
+      do i = 2,n-1
+         dy_dx(i) = 0.5_WP*((y(i) - y(i-1))/(x(i) - x(i-1)) + &
+                            (y(i+1) - y(i))/(x(i+1) - x(i)))
+      end do
+
+      dy_dx(n) = (y(n) - y(n-1))/(x(n) - x(n-1))
+
+      ! Finish
+
+      return
+
+    end function deriv_
+
+  end function delL_rd_
+
+!****
+
+  $if($MPI)
+
+  subroutine bcast_ (md, root_rank, ml)
+
+    class(mode_t), intent(inout)       :: md
+    integer, intent(in)                :: root_rank
+    class(model_t), intent(in), target :: ml
+
+    ! Broadcast the mode_t
+
+    if(MPI_RANK /= root_rank) then
+       md%ml => ml
+    endif
+
+    call bcast(md%op, root_rank)
+
+    call bcast_alloc(md%x, root_rank)
+    call bcast_alloc(md%y, root_rank)
+    
+    call bcast(md%x_ref, root_rank)
+    call bcast(md%y_ref, root_rank)
+
+    call bcast(md%omega, root_rank)
+
+    call bcast(md%n_p, root_rank)
+    call bcast(md%n_g, root_rank)
+    call bcast(md%n_pg, root_rank)
+
+    call bcast(md%n, root_rank)
+    call bcast(md%n_iter, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_
+
+  $endif
 
 end module gyre_mode

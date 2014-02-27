@@ -24,7 +24,7 @@ module gyre_bound_nad_unno
   use core_kinds
 
   use gyre_bound
-  use gyre_coeffs
+  use gyre_model
   use gyre_jacobian
   use gyre_oscpar
   use gyre_atmos
@@ -39,15 +39,20 @@ module gyre_bound_nad_unno
 
   type, extends (bound_t) :: bound_nad_unno_t
      private
-     class(coeffs_t), pointer   :: cf => null()
-     class(jacobian_t), pointer :: jc => null()
-     type(oscpar_t), pointer    :: op => null()
+     class(model_t), pointer        :: ml => null()
+     class(jacobian_t), allocatable :: jc
+     type(oscpar_t)                 :: op
    contains 
      private
-     procedure, public :: init
-     procedure, public :: inner_bound
-     procedure, public :: outer_bound
+     procedure, public :: inner_bound => inner_bound_
+     procedure, public :: outer_bound => outer_bound_
   end type bound_nad_unno_t
+
+  ! Interfaces
+
+  interface bound_nad_unno_t
+     module procedure bound_nad_unno_t_
+  end interface bound_nad_unno_t
 
   ! Access specifiers
 
@@ -59,54 +64,54 @@ module gyre_bound_nad_unno
 
 contains
 
-  subroutine init (this, cf, jc, op)
+  function bound_nad_unno_t_ (ml, jc, op) result (bd)
 
-    class(bound_nad_unno_t), intent(out) :: this
-    class(coeffs_t), intent(in), target   :: cf
-    class(jacobian_t), intent(in), target :: jc
-    type(oscpar_t), intent(in), target    :: op
+    class(model_t), pointer, intent(in) :: ml
+    class(jacobian_t), intent(in)       :: jc
+    type(oscpar_t), intent(in)          :: op
+    type(bound_nad_unno_t)              :: bd
 
-    ! Initialize the bound
+    ! Construct the bound_nad_unno_t
 
-    this%cf => cf
-    this%jc => jc
-    this%op => op
+    bd%ml => ml
+    allocate(bd%jc, SOURCE=jc)
+    bd%op = op
 
-    this%n_i = 3
-    this%n_o = 3
-    this%n_e = this%n_i + this%n_o
+    bd%n_i = 3
+    bd%n_o = 3
+    bd%n_e = bd%n_i + bd%n_o
 
-    $CHECK_BOUNDS(this%n_e,this%jc%n_e)
+    $CHECK_BOUNDS(bd%n_e,bd%jc%n_e)
 
     ! Finish
 
     return
     
-  end subroutine init
+  end function bound_nad_unno_t_
 
 !****
 
-  function inner_bound (this, x_i, omega) result (B_i)
+  function inner_bound_ (this, x_i, omega) result (B_i)
 
     class(bound_nad_unno_t), intent(in) :: this
-    real(WP), intent(in)                 :: x_i
-    complex(WP), intent(in)              :: omega
-    $if($GFORTRAN_PR_58007)
-    complex(WP), allocatable             :: B_i(:,:)
+    real(WP), intent(in)                :: x_i
+    complex(WP), intent(in)             :: omega
+    $if ($GFORTRAN_PR_58007)
+    complex(WP), allocatable            :: B_i(:,:)
     $else
-    complex(WP)                          :: B_i(this%n_i,this%n_e)
+    complex(WP)                         :: B_i(this%n_i,this%n_e)
     $endif
 
     $ASSERT(x_i == 0._WP,Boundary condition invalid for x_i /= 0)
 
-    $if($GFORTRAN_PR_58007)
+    $if ($GFORTRAN_PR_58007)
     allocate(B_i(this%n_i,this%n_e))
     $endif
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%cf%c_1(x_i), l => this%op%l, &
-              omega_c => this%cf%omega_c(x_i, this%op%m, omega))
+    associate(c_1 => this%ml%c_1(x_i), l => this%op%l, &
+              omega_c => this%ml%omega_c(x_i, this%op%m, omega))
 
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l
@@ -137,16 +142,16 @@ contains
 
     return
 
-  end function inner_bound
+  end function inner_bound_
 
 !****
 
-  function outer_bound (this, x_o, omega) result (B_o)
+  function outer_bound_ (this, x_o, omega) result (B_o)
 
     class(bound_nad_unno_t), intent(in) :: this
     real(WP), intent(in)                 :: x_o
     complex(WP), intent(in)              :: omega
-    $if($GFORTRAN_PR_58007)
+    $if ($GFORTRAN_PR_58007)
     complex(WP), allocatable             :: B_o(:,:)
     $else
     complex(WP)                          :: B_o(this%n_o,this%n_e)
@@ -165,16 +170,16 @@ contains
     complex(WP) :: alpha_1
     complex(WP) :: alpha_2
 
-    $if($GFORTRAN_PR_58007)
+    $if ($GFORTRAN_PR_58007)
     allocate(B_o(this%n_o,this%n_e))
     $endif
 
     ! Set the outer boundary conditions
 
-    call eval_atmos_coeffs_unno(this%cf, x_o, V_g, As, c_1)
+    call eval_atmos_coeffs_unno(this%ml, x_o, V_g, As, c_1)
 
-    associate(V => this%cf%V(x_o), nabla_ad => this%cf%nabla_ad(x_o), &
-              l => this%op%l, omega_c => this%cf%omega_c(x_o, this%op%m, omega))
+    associate(V => this%ml%V(x_o), nabla_ad => this%ml%nabla_ad(x_o), &
+              l => this%op%l, omega_c => this%ml%omega_c(x_o, this%op%m, omega))
 
       lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l)
       
@@ -218,6 +223,6 @@ contains
 
     return
 
-  end function outer_bound
+  end function outer_bound_
 
 end module gyre_bound_nad_unno

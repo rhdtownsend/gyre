@@ -22,7 +22,7 @@ module gyre_ivp_magnus_GL6
   ! Uses
 
   use core_kinds
-  use core_constants
+  use gyre_constants
 
   use gyre_jacobian
   use gyre_linalg
@@ -38,13 +38,18 @@ module gyre_ivp_magnus_GL6
 
   type, extends (ivp_magnus_t) :: ivp_magnus_GL6_t
      private
-     class(jacobian_t), pointer :: jc => null()
+     class(jacobian_t), allocatable :: jc
    contains
      private
-     procedure, public :: init
-     procedure, public :: eval_dOmega
-     procedure, public :: abscissa
+     procedure, public :: eval_dOmega => eval_dOmega_
+     procedure, public :: abscissa => abscissa_
   end type ivp_magnus_GL6_t
+
+  ! Interfaces
+
+  interface ivp_magnus_GL6_t
+     module procedure ivp_magnus_GL6_t_
+  end interface ivp_magnus_GL6_t
 
   ! Access specifiers
 
@@ -56,26 +61,26 @@ module gyre_ivp_magnus_GL6
 
 contains
 
-  subroutine init (this, jc)
+  function ivp_magnus_GL6_t_ (jc) result (iv)
 
-    class(ivp_magnus_GL6_t), intent(out)  :: this
-    class(jacobian_t), intent(in), target :: jc
+    class(jacobian_t), intent(in) :: jc
+    type(ivp_magnus_GL6_t)        :: iv
 
-    ! Initialize the ivp_t
+    ! Construct the ivp_magnus_GL6
 
-    this%jc => jc
+    allocate(iv%jc, SOURCE=jc)
 
-    this%n_e = jc%n_e
+    iv%n_e = jc%n_e
 
     ! Finish
 
     return
     
-  end subroutine init
+  end function ivp_magnus_GL6_t_
 
 !****
 
-  subroutine eval_dOmega (this, omega, x_a, x_b, dOmega)
+  subroutine eval_dOmega_ (this, omega, x_a, x_b, dOmega)
 
     class(ivp_magnus_GL6_t), intent(in) :: this
     complex(WP), intent(in)             :: omega
@@ -120,11 +125,11 @@ contains
 
     return
 
-  end subroutine eval_dOmega
+  end subroutine eval_dOmega_
 
 !****
 
-  function abscissa (this, x_a, x_b) result (x)
+  function abscissa_ (this, x_a, x_b) result (x)
 
     class(ivp_magnus_GL6_t), intent(in) :: this
     real(WP), intent(in)                :: x_a
@@ -143,6 +148,6 @@ contains
 
     return
 
-  end function abscissa
+  end function abscissa_
 
 end module gyre_ivp_magnus_GL6

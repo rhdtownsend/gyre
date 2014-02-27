@@ -22,10 +22,10 @@ module gyre_input
   ! Uses
 
   use core_kinds
-  use core_constants
   use core_order
   use core_parallel
 
+  use gyre_constants
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -42,7 +42,8 @@ module gyre_input
   private
 
   public :: parse_args
-  public :: read_coeffs
+  public :: read_constants
+  public :: read_model
   public :: read_oscpar
   public :: read_numpar
   public :: read_scanpar
@@ -77,89 +78,110 @@ contains
 
 !****
 
-  subroutine read_coeffs (unit, x_bc, cf)
+  subroutine read_constants (unit)
 
-    use gyre_coeffs
-    use gyre_coeffs_evol
-    use gyre_coeffs_poly
-    use gyre_coeffs_hom
+    integer, intent(in) :: unit
+
+    namelist /constants/ G_GRAVITY, C_LIGHT, A_RADIATION, &
+                         M_SUN, R_SUN, L_SUN
+
+    ! Read constants
+
+    rewind(unit)
+    read(unit, NML=constants, END=900)
+
+    ! Finish
+
+    return
+
+    ! Jump-in point for end-of-file
+
+900 continue
+
+    $ABORT(No &constants namelist in input file)
+
+  end subroutine read_constants
+
+!****
+
+  subroutine read_model (unit, x_bc, ml)
+
+    use gyre_model
+    use gyre_model_evol
+    use gyre_model_poly
+    use gyre_model_hom
     use gyre_mesa_file
     use gyre_osc_file
     use gyre_fgong_file
     use gyre_famdl_file
-    $if($HDF5)
+    $if ($HDF5)
     use gyre_b3_file
     use gyre_gsm_file
     use gyre_poly_file
     $endif
 
-    integer, intent(in)                                   :: unit
-    real(WP), allocatable, intent(out)                    :: x_bc(:)
-    $if($GFORTRAN_PR56218)
-    class(coeffs_t), allocatable, intent(inout)           :: cf
-    $else
-    class(coeffs_t), allocatable, intent(out), optional   :: cf
-    $endif
+    integer, intent(in)                  :: unit
+    real(WP), allocatable, intent(out)   :: x_bc(:)
+    class(model_t), pointer, intent(out) :: ml
 
-    character(LEN=256)          :: coeffs_type
+    character(LEN=256)          :: model_type
     character(LEN=256)          :: file_format
     character(LEN=256)          :: data_format
     character(LEN=256)          :: deriv_type
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: G
     real(WP)                    :: Gamma_1
-    type(coeffs_evol_t)         :: ec
-    type(coeffs_poly_t)         :: pc
-    type(coeffs_hom_t)          :: hc
+    type(model_evol_t)          :: ec
+    type(model_poly_t)          :: pc
+    type(model_hom_t)           :: hc
 
-    namelist /coeffs/ coeffs_type, file_format, data_format, deriv_type, file, G, Gamma_1
+    namelist /model/ model_type, file_format, data_format, deriv_type, file, Gamma_1
 
-    ! Read structure coefficients parameters
+    ! Read model parameters
 
-    coeffs_type = ''
+    model_type = ''
     file_format = ''
     data_format = ''
     deriv_type = 'MONO'
 
     file = ''
 
-    G = G_GRAVITY
     Gamma_1 = 5._WP/3._WP
 
     rewind(unit)
-    read(unit, NML=coeffs, END=900)
+    read(unit, NML=model, END=900)
 
-    ! Read/initialize the base_coeffs
+    ! Read/initialize the model
 
-    select case (coeffs_type)
+    select case (model_type)
     case ('EVOL')
 
        select case (file_format)
        case ('MESA')
-          call read_mesa_file(file, G, deriv_type, ec, x=x_bc)
+          call read_mesa_file(file, deriv_type, ec, x=x_bc)
        case('B3')
           $if($HDF5)
-          call read_b3_file(file, G, deriv_type, ec, x=x_bc)
+          call read_b3_file(file, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
        case ('GSM')
           $if($HDF5)
-          call read_gsm_file(file, G, deriv_type, ec, x=x_bc)
+          call read_gsm_file(file, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read GSM-format files)
           $endif
        case ('OSC')
-          call read_osc_file(file, G, deriv_type, data_format, ec, x=x_bc)
+          call read_osc_file(file, deriv_type, data_format, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_file(file, G, deriv_type, data_format, ec, x=x_bc) 
+          call read_fgong_file(file, deriv_type, data_format, ec, x=x_bc) 
        case ('FAMDL')
-          call read_famdl_file(file, G, deriv_type, data_format, ec, x=x_bc) 
+          call read_famdl_file(file, deriv_type, data_format, ec, x=x_bc) 
        case default
           $ABORT(Invalid file_format)
        end select
 
-       allocate(cf, SOURCE=ec)
+       allocate(ml, SOURCE=ec)
        
     case ('POLY')
 
@@ -169,17 +191,17 @@ contains
        $ABORT(No HDF5 support, therefore cannot read POLY files)
        $endif
 
-       allocate(cf, SOURCE=pc)
+       allocate(ml, SOURCE=pc)
 
     case ('HOM')
 
-       call hc%init(Gamma_1)
+       hc = model_hom_t(Gamma_1)
 
-       allocate(cf, SOURCE=hc)
+       allocate(ml, SOURCE=hc)
 
     case default
 
-       $ABORT(Invalid coeffs_type)
+       $ABORT(Invalid model_type)
 
     end select
 
@@ -191,9 +213,9 @@ contains
 
 900 continue
 
-    $ABORT(No &coeffs namelist in input file)
+    $ABORT(No &model namelist in input file)
 
-  end subroutine read_coeffs
+  end subroutine read_model
 
 !****
 
@@ -212,10 +234,11 @@ contains
     character(LEN=64) :: outer_bound_type
     character(LEN=64) :: inertia_norm_type
     character(LEN=64) :: tag
+    real(WP)          :: x_ref
 
-    namelist /osc/ l, m, X_n_pg_min, X_n_pg_max, &
+    namelist /osc/ x_ref, l, m, X_n_pg_min, X_n_pg_max, &
          outer_bound_type, variables_type, &
-         inertia_norm_type, tag
+         inertia_norm_type, tag, x_ref
 
     ! Count the number of grid namelists
 
@@ -249,13 +272,15 @@ contains
        inertia_norm_type = 'BOTH'
        tag = ''
 
+       x_ref = HUGE(0._WP)
+
        read(unit, NML=osc)
 
        ! Initialize the oscpar
 
        op(i) = oscpar_t(l=l, m=m, X_n_pg_min=X_n_pg_min, X_n_pg_max=X_n_pg_max, &
                         variables_type=variables_type, outer_bound_type=outer_bound_type, &
-                        inertia_norm_type=inertia_norm_type, tag=tag)
+                        inertia_norm_type=inertia_norm_type, tag=tag, x_ref=x_ref)
 
     end do read_loop
 

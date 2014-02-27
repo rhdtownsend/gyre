@@ -41,21 +41,22 @@ module gyre_cocache
      integer               :: n_c
    contains
      private
-     procedure, public :: init
-     $if($GFORTRAN_PR57922)
-     procedure, public :: final
+     $if ($GFORTRAN_PR57922)
+     procedure, public :: final => final_
      $endif
-     procedure, public :: lookup
+     procedure, public :: lookup => lookup_
   end type cocache_t
 
   ! Interfaces
 
-  $if($MPI)
+  interface cocache_t
+     module procedure cocache_t_
+  end interface cocache_t
 
+  $if ($MPI)
   interface bcast
-     module procedure bcast_cc
+     module procedure bcast_
   end interface bcast
-
   $endif
 
   ! Access specifiers
@@ -63,47 +64,47 @@ module gyre_cocache
   private
 
   public :: cocache_t
-  $if($MPI)
+  $if ($MPI)
   public :: bcast
   $endif
 
 contains
 
-  subroutine init (this, x, c)
+  function cocache_t_ (x, c) result (cc)
 
-    class(cocache_t), intent(out) :: this
-    real(WP), intent(in)          :: x(:)
-    real(WP), intent(in)          :: c(:,:)
+    real(WP), intent(in) :: x(:)
+    real(WP), intent(in) :: c(:,:)
+    type(cocache_t)      :: cc
 
     integer, allocatable :: i(:)
 
     $CHECK_BOUNDS(SIZE(c, 2),SIZE(x))
 
-    ! Initialize the cocache
+    ! Construct the cocache_t
 
     i = unique_indices(x)
 
-    this%x = x(i)
-    this%c = c(:,i)
+    cc%x = x(i)
+    cc%c = c(:,i)
 
-    this%n = SIZE(i)
-    this%n_c = SIZE(c, 1)
+    cc%n = SIZE(i)
+    cc%n_c = SIZE(c, 1)
 
     ! Finish
 
     return
 
-  end subroutine init
+  end function cocache_t_
 
 !****
 
-  $if($GFORTRAN_PR57922)
+  $if ($GFORTRAN_PR57922)
 
-  subroutine final (this)
+  subroutine final_ (this)
 
     class(cocache_t), intent(inout) :: this
 
-    ! Finalize the cocache
+    ! Finalize the cocache_t
 
     if(ALLOCATED(this%x)) deallocate(this%x)
     if(ALLOCATED(this%c)) deallocate(this%c)
@@ -112,20 +113,20 @@ contains
 
     return
 
-  end subroutine final
+  end subroutine final_
 
   $endif
 
 !****
 
-  $if($MPI)
+  $if ($MPI)
 
-  subroutine bcast_cc (this, root_rank)
+  subroutine bcast_ (this, root_rank)
 
     class(cocache_t), intent(inout) :: this
     integer, intent(in)             :: root_rank
 
-    ! Broadcast the cocache
+    ! Broadcast the cocache_t
 
     call bcast_alloc(this%x, root_rank)
     call bcast_alloc(this%c, root_rank)
@@ -137,13 +138,13 @@ contains
 
     return
 
-  end subroutine bcast_cc
+  end subroutine bcast_
 
   $endif
 
 !****
 
-  function lookup (this, j, x) result (c)
+  function lookup_ (this, j, x) result (c)
 
     class(cocache_t), intent(in) :: this
     integer, intent(in)          :: j
@@ -157,7 +158,7 @@ contains
 
     ! Find where x falls in the cache
 
-    call locate(this%x, x, k)
+    call locate_(this%x, x, k)
 
     ! Lookup the coeff
 
@@ -169,7 +170,7 @@ contains
 
   contains
 
-    subroutine locate (x, x_loc, i_loc)
+    subroutine locate_ (x, x_loc, i_loc)
 
       real(WP), intent(in) :: x(:)
       real(WP), intent(in) :: x_loc
@@ -269,8 +270,8 @@ contains
 
       return
 
-    end subroutine locate
+    end subroutine locate_
 
-  end function lookup
+  end function lookup_
 
 end module gyre_cocache
