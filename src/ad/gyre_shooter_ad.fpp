@@ -43,8 +43,8 @@ module gyre_shooter_ad
      private
      class(model_t), pointer   :: ml => null()
      class(ivp_t), allocatable :: iv
-     type(oscpar_t), pointer   :: op
-     type(numpar_t), pointer   :: np
+     type(oscpar_t)            :: op
+     type(numpar_t)            :: np
      integer, public           :: n_e
    contains
      private
