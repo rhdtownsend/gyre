@@ -53,6 +53,10 @@ module gyre_constants
 
   public :: FILENAME_LEN
 
+  $if ($MPI)
+  public :: bcast_constants
+  $endif
+
   ! Procedures
 
 contains

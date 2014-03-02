@@ -507,9 +507,9 @@ contains
 
   $if ($MPI)
 
-  subroutine bcast_ (this, root_rank, ml)
+  subroutine bcast_ (bp, root_rank, ml)
 
-    class(bvp_rad_t), intent(inout)    :: bp
+    type(bvp_rad_t), intent(inout)     :: bp
     integer, intent(in)                :: root_rank
     class(model_t), intent(in), target :: ml
 
@@ -541,7 +541,7 @@ contains
 
        call bcast_alloc(x_in, root_rank)
 
-       call bp%init(ml, op, np, shoot_gp, recon_gp, x_in)
+       bp = bvp_rad_t(ml, op, np, shoot_gp, recon_gp, x_in)
 
     endif
 

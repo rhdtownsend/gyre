@@ -666,7 +666,7 @@ contains
 
   $if ($MPI)
 
-  subroutine bcast_ (bc, root_rank)
+  subroutine bcast_ (ml, root_rank)
 
     type(model_poly_t), intent(inout) :: ml
     integer, intent(in)               :: root_rank
