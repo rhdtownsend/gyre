@@ -52,7 +52,7 @@ program gyre_nad
 
   ! Variables
 
-  character(LEN=:), allocatable :: filename
+  character(:), allocatable     :: filename
   integer                       :: unit
   real(WP), allocatable         :: x_ml(:)
   class(model_t), pointer       :: ml => null()
@@ -152,7 +152,7 @@ program gyre_nad
      shoot_gp_sel%omega_a = MINVAL(omega)
      shoot_gp_sel%omega_b = MAXVAL(omega)
 
-     ! Set up bp
+     ! Set up the bvp's
 
      if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
