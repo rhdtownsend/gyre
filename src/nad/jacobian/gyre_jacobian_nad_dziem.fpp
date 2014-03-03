@@ -1,5 +1,5 @@
 ! Module   : gyre_jacobian_nad_dziem
-! Purpose  : nonadiabatic Jacobian evaluation (Dziembowski variables)
+! Purpose  : nonadiabatic Jacobian evaluation (DZIEM variables)
 !
 ! Copyright 2013 Rich Townsend
 !
