@@ -68,7 +68,7 @@ program gyre_nad
   type(scanpar_t), allocatable  :: sp_sel(:)
   real(WP), allocatable         :: omega(:)
   class(bvp_t), allocatable     :: ad_bp
-  type(bvp_nad_t)               :: nad_bp
+  class(bvp_t), allocatable     :: nad_bp
   type(mode_t), allocatable     :: md(:)
   type(mode_t), allocatable     :: md_all(:)
   type(mode_t), allocatable     :: md_tmp(:)
@@ -161,8 +161,8 @@ program gyre_nad
      else
         allocate(ad_bp, SOURCE=bvp_ad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
-
-     nad_bp = bvp_nad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml)
+ 
+     allocate(nad_bp, SOURCE=bvp_nad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
 
      ! Find modes
 
@@ -179,6 +179,7 @@ program gyre_nad
      call MOVE_ALLOC(md_tmp, md_all)
 
      deallocate(ad_bp)
+     deallocate(nad_bp)
 
   end do op_loop
 
