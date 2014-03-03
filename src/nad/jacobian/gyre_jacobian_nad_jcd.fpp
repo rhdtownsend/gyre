@@ -1,5 +1,5 @@
 ! Module   : gyre_jacobian_nad_jcd
-! Purpose  : nonadiabatic Jacobian evaluation (JCD variables)
+! Purpose  : non-adiabatic Jacobian evaluation (JCD variables)
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -126,47 +126,95 @@ contains
               kappa_ad => this%ml%kappa_ad(x), kappa_S => this%ml%kappa_S(x), &
               l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
 
-      A(1,1) = V_g - 1._WP - l
-      A(1,2) = 1._WP - V_g*c_1*omega_c**2/(l*(l+1))
-      A(1,3) = -V_g
-      A(1,4) = 0._WP
-      A(1,5) = delta
-      A(1,6) = 0._WP
-      
-      A(2,1) = l*(l+1) - As*l*(l+1)/(c_1*omega_c**2)
-      A(2,2) = As - l
-      A(2,3) = As*l*(l+1)/(c_1*omega_c**2)
-      A(2,4) = 0._WP
-      A(2,5) = delta*l*(l+1)/(c_1*omega_c**2)
-      A(2,6) = 0._WP
-      
-      A(3,1) = 0._WP
-      A(3,2) = 0._WP
-      A(3,3) = 2._WP - l
-      A(3,4) = 1._WP
-      A(3,5) = 0._WP
-      A(3,6) = 0._WP
-      
-      A(4,1) = -U*As
-      A(4,2) = -U*V_g*c_1*omega_c**2/(l*(l+1))
-      A(4,3) = l*(l+1) + U*(As - 2._WP)
-      A(4,4) = 2._WP*(1._WP-U) - (l - 1._WP)
-      A(4,5) = U*delta
-      A(4,6) = 0._WP
+      if (l /= 0) then
 
-      A(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-      A(5,2) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)*c_1*omega_c**2/(l*(l+1))
-      A(5,3) = -V*c_dif + V*nabla_ad*(1._WP-U)
-      A(5,4) = -V*nabla_ad
-      A(5,5) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
-      A(5,6) = -V*nabla/c_rad
+         A(1,1) = V_g - 1._WP - l
+         A(1,2) = 1._WP - V_g*c_1*omega_c**2/(l*(l+1))
+         A(1,3) = -V_g
+         A(1,4) = 0._WP
+         A(1,5) = delta
+         A(1,6) = 0._WP
+      
+         A(2,1) = l*(l+1) - As*l*(l+1)/(c_1*omega_c**2)
+         A(2,2) = As - l
+         A(2,3) = As*l*(l+1)/(c_1*omega_c**2)
+         A(2,4) = 0._WP
+         A(2,5) = delta*l*(l+1)/(c_1*omega_c**2)
+         A(2,6) = 0._WP
+      
+         A(3,1) = 0._WP
+         A(3,2) = 0._WP
+         A(3,3) = 2._WP - l
+         A(3,4) = 1._WP
+         A(3,5) = 0._WP
+         A(3,6) = 0._WP
+      
+         A(4,1) = -U*As
+         A(4,2) = -U*V_g*c_1*omega_c**2/(l*(l+1))
+         A(4,3) = l*(l+1) + U*(As - 2._WP)
+         A(4,4) = 2._WP*(1._WP-U) - (l - 1._WP)
+         A(4,5) = U*delta
+         A(4,6) = 0._WP
 
-      A(6,1) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-      A(6,2) = (V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2)))*c_1*omega_c**2/(l*(l+1))
-      A(6,3) = -(l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad)
-      A(6,4) = 0._WP
-      A(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
-      A(6,6) = -1._WP - l
+         A(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+         A(5,2) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)*c_1*omega_c**2/(l*(l+1))
+         A(5,3) = -V*c_dif + V*nabla_ad*(1._WP-U)
+         A(5,4) = -V*nabla_ad
+         A(5,5) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
+         A(5,6) = -V*nabla/c_rad
+
+         A(6,1) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A(6,2) = (V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2)))*c_1*omega_c**2/(l*(l+1))
+         A(6,3) = -(l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad)
+         A(6,4) = 0._WP
+         A(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+         A(6,6) = -1._WP - l
+
+      else
+
+         A(1,1) = V_g - 1._WP
+         A(1,2) = -V_g*c_1*omega_c**2
+         A(1,3) = -V_g
+         A(1,4) = 0._WP
+         A(1,5) = delta
+         A(1,6) = 0._WP
+      
+         A(2,1) = 1._WP - As/(c_1*omega_c**2)
+         A(2,2) = As
+         A(2,3) = As/(c_1*omega_c**2)
+         A(2,4) = 0._WP
+         A(2,5) = delta/(c_1*omega_c**2)
+         A(2,6) = 0._WP
+      
+         A(3,1) = 0._WP
+         A(3,2) = 0._WP
+         A(3,3) = 2._WP
+         A(3,4) = 1._WP
+         A(3,5) = 0._WP
+         A(3,6) = 0._WP
+      
+         A(4,1) = -U*As
+         A(4,2) = -U*V_g*c_1*omega_c**2
+         A(4,3) = U*(As - 2._WP)
+         A(4,4) = 2._WP*(1._WP-U) + 1._WP
+         A(4,5) = U*delta
+         A(4,6) = 0._WP
+
+         A(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+         A(5,2) = V*(-c_dif)*c_1*omega_c**2
+         A(5,3) = -V*c_dif + V*nabla_ad*(1._WP-U)
+         A(5,4) = -V*nabla_ad
+         A(5,5) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
+         A(5,6) = -V*nabla/c_rad
+
+         A(6,1) = -V*c_eps_ad
+         A(6,2) = V*c_eps_ad*c_1*omega_c**2
+         A(6,3) = -V*c_eps_ad
+         A(6,4) = 0._WP
+         A(6,5) = c_eps_S - (0._WP,1._WP)*omega_c*c_thm
+         A(6,6) = -1._WP
+
+      endif
 
     end associate
 
@@ -202,47 +250,95 @@ contains
        associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
                  l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
 
-         M(1,1) = 1._WP
-         M(1,2) = 0._WP
-         M(1,3) = 0._WP
-         M(1,4) = 0._WP
-         M(1,5) = 0._WP
-         M(1,6) = 0._WP
+         if (l /= 0) then
 
-         M(2,1) = 0._WP
-         M(2,2) = c_1*omega_c**2/(l*(l+1))
-         M(2,3) = 0._WP
-         M(2,4) = 0._WP
-         M(2,5) = 0._WP
-         M(2,6) = 0._WP
+            M(1,1) = 1._WP
+            M(1,2) = 0._WP
+            M(1,3) = 0._WP
+            M(1,4) = 0._WP
+            M(1,5) = 0._WP
+            M(1,6) = 0._WP
 
-         M(3,1) = 0._WP
-         M(3,2) = 0._WP
-         M(3,3) = -1._WP
-         M(3,4) = 0._WP
-         M(3,5) = 0._WP
-         M(3,6) = 0._WP
+            M(2,1) = 0._WP
+            M(2,2) = c_1*omega_c**2/(l*(l+1))
+            M(2,3) = 0._WP
+            M(2,4) = 0._WP
+            M(2,5) = 0._WP
+            M(2,6) = 0._WP
 
-         M(4,1) = 0._WP
-         M(4,2) = 0._WP
-         M(4,3) = 1._WP - U
-         M(4,4) = -1._WP
-         M(4,5) = 0._WP
-         M(4,6) = 0._WP
+            M(3,1) = 0._WP
+            M(3,2) = 0._WP
+            M(3,3) = -1._WP
+            M(3,4) = 0._WP
+            M(3,5) = 0._WP
+            M(3,6) = 0._WP
 
-         M(5,1) = 0._WP
-         M(5,2) = 0._WP
-         M(5,3) = 0._WP
-         M(5,4) = 0._WP
-         M(5,5) = 1._WP
-         M(5,6) = 0._WP
+            M(4,1) = 0._WP
+            M(4,2) = 0._WP
+            M(4,3) = 1._WP - U
+            M(4,4) = -1._WP
+            M(4,5) = 0._WP
+            M(4,6) = 0._WP
+         
+            M(5,1) = 0._WP
+            M(5,2) = 0._WP
+            M(5,3) = 0._WP
+            M(5,4) = 0._WP
+            M(5,5) = 1._WP
+            M(5,6) = 0._WP
 
-         M(6,1) = 0._WP
-         M(6,2) = 0._WP
-         M(6,3) = 0._WP
-         M(6,4) = 0._WP
-         M(6,5) = 0._WP
-         M(6,6) = 1._WP
+            M(6,1) = 0._WP
+            M(6,2) = 0._WP
+            M(6,3) = 0._WP
+            M(6,4) = 0._WP
+            M(6,5) = 0._WP
+            M(6,6) = 1._WP
+
+         else
+
+            M(1,1) = 1._WP
+            M(1,2) = 0._WP
+            M(1,3) = 0._WP
+            M(1,4) = 0._WP
+            M(1,5) = 0._WP
+            M(1,6) = 0._WP
+
+            M(2,1) = 0._WP
+            M(2,2) = c_1*omega_c**2
+            M(2,3) = 0._WP
+            M(2,4) = 0._WP
+            M(2,5) = 0._WP
+            M(2,6) = 0._WP
+
+            M(3,1) = 0._WP
+            M(3,2) = 0._WP
+            M(3,3) = -1._WP
+            M(3,4) = 0._WP
+            M(3,5) = 0._WP
+            M(3,6) = 0._WP
+
+            M(4,1) = 0._WP
+            M(4,2) = 0._WP
+            M(4,3) = 1._WP - U
+            M(4,4) = -1._WP
+            M(4,5) = 0._WP
+            M(4,6) = 0._WP
+         
+            M(5,1) = 0._WP
+            M(5,2) = 0._WP
+            M(5,3) = 0._WP
+            M(5,4) = 0._WP
+            M(5,5) = 1._WP
+            M(5,6) = 0._WP
+
+            M(6,1) = 0._WP
+            M(6,2) = 0._WP
+            M(6,3) = 0._WP
+            M(6,4) = 0._WP
+            M(6,5) = 0._WP
+            M(6,6) = 1._WP
+
+         endif
 
        end associate
 
@@ -251,47 +347,95 @@ contains
        associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
                  l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
 
-         M(1,1) = 1._WP
-         M(1,2) = 0._WP
-         M(1,3) = 0._WP
-         M(1,4) = 0._WP
-         M(1,5) = 0._WP
-         M(1,6) = 0._WP
+         if (l /= 0) then
 
-         M(2,1) = 0._WP
-         M(2,2) = l*(l+1)/(c_1*omega_c**2)
-         M(2,3) = 0._WP
-         M(2,4) = 0._WP
-         M(2,5) = 0._WP
-         M(2,6) = 0._WP
+            M(1,1) = 1._WP
+            M(1,2) = 0._WP
+            M(1,3) = 0._WP
+            M(1,4) = 0._WP
+            M(1,5) = 0._WP
+            M(1,6) = 0._WP
 
-         M(3,1) = 0._WP
-         M(3,2) = 0._WP
-         M(3,3) = -1._WP
-         M(3,4) = 0._WP
-         M(3,5) = 0._WP
-         M(3,6) = 0._WP
+            M(2,1) = 0._WP
+            M(2,2) = l*(l+1)/(c_1*omega_c**2)
+            M(2,3) = 0._WP
+            M(2,4) = 0._WP
+            M(2,5) = 0._WP
+            M(2,6) = 0._WP
 
-         M(4,1) = 0._WP
-         M(4,2) = 0._WP
-         M(4,3) = -(1._WP - U)
-         M(4,4) = -1._WP
-         M(4,5) = 0._WP
-         M(4,6) = 0._WP
+            M(3,1) = 0._WP
+            M(3,2) = 0._WP
+            M(3,3) = -1._WP
+            M(3,4) = 0._WP
+            M(3,5) = 0._WP
+            M(3,6) = 0._WP
 
-         M(5,1) = 0._WP
-         M(5,2) = 0._WP
-         M(5,3) = 0._WP
-         M(5,4) = 0._WP
-         M(5,5) = 1._WP
-         M(5,6) = 0._WP
+            M(4,1) = 0._WP
+            M(4,2) = 0._WP
+            M(4,3) = -(1._WP - U)
+            M(4,4) = -1._WP
+            M(4,5) = 0._WP
+            M(4,6) = 0._WP
 
-         M(6,1) = 0._WP
-         M(6,2) = 0._WP
-         M(6,3) = 0._WP
-         M(6,4) = 0._WP
-         M(6,5) = 0._WP
-         M(6,6) = 1._WP
+            M(5,1) = 0._WP
+            M(5,2) = 0._WP
+            M(5,3) = 0._WP
+            M(5,4) = 0._WP
+            M(5,5) = 1._WP
+            M(5,6) = 0._WP
+
+            M(6,1) = 0._WP
+            M(6,2) = 0._WP
+            M(6,3) = 0._WP
+            M(6,4) = 0._WP
+            M(6,5) = 0._WP
+            M(6,6) = 1._WP
+
+         else
+
+            M(1,1) = 1._WP
+            M(1,2) = 0._WP
+            M(1,3) = 0._WP
+            M(1,4) = 0._WP
+            M(1,5) = 0._WP
+            M(1,6) = 0._WP
+
+            M(2,1) = 0._WP
+            M(2,2) = 1._WP/(c_1*omega_c**2)
+            M(2,3) = 0._WP
+            M(2,4) = 0._WP
+            M(2,5) = 0._WP
+            M(2,6) = 0._WP
+
+            M(3,1) = 0._WP
+            M(3,2) = 0._WP
+            M(3,3) = -1._WP
+            M(3,4) = 0._WP
+            M(3,5) = 0._WP
+            M(3,6) = 0._WP
+
+            M(4,1) = 0._WP
+            M(4,2) = 0._WP
+            M(4,3) = -(1._WP - U)
+            M(4,4) = -1._WP
+            M(4,5) = 0._WP
+            M(4,6) = 0._WP
+
+            M(5,1) = 0._WP
+            M(5,2) = 0._WP
+            M(5,3) = 0._WP
+            M(5,4) = 0._WP
+            M(5,5) = 1._WP
+            M(5,6) = 0._WP
+
+            M(6,1) = 0._WP
+            M(6,2) = 0._WP
+            M(6,3) = 0._WP
+            M(6,4) = 0._WP
+            M(6,5) = 0._WP
+            M(6,6) = 1._WP
+
+         endif
 
        end associate
 
