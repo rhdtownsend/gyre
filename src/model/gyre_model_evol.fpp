@@ -243,7 +243,7 @@ contains
        $ASSERT(r(1) == 0._WP,First grid point not at center)
        $ASSERT(m(1) == 0._WP,First grid point not at center)
 
-       $ASSERT(ALL(r(2:) >= r(:n-1)),Non-monotonic radius data)
+       $ASSERT(ALL(r(2:) > r(:n-1)),Non-monotonic radius data)
        $ASSERT(ALL(m(2:) >= m(:n-1)),Non-monotonic mass data)
 
        ! Calculate coefficients
@@ -483,7 +483,7 @@ contains
        $ASSERT(r(1) == 0._WP,First grid point not at center)
        $ASSERT(m(1) == 0._WP,First grid point not at center)
 
-       $ASSERT(ALL(r(2:) >= r(:n-1)),Non-monotonic radius data)
+       $ASSERT(ALL(r(2:) > r(:n-1)),Non-monotonic radius data)
        $ASSERT(ALL(m(2:) >= m(:n-1)),Non-monotonic mass data)
 
        ! Calculate coefficients
