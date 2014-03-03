@@ -120,7 +120,7 @@ contains
               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
               l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
 
-      if(l /= 0) then
+      if (l /= 0) then
 
          A(1,1) = V_g - 1._WP - l
          A(1,2) = 1._WP - V_g*c_1*omega**2/(l*(l+1))
@@ -200,7 +200,7 @@ contains
        associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
                  l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
 
-         if(l /= 0) then
+         if (l /= 0) then
 
             M(1,1) = 1._WP
             M(1,2) = 0._WP
@@ -253,7 +253,7 @@ contains
        associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
                  l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
 
-         if(l /= 0) then
+         if (l /= 0) then
 
             M(1,1) = 1._WP
             M(1,2) = 0._WP
