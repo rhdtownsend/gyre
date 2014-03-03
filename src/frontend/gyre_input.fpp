@@ -129,7 +129,6 @@ contains
     character(LEN=256)          :: data_format
     character(LEN=256)          :: deriv_type
     character(LEN=FILENAME_LEN) :: file
-    real(WP)                    :: G
     real(WP)                    :: Gamma_1
     type(model_evol_t)          :: ec
     type(model_poly_t)          :: pc
