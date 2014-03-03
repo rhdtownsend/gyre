@@ -52,17 +52,15 @@ contains
     integer, intent(in)         :: unit
     type(mode_t), intent(in)    :: md(:)
 
-    character(LEN=256)           :: freq_units
-    character(LEN=FILENAME_LEN)  :: summary_file
-    character(LEN=256)           :: summary_file_format
-    character(LEN=2048)          :: summary_item_list
-    character(LEN=FILENAME_LEN)  :: mode_prefix
-    character(LEN=256)           :: mode_file_format
-    character(LEN=2048)          :: mode_item_list
-    character(LEN=5)             :: infix
-    character(LEN=FILENAME_LEN)  :: mode_file
+    character(256)               :: freq_units
+    character(FILENAME_LEN)      :: summary_file
+    character(256)               :: summary_file_format
+    character(2048)              :: summary_item_list
+    character(FILENAME_LEN)      :: mode_prefix
+    character(256)               :: mode_file_format
+    character(2048)              :: mode_item_list
+    character(5)                 :: infix
     class(writer_t), allocatable :: wr
-    character(LEN=16)            :: ext
     integer                      :: j
 
     namelist /output/ freq_units, summary_file, summary_file_format, summary_item_list, mode_prefix, mode_file_format, mode_item_list
@@ -145,8 +143,8 @@ contains
 
     class(writer_t), intent(inout) :: wr
     type(mode_t), intent(in)       :: md(:)
-    character(LEN=*), intent(in)   :: items(:)
-    character(LEN=*), intent(in)   :: freq_units
+    character(*), intent(in)       :: items(:)
+    character(*), intent(in)       :: freq_units
 
     integer            :: n_md
     integer            :: i
@@ -222,7 +220,7 @@ contains
 
       class(writer_t), intent(inout) :: wr
       type(model_evol_t), intent(in) :: ml
-      character(LEN=*), intent(in)   :: item
+      character(*), intent(in)       :: item
 
       ! Write the item
 
@@ -248,7 +246,7 @@ contains
 
       class(writer_t), intent(inout) :: wr
       type(model_poly_t), intent(in) :: ml
-      character(LEN=*), intent(in)   :: item
+      character(*), intent(in)       :: item
 
       ! Write the item
 
@@ -274,8 +272,8 @@ contains
 
     class(writer_t), intent(inout) :: wr
     type(mode_t), intent(in)       :: md
-    character(LEN=*), intent(in)   :: items(:)
-    character(LEN=*), intent(in)   :: freq_units
+    character(*), intent(in)       :: items(:)
+    character(*), intent(in)       :: freq_units
     integer, intent(in)            :: i
 
     integer :: j
@@ -403,7 +401,7 @@ contains
 
       class(writer_t), intent(inout) :: wr
       type(model_evol_t), intent(in) :: ml
-      character(LEN=*), intent(in)   :: item
+      character(*), intent(in)       :: item
 
       ! Write the item
 
@@ -437,7 +435,7 @@ contains
 
       class(writer_t), intent(inout) :: wr
       type(model_poly_t), intent(in) :: ml
-      character(LEN=*), intent(in)   :: item
+      character(*), intent(in)       :: item
 
       ! Write the item
 
