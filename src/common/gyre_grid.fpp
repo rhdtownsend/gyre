@@ -179,6 +179,10 @@ contains
        $ASSERT(ALLOCATED(x_in),No grid to clone)
        x_i = x_in(1)
        x_o = x_in(SIZE(x_in))
+    case ('CREATE_MIDPOINT')
+       $ASSERT(ALLOCATED(x_in),No grid to midpoint)
+       x_i = x_in(1)
+       x_o = x_in(SIZE(x_in))
     case ('CREATE_UNIFORM')
        x_i = 0._WP
        x_o = 1._WP
