@@ -22,8 +22,9 @@ module gyre_output
   ! Uses
 
   use core_kinds
-  use gyre_constants
+  use core_string
 
+  use gyre_constants
   use gyre_model
   use gyre_model_evol
   use gyre_model_poly
@@ -57,13 +58,17 @@ contains
     character(256)               :: summary_file_format
     character(2048)              :: summary_item_list
     character(FILENAME_LEN)      :: mode_prefix
+    character(FILENAME_LEN)      :: mode_template
     character(256)               :: mode_file_format
     character(2048)              :: mode_item_list
-    character(5)                 :: infix
+    character(:), allocatable    :: mode_file
+    character(64)                :: infix
     class(writer_t), allocatable :: wr
     integer                      :: j
 
-    namelist /output/ freq_units, summary_file, summary_file_format, summary_item_list, mode_prefix, mode_file_format, mode_item_list
+    namelist /output/ freq_units, &
+         summary_file, summary_file_format, summary_item_list, &
+         mode_prefix, mode_template, mode_file_format, mode_item_list
 
     ! Read output parameters
 
@@ -74,6 +79,7 @@ contains
     summary_item_list = 'l,n_pg,omega,freq'
 
     mode_prefix = ''
+    mode_template = ''
     mode_file_format = 'HDF'
     mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
 
@@ -100,21 +106,52 @@ contains
 
     endif
 
-    if(mode_prefix /= '') then
+    if(mode_prefix /= '' .OR. mode_template /= '') then
 
        mode_loop : do j = 1,SIZE(md)
 
-          write(infix, 100) j
-100       format(I5.5)
+          ! Set up the mode filename
+
+          if (mode_template /= '') then
+
+             mode_file = mode_template
+
+             ! Fixed-width fields
+
+             mode_file = subst_(mode_file, '%J', j, '(I5.5)')
+             mode_file = subst_(mode_file, '%L', md(j)%op%l, '(I3.3)')
+             mode_file = subst_(mode_file, '%N', md(j)%n_pg, '(SP,I6.5)')
+
+             ! Variable-width fields
+
+             mode_file = subst_(mode_file, '%j', j, '(I0)')
+             mode_file = subst_(mode_file, '%l', md(j)%op%l, '(I0)')
+             mode_file = subst_(mode_file, '%n', md(j)%n_pg, '(SP,I0)')
+
+          else
+
+             write(infix, 100) j
+100          format(I5.5)
+
+             select case (mode_file_format)
+             case ('HDF')
+                mode_file = TRIM(mode_prefix)//infix//'.h5'
+             case ('TXT')
+                mode_file = TRIM(mode_prefix)//infix//'.txt'
+             case default
+                $ABORT(Invalid mode_file_format)
+             end select
+
+          endif
 
           select case (mode_file_format)
           case ('HDF')
-             allocate(wr, SOURCE=hdf_writer_t(TRIM(mode_prefix)//infix//'.h5'))
+             allocate(wr, SOURCE=hdf_writer_t(mode_file))
           case ('TXT')
-             allocate(wr, SOURCE=txt_writer_t(TRIM(mode_prefix)//infix//'.txt'))
-         case default
-            $ABORT(Invalid mode_file_format)
-         end select
+             allocate(wr, SOURCE=txt_writer_t(mode_file))
+          case default
+             $ABORT(Invalid mode_file_format)
+          end select
 
           call write_mode_(wr, md(j), split_list(mode_item_list, ','), freq_units, j)
           call wr%final()
@@ -454,5 +491,31 @@ contains
     end subroutine write_mode_poly_
     
   end subroutine write_mode_
+
+!****
+
+  function subst_ (string, pattern, i, format) result (new_string)
+
+    character(*), intent(in)  :: string
+    character(*), intent(in)  :: pattern
+    integer, intent(in)       :: i
+    character(*), intent(in)  :: format
+    character(:), allocatable :: new_string
+
+    character(64) :: substring
+
+    ! Write i into the substring buffer
+
+    write(substring, format) i
+
+    ! Do the replacement
+
+    new_string = replace(string, pattern, TRIM(substring), every=.TRUE.)
+
+    ! Finish
+
+    return
+
+  end function subst_
 
 end module gyre_output
