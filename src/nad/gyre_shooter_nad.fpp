@@ -45,7 +45,6 @@ module gyre_shooter_nad
      private
      class(model_t), pointer   :: ml => null()
      class(ivp_t), allocatable :: iv
-     class(ivp_t), allocatable :: iv_upw
      type(oscpar_t)            :: op
      type(numpar_t)            :: np
      integer, public           :: n_e
@@ -72,11 +71,10 @@ module gyre_shooter_nad
 
 contains
 
-  function shooter_nad_t_ (ml, iv, iv_upw, op, np) result (sh)
+  function shooter_nad_t_ (ml, iv, op, np) result (sh)
 
     class(model_t), pointer, intent(in) :: ml
     class(ivp_t), intent(in)            :: iv
-    class(ivp_t), intent(in)            :: iv_upw
     type(oscpar_t), intent(in)          :: op
     type(numpar_t), intent(in)          :: np
     type(shooter_nad_t)                 :: sh
@@ -85,7 +83,6 @@ contains
 
     sh%ml => ml
     allocate(sh%iv, SOURCE=iv)
-    allocate(sh%iv_upw, SOURCE=iv_upw)
     sh%op = op
     sh%np = np
 
@@ -99,26 +96,18 @@ contains
 
 !****
 
-  subroutine shoot_ (this, omega, x, sm, x_upw)
+  subroutine shoot_ (this, omega, x, sm)
 
     class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x(:)
     class(sysmtx_t), intent(inout)   :: sm
-    real(WP), optional, intent(in)   :: x_upw
 
-    real(WP)            :: x_upw_
     integer             :: k
     complex(WP)         :: E_l(this%n_e,this%n_e)
     complex(WP)         :: E_r(this%n_e,this%n_e)
     type(ext_complex_t) :: scale
     complex(WP)         :: lambda
-
-    if(PRESENT(x_upw)) then
-       x_upw_ = x_upw
-    else
-       x_upw_ = 0._WP
-    endif
 
     ! Set the sysmtx equation blocks by solving IVPs across the
     ! intervals x(k) -> x(k+1)
@@ -126,30 +115,20 @@ contains
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
 
-       if(k > 1 .AND. x(k) < x_upw_) then
+       ! Shoot
 
-          ! Shoot using upwinded finite differences
+       call this%iv%solve(omega, x(k), x(k+1), E_l, E_r, scale)
 
-          call this%iv_upw%solve(omega, x(k), x(k+1), E_l, E_r, scale)
+       ! Apply the thermal-term rescaling, to assist the rootfinder
 
-       else
+       associate(x_mid => x(k) + 0.5_WP*(x(k+1) - x(k)))
+         associate(V => this%ml%V(x_mid), nabla => this%ml%nabla(x_mid), &
+                   c_rad => this%ml%c_rad(x_mid), c_thm => this%ml%c_thm(x_mid))
+           lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x_mid
+         end associate
+       end associate
 
-          ! Shoot
-
-          call this%iv%solve(omega, x(k), x(k+1), E_l, E_r, scale)
-
-          ! Apply the thermal-term rescaling, to assist the rootfinder
-
-          associate(x_mid => 0.5_WP*(x(k) + x(k+1)))
-            associate(V => this%ml%V(x_mid), nabla => this%ml%nabla(x_mid), &
-                      c_rad => this%ml%c_rad(x_mid), c_thm => this%ml%c_thm(x_mid))
-              lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x_mid
-            end associate
-          end associate
-
-          scale = scale*exp(ext_complex_t(-lambda*(x(k+1)-x(k))))
-
-       endif
+       scale = scale*exp(ext_complex_t(-lambda*(x(k+1)-x(k))))
 
        call sm%set_block(k, E_l, E_r, scale)
 
@@ -161,7 +140,7 @@ contains
 
 !****
 
-  subroutine recon_ (this, omega, x_sh, y_sh, x, y, x_upw)
+  subroutine recon_ (this, omega, x_sh, y_sh, x, y)
 
     class(shooter_nad_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
@@ -169,9 +148,7 @@ contains
     complex(WP), intent(in)          :: y_sh(:,:)
     real(WP), intent(in)             :: x(:)
     complex(WP), intent(out)         :: y(:,:)
-    real(WP), optional, intent(in)   :: x_upw
 
-    real(WP)    :: x_upw_
     integer     :: n_sh
     integer     :: n
     integer     :: k
@@ -188,12 +165,6 @@ contains
 
     $CHECK_BOUNDS(SIZE(y, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
-
-    if(PRESENT(x_upw)) then
-       x_upw_ = x_upw
-    else
-       x_upw_ = 0._WP
-    endif
 
     ! Reconstruct the eigenfunctions on the supplied grid
 
@@ -223,21 +194,8 @@ contains
 
           x_in(:n_in) = x(i_in(:n_in))
 
-          if(k > 1 .AND. x_sh(k) < x_upw_) then
-
-             ! Reconstruct using upwinded finite differences
-
-             call this%iv_upw%recon(omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
-                                    x_in(:n_in), y_in(:,:n_in))
-
-          else
-
-             ! Reconstruct
-
-             call this%iv%recon(omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
-                                x_in(:n_in), y_in(:,:n_in))
-
-          endif
+          call this%iv%recon(omega, x_sh(k), x_sh(k+1), y_sh(:,k), y_sh(:,k+1), &
+               x_in(:n_in), y_in(:,:n_in))
 
           y(:,i_in(:n_in)) = y_in(:,:n_in)
 
@@ -259,74 +217,35 @@ contains
     real(WP), intent(in)             :: x_sh(:)
     real(WP), allocatable            :: x(:)
 
-    integer               :: k
-    integer               :: n_cell(SIZE(x_sh)-1)
-    integer               :: n_cell_upw(SIZE(x_sh)-1)
-    real(WP), allocatable :: x_(:)
-    integer               :: i
+    integer :: k
+    integer :: n_cell(SIZE(x_sh)-1)
+    integer :: i
 
     ! Determine the abscissa used for shooting on the grid x_sh
 
     !$OMP PARALLEL DO SCHEDULE (DYNAMIC)
     count_loop : do k = 1,SIZE(x_sh)-1
        n_cell(k) = SIZE(this%iv%abscissa(x_sh(k), x_sh(k+1)))
-       n_cell_upw(k) = SIZE(this%iv_upw%abscissa(x_sh(k), x_sh(k+1)))
     end do count_loop
 
-    allocate(x_(SUM(n_cell+n_cell_upw)))
+    allocate(x(SUM(n_cell+1)))
 
     i = 1
 
     cell_loop : do k = 1,SIZE(x_sh)-1
-
-       x_(i:i+n_cell(k)-1) = this%iv%abscissa(x_sh(k), x_sh(k+1))
-       x_(i+n_cell(k):i+n_cell_upw(k)-1) = this%iv_upw%abscissa(x_sh(k), x_sh(k+1))
-
-       i = i + n_cell(k) + n_cell_upw(k)
-
+       x(i:i+n_cell(k)-1) = this%iv%abscissa(x_sh(k), x_sh(k+1))
+       x(i+n_cell(k)) = x_sh(k) + 0.5_WP*(x_sh(k+1) - x_sh(k))
+       i = i + n_cell(k) + 1
     end do cell_loop
 
-    $CHECK_BOUNDS(i,SIZE(x_)+1)
+    $CHECK_BOUNDS(i,SIZE(x)+1)
 
-    x = x_(unique_indices(x_))
+    x = x(unique_indices(x))
 
     ! Finish
 
     return
 
   end function abscissa_
-
-! !****
-
-!   function diff_coeffs (ml, op, omega, x) result (a)
-
-!     class(model_t), intent(in) :: ml
-!     type(oscpar_t), intent(in) :: op
-!     complex(WP), intent(in)    :: omega
-!     real(WP), intent(in)       :: x
-!     complex(WP)                :: a(6)
-
-!     ! Calculate the coefficients of the (algebraic) adiabatic
-!     ! diffusion equation
-
-!     associate(U => ml%U(x), c_1 => ml%c_1(x), &
-!               nabla_ad => ml%nabla_ad(x), &
-!               c_rad => ml%c_rad(x), c_dif => ml%c_dif(x), nabla => ml%nabla(x), &
-!               l => op%l)
-
-!       a(1) = (nabla_ad*(U - c_1*omega**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-!       a(2) = (l*(l+1)/(c_1*omega**2)*(nabla_ad - nabla) - c_dif)
-!       a(3) = c_dif
-!       a(4) = nabla_ad
-!       a(5) = 0._WP
-!       a(6) = -nabla/c_rad
-      
-!     end associate
-
-!     ! Finish
-
-!     return
-
-!   end function diff_coeffs
 
 end module gyre_shooter_nad
