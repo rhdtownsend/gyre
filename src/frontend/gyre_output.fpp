@@ -135,9 +135,9 @@ contains
 
              select case (mode_file_format)
              case ('HDF')
-                mode_file = TRIM(mode_prefix)//infix//'.h5'
+                mode_file = TRIM(mode_prefix)//TRIM(infix)//'.h5'
              case ('TXT')
-                mode_file = TRIM(mode_prefix)//infix//'.txt'
+                mode_file = TRIM(mode_prefix)//TRIM(infix)//'.txt'
              case default
                 $ABORT(Invalid mode_file_format)
              end select
