@@ -1,4 +1,4 @@
-! Module   : gyre_model_evol
+! Module   : gyre_evol_model
 ! Purpose  : stellar evolutionary model
 !
 ! Copyright 2013 Rich Townsend
@@ -18,13 +18,14 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_model_evol
+module gyre_evol_model
 
   ! Uses
 
   use core_kinds
   use core_parallel
   use core_spline
+  use core_table
 
   use gyre_constants
   use gyre_model
@@ -81,7 +82,7 @@ module gyre_model_evol
     generic, public :: ${NAME} => ${NAME}_1_, ${NAME}_v_
   $endsub
 
-  type, extends (model_t) :: model_evol_t
+  type, extends (model_t) :: evol_model_t
      private
      type(spline_t), allocatable :: sp(:)
      logical, allocatable        :: sp_def(:)
@@ -124,16 +125,17 @@ module gyre_model_evol
      procedure, public :: attach_cache => attach_cache_
      procedure, public :: detach_cache => detach_cache_
      procedure, public :: fill_cache => fill_cache_
-  end type model_evol_t
+     procedure, public :: regularize => regularize_
+  end type evol_model_t
  
   ! Interfaces
 
-  interface model_evol_t
-     module procedure model_evol_t_
-     module procedure model_evol_t_mech_
-     module procedure model_evol_t_mech_coeffs_
-     module procedure model_evol_t_full_
-  end interface model_evol_t
+  interface evol_model_t
+     module procedure evol_model_t_
+     module procedure evol_model_t_mech_
+     module procedure evol_model_t_mech_coeffs_
+     module procedure evol_model_t_full_
+  end interface evol_model_t
 
   $if ($MPI)
   interface bcast
@@ -145,7 +147,7 @@ module gyre_model_evol
 
   private
 
-  public :: model_evol_t
+  public :: evol_model_t
   $if ($MPI)
   public :: bcast
   $endif
@@ -154,11 +156,11 @@ module gyre_model_evol
 
 contains
 
-  function model_evol_t_ () result (ml)
+  function evol_model_t_ () result (ml)
 
-    type(model_evol_t) :: ml
+    type(evol_model_t) :: ml
 
-    ! Construct the model_evol_t
+    ! Construct the evol_model_t
 
     allocate(ml%sp(N_J))
 
@@ -171,11 +173,11 @@ contains
 
     return
 
-  end function model_evol_t_
+  end function evol_model_t_
 
 !****
 
-  recursive function model_evol_t_mech_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
+  recursive function evol_model_t_mech_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                         Gamma_1, nabla_ad, delta, Omega_rot, &
                                         deriv_type, add_center) result (ml)
 
@@ -194,7 +196,7 @@ contains
     real(WP), intent(in)          :: Omega_rot(:)
     character(LEN=*), intent(in)  :: deriv_type
     logical, optional, intent(in) :: add_center
-    type(model_evol_t)            :: ml
+    type(evol_model_t)            :: ml
 
     logical  :: add_center_
     integer  :: n
@@ -221,7 +223,7 @@ contains
        add_center_ = .FALSE.
     endif
 
-    ! Construct the model_evol_t using the mechanical structure data
+    ! Construct the evol_model_t using the mechanical structure data
 
     ! See if we need a central point
 
@@ -229,7 +231,7 @@ contains
 
        ! Add a central point and initialize using recursion
 
-       ml = model_evol_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
+       ml = evol_model_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
                          prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), &
                          [0._WP,N2], prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), &
                          prep_center_(r, Omega_rot), deriv_type, .FALSE.)
@@ -266,7 +268,7 @@ contains
 
        ! Initialize the model
 
-       ml = model_evol_t()
+       ml = evol_model_t()
 
        !$OMP PARALLEL SECTIONS
        !$OMP SECTION
@@ -299,17 +301,20 @@ contains
        ml%R_star = R_star
        ml%L_star = L_star
 
+       ml%p_c = p(1)
+       ml%rho_c = rho(1)
+
     endif
 
     ! Finish
 
     return
 
-  end function model_evol_t_mech_
+  end function evol_model_t_mech_
 
 !****
 
-  recursive function model_evol_t_mech_coeffs_ (M_star, R_star, L_star, x, &
+  recursive function evol_model_t_mech_coeffs_ (M_star, R_star, L_star, x, &
                                                 V, As, U, c_1, Gamma_1, &
                                                 deriv_type, add_center) result (ml)
 
@@ -324,7 +329,7 @@ contains
     real(WP), intent(in)          :: Gamma_1(:)
     character(LEN=*), intent(in)  :: deriv_type
     logical, optional, intent(in) :: add_center
-    type(model_evol_t)            :: ml
+    type(evol_model_t)            :: ml
 
     logical  :: add_center_
 
@@ -340,7 +345,7 @@ contains
        add_center_ = .FALSE.
     endif
 
-    ! Construct the model_evol_t using the dimensionless coefficients
+    ! Construct the evol_model_t using the dimensionless coefficients
 
     ! See if we need a central point
 
@@ -348,7 +353,7 @@ contains
 
        ! Add a central point and initialize using recursion
        
-       ml = model_evol_t(M_star, R_star, L_star, &
+       ml = evol_model_t(M_star, R_star, L_star, &
                          [0._WP,x], [0._WP,V], [0._WP,As], [3._WP,U], &
                          prep_center_(x, c_1), prep_center_(x, Gamma_1), deriv_type, .FALSE.)
 
@@ -356,7 +361,7 @@ contains
 
        ! Initialize the model
 
-       ml = model_evol_t()
+       ml = evol_model_t()
 
        !$OMP PARALLEL SECTIONS
        !$OMP SECTION
@@ -377,17 +382,20 @@ contains
        ml%R_star = R_star
        ml%L_star = L_star
 
+       ml%rho_c = 0._WP
+       ml%p_c = 0._WP
+
     endif
 
     ! Finish
 
     return
 
-  end function model_evol_t_mech_coeffs_
+  end function evol_model_t_mech_coeffs_
 
 !****
 
-  recursive function model_evol_t_full_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
+  recursive function evol_model_t_full_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                          Gamma_1, nabla_ad, delta, Omega_rot, &
                                          nabla, kappa, kappa_rho, kappa_T, &
                                          epsilon, epsilon_rho, epsilon_T, &
@@ -415,7 +423,7 @@ contains
     real(WP), intent(in)          :: epsilon_T(:)
     character(LEN=*), intent(in)  :: deriv_type
     logical, optional, intent(in) :: add_center
-    type(model_evol_t)            :: ml
+    type(evol_model_t)            :: ml
 
     logical  :: add_center_
     integer  :: n
@@ -459,7 +467,7 @@ contains
        add_center_ = .FALSE.
     endif
 
-    ! Construct the model_evol using the full structure data
+    ! Construct the evol_model using the full structure data
 
     ! See if we need a central point
 
@@ -467,7 +475,7 @@ contains
 
        ! Add a central point and initialize using recursion
 
-       ml = model_evol_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
+       ml = evol_model_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
                          prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), [0._WP,N2], &
                          prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), prep_center_(r, Omega_rot), &
                          prep_center_(r, nabla), prep_center_(r, kappa), prep_center_(r, kappa_rho), prep_center_(r, kappa_T), &
@@ -525,7 +533,7 @@ contains
 
        ! Initialize the model
 
-       ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
+       ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
                          Gamma_1, nabla_ad, delta, Omega_rot, &
                          deriv_type, .FALSE.)
 
@@ -585,7 +593,7 @@ contains
 
     end function dlny_dlnx_
 
-  end function model_evol_t_full_
+  end function evol_model_t_full_
 
 !****
 
@@ -593,11 +601,11 @@ contains
 
   subroutine final_ (this)
 
-    class(model_evol_t), intent(inout) :: this
+    class(evol_model_t), intent(inout) :: this
 
     integer :: j
 
-    ! Finalize the model_evol_t
+    ! Finalize the evol_model_t
 
     call this%detach_cache()
 
@@ -622,7 +630,7 @@ contains
 
   subroutine set_sp_ (this, x, y, deriv_type, i)
 
-    class(model_evol_t), intent(inout) :: this
+    class(evol_model_t), intent(inout) :: this
     real(WP), intent(in)               :: x(:)
     real(WP), intent(in)               :: y(:)
     character(LEN=*), intent(in)       :: deriv_type
@@ -672,13 +680,88 @@ contains
 
 !****
 
+  subroutine regularize_ (this)
+
+    class(evol_model_t), intent(inout) :: this
+
+    real(WP), allocatable :: x(:)
+    real(WP), allocatable :: V(:)
+    real(WP), allocatable :: As(:)
+    real(WP), allocatable :: U(:)
+    real(WP), allocatable :: c_1(:)
+    real(WP), allocatable :: Gamma_1(:)
+    integer               :: n
+    real(WP), allocatable :: r(:)
+    real(WP), allocatable :: dlnrho_dlnr(:)
+    real(WP), allocatable :: lnrho(:)
+    real(WP), allocatable :: rho(:)
+    real(WP), allocatable :: m(:)
+
+    ! Regularize the mechanical structure coefficients
+
+    x = this%sp(J_V)%x
+
+    V = this%sp(J_V)%y
+    As = this%sp(J_AS)%y
+    U = this%sp(J_U)%y
+    c_1 = this%sp(J_C_1)%y
+    Gamma_1 = this%sp(J_GAMMA_1)%y
+
+    ! Do the regularization
+
+    ! First, reconstruct the density
+
+    n = SIZE(x)
+
+    r = x*this%R_star
+
+    dlnrho_dlnr = -V/Gamma_1 - As
+
+    allocate(lnrho(n))
+
+    lnrho(1) = LOG(this%rho_c)
+    lnrho(2:) = lnrho(1) + integ(LOG(r(2:)), dlnrho_dlnr(2:), 'MONO')
+
+    rho = EXP(lnrho)
+
+    ! Now reconstruct the mass
+
+    m = integ(r, 4._WP*PI*r**2*rho, 'MONO', dy_dx_a=0._WP)
+
+    ! Set c_1 and U
+
+    where(r /= 0._WP)
+       U = 4._WP*PI*rho*r**3/m
+       c_1 = (r/this%R_star)**3/(m/MAXVAL(m))
+    elsewhere
+       U = 3._WP
+       c_1 = 3._WP*(MAXVAL(m)/this%R_star**3)/(4._WP*PI*rho)
+    end where
+
+    ! Update the model
+
+    !$OMP PARALLEL SECTIONS
+    !$OMP SECTION
+    call this%set_sp_(x, U, 'MONO', J_U)
+    !$OMP SECTION
+    call this%set_sp_(x, c_1, 'MONO', J_C_1)
+    !$OMP END PARALLEL SECTIONS
+
+    ! Finish
+
+    return
+
+  end subroutine regularize_
+
+!****
+
   $define $PROC $sub
 
   $local $NAME $1
 
   function ${NAME}_1_ (this, x) result ($NAME)
 
-    class(model_evol_t), intent(in) :: this
+    class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: $NAME
 
@@ -710,7 +793,7 @@ contains
 
   function ${NAME}_v_ (this, x) result ($NAME)
 
-    class(model_evol_t), intent(in) :: this
+    class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: $NAME(SIZE(x))
 
@@ -766,7 +849,7 @@ contains
 
   function d${NAME}_1_ (this, x) result (d$NAME)
 
-    class(model_evol_t), intent(in) :: this
+    class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: d$NAME
 
@@ -804,7 +887,7 @@ contains
 
   function d${NAME}_v_ (this, x) result (d$NAME)
 
-    class(model_evol_t), intent(in) :: this
+    class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: d$NAME(SIZE(x))
 
@@ -842,7 +925,7 @@ contains
 
   function U_1_ (this, x) result (U)
 
-    class(model_evol_t), intent(in) :: this
+    class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: U
 
@@ -875,7 +958,7 @@ contains
 
   function U_v_ (this, x) result (U)
 
-    class(model_evol_t), intent(in) :: this
+    class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: U(SIZE(x))
 
@@ -900,7 +983,7 @@ contains
 
   function Gamma_1_1_ (this, x) result (Gamma_1)
 
-    class(model_evol_t), intent(in) :: this
+    class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: Gamma_1
 
@@ -936,7 +1019,7 @@ contains
 
   function Gamma_1_v_ (this, x) result (Gamma_1)
 
-    class(model_evol_t), intent(in) :: this
+    class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: Gamma_1(SIZE(x))
 
@@ -964,7 +1047,7 @@ contains
 
   function pi_c_ (this) result (pi_c)
 
-    class(model_evol_t), intent(in) :: this
+    class(evol_model_t), intent(in) :: this
     real(WP)                         :: pi_c
 
     ! Calculate pi_c = V/x^2 as x -> 0
@@ -981,7 +1064,7 @@ contains
 
   function is_zero_ (this, x) result (is_zero)
 
-    class(model_evol_t), intent(in) :: this
+    class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
     logical                         :: is_zero
 
@@ -1015,7 +1098,7 @@ contains
 
   subroutine attach_cache_ (this, cc)
 
-    class(model_evol_t), intent(inout)    :: this
+    class(evol_model_t), intent(inout)    :: this
     class(cocache_t), pointer, intent(in) :: cc
 
     ! Attach a coefficient cache
@@ -1032,7 +1115,7 @@ contains
 
   subroutine detach_cache_ (this)
 
-    class(model_evol_t), intent(inout) :: this
+    class(evol_model_t), intent(inout) :: this
 
     ! Detach the coefficient cache
 
@@ -1048,7 +1131,7 @@ contains
 
   subroutine fill_cache_ (this, x)
 
-    class(model_evol_t), intent(inout) :: this
+    class(evol_model_t), intent(inout) :: this
     real(WP), intent(in)               :: x(:)
 
     real(WP) :: c(N_J,SIZE(x))
@@ -1118,10 +1201,10 @@ contains
 
   subroutine bcast_ (ml, root_rank)
 
-    type(model_evol_t), intent(inout) :: ml
+    type(evol_model_t), intent(inout) :: ml
     integer, intent(in)               :: root_rank
 
-    ! Broadcast the model_evol_t
+    ! Broadcast the evol_model_t
 
     call bcast_alloc(ml%sp, root_rank)
     call bcast_alloc(ml%sp_def, root_rank)
@@ -1143,4 +1226,4 @@ contains
 
   $endif
 
-end module gyre_model_evol
+end module gyre_evol_model

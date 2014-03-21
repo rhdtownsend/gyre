@@ -1,5 +1,5 @@
-! Module   : gyre_model_hom
-! Purpose  : homogeneous compressible model
+! Module   : gyre_poly_model
+! Purpose  : stellar polytropic model
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,12 +17,13 @@
 
 $include 'core.inc'
 
-module gyre_model_hom
+module gyre_poly_model
 
   ! Uses
 
   use core_kinds
   use core_parallel
+  use core_spline
 
   use gyre_model
   use gyre_cocache
@@ -41,11 +42,18 @@ module gyre_model_hom
     procedure :: ${NAME}_v_
   $endsub
 
-  type, extends(model_t) :: model_hom_t
+  type, extends(model_t) :: poly_model_t
      private
-     real(WP) :: dt_Gamma_1
+     type(spline_t)   :: sp_Theta
+     type(spline_t)   :: sp_dTheta
+     real(WP)         :: dt_Gamma_1
+     real(WP), public :: n_poly
+     real(WP), public :: xi_1
    contains
      private
+     $if ($GFORTRAN_PR57922)
+     procedure, public :: final => final_
+     $endif
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -69,13 +77,13 @@ module gyre_model_hom
      procedure, public :: attach_cache => attach_cache_
      procedure, public :: detach_cache => detach_cache_
      procedure, public :: fill_cache => fill_cache_
-  end type model_hom_t
+  end type poly_model_t
 
   ! Interfaces
 
-  interface model_hom_t
-     module procedure model_hom_t_
-  end interface model_hom_t
+  interface poly_model_t
+     module procedure poly_model_t_
+  end interface poly_model_t
 
   $if ($MPI)
   interface bcast
@@ -87,7 +95,7 @@ module gyre_model_hom
 
   private
 
-  public :: model_hom_t
+  public :: poly_model_t
   $if ($MPI)
   public :: bcast
   $endif
@@ -96,32 +104,93 @@ module gyre_model_hom
 
 contains
 
-  function model_hom_t_ (Gamma_1) result (ml)
+  function poly_model_t_ (xi, Theta, dTheta, n_poly, Gamma_1, deriv_type) result (ml)
 
-    real(WP), intent(in) :: Gamma_1
-    type(model_hom_t)    :: ml
+    real(WP), intent(in)         :: xi(:)
+    real(WP), intent(in)         :: Theta(:)
+    real(WP), intent(in)         :: dTheta(:)
+    real(WP), intent(in)         :: n_poly
+    real(WP), intent(in)         :: Gamma_1
+    character(LEN=*), intent(in) :: deriv_type
+    type(poly_model_t)           :: ml
 
-    ! Construct the model_hom_t
+    integer  :: n
+    real(WP) :: d2Theta(SIZE(xi))
 
+    $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
+
+    ! Construct the poly_model_t from the polytrope functions
+
+    n = SIZE(xi)
+
+    if(n_poly /= 0._WP) then
+
+       where (xi /= 0._WP)
+          d2Theta = -2._WP*dTheta/xi - Theta**n_poly
+       elsewhere
+          d2Theta = -1._WP/3._WP
+       end where
+
+    else
+
+       d2Theta = -1._WP/3._WP
+
+    endif
+
+    ml%sp_Theta = spline_t(xi, Theta, dTheta)
+    ml%sp_dTheta = spline_t(xi, dTheta, d2Theta)
+
+    ml%n_poly = n_poly
     ml%dt_Gamma_1 = Gamma_1
+    ml%xi_1 = xi(n)
 
     ! Finish
 
     return
 
-  end function model_hom_t_
+  end function poly_model_t_
+
+!****
+
+  $if ($GFORTRAN_PR57922)
+
+  subroutine final_ (this)
+
+    class(poly_model_t), intent(inout) :: this
+
+    ! Finalize the poly_model_t
+
+    call this%sp_Theta%final()
+    call this%sp_dTheta%final()
+
+    ! Finish
+
+    return
+
+  end subroutine final_
+
+  $endif
 
 !****
 
   function V_1_ (this, x) result (V)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: V
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: V
+
+    real(WP) :: xi
+    real(WP) :: Theta
+    real(WP) :: dTheta
 
     ! Calculate V
 
-    V = 2._WP*x**2/(1._WP - x**2)
+    xi = x*this%xi_1
+
+    Theta = this%sp_Theta%interp(xi)
+    dTheta = this%sp_dTheta%interp(xi)
+
+    V = -(this%n_poly + 1._WP)*xi*dTheta/Theta
 
     ! Finish
 
@@ -130,12 +199,12 @@ contains
   end function V_1_
 
 !****
-  
+
   function V_v_ (this, x) result (V)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: V(SIZE(x))
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)             :: x(:)
+    real(WP)                         :: V(SIZE(x))
 
     integer :: i
 
@@ -155,13 +224,13 @@ contains
 
   function As_1_ (this, x) result (As)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: As
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: As
 
     ! Calculate As
 
-    As = -this%V(x)/this%dt_Gamma_1
+    As = this%V(x)*(this%n_poly/(this%n_poly + 1._WP) - 1._WP/this%Gamma_1(x))
 
     ! Finish
 
@@ -170,12 +239,12 @@ contains
   end function As_1_
 
 !****
-  
+
   function As_v_ (this, x) result (As)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: As(SIZE(x))
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: As(SIZE(x))
 
     integer :: i
 
@@ -195,13 +264,26 @@ contains
 
   function U_1_ (this, x) result (U)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: U
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: U
+
+    real(WP) :: xi
+    real(WP) :: Theta
+    real(WP) :: dTheta
 
     ! Calculate U
 
-    U = 3._WP
+    xi = x*this%xi_1
+
+    Theta = this%sp_Theta%interp(xi)
+    dTheta = this%sp_dTheta%interp(xi)
+
+    if(x /= 0._WP) then
+       U = -xi*Theta**this%n_poly/dTheta
+    else
+       U = 3._WP
+    endif
 
     ! Finish
 
@@ -210,12 +292,12 @@ contains
   end function U_1_
 
 !****
-  
+
   function U_v_ (this, x) result (U)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: U(SIZE(x))
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: U(SIZE(x))
 
     integer :: i
 
@@ -235,13 +317,26 @@ contains
 
   function c_1_1_ (this, x) result (c_1)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: c_1
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: c_1
+
+    real(WP) :: xi
+    real(WP) :: dTheta
+    real(WP) :: dTheta_1
 
     ! Calculate c_1
 
-    c_1 = 1._WP
+    xi = x*this%xi_1
+
+    dTheta = this%sp_dTheta%interp(xi)
+    dTheta_1 = this%sp_dTheta%interp(this%xi_1)
+
+    if(x /= 0._WP) then
+       c_1 = x*dTheta_1/dTheta
+    else
+       c_1 = -3._WP*dTheta_1/this%xi_1
+    endif
 
     ! Finish
 
@@ -250,12 +345,12 @@ contains
   end function c_1_1_
 
 !****
-  
+
   function c_1_v_ (this, x) result (c_1)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: c_1(SIZE(x))
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: c_1(SIZE(x))
 
     integer :: i
 
@@ -268,16 +363,16 @@ contains
     ! Finish
 
     return
-
+    
   end function c_1_v_
 
 !****
 
   function Gamma_1_1_ (this, x) result (Gamma_1)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: Gamma_1
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: Gamma_1
 
     ! Calculate Gamma_1
 
@@ -293,9 +388,9 @@ contains
   
   function Gamma_1_v_ (this, x) result (Gamma_1)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: Gamma_1(SIZE(x))
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: Gamma_1(SIZE(x))
 
     integer :: i
 
@@ -315,9 +410,9 @@ contains
 
   function nabla_ad_1_ (this, x) result (nabla_ad)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: nabla_ad
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: nabla_ad
 
     ! Calculate nabla_ad (assume ideal gas)
 
@@ -333,9 +428,9 @@ contains
   
   function nabla_ad_v_ (this, x) result (nabla_ad)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: nabla_ad(SIZE(x))
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: nabla_ad(SIZE(x))
 
     integer :: i
 
@@ -355,9 +450,9 @@ contains
 
   function delta_1_ (this, x) result (delta)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: delta
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: delta
 
     ! Calculate delta (assume ideal gas)
 
@@ -373,9 +468,9 @@ contains
   
   function delta_v_ (this, x) result (delta)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: delta(SIZE(x))
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: delta(SIZE(x))
 
     integer :: i
 
@@ -399,9 +494,9 @@ contains
 
   function ${NAME}_1_ (this, x) result ($NAME)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: $NAME
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: $NAME
 
     ! Abort with $NAME undefined
 
@@ -417,9 +512,9 @@ contains
 
   function ${NAME}_v_ (this, x) result ($NAME)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: $NAME(SIZE(x))
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: $NAME(SIZE(x))
 
     ! Abort with $NAME undefined
 
@@ -448,9 +543,9 @@ contains
 
   function Omega_rot_1_ (this, x) result (Omega_rot)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: Omega_rot
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: Omega_rot
 
     ! Calculate Omega_rot (no rotation)
 
@@ -466,9 +561,9 @@ contains
   
   function Omega_rot_v_ (this, x) result (Omega_rot)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: Omega_rot(SIZE(x))
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: Omega_rot(SIZE(x))
 
     integer :: i
 
@@ -488,12 +583,12 @@ contains
 
   function pi_c_ (this) result (pi_c)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP)                       :: pi_c
+    class(poly_model_t), intent(in) :: this
+    real(WP)                        :: pi_c
 
     ! Calculate pi_c = V/x^2 as x -> 0
 
-    pi_c = 2._WP
+    pi_c =  (this%n_poly + 1._WP)*this%xi_1**2/3._WP
 
     ! Finish
 
@@ -505,13 +600,17 @@ contains
 
   function is_zero_ (this, x) result (is_zero)
 
-    class(model_hom_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    logical                        :: is_zero
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    logical                         :: is_zero
+
+    real(WP) :: xi
 
     ! Determine whether the point at x has a vanishing pressure and/or density
 
-    is_zero = x >= 1._WP
+    xi = x*this%xi_1
+
+    is_zero = this%sp_Theta%interp(xi) == 0._WP
 
     ! Finish
 
@@ -523,10 +622,10 @@ contains
 
   subroutine attach_cache_ (this, cc)
 
-    class(model_hom_t), intent(inout)     :: this
+    class(poly_model_t), intent(inout)    :: this
     class(cocache_t), pointer, intent(in) :: cc
 
-    ! Attach a coefficient cache (no-op, since we don't cache)
+    ! Enable a coefficient cache (no-op, since we don't cache)
 
     ! Finish
 
@@ -538,7 +637,7 @@ contains
 
   subroutine detach_cache_ (this)
 
-    class(model_hom_t), intent(inout) :: this
+    class(poly_model_t), intent(inout) :: this
 
     ! Detach the coefficient cache (no-op, since we don't cache)
 
@@ -552,8 +651,8 @@ contains
 
   subroutine fill_cache_ (this, x)
 
-    class(model_hom_t), intent(inout) :: this
-    real(WP), intent(in)              :: x(:)
+    class(poly_model_t), intent(inout) :: this
+    real(WP), intent(in)               :: x(:)
 
     ! Fill the coefficient cache (no-op, since we don't cache)
 
@@ -569,12 +668,17 @@ contains
 
   subroutine bcast_ (ml, root_rank)
 
-    class(model_hom_t), intent(inout) :: ml
+    type(poly_model_t), intent(inout) :: ml
     integer, intent(in)               :: root_rank
 
-    ! Broadcast the model_hom_t
+    ! Broadcast the poly_model_t
 
+    call bcast(ml%sp_Theta, root_rank)
+    call bcast(ml%sp_dTheta, root_rank)
+
+    call bcast(ml%n_poly, root_rank)
     call bcast(ml%dt_Gamma_1, root_rank)
+    call bcast(ml%xi_1, root_rank)
 
     ! Finish
 
@@ -584,4 +688,4 @@ contains
 
   $endif
 
-end module gyre_model_hom
+end module gyre_poly_model
