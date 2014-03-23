@@ -27,9 +27,9 @@ module gyre_util
 
   use gyre_constants
   use gyre_model
-  use gyre_model_evol
-  use gyre_model_poly
-  use gyre_model_hom
+  use gyre_evol_model
+  use gyre_poly_model
+  use gyre_hom_model
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -203,11 +203,11 @@ contains
     ! frequency to a dimensioned frequency
 
     select type (ml)
-    class is (model_evol_t)
+    class is (evol_model_t)
        freq_scale = evol_freq_scale_(ml, op, x_o, freq_units)
-    class is (model_poly_t)
+    class is (poly_model_t)
        freq_scale = poly_freq_scale_(freq_units)
-    class is (model_hom_t)
+    class is (hom_model_t)
        freq_scale = hom_freq_scale_(freq_units)
     class default
        $ABORT(Invalid ml type)
@@ -221,7 +221,7 @@ contains
 
     function evol_freq_scale_ (ml, op, x_o, freq_units) result (freq_scale)
 
-      class(model_evol_t), intent(in) :: ml
+      class(evol_model_t), intent(in) :: ml
       type(oscpar_t), intent(in)      :: op
       real(WP), intent(in)            :: x_o
       character(LEN=*), intent(in)    :: freq_units
