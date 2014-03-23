@@ -1,4 +1,4 @@
-! Module   : gyre_ivp_magnus_GL2
+! Module   : gyre_magnus_gl2_ivp
 ! Purpose  : solve initial-value problems (2nd-order Gauss-Legendre Magnus)
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_ivp_magnus_GL2
+module gyre_magnus_gl2_ivp
 
   ! Uses
 
@@ -25,7 +25,7 @@ module gyre_ivp_magnus_GL2
   use gyre_constants
 
   use gyre_jacobian
-  use gyre_ivp_magnus
+  use gyre_magnus_ivp
 
   use ISO_FORTRAN_ENV
 
@@ -35,37 +35,37 @@ module gyre_ivp_magnus_GL2
 
   ! Derived-type definitions
 
-  type, extends (ivp_magnus_t) :: ivp_magnus_GL2_t
+  type, extends (magnus_ivp_t) :: magnus_gl2_ivp_t
      private
      class(jacobian_t), allocatable :: jc
    contains
      private
      procedure, public :: eval_dOmega => eval_dOmega_
      procedure, public :: abscissa => abscissa_
-  end type ivp_magnus_GL2_t
+  end type magnus_gl2_ivp_t
 
   ! Interfaces
 
-  interface ivp_magnus_GL2_t
-     module procedure ivp_magnus_GL2_t_
-  end interface ivp_magnus_GL2_t
+  interface magnus_gl2_ivp_t
+     module procedure magnus_gl2_ivp_t_
+  end interface magnus_gl2_ivp_t
 
   ! Access specifiers
 
   private
 
-  public :: ivp_magnus_GL2_t
+  public :: magnus_gl2_ivp_t
 
   ! Procedures
 
 contains
 
-  function ivp_magnus_GL2_t_ (jc) result (iv)
+  function magnus_gl2_ivp_t_ (jc) result (iv)
 
     class(jacobian_t), intent(in) :: jc
-    type(ivp_magnus_GL2_t)        :: iv
+    type(magnus_gl2_ivp_t)        :: iv
 
-    ! Construct the ivp_magnus_GL2_t
+    ! Construct the magnus_gl2_ivp_t
 
     allocate(iv%jc, SOURCE=jc)
 
@@ -75,13 +75,13 @@ contains
 
     return
     
-  end function ivp_magnus_GL2_t_
+  end function magnus_gl2_ivp_t_
 
 !****
 
   subroutine eval_dOmega_ (this, omega, x_a, x_b, dOmega)
 
-    class(ivp_magnus_GL2_t), intent(in) :: this
+    class(magnus_gl2_ivp_t), intent(in) :: this
     complex(WP), intent(in)             :: omega
     real(WP), intent(in)                :: x_a
     real(WP), intent(in)                :: x_b
@@ -117,7 +117,7 @@ contains
 
   function abscissa_ (this, x_a, x_b) result (x)
 
-    class(ivp_magnus_GL2_t), intent(in) :: this
+    class(magnus_gl2_ivp_t), intent(in) :: this
     real(WP), intent(in)                :: x_a
     real(WP), intent(in)                :: x_b
     real(WP), allocatable               :: x(:)
@@ -136,4 +136,4 @@ contains
     
   end function abscissa_
 
-end module gyre_ivp_magnus_GL2
+end module gyre_magnus_gl2_ivp

@@ -1,4 +1,4 @@
-! Module   : gyre_ivp_magnus
+! Module   : gyre_magnus_ivp
 ! Purpose  : solve initial-value problems (interface, for Magnus schemes)
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_ivp_magnus
+module gyre_magnus_ivp
 
   ! Uses
 
@@ -37,13 +37,13 @@ module gyre_ivp_magnus
 
   ! Derived-type definitions
 
-  type, abstract, extends (ivp_t) :: ivp_magnus_t
+  type, abstract, extends (ivp_t) :: magnus_ivp_t
    contains
      private
      procedure, public                         :: solve => solve_
      procedure, public                         :: recon => recon_
      procedure(eval_dOmega_), deferred, public :: eval_dOmega
-  end type ivp_magnus_t
+  end type magnus_ivp_t
 
   ! Interfaces
 
@@ -51,8 +51,8 @@ module gyre_ivp_magnus
 
      subroutine eval_dOmega_ (this, omega, x_a, x_b, dOmega)
        use core_kinds
-       import ivp_magnus_t
-       class(ivp_magnus_t), intent(in) :: this
+       import magnus_ivp_t
+       class(magnus_ivp_t), intent(in) :: this
        complex(WP), intent(in)         :: omega
        real(WP), intent(in)            :: x_a
        real(WP), intent(in)            :: x_b
@@ -65,7 +65,7 @@ module gyre_ivp_magnus
 
   private
 
-  public :: ivp_magnus_t
+  public :: magnus_ivp_t
 
   ! Procedures
 
@@ -73,7 +73,7 @@ contains
 
   subroutine solve_ (this, omega, x_a, x_b, E_l, E_r, S, use_real)
 
-    class(ivp_magnus_t), intent(in)  :: this
+    class(magnus_ivp_t), intent(in)  :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x_a
     real(WP), intent(in)             :: x_b
@@ -184,7 +184,7 @@ contains
 
   subroutine recon_ (this, omega, x_a, x_b, y_a, y_b, x, y, use_real)
 
-    class(ivp_magnus_t), intent(in) :: this
+    class(magnus_ivp_t), intent(in) :: this
     complex(WP), intent(in)         :: omega
     real(WP), intent(in)            :: x_a
     real(WP), intent(in)            :: x_b
@@ -241,4 +241,4 @@ contains
 
   end subroutine recon_
 
-end module gyre_ivp_magnus
+end module gyre_magnus_ivp

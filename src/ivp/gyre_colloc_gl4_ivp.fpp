@@ -1,5 +1,5 @@
-! Module   : gyre_ivp_colloc_GL2
-! Purpose  : solve initial-value problems (2nd-order Gauss-Legendre collocation)
+! Module   : gyre_colloc_gl4_ivp
+! Purpose  : solve initial-value problems (4th-order Gauss-Legendre collocation)
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_ivp_colloc_GL2
+module gyre_colloc_gl4_ivp
 
   ! Uses
 
@@ -27,7 +27,6 @@ module gyre_ivp_colloc_GL2
   use gyre_jacobian
   use gyre_ivp_colloc
   use gyre_ext_arith
-  use gyre_linalg
 
   use ISO_FORTRAN_ENV
 
@@ -37,7 +36,7 @@ module gyre_ivp_colloc_GL2
 
   ! Derived-type definitions
 
-  type, extends (ivp_colloc_t) :: ivp_colloc_GL2_t
+  type, extends (ivp_colloc_t) :: colloc_gl4_ivp_t
      private
      class(jacobian_t), allocatable :: jc
    contains
@@ -45,28 +44,28 @@ module gyre_ivp_colloc_GL2
      procedure, public :: solve => solve_
      procedure, public :: recon => recon_
      procedure, public :: abscissa => abscissa_
-  end type ivp_colloc_GL2_t
+  end type colloc_gl4_ivp_t
 
   ! Interfaces
 
-  interface ivp_colloc_GL2_t
-     module procedure ivp_colloc_GL2_t_
-  end interface ivp_colloc_GL2_t
+  interface colloc_gl4_ivp_t
+     module procedure colloc_gl4_ivp_t_
+  end interface colloc_gl4_ivp_t
 
   ! Access specifiers
 
   private
 
-  public :: ivp_colloc_GL2_t
+  public :: colloc_gl4_ivp_t
 
 contains
 
-  function ivp_colloc_GL2_t_ (jc) result (iv)
+  function colloc_gl4_ivp_t_ (jc) result (iv)
 
     class(jacobian_t), intent(in) :: jc
-    type(ivp_colloc_GL2_t)        :: iv
-
-    ! Construct the ivp_colloc_GL2_t
+    type(colloc_gl4_ivp_t)        :: iv
+    
+    ! Construct the colloc_gl4_ivp_t
 
     allocate(iv%jc, SOURCE=jc)
 
@@ -76,13 +75,13 @@ contains
 
     return
     
-  end function ivp_colloc_GL2_t_
+  end function colloc_gl4_ivp_t_
 
 !****
 
   subroutine solve_ (this, omega, x_a, x_b, E_l, E_r, S, use_real)
 
-    class(ivp_colloc_GL2_t), intent(in) :: this
+    class(colloc_gl4_ivp_t), intent(in) :: this
     complex(WP), intent(in)             :: omega
     real(WP), intent(in)                :: x_a
     real(WP), intent(in)                :: x_b
@@ -91,9 +90,22 @@ contains
     type(ext_complex_t), intent(out)    :: S
     logical, optional, intent(in)       :: use_real
 
+    real(WP), parameter :: ALPHA_11 = 0.25_WP
+    real(WP), parameter :: ALPHA_21 = 0.25_WP + SQRT(3._WP)/6._WP
+    real(WP), parameter :: ALPHA_12 = 0.25_WP - SQRT(3._WP)/6._WP
+    real(WP), parameter :: ALPHA_22 = 0.25_WP
+    real(WP), parameter :: BETA_1 = 0.5_WP
+    real(WP), parameter :: BETA_2 = 0.5_WP
+
     real(WP)    :: dx
-    real(WP)    :: x(1)
-    complex(WP) :: A(this%n_e,this%n_e)
+    real(WP)    :: x(2)
+    complex(WP) :: A(this%n_e,this%n_e,2)
+    integer     :: n_e
+    complex(WP) :: W(2*this%n_e,2*this%n_e)
+    integer     :: i
+    complex(WP) :: V(2*this%n_e,this%n_e)
+    integer     :: ipiv(2*this%n_e)
+    integer     :: info
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -103,17 +115,43 @@ contains
 
     ! Solve the IVP across the interval x_a -> x_b
 
-    ! Evaluate the Jacobian
+    ! Evaluate the Jacobians
 
     x = this%abscissa(x_a, x_b)
     dx = x_b - x_a
 
-    call this%jc%eval(x(1), omega, A)
+    call this%jc%eval(x(1), omega, A(:,:,1))
+    call this%jc%eval(x(2), omega, A(:,:,2))
 
     ! Set up the solution matrices and scales
 
-    E_l = 0.5_WP*dx*A + identity_matrix(this%n_e)
-    E_r = 0.5_WP*dx*A - identity_matrix(this%n_e)
+    n_e = this%n_e
+
+    W(:n_e,:n_e) = -dx*ALPHA_11*A(:,:,1)
+    W(n_e+1:,:n_e) = -dx*ALPHA_21*A(:,:,2)
+
+    W(:n_e,n_e+1:) = -dx*ALPHA_12*A(:,:,1)
+    W(n_e+1:,n_e+1:) = -dx*ALPHA_22*A(:,:,2)
+
+    do i = 1,2*n_e
+       W(i,i) = W(i,i) + 1._WP
+    end do
+
+    V(:n_e,:) = A(:,:,1)
+    V(n_e+1:,:) = A(:,:,2)
+
+    call XGESV(2*n_e, n_e, W, 2*n_e, ipiv, V, 2*n_e, info)
+    $ASSERT(info == 0,Non-zero return from XGESV)
+    
+    ! Set up the solution matrices and scales
+
+    E_l = -dx*(BETA_1*V(:n_e,:) + BETA_2*V(n_e+1:,:))
+    E_r = 0._WP
+
+    do i = 1,n_e
+       E_l(i,i) = E_l(i,i) - 1._WP
+       E_r(i,i) = E_r(i,i) + 1._WP
+    end do
 
     S = ext_complex_t(1._WP)
 
@@ -125,7 +163,7 @@ contains
 
   subroutine recon_ (this, omega, x_a, x_b, y_a, y_b, x, y, use_real)
 
-    class(ivp_colloc_GL2_t), intent(in) :: this
+    class(colloc_gl4_ivp_t), intent(in) :: this
     complex(WP), intent(in)             :: omega
     real(WP), intent(in)                :: x_a
     real(WP), intent(in)                :: x_b
@@ -146,6 +184,8 @@ contains
     
     ! Reconstruct the solution within the interval x_a -> x_b
 
+    ! (This just uses straight linear interpolation, and needs to be updated)
+
     recon_loop : do i = 1,SIZE(x)
 
        w = (x(i) - x_a)/(x_b - x_a)
@@ -164,7 +204,7 @@ contains
 
   function abscissa_ (this, x_a, x_b) result (x)
 
-    class(ivp_colloc_GL2_t), intent(in) :: this
+    class(colloc_gl4_ivp_t), intent(in) :: this
     real(WP), intent(in)                :: x_a
     real(WP), intent(in)                :: x_b
     real(WP), allocatable               :: x(:)
@@ -175,7 +215,7 @@ contains
 
     dx = x_b - x_a
 
-    x = x_a + [0.5_WP]*dx
+    x = x_a + (0.5_WP+[-1._WP,1._WP]*SQRT(3._WP)/6._WP)*dx
 
     ! Finish
 
@@ -183,4 +223,4 @@ contains
 
   end function abscissa_
 
-end module gyre_ivp_colloc_GL2
+end module gyre_colloc_gl4_ivp
