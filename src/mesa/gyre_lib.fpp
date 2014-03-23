@@ -25,10 +25,10 @@ module gyre_lib
   use core_parallel
 
   use gyre_bvp
-  use gyre_bvp_ad
-  use gyre_bvp_rad
+  use gyre_ad_bvp
+  use gyre_rad_bvp
   use gyre_model
-  use gyre_model_evol
+  use gyre_evol_model
   use gyre_mesa_file
   use gyre_oscpar
   use gyre_gridpar
@@ -107,7 +107,7 @@ contains
     character(LEN=*), intent(in) :: file
     character(LEN=*), intent(in) :: deriv_type
 
-    type(model_evol_t) :: ec
+    type(evol_model_t) :: ec
 
     ! Read the model
 
@@ -116,7 +116,7 @@ contains
        deallocate(ml_m)
     endif
 
-    call read_mesa_file(file, deriv_type, ec, x_ml_m)
+    call read_mesa_model(file, deriv_type, ec, x_ml_m)
 
     allocate(ml_m, SOURCE=ec)
 
@@ -166,7 +166,7 @@ contains
        deallocate(ml_m)
     endif
 
-    allocate(model_evol_t::ml_m)
+    allocate(evol_model_t::ml_m)
 
     ! Set the model by storing coefficients
 
@@ -174,7 +174,7 @@ contains
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    allocate(ml_m, SOURCE=model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
+    allocate(ml_m, SOURCE=evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                        Gamma_1, nabla_ad, delta, Omega_rot, &
                                        nabla, kappa, kappa_rho, kappa_T, &
                                        epsilon, epsilon_rho, epsilon_T, &
@@ -270,9 +270,9 @@ contains
        ! Set up bp
 
        if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-          allocate(bp, SOURCE=bvp_rad_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+          allocate(bp, SOURCE=rad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
        else
-          allocate(bp, SOURCE=bvp_ad_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+          allocate(bp, SOURCE=ad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
        endif
 
        ! Find modes
@@ -281,9 +281,9 @@ contains
 
        $if ($GFORTRAN_PR57922)
        select type (bp)
-       type is (bvp_rad_t)
+       type is (rad_bvp_t)
           call bp%final()
-       type is (bvp_ad_t)
+       type is (ad_bvp_t)
           call bp%final()
        class default
           $ABORT(Invalid type)
