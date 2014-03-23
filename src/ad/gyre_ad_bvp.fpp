@@ -1,4 +1,4 @@
-! Module   : gyre_bvp_ad
+! Module   : gyre_ad_bvp
 ! Purpose  : solve adiabatic BVPs
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_bvp_ad
+module gyre_ad_bvp
 
   ! Uses
 
@@ -34,7 +34,7 @@ module gyre_bvp_ad
   use gyre_numpar
   use gyre_gridpar
   use gyre_discfunc
-  use gyre_shooter_ad
+  use gyre_ad_shooter
   use gyre_jacobian
   use gyre_ivp
   use gyre_bound
@@ -51,14 +51,14 @@ module gyre_bvp_ad
 
   ! Derived-type definitions
 
-  type, extends (bvp_t) :: bvp_ad_t
+  type, extends (bvp_t) :: ad_bvp_t
      private
      class(model_t), pointer        :: ml => null()
      type(cocache_t)                :: cc
      class(jacobian_t), allocatable :: jc
      class(ivp_t), allocatable      :: iv
      class(bound_t), allocatable    :: bd
-     type(shooter_ad_t)             :: sh
+     type(ad_shooter_t)             :: sh
      type(sysmtx_t)                 :: sm
      type(oscpar_t)                 :: op
      type(numpar_t)                 :: np
@@ -78,13 +78,13 @@ module gyre_bvp_ad
      procedure         :: recon_
      procedure, public :: mode => mode_
      procedure, public :: model => model_
-  end type bvp_ad_t
+  end type ad_bvp_t
 
   ! Interfaces
 
-  interface bvp_ad_t
-     module procedure bvp_ad_t_
-  end interface bvp_ad_t
+  interface ad_bvp_t
+     module procedure ad_bvp_t_
+  end interface ad_bvp_t
 
   $if ($MPI)
   interface bcast
@@ -96,7 +96,7 @@ module gyre_bvp_ad
 
   private
 
-  public :: bvp_ad_t
+  public :: ad_bvp_t
   $if ($MPI)
   public :: bcast
   $endif
@@ -105,22 +105,22 @@ module gyre_bvp_ad
 
 contains
 
-  function bvp_ad_t_ (ml, op, np, shoot_gp, recon_gp, x_in) result (bp)
+  function ad_bvp_t_ (ml, op, np, shoot_gp, recon_gp, x_in) result (bp)
 
-    use gyre_jacobian_ad_dziem
-    use gyre_jacobian_ad_jcd
-    use gyre_jacobian_ad_mix
+    use gyre_ad_dziem_jacobian
+    use gyre_ad_jcd_jacobian
+    use gyre_ad_mix_jacobian
 
-    use gyre_bound_ad_zero
-    use gyre_bound_ad_dziem
-    use gyre_bound_ad_unno
-    use gyre_bound_ad_jcd
+    use gyre_ad_zero_bound
+    use gyre_ad_dziem_bound
+    use gyre_ad_unno_bound
+    use gyre_ad_jcd_bound
 
-    use gyre_ivp_magnus_GL2
-    use gyre_ivp_magnus_GL4
-    use gyre_ivp_magnus_GL6
-    use gyre_ivp_colloc_GL2
-    use gyre_ivp_colloc_GL4
+    use gyre_magnus_gl2_ivp
+    use gyre_magnus_gl4_ivp
+    use gyre_magnus_gl6_ivp
+    use gyre_colloc_gl2_ivp
+    use gyre_colloc_gl4_ivp
 
     class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
@@ -128,12 +128,12 @@ contains
     type(gridpar_t), intent(in)         :: shoot_gp(:)
     type(gridpar_t), intent(in)         :: recon_gp(:)
     real(WP), allocatable, intent(in)   :: x_in(:)
-    type(bvp_ad_t), target              :: bp
+    type(ad_bvp_t), target              :: bp
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
 
-    ! Construct the bvp_ad_t
+    ! Construct the ad_bvp_t
 
     ! Store parameters
 
@@ -151,11 +151,11 @@ contains
 
     select case (bp%op%variables_type)
     case ('DZIEM')
-       allocate(bp%jc, SOURCE=jacobian_ad_dziem_t(bp%ml, bp%op))
+       allocate(bp%jc, SOURCE=ad_dziem_jacobian_t(bp%ml, bp%op))
     case ('JCD')
-       allocate(bp%jc, SOURCE=jacobian_ad_jcd_t(bp%ml, bp%op))
+       allocate(bp%jc, SOURCE=ad_jcd_jacobian_t(bp%ml, bp%op))
     case ('MIX')
-       allocate(bp%jc, SOURCE=jacobian_ad_mix_t(bp%ml, bp%op))
+       allocate(bp%jc, SOURCE=ad_mix_jacobian_t(bp%ml, bp%op))
     case default
        $ABORT(Invalid variables_type)
     end select
@@ -164,13 +164,13 @@ contains
 
     select case (bp%op%outer_bound_type)
     case ('ZERO')
-       allocate(bp%bd, SOURCE=bound_ad_zero_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=ad_zero_bound_t(bp%ml, bp%jc, bp%op))
     case ('DZIEM')
-       allocate(bp%bd, SOURCE=bound_ad_dziem_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=ad_dziem_bound_t(bp%ml, bp%jc, bp%op))
     case ('UNNO')
-       allocate(bp%bd, SOURCE=bound_ad_unno_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=ad_unno_bound_t(bp%ml, bp%jc, bp%op))
     case ('JCD')
-       allocate(bp%bd, SOURCE=bound_ad_jcd_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=ad_jcd_bound_t(bp%ml, bp%jc, bp%op))
     case default
        $ABORT(Invalid bound_type)
     end select
@@ -179,22 +179,22 @@ contains
 
     select case (bp%np%ivp_solver_type)
     case ('MAGNUS_GL2')
-       allocate(bp%iv, SOURCE=ivp_magnus_GL2_t(bp%jc))
+       allocate(bp%iv, SOURCE=magnus_gl2_ivp_t(bp%jc))
     case ('MAGNUS_GL4')
-       allocate(bp%iv, SOURCE=ivp_magnus_GL4_t(bp%jc))
+       allocate(bp%iv, SOURCE=magnus_gl4_ivp_t(bp%jc))
     case ('MAGNUS_GL6')
-       allocate(bp%iv, SOURCE=ivp_magnus_GL6_t(bp%jc))
+       allocate(bp%iv, SOURCE=magnus_gl6_ivp_t(bp%jc))
     case ('FINDIFF_GL2')
-       allocate(bp%iv, SOURCE=ivp_colloc_GL2_t(bp%jc))
+       allocate(bp%iv, SOURCE=colloc_gl2_ivp_t(bp%jc))
     case ('FINDIFF_GL4')
-       allocate(bp%iv, SOURCE=ivp_colloc_GL4_t(bp%jc))
+       allocate(bp%iv, SOURCE=colloc_gl4_ivp_t(bp%jc))
     case default
        $ABORT(Invalid ivp_solver_type)
     end select
 
     ! Initialize the shooter
 
-    bp%sh = shooter_ad_t(bp%ml, bp%iv, bp%op, bp%np)
+    bp%sh = ad_shooter_t(bp%ml, bp%iv, bp%op, bp%np)
 
     ! Build the shooting grid
 
@@ -225,7 +225,7 @@ contains
 
     return
 
-  end function bvp_ad_t_
+  end function ad_bvp_t_
 
 !****
 
@@ -233,9 +233,9 @@ contains
 
   subroutine final_ (this)
 
-    class(bvp_ad_t), intent(inout) :: this
+    class(ad_bvp_t), intent(inout) :: this
 
-    ! Finalize the bvp_ad_t
+    ! Finalize the ad_bvp_t
 
     call this%cc%final()
     call this%sm%final()
@@ -262,7 +262,7 @@ contains
 
   function discrim_ (this, omega, use_real)
 
-    class(bvp_ad_t), intent(inout) :: this
+    class(ad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)        :: omega
     logical, optional, intent(in)  :: use_real
     type(ext_complex_t)            :: discrim_
@@ -283,7 +283,7 @@ contains
 
   subroutine build_ (this, omega)
 
-    class(bvp_ad_t), target, intent(inout) :: this
+    class(ad_bvp_t), target, intent(inout) :: this
     complex(WP), intent(in)                :: omega
 
     ! Set up the sysmtx
@@ -309,7 +309,7 @@ contains
 
   subroutine recon_ (this, omega, x, y, x_ref, y_ref, discrim, use_real)
 
-    class(bvp_ad_t), intent(inout)        :: this
+    class(ad_bvp_t), intent(inout)        :: this
     complex(WP), intent(in)               :: omega
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
@@ -378,7 +378,7 @@ contains
 
   function mode_ (this, omega, discrim, use_real, omega_def) result (md)
 
-    class(bvp_ad_t), target, intent(inout)    :: this
+    class(ad_bvp_t), target, intent(inout)    :: this
     complex(WP), intent(in)                   :: omega(:)
     type(ext_complex_t), optional, intent(in) :: discrim(:)
     logical, optional, intent(in)             :: use_real
@@ -482,7 +482,7 @@ contains
 
   function model_ (this) result (ml)
 
-    class(bvp_ad_t), intent(in) :: this
+    class(ad_bvp_t), intent(in) :: this
     class(model_t), pointer     :: ml
 
     ! Return the model pointer
@@ -501,7 +501,7 @@ contains
 
   subroutine bcast_ (bp, root_rank, ml)
 
-    type(bvp_ad_t), intent(inout)      :: bp
+    type(ad_bvp_t), intent(inout)      :: bp
     integer, intent(in)                :: root_rank
     class(model_t), intent(in), target :: ml
 
@@ -511,7 +511,7 @@ contains
     type(gridpar_t), allocatable :: recon_gp(:)
     real(WP), allocatable        :: x_in(:)
 
-    ! Broadcast the bvp_ad_t
+    ! Broadcast the ad_bvp_t
 
     if(MPI_RANK == root_rank) then
 
@@ -533,7 +533,7 @@ contains
 
        call bcast_alloc(x_in, root_rank)
 
-       bp = bvp_ad_t(ml, op, np, shoot_gp, recon_gp, x_in)
+       bp = ad_bvp_t(ml, op, np, shoot_gp, recon_gp, x_in)
  
     endif
 
@@ -545,5 +545,5 @@ contains
 
   $endif
 
-end module gyre_bvp_ad
+end module gyre_ad_bvp
 

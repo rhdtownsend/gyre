@@ -1,4 +1,4 @@
-! Module   : gyre_jacobian_ad_mix
+! Module   : gyre_ad_mix_jacobian
 ! Purpose  : adiabatic Jacobian evaluation (mixed JCD/Dziem variables)
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_jacobian_ad_mix
+module gyre_ad_mix_jacobian
 
   ! Uses
 
@@ -35,7 +35,7 @@ module gyre_jacobian_ad_mix
 
   ! Derived-type definitions
 
-  type, extends (jacobian_t) :: jacobian_ad_mix_t
+  type, extends (jacobian_t) :: ad_mix_jacobian_t
      private
      class(model_t), pointer :: ml => null()
      type(oscpar_t)          :: op
@@ -44,31 +44,31 @@ module gyre_jacobian_ad_mix
      procedure, public :: eval => eval_
      procedure, public :: eval_logx => eval_logx_
      procedure, public :: trans_matrix => trans_matrix_
-  end type jacobian_ad_mix_t
+  end type ad_mix_jacobian_t
 
   ! Interfaces
 
-  interface jacobian_ad_mix_t
-     module procedure jacobian_ad_mix_t_
-  end interface jacobian_ad_mix_t
+  interface ad_mix_jacobian_t
+     module procedure ad_mix_jacobian_t_
+  end interface ad_mix_jacobian_t
 
   ! Access specifiers
 
   private
 
-  public :: jacobian_ad_mix_t
+  public :: ad_mix_jacobian_t
 
   ! Procedures
 
 contains
 
-  function jacobian_ad_mix_t_ (ml, op) result (jc)
+  function ad_mix_jacobian_t_ (ml, op) result (jc)
 
     class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
-    type(jacobian_ad_mix_t)             :: jc
+    type(ad_mix_jacobian_t)             :: jc
 
-    ! Construct the jacobian_ad_mix_t
+    ! Construct the ad_mix_jacobian_t
 
     jc%ml => ml
     jc%op = op
@@ -79,13 +79,13 @@ contains
 
     return
 
-  end function jacobian_ad_mix_t_
+  end function ad_mix_jacobian_t_
 
 !****
 
   subroutine eval_ (this, x, omega, A)
 
-    class(jacobian_ad_mix_t), intent(in) :: this
+    class(ad_mix_jacobian_t), intent(in) :: this
     real(WP), intent(in)                 :: x
     complex(WP), intent(in)              :: omega
     complex(WP), intent(out)             :: A(:,:)
@@ -106,7 +106,7 @@ contains
 
   subroutine eval_logx_ (this, x, omega, A)
 
-    class(jacobian_ad_mix_t), intent(in) :: this
+    class(ad_mix_jacobian_t), intent(in) :: this
     real(WP), intent(in)                 :: x
     complex(WP), intent(in)              :: omega
     complex(WP), intent(out)             :: A(:,:)
@@ -152,7 +152,7 @@ contains
 
   function trans_matrix_ (this, x, omega, to_canon) result (M)
 
-    class(jacobian_ad_mix_t), intent(in) :: this
+    class(ad_mix_jacobian_t), intent(in) :: this
     real(WP), intent(in)                 :: x
     complex(WP), intent(in)              :: omega
     logical, intent(in)                  :: to_canon
@@ -231,4 +231,4 @@ contains
 
   end function trans_matrix_
 
-end module gyre_jacobian_ad_mix
+end module gyre_ad_mix_jacobian

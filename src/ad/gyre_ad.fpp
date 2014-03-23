@@ -35,8 +35,8 @@ program gyre_ad
   use gyre_gridpar
   use gyre_scanpar
   use gyre_bvp
-  use gyre_bvp_ad
-  use gyre_bvp_rad
+  use gyre_ad_bvp
+  use gyre_rad_bvp
   use gyre_search
   use gyre_mode
   use gyre_input
@@ -169,9 +169,9 @@ program gyre_ad
      if (ALLOCATED(bp)) deallocate(bp)
 
      if (op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(bp, SOURCE=bvp_rad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(bp, SOURCE=rad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      else
-        allocate(bp, SOURCE=bvp_ad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(bp, SOURCE=ad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
 
      ! Find modes

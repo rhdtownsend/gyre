@@ -1,4 +1,4 @@
-! Module   : gyre_bound_ad_zero
+! Module   : gyre_ad_zero_bound
 ! Purpose  : adiabatic boundary conditions (zero-pressure surface)
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_bound_ad_zero
+module gyre_ad_zero_bound
 
   ! Uses
 
@@ -36,7 +36,7 @@ module gyre_bound_ad_zero
 
   ! Derived-type definitions
 
-  type, extends (bound_t) :: bound_ad_zero_t
+  type, extends (bound_t) :: ad_zero_bound_t
      private
      class(model_t), pointer        :: ml => null()
      class(jacobian_t), allocatable :: jc
@@ -45,32 +45,32 @@ module gyre_bound_ad_zero
      private
      procedure, public :: inner_bound => inner_bound_
      procedure, public :: outer_bound => outer_bound_
-  end type bound_ad_zero_t
+  end type ad_zero_bound_t
 
   ! Interface
 
-  interface bound_ad_zero_t
-     module procedure bound_ad_zero_t_
-  end interface bound_ad_zero_t
+  interface ad_zero_bound_t
+     module procedure ad_zero_bound_t_
+  end interface ad_zero_bound_t
 
   ! Access specifiers
 
   private
 
-  public :: bound_ad_zero_t
+  public :: ad_zero_bound_t
 
   ! Procedures
 
 contains
 
-  function bound_ad_zero_t_ (ml, jc, op) result (bd)
+  function ad_zero_bound_t_ (ml, jc, op) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
     class(jacobian_t), intent(in)       :: jc
     type(oscpar_t), intent(in)          :: op
-    type(bound_ad_zero_t)               :: bd
+    type(ad_zero_bound_t)               :: bd
     
-    ! Construct the bound_ad_zero_t
+    ! Construct the ad_zero_bound_t
 
     bd%ml => ml
     allocate(bd%jc, SOURCE=jc)
@@ -86,13 +86,13 @@ contains
 
     return
     
-  end function bound_ad_zero_t_
+  end function ad_zero_bound_t_
 
 !****
 
   function inner_bound_ (this, x_i, omega) result (B_i)
 
-    class(bound_ad_zero_t), intent(in) :: this
+    class(ad_zero_bound_t), intent(in) :: this
     real(WP), intent(in)               :: x_i
     complex(WP), intent(in)            :: omega
     $if ($GFORTRAN_PR_58007)
@@ -136,7 +136,7 @@ contains
 
   function outer_bound_ (this, x_o, omega) result (B_o)
 
-    class(bound_ad_zero_t), intent(in) :: this
+    class(ad_zero_bound_t), intent(in) :: this
     real(WP), intent(in)               :: x_o
     complex(WP), intent(in)            :: omega
     $if ($GFORTRAN_PR_58007)
@@ -173,4 +173,4 @@ contains
 
   end function outer_bound_
 
-end module gyre_bound_ad_zero
+end module gyre_ad_zero_bound
