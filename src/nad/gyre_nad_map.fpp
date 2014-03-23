@@ -37,7 +37,7 @@ program gyre_nad_map
   use gyre_gridpar
   use gyre_scanpar
   use gyre_bvp
-  use gyre_bvp_nad
+  use gyre_nad_bvp
   use gyre_input
   use gyre_search
   use gyre_mode
@@ -154,7 +154,7 @@ program gyre_nad_map
 
   ! Set up the bvp
 
-  allocate(nad_bp, SOURCE=bvp_nad_t(ml, op(1), np(1), shoot_gp, recon_gp, x_ml))
+  allocate(nad_bp, SOURCE=nad_bvp_t(ml, op(1), np(1), shoot_gp, recon_gp, x_ml))
 
   ! Map the discriminant
 

@@ -1,4 +1,4 @@
-! Module   : gyre_bound_nad_jcd
+! Module   : gyre_nad_jcd_bound
 ! Purpose  : nonadiabatic boundary conditions (JCD formulation)
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_bound_nad_jcd
+module gyre_nad_jcd_bound
 
   ! Uses
 
@@ -37,7 +37,7 @@ module gyre_bound_nad_jcd
 
   ! Derived-type definitions
 
-  type, extends (bound_t) :: bound_nad_jcd_t
+  type, extends (bound_t) :: nad_jcd_bound_t
      private
      class(model_t), pointer        :: ml => null()
      class(jacobian_t), allocatable :: jc
@@ -46,32 +46,32 @@ module gyre_bound_nad_jcd
      private
      procedure, public :: inner_bound => inner_bound_
      procedure, public :: outer_bound => outer_bound_
-  end type bound_nad_jcd_t
+  end type nad_jcd_bound_t
 
   ! Interfaces
 
-  interface bound_nad_jcd_t
-     module procedure bound_nad_jcd_t_
-  end interface bound_nad_jcd_t
+  interface nad_jcd_bound_t
+     module procedure nad_jcd_bound_t_
+  end interface nad_jcd_bound_t
 
   ! Access specifiers
 
   private
 
-  public :: bound_nad_jcd_t
+  public :: nad_jcd_bound_t
 
   ! Procedures
 
 contains
 
-  function bound_nad_jcd_t_ (ml, jc, op) result (bd)
+  function nad_jcd_bound_t_ (ml, jc, op) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
     class(jacobian_t), intent(in)       :: jc
     type(oscpar_t), intent(in)          :: op
-    type(bound_nad_jcd_t)               :: bd
+    type(nad_jcd_bound_t)               :: bd
 
-    ! Construct the bound_nad_jcd_t
+    ! Construct the nad_jcd_bound_t
 
     bd%ml => ml
     allocate(bd%jc, SOURCE=jc)
@@ -87,13 +87,13 @@ contains
 
     return
     
-  end function bound_nad_jcd_t_
+  end function nad_jcd_bound_t_
 
 !****
 
   function inner_bound_ (this, x_i, omega) result (B_i)
 
-    class(bound_nad_jcd_t), intent(in) :: this
+    class(nad_jcd_bound_t), intent(in) :: this
     real(WP), intent(in)               :: x_i
     complex(WP), intent(in)            :: omega
     $if ($GFORTRAN_PR_58007)
@@ -148,7 +148,7 @@ contains
 
   function outer_bound_ (this, x_o, omega) result (B_o)
 
-    class(bound_nad_jcd_t), intent(in) :: this
+    class(nad_jcd_bound_t), intent(in) :: this
     real(WP), intent(in)               :: x_o
     complex(WP), intent(in)            :: omega
     $if ($GFORTRAN_PR_58007)
@@ -211,4 +211,4 @@ contains
 
   end function outer_bound_
 
-end module gyre_bound_nad_jcd
+end module gyre_nad_jcd_bound

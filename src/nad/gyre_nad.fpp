@@ -35,9 +35,9 @@ program gyre_nad
   use gyre_gridpar
   use gyre_scanpar
   use gyre_bvp
-  use gyre_bvp_ad
-  use gyre_bvp_rad
-  use gyre_bvp_nad
+  use gyre_ad_bvp
+  use gyre_rad_bvp
+  use gyre_nad_bvp
   use gyre_search
   use gyre_mode
   use gyre_input
@@ -157,12 +157,12 @@ program gyre_nad
      if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
      if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(ad_bp, SOURCE=bvp_rad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(ad_bp, SOURCE=rad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      else
-        allocate(ad_bp, SOURCE=bvp_ad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(ad_bp, SOURCE=ad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
  
-     allocate(nad_bp, SOURCE=bvp_nad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+     allocate(nad_bp, SOURCE=nad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
 
      ! Find modes
 

@@ -1,4 +1,4 @@
-! Module   : gyre_bvp_nad
+! Module   : gyre_nad_bvp
 ! Purpose  : solve nonadiabatic BVPs
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_bvp_nad
+module gyre_nad_bvp
 
   ! Uses
 
@@ -34,7 +34,7 @@ module gyre_bvp_nad
   use gyre_numpar
   use gyre_gridpar
   use gyre_discfunc
-  use gyre_shooter_nad
+  use gyre_nad_shooter
   use gyre_jacobian
   use gyre_ivp
   use gyre_bound
@@ -52,14 +52,14 @@ module gyre_bvp_nad
 
   ! Derived-type definitions
 
-  type, extends (bvp_t) :: bvp_nad_t
+  type, extends (bvp_t) :: nad_bvp_t
      private
      class(model_t), pointer        :: ml => null()
      type(cocache_t)                :: cc
      class(jacobian_t), allocatable :: jc
      class(ivp_t), allocatable      :: iv
      class(bound_t), allocatable    :: bd
-     type(shooter_nad_t)            :: sh
+     type(nad_shooter_t)            :: sh
      type(sysmtx_t)                 :: sm
      type(oscpar_t)                 :: op
      type(numpar_t)                 :: np
@@ -79,13 +79,13 @@ module gyre_bvp_nad
      procedure         :: recon_
      procedure, public :: mode => mode_old_
      procedure, public :: model => model_
-  end type bvp_nad_t
+  end type nad_bvp_t
 
   ! Interfaces
 
-  interface bvp_nad_t
-     module procedure bvp_nad_t_
-  end interface bvp_nad_t
+  interface nad_bvp_t
+     module procedure nad_bvp_t_
+  end interface nad_bvp_t
 
   $if ($MPI)
   interface bcast
@@ -97,7 +97,7 @@ module gyre_bvp_nad
 
   private
 
-  public :: bvp_nad_t
+  public :: nad_bvp_t
   $if ($MPI)
   public :: bcast
   $endif
@@ -106,21 +106,21 @@ module gyre_bvp_nad
 
 contains
 
-  function bvp_nad_t_ (ml, op, np, shoot_gp, recon_gp, x_in) result (bp)
+  function nad_bvp_t_ (ml, op, np, shoot_gp, recon_gp, x_in) result (bp)
 
-    use gyre_jacobian_nad_dziem
-    use gyre_jacobian_nad_jcd
+    use gyre_nad_dziem_jacobian
+    use gyre_nad_jcd_jacobian
 
-    use gyre_bound_nad_zero
-    use gyre_bound_nad_dziem
-    use gyre_bound_nad_unno
-    use gyre_bound_nad_jcd
+    use gyre_nad_zero_bound
+    use gyre_nad_dziem_bound
+    use gyre_nad_unno_bound
+    use gyre_nad_jcd_bound
 
-    use gyre_ivp_magnus_GL2
-    use gyre_ivp_magnus_GL4
-    use gyre_ivp_magnus_GL6
-    use gyre_ivp_colloc_GL2
-    use gyre_ivp_colloc_GL4
+    use gyre_magnus_GL2_ivp
+    use gyre_magnus_GL4_ivp
+    use gyre_magnus_GL6_ivp
+    use gyre_colloc_GL2_ivp
+    use gyre_colloc_GL4_ivp
 
     class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
@@ -128,12 +128,12 @@ contains
     type(gridpar_t), intent(in)         :: shoot_gp(:)
     type(gridpar_t), intent(in)         :: recon_gp(:)
     real(WP), allocatable, intent(in)   :: x_in(:)
-    type(bvp_nad_t), target             :: bp
+    type(nad_bvp_t), target             :: bp
 
     integer               :: n
     real(WP), allocatable :: x_cc(:)
 
-    ! Construct the bvp_nad_t
+    ! Construct the nad_bvp_t
 
     ! Store parameters
 
@@ -151,9 +151,9 @@ contains
 
     select case (bp%op%variables_type)
     case ('DZIEM')
-       allocate(bp%jc, SOURCE=jacobian_nad_dziem_t(bp%ml, bp%op))
+       allocate(bp%jc, SOURCE=nad_dziem_jacobian_t(bp%ml, bp%op))
     case ('JCD')
-       allocate(bp%jc, SOURCE=jacobian_nad_jcd_t(bp%ml, bp%op))
+       allocate(bp%jc, SOURCE=nad_jcd_jacobian_t(bp%ml, bp%op))
     case default
        $ABORT(Invalid variables_type)
     end select
@@ -162,13 +162,13 @@ contains
 
     select case (bp%op%outer_bound_type)
     case ('ZERO')
-       allocate(bp%bd, SOURCE=bound_nad_zero_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=nad_zero_bound_t(bp%ml, bp%jc, bp%op))
     case ('DZIEM')
-       allocate(bp%bd, SOURCE=bound_nad_dziem_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=nad_dziem_bound_t(bp%ml, bp%jc, bp%op))
     case ('UNNO')
-       allocate(bp%bd, SOURCE=bound_nad_unno_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=nad_unno_bound_t(bp%ml, bp%jc, bp%op))
     case ('JCD')
-       allocate(bp%bd, SOURCE=bound_nad_jcd_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=nad_jcd_bound_t(bp%ml, bp%jc, bp%op))
     case default
        $ABORT(Invalid bound_type)
     end select
@@ -177,22 +177,22 @@ contains
 
     select case (bp%np%ivp_solver_type)
     case ('MAGNUS_GL2')
-       allocate(bp%iv, SOURCE=ivp_magnus_GL2_t(bp%jc))
+       allocate(bp%iv, SOURCE=magnus_GL2_ivp_t(bp%jc))
     case ('MAGNUS_GL4')
-       allocate(bp%iv, SOURCE=ivp_magnus_GL4_t(bp%jc))
+       allocate(bp%iv, SOURCE=magnus_GL4_ivp_t(bp%jc))
     case ('MAGNUS_GL6')
-       allocate(bp%iv, SOURCE=ivp_magnus_GL6_t(bp%jc))
+       allocate(bp%iv, SOURCE=magnus_GL6_ivp_t(bp%jc))
     case ('FINDIFF_GL2')
-       allocate(bp%iv, SOURCE=ivp_colloc_GL2_t(bp%jc))
+       allocate(bp%iv, SOURCE=colloc_GL2_ivp_t(bp%jc))
     case ('FINDIFF_GL4')
-       allocate(bp%iv, SOURCE=ivp_colloc_GL4_t(bp%jc))
+       allocate(bp%iv, SOURCE=colloc_GL4_ivp_t(bp%jc))
     case default
        $ABORT(Invalid ivp_solver_type)
     end select
 
     ! Initialize the shooter
 
-    bp%sh = shooter_nad_t(bp%ml, bp%iv, bp%op, bp%np)
+    bp%sh = nad_shooter_t(bp%ml, bp%iv, bp%op, bp%np)
 
     ! Build the shooting grid
 
@@ -223,7 +223,7 @@ contains
 
     return
 
-  end function bvp_nad_t_
+  end function nad_bvp_t_
 
 !****
 
@@ -231,9 +231,9 @@ contains
 
   subroutine final_ (this)
 
-    class(bvp_nad_t), intent(inout) :: this
+    class(nad_bvp_t), intent(inout) :: this
 
-    ! Finalize the bvp_nad_t
+    ! Finalize the nad_bvp_t
 
     deallocate(this%jc)
     deallocate(this%iv)
@@ -251,7 +251,7 @@ contains
 
   function discrim_ (this, omega, use_real)
 
-    class(bvp_nad_t), intent(inout) :: this
+    class(nad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)         :: omega
     logical, optional, intent(in)   :: use_real
     type(ext_complex_t)             :: discrim_
@@ -272,7 +272,7 @@ contains
 
   subroutine build_ (this, omega)
 
-    class(bvp_nad_t), target, intent(inout) :: this
+    class(nad_bvp_t), target, intent(inout) :: this
     complex(WP), intent(in)                 :: omega
 
     ! Set up the sysmtx
@@ -298,7 +298,7 @@ contains
 
   subroutine recon_ (this, omega, x, y, x_ref, y_ref, discrim)
 
-    class(bvp_nad_t), intent(inout)       :: this
+    class(nad_bvp_t), intent(inout)       :: this
     complex(WP), intent(in)               :: omega
     real(WP), allocatable, intent(out)    :: x(:)
     complex(WP), allocatable, intent(out) :: y(:,:)
@@ -366,7 +366,7 @@ contains
 
   function mode_old_ (this, omega, discrim, use_real, omega_def) result (md)
 
-    class(bvp_nad_t), target, intent(inout)   :: this
+    class(nad_bvp_t), target, intent(inout)   :: this
     complex(WP), intent(in)                   :: omega(:)
     type(ext_complex_t), optional, intent(in) :: discrim(:)
     logical, optional, intent(in)             :: use_real
@@ -505,7 +505,7 @@ contains
 
   function mode_new_ (this, omega, discrim, use_real, omega_def) result (md)
 
-    class(bvp_nad_t), target, intent(inout)   :: this
+    class(nad_bvp_t), target, intent(inout)   :: this
     complex(WP), intent(in)                   :: omega(:)
     type(ext_complex_t), optional, intent(in) :: discrim(:)
     logical, optional, intent(in)             :: use_real
@@ -629,7 +629,7 @@ contains
 
   function model_ (this) result (ml)
 
-    class(bvp_nad_t), intent(in) :: this
+    class(nad_bvp_t), intent(in) :: this
     class(model_t), pointer      :: ml
 
     ! Return the model pointer
@@ -648,7 +648,7 @@ contains
 
   subroutine bcast_ (bp, root_rank, ml)
 
-    type(bvp_nad_t), intent(inout)     :: bp
+    type(nad_bvp_t), intent(inout)     :: bp
     integer, intent(in)                :: root_rank
     class(model_t), intent(in), target :: ml
 
@@ -658,7 +658,7 @@ contains
     type(gridpar_t), allocatable :: recon_gp(:)
     real(WP), allocatable        :: x_in(:)
 
-    ! Broadcast the bvp_nad_t
+    ! Broadcast the nad_bvp_t
 
     if(MPI_RANK == root_rank) then
 
@@ -680,7 +680,7 @@ contains
 
        call bcast_alloc(x_in, root_rank)
 
-       bp = bvp_nad_t(ml, op, np, shoot_gp, recon_gp, x_in)
+       bp = nad_bvp_t(ml, op, np, shoot_gp, recon_gp, x_in)
 
     endif
 
@@ -692,4 +692,4 @@ contains
 
   $endif
 
-end module gyre_bvp_nad
+end module gyre_nad_bvp

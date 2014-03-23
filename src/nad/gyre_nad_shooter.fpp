@@ -1,4 +1,4 @@
-! Module   : gyre_shooter_nad
+! Module   : gyre_nad_shooter
 ! Purpose  : nonadiabatic multiple shooting
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_shooter_nad
+module gyre_nad_shooter
 
   ! Uses
 
@@ -41,7 +41,7 @@ module gyre_shooter_nad
 
   ! Derived-type definitions
 
-  type :: shooter_nad_t
+  type :: nad_shooter_t
      private
      class(model_t), pointer   :: ml => null()
      class(ivp_t), allocatable :: iv
@@ -53,33 +53,33 @@ module gyre_shooter_nad
      procedure, public :: shoot => shoot_
      procedure, public :: recon => recon_
      procedure, public :: abscissa => abscissa_
-  end type shooter_nad_t
+  end type nad_shooter_t
 
   ! Interfaces
 
-  interface shooter_nad_t
-     module procedure shooter_nad_t_
-  end interface shooter_nad_t
+  interface nad_shooter_t
+     module procedure nad_shooter_t_
+  end interface nad_shooter_t
 
   ! Access specifiers
 
   private
 
-  public :: shooter_nad_t
+  public :: nad_shooter_t
 
   ! Procedures
 
 contains
 
-  function shooter_nad_t_ (ml, iv, op, np) result (sh)
+  function nad_shooter_t_ (ml, iv, op, np) result (sh)
 
     class(model_t), pointer, intent(in) :: ml
     class(ivp_t), intent(in)            :: iv
     type(oscpar_t), intent(in)          :: op
     type(numpar_t), intent(in)          :: np
-    type(shooter_nad_t)                 :: sh
+    type(nad_shooter_t)                 :: sh
 
-    ! Construct the shooter_nad_t
+    ! Construct the nad_shooter_t
 
     sh%ml => ml
     allocate(sh%iv, SOURCE=iv)
@@ -92,13 +92,13 @@ contains
 
     return
 
-  end function shooter_nad_t_
+  end function nad_shooter_t_
 
 !****
 
   subroutine shoot_ (this, omega, x, sm)
 
-    class(shooter_nad_t), intent(in) :: this
+    class(nad_shooter_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x(:)
     class(sysmtx_t), intent(inout)   :: sm
@@ -142,7 +142,7 @@ contains
 
   subroutine recon_ (this, omega, x_sh, y_sh, x, y)
 
-    class(shooter_nad_t), intent(in) :: this
+    class(nad_shooter_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x_sh(:)
     complex(WP), intent(in)          :: y_sh(:,:)
@@ -213,7 +213,7 @@ contains
 
   function abscissa_ (this, x_sh) result (x)
 
-    class(shooter_nad_t), intent(in) :: this
+    class(nad_shooter_t), intent(in) :: this
     real(WP), intent(in)             :: x_sh(:)
     real(WP), allocatable            :: x(:)
 
@@ -248,4 +248,4 @@ contains
 
   end function abscissa_
 
-end module gyre_shooter_nad
+end module gyre_nad_shooter

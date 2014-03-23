@@ -1,5 +1,5 @@
-! Module   : gyre_bound_nad_unno
-! Purpose  : nonadiabatic boundary conditions (Unno et al. formulation)
+! Module   : gyre_nad_dziem_bound
+! Purpose  : nonadiabatic boundary conditions (Dziembowski formulation)
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_bound_nad_unno
+module gyre_nad_dziem_bound
 
   ! Uses
 
@@ -27,7 +27,6 @@ module gyre_bound_nad_unno
   use gyre_model
   use gyre_jacobian
   use gyre_oscpar
-  use gyre_atmos
 
   use ISO_FORTRAN_ENV
 
@@ -37,7 +36,7 @@ module gyre_bound_nad_unno
 
   ! Derived-type definitions
 
-  type, extends (bound_t) :: bound_nad_unno_t
+  type, extends (bound_t) :: nad_dziem_bound_t
      private
      class(model_t), pointer        :: ml => null()
      class(jacobian_t), allocatable :: jc
@@ -46,32 +45,32 @@ module gyre_bound_nad_unno
      private
      procedure, public :: inner_bound => inner_bound_
      procedure, public :: outer_bound => outer_bound_
-  end type bound_nad_unno_t
+  end type nad_dziem_bound_t
 
   ! Interfaces
 
-  interface bound_nad_unno_t
-     module procedure bound_nad_unno_t_
-  end interface bound_nad_unno_t
+  interface nad_dziem_bound_t
+     module procedure nad_dziem_bound_t_
+  end interface nad_dziem_bound_t
 
   ! Access specifiers
 
   private
 
-  public :: bound_nad_unno_t
+  public :: nad_dziem_bound_t
 
   ! Procedures
 
 contains
 
-  function bound_nad_unno_t_ (ml, jc, op) result (bd)
+  function nad_dziem_bound_t_ (ml, jc, op) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
     class(jacobian_t), intent(in)       :: jc
     type(oscpar_t), intent(in)          :: op
-    type(bound_nad_unno_t)              :: bd
+    type(nad_dziem_bound_t)             :: bd
 
-    ! Construct the bound_nad_unno_t
+    ! Construct the nad_dziem_bound_t
 
     bd%ml => ml
     allocate(bd%jc, SOURCE=jc)
@@ -87,19 +86,19 @@ contains
 
     return
     
-  end function bound_nad_unno_t_
+  end function nad_dziem_bound_t_
 
 !****
 
   function inner_bound_ (this, x_i, omega) result (B_i)
 
-    class(bound_nad_unno_t), intent(in) :: this
-    real(WP), intent(in)                :: x_i
-    complex(WP), intent(in)             :: omega
+    class(nad_dziem_bound_t), intent(in) :: this
+    real(WP), intent(in)                 :: x_i
+    complex(WP), intent(in)              :: omega
     $if ($GFORTRAN_PR_58007)
-    complex(WP), allocatable            :: B_i(:,:)
+    complex(WP), allocatable             :: B_i(:,:)
     $else
-    complex(WP)                         :: B_i(this%n_i,this%n_e)
+    complex(WP)                          :: B_i(this%n_i,this%n_e)
     $endif
 
     $ASSERT(x_i == 0._WP,Boundary condition invalid for x_i /= 0)
@@ -148,7 +147,7 @@ contains
 
   function outer_bound_ (this, x_o, omega) result (B_o)
 
-    class(bound_nad_unno_t), intent(in) :: this
+    class(nad_dziem_bound_t), intent(in) :: this
     real(WP), intent(in)                 :: x_o
     complex(WP), intent(in)              :: omega
     $if ($GFORTRAN_PR_58007)
@@ -157,50 +156,22 @@ contains
     complex(WP)                          :: B_o(this%n_o,this%n_e)
     $endif
 
-    real(WP)    :: V_g
-    real(WP)    :: As
-    real(WP)    :: c_1
-    complex(WP) :: lambda
-    complex(WP) :: b_11
-    complex(WP) :: b_12
-    complex(WP) :: b_13
-    complex(WP) :: b_21
-    complex(WP) :: b_22
-    complex(WP) :: b_23
-    complex(WP) :: alpha_1
-    complex(WP) :: alpha_2
-
     $if ($GFORTRAN_PR_58007)
     allocate(B_o(this%n_o,this%n_e))
     $endif
 
     ! Set the outer boundary conditions
 
-    call eval_atmos_coeffs_unno(this%ml, x_o, V_g, As, c_1)
-
     associate(V => this%ml%V(x_o), nabla_ad => this%ml%nabla_ad(x_o), &
               l => this%op%l, omega_c => this%ml%omega_c(x_o, this%op%m, omega))
 
-      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l)
-      
-      b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/(c_1*omega_c**2) - V_g
-      b_13 = V_g
-
-      b_21 = c_1*omega_c**2 - As
-      b_22 = 1._WP + As
-      b_23 = -As
-    
-      alpha_1 = (b_12*b_23 - b_13*(b_22+l))/((b_11+l)*(b_22+l) - b_12*b_21)
-      alpha_2 = (b_21*b_13 - b_23*(b_11+l))/((b_11+l)*(b_22+l) - b_12*b_21)
-
-      B_o(1,1) = lambda - b_11
-      B_o(1,2) = -b_12
-      B_o(1,3) = -(alpha_1*(lambda - b_11) - alpha_2*b_12)
+      B_o(1,1) = 1 + (l*(l+1)/omega_c**2 - 4 - omega_c**2)/V
+      B_o(1,2) = -1._WP
+      B_o(1,3) = 1 + (l*(l+1)/omega_c**2 - l - 1)/V
       B_o(1,4) = 0._WP
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
-
+     
       B_o(2,1) = 0._WP
       B_o(2,2) = 0._WP
       B_o(2,3) = l + 1._WP
@@ -225,4 +196,4 @@ contains
 
   end function outer_bound_
 
-end module gyre_bound_nad_unno
+end module gyre_nad_dziem_bound
