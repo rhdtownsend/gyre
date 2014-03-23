@@ -25,7 +25,7 @@ module gyre_poly_file
   use core_hgroup
 
   use gyre_model
-  use gyre_model_poly
+  use gyre_poly_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -38,17 +38,17 @@ module gyre_poly_file
 
   private
 
-  public :: read_poly_file
+  public :: read_poly_model
 
   ! Procedures
 
 contains
 
-  subroutine read_poly_file (file, deriv_type, ml, x)
+  subroutine read_poly_model (file, deriv_type, ml, x)
 
     character(LEN=*), intent(in)                 :: file
     character(LEN=*), intent(in)                 :: deriv_type
-    type(model_poly_t), intent(out)              :: ml
+    type(poly_model_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
@@ -58,7 +58,7 @@ contains
     real(WP), allocatable :: Theta(:)
     real(WP), allocatable :: dTheta(:)
 
-    ! Read the Lane-Emden solution from the POLY-format file
+    ! Read data from the POLY-format file
 
     if(check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from POLY file', TRIM(file)
@@ -76,9 +76,9 @@ contains
 
     call hg%final()
 
-    ! Initialize the model_poly
+    ! Initialize the poly_model
 
-    ml = model_poly_t(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
+    ml = poly_model_t(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
 
     ! If necessary, return the grid
 
@@ -90,6 +90,6 @@ contains
 
     return
 
-  end subroutine read_poly_file
+  end subroutine read_poly_model
 
 end module gyre_poly_file

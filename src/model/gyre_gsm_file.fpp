@@ -26,7 +26,7 @@ module gyre_gsm_file
 
   use gyre_constants
   use gyre_model
-  use gyre_model_evol
+  use gyre_evol_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -39,19 +39,19 @@ module gyre_gsm_file
 
   private
 
-  public :: read_gsm_file
-  public :: read_gsm_file_data
-  public :: write_gsm_file_data
+  public :: read_gsm_model
+  public :: read_gsm_data
+  public :: write_gsm_data
 
   ! Procedures
 
 contains
 
-  subroutine read_gsm_file (file, deriv_type, ml, x)
+  subroutine read_gsm_model (file, deriv_type, ml, x)
 
-    character(LEN=*), intent(in)                 :: file
-    character(LEN=*), intent(in)                 :: deriv_type
-    type(model_evol_t), intent(out)              :: ml
+    character(*), intent(in)                     :: file
+    character(*), intent(in)                     :: deriv_type
+    type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
 
     real(WP)              :: M_star
@@ -78,18 +78,18 @@ contains
     real(WP), allocatable :: m(:)
     logical               :: add_center
 
-    ! Read the model from the GSM-format file
+    ! Read data from the GSM-format file
 
     if(check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from GSM file', TRIM(file)
 100    format(A,1X,A)
     endif
 
-    call read_gsm_file_data(file, M_star, R_star, L_star, r, w, p, rho, T, &
-                            N2, Gamma_1, nabla_ad, delta, nabla,  &
-                            kappa, kappa_rho, kappa_T, &
-                            epsilon, epsilon_rho, epsilon_T, &
-                            Omega_rot)
+    call read_gsm_data(file, M_star, R_star, L_star, r, w, p, rho, T, &
+                       N2, Gamma_1, nabla_ad, delta, nabla,  &
+                       kappa, kappa_rho, kappa_T, &
+                       epsilon, epsilon_rho, epsilon_T, &
+                       Omega_rot)
 
     n = SIZE(r)
 
@@ -104,7 +104,7 @@ contains
 
     ! Initialize the model
 
-    ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
+    ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
                       N2, Gamma_1, nabla_ad, delta, Omega_rot, &
                       nabla, kappa, kappa_rho, kappa_T, &
                       epsilon, epsilon_rho, epsilon_T, &
@@ -124,15 +124,15 @@ contains
 
     return
 
-  end subroutine read_gsm_file
+  end subroutine read_gsm_model
 
 !****
 
-  subroutine read_gsm_file_data (file, M_star, R_star, L_star, r, w, p, rho, T, &
-                                 N2, Gamma_1, nabla_ad, delta, nabla,  &
-                                 kappa, kappa_rho, kappa_T, &
-                                 epsilon, epsilon_rho, epsilon_T, &
-                                 Omega_rot)
+  subroutine read_gsm_data (file, M_star, R_star, L_star, r, w, p, rho, T, &
+                            N2, Gamma_1, nabla_ad, delta, nabla,  &
+                            kappa, kappa_rho, kappa_T, &
+                            epsilon, epsilon_rho, epsilon_T, &
+                            Omega_rot)
 
     character(*), intent(in)           :: file
     real(WP), intent(out)              :: M_star
@@ -215,15 +215,15 @@ contains
 
     return
 
-  end subroutine read_gsm_file_data
+  end subroutine read_gsm_data
 
 !****
 
-  subroutine write_gsm_file_data (file, M_star, R_star, L_star, r, w, p, rho, T, &
-                                  N2, Gamma_1, nabla_ad, delta, nabla,  &
-                                  kappa, kappa_rho, kappa_T, &
-                                  epsilon, epsilon_rho, epsilon_T, &
-                                  Omega_rot)
+  subroutine write_gsm_data (file, M_star, R_star, L_star, r, w, p, rho, T, &
+                             N2, Gamma_1, nabla_ad, delta, nabla,  &
+                             kappa, kappa_rho, kappa_T, &
+                             epsilon, epsilon_rho, epsilon_T, &
+                             Omega_rot)
 
     character(*), intent(in) :: file
     real(WP), intent(in)     :: M_star
@@ -287,6 +287,6 @@ contains
 
     return
 
-  end subroutine write_gsm_file_data
+  end subroutine write_gsm_data
 
 end module gyre_gsm_file

@@ -25,7 +25,7 @@ module gyre_mesa_file
 
   use gyre_constants
   use gyre_model
-  use gyre_model_evol
+  use gyre_evol_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -38,17 +38,18 @@ module gyre_mesa_file
 
   private
 
-  public :: read_mesa_file
+  public :: read_mesa_model
+  public :: read_mesa_data
 
   ! Procedures
 
 contains
 
-  subroutine read_mesa_file (file, deriv_type, ml, x)
+  subroutine read_mesa_model (file, deriv_type, ml, x)
 
-    character(LEN=*), intent(in)                 :: file
-    character(LEN=*), intent(in)                 :: deriv_type 
-    type(model_evol_t), intent(out)              :: ml
+    character(*), intent(in)                     :: file
+    character(*), intent(in)                     :: deriv_type 
+    type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
 
     integer               :: unit
@@ -77,20 +78,90 @@ contains
     real(WP), allocatable :: Omega_rot(:)
     logical               :: add_center
 
-    ! Read the model from the MESA-format file
+    ! Read data from the MESA-format file
 
     if(check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from MESA file', TRIM(file)
 100    format(A,1X,A)
     endif
 
+    call read_mesa_data(file, M_star, R_star, L_star, r, m, p, rho, T, &
+                        N2, Gamma_1, nabla_ad, delta, nabla,  &
+                        kappa, kappa_rho, kappa_T, &
+                        epsilon, epsilon_rho, epsilon_T, &
+                        Omega_rot)
+
+    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
+
+    if(add_center .AND. check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Adding central point'
+110    format(2X,A)
+    endif
+
+    ! Initialize the model
+
+    ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
+                      N2, Gamma_1, nabla_ad, delta, Omega_rot, &
+                      nabla, kappa, kappa_rho, kappa_T, &
+                      epsilon, epsilon_rho, epsilon_T, &
+                      deriv_type, add_center)
+
+    ! Set up the grid
+
+    if(PRESENT(x)) then
+       if(add_center) then
+          x = [0._WP,r/R_star]
+       else
+          x = r/R_star
+       endif
+    endif
+    ! Finish
+
+    return
+
+  end subroutine read_mesa_model
+
+!****
+
+  subroutine read_mesa_data (file, M_star, R_star, L_star, r, m, p, rho, T, &
+                             N2, Gamma_1, nabla_ad, delta, nabla,  &
+                             kappa, kappa_rho, kappa_T, &
+                             epsilon, epsilon_rho, epsilon_T, &
+                             Omega_rot)
+
+    character(*), intent(in)           :: file
+    real(WP), intent(out)              :: M_star
+    real(WP), intent(out)              :: R_star
+    real(WP), intent(out)              :: L_star
+    real(WP), allocatable, intent(out) :: r(:)
+    real(WP), allocatable, intent(out) :: m(:)
+    real(WP), allocatable, intent(out) :: p(:)
+    real(WP), allocatable, intent(out) :: rho(:)
+    real(WP), allocatable, intent(out) :: T(:)
+    real(WP), allocatable, intent(out) :: N2(:)
+    real(WP), allocatable, intent(out) :: Gamma_1(:)
+    real(WP), allocatable, intent(out) :: nabla_ad(:)
+    real(WP), allocatable, intent(out) :: delta(:)
+    real(WP), allocatable, intent(out) :: nabla(:)
+    real(WP), allocatable, intent(out) :: kappa(:)
+    real(WP), allocatable, intent(out) :: kappa_rho(:)
+    real(WP), allocatable, intent(out) :: kappa_T(:)
+    real(WP), allocatable, intent(out) :: epsilon(:)
+    real(WP), allocatable, intent(out) :: epsilon_rho(:)
+    real(WP), allocatable, intent(out) :: epsilon_T(:)
+    real(WP), allocatable, intent(out) :: Omega_rot(:)
+
+    integer  :: unit
+    integer  :: n
+    integer  :: n_cols
+    
+    ! Read data from the MESA-format file
+
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
     ! Read the header
 
     read(unit, *) n, M_star, R_star, L_star, n_cols
-
-    ! Determine the file variant, and read the data
 
     if(n_cols == 1) then
 
@@ -119,29 +190,7 @@ contains
 
     endif
 
-    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
-
-    if(add_center .AND. check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Adding central point'
-    endif
-
-    ! Initialize the model
-
-    ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
-                      N2, Gamma_1, nabla_ad, delta, Omega_rot, &
-                      nabla, kappa, kappa_rho, kappa_T, &
-                      epsilon, epsilon_rho, epsilon_T, &
-                      deriv_type, add_center)
-
-    ! Set up the grid
-
-    if(PRESENT(x)) then
-       if(add_center) then
-          x = [0._WP,r/R_star]
-       else
-          x = r/R_star
-       endif
-    endif
+    close(unit)
 
     ! Finish
 
@@ -151,8 +200,9 @@ contains
 
     subroutine read_mesa_data_old_ ()
 
-      integer :: k
-      integer :: k_chk
+      real(WP), allocatable :: var(:,:)
+      integer               :: k
+      integer               :: k_chk
 
       ! Read data from the old-variant file
 
@@ -210,8 +260,9 @@ contains
 
     subroutine read_mesa_data_new_ ()
 
-      integer :: k
-      integer :: k_chk
+      real(WP), allocatable :: var(:,:)
+      integer               :: k
+      integer               :: k_chk
 
       $ASSERT(n_cols >= 18,Too few columns)
 
@@ -250,6 +301,6 @@ contains
 
     end subroutine read_mesa_data_new_
 
-  end subroutine read_mesa_file
+  end subroutine read_mesa_data
 
 end module gyre_mesa_file
