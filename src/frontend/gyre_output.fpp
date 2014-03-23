@@ -26,8 +26,8 @@ module gyre_output
 
   use gyre_constants
   use gyre_model
-  use gyre_model_evol
-  use gyre_model_poly
+  use gyre_evol_model
+  use gyre_poly_model
   use gyre_mode
   use gyre_util
   use gyre_writer
@@ -234,9 +234,9 @@ contains
        case default
           if(n_md >= 1) then
              select type (ml => md(1)%ml)
-             type is (model_evol_t)
+             type is (evol_model_t)
                 call write_summary_evol_(wr, ml, items(j))
-             type is (model_poly_t)
+             type is (poly_model_t)
                 call write_summary_poly_(wr, ml, items(j))
              class default
                 write(ERROR_UNIT, *) 'item:', TRIM(items(j))
@@ -256,7 +256,7 @@ contains
     subroutine write_summary_evol_ (wr, ml, item)
 
       class(writer_t), intent(inout) :: wr
-      type(model_evol_t), intent(in) :: ml
+      type(evol_model_t), intent(in) :: ml
       character(*), intent(in)       :: item
 
       ! Write the item
@@ -282,7 +282,7 @@ contains
     subroutine write_summary_poly_ (wr, ml, item)
 
       class(writer_t), intent(inout) :: wr
-      type(model_poly_t), intent(in) :: ml
+      type(poly_model_t), intent(in) :: ml
       character(*), intent(in)       :: item
 
       ! Write the item
@@ -416,9 +416,9 @@ contains
           call wr%write('freq_units', freq_units)
        case default
           select type (ml => md%ml)
-          type is (model_evol_t)
+          type is (evol_model_t)
              call write_mode_evol_(wr, ml, items(j))
-          type is (model_poly_t)
+          type is (poly_model_t)
              call write_mode_poly_(wr, ml, items(j))
           class default
              write(ERROR_UNIT, *) 'item:', TRIM(items(j))
@@ -437,7 +437,7 @@ contains
     subroutine write_mode_evol_ (wr, ml, item)
 
       class(writer_t), intent(inout) :: wr
-      type(model_evol_t), intent(in) :: ml
+      type(evol_model_t), intent(in) :: ml
       character(*), intent(in)       :: item
 
       ! Write the item
@@ -471,7 +471,7 @@ contains
     subroutine write_mode_poly_ (wr, ml, item)
 
       class(writer_t), intent(inout) :: wr
-      type(model_poly_t), intent(in) :: ml
+      type(poly_model_t), intent(in) :: ml
       character(*), intent(in)       :: item
 
       ! Write the item

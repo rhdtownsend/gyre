@@ -107,9 +107,9 @@ contains
   subroutine read_model (unit, x_bc, ml)
 
     use gyre_model
-    use gyre_model_evol
-    use gyre_model_poly
-    use gyre_model_hom
+    use gyre_evol_model
+    use gyre_poly_model
+    use gyre_hom_model
     use gyre_mesa_file
     use gyre_osc_file
     use gyre_fgong_file
@@ -130,11 +130,12 @@ contains
     character(LEN=256)          :: deriv_type
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: Gamma_1
-    type(model_evol_t)          :: ec
-    type(model_poly_t)          :: pc
-    type(model_hom_t)           :: hc
+    logical                     :: regularize
+    type(evol_model_t)          :: ec
+    type(poly_model_t)          :: pc
+    type(hom_model_t)           :: hc
 
-    namelist /model/ model_type, file_format, data_format, deriv_type, file, Gamma_1
+    namelist /model/ model_type, file_format, data_format, deriv_type, file, Gamma_1, regularize
 
     ! Read model parameters
 
@@ -142,6 +143,7 @@ contains
     file_format = ''
     data_format = ''
     deriv_type = 'MONO'
+    regularize = .FALSE.
 
     file = ''
 
@@ -157,35 +159,39 @@ contains
 
        select case (file_format)
        case ('MESA')
-          call read_mesa_file(file, deriv_type, ec, x=x_bc)
+          call read_mesa_model(file, deriv_type, ec, x=x_bc)
        case('B3')
           $if($HDF5)
-          call read_b3_file(file, deriv_type, ec, x=x_bc)
+          call read_b3_model(file, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
        case ('GSM')
           $if($HDF5)
-          call read_gsm_file(file, deriv_type, ec, x=x_bc)
+          call read_gsm_model(file, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read GSM-format files)
           $endif
        case ('OSC')
-          call read_osc_file(file, deriv_type, data_format, ec, x=x_bc)
+          call read_osc_model(file, deriv_type, data_format, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_file(file, deriv_type, data_format, ec, x=x_bc) 
+          call read_fgong_model(file, deriv_type, data_format, ec, x=x_bc) 
        case ('FAMDL')
-          call read_famdl_file(file, deriv_type, data_format, ec, x=x_bc) 
+          call read_famdl_model(file, deriv_type, data_format, ec, x=x_bc) 
        case default
           $ABORT(Invalid file_format)
        end select
 
+       if (regularize) then
+          call ec%regularize()
+       endif
+
        allocate(ml, SOURCE=ec)
-       
+
     case ('POLY')
 
        $if($HDF5)
-       call read_poly_file(file, deriv_type, pc, x=x_bc)
+       call read_poly_model(file, deriv_type, pc, x=x_bc)
        $else
        $ABORT(No HDF5 support, therefore cannot read POLY files)
        $endif
@@ -194,7 +200,7 @@ contains
 
     case ('HOM')
 
-       hc = model_hom_t(Gamma_1)
+       hc = hom_model_t(Gamma_1)
 
        allocate(ml, SOURCE=hc)
 
