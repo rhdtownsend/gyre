@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_bound_rad_unno
+module gyre_rad_unno_bound
 
   ! Uses
 
@@ -37,7 +37,7 @@ module gyre_bound_rad_unno
 
   ! Derived-type definitions
 
-  type, extends (bound_t) :: bound_rad_unno_t
+  type, extends (bound_t) :: rad_unno_bound_t
      private
      class(model_t), pointer        :: ml => null()
      class(jacobian_t), allocatable :: jc
@@ -46,32 +46,32 @@ module gyre_bound_rad_unno
      private
      procedure, public :: inner_bound => inner_bound_
      procedure, public :: outer_bound => outer_bound_
-  end type bound_rad_unno_t
+  end type rad_unno_bound_t
 
   ! Interfaces
 
-  interface bound_rad_unno_t
-     module procedure bound_rad_unno_t_
-  end interface bound_rad_unno_t
+  interface rad_unno_bound_t
+     module procedure rad_unno_bound_t_
+  end interface rad_unno_bound_t
 
   ! Access specifiers
 
   private
 
-  public :: bound_rad_unno_t
+  public :: rad_unno_bound_t
 
   ! Procedures
 
 contains
 
-  function bound_rad_unno_t_ (ml, jc, op) result (bd)
+  function rad_unno_bound_t_ (ml, jc, op) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
     class(jacobian_t), intent(in)       :: jc
     type(oscpar_t), intent(in)          :: op
-    type(bound_rad_unno_t)              :: bd
+    type(rad_unno_bound_t)              :: bd
 
-    ! Construct the bound_rad_unno_t
+    ! Construct the rad_unno_bound_t
 
     bd%ml => ml
     allocate(bd%jc, SOURCE=jc)
@@ -87,13 +87,13 @@ contains
 
     return
     
-  end function bound_rad_unno_t_
+  end function rad_unno_bound_t_
 
 !****
 
   function inner_bound_ (this, x_i, omega) result (B_i)
 
-    class(bound_rad_unno_t), intent(in) :: this
+    class(rad_unno_bound_t), intent(in) :: this
     real(WP), intent(in)                :: x_i
     complex(WP), intent(in)             :: omega
     $if ($GFORTRAN_PR_58007)
@@ -130,7 +130,7 @@ contains
 
   function outer_bound_ (this, x_o, omega) result (B_o)
 
-    class(bound_rad_unno_t), intent(in) :: this
+    class(rad_unno_bound_t), intent(in) :: this
     real(WP), intent(in)                :: x_o
     complex(WP), intent(in)             :: omega
     $if ($GFORTRAN_PR_58007)
@@ -174,4 +174,4 @@ contains
 
   end function outer_bound_
 
-end module gyre_bound_rad_unno
+end module gyre_rad_unno_bound

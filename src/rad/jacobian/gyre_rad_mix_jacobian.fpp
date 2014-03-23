@@ -1,5 +1,5 @@
-! Module   : gyre_jacobian_rad_dziem
-! Purpose  : radial adiabatic Jacobian evaluation (Dziembowski variables)
+! Module   : gyre_rad_mix_jacobian
+! Purpose  : radial adiabatic Jacobian evaluation (mixed JCD/Dziem variables)
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_jacobian_rad_dziem
+module gyre_rad_mix_jacobian
 
   ! Uses
 
@@ -36,7 +36,7 @@ module gyre_jacobian_rad_dziem
 
   ! Derived-type definitions
 
-  type, extends (jacobian_t) :: jacobian_rad_dziem_t
+  type, extends (jacobian_t) :: rad_mix_jacobian_t
      private
      class(model_t), pointer :: ml => null()
      type(oscpar_t)          :: op
@@ -45,31 +45,31 @@ module gyre_jacobian_rad_dziem
      procedure, public :: eval => eval_
      procedure, public :: eval_logx => eval_logx_
      procedure, public :: trans_matrix => trans_matrix_
-  end type jacobian_rad_dziem_t
+  end type rad_mix_jacobian_t
 
   ! Interfaces
 
-  interface jacobian_rad_dziem_t
-     module procedure jacobian_rad_dziem_t_
-  end interface jacobian_rad_dziem_t
+  interface rad_mix_jacobian_t
+     module procedure rad_mix_jacobian_t_
+  end interface rad_mix_jacobian_t
 
   ! Access specifiers
 
   private
 
-  public :: jacobian_rad_dziem_t
+  public :: rad_mix_jacobian_t
 
   ! Procedures
 
 contains
 
-  function jacobian_rad_dziem_t_ (ml, op) result (jc)
+  function rad_mix_jacobian_t_ (ml, op) result (jc)
 
     class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
-    type(jacobian_rad_dziem_t)          :: jc
+    type(rad_mix_jacobian_t)            :: jc
 
-    ! Construct the jacobian_rad_dziem_t
+    ! Construct the rad_mix_jacobian_t
 
     jc%ml => ml
     jc%op = op
@@ -80,16 +80,16 @@ contains
 
     return
 
-  end function jacobian_rad_dziem_t_
+  end function rad_mix_jacobian_t_
 
 !****
 
   subroutine eval_ (this, x, omega, A)
 
-    class(jacobian_rad_dziem_t), intent(in) :: this
-    real(WP), intent(in)                    :: x
-    complex(WP), intent(in)                 :: omega
-    complex(WP), intent(out)                :: A(:,:)
+    class(rad_mix_jacobian_t), intent(in) :: this
+    real(WP), intent(in)                  :: x
+    complex(WP), intent(in)               :: omega
+    complex(WP), intent(out)              :: A(:,:)
     
     ! Evaluate the Jacobian matrix
 
@@ -107,10 +107,10 @@ contains
 
   subroutine eval_logx_ (this, x, omega, A)
 
-    class(jacobian_rad_dziem_t), intent(in) :: this
-    real(WP), intent(in)                    :: x
-    complex(WP), intent(in)                 :: omega
-    complex(WP), intent(out)                :: A(:,:)
+    class(rad_mix_jacobian_t), intent(in) :: this
+    real(WP), intent(in)                  :: x
+    complex(WP), intent(in)               :: omega
+    complex(WP), intent(out)              :: A(:,:)
     
     $CHECK_BOUNDS(SIZE(A, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(A, 2),this%n_e)
@@ -124,7 +124,7 @@ contains
       A(1,1) = V_g - 1._WP
       A(1,2) = -V_g
       
-      A(2,1) = c_1*omega_c**2 + U - As
+      A(2,1) = c_1*omega**2 + U - As
       A(2,2) = As - U + 3._WP
 
     end associate
@@ -139,14 +139,14 @@ contains
 
   function trans_matrix_ (this, x, omega, to_canon) result (M)
 
-    class(jacobian_rad_dziem_t), intent(in) :: this
-    real(WP), intent(in)                    :: x
-    complex(WP), intent(in)                 :: omega
-    logical, intent(in)                     :: to_canon
+    class(rad_mix_jacobian_t), intent(in) :: this
+    real(WP), intent(in)                  :: x
+    complex(WP), intent(in)               :: omega
+    logical, intent(in)                   :: to_canon
     $if ($GFORTRAN_PR_58007)
-    complex(WP), allocatable                :: M(:,:)
+    complex(WP), allocatable              :: M(:,:)
     $else
-    complex(WP)                             :: M(this%n_e,this%n_e)
+    complex(WP)                           :: M(this%n_e,this%n_e)
     $endif
 
     $if ($GFORTRAN_PR_58007)
@@ -154,7 +154,7 @@ contains
     $endif
 
     ! Calculate the transformation matrix to convert variables between the
-    ! canonical formulation and the Dziembowski formulation
+    ! canonical formulation and the mixed formulation
 
     if (to_canon) then
        M = identity_matrix(this%n_e)
@@ -168,4 +168,4 @@ contains
 
   end function trans_matrix_
 
-end module gyre_jacobian_rad_dziem
+end module gyre_rad_mix_jacobian

@@ -1,4 +1,4 @@
-! Module   : gyre_jacobian_rad_jcd
+! Module   : gyre_rad_jcd_jacobian
 ! Purpose  : radial adiabatic Jacobian evaluation (JCD variables)
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_jacobian_rad_jcd
+module gyre_rad_jcd_jacobian
 
   ! Uses
 
@@ -35,7 +35,7 @@ module gyre_jacobian_rad_jcd
 
   ! Derived-type definitions
 
-  type, extends (jacobian_t) :: jacobian_rad_jcd_t
+  type, extends (jacobian_t) :: rad_jcd_jacobian_t
      private
      class(model_t), pointer :: ml => null()
      type(oscpar_t)          :: op
@@ -44,31 +44,31 @@ module gyre_jacobian_rad_jcd
      procedure, public :: eval => eval_
      procedure, public :: eval_logx => eval_logx_
      procedure, public :: trans_matrix => trans_matrix_
-  end type jacobian_rad_jcd_t
+  end type rad_jcd_jacobian_t
 
   ! Interfaces
 
-  interface jacobian_rad_jcd_t
-     module procedure jacobian_rad_jcd_t_
-  end interface jacobian_rad_jcd_t
+  interface rad_jcd_jacobian_t
+     module procedure rad_jcd_jacobian_t_
+  end interface rad_jcd_jacobian_t
 
   ! Access specifiers
 
   private
 
-  public :: jacobian_rad_jcd_t
+  public :: rad_jcd_jacobian_t
 
   ! Procedures
 
 contains
 
-  function jacobian_rad_jcd_t_ (ml, op) result (jc)
+  function rad_jcd_jacobian_t_ (ml, op) result (jc)
 
     class(model_t), pointer, intent(in) :: ml
     type(oscpar_t), intent(in)          :: op
-    type(jacobian_rad_jcd_t)            :: jc
+    type(rad_jcd_jacobian_t)            :: jc
 
-    ! Construct the jacobian_rad_jcd_t
+    ! Construct the rad_jcd_jacobian_t
 
     jc%ml => ml
     jc%op = op
@@ -79,13 +79,13 @@ contains
 
     return
 
-  end function jacobian_rad_jcd_t_
+  end function rad_jcd_jacobian_t_
 
 !****
 
   subroutine eval_ (this, x, omega, A)
 
-    class(jacobian_rad_jcd_t), intent(in) :: this
+    class(rad_jcd_jacobian_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     complex(WP), intent(in)               :: omega
     complex(WP), intent(out)              :: A(:,:)
@@ -106,7 +106,7 @@ contains
 
   subroutine eval_logx_ (this, x, omega, A)
 
-    class(jacobian_rad_jcd_t), intent(in) :: this
+    class(rad_jcd_jacobian_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     complex(WP), intent(in)               :: omega
     complex(WP), intent(out)              :: A(:,:)
@@ -138,7 +138,7 @@ contains
 
   function trans_matrix_ (this, x, omega, to_canon) result (M)
 
-    class(jacobian_rad_jcd_t), intent(in) :: this
+    class(rad_jcd_jacobian_t), intent(in) :: this
     real(WP), intent(in)                  :: x
     complex(WP), intent(in)               :: omega
     logical, intent(in)                   :: to_canon
@@ -189,4 +189,4 @@ contains
 
   end function trans_matrix_
 
-end module gyre_jacobian_rad_jcd
+end module gyre_rad_jcd_jacobian
