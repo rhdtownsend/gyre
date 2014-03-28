@@ -22,6 +22,7 @@ module gyre_mesa_file
   ! Uses
 
   use core_kinds
+  use core_order
 
   use gyre_constants
   use gyre_model
@@ -172,8 +173,8 @@ contains
        backspace(unit)
 
        if(check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 110) 'Detected old-variant file'
-110       format(2X,A)
+          write(OUTPUT_UNIT, 100) 'Detected old-variant file'
+100       format(3X,A)
        endif
 
        call read_mesa_data_old_()
@@ -183,7 +184,7 @@ contains
        ! New variant (n_cols specified)
 
        if(check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 110) 'Detected new-variant file'
+          write(OUTPUT_UNIT, 100) 'Detected new-variant file'
        endif
 
        call read_mesa_data_new_()
@@ -203,6 +204,7 @@ contains
       real(WP), allocatable :: var(:,:)
       integer               :: k
       integer               :: k_chk
+      integer, allocatable  :: ind(:)
 
       ! Read data from the old-variant file
 
@@ -214,6 +216,21 @@ contains
       end do read_loop
 
       close(unit)
+
+      ind = unique_indices(var(1,:))
+
+      if (SIZE(ind) < n) then
+
+         if(check_log_level('WARN')) then
+            write(OUTPUT_UNIT, 110) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
+110         format('!!',1X,A)
+         endif
+
+         n = SIZE(var, 2)
+
+      endif
+       
+      var = var(:,ind)
 
       r = var(1,:)
       m = var(2,:)/(1._WP+var(2,:))*M_star
@@ -246,8 +263,8 @@ contains
          epsilon_rho = epsilon_rho*epsilon
 
          if(check_log_level('INFO')) then
-            write(OUTPUT_UNIT, 100) 'Rescaled epsilon derivatives'
-100       format(2X,A)
+            write(OUTPUT_UNIT, 120) 'Rescaled epsilon derivatives'
+120         format(3X,A)
          endif
 
       endif
@@ -263,6 +280,7 @@ contains
       real(WP), allocatable :: var(:,:)
       integer               :: k
       integer               :: k_chk
+      integer, allocatable  :: ind(:)
 
       $ASSERT(n_cols >= 18,Too few columns)
 
@@ -276,6 +294,21 @@ contains
       end do read_loop
 
       close(unit)
+
+      ind = unique_indices(var(1,:))
+
+      if (SIZE(ind) < n) then
+
+         if(check_log_level('WARN')) then
+            write(OUTPUT_UNIT, 110) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
+110         format('!!',1X,A)
+         endif
+
+         n = SIZE(var, 2)
+
+      endif
+       
+      var = var(:,ind)
 
       r = var(1,:)
       m = var(2,:)/(1._WP+var(2,:))*M_star

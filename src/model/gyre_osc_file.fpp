@@ -22,6 +22,7 @@ module gyre_osc_file
   ! Uses
 
   use core_kinds
+  use core_order
 
   use gyre_constants
   use gyre_model
@@ -62,6 +63,7 @@ contains
     real(WP), allocatable     :: glob(:)
     real(WP), allocatable     :: var(:,:)
     integer                   :: i
+    integer, allocatable      :: ind(:)
     real(WP)                  :: M_star
     real(WP)                  :: R_star
     real(WP)                  :: L_star
@@ -112,7 +114,7 @@ contains
     if(check_log_level('INFO')) then
        write(OUTPUT_UNIT, 110) 'Initial points :', n
        write(OUTPUT_UNIT, 110) 'File version   :', ivers
-110    format(2X,A,1X,I0)
+110    format(3X,A,1X,I0)
     endif
 
     ! Read the data
@@ -128,7 +130,20 @@ contains
 
     close(unit)
 
-    var = var(:,n:1:-1)
+    ind = unique_indices(var(1,:))
+
+    if (SIZE(ind) < n) then
+
+       if(check_log_level('WARN')) then
+          write(OUTPUT_UNIT, 120) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
+120       format('!!',1X,A)
+       endif
+
+       n = SIZE(var, 2)
+
+    endif
+       
+    var = var(:,ind)
 
     M_star = glob(1)
     R_star = glob(2)
