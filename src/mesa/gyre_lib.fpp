@@ -24,6 +24,7 @@ module gyre_lib
   use core_kinds
   use core_parallel
 
+  use gyre_constants
   use gyre_bvp
   use gyre_ad_bvp
   use gyre_rad_bvp
@@ -55,6 +56,15 @@ module gyre_lib
   private
 
   public :: WP
+
+  public :: G_GRAVITY
+  public :: C_LIGHT
+  public :: A_RADIATION
+  
+  public :: M_SUN
+  public :: R_SUN
+  public :: L_SUN
+
   public :: mode_t
   public :: gyre_init
   public :: gyre_read_model
