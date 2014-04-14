@@ -21,25 +21,28 @@ program gyre_nad_map
 
   ! Uses
 
-  use core_kinds
+  use core_kinds, SP_ => SP
   use gyre_constants
   use core_parallel
   use core_order
   use core_hgroup
 
   use gyre_version
-  use gyre_base_coeffs
-  use gyre_therm_coeffs
+  use gyre_model
+  $if($MPI)
+  use gyre_model_mpi
+  $endif
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
-  use gyre_bvp_nad
-  use gyre_mode
+  use gyre_scanpar
+  use gyre_bvp
+  use gyre_nad_bvp
   use gyre_input
-  use gyre_output
+  use gyre_search
+  use gyre_mode
   use gyre_util
   use gyre_ext_arith
-  use gyre_grid
 
   use ISO_FORTRAN_ENV
 
@@ -49,33 +52,34 @@ program gyre_nad_map
 
   ! Variables
 
-  character(LEN=:), allocatable      :: filename
-  integer                            :: unit
-  real(WP), allocatable              :: x_bc(:)
-  class(base_coeffs_t), allocatable  :: bc
-  class(therm_coeffs_t), allocatable :: tc
-  type(oscpar_t)                     :: op
-  type(numpar_t)                     :: np
-  real(WP), allocatable              :: omega_re(:)
-  real(WP), allocatable              :: omega_im(:)
-  type(gridpar_t), allocatable       :: shoot_gp(:)
-  type(gridpar_t), allocatable       :: recon_gp(:)
-  type(bvp_nad_t)                    :: nad_bp
-  character(LEN=FILENAME_LEN)        :: map_file
-  
-  integer                   :: n_omega_re
-  integer                   :: n_omega_im
-  complex(WP), allocatable  :: discrim_map_f(:,:)
-  integer, allocatable      :: discrim_map_e(:,:)
-  integer, allocatable      :: k_part(:)
-  integer                   :: k
-  integer                   :: i(2)
+  character(:), allocatable    :: filename
+  integer                      :: unit
+  real(WP), allocatable        :: x_ml(:)
+  class(model_t), pointer      :: ml => null()
+  type(oscpar_t), allocatable  :: op(:)
+  type(numpar_t), allocatable  :: np(:)
+  type(gridpar_t), allocatable :: shoot_gp(:)
+  type(gridpar_t), allocatable :: recon_gp(:)
+  type(scanpar_t), allocatable :: sp(:)
+  type(scanpar_t), allocatable :: sp_re(:)
+  type(scanpar_t), allocatable :: sp_im(:)
+  real(WP), allocatable        :: omega_re(:)
+  real(WP), allocatable        :: omega_im(:)
+  class(bvp_t), allocatable    :: nad_bp
+  integer                      :: n_omega_re
+  integer                      :: n_omega_im
+  complex(WP), allocatable     :: discrim_map_f(:,:)
+  integer, allocatable         :: discrim_map_e(:,:)
+  integer, allocatable         :: k_part(:)
+  integer                      :: k
+  integer                      :: i(2)
   $if($MPI)
-  integer                   :: p
+  integer                      :: p
   $endif
-  complex(WP)               :: omega
-  type(ext_complex_t)       :: discrim
-  type(hgroup_t)            :: hg
+  complex(WP)                  :: omega
+  type(ext_complex_t)          :: discrim
+  character(FILENAME_LEN)      :: map_filename
+  type(hgroup_t)               :: hg
 
   ! Initialize
 
@@ -108,27 +112,49 @@ program gyre_nad_map
      
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-     call read_coeffs(unit, x_bc, bc, tc)
-
-     $ASSERT(ALLOCATED(tc),No therm_coeffs data)
-
+     call read_constants(unit)
+     call read_model(unit, x_ml, ml)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
      call read_recon_gridpar(unit, recon_gp)
-     call read_mappar(unit, bc, op, shoot_gp, x_bc, omega_re, omega_im)
-     call read_outpar(unit, map_file)
-
-     call nad_bp%init(bc, op, np, shoot_gp, recon_gp, x_bc, tc)
+     call read_scanpar(unit, sp)
+     call read_outpar(unit, map_filename)
 
   endif
 
   $if($MPI)
   call bcast_constants(0)
-  call bcast_alloc(omega_re, 0)
-  call bcast_alloc(omega_im, 0)
-  call bcast(nad_bp, 0)
+  call bcast_alloc(x_ml, 0)
+  call bcast_alloc(ml, 0)
+  call bcast_alloc(op, 0)
+  call bcast_alloc(np, 0)
+  call bcast_alloc(shoot_gp, 0)
+  call bcast_alloc(recon_gp, 0)
+  call bcast_alloc(sp, 0)
   $endif
+
+  ! Select parameters according to tags
+
+  call select_par(sp, 'REAL', sp_re)
+  call select_par(sp, 'IMAG', sp_im)
+
+  $ASSERT(SIZE(sp_im) == 1,No matching scan parameters)
+  $ASSERT(SIZE(sp_re) == 1,No matching scan parameters)
+  
+  ! Set up the frequency arrays
+
+  call build_scan(sp_re, ml, op(1), shoot_gp, x_ml, omega_re)
+  call build_scan(sp_im, ml, op(1), shoot_gp, x_ml, omega_im)
+
+  ! Store the frequency range in shoot_gp
+
+  shoot_gp(1)%omega_a = MINVAL(omega_re)
+  shoot_gp(1)%omega_b = MAXVAL(omega_re)
+
+  ! Set up the bvp
+
+  allocate(nad_bp, SOURCE=nad_bvp_t(ml, op(1), np(1), shoot_gp, recon_gp, x_ml))
 
   ! Map the discriminant
 
@@ -148,6 +174,8 @@ program gyre_nad_map
 
      omega = CMPLX(omega_re(i(1)), omega_im(i(2)), KIND=WP)
 
+     print *,'Omega:',k,omega
+
      discrim = nad_bp%discrim(omega)
 
      discrim_map_f(i(1),i(2)) = FRACTION(discrim)
@@ -166,7 +194,7 @@ program gyre_nad_map
 
   ! Write out the map
 
-  call hg%init(map_file, CREATE_FILE)
+  hg = hgroup_t(map_filename, CREATE_FILE)
 
   call write_dset(hg, 'omega_re', omega_re)
   call write_dset(hg, 'omega_im', omega_im)
@@ -182,104 +210,12 @@ program gyre_nad_map
 
 contains
 
-  subroutine read_mappar (unit, bc, op, gp, x_in, omega_re, omega_im)
+  subroutine read_outpar (unit, map_file)
 
-    integer, intent(in)                :: unit
-    class(base_coeffs_t), intent(in)   :: bc
-    type(oscpar_t), intent(in)         :: op
-    type(gridpar_t), intent(inout)     :: gp(:)
-    real(WP), allocatable, intent(in)  :: x_in(:)
-    real(WP), allocatable, intent(out) :: omega_re(:)
-    real(WP), allocatable, intent(out) :: omega_im(:)
+    integer, intent(in)       :: unit
+    character(*), intent(out) :: map_file
 
-    character(LEN=256) :: grid_type_re
-    character(LEN=256) :: grid_type_im
-    real(WP)           :: freq_re_min
-    real(WP)           :: freq_re_max
-    integer            :: n_freq_re
-    real(WP)           :: freq_im_min
-    real(WP)           :: freq_im_max
-    integer            :: n_freq_im
-    character(LEN=256) :: freq_units
-    real(WP)           :: x_i
-    real(WP)           :: x_o
-    real(WP)           :: omega_min
-    real(WP)           :: omega_max
-    integer            :: i
-
-    namelist /map/ grid_type_re, grid_type_im, &
-          freq_re_min, freq_re_max, n_freq_re, &
-          freq_im_min, freq_im_max, n_freq_im, &
-          freq_units
-
-    ! Determine the grid range
-
-    call grid_range(gp, bc, op, x_in, x_i, x_o)
-
-    ! Read map parameters
-
-    rewind(unit)
-
-    grid_type_re = 'LINEAR'
-    grid_type_im = 'LINEAR'
-
-    freq_re_min = 1._WP
-    freq_re_max = 11._WP
-    n_freq_re = 10
-          
-    freq_im_min = -5._WP
-    freq_im_max = 5._WP
-    n_freq_im = 10
-          
-    freq_units = 'NONE'
-
-    read(unit, NML=map)
-          
-    ! Set up the frequency grids
-
-    omega_min = freq_re_min/freq_scale(bc, op, x_o, freq_units)
-    omega_max = freq_re_max/freq_scale(bc, op, x_o, freq_units)
-       
-    select case(grid_type_re)
-    case('LINEAR')
-       omega_re = [(((n_freq_re-i)*omega_min + (i-1)*omega_max)/(n_freq_re-1), i=1,n_freq_re)]
-    case('INVERSE')
-       omega_re = [((n_freq_re-1)/((n_freq_re-i)/omega_min + (i-1)/omega_max), i=1,n_freq_re)]
-    case default
-       $ABORT(Invalid grid_type_re)
-    end select
-
-    omega_min = freq_im_min/freq_scale(bc, op, x_o, freq_units)
-    omega_max = freq_im_max/freq_scale(bc, op, x_o, freq_units)
-       
-    select case(grid_type_im)
-    case('LINEAR')
-       omega_im = [(((n_freq_im-i)*omega_min + (i-1)*omega_max)/(n_freq_im-1), i=1,n_freq_im)]
-    case('INVERSE')
-       omega_im = [((n_freq_im-1)/((n_freq_im-i)/omega_min + (i-1)/omega_max), i=1,n_freq_im)]
-    case default
-       $ABORT(Invalid grid_type_im)
-    end select
-
-    ! Store the frequency range in gp
-
-    gp%omega_a = MINVAL(omega_re)
-    gp%omega_b = MAXVAL(omega_re)
-
-    ! Finish
-
-    return
-
-  end subroutine read_mappar
-
-!****
-
-  subroutine read_outpar (unit, file)
-
-    integer, intent(in)           :: unit
-    character(LEN=*), intent(out) :: file
-
-    namelist /output/ file
+    namelist /output/ map_file
 
     ! Read output parameters
 

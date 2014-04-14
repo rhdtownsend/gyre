@@ -22,10 +22,11 @@ module gyre_fgong_file
   ! Uses
 
   use core_kinds
+  use core_order
 
   use gyre_constants
   use gyre_model
-  use gyre_model_evol
+  use gyre_evol_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -38,42 +39,43 @@ module gyre_fgong_file
 
   private
 
-  public :: read_fgong_file
+  public :: read_fgong_model
 
   ! Procedures
 
 contains
 
-  subroutine read_fgong_file (file, deriv_type, data_format, ml, x)
+  subroutine read_fgong_model (file, deriv_type, data_format, ml, x)
 
-    character(LEN=*), intent(in)                 :: file
-    character(LEN=*), intent(in)                 :: deriv_type
-    character(LEN=*), intent(in)                 :: data_format
-    type(model_evol_t), intent(out)              :: ml
+    character(*), intent(in)                     :: file
+    character(*), intent(in)                     :: deriv_type
+    character(*), intent(in)                     :: data_format
+    type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
-    character(LEN=:), allocatable :: data_format_
-    integer                       :: unit
-    integer                       :: n
-    integer                       :: iconst
-    integer                       :: ivar
-    integer                       :: ivers
-    real(WP), allocatable         :: glob(:)
-    real(WP), allocatable         :: var(:,:)
-    integer                       :: i
-    real(WP)                      :: M_star
-    real(WP)                      :: R_star
-    real(WP)                      :: L_star
-    real(WP), allocatable         :: r(:)
-    real(WP), allocatable         :: m(:)
-    real(WP), allocatable         :: p(:)
-    real(WP), allocatable         :: rho(:) 
-    real(WP), allocatable         :: T(:) 
-    real(WP), allocatable         :: N2(:)
-    real(WP), allocatable         :: Gamma_1(:)
-    real(WP), allocatable         :: nabla_ad(:)
-    real(WP), allocatable         :: delta(:)
-    logical                       :: add_center
+    character(:), allocatable :: data_format_
+    integer                   :: unit
+    integer                   :: n
+    integer                   :: iconst
+    integer                   :: ivar
+    integer                   :: ivers
+    real(WP), allocatable     :: glob(:)
+    real(WP), allocatable     :: var(:,:)
+    integer                   :: i
+    integer, allocatable      :: ind(:)
+    real(WP)                  :: M_star
+    real(WP)                  :: R_star
+    real(WP)                  :: L_star
+    real(WP), allocatable     :: r(:)
+    real(WP), allocatable     :: m(:)
+    real(WP), allocatable     :: p(:)
+    real(WP), allocatable     :: rho(:) 
+    real(WP), allocatable     :: T(:) 
+    real(WP), allocatable     :: N2(:)
+    real(WP), allocatable     :: Gamma_1(:)
+    real(WP), allocatable     :: nabla_ad(:)
+    real(WP), allocatable     :: delta(:)
+    logical                   :: add_center
 
     if(data_format /= '') then
        data_format_ = data_format
@@ -81,7 +83,7 @@ contains
        data_format_ = '(1P5E16.9)'
     endif
 
-    ! Read the model from the FGONG-format file
+    ! Read data from the FGONG-format file
 
     if(check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from FGONG file', TRIM(file)
@@ -99,10 +101,10 @@ contains
 
     read(unit, *) n, iconst, ivar, ivers
 
-    if(check_log_level('INFO')) then
+     if(check_log_level('INFO')) then
        write(OUTPUT_UNIT, 110) 'Initial points :', n
        write(OUTPUT_UNIT, 110) 'File version   :', ivers
-110    format(2X,A,1X,I0)
+110    format(3X,A,1X,I0)
     endif
 
     ! Read the data
@@ -118,7 +120,20 @@ contains
 
     close(unit)
 
-    var = var(:,n:1:-1)
+    ind = unique_indices(var(1,:))
+
+    if (SIZE(ind) < n) then
+
+       if(check_log_level('WARN')) then
+          write(OUTPUT_UNIT, 120) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
+120       format('!!',1X,A)
+       endif
+
+       n = SIZE(var, 2)
+
+    endif
+
+    var = var(:,ind)
 
     M_star = glob(1)
     R_star = glob(2)
@@ -160,7 +175,7 @@ contains
 
     ! Initialize the model
 
-    ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
+    ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
                       deriv_type, add_center)
 
@@ -178,6 +193,6 @@ contains
 
     return
 
-  end subroutine read_fgong_file
+  end subroutine read_fgong_model
 
 end module gyre_fgong_file

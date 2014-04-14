@@ -6,6 +6,7 @@ module gyre_constants
   ! Uses
 
   use core_kinds
+  use core_parallel
   use core_constants, &
        G_GRAVITY_ => G_GRAVITY, &
        C_LIGHT_ => C_LIGHT, &
@@ -13,7 +14,6 @@ module gyre_constants
        M_SUN_ => M_SUN, &
        R_SUN_ => R_SUN, &
        L_SUN_ => L_SUN
-  use core_parallel
 
   ! No implicit typing
 
@@ -52,6 +52,10 @@ module gyre_constants
   public :: L_SUN
 
   public :: FILENAME_LEN
+
+  $if ($MPI)
+  public :: bcast_constants
+  $endif
 
   ! Procedures
 

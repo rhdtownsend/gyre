@@ -35,9 +35,9 @@ program gyre_nad
   use gyre_gridpar
   use gyre_scanpar
   use gyre_bvp
-  use gyre_bvp_ad
-  use gyre_bvp_rad
-  use gyre_bvp_nad
+  use gyre_ad_bvp
+  use gyre_rad_bvp
+  use gyre_nad_bvp
   use gyre_search
   use gyre_mode
   use gyre_input
@@ -52,7 +52,7 @@ program gyre_nad
 
   ! Variables
 
-  character(LEN=:), allocatable :: filename
+  character(:), allocatable     :: filename
   integer                       :: unit
   real(WP), allocatable         :: x_ml(:)
   class(model_t), pointer       :: ml => null()
@@ -68,7 +68,7 @@ program gyre_nad
   type(scanpar_t), allocatable  :: sp_sel(:)
   real(WP), allocatable         :: omega(:)
   class(bvp_t), allocatable     :: ad_bp
-  type(bvp_nad_t)               :: nad_bp
+  class(bvp_t), allocatable     :: nad_bp
   type(mode_t), allocatable     :: md(:)
   type(mode_t), allocatable     :: md_all(:)
   type(mode_t), allocatable     :: md_tmp(:)
@@ -152,17 +152,17 @@ program gyre_nad
      shoot_gp_sel%omega_a = MINVAL(omega)
      shoot_gp_sel%omega_b = MAXVAL(omega)
 
-     ! Set up bp
+     ! Set up the bvp's
 
      if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
      if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(ad_bp, SOURCE=bvp_rad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(ad_bp, SOURCE=rad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      else
-        allocate(ad_bp, SOURCE=bvp_ad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(ad_bp, SOURCE=ad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
-
-     nad_bp = bvp_nad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml)
+ 
+     allocate(nad_bp, SOURCE=nad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
 
      ! Find modes
 
@@ -179,6 +179,7 @@ program gyre_nad
      call MOVE_ALLOC(md_tmp, md_all)
 
      deallocate(ad_bp)
+     deallocate(nad_bp)
 
   end do op_loop
 

@@ -58,8 +58,8 @@ contains
 
   subroutine bcast_alloc_ (ml, root_rank)
 
-    class(model_t), allocatable, intent(inout) :: ml
-    integer, intent(in)                        :: root_rank
+    class(model_t), pointer, intent(inout) :: ml
+    integer, intent(in)                    :: root_rank
 
     integer, parameter :: EVOL_TYPE = 1
     integer, parameter :: POLY_TYPE = 2
@@ -70,13 +70,13 @@ contains
 
     ! Deallocate the model on non-root processors
 
-    if(MPI_RANK /= root_rank .AND. ALLOCATED(ml)) then
+    if(MPI_RANK /= root_rank .AND. ASSOCIATED(ml)) then
        deallocate(ml)
     endif
 
     ! Check if the model is allocated on the root processor
 
-    if(MPI_RANK == root_rank) alloc = ALLOCATED(ml)
+    if(MPI_RANK == root_rank) alloc = ASSOCIATED(ml)
     call bcast(alloc, root_rank)
 
     if(alloc) then
@@ -105,11 +105,11 @@ contains
        if(MPI_RANK /= root_rank) then
           select case (type)
           case (EVOL_TYPE)
-             allocate(model_evol_t::cf)
+             allocate(model_evol_t::ml)
           case (POLY_TYPE)
-             allocate(model_poly_t::cf)
+             allocate(model_poly_t::ml)
           case(HOM_TYPE)
-             allocate(model_hom_t::cf)
+             allocate(model_hom_t::ml)
           case default
              $ABORT(Unsupported type)
           end select

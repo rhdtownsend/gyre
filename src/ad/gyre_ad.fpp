@@ -27,7 +27,7 @@ program gyre_ad
 
   use gyre_version
   use gyre_model
-  $if($MPI)
+  $if ($MPI)
   use gyre_model_mpi
   $endif
   use gyre_oscpar
@@ -35,8 +35,8 @@ program gyre_ad
   use gyre_gridpar
   use gyre_scanpar
   use gyre_bvp
-  use gyre_bvp_ad
-  use gyre_bvp_rad
+  use gyre_ad_bvp
+  use gyre_rad_bvp
   use gyre_search
   use gyre_mode
   use gyre_input
@@ -77,7 +77,7 @@ program gyre_ad
 
   call set_log_level($str($LOG_LEVEL))
 
-  if(check_log_level('INFO')) then
+  if (check_log_level('INFO')) then
 
      write(OUTPUT_UNIT, 100) form_header('gyre_ad ['//TRIM(version)//']', '=')
 100  format(A)
@@ -96,7 +96,7 @@ program gyre_ad
 
   ! Process arguments
 
-  if(MPI_RANK == 0) then
+  if (MPI_RANK == 0) then
 
      call parse_args(filename)
      
@@ -112,7 +112,7 @@ program gyre_ad
 
   end if
 
-  $if($MPI)
+  $if ($MPI)
   call bcast_constants(0)
   call bcast_alloc(x_ml, 0)
   call bcast_alloc(ml, 0)
@@ -129,7 +129,7 @@ program gyre_ad
 
   op_loop : do i = 1, SIZE(op)
 
-     if(check_log_level('INFO')) then
+     if (check_log_level('INFO')) then
 
         write(OUTPUT_UNIT, 100) form_header('Mode Search', '=')
 
@@ -166,12 +166,12 @@ program gyre_ad
 
      ! Set up bp
 
-     if(ALLOCATED(bp)) deallocate(bp)
+     if (ALLOCATED(bp)) deallocate(bp)
 
-     if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(bp, SOURCE=bvp_rad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+     if (op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
+        allocate(bp, SOURCE=rad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      else
-        allocate(bp, SOURCE=bvp_ad_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(bp, SOURCE=ad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
 
      ! Find modes
@@ -190,7 +190,7 @@ program gyre_ad
 
   ! Write output
  
-  if(MPI_RANK == 0) then
+  if (MPI_RANK == 0) then
      call write_data(unit, md_all)
   endif
 

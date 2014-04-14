@@ -554,7 +554,7 @@ contains
 
   function omega_im_ (this) result (omega_im)
 
-    use gyre_model_evol
+    use gyre_evol_model
 
     class(mode_t), intent(in)     :: this
     real(WP)                      :: omega_im
@@ -566,7 +566,7 @@ contains
     ! function
 
     select type (ml => This%ml)
-    class is (model_evol_t)
+    class is (evol_model_t)
        t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
     class default

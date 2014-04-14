@@ -22,10 +22,11 @@ module gyre_famdl_file
   ! Uses
 
   use core_kinds
+  use core_order
 
   use gyre_constants
   use gyre_model
-  use gyre_model_evol
+  use gyre_evol_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -38,37 +39,38 @@ module gyre_famdl_file
 
   private
 
-  public :: read_famdl_file
+  public :: read_famdl_model
 
   ! Procedures
 
 contains
 
-  subroutine read_famdl_file (file, deriv_type, data_format, ml, x)
+  subroutine read_famdl_model (file, deriv_type, data_format, ml, x)
 
-    character(LEN=*), intent(in)                 :: file
-    character(LEN=*), intent(in)                 :: deriv_type
-    character(LEN=*), intent(in)                 :: data_format
-    type(model_evol_t), intent(out)              :: ml
+    character(*), intent(in)                     :: file
+    character(*), intent(in)                     :: deriv_type
+    character(*), intent(in)                     :: data_format
+    type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
-    character(LEN=:), allocatable :: data_format_
-    integer                       :: unit
-    integer                       :: nmod
-    integer                       :: n
-    integer                       :: ivar
-    real(WP), allocatable         :: glob(:)
-    real(WP), allocatable         :: var(:,:)
-    real(WP)                      :: M_star
-    real(WP)                      :: R_star
-    real(WP)                      :: L_star
-    real(WP), allocatable         :: x_(:)
-    real(WP), allocatable         :: c_1(:)
-    real(WP), allocatable         :: V_g(:)
-    real(WP), allocatable         :: Gamma_1(:) 
-    real(WP), allocatable         :: As(:) 
-    real(WP), allocatable         :: U(:)
-    logical                       :: add_center
+    character(:), allocatable :: data_format_
+    integer                   :: unit
+    integer                   :: nmod
+    integer                   :: n
+    integer                   :: ivar
+    real(WP), allocatable     :: glob(:)
+    real(WP), allocatable     :: var(:,:)
+    integer, allocatable      :: ind(:)
+    real(WP)                  :: M_star
+    real(WP)                  :: R_star
+    real(WP)                  :: L_star
+    real(WP), allocatable     :: x_(:)
+    real(WP), allocatable     :: c_1(:)
+    real(WP), allocatable     :: V_g(:)
+    real(WP), allocatable     :: Gamma_1(:) 
+    real(WP), allocatable     :: As(:) 
+    real(WP), allocatable     :: U(:)
+    logical                   :: add_center
 
     if(data_format /= '') then
        data_format_ = data_format
@@ -92,7 +94,7 @@ contains
 
     if(check_log_level('INFO')) then
        write(OUTPUT_UNIT, 120) 'Initial points :', n
-120    format(2X,A,1X,I0)
+120    format(3X,A,1X,I0)
     endif
 
     ! Read the data
@@ -103,6 +105,21 @@ contains
     read(unit, data_format_) glob, var
 
     close(unit)
+
+    ind = unique_indices(var(1,:))
+
+    if (SIZE(ind) < n) then
+
+       if(check_log_level('WARN')) then
+          write(OUTPUT_UNIT, 110) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
+130       format('!!',1X,A)
+       endif
+
+       n = SIZE(var, 2)
+
+    endif
+       
+    var = var(:,ind)
 
     M_star = glob(1)
     R_star = glob(2)
@@ -119,12 +136,12 @@ contains
     add_center = x_(1) /= 0._WP
 
     if(add_center .AND. check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Adding central point'
+       write(OUTPUT_UNIT, 120) 'Adding central point'
     endif
 
     ! Initialize the model
 
-    ml = model_evol_t(M_star, R_star, L_star, x_, V_g*Gamma_1, As, U, c_1, Gamma_1, &
+    ml = evol_model_t(M_star, R_star, L_star, x_, V_g*Gamma_1, As, U, c_1, Gamma_1, &
                       deriv_type, add_center)
 
     ! Set up the grid
@@ -141,6 +158,6 @@ contains
 
     return
 
-  end subroutine read_famdl_file
+  end subroutine read_famdl_model
 
 end module gyre_famdl_file

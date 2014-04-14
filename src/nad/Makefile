@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=gyre_nad
+TARGETS=gyre_nad gyre_nad_map
 
 # Flags
 

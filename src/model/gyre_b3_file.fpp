@@ -26,7 +26,7 @@ module gyre_b3_file
 
   use gyre_constants
   use gyre_model
-  use gyre_model_evol
+  use gyre_evol_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -39,17 +39,17 @@ module gyre_b3_file
 
   private
 
-  public :: read_b3_file
+  public :: read_b3_model
 
   ! Procedures
 
 contains
 
-  subroutine read_b3_file (file, deriv_type, ml, x)
+  subroutine read_b3_model (file, deriv_type, ml, x)
 
-    character(LEN=*), intent(in)                 :: file
-    character(LEN=*), intent(in)                 :: deriv_type
-    type(model_evol_t), intent(out)              :: ml
+    character(*), intent(in)                     :: file
+    character(*), intent(in)                     :: deriv_type
+    type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
     type(hgroup_t)        :: hg
@@ -80,7 +80,7 @@ contains
     real(WP), allocatable :: delta(:)
     logical               :: add_center
 
-    ! Read the model from the B3-format file
+    ! Read data from the B3-format file
 
     if(check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from B3 file', TRIM(file)
@@ -149,7 +149,7 @@ contains
 
     ! Initialize the model
 
-    ml = model_evol_t(M_star, R_star, L_star, r, m, p, rho, T, &
+    ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
                       nabla, kappa, kappa_rho, kappa_T, &
                       epsilon, epsilon_rho, epsilon_T, &
@@ -169,6 +169,6 @@ contains
 
     return
 
-  end subroutine read_b3_file
+  end subroutine read_b3_model
 
 end module gyre_b3_file
