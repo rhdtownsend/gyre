@@ -125,7 +125,7 @@ module gyre_evol_model
      procedure, public :: attach_cache => attach_cache_
      procedure, public :: detach_cache => detach_cache_
      procedure, public :: fill_cache => fill_cache_
-     procedure, public :: regularize => regularize_
+!     procedure, public :: regularize => regularize_
   end type evol_model_t
  
   ! Interfaces
@@ -678,80 +678,80 @@ contains
 
   end function prep_center_
 
-!****
+! !****
 
-  subroutine regularize_ (this)
+!   subroutine regularize_ (this)
 
-    class(evol_model_t), intent(inout) :: this
+!     class(evol_model_t), intent(inout) :: this
 
-    real(WP), allocatable :: x(:)
-    real(WP), allocatable :: V(:)
-    real(WP), allocatable :: As(:)
-    real(WP), allocatable :: U(:)
-    real(WP), allocatable :: c_1(:)
-    real(WP), allocatable :: Gamma_1(:)
-    integer               :: n
-    real(WP), allocatable :: r(:)
-    real(WP), allocatable :: dlnrho_dlnr(:)
-    real(WP), allocatable :: lnrho(:)
-    real(WP), allocatable :: rho(:)
-    real(WP), allocatable :: m(:)
+!     real(WP), allocatable :: x(:)
+!     real(WP), allocatable :: V(:)
+!     real(WP), allocatable :: As(:)
+!     real(WP), allocatable :: U(:)
+!     real(WP), allocatable :: c_1(:)
+!     real(WP), allocatable :: Gamma_1(:)
+!     integer               :: n
+!     real(WP), allocatable :: r(:)
+!     real(WP), allocatable :: dlnrho_dlnr(:)
+!     real(WP), allocatable :: lnrho(:)
+!     real(WP), allocatable :: rho(:)
+!     real(WP), allocatable :: m(:)
 
-    ! Regularize the mechanical structure coefficients
+!     ! Regularize the mechanical structure coefficients
 
-    x = this%sp(J_V)%x
+!     x = this%sp(J_V)%x
 
-    V = this%sp(J_V)%y
-    As = this%sp(J_AS)%y
-    U = this%sp(J_U)%y
-    c_1 = this%sp(J_C_1)%y
-    Gamma_1 = this%sp(J_GAMMA_1)%y
+!     V = this%sp(J_V)%y
+!     As = this%sp(J_AS)%y
+!     U = this%sp(J_U)%y
+!     c_1 = this%sp(J_C_1)%y
+!     Gamma_1 = this%sp(J_GAMMA_1)%y
 
-    ! Do the regularization
+!     ! Do the regularization
 
-    ! First, reconstruct the density
+!     ! First, reconstruct the density
 
-    n = SIZE(x)
+!     n = SIZE(x)
 
-    r = x*this%R_star
+!     r = x*this%R_star
 
-    dlnrho_dlnr = -V/Gamma_1 - As
+!     dlnrho_dlnr = -V/Gamma_1 - As
 
-    allocate(lnrho(n))
+!     allocate(lnrho(n))
 
-    lnrho(1) = LOG(this%rho_c)
-    lnrho(2:) = lnrho(1) + integ(LOG(r(2:)), dlnrho_dlnr(2:), 'MONO')
+!     lnrho(1) = LOG(this%rho_c)
+!     lnrho(2:) = lnrho(1) + integ(LOG(r(2:)), dlnrho_dlnr(2:), 'MONO')
 
-    rho = EXP(lnrho)
+!     rho = EXP(lnrho)
 
-    ! Now reconstruct the mass
+!     ! Now reconstruct the mass
 
-    m = integ(r, 4._WP*PI*r**2*rho, 'MONO', dy_dx_a=0._WP)
+!     m = integ(r, 4._WP*PI*r**2*rho, 'MONO', dy_dx_a=0._WP)
 
-    ! Set c_1 and U
+!     ! Set c_1 and U
 
-    where(r /= 0._WP)
-       U = 4._WP*PI*rho*r**3/m
-       c_1 = (r/this%R_star)**3/(m/MAXVAL(m))
-    elsewhere
-       U = 3._WP
-       c_1 = 3._WP*(MAXVAL(m)/this%R_star**3)/(4._WP*PI*rho)
-    end where
+!     where(r /= 0._WP)
+!        U = 4._WP*PI*rho*r**3/m
+!        c_1 = (r/this%R_star)**3/(m/MAXVAL(m))
+!     elsewhere
+!        U = 3._WP
+!        c_1 = 3._WP*(MAXVAL(m)/this%R_star**3)/(4._WP*PI*rho)
+!     end where
 
-    ! Update the model
+!     ! Update the model
 
-    !$OMP PARALLEL SECTIONS
-    !$OMP SECTION
-    call this%set_sp_(x, U, 'MONO', J_U)
-    !$OMP SECTION
-    call this%set_sp_(x, c_1, 'MONO', J_C_1)
-    !$OMP END PARALLEL SECTIONS
+!     !$OMP PARALLEL SECTIONS
+!     !$OMP SECTION
+!     call this%set_sp_(x, U, 'MONO', J_U)
+!     !$OMP SECTION
+!     call this%set_sp_(x, c_1, 'MONO', J_C_1)
+!     !$OMP END PARALLEL SECTIONS
 
-    ! Finish
+!     ! Finish
 
-    return
+!     return
 
-  end subroutine regularize_
+!   end subroutine regularize_
 
 !****
 

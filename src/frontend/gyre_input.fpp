@@ -182,9 +182,9 @@ contains
           $ABORT(Invalid file_format)
        end select
 
-       if (regularize) then
-          call ec%regularize()
-       endif
+!       if (regularize) then
+!          call ec%regularize()
+!       endif
 
        allocate(ml, SOURCE=ec)
 
