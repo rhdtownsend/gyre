@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass[fleqn]{article}
 
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -50,25 +50,64 @@
 
 \begin{document}
 
-\section*{Variables}
+%%% DZIEM %%%%
+
+\section*{DZIEM Formulation}
+
+\subsection*{Radial Adiabatic}
+
+\subsubsection*{Variables}
+
+\begin{align*}
+x     &= \frac{r}{\Rstar} \\
+y_{1} &= x^{2}\, \frac{\xi_{r}}{r} \\
+y_{2} &= x^{2}\, \frac{1}{gr} \left( \frac{p'}{\rho} \right) \\
+\end{align*}
+
+\subsubsection*{Differential Equations}
+
+\begin{align*}
+x \frac{\diff y_{1}}{\diff x} &=
+\left(\Vg - 1 \right) y_{1} +
+- \Vg y_{2} \\
+x \frac{\diff y_{2}}{\diff x} &=
+(c_{1} \omega^{2} + U - \As ) y_{1} +
+(3 - U + \As) y_{2}
+\end{align*}
+
+\subsubsection*{Boundary Conditions}
+
+\begin{equation*}
+\begin{aligned}
+y_{1} &= 0
+\end{aligned}
+\text{as}\ x \rightarrow 0
+\end{equation*}
+
+\begin{equation*}
+\begin{aligned}
+y_{1} - y_{2} &= 0
+\end{aligned}
+\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
+\end{equation*}
+
+%%
+
+\newpage
+
+\subsection*{Non-Radial Adiabatic}
+
+\subsubsection*{Variables}
 
 \begin{align*}
 x     &= \frac{r}{\Rstar} \\
 y_{1} &= x^{2-\ell}\, \frac{\xi_{r}}{r} \\
-y_{2} &= x^{2-\ell}\, \frac{1}{gr} \left( \frac{p'}{\rho} + \Phi' \right)\\
-y_{3} &= x^{2-\ell}\, \frac{\Phi'}{gr}\\
-y_{4} &= x^{2-\ell}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r}\\
-y_{5} &= x^{2-\ell}\, \frac{\delta S}{c_{p}}\\
-y_{6} &= x^{-1-\ell}\, \frac{\delta \Lrad}{\Lstar}
+y_{2} &= x^{2-\ell}\, \frac{1}{gr} \left( \frac{p'}{\rho} + \Phi' \right) \\
+y_{3} &= x^{2-\ell}\, \frac{\Phi'}{gr} \\
+y_{4} &= x^{2-\ell}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r} \\
 \end{align*}
 
-%%
-
-\section*{Differential Equations}
-
-%%
-
-\subsection*{Adiabatic}
+\subsubsection*{Differential Equations}
 
 \begin{align*}
 x \frac{\diff y_{1}}{\diff x} &=
@@ -86,10 +125,120 @@ x \frac{\diff y_{4}}{\diff x} &=
 \As U y_{1} +
 \Vg U y_{2} +
 \left[ \ell(\ell+1) - \Vg U \right] y_{3} -
-(U + \ell - 2) y_{4}
+(U + \ell - 2) y_{4} \\
 \end{align*}
 
+\subsubsection*{Boundary Conditions}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
+\ell y_{3} - y_{4} &= 0
+\end{aligned}
+\right\}
+\text{as}\ x \rightarrow 0
+\end{equation*}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+y_{1} - y_{2} + y_{3} &= 0 \\
+U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0
+\end{aligned}
+\right\}
+\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
+\end{equation*}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
+y_{2} +
+\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
+(\ell + 1) y_{3} + y_{4} &= 0
+\end{aligned}
+\right\} 
+\text{as}\ x \rightarrow 1 \qquad \text{(Dziembowski)}
+\end{equation*}
+
 %%
+
+%% \newpage
+
+%% \subsection*{Radial Non-Adiabatic}
+
+%% \subsubsection*{Variables}
+
+%% \begin{align*}
+%% x     &= \frac{r}{\Rstar} \\
+%% y_{1} &= x^{2}\, \frac{\xi_{r}}{r} \\
+%% y_{2} &= x^{2}\, \frac{1}{gr} \left( \frac{p'}{\rho} \right)\\
+%% y_{5} &= x^{2}\, \frac{\delta S}{c_{p}}\\
+%% y_{6} &= x^{-1}\, \frac{\delta \Lrad}{\Lstar}
+%% \end{align*}
+
+%% \subsubsection*{Differential Equations}
+
+%% \begin{align*}
+%% x \frac{\diff y_{1}}{\diff x} &=
+%% \left(\Vg - 1 \right) y_{1} - \Vg y_{2} +
+%% \delta y_{5} \\
+%% x \frac{\diff y_{2}}{\diff x} &=
+%% (c_{1} \omega^{2} + U - \As ) y_{1} +
+%% (3 - U + \As ) y_{2} +
+%% \delta y_{5} \\
+%% x \frac{\diff y_{5}}{\diff x} &=
+%% V \left[ \nabad (U - c_{1}\omega^{2}) - U - 4 (\nabad - \nabla) + \ckap \right] y_{1} - V \ckap y_{2} + 
+%% \left[ V \nabla (4 - \kapS) + 2 \right] y_{5} -
+%% \frac{V \nabla}{\crad} y_{6} \\
+%% x \frac{\diff y_{6}}{\diff x} &=
+%% - V \cepsad y_{1} +
+%% V \cepsad y_{2} + \left[ \cepsS - \ii \omega \cthm\right] y_{5} -
+%% y_{6}
+%% \end{align*}
+
+%% \subsubsection*{Boundary Conditions}
+
+%% \begin{equation*}
+%% \left.
+%% \begin{aligned}
+%% y_{1} &= 0 \\
+%% y_{5} &= 0
+%% \end{aligned}
+%% \right\}
+%% \text{as}\ x \rightarrow 0
+%% \end{equation*}
+
+%% \begin{equation*}
+%% \left.
+%% \begin{aligned}
+%% y_{1} - y_{2} &= 0 \\
+%% (2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
+%% \end{aligned}
+%% \right\}
+%% \text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
+%% \end{equation*}
+
+%% %%
+
+\newpage
+
+\subsection*{Non-Radial Non-Adiabatic}
+
+\subsubsection*{Variables}
+
+\begin{align*}
+x     &= \frac{r}{\Rstar} \\
+y_{1} &= x^{2-\ell}\, \frac{\xi_{r}}{r} \\
+y_{2} &= x^{2-\ell}\, \frac{1}{gr} \left( \frac{p'}{\rho} + \Phi' \right)\\
+y_{3} &= x^{2-\ell}\, \frac{\Phi'}{gr}\\
+y_{4} &= x^{2-\ell}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r}\\
+y_{5} &= x^{2-\ell}\, \frac{\delta S}{c_{p}}\\
+y_{6} &= x^{-1-\ell}\, \frac{\delta \Lrad}{\Lstar}
+\end{align*}
+
+\subsubsection*{Differential Equations}
 
 \subsection*{Non-Adiabatic}
 
@@ -130,58 +279,17 @@ x \frac{\diff y_{6}}{\diff x} &=
 \left[ 1 + \ell \right] y_{6}
 \end{align*}
 
-%%
-
-\section*{Boundary Conditions}
-
-\subsection*{Adiabatic}
-
-\subsubsection*{Inner}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
-\ell y_{3} - y_{4} &= 0
-\end{aligned}
-\right\}
-\end{equation*}
-
-\subsubsection*{Outer}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-y_{1} - y_{2} + y_{3} &= 0 \\
-U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0
-\end{aligned}
-\right\} \qquad \text{(Zero)}
-\end{equation*}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
-y_{2} +
-\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
-(\ell + 1) y_{3} + y_{4} &= 0
-\end{aligned}
-\right\} \qquad \text{(Dziembowski)}
-\end{equation*}
-
-\subsection*{Non-Adiabatic}
-
-\subsubsection*{Inner}
+\subsubsection*{Boundary Conditions}
 
 \begin{equation*}
 \left.
 \begin{aligned}
 c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
 \ell y_{3} - y_{4} &= 0 \\
-\left[ (c_{1} \omega^{2} - \ell) \nabad + (\ell-3) \nabla \right] y_{1} -
-\ell \nabad y_{3} + \frac{\ell}{V} x^{2} y_{5} + \frac{\nabla}{\crad} y_{6} &= 0
+y_{5} &= 0
 \end{aligned}
 \right\}
+\text{as}\ x \rightarrow 0
 \end{equation*}
 
 \subsubsection*{Outer}
@@ -193,7 +301,8 @@ y_{1} - y_{2} + y_{3} &= 0 \\
 U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0 \\
 (2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
 \end{aligned}
-\right\} \qquad \text{(Zero)}
+\right\}
+\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
 \end{equation*}
 
 \begin{equation*}
@@ -205,10 +314,324 @@ y_{2} +
 (\ell + 1) y_{3} + y_{4} &= 0 \\
 (2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
 \end{aligned}
-\right\} \qquad \text{(Dziembowski)}
+\right\}
+\text{as}\ x \rightarrow 1 \qquad \text{(Dziembowski)}
+\end{equation*}
+
+%%%% JCD FORMULATION %%%%
+
+\newpage
+
+\section*{JCD Formulation}
+
+\subsection*{Radial Adiabatic}
+
+\subsubsection*{Variables}
+
+\begin{align*}
+x     &= \frac{r}{\Rstar} \\
+y_{1} &= x^{2}\, \frac{\xi_{r}}{r} \\
+y_{2} &= x^{2}\, \frac{1}{\sigma^{2} r^{2}} \left( \frac{p'}{\rho} \right) \\
+\end{align*}
+
+\subsubsection*{Differential Equations}
+
+\begin{align*}
+x \frac{\diff y_{1}}{\diff x} &=
+\left(\Vg - 1 \right) y_{1} +
+- \Vg c_{1} \omega^{2} y_{2} \\
+x \frac{\diff y_{2}}{\diff x} &=
+\left(1 + \frac{U - \As}{c_{1} \omega^{2}} \right) y_{1} +
+\As y_{2}
+\end{align*}
+
+\subsubsection*{Boundary Conditions}
+
+\begin{equation*}
+\begin{aligned}
+y_{1} &= 0
+\end{aligned}
+\text{as}\ x \rightarrow 0
+\end{equation*}
+
+\begin{equation*}
+\begin{aligned}
+y_{1} - \frac{y_{2}}{c_{1} \omega^{2}} &= 0
+\end{aligned}
+\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
 \end{equation*}
 
 %%
+
+\newpage
+
+\subsection*{Non-Radial Adiabatic}
+
+\subsubsection*{Variables}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+x     &= \frac{r}{\Rstar} \\
+y_{1} &= x^{2-\ell}\, \frac{\xi_{r}}{r} \\
+y_{2} &= x^{2-\ell}\, \frac{\ell(\ell+1)}{r^{2} \sigma^{2}} \left( \frac{p'}{\rho} + \Phi' \right) \\
+y_{3} &= - x^{2-\ell}\, \frac{\Phi'}{gr} \\
+y_{4} &= - x^{2-\ell}\, r \frac{\diff}{\diff r} \left( \frac{\Phi'}{g r} \right) \\
+\end{aligned}
+\quad \right\} \ell \neq 0
+\end{equation*}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+x     &= \frac{r}{\Rstar} \\
+y_{1} &= x^{2}\, \frac{\xi_{r}}{r} \\
+y_{2} &= x^{2}\, \frac{1}{r^{2} \sigma^{2}} \left( \frac{p'}{\rho} \right) \\
+y_{3} &= - x^{2}\, \frac{\Phi'}{gr} \\
+y_{4} &= - x^{2}\, r \frac{\diff}{\diff r} \left( \frac{\Phi'}{g r} \right) \\
+\end{aligned}
+\quad \right\} \ell = 0
+\end{equation*}
+
+\subsubsection*{Differential Equations}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+x \frac{\diff y_{1}}{\diff x} &=
+\left(\Vg - 1 - \ell \right) y_{1} +
+\left(1 - \Vg \frac{c_{1} \omega^{2}}{\ell(\ell+1)} \right) y_{2} -
+\Vg y_{3} \\
+x \frac{\diff y_{2}}{\diff x} &=
+\left( \ell(\ell+1) - \frac{\ell(\ell+1)}{c_{1} \omega^{2}} \As \right) y_{1} +
+(\As - \ell) y_{2} +
+\frac{\ell(\ell+1)}{c_{1} \omega^{2}} \As y_{3} \\
+x \frac{\diff y_{3}}{\diff x} &=
+(2 - \ell) y_{3} + y_{4} \\
+x \frac{\diff y_{4}}{\diff x} &=
+- \As U y_{1} +
+- \Vg U \frac{c_{1} \omega^{2}}{\ell(\ell+1)} y_{2} +
+\left[ \ell(\ell+1) + U(\As - 2) \right] y_{3} +
+( 3 - 2U - \ell ) y_{4} \\
+\end{aligned}
+\quad \right\} \ell \neq 0
+\end{equation*}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+x \frac{\diff y_{1}}{\diff x} &=
+\left(\Vg - 1 \right) y_{1} +
+- \Vg c_{1} \omega^{2} y_{2} -
+\Vg y_{3} \\
+x \frac{\diff y_{2}}{\diff x} &=
+(1 - \frac{\As}{c_{1} \omega^{2}} ) y_{1} +
+\As y_{2} +
+\frac{\As}{c_{1} \omega^{2}} y_{3} \\
+x \frac{\diff y_{3}}{\diff x} &=
+2 y_{3} + y_{4} \\
+x \frac{\diff y_{4}}{\diff x} &=
+\As U y_{1} +
+\Vg U c_{1} \omega^{2} y_{2} +
+U (\As - 2) y_{3} +
+(3 - 2 U) y_{4} \\
+\end{aligned}
+\quad \right\} \ell = 0
+\end{equation*}
+
+\subsubsection*{Boundary Conditions}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
+\ell y_{3} - y_{4} &= 0
+\end{aligned}
+\right\}
+\text{as}\ x \rightarrow 0
+\end{equation*}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+y_{1} - y_{2} + y_{3} &= 0 \\
+U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0
+\end{aligned}
+\right\}
+\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
+\end{equation*}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
+y_{2} +
+\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
+(\ell + 1) y_{3} + y_{4} &= 0
+\end{aligned}
+\right\} 
+\text{as}\ x \rightarrow 1 \qquad \text{(Dziembowski)}
+\end{equation*}
+
+%%
+
+%% \newpage
+
+%% \subsection*{Radial Non-Adiabatic}
+
+%% \subsubsection*{Variables}
+
+%% \begin{align*}
+%% x     &= \frac{r}{\Rstar} \\
+%% y_{1} &= x^{2}\, \frac{\xi_{r}}{r} \\
+%% y_{2} &= x^{2}\, \frac{1}{gr} \left( \frac{p'}{\rho} \right)\\
+%% y_{5} &= x^{2}\, \frac{\delta S}{c_{p}}\\
+%% y_{6} &= x^{-1}\, \frac{\delta \Lrad}{\Lstar}
+%% \end{align*}
+
+%% \subsubsection*{Differential Equations}
+
+%% \begin{align*}
+%% x \frac{\diff y_{1}}{\diff x} &=
+%% \left(\Vg - 1 \right) y_{1} - \Vg y_{2} +
+%% \delta y_{5} \\
+%% x \frac{\diff y_{2}}{\diff x} &=
+%% (c_{1} \omega^{2} + U - \As ) y_{1} +
+%% (3 - U + \As ) y_{2} +
+%% \delta y_{5} \\
+%% x \frac{\diff y_{5}}{\diff x} &=
+%% V \left[ \nabad (U - c_{1}\omega^{2}) - U - 4 (\nabad - \nabla) + \ckap \right] y_{1} - V \ckap y_{2} + 
+%% \left[ V \nabla (4 - \kapS) + 2 \right] y_{5} -
+%% \frac{V \nabla}{\crad} y_{6} \\
+%% x \frac{\diff y_{6}}{\diff x} &=
+%% - V \cepsad y_{1} +
+%% V \cepsad y_{2} + \left[ \cepsS - \ii \omega \cthm\right] y_{5} -
+%% y_{6}
+%% \end{align*}
+
+%% \subsubsection*{Boundary Conditions}
+
+%% \begin{equation*}
+%% \left.
+%% \begin{aligned}
+%% y_{1} &= 0 \\
+%% y_{5} &= 0
+%% \end{aligned}
+%% \right\}
+%% \text{as}\ x \rightarrow 0
+%% \end{equation*}
+
+%% \begin{equation*}
+%% \left.
+%% \begin{aligned}
+%% y_{1} - y_{2} &= 0 \\
+%% (2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
+%% \end{aligned}
+%% \right\}
+%% \text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
+%% \end{equation*}
+
+%% %%
+
+\newpage
+
+\subsection*{Non-Radial Non-Adiabatic}
+
+\subsubsection*{Variables}
+
+\begin{align*}
+x     &= \frac{r}{\Rstar} \\
+y_{1} &= x^{2-\ell}\, \frac{\xi_{r}}{r} \\
+y_{2} &= x^{2-\ell}\, \frac{1}{gr} \left( \frac{p'}{\rho} + \Phi' \right)\\
+y_{3} &= x^{2-\ell}\, \frac{\Phi'}{gr}\\
+y_{4} &= x^{2-\ell}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r}\\
+y_{5} &= x^{2-\ell}\, \frac{\delta S}{c_{p}}\\
+y_{6} &= x^{-1-\ell}\, \frac{\delta \Lrad}{\Lstar}
+\end{align*}
+
+\subsubsection*{Differential Equations}
+
+\subsection*{Non-Adiabatic}
+
+\begin{align*}
+x \frac{\diff y_{1}}{\diff x} &=
+\left(\Vg - 1 - \ell \right) y_{1} +
+\left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - \Vg \right) y_{2} +
+\Vg y_{3} +
+\delta y_{5} \\
+x \frac{\diff y_{2}}{\diff x} &=
+(c_{1} \omega^{2} - \As ) y_{1} +
+(3 - U + \As - \ell) y_{2} -
+\As y_{3} +
+\delta y_{5} \\
+x \frac{\diff y_{3}}{\diff x} &=
+(3 - U - \ell) y_{3} +
+y_{4} \\
+x \frac{\diff y_{4}}{\diff x} &=
+\As U y_{1} +
+\Vg U y_{2} +
+\left[ \ell(\ell+1) - \Vg U \right] y_{3} -
+(U + \ell - 2) y_{4}
+- \delta U y_{5} \\
+x \frac{\diff y_{5}}{\diff x} &=
+V \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \ckap \right] y_{1} + 
+V \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} (\nabad - \nabla) - \ckap \right] y_{2} + \mbox{} \\
+& 
+V \ckap y_{3} + 
+V \nabad y_{4} + 
+\left[ V \nabla (4 - \kapS) + 2 - \ell \right] y_{5} -
+\frac{V \nabla}{\crad} y_{6} \\
+x \frac{\diff y_{6}}{\diff x} &=
+\left[ \ell(\ell+1)\left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} +
+\left[ V \cepsad - \ell(\ell+1)\crad \left( \frac{\nabad}{\nabla} - \frac{3 + \crad'}{c_{1}\omega^{2}} \right) \right] y_{2} + \mbox{} \\
+&
+\left[ \ell(\ell+1) \frac{\nabad}{\nabla} \crad - V \cepsad \right] y_{3} +
+\left[ \cepsS - \frac{\ell(\ell+1)\crad}{\nabla V} - \ii \omega \cthm\right] y_{5} -
+\left[ 1 + \ell \right] y_{6}
+\end{align*}
+
+\subsubsection*{Boundary Conditions}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
+\ell y_{3} - y_{4} &= 0 \\
+y_{5} &= 0
+\end{aligned}
+\right\}
+\text{as}\ x \rightarrow 0
+\end{equation*}
+
+\subsubsection*{Outer}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+y_{1} - y_{2} + y_{3} &= 0 \\
+U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0 \\
+(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
+\end{aligned}
+\right\}
+\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
+\end{equation*}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
+y_{2} +
+\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
+(\ell + 1) y_{3} + y_{4} &= 0 \\
+(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
+\end{aligned}
+\right\}
+\text{as}\ x \rightarrow 1 \qquad \text{(Dziembowski)}
+\end{equation*}
+
+%%%% STRUCTURE COEFFS %%%%
+
+\newpage
 
 \section*{Structure Coefficients}
 
@@ -229,7 +652,7 @@ c_1 = \frac{r^{3}}{\Rstar^{3}} \frac{\Mstar}{M_{r}} \qquad
 \nabad = \left( \frac{\partial \ln T}{\partial \ln p} \right)_{S} \qquad
 \delta = - \left( \frac{\partial \ln \rho}{\partial \ln T} \right)_{p} \qquad \\
 \crad = x^{-3} \frac{\Lrad}{\Lstar} \qquad
-\crad' = \frac{\diff \ln \crad}{\diff \ln r} \qquad
+\crad' = \frac{\diff \ln \crad}{\diff \ln r} \\
 \cepsad = x^{-3} \frac{4\pi r^{3} \epsad \rho}{\Lstar} \qquad
 \cepsS = x^{-3} \frac{4\pi r^{3} \epsS \rho}{\Lstar} \qquad
 \cthm = x^{-3} \frac{4\pi r^{3} c_{p} T \rho}{\Lstar} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \\
