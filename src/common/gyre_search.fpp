@@ -137,7 +137,9 @@ contains
 
     endif
 
-    write(OUTPUT_UNIT, *)
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, *)
+    endif
 
     ! Finish
 
