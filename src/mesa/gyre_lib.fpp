@@ -28,6 +28,7 @@ module gyre_lib
   use gyre_bvp
   use gyre_ad_bvp
   use gyre_rad_bvp
+  use gyre_nad_bvp
   use gyre_model
   use gyre_evol_model
   use gyre_mesa_file
@@ -204,10 +205,11 @@ contains
 
 !****
 
-  subroutine gyre_get_modes (l, file, user_sub, ipar, rpar, dummy)
+  subroutine gyre_get_modes (l, file, non_ad, user_sub, ipar, rpar)
 
     integer, intent(in)          :: l
     character(LEN=*), intent(in) :: file
+    logical, intent(in)          :: non_ad
     interface
        subroutine user_sub (md, ipar, rpar, retcode)
          import mode_t
@@ -220,7 +222,6 @@ contains
     end interface
     integer, intent(inout)  :: ipar(:)
     real(WP), intent(inout) :: rpar(:)
-    logical, optional, intent(in) :: dummy
 
     integer                      :: unit
     type(oscpar_t), allocatable  :: op(:)
@@ -234,7 +235,8 @@ contains
     type(gridpar_t), allocatable :: recon_gp_sel(:)
     type(scanpar_t), allocatable :: sp_sel(:)
     real(WP), allocatable        :: omega(:)
-    class(bvp_t), allocatable    :: bp
+    class(bvp_t), allocatable    :: ad_bp
+    class(bvp_t), allocatable    :: nad_bp
     type(mode_t), allocatable    :: md(:)
     integer                      :: j
     integer                      :: retcode
@@ -280,30 +282,51 @@ contains
           shoot_gp_sel%omega_a = MINVAL(omega)
           shoot_gp_sel%omega_b = MAXVAL(omega)
 
-          ! Set up bp
+          ! Set up the bvp's
+
+          if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
           if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-             allocate(bp, SOURCE=rad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+             allocate(ad_bp, SOURCE=rad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
           else
-             allocate(bp, SOURCE=ad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+             allocate(ad_bp, SOURCE=ad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+          endif
+
+          if (non_ad) then
+             allocate(nad_bp, SOURCE=nad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
           endif
 
           ! Find modes
 
-          call scan_search(bp, omega, md)
+          call scan_search(ad_bp, omega, md)
+
+          if (non_ad) call prox_search(nad_bp, md)
 
           $if ($GFORTRAN_PR57922)
-          select type (bp)
+
+          select type (ad_bp)
           type is (rad_bvp_t)
-             call bp%final()
+             call ad_bp%final()
           type is (ad_bvp_t)
-             call bp%final()
+             call ad_bp%final()
           class default
              $ABORT(Invalid type)
           end select
+
+          if (non_ad) then
+             select type (nad_bp)
+             type is (nad_bvp_t)
+                call nad_bp%final()
+             class default
+                $ABORT(Invalid type)
+             end select
+          endif
+
           $endif
 
-          if(ALLOCATED(bp)) deallocate(bp)
+          deallocate(ad_bp)
+          
+          if (non_ad) deallocate(nad_bp)
 
           ! Process the modes
 
