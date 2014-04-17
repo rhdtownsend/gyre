@@ -29,7 +29,7 @@ module gyre_version
 
   ! Parameters
 
-  character(LEN=*), parameter :: version = '3.1.1'
+  character(LEN=*), parameter :: version = '3.1.2'
 
   ! Access specifiers
 
