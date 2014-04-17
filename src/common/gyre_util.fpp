@@ -227,8 +227,8 @@ contains
       character(LEN=*), intent(in)    :: freq_units
       real(WP)                        :: freq_scale
 
-      real(WP) :: omega_c_cutoff_lo
-      real(WP) :: omega_c_cutoff_hi
+      real(WP) :: omega_cutoff_lo
+      real(WP) :: omega_cutoff_hi
 
       ! Calculate the scale factor to convert a dimensionless angular
       ! frequency to a dimensioned frequency
@@ -243,11 +243,11 @@ contains
       case('PER_DAY')
          freq_scale = 86400._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
       case('ACOUSTIC_CUTOFF')
-         call eval_cutoff_freqs(ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
-         freq_scale = 1._WP/omega_c_cutoff_hi
+         call eval_cutoff_freqs(ml, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+         freq_scale = 1._WP/omega_cutoff_hi
       case('GRAVITY_CUTOFF')
-         call eval_cutoff_freqs(ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
-         freq_scale = 1._WP/omega_c_cutoff_lo
+         call eval_cutoff_freqs(ml, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+         freq_scale = 1._WP/omega_cutoff_lo
       case default
          $ABORT(Invalid freq_units)
       end select
@@ -304,17 +304,19 @@ contains
 
  !****
 
-  subroutine eval_cutoff_freqs (ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+  subroutine eval_cutoff_freqs (ml, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
 
     class(model_t), intent(in) :: ml
     type(oscpar_t), intent(in) :: op
     real(WP), intent(in)       :: x_o
-    real(WP), intent(out)      :: omega_c_cutoff_lo
-    real(WP), intent(out)      :: omega_c_cutoff_hi
+    real(WP), intent(out)      :: omega_cutoff_lo
+    real(WP), intent(out)      :: omega_cutoff_hi
 
     real(WP) :: V_g
     real(WP) :: As
     real(WP) :: c_1
+    real(WP) :: omega_c_cutoff_lo
+    real(WP) :: omega_c_cutoff_hi
 
      ! Evaluate the cutoff frequencies
 
@@ -328,9 +330,13 @@ contains
      case ('UNNO')
         call eval_atmos_coeffs_unno(ml, x_o, V_g, As, c_1)
         call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+        omega_cutoff_lo = ml%omega(x_o, op%m, omega_c_cutoff_lo)
+        omega_cutoff_hi = ml%omega(x_o, op%m, omega_c_cutoff_hi)
      case('JCD')
         call eval_atmos_coeffs_jcd(ml, x_o, V_g, As, c_1)
         call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+        omega_cutoff_lo = ml%omega(x_o, op%m, omega_c_cutoff_lo)
+        omega_cutoff_hi = ml%omega(x_o, op%m, omega_c_cutoff_hi)
      case default
         $ABORT(Invalid outer_bound_type)
      end select

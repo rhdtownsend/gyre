@@ -42,39 +42,39 @@ module gyre_atmos
 
 contains
 
-  function atmos_wavenumber (V_g, As, c_1, omega_c, l) result (lambda)
+  function atmos_wavenumber (V_g, As, c_1, omega, l) result (lambda)
 
     real(WP)                :: V_g
     real(WP), intent(in)    :: As
     real(WP), intent(in)    :: c_1
-    complex(WP), intent(in) :: omega_c
+    complex(WP), intent(in) :: omega
     integer, intent(in)     :: l
     complex(WP)             :: lambda
 
-    real(WP)    :: omega_c_cutoff_lo
-    real(WP)    :: omega_c_cutoff_hi
+    real(WP)    :: omega_cutoff_lo
+    real(WP)    :: omega_cutoff_hi
     complex(WP) :: gamma
     complex(WP) :: sgamma
 
     ! Calculate the radial wavenumber in the atmosphere
 
-    if(AIMAG(omega_c) == 0._WP) then
+    if (AIMAG(omega) == 0._WP) then
 
        ! Calculate cutoff frequencies
 
-       call eval_atmos_cutoff_freqs(V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+       call eval_atmos_cutoff_freqs(V_g, As, c_1, l, omega_cutoff_lo, omega_cutoff_hi)
 
        ! Evaluate the wavenumber
 
-       gamma = -4._WP*V_g*c_1*(omega_c**2 - omega_c_cutoff_lo**2)*(omega_c**2 - omega_c_cutoff_hi**2)/omega_c**2
+       gamma = -4._WP*V_g*c_1*(omega**2 - omega_cutoff_lo**2)*(omega**2 - omega_cutoff_hi**2)/omega**2
 
-       if(ABS(REAL(omega_c)) > omega_c_cutoff_hi) then
+       if (ABS(REAL(omega)) > omega_cutoff_hi) then
 
           ! Acoustic waves
 
           lambda = 0.5_WP*((V_g + As - 2._WP) - SQRT(gamma))
 
-       elseif(ABS(REAL(omega_c)) < omega_c_cutoff_lo) then
+       elseif (ABS(REAL(omega)) < omega_cutoff_lo) then
 
           ! Gravity waves
 
@@ -92,15 +92,15 @@ contains
 
        ! Evaluate the wavenumber
 
-       gamma = (As - V_g + 4._WP)**2 + 4*(l*(l+1)/(c_1*omega_c**2) - V_g)*(c_1*omega_c**2 - As)
+       gamma = (As - V_g + 4._WP)**2 + 4*(l*(l+1)/(c_1*omega**2) - V_g)*(c_1*omega**2 - As)
        sgamma = SQRT(gamma)
 
-       if(AIMAG(omega_c) > 0._WP) then
+       if (AIMAG(omega) > 0._WP) then
 
           ! Decaying oscillations; choose the wave with diverging
           ! energy density (see Townsend 2000b)
 
-          if(REAL(sgamma) > 0._WP) then
+          if (REAL(sgamma) > 0._WP) then
              lambda = 0.5_WP*((V_g + As - 2._WP) + sgamma)
           else
              lambda = 0.5_WP*((V_g + As - 2._WP) - sgamma)
@@ -111,7 +111,7 @@ contains
           ! Growing oscillations; choose the wave with non-diverging
           ! energy density (see Townsend 2000b)
 
-          if(REAL(sgamma) > 0._WP) then
+          if (REAL(sgamma) > 0._WP) then
              lambda = 0.5_WP*((V_g + As - 2._WP) - sgamma)
           else
              lambda = 0.5_WP*((V_g + As - 2._WP) + sgamma)
@@ -129,14 +129,14 @@ contains
 
 !****
 
-  subroutine eval_atmos_cutoff_freqs (V_g, As, c_1, l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+  subroutine eval_atmos_cutoff_freqs (V_g, As, c_1, l, omega_cutoff_lo, omega_cutoff_hi)
 
     real(WP), intent(in)  :: V_g
     real(WP), intent(in)  :: As
     real(WP), intent(in)  :: c_1
     integer, intent(in)   :: l
-    real(WP), intent(out) :: omega_c_cutoff_lo
-    real(WP), intent(out) :: omega_c_cutoff_hi
+    real(WP), intent(out) :: omega_cutoff_lo
+    real(WP), intent(out) :: omega_cutoff_hi
 
     real(WP) :: a
     real(WP) :: b
@@ -148,10 +148,10 @@ contains
     b = ((As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1))*c_1
     c = -4._WP*l*(l+1)*As
 
-    omega_c_cutoff_lo = SQRT((-b + SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
-    omega_c_cutoff_hi = SQRT((-b - SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
+    omega_cutoff_lo = SQRT((-b + SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
+    omega_cutoff_hi = SQRT((-b - SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
     
-    $ASSERT(omega_c_cutoff_hi >= omega_c_cutoff_lo,Incorrect cutoff frequency ordering)
+    $ASSERT(omega_cutoff_hi >= omega_cutoff_lo,Incorrect cutoff frequency ordering)
 
     ! Finish
 

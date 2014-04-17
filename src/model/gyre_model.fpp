@@ -65,10 +65,14 @@ module gyre_model
      procedure(attach_cache_), deferred, public :: attach_cache
      procedure(detach_cache_), deferred, public :: detach_cache
      procedure(fill_cache_), deferred, public   :: fill_cache
-     procedure, public                          :: omega => omega_
-     procedure                                  :: omega_c_1_
-     procedure                                  :: omega_c_v_
-     generic, public                            :: omega_c => omega_c_1_, omega_c_v_
+     procedure                                  :: omega_r_
+     procedure                                  :: omega_c_
+     generic, public                            :: omega => omega_r_, omega_c_
+     procedure                                  :: omega_c_r_1_
+     procedure                                  :: omega_c_c_1_
+     procedure                                  :: omega_c_r_v_
+     procedure                                  :: omega_c_c_v_
+     generic, public                            :: omega_c => omega_c_r_1_, omega_c_c_1_, omega_c_r_v_, omega_c_c_v_
   end type model_t
 
   ! Interfaces
@@ -155,7 +159,27 @@ contains
 
 !****
 
-  function omega_ (this, x, m, omega_c) result (omega)
+  function omega_r_ (this, x, m, omega_c) result (omega)
+
+    class(model_t), intent(in) :: this
+    real(WP), intent(in)       :: x
+    integer, intent(in)        :: m
+    real(WP), intent(in)       :: omega_c
+    real(WP)                   :: omega
+
+    ! Calculate the intertial frequency from the co-rotating frequency
+
+    omega = REAL(this%omega(x, m, CMPLX(omega_c, KIND=WP)), WP)
+
+    ! Finish
+
+    return
+
+  end function omega_r_
+
+!****
+
+  function omega_c_ (this, x, m, omega_c) result (omega)
 
     class(model_t), intent(in) :: this
     real(WP), intent(in)       :: x
@@ -171,11 +195,51 @@ contains
 
     return
 
-  end function omega_
+  end function omega_c_
 
 !****
 
-  function omega_c_1_ (this, x, m, omega) result (omega_c)
+  function omega_c_r_1_ (this, x, m, omega) result (omega_c)
+
+    class(model_t), intent(in) :: this
+    real(WP), intent(in)       :: x
+    integer, intent(in)        :: m
+    real(WP), intent(in)       :: omega
+    real(WP)                   :: omega_c
+
+    ! Calculate the co-rotating frequency from the inertial frequency
+
+    omega_c = REAL(this%omega_c(x, m, CMPLX(omega, KIND=WP)), WP)
+
+    ! Finish
+
+    return
+
+  end function omega_c_r_1_
+
+!****
+
+  function omega_c_r_v_ (this, x, m, omega) result (omega_c)
+
+    class(model_t), intent(in) :: this
+    real(WP), intent(in)       :: x(:)
+    integer, intent(in)        :: m
+    real(WP), intent(in)       :: omega
+    real(WP)                   :: omega_c(SIZE(x))
+
+    ! Calculate the co-rotating frequency from the inertial frequency
+
+    omega_c = REAL(this%omega_c(x, m, CMPLX(omega, KIND=WP)), WP)
+
+    ! Finish
+
+    return
+
+  end function omega_c_r_v_
+
+!****
+
+  function omega_c_c_1_ (this, x, m, omega) result (omega_c)
 
     class(model_t), intent(in) :: this
     real(WP), intent(in)       :: x
@@ -191,11 +255,11 @@ contains
 
     return
 
-  end function omega_c_1_
+  end function omega_c_c_1_
 
 !****
 
-  function omega_c_v_ (this, x, m, omega) result (omega_c)
+  function omega_c_c_v_ (this, x, m, omega) result (omega_c)
 
     class(model_t), intent(in) :: this
     real(WP), intent(in)       :: x(:)
@@ -211,6 +275,6 @@ contains
 
     return
 
-  end function omega_c_v_
+  end function omega_c_c_v_
 
 end module gyre_model
