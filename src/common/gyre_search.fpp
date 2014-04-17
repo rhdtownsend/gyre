@@ -109,6 +109,8 @@ contains
 
     n_omega = SIZE(omega)
 
+    $ASSERT(n_omega > 2,At least two frequency points required)
+
     ! Sort the frequencies
 
     omega = omega(sort_indices(omega))

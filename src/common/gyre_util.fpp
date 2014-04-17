@@ -322,11 +322,11 @@ contains
 
      select case (op%outer_bound_type)
      case ('ZERO')
-        omega_c_cutoff_lo = 0._WP
-        omega_c_cutoff_hi = HUGE(0._WP)
+        omega_cutoff_lo = 0._WP
+        omega_cutoff_hi = HUGE(0._WP)
      case ('DZIEM')
-        omega_c_cutoff_lo = 0._WP
-        omega_c_cutoff_hi = HUGE(0._WP)
+        omega_cutoff_lo = 0._WP
+        omega_cutoff_hi = HUGE(0._WP)
      case ('UNNO')
         call eval_atmos_coeffs_unno(ml, x_o, V_g, As, c_1)
         call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
