@@ -124,7 +124,7 @@ contains
       A(1,1) = V_g - 1._WP
       A(1,2) = -V_g
       
-      A(2,1) = c_1*omega**2 + U - As
+      A(2,1) = c_1*omega_c**2 + U - As
       A(2,2) = As - U + 3._WP
 
     end associate

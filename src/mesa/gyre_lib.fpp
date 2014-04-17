@@ -204,8 +204,9 @@ contains
 
 !****
 
-  subroutine gyre_get_modes (file, user_sub, ipar, rpar, dummy)
+  subroutine gyre_get_modes (l, file, user_sub, ipar, rpar, dummy)
 
+    integer, intent(in)          :: l
     character(LEN=*), intent(in) :: file
     interface
        subroutine user_sub (md, ipar, rpar, retcode)
@@ -256,64 +257,68 @@ contains
 
     op_loop : do i = 1, SIZE(op)
 
-       ! Select parameters according to tags
+       if (op(i)%l == l) then
 
-       call select_par(np, op(i)%tag, np_sel, last=.TRUE.)
-       call select_par(shoot_gp, op(i)%tag, shoot_gp_sel)
-       call select_par(recon_gp, op(i)%tag, recon_gp_sel)
-       call select_par(sp, op(i)%tag, sp_sel)
+          ! Select parameters according to tags
 
-       $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
-       $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
-       $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
-       $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
+          call select_par(np, op(i)%tag, np_sel, last=.TRUE.)
+          call select_par(shoot_gp, op(i)%tag, shoot_gp_sel)
+          call select_par(recon_gp, op(i)%tag, recon_gp_sel)
+          call select_par(sp, op(i)%tag, sp_sel)
 
-       ! Set up the frequency array
+          $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
+          $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
+          $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
+          $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
 
-       call build_scan(sp_sel, ml_m, op(i), shoot_gp_sel, x_ml_m, omega)
+          ! Set up the frequency array
 
-       ! Store the frequency range in shoot_gp_sel
+          call build_scan(sp_sel, ml_m, op(i), shoot_gp_sel, x_ml_m, omega)
 
-       shoot_gp_sel%omega_a = MINVAL(omega)
-       shoot_gp_sel%omega_b = MAXVAL(omega)
+          ! Store the frequency range in shoot_gp_sel
 
-       ! Set up bp
+          shoot_gp_sel%omega_a = MINVAL(omega)
+          shoot_gp_sel%omega_b = MAXVAL(omega)
 
-       if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-          allocate(bp, SOURCE=rad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
-       else
-          allocate(bp, SOURCE=ad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
-       endif
+          ! Set up bp
 
-       ! Find modes
-
-       call scan_search(bp, omega, md)
-
-       $if ($GFORTRAN_PR57922)
-       select type (bp)
-       type is (rad_bvp_t)
-          call bp%final()
-       type is (ad_bvp_t)
-          call bp%final()
-       class default
-          $ABORT(Invalid type)
-       end select
-       $endif
-
-       if(ALLOCATED(bp)) deallocate(bp)
-
-       ! Process the modes
-
-       retcode = 0
-
-       mode_loop : do j = 1,SIZE(md)
-          if(retcode == 0) then
-             call user_sub(md(j), ipar, rpar, retcode)
+          if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
+             allocate(bp, SOURCE=rad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+          else
+             allocate(bp, SOURCE=ad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
           endif
-          $if($GFORTRAN_PR57922)
-          call md(j)%final()
+
+          ! Find modes
+
+          call scan_search(bp, omega, md)
+
+          $if ($GFORTRAN_PR57922)
+          select type (bp)
+          type is (rad_bvp_t)
+             call bp%final()
+          type is (ad_bvp_t)
+             call bp%final()
+          class default
+             $ABORT(Invalid type)
+          end select
           $endif
-       end do mode_loop
+
+          if(ALLOCATED(bp)) deallocate(bp)
+
+          ! Process the modes
+
+          retcode = 0
+
+          mode_loop : do j = 1,SIZE(md)
+             if(retcode == 0) then
+                call user_sub(md(j), ipar, rpar, retcode)
+             endif
+             $if($GFORTRAN_PR57922)
+             call md(j)%final()
+             $endif
+          end do mode_loop
+
+       end if
 
        ! Loop around
 

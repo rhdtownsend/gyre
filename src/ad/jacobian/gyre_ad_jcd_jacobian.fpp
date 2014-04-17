@@ -123,13 +123,13 @@ contains
       if (l /= 0) then
 
          A(1,1) = V_g - 1._WP - l
-         A(1,2) = 1._WP - V_g*c_1*omega**2/(l*(l+1))
+         A(1,2) = 1._WP - V_g*c_1*omega_c**2/(l*(l+1))
          A(1,3) = -V_g
          A(1,4) = 0._WP
       
-         A(2,1) = l*(l+1) - As*l*(l+1)/(c_1*omega**2)
+         A(2,1) = l*(l+1) - As*l*(l+1)/(c_1*omega_c**2)
          A(2,2) = As - l
-         A(2,3) = As*l*(l+1)/(c_1*omega**2)
+         A(2,3) = As*l*(l+1)/(c_1*omega_c**2)
          A(2,4) = 0._WP
       
          A(3,1) = 0._WP
@@ -138,20 +138,20 @@ contains
          A(3,4) = 1._WP
       
          A(4,1) = -U*As
-         A(4,2) = -U*V_g*c_1*omega**2/(l*(l+1))
+         A(4,2) = -U*V_g*c_1*omega_c**2/(l*(l+1))
          A(4,3) = l*(l+1) + U*(As - 2._WP)
          A(4,4) = 2._WP*(1._WP-U) - (l - 1._WP)
 
       else
 
          A(1,1) = V_g - 1._WP
-         A(1,2) = -V_g*c_1*omega**2
+         A(1,2) = -V_g*c_1*omega_c**2
          A(1,3) = -V_g
          A(1,4) = 0._WP
       
-         A(2,1) = 1._WP - As/(c_1*omega**2)
+         A(2,1) = 1._WP - As/(c_1*omega_c**2)
          A(2,2) = As
-         A(2,3) = As/(c_1*omega**2)
+         A(2,3) = As/(c_1*omega_c**2)
          A(2,4) = 0._WP
       
          A(3,1) = 0._WP
@@ -160,7 +160,7 @@ contains
          A(3,4) = 1._WP
       
          A(4,1) = -U*As
-         A(4,2) = -U*V_g*c_1*omega**2
+         A(4,2) = -U*V_g*c_1*omega_c**2
          A(4,3) = U*(As - 2._WP)
          A(4,4) = 2._WP*(1._WP-U) + 1._WP
 
