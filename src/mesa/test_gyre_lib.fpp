@@ -50,7 +50,9 @@ program test_gyre_lib
 
   do i = 1,100
      print *,'Iteration:',i
-     call gyre_get_modes('gyre_ad.in', user_sub, ipar, rpar, .FALSE.)
+     call gyre_get_modes(0, 'gyre_ad.in', .TRUE., user_sub, ipar, rpar)
+     call gyre_get_modes(1, 'gyre_ad.in', .TRUE., user_sub, ipar, rpar)
+     call gyre_get_modes(2, 'gyre_ad.in', .TRUE., user_sub, ipar, rpar)
   end do
 
   ! Finish

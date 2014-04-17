@@ -62,14 +62,15 @@ contains
     real(WP), allocatable, intent(in)  :: x_in(:)
     real(WP), allocatable, intent(out) :: omega(:)
 
-    real(WP) :: x_i
-    real(WP) :: x_o
-    integer  :: i
-    real(WP) :: omega_min
-    real(WP) :: omega_max
-    real(WP) :: omega_c_cutoff_lo
-    real(WP) :: omega_c_cutoff_hi
-    integer  :: j
+    real(WP)              :: x_i
+    real(WP)              :: x_o
+    integer               :: i
+    real(WP)              :: omega_min
+    real(WP)              :: omega_max
+    integer               :: j
+    integer               :: n_omega
+    real(WP)              :: omega_cutoff_lo
+    real(WP)              :: omega_cutoff_hi
 
     $ASSERT(SIZE(sp) >=1,Empty scanpars)
 
@@ -106,13 +107,17 @@ contains
 
     end do sp_loop
 
+    n_omega = SIZE(omega)
+
+    $ASSERT(n_omega > 2,At least two frequency points required)
+
     ! Sort the frequencies
 
     omega = omega(sort_indices(omega))
 
     if (check_log_level('INFO')) then
 
-       write(OUTPUT_UNIT, 110) 'omega points :', SIZE(omega)
+       write(OUTPUT_UNIT, 110) 'omega points :', n_omega
 110    format(2X,A,1X,I0)
 
        write(OUTPUT_UNIT, 120) 'omega range  :', MINVAL(omega), '->',  MAXVAL(omega)
@@ -124,14 +129,14 @@ contains
 
     if (check_log_level('WARN')) then
 
-       call eval_cutoff_freqs(ml, op, x_o, omega_c_cutoff_lo, omega_c_cutoff_hi)
+       call eval_cutoff_freqs(ml, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
 
-       if (MINVAL(omega) < omega_c_cutoff_lo) then
+       if (omega(1) < omega_cutoff_lo) then
           write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends below atmospheric gravity cutoff frequency'
 130       format(2X,A)
        end if
 
-       if (MAXVAL(omega) > omega_c_cutoff_hi) then
+       if (omega(n_omega) > omega_cutoff_hi) then
           write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends above atmospheric acoustic cutoff frequency'
        end if
 
