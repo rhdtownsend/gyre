@@ -1,5 +1,5 @@
-! Module   : gyre_oscpar
-! Purpose  : oscillation parameters
+! Module   : gyre_modepar
+! Purpose  : mode parameters
 !
 ! Copyright 2013 Rich Townsend
 !
@@ -18,7 +18,7 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_oscpar
+module gyre_modepar
 
   ! Uses
 
@@ -31,13 +31,13 @@ module gyre_oscpar
 
   ! Derived-type definitions
 
-  type :: oscpar_t
-     real(WP)          :: x_ref
-     character(LEN=64) :: variables_type
-     character(LEN=64) :: outer_bound_type
-     character(LEN=64) :: inertia_norm_type
-     character(LEN=64) :: tag_list
-  end type oscpar_t
+  type :: modepar_t
+     integer           :: l
+     integer           :: m
+     integer           :: X_n_pg_min
+     integer           :: X_n_pg_max
+     character(LEN=64) :: tag
+  end type modepar_t
 
   ! Interfaces
 
@@ -59,7 +59,7 @@ module gyre_oscpar
 
   private
 
-  public :: oscpar_t
+  public :: modepar_t
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -77,17 +77,16 @@ contains
 
   subroutine bcast_${RANK}_ (op, root_rank)
 
-    type(oscpar_t), intent(inout) :: op$ARRAY_SPEC($RANK)
+    type(modepar_t), intent(inout) :: op$ARRAY_SPEC($RANK)
     integer, intent(in)           :: root_rank
 
-    ! Broadcast the oscpar_t
+    ! Broadcast the modepar_t
 
-    call bcast(op%x_ref, root_rank)
+    call bcast(op%l, root_rank)
+    call bcast(op%m, root_rank)
 
-    call bcast(op%variables_type, root_rank)
-    call bcast(op%outer_bound_type, root_rank)
-    call bcast(op%inertia_norm_type, root_rank)
-    call bcast(op%tag_list, root_rank)
+    call bcast(op%X_n_pg_min, root_rank)
+    call bcast(op%X_n_pg_max, root_rank)
 
     ! Finish
 
@@ -102,9 +101,9 @@ contains
 
 !****
 
-  $BCAST_ALLOC(type(oscpar_t),0)
-  $BCAST_ALLOC(type(oscpar_t),1)
+  $BCAST_ALLOC(type(modepar_t),0)
+  $BCAST_ALLOC(type(modepar_t),1)
 
   $endif
 
-end module gyre_oscpar
+end module gyre_modepar

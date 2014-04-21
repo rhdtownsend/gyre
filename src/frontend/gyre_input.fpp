@@ -26,6 +26,7 @@ module gyre_input
   use core_parallel
 
   use gyre_constants
+  use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -44,6 +45,7 @@ module gyre_input
   public :: parse_args
   public :: read_constants
   public :: read_model
+  public :: read_modepar
   public :: read_oscpar
   public :: read_numpar
   public :: read_scanpar
@@ -224,6 +226,66 @@ contains
 
 !****
 
+  subroutine read_modepar (unit, mp)
+
+    integer, intent(in)                       :: unit
+    type(modepar_t), allocatable, intent(out) :: mp(:)
+
+    integer           :: n_mp
+    integer           :: i
+    integer           :: l
+    integer           :: m
+    integer           :: X_n_pg_min
+    integer           :: X_n_pg_max
+    character(LEN=64) :: tag
+
+    namelist /mode/ l, m, X_n_pg_min, X_n_pg_max
+
+    ! Count the number of mode namelists
+
+    rewind(unit)
+
+    n_mp = 0
+
+    count_loop : do
+       read(unit, NML=mode, END=100)
+       n_mp = n_mp + 1
+    end do count_loop
+
+100 continue
+
+    ! Read mode parameters
+
+    rewind(unit)
+
+    allocate(mp(n_mp))
+
+    read_loop : do i = 1,n_mp
+
+       l = 0
+       m = 0
+
+       X_n_pg_min = -HUGE(0)
+       X_n_pg_max = HUGE(0)
+
+       tag = ''
+
+       read(unit, NML=mode)
+
+       ! Initialize the modepar
+
+       mp(i) = modepar_t(l=l, m=m, X_n_pg_min=X_n_pg_min, X_n_pg_max=X_n_pg_max, tag=tag)
+
+    end do read_loop
+
+    ! Finish
+
+    return
+
+  end subroutine read_modepar
+
+!****
+
   subroutine read_oscpar (unit, op)
 
     integer, intent(in)                      :: unit
@@ -231,21 +293,16 @@ contains
 
     integer           :: n_op
     integer           :: i
-    integer           :: l
-    integer           :: m
-    integer           :: X_n_pg_min
-    integer           :: X_n_pg_max
     character(LEN=64) :: variables_type
     character(LEN=64) :: outer_bound_type
     character(LEN=64) :: inertia_norm_type
-    character(LEN=64) :: tag
+    character(LEN=64) :: tag_list
     real(WP)          :: x_ref
 
-    namelist /osc/ x_ref, l, m, X_n_pg_min, X_n_pg_max, &
-         outer_bound_type, variables_type, &
-         inertia_norm_type, tag, x_ref
+    namelist /osc/ x_ref, outer_bound_type, variables_type, &
+         inertia_norm_type, tag_list, x_ref
 
-    ! Count the number of grid namelists
+    ! Count the number of osc namelists
 
     rewind(unit)
 
@@ -266,16 +323,10 @@ contains
 
     read_loop : do i = 1,n_op
 
-       l = 0
-       m = 0
-
-       X_n_pg_min = -HUGE(0)
-       X_n_pg_max = HUGE(0)
-
        variables_type = 'DZIEM'
        outer_bound_type = 'ZERO'
        inertia_norm_type = 'BOTH'
-       tag = ''
+       tag_list = ''
 
        x_ref = HUGE(0._WP)
 
@@ -283,9 +334,8 @@ contains
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(l=l, m=m, X_n_pg_min=X_n_pg_min, X_n_pg_max=X_n_pg_max, &
-                        variables_type=variables_type, outer_bound_type=outer_bound_type, &
-                        inertia_norm_type=inertia_norm_type, tag=tag, x_ref=x_ref)
+       op(i) = oscpar_t(variables_type=variables_type, outer_bound_type=outer_bound_type, &
+                        inertia_norm_type=inertia_norm_type, tag_list=tag_list, x_ref=x_ref)
 
     end do read_loop
 

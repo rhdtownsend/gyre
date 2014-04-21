@@ -30,6 +30,7 @@ module gyre_mode
   use gyre_model_mpi
   $endif
   use gyre_ext_arith
+  use gyre_modepar
   use gyre_oscpar
   use gyre_grid
   use gyre_mode_funcs
@@ -45,6 +46,7 @@ module gyre_mode
 
   type :: mode_t
      class(model_t), pointer  :: ml => null()
+     type(modepar_t)          :: mp
      type(oscpar_t)           :: op
      type(ext_real_t)         :: chi
      real(WP), allocatable    :: x(:)
@@ -121,9 +123,10 @@ module gyre_mode
 
 contains
 
-  function mode_t_ (ml, op, omega, x, y, x_ref, y_ref, chi, n_iter) result (md)
+  function mode_t_ (ml, mp, op, omega, x, y, x_ref, y_ref, chi, n_iter) result (md)
 
     class(model_t), pointer, intent(in) :: ml
+    type(modepar_t), intent(in)         :: mp
     type(oscpar_t), intent(in)          :: op
     complex(WP), intent(in)             :: omega
     real(WP), intent(in)                :: x(:)
@@ -147,6 +150,7 @@ contains
 
     md%ml => ml
 
+    md%mp = mp
     md%op = op
 
     md%chi = chi
@@ -214,7 +218,7 @@ contains
 
     ! Calculate the frequency
 
-    freq = this%omega*freq_scale(this%ml, this%op, this%x(this%n), freq_units)
+    freq = this%omega*freq_scale(this%ml, this%mp, this%op, this%x(this%n), freq_units)
 
     ! Finish
     
@@ -240,7 +244,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, this%n
-       ${NAME}_(k) = ${NAME}(this%ml, this%op, this%omega, this%x(k), this%y(:,k))
+       ${NAME}_(k) = ${NAME}(this%ml, this%mp, this%omega, this%x(k), this%y(:,k))
     end do
     
     ! Finish
@@ -349,7 +353,7 @@ contains
     
     ! Calculate $NAME at x_ref
 
-    ${NAME}_ref_ = ${NAME}(this%ml, this%op, this%omega, this%x_ref, this%y_ref)
+    ${NAME}_ref_ = ${NAME}(this%ml, this%mp, this%omega, this%x_ref, this%y_ref)
     
     ! Finish
 
@@ -376,8 +380,8 @@ contains
     ! T_eff. This expression is based on the standard definition of
     ! effective temperature
 
-    delT_eff = 0.25_WP*(delL(this%ml, this%op, this%omega, this%x_ref, this%y_ref) - &
-                  2._WP*xi_r(this%ml, this%op, this%omega, this%x_ref, this%y_ref))
+    delT_eff = 0.25_WP*(delL(this%ml, this%mp, this%omega, this%x_ref, this%y_ref) - &
+                  2._WP*xi_r(this%ml, this%mp, this%omega, this%x_ref, this%y_ref))
 
     ! Finish
 
@@ -446,7 +450,7 @@ contains
 
     E = this%E()
 
-    associate(l => this%op%l)
+    associate(l => this%mp%l)
 
       select case (this%op%inertia_norm_type)
       case ('RADIAL')
@@ -507,7 +511,7 @@ contains
     xi_h = this%xi_h()
 
     associate(x => this%x, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
-              l => this%op%l)
+              l => this%mp%l)
 
       K = (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
 
@@ -537,7 +541,7 @@ contains
     xi_h = this%xi_h()
 
     associate(x => this%x, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
-              l => this%op%l)
+              l => this%mp%l)
 
       beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
              integrate(x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
@@ -593,7 +597,7 @@ contains
 
     associate(x => this%x, V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
               As => this%ml%As(this%x), c_1 => this%ml%c_1(this%x), &
-              l => this%op%l, omega_c => REAL(this%ml%omega_c(this%x, this%op%m, this%omega)))
+              l => this%mp%l, omega_c => REAL(this%ml%omega_c(this%x, this%mp%m, this%omega)))
 
       prop_type = MERGE(1, 0, c_1*omega_c**2 > As) + &
                    MERGE(-1, 0, l*(l+1)/(c_1*omega_c**2) > V_g)
@@ -624,7 +628,7 @@ contains
 
     ! Classify the mode based on its eigenfunctions
 
-    select case (md%op%l)
+    select case (md%mp%l)
 
     case (0)
 
@@ -664,7 +668,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the origin)
 
-       call find_x_turn(md%x, md%ml, md%op, REAL(md%omega), x_turn)
+       call find_x_turn(md%x, md%ml, md%mp, REAL(md%omega), x_turn)
 
        x_turn_loop : do i = 1,md%n-1
           if(md%x(i) > x_turn) exit x_turn_loop
@@ -794,7 +798,7 @@ contains
               nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
               c_rad => this%ml%c_rad(this%x), dc_rad => this%ml%dc_rad(this%x), c_thm => this%ml%c_thm(this%x), &
               c_eps_ad => this%ml%c_eps_ad(this%x), c_eps_S => this%ml%c_eps_S(this%x), &              
-              l => this%op%l, omega_c => this%ml%omega_c(this%x, this%op%m, this%omega))
+              l => this%mp%l, omega_c => this%ml%omega_c(this%x, this%mp%m, this%omega))
 
       where(this%x /= 0)
          A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
@@ -884,7 +888,7 @@ contains
               nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
               c_dif => this%ml%c_dif(this%x), c_rad => this%ml%c_rad(this%x), &
               kappa_S => this%ml%kappa_S(this%x), &
-              l => this%op%l, omega_c => this%ml%omega_c(this%x, this%op%m, this%omega))
+              l => this%mp%l, omega_c => this%ml%omega_c(this%x, this%mp%m, this%omega))
 
       A_5(1,:) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
       A_5(2,:) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
@@ -967,6 +971,7 @@ contains
        md%ml => ml
     endif
 
+    call bcast(md%mp, root_rank)
     call bcast(md%op, root_rank)
 
     call bcast_alloc(md%x, root_rank)

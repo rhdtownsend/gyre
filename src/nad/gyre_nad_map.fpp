@@ -32,6 +32,7 @@ program gyre_nad_map
   $if($MPI)
   use gyre_model_mpi
   $endif
+  use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -56,6 +57,7 @@ program gyre_nad_map
   integer                      :: unit
   real(WP), allocatable        :: x_ml(:)
   class(model_t), pointer      :: ml => null()
+  type(modepar_t), allocatable :: mp(:)
   type(oscpar_t), allocatable  :: op(:)
   type(numpar_t), allocatable  :: np(:)
   type(gridpar_t), allocatable :: shoot_gp(:)
@@ -114,6 +116,7 @@ program gyre_nad_map
 
      call read_constants(unit)
      call read_model(unit, x_ml, ml)
+     call read_modepar(unit, mp)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
@@ -127,6 +130,7 @@ program gyre_nad_map
   call bcast_constants(0)
   call bcast_alloc(x_ml, 0)
   call bcast_alloc(ml, 0)
+  call bcast_alloc(mp, 0)
   call bcast_alloc(op, 0)
   call bcast_alloc(np, 0)
   call bcast_alloc(shoot_gp, 0)
@@ -144,8 +148,8 @@ program gyre_nad_map
   
   ! Set up the frequency arrays
 
-  call build_scan(sp_re, ml, op(1), shoot_gp, x_ml, omega_re)
-  call build_scan(sp_im, ml, op(1), shoot_gp, x_ml, omega_im)
+  call build_scan(sp_re, ml, mp(1), op(1), shoot_gp, x_ml, omega_re)
+  call build_scan(sp_im, ml, mp(1), op(1), shoot_gp, x_ml, omega_im)
 
   ! Store the frequency range in shoot_gp
 
@@ -154,7 +158,7 @@ program gyre_nad_map
 
   ! Set up the bvp
 
-  allocate(nad_bp, SOURCE=nad_bvp_t(ml, op(1), np(1), shoot_gp, recon_gp, x_ml))
+  allocate(nad_bp, SOURCE=nad_bvp_t(ml, mp(1), op(1), np(1), shoot_gp, recon_gp, x_ml))
 
   ! Map the discriminant
 

@@ -26,7 +26,7 @@ module gyre_ad_dziem_bound
   use gyre_bound
   use gyre_model
   use gyre_jacobian
-  use gyre_oscpar
+  use gyre_modepar
 
   use ISO_FORTRAN_ENV
 
@@ -40,7 +40,7 @@ module gyre_ad_dziem_bound
      private
      class(model_t), pointer        :: ml => null()
      class(jacobian_t), allocatable :: jc
-     type(oscpar_t)                 :: op
+     type(modepar_t)                :: mp
    contains 
      private
      procedure, public :: inner_bound => inner_bound_
@@ -63,18 +63,18 @@ module gyre_ad_dziem_bound
 
 contains
 
-  function ad_dziem_bound_t_ (ml, jc, op) result (bd)
+  function ad_dziem_bound_t_ (ml, jc, mp) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
     class(jacobian_t), intent(in)       :: jc
-    type(oscpar_t), intent(in)          :: op
+    type(modepar_t), intent(in)         :: mp
     type(ad_dziem_bound_t)              :: bd
 
     ! Construct the ad_dziem_bound_t
 
     bd%ml => ml
     allocate(bd%jc, SOURCE=jc)
-    bd%op = op
+    bd%mp = mp
 
     bd%n_i = 2
     bd%n_o = 2
@@ -109,8 +109,8 @@ contains
 
     ! Set the inner boundary conditions to enforce non-diverging modes
 
-    associate(c_1 => this%ml%c_1(x_i), l => this%op%l, &
-              omega_c => this%ml%omega_c(x_i, this%op%m, omega))
+    associate(c_1 => this%ml%c_1(x_i), l => this%mp%l, &
+              omega_c => this%ml%omega_c(x_i, this%mp%m, omega))
                  
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l
@@ -152,7 +152,7 @@ contains
     ! Set the outer boundary conditions
 
     associate(V => this%ml%V(x_o), c_1 => this%ml%c_1(x_o), &
-              l => this%op%l, omega_c => this%ml%omega_c(x_o, this%op%m, omega))
+              l => this%mp%l, omega_c => this%ml%omega_c(x_o, this%mp%m, omega))
         
       B_o(1,1) = 1 + (l*(l+1)/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
       B_o(1,2) = -1._WP

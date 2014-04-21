@@ -30,6 +30,7 @@ module gyre_nad_bvp
   $if ($MPI)
   use gyre_model_mpi
   $endif
+  use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -61,6 +62,7 @@ module gyre_nad_bvp
      class(bound_t), allocatable    :: bd
      type(nad_shooter_t)            :: sh
      type(sysmtx_t)                 :: sm
+     type(modepar_t)                :: mp
      type(oscpar_t)                 :: op
      type(numpar_t)                 :: np
      type(gridpar_t), allocatable   :: shoot_gp(:)
@@ -106,7 +108,7 @@ module gyre_nad_bvp
 
 contains
 
-  function nad_bvp_t_ (ml, op, np, shoot_gp, recon_gp, x_in) result (bp)
+  function nad_bvp_t_ (ml, mp, op, np, shoot_gp, recon_gp, x_in) result (bp)
 
     use gyre_nad_dziem_jacobian
     use gyre_nad_jcd_jacobian
@@ -123,6 +125,7 @@ contains
     use gyre_colloc_GL4_ivp
 
     class(model_t), pointer, intent(in) :: ml
+    type(modepar_t), intent(in)         :: mp
     type(oscpar_t), intent(in)          :: op
     type(numpar_t), intent(in)          :: np
     type(gridpar_t), intent(in)         :: shoot_gp(:)
@@ -137,6 +140,7 @@ contains
 
     ! Store parameters
 
+    bp%mp = mp
     bp%op = op
     bp%np = np
 
@@ -151,9 +155,9 @@ contains
 
     select case (bp%op%variables_type)
     case ('DZIEM')
-       allocate(bp%jc, SOURCE=nad_dziem_jacobian_t(bp%ml, bp%op))
+       allocate(bp%jc, SOURCE=nad_dziem_jacobian_t(bp%ml, bp%mp))
     case ('JCD')
-       allocate(bp%jc, SOURCE=nad_jcd_jacobian_t(bp%ml, bp%op))
+       allocate(bp%jc, SOURCE=nad_jcd_jacobian_t(bp%ml, bp%mp))
     case default
        $ABORT(Invalid variables_type)
     end select
@@ -162,13 +166,13 @@ contains
 
     select case (bp%op%outer_bound_type)
     case ('ZERO')
-       allocate(bp%bd, SOURCE=nad_zero_bound_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=nad_zero_bound_t(bp%ml, bp%jc, bp%mp))
     case ('DZIEM')
-       allocate(bp%bd, SOURCE=nad_dziem_bound_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=nad_dziem_bound_t(bp%ml, bp%jc, bp%mp))
     case ('UNNO')
-       allocate(bp%bd, SOURCE=nad_unno_bound_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=nad_unno_bound_t(bp%ml, bp%jc, bp%mp))
     case ('JCD')
-       allocate(bp%bd, SOURCE=nad_jcd_bound_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=nad_jcd_bound_t(bp%ml, bp%jc, bp%mp))
     case default
        $ABORT(Invalid bound_type)
     end select
@@ -192,11 +196,11 @@ contains
 
     ! Initialize the shooter
 
-    bp%sh = nad_shooter_t(bp%ml, bp%iv, bp%op, bp%np)
+    bp%sh = nad_shooter_t(bp%ml, bp%iv, bp%np)
 
     ! Build the shooting grid
 
-    call build_grid(bp%shoot_gp, bp%ml, bp%op, x_in, bp%x)
+    call build_grid(bp%shoot_gp, bp%ml, bp%mp, x_in, bp%x)
 
     n = SIZE(bp%x)
 
@@ -326,7 +330,7 @@ contains
     this%recon_gp%omega_a = REAL(omega)
     this%recon_gp%omega_b = REAL(omega)
 
-    call build_grid(this%recon_gp, this%ml, this%op, this%x, x)
+    call build_grid(this%recon_gp, this%ml, this%mp, this%x, x)
 
     if(SIZE(x) == SIZE(this%x)) then
        same_grid = ALL(x == this%x)
@@ -490,9 +494,9 @@ contains
     chi = ABS(discrim_root)/discrim_norm
     
     if(PRESENT(omega_def)) then
-       md = mode_t(this%ml, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
+       md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
     else
-       md = mode_t(this%ml, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
+       md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
     endif
 
     ! Finish
@@ -617,7 +621,7 @@ contains
     
     chi = ABS(discrim_root)/discrim_norm
     
-    md = mode_t(this%ml, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
+    md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
 
     ! Finish
 
@@ -652,6 +656,7 @@ contains
     integer, intent(in)                :: root_rank
     class(model_t), intent(in), target :: ml
 
+    type(modepar_t)              :: mp
     type(oscpar_t)               :: op
     type(numpar_t)               :: np
     type(gridpar_t), allocatable :: shoot_gp(:)
@@ -662,6 +667,7 @@ contains
 
     if(MPI_RANK == root_rank) then
 
+       call bcast(bp%mp, root_rank)
        call bcast(bp%op, root_rank)
        call bcast(bp%np, root_rank)
 
@@ -672,6 +678,7 @@ contains
 
     else
 
+       call bcast(mp, root_rank)
        call bcast(op, root_rank)
        call bcast(np, root_rank)
 

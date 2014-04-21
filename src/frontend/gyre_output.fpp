@@ -119,13 +119,13 @@ contains
              ! Fixed-width fields
 
              mode_file = subst_(mode_file, '%J', j, '(I5.5)')
-             mode_file = subst_(mode_file, '%L', md(j)%op%l, '(I3.3)')
+             mode_file = subst_(mode_file, '%L', md(j)%mp%l, '(I3.3)')
              mode_file = subst_(mode_file, '%N', md(j)%n_pg, '(SP,I6.5)')
 
              ! Variable-width fields
 
              mode_file = subst_(mode_file, '%j', j, '(I0)')
-             mode_file = subst_(mode_file, '%l', md(j)%op%l, '(I0)')
+             mode_file = subst_(mode_file, '%l', md(j)%mp%l, '(I0)')
              mode_file = subst_(mode_file, '%n', md(j)%n_pg, '(SP,I0)')
 
           else
@@ -196,7 +196,7 @@ contains
        select case (items(j))
 
        case('l')
-          call wr%write('l', md%op%l)
+          call wr%write('l', md%mp%l)
        case('n_p')
           call wr%write('n_p', md%n_p)
        case('n_g')
@@ -325,7 +325,7 @@ contains
        case ('n')
           call wr%write('n', md%n)
        case ('l')
-          call wr%write('l', md%op%l)
+          call wr%write('l', md%mp%l)
        case ('n_p')
           call wr%write('n_p', md%n_p)
        case ('n_g')

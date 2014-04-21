@@ -30,6 +30,7 @@ module gyre_rad_bvp
   $if($MPI)
   use gyre_model_mpi
   $endif
+  use gyre_modepar
   use gyre_oscpar
   use gyre_gridpar
   use gyre_numpar
@@ -60,6 +61,7 @@ module gyre_rad_bvp
      class(bound_t), allocatable    :: bd
      type(rad_shooter_t)            :: sh
      type(sysmtx_t)                 :: sm
+     type(modepar_t)                :: mp
      type(oscpar_t)                 :: op
      type(numpar_t)                 :: np
      type(gridpar_t), allocatable   :: shoot_gp(:)
@@ -105,7 +107,7 @@ module gyre_rad_bvp
 
 contains
 
-  function rad_bvp_t_ (ml, op, np, shoot_gp, recon_gp, x_in) result (bp)
+  function rad_bvp_t_ (ml, mp, op, np, shoot_gp, recon_gp, x_in) result (bp)
 
     use gyre_rad_dziem_jacobian
     use gyre_rad_jcd_jacobian
@@ -123,6 +125,7 @@ contains
     use gyre_colloc_gl4_ivp
 
     class(model_t), pointer, intent(in) :: ml
+    type(modepar_t), intent(in)         :: mp
     type(oscpar_t), intent(in)          :: op
     type(numpar_t), intent(in)          :: np
     type(gridpar_t), intent(in)         :: shoot_gp(:)
@@ -133,12 +136,13 @@ contains
     integer               :: n
     real(WP), allocatable :: x_cc(:)
 
-    $ASSERT(op%l == 0,Invalid harmonic degree)
+    $ASSERT(mp%l == 0,Invalid harmonic degree)
 
     ! Construct the rad_bvp_t
 
     ! Store parameters
 
+    bp%mp = mp
     bp%op = op
     bp%np = np
 
@@ -153,11 +157,11 @@ contains
 
     select case (op%variables_type)
     case ('DZIEM')
-       allocate(bp%jc, SOURCE=rad_dziem_jacobian_t(bp%ml, bp%op))
+       allocate(bp%jc, SOURCE=rad_dziem_jacobian_t(bp%ml, bp%mp))
     case ('JCD')
-       allocate(bp%jc, SOURCE=rad_jcd_jacobian_t(bp%ml, bp%op))
+       allocate(bp%jc, SOURCE=rad_jcd_jacobian_t(bp%ml, bp%mp))
     case ('MIX')
-       allocate(bp%jc, SOURCE=rad_mix_jacobian_t(bp%ml, bp%op))
+       allocate(bp%jc, SOURCE=rad_mix_jacobian_t(bp%ml, bp%mp))
     case default
        $ABORT(Invalid variables_type)
     end select
@@ -166,13 +170,13 @@ contains
 
     select case (bp%op%outer_bound_type)
     case ('ZERO')
-       allocate(bp%bd, SOURCE=rad_zero_bound_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=rad_zero_bound_t(bp%ml, bp%jc, bp%mp))
     case ('DZIEM')
-       allocate(bp%bd, SOURCE=rad_dziem_bound_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=rad_dziem_bound_t(bp%ml, bp%jc, bp%mp))
     case ('UNNO')
-       allocate(bp%bd, SOURCE=rad_unno_bound_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=rad_unno_bound_t(bp%ml, bp%jc, bp%mp))
     case ('JCD')
-       allocate(bp%bd, SOURCE=rad_jcd_bound_t(bp%ml, bp%jc, bp%op))
+       allocate(bp%bd, SOURCE=rad_jcd_bound_t(bp%ml, bp%jc, bp%mp))
     case default
        $ABORT(Invalid bound_type)
     end select
@@ -196,11 +200,11 @@ contains
 
     ! Initialize the shooter
 
-    bp%sh = rad_shooter_t(bp%ml, bp%iv, bp%op, bp%np)
+    bp%sh = rad_shooter_t(bp%ml, bp%iv, bp%np)
 
     ! Build the shooting grid
 
-    call build_grid(bp%shoot_gp, bp%ml, bp%op, x_in, bp%x, verbose=.TRUE.)
+    call build_grid(bp%shoot_gp, bp%ml, bp%mp, x_in, bp%x, verbose=.TRUE.)
 
     n = SIZE(bp%x)
 
@@ -340,7 +344,7 @@ contains
     this%recon_gp%omega_a = REAL(omega)
     this%recon_gp%omega_b = REAL(omega)
 
-    call build_grid(this%recon_gp, this%ml, this%op, this%x, x)
+    call build_grid(this%recon_gp, this%ml, this%mp, this%x, x)
 
     if(SIZE(x) == SIZE(this%x)) then
        same_grid = ALL(x == this%x)
@@ -478,7 +482,7 @@ contains
     
     chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
     
-    md = mode_t(this%ml, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
+    md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
 
     ! Finish
 
@@ -513,16 +517,18 @@ contains
     integer, intent(in)                :: root_rank
     class(model_t), intent(in), target :: ml
 
-    type(oscpar_t)                :: op
-    type(numpar_t)                :: np
-    type(gridpar_t), allocatable  :: shoot_gp(:)
-    type(gridpar_t), allocatable  :: recon_gp(:)
-    real(WP), allocatable         :: x_in(:)
+    type(modepar_t)              :: mp
+    type(oscpar_t)               :: op
+    type(numpar_t)               :: np
+    type(gridpar_t), allocatable :: shoot_gp(:)
+    type(gridpar_t), allocatable :: recon_gp(:)
+    real(WP), allocatable        :: x_in(:)
 
     ! Broadcast the rad_bvp_t
 
     if(MPI_RANK == root_rank) then
 
+       call bcast(bp%mp, root_rank)
        call bcast(bp%op, root_rank)
        call bcast(bp%np, root_rank)
 
@@ -533,6 +539,7 @@ contains
 
     else
 
+       call bcast(mp, root_rank)
        call bcast(op, root_rank)
        call bcast(np, root_rank)
 
@@ -541,7 +548,7 @@ contains
 
        call bcast_alloc(x_in, root_rank)
 
-       bp = rad_bvp_t(ml, op, np, shoot_gp, recon_gp, x_in)
+       bp = rad_bvp_t(ml, mp, op, np, shoot_gp, recon_gp, x_in)
 
     endif
 

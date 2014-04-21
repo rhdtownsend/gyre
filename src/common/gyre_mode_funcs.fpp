@@ -25,7 +25,7 @@ module gyre_mode_funcs
   use gyre_constants
 
   use gyre_model
-  use gyre_oscpar
+  use gyre_modepar
 
   use ISO_FORTRAN_ENV
 
@@ -57,21 +57,21 @@ module gyre_mode_funcs
 
 contains
 
-  function xi_r (ml, op, omega, x, y)
+  function xi_r (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: xi_r
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: xi_r
 
     $CHECK_BOUNDS(SIZE(y),6)
     
     ! Calculate the radial displacement perturbation at x, in units of
     ! R_star
 
-    associate (l => op%l)
+    associate (l => mp%l)
 
       if (l /= 1) then
 
@@ -97,21 +97,21 @@ contains
 
 !****
 
-  function xi_h (ml, op, omega, x, y)
+  function xi_h (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: xi_h
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: xi_h
 
     $CHECK_BOUNDS(SIZE(y),6)
     
     ! Calculate the horizontal displacement perturbation at x, in
     ! units of R_star
 
-    associate (c_1 => ml%c_1(x), l => op%l, omega_c => ml%omega_c(x, op%m, omega))
+    associate (c_1 => ml%c_1(x), l => mp%l, omega_c => ml%omega_c(x, mp%m, omega))
 
       if (l /= 0) then
 
@@ -145,21 +145,21 @@ contains
 
 !****
 
-  function phip (ml, op, omega, x, y)
+  function phip (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: phip
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: phip
 
     $CHECK_BOUNDS(SIZE(y),6)
     
     ! Calculate the Eulerian gravitational potential perturbation at
     ! x, in units of G M_star / R_star
 
-    associate (c_1 => ml%c_1(x), l => op%l)
+    associate (c_1 => ml%c_1(x), l => mp%l)
 
       phip = y(3)*x**l/c_1
 
@@ -173,21 +173,21 @@ contains
 
 !****
 
-  function dphip_dx (ml, op, omega, x, y)
+  function dphip_dx (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: dphip_dx
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: dphip_dx
 
     $CHECK_BOUNDS(SIZE(y),6)
     
     ! Calculate the Eulerian gravity perturbation at x, in units of G
     ! M_star / R_star**2
 
-    associate (c_1 => ml%c_1(x), l => op%l)
+    associate (c_1 => ml%c_1(x), l => mp%l)
 
       if (l /= 1) then
 
@@ -213,21 +213,21 @@ contains
 
 !****
 
-  function delS (ml, op, omega, x, y)
+  function delS (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: delS
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: delS
 
     $CHECK_BOUNDS(SIZE(y),6)
 
     ! Calculate the Lagrangian specific entropy perturbation at x, in units
     ! of c_p
 
-    associate (l => op%l)
+    associate (l => mp%l)
 
       if (x /= 0._WP) then
          delS = y(5)*x**(l-2)
@@ -245,21 +245,21 @@ contains
 
 !****
 
-  function delL (ml, op, omega, x, y)
+  function delL (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: delL
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: delL
 
     $CHECK_BOUNDS(SIZE(y),6)
 
     ! Calculate the Lagrangian luminosity perturbation at x, in units
     ! of L_star
 
-    associate (l => op%l)
+    associate (l => mp%l)
 
       delL = y(6)*x**(l+1)
 
@@ -273,21 +273,21 @@ contains
 
 !****
 
-  function delp (ml, op, omega, x, y)
+  function delp (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: delp
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: delp
 
     $CHECK_BOUNDS(SIZE(y),6)
 
     ! Calculate the Lagrangian pressure perturbation at x, in units of
     ! p
 
-    associate (V => ml%V(x), pi_c => ml%pi_c(), l => op%l)
+    associate (V => ml%V(x), pi_c => ml%pi_c(), l => mp%l)
 
       if(l > 0) then
 
@@ -317,14 +317,14 @@ contains
 
 !****
 
-  function delrho (ml, op, omega, x, y)
+  function delrho (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: delrho
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: delrho
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -333,7 +333,7 @@ contains
 
     associate (Gamma_1 => ml%Gamma_1(x), delta => ml%delta(x))
 
-      delrho = delp(ml, op, omega, x, y)/Gamma_1 - delta*delS(ml, op, omega, x, y)
+      delrho = delp(ml, mp, omega, x, y)/Gamma_1 - delta*delS(ml, mp, omega, x, y)
 
     end associate
 
@@ -345,14 +345,14 @@ contains
 
 !****
 
-  function delT (ml, op, omega, x, y)
+  function delT (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: delT
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: delT
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -361,7 +361,7 @@ contains
 
     associate (nabla_ad => ml%nabla_ad(x))
       
-      delT = nabla_ad*delp(ml, op, omega, x, y) + delS(ml, op, omega, x, y)
+      delT = nabla_ad*delp(ml, mp, omega, x, y) + delS(ml, mp, omega, x, y)
 
     end associate
 
@@ -373,22 +373,22 @@ contains
 
 !****
 
-  function dE_dx (ml, op, omega, x, y)
+  function dE_dx (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    real(WP)                   :: dE_dx
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    real(WP)                    :: dE_dx
 
     $CHECK_BOUNDS(SIZE(y),6)
 
     ! Calculate the differential mode inertia at x, in units of M_star
     ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010]
 
-    associate(xi_r => xi_r(ml, op, omega, x, y), xi_h => xi_h(ml, op, omega, x, y), &
-              U => ml%U(x), c_1 => ml%c_1(x), l => op%l)
+    associate(xi_r => xi_r(ml, mp, omega, x, y), xi_h => xi_h(ml, mp, omega, x, y), &
+              U => ml%U(x), c_1 => ml%c_1(x), l => mp%l)
       dE_dx = (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1
     end associate
 
@@ -400,14 +400,14 @@ contains
 
 !****
 
-  function dW_dx (ml, op, omega, x, y)
+  function dW_dx (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    real(WP)                   :: dW_dx
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    real(WP)                    :: dW_dx
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -417,7 +417,7 @@ contains
 
     associate(c_thm => ml%c_thm(x))
 
-      dW_dx = -PI*AIMAG(CONJG(delT(ml, op, omega, x, y))*delS(ml, op, omega, x, y))*c_thm*x**2
+      dW_dx = -PI*AIMAG(CONJG(delT(ml, mp, omega, x, y))*delS(ml, mp, omega, x, y))*c_thm*x**2
 
     end associate
 
@@ -429,14 +429,14 @@ contains
 
 !****
 
-  function Yt_1 (ml, op, omega, x, y)
+  function Yt_1 (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: Yt_1
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: Yt_1
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -457,14 +457,14 @@ contains
 
 !****
 
-  function Yt_2 (ml, op, omega, x, y)
+  function Yt_2 (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: Yt_2
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: Yt_2
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -481,21 +481,21 @@ contains
 
 !****
 
-  function I_0 (ml, op, omega, x, y)
+  function I_0 (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: I_0
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: I_0
 
     $CHECK_BOUNDS(SIZE(y),6)
 
     ! Calculate the I_0 integral at x, which should be zero for radial
     ! modes. This expression is based on eqn. 42 of [Tak2006a]
 
-    associate(U => ml%U(x), c_1 => ml%c_1(x), l => op%l)
+    associate(U => ml%U(x), c_1 => ml%c_1(x), l => mp%l)
 
       I_0 = x**(l+1)*(U*y(1) + y(4))/c_1
 
@@ -509,22 +509,22 @@ contains
 
 !****
 
-  function I_1 (ml, op, omega, x, y)
+  function I_1 (ml, mp, omega, x, y)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    complex(WP), intent(in)    :: omega
-    real(WP), intent(in)       :: x
-    complex(WP), intent(in)    :: y(:)
-    complex(WP)                :: I_1
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: I_1
 
     $CHECK_BOUNDS(SIZE(y),6)
 
     ! Calculate the I_0 integral at x, which should be zero for dipole
     ! modes. This expression is based on eqn. 43 of [Tak2006a]
 
-    associate(U => ml%U(x), c_1 => ml%c_1(x), l => op%l, &
-              omega_c => ml%omega_c(x, op%m, omega))
+    associate(U => ml%U(x), c_1 => ml%c_1(x), l => mp%l, &
+              omega_c => ml%omega_c(x, mp%m, omega))
 
       I_1 = x**(l+2)*(c_1*omega_c**2*U*y(1) - U*y(2) + &
                   (U - c_1*omega_c**2 - 2._WP)*y(3) + (c_1*omega_c**2 - 1._WP)*y(4))/c_1**2

@@ -24,7 +24,6 @@ module gyre_rad_shooter
   use core_kinds
 
   use gyre_model
-  use gyre_oscpar
   use gyre_numpar
   use gyre_ivp
   use gyre_sysmtx
@@ -43,7 +42,6 @@ module gyre_rad_shooter
      private
      class(model_t), pointer   :: ml => null()
      class(ivp_t), allocatable :: iv
-     type(oscpar_t)            :: op
      type(numpar_t)            :: np
      integer, public           :: n_e
    contains
@@ -69,11 +67,10 @@ module gyre_rad_shooter
 
 contains
 
-  function rad_shooter_t_ (ml, iv, op, np) result (sh)
+  function rad_shooter_t_ (ml, iv, np) result (sh)
 
     class(model_t), pointer, intent(in) :: ml
     class(ivp_t), intent(in)            :: iv
-    type(oscpar_t), intent(in)          :: op
     type(numpar_t), intent(in)          :: np
     type(rad_shooter_t)                 :: sh
 
@@ -81,7 +78,6 @@ contains
 
     sh%ml => ml
     allocate(sh%iv, SOURCE=iv)
-    sh%op = op
     sh%np = np
 
     sh%n_e = sh%iv%n_e

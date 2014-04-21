@@ -30,6 +30,7 @@ module gyre_util
   use gyre_evol_model
   use gyre_poly_model
   use gyre_hom_model
+  use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -49,6 +50,7 @@ module gyre_util
   ! Interfaces
 
   interface select_par
+     module procedure select_par_op_
      module procedure select_par_np_
      module procedure select_par_gp_
      module procedure select_par_sp_
@@ -191,9 +193,10 @@ contains
 
 !****
 
-  function freq_scale (ml, op, x_o, freq_units)
+  function freq_scale (ml, mp, op, x_o, freq_units)
 
     class(model_t), intent(in)   :: ml
+    type(modepar_t), intent(in)  :: mp
     type(oscpar_t), intent(in)   :: op
     real(WP), intent(in)         :: x_o
     character(LEN=*), intent(in) :: freq_units
@@ -204,7 +207,7 @@ contains
 
     select type (ml)
     class is (evol_model_t)
-       freq_scale = evol_freq_scale_(ml, op, x_o, freq_units)
+       freq_scale = evol_freq_scale_(ml, mp, op, x_o, freq_units)
     class is (poly_model_t)
        freq_scale = poly_freq_scale_(freq_units)
     class is (hom_model_t)
@@ -219,9 +222,10 @@ contains
 
   contains
 
-    function evol_freq_scale_ (ml, op, x_o, freq_units) result (freq_scale)
+    function evol_freq_scale_ (ml, mp, op, x_o, freq_units) result (freq_scale)
 
       class(evol_model_t), intent(in) :: ml
+      type(modepar_t), intent(in)     :: mp
       type(oscpar_t), intent(in)      :: op
       real(WP), intent(in)            :: x_o
       character(LEN=*), intent(in)    :: freq_units
@@ -243,10 +247,10 @@ contains
       case('PER_DAY')
          freq_scale = 86400._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
       case('ACOUSTIC_CUTOFF')
-         call eval_cutoff_freqs(ml, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+         call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
          freq_scale = 1._WP/omega_cutoff_hi
       case('GRAVITY_CUTOFF')
-         call eval_cutoff_freqs(ml, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+         call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
          freq_scale = 1._WP/omega_cutoff_lo
       case default
          $ABORT(Invalid freq_units)
@@ -304,13 +308,14 @@ contains
 
  !****
 
-  subroutine eval_cutoff_freqs (ml, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+  subroutine eval_cutoff_freqs (ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
 
-    class(model_t), intent(in) :: ml
-    type(oscpar_t), intent(in) :: op
-    real(WP), intent(in)       :: x_o
-    real(WP), intent(out)      :: omega_cutoff_lo
-    real(WP), intent(out)      :: omega_cutoff_hi
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    type(oscpar_t), intent(in)  :: op
+    real(WP), intent(in)        :: x_o
+    real(WP), intent(out)       :: omega_cutoff_lo
+    real(WP), intent(out)       :: omega_cutoff_hi
 
     real(WP) :: V_g
     real(WP) :: As
@@ -329,14 +334,14 @@ contains
         omega_cutoff_hi = HUGE(0._WP)
      case ('UNNO')
         call eval_atmos_coeffs_unno(ml, x_o, V_g, As, c_1)
-        call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
-        omega_cutoff_lo = ml%omega(x_o, op%m, omega_c_cutoff_lo)
-        omega_cutoff_hi = ml%omega(x_o, op%m, omega_c_cutoff_hi)
+        call eval_atmos_cutoff_freqs(V_g, As, c_1, mp%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+        omega_cutoff_lo = ml%omega(x_o, mp%m, omega_c_cutoff_lo)
+        omega_cutoff_hi = ml%omega(x_o, mp%m, omega_c_cutoff_hi)
      case('JCD')
         call eval_atmos_coeffs_jcd(ml, x_o, V_g, As, c_1)
-        call eval_atmos_cutoff_freqs(V_g, As, c_1, op%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
-        omega_cutoff_lo = ml%omega(x_o, op%m, omega_c_cutoff_lo)
-        omega_cutoff_hi = ml%omega(x_o, op%m, omega_c_cutoff_hi)
+        call eval_atmos_cutoff_freqs(V_g, As, c_1, mp%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+        omega_cutoff_lo = ml%omega(x_o, mp%m, omega_c_cutoff_lo)
+        omega_cutoff_hi = ml%omega(x_o, mp%m, omega_c_cutoff_hi)
      case default
         $ABORT(Invalid outer_bound_type)
      end select
@@ -407,6 +412,7 @@ contains
 
   $endsub
 
+  $SELECT_PAR(op,oscpar_t)
   $SELECT_PAR(np,numpar_t)
   $SELECT_PAR(gp,gridpar_t)
   $SELECT_PAR(sp,scanpar_t)

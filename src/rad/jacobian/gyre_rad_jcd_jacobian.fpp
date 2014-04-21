@@ -25,7 +25,7 @@ module gyre_rad_jcd_jacobian
 
   use gyre_jacobian
   use gyre_model
-  use gyre_oscpar
+  use gyre_modepar
 
   use ISO_FORTRAN_ENV
 
@@ -38,7 +38,7 @@ module gyre_rad_jcd_jacobian
   type, extends (jacobian_t) :: rad_jcd_jacobian_t
      private
      class(model_t), pointer :: ml => null()
-     type(oscpar_t)          :: op
+     type(modepar_t)         :: mp
    contains
      private
      procedure, public :: eval => eval_
@@ -62,16 +62,16 @@ module gyre_rad_jcd_jacobian
 
 contains
 
-  function rad_jcd_jacobian_t_ (ml, op) result (jc)
+  function rad_jcd_jacobian_t_ (ml, mp) result (jc)
 
     class(model_t), pointer, intent(in) :: ml
-    type(oscpar_t), intent(in)          :: op
+    type(modepar_t), intent(in)         :: mp
     type(rad_jcd_jacobian_t)            :: jc
 
     ! Construct the rad_jcd_jacobian_t
 
     jc%ml => ml
-    jc%op = op
+    jc%mp = mp
 
     jc%n_e = 2
 
@@ -118,7 +118,7 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              omega_c => this%ml%omega_c(x, this%op%m, omega))
+              omega_c => this%ml%omega_c(x, this%mp%m, omega))
 
       A(1,1) = V_g - 1._WP
       A(1,2) = -V_g*c_1*omega_c**2
@@ -158,7 +158,7 @@ contains
     if (to_canon) then
 
        associate(c_1 => this%ml%c_1(x), &
-                 omega_c => this%ml%omega_c(x, this%op%m, omega))
+                 omega_c => this%ml%omega_c(x, this%mp%m, omega))
 
          M(1,1) = 1._WP
          M(1,2) = 0._WP
@@ -171,7 +171,7 @@ contains
     else
 
        associate(c_1 => this%ml%c_1(x), &
-                 omega_c => this%ml%omega_c(x, this%op%m, omega))
+                 omega_c => this%ml%omega_c(x, this%mp%m, omega))
 
          M(1,1) = 1._WP
          M(1,2) = 0._WP

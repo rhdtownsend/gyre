@@ -7,22 +7,25 @@
 	file_format = 'MESA'
 /
 
-&osc
+&mode
 	l = 0
 /
 
-&osc
+&mode
 	l = 1
 /
 
-&osc
+&mode
 	l = 2
 	X_n_pg_min = -50
 /
 
-&osc
+&mode
 	l = 3
 	X_n_pg_min = -50
+/
+
+&osc
 /
 
 &num
