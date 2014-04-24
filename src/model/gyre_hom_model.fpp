@@ -44,6 +44,7 @@ module gyre_hom_model
   type, extends(model_t) :: hom_model_t
      private
      real(WP) :: dt_Gamma_1
+     real(WP) :: dt_Omega_rot
    contains
      private
      $PROC_DECL(V)
@@ -96,14 +97,16 @@ module gyre_hom_model
 
 contains
 
-  function hom_model_t_ (Gamma_1) result (ml)
+  function hom_model_t_ (Gamma_1, Omega_rot) result (ml)
 
     real(WP), intent(in) :: Gamma_1
+    real(WP), intent(in) :: Omega_rot
     type(hom_model_t)    :: ml
 
     ! Construct the hom_model_t
 
     ml%dt_Gamma_1 = Gamma_1
+    ml%dt_Omega_rot = Omega_rot
 
     ! Finish
 
@@ -452,9 +455,9 @@ contains
     real(WP), intent(in)           :: x
     real(WP)                       :: Omega_rot
 
-    ! Calculate Omega_rot (no rotation)
+    ! Calculate Omega_rot
 
-    Omega_rot = 0._WP
+    Omega_rot = this%dt_Omega_rot
 
     ! Finish
 

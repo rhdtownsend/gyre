@@ -46,6 +46,7 @@ module gyre_poly_model
      private
      type(spline_t)   :: sp_Theta
      type(spline_t)   :: sp_dTheta
+     type(spline_t)   :: sp_Omega_rot
      real(WP)         :: dt_Gamma_1
      real(WP), public :: n_poly
      real(WP), public :: xi_1
@@ -104,11 +105,12 @@ module gyre_poly_model
 
 contains
 
-  function poly_model_t_ (xi, Theta, dTheta, n_poly, Gamma_1, deriv_type) result (ml)
+  function poly_model_t_ (xi, Theta, dTheta, Omega_rot, n_poly, Gamma_1, deriv_type) result (ml)
 
     real(WP), intent(in)         :: xi(:)
     real(WP), intent(in)         :: Theta(:)
     real(WP), intent(in)         :: dTheta(:)
+    real(WP), intent(in)         :: Omega_rot(:)
     real(WP), intent(in)         :: n_poly
     real(WP), intent(in)         :: Gamma_1
     character(LEN=*), intent(in) :: deriv_type
@@ -118,6 +120,7 @@ contains
     real(WP) :: d2Theta(SIZE(xi))
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
+    $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(xi))
 
     ! Construct the poly_model_t from the polytrope functions
 
@@ -139,6 +142,8 @@ contains
 
     ml%sp_Theta = spline_t(xi, Theta, dTheta)
     ml%sp_dTheta = spline_t(xi, dTheta, d2Theta)
+
+    ml%sp_Omega_rot = spline_t(xi/xi(n), Omega_rot, deriv_type, dy_dx_a=0._WP, dy_dx_b=0._WP)
 
     ml%n_poly = n_poly
     ml%dt_Gamma_1 = Gamma_1
@@ -540,17 +545,17 @@ contains
   $PROC(tau_thm)
 
 !****
-
+ 
   function Omega_rot_1_ (this, x) result (Omega_rot)
 
     class(poly_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: Omega_rot
 
-    ! Calculate Omega_rot (no rotation)
+    ! Interpolate Omega_rot
 
-    Omega_rot = 0._WP
-
+    Omega_rot = this%sp_Omega_rot%interp(x)
+       
     ! Finish
 
     return
@@ -558,20 +563,18 @@ contains
   end function Omega_rot_1_
 
 !****
-  
+
   function Omega_rot_v_ (this, x) result (Omega_rot)
 
     class(poly_model_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: Omega_rot(SIZE(x))
 
-    integer :: i
+    integer :: j
 
-    ! Calculate Omega_rot
-    
-    x_loop : do i = 1,SIZE(x)
-       Omega_rot(i) = this%Omega_rot(x(i))
-    end do x_loop
+    ! Interpolate Omega_rot
+
+    Omega_rot = this%sp_Omega_rot%interp(x)
 
     ! Finish
 
