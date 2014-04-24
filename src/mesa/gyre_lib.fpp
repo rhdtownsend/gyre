@@ -32,6 +32,7 @@ module gyre_lib
   use gyre_model
   use gyre_evol_model
   use gyre_mesa_file
+  use gyre_modepar
   use gyre_oscpar
   use gyre_gridpar
   use gyre_numpar
@@ -224,12 +225,14 @@ contains
     real(WP), intent(inout) :: rpar(:)
 
     integer                      :: unit
+    type(modepar_t), allocatable :: mp(:)
     type(oscpar_t), allocatable  :: op(:)
     type(numpar_t), allocatable  :: np(:)
     type(scanpar_t), allocatable :: sp(:)
     type(gridpar_t), allocatable :: shoot_gp(:)
     type(gridpar_t), allocatable :: recon_gp(:)
     integer                      :: i
+    type(oscpar_t), allocatable  :: op_sel(:)
     type(numpar_t), allocatable  :: np_sel(:)
     type(gridpar_t), allocatable :: shoot_gp_sel(:)
     type(gridpar_t), allocatable :: recon_gp_sel(:)
@@ -247,6 +250,7 @@ contains
 
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
+    call read_modepar(unit, mp)
     call read_oscpar(unit, op)
     call read_numpar(unit, np)
     call read_shoot_gridpar(unit, shoot_gp)
@@ -257,17 +261,19 @@ contains
 
     ! Loop through oscpars
 
-    op_loop : do i = 1, SIZE(op)
+    op_loop : do i = 1, SIZE(mp)
 
-       if (op(i)%l == l) then
+       if (mp(i)%l == l) then
 
           ! Select parameters according to tags
 
-          call select_par(np, op(i)%tag, np_sel, last=.TRUE.)
-          call select_par(shoot_gp, op(i)%tag, shoot_gp_sel)
-          call select_par(recon_gp, op(i)%tag, recon_gp_sel)
-          call select_par(sp, op(i)%tag, sp_sel)
+          call select_par(op, mp(i)%tag, op_sel, last=.TRUE.)
+          call select_par(np, mp(i)%tag, np_sel, last=.TRUE.)
+          call select_par(shoot_gp, mp(i)%tag, shoot_gp_sel)
+          call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
+          call select_par(sp, mp(i)%tag, sp_sel)
 
+          $ASSERT(SIZE(op_sel) == 1,No matching num parameters)
           $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
           $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
           $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
@@ -275,7 +281,7 @@ contains
 
           ! Set up the frequency array
 
-          call build_scan(sp_sel, ml_m, op(i), shoot_gp_sel, x_ml_m, omega)
+          call build_scan(sp_sel, ml_m, mp(i), op_sel(1), shoot_gp_sel, x_ml_m, omega)
 
           ! Store the frequency range in shoot_gp_sel
 
@@ -286,14 +292,14 @@ contains
 
           if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
-          if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-             allocate(ad_bp, SOURCE=rad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+          if(mp(i)%l == 0 .AND. np_sel(1)%reduce_order) then
+             allocate(ad_bp, SOURCE=rad_bvp_t(ml_m, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
           else
-             allocate(ad_bp, SOURCE=ad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+             allocate(ad_bp, SOURCE=ad_bvp_t(ml_m, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
           endif
 
           if (non_ad) then
-             allocate(nad_bp, SOURCE=nad_bvp_t(ml_m, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+             allocate(nad_bp, SOURCE=nad_bvp_t(ml_m, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
           endif
 
           ! Find modes
