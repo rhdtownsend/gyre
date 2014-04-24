@@ -12,7 +12,7 @@ EXEC=./gyre_ad
 IN_FILE=gyre_ad.in
 OUT_FILE=gyre_ad.txt
 
-LABEL="solar model S"
+LABEL="FGONG solar model S"
 
 RELERR=3E-14
 FIELDS=1-5
