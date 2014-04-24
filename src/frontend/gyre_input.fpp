@@ -132,12 +132,13 @@ contains
     character(LEN=256)          :: deriv_type
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: Gamma_1
+    real(WP)                    :: Omega_rot
     logical                     :: regularize
     type(evol_model_t)          :: ec
     type(poly_model_t)          :: pc
     type(hom_model_t)           :: hc
 
-    namelist /model/ model_type, file_format, data_format, deriv_type, file, Gamma_1, regularize
+    namelist /model/ model_type, file_format, data_format, deriv_type, file, Gamma_1, Omega_rot, regularize
 
     ! Read model parameters
 
@@ -150,6 +151,7 @@ contains
     file = ''
 
     Gamma_1 = 5._WP/3._WP
+    Omega_rot = 0._WP
 
     rewind(unit)
     read(unit, NML=model, END=900)
@@ -202,7 +204,7 @@ contains
 
     case ('HOM')
 
-       hc = hom_model_t(Gamma_1)
+       hc = hom_model_t(Gamma_1, Omega_rot)
 
        allocate(ml, SOURCE=hc)
 
@@ -239,7 +241,7 @@ contains
     integer           :: X_n_pg_max
     character(LEN=64) :: tag
 
-    namelist /mode/ l, m, X_n_pg_min, X_n_pg_max
+    namelist /mode/ l, m, X_n_pg_min, X_n_pg_max, tag
 
     ! Count the number of mode namelists
 
