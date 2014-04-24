@@ -60,6 +60,9 @@ module gyre_grid
 
   public :: build_grid
   public :: grid_range
+  public :: create_uniform
+  public :: create_geom
+  public :: create_log
   public :: find_x_turn
 
   ! Procedures
@@ -105,11 +108,11 @@ contains
        n_in = SIZE(x_in)
        x = [x_in(1),0.5_WP*(x_in(:n_in-1)+x_in(2:)),x_in(n_in)]
     case ('CREATE_UNIFORM')
-       call create_uniform_(gp(1)%n, x)
+       call create_uniform(gp(1)%n, x)
     case ('CREATE_GEOM')
-       call create_geom_(gp(1)%s, gp(1)%n, x)
+       call create_geom(gp(1)%s, gp(1)%n, x)
     case ('CREATE_LOG')
-       call create_log_(gp(1)%s, gp(1)%n, x)
+       call create_log(gp(1)%s, gp(1)%n, x)
     case ('CREATE_FROM_FILE')
        call create_from_file_(gp(1)%file, x)
     case default
@@ -207,7 +210,7 @@ contains
           
 !****
 
-  subroutine create_uniform_ (n, x)
+  subroutine create_uniform (n, x)
 
     integer, intent(in)                :: n
     real(WP), allocatable, intent(out) :: x(:)
@@ -231,11 +234,11 @@ contains
 
     return
 
-  end subroutine create_uniform_
+  end subroutine create_uniform
 
 !****
 
-  subroutine create_geom_ (s, n, x)
+  subroutine create_geom (s, n, x)
 
     real(WP), intent(in)               :: s
     integer, intent(in)                :: n
@@ -325,7 +328,7 @@ contains
 
     return
 
-  end subroutine create_geom_
+  end subroutine create_geom
 
 !****
 
@@ -372,7 +375,7 @@ contains
 
 !****
 
-  subroutine create_log_ (s, n, x)
+  subroutine create_log (s, n, x)
 
     real(WP), intent(in)               :: s
     integer, intent(in)                :: n
@@ -441,7 +444,7 @@ contains
 
     return
 
-  end subroutine create_log_
+  end subroutine create_log
 
 !****
 
