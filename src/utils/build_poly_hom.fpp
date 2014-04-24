@@ -36,6 +36,7 @@ program build_poly_hom
   ! Variables
 
   real(WP)                    :: Gamma_1
+  real(WP)                    :: Omega_rot
   character(LEN=256)          :: grid_type
   real(WP)                    :: s
   integer                     :: n
@@ -46,13 +47,14 @@ program build_poly_hom
   real(WP), allocatable       :: dTheta(:)
   type(hgroup_t)              :: hg
 
-  namelist /poly/ Gamma_1
+  namelist /poly/ Gamma_1, Omega_rot
   namelist /grid/ grid_type, s, n
   namelist /output/ file
 
   ! Read parameters
 
   Gamma_1 = 5._WP/3._WP
+  Omega_rot = 0._WP
 
   read(INPUT_UNIT, NML=poly)
   
@@ -92,7 +94,7 @@ program build_poly_hom
 
   ! Write the model
 
-  call hg%init(file, CREATE_FILE)
+  hg = hgroup_t(file, CREATE_FILE)
 
   call write_attr(hg, 'n', n)
 
@@ -102,6 +104,7 @@ program build_poly_hom
   call write_dset(hg, 'xi', xi)
   call write_dset(hg, 'Theta', Theta)
   call write_dset(hg, 'dTheta', dTheta)
+  call write_dset(hg, 'Omega_rot', SPREAD(Omega_rot, DIM=1, NCOPIES=n))
 
   call hg%final()
 
