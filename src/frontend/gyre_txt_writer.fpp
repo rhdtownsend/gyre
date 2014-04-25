@@ -35,11 +35,11 @@ module gyre_txt_writer
 
   ! Parameter definitions
 
-  integer, parameter :: FIELD_LEN = 24
+  integer, parameter :: FIELD_LEN = 25
 
-  character(LEN=*), parameter :: I_FORMAT = '(I24)'
-  character(LEN=*), parameter :: R_FORMAT = '(E24.16)'
-  character(LEN=*), parameter :: A_FORMAT = '(A24)'
+  character(LEN=*), parameter :: I_FORMAT = '(I25)'
+  character(LEN=*), parameter :: R_FORMAT = '(E25.16E3)'
+  character(LEN=*), parameter :: A_FORMAT = '(A25)'
 
   ! Derived-type definitions
 
