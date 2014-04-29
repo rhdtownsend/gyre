@@ -45,11 +45,12 @@ module gyre_famdl_file
 
 contains
 
-  subroutine read_famdl_model (file, deriv_type, data_format, ml, x)
+  subroutine read_famdl_model (file, deriv_type, data_format, regularize, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
     character(*), intent(in)                     :: data_format
+    logical, intent(in)                          :: regularize
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
@@ -111,7 +112,7 @@ contains
     if (SIZE(ind) < n) then
 
        if(check_log_level('WARN')) then
-          write(OUTPUT_UNIT, 110) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
+          write(OUTPUT_UNIT, 130) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
 130       format('!!',1X,A)
        endif
 
@@ -135,14 +136,17 @@ contains
 
     add_center = x_(1) /= 0._WP
 
-    if(add_center .AND. check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Adding central point'
+    if (check_log_level('INFO')) then
+       if (add_center) write(OUTPUT_UNIT, 140) 'Adding central point'
+140    format(3X,A)
     endif
+
+    if (regularize) write(OUTPUT_UNIT, 130) 'Warning: Cannot regularize this model'
 
     ! Initialize the model
 
     ml = evol_model_t(M_star, R_star, L_star, x_, V_g*Gamma_1, As, U, c_1, Gamma_1, &
-                      deriv_type, add_center)
+                      deriv_type, add_center=add_center)
 
     ! Set up the grid
 

@@ -45,11 +45,12 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_model (file, deriv_type, data_format, ml, x)
+  subroutine read_fgong_model (file, deriv_type, data_format, regularize, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
     character(*), intent(in)                     :: data_format
+    logical, intent(in)                          :: regularize
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
@@ -129,7 +130,7 @@ contains
 120       format('!!',1X,A)
        endif
 
-       n = SIZE(var, 2)
+       n = SIZE(ind)
 
     endif
 
@@ -161,23 +162,25 @@ contains
 
     if(m(1) == 0._WP .AND. r(1) /= 0._WP) then
        r(1) = 0._WP
-       write(OUTPUT_UNIT, 110) 'Forcing central r == 0'
+       write(OUTPUT_UNIT, 130) 'Forcing central r == 0'
+130    format(3X,A)
     elseif(r(1) == 0._WP .AND. m(1) /= 0._WP) then
        m(1) = 0._WP
-       write(OUTPUT_UNIT, 110) 'Forcing central m == 0'
+       write(OUTPUT_UNIT, 130) 'Forcing central m == 0'
     endif
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    if(add_center .AND. check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Adding central point'
+    if (check_log_level('INFO')) then
+       if (regularize) write(OUTPUT_UNIT, 130) 'Regularizing'
+       if (add_center) write(OUTPUT_UNIT, 130) 'Adding central point'
     endif
 
     ! Initialize the model
 
     ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
-                      deriv_type, add_center)
+                      deriv_type, regularize=regularize, add_center=add_center)
 
     ! Set up the grid
 

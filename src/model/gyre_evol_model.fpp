@@ -179,7 +179,7 @@ contains
 
   recursive function evol_model_t_mech_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                         Gamma_1, nabla_ad, delta, Omega_rot, &
-                                        deriv_type, add_center) result (ml)
+                                        deriv_type, regularize, add_center) result (ml)
 
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
@@ -195,11 +195,15 @@ contains
     real(WP), intent(in)          :: delta(:)
     real(WP), intent(in)          :: Omega_rot(:)
     character(LEN=*), intent(in)  :: deriv_type
+    logical, optional, intent(in) :: regularize
     logical, optional, intent(in) :: add_center
     type(evol_model_t)            :: ml
 
+    logical  :: regularize_
     logical  :: add_center_
     integer  :: n
+    real(WP) :: m_reg(SIZE(r))
+    real(WP) :: p_reg(SIZE(r))
     real(WP) :: V(SIZE(r))
     real(WP) :: As(SIZE(r))
     real(WP) :: U(SIZE(r))
@@ -217,6 +221,12 @@ contains
     $CHECK_BOUNDS(SIZE(delta),SIZE(r))
     $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(r))
 
+    if (PRESENT(regularize)) then
+       regularize_ = regularize
+    else
+       regularize_ = .FALSE.
+    endif
+
     if(PRESENT(add_center)) then
        add_center_ = add_center
     else
@@ -227,17 +237,30 @@ contains
 
     ! See if we need a central point
 
-    if(add_center_) then
+    if (add_center_) then
 
        ! Add a central point and initialize using recursion
 
        ml = evol_model_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
                          prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), &
                          [0._WP,N2], prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), &
-                         prep_center_(r, Omega_rot), deriv_type, .FALSE.)
+                         prep_center_(r, Omega_rot), deriv_type, regularize, .FALSE.)
+
+    elseif (regularize_) then
+
+       ! Regularize and initialize using recursion
+
+       n = SIZE(r)
+
+       call regularize_data_(r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg)
+
+       ml = evol_model_t(m_reg(n), R_star, L_star, r, m_reg, &
+                         p_reg, rho, T, &
+                         N2, Gamma_1, nabla_ad, delta, &
+                         Omega_rot, deriv_type, .FALSE., .FALSE.)
 
     else
-
+       
        ! Perform basic validations
        
        n = SIZE(r)
@@ -399,7 +422,7 @@ contains
                                          Gamma_1, nabla_ad, delta, Omega_rot, &
                                          nabla, kappa, kappa_rho, kappa_T, &
                                          epsilon, epsilon_rho, epsilon_T, &
-                                         deriv_type, add_center) result (ml)
+                                         deriv_type, regularize, add_center) result (ml)
 
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
@@ -422,11 +445,15 @@ contains
     real(WP), intent(in)          :: epsilon_rho(:)
     real(WP), intent(in)          :: epsilon_T(:)
     character(LEN=*), intent(in)  :: deriv_type
+    logical, optional, intent(in) :: regularize
     logical, optional, intent(in) :: add_center
     type(evol_model_t)            :: ml
 
+    logical  :: regularize_
     logical  :: add_center_
     integer  :: n
+    real(WP) :: m_reg(SIZE(r))
+    real(WP) :: p_reg(SIZE(r))
     real(WP) :: x(SIZE(r))
     real(WP) :: V(SIZE(r))
     real(WP) :: V_x2(SIZE(r))
@@ -461,7 +488,13 @@ contains
     $CHECK_BOUNDS(SIZE(epsilon_rho),SIZE(r))
     $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(r))
 
-    if(PRESENT(add_center)) then
+    if (PRESENT(regularize)) then
+       regularize_ = regularize
+    else
+       regularize_ = .FALSE.
+    endif
+
+    if (PRESENT(add_center)) then
        add_center_ = add_center
     else
        add_center_ = .FALSE.
@@ -469,9 +502,7 @@ contains
 
     ! Construct the evol_model using the full structure data
 
-    ! See if we need a central point
-
-    if(add_center_) then
+    if (add_center_) then
 
        ! Add a central point and initialize using recursion
 
@@ -480,7 +511,22 @@ contains
                          prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), prep_center_(r, Omega_rot), &
                          prep_center_(r, nabla), prep_center_(r, kappa), prep_center_(r, kappa_rho), prep_center_(r, kappa_T), &
                          prep_center_(r, epsilon), prep_center_(r, epsilon_rho), prep_center_(r, epsilon_T), &
-                         deriv_type, .FALSE.)
+                         deriv_type, regularize_, .FALSE.)
+
+    elseif (regularize_) then
+
+       ! Regularize and initialize using recursion
+
+       n = SIZE(r)
+
+       call regularize_data_(r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg)
+
+       ml = evol_model_t(m_reg(n), R_star, L_star, r, m_reg, &
+                         p_reg, rho, T, N2, &
+                         Gamma_1, nabla_ad, delta, Omega_rot, &
+                         nabla, kappa, kappa_rho, kappa_T, &
+                         epsilon, epsilon_rho, epsilon_T, &
+                         deriv_type, regularize_, .FALSE.)
 
     else
 
@@ -678,80 +724,69 @@ contains
 
   end function prep_center_
 
-! !****
+!****
 
-!   subroutine regularize_ (this)
+  subroutine regularize_data_ (r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg)
 
-!     class(evol_model_t), intent(inout) :: this
+    real(WP), intent(in)     :: r(:)
+    real(WP), intent(in)     :: m(:)
+    real(WP), intent(in)     :: p(:)
+    real(WP), intent(in)     :: rho(:)
+    real(WP), intent(in)     :: Gamma_1(:)
+    real(WP), intent(in)     :: N2(:)
+    character(*), intent(in) :: deriv_type
+    real(WP), intent(out)    :: m_reg(:)
+    real(WP), intent(out)    :: p_reg(:)
 
-!     real(WP), allocatable :: x(:)
-!     real(WP), allocatable :: V(:)
-!     real(WP), allocatable :: As(:)
-!     real(WP), allocatable :: U(:)
-!     real(WP), allocatable :: c_1(:)
-!     real(WP), allocatable :: Gamma_1(:)
-!     integer               :: n
-!     real(WP), allocatable :: r(:)
-!     real(WP), allocatable :: dlnrho_dlnr(:)
-!     real(WP), allocatable :: lnrho(:)
-!     real(WP), allocatable :: rho(:)
-!     real(WP), allocatable :: m(:)
+    type(spline_t) :: sp_rho
+    type(spline_t) :: sp_dm
+    real(WP)       :: dlnrho_dlnr(SIZE(r))
+    real(WP)       :: g_r(SIZE(r))
 
-!     ! Regularize the mechanical structure coefficients
+    $CHECK_BOUNDS(SIZE(m),SIZE(r))
+    $CHECK_BOUNDS(SIZE(p),SIZE(r))
+    $CHECK_BOUNDS(SIZE(rho),SIZE(r))
+    $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(r))
+    $CHECK_BOUNDS(SIZE(N2),SIZE(r))
+    $CHECK_BOUNDS(SIZE(m_reg),SIZE(r))
+    $CHECK_BOUNDS(SIZE(p_reg),SIZE(r))
 
-!     x = this%sp(J_V)%x
+    ! Regularize the model
 
-!     V = this%sp(J_V)%y
-!     As = this%sp(J_AS)%y
-!     U = this%sp(J_U)%y
-!     c_1 = this%sp(J_C_1)%y
-!     Gamma_1 = this%sp(J_GAMMA_1)%y
+    sp_rho = spline_t(r, rho, deriv_type, dy_dx_a=0._WP)
+    sp_dm = spline_t(r, 4._WP*PI*r**2*rho, deriv_type, dy_dx_a=0._WP)
 
-!     ! Do the regularization
+    ! Recalculate m
 
-!     ! First, reconstruct the density
+    m_reg = sp_dm%integ()
 
-!     n = SIZE(x)
+    ! Calculate dlnrho/dlnr
 
-!     r = x*this%R_star
+    dlnrho_dlnr = r*sp_rho%deriv()/rho
 
-!     dlnrho_dlnr = -V/Gamma_1 - As
+    ! Calculate g/r
 
-!     allocate(lnrho(n))
+    where (r /= 0._WP)
+       g_r = G_GRAVITY*m_reg/r**3
+    elsewhere
+       g_r = 4._WP*PI*G_GRAVITY*rho
+    endwhere
 
-!     lnrho(1) = LOG(this%rho_c)
-!     lnrho(2:) = lnrho(1) + integ(LOG(r(2:)), dlnrho_dlnr(2:), 'MONO')
+    ! Recalculate p
 
-!     rho = EXP(lnrho)
+    where (r /= 0._WP)
+       p_reg = -rho*g_r*r**2/(Gamma_1*(N2/g_r + dlnrho_dlnr))
+    endwhere
 
-!     ! Now reconstruct the mass
+    where (r == 0._WP)
+       p_reg = MAXVAL(p_reg, MASK=r /= 0._WP)
+    endwhere
 
-!     m = integ(r, 4._WP*PI*r**2*rho, 'MONO', dy_dx_a=0._WP)
+    ! Finish
 
-!     ! Set c_1 and U
+    return
 
-!     where(r /= 0._WP)
-!        U = 4._WP*PI*rho*r**3/m
-!        c_1 = (r/this%R_star)**3/(m/MAXVAL(m))
-!     elsewhere
-!        U = 3._WP
-!        c_1 = 3._WP*(MAXVAL(m)/this%R_star**3)/(4._WP*PI*rho)
-!     end where
-
-!     ! Update the model
-
-!     !$OMP PARALLEL SECTIONS
-!     !$OMP SECTION
-!     call this%set_sp_(x, U, 'MONO', J_U)
-!     !$OMP SECTION
-!     call this%set_sp_(x, c_1, 'MONO', J_C_1)
-!     !$OMP END PARALLEL SECTIONS
-
-!     ! Finish
-
-!     return
-
-!   end subroutine regularize_
+  end subroutine regularize_data_
 
 !****
 
