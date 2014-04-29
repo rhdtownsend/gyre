@@ -163,32 +163,28 @@ contains
 
        select case (file_format)
        case ('MESA')
-          call read_mesa_model(file, deriv_type, ec, x=x_bc)
+          call read_mesa_model(file, deriv_type, regularize, ec, x=x_bc)
        case('B3')
           $if($HDF5)
-          call read_b3_model(file, deriv_type, ec, x=x_bc)
+          call read_b3_model(file, deriv_type, regularize, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
        case ('GSM')
           $if($HDF5)
-          call read_gsm_model(file, deriv_type, ec, x=x_bc)
+          call read_gsm_model(file, deriv_type, regularize, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read GSM-format files)
           $endif
        case ('OSC')
-          call read_osc_model(file, deriv_type, data_format, ec, x=x_bc)
+          call read_osc_model(file, deriv_type, data_format, regularize, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_model(file, deriv_type, data_format, ec, x=x_bc) 
+          call read_fgong_model(file, deriv_type, data_format, regularize, ec, x=x_bc) 
        case ('FAMDL')
-          call read_famdl_model(file, deriv_type, data_format, ec, x=x_bc) 
+          call read_famdl_model(file, deriv_type, data_format, regularize, ec, x=x_bc)
        case default
           $ABORT(Invalid file_format)
        end select
-
-!       if (regularize) then
-!          call ec%regularize()
-!       endif
 
        allocate(ml, SOURCE=ec)
 
