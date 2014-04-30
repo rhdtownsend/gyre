@@ -204,6 +204,7 @@ contains
     integer  :: n
     real(WP) :: m_reg(SIZE(r))
     real(WP) :: p_reg(SIZE(r))
+    real(WP) :: N2_reg(SIZE(r))
     real(WP) :: V(SIZE(r))
     real(WP) :: As(SIZE(r))
     real(WP) :: U(SIZE(r))
@@ -252,11 +253,11 @@ contains
 
        n = SIZE(r)
 
-       call regularize_data_(r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg)
+       call regularize_data_(r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg, N2_reg)
 
        ml = evol_model_t(m_reg(n), R_star, L_star, r, m_reg, &
                          p_reg, rho, T, &
-                         N2, Gamma_1, nabla_ad, delta, &
+                         N2_reg, Gamma_1, nabla_ad, delta, &
                          Omega_rot, deriv_type, .FALSE., .FALSE.)
 
     else
@@ -454,6 +455,7 @@ contains
     integer  :: n
     real(WP) :: m_reg(SIZE(r))
     real(WP) :: p_reg(SIZE(r))
+    real(WP) :: N2_reg(SIZE(r))
     real(WP) :: x(SIZE(r))
     real(WP) :: V(SIZE(r))
     real(WP) :: V_x2(SIZE(r))
@@ -519,10 +521,10 @@ contains
 
        n = SIZE(r)
 
-       call regularize_data_(r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg)
+       call regularize_data_(r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg, N2_reg)
 
        ml = evol_model_t(m_reg(n), R_star, L_star, r, m_reg, &
-                         p_reg, rho, T, N2, &
+                         p_reg, rho, T, N2_reg, &
                          Gamma_1, nabla_ad, delta, Omega_rot, &
                          nabla, kappa, kappa_rho, kappa_T, &
                          epsilon, epsilon_rho, epsilon_T, &
@@ -726,7 +728,7 @@ contains
 
 !****
 
-  subroutine regularize_data_ (r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg)
+  subroutine regularize_data_ (r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg, N2_reg)
 
     real(WP), intent(in)     :: r(:)
     real(WP), intent(in)     :: m(:)
@@ -737,9 +739,13 @@ contains
     character(*), intent(in) :: deriv_type
     real(WP), intent(out)    :: m_reg(:)
     real(WP), intent(out)    :: p_reg(:)
+    real(WP), intent(out)    :: N2_reg(:)
 
     type(spline_t) :: sp_rho
     type(spline_t) :: sp_dm
+    type(spline_t) :: sp_N2
+    integer        :: n
+    logical        :: N2_mask(SIZE(r))
     real(WP)       :: dlnrho_dlnr(SIZE(r))
     real(WP)       :: g_r(SIZE(r))
 
@@ -750,11 +756,20 @@ contains
     $CHECK_BOUNDS(SIZE(N2),SIZE(r))
     $CHECK_BOUNDS(SIZE(m_reg),SIZE(r))
     $CHECK_BOUNDS(SIZE(p_reg),SIZE(r))
+    $CHECK_BOUNDS(SIZE(N2_reg),SIZE(r))
 
     ! Regularize the model
 
+    ! Set up interpolating splines
+
     sp_rho = spline_t(r, rho, deriv_type, dy_dx_a=0._WP)
     sp_dm = spline_t(r, 4._WP*PI*r**2*rho, deriv_type, dy_dx_a=0._WP)
+
+    n = SIZE(N2)
+
+    N2_mask = [.TRUE.,N2(:n-2) > 0._WP .AND. N2(1:n-1) < 0._WP .AND. N2(2:n) > 0._WP,.TRUE.]
+
+    sp_N2 = spline_t(PACK(r, N2_mask), PACK(N2, N2_mask), deriv_type, dy_dx_a=0._WP)
 
     ! Recalculate m
 
@@ -772,10 +787,14 @@ contains
        g_r = 4._WP*PI*G_GRAVITY*rho
     endwhere
 
+    ! Recalculate N2
+
+    N2_reg = sp_N2%interp(r)
+
     ! Recalculate p
 
     where (r /= 0._WP)
-       p_reg = -rho*g_r*r**2/(Gamma_1*(N2/g_r + dlnrho_dlnr))
+       p_reg = -rho*g_r*r**2/(Gamma_1*(N2_reg/g_r + dlnrho_dlnr))
     endwhere
 
     where (r == 0._WP)
