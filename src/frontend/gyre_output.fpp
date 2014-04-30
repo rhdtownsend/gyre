@@ -414,6 +414,12 @@ contains
           call wr%write('K', md%K())
        case('freq_units')
           call wr%write('freq_units', freq_units)
+       case('dm_dr')
+          call wr%write('dm_dr', md%ml%U(md%x)*md%x**2/md%ml%c_1(md%x))
+       case('igrand')
+          call wr%write('igrand', ABS(md%xi_r())**2*md%ml%U(md%x)*md%x**2/md%ml%c_1(md%x))
+       case('E_chk')
+          call wr%write('E_chk', integrate(md%x, ABS(md%xi_r())**2*md%ml%U(md%x)*md%x**2/md%ml%c_1(md%x)))
        case default
           select type (ml => md%ml)
           type is (evol_model_t)

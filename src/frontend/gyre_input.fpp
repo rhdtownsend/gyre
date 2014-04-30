@@ -114,6 +114,7 @@ contains
     use gyre_hom_model
     use gyre_mesa_file
     use gyre_osc_file
+    use gyre_losc_file
     use gyre_fgong_file
     use gyre_famdl_file
     $if ($HDF5)
@@ -178,6 +179,8 @@ contains
           $endif
        case ('OSC')
           call read_osc_model(file, deriv_type, data_format, regularize, ec, x=x_bc)
+       case ('LOSC')
+          call read_losc_model(file, deriv_type, regularize, ec, x=x_bc)
        case ('FGONG')
           call read_fgong_model(file, deriv_type, data_format, regularize, ec, x=x_bc) 
        case ('FAMDL')
