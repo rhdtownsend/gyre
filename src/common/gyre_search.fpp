@@ -28,6 +28,7 @@ module gyre_search
 
   use gyre_bvp
   use gyre_model
+  use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -53,10 +54,11 @@ module gyre_search
 
 contains
 
-  subroutine build_scan (sp, ml, op, gp, x_in, omega)
+  subroutine build_scan (sp, ml, mp, op, gp, x_in, omega)
 
     type(scanpar_t), intent(in)        :: sp(:)
     class(model_t), intent(in)         :: ml
+    type(modepar_t), intent(in)        :: mp
     type(oscpar_t), intent(in)         :: op
     type(gridpar_t), intent(in)        :: gp(:)
     real(WP), allocatable, intent(in)  :: x_in(:)
@@ -81,7 +83,7 @@ contains
 100    format(A)
     endif
 
-    call grid_range(gp, ml, op, x_in, x_i, x_o)
+    call grid_range(gp, ml, mp, x_in, x_i, x_o)
 
     ! Loop through scanpars
 
@@ -91,8 +93,8 @@ contains
 
        ! Determine the frequency range
 
-       omega_min = sp(i)%freq_min/freq_scale(ml, op, x_o, sp(i)%freq_units)
-       omega_max = sp(i)%freq_max/freq_scale(ml, op, x_o, sp(i)%freq_units)
+       omega_min = sp(i)%freq_min/freq_scale(ml, mp, op, x_o, sp(i)%freq_units)
+       omega_max = sp(i)%freq_max/freq_scale(ml, mp, op, x_o, sp(i)%freq_units)
 
        ! Add points to the frequency grid
 
@@ -129,7 +131,7 @@ contains
 
     if (check_log_level('WARN')) then
 
-       call eval_cutoff_freqs(ml, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+       call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
 
        if (omega(1) < omega_cutoff_lo) then
           write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends below atmospheric gravity cutoff frequency'
@@ -213,7 +215,7 @@ contains
        ! Report
 
        if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%op%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter, md(i)%n
+          write(OUTPUT_UNIT, 120) md(i)%mp%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter, md(i)%n
 120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
        endif
 
@@ -306,7 +308,7 @@ contains
        ! Report
 
        if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%op%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter, md(i)%n
+          write(OUTPUT_UNIT, 120) md(i)%mp%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter, md(i)%n
 120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
        endif
 

@@ -5,20 +5,23 @@
 	model_type = 'HOM'
 /
 
-&osc
+&mode
 	l = 0
 /
 
-&osc
+&mode
 	l = 1
 /
 
-&osc
+&mode
 	l = 2
 /
 
-&osc
+&mode
 	l = 3
+/
+
+&osc
 /
 
 &num

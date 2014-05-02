@@ -25,7 +25,7 @@ module gyre_nad_jcd_jacobian
 
   use gyre_jacobian
   use gyre_model
-  use gyre_oscpar
+  use gyre_modepar
 
   use ISO_FORTRAN_ENV
 
@@ -38,7 +38,7 @@ module gyre_nad_jcd_jacobian
   type, extends (jacobian_t) :: nad_jcd_jacobian_t
      private
      class(model_t), pointer :: ml => null()
-     type(oscpar_t)          :: op
+     type(modepar_t)         :: mp
    contains
      private
      procedure, public :: eval => eval_
@@ -62,16 +62,16 @@ module gyre_nad_jcd_jacobian
 
 contains
 
-  function nad_jcd_jacobian_t_ (ml, op) result (jc)
+  function nad_jcd_jacobian_t_ (ml, mp) result (jc)
 
     class(model_t), pointer, intent(in) :: ml
-    type(oscpar_t), intent(in)          :: op
+    type(modepar_t), intent(in)         :: mp
     type(nad_jcd_jacobian_t)            :: jc
 
     ! Construct the nad_jcd_jacobian_t
 
     jc%ml => ml
-    jc%op = op
+    jc%mp = mp
 
     jc%n_e = 6
 
@@ -124,7 +124,7 @@ contains
               c_thm => this%ml%c_thm(x), c_dif => this%ml%c_dif(x), &
               c_eps_ad => this%ml%c_eps_ad(x), c_eps_S => this%ml%c_eps_S(x), &
               kappa_ad => this%ml%kappa_ad(x), kappa_S => this%ml%kappa_S(x), &
-              l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
+              l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
 
       if (l /= 0) then
 
@@ -248,7 +248,7 @@ contains
     if (to_canon) then
 
        associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-                 l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
+                 l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
 
          if (l /= 0) then
 
@@ -345,7 +345,7 @@ contains
     else
 
        associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-                 l => this%op%l, omega_c => this%ml%omega_c(x, this%op%m, omega))
+                 l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
 
          if (l /= 0) then
 

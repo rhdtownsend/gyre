@@ -27,7 +27,7 @@ module gyre_grid
   use core_order
 
   use gyre_model
-  use gyre_oscpar
+  use gyre_modepar
   use gyre_gridpar
   use gyre_util
 
@@ -47,9 +47,9 @@ module gyre_grid
   end type geom_func_t
 
   type, extends (func_t) :: gamma_func_t
-     class(model_t), pointer :: ml => null()
-     type(oscpar_t), pointer :: op => null()
-     real(WP)                :: omega
+     class(model_t), pointer  :: ml => null()
+     type(modepar_t), pointer :: mp => null()
+     real(WP)                 :: omega
    contains
      procedure :: eval_c_ => eval_gamma_func_
   end type gamma_func_t
@@ -60,17 +60,20 @@ module gyre_grid
 
   public :: build_grid
   public :: grid_range
+  public :: create_uniform
+  public :: create_geom
+  public :: create_log
   public :: find_x_turn
 
   ! Procedures
 
 contains
 
-  subroutine build_grid (gp, ml, op, x_in, x, verbose)
+  subroutine build_grid (gp, ml, mp, x_in, x, verbose)
 
     type(gridpar_t), intent(in)        :: gp(:)
     class(model_t), intent(in)         :: ml
-    type(oscpar_t), intent(in)         :: op
+    type(modepar_t), intent(in)        :: mp
     real(WP), allocatable, intent(in)  :: x_in(:)
     real(WP), allocatable, intent(out) :: x(:)
     logical, optional, intent(in)      :: verbose
@@ -105,11 +108,11 @@ contains
        n_in = SIZE(x_in)
        x = [x_in(1),0.5_WP*(x_in(:n_in-1)+x_in(2:)),x_in(n_in)]
     case ('CREATE_UNIFORM')
-       call create_uniform_(gp(1)%n, x)
+       call create_uniform(gp(1)%n, x)
     case ('CREATE_GEOM')
-       call create_geom_(gp(1)%s, gp(1)%n, x)
+       call create_geom(gp(1)%s, gp(1)%n, x)
     case ('CREATE_LOG')
-       call create_log_(gp(1)%s, gp(1)%n, x)
+       call create_log(gp(1)%s, gp(1)%n, x)
     case ('CREATE_FROM_FILE')
        call create_from_file_(gp(1)%file, x)
     case default
@@ -125,13 +128,13 @@ contains
 
        select case (gp(i)%op_type)
        case ('RESAMP_DISPERSION')
-          call resample_dispersion_(ml, op, gp(i)%omega_a, gp(i)%omega_b, &
+          call resample_dispersion_(ml, mp, gp(i)%omega_a, gp(i)%omega_b, &
                                     gp(i)%alpha_osc, gp(i)%alpha_exp, x)
        case ('RESAMP_THERMAL')
           call resample_thermal_(ml, gp(i)%omega_a, gp(i)%omega_b, &
                                  gp(i)%alpha_thm, x)
        case ('RESAMP_CENTER')
-          call resample_center_(ml, op, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
+          call resample_center_(ml, mp, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
        case ('RESAMP_UNIFORM')
           call resample_uniform_(gp(i)%n, x)
        case default
@@ -161,11 +164,11 @@ contains
 
 !****
           
-  subroutine grid_range (gp, ml, op, x_in, x_i, x_o)
+  subroutine grid_range (gp, ml, mp, x_in, x_i, x_o)
 
     type(gridpar_t), intent(in)       :: gp(:)
     class(model_t), intent(in)        :: ml
-    type(oscpar_t), intent(in)        :: op
+    type(modepar_t), intent(in)       :: mp
     real(WP), allocatable, intent(in) :: x_in(:)
     real(WP), intent(out)             :: x_i
     real(WP), intent(out)             :: x_o
@@ -207,7 +210,7 @@ contains
           
 !****
 
-  subroutine create_uniform_ (n, x)
+  subroutine create_uniform (n, x)
 
     integer, intent(in)                :: n
     real(WP), allocatable, intent(out) :: x(:)
@@ -231,11 +234,11 @@ contains
 
     return
 
-  end subroutine create_uniform_
+  end subroutine create_uniform
 
 !****
 
-  subroutine create_geom_ (s, n, x)
+  subroutine create_geom (s, n, x)
 
     real(WP), intent(in)               :: s
     integer, intent(in)                :: n
@@ -325,7 +328,7 @@ contains
 
     return
 
-  end subroutine create_geom_
+  end subroutine create_geom
 
 !****
 
@@ -372,7 +375,7 @@ contains
 
 !****
 
-  subroutine create_log_ (s, n, x)
+  subroutine create_log (s, n, x)
 
     real(WP), intent(in)               :: s
     integer, intent(in)                :: n
@@ -441,7 +444,7 @@ contains
 
     return
 
-  end subroutine create_log_
+  end subroutine create_log
 
 !****
 
@@ -529,10 +532,10 @@ contains
 
 !****
 
-  subroutine resample_dispersion_ (ml, op, omega_a, omega_b, alpha_osc, alpha_exp, x)
+  subroutine resample_dispersion_ (ml, mp, omega_a, omega_b, alpha_osc, alpha_exp, x)
 
     class(model_t), intent(in)           :: ml
-    type(oscpar_t), intent(in)           :: op
+    type(modepar_t), intent(in)          :: mp
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
     real(WP), intent(in)                 :: alpha_osc
@@ -579,7 +582,7 @@ contains
 
        associate(V_g => ml%V(x(i))/ml%Gamma_1(x(i)), As => ml%As(x(i)), &
                  U => ml%U(x(i)), c_1 => ml%c_1(x(i)), &
-                 l => op%l)
+                 l => mp%l)
 
          ! Look for an extremum of the propagation discriminant ]
          ! gamma = [g_4*omega**4 + g_2*omega**2 + g_0]/omega**2 in the
@@ -724,10 +727,10 @@ contains
 
 !****
 
-  subroutine resample_center_ (ml, op, omega_a, omega_b, n, x)
+  subroutine resample_center_ (ml, mp, omega_a, omega_b, n, x)
 
     class(model_t), intent(in)           :: ml
-    type(oscpar_t), intent(in)           :: op
+    type(modepar_t), intent(in)          :: mp
     real(WP), intent(in)                 :: omega_a
     real(WP), intent(in)                 :: omega_b
     integer, intent(in)                  :: n
@@ -752,8 +755,8 @@ contains
 
     ! First, locate the innermost turning point at both omega_a and omega_b
 
-    call find_x_turn(x, ml, op, omega_a, x_turn_a)
-    call find_x_turn(x, ml, op, omega_b, x_turn_b)
+    call find_x_turn(x, ml, mp, omega_a, x_turn_a)
+    call find_x_turn(x, ml, mp, omega_b, x_turn_b)
 
     x_turn = MIN(x_turn_a, x_turn_b)
     call locate(x, x_turn, i_turn)
@@ -812,13 +815,13 @@ contains
 
 !****
 
-  subroutine find_x_turn (x, ml, op, omega, x_turn)
+  subroutine find_x_turn (x, ml, mp, omega, x_turn)
 
-    real(WP), intent(in)               :: x(:)
-    class(model_t), target, intent(in) :: ml
-    type(oscpar_t), target, intent(in) :: op
-    real(WP), intent(in)               :: omega
-    real(WP)                           :: x_turn
+    real(WP), intent(in)                :: x(:)
+    class(model_t), target, intent(in)  :: ml
+    type(modepar_t), target, intent(in) :: mp
+    real(WP), intent(in)                :: omega
+    real(WP)                            :: x_turn
 
     type(gamma_func_t) :: gf
     integer            :: i
@@ -828,7 +831,7 @@ contains
     x_turn = HUGE(0._WP)
 
     gf%ml => ml
-    gf%op => op
+    gf%mp => mp
 
     gf%omega = omega
 
@@ -866,7 +869,7 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), As => this%ml%As(x), &
               U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-              l => this%op%l)
+              l => this%mp%l)
 
       g_4 = -4._WP*V_g*c_1
       g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1)

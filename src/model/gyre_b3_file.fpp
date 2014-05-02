@@ -45,10 +45,11 @@ module gyre_b3_file
 
 contains
 
-  subroutine read_b3_model (file, deriv_type, ml, x)
+  subroutine read_b3_model (file, deriv_type, regularize, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
+    logical, intent(in)                          :: regularize
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
@@ -142,8 +143,9 @@ contains
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    if(add_center .AND. check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Adding central point'
+    if (check_log_level('INFO')) then
+       if (regularize) write(OUTPUT_UNIT, 110) 'Regularizing'
+       if (add_center) write(OUTPUT_UNIT, 110) 'Adding central point'
 110    format(2X,A)
     endif
 
@@ -153,7 +155,7 @@ contains
                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
                       nabla, kappa, kappa_rho, kappa_T, &
                       epsilon, epsilon_rho, epsilon_T, &
-                       deriv_type, add_center)
+                      deriv_type, regularize=regularize, add_center=add_center)
 
     ! Set up the grid
 

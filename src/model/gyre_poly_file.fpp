@@ -57,6 +57,7 @@ contains
     real(WP), allocatable :: xi(:)
     real(WP), allocatable :: Theta(:)
     real(WP), allocatable :: dTheta(:)
+    real(WP), allocatable :: Omega_rot(:)
 
     ! Read data from the POLY-format file
 
@@ -73,12 +74,13 @@ contains
     call read_dset_alloc(hg, 'xi', xi)
     call read_dset_alloc(hg, 'Theta', Theta)
     call read_dset_alloc(hg, 'dTheta', dTheta)
+    call read_dset_alloc(hg, 'Omega_rot', Omega_rot)
 
     call hg%final()
 
     ! Initialize the poly_model
 
-    ml = poly_model_t(xi,Theta, dTheta, n_poly, Gamma_1, deriv_type)
+    ml = poly_model_t(xi,Theta, dTheta, Omega_rot, n_poly, Gamma_1, deriv_type)
 
     ! If necessary, return the grid
 

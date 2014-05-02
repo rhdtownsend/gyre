@@ -45,11 +45,12 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_model (file, deriv_type, data_format, ml, x)
+  subroutine read_osc_model (file, deriv_type, data_format, regularize, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
     character(*), intent(in)                     :: data_format
+    logical, intent(in)                          :: regularize
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
 
@@ -179,8 +180,10 @@ contains
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    if(add_center .AND. check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Adding central point'
+    if (check_log_level('INFO')) then
+       if (regularize) write(OUTPUT_UNIT, 130) 'Regularizing'
+       if (add_center) write(OUTPUT_UNIT, 130) 'Adding central point'
+130    format(3X,A)
     endif
 
     ! Initialize the model
@@ -189,7 +192,7 @@ contains
                       N2, Gamma_1, nabla_ad, delta, Omega_rot, &
                       nabla, kappa, kappa_rho, kappa_T, &
                       epsilon_, epsilon_rho, epsilon_T, &
-                      deriv_type, add_center)
+                      deriv_type, regularize=regularize, add_center=add_center)
 
     ! Set up the grid
 

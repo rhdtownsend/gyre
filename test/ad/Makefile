@@ -3,7 +3,7 @@
 
 # Variables
 
-TESTDIRS=hom poly/hom omp mesa/bcep mesa/rgb mesa/spb
+TESTDIRS=hom poly/hom omp doppler mesa/bcep mesa/rgb mesa/spb solar
 
 # Rules
 

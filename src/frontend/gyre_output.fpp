@@ -119,13 +119,13 @@ contains
              ! Fixed-width fields
 
              mode_file = subst_(mode_file, '%J', j, '(I5.5)')
-             mode_file = subst_(mode_file, '%L', md(j)%op%l, '(I3.3)')
+             mode_file = subst_(mode_file, '%L', md(j)%mp%l, '(I3.3)')
              mode_file = subst_(mode_file, '%N', md(j)%n_pg, '(SP,I6.5)')
 
              ! Variable-width fields
 
              mode_file = subst_(mode_file, '%j', j, '(I0)')
-             mode_file = subst_(mode_file, '%l', md(j)%op%l, '(I0)')
+             mode_file = subst_(mode_file, '%l', md(j)%mp%l, '(I0)')
              mode_file = subst_(mode_file, '%n', md(j)%n_pg, '(SP,I0)')
 
           else
@@ -196,7 +196,7 @@ contains
        select case (items(j))
 
        case('l')
-          call wr%write('l', md%op%l)
+          call wr%write('l', md%mp%l)
        case('n_p')
           call wr%write('n_p', md%n_p)
        case('n_g')
@@ -325,7 +325,7 @@ contains
        case ('n')
           call wr%write('n', md%n)
        case ('l')
-          call wr%write('l', md%op%l)
+          call wr%write('l', md%mp%l)
        case ('n_p')
           call wr%write('n_p', md%n_p)
        case ('n_g')
@@ -414,6 +414,12 @@ contains
           call wr%write('K', md%K())
        case('freq_units')
           call wr%write('freq_units', freq_units)
+       case('dm_dr')
+          call wr%write('dm_dr', md%ml%U(md%x)*md%x**2/md%ml%c_1(md%x))
+       case('igrand')
+          call wr%write('igrand', ABS(md%xi_r())**2*md%ml%U(md%x)*md%x**2/md%ml%c_1(md%x))
+       case('E_chk')
+          call wr%write('E_chk', integrate(md%x, ABS(md%xi_r())**2*md%ml%U(md%x)*md%x**2/md%ml%c_1(md%x)))
        case default
           select type (ml => md%ml)
           type is (evol_model_t)

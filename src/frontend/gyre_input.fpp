@@ -26,6 +26,7 @@ module gyre_input
   use core_parallel
 
   use gyre_constants
+  use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -44,6 +45,7 @@ module gyre_input
   public :: parse_args
   public :: read_constants
   public :: read_model
+  public :: read_modepar
   public :: read_oscpar
   public :: read_numpar
   public :: read_scanpar
@@ -112,6 +114,7 @@ contains
     use gyre_hom_model
     use gyre_mesa_file
     use gyre_osc_file
+    use gyre_losc_file
     use gyre_fgong_file
     use gyre_famdl_file
     $if ($HDF5)
@@ -130,12 +133,13 @@ contains
     character(LEN=256)          :: deriv_type
     character(LEN=FILENAME_LEN) :: file
     real(WP)                    :: Gamma_1
+    real(WP)                    :: Omega_rot
     logical                     :: regularize
     type(evol_model_t)          :: ec
     type(poly_model_t)          :: pc
     type(hom_model_t)           :: hc
 
-    namelist /model/ model_type, file_format, data_format, deriv_type, file, Gamma_1, regularize
+    namelist /model/ model_type, file_format, data_format, deriv_type, file, Gamma_1, Omega_rot, regularize
 
     ! Read model parameters
 
@@ -148,6 +152,7 @@ contains
     file = ''
 
     Gamma_1 = 5._WP/3._WP
+    Omega_rot = 0._WP
 
     rewind(unit)
     read(unit, NML=model, END=900)
@@ -159,32 +164,30 @@ contains
 
        select case (file_format)
        case ('MESA')
-          call read_mesa_model(file, deriv_type, ec, x=x_bc)
+          call read_mesa_model(file, deriv_type, regularize, ec, x=x_bc)
        case('B3')
           $if($HDF5)
-          call read_b3_model(file, deriv_type, ec, x=x_bc)
+          call read_b3_model(file, deriv_type, regularize, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
        case ('GSM')
           $if($HDF5)
-          call read_gsm_model(file, deriv_type, ec, x=x_bc)
+          call read_gsm_model(file, deriv_type, regularize, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read GSM-format files)
           $endif
        case ('OSC')
-          call read_osc_model(file, deriv_type, data_format, ec, x=x_bc)
+          call read_osc_model(file, deriv_type, data_format, regularize, ec, x=x_bc)
+       case ('LOSC')
+          call read_losc_model(file, deriv_type, regularize, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_model(file, deriv_type, data_format, ec, x=x_bc) 
+          call read_fgong_model(file, deriv_type, data_format, regularize, ec, x=x_bc) 
        case ('FAMDL')
-          call read_famdl_model(file, deriv_type, data_format, ec, x=x_bc) 
+          call read_famdl_model(file, deriv_type, data_format, regularize, ec, x=x_bc)
        case default
           $ABORT(Invalid file_format)
        end select
-
-!       if (regularize) then
-!          call ec%regularize()
-!       endif
 
        allocate(ml, SOURCE=ec)
 
@@ -200,7 +203,7 @@ contains
 
     case ('HOM')
 
-       hc = hom_model_t(Gamma_1)
+       hc = hom_model_t(Gamma_1, Omega_rot)
 
        allocate(ml, SOURCE=hc)
 
@@ -224,6 +227,66 @@ contains
 
 !****
 
+  subroutine read_modepar (unit, mp)
+
+    integer, intent(in)                       :: unit
+    type(modepar_t), allocatable, intent(out) :: mp(:)
+
+    integer           :: n_mp
+    integer           :: i
+    integer           :: l
+    integer           :: m
+    integer           :: X_n_pg_min
+    integer           :: X_n_pg_max
+    character(LEN=64) :: tag
+
+    namelist /mode/ l, m, X_n_pg_min, X_n_pg_max, tag
+
+    ! Count the number of mode namelists
+
+    rewind(unit)
+
+    n_mp = 0
+
+    count_loop : do
+       read(unit, NML=mode, END=100)
+       n_mp = n_mp + 1
+    end do count_loop
+
+100 continue
+
+    ! Read mode parameters
+
+    rewind(unit)
+
+    allocate(mp(n_mp))
+
+    read_loop : do i = 1,n_mp
+
+       l = 0
+       m = 0
+
+       X_n_pg_min = -HUGE(0)
+       X_n_pg_max = HUGE(0)
+
+       tag = ''
+
+       read(unit, NML=mode)
+
+       ! Initialize the modepar
+
+       mp(i) = modepar_t(l=l, m=m, X_n_pg_min=X_n_pg_min, X_n_pg_max=X_n_pg_max, tag=tag)
+
+    end do read_loop
+
+    ! Finish
+
+    return
+
+  end subroutine read_modepar
+
+!****
+
   subroutine read_oscpar (unit, op)
 
     integer, intent(in)                      :: unit
@@ -231,21 +294,16 @@ contains
 
     integer           :: n_op
     integer           :: i
-    integer           :: l
-    integer           :: m
-    integer           :: X_n_pg_min
-    integer           :: X_n_pg_max
     character(LEN=64) :: variables_type
     character(LEN=64) :: outer_bound_type
     character(LEN=64) :: inertia_norm_type
-    character(LEN=64) :: tag
+    character(LEN=64) :: tag_list
     real(WP)          :: x_ref
 
-    namelist /osc/ x_ref, l, m, X_n_pg_min, X_n_pg_max, &
-         outer_bound_type, variables_type, &
-         inertia_norm_type, tag, x_ref
+    namelist /osc/ x_ref, outer_bound_type, variables_type, &
+         inertia_norm_type, tag_list, x_ref
 
-    ! Count the number of grid namelists
+    ! Count the number of osc namelists
 
     rewind(unit)
 
@@ -266,16 +324,10 @@ contains
 
     read_loop : do i = 1,n_op
 
-       l = 0
-       m = 0
-
-       X_n_pg_min = -HUGE(0)
-       X_n_pg_max = HUGE(0)
-
        variables_type = 'DZIEM'
        outer_bound_type = 'ZERO'
        inertia_norm_type = 'BOTH'
-       tag = ''
+       tag_list = ''
 
        x_ref = HUGE(0._WP)
 
@@ -283,9 +335,8 @@ contains
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(l=l, m=m, X_n_pg_min=X_n_pg_min, X_n_pg_max=X_n_pg_max, &
-                        variables_type=variables_type, outer_bound_type=outer_bound_type, &
-                        inertia_norm_type=inertia_norm_type, tag=tag, x_ref=x_ref)
+       op(i) = oscpar_t(variables_type=variables_type, outer_bound_type=outer_bound_type, &
+                        inertia_norm_type=inertia_norm_type, tag_list=tag_list, x_ref=x_ref)
 
     end do read_loop
 

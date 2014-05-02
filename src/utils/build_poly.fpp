@@ -36,6 +36,7 @@ program build_poly
   ! Variables
 
   real(WP)                    :: Gamma_1
+  real(WP)                    :: Omega_rot
   real(WP)                    :: n_poly
   real(WP)                    :: dxi
   real(WP)                    :: toler
@@ -46,12 +47,13 @@ program build_poly
   integer                     :: n
   type(hgroup_t)              :: hg
 
-  namelist /poly/ n_poly, Gamma_1, dxi, toler
+  namelist /poly/ n_poly, Gamma_1, Omega_rot, dxi, toler
   namelist /output/ file
 
   ! Read parameters
 
   Gamma_1 = 5._WP/3._WP
+  Omega_rot = 0._WP
 
   dxi = 1.E-3_WP
   toler = EPSILON(0._WP)
@@ -68,7 +70,7 @@ program build_poly
 
   ! Write the model
 
-  call hg%init(file, CREATE_FILE)
+  hg = hgroup_t(file, CREATE_FILE)
 
   call write_attr(hg, 'n', n)
 
@@ -78,6 +80,7 @@ program build_poly
   call write_dset(hg, 'xi', xi)
   call write_dset(hg, 'Theta', Theta)
   call write_dset(hg, 'dTheta', dTheta)
+  call write_dset(hg, 'Omega_rot', SPREAD(Omega_rot, DIM=1, NCOPIES=n))
 
   call hg%final()
 

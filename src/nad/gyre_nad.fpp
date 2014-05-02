@@ -30,6 +30,7 @@ program gyre_nad
   $if($MPI)
   use gyre_model_mpi
   $endif
+  use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -52,26 +53,28 @@ program gyre_nad
 
   ! Variables
 
-  character(:), allocatable     :: filename
-  integer                       :: unit
-  real(WP), allocatable         :: x_ml(:)
-  class(model_t), pointer       :: ml => null()
-  type(oscpar_t), allocatable   :: op(:)
-  type(numpar_t), allocatable   :: np(:)
-  type(gridpar_t), allocatable  :: shoot_gp(:)
-  type(gridpar_t), allocatable  :: recon_gp(:)
-  type(scanpar_t), allocatable  :: sp(:)
-  integer                       :: i
-  type(numpar_t), allocatable   :: np_sel(:)
-  type(gridpar_t), allocatable  :: shoot_gp_sel(:)
-  type(gridpar_t), allocatable  :: recon_gp_sel(:)
-  type(scanpar_t), allocatable  :: sp_sel(:)
-  real(WP), allocatable         :: omega(:)
-  class(bvp_t), allocatable     :: ad_bp
-  class(bvp_t), allocatable     :: nad_bp
-  type(mode_t), allocatable     :: md(:)
-  type(mode_t), allocatable     :: md_all(:)
-  type(mode_t), allocatable     :: md_tmp(:)
+  character(:), allocatable    :: filename
+  integer                      :: unit
+  real(WP), allocatable        :: x_ml(:)
+  class(model_t), pointer      :: ml => null()
+  type(modepar_t), allocatable :: mp(:)
+  type(oscpar_t), allocatable  :: op(:)
+  type(numpar_t), allocatable  :: np(:)
+  type(gridpar_t), allocatable :: shoot_gp(:)
+  type(gridpar_t), allocatable :: recon_gp(:)
+  type(scanpar_t), allocatable :: sp(:)
+  integer                      :: i
+  type(oscpar_t), allocatable  :: op_sel(:)
+  type(numpar_t), allocatable  :: np_sel(:)
+  type(gridpar_t), allocatable :: shoot_gp_sel(:)
+  type(gridpar_t), allocatable :: recon_gp_sel(:)
+  type(scanpar_t), allocatable :: sp_sel(:)
+  real(WP), allocatable        :: omega(:)
+  class(bvp_t), allocatable    :: ad_bp
+  class(bvp_t), allocatable    :: nad_bp
+  type(mode_t), allocatable    :: md(:)
+  type(mode_t), allocatable    :: md_all(:)
+  type(mode_t), allocatable    :: md_tmp(:)
 
   ! Initialize
 
@@ -106,6 +109,7 @@ program gyre_nad
 
      call read_constants(unit)
      call read_model(unit, x_ml, ml)
+     call read_modepar(unit, mp)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
@@ -118,6 +122,7 @@ program gyre_nad
   call bcast_constants(0)
   call bcast_alloc(x_ml, 0)
   call bcast_alloc(ml, 0)
+  call bcast_alloc(mp, 0)
   call bcast_alloc(op, 0)
   call bcast_alloc(np, 0)
   call bcast_alloc(shoot_gp, 0)
@@ -125,19 +130,21 @@ program gyre_nad
   call bcast_alloc(sp, 0)
   $endif
 
-  ! Loop through oscpars
+  ! Loop through modepars
 
   allocate(md_all(0))
 
-  op_loop : do i = 1, SIZE(op)
+  op_loop : do i = 1, SIZE(mp)
 
      ! Select parameters according to tags
 
-     call select_par(np, op(i)%tag, np_sel, last=.TRUE.)
-     call select_par(shoot_gp, op(i)%tag, shoot_gp_sel)
-     call select_par(recon_gp, op(i)%tag, recon_gp_sel)
-     call select_par(sp, op(i)%tag, sp_sel)
+     call select_par(op, mp(i)%tag, op_sel, last=.TRUE.)
+     call select_par(np, mp(i)%tag, np_sel, last=.TRUE.)
+     call select_par(shoot_gp, mp(i)%tag, shoot_gp_sel)
+     call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
+     call select_par(sp, mp(i)%tag, sp_sel)
 
+     $ASSERT(SIZE(op_sel) == 1,No matching osc parameters)
      $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
      $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
      $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
@@ -145,7 +152,7 @@ program gyre_nad
 
      ! Set up the frequency array
 
-     call build_scan(sp_sel, ml, op(i), shoot_gp_sel, x_ml, omega)
+     call build_scan(sp_sel, ml, mp(i), op_sel(1), shoot_gp_sel, x_ml, omega)
 
      ! Store the frequency range in shoot_gp_sel
 
@@ -156,19 +163,19 @@ program gyre_nad
 
      if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
-     if(op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(ad_bp, SOURCE=rad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+     if(mp(i)%l == 0 .AND. np_sel(1)%reduce_order) then
+        allocate(ad_bp, SOURCE=rad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      else
-        allocate(ad_bp, SOURCE=ad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(ad_bp, SOURCE=ad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
  
-     allocate(nad_bp, SOURCE=nad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+     allocate(nad_bp, SOURCE=nad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
 
      ! Find modes
 
      call scan_search(ad_bp, omega, md)
 
-     call filter_md(md, md%n_pg >= op(i)%X_n_pg_min .AND. md%n_pg <= op(i)%X_n_pg_max)
+     call filter_md(md, md%n_pg >= mp(i)%X_n_pg_min .AND. md%n_pg <= mp(i)%X_n_pg_max)
 
      call prox_search(nad_bp, md)
 

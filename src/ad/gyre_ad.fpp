@@ -30,6 +30,7 @@ program gyre_ad
   $if ($MPI)
   use gyre_model_mpi
   $endif
+  use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
@@ -55,12 +56,14 @@ program gyre_ad
   integer                       :: unit
   real(WP), allocatable         :: x_ml(:)
   class(model_t), pointer       :: ml => null()
+  type(modepar_t), allocatable  :: mp(:)
   type(oscpar_t), allocatable   :: op(:)
   type(numpar_t), allocatable   :: np(:)
   type(gridpar_t), allocatable  :: shoot_gp(:)
   type(gridpar_t), allocatable  :: recon_gp(:)
   type(scanpar_t), allocatable  :: sp(:)
   integer                       :: i
+  type(oscpar_t), allocatable   :: op_sel(:)
   type(numpar_t), allocatable   :: np_sel(:)
   type(gridpar_t), allocatable  :: shoot_gp_sel(:)
   type(gridpar_t), allocatable  :: recon_gp_sel(:)
@@ -104,6 +107,7 @@ program gyre_ad
 
      call read_constants(unit)
      call read_model(unit, x_ml, ml)
+     call read_modepar(unit, mp)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
@@ -116,6 +120,7 @@ program gyre_ad
   call bcast_constants(0)
   call bcast_alloc(x_ml, 0)
   call bcast_alloc(ml, 0)
+  call bcast_alloc(mp, 0)
   call bcast_alloc(op, 0)
   call bcast_alloc(np, 0)
   call bcast_alloc(shoot_gp, 0)
@@ -123,11 +128,11 @@ program gyre_ad
   call bcast_alloc(sp, 0)
   $endif
 
-  ! Loop through oscpars
+  ! Loop through modepars
 
   allocate(md_all(0))
 
-  op_loop : do i = 1, SIZE(op)
+  op_loop : do i = 1, SIZE(mp)
 
      if (check_log_level('INFO')) then
 
@@ -135,8 +140,8 @@ program gyre_ad
 
         write(OUTPUT_UNIT, 100) 'Mode parameters'
 
-        write(OUTPUT_UNIT, 130) 'l :', op(i)%l
-        write(OUTPUT_UNIT, 130) 'm :', op(i)%m
+        write(OUTPUT_UNIT, 130) 'l :', mp(i)%l
+        write(OUTPUT_UNIT, 130) 'm :', mp(i)%m
 130     format(2X,A,1X,I0)
 
         write(OUTPUT_UNIT, *)
@@ -145,11 +150,13 @@ program gyre_ad
 
      ! Select parameters according to tags
 
-     call select_par(np, op(i)%tag, np_sel, last=.TRUE.)
-     call select_par(shoot_gp, op(i)%tag, shoot_gp_sel)
-     call select_par(recon_gp, op(i)%tag, recon_gp_sel)
-     call select_par(sp, op(i)%tag, sp_sel)
+     call select_par(op, mp(i)%tag, op_sel, last=.TRUE.)
+     call select_par(np, mp(i)%tag, np_sel, last=.TRUE.)
+     call select_par(shoot_gp, mp(i)%tag, shoot_gp_sel)
+     call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
+     call select_par(sp, mp(i)%tag, sp_sel)
 
+     $ASSERT(SIZE(op_sel) == 1,No matching osc parameters)
      $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
      $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
      $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
@@ -157,7 +164,7 @@ program gyre_ad
 
      ! Set up the frequency array
 
-     call build_scan(sp_sel, ml, op(i), shoot_gp_sel, x_ml, omega)
+     call build_scan(sp_sel, ml, mp(i), op_sel(1), shoot_gp_sel, x_ml, omega)
 
      ! Store the frequency range in shoot_gp_sel
 
@@ -168,10 +175,10 @@ program gyre_ad
 
      if (ALLOCATED(bp)) deallocate(bp)
 
-     if (op(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(bp, SOURCE=rad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+     if (mp(i)%l == 0 .AND. np_sel(1)%reduce_order) then
+        allocate(bp, SOURCE=rad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      else
-        allocate(bp, SOURCE=ad_bvp_t(ml, op(i), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(bp, SOURCE=ad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
 
      ! Find modes

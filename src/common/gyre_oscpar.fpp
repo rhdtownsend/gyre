@@ -33,14 +33,10 @@ module gyre_oscpar
 
   type :: oscpar_t
      real(WP)          :: x_ref
-     integer           :: l
-     integer           :: m
-     integer           :: X_n_pg_min
-     integer           :: X_n_pg_max
      character(LEN=64) :: variables_type
      character(LEN=64) :: outer_bound_type
      character(LEN=64) :: inertia_norm_type
-     character(LEN=64) :: tag
+     character(LEN=64) :: tag_list
   end type oscpar_t
 
   ! Interfaces
@@ -88,16 +84,10 @@ contains
 
     call bcast(op%x_ref, root_rank)
 
-    call bcast(op%l, root_rank)
-    call bcast(op%m, root_rank)
-
-    call bcast(op%X_n_pg_min, root_rank)
-    call bcast(op%X_n_pg_max, root_rank)
-
     call bcast(op%variables_type, root_rank)
     call bcast(op%outer_bound_type, root_rank)
     call bcast(op%inertia_norm_type, root_rank)
-    call bcast(op%tag, root_rank)
+    call bcast(op%tag_list, root_rank)
 
     ! Finish
 
