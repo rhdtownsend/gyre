@@ -34,8 +34,8 @@ module gyre_modepar
   type :: modepar_t
      integer           :: l
      integer           :: m
-     integer           :: X_n_pg_min
-     integer           :: X_n_pg_max
+     integer           :: n_pg_min
+     integer           :: n_pg_max
      character(LEN=64) :: tag
   end type modepar_t
 
@@ -85,8 +85,8 @@ contains
     call bcast(op%l, root_rank)
     call bcast(op%m, root_rank)
 
-    call bcast(op%X_n_pg_min, root_rank)
-    call bcast(op%X_n_pg_max, root_rank)
+    call bcast(op%n_pg_min, root_rank)
+    call bcast(op%n_pg_max, root_rank)
 
     ! Finish
 
