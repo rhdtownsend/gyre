@@ -45,7 +45,7 @@ module gyre_util
 
   ! Module variables
 
-  character(LEN=64), save :: log_level_m
+  character(64), save :: log_level_m
 
   ! Interfaces
 
@@ -86,9 +86,9 @@ contains
 
   function form_header (header, underchar)
 
-    character(LEN=*), intent(in)           :: header
-    character(LEN=*), optional, intent(in) :: underchar
-    character(LEN=:), allocatable          :: form_header
+    character(*), intent(in)           :: header
+    character(*), optional, intent(in) :: underchar
+    character(:), allocatable          :: form_header
 
     ! Format the header string
 
@@ -125,7 +125,7 @@ contains
 
   subroutine set_log_level (log_level)
 
-    character(LEN=*), intent(in) :: log_level
+    character(*), intent(in) :: log_level
     
     ! Set the log level
 
@@ -149,7 +149,7 @@ contains
 
   function check_log_level (log_level, rank)
 
-    character(LEN=*), intent(in)  :: log_level
+    character(*), intent(in)  :: log_level
     integer, optional, intent(in) :: rank
     logical                       :: check_log_level
 
@@ -195,12 +195,12 @@ contains
 
   function freq_scale (ml, mp, op, x_o, freq_units)
 
-    class(model_t), intent(in)   :: ml
-    type(modepar_t), intent(in)  :: mp
-    type(oscpar_t), intent(in)   :: op
-    real(WP), intent(in)         :: x_o
-    character(LEN=*), intent(in) :: freq_units
-    real(WP)                     :: freq_scale
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    type(oscpar_t), intent(in)  :: op
+    real(WP), intent(in)        :: x_o
+    character(*), intent(in)    :: freq_units
+    real(WP)                    :: freq_scale
 
     ! Calculate the scale factor to convert a dimensionless angular
     ! frequency to a dimensioned frequency
@@ -228,7 +228,7 @@ contains
       type(modepar_t), intent(in)     :: mp
       type(oscpar_t), intent(in)      :: op
       real(WP), intent(in)            :: x_o
-      character(LEN=*), intent(in)    :: freq_units
+      character(*), intent(in)        :: freq_units
       real(WP)                        :: freq_scale
 
       real(WP) :: omega_cutoff_lo
@@ -264,8 +264,8 @@ contains
 
     function poly_freq_scale_ (freq_units) result (freq_scale)
 
-      character(LEN=*), intent(in) :: freq_units
-      real(WP)                     :: freq_scale
+      character(*), intent(in) :: freq_units
+      real(WP)                 :: freq_scale
 
       ! Calculate the scale factor to convert a dimensionless angular
       ! frequency to a dimensioned frequency
@@ -285,8 +285,8 @@ contains
 
     function hom_freq_scale_ (freq_units) result (freq_scale)
 
-      character(LEN=*), intent(in) :: freq_units
-      real(WP)                     :: freq_scale
+      character(*), intent(in) :: freq_units
+      real(WP)                 :: freq_scale
 
       ! Calculate the scale factor to convert a dimensionless angular
       ! frequency to a dimensioned frequency
@@ -362,7 +362,7 @@ contains
    subroutine select_par_${INFIX}_ (par, tag, par_sel, last)
 
      type($PAR_TYPE), intent(in)               :: par(:)
-     character(LEN=*), intent(in)              :: tag
+     character(*), intent(in)                  :: tag
      type($PAR_TYPE), allocatable, intent(out) :: par_sel(:)
      logical, optional, intent(in)             :: last
 
@@ -421,14 +421,14 @@ contains
 
   function split_list (list, delim) result (elems)
 
-    character(LEN=*), intent(in)          :: list
-    character(LEN=1), intent(in)          :: delim
-    character(LEN=LEN(list)), allocatable :: elems(:)
+    character(*), intent(in)          :: list
+    character(1), intent(in)          :: delim
+    character(LEN(list)), allocatable :: elems(:)
 
-    character(LEN=LEN(list)) :: list_
-    integer                  :: d
-    integer                  :: n
-    integer                  :: j
+    character(LEN(list)) :: list_
+    integer              :: d
+    integer              :: n
+    integer              :: j
     
     ! Split the delimited list into an array of elements
  
@@ -484,9 +484,9 @@ contains
 
   function join_fmts (fmts, n) result (fmt)
     
-    character(LEN=*), intent(in)  :: fmts(:)
-    integer, intent(in)           :: n(:)
-    character(LEN=:), allocatable :: fmt
+    character(*), intent(in)  :: fmts(:)
+    integer, intent(in)       :: n(:)
+    character(:), allocatable :: fmt
 
     integer :: i
 
@@ -526,8 +526,8 @@ contains
 
   function sprint_ (i) result (a)
 
-    integer, intent(in)           :: i
-    character(LEN=:), allocatable :: a
+    integer, intent(in)       :: i
+    character(:), allocatable :: a
 
     integer :: n
 
@@ -543,7 +543,7 @@ contains
        n = 1
     endif
 
-    allocate(character(LEN=n)::a)
+    allocate(character(n)::a)
 
     ! Do the conversion
 
@@ -560,9 +560,9 @@ contains
 
   function rjust (a, n) result (a_just)
 
-    character(LEN=*), intent(in) :: a
-    integer, intent(in)          :: n
-    character(LEN=n)             :: a_just
+    character(*), intent(in) :: a
+    integer, intent(in)      :: n
+    character(n)             :: a_just
 
     ! Right-justify a in a field width of n
 
