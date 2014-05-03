@@ -33,18 +33,18 @@ module gyre_gridpar
   ! Derived-type definitions
 
   type :: gridpar_t
-     real(WP)                    :: x_i = 0._WP
-     real(WP)                    :: x_o = 1._WP
-     real(WP)                    :: alpha_osc = 0._WP
-     real(WP)                    :: alpha_exp = 0._WP
-     real(WP)                    :: alpha_thm = 0._WP
-     real(WP)                    :: omega_a = 0._WP
-     real(WP)                    :: omega_b = 0._WP
-     real(WP)                    :: s = 0
-     integer                     :: n = 0
-     character(LEN=FILENAME_LEN) :: file
-     character(LEN=64)           :: op_type
-     character(LEN=2048)         :: tag_list
+     real(WP)                :: x_i = 0._WP
+     real(WP)                :: x_o = 1._WP
+     real(WP)                :: alpha_osc = 0._WP
+     real(WP)                :: alpha_exp = 0._WP
+     real(WP)                :: alpha_thm = 0._WP
+     real(WP)                :: omega_a = 0._WP
+     real(WP)                :: omega_b = 0._WP
+     real(WP)                :: s = 0
+     integer                 :: n = 0
+     character(FILENAME_LEN) :: file
+     character(64)           :: op_type
+     character(2048)         :: tag_list
   end type gridpar_t
 
   ! Interfaces
