@@ -59,11 +59,13 @@ module gyre_mode
      integer                  :: n_g
      integer                  :: n
      integer                  :: n_iter
+     logical                  :: pruned
    contains
      private
      $if($GFORTRAN_PR57922)
      procedure, public :: final => final_
      $endif
+     procedure, public :: prune => prune_
      procedure, public :: freq => freq_
      procedure, public :: xi_r => xi_r_
      procedure, public :: xi_h => xi_h_
@@ -166,6 +168,8 @@ contains
     md%n = SIZE(md%x)
     md%n_iter = n_iter
 
+    md%pruned = .FALSE.
+
     ! Normalize by the mode inertia, and so that y_ref(1) is real
 
     phase = ATAN2(AIMAG(md%y_ref(1)), REAL(md%y_ref(1)))
@@ -199,14 +203,41 @@ contains
 
     ! Finalize the mode_t
 
-    deallocate(this%x)
-    deallocate(this%y)
+    if (.NOT. this%pruned) then
+
+       deallocate(this%x)
+       deallocate(this%y)
+
+    endif
 
     ! Finish
 
   end subroutine final_
 
   $endif
+
+!****
+
+  subroutine prune_ (this)
+
+    class(mode_t), intent(inout) :: this
+
+    ! Prune the mode_t
+
+    if (.NOT. this%pruned) then
+
+       deallocate(this%x)
+       deallocate(this%y)
+
+       this%pruned = .TRUE.
+
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine prune_
 
 !****
 
@@ -239,6 +270,8 @@ contains
     $TYPE(WP)                 :: ${NAME}_(this%n)
 
     integer :: k
+    
+    $ASSERT(.NOT. this%pruned,Cannot calculate ${NAME} from pruned solution)
     
     ! Calculate $NAME on the x grid
 
@@ -988,6 +1021,8 @@ contains
 
     call bcast(md%n, root_rank)
     call bcast(md%n_iter, root_rank)
+
+    call bcast(md%pruned, root_rank)
 
     ! Finish
 
