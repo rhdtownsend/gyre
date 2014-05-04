@@ -156,11 +156,16 @@ contains
 
 !****
 
-  subroutine scan_search (bp, omega, md)
+  subroutine scan_search (bp, omega, process_mode)
 
-    class(bvp_t), intent(inout)            :: bp
-    real(WP), intent(in)                   :: omega(:)
-    type(mode_t), allocatable, intent(out) :: md(:)
+    class(bvp_t), intent(inout) :: bp
+    real(WP), intent(in)        :: omega(:)
+    interface
+       subroutine process_mode (md)
+         use gyre_mode
+         type(mode_t), intent(in) :: md
+       end subroutine process_mode
+    end interface
 
     real(WP), allocatable         :: omega_a(:)
     real(WP), allocatable         :: omega_b(:)
@@ -171,11 +176,8 @@ contains
     integer                       :: c_beg
     integer                       :: c_end
     integer                       :: c_rate
+    type(mode_t)                  :: md
     integer                       :: i
-    $if($MPI)
-    class(model_t), pointer       :: ml
-    integer                       :: p
-    $endif
 
     ! Find discriminant root brackets
 
@@ -197,8 +199,6 @@ contains
 
     call partition_tasks(n_brack, 1, i_part)
 
-    allocate(md(n_brack))
-
     call SYSTEM_CLOCK(c_beg, c_rate)
 
     $if($MPI)
@@ -209,15 +209,23 @@ contains
 
        ! Find the mode
 
-       md(i) = bp%mode(CMPLX([omega_a(i),omega_b(i)], KIND=WP), &
-                       ext_complex_t([discrim_a(i),discrim_b(i)]), use_real=.TRUE.)
+       md = bp%mode(CMPLX([omega_a(i),omega_b(i)], KIND=WP), &
+                    ext_complex_t([discrim_a(i),discrim_b(i)]), use_real=.TRUE.)
+ 
+       if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
 
-       ! Report
+       ! Process it
 
-       if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%mp%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter, md(i)%n
+       if (check_log_level('INFO', MPI_RANK)) then
+          write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
 120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
        endif
+
+       call process_mode(md)
+
+       $if($GFORTRAN_PR57922)
+       call md%final()
+       $endif
 
     end do mode_loop
 
@@ -227,24 +235,10 @@ contains
 
     call SYSTEM_CLOCK(c_end)
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
 130    format(2X,A,1X,F10.3,1X,A)
     endif
-
-    ! Broadcast data
-
-    $if($MPI)
-
-    ml => bp%model()
-
-    do p = 0, MPI_SIZE-1
-       do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p, ml)
-       end do
-    enddo
-
-    $endif
 
     ! Finish
 
@@ -254,27 +248,31 @@ contains
 
 !****
 
-  subroutine prox_search (bp, md)
+  subroutine prox_search (bp, md_in, process_mode)
 
     class(bvp_t), target, intent(inout) :: bp
-    type(mode_t), intent(inout)         :: md(:)
+    type(mode_t), intent(in)            :: md_in(:)
+    interface
+       subroutine process_mode (md)
+         use gyre_mode
+         type(mode_t), intent(in) :: md
+       end subroutine process_mode
+    end interface
+    
 
-    integer                 :: n_md
-    integer                 :: i_part(MPI_SIZE+1)
-    integer                 :: c_beg
-    integer                 :: c_end
-    integer                 :: c_rate
-    integer                 :: i
-    complex(WP)             :: omega_a
-    complex(WP)             :: omega_b
-    $if($MPI)
-    class(model_t), pointer :: ml
-    integer                 :: p
-    $endif
+    integer      :: n_in
+    integer      :: i_part(MPI_SIZE+1)
+    integer      :: c_beg
+    integer      :: c_end
+    integer      :: c_rate
+    integer      :: i
+    complex(WP)  :: omega_a
+    complex(WP)  :: omega_b
+    type(mode_t) :: md
 
-    ! Process each mode to find a proximate mode
+    ! Process each initial mode to find a proximate mode
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
 
        write(OUTPUT_UNIT, 100) 'Root Solving'
 100    format(A)
@@ -284,9 +282,9 @@ contains
        
     endif
 
-    n_md = SIZE(md)
+    n_in = SIZE(md_in)
 
-    call partition_tasks(n_md, 1, i_part)
+    call partition_tasks(n_in, 1, i_part)
 
     call SYSTEM_CLOCK(c_beg, c_rate)
 
@@ -296,21 +294,29 @@ contains
 
     mode_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
-       ! Initial guesses
+       ! Set up initial guesses
 
-       omega_a = md(i)%omega*CMPLX(1._WP,  SQRT(EPSILON(0._WP)), WP)
-       omega_b = md(i)%omega*CMPLX(1._WP, -SQRT(EPSILON(0._WP)), WP)
+       omega_a = md_in(i)%omega*CMPLX(1._WP,  SQRT(EPSILON(0._WP)), WP)
+       omega_b = md_in(i)%omega*CMPLX(1._WP, -SQRT(EPSILON(0._WP)), WP)
 
        ! Find the mode
 
-       md(i) = bp%mode([omega_a,omega_b], omega_def=md(:i-1)%omega)
+       md = bp%mode([omega_a,omega_b])
 
-       ! Report
+       if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
 
-       if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%mp%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter, md(i)%n
+       ! Process it
+
+       if (check_log_level('INFO', MPI_RANK)) then
+          write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
 120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
        endif
+
+       call process_mode(md)
+
+       $if($GFORTRAN_PR57922)
+       call md%final()
+       $endif
 
     end do mode_loop
 
@@ -324,20 +330,6 @@ contains
        write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
 130    format(2X,A,1X,F10.3,1X,A)
     endif
-
-    ! Broadcast data
-
-    $if($MPI)
-
-    ml => bp%model()
-
-    do p = 0, MPI_SIZE-1
-       do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p, ml)
-       end do
-    enddo
-
-    $endif
 
     ! Finish
 
