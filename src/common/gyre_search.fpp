@@ -172,7 +172,6 @@ contains
     type(ext_real_t), allocatable :: discrim_a(:)
     type(ext_real_t), allocatable :: discrim_b(:)
     integer                       :: n_brack
-    integer                       :: i_part(MPI_SIZE+1)
     integer                       :: c_beg
     integer                       :: c_end
     integer                       :: c_rate
@@ -195,17 +194,9 @@ contains
        
     endif
 
-    n_brack = SIZE(omega_a)
-
-    call partition_tasks(n_brack, 1, i_part)
-
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    $if($MPI)
-    call barrier()
-    $endif
-
-    mode_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
+    mode_loop : do i = 1, SIZE(omega_a)
 
        ! Find the mode
 
@@ -216,7 +207,7 @@ contains
 
        ! Process it
 
-       if (check_log_level('INFO', MPI_RANK)) then
+       if (check_log_level('INFO')) then
           write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
 120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
        endif
@@ -228,10 +219,6 @@ contains
        $endif
 
     end do mode_loop
-
-    $if($MPI)
-    call barrier()
-    $endif
 
     call SYSTEM_CLOCK(c_end)
 
@@ -259,9 +246,6 @@ contains
        end subroutine process_mode
     end interface
     
-
-    integer      :: n_in
-    integer      :: i_part(MPI_SIZE+1)
     integer      :: c_beg
     integer      :: c_end
     integer      :: c_rate
@@ -282,17 +266,9 @@ contains
        
     endif
 
-    n_in = SIZE(md_in)
-
-    call partition_tasks(n_in, 1, i_part)
-
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    $if($MPI)
-    call barrier()
-    $endif
-
-    mode_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
+    mode_loop : do i = 1, SIZE(md_in)
 
        ! Set up initial guesses
 
@@ -307,7 +283,7 @@ contains
 
        ! Process it
 
-       if (check_log_level('INFO', MPI_RANK)) then
+       if (check_log_level('INFO')) then
           write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
 120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
        endif
@@ -319,10 +295,6 @@ contains
        $endif
 
     end do mode_loop
-
-    $if($MPI)
-    call barrier()
-    $endif
 
     call SYSTEM_CLOCK(c_end)
 
@@ -349,16 +321,11 @@ contains
     type(ext_real_t), allocatable, intent(out) :: discrim_b(:)
 
     integer          :: n_omega
-    integer          :: i_part(MPI_SIZE+1)
     integer          :: c_beg
     integer          :: c_end
     integer          :: c_rate
     integer          :: i
     type(ext_real_t) :: discrim(SIZE(omega))
-    $if($MPI)
-    integer          :: recvcounts(MPI_SIZE)
-    integer          :: displs(MPI_SIZE)
-    $endif
     integer          :: n_brack
     integer          :: i_brack(SIZE(omega))
 
@@ -371,37 +338,18 @@ contains
 
     n_omega = SIZE(omega)
 
-    call partition_tasks(n_omega, 1, i_part)
-
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    $if($MPI)
-    call barrier()
-    $endif
-
-    discrim_loop : do i = i_part(MPI_RANK+1),i_part(MPI_RANK+2)-1
+    discrim_loop : do i = 1, n_omega
 
        discrim(i) = ext_real_t(bp%discrim(CMPLX(omega(i), KIND=WP)))
 
-       if(check_log_level('DEBUG', MPI_RANK)) then
+       if(check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
 110       format(2X,E24.16,2X,F19.16,2X,I7)
        endif
 
     end do discrim_loop
-
-    $if($MPI)
-
-    recvcounts = i_part(2:)-i_part(:MPI_SIZE)
-    displs = i_part(:MPI_SIZE)-1
-
-    call allgatherv(discrim, recvcounts, displs)
-
-    $endif
-
-    $if($MPI)
-    call barrier()
-    $endif
 
     call SYSTEM_CLOCK(c_end)
 
