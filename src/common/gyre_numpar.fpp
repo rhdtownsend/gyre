@@ -32,13 +32,13 @@ module gyre_numpar
   ! Derived-type definitions
 
   type :: numpar_t
-     integer             :: n_iter_max
-     real(WP)            :: theta_ad
-     logical             :: reduce_order
-     logical             :: use_banded
-     logical             :: use_trad_approx
-     character(LEN=64)   :: ivp_solver_type
-     character(LEN=2048) :: tag_list
+     integer         :: n_iter_max
+     real(WP)        :: theta_ad
+     logical         :: reduce_order
+     logical         :: use_banded
+     logical         :: use_trad_approx
+     character(64)   :: ivp_solver_type
+     character(2048) :: tag_list
   end type numpar_t
 
   ! Interfaces
