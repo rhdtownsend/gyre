@@ -180,7 +180,7 @@ contains
 
     phase = ATAN2(AIMAG(md%y_ref(1)), REAL(md%y_ref(1)))
 
-    norm_fac = 1._WP/SQRT(integrate(this%x, this%dE_dx()))*EXP(CMPLX(0._WP, -phase, KIND=WP))
+    norm_fac = 1._WP/SQRT(integrate(md%x, md%dE_dx()))*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
     md%y = norm_fac*md%y
     md%y_ref = norm_fac*md%y_ref
