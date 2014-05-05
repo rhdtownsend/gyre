@@ -149,7 +149,7 @@ contains
 
   function check_log_level (log_level, rank)
 
-    character(*), intent(in)  :: log_level
+    character(*), intent(in)      :: log_level
     integer, optional, intent(in) :: rank
     logical                       :: check_log_level
 
