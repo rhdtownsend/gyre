@@ -16,6 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_memory.inc'
 
 module gyre_mode
 
@@ -106,6 +107,10 @@ module gyre_mode
      module procedure mode_t_
   end interface mode_t
 
+  interface reallocate
+     module procedure reallocate_1_
+  end interface reallocate
+
   $if ($MPI)
   interface bcast
      module procedure bcast_
@@ -117,6 +122,7 @@ module gyre_mode
   private
 
   public :: mode_t
+  public :: reallocate
   $if($MPI)
   public :: bcast
   $endif
@@ -192,6 +198,10 @@ contains
     return
 
   end function mode_t_
+
+!****
+
+  $REALLOCATE(type(mode_t),1)
 
 !****
 
