@@ -27,7 +27,7 @@ module gyre_mode
   use core_parallel
 
   use gyre_model
-  $if($MPI)
+  $if ($MPI)
   use gyre_model_mpi
   $endif
   use gyre_ext_arith
