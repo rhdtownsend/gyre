@@ -35,6 +35,7 @@ program gyre_ad
   use gyre_numpar
   use gyre_gridpar
   use gyre_scanpar
+  use gyre_outpar
   use gyre_bvp
   use gyre_ad_bvp
   use gyre_rad_bvp
@@ -62,17 +63,21 @@ program gyre_ad
   type(gridpar_t), allocatable  :: shoot_gp(:)
   type(gridpar_t), allocatable  :: recon_gp(:)
   type(scanpar_t), allocatable  :: sp(:)
+  type(outpar_t)                :: up
   integer                       :: i
   type(oscpar_t), allocatable   :: op_sel(:)
   type(numpar_t), allocatable   :: np_sel(:)
   type(gridpar_t), allocatable  :: shoot_gp_sel(:)
   type(gridpar_t), allocatable  :: recon_gp_sel(:)
   type(scanpar_t), allocatable  :: sp_sel(:)
+  integer                       :: n_op_sel
+  integer                       :: n_np_sel
+  integer                       :: n_up_sel
   real(WP), allocatable         :: omega(:)
   class(bvp_t), allocatable     :: bp
-  type(mode_t), allocatable     :: md(:)
+  integer                       :: n_md
+  integer                       :: d_md
   type(mode_t), allocatable     :: md_all(:)
-  type(mode_t), allocatable     :: md_tmp(:)
 
   ! Initialize
 
@@ -105,20 +110,21 @@ program gyre_ad
      
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-     call read_constants(unit)
      call read_model(unit, x_ml, ml)
+     call read_constants(unit)
      call read_modepar(unit, mp)
      call read_oscpar(unit, op)
      call read_numpar(unit, np)
      call read_shoot_gridpar(unit, shoot_gp)
      call read_recon_gridpar(unit, recon_gp)
      call read_scanpar(unit, sp)
+     call read_outpar(unit, up)
 
   end if
 
   $if ($MPI)
-  call bcast_constants(0)
   call bcast_alloc(x_ml, 0)
+  call bcast_constants(0)
   call bcast_alloc(ml, 0)
   call bcast_alloc(mp, 0)
   call bcast_alloc(op, 0)
@@ -126,11 +132,15 @@ program gyre_ad
   call bcast_alloc(shoot_gp, 0)
   call bcast_alloc(recon_gp, 0)
   call bcast_alloc(sp, 0)
+  call bcast(up, 0)
   $endif
 
   ! Loop through modepars
 
-  allocate(md_all(0))
+  d_md = 128
+  n_md = 0
+
+  allocate(md_all(d_md))
 
   op_loop : do i = 1, SIZE(mp)
 
@@ -142,7 +152,7 @@ program gyre_ad
 
         write(OUTPUT_UNIT, 130) 'l :', mp(i)%l
         write(OUTPUT_UNIT, 130) 'm :', mp(i)%m
-130     format(2X,A,1X,I0)
+130     format(3X,A,1X,I0)
 
         write(OUTPUT_UNIT, *)
 
@@ -150,21 +160,33 @@ program gyre_ad
 
      ! Select parameters according to tags
 
-     call select_par(op, mp(i)%tag, op_sel, last=.TRUE.)
-     call select_par(np, mp(i)%tag, np_sel, last=.TRUE.)
+     call select_par(op, mp(i)%tag, op_sel)
+     call select_par(np, mp(i)%tag, np_sel)
      call select_par(shoot_gp, mp(i)%tag, shoot_gp_sel)
      call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
      call select_par(sp, mp(i)%tag, sp_sel)
 
-     $ASSERT(SIZE(op_sel) == 1,No matching osc parameters)
-     $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
+     n_op_sel = SIZE(op_sel)
+     n_np_sel = SIZE(np_sel)
+
+     $ASSERT(n_op_sel >= 1,No matching osc parameters)
+     $ASSERT(n_np_sel >= 1,No matching num parameters)
      $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
      $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
      $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
 
+     if (n_op_sel > 1 .AND. check_log_level('WARN')) then
+        write(OUTPUT_UNIT, 140) 'Warning: multiple matching osc namelists, using final match'
+140     format('!!',1X,A)
+     endif
+        
+     if (n_np_sel > 1 .AND. check_log_level('WARN')) then
+        write(OUTPUT_UNIT, 140) 'Warning: multiple matching num namelists, using final match'
+     endif
+        
      ! Set up the frequency array
 
-     call build_scan(sp_sel, ml, mp(i), op_sel(1), shoot_gp_sel, x_ml, omega)
+     call build_scan(sp_sel, ml, mp(i), op_sel(n_op_sel), shoot_gp_sel, x_ml, omega)
 
      ! Store the frequency range in shoot_gp_sel
 
@@ -173,32 +195,34 @@ program gyre_ad
 
      ! Set up bp
 
-     if (ALLOCATED(bp)) deallocate(bp)
-
-     if (mp(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(bp, SOURCE=rad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+     if (mp(i)%l == 0 .AND. np_sel(n_np_sel)%reduce_order) then
+        allocate(bp, SOURCE=rad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
      else
-        allocate(bp, SOURCE=ad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(bp, SOURCE=ad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
 
      ! Find modes
 
-     call scan_search(bp, omega, md)
+     call scan_search(bp, omega, process_mode)
 
-     ! (The following could be simpler, but this is a workaround for a
-     ! gfortran issue, likely PR 57839)
+     ! Share them among processors
 
-     md_tmp = [md_all, md]
-     call MOVE_ALLOC(md_tmp, md_all)
+     $if($MPI)
+
+     THIS NEEDS TO BE IMPLEMENTED
+
+     $endif
+
+     ! Clean up
 
      deallocate(bp)
 
   end do op_loop
 
-  ! Write output
+  ! Write the summary file
  
   if (MPI_RANK == 0) then
-     call write_data(unit, md_all)
+     call write_summary(up, md_all(:n_md))
   endif
 
   ! Finish
@@ -206,5 +230,35 @@ program gyre_ad
   close(unit)
 
   call final_parallel()
+
+contains
+
+  subroutine process_mode (md)
+
+    type(mode_t), intent(in) :: md
+
+    ! Write the mode
+
+    n_md = n_md + 1
+
+    call write_mode(up, md, n_md)
+
+    ! Add it to the all-mode list
+
+    if (n_md > d_md) then
+       $ABORT(Out of space for modes)
+!       d_md = 2*d_md
+!       call reallocate(md_all, [d_md])
+    endif
+
+    md_all(n_md) = md
+
+    if (up%prune_modes) call md_all(n_md)%prune()
+
+    ! Finish
+
+    return
+
+  end subroutine process_mode
 
 end program gyre_ad
