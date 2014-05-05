@@ -190,7 +190,7 @@ contains
 100    format(A)
 
        write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
-110    format(4(2X,A6),3(2X,A24),2X,A6,2X,A7)
+110    format(4(2X,A8),3(2X,A24),2X,A6,2X,A7)
        
     endif
 
@@ -209,7 +209,7 @@ contains
 
        if (check_log_level('INFO')) then
           write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
-120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
+120       format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
        endif
 
        call process_mode(md)
@@ -262,7 +262,7 @@ contains
 100    format(A)
 
        write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
-110    format(4(2X,A6),3(2X,A24),2X,A6,2X,A7)
+110    format(4(2X,A8),3(2X,A24),2X,A6,2X,A7)
        
     endif
 
@@ -285,7 +285,7 @@ contains
 
        if (check_log_level('INFO')) then
           write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
-120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
+120       format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
        endif
 
        call process_mode(md)
