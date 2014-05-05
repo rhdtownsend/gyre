@@ -77,7 +77,7 @@ program gyre_ad
   class(bvp_t), allocatable     :: bp
   integer                       :: n_md
   integer                       :: d_md
-  type(mode_t), allocatable     :: md_all(:)
+  type(mode_t), allocatable     :: md(:)
 
   ! Initialize
 
@@ -140,7 +140,7 @@ program gyre_ad
   d_md = 128
   n_md = 0
 
-  allocate(md_all(d_md))
+  allocate(md(d_md))
 
   op_loop : do i = 1, SIZE(mp)
 
@@ -222,7 +222,7 @@ program gyre_ad
   ! Write the summary file
  
   if (MPI_RANK == 0) then
-     call write_summary(up, md_all(:n_md))
+     call write_summary(up, md(:n_md))
   endif
 
   ! Finish
@@ -233,27 +233,28 @@ program gyre_ad
 
 contains
 
-  subroutine process_mode (md)
+  subroutine process_mode (md_new)
 
-    type(mode_t), intent(in) :: md
+    type(mode_t), intent(in) :: md_new
 
-    ! Write the mode
+    ! Store the mode
 
     n_md = n_md + 1
 
-    call write_mode(up, md, n_md)
-
-    ! Add it to the all-mode list
-
     if (n_md > d_md) then
-       $ABORT(Out of space for modes)
-!       d_md = 2*d_md
-!       call reallocate(md_all, [d_md])
+       d_md = 2*d_md
+       call reallocate(md, [d_md])
     endif
 
-    md_all(n_md) = md
+    md(n_md) = md_new
 
-    if (up%prune_modes) call md_all(n_md)%prune()
+    ! Write it
+
+    call write_mode(up, md(n_md), n_md)
+
+    ! If necessary, prune it
+
+    if (up%prune_modes) call md(n_md)%prune()
 
     ! Finish
 

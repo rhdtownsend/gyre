@@ -39,7 +39,7 @@ program gyre_nad_map
   use gyre_scanpar
   use gyre_bvp
   use gyre_nad_bvp
-  use gyre_input
+  use gyre_input, read_outpar_ => read_outpar
   use gyre_search
   use gyre_mode
   use gyre_util
