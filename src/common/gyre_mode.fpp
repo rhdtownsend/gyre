@@ -180,7 +180,7 @@ contains
 
     phase = ATAN2(AIMAG(md%y_ref(1)), REAL(md%y_ref(1)))
 
-    norm_fac = 1._WP/SQRT(md%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+    norm_fac = 1._WP/SQRT(integrate(this%x, this%dE_dx()))*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
     md%y = norm_fac*md%y
     md%y_ref = norm_fac*md%y_ref
@@ -464,9 +464,10 @@ contains
     real(WP)                  :: E
     
     ! Calculate the total mode inertia, in units of M_star
-    ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010]
+    ! R_star**2. Due to the mode normalization enforced in mode_t_,
+    ! this is always unity
 
-    E = integrate(this%x, this%dE_dx())
+    E = 1._WP
 
     ! Finish
 
