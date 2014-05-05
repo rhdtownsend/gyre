@@ -27,9 +27,6 @@ program gyre_ad
 
   use gyre_version
   use gyre_model
-  $if ($MPI)
-  use gyre_model_mpi
-  $endif
   use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
@@ -95,7 +92,6 @@ program gyre_ad
 110  format(A,1X,A)
 
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
-     write(OUTPUT_UNIT, 120) 'MPI Processors   :', MPI_SIZE
 120  format(A,1X,I0)
 
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
@@ -104,36 +100,19 @@ program gyre_ad
 
   ! Process arguments
 
-  if (MPI_RANK == 0) then
-
-     call parse_args(filename)
+  call parse_args(filename)
      
-     open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
+  open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-     call read_model(unit, x_ml, ml)
-     call read_constants(unit)
-     call read_modepar(unit, mp)
-     call read_oscpar(unit, op)
-     call read_numpar(unit, np)
-     call read_shoot_gridpar(unit, shoot_gp)
-     call read_recon_gridpar(unit, recon_gp)
-     call read_scanpar(unit, sp)
-     call read_outpar(unit, up)
-
-  end if
-
-  $if ($MPI)
-  call bcast_alloc(x_ml, 0)
-  call bcast_constants(0)
-  call bcast_alloc(ml, 0)
-  call bcast_alloc(mp, 0)
-  call bcast_alloc(op, 0)
-  call bcast_alloc(np, 0)
-  call bcast_alloc(shoot_gp, 0)
-  call bcast_alloc(recon_gp, 0)
-  call bcast_alloc(sp, 0)
-  call bcast(up, 0)
-  $endif
+  call read_model(unit, x_ml, ml)
+  call read_constants(unit)
+  call read_modepar(unit, mp)
+  call read_oscpar(unit, op)
+  call read_numpar(unit, np)
+  call read_shoot_gridpar(unit, shoot_gp)
+  call read_recon_gridpar(unit, recon_gp)
+  call read_scanpar(unit, sp)
+  call read_outpar(unit, up)
 
   ! Loop through modepars
 
@@ -205,14 +184,6 @@ program gyre_ad
 
      call scan_search(bp, omega, process_mode)
 
-     ! Share them among processors
-
-     $if($MPI)
-
-     THIS NEEDS TO BE IMPLEMENTED
-
-     $endif
-
      ! Clean up
 
      deallocate(bp)
@@ -221,9 +192,7 @@ program gyre_ad
 
   ! Write the summary file
  
-  if (MPI_RANK == 0) then
-     call write_summary(up, md(:n_md))
-  endif
+  call write_summary(up, md(:n_md))
 
   ! Finish
 

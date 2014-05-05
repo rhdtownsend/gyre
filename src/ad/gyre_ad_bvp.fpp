@@ -22,14 +22,10 @@ module gyre_ad_bvp
   ! Uses
 
   use core_kinds
-  use core_parallel
 
   use gyre_bvp
   use gyre_model
   use gyre_cocache
-  $if($MPI)
-  use gyre_model_mpi
-  $endif
   use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
@@ -88,20 +84,11 @@ module gyre_ad_bvp
      module procedure ad_bvp_t_
   end interface ad_bvp_t
 
-  $if ($MPI)
-  interface bcast
-     module procedure bcast_
-  end interface bcast
-  $endif
-
   ! Access specifiers
 
   private
 
   public :: ad_bvp_t
-  $if ($MPI)
-  public :: bcast
-  $endif
 
   ! Procedures
 
@@ -498,59 +485,6 @@ contains
     return
 
   end function model_
-
-!****
-
-  $if ($MPI)
-
-  subroutine bcast_ (bp, root_rank, ml)
-
-    type(ad_bvp_t), intent(inout)      :: bp
-    integer, intent(in)                :: root_rank
-    class(model_t), intent(in), target :: ml
-
-    type(modepar_t)              :: mp
-    type(oscpar_t)               :: op
-    type(numpar_t)               :: np
-    type(gridpar_t), allocatable :: shoot_gp(:)
-    type(gridpar_t), allocatable :: recon_gp(:)
-    real(WP), allocatable        :: x_in(:)
-
-    ! Broadcast the ad_bvp_t
-
-    if(MPI_RANK == root_rank) then
-
-       call bcast(bp%mp, root_rank)
-       call bcast(bp%op, root_rank)
-       call bcast(bp%np, root_rank)
-
-       call bcast_alloc(bp%shoot_gp, root_rank)
-       call bcast_alloc(bp%recon_gp, root_rank)
-
-       call bcast_alloc(bp%x_in, root_rank)
-
-    else
-
-       call bcast(mp, root_rank)
-       call bcast(op, root_rank)
-       call bcast(np, root_rank)
-
-       call bcast_alloc(shoot_gp, root_rank)
-       call bcast_alloc(recon_gp, root_rank)
-
-       call bcast_alloc(x_in, root_rank)
-
-       bp = ad_bvp_t(ml, mp, op, np, shoot_gp, recon_gp, x_in)
- 
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_
-
-  $endif
 
 end module gyre_ad_bvp
 
