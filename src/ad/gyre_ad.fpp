@@ -69,7 +69,6 @@ program gyre_ad
   type(scanpar_t), allocatable  :: sp_sel(:)
   integer                       :: n_op_sel
   integer                       :: n_np_sel
-  integer                       :: n_up_sel
   real(WP), allocatable         :: omega(:)
   class(bvp_t), allocatable     :: bp
   integer                       :: n_md
