@@ -17,12 +17,12 @@
 
 &mode
 	l = 2
-	X_n_pg_min = -50
+	n_pg_min = -50
 /
 
 &mode
 	l = 3
-	X_n_pg_min = -50
+	n_pg_min = -50
 /
 
 &osc

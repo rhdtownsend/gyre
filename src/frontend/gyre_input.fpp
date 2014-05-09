@@ -93,6 +93,7 @@ contains
     use gyre_losc_file
     use gyre_fgong_file
     use gyre_famdl_file
+    use gyre_amdl_file
     $if ($HDF5)
     use gyre_b3_file
     use gyre_gsm_file
@@ -177,6 +178,8 @@ contains
           call read_fgong_model(file, deriv_type, data_format, regularize, ec, x=x_bc) 
        case ('FAMDL')
           call read_famdl_model(file, deriv_type, data_format, regularize, ec, x=x_bc)
+       case ('AMDL')
+          call read_amdl_model(file, deriv_type, regularize, ec, x=x_bc)
        case default
           $ABORT(Invalid file_format)
        end select
