@@ -86,7 +86,7 @@ contains
     type(outpar_t), intent(inout) :: up$ARRAY_SPEC($RANK)
     integer, intent(in)           :: root_rank
 
-    ! Broadcast the modepar_t
+    ! Broadcast the outpar_t
 
     call bcast(up%freq_units, root_rank)
     call bcast(up%summary_file, root_rank)
@@ -97,7 +97,7 @@ contains
     call bcast(up%mode_file_format, root_rank)
     call bcast(up%mode_item_list, root_rank)
     
-    call bcast(up%prune_modes)
+    call bcast(up%prune_modes, root_rank)
 
     ! Finish
 
@@ -112,8 +112,8 @@ contains
 
 !****
 
-  $BCAST_ALLOC(type(modepar_t),0)
-  $BCAST_ALLOC(type(modepar_t),1)
+  $BCAST_ALLOC(type(outpar_t),0)
+  $BCAST_ALLOC(type(outpar_t),1)
 
   $endif
 
