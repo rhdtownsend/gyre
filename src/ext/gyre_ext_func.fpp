@@ -42,7 +42,7 @@ module gyre_ext_func
      procedure, public             :: expand_bracket => expand_bracket_
      procedure, public             :: expand_pair => expand_pair_
      procedure, public             :: narrow_bracket => narrow_bracket_
-     procedure, public             :: narrow_pair => narrow_pair_
+     procedure, public             :: narrow_pair => narrow_pair_secant_
      procedure                     :: root_r_
      procedure                     :: root_c_
      generic, public               :: root => root_r_, root_c_
@@ -457,7 +457,7 @@ contains
 
 !****
 
-  subroutine narrow_pair_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol)
+  subroutine narrow_pair_secant_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol)
 
     class(ext_func_t), intent(inout)             :: this
     type(ext_complex_t), intent(inout)           :: ez_a
@@ -580,7 +580,154 @@ contains
 
     ! Finish
 
-  end subroutine narrow_pair_
+  end subroutine narrow_pair_secant_
+
+!****
+
+  subroutine narrow_pair_ridders_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol)
+
+    class(ext_func_t), intent(inout)             :: this
+    type(ext_complex_t), intent(inout)           :: ez_a
+    type(ext_complex_t), intent(inout)           :: ez_b
+    type(ext_real_t), intent(in)                 :: ez_tol
+    type(ext_complex_t), optional, intent(inout) :: f_ez_a
+    type(ext_complex_t), optional, intent(inout) :: f_ez_b
+    integer, optional, intent(inout)             :: n_iter
+    logical, optional, intent(in)                :: relative_tol
+
+    integer             :: n_iter_
+    logical             :: relative_tol_
+    type(ext_complex_t) :: a
+    type(ext_complex_t) :: b
+    type(ext_complex_t) :: c
+    type(ext_complex_t) :: f_a
+    type(ext_complex_t) :: f_b
+    type(ext_complex_t) :: f_c
+    integer             :: i
+    type(ext_complex_t) :: exp_Q_p
+    type(ext_complex_t) :: exp_Q_m
+    type(ext_complex_t) :: exp_Q
+    type(ext_complex_t) :: f_dz
+    type(ext_complex_t) :: rho
+    type(ext_real_t)    :: tol
+
+    if(PRESENT(n_iter)) then
+       n_iter_ = n_iter
+    else
+       n_iter_ = 50
+    end if
+
+    if(PRESENT(relative_tol)) then
+       relative_tol_ = relative_tol
+    else
+       relative_tol_ = .FALSE.
+    endif
+
+    $ASSERT(ez_a /= ez_b,Invalid initial pair)
+
+    ! Use a complex pseudo-Ridders' method (with secant updates,
+    ! rather than regula falsi) to narrow the pair [z_a,z_b] on a root
+    ! of the complex function this%eval_c(z)
+
+    ! Set up the initial state
+
+    a = ez_a
+    b = ez_b
+
+    if(PRESENT(f_ez_a)) then
+       f_a = f_ez_a
+    else
+       f_a = this%eval(a)
+    endif
+
+    if(PRESENT(f_ez_b)) then
+       f_b = f_ez_b
+    else
+       f_b = this%eval(b)
+    endif
+
+    if(ABS(f_a) < ABS(f_b)) then
+
+       c = a
+       a = b
+       b = c
+
+       f_c = f_a
+       f_a = f_b
+       f_b = f_c
+
+    endif
+
+    ! Iterate until the correction drops below the threshold, or the
+    ! maximum number of iterations is exceeded
+
+    iterate_loop : do i = 1,n_iter_
+
+       ! Calculate the mid-point values
+
+       c =  0.5_WP*(a + b)
+       f_c = this%eval(c)
+
+       ! Solve for the re-scaling exponential
+
+       exp_Q_p = (f_c + SQRT(f_c*f_c - f_a*f_b))/f_b
+       exp_Q_m = (f_c - SQRT(f_c*f_c - f_a*f_b))/f_b
+
+       if (ABS(exp_Q_p) < ABS(exp_Q_m)) then
+          exp_Q = exp_Q_p
+       else
+          exp_Q = exp_Q_m
+       endif
+
+       ! Apply the secant method to the re-scaled problem
+ 
+       f_dz = f_b*(exp_Q*exp_Q)*(b - a)
+
+       rho = f_b*(exp_Q*exp_Q) - f_a
+
+       ! Check for a singular correction
+
+       if(ABS(b*rho) < 8._WP*EPSILON(0._WP)*ABS(f_dz)) then
+          $ABORT(Singular correction in secant)
+       endif
+
+       ! Update the root
+
+       a = b
+       f_a = f_b
+
+       b = b - f_dz/rho
+       f_b = this%eval(b)
+
+       ! Check for convergence
+
+       if(relative_tol_) then
+          tol = (4._WP*EPSILON(0._WP) + ez_tol)*ABS(b)
+       else
+          tol = 4._WP*EPSILON(0._WP)*ABS(b) + ez_tol
+       endif
+
+       if((ABS(b - a) <= tol .OR. f_b == 0._WP)) exit iterate_loop
+
+    end do iterate_loop
+
+    if(PRESENT(n_iter)) then
+       n_iter = i
+    else
+       $ASSERT(i <= n_iter_,Too many iterations)
+    endif
+
+    ! Store the results
+
+    ez_a = a
+    ez_b = b
+
+    if(PRESENT(f_ez_a)) f_ez_a = f_a
+    if(PRESENT(f_ez_b)) f_ez_b = f_b
+
+    ! Finish
+
+  end subroutine narrow_pair_ridders_
 
 !****
 
