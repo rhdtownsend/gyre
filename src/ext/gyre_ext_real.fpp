@@ -98,6 +98,10 @@ module gyre_ext_real
      module procedure exp_
   end interface exp
 
+  interface sqrt
+     module procedure sqrt_
+  end interface sqrt
+
   interface abs
      module procedure abs_
   end interface abs
@@ -184,6 +188,7 @@ module gyre_ext_real
   public :: product
   public :: abs
   public :: exp
+  public :: sqrt
   public :: fraction
   public :: exponent
   public :: max
@@ -752,6 +757,29 @@ contains
     return
 
   end function exp_
+
+!****
+
+  elemental function sqrt_ (ex) result (sqrt_ex)
+
+    type(ext_real_t), intent(in) :: ex
+    type(ext_real_t)             :: sqrt_ex
+
+    ! Calculate the square root of ex
+
+    sqrt_ex = ext_real_t(SQRT(ex%f))
+
+    if (MOD(ex%e, 2) == 0) then
+       sqrt_ex = scale(sqrt_ex, ex%e/2)
+    else
+       sqrt_ex = scale(sqrt_ex, (ex%e-1)/2)*SQRT(2._WP)
+    endif
+
+    ! Finish
+
+    return
+
+  end function sqrt_
 
 !****
 

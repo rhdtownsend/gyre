@@ -116,6 +116,10 @@ module gyre_ext_complex
      module procedure exp_
   end interface exp
 
+  interface sqrt
+     module procedure sqrt_
+  end interface sqrt
+
   interface abs
      module procedure abs_
   end interface abs
@@ -204,6 +208,7 @@ module gyre_ext_complex
   public :: product
   public :: abs
   public :: exp
+  public :: sqrt
   public :: fraction
   public :: exponent
   public :: scale
@@ -852,6 +857,29 @@ contains
     return
 
   end function exp_
+
+!****
+
+  elemental function sqrt_ (ez) result (sqrt_ez)
+
+    type(ext_complex_t), intent(in) :: ez
+    type(ext_complex_t)             :: sqrt_ez
+
+    ! Calculate the square root of ez
+
+    sqrt_ez = ext_complex_t(SQRT(ez%f))
+
+    if (MOD(ez%e, 2) == 0) then
+       sqrt_ez = scale(sqrt_ez, ez%e/2)
+    else
+       sqrt_ez = scale(sqrt_ez, (ez%e-1)/2)*SQRT(2._WP)
+    endif
+
+    ! Finish
+
+    return
+
+  end function sqrt_
 
 !****
 
