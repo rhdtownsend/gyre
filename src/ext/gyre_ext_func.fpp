@@ -36,21 +36,30 @@ module gyre_ext_func
   type, abstract :: ext_func_t
    contains
      private
-     procedure                     :: eval_er_
+     procedure(eval_er_), deferred :: eval_er_
      procedure(eval_ec_), deferred :: eval_ec_
      generic, public               :: eval => eval_er_, eval_ec_
-     procedure, public             :: expand_bracket => expand_bracket_
-     procedure, public             :: expand_pair => expand_pair_
-     procedure, public             :: narrow_bracket => narrow_bracket_
-     procedure, public             :: narrow_pair => narrow_pair_secant_
-     procedure                     :: root_r_
-     procedure                     :: root_c_
-     generic, public               :: root => root_r_, root_c_
+     procedure                     :: expand_er_
+     procedure                     :: expand_ec_
+     generic, public               :: expand => expand_er_, expand_ec_
+     procedure                     :: narrow_er_
+     procedure                     :: narrow_ec_secant_
+     generic, public               :: narrow => narrow_er_, narrow_ec_secant_
+     procedure                     :: root_er_
+     procedure                     :: root_ec_
+     generic, public               :: root => root_er_, root_ec_
   end type ext_func_t 
 
   ! Interfaces
 
   abstract interface
+    function eval_er_ (this, ex) result (f_ex)
+      use gyre_ext_arith
+      import ext_func_t
+      class(ext_func_t), intent(inout) :: this
+      type(ext_real_t), intent(in)     :: ex
+      type(ext_real_t)                 :: f_ex
+    end function eval_er_
     function eval_ec_ (this, ez) result (f_ez)
       use gyre_ext_arith
       import ext_func_t
@@ -70,26 +79,7 @@ module gyre_ext_func
 
 contains
 
-  function eval_er_ (this, ex) result (f_ex)
-
-    class(ext_func_t), intent(inout) :: this
-    type(ext_real_t), intent(in)     :: ex
-    type(ext_real_t)                 :: f_ex
-
-    ! Evaluate the real function based on the complex function
-    ! this%eval()
-
-    f_ex = ext_real_t(this%eval(ext_complex_t(ex)))
-
-    ! Finish
-
-    return
-
-  end function eval_er_
-
-!****
-
-  subroutine expand_bracket_ (this, ex_a, ex_b, f_ex_a, f_ex_b, clamp_a, clamp_b)
+  subroutine expand_er_ (this, ex_a, ex_b, f_ex_a, f_ex_b, clamp_a, clamp_b)
 
     class(ext_func_t), intent(inout)        :: this
     type(ext_real_t), intent(inout)         :: ex_a
@@ -123,8 +113,8 @@ contains
 
     $ASSERT(ex_a /= ex_b,Invalid initial bracket)
 
-    ! Expand the bracket [x_a,x_b] until it contains a root of the
-    ! real function this%eval_r(x)
+    ! Expand the bracket [ex_a,ex_b] until it contains a root of the
+    ! real function this%eval(ex)
 
     f_a = this%eval(ex_a)
     f_b = this%eval(ex_b)
@@ -161,11 +151,11 @@ contains
 
     return
 
-  end subroutine expand_bracket_
+  end subroutine expand_er_
 
 !****
 
-  subroutine expand_pair_ (this, ez_a, ez_b, f_ez_tol, f_ez_a, f_ez_b, clamp_a, clamp_b, relative_tol)
+  subroutine expand_ec_ (this, ez_a, ez_b, f_ez_tol, f_ez_a, f_ez_b, clamp_a, clamp_b, relative_tol)
 
     class(ext_func_t), intent(inout)           :: this
     type(ext_complex_t), intent(inout)         :: ez_a
@@ -209,8 +199,8 @@ contains
 
     $ASSERT(ez_a /= ez_b,Invalid initial pair)
 
-    ! Expand the pair [z_a,z_b] until the difference between f(z_a)
-    ! and f(z_b) exceeds the tolerance
+    ! Expand the pair [ez_a,ez_b] until the difference between f(ez_a)
+    ! and f(ez_b) exceeds the tolerance
 
     f_a = this%eval(ez_a)
     f_b = this%eval(ez_b)
@@ -252,11 +242,11 @@ contains
 
     return
 
-  end subroutine expand_pair_
+  end subroutine expand_ec_
 
 !****
 
-  subroutine narrow_bracket_ (this, ex_a, ex_b, ex_tol, f_ex_a, f_ex_b, n_iter, relative_tol)
+  subroutine narrow_er_ (this, ex_a, ex_b, ex_tol, f_ex_a, f_ex_b, n_iter, relative_tol)
 
     class(ext_func_t), intent(inout)          :: this
     type(ext_real_t), intent(inout)           :: ex_a
@@ -300,7 +290,7 @@ contains
     ! Use Brent's method [based on the ALGOL 60 routine 'zero'
     ! published in Brent (1973, "Algorithms for Minimization without
     ! Derivatives", Prentice Hall, Englewood Cliffs] to narrow the
-    ! bracket [x_a,x_b] bracket on the real function this%eval_r(x)
+    ! bracket [ex_a,ex_b] on the real function this%eval(ex)
 
     ! Set up the initial state
 
@@ -453,11 +443,11 @@ contains
 
     return
 
-  end subroutine narrow_bracket_
+  end subroutine narrow_er_
 
 !****
 
-  subroutine narrow_pair_secant_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol)
+  subroutine narrow_ec_secant_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol)
 
     class(ext_func_t), intent(inout)             :: this
     type(ext_complex_t), intent(inout)           :: ez_a
@@ -495,8 +485,8 @@ contains
 
     $ASSERT(ez_a /= ez_b,Invalid initial pair)
 
-    ! Use the secant method to narrow the pair [z_a,z_b] on a root of
-    ! the complex function this%eval_c(z)
+    ! Use the secant method to narrow the pair [ez_a,ez_b] on a root of
+    ! the complex function this%eval(ez)
 
     ! Set up the initial state
 
@@ -580,11 +570,11 @@ contains
 
     ! Finish
 
-  end subroutine narrow_pair_secant_
+  end subroutine narrow_ec_secant_
 
 !****
 
-  subroutine narrow_pair_ridders_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol)
+  subroutine narrow_ec_ridders_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol)
 
     class(ext_func_t), intent(inout)             :: this
     type(ext_complex_t), intent(inout)           :: ez_a
@@ -625,9 +615,9 @@ contains
 
     $ASSERT(ez_a /= ez_b,Invalid initial pair)
 
-    ! Use a complex pseudo-Ridders' method (with secant updates,
-    ! rather than regula falsi) to narrow the pair [z_a,z_b] on a root
-    ! of the complex function this%eval_c(z)
+    ! Use a complex Ridders' method (with secant updates, rather than
+    ! regula falsi) to narrow the pair [ez_a,ez_b] on a root of the
+    ! complex function this%eval(ez)
 
     ! Set up the initial state
 
@@ -701,13 +691,13 @@ contains
 
        ! Check for convergence
 
-       if(relative_tol_) then
+       if (relative_tol_) then
           tol = (4._WP*EPSILON(0._WP) + ez_tol)*ABS(b)
        else
           tol = 4._WP*EPSILON(0._WP)*ABS(b) + ez_tol
        endif
 
-       if((ABS(b - a) <= tol .OR. f_b == 0._WP)) exit iterate_loop
+       if ((ABS(b - a) <= tol .OR. f_b == 0._WP)) exit iterate_loop
 
     end do iterate_loop
 
@@ -722,16 +712,16 @@ contains
     ez_a = a
     ez_b = b
 
-    if(PRESENT(f_ez_a)) f_ez_a = f_a
-    if(PRESENT(f_ez_b)) f_ez_b = f_b
+    if (PRESENT(f_ez_a)) f_ez_a = f_a
+    if (PRESENT(f_ez_b)) f_ez_b = f_b
 
     ! Finish
 
-  end subroutine narrow_pair_ridders_
+  end subroutine narrow_ec_ridders_
 
 !****
 
-  function root_r_ (this, ex_a, ex_b, ex_tol, f_ex_a, f_ex_b, n_iter, relative_tol) result (ex)
+  function root_er_ (this, ex_a, ex_b, ex_tol, f_ex_a, f_ex_b, n_iter, relative_tol) result (ex)
 
     class(ext_func_t), intent(inout)       :: this
     type(ext_real_t), intent(in)           :: ex_a
@@ -748,7 +738,7 @@ contains
     type(ext_real_t) :: f_a
     type(ext_real_t) :: f_b
 
-    ! Find a root of the real function this%eval_r(x)
+    ! Find a root of the real function this%eval(ex)
 
     a = ex_a
     b = ex_b
@@ -765,7 +755,7 @@ contains
        f_b = this%eval(b)
     endif
 
-    call this%narrow_bracket(a, b, ex_tol, f_a, f_b, n_iter, relative_tol)
+    call this%narrow(a, b, ex_tol, f_a, f_b, n_iter, relative_tol)
 
     ex = b
 
@@ -773,11 +763,11 @@ contains
 
     return
 
-  end function root_r_
+  end function root_er_
 
 !****
 
-  function root_c_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol) result (ez)
+  function root_ec_ (this, ez_a, ez_b, ez_tol, f_ez_a, f_ez_b, n_iter, relative_tol) result (ez)
 
     class(ext_func_t), intent(inout)          :: this
     type(ext_complex_t), intent(in)           :: ez_a
@@ -794,7 +784,7 @@ contains
     type(ext_complex_t) :: f_a
     type(ext_complex_t) :: f_b
 
-    ! Find a root of the real function this%eval_r(x)
+    ! Find a root of the complex function this%eval(ez)
 
     a = ez_a
     b = ez_b
@@ -811,7 +801,7 @@ contains
        f_b = this%eval(b)
     endif
 
-    call this%narrow_pair(a, b, ez_tol, f_a, f_b, n_iter, relative_tol)
+    call this%narrow(a, b, ez_tol, f_a, f_b, n_iter, relative_tol)
 
     ez = b
 
@@ -819,6 +809,6 @@ contains
 
     return
 
-  end function root_c_
+  end function root_ec_
 
 end module gyre_ext_func
