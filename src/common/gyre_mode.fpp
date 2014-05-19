@@ -604,8 +604,8 @@ contains
 
     use gyre_evol_model
 
-    class(mode_t), intent(in)     :: this
-    real(WP)                      :: omega_im
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: omega_im
 
     real(WP) :: t_dyn
     real(WP) :: t_kh
@@ -613,7 +613,7 @@ contains
     ! Estimate the imaginary part of omega by integrating the work
     ! function
 
-    select type (ml => This%ml)
+    select type (ml => this%ml)
     class is (evol_model_t)
        t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
