@@ -342,7 +342,7 @@ contains
 
     discrim_loop : do i = 1, n_omega
 
-       discrim(i) = ext_real_t(bp%discrim(CMPLX(omega(i), KIND=WP)))
+       discrim(i) = ext_real_t(bp%discrim(CMPLX(omega(i), KIND=WP), use_real=.TRUE.))
 
        if(check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
