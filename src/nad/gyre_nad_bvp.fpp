@@ -428,7 +428,7 @@ contains
 
        n_iter_def = this%np%n_iter_max
 
-       call df%narrow_pair(omega_a, omega_b, ext_real_t(0._WP), n_iter=n_iter_def)
+       call df%narrow(omega_a, omega_b, ext_real_t(0._WP), n_iter=n_iter_def)
 
        $ASSERT(n_iter_def <= this%np%n_iter_max,Too many iterations)
 
@@ -441,7 +441,7 @@ contains
           omega_b = omega_a + TINY(0._WP)*(omega_a/ABS(omega_a))
        endif
 
-       call df%expand_pair(omega_a, omega_b, ext_real_t(0._WP), discrim_a, discrim_b)
+       call df%expand(omega_a, omega_b, ext_real_t(0._WP), discrim_a, discrim_b)
 
     endif
 
