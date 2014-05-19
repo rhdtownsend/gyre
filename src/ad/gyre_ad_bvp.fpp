@@ -428,19 +428,19 @@ contains
 
     n_iter = this%np%n_iter_max
 
-    if(use_real_) then
+    if (use_real_) then
        omega_root = real(df%root(ext_real_t(omega_a), ext_real_t(omega_b), ext_real_t(0._WP), &
-                            f_ex_a=ext_real_t(discrim_a), f_ex_b=ext_real_t(discrim_b), n_iter=n_iter))
+                         f_ex_a=ext_real_t(discrim_a), f_ex_b=ext_real_t(discrim_b), n_iter=n_iter))
     else
        omega_root = cmplx(df%root(ext_complex_t(omega_a), ext_complex_t(omega_b), ext_real_t(0._WP), &
-                            f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
+                          f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
     endif
 
     $ASSERT(n_iter <= this%np%n_iter_max,Too many iterations)
 
     ! Reconstruct the solution
 
-    call this%recon_(omega_root, x, y, x_ref, y_ref, discrim_root)
+    call this%recon_(omega_root, x, y, x_ref, y_ref, discrim_root, use_real)
 
     ! Calculate canonical variables
 
