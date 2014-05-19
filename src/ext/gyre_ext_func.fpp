@@ -44,7 +44,8 @@ module gyre_ext_func
      generic, public               :: expand => expand_er_, expand_ec_
      procedure                     :: narrow_er_
      procedure                     :: narrow_ec_secant_
-     generic, public               :: narrow => narrow_er_, narrow_ec_secant_
+     procedure                     :: narrow_ec_ridders_
+     generic, public               :: narrow => narrow_er_, narrow_ec_ridders_
      procedure                     :: root_er_
      procedure                     :: root_ec_
      generic, public               :: root => root_er_, root_ec_
@@ -663,7 +664,7 @@ contains
        exp_Q_p = (f_c + SQRT(f_c*f_c - f_a*f_b))/f_b
        exp_Q_m = (f_c - SQRT(f_c*f_c - f_a*f_b))/f_b
 
-       if (ABS(exp_Q_p) < ABS(exp_Q_m)) then
+       if (ABS(exp_Q_p-1._WP) < ABS(exp_Q_m-1._WP)) then
           exp_Q = exp_Q_p
        else
           exp_Q = exp_Q_m
