@@ -419,7 +419,7 @@ contains
     ! If omega_def is provided, do a preliminary root find using the
     ! deflated discriminant
 
-    if(.FALSE. .AND. PRESENT(omega_def)) then
+    if (this%np%deflate_roots .AND. PRESENT(omega_def)) then
 
        ! (Don't pass discrim_a and discrim_b in/out, because they
        ! haven't been deflated)
@@ -430,7 +430,7 @@ contains
 
        call df%narrow(omega_a, omega_b, ext_real_t(0._WP), n_iter=n_iter_def)
 
-       $ASSERT(n_iter_def <= this%np%n_iter_max,Too many iterations)
+       $ASSERT(n_iter_def <= this%np%n_iter_max,Too many deflation iterations)
 
        deallocate(df%omega_def)
 
@@ -438,18 +438,22 @@ contains
        ! coincident
 
        if(omega_b == omega_a) then
-          omega_b = omega_a + TINY(0._WP)*(omega_a/ABS(omega_a))
+          omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
        endif
 
        call df%expand(omega_a, omega_b, ext_real_t(0._WP), discrim_a, discrim_b)
+
+    else
+
+       n_iter_def = 0
 
     endif
 
     ! Find the discriminant root
 
-    n_iter = this%np%n_iter_max
+    n_iter = this%np%n_iter_max - n_iter_def
  
-   if(use_real_) then
+    if (use_real_) then
        omega_root = real(df%root(ext_real_t(omega_a), ext_real_t(omega_b), ext_real_t(0._WP), &
                                  f_ex_a=ext_real_t(discrim_a), f_ex_b=ext_real_t(discrim_b), n_iter=n_iter))
     else
@@ -457,7 +461,9 @@ contains
                                   f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
     endif
 
-    $ASSERT(n_iter <= this%np%n_iter_max,Too many iterations)
+    n_iter = n_iter + n_iter_def
+
+    $ASSERT(n_iter <= this%np%n_iter_max-n_iter_def,Too many iterations)
 
     ! Reconstruct the solution
 

@@ -331,13 +331,14 @@ contains
        end subroutine process_mode
     end interface
     
-    integer      :: c_beg
-    integer      :: c_end
-    integer      :: c_rate
-    integer      :: i
-    complex(WP)  :: omega_a
-    complex(WP)  :: omega_b
-    type(mode_t) :: md
+    integer                  :: c_beg
+    integer                  :: c_end
+    integer                  :: c_rate
+    integer                  :: i
+    complex(WP)              :: omega_a
+    complex(WP)              :: omega_b
+    complex(WP), allocatable :: omega_def(:)
+    type(mode_t)             :: md
 
     ! Process each initial mode to find a proximate mode
 
@@ -362,7 +363,11 @@ contains
 
        ! Find the mode
 
-       md = bp%mode([omega_a,omega_b])
+       if (ALLOCATED(omega_def)) then
+          md = bp%mode([omega_a,omega_b], omega_def=omega_def)
+       else
+          md = bp%mode([omega_a,omega_b])
+       endif
 
        if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
 
@@ -374,6 +379,14 @@ contains
        endif
 
        call process_mode(md)
+
+       ! Store the frequency in the deflation array
+
+       if (ALLOCATED(omega_def)) then
+          omega_def = [omega_def,md%omega]
+       else
+          omega_def = [md%omega]
+       endif
 
        $if($GFORTRAN_PR57922)
        call md%final()
