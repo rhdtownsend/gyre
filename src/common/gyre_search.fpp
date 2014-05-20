@@ -50,6 +50,7 @@ module gyre_search
 
   public :: build_scan
   public :: scan_search
+  public :: min_search
   public :: prox_search
 
 contains
@@ -180,7 +181,7 @@ contains
 
     ! Find discriminant root brackets
 
-    call find_brackets(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+    call find_root_brackets(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
 
     ! Process each bracket to find modes
 
@@ -232,6 +233,90 @@ contains
     return
 
   end subroutine scan_search
+
+!****
+
+  subroutine min_search (bp, omega, process_mode)
+
+    class(bvp_t), intent(inout) :: bp
+    real(WP), intent(in)        :: omega(:)
+    interface
+       subroutine process_mode (md)
+         use gyre_mode
+         type(mode_t), intent(in) :: md
+       end subroutine process_mode
+    end interface
+
+    real(WP), allocatable         :: omega_a(:)
+    real(WP), allocatable         :: omega_b(:)
+    real(WP), allocatable         :: omega_c(:)
+    type(ext_real_t), allocatable :: discrim_a(:)
+    type(ext_real_t), allocatable :: discrim_b(:)
+    type(ext_real_t), allocatable :: discrim_c(:)
+    integer                       :: n_brack
+    integer                       :: c_beg
+    integer                       :: c_end
+    integer                       :: c_rate
+    real(WP)                      :: domega
+    type(mode_t)                  :: md
+    integer                       :: i
+
+    ! Find discriminant minimum brackets
+
+    call find_min_brackets(bp, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
+
+    ! Process each bracket to find modes
+
+    if(check_log_level('INFO')) then
+
+       write(OUTPUT_UNIT, 100) 'Root Solving'
+100    format(A)
+
+       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
+110    format(4(2X,A8),3(2X,A24),2X,A6,2X,A7)
+       
+    endif
+
+    call SYSTEM_CLOCK(c_beg, c_rate)
+
+    mode_loop : do i = 1, SIZE(omega_a)
+
+       ! Find the mode
+
+       domega = MIN(ABS(omega_b(i)-omega_a(i)), ABS(omega_b(i)-omega_c(i)))
+
+       md = bp%mode([CMPLX(omega_b(i),  0.5_WP*domega, KIND=WP),  &
+                     CMPLX(omega_b(i), -0.5_WP*domega, KIND=WP)])
+ 
+       if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
+
+       ! Process it
+
+       if (check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
+120       format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
+       endif
+
+       call process_mode(md)
+
+       $if($GFORTRAN_PR57922)
+       call md%final()
+       $endif
+
+    end do mode_loop
+
+    call SYSTEM_CLOCK(c_end)
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+130    format(2X,A,1X,F10.3,1X,A)
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine min_search
 
 !****
 
@@ -311,7 +396,7 @@ contains
 
 !****
 
-  subroutine find_brackets (bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+  subroutine find_root_brackets (bp, omega, omega_a, omega_b, discrim_a, discrim_b)
 
     class(bvp_t), target, intent(inout)        :: bp
     real(WP), intent(in)                       :: omega(:)
@@ -383,6 +468,87 @@ contains
 
     return
 
-  end subroutine find_brackets
+  end subroutine find_root_brackets
+
+!****
+
+  subroutine find_min_brackets (bp, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
+
+    class(bvp_t), target, intent(inout)        :: bp
+    real(WP), intent(in)                       :: omega(:)
+    real(WP), allocatable, intent(out)         :: omega_a(:)
+    real(WP), allocatable, intent(out)         :: omega_b(:)
+    real(WP), allocatable, intent(out)         :: omega_c(:)
+    type(ext_real_t), allocatable, intent(out) :: discrim_a(:)
+    type(ext_real_t), allocatable, intent(out) :: discrim_b(:)
+    type(ext_real_t), allocatable, intent(out) :: discrim_c(:)
+
+    integer          :: n_omega
+    integer          :: c_beg
+    integer          :: c_end
+    integer          :: c_rate
+    integer          :: i
+    type(ext_real_t) :: discrim(SIZE(omega))
+    integer          :: n_brack
+    integer          :: i_brack(SIZE(omega))
+
+    ! Calculate the discriminant on the omega abscissa
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Root bracketing'
+100    format(A)
+    endif
+
+    n_omega = SIZE(omega)
+
+    call SYSTEM_CLOCK(c_beg, c_rate)
+
+    discrim_loop : do i = 1, n_omega
+
+       discrim(i) = abs(bp%discrim(CMPLX(omega(i), KIND=WP)))
+
+       if(check_log_level('DEBUG')) then
+          write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
+110       format(2X,E24.16,2X,F19.16,2X,I7)
+       endif
+
+    end do discrim_loop
+
+    call SYSTEM_CLOCK(c_end)
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+120    format(2X,A,F10.3,1X,A/)
+    endif
+
+    ! Find minimum brackets
+
+    n_brack = 0
+
+    bracket_loop : do i = 2, n_omega-1
+
+       if(discrim(i) < discrim(i-1) .AND. &
+          discrim(i) < discrim(i+1)) then
+          n_brack = n_brack + 1
+          i_brack(n_brack) = i
+       end if
+
+    end do bracket_loop
+
+    ! Set up the bracket frequencies
+
+    omega_a = omega(i_brack(:n_brack)-1)
+    omega_b = omega(i_brack(:n_brack))
+    omega_c = omega(i_brack(:n_brack)+1)
+
+    discrim_a = discrim(i_brack(:n_brack)-1)
+    discrim_b = discrim(i_brack(:n_brack))
+    discrim_c = discrim(i_brack(:n_brack)+1)
+
+    ! Finish
+
+    return
+
+  end subroutine find_min_brackets
 
 end module gyre_search
