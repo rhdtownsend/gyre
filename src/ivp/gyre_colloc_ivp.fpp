@@ -1,4 +1,4 @@
-! Module   : gyre_ivp_colloc
+! Module   : gyre_colloc_ivp
 ! Purpose  : solve initial-value problems (interface, for collocation schemes)
 !
 ! Copyright 2013 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_ivp_colloc
+module gyre_colloc_ivp
 
   ! Uses
 
@@ -33,13 +33,13 @@ module gyre_ivp_colloc
 
   ! Derived-type definitions
 
-  type, abstract, extends (ivp_t) :: ivp_colloc_t
-  end type ivp_colloc_t
+  type, abstract, extends (ivp_t) :: colloc_ivp_t
+  end type colloc_ivp_t
 
   ! Access specifiers
 
   private
 
-  public :: ivp_colloc_t
+  public :: colloc_ivp_t
 
-end module gyre_ivp_colloc
+end module gyre_colloc_ivp

@@ -25,7 +25,7 @@ module gyre_colloc_gl4_ivp
   use core_linalg
 
   use gyre_jacobian
-  use gyre_ivp_colloc
+  use gyre_colloc_ivp
   use gyre_ext_arith
 
   use ISO_FORTRAN_ENV
@@ -36,7 +36,7 @@ module gyre_colloc_gl4_ivp
 
   ! Derived-type definitions
 
-  type, extends (ivp_colloc_t) :: colloc_gl4_ivp_t
+  type, extends (colloc_ivp_t) :: colloc_gl4_ivp_t
      private
      class(jacobian_t), allocatable :: jc
    contains
