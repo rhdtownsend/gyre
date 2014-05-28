@@ -95,37 +95,63 @@ contains
 
   subroutine shoot_ (this, omega, x, sm)
 
+    use gyre_magnus_gl2_ivp
+    use gyre_findiff_ivp
+
     class(nad_shooter_t), intent(in) :: this
     complex(WP), intent(in)          :: omega
     real(WP), intent(in)             :: x(:)
     class(sysmtx_t), intent(inout)   :: sm
 
-    integer             :: k
-    complex(WP)         :: E_l(this%n_e,this%n_e)
-    complex(WP)         :: E_r(this%n_e,this%n_e)
-    type(ext_complex_t) :: scale
-    complex(WP)         :: lambda
+    class(ivp_t), allocatable :: iv
+    integer                   :: k
+    complex(WP)               :: E_l(this%n_e,this%n_e)
+    complex(WP)               :: E_r(this%n_e,this%n_e)
+    type(ext_complex_t)       :: scale
+    complex(WP)               :: lambda
 
     ! Set the sysmtx equation blocks by solving IVPs across the
     ! intervals x(k) -> x(k+1)
 
-    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
+    allocate(iv, SOURCE=this%iv)
+
+    !$OMP PARALLEL DO PRIVATE (iv, E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
 
        ! Shoot
 
-       call this%iv%solve(omega, x(k), x(k+1), E_l, E_r, scale)
+       select type (iv)
 
-       ! Apply the thermal-term rescaling, to assist the rootfinder
+       class is (findiff_ivp_t)
 
-       associate(x_mid => x(k) + 0.5_WP*(x(k+1) - x(k)))
-         associate(V => this%ml%V(x_mid), nabla => this%ml%nabla(x_mid), &
-                   c_rad => this%ml%c_rad(x_mid), c_thm => this%ml%c_thm(x_mid))
-           lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x_mid
-         end associate
-       end associate
+          if (this%ml%c_thm(x(k)) > 1.E4*this%ml%c_rad(x(k))) then
+             iv%w = [0.5_WP,0.5_WP,0.5_WP,0.5_WP,1._WP,0._WP]
+          else
+             iv%w = [0.5_WP,0.5_WP,0.5_WP,0.5_WP,0.5_WP,0.5_WP]
+          endif
 
-       scale = scale*exp(ext_complex_t(-lambda*(x(k+1)-x(k))))
+          call iv%solve(omega, x(k), x(k+1), E_l, E_r, scale)
+
+       class is (magnus_gl2_ivp_t)
+
+          call iv%solve(omega, x(k), x(k+1), E_l, E_r, scale)
+
+          ! Apply the thermal-term rescaling, to assist the rootfinder
+
+          associate(x_mid => x(k) + 0.5_WP*(x(k+1) - x(k)))
+            associate(V => this%ml%V(x_mid), nabla => this%ml%nabla(x_mid), &
+                 c_rad => this%ml%c_rad(x_mid), c_thm => this%ml%c_thm(x_mid))
+              lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x_mid
+            end associate
+          end associate
+
+          scale = scale*exp(ext_complex_t(-lambda*(x(k+1)-x(k))))
+
+       class default
+
+          $ABORT(Unsupported ivp_solver_type)
+
+       end select
 
        call sm%set_block(k, E_l, E_r, scale)
 
