@@ -110,6 +110,7 @@ contains
     use gyre_magnus_GL6_ivp
     use gyre_colloc_GL2_ivp
     use gyre_colloc_GL4_ivp
+    use gyre_findiff_ivp
 
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
@@ -173,10 +174,12 @@ contains
        allocate(bp%iv, SOURCE=magnus_GL4_ivp_t(bp%jc))
     case ('MAGNUS_GL6')
        allocate(bp%iv, SOURCE=magnus_GL6_ivp_t(bp%jc))
-    case ('FINDIFF_GL2')
+    case ('COLLOC_GL2')
        allocate(bp%iv, SOURCE=colloc_GL2_ivp_t(bp%jc))
-    case ('FINDIFF_GL4')
+    case ('COLLOC_GL4')
        allocate(bp%iv, SOURCE=colloc_GL4_ivp_t(bp%jc))
+    case ('FINDIFF')
+       allocate(bp%iv, SOURCE=findiff_ivp_t(bp%jc))
     case default
        $ABORT(Invalid ivp_solver_type)
     end select
@@ -452,7 +455,7 @@ contains
     ! Find the discriminant root
 
     n_iter = this%np%n_iter_max - n_iter_def
- 
+
     if (use_real_) then
        omega_root = real(df%root(ext_real_t(omega_a), ext_real_t(omega_b), ext_real_t(0._WP), &
                                  f_ex_a=ext_real_t(discrim_a), f_ex_b=ext_real_t(discrim_b), n_iter=n_iter))

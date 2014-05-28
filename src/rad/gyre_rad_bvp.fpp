@@ -110,6 +110,7 @@ contains
     use gyre_magnus_gl6_ivp
     use gyre_colloc_gl2_ivp
     use gyre_colloc_gl4_ivp
+    use gyre_findiff_ivp
 
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
@@ -177,10 +178,12 @@ contains
        allocate(bp%iv, SOURCE=magnus_gl4_ivp_t(bp%jc))
     case ('MAGNUS_GL6')
        allocate(bp%iv, SOURCE=magnus_gl6_ivp_t(bp%jc))
-    case ('FINDIFF_GL2')
+    case ('COLLOC_GL2')
        allocate(bp%iv, SOURCE=colloc_gl2_ivp_t(bp%jc))
-    case ('FINDIFF_GL4')
+    case ('COLLOC_GL4')
        allocate(bp%iv, SOURCE=colloc_gl4_ivp_t(bp%jc))
+    case ('FINDIFF')
+       allocate(bp%iv, SOURCE=findiff_ivp_t(bp%jc))
     case default
        $ABORT(Invalid ivp_solver_type)
     end select
