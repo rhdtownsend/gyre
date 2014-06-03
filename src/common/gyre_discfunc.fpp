@@ -90,12 +90,12 @@ contains
 
     ! Evaluate the discriminant for real frequencies
 
-    associate (omega => CMPLX(ext_complex_t(ex)))
+    associate (omega => REAL(ex))
 
-      f_ex = ext_real_t(this%bp%discrim(omega, use_real=.TRUE.))
+      f_ex = this%bp%discrim(omega)
 
       if (ALLOCATED(this%omega_def)) then
-         f_ex = f_ex/PRODUCT(REAL(omega - this%omega_def))
+         f_ex = f_ex/PRODUCT(omega - REAL(this%omega_def))
       endif
 
     end associate
