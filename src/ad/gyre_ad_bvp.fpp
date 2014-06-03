@@ -71,10 +71,12 @@ module gyre_ad_bvp
      $if ($GFORTRAN_PR57922)
      procedure, public :: final => final_
      $endif
-     procedure, public :: discrim => discrim_
+     procedure         :: discrim_r_
+     procedure         :: discrim_c_
+     procedure         :: mode_r_
+     procedure         :: mode_c_
      procedure         :: build_
      procedure         :: recon_
-     procedure, public :: mode => mode_
      procedure, public :: model => model_
   end type ad_bvp_t
 
@@ -254,24 +256,146 @@ contains
 
 !****
 
-  function discrim_ (this, omega, use_real)
+  function discrim_r_ (this, omega) result (discrim)
 
     class(ad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)        :: omega
-    logical, optional, intent(in)  :: use_real
-    type(ext_complex_t)            :: discrim_
+    real(WP), intent(in)           :: omega
+    type(ext_real_t)               :: discrim
 
-    ! Evaluate the discriminant as the determinant of the sysmtx
+    type(ext_complex_t) :: discrim_c
 
-    call this%build_(omega)
+    ! Evaluate the discriminant as the determinant of the sysmtx (real
+    ! version)
 
-    call this%sm%determinant(discrim_, use_real, this%np%use_banded)
+    call this%build_(CMPLX(omega, KIND=WP))
+
+    call this%sm%determinant(discrim_c, .TRUE., this%np%use_banded)
+
+    discrim = ext_real_t(discrim_c)
 
     ! Finish
 
     return
 
-  end function discrim_
+  end function discrim_r_
+
+!****
+
+  function discrim_c_ (this, omega) result (discrim)
+
+    class(ad_bvp_t), intent(inout) :: this
+    complex(WP), intent(in)        :: omega
+    type(ext_complex_t)            :: discrim
+
+    ! Evaluate the discriminant as the determinant of the sysmtx
+    ! (complex version)
+
+    call this%build_(omega)
+
+    call this%sm%determinant(discrim, .FALSE., this%np%use_banded)
+
+    ! Finish
+
+    return
+
+  end function discrim_c_
+
+!****
+
+  function mode_r_ (this, omega) result (md)
+
+    class(ad_bvp_t), target, intent(inout) :: this
+    real(WP), intent(in)                   :: omega
+    type(mode_t)                           :: md
+
+    complex(WP)              :: omega_c
+    real(WP), allocatable    :: x(:)
+    complex(WP), allocatable :: y(:,:)
+    real(WP)                 :: x_ref
+    complex(WP)              :: y_ref(this%n_e)
+    type(ext_complex_t)      :: discrim_c
+    integer                  :: n
+    integer                  :: i
+    complex(WP), allocatable :: y_c(:,:)
+    complex(WP)              :: y_c_ref(6)
+
+    ! Reconstruct the solution
+
+    omega_c = CMPLX(omega, KIND=WP)
+
+    call this%recon_(omega_c, x, y, x_ref, y_ref, discrim_c, .TRUE.)
+
+    ! Calculate canonical variables
+
+    n = SIZE(x)
+
+    allocate(y_c(6,n))
+
+    !$OMP PARALLEL DO 
+    do i = 1,n
+       y_c(1:4,i) = MATMUL(this%jc%trans_matrix(x(i), omega_c, .TRUE.), y(:,i))
+       y_c(5:6,i) = 0._WP
+    end do
+
+    y_c_ref(1:4) = MATMUL(this%jc%trans_matrix(x_ref, omega_c, .TRUE.), y_ref)
+    y_c_ref(5:6) = 0._WP
+
+    ! Initialize the mode
+
+    md = mode_t(this%ml, this%mp, this%op, omega_c, discrim_c, x, y_c, x_ref, y_c_ref)
+
+    ! Finish
+
+    return
+
+  end function mode_r_
+
+!****
+
+  function mode_c_ (this, omega) result (md)
+
+    class(ad_bvp_t), target, intent(inout) :: this
+    complex(WP), intent(in)                :: omega
+    type(mode_t)                           :: md
+
+    real(WP), allocatable    :: x(:)
+    complex(WP), allocatable :: y(:,:)
+    real(WP)                 :: x_ref
+    complex(WP)              :: y_ref(this%n_e)
+    type(ext_complex_t)      :: discrim
+    integer                  :: n
+    integer                  :: i
+    complex(WP), allocatable :: y_c(:,:)
+    complex(WP)              :: y_c_ref(6)
+
+    ! Reconstruct the solution
+
+    call this%recon_(omega, x, y, x_ref, y_ref, discrim, .FALSE.)
+
+    ! Calculate canonical variables
+
+    n = SIZE(x)
+
+    allocate(y_c(6,n))
+
+    !$OMP PARALLEL DO 
+    do i = 1,n
+       y_c(1:4,i) = MATMUL(this%jc%trans_matrix(x(i), omega, .TRUE.), y(:,i))
+       y_c(5:6,i) = 0._WP
+    end do
+
+    y_c_ref(1:4) = MATMUL(this%jc%trans_matrix(x_ref, omega, .TRUE.), y_ref)
+    y_c_ref(5:6) = 0._WP
+
+    ! Initialize the mode
+
+    md = mode_t(this%ml, this%mp, this%op, omega, discrim, x, y_c, x_ref, y_c_ref)
+
+    ! Finish
+
+    return
+
+  end function mode_c_
 
 !****
 
@@ -367,110 +491,6 @@ contains
     return
 
   end subroutine recon_
-
-!****
-
-  function mode_ (this, omega, discrim, use_real, omega_def) result (md)
-
-    class(ad_bvp_t), target, intent(inout)    :: this
-    complex(WP), intent(in)                   :: omega(:)
-    type(ext_complex_t), optional, intent(in) :: discrim(:)
-    logical, optional, intent(in)             :: use_real
-    complex(WP), optional, intent(in)         :: omega_def(:)
-    type(mode_t)                              :: md
-
-    logical                  :: use_real_
-    complex(WP)              :: omega_a
-    complex(WP)              :: omega_b
-    type(ext_complex_t)      :: discrim_a
-    type(ext_complex_t)      :: discrim_b
-    type(discfunc_t)         :: df
-    integer                  :: n_iter
-    complex(WP)              :: omega_root
-    real(WP), allocatable    :: x(:)
-    complex(WP), allocatable :: y(:,:)
-    real(WP)                 :: x_ref
-    complex(WP)              :: y_ref(this%n_e)
-    type(ext_complex_t)      :: discrim_root
-    integer                  :: n
-    integer                  :: i
-    complex(WP), allocatable :: y_c(:,:)
-    complex(WP)              :: y_c_ref(6)
-    type(ext_real_t)         :: chi
-
-    $CHECK_BOUNDS(SIZE(omega),2)
-    
-    if(PRESENT(discrim)) then
-       $CHECK_BOUNDS(SIZE(discrim),2)
-    endif
-
-    if(PRESENT(use_real)) then
-       use_real_ = use_real
-    else
-       use_real_ = .FALSE.
-    endif
-
-    ! Unpack arguments
-
-    omega_a = omega(1)
-    omega_b = omega(2)
-
-    if(PRESENT(discrim)) then
-       discrim_a = discrim(1)
-       discrim_b = discrim(2)
-    else
-       discrim_a = this%discrim(omega_a)
-       discrim_b = this%discrim(omega_b)
-    endif
-
-    ! Set up the discriminant function
-
-    df = discfunc_t(this)
-
-    ! Find the discriminant root
-
-    n_iter = this%np%n_iter_max
-
-    if (use_real_) then
-       omega_root = real(df%root(ext_real_t(omega_a), ext_real_t(omega_b), ext_real_t(0._WP), &
-                         f_ex_a=ext_real_t(discrim_a), f_ex_b=ext_real_t(discrim_b), n_iter=n_iter))
-    else
-       omega_root = cmplx(df%root(ext_complex_t(omega_a), ext_complex_t(omega_b), ext_real_t(0._WP), &
-                          f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
-    endif
-
-    $ASSERT(n_iter <= this%np%n_iter_max,Too many iterations)
-
-    ! Reconstruct the solution
-
-    call this%recon_(omega_root, x, y, x_ref, y_ref, discrim_root, use_real)
-
-    ! Calculate canonical variables
-
-    n = SIZE(x)
-
-    allocate(y_c(6,n))
-
-    !$OMP PARALLEL DO 
-    do i = 1,n
-       y_c(1:4,i) = MATMUL(this%jc%trans_matrix(x(i), omega_root, .TRUE.), y(:,i))
-       y_c(5:6,i) = 0._WP
-    end do
-
-    y_c_ref(1:4) = MATMUL(this%jc%trans_matrix(x_ref, omega_root, .TRUE.), y_ref)
-    y_c_ref(5:6) = 0._WP
-
-    ! Initialize the mode
-
-    chi = ABS(discrim_root)/MAX(ABS(discrim_a), ABS(discrim_b))
-
-    md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
-
-    ! Finish
-
-    return
-
-  end function mode_
 
 !****
 

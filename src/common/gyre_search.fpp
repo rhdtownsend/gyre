@@ -33,6 +33,7 @@ module gyre_search
   use gyre_numpar
   use gyre_gridpar
   use gyre_scanpar
+  use gyre_discfunc
   use gyre_mode
   use gyre_grid
   use gyre_ext_arith
@@ -50,7 +51,7 @@ module gyre_search
 
   public :: build_scan
   public :: scan_search
-  public :: min_search
+!  public :: min_search
   public :: prox_search
 
 contains
@@ -136,7 +137,6 @@ contains
 
        if (omega(1) < omega_cutoff_lo) then
           write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends below atmospheric gravity cutoff frequency'
-130       format(2X,A)
        end if
 
        if (omega(n_omega) > omega_cutoff_hi) then
@@ -157,10 +157,11 @@ contains
 
 !****
 
-  subroutine scan_search (bp, omega, process_mode)
+  subroutine scan_search (bp, np, omega, process_mode)
 
-    class(bvp_t), intent(inout) :: bp
-    real(WP), intent(in)        :: omega(:)
+    class(bvp_t), target, intent(inout) :: bp
+    type(numpar_t), intent(in)          :: np
+    real(WP), intent(in)                :: omega(:)
     interface
        subroutine process_mode (md)
          use gyre_mode
@@ -168,20 +169,26 @@ contains
        end subroutine process_mode
     end interface
 
+    type(discfunc_t)              :: df
     real(WP), allocatable         :: omega_a(:)
     real(WP), allocatable         :: omega_b(:)
     type(ext_real_t), allocatable :: discrim_a(:)
     type(ext_real_t), allocatable :: discrim_b(:)
-    integer                       :: n_brack
     integer                       :: c_beg
     integer                       :: c_end
     integer                       :: c_rate
+    integer                       :: n_iter
+    real(WP)                      :: omega_root
     type(mode_t)                  :: md
     integer                       :: i
 
+    ! Set up the discriminant function
+
+    df = discfunc_t(bp)
+
     ! Find discriminant root brackets
 
-    call find_root_brackets(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+    call find_root_brackets(df, omega, omega_a, omega_b, discrim_a, discrim_b)
 
     ! Process each bracket to find modes
 
@@ -199,12 +206,23 @@ contains
 
     mode_loop : do i = 1, SIZE(omega_a)
 
-       ! Find the mode
+       ! Find the discriminant root
 
-       md = bp%mode(CMPLX([omega_a(i),omega_b(i)], KIND=WP), &
-                    ext_complex_t([discrim_a(i),discrim_b(i)]), use_real=.TRUE.)
- 
+       n_iter = np%n_iter_max
+
+       omega_root = real(df%root(ext_real_t(omega_a(i)), ext_real_t(omega_b(i)), ext_real_t(0._WP), &
+                                 f_ex_a=discrim_a(i), f_ex_b=discrim_b(i), n_iter=n_iter))
+
+       $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
+
+       ! Construct the mode
+
+       md = bp%mode(omega_root)
+
        if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
+
+       md%n_iter = n_iter
+       md%chi = ABS(md%discrim)/MAX(ABS(discrim_a(i)), ABS(discrim_b(i)))
 
        ! Process it
 
@@ -234,95 +252,96 @@ contains
 
   end subroutine scan_search
 
-!****
+! !****
 
-  subroutine min_search (bp, omega, process_mode)
+!   subroutine min_search (bp, omega, process_mode)
 
-    class(bvp_t), intent(inout) :: bp
-    real(WP), intent(in)        :: omega(:)
-    interface
-       subroutine process_mode (md)
-         use gyre_mode
-         type(mode_t), intent(in) :: md
-       end subroutine process_mode
-    end interface
+!     class(bvp_t), intent(inout) :: bp
+!     real(WP), intent(in)        :: omega(:)
+!     interface
+!        subroutine process_mode (md)
+!          use gyre_mode
+!          type(mode_t), intent(in) :: md
+!        end subroutine process_mode
+!     end interface
 
-    real(WP), allocatable         :: omega_a(:)
-    real(WP), allocatable         :: omega_b(:)
-    real(WP), allocatable         :: omega_c(:)
-    type(ext_real_t), allocatable :: discrim_a(:)
-    type(ext_real_t), allocatable :: discrim_b(:)
-    type(ext_real_t), allocatable :: discrim_c(:)
-    integer                       :: n_brack
-    integer                       :: c_beg
-    integer                       :: c_end
-    integer                       :: c_rate
-    real(WP)                      :: domega
-    type(mode_t)                  :: md
-    integer                       :: i
+!     real(WP), allocatable         :: omega_a(:)
+!     real(WP), allocatable         :: omega_b(:)
+!     real(WP), allocatable         :: omega_c(:)
+!     type(ext_real_t), allocatable :: discrim_a(:)
+!     type(ext_real_t), allocatable :: discrim_b(:)
+!     type(ext_real_t), allocatable :: discrim_c(:)
+!     integer                       :: n_brack
+!     integer                       :: c_beg
+!     integer                       :: c_end
+!     integer                       :: c_rate
+!     real(WP)                      :: domega
+!     type(mode_t)                  :: md
+!     integer                       :: i
 
-    ! Find discriminant minimum brackets
+!     ! Find discriminant minimum brackets
 
-    call find_min_brackets(bp, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
+!     call find_min_brackets(bp, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
 
-    ! Process each bracket to find modes
+!     ! Process each bracket to find modes
 
-    if(check_log_level('INFO')) then
+!     if(check_log_level('INFO')) then
 
-       write(OUTPUT_UNIT, 100) 'Root Solving'
-100    format(A)
+!        write(OUTPUT_UNIT, 100) 'Root Solving'
+! 100    format(A)
 
-       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
-110    format(4(2X,A8),3(2X,A24),2X,A6,2X,A7)
+!        write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
+! 110    format(4(2X,A8),3(2X,A24),2X,A6,2X,A7)
        
-    endif
+!     endif
 
-    call SYSTEM_CLOCK(c_beg, c_rate)
+!     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    mode_loop : do i = 1, SIZE(omega_a)
+!     mode_loop : do i = 1, SIZE(omega_a)
 
-       ! Find the mode
+!        ! Find the mode
 
-       domega = MIN(ABS(omega_b(i)-omega_a(i)), ABS(omega_b(i)-omega_c(i)))
+!        domega = MIN(ABS(omega_b(i)-omega_a(i)), ABS(omega_b(i)-omega_c(i)))
 
-       md = bp%mode([CMPLX(omega_b(i),  0.5_WP*domega, KIND=WP),  &
-                     CMPLX(omega_b(i), -0.5_WP*domega, KIND=WP)])
+!        md = bp%mode([CMPLX(omega_b(i),  0.5_WP*domega, KIND=WP),  &
+!                      CMPLX(omega_b(i), -0.5_WP*domega, KIND=WP)])
  
-       if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
+!        if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
 
-       ! Process it
+!        ! Process it
 
-       if (check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
-120       format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
-       endif
+!        if (check_log_level('INFO')) then
+!           write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
+! 120       format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
+!        endif
 
-       call process_mode(md)
+!        call process_mode(md)
 
-       $if($GFORTRAN_PR57922)
-       call md%final()
-       $endif
+!        $if($GFORTRAN_PR57922)
+!        call md%final()
+!        $endif
 
-    end do mode_loop
+!     end do mode_loop
 
-    call SYSTEM_CLOCK(c_end)
+!     call SYSTEM_CLOCK(c_end)
 
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
-130    format(2X,A,1X,F10.3,1X,A)
-    endif
+!     if (check_log_level('INFO')) then
+!        write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+! 130    format(2X,A,1X,F10.3,1X,A)
+!     endif
 
-    ! Finish
+!     ! Finish
 
-    return
+!     return
 
-  end subroutine min_search
+!   end subroutine min_search
 
 !****
 
-  subroutine prox_search (bp, md_in, process_mode)
+  subroutine prox_search (bp, np, md_in, process_mode)
 
     class(bvp_t), target, intent(inout) :: bp
+    type(numpar_t), intent(in)          :: np
     type(mode_t), intent(in)            :: md_in(:)
     interface
        subroutine process_mode (md)
@@ -331,14 +350,28 @@ contains
        end subroutine process_mode
     end interface
     
+    type(discfunc_t)         :: df
+    complex(WP), allocatable :: omega_def(:)
     integer                  :: c_beg
     integer                  :: c_end
     integer                  :: c_rate
     integer                  :: i
-    complex(WP)              :: omega_a
-    complex(WP)              :: omega_b
-    complex(WP), allocatable :: omega_def(:)
+    type(ext_complex_t)      :: omega_a
+    type(ext_complex_t)      :: omega_b
+    integer                  :: n_iter
+    integer                  :: n_iter_def
+    type(ext_complex_t)      :: discrim_a
+    type(ext_complex_t)      :: discrim_b
+    complex(WP)              :: omega_root
     type(mode_t)             :: md
+
+    ! Set up the discriminant function
+
+    df = discfunc_t(bp)
+
+    ! Initialize the frequency deflation array
+
+    allocate(omega_def(0))
 
     ! Process each initial mode to find a proximate mode
 
@@ -358,18 +391,61 @@ contains
 
        ! Set up initial guesses
 
-       omega_a = md_in(i)%omega*CMPLX(1._WP,  SQRT(EPSILON(0._WP)), WP)
-       omega_b = md_in(i)%omega*CMPLX(1._WP, -SQRT(EPSILON(0._WP)), WP)
+       omega_a = md_in(i)%omega*ext_complex_t(CMPLX(1._WP,  SQRT(EPSILON(0._WP)), KIND=WP))
+       omega_b = md_in(i)%omega*ext_complex_t(CMPLX(1._WP, -SQRT(EPSILON(0._WP)), KIND=WP))
 
-       ! Find the mode
+       ! If necessary, do a preliminary root find using the deflated
+       ! discriminant
 
-       if (ALLOCATED(omega_def)) then
-          md = bp%mode([omega_a,omega_b], omega_def=omega_def)
+       if (np%deflate_roots) then
+
+          n_iter_def = np%n_iter_max
+
+          df%omega_def = omega_def
+
+          call df%narrow(omega_a, omega_b, ext_real_t(0._WP), n_iter=n_iter_def)
+
+          $ASSERT(n_iter_def <= np%n_iter_max,Too many deflation iterations)
+
+          deallocate(df%omega_def)
+
+          ! If necessary, reset omega_a and omega_b so they are not
+          ! coincident (this also setsXXXXX
+
+          if(omega_b == omega_a) then
+             omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
+          endif
+
+          call df%expand(omega_a, omega_b, ext_real_t(0._WP), discrim_a, discrim_b)
+
        else
-          md = bp%mode([omega_a,omega_b])
+
+          discrim_a = df%eval(omega_a)
+          discrim_b = df%eval(omega_b)
+
+          n_iter_def = 0
+
        endif
 
+       ! Find the discriminant root
+
+       n_iter = np%n_iter_max - n_iter_def
+
+       omega_root = cmplx(df%root(omega_a, omega_b, ext_real_t(0._WP), &
+                                  f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
+
+       n_iter = n_iter + n_iter_def
+
+       $ASSERT(n_iter <= np%n_iter_max-n_iter_def,Too many iterations)
+
+       ! Construct the mode
+
+       md = bp%mode(omega_root)
+
        if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
+
+       md%n_iter = n_iter
+       md%chi = ABS(md%discrim)/MAX(ABS(discrim_a), ABS(discrim_b))
 
        ! Process it
 
@@ -382,11 +458,7 @@ contains
 
        ! Store the frequency in the deflation array
 
-       if (ALLOCATED(omega_def)) then
-          omega_def = [omega_def,md%omega]
-       else
-          omega_def = [md%omega]
-       endif
+       omega_def = [omega_def,md%omega]
 
        $if($GFORTRAN_PR57922)
        call md%final()
@@ -409,9 +481,9 @@ contains
 
 !****
 
-  subroutine find_root_brackets (bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+  subroutine find_root_brackets (df, omega, omega_a, omega_b, discrim_a, discrim_b)
 
-    class(bvp_t), target, intent(inout)        :: bp
+    type(discfunc_t), intent(inout)            :: df
     real(WP), intent(in)                       :: omega(:)
     real(WP), allocatable, intent(out)         :: omega_a(:)
     real(WP), allocatable, intent(out)         :: omega_b(:)
@@ -440,7 +512,7 @@ contains
 
     discrim_loop : do i = 1, n_omega
 
-       discrim(i) = ext_real_t(bp%discrim(CMPLX(omega(i), KIND=WP), use_real=.TRUE.))
+       discrim(i) = df%eval(ext_real_t(omega(i)))
 
        if(check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
@@ -485,9 +557,9 @@ contains
 
 !****
 
-  subroutine find_min_brackets (bp, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
+  subroutine find_min_brackets (df, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
 
-    class(bvp_t), target, intent(inout)        :: bp
+    type(discfunc_t), intent(inout)            :: df
     real(WP), intent(in)                       :: omega(:)
     real(WP), allocatable, intent(out)         :: omega_a(:)
     real(WP), allocatable, intent(out)         :: omega_b(:)
@@ -518,7 +590,7 @@ contains
 
     discrim_loop : do i = 1, n_omega
 
-       discrim(i) = abs(bp%discrim(CMPLX(omega(i), KIND=WP)))
+       discrim(i) = abs(df%eval(ext_complex_t(CMPLX(omega(i), KIND=WP))))
 
        if(check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
