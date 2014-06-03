@@ -602,27 +602,13 @@ contains
 
   function omega_im_ (this) result (omega_im)
 
-    use gyre_evol_model
-
     class(mode_t), intent(in) :: this
     real(WP)                  :: omega_im
-
-    real(WP) :: t_dyn
-    real(WP) :: t_kh
 
     ! Estimate the imaginary part of omega by integrating the work
     ! function
 
-    select type (ml => this%ml)
-    class is (evol_model_t)
-       t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
-       t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
-    class default
-       t_dyn = 1._WP
-       t_kh = 1._WP
-    end select
-
-    omega_im = -t_dyn*this%W()/(TWOPI*t_kh*REAL(this%omega)*this%E())
+    omega_im = -this%W()/(TWOPI*REAL(this%omega)*this%E())
 
     ! Finish
 

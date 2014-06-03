@@ -402,6 +402,8 @@ contains
 
   function dW_dx (ml, mp, omega, x, y)
 
+    use gyre_evol_model
+
     class(model_t), intent(in)  :: ml
     type(modepar_t), intent(in) :: mp
     complex(WP), intent(in)     :: omega
@@ -409,15 +411,27 @@ contains
     complex(WP), intent(in)     :: y(:)
     real(WP)                    :: dW_dx
 
+    real(WP) :: t_dyn
+    real(WP) :: t_kh
+
     $CHECK_BOUNDS(SIZE(y),6)
 
     ! Calculate the differential work at x, in units of G
-    ! M_star**2/R_star t_dyn/t_KH = t_dyn L_star.  This expression is
-    ! based on eqn. 25.9 of [Unn1989]
+    ! M_star**2/R_star.  This expression is based on eqn. 25.9 of
+    ! [Unn1989]
+
+    select type (ml)
+    class is (evol_model_t)
+       t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
+    class default
+       t_dyn = 1._WP
+       t_kh = 1._WP
+    end select
 
     associate(c_thm => ml%c_thm(x))
 
-      dW_dx = -PI*AIMAG(CONJG(delT(ml, mp, omega, x, y))*delS(ml, mp, omega, x, y))*c_thm*x**2
+      dW_dx = -PI*AIMAG(CONJG(delT(ml, mp, omega, x, y))*delS(ml, mp, omega, x, y))*c_thm*x**2*t_dyn/t_kh
 
     end associate
 
