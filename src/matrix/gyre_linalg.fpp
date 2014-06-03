@@ -165,7 +165,7 @@ contains
 
        do i = 1, n
           norm = SUM(V_l(i,:)*V_r(:,i))
-          $ASSERT(ABS(norm) > n*EPSILON(0._WP),Near-defective matrix)
+!          $ASSERT(ABS(norm) > n*EPSILON(0._WP),Near-defective matrix)
           V_l(i,:) = V_l(i,:)/norm
        enddo
 
@@ -294,7 +294,7 @@ contains
 
        do i = 1,n
           norm = SUM(V_l(i,:)*V_r(:,i))
-          $ASSERT(ABS(norm) > n*EPSILON(0._WP),Near-defective matrix)
+!          $ASSERT(ABS(norm) > n*EPSILON(0._WP),Near-defective matrix)
           V_l(i,:) = V_l(i,:)/norm
        enddo
 
