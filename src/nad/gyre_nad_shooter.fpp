@@ -115,7 +115,7 @@ contains
 
     allocate(iv, SOURCE=this%iv)
 
-    !$OMP PARALLEL DO PRIVATE (iv, E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
+    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
 
        ! Shoot
@@ -123,6 +123,8 @@ contains
        select type (iv)
 
        class is (findiff_ivp_t)
+
+          $ABORT(iv is not private, needs fixing)
 
           if (this%ml%c_thm(x(k)) > 1.E4*this%ml%c_rad(x(k))) then
              iv%w = [0.5_WP,0.5_WP,0.5_WP,0.5_WP,1._WP,0._WP]
