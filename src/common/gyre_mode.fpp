@@ -49,6 +49,7 @@ module gyre_mode
      class(model_t), pointer  :: ml => null()
      type(modepar_t)          :: mp
      type(oscpar_t)           :: op
+     type(ext_complex_t)      :: discrim
      type(ext_real_t)         :: chi
      real(WP), allocatable    :: x(:)
      complex(WP), allocatable :: y(:,:)
@@ -131,18 +132,17 @@ module gyre_mode
 
 contains
 
-  function mode_t_ (ml, mp, op, omega, x, y, x_ref, y_ref, chi, n_iter) result (md)
+  function mode_t_ (ml, mp, op, omega, discrim, x, y, x_ref, y_ref) result (md)
 
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
     type(oscpar_t), intent(in)          :: op
     complex(WP), intent(in)             :: omega
+    type(ext_complex_t), intent(in)     :: discrim
     real(WP), intent(in)                :: x(:)
     complex(WP), intent(in)             :: y(:,:)
     real(WP), intent(in)                :: x_ref
     complex(WP), intent(in)             :: y_ref(:)
-    type(ext_real_t), intent(in)        :: chi
-    integer, intent(in)                 :: n_iter
     type(mode_t)                        :: md
 
     real(WP)    :: phase
@@ -161,8 +161,6 @@ contains
     md%mp = mp
     md%op = op
 
-    md%chi = chi
-
     md%x = x
     md%y = y
 
@@ -170,9 +168,9 @@ contains
     md%y_ref = y_ref
 
     md%omega = omega
+    md%discrim = discrim
 
     md%n = SIZE(md%x)
-    md%n_iter = n_iter
 
     md%pruned = .FALSE.
 
