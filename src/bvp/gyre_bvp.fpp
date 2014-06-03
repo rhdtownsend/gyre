@@ -32,8 +32,12 @@ module gyre_bvp
   type, abstract :: bvp_t
    contains 
      private
-     procedure(discrim_), deferred, public :: discrim
-     procedure(mode_), deferred, public    :: mode
+     procedure(discrim_r_), deferred       :: discrim_r_
+     procedure(discrim_c_), deferred       :: discrim_c_
+     generic, public                       :: discrim => discrim_r_, discrim_c_
+     procedure(mode_r_), deferred          :: mode_r_
+     procedure(mode_c_), deferred          :: mode_c_
+     generic, public                       :: mode => mode_r_, mode_c_
      procedure(model_), deferred, public   :: model
   end type bvp_t
 
@@ -41,28 +45,41 @@ module gyre_bvp
 
   abstract interface
 
-     function discrim_ (this, omega, use_real) result (discrim)
+     function discrim_r_ (this, omega) result (discrim)
+       use core_kinds
+       use gyre_ext_arith
+       import bvp_t
+       class(bvp_t), intent(inout) :: this
+       real(WP), intent(in)        :: omega
+       type(ext_real_t)            :: discrim
+     end function discrim_r_
+
+     function discrim_c_ (this, omega) result (discrim)
        use core_kinds
        use gyre_ext_arith
        import bvp_t
        class(bvp_t), intent(inout)   :: this
        complex(WP), intent(in)       :: omega
-       logical, optional, intent(in) :: use_real
        type(ext_complex_t)           :: discrim
-     end function discrim_
+     end function discrim_c_
 
-     function mode_ (this, omega, discrim, use_real, omega_def) result (mode)
+     function mode_r_ (this, omega) result (mode)
        use core_kinds
        use gyre_mode
-       use gyre_ext_arith
        import bvp_t
-       class(bvp_t), target, intent(inout)       :: this
-       complex(WP), intent(in)                   :: omega(:)
-       type(ext_complex_t), optional, intent(in) :: discrim(:)
-       logical, optional, intent(in)             :: use_real
-       complex(WP), optional, intent(in)         :: omega_def(:)
-       type(mode_t)                              :: mode
-     end function mode_
+       class(bvp_t), target, intent(inout) :: this
+       real(WP), intent(in)                :: omega
+       type(mode_t)                        :: mode
+     end function mode_r_
+
+     function mode_c_ (this, omega) result (mode)
+       use core_kinds
+       use gyre_mode
+       import bvp_t
+       class(bvp_t), target, intent(inout) :: this
+       complex(WP), intent(in)             :: omega
+       type(mode_t)                        :: mode
+     end function mode_c_
 
      function model_ (this) result (ml)
        use gyre_model
