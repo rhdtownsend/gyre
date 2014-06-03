@@ -68,6 +68,8 @@ program gyre_nad
   type(gridpar_t), allocatable :: shoot_gp_sel(:)
   type(gridpar_t), allocatable :: recon_gp_sel(:)
   type(scanpar_t), allocatable :: sp_sel(:)
+  integer                       :: n_op_sel
+  integer                       :: n_np_sel
   real(WP), allocatable        :: omega(:)
   class(bvp_t), allocatable    :: ad_bp
   class(bvp_t), allocatable    :: nad_bp
@@ -130,6 +132,20 @@ program gyre_nad
 
   op_loop : do i = 1, SIZE(mp)
 
+     if (check_log_level('INFO')) then
+
+        write(OUTPUT_UNIT, 100) form_header('Mode Search', '=')
+
+        write(OUTPUT_UNIT, 100) 'Mode parameters'
+
+        write(OUTPUT_UNIT, 130) 'l :', mp(i)%l
+        write(OUTPUT_UNIT, 130) 'm :', mp(i)%m
+130     format(3X,A,1X,I0)
+
+        write(OUTPUT_UNIT, *)
+
+     endif
+
      ! Select parameters according to tags
 
      call select_par(op, mp(i)%tag, op_sel, last=.TRUE.)
@@ -138,15 +154,27 @@ program gyre_nad
      call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
      call select_par(sp, mp(i)%tag, sp_sel)
 
-     $ASSERT(SIZE(op_sel) == 1,No matching osc parameters)
-     $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
+     n_op_sel = SIZE(op_sel)
+     n_np_sel = SIZE(np_sel)
+
+     $ASSERT(n_op_sel >= 1,No matching osc parameters)
+     $ASSERT(n_np_sel >= 1,No matching num parameters)
      $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
      $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
      $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
 
+     if (n_op_sel > 1 .AND. check_log_level('WARN')) then
+        write(OUTPUT_UNIT, 140) 'Warning: multiple matching osc namelists, using final match'
+140     format('!!',1X,A)
+     endif
+        
+     if (n_np_sel > 1 .AND. check_log_level('WARN')) then
+        write(OUTPUT_UNIT, 140) 'Warning: multiple matching num namelists, using final match'
+     endif
+        
      ! Set up the frequency array
 
-     call build_scan(sp_sel, ml, mp(i), op_sel(1), shoot_gp_sel, x_ml, omega)
+     call build_scan(sp_sel, ml, mp(i), op_sel(n_op_sel), shoot_gp_sel, x_ml, omega)
 
      ! Store the frequency range in shoot_gp_sel
 
@@ -157,21 +185,21 @@ program gyre_nad
 
      if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
-     if(mp(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(ad_bp, SOURCE=rad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+     if(mp(i)%l == 0 .AND. np_sel(n_np_sel)%reduce_order) then
+        allocate(ad_bp, SOURCE=rad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
      else
-        allocate(ad_bp, SOURCE=ad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(ad_bp, SOURCE=ad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
  
-     allocate(nad_bp, SOURCE=nad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+     allocate(nad_bp, SOURCE=nad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
 
      ! Find modes
 
      n_md_ad = 0
 
-     call scan_search(ad_bp, omega, process_mode_ad)
+     call scan_search(ad_bp, np_sel(n_np_sel), omega, process_mode_ad)
 
-     call prox_search(nad_bp, md_ad(:n_md_ad), process_mode_nad)
+     call prox_search(nad_bp, np_sel(n_np_sel), md_ad(:n_md_ad), process_mode_nad)
 
      ! Clean up
 

@@ -181,7 +181,7 @@ program gyre_ad
 
      ! Find modes
 
-     call scan_search(bp, omega, process_mode)
+     call scan_search(bp, np_sel(n_np_sel), omega, process_mode)
 
      ! Clean up
 
