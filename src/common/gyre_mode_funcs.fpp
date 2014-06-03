@@ -48,6 +48,7 @@ module gyre_mode_funcs
   public :: delrho
   public :: dE_dx
   public :: dW_dx
+  public :: F_j_rey
   public :: Yt_1
   public :: Yt_2
   public :: I_0
@@ -440,6 +441,28 @@ contains
     return
 
   end function dW_dx
+
+!****
+
+  function F_j_rey (ml, mp, omega, x, y)
+
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    real(WP)                    :: F_j_rey
+    
+    ! Calculate the angle-averaged angular momentum flux due to Reynolds stress, in units of G
+    ! M_star**2/R_star**3.  This expression is based on eqn. 21 of [LeeSai1993]
+
+    associate (c_1 => ml%c_1(x), U => ml%U(x), m => mp%m, omega_c => ml%omega_c(x, mp%m, omega))
+
+      F_j_rey = -ABS(omega_c**2)*x*U*AIMAG(CONJG(xi_r(ml, mp, omega, x, y))*m*xi_h(ml, mp, omega, x, y))/(32._WP*PI**2*c_1)
+
+    end associate
+
+  end function F_j_rey
 
 !****
 

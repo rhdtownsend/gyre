@@ -350,6 +350,8 @@ contains
           call wr%write('dE_dx', md%dE_dx())
        case ('dW_dx')
           call wr%write('dW_dx', md%dW_dx())
+       case ('F_j_rey')
+          call wr%write('F_j_rey', md%F_j_rey())
        case ('Yt_1')
           call wr%write('Yt_1', md%Yt_1())
        case ('Yt_2')

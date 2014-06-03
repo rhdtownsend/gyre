@@ -80,6 +80,7 @@ module gyre_mode
      procedure, public :: delT => delT_
      procedure, public :: dE_dx => dE_dx_
      procedure, public :: dW_dx => dW_dx_
+     procedure, public :: F_j_rey => F_j_rey_
      procedure, public :: Yt_1 => Yt_1_
      procedure, public :: Yt_2 => Yt_2_
      procedure, public :: I_0 => I_0_
@@ -307,6 +308,7 @@ contains
   $CALC_GRID(delT,complex)
   $CALC_GRID(dE_dx,real)
   $CALC_GRID(dW_dx,real)
+  $CALC_GRID(F_j_rey,real)
   $CALC_GRID(Yt_1,complex)
   $CALC_GRID(Yt_2,complex)
   $CALC_GRID(I_0,complex)
