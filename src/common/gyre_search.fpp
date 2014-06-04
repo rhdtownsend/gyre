@@ -410,7 +410,7 @@ contains
           deallocate(df%omega_def)
 
           ! If necessary, reset omega_a and omega_b so they are not
-          ! coincident (this also setsXXXXX
+          ! coincident
 
           if(omega_b == omega_a) then
              omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
@@ -436,7 +436,7 @@ contains
 
        n_iter = n_iter + n_iter_def
 
-       $ASSERT(n_iter <= np%n_iter_max-n_iter_def,Too many iterations)
+       $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
 
        ! Construct the mode
 
