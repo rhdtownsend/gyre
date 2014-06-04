@@ -362,6 +362,8 @@ contains
     integer                  :: n_iter_def
     type(ext_complex_t)      :: discrim_a
     type(ext_complex_t)      :: discrim_b
+    type(ext_complex_t)      :: discrim_a_rev
+    type(ext_complex_t)      :: discrim_b_rev
     complex(WP)              :: omega_root
     type(mode_t)             :: md
 
@@ -394,6 +396,9 @@ contains
        omega_a = md_in(i)%omega*ext_complex_t(CMPLX(1._WP,  SQRT(EPSILON(0._WP)), KIND=WP))
        omega_b = md_in(i)%omega*ext_complex_t(CMPLX(1._WP, -SQRT(EPSILON(0._WP)), KIND=WP))
 
+       discrim_a = df%eval(omega_a)
+       discrim_b = df%eval(omega_b)
+
        ! If necessary, do a preliminary root find using the deflated
        ! discriminant
 
@@ -416,12 +421,12 @@ contains
              omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
           endif
 
-          call df%expand(omega_a, omega_b, ext_real_t(0._WP), discrim_a, discrim_b)
+          call df%expand(omega_a, omega_b, ext_real_t(0._WP), discrim_a_rev, discrim_b_rev)
 
        else
 
-          discrim_a = df%eval(omega_a)
-          discrim_b = df%eval(omega_b)
+          discrim_a_rev = discrim_a
+          discrim_b_rev = discrim_b
 
           n_iter_def = 0
 
@@ -432,7 +437,7 @@ contains
        n_iter = np%n_iter_max - n_iter_def
 
        omega_root = cmplx(df%root(omega_a, omega_b, ext_real_t(0._WP), &
-                                  f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
+                                  f_ez_a=discrim_a_rev, f_ez_b=discrim_b_rev, n_iter=n_iter))
 
        n_iter = n_iter + n_iter_def
 
