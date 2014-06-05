@@ -103,36 +103,32 @@ contains
     real(WP), intent(in)             :: x(:)
     class(sysmtx_t), intent(inout)   :: sm
 
-    class(ivp_t), allocatable :: iv
-    integer                   :: k
-    complex(WP)               :: E_l(this%n_e,this%n_e)
-    complex(WP)               :: E_r(this%n_e,this%n_e)
-    type(ext_complex_t)       :: scale
-    complex(WP)               :: lambda
+    real(WP)            :: w(this%n_e)
+    integer             :: k
+    complex(WP)         :: E_l(this%n_e,this%n_e)
+    complex(WP)         :: E_r(this%n_e,this%n_e)
+    type(ext_complex_t) :: scale
+    complex(WP)         :: lambda
 
     ! Set the sysmtx equation blocks by solving IVPs across the
     ! intervals x(k) -> x(k+1)
 
-    allocate(iv, SOURCE=this%iv)
-
-    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
+    !$OMP PARALLEL DO PRIVATE (w, E_l, E_r, scale, lambda) SCHEDULE (DYNAMIC)
     block_loop : do k = 1,SIZE(x)-1
 
        ! Shoot
 
-       select type (iv)
+       select type (iv => this%iv)
 
        class is (findiff_ivp_t)
 
-          $ABORT(iv is not private, needs fixing)
-
           if (this%ml%c_thm(x(k)) > 1.E4*this%ml%c_rad(x(k))) then
-             iv%w = [0.5_WP,0.5_WP,0.5_WP,0.5_WP,1._WP,0._WP]
+             w = [0.5_WP,0.5_WP,0.5_WP,0.5_WP,1._WP,0._WP]
           else
-             iv%w = [0.5_WP,0.5_WP,0.5_WP,0.5_WP,0.5_WP,0.5_WP]
+             w = [0.5_WP,0.5_WP,0.5_WP,0.5_WP,0.5_WP,0.5_WP]
           endif
 
-          call iv%solve(omega, x(k), x(k+1), E_l, E_r, scale)
+          call iv%solve_w(w, omega, x(k), x(k+1), E_l, E_r, scale)
 
        class is (magnus_gl2_ivp_t)
 
