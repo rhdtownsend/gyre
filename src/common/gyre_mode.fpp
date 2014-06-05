@@ -71,13 +71,13 @@ module gyre_mode
      procedure, public :: freq => freq_
      procedure, public :: xi_r => xi_r_
      procedure, public :: xi_h => xi_h_
-     procedure, public :: phip => phip_
-     procedure, public :: dphip_dx => dphip_dx_
-     procedure, public :: delS => delS_
-     procedure, public :: delL => delL_
-     procedure, public :: delp => delp_
-     procedure, public :: delrho => delrho_
-     procedure, public :: delT => delT_
+     procedure, public :: eul_phi => eul_phi_
+     procedure, public :: deul_phi => deul_phi_
+     procedure, public :: lag_S => lag_S_
+     procedure, public :: lag_L => lag_L_
+     procedure, public :: lag_P => lag_P_
+     procedure, public :: lag_rho => lag_rho_
+     procedure, public :: lag_T => lag_T_
      procedure, public :: dE_dx => dE_dx_
      procedure, public :: dW_dx => dW_dx_
      procedure, public :: F_j_rey => F_j_rey_
@@ -87,10 +87,10 @@ module gyre_mode
      procedure, public :: I_1 => I_1_
      procedure, public :: xi_r_ref => xi_r_ref_
      procedure, public :: xi_h_ref => xi_h_ref_
-     procedure, public :: phip_ref => phip_ref_
-     procedure, public :: dphip_dx_ref => dphip_dx_ref_
-     procedure, public :: delT_eff => delT_eff_
-     procedure, public :: delg_eff => delg_eff_
+     procedure, public :: eul_phi_ref => eul_phi_ref_
+     procedure, public :: deul_phi_ref => deul_phi_ref_
+     procedure, public :: lag_T_eff => lag_T_eff_
+     procedure, public :: lag_g_eff => lag_g_eff_
      procedure, public :: E => E_
      procedure, public :: E_norm => E_norm_
      procedure, public :: W => W_
@@ -99,8 +99,8 @@ module gyre_mode
      procedure, public :: omega_im => omega_im_
      procedure, public :: prop_type => prop_type_
      procedure         :: classify_
-     procedure, public :: delS_en => delS_en_
-     procedure, public :: delL_rd => delL_rd_
+     procedure, public :: lag_S_en => lag_S_en_
+     procedure, public :: lag_L_rd => lag_L_rd_
   end type mode_t
 
   ! Interfaces
@@ -299,13 +299,13 @@ contains
 
   $CALC_GRID(xi_r,complex)
   $CALC_GRID(xi_h,complex)
-  $CALC_GRID(phip,complex)
-  $CALC_GRID(dphip_dx,complex)
-  $CALC_GRID(delS,complex)
-  $CALC_GRID(delL,complex)
-  $CALC_GRID(delp,complex)
-  $CALC_GRID(delrho,complex)
-  $CALC_GRID(delT,complex)
+  $CALC_GRID(eul_phi,complex)
+  $CALC_GRID(deul_phi,complex)
+  $CALC_GRID(lag_S,complex)
+  $CALC_GRID(lag_L,complex)
+  $CALC_GRID(lag_P,complex)
+  $CALC_GRID(lag_rho,complex)
+  $CALC_GRID(lag_T,complex)
   $CALC_GRID(dE_dx,real)
   $CALC_GRID(dW_dx,real)
   $CALC_GRID(F_j_rey,real)
@@ -326,7 +326,7 @@ contains
     ! Calculate the non-adiabatic f_T parameter. This is expression is
     ! based on eqn. 5 of [Dup2003]
 
-    C_T = this%delT_eff()/this%xi_r_ref()
+    C_T = this%lag_T_eff()/this%xi_r_ref()
 
     f_T = ABS(C_T)
 
@@ -348,7 +348,7 @@ contains
     ! Calculate the non-adiabatic f_g parameter. This is expression is
     ! based on eqn. 6 of [Dup2003]
 
-    C_g = this%delg_eff()/this%xi_r_ref()
+    C_g = this%lag_g_eff()/this%xi_r_ref()
 
     f_g = -ABS(C_g)
 
@@ -370,7 +370,7 @@ contains
     ! Calculate the non-adiabatic psi_T parameter, in radians. This is
     ! expression is based on eqn. 5 of [Dup2003]
 
-    C_T = this%delT_eff()/this%xi_r_ref()
+    C_T = this%lag_T_eff()/this%xi_r_ref()
 
     psi_T = ATAN2(AIMAG(C_T), REAL(C_T))
 
@@ -408,36 +408,36 @@ contains
 
   $CALC_REF(xi_r,complex)
   $CALC_REF(xi_h,complex)
-  $CALC_REF(phip,complex)
-  $CALC_REF(dphip_dx,complex)
+  $CALC_REF(eul_phi,complex)
+  $CALC_REF(deul_phi,complex)
 
 !****
 
-  function delT_eff_ (this) result (delT_eff)
+  function lag_T_eff_ (this) result (lag_T_eff)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: delT_eff
+    complex(WP)               :: lag_T_eff
 
     ! Calculate the effective temperature perturbation at x_ref
     ! (assumed to correspond to the photosphere), in units of
     ! T_eff. This expression is based on the standard definition of
     ! effective temperature
 
-    delT_eff = 0.25_WP*(delL(this%ml, this%mp, this%omega, this%x_ref, this%y_ref) - &
+    lag_T_eff = 0.25_WP*(lag_L(this%ml, this%mp, this%omega, this%x_ref, this%y_ref) - &
                   2._WP*xi_r(this%ml, this%mp, this%omega, this%x_ref, this%y_ref))
 
     ! Finish
 
     return
 
-  end function delT_eff_
+  end function lag_T_eff_
 
 !****
 
-  function delg_eff_ (this) result (delg_eff)
+  function lag_g_eff_ (this) result (lag_g_eff)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: delg_eff
+    complex(WP)               :: lag_g_eff
 
     ! Calculate the effective gravity perturbation at x_ref (assumed
     ! to correspond to the photosphere), in units of the gravity. This
@@ -446,7 +446,7 @@ contains
     associate (c_1 => this%ml%c_1(this%x_ref), U => this%ml%U(this%x_ref), &
                x => this%x_ref)
 
-      delg_eff = (c_1/x)*this%dphip_dx_ref() + (U - (2._WP + c_1*this%omega**2))*this%xi_r_ref()/x
+      lag_g_eff = (c_1/x)*this%deul_phi_ref() + (U - (2._WP + c_1*this%omega**2))*this%xi_r_ref()/x
 
     end associate
 
@@ -454,7 +454,7 @@ contains
 
     return
 
-  end function delg_eff_
+  end function lag_g_eff_
 
 !****
 
@@ -812,10 +812,10 @@ contains
 
 !****
 
-  function delS_en_ (this) result (delS_en)
+  function lag_S_en_ (this) result (lag_S_en)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: delS_en(this%n)
+    complex(WP)               :: lag_S_en(this%n)
 
     complex(WP) :: A_6(6,this%n)
     complex(WP) :: dy_6(this%n)
@@ -855,9 +855,9 @@ contains
                      A_6(6,:)*this%y(6,:)))/A_6(5,:)
 
       where(this%x /= 0._WP)
-         delS_en = y_5*this%x**(l-2)
+         lag_S_en = y_5*this%x**(l-2)
       elsewhere
-         delS_en = 0._WP
+         lag_S_en = 0._WP
       end where
 
     end associate
@@ -898,14 +898,14 @@ contains
 
     end function deriv_
 
-  end function delS_en_
+  end function lag_S_en_
 
 !****
 
-  function delL_rd_ (this) result (delL_rd)
+  function lag_L_rd_ (this) result (lag_L_rd)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: delL_rd(this%n)
+    complex(WP)               :: lag_L_rd(this%n)
 
     complex(WP) :: A_5(6,this%n)
     complex(WP) :: dy_5(this%n)
@@ -943,7 +943,7 @@ contains
 
       endwhere
 
-      delL_rd = y_6*this%x**(l+1)
+      lag_L_rd = y_6*this%x**(l+1)
 
     end associate
          
@@ -983,7 +983,7 @@ contains
 
     end function deriv_
 
-  end function delL_rd_
+  end function lag_L_rd_
 
 !****
 
