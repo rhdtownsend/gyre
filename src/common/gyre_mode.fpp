@@ -75,8 +75,11 @@ module gyre_mode
      procedure, public :: deul_phi => deul_phi_
      procedure, public :: lag_S => lag_S_
      procedure, public :: lag_L => lag_L_
+     procedure, public :: eul_P => eul_P_
      procedure, public :: lag_P => lag_P_
+     procedure, public :: eul_rho => eul_rho_
      procedure, public :: lag_rho => lag_rho_
+     procedure, public :: eul_T => eul_T_
      procedure, public :: lag_T => lag_T_
      procedure, public :: dE_dx => dE_dx_
      procedure, public :: dW_dx => dW_dx_
@@ -304,7 +307,10 @@ contains
   $CALC_GRID(lag_S,complex)
   $CALC_GRID(lag_L,complex)
   $CALC_GRID(lag_P,complex)
+  $CALC_GRID(eul_P,complex)
+  $CALC_GRID(eul_rho,complex)
   $CALC_GRID(lag_rho,complex)
+  $CALC_GRID(eul_T,complex)
   $CALC_GRID(lag_T,complex)
   $CALC_GRID(dE_dx,real)
   $CALC_GRID(dW_dx,real)
