@@ -43,9 +43,12 @@ module gyre_mode_funcs
   public :: deul_phi_dx
   public :: lag_S
   public :: lag_L
+  public :: eul_P
   public :: lag_P
-  public :: lag_T
+  public :: eul_rho
   public :: lag_rho
+  public :: eul_T
+  public :: lag_T
   public :: dE_dx
   public :: dW_dx
   public :: F_j_rey
@@ -274,6 +277,38 @@ contains
 
 !****
 
+  function eul_P (ml, mp, omega, x, y)
+
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: eul_P
+
+    $CHECK_BOUNDS(SIZE(y),6)
+
+    ! Calculate the Eulerian pressure perturbation at x, in units of
+    ! P
+
+    associate (V => ml%V(x))
+
+      if (x /= 0._WP) then
+         eul_P = lag_P(ml, mp, omega, x, y) + V*xi_r(ml, mp, omega, x, y)/x
+      else
+         eul_P = delp(ml, mp, omega, x, y)
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function eul_P
+
+!****
+
   function lag_P (ml, mp, omega, x, y)
 
     class(model_t), intent(in)  :: ml
@@ -286,7 +321,7 @@ contains
     $CHECK_BOUNDS(SIZE(y),6)
 
     ! Calculate the Lagrangian pressure perturbation at x, in units of
-    ! p
+    ! P
 
     associate (V => ml%V(x), pi_c => ml%pi_c(), l => mp%l)
 
@@ -318,6 +353,38 @@ contains
 
 !****
 
+  function eul_rho (ml, mp, omega, x, y)
+
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: eul_rho
+
+    $CHECK_BOUNDS(SIZE(y),6)
+
+    ! Calculate the Eulerian density perturbation at x, in units of
+    ! rho
+
+    associate (V_g => ml%V(x)/ml%Gamma_1(x), As => ml%As(x))
+
+      if (x /= 0._WP) then
+         eul_rho = lag_rho(ml, mp, omega, x, y) + (V_g + As)*xi_r(ml, mp, omega, x, y)/x
+      else
+         eul_rho = lag_rho(ml, mp, omega, x, y)
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function eul_rho
+
+!****
+
   function lag_rho (ml, mp, omega, x, y)
 
     class(model_t), intent(in)  :: ml
@@ -343,6 +410,38 @@ contains
     return
 
   end function lag_rho
+
+!****
+
+  function eul_T (ml, mp, omega, x, y)
+
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: eul_T
+
+    $CHECK_BOUNDS(SIZE(y),6)
+
+    ! Calculate the Lagrangian temperature perturbation at x, in units
+    ! of T
+
+    associate (V => ml%V(x), nabla => ml%nabla(x), nabla_ad => ml%nabla_ad(x))
+      
+      if (x /= 0._WP) then
+         eul_T = lag_T(ml, mp, omega, x, y) + nabla*V*xi_r(ml, mp, omega, x, y)/x
+      else
+         eul_T = lag_T(ml, mp, omega, x, y)
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function eul_T
 
 !****
 
