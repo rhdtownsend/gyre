@@ -99,6 +99,7 @@ module gyre_mode
      procedure, public :: W => W_
      procedure, public :: K => K_
      procedure, public :: beta => beta_
+     procedure, public :: omega_int => omega_int_
      procedure, public :: omega_im => omega_im_
      procedure, public :: prop_type => prop_type_
      procedure         :: classify_
@@ -606,21 +607,53 @@ contains
 
 !****
 
-  function omega_im_ (this) result (omega_im)
+  function omega_int_ (this) result (omega_int)
 
     class(mode_t), intent(in) :: this
-    real(WP)                  :: omega_im
+    complex(WP)               :: omega2_int
 
-    ! Estimate the imaginary part of omega by integrating the work
-    ! function
+    real(WP)    :: x4_V(this%n)
+    complex(WP) :: W_th
+    complex(WP) :: W_re
+    complex(WP) :: W_gr
+    complex(WP) :: W_xi
 
-    omega_im = -this%W()/(TWOPI*REAL(this%omega)*this%E())
+    ! Calculate the dimensionless frequency from the integral
+    ! expression in eqn. (1.71) of [Dup2003]
+
+    associate(x => this%x, &
+              V => this%ml%V(this%x), V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
+              As => this%ml%As(this%x), U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
+              xi_r => this%xi_r(), xi_h => this%xi_h(), phip => this%phip(), &
+              delrho => this%delrho(), delp => this%delp(), &
+              rhop => this%rhop(), &
+              l => this%mp%l)
+
+      where (x /= 0._WP)
+         x4_V = x**4/V
+      elsewhere
+         x4_V = 0._WP
+      endwhere
+
+      ! Work-function-like terms
+
+      W_th = integrate(x, CONJG(delrho)*delp*(U*x4_V/(c_1**2)))
+
+      W_re = integrate(x, 2._WP*REAL(delrho*CONJG(xi_r)*(x/c_1)*(x**2*U/c_1)))
+
+      W_gr = integrate(x, CONJG(rhop)*phip*(x**2*U/c_1))
+
+      W_xi = integrate(x, -ABS(xi_r)**2*(x/c_1)*(x*U*(-V_g-As)/c_1))
+
+    end associate
+    
+    omega_int = SQRT((W_th + W_re + W_gr + W_xi)/this%E())
 
     ! Finish
 
     return
 
-  end function omega_im_
+  end function omega_int_
 
 !****
 
