@@ -296,7 +296,7 @@ contains
       if (x /= 0._WP) then
          eul_P = lag_P(ml, mp, omega, x, y) + V*xi_r(ml, mp, omega, x, y)/x
       else
-         eul_P = delp(ml, mp, omega, x, y)
+         eul_P = lag_P(ml, mp, omega, x, y)
       endif
 
     end associate
