@@ -212,7 +212,7 @@ module gyre_ext_complex
   public :: fraction
   public :: exponent
   public :: scale
-  $if($MPI)
+  $if ($MPI)
   public :: send
   public :: recv
   public :: recv_any
@@ -289,19 +289,19 @@ contains
 
     ! Apply the plus operator
 
-    if(this%f == 0._WP) then
+    if (this%f == 0._WP) then
 
        ez%f = that%f
        ez%e = that%e
 
-    elseif(that%f == 0._WP) then
+    elseif (that%f == 0._WP) then
 
        ez%f = this%f
        ez%e = this%e
 
     else
 
-       if(this%e > that%e) then
+       if (this%e > that%e) then
           f = this%f + cmplx(ext_complex_t(that%f, that%e - this%e))
           e = this%e
        else
@@ -351,19 +351,19 @@ contains
 
     ! Apply the minus operator
 
-    if(this%f == 0._WP) then
+    if (this%f == 0._WP) then
        
        ez%f = -that%f
        ez%e = that%e
 
-    elseif(that%f == 0._WP) then
+    elseif (that%f == 0._WP) then
 
        ez%f = this%f
        ez%e = this%e
 
     else
 
-       if(this%e > that%e) then
+       if (this%e > that%e) then
           f = this%f - cmplx(ext_complex_t(that%f, that%e - this%e))
           e = this%e
        else
@@ -395,7 +395,7 @@ contains
 
     ! Apply the times operator
 
-    if(this%f == 0._WP .OR. that%f == 0._WP) then
+    if (this%f == 0._WP .OR. that%f == 0._WP) then
 
        ez = ext_complex_t(0._WP)
 
@@ -428,7 +428,7 @@ contains
 
     ! Apply the divide operator
 
-    if(this%f == 0._WP .AND. that%f /= 0._WP) then
+    if (this%f == 0._WP .AND. that%f /= 0._WP) then
 
        ez = ext_complex_t(0._WP)
 
@@ -748,11 +748,11 @@ contains
 
     ! Convert ext_complex_t to complex
 
-    if(ez%f /= 0._WP) then
+    if (ez%f /= 0._WP) then
 
        e_min = MINEXPONENT(0._WP)
 
-       if(ez%e >= e_min) then
+       if (ez%e >= e_min) then
           z = ez%f*RADIX_WP**ez%e
        else
           z = (ez%f*RADIX_WP**MAX(ez%e-e_min, -DIGITS(0._WP)-1))*RADIX_WP**e_min
@@ -958,7 +958,7 @@ contains
     f_r = FRACTION(z_r)
     f_i = FRACTION(z_i)
 
-    if(f_r == 0._WP .AND. f_i == 0._WP) then
+    if (f_r == 0._WP .AND. f_i == 0._WP) then
 
        f = 0._WP
        e = 0
@@ -970,16 +970,20 @@ contains
 
        e_ref = MAXVAL([e_r,e_i], MASK=[f_r,f_i] /= 0._WP)
 
-       if(e_r - e_ref < MINEXPONENT(0._WP)) then
-          f_r = 0
-       else
-          f_r = f_r*RADIX_WP**(e_r - e_ref)
+       if (f_r /= 0._WP) then
+          if (e_r - e_ref < MINEXPONENT(0._WP)) then
+             f_r = 0
+          else
+             f_r = f_r*RADIX_WP**(e_r - e_ref)
+          endif
        endif
-       
-       if(e_i - e_ref < MINEXPONENT(0._WP)) then
-          f_i = 0
-       else
-          f_i = f_i*RADIX_WP**(e_i - e_ref)
+
+       if (f_i /= 0._WP) then
+          if (e_i - e_ref < MINEXPONENT(0._WP)) then
+             f_i = 0
+          else
+             f_i = f_i*RADIX_WP**(e_i - e_ref)
+          endif
        endif
 
        f = CMPLX(f_r, f_i, WP)
@@ -995,7 +999,7 @@ contains
 
 !****
 
-  $if($MPI)
+  $if ($MPI)
 
   $define $SEND $sub
 
