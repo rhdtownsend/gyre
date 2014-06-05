@@ -40,7 +40,7 @@ module gyre_mode_funcs
   public :: xi_r
   public :: xi_h
   public :: eul_phi
-  public :: deul_phi_dx
+  public :: deul_phi
   public :: lag_S
   public :: lag_L
   public :: eul_P
@@ -184,7 +184,7 @@ contains
     complex(WP), intent(in)     :: omega
     real(WP), intent(in)        :: x
     complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: deul_phi_dx
+    complex(WP)                 :: deul_phi
 
     $CHECK_BOUNDS(SIZE(y),6)
     
@@ -196,14 +196,14 @@ contains
       if (l /= 1) then
 
          if (x /= 0._WP) then
-            deul_phi_dx = y(4)*x**(l-1)/c_1
+            deul_phi = y(4)*x**(l-1)/c_1
          else
-            deul_phi_dx = 0._WP
+            deul_phi = 0._WP
          end if
 
       else
 
-         deul_phi_dx = y(4)/c_1
+         deul_phi = y(4)/c_1
 
       end if
 
