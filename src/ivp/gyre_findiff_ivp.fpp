@@ -40,10 +40,10 @@ module gyre_findiff_ivp
   type, extends (ivp_t) :: findiff_ivp_t
      private
      class(jacobian_t), allocatable :: jc
-     real(WP), allocatable, public  :: w(:)
    contains
      private
      procedure, public :: solve => solve_
+     procedure, public :: solve_w => solve_w_
      procedure, public :: recon => recon_
      procedure, public :: abscissa => abscissa_
   end type findiff_ivp_t
@@ -70,9 +70,6 @@ contains
     ! Construct the findiff_ivp_t
 
     allocate(iv%jc, SOURCE=jc)
-    allocate(iv%w(jc%n_e))
-
-    iv%w = 0.5_WP
 
     iv%n_e = jc%n_e
 
@@ -95,10 +92,44 @@ contains
     type(ext_complex_t), intent(out) :: S
     logical, optional, intent(in)    :: use_real
 
+    real(WP) :: w(this%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
+
+    ! Solve the IVP across the interval x_a -> x_b, with standard weights
+
+    w = 0.5_WP
+
+    call this%solve_w(w, omega, x_a, x_b, E_l, E_r, S, use_real)
+
+    ! Finish
+
+  end subroutine solve_
+
+!****
+
+  subroutine solve_w_ (this, w, omega, x_a, x_b, E_l, E_r, S, use_real)
+
+    class(findiff_ivp_t), intent(in) :: this
+    real(WP), intent(in)             :: w(:)
+    complex(WP), intent(in)          :: omega
+    real(WP), intent(in)             :: x_a
+    real(WP), intent(in)             :: x_b
+    complex(WP), intent(out)         :: E_l(:,:)
+    complex(WP), intent(out)         :: E_r(:,:)
+    type(ext_complex_t), intent(out) :: S
+    logical, optional, intent(in)    :: use_real
+
     real(WP)    :: dx
     real(WP)    :: x(2)
     complex(WP) :: A_logx(this%n_e,this%n_e,2)
     real(WP)    :: x_m
+
+    $CHECK_BOUNDS(SIZE(w),this%n_e)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -120,15 +151,15 @@ contains
 
     x_m = 0.5_WP*(x_a + x_b)
 
-    E_l = -x_m*identity_matrix(this%n_e) - dx*MATMUL(diagonal_matrix(1._WP-this%w), A_logx(:,:,1))
-    E_r =  x_m*identity_matrix(this%n_e) - dx*MATMUL(diagonal_matrix(      this%w), A_logx(:,:,2))
+    E_l = -x_m*identity_matrix(this%n_e) - dx*MATMUL(diagonal_matrix(1._WP-w), A_logx(:,:,1))
+    E_r =  x_m*identity_matrix(this%n_e) - dx*MATMUL(diagonal_matrix(      w), A_logx(:,:,2))
 
     S = ext_complex_t(1._WP)
 
     ! Finish
 
-  end subroutine solve_
-
+  end subroutine solve_w_
+  
 !****
 
   subroutine recon_ (this, omega, x_a, x_b, y_a, y_b, x, y, use_real)
