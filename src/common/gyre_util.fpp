@@ -65,6 +65,11 @@ module gyre_util
      module procedure Integrate_c_
   end interface integrate
 
+  interface integral
+     module procedure integral_r_
+     module procedure Integral_c_
+  end interface integral
+
   ! Access specifiers
 
   private
@@ -81,6 +86,7 @@ module gyre_util
   public :: rjust
   public :: phase
   public :: integrate
+  public :: integral
 
 contains
 
@@ -624,5 +630,44 @@ contains
 
   $INTEGRATE(r,real)
   $INTEGRATE(c,complex)
+
+!****
+
+  $define $INTEGRAL $sub
+
+  $local $INFIX $1
+  $local $TYPE $2
+
+  function integral_${INFIX}_ (x, y) result (int_y)
+
+    real(WP), intent(in)  :: x(:)
+    $TYPE(WP), intent(in) :: y(:)
+    $TYPE(WP)             :: int_y(SIZE(x))
+
+    integer :: n
+    integer :: i
+
+    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+    ! Calculate the integral of y(x) using trapezoidal quadrature
+
+    n = SIZE(x)
+
+    int_y(1) = 0._WP
+
+    int_loop : do i = 2, n
+       int_y(i) = int_y(i-1) + 0.5_WP*(y(i) + y(i-1))*(x(i) - x(i-1))
+    end do int_loop
+
+    ! Finish
+
+    return
+
+  end function integral_${INFIX}_
+
+  $endsub
+
+  $INTEGRAL(r,real)
+  $INTEGRAL(c,complex)
 
 end module gyre_util
