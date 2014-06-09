@@ -100,7 +100,6 @@ module gyre_mode
      procedure, public :: K => K_
      procedure, public :: beta => beta_
      procedure, public :: omega_int => omega_int_
-     procedure, public :: omega_im => omega_im_
      procedure, public :: prop_type => prop_type_
      procedure         :: classify_
      procedure, public :: lag_S_en => lag_S_en_
@@ -610,7 +609,7 @@ contains
   function omega_int_ (this) result (omega_int)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: omega2_int
+    complex(WP)               :: omega_int
 
     real(WP)    :: x4_V(this%n)
     complex(WP) :: W_th
@@ -624,10 +623,9 @@ contains
     associate(x => this%x, &
               V => this%ml%V(this%x), V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
               As => this%ml%As(this%x), U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
-              xi_r => this%xi_r(), xi_h => this%xi_h(), phip => this%phip(), &
-              delrho => this%delrho(), delp => this%delp(), &
-              rhop => this%rhop(), &
-              l => this%mp%l)
+              xi_r => this%xi_r(), eul_phi => this%eul_phi(), &
+              lag_rho => this%lag_rho(), eul_rho => this%eul_rho(), &
+              lag_P => this%lag_P())
 
       where (x /= 0._WP)
          x4_V = x**4/V
@@ -637,11 +635,11 @@ contains
 
       ! Work-function-like terms
 
-      W_th = integrate(x, CONJG(delrho)*delp*(U*x4_V/(c_1**2)))
+      W_th = integrate(x, CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)))
 
-      W_re = integrate(x, 2._WP*REAL(delrho*CONJG(xi_r)*(x/c_1)*(x**2*U/c_1)))
+      W_re = integrate(x, 2._WP*REAL(lag_rho*CONJG(xi_r)*(x/c_1)*(x**2*U/c_1)))
 
-      W_gr = integrate(x, CONJG(rhop)*phip*(x**2*U/c_1))
+      W_gr = integrate(x, CONJG(eul_rho)*eul_phi*(x**2*U/c_1))
 
       W_xi = integrate(x, -ABS(xi_r)**2*(x/c_1)*(x*U*(-V_g-As)/c_1))
 
