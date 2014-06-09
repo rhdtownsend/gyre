@@ -354,6 +354,7 @@ contains
     eul_phi = integral(x, y_4_x/this%ml%c_1(x))
 
     y_c(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
+    y_c(2,:) = y_c(2,:) + y_c(3,:)
 
     y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega_c, .TRUE.), y_ref)
     y_c_ref(3) = 0._WP
@@ -418,6 +419,7 @@ contains
     eul_phi = integral(x, y_4_x/this%ml%c_1(x))
 
     y_c(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
+    y_c(2,:) = y_c(2,:) + y_c(3,:)
 
     y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega, .TRUE.), y_ref)
     y_c_ref(3) = 0._WP
