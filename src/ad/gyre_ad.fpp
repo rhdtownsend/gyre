@@ -173,7 +173,7 @@ program gyre_ad
 
      ! Set up bp
 
-     if (mp(i)%l == 0 .AND. np_sel(n_np_sel)%reduce_order) then
+     if (mp(i)%l == 0 .AND. op_sel(n_op_sel)%reduce_order) then
         allocate(bp, SOURCE=rad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
      else
         allocate(bp, SOURCE=ad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))

@@ -37,6 +37,7 @@ module gyre_oscpar
      character(64)   :: outer_bound_type
      character(64)   :: inertia_norm_type
      character(2048) :: tag_list
+     logical         :: reduce_order
   end type oscpar_t
 
   ! Interfaces
@@ -88,6 +89,8 @@ contains
     call bcast(op%outer_bound_type, root_rank)
     call bcast(op%inertia_norm_type, root_rank)
     call bcast(op%tag_list, root_rank)
+
+    call bcast(np%reduce_order, root_rank)
 
     ! Finish
 

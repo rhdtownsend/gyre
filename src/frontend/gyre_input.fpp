@@ -320,6 +320,7 @@ contains
 
     integer         :: n_op
     integer         :: i
+    logical         :: reduce_order
     character(64)   :: variables_type
     character(64)   :: outer_bound_type
     character(64)   :: inertia_norm_type
@@ -327,7 +328,7 @@ contains
     real(WP)        :: x_ref
 
     namelist /osc/ x_ref, outer_bound_type, variables_type, &
-         inertia_norm_type, tag_list, x_ref
+         inertia_norm_type, tag_list, reduce_order
 
     ! Count the number of osc namelists
 
@@ -350,19 +351,23 @@ contains
 
     read_loop : do i = 1,n_op
 
+       x_ref = HUGE(0._WP)
+
        variables_type = 'DZIEM'
        outer_bound_type = 'ZERO'
        inertia_norm_type = 'BOTH'
        tag_list = ''
 
-       x_ref = HUGE(0._WP)
+       reduce_order = .TRUE.
 
        read(unit, NML=osc)
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(variables_type=variables_type, outer_bound_type=outer_bound_type, &
-                        inertia_norm_type=inertia_norm_type, tag_list=tag_list, x_ref=x_ref)
+       op(i) = oscpar_t(x_ref=x_ref, &
+                        variables_type=variables_type, outer_bound_type=outer_bound_type, &
+                        inertia_norm_type=inertia_norm_type, tag_list=tag_list, &
+                        reduce_order=reduce_order)
 
     end do read_loop
 
@@ -383,7 +388,6 @@ contains
     integer         :: i
     integer         :: n_iter_max
     real(WP)        :: theta_ad
-    logical         :: reduce_order
     logical         :: use_banded
     logical         :: use_trad_approx
     logical         :: deflate_roots
@@ -391,7 +395,7 @@ contains
     character(2048) :: tag_list
 
     namelist /num/ n_iter_max, theta_ad, &
-         reduce_order, use_banded, use_trad_approx, deflate_roots, &
+         use_banded, use_trad_approx, deflate_roots, &
          ivp_solver_type, tag_list
 
     ! Count the number of num namelists
@@ -418,7 +422,6 @@ contains
        n_iter_max = 50
        theta_ad = 0._WP
 
-       reduce_order = .TRUE.
        use_banded = .FALSE.
        use_trad_approx = .FALSE.
        deflate_roots = .TRUE.
@@ -431,7 +434,7 @@ contains
        ! Initialize the numpar
 
        np(i) = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, &
-                        reduce_order=reduce_order, use_banded=use_banded, &
+                        use_banded=use_banded, &
                         use_trad_approx=use_trad_approx, deflate_roots=deflate_roots, &
                         ivp_solver_type=ivp_solver_type, tag_list=tag_list)
 

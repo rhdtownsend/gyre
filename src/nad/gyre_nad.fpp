@@ -185,7 +185,7 @@ program gyre_nad
 
      if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
-     if(mp(i)%l == 0 .AND. np_sel(n_np_sel)%reduce_order) then
+     if(mp(i)%l == 0 .AND. op_sel(n_op_sel)%reduce_order) then
         allocate(ad_bp, SOURCE=rad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
      else
         allocate(ad_bp, SOURCE=ad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
