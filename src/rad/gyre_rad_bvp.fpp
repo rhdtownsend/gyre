@@ -39,6 +39,7 @@ module gyre_rad_bvp
   use gyre_ext_arith
   use gyre_grid
   use gyre_mode
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -319,6 +320,8 @@ contains
     integer                  :: n
     integer                  :: i
     complex(WP), allocatable :: y_c(:,:)
+    complex(WP), allocatable :: y_4_x(:)
+    complex(WP), allocatable :: eul_phi(:)
     complex(WP)              :: y_c_ref(6)
 
     ! Reconstruct the solution
@@ -336,10 +339,21 @@ contains
     !$OMP PARALLEL DO 
     do i = 1,n
        y_c(1:2,i) = MATMUL(this%jc%trans_matrix(x(i), omega_c, .TRUE.), y(:,i))
-       y_c(3,i) = 0._WP
        y_c(4,i) = -y_c(1,i)*this%ml%U(x(i))
        y_c(5:6,i) = 0._WP
     end do
+
+    allocate(y_4_x(n))
+
+    where (x /= 0._WP)
+       y_4_x = y_c(4,:)/x
+    elsewhere
+       y_4_x = 0._WP
+    end where
+
+    eul_phi = integral(x, y_4_x/this%ml%c_1(x))
+
+    y_c(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
 
     y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega_c, .TRUE.), y_ref)
     y_c_ref(3) = 0._WP
@@ -372,6 +386,8 @@ contains
     integer                  :: n
     integer                  :: i
     complex(WP), allocatable :: y_c(:,:)
+    complex(WP), allocatable :: y_4_x(:)
+    complex(WP), allocatable :: eul_phi(:)
     complex(WP)              :: y_c_ref(6)
 
     ! Reconstruct the solution
@@ -387,10 +403,21 @@ contains
     !$OMP PARALLEL DO 
     do i = 1,n
        y_c(1:2,i) = MATMUL(this%jc%trans_matrix(x(i), omega, .TRUE.), y(:,i))
-       y_c(3,i) = 0._WP
        y_c(4,i) = -y_c(1,i)*this%ml%U(x(i))
        y_c(5:6,i) = 0._WP
     end do
+
+    allocate(y_4_x(n))
+
+    where (x /= 0._WP)
+       y_4_x = y_c(4,:)/x
+    elsewhere
+       y_4_x = 0._WP
+    end where
+
+    eul_phi = integral(x, y_4_x/this%ml%c_1(x))
+
+    y_c(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
 
     y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega, .TRUE.), y_ref)
     y_c_ref(3) = 0._WP
