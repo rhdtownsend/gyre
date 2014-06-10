@@ -57,5 +57,5 @@
 &output
 	summary_file = 'gyre_nad.txt'
 	summary_file_format = 'TXT'
-	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_im'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
 /
