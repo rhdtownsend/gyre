@@ -33,7 +33,6 @@ module gyre_numpar
 
   type :: numpar_t
      integer         :: n_iter_max
-     real(WP)        :: theta_ad
      logical         :: use_banded
      logical         :: use_trad_approx
      logical         :: deflate_roots
@@ -85,7 +84,6 @@ contains
     ! Broadcast the numpar_t
 
     call bcast(np%n_iter_max, root_rank)
-    call bcast(np%theta_ad, root_rank)
 
     call bcast(np%use_banded, root_rank)
     call bcast(np%use_trad_approx, root_rank)
