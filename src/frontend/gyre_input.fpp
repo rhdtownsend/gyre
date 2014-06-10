@@ -387,14 +387,13 @@ contains
     integer         :: n_np
     integer         :: i
     integer         :: n_iter_max
-    real(WP)        :: theta_ad
     logical         :: use_banded
     logical         :: use_trad_approx
     logical         :: deflate_roots
     character(64)   :: ivp_solver_type
     character(2048) :: tag_list
 
-    namelist /num/ n_iter_max, theta_ad, &
+    namelist /num/ n_iter_max, &
          use_banded, use_trad_approx, deflate_roots, &
          ivp_solver_type, tag_list
 
@@ -420,7 +419,6 @@ contains
     read_loop : do i = 1,n_np
 
        n_iter_max = 50
-       theta_ad = 0._WP
 
        use_banded = .FALSE.
        use_trad_approx = .FALSE.
@@ -433,7 +431,7 @@ contains
 
        ! Initialize the numpar
 
-       np(i) = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, &
+       np(i) = numpar_t(n_iter_max=n_iter_max, &
                         use_banded=use_banded, &
                         use_trad_approx=use_trad_approx, deflate_roots=deflate_roots, &
                         ivp_solver_type=ivp_solver_type, tag_list=tag_list)
@@ -462,13 +460,14 @@ contains
     real(WP)                :: alpha_osc
     real(WP)                :: alpha_exp
     real(WP)                :: alpha_thm
+    real(WP)                :: alpha_str
     real(WP)                :: s
     integer                 :: n
     character(FILENAME_LEN) :: file
     character(64)           :: op_type
     character(2048)         :: tag_list
 
-    namelist /${NAME}_grid/ alpha_osc, alpha_exp, alpha_thm, s, n, file, op_type, tag_list
+    namelist /${NAME}_grid/ alpha_osc, alpha_exp, alpha_thm, alpha_str, s, n, file, op_type, tag_list
 
     ! Count the number of grid namelists
 
@@ -494,6 +493,7 @@ contains
        alpha_osc = 0._WP
        alpha_exp = 0._WP
        alpha_thm = 0._WP
+       alpha_str = 0._WP
 
        s = 0._WP
 
@@ -508,7 +508,7 @@ contains
 
        ! Initialize the gridpar
 
-       gp(i) = gridpar_t(alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, &
+       gp(i) = gridpar_t(alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, alpha_str=alpha_str, &
                          omega_a=0._WP, omega_b=0._WP, &
                          s=s, n=n, file=file, op_type=op_type, tag_list=tag_list)
 
