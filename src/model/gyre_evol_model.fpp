@@ -528,7 +528,7 @@ contains
                          Gamma_1, nabla_ad, delta, Omega_rot, &
                          nabla, kappa, kappa_rho, kappa_T, &
                          epsilon, epsilon_rho, epsilon_T, &
-                         deriv_type, regularize_, .FALSE.)
+                         deriv_type, .FALSE., .FALSE.)
 
     else
 
@@ -767,7 +767,7 @@ contains
 
     n = SIZE(N2)
 
-    N2_mask = [.TRUE.,N2(:n-2) > 0._WP .AND. N2(1:n-1) < 0._WP .AND. N2(2:n) > 0._WP,.TRUE.]
+    N2_mask = [.TRUE.,N2(1:n-2) > 0._WP .AND. N2(2:n-1) < 0._WP .AND. N2(3:n) > 0._WP,.TRUE.]
 
     sp_N2 = spline_t(PACK(r, N2_mask), PACK(N2, N2_mask), deriv_type, dy_dx_a=0._WP)
 
