@@ -9,16 +9,16 @@ BINDIR=${CURDIR}/bin
 
 all :
 	@mkdir -p ${BINDIR}
-	@make BINDIR=${BINDIR} -w -C src install
+	@${MAKE} BINDIR=${BINDIR} -w -C src install
 
 test :
-	@make BINDIR=${BINDIR} -w -C test
+	@${MAKE} BINDIR=${BINDIR} -w -C test
 
 build_ref :
-	@make BINDIR=${BINDIR} -w -C test build_ref
+	@${MAKE} BINDIR=${BINDIR} -w -C test build_ref
 
 clean :
-	@make -w -C src clean
+	@${MAKE} -w -C src clean
 	rm -f ${BINDIR}/*
 
 .PHONY: all test build_ref clean
