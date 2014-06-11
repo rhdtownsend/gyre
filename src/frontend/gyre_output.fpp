@@ -343,7 +343,7 @@ contains
        case ('eul_P')
           call wr%write('eul_P', md%eul_P())
        case ('lag_P')
-          call wr%write('lag_P', md%eul_P())
+          call wr%write('lag_P', md%lag_P())
        case ('eul_rho')
           call wr%write('eul_rho', md%eul_rho())
        case ('lag_rho')
