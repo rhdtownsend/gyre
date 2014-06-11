@@ -212,6 +212,8 @@ contains
     real(WP) :: Omega_rot_(SIZE(r))
     real(WP) :: x(SIZE(r))
 
+    integer :: i
+
     $CHECK_BOUNDS(SIZE(m),SIZE(r))
     $CHECK_BOUNDS(SIZE(p),SIZE(r))
     $CHECK_BOUNDS(SIZE(rho),SIZE(r))
@@ -291,6 +293,11 @@ contains
        x = r/R_star
 
        ! Initialize the model
+
+       do i = 1,n
+          write(69, 999) i,x(i),V(i),As(i),U(i),c_1(i),Gamma_1(i)
+999       format(I0,999(1X,E16.8))
+       end do
 
        ml = evol_model_t()
 
@@ -800,6 +807,8 @@ contains
     where (r == 0._WP)
        p_reg = MAXVAL(p_reg, MASK=r /= 0._WP)
     endwhere
+
+    $ASSERT(ALL(p_reg > 0._WP),Negative regularized pressure)
 
     ! Finish
 
