@@ -51,7 +51,8 @@ module gyre_mode_funcs
   public :: lag_T
   public :: dE_dx
   public :: dW_dx
-  public :: F_j_rey
+  public :: F_j
+  public :: div_F_j
   public :: Yt_1
   public :: Yt_2
   public :: I_0
@@ -543,25 +544,61 @@ contains
 
 !****
 
-  function F_j_rey (ml, mp, omega, x, y)
+  function F_j (ml, mp, omega, x, y)
 
     class(model_t), intent(in)  :: ml
     type(modepar_t), intent(in) :: mp
     complex(WP), intent(in)     :: omega
     real(WP), intent(in)        :: x
     complex(WP), intent(in)     :: y(:)
-    real(WP)                    :: F_j_rey
+    real(WP)                    :: F_j
     
     ! Calculate the angle-averaged angular momentum flux due to Reynolds stress, in units of G
     ! M_star**2/R_star**3.  This expression is based on eqn. 21 of [LeeSai1993]
 
     associate (c_1 => ml%c_1(x), U => ml%U(x), m => mp%m, omega_c => ml%omega_c(x, mp%m, omega))
 
-      F_j_rey = -ABS(omega_c**2)*x*U*AIMAG(CONJG(xi_r(ml, mp, omega, x, y))*m*xi_h(ml, mp, omega, x, y))/(32._WP*PI**2*c_1)
+      F_j = -ABS(omega_c**2)*x*U*AIMAG(CONJG(xi_r(ml, mp, omega, x, y))*m*xi_h(ml, mp, omega, x, y))/(32._WP*PI**2*c_1)
 
     end associate
 
-  end function F_j_rey
+  end function F_j
+
+!****
+
+  function div_F_j (ml, mp, omega, x, y)
+
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    real(WP)                    :: div_F_j
+
+    real(WP) :: div_F_j_wave
+    real(WP) :: div_F_j_NA
+    
+    ! Calculate the divergence of the angle-averaged angular momentum
+    ! flux due to Reynolds stress, in units of G M_star**2/R_star**3.
+    ! This expression is based on eqns. 8-10 of [And1983]
+
+    associate (V => ml%V(x), Gamma_1 => ml%Gamma_1(x), As => ml%As(x), U => ml%U(x), c_1 => ml%c_1(x), &
+               m => mp%m, omega_c => ml%omega_c(x, mp%m, omega))
+
+      div_F_j_wave = REAL(omega_c)*AIMAG(omega_c)*m*(U/c_1)*(V/Gamma_1*c_1*REAL(omega_c)**2*ABS(xi_h(ml, mp, omega, x, y))**2 + &
+                                                             As/(c_1*REAL(omega_c)**2)*ABS(xi_r(ml, mp, omega, x, y))**2)/(16._WP*PI**2)
+
+      if (x /= 0._WP) then
+         div_F_j_NA = m*AIMAG(CONJG(lag_P(ml, mp, omega, x, y))*lag_rho(ml, mp, omega, x, y))*U*x**2/(32._WP*PI**2*c_1**2*V)
+      else
+         div_F_j_NA = 0._WP
+      endif
+
+      div_F_j = div_F_j_wave + div_F_j_NA
+
+    end associate
+
+  end function div_F_j
 
 !****
 
