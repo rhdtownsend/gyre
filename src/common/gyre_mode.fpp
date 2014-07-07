@@ -100,6 +100,7 @@ module gyre_mode
      procedure, public :: K => K_
      procedure, public :: beta => beta_
      procedure, public :: omega_int => omega_int_
+     procedure, public :: eta => eta_
      procedure, public :: prop_type => prop_type_
      procedure         :: classify_
      procedure, public :: lag_S_en => lag_S_en_
@@ -653,6 +654,27 @@ contains
 
   end function omega_int_
 
+!****
+
+  function eta_ (this) result (eta)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: eta
+
+    real(WP)    :: dW_dx(this%n)
+
+    ! Calculate the normalized growth rate defined by [Stel1978]
+
+    dW_dx = this%dW_dx()
+
+    eta = integrate(this%x, dW_dx)/integrate(this%x, ABS(dW_dx))
+
+    ! Finish
+
+    return
+
+  end function eta_
+    
 !****
 
   function prop_type_ (this) result (prop_type)
