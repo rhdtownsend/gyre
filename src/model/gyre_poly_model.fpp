@@ -52,9 +52,6 @@ module gyre_poly_model
      real(WP), public :: xi_1
    contains
      private
-     $if ($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -154,27 +151,6 @@ contains
     return
 
   end function poly_model_t_
-
-!****
-
-  $if ($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
-
-    class(poly_model_t), intent(inout) :: this
-
-    ! Finalize the poly_model_t
-
-    call this%sp_Theta%final()
-    call this%sp_dTheta%final()
-
-    ! Finish
-
-    return
-
-  end subroutine final_
-
-  $endif
 
 !****
 

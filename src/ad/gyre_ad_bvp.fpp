@@ -68,9 +68,6 @@ module gyre_ad_bvp
      integer, public                :: n_e
    contains 
      private
-     $if ($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
      procedure         :: discrim_r_
      procedure         :: discrim_c_
      procedure         :: mode_r_
@@ -222,37 +219,6 @@ contains
     return
 
   end function ad_bvp_t_
-
-!****
-
-  $if ($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
-
-    class(ad_bvp_t), intent(inout) :: this
-
-    ! Finalize the ad_bvp_t
-
-    call this%cc%final()
-    call this%sm%final()
-
-    deallocate(this%jc)
-    deallocate(this%iv)
-    deallocate(this%bd)
-
-    deallocate(this%shoot_gp)
-    deallocate(this%recon_gp)
-
-    deallocate(this%x)
-    deallocate(this%x_in)
-    
-    ! Finish
-
-    return
-
-  end subroutine final_
-
-  $endif
 
 !****
 

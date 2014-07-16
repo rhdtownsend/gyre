@@ -64,9 +64,6 @@ module gyre_mode
      logical                  :: pruned
    contains
      private
-     $if($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
      procedure, public :: prune => prune_
      procedure, public :: freq => freq_
      procedure, public :: xi_r => xi_r_
@@ -206,29 +203,6 @@ contains
 !****
 
   $REALLOCATE(type(mode_t),1)
-
-!****
-
-  $if($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
-
-    class(mode_t), intent(inout) :: this
-
-    ! Finalize the mode_t
-
-    if (.NOT. this%pruned) then
-
-       deallocate(this%x)
-       deallocate(this%y)
-
-    endif
-
-    ! Finish
-
-  end subroutine final_
-
-  $endif
 
 !****
 

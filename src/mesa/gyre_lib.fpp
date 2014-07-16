@@ -308,28 +308,6 @@ contains
 
           if (non_ad) call prox_search(nad_bp, md)
 
-          $if ($GFORTRAN_PR57922)
-
-          select type (ad_bp)
-          type is (rad_bvp_t)
-             call ad_bp%final()
-          type is (ad_bvp_t)
-             call ad_bp%final()
-          class default
-             $ABORT(Invalid type)
-          end select
-
-          if (non_ad) then
-             select type (nad_bp)
-             type is (nad_bvp_t)
-                call nad_bp%final()
-             class default
-                $ABORT(Invalid type)
-             end select
-          endif
-
-          $endif
-
           deallocate(ad_bp)
           
           if (non_ad) deallocate(nad_bp)
@@ -342,9 +320,6 @@ contains
              if(retcode == 0) then
                 call user_sub(md(j), ipar, rpar, retcode)
              endif
-             $if($GFORTRAN_PR57922)
-             call md(j)%final()
-             $endif
           end do mode_loop
 
        end if

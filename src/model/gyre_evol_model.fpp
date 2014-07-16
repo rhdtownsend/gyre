@@ -94,9 +94,6 @@ module gyre_evol_model
      real(WP)                    :: rho_c
    contains
      private
-     $if ($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
      procedure         :: set_sp_
      $PROC_DECL_GEN(m)
      $PROC_DECL_GEN(p)
@@ -642,37 +639,6 @@ contains
     end function dlny_dlnx_
 
   end function evol_model_t_full_
-
-!****
-
-  $if ($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
-
-    class(evol_model_t), intent(inout) :: this
-
-    integer :: j
-
-    ! Finalize the evol_model_t
-
-    call this%detach_cache()
-
-    do j = 1, N_J
-       if(this%sp_def(j)) then
-          call this%sp(j)%final()
-       endif
-    end do
-
-    deallocate(this%sp)
-    deallocate(this%sp_def)
-
-    ! Finish
-
-    return
-
-  end subroutine final_
-
-  $endif
 
 !****
 

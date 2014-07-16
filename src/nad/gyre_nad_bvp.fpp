@@ -69,9 +69,6 @@ module gyre_nad_bvp
      integer, public                :: n_e
    contains 
      private
-     $if ($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
      procedure         :: discrim_r_
      procedure         :: discrim_c_
      procedure         :: mode_r_
@@ -220,28 +217,6 @@ contains
     return
 
   end function nad_bvp_t_
-
-!****
-
-  $if ($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
-
-    class(nad_bvp_t), intent(inout) :: this
-
-    ! Finalize the nad_bvp_t
-
-    deallocate(this%jc)
-    deallocate(this%iv)
-    deallocate(this%bd)
-    
-    ! Finish
-
-    return
-
-  end subroutine final_
-
-  $endif
 
 !****
 

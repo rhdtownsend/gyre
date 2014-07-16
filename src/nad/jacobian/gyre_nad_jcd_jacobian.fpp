@@ -237,15 +237,7 @@ contains
     real(WP), intent(in)                  :: x
     complex(WP), intent(in)               :: omega
     logical, intent(in)                   :: to_canon
-    $if ($GFORTRAN_PR_58007)
-    complex(WP), allocatable              :: M(:,:)
-    $else
     complex(WP)                           :: M(this%n_e,this%n_e)
-    $endif
-
-    $if ($GFORTRAN_PR_58007)
-    allocate(M(this%n_e,this%n_e))
-    $endif
 
     ! Calculate the transformation matrix to convert variables between the
     ! canonical formulation and the JCD formulation

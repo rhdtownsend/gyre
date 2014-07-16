@@ -233,10 +233,6 @@ contains
 
        call process_mode(md)
 
-       $if($GFORTRAN_PR57922)
-       call md%final()
-       $endif
-
     end do mode_loop
 
     call SYSTEM_CLOCK(c_end)
@@ -316,10 +312,6 @@ contains
 !        endif
 
 !        call process_mode(md)
-
-!        $if($GFORTRAN_PR57922)
-!        call md%final()
-!        $endif
 
 !     end do mode_loop
 
@@ -464,10 +456,6 @@ contains
        ! Store the frequency in the deflation array
 
        omega_def = [omega_def,md%omega]
-
-       $if($GFORTRAN_PR57922)
-       call md%final()
-       $endif
 
     end do mode_loop
 

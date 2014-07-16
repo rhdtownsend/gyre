@@ -39,9 +39,6 @@ module gyre_model
   type, abstract :: model_t
    contains
      private
-     $if($GFORTRAN_PR57922)
-     procedure, public :: final
-     $endif
      $PROC_DECL(V)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -140,24 +137,6 @@ module gyre_model
   ! Procedures
 
 contains
-
-  $if($GFORTRAN_PR57922)
-
-  subroutine final (this)
-
-    class(model_t), intent(inout) :: this
-
-    ! Finalize the model_t
-
-    ! Finish
-
-    return
-
-  end subroutine final
-
-  $endif
-
-!****
 
   function omega_r_ (this, x, m, omega_c) result (omega)
 

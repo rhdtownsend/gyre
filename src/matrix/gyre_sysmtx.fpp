@@ -51,9 +51,6 @@ module gyre_sysmtx
      integer                          :: n_o        ! Number of outer boundary conditions
    contains
      private
-     $if ($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
      procedure, public :: set_inner_bound => set_inner_bound_
      procedure, public :: set_outer_bound => set_outer_bound_
      procedure, public :: set_block => set_block_
@@ -107,32 +104,6 @@ contains
     return
 
   end function sysmtx_t_
-
-!****
-
-  $if ($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
-
-    class(sysmtx_t), intent(inout) :: this
-
-    ! Finalize the sysmtx
-
-    deallocate(this%E_l)
-    deallocate(this%E_r)
-
-    deallocate(this%B_i)
-    deallocate(this%B_o)
-
-    deallocate(this%S)
-
-    ! Finish
-
-    return
-
-  end subroutine final_
-
-  $endif
 
 !****
 
