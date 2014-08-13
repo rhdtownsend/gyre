@@ -28,6 +28,7 @@ module gyre_util
   use gyre_constants
   use gyre_model
   use gyre_evol_model
+  use gyre_scons_model
   use gyre_poly_model
   use gyre_hom_model
   use gyre_modepar
@@ -214,6 +215,8 @@ contains
     select type (ml)
     class is (evol_model_t)
        freq_scale = evol_freq_scale_(ml, mp, op, x_o, freq_units)
+    class is (scons_model_t)
+       freq_scale = scons_freq_scale_(ml, mp, op, x_o, freq_units)
     class is (poly_model_t)
        freq_scale = poly_freq_scale_(freq_units)
     class is (hom_model_t)
@@ -267,6 +270,46 @@ contains
       return
 
     end function evol_freq_scale_
+
+    function scons_freq_scale_ (ml, mp, op, x_o, freq_units) result (freq_scale)
+
+      class(scons_model_t), intent(in) :: ml
+      type(modepar_t), intent(in)      :: mp
+      type(oscpar_t), intent(in)       :: op
+      real(WP), intent(in)             :: x_o
+      character(*), intent(in)         :: freq_units
+      real(WP)                         :: freq_scale
+
+      real(WP) :: omega_cutoff_lo
+      real(WP) :: omega_cutoff_hi
+
+      ! Calculate the scale factor to convert a dimensionless angular
+      ! frequency to a dimensioned frequency
+
+      select case(freq_units)
+      case('NONE')
+         freq_scale = 1._WP
+      case('HZ')
+         freq_scale = 1._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+      case('UHZ')
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+      case('PER_DAY')
+         freq_scale = 86400._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+      case('ACOUSTIC_CUTOFF')
+         call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+         freq_scale = 1._WP/omega_cutoff_hi
+      case('GRAVITY_CUTOFF')
+         call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+         freq_scale = 1._WP/omega_cutoff_lo
+      case default
+         $ABORT(Invalid freq_units)
+      end select
+
+      ! Finish
+
+      return
+
+    end function scons_freq_scale_
 
     function poly_freq_scale_ (freq_units) result (freq_scale)
 
