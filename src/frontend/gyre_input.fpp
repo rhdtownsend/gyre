@@ -86,6 +86,7 @@ contains
 
     use gyre_model
     use gyre_evol_model
+    use gyre_scons_model
     use gyre_poly_model
     use gyre_hom_model
     use gyre_mesa_file
@@ -114,6 +115,7 @@ contains
     real(WP)                :: Omega_rot
     logical                 :: regularize
     type(evol_model_t)      :: ec
+    type(scons_model_t)     :: sc
     type(poly_model_t)      :: pc
     type(hom_model_t)       :: hc
 
@@ -185,6 +187,19 @@ contains
        end select
 
        allocate(ml, SOURCE=ec)
+
+    case ('SCONS')
+
+       select case (file_format)
+       case ('MESA')
+          call read_mesa_model(file, sc, x=x_bc)
+       case ('FGONG')
+          call read_fgong_model(file, data_format, sc, x=x_bc)
+       case default
+          $ABORT(Invalid file_format)
+       end select
+
+       allocate(ml, SOURCE=sc)
 
     case ('POLY')
 
@@ -595,7 +610,6 @@ contains
     type(outpar_t), intent(out) :: up
 
     integer                 :: n_up
-    integer                 :: i
     character(256)          :: freq_units
     character(FILENAME_LEN) :: summary_file
     character(256)          :: summary_file_format
