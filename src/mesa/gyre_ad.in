@@ -4,16 +4,19 @@
 	file_format = 'MESA'
 /
 
-&osc
+&mode
 	l = 0
 /
 
-&osc
+&mode
 	l = 1
 /
 
-&osc
+&mode
 	l = 2
+/
+
+&osc
 /
 
 &num
