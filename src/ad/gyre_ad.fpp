@@ -120,7 +120,7 @@ program gyre_ad
 
   allocate(md(d_md))
 
-  op_loop : do i = 1, SIZE(mp)
+  mp_loop : do i = 1, SIZE(mp)
 
      if (check_log_level('INFO')) then
 
@@ -187,7 +187,7 @@ program gyre_ad
 
      deallocate(bp)
 
-  end do op_loop
+  end do mp_loop
 
   ! Write the summary file
  
