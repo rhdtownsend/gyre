@@ -68,8 +68,8 @@ program gyre_nad
   type(gridpar_t), allocatable :: shoot_gp_sel(:)
   type(gridpar_t), allocatable :: recon_gp_sel(:)
   type(scanpar_t), allocatable :: sp_sel(:)
-  integer                       :: n_op_sel
-  integer                       :: n_np_sel
+  integer                      :: n_op_sel
+  integer                      :: n_np_sel
   real(WP), allocatable        :: omega(:)
   class(bvp_t), allocatable    :: ad_bp
   class(bvp_t), allocatable    :: nad_bp
@@ -130,7 +130,7 @@ program gyre_nad
 
   allocate(md_nad(d_md_nad))
 
-  op_loop : do i = 1, SIZE(mp)
+  mp_loop : do i = 1, SIZE(mp)
 
      if (check_log_level('INFO')) then
 
@@ -206,7 +206,7 @@ program gyre_nad
      deallocate(ad_bp)
      deallocate(nad_bp)
 
-  end do op_loop
+  end do mp_loop
 
   ! Write the summary file
  
