@@ -97,11 +97,7 @@ contains
 
     ! Finalize
 
-    if(ASSOCIATED(ml_m)) then
-       call ml_m%final()
-       deallocate(ml_m)
-    endif
-
+    if(ASSOCIATED(ml_m)) deallocate(ml_m)
     if(ALLOCATED(x_ml_m)) deallocate(x_ml_m)
 
     call final_parallel()
@@ -123,12 +119,9 @@ contains
 
     ! Read the model
 
-    if(ASSOCIATED(ml_m)) then
-       call ml_m%final()
-       deallocate(ml_m)
-    endif
+    if(ASSOCIATED(ml_m)) deallocate(ml_m)
 
-    call read_mesa_model(file, deriv_type, ec, x_ml_m)
+    call read_mesa_model(file, deriv_type, .FALSE., ec, x_ml_m)
 
     allocate(ml_m, SOURCE=ec)
 
@@ -173,11 +166,7 @@ contains
 
     ! Allocate the model
 
-    if(ASSOCIATED(ml_m)) then
-       call ml_m%final()
-       deallocate(ml_m)
-    endif
-
+    if(ASSOCIATED(ml_m)) deallocate(ml_m)
     allocate(evol_model_t::ml_m)
 
     ! Set the model by storing coefficients
@@ -231,18 +220,20 @@ contains
     type(scanpar_t), allocatable :: sp(:)
     type(gridpar_t), allocatable :: shoot_gp(:)
     type(gridpar_t), allocatable :: recon_gp(:)
+    integer                      :: n_md
+    integer                      :: d_md
+    type(mode_t), allocatable    :: md(:)
     integer                      :: i
     type(oscpar_t), allocatable  :: op_sel(:)
     type(numpar_t), allocatable  :: np_sel(:)
     type(gridpar_t), allocatable :: shoot_gp_sel(:)
     type(gridpar_t), allocatable :: recon_gp_sel(:)
     type(scanpar_t), allocatable :: sp_sel(:)
+    integer                      :: n_op_sel
+    integer                      :: n_np_sel
     real(WP), allocatable        :: omega(:)
     class(bvp_t), allocatable    :: ad_bp
     class(bvp_t), allocatable    :: nad_bp
-    type(mode_t), allocatable    :: md(:)
-    integer                      :: j
-    integer                      :: retcode
 
     $ASSERT(ASSOCIATED(ml_m),No model provided)
 
@@ -259,22 +250,30 @@ contains
 
     close(unit)
 
-    ! Loop through oscpars
+    ! Loop through modepars
 
-    op_loop : do i = 1, SIZE(mp)
+    d_md = 128
+    n_md = 0
+
+    allocate(md(d_md))
+
+    mp_loop : do i = 1, SIZE(mp)
 
        if (mp(i)%l == l) then
 
           ! Select parameters according to tags
 
-          call select_par(op, mp(i)%tag, op_sel, last=.TRUE.)
-          call select_par(np, mp(i)%tag, np_sel, last=.TRUE.)
+          call select_par(op, mp(i)%tag, op_sel)
+          call select_par(np, mp(i)%tag, np_sel)
           call select_par(shoot_gp, mp(i)%tag, shoot_gp_sel)
           call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
           call select_par(sp, mp(i)%tag, sp_sel)
 
-          $ASSERT(SIZE(op_sel) == 1,No matching num parameters)
-          $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
+          n_op_sel = SIZE(op_sel)
+          n_np_sel = SIZE(np_sel)
+
+          $ASSERT(n_op_sel >= 1,No matching osc parameters)
+          $ASSERT(n_np_sel >= 1,No matching num parameters)
           $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
           $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
           $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
@@ -290,9 +289,7 @@ contains
 
           ! Set up the bvp's
 
-          if(ALLOCATED(ad_bp)) deallocate(ad_bp)
-
-          if(mp(i)%l == 0 .AND. np_sel(1)%reduce_order) then
+          if(mp(i)%l == 0 .AND. op_sel(1)%reduce_order) then
              allocate(ad_bp, SOURCE=rad_bvp_t(ml_m, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
           else
              allocate(ad_bp, SOURCE=ad_bvp_t(ml_m, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
@@ -304,33 +301,67 @@ contains
 
           ! Find modes
 
-          call scan_search(ad_bp, omega, md)
+          if (non_ad) then
+             n_md = 0
+             call scan_search(ad_bp, np_sel(n_np_sel), omega, store_mode)
+             call prox_search(nad_bp, np_sel(n_np_sel), md(:n_md), process_mode)
+          else
+             call scan_search(ad_bp, np_sel(n_np_sel), omega, process_mode)
+          endif
 
-          if (non_ad) call prox_search(nad_bp, md)
+          ! Clean up
 
           deallocate(ad_bp)
-          
           if (non_ad) deallocate(nad_bp)
-
-          ! Process the modes
-
-          retcode = 0
-
-          mode_loop : do j = 1,SIZE(md)
-             if(retcode == 0) then
-                call user_sub(md(j), ipar, rpar, retcode)
-             endif
-          end do mode_loop
 
        end if
 
        ! Loop around
 
-    end do op_loop
+    end do mp_loop
 
     ! Finish
 
     return
+
+  contains
+
+    subroutine store_mode (md_new)
+
+      type(mode_t), intent(in) :: md_new
+
+      ! Store the mode
+
+      n_md = n_md + 1
+
+      if (n_md > d_md) then
+         d_md = 2*d_md
+         call reallocate(md, [d_md])
+      endif
+
+      md(n_md) = md_new
+
+      call md(n_md)%prune()
+
+      ! Finish
+
+      return
+
+    end subroutine store_mode
+
+    subroutine process_mode (md_new)
+
+      type(mode_t), intent(in) :: md_new
+
+      integer :: retcode
+
+      ! Process the mode
+
+      retcode = 0
+
+      call user_sub(md_new, ipar, rpar, retcode)
+
+    end subroutine process_mode
 
   end subroutine gyre_get_modes
 
