@@ -190,7 +190,7 @@ contains
                                        Gamma_1, nabla_ad, delta, Omega_rot, &
                                        nabla, kappa, kappa_rho, kappa_T, &
                                        epsilon, epsilon_rho, epsilon_T, &
-                                       deriv_type, regularize=.FALSE. add_center=add_center))
+                                       deriv_type, regularize=.FALSE., add_center=add_center))
 
     if(add_center) then
        x_ml_m = [0._WP,r/R_star]
