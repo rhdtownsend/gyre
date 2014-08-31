@@ -510,7 +510,7 @@ contains
                          prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), prep_center_(r, Omega_rot), &
                          prep_center_(r, nabla), prep_center_(r, kappa), prep_center_(r, kappa_rho), prep_center_(r, kappa_T), &
                          prep_center_(r, epsilon), prep_center_(r, epsilon_rho), prep_center_(r, epsilon_T), &
-                         deriv_type, regularize_, .FALSE.)
+                         deriv_type, regularize, .FALSE.)
 
     elseif (regularize_) then
 
