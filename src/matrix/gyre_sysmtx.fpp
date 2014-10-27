@@ -51,15 +51,13 @@ module gyre_sysmtx
      integer                          :: n_o        ! Number of outer boundary conditions
    contains
      private
-     $if ($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
      procedure, public :: set_inner_bound => set_inner_bound_
      procedure, public :: set_outer_bound => set_outer_bound_
      procedure, public :: set_block => set_block_
      procedure, public :: scale_rows => scale_rows_
      procedure, public :: determinant => determinant_
      procedure, public :: null_vector => null_vector_
+     procedure, public :: sol_vector => sol_vector_
   end type sysmtx_t
 
   ! Interfaces
@@ -106,32 +104,6 @@ contains
     return
 
   end function sysmtx_t_
-
-!****
-
-  $if ($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
-
-    class(sysmtx_t), intent(inout) :: this
-
-    ! Finalize the sysmtx
-
-    deallocate(this%E_l)
-    deallocate(this%E_r)
-
-    deallocate(this%B_i)
-    deallocate(this%B_o)
-
-    deallocate(this%S)
-
-    ! Finish
-
-    return
-
-  end subroutine final_
-
-  $endif
 
 !****
 
@@ -1102,5 +1074,97 @@ contains
 
   $NULL_VECTOR_BANDED(r,real)
   $NULL_VECTOR_BANDED(c,complex)
+
+!****
+
+  subroutine sol_vector_ (this, i, b)
+
+    class(sysmtx_t), intent(inout)   :: this
+    integer, intent(in)              :: i
+    complex(WP), intent(out)         :: b(:)
+
+    $CHECK_BOUNDS(SIZE(b),this%n_e*(this%n+1))
+
+    ! Calculate the solution vector
+
+    call sol_vector_banded_c_(this, i, b)
+
+    ! Finish
+
+    return
+
+  end subroutine sol_vector_
+
+!****
+
+  $define $SOL_VECTOR_BANDED $sub
+
+  $local $INFIX $1
+  $local $TYPE $2
+
+  subroutine sol_vector_banded_${INFIX}_ (sm, i, b)
+  
+    class(sysmtx_t), intent(inout)   :: sm
+    integer, intent(in)              :: i
+    $TYPE(WP), intent(out)           :: b(:)
+
+    $TYPE(WP), allocatable :: A_b(:,:)
+    integer                :: n_l
+    integer                :: n_u
+    integer                :: m
+    integer, allocatable   :: ipiv(:)
+    integer                :: info
+
+    $CHECK_BOUNDS(SIZE(b),sm%n_e*(sm%n+1))
+    
+    ! Pack the smatrix into banded form
+
+    call pack_banded_${INFIX}_(sm, A_b)
+
+    ! Set up the RHS vector
+
+    b = 0._WP
+    b(i) = 1._WP
+
+    ! Solve thge linear system
+
+    n_l = sm%n_e + sm%n_i - 1
+    n_u = sm%n_e + sm%n_i - 1
+
+    m = SIZE(A_b, 2)
+
+    allocate(ipiv(m))
+
+    $block
+
+    $if ($DOUBLE_PRECISION)
+    $if ($INFIX eq 'r')
+    $local $X D
+    $else
+    $local $X Z
+    $endif
+    $else
+    $if ($INFIX eq 'r')
+    $local $X S
+    $else
+    $local $X C
+    $endif
+    $endif
+
+    call ${X}GBSV(m, n_l, n_u, 1, A_b, SIZE(A_b, 1), ipiv, b, SIZE(b, 1), info)
+    $ASSERT(info == 0 .OR. info == m,Non-zero return from XGBSV)
+
+    $endblock
+
+    ! Finish
+
+    return
+
+  end subroutine sol_vector_banded_${INFIX}_
+
+  $endsub
+
+  $SOL_VECTOR_BANDED(r,real)
+  $SOL_VECTOR_BANDED(c,complex)
 
 end module gyre_sysmtx

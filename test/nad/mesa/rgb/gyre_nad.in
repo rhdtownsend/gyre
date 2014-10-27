@@ -1,0 +1,64 @@
+&constants
+/
+
+&model
+	model_type = 'EVOL'
+	file = 'rgb.mesa'
+	file_format = 'MESA'
+/
+
+&mode
+	l = 0
+/
+
+&mode
+	l = 1
+/
+
+&mode
+	l = 2
+/
+
+&mode
+	l = 3
+/
+
+&osc
+/
+
+&num
+	ivp_solver_type = 'MAGNUS_GL2'
+/
+
+&scan
+	grid_type = 'INVERSE'
+	freq_min = 39,
+	freq_max = 41,
+	freq_units = 'UHZ'
+	n_freq = 200,
+/
+
+&shoot_grid
+	op_type = 'CREATE_CLONE'
+/
+
+&shoot_grid
+	op_type = 'RESAMP_DISPERSION'
+	alpha_osc = 5
+	alpha_exp = 1
+/
+
+&shoot_grid
+	op_type = 'RESAMP_CENTER'
+	n = 5
+/
+
+&recon_grid
+	op_type = 'CREATE_MIDPOINT'
+/
+
+&output
+	summary_file = 'gyre_nad.txt'
+	summary_file_format = 'TXT'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+/

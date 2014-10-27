@@ -25,7 +25,7 @@ module gyre_colloc_gl2_ivp
   use core_linalg
 
   use gyre_jacobian
-  use gyre_ivp_colloc
+  use gyre_colloc_ivp
   use gyre_ext_arith
   use gyre_linalg
 
@@ -37,7 +37,7 @@ module gyre_colloc_gl2_ivp
 
   ! Derived-type definitions
 
-  type, extends (ivp_colloc_t) :: colloc_gl2_ivp_t
+  type, extends (colloc_ivp_t) :: colloc_gl2_ivp_t
      private
      class(jacobian_t), allocatable :: jc
    contains

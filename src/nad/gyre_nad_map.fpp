@@ -39,7 +39,7 @@ program gyre_nad_map
   use gyre_scanpar
   use gyre_bvp
   use gyre_nad_bvp
-  use gyre_input
+  use gyre_input, read_outpar_ => read_outpar
   use gyre_search
   use gyre_mode
   use gyre_util
@@ -153,8 +153,8 @@ program gyre_nad_map
 
   ! Store the frequency range in shoot_gp
 
-  shoot_gp(1)%omega_a = MINVAL(omega_re)
-  shoot_gp(1)%omega_b = MAXVAL(omega_re)
+  shoot_gp%omega_a = MINVAL(omega_re)
+  shoot_gp%omega_b = MAXVAL(omega_re)
 
   ! Set up the bvp
 

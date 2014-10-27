@@ -32,13 +32,12 @@ module gyre_numpar
   ! Derived-type definitions
 
   type :: numpar_t
-     integer             :: n_iter_max
-     real(WP)            :: theta_ad
-     logical             :: reduce_order
-     logical             :: use_banded
-     logical             :: use_trad_approx
-     character(LEN=64)   :: ivp_solver_type
-     character(LEN=2048) :: tag_list
+     integer         :: n_iter_max
+     logical         :: use_banded
+     logical         :: use_trad_approx
+     logical         :: deflate_roots
+     character(64)   :: ivp_solver_type
+     character(2048) :: tag_list
   end type numpar_t
 
   ! Interfaces
@@ -85,11 +84,10 @@ contains
     ! Broadcast the numpar_t
 
     call bcast(np%n_iter_max, root_rank)
-    call bcast(np%theta_ad, root_rank)
 
-    call bcast(np%reduce_order, root_rank)
     call bcast(np%use_banded, root_rank)
     call bcast(np%use_trad_approx, root_rank)
+    call bcast(np%deflate_roots, root_rank)
 
     call bcast(np%ivp_solver_type, root_rank)
     call bcast(np%tag_list, root_rank)

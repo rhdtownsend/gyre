@@ -133,6 +133,8 @@ contains
        case ('RESAMP_THERMAL')
           call resample_thermal_(ml, gp(i)%omega_a, gp(i)%omega_b, &
                                  gp(i)%alpha_thm, x)
+       case ('RESAMP_STRUCT')
+          call resample_struct_(ml, gp(i)%alpha_str, x)
        case ('RESAMP_CENTER')
           call resample_center_(ml, mp, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
        case ('RESAMP_UNIFORM')
@@ -724,6 +726,70 @@ contains
     return
 
   end subroutine resample_thermal_
+
+!****
+
+  subroutine resample_struct_ (ml, alpha_str, x)
+
+    class(model_t), intent(in)           :: ml
+    real(WP), intent(in)                 :: alpha_str
+    real(WP), allocatable, intent(inout) :: x(:)
+
+    integer :: dn(SIZE(x)-1)
+    integer :: i
+
+    $ASSERT(ALLOCATED(x),No input grid)
+
+    ! Resample x by adding points to each cell, such that there are at
+    ! least alpha_str points per dex change in the structure variables (V,
+    ! As, Gamma_1, c_1, & U)
+
+    ! Calculate the number of points to add to each cell
+
+    dn = 0
+
+    cell_loop : do i = 1, SIZE(x)-1
+
+       dn(i) = dn(i) + FLOOR(alpha_str*dlog_(ml%V(x(i)), ml%V(x(i+1)))) + &
+                       FLOOR(alpha_str*dlog_(ml%As(x(i)), ml%V(x(i+1)))) + &
+                       FLOOR(alpha_str*dlog_(ml%Gamma_1(x(i)), ml%Gamma_1(x(i+1)))) + &
+                       FLOOR(alpha_str*dlog_(ml%c_1(x(i)), ml%c_1(x(i+1)))) + &
+                       FLOOR(alpha_str*dlog_(ml%U(x(i)), ml%U(x(i+1))))
+
+    end do cell_loop
+
+    ! Perform the resampling
+
+    call resample_(x, dn)
+
+    ! Finish
+
+    return
+
+  contains
+
+    function dlog_ (y_a, y_b) result (dlog)
+
+      real(WP), intent(in) :: y_a
+      real(WP), intent(in) :: y_b
+      real(WP)             :: dlog
+
+      ! Calculate the logarithmic change between y_a and y_b
+
+      if ((y_a > 0._WP .AND. y_b > 0._WP) .OR. &
+          (y_a < 0._WP .AND. y_b < 0._WP)) then
+         dlog = ABS(LOG10(y_b/y_a))
+      else
+         dlog = 0._WP
+      endif
+
+      ! Finish
+
+      return
+
+    end function dlog_
+
+  end subroutine resample_struct_
 
 !****
 

@@ -98,6 +98,10 @@ module gyre_ext_real
      module procedure exp_
   end interface exp
 
+  interface sqrt
+     module procedure sqrt_
+  end interface sqrt
+
   interface abs
      module procedure abs_
   end interface abs
@@ -184,6 +188,7 @@ module gyre_ext_real
   public :: product
   public :: abs
   public :: exp
+  public :: sqrt
   public :: fraction
   public :: exponent
   public :: max
@@ -248,19 +253,19 @@ contains
 
     ! Apply the plus operator
 
-    if(this%f == 0._WP) then
+    if (this%f == 0._WP) then
 
        ex%f = that%f
        ex%e = that%e
 
-    elseif(that%f == 0._WP) then
+    elseif (that%f == 0._WP) then
 
        ex%f = this%f
        ex%e = this%e
 
     else
 
-       if(this%e > that%e) then
+       if (this%e > that%e) then
           f = this%f + real(ext_real_t(that%f, that%e - this%e))
           e = this%e
        else
@@ -310,19 +315,19 @@ contains
 
     ! Apply the minus operator
 
-    if(this%f == 0._WP) then
+    if (this%f == 0._WP) then
        
        ex%f = -that%f
        ex%e = that%e
 
-    elseif(that%f == 0._WP) then
+    elseif (that%f == 0._WP) then
 
        ex%f = this%f
        ex%e = this%e
 
     else
 
-       if(this%e > that%e) then
+       if (this%e > that%e) then
           f = this%f - real(ext_real_t(that%f, that%e - this%e))
           e = this%e
        else
@@ -354,7 +359,7 @@ contains
 
     ! Apply the times operator
 
-    if(this%f == 0._WP .OR. that%f == 0._WP) then
+    if (this%f == 0._WP .OR. that%f == 0._WP) then
 
        ex = ext_real_t(0._WP)
 
@@ -387,7 +392,7 @@ contains
 
     ! Apply the divide operator
 
-    if(this%f == 0._WP .AND. that%f /= 0._WP) then
+    if (this%f == 0._WP .AND. that%f /= 0._WP) then
 
        ex = ext_real_t(0._WP)
 
@@ -502,7 +507,7 @@ contains
 
     ! Apply the less-than operator
 
-    if(this%f == 0._WP .OR. that%f == 0._WP) then
+    if (this%f == 0._WP .OR. that%f == 0._WP) then
 
        lt = this%f < that%f
 
@@ -511,8 +516,8 @@ contains
        this_s = SIGN(1._WP, this%f)
        that_s = SIGN(1._WP, that%f)
 
-       if(this_s == that_s) then
-          if(this_s > 0._WP) then
+       if (this_s == that_s) then
+          if (this_s > 0._WP) then
              lt = (this%e < that%e .OR. (this%e == that%e .AND. this%f < that%f))
           else
              lt = (this%e > that%e .OR. (this%e == that%e .AND. this%f < that%f))
@@ -642,11 +647,11 @@ contains
 
     ! Convert the ext_real_t to real
 
-    if(ex%f /= 0._WP) then
+    if (ex%f /= 0._WP) then
 
        e_min = MINEXPONENT(0._WP)
 
-       if(ex%e >= e_min) then
+       if (ex%e >= e_min) then
           x = ex%f*RADIX_WP**ex%e
        else
           x = (ex%f*RADIX_WP**MAX(ex%e-e_min, -DIGITS(0._WP)-1))*RADIX_WP**e_min
@@ -755,6 +760,29 @@ contains
 
 !****
 
+  elemental function sqrt_ (ex) result (sqrt_ex)
+
+    type(ext_real_t), intent(in) :: ex
+    type(ext_real_t)             :: sqrt_ex
+
+    ! Calculate the square root of ex
+
+    sqrt_ex = ext_real_t(SQRT(ex%f))
+
+    if (MOD(ex%e, 2) == 0) then
+       sqrt_ex = scale(sqrt_ex, ex%e/2)
+    else
+       sqrt_ex = scale(sqrt_ex, (ex%e-1)/2)*SQRT(2._WP)
+    endif
+
+    ! Finish
+
+    return
+
+  end function sqrt_
+
+!****
+
   elemental function fraction_ (ex) result (fraction_ex)
 
     type(ext_real_t), intent(in) :: ex
@@ -803,17 +831,17 @@ contains
     ex_a_s = SIGN(1._WP, ex_a%f)
     ex_b_s = SIGN(1._WP, ex_b%f)
 
-    if(ex_a_s == ex_b_s) then
-       if(ex_a%e > ex_b%e .EQV. ex_a_s > 0._WP) then
+    if (ex_a_s == ex_b_s) then
+       if (ex_a%e > ex_b%e .EQV. ex_a_s > 0._WP) then
           max_ex = ex_a
-       elseif(ex_b%e > ex_a%e .EQV. ex_a_s > 0._WP) then
+       elseif (ex_b%e > ex_a%e .EQV. ex_a_s > 0._WP) then
           max_ex = ex_b
        else
           max_ex%f = MAX(ex_a%f, ex_b%f)
           max_ex%e = ex_a%e
        endif
     else
-       if(ex_a_s > 0._WP) then
+       if (ex_a_s > 0._WP) then
           max_ex = ex_a
        else
           max_ex = ex_b
@@ -884,7 +912,7 @@ contains
 
 !****
 
-  $if($MPI)
+  $if ($MPI)
 
   $define $SEND $sub
 

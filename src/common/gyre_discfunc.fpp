@@ -45,7 +45,8 @@ module gyre_discfunc
      complex(WP), allocatable, public :: omega_def(:)
    contains 
      private
-     procedure, public :: eval_ec_
+     procedure :: eval_er_
+     procedure :: eval_ec_
   end type discfunc_t
 
   ! Interfaces
@@ -81,19 +82,49 @@ contains
 
 !****
 
+  function eval_er_ (this, ex) result (f_ex)
+
+    class(discfunc_t), intent(inout) :: this
+    type(ext_real_t), intent(in)     :: ex
+    type(ext_real_t)                 :: f_ex
+
+    ! Evaluate the discriminant for real frequencies
+
+    associate (omega => REAL(ex))
+
+      f_ex = this%bp%discrim(omega)
+
+      if (ALLOCATED(this%omega_def)) then
+         f_ex = f_ex/PRODUCT(omega - REAL(this%omega_def))
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function eval_er_
+
+!****
+
   function eval_ec_ (this, ez) result (f_ez)
 
     class(discfunc_t), intent(inout) :: this
     type(ext_complex_t), intent(in)  :: ez
     type(ext_complex_t)              :: f_ez
 
-    ! Evaluate the discriminant
+    ! Evaluate the discriminant for complex frequencies
 
-    f_ez = this%bp%discrim(CMPLX(ez))
+    associate (omega => CMPLX(ez))
 
-    if(ALLOCATED(this%omega_def)) then
-       f_ez = f_ez/PRODUCT(CMPLX(ez)-this%omega_def)
-    endif
+      f_ez = this%bp%discrim(omega)
+
+      if(ALLOCATED(this%omega_def)) then
+         f_ez = f_ez/PRODUCT(omega - this%omega_def)
+      endif
+
+    end associate
 
     ! Finish
 

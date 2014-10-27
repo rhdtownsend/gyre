@@ -9,7 +9,7 @@ SUBDIRS=ad nad
 
 all :
 	@for DIR in ${SUBDIRS}; do \
-            make -w -C $${DIR}; \
+            ${MAKE} -w -C $${DIR}; \
             if [ $$? -ne 0 ]; then \
                 exit $$?; \
             fi; \
@@ -17,7 +17,7 @@ all :
 
 install :
 	@for DIR in ${SUBDIRS}; do \
-            make BINDIR=${BINDIR} -w -C $${DIR} install; \
+            ${MAKE} BINDIR=${BINDIR} -w -C $${DIR} install; \
             if [ $$? -ne 0 ]; then \
                 exit $$?; \
             fi; \
@@ -25,7 +25,7 @@ install :
 
 clean :
 	@for DIR in ${SUBDIRS}; do \
-            make -w -C $${DIR} clean; \
+            ${MAKE} -w -C $${DIR} clean; \
             if [ $$? -ne 0 ]; then \
                 exit $$?; \
             fi; \

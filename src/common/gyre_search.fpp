@@ -33,6 +33,7 @@ module gyre_search
   use gyre_numpar
   use gyre_gridpar
   use gyre_scanpar
+  use gyre_discfunc
   use gyre_mode
   use gyre_grid
   use gyre_ext_arith
@@ -50,6 +51,7 @@ module gyre_search
 
   public :: build_scan
   public :: scan_search
+!  public :: min_search
   public :: prox_search
 
 contains
@@ -135,7 +137,6 @@ contains
 
        if (omega(1) < omega_cutoff_lo) then
           write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends below atmospheric gravity cutoff frequency'
-130       format(2X,A)
        end if
 
        if (omega(n_omega) > omega_cutoff_hi) then
@@ -156,30 +157,38 @@ contains
 
 !****
 
-  subroutine scan_search (bp, omega, md)
+  subroutine scan_search (bp, np, omega, process_mode)
 
-    class(bvp_t), intent(inout)            :: bp
-    real(WP), intent(in)                   :: omega(:)
-    type(mode_t), allocatable, intent(out) :: md(:)
+    class(bvp_t), target, intent(inout) :: bp
+    type(numpar_t), intent(in)          :: np
+    real(WP), intent(in)                :: omega(:)
+    interface
+       subroutine process_mode (md)
+         use gyre_mode
+         type(mode_t), intent(in) :: md
+       end subroutine process_mode
+    end interface
 
+    type(discfunc_t)              :: df
     real(WP), allocatable         :: omega_a(:)
     real(WP), allocatable         :: omega_b(:)
     type(ext_real_t), allocatable :: discrim_a(:)
     type(ext_real_t), allocatable :: discrim_b(:)
-    integer                       :: n_brack
-    integer                       :: i_part(MPI_SIZE+1)
     integer                       :: c_beg
     integer                       :: c_end
     integer                       :: c_rate
+    integer                       :: n_iter
+    real(WP)                      :: omega_root
+    type(mode_t)                  :: md
     integer                       :: i
-    $if($MPI)
-    class(model_t), pointer       :: ml
-    integer                       :: p
-    $endif
+
+    ! Set up the discriminant function
+
+    df = discfunc_t(bp)
 
     ! Find discriminant root brackets
 
-    call find_brackets(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+    call find_root_brackets(df, omega, omega_a, omega_b, discrim_a, discrim_b)
 
     ! Process each bracket to find modes
 
@@ -189,62 +198,49 @@ contains
 100    format(A)
 
        write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
-110    format(4(2X,A6),3(2X,A24),2X,A6,2X,A7)
+110    format(4(2X,A8),3(2X,A24),2X,A6,2X,A7)
        
     endif
 
-    n_brack = SIZE(omega_a)
-
-    call partition_tasks(n_brack, 1, i_part)
-
-    allocate(md(n_brack))
-
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    $if($MPI)
-    call barrier()
-    $endif
+    mode_loop : do i = 1, SIZE(omega_a)
 
-    mode_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
+       ! Find the discriminant root
 
-       ! Find the mode
+       n_iter = np%n_iter_max
 
-       md(i) = bp%mode(CMPLX([omega_a(i),omega_b(i)], KIND=WP), &
-                       ext_complex_t([discrim_a(i),discrim_b(i)]), use_real=.TRUE.)
+       omega_root = real(df%root(ext_real_t(omega_a(i)), ext_real_t(omega_b(i)), ext_real_t(0._WP), &
+                                 f_ex_a=discrim_a(i), f_ex_b=discrim_b(i), n_iter=n_iter))
 
-       ! Report
+       $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
 
-       if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%mp%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter, md(i)%n
-120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
+       ! Construct the mode
+
+       md = bp%mode(omega_root)
+
+       if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
+
+       md%n_iter = n_iter
+       md%chi = ABS(md%discrim)/MAX(ABS(discrim_a(i)), ABS(discrim_b(i)))
+
+       ! Process it
+
+       if (check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
+120       format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
        endif
+
+       call process_mode(md)
 
     end do mode_loop
 
-    $if($MPI)
-    call barrier()
-    $endif
-
     call SYSTEM_CLOCK(c_end)
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
 130    format(2X,A,1X,F10.3,1X,A)
     endif
-
-    ! Broadcast data
-
-    $if($MPI)
-
-    ml => bp%model()
-
-    do p = 0, MPI_SIZE-1
-       do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p, ml)
-       end do
-    enddo
-
-    $endif
 
     ! Finish
 
@@ -252,71 +248,216 @@ contains
 
   end subroutine scan_search
 
+! !****
+
+!   subroutine min_search (bp, omega, process_mode)
+
+!     class(bvp_t), intent(inout) :: bp
+!     real(WP), intent(in)        :: omega(:)
+!     interface
+!        subroutine process_mode (md)
+!          use gyre_mode
+!          type(mode_t), intent(in) :: md
+!        end subroutine process_mode
+!     end interface
+
+!     real(WP), allocatable         :: omega_a(:)
+!     real(WP), allocatable         :: omega_b(:)
+!     real(WP), allocatable         :: omega_c(:)
+!     type(ext_real_t), allocatable :: discrim_a(:)
+!     type(ext_real_t), allocatable :: discrim_b(:)
+!     type(ext_real_t), allocatable :: discrim_c(:)
+!     integer                       :: n_brack
+!     integer                       :: c_beg
+!     integer                       :: c_end
+!     integer                       :: c_rate
+!     real(WP)                      :: domega
+!     type(mode_t)                  :: md
+!     integer                       :: i
+
+!     ! Find discriminant minimum brackets
+
+!     call find_min_brackets(bp, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
+
+!     ! Process each bracket to find modes
+
+!     if(check_log_level('INFO')) then
+
+!        write(OUTPUT_UNIT, 100) 'Root Solving'
+! 100    format(A)
+
+!        write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
+! 110    format(4(2X,A8),3(2X,A24),2X,A6,2X,A7)
+       
+!     endif
+
+!     call SYSTEM_CLOCK(c_beg, c_rate)
+
+!     mode_loop : do i = 1, SIZE(omega_a)
+
+!        ! Find the mode
+
+!        domega = MIN(ABS(omega_b(i)-omega_a(i)), ABS(omega_b(i)-omega_c(i)))
+
+!        md = bp%mode([CMPLX(omega_b(i),  0.5_WP*domega, KIND=WP),  &
+!                      CMPLX(omega_b(i), -0.5_WP*domega, KIND=WP)])
+ 
+!        if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
+
+!        ! Process it
+
+!        if (check_log_level('INFO')) then
+!           write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
+! 120       format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
+!        endif
+
+!        call process_mode(md)
+
+!     end do mode_loop
+
+!     call SYSTEM_CLOCK(c_end)
+
+!     if (check_log_level('INFO')) then
+!        write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+! 130    format(2X,A,1X,F10.3,1X,A)
+!     endif
+
+!     ! Finish
+
+!     return
+
+!   end subroutine min_search
+
 !****
 
-  subroutine prox_search (bp, md)
+  subroutine prox_search (bp, np, md_in, process_mode)
 
     class(bvp_t), target, intent(inout) :: bp
-    type(mode_t), intent(inout)         :: md(:)
+    type(numpar_t), intent(in)          :: np
+    type(mode_t), intent(in)            :: md_in(:)
+    interface
+       subroutine process_mode (md)
+         use gyre_mode
+         type(mode_t), intent(in) :: md
+       end subroutine process_mode
+    end interface
+    
+    type(discfunc_t)         :: df
+    complex(WP), allocatable :: omega_def(:)
+    integer                  :: c_beg
+    integer                  :: c_end
+    integer                  :: c_rate
+    integer                  :: i
+    type(ext_complex_t)      :: omega_a
+    type(ext_complex_t)      :: omega_b
+    integer                  :: n_iter
+    integer                  :: n_iter_def
+    type(ext_complex_t)      :: discrim_a
+    type(ext_complex_t)      :: discrim_b
+    type(ext_complex_t)      :: discrim_a_rev
+    type(ext_complex_t)      :: discrim_b_rev
+    complex(WP)              :: omega_root
+    type(mode_t)             :: md
 
-    integer                 :: n_md
-    integer                 :: i_part(MPI_SIZE+1)
-    integer                 :: c_beg
-    integer                 :: c_end
-    integer                 :: c_rate
-    integer                 :: i
-    complex(WP)             :: omega_a
-    complex(WP)             :: omega_b
-    $if($MPI)
-    class(model_t), pointer :: ml
-    integer                 :: p
-    $endif
+    ! Set up the discriminant function
 
-    ! Process each mode to find a proximate mode
+    df = discfunc_t(bp)
 
-    if(check_log_level('INFO')) then
+    ! Initialize the frequency deflation array
+
+    allocate(omega_def(0))
+
+    ! Process each initial mode to find a proximate mode
+
+    if (check_log_level('INFO')) then
 
        write(OUTPUT_UNIT, 100) 'Root Solving'
 100    format(A)
 
        write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
-110    format(4(2X,A6),3(2X,A24),2X,A6,2X,A7)
+110    format(4(2X,A8),3(2X,A24),2X,A6,2X,A7)
        
     endif
 
-    n_md = SIZE(md)
-
-    call partition_tasks(n_md, 1, i_part)
-
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    $if($MPI)
-    call barrier()
-    $endif
+    mode_loop : do i = 1, SIZE(md_in)
 
-    mode_loop : do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
+       ! Set up initial guesses
 
-       ! Initial guesses
+       omega_a = md_in(i)%omega*ext_complex_t(CMPLX(1._WP,  SQRT(EPSILON(0._WP)), KIND=WP))
+       omega_b = md_in(i)%omega*ext_complex_t(CMPLX(1._WP, -SQRT(EPSILON(0._WP)), KIND=WP))
 
-       omega_a = md(i)%omega*CMPLX(1._WP,  SQRT(EPSILON(0._WP)), WP)
-       omega_b = md(i)%omega*CMPLX(1._WP, -SQRT(EPSILON(0._WP)), WP)
+       discrim_a = df%eval(omega_a)
+       discrim_b = df%eval(omega_b)
 
-       ! Find the mode
+       ! If necessary, do a preliminary root find using the deflated
+       ! discriminant
 
-       md(i) = bp%mode([omega_a,omega_b], omega_def=md(:i-1)%omega)
+       if (np%deflate_roots) then
 
-       ! Report
+          n_iter_def = np%n_iter_max
 
-       if(check_log_level('INFO', MPI_RANK)) then
-          write(OUTPUT_UNIT, 120) md(i)%mp%l, md(i)%n_pg, md(i)%n_p, md(i)%n_g, md(i)%omega, real(md(i)%chi), md(i)%n_iter, md(i)%n
-120       format(4(2X,I6),3(2X,E24.16),2X,I6,2X,I7)
+          df%omega_def = omega_def
+
+          call df%narrow(omega_a, omega_b, ext_real_t(0._WP), n_iter=n_iter_def)
+
+          $ASSERT(n_iter_def <= np%n_iter_max,Too many deflation iterations)
+
+          deallocate(df%omega_def)
+
+          ! If necessary, reset omega_a and omega_b so they are not
+          ! coincident
+
+          if(omega_b == omega_a) then
+             omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
+          endif
+
+          call df%expand(omega_a, omega_b, ext_real_t(0._WP), discrim_a_rev, discrim_b_rev)
+
+       else
+
+          discrim_a_rev = discrim_a
+          discrim_b_rev = discrim_b
+
+          n_iter_def = 0
+
        endif
 
-    end do mode_loop
+       ! Find the discriminant root
 
-    $if($MPI)
-    call barrier()
-    $endif
+       n_iter = np%n_iter_max - n_iter_def
+
+       omega_root = cmplx(df%root(omega_a, omega_b, ext_real_t(0._WP), &
+                                  f_ez_a=discrim_a_rev, f_ez_b=discrim_b_rev, n_iter=n_iter))
+
+       n_iter = n_iter + n_iter_def
+
+       $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
+
+       ! Construct the mode
+
+       md = bp%mode(omega_root)
+
+       if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
+
+       md%n_iter = n_iter
+       md%chi = ABS(md%discrim)/MAX(ABS(discrim_a), ABS(discrim_b))
+
+       ! Process it
+
+       if (check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
+120       format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
+       endif
+
+       call process_mode(md)
+
+       ! Store the frequency in the deflation array
+
+       omega_def = [omega_def,md%omega]
+
+    end do mode_loop
 
     call SYSTEM_CLOCK(c_end)
 
@@ -324,20 +465,6 @@ contains
        write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
 130    format(2X,A,1X,F10.3,1X,A)
     endif
-
-    ! Broadcast data
-
-    $if($MPI)
-
-    ml => bp%model()
-
-    do p = 0, MPI_SIZE-1
-       do i = i_part(p+1), i_part(p+2)-1
-          call bcast(md(i), p, ml)
-       end do
-    enddo
-
-    $endif
 
     ! Finish
 
@@ -347,9 +474,9 @@ contains
 
 !****
 
-  subroutine find_brackets (bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+  subroutine find_root_brackets (df, omega, omega_a, omega_b, discrim_a, discrim_b)
 
-    class(bvp_t), target, intent(inout)        :: bp
+    type(discfunc_t), intent(inout)            :: df
     real(WP), intent(in)                       :: omega(:)
     real(WP), allocatable, intent(out)         :: omega_a(:)
     real(WP), allocatable, intent(out)         :: omega_b(:)
@@ -357,16 +484,11 @@ contains
     type(ext_real_t), allocatable, intent(out) :: discrim_b(:)
 
     integer          :: n_omega
-    integer          :: i_part(MPI_SIZE+1)
     integer          :: c_beg
     integer          :: c_end
     integer          :: c_rate
     integer          :: i
     type(ext_real_t) :: discrim(SIZE(omega))
-    $if($MPI)
-    integer          :: recvcounts(MPI_SIZE)
-    integer          :: displs(MPI_SIZE)
-    $endif
     integer          :: n_brack
     integer          :: i_brack(SIZE(omega))
 
@@ -379,37 +501,18 @@ contains
 
     n_omega = SIZE(omega)
 
-    call partition_tasks(n_omega, 1, i_part)
-
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    $if($MPI)
-    call barrier()
-    $endif
+    discrim_loop : do i = 1, n_omega
 
-    discrim_loop : do i = i_part(MPI_RANK+1),i_part(MPI_RANK+2)-1
+       discrim(i) = df%eval(ext_real_t(omega(i)))
 
-       discrim(i) = ext_real_t(bp%discrim(CMPLX(omega(i), KIND=WP)))
-
-       if(check_log_level('DEBUG', MPI_RANK)) then
+       if(check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
 110       format(2X,E24.16,2X,F19.16,2X,I7)
        endif
 
     end do discrim_loop
-
-    $if($MPI)
-
-    recvcounts = i_part(2:)-i_part(:MPI_SIZE)
-    displs = i_part(:MPI_SIZE)-1
-
-    call allgatherv(discrim, recvcounts, displs)
-
-    $endif
-
-    $if($MPI)
-    call barrier()
-    $endif
 
     call SYSTEM_CLOCK(c_end)
 
@@ -443,6 +546,87 @@ contains
 
     return
 
-  end subroutine find_brackets
+  end subroutine find_root_brackets
+
+!****
+
+  subroutine find_min_brackets (df, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
+
+    type(discfunc_t), intent(inout)            :: df
+    real(WP), intent(in)                       :: omega(:)
+    real(WP), allocatable, intent(out)         :: omega_a(:)
+    real(WP), allocatable, intent(out)         :: omega_b(:)
+    real(WP), allocatable, intent(out)         :: omega_c(:)
+    type(ext_real_t), allocatable, intent(out) :: discrim_a(:)
+    type(ext_real_t), allocatable, intent(out) :: discrim_b(:)
+    type(ext_real_t), allocatable, intent(out) :: discrim_c(:)
+
+    integer          :: n_omega
+    integer          :: c_beg
+    integer          :: c_end
+    integer          :: c_rate
+    integer          :: i
+    type(ext_real_t) :: discrim(SIZE(omega))
+    integer          :: n_brack
+    integer          :: i_brack(SIZE(omega))
+
+    ! Calculate the discriminant on the omega abscissa
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Root bracketing'
+100    format(A)
+    endif
+
+    n_omega = SIZE(omega)
+
+    call SYSTEM_CLOCK(c_beg, c_rate)
+
+    discrim_loop : do i = 1, n_omega
+
+       discrim(i) = abs(df%eval(ext_complex_t(CMPLX(omega(i), KIND=WP))))
+
+       if(check_log_level('DEBUG')) then
+          write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
+110       format(2X,E24.16,2X,F19.16,2X,I7)
+       endif
+
+    end do discrim_loop
+
+    call SYSTEM_CLOCK(c_end)
+
+    if(check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+120    format(2X,A,F10.3,1X,A/)
+    endif
+
+    ! Find minimum brackets
+
+    n_brack = 0
+
+    bracket_loop : do i = 2, n_omega-1
+
+       if(discrim(i) < discrim(i-1) .AND. &
+          discrim(i) < discrim(i+1)) then
+          n_brack = n_brack + 1
+          i_brack(n_brack) = i
+       end if
+
+    end do bracket_loop
+
+    ! Set up the bracket frequencies
+
+    omega_a = omega(i_brack(:n_brack)-1)
+    omega_b = omega(i_brack(:n_brack))
+    omega_c = omega(i_brack(:n_brack)+1)
+
+    discrim_a = discrim(i_brack(:n_brack)-1)
+    discrim_b = discrim(i_brack(:n_brack))
+    discrim_c = discrim(i_brack(:n_brack)+1)
+
+    ! Finish
+
+    return
+
+  end subroutine find_min_brackets
 
 end module gyre_search

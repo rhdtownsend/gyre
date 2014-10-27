@@ -41,9 +41,6 @@ module gyre_cocache
      integer               :: n_c
    contains
      private
-     $if ($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
      procedure, public :: lookup => lookup_
   end type cocache_t
 
@@ -95,27 +92,6 @@ contains
     return
 
   end function cocache_t_
-
-!****
-
-  $if ($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
-
-    class(cocache_t), intent(inout) :: this
-
-    ! Finalize the cocache_t
-
-    if(ALLOCATED(this%x)) deallocate(this%x)
-    if(ALLOCATED(this%c)) deallocate(this%c)
-
-    ! Finish
-
-    return
-
-  end subroutine final_
-
-  $endif
 
 !****
 

@@ -94,9 +94,6 @@ module gyre_evol_model
      real(WP)                    :: rho_c
    contains
      private
-     $if ($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
      procedure         :: set_sp_
      $PROC_DECL_GEN(m)
      $PROC_DECL_GEN(p)
@@ -645,37 +642,6 @@ contains
 
 !****
 
-  $if ($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
-
-    class(evol_model_t), intent(inout) :: this
-
-    integer :: j
-
-    ! Finalize the evol_model_t
-
-    call this%detach_cache()
-
-    do j = 1, N_J
-       if(this%sp_def(j)) then
-          call this%sp(j)%final()
-       endif
-    end do
-
-    deallocate(this%sp)
-    deallocate(this%sp_def)
-
-    ! Finish
-
-    return
-
-  end subroutine final_
-
-  $endif
-
-!****
-
   subroutine set_sp_ (this, x, y, deriv_type, i)
 
     class(evol_model_t), intent(inout) :: this
@@ -767,7 +733,7 @@ contains
 
     n = SIZE(N2)
 
-    N2_mask = [.TRUE.,N2(:n-2) > 0._WP .AND. N2(1:n-1) < 0._WP .AND. N2(2:n) > 0._WP,.TRUE.]
+    N2_mask = [.TRUE.,N2(1:n-2) > 0._WP .AND. N2(2:n-1) < 0._WP .AND. N2(3:n) > 0._WP,.TRUE.]
 
     sp_N2 = spline_t(PACK(r, N2_mask), PACK(N2, N2_mask), deriv_type, dy_dx_a=0._WP)
 
@@ -800,6 +766,8 @@ contains
     where (r == 0._WP)
        p_reg = MAXVAL(p_reg, MASK=r /= 0._WP)
     endwhere
+
+    $ASSERT(ALL(p_reg > 0._WP),Negative regularized pressure)
 
     ! Finish
 

@@ -32,11 +32,11 @@ module gyre_modepar
   ! Derived-type definitions
 
   type :: modepar_t
-     integer           :: l
-     integer           :: m
-     integer           :: X_n_pg_min
-     integer           :: X_n_pg_max
-     character(LEN=64) :: tag
+     integer       :: l
+     integer       :: m
+     integer       :: n_pg_min
+     integer       :: n_pg_max
+     character(64) :: tag
   end type modepar_t
 
   ! Interfaces
@@ -78,15 +78,15 @@ contains
   subroutine bcast_${RANK}_ (op, root_rank)
 
     type(modepar_t), intent(inout) :: op$ARRAY_SPEC($RANK)
-    integer, intent(in)           :: root_rank
+    integer, intent(in)            :: root_rank
 
     ! Broadcast the modepar_t
 
     call bcast(op%l, root_rank)
     call bcast(op%m, root_rank)
 
-    call bcast(op%X_n_pg_min, root_rank)
-    call bcast(op%X_n_pg_max, root_rank)
+    call bcast(op%n_pg_min, root_rank)
+    call bcast(op%n_pg_max, root_rank)
 
     ! Finish
 

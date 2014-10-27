@@ -39,15 +39,20 @@ module gyre_mode_funcs
 
   public :: xi_r
   public :: xi_h
-  public :: phip
-  public :: dphip_dx
-  public :: delS
-  public :: delL
-  public :: delp
-  public :: delT
-  public :: delrho
+  public :: eul_phi
+  public :: deul_phi
+  public :: lag_S
+  public :: lag_L
+  public :: eul_P
+  public :: lag_P
+  public :: eul_rho
+  public :: lag_rho
+  public :: eul_T
+  public :: lag_T
   public :: dE_dx
   public :: dW_dx
+  public :: F_j
+  public :: div_F_j
   public :: Yt_1
   public :: Yt_2
   public :: I_0
@@ -145,14 +150,14 @@ contains
 
 !****
 
-  function phip (ml, mp, omega, x, y)
+  function eul_phi (ml, mp, omega, x, y)
 
     class(model_t), intent(in)  :: ml
     type(modepar_t), intent(in) :: mp
     complex(WP), intent(in)     :: omega
     real(WP), intent(in)        :: x
     complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: phip
+    complex(WP)                 :: eul_phi
 
     $CHECK_BOUNDS(SIZE(y),6)
     
@@ -161,7 +166,7 @@ contains
 
     associate (c_1 => ml%c_1(x), l => mp%l)
 
-      phip = y(3)*x**l/c_1
+      eul_phi = y(3)*x**l/c_1
 
     end associate
 
@@ -169,37 +174,37 @@ contains
 
     return
 
-  end function phip
+  end function eul_phi
 
 !****
 
-  function dphip_dx (ml, mp, omega, x, y)
+  function deul_phi (ml, mp, omega, x, y)
 
     class(model_t), intent(in)  :: ml
     type(modepar_t), intent(in) :: mp
     complex(WP), intent(in)     :: omega
     real(WP), intent(in)        :: x
     complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: dphip_dx
+    complex(WP)                 :: deul_phi
 
     $CHECK_BOUNDS(SIZE(y),6)
     
-    ! Calculate the Eulerian gravity perturbation at x, in units of G
-    ! M_star / R_star**2
+    ! Calculate the Eulerian potential gradient (gravity) perturbation
+    ! at x, in units of G M_star / R_star**2
 
     associate (c_1 => ml%c_1(x), l => mp%l)
 
       if (l /= 1) then
 
          if (x /= 0._WP) then
-            dphip_dx = y(4)*x**(l-1)/c_1
+            deul_phi = y(4)*x**(l-1)/c_1
          else
-            dphip_dx = 0._WP
+            deul_phi = 0._WP
          end if
 
       else
 
-         dphip_dx = y(4)/c_1
+         deul_phi = y(4)/c_1
 
       end if
 
@@ -209,18 +214,18 @@ contains
 
     return
 
-  end function dphip_dx
+  end function deul_phi
 
 !****
 
-  function delS (ml, mp, omega, x, y)
+  function lag_S (ml, mp, omega, x, y)
 
     class(model_t), intent(in)  :: ml
     type(modepar_t), intent(in) :: mp
     complex(WP), intent(in)     :: omega
     real(WP), intent(in)        :: x
     complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: delS
+    complex(WP)                 :: lag_S
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -230,9 +235,9 @@ contains
     associate (l => mp%l)
 
       if (x /= 0._WP) then
-         delS = y(5)*x**(l-2)
+         lag_S = y(5)*x**(l-2)
       else
-         delS = 0._WP
+         lag_S = 0._WP
       endif
 
     end associate
@@ -241,18 +246,18 @@ contains
 
     return
 
-  end function delS
+  end function lag_S
 
 !****
 
-  function delL (ml, mp, omega, x, y)
+  function lag_L (ml, mp, omega, x, y)
 
     class(model_t), intent(in)  :: ml
     type(modepar_t), intent(in) :: mp
     complex(WP), intent(in)     :: omega
     real(WP), intent(in)        :: x
     complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: delL
+    complex(WP)                 :: lag_L
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -261,7 +266,7 @@ contains
 
     associate (l => mp%l)
 
-      delL = y(6)*x**(l+1)
+      lag_L = y(6)*x**(l+1)
 
     end associate
 
@@ -269,40 +274,72 @@ contains
 
     return
 
-  end function delL
+  end function lag_L
 
 !****
 
-  function delp (ml, mp, omega, x, y)
+  function eul_P (ml, mp, omega, x, y)
 
     class(model_t), intent(in)  :: ml
     type(modepar_t), intent(in) :: mp
     complex(WP), intent(in)     :: omega
     real(WP), intent(in)        :: x
     complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: delp
+    complex(WP)                 :: eul_P
+
+    $CHECK_BOUNDS(SIZE(y),6)
+
+    ! Calculate the Eulerian pressure perturbation at x, in units of
+    ! P
+
+    associate (V => ml%V(x))
+
+      if (x /= 0._WP) then
+         eul_P = lag_P(ml, mp, omega, x, y) + V*xi_r(ml, mp, omega, x, y)/x
+      else
+         eul_P = lag_P(ml, mp, omega, x, y)
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function eul_P
+
+!****
+
+  function lag_P (ml, mp, omega, x, y)
+
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: lag_P
 
     $CHECK_BOUNDS(SIZE(y),6)
 
     ! Calculate the Lagrangian pressure perturbation at x, in units of
-    ! p
+    ! P
 
     associate (V => ml%V(x), pi_c => ml%pi_c(), l => mp%l)
 
       if(l > 0) then
 
          if (x /= 0._WP) then
-            delp = V*(y(2) - y(1) - y(3))*x**(l-2)
+            lag_P = V*(y(2) - y(1) - y(3))*x**(l-2)
          else
-            delp = 0._WP
+            lag_P = 0._WP
          end if
 
       else
 
          if (x /= 0._WP) then
-            delp = V*(y(2) - y(1) - y(3))*x**(l-2)
+            lag_P = V*(y(2) - y(1) - y(3))*x**(l-2)
          else
-            delp = pi_c*(y(2) - y(1) - y(3))
+            lag_P = pi_c*(y(2) - y(1) - y(3))
          endif
 
       endif
@@ -313,18 +350,50 @@ contains
 
     return
 
-  end function delp
+  end function lag_P
 
 !****
 
-  function delrho (ml, mp, omega, x, y)
+  function eul_rho (ml, mp, omega, x, y)
 
     class(model_t), intent(in)  :: ml
     type(modepar_t), intent(in) :: mp
     complex(WP), intent(in)     :: omega
     real(WP), intent(in)        :: x
     complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: delrho
+    complex(WP)                 :: eul_rho
+
+    $CHECK_BOUNDS(SIZE(y),6)
+
+    ! Calculate the Eulerian density perturbation at x, in units of
+    ! rho
+
+    associate (V_g => ml%V(x)/ml%Gamma_1(x), As => ml%As(x))
+
+      if (x /= 0._WP) then
+         eul_rho = lag_rho(ml, mp, omega, x, y) + (V_g + As)*xi_r(ml, mp, omega, x, y)/x
+      else
+         eul_rho = lag_rho(ml, mp, omega, x, y)
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function eul_rho
+
+!****
+
+  function lag_rho (ml, mp, omega, x, y)
+
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: lag_rho
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -333,7 +402,7 @@ contains
 
     associate (Gamma_1 => ml%Gamma_1(x), delta => ml%delta(x))
 
-      delrho = delp(ml, mp, omega, x, y)/Gamma_1 - delta*delS(ml, mp, omega, x, y)
+      lag_rho = lag_P(ml, mp, omega, x, y)/Gamma_1 - delta*lag_S(ml, mp, omega, x, y)
 
     end associate
 
@@ -341,18 +410,50 @@ contains
 
     return
 
-  end function delrho
+  end function lag_rho
 
 !****
 
-  function delT (ml, mp, omega, x, y)
+  function eul_T (ml, mp, omega, x, y)
 
     class(model_t), intent(in)  :: ml
     type(modepar_t), intent(in) :: mp
     complex(WP), intent(in)     :: omega
     real(WP), intent(in)        :: x
     complex(WP), intent(in)     :: y(:)
-    complex(WP)                 :: delT
+    complex(WP)                 :: eul_T
+
+    $CHECK_BOUNDS(SIZE(y),6)
+
+    ! Calculate the Lagrangian temperature perturbation at x, in units
+    ! of T
+
+    associate (V => ml%V(x), nabla => ml%nabla(x), nabla_ad => ml%nabla_ad(x))
+      
+      if (x /= 0._WP) then
+         eul_T = lag_T(ml, mp, omega, x, y) + nabla*V*xi_r(ml, mp, omega, x, y)/x
+      else
+         eul_T = lag_T(ml, mp, omega, x, y)
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function eul_T
+
+!****
+
+  function lag_T (ml, mp, omega, x, y)
+
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    complex(WP)                 :: lag_T
 
     $CHECK_BOUNDS(SIZE(y),6)
 
@@ -361,7 +462,7 @@ contains
 
     associate (nabla_ad => ml%nabla_ad(x))
       
-      delT = nabla_ad*delp(ml, mp, omega, x, y) + delS(ml, mp, omega, x, y)
+      lag_T = nabla_ad*lag_P(ml, mp, omega, x, y) + lag_S(ml, mp, omega, x, y)
 
     end associate
 
@@ -369,7 +470,7 @@ contains
 
     return
 
-  end function delT
+  end function lag_T
 
 !****
 
@@ -402,6 +503,8 @@ contains
 
   function dW_dx (ml, mp, omega, x, y)
 
+    use gyre_evol_model
+
     class(model_t), intent(in)  :: ml
     type(modepar_t), intent(in) :: mp
     complex(WP), intent(in)     :: omega
@@ -409,15 +512,27 @@ contains
     complex(WP), intent(in)     :: y(:)
     real(WP)                    :: dW_dx
 
+    real(WP) :: t_dyn
+    real(WP) :: t_kh
+
     $CHECK_BOUNDS(SIZE(y),6)
 
     ! Calculate the differential work at x, in units of G
-    ! M_star**2/R_star t_dyn/t_KH = t_dyn L_star.  This expression is
-    ! based on eqn. 25.9 of [Unn1989]
+    ! M_star**2/R_star.  This expression is based on eqn. 25.9 of
+    ! [Unn1989]
+
+    select type (ml)
+    class is (evol_model_t)
+       t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
+    class default
+       t_dyn = 1._WP
+       t_kh = 1._WP
+    end select
 
     associate(c_thm => ml%c_thm(x))
 
-      dW_dx = -PI*AIMAG(CONJG(delT(ml, mp, omega, x, y))*delS(ml, mp, omega, x, y))*c_thm*x**2
+      dW_dx = -PI*AIMAG(CONJG(lag_T(ml, mp, omega, x, y))*lag_S(ml, mp, omega, x, y))*c_thm*x**2*t_dyn/t_kh
 
     end associate
 
@@ -426,6 +541,64 @@ contains
     return
 
   end function dW_dx
+
+!****
+
+  function F_j (ml, mp, omega, x, y)
+
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    real(WP)                    :: F_j
+    
+    ! Calculate the angle-averaged angular momentum flux due to Reynolds stress, in units of G
+    ! M_star**2/R_star**3.  This expression is based on eqn. 21 of [LeeSai1993]
+
+    associate (c_1 => ml%c_1(x), U => ml%U(x), m => mp%m, omega_c => ml%omega_c(x, mp%m, omega))
+
+      F_j = -ABS(omega_c**2)*x*U*AIMAG(CONJG(xi_r(ml, mp, omega, x, y))*m*xi_h(ml, mp, omega, x, y))/(32._WP*PI**2*c_1)
+
+    end associate
+
+  end function F_j
+
+!****
+
+  function div_F_j (ml, mp, omega, x, y)
+
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    complex(WP), intent(in)     :: omega
+    real(WP), intent(in)        :: x
+    complex(WP), intent(in)     :: y(:)
+    real(WP)                    :: div_F_j
+
+    real(WP) :: div_F_j_wave
+    real(WP) :: div_F_j_NA
+    
+    ! Calculate the divergence of the angle-averaged angular momentum
+    ! flux due to Reynolds stress, in units of G M_star**2/R_star**3.
+    ! This expression is based on eqns. 8-10 of [And1983]
+
+    associate (V => ml%V(x), Gamma_1 => ml%Gamma_1(x), As => ml%As(x), U => ml%U(x), c_1 => ml%c_1(x), &
+               m => mp%m, omega_c => ml%omega_c(x, mp%m, omega))
+
+      div_F_j_wave = REAL(omega_c)*AIMAG(omega_c)*m*(U/c_1)*(V/Gamma_1*c_1*REAL(omega_c)**2*ABS(xi_h(ml, mp, omega, x, y))**2 + &
+                                                             As/(c_1*REAL(omega_c)**2)*ABS(xi_r(ml, mp, omega, x, y))**2)/(16._WP*PI**2)
+
+      if (x /= 0._WP) then
+         div_F_j_NA = m*AIMAG(CONJG(lag_P(ml, mp, omega, x, y))*lag_rho(ml, mp, omega, x, y))*U*x**2/(32._WP*PI**2*c_1**2*V)
+      else
+         div_F_j_NA = 0._WP
+      endif
+
+      div_F_j = div_F_j_wave + div_F_j_NA
+
+    end associate
+
+  end function div_F_j
 
 !****
 

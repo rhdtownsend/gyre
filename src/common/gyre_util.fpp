@@ -28,6 +28,7 @@ module gyre_util
   use gyre_constants
   use gyre_model
   use gyre_evol_model
+  use gyre_scons_model
   use gyre_poly_model
   use gyre_hom_model
   use gyre_modepar
@@ -45,7 +46,7 @@ module gyre_util
 
   ! Module variables
 
-  character(LEN=64), save :: log_level_m
+  character(64), save :: log_level_m
 
   ! Interfaces
 
@@ -65,6 +66,11 @@ module gyre_util
      module procedure Integrate_c_
   end interface integrate
 
+  interface integral
+     module procedure integral_r_
+     module procedure Integral_c_
+  end interface integral
+
   ! Access specifiers
 
   private
@@ -81,14 +87,15 @@ module gyre_util
   public :: rjust
   public :: phase
   public :: integrate
+  public :: integral
 
 contains
 
   function form_header (header, underchar)
 
-    character(LEN=*), intent(in)           :: header
-    character(LEN=*), optional, intent(in) :: underchar
-    character(LEN=:), allocatable          :: form_header
+    character(*), intent(in)           :: header
+    character(*), optional, intent(in) :: underchar
+    character(:), allocatable          :: form_header
 
     ! Format the header string
 
@@ -125,7 +132,7 @@ contains
 
   subroutine set_log_level (log_level)
 
-    character(LEN=*), intent(in) :: log_level
+    character(*), intent(in) :: log_level
     
     ! Set the log level
 
@@ -149,7 +156,7 @@ contains
 
   function check_log_level (log_level, rank)
 
-    character(LEN=*), intent(in)  :: log_level
+    character(*), intent(in)      :: log_level
     integer, optional, intent(in) :: rank
     logical                       :: check_log_level
 
@@ -195,12 +202,12 @@ contains
 
   function freq_scale (ml, mp, op, x_o, freq_units)
 
-    class(model_t), intent(in)   :: ml
-    type(modepar_t), intent(in)  :: mp
-    type(oscpar_t), intent(in)   :: op
-    real(WP), intent(in)         :: x_o
-    character(LEN=*), intent(in) :: freq_units
-    real(WP)                     :: freq_scale
+    class(model_t), intent(in)  :: ml
+    type(modepar_t), intent(in) :: mp
+    type(oscpar_t), intent(in)  :: op
+    real(WP), intent(in)        :: x_o
+    character(*), intent(in)    :: freq_units
+    real(WP)                    :: freq_scale
 
     ! Calculate the scale factor to convert a dimensionless angular
     ! frequency to a dimensioned frequency
@@ -208,6 +215,8 @@ contains
     select type (ml)
     class is (evol_model_t)
        freq_scale = evol_freq_scale_(ml, mp, op, x_o, freq_units)
+    class is (scons_model_t)
+       freq_scale = scons_freq_scale_(ml, mp, op, x_o, freq_units)
     class is (poly_model_t)
        freq_scale = poly_freq_scale_(freq_units)
     class is (hom_model_t)
@@ -228,7 +237,7 @@ contains
       type(modepar_t), intent(in)     :: mp
       type(oscpar_t), intent(in)      :: op
       real(WP), intent(in)            :: x_o
-      character(LEN=*), intent(in)    :: freq_units
+      character(*), intent(in)        :: freq_units
       real(WP)                        :: freq_scale
 
       real(WP) :: omega_cutoff_lo
@@ -262,10 +271,50 @@ contains
 
     end function evol_freq_scale_
 
+    function scons_freq_scale_ (ml, mp, op, x_o, freq_units) result (freq_scale)
+
+      class(scons_model_t), intent(in) :: ml
+      type(modepar_t), intent(in)      :: mp
+      type(oscpar_t), intent(in)       :: op
+      real(WP), intent(in)             :: x_o
+      character(*), intent(in)         :: freq_units
+      real(WP)                         :: freq_scale
+
+      real(WP) :: omega_cutoff_lo
+      real(WP) :: omega_cutoff_hi
+
+      ! Calculate the scale factor to convert a dimensionless angular
+      ! frequency to a dimensioned frequency
+
+      select case(freq_units)
+      case('NONE')
+         freq_scale = 1._WP
+      case('HZ')
+         freq_scale = 1._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+      case('UHZ')
+         freq_scale = 1.E6_WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+      case('PER_DAY')
+         freq_scale = 86400._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+      case('ACOUSTIC_CUTOFF')
+         call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+         freq_scale = 1._WP/omega_cutoff_hi
+      case('GRAVITY_CUTOFF')
+         call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+         freq_scale = 1._WP/omega_cutoff_lo
+      case default
+         $ABORT(Invalid freq_units)
+      end select
+
+      ! Finish
+
+      return
+
+    end function scons_freq_scale_
+
     function poly_freq_scale_ (freq_units) result (freq_scale)
 
-      character(LEN=*), intent(in) :: freq_units
-      real(WP)                     :: freq_scale
+      character(*), intent(in) :: freq_units
+      real(WP)                 :: freq_scale
 
       ! Calculate the scale factor to convert a dimensionless angular
       ! frequency to a dimensioned frequency
@@ -285,8 +334,8 @@ contains
 
     function hom_freq_scale_ (freq_units) result (freq_scale)
 
-      character(LEN=*), intent(in) :: freq_units
-      real(WP)                     :: freq_scale
+      character(*), intent(in) :: freq_units
+      real(WP)                 :: freq_scale
 
       ! Calculate the scale factor to convert a dimensionless angular
       ! frequency to a dimensioned frequency
@@ -362,7 +411,7 @@ contains
    subroutine select_par_${INFIX}_ (par, tag, par_sel, last)
 
      type($PAR_TYPE), intent(in)               :: par(:)
-     character(LEN=*), intent(in)              :: tag
+     character(*), intent(in)                  :: tag
      type($PAR_TYPE), allocatable, intent(out) :: par_sel(:)
      logical, optional, intent(in)             :: last
 
@@ -421,14 +470,14 @@ contains
 
   function split_list (list, delim) result (elems)
 
-    character(LEN=*), intent(in)          :: list
-    character(LEN=1), intent(in)          :: delim
-    character(LEN=LEN(list)), allocatable :: elems(:)
+    character(*), intent(in)          :: list
+    character(1), intent(in)          :: delim
+    character(LEN(list)), allocatable :: elems(:)
 
-    character(LEN=LEN(list)) :: list_
-    integer                  :: d
-    integer                  :: n
-    integer                  :: j
+    character(LEN(list)) :: list_
+    integer              :: d
+    integer              :: n
+    integer              :: j
     
     ! Split the delimited list into an array of elements
  
@@ -484,9 +533,9 @@ contains
 
   function join_fmts (fmts, n) result (fmt)
     
-    character(LEN=*), intent(in)  :: fmts(:)
-    integer, intent(in)           :: n(:)
-    character(LEN=:), allocatable :: fmt
+    character(*), intent(in)  :: fmts(:)
+    integer, intent(in)       :: n(:)
+    character(:), allocatable :: fmt
 
     integer :: i
 
@@ -526,8 +575,8 @@ contains
 
   function sprint_ (i) result (a)
 
-    integer, intent(in)           :: i
-    character(LEN=:), allocatable :: a
+    integer, intent(in)       :: i
+    character(:), allocatable :: a
 
     integer :: n
 
@@ -543,7 +592,7 @@ contains
        n = 1
     endif
 
-    allocate(character(LEN=n)::a)
+    allocate(character(n)::a)
 
     ! Do the conversion
 
@@ -560,9 +609,9 @@ contains
 
   function rjust (a, n) result (a_just)
 
-    character(LEN=*), intent(in) :: a
-    integer, intent(in)          :: n
-    character(LEN=n)             :: a_just
+    character(*), intent(in) :: a
+    integer, intent(in)      :: n
+    character(n)             :: a_just
 
     ! Right-justify a in a field width of n
 
@@ -624,5 +673,44 @@ contains
 
   $INTEGRATE(r,real)
   $INTEGRATE(c,complex)
+
+!****
+
+  $define $INTEGRAL $sub
+
+  $local $INFIX $1
+  $local $TYPE $2
+
+  function integral_${INFIX}_ (x, y) result (int_y)
+
+    real(WP), intent(in)  :: x(:)
+    $TYPE(WP), intent(in) :: y(:)
+    $TYPE(WP)             :: int_y(SIZE(x))
+
+    integer :: n
+    integer :: i
+
+    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+    ! Calculate the integral of y(x) using trapezoidal quadrature
+
+    n = SIZE(x)
+
+    int_y(1) = 0._WP
+
+    int_loop : do i = 2, n
+       int_y(i) = int_y(i-1) + 0.5_WP*(y(i) + y(i-1))*(x(i) - x(i-1))
+    end do int_loop
+
+    ! Finish
+
+    return
+
+  end function integral_${INFIX}_
+
+  $endsub
+
+  $INTEGRAL(r,real)
+  $INTEGRAL(c,complex)
 
 end module gyre_util

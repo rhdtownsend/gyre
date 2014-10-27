@@ -32,12 +32,12 @@ module gyre_scanpar
   ! Derived-type definitions
 
   type :: scanpar_t
-     real(WP)            :: freq_min
-     real(WP)            :: freq_max
-     integer             :: n_freq
-     character(LEN=64)   :: grid_type
-     character(LEN=64)   :: freq_units
-     character(LEN=2048) :: tag_list
+     real(WP)        :: freq_min
+     real(WP)        :: freq_max
+     integer         :: n_freq
+     character(64)   :: grid_type
+     character(64)   :: freq_units
+     character(2048) :: tag_list
   end type scanpar_t
 
   ! Interfaces

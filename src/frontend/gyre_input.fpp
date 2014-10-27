@@ -31,6 +31,7 @@ module gyre_input
   use gyre_numpar
   use gyre_gridpar
   use gyre_scanpar
+  use gyre_outpar
 
   use ISO_FORTRAN_ENV
 
@@ -51,12 +52,13 @@ module gyre_input
   public :: read_scanpar
   public :: read_shoot_gridpar
   public :: read_recon_gridpar
+  public :: read_outpar
 
 contains
 
   subroutine parse_args (filename)
 
-    character(LEN=:), allocatable, intent(out) :: filename
+    character(:), allocatable, intent(out) :: filename
 
     integer :: n
     integer :: length
@@ -68,7 +70,7 @@ contains
     $ASSERT(n == 1,Invalid number of arguments)
 
     call GET_COMMAND_ARGUMENT(1, LENGTH=length)
-    allocate(character(LEN=length) :: filename)
+    allocate(character(length) :: filename)
 
     call GET_COMMAND_ARGUMENT(1, VALUE=filename)
 
@@ -80,36 +82,11 @@ contains
 
 !****
 
-  subroutine read_constants (unit)
-
-    integer, intent(in) :: unit
-
-    namelist /constants/ G_GRAVITY, C_LIGHT, A_RADIATION, &
-                         M_SUN, R_SUN, L_SUN
-
-    ! Read constants
-
-    rewind(unit)
-    read(unit, NML=constants, END=900)
-
-    ! Finish
-
-    return
-
-    ! Jump-in point for end-of-file
-
-900 continue
-
-    $ABORT(No &constants namelist in input file)
-
-  end subroutine read_constants
-
-!****
-
   subroutine read_model (unit, x_bc, ml)
 
     use gyre_model
     use gyre_evol_model
+    use gyre_scons_model
     use gyre_poly_model
     use gyre_hom_model
     use gyre_mesa_file
@@ -117,6 +94,7 @@ contains
     use gyre_losc_file
     use gyre_fgong_file
     use gyre_famdl_file
+    use gyre_amdl_file
     $if ($HDF5)
     use gyre_b3_file
     use gyre_gsm_file
@@ -127,19 +105,36 @@ contains
     real(WP), allocatable, intent(out)   :: x_bc(:)
     class(model_t), pointer, intent(out) :: ml
 
-    character(LEN=256)          :: model_type
-    character(LEN=256)          :: file_format
-    character(LEN=256)          :: data_format
-    character(LEN=256)          :: deriv_type
-    character(LEN=FILENAME_LEN) :: file
-    real(WP)                    :: Gamma_1
-    real(WP)                    :: Omega_rot
-    logical                     :: regularize
-    type(evol_model_t)          :: ec
-    type(poly_model_t)          :: pc
-    type(hom_model_t)           :: hc
+    integer                 :: n_ml
+    character(256)          :: model_type
+    character(256)          :: file_format
+    character(256)          :: data_format
+    character(256)          :: deriv_type
+    character(FILENAME_LEN) :: file
+    real(WP)                :: Gamma_1
+    real(WP)                :: Omega_rot
+    logical                 :: regularize
+    type(evol_model_t)      :: ec
+    type(scons_model_t)     :: sc
+    type(poly_model_t)      :: pc
+    type(hom_model_t)       :: hc
 
     namelist /model/ model_type, file_format, data_format, deriv_type, file, Gamma_1, Omega_rot, regularize
+
+    ! Count the number of model namelists
+
+    rewind(unit)
+
+    n_ml = 0
+
+    count_loop : do
+       read(unit, NML=model, END=100)
+       n_ml = n_ml + 1
+    end do count_loop
+
+100 continue
+
+    $ASSERT(n_ml == 1,Input file should contain exactly one &model namelist)
 
     ! Read model parameters
 
@@ -155,7 +150,7 @@ contains
     Omega_rot = 0._WP
 
     rewind(unit)
-    read(unit, NML=model, END=900)
+    read(unit, NML=model)
 
     ! Read/initialize the model
 
@@ -185,11 +180,26 @@ contains
           call read_fgong_model(file, deriv_type, data_format, regularize, ec, x=x_bc) 
        case ('FAMDL')
           call read_famdl_model(file, deriv_type, data_format, regularize, ec, x=x_bc)
+       case ('AMDL')
+          call read_amdl_model(file, deriv_type, regularize, ec, x=x_bc)
        case default
           $ABORT(Invalid file_format)
        end select
 
        allocate(ml, SOURCE=ec)
+
+    case ('SCONS')
+
+       select case (file_format)
+       case ('MESA')
+          call read_mesa_model(file, sc, x=x_bc)
+       case ('FGONG')
+          call read_fgong_model(file, data_format, sc, x=x_bc)
+       case default
+          $ABORT(Invalid file_format)
+       end select
+
+       allocate(ml, SOURCE=sc)
 
     case ('POLY')
 
@@ -217,13 +227,44 @@ contains
 
     return
 
-    ! Jump-in point for end-of-file
-
-900 continue
-
-    $ABORT(No &model namelist in input file)
-
   end subroutine read_model
+
+!****
+
+  subroutine read_constants (unit)
+
+    integer, intent(in) :: unit
+
+    integer :: n_cn
+
+    namelist /constants/ G_GRAVITY, C_LIGHT, A_RADIATION, &
+                         M_SUN, R_SUN, L_SUN
+
+    ! Count the number of constants namelists
+
+    rewind(unit)
+
+    n_cn = 0
+
+    count_loop : do
+       read(unit, NML=constants, END=100)
+       n_cn = n_cn + 1
+    end do count_loop
+
+100 continue
+
+    $ASSERT(n_cn == 1,Input file should contain exactly one &constants namelist)
+
+    ! Read constants
+
+    rewind(unit)
+    read(unit, NML=constants)
+
+    ! Finish
+
+    return
+
+  end subroutine read_constants
 
 !****
 
@@ -232,15 +273,15 @@ contains
     integer, intent(in)                       :: unit
     type(modepar_t), allocatable, intent(out) :: mp(:)
 
-    integer           :: n_mp
-    integer           :: i
-    integer           :: l
-    integer           :: m
-    integer           :: X_n_pg_min
-    integer           :: X_n_pg_max
-    character(LEN=64) :: tag
+    integer       :: n_mp
+    integer       :: i
+    integer       :: l
+    integer       :: m
+    integer       :: n_pg_min
+    integer       :: n_pg_max
+    character(64) :: tag
 
-    namelist /mode/ l, m, X_n_pg_min, X_n_pg_max, tag
+    namelist /mode/ l, m, n_pg_min, n_pg_max, tag
 
     ! Count the number of mode namelists
 
@@ -266,8 +307,8 @@ contains
        l = 0
        m = 0
 
-       X_n_pg_min = -HUGE(0)
-       X_n_pg_max = HUGE(0)
+       n_pg_min = -HUGE(0)
+       n_pg_max = HUGE(0)
 
        tag = ''
 
@@ -275,7 +316,7 @@ contains
 
        ! Initialize the modepar
 
-       mp(i) = modepar_t(l=l, m=m, X_n_pg_min=X_n_pg_min, X_n_pg_max=X_n_pg_max, tag=tag)
+       mp(i) = modepar_t(l=l, m=m, n_pg_min=n_pg_min, n_pg_max=n_pg_max, tag=tag)
 
     end do read_loop
 
@@ -292,16 +333,17 @@ contains
     integer, intent(in)                      :: unit
     type(oscpar_t), allocatable, intent(out) :: op(:)
 
-    integer           :: n_op
-    integer           :: i
-    character(LEN=64) :: variables_type
-    character(LEN=64) :: outer_bound_type
-    character(LEN=64) :: inertia_norm_type
-    character(LEN=64) :: tag_list
-    real(WP)          :: x_ref
+    integer         :: n_op
+    integer         :: i
+    logical         :: reduce_order
+    character(64)   :: variables_type
+    character(64)   :: outer_bound_type
+    character(64)   :: inertia_norm_type
+    character(2048) :: tag_list
+    real(WP)        :: x_ref
 
     namelist /osc/ x_ref, outer_bound_type, variables_type, &
-         inertia_norm_type, tag_list, x_ref
+         inertia_norm_type, tag_list, reduce_order
 
     ! Count the number of osc namelists
 
@@ -324,19 +366,23 @@ contains
 
     read_loop : do i = 1,n_op
 
+       x_ref = HUGE(0._WP)
+
        variables_type = 'DZIEM'
        outer_bound_type = 'ZERO'
        inertia_norm_type = 'BOTH'
        tag_list = ''
 
-       x_ref = HUGE(0._WP)
+       reduce_order = .TRUE.
 
        read(unit, NML=osc)
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(variables_type=variables_type, outer_bound_type=outer_bound_type, &
-                        inertia_norm_type=inertia_norm_type, tag_list=tag_list, x_ref=x_ref)
+       op(i) = oscpar_t(x_ref=x_ref, &
+                        variables_type=variables_type, outer_bound_type=outer_bound_type, &
+                        inertia_norm_type=inertia_norm_type, tag_list=tag_list, &
+                        reduce_order=reduce_order)
 
     end do read_loop
 
@@ -353,18 +399,18 @@ contains
     integer, intent(in)                      :: unit
     type(numpar_t), allocatable, intent(out) :: np(:)
 
-    integer             :: n_np
-    integer             :: n_iter_max
-    real(WP)            :: theta_ad
-    logical             :: reduce_order
-    logical             :: use_banded
-    logical             :: use_trad_approx
-    character(LEN=64)   :: ivp_solver_type
-    character(LEN=2048) :: tag_list
-    integer             :: i
+    integer         :: n_np
+    integer         :: i
+    integer         :: n_iter_max
+    logical         :: use_banded
+    logical         :: use_trad_approx
+    logical         :: deflate_roots
+    character(64)   :: ivp_solver_type
+    character(2048) :: tag_list
 
-    namelist /num/ n_iter_max, theta_ad, &
-         reduce_order, use_banded, use_trad_approx, ivp_solver_type, tag_list
+    namelist /num/ n_iter_max, &
+         use_banded, use_trad_approx, deflate_roots, &
+         ivp_solver_type, tag_list
 
     ! Count the number of num namelists
 
@@ -388,11 +434,10 @@ contains
     read_loop : do i = 1,n_np
 
        n_iter_max = 50
-       theta_ad = 0._WP
 
-       reduce_order = .TRUE.
        use_banded = .FALSE.
        use_trad_approx = .FALSE.
+       deflate_roots = .TRUE.
 
        ivp_solver_type = 'MAGNUS_GL2'
        tag_list = ''
@@ -401,9 +446,10 @@ contains
 
        ! Initialize the numpar
 
-       np(i) = numpar_t(n_iter_max=n_iter_max, theta_ad=theta_ad, &
-                        reduce_order=reduce_order, use_banded=use_banded, use_trad_approx=use_trad_approx, &
-                       ivp_solver_type=ivp_solver_type, tag_list=tag_list)
+       np(i) = numpar_t(n_iter_max=n_iter_max, &
+                        use_banded=use_banded, &
+                        use_trad_approx=use_trad_approx, deflate_roots=deflate_roots, &
+                        ivp_solver_type=ivp_solver_type, tag_list=tag_list)
 
     end do read_loop
 
@@ -424,18 +470,19 @@ contains
     integer, intent(in)                       :: unit
     type(gridpar_t), allocatable, intent(out) :: gp(:)
 
-    integer                     :: n_gp
-    real(WP)                    :: alpha_osc
-    real(WP)                    :: alpha_exp
-    real(WP)                    :: alpha_thm
-    real(WP)                    :: s
-    integer                     :: n
-    character(LEN=FILENAME_LEN) :: file
-    character(LEN=64)           :: op_type
-    character(LEN=2048)         :: tag_list
-    integer                     :: i
+    integer                 :: n_gp
+    integer                 :: i
+    real(WP)                :: alpha_osc
+    real(WP)                :: alpha_exp
+    real(WP)                :: alpha_thm
+    real(WP)                :: alpha_str
+    real(WP)                :: s
+    integer                 :: n
+    character(FILENAME_LEN) :: file
+    character(64)           :: op_type
+    character(2048)         :: tag_list
 
-    namelist /${NAME}_grid/ alpha_osc, alpha_exp, alpha_thm, s, n, file, op_type, tag_list
+    namelist /${NAME}_grid/ alpha_osc, alpha_exp, alpha_thm, alpha_str, s, n, file, op_type, tag_list
 
     ! Count the number of grid namelists
 
@@ -456,11 +503,12 @@ contains
 
     allocate(gp(n_gp))
 
-    read_loop : do i = 1,n_gp
+    read_loop : do i = 1, n_gp
 
        alpha_osc = 0._WP
        alpha_exp = 0._WP
        alpha_thm = 0._WP
+       alpha_str = 0._WP
 
        s = 0._WP
 
@@ -475,7 +523,7 @@ contains
 
        ! Initialize the gridpar
 
-       gp(i) = gridpar_t(alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, &
+       gp(i) = gridpar_t(alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, alpha_str=alpha_str, &
                          omega_a=0._WP, omega_b=0._WP, &
                          s=s, n=n, file=file, op_type=op_type, tag_list=tag_list)
 
@@ -499,14 +547,14 @@ contains
     integer, intent(in)                       :: unit
     type(scanpar_t), allocatable, intent(out) :: sp(:)
 
-    integer             :: n_sp
-    integer             :: i
-    real(WP)            :: freq_min
-    real(WP)            :: freq_max
-    integer             :: n_freq
-    character(LEN=64)   :: freq_units
-    character(LEN=64)   :: grid_type
-    character(LEN=2048) :: tag_list
+    integer         :: n_sp
+    integer         :: i
+    real(WP)        :: freq_min
+    real(WP)        :: freq_max
+    integer         :: n_freq
+    character(64)   :: freq_units
+    character(64)   :: grid_type
+    character(2048) :: tag_list
 
     namelist /scan/ freq_min, freq_max, n_freq, freq_units, grid_type, tag_list
 
@@ -529,7 +577,7 @@ contains
 
     allocate(sp(n_sp))
 
-    read_loop : do i = 1,n_sp
+    read_loop : do i = 1, n_sp
 
        freq_min = 1._WP
        freq_max = 10._WP
@@ -553,5 +601,72 @@ contains
     return
 
   end subroutine read_scanpar
+
+!****
+
+  subroutine read_outpar (unit, up)
+
+    integer, intent(in)         :: unit
+    type(outpar_t), intent(out) :: up
+
+    integer                 :: n_up
+    character(256)          :: freq_units
+    character(FILENAME_LEN) :: summary_file
+    character(256)          :: summary_file_format
+    character(2048)         :: summary_item_list
+    character(FILENAME_LEN) :: mode_prefix
+    character(FILENAME_LEN) :: mode_template
+    character(256)          :: mode_file_format
+    character(2048)         :: mode_item_list
+    logical                 :: prune_modes
+
+    namelist /output/ freq_units, summary_file, summary_file_format, summary_item_list, &
+                      mode_prefix, mode_template, mode_file_format, mode_item_list, prune_modes
+
+    ! Count the number of output namelists
+
+    rewind(unit)
+
+    n_up = 0
+
+    count_loop : do
+       read(unit, NML=output, END=100)
+       n_up = n_up + 1
+    end do count_loop
+
+100 continue
+
+    $ASSERT(n_up == 1,Input file should contain exactly one &output namelist)
+
+    ! Read output parameters
+
+    freq_units = 'NONE'
+
+    summary_file = ''
+    summary_file_format = 'HDF'
+    summary_item_list = 'l,n_pg,omega,freq'
+    
+    mode_prefix = ''
+    mode_template = ''
+    mode_file_format = 'HDF'
+    mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
+
+    prune_modes = .FALSE.
+
+    rewind(unit)
+    read(unit, NML=output)
+
+    ! Initialize the outpar
+
+    up = outpar_t(freq_units=freq_units, &
+                  summary_file=summary_file, summary_file_format=summary_file_format, summary_item_list=summary_item_list, &
+                  mode_prefix=mode_prefix, mode_template=mode_template, mode_file_format=mode_file_format, mode_item_list=mode_item_list, &
+                  prune_modes=prune_modes)
+
+    ! Finish
+
+    return
+
+  end subroutine read_outpar
 
 end module gyre_input

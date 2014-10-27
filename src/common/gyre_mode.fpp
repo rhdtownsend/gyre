@@ -16,6 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_memory.inc'
 
 module gyre_mode
 
@@ -26,7 +27,7 @@ module gyre_mode
   use core_parallel
 
   use gyre_model
-  $if($MPI)
+  $if ($MPI)
   use gyre_model_mpi
   $endif
   use gyre_ext_arith
@@ -48,6 +49,7 @@ module gyre_mode
      class(model_t), pointer  :: ml => null()
      type(modepar_t)          :: mp
      type(oscpar_t)           :: op
+     type(ext_complex_t)      :: discrim
      type(ext_real_t)         :: chi
      real(WP), allocatable    :: x(:)
      complex(WP), allocatable :: y(:,:)
@@ -59,43 +61,48 @@ module gyre_mode
      integer                  :: n_g
      integer                  :: n
      integer                  :: n_iter
+     logical                  :: pruned
    contains
      private
-     $if($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
+     procedure, public :: prune => prune_
      procedure, public :: freq => freq_
      procedure, public :: xi_r => xi_r_
      procedure, public :: xi_h => xi_h_
-     procedure, public :: phip => phip_
-     procedure, public :: dphip_dx => dphip_dx_
-     procedure, public :: delS => delS_
-     procedure, public :: delL => delL_
-     procedure, public :: delp => delp_
-     procedure, public :: delrho => delrho_
-     procedure, public :: delT => delT_
+     procedure, public :: eul_phi => eul_phi_
+     procedure, public :: deul_phi => deul_phi_
+     procedure, public :: lag_S => lag_S_
+     procedure, public :: lag_L => lag_L_
+     procedure, public :: eul_P => eul_P_
+     procedure, public :: lag_P => lag_P_
+     procedure, public :: eul_rho => eul_rho_
+     procedure, public :: lag_rho => lag_rho_
+     procedure, public :: eul_T => eul_T_
+     procedure, public :: lag_T => lag_T_
      procedure, public :: dE_dx => dE_dx_
      procedure, public :: dW_dx => dW_dx_
+     procedure, public :: F_j => F_j_
+     procedure, public :: div_F_j => div_F_j_
      procedure, public :: Yt_1 => Yt_1_
      procedure, public :: Yt_2 => Yt_2_
      procedure, public :: I_0 => I_0_
      procedure, public :: I_1 => I_1_
      procedure, public :: xi_r_ref => xi_r_ref_
      procedure, public :: xi_h_ref => xi_h_ref_
-     procedure, public :: phip_ref => phip_ref_
-     procedure, public :: dphip_dx_ref => dphip_dx_ref_
-     procedure, public :: delT_eff => delT_eff_
-     procedure, public :: delg_eff => delg_eff_
+     procedure, public :: eul_phi_ref => eul_phi_ref_
+     procedure, public :: deul_phi_ref => deul_phi_ref_
+     procedure, public :: lag_T_eff => lag_T_eff_
+     procedure, public :: lag_g_eff => lag_g_eff_
      procedure, public :: E => E_
      procedure, public :: E_norm => E_norm_
      procedure, public :: W => W_
      procedure, public :: K => K_
      procedure, public :: beta => beta_
-     procedure, public :: omega_im => omega_im_
+     procedure, public :: omega_int => omega_int_
+     procedure, public :: eta => eta_
      procedure, public :: prop_type => prop_type_
      procedure         :: classify_
-     procedure, public :: delS_en => delS_en_
-     procedure, public :: delL_rd => delL_rd_
+     procedure, public :: lag_S_en => lag_S_en_
+     procedure, public :: lag_L_rd => lag_L_rd_
   end type mode_t
 
   ! Interfaces
@@ -103,6 +110,10 @@ module gyre_mode
   interface mode_t
      module procedure mode_t_
   end interface mode_t
+
+  interface reallocate
+     module procedure reallocate_1_
+  end interface reallocate
 
   $if ($MPI)
   interface bcast
@@ -115,6 +126,7 @@ module gyre_mode
   private
 
   public :: mode_t
+  public :: reallocate
   $if($MPI)
   public :: bcast
   $endif
@@ -123,18 +135,17 @@ module gyre_mode
 
 contains
 
-  function mode_t_ (ml, mp, op, omega, x, y, x_ref, y_ref, chi, n_iter) result (md)
+  function mode_t_ (ml, mp, op, omega, discrim, x, y, x_ref, y_ref) result (md)
 
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
     type(oscpar_t), intent(in)          :: op
     complex(WP), intent(in)             :: omega
+    type(ext_complex_t), intent(in)     :: discrim
     real(WP), intent(in)                :: x(:)
     complex(WP), intent(in)             :: y(:,:)
     real(WP), intent(in)                :: x_ref
     complex(WP), intent(in)             :: y_ref(:)
-    type(ext_real_t), intent(in)        :: chi
-    integer, intent(in)                 :: n_iter
     type(mode_t)                        :: md
 
     real(WP)    :: phase
@@ -153,8 +164,6 @@ contains
     md%mp = mp
     md%op = op
 
-    md%chi = chi
-
     md%x = x
     md%y = y
 
@@ -162,15 +171,17 @@ contains
     md%y_ref = y_ref
 
     md%omega = omega
+    md%discrim = discrim
 
     md%n = SIZE(md%x)
-    md%n_iter = n_iter
+
+    md%pruned = .FALSE.
 
     ! Normalize by the mode inertia, and so that y_ref(1) is real
 
     phase = ATAN2(AIMAG(md%y_ref(1)), REAL(md%y_ref(1)))
 
-    norm_fac = 1._WP/SQRT(md%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+    norm_fac = 1._WP/SQRT(integrate(md%x, md%dE_dx()))*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
     md%y = norm_fac*md%y
     md%y_ref = norm_fac*md%y_ref
@@ -191,22 +202,30 @@ contains
 
 !****
 
-  $if($GFORTRAN_PR57922)
+  $REALLOCATE(type(mode_t),1)
 
-  subroutine final_ (this)
+!****
+
+  subroutine prune_ (this)
 
     class(mode_t), intent(inout) :: this
 
-    ! Finalize the mode_t
+    ! Prune the mode_t
 
-    deallocate(this%x)
-    deallocate(this%y)
+    if (.NOT. this%pruned) then
+
+       deallocate(this%x)
+       deallocate(this%y)
+
+       this%pruned = .TRUE.
+
+    endif
 
     ! Finish
 
-  end subroutine final_
+    return
 
-  $endif
+  end subroutine prune_
 
 !****
 
@@ -240,6 +259,8 @@ contains
 
     integer :: k
     
+    $ASSERT(.NOT. this%pruned,Cannot calculate ${NAME} from pruned solution)
+    
     ! Calculate $NAME on the x grid
 
     !$OMP PARALLEL DO
@@ -257,15 +278,20 @@ contains
 
   $CALC_GRID(xi_r,complex)
   $CALC_GRID(xi_h,complex)
-  $CALC_GRID(phip,complex)
-  $CALC_GRID(dphip_dx,complex)
-  $CALC_GRID(delS,complex)
-  $CALC_GRID(delL,complex)
-  $CALC_GRID(delp,complex)
-  $CALC_GRID(delrho,complex)
-  $CALC_GRID(delT,complex)
+  $CALC_GRID(eul_phi,complex)
+  $CALC_GRID(deul_phi,complex)
+  $CALC_GRID(lag_S,complex)
+  $CALC_GRID(lag_L,complex)
+  $CALC_GRID(lag_P,complex)
+  $CALC_GRID(eul_P,complex)
+  $CALC_GRID(eul_rho,complex)
+  $CALC_GRID(lag_rho,complex)
+  $CALC_GRID(eul_T,complex)
+  $CALC_GRID(lag_T,complex)
   $CALC_GRID(dE_dx,real)
   $CALC_GRID(dW_dx,real)
+  $CALC_GRID(F_j,real)
+  $CALC_GRID(div_F_j,real)
   $CALC_GRID(Yt_1,complex)
   $CALC_GRID(Yt_2,complex)
   $CALC_GRID(I_0,complex)
@@ -283,7 +309,7 @@ contains
     ! Calculate the non-adiabatic f_T parameter. This is expression is
     ! based on eqn. 5 of [Dup2003]
 
-    C_T = this%delT_eff()/this%xi_r_ref()
+    C_T = this%lag_T_eff()/this%xi_r_ref()
 
     f_T = ABS(C_T)
 
@@ -305,7 +331,7 @@ contains
     ! Calculate the non-adiabatic f_g parameter. This is expression is
     ! based on eqn. 6 of [Dup2003]
 
-    C_g = this%delg_eff()/this%xi_r_ref()
+    C_g = this%lag_g_eff()/this%xi_r_ref()
 
     f_g = -ABS(C_g)
 
@@ -327,7 +353,7 @@ contains
     ! Calculate the non-adiabatic psi_T parameter, in radians. This is
     ! expression is based on eqn. 5 of [Dup2003]
 
-    C_T = this%delT_eff()/this%xi_r_ref()
+    C_T = this%lag_T_eff()/this%xi_r_ref()
 
     psi_T = ATAN2(AIMAG(C_T), REAL(C_T))
 
@@ -365,36 +391,36 @@ contains
 
   $CALC_REF(xi_r,complex)
   $CALC_REF(xi_h,complex)
-  $CALC_REF(phip,complex)
-  $CALC_REF(dphip_dx,complex)
+  $CALC_REF(eul_phi,complex)
+  $CALC_REF(deul_phi,complex)
 
 !****
 
-  function delT_eff_ (this) result (delT_eff)
+  function lag_T_eff_ (this) result (lag_T_eff)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: delT_eff
+    complex(WP)               :: lag_T_eff
 
     ! Calculate the effective temperature perturbation at x_ref
     ! (assumed to correspond to the photosphere), in units of
     ! T_eff. This expression is based on the standard definition of
     ! effective temperature
 
-    delT_eff = 0.25_WP*(delL(this%ml, this%mp, this%omega, this%x_ref, this%y_ref) - &
+    lag_T_eff = 0.25_WP*(lag_L(this%ml, this%mp, this%omega, this%x_ref, this%y_ref) - &
                   2._WP*xi_r(this%ml, this%mp, this%omega, this%x_ref, this%y_ref))
 
     ! Finish
 
     return
 
-  end function delT_eff_
+  end function lag_T_eff_
 
 !****
 
-  function delg_eff_ (this) result (delg_eff)
+  function lag_g_eff_ (this) result (lag_g_eff)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: delg_eff
+    complex(WP)               :: lag_g_eff
 
     ! Calculate the effective gravity perturbation at x_ref (assumed
     ! to correspond to the photosphere), in units of the gravity. This
@@ -403,7 +429,7 @@ contains
     associate (c_1 => this%ml%c_1(this%x_ref), U => this%ml%U(this%x_ref), &
                x => this%x_ref)
 
-      delg_eff = (c_1/x)*this%dphip_dx_ref() + (U - (2._WP + c_1*this%omega**2))*this%xi_r_ref()/x
+      lag_g_eff = (c_1/x)*this%deul_phi_ref() + (U - (2._WP + c_1*this%omega**2))*this%xi_r_ref()/x
 
     end associate
 
@@ -411,7 +437,7 @@ contains
 
     return
 
-  end function delg_eff_
+  end function lag_g_eff_
 
 !****
 
@@ -421,9 +447,10 @@ contains
     real(WP)                  :: E
     
     ! Calculate the total mode inertia, in units of M_star
-    ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010]
+    ! R_star**2. Due to the mode normalization enforced in mode_t_,
+    ! this is always unity
 
-    E = integrate(this%x, this%dE_dx())
+    E = 1._WP
 
     ! Finish
 
@@ -556,36 +583,74 @@ contains
 
 !****
 
-  function omega_im_ (this) result (omega_im)
+  function omega_int_ (this) result (omega_int)
 
-    use gyre_evol_model
+    class(mode_t), intent(in) :: this
+    complex(WP)               :: omega_int
 
-    class(mode_t), intent(in)     :: this
-    real(WP)                      :: omega_im
+    real(WP)    :: x4_V(this%n)
+    complex(WP) :: W_th
+    complex(WP) :: W_re
+    complex(WP) :: W_gr
+    complex(WP) :: W_xi
 
-    real(WP) :: t_dyn
-    real(WP) :: t_kh
+    ! Calculate the dimensionless frequency from the integral
+    ! expression in eqn. (1.71) of [Dup2003]
 
-    ! Estimate the imaginary part of omega by integrating the work
-    ! function
+    associate(x => this%x, &
+              V => this%ml%V(this%x), V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
+              As => this%ml%As(this%x), U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
+              xi_r => this%xi_r(), eul_phi => this%eul_phi(), &
+              lag_rho => this%lag_rho(), eul_rho => this%eul_rho(), &
+              lag_P => this%lag_P())
 
-    select type (ml => This%ml)
-    class is (evol_model_t)
-       t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
-       t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
-    class default
-       t_dyn = 1._WP
-       t_kh = 1._WP
-    end select
+      where (x /= 0._WP)
+         x4_V = x**4/V
+      elsewhere
+         x4_V = 0._WP
+      endwhere
 
-    omega_im = -t_dyn*this%W()/(TWOPI*t_kh*REAL(this%omega)*this%E())
+      ! Work-function-like terms
+
+      W_th = integrate(x, CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)))
+
+      W_re = integrate(x, 2._WP*REAL(lag_rho*CONJG(xi_r)*(x/c_1)*(x**2*U/c_1)))
+
+      W_gr = integrate(x, CONJG(eul_rho)*eul_phi*(x**2*U/c_1))
+
+      W_xi = integrate(x, -ABS(xi_r)**2*(x/c_1)*(x*U*(-V_g-As)/c_1))
+
+    end associate
+    
+    omega_int = SQRT((W_th + W_re + W_gr + W_xi)/this%E())
 
     ! Finish
 
     return
 
-  end function omega_im_
+  end function omega_int_
 
+!****
+
+  function eta_ (this) result (eta)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: eta
+
+    real(WP)    :: dW_dx(this%n)
+
+    ! Calculate the normalized growth rate defined by [Stel1978]
+
+    dW_dx = this%dW_dx()
+
+    eta = integrate(this%x, dW_dx)/integrate(this%x, ABS(dW_dx))
+
+    ! Finish
+
+    return
+
+  end function eta_
+    
 !****
 
   function prop_type_ (this) result (prop_type)
@@ -782,10 +847,10 @@ contains
 
 !****
 
-  function delS_en_ (this) result (delS_en)
+  function lag_S_en_ (this) result (lag_S_en)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: delS_en(this%n)
+    complex(WP)               :: lag_S_en(this%n)
 
     complex(WP) :: A_6(6,this%n)
     complex(WP) :: dy_6(this%n)
@@ -825,9 +890,9 @@ contains
                      A_6(6,:)*this%y(6,:)))/A_6(5,:)
 
       where(this%x /= 0._WP)
-         delS_en = y_5*this%x**(l-2)
+         lag_S_en = y_5*this%x**(l-2)
       elsewhere
-         delS_en = 0._WP
+         lag_S_en = 0._WP
       end where
 
     end associate
@@ -868,14 +933,14 @@ contains
 
     end function deriv_
 
-  end function delS_en_
+  end function lag_S_en_
 
 !****
 
-  function delL_rd_ (this) result (delL_rd)
+  function lag_L_rd_ (this) result (lag_L_rd)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: delL_rd(this%n)
+    complex(WP)               :: lag_L_rd(this%n)
 
     complex(WP) :: A_5(6,this%n)
     complex(WP) :: dy_5(this%n)
@@ -913,7 +978,7 @@ contains
 
       endwhere
 
-      delL_rd = y_6*this%x**(l+1)
+      lag_L_rd = y_6*this%x**(l+1)
 
     end associate
          
@@ -953,7 +1018,7 @@ contains
 
     end function deriv_
 
-  end function delL_rd_
+  end function lag_L_rd_
 
 !****
 
@@ -988,6 +1053,8 @@ contains
 
     call bcast(md%n, root_rank)
     call bcast(md%n_iter, root_rank)
+
+    call bcast(md%pruned, root_rank)
 
     ! Finish
 

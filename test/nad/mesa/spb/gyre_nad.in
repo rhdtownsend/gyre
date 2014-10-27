@@ -17,12 +17,12 @@
 
 &mode
 	l = 2
-	X_n_pg_min = -50
+	n_pg_min = -50
 /
 
 &mode
 	l = 3
-	X_n_pg_min = -50
+	n_pg_min = -50
 /
 
 &osc
@@ -57,5 +57,8 @@
 &output
 	summary_file = 'gyre_nad.txt'
 	summary_file_format = 'TXT'
-	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_im'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+	mode_template = 'mode-l%l-n%n-j%j.h5'
+!	mode_item_list = 'x,xi_r,xi_h,delS,delL,delp,dW_dx,T'
+	mode_item_list = 'x,xi_r,xi_h,lag_P'
 /

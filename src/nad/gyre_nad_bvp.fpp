@@ -22,14 +22,10 @@ module gyre_nad_bvp
   ! Uses
 
   use core_kinds
-  use core_parallel
 
   use gyre_bvp
   use gyre_model
   use gyre_cocache
-  $if ($MPI)
-  use gyre_model_mpi
-  $endif
   use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
@@ -73,13 +69,12 @@ module gyre_nad_bvp
      integer, public                :: n_e
    contains 
      private
-     $if ($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
-     procedure, public :: discrim => discrim_
+     procedure         :: discrim_r_
+     procedure         :: discrim_c_
+     procedure         :: mode_r_
+     procedure         :: mode_c_
      procedure         :: build_
      procedure         :: recon_
-     procedure, public :: mode => mode_old_
      procedure, public :: model => model_
   end type nad_bvp_t
 
@@ -89,20 +84,11 @@ module gyre_nad_bvp
      module procedure nad_bvp_t_
   end interface nad_bvp_t
 
-  $if ($MPI)
-  interface bcast
-     module procedure bcast_
-  end interface bcast
-  $endif
-
   ! Access specifiers
 
   private
 
   public :: nad_bvp_t
-  $if ($MPI)
-  public :: bcast
-  $endif
 
   ! Procedures
 
@@ -123,6 +109,7 @@ contains
     use gyre_magnus_GL6_ivp
     use gyre_colloc_GL2_ivp
     use gyre_colloc_GL4_ivp
+    use gyre_findiff_ivp
 
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
@@ -186,10 +173,12 @@ contains
        allocate(bp%iv, SOURCE=magnus_GL4_ivp_t(bp%jc))
     case ('MAGNUS_GL6')
        allocate(bp%iv, SOURCE=magnus_GL6_ivp_t(bp%jc))
-    case ('FINDIFF_GL2')
+    case ('COLLOC_GL2')
        allocate(bp%iv, SOURCE=colloc_GL2_ivp_t(bp%jc))
-    case ('FINDIFF_GL4')
+    case ('COLLOC_GL4')
        allocate(bp%iv, SOURCE=colloc_GL4_ivp_t(bp%jc))
+    case ('FINDIFF')
+       allocate(bp%iv, SOURCE=findiff_ivp_t(bp%jc))
     case default
        $ABORT(Invalid ivp_solver_type)
     end select
@@ -231,46 +220,411 @@ contains
 
 !****
 
-  $if ($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
+  function discrim_r_ (this, omega) result (discrim)
 
     class(nad_bvp_t), intent(inout) :: this
+    real(WP), intent(in)            :: omega
+    type(ext_real_t)                :: discrim
 
-    ! Finalize the nad_bvp_t
+    type(ext_complex_t) :: discrim_c
 
-    deallocate(this%jc)
-    deallocate(this%iv)
-    deallocate(this%bd)
-    
+    ! Evaluate the discriminant as the determinant of the sysmtx (real
+    ! version)
+
+    call this%build_(CMPLX(omega, KIND=WP))
+
+    call this%sm%determinant(discrim_c, .TRUE., this%np%use_banded)
+
+    discrim = ext_real_t(discrim_c)
+
     ! Finish
 
     return
 
-  end subroutine final_
-
-  $endif
+  end function discrim_r_
 
 !****
 
-  function discrim_ (this, omega, use_real)
+  function discrim_c_ (this, omega) result (discrim)
 
     class(nad_bvp_t), intent(inout) :: this
     complex(WP), intent(in)         :: omega
-    logical, optional, intent(in)   :: use_real
-    type(ext_complex_t)             :: discrim_
+    type(ext_complex_t)             :: discrim
 
     ! Evaluate the discriminant as the determinant of the sysmtx
+    ! (complex version)
 
     call this%build_(omega)
 
-    call this%sm%determinant(discrim_, use_real, this%np%use_banded)
+    call this%sm%determinant(discrim, .FALSE., this%np%use_banded)
 
     ! Finish
 
     return
 
-  end function discrim_
+  end function discrim_c_
+
+!****
+
+  function mode_r_ (this, omega) result (md)
+
+    class(nad_bvp_t), target, intent(inout) :: this
+    real(WP), intent(in)                    :: omega
+    type(mode_t)                            :: md
+
+    complex(WP)              :: omega_c
+    real(WP), allocatable    :: x(:)
+    complex(WP), allocatable :: y(:,:)
+    real(WP)                 :: x_ref
+    complex(WP)              :: y_ref(this%n_e)
+    type(ext_complex_t)      :: discrim_c
+    integer                  :: n
+    integer                  :: i
+    complex(WP), allocatable :: y_c(:,:)
+    complex(WP)              :: y_c_ref(6)
+
+    ! Reconstruct the solution
+
+    omega_c = CMPLX(omega, KIND=WP)
+
+    call this%recon_(omega_c, x, y, x_ref, y_ref, discrim_c, .TRUE.)
+
+    ! Calculate canonical variables
+
+    n = SIZE(x)
+
+    allocate(y_c(6,n))
+
+     !$OMP PARALLEL DO 
+     do i = 1,n
+        y_c(:,i) = MATMUL(this%jc%trans_matrix(x(i), omega_c, .TRUE.), y(:,i))
+     end do
+
+     y_c_ref = MATMUL(this%jc%trans_matrix(x_ref, omega_c, .TRUE.), y_ref)
+
+    ! Initialize the mode
+
+    md = mode_t(this%ml, this%mp, this%op, omega_c, discrim_c, x, y_c, x_ref, y_c_ref)
+
+    ! Finish
+
+    return
+
+  end function mode_r_
+
+!****
+
+  function mode_c_ (this, omega) result (md)
+
+    class(nad_bvp_t), target, intent(inout) :: this
+    complex(WP), intent(in)                 :: omega
+    type(mode_t)                            :: md
+
+    real(WP), allocatable    :: x(:)
+    complex(WP), allocatable :: y(:,:)
+    real(WP)                 :: x_ref
+    complex(WP)              :: y_ref(this%n_e)
+    type(ext_complex_t)      :: discrim
+    integer                  :: n
+    integer                  :: i
+    complex(WP), allocatable :: y_c(:,:)
+    complex(WP)              :: y_c_ref(6)
+
+    ! Reconstruct the solution
+
+    call this%recon_(omega, x, y, x_ref, y_ref, discrim, .FALSE.)
+
+    ! Calculate canonical variables
+
+    n = SIZE(x)
+
+    allocate(y_c(6,n))
+
+     !$OMP PARALLEL DO 
+     do i = 1,n
+        y_c(:,i) = MATMUL(this%jc%trans_matrix(x(i), omega, .TRUE.), y(:,i))
+     end do
+
+     y_c_ref = MATMUL(this%jc%trans_matrix(x_ref, omega, .TRUE.), y_ref)
+
+    ! Initialize the mode
+
+    md = mode_t(this%ml, this%mp, this%op, omega, discrim, x, y_c, x_ref, y_c_ref)
+
+    ! Finish
+
+    return
+
+  end function mode_c_
+
+! !****
+
+!   function mode_old_ (this, omega, discrim, use_real, omega_def) result (md)
+
+!     class(nad_bvp_t), target, intent(inout)   :: this
+!     complex(WP), intent(in)                   :: omega(:)
+!     type(ext_complex_t), optional, intent(in) :: discrim(:)
+!     logical, optional, intent(in)             :: use_real
+!     complex(WP), optional, intent(in)         :: omega_def(:)
+!     type(mode_t)                              :: md
+
+!     logical                   :: use_real_
+!     type(ext_complex_t)       :: omega_a
+!     type(ext_complex_t)       :: omega_b
+!     type(ext_complex_t)       :: discrim_a
+!     type(ext_complex_t)       :: discrim_b
+!     type(ext_real_t)          :: discrim_norm
+!     type(discfunc_t)          :: df
+!     integer                   :: n_iter_def
+!     integer                   :: n_iter
+!     complex(WP)               :: omega_root
+!     real(WP), allocatable     :: x(:)
+!     complex(WP), allocatable  :: y(:,:)
+!     real(WP)                  :: x_ref
+!     complex(WP)               :: y_ref(this%n_e)
+!     type(ext_complex_t)       :: discrim_root
+!     integer                   :: n
+!     integer                   :: i
+!     complex(WP), allocatable  :: y_c(:,:)
+!     complex(WP)               :: y_c_ref(6)
+!     type(ext_real_t)          :: chi 
+    
+!     $CHECK_BOUNDS(SIZE(omega),2)
+    
+!     if(PRESENT(discrim)) then
+!        $CHECK_BOUNDS(SIZE(discrim),2)
+!     endif
+
+!     if(PRESENT(use_real)) then
+!        use_real_ = use_real
+!     else
+!        use_real_ = .FALSE.
+!     endif
+
+!     ! Unpack arguments
+
+!     omega_a = ext_complex_t(omega(1))
+!     omega_b = ext_complex_t(omega(2))
+
+!     if(PRESENT(discrim)) then
+!        discrim_a = discrim(1)
+!        discrim_b = discrim(2)
+!     else
+!        discrim_a = this%discrim(cmplx(omega_a))
+!        discrim_b = this%discrim(cmplx(omega_b))
+!     endif
+    
+!     discrim_norm = MAX(ABS(discrim_a), ABS(discrim_b))
+
+!     ! Set up the discriminant function
+
+!     df = discfunc_t(this)
+
+!     ! If omega_def is provided, do a preliminary root find using the
+!     ! deflated discriminant
+
+!     if (this%np%deflate_roots .AND. PRESENT(omega_def)) then
+
+!        ! (Don't pass discrim_a and discrim_b in/out, because they
+!        ! haven't been deflated)
+
+!        df%omega_def = omega_def
+
+!        n_iter_def = this%np%n_iter_max
+
+!        call df%narrow(omega_a, omega_b, ext_real_t(0._WP), n_iter=n_iter_def)
+
+!        $ASSERT(n_iter_def <= this%np%n_iter_max,Too many deflation iterations)
+
+!        deallocate(df%omega_def)
+
+!        ! If necessary, reset omega_a and omega_b so they are not
+!        ! coincident
+
+!        if(omega_b == omega_a) then
+!           omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
+!        endif
+
+!        call df%expand(omega_a, omega_b, ext_real_t(0._WP), discrim_a, discrim_b)
+
+!     else
+
+!        n_iter_def = 0
+
+!     endif
+
+!     ! Find the discriminant root
+
+!     n_iter = this%np%n_iter_max - n_iter_def
+
+!     if (use_real_) then
+!        omega_root = real(df%root(ext_real_t(omega_a), ext_real_t(omega_b), ext_real_t(0._WP), &
+!                                  f_ex_a=ext_real_t(discrim_a), f_ex_b=ext_real_t(discrim_b), n_iter=n_iter))
+!     else
+!        omega_root = cmplx(df%root(omega_a, omega_b, ext_real_t(0._WP), &
+!                                   f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
+!     endif
+
+!     n_iter = n_iter + n_iter_def
+
+!     $ASSERT(n_iter <= this%np%n_iter_max-n_iter_def,Too many iterations)
+
+!     ! Reconstruct the solution
+
+!     call this%recon_(omega_root, x, y, x_ref, y_ref, discrim_root)
+
+!     ! Calculate canonical variables
+
+!     n = SIZE(x)
+
+!     allocate(y_c(6,n))
+
+!     !$OMP PARALLEL DO 
+!     do i = 1,n
+!        y_c(:,i) = MATMUL(this%jc%trans_matrix(x(i), omega_root, .TRUE.), y(:,i))
+!     end do
+
+!     y_c_ref = MATMUL(this%jc%trans_matrix(x_ref, omega_root, .TRUE.), y_ref)
+
+!     ! Initialize the mode
+    
+!     chi = ABS(discrim_root)/discrim_norm
+    
+!     if(PRESENT(omega_def)) then
+!        md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
+!     else
+!        md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
+!     endif
+
+!     ! Finish
+
+!     return
+
+!   end function mode_old_
+
+! !****
+
+!   function mode_new_ (this, omega, discrim, use_real, omega_def) result (md)
+
+!     class(nad_bvp_t), target, intent(inout)   :: this
+!     complex(WP), intent(in)                   :: omega(:)
+!     type(ext_complex_t), optional, intent(in) :: discrim(:)
+!     logical, optional, intent(in)             :: use_real
+!     complex(WP), optional, intent(in)         :: omega_def(:)
+!     type(mode_t)                              :: md
+
+!     logical                   :: use_real_
+!     type(ext_complex_t)       :: omega_a
+!     type(ext_complex_t)       :: omega_b
+!     type(ext_complex_t)       :: omega_c
+!     type(ext_complex_t)       :: discrim_a
+!     type(ext_complex_t)       :: discrim_b
+!     type(ext_complex_t)       :: discrim_c
+!     type(ext_real_t)          :: discrim_norm
+!     type(discfunc_t)          :: df
+!     type(cimplex_t)           :: cm
+!     integer                   :: n_iter
+!     complex(WP)               :: omega_root
+!     real(WP), allocatable     :: x(:)
+!     complex(WP), allocatable  :: y(:,:)
+!     real(WP)                  :: x_ref
+!     complex(WP)               :: y_ref(this%n_e)
+!     type(ext_complex_t)       :: discrim_root
+!     integer                   :: n
+!     integer                   :: i
+!     complex(WP), allocatable  :: y_c(:,:)
+!     complex(WP)               :: y_c_ref(6)
+!     type(ext_real_t)          :: chi
+
+!     type(ext_complex_t) :: omegas(3)
+!     type(ext_complex_t) :: discrims(3)
+    
+!     $CHECK_BOUNDS(SIZE(omega),2)
+    
+!     if(PRESENT(discrim)) then
+!        $CHECK_BOUNDS(SIZE(discrim),2)
+!     endif
+
+!     if(PRESENT(use_real)) then
+!        use_real_ = use_real
+!     else
+!        use_real_ = .FALSE.
+!     endif
+
+!     ! Unpack arguments
+
+!     omega_a = ext_complex_t(omega(1))
+!     omega_b = ext_complex_t(omega(2))
+!     omega_c = 0.5_WP*(omega_a + omega_b) + (0._WP,0.5_WP)*(omega_b - omega_a)
+
+!     if(PRESENT(discrim)) then
+!        discrim_a = discrim(1)
+!        discrim_b = discrim(2)
+!     else
+!        discrim_a = this%discrim(cmplx(omega_a))
+!        discrim_b = this%discrim(cmplx(omega_b))
+!     endif
+    
+!     discrim_c = this%discrim(cmplx(omega_c))
+
+!     discrim_norm = MAX(MAX(ABS(discrim_a), ABS(discrim_b)), ABS(discrim_c))
+
+!     ! Set up the discriminant function
+
+!     df = discfunc_t(this)
+
+!     ! Set up the cimplex (the need to create intermediate arrays appears to be a gfortran bug)
+
+!     omegas = [omega_a,omega_b,omega_c]
+!     discrims = [discrim_a,discrim_b,discrim_c]
+
+! !    cm = cimplex_t([omega_a,omega_b,omega_c], &
+! !                   [discrim_a,discrim_b,discrim_c], df)
+!     cm = cimplex_t(omegas, discrims, df)
+
+!     ! Set up the discriminant function
+
+!     df = discfunc_t(this)
+
+!     ! Find the discriminant root
+
+!     n_iter = this%np%n_iter_max
+ 
+!     call cm%refine(0._WP, n_iter=n_iter)
+
+!     $ASSERT(n_iter <= this%np%n_iter_max,Too many iterations)
+
+!     omega_root = cmplx(cm%ez(cm%i_lo))
+!     discrim_root = df%eval(cm%ez(cm%i_lo))
+
+!     ! Reconstruct the solution
+
+!     call this%recon_(omega_root, x, y, x_ref, y_ref, discrim_root)
+
+!     ! Calculate canonical variables
+
+!     n = SIZE(x)
+
+!     allocate(y_c(6,n))
+
+!     !$OMP PARALLEL DO 
+!     do i = 1,n
+!        y_c(:,i) = MATMUL(this%jc%trans_matrix(x(i), omega_root, .TRUE.), y(:,i))
+!     end do
+
+!     y_c_ref = MATMUL(this%jc%trans_matrix(x_ref, omega_root, .TRUE.), y_ref)
+
+!     ! Initialize the mode
+    
+!     chi = ABS(discrim_root)/discrim_norm
+    
+!     md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
+
+!     ! Finish
+
+!     return
+
+!   end function mode_new_
 
 !****
 
@@ -300,7 +654,7 @@ contains
 
 !****
 
-  subroutine recon_ (this, omega, x, y, x_ref, y_ref, discrim)
+  subroutine recon_ (this, omega, x, y, x_ref, y_ref, discrim, use_real)
 
     class(nad_bvp_t), intent(inout)       :: this
     complex(WP), intent(in)               :: omega
@@ -309,6 +663,7 @@ contains
     real(WP), intent(out)                 :: x_ref
     complex(WP), intent(out)              :: y_ref(:)
     type(ext_complex_t), intent(out)      :: discrim
+    logical, intent(in), optional         :: use_real
 
     complex(WP) :: b(this%n_e*this%n)
     complex(WP) :: y_sh(this%n_e,this%n)
@@ -321,7 +676,7 @@ contains
 
     call this%build_(omega)
 
-    call this%sm%null_vector(b, discrim, this%np%use_banded)
+    call this%sm%null_vector(b, discrim, use_real, this%np%use_banded)
 
     y_sh = RESHAPE(b, SHAPE(y_sh))
 
@@ -368,269 +723,6 @@ contains
 
 !****
 
-  function mode_old_ (this, omega, discrim, use_real, omega_def) result (md)
-
-    class(nad_bvp_t), target, intent(inout)   :: this
-    complex(WP), intent(in)                   :: omega(:)
-    type(ext_complex_t), optional, intent(in) :: discrim(:)
-    logical, optional, intent(in)             :: use_real
-    complex(WP), optional, intent(in)         :: omega_def(:)
-    type(mode_t)                              :: md
-
-    logical                   :: use_real_
-    type(ext_complex_t)       :: omega_a
-    type(ext_complex_t)       :: omega_b
-    type(ext_complex_t)       :: discrim_a
-    type(ext_complex_t)       :: discrim_b
-    type(ext_real_t)          :: discrim_norm
-    type(discfunc_t)          :: df
-    integer                   :: n_iter_def
-    integer                   :: n_iter
-    complex(WP)               :: omega_root
-    real(WP), allocatable     :: x(:)
-    complex(WP), allocatable  :: y(:,:)
-    real(WP)                  :: x_ref
-    complex(WP)               :: y_ref(this%n_e)
-    type(ext_complex_t)       :: discrim_root
-    integer                   :: n
-    integer                   :: i
-    complex(WP), allocatable  :: y_c(:,:)
-    complex(WP)               :: y_c_ref(6)
-    type(ext_real_t)          :: chi 
-    
-    $CHECK_BOUNDS(SIZE(omega),2)
-    
-    if(PRESENT(discrim)) then
-       $CHECK_BOUNDS(SIZE(discrim),2)
-    endif
-
-    if(PRESENT(use_real)) then
-       use_real_ = use_real
-    else
-       use_real_ = .FALSE.
-    endif
-
-    ! Unpack arguments
-
-    omega_a = ext_complex_t(omega(1))
-    omega_b = ext_complex_t(omega(2))
-
-    if(PRESENT(discrim)) then
-       discrim_a = discrim(1)
-       discrim_b = discrim(2)
-    else
-       discrim_a = this%discrim(cmplx(omega_a))
-       discrim_b = this%discrim(cmplx(omega_b))
-    endif
-    
-    discrim_norm = MAX(ABS(discrim_a), ABS(discrim_b))
-
-    ! Set up the discriminant function
-
-    df = discfunc_t(this)
-
-    ! If omega_def is provided, do a preliminary root find using the
-    ! deflated discriminant
-
-    if(.FALSE. .AND. PRESENT(omega_def)) then
-
-       ! (Don't pass discrim_a and discrim_b in/out, because they
-       ! haven't been deflated)
-
-       df%omega_def = omega_def
-
-       n_iter_def = this%np%n_iter_max
-
-       call df%narrow_pair(omega_a, omega_b, ext_real_t(0._WP), n_iter=n_iter_def)
-
-       $ASSERT(n_iter_def <= this%np%n_iter_max,Too many iterations)
-
-       deallocate(df%omega_def)
-
-       ! If necessary, reset omega_a and omega_b so they are not
-       ! coincident
-
-       if(omega_b == omega_a) then
-          omega_b = omega_a + TINY(0._WP)*(omega_a/ABS(omega_a))
-       endif
-
-       call df%expand_pair(omega_a, omega_b, ext_real_t(0._WP), discrim_a, discrim_b)
-
-    endif
-
-    ! Find the discriminant root
-
-    n_iter = this%np%n_iter_max
- 
-   if(use_real_) then
-       omega_root = real(df%root(ext_real_t(omega_a), ext_real_t(omega_b), ext_real_t(0._WP), &
-                                 f_ex_a=ext_real_t(discrim_a), f_ex_b=ext_real_t(discrim_b), n_iter=n_iter))
-    else
-       omega_root = cmplx(df%root(omega_a, omega_b, ext_real_t(0._WP), &
-                                  f_ez_a=discrim_a, f_ez_b=discrim_b, n_iter=n_iter))
-    endif
-
-    $ASSERT(n_iter <= this%np%n_iter_max,Too many iterations)
-
-    ! Reconstruct the solution
-
-    call this%recon_(omega_root, x, y, x_ref, y_ref, discrim_root)
-
-    ! Calculate canonical variables
-
-    n = SIZE(x)
-
-    allocate(y_c(6,n))
-
-    !$OMP PARALLEL DO 
-    do i = 1,n
-       y_c(:,i) = MATMUL(this%jc%trans_matrix(x(i), omega_root, .TRUE.), y(:,i))
-    end do
-
-    y_c_ref = MATMUL(this%jc%trans_matrix(x_ref, omega_root, .TRUE.), y_ref)
-
-    ! Initialize the mode
-    
-    chi = ABS(discrim_root)/discrim_norm
-    
-    if(PRESENT(omega_def)) then
-       md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
-    else
-       md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
-    endif
-
-    ! Finish
-
-    return
-
-  end function mode_old_
-
-!****
-
-  function mode_new_ (this, omega, discrim, use_real, omega_def) result (md)
-
-    class(nad_bvp_t), target, intent(inout)   :: this
-    complex(WP), intent(in)                   :: omega(:)
-    type(ext_complex_t), optional, intent(in) :: discrim(:)
-    logical, optional, intent(in)             :: use_real
-    complex(WP), optional, intent(in)         :: omega_def(:)
-    type(mode_t)                              :: md
-
-    logical                   :: use_real_
-    type(ext_complex_t)       :: omega_a
-    type(ext_complex_t)       :: omega_b
-    type(ext_complex_t)       :: omega_c
-    type(ext_complex_t)       :: discrim_a
-    type(ext_complex_t)       :: discrim_b
-    type(ext_complex_t)       :: discrim_c
-    type(ext_real_t)          :: discrim_norm
-    type(discfunc_t)          :: df
-    type(cimplex_t)           :: cm
-    integer                   :: n_iter
-    complex(WP)               :: omega_root
-    real(WP), allocatable     :: x(:)
-    complex(WP), allocatable  :: y(:,:)
-    real(WP)                  :: x_ref
-    complex(WP)               :: y_ref(this%n_e)
-    type(ext_complex_t)       :: discrim_root
-    integer                   :: n
-    integer                   :: i
-    complex(WP), allocatable  :: y_c(:,:)
-    complex(WP)               :: y_c_ref(6)
-    type(ext_real_t)          :: chi
-
-    type(ext_complex_t) :: omegas(3)
-    type(ext_complex_t) :: discrims(3)
-    
-    $CHECK_BOUNDS(SIZE(omega),2)
-    
-    if(PRESENT(discrim)) then
-       $CHECK_BOUNDS(SIZE(discrim),2)
-    endif
-
-    if(PRESENT(use_real)) then
-       use_real_ = use_real
-    else
-       use_real_ = .FALSE.
-    endif
-
-    ! Unpack arguments
-
-    omega_a = ext_complex_t(omega(1))
-    omega_b = ext_complex_t(omega(2))
-    omega_c = 0.5_WP*(omega_a + omega_b) + (0._WP,0.5_WP)*(omega_b - omega_a)
-
-    if(PRESENT(discrim)) then
-       discrim_a = discrim(1)
-       discrim_b = discrim(2)
-    else
-       discrim_a = this%discrim(cmplx(omega_a))
-       discrim_b = this%discrim(cmplx(omega_b))
-    endif
-    
-    discrim_c = this%discrim(cmplx(omega_c))
-
-    discrim_norm = MAX(MAX(ABS(discrim_a), ABS(discrim_b)), ABS(discrim_c))
-
-    ! Set up the discriminant function
-
-    df = discfunc_t(this)
-
-    ! Set up the cimplex (the need to create intermediate arrays appears to be a gfortran bug)
-
-    omegas = [omega_a,omega_b,omega_c]
-    discrims = [discrim_a,discrim_b,discrim_c]
-
-!    cm = cimplex_t([omega_a,omega_b,omega_c], &
-!                   [discrim_a,discrim_b,discrim_c], df)
-    cm = cimplex_t(omegas, discrims, df)
-
-    ! Set up the discriminant function
-
-    df = discfunc_t(this)
-
-    ! Find the discriminant root
-
-    n_iter = this%np%n_iter_max
- 
-    call cm%refine(0._WP, n_iter=n_iter)
-
-    $ASSERT(n_iter <= this%np%n_iter_max,Too many iterations)
-
-    omega_root = cmplx(cm%ez(cm%i_lo))
-    discrim_root = df%eval(cm%ez(cm%i_lo))
-
-    ! Reconstruct the solution
-
-    call this%recon_(omega_root, x, y, x_ref, y_ref, discrim_root)
-
-    ! Calculate canonical variables
-
-    n = SIZE(x)
-
-    allocate(y_c(6,n))
-
-    !$OMP PARALLEL DO 
-    do i = 1,n
-       y_c(:,i) = MATMUL(this%jc%trans_matrix(x(i), omega_root, .TRUE.), y(:,i))
-    end do
-
-    y_c_ref = MATMUL(this%jc%trans_matrix(x_ref, omega_root, .TRUE.), y_ref)
-
-    ! Initialize the mode
-    
-    chi = ABS(discrim_root)/discrim_norm
-    
-    md = mode_t(this%ml, this%mp, this%op, omega_root, x, y_c, x_ref, y_c_ref, chi, n_iter)
-
-    ! Finish
-
-    return
-
-  end function mode_new_
-
-!****
-
   function model_ (this) result (ml)
 
     class(nad_bvp_t), intent(in) :: this
@@ -645,58 +737,5 @@ contains
     return
 
   end function model_
-
-!****
-
-  $if ($MPI)
-
-  subroutine bcast_ (bp, root_rank, ml)
-
-    type(nad_bvp_t), intent(inout)     :: bp
-    integer, intent(in)                :: root_rank
-    class(model_t), intent(in), target :: ml
-
-    type(modepar_t)              :: mp
-    type(oscpar_t)               :: op
-    type(numpar_t)               :: np
-    type(gridpar_t), allocatable :: shoot_gp(:)
-    type(gridpar_t), allocatable :: recon_gp(:)
-    real(WP), allocatable        :: x_in(:)
-
-    ! Broadcast the nad_bvp_t
-
-    if(MPI_RANK == root_rank) then
-
-       call bcast(bp%mp, root_rank)
-       call bcast(bp%op, root_rank)
-       call bcast(bp%np, root_rank)
-
-       call bcast_alloc(bp%shoot_gp, root_rank)
-       call bcast_alloc(bp%recon_gp, root_rank)
-
-       call bcast_alloc(bp%x_in, root_rank)
-
-    else
-
-       call bcast(mp, root_rank)
-       call bcast(op, root_rank)
-       call bcast(np, root_rank)
-
-       call bcast_alloc(shoot_gp, root_rank)
-       call bcast_alloc(recon_gp, root_rank)
-
-       call bcast_alloc(x_in, root_rank)
-
-       bp = nad_bvp_t(ml, op, np, shoot_gp, recon_gp, x_in)
-
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_
-
-  $endif
 
 end module gyre_nad_bvp

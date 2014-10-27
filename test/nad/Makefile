@@ -3,7 +3,7 @@
 
 # Variables
 
-TESTDIRS=mesa/bcep mesa/spb
+TESTDIRS=mesa/bcep mesa/rgb mesa/spb
 
 # Rules
 

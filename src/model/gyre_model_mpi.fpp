@@ -24,9 +24,9 @@ module gyre_model_mpi
   use core_parallel
 
   use gyre_model
-  use gyre_model_evol
-  use gyre_model_poly
-  use gyre_model_hom
+  use gyre_evol_model
+  use gyre_poly_model
+  use gyre_hom_model
 
   use ISO_FORTRAN_ENV
 
@@ -86,11 +86,11 @@ contains
        if(MPI_RANK == root_rank) then
 
           select type (ml)
-          type is (model_evol_t)
+          type is (evol_model_t)
              type = EVOL_TYPE
-          type is (model_poly_t)
+          type is (poly_model_t)
              type = POLY_TYPE
-          type is (model_hom_t)
+          type is (hom_model_t)
              type = HOM_TYPE
           class default
              $ABORT(Unsupported type)
@@ -105,11 +105,11 @@ contains
        if(MPI_RANK /= root_rank) then
           select case (type)
           case (EVOL_TYPE)
-             allocate(model_evol_t::ml)
+             allocate(evol_model_t::ml)
           case (POLY_TYPE)
-             allocate(model_poly_t::ml)
+             allocate(poly_model_t::ml)
           case(HOM_TYPE)
-             allocate(model_hom_t::ml)
+             allocate(hom_model_t::ml)
           case default
              $ABORT(Unsupported type)
           end select
@@ -118,11 +118,11 @@ contains
        ! Broadcast the model
 
        select type (ml)
-       type is (model_evol_t)
+       type is (evol_model_t)
           call bcast(ml, root_rank)
-       type is (model_poly_t)
+       type is (poly_model_t)
           call bcast(ml, root_rank)
-       type is (model_hom_t)
+       type is (hom_model_t)
           call bcast(ml, root_rank)
        class default
           $ABORT(Unsupported type)

@@ -166,7 +166,11 @@ contains
       A(6,2) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
       A(6,3) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
       A(6,4) = 0._WP
-      A(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+      if (x > 0._WP) then
+         A(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+      else
+         A(6,5) = -HUGE(0._WP)
+      endif
       A(6,6) = -1._WP - l
 
     end associate
@@ -185,15 +189,7 @@ contains
     real(WP), intent(in)                    :: x
     complex(WP), intent(in)                 :: omega
     logical, intent(in)                     :: to_canon
-    $if ($GFORTRAN_PR_58007)
-    complex(WP), allocatable                :: M(:,:)
-    $else
     complex(WP)                             :: M(this%n_e,this%n_e)
-    $endif
-
-    $if ($GFORTRAN_PR_58007)
-    allocate(M(this%n_e,this%n_e))
-    $endif
 
     ! Calculate the transformation matrix to convert variables between
     ! the canonical formulation and the Dziembowski formulation

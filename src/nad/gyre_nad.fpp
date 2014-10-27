@@ -27,14 +27,12 @@ program gyre_nad
 
   use gyre_version
   use gyre_model
-  $if($MPI)
-  use gyre_model_mpi
-  $endif
   use gyre_modepar
   use gyre_oscpar
   use gyre_numpar
   use gyre_gridpar
   use gyre_scanpar
+  use gyre_outpar
   use gyre_bvp
   use gyre_ad_bvp
   use gyre_rad_bvp
@@ -63,18 +61,24 @@ program gyre_nad
   type(gridpar_t), allocatable :: shoot_gp(:)
   type(gridpar_t), allocatable :: recon_gp(:)
   type(scanpar_t), allocatable :: sp(:)
+  type(outpar_t)               :: up
   integer                      :: i
   type(oscpar_t), allocatable  :: op_sel(:)
   type(numpar_t), allocatable  :: np_sel(:)
   type(gridpar_t), allocatable :: shoot_gp_sel(:)
   type(gridpar_t), allocatable :: recon_gp_sel(:)
   type(scanpar_t), allocatable :: sp_sel(:)
+  integer                      :: n_op_sel
+  integer                      :: n_np_sel
   real(WP), allocatable        :: omega(:)
   class(bvp_t), allocatable    :: ad_bp
   class(bvp_t), allocatable    :: nad_bp
-  type(mode_t), allocatable    :: md(:)
-  type(mode_t), allocatable    :: md_all(:)
-  type(mode_t), allocatable    :: md_tmp(:)
+  integer                      :: n_md_ad
+  integer                      :: d_md_ad
+  type(mode_t), allocatable    :: md_ad(:)
+  integer                      :: n_md_nad
+  integer                      :: d_md_nad
+  type(mode_t), allocatable    :: md_nad(:)
 
   ! Initialize
 
@@ -92,7 +96,6 @@ program gyre_nad
 110  format(2A)
 
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   : ', OMP_SIZE_MAX
-     write(OUTPUT_UNIT, 120) 'MPI Processors   : ', MPI_SIZE
 120  format(A,I0)
      
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
@@ -101,40 +104,47 @@ program gyre_nad
 
   ! Process arguments
 
-  if(MPI_RANK == 0) then
-
-     call parse_args(filename)
+  call parse_args(filename)
      
-     open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
+  open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-     call read_constants(unit)
-     call read_model(unit, x_ml, ml)
-     call read_modepar(unit, mp)
-     call read_oscpar(unit, op)
-     call read_numpar(unit, np)
-     call read_shoot_gridpar(unit, shoot_gp)
-     call read_recon_gridpar(unit, recon_gp)
-     call read_scanpar(unit, sp)
-
-  endif
-
-  $if($MPI)
-  call bcast_constants(0)
-  call bcast_alloc(x_ml, 0)
-  call bcast_alloc(ml, 0)
-  call bcast_alloc(mp, 0)
-  call bcast_alloc(op, 0)
-  call bcast_alloc(np, 0)
-  call bcast_alloc(shoot_gp, 0)
-  call bcast_alloc(recon_gp, 0)
-  call bcast_alloc(sp, 0)
-  $endif
+  call read_model(unit, x_ml, ml)
+  call read_constants(unit)
+  call read_modepar(unit, mp)
+  call read_oscpar(unit, op)
+  call read_numpar(unit, np)
+  call read_shoot_gridpar(unit, shoot_gp)
+  call read_recon_gridpar(unit, recon_gp)
+  call read_scanpar(unit, sp)
+  call read_outpar(unit, up)
 
   ! Loop through modepars
 
-  allocate(md_all(0))
+  d_md_ad = 128
+  n_md_ad = 0
 
-  op_loop : do i = 1, SIZE(mp)
+  allocate(md_ad(d_md_ad))
+
+  d_md_nad = 128
+  n_md_nad = 0
+
+  allocate(md_nad(d_md_nad))
+
+  mp_loop : do i = 1, SIZE(mp)
+
+     if (check_log_level('INFO')) then
+
+        write(OUTPUT_UNIT, 100) form_header('Mode Search', '=')
+
+        write(OUTPUT_UNIT, 100) 'Mode parameters'
+
+        write(OUTPUT_UNIT, 130) 'l :', mp(i)%l
+        write(OUTPUT_UNIT, 130) 'm :', mp(i)%m
+130     format(3X,A,1X,I0)
+
+        write(OUTPUT_UNIT, *)
+
+     endif
 
      ! Select parameters according to tags
 
@@ -144,15 +154,27 @@ program gyre_nad
      call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
      call select_par(sp, mp(i)%tag, sp_sel)
 
-     $ASSERT(SIZE(op_sel) == 1,No matching osc parameters)
-     $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
+     n_op_sel = SIZE(op_sel)
+     n_np_sel = SIZE(np_sel)
+
+     $ASSERT(n_op_sel >= 1,No matching osc parameters)
+     $ASSERT(n_np_sel >= 1,No matching num parameters)
      $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
      $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
      $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
 
+     if (n_op_sel > 1 .AND. check_log_level('WARN')) then
+        write(OUTPUT_UNIT, 140) 'Warning: multiple matching osc namelists, using final match'
+140     format('!!',1X,A)
+     endif
+        
+     if (n_np_sel > 1 .AND. check_log_level('WARN')) then
+        write(OUTPUT_UNIT, 140) 'Warning: multiple matching num namelists, using final match'
+     endif
+        
      ! Set up the frequency array
 
-     call build_scan(sp_sel, ml, mp(i), op_sel(1), shoot_gp_sel, x_ml, omega)
+     call build_scan(sp_sel, ml, mp(i), op_sel(n_op_sel), shoot_gp_sel, x_ml, omega)
 
      ! Store the frequency range in shoot_gp_sel
 
@@ -163,38 +185,32 @@ program gyre_nad
 
      if(ALLOCATED(ad_bp)) deallocate(ad_bp)
 
-     if(mp(i)%l == 0 .AND. np_sel(1)%reduce_order) then
-        allocate(ad_bp, SOURCE=rad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+     if(mp(i)%l == 0 .AND. op_sel(n_op_sel)%reduce_order) then
+        allocate(ad_bp, SOURCE=rad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
      else
-        allocate(ad_bp, SOURCE=ad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+        allocate(ad_bp, SOURCE=ad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
      endif
  
-     allocate(nad_bp, SOURCE=nad_bvp_t(ml, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml))
+     allocate(nad_bp, SOURCE=nad_bvp_t(ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel), shoot_gp_sel, recon_gp_sel, x_ml))
 
      ! Find modes
 
-     call scan_search(ad_bp, omega, md)
+     n_md_ad = 0
 
-     call filter_md(md, md%n_pg >= mp(i)%X_n_pg_min .AND. md%n_pg <= mp(i)%X_n_pg_max)
+     call scan_search(ad_bp, np_sel(n_np_sel), omega, process_mode_ad)
 
-     call prox_search(nad_bp, md)
+     call prox_search(nad_bp, np_sel(n_np_sel), md_ad(:n_md_ad), process_mode_nad)
 
-     ! (The following could be simpler, but this is a workaround for a
-     ! gfortran issue, likely PR 57839)
-
-     md_tmp = [md_all, md]
-     call MOVE_ALLOC(md_tmp, md_all)
+     ! Clean up
 
      deallocate(ad_bp)
      deallocate(nad_bp)
 
-  end do op_loop
+  end do mp_loop
 
-  ! Write output
+  ! Write the summary file
  
-  if(MPI_RANK == 0) then
-     call write_data(unit, md_all)
-  endif
+  call write_summary(up, md_nad(:n_md_nad))
 
   ! Finish
 
@@ -204,39 +220,60 @@ program gyre_nad
 
 contains
 
-  subroutine filter_md (md, mask)
+  subroutine process_mode_ad (md_new)
 
-    type(mode_t), intent(inout), allocatable :: md(:)
-    logical, intent(in)                      :: mask(:)
+    type(mode_t), intent(in) :: md_new
 
-    integer                   :: n_md_filt
-    type(mode_t), allocatable :: md_filt(:)
-    integer                   :: i
-    integer                   :: j
+    ! Store the mode
 
-    $CHECK_BOUNDS(SIZE(md),SIZE(mask))
+    n_md_ad = n_md_ad + 1
 
-    ! Filter the modes according to mask
+    if (n_md_ad > d_md_ad) then
+       d_md_ad = 2*d_md_ad
+       call reallocate(md_ad, [d_md_ad])
+    endif
 
-    n_md_filt = COUNT(mask)
+    md_ad(n_md_ad) = md_new
 
-    allocate(md_filt(n_md_filt))
+    ! Prune it
 
-    j = 0
-
-    filter_loop : do i = 1,SIZE(md)
-       if(mask(i)) then
-          j = j + 1
-          md_filt(j) = md(i)
-       endif
-    end do filter_loop
-
-    call MOVE_ALLOC(md_filt, md)
+    call md_ad(n_md_ad)%prune()
 
     ! Finish
 
     return
 
-  end subroutine filter_md
+  end subroutine process_mode_ad
+
+!****
+
+  subroutine process_mode_nad (md_new)
+
+    type(mode_t), intent(in) :: md_new
+
+    ! Store the mode
+
+    n_md_nad = n_md_nad + 1
+
+    if (n_md_nad > d_md_nad) then
+       d_md_nad = 2*d_md_nad
+       call reallocate(md_nad, [d_md_nad])
+    endif
+
+    md_nad(n_md_nad) = md_new
+
+    ! Write it
+
+    call write_mode(up, md_nad(n_md_nad), n_md_nad)
+
+    ! If necessary, prune it
+
+    if (up%prune_modes) call md_nad(n_md_nad)%prune()
+
+    ! Finish
+
+    return
+
+  end subroutine process_mode_nad
 
 end program gyre_nad

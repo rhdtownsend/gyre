@@ -32,11 +32,12 @@ module gyre_oscpar
   ! Derived-type definitions
 
   type :: oscpar_t
-     real(WP)          :: x_ref
-     character(LEN=64) :: variables_type
-     character(LEN=64) :: outer_bound_type
-     character(LEN=64) :: inertia_norm_type
-     character(LEN=64) :: tag_list
+     real(WP)        :: x_ref
+     character(64)   :: variables_type
+     character(64)   :: outer_bound_type
+     character(64)   :: inertia_norm_type
+     character(2048) :: tag_list
+     logical         :: reduce_order
   end type oscpar_t
 
   ! Interfaces
@@ -88,6 +89,8 @@ contains
     call bcast(op%outer_bound_type, root_rank)
     call bcast(op%inertia_norm_type, root_rank)
     call bcast(op%tag_list, root_rank)
+
+    call bcast(np%reduce_order, root_rank)
 
     ! Finish
 

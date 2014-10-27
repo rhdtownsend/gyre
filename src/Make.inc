@@ -55,10 +55,20 @@ ifeq (${OMP},yes)
   F77FLAGS:=${F77FLAGS} -fopenmp
 endif
 
-FPX3FLAGS:=${FPX3FLAGS} -DGFORTRAN_PR56218 -DGFORTRAN_PR57922 \
- -DGFORTRAN_PR53945 \
- -DGFORTRAN_PR_56052 -DGFORTRAN_PR_56872 \
- -DGFORTRAN_PR_58007
+GFORTRAN_MAJOR:=$(shell gfortran -dumpversion | awk '{split($$0,verarray,".")} END{print verarray[1]}')
+GFORTRAN_MINOR:=$(shell gfortran -dumpversion | awk '{split($$0,verarray,".")} END{print verarray[2]}')
+
+ifneq (${GFORTRAN_MAJOR},4)
+  VERSION_WARN:='y'
+else
+  ifneq (${GFORTRAN_MINOR},10)
+    VERSION_WARN:='y'
+  endif
+endif
+
+ifeq (${VERSION_WARN},y)
+  $(warning You need gfortran 4.10.0 to compile this code)
+endif
 
 LDFLAGS:=${LDFLAGS} `mesasdk_lapack95_link`
 
