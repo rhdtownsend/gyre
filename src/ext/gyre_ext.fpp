@@ -1,7 +1,7 @@
-! Module   : gyre_ext_arith
+! Module   : gyre_ext
 ! Purpose  : extented-range arithmetic
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2014 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -18,11 +18,11 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_ext_arith
+module gyre_ext
 
   ! Uses
 
-  use gyre_ext_real
-  use gyre_ext_complex
+  use gyre_r_ext
+  use gyre_c_ext
 
-end module gyre_ext_arith
+end module gyre_ext
