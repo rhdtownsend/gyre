@@ -23,7 +23,7 @@ module gyre_c_extfunc
 
   use core_kinds
 
-  use gyre_ext_arith
+  use gyre_ext
 
   use ISO_FORTRAN_ENV
 
@@ -36,10 +36,10 @@ module gyre_c_extfunc
   type, abstract :: c_extfunc_t
    contains
      private
-     procedure(eval_), deferred :: eval
-     procedure                  :: expand => expand_
-     procedure                  :: narrow => narrow_ridders_
-     procedure                  :: root => root_
+     procedure(eval_), deferred, public :: eval
+     procedure, public                  :: expand => expand_
+     procedure, public                  :: narrow => narrow_ridders_
+     procedure, public                  :: root => root_
   end type c_extfunc_t
 
   ! Interfaces
@@ -151,7 +151,7 @@ contains
 
     return
 
-  end subroutine expand_ec_
+  end subroutine expand_
 
 !****
 
