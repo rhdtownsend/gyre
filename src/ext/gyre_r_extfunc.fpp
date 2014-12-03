@@ -36,16 +36,16 @@ module gyre_r_extfunc
   type, abstract :: r_extfunc_t
    contains
      private
-     procedure(eval_), deferred :: eval
-     procedure                  :: expand => expand_
-     procedure                  :: narrow => narrow_
-     procedure                  :: root => root_
+     procedure(eval_), deferred, public :: eval
+     procedure, public                  :: expand => expand_
+     procedure, public                  :: narrow => narrow_
+     procedure, public                  :: root => root_
   end type r_extfunc_t
 
   ! Interfaces
 
   abstract interface
-    function eval_ (this, ex) result (f_ex)
+    function eval_ (this, rx) result (f_rx)
       use gyre_r_ext
       import r_extfunc_t
       class(r_extfunc_t), intent(inout) :: this
@@ -139,7 +139,7 @@ contains
 
 !****
 
-  subroutine narrow_ (this, ex_a, rx_b, rx_tol, f_rx_a, f_rx_b, n_iter, relative_tol)
+  subroutine narrow_ (this, rx_a, rx_b, rx_tol, f_rx_a, f_rx_b, n_iter, relative_tol)
 
     class(r_extfunc_t), intent(inout)      :: this
     type(r_ext_t), intent(inout)           :: rx_a
@@ -384,4 +384,4 @@ contains
 
   end function root_
 
-end module gyre_ext_func
+end module gyre_r_extfunc
