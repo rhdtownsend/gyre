@@ -59,7 +59,6 @@ module gyre_grid
   private
 
   public :: build_grid
-  public :: grid_range
   public :: create_uniform
   public :: create_geom
   public :: create_log
@@ -166,52 +165,6 @@ contains
 
   end subroutine build_grid
 
-!****
-          
-  subroutine grid_range (gp, ml, mp, x_in, x_i, x_o)
-
-    type(gridpar_t), intent(in)       :: gp(:)
-    class(model_t), intent(in)        :: ml
-    type(modepar_t), intent(in)       :: mp
-    real(WP), allocatable, intent(in) :: x_in(:)
-    real(WP), intent(out)             :: x_i
-    real(WP), intent(out)             :: x_o
-
-    $ASSERT(SIZE(gp) >= 1,Empty gridpars)
-
-    ! Determine the range spanned by the grid
-
-    select case (gp(1)%op_type)
-    case ('CREATE_CLONE')
-       $ASSERT(ALLOCATED(x_in),No grid to clone)
-       x_i = x_in(1)
-       x_o = x_in(SIZE(x_in))
-    case ('CREATE_MIDPOINT')
-       $ASSERT(ALLOCATED(x_in),No grid to midpoint)
-       x_i = x_in(1)
-       x_o = x_in(SIZE(x_in))
-    case ('CREATE_UNIFORM')
-       x_i = 0._WP
-       x_o = 1._WP
-    case ('CREATE_GEOM')
-       x_i = 0._WP
-       x_o = 1._WP
-    case ('CREATE_LOG')
-       x_i = 0._WP
-       x_o = 1._WP
-    case ('CREATE_FROM_FILE')
-       x_i = 0._WP
-       x_o = 1._WP
-    case default
-       $ABORT(Invalid op_type (the first op_type must be CREATE_*))
-    end select
-
-    ! Finish
-
-    return
-
-  end subroutine grid_range
-          
 !****
 
   subroutine create_uniform (n, x)
