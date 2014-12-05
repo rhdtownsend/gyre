@@ -27,16 +27,14 @@ module gyre_r_search
   use core_parallel
 
   use gyre_bvp
+  use gyre_discfunc
+  use gyre_ext
+  use gyre_mode
   use gyre_model
   use gyre_modepar
-  use gyre_oscpar
   use gyre_numpar
-  use gyre_gridpar
+  use gyre_oscpar
   use gyre_scanpar
-  use gyre_discfunc
-  use gyre_mode
-  use gyre_grid
-  use gyre_ext
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -54,18 +52,16 @@ module gyre_r_search
 
 contains
 
-  subroutine build_scan (sp, ml, mp, op, gp, x_in, omega)
+  subroutine build_scan (sp, ml, mp, op, x_i, x_o, omega)
 
     type(scanpar_t), intent(in)        :: sp(:)
     class(model_t), intent(in)         :: ml
     type(modepar_t), intent(in)        :: mp
     type(oscpar_t), intent(in)         :: op
-    type(gridpar_t), intent(in)        :: gp(:)
-    real(WP), allocatable, intent(in)  :: x_in(:)
+    real(WP), intent(in)               :: x_i
+    real(WP), intent(in)               :: x_o
     real(WP), allocatable, intent(out) :: omega(:)
 
-    real(WP) :: x_i
-    real(WP) :: x_o
     integer  :: i
     real(WP) :: omega_min
     real(WP) :: omega_max
@@ -76,14 +72,12 @@ contains
 
     $ASSERT(SIZE(sp) >=1,Empty scanpars)
 
-    ! Determine the grid range
+    ! Build the frequency scan grid
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Building omega grid'
 100    format(A)
     endif
-
-    call grid_range(gp, ml, mp, x_in, x_i, x_o)
 
     ! Loop through scanpars
 
@@ -218,28 +212,6 @@ contains
        ! Process it
 
        call process_root(omega_root, n_iter, MAX(ABS(discrim_a(i)), ABS(discrim_b(i))))
-
-!        ! Construct the mode
-
-!        XXXXX
-
-!        md = bp%mode(omega_root)
-
-!        if (md%n_pg < md%mp%n_pg_min .OR. md%n_pg > md%mp%n_pg_max) cycle mode_loop
-
-!        md%n_iter = n_iter
-!        md%chi = ABS(md%discrim)/MAX(ABS(discrim_a(i)), ABS(discrim_b(i)))
-
-!        ! Process it
-
-!        ca
-
-!        if (check_log_level('INFO')) then
-!           write(OUTPUT_UNIT, 120) md%mp%l, md%n_pg, md%n_p, md%n_g, md%omega, real(md%chi), md%n_iter, md%n
-! 120       format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
-!        endif
-
-!        call process_mode(md)
 
     end do mode_loop
 
