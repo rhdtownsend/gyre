@@ -34,6 +34,7 @@ module gyre_oscpar
   type :: oscpar_t
      real(WP)        :: x_ref
      character(64)   :: variables_type
+     character(64)   :: inner_bound_type
      character(64)   :: outer_bound_type
      character(64)   :: inertia_norm_type
      character(2048) :: tag_list
@@ -86,6 +87,7 @@ contains
     call bcast(op%x_ref, root_rank)
 
     call bcast(op%variables_type, root_rank)
+    call bcast(op%inner_bound_type, root_rank)
     call bcast(op%outer_bound_type, root_rank)
     call bcast(op%inertia_norm_type, root_rank)
     call bcast(op%tag_list, root_rank)
