@@ -94,16 +94,7 @@ contains
 
     ! Initialize the jacobian
 
-    select case (op%variables_type)
-    case ('DZIEM')
-       jc = rad_jacob_t(ml, mp, 'DZIEM')
-    case ('JCD')
-       jc = rad_jacob_t(ml, mp, 'JCD')
-    case ('MIX')
-       jc = rad_jacob_t(ml, mp, 'MIX')
-    case default
-       $ABORT(Invalid variables_type)
-    end select
+    jc = rad_jacob_t(ml, mp, op%variables_type)
 
     ! Initialize the boundary conditions
 
@@ -112,20 +103,7 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    print *,'Set:',x_i,x_o
-
-    select case (op%outer_bound_type)
-    case ('ZERO')
-       bd = rad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'ZERO')
-    case ('DZIEM')
-       bd = rad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'DZIEM')
-    case ('UNNO')
-       bd = rad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'UNNO')
-    case ('JCD')
-       bd = rad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'JCD')
-    case default
-       $ABORT(Invalid bound_type)
-    end select
+    bd = rad_bound_t(ml, jc, mp, x_i, x_o, op%inner_bound_type, op%outer_bound_type)
 
     ! Initialize the IVP solver
 

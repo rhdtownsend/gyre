@@ -89,14 +89,7 @@ contains
 
     ! Initialize the jacobian
 
-    select case (op%variables_type)
-    case ('DZIEM')
-       jc = nad_jacob_t(ml, mp, 'DZIEM')
-    case ('JCD')
-       jc = nad_jacob_t(ml, mp, 'JCD')
-    case default
-       $ABORT(Invalid variables_type)
-    end select
+    jc = nad_jacob_t(ml, mp, op%variables_type)
 
     ! Initialize the boundary conditions
 
@@ -105,18 +98,7 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    select case (op%outer_bound_type)
-    case ('ZERO')
-       bd = nad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'ZERO')
-    case ('DZIEM')
-       bd = nad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'DZIEM')
-    case ('UNNO')
-       bd = nad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'UNNO')
-    case ('JCD')
-       bd = nad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'JCD')
-    case default
-       $ABORT(Invalid bound_type)
-    end select
+    bd = nad_bound_t(ml, jc, mp, x_i, x_o, op%inner_bound_type, op%outer_bound_type)
 
     ! Initialize the IVP solver
 
