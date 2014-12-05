@@ -69,11 +69,13 @@ module gyre_grid
 
 contains
 
-  subroutine build_grid (gp, ml, mp, x_in, x, verbose)
+  subroutine build_grid (gp, ml, mp, omega_min, omega_max, x_in, x, verbose)
 
     type(gridpar_t), intent(in)        :: gp(:)
     class(model_t), intent(in)         :: ml
     type(modepar_t), intent(in)        :: mp
+    real(WP), intent(in)               :: omega_min
+    real(WP), intent(in)               :: omega_max
     real(WP), allocatable, intent(in)  :: x_in(:)
     real(WP), allocatable, intent(out) :: x(:)
     logical, optional, intent(in)      :: verbose
@@ -128,15 +130,15 @@ contains
 
        select case (gp(i)%op_type)
        case ('RESAMP_DISPERSION')
-          call resample_dispersion_(ml, mp, gp(i)%omega_a, gp(i)%omega_b, &
+          call resample_dispersion_(ml, mp, omega_min, omega_max, &
                                     gp(i)%alpha_osc, gp(i)%alpha_exp, x)
        case ('RESAMP_THERMAL')
-          call resample_thermal_(ml, gp(i)%omega_a, gp(i)%omega_b, &
+          call resample_thermal_(ml, omega_min, omega_max, &
                                  gp(i)%alpha_thm, x)
        case ('RESAMP_STRUCT')
           call resample_struct_(ml, gp(i)%alpha_str, x)
        case ('RESAMP_CENTER')
-          call resample_center_(ml, mp, gp(i)%omega_a, gp(i)%omega_b, gp(i)%n, x)
+          call resample_center_(ml, mp, omega_min, omega_max, gp(i)%n, x)
        case ('RESAMP_UNIFORM')
           call resample_uniform_(gp(i)%n, x)
        case default
@@ -534,12 +536,12 @@ contains
 
 !****
 
-  subroutine resample_dispersion_ (ml, mp, omega_a, omega_b, alpha_osc, alpha_exp, x)
+  subroutine resample_dispersion_ (ml, mp, omega_min, omega_max, alpha_osc, alpha_exp, x)
 
     class(model_t), intent(in)           :: ml
     type(modepar_t), intent(in)          :: mp
-    real(WP), intent(in)                 :: omega_a
-    real(WP), intent(in)                 :: omega_b
+    real(WP), intent(in)                 :: omega_min
+    real(WP), intent(in)                 :: omega_max
     real(WP), intent(in)                 :: alpha_osc
     real(WP), intent(in)                 :: alpha_exp
     real(WP), allocatable, intent(inout) :: x(:)
@@ -561,13 +563,13 @@ contains
 
     $ASSERT(ALLOCATED(x),No input grid)
 
-    $ASSERT(omega_b >= omega_a,Invalid frequency interval)
+    $ASSERT(omega_max >= omega_min,Invalid frequency interval)
 
     ! Resample x by adding points to each cell, such that there are at
     ! least alpha_osc points per oscillatory wavelength and alpha_exp
     ! points per exponential wavelength. Wavelengths are calculated
     ! based on a local dispersion analysis of the adibatic/Cowling
-    ! wave equation, for frequencies in the interval [omega_a,omega_b]
+    ! wave equation, for frequencies in the interval [omega_min,omega_max]
 
     ! First, determine maximal oscillatory and exponential wavenumbers
     ! at each point of x
@@ -598,7 +600,7 @@ contains
 
             omega2_ext = SQRT(g_0/g_4)
             
-            if(omega2_ext >= omega_a**2 .AND. omega2_ext <= omega_b**2) then
+            if(omega2_ext >= omega_min**2 .AND. omega2_ext <= omega_max**2) then
                gamma_ext = (g_4*omega2_ext**2 + g_2*omega2_ext + g_0)/omega2_ext
             else
                gamma_ext = 0._WP
@@ -612,8 +614,8 @@ contains
 
          ! Calculate gamma at the interval endpoints
 
-         gamma_a = (g_4*omega_a**4 + g_2*omega_a**2 + g_0)/omega_a**2
-         gamma_b = (g_4*omega_b**4 + g_2*omega_b**2 + g_0)/omega_b**2
+         gamma_a = (g_4*omega_min**4 + g_2*omega_min**2 + g_0)/omega_min**2
+         gamma_b = (g_4*omega_max**4 + g_2*omega_max**2 + g_0)/omega_max**2
 
          ! Determine the wavenumber bounds
 
@@ -659,11 +661,11 @@ contains
 
 !****
 
-  subroutine resample_thermal_ (ml, omega_a, omega_b, alpha_thm, x)
+  subroutine resample_thermal_ (ml, omega_min, omega_max, alpha_thm, x)
 
     class(model_t), intent(in)           :: ml
-    real(WP), intent(in)                 :: omega_a
-    real(WP), intent(in)                 :: omega_b
+    real(WP), intent(in)                 :: omega_min
+    real(WP), intent(in)                 :: omega_max
     real(WP), intent(in)                 :: alpha_thm
     real(WP), allocatable, intent(inout) :: x(:)
 
@@ -675,7 +677,7 @@ contains
 
     $ASSERT(ALLOCATED(x),No input grid)
 
-    $ASSERT(omega_b >= omega_a,Invalid frequency interval)
+    $ASSERT(omega_max >= omega_min,Invalid frequency interval)
 
     ! Resample x by adding points to each cell, such that there are at
     ! least alpha_thm points per thermal length c_thm
@@ -693,7 +695,7 @@ contains
        associate(V => ml%V(x(i)), nabla => ml%nabla(x(i)), &
                  c_rad => ml%c_rad(x(i)), c_thm => ml%c_thm(x(i)))
 
-         k_thm(i) = SQRT(ABS(V*nabla*omega_b*c_thm/c_rad))/x(i)
+         k_thm(i) = SQRT(ABS(V*nabla*omega_max*c_thm/c_rad))/x(i)
 
        end associate
 
@@ -793,12 +795,12 @@ contains
 
 !****
 
-  subroutine resample_center_ (ml, mp, omega_a, omega_b, n, x)
+  subroutine resample_center_ (ml, mp, omega_min, omega_max, n, x)
 
     class(model_t), intent(in)           :: ml
     type(modepar_t), intent(in)          :: mp
-    real(WP), intent(in)                 :: omega_a
-    real(WP), intent(in)                 :: omega_b
+    real(WP), intent(in)                 :: omega_min
+    real(WP), intent(in)                 :: omega_max
     integer, intent(in)                  :: n
     real(WP), allocatable, intent(inout) :: x(:)
 
@@ -811,18 +813,18 @@ contains
 
     $ASSERT(ALLOCATED(x),No input grid)
 
-    $ASSERT(omega_b >= omega_a,Invalid frequency interval)
+    $ASSERT(omega_max >= omega_min,Invalid frequency interval)
 
     ! Resample x by adding points to central cells, such that there
     ! are n_floor points covering the evanescent region at the
     ! center. Evanescence is determined based on a local dispersion
     ! analysis of the adibatic/Cowling wave equation, for frequencies
-    ! in the interval [omega_a,omega_b]
+    ! in the interval [omega_min,omega_max]
 
-    ! First, locate the innermost turning point at both omega_a and omega_b
+    ! First, locate the innermost turning point at both omega_min and omega_max
 
-    call find_x_turn(x, ml, mp, omega_a, x_turn_a)
-    call find_x_turn(x, ml, mp, omega_b, x_turn_b)
+    call find_x_turn(x, ml, mp, omega_min, x_turn_a)
+    call find_x_turn(x, ml, mp, omega_max, x_turn_b)
 
     x_turn = MIN(x_turn_a, x_turn_b)
     call locate(x, x_turn, i_turn)

@@ -39,8 +39,6 @@ module gyre_gridpar
      real(WP)                :: alpha_exp = 0._WP
      real(WP)                :: alpha_thm = 0._WP
      real(WP)                :: alpha_str = 0._WP
-     real(WP)                :: omega_a = 0._WP
-     real(WP)                :: omega_b = 0._WP
      real(WP)                :: s = 0
      integer                 :: n = 0
      character(FILENAME_LEN) :: file

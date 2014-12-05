@@ -1,5 +1,5 @@
-! Module   : gyre_findiff_ivp
-! Purpose  : initial-value solvers (finite difference)
+! Module   : gyre_c_sysmtx
+! Purpose  : system matrix (complex)
 !
 ! Copyright 2013-2014 Rich Townsend
 !
@@ -15,11 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_findiff_ivp
+$include 'gyre_sysmtx.inc'
 
-  ! Uses
-
-  use gyre_r_findiff_ivp
-  use gyre_c_findiff_ivp
-
-end module gyre_findiff_ivp
+$MOD_DECL(c,complex)

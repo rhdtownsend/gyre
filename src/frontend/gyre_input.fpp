@@ -524,7 +524,6 @@ contains
        ! Initialize the gridpar
 
        gp(i) = gridpar_t(alpha_osc=alpha_osc, alpha_exp=alpha_exp, alpha_thm=alpha_thm, alpha_str=alpha_str, &
-                         omega_a=0._WP, omega_b=0._WP, &
                          s=s, n=n, file=file, op_type=op_type, tag_list=tag_list)
 
     end do read_loop

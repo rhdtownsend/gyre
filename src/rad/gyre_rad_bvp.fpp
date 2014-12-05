@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_bvp
-! Purpose  : solve radial adiabatic BVPs
+! Purpose  : boundary-value solver (adiabatic radial)
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2014 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,20 +25,13 @@ module gyre_rad_bvp
 
   use gyre_bvp
   use gyre_model
-  use gyre_cocache
+  use gyre_mode
+  use gyre_ext
+  use gyre_ivp
+  use gyre_sysmtx
   use gyre_modepar
   use gyre_oscpar
-  use gyre_gridpar
   use gyre_numpar
-  use gyre_discfunc
-  use gyre_rad_shooter
-  use gyre_jacobian
-  use gyre_ivp
-  use gyre_bound
-  use gyre_sysmtx
-  use gyre_ext_arith
-  use gyre_grid
-  use gyre_mode
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -49,36 +42,10 @@ module gyre_rad_bvp
 
   ! Derived-type definitions
 
-  type, extends(bvp_t) :: rad_bvp_t
+  type, extends(r_bvp_t) :: rad_bvp_t
+   contains
      private
-     class(model_t), pointer        :: ml => null()
-     type(cocache_t)                :: cc
-     class(jacobian_t), allocatable :: jc
-     class(ivp_t), allocatable      :: iv
-     class(bound_t), allocatable    :: bd
-     type(rad_shooter_t)            :: sh
-     type(sysmtx_t)                 :: sm
-     type(modepar_t)                :: mp
-     type(oscpar_t)                 :: op
-     type(numpar_t)                 :: np
-     type(gridpar_t), allocatable   :: shoot_gp(:)
-     type(gridpar_t), allocatable   :: recon_gp(:)
-     real(WP), allocatable          :: x_in(:)
-     real(WP), allocatable          :: x(:)
-     integer, public                :: n
-     integer, public                :: n_e
-   contains 
-     private
-     $if ($GFORTRAN_PR57922)
-     procedure, public :: final => final_
-     $endif
-     procedure         :: discrim_r_
-     procedure         :: discrim_c_
-     procedure         :: mode_r_
-     procedure         :: mode_c_
-     procedure         :: build_
-     procedure         :: recon_
-     procedure, public :: model => model_
+     procedure, public :: recon => recon_
   end type rad_bvp_t
 
   ! Interfaces
@@ -97,128 +64,99 @@ module gyre_rad_bvp
 
 contains
 
-  function rad_bvp_t_ (ml, mp, op, np, shoot_gp, recon_gp, x_in) result (bp)
+  function rad_bvp_t_ (x, ml, mp, op, np) result (bp)
 
-    use gyre_rad_dziem_jacobian
-    use gyre_rad_jcd_jacobian
-    use gyre_rad_mix_jacobian
+    use gyre_rad_jacob
+    use gyre_rad_bound
 
-    use gyre_rad_zero_bound
-    use gyre_rad_dziem_bound
-    use gyre_rad_unno_bound
-    use gyre_rad_jcd_bound
-
-    use gyre_magnus_gl2_ivp
-    use gyre_magnus_gl4_ivp
-    use gyre_magnus_gl6_ivp
-    use gyre_colloc_gl2_ivp
-    use gyre_colloc_gl4_ivp
+    use gyre_magnus_ivp
+    use gyre_colloc_ivp
     use gyre_findiff_ivp
 
+    use gyre_block_sysmtx
+ 
+    real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
     type(oscpar_t), intent(in)          :: op
     type(numpar_t), intent(in)          :: np
-    type(gridpar_t), intent(in)         :: shoot_gp(:)
-    type(gridpar_t), intent(in)         :: recon_gp(:)
-    real(WP), allocatable, intent(in)   :: x_in(:)
     type(rad_bvp_t), target             :: bp
 
-    integer               :: n
-    real(WP), allocatable :: x_cc(:)
-
-    $ASSERT(mp%l == 0,Invalid harmonic degree)
-
+    type(rad_jacob_t)              :: jc
+    integer                        :: n
+    real(WP)                       :: x_i
+    real(WP)                       :: x_o
+    type(rad_bound_t)              :: bd
+    class(r_ivp_t), allocatable    :: iv
+    class(r_sysmtx_t), allocatable :: sm
+ 
     ! Construct the rad_bvp_t
-
-    ! Store parameters
-
-    bp%mp = mp
-    bp%op = op
-    bp%np = np
-
-    bp%shoot_gp = shoot_gp
-    bp%recon_gp = recon_gp
-
-    ! Set up the coefficient pointer
-    
-    bp%ml => ml
 
     ! Initialize the jacobian
 
     select case (op%variables_type)
     case ('DZIEM')
-       allocate(bp%jc, SOURCE=rad_dziem_jacobian_t(bp%ml, bp%mp))
+       jc = rad_jacob_t(ml, mp, 'DZIEM')
     case ('JCD')
-       allocate(bp%jc, SOURCE=rad_jcd_jacobian_t(bp%ml, bp%mp))
+       jc = rad_jacob_t(ml, mp, 'JCD')
     case ('MIX')
-       allocate(bp%jc, SOURCE=rad_mix_jacobian_t(bp%ml, bp%mp))
+       jc = rad_jacob_t(ml, mp, 'MIX')
     case default
        $ABORT(Invalid variables_type)
     end select
 
     ! Initialize the boundary conditions
 
-    select case (bp%op%outer_bound_type)
+    n = SIZE(x)
+
+    x_i = x(1)
+    x_o = x(n)
+
+    print *,'Set:',x_i,x_o
+
+    select case (op%outer_bound_type)
     case ('ZERO')
-       allocate(bp%bd, SOURCE=rad_zero_bound_t(bp%ml, bp%jc, bp%mp))
+       bd = rad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'ZERO')
     case ('DZIEM')
-       allocate(bp%bd, SOURCE=rad_dziem_bound_t(bp%ml, bp%jc, bp%mp))
+       bd = rad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'DZIEM')
     case ('UNNO')
-       allocate(bp%bd, SOURCE=rad_unno_bound_t(bp%ml, bp%jc, bp%mp))
+       bd = rad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'UNNO')
     case ('JCD')
-       allocate(bp%bd, SOURCE=rad_jcd_bound_t(bp%ml, bp%jc, bp%mp))
+       bd = rad_bound_t(ml, jc, mp, x_i, x_o, 'REGULAR', 'JCD')
     case default
        $ABORT(Invalid bound_type)
     end select
 
     ! Initialize the IVP solver
 
-    select case (bp%np%ivp_solver_type)
+    select case (np%ivp_solver_type)
     case ('MAGNUS_GL2')
-       allocate(bp%iv, SOURCE=magnus_gl2_ivp_t(bp%jc))
+       allocate(iv, SOURCE=r_magnus_ivp_t(jc, 'GL2'))
     case ('MAGNUS_GL4')
-       allocate(bp%iv, SOURCE=magnus_gl4_ivp_t(bp%jc))
+       allocate(iv, SOURCE=r_magnus_ivp_t(jc, 'GL4'))
     case ('MAGNUS_GL6')
-       allocate(bp%iv, SOURCE=magnus_gl6_ivp_t(bp%jc))
+       allocate(iv, SOURCE=r_magnus_ivp_t(jc, 'GL6'))
     case ('COLLOC_GL2')
-       allocate(bp%iv, SOURCE=colloc_gl2_ivp_t(bp%jc))
+       allocate(iv, SOURCE=r_colloc_ivp_t(jc, 'GL2'))
     case ('COLLOC_GL4')
-       allocate(bp%iv, SOURCE=colloc_gl4_ivp_t(bp%jc))
+       allocate(iv, SOURCE=r_colloc_ivp_t(jc, 'GL4'))
     case ('FINDIFF')
-       allocate(bp%iv, SOURCE=findiff_ivp_t(bp%jc))
+       allocate(iv, SOURCE=r_findiff_ivp_t(jc))
     case default
        $ABORT(Invalid ivp_solver_type)
     end select
 
-    ! Initialize the shooter
-
-    bp%sh = rad_shooter_t(bp%ml, bp%iv, bp%np)
-
-    ! Build the shooting grid
-
-    call build_grid(bp%shoot_gp, bp%ml, bp%mp, x_in, bp%x, verbose=.TRUE.)
-
-    n = SIZE(bp%x)
-
     ! Initialize the system matrix
 
-    bp%sm = sysmtx_t(n-1, bp%jc%n_e, bp%bd%n_i, bp%bd%n_o)
+    if (np%use_banded) then
+       $ABORT(Not yet implemented)
+    else
+       allocate(sm, SOURCE=r_block_sysmtx_t(n-1, jc%n_e, bd%n_i, bd%n_o))
+    endif
 
-    ! Other stuff
+    ! Initialize the bvp_t
 
-    if(ALLOCATED(x_in)) bp%x_in = x_in
-
-    bp%n = n
-    bp%n_e = bp%sh%n_e
-
-    ! Set up the coefficient cache
-
-    x_cc = [bp%x(1),bp%sh%abscissa(bp%x),bp%x(n)]
-
-    call bp%ml%attach_cache(bp%cc)
-    call bp%ml%fill_cache(x_cc)
-    call bp%ml%detach_cache()
+    bp%r_bvp_t = r_bvp_t(x, ml, jc, bd, iv, sm)
 
     ! Finish
 
@@ -228,302 +166,62 @@ contains
 
 !****
 
-  $if ($GFORTRAN_PR57922)
-
-  subroutine final_ (this)
-
-    class(rad_bvp_t), intent(inout) :: this
-
-    ! Finalize the rad_bvp_t
-
-    call this%cc%final()
-    call this%sm%final()
-
-    deallocate(this%jc)
-    deallocate(this%iv)
-    deallocate(this%bd)
-
-    deallocate(this%shoot_gp)
-    deallocate(this%recon_gp)
-
-    deallocate(this%x)
-    deallocate(this%x_in)
-    
-    ! Finish
-
-    return
-
-  end subroutine final_
-
-  $endif
-
-!****
-
-  function discrim_r_ (this, omega) result (discrim)
+  subroutine recon_ (this, omega, x, x_ref, y, y_ref, discrim)
 
     class(rad_bvp_t), intent(inout) :: this
     real(WP), intent(in)            :: omega
-    type(ext_real_t)                :: discrim
+    real(WP), intent(in)            :: x(:)
+    real(WP), intent(in)            :: x_ref
+    real(WP), intent(out)           :: y(:,:)
+    real(WP), intent(out)           :: y_ref(:)
+    type(r_ext_t), intent(out)      :: discrim
 
-    type(ext_complex_t) :: discrim_c
+    real(WP) :: y_(2,SIZE(x))
+    real(WP) :: y_ref_(2)
+    integer  :: n
+    integer  :: i
+    real(WP) :: y_4_x(SIZE(x))
+    real(WP) :: eul_phi(SIZE(x))
 
-    ! Evaluate the discriminant as the determinant of the sysmtx (real
-    ! version)
+    $CHECK_BOUNDS(SIZE(y, 1),6)
+    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
 
-    call this%build_(CMPLX(omega, KIND=WP))
-
-    call this%sm%determinant(discrim_c, .TRUE., this%np%use_banded)
-
-    discrim = ext_real_t(discrim_c)
-
-    ! Finish
-
-    return
-
-  end function discrim_r_
-
-!****
-
-  function discrim_c_ (this, omega) result (discrim)
-
-    class(rad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)         :: omega
-    type(ext_complex_t)             :: discrim
-
-    ! Evaluate the discriminant as the determinant of the sysmtx
-    ! (complex version)
-
-    call this%build_(omega)
-
-    call this%sm%determinant(discrim, .FALSE., this%np%use_banded)
-
-    ! Finish
-
-    return
-
-  end function discrim_c_
-
-!****
-
-  function mode_r_ (this, omega) result (md)
-
-    class(rad_bvp_t), target, intent(inout) :: this
-    real(WP), intent(in)                    :: omega
-    type(mode_t)                            :: md
-
-    complex(WP)              :: omega_c
-    real(WP), allocatable    :: x(:)
-    complex(WP), allocatable :: y(:,:)
-    real(WP)                 :: x_ref
-    complex(WP)              :: y_ref(this%n_e)
-    type(ext_complex_t)      :: discrim_c
-    integer                  :: n
-    integer                  :: i
-    complex(WP), allocatable :: y_c(:,:)
-    complex(WP), allocatable :: y_4_x(:)
-    complex(WP), allocatable :: eul_phi(:)
-    complex(WP)              :: y_c_ref(6)
+    $CHECK_BOUNDS(SIZE(y_ref),6)
 
     ! Reconstruct the solution
 
-    omega_c = CMPLX(omega, KIND=WP)
+    call this%r_bvp_t%recon(omega, x, x_ref, y_, y_ref_, discrim)
 
-    call this%recon_(omega_c, x, y, x_ref, y_ref, discrim_c, .TRUE.)
-
-    ! Calculate canonical variables
+    ! Convert to the canonical (6-variable) solution
 
     n = SIZE(x)
 
-    allocate(y_c(6,n))
-
     !$OMP PARALLEL DO 
-    do i = 1,n
-       y_c(1:2,i) = MATMUL(this%jc%trans_matrix(x(i), omega_c, .TRUE.), y(:,i))
-       y_c(4,i) = -y_c(1,i)*this%ml%U(x(i))
-       y_c(5:6,i) = 0._WP
+    do i = 1, n
+       y(1:2,i) = MATMUL(this%jc%T(x(i), omega, .TRUE.), y_(:,i))
+       y(4,i) = -y(1,i)*this%ml%U(x(i))
+       y(5:6,i) = 0._WP
     end do
 
-    allocate(y_4_x(n))
+    ! Reconstruct the potential by integrating the gravity
 
     where (x /= 0._WP)
-       y_4_x = y_c(4,:)/x
+       y_4_x = y(4,:)/x
     elsewhere
        y_4_x = 0._WP
     end where
 
     eul_phi = integral(x, y_4_x/this%ml%c_1(x))
 
-    y_c(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
-    y_c(2,:) = y_c(2,:) + y_c(3,:)
+    y(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
+    y(2,:) = y(2,:) + y(3,:)
 
-    y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega_c, .TRUE.), y_ref)
-    y_c_ref(3) = 0._WP
-    y_c_ref(4) = -y_c_ref(1)*this%ml%U(x_ref)
-    y_c_ref(5:6) = 0._WP
+    ! Note: y_ref(3) is set to zero; need to fix this
 
-    ! Initialize the mode
-
-    md = mode_t(this%ml, this%mp, this%op, omega_c, discrim_c, x, y_c, x_ref, y_c_ref)
-
-    ! Finish
-
-    return
-
-  end function mode_r_
-
-!****
-
-  function mode_c_ (this, omega) result (md)
-
-    class(rad_bvp_t), target, intent(inout) :: this
-    complex(WP), intent(in)                 :: omega
-    type(mode_t)                            :: md
-
-    real(WP), allocatable    :: x(:)
-    complex(WP), allocatable :: y(:,:)
-    real(WP)                 :: x_ref
-    complex(WP)              :: y_ref(this%n_e)
-    type(ext_complex_t)      :: discrim
-    integer                  :: n
-    integer                  :: i
-    complex(WP), allocatable :: y_c(:,:)
-    complex(WP), allocatable :: y_4_x(:)
-    complex(WP), allocatable :: eul_phi(:)
-    complex(WP)              :: y_c_ref(6)
-
-    ! Reconstruct the solution
-
-    call this%recon_(omega, x, y, x_ref, y_ref, discrim, .FALSE.)
-
-    ! Calculate canonical variables
-
-    n = SIZE(x)
-
-    allocate(y_c(6,n))
-
-    !$OMP PARALLEL DO 
-    do i = 1,n
-       y_c(1:2,i) = MATMUL(this%jc%trans_matrix(x(i), omega, .TRUE.), y(:,i))
-       y_c(4,i) = -y_c(1,i)*this%ml%U(x(i))
-       y_c(5:6,i) = 0._WP
-    end do
-
-    allocate(y_4_x(n))
-
-    where (x /= 0._WP)
-       y_4_x = y_c(4,:)/x
-    elsewhere
-       y_4_x = 0._WP
-    end where
-
-    eul_phi = integral(x, y_4_x/this%ml%c_1(x))
-
-    y_c(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
-    y_c(2,:) = y_c(2,:) + y_c(3,:)
-
-    y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega, .TRUE.), y_ref)
-    y_c_ref(3) = 0._WP
-    y_c_ref(4) = -y_c_ref(1)*this%ml%U(x_ref)
-    y_c_ref(5:6) = 0._WP
-
-    ! Initialize the mode
-
-    md = mode_t(this%ml, this%mp, this%op, omega, discrim, x, y_c, x_ref, y_c_ref)
-
-    ! Finish
-
-    return
-
-  end function mode_c_
-
-!****
-
-  subroutine build_ (this, omega)
-
-    class(rad_bvp_t), target, intent(inout) :: this
-    complex(WP), intent(in)                 :: omega
-
-    ! Set up the sysmtx
-
-    call this%ml%attach_cache(this%cc)
-
-    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega), ext_complex_t(1._WP))
-    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega), ext_complex_t(1._WP))
-
-    call this%sh%shoot(omega, this%x, this%sm)
-
-    call this%ml%detach_cache()
-
-    call this%sm%scale_rows()
-
-    ! Finish
-
-    return
-
-  end subroutine build_
-
-!****
-
-  subroutine recon_ (this, omega, x, y, x_ref, y_ref, discrim, use_real)
-
-    class(rad_bvp_t), intent(inout)       :: this
-    complex(WP), intent(in)               :: omega
-    real(WP), allocatable, intent(out)    :: x(:)
-    complex(WP), allocatable, intent(out) :: y(:,:)
-    real(WP), intent(out)                 :: x_ref
-    complex(WP), intent(out)              :: y_ref(:)
-    type(ext_complex_t), intent(out)      :: discrim
-    logical, optional, intent(in)         :: use_real
-
-    complex(WP) :: b(this%n_e*this%n)
-    complex(WP) :: y_sh(this%n_e,this%n)
-    logical     :: same_grid
-    complex(WP) :: y_ref_(this%n_e,1)
-
-    $CHECK_BOUNDS(SIZE(y_ref),this%n_e)
-
-    ! Reconstruct the solution on the shooting grid
-
-    call this%build_(omega)
-
-    call this%sm%null_vector(b, discrim, use_real, this%np%use_banded)
-
-    y_sh = RESHAPE(b, SHAPE(y_sh))
-
-    ! Build the recon grid
-
-    this%recon_gp%omega_a = REAL(omega)
-    this%recon_gp%omega_b = REAL(omega)
-
-    call build_grid(this%recon_gp, this%ml, this%mp, this%x, x)
-
-    if(SIZE(x) == SIZE(this%x)) then
-       same_grid = ALL(x == this%x)
-    else
-       same_grid = .FALSE.
-    endif
-
-    ! Reconstruct the full solution
-
-    if(same_grid) then
-
-       y = y_sh
-
-    else
-
-       allocate(y(this%n_e,SIZE(x)))
-
-       call this%sh%recon(omega, this%x, y_sh, x, y)
-
-    endif
-
-    ! Reconstruct the solution at x_ref
-    
-    x_ref = MIN(MAX(this%op%x_ref, this%x(1)), this%x(this%n))
-
-    call this%sh%recon(omega, this%x, y_sh, [x_ref], y_ref_)
-
-    y_ref = y_ref_(:,1)
+    y_ref(1:2) = MATMUL(this%jc%T(x_ref, omega, .TRUE.), y_ref_)
+    y_ref(3) = 0._WP
+    y_ref(4) = -y_ref_(1)*this%ml%U(x_ref)
+    y_ref(5:6) = 0._WP
 
     ! Finish
 
@@ -531,21 +229,426 @@ contains
 
   end subroutine recon_
 
-!****
+! ! !****
 
-  function model_ (this) result (ml)
+! !   function mode_c_ (this, omega) result (md)
 
-    class(rad_bvp_t), intent(in) :: this
-    class(model_t), pointer      :: ml
+! !     class(rad_bvp_t), target, intent(inout) :: this
+! !     complex(WP), intent(in)                 :: omega
+! !     type(mode_t)                            :: md
 
-    ! Return the model pointer
+! !     real(WP), allocatable    :: x(:)
+! !     complex(WP), allocatable :: y(:,:)
+! !     real(WP)                 :: x_ref
+! !     complex(WP)              :: y_ref(this%n_e)
+! !     type(ext_complex_t)      :: discrim
+! !     integer                  :: n
+! !     integer                  :: i
+! !     complex(WP), allocatable :: y_c(:,:)
+! !     complex(WP), allocatable :: y_4_x(:)
+! !     complex(WP), allocatable :: eul_phi(:)
+! !     complex(WP)              :: y_c_ref(6)
 
-    ml => this%ml
+! !     ! Reconstruct the solution
 
-    ! Finish
+! !     call this%recon_(omega, x, y, x_ref, y_ref, discrim, .FALSE.)
 
-    return
+! !     ! Calculate canonical variables
 
-  end function model_
+! !     n = SIZE(x)
+
+! !     allocate(y_c(6,n))
+
+! !     !$OMP PARALLEL DO 
+! !     do i = 1,n
+! !        y_c(1:2,i) = MATMUL(this%jc%trans_matrix(x(i), omega, .TRUE.), y(:,i))
+! !        y_c(4,i) = -y_c(1,i)*this%ml%U(x(i))
+! !        y_c(5:6,i) = 0._WP
+! !     end do
+
+! !     allocate(y_4_x(n))
+
+! !     where (x /= 0._WP)
+! !        y_4_x = y_c(4,:)/x
+! !     elsewhere
+! !        y_4_x = 0._WP
+! !     end where
+
+! !     eul_phi = integral(x, y_4_x/this%ml%c_1(x))
+
+! !     y_c(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
+! !     y_c(2,:) = y_c(2,:) + y_c(3,:)
+
+! !     y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega, .TRUE.), y_ref)
+! !     y_c_ref(3) = 0._WP
+! !     y_c_ref(4) = -y_c_ref(1)*this%ml%U(x_ref)
+! !     y_c_ref(5:6) = 0._WP
+
+! !     ! Initialize the mode
+
+! !     md = mode_t(this%ml, this%mp, this%op, omega, discrim, x, y_c, x_ref, y_c_ref)
+
+! !     ! Finish
+
+! !     return
+
+! !   end function mode_c_
+
+! !****
+
+!   subroutine build_ (this, omega)
+
+!     class(rad_bvp_t), target, intent(inout) :: this
+!     complex(WP), intent(in)                 :: omega
+
+!     ! Set up the sysmtx
+
+!     call this%ml%attach_cache(this%cc)
+
+!     call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega), ext_complex_t(1._WP))
+!     call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega), ext_complex_t(1._WP))
+
+!     call this%sh%shoot(omega, this%x, this%sm)
+
+!     call this%ml%detach_cache()
+
+!     call this%sm%scale_rows()
+
+!     ! Finish
+
+!     return
+
+!   end subroutine build_
+
+! !****
+
+!   subroutine recon_ (this, omega, x, y, x_ref, y_ref, discrim, use_real)
+
+!     class(rad_bvp_t), intent(inout)       :: this
+!     complex(WP), intent(in)               :: omega
+!     real(WP), allocatable, intent(out)    :: x(:)
+!     complex(WP), allocatable, intent(out) :: y(:,:)
+!     real(WP), intent(out)                 :: x_ref
+!     complex(WP), intent(out)              :: y_ref(:)
+!     type(ext_complex_t), intent(out)      :: discrim
+!     logical, optional, intent(in)         :: use_real
+
+!     complex(WP) :: b(this%n_e*this%n)
+!     complex(WP) :: y_sh(this%n_e,this%n)
+!     logical     :: same_grid
+!     complex(WP) :: y_ref_(this%n_e,1)
+
+!     $CHECK_BOUNDS(SIZE(y_ref),this%n_e)
+
+!     ! Reconstruct the solution on the shooting grid
+
+!     call this%build_(omega)
+
+!     call this%sm%null_vector(b, discrim, use_real, this%np%use_banded)
+
+!     y_sh = RESHAPE(b, SHAPE(y_sh))
+
+!     ! Build the recon grid
+
+!     this%recon_gp%omega_a = REAL(omega)
+!     this%recon_gp%omega_b = REAL(omega)
+
+!     call build_grid(this%recon_gp, this%ml, this%mp, this%x, x)
+
+!     if(SIZE(x) == SIZE(this%x)) then
+!        same_grid = ALL(x == this%x)
+!     else
+!        same_grid = .FALSE.
+!     endif
+
+!     ! Reconstruct the full solution
+
+!     if(same_grid) then
+
+!        y = y_sh
+
+!     else
+
+!        allocate(y(this%n_e,SIZE(x)))
+
+!        call this%sh%recon(omega, this%x, y_sh, x, y)
+
+!     endif
+
+!     ! Reconstruct the solution at x_ref
+    
+!     x_ref = MIN(MAX(this%op%x_ref, this%x(1)), this%x(this%n))
+
+!     call this%sh%recon(omega, this%x, y_sh, [x_ref], y_ref_)
+
+!     y_ref = y_ref_(:,1)
+
+!     ! Finish
+
+!     return
+
+!   end subroutine recon_
+
+! !****
+
+!   function model_ (this) result (ml)
+
+!     class(rad_bvp_t), intent(in) :: this
+!     class(model_t), pointer      :: ml
+
+!     ! Return the model pointer
+
+!     ml => this%ml
+
+!     ! Finish
+
+!     return
+
+!   end function model_
+
+! !****
+
+!   function mode_r_ (this, omega) result (md)
+
+!     class(rad_bvp_t), target, intent(inout) :: this
+!     real(WP), intent(in)                    :: omega
+!     type(mode_t)                            :: md
+
+!     complex(WP)              :: omega_c
+!     real(WP), allocatable    :: x(:)
+!     complex(WP), allocatable :: y(:,:)
+!     real(WP)                 :: x_ref
+!     complex(WP)              :: y_ref(this%n_e)
+!     type(ext_complex_t)      :: discrim_c
+!     integer                  :: n
+!     integer                  :: i
+!     complex(WP), allocatable :: y_c(:,:)
+!     complex(WP), allocatable :: y_4_x(:)
+!     complex(WP), allocatable :: eul_phi(:)
+!     complex(WP)              :: y_c_ref(6)
+
+!     ! Reconstruct the solution
+
+!     omega_c = CMPLX(omega, KIND=WP)
+
+!     call this%recon_(omega_c, x, y, x_ref, y_ref, discrim_c, .TRUE.)
+
+!     ! Calculate canonical variables
+
+!     n = SIZE(x)
+
+!     allocate(y_c(6,n))
+
+!     !$OMP PARALLEL DO 
+!     do i = 1,n
+!        y_c(1:2,i) = MATMUL(this%jc%trans_matrix(x(i), omega_c, .TRUE.), y(:,i))
+!        y_c(4,i) = -y_c(1,i)*this%ml%U(x(i))
+!        y_c(5:6,i) = 0._WP
+!     end do
+
+!     allocate(y_4_x(n))
+
+!     where (x /= 0._WP)
+!        y_4_x = y_c(4,:)/x
+!     elsewhere
+!        y_4_x = 0._WP
+!     end where
+
+!     eul_phi = integral(x, y_4_x/this%ml%c_1(x))
+
+!     y_c(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
+!     y_c(2,:) = y_c(2,:) + y_c(3,:)
+
+!     y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega_c, .TRUE.), y_ref)
+!     y_c_ref(3) = 0._WP
+!     y_c_ref(4) = -y_c_ref(1)*this%ml%U(x_ref)
+!     y_c_ref(5:6) = 0._WP
+
+!     ! Initialize the mode
+
+!     md = mode_t(this%ml, this%mp, this%op, omega_c, discrim_c, x, y_c, x_ref, y_c_ref)
+
+!     ! Finish
+
+!     return
+
+!   end function mode_r_
+
+! !****
+
+!   function mode_c_ (this, omega) result (md)
+
+!     class(rad_bvp_t), target, intent(inout) :: this
+!     complex(WP), intent(in)                 :: omega
+!     type(mode_t)                            :: md
+
+!     real(WP), allocatable    :: x(:)
+!     complex(WP), allocatable :: y(:,:)
+!     real(WP)                 :: x_ref
+!     complex(WP)              :: y_ref(this%n_e)
+!     type(ext_complex_t)      :: discrim
+!     integer                  :: n
+!     integer                  :: i
+!     complex(WP), allocatable :: y_c(:,:)
+!     complex(WP), allocatable :: y_4_x(:)
+!     complex(WP), allocatable :: eul_phi(:)
+!     complex(WP)              :: y_c_ref(6)
+
+!     ! Reconstruct the solution
+
+!     call this%recon_(omega, x, y, x_ref, y_ref, discrim, .FALSE.)
+
+!     ! Calculate canonical variables
+
+!     n = SIZE(x)
+
+!     allocate(y_c(6,n))
+
+!     !$OMP PARALLEL DO 
+!     do i = 1,n
+!        y_c(1:2,i) = MATMUL(this%jc%trans_matrix(x(i), omega, .TRUE.), y(:,i))
+!        y_c(4,i) = -y_c(1,i)*this%ml%U(x(i))
+!        y_c(5:6,i) = 0._WP
+!     end do
+
+!     allocate(y_4_x(n))
+
+!     where (x /= 0._WP)
+!        y_4_x = y_c(4,:)/x
+!     elsewhere
+!        y_4_x = 0._WP
+!     end where
+
+!     eul_phi = integral(x, y_4_x/this%ml%c_1(x))
+
+!     y_c(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
+!     y_c(2,:) = y_c(2,:) + y_c(3,:)
+
+!     y_c_ref(1:2) = MATMUL(this%jc%trans_matrix(x_ref, omega, .TRUE.), y_ref)
+!     y_c_ref(3) = 0._WP
+!     y_c_ref(4) = -y_c_ref(1)*this%ml%U(x_ref)
+!     y_c_ref(5:6) = 0._WP
+
+!     ! Initialize the mode
+
+!     md = mode_t(this%ml, this%mp, this%op, omega, discrim, x, y_c, x_ref, y_c_ref)
+
+!     ! Finish
+
+!     return
+
+!   end function mode_c_
+
+! !****
+
+!   subroutine build_ (this, omega)
+
+!     class(rad_bvp_t), target, intent(inout) :: this
+!     complex(WP), intent(in)                 :: omega
+
+!     ! Set up the sysmtx
+
+!     call this%ml%attach_cache(this%cc)
+
+!     call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega), ext_complex_t(1._WP))
+!     call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega), ext_complex_t(1._WP))
+
+!     call this%sh%shoot(omega, this%x, this%sm)
+
+!     call this%ml%detach_cache()
+
+!     call this%sm%scale_rows()
+
+!     ! Finish
+
+!     return
+
+!   end subroutine build_
+
+! !****
+
+!   subroutine recon_ (this, omega, x, y, x_ref, y_ref, discrim, use_real)
+
+!     class(rad_bvp_t), intent(inout)       :: this
+!     complex(WP), intent(in)               :: omega
+!     real(WP), allocatable, intent(out)    :: x(:)
+!     complex(WP), allocatable, intent(out) :: y(:,:)
+!     real(WP), intent(out)                 :: x_ref
+!     complex(WP), intent(out)              :: y_ref(:)
+!     type(ext_complex_t), intent(out)      :: discrim
+!     logical, optional, intent(in)         :: use_real
+
+!     complex(WP) :: b(this%n_e*this%n)
+!     complex(WP) :: y_sh(this%n_e,this%n)
+!     logical     :: same_grid
+!     complex(WP) :: y_ref_(this%n_e,1)
+
+!     $CHECK_BOUNDS(SIZE(y_ref),this%n_e)
+
+!     ! Reconstruct the solution on the shooting grid
+
+!     call this%build_(omega)
+
+!     call this%sm%null_vector(b, discrim, use_real, this%np%use_banded)
+
+!     y_sh = RESHAPE(b, SHAPE(y_sh))
+
+!     ! Build the recon grid
+
+!     this%recon_gp%omega_a = REAL(omega)
+!     this%recon_gp%omega_b = REAL(omega)
+
+!     call build_grid(this%recon_gp, this%ml, this%mp, this%x, x)
+
+!     if(SIZE(x) == SIZE(this%x)) then
+!        same_grid = ALL(x == this%x)
+!     else
+!        same_grid = .FALSE.
+!     endif
+
+!     ! Reconstruct the full solution
+
+!     if(same_grid) then
+
+!        y = y_sh
+
+!     else
+
+!        allocate(y(this%n_e,SIZE(x)))
+
+!        call this%sh%recon(omega, this%x, y_sh, x, y)
+
+!     endif
+
+!     ! Reconstruct the solution at x_ref
+    
+!     x_ref = MIN(MAX(this%op%x_ref, this%x(1)), this%x(this%n))
+
+!     call this%sh%recon(omega, this%x, y_sh, [x_ref], y_ref_)
+
+!     y_ref = y_ref_(:,1)
+
+!     ! Finish
+
+!     return
+
+!   end subroutine recon_
+
+! !****
+
+!   function model_ (this) result (ml)
+
+!     class(rad_bvp_t), intent(in) :: this
+!     class(model_t), pointer      :: ml
+
+!     ! Return the model pointer
+
+!     ml => this%ml
+
+!     ! Finish
+
+!     return
+
+!   end function model_
 
 end module gyre_rad_bvp

@@ -31,6 +31,15 @@ module gyre_atmos
 
   implicit none
 
+  ! Interfaces
+
+  interface atmos_wavenumber
+     module procedure atmos_wavenumber_r_
+     module procedure atmos_wavenumber_c_
+  end interface atmos_wavenumber
+
+  ! Access specifiers
+
   private
 
   public :: atmos_wavenumber
@@ -42,7 +51,29 @@ module gyre_atmos
 
 contains
 
-  function atmos_wavenumber (V_g, As, c_1, omega, l) result (lambda)
+  function atmos_wavenumber_r_ (V_g, As, c_1, omega, l) result (lambda)
+
+    real(WP)             :: V_g
+    real(WP), intent(in) :: As
+    real(WP), intent(in) :: c_1
+    real(WP), intent(in) :: omega
+    integer, intent(in)  :: l
+    real(WP)             :: lambda
+
+    ! Calculate the radial wavenumber in the atmosphere (real
+    ! frequencies)
+
+    lambda = REAL(atmos_wavenumber_c_(V_g, As, c_1, CMPLX(omega, KIND=WP), l), WP)
+
+    ! Finish
+
+    return
+
+  end function atmos_wavenumber_r_
+
+!****
+
+  function atmos_wavenumber_c_ (V_g, As, c_1, omega, l) result (lambda)
 
     real(WP)                :: V_g
     real(WP), intent(in)    :: As
@@ -56,7 +87,8 @@ contains
     complex(WP) :: gamma
     complex(WP) :: sgamma
 
-    ! Calculate the radial wavenumber in the atmosphere
+    ! Calculate the radial wavenumber in the atmosphere (real
+    ! frequencies)
 
     if (AIMAG(omega) == 0._WP) then
 
@@ -67,24 +99,25 @@ contains
        ! Evaluate the wavenumber
 
        gamma = -4._WP*V_g*c_1*(omega**2 - omega_cutoff_lo**2)*(omega**2 - omega_cutoff_hi**2)/omega**2
+       sgamma = SQRT(gamma)
 
        if (ABS(REAL(omega)) > omega_cutoff_hi) then
 
           ! Acoustic waves
 
-          lambda = 0.5_WP*((V_g + As - 2._WP) - SQRT(gamma))
+          lambda = 0.5_WP*((V_g + As - 2._WP) - sgamma)
 
        elseif (ABS(REAL(omega)) < omega_cutoff_lo) then
 
           ! Gravity waves
 
-          lambda = 0.5_WP*((V_g + As - 2._WP) + SQRT(gamma))
+          lambda = 0.5_WP*((V_g + As - 2._WP) + sgamma)
 
        else
 
           ! Evanescent
 
-          lambda = 0.5_WP*((V_g + As - 2._WP) - SQRT(gamma))
+          lambda = 0.5_WP*((V_g + As - 2._WP) - sgamma)
 
        endif
 
@@ -98,7 +131,7 @@ contains
        if (AIMAG(omega) > 0._WP) then
 
           ! Decaying oscillations; choose the wave with diverging
-          ! energy density (see Townsend 2000b)
+          ! energy density (see [Tow2000b])
 
           if (REAL(sgamma) > 0._WP) then
              lambda = 0.5_WP*((V_g + As - 2._WP) + sgamma)
@@ -109,7 +142,7 @@ contains
        else
 
           ! Growing oscillations; choose the wave with non-diverging
-          ! energy density (see Townsend 2000b)
+          ! energy density (see [Tow2000b])
 
           if (REAL(sgamma) > 0._WP) then
              lambda = 0.5_WP*((V_g + As - 2._WP) - sgamma)
@@ -125,7 +158,7 @@ contains
 
     return
 
-  end function atmos_wavenumber
+  end function atmos_wavenumber_c_
 
 !****
 

@@ -1,7 +1,7 @@
 ! Module   : gyre_colloc_ivp
-! Purpose  : solve initial-value problems (interface, for collocation schemes)
+! Purpose  : initial-value solvers (collocation)
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2014 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,31 +15,11 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'core.inc'
-
 module gyre_colloc_ivp
 
   ! Uses
 
-  use core_kinds
-  use core_linalg
-
-  use gyre_jacobian
-  use gyre_ivp
-
-  ! No implicit typing
-
-  implicit none
-
-  ! Derived-type definitions
-
-  type, abstract, extends (ivp_t) :: colloc_ivp_t
-  end type colloc_ivp_t
-
-  ! Access specifiers
-
-  private
-
-  public :: colloc_ivp_t
+  use gyre_r_colloc_ivp
+  use gyre_c_colloc_ivp
 
 end module gyre_colloc_ivp

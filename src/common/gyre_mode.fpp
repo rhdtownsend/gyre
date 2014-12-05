@@ -30,7 +30,7 @@ module gyre_mode
   $if ($MPI)
   use gyre_model_mpi
   $endif
-  use gyre_ext_arith
+  use gyre_ext
   use gyre_modepar
   use gyre_oscpar
   use gyre_grid
@@ -49,8 +49,8 @@ module gyre_mode
      class(model_t), pointer  :: ml => null()
      type(modepar_t)          :: mp
      type(oscpar_t)           :: op
-     type(ext_complex_t)      :: discrim
-     type(ext_real_t)         :: chi
+     type(c_ext_t)            :: discrim
+     type(r_ext_t)            :: chi
      real(WP), allocatable    :: x(:)
      complex(WP), allocatable :: y(:,:)
      real(WP)                 :: x_ref
@@ -141,7 +141,7 @@ contains
     type(modepar_t), intent(in)         :: mp
     type(oscpar_t), intent(in)          :: op
     complex(WP), intent(in)             :: omega
-    type(ext_complex_t), intent(in)     :: discrim
+    type(c_ext_t), intent(in)           :: discrim
     real(WP), intent(in)                :: x(:)
     complex(WP), intent(in)             :: y(:,:)
     real(WP), intent(in)                :: x_ref
