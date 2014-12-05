@@ -71,6 +71,8 @@ program gyre_ad
   type(scanpar_t), allocatable :: sp_sel(:)
   integer                      :: n_op_sel
   integer                      :: n_np_sel
+  real(WP)                     :: x_i
+  real(WP)                     :: x_o
   real(WP), allocatable        :: omega(:)
   real(WP), allocatable        :: x_sh(:)
   class(r_bvp_t), allocatable  :: bp
@@ -167,7 +169,15 @@ program gyre_ad
         
      ! Set up the frequency array
 
-     call build_scan(sp_sel, ml, mp(i), op_sel(n_op_sel), shoot_gp_sel, x_ml, omega)
+     if (allocated(x_ml)) then
+        x_i = x_ml(1)
+        x_o = x_ml(SIZE(x_ml))
+     else
+        x_i = 0._WP
+        x_o = 1._WP
+     endif
+
+     call build_scan(sp_sel, ml, mp(i), op_sel(n_op_sel), x_i, x_o, omega)
 
      ! Set up the shooting grid
 
