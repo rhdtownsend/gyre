@@ -27,9 +27,8 @@ module gyre_c_search
   use core_parallel
 
   use gyre_bvp
-  use gyre_ext
   use gyre_discfunc
-!  use gyre_grid
+  use gyre_ext
   use gyre_mode
   use gyre_model
   use gyre_numpar
