@@ -24,14 +24,15 @@ module gyre_ad_bvp
   use core_kinds
 
   use gyre_bvp
-  use gyre_model
-  use gyre_mode
   use gyre_ext
   use gyre_ivp
-  use gyre_sysmtx
+  use gyre_mode
   use gyre_modepar
-  use gyre_oscpar
+  use gyre_model
   use gyre_numpar
+  use gyre_oscpar
+  use gyre_sysmtx
+  use gyre_rot
 
   use ISO_FORTRAN_ENV
 
@@ -65,6 +66,9 @@ contains
 
   function ad_bvp_t_ (x, ml, mp, op, np) result (bp)
 
+    use gyre_dopp_rot
+    use gyre_trad_rot
+
     use gyre_ad_jacob
     use gyre_ad_bound
 
@@ -74,6 +78,8 @@ contains
 
     use gyre_block_sysmtx
 
+    use core_hgroup
+
     real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
@@ -81,6 +87,7 @@ contains
     type(numpar_t), intent(in)          :: np
     type(ad_bvp_t), target              :: bp
 
+    class(r_rot_t), allocatable    :: rt
     type(ad_jacob_t)               :: jc
     integer                        :: n
     real(WP)                       :: x_i
@@ -91,9 +98,20 @@ contains
 
     ! Construct the ad_bvp_t
 
+    ! Initialize the rotational effects
+
+    select case (op%rotation_type)
+    case ('DOPPLER')
+       allocate(rt, SOURCE=r_dopp_rot_t(ml, mp))
+    case ('TRAD')
+       allocate(rt, SOURCE=r_trad_rot_t(ml, mp))
+    case default
+       $ABORT(Invalid rotation_type)
+    end select
+ 
     ! Initialize the jacobian
 
-    jc = ad_jacob_t(ml, mp, op%variables_type)
+    jc = ad_jacob_t(ml, rt, op%variables_type)
 
     ! Initialize the boundary conditions
 
@@ -102,7 +120,7 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    bd = ad_bound_t(ml, jc, mp, x_i, x_o, op%inner_bound_type, op%outer_bound_type)
+    bd = ad_bound_t(ml, rt, jc, x_i, x_o, op%inner_bound_type, op%outer_bound_type)
 
     ! Initialize the IVP solver
 

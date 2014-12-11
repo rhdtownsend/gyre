@@ -24,15 +24,16 @@ module gyre_rad_bvp
   use core_kinds
 
   use gyre_bvp
-  use gyre_model
-  use gyre_mode
   use gyre_ext
   use gyre_ivp
-  use gyre_sysmtx
+  use gyre_mode
   use gyre_modepar
-  use gyre_oscpar
+  use gyre_model
   use gyre_numpar
+  use gyre_oscpar
+  use gyre_sysmtx
   use gyre_util
+  use gyre_rot
 
   use ISO_FORTRAN_ENV
 
@@ -66,6 +67,9 @@ contains
 
   function rad_bvp_t_ (x, ml, mp, op, np) result (bp)
 
+    use gyre_dopp_rot
+    use gyre_trad_rot
+
     use gyre_rad_jacob
     use gyre_rad_bound
 
@@ -82,6 +86,7 @@ contains
     type(numpar_t), intent(in)          :: np
     type(rad_bvp_t), target             :: bp
 
+    class(r_rot_t), allocatable    :: rt
     type(rad_jacob_t)              :: jc
     integer                        :: n
     real(WP)                       :: x_i
@@ -92,9 +97,20 @@ contains
  
     ! Construct the rad_bvp_t
 
+    ! Initialize the rotational effects
+
+    select case (op%rotation_type)
+    case ('DOPPLER')
+       allocate(rt, SOURCE=r_dopp_rot_t(ml, mp))
+    case ('TRAD')
+       allocate(rt, SOURCE=r_trad_rot_t(ml, mp))
+    case default
+       $ABORT(Invalid rotation_type)
+    end select
+ 
     ! Initialize the jacobian
 
-    jc = rad_jacob_t(ml, mp, op%variables_type)
+    jc = rad_jacob_t(ml, rt, op%variables_type)
 
     ! Initialize the boundary conditions
 
@@ -103,7 +119,7 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    bd = rad_bound_t(ml, jc, mp, x_i, x_o, op%inner_bound_type, op%outer_bound_type)
+    bd = rad_bound_t(ml, rt, jc, x_i, x_o, op%inner_bound_type, op%outer_bound_type)
 
     ! Initialize the IVP solver
 

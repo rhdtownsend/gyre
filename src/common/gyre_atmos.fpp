@@ -51,19 +51,19 @@ module gyre_atmos
 
 contains
 
-  function atmos_wavenumber_r_ (V_g, As, c_1, omega, l) result (lambda)
+  function atmos_wavenumber_r_ (V_g, As, c_1, omega, l_e) result (lambda)
 
     real(WP)             :: V_g
     real(WP), intent(in) :: As
     real(WP), intent(in) :: c_1
     real(WP), intent(in) :: omega
-    integer, intent(in)  :: l
+    real(WP), intent(in) :: l_e
     real(WP)             :: lambda
 
     ! Calculate the radial wavenumber in the atmosphere (real
     ! frequencies)
 
-    lambda = REAL(atmos_wavenumber_c_(V_g, As, c_1, CMPLX(omega, KIND=WP), l), WP)
+    lambda = REAL(atmos_wavenumber_c_(V_g, As, c_1, CMPLX(omega, KIND=WP), CMPLX(l_e, KIND=WP)), WP)
 
     ! Finish
 
@@ -73,13 +73,13 @@ contains
 
 !****
 
-  function atmos_wavenumber_c_ (V_g, As, c_1, omega, l) result (lambda)
+  function atmos_wavenumber_c_ (V_g, As, c_1, omega, l_e) result (lambda)
 
     real(WP)                :: V_g
     real(WP), intent(in)    :: As
     real(WP), intent(in)    :: c_1
     complex(WP), intent(in) :: omega
-    integer, intent(in)     :: l
+    complex(WP), intent(in) :: l_e
     complex(WP)             :: lambda
 
     real(WP)    :: omega_cutoff_lo
@@ -87,14 +87,14 @@ contains
     complex(WP) :: gamma
     complex(WP) :: sgamma
 
-    ! Calculate the radial wavenumber in the atmosphere (real
+    ! Calculate the radial wavenumber in the atmosphere (complex
     ! frequencies)
 
-    if (AIMAG(omega) == 0._WP) then
+    if (AIMAG(omega) == 0._WP .AND. AIMAG(l_e) == 0._WP) then
 
        ! Calculate cutoff frequencies
 
-       call eval_atmos_cutoff_freqs(V_g, As, c_1, l, omega_cutoff_lo, omega_cutoff_hi)
+       call eval_atmos_cutoff_freqs(V_g, As, c_1, REAL(l_e), omega_cutoff_lo, omega_cutoff_hi)
 
        ! Evaluate the wavenumber
 
@@ -125,7 +125,7 @@ contains
 
        ! Evaluate the wavenumber
 
-       gamma = (As - V_g + 4._WP)**2 + 4*(l*(l+1)/(c_1*omega**2) - V_g)*(c_1*omega**2 - As)
+       gamma = (As - V_g + 4._WP)**2 + 4*(l_e*(l_e+1._WP)/(c_1*omega**2) - V_g)*(c_1*omega**2 - As)
        sgamma = SQRT(gamma)
 
        if (AIMAG(omega) > 0._WP) then
@@ -162,12 +162,12 @@ contains
 
 !****
 
-  subroutine eval_atmos_cutoff_freqs (V_g, As, c_1, l, omega_cutoff_lo, omega_cutoff_hi)
+  subroutine eval_atmos_cutoff_freqs (V_g, As, c_1, l_e, omega_cutoff_lo, omega_cutoff_hi)
 
     real(WP), intent(in)  :: V_g
     real(WP), intent(in)  :: As
     real(WP), intent(in)  :: c_1
-    integer, intent(in)   :: l
+    real(WP), intent(in)  :: l_e
     real(WP), intent(out) :: omega_cutoff_lo
     real(WP), intent(out) :: omega_cutoff_hi
 
@@ -178,8 +178,8 @@ contains
     ! Evaluate the atmospheric cutoff frequencies from the supplied coefficients
 
     a = -4._WP*V_g*c_1**2
-    b = ((As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1))*c_1
-    c = -4._WP*l*(l+1)*As
+    b = ((As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l_e*(l_e+1._WP))*c_1
+    c = -4._WP*l_e*(l_e+1._WP)*As
 
     omega_cutoff_lo = SQRT((-b + SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
     omega_cutoff_hi = SQRT((-b - SQRT(b**2 - 4._WP*a*c))/(2._WP*a))

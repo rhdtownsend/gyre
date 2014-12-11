@@ -23,11 +23,11 @@ module gyre_rad_bound
 
   use core_kinds
 
-  use gyre_bound
-  use gyre_model
-  use gyre_jacob
-  use gyre_modepar
   use gyre_atmos
+  use gyre_bound
+  use gyre_jacob
+  use gyre_model
+  use gyre_rot
 
   use ISO_FORTRAN_ENV
 
@@ -50,8 +50,8 @@ module gyre_rad_bound
   type, extends (r_bound_t) :: rad_bound_t
      private
      class(model_t), pointer       :: ml => null()
+     class(r_rot_t), allocatable   :: rt
      class(r_jacob_t), allocatable :: jc
-     type(modepar_t)               :: mp
      real(WP)                      :: x_i
      real(WP)                      :: x_o
      integer                       :: type_i
@@ -84,11 +84,11 @@ module gyre_rad_bound
 
 contains
 
-  function rad_bound_t_ (ml, jc, mp, x_i, x_o, type_i, type_o) result (bd)
+  function rad_bound_t_ (ml, rt, jc, x_i, x_o, type_i, type_o) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
+    class(r_rot_t), intent(in)          :: rt
     class(r_jacob_t), intent(in)        :: jc
-    type(modepar_t), intent(in)         :: mp
     real(WP)                            :: x_i
     real(WP)                            :: x_o
     character(*), intent(in)            :: type_i
@@ -98,8 +98,8 @@ contains
     ! Construct the rad_bound_t
 
     bd%ml => ml
+    allocate(bd%rt, SOURCE=rt)
     allocate(bd%jc, SOURCE=jc)
-    bd%mp = mp
 
     bd%x_i = x_i
     bd%x_o = x_o
@@ -141,8 +141,8 @@ contains
   function B_i_ (this, omega) result (B_i)
 
     class(rad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: B_i(this%n_i,this%n_e)
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: B_i(this%n_i,this%n_e)
 
     ! Evaluate the inner boundary conditions
 
@@ -178,7 +178,7 @@ contains
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
     associate(c_1 => this%ml%c_1(this%x_i), &
-              omega_c => this%ml%omega_c(this%x_i, this%mp%m, omega))
+              omega_c => this%rt%omega_c(this%x_i, omega))
 
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = 0._WP
@@ -204,7 +204,7 @@ contains
     ! Evaluate the inner boundary conditions (zero displacement/gravity)
 
     associate(c_1 => this%ml%c_1(this%x_i), &
-              omega_c => this%ml%omega_c(this%x_i, this%mp%m, omega))
+              omega_c => this%rt%omega_c(this%x_i, omega))
 
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = 0._WP
@@ -280,7 +280,7 @@ contains
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     associate(V => this%ml%V(this%x_o), c_1 => this%ml%c_1(this%x_o), &
-              omega_c => this%ml%omega_c(this%x_o, this%mp%m, omega))
+              omega_c => this%rt%omega_c(this%x_o, omega))
         
       B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
       B_o(1,2) = -1._WP
@@ -312,12 +312,12 @@ contains
 
     call eval_atmos_coeffs_unno(this%ml, this%x_o, V_g, As, c_1)
 
-    associate(l => this%mp%l, omega_c => this%ml%omega_c(this%x_o, this%mp%m, omega))
+    associate(omega_c => this%rt%omega_c(this%x_o, omega))
 
-      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l)
+      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, 0._WP)
       
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/(c_1*omega_c**2) - V_g
+      b_12 = -V_g
     
       B_o(1,1) = lambda - b_11
       B_o(1,2) = -b_12
@@ -349,12 +349,12 @@ contains
 
     call eval_atmos_coeffs_jcd(this%ml, this%x_o, V_g, As, c_1)
 
-    associate(l => this%mp%l, omega_c => this%ml%omega_c(this%x_o, this%mp%m, omega))
+    associate(omega_c => this%rt%omega_c(this%x_o, omega))
 
-      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l)
+      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, 0._WP)
 
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/(c_1*omega_c**2) - V_g
+      b_12 = -V_g
 
       B_o(1,1) = lambda - b_11
       B_o(1,2) = -b_12

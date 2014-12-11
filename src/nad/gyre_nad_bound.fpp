@@ -23,11 +23,11 @@ module gyre_nad_bound
 
   use core_kinds
 
-  use gyre_bound
-  use gyre_model
-  use gyre_jacob
-  use gyre_modepar
   use gyre_atmos
+  use gyre_bound
+  use gyre_jacob
+  use gyre_model
+  use gyre_wave
 
   use ISO_FORTRAN_ENV
 
@@ -50,8 +50,8 @@ module gyre_nad_bound
   type, extends (c_bound_t) :: nad_bound_t
      private
      class(model_t), pointer       :: ml => null()
+     class(c_wave_t), allocatable  :: wv
      class(c_jacob_t), allocatable :: jc
-     type(modepar_t)               :: mp
      real(WP)                      :: x_i
      real(WP)                      :: x_o
      integer                       :: type_i
@@ -84,11 +84,11 @@ module gyre_nad_bound
 
 contains
 
-  function nad_bound_t_ (ml, jc, mp, x_i, x_o, type_i, type_o) result (bd)
+  function nad_bound_t_ (ml, wv, jc, x_i, x_o, type_i, type_o) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
+    class(c_wave_t), intent(in)         :: wv
     class(c_jacob_t), intent(in)        :: jc
-    type(modepar_t), intent(in)         :: mp
     real(WP)                            :: x_i
     real(WP)                            :: x_o
     character(*), intent(in)            :: type_i
@@ -98,8 +98,8 @@ contains
     ! Construct the nad_bound_t
 
     bd%ml => ml
+    allocate(bd%wv, SOURCE=wv)
     allocate(bd%jc, SOURCE=jc)
-    bd%mp = mp
 
     bd%x_i = x_i
     bd%x_o = x_o
@@ -177,11 +177,11 @@ contains
 
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
-    associate(c_1 => this%ml%c_1(this%x_i), l => this%mp%l, &
-              omega_c => this%ml%omega_c(this%x_i, this%mp%m, omega))
+    associate(c_1 => this%ml%c_1(this%x_i), &
+              l_e => this%wv%l_e(this%x_i, omega), omega_c => this%wv%omega_c(this%x_i, omega))
 
       B_i(1,1) = c_1*omega_c**2
-      B_i(1,2) = -l
+      B_i(1,2) = -l_e
       B_i(1,3) = 0._WP
       B_i(1,4) = 0._WP
       B_i(1,5) = 0._WP
@@ -189,7 +189,7 @@ contains
 
       B_i(2,1) = 0._WP
       B_i(2,2) = 0._WP
-      B_i(2,3) = l
+      B_i(2,3) = l_e
       B_i(2,4) = -1._WP
       B_i(2,5) = 0._WP
       B_i(2,6) = 0._WP
@@ -293,7 +293,7 @@ contains
     ! Evaluate the outer boundary conditions (zero-pressure)
 
     associate(V => this%ml%V(this%x_o), U => this%ml%U(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l => this%mp%l)
+              l_e => this%wv%l_e(this%x_i, omega))
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
@@ -304,7 +304,7 @@ contains
       
       B_o(2,1) = U
       B_o(2,2) = 0._WP
-      B_o(2,3) = l + 1._WP
+      B_o(2,3) = l_e + 1._WP
       B_o(2,4) = 1._WP
       B_o(2,5) = 0._WP
       B_o(2,6) = 0._WP
@@ -335,18 +335,18 @@ contains
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     associate(V => this%ml%V(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l => this%mp%l, omega_c => this%ml%omega_c(this%x_o, this%mp%m, omega))
+              l_e => this%wv%l_e(this%x_o, omega), omega_c => this%wv%omega_c(this%x_o, omega))
 
-      B_o(1,1) = 1 + (l*(l+1)/omega_c**2 - 4 - omega_c**2)/V
+      B_o(1,1) = 1 + (l_e*(l_e+1._WP)/omega_c**2 - 4 - omega_c**2)/V
       B_o(1,2) = -1._WP
-      B_o(1,3) = 1 + (l*(l+1)/omega_c**2 - l - 1)/V
+      B_o(1,3) = 1 + (l_e*(l_e+1._WP)/omega_c**2 - l_e - 1)/V
       B_o(1,4) = 0._WP
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
      
       B_o(2,1) = 0._WP
       B_o(2,2) = 0._WP
-      B_o(2,3) = l + 1._WP
+      B_o(2,3) = l_e + 1._WP
       B_o(2,4) = 1._WP
       B_o(2,5) = 0._WP
       B_o(2,6) = 0._WP
@@ -392,20 +392,20 @@ contains
     call eval_atmos_coeffs_unno(this%ml, this%x_o, V_g, As, c_1)
 
     associate(V => this%ml%V(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l => this%mp%l, omega_c => this%ml%omega_c(this%x_o, this%mp%m, omega))
+              l_e => this%wv%l_e(this%x_o, omega), omega_c => this%wv%omega_c(this%x_o, omega))
 
-      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l)
+      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l_e)
       
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/(c_1*omega_c**2) - V_g
+      b_12 = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
       b_13 = V_g
 
       b_21 = c_1*omega_c**2 - As
       b_22 = 1._WP + As
       b_23 = -As
     
-      alpha_1 = (b_12*b_23 - b_13*(b_22+l))/((b_11+l)*(b_22+l) - b_12*b_21)
-      alpha_2 = (b_21*b_13 - b_23*(b_11+l))/((b_11+l)*(b_22+l) - b_12*b_21)
+      alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
+      alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
 
       B_o(1,1) = lambda - b_11
       B_o(1,2) = -b_12
@@ -416,7 +416,7 @@ contains
 
       B_o(2,1) = 0._WP
       B_o(2,2) = 0._WP
-      B_o(2,3) = l + 1._WP
+      B_o(2,3) = l_e + 1._WP
       B_o(2,4) = 1._WP
       B_o(2,5) = 0._WP
       B_o(2,6) = 0._WP
@@ -456,23 +456,23 @@ contains
     call eval_atmos_coeffs_jcd(this%ml, this%x_o, V_g, As, c_1)
 
     associate(V => this%ml%V(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l => this%mp%l, omega_c => this%ml%omega_c(this%x_o, this%mp%m, omega))
+              l_e => this%wv%l_e(this%x_o, omega), omega_c => this%wv%omega_c(this%x_o, omega))
 
-      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l)
+      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l_e)
 
       b_11 = V_g - 3._WP
-      b_12 = l*(l+1)/(c_1*omega_c**2) - V_g
+      b_12 = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
 
       B_o(1,1) = lambda - b_11
       B_o(1,2) = -b_12
-      B_o(1,3) = b_12 + (l*(l+1)/(c_1*omega_c**2) - l - 1._WP)*b_12/(V_g + As)
+      B_o(1,3) = b_12 + (l_e*(l_e+1)/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As)
       B_o(1,4) = 0._WP
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
 
       B_o(2,1) = 0._WP
       B_o(2,2) = 0._WP
-      B_o(2,3) = l + 1._WP
+      B_o(2,3) = l_e + 1._WP
       B_o(2,4) = 1._WP
       B_o(2,5) = 0._WP
       B_o(2,6) = 0._WP

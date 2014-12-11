@@ -25,24 +25,25 @@ program gyre_ad
   use gyre_constants
   use core_parallel
 
-  use gyre_version
+  use gyre_ad_bvp
+  use gyre_bvp
   use gyre_ext
+  use gyre_grid
+  use gyre_gridpar
+  use gyre_input
+  use gyre_mode
   use gyre_model
   use gyre_modepar
-  use gyre_oscpar
   use gyre_numpar
-  use gyre_gridpar
-  use gyre_scanpar
+  use gyre_oscpar
   use gyre_outpar
-  use gyre_bvp
-  use gyre_ad_bvp
+  use gyre_output
   use gyre_rad_bvp
   use gyre_search
-  use gyre_mode
-  use gyre_input
-  use gyre_output
+  use gyre_scanpar
+  use gyre_trad
   use gyre_util
-  use gyre_grid
+  use gyre_version
 
   use ISO_FORTRAN_ENV
 
@@ -101,6 +102,8 @@ program gyre_ad
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
 
   endif
+
+  call init_trad()
 
   ! Process arguments
 

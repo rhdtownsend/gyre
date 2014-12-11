@@ -24,9 +24,9 @@ module gyre_ad_jacob
   use core_kinds
 
   use gyre_jacob
-  use gyre_model
-  use gyre_modepar
   use gyre_linalg
+  use gyre_model
+  use gyre_rot
 
   use ISO_FORTRAN_ENV
 
@@ -44,9 +44,9 @@ module gyre_ad_jacob
 
   type, extends (r_jacob_t) :: ad_jacob_t
      private
-     class(model_t), pointer :: ml => null()
-     type(modepar_t)         :: mp
-     integer                 :: vars
+     class(model_t), pointer     :: ml => null()
+     class(r_rot_t), allocatable :: rt
+     integer                     :: vars
    contains
      private
      procedure, public :: A => A_
@@ -75,17 +75,17 @@ module gyre_ad_jacob
 
 contains
 
-  function ad_jacob_t_ (ml, mp, vars) result (jc)
+  function ad_jacob_t_ (ml, rt, vars) result (jc)
 
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
+    class(r_rot_t), intent(in)          :: rt
     character(*), intent(in)            :: vars
     type(ad_jacob_t)                    :: jc
 
     ! Construct the ad_jacob_t
 
     jc%ml => ml
-    jc%mp = mp
+    allocate(jc%rt, SOURCE=rt)
 
     select case (vars)
     case ('DZIEM')
@@ -167,27 +167,27 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
+              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(x), omega_c => this%rt%omega_c(x, omega))
 
-      xA(1,1) = V_g - 1._WP - l
-      xA(1,2) = l*(l+1)/(c_1*omega_c**2) - V_g
+      xA(1,1) = V_g - 1._WP - l_0
+      xA(1,2) = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
       xA(1,3) = V_g
       xA(1,4) = 0._WP
       
       xA(2,1) = c_1*omega_c**2 - As
-      xA(2,2) = As - U + 3._WP - l
+      xA(2,2) = As - U + 3._WP - l_0
       xA(2,3) = -As
       xA(2,4) = 0._WP
       
       xA(3,1) = 0._WP
       xA(3,2) = 0._WP
-      xA(3,3) = 3._WP - U - l
+      xA(3,3) = 3._WP - U - l_0
       xA(3,4) = 1._WP
       
       xA(4,1) = U*As
       xA(4,2) = U*V_g
-      xA(4,3) = l*(l+1) - U*V_g
-      xA(4,4) = -U - l + 2._WP
+      xA(4,3) = l_e*(l_e+1._WP) - U*V_g
+      xA(4,4) = -U - l_0 + 2._WP
 
     end associate
 
@@ -211,29 +211,29 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
+              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(x), omega_c => this%rt%omega_c(x, omega))
 
-      if (l /= 0) then
+      if (l_e /= 0._WP) then
 
-         xA(1,1) = V_g - 1._WP - l
-         xA(1,2) = 1._WP - V_g*c_1*omega_c**2/(l*(l+1))
+         xA(1,1) = V_g - 1._WP - l_0
+         xA(1,2) = 1._WP - V_g*c_1*omega_c**2/(l_e*(l_e+1._WP))
          xA(1,3) = -V_g
          xA(1,4) = 0._WP
       
-         xA(2,1) = l*(l+1) - As*l*(l+1)/(c_1*omega_c**2)
-         xA(2,2) = As - l
-         xA(2,3) = As*l*(l+1)/(c_1*omega_c**2)
+         xA(2,1) = l_e*(l_e+1._WP) - As*l_e*(l_e+1._WP)/(c_1*omega_c**2)
+         xA(2,2) = As - l_0
+         xA(2,3) = As*l_e*(l_e+1._WP)/(c_1*omega_c**2)
          xA(2,4) = 0._WP
       
          xA(3,1) = 0._WP
          xA(3,2) = 0._WP
-         xA(3,3) = 2._WP - l
+         xA(3,3) = 2._WP - l_0
          xA(3,4) = 1._WP
       
          xA(4,1) = -U*As
-         xA(4,2) = -U*V_g*c_1*omega_c**2/(l*(l+1))
-         xA(4,3) = l*(l+1) + U*(As - 2._WP)
-         xA(4,4) = 2._WP*(1._WP-U) - (l - 1._WP)
+         xA(4,2) = -U*V_g*c_1*omega_c**2/(l_e*(l_e+1._WP))
+         xA(4,3) = l_e*(l_e+1._WP) + U*(As - 2._WP)
+         xA(4,4) = 2._WP*(1._WP-U) - (l_0 - 1._WP)
 
       else
 
@@ -279,28 +279,28 @@ contains
     ! Evaluate the log(x)-space Jacobian matrix (mixed formulation)
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-              As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
+              As => this%ml%As(x), c_1 => this%ml%c_1(x), & 
+              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(x), omega_c => this%rt%omega_c(x, omega))
 
-      xA(1,1) = V_g - 1._WP - l
-      xA(1,2) = l*(l+1)/(c_1*omega_c**2) - V_g
+      xA(1,1) = V_g - 1._WP - l_0
+      xA(1,2) = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
       xA(1,3) = -V_g
       xA(1,4) = 0._WP
       
       xA(2,1) = c_1*omega_c**2 - As
-      xA(2,2) = As - U + 3._WP - l
+      xA(2,2) = As - U + 3._WP - l_0
       xA(2,3) = As
       xA(2,4) = 0._WP
       
       xA(3,1) = 0._WP
       xA(3,2) = 0._WP
-      xA(3,3) = 2._WP - l
+      xA(3,3) = 2._WP - l_0
       xA(3,4) = 1._WP
       
       xA(4,1) = -U*As
       xA(4,2) = -U*V_g
-      xA(4,3) = l*(l+1) + U*(As - 2._WP)
-      xA(4,4) = 2._WP*(1._WP-U) - (l - 1._WP)
+      xA(4,3) = l_e*(l_e+1._WP) + U*(As - 2._WP)
+      xA(4,4) = 2._WP*(1._WP-U) - (l_0 - 1._WP)
 
     end associate
 
@@ -354,11 +354,11 @@ contains
     ! to/from the canonical (DZEIM) formulation
 
     associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-              l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
+              l_e => this%rt%l_e(x, omega), omega_c => this%rt%omega_c(x, omega))
       
       if (to_canon) then
 
-         if (l /= 0) then
+         if (l_e /= 0._WP) then
 
             T(1,1) = 1._WP
             T(1,2) = 0._WP
@@ -366,7 +366,7 @@ contains
             T(1,4) = 0._WP
 
             T(2,1) = 0._WP
-            T(2,2) = c_1*omega_c**2/(l*(l+1))
+            T(2,2) = c_1*omega_c**2/(l_e*(l_e+1._WP))
             T(2,3) = 0._WP
             T(2,4) = 0._WP
 
@@ -406,7 +406,7 @@ contains
 
       else
 
-         if (l /= 0) then
+         if (l_e /= 0._WP) then
 
             T(1,1) = 1._WP
             T(1,2) = 0._WP
@@ -414,7 +414,7 @@ contains
             T(1,4) = 0._WP
 
             T(2,1) = 0._WP
-            T(2,2) = l*(l+1)/(c_1*omega_c**2)
+            T(2,2) = l_e*(l_e+1._WP)/(c_1*omega_c**2)
             T(2,3) = 0._WP
             T(2,4) = 0._WP
 
@@ -475,8 +475,7 @@ contains
     ! Calculate the transformation matrix to convert MIX variables
     ! to/from the canonical (DZEIM) formulation
 
-    associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-              l => this%mp%l)
+    associate(U => this%ml%U(x))
 
       if (to_canon) then
 

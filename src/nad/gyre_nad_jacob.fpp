@@ -26,7 +26,7 @@ module gyre_nad_jacob
   use gyre_jacob
   use gyre_linalg
   use gyre_model
-  use gyre_modepar
+  use gyre_rot
 
   use ISO_FORTRAN_ENV
 
@@ -43,9 +43,9 @@ module gyre_nad_jacob
 
   type, extends (c_jacob_t) :: nad_jacob_t
      private
-     class(model_t), pointer :: ml => null()
-     type(modepar_t)         :: mp
-     integer                 :: vars
+     class(model_t), pointer     :: ml => null()
+     class(c_rot_t), allocatable :: rt
+     integer                     :: vars
    contains
      private
      procedure, public :: A => A_
@@ -72,17 +72,17 @@ module gyre_nad_jacob
 
 contains
 
-  function nad_jacob_t_ (ml, mp, vars) result (jc)
+  function nad_jacob_t_ (ml, rt, vars) result (jc)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    character(*), intent(in)            :: vars
-    type(nad_jacob_t)                   :: jc
+    class(model_t), pointer, intent(in)     :: ml
+    class(c_rot_t), allocatable, intent(in) :: rt
+    character(*), intent(in)                :: vars
+    type(nad_jacob_t)                       :: jc
 
     ! Construct the nad_jacob_t
 
     jc%ml => ml
-    jc%mp = mp
+    allocate(jc%rt, SOURCE=rt)
 
     select case (vars)
     case ('DZIEM')
@@ -166,17 +166,17 @@ contains
               c_thm => this%ml%c_thm(x), c_dif => this%ml%c_dif(x), &
               c_eps_ad => this%ml%c_eps_ad(x), c_eps_S => this%ml%c_eps_S(x), &
               kappa_ad => this%ml%kappa_ad(x), kappa_S => this%ml%kappa_S(x), &
-              l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
+              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
-      xA(1,1) = V_g - 1._WP - l
-      xA(1,2) = l*(l+1)/(c_1*omega_c**2) - V_g
+      xA(1,1) = V_g - 1._WP - l_0
+      xA(1,2) = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
       xA(1,3) = V_g
       xA(1,4) = 0._WP
       xA(1,5) = delta
       xA(1,6) = 0._WP
 
       xA(2,1) = c_1*omega_c**2 - As
-      xA(2,2) = As - U + 3._WP - l
+      xA(2,2) = As - U + 3._WP - l_0
       xA(2,3) = -As
       xA(2,4) = 0._WP
       xA(2,5) = delta
@@ -184,35 +184,35 @@ contains
 
       xA(3,1) = 0._WP
       xA(3,2) = 0._WP
-      xA(3,3) = 3._WP - U - l
+      xA(3,3) = 3._WP - U - l_0
       xA(3,4) = 1._WP
       xA(3,5) = 0._WP
       xA(3,6) = 0._WP
 
       xA(4,1) = U*As
       xA(4,2) = U*V_g
-      xA(4,3) = l*(l+1) - U*V_g
-      xA(4,4) = -U - l + 2._WP
+      xA(4,3) = l_e*(l_e+1._WP) - U*V_g
+      xA(4,4) = -U - l_0 + 2._WP
       xA(4,5) = -U*delta
       xA(4,6) = 0._WP
 
       xA(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-      xA(5,2) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
+      xA(5,2) = V*(l_e*(l_e+1._WP)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
       xA(5,3) = V*c_dif
       xA(5,4) = V*nabla_ad
-      xA(5,5) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
+      xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
       xA(5,6) = -V*nabla/c_rad
 
-      xA(6,1) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-      xA(6,2) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-      xA(6,3) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
+      xA(6,1) = l_e*(l_e+1._WP)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+      xA(6,2) = V*c_eps_ad - l_e*(l_e+1._WP)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+      xA(6,3) = l_e*(l_e+1._WP)*nabla_ad/nabla*c_rad - V*c_eps_ad
       xA(6,4) = 0._WP
       if (x > 0._WP) then
-         xA(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+         xA(6,5) = c_eps_S - l_e*(l_e+1._WP)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
       else
          xA(6,5) = -HUGE(0._WP)
       endif
-      xA(6,6) = -1._WP - l
+      xA(6,6) = -1._WP - l_0
 
     end associate
 
@@ -242,56 +242,55 @@ contains
               c_thm => this%ml%c_thm(x), c_dif => this%ml%c_dif(x), &
               c_eps_ad => this%ml%c_eps_ad(x), c_eps_S => this%ml%c_eps_S(x), &
               kappa_ad => this%ml%kappa_ad(x), kappa_S => this%ml%kappa_S(x), &
-              l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
+              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
-      if (l /= 0) then
+      if (l_e /= 0._WP) then
 
-         xA(1,1) = V_g - 1._WP - l
-         xA(1,2) = 1._WP - V_g*c_1*omega_c**2/(l*(l+1))
+         xA(1,1) = V_g - 1._WP - l_0
+         xA(1,2) = 1._WP - V_g*c_1*omega_c**2/(l_e*(l_e+1._WP))
          xA(1,3) = -V_g
          xA(1,4) = 0._WP
          xA(1,5) = delta
          xA(1,6) = 0._WP
       
-         xA(2,1) = l*(l+1) - As*l*(l+1)/(c_1*omega_c**2)
-         xA(2,2) = As - l
-         xA(2,3) = As*l*(l+1)/(c_1*omega_c**2)
+         xA(2,1) = l_e*(l_e+1._WP) - As*l_e*(l_e+1._WP)/(c_1*omega_c**2)
+         xA(2,2) = As - l_0
+         xA(2,3) = As*l_e*(l_e+1._WP)/(c_1*omega_c**2)
          xA(2,4) = 0._WP
-         xA(2,5) = delta*l*(l+1)/(c_1*omega_c**2)
+         xA(2,5) = delta*l_e*(l_e+1._WP)/(c_1*omega_c**2)
          xA(2,6) = 0._WP
       
          xA(3,1) = 0._WP
          xA(3,2) = 0._WP
-         xA(3,3) = 2._WP - l
+         xA(3,3) = 2._WP - l_0
          xA(3,4) = 1._WP
          xA(3,5) = 0._WP
          xA(3,6) = 0._WP
       
          xA(4,1) = -U*As
-         xA(4,2) = -U*V_g*c_1*omega_c**2/(l*(l+1))
-         xA(4,3) = l*(l+1) + U*(As - 2._WP)
-         xA(4,4) = 2._WP*(1._WP-U) - (l - 1._WP)
+         xA(4,2) = -U*V_g*c_1*omega_c**2/(l_e*(l_e+1._WP))
+         xA(4,3) = l_e*(l_e+1._WP) + U*(As - 2._WP)
+         xA(4,4) = 2._WP*(1._WP-U) - (l_0 - 1._WP)
          xA(4,5) = U*delta
          xA(4,6) = 0._WP
 
          xA(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-         xA(5,2) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)*c_1*omega_c**2/(l*(l+1))
+         xA(5,2) = V*(l_e*(l_e+1._WP)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)*c_1*omega_c**2/(l_e*(l_e+1._WP))
          xA(5,3) = -V*c_dif + V*nabla_ad*(1._WP-U)
          xA(5,4) = -V*nabla_ad
-         xA(5,5) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
+         xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
          xA(5,6) = -V*nabla/c_rad
 
-         xA(6,1) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-         xA(6,2) = (V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2)))*c_1*omega_c**2/(l*(l+1))
-         xA(6,3) = -(l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad)
+         xA(6,1) = l_0*(l_0+1._WP)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         xA(6,2) = (V*c_eps_ad - l_e*(l_e+1._WP)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2)))*c_1*omega_c**2/(l_e*(l_e+1._WP))
+         xA(6,3) = -(l_e*(l_e+1._WP)*nabla_ad/nabla*c_rad - V*c_eps_ad)
          xA(6,4) = 0._WP
          if (x > 0._WP) then
-            xA(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+            xA(6,5) = c_eps_S - l_e*(l_e+1._WP)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
          else
             xA(6,5) = -HUGE(0._WP)
          endif
-         xA(6,5) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
-         xA(6,6) = -1._WP - l
+         xA(6,6) = -1._WP - l_0
 
       else
 
@@ -327,7 +326,7 @@ contains
          xA(5,2) = V*(-c_dif)*c_1*omega_c**2
          xA(5,3) = -V*c_dif + V*nabla_ad*(1._WP-U)
          xA(5,4) = -V*nabla_ad
-         xA(5,5) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
+         xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
          xA(5,6) = -V*nabla/c_rad
 
          xA(6,1) = -V*c_eps_ad
@@ -388,12 +387,12 @@ contains
     ! Calculate the transformation matrix to convert JCD variables
     ! to/from the canonical (DZEIM) formulation
 
-    if (to_canon) then
+    associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
+              l_e => this%rt%l_e(x, omega), omega_c => this%rt%omega_c(x, omega))
 
-       associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-                 l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
+      if (to_canon) then
 
-         if (l /= 0) then
+         if (l_e /= 0._WP) then
 
             T(1,1) = 1._WP
             T(1,2) = 0._WP
@@ -403,7 +402,7 @@ contains
             T(1,6) = 0._WP
 
             T(2,1) = 0._WP
-            T(2,2) = c_1*omega_c**2/(l*(l+1))
+            T(2,2) = c_1*omega_c**2/(l_e*(l_e+1._WP))
             T(2,3) = 0._WP
             T(2,4) = 0._WP
             T(2,5) = 0._WP
@@ -481,16 +480,11 @@ contains
             T(6,5) = 0._WP
             T(6,6) = 1._WP
 
-         endif
+         end if
 
-       end associate
+      else
 
-    else
-
-       associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-                 l => this%mp%l, omega_c => this%ml%omega_c(x, this%mp%m, omega))
-
-         if (l /= 0) then
+         if (l_e /= 0._WP) then
 
             T(1,1) = 1._WP
             T(1,2) = 0._WP
@@ -500,7 +494,7 @@ contains
             T(1,6) = 0._WP
 
             T(2,1) = 0._WP
-            T(2,2) = l*(l+1)/(c_1*omega_c**2)
+            T(2,2) = l_e*(l_e+1._WP)/(c_1*omega_c**2)
             T(2,3) = 0._WP
             T(2,4) = 0._WP
             T(2,5) = 0._WP
@@ -578,11 +572,11 @@ contains
             T(6,5) = 0._WP
             T(6,6) = 1._WP
 
-         endif
+         end if
 
-       end associate
+      end if
 
-    endif
+    end associate
 
     ! Finish
 

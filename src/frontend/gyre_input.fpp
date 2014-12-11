@@ -336,6 +336,7 @@ contains
     integer         :: n_op
     integer         :: i
     logical         :: reduce_order
+    character(64)   :: rotation_type
     character(64)   :: variables_type
     character(64)   :: inner_bound_type
     character(64)   :: outer_bound_type
@@ -369,6 +370,7 @@ contains
 
        x_ref = HUGE(0._WP)
 
+       rotation_type = 'DOPPLER'
        variables_type = 'DZIEM'
        inner_bound_type = 'REGULAR'
        outer_bound_type = 'ZERO'
@@ -381,7 +383,7 @@ contains
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(x_ref=x_ref, variables_type=variables_type, &
+       op(i) = oscpar_t(x_ref=x_ref, rotation_type=rotation_type, variables_type=variables_type, &
                         inner_bound_type=inner_bound_type, outer_bound_type=outer_bound_type, &
                         inertia_norm_type=inertia_norm_type, tag_list=tag_list, &
                         reduce_order=reduce_order)

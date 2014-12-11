@@ -383,12 +383,14 @@ contains
         omega_cutoff_hi = HUGE(0._WP)
      case ('UNNO')
         call eval_atmos_coeffs_unno(ml, x_o, V_g, As, c_1)
-        call eval_atmos_cutoff_freqs(V_g, As, c_1, mp%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+        ! THIS NEEDS TO BE FIXED -- should be l_e, not mp%l
+        call eval_atmos_cutoff_freqs(V_g, As, c_1, REAL(mp%l, WP), omega_c_cutoff_lo, omega_c_cutoff_hi)
         omega_cutoff_lo = ml%omega(x_o, mp%m, omega_c_cutoff_lo)
         omega_cutoff_hi = ml%omega(x_o, mp%m, omega_c_cutoff_hi)
      case('JCD')
         call eval_atmos_coeffs_jcd(ml, x_o, V_g, As, c_1)
-        call eval_atmos_cutoff_freqs(V_g, As, c_1, mp%l, omega_c_cutoff_lo, omega_c_cutoff_hi)
+        ! THIS NEEDS TO BE FIXED -- should be l_e, not mp%l
+        call eval_atmos_cutoff_freqs(V_g, As, c_1, REAL(mp%l, WP), omega_c_cutoff_lo, omega_c_cutoff_hi)
         omega_cutoff_lo = ml%omega(x_o, mp%m, omega_c_cutoff_lo)
         omega_cutoff_hi = ml%omega(x_o, mp%m, omega_c_cutoff_hi)
      case default

@@ -24,9 +24,9 @@ module gyre_rad_jacob
   use core_kinds
 
   use gyre_jacob
-  use gyre_model
-  use gyre_modepar
   use gyre_linalg
+  use gyre_model
+  use gyre_rot
 
   use ISO_FORTRAN_ENV
 
@@ -44,9 +44,9 @@ module gyre_rad_jacob
 
   type, extends (r_jacob_t) :: rad_jacob_t
      private
-     class(model_t), pointer :: ml => null()
-     type(modepar_t)         :: mp
-     integer                 :: vars
+     class(model_t), pointer     :: ml => null()
+     class(r_rot_t), allocatable :: rt
+     integer                     :: vars
    contains
      private
      procedure, public :: A => A_
@@ -74,17 +74,17 @@ module gyre_rad_jacob
 
 contains
 
-  function rad_jacob_t_ (ml, mp, vars) result (jc)
+  function rad_jacob_t_ (ml, rt, vars) result (jc)
 
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
+    class(r_rot_t), intent(in)          :: rt
     character(*), intent(in)            :: vars
     type(rad_jacob_t)                   :: jc
 
     ! Construct the rad_jacob_t
 
     jc%ml => ml
-    jc%mp = mp
+    allocate(jc%rt, SOURCE=rt)
 
     select case (vars)
     case ('DZIEM')
@@ -166,7 +166,7 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              omega_c => this%ml%omega_c(x, this%mp%m, omega))
+              omega_c => this%rt%omega_c(x, omega))
 
       xA(1,1) = V_g - 1._WP
       xA(1,2) = -V_g
@@ -196,7 +196,7 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              omega_c => this%ml%omega_c(x, this%mp%m, omega))
+              omega_c => this%rt%omega_c(x, omega))
 
       xA(1,1) = V_g - 1._WP
       xA(1,2) = -V_g*c_1*omega_c**2
@@ -225,7 +225,7 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              omega_c => this%ml%omega_c(x, this%mp%m, omega))
+              omega_c => this%rt%omega_c(x, omega))
 
       xA(1,1) = V_g - 1._WP
       xA(1,2) = -V_g
@@ -285,7 +285,7 @@ contains
     ! to/from the canonical (DZEIM) formulation
 
     associate(c_1 => this%ml%c_1(x), &
-              omega_c => this%ml%omega_c(x, this%mp%m, omega))
+              omega_c => this%rt%omega_c(x, omega))
 
       if (to_canon) then
 

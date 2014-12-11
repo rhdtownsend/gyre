@@ -24,14 +24,15 @@ module gyre_nad_bvp
   use core_kinds
 
   use gyre_bvp
-  use gyre_model
-  use gyre_mode
   use gyre_ext
   use gyre_ivp
-  use gyre_sysmtx
+  use gyre_mode
   use gyre_modepar
-  use gyre_oscpar
+  use gyre_model
   use gyre_numpar
+  use gyre_oscpar
+  use gyre_sysmtx
+  use gyre_rot
 
   use ISO_FORTRAN_ENV
 
@@ -62,6 +63,9 @@ contains
 
   function nad_bvp_t_ (x, ml, mp, op, np) result (bp)
 
+    use gyre_dopp_rot
+    use gyre_trad_rot
+
     use gyre_nad_jacob
     use gyre_nad_bound
 
@@ -77,6 +81,7 @@ contains
     type(numpar_t), intent(in)          :: np
     type(nad_bvp_t), target             :: bp
 
+    class(c_rot_t), allocatable    :: rt
     type(nad_jacob_t)              :: jc
     integer                        :: n
     real(WP)                       :: x_i
@@ -87,9 +92,20 @@ contains
 
     ! Construct the nad_bvp_t
 
+    ! Initialize the rotational effects
+
+    select case (op%rotation_type)
+    case ('DOPPLER')
+       allocate(rt, SOURCE=r_dopp_rot_t(ml, mp))
+    case ('TRAD')
+       allocate(rt, SOURCE=r_trad_rot_t(ml, mp))
+    case default
+       $ABORT(Invalid rotation_type)
+    end select
+ 
     ! Initialize the jacobian
 
-    jc = nad_jacob_t(ml, mp, op%variables_type)
+    jc = nad_jacob_t(ml, rt, op%variables_type)
 
     ! Initialize the boundary conditions
 
@@ -98,7 +114,7 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    bd = nad_bound_t(ml, jc, mp, x_i, x_o, op%inner_bound_type, op%outer_bound_type)
+    bd = nad_bound_t(ml, rt, jc, x_i, x_o, op%inner_bound_type, op%outer_bound_type)
 
     ! Initialize the IVP solver
 
