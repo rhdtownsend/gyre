@@ -167,7 +167,7 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(x), omega_c => this%rt%omega_c(x, omega))
+              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
       xA(1,1) = V_g - 1._WP - l_0
       xA(1,2) = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
@@ -211,7 +211,7 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(x), omega_c => this%rt%omega_c(x, omega))
+              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
       if (l_e /= 0._WP) then
 
@@ -280,7 +280,7 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), & 
-              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(x), omega_c => this%rt%omega_c(x, omega))
+              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
       xA(1,1) = V_g - 1._WP - l_0
       xA(1,2) = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
