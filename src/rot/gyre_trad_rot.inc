@@ -104,7 +104,7 @@ contains
 
     lambda = trad_lambda(nu, this%mp%l, this%mp%m)
 
-    Lx_e = 0.5_WP*(-1._WP + SQRT(1._WP + 4.*lambda))
+    l_e = 0.5_WP*(-1._WP + SQRT(1._WP + 4.*lambda))
 
     ! Finish
 
