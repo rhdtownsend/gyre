@@ -344,7 +344,7 @@ contains
     character(2048) :: tag_list
     real(WP)        :: x_ref
 
-    namelist /osc/ x_ref, inner_bound_type, outer_bound_type, variables_type, &
+    namelist /osc/ x_ref, rotation_type, inner_bound_type, outer_bound_type, variables_type, &
          inertia_norm_type, tag_list, reduce_order
 
     ! Count the number of osc namelists
