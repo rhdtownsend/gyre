@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=build_trad_table
+TARGETS=build_trad_table test_trad_table
 
 # Flags
 
