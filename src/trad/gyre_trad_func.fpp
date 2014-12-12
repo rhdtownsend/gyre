@@ -288,7 +288,7 @@ contains
     if (nu < -1._WP) then
        lambda = this%cb_neg%eval(1._WP/nu)*lambda_norm_(nu, this%m, this%k)
     elseif (nu > 1._WP) then
-       lambda = this%cb_pos%eval(1._WP/nu)*lambda_norm_(nu, this%m, this%m)
+       lambda = this%cb_pos%eval(1._WP/nu)*lambda_norm_(nu, this%m, this%k)
     else
        lambda = this%cb_ctr%eval(nu)*lambda_norm_(nu, this%m, this%k)
     endif
@@ -340,7 +340,9 @@ contains
     elseif (nu > 1._WP) then
        lambda_norm = lambda_asymp(nu, m, k)
     else
-       lambda_norm = lambda_asymp(nu, m, k)
+       associate (l => ABS(m) + k)
+         lambda_norm = l*(l+1)
+       end associate
     end if
 
     ! Finish
