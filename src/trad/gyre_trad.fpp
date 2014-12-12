@@ -64,7 +64,10 @@ contains
 
     ! Load the trad_table_t from the data directory
 
-    call get_env('GYRE_DIR', gyre_dir)
+!    call get_env('GYRE_DIR', gyre_dir)
+    gyre_dir = '/Users/townsend/devel/gyre-4'
+
+    print *,"Open:",TRIM(gyre_dir)//'/data/trad_table.h5'
 
     hg = hgroup_t(TRIM(gyre_dir)//'/data/trad_table.h5', OPEN_FILE)
     call read(hg, tt_m)
@@ -78,7 +81,7 @@ contains
 
 !****
 
-  function trad_lambda_r_ (l, m, nu) result (lambda)
+  function trad_lambda_r_ (nu, l, m) result (lambda)
 
     integer, intent(in)  :: l
     integer, intent(in)  :: m
@@ -97,7 +100,7 @@ contains
 
 !****
 
-  function trad_lambda_c_ (l, m, nu) result (lambda)
+  function trad_lambda_c_ (nu, l, m) result (lambda)
 
     integer, intent(in)     :: l
     integer, intent(in)     :: m
