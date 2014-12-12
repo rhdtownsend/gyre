@@ -27,7 +27,7 @@ module gyre_nad_bound
   use gyre_bound
   use gyre_jacob
   use gyre_model
-  use gyre_wave
+  use gyre_rot
 
   use ISO_FORTRAN_ENV
 
@@ -50,7 +50,7 @@ module gyre_nad_bound
   type, extends (c_bound_t) :: nad_bound_t
      private
      class(model_t), pointer       :: ml => null()
-     class(c_wave_t), allocatable  :: wv
+     class(c_rot_t), allocatable   :: rt
      class(c_jacob_t), allocatable :: jc
      real(WP)                      :: x_i
      real(WP)                      :: x_o
@@ -84,10 +84,10 @@ module gyre_nad_bound
 
 contains
 
-  function nad_bound_t_ (ml, wv, jc, x_i, x_o, type_i, type_o) result (bd)
+  function nad_bound_t_ (ml, rt, jc, x_i, x_o, type_i, type_o) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
-    class(c_wave_t), intent(in)         :: wv
+    class(c_rot_t), intent(in)          :: rt
     class(c_jacob_t), intent(in)        :: jc
     real(WP)                            :: x_i
     real(WP)                            :: x_o
@@ -98,7 +98,7 @@ contains
     ! Construct the nad_bound_t
 
     bd%ml => ml
-    allocate(bd%wv, SOURCE=wv)
+    allocate(bd%rt, SOURCE=rt)
     allocate(bd%jc, SOURCE=jc)
 
     bd%x_i = x_i
@@ -178,7 +178,7 @@ contains
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
     associate(c_1 => this%ml%c_1(this%x_i), &
-              l_e => this%wv%l_e(this%x_i, omega), omega_c => this%wv%omega_c(this%x_i, omega))
+              l_e => this%rt%l_e(this%x_i, omega), omega_c => this%rt%omega_c(this%x_i, omega))
 
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l_e
@@ -293,7 +293,7 @@ contains
     ! Evaluate the outer boundary conditions (zero-pressure)
 
     associate(V => this%ml%V(this%x_o), U => this%ml%U(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l_e => this%wv%l_e(this%x_i, omega))
+              l_e => this%rt%l_e(this%x_i, omega))
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
@@ -335,7 +335,7 @@ contains
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     associate(V => this%ml%V(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l_e => this%wv%l_e(this%x_o, omega), omega_c => this%wv%omega_c(this%x_o, omega))
+              l_e => this%rt%l_e(this%x_o, omega), omega_c => this%rt%omega_c(this%x_o, omega))
 
       B_o(1,1) = 1 + (l_e*(l_e+1._WP)/omega_c**2 - 4 - omega_c**2)/V
       B_o(1,2) = -1._WP
@@ -392,7 +392,7 @@ contains
     call eval_atmos_coeffs_unno(this%ml, this%x_o, V_g, As, c_1)
 
     associate(V => this%ml%V(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l_e => this%wv%l_e(this%x_o, omega), omega_c => this%wv%omega_c(this%x_o, omega))
+              l_e => this%rt%l_e(this%x_o, omega), omega_c => this%rt%omega_c(this%x_o, omega))
 
       lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l_e)
       
@@ -456,7 +456,7 @@ contains
     call eval_atmos_coeffs_jcd(this%ml, this%x_o, V_g, As, c_1)
 
     associate(V => this%ml%V(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l_e => this%wv%l_e(this%x_o, omega), omega_c => this%wv%omega_c(this%x_o, omega))
+              l_e => this%rt%l_e(this%x_o, omega), omega_c => this%rt%omega_c(this%x_o, omega))
 
       lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l_e)
 
