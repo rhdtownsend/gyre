@@ -89,6 +89,9 @@ contains
 
     cb%c = c
 
+    cb%x_a = x_a
+    cb%x_b = x_b
+
     cb%n = SIZE(c)
 
     ! Finish
@@ -219,13 +222,13 @@ contains
     integer  :: j
 
     ! Truncate the Chebyshev series to relative tolerance tol (i.e.,
-    ! assuming that the first discarded term is smaller than tol times
+    ! assuming that the discarded terms are all smaller than tol times
     ! the maximum term)
 
     c_max = MAXVAL(ABS(this%c))
 
     do j = 1, this%n
-       if (ABS(this%c(j)) < tol*c_max) exit
+       if (ALL(ABS(this%c(j:)) < tol*c_max)) exit
     end do
 
     if (j <= this%n) then
