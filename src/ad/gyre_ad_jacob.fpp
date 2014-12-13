@@ -167,10 +167,10 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+              lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
       xA(1,1) = V_g - 1._WP - l_0
-      xA(1,2) = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
+      xA(1,2) = lambda/(c_1*omega_c**2) - V_g
       xA(1,3) = V_g
       xA(1,4) = 0._WP
       
@@ -186,7 +186,7 @@ contains
       
       xA(4,1) = U*As
       xA(4,2) = U*V_g
-      xA(4,3) = l_e*(l_e+1._WP) - U*V_g
+      xA(4,3) = lambda - U*V_g
       xA(4,4) = -U - l_0 + 2._WP
 
     end associate
@@ -210,19 +210,19 @@ contains
     ! formulation)
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-              As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+              As => this%ml%As(x), c_1 => this%ml%c_1(x), l => this%rt%mp%l, &
+              lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
-      if (l_e /= 0._WP) then
+      if (l /= 0) then
 
          xA(1,1) = V_g - 1._WP - l_0
-         xA(1,2) = 1._WP - V_g*c_1*omega_c**2/(l_e*(l_e+1._WP))
+         xA(1,2) = 1._WP - V_g*c_1*omega_c**2/lambda
          xA(1,3) = -V_g
          xA(1,4) = 0._WP
       
-         xA(2,1) = l_e*(l_e+1._WP) - As*l_e*(l_e+1._WP)/(c_1*omega_c**2)
+         xA(2,1) = lambda - As*lambda/(c_1*omega_c**2)
          xA(2,2) = As - l_0
-         xA(2,3) = As*l_e*(l_e+1._WP)/(c_1*omega_c**2)
+         xA(2,3) = As*lambda/(c_1*omega_c**2)
          xA(2,4) = 0._WP
       
          xA(3,1) = 0._WP
@@ -231,8 +231,8 @@ contains
          xA(3,4) = 1._WP
       
          xA(4,1) = -U*As
-         xA(4,2) = -U*V_g*c_1*omega_c**2/(l_e*(l_e+1._WP))
-         xA(4,3) = l_e*(l_e+1._WP) + U*(As - 2._WP)
+         xA(4,2) = -U*V_g*c_1*omega_c**2/lambda
+         xA(4,3) = lambda + U*(As - 2._WP)
          xA(4,4) = 2._WP*(1._WP-U) - (l_0 - 1._WP)
 
       else
@@ -280,10 +280,10 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
               As => this%ml%As(x), c_1 => this%ml%c_1(x), & 
-              l_e => this%rt%l_e(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+              lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
       xA(1,1) = V_g - 1._WP - l_0
-      xA(1,2) = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
+      xA(1,2) = lambda/(c_1*omega_c**2) - V_g
       xA(1,3) = -V_g
       xA(1,4) = 0._WP
       
@@ -299,7 +299,7 @@ contains
       
       xA(4,1) = -U*As
       xA(4,2) = -U*V_g
-      xA(4,3) = l_e*(l_e+1._WP) + U*(As - 2._WP)
+      xA(4,3) = lambda + U*(As - 2._WP)
       xA(4,4) = 2._WP*(1._WP-U) - (l_0 - 1._WP)
 
     end associate
@@ -353,12 +353,12 @@ contains
     ! Calculate the transformation matrix to convert JCD variables
     ! to/from the canonical (DZEIM) formulation
 
-    associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-              l_e => this%rt%l_e(x, omega), omega_c => this%rt%omega_c(x, omega))
+    associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), l => this%rt%mp%l, &
+              lambda => this%rt%lambda(x, omega), omega_c => this%rt%omega_c(x, omega))
       
       if (to_canon) then
 
-         if (l_e /= 0._WP) then
+         if (l /= 0._WP) then
 
             T(1,1) = 1._WP
             T(1,2) = 0._WP
@@ -366,7 +366,7 @@ contains
             T(1,4) = 0._WP
 
             T(2,1) = 0._WP
-            T(2,2) = c_1*omega_c**2/(l_e*(l_e+1._WP))
+            T(2,2) = c_1*omega_c**2/(lambda)
             T(2,3) = 0._WP
             T(2,4) = 0._WP
 
@@ -406,7 +406,7 @@ contains
 
       else
 
-         if (l_e /= 0._WP) then
+         if (l /= 0) then
 
             T(1,1) = 1._WP
             T(1,2) = 0._WP
@@ -414,7 +414,7 @@ contains
             T(1,4) = 0._WP
 
             T(2,1) = 0._WP
-            T(2,2) = l_e*(l_e+1._WP)/(c_1*omega_c**2)
+            T(2,2) = lambda/(c_1*omega_c**2)
             T(2,3) = 0._WP
             T(2,4) = 0._WP
 
