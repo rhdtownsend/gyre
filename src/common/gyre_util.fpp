@@ -366,36 +366,45 @@ contains
     real(WP), intent(out)       :: omega_cutoff_lo
     real(WP), intent(out)       :: omega_cutoff_hi
 
-    real(WP) :: V_g
-    real(WP) :: As
-    real(WP) :: c_1
-    real(WP) :: omega_c_cutoff_lo
-    real(WP) :: omega_c_cutoff_hi
+    real(WP)      :: V_g
+    real(WP)      :: As
+    real(WP)      :: c_1
+    logical, save :: warned = .FALSE.
 
      ! Evaluate the cutoff frequencies
 
      select case (op%outer_bound_type)
+
      case ('ZERO')
+
         omega_cutoff_lo = 0._WP
         omega_cutoff_hi = HUGE(0._WP)
+
      case ('DZIEM')
+
         omega_cutoff_lo = 0._WP
         omega_cutoff_hi = HUGE(0._WP)
+
      case ('UNNO')
+
         call eval_atmos_coeffs_unno(ml, x_o, V_g, As, c_1)
-        ! THIS NEEDS TO BE FIXED -- should be l_e, not mp%l
-        call eval_atmos_cutoff_freqs(V_g, As, c_1, REAL(mp%l, WP), omega_c_cutoff_lo, omega_c_cutoff_hi)
-        omega_cutoff_lo = ml%omega(x_o, mp%m, omega_c_cutoff_lo)
-        omega_cutoff_hi = ml%omega(x_o, mp%m, omega_c_cutoff_hi)
+        call eval_atmos_cutoff_freqs(V_g, As, c_1, mp%l*(mp%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+
      case('JCD')
+
         call eval_atmos_coeffs_jcd(ml, x_o, V_g, As, c_1)
-        ! THIS NEEDS TO BE FIXED -- should be l_e, not mp%l
-        call eval_atmos_cutoff_freqs(V_g, As, c_1, REAL(mp%l, WP), omega_c_cutoff_lo, omega_c_cutoff_hi)
-        omega_cutoff_lo = ml%omega(x_o, mp%m, omega_c_cutoff_lo)
-        omega_cutoff_hi = ml%omega(x_o, mp%m, omega_c_cutoff_hi)
+        call eval_atmos_cutoff_freqs(V_g, As, c_1, mp%l*(mp%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+
      case default
+
         $ABORT(Invalid outer_bound_type)
+
      end select
+
+     if (.not. warned) then
+        $WARN(WARNING: Cutoff frequencies do not account for rotation effects)
+        warned = .TRUE.
+     endif
 
      ! Finish
 
