@@ -67,8 +67,6 @@ contains
     real(WP) :: omega_max
     integer  :: j
     integer  :: n_omega
-    real(WP) :: omega_cutoff_lo
-    real(WP) :: omega_cutoff_hi
 
     $ASSERT(SIZE(sp) >=1,Empty scanpars)
 
@@ -118,22 +116,6 @@ contains
 
        write(OUTPUT_UNIT, 120) 'omega range  :', MINVAL(omega), '->',  MAXVAL(omega)
 120    format(2X,A,1X,E24.16,1X,A,1X,E24.16)
-
-    endif
-
-    ! Perform checks
-
-    if (check_log_level('WARN')) then
-
-       call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-
-       if (omega(1) < omega_cutoff_lo) then
-          write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends below atmospheric gravity cutoff frequency'
-       end if
-
-       if (omega(n_omega) > omega_cutoff_hi) then
-          write(OUTPUT_UNIT, 100) '!!! WARNING: omega extends above atmospheric acoustic cutoff frequency'
-       end if
 
     endif
 
