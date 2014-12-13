@@ -335,11 +335,12 @@ contains
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     associate(V => this%ml%V(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l_e => this%rt%l_e(this%x_o, omega), omega_c => this%rt%omega_c(this%x_o, omega))
+              lambda => this%rt%lambda(this%x_o, omega), l_e => this%rt%l_e(this%x_o, omega), &
+              omega_c => this%rt%omega_c(this%x_o, omega))
 
-      B_o(1,1) = 1 + (l_e*(l_e+1._WP)/omega_c**2 - 4 - omega_c**2)/V
+      B_o(1,1) = 1 + (lambda/omega_c**2 - 4 - omega_c**2)/V
       B_o(1,2) = -1._WP
-      B_o(1,3) = 1 + (l_e*(l_e+1._WP)/omega_c**2 - l_e - 1)/V
+      B_o(1,3) = 1 + (lambda/omega_c**2 - l_e - 1)/V
       B_o(1,4) = 0._WP
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
@@ -377,7 +378,7 @@ contains
     real(WP)    :: V_g
     real(WP)    :: As
     real(WP)    :: c_1
-    complex(WP) :: lambda
+    complex(WP) :: beta
     complex(WP) :: b_11
     complex(WP) :: b_12
     complex(WP) :: b_13
@@ -392,12 +393,13 @@ contains
     call eval_atmos_coeffs_unno(this%ml, this%x_o, V_g, As, c_1)
 
     associate(V => this%ml%V(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l_e => this%rt%l_e(this%x_o, omega), omega_c => this%rt%omega_c(this%x_o, omega))
+              lambda => this%rt%lambda(this%x_o, omega), l_e => this%rt%l_e(this%x_o, omega), &
+              omega_c => this%rt%omega_c(this%x_o, omega))
 
-      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l_e)
+      beta = atmos_beta(V_g, As, c_1, omega_c, l_e)
       
       b_11 = V_g - 3._WP
-      b_12 = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
+      b_12 = lambda/(c_1*omega_c**2) - V_g
       b_13 = V_g
 
       b_21 = c_1*omega_c**2 - As
@@ -407,9 +409,9 @@ contains
       alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
       alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
 
-      B_o(1,1) = lambda - b_11
+      B_o(1,1) = beta - b_11
       B_o(1,2) = -b_12
-      B_o(1,3) = -(alpha_1*(lambda - b_11) - alpha_2*b_12)
+      B_o(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12)
       B_o(1,4) = 0._WP
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
@@ -447,7 +449,7 @@ contains
     real(WP)    :: V_g
     real(WP)    :: As
     real(WP)    :: c_1
-    complex(WP) :: lambda
+    complex(WP) :: beta
     complex(WP) :: b_11
     complex(WP) :: b_12
 
@@ -456,16 +458,17 @@ contains
     call eval_atmos_coeffs_jcd(this%ml, this%x_o, V_g, As, c_1)
 
     associate(V => this%ml%V(this%x_o), nabla_ad => this%ml%nabla_ad(this%x_o), &
-              l_e => this%rt%l_e(this%x_o, omega), omega_c => this%rt%omega_c(this%x_o, omega))
+              lambda => this%rt%lambda(this%x_o, omega), l_e => this%rt%l_e(this%x_o, omega), &
+              omega_c => this%rt%omega_c(this%x_o, omega))
 
-      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, l_e)
+      beta = atmos_beta(V_g, As, c_1, omega_c, l_e)
 
       b_11 = V_g - 3._WP
-      b_12 = l_e*(l_e+1._WP)/(c_1*omega_c**2) - V_g
+      b_12 = lambda/(c_1*omega_c**2) - V_g
 
-      B_o(1,1) = lambda - b_11
+      B_o(1,1) = beta - b_11
       B_o(1,2) = -b_12
-      B_o(1,3) = b_12 + (l_e*(l_e+1)/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As)
+      B_o(1,3) = b_12 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As)
       B_o(1,4) = 0._WP
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP

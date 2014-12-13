@@ -301,12 +301,12 @@ contains
     real(WP), intent(in)          :: omega
     real(WP)                      :: B_o(this%n_o,this%n_e)
 
-    real(WP)    :: V_g
-    real(WP)    :: As
-    real(WP)    :: c_1
-    complex(WP) :: lambda
-    complex(WP) :: b_11
-    complex(WP) :: b_12
+    real(WP) :: V_g
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: beta
+    real(WP) :: b_11
+    real(WP) :: b_12
 
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
@@ -314,12 +314,12 @@ contains
 
     associate(omega_c => this%rt%omega_c(this%x_o, omega))
 
-      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, 0._WP)
+      beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
       
       b_11 = V_g - 3._WP
       b_12 = -V_g
     
-      B_o(1,1) = lambda - b_11
+      B_o(1,1) = beta - b_11
       B_o(1,2) = -b_12
 
     end associate
@@ -338,12 +338,12 @@ contains
     real(WP), intent(in)           :: omega
     real(WP)                       :: B_o(this%n_o,this%n_e)
 
-    real(WP)    :: V_g
-    real(WP)    :: As
-    real(WP)    :: c_1
-    complex(WP) :: lambda
-    complex(WP) :: b_11
-    complex(WP) :: b_12
+    real(WP) :: V_g
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: beta
+    real(WP) :: b_11
+    real(WP) :: b_12
 
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
@@ -351,12 +351,12 @@ contains
 
     associate(omega_c => this%rt%omega_c(this%x_o, omega))
 
-      lambda = atmos_wavenumber(V_g, As, c_1, omega_c, 0._WP)
+      beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
 
       b_11 = V_g - 3._WP
       b_12 = -V_g
 
-      B_o(1,1) = lambda - b_11
+      B_o(1,1) = beta - b_11
       B_o(1,2) = -b_12
 
     end associate
