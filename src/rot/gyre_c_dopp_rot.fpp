@@ -18,4 +18,3 @@
 $include 'gyre_dopp_rot.inc'
 
 $MOD_DECL(c,complex)
-
