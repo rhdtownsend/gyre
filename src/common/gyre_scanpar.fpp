@@ -37,6 +37,7 @@ module gyre_scanpar
      integer         :: n_freq
      character(64)   :: grid_type
      character(64)   :: freq_units
+     character(64)   :: freq_frame
      character(2048) :: tag_list
   end type scanpar_t
 
@@ -89,6 +90,7 @@ contains
 
     call bcast(sp%grid_type, root_rank)
     call bcast(sp%freq_units, root_rank)
+    call bcast(sp%freq_frame, root_rank)
     call bcast(sp%tag_list, root_rank)
 
     ! Finish
