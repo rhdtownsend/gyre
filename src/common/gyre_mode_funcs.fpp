@@ -166,7 +166,19 @@ contains
 
     associate (c_1 => ml%c_1(x), l_0 => rt%l_0(omega))
 
-      eul_phi = y(3)*x**l_0/c_1
+      if (l_0 /= 0._WP) then
+
+         if (x /= 0._WP) then
+            eul_phi = y(3)*x**l_0/c_1
+         else
+            eul_phi = 0._WP
+         endif
+
+      else
+
+         eul_phi = y(3)/c_1
+
+      endif
 
     end associate
 
@@ -489,8 +501,8 @@ contains
     ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010]
 
     associate(xi_r => xi_r(ml, rt, omega, x, y), xi_h => xi_h(ml, rt, omega, x, y), &
-              U => ml%U(x), c_1 => ml%c_1(x), l_e => rt%l_e(x, omega))
-      dE_dx = (ABS(xi_r)**2 + l_e*(l_e+1._WP)*ABS(xi_h)**2)*U*x**2/c_1
+              U => ml%U(x), c_1 => ml%c_1(x), lambda => rt%lambda(x, omega))
+      dE_dx = (ABS(xi_r)**2 + ABS(lambda)*ABS(xi_h)**2)*U*x**2/c_1
     end associate
 
     ! Finish
@@ -669,9 +681,9 @@ contains
     ! Calculate the I_0 integral at x, which should be zero for radial
     ! modes. This expression is based on eqn. 42 of [Tak2006a]
 
-    associate(U => ml%U(x), c_1 => ml%c_1(x), l_e => rt%l_e(x, omega))
+    associate(U => ml%U(x), c_1 => ml%c_1(x), l_0 => rt%l_0(omega))
 
-      I_0 = x**(l_e+1._WP)*(U*y(1) + y(4))/c_1
+      I_0 = x**(l_0+1._WP)*(U*y(1) + y(4))/c_1
 
     end associate
 
@@ -697,10 +709,10 @@ contains
     ! Calculate the I_0 integral at x, which should be zero for dipole
     ! modes. This expression is based on eqn. 43 of [Tak2006a]
 
-    associate(U => ml%U(x), c_1 => ml%c_1(x), l_e => rt%l_e(x, omega), &
+    associate(U => ml%U(x), c_1 => ml%c_1(x), l_0 => rt%l_0(omega), &
               omega_c => rt%omega_c(x, omega))
 
-      I_1 = x**(l_e+2._WP)*(c_1*omega_c**2*U*y(1) - U*y(2) + &
+      I_1 = x**(l_0+2._WP)*(c_1*omega_c**2*U*y(1) - U*y(2) + &
                   (U - c_1*omega_c**2 - 2._WP)*y(3) + (c_1*omega_c**2 - 1._WP)*y(4))/c_1**2
 
     end associate
