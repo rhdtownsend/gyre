@@ -396,7 +396,7 @@ contains
               lambda => this%rt%lambda(this%x_o, omega), l_e => this%rt%l_e(this%x_o, omega), &
               omega_c => this%rt%omega_c(this%x_o, omega))
 
-      beta = atmos_beta(V_g, As, c_1, omega_c, l_e)
+      beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
       
       b_11 = V_g - 3._WP
       b_12 = lambda/(c_1*omega_c**2) - V_g
@@ -461,7 +461,7 @@ contains
               lambda => this%rt%lambda(this%x_o, omega), l_e => this%rt%l_e(this%x_o, omega), &
               omega_c => this%rt%omega_c(this%x_o, omega))
 
-      beta = atmos_beta(V_g, As, c_1, omega_c, l_e)
+      beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
       b_11 = V_g - 3._WP
       b_12 = lambda/(c_1*omega_c**2) - V_g
