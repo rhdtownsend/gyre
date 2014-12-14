@@ -69,16 +69,16 @@ module gyre_${T}_trad_rot
 
 contains
 
-  function ${T}_trad_rot_t_ (ml, mp) result (wv)
+  function ${T}_trad_rot_t_ (ml, mp) result (rt)
 
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
-    type(${T}_trad_rot_t)               :: wv
+    type(${T}_trad_rot_t)               :: rt
 
     ! Construct the trad_rot_t
 
-    wv%ml => ml
-    wv%mp = mp
+    rt%ml => ml
+    rt%mp = mp
 
     ! Finish
 

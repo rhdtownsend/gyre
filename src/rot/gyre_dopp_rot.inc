@@ -66,16 +66,16 @@ module gyre_${T}_dopp_rot
 
 contains
 
-  function ${T}_dopp_rot_t_ (ml, mp) result (wv)
+  function ${T}_dopp_rot_t_ (ml, mp) result (rt)
 
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
-    type(${T}_dopp_rot_t)               :: wv
+    type(${T}_dopp_rot_t)               :: rt
 
     ! Construct the dopp_rot_t
 
-    wv%ml => ml
-    wv%mp = mp
+    rt%ml => ml
+    rt%mp = mp
 
     ! Finish
 
