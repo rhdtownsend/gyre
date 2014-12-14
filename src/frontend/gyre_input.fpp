@@ -345,7 +345,7 @@ contains
     real(WP)        :: x_ref
 
     namelist /osc/ x_ref, rotation_method, inner_bound_type, outer_bound_type, variables_type, &
-         inertia_norm_type, tag_list, reduce_order
+         inertia_norm_type, tag_list, adiabatic, reduce_order
 
     ! Count the number of osc namelists
 
@@ -377,6 +377,7 @@ contains
        inertia_norm_type = 'BOTH'
        tag_list = ''
 
+       nonadiabatic = .FALSE.
        reduce_order = .TRUE.
 
        read(unit, NML=osc)
@@ -386,7 +387,7 @@ contains
        op(i) = oscpar_t(x_ref=x_ref, rotation_method=rotation_method, variables_type=variables_type, &
                         inner_bound_type=inner_bound_type, outer_bound_type=outer_bound_type, &
                         inertia_norm_type=inertia_norm_type, tag_list=tag_list, &
-                        reduce_order=reduce_order)
+                        nonadiabatic=nonadiabatic, reduce_order=reduce_order)
 
     end do read_loop
 
