@@ -29,13 +29,14 @@ module gyre_${T}_bvp
   use core_kinds
   use core_order
 
-  use gyre_model
-  use gyre_cocache
-  use gyre_jacob
-  use gyre_ivp
   use gyre_bound
-  use gyre_sysmtx
+  use gyre_cocache
   use gyre_ext
+  use gyre_ivp
+  use gyre_jacob
+  use gyre_model
+  use gyre_rot
+  use gyre_sysmtx
 
   use ISO_FORTRAN_ENV
 
