@@ -336,7 +336,7 @@ contains
     integer         :: n_op
     integer         :: i
     logical         :: reduce_order
-    character(64)   :: rotation_type
+    character(64)   :: rot_method
     character(64)   :: variables_type
     character(64)   :: inner_bound_type
     character(64)   :: outer_bound_type
@@ -344,7 +344,7 @@ contains
     character(2048) :: tag_list
     real(WP)        :: x_ref
 
-    namelist /osc/ x_ref, rotation_type, inner_bound_type, outer_bound_type, variables_type, &
+    namelist /osc/ x_ref, rot_method, inner_bound_type, outer_bound_type, variables_type, &
          inertia_norm_type, tag_list, reduce_order
 
     ! Count the number of osc namelists
@@ -370,7 +370,7 @@ contains
 
        x_ref = HUGE(0._WP)
 
-       rotation_type = 'DOPPLER'
+       rot_method = 'DOPPLER'
        variables_type = 'DZIEM'
        inner_bound_type = 'REGULAR'
        outer_bound_type = 'ZERO'
@@ -383,7 +383,7 @@ contains
 
        ! Initialize the oscpar
 
-       op(i) = oscpar_t(x_ref=x_ref, rotation_type=rotation_type, variables_type=variables_type, &
+       op(i) = oscpar_t(x_ref=x_ref, rot_method=rot_method, variables_type=variables_type, &
                         inner_bound_type=inner_bound_type, outer_bound_type=outer_bound_type, &
                         inertia_norm_type=inertia_norm_type, tag_list=tag_list, &
                         reduce_order=reduce_order)
@@ -556,10 +556,11 @@ contains
     real(WP)        :: freq_max
     integer         :: n_freq
     character(64)   :: freq_units
+    character(64)   :: freq_frame
     character(64)   :: grid_type
     character(2048) :: tag_list
 
-    namelist /scan/ freq_min, freq_max, n_freq, freq_units, grid_type, tag_list
+    namelist /scan/ freq_min, freq_max, n_freq, freq_units, freq_frame, grid_type, tag_list
 
     ! Count the number of scan namelists
 
@@ -587,6 +588,7 @@ contains
        n_freq = 10
           
        freq_units = 'NONE'
+       freq_frame = 'INERTIAL'
        grid_type = 'LINEAR'
        tag_list = ''
 
@@ -595,7 +597,8 @@ contains
        ! Initialize the scanpar
 
        sp(i) = scanpar_t(freq_min=freq_min, freq_max=freq_max, n_freq=n_freq, &
-                         freq_units=freq_units, grid_type=grid_type, tag_list=tag_list)
+                         freq_units=freq_units, freq_frame=freq_frame, &
+                         grid_type=grid_type, tag_list=tag_list)
 
     end do read_loop
 

@@ -67,6 +67,7 @@ contains
   function ad_bvp_t_ (x, ml, mp, op, np) result (bp)
 
     use gyre_dopp_rot
+    use gyre_null_rot
     use gyre_trad_rot
 
     use gyre_ad_jacob
@@ -77,8 +78,6 @@ contains
     use gyre_findiff_ivp
 
     use gyre_block_sysmtx
-
-    use core_hgroup
 
     real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
@@ -100,13 +99,15 @@ contains
 
     ! Initialize the rotational effects
 
-    select case (op%rotation_type)
+    select case (op%rot_method)
     case ('DOPPLER')
        allocate(rt, SOURCE=r_dopp_rot_t(ml, mp))
+    case ('NULL')
+       allocate(rt, SOURCE=r_null_rot_t(mp))
     case ('TRAD')
        allocate(rt, SOURCE=r_trad_rot_t(ml, mp))
     case default
-       $ABORT(Invalid rotation_type)
+       $ABORT(Invalid rot_method)
     end select
  
     ! Initialize the jacobian
