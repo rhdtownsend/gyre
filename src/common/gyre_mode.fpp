@@ -140,6 +140,7 @@ contains
   function mode_t_ (ml, mp, op, omega, discrim, x, y, x_ref, y_ref) result (md)
 
     use gyre_dopp_rot
+    use gyre_null_rot
     use gyre_trad_rot
 
     class(model_t), pointer, intent(in) :: ml
@@ -166,13 +167,15 @@ contains
 
     md%ml => ml
  
-    select case (op%rotation_type)
+    select case (op%rot_method)
     case ('DOPPLER')
        allocate(md%rt, SOURCE=c_dopp_rot_t(ml, mp))
+    case ('NULL')
+       allocate(md%rt, SOURCE=c_null_rot_t(mp))
     case ('TRAD')
        allocate(md%rt, SOURCE=c_trad_rot_t(ml, mp))
     case default
-       $ABORT(Invalid rotation_type)
+       $ABORT(Invalid rot_method)
     end select
  
     md%mp = mp
@@ -389,8 +392,6 @@ contains
     class(mode_t), intent(in) :: this
     $TYPE(WP)                 :: ${NAME}_ref_
 
-    integer :: k
-    
     ! Calculate $NAME at x_ref
 
     ${NAME}_ref_ = ${NAME}(this%ml, this%rt, this%omega, this%x_ref, this%y_ref)
@@ -479,27 +480,23 @@ contains
     class(mode_t), intent(in) :: this
     real(WP)                  :: E_norm
 
-    real(WP)    :: E
-    complex(WP) :: xi_r(this%n)
-    complex(WP) :: xi_h(this%n)
-    complex(WP) :: xi_r_1
-    complex(WP) :: xi_h_1
-    real(WP)    :: A2
+    real(WP) :: E
+    real(WP) :: A2
 
     ! Calculate the normalized mode inertia. This expression is based
     ! on eqn. 3.140 of [Aer2010]
 
     E = this%E()
 
-    associate(l_e => this%rt%l_e(this%x_ref, this%omega))
+    associate(lambda => this%rt%lambda(this%x_ref, this%omega))
 
       select case (this%op%inertia_norm_type)
       case ('RADIAL')
          A2 = ABS(this%xi_r_ref())**2
       case ('HORIZ')
-         A2 = l_e*(l_e+1._WP)*ABS(this%xi_h_ref())**2
+         A2 = ABS(lambda)*ABS(this%xi_h_ref())**2
       case ('BOTH')
-         A2 = ABS(this%xi_r_ref())**2 + l_e*(l_e+1._WP)*ABS(this%xi_h_ref())**2
+         A2 = ABS(this%xi_r_ref())**2 + ABS(lambda)*ABS(this%xi_h_ref())**2
       case default
          $ABORT(Invalid inertia_norm_type)
       end select
@@ -552,9 +549,9 @@ contains
     xi_h = this%xi_h()
 
     associate(x => this%x, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
-              l_e => this%rt%l_e(this%x, this%omega))
+              lambda => this%rt%lambda(this%x, this%omega))
 
-      K = (ABS(xi_r)**2 + (l_e*(l_e+1._WP)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
+      K = (ABS(xi_r)**2 + (ABS(lambda)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
 
       K = K/integrate(x, K)
 
@@ -582,10 +579,10 @@ contains
     xi_h = this%xi_h()
 
     associate(x => this%x, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
-              l_e => this%rt%l_e(this%x, this%omega))
+              lambda => this%rt%lambda(this%x, this%omega))
 
-      beta = integrate(x, (ABS(xi_r)**2 + (l_e*(l_e+1._WP)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
-             integrate(x, (ABS(xi_r)**2 + l_e*(l_e+1._WP)*ABS(xi_h)**2)*U*x**2/c_1)
+      beta = integrate(x, (ABS(xi_r)**2 + (ABS(lambda)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
+             integrate(x, (ABS(xi_r)**2 + ABS(lambda)*ABS(xi_h)**2)*U*x**2/c_1)
 
     end associate
 
@@ -676,10 +673,10 @@ contains
 
     associate(x => this%x, V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
               As => this%ml%As(this%x), c_1 => this%ml%c_1(this%x), &
-              l_e => this%rt%l_e(this%x, this%omega), omega_c => this%rt%omega_c(this%x, this%omega))
+              lambda => this%rt%lambda(this%x, this%omega), omega_c => this%rt%omega_c(this%x, this%omega))
 
       prop_type = MERGE(1, 0, REAL(c_1*omega_c**2) > As) + &
-                  MERGE(-1, 0, REAL(l_e*(l_e+1._WP)/(c_1*omega_c**2)) > V_g)
+                  MERGE(-1, 0, REAL(lambda/(c_1*omega_c**2)) > V_g)
 
     end associate
 
@@ -877,20 +874,20 @@ contains
               nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
               c_rad => this%ml%c_rad(this%x), dc_rad => this%ml%dc_rad(this%x), c_thm => this%ml%c_thm(this%x), &
               c_eps_ad => this%ml%c_eps_ad(this%x), c_eps_S => this%ml%c_eps_S(this%x), &              
-              l_e => this%rt%l_e(this%x, this%omega), l_0 => this%rt%l_0(this%omega), &
+              lambda => this%rt%lambda(this%x, this%omega), l_0 => this%rt%l_0(this%omega), &
               omega_c => this%rt%omega_c(this%x, this%omega))
 
       where(this%x /= 0)
-         A_6(1,:) = l_e*(l_e+1._WP)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-         A_6(2,:) = V*c_eps_ad - l_e*(l_e+1._WP)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-         A_6(3,:) = l_e*(l_e+1._WP)*nabla_ad/nabla*c_rad - V*c_eps_ad
+         A_6(1,:) = lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A_6(2,:) = V*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+         A_6(3,:) = lambda*nabla_ad/nabla*c_rad - V*c_eps_ad
          A_6(4,:) = 0._WP
-         A_6(5,:) = c_eps_S - l_e*(l_e+1._WP)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+         A_6(5,:) = c_eps_S - lambda*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
          A_6(6,:) = -1._WP - l_0
       elsewhere
-         A_6(1,:) = l_e*(l_e+1._WP)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-         A_6(2,:) = V*c_eps_ad - l_e*(l_e+1_WP)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-         A_6(3,:) = l_e*(l_e+1._WP)*nabla_ad/nabla*c_rad - V*c_eps_ad
+         A_6(1,:) = lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A_6(2,:) = V*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+         A_6(3,:) = lambda*nabla_ad/nabla*c_rad - V*c_eps_ad
          A_6(4,:) = 0._WP
          A_6(5,:) = -HUGE(0._WP)
          A_6(6,:) = -1._WP - l_0
@@ -968,11 +965,11 @@ contains
               nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
               c_dif => this%ml%c_dif(this%x), c_rad => this%ml%c_rad(this%x), &
               kappa_S => this%ml%kappa_S(this%x), &
-              l_e => this%rt%l_e(this%x, this%omega), l_0 => this%rt%l_0(this%omega), &
+              lambda => this%rt%lambda(this%x, this%omega), l_0 => this%rt%l_0(this%omega), &
               omega_c => this%rt%omega_c(this%x, this%omega))
 
       A_5(1,:) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-      A_5(2,:) = V*(l_e*(l_e+1._WP)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
+      A_5(2,:) = V*(lambda/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
       A_5(3,:) = V*c_dif
       A_5(4,:) = V*nabla_ad
       A_5(5,:) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
