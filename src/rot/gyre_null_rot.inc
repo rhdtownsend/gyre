@@ -29,6 +29,7 @@ module gyre_${T}_null_rot
   use core_kinds
 
   use gyre_modepar
+  use gyre_rot
  
   ! No implicit typing
 
@@ -63,15 +64,14 @@ module gyre_${T}_null_rot
 
 contains
 
-  function ${T}_null_rot_t_ (ml, mp) result (wv)
+  function ${T}_null_rot_t_ (mp) result (rt)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(${T}_null_rot_t)               :: wv
+    type(modepar_t), intent(in) :: mp
+    type(${T}_null_rot_t)       :: rt
 
     ! Construct the null_rot_t
 
-    wv%mp = mp
+    rt%mp = mp
 
     ! Finish
 
