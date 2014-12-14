@@ -167,7 +167,7 @@ contains
 
     md%ml => ml
  
-    select case (op%rot_method)
+    select case (op%rotation_method)
     case ('DOPPLER')
        allocate(md%rt, SOURCE=c_dopp_rot_t(ml, mp))
     case ('NULL')
@@ -175,7 +175,7 @@ contains
     case ('TRAD')
        allocate(md%rt, SOURCE=c_trad_rot_t(ml, mp))
     case default
-       $ABORT(Invalid rot_method)
+       $ABORT(Invalid rotation_method)
     end select
  
     md%mp = mp
