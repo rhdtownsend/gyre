@@ -26,9 +26,12 @@ module gyre_grid
   use core_func
   use core_order
 
+  use gyre_gridpar
   use gyre_model
   use gyre_modepar
-  use gyre_gridpar
+  use gyre_oscpar
+  use gyre_rot
+  use gyre_rot_factory
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -47,9 +50,9 @@ module gyre_grid
   end type geom_func_t
 
   type, extends (func_t) :: gamma_func_t
-     class(model_t), pointer  :: ml => null()
-     type(modepar_t), pointer :: mp => null()
-     real(WP)                 :: omega
+     class(model_t), pointer     :: ml => null()
+     class(r_rot_t), allocatable :: rt
+     real(WP)                    :: omega
    contains
      procedure :: eval_c_ => eval_gamma_func_
   end type gamma_func_t
@@ -68,16 +71,16 @@ module gyre_grid
 
 contains
 
-  subroutine build_grid (gp, ml, mp, omega_min, omega_max, x_in, x, verbose)
+  subroutine build_grid (gp, ml, mp, op, omega, x_in, x, verbose)
 
-    type(gridpar_t), intent(in)        :: gp(:)
-    class(model_t), intent(in)         :: ml
-    type(modepar_t), intent(in)        :: mp
-    real(WP), intent(in)               :: omega_min
-    real(WP), intent(in)               :: omega_max
-    real(WP), allocatable, intent(in)  :: x_in(:)
-    real(WP), allocatable, intent(out) :: x(:)
-    logical, optional, intent(in)      :: verbose
+    type(gridpar_t), intent(in)         :: gp(:)
+    class(model_t), pointer, intent(in) :: ml
+    type(modepar_t), intent(in)         :: mp
+    type(oscpar_t), intent(in)          :: op
+    real(WP), intent(in)                :: omega(:)
+    real(WP), allocatable, intent(in)   :: x_in(:)
+    real(WP), allocatable, intent(out)  :: x(:)
+    logical, optional, intent(in)       :: verbose
 
     logical :: write_info
     integer :: n_in
@@ -129,15 +132,13 @@ contains
 
        select case (gp(i)%op_type)
        case ('RESAMP_DISPERSION')
-          call resample_dispersion_(ml, mp, omega_min, omega_max, &
-                                    gp(i)%alpha_osc, gp(i)%alpha_exp, x)
+          call resample_dispersion_(ml, mp, op, omega, gp(i)%alpha_osc, gp(i)%alpha_exp, x)
        case ('RESAMP_THERMAL')
-          call resample_thermal_(ml, omega_min, omega_max, &
-                                 gp(i)%alpha_thm, x)
+          call resample_thermal_(ml, mp, op, omega, gp(i)%alpha_thm, x)
+       case ('RESAMP_CENTER')
+          call resample_center_(ml, mp, op, omega, gp(i)%n, x)
        case ('RESAMP_STRUCT')
           call resample_struct_(ml, gp(i)%alpha_str, x)
-       case ('RESAMP_CENTER')
-          call resample_center_(ml, mp, omega_min, omega_max, gp(i)%n, x)
        case ('RESAMP_UNIFORM')
           call resample_uniform_(gp(i)%n, x)
        case default
@@ -489,100 +490,105 @@ contains
 
 !****
 
-  subroutine resample_dispersion_ (ml, mp, omega_min, omega_max, alpha_osc, alpha_exp, x)
+  subroutine resample_dispersion_ (ml, mp, op, omega, alpha_osc, alpha_exp, x)
 
-    class(model_t), intent(in)           :: ml
+    class(model_t), pointer, intent(in)  :: ml
     type(modepar_t), intent(in)          :: mp
-    real(WP), intent(in)                 :: omega_min
-    real(WP), intent(in)                 :: omega_max
+    type(oscpar_t), intent(in)           :: op
+    real(WP), intent(in)                 :: omega(:)
     real(WP), intent(in)                 :: alpha_osc
     real(WP), intent(in)                 :: alpha_exp
     real(WP), allocatable, intent(inout) :: x(:)
 
-    integer               :: n_x
-    real(WP), allocatable :: k_osc(:)
-    real(WP), allocatable :: k_exp(:)
-    integer               :: i
-    real(WP)              :: g_4
-    real(WP)              :: g_2
-    real(WP)              :: g_0
-    real(WP)              :: omega2_ext
-    real(WP)              :: gamma_ext
-    real(WP)              :: gamma_a
-    real(WP)              :: gamma_b
-    integer, allocatable  :: dn(:)
-    real(WP)              :: dphi_osc
-    real(WP)              :: dphi_exp
+    class(r_rot_t), allocatable :: rt
+    integer                     :: n_x
+    real(WP), allocatable       :: k_r_max(:)
+    real(WP), allocatable       :: k_i_max(:)
+    integer                     :: i
+    integer                     :: j
+    real(WP)                    :: omega_c
+    real(WP)                    :: lambda
+    real(WP)                    :: l_0
+    real(WP)                    :: g_4
+    real(WP)                    :: g_2
+    real(WP)                    :: g_0
+    real(WP)                    :: gamma
+    integer, allocatable        :: dn(:)
+    real(WP)                    :: dphi_osc
+    real(WP)                    :: dphi_exp
 
     $ASSERT(ALLOCATED(x),No input grid)
 
-    $ASSERT(omega_max >= omega_min,Invalid frequency interval)
-
     ! Resample x by adding points to each cell, such that there are at
     ! least alpha_osc points per oscillatory wavelength and alpha_exp
-    ! points per exponential wavelength. Wavelengths are calculated
-    ! based on a local dispersion analysis of the adibatic/Cowling
-    ! wave equation, for frequencies in the interval [omega_min,omega_max]
+    ! points per exponential wavelength.
+    !
+    ! Wavelengths are calculated based on a local dispersion analysis
+    ! of the adibatic/Cowling wave equation, for inertial frequencies
+    ! specified by omega
 
-    ! First, determine maximal oscillatory and exponential wavenumbers
-    ! at each point of x
+    allocate(rt, SOURCE=r_rot_t(ml, mp, op))
+
+    ! At each point of x, determine the maximum absolute value of the
+    ! real and imaginary parts of the local wavenumber
 
     n_x = SIZE(x)
 
-    allocate(k_osc(n_x))
-    allocate(k_exp(n_x))
+    allocate(k_r_max(n_x))
+    allocate(k_i_max(n_x))
 
-    k_osc(1) = 0._WP
-    k_exp(1) = 0._WP
+    k_r_max(1) = 0._WP
+    k_i_max(1) = 0._WP
 
     wavenumber_loop : do i = 2,n_x-1
 
-       associate(V_g => ml%V(x(i))/ml%Gamma_1(x(i)), As => ml%As(x(i)), &
-                 U => ml%U(x(i)), c_1 => ml%c_1(x(i)), &
-                 l => mp%l)
+       associate (V_g => ml%V(x(i))/ml%Gamma_1(x(i)), As => ml%As(x(i)), &
+                  U => ml%U(x(i)), c_1 => ml%c_1(x(i)))
 
-         ! Look for an extremum of the propagation discriminant ]
-         ! gamma = [g_4*omega**4 + g_2*omega**2 + g_0]/omega**2 in the
-         ! frequency interval
+         k_r_max(i) = 0._WP
+         k_i_max(i) = 0._WP
 
-         g_4 = -4._WP*V_g*c_1
-         g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1)
-         g_0 = -4._WP*l*(l+1)*As/c_1
+         omega_loop : do j = 1, SIZE(omega)
 
-         if(g_0 /= 0._WP .AND. SIGN(1._WP, g_4) == SIGN(1._WP, g_0)) then
+            omega_c = rt%omega_c(x(i), omega(j))
 
-            omega2_ext = SQRT(g_0/g_4)
+            lambda = rt%lambda(x(i), omega(j))
+            l_0 = rt%l_0(omega(j))
             
-            if(omega2_ext >= omega_min**2 .AND. omega2_ext <= omega_max**2) then
-               gamma_ext = (g_4*omega2_ext**2 + g_2*omega2_ext + g_0)/omega2_ext
+            ! Calculate the propagation discriminant gamma
+
+            g_4 = -4._WP*V_g*c_1
+            g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
+            g_0 = -4._WP*lambda*As/c_1
+
+            gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
+
+            ! Update the wavenumber maxima
+
+            if (gamma < 0._WP) then
+               
+               ! Propagation zone
+
+               k_r_max(i) = MAX(k_r_max(i), ABS(0.5_WP*SQRT(-gamma))/x(i))
+               k_i_max(i) = MAX(k_i_max(i), ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_0))/x(i))
+
             else
-               gamma_ext = 0._WP
-            endif
 
-         else
+               ! Evanescent zone
 
-            gamma_ext = 0._WP
+               k_i_max(i) = MAX(k_i_max(i), ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_0 - SQRT(gamma)))/x(i), &
+                                            ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_0 + SQRT(gamma)))/x(i))
 
-         endif
+            end if
 
-         ! Calculate gamma at the interval endpoints
-
-         gamma_a = (g_4*omega_min**4 + g_2*omega_min**2 + g_0)/omega_min**2
-         gamma_b = (g_4*omega_max**4 + g_2*omega_max**2 + g_0)/omega_max**2
-
-         ! Determine the wavenumber bounds
-
-         k_osc(i) = SQRT(MAX(-gamma_a, -gamma_b, 0._WP))/x(i)
-
-         k_exp(i) = 0.5_WP*(ABS(As + V_g - U + 2._WP - 2._WP*l) + &
-                            SQRT(MAX(gamma_ext, gamma_a, gamma_b, 0._WP)))/x(i)
+         end do omega_loop
 
        end associate
 
     end do wavenumber_loop
 
-    k_osc(n_x) = 0._WP
-    k_exp(n_x) = 0._WP
+    k_r_max(n_x) = 0._WP
+    k_i_max(n_x) = 0._WP
 
     ! Determine how many points to add to each cell
 
@@ -593,8 +599,8 @@ contains
        ! Calculate the oscillatory and exponential phase change across
        ! the cell
 
-       dphi_osc = MAX(k_osc(i), k_osc(i+1))*(x(i+1) - x(i))
-       dphi_exp = MAX(k_exp(i), k_exp(i+1))*(x(i+1) - x(i))
+       dphi_osc = MAX(k_r_max(i), k_r_max(i+1))*(x(i+1) - x(i))
+       dphi_exp = MAX(k_i_max(i), k_i_max(i+1))*(x(i+1) - x(i))
 
        ! Set up dn
 
@@ -614,47 +620,60 @@ contains
 
 !****
 
-  subroutine resample_thermal_ (ml, omega_min, omega_max, alpha_thm, x)
+  subroutine resample_thermal_ (ml, mp, op, omega, alpha_thm, x)
 
-    class(model_t), intent(in)           :: ml
-    real(WP), intent(in)                 :: omega_min
-    real(WP), intent(in)                 :: omega_max
+    class(model_t), pointer, intent(in)  :: ml
+    type(modepar_t), intent(in)          :: mp
+    type(oscpar_t), intent(in)           :: op
+    real(WP), intent(in)                 :: omega(:)
     real(WP), intent(in)                 :: alpha_thm
     real(WP), allocatable, intent(inout) :: x(:)
 
-    integer               :: n_x
-    real(WP), allocatable :: k_thm(:)
-    integer               :: i
-    integer, allocatable  :: dn(:)
-    real(WP)              :: dphi_thm
+    class(r_rot_t), allocatable :: rt
+    integer                     :: n_x
+    real(WP), allocatable       :: k_t_max(:)
+    integer                     :: i
+    integer                     :: j
+    real(WP)                    :: omega_c
+    integer, allocatable        :: dn(:)
+    real(WP)                    :: dphi_thm
 
     $ASSERT(ALLOCATED(x),No input grid)
-
-    $ASSERT(omega_max >= omega_min,Invalid frequency interval)
 
     ! Resample x by adding points to each cell, such that there are at
     ! least alpha_thm points per thermal length c_thm
 
-    ! First, determine thermal wavenumbers at each point of x
+    allocate(rt, SOURCE=r_rot_t(ml, mp, op))
+
+    ! At each point of x, determine the maximum absolute value of the
+    ! local thermal wavenumber
 
     n_x = SIZE(x)
 
-    allocate(k_thm(n_x))
+    allocate(k_t_max(n_x))
 
-    k_thm(1) = 0._WP
+    k_t_max(1) = 0._WP
 
     wavenumber_loop : do i = 2,n_x-1
 
        associate(V => ml%V(x(i)), nabla => ml%nabla(x(i)), &
-                 c_rad => ml%c_rad(x(i)), c_thm => ml%c_thm(x(i)))
+                c_rad => ml%c_rad(x(i)), c_thm => ml%c_thm(x(i)))
+         
+         k_t_max(i) = 0._WP
 
-         k_thm(i) = SQRT(ABS(V*nabla*omega_max*c_thm/c_rad))/x(i)
+         omega_loop : do j = 1, SIZE(omega)
+
+            omega_c = rt%omega_c(x(i), omega(j))
+
+            k_t_max(i) = MAX(k_t_max(i), SQRT(ABS(V*nabla*omega_c*c_thm/c_rad))/x(i))
+
+         end do omega_loop
 
        end associate
 
     end do wavenumber_loop
 
-    k_thm(n_x) = 0._WP
+    k_t_max(n_x) = 0._WP
 
     ! Determine how many points to add to each cell
 
@@ -664,7 +683,7 @@ contains
 
        ! Calculate the thermal phase change across the cell
 
-       dphi_thm = MAX(k_thm(i), k_thm(i+1))*(x(i+1) - x(i))
+       dphi_thm = MAX(k_t_max(i), k_t_max(i+1))*(x(i+1) - x(i))
 
        ! Set up dn
 
@@ -684,9 +703,68 @@ contains
 
 !****
 
+  subroutine resample_center_ (ml, mp, op, omega, n, x)
+
+    class(model_t), pointer,  intent(in) :: ml
+    type(modepar_t), intent(in)          :: mp
+    type(oscpar_t), intent(in)           :: op
+    real(WP), intent(in)                 :: omega(:)
+    integer, intent(in)                  :: n
+    real(WP), allocatable, intent(inout) :: x(:)
+
+    real(WP)             :: x_turn
+    integer              :: j
+    real(WP)             :: x_turn_j
+    integer              :: i_turn
+    integer              :: n_x
+    integer, allocatable :: dn(:)
+
+    $ASSERT(ALLOCATED(x),No input grid)
+
+    ! Resample x by adding points to central cells, such that there
+    ! are n_floor points covering the evanescent region at the
+    ! center. Evanescence is determined based on a local dispersion
+    ! analysis of the adibatic/Cowling wave equation, for frequencies
+    ! in the interval [omega_min,omega_max]
+
+    ! First, locate the innermost turning point
+
+    x_turn = HUGE(0._WP)
+
+    omega_loop : do j = 1, SIZE(omega)
+       call find_x_turn(x, ml, mp, op, omega(j), x_turn_j)
+       x_turn = MIN(x_turn, x_turn_j)
+    end do omega_loop
+
+    call locate(x, x_turn, i_turn)
+
+    ! Determine how many points to add to each cell
+
+    n_x = SIZE(x)
+
+    allocate(dn(n_x-1))
+
+    dn = 0
+
+    if(i_turn >= 1 .AND. i_turn < n_x) then
+       dn(:i_turn) = CEILING(n*x(i_turn+1)/x_turn/i_turn)
+    endif
+    
+    ! Perform the resampling
+
+    call resample_(x, dn)
+
+    ! Finish
+
+    return
+
+  end subroutine resample_center_
+
+!****
+
   subroutine resample_struct_ (ml, alpha_str, x)
 
-    class(model_t), intent(in)           :: ml
+    class(model_t), pointer, intent(in)  :: ml
     real(WP), intent(in)                 :: alpha_str
     real(WP), allocatable, intent(inout) :: x(:)
 
@@ -748,64 +826,6 @@ contains
 
 !****
 
-  subroutine resample_center_ (ml, mp, omega_min, omega_max, n, x)
-
-    class(model_t), intent(in)           :: ml
-    type(modepar_t), intent(in)          :: mp
-    real(WP), intent(in)                 :: omega_min
-    real(WP), intent(in)                 :: omega_max
-    integer, intent(in)                  :: n
-    real(WP), allocatable, intent(inout) :: x(:)
-
-    real(WP)             :: x_turn_a
-    real(WP)             :: x_turn_b
-    real(WP)             :: x_turn
-    integer              :: i_turn
-    integer              :: n_x
-    integer, allocatable :: dn(:)
-
-    $ASSERT(ALLOCATED(x),No input grid)
-
-    $ASSERT(omega_max >= omega_min,Invalid frequency interval)
-
-    ! Resample x by adding points to central cells, such that there
-    ! are n_floor points covering the evanescent region at the
-    ! center. Evanescence is determined based on a local dispersion
-    ! analysis of the adibatic/Cowling wave equation, for frequencies
-    ! in the interval [omega_min,omega_max]
-
-    ! First, locate the innermost turning point at both omega_min and omega_max
-
-    call find_x_turn(x, ml, mp, omega_min, x_turn_a)
-    call find_x_turn(x, ml, mp, omega_max, x_turn_b)
-
-    x_turn = MIN(x_turn_a, x_turn_b)
-    call locate(x, x_turn, i_turn)
-
-    ! Determine how many points to add to each cell
-
-    n_x = SIZE(x)
-
-    allocate(dn(n_x-1))
-
-    dn = 0
-
-    if(i_turn >= 1 .AND. i_turn < n_x) then
-       dn(:i_turn) = CEILING(n*x(i_turn+1)/x_turn/i_turn)
-    endif
-    
-    ! Perform the resampling
-
-    call resample_(x, dn)
-
-    ! Finish
-
-    return
-
-  end subroutine resample_center_
-
-!****
-
   subroutine resample_uniform_ (n, x)
 
     integer, intent(in)                  :: n
@@ -836,11 +856,12 @@ contains
 
 !****
 
-  subroutine find_x_turn (x, ml, mp, omega, x_turn)
+  subroutine find_x_turn (x, ml, mp, op, omega, x_turn)
 
     real(WP), intent(in)                :: x(:)
-    class(model_t), target, intent(in)  :: ml
-    type(modepar_t), target, intent(in) :: mp
+    class(model_t), pointer, intent(in) :: ml
+    type(modepar_t), intent(in)         :: mp
+    type(oscpar_t), intent(in)          :: op
     real(WP), intent(in)                :: omega
     real(WP)                            :: x_turn
 
@@ -852,7 +873,7 @@ contains
     x_turn = HUGE(0._WP)
 
     gf%ml => ml
-    gf%mp => mp
+    allocate(gf%rt, SOURCE=r_rot_t(ml, mp, op))
 
     gf%omega = omega
 
@@ -890,11 +911,11 @@ contains
 
     associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), As => this%ml%As(x), &
               U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-              l => this%mp%l)
+              lambda => this%rt%lambda(x, this%omega))
 
       g_4 = -4._WP*V_g*c_1
-      g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1)
-      g_0 = -4._WP*l*(l+1)*As/c_1
+      g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
+      g_0 = -4._WP*lambda*As/c_1
 
       gamma = (g_4*this%omega**4 + g_2*this%omega**2 + g_0)/this%omega**2
 
