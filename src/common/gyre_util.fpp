@@ -25,18 +25,18 @@ module gyre_util
   use core_parallel
   use core_memory
 
-  use gyre_constants
-  use gyre_model
-  use gyre_evol_model
-  use gyre_scons_model
-  use gyre_poly_model
-  use gyre_hom_model
-  use gyre_modepar
-  use gyre_oscpar
-  use gyre_numpar
-  use gyre_gridpar
-  use gyre_scanpar
   use gyre_atmos
+  use gyre_constants
+  use gyre_evol_model
+  use gyre_gridpar
+  use gyre_hom_model
+  use gyre_model
+  use gyre_modepar
+  use gyre_numpar
+  use gyre_oscpar
+  use gyre_poly_model
+  use gyre_scanpar
+  use gyre_scons_model
 
   use ISO_FORTRAN_ENV
 
@@ -88,6 +88,8 @@ module gyre_util
   public :: phase
   public :: integrate
   public :: integral
+
+  ! Procedures
 
 contains
 
