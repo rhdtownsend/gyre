@@ -66,9 +66,7 @@ contains
 
   function ad_bvp_t_ (x, ml, mp, op, np) result (bp)
 
-    use gyre_dopp_rot
-    use gyre_null_rot
-    use gyre_trad_rot
+    use gyre_rot_factory
 
     use gyre_ad_jacob
     use gyre_ad_bound
@@ -99,16 +97,7 @@ contains
 
     ! Initialize the rotational effects
 
-    select case (op%rotation_method)
-    case ('DOPPLER')
-       allocate(rt, SOURCE=r_dopp_rot_t(ml, mp))
-    case ('NULL')
-       allocate(rt, SOURCE=r_null_rot_t(mp))
-    case ('TRAD')
-       allocate(rt, SOURCE=r_trad_rot_t(ml, mp))
-    case default
-       $ABORT(Invalid rotation_method)
-    end select
+    allocate(rt, SOURCE=r_rot_t(ml, mp, op))
  
     ! Initialize the jacobian
 
