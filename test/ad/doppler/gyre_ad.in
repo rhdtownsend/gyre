@@ -25,6 +25,7 @@
 /
 
 &osc
+	rotation_method = 'DOPPLER'
 /
 
 &num
