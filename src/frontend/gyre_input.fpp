@@ -335,17 +335,18 @@ contains
 
     integer         :: n_op
     integer         :: i
-    logical         :: reduce_order
     character(64)   :: rotation_method
     character(64)   :: variables_type
     character(64)   :: inner_bound_type
     character(64)   :: outer_bound_type
     character(64)   :: inertia_norm_type
     character(2048) :: tag_list
+    logical         :: reduce_order
+    logical         :: nonadiabatic
     real(WP)        :: x_ref
 
     namelist /osc/ x_ref, rotation_method, inner_bound_type, outer_bound_type, variables_type, &
-         inertia_norm_type, tag_list, adiabatic, reduce_order
+         inertia_norm_type, tag_list, reduce_order, nonadiabatic
 
     ! Count the number of osc namelists
 
