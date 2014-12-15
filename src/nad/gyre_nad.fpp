@@ -191,7 +191,7 @@ program gyre_nad
 
      ! Set up the shooting grid
 
-     call build_grid(shoot_gp_sel, ml, mp(i), MINVAL(omega), MAXVAL(omega), x_ml, x_sh, verbose=.TRUE.)
+     call build_grid(shoot_gp_sel, ml, mp(i), op_sel(n_op_sel), omega, x_ml, x_sh, verbose=.TRUE.)
 
      ! Set up the bvp's
 
@@ -246,7 +246,7 @@ contains
 
     ! Build the reconstruction grid
 
-    call build_grid(recon_gp_sel, ml, mp(i), omega, omega, x_sh, x_rc, verbose=.FALSE.)
+    call build_grid(recon_gp_sel, ml, mp(i), op_sel(n_op_sel), [omega], x_sh, x_rc, verbose=.FALSE.)
 
     ! Reconstruct the solution
 
@@ -313,7 +313,7 @@ contains
 
     ! Build the reconstruction grid
 
-    call build_grid(recon_gp_sel, ml, mp(i), REAL(omega), REAL(omega), x_sh, x_rc, verbose=.FALSE.)
+    call build_grid(recon_gp_sel, ml, mp(i), op_sel(n_op_sel), [REAL(omega)], x_sh, x_rc, verbose=.FALSE.)
 
     ! Reconstruct the solution
 

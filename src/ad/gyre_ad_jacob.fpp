@@ -26,6 +26,7 @@ module gyre_ad_jacob
   use gyre_jacob
   use gyre_linalg
   use gyre_model
+  use gyre_oscpar
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -75,11 +76,11 @@ module gyre_ad_jacob
 
 contains
 
-  function ad_jacob_t_ (ml, rt, vars) result (jc)
+  function ad_jacob_t_ (ml, rt, op) result (jc)
 
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
-    character(*), intent(in)            :: vars
+    type(oscpar_t), intent(in)          :: op
     type(ad_jacob_t)                    :: jc
 
     ! Construct the ad_jacob_t
@@ -87,7 +88,7 @@ contains
     jc%ml => ml
     allocate(jc%rt, SOURCE=rt)
 
-    select case (vars)
+    select case (op%variables_type)
     case ('DZIEM')
        jc%vars = DZIEM_VARS
     case ('JCD')
@@ -95,7 +96,7 @@ contains
     case ('MIX')
        jc%vars = MIX_VARS
     case default
-       $ABORT(Invalid vars)
+       $ABORT(Invalid variables_type)
     end select
 
     jc%n_e = 4

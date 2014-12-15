@@ -27,6 +27,7 @@ module gyre_nad_bound
   use gyre_bound
   use gyre_jacob
   use gyre_model
+  use gyre_oscpar
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -84,15 +85,14 @@ module gyre_nad_bound
 
 contains
 
-  function nad_bound_t_ (ml, rt, jc, x_i, x_o, type_i, type_o) result (bd)
+  function nad_bound_t_ (ml, rt, jc, op, x_i, x_o) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
     class(c_rot_t), intent(in)          :: rt
     class(c_jacob_t), intent(in)        :: jc
+    type(oscpar_t), intent(in)          :: op
     real(WP)                            :: x_i
     real(WP)                            :: x_o
-    character(*), intent(in)            :: type_i
-    character(*), intent(in)            :: type_o
     type(nad_bound_t)                   :: bd
 
     ! Construct the nad_bound_t
@@ -104,16 +104,16 @@ contains
     bd%x_i = x_i
     bd%x_o = x_o
 
-    select case (type_i)
+    select case (op%inner_bound_type)
     case ('REGULAR')
        bd%type_i = REGULAR_TYPE_I
     case ('ZERO')
        bd%type_i = ZERO_TYPE_I
     case default
-       $ABORT(Invalid type_i)
+       $ABORT(Invalid inner_bound_type)
     end select
 
-    select case (type_o)
+    select case (op%outer_bound_type)
     case ('ZERO')
        bd%type_o = ZERO_TYPE_O
     case ('DZIEM')
@@ -123,7 +123,7 @@ contains
     case ('JCD')
        bd%type_o = JCD_TYPE_O
     case default
-       $ABORT(Invalid type_o)
+       $ABORT(Invalid outer_bound_type)
     end select
 
     bd%n_i = 3

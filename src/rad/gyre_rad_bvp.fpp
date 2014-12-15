@@ -26,6 +26,7 @@ module gyre_rad_bvp
   use gyre_bvp
   use gyre_ext
   use gyre_ivp
+  use gyre_ivp_factory
   use gyre_mode
   use gyre_modepar
   use gyre_model
@@ -34,6 +35,7 @@ module gyre_rad_bvp
   use gyre_sysmtx
   use gyre_util
   use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -67,14 +69,8 @@ contains
 
   function rad_bvp_t_ (x, ml, mp, op, np) result (bp)
 
-    use gyre_rot_factory
-
     use gyre_rad_jacob
     use gyre_rad_bound
-
-    use gyre_magnus_ivp
-    use gyre_colloc_ivp
-    use gyre_findiff_ivp
 
     use gyre_block_sysmtx
  
@@ -102,7 +98,7 @@ contains
  
     ! Initialize the jacobian
 
-    jc = rad_jacob_t(ml, rt, op%variables_type)
+    jc = rad_jacob_t(ml, rt, op)
 
     ! Initialize the boundary conditions
 
@@ -111,26 +107,11 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    bd = rad_bound_t(ml, rt, jc, x_i, x_o, op%inner_bound_type, op%outer_bound_type)
+    bd = rad_bound_t(ml, rt, jc, op, x_i, x_o)
 
     ! Initialize the IVP solver
 
-    select case (np%ivp_solver_type)
-    case ('MAGNUS_GL2')
-       allocate(iv, SOURCE=r_magnus_ivp_t(jc, 'GL2'))
-    case ('MAGNUS_GL4')
-       allocate(iv, SOURCE=r_magnus_ivp_t(jc, 'GL4'))
-    case ('MAGNUS_GL6')
-       allocate(iv, SOURCE=r_magnus_ivp_t(jc, 'GL6'))
-    case ('COLLOC_GL2')
-       allocate(iv, SOURCE=r_colloc_ivp_t(jc, 'GL2'))
-    case ('COLLOC_GL4')
-       allocate(iv, SOURCE=r_colloc_ivp_t(jc, 'GL4'))
-    case ('FINDIFF')
-       allocate(iv, SOURCE=r_findiff_ivp_t(jc))
-    case default
-       $ABORT(Invalid ivp_solver_type)
-    end select
+    allocate(iv, SOURCE=r_ivp_t(jc, np))
 
     ! Initialize the system matrix
 

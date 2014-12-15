@@ -26,6 +26,7 @@ module gyre_nad_bvp
   use gyre_bvp
   use gyre_ext
   use gyre_ivp
+  use gyre_ivp_factory
   use gyre_mode
   use gyre_modepar
   use gyre_model
@@ -33,6 +34,7 @@ module gyre_nad_bvp
   use gyre_oscpar
   use gyre_sysmtx
   use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -63,13 +65,8 @@ contains
 
   function nad_bvp_t_ (x, ml, mp, op, np) result (bp)
 
-    use gyre_rot_factory
-
     use gyre_nad_jacob
     use gyre_nad_bound
-
-    use gyre_nad_magnus_ivp
-    use gyre_nad_findiff_ivp
 
     use gyre_block_sysmtx
 
@@ -97,7 +94,7 @@ contains
  
     ! Initialize the jacobian
 
-    jc = nad_jacob_t(ml, rt, op%variables_type)
+    jc = nad_jacob_t(ml, rt, op)
 
     ! Initialize the boundary conditions
 
@@ -106,18 +103,11 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    bd = nad_bound_t(ml, rt, jc, x_i, x_o, op%inner_bound_type, op%outer_bound_type)
+    bd = nad_bound_t(ml, rt, jc, op, x_i, x_o)
 
     ! Initialize the IVP solver
 
-    select case (np%ivp_solver_type)
-    case ('MAGNUS_GL2')
-       allocate(iv, SOURCE=nad_magnus_ivp_t(ml, jc, 'GL2'))
-    case ('FINDIFF')
-       allocate(iv, SOURCE=nad_findiff_ivp_t(ml, jc))
-    case default
-       $ABORT(Invalid ivp_solver_type)
-    end select
+    allocate(iv, SOURCE=c_ivp_t(jc, np))
 
     ! Initialize the system matrix
 
