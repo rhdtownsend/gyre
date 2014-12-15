@@ -139,9 +139,7 @@ contains
 
   function mode_t_ (ml, mp, op, omega, discrim, x, y, x_ref, y_ref) result (md)
 
-    use gyre_dopp_rot
-    use gyre_null_rot
-    use gyre_trad_rot
+    use gyre_rot_factory
 
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
@@ -167,16 +165,7 @@ contains
 
     md%ml => ml
  
-    select case (op%rotation_method)
-    case ('DOPPLER')
-       allocate(md%rt, SOURCE=c_dopp_rot_t(ml, mp))
-    case ('NULL')
-       allocate(md%rt, SOURCE=c_null_rot_t(mp))
-    case ('TRAD')
-       allocate(md%rt, SOURCE=c_trad_rot_t(ml, mp))
-    case default
-       $ABORT(Invalid rotation_method)
-    end select
+    allocate(md%rt, SOURCE=c_rot_t(ml, mp, op))
  
     md%mp = mp
     md%op = op
@@ -744,7 +733,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the origin)
 
-       call find_x_turn(md%x, md%ml, md%mp, REAL(md%omega), x_turn)
+       call find_x_turn(md%x, md%ml, md%mp, md%op, REAL(md%omega), x_turn)
 
        x_turn_loop : do i = 1,md%n-1
           if(md%x(i) > x_turn) exit x_turn_loop
