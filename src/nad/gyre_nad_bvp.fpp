@@ -26,7 +26,6 @@ module gyre_nad_bvp
   use gyre_bvp
   use gyre_ext
   use gyre_ivp
-  use gyre_ivp_factory
   use gyre_mode
   use gyre_modepar
   use gyre_model
@@ -64,6 +63,9 @@ module gyre_nad_bvp
 contains
 
   function nad_bvp_t_ (x, ml, mp, op, np) result (bp)
+
+    use gyre_nad_magnus_ivp
+    use gyre_nad_findiff_ivp
 
     use gyre_nad_jacob
     use gyre_nad_bound
@@ -107,7 +109,18 @@ contains
 
     ! Initialize the IVP solver
 
-    allocate(iv, SOURCE=c_ivp_t(jc, np))
+    select case (np%ivp_solver_type)
+    case ('MAGNUS_GL2')
+       allocate(iv, SOURCE=nad_magnus_ivp_t(ml, jc, 'GL2'))
+    case ('MAGNUS_GL4')
+       allocate(iv, SOURCE=nad_magnus_ivp_t(ml, jc, 'GL4'))
+    case ('MAGNUS_GL6')
+       allocate(iv, SOURCE=nad_magnus_ivp_t(ml, jc, 'GL6'))
+    case ('FINDIFF')
+       allocate(iv, SOURCE=nad_findiff_ivp_t(ml, jc))
+    case default
+       $ABORT(Invalid ivp_solver)
+    end select
 
     ! Initialize the system matrix
 
