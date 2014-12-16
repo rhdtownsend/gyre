@@ -71,17 +71,17 @@ contains
 
     select case (np%ivp_solver_type)
     case ('MAGNUS_GL2')
-       allocate(iv, SOURCE=r_magnus_ivp_t(jc, 'GL2'))
+       allocate(iv, SOURCE=${T}_magnus_ivp_t(jc, 'GL2'))
     case ('MAGNUS_GL4')
-       allocate(iv, SOURCE=r_magnus_ivp_t(jc, 'GL4'))
+       allocate(iv, SOURCE=${T}_magnus_ivp_t(jc, 'GL4'))
     case ('MAGNUS_GL6')
-       allocate(iv, SOURCE=r_magnus_ivp_t(jc, 'GL6'))
+       allocate(iv, SOURCE=${T}_magnus_ivp_t(jc, 'GL6'))
     case ('COLLOC_GL2')
-       allocate(iv, SOURCE=r_colloc_ivp_t(jc, 'GL2'))
+       allocate(iv, SOURCE=${T}_colloc_ivp_t(jc, 'GL2'))
     case ('COLLOC_GL4')
-       allocate(iv, SOURCE=r_colloc_ivp_t(jc, 'GL4'))
+       allocate(iv, SOURCE=${T}_colloc_ivp_t(jc, 'GL4'))
     case ('FINDIFF')
-       allocate(iv, SOURCE=r_findiff_ivp_t(jc))
+       allocate(iv, SOURCE=${T}_findiff_ivp_t(jc))
     case default
        $ABORT(Invalid ivp_solver)
     end select
