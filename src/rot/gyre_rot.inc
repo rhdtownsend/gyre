@@ -41,17 +41,17 @@ module gyre_${T}_rot
      type(modepar_t), public :: mp
    contains
      private
-     procedure(omega_), deferred     :: omega
-     procedure(omega_c_1_), deferred :: omega_c_1_
-     procedure(omega_c_v_), deferred :: omega_c_v_
-     generic, public                 :: omega_c => omega_c_1_, omega_c_v_
-     procedure                       :: l_e_1_
-     procedure                       :: l_e_v_
-     generic, public                 :: l_e => l_e_1_, l_e_v_
-     procedure, public               :: l_0 => l_0_
-     procedure(lambda_1_), deferred  :: lambda_1_
-     procedure(lambda_v_), deferred  :: lambda_v_
-     generic, public                 :: lambda => lambda_1_, lambda_v_
+     procedure(omega_), deferred, public :: omega
+     procedure(omega_c_1_), deferred     :: omega_c_1_
+     procedure(omega_c_v_), deferred     :: omega_c_v_
+     generic, public                     :: omega_c => omega_c_1_, omega_c_v_
+     procedure                           :: l_e_1_
+     procedure                           :: l_e_v_
+     generic, public                     :: l_e => l_e_1_, l_e_v_
+     procedure, public                   :: l_0 => l_0_
+     procedure(lambda_1_), deferred      :: lambda_1_
+     procedure(lambda_v_), deferred      :: lambda_v_
+     generic, public                     :: lambda => lambda_1_, lambda_v_
   end type ${T}_rot_t
 
   ! Interfaces
