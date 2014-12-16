@@ -11,11 +11,8 @@ test :
 	@for DIR in ${TESTDIRS}; do \
             cd $$DIR; \
             ./test.sh; \
-            if [ $$? -ne 0 ]; then \
-                exit $$?; \
-            fi; \
             cd ${CURDIR}; \
-        done
+	done
 
 build_ref :
 	@for DIR in ${TESTDIRS}; do \
