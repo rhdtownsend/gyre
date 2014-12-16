@@ -37,6 +37,8 @@ module gyre_util
   use gyre_poly_model
   use gyre_scanpar
   use gyre_scons_model
+  use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -49,6 +51,16 @@ module gyre_util
   character(64), save :: log_level_m
 
   ! Interfaces
+
+  interface omega_from_freq
+     module procedure omega_from_freq_r_
+     module procedure omega_from_freq_c_
+  end interface omega_from_freq
+
+interface freq_from_omega
+     module procedure freq_from_omega_r_
+     module procedure freq_from_omega_c_
+  end interface freq_from_omega
 
   interface select_par
      module procedure select_par_op_
@@ -78,7 +90,8 @@ module gyre_util
   public :: form_header
   public :: set_log_level
   public :: check_log_level
-  public :: freq_scale
+  public :: omega_from_freq
+  public :: freq_from_omega
   public :: eval_cutoff_freqs
   public :: select_par
   public :: split_list
@@ -202,162 +215,251 @@ contains
 
 !****
 
-  function freq_scale (ml, mp, op, x_o, freq_units)
+  $define $OMEGA_FROM_FREQ $sub
 
-    class(model_t), intent(in)  :: ml
-    type(modepar_t), intent(in) :: mp
-    type(oscpar_t), intent(in)  :: op
-    real(WP), intent(in)        :: x_o
-    character(*), intent(in)    :: freq_units
-    real(WP)                    :: freq_scale
+  $local $T $1
+  $local $TYPE $2
 
-    ! Calculate the scale factor to convert a dimensionless angular
-    ! frequency to a dimensioned frequency
+  function omega_from_freq_${T}_ (freq, ml, mp, op, x_i, x_o, freq_units, freq_frame) result (omega)
+
+    $TYPE(WP), intent(in)               :: freq
+    class(model_t), pointer, intent(in) :: ml
+    type(modepar_t), intent(in)         :: mp
+    type(oscpar_t), intent(in)          :: op
+    real(WP), intent(in)                :: x_i
+    real(WP), intent(in)                :: x_o
+    character(*), intent(in)            :: freq_units
+    character(*), intent(in)            :: freq_frame
+    $TYPE(WP)                           :: omega
+
+    $TYPE(WP)                      :: omega_l
+    class(${T}_rot_t), allocatable :: rt
+    real(WP)                       :: omega_cutoff_lo
+    real(WP)                       :: omega_cutoff_hi
+
+    ! Calculate the dimensionless inertial-frame frequency omega from
+    ! the dimensioned local-frame frequency freq
+
+    ! First calculate the dimensionless frequency in the local frame
 
     select type (ml)
+
     class is (evol_model_t)
-       freq_scale = evol_freq_scale_(ml, mp, op, x_o, freq_units)
+
+       select case(freq_units)
+       case('NONE')
+          omega_l = freq
+       case('HZ')
+          omega_l = freq*(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+       case('UHZ')
+          omega_l = freq*(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))/1E6_WP
+       case('PER_DAY')
+          omega_l = freq*(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))/86400._WP
+       case('ACOUSTIC_CUTOFF')
+          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+          omega_l = freq*omega_cutoff_hi
+       case('GRAVITY_CUTOFF')
+          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+          omega_l = freq*omega_cutoff_lo
+       case default
+          $ABORT(Invalid freq_units)
+       end select
+
     class is (scons_model_t)
-       freq_scale = scons_freq_scale_(ml, mp, op, x_o, freq_units)
+
+       select case(freq_units)
+       case('NONE')
+          omega_l = freq
+       case('HZ')
+          omega_l = freq*(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+       case('UHZ')
+          omega_l = freq*(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))/1E6_WP
+       case('PER_DAY')
+          omega_l = freq*(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))/86400._WP
+       case('ACOUSTIC_CUTOFF')
+          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+          omega_l = freq*omega_cutoff_hi
+       case('GRAVITY_CUTOFF')
+          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+          omega_l = freq*omega_cutoff_lo
+       case default
+          $ABORT(Invalid freq_units)
+       end select
+
     class is (poly_model_t)
-       freq_scale = poly_freq_scale_(freq_units)
-    class is (hom_model_t)
-       freq_scale = hom_freq_scale_(freq_units)
+
+       select case (freq_units)
+       case ('NONE')
+          omega_l = freq
+       case default
+         $ABORT(Invalid freq_units)
+      end select
+
+   class is (hom_model_t)
+
+       select case (freq_units)
+       case ('NONE')
+          omega_l = freq
+       case default
+         $ABORT(Invalid freq_units)
+      end select
+
     class default
+
        $ABORT(Invalid ml type)
+
+    end select
+
+    ! Now convert to the inertial frame
+
+    allocate(rt, SOURCE=${T}_rot_t(ml, mp, op))
+
+    select case (freq_frame)
+    case ('INERTIAL')
+       omega = omega_l
+    case ('COROT_I')
+       omega = rt%omega(x_i, omega_l)
+    case ('COROT_O')
+       omega = rt%omega(x_o, omega_l)
+    case default
+       $ABORT(Invalid freq_frame)
     end select
 
     ! Finish
 
     return
 
-  contains
+  end function omega_from_freq_${T}_
 
-    function evol_freq_scale_ (ml, mp, op, x_o, freq_units) result (freq_scale)
+  $endsub
 
-      class(evol_model_t), intent(in) :: ml
-      type(modepar_t), intent(in)     :: mp
-      type(oscpar_t), intent(in)      :: op
-      real(WP), intent(in)            :: x_o
-      character(*), intent(in)        :: freq_units
-      real(WP)                        :: freq_scale
+  $OMEGA_FROM_FREQ(r,real)
+  $OMEGA_FROM_FREQ(c,complex)
 
-      real(WP) :: omega_cutoff_lo
-      real(WP) :: omega_cutoff_hi
+!****
 
-      ! Calculate the scale factor to convert a dimensionless angular
-      ! frequency to a dimensioned frequency
+  $define $FREQ_FROM_OMEGA $sub
 
-      select case(freq_units)
-      case('NONE')
-         freq_scale = 1._WP
-      case('HZ')
-         freq_scale = 1._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
-      case('UHZ')
-         freq_scale = 1.E6_WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
-      case('PER_DAY')
-         freq_scale = 86400._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
-      case('ACOUSTIC_CUTOFF')
-         call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-         freq_scale = 1._WP/omega_cutoff_hi
-      case('GRAVITY_CUTOFF')
-         call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-         freq_scale = 1._WP/omega_cutoff_lo
-      case default
+  $local $T $1
+  $local $TYPE $2
+
+  function freq_from_omega_${T}_ (omega, ml, mp, op, x_i, x_o, freq_units, freq_frame) result (freq)
+
+    $TYPE(WP), intent(in)               :: omega
+    class(model_t), pointer, intent(in) :: ml
+    type(modepar_t), intent(in)         :: mp
+    type(oscpar_t), intent(in)          :: op
+    real(WP), intent(in)                :: x_i
+    real(WP), intent(in)                :: x_o
+    character(*), intent(in)            :: freq_units
+    character(*), intent(in)            :: freq_frame
+    $TYPE(WP)                           :: freq
+
+    $TYPE(WP)                      :: omega_l
+    class(${T}_rot_t), allocatable :: rt
+    real(WP)                       :: omega_cutoff_lo
+    real(WP)                       :: omega_cutoff_hi
+
+    ! Calculate the dimensionless inertial-frame frequency omega from
+    ! the dimensioned local-frame frequency freq
+
+    ! First convert from the inertial frame
+
+    allocate(rt, SOURCE=${T}_rot_t(ml, mp, op))
+
+    select case (freq_frame)
+    case ('INERTIAL')
+       omega_l = omega
+    case ('COROT_I')
+       omega_l = rt%omega_c(x_i, omega)
+    case ('COROT_O')
+       omega_l = rt%omega_c(x_o, omega)
+    case default
+       $ABORT(Invalid freq_frame)
+    end select
+
+    ! Now calculate the dimensionless frequency in the local frame
+
+    select type (ml)
+
+    class is (evol_model_t)
+
+       select case(freq_units)
+       case('NONE')
+          freq = omega_l
+       case('HZ')
+          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+       case('UHZ')
+          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*1E6_WP
+       case('PER_DAY')
+          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*86400._WP
+       case('ACOUSTIC_CUTOFF')
+          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+          freq = omega_l/omega_cutoff_hi
+       case('GRAVITY_CUTOFF')
+          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+          freq = omega_l/omega_cutoff_lo
+       case default
+          $ABORT(Invalid freq_units)
+       end select
+
+    class is (scons_model_t)
+
+       select case(freq_units)
+       case('NONE')
+          freq = omega_l
+       case('HZ')
+          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+       case('UHZ')
+          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*1E6_WP
+       case('PER_DAY')
+          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*86400._WP
+       case('ACOUSTIC_CUTOFF')
+          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+          freq = omega_l/omega_cutoff_hi
+       case('GRAVITY_CUTOFF')
+          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
+          freq = omega_l/omega_cutoff_lo
+       case default
+          $ABORT(Invalid freq_units)
+       end select
+
+    class is (poly_model_t)
+
+       select case (freq_units)
+       case ('NONE')
+          freq = omega_l
+       case default
          $ABORT(Invalid freq_units)
       end select
 
-      ! Finish
+    class is (hom_model_t)
 
-      return
-
-    end function evol_freq_scale_
-
-    function scons_freq_scale_ (ml, mp, op, x_o, freq_units) result (freq_scale)
-
-      class(scons_model_t), intent(in) :: ml
-      type(modepar_t), intent(in)      :: mp
-      type(oscpar_t), intent(in)       :: op
-      real(WP), intent(in)             :: x_o
-      character(*), intent(in)         :: freq_units
-      real(WP)                         :: freq_scale
-
-      real(WP) :: omega_cutoff_lo
-      real(WP) :: omega_cutoff_hi
-
-      ! Calculate the scale factor to convert a dimensionless angular
-      ! frequency to a dimensioned frequency
-
-      select case(freq_units)
-      case('NONE')
-         freq_scale = 1._WP
-      case('HZ')
-         freq_scale = 1._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
-      case('UHZ')
-         freq_scale = 1.E6_WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
-      case('PER_DAY')
-         freq_scale = 86400._WP/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
-      case('ACOUSTIC_CUTOFF')
-         call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-         freq_scale = 1._WP/omega_cutoff_hi
-      case('GRAVITY_CUTOFF')
-         call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-         freq_scale = 1._WP/omega_cutoff_lo
-      case default
+       select case (freq_units)
+       case ('NONE')
+          freq = omega_l
+       case default
          $ABORT(Invalid freq_units)
       end select
 
-      ! Finish
+    class default
 
-      return
+       $ABORT(Invalid ml type)
 
-    end function scons_freq_scale_
+    end select
 
-    function poly_freq_scale_ (freq_units) result (freq_scale)
+    ! Finish
 
-      character(*), intent(in) :: freq_units
-      real(WP)                 :: freq_scale
+    return
 
-      ! Calculate the scale factor to convert a dimensionless angular
-      ! frequency to a dimensioned frequency
+  end function freq_from_omega_${T}_
 
-      select case (freq_units)
-      case ('NONE')
-         freq_scale = 1._WP
-      case default
-         $ABORT(Invalid freq_units)
-      end select
+  $endsub
 
-      ! Finish
+  $FREQ_FROM_OMEGA(r,real)
+  $FREQ_FROM_OMEGA(c,complex)
 
-      return
-
-    end function poly_freq_scale_
-
-    function hom_freq_scale_ (freq_units) result (freq_scale)
-
-      character(*), intent(in) :: freq_units
-      real(WP)                 :: freq_scale
-
-      ! Calculate the scale factor to convert a dimensionless angular
-      ! frequency to a dimensioned frequency
-
-      select case (freq_units)
-      case ('NONE')
-         freq_scale = 1._WP
-      case default
-         $ABORT(Invalid freq_units)
-      end select
-
-      ! Finish
-
-      return
-
-    end function hom_freq_scale_
-
-  end function freq_scale
-
- !****
+!****
 
   subroutine eval_cutoff_freqs (ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
 

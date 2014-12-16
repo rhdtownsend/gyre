@@ -235,15 +235,16 @@ contains
 
 !****
 
-  function freq_ (this, freq_units) result (freq)
+  function freq_ (this, freq_units, freq_frame) result (freq)
 
     class(mode_t), intent(in)    :: this
     character(LEN=*), intent(in) :: freq_units
+    character(LEN=*), intent(in) :: freq_frame
     complex(WP)                  :: freq
 
     ! Calculate the frequency
 
-    freq = this%omega*freq_scale(this%ml, this%mp, this%op, this%x(this%n), freq_units)
+    freq = freq_from_omega(this%omega, this%ml, this%mp, this%op, this%x(1), this%x(this%n), freq_units, freq_frame)
 
     ! Finish
     

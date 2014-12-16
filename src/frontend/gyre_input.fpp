@@ -591,6 +591,7 @@ contains
           
        freq_units = 'NONE'
        freq_frame = 'INERTIAL'
+
        grid_type = 'LINEAR'
        tag_list = ''
 
@@ -619,6 +620,7 @@ contains
 
     integer                 :: n_up
     character(256)          :: freq_units
+    character(256)          :: freq_frame
     character(FILENAME_LEN) :: summary_file
     character(256)          :: summary_file_format
     character(2048)         :: summary_item_list
@@ -628,7 +630,7 @@ contains
     character(2048)         :: mode_item_list
     logical                 :: prune_modes
 
-    namelist /output/ freq_units, summary_file, summary_file_format, summary_item_list, &
+    namelist /output/ freq_units, freq_frame, summary_file, summary_file_format, summary_item_list, &
                       mode_prefix, mode_template, mode_file_format, mode_item_list, prune_modes
 
     ! Count the number of output namelists
@@ -649,6 +651,7 @@ contains
     ! Read output parameters
 
     freq_units = 'NONE'
+    freq_frame = 'INERTIAL'
 
     summary_file = ''
     summary_file_format = 'HDF'
@@ -666,7 +669,7 @@ contains
 
     ! Initialize the outpar
 
-    up = outpar_t(freq_units=freq_units, &
+    up = outpar_t(freq_units=freq_units, freq_frame=freq_frame, &
                   summary_file=summary_file, summary_file_format=summary_file_format, summary_item_list=summary_item_list, &
                   mode_prefix=mode_prefix, mode_template=mode_template, mode_file_format=mode_file_format, mode_item_list=mode_item_list, &
                   prune_modes=prune_modes)

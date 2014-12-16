@@ -35,6 +35,7 @@ module gyre_outpar
 
   type :: outpar_t
      character(256)          :: freq_units
+     character(256)          :: freq_frame
      character(FILENAME_LEN) :: summary_file
      character(256)          :: summary_file_format
      character(2048)         :: summary_item_list
@@ -89,6 +90,7 @@ contains
     ! Broadcast the outpar_t
 
     call bcast(up%freq_units, root_rank)
+    call bcast(up%freq_frame, root_rank)
     call bcast(up%summary_file, root_rank)
     call bcast(up%summary_file_format, root_rank)
     call bcast(up%summary_item_list, root_rank)

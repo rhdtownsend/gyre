@@ -99,7 +99,7 @@ contains
        case('omega')
           call wr%write('omega', md%omega)
        case('freq')
-          call wr%write('freq', [(md(j)%freq(up%freq_units), j=1,n_md)])
+          call wr%write('freq', [(md(j)%freq(up%freq_units, up%freq_frame), j=1,n_md)])
        case ('f_T')
           call wr%write('f_T', [(ABS(md(j)%lag_T_eff()/md(j)%xi_r_ref()), j=1,n_md)])
        case ('f_g')
@@ -126,6 +126,8 @@ contains
           call wr%write('xi_h_ref', md(j)%xi_h_ref())
        case('freq_units')
           call wr%write('freq_units', up%freq_units)
+       case('freq_frame')
+          call wr%write('freq_frame', up%freq_frame)
        case default
           if(n_md >= 1) then
              select type (ml => md(1)%ml)
@@ -287,7 +289,7 @@ contains
        case ('omega')
           call wr%write('omega', md%omega)
        case ('freq')
-          call wr%write('freq', md%freq(up%freq_units))
+          call wr%write('freq', md%freq(up%freq_units, up%freq_frame))
        case ('f_T')
           call wr%write('f_T', ABS(md%lag_T_eff()/md%xi_r_ref()))
        case ('f_g')
@@ -378,6 +380,8 @@ contains
           call wr%write('K', md%K())
        case('freq_units')
           call wr%write('freq_units', up%freq_units)
+       case('freq_frame')
+          call wr%write('freq_frame', up%freq_frame)
        case default
           select type (ml => md%ml)
           type is (evol_model_t)

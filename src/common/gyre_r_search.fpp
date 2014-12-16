@@ -54,13 +54,13 @@ contains
 
   subroutine build_scan (sp, ml, mp, op, x_i, x_o, omega)
 
-    type(scanpar_t), intent(in)        :: sp(:)
-    class(model_t), intent(in)         :: ml
-    type(modepar_t), intent(in)        :: mp
-    type(oscpar_t), intent(in)         :: op
-    real(WP), intent(in)               :: x_i
-    real(WP), intent(in)               :: x_o
-    real(WP), allocatable, intent(out) :: omega(:)
+    type(scanpar_t), intent(in)         :: sp(:)
+    class(model_t), pointer, intent(in) :: ml
+    type(modepar_t), intent(in)         :: mp
+    type(oscpar_t), intent(in)          :: op
+    real(WP), intent(in)                :: x_i
+    real(WP), intent(in)                :: x_o
+    real(WP), allocatable, intent(out)  :: omega(:)
 
     integer  :: i
     real(WP) :: omega_min
@@ -85,8 +85,8 @@ contains
 
        ! Determine the frequency range
 
-       omega_min = sp(i)%freq_min/freq_scale(ml, mp, op, x_o, sp(i)%freq_units)
-       omega_max = sp(i)%freq_max/freq_scale(ml, mp, op, x_o, sp(i)%freq_units)
+       omega_min = omega_from_freq(sp(i)%freq_min, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
+       omega_max = omega_from_freq(sp(i)%freq_max, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
 
        ! Add points to the frequency grid
 
