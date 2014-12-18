@@ -44,6 +44,7 @@ program gyre_nad
   use gyre_util
   use gyre_version
   use gyre_grid
+  use gyre_trad
 
   use ISO_FORTRAN_ENV
 
@@ -106,6 +107,8 @@ program gyre_nad
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
 
   endif
+
+  call init_trad()
 
   ! Process arguments
 
