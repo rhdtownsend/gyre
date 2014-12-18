@@ -54,13 +54,14 @@ module gyre_mesa_file
 
 contains
 
-  subroutine read_mesa_model_evol_ (file, deriv_type, regularize, ml, x)
+  subroutine read_mesa_model_evol_ (file, deriv_type, regularize, ml, x, uni_Omega_rot)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type 
     logical, intent(in)                          :: regularize
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
+    real(WP), optional, intent(in)               :: uni_Omega_rot
 
     integer               :: unit
     integer               :: n
@@ -100,6 +101,8 @@ contains
                         kappa, kappa_rho, kappa_T, &
                         epsilon, epsilon_rho, epsilon_T, &
                         Omega_rot)
+
+    if (PRESENT(uni_Omega_rot)) Omega_rot = uni_Omega_rot
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 

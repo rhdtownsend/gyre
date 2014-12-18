@@ -1,7 +1,7 @@
 ! Module   : gyre_model
 ! Purpose  : stellar model (interface)
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2014 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
