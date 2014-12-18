@@ -112,14 +112,17 @@ contains
     character(256)          :: deriv_type
     character(FILENAME_LEN) :: file
     real(WP)                :: Gamma_1
-    real(WP)                :: Omega_rot
     logical                 :: regularize
+    logical                 :: uniform_rot
+    real(WP)                :: Omega_rot
     type(evol_model_t)      :: ec
     type(scons_model_t)     :: sc
     type(poly_model_t)      :: pc
     type(hom_model_t)       :: hc
 
-    namelist /model/ model_type, file_format, data_format, deriv_type, file, Gamma_1, Omega_rot, regularize
+    namelist /model/ model_type, file_format, data_format, deriv_type, &
+                     file, Gamma_1, &
+                     regularize, uniform_rot, Omega_rot
 
     ! Count the number of model namelists
 
@@ -142,6 +145,7 @@ contains
     file_format = ''
     data_format = ''
     deriv_type = 'MONO'
+    uniform_rot = .FALSE.
     regularize = .FALSE.
 
     file = ''
@@ -159,7 +163,11 @@ contains
 
        select case (file_format)
        case ('MESA')
-          call read_mesa_model(file, deriv_type, regularize, ec, x=x_bc)
+          if (uniform_rot) then
+             call read_mesa_model(file, deriv_type, regularize, ec, x=x_bc, uni_Omega_rot=Omega_rot)
+          else
+             call read_mesa_model(file, deriv_type, regularize, ec, x=x_bc)
+          endif
        case('B3')
           $if($HDF5)
           call read_b3_model(file, deriv_type, regularize, ec, x=x_bc)
