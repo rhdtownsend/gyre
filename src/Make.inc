@@ -15,13 +15,16 @@ MPI=no
 # Use double precision arithmetic (best left to 'yes')
 DOUBLE_PRECISION=yes
 
+# Use IEEE fortran features
+IEEE=yes
+
 ############ DO NOT EDIT BELOW THIS LINE ############
 ### (unless you think you know what you're doing) ###
 #####################################################
 
 # Preprocesser flags
 
-OPTS=DEBUG OMP MPI HDF5 DOUBLE_PRECISION 
+OPTS=DEBUG OMP MPI HDF5 DOUBLE_PRECISION IEEE
 
 FPX3FLAGS:=${FPX3FLAGS} -I.:${SUBDIRS} $(foreach opt,${OPTS},$(if $(filter yes,${${opt}}),-D${opt}))
 
