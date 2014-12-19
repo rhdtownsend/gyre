@@ -91,7 +91,7 @@ contains
     complex(WP), intent(out)            :: E_r(:,:)
     type(c_ext_t), intent(out)          :: S
 
-    logical, parameter :: RESCALE_THERM = .TRUE.
+    logical, parameter :: RESCALE_THERM = .FALSE.
 
     real(WP)    :: x
     complex(WP) :: lambda
