@@ -22,11 +22,12 @@ module gyre_r_search
   ! Uses
 
   use core_kinds
-  use gyre_constants
+  use core_memory
   use core_order
   use core_parallel
 
   use gyre_bvp
+  use gyre_constants
   use gyre_discfunc
   use gyre_ext
   use gyre_mode
@@ -54,6 +55,9 @@ contains
 
   subroutine build_scan (sp, ml, mp, op, x_i, x_o, omega)
 
+    use gyre_rot
+    use gyre_trad_rot
+
     type(scanpar_t), intent(in)         :: sp(:)
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
@@ -63,10 +67,10 @@ contains
     real(WP), allocatable, intent(out)  :: omega(:)
 
     integer  :: i
-    real(WP) :: omega_min
-    real(WP) :: omega_max
     integer  :: j
     integer  :: n_omega
+
+    class(r_rot_t), allocatable :: rt
 
     $ASSERT(SIZE(sp) >=1,Empty scanpars)
 
@@ -79,25 +83,34 @@ contains
 
     ! Loop through scanpars
 
+    allocate(rt, source=r_trad_rot_t(ml, mp))
+
+    n_omega = 0
+
     allocate(omega(0))
 
     sp_loop : do i = 1,SIZE(sp)
 
-       ! Determine the frequency range
-
-       omega_min = omega_from_freq(sp(i)%freq_min, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
-       omega_max = omega_from_freq(sp(i)%freq_max, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
-
        ! Add points to the frequency grid
 
-       select case(sp(i)%grid_type)
-       case('LINEAR')
-          omega = [omega,(((sp(i)%n_freq-j)*omega_min + (j-1)*omega_max)/(sp(i)%n_freq-1), j=1,sp(i)%n_freq)]
-       case('INVERSE')
-          omega = [omega,((sp(i)%n_freq-1)/((sp(i)%n_freq-j)/omega_min + (j-1)/omega_max), j=1,sp(i)%n_freq)]
-       case default
-          $ABORT(Invalid grid_type)
-       end select
+       call reallocate(omega, [n_omega+sp(i)%n_freq])
+
+       do j = 1, sp(i)%n_freq
+          
+          select case(sp(i)%grid_type)
+          case('LINEAR')
+             omega(n_omega+j) = omega_from_freq(((sp(i)%n_freq-j)*sp(i)%freq_min + (j-1)*sp(i)%freq_max)/(sp(i)%n_freq-1), &
+                                                ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
+          case('INVERSE')
+             omega(n_omega+j) = omega_from_freq((sp(i)%n_freq-1)/((sp(i)%n_freq-j)/sp(i)%freq_min + (j-1)/sp(i)%freq_max), &
+                                                ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
+          case default
+             $ABORT(Invalid grid_type)
+          end select
+
+       end do
+
+       n_omega = n_omega + sp(i)%n_freq
 
     end do sp_loop
 
