@@ -360,8 +360,8 @@ contains
     real(WP)                       :: omega_cutoff_lo
     real(WP)                       :: omega_cutoff_hi
 
-    ! Calculate the dimensionless inertial-frame frequency omega from
-    ! the dimensioned local-frame frequency freq
+    ! Calculate the dimensioned local-frame frequency freq from the
+    ! dimensionless inertial-frame frequency omega
 
     ! First convert from the inertial frame
 
