@@ -135,7 +135,7 @@ contains
       else
 
          associate (nu => x)
-           f_inner = lambda(nu, m, k, lambda_tol)/lambda_norm_(nu, m, k)
+           f_inner = lambda(nu, m, k, lambda_tol)/lambda_norm_r_(nu, m, k)
          end associate
 
       endif
@@ -166,7 +166,7 @@ contains
          else
 
             associate (nu => 1._WP/x)
-              f_outer = lambda(nu, m, k, lambda_tol)/lambda_norm_(nu, m, k)
+              f_outer = lambda(nu, m, k, lambda_tol)/lambda_norm_r_(nu, m, k)
             end associate
 
          endif
@@ -286,11 +286,11 @@ contains
     ! Evaluate the eigenvalue of Laplace's tidal equation (real)
 
     if (nu < -1._WP) then
-       lambda = this%cb_neg%eval(1._WP/nu)*lambda_norm_(nu, this%m, this%k)
+       lambda = this%cb_neg%eval(1._WP/nu)*lambda_norm_r_(nu, this%m, this%k)
     elseif (nu > 1._WP) then
-       lambda = this%cb_pos%eval(1._WP/nu)*lambda_norm_(nu, this%m, this%k)
+       lambda = this%cb_pos%eval(1._WP/nu)*lambda_norm_r_(nu, this%m, this%k)
     else
-       lambda = this%cb_ctr%eval(nu)*lambda_norm_(nu, this%m, this%k)
+       lambda = this%cb_ctr%eval(nu)*lambda_norm_r_(nu, this%m, this%k)
     endif
 
     ! Finish
@@ -310,11 +310,11 @@ contains
     ! Evaluate the eigenvalue of Laplace's tidal equation (complex)
 
     if (REAL(nu) < -1._WP) then
-       lambda = this%cb_neg%eval(1._WP/nu)*lambda_norm_(REAL(nu), this%m, this%k)
+       lambda = this%cb_neg%eval(1._WP/nu)*lambda_norm_c_(nu, this%m, this%k)
     elseif (REAL(nu) > 1._WP) then
-       lambda = this%cb_pos%eval(1._WP/nu)*lambda_norm_(REAL(nu), this%m, this%k)
+       lambda = this%cb_pos%eval(1._WP/nu)*lambda_norm_c_(nu, this%m, this%k)
     else
-       lambda = this%cb_ctr%eval(nu)*lambda_norm_(REAL(nu), this%m, this%k)
+       lambda = this%cb_ctr%eval(nu)*lambda_norm_c_(nu, this%m, this%k)
     endif
 
     ! Finish
@@ -325,7 +325,7 @@ contains
 
 !****
 
-  function lambda_norm_ (nu, m, k) result (lambda_norm)
+  function lambda_norm_r_ (nu, m, k) result (lambda_norm)
 
     real(WP), intent(in) :: nu
     integer, intent(in)  :: m
@@ -336,9 +336,37 @@ contains
     ! the Chebychev fits to lambda)
 
     if (nu < -1._WP) then
-       lambda_norm = lambda_asymp(nu, m, k)
+       lambda_norm = lambda_asymp_r_(nu, m, k)
     elseif (nu > 1._WP) then
-       lambda_norm = lambda_asymp(nu, m, k)
+       lambda_norm = lambda_asymp_r_(nu, m, k)
+     else
+       associate (l => ABS(m) + k)
+         lambda_norm = l*(l+1)
+       end associate
+    end if
+
+    ! Finish
+
+    return
+    
+  end function lambda_norm_r_
+  
+!****
+
+  function lambda_norm_c_ (nu, m, k) result (lambda_norm)
+
+    complex(WP), intent(in) :: nu
+    integer, intent(in)     :: m
+    integer, intent(in)     :: k
+    complex(WP)             :: lambda_norm
+
+    ! Evaluate the eigenvalue normalization function (used to scale
+    ! the Chebychev fits to lambda)
+
+    if (REAL(nu) < -1._WP) then
+       lambda_norm = lambda_asymp_c_(nu, m, k)
+    elseif (REAL(nu) > 1._WP) then
+       lambda_norm = lambda_asymp_c_(nu, m, k)
     else
        associate (l => ABS(m) + k)
          lambda_norm = l*(l+1)
@@ -349,6 +377,134 @@ contains
 
     return
 
-  end function lambda_norm_
+  end function lambda_norm_c_
+
+!****
+
+  function lambda_asymp_r_ (nu, m, k) result (lambda)
+
+    real(WP), intent(in) :: nu
+    integer, intent(in)  :: m
+    integer, intent(in)  :: k
+    real(WP)             :: lambda
+
+    integer :: s
     
+    ! Evaluate the (m, k) Hough eigenvalue lambda using the asymptotic
+    ! expressions by [Tow2003a]
+
+    if (m*nu >= 0._WP) then
+
+       $ASSERT(k >= 0,Invalid k)
+
+       if (k > 0) then
+
+          s = k - 1
+
+          lambda = m*nu + m**2 + 0.5_WP*nu**2*(2*s + 1)**2* &
+                                 (1._WP + SQRT(1._WP + 4._WP*(m*nu + m**2)/(nu**2*(2*s + 1)**2)))
+
+!          lambda = m*nu + m**2 + 0.5_WP*(2*s + 1)**2* &
+!                                 (nu**2 + SQRT(nu**4 + 4._WP*nu**2*(m*nu + m**2)/(2*s + 1)**2))
+
+
+       else
+
+          lambda = m**2*(2._WP*m*nu)/(2._WP*m*nu - 1._WP)
+
+       endif
+
+    else
+
+       if (k >= -1) then
+
+          s = k + 1
+
+          lambda = m*nu + m**2 + 0.5_WP*nu**2*(2*s + 1)**2* &
+                                 (1._WP + SQRT(1._WP + 4._WP*(m*nu + m**2)/(nu**2*(2*s + 1)**2)))
+
+!          lambda = m*nu + m**2 + 0.5_WP*(2*s + 1)**2* &
+!                                 (nu**2 + SQRT(nu**4 + 4._WP*nu**2*(m*nu + m**2)/(2*s + 1)**2))
+
+       else
+
+          s = -k -1
+
+          lambda = (m*nu - m**2)**2/(nu**2*(2*s+1)**2)
+
+       endif
+
+    endif
+
+    ! Finish
+
+    return
+
+  end function lambda_asymp_r_
+
+!****
+
+  function lambda_asymp_c_ (nu, m, k) result (lambda)
+
+    complex(WP), intent(in) :: nu
+    integer, intent(in)     :: m
+    integer, intent(in)     :: k
+    complex(WP)             :: lambda
+
+    integer :: s
+    
+    ! Evaluate the (m, k) Hough eigenvalue lambda using the asymptotic
+    ! expressions by [Tow2003a]
+
+    if (REAL(m*nu) >= 0._WP) then
+
+       $ASSERT(k >= 0,Invalid k)
+
+       if (k > 0) then
+
+          s = k - 1
+
+          lambda = m*nu + m**2 + 0.5_WP*nu**2*(2*s + 1)**2* &
+                                 (1._WP + SQRT(1._WP + 4._WP*(m*nu + m**2)/(nu**2*(2*s + 1)**2)))
+
+!          lambda = m*nu + m**2 + 0.5_WP*(2*s + 1)**2* &
+!                                 (nu**2 + SQRT(nu**4 + 4._WP*nu**2*(m*nu + m**2)/(2*s + 1)**2))
+
+
+       else
+
+          lambda = m**2*(2._WP*m*nu)/(2._WP*m*nu - 1._WP)
+
+       endif
+
+       print *,'pro'
+
+    else
+
+       if (k >= -1) then
+
+          s = k + 1
+
+          lambda = m*nu + m**2 + 0.5_WP*nu**2*(2*s + 1)**2* &
+                                 (1._WP + SQRT(1._WP + 4._WP*(m*nu + m**2)/(nu**2*(2*s + 1)**2)))
+
+!          lambda = m*nu + m**2 + 0.5_WP*(2*s + 1)**2* &
+!                                 (nu**2 + SQRT(nu**4 + 4._WP*nu**2*(m*nu + m**2)/(2*s + 1)**2))
+
+       else
+
+          s = -k -1
+
+          lambda = (m*nu - m**2)**2/(nu**2*(2*s+1)**2)
+
+       endif
+
+    endif
+
+    ! Finish
+
+    return
+
+  end function lambda_asymp_c_
+
 end module gyre_trad_func
