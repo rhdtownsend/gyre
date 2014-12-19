@@ -568,9 +568,11 @@ contains
     character(64)   :: freq_units
     character(64)   :: freq_frame
     character(64)   :: grid_type
+    character(64)   :: grid_frame
     character(2048) :: tag_list
 
-    namelist /scan/ freq_min, freq_max, n_freq, freq_units, freq_frame, grid_type, tag_list
+    namelist /scan/ freq_min, freq_max, n_freq, freq_units, freq_frame, &
+         grid_type, grid_frame, tag_list
 
     ! Count the number of scan namelists
 
@@ -601,6 +603,8 @@ contains
        freq_frame = 'INERTIAL'
 
        grid_type = 'LINEAR'
+       grid_frame = 'INERTIAL'
+
        tag_list = ''
 
        read(unit, NML=scan)
@@ -609,7 +613,8 @@ contains
 
        sp(i) = scanpar_t(freq_min=freq_min, freq_max=freq_max, n_freq=n_freq, &
                          freq_units=freq_units, freq_frame=freq_frame, &
-                         grid_type=grid_type, tag_list=tag_list)
+                         grid_type=grid_type, grid_frame=grid_frame, &
+                         tag_list=tag_list)
 
     end do read_loop
 
