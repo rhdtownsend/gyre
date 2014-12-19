@@ -271,7 +271,7 @@ contains
        dd = sv
     end do
 
-    f = y*d - dd + 0.5*this%c(1)
+    f = y*d - dd + 0.5_WP*this%c(1)
 
     ! Finish
 
@@ -308,7 +308,7 @@ contains
        dd = sv
     end do
 
-    f = y*d - dd + 0.5*this%c(1)
+    f = y*d - dd + 0.5_WP*this%c(1)
 
     ! Finish
 
