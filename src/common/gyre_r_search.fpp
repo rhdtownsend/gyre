@@ -66,11 +66,14 @@ contains
     real(WP), intent(in)                :: x_o
     real(WP), allocatable, intent(out)  :: omega(:)
 
-    integer  :: i
-    integer  :: j
-    integer  :: n_omega
-
-    class(r_rot_t), allocatable :: rt
+    integer               :: n_omega
+    integer               :: i
+    real(WP)              :: omega_min
+    real(WP)              :: omega_max
+    real(WP)              :: freq_g_min
+    real(WP)              :: freq_g_max
+    real(WP), allocatable :: freq_g(:)
+    integer               :: j
 
     $ASSERT(SIZE(sp) >=1,Empty scanpars)
 
@@ -83,38 +86,50 @@ contains
 
     ! Loop through scanpars
 
-    allocate(rt, source=r_trad_rot_t(ml, mp))
-
     n_omega = 0
 
     allocate(omega(0))
 
     sp_loop : do i = 1,SIZE(sp)
 
-       ! Add points to the frequency grid
+       ! Calculate the dimensionless frequency range in inertial frame
 
-       call reallocate(omega, [n_omega+sp(i)%n_freq])
+       omega_min = omega_from_freq(sp(i)%freq_min, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
+       omega_max = omega_from_freq(sp(i)%freq_max, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
+
+       ! Calculate the frequency range in the grid frame
+
+       freq_g_min = freq_from_omega(omega_min, ml, mp, op, x_i, x_o, '', sp(i)%grid_frame)
+       freq_g_max = freq_from_omega(omega_max, ml, mp, op, x_i, x_o, '', sp(i)%grid_frame)
+
+       ! Set up the frequencies
+
+       allocate(freq_g(sp(i)%n_freq))
 
        do j = 1, sp(i)%n_freq
-          
+
           select case(sp(i)%grid_type)
           case('LINEAR')
-             omega(n_omega+j) = omega_from_freq(((sp(i)%n_freq-j)*sp(i)%freq_min + (j-1)*sp(i)%freq_max)/(sp(i)%n_freq-1), &
-                                                ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
+             freq_g(j) = ((sp(i)%n_freq-j)*freq_g_min + (j-1)*freq_g_max)/(sp(i)%n_freq-1)
           case('INVERSE')
-             omega(n_omega+j) = omega_from_freq((sp(i)%n_freq-1)/((sp(i)%n_freq-j)/sp(i)%freq_min + (j-1)/sp(i)%freq_max), &
-                                                ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
+             freq_g(j) = (sp(i)%n_freq-1)/((sp(i)%n_freq-j)/freq_g_min + (j-1)/freq_g_max)
           case default
              $ABORT(Invalid grid_type)
           end select
 
        end do
 
-       n_omega = n_omega + sp(i)%n_freq
+       ! Store them
+
+       call reallocate(omega, [n_omega+sp(i)%n_freq])
+
+       do j = 1, sp(i)%n_freq
+          omega(n_omega+j) = omega_from_freq(freq_g(j), ml, mp, op, x_i, x_o, '', sp(i)%grid_frame)
+       end do
+
+       deallocate(freq_g)
 
     end do sp_loop
-
-    n_omega = SIZE(omega)
 
     $ASSERT(n_omega > 2,At least two frequency points required)
 

@@ -36,6 +36,7 @@ module gyre_scanpar
      real(WP)        :: freq_max
      integer         :: n_freq
      character(64)   :: grid_type
+     character(64)   :: grid_frame
      character(64)   :: freq_units
      character(64)   :: freq_frame
      character(2048) :: tag_list
