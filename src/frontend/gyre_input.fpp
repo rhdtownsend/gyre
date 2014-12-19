@@ -281,13 +281,13 @@ contains
     integer, intent(in)                       :: unit
     type(modepar_t), allocatable, intent(out) :: mp(:)
 
-    integer       :: n_mp
-    integer       :: i
-    integer       :: l
-    integer       :: m
-    integer       :: n_pg_min
-    integer       :: n_pg_max
-    character(64) :: tag
+    integer                :: n_mp
+    integer                :: i
+    integer                :: l
+    integer                :: m
+    integer                :: n_pg_min
+    integer                :: n_pg_max
+    character(LEN(mp%tag)) :: tag
 
     namelist /mode/ l, m, n_pg_min, n_pg_max, tag
 
@@ -341,17 +341,17 @@ contains
     integer, intent(in)                      :: unit
     type(oscpar_t), allocatable, intent(out) :: op(:)
 
-    integer         :: n_op
-    integer         :: i
-    character(64)   :: rotation_method
-    character(64)   :: variables_type
-    character(64)   :: inner_bound_type
-    character(64)   :: outer_bound_type
-    character(64)   :: inertia_norm_type
-    character(2048) :: tag_list
-    logical         :: reduce_order
-    logical         :: nonadiabatic
-    real(WP)        :: x_ref
+    integer                              :: n_op
+    integer                              :: i
+    character(LEN(op%rotation_method))   :: rotation_method
+    character(LEN(op%variables_type))    :: variables_type
+    character(LEN(op%inner_bound_type))  :: inner_bound_type
+    character(LEN(op%outer_bound_type))  :: outer_bound_type
+    character(LEN(op%inertia_norm_type)) :: inertia_norm_type
+    character(LEN(op%tag_list))          :: tag_list
+    logical                              :: reduce_order
+    logical                              :: nonadiabatic
+    real(WP)                             :: x_ref
 
     namelist /osc/ x_ref, rotation_method, inner_bound_type, outer_bound_type, variables_type, &
          inertia_norm_type, tag_list, reduce_order, nonadiabatic
@@ -413,14 +413,14 @@ contains
     integer, intent(in)                      :: unit
     type(numpar_t), allocatable, intent(out) :: np(:)
 
-    integer         :: n_np
-    integer         :: i
-    integer         :: n_iter_max
-    logical         :: use_banded
-    logical         :: use_trad_approx
-    logical         :: deflate_roots
-    character(64)   :: ivp_solver_type
-    character(2048) :: tag_list
+    integer                            :: n_np
+    integer                            :: i
+    integer                            :: n_iter_max
+    logical                            :: use_banded
+    logical                            :: use_trad_approx
+    logical                            :: deflate_roots
+    character(LEN(np%ivp_solver_type)) :: ivp_solver_type
+    character(LEN(np%tag_list))        :: tag_list
 
     namelist /num/ n_iter_max, &
          use_banded, use_trad_approx, deflate_roots, &
@@ -484,17 +484,17 @@ contains
     integer, intent(in)                       :: unit
     type(gridpar_t), allocatable, intent(out) :: gp(:)
 
-    integer                 :: n_gp
-    integer                 :: i
-    real(WP)                :: alpha_osc
-    real(WP)                :: alpha_exp
-    real(WP)                :: alpha_thm
-    real(WP)                :: alpha_str
-    real(WP)                :: s
-    integer                 :: n
-    character(FILENAME_LEN) :: file
-    character(64)           :: op_type
-    character(2048)         :: tag_list
+    integer                     :: n_gp
+    integer                     :: i
+    real(WP)                    :: alpha_osc
+    real(WP)                    :: alpha_exp
+    real(WP)                    :: alpha_thm
+    real(WP)                    :: alpha_str
+    real(WP)                    :: s
+    integer                     :: n
+    character(LEN(gp%file))     :: file
+    character(LEN(gp%op_type))  :: op_type
+    character(LEN(gp%tag_list)) :: tag_list
 
     namelist /${NAME}_grid/ alpha_osc, alpha_exp, alpha_thm, alpha_str, s, n, file, op_type, tag_list
 
@@ -560,16 +560,16 @@ contains
     integer, intent(in)                       :: unit
     type(scanpar_t), allocatable, intent(out) :: sp(:)
 
-    integer         :: n_sp
-    integer         :: i
-    real(WP)        :: freq_min
-    real(WP)        :: freq_max
-    integer         :: n_freq
-    character(64)   :: freq_units
-    character(64)   :: freq_frame
-    character(64)   :: grid_type
-    character(64)   :: grid_frame
-    character(2048) :: tag_list
+    integer                       :: n_sp
+    integer                       :: i
+    real(WP)                      :: freq_min
+    real(WP)                      :: freq_max
+    integer                       :: n_freq
+    character(LEN(sp%freq_units)) :: freq_units
+    character(LEN(sp%freq_frame)) :: freq_frame
+    character(LEN(sp%grid_type))  :: grid_type
+    character(LEN(sp%grid_frame)) :: grid_frame
+    character(LEN(sp%tag_list))   :: tag_list
 
     namelist /scan/ freq_min, freq_max, n_freq, freq_units, freq_frame, &
          grid_type, grid_frame, tag_list
@@ -631,17 +631,17 @@ contains
     integer, intent(in)         :: unit
     type(outpar_t), intent(out) :: up
 
-    integer                 :: n_up
-    character(256)          :: freq_units
-    character(256)          :: freq_frame
-    character(FILENAME_LEN) :: summary_file
-    character(256)          :: summary_file_format
-    character(2048)         :: summary_item_list
-    character(FILENAME_LEN) :: mode_prefix
-    character(FILENAME_LEN) :: mode_template
-    character(256)          :: mode_file_format
-    character(2048)         :: mode_item_list
-    logical                 :: prune_modes
+    integer                                :: n_up
+    character(LEN(up%freq_units))          :: freq_units
+    character(LEN(up%freq_frame))          :: freq_frame
+    character(LEN(up%summary_file))        :: summary_file
+    character(LEN(up%summary_file_format)) :: summary_file_format
+    character(LEN(up%summary_item_list))   :: summary_item_list
+    character(LEN(up%mode_prefix))         :: mode_prefix
+    character(LEN(up%mode_template))       :: mode_template
+    character(LEN(up%mode_file_format))    :: mode_file_format
+    character(LEN(up%mode_item_list))      :: mode_item_list
+    logical                                :: prune_modes
 
     namelist /output/ freq_units, freq_frame, summary_file, summary_file_format, summary_item_list, &
                       mode_prefix, mode_template, mode_file_format, mode_item_list, prune_modes
