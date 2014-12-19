@@ -122,7 +122,16 @@ contains
 
           call df%narrow(omega_a, omega_b, r_ext_t(0._WP), n_iter=n_iter_def)
 
-          $ASSERT(n_iter_def <= np%n_iter_max,Too many deflation iterations)
+          if (n_iter_def > np%n_iter_max) then
+
+             if (check_log_level('WARN')) then
+                write(OUTPUT_UNIT, 120) 'Failed to find mode in', n_iter_def, 'iterations (starting from omega=', REAL(md_in(i)%omega), ')'
+120             format(A,1X,I0,1X,A,E24.16,A)
+             endif
+
+             cycle mode_loop
+
+          endif
 
           deallocate(df%omega_def)
 
@@ -153,7 +162,15 @@ contains
 
        n_iter = n_iter + n_iter_def
 
-       $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
+       if (n_iter > np%n_iter_max) then
+
+          if (check_log_level('WARN')) then
+             write(OUTPUT_UNIT, 120) 'Failed to find mode in', n_iter, 'iterations (starting from omega=', md_in(i)%omega, ')'
+          endif
+
+          cycle mode_loop
+
+       endif
 
        ! Process it
 
