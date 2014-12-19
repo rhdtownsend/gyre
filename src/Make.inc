@@ -4,7 +4,7 @@
 # The following flags can be edited (set to either yes or no)
 
 # Enable debugging (with a performance penalty)
-DEBUG=no
+DEBUG=yes
 
 # Enable OpenMP parallelization
 OMP=yes
@@ -16,7 +16,7 @@ MPI=no
 DOUBLE_PRECISION=yes
 
 # Use IEEE fortran features
-IEEE=yes
+IEEE=no
 
 ############ DO NOT EDIT BELOW THIS LINE ############
 ### (unless you think you know what you're doing) ###
@@ -89,14 +89,16 @@ vpath %.f ${SUBDIRS}
 %.f90 : %.fpp
 	@fpx3 ${FPX3FLAGS} < $< > $@
 
-%.o %.mod : %.f90
-	@echo FC $<
-	@${F9XC} ${F9XFLAGS} ${MODINCS} -c $<
-	@if [ -e $(basename $@).mod ]; then touch $(basename $@).mod; fi
-
 %.o : %.f
 	@echo FC $<
 	@$(F9XC) ${F77FLAGS} -c $<
+
+%.o : %.f90
+	@echo FC $<
+	@${F9XC} ${F9XFLAGS} ${MODINCS} -c $<
+
+%.mod : %.o
+	@true
 
 %.a :
 	@echo AR $@
