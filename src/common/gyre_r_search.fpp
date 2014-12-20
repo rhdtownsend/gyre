@@ -99,8 +99,8 @@ contains
 
        ! Calculate the frequency range in the grid frame
 
-       freq_g_min = freq_from_omega(omega_min, ml, mp, op, x_i, x_o, '', sp(i)%grid_frame)
-       freq_g_max = freq_from_omega(omega_max, ml, mp, op, x_i, x_o, '', sp(i)%grid_frame)
+       freq_g_min = freq_from_omega(omega_min, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
+       freq_g_max = freq_from_omega(omega_max, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
 
        ! Set up the frequencies
 
@@ -124,8 +124,10 @@ contains
        call reallocate(omega, [n_omega+sp(i)%n_freq])
 
        do j = 1, sp(i)%n_freq
-          omega(n_omega+j) = omega_from_freq(freq_g(j), ml, mp, op, x_i, x_o, '', sp(i)%grid_frame)
+          omega(n_omega+j) = omega_from_freq(freq_g(j), ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
        end do
+
+       n_omega = n_omega + sp(i)%n_freq
 
        deallocate(freq_g)
 
