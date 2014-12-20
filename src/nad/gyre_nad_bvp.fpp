@@ -109,7 +109,7 @@ contains
 
     ! Initialize the IVP solver
 
-    select case (np%ivp_solver_type)
+    select case (np%ivp_solver)
     case ('MAGNUS_GL2')
        allocate(iv, SOURCE=nad_magnus_ivp_t(ml, jc, 'GL2'))
     case ('MAGNUS_GL4')

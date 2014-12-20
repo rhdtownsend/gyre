@@ -69,7 +69,7 @@ contains
     
     ! Create a ${T}_ivp_t
 
-    select case (np%ivp_solver_type)
+    select case (np%ivp_solver)
     case ('MAGNUS_GL2')
        allocate(iv, SOURCE=${T}_magnus_ivp_t(jc, 'GL2'))
     case ('MAGNUS_GL4')
