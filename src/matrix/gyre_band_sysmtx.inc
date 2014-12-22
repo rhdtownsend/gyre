@@ -222,11 +222,13 @@ contains
 
     do i = 1, this%n_e
 
-       R = [E_l,E_r]
+       R = [E_l(i,:),E_r(i,:)]
 
        call this%set_row_(i_0+i-1, j_0, R)
 
     end do
+
+    this%S(k) = S
 
     ! Finish
 
@@ -247,56 +249,33 @@ contains
     integer :: i_b
     integer :: j_b
 
-    $ASSERT_DEBUG(i-j_0 >= -this%n_ul,Invalid indices)
-    $ASSERT_DEBUG(i-j_0 <= this%n_ul,Invalid indices)
-
-    $ASSERT_DEBUG(i-(j_0+SIZE(r)-1) >= -this%n_ul,Invalid indices)
-    $ASSERT_DEBUG(i+(j_0+SIZE(r)-1) <= this%n_ul,Invalid indices)
+    $ASSERT_DEBUG(ABS(i_0-j_0) <= this%n_ul,Invalid indices)
+    $ASSERT_DEBUG(ABS(i_0-(j_0+SIZE(R)-1)) <= this%n_ul,Invalid indices)
 
     ! Set data in row i_0, starting at column j_0. The rest of the row
     ! is zeroed out
 
     do j = MAX(i_0-this%n_ul, 1), j_0-1
-       call map_indices_(this, i_0, j, i_b, j_b)
+       i_b = 2*this%n_ul + 1 + i_0 - j
+       j_b = j
        this%A_b(i_b, j_b) = 0._WP
     end do
 
     do j = j_0, j_0+SIZE(R)-1
-       call map_indices_(this, i_0, j, i_b, j_b)
+       i_b = 2*this%n_ul + 1 + i_0 - j
+       j_b = j
        this%A_b(i_b, j_b) = R(j-j_0+1)
     end do
 
     do j = j_0+SIZE(R), MIN(i_0+this%n_ul, this%n_e*(this%n+1))
-       call map_indices_(this, i_0, j, i_b, j_b)
+       i_b = 2*this%n_ul + 1 + i_0 - j
+       j_b = j
        this%A_b(i_b, j_b) = 0._WP
     end do
 
     ! Finish
 
     return
-
-  contains
-
-    subroutine map_indices_ (sm, i, j, i_b, j_b)
-
-      class(${T}_band_sysmtx_t), intent(in) :: sm
-      integer, intent(in)                   :: i
-      integer, intent(in)                   :: j
-      integer, intent(out)                  :: i_b
-      integer, intent(out)                  :: j_b
-
-      ! Map square matrix indices (i,j) to banded matrix indices
-      ! (i_b,j_b); the latter are defined by LAPACK's banded storage
-      ! format, with n_ul subdiagonals and 2*n_ul superdiagonals
-
-      i_b = 2*sm%n_ul + 1 + i - j
-      j_b = j
-
-      ! Finish
-
-      return
-
-    end subroutine map_indices_
 
   end subroutine set_row_
 
@@ -313,6 +292,8 @@ contains
     integer :: info
 
     ! Factorize the sysmtx using LU decomposition
+
+    call this%scale_rows_()
 
     n = SIZE(this%A_b, 1)
     m = SIZE(this%A_b, 2)
@@ -332,32 +313,42 @@ contains
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
 
-    ! real(WP) :: scale
-    ! integer  :: i
-    ! integer  :: k
+    integer  :: i
+    integer  :: j
+    real(WP) :: scale
+    integer  :: i_b
+    integer  :: j_b
+    integer  :: k
 
     ! Scale the rows of the sysmtx to have maximum absolute value of unity
 
-    ! do i = 1,this%n_i
-    !    scale = MAXVAL(ABS(this%B_i(i,:)))
-    !    this%B_i(i,:) = this%B_i(i,:)/scale
-    !    this%S_i = this%S_i*scale
-    ! end do
+    do i = 1, this%n_e*(this%n+1)
 
-    ! do k = 1, this%n
-    !    do i = 1, this%n_e
-    !       scale = MAX(MAXVAL(wABS(this%E_l(i,:,k))), MAXVAL(ABS(this%E_r(i,:,k))))
-    !       this%E_l(i,:,k) = this%E_l(i,:,k)/scale
-    !       this%E_r(i,:,k) = this%E_r(i,:,k)/scale
-    !       this%S(k) = this%S(k)*scale
-    !    end do
-    ! end do
+       scale = 0._WP
 
-    ! do i = 1,this%n_o
-    !    scale = MAXVAL(ABS(this%B_o(i,:)))
-    !    this%B_o(i,:) = this%B_o(i,:)/scale
-    !    this%S_o = this%S_o*scale
-    ! end do
+       do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
+          i_b = 2*this%n_ul + 1 + i - j
+          j_b = j
+          scale = MAX(scale, ABS(this%A_b(i_b,j_b)))
+       end do
+
+       do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
+          i_b = 2*this%n_ul + 1 + i - j
+          j_b = j
+          this%A_b(i_b,j_b) = this%A_b(i_b,j_b)/scale
+       end do
+
+       k = (i-1+this%n_o)/this%n_e
+
+       if (k == 0) then
+          this%S_i = this%S_i*scale
+       elseif (k == this%n+1) then
+          this%S_o = this%S_o*scale
+       else
+          this%S(k) = this%S(k)*scale
+       endif
+
+    end do
 
     ! Finish
 
@@ -396,8 +387,6 @@ contains
     $TYPE(WP)                             :: v(this%n_e*(this%n+1))
 
     integer                :: i
-    integer                :: i_b
-    integer                :: j_b
     $TYPE(WP), allocatable :: A_b(:,:)
     $TYPE(WP), allocatable :: B(:,:)
     integer, allocatable   :: ipiv(:)
@@ -413,7 +402,7 @@ contains
       ! Locate the singular element on the diagonal
 
       sing_loop : do i = 1, n_e*(n+1)-1
-         if (this%A_b(2*this%n_ul+i,i) == 0._WP) exit sing_loop
+         if (this%A_b(2*this%n_ul+1,i) == 0._WP) exit sing_loop
       end do sing_loop
 
       $ASSERT(i > n_e*n,Singular element not in outer block)
@@ -435,7 +424,7 @@ contains
       n2 = MIN(2*n_ul, i-1)
 
       B(:i-n2-1,1) = 0._WP
-      B(i-n2:,1) = -this%A_b(2*n_ul+1-n2:n_ul,i)
+      B(i-n2:,1) = -this%A_b(2*n_ul+1-n2:2*n_ul,i)
 
       do j = 1,i-1
          ipiv(j) = j
