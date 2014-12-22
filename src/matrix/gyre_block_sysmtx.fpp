@@ -1,5 +1,5 @@
 ! Module   : gyre_block_sysmtx
-! Purpose  : block-storage system matrix
+! Purpose  : system matrix (block storage)
 !
 ! Copyright 2013-214 Rich Townsend
 !

@@ -1,5 +1,5 @@
-! Module   : gyre_r_block_sysmtx
-! Purpose  : system matrix (block storage, real)
+! Module   : gyre_r_band_sysmtx
+! Purpose  : system matrix (band storage, real)
 !
 ! Copyright 2013-2014 Rich Townsend
 !
@@ -15,6 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'gyre_block_sysmtx.inc'
+$include 'gyre_band_sysmtx.inc'
 
 $MOD_DECL(r,real)

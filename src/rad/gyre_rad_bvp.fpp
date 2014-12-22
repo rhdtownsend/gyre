@@ -33,6 +33,7 @@ module gyre_rad_bvp
   use gyre_numpar
   use gyre_oscpar
   use gyre_sysmtx
+  use gyre_sysmtx_factory
   use gyre_util
   use gyre_rot
   use gyre_rot_factory
@@ -72,8 +73,6 @@ contains
     use gyre_rad_jacob
     use gyre_rad_bound
 
-    use gyre_block_sysmtx
- 
     real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
     type(modepar_t), intent(in)         :: mp
@@ -115,11 +114,7 @@ contains
 
     ! Initialize the system matrix
 
-    if (np%use_banded) then
-       $ABORT(Not yet implemented)
-    else
-       allocate(sm, SOURCE=r_block_sysmtx_t(n-1, jc%n_e, bd%n_i, bd%n_o))
-    endif
+    allocate(sm, SOURCE=r_sysmtx_t(n-1, jc%n_e, bd%n_i, bd%n_o, np))
 
     ! Initialize the bvp_t
 

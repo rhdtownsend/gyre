@@ -1,7 +1,7 @@
-! Module   : gyre_r_block_sysmtx
-! Purpose  : system matrix (block storage, real)
+! Module   : gyre_band_sysmtx
+! Purpose  : system matrix (band storage)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-214 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,6 +15,11 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'gyre_block_sysmtx.inc'
+module gyre_band_sysmtx
 
-$MOD_DECL(r,real)
+  ! Uses
+
+  use gyre_r_band_sysmtx
+  use gyre_c_band_sysmtx
+
+end module gyre_band_sysmtx

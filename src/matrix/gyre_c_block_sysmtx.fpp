@@ -1,5 +1,5 @@
 ! Module   : gyre_c_block_sysmtx
-! Purpose  : blocked-storage system matrix (complex)
+! Purpose  : system matrix (block storage, complex)
 !
 ! Copyright 2013-2014 Rich Townsend
 !

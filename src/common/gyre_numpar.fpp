@@ -33,10 +33,9 @@ module gyre_numpar
 
   type :: numpar_t
      integer         :: n_iter_max
-     logical         :: use_banded
-     logical         :: use_trad_approx
      logical         :: deflate_roots
      character(64)   :: ivp_solver
+     character(64)   :: matrix_type
      character(2048) :: tag_list
   end type numpar_t
 
@@ -85,10 +84,9 @@ contains
 
     call bcast(np%n_iter_max, root_rank)
 
-    call bcast(np%use_banded, root_rank)
-    call bcast(np%use_trad_approx, root_rank)
     call bcast(np%deflate_roots, root_rank)
 
+    call bcast(np%matrix_type, root_rank)
     call bcast(np%ivp_solver, root_rank)
     call bcast(np%tag_list, root_rank)
 

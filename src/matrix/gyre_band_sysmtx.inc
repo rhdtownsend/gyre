@@ -60,7 +60,7 @@ module gyre_${T}_band_sysmtx
 
   ! Derived-type definitions
 
-  type, extends (${T}_sysmtx_t) :: ${T}_sysmtx_t
+  type, extends (${T}_sysmtx_t) :: ${T}_band_sysmtx_t
      private
      $TYPE(WP), allocatable        :: A_b(:,:) ! Banded matrix
      integer, allocatable          :: ipiv(:)  ! Pivot indices
@@ -72,24 +72,25 @@ module gyre_${T}_band_sysmtx
      private
      procedure, public :: set_B_i => set_B_i_
      procedure, public :: set_B_o => set_B_o_
-     procedure, public :: set_block => set_block_
-     procedure, public :: scale_rows => scale_rows_
-     procedure, public :: determinant => determinant_
-     procedure, public :: null_vector => null_vector_
-     procedure, public :: sol_vector => sol_vector_
-  end type ${T}_sysmtx_t
+     procedure, public :: set_E => set_E_
+     procedure         :: set_row_
+     procedure, public :: factorize => factorize_
+     procedure, public :: scale_rows_
+     procedure, public :: det => det_
+     procedure, public :: null_vec => null_vec_
+  end type ${T}_band_sysmtx_t
 
   ! Interfaces
 
-  interface ${T}_sysmtx_t
-     module procedure ${T}_sysmtx_t_
-  end interface ${T}_sysmtx_t
+  interface ${T}_band_sysmtx_t
+     module procedure ${T}_band_sysmtx_t_
+  end interface ${T}_band_sysmtx_t
 
   ! Access specifiers
 
   private
 
-  public :: ${T}_sysmtx_t
+  public :: ${T}_band_sysmtx_t
 
   ! Procedures
 
@@ -124,43 +125,33 @@ contains
 
     return
 
-  end function ${T}_sysmtx_t_
+  end function ${T}_band_sysmtx_t_
 
 !****
 
-  subroutine map_indices_ (this, i, j, i_b, j_b)
-
-    class(${T}_band_sysmtx_t), intent(in) :: this
-    integer, intent(in) :: i
-    integer, intent(in) :: j
-    integer, intent(out) :: i_b
-    integer, intent(out) :: j_b
-
-    ! Map square matrix indices (i,j) to banded matrix indices
-    ! (i_b,j_b); the latter are defined by LAPACK's banded storage
-    ! format, with n_ul subdiagonals and 2*n_ul superdiagonals
-
-    i_b = 2*this%n_ul + 1 + i - j
-    j_b = j
-
-    ! Finish
-
-    return
-
-  end subroutine map_indices_
-
-!****
-
-  subroutine set_B_i_ (this, B_i, S_i)
+  subroutine set_B_i_ (this, B, S)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
-    $TYPE(WP), intent(in)                    :: B_i(:,:)
-    type(${T}_ext_t), intent(in)             :: S_i
+    $TYPE(WP), intent(in)                    :: B(:,:)
+    type(${T}_ext_t), intent(in)             :: S
+
+    integer :: i_0
+    integer :: j_0
+    integer :: i
     
-    $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
-    $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
     ! Set the inner boundary conditions
+
+    i_0 = 1
+    j_0 = 1
+
+    do i = 1, this%n_i
+       call this%set_row_(i_0+i-1, j_0, B(i,:))
+    end do
+
+    this%S_i = S
 
     ! Finish
 
@@ -170,16 +161,29 @@ contains
 
 !****
 
-  subroutine set_B_o_ (this, B_o, S_o)
+  subroutine set_B_o_ (this, B, S)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
-    $TYPE(WP), intent(in)                    :: B_o(:,:)
-    type(${T}_ext_t), intent(in)             :: S_o
+    $TYPE(WP), intent(in)                    :: B(:,:)
+    type(${T}_ext_t), intent(in)             :: S
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    integer :: i_0
+    integer :: j_0
+    integer :: i
+
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
     ! Set the outer boundary conditions
+
+    i_0 = this%n*this%n_e + this%n_i + 1
+    j_0 = this%n*this%n_e + 1
+
+    do i = 1, this%n_o
+       call this%set_row_(i_0+i-1, j_0, B(i,:))
+    end do
+
+    this%S_o = S
 
     ! Finish
 
@@ -197,6 +201,11 @@ contains
     $TYPE(WP), intent(in)                    :: E_r(:,:)
     type(${T}_ext_t), intent(in)             :: S
 
+    integer   :: i_0
+    integer   :: j_0
+    integer   :: i
+    $TYPE(WP) :: R(2*this%n_e)
+
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
 
@@ -208,21 +217,99 @@ contains
 
     ! Set the block
 
+    i_0 = this%n_e*(k-1) + this%n_i + 1
+    j_0 = this%n_e*(k-1) + 1
+
+    do i = 1, this%n_e
+
+       R = [E_l,E_r]
+
+       call this%set_row_(i_0+i-1, j_0, R)
+
+    end do
+
     ! Finish
 
     return
 
-  end subroutine set_block_
+  end subroutine set_E_
+
+!****
+
+  subroutine set_row_ (this, i_0, j_0, R)
+
+    class(${T}_band_sysmtx_t), intent(inout) :: this
+    integer, intent(in)                      :: i_0
+    integer, intent(in)                      :: j_0
+    $TYPE(WP), intent(in)                    :: R(:)
+
+    integer :: j
+    integer :: i_b
+    integer :: j_b
+
+    $ASSERT_DEBUG(i-j_0 >= -this%n_ul,Invalid indices)
+    $ASSERT_DEBUG(i-j_0 <= this%n_ul,Invalid indices)
+
+    $ASSERT_DEBUG(i-(j_0+SIZE(r)-1) >= -this%n_ul,Invalid indices)
+    $ASSERT_DEBUG(i+(j_0+SIZE(r)-1) <= this%n_ul,Invalid indices)
+
+    ! Set data in row i_0, starting at column j_0. The rest of the row
+    ! is zeroed out
+
+    do j = MAX(i_0-this%n_ul, 1), j_0-1
+       call map_indices_(this, i_0, j, i_b, j_b)
+       this%A_b(i_b, j_b) = 0._WP
+    end do
+
+    do j = j_0, j_0+SIZE(R)-1
+       call map_indices_(this, i_0, j, i_b, j_b)
+       this%A_b(i_b, j_b) = R(j-j_0+1)
+    end do
+
+    do j = j_0+SIZE(R), MIN(i_0+this%n_ul, this%n_e*(this%n+1))
+       call map_indices_(this, i_0, j, i_b, j_b)
+       this%A_b(i_b, j_b) = 0._WP
+    end do
+
+    ! Finish
+
+    return
+
+  contains
+
+    subroutine map_indices_ (sm, i, j, i_b, j_b)
+
+      class(${T}_band_sysmtx_t), intent(in) :: sm
+      integer, intent(in)                   :: i
+      integer, intent(in)                   :: j
+      integer, intent(out)                  :: i_b
+      integer, intent(out)                  :: j_b
+
+      ! Map square matrix indices (i,j) to banded matrix indices
+      ! (i_b,j_b); the latter are defined by LAPACK's banded storage
+      ! format, with n_ul subdiagonals and 2*n_ul superdiagonals
+
+      i_b = 2*sm%n_ul + 1 + i - j
+      j_b = j
+
+      ! Finish
+
+      return
+
+    end subroutine map_indices_
+
+  end subroutine set_row_
 
 !****
 
   subroutine factorize_ (this)
 
-    class(${T}_block_sysmtx_t), intent(inout) :: this
+    class(${T}_band_sysmtx_t), intent(inout) :: this
 
     $TYPE(WP), parameter :: ONE = 1._WP
 
     integer :: n
+    integer :: m
     integer :: info
 
     ! Factorize the sysmtx using LU decomposition
@@ -241,42 +328,42 @@ contains
 
 !****
 
-!   subroutine scale_rows_ (this)
+  subroutine scale_rows_ (this)
 
-!     class(${T}_sysmtx_t), intent(inout) :: this
+    class(${T}_band_sysmtx_t), intent(inout) :: this
 
-!     real(WP) :: scale
-!     integer  :: i
-!     integer  :: k
+    ! real(WP) :: scale
+    ! integer  :: i
+    ! integer  :: k
 
-!     ! Scale the rows of the sysmtx to have maximum absolute value of unity
+    ! Scale the rows of the sysmtx to have maximum absolute value of unity
 
-!     do i = 1,this%n_i
-!        scale = MAXVAL(ABS(this%B_i(i,:)))
-!        this%B_i(i,:) = this%B_i(i,:)/scale
-!        this%S_i = this%S_i*scale
-!     end do
+    ! do i = 1,this%n_i
+    !    scale = MAXVAL(ABS(this%B_i(i,:)))
+    !    this%B_i(i,:) = this%B_i(i,:)/scale
+    !    this%S_i = this%S_i*scale
+    ! end do
 
-!     do k = 1, this%n
-!        do i = 1, this%n_e
-!           scale = MAX(MAXVAL(ABS(this%E_l(i,:,k))), MAXVAL(ABS(this%E_r(i,:,k))))
-!           this%E_l(i,:,k) = this%E_l(i,:,k)/scale
-!           this%E_r(i,:,k) = this%E_r(i,:,k)/scale
-!           this%S(k) = this%S(k)*scale
-!        end do
-!     end do
+    ! do k = 1, this%n
+    !    do i = 1, this%n_e
+    !       scale = MAX(MAXVAL(wABS(this%E_l(i,:,k))), MAXVAL(ABS(this%E_r(i,:,k))))
+    !       this%E_l(i,:,k) = this%E_l(i,:,k)/scale
+    !       this%E_r(i,:,k) = this%E_r(i,:,k)/scale
+    !       this%S(k) = this%S(k)*scale
+    !    end do
+    ! end do
 
-!     do i = 1,this%n_o
-!        scale = MAXVAL(ABS(this%B_o(i,:)))
-!        this%B_o(i,:) = this%B_o(i,:)/scale
-!        this%S_o = this%S_o*scale
-!     end do
+    ! do i = 1,this%n_o
+    !    scale = MAXVAL(ABS(this%B_o(i,:)))
+    !    this%B_o(i,:) = this%B_o(i,:)/scale
+    !    this%S_o = this%S_o*scale
+    ! end do
 
-!     ! Finish
+    ! Finish
 
-!     return
+    return
 
-!   end subroutine scale_rows_
+  end subroutine scale_rows_
 
 !****
 
@@ -305,157 +392,76 @@ contains
 
   function null_vec_ (this) result (v)
   
-    class(${T}_band_sysmtx_t), intent(in) :: sm
-    $TYPE(WP), intent(out)                :: v(this%n_e*(this%n+1))
+    class(${T}_band_sysmtx_t), intent(in) :: this
+    $TYPE(WP)                             :: v(this%n_e*(this%n+1))
 
     integer                :: i
-    $TYPE(WP), allocatable :: A_r(:,:)
-    $TYPE(WP), allocatable :: Mb(:,:)
+    integer                :: i_b
+    integer                :: j_b
+    $TYPE(WP), allocatable :: A_b(:,:)
+    $TYPE(WP), allocatable :: B(:,:)
+    integer, allocatable   :: ipiv(:)
+    integer                :: n2
     integer                :: j
-    integer                :: n_lu
+    integer                :: info
 
     ! Evaluate the null vector (working on the assumption that the
     ! final diagonal element of the factorized matrix is zero)
 
-    associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+    associate (n => this%n, n_e => this%n_e, n_ul => this%n_ul)
 
       ! Locate the singular element on the diagonal
 
       sing_loop : do i = 1, n_e*(n+1)-1
-         call this%map_indices_(i, i, i_b, j_b)
-         if (this%A_b(i_b,j_b) == 0._WP)) exit sing_loop
+         if (this%A_b(2*this%n_ul+i,i) == 0._WP) exit sing_loop
       end do sing_loop
+
+      $ASSERT(i > n_e*n,Singular element not in outer block)
 
       if (i /= n_e*(n+1)) then
          $WARN(Singular element not at outer point)
       endif
 
-      ! Calculate the solutions at the outer boundary
+      ! Set up the reduced banded system
 
-      v_bound(:i-1) = -M(:i-1,i)
-
-      call ${X}TRSM('L', 'U', 'N', 'N', i-1, 1, &
-           ONE, M, 2*n_e, v_bound, 2*n_e)
-
-      v_bound(i) = 1._WP
-      v_bound(i+1:) = 0._WP
-
-
-       
-      ! Reconstruct the full solution vector
-
-      allocate(A_r(2*n_l+n_u+1,i-1))
-      allocate(Mb(i-1,1))
-
-      deallocate(ipiv)
+      allocate(A_b(3*n_ul+1,i-1))
+      allocate(B(i-1,1))
+      
       allocate(ipiv(i-1))
 
-      if(i > 1) then 
+      A_b(:2*n_ul+1,:) = this%A_b(:2*n_ul+1,:i-1)
+      A_b(2*n_ul+2:,:) = 0._WP
 
-         ! Set up the reduced LU system
+      n2 = MIN(2*n_ul, i-1)
 
-         A_r(:n_l+n_u+1,:) = A_b(:n_l+n_u+1,:i-1)
-         A_r(n_l+n_u+2:,:) = 0._WP
+      B(:i-n2-1,1) = 0._WP
+      B(i-n2:,1) = -this%A_b(2*n_ul+1-n2:n_ul,i)
 
-         ! The following line seems to cause out-of-memory errors when
-         ! compiled with gfortran 4.8.0 on MVAPICH systems. Very puzzling!
-         !
-         ! ipiv = [(j,j=1,i-1)]
+      do j = 1,i-1
+         ipiv(j) = j
+      enddo
 
-         do j = 1,i-1
-            ipiv(j) = j
-         enddo
+      ! Solve for the 1:i-1 components of the null vector
 
-         ! Solve for the 1:i-1 components of b
+      call ${X}GBTRS('N', SIZE(A_b, 2), n_ul, n_ul, 1, A_b, SIZE(A_b, 1), ipiv, B, SIZE(B, 1), info)
+      $ASSERT(info == 0,Non-zero return from XGBTRS)
 
-         n_lu = MIN(n_l+n_u, i-1)
+      v(:i-1) = B(:,1)
 
-         Mb(:i-n_lu-1,1) = 0._WP
-         Mb(i-n_lu:,1) = -A_b(n_l+n_u+1-n_lu:n_l+n_u,i)
-
-         call ${X}GBTRS('N', SIZE(A_r, 2), n_l, n_u, 1, A_r, SIZE(A_r, 1), ipiv, Mb, SIZE(Mb, 1), info)
-         $ASSERT(info == 0,Non-zero return from XGBTRS)
-
-         b(:i-1) = Mb(:,1)
-
-      end if
+    end associate
        
-    ! Fill in the other parts of b
+    ! Fill in the remainign components of the null vector
     
-    b(i) = 1._WP
-    b(i+1:) = 0._WP
+    v(i) = 1._WP
+    v(i+1:) = 0._WP
 
     ! Finish
 
     return
 
-  end subroutine null_vector_banded_
+  end function null_vec_
 
-!****
-
-  subroutine sol_vector_ (this, i, b)
-
-    class(${T}_sysmtx_t), intent(inout) :: this
-    integer, intent(in)                 :: i
-    $TYPE(WP), intent(out)              :: b(:)
-
-    $CHECK_BOUNDS(SIZE(b),this%n_e*(this%n+1))
-
-    ! Calculate the solution vector
-
-    call sol_vector_banded_(this, i, b)
-
-    ! Finish
-
-    return
-
-  end subroutine sol_vector_
-
-!****
-
-  subroutine sol_vector_banded_ (sm, i, b)
-  
-    class(${T}_sysmtx_t), intent(inout) :: sm
-    integer, intent(in)                 :: i
-    $TYPE(WP), intent(out)              :: b(:)
-
-    $TYPE(WP), allocatable :: A_b(:,:)
-    integer                :: n_l
-    integer                :: n_u
-    integer                :: m
-    integer, allocatable   :: ipiv(:)
-    integer                :: info
-
-    $CHECK_BOUNDS(SIZE(b),sm%n_e*(sm%n+1))
-    
-    ! Pack the smatrix into banded form
-
-    call pack_banded_(sm, A_b)
-
-    ! Set up the RHS vector
-
-    b = 0._WP
-    b(i) = 1._WP
-
-    ! Solve thge linear system
-
-    n_l = sm%n_e + sm%n_i - 1
-    n_u = sm%n_e + sm%n_i - 1
-
-    m = SIZE(A_b, 2)
-
-    allocate(ipiv(m))
-
-    call ${X}GBSV(m, n_l, n_u, 1, A_b, SIZE(A_b, 1), ipiv, b, SIZE(b, 1), info)
-    $ASSERT(info == 0 .OR. info == m,Non-zero return from XGBSV)
-
-    ! Finish
-
-    return
-
-  end subroutine sol_vector_banded_
-
-end module gyre_${T}_sysmtx
+end module gyre_${T}_band_sysmtx
 
 $endsub
 

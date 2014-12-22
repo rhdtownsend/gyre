@@ -413,18 +413,16 @@ contains
     integer, intent(in)                      :: unit
     type(numpar_t), allocatable, intent(out) :: np(:)
 
-    integer                       :: n_np
-    integer                       :: i
-    integer                       :: n_iter_max
-    logical                       :: use_banded
-    logical                       :: use_trad_approx
-    logical                       :: deflate_roots
-    character(LEN(np%ivp_solver)) :: ivp_solver
-    character(LEN(np%tag_list))   :: tag_list
+    integer                        :: n_np
+    integer                        :: i
+    integer                        :: n_iter_max
+    logical                        :: deflate_roots
+    character(LEN(np%ivp_solver))  :: ivp_solver
+    character(LEN(np%matrix_type)) :: matrix_type
+    character(LEN(np%tag_list))    :: tag_list
 
-    namelist /num/ n_iter_max, &
-         use_banded, use_trad_approx, deflate_roots, &
-         ivp_solver, tag_list
+    namelist /num/ n_iter_max, deflate_roots, &
+         ivp_solver, matrix_type, tag_list
 
     ! Count the number of num namelists
 
@@ -449,21 +447,18 @@ contains
 
        n_iter_max = 50
 
-       use_banded = .FALSE.
-       use_trad_approx = .FALSE.
        deflate_roots = .TRUE.
 
        ivp_solver = 'MAGNUS_GL2'
+       matrix_type = 'BLOCK'
        tag_list = ''
 
        read(unit, NML=num)
 
        ! Initialize the numpar
 
-       np(i) = numpar_t(n_iter_max=n_iter_max, &
-                        use_banded=use_banded, &
-                        use_trad_approx=use_trad_approx, deflate_roots=deflate_roots, &
-                        ivp_solver=ivp_solver, tag_list=tag_list)
+       np(i) = numpar_t(n_iter_max=n_iter_max, deflate_roots=deflate_roots, &
+                        ivp_solver=ivp_solver, matrix_type=matrix_type, tag_list=tag_list)
 
     end do read_loop
 
