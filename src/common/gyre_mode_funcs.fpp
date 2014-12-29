@@ -592,7 +592,7 @@ contains
     real(WP) :: div_F_j_NA
     
     ! Calculate the divergence of the angle-averaged angular momentum
-    ! flux due to Reynolds stress, in units of G M_star**2/R_star**3.
+    ! flux due to Reynolds stress, in units of G M_star**2/R_star**4.
     ! This expression is based on eqns. 8-10 of [And1983]
 
     associate (V => ml%V(x), Gamma_1 => ml%Gamma_1(x), As => ml%As(x), U => ml%U(x), c_1 => ml%c_1(x), &
