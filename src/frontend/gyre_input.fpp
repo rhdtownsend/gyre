@@ -24,6 +24,7 @@ module gyre_input
   use core_kinds
   use core_order
   use core_parallel
+  use core_system
 
   use gyre_constants
   use gyre_modepar
@@ -43,7 +44,7 @@ module gyre_input
 
   private
 
-  public :: parse_args
+  public :: init_system
   public :: read_constants
   public :: read_model
   public :: read_modepar
@@ -56,29 +57,29 @@ module gyre_input
 
 contains
 
-  subroutine parse_args (filename)
+  subroutine init_system (filename, gyre_dir)
 
     character(:), allocatable, intent(out) :: filename
+    character(:), allocatable, intent(out) :: gyre_dir
 
-    integer :: n
-    integer :: length
+    integer :: status
 
-    ! Parse the command-line arguments
+    ! Get command-line arguments
 
-    n = COMMAND_ARGUMENT_COUNT()
+    $ASSERT(n_arg() == 1,Invalid number of arguments)
 
-    $ASSERT(n == 1,Invalid number of arguments)
+    call get_arg(1, filename)
 
-    call GET_COMMAND_ARGUMENT(1, LENGTH=length)
-    allocate(character(length) :: filename)
+    ! Get environment variables
 
-    call GET_COMMAND_ARGUMENT(1, VALUE=filename)
+    call get_env('GYRE_DIR', gyre_dir, status)
+    $ASSERT(status == 0,The GYRE_DIR environment variable is not set)
 
     ! Finish
 
     return
 
-  end subroutine parse_args
+  end subroutine init_system
 
 !****
 

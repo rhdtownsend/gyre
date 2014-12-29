@@ -54,6 +54,7 @@ program gyre_ad
   ! Variables
 
   character(:), allocatable    :: filename
+  character(:), allocatable    :: gyre_dir
   integer                      :: unit
   real(WP), allocatable        :: x_ml(:)
   class(model_t), pointer      :: ml => null()
@@ -84,6 +85,7 @@ program gyre_ad
   ! Initialize
 
   call init_parallel()
+  call init_system(filename, gyre_dir)
 
   call set_log_level($str($LOG_LEVEL))
 
@@ -99,16 +101,17 @@ program gyre_ad
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
 120  format(A,1X,I0)
 
+     write(OUTPUT_UNIT, 110) 'Input filename   :', filename
+     write(OUTPUT_UNIT, 110) 'GYRE_DIR         :', gyre_dir
+
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
 
   endif
 
-  call init_trad()
+  call init_trad(gyre_dir)
 
   ! Process arguments
 
-  call parse_args(filename)
-     
   open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
   call read_model(unit, x_ml, ml)
