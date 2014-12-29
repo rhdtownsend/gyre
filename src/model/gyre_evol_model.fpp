@@ -240,7 +240,7 @@ contains
        ! Add a central point and initialize using recursion
 
        ml = evol_model_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
-                         prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), &
+                         prep_center_(r, p), prep_center_rho_(r, m, rho), prep_center_(r, T), &
                          [0._WP,N2], prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), &
                          prep_center_(r, Omega_rot), deriv_type, regularize, .FALSE.)
 
@@ -506,7 +506,7 @@ contains
        ! Add a central point and initialize using recursion
 
        ml = evol_model_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
-                         prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), [0._WP,N2], &
+                         prep_center_(r, p), prep_center_rho_(r, m, rho), prep_center_(r, T), [0._WP,N2], &
                          prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), prep_center_(r, Omega_rot), &
                          prep_center_(r, nabla), prep_center_(r, kappa), prep_center_(r, kappa_rho), prep_center_(r, kappa_T), &
                          prep_center_(r, epsilon), prep_center_(r, epsilon_rho), prep_center_(r, epsilon_T), &
@@ -691,6 +691,44 @@ contains
     return
 
   end function prep_center_
+
+!****
+  
+  function prep_center_rho_ (r, m, rho) result (rho_prep)
+      
+    real(WP), intent(in) :: r(:)
+    real(WP), intent(in) :: m(:)
+    real(WP), intent(in) :: rho(:)
+    real(WP)             :: rho_prep(SIZE(rho)+1)
+
+    real(WP) :: rho_bar
+    real(WP) :: a_0
+    real(WP) :: a_2
+    real(WP) :: rho_0
+
+    $CHECK_BOUNDS(SIZE(m),SIZE(r))
+    $CHECK_BOUNDS(SIZE(rho),SIZE(r))
+
+    $ASSERT(SIZE(rho) >= 1,Insufficient grid points)
+
+    ! Use mass-conserving parabola fitting to interpolate rho at the center
+
+    rho_bar = m(1)/(4._WP*PI*r(1)**3/3._WP)
+
+    a_0 = 5._WP*rho_bar/2._WP - 3._WP*rho(1)/2._WP
+    a_2 = 5._WP*(rho(1) - rho_bar)/2._WP
+
+    rho_0 = a_0
+      
+    ! Preprend this to the array
+
+    rho_prep = [rho_0,rho]
+
+    ! Finish
+
+    return
+
+  end function prep_center_rho_
 
 !****
 
