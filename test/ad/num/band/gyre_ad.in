@@ -2,9 +2,7 @@
 /
 
 &model
-	model_type = 'EVOL'
-	file = 'spb.mesa'
-	file_format = 'MESA'
+	model_type = 'HOM'
 /
 
 &mode
@@ -27,24 +25,21 @@
 /
 
 &num
-	ivp_solver = 'MAGNUS_GL2'
-/
-
-&scan
-	grid_type = 'INVERSE'
-	freq_min = 0.15
-	freq_max = 1
-	n_freq = 200
+	ivp_solver = 'MAGNUS_GL6'
+	matrix_type = 'BAND'
 /
 
 &scan
 	grid_type = 'LINEAR'
-	freq_min = 1
-	freq_max = 10
-	n_freq = 100
+	freq_min = 0.9
+	freq_max = 11.0
+	n_freq = 20
 /
 
 &shoot_grid
+	op_type = 'CREATE_GEOM'
+	s = 1000.
+	n = 1000
 /
 
 &recon_grid

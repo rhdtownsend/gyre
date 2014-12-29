@@ -19,7 +19,7 @@ FIELDS=1-5
 
 # Do the tests
 
-run_gyre $EXEC $IN_FILE_N "homogeneous compressible model (OpenMP)"
+run_gyre $EXEC $IN_FILE_N "numerics (OpenMP)"
 if [ $? -ne 0 ]; then
     exit 1;
 fi

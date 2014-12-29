@@ -1,9 +1,9 @@
 # File     : Makefile
-# Purpose  : makefile for test/ad subdir
+# Purpose  : makefile for num subdir
 
 # Variables
 
-SUBDIRS=num fgong mesa
+SUBDIRS=omp band doppler trad
 
 # Rules
 

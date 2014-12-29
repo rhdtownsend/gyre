@@ -22,15 +22,17 @@ run_gyre ()
     local file=$2
     local label=$3
 
+    export GYRE_DIR=`pwd | sed -e 's|test/.*||'`
+
     if [ -n "$label" ]; then
-	echo -n "TEST $label"
+	echo "TEST $label..."
     fi
 
     $exec $file > /dev/null
     retval=$?
 
     if [ $retval -ne 0 ]; then
-	echo " ...failed during execution of $exec"
+	echo " ...failed: $exec returned non-zero exit status"
     fi
 
     return $retval
@@ -59,16 +61,34 @@ check_output ()
 
     fi
 
+    if [ ! -e "$file_a" ]; then
+	echo " ...failed: $file_a is missing"
+	return 1
+    fi
+
+    if [ ! -e "$file_b" ]; then
+	echo "  ...failed: $file_b is missing"
+	return 1
+    fi
+
+    len_a=`cat $file_a | wc -l`
+    len_b=`cat $file_b | wc -l`
+
+    if [ $len_a -ne $len_b ]; then
+	echo " ...failed: $file_a and $file_b differ in length"
+	return 1
+    fi
+
     if [ -z "$relerr" ]; then
 	ndiff -quiet -fields $fields $file_a $file_b
 	retval=$?
-    else
+    else	
 	ndiff -quiet -relerr $relerr -fields $fields $file_a $file_b
 	retval=$?
-    fi	
+    fi
 
     if [ $retval -ne 0 ]; then
-	echo " ...failed when comparing $file_a and $file_b"
+	echo " ...failed: $file_a and $file_b differ in fields $fields"
     fi
 
     return $retval

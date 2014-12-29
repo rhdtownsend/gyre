@@ -3,31 +3,18 @@
 
 # Variables
 
-TESTDIRS=mesa/bcep mesa/rgb mesa/spb
+SUBDIRS=mesa
 
 # Rules
 
 test :
-	@for DIR in ${TESTDIRS}; do \
-            cd $$DIR; \
-            ./test.sh; \
-            cd ${CURDIR}; \
+	@for DIR in ${SUBDIRS}; do \
+            make -C $${DIR}; \
         done
 
-build_ref :
-	@for DIR in ${TESTDIRS}; do \
-            cd $$DIR; \
-            ./gyre_nad gyre_nad.in; \
-            for file in *.txt; do mv $$file ref/$$file; done; \
-            cd ${CURDIR}; \
+build_ref build_ref_arch :
+	@for DIR in ${SUBDIRS}; do \
+            make -C $${DIR} $@; \
         done
 
-build_ref_arch :
-	@for DIR in ${TESTDIRS}; do \
-            cd $$DIR; \
-            ./gyre_nad gyre_nad.in; \
-            for file in *.txt; do mv $$file ref/$$file.`uname -m`-`uname -s`; done; \
-            cd ${CURDIR}; \
-        done
-
-.PHONY: test build_ref
+.PHONY: test build_ref build_ref_arch

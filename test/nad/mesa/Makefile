@@ -1,9 +1,9 @@
 # File     : Makefile
-# Purpose  : makefile for test/ad subdir
+# Purpose  : makefile for mesa subdir
 
 # Variables
 
-SUBDIRS=num fgong mesa
+SUBDIRS=bcep spb rgb
 
 # Rules
 

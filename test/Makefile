@@ -17,4 +17,4 @@ build_ref build_ref_arch :
             make -C $${DIR} $@; \
         done
 
-.PHONY: test build_ref
+.PHONY: test build_ref build_ref_arch
