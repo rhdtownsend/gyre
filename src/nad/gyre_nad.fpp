@@ -1,4 +1,4 @@
-M! Program  : gyre_nad
+! Program  : gyre_nad
 ! Purpose  : nonadiabatic oscillation code
 !
 ! Copyright 2013 Rich Townsend
