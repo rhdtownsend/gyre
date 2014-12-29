@@ -1,7 +1,7 @@
 ! Program  : build_poly_hom
 ! Purpose  : build homogeneous polytrope
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-214 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,6 +24,7 @@ program build_poly_hom
   use core_kinds
   use gyre_constants
   use core_hgroup
+  use core_system
 
   use gyre_grid
 
@@ -35,37 +36,26 @@ program build_poly_hom
 
   ! Variables
 
-  real(WP)                    :: Gamma_1
-  real(WP)                    :: Omega_rot
-  character(LEN=256)          :: grid_type
-  real(WP)                    :: s
-  integer                     :: n
-  character(LEN=FILENAME_LEN) :: file
-  real(WP), allocatable       :: x(:)
-  real(WP), allocatable       :: xi(:)
-  real(WP), allocatable       :: Theta(:)
-  real(WP), allocatable       :: dTheta(:)
-  type(hgroup_t)              :: hg
-
-  namelist /poly/ Gamma_1, Omega_rot
-  namelist /grid/ grid_type, s, n
-  namelist /output/ file
+  real(WP)                   :: Gamma_1
+  character(:), allocatable  :: grid_type
+  real(WP)                   :: s
+  integer                    :: n
+  character(:), allocatable  :: filename
+  real(WP), allocatable      :: x(:)
+  real(WP), allocatable      :: xi(:)
+  real(WP), allocatable      :: Theta(:)
+  real(WP), allocatable      :: dTheta(:)
+  type(hgroup_t)             :: hg
 
   ! Read parameters
 
-  Gamma_1 = 5._WP/3._WP
-  Omega_rot = 0._WP
+  $ASSERT(n_arg() == 5,Syntax: build_poly_hom Gamma_1 grid_type s n filename)
 
-  read(INPUT_UNIT, NML=poly)
-  
-  grid_type = 'GEOM'
-
-  s = 100._WP
-  n = 100
-
-  read(INPUT_UNIT, NML=grid)
-
-  read(INPUT_UNIT, NML=output)
+  call get_arg(1, Gamma_1)
+  call get_arg(2, grid_type)
+  call get_arg(3, s)
+  call get_arg(4, n)
+  call get_arg(5, filename)
 
   ! Set up the grid
 
@@ -94,7 +84,7 @@ program build_poly_hom
 
   ! Write the model
 
-  hg = hgroup_t(file, CREATE_FILE)
+  hg = hgroup_t(filename, CREATE_FILE)
 
   call write_attr(hg, 'n', n)
 
@@ -104,7 +94,7 @@ program build_poly_hom
   call write_dset(hg, 'xi', xi)
   call write_dset(hg, 'Theta', Theta)
   call write_dset(hg, 'dTheta', dTheta)
-  call write_dset(hg, 'Omega_rot', SPREAD(Omega_rot, DIM=1, NCOPIES=n))
+  call write_dset(hg, 'Omega_rot', SPREAD(0._WP, DIM=1, NCOPIES=n))
 
   call hg%final()
 
