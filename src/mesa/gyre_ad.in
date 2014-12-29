@@ -20,8 +20,7 @@
 /
 
 &num
-	ivp_solver_type = 'MAGNUS_GL2'
-	n_iter_max = 500
+	ivp_solver = 'MAGNUS_GL2'
 /
 
 &scan
