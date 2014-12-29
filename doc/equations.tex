@@ -75,6 +75,14 @@ x \frac{\diff y_{2}}{\diff x} &=
 (3 - U + \As) y_{2}
 \end{align*}
 
+\subsubsection*{Jump Conditions}
+
+At a density discontinuity, $y_{1}$ is continuous, while
+
+\begin{align*}
+U^{\rm +} y_{2}^{+} - U^{-} y_{2}^{-} &= y_{1} (U^{+} - U^{-})
+\end{align*}
+
 \subsubsection*{Boundary Conditions}
 
 \begin{equation*}
@@ -126,6 +134,15 @@ x \frac{\diff y_{4}}{\diff x} &=
 \Vg U y_{2} +
 \left[ \ell(\ell+1) - \Vg U \right] y_{3} -
 (U + \ell - 2) y_{4} \\
+\end{align*}
+
+\subsubsection*{Jump Conditions}
+
+At a density discontinuity, $y_{1}$ and $y_{3}$ are continuous, while
+
+\begin{align*}
+U^{+} y_{2}^{+} - U^{-} y_{2}^{-} &= (y_{1} + y_{3}) (U^{+} - U^{-}) \\
+y_{4}^{+} - y_{4}^{-} &= -y_{1} (U^{+} - U^{-}) \\
 \end{align*}
 
 \subsubsection*{Boundary Conditions}
@@ -345,6 +362,14 @@ x \frac{\diff y_{2}}{\diff x} &=
 \As y_{2}
 \end{align*}
 
+\subsubsection*{Jump Conditions}
+
+At a density discontinuity, $y_{1}$ is continuous, while
+
+\begin{align*}
+U^{\rm +} y_{2}^{+} - U^{-} y_{2}^{-} &= \frac{y_{1}}{c_{1}\omega^{2}} (U^{+} - U^{-})
+\end{align*}
+
 \subsubsection*{Boundary Conditions}
 
 \begin{equation*}
@@ -409,7 +434,7 @@ x \frac{\diff y_{2}}{\diff x} &=
 x \frac{\diff y_{3}}{\diff x} &=
 (2 - \ell) y_{3} + y_{4} \\
 x \frac{\diff y_{4}}{\diff x} &=
-- \As U y_{1} +
+- \As U y_{1} 
 - \Vg U \frac{c_{1} \omega^{2}}{\ell(\ell+1)} y_{2} +
 \left[ \ell(\ell+1) + U(\As - 2) \right] y_{3} +
 ( 3 - 2U - \ell ) y_{4} \\
@@ -435,6 +460,28 @@ x \frac{\diff y_{4}}{\diff x} &=
 \Vg U c_{1} \omega^{2} y_{2} +
 U (\As - 2) y_{3} +
 (3 - 2 U) y_{4} \\
+\end{aligned}
+\quad \right\} \ell = 0
+\end{equation*}
+
+\subsubsection*{Jump Conditions}
+
+At a density discontinuity, $y_{1}$ and $y_{3}$ are continuous, while
+
+\begin{equation*}
+\left.
+\begin{aligned}
+U^{+} y_{2}^{+} - U^{-} y_{2}^{-} &= \frac{\ell(\ell+1)}{c_{1}\omega^{2}}(y_{1} + y_{3}) (U^{+} - U^{-}) \\
+y_{4}^{+} - y_{4}^{-} &= -(y_{1}+y_{3}) (U^{+} - U^{-}) \\
+\end{aligned}
+\quad \right\} \ell \neq 0
+\end{equation*}
+
+\begin{equation*}
+\left.
+\begin{aligned}
+U^{+} y_{2}^{+} - U^{-} y_{2}^{-} &= \frac{1}{c_{1}\omega^{2}}(y_{1} + y_{3}) (U^{+} - U^{-}) \\
+y_{4}^{+} - y_{4}^{-} &= -(y_{1}+y_{3}) (U^{+} - U^{-}) \\
 \end{aligned}
 \quad \right\} \ell = 0
 \end{equation*}
