@@ -71,8 +71,6 @@ program gyre_ad
   type(gridpar_t), allocatable :: shoot_gp_sel(:)
   type(gridpar_t), allocatable :: recon_gp_sel(:)
   type(scanpar_t), allocatable :: sp_sel(:)
-  integer                      :: n_op_sel
-  integer                      :: n_np_sel
   real(WP)                     :: x_i
   real(WP)                     :: x_o
   real(WP), allocatable        :: omega(:)
@@ -155,24 +153,12 @@ program gyre_ad
      call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
      call select_par(sp, mp(i)%tag, sp_sel)
 
-     n_op_sel = SIZE(op_sel)
-     n_np_sel = SIZE(np_sel)
-
-     $ASSERT(n_op_sel >= 1,No matching osc parameters)
-     $ASSERT(n_np_sel >= 1,No matching num parameters)
+     $ASSERT(SIZE(op_sel) == 1,No matching osc parameters)
+     $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
      $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
      $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
      $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
 
-     if (n_op_sel > 1 .AND. check_log_level('WARN')) then
-        write(OUTPUT_UNIT, 140) 'Warning: multiple matching osc namelists, using final match'
-140     format('!!',1X,A)
-     endif
-        
-     if (n_np_sel > 1 .AND. check_log_level('WARN')) then
-        write(OUTPUT_UNIT, 140) 'Warning: multiple matching num namelists, using final match'
-     endif
-        
      ! Set up the frequency array
 
      if (allocated(x_ml)) then
@@ -183,23 +169,23 @@ program gyre_ad
         x_o = 1._WP
      endif
 
-     call build_scan(sp_sel, ml, mp(i), op_sel(n_op_sel), x_i, x_o, omega)
+     call build_scan(sp_sel, ml, mp(i), op_sel(1), x_i, x_o, omega)
 
      ! Set up the shooting grid
 
-     call build_grid(shoot_gp_sel, ml, mp(i), op_sel(n_op_sel), omega, x_ml, x_sh, verbose=.TRUE.)
+     call build_grid(shoot_gp_sel, ml, mp(i), op_sel(1), omega, x_ml, x_sh, verbose=.TRUE.)
 
      ! Set up bp
 
-     if (mp(i)%l == 0 .AND. op_sel(n_op_sel)%reduce_order) then
-        allocate(bp, SOURCE=rad_bvp_t(x_sh, ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel)))
+     if (mp(i)%l == 0 .AND. op_sel(1)%reduce_order) then
+        allocate(bp, SOURCE=rad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1)))
      else
-        allocate(bp, SOURCE=ad_bvp_t(x_sh, ml, mp(i), op_sel(n_op_sel), np_sel(n_np_sel)))
+        allocate(bp, SOURCE=ad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1)))
      endif
 
      ! Find roots
 
-     call scan_search(bp, np_sel(n_np_sel), omega, process_root)
+     call scan_search(bp, np_sel(1), omega, process_root)
 
      ! Clean up
 
@@ -235,11 +221,11 @@ contains
 
     ! Build the reconstruction grid
 
-    call build_grid(recon_gp_sel, ml, mp(i), op_sel(n_op_sel), [omega], x_sh, x_rc, verbose=.FALSE.)
+    call build_grid(recon_gp_sel, ml, mp(i), op_sel(1), [omega], x_sh, x_rc, verbose=.FALSE.)
 
     ! Reconstruct the solution
 
-    x_ref = MIN(MAX(op_sel(n_op_sel)%x_ref, x_sh(1)), x_sh(SIZE(x_sh)))
+    x_ref = MIN(MAX(op_sel(1)%x_ref, x_sh(1)), x_sh(SIZE(x_sh)))
 
     n = SIZE(x_rc)
 
@@ -249,7 +235,7 @@ contains
 
     ! Create the mode
 
-    md_new = mode_t(ml, mp(i), op_sel(n_op_sel), CMPLX(omega, KIND=WP), c_ext_t(discrim), &
+    md_new = mode_t(ml, mp(i), op_sel(1), CMPLX(omega, KIND=WP), c_ext_t(discrim), &
                     x_rc, CMPLX(y, KIND=WP), x_ref, CMPLX(y_ref, KIND=WP))
 
     if (md_new%n_pg < mp(i)%n_pg_min .OR. md_new%n_pg > mp(i)%n_pg_max) return
