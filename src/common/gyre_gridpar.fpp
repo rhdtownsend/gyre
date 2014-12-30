@@ -67,6 +67,8 @@ module gyre_gridpar
   private
 
   public :: gridpar_t
+  public :: read_shoot_gridpar
+  public :: read_recon_gridpar
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -75,6 +77,94 @@ module gyre_gridpar
   ! Procedures
 
 contains
+
+!****
+
+  $define $READ_GRIDPAR $sub
+
+  $local $NAME $1
+
+  subroutine read_${NAME}_gridpar (unit, gp)
+
+    integer, intent(in)                       :: unit
+    type(gridpar_t), allocatable, intent(out) :: gp(:)
+
+    integer                     :: n_gp
+    integer                     :: i
+    real(WP)                    :: alpha_osc
+    real(WP)                    :: alpha_exp
+    real(WP)                    :: alpha_thm
+    real(WP)                    :: alpha_str
+    real(WP)                    :: s
+    integer                     :: n
+    character(LEN(gp%file))     :: file
+    character(LEN(gp%op_type))  :: op_type
+    character(LEN(gp%tag_list)) :: tag_list
+
+    namelist /${NAME}_grid/ alpha_osc, alpha_exp, alpha_thm, alpha_str, s, n, file, op_type, tag_list
+
+    ! Count the number of grid namelists
+
+    rewind(unit)
+
+    n_gp = 0
+
+    count_loop : do
+       read(unit, NML=${NAME}_grid, END=100)
+       n_gp = n_gp + 1
+    end do count_loop
+
+100 continue
+
+    ! Read grid parameters
+
+    rewind(unit)
+
+    allocate(gp(n_gp))
+
+    read_loop : do i = 1, n_gp
+
+       alpha_osc = 0._WP
+       alpha_exp = 0._WP
+       alpha_thm = 0._WP
+       alpha_str = 0._WP
+
+       s = 0._WP
+
+       n = 0
+
+       file = ''
+
+       op_type = 'CREATE_CLONE'
+       tag_list = ''
+
+       read(unit, NML=${NAME}_grid)
+
+       ! Initialize the gridpar
+
+       gp(i) = gridpar_t(alpha_osc=alpha_osc, &
+                         alpha_exp=alpha_exp, &
+                         alpha_thm=alpha_thm, alpha_str=alpha_str, &
+                         s=s, &
+                         n=n, &
+                         file=file, &
+                         op_type=op_type, &
+                         tag_list=tag_list)
+
+    end do read_loop
+
+    ! Finish
+
+    return
+
+  end subroutine read_${NAME}_gridpar
+
+  $endsub
+
+  $READ_GRIDPAR(shoot)
+  $READ_GRIDPAR(recon)
+
+!****
 
   $if ($MPI)
 

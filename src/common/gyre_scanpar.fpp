@@ -63,6 +63,7 @@ module gyre_scanpar
   private
 
   public :: scanpar_t
+  public :: read_scanpar
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -71,6 +72,81 @@ module gyre_scanpar
   ! Procedures
 
 contains
+
+  subroutine read_scanpar (unit, sp)
+
+    integer, intent(in)                       :: unit
+    type(scanpar_t), allocatable, intent(out) :: sp(:)
+
+    integer                       :: n_sp
+    integer                       :: i
+    real(WP)                      :: freq_min
+    real(WP)                      :: freq_max
+    integer                       :: n_freq
+    character(LEN(sp%freq_units)) :: freq_units
+    character(LEN(sp%freq_frame)) :: freq_frame
+    character(LEN(sp%grid_type))  :: grid_type
+    character(LEN(sp%grid_frame)) :: grid_frame
+    character(LEN(sp%tag_list))   :: tag_list
+
+    namelist /scan/ freq_min, freq_max, n_freq, freq_units, freq_frame, &
+         grid_type, grid_frame, tag_list
+
+    ! Count the number of scan namelists
+
+    rewind(unit)
+
+    n_sp = 0
+
+    count_loop : do
+       read(unit, NML=scan, END=100)
+       n_sp = n_sp + 1
+    end do count_loop
+
+100 continue
+
+    ! Read scan parameters
+
+    rewind(unit)
+
+    allocate(sp(n_sp))
+
+    read_loop : do i = 1, n_sp
+
+       freq_min = 1._WP
+       freq_max = 10._WP
+       n_freq = 10
+          
+       freq_units = 'NONE'
+       freq_frame = 'INERTIAL'
+
+       grid_type = 'LINEAR'
+       grid_frame = 'INERTIAL'
+
+       tag_list = ''
+
+       read(unit, NML=scan)
+
+       ! Initialize the scanpar
+
+       sp(i) = scanpar_t(freq_min=freq_min, &
+                         freq_max=freq_max, &
+                         n_freq=n_freq, &
+                         freq_units=freq_units, &
+                         freq_frame=freq_frame, &
+                         grid_type=grid_type, &
+                         grid_frame=grid_frame, &
+                         tag_list=tag_list)
+
+    end do read_loop
+
+    ! Finish
+
+    return
+
+  end subroutine read_scanpar
+
+!****
 
   $if ($MPI)
 

@@ -27,6 +27,8 @@ module gyre_outpar
 
   use gyre_constants
 
+  use ISO_FORTRAN_ENV
+
   ! No implicit typing
 
   implicit none
@@ -67,6 +69,7 @@ module gyre_outpar
   private
 
   public :: outpar_t
+  public :: read_outpar
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -75,6 +78,81 @@ module gyre_outpar
   ! Procedures
 
 contains
+
+  subroutine read_outpar (unit, up)
+
+    integer, intent(in)         :: unit
+    type(outpar_t), intent(out) :: up
+
+    integer                                :: n_up
+    character(LEN(up%freq_units))          :: freq_units
+    character(LEN(up%freq_frame))          :: freq_frame
+    character(LEN(up%summary_file))        :: summary_file
+    character(LEN(up%summary_file_format)) :: summary_file_format
+    character(LEN(up%summary_item_list))   :: summary_item_list
+    character(LEN(up%mode_prefix))         :: mode_prefix
+    character(LEN(up%mode_template))       :: mode_template
+    character(LEN(up%mode_file_format))    :: mode_file_format
+    character(LEN(up%mode_item_list))      :: mode_item_list
+    logical                                :: prune_modes
+
+    namelist /output/ freq_units, freq_frame, summary_file, summary_file_format, summary_item_list, &
+                      mode_prefix, mode_template, mode_file_format, mode_item_list, prune_modes
+
+    ! Count the number of output namelists
+
+    rewind(unit)
+
+    n_up = 0
+
+    count_loop : do
+       read(unit, NML=output, END=100)
+       n_up = n_up + 1
+    end do count_loop
+
+100 continue
+
+    $ASSERT(n_up == 1,Input file should contain exactly one &output namelist)
+
+    ! Read output parameters
+
+    freq_units = 'NONE'
+    freq_frame = 'INERTIAL'
+
+    summary_file = ''
+    summary_file_format = 'HDF'
+    summary_item_list = 'l,n_pg,omega,freq'
+    
+    mode_prefix = ''
+    mode_template = ''
+    mode_file_format = 'HDF'
+    mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
+
+    prune_modes = .FALSE.
+
+    rewind(unit)
+    read(unit, NML=output)
+
+    ! Initialize the outpar
+
+    up = outpar_t(freq_units=freq_units, &
+                  freq_frame=freq_frame, &
+                  summary_file=summary_file, &
+                  summary_file_format=summary_file_format, &
+                  summary_item_list=summary_item_list, &
+                  mode_prefix=mode_prefix, &
+                  mode_template=mode_template, &
+                  mode_file_format=mode_file_format, &
+                  mode_item_list=mode_item_list, &
+                  prune_modes=prune_modes)
+
+    ! Finish
+
+    return
+
+  end subroutine read_outpar
+
+!****
 
   $if ($MPI)
 
