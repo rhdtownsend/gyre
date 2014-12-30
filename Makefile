@@ -12,13 +12,13 @@ all :
 	@${MAKE} BINDIR=${BINDIR} -w -C src install
 
 test :
-	@${MAKE} BINDIR=${BINDIR} -w -C test
+	@${MAKE} BINDIR=${BINDIR} -w -C test $@
 
-build_ref :
-	@${MAKE} BINDIR=${BINDIR} -w -C test build_ref
+build_ref build_ref_arch :
+	@${MAKE} BINDIR=${BINDIR} -w -C test $@
 
 clean :
-	@${MAKE} -w -C src clean
+	@${MAKE} -w -C src $@
 	rm -f ${BINDIR}/*
 
-.PHONY: all test build_ref clean
+.PHONY: all test build_ref build_ref_arch clean
