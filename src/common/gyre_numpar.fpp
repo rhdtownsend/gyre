@@ -60,6 +60,7 @@ module gyre_numpar
   private
 
   public :: numpar_t
+  public :: read_numpar
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -68,6 +69,71 @@ module gyre_numpar
   ! Procedures
 
 contains
+
+  subroutine read_numpar (unit, np)
+
+    integer, intent(in)                      :: unit
+    type(numpar_t), allocatable, intent(out) :: np(:)
+
+    integer                        :: n_np
+    integer                        :: i
+    integer                        :: n_iter_max
+    logical                        :: deflate_roots
+    character(LEN(np%ivp_solver))  :: ivp_solver
+    character(LEN(np%matrix_type)) :: matrix_type
+    character(LEN(np%tag_list))    :: tag_list
+
+    namelist /num/ n_iter_max, deflate_roots, &
+         ivp_solver, matrix_type, tag_list
+
+    ! Count the number of num namelists
+
+    rewind(unit)
+
+    n_np = 0
+
+    count_loop : do
+       read(unit, NML=num, END=100)
+       n_np = n_np + 1
+    end do count_loop
+
+100 continue
+
+    ! Read numerical parameters
+
+    rewind(unit)
+
+    allocate(np(n_np))
+
+    read_loop : do i = 1,n_np
+
+       n_iter_max = 50
+
+       deflate_roots = .TRUE.
+
+       ivp_solver = 'MAGNUS_GL2'
+       matrix_type = 'BLOCK'
+       tag_list = ''
+
+       read(unit, NML=num)
+
+       ! Initialize the numpar
+
+       np(i) = numpar_t(n_iter_max=n_iter_max, &
+                        deflate_roots=deflate_roots, &
+                        ivp_solver=ivp_solver, &
+                        matrix_type=matrix_type, &
+                        tag_list=tag_list)
+
+    end do read_loop
+
+    ! Finish
+
+    return
+
+  end subroutine read_numpar
+
+!****
 
   $if ($MPI)
 

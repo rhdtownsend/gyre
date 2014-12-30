@@ -60,6 +60,7 @@ module gyre_modepar
   private
 
   public :: modepar_t
+  public :: read_modepar
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -68,6 +69,68 @@ module gyre_modepar
   ! Procedures
 
 contains
+
+!****
+
+  subroutine read_modepar (unit, mp)
+
+    integer, intent(in)                       :: unit
+    type(modepar_t), allocatable, intent(out) :: mp(:)
+
+    integer                :: n_mp
+    integer                :: i
+    integer                :: l
+    integer                :: m
+    integer                :: n_pg_min
+    integer                :: n_pg_max
+    character(LEN(mp%tag)) :: tag
+
+    namelist /mode/ l, m, n_pg_min, n_pg_max, tag
+
+    ! Count the number of mode namelists
+
+    rewind(unit)
+
+    n_mp = 0
+
+    count_loop : do
+       read(unit, NML=mode, END=100)
+       n_mp = n_mp + 1
+    end do count_loop
+
+100 continue
+
+    ! Read mode parameters
+
+    rewind(unit)
+
+    allocate(mp(n_mp))
+
+    read_loop : do i = 1,n_mp
+
+       l = 0
+       m = 0
+
+       n_pg_min = -HUGE(0)
+       n_pg_max = HUGE(0)
+
+       tag = ''
+
+       read(unit, NML=mode)
+
+       ! Initialize the modepar
+
+       mp(i) = modepar_t(l=l, m=m, n_pg_min=n_pg_min, n_pg_max=n_pg_max, tag=tag)
+
+    end do read_loop
+
+    ! Finish
+
+    return
+
+  end subroutine read_modepar
+
+!****
 
   $if ($MPI)
 
