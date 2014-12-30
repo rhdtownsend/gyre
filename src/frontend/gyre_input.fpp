@@ -113,7 +113,7 @@ contains
     character(256)          :: deriv_type
     character(FILENAME_LEN) :: file
     real(WP)                :: Gamma_1
-    logical                 :: regularize
+    logical                 :: override_As
     logical                 :: uniform_rot
     real(WP)                :: Omega_rot
     type(evol_model_t)      :: ec
@@ -123,7 +123,7 @@ contains
 
     namelist /model/ model_type, file_format, data_format, deriv_type, &
                      file, Gamma_1, &
-                     regularize, uniform_rot, Omega_rot
+                     override_As, uniform_rot, Omega_rot
 
     ! Count the number of model namelists
 
@@ -147,7 +147,7 @@ contains
     data_format = ''
     deriv_type = 'MONO'
     uniform_rot = .FALSE.
-    regularize = .FALSE.
+    override_As = .FALSE.
 
     file = ''
 
@@ -165,35 +165,37 @@ contains
        select case (file_format)
        case ('MESA')
           if (uniform_rot) then
-             call read_mesa_model(file, deriv_type, regularize, ec, x=x_bc, uni_Omega_rot=Omega_rot)
+             call read_mesa_model(file, deriv_type, ec, x=x_bc, uni_Omega_rot=Omega_rot)
           else
-             call read_mesa_model(file, deriv_type, regularize, ec, x=x_bc)
+             call read_mesa_model(file, deriv_type, ec, x=x_bc)
           endif
        case('B3')
           $if($HDF5)
-          call read_b3_model(file, deriv_type, regularize, ec, x=x_bc)
+          call read_b3_model(file, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
        case ('GSM')
           $if($HDF5)
-          call read_gsm_model(file, deriv_type, regularize, ec, x=x_bc)
+          call read_gsm_model(file, deriv_type, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read GSM-format files)
           $endif
        case ('OSC')
-          call read_osc_model(file, deriv_type, data_format, regularize, ec, x=x_bc)
+          call read_osc_model(file, deriv_type, data_format, ec, x=x_bc)
        case ('LOSC')
-          call read_losc_model(file, deriv_type, regularize, ec, x=x_bc)
+          call read_losc_model(file, deriv_type, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_model(file, deriv_type, data_format, regularize, ec, x=x_bc) 
+          call read_fgong_model(file, deriv_type, data_format, ec, x=x_bc) 
        case ('FAMDL')
-          call read_famdl_model(file, deriv_type, data_format, regularize, ec, x=x_bc)
+          call read_famdl_model(file, deriv_type, data_format, ec, x=x_bc)
        case ('AMDL')
-          call read_amdl_model(file, deriv_type, regularize, ec, x=x_bc)
+          call read_amdl_model(file, deriv_type, ec, x=x_bc)
        case default
           $ABORT(Invalid file_format)
        end select
+
+       ec%override_As = override_As
 
        allocate(ml, SOURCE=ec)
 

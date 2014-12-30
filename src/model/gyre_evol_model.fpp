@@ -1,7 +1,7 @@
 ! Module   : gyre_evol_model
 ! Purpose  : stellar evolutionary model
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2014 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -38,9 +38,6 @@ module gyre_evol_model
   implicit none
 
   ! Parameters
-
-  logical, parameter :: IMPLICIT_U = .FALSE.
-  logical, parameter :: IMPLICIT_GAMMA_1 = .FALSE.
 
   integer, parameter :: J_M = 1
   integer, parameter :: J_P = 2
@@ -92,6 +89,7 @@ module gyre_evol_model
      real(WP), public            :: L_star
      real(WP)                    :: p_c
      real(WP)                    :: rho_c
+     logical, public             :: override_As
    contains
      private
      procedure         :: set_sp_
@@ -122,7 +120,6 @@ module gyre_evol_model
      procedure, public :: attach_cache => attach_cache_
      procedure, public :: detach_cache => detach_cache_
      procedure, public :: fill_cache => fill_cache_
-!     procedure, public :: regularize => regularize_
   end type evol_model_t
  
   ! Interfaces
@@ -176,7 +173,7 @@ contains
 
   recursive function evol_model_t_mech_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                         Gamma_1, nabla_ad, delta, Omega_rot, &
-                                        deriv_type, regularize, add_center) result (ml)
+                                        deriv_type, add_center) result (ml)
 
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
@@ -192,11 +189,9 @@ contains
     real(WP), intent(in)          :: delta(:)
     real(WP), intent(in)          :: Omega_rot(:)
     character(LEN=*), intent(in)  :: deriv_type
-    logical, optional, intent(in) :: regularize
     logical, optional, intent(in) :: add_center
     type(evol_model_t)            :: ml
 
-    logical  :: regularize_
     logical  :: add_center_
     integer  :: n
     real(WP) :: m_reg(SIZE(r))
@@ -219,12 +214,6 @@ contains
     $CHECK_BOUNDS(SIZE(delta),SIZE(r))
     $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(r))
 
-    if (PRESENT(regularize)) then
-       regularize_ = regularize
-    else
-       regularize_ = .FALSE.
-    endif
-
     if(PRESENT(add_center)) then
        add_center_ = add_center
     else
@@ -242,20 +231,7 @@ contains
        ml = evol_model_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
                          prep_center_(r, p), prep_center_rho_(r, m, rho), prep_center_(r, T), &
                          [0._WP,N2], prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), &
-                         prep_center_(r, Omega_rot), deriv_type, regularize, .FALSE.)
-
-    elseif (regularize_) then
-
-       ! Regularize and initialize using recursion
-
-       n = SIZE(r)
-
-       call regularize_data_(r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg, N2_reg)
-
-       ml = evol_model_t(m_reg(n), R_star, L_star, r, m_reg, &
-                         p_reg, rho, T, &
-                         N2_reg, Gamma_1, nabla_ad, delta, &
-                         Omega_rot, deriv_type, .FALSE., .FALSE.)
+                         prep_center_(r, Omega_rot), deriv_type, .FALSE.)
 
     else
        
@@ -324,6 +300,8 @@ contains
 
        ml%p_c = p(1)
        ml%rho_c = rho(1)
+
+       ml%override_As = .FALSE.
 
     endif
 
@@ -406,6 +384,8 @@ contains
        ml%rho_c = 0._WP
        ml%p_c = 0._WP
 
+       ml%override_As = .FALSE.
+
     endif
 
     ! Finish
@@ -420,7 +400,7 @@ contains
                                          Gamma_1, nabla_ad, delta, Omega_rot, &
                                          nabla, kappa, kappa_rho, kappa_T, &
                                          epsilon, epsilon_rho, epsilon_T, &
-                                         deriv_type, regularize, add_center) result (ml)
+                                         deriv_type, add_center) result (ml)
 
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
@@ -443,11 +423,9 @@ contains
     real(WP), intent(in)          :: epsilon_rho(:)
     real(WP), intent(in)          :: epsilon_T(:)
     character(LEN=*), intent(in)  :: deriv_type
-    logical, optional, intent(in) :: regularize
     logical, optional, intent(in) :: add_center
     type(evol_model_t)            :: ml
 
-    logical  :: regularize_
     logical  :: add_center_
     integer  :: n
     real(WP) :: m_reg(SIZE(r))
@@ -487,12 +465,6 @@ contains
     $CHECK_BOUNDS(SIZE(epsilon_rho),SIZE(r))
     $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(r))
 
-    if (PRESENT(regularize)) then
-       regularize_ = regularize
-    else
-       regularize_ = .FALSE.
-    endif
-
     if (PRESENT(add_center)) then
        add_center_ = add_center
     else
@@ -510,22 +482,7 @@ contains
                          prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), prep_center_(r, Omega_rot), &
                          prep_center_(r, nabla), prep_center_(r, kappa), prep_center_(r, kappa_rho), prep_center_(r, kappa_T), &
                          prep_center_(r, epsilon), prep_center_(r, epsilon_rho), prep_center_(r, epsilon_T), &
-                         deriv_type, regularize, .FALSE.)
-
-    elseif (regularize_) then
-
-       ! Regularize and initialize using recursion
-
-       n = SIZE(r)
-
-       call regularize_data_(r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg, N2_reg)
-
-       ml = evol_model_t(m_reg(n), R_star, L_star, r, m_reg, &
-                         p_reg, rho, T, N2_reg, &
-                         Gamma_1, nabla_ad, delta, Omega_rot, &
-                         nabla, kappa, kappa_rho, kappa_T, &
-                         epsilon, epsilon_rho, epsilon_T, &
-                         deriv_type, .FALSE., .FALSE.)
+                         deriv_type, .FALSE.)
 
     else
 
@@ -732,89 +689,6 @@ contains
 
 !****
 
-  subroutine regularize_data_ (r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg, N2_reg)
-
-    real(WP), intent(in)     :: r(:)
-    real(WP), intent(in)     :: m(:)
-    real(WP), intent(in)     :: p(:)
-    real(WP), intent(in)     :: rho(:)
-    real(WP), intent(in)     :: Gamma_1(:)
-    real(WP), intent(in)     :: N2(:)
-    character(*), intent(in) :: deriv_type
-    real(WP), intent(out)    :: m_reg(:)
-    real(WP), intent(out)    :: p_reg(:)
-    real(WP), intent(out)    :: N2_reg(:)
-
-    type(spline_t) :: sp_rho
-    type(spline_t) :: sp_dm
-    type(spline_t) :: sp_N2
-    integer        :: n
-    logical        :: N2_mask(SIZE(r))
-    real(WP)       :: dlnrho_dlnr(SIZE(r))
-    real(WP)       :: g_r(SIZE(r))
-
-    $CHECK_BOUNDS(SIZE(m),SIZE(r))
-    $CHECK_BOUNDS(SIZE(p),SIZE(r))
-    $CHECK_BOUNDS(SIZE(rho),SIZE(r))
-    $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(r))
-    $CHECK_BOUNDS(SIZE(N2),SIZE(r))
-    $CHECK_BOUNDS(SIZE(m_reg),SIZE(r))
-    $CHECK_BOUNDS(SIZE(p_reg),SIZE(r))
-    $CHECK_BOUNDS(SIZE(N2_reg),SIZE(r))
-
-    ! Regularize the model
-
-    ! Set up interpolating splines
-
-    sp_rho = spline_t(r, rho, deriv_type, dy_dx_a=0._WP)
-    sp_dm = spline_t(r, 4._WP*PI*r**2*rho, deriv_type, dy_dx_a=0._WP)
-
-    n = SIZE(N2)
-
-    N2_mask = [.TRUE.,N2(1:n-2) > 0._WP .AND. N2(2:n-1) < 0._WP .AND. N2(3:n) > 0._WP,.TRUE.]
-
-    sp_N2 = spline_t(PACK(r, N2_mask), PACK(N2, N2_mask), deriv_type, dy_dx_a=0._WP)
-
-    ! Recalculate m
-
-    m_reg = sp_dm%integ()
-
-    ! Calculate dlnrho/dlnr
-
-    dlnrho_dlnr = r*sp_rho%deriv()/rho
-
-    ! Calculate g/r
-
-    where (r /= 0._WP)
-       g_r = G_GRAVITY*m_reg/r**3
-    elsewhere
-       g_r = 4._WP*PI*G_GRAVITY*rho
-    endwhere
-
-    ! Recalculate N2
-
-    N2_reg = sp_N2%interp(r)
-
-    ! Recalculate p
-
-    where (r /= 0._WP)
-       p_reg = -rho*g_r*r**2/(Gamma_1*(N2_reg/g_r + dlnrho_dlnr))
-    endwhere
-
-    where (r == 0._WP)
-       p_reg = MAXVAL(p_reg, MASK=r /= 0._WP)
-    endwhere
-
-    $ASSERT(ALL(p_reg > 0._WP),Negative regularized pressure)
-
-    ! Finish
-
-    return
-
-  end subroutine regularize_data_
-
-!****
-
   $define $PROC $sub
 
   $local $NAME $1
@@ -886,8 +760,9 @@ contains
   $PROC(rho)
   $PROC(T)
   $PROC(V)
-  $PROC(As)
+  $PROC(U)
   $PROC(c_1)
+  $PROC(Gamma_1)
   $PROC(nabla_ad)
   $PROC(delta)
   $PROC(Omega_rot)
@@ -983,27 +858,25 @@ contains
 
 !****
 
-  function U_1_ (this, x) result (U)
+  function As_1_ (this, x) result (As)
 
     class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
-    real(WP)                        :: U
+    real(WP)                        :: As
 
-    ! Calculate U. If implicit_U is .TRUE., use the c_1 based
-    ! expression; this ensures that the correct relation between U and
-    ! c_1 is preserved (see, e.g., eqn. 18 of Takata 2006, Proc. SOHO
-    ! 18/GONG 2006/HELAS I, p. 26)
+    ! Calculate As. If override_As is .TRUE., use eqn. 21 of
+    ! [Tak2006a]
 
-    if(ASSOCIATED(this%cc)) then
+    if (ASSOCIATED(this%cc)) then
 
-       U = this%cc%lookup(J_U, x)
+       As = this%cc%lookup(J_AS, x)
 
     else
 
-       if(implicit_U) then
-          U = 3._WP - x*this%sp(J_C_1)%deriv(x)/this%sp(J_C_1)%interp(x)
+       if (this%override_As) then
+          As = -this%V(x)/this%Gamma_1(x) - this%U(x) + 3._WP - x*this%sp(J_U)%deriv(x)/this%U(x)
        else
-          U =  this%sp(J_U)%interp(x)
+          As =  this%sp(J_AS)%interp(x)
        endif
 
     endif
@@ -1012,97 +885,31 @@ contains
 
     return
 
-  end function U_1_
+  end function As_1_
 
 !****
 
-  function U_v_ (this, x) result (U)
+  function As_v_ (this, x) result (As)
 
     class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
-    real(WP)                        :: U(SIZE(x))
+    real(WP)                        :: As(SIZE(x))
 
-    ! Calculate U. If implicit_U is .TRUE., use the c_1 based
-    ! expression; this ensures that the correct relation between U and
-    ! c_1 is preserved (see, e.g., eqn. 18 of Takata 2006, Proc. SOHO
-    ! 18/GONG 2006/HELAS I, p. 26)
+    ! Calculate As. If override_As is .TRUE., use eqn. 21 of
+    ! [Tak2006a]
 
-    if(implicit_U) then
-       U = 3._WP - x*this%sp(J_C_1)%deriv(x)/this%sp(J_C_1)%interp(x)
+    if (this%override_As) then
+       As = -this%V(x)/this%Gamma_1(x) - this%U(x) + 3._WP - x*this%sp(J_U)%deriv(x)/this%U(x)
     else
-       U =  this%sp(J_U)%interp(x)
+       As =  this%sp(J_AS)%interp(x)
     endif
 
     ! Finish
 
     return
 
-  end function U_v_
+  end function As_v_
 
-!****
-
-  function Gamma_1_1_ (this, x) result (Gamma_1)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: Gamma_1
-
-    ! Calculate Gamma_1. If implicit_Gamma_1 is .TRUE., derive from
-    ! other structure coefficients
-
-    if(ASSOCIATED(this%cc)) then
-
-       Gamma_1 = this%cc%lookup(J_GAMMA_1, x)
-
-    else
-
-       if(implicit_Gamma_1 .AND. x /= 0._WP) then
-
-          Gamma_1 = this%V(x)/(-this%As(x) + this%U(x) + this%V(x) - 1._WP - &
-                               x*this%sp(J_V)%deriv(x)/this%V(x))
-
-       else
-       
-          Gamma_1 = this%sp(J_GAMMA_1)%interp(x)
-
-       endif
-
-    endif
-
-    ! Finish
-
-    return
-
-  end function Gamma_1_1_
-
-!****
-
-  function Gamma_1_v_ (this, x) result (Gamma_1)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: Gamma_1(SIZE(x))
-
-    ! Calculate Gamma_1. If implicit_Gamma_1 is .TRUE., derive from
-    ! other structure coefficients
-
-    where(implicit_Gamma_1 .AND. x /= 0._WP)
-
-       Gamma_1 = this%V(x)/(-this%As(x) + this%U(x) + this%V(x) - 1._WP - &
-                            x*this%sp(J_V)%deriv(x)/this%V(x))
-
-    elsewhere
-
-       Gamma_1 = this%sp(J_GAMMA_1)%interp(x)
-
-    end where
-
-    ! Finish
-
-    return
-
-  end function Gamma_1_v_
-       
 !****
 
   function pi_c_ (this) result (pi_c)

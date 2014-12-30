@@ -53,12 +53,11 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_model_evol_ (file, deriv_type, data_format, regularize, ml, x)
+  subroutine read_fgong_model_evol_ (file, deriv_type, data_format, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
     character(*), intent(in)                     :: data_format
-    logical, intent(in)                          :: regularize
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
@@ -180,7 +179,6 @@ contains
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
     if (check_log_level('INFO')) then
-       if (regularize) write(OUTPUT_UNIT, 130) 'Regularizing'
        if (add_center) write(OUTPUT_UNIT, 130) 'Adding central point'
     endif
 
@@ -188,7 +186,7 @@ contains
 
     ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
-                      deriv_type, regularize=regularize, add_center=add_center)
+                      deriv_type, add_center=add_center)
 
     ! Set up the grid
 

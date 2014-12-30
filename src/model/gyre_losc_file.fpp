@@ -1,7 +1,7 @@
 ! Module   : gyre_losc_file
 ! Purpose  : read LOSC files
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2014 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -45,11 +45,10 @@ module gyre_losc_file
 
 contains
 
-  subroutine read_losc_model (file, deriv_type, regularize, ml, x)
+  subroutine read_losc_model (file, deriv_type, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
-    logical, intent(in)                          :: regularize
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
 
@@ -147,8 +146,6 @@ contains
        if (add_center) write(OUTPUT_UNIT, 130) 'Adding central point'
 130    format(3X,A)
     endif
-
-    if (regularize) write(OUTPUT_UNIT, 130) 'Warning: Cannot regularize this model'
 
     ! Initialize the model
 

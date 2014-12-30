@@ -1,7 +1,7 @@
 ! Module   : gyre_gsm_file
 ! Purpose  : read GSM (GYRE Stellar Model) files
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2014 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -47,11 +47,10 @@ module gyre_gsm_file
 
 contains
 
-  subroutine read_gsm_model (file, deriv_type, regularize, ml, x)
+  subroutine read_gsm_model (file, deriv_type, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
-    logical, intent(in)                          :: regularize
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
 
@@ -99,7 +98,6 @@ contains
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
     if (check_log_level('INFO')) then
-       if (regularize) write(OUTPUT_UNIT, 110) 'Regularizing'
        if (add_center) write(OUTPUT_UNIT, 110) 'Adding central point'
 110    format(2X,A)
     endif
@@ -110,7 +108,7 @@ contains
                       N2, Gamma_1, nabla_ad, delta, Omega_rot, &
                       nabla, kappa, kappa_rho, kappa_T, &
                       epsilon, epsilon_rho, epsilon_T, &
-                      deriv_type, regularize=regularize, add_center=add_center)
+                      deriv_type, add_center=add_center)
 
     ! Set up the grid
 
