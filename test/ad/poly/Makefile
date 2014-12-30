@@ -1,9 +1,9 @@
 # File     : Makefile
-# Purpose  : makefile for test/ad subdir
+# Purpose  : makefile for poly subdir
 
 # Variables
 
-SUBDIRS=num poly fgong mesa
+SUBDIRS=hom
 
 # Rules
 
