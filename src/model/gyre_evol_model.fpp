@@ -89,7 +89,7 @@ module gyre_evol_model
      real(WP), public            :: L_star
      real(WP)                    :: p_c
      real(WP)                    :: rho_c
-     logical, public             :: override_As
+     logical, public             :: reconstruct_As
    contains
      private
      procedure         :: set_sp_
@@ -301,7 +301,7 @@ contains
        ml%p_c = p(1)
        ml%rho_c = rho(1)
 
-       ml%override_As = .FALSE.
+       ml%reconstruct_As = .FALSE.
 
     endif
 
@@ -384,7 +384,7 @@ contains
        ml%rho_c = 0._WP
        ml%p_c = 0._WP
 
-       ml%override_As = .FALSE.
+       ml%reconstruct_As = .FALSE.
 
     endif
 
@@ -864,7 +864,7 @@ contains
     real(WP), intent(in)            :: x
     real(WP)                        :: As
 
-    ! Calculate As. If override_As is .TRUE., use eqn. 21 of
+    ! Calculate As. If reconstruct_As is .TRUE., use eqn. 21 of
     ! [Tak2006a]
 
     if (ASSOCIATED(this%cc)) then
@@ -873,7 +873,7 @@ contains
 
     else
 
-       if (this%override_As) then
+       if (this%reconstruct_As) then
           As = -this%V(x)/this%Gamma_1(x) - this%U(x) + 3._WP - x*this%sp(J_U)%deriv(x)/this%U(x)
        else
           As =  this%sp(J_AS)%interp(x)
@@ -895,10 +895,10 @@ contains
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: As(SIZE(x))
 
-    ! Calculate As. If override_As is .TRUE., use eqn. 21 of
+    ! Calculate As. If reconstruct_As is .TRUE., use eqn. 21 of
     ! [Tak2006a]
 
-    if (this%override_As) then
+    if (this%reconstruct_As) then
        As = -this%V(x)/this%Gamma_1(x) - this%U(x) + 3._WP - x*this%sp(J_U)%deriv(x)/this%U(x)
     else
        As =  this%sp(J_AS)%interp(x)

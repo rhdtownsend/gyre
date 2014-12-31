@@ -100,7 +100,7 @@ contains
     character(256)          :: deriv_type
     character(FILENAME_LEN) :: file
     real(WP)                :: Gamma_1
-    logical                 :: override_As
+    logical                 :: reconstruct_As
     logical                 :: uniform_rot
     real(WP)                :: Omega_rot
     type(evol_model_t)      :: ec
@@ -110,7 +110,7 @@ contains
 
     namelist /model/ model_type, file_format, data_format, deriv_type, &
                      file, Gamma_1, &
-                     override_As, uniform_rot, Omega_rot
+                     reconstruct_As, uniform_rot, Omega_rot
 
     ! Count the number of model namelists
 
@@ -134,7 +134,7 @@ contains
     data_format = ''
     deriv_type = 'MONO'
     uniform_rot = .FALSE.
-    override_As = .FALSE.
+    reconstruct_As = .FALSE.
 
     file = ''
 
@@ -182,7 +182,7 @@ contains
           $ABORT(Invalid file_format)
        end select
 
-       ec%override_As = override_As
+       ec%reconstruct_As = reconstruct_As
 
        allocate(ml, SOURCE=ec)
 
