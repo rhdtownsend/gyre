@@ -104,16 +104,16 @@ contains
     bd%x_i = x_i
     bd%x_o = x_o
 
-    select case (op%inner_bound_type)
+    select case (op%inner_bound)
     case ('REGULAR')
        bd%type_i = REGULAR_TYPE_I
     case ('ZERO')
        bd%type_i = ZERO_TYPE_I
     case default
-       $ABORT(Invalid inner_bound_type)
+       $ABORT(Invalid inner_bound)
     end select
 
-    select case (op%outer_bound_type)
+    select case (op%outer_bound)
     case ('ZERO')
        bd%type_o = ZERO_TYPE_O
     case ('DZIEM')
@@ -123,7 +123,7 @@ contains
     case ('JCD')
        bd%type_o = JCD_TYPE_O
     case default
-       $ABORT(Invalid outer_bound_type)
+       $ABORT(Invalid outer_bound)
     end select
 
     bd%n_i = 3

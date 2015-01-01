@@ -12,7 +12,7 @@
 /
 
 &osc
-	outer_bound_type = 'JCD'
+	outer_bound = 'JCD'
 /
 
 &num

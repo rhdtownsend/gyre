@@ -477,7 +477,7 @@ contains
 
      ! Evaluate the cutoff frequencies
 
-     select case (op%outer_bound_type)
+     select case (op%outer_bound)
 
      case ('ZERO')
 
@@ -501,7 +501,7 @@ contains
 
      case default
 
-        $ABORT(Invalid outer_bound_type)
+        $ABORT(Invalid outer_bound)
 
      end select
 

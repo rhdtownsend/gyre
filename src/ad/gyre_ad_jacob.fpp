@@ -88,7 +88,7 @@ contains
     jc%ml => ml
     allocate(jc%rt, SOURCE=rt)
 
-    select case (op%variables_type)
+    select case (op%variables)
     case ('DZIEM')
        jc%vars = DZIEM_VARS
     case ('JCD')
@@ -96,7 +96,7 @@ contains
     case ('MIX')
        jc%vars = MIX_VARS
     case default
-       $ABORT(Invalid variables_type)
+       $ABORT(Invalid variables)
     end select
 
     jc%n_e = 4

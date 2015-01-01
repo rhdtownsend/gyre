@@ -480,7 +480,7 @@ contains
 
     associate(lambda => this%rt%lambda(this%x_ref, this%omega))
 
-      select case (this%op%inertia_norm_type)
+      select case (this%op%inertia_norm)
       case ('RADIAL')
          A2 = ABS(this%xi_r_ref())**2
       case ('HORIZ')
@@ -488,7 +488,7 @@ contains
       case ('BOTH')
          A2 = ABS(this%xi_r_ref())**2 + ABS(lambda)*ABS(this%xi_h_ref())**2
       case default
-         $ABORT(Invalid inertia_norm_type)
+         $ABORT(Invalid inertia_norm)
       end select
 
       if(A2 == 0._WP) then

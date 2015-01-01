@@ -34,10 +34,10 @@ module gyre_oscpar
   type :: oscpar_t
      real(WP)        :: x_ref
      character(64)   :: rotation_method
-     character(64)   :: variables_type
-     character(64)   :: inner_bound_type
-     character(64)   :: outer_bound_type
-     character(64)   :: inertia_norm_type
+     character(64)   :: variables
+     character(64)   :: inner_bound
+     character(64)   :: outer_bound
+     character(64)   :: inertia_norm
      character(2048) :: tag_list
      logical         :: nonadiabatic
      logical         :: reduce_order
@@ -81,20 +81,20 @@ contains
     integer, intent(in)                      :: unit
     type(oscpar_t), allocatable, intent(out) :: op(:)
 
-    integer                              :: n_op
-    integer                              :: i
-    character(LEN(op%rotation_method))   :: rotation_method
-    character(LEN(op%variables_type))    :: variables_type
-    character(LEN(op%inner_bound_type))  :: inner_bound_type
-    character(LEN(op%outer_bound_type))  :: outer_bound_type
-    character(LEN(op%inertia_norm_type)) :: inertia_norm_type
-    character(LEN(op%tag_list))          :: tag_list
-    logical                              :: reduce_order
-    logical                              :: nonadiabatic
-    real(WP)                             :: x_ref
+    integer                            :: n_op
+    integer                            :: i
+    character(LEN(op%rotation_method)) :: rotation_method
+    character(LEN(op%variables))       :: variables
+    character(LEN(op%inner_bound))     :: inner_bound
+    character(LEN(op%outer_bound))     :: outer_bound
+    character(LEN(op%inertia_norm))    :: inertia_norm
+    character(LEN(op%tag_list))        :: tag_list
+    logical                            :: reduce_order
+    logical                            :: nonadiabatic
+    real(WP)                           :: x_ref
 
-    namelist /osc/ x_ref, rotation_method, inner_bound_type, outer_bound_type, variables_type, &
-         inertia_norm_type, tag_list, reduce_order, nonadiabatic
+    namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, variables, &
+         inertia_norm, tag_list, reduce_order, nonadiabatic
 
     ! Count the number of osc namelists
 
@@ -120,10 +120,10 @@ contains
        x_ref = HUGE(0._WP)
 
        rotation_method = 'NULL'
-       variables_type = 'DZIEM'
-       inner_bound_type = 'REGULAR'
-       outer_bound_type = 'ZERO'
-       inertia_norm_type = 'BOTH'
+       variables = 'DZIEM'
+       inner_bound = 'REGULAR'
+       outer_bound = 'ZERO'
+       inertia_norm = 'BOTH'
        tag_list = ''
 
        nonadiabatic = .FALSE.
@@ -135,10 +135,10 @@ contains
 
        op(i) = oscpar_t(x_ref=x_ref, &
                         rotation_method=rotation_method, &
-                        variables_type=variables_type, &
-                        inner_bound_type=inner_bound_type, &
-                        outer_bound_type=outer_bound_type, &
-                        inertia_norm_type=inertia_norm_type, &
+                        variables=variables, &
+                        inner_bound=inner_bound, &
+                        outer_bound=outer_bound, &
+                        inertia_norm=inertia_norm, &
                         tag_list=tag_list, &
                         nonadiabatic=nonadiabatic, &
                         reduce_order=reduce_order)
