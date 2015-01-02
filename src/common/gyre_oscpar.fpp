@@ -34,7 +34,7 @@ module gyre_oscpar
   type :: oscpar_t
      real(WP)        :: x_ref
      character(64)   :: rotation_method
-     character(64)   :: variables
+     character(64)   :: variables_set
      character(64)   :: inner_bound
      character(64)   :: outer_bound
      character(64)   :: inertia_norm
@@ -84,7 +84,7 @@ contains
     integer                            :: n_op
     integer                            :: i
     character(LEN(op%rotation_method)) :: rotation_method
-    character(LEN(op%variables))       :: variables
+    character(LEN(op%variables_set))   :: variables_set
     character(LEN(op%inner_bound))     :: inner_bound
     character(LEN(op%outer_bound))     :: outer_bound
     character(LEN(op%inertia_norm))    :: inertia_norm
@@ -93,7 +93,7 @@ contains
     logical                            :: nonadiabatic
     real(WP)                           :: x_ref
 
-    namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, variables, &
+    namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, variables_set, &
          inertia_norm, tag_list, reduce_order, nonadiabatic
 
     ! Count the number of osc namelists
@@ -120,7 +120,7 @@ contains
        x_ref = HUGE(0._WP)
 
        rotation_method = 'NULL'
-       variables = 'DZIEM'
+       variables_set = 'DZIEM'
        inner_bound = 'REGULAR'
        outer_bound = 'ZERO'
        inertia_norm = 'BOTH'
@@ -135,7 +135,7 @@ contains
 
        op(i) = oscpar_t(x_ref=x_ref, &
                         rotation_method=rotation_method, &
-                        variables=variables, &
+                        variables_set=variables_set, &
                         inner_bound=inner_bound, &
                         outer_bound=outer_bound, &
                         inertia_norm=inertia_norm, &
