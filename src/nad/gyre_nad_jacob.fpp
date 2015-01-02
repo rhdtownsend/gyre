@@ -85,13 +85,13 @@ contains
     jc%ml => ml
     allocate(jc%rt, SOURCE=rt)
 
-    select case (op%variables)
+    select case (op%variables_set)
     case ('DZIEM')
        jc%vars = DZIEM_VARS
     case ('JCD')
        jc%vars = JCD_VARS
     case default
-       $ABORT(Invalid variables)
+       $ABORT(Invalid variables_set)
     end select
 
     jc%n_e = 6
