@@ -50,6 +50,8 @@ module gyre_poly_model
      real(WP)         :: dt_Gamma_1
      real(WP), public :: n_poly
      real(WP), public :: xi_1
+     real(WP), public :: Omega_uni
+     logical, public  :: uniform_rot
    contains
      private
      $PROC_DECL(V)
@@ -145,6 +147,9 @@ contains
     ml%n_poly = n_poly
     ml%dt_Gamma_1 = Gamma_1
     ml%xi_1 = xi(n)
+    ml%Omega_uni = 0._WP
+
+    ml%uniform_rot = .FALSE.
 
     ! Finish
 
@@ -528,10 +533,15 @@ contains
     real(WP), intent(in)            :: x
     real(WP)                        :: Omega_rot
 
-    ! Interpolate Omega_rot
+    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
+    ! rate given by Omega_uni instead
 
-    Omega_rot = this%sp_Omega_rot%interp(x)
-       
+    if (this%uniform_rot) then
+       Omega_rot = this%Omega_uni
+    else
+       Omega_rot = this%sp_Omega_rot%interp(x)
+    endif
+
     ! Finish
 
     return
@@ -546,11 +556,14 @@ contains
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: Omega_rot(SIZE(x))
 
-    integer :: j
+    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
+    ! rate given by Omega_uni instead
 
-    ! Interpolate Omega_rot
-
-    Omega_rot = this%sp_Omega_rot%interp(x)
+    if (this%uniform_rot) then
+       Omega_rot = this%Omega_uni
+    else
+       Omega_rot = this%sp_Omega_rot%interp(x)
+    endif
 
     ! Finish
 

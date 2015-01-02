@@ -43,8 +43,9 @@ module gyre_hom_model
 
   type, extends(model_t) :: hom_model_t
      private
-     real(WP) :: dt_Gamma_1
-     real(WP) :: dt_Omega_rot
+     real(WP)         :: dt_Gamma_1
+     real(WP), public :: Omega_uni
+     logical, public  :: uniform_rot
    contains
      private
      $PROC_DECL(V)
@@ -97,16 +98,18 @@ module gyre_hom_model
 
 contains
 
-  function hom_model_t_ (Gamma_1, Omega_rot) result (ml)
+  function hom_model_t_ (Gamma_1) result (ml)
 
     real(WP), intent(in) :: Gamma_1
-    real(WP), intent(in) :: Omega_rot
     type(hom_model_t)    :: ml
 
     ! Construct the hom_model_t
 
     ml%dt_Gamma_1 = Gamma_1
-    ml%dt_Omega_rot = Omega_rot
+    ml%Omega_uni = 0._WP
+
+    ml%uniform_rot = .FALSE.
+
 
     ! Finish
 
@@ -455,9 +458,14 @@ contains
     real(WP), intent(in)           :: x
     real(WP)                       :: Omega_rot
 
-    ! Calculate Omega_rot
+    ! Calculate Omega_rot. If uniform_rot is .TRUE., use the uniform
+    ! rate given by Omega_uni
 
-    Omega_rot = this%dt_Omega_rot
+    if (this%uniform_rot) then
+       Omega_rot = this%Omega_uni
+    else
+       Omega_rot = 0._WP
+    endif
 
     ! Finish
 
@@ -476,7 +484,7 @@ contains
     integer :: i
 
     ! Calculate Omega_rot
-    
+
     x_loop : do i = 1,SIZE(x)
        Omega_rot(i) = this%Omega_rot(x(i))
     end do x_loop

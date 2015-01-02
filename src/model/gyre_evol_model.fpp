@@ -89,6 +89,8 @@ module gyre_evol_model
      real(WP), public            :: L_star
      real(WP)                    :: p_c
      real(WP)                    :: rho_c
+     real(WP), public            :: Omega_uni
+     logical, public             :: uniform_rot
      logical, public             :: reconstruct_As
    contains
      private
@@ -300,7 +302,9 @@ contains
 
        ml%p_c = p(1)
        ml%rho_c = rho(1)
+       ml%Omega_uni = 0._WP
 
+       ml%uniform_rot = .FALSE.
        ml%reconstruct_As = .FALSE.
 
     endif
@@ -383,7 +387,9 @@ contains
 
        ml%rho_c = 0._WP
        ml%p_c = 0._WP
+       ml%Omega_uni = 0._WP
 
+       ml%uniform_rot = .FALSE.
        ml%reconstruct_As = .FALSE.
 
     endif
@@ -765,7 +771,6 @@ contains
   $PROC(Gamma_1)
   $PROC(nabla_ad)
   $PROC(delta)
-  $PROC(Omega_rot)
   $PROC(nabla)
   $PROC(c_rad)
   $PROC(c_thm)
@@ -864,8 +869,8 @@ contains
     real(WP), intent(in)            :: x
     real(WP)                        :: As
 
-    ! Calculate As. If reconstruct_As is .TRUE., use eqn. 21 of
-    ! [Tak2006a]
+    ! Interpolate As. If reconstruct_As is .TRUE., use eqn. 21 of
+    ! [Tak2006a] instead
 
     if (ASSOCIATED(this%cc)) then
 
@@ -895,8 +900,8 @@ contains
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: As(SIZE(x))
 
-    ! Calculate As. If reconstruct_As is .TRUE., use eqn. 21 of
-    ! [Tak2006a]
+    ! Interpolate As. If reconstruct_As is .TRUE., use eqn. 21 of
+    ! [Tak2006a] instead
 
     if (this%reconstruct_As) then
        As = -this%V(x)/this%Gamma_1(x) - this%U(x) + 3._WP - x*this%sp(J_U)%deriv(x)/this%U(x)
@@ -909,6 +914,60 @@ contains
     return
 
   end function As_v_
+
+!****
+
+  function Omega_rot_1_ (this, x) result (Omega_rot)
+
+    class(evol_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: Omega_rot
+
+    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
+    ! rate given by Omega_uni instead
+
+    if (ASSOCIATED(this%cc)) then
+
+       Omega_rot = this%cc%lookup(J_OMEGA_ROT, x)
+
+    else
+
+       if (this%uniform_rot) then
+          Omega_rot = this%Omega_uni
+       else
+          Omega_rot = this%sp(J_OMEGA_ROT)%interp(x)
+       endif
+
+    endif
+
+    ! Finish
+
+    return
+
+  end function Omega_rot_1_
+
+!****
+
+  function Omega_rot_v_ (this, x) result (Omega_rot)
+
+    class(evol_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: Omega_rot(SIZE(x))
+
+    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
+    ! rate given by Omega_uni instead
+
+    if (this%uniform_rot) then
+       Omega_rot = this%Omega_uni
+    else
+       Omega_rot = this%sp(J_OMEGA_ROT)%interp(x)
+    endif
+
+    ! Finish
+
+    return
+
+  end function Omega_rot_v_
 
 !****
 

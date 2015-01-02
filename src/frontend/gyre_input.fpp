@@ -74,7 +74,6 @@ contains
 
     use gyre_model
     use gyre_evol_model
-    use gyre_scons_model
     use gyre_poly_model
     use gyre_hom_model
     use gyre_mesa_file
@@ -102,15 +101,14 @@ contains
     real(WP)                :: Gamma_1
     logical                 :: reconstruct_As
     logical                 :: uniform_rot
-    real(WP)                :: Omega_rot
+    real(WP)                :: Omega_uni
     type(evol_model_t)      :: ec
-    type(scons_model_t)     :: sc
     type(poly_model_t)      :: pc
     type(hom_model_t)       :: hc
 
     namelist /model/ model_type, file_format, data_format, deriv_type, &
                      file, Gamma_1, &
-                     reconstruct_As, uniform_rot, Omega_rot
+                     reconstruct_As, uniform_rot, Omega_uni
 
     ! Count the number of model namelists
 
@@ -139,7 +137,7 @@ contains
     file = ''
 
     Gamma_1 = 5._WP/3._WP
-    Omega_rot = 0._WP
+    Omega_uni = 0._WP
 
     rewind(unit)
     read(unit, NML=model)
@@ -151,11 +149,7 @@ contains
 
        select case (file_format)
        case ('MESA')
-          if (uniform_rot) then
-             call read_mesa_model(file, deriv_type, ec, x=x_bc, uni_Omega_rot=Omega_rot)
-          else
-             call read_mesa_model(file, deriv_type, ec, x=x_bc)
-          endif
+          call read_mesa_model(file, deriv_type, ec, x=x_bc)
        case('B3')
           $if($HDF5)
           call read_b3_model(file, deriv_type, ec, x=x_bc)
@@ -182,22 +176,12 @@ contains
           $ABORT(Invalid file_format)
        end select
 
+       ec%Omega_uni = Omega_uni
+
        ec%reconstruct_As = reconstruct_As
+       ec%uniform_rot = uniform_rot
 
        allocate(ml, SOURCE=ec)
-
-    case ('SCONS')
-
-       select case (file_format)
-       case ('MESA')
-          call read_mesa_model(file, sc, x=x_bc)
-       case ('FGONG')
-          call read_fgong_model(file, data_format, sc, x=x_bc)
-       case default
-          $ABORT(Invalid file_format)
-       end select
-
-       allocate(ml, SOURCE=sc)
 
     case ('POLY')
 
@@ -207,11 +191,19 @@ contains
        $ABORT(No HDF5 support, therefore cannot read POLY files)
        $endif
 
+       pc%Omega_uni = Omega_uni
+
+       pc%uniform_rot = uniform_rot
+
        allocate(ml, SOURCE=pc)
 
     case ('HOM')
 
-       hc = hom_model_t(Gamma_1, Omega_rot)
+       hc = hom_model_t(Gamma_1)
+
+       hc%Omega_uni = Omega_uni
+
+       hc%uniform_rot = uniform_rot
 
        allocate(ml, SOURCE=hc)
 

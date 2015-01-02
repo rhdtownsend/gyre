@@ -27,7 +27,6 @@ module gyre_mesa_file
   use gyre_constants
   use gyre_model
   use gyre_evol_model
-  use gyre_scons_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -35,13 +34,6 @@ module gyre_mesa_file
   ! No implicit typing
 
   implicit none
-
-  ! Interfaces
-
-  interface read_mesa_model
-     module procedure read_mesa_model_evol_
-     module procedure read_mesa_model_scons_
-  end interface read_mesa_model
 
   ! Access specifiers
 
@@ -54,7 +46,7 @@ module gyre_mesa_file
 
 contains
 
-  subroutine read_mesa_model_evol_ (file, deriv_type, ml, x, uni_Omega_rot)
+  subroutine read_mesa_model (file, deriv_type, ml, x, uni_Omega_rot)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type 
@@ -131,82 +123,7 @@ contains
 
     return
 
-  end subroutine read_mesa_model_evol_
-
-!****
-
-  subroutine read_mesa_model_scons_ (file, ml, x)
-
-    character(*), intent(in)                     :: file
-    type(scons_model_t), intent(out)             :: ml
-    real(WP), allocatable, optional, intent(out) :: x(:)
-
-    integer               :: unit
-    integer               :: n
-    real(WP)              :: M_star
-    real(WP)              :: R_star
-    real(WP)              :: L_star
-    integer               :: n_cols
-    real(WP), allocatable :: var(:,:)
-    real(WP), allocatable :: r(:)
-    real(WP), allocatable :: m(:)
-    real(WP), allocatable :: p(:)
-    real(WP), allocatable :: rho(:)
-    real(WP), allocatable :: T(:)
-    real(WP), allocatable :: N2(:)
-    real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: nabla_ad(:)
-    real(WP), allocatable :: delta(:)
-    real(WP), allocatable :: nabla(:)
-    real(WP), allocatable :: kappa(:)
-    real(WP), allocatable :: kappa_rho(:)
-    real(WP), allocatable :: kappa_T(:)
-    real(WP), allocatable :: epsilon(:)
-    real(WP), allocatable :: epsilon_rho(:)
-    real(WP), allocatable :: epsilon_T(:)
-    real(WP), allocatable :: Omega_rot(:)
-    logical               :: add_center
-
-    ! Read data from the MESA-format file
-
-    if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from MESA file', TRIM(file)
-100    format(A,1X,A)
-    endif
-
-    call read_mesa_data(file, M_star, R_star, L_star, r, m, p, rho, T, &
-                        N2, Gamma_1, nabla_ad, delta, nabla,  &
-                        kappa, kappa_rho, kappa_T, &
-                        epsilon, epsilon_rho, epsilon_T, &
-                        Omega_rot)
-
-    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
-
-    if (check_log_level('INFO')) then
-       if (add_center) write(OUTPUT_UNIT, 110) 'Adding central point'
-110    format(3X,A)
-    endif
-
-    ! Initialize the model
-
-    ml = scons_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
-                       N2, Gamma_1, nabla_ad, delta, Omega_rot, &
-                       add_center=add_center)
-
-    ! Set up the grid
-
-    if(PRESENT(x)) then
-       if(add_center) then
-          x = [0._WP,r/R_star]
-       else
-          x = r/R_star
-       endif
-    endif
-    ! Finish
-
-    return
-
-  end subroutine read_mesa_model_scons_
+  end subroutine read_mesa_model
 
 !****
 
