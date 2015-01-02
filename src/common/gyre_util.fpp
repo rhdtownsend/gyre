@@ -36,7 +36,6 @@ module gyre_util
   use gyre_oscpar
   use gyre_poly_model
   use gyre_scanpar
-  use gyre_scons_model
   use gyre_rot
   use gyre_rot_factory
 
@@ -265,27 +264,6 @@ contains
           $ABORT(Invalid freq_units)
        end select
 
-    class is (scons_model_t)
-
-       select case(freq_units)
-       case('NONE')
-          omega_l = freq
-       case('HZ')
-          omega_l = freq*(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
-       case('UHZ')
-          omega_l = freq*(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))/1E6_WP
-       case('PER_DAY')
-          omega_l = freq*(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))/86400._WP
-       case('ACOUSTIC_CUTOFF')
-          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-          omega_l = freq*omega_cutoff_hi
-       case('GRAVITY_CUTOFF')
-          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-          omega_l = freq*omega_cutoff_lo
-       case default
-          $ABORT(Invalid freq_units)
-       end select
-
     class is (poly_model_t)
 
        select case (freq_units)
@@ -383,27 +361,6 @@ contains
     select type (ml)
 
     class is (evol_model_t)
-
-       select case(freq_units)
-       case('NONE')
-          freq = omega_l
-       case('HZ')
-          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
-       case('UHZ')
-          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*1E6_WP
-       case('PER_DAY')
-          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*86400._WP
-       case('ACOUSTIC_CUTOFF')
-          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-          freq = omega_l/omega_cutoff_hi
-       case('GRAVITY_CUTOFF')
-          call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
-          freq = omega_l/omega_cutoff_lo
-       case default
-          $ABORT(Invalid freq_units)
-       end select
-
-    class is (scons_model_t)
 
        select case(freq_units)
        case('NONE')
