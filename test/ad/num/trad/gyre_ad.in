@@ -3,7 +3,8 @@
 
 &model
 	model_type = 'HOM'
-	Omega_rot = 1.0
+	uniform_rot = .TRUE.
+	Omega_uni = 1.0
 /
 
 &mode
