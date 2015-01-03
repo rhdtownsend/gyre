@@ -12,10 +12,10 @@ EXEC=./gyre_ad
 IN_FILE=gyre_ad.in
 OUT_FILE=gyre_ad.txt
 
-LABEL="homogeneous compressible model (polytropic structure)"
+LABEL="polytrope model (n_poly=3.0, g modes)"
 
-RELERR=3E-14
-FIELDS=1-5
+RELERR=6E-8
+FIELDS=1-2,5
 
 # Do the tests
 
@@ -24,7 +24,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output $RELERR $FIELDS $OUT_FILE
+check_output $RELERR $FIELDS $OUT_FILE '' rel
 if [ $? -ne 0 ]; then
     exit 1;
 fi

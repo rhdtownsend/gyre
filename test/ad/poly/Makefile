@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=hom
+SUBDIRS=0.0 1.5 3.0 3.0-g 4.0
 
 # Rules
 
