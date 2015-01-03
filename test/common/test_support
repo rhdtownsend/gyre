@@ -44,10 +44,11 @@ run_gyre ()
 check_output ()
 {
 
-    local relerr=$1
+    local errval=$1
     local fields=$2
     local file_a=$3
     local file_b=$4
+    local errtype=$5
 
     if [ ! -e "$file_b" ]; then
 
@@ -79,13 +80,21 @@ check_output ()
 	return 1
     fi
 
-    if [ -z "$relerr" ]; then
-	ndiff -quiet -fields $fields $file_a $file_b
-	retval=$?
-    else	
-	ndiff -quiet -relerr $relerr -fields $fields $file_a $file_b
-	retval=$?
-    fi
+    local ndiff_flags="-quiet -fields $fields"
+
+    case $errtype in
+	rel|'')
+            ndiff_flags="$ndiff_flags -relerr $errval"
+	    ;;
+	abs)
+            ndiff_flags="$ndiff_flags -abserr $errval"
+	    ;;
+	*)
+	    echo "Invalid errtype"
+	    return 1
+    esac
+
+    ndiff $ndiff_flags $file_a $file_b
 
     if [ $retval -ne 0 ]; then
 	echo " ...failed: $file_a and $file_b differ in fields $fields"
