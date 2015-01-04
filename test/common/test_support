@@ -82,17 +82,21 @@ check_output ()
 
     local ndiff_flags="-quiet -fields $fields"
 
-    case $errtype in
-	rel|'')
-            ndiff_flags="$ndiff_flags -relerr $errval"
-	    ;;
-	abs)
-            ndiff_flags="$ndiff_flags -abserr $errval"
-	    ;;
-	*)
-	    echo "Invalid errtype"
-	    return 1
-    esac
+    if [ -n "$errval" ]; then
+
+	case $errtype in 
+	    rel|'')
+		ndiff_flags="$ndiff_flags -relerr $errval"
+		;;
+	    abs)
+		ndiff_flags="$ndiff_flags -abserr $errval"
+		;;
+	    *)
+		echo "Invalid errtype"
+		return 1
+	esac
+
+    fi
 
     ndiff $ndiff_flags $file_a $file_b
 
