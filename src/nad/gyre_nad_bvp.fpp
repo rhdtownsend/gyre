@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_bvp
 ! Purpose  : boundary-value solver (nonadiabatic)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -27,10 +27,10 @@ module gyre_nad_bvp
   use gyre_ext
   use gyre_ivp
   use gyre_mode
-  use gyre_modepar
+  use gyre_mode_par
   use gyre_model
-  use gyre_numpar
-  use gyre_oscpar
+  use gyre_num_par
+  use gyre_osc_par
   use gyre_sysmtx
   use gyre_sysmtx_factory
   use gyre_rot
@@ -73,9 +73,9 @@ contains
 
     real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(oscpar_t), intent(in)          :: op
-    type(numpar_t), intent(in)          :: np
+    type(mode_par_t), intent(in)        :: mp
+    type(osc_par_t), intent(in)         :: op
+    type(num_par_t), intent(in)         :: np
     type(nad_bvp_t), target             :: bp
 
     class(c_rot_t), allocatable    :: rt

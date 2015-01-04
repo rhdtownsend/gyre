@@ -1,7 +1,7 @@
 ! Module   : gyre_sysmtx_factory
 ! Purpose  : factory procedures for r_sysmtx_t and c_sysmtx_t types
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,7 +26,7 @@ module gyre_sysmtx_factory
   use gyre_sysmtx
   use gyre_band_sysmtx
   use gyre_block_sysmtx
-  use gyre_numpar
+  use gyre_num_par
 
   use ISO_FORTRAN_ENV
 
@@ -65,7 +65,7 @@ contains
     integer, intent(in)               :: n_e
     integer, intent(in)               :: n_i
     integer, intent(in)               :: n_o
-    type(numpar_t), intent(in)        :: np
+    type(num_par_t), intent(in)       :: np
     class(${T}_sysmtx_t), allocatable :: sm
     
     ! Create a ${T}_sysmtx_t

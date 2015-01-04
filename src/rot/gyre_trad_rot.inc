@@ -1,7 +1,7 @@
 ! Incfile  : gyre_trad_rot
 ! Purpose  : rotational effects (traditional approximation, template)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -29,7 +29,7 @@ module gyre_${T}_trad_rot
   use core_kinds
 
   use gyre_model
-  use gyre_modepar
+  use gyre_mode_par
   use gyre_trad
   use gyre_rot
 
@@ -72,7 +72,7 @@ contains
   function ${T}_trad_rot_t_ (ml, mp) result (rt)
 
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
+    type(mode_par_t), intent(in)        :: mp
     type(${T}_trad_rot_t)               :: rt
 
     ! Construct the trad_rot_t

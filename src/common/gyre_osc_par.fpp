@@ -1,7 +1,7 @@
-! Module   : gyre_oscpar
+! Module   : gyre_osc_par
 ! Purpose  : oscillation parameters
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -18,7 +18,7 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_oscpar
+module gyre_osc_par
 
   ! Uses
 
@@ -31,7 +31,7 @@ module gyre_oscpar
 
   ! Derived-type definitions
 
-  type :: oscpar_t
+  type :: osc_par_t
      real(WP)        :: x_ref
      character(64)   :: rotation_method
      character(64)   :: variables_set
@@ -41,7 +41,7 @@ module gyre_oscpar
      character(2048) :: tag_list
      logical         :: nonadiabatic
      logical         :: reduce_order
-  end type oscpar_t
+  end type osc_par_t
 
   ! Interfaces
 
@@ -63,8 +63,8 @@ module gyre_oscpar
 
   private
 
-  public :: oscpar_t
-  public :: read_oscpar
+  public :: osc_par_t
+  public :: read_osc_par
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -76,10 +76,10 @@ contains
 
 !****
 
-  subroutine read_oscpar (unit, op)
+  subroutine read_osc_par (unit, op)
 
-    integer, intent(in)                      :: unit
-    type(oscpar_t), allocatable, intent(out) :: op(:)
+    integer, intent(in)                       :: unit
+    type(osc_par_t), allocatable, intent(out) :: op(:)
 
     integer                            :: n_op
     integer                            :: i
@@ -131,9 +131,9 @@ contains
 
        read(unit, NML=osc)
 
-       ! Initialize the oscpar
+       ! Initialize the osc_par
 
-       op(i) = oscpar_t(x_ref=x_ref, &
+       op(i) = osc_par_t(x_ref=x_ref, &
                         rotation_method=rotation_method, &
                         variables_set=variables_set, &
                         inner_bound=inner_bound, &
@@ -149,7 +149,7 @@ contains
 
     return
 
-  end subroutine read_oscpar
+  end subroutine read_osc_par
 
 !****
 
@@ -161,10 +161,10 @@ contains
 
   subroutine bcast_${RANK}_ (op, root_rank)
 
-    type(oscpar_t), intent(inout) :: op$ARRAY_SPEC($RANK)
-    integer, intent(in)           :: root_rank
+    type(osc_par_t), intent(inout) :: op$ARRAY_SPEC($RANK)
+    integer, intent(in)            :: root_rank
 
-    ! Broadcast the oscpar_t
+    ! Broadcast the osc_par_t
 
     call bcast(op%x_ref, root_rank)
 
@@ -191,9 +191,9 @@ contains
 
 !****
 
-  $BCAST_ALLOC(type(oscpar_t),0)
-  $BCAST_ALLOC(type(oscpar_t),1)
+  $BCAST_ALLOC(type(osc_par_t),0)
+  $BCAST_ALLOC(type(osc_par_t),1)
 
   $endif
 
-end module gyre_oscpar
+end module gyre_osc_par

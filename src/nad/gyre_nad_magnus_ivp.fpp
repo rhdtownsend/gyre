@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_magnus_ivp
 ! Purpose  : initial-value solvers (Magnus method, nonadiabatic)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General

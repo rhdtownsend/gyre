@@ -1,7 +1,7 @@
-! Module   : gyre_numpar
+! Module   : gyre_num_par
 ! Purpose  : numerics parameters
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -18,7 +18,7 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_numpar
+module gyre_num_par
 
   ! Uses
 
@@ -31,13 +31,13 @@ module gyre_numpar
 
   ! Derived-type definitions
 
-  type :: numpar_t
+  type :: num_par_t
      integer         :: n_iter_max
      logical         :: deflate_roots
      character(64)   :: ivp_solver
      character(64)   :: matrix_type
      character(2048) :: tag_list
-  end type numpar_t
+  end type num_par_t
 
   ! Interfaces
 
@@ -59,8 +59,8 @@ module gyre_numpar
 
   private
 
-  public :: numpar_t
-  public :: read_numpar
+  public :: num_par_t
+  public :: read_num_par
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -70,10 +70,10 @@ module gyre_numpar
 
 contains
 
-  subroutine read_numpar (unit, np)
+  subroutine read_num_par (unit, np)
 
-    integer, intent(in)                      :: unit
-    type(numpar_t), allocatable, intent(out) :: np(:)
+    integer, intent(in)                       :: unit
+    type(num_par_t), allocatable, intent(out) :: np(:)
 
     integer                        :: n_np
     integer                        :: i
@@ -117,9 +117,9 @@ contains
 
        read(unit, NML=num)
 
-       ! Initialize the numpar
+       ! Initialize the num_par
 
-       np(i) = numpar_t(n_iter_max=n_iter_max, &
+       np(i) = num_par_t(n_iter_max=n_iter_max, &
                         deflate_roots=deflate_roots, &
                         ivp_solver=ivp_solver, &
                         matrix_type=matrix_type, &
@@ -131,7 +131,7 @@ contains
 
     return
 
-  end subroutine read_numpar
+  end subroutine read_num_par
 
 !****
 
@@ -143,10 +143,10 @@ contains
 
   subroutine bcast_${RANK}_ (np, root_rank)
 
-    type(numpar_t), intent(inout) :: np$ARRAY_SPEC($RANK)
-    integer, intent(in)           :: root_rank
+    type(num_par_t), intent(inout) :: np$ARRAY_SPEC($RANK)
+    integer, intent(in)            :: root_rank
 
-    ! Broadcast the numpar_t
+    ! Broadcast the num_par_t
 
     call bcast(np%n_iter_max, root_rank)
 
@@ -169,9 +169,9 @@ contains
 
 !****
 
-  $BCAST_ALLOC(type(numpar_t),0)
-  $BCAST_ALLOC(type(numpar_t),1)
+  $BCAST_ALLOC(type(num_par_t),0)
+  $BCAST_ALLOC(type(num_par_t),1)
 
   $endif
 
-end module gyre_numpar
+end module gyre_num_par

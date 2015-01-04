@@ -1,7 +1,7 @@
 ! Incfile  : gyre_rot
 ! Purpose  : rotational effects (template)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -28,7 +28,7 @@ module gyre_${T}_rot
 
   use core_kinds
 
-  use gyre_modepar
+  use gyre_mode_par
 
   ! No implicit typing
 
@@ -38,7 +38,7 @@ module gyre_${T}_rot
 
   type, abstract :: ${T}_rot_t
      private
-     type(modepar_t), public :: mp
+     type(mode_par_t), public :: mp
    contains
      private
      procedure(omega_), deferred, public :: omega

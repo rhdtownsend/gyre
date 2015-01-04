@@ -1,7 +1,7 @@
 ! Program  : gyre_util
 ! Purpose  : miscellaneous utility routines
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -28,14 +28,14 @@ module gyre_util
   use gyre_atmos
   use gyre_constants
   use gyre_evol_model
-  use gyre_gridpar
+  use gyre_grid_par
   use gyre_hom_model
   use gyre_model
-  use gyre_modepar
-  use gyre_numpar
-  use gyre_oscpar
+  use gyre_mode_par
+  use gyre_num_par
+  use gyre_osc_par
   use gyre_poly_model
-  use gyre_scanpar
+  use gyre_scan_par
   use gyre_rot
   use gyre_rot_factory
 
@@ -223,8 +223,8 @@ contains
 
     $TYPE(WP), intent(in)               :: freq
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(oscpar_t), intent(in)          :: op
+    type(mode_par_t), intent(in)        :: mp
+    type(osc_par_t), intent(in)         :: op
     real(WP), intent(in)                :: x_i
     real(WP), intent(in)                :: x_o
     character(*), intent(in)            :: freq_units
@@ -325,8 +325,8 @@ contains
 
     $TYPE(WP), intent(in)               :: omega
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(oscpar_t), intent(in)          :: op
+    type(mode_par_t), intent(in)        :: mp
+    type(osc_par_t), intent(in)         :: op
     real(WP), intent(in)                :: x_i
     real(WP), intent(in)                :: x_o
     character(*), intent(in)            :: freq_units
@@ -420,12 +420,12 @@ contains
 
   subroutine eval_cutoff_freqs (ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
 
-    class(model_t), intent(in)  :: ml
-    type(modepar_t), intent(in) :: mp
-    type(oscpar_t), intent(in)  :: op
-    real(WP), intent(in)        :: x_o
-    real(WP), intent(out)       :: omega_cutoff_lo
-    real(WP), intent(out)       :: omega_cutoff_hi
+    class(model_t), intent(in)   :: ml
+    type(mode_par_t), intent(in) :: mp
+    type(osc_par_t), intent(in)  :: op
+    real(WP), intent(in)         :: x_o
+    real(WP), intent(out)        :: omega_cutoff_lo
+    real(WP), intent(out)        :: omega_cutoff_hi
 
     real(WP)      :: V_g
     real(WP)      :: As
@@ -533,10 +533,10 @@ contains
 
   $endsub
 
-  $SELECT_PAR(op,oscpar_t)
-  $SELECT_PAR(np,numpar_t)
-  $SELECT_PAR(gp,gridpar_t)
-  $SELECT_PAR(sp,scanpar_t)
+  $SELECT_PAR(gp,grid_par_t)
+  $SELECT_PAR(np,num_par_t)
+  $SELECT_PAR(op,osc_par_t)
+  $SELECT_PAR(sp,scan_par_t)
 
 !****
 

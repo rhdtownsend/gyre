@@ -1,7 +1,7 @@
 ! Module   : gyre_c_search
 ! Purpose  : mode searching (complex)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -31,7 +31,7 @@ module gyre_c_search
   use gyre_ext
   use gyre_mode
   use gyre_model
-  use gyre_numpar
+  use gyre_num_par
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -51,7 +51,7 @@ contains
   subroutine prox_search (bp, np, md_in, process_root)
 
     class(c_bvp_t), target, intent(inout) :: bp
-    type(numpar_t), intent(in)            :: np
+    type(num_par_t), intent(in)           :: np
     type(mode_t), intent(in)              :: md_in(:)
     interface
        subroutine process_root (omega, n_iter, discrim_ref)

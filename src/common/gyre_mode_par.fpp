@@ -1,7 +1,7 @@
-! Module   : gyre_modepar
+! Module   : gyre_mode_par
 ! Purpose  : mode parameters
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -18,7 +18,7 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_modepar
+module gyre_mode_par
 
   ! Uses
 
@@ -31,13 +31,13 @@ module gyre_modepar
 
   ! Derived-type definitions
 
-  type :: modepar_t
+  type :: mode_par_t
      integer       :: l
      integer       :: m
      integer       :: n_pg_min
      integer       :: n_pg_max
      character(64) :: tag
-  end type modepar_t
+  end type mode_par_t
 
   ! Interfaces
 
@@ -59,8 +59,8 @@ module gyre_modepar
 
   private
 
-  public :: modepar_t
-  public :: read_modepar
+  public :: mode_par_t
+  public :: read_mode_par
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -72,10 +72,10 @@ contains
 
 !****
 
-  subroutine read_modepar (unit, mp)
+  subroutine read_mode_par (unit, mp)
 
-    integer, intent(in)                       :: unit
-    type(modepar_t), allocatable, intent(out) :: mp(:)
+    integer, intent(in)                        :: unit
+    type(mode_par_t), allocatable, intent(out) :: mp(:)
 
     integer                :: n_mp
     integer                :: i
@@ -118,9 +118,9 @@ contains
 
        read(unit, NML=mode)
 
-       ! Initialize the modepar
+       ! Initialize the mode_par
 
-       mp(i) = modepar_t(l=l, m=m, n_pg_min=n_pg_min, n_pg_max=n_pg_max, tag=tag)
+       mp(i) = mode_par_t(l=l, m=m, n_pg_min=n_pg_min, n_pg_max=n_pg_max, tag=tag)
 
     end do read_loop
 
@@ -128,7 +128,7 @@ contains
 
     return
 
-  end subroutine read_modepar
+  end subroutine read_mode_par
 
 !****
 
@@ -140,10 +140,10 @@ contains
 
   subroutine bcast_${RANK}_ (op, root_rank)
 
-    type(modepar_t), intent(inout) :: op$ARRAY_SPEC($RANK)
-    integer, intent(in)            :: root_rank
+    type(mode_par_t), intent(inout) :: op$ARRAY_SPEC($RANK)
+    integer, intent(in)             :: root_rank
 
-    ! Broadcast the modepar_t
+    ! Broadcast the mode_par_t
 
     call bcast(op%l, root_rank)
     call bcast(op%m, root_rank)
@@ -164,9 +164,9 @@ contains
 
 !****
 
-  $BCAST_ALLOC(type(modepar_t),0)
-  $BCAST_ALLOC(type(modepar_t),1)
+  $BCAST_ALLOC(type(mode_par_t),0)
+  $BCAST_ALLOC(type(mode_par_t),1)
 
   $endif
 
-end module gyre_modepar
+end module gyre_mode_par

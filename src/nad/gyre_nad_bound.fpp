@@ -1,7 +1,7 @@
 ! Incfile  : gyre_nad_bound
 ! Purpose  : boundary conditions (nonadiabatic)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -27,7 +27,7 @@ module gyre_nad_bound
   use gyre_bound
   use gyre_jacob
   use gyre_model
-  use gyre_oscpar
+  use gyre_osc_par
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -90,7 +90,7 @@ contains
     class(model_t), pointer, intent(in) :: ml
     class(c_rot_t), intent(in)          :: rt
     class(c_jacob_t), intent(in)        :: jc
-    type(oscpar_t), intent(in)          :: op
+    type(osc_par_t), intent(in)         :: op
     real(WP)                            :: x_i
     real(WP)                            :: x_o
     type(nad_bound_t)                   :: bd

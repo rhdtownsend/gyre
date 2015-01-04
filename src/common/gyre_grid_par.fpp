@@ -1,7 +1,7 @@
-! Module   : gyre_gridpar
+! Module   : gyre_grid_par
 ! Purpose  : grid parameters
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -18,7 +18,7 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_gridpar
+module gyre_grid_par
 
   ! Uses
 
@@ -32,7 +32,7 @@ module gyre_gridpar
 
   ! Derived-type definitions
 
-  type :: gridpar_t
+  type :: grid_par_t
      real(WP)                :: x_i = 0._WP
      real(WP)                :: x_o = 1._WP
      real(WP)                :: alpha_osc = 0._WP
@@ -44,7 +44,7 @@ module gyre_gridpar
      character(FILENAME_LEN) :: file
      character(64)           :: op_type
      character(2048)         :: tag_list
-  end type gridpar_t
+  end type grid_par_t
 
   ! Interfaces
 
@@ -66,9 +66,9 @@ module gyre_gridpar
 
   private
 
-  public :: gridpar_t
-  public :: read_shoot_gridpar
-  public :: read_recon_gridpar
+  public :: grid_par_t
+  public :: read_shoot_grid_par
+  public :: read_recon_grid_par
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -80,14 +80,14 @@ contains
 
 !****
 
-  $define $READ_GRIDPAR $sub
+  $define $READ_GRID_PAR $sub
 
   $local $NAME $1
 
-  subroutine read_${NAME}_gridpar (unit, gp)
+  subroutine read_${NAME}_grid_par (unit, gp)
 
-    integer, intent(in)                       :: unit
-    type(gridpar_t), allocatable, intent(out) :: gp(:)
+    integer, intent(in)                        :: unit
+    type(grid_par_t), allocatable, intent(out) :: gp(:)
 
     integer                     :: n_gp
     integer                     :: i
@@ -140,9 +140,9 @@ contains
 
        read(unit, NML=${NAME}_grid)
 
-       ! Initialize the gridpar
+       ! Initialize the grid_par
 
-       gp(i) = gridpar_t(alpha_osc=alpha_osc, &
+       gp(i) = grid_par_t(alpha_osc=alpha_osc, &
                          alpha_exp=alpha_exp, &
                          alpha_thm=alpha_thm, alpha_str=alpha_str, &
                          s=s, &
@@ -157,12 +157,12 @@ contains
 
     return
 
-  end subroutine read_${NAME}_gridpar
+  end subroutine read_${NAME}_grid_par
 
   $endsub
 
-  $READ_GRIDPAR(shoot)
-  $READ_GRIDPAR(recon)
+  $READ_GRID_PAR(shoot)
+  $READ_GRID_PAR(recon)
 
 !****
 
@@ -174,10 +174,10 @@ contains
 
   subroutine bcast_${RANK}_ (gp, root_rank)
 
-    type(gridpar_t), intent(inout) :: gp$ARRAY_SPEC($RANK)
-    integer, intent(in)            :: root_rank
+    type(grid_par_t), intent(inout) :: gp$ARRAY_SPEC($RANK)
+    integer, intent(in)             :: root_rank
 
-    ! Broadcast the gridpar_t
+    ! Broadcast the grid_par_t
 
     call bcast(gp%x_i, root_rank)
     call bcast(gp%x_o, root_rank)
@@ -212,9 +212,9 @@ contains
 
 !****
 
-  $BCAST_ALLOC(type(gridpar_t),0)
-  $BCAST_ALLOC(type(gridpar_t),1)
+  $BCAST_ALLOC(type(grid_par_t),0)
+  $BCAST_ALLOC(type(grid_par_t),1)
 
   $endif
 
-end module gyre_gridpar
+end module gyre_grid_par

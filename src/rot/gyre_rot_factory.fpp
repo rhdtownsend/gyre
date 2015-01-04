@@ -1,7 +1,7 @@
 ! Incfile  : gyre_rot_factory
 ! Purpose  : factory procedures for r_rot_t and c_rot_t types
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,8 +24,8 @@ module gyre_rot_factory
   use core_kinds
 
   use gyre_model
-  use gyre_modepar
-  use gyre_oscpar
+  use gyre_mode_par
+  use gyre_osc_par
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -66,8 +66,8 @@ contains
     use gyre_trad_rot
 
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(oscpar_t), intent(in)          :: op
+    type(mode_par_t), intent(in)        :: mp
+    type(osc_par_t), intent(in)         :: op
     class(${T}_rot_t), allocatable      :: rt
     
     ! Create a ${T}_rot_t

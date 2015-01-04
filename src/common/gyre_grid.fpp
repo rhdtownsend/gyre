@@ -1,7 +1,7 @@
 ! Module   : gyre_grid
 ! Purpose  : grid construction
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,10 +26,10 @@ module gyre_grid
   use core_func
   use core_order
 
-  use gyre_gridpar
+  use gyre_grid_par
   use gyre_model
-  use gyre_modepar
-  use gyre_oscpar
+  use gyre_mode_par
+  use gyre_osc_par
   use gyre_rot
   use gyre_rot_factory
   use gyre_util
@@ -73,10 +73,10 @@ contains
 
   subroutine build_grid (gp, ml, mp, op, omega, x_in, x, verbose)
 
-    type(gridpar_t), intent(in)         :: gp(:)
+    type(grid_par_t), intent(in)        :: gp(:)
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(oscpar_t), intent(in)          :: op
+    type(mode_par_t), intent(in)        :: mp
+    type(osc_par_t), intent(in)         :: op
     real(WP), intent(in)                :: omega(:)
     real(WP), allocatable, intent(in)   :: x_in(:)
     real(WP), allocatable, intent(out)  :: x(:)
@@ -86,7 +86,7 @@ contains
     integer :: n_in
     integer :: i
 
-    $ASSERT(SIZE(gp) >= 1,Empty gridpars)
+    $ASSERT(SIZE(gp) >= 1,Empty grid_par_t)
 
     if(PRESENT(verbose)) then
        write_info = verbose .AND. check_log_level('INFO')
@@ -94,7 +94,7 @@ contains
        write_info = check_log_level('DEBUG')
     endif
 
-    ! Build a grid using the supplied list of gridpars
+    ! Build a grid using the supplied list of grid_par_t
 
     if(write_info) then
 
@@ -493,8 +493,8 @@ contains
   subroutine resample_dispersion_ (ml, mp, op, omega, alpha_osc, alpha_exp, x)
 
     class(model_t), pointer, intent(in)  :: ml
-    type(modepar_t), intent(in)          :: mp
-    type(oscpar_t), intent(in)           :: op
+    type(mode_par_t), intent(in)         :: mp
+    type(osc_par_t), intent(in)          :: op
     real(WP), intent(in)                 :: omega(:)
     real(WP), intent(in)                 :: alpha_osc
     real(WP), intent(in)                 :: alpha_exp
@@ -623,8 +623,8 @@ contains
   subroutine resample_thermal_ (ml, mp, op, omega, alpha_thm, x)
 
     class(model_t), pointer, intent(in)  :: ml
-    type(modepar_t), intent(in)          :: mp
-    type(oscpar_t), intent(in)           :: op
+    type(mode_par_t), intent(in)         :: mp
+    type(osc_par_t), intent(in)          :: op
     real(WP), intent(in)                 :: omega(:)
     real(WP), intent(in)                 :: alpha_thm
     real(WP), allocatable, intent(inout) :: x(:)
@@ -706,8 +706,8 @@ contains
   subroutine resample_center_ (ml, mp, op, omega, n, x)
 
     class(model_t), pointer,  intent(in) :: ml
-    type(modepar_t), intent(in)          :: mp
-    type(oscpar_t), intent(in)           :: op
+    type(mode_par_t), intent(in)         :: mp
+    type(osc_par_t), intent(in)          :: op
     real(WP), intent(in)                 :: omega(:)
     integer, intent(in)                  :: n
     real(WP), allocatable, intent(inout) :: x(:)
@@ -865,8 +865,8 @@ contains
 
     real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(oscpar_t), intent(in)          :: op
+    type(mode_par_t), intent(in)        :: mp
+    type(osc_par_t), intent(in)         :: op
     real(WP), intent(in)                :: omega
     real(WP)                            :: x_turn
 

@@ -1,7 +1,7 @@
 ! Module   : gyre_mode
 ! Purpose  : mode data
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -33,8 +33,8 @@ module gyre_mode
   $if ($MPI)
   use gyre_model_mpi
   $endif
-  use gyre_modepar
-  use gyre_oscpar
+  use gyre_mode_par
+  use gyre_osc_par
   use gyre_rot
   use gyre_util
 
@@ -49,8 +49,8 @@ module gyre_mode
   type :: mode_t
      class(model_t), pointer     :: ml => null()
      class(c_rot_t), allocatable :: rt
-     type(modepar_t)             :: mp
-     type(oscpar_t)              :: op
+     type(mode_par_t)            :: mp
+     type(osc_par_t)             :: op
      type(c_ext_t)               :: discrim
      type(r_ext_t)               :: chi
      real(WP), allocatable       :: x(:)
@@ -142,8 +142,8 @@ contains
     use gyre_rot_factory
 
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(oscpar_t), intent(in)          :: op
+    type(mode_par_t), intent(in)        :: mp
+    type(osc_par_t), intent(in)         :: op
     complex(WP), intent(in)             :: omega
     type(c_ext_t), intent(in)           :: discrim
     real(WP), intent(in)                :: x(:)

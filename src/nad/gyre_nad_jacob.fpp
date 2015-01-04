@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_jacob
 ! Purpose  : jacobian evaluation (nonadiabatic)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,7 +26,7 @@ module gyre_nad_jacob
   use gyre_jacob
   use gyre_linalg
   use gyre_model
-  use gyre_oscpar
+  use gyre_osc_par
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -77,7 +77,7 @@ contains
 
     class(model_t), pointer, intent(in)     :: ml
     class(c_rot_t), allocatable, intent(in) :: rt
-    type(oscpar_t), intent(in)              :: op
+    type(osc_par_t), intent(in)             :: op
     type(nad_jacob_t)                       :: jc
 
     ! Construct the nad_jacob_t

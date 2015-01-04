@@ -1,7 +1,7 @@
 ! Program  : gyre_output
 ! Purpose  : output routines
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -28,7 +28,7 @@ module gyre_output
   use gyre_model
   use gyre_evol_model
   use gyre_poly_model
-  use gyre_outpar
+  use gyre_out_par
   use gyre_mode
   use gyre_util
   use gyre_writer
@@ -52,8 +52,8 @@ contains
 
   subroutine write_summary (up, md)
 
-    type(outpar_t), intent(in)     :: up
-    type(mode_t), intent(in)       :: md(:)
+    type(out_par_t), intent(in) :: up
+    type(mode_t), intent(in)    :: md(:)
 
     class(writer_t), allocatable                      :: wr
     character(LEN(up%summary_item_list)), allocatable :: items(:)
@@ -208,9 +208,9 @@ contains
 
   subroutine write_mode (up, md, j)
 
-    type(outpar_t), intent(in)     :: up
-    type(mode_t), intent(in)       :: md
-    integer, intent(in)            :: j
+    type(out_par_t), intent(in) :: up
+    type(mode_t), intent(in)    :: md
+    integer, intent(in)         :: j
 
     character(:), allocatable                      :: mode_file
     character(64)                                  :: infix

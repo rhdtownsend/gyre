@@ -1,7 +1,7 @@
 ! Program  : gyre_nad
 ! Purpose  : nonadiabatic oscillation code
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,17 +30,17 @@ program gyre_nad
   use gyre_ext
   use gyre_input
   use gyre_grid
-  use gyre_gridpar
+  use gyre_grid_par
   use gyre_mode
+  use gyre_mode_par
   use gyre_model
-  use gyre_modepar
   use gyre_nad_bvp
-  use gyre_oscpar
-  use gyre_outpar
+  use gyre_osc_par
+  use gyre_out_par
   use gyre_output
-  use gyre_numpar
+  use gyre_num_par
   use gyre_rad_bvp
-  use gyre_scanpar
+  use gyre_scan_par
   use gyre_search
   use gyre_trad
   use gyre_util
@@ -54,36 +54,36 @@ program gyre_nad
 
   ! Variables
 
-  character(:), allocatable    :: filename
-  character(:), allocatable    :: gyre_dir
-  integer                      :: unit
-  real(WP), allocatable        :: x_ml(:)
-  class(model_t), pointer      :: ml => null()
-  type(modepar_t), allocatable :: mp(:)
-  type(oscpar_t), allocatable  :: op(:)
-  type(numpar_t), allocatable  :: np(:)
-  type(gridpar_t), allocatable :: shoot_gp(:)
-  type(gridpar_t), allocatable :: recon_gp(:)
-  type(scanpar_t), allocatable :: sp(:)
-  type(outpar_t)               :: up
-  integer                      :: i
-  type(oscpar_t), allocatable  :: op_sel(:)
-  type(numpar_t), allocatable  :: np_sel(:)
-  type(gridpar_t), allocatable :: shoot_gp_sel(:)
-  type(gridpar_t), allocatable :: recon_gp_sel(:)
-  type(scanpar_t), allocatable :: sp_sel(:)
-  real(WP)                     :: x_i
-  real(WP)                     :: x_o
-  real(WP), allocatable        :: omega(:)
-  real(WP), allocatable        :: x_sh(:)
-  class(r_bvp_t), allocatable  :: ad_bp
-  class(c_bvp_t), allocatable  :: nad_bp
-  integer                      :: n_md_ad
-  integer                      :: d_md_ad
-  type(mode_t), allocatable    :: md_ad(:)
-  integer                      :: n_md_nad
-  integer                      :: d_md_nad
-  type(mode_t), allocatable    :: md_nad(:)
+  character(:), allocatable     :: filename
+  character(:), allocatable     :: gyre_dir
+  integer                       :: unit
+  real(WP), allocatable         :: x_ml(:)
+  class(model_t), pointer       :: ml => null()
+  type(mode_par_t), allocatable :: mp(:)
+  type(osc_par_t), allocatable  :: op(:)
+  type(num_par_t), allocatable  :: np(:)
+  type(grid_par_t), allocatable :: shoot_gp(:)
+  type(grid_par_t), allocatable :: recon_gp(:)
+  type(scan_par_t), allocatable :: sp(:)
+  type(out_par_t)               :: up
+  integer                       :: i
+  type(osc_par_t), allocatable  :: op_sel(:)
+  type(num_par_t), allocatable  :: np_sel(:)
+  type(grid_par_t), allocatable :: shoot_gp_sel(:)
+  type(grid_par_t), allocatable :: recon_gp_sel(:)
+  type(scan_par_t), allocatable :: sp_sel(:)
+  real(WP)                      :: x_i
+  real(WP)                      :: x_o
+  real(WP), allocatable         :: omega(:)
+  real(WP), allocatable         :: x_sh(:)
+  class(r_bvp_t), allocatable   :: ad_bp
+  class(c_bvp_t), allocatable   :: nad_bp
+  integer                       :: n_md_ad
+  integer                       :: d_md_ad
+  type(mode_t), allocatable     :: md_ad(:)
+  integer                       :: n_md_nad
+  integer                       :: d_md_nad
+  type(mode_t), allocatable     :: md_nad(:)
 
   ! Initialize
 
@@ -119,15 +119,15 @@ program gyre_nad
 
   call read_model(unit, x_ml, ml)
   call read_constants(unit)
-  call read_modepar(unit, mp)
-  call read_oscpar(unit, op)
-  call read_numpar(unit, np)
-  call read_shoot_gridpar(unit, shoot_gp)
-  call read_recon_gridpar(unit, recon_gp)
-  call read_scanpar(unit, sp)
-  call read_outpar(unit, up)
+  call read_mode_par(unit, mp)
+  call read_osc_par(unit, op)
+  call read_num_par(unit, np)
+  call read_shoot_grid_par(unit, shoot_gp)
+  call read_recon_grid_par(unit, recon_gp)
+  call read_scan_par(unit, sp)
+  call read_out_par(unit, up)
 
-  ! Loop through modepars
+  ! Loop through mp
 
   d_md_ad = 128
   n_md_ad = 0

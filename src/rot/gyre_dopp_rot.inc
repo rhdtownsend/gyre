@@ -1,7 +1,7 @@
 ! Incfile  : gyre_dopp_rot
 ! Purpose  : rotational effects (Doppler shift, template)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -29,7 +29,7 @@ module gyre_${T}_dopp_rot
   use core_kinds
 
   use gyre_model
-  use gyre_modepar
+  use gyre_mode_par
   use gyre_rot
 
   ! No implicit typing
@@ -69,7 +69,7 @@ contains
   function ${T}_dopp_rot_t_ (ml, mp) result (rt)
 
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
+    type(mode_par_t), intent(in)        :: mp
     type(${T}_dopp_rot_t)               :: rt
 
     ! Construct the dopp_rot_t

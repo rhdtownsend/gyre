@@ -1,7 +1,7 @@
 ! Module   : gyre_c_band_sysmtx
 ! Purpose  : system matrix (band storage, complex)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General

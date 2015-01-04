@@ -1,7 +1,7 @@
-! Module   : gyre_scanpar
+! Module   : gyre_scan_par
 ! Purpose  : frequency scan parameters
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -18,7 +18,7 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_scanpar
+module gyre_scan_par
 
   ! Uses
 
@@ -31,7 +31,7 @@ module gyre_scanpar
 
   ! Derived-type definitions
 
-  type :: scanpar_t
+  type :: scan_par_t
      real(WP)        :: freq_min
      real(WP)        :: freq_max
      integer         :: n_freq
@@ -40,7 +40,7 @@ module gyre_scanpar
      character(64)   :: freq_units
      character(64)   :: freq_frame
      character(2048) :: tag_list
-  end type scanpar_t
+  end type scan_par_t
 
   ! Interfaces
 
@@ -62,8 +62,8 @@ module gyre_scanpar
 
   private
 
-  public :: scanpar_t
-  public :: read_scanpar
+  public :: scan_par_t
+  public :: read_scan_par
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -73,10 +73,10 @@ module gyre_scanpar
 
 contains
 
-  subroutine read_scanpar (unit, sp)
+  subroutine read_scan_par (unit, sp)
 
-    integer, intent(in)                       :: unit
-    type(scanpar_t), allocatable, intent(out) :: sp(:)
+    integer, intent(in)                        :: unit
+    type(scan_par_t), allocatable, intent(out) :: sp(:)
 
     integer                       :: n_sp
     integer                       :: i
@@ -127,9 +127,9 @@ contains
 
        read(unit, NML=scan)
 
-       ! Initialize the scanpar
+       ! Initialize the scan_par
 
-       sp(i) = scanpar_t(freq_min=freq_min, &
+       sp(i) = scan_par_t(freq_min=freq_min, &
                          freq_max=freq_max, &
                          n_freq=n_freq, &
                          freq_units=freq_units, &
@@ -144,7 +144,7 @@ contains
 
     return
 
-  end subroutine read_scanpar
+  end subroutine read_scan_par
 
 !****
 
@@ -156,10 +156,10 @@ contains
 
   subroutine bcast_${RANK}_ (sp, root_rank)
 
-    type(scanpar_t), intent(inout) :: sp$ARRAY_SPEC($RANK)
-    integer, intent(in)            :: root_rank
+    type(scan_par_t), intent(inout) :: sp$ARRAY_SPEC($RANK)
+    integer, intent(in)             :: root_rank
 
-    ! Broadcast the scanpar_t
+    ! Broadcast the scan_par_t
 
     call bcast(sp%freq_min, root_rank)
     call bcast(sp%freq_max, root_rank)
@@ -183,9 +183,9 @@ contains
 
 !****
 
-  $BCAST_ALLOC(type(scanpar_t),0)
-  $BCAST_ALLOC(type(scanpar_t),1)
+  $BCAST_ALLOC(type(scan_par_t),0)
+  $BCAST_ALLOC(type(scan_par_t),1)
 
   $endif
 
-end module gyre_scanpar
+end module gyre_scan_par

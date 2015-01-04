@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_jacob
 ! Purpose  : jacobian evaluation (adiabatic radial)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,7 +26,7 @@ module gyre_rad_jacob
   use gyre_jacob
   use gyre_linalg
   use gyre_model
-  use gyre_oscpar
+  use gyre_osc_par
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -79,7 +79,7 @@ contains
 
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
-    type(oscpar_t), intent(in)          :: op
+    type(osc_par_t), intent(in)         :: op
     type(rad_jacob_t)                   :: jc
 
     ! Construct the rad_jacob_t

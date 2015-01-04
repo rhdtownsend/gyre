@@ -1,7 +1,7 @@
 ! Module   : gyre_r_search
 ! Purpose  : mode searching (real)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -32,10 +32,10 @@ module gyre_r_search
   use gyre_ext
   use gyre_mode
   use gyre_model
-  use gyre_modepar
-  use gyre_numpar
-  use gyre_oscpar
-  use gyre_scanpar
+  use gyre_mode_par
+  use gyre_num_par
+  use gyre_osc_par
+  use gyre_scan_par
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -58,10 +58,10 @@ contains
     use gyre_rot
     use gyre_trad_rot
 
-    type(scanpar_t), intent(in)         :: sp(:)
+    type(scan_par_t), intent(in)        :: sp(:)
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(oscpar_t), intent(in)          :: op
+    type(mode_par_t), intent(in)        :: mp
+    type(osc_par_t), intent(in)         :: op
     real(WP), intent(in)                :: x_i
     real(WP), intent(in)                :: x_o
     real(WP), allocatable, intent(out)  :: omega(:)
@@ -75,7 +75,7 @@ contains
     real(WP), allocatable :: freq_g(:)
     integer               :: j
 
-    $ASSERT(SIZE(sp) >=1,Empty scanpars)
+    $ASSERT(SIZE(sp) >=1,Empty scan_par_t)
 
     ! Build the frequency scan grid
 
@@ -84,7 +84,7 @@ contains
 100    format(A)
     endif
 
-    ! Loop through scanpars
+    ! Loop through scan_par_t
 
     n_omega = 0
 
@@ -164,7 +164,7 @@ contains
   subroutine scan_search (bp, np, omega, process_root)
 
     class(r_bvp_t), target, intent(inout) :: bp
-    type(numpar_t), intent(in)            :: np
+    type(num_par_t), intent(in)           :: np
     real(WP), intent(in)                  :: omega(:)
     interface
        subroutine process_root (omega, n_iter, discrim_ref)

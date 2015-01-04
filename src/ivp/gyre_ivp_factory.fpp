@@ -1,7 +1,7 @@
 ! Module   : gyre_ivp_factory
 ! Purpose  : factory procedures for r_ivp_t and c_ivp_t types
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -27,7 +27,7 @@ module gyre_ivp_factory
   use gyre_findiff_ivp
   use gyre_ivp
   use gyre_jacob
-  use gyre_numpar
+  use gyre_num_par
   use gyre_magnus_ivp
 
   use ISO_FORTRAN_ENV
@@ -64,7 +64,7 @@ contains
   function ${T}_ivp_t_ (jc, np) result (iv)
 
     class(${T}_jacob_t), intent(in) :: jc
-    type(numpar_t), intent(in)      :: np
+    type(num_par_t), intent(in)     :: np
     class(${T}_ivp_t), allocatable  :: iv
     
     ! Create a ${T}_ivp_t

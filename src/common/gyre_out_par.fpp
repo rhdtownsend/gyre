@@ -1,7 +1,7 @@
-! Module   : gyre_outpar
+! Module   : gyre_out_par
 ! Purpose  : output parameters
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -18,7 +18,7 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_outpar
+module gyre_out_par
 
   ! Uses
 
@@ -35,7 +35,7 @@ module gyre_outpar
 
   ! Derived-type definitions
 
-  type :: outpar_t
+  type :: out_par_t
      character(256)          :: freq_units
      character(256)          :: freq_frame
      character(FILENAME_LEN) :: summary_file
@@ -46,7 +46,7 @@ module gyre_outpar
      character(256)          :: mode_file_format
      character(2048)         :: mode_item_list
      logical                 :: prune_modes
-  end type outpar_t
+  end type out_par_t
 
   ! Interfaces
 
@@ -68,8 +68,8 @@ module gyre_outpar
 
   private
 
-  public :: outpar_t
-  public :: read_outpar
+  public :: out_par_t
+  public :: read_out_par
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -79,10 +79,10 @@ module gyre_outpar
 
 contains
 
-  subroutine read_outpar (unit, up)
+  subroutine read_out_par (unit, up)
 
-    integer, intent(in)         :: unit
-    type(outpar_t), intent(out) :: up
+    integer, intent(in)          :: unit
+    type(out_par_t), intent(out) :: up
 
     integer                                :: n_up
     character(LEN(up%freq_units))          :: freq_units
@@ -133,9 +133,9 @@ contains
     rewind(unit)
     read(unit, NML=output)
 
-    ! Initialize the outpar
+    ! Initialize the out_par
 
-    up = outpar_t(freq_units=freq_units, &
+    up = out_par_t(freq_units=freq_units, &
                   freq_frame=freq_frame, &
                   summary_file=summary_file, &
                   summary_file_format=summary_file_format, &
@@ -150,7 +150,7 @@ contains
 
     return
 
-  end subroutine read_outpar
+  end subroutine read_out_par
 
 !****
 
@@ -162,10 +162,10 @@ contains
 
   subroutine bcast_${RANK}_ (up, root_rank)
 
-    type(outpar_t), intent(inout) :: up$ARRAY_SPEC($RANK)
-    integer, intent(in)           :: root_rank
+    type(out_par_t), intent(inout) :: up$ARRAY_SPEC($RANK)
+    integer, intent(in)            :: root_rank
 
-    ! Broadcast the outpar_t
+    ! Broadcast the out_par_t
 
     call bcast(up%freq_units, root_rank)
     call bcast(up%freq_frame, root_rank)
@@ -192,9 +192,9 @@ contains
 
 !****
 
-  $BCAST_ALLOC(type(outpar_t),0)
-  $BCAST_ALLOC(type(outpar_t),1)
+  $BCAST_ALLOC(type(out_par_t),0)
+  $BCAST_ALLOC(type(out_par_t),1)
 
   $endif
 
-end module gyre_outpar
+end module gyre_out_par
