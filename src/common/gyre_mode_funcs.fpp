@@ -683,7 +683,11 @@ contains
 
     associate(U => ml%U(x), c_1 => ml%c_1(x), l_0 => rt%l_0(omega))
 
-      I_0 = x**(l_0+1._WP)*(U*y(1) + y(4))/c_1
+      if (x /= 0._WP) then
+         I_0 = x**(l_0+1._WP)*(U*y(1) + y(4))/c_1
+      else
+         I_0 = 0._WP
+      endif
 
     end associate
 
@@ -710,10 +714,14 @@ contains
     ! modes. This expression is based on eqn. 43 of [Tak2006a]
 
     associate(U => ml%U(x), c_1 => ml%c_1(x), l_0 => rt%l_0(omega), &
-              omega_c => rt%omega_c(x, omega))
+         omega_c => rt%omega_c(x, omega))
 
-      I_1 = x**(l_0+2._WP)*(c_1*omega_c**2*U*y(1) - U*y(2) + &
-                  (U - c_1*omega_c**2 - 2._WP)*y(3) + (c_1*omega_c**2 - 1._WP)*y(4))/c_1**2
+      if (x /= 0._WP) then
+         I_1 = x**(l_0+2._WP)*(c_1*omega_c**2*U*y(1) - U*y(2) + &
+              (U - c_1*omega_c**2 - 2._WP)*y(3) + (c_1*omega_c**2 - 1._WP)*y(4))/c_1**2
+      else
+         I_1 = 0._WP
+      endif
 
     end associate
 
