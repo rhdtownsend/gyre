@@ -716,6 +716,7 @@ contains
     integer              :: j
     real(WP)             :: x_turn_j
     integer              :: i_turn
+    integer              :: n_add
     integer              :: n_x
     integer, allocatable :: dn(:)
 
@@ -738,6 +739,10 @@ contains
 
     call locate(x, x_turn, i_turn)
 
+    ! Determine how many points need to be added
+
+    n_add = MAX(n-i_turn, 0)
+
     ! Determine how many points to add to each cell
 
     n_x = SIZE(x)
@@ -747,7 +752,7 @@ contains
     dn = 0
 
     if(i_turn >= 1 .AND. i_turn < n_x) then
-       dn(:i_turn) = CEILING(n*x(i_turn+1)/x_turn/i_turn)
+       dn(:i_turn) = CEILING(n_add*(x(i_turn+1)/x_turn)/i_turn)
     endif
     
     ! Perform the resampling
