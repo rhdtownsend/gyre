@@ -176,7 +176,7 @@ contains
           $ABORT(Invalid file_format)
        end select
 
-       ec%Omega_uni = Omega_uni
+       ec%Omega_uni = SQRT(ec%R_star**3/(G_GRAVITY*ec%M_star))*Omega_uni
 
        ec%reconstruct_As = reconstruct_As
        ec%uniform_rot = uniform_rot
