@@ -87,8 +87,7 @@ module gyre_evol_model
      real(WP), public            :: M_star
      real(WP), public            :: R_star
      real(WP), public            :: L_star
-     real(WP)                    :: p_c
-     real(WP)                    :: rho_c
+     real(WP)                    :: V_2_c
      real(WP), public            :: Omega_uni
      logical, public             :: uniform_rot
      logical, public             :: reconstruct_As
@@ -100,8 +99,10 @@ module gyre_evol_model
      $PROC_DECL_GEN(rho)
      $PROC_DECL_GEN(T)
      $PROC_DECL(V)
+     $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
+     $PROC_DECL(D)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
@@ -249,7 +250,9 @@ contains
 
        ! Calculate coefficients
 
-       where(r /= 0._WP)
+       x = r/R_star
+
+       where (r /= 0._WP)
           V = G_GRAVITY*m*rho/(p*r)
           As = r**3*N2/(G_GRAVITY*m)
           U = 4._WP*PI*rho*r**3/m
@@ -262,8 +265,6 @@ contains
        end where
 
        Omega_rot_ = SQRT(R_star**3/(G_GRAVITY*M_star))*Omega_rot
-
-       x = r/R_star
 
        ! Initialize the model
 
@@ -300,8 +301,7 @@ contains
        ml%R_star = R_star
        ml%L_star = L_star
 
-       ml%p_c = p(1)
-       ml%rho_c = rho(1)
+       ml%V_2_c = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*p(1))
        ml%Omega_uni = 0._WP
 
        ml%uniform_rot = .FALSE.
@@ -319,20 +319,21 @@ contains
 
   recursive function evol_model_t_mech_coeffs_ (M_star, R_star, L_star, x, &
                                                 V, As, U, c_1, Gamma_1, &
-                                                deriv_type, add_center) result (ml)
+                                                deriv_type, add_center, V_2_c) result (ml)
 
-    real(WP), intent(in)          :: M_star
-    real(WP), intent(in)          :: R_star
-    real(WP), intent(in)          :: L_star
-    real(WP), intent(in)          :: x(:)
-    real(WP), intent(in)          :: V(:)
-    real(WP), intent(in)          :: As(:)
-    real(WP), intent(in)          :: U(:)
-    real(WP), intent(in)          :: c_1(:)
-    real(WP), intent(in)          :: Gamma_1(:)
-    character(LEN=*), intent(in)  :: deriv_type
-    logical, optional, intent(in) :: add_center
-    type(evol_model_t)            :: ml
+    real(WP), intent(in)           :: M_star
+    real(WP), intent(in)           :: R_star
+    real(WP), intent(in)           :: L_star
+    real(WP), intent(in)           :: x(:)
+    real(WP), intent(in)           :: V(:)
+    real(WP), intent(in)           :: As(:)
+    real(WP), intent(in)           :: U(:)
+    real(WP), intent(in)           :: c_1(:)
+    real(WP), intent(in)           :: Gamma_1(:)
+    character(LEN=*), intent(in)   :: deriv_type
+    logical, optional, intent(in)  :: add_center
+    real(WP), optional, intent(in) :: V_2_c
+    type(evol_model_t)             :: ml
 
     logical  :: add_center_
 
@@ -352,13 +353,13 @@ contains
 
     ! See if we need a central point
 
-    if(add_center_) then
+    if (add_center_) then
 
        ! Add a central point and initialize using recursion
        
        ml = evol_model_t(M_star, R_star, L_star, &
                          [0._WP,x], [0._WP,V], [0._WP,As], [3._WP,U], &
-                         prep_center_(x, c_1), prep_center_(x, Gamma_1), deriv_type, .FALSE.)
+                         prep_center_(x, c_1), prep_center_(x, Gamma_1), deriv_type, .FALSE., V_2_c)
 
     else
 
@@ -385,8 +386,11 @@ contains
        ml%R_star = R_star
        ml%L_star = L_star
 
-       ml%rho_c = 0._WP
-       ml%p_c = 0._WP
+       if (PRESENT(V_2_c)) then
+          ml%V_2_c = V_2_c
+       else
+          ml%V_2_c = 0._WP
+       end if
        ml%Omega_uni = 0._WP
 
        ml%uniform_rot = .FALSE.
@@ -439,7 +443,7 @@ contains
     real(WP) :: N2_reg(SIZE(r))
     real(WP) :: x(SIZE(r))
     real(WP) :: V(SIZE(r))
-    real(WP) :: V_x2(SIZE(r))
+    real(WP) :: V_2(SIZE(r))
     real(WP) :: c_p(SIZE(r))
     real(WP) :: c_rad(SIZE(r))
     real(WP) :: c_thm(SIZE(r))
@@ -507,16 +511,16 @@ contains
        x = r/R_star
 
        where(r /= 0._WP)
-          V_x2 = G_GRAVITY*m*rho/(p*r*x**2)
+          V_2 = G_GRAVITY*m*rho/(p*r*x**2)
        elsewhere
-          V_x2 = 4._WP*PI*G_GRAVITY*rho**2*R_star**2/(3._WP*p)
+          V_2 = 4._WP*PI*G_GRAVITY*rho**2*R_star**2/(3._WP*p)
        end where
 
-       V = V_x2*x**2
+       V = V_2*x**2
 
        c_p = p*delta/(rho*T*nabla_ad)
 
-       c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho*L_star)
+       c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kappa*rho*L_star)
        c_thm = 4._WP*PI*rho*T*c_p*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
 
        kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
@@ -863,6 +867,50 @@ contains
 
 !****
 
+  function V_2_1_ (this, x) result (V_2)
+
+    class(evol_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: V_2
+
+    ! Calculate V_2
+
+    if (x /= 0._WP) then
+       V_2 = this%V(x)/x**2
+    else
+       V_2 = this%V_2_c
+    end if
+
+    ! Finish
+
+    return
+
+  end function V_2_1_
+
+!****
+
+  function V_2_v_ (this, x) result (V_2)
+
+    class(evol_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: V_2(SIZE(x))
+
+    ! Calculate V_2
+
+    where (x /= 0._WP)
+       V_2 = this%V_2(x)/x**2
+    elsewhere
+       V_2 = this%V_2_c
+    end where
+
+    ! Finish
+
+    return
+
+  end function V_2_v_
+
+!****
+
   function As_1_ (this, x) result (As)
 
     class(evol_model_t), intent(in) :: this
@@ -914,6 +962,42 @@ contains
     return
 
   end function As_v_
+
+!****
+
+  function D_1_ (this, x) result (D)
+
+    class(evol_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: D
+
+    ! Calculate D = dlnrho/dlnx
+
+    D = this%U(x) - 3._WP + x*this%sp(J_U)%deriv(x)/this%U(x)
+
+    ! Finish
+
+    return
+
+  end function D_1_
+
+!****
+
+  function D_v_ (this, x) result (D)
+
+    class(evol_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: D(SIZE(x))
+
+    ! Calculate D = dlnrho/dlnx
+
+    D = this%U(x) - 3._WP + x*this%sp(J_U)%deriv(x)/this%U(x)
+
+    ! Finish
+
+    return
+
+  end function D_v_
 
 !****
 
@@ -974,11 +1058,11 @@ contains
   function pi_c_ (this) result (pi_c)
 
     class(evol_model_t), intent(in) :: this
-    real(WP)                         :: pi_c
+    real(WP)                        :: pi_c
 
     ! Calculate pi_c = V/x^2 as x -> 0
 
-    pi_c = 4._WP*PI*G_GRAVITY*this%rho(0._WP)**2*this%R_star**2/(3._WP*this%p(0._WP))
+    pi_c = this%V_2_c
 
     ! Finish
 

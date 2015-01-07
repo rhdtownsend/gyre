@@ -55,8 +55,10 @@ module gyre_poly_model
    contains
      private
      $PROC_DECL(V)
+     $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
+     $PROC_DECL(D)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
@@ -208,6 +210,54 @@ contains
 
 !****
 
+  function V_2_1_ (this, x) result (V_2)
+
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: V_2
+
+    ! Calculate V_2
+
+    if (x /= 0._WP) then
+
+       V_2 = this%V(x)/x**2
+
+    else
+
+       V_2 =  (this%n_poly + 1._WP)*this%xi_1**2/3._WP
+
+    endif
+
+    ! Finish
+
+    return
+
+  end function V_2_1_
+
+!****
+
+  function V_2_v_ (this, x) result (V_2)
+
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: V_2(SIZE(x))
+
+    integer :: i
+
+    ! Calculate V_2
+
+    x_loop : do i = 1,SIZE(x)
+       V_2(i) = this%V_2(x(i))
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  end function V_2_v_
+
+!****
+
   function As_1_ (this, x) result (As)
 
     class(poly_model_t), intent(in) :: this
@@ -298,6 +348,46 @@ contains
     return
 
   end function U_v_
+
+!****
+
+  function D_1_ (this, x) result (D)
+
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: D
+
+    ! Calculate D = dlnrho/dlnx
+
+    D = -this%As(x) - this%V(x)/this%Gamma_1(x)
+
+    ! Finish
+
+    return
+
+  end function D_1_
+
+!****
+
+  function D_v_ (this, x) result (D)
+
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: D(SIZE(x))
+
+    integer :: i
+
+    ! Calculate D = dlnrho/dlnx
+
+    x_loop : do i = 1,SIZE(x)
+       D(i) = this%D(x(i))
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  end function D_v_
 
 !****
 

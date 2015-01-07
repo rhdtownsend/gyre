@@ -40,8 +40,10 @@ module gyre_model
    contains
      private
      $PROC_DECL(V)
+     $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
+     $PROC_DECL(D)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
