@@ -40,6 +40,7 @@ module gyre_ad_jacob
   integer, parameter :: DZIEM_VARS = 1
   integer, parameter :: JCD_VARS = 2
   integer, parameter :: MIX_VARS = 3
+  integer, parameter :: LAGP_VARS = 4
 
   ! Derived-type definitions
 
@@ -55,9 +56,11 @@ module gyre_ad_jacob
      procedure         :: xA_dziem_
      procedure         :: xA_jcd_
      procedure         :: xA_mix_
+     procedure         :: xA_lagp_
      procedure, public :: T => T_
      procedure         :: T_jcd_
      procedure         :: T_mix_
+     procedure         :: T_lagp_
   end type ad_jacob_t
 
   ! Interfaces
@@ -95,6 +98,8 @@ contains
        jc%vars = JCD_VARS
     case ('MIX')
        jc%vars = MIX_VARS
+    case ('LAGP')
+       jc%vars = LAGP_VARS
     case default
        $ABORT(Invalid variables_set)
     end select
@@ -144,6 +149,8 @@ contains
        xA = this%xA_jcd_(x, omega)
     case (MIX_VARS)
        xA = this%xA_mix_(x, omega)
+    case (LAGP_VARS)
+       xA = this%xA_lagp_(x, omega)
     case default
        $ABORT(Invalid vars)
     end select
@@ -166,9 +173,9 @@ contains
     ! Evaluate the log(x)-space Jacobian matrix ([Dzi1971]
     ! formulation)
 
-    associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-              As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-              lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+    associate (V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
+               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
+               lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
       xA(1,1) = V_g - 1._WP - l_0
       xA(1,2) = lambda/(c_1*omega_c**2) - V_g
@@ -210,9 +217,9 @@ contains
     ! Evaluate the log(x)-space Jacobian matrix ([Chr2008]
     ! formulation)
 
-    associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-              As => this%ml%As(x), c_1 => this%ml%c_1(x), l => this%rt%mp%l, &
-              lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+    associate (V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
+               As => this%ml%As(x), c_1 => this%ml%c_1(x), l => this%rt%mp%l, &
+               lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
       if (l /= 0) then
 
@@ -279,9 +286,9 @@ contains
     
     ! Evaluate the log(x)-space Jacobian matrix (mixed formulation)
 
-    associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-              As => this%ml%As(x), c_1 => this%ml%c_1(x), & 
-              lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+    associate (V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
+               As => this%ml%As(x), c_1 => this%ml%c_1(x), & 
+               lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
 
       xA(1,1) = V_g - 1._WP - l_0
       xA(1,2) = lambda/(c_1*omega_c**2) - V_g
@@ -313,6 +320,50 @@ contains
 
 !****
 
+  function xA_lagp_ (this, x, omega) result (xA)
+
+    class(ad_jacob_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    real(WP), intent(in)          :: omega
+    real(WP)                      :: xA(this%n_e,this%n_e)
+    
+    ! Evaluate the log(x)-space Jacobian matrix (Lagrangian pressure
+    ! perturbation formulation)
+
+    associate (V_2 => this%ml%V_2(x), V => this%ml%V(x), V_g => this%ml%V(x)/this%ml%Gamma_1(x), Gamma_1 => this%ml%Gamma_1(x), &
+               U => this%ml%U(x), D => this%ml%D(x), c_1 => this%ml%c_1(x), &
+               lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+
+      xA(1,1) = lambda/(c_1*omega_c**2) - 1._WP - l_0
+      xA(1,2) = (lambda/(c_1*omega_c**2) - V_g)/V_2
+      xA(1,3) = lambda/(c_1*omega_c**2)
+      xA(1,4) = 0._WP
+      
+      xA(2,1) = -V_2*(lambda/(c_1*omega_c**2) - c_1*omega_c**2 + U - 4._WP)
+      xA(2,2) = -lambda/(c_1*omega_c**2) + V - l_0
+      xA(2,3) = -V_2*lambda/(c_1*omega_c**2)
+      xA(2,4) = -V_2
+      
+      xA(3,1) = 0._WP
+      xA(3,2) = 0._WP
+      xA(3,3) = 3._WP - U - l_0
+      xA(3,4) = 1._WP
+      
+      xA(4,1) = -U*D
+      xA(4,2) = U*x**2/Gamma_1
+      xA(4,3) = lambda
+      xA(4,4) = -U - l_0 + 2._WP
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function xA_lagp_
+  
+!****
+
   function T_ (this, x, omega, to_canon) result (T)
 
     class(ad_jacob_t), intent(in) :: this
@@ -331,6 +382,8 @@ contains
        T = this%T_jcd_(x, omega, to_canon)
     case (MIX_VARS)
        T = this%T_mix_(x, omega, to_canon)
+    case (LAGP_VARS)
+       T = this%T_lagp_(x, omega, to_canon)
     case default
        $ABORT(Invalid vars)
     end select
@@ -354,8 +407,8 @@ contains
     ! Calculate the transformation matrix to convert JCD variables
     ! to/from the canonical (DZEIM) formulation
 
-    associate(U => this%ml%U(x), c_1 => this%ml%c_1(x), l => this%rt%mp%l, &
-              lambda => this%rt%lambda(x, omega), omega_c => this%rt%omega_c(x, omega))
+    associate (U => this%ml%U(x), c_1 => this%ml%c_1(x), l => this%rt%mp%l, &
+               lambda => this%rt%lambda(x, omega), omega_c => this%rt%omega_c(x, omega))
       
       if (to_canon) then
 
@@ -476,7 +529,7 @@ contains
     ! Calculate the transformation matrix to convert MIX variables
     ! to/from the canonical (DZEIM) formulation
 
-    associate(U => this%ml%U(x))
+    associate (U => this%ml%U(x))
 
       if (to_canon) then
 
@@ -531,5 +584,74 @@ contains
     return
 
   end function T_mix_
+
+!****
+
+  function T_lagp_ (this, x, omega, to_canon) result (T)
+
+    class(ad_jacob_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    real(WP), intent(in)          :: omega
+    logical, intent(in)           :: to_canon
+    real(WP)                      :: T(this%n_e,this%n_e)
+
+    ! Calculate the transformation matrix to convert LAGP variables
+    ! to/from the canonical (DZEIM) formulation
+
+    associate (V_2 => this%ml%V_2(x))
+
+      if (to_canon) then
+
+         T(1,1) = 1._WP
+         T(1,2) = 0._WP
+         T(1,3) = 0._WP
+         T(1,4) = 0._WP
+
+         T(2,1) = 1._WP
+         T(2,2) = 1._WP/V_2
+         T(2,3) = 1._WP
+         T(2,4) = 0._WP
+
+         T(3,1) = 0._WP
+         T(3,2) = 0._WP
+         T(3,3) = 1._WP
+         T(3,4) = 0._WP
+
+         T(4,1) = 0._WP
+         T(4,2) = 0._WP
+         T(4,3) = 0._WP
+         T(4,4) = 1._WP
+
+      else
+
+         T(1,1) = 1._WP
+         T(1,2) = 0._WP
+         T(1,3) = 0._WP
+         T(1,4) = 0._WP
+
+         T(2,1) = -V_2
+         T(2,2) = V_2
+         T(2,3) = -V_2
+         T(2,4) = 0._WP
+
+         T(3,1) = 0._WP
+         T(3,2) = 0._WP
+         T(3,3) = 1._WP
+         T(3,4) = 0._WP
+
+         T(4,1) = 0._WP
+         T(4,2) = 0._WP
+         T(4,3) = 0._WP
+         T(4,4) = 1._WP
+
+      end if
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function T_lagp_
 
 end module gyre_ad_jacob
