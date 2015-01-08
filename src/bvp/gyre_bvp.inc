@@ -30,7 +30,6 @@ module gyre_${T}_bvp
   use core_order
 
   use gyre_bound
-  use gyre_cocache
   use gyre_ext
   use gyre_ivp
   use gyre_jacob
@@ -48,7 +47,6 @@ module gyre_${T}_bvp
 
   type :: ${T}_bvp_t
      class(model_t), pointer           :: ml => null()
-     type(cocache_t)                   :: cc
      class(${T}_jacob_t), allocatable  :: jc
      class(${T}_bound_t), allocatable  :: bd
      class(${T}_ivp_t), allocatable    :: iv
@@ -90,8 +88,6 @@ contains
     class(${T}_sysmtx_t), intent(in)    :: sm
     type(${T}_bvp_t), target            :: bp
 
-    real(WP), allocatable :: x_cc(:)
-
     $CHECK_BOUNDS(bd%n_e,jc%n_e)
 
     $CHECK_BOUNDS(iv%n_e,jc%n_e)
@@ -114,14 +110,6 @@ contains
     bp%x = x
     allocate(bp%y(bp%n_e,bp%n))
     
-    ! Set up the coefficient cache
-
-    x_cc = [bp%x(1),bp%abscissa(),bp%x(bp%n)]
-
-    call bp%ml%attach_cache(bp%cc)
-    call bp%ml%fill_cache(x_cc)
-    call bp%ml%detach_cache()
-
     ! Finish
     
     return
@@ -163,10 +151,6 @@ contains
     
     ! Build the sysmtx
 
-    ! Attach the cache
-
-    call this%ml%attach_cache(this%cc)
-
     ! Boundary conditions
 
     call this%sm%set_B_i(this%bd%B_i(omega), ${T}_ext_t(1._WP))
@@ -179,10 +163,6 @@ contains
        call this%iv%shoot(omega, this%x(k), this%x(k+1), E_l, E_r, S)
        call this%sm%set_E(k, E_l, E_r, S)
     end do sub_loop
-
-    ! Detach the cache
-
-    call this%ml%detach_cache()
 
     ! Finish
 
