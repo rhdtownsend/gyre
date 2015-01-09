@@ -94,6 +94,10 @@ contains
     logical, parameter :: RESCALE_THERM = .TRUE.
 
     real(WP)    :: x
+    real(WP)    :: V
+    real(WP)    :: nabla
+    real(WP)    :: c_rad
+    real(WP)    :: c_thm
     complex(WP) :: lambda
 
     ! Set up the shooting matrices and scales
@@ -107,10 +111,12 @@ contains
 
        x = MINVAL(this%abscissa(x_a, x_b))
 
-       associate(V => this%ml%V(x), nabla => this%ml%nabla(x), &
-                c_rad => this%ml%c_rad(x), c_thm => this%ml%c_thm(x))
-         lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x
-       end associate
+       V = this%ml%V_2(x)*x**2
+       nabla = this%ml%nabla(x)
+       c_rad = this%ml%c_rad(x)
+       c_thm = this%ml%c_thm(x)
+       
+       lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x
 
        S = S*exp(c_ext_t(-lambda*(x_b - x_a)))
 
