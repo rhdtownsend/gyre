@@ -48,7 +48,6 @@ module gyre_hom_model
      logical, public  :: uniform_rot
    contains
      private
-     $PROC_DECL(V)
      $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -68,7 +67,6 @@ module gyre_hom_model
      $PROC_DECL(kappa_S)
      $PROC_DECL(tau_thm)
      $PROC_DECL(Omega_rot)
-     procedure, public :: pi_c => pi_c_
      procedure, public :: is_zero => is_zero_
      procedure, public :: attach_cache => attach_cache_
      procedure, public :: detach_cache => detach_cache_
@@ -121,46 +119,6 @@ contains
 
 !****
 
-  function V_1_ (this, x) result (V)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: V
-
-    ! Calculate V
-
-    V = 2._WP*x**2/(1._WP - x**2)
-
-    ! Finish
-
-    return
-
-  end function V_1_
-
-!****
-  
-  function V_v_ (this, x) result (V)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: V(SIZE(x))
-
-    integer :: i
-
-    ! Calculate V
-
-    x_loop : do i = 1,SIZE(x)
-       V(i) = this%V(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function V_v_
-
-!****
-
   function V_2_1_ (this, x) result (V_2)
 
     class(hom_model_t), intent(in) :: this
@@ -169,15 +127,7 @@ contains
 
     ! Calculate V_2
 
-    if (x /= 0._WP) then
-
-       V_2 = this%V(x)/x**2
-
-    else
-
-       V_2 = 2._WP
-
-    endif
+    V_2 = 2._WP/(1._WP - x**2)
 
     ! Finish
 
@@ -217,7 +167,7 @@ contains
 
     ! Calculate As
 
-    As = -this%V(x)/this%dt_Gamma_1
+    As = -this%V_2(x)*x**2/this%dt_Gamma_1
 
     ! Finish
 

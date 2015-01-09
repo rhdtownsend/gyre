@@ -43,7 +43,7 @@ module gyre_evol_model
   integer, parameter :: J_P = 2
   integer, parameter :: J_RHO = 3
   integer, parameter :: J_T = 4
-  integer, parameter :: J_V = 5
+  integer, parameter :: J_V_2 = 5
   integer, parameter :: J_AS = 6
   integer, parameter :: J_U = 7
   integer, parameter :: J_C_1 = 8
@@ -87,7 +87,6 @@ module gyre_evol_model
      real(WP), public            :: M_star
      real(WP), public            :: R_star
      real(WP), public            :: L_star
-     real(WP)                    :: V_2_c
      real(WP), public            :: Omega_uni
      logical, public             :: uniform_rot
      logical, public             :: reconstruct_As
@@ -98,7 +97,6 @@ module gyre_evol_model
      $PROC_DECL_GEN(p)
      $PROC_DECL_GEN(rho)
      $PROC_DECL_GEN(T)
-     $PROC_DECL(V)
      $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -118,7 +116,6 @@ module gyre_evol_model
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
      $PROC_DECL(tau_thm)
-     procedure, public :: pi_c => pi_c_
      procedure, public :: is_zero => is_zero_
      procedure, public :: attach_cache => attach_cache_
      procedure, public :: detach_cache => detach_cache_
@@ -197,10 +194,7 @@ contains
 
     logical  :: add_center_
     integer  :: n
-    real(WP) :: m_reg(SIZE(r))
-    real(WP) :: p_reg(SIZE(r))
-    real(WP) :: N2_reg(SIZE(r))
-    real(WP) :: V(SIZE(r))
+    real(WP) :: V_2(SIZE(r))
     real(WP) :: As(SIZE(r))
     real(WP) :: U(SIZE(r))
     real(WP) :: c_1(SIZE(r))
@@ -253,12 +247,12 @@ contains
        x = r/R_star
 
        where (r /= 0._WP)
-          V = G_GRAVITY*m*rho/(p*r)
+          V_2 = G_GRAVITY*m*rho/(p*r*x**2)
           As = r**3*N2/(G_GRAVITY*m)
           U = 4._WP*PI*rho*r**3/m
           c_1 = (r/R_star)**3/(m/M_star)
        elsewhere
-          V = 0._WP
+          V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*p(1))
           As = 0._WP
           U = 3._WP
           c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
@@ -280,7 +274,7 @@ contains
        !$OMP SECTION
        call ml%set_sp_(x, T, deriv_type, J_T)
        !$OMP SECTION
-       call ml%set_sp_(x, V, deriv_type, J_V)
+       call ml%set_sp_(x, V_2, deriv_type, J_V_2)
        !$OMP SECTION
        call ml%set_sp_(x, As, deriv_type, J_AS)
        !$OMP SECTION
@@ -301,7 +295,6 @@ contains
        ml%R_star = R_star
        ml%L_star = L_star
 
-       ml%V_2_c = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*p(1))
        ml%Omega_uni = 0._WP
 
        ml%uniform_rot = .FALSE.
@@ -318,22 +311,21 @@ contains
 !****
 
   recursive function evol_model_t_mech_coeffs_ (M_star, R_star, L_star, x, &
-                                                V, As, U, c_1, Gamma_1, &
-                                                deriv_type, add_center, V_2_c) result (ml)
+                                                V_2, As, U, c_1, Gamma_1, &
+                                                deriv_type, add_center) result (ml)
 
-    real(WP), intent(in)           :: M_star
-    real(WP), intent(in)           :: R_star
-    real(WP), intent(in)           :: L_star
-    real(WP), intent(in)           :: x(:)
-    real(WP), intent(in)           :: V(:)
-    real(WP), intent(in)           :: As(:)
-    real(WP), intent(in)           :: U(:)
-    real(WP), intent(in)           :: c_1(:)
-    real(WP), intent(in)           :: Gamma_1(:)
-    character(LEN=*), intent(in)   :: deriv_type
-    logical, optional, intent(in)  :: add_center
-    real(WP), optional, intent(in) :: V_2_c
-    type(evol_model_t)             :: ml
+    real(WP), intent(in)          :: M_star
+    real(WP), intent(in)          :: R_star
+    real(WP), intent(in)          :: L_star
+    real(WP), intent(in)          :: x(:)
+    real(WP), intent(in)          :: V_2(:)
+    real(WP), intent(in)          :: As(:)
+    real(WP), intent(in)          :: U(:)
+    real(WP), intent(in)          :: c_1(:)
+    real(WP), intent(in)          :: Gamma_1(:)
+    character(LEN=*), intent(in)  :: deriv_type
+    logical, optional, intent(in) :: add_center
+    type(evol_model_t)            :: ml
 
     logical  :: add_center_
 
@@ -358,8 +350,8 @@ contains
        ! Add a central point and initialize using recursion
        
        ml = evol_model_t(M_star, R_star, L_star, &
-                         [0._WP,x], [0._WP,V], [0._WP,As], [3._WP,U], &
-                         prep_center_(x, c_1), prep_center_(x, Gamma_1), deriv_type, .FALSE., V_2_c)
+                         [0._WP,x], prep_center_(x, V_2), [0._WP,As], [3._WP,U], &
+                         prep_center_(x, c_1), prep_center_(x, Gamma_1), deriv_type, .FALSE.)
 
     else
 
@@ -369,7 +361,7 @@ contains
 
        !$OMP PARALLEL SECTIONS
        !$OMP SECTION
-       call ml%set_sp_(x, V, deriv_type, J_V)
+       call ml%set_sp_(x, V_2, deriv_type, J_V_2)
        !$OMP SECTION
        call ml%set_sp_(x, As, deriv_type, J_AS)
        !$OMP SECTION
@@ -386,11 +378,6 @@ contains
        ml%R_star = R_star
        ml%L_star = L_star
 
-       if (PRESENT(V_2_c)) then
-          ml%V_2_c = V_2_c
-       else
-          ml%V_2_c = 0._WP
-       end if
        ml%Omega_uni = 0._WP
 
        ml%uniform_rot = .FALSE.
@@ -438,12 +425,9 @@ contains
 
     logical  :: add_center_
     integer  :: n
-    real(WP) :: m_reg(SIZE(r))
-    real(WP) :: p_reg(SIZE(r))
-    real(WP) :: N2_reg(SIZE(r))
     real(WP) :: x(SIZE(r))
-    real(WP) :: V(SIZE(r))
     real(WP) :: V_2(SIZE(r))
+    real(WP) :: V(SIZE(r))
     real(WP) :: c_p(SIZE(r))
     real(WP) :: c_rad(SIZE(r))
     real(WP) :: c_thm(SIZE(r))
@@ -769,7 +753,7 @@ contains
   $PROC(p)
   $PROC(rho)
   $PROC(T)
-  $PROC(V)
+  $PROC(V_2)
   $PROC(U)
   $PROC(c_1)
   $PROC(Gamma_1)
@@ -867,50 +851,6 @@ contains
 
 !****
 
-  function V_2_1_ (this, x) result (V_2)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: V_2
-
-    ! Calculate V_2
-
-    if (x /= 0._WP) then
-       V_2 = this%V(x)/x**2
-    else
-       V_2 = this%V_2_c
-    end if
-
-    ! Finish
-
-    return
-
-  end function V_2_1_
-
-!****
-
-  function V_2_v_ (this, x) result (V_2)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: V_2(SIZE(x))
-
-    ! Calculate V_2
-
-    where (x /= 0._WP)
-       V_2 = this%V_2(x)/x**2
-    elsewhere
-       V_2 = this%V_2_c
-    end where
-
-    ! Finish
-
-    return
-
-  end function V_2_v_
-
-!****
-
   function As_1_ (this, x) result (As)
 
     class(evol_model_t), intent(in) :: this
@@ -927,7 +867,8 @@ contains
     else
 
        if (this%reconstruct_As) then
-          As = -this%V(x)/this%Gamma_1(x) - this%U(x) + 3._WP - x*this%sp(J_U)%deriv(x)/this%U(x)
+          As = -this%V_2(x)*x**2/this%Gamma_1(x) - this%U(x) + 3._WP - &
+               x*this%sp(J_U)%deriv(x)/this%U(x)
        else
           As =  this%sp(J_AS)%interp(x)
        endif
@@ -952,7 +893,8 @@ contains
     ! [Tak2006a] instead
 
     if (this%reconstruct_As) then
-       As = -this%V(x)/this%Gamma_1(x) - this%U(x) + 3._WP - x*this%sp(J_U)%deriv(x)/this%U(x)
+       As = -this%V_2(x)*x**2/this%Gamma_1(x) - this%U(x) + 3._WP - &
+            x*this%sp(J_U)%deriv(x)/this%U(x)
     else
        As =  this%sp(J_AS)%interp(x)
     endif
@@ -1055,23 +997,6 @@ contains
 
 !****
 
-  function pi_c_ (this) result (pi_c)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP)                        :: pi_c
-
-    ! Calculate pi_c = V/x^2 as x -> 0
-
-    pi_c = this%V_2_c
-
-    ! Finish
-
-    return
-
-  end function pi_c_
-
-!****
-
   function is_zero_ (this, x) result (is_zero)
 
     class(evol_model_t), intent(in) :: this
@@ -1160,7 +1085,7 @@ contains
     !$OMP SECTION
     if (this%sp_def(J_T)) c(J_T,:) = this%T(x)
     !$OMP SECTION
-    if (this%sp_def(J_V)) c(J_V,:) = this%V(x)
+    if (this%sp_def(J_V_2)) c(J_V_2,:) = this%V_2(x)
     !$OMP SECTION
     if (this%sp_def(J_AS)) c(J_AS,:) = this%As(x)
     !$OMP SECTION

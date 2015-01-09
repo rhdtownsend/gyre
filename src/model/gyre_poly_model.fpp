@@ -54,7 +54,6 @@ module gyre_poly_model
      logical, public  :: uniform_rot
    contains
      private
-     $PROC_DECL(V)
      $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -161,70 +160,30 @@ contains
 
 !****
 
-  function V_1_ (this, x) result (V)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: V
-
-    real(WP) :: xi
-    real(WP) :: Theta
-    real(WP) :: dTheta
-
-    ! Calculate V
-
-    xi = x*this%xi_1
-
-    Theta = this%sp_Theta%interp(xi)
-    dTheta = this%sp_dTheta%interp(xi)
-
-    V = -(this%n_poly + 1._WP)*xi*dTheta/Theta
-
-    ! Finish
-
-    return
-
-  end function V_1_
-
-!****
-
-  function V_v_ (this, x) result (V)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)             :: x(:)
-    real(WP)                         :: V(SIZE(x))
-
-    integer :: i
-
-    ! Calculate V
-
-    x_loop : do i = 1,SIZE(x)
-       V(i) = this%V(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function V_v_
-
-!****
-
   function V_2_1_ (this, x) result (V_2)
 
     class(poly_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
     real(WP)                        :: V_2
 
+    real(WP) :: xi
+    real(WP) :: Theta
+    real(WP) :: dTheta
+
     ! Calculate V_2
 
     if (x /= 0._WP) then
 
-       V_2 = this%V(x)/x**2
+       xi = x*this%xi_1
+
+       Theta = this%sp_Theta%interp(xi)
+       dTheta = this%sp_dTheta%interp(xi)
+
+       V_2 = -(this%n_poly + 1._WP)*xi*dTheta/(Theta*x**2)
 
     else
 
-       V_2 =  (this%n_poly + 1._WP)*this%xi_1**2/3._WP
+       V_2 = (this%n_poly + 1._WP)*this%xi_1**2/3._WP
 
     endif
 
@@ -234,6 +193,7 @@ contains
 
   end function V_2_1_
 
+  
 !****
 
   function V_2_v_ (this, x) result (V_2)
@@ -266,7 +226,8 @@ contains
 
     ! Calculate As
 
-    As = this%V(x)*(this%n_poly/(this%n_poly + 1._WP) - 1._WP/this%Gamma_1(x))
+    As = this%V_2(x)*x**2 * &
+         (this%n_poly/(this%n_poly + 1._WP) - 1._WP/this%Gamma_1(x))
 
     ! Finish
 
@@ -359,8 +320,8 @@ contains
 
     ! Calculate D = dlnrho/dlnx
 
-    D = -this%As(x) - this%V(x)/this%Gamma_1(x)
-
+    D = -this%V_2(x)*x**2*this%n_poly/(this%n_poly + 1._WP)
+    
     ! Finish
 
     return
