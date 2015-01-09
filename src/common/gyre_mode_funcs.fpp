@@ -304,7 +304,7 @@ contains
     ! Calculate the Eulerian pressure perturbation at x, in units of
     ! P
 
-    associate (V => ml%V(x))
+    associate (V => ml%V_2(x)*x**2)
 
       if (x /= 0._WP) then
          eul_P = lag_P(ml, rt, omega, x, y) + V*xi_r(ml, rt, omega, x, y)/x
@@ -336,23 +336,19 @@ contains
     ! Calculate the Lagrangian pressure perturbation at x, in units of
     ! P
 
-    associate (V => ml%V(x), pi_c => ml%pi_c(), l_0 => rt%l_0(omega))
+    associate (V_2 => ml%V_2(x), l_0 => rt%l_0(omega))
 
       if (l_0 /= 0._WP) then
 
          if (x /= 0._WP) then
-            lag_P = V*(y(2) - y(1) - y(3))*x**(l_0-2._WP)
+            lag_P = V_2*(y(2) - y(1) - y(3))*x**l_0
          else
             lag_P = 0._WP
          end if
 
       else
 
-         if (x /= 0._WP) then
-            lag_P = V*(y(2) - y(1) - y(3))*x**(l_0-2._WP)
-         else
-            lag_P = pi_c*(y(2) - y(1) - y(3))
-         endif
+         lag_P = V_2*(y(2) - y(1) - y(3))
 
       endif
 
@@ -380,7 +376,7 @@ contains
     ! Calculate the Eulerian density perturbation at x, in units of
     ! rho
 
-    associate (V_g => ml%V(x)/ml%Gamma_1(x), As => ml%As(x))
+    associate (V_g => ml%V_2(x)*x**2/ml%Gamma_1(x), As => ml%As(x))
 
       if (x /= 0._WP) then
          eul_rho = lag_rho(ml, rt, omega, x, y) + (V_g + As)*xi_r(ml, rt, omega, x, y)/x
@@ -440,7 +436,7 @@ contains
     ! Calculate the Lagrangian temperature perturbation at x, in units
     ! of T
 
-    associate (V => ml%V(x), nabla => ml%nabla(x), nabla_ad => ml%nabla_ad(x))
+    associate (V => ml%V_2(x)*x**2, nabla => ml%nabla(x), nabla_ad => ml%nabla_ad(x))
       
       if (x /= 0._WP) then
          eul_T = lag_T(ml, rt, omega, x, y) + nabla*V*xi_r(ml, rt, omega, x, y)/x
@@ -595,7 +591,7 @@ contains
     ! flux due to Reynolds stress, in units of G M_star**2/R_star**4.
     ! This expression is based on eqns. 8-10 of [And1983]
 
-    associate (V => ml%V(x), Gamma_1 => ml%Gamma_1(x), As => ml%As(x), U => ml%U(x), c_1 => ml%c_1(x), &
+    associate (V => ml%V_2(x)*x**2, Gamma_1 => ml%Gamma_1(x), As => ml%As(x), U => ml%U(x), c_1 => ml%c_1(x), &
                m => rt%mp%m, omega_c => rt%omega_c(x, omega))
 
       div_F_j_wave = REAL(omega_c)*AIMAG(omega_c)*m*(U/c_1)*(V/Gamma_1*c_1*REAL(omega_c)**2*ABS(xi_h(ml, rt, omega, x, y))**2 + &

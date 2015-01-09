@@ -542,7 +542,7 @@ contains
 
     wavenumber_loop : do i = 2,n_x-1
 
-       associate (V_g => ml%V(x(i))/ml%Gamma_1(x(i)), As => ml%As(x(i)), &
+       associate (V_g => ml%V_2(x(i))*x(i)**2/ml%Gamma_1(x(i)), As => ml%As(x(i)), &
                   U => ml%U(x(i)), c_1 => ml%c_1(x(i)))
 
          k_r_max(i) = 0._WP
@@ -656,7 +656,7 @@ contains
 
     wavenumber_loop : do i = 2,n_x-1
 
-       associate(V => ml%V(x(i)), nabla => ml%nabla(x(i)), &
+       associate(V => ml%V_2(x(i))*x(i)**2, nabla => ml%nabla(x(i)), &
                 c_rad => ml%c_rad(x(i)), c_thm => ml%c_thm(x(i)))
          
          k_t_max(i) = 0._WP
@@ -788,8 +788,8 @@ contains
 
     cell_loop : do i = 1, SIZE(x)-1
 
-       dn(i) = dn(i) + FLOOR(alpha_str*dlog_(ml%V(x(i)), ml%V(x(i+1)))) + &
-                       FLOOR(alpha_str*dlog_(ml%As(x(i)), ml%V(x(i+1)))) + &
+       dn(i) = dn(i) + FLOOR(alpha_str*dlog_(ml%V_2(x(i)), ml%V_2(x(i+1)))) + &
+                       FLOOR(alpha_str*dlog_(ml%As(x(i)), ml%As(x(i+1)))) + &
                        FLOOR(alpha_str*dlog_(ml%Gamma_1(x(i)), ml%Gamma_1(x(i+1)))) + &
                        FLOOR(alpha_str*dlog_(ml%c_1(x(i)), ml%c_1(x(i+1)))) + &
                        FLOOR(alpha_str*dlog_(ml%U(x(i)), ml%U(x(i+1))))
@@ -914,7 +914,7 @@ contains
 
     x = REAL(z)
 
-    associate(V_g => this%ml%V(x)/this%ml%Gamma_1(x), As => this%ml%As(x), &
+    associate(V_g => this%ml%V_2(x)*x**2/this%ml%Gamma_1(x), As => this%ml%As(x), &
               U => this%ml%U(x), c_1 => this%ml%c_1(x), &
               lambda => this%rt%lambda(x, this%omega))
 

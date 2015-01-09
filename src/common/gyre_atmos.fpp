@@ -211,7 +211,7 @@ contains
 
     ! Evaluate atmosphere coefficients (Unno et al. formulation)
 
-    V_g = ml%V(x_o)/ml%Gamma_1(x_o)
+    V_g = ml%V_2(x_o)*x_o**2/ml%Gamma_1(x_o)
     As = ml%As(x_o)
     c_1 = ml%c_1(x_o)
 
@@ -233,8 +233,8 @@ contains
 
     ! Evaluate atmosphere coefficients (JCD formulation)
 
-    V_g = ml%V(x_o)/ml%Gamma_1(x_o)
-    As = ml%V(x_o)*(1._WP-1._WP/ml%Gamma_1(x_o))
+    V_g = ml%V_2(x_o)*x_o**2/ml%Gamma_1(x_o)
+    As = ml%V_2(x_o)*x_o**2*(1._WP-1._WP/ml%Gamma_1(x_o))
     c_1 = ml%c_1(x_o)
 
     ! Finish
