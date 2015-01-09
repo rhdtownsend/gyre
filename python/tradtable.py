@@ -46,6 +46,12 @@ class TradTable :
 
         return self.trad[l,l+m].lamb(nu)
 
+    def l_e (self, l, m, nu) :
+
+        """Effective harmonic degree"""
+
+        return self.trad[l,l+m].l_e(nu)
+
 
 
 
