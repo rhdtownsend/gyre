@@ -599,17 +599,13 @@ contains
     ! expression in eqn. (1.71) of [Dup2003]
 
     associate(x => this%x, &
-              V => this%ml%V(this%x), V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
+              V_2 => this%ml%V_2(this%x), V_g => this%ml%V_2(this%x)*this%x**2/this%ml%Gamma_1(this%x), &
               As => this%ml%As(this%x), U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
               xi_r => this%xi_r(), eul_phi => this%eul_phi(), &
               lag_rho => this%lag_rho(), eul_rho => this%eul_rho(), &
               lag_P => this%lag_P())
 
-      where (x /= 0._WP)
-         x4_V = x**4/V
-      elsewhere
-         x4_V = 0._WP
-      endwhere
+      x4_V = x**2/V_2
 
       ! Work-function-like terms
 
@@ -661,7 +657,7 @@ contains
 
     ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
-    associate(x => this%x, V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
+    associate(x => this%x, V_g => this%ml%V_2(this%x)*this%x**2/this%ml%Gamma_1(this%x), &
               As => this%ml%As(this%x), c_1 => this%ml%c_1(this%x), &
               lambda => this%rt%lambda(this%x, this%omega), omega_c => this%rt%omega_c(this%x, this%omega))
 
@@ -860,7 +856,7 @@ contains
     ! Calculate the Lagrangian specific entropy perturbation in units
     ! of c_p, from the energy equation
 
-    associate(V => this%ml%V(this%x), c_1 => this%ml%c_1(this%x), &
+    associate(V => this%ml%V_2(this%x)*this%x**2, c_1 => this%ml%c_1(this%x), &
               nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
               c_rad => this%ml%c_rad(this%x), dc_rad => this%ml%dc_rad(this%x), c_thm => this%ml%c_thm(this%x), &
               c_eps_ad => this%ml%c_eps_ad(this%x), c_eps_S => this%ml%c_eps_S(this%x), &              
@@ -951,7 +947,7 @@ contains
     ! Calculate the Lagrangian luminosity perturbation in units of L_star, 
     ! from the radiative diffusion equation
 
-    associate(V => this%ml%V(this%x), U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
+    associate(V => this%ml%V_2(this%x)*this%x**2, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
               nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
               c_dif => this%ml%c_dif(this%x), c_rad => this%ml%c_rad(this%x), &
               kappa_S => this%ml%kappa_S(this%x), &

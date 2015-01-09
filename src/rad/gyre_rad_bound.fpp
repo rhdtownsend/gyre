@@ -173,17 +173,23 @@ contains
     real(WP), intent(in)           :: omega
     real(WP)                       :: B_i(this%n_i,this%n_e)
 
+    real(WP) :: c_1
+    real(WP) :: omega_c
+
     $ASSERT(this%x_i == 0._WP,Boundary condition invalid for x_i /= 0)
 
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
-    associate(c_1 => this%ml%c_1(this%x_i), &
-              omega_c => this%rt%omega_c(this%x_i, omega))
+    ! Calculate coefficients
 
-      B_i(1,1) = c_1*omega_c**2
-      B_i(1,2) = 0._WP
+    c_1 = this%ml%c_1(this%x_i)
 
-    end associate
+    omega_c = this%rt%omega_c(this%x_i, omega)
+
+    ! Set up the boundary conditions
+
+    B_i(1,1) = c_1*omega_c**2
+    B_i(1,2) = 0._WP
 
     ! Finish
 
@@ -199,17 +205,24 @@ contains
     real(WP), intent(in)           :: omega
     real(WP)                       :: B_i(this%n_i,this%n_e)
 
+    real(WP) :: c_1
+    real(WP) :: omega_c
+
     $ASSERT(this%x_i /= 0._WP,Boundary condition invalid for x_i == 0)
 
-    ! Evaluate the inner boundary conditions (zero displacement/gravity)
+    ! Evaluate the inner boundary conditions (zero
+    ! displacement/gravity)
 
-    associate(c_1 => this%ml%c_1(this%x_i), &
-              omega_c => this%rt%omega_c(this%x_i, omega))
+    ! Calculate coefficients
 
-      B_i(1,1) = c_1*omega_c**2
-      B_i(1,2) = 0._WP
+    c_1 = this%ml%c_1(this%x_i)
 
-    end associate
+    omega_c = this%rt%omega_c(this%x_i, omega)
+
+    ! Set up the boundary conditions
+
+    B_i(1,1) = c_1*omega_c**2
+    B_i(1,2) = 0._WP
 
     ! Finish
 
@@ -277,15 +290,23 @@ contains
     real(WP), intent(in)           :: omega
     real(WP)                       :: B_o(this%n_o,this%n_e)
 
+    real(WP) :: V
+    real(WP) :: c_1
+    real(WP) :: omega_c
+
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
-    associate(V => this%ml%V(this%x_o), c_1 => this%ml%c_1(this%x_o), &
-              omega_c => this%rt%omega_c(this%x_o, omega))
-        
-      B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
-      B_o(1,2) = -1._WP
+    ! Calculate coefficients
 
-    end associate
+    V = this%ml%V_2(this%x_o)*this%x_o**2
+    c_1 = this%ml%c_1(this%x_o)
+
+    omega_c = this%rt%omega_c(this%x_o, omega)
+
+    ! Set up the boundary conditions
+        
+    B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
+    B_o(1,2) = -1._WP
 
     ! Finish
 
@@ -304,25 +325,28 @@ contains
     real(WP) :: V_g
     real(WP) :: As
     real(WP) :: c_1
+    real(WP) :: omega_c
     real(WP) :: beta
     real(WP) :: b_11
     real(WP) :: b_12
 
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
+    ! Calculate coefficients
+
     call eval_atmos_coeffs_unno(this%ml, this%x_o, V_g, As, c_1)
 
-    associate(omega_c => this%rt%omega_c(this%x_o, omega))
+    omega_c = this%rt%omega_c(this%x_o, omega)
 
-      beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
+    beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
       
-      b_11 = V_g - 3._WP
-      b_12 = -V_g
+    b_11 = V_g - 3._WP
+    b_12 = -V_g
     
-      B_o(1,1) = beta - b_11
-      B_o(1,2) = -b_12
+    ! Set up the boundary conditions
 
-    end associate
+    B_o(1,1) = beta - b_11
+    B_o(1,2) = -b_12
 
     ! Finish
 
@@ -341,25 +365,28 @@ contains
     real(WP) :: V_g
     real(WP) :: As
     real(WP) :: c_1
+    real(WP) :: omega_c
     real(WP) :: beta
     real(WP) :: b_11
     real(WP) :: b_12
 
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
+    ! Calculate coefficients
+
     call eval_atmos_coeffs_jcd(this%ml, this%x_o, V_g, As, c_1)
 
-    associate(omega_c => this%rt%omega_c(this%x_o, omega))
+    omega_c = this%rt%omega_c(this%x_o, omega)
 
-      beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
+    beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
 
-      b_11 = V_g - 3._WP
-      b_12 = -V_g
+    b_11 = V_g - 3._WP
+    b_12 = -V_g
 
-      B_o(1,1) = beta - b_11
-      B_o(1,2) = -b_12
+    ! Set up the boundary conditions
 
-    end associate
+    B_o(1,1) = beta - b_11
+    B_o(1,2) = -b_12
 
     ! Finish
 

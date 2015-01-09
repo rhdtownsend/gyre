@@ -121,7 +121,7 @@ contains
     real(WP), intent(in)          :: omega
     real(WP)                      :: A(this%n_e,this%n_e)
     
-    ! Evaluate the Jacobian matrix
+    ! Evaluate the RHS matrix
 
     A = this%xA(x, omega)/x
 
@@ -140,7 +140,7 @@ contains
     real(WP), intent(in)          :: omega
     real(WP)                      :: xA(this%n_e,this%n_e)
     
-    ! Evaluate the log(x)-space Jacobian matrix (=x*A)
+    ! Evaluate the log(x)-space RHS matrix (=x*A)
 
     select case (this%vars)
     case (DZIEM_VARS)
@@ -169,35 +169,50 @@ contains
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
     real(WP)                      :: xA(this%n_e,this%n_e)
+
+    real(WP) :: V_g
+    real(WP) :: U
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: lambda
+    real(WP) :: l_0
+    real(WP) :: omega_c
     
-    ! Evaluate the log(x)-space Jacobian matrix ([Dzi1971]
-    ! formulation)
+    ! Evaluate the log(x)-space RHS matrix ([Dzi1971] formulation)
 
-    associate (V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-               lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+    ! Calculate coefficients
 
-      xA(1,1) = V_g - 1._WP - l_0
-      xA(1,2) = lambda/(c_1*omega_c**2) - V_g
-      xA(1,3) = V_g
-      xA(1,4) = 0._WP
-      
-      xA(2,1) = c_1*omega_c**2 - As
-      xA(2,2) = As - U + 3._WP - l_0
-      xA(2,3) = -As
-      xA(2,4) = 0._WP
-      
-      xA(3,1) = 0._WP
-      xA(3,2) = 0._WP
-      xA(3,3) = 3._WP - U - l_0
-      xA(3,4) = 1._WP
-      
-      xA(4,1) = U*As
-      xA(4,2) = U*V_g
-      xA(4,3) = lambda - U*V_g
-      xA(4,4) = -U - l_0 + 2._WP
+    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
+    U = this%ml%U(x)
+    As = this%ml%As(x)
+    c_1 = this%ml%c_1(x)
 
-    end associate
+    lambda = this%rt%lambda(x, omega)
+    l_0 = this%rt%l_0(omega)
+
+    omega_c = this%rt%omega_c(x, omega)
+
+    ! Set up the matrix
+
+    xA(1,1) = V_g - 1._WP - l_0
+    xA(1,2) = lambda/(c_1*omega_c**2) - V_g
+    xA(1,3) = V_g
+    xA(1,4) = 0._WP
+      
+    xA(2,1) = c_1*omega_c**2 - As
+    xA(2,2) = As - U + 3._WP - l_0
+    xA(2,3) = -As
+    xA(2,4) = 0._WP
+      
+    xA(3,1) = 0._WP
+    xA(3,2) = 0._WP
+    xA(3,3) = 3._WP - U - l_0
+    xA(3,4) = 1._WP
+      
+    xA(4,1) = U*As
+    xA(4,2) = U*V_g
+    xA(4,3) = lambda - U*V_g
+    xA(4,4) = -U - l_0 + 2._WP
 
     ! Finish
 
@@ -213,61 +228,79 @@ contains
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
     real(WP)                      :: xA(this%n_e,this%n_e)
+
+    real(WP) :: V_g
+    real(WP) :: U
+    real(WP) :: As
+    real(WP) :: c_1
+    integer  :: l
+    real(WP) :: lambda
+    real(WP) :: l_0
+    real(WP) :: omega_c
     
-    ! Evaluate the log(x)-space Jacobian matrix ([Chr2008]
+    ! Evaluate the log(x)-space RHS matrix ([Chr2008]
     ! formulation)
 
-    associate (V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-               As => this%ml%As(x), c_1 => this%ml%c_1(x), l => this%rt%mp%l, &
-               lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+    ! Calculate coefficients
 
-      if (l /= 0) then
+    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
+    U = this%ml%U(x)
+    As = this%ml%As(x)
+    c_1 = this%ml%c_1(x)
 
-         xA(1,1) = V_g - 1._WP - l_0
-         xA(1,2) = 1._WP - V_g*c_1*omega_c**2/lambda
-         xA(1,3) = -V_g
-         xA(1,4) = 0._WP
-      
-         xA(2,1) = lambda - As*lambda/(c_1*omega_c**2)
-         xA(2,2) = As - l_0
-         xA(2,3) = As*lambda/(c_1*omega_c**2)
-         xA(2,4) = 0._WP
-      
-         xA(3,1) = 0._WP
-         xA(3,2) = 0._WP
-         xA(3,3) = 2._WP - l_0
-         xA(3,4) = 1._WP
-      
-         xA(4,1) = -U*As
-         xA(4,2) = -U*V_g*c_1*omega_c**2/lambda
-         xA(4,3) = lambda + U*(As - 2._WP)
-         xA(4,4) = 2._WP*(1._WP-U) - (l_0 - 1._WP)
+    l = this%rt%mp%l
+    lambda = this%rt%lambda(x, omega)
+    l_0 = this%rt%l_0(omega)
 
-      else
+    omega_c = this%rt%omega_c(x, omega)
 
-         xA(1,1) = V_g - 1._WP
-         xA(1,2) = -V_g*c_1*omega_c**2
-         xA(1,3) = -V_g
-         xA(1,4) = 0._WP
-      
-         xA(2,1) = 1._WP - As/(c_1*omega_c**2)
-         xA(2,2) = As
-         xA(2,3) = As/(c_1*omega_c**2)
-         xA(2,4) = 0._WP
-      
-         xA(3,1) = 0._WP
-         xA(3,2) = 0._WP
-         xA(3,3) = 2._WP
-         xA(3,4) = 1._WP
-      
-         xA(4,1) = -U*As
-         xA(4,2) = -U*V_g*c_1*omega_c**2
-         xA(4,3) = U*(As - 2._WP)
-         xA(4,4) = 2._WP*(1._WP-U) + 1._WP
+    ! Set up the matrix
 
-      endif
+    if (l /= 0) then
 
-    end associate
+       xA(1,1) = V_g - 1._WP - l_0
+       xA(1,2) = 1._WP - V_g*c_1*omega_c**2/lambda
+       xA(1,3) = -V_g
+       xA(1,4) = 0._WP
+      
+       xA(2,1) = lambda - As*lambda/(c_1*omega_c**2)
+       xA(2,2) = As - l_0
+       xA(2,3) = As*lambda/(c_1*omega_c**2)
+       xA(2,4) = 0._WP
+      
+       xA(3,1) = 0._WP
+       xA(3,2) = 0._WP
+       xA(3,3) = 2._WP - l_0
+       xA(3,4) = 1._WP
+      
+       xA(4,1) = -U*As
+       xA(4,2) = -U*V_g*c_1*omega_c**2/lambda
+       xA(4,3) = lambda + U*(As - 2._WP)
+       xA(4,4) = 2._WP*(1._WP-U) - (l_0 - 1._WP)
+
+    else
+
+       xA(1,1) = V_g - 1._WP
+       xA(1,2) = -V_g*c_1*omega_c**2
+       xA(1,3) = -V_g
+       xA(1,4) = 0._WP
+      
+       xA(2,1) = 1._WP - As/(c_1*omega_c**2)
+       xA(2,2) = As
+       xA(2,3) = As/(c_1*omega_c**2)
+       xA(2,4) = 0._WP
+      
+       xA(3,1) = 0._WP
+       xA(3,2) = 0._WP
+       xA(3,3) = 2._WP
+       xA(3,4) = 1._WP
+      
+       xA(4,1) = -U*As
+       xA(4,2) = -U*V_g*c_1*omega_c**2
+       xA(4,3) = U*(As - 2._WP)
+       xA(4,4) = 2._WP*(1._WP-U) + 1._WP
+
+    endif
 
     ! Finish
 
@@ -283,34 +316,50 @@ contains
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
     real(WP)                      :: xA(this%n_e,this%n_e)
+
+    real(WP) :: V_g
+    real(WP) :: U
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: lambda
+    real(WP) :: l_0
+    real(WP) :: omega_c
     
-    ! Evaluate the log(x)-space Jacobian matrix (mixed formulation)
+    ! Evaluate the log(x)-space RHS matrix (mixed formulation)
 
-    associate (V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-               As => this%ml%As(x), c_1 => this%ml%c_1(x), & 
-               lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+    ! Calculate coefficients
 
-      xA(1,1) = V_g - 1._WP - l_0
-      xA(1,2) = lambda/(c_1*omega_c**2) - V_g
-      xA(1,3) = -V_g
-      xA(1,4) = 0._WP
-      
-      xA(2,1) = c_1*omega_c**2 - As
-      xA(2,2) = As - U + 3._WP - l_0
-      xA(2,3) = As
-      xA(2,4) = 0._WP
-      
-      xA(3,1) = 0._WP
-      xA(3,2) = 0._WP
-      xA(3,3) = 2._WP - l_0
-      xA(3,4) = 1._WP
-      
-      xA(4,1) = -U*As
-      xA(4,2) = -U*V_g
-      xA(4,3) = lambda + U*(As - 2._WP)
-      xA(4,4) = 2._WP*(1._WP-U) - (l_0 - 1._WP)
+    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
+    U = this%ml%U(x)
+    As = this%ml%As(x)
+    c_1 = this%ml%c_1(x)
 
-    end associate
+    lambda = this%rt%lambda(x, omega)
+    l_0 = this%rt%l_0(omega)
+
+    omega_c = this%rt%omega_c(x, omega)
+
+    ! Set up the matrix
+
+    xA(1,1) = V_g - 1._WP - l_0
+    xA(1,2) = lambda/(c_1*omega_c**2) - V_g
+    xA(1,3) = -V_g
+    xA(1,4) = 0._WP
+      
+    xA(2,1) = c_1*omega_c**2 - As
+    xA(2,2) = As - U + 3._WP - l_0
+    xA(2,3) = As
+    xA(2,4) = 0._WP
+      
+    xA(3,1) = 0._WP
+    xA(3,2) = 0._WP
+    xA(3,3) = 2._WP - l_0
+    xA(3,4) = 1._WP
+      
+    xA(4,1) = -U*As
+    xA(4,2) = -U*V_g
+    xA(4,3) = lambda + U*(As - 2._WP)
+    xA(4,4) = 2._WP*(1._WP-U) - (l_0 - 1._WP)
 
     ! Finish
 
@@ -326,35 +375,55 @@ contains
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
     real(WP)                      :: xA(this%n_e,this%n_e)
+
+    real(WP) :: V_2
+    real(WP) :: V
+    real(WP) :: Gamma_1
+    real(WP) :: U
+    real(WP) :: D
+    real(WP) :: c_1
+    real(WP) :: lambda
+    real(WP) :: l_0
+    real(WP) :: omega_c
     
-    ! Evaluate the log(x)-space Jacobian matrix (Lagrangian pressure
+    ! Evaluate the log(x)-space RHS matrix (Lagrangian pressure
     ! perturbation formulation)
 
-    associate (V_2 => this%ml%V_2(x), V => this%ml%V(x), V_g => this%ml%V(x)/this%ml%Gamma_1(x), Gamma_1 => this%ml%Gamma_1(x), &
-               U => this%ml%U(x), D => this%ml%D(x), c_1 => this%ml%c_1(x), &
-               lambda => this%rt%lambda(x, omega), l_0 => this%rt%l_0(omega), omega_c => this%rt%omega_c(x, omega))
+    ! Calculate coefficients
 
-      xA(1,1) = lambda/(c_1*omega_c**2) - 1._WP - l_0
-      xA(1,2) = (lambda/(c_1*omega_c**2) - V_g)/V_2
-      xA(1,3) = lambda/(c_1*omega_c**2)
-      xA(1,4) = 0._WP
-      
-      xA(2,1) = -V_2*(lambda/(c_1*omega_c**2) - c_1*omega_c**2 + U - 4._WP)
-      xA(2,2) = -lambda/(c_1*omega_c**2) + V - l_0
-      xA(2,3) = -V_2*lambda/(c_1*omega_c**2)
-      xA(2,4) = -V_2
-      
-      xA(3,1) = 0._WP
-      xA(3,2) = 0._WP
-      xA(3,3) = 3._WP - U - l_0
-      xA(3,4) = 1._WP
-      
-      xA(4,1) = -U*D
-      xA(4,2) = U*x**2/Gamma_1
-      xA(4,3) = lambda
-      xA(4,4) = -U - l_0 + 2._WP
+    V_2 = this%ml%V_2(x)
+    V = V_2*x**2
+    Gamma_1 = this%ml%Gamma_1(x)
+    U = this%ml%U(x)
+    D = this%ml%D(x)
+    c_1 = this%ml%c_1(x)
 
-    end associate
+    lambda = this%rt%lambda(x, omega)
+    l_0 = this%rt%l_0(omega)
+
+    omega_c = this%rt%omega_c(x, omega)
+
+    ! Set up the matrix
+
+    xA(1,1) = lambda/(c_1*omega_c**2) - 1._WP - l_0
+    xA(1,2) = lambda/(c_1*omega_c**2)/V_2 - x**2/Gamma_1
+    xA(1,3) = lambda/(c_1*omega_c**2)
+    xA(1,4) = 0._WP
+      
+    xA(2,1) = -V_2*(lambda/(c_1*omega_c**2) - c_1*omega_c**2 + U - 4._WP)
+    xA(2,2) = -lambda/(c_1*omega_c**2) + V - l_0
+    xA(2,3) = -V_2*lambda/(c_1*omega_c**2)
+    xA(2,4) = -V_2
+      
+    xA(3,1) = 0._WP
+    xA(3,2) = 0._WP
+    xA(3,3) = 3._WP - U - l_0
+    xA(3,4) = 1._WP
+      
+    xA(4,1) = -U*D
+    xA(4,2) = U*x**2/Gamma_1
+    xA(4,3) = lambda
+    xA(4,4) = -U - l_0 + 2._WP
 
     ! Finish
 
@@ -372,7 +441,7 @@ contains
     logical, intent(in)           :: to_canon
     real(WP)                      :: T(this%n_e,this%n_e)
 
-    ! Calculate the transformation matrix to convert variables to/from
+    ! Evaluate the transformation matrix to convert variables to/from
     ! the canonical (DZEIM) formulation
 
     select case (this%vars)
@@ -404,111 +473,124 @@ contains
     logical, intent(in)           :: to_canon
     real(WP)                      :: T(this%n_e,this%n_e)
 
-    ! Calculate the transformation matrix to convert JCD variables
+    real(WP) :: U
+    real(WP) :: c_1
+    integer  :: l
+    real(WP) :: lambda
+    real(WP) :: omega_c
+
+    ! Evaluate the transformation matrix to convert JCD variables
     ! to/from the canonical (DZEIM) formulation
 
-    associate (U => this%ml%U(x), c_1 => this%ml%c_1(x), l => this%rt%mp%l, &
-               lambda => this%rt%lambda(x, omega), omega_c => this%rt%omega_c(x, omega))
+    ! Calculate coefficients
+
+    U = this%ml%U(x)
+    c_1 = this%ml%c_1(x)
+
+    l = this%rt%mp%l
+    lambda = this%rt%lambda(x, omega)
+
+    omega_c = this%rt%omega_c(x, omega)
+
+    ! Set up the matrix
       
-      if (to_canon) then
+    if (to_canon) then
 
-         if (l /= 0._WP) then
+       if (l /= 0._WP) then
 
-            T(1,1) = 1._WP
-            T(1,2) = 0._WP
-            T(1,3) = 0._WP
-            T(1,4) = 0._WP
+          T(1,1) = 1._WP
+          T(1,2) = 0._WP
+          T(1,3) = 0._WP
+          T(1,4) = 0._WP
 
-            T(2,1) = 0._WP
-            T(2,2) = c_1*omega_c**2/(lambda)
-            T(2,3) = 0._WP
-            T(2,4) = 0._WP
+          T(2,1) = 0._WP
+          T(2,2) = c_1*omega_c**2/lambda
+          T(2,3) = 0._WP
+          T(2,4) = 0._WP
 
-            T(3,1) = 0._WP
-            T(3,2) = 0._WP
-            T(3,3) = -1._WP
-            T(3,4) = 0._WP
+          T(3,1) = 0._WP
+          T(3,2) = 0._WP
+          T(3,3) = -1._WP
+          T(3,4) = 0._WP
 
-            T(4,1) = 0._WP
-            T(4,2) = 0._WP
-            T(4,3) = 1._WP - U
-            T(4,4) = -1._WP
+          T(4,1) = 0._WP
+          T(4,2) = 0._WP
+          T(4,3) = 1._WP - U
+          T(4,4) = -1._WP
 
-         else
+       else
 
-            T(1,1) = 1._WP
-            T(1,2) = 0._WP
-            T(1,3) = 0._WP
-            T(1,4) = 0._WP
+          T(1,1) = 1._WP
+          T(1,2) = 0._WP
+          T(1,3) = 0._WP
+          T(1,4) = 0._WP
 
-            T(2,1) = 0._WP
-            T(2,2) = c_1*omega_c**2
-            T(2,3) = 0._WP
-            T(2,4) = 0._WP
+          T(2,1) = 0._WP
+          T(2,2) = c_1*omega_c**2
+          T(2,3) = 0._WP
+          T(2,4) = 0._WP
 
-            T(3,1) = 0._WP
-            T(3,2) = 0._WP
-            T(3,3) = -1._WP
-            T(3,4) = 0._WP
+          T(3,1) = 0._WP
+          T(3,2) = 0._WP
+          T(3,3) = -1._WP
+          T(3,4) = 0._WP
 
-            T(4,1) = 0._WP
-            T(4,2) = 0._WP
-            T(4,3) = 1._WP - U
-            T(4,4) = -1._WP
+          T(4,1) = 0._WP
+          T(4,2) = 0._WP
+          T(4,3) = 1._WP - U
+          T(4,4) = -1._WP
 
-         endif
+       endif
 
-      else
+    else
 
-         if (l /= 0) then
+       if (l /= 0) then
 
-            T(1,1) = 1._WP
-            T(1,2) = 0._WP
-            T(1,3) = 0._WP
-            T(1,4) = 0._WP
+          T(1,1) = 1._WP
+          T(1,2) = 0._WP
+          T(1,3) = 0._WP
+          T(1,4) = 0._WP
+          
+          T(2,1) = 0._WP
+          T(2,2) = lambda/(c_1*omega_c**2)
+          T(2,3) = 0._WP
+          T(2,4) = 0._WP
+          
+          T(3,1) = 0._WP
+          T(3,2) = 0._WP
+          T(3,3) = -1._WP
+          T(3,4) = 0._WP
 
-            T(2,1) = 0._WP
-            T(2,2) = lambda/(c_1*omega_c**2)
-            T(2,3) = 0._WP
-            T(2,4) = 0._WP
+          T(4,1) = 0._WP
+          T(4,2) = 0._WP
+          T(4,3) = -(1._WP - U)
+          T(4,4) = -1._WP
 
-            T(3,1) = 0._WP
-            T(3,2) = 0._WP
-            T(3,3) = -1._WP
-            T(3,4) = 0._WP
+       else
 
-            T(4,1) = 0._WP
-            T(4,2) = 0._WP
-            T(4,3) = -(1._WP - U)
-            T(4,4) = -1._WP
+          T(1,1) = 1._WP
+          T(1,2) = 0._WP
+          T(1,3) = 0._WP
+          T(1,4) = 0._WP
 
-         else
+          T(2,1) = 0._WP
+          T(2,2) = 1._WP/(c_1*omega_c**2)
+          T(2,3) = 0._WP
+          T(2,4) = 0._WP
 
-            T(1,1) = 1._WP
-            T(1,2) = 0._WP
-            T(1,3) = 0._WP
-            T(1,4) = 0._WP
+          T(3,1) = 0._WP
+          T(3,2) = 0._WP
+          T(3,3) = -1._WP
+          T(3,4) = 0._WP
 
-            T(2,1) = 0._WP
-            T(2,2) = 1._WP/(c_1*omega_c**2)
-            T(2,3) = 0._WP
-            T(2,4) = 0._WP
+          T(4,1) = 0._WP
+          T(4,2) = 0._WP
+          T(4,3) = -(1._WP - U)
+          T(4,4) = -1._WP
 
-            T(3,1) = 0._WP
-            T(3,2) = 0._WP
-            T(3,3) = -1._WP
-            T(3,4) = 0._WP
+       endif
 
-            T(4,1) = 0._WP
-            T(4,2) = 0._WP
-            T(4,3) = -(1._WP - U)
-            T(4,4) = -1._WP
-
-         endif
-
-      end if
-
-    end associate
+    end if
 
     ! Finish
 
@@ -526,58 +608,62 @@ contains
     logical, intent(in)           :: to_canon
     real(WP)                      :: T(this%n_e,this%n_e)
 
-    ! Calculate the transformation matrix to convert MIX variables
+    real(WP) :: U
+
+    ! Evaluate the transformation matrix to convert MIX variables
     ! to/from the canonical (DZEIM) formulation
 
-    associate (U => this%ml%U(x))
+    ! Calculate coefficients
 
-      if (to_canon) then
+    U = this%ml%U(x)
 
-         T(1,1) = 1._WP
-         T(1,2) = 0._WP
-         T(1,3) = 0._WP
-         T(1,4) = 0._WP
+    ! Set up the matrix
 
-         T(2,1) = 0._WP
-         T(2,2) = 1._WP
-         T(2,3) = 0._WP
-         T(2,4) = 0._WP
+    if (to_canon) then
 
-         T(3,1) = 0._WP
-         T(3,2) = 0._WP
-         T(3,3) = -1._WP
-         T(3,4) = 0._WP
+       T(1,1) = 1._WP
+       T(1,2) = 0._WP
+       T(1,3) = 0._WP
+       T(1,4) = 0._WP
 
-         T(4,1) = 0._WP
-         T(4,2) = 0._WP
-         T(4,3) = 1._WP - U
-         T(4,4) = -1._WP
+       T(2,1) = 0._WP
+       T(2,2) = 1._WP
+       T(2,3) = 0._WP
+       T(2,4) = 0._WP
 
-      else
+       T(3,1) = 0._WP
+       T(3,2) = 0._WP
+       T(3,3) = -1._WP
+       T(3,4) = 0._WP
 
-         T(1,1) = 1._WP
-         T(1,2) = 0._WP
-         T(1,3) = 0._WP
-         T(1,4) = 0._WP
+       T(4,1) = 0._WP
+       T(4,2) = 0._WP
+       T(4,3) = 1._WP - U
+       T(4,4) = -1._WP
 
-         T(2,1) = 0._WP
-         T(2,2) = 1._WP
-         T(2,3) = 0._WP
-         T(2,4) = 0._WP
+    else
 
-         T(3,1) = 0._WP
-         T(3,2) = 0._WP
-         T(3,3) = -1._WP
-         T(3,4) = 0._WP
+       T(1,1) = 1._WP
+       T(1,2) = 0._WP
+       T(1,3) = 0._WP
+       T(1,4) = 0._WP
 
-         T(4,1) = 0._WP
-         T(4,2) = 0._WP
-         T(4,3) = -(1._WP - U)
-         T(4,4) = -1._WP
+       T(2,1) = 0._WP
+       T(2,2) = 1._WP
+       T(2,3) = 0._WP
+       T(2,4) = 0._WP
 
-      end if
+       T(3,1) = 0._WP
+       T(3,2) = 0._WP
+       T(3,3) = -1._WP
+       T(3,4) = 0._WP
 
-    end associate
+       T(4,1) = 0._WP
+       T(4,2) = 0._WP
+       T(4,3) = -(1._WP - U)
+       T(4,4) = -1._WP
+
+    end if
 
     ! Finish
 
@@ -595,58 +681,63 @@ contains
     logical, intent(in)           :: to_canon
     real(WP)                      :: T(this%n_e,this%n_e)
 
-    ! Calculate the transformation matrix to convert LAGP variables
+    real(WP) :: V
+    real(WP) :: V_2
+
+    ! Evaluate the transformation matrix to convert LAGP variables
     ! to/from the canonical (DZEIM) formulation
 
-    associate (V_2 => this%ml%V_2(x))
+    ! Calculate coefficients
 
-      if (to_canon) then
+    V_2 = this%ml%V_2(x)
 
-         T(1,1) = 1._WP
-         T(1,2) = 0._WP
-         T(1,3) = 0._WP
-         T(1,4) = 0._WP
+    ! Set up the matrix
 
-         T(2,1) = 1._WP
-         T(2,2) = 1._WP/V_2
-         T(2,3) = 1._WP
-         T(2,4) = 0._WP
+    if (to_canon) then
 
-         T(3,1) = 0._WP
-         T(3,2) = 0._WP
-         T(3,3) = 1._WP
-         T(3,4) = 0._WP
+       T(1,1) = 1._WP
+       T(1,2) = 0._WP
+       T(1,3) = 0._WP
+       T(1,4) = 0._WP
 
-         T(4,1) = 0._WP
-         T(4,2) = 0._WP
-         T(4,3) = 0._WP
-         T(4,4) = 1._WP
+       T(2,1) = 1._WP
+       T(2,2) = 1._WP/V_2
+       T(2,3) = 1._WP
+       T(2,4) = 0._WP
 
-      else
+       T(3,1) = 0._WP
+       T(3,2) = 0._WP
+       T(3,3) = 1._WP
+       T(3,4) = 0._WP
 
-         T(1,1) = 1._WP
-         T(1,2) = 0._WP
-         T(1,3) = 0._WP
-         T(1,4) = 0._WP
+       T(4,1) = 0._WP
+       T(4,2) = 0._WP
+       T(4,3) = 0._WP
+       T(4,4) = 1._WP
 
-         T(2,1) = -V_2
-         T(2,2) = V_2
-         T(2,3) = -V_2
-         T(2,4) = 0._WP
+    else
 
-         T(3,1) = 0._WP
-         T(3,2) = 0._WP
-         T(3,3) = 1._WP
-         T(3,4) = 0._WP
+       T(1,1) = 1._WP
+       T(1,2) = 0._WP
+       T(1,3) = 0._WP
+       T(1,4) = 0._WP
 
-         T(4,1) = 0._WP
-         T(4,2) = 0._WP
-         T(4,3) = 0._WP
-         T(4,4) = 1._WP
+       T(2,1) = -V_2
+       T(2,2) = V_2
+       T(2,3) = -V_2
+       T(2,4) = 0._WP
 
-      end if
+       T(3,1) = 0._WP
+       T(3,2) = 0._WP
+       T(3,3) = 1._WP
+       T(3,4) = 0._WP
 
-    end associate
+       T(4,1) = 0._WP
+       T(4,2) = 0._WP
+       T(4,3) = 0._WP
+       T(4,4) = 1._WP
+
+    end if
 
     ! Finish
 
