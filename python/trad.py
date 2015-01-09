@@ -30,9 +30,9 @@ class Trad :
 
         """Laplace tidal equation eigenvalue"""
 
-        if nu.dtype == float :
+        if isinstance(nu, float) :
             nu_r = nu
-        elif nu.dtype == complex :
+        elif isinstance(nu, complex) :
             nu_r = nu.real
         else :
             raise Exception('nu must be float or complex')
@@ -51,9 +51,9 @@ class Trad :
 
         """Laplace tidal equation eigenvalue in asymptotic limit of large nu"""
 
-        if nu.dtype == float :
+        if isinstance(nu, float) :
             nu_r = nu
-        elif nu.dtype == complex : 
+        elif isinstance(nu, complex) : 
             nu_r = nu.real
         else :
             raise Exception('nu must be float or complex')
