@@ -37,11 +37,11 @@ program build_trad_table
 
   ! Variables
 
-  integer         :: l_max
-  real(WP)        :: lambda_tol
-  real(WP)        :: cheby_tol
-  integer         :: cheby_n
-  character(1024) :: filename
+  integer                   :: l_max
+  real(WP)                  :: lambda_tol
+  real(WP)                  :: cheby_tol
+  integer                   :: cheby_n
+  character(:), allocatable :: filename
 
   type(trad_table_t) :: tt
   integer            :: l

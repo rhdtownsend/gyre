@@ -150,6 +150,12 @@ contains
        cb%c(j) = fac*sum
     end do
 
+    ! Fold the -0.5*c(1) correction into the coefficients
+
+    cb%c(1) = 0.5_WP*cb%c(1)
+
+    ! Set other components
+
     cb%x_a = x_a
     cb%x_b = x_b
 
@@ -271,7 +277,7 @@ contains
        dd = sv
     end do
 
-    f = y*d - dd + 0.5_WP*this%c(1)
+    f = y*d - dd + this%c(1)
 
     ! Finish
 
@@ -308,7 +314,7 @@ contains
        dd = sv
     end do
 
-    f = y*d - dd + 0.5_WP*this%c(1)
+    f = y*d - dd + this%c(1)
 
     ! Finish
 

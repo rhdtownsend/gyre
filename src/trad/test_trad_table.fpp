@@ -39,11 +39,11 @@ program test_trad_table
 
   ! Variables
 
-  character(1024) :: filename
-  real(WP)        :: nu_min
-  real(WP)        :: nu_max
-  integer         :: n_nu
-  real(WP)        :: lambda_tol
+  character(:), allocatable :: filename
+  real(WP)                  :: nu_min
+  real(WP)                  :: nu_max
+  integer                   :: n_nu
+  real(WP)                  :: lambda_tol
 
   type(hgroup_t)        :: hg
   type(trad_table_t)    :: tt
@@ -53,6 +53,7 @@ program test_trad_table
   real(WP)              :: nu
   real(WP)              :: lambda_tab
   real(WP)              :: lambda_chk
+  real(WP)              :: lambda_nrm
   real(WP), allocatable :: err(:)
 
   ! Read parameters
@@ -85,8 +86,10 @@ program test_trad_table
            lambda_tab = tt%tf(l,m)%lambda(nu)
            lambda_chk = lambda(nu, m, l-ABS(m), lambda_tol)
 
-           if (lambda_chk /= 0) then
-              err(i) = lambda_tab/lambda_chk - 1._WP
+           lambda_nrm = MIN(ABS(lambda_tab), ABS(lambda_chk))
+
+           if (lambda_nrm /= 0._WP) then
+              err(i) = (lambda_tab - lambda_chk)/lambda_nrm
            else
               err(i) = lambda_tab - lambda_chk
            endif
