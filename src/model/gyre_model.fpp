@@ -39,7 +39,6 @@ module gyre_model
   type, abstract :: model_t
    contains
      private
-     $PROC_DECL(V)
      $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -59,7 +58,6 @@ module gyre_model
      $PROC_DECL(kappa_S)
      $PROC_DECL(tau_thm)
      $PROC_DECL(Omega_rot)
-     procedure(pi_c_), deferred, public         :: pi_c
      procedure(is_zero_), deferred, public      :: is_zero
      procedure(attach_cache_), deferred, public :: attach_cache
      procedure(detach_cache_), deferred, public :: detach_cache
@@ -85,13 +83,6 @@ module gyre_model
        real(WP), intent(in)       :: x(:)
        real(WP)                   :: y(SIZE(x))
      end function y_v_
-
-     function pi_c_ (this) result (pi_c)
-       use core_kinds
-       import model_t
-       class(model_t), intent(in) :: this
-       real(WP)                   :: pi_c
-     end function pi_c_
 
      function is_zero_ (this, x) result (is_zero)
        use core_kinds
