@@ -477,8 +477,6 @@ contains
 
        endif
 
-       print *,'pro'
-
     else
 
        if (k >= -1) then
