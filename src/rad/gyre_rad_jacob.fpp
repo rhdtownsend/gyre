@@ -120,7 +120,7 @@ contains
     real(WP), intent(in)           :: omega
     real(WP)                       :: A(this%n_e,this%n_e)
     
-    ! Evaluate the Jacobian matrix
+    ! Evaluate the RHS matrix
 
     A = this%xA(x, omega)/x
 
@@ -139,7 +139,7 @@ contains
     real(WP), intent(in)           :: omega
     real(WP)                       :: xA(this%n_e,this%n_e)
     
-    ! Evaluate the log(x)-space Jacobian matrix (=x*A)
+    ! Evaluate the log(x)-space RHS matrix (=x*A)
 
     select case (this%vars)
     case (DZIEM_VARS)
@@ -168,21 +168,31 @@ contains
     real(WP), intent(in)           :: x
     real(WP), intent(in)           :: omega
     real(WP)                       :: xA(this%n_e,this%n_e)
+
+    real(WP) :: V_g
+    real(WP) :: U
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: omega_c
     
-    ! Evaluate the log(x)-space Jacobian matrix ([Dzi1971]
-    ! formulation)
+    ! Evaluate the log(x)-space RHS matrix ([Dzi1971] formulation)
 
-    associate (V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-               omega_c => this%rt%omega_c(x, omega))
+    ! Calculate coefficients
 
-      xA(1,1) = V_g - 1._WP
-      xA(1,2) = -V_g
+    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
+    U = this%ml%U(x)
+    As = this%ml%As(x)
+    c_1 = this%ml%c_1(x)
+
+    omega_c = this%rt%omega_c(x, omega)
+
+    ! Set up the matrix
+
+    xA(1,1) = V_g - 1._WP
+    xA(1,2) = -V_g
       
-      xA(2,1) = c_1*omega_c**2 + U - As
-      xA(2,2) = As - U + 3._WP
-
-    end associate
+    xA(2,1) = c_1*omega_c**2 + U - As
+    xA(2,2) = As - U + 3._WP
 
     ! Finish
 
@@ -199,21 +209,31 @@ contains
     real(WP), intent(in)           :: omega
     real(WP)                       :: xA(this%n_e,this%n_e)
     
-    ! Evaluate the log(x)-space Jacobian matrix ([ChrDal2008]
-    ! formulation)
+    real(WP) :: V_g
+    real(WP) :: U
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: omega_c
+    
+    ! Evaluate the log(x)-space RHS matrix ([ChrDal2008] formulation)
 
-    associate (V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-               omega_c => this%rt%omega_c(x, omega))
+    ! Calculate coefficients
 
-      xA(1,1) = V_g - 1._WP
-      xA(1,2) = -V_g*c_1*omega_c**2
-      
-      xA(2,1) = 1._WP - (As - U)/(c_1*omega_c**2)
-      xA(2,2) = As
+    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
+    U = this%ml%U(x)
+    As = this%ml%As(x)
+    c_1 = this%ml%c_1(x)
 
-    end associate
+    omega_c = this%rt%omega_c(x, omega)
 
+    ! Set up the matrix
+
+    xA(1,1) = V_g - 1._WP
+    xA(1,2) = -V_g*c_1*omega_c**2
+    
+    xA(2,1) = 1._WP - (As - U)/(c_1*omega_c**2)
+    xA(2,2) = As
+    
     ! Finish
 
     return
@@ -229,19 +249,30 @@ contains
     real(WP), intent(in)           :: omega
     real(WP)                       :: xA(this%n_e,this%n_e)
     
-    ! Evaluate the log(x)-space Jacobian matrix (mixed formulation)
+    real(WP) :: V_g
+    real(WP) :: U
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: omega_c
+    
+    ! Evaluate the log(x)-space RHS matrix (mixed formulation)
 
-    associate (V_g => this%ml%V(x)/this%ml%Gamma_1(x), U => this%ml%U(x), &
-               As => this%ml%As(x), c_1 => this%ml%c_1(x), &
-               omega_c => this%rt%omega_c(x, omega))
+    ! Calculate coefficients
 
-      xA(1,1) = V_g - 1._WP
-      xA(1,2) = -V_g
+    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
+    U = this%ml%U(x)
+    As = this%ml%As(x)
+    c_1 = this%ml%c_1(x)
+
+    omega_c = this%rt%omega_c(x, omega)
+
+    ! Set upt the matrix
+
+    xA(1,1) = V_g - 1._WP
+    xA(1,2) = -V_g
       
-      xA(2,1) = c_1*omega_c**2 + U - As
-      xA(2,2) = As - U + 3._WP
-
-    end associate
+    xA(2,1) = c_1*omega_c**2 + U - As
+    xA(2,2) = As - U + 3._WP
 
     ! Finish
 
@@ -258,20 +289,27 @@ contains
     real(WP), intent(in)           :: omega
     real(WP)                       :: xA(this%n_e,this%n_e)
     
-    ! Evaluate the log(x)-space Jacobian matrix (Lagrangian pressure
+    real(WP) :: V_2
+    real(WP) :: Gamma_1
+    real(WP) :: c_1
+    real(WP) :: omega_c
+
+    ! Evaluate the log(x)-space RHS matrix (Lagrangian pressure
     ! perturbation formulation)
 
-    associate (V_2 => this%ml%V_2(x), V => this%ml%V(x), Gamma_1 => this%ml%Gamma_1(x), &
-               U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-               omega_c => this%rt%omega_c(x, omega))
+    ! Calculate coefficients
 
-      xA(1,1) = -1._WP
-      xA(1,2) = -x**2/Gamma_1
+    V_2 = this%ml%V_2(x)
+    Gamma_1 = this%ml%Gamma_1(x)
+    c_1 = this%ml%c_1(x)
+
+    omega_c = this%rt%omega_c(x, omega)
+
+    xA(1,1) = -1._WP
+    xA(1,2) = -x**2/Gamma_1
       
-      xA(2,1) = V_2*(4._WP + c_1*omega_c**2)
-      xA(2,2) = V
-
-    end associate
+    xA(2,1) = V_2*(4._WP + c_1*omega_c**2)
+    xA(2,2) = V_2*x**2
 
     ! Finish
 
@@ -289,7 +327,7 @@ contains
     logical, intent(in)            :: to_canon
     real(WP)                       :: T(this%n_e,this%n_e)
 
-    ! Calculate the transformation matrix to convert variables to/from
+    ! Evaluate the transformation matrix to convert variables to/from
     ! the canonical (DZEIM) formulation
 
     select case (this%vars)
@@ -321,31 +359,37 @@ contains
     logical, intent(in)            :: to_canon
     real(WP)                       :: T(this%n_e,this%n_e)
 
-    ! Calculate the transformation matrix to convert JCD variables
+    real(WP) :: c_1
+    real(WP) :: omega_c
+
+    ! Evaluate the transformation matrix to convert JCD variables
     ! to/from the canonical (DZEIM) formulation
 
-    associate (c_1 => this%ml%c_1(x), &
-               omega_c => this%rt%omega_c(x, omega))
+    ! Calculate coefficients
 
-      if (to_canon) then
+    c_1 = this%ml%c_1(x)
 
-         T(1,1) = 1._WP
-         T(1,2) = 0._WP
+    omega_c = this%rt%omega_c(x, omega)
 
-         T(2,1) = 0._WP
-         T(2,2) = c_1*omega_c**2
+    ! Set up the matrix
 
-      else
+    if (to_canon) then
 
-         T(1,1) = 1._WP
-         T(1,2) = 0._WP
+       T(1,1) = 1._WP
+       T(1,2) = 0._WP
+       
+       T(2,1) = 0._WP
+       T(2,2) = c_1*omega_c**2
 
-         T(2,1) = 0._WP
-         T(2,2) = 1._WP/(c_1*omega_c**2)
+    else
 
-      end if
+       T(1,1) = 1._WP
+       T(1,2) = 0._WP
 
-    end associate
+       T(2,1) = 0._WP
+       T(2,2) = 1._WP/(c_1*omega_c**2)
+
+    end if
 
     ! Finish
 
@@ -363,30 +407,34 @@ contains
     logical, intent(in)            :: to_canon
     real(WP)                       :: T(this%n_e,this%n_e)
 
-    ! Calculate the transformation matrix to convert LAGP variables
+    real(WP) :: V_2
+
+    ! Evaluate the transformation matrix to convert LAGP variables
     ! to/from the canonical (DZEIM) formulation
 
-    associate (V_2 => this%ml%V_2(x))
+    ! Calculate coefficients
 
-      if (to_canon) then
+    V_2 = this%ml%V_2(x)
 
-         T(1,1) = 1._WP
-         T(1,2) = 0._WP
+    ! Set up the matrix
 
-         T(2,1) = 1._WP
-         T(2,2) = 1._WP/V_2
+    if (to_canon) then
 
-      else
+       T(1,1) = 1._WP
+       T(1,2) = 0._WP
 
-         T(1,1) = 1._WP
-         T(1,2) = 0._WP
+       T(2,1) = 1._WP
+       T(2,2) = 1._WP/V_2
 
-         T(2,1) = -V_2
-         T(2,2) = V_2
+    else
 
-      end if
+       T(1,1) = 1._WP
+       T(1,2) = 0._WP
 
-    end associate
+       T(2,1) = -V_2
+       T(2,2) = V_2
+
+    end if
 
     ! Finish
 
