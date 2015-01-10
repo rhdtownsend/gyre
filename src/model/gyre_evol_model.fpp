@@ -329,7 +329,7 @@ contains
 
     logical  :: add_center_
 
-    $CHECK_BOUNDS(SIZE(V),SIZE(x))
+    $CHECK_BOUNDS(SIZE(V_2),SIZE(x))
     $CHECK_BOUNDS(SIZE(As),SIZE(x))
     $CHECK_BOUNDS(SIZE(U),SIZE(x))
     $CHECK_BOUNDS(SIZE(c_1),SIZE(x))
