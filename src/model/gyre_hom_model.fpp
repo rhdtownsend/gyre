@@ -127,7 +127,11 @@ contains
 
     ! Calculate V_2
 
-    V_2 = 2._WP/(1._WP - x**2)
+    if (x /= 1. _WP) then
+       V_2 = 2._WP/(1._WP - x**2)
+    else
+       V_2 = 2._WP/TINY(0._WP)
+    endif
 
     ! Finish
 
