@@ -23,8 +23,8 @@ module gyre_cimplex
 
   use core_kinds
 
-  use gyre_ext_arith
-  use gyre_ext_func
+  use gyre_ext
+  use gyre_extfunc
 
   use ISO_FORTRAN_ENV
 
@@ -35,14 +35,16 @@ module gyre_cimplex
   ! Derived-type definitions
 
   type :: cimplex_t
-     type(ext_complex_t)            :: ez(3)
-     type(ext_real_t)               :: f_ez(3)
-     integer                        :: i_hi
-     integer                        :: i_lo
-     class(ext_func_t), allocatable :: ef
+     private
+     type(c_ext_t)                   :: cx(3)
+     type(c_ext_t)                   :: f_cx(3)
+     integer                         :: i_hi
+     integer                         :: i_lo
+     class(c_extfunc_t), allocatable :: cf
    contains
      private
      procedure, public :: refine => refine_
+     procedure, public :: lowest => lowest_
   end type cimplex_t
 
   ! Interfaces
@@ -60,14 +62,14 @@ module gyre_cimplex
 
 contains
 
-  function cimplex_t_ (ef) result (cm)
+  function cimplex_t_ (cf) result (cm)
 
-    class(ext_func_t), intent(in) :: ef
-    type(cimplex_t)               :: cm
+    class(c_extfunc_t), intent(in) :: cf
+    type(cimplex_t)                :: cm
        
     ! Construct the cimplex_t
 
-    allocate(cm%ef, SOURCE=ef)
+    allocate(cm%cf, SOURCE=cf)
 
     ! Finish
 
@@ -77,31 +79,29 @@ contains
 
 !****
 
-  function cimplex_t_verts_ (ez, f_ez, ef) result (cm)
+  function cimplex_t_verts_ (cx, f_cx, cf) result (cm)
 
-    class(ext_complex_t), intent(in) :: ez(:)
-    class(ext_complex_t), intent(in) :: f_ez(:)
-    class(ext_func_t), intent(in)    :: ef
-    type(cimplex_t)                  :: cm
+    class(c_ext_t), intent(in)     :: cx(:)
+    class(c_ext_t), intent(in)     :: f_cx(:)
+    class(c_extfunc_t), intent(in) :: cf
+    type(cimplex_t)                :: cm
        
-    integer  :: i
-
-    $CHECK_BOUNDS(SIZE(ez),3)
-    $CHECK_BOUNDS(SIZE(f_ez),3)
+    $CHECK_BOUNDS(SIZE(cx),3)
+    $CHECK_BOUNDS(SIZE(f_cx),3)
 
     ! Construct the cimplex_t
 
-    cm = cimplex_t(ef)
+    cm = cimplex_t(cf)
 
     ! Set up the starting vertices
 
-    cm%ez = ez
-    cm%f_ez = ABS(f_ez)
+    cm%cx = cx
+    cm%f_cx = f_cx
 
     ! Find the highest and lowest vertices
 
-    cm%i_hi = maxloc_pos_(cm%f_ez)
-    cm%i_lo = minloc_pos_(cm%f_ez)
+    cm%i_hi = absmaxloc_(cm%f_cx)
+    cm%i_lo = absminloc_(cm%f_cx)
 
     ! Finish
 
@@ -141,16 +141,20 @@ contains
     tol = MAX(toler, EPS)
 
     ! ! This appears to be a gfortran bug; intrinsic assignment should work
-    cm = cimplex_t(this%ef)
-    cm%ez = this%ez
-    cm%f_ez = this%f_ez
+
+    cm = cimplex_t(this%cf)
+
+    cm%cx = this%cx
+    cm%f_cx = this%f_cx
+
     cm%i_lo = this%i_lo
     cm%i_hi = this%i_hi
 
     if(VERBOSE) then
+
        write(OUTPUT_UNIT, *) 'Initial vertices:'
        do i = 1,3
-          write(OUTPUT_UNIT, 100) i, fraction(this%ez(i)), exponent(this%ez(i)), fraction(this%f_ez(i)), exponent(this%f_ez(i))
+          write(OUTPUT_UNIT, 100) i, fraction(this%cx(i)), exponent(this%cx(i)), fraction(this%f_cx(i)), exponent(this%f_cx(i))
 100       format(I0,2(1X,E16.8),1X,I0,1X,E16.8,1X,I0)
        end do
     endif
@@ -159,8 +163,8 @@ contains
 
        ! Check for convergence (equal minima)
 
-       if (cm%f_ez(cm%i_hi)-cm%f_ez(cm%i_lo) < &
-            tol*cm%f_ez(cm%i_hi)) exit iterate_loop
+       if (ABS(cm%f_cx(cm%i_hi))-ABS(cm%f_cx(cm%i_lo)) < &
+            tol*ABS(cm%f_cx(cm%i_hi))) exit iterate_loop
           
        ! Update the cimplex
 
@@ -192,15 +196,15 @@ contains
 
        ! Check for convergence (change in coordinates)
 
-       if (ABS(cm%ez(cm%i_hi) - cm%ez(cm%i_lo)) < &
-            tol*MAX(ABS(cm%ez(cm%i_hi)), ABS(cm%ez(cm%i_lo)))) exit iterate_loop
+       if (ABS(cm%cx(cm%i_hi) - cm%cx(cm%i_lo)) < &
+            tol*MAX(ABS(cm%cx(cm%i_hi)), ABS(cm%cx(cm%i_lo)))) exit iterate_loop
 
        cm = cm_new
 
        if (VERBOSE) then
           write(OUTPUT_UNIT, *) 'Current vertices:'
           do i = 1,3
-             write(OUTPUT_UNIT, *) i, cmplx(cm%ez(i)), real(cm%f_ez(i))
+             write(OUTPUT_UNIT, *) i, cmplx(cm%cx(i)), real(cm%f_cx(i))
           end do
        endif
 
@@ -215,12 +219,14 @@ contains
     if (VERBOSE) then
        write(OUTPUT_UNIT, *) 'Final vertices:'
        do i = 1,3
-          write(OUTPUT_UNIT, *) i, cmplx(cm%ez(i)), real(cm%f_ez(i))
+          write(OUTPUT_UNIT, *) i, cmplx(cm%cx(i)), real(cm%f_cx(i))
        end do
     endif
 
-    this%ez = cm%ez
-    this%f_ez = cm%f_ez
+    ! this%cimplex_t = cm
+
+    this%cx = cm%cx
+    this%f_cx = cm%f_cx
 
     this%i_lo = cm%i_lo
     this%i_hi = cm%i_hi
@@ -233,6 +239,23 @@ contains
 
 !****
 
+  function lowest_ (this) result (cx)
+
+    class(cimplex_t), intent(in) :: this
+    type(c_ext_t)                :: cx
+
+    ! Return the lowest point of the cimplex
+
+    cx = this%cx(this%i_lo)
+
+    ! Finish
+
+    return
+
+  end function lowest_
+  
+!****
+
   function ooze_ (cm, scale, i) result (cm_new)
 
     type(cimplex_t), intent(inout) :: cm
@@ -240,41 +263,41 @@ contains
     integer, intent(in)            :: i
     type(cimplex_t)                :: cm_new
 
-    integer             :: j
-    type(ext_complex_t) :: ez_cen
-    type(ext_complex_t) :: ez_new
-    type(ext_real_t)    :: f_ez_new
+    integer       :: j
+    type(c_ext_t) :: cx_cen
+    type(c_ext_t) :: cx_new
+    type(c_ext_t) :: f_cx_new
 
     ! (Provisionally) ooze the cimplex by scaling vertex i
 
     ! Find the centroid excluding vertex i
 
-    ez_cen = ext_complex_t(0._WP)
+    cx_cen = c_ext_t(0._WP)
 
     do j = 1, 3
        if (j /= i) then
-          ez_cen = ez_cen + cm%ez(j)
+          cx_cen = cx_cen + cm%cx(j)
        endif
     enddo
 
-    ez_cen = ez_cen/2._WP
+    cx_cen = cx_cen/2._WP
 
     ! Calculate the new vertex position & value
 
-    ez_new = ez_cen + scale*(cm%ez(i) - ez_cen)
-    f_ez_new = ABS(cm%ef%eval(ez_new))
+    cx_new = cx_cen + scale*(cm%cx(i) - cx_cen)
+    f_cx_new = cm%cf%eval(cx_new)
 
     ! Accept or reject the new position
 
     cm_new = cm
 
-    if (f_ez_new < cm%f_ez(i)) then
+    if (ABS(f_cx_new) < ABS(cm%f_cx(i))) then
 
-       cm_new%ez(i) = ez_new
-       cm_new%f_ez(i) = f_ez_new
+       cm_new%cx(i) = cx_new
+       cm_new%f_cx(i) = f_cx_new
 
-       cm_new%i_lo = minloc_pos_(cm_new%f_ez)
-       cm_new%i_hi = maxloc_pos_(cm_new%f_ez)
+       cm_new%i_lo = absminloc_(cm_new%f_cx)
+       cm_new%i_hi = absmaxloc_(cm_new%f_cx)
 
     endif
 
@@ -301,13 +324,13 @@ contains
 
     do j = 1,3
        if (j /= i) then
-          cm_new%ez(j) = cm%ez(i) + scale*(cm%ez(j) - cm%ez(i))
-          cm_new%f_ez(j) = ABS(cm_new%ef%eval(cm_new%ez(j)))
+          cm_new%cx(j) = cm%cx(i) + scale*(cm%cx(j) - cm%cx(i))
+          cm_new%f_cx(j) = cm_new%cf%eval(cm_new%cx(j))
        endif
     end do
           
-    cm_new%i_lo = minloc_pos_(cm_new%f_ez)
-    cm_new%i_hi = maxloc_pos_(cm_new%f_ez)
+    cm_new%i_lo = absminloc_(cm_new%f_cx)
+    cm_new%i_hi = absmaxloc_(cm_new%f_cx)
     
     ! Finish
 
@@ -317,19 +340,18 @@ contains
 
 !****
 
-  function maxloc_pos_ (ez) result (i_max)
+  function absmaxloc_ (cx) result (i_max)
 
-    type(ext_real_t), intent(in) :: ez(:)
-    integer                      :: i_max
+    type(c_ext_t), intent(in) :: cx(:)
+    integer                   :: i_max
 
-    real(WP) :: f(SIZE(ez))
-    integer  :: e(SIZE(ez))
+    real(WP) :: f(SIZE(cx))
+    integer  :: e(SIZE(cx))
 
-    ! Return the index of the maximum value in ez, *assuming
-    ! all-positive arguments*
+    ! Return the index of the maximum absolute value in cx
 
-    f = FRACTION(ez)
-    e = MERGE(EXPONENT(ez), -HUGE(0), f > 0._WP)
+    f = FRACTION(ABS(cx))
+    e = MERGE(EXPONENT(ABS(cx)), -HUGE(0), f > 0._WP)
 
     i_max = MAXLOC(f, MASK=e==MAXVAL(e), DIM=1)
 
@@ -337,23 +359,22 @@ contains
 
     return
 
-  end function maxloc_pos_
+  end function absmaxloc_
 
 !****
 
-  function minloc_pos_ (ez) result (i_min)
+  function absminloc_ (cx) result (i_min)
 
-    type(ext_real_t), intent(in) :: ez(:)
-    integer                      :: i_min
+    type(c_ext_t), intent(in) :: cx(:)
+    integer                   :: i_min
 
-    real(WP) :: f(SIZE(ez))
-    integer  :: e(SIZE(ez))
+    real(WP) :: f(SIZE(cx))
+    integer  :: e(SIZE(cx))
 
-    ! Return the index of the minimum value in ez, *assuming
-    ! all-positive arguments*
+    ! Return the index of the minimum absolute value in cx
 
-    f = FRACTION(ez)
-    e = MERGE(EXPONENT(ez), -HUGE(0), f > 0._WP)
+    f = FRACTION(ABS(cx))
+    e = MERGE(EXPONENT(ABS(cx)), -HUGE(0), f > 0._WP)
 
     i_min = MINLOC(f, MASK=e==MINVAL(e), DIM=1)
 
@@ -361,6 +382,6 @@ contains
 
     return
 
-  end function minloc_pos_
+  end function absminloc_
 
 end module gyre_cimplex
