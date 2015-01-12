@@ -179,6 +179,8 @@ contains
        Theta = this%sp_Theta%interp(xi)
        dTheta = this%sp_dTheta%interp(xi)
 
+       if (Theta == 0._WP) Theta = TINY(0._WP)
+
        V_2 = -(this%n_poly + 1._WP)*xi*dTheta/(Theta*x**2)
 
     else
