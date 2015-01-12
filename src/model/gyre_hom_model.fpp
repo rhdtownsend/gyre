@@ -541,23 +541,6 @@ contains
 
 !****
 
-  function pi_c_ (this) result (pi_c)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP)                       :: pi_c
-
-    ! Calculate pi_c = V/x^2 as x -> 0
-
-    pi_c = 2._WP
-
-    ! Finish
-
-    return
-
-  end function pi_c_
-
-!****
-
   function is_zero_ (this, x) result (is_zero)
 
     class(hom_model_t), intent(in) :: this
