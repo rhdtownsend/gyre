@@ -70,7 +70,9 @@ contains
     integer                  :: c_beg
     integer                  :: c_end
     integer                  :: c_rate
+    integer                  :: n_md_in
     integer                  :: i
+    real(WP)                 :: domega
     type(c_ext_t)            :: omega_a
     type(c_ext_t)            :: omega_b
     integer                  :: n_iter
@@ -103,12 +105,33 @@ contains
 
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    mode_loop : do i = 1, SIZE(md_in)
+    n_md_in = SIZE(md_in)
+
+    mode_loop : do i = 1, n_md_in
 
        ! Set up initial guesses
 
-       omega_a = md_in(i)%omega*c_ext_t(CMPLX(1._WP,  SQRT(EPSILON(0._WP)), KIND=WP))
-       omega_b = md_in(i)%omega*c_ext_t(CMPLX(1._WP, -SQRT(EPSILON(0._WP)), KIND=WP))
+       if (n_md_in > 1) then
+
+          if (i == 1) then
+             domega = ABS(md_in(2)%omega - md_in(1)%omega)
+          elseif (i == n_md_in) then
+             domega = ABS(md_in(n_md_in)%omega - md_in(n_md_in-1)%omega)
+          else
+             domega = MIN(ABS(md_in(i)%omega - md_in(i-1)%omega), &
+                          ABS(md_in(i+1)%omega - md_in(i)%omega))
+          endif
+
+          domega = domega*1E-3
+
+       else
+
+          domega = md_in(i)%omega*SQRT(EPSILON(0._WP))
+
+       endif
+
+       omega_a = c_ext_t(md_in(i)%omega + CMPLX(0._WP, domega, KIND=WP))
+       omega_b = c_ext_t(md_in(i)%omega - CMPLX(0._WP, domega, KIND=WP))
 
        discrim_a = df%eval(omega_a)
        discrim_b = df%eval(omega_b)
@@ -219,6 +242,8 @@ contains
     integer                  :: c_end
     integer                  :: c_rate
     integer                  :: i
+    integer                  :: n_md_in
+    real(WP)                 :: domega
     type(c_ext_t)            :: omega_a
     type(c_ext_t)            :: omega_b
     type(c_ext_t)            :: omega_c
@@ -249,13 +274,34 @@ contains
 
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    mode_loop : do i = 1, SIZE(md_in)
+    n_md_in = SIZE(md_in)
+
+    mode_loop : do i = 1, n_md_in
 
        ! Set up initial guesses
 
-       omega_a = md_in(i)%omega*c_ext_t(1._WP + SQRT(EPSILON(0._WP))*EXP(CMPLX(0._WP,1._WP,WP)*TWOPI*0._WP/3._WP))
-       omega_b = md_in(i)%omega*c_ext_t(1._WP + SQRT(EPSILON(0._WP))*EXP(CMPLX(0._WP,1._WP,WP)*TWOPI*1._WP/3._WP))
-       omega_c = md_in(i)%omega*c_ext_t(1._WP + SQRT(EPSILON(0._WP))*EXP(CMPLX(0._WP,1._WP,WP)*TWOPI*2._WP/3._WP))
+       if (n_md_in > 1) then
+
+          if (i == 1) then
+             domega = ABS(md_in(2)%omega - md_in(1)%omega)
+          elseif (i == n_md_in) then
+             domega = ABS(md_in(n_md_in)%omega - md_in(n_md_in-1)%omega)
+          else
+             domega = MIN(ABS(md_in(i)%omega - md_in(i-1)%omega), &
+                          ABS(md_in(i+1)%omega - md_in(i)%omega))
+          endif
+
+          domega = domega*1E-3
+
+       else
+
+          domega = md_in(i)%omega*SQRT(EPSILON(0._WP))
+
+       endif
+
+       omega_a = md_in(i)%omega*c_ext_t(1._WP + domega*EXP(CMPLX(0._WP,1._WP,WP)*TWOPI*0._WP/3._WP))
+       omega_b = md_in(i)%omega*c_ext_t(1._WP + domega*EXP(CMPLX(0._WP,1._WP,WP)*TWOPI*1._WP/3._WP))
+       omega_c = md_in(i)%omega*c_ext_t(1._WP + domega*EXP(CMPLX(0._WP,1._WP,WP)*TWOPI*2._WP/3._WP))
 
        discrim_a = df%eval(omega_a)
        discrim_b = df%eval(omega_b)
