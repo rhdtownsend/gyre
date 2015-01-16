@@ -841,7 +841,12 @@ contains
     ! Scale rx by RADIX_WP**de
 
     scale_rx%f = rx%f
-    scale_rx%e = rx%e + de
+
+    if (scale_rx%f /= 0._WP) then
+       scale_rx%e = rx%e + de
+    else
+       scale_rx%e = 0
+    endif
 
     ! Finish
 

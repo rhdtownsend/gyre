@@ -806,7 +806,12 @@ contains
     ! Scale cx by RADIX_WP**de
 
     scale_cx%f = cx%f
-    scale_cx%e = cx%e + de
+
+    if (scale_cx%f /= 0._WP) then
+       scale_cx%e = cx%e + de
+    else
+       scale_cx%e = 0
+    endif
 
     ! Finish
 
