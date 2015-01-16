@@ -871,6 +871,8 @@ contains
     real(WP)                            :: x_turn
 
     type(gamma_func_t) :: gf
+    real(WP)           :: gf_a
+    real(WP)           :: gf_b
     integer            :: i
 
     ! Find the inner turning point at frequency omega
@@ -882,13 +884,31 @@ contains
 
     gf%omega = omega
 
+    gf_b = gf%eval(x(1))
+
     turn_loop : do i = 1,SIZE(x)-1
-       if(.NOT. (ml%is_zero(x(i)) .OR. ml%is_zero(x(i+1)))) then
-          if(gf%eval(x(i)) > 0._WP .AND. gf%eval(x(i+1)) <= 0._WP) then
-             x_turn = gf%root(x(i), x(i+1), 0._WP)
+
+       if (.NOT. (ml%is_zero(x(i)) .OR. ml%is_zero(x(i+1)))) then
+
+          gf_a = gf_b
+          gf_b = gf%eval(x(i+1))
+
+          if (gf_a > 0._WP .AND. gf_b <= 0._WP) then
+
+             if (ABS(gf_a) < EPSILON(0._WP)*ABS(gf_b)) then
+                x_turn = x(i)
+             elseif (ABS(gf_b) < EPSILON(0._WP)*ABS(gf_a)) then
+                x_turn = x(i+1)
+             else
+                x_turn = gf%root(x(i), x(i+1), 0._WP)
+             endif
+
              exit turn_loop
+
           end if
+
        endif
+
     end do turn_loop
 
     ! Finish
