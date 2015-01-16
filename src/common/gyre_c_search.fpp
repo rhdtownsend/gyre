@@ -143,7 +143,7 @@ contains
 
           n_iter_def = np%n_iter_max
 
-          df%omega_def = omega_def
+          df%omega_def = [omega_def,-CONJG(omega_def)]
 
           call df%narrow(omega_a, omega_b, r_ext_t(0._WP), n_iter=n_iter_def)
 
@@ -184,6 +184,8 @@ contains
 
        omega_root = cmplx(df%root(omega_a, omega_b, r_ext_t(0._WP), &
                                   f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev, n_iter=n_iter))
+
+       if (REAL(omega_root) < 0._WP) omega_root = -CONJG(omega_root)
 
        n_iter = n_iter + n_iter_def
 
