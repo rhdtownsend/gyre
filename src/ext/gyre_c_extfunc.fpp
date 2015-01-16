@@ -230,6 +230,8 @@ contains
 
     iterate_loop : do i = 1,n_iter_
 
+       if (f_b == 0._WP) exit iterate_loop
+
        ! Calculate the correction
 
        f_dz = f_b*(b - a)
@@ -258,7 +260,7 @@ contains
           tol = 4._WP*EPSILON(0._WP)*ABS(b) + cx_tol
        endif
 
-       if ((ABS(b - a) <= tol .OR. f_b == 0._WP)) exit iterate_loop
+       if (ABS(b - a) <= tol) exit iterate_loop
 
     end do iterate_loop
 
@@ -361,6 +363,8 @@ contains
 
     iterate_loop : do i = 1,n_iter_
 
+       if (f_b == 0._WP) exit iterate_loop
+
        ! Calculate the mid-point values
 
        c =  0.5_WP*(a + b)
@@ -405,7 +409,7 @@ contains
           tol = 4._WP*EPSILON(0._WP)*ABS(b) + rx_tol
        endif
 
-       if ((ABS(b - a) <= tol .OR. f_b == 0._WP)) exit iterate_loop
+       if (ABS(b - a) <= tol) exit iterate_loop
 
     end do iterate_loop
 
