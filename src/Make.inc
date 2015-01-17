@@ -50,7 +50,7 @@ else
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO
 endif
 
-F9XFLAGS:=${F9XFLAGS} $(addprefix -I,${MODPATH}) ${FFLAGS} -std=f2008
+F9XFLAGS:=${F9XFLAGS} $(addprefix -I,${MODPATH}) ${FFLAGS} #-std=f2008
 F77FLAGS:=${F77FLAGS} ${FFLAGS} -ffixed-form
 
 ifeq (${OMP},yes)
@@ -119,6 +119,9 @@ install : ${TARGETS}
 
 clean :
 	rm -f ${TARGETS} $(addsuffix .f90,${TARGETS}) *.o *.mod .depend *.f90
+
+almostclean :
+	rm -f ${TARGETS} $(addsuffix .f90,${TARGETS}) *.o *.mod *.f90
 
 # Dependencies
 
