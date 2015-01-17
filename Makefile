@@ -17,7 +17,7 @@ test :
 build_ref build_ref_arch :
 	@${MAKE} BINDIR=${BINDIR} -w -C test $@
 
-clean :
+clean almostclean :
 	@${MAKE} -w -C src $@
 	rm -f ${BINDIR}/*
 

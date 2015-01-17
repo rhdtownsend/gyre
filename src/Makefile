@@ -23,12 +23,12 @@ install :
             fi; \
         done
 
-clean :
+clean almostclean :
 	@for DIR in ${SUBDIRS}; do \
-            ${MAKE} -w -C $${DIR} clean; \
+            ${MAKE} -w -C $${DIR} $@ ; \
             if [ $$? -ne 0 ]; then \
                 exit $$?; \
             fi; \
         done
 
-.PHONY: all clean
+.PHONY: all clean almostclean
