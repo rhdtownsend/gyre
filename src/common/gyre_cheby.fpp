@@ -27,6 +27,7 @@ module gyre_cheby
   use core_hgroup
   $endif
   use core_memory
+  use core_parallel
 
   ! No implicit typing
 
@@ -64,6 +65,12 @@ module gyre_cheby
   end interface write
   $endif
 
+  $if ($MPI)
+  interface bcast
+     module procedure bcast_
+  end interface bcast
+  $endif
+
   ! Access specifiers
 
   private
@@ -72,6 +79,9 @@ module gyre_cheby
   $if ($HDF5)
   public :: read
   public :: write
+  $endif
+  $if ($MPI)
+  public :: bcast
   $endif
 
   ! Procedures
@@ -214,6 +224,30 @@ contains
     return
 
   end subroutine write_
+
+  $endif
+
+!****
+
+  $if ($MPI)
+
+  subroutine bcast_ (cb, root_rank)
+
+    type(cheby_t), intent(inout) :: cb
+    integer, intent(in)          :: root_rank
+
+    ! Broadcast the cheby_t
+
+    call bcast(cb%x_a, root_rank)
+    call bcast(cb%x_b, root_rank)
+
+    call bcast_alloc(cb%c, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_
 
   $endif
 

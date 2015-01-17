@@ -187,9 +187,6 @@ contains
     call bcast(gp%alpha_thm, root_rank)
     call bcast(gp%alpha_str, root_rank)
 
-    call bcast(gp%omega_a, root_rank)
-    call bcast(gp%omega_b, root_rank)
-
     call bcast(gp%s, root_rank)
 
     call bcast(gp%n, root_rank)

@@ -219,15 +219,19 @@ program gyre_nad_map
 
   ! Write out the map
 
-  hg = hgroup_t(map_filename, CREATE_FILE)
+  if (MPI_RANK == 0) then
 
-  call write_dset(hg, 'omega_re', omega_re)
-  call write_dset(hg, 'omega_im', omega_im)
+     hg = hgroup_t(map_filename, CREATE_FILE)
 
-  call write_dset(hg, 'discrim_map_f', discrim_map_f)
-  call write_dset(hg, 'discrim_map_e', discrim_map_e)
+     call write_dset(hg, 'omega_re', omega_re)
+     call write_dset(hg, 'omega_im', omega_im)
 
-  call hg%final()
+     call write_dset(hg, 'discrim_map_f', discrim_map_f)
+     call write_dset(hg, 'discrim_map_e', discrim_map_e)
+
+     call hg%final()
+
+  end if
 
   ! Finish
 

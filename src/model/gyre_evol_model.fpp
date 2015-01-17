@@ -1148,9 +1148,6 @@ contains
     call bcast(ml%R_star, root_rank)
     call bcast(ml%L_star, root_rank)
 
-    call bcast(ml%p_c, root_rank)
-    call bcast(ml%rho_c, root_rank)
-
     if(MPI_RANK /= root_rank) ml%cc => null()
 
     ! Finish

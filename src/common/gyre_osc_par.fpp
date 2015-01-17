@@ -169,14 +169,14 @@ contains
     call bcast(op%x_ref, root_rank)
 
     call bcast(op%rotation_method, root_rank)
-    call bcast(op%variables, root_rank)
+    call bcast(op%variables_set, root_rank)
     call bcast(op%inner_bound, root_rank)
     call bcast(op%outer_bound, root_rank)
     call bcast(op%inertia_norm, root_rank)
     call bcast(op%tag_list, root_rank)
 
-    call bcast(np%nonadiabatic, root_rank)
-    call bcast(np%reduce_order, root_rank)
+    call bcast(op%nonadiabatic, root_rank)
+    call bcast(op%reduce_order, root_rank)
 
     ! Finish
 

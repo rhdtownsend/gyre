@@ -166,8 +166,11 @@ contains
     call bcast(sp%n_freq, root_rank)
 
     call bcast(sp%grid_type, root_rank)
+    call bcast(sp%grid_frame, root_rank)
+
     call bcast(sp%freq_units, root_rank)
     call bcast(sp%freq_frame, root_rank)
+
     call bcast(sp%tag_list, root_rank)
 
     ! Finish

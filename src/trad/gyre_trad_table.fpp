@@ -25,6 +25,7 @@ module gyre_trad_table
   $if ($HDF5)
   use core_hgroup
   $endif
+  use core_parallel
 
   use gyre_trad_func
 
@@ -167,8 +168,8 @@ contains
 
   subroutine bcast_ (tt, root_rank)
 
-    class(trad_table_t), intent(inout) :: tt
-    integer, intent(in)                :: root_rank
+    type(trad_table_t), intent(inout) :: tt
+    integer, intent(in)               :: root_rank
 
     integer :: l_max
     integer :: l
@@ -188,13 +189,9 @@ contains
 
     endif
 
-    call bcast(tt%tf_def, root_rank)
-
     do l = 0, tt%l_max
        do m = -l, l
-          if (tt%tf_def(l,m)) then
-             call bcast(tt%tf(l,m), root_rank)
-          endif
+          call bcast(tt%tf(l,m), root_rank)
        end do
     end do
 

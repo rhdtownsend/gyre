@@ -25,6 +25,7 @@ module gyre_trad_func
   $if ($HDF5)
   use core_hgroup
   $endif
+  use core_parallel
 
   use astro_hough
 
@@ -253,10 +254,10 @@ contains
 
   $if ($MPI)
 
-  subroutine bcast_ (tr, root_rank)
+  subroutine bcast_ (tf, root_rank)
 
-    class(trad_func_t), intent(inout) :: tr
-    integer, intent(in)               :: root_rank
+    type(trad_func_t), intent(inout) :: tf
+    integer, intent(in)              :: root_rank
 
     ! Broadcast the trad_func_t
 

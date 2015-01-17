@@ -36,6 +36,7 @@ module gyre_mode
   use gyre_mode_par
   use gyre_osc_par
   use gyre_rot
+  use gyre_rot_factory
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -138,8 +139,6 @@ module gyre_mode
 contains
 
   function mode_t_ (ml, mp, op, omega, discrim, x, y, x_ref, y_ref) result (md)
-
-    use gyre_rot_factory
 
     class(model_t), pointer, intent(in) :: ml
     type(mode_par_t), intent(in)        :: mp
@@ -1031,14 +1030,16 @@ contains
 
     ! Broadcast the mode_t
 
-    if(MPI_RANK /= root_rank) then
+    if (MPI_RANK /= root_rank) then
        md%ml => ml
     endif
 
-    call bcast(md%rt, root_rank)
-
     call bcast(md%mp, root_rank)
     call bcast(md%op, root_rank)
+
+    if (MPI_RANK /= root_rank) then
+       allocate(md%rt, SOURCE=c_rot_t(ml, md%mp, md%op))
+    endif
 
     call bcast_alloc(md%x, root_rank)
     call bcast_alloc(md%y, root_rank)
