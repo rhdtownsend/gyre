@@ -23,27 +23,29 @@ program gyre_nad_map
 
   use core_kinds, SP_ => SP
   use gyre_constants
-  use core_parallel
-  use core_order
   use core_hgroup
+  use core_order
+  use core_parallel
 
-  use gyre_version
+  use gyre_bvp
+  use gyre_ext
+  use gyre_grid
+  use gyre_grid_par
+  use gyre_input
+  use gyre_mode
   use gyre_model
   $if($MPI)
   use gyre_model_mpi
   $endif
-  use gyre_modepar
-  use gyre_oscpar
-  use gyre_numpar
-  use gyre_gridpar
-  use gyre_scanpar
-  use gyre_bvp
+  use gyre_mode_par
   use gyre_nad_bvp
-  use gyre_input, read_outpar_ => read_outpar
+  use gyre_num_par
+  use gyre_osc_par
+  use gyre_scan_par
   use gyre_search
-  use gyre_mode
+  use gyre_trad
   use gyre_util
-  use gyre_ext_arith
+  use gyre_version
 
   use ISO_FORTRAN_ENV
 
@@ -53,39 +55,44 @@ program gyre_nad_map
 
   ! Variables
 
-  character(:), allocatable    :: filename
-  integer                      :: unit
-  real(WP), allocatable        :: x_ml(:)
-  class(model_t), pointer      :: ml => null()
-  type(modepar_t), allocatable :: mp(:)
-  type(oscpar_t), allocatable  :: op(:)
-  type(numpar_t), allocatable  :: np(:)
-  type(gridpar_t), allocatable :: shoot_gp(:)
-  type(gridpar_t), allocatable :: recon_gp(:)
-  type(scanpar_t), allocatable :: sp(:)
-  type(scanpar_t), allocatable :: sp_re(:)
-  type(scanpar_t), allocatable :: sp_im(:)
-  real(WP), allocatable        :: omega_re(:)
-  real(WP), allocatable        :: omega_im(:)
-  class(bvp_t), allocatable    :: nad_bp
-  integer                      :: n_omega_re
-  integer                      :: n_omega_im
-  complex(WP), allocatable     :: discrim_map_f(:,:)
-  integer, allocatable         :: discrim_map_e(:,:)
-  integer, allocatable         :: k_part(:)
-  integer                      :: k
-  integer                      :: i(2)
+  character(:), allocatable     :: filename
+  character(:), allocatable     :: gyre_dir
+  integer                       :: unit
+  real(WP), allocatable         :: x_ml(:)
+  class(model_t), pointer       :: ml => null()
+  type(mode_par_t), allocatable :: mp(:)
+  type(osc_par_t), allocatable  :: op(:)
+  type(num_par_t), allocatable  :: np(:)
+  type(grid_par_t), allocatable :: shoot_gp(:)
+  type(grid_par_t), allocatable :: recon_gp(:)
+  type(scan_par_t), allocatable :: sp(:)
+  type(scan_par_t), allocatable :: sp_re(:)
+  type(scan_par_t), allocatable :: sp_im(:)
+  real(WP)                      :: x_i
+  real(WP)                      :: x_o
+  real(WP), allocatable         :: omega_re(:)
+  real(WP), allocatable         :: omega_im(:)
+  real(WP), allocatable         :: x_sh(:)
+  class(c_bvp_t), allocatable   :: nad_bp
+  integer                       :: n_omega_re
+  integer                       :: n_omega_im
+  complex(WP), allocatable      :: discrim_map_f(:,:)
+  integer, allocatable          :: discrim_map_e(:,:)
+  integer, allocatable          :: k_part(:)
+  integer                       :: k
+  integer                       :: i(2)
   $if($MPI)
-  integer                      :: p
+  integer                       :: p
   $endif
-  complex(WP)                  :: omega
-  type(ext_complex_t)          :: discrim
-  character(FILENAME_LEN)      :: map_filename
-  type(hgroup_t)               :: hg
+  complex(WP)                   :: omega
+  type(c_ext_t)                 :: discrim
+  character(FILENAME_LEN)       :: map_filename
+  type(hgroup_t)                :: hg
 
   ! Initialize
 
   call init_parallel()
+  call init_system(filename, gyre_dir)
 
   call set_log_level($str($LOG_LEVEL))
 
@@ -102,27 +109,30 @@ program gyre_nad_map
      write(OUTPUT_UNIT, 120) 'MPI Processors   : ', MPI_SIZE
 120  format(A,I0)
      
+     write(OUTPUT_UNIT, 110) 'Input filename   :', filename
+     write(OUTPUT_UNIT, 110) 'GYRE_DIR         :', gyre_dir
+
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
 
   endif
+
+  call init_trad(gyre_dir)
 
   ! Process arguments
 
   if(MPI_RANK == 0) then
 
-     call parse_args(filename)
-     
      open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
      call read_constants(unit)
      call read_model(unit, x_ml, ml)
-     call read_modepar(unit, mp)
-     call read_oscpar(unit, op)
-     call read_numpar(unit, np)
-     call read_shoot_gridpar(unit, shoot_gp)
-     call read_recon_gridpar(unit, recon_gp)
-     call read_scanpar(unit, sp)
-     call read_outpar(unit, map_filename)
+     call read_mode_par(unit, mp)
+     call read_osc_par(unit, op)
+     call read_num_par(unit, np)
+     call read_shoot_grid_par(unit, shoot_gp)
+     call read_recon_grid_par(unit, recon_gp)
+     call read_scan_par(unit, sp)
+     call read_out_par(unit, map_filename)
 
   endif
 
@@ -143,22 +153,33 @@ program gyre_nad_map
   call select_par(sp, 'REAL', sp_re)
   call select_par(sp, 'IMAG', sp_im)
 
+  $ASSERT(SIZE(op) == 1,No matching osc parameters)
+  $ASSERT(SIZE(np) == 1,No matching num parameters)
+  $ASSERT(SIZE(shoot_gp) >= 1,No matching shoot_grid parameters)
+  $ASSERT(SIZE(recon_gp) >= 1,No matching recon_grid parameters)
   $ASSERT(SIZE(sp_im) == 1,No matching scan parameters)
   $ASSERT(SIZE(sp_re) == 1,No matching scan parameters)
-  
+
   ! Set up the frequency arrays
 
-  call build_scan(sp_re, ml, mp(1), op(1), shoot_gp, x_ml, omega_re)
-  call build_scan(sp_im, ml, mp(1), op(1), shoot_gp, x_ml, omega_im)
+  if (allocated(x_ml)) then
+     x_i = x_ml(1)
+     x_o = x_ml(SIZE(x_ml))
+  else
+     x_i = 0._WP
+     x_o = 1._WP
+  endif
 
-  ! Store the frequency range in shoot_gp
+  call build_scan(sp_re, ml, mp(1), op(1), x_i, x_o, omega_re)
+  call build_scan(sp_im, ml, mp(1), op(1), x_i, x_o, omega_im)
 
-  shoot_gp%omega_a = MINVAL(omega_re)
-  shoot_gp%omega_b = MAXVAL(omega_re)
+  ! Set up the shooting grid
+
+  call build_grid(shoot_gp, ml, mp(1), op(1), omega_re, x_ml, x_sh, verbose=.TRUE.)
 
   ! Set up the bvp
 
-  allocate(nad_bp, SOURCE=nad_bvp_t(ml, mp(1), op(1), np(1), shoot_gp, recon_gp, x_ml))
+  allocate(nad_bp, SOURCE=nad_bvp_t(x_sh, ml, mp(1), op(1), np(1)))
 
   ! Map the discriminant
 
@@ -214,7 +235,7 @@ program gyre_nad_map
 
 contains
 
-  subroutine read_outpar (unit, map_file)
+  subroutine read_out_par (unit, map_file)
 
     integer, intent(in)       :: unit
     character(*), intent(out) :: map_file
@@ -231,6 +252,6 @@ contains
     
     return
 
-  end subroutine read_outpar
+  end subroutine read_out_par
           
 end program gyre_nad_map
