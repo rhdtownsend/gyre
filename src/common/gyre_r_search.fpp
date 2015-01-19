@@ -35,6 +35,7 @@ module gyre_r_search
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_root
   use gyre_scan_par
   use gyre_util
 
@@ -185,7 +186,7 @@ contains
     integer                    :: c_end
     integer                    :: c_rate
     integer                    :: n_iter
-    real(WP)                   :: omega_root
+    type(r_ext_t)              :: omega_root
     integer                    :: i
 
     ! Set up the discriminant function
@@ -216,14 +217,14 @@ contains
 
        n_iter = np%n_iter_max
 
-       omega_root = real(df%root(r_ext_t(omega_a(i)), r_ext_t(omega_b(i)), r_ext_t(0._WP), &
-                                 f_rx_a=discrim_a(i), f_rx_b=discrim_b(i), n_iter=n_iter))
+       call solve(df, np, r_ext_t(omega_a(i)), r_ext_t(omega_b(i)), r_ext_t(0._WP), omega_root, &
+                  n_iter=n_iter, f_rx_a=discrim_a(i), f_rx_b=discrim_b(i))
 
        $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
 
        ! Process it
 
-       call process_root(omega_root, n_iter, MAX(ABS(discrim_a(i)), ABS(discrim_b(i))))
+       call process_root(real(omega_root), n_iter, MAX(ABS(discrim_a(i)), ABS(discrim_b(i))))
 
     end do mode_loop
 

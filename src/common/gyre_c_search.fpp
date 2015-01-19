@@ -33,6 +33,7 @@ module gyre_c_search
   use gyre_mode
   use gyre_model
   use gyre_num_par
+  use gyre_root
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -81,7 +82,7 @@ contains
     type(c_ext_t)            :: discrim_b
     type(c_ext_t)            :: discrim_a_rev
     type(c_ext_t)            :: discrim_b_rev
-    complex(WP)              :: omega_root
+    type(c_ext_t)            :: omega_root
 
     ! Set up the discriminant function
 
@@ -145,7 +146,7 @@ contains
 
           df%omega_def = [omega_def,-CONJG(omega_def)]
 
-          call df%narrow(omega_a, omega_b, r_ext_t(0._WP), n_iter=n_iter_def)
+          call narrow(df, np, omega_a, omega_b, r_ext_t(0._WP), n_iter=n_iter_def)
 
           if (n_iter_def > np%n_iter_max) then
 
@@ -167,7 +168,7 @@ contains
              omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
           endif
 
-          call df%expand(omega_a, omega_b, r_ext_t(0._WP), discrim_a_rev, discrim_b_rev)
+          call expand(df, omega_a, omega_b, r_ext_t(0._WP), f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 
 
        else
 
@@ -182,8 +183,8 @@ contains
 
        n_iter = np%n_iter_max - n_iter_def
 
-       omega_root = cmplx(df%root(omega_a, omega_b, r_ext_t(0._WP), &
-                                  f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev, n_iter=n_iter))
+       call solve(df, np, omega_a, omega_b, r_ext_t(0._WP), omega_root, n_iter=n_iter, &
+                  f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
 
        if (REAL(omega_root) < 0._WP) omega_root = -CONJG(omega_root)
 
@@ -201,11 +202,11 @@ contains
 
        ! Process it
 
-       call process_root(omega_root, n_iter, max(abs(discrim_a), abs(discrim_b)))
+       call process_root(cmplx(omega_root), n_iter, max(abs(discrim_a), abs(discrim_b)))
 
        ! Store the frequency in the deflation array
 
-       omega_def = [omega_def,omega_root]
+       omega_def = [omega_def,cmplx(omega_root)]
 
     end do mode_loop
 
