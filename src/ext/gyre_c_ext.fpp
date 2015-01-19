@@ -73,8 +73,10 @@ module gyre_c_ext
 
   interface c_ext_t
      module procedure c_ext_t_r_
+     module procedure c_ext_t_r_i_
      module procedure c_ext_t_c_
      module procedure c_ext_t_rx_
+     module procedure c_ext_t_rx_ix_
   end interface c_ext_t
 
   interface r_ext_t
@@ -92,6 +94,10 @@ module gyre_c_ext
   interface valid
      module procedure valid_
   end interface valid
+
+  interface conjg
+     module procedure conjg_
+  end interface conjg
 
   interface product
      module procedure product_
@@ -190,6 +196,7 @@ module gyre_c_ext
   public :: real
   public :: cmplx
   public :: valid
+  public :: conjg
   public :: product
   public :: abs
   public :: exp
@@ -228,6 +235,24 @@ contains
 
 !****
 
+  elemental function c_ext_t_r_i_ (r, i) result (cx)
+
+    real(WP), intent(in) :: r
+    real(WP), intent(in) :: i
+    type(c_ext_t)        :: cx
+
+    ! Construct the c_ext_t from the real/imaginary pair r, i
+
+    call split_(CMPLX(r, i, KIND=WP), cx%f, cx%e)
+
+    ! Finish
+
+    return
+
+  end function c_ext_t_r_i_
+
+!****
+
   elemental function c_ext_t_c_ (c) result (cx)
 
     complex(WP), intent(in) :: c
@@ -246,20 +271,39 @@ contains
 !****
 
   elemental function c_ext_t_rx_ (rx) result (cx)
-
+ 
     type(r_ext_t), intent(in) :: rx
     type(c_ext_t)             :: cx
-
+ 
     ! Construct the c_ext_t from the r_ext_t rx
-
+ 
     call split_(CMPLX(FRACTION(rx), KIND=WP), cx%f, cx%e)
     cx = scale(cx, EXPONENT(rx))
+ 
+    ! Finish
+ 
+    return
+ 
+  end function c_ext_t_rx_
+ 
+!****
+
+  elemental function c_ext_t_rx_ix_ (rx, ix) result (cx)
+
+    type(r_ext_t), intent(in) :: rx
+    type(r_ext_t), intent(in) :: ix
+    type(c_ext_t)             :: cx
+
+    ! Construct the c_ext_t from the r_ext_t real/imaginary pair rx,
+    ! ix
+
+    cx = c_ext_t(rx) + c_ext_t(0._WP, 1._WP)*c_ext_t(ix)
 
     ! Finish
 
     return
 
-  end function c_ext_t_rx_
+  end function c_ext_t_rx_ix_
 
 !****
 
@@ -666,6 +710,24 @@ contains
     return
 
   end function valid_
+
+!****
+
+  elemental function conjg_ (cx) result (conjg_cx)
+
+    type(c_ext_t), intent(in) :: cx
+    type(c_ext_t)             :: conjg_cx
+
+    ! Calculate the complex conjugate of cx
+
+    conjg_cx%f = CONJG(cx%f)
+    conjg_cx%e = cx%e
+
+    ! Finish
+
+    return
+
+  end function conjg_
 
 !****
 
