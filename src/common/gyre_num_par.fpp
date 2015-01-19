@@ -35,6 +35,8 @@ module gyre_num_par
      integer         :: n_iter_max
      logical         :: deflate_roots
      character(64)   :: ivp_solver
+     character(64)   :: r_root_solver
+     character(64)   :: c_root_solver
      character(64)   :: matrix_type
      character(2048) :: tag_list
   end type num_par_t
@@ -75,16 +77,18 @@ contains
     integer, intent(in)                       :: unit
     type(num_par_t), allocatable, intent(out) :: np(:)
 
-    integer                        :: n_np
-    integer                        :: i
-    integer                        :: n_iter_max
-    logical                        :: deflate_roots
-    character(LEN(np%ivp_solver))  :: ivp_solver
-    character(LEN(np%matrix_type)) :: matrix_type
-    character(LEN(np%tag_list))    :: tag_list
+    integer                          :: n_np
+    integer                          :: i
+    integer                          :: n_iter_max
+    logical                          :: deflate_roots
+    character(LEN(np%ivp_solver))    :: ivp_solver
+    character(LEN(np%r_root_solver)) :: r_root_solver
+    character(LEN(np%c_root_solver)) :: c_root_solver
+    character(LEN(np%matrix_type))   :: matrix_type
+    character(LEN(np%tag_list))      :: tag_list
 
     namelist /num/ n_iter_max, deflate_roots, &
-         ivp_solver, matrix_type, tag_list
+         ivp_solver, r_root_solver, c_root_solver, matrix_type, tag_list
 
     ! Count the number of num namelists
 
@@ -112,6 +116,10 @@ contains
        deflate_roots = .TRUE.
 
        ivp_solver = 'MAGNUS_GL2'
+
+       r_root_solver = 'BRENT'
+       c_root_solver = 'RIDDERS'
+
        matrix_type = 'BLOCK'
        tag_list = ''
 
@@ -122,6 +130,8 @@ contains
        np(i) = num_par_t(n_iter_max=n_iter_max, &
                         deflate_roots=deflate_roots, &
                         ivp_solver=ivp_solver, &
+                        r_root_solver=r_root_solver, &
+                        c_root_solver=c_root_solver, &
                         matrix_type=matrix_type, &
                         tag_list=tag_list)
 
@@ -151,9 +161,14 @@ contains
     call bcast(np%n_iter_max, root_rank)
 
     call bcast(np%deflate_roots, root_rank)
+ 
+    call bcast(np%ivp_solver, root_rank)
+
+    call bcast(np%r_root_solver, root_rank)
+    call bcast(np%c_root_solver, root_rank)
 
     call bcast(np%matrix_type, root_rank)
-    call bcast(np%ivp_solver, root_rank)
+
     call bcast(np%tag_list, root_rank)
 
     ! Finish
