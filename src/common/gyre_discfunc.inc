@@ -109,7 +109,7 @@ contains
     f_$VAR = this%bp%discrim(omega)
 
     if (ALLOCATED(this%omega_def)) then
-       f_$VAR = f_$VAR/PRODUCT(omega - this%omega_def)
+       f_$VAR = f_$VAR*PRODUCT(omega/(omega - this%omega_def))
     endif
     
     ! Finish
