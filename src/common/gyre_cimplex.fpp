@@ -38,13 +38,13 @@ module gyre_cimplex
      private
      type(c_ext_t)                   :: cx(3)
      type(c_ext_t)                   :: f_cx(3)
-     integer                         :: i_hi
-     integer                         :: i_lo
+     integer                         :: i(3)
      class(c_extfunc_t), allocatable :: cf
    contains
      private
-     procedure, public :: refine => refine_
-     procedure, public :: lowest => lowest_
+     procedure         :: set_indices => set_indices_
+     procedure, public :: verts => verts_
+     procedure, public :: values => values_
   end type cimplex_t
 
   ! Interfaces
@@ -54,11 +54,16 @@ module gyre_cimplex
      module procedure cimplex_t_verts_
   end interface cimplex_t
 
+  interface refine
+     module procedure refine_
+  end interface refine
+
   ! Access specifiers
 
   private
 
   public :: cimplex_t
+  public :: refine
 
 contains
 
@@ -79,12 +84,12 @@ contains
 
 !****
 
-  function cimplex_t_verts_ (cx, f_cx, cf) result (cm)
+  function cimplex_t_verts_ (cf, cx, f_cx) result (cm)
 
-    class(c_ext_t), intent(in)     :: cx(:)
-    class(c_ext_t), intent(in)     :: f_cx(:)
-    class(c_extfunc_t), intent(in) :: cf
-    type(cimplex_t)                :: cm
+    class(c_extfunc_t), intent(in)       :: cf
+    class(c_ext_t), intent(in)           :: cx(:)
+    class(c_ext_t), optional, intent(in) :: f_cx(:)
+    type(cimplex_t)                      :: cm
        
     $CHECK_BOUNDS(SIZE(cx),3)
     $CHECK_BOUNDS(SIZE(f_cx),3)
@@ -96,12 +101,16 @@ contains
     ! Set up the starting vertices
 
     cm%cx = cx
-    cm%f_cx = f_cx
 
-    ! Find the highest and lowest vertices
+    if (PRESENT(f_cx)) then
+       cm%f_cx = f_cx
+    else
+       cm%f_cx(1) = cm%cf%eval(cx(1))
+       cm%f_cx(2) = cm%cf%eval(cx(2))
+       cm%f_cx(3) = cm%cf%eval(cx(3))
+    end if
 
-    cm%i_hi = absmaxloc_(cm%f_cx)
-    cm%i_lo = absminloc_(cm%f_cx)
+    call cm%set_indices()
 
     ! Finish
 
@@ -111,84 +120,156 @@ contains
 
 !****
 
-  subroutine refine_ (this, toler, n_iter)
+  subroutine set_indices_ (this)
 
-    class(cimplex_t), intent(inout)  :: this
-    real(WP), intent(in)             :: toler
+    class(cimplex_t), intent(inout) :: this
+
+    integer       :: i(3)
+    type(r_ext_t) :: a(3)
+
+    ! Set up the ranking indices (yes, this uses a bubble sort!)
+
+    i = [1,2,3]
+
+    a = ABS(this%f_cx)
+
+    if (a(i(1)) > a(i(2))) call swap_(1, 2)
+    if (a(i(2)) > a(i(3))) call swap_(2, 3)
+    if (a(i(1)) > a(i(2))) call swap_(1, 2)
+
+    this%i = i
+
+    ! Finish
+
+    return
+
+  contains
+
+    subroutine swap_ (j_a, j_b)
+
+      integer, intent(in) :: j_a
+      integer, intent(in) :: j_b
+
+      integer :: i_tmp
+
+      i_tmp = i(j_a)
+      i(j_a) = i(j_b)
+      i(j_b) = i_tmp
+
+      return
+
+    end subroutine swap_
+
+  end subroutine set_indices_
+
+!****
+
+  function verts_ (this) result (cx)
+
+    class(cimplex_t), intent(in) :: this
+    type(c_ext_t)                :: cx(3)
+
+    ! Get the vertices, sorted into increasing (value) order
+
+    cx = this%cx(this%i)
+
+    ! Finish
+
+    return
+
+  end function verts_
+
+!****
+
+  function values_ (this) result (f_cx)
+
+    class(cimplex_t), intent(in) :: this
+    type(c_ext_t)                :: f_cx(3)
+
+    ! Get the values, sorted into increasing order
+
+    f_cx = this%f_cx(this%i)
+
+    ! Finish
+
+    return
+
+  end function values_
+
+!****
+
+  subroutine refine_ (cm, cx_tol, n_iter, relative_tol)
+
+    type(cimplex_t), intent(inout)   :: cm
+    type(r_ext_t), intent(in)        :: cx_tol
     integer, optional, intent(inout) :: n_iter
+    logical, optional, intent(in)    :: relative_tol
 
-    real(WP), parameter :: EPS = 4._WP*EPSILON(0._WP)
     logical, parameter  :: VERBOSE = .FALSE.
 
-    integer         :: n_iter_
-    real(WP)        :: tol
-    type(cimplex_t) :: cm
+    logical         :: relative_tol_
+    integer         :: i_iter
+    type(r_ext_t)   :: tol
     type(cimplex_t) :: cm_new
     integer         :: i
-    integer         :: j
 
-    if(PRESENT(n_iter)) then
-       n_iter_ = n_iter
+    if (PRESENT(relative_tol)) then
+       relative_tol_ = relative_tol
     else
-       n_iter_ = 500
-    end if
+       relative_tol_ = .FALSE.
+    endif
 
-    ! Iterate the cimplex using the downhill simplex (Nelder-Mead)
-    ! algorithm, until convergence or the number of iterations is
-    ! exceeded. This implementation follows the same approach as
-    ! described in Wikipedia
+    ! Refine the cimplex until convergence or the number of iterations
+    ! is exceeded. This implementation follows the Nelder-Mead
+    ! algorithm as described in Wikipedia
 
-    tol = MAX(toler, EPS)
-
-    ! ! This appears to be a gfortran bug; intrinsic assignment should work
-
-    cm = cimplex_t(this%cf)
-
-    cm%cx = this%cx
-    cm%f_cx = this%f_cx
-
-    cm%i_lo = this%i_lo
-    cm%i_hi = this%i_hi
-
-    if(VERBOSE) then
+    if (VERBOSE) then
 
        write(OUTPUT_UNIT, *) 'Initial vertices:'
        do i = 1,3
-          write(OUTPUT_UNIT, 100) i, fraction(this%cx(i)), exponent(this%cx(i)), fraction(this%f_cx(i)), exponent(this%f_cx(i))
+          write(OUTPUT_UNIT, 100) i, fraction(cm%cx(i)), exponent(cm%cx(i)), fraction(cm%f_cx(i)), exponent(cm%f_cx(i))
 100       format(I0,2(1X,E16.8),1X,I0,1X,E16.8,1X,I0)
        end do
     endif
 
-    iterate_loop : do j = 1, n_iter_
+    i_iter = 0
+
+    iterate_loop : do
+
+       if (PRESENT(n_iter)) then
+          if (i_iter >= n_iter) exit iterate_loop
+       end if
+
+       i_iter = i_iter + 1
 
        ! Check for convergence (equal minima)
 
-       if (ABS(cm%f_cx(cm%i_hi))-ABS(cm%f_cx(cm%i_lo)) < &
-            tol*ABS(cm%f_cx(cm%i_hi))) exit iterate_loop
+       !if (ABS(cm%f_cx(cm%i(3)))-ABS(cm%f_cx(cm%i(1))) < &
+       !     tol*ABS(cm%f_cx(cm%i(3)))) exit iterate_loop
           
        ! Update the cimplex
 
        ! Reflect
 
-       cm_new = ooze_(cm, -1._WP, cm%i_hi)
+       cm_new = ooze_(cm, -1._WP, cm%i(3))
 
-       if (cm_new%i_lo == cm%i_hi) then
+       if (cm_new%i(1) == cm%i(3)) then
 
           ! Expand
 
-          cm_new = ooze_(cm_new, 2._WP, cm%i_hi)
+          cm_new = ooze_(cm_new, 2._WP, cm%i(3))
 
-       elseif (cm_new%i_hi == cm%i_hi) then
+       elseif (cm_new%i(3) == cm%i(3)) then
 
           ! Contract
 
-          cm_new = ooze_(cm, 0.5_WP, cm%i_hi)
+          cm_new = ooze_(cm, 0.5_WP, cm%i(3))
 
-          if (cm_new%i_hi == cm%i_hi) then
+          if (cm_new%i(3) == cm%i(3)) then
 
              ! Reduce
 
-             cm_new = shrink_(cm, 0.5_WP, cm%i_lo)
+             cm_new = shrink_(cm, 0.5_WP, cm%i(1))
 
           endif
 
@@ -196,8 +277,13 @@ contains
 
        ! Check for convergence (change in coordinates)
 
-       if (ABS(cm%cx(cm%i_hi) - cm%cx(cm%i_lo)) < &
-            tol*MAX(ABS(cm%cx(cm%i_hi)), ABS(cm%cx(cm%i_lo)))) exit iterate_loop
+       if (relative_tol_) then
+          tol = (4._WP*EPSILON(0._WP) + cx_tol)*MAX(ABS(cm%cx(cm%i(3))), ABS(cm%cx(cm%i(1))))
+       else
+          tol = 4._WP*EPSILON(0._WP)*MAX(ABS(cm%cx(cm%i(3))), ABS(cm%cx(cm%i(1)))) + cx_tol
+       endif
+
+       if (ABS(cm%cx(cm%i(3)) - cm%cx(cm%i(1))) <= tol) exit iterate_loop
 
        cm = cm_new
 
@@ -211,9 +297,7 @@ contains
     end do iterate_loop
 
     if (PRESENT(n_iter)) then
-       n_iter = j
-    else
-       $ASSERT(i <= n_iter_,Too many iterations)
+       n_iter = i_iter
     endif
 
     if (VERBOSE) then
@@ -223,37 +307,12 @@ contains
        end do
     endif
 
-    ! this%cimplex_t = cm
-
-    this%cx = cm%cx
-    this%f_cx = cm%f_cx
-
-    this%i_lo = cm%i_lo
-    this%i_hi = cm%i_hi
-
     ! Finish
 
     return
 
   end subroutine refine_
 
-!****
-
-  function lowest_ (this) result (cx)
-
-    class(cimplex_t), intent(in) :: this
-    type(c_ext_t)                :: cx
-
-    ! Return the lowest point of the cimplex
-
-    cx = this%cx(this%i_lo)
-
-    ! Finish
-
-    return
-
-  end function lowest_
-  
 !****
 
   function ooze_ (cm, scale, i) result (cm_new)
@@ -296,8 +355,7 @@ contains
        cm_new%cx(i) = cx_new
        cm_new%f_cx(i) = f_cx_new
 
-       cm_new%i_lo = absminloc_(cm_new%f_cx)
-       cm_new%i_hi = absmaxloc_(cm_new%f_cx)
+       call cm_new%set_indices()
 
     endif
 
@@ -328,60 +386,13 @@ contains
           cm_new%f_cx(j) = cm_new%cf%eval(cm_new%cx(j))
        endif
     end do
-          
-    cm_new%i_lo = absminloc_(cm_new%f_cx)
-    cm_new%i_hi = absmaxloc_(cm_new%f_cx)
+
+    call cm_new%set_indices()
     
     ! Finish
 
     return
 
   end function shrink_
-
-!****
-
-  function absmaxloc_ (cx) result (i_max)
-
-    type(c_ext_t), intent(in) :: cx(:)
-    integer                   :: i_max
-
-    real(WP) :: f(SIZE(cx))
-    integer  :: e(SIZE(cx))
-
-    ! Return the index of the maximum absolute value in cx
-
-    f = FRACTION(ABS(cx))
-    e = MERGE(EXPONENT(ABS(cx)), -HUGE(0), f > 0._WP)
-
-    i_max = MAXLOC(f, MASK=e==MAXVAL(e), DIM=1)
-
-    ! Finish
-
-    return
-
-  end function absmaxloc_
-
-!****
-
-  function absminloc_ (cx) result (i_min)
-
-    type(c_ext_t), intent(in) :: cx(:)
-    integer                   :: i_min
-
-    real(WP) :: f(SIZE(cx))
-    integer  :: e(SIZE(cx))
-
-    ! Return the index of the minimum absolute value in cx
-
-    f = FRACTION(ABS(cx))
-    e = MERGE(EXPONENT(ABS(cx)), -HUGE(0), f > 0._WP)
-
-    i_min = MINLOC(f, MASK=e==MINVAL(e), DIM=1)
-
-    ! Finish
-
-    return
-
-  end function absminloc_
 
 end module gyre_cimplex
