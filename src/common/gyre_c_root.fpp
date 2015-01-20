@@ -23,6 +23,7 @@ module gyre_c_root
 
   use core_kinds
 
+  use gyre_cimplex
   use gyre_ext
   use gyre_extfunc
   use gyre_num_par
@@ -124,6 +125,8 @@ contains
        call narrow_secant_(cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
     case ('RIDDERS')
        call narrow_ridders_(cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
+    case ('SIMPLEX')
+       call narrow_simplex_(cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
     case default
        $ABORT(Invalid c_root_solver)
     end select
@@ -409,6 +412,74 @@ contains
     ! Finish
 
   end subroutine narrow_ridders_
+
+!****
+
+  subroutine narrow_simplex_ (cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
+
+    class(c_extfunc_t), intent(inout)      :: cf
+    class(num_par_t), intent(in)           :: np
+    type(c_ext_t), intent(inout)           :: cx_a
+    type(c_ext_t), intent(inout)           :: cx_b
+    type(r_ext_t), intent(in)              :: cx_tol
+    integer, optional, intent(inout)       :: n_iter
+    logical, optional, intent(in)          :: relative_tol
+    type(c_ext_t), optional, intent(inout) :: f_cx_a
+    type(c_ext_t), optional, intent(inout) :: f_cx_b
+
+    type(c_ext_t)   :: cx(3)
+    type(c_ext_t)   :: f_cx(3) 
+    type(cimplex_t) :: cm
+   
+    $ASSERT(cx_a /= cx_b,Invalid initial pair)
+
+    ! Narrow the pair [cx_a,cx_b] toward a root of the function cf
+    ! using the simplex algorithm to minimize |cf|
+
+    ! Set up the initial state
+
+    cx(1) = cx_a
+    cx(2) = cx_b
+    cx(3) = 0.5_WP*(cx(1) + cx(2)) + 0.5_WP*(cx(2) - cx(1))*CMPLX(0._WP, 1._WP, KIND=WP)
+
+    if (PRESENT(f_cx_a)) then
+       f_cx(1) = f_cx_a
+    else
+       f_cx(1) = cf%eval(cx(1))
+    endif
+
+    if (PRESENT(f_cx_b)) then
+       f_cx(2) = f_cx_b
+    else
+       f_cx(2) = cf%eval(cx(2))
+    endif
+
+    f_cx(3) = cf%eval(cx(3))
+
+    ! Set up the cimplex_t
+
+    cm = cimplex_t(cf, cx, f_cx)
+
+    ! Refine it
+
+    call refine(cm, cx_tol, n_iter, relative_tol)
+
+    ! Store the results
+
+    cx = cm%verts()
+    f_cx = cm%values()
+
+    cx_a = cx(2)
+    cx_b = cx(1)
+
+    if (PRESENT(f_cx_a)) f_cx_a = f_cx(2)
+    if (PRESENT(f_cx_b)) f_cx_b = f_cx(1)
+
+    ! Finish
+
+    return
+
+  end subroutine narrow_simplex_
 
 !****
 
