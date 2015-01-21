@@ -29,7 +29,7 @@ module gyre_${T}_findiff_ivp
   use core_kinds
   use core_linalg
 
-  use gyre_jacob
+  use gyre_eqns
   use gyre_ivp
   use gyre_ext
   use gyre_linalg
@@ -44,7 +44,7 @@ module gyre_${T}_findiff_ivp
 
   type, extends (${T}_ivp_t) :: ${T}_findiff_ivp_t
      private
-     class(${T}_jacob_t), allocatable :: jc
+     class(${T}_eqns_t), allocatable :: eq
    contains
      private
      procedure, public :: shoot => shoot_
@@ -67,16 +67,16 @@ module gyre_${T}_findiff_ivp
 
 contains
 
-  function ${T}_findiff_ivp_t_ (jc) result (iv)
+  function ${T}_findiff_ivp_t_ (eq) result (iv)
 
-    class(${T}_jacob_t), intent(in) :: jc
-    type(${T}_findiff_ivp_t)      :: iv
+    class(${T}_eqns_t), intent(in) :: eq
+    type(${T}_findiff_ivp_t)       :: iv
 
     ! Construct the findiff_ivp_t
 
-    allocate(iv%jc, SOURCE=jc)
+    allocate(iv%eq, SOURCE=eq)
 
-    iv%n_e = jc%n_e
+    iv%n_e = eq%n_e
 
     ! Finish
 
@@ -140,13 +140,13 @@ contains
     $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
 
-    ! Evaluate the Jacobian
+    ! Evaluate the RHS matrix
 
     x = this%abscissa(x_a, x_b)
     dx = x_b - x_a
 
-    xA(:,:,1) = this%jc%xA(x(1), omega)
-    xA(:,:,2) = this%jc%xA(x(2), omega)
+    xA(:,:,1) = this%eq%xA(x(1), omega)
+    xA(:,:,2) = this%eq%xA(x(2), omega)
 
     ! Set up the shooting matrices and scales
 

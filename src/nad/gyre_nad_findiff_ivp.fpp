@@ -23,9 +23,9 @@ module gyre_nad_findiff_ivp
 
   use core_kinds
 
+  use gyre_eqns
   use gyre_ext
   use gyre_findiff_ivp
-  use gyre_jacob
   use gyre_model
 
   use ISO_FORTRAN_ENV
@@ -59,15 +59,15 @@ module gyre_nad_findiff_ivp
 
 contains
 
-  function nad_findiff_ivp_t_ (ml, jc) result (iv)
+  function nad_findiff_ivp_t_ (ml, eq) result (iv)
 
     class(model_t), pointer, intent(in) :: ml
-    class(c_jacob_t), intent(in)        :: jc
+    class(c_eqns_t), intent(in)         :: eq
     type(nad_findiff_ivp_t)             :: iv
 
     ! Construct the nad_findiff_ivp_t
 
-    iv%c_findiff_ivp_t = c_findiff_ivp_t(jc)
+    iv%c_findiff_ivp_t = c_findiff_ivp_t(eq)
 
     iv%ml => ml
 

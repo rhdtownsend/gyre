@@ -25,7 +25,7 @@ module gyre_nad_bound
 
   use gyre_atmos
   use gyre_bound
-  use gyre_jacob
+  use gyre_eqns
   use gyre_model
   use gyre_osc_par
   use gyre_rot
@@ -50,13 +50,13 @@ module gyre_nad_bound
 
   type, extends (c_bound_t) :: nad_bound_t
      private
-     class(model_t), pointer       :: ml => null()
-     class(c_rot_t), allocatable   :: rt
-     class(c_jacob_t), allocatable :: jc
-     real(WP)                      :: x_i
-     real(WP)                      :: x_o
-     integer                       :: type_i
-     integer                       :: type_o
+     class(model_t), pointer      :: ml => null()
+     class(c_rot_t), allocatable  :: rt
+     class(c_eqns_t), allocatable :: eq
+     real(WP)                     :: x_i
+     real(WP)                     :: x_o
+     integer                      :: type_i
+     integer                      :: type_o
    contains 
      private
      procedure, public :: B_i => B_i_
@@ -85,11 +85,11 @@ module gyre_nad_bound
 
 contains
 
-  function nad_bound_t_ (ml, rt, jc, op, x_i, x_o) result (bd)
+  function nad_bound_t_ (ml, rt, eq, op, x_i, x_o) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
     class(c_rot_t), intent(in)          :: rt
-    class(c_jacob_t), intent(in)        :: jc
+    class(c_eqns_t), intent(in)         :: eq
     type(osc_par_t), intent(in)         :: op
     real(WP)                            :: x_i
     real(WP)                            :: x_o
@@ -99,7 +99,7 @@ contains
 
     bd%ml => ml
     allocate(bd%rt, SOURCE=rt)
-    allocate(bd%jc, SOURCE=jc)
+    allocate(bd%eq, SOURCE=eq)
 
     bd%x_i = x_i
     bd%x_o = x_o
@@ -155,9 +155,9 @@ contains
        $ABORT(Invalid type_i)
     end select
 
-    ! Transform to the variables used in the jacobian
+    ! Transform to the variables used in the differential equations
 
-    B_i = MATMUL(B_i, this%jc%T(this%x_i, omega, .TRUE.))
+    B_i = MATMUL(B_i, this%eq%T(this%x_i, omega, .TRUE.))
 
     ! Finish
 
@@ -281,9 +281,9 @@ contains
        $ABORT(Invalid type_o)
     end select
 
-    ! Transform to the variables used in the jacobian
+    ! Transform to the variables used in the differential equations
 
-    B_o = MATMUL(B_o, this%jc%T(this%x_o, omega, .TRUE.))
+    B_o = MATMUL(B_o, this%eq%T(this%x_o, omega, .TRUE.))
     
     ! Finish
 

@@ -1,7 +1,7 @@
-! Module   : gyre_jacob
-! Purpose  : jacobian evaluation
+! Module   : gyre_c_eqns
+! Purpose  : differential equations evaluation (complex)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,11 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_jacob
+$include 'gyre_eqns.inc'
 
-  ! Uses
-
-  use gyre_r_jacob
-  use gyre_c_jacob
-
-end module gyre_jacob
+$MOD_DECL(c,complex)

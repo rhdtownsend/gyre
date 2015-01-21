@@ -24,9 +24,9 @@ module gyre_ivp_factory
   use core_kinds
 
   use gyre_colloc_ivp
+  use gyre_eqns
   use gyre_findiff_ivp
   use gyre_ivp
-  use gyre_jacob
   use gyre_num_par
   use gyre_magnus_ivp
 
@@ -61,9 +61,9 @@ contains
 
   $local $T $1
 
-  function ${T}_ivp_t_ (jc, np) result (iv)
+  function ${T}_ivp_t_ (eq, np) result (iv)
 
-    class(${T}_jacob_t), intent(in) :: jc
+    class(${T}_eqns_t), intent(in)  :: eq
     type(num_par_t), intent(in)     :: np
     class(${T}_ivp_t), allocatable  :: iv
     
@@ -71,17 +71,17 @@ contains
 
     select case (np%ivp_solver)
     case ('MAGNUS_GL2')
-       allocate(iv, SOURCE=${T}_magnus_ivp_t(jc, 'GL2'))
+       allocate(iv, SOURCE=${T}_magnus_ivp_t(eq, 'GL2'))
     case ('MAGNUS_GL4')
-       allocate(iv, SOURCE=${T}_magnus_ivp_t(jc, 'GL4'))
+       allocate(iv, SOURCE=${T}_magnus_ivp_t(eq, 'GL4'))
     case ('MAGNUS_GL6')
-       allocate(iv, SOURCE=${T}_magnus_ivp_t(jc, 'GL6'))
+       allocate(iv, SOURCE=${T}_magnus_ivp_t(eq, 'GL6'))
     case ('COLLOC_GL2')
-       allocate(iv, SOURCE=${T}_colloc_ivp_t(jc, 'GL2'))
+       allocate(iv, SOURCE=${T}_colloc_ivp_t(eq, 'GL2'))
     case ('COLLOC_GL4')
-       allocate(iv, SOURCE=${T}_colloc_ivp_t(jc, 'GL4'))
+       allocate(iv, SOURCE=${T}_colloc_ivp_t(eq, 'GL4'))
     case ('FINDIFF')
-       allocate(iv, SOURCE=${T}_findiff_ivp_t(jc))
+       allocate(iv, SOURCE=${T}_findiff_ivp_t(eq))
     case default
        $ABORT(Invalid ivp_solver)
     end select

@@ -1,5 +1,5 @@
-! Module   : gyre_ad_jacob
-! Purpose  : jacobian evaluation (adiabatic)
+! Module   : gyre_ad_eqns
+! Purpose  : differential equations evaluation (adiabatic)
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -17,13 +17,13 @@
 
 $include 'core.inc'
 
-module gyre_ad_jacob
+module gyre_ad_eqns
 
   ! Uses
 
   use core_kinds
 
-  use gyre_jacob
+  use gyre_eqns
   use gyre_linalg
   use gyre_model
   use gyre_osc_par
@@ -44,7 +44,7 @@ module gyre_ad_jacob
 
   ! Derived-type definitions
 
-  type, extends (r_jacob_t) :: ad_jacob_t
+  type, extends (r_eqns_t) :: ad_eqns_t
      private
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
@@ -61,65 +61,65 @@ module gyre_ad_jacob
      procedure         :: T_jcd_
      procedure         :: T_mix_
      procedure         :: T_lagp_
-  end type ad_jacob_t
+  end type ad_eqns_t
 
   ! Interfaces
 
-  interface ad_jacob_t
-     module procedure ad_jacob_t_
-  end interface ad_jacob_t
+  interface ad_eqns_t
+     module procedure ad_eqns_t_
+  end interface ad_eqns_t
 
   ! Access specifiers
 
   private
 
-  public :: ad_jacob_t
+  public :: ad_eqns_t
 
   ! Procedures
 
 contains
 
-  function ad_jacob_t_ (ml, rt, op) result (jc)
+  function ad_eqns_t_ (ml, rt, op) result (eq)
 
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
     type(osc_par_t), intent(in)         :: op
-    type(ad_jacob_t)                    :: jc
+    type(ad_eqns_t)                     :: eq
 
-    ! Construct the ad_jacob_t
+    ! Construct the ad_eqns_t
 
-    jc%ml => ml
-    allocate(jc%rt, SOURCE=rt)
+    eq%ml => ml
+    allocate(eq%rt, SOURCE=rt)
 
     select case (op%variables_set)
     case ('DZIEM')
-       jc%vars = DZIEM_VARS
+       eq%vars = DZIEM_VARS
     case ('JCD')
-       jc%vars = JCD_VARS
+       eq%vars = JCD_VARS
     case ('MIX')
-       jc%vars = MIX_VARS
+       eq%vars = MIX_VARS
     case ('LAGP')
-       jc%vars = LAGP_VARS
+       eq%vars = LAGP_VARS
     case default
        $ABORT(Invalid variables_set)
     end select
 
-    jc%n_e = 4
+    eq%n_e = 4
 
     ! Finish
 
     return
 
-  end function ad_jacob_t_
+  end function ad_eqns_t_
 
 !****
 
   function A_ (this, x, omega) result (A)
 
-    class(ad_jacob_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: A(this%n_e,this%n_e)
+    class(ad_eqns_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP), intent(in)         :: omega
+    real(WP)                     :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
@@ -135,10 +135,10 @@ contains
 
   function xA_ (this, x, omega) result (xA)
 
-    class(ad_jacob_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: xA(this%n_e,this%n_e)
+    class(ad_eqns_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP), intent(in)         :: omega
+    real(WP)                     :: xA(this%n_e,this%n_e)
     
     ! Evaluate the log(x)-space RHS matrix (=x*A)
 
@@ -165,10 +165,10 @@ contains
 
   function xA_dziem_ (this, x, omega) result (xA)
 
-    class(ad_jacob_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: xA(this%n_e,this%n_e)
+    class(ad_eqns_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP), intent(in)         :: omega
+    real(WP)                     :: xA(this%n_e,this%n_e)
 
     real(WP) :: V_g
     real(WP) :: U
@@ -224,10 +224,10 @@ contains
 
   function xA_jcd_ (this, x, omega) result (xA)
 
-    class(ad_jacob_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: xA(this%n_e,this%n_e)
+    class(ad_eqns_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP), intent(in)         :: omega
+    real(WP)                     :: xA(this%n_e,this%n_e)
 
     real(WP) :: V_g
     real(WP) :: U
@@ -312,10 +312,10 @@ contains
 
   function xA_mix_ (this, x, omega) result (xA)
 
-    class(ad_jacob_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: xA(this%n_e,this%n_e)
+    class(ad_eqns_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP), intent(in)         :: omega
+    real(WP)                     :: xA(this%n_e,this%n_e)
 
     real(WP) :: V_g
     real(WP) :: U
@@ -371,10 +371,10 @@ contains
 
   function xA_lagp_ (this, x, omega) result (xA)
 
-    class(ad_jacob_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: xA(this%n_e,this%n_e)
+    class(ad_eqns_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP), intent(in)         :: omega
+    real(WP)                     :: xA(this%n_e,this%n_e)
 
     real(WP) :: V_2
     real(WP) :: V
@@ -435,11 +435,11 @@ contains
 
   function T_ (this, x, omega, to_canon) result (T)
 
-    class(ad_jacob_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    logical, intent(in)           :: to_canon
-    real(WP)                      :: T(this%n_e,this%n_e)
+    class(ad_eqns_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP), intent(in)         :: omega
+    logical, intent(in)          :: to_canon
+    real(WP)                     :: T(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert variables to/from
     ! the canonical (DZEIM) formulation
@@ -467,11 +467,11 @@ contains
 
   function T_jcd_ (this, x, omega, to_canon) result (T)
 
-    class(ad_jacob_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    logical, intent(in)           :: to_canon
-    real(WP)                      :: T(this%n_e,this%n_e)
+    class(ad_eqns_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP), intent(in)         :: omega
+    logical, intent(in)          :: to_canon
+    real(WP)                     :: T(this%n_e,this%n_e)
 
     real(WP) :: U
     real(WP) :: c_1
@@ -602,11 +602,11 @@ contains
 
   function T_mix_ (this, x, omega, to_canon) result (T)
 
-    class(ad_jacob_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    logical, intent(in)           :: to_canon
-    real(WP)                      :: T(this%n_e,this%n_e)
+    class(ad_eqns_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP), intent(in)         :: omega
+    logical, intent(in)          :: to_canon
+    real(WP)                     :: T(this%n_e,this%n_e)
 
     real(WP) :: U
 
@@ -675,11 +675,11 @@ contains
 
   function T_lagp_ (this, x, omega, to_canon) result (T)
 
-    class(ad_jacob_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    logical, intent(in)           :: to_canon
-    real(WP)                      :: T(this%n_e,this%n_e)
+    class(ad_eqns_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP), intent(in)         :: omega
+    logical, intent(in)          :: to_canon
+    real(WP)                     :: T(this%n_e,this%n_e)
 
     real(WP) :: V
     real(WP) :: V_2
@@ -745,4 +745,4 @@ contains
 
   end function T_lagp_
 
-end module gyre_ad_jacob
+end module gyre_ad_eqns

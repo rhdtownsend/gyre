@@ -28,7 +28,7 @@ module gyre_${T}_magnus_ivp
 
   use core_kinds
 
-  use gyre_jacob
+  use gyre_eqns
   use gyre_ext
   use gyre_ivp
   use gyre_linalg
@@ -49,8 +49,8 @@ module gyre_${T}_magnus_ivp
 
   type, extends (${T}_ivp_t) :: ${T}_magnus_ivp_t
      private
-     class(${T}_jacob_t), allocatable :: jc
-     integer                          :: scheme
+     class(${T}_eqns_t), allocatable :: eq
+     integer                         :: scheme
    contains
      private
      procedure, public :: shoot => shoot_
@@ -75,15 +75,15 @@ module gyre_${T}_magnus_ivp
 
 contains
 
-  function ${T}_magnus_ivp_t_ (jc, scheme) result (iv)
+  function ${T}_magnus_ivp_t_ (eq, scheme) result (iv)
 
-    class(${T}_jacob_t), intent(in) :: jc
-    character(*), intent(in)        :: scheme
-    type(${T}_magnus_ivp_t)         :: iv
+    class(${T}_eqns_t), intent(in) :: eq
+    character(*), intent(in)       :: scheme
+    type(${T}_magnus_ivp_t)        :: iv
 
     ! Construct the magnus_ivp_t
 
-    allocate(iv%jc, SOURCE=jc)
+    allocate(iv%eq, SOURCE=eq)
 
     select case (scheme)
     case ('GL2')
@@ -96,7 +96,7 @@ contains
        $ABORT(Invalid scheme)
     end select
 
-    iv%n_e = jc%n_e
+    iv%n_e = eq%n_e
 
     ! Finish
 
@@ -404,11 +404,11 @@ contains
 
     ! Evaluate the GL2 Magnus slope matrix
 
-    ! Calculate the Jacobian
+    ! Calculate the RHS matrix
 
     x = this%abscissa(x_a, x_b)
 
-    A = this%jc%A(x(1), omega)
+    A = this%eq%A(x(1), omega)
 
     ! Set up the slope matrix
 
@@ -437,13 +437,13 @@ contains
 
     ! Evaluate the GL4 Magnus slope matrix
 
-    ! Calculate the Jacobians
+    ! Calculate the RHS matrices
 
     dx = x_b - x_a
     x = this%abscissa(x_a, x_b)
 
-    A(:,:,1) = this%jc%A(x(1), omega)
-    A(:,:,2) = this%jc%A(x(2), omega)
+    A(:,:,1) = this%eq%A(x(1), omega)
+    A(:,:,2) = this%eq%A(x(2), omega)
 
     ! Set up the Magnus slope matrix (Blanes et al. 2009, eqns. 243
     ! and 253; note that the 12 in the denominator of their expression
@@ -478,14 +478,14 @@ contains
 
     ! Evaluate the GL6 Magnus slope matrix
 
-    ! Calculate the Jacobians
+    ! Calculate the RHS matrices
 
     dx = x_b - x_a
     x = this%abscissa(x_a, x_b)
 
-    A(:,:,1) = this%jc%A(x(1), omega)
-    A(:,:,2) = this%jc%A(x(2), omega)
-    A(:,:,3) = this%jc%A(x(3), omega)
+    A(:,:,1) = this%eq%A(x(1), omega)
+    A(:,:,2) = this%eq%A(x(2), omega)
+    A(:,:,3) = this%eq%A(x(3), omega)
 
     ! Set up the Magnus slope matrix (Blanes et al. 2009, eqns. 251
     ! and 257)

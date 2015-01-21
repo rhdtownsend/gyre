@@ -1,7 +1,7 @@
-! Incfile  : gyre_jacob
-! Purpose  : jacobian evaluation (template)
+! Incfile  : gyre_eqns
+! Purpose  : differential equations evaluation (template)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -20,7 +20,7 @@ $define $MOD_DECL $sub
 $local $T $1
 $local $TYPE $2
 
-module gyre_${T}_jacob
+module gyre_${T}_eqns
 
   ! Uses
 
@@ -32,7 +32,7 @@ module gyre_${T}_jacob
 
   ! Derived-type definitions
 
-  type, abstract :: ${T}_jacob_t
+  type, abstract :: ${T}_eqns_t
      private
      integer, public :: n_e
    contains
@@ -40,7 +40,7 @@ module gyre_${T}_jacob
      procedure(A_), deferred, public :: A
      procedure(A_), deferred, public :: xA
      procedure(T_), deferred, public :: T
-  end type ${T}_jacob_t
+  end type ${T}_eqns_t
 
   ! Interfaces
 
@@ -48,21 +48,21 @@ module gyre_${T}_jacob
 
      function A_ (this, x, omega) result (A)
        use core_kinds
-       import ${T}_jacob_t
-       class(${T}_jacob_t), intent(in) :: this
-       real(WP), intent(in)            :: x
-       $TYPE(WP), intent(in)           :: omega
-       $TYPE(WP)                       :: A(this%n_e,this%n_e)
+       import ${T}_eqns_t
+       class(${T}_eqns_t), intent(in) :: this
+       real(WP), intent(in)           :: x
+       $TYPE(WP), intent(in)          :: omega
+       $TYPE(WP)                      :: A(this%n_e,this%n_e)
      end function A_
 
      function T_ (this, x, omega, to_canon) result (T)
        use core_kinds
-       import ${T}_jacob_t
-       class(${T}_jacob_t), intent(in) :: this
-       real(WP), intent(in)            :: x
-       $TYPE(WP), intent(in)           :: omega
-       logical, intent(in)             :: to_canon
-       $TYPE(WP)                       :: T(this%n_e,this%n_e)
+       import ${T}_eqns_t
+       class(${T}_eqns_t), intent(in) :: this
+       real(WP), intent(in)           :: x
+       $TYPE(WP), intent(in)          :: omega
+       logical, intent(in)            :: to_canon
+       $TYPE(WP)                      :: T(this%n_e,this%n_e)
      end function T_
 
   end interface
@@ -71,8 +71,8 @@ module gyre_${T}_jacob
 
   private
 
-  public :: ${T}_jacob_t
+  public :: ${T}_eqns_t
 
-end module gyre_${T}_jacob
+end module gyre_${T}_eqns
 
 $endsub

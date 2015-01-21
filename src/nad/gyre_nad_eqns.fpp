@@ -1,5 +1,5 @@
-! Module   : gyre_nad_jacob
-! Purpose  : jacobian evaluation (nonadiabatic)
+! Module   : gyre_nad_eqns
+! Purpose  : differential equations evaluation (nonadiabatic)
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -17,13 +17,13 @@
 
 $include 'core.inc'
 
-module gyre_nad_jacob
+module gyre_nad_eqns
 
   ! Uses
 
   use core_kinds
 
-  use gyre_jacob
+  use gyre_eqns
   use gyre_linalg
   use gyre_model
   use gyre_osc_par
@@ -43,7 +43,7 @@ module gyre_nad_jacob
 
   ! Derived-type definitions
 
-  type, extends (c_jacob_t) :: nad_jacob_t
+  type, extends (c_eqns_t) :: nad_eqns_t
      private
      class(model_t), pointer     :: ml => null()
      class(c_rot_t), allocatable :: rt
@@ -58,63 +58,63 @@ module gyre_nad_jacob
      procedure, public :: T => T_
      procedure         :: T_jcd_
      procedure         :: T_lagp_
-  end type nad_jacob_t
+  end type nad_eqns_t
 
   ! Interfaces
 
-  interface nad_jacob_t
-     module procedure nad_jacob_t_
-  end interface nad_jacob_t
+  interface nad_eqns_t
+     module procedure nad_eqns_t_
+  end interface nad_eqns_t
 
   ! Access specifiers
 
   private
 
-  public :: nad_jacob_t
+  public :: nad_eqns_t
 
   ! Procedures
 
 contains
 
-  function nad_jacob_t_ (ml, rt, op) result (jc)
+  function nad_eqns_t_ (ml, rt, op) result (eq)
 
     class(model_t), pointer, intent(in)     :: ml
     class(c_rot_t), allocatable, intent(in) :: rt
     type(osc_par_t), intent(in)             :: op
-    type(nad_jacob_t)                       :: jc
+    type(nad_eqns_t)                        :: eq
 
-    ! Construct the nad_jacob_t
+    ! Construct the nad_eqns_t
 
-    jc%ml => ml
-    allocate(jc%rt, SOURCE=rt)
+    eq%ml => ml
+    allocate(eq%rt, SOURCE=rt)
 
     select case (op%variables_set)
     case ('DZIEM')
-       jc%vars = DZIEM_VARS
+       eq%vars = DZIEM_VARS
     case ('JCD')
-       jc%vars = JCD_VARS
+       eq%vars = JCD_VARS
     case ('LAGP')
-       jc%vars = LAGP_VARS
+       eq%vars = LAGP_VARS
     case default
        $ABORT(Invalid variables_set)
     end select
 
-    jc%n_e = 6
+    eq%n_e = 6
 
     ! Finish
 
     return
 
-  end function nad_jacob_t_
+  end function nad_eqns_t_
 
 !****
 
   function A_ (this, x, omega) result (A)
 
-    class(nad_jacob_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    complex(WP), intent(in)        :: omega
-    complex(WP)                    :: A(this%n_e,this%n_e)
+    class(nad_eqns_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    complex(WP)                   :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
@@ -130,10 +130,10 @@ contains
 
   function xA_ (this, x, omega) result (xA)
 
-    class(nad_jacob_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    complex(WP), intent(in)        :: omega
-    complex(WP)                    :: xA(this%n_e,this%n_e)
+    class(nad_eqns_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    complex(WP)                   :: xA(this%n_e,this%n_e)
     
     ! Evaluate the log(x)-space RHS matrix (=x*A)
 
@@ -158,10 +158,10 @@ contains
 
   function xA_dziem_ (this, x, omega) result (xA)
 
-    class(nad_jacob_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    complex(WP), intent(in)        :: omega
-    complex(WP)                    :: xA(this%n_e,this%n_e)
+    class(nad_eqns_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    complex(WP)                   :: xA(this%n_e,this%n_e)
 
     real(WP)    :: V
     real(WP)    :: V_g
@@ -268,10 +268,10 @@ contains
 
   function xA_jcd_ (this, x, omega) result (xA)
 
-    class(nad_jacob_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    complex(WP), intent(in)        :: omega
-    complex(WP)                    :: xA(this%n_e,this%n_e)
+    class(nad_eqns_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    complex(WP)                   :: xA(this%n_e,this%n_e)
     
     real(WP)    :: V
     real(WP)    :: V_g
@@ -428,10 +428,10 @@ contains
 
   function xA_lagp_ (this, x, omega) result (xA)
 
-    class(nad_jacob_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    complex(WP), intent(in)        :: omega
-    complex(WP)                    :: xA(this%n_e,this%n_e)
+    class(nad_eqns_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    complex(WP)                   :: xA(this%n_e,this%n_e)
 
     real(WP)    :: V_2
     real(WP)    :: V
@@ -541,11 +541,11 @@ contains
 
   function T_ (this, x, omega, to_canon) result (T)
 
-    class(nad_jacob_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    complex(WP), intent(in)        :: omega
-    logical, intent(in)            :: to_canon
-    complex(WP)                    :: T(this%n_e,this%n_e)
+    class(nad_eqns_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    logical, intent(in)           :: to_canon
+    complex(WP)                   :: T(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert variables to/from
     ! the canonical (DZEIM) formulation
@@ -571,11 +571,11 @@ contains
 
   function T_jcd_ (this, x, omega, to_canon) result (T)
 
-    class(nad_jacob_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    complex(WP), intent(in)        :: omega
-    logical, intent(in)            :: to_canon
-    complex(WP)                    :: T(this%n_e,this%n_e)
+    class(nad_eqns_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    logical, intent(in)           :: to_canon
+    complex(WP)                   :: T(this%n_e,this%n_e)
 
     real(WP)    :: U
     real(WP)    :: c_1
@@ -794,11 +794,11 @@ contains
 
   function T_lagp_ (this, x, omega, to_canon) result (T)
 
-    class(nad_jacob_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    complex(WP), intent(in)        :: omega
-    logical, intent(in)            :: to_canon
-    complex(WP)                    :: T(this%n_e,this%n_e)
+    class(nad_eqns_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    logical, intent(in)           :: to_canon
+    complex(WP)                   :: T(this%n_e,this%n_e)
 
     real(WP) :: V_2
 
@@ -907,4 +907,4 @@ contains
 
   end function T_lagp_
 
-end module gyre_nad_jacob
+end module gyre_nad_eqns

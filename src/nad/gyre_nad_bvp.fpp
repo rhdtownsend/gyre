@@ -68,7 +68,7 @@ contains
     use gyre_nad_magnus_ivp
     use gyre_nad_findiff_ivp
 
-    use gyre_nad_jacob
+    use gyre_nad_eqns
     use gyre_nad_bound
 
     real(WP), intent(in)                :: x(:)
@@ -79,7 +79,7 @@ contains
     type(nad_bvp_t), target             :: bp
 
     class(c_rot_t), allocatable    :: rt
-    type(nad_jacob_t)              :: jc
+    type(nad_eqns_t)               :: eq
     integer                        :: n
     real(WP)                       :: x_i
     real(WP)                       :: x_o
@@ -93,9 +93,9 @@ contains
 
     allocate(rt, SOURCE=c_rot_t(ml, mp, op))
  
-    ! Initialize the jacobian
+    ! Initialize the equations
 
-    jc = nad_jacob_t(ml, rt, op)
+    eq = nad_eqns_t(ml, rt, op)
 
     ! Initialize the boundary conditions
 
@@ -104,30 +104,30 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    bd = nad_bound_t(ml, rt, jc, op, x_i, x_o)
+    bd = nad_bound_t(ml, rt, eq, op, x_i, x_o)
 
     ! Initialize the IVP solver
 
     select case (np%ivp_solver)
     case ('MAGNUS_GL2')
-       allocate(iv, SOURCE=nad_magnus_ivp_t(ml, jc, 'GL2'))
+       allocate(iv, SOURCE=nad_magnus_ivp_t(ml, eq, 'GL2'))
     case ('MAGNUS_GL4')
-       allocate(iv, SOURCE=nad_magnus_ivp_t(ml, jc, 'GL4'))
+       allocate(iv, SOURCE=nad_magnus_ivp_t(ml, eq, 'GL4'))
     case ('MAGNUS_GL6')
-       allocate(iv, SOURCE=nad_magnus_ivp_t(ml, jc, 'GL6'))
+       allocate(iv, SOURCE=nad_magnus_ivp_t(ml, eq, 'GL6'))
     case ('FINDIFF')
-       allocate(iv, SOURCE=nad_findiff_ivp_t(ml, jc))
+       allocate(iv, SOURCE=nad_findiff_ivp_t(ml, eq))
     case default
        $ABORT(Invalid ivp_solver)
     end select
 
     ! Initialize the system matrix
 
-    allocate(sm, SOURCE=c_sysmtx_t(n-1, jc%n_e, bd%n_i, bd%n_o, np))
+    allocate(sm, SOURCE=c_sysmtx_t(n-1, eq%n_e, bd%n_i, bd%n_o, np))
 
     ! Initialize the bvp_t
 
-    bp%c_bvp_t = c_bvp_t(x, ml, jc, bd, iv, sm)
+    bp%c_bvp_t = c_bvp_t(x, ml, eq, bd, iv, sm)
 
     ! Finish
 

@@ -23,8 +23,8 @@ module gyre_nad_magnus_ivp
 
   use core_kinds
 
+  use gyre_eqns
   use gyre_ext
-  use gyre_jacob
   use gyre_magnus_ivp
   use gyre_model
 
@@ -60,16 +60,16 @@ module gyre_nad_magnus_ivp
 
 contains
 
-  function nad_magnus_ivp_t_ (ml, jc, scheme) result (iv)
+  function nad_magnus_ivp_t_ (ml, eq, scheme) result (iv)
 
     class(model_t), pointer, intent(in) :: ml
-    class(c_jacob_t), intent(in)        :: jc
+    class(c_eqns_t), intent(in)         :: eq
     character(*), intent(in)            :: scheme
     type(nad_magnus_ivp_t)              :: iv
 
     ! Construct the nad_magnus_ivp_t
 
-    iv%c_magnus_ivp_t = c_magnus_ivp_t(jc, scheme)
+    iv%c_magnus_ivp_t = c_magnus_ivp_t(eq, scheme)
 
     iv%ml => ml
 

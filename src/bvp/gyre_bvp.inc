@@ -30,9 +30,9 @@ module gyre_${T}_bvp
   use core_order
 
   use gyre_bound
+  use gyre_eqns
   use gyre_ext
   use gyre_ivp
-  use gyre_jacob
   use gyre_model
   use gyre_rot
   use gyre_sysmtx
@@ -47,7 +47,7 @@ module gyre_${T}_bvp
 
   type :: ${T}_bvp_t
      class(model_t), pointer           :: ml => null()
-     class(${T}_jacob_t), allocatable  :: jc
+     class(${T}_eqns_t), allocatable   :: eq
      class(${T}_bound_t), allocatable  :: bd
      class(${T}_ivp_t), allocatable    :: iv
      class(${T}_sysmtx_t), allocatable :: sm
@@ -78,31 +78,31 @@ module gyre_${T}_bvp
 
 contains
 
-  function ${T}_bvp_t_ (x, ml, jc, bd, iv, sm) result (bp)
+  function ${T}_bvp_t_ (x, ml, eq, bd, iv, sm) result (bp)
 
     real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
-    class(${T}_jacob_t), intent(in)     :: jc
+    class(${T}_eqns_t), intent(in)      :: eq
     class(${T}_bound_t), intent(in)     :: bd
     class(${T}_ivp_t), intent(in)       :: iv
     class(${T}_sysmtx_t), intent(in)    :: sm
     type(${T}_bvp_t), target            :: bp
 
-    $CHECK_BOUNDS(bd%n_e,jc%n_e)
+    $CHECK_BOUNDS(bd%n_e,eq%n_e)
 
-    $CHECK_BOUNDS(iv%n_e,jc%n_e)
+    $CHECK_BOUNDS(iv%n_e,eq%n_e)
     
-    $CHECK_BOUNDS(sm%n_e,jc%n_e)
+    $CHECK_BOUNDS(sm%n_e,eq%n_e)
     $CHECK_BOUNDS(sm%n,SIZE(x)-1)
 
     ! Construct the bvp_t
 
     bp%n = SIZE(x)
-    bp%n_e = jc%n_e
+    bp%n_e = eq%n_e
 
     bp%ml => ml
     
-    allocate(bp%jc, SOURCE=jc)
+    allocate(bp%eq, SOURCE=eq)
     allocate(bp%bd, SOURCE=bd)
     allocate(bp%iv, SOURCE=iv)
     allocate(bp%sm, SOURCE=sm)

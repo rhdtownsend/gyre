@@ -70,7 +70,7 @@ contains
 
   function rad_bvp_t_ (x, ml, mp, op, np) result (bp)
 
-    use gyre_rad_jacob
+    use gyre_rad_eqns
     use gyre_rad_bound
 
     real(WP), intent(in)                :: x(:)
@@ -81,7 +81,7 @@ contains
     type(rad_bvp_t), target             :: bp
 
     class(r_rot_t), allocatable    :: rt
-    type(rad_jacob_t)              :: jc
+    type(rad_eqns_t)               :: eq
     integer                        :: n
     real(WP)                       :: x_i
     real(WP)                       :: x_o
@@ -95,9 +95,9 @@ contains
 
     allocate(rt, SOURCE=r_rot_t(ml, mp, op))
  
-    ! Initialize the jacobian
+    ! Initialize the equations
 
-    jc = rad_jacob_t(ml, rt, op)
+    eq = rad_eqns_t(ml, rt, op)
 
     ! Initialize the boundary conditions
 
@@ -106,19 +106,19 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    bd = rad_bound_t(ml, rt, jc, op, x_i, x_o)
+    bd = rad_bound_t(ml, rt, eq, op, x_i, x_o)
 
     ! Initialize the IVP solver
 
-    allocate(iv, SOURCE=r_ivp_t(jc, np))
+    allocate(iv, SOURCE=r_ivp_t(eq, np))
 
     ! Initialize the system matrix
 
-    allocate(sm, SOURCE=r_sysmtx_t(n-1, jc%n_e, bd%n_i, bd%n_o, np))
+    allocate(sm, SOURCE=r_sysmtx_t(n-1, eq%n_e, bd%n_i, bd%n_o, np))
 
     ! Initialize the bvp_t
 
-    bp%r_bvp_t = r_bvp_t(x, ml, jc, bd, iv, sm)
+    bp%r_bvp_t = r_bvp_t(x, ml, eq, bd, iv, sm)
 
     ! Finish
 
@@ -160,7 +160,7 @@ contains
 
     !$OMP PARALLEL DO 
     do i = 1, n
-       y(1:2,i) = MATMUL(this%jc%T(x(i), omega, .TRUE.), y_(:,i))
+       y(1:2,i) = MATMUL(this%eq%T(x(i), omega, .TRUE.), y_(:,i))
        y(4,i) = -y(1,i)*this%ml%U(x(i))
        y(5:6,i) = 0._WP
     end do
@@ -180,7 +180,7 @@ contains
 
     ! Note: y_ref(3) is set to zero; need to fix this
 
-    y_ref(1:2) = MATMUL(this%jc%T(x_ref, omega, .TRUE.), y_ref_)
+    y_ref(1:2) = MATMUL(this%eq%T(x_ref, omega, .TRUE.), y_ref_)
     y_ref(3) = 0._WP
     y_ref(4) = -y_ref_(1)*this%ml%U(x_ref)
     y_ref(5:6) = 0._WP
