@@ -1,0 +1,32 @@
+
+&constants
+/
+&model
+	model_type = 'HOM'
+/
+&mode
+	l = 0
+/
+&osc
+        variables_set = 'LAGP'
+/
+&num
+	ivp_solver = 'COLLOC_GL4'
+/
+&scan
+        grid_type = 'LINEAR'
+        freq_min = 0.5
+        freq_max = 20
+        n_freq = 100
+/
+&shoot_grid
+	op_type = 'CREATE_GEOM'
+        n = 10000
+        s = 1000
+/
+&recon_grid
+/
+&output
+	summary_file = 'summary.h5'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega'
+/
