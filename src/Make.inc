@@ -10,7 +10,7 @@ DEBUG=no
 OMP=yes
 
 # Enable MPI parallelization
-MPI=yes
+MPI=no
 
 # Use double precision arithmetic (best left to 'yes')
 DOUBLE_PRECISION=yes
