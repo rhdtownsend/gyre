@@ -236,11 +236,11 @@ contains
 
     iterate_loop : do
 
-       if (PRESENT(n_iter)) then
-          if (i_iter >= n_iter) exit iterate_loop
-       end if
-
        i_iter = i_iter + 1
+
+       if (PRESENT(n_iter)) then
+          if (i_iter > n_iter) exit iterate_loop
+       end if
 
        ! Check for convergence (equal minima)
 

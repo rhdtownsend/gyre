@@ -210,11 +210,11 @@ contains
 
        if (f_b == 0._WP) exit iterate_loop
 
-       if (PRESENT(n_iter)) then
-          if (i_iter >= n_iter) exit iterate_loop
-       endif
-
        i_iter = i_iter + 1
+
+       if (PRESENT(n_iter)) then
+          if (i_iter > n_iter) exit iterate_loop
+       endif
 
        ! Calculate the correction
 
@@ -343,11 +343,11 @@ contains
 
        if (f_b == 0._WP) exit iterate_loop
 
-       if (PRESENT(n_iter)) then
-          if (i_iter >= n_iter) exit iterate_loop
-       endif
-
        i_iter = i_iter + 1
+
+       if (PRESENT(n_iter)) then
+          if (i_iter > n_iter) exit iterate_loop
+       endif
 
        ! Calculate the mid-point values
 

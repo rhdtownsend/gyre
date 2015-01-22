@@ -210,11 +210,11 @@ contains
 
     iterate_loop : do
 
-       if (PRESENT(n_iter)) then
-          if (i_iter >= n_iter) exit iterate_loop
-       endif
-
        i_iter = i_iter + 1
+
+       if (PRESENT(n_iter)) then
+          if (i_iter > n_iter) exit iterate_loop
+       endif
 
        ! Reorder c so that it has the opposite sign to b
 
