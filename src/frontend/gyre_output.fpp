@@ -322,6 +322,8 @@ contains
           call wr%write('c_1', md%ml%c_1(md%x))
        case ('Gamma_1')
           call wr%write('Gamma_1', md%ml%Gamma_1(md%x))
+       case ('nabla')
+          call wr%write('nabla', md%ml%nabla(md%x))
        case ('nabla_ad')
           call wr%write('nabla_ad', md%ml%nabla_ad(md%x))
        case ('delta')
