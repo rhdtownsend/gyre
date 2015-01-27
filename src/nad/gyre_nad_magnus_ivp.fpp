@@ -38,7 +38,8 @@ module gyre_nad_magnus_ivp
 
   type, extends (c_magnus_ivp_t) ::  nad_magnus_ivp_t
      private
-     class(model_t), pointer :: ml => null()
+     class(model_t), pointer      :: ml => null()
+     class(c_eqns_t), allocatable :: eq_
    contains
      private
      procedure, public :: shoot => shoot_
@@ -72,6 +73,7 @@ contains
     iv%c_magnus_ivp_t = c_magnus_ivp_t(eq, scheme)
 
     iv%ml => ml
+    allocate(iv%eq_, SOURCE=eq)
 
     ! Finish
 
@@ -91,34 +93,32 @@ contains
     complex(WP), intent(out)            :: E_r(:,:)
     type(c_ext_t), intent(out)          :: S
 
-    logical, parameter :: RESCALE_THERM = .TRUE.
+    logical, parameter :: RESCALE_EIGEN = .TRUE.
 
     real(WP)    :: x
-    real(WP)    :: V
-    real(WP)    :: nabla
-    real(WP)    :: c_rad
-    real(WP)    :: c_thm
-    complex(WP) :: lambda
+    complex(WP) :: A(this%n_e,this%n_e)
+    complex(WP) :: lambda_1
+    complex(WP) :: lambda_2
+    complex(WP) :: lambda_3
 
     ! Set up the shooting matrices and scales
 
     call this%c_magnus_ivp_t%shoot(omega, x_a, x_b, E_l, E_r, S)
 
-    ! Rescale by the zone-left thermal term, in order to help the
-    ! root finder
+    ! Rescale by the uncoupledc eigenvalues, in order to help the root
+    ! finder
 
-    if (RESCALE_THERM) then
+    if (RESCALE_EIGEN) then
 
-       x = MINVAL(this%abscissa(x_a, x_b))
+       x = 0.5_WP*(x_a + x_b)
 
-       V = this%ml%V_2(x)*x**2
-       nabla = this%ml%nabla(x)
-       c_rad = this%ml%c_rad(x)
-       c_thm = this%ml%c_thm(x)
-       
-       lambda = SQRT(V*nabla/c_rad * (0._WP,1._WP)*omega*c_thm)/x
+       A = this%eq_%A(x, omega)
 
-       S = S*exp(c_ext_t(-lambda*(x_b - x_a)))
+       lambda_1 = SQRT(A(2,1)*A(1,2))
+       lambda_2 = SQRT(A(4,3)*A(3,4))
+       lambda_3 = SQRT(A(6,5)*A(5,6))
+
+       S = S*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(x_b - x_a)))
 
     else
 
