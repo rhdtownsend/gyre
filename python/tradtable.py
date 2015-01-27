@@ -37,7 +37,7 @@ class TradTable :
                 k = f[tf_group_name].attrs['k']
 
                 self.trad[l,l+m] = trad.Trad(m, k, cb_pos, cb_neg, cb_ctr)
-
+                
         f.close()
 
     def lamb (self, l, m, nu) :
