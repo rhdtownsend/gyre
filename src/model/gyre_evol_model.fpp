@@ -30,6 +30,7 @@ module gyre_evol_model
   use gyre_constants
   use gyre_model
   use gyre_cocache
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -88,6 +89,8 @@ module gyre_evol_model
      real(WP), public            :: R_star
      real(WP), public            :: L_star
      real(WP), public            :: Omega_uni
+     real(WP), public            :: delta_p
+     real(WP), public            :: delta_g
      logical, public             :: uniform_rot
      logical, public             :: reconstruct_As
    contains
@@ -200,6 +203,8 @@ contains
     real(WP) :: c_1(SIZE(r))
     real(WP) :: Omega_rot_(SIZE(r))
     real(WP) :: x(SIZE(r))
+    real(WP) :: f_p(SIZE(r))
+    real(WP) :: f_g(SIZE(r))
 
     $CHECK_BOUNDS(SIZE(m),SIZE(r))
     $CHECK_BOUNDS(SIZE(p),SIZE(r))
@@ -297,6 +302,17 @@ contains
 
        ml%Omega_uni = 0._WP
 
+       f_p = 1./SQRT((G_GRAVITY*M_star/R_star**3)*Gamma_1/(c_1*V_2))
+       
+       where (x /= 0._WP)
+          f_g = SQRT((G_GRAVITY*M_star/R_star**3)*MAX(As/c_1, 0._WP))/x
+       elsewhere
+          f_g = 0._WP
+       end where
+
+       ml%delta_p = 0.5_WP/integrate(x, f_p)
+       ml%delta_g = 0.5_WP*integrate(x, f_g)/PI**2
+
        ml%uniform_rot = .FALSE.
        ml%reconstruct_As = .FALSE.
 
@@ -328,6 +344,8 @@ contains
     type(evol_model_t)            :: ml
 
     logical  :: add_center_
+    real(WP) :: f_p(SIZE(x))
+    real(WP) :: f_g(SIZE(x))
 
     $CHECK_BOUNDS(SIZE(V_2),SIZE(x))
     $CHECK_BOUNDS(SIZE(As),SIZE(x))
@@ -379,6 +397,17 @@ contains
        ml%L_star = L_star
 
        ml%Omega_uni = 0._WP
+
+       f_p = 1./SQRT((G_GRAVITY*M_star/R_star**3)*Gamma_1/(c_1*V_2))
+       
+       where (x /= 0._WP)
+          f_g = SQRT((G_GRAVITY*M_star/R_star**3)*MAX(As/c_1, 0._WP))/x
+       elsewhere
+          f_g = 0._WP
+       end where
+
+       ml%delta_p = 0.5_WP/integrate(x, f_p)
+       ml%delta_g = 0.5_WP*integrate(x, f_g)/PI**2
 
        ml%uniform_rot = .FALSE.
        ml%reconstruct_As = .FALSE.
