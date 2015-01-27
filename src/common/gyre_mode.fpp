@@ -27,6 +27,7 @@ module gyre_mode
   use core_parallel
 
   use gyre_ext
+  use gyre_freq
   use gyre_grid
   use gyre_mode_funcs
   use gyre_model

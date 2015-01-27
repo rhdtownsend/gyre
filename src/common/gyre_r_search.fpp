@@ -30,6 +30,7 @@ module gyre_r_search
   use gyre_constants
   use gyre_discfunc
   use gyre_ext
+  use gyre_freq
   use gyre_mode
   use gyre_model
   use gyre_mode_par
@@ -199,7 +200,7 @@ contains
 
     ! Process each bracket to find modes
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
 
        write(OUTPUT_UNIT, 100) 'Root Solving'
 100    format(A)
@@ -263,7 +264,7 @@ contains
 
     ! Calculate the discriminant on the omega abscissa
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Root bracketing'
 100    format(A)
     endif
@@ -276,7 +277,7 @@ contains
 
        discrim(i) = df%eval(r_ext_t(omega(i)))
 
-       if(check_log_level('DEBUG')) then
+       if (check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
 110       format(2X,E24.16,2X,F19.16,2X,I7)
        endif
@@ -285,7 +286,7 @@ contains
 
     call SYSTEM_CLOCK(c_end)
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
 120    format(2X,A,F10.3,1X,A/)
     endif
@@ -296,7 +297,7 @@ contains
 
     bracket_loop : do i = 1, n_omega-1
 
-       if(discrim(i)*discrim(i+1) <= r_ext_t(0._WP)) then
+       if (discrim(i)*discrim(i+1) <= r_ext_t(0._WP)) then
           n_brack = n_brack + 1
           i_brack(n_brack) = i
        end if
@@ -350,7 +351,7 @@ contains
 
 !     ! Process each bracket to find modes
 
-!     if(check_log_level('INFO')) then
+!     if (check_log_level('INFO')) then
 
 !        write(OUTPUT_UNIT, 100) 'Root Solving'
 ! 100    format(A)
@@ -421,7 +422,7 @@ contains
 
 !     ! Calculate the discriminant on the omega abscissa
 
-!     if(check_log_level('INFO')) then
+!     if (check_log_level('INFO')) then
 !        write(OUTPUT_UNIT, 100) 'Root bracketing'
 ! 100    format(A)
 !     endif
@@ -434,7 +435,7 @@ contains
 
 !        discrim(i) = abs(df%eval(ext_complex_t(CMPLX(omega(i), KIND=WP))))
 
-!        if(check_log_level('DEBUG')) then
+!        if (check_log_level('DEBUG')) then
 !           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
 ! 110       format(2X,E24.16,2X,F19.16,2X,I7)
 !        endif
@@ -443,7 +444,7 @@ contains
 
 !     call SYSTEM_CLOCK(c_end)
 
-!     if(check_log_level('INFO')) then
+!     if (check_log_level('INFO')) then
 !        write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
 ! 120    format(2X,A,F10.3,1X,A/)
 !     endif
@@ -454,7 +455,7 @@ contains
 
 !     bracket_loop : do i = 2, n_omega-1
 
-!        if(discrim(i) < discrim(i-1) .AND. &
+!        if (discrim(i) < discrim(i-1) .AND. &
 !           discrim(i) < discrim(i+1)) then
 !           n_brack = n_brack + 1
 !           i_brack(n_brack) = i

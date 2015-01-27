@@ -598,7 +598,7 @@ contains
 
     omega_c = rt%omega_c(x, omega)
 
-    F_j = -ABS(omega_c**2)*x*U*AIMAG(CONJG(xi_r(ml, rt, omega, x, y))*m*xi_h(ml, rt, omega, x, y))/(32._WP*PI**2*c_1)
+    F_j = ABS(omega_c**2)*x*U*AIMAG(CONJG(xi_r(ml, rt, omega, x, y))*m*xi_h(ml, rt, omega, x, y))/(32._WP*PI**2*c_1)
 
     ! Finish
 
