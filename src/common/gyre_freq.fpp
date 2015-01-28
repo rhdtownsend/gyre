@@ -102,15 +102,15 @@ contains
        case('NONE')
           omega_l = freq
        case('HZ')
-          omega_l = freq*(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+          omega_l = TWOPI*freq*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case('UHZ')
-          omega_l = TWOPI*freq*(SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))/1E6_WP
+          omega_l = TWOPI*freq*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/1E6_WP
        case('PER_DAY')
-          omega_l = TWOPI*freq*(SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))/86400._WP
+          omega_l = TWOPI*freq*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/86400._WP
        case ('ACOUSTIC_DELTA')
-          omega_l = TWOPI*freq*ml%delta_p
+          omega_l = TWOPI*freq*ml%delta_p*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case ('GRAVITY_DELTA')
-          omega_l = TWOPI*freq*ml%delta_g
+          omega_l = TWOPI*freq*ml%delta_g*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
           omega_l = freq*omega_cutoff_hi
@@ -229,9 +229,9 @@ contains
        case ('PER_DAY')
           freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*86400._WP
        case ('ACOUSTIC_DELTA')
-          freq = omega_l/(TWOPI*ml%delta_p)
+          freq = omega_l/(TWOPI*ml%delta_p*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
        case ('GRAVITY_DELTA')
-          freq = omega_l/(TWOPI*ml%delta_g)
+          freq = omega_l/(TWOPI*ml%delta_g*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
        case ('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, mp, op, x_o, omega_cutoff_lo, omega_cutoff_hi)
           freq = omega_l/omega_cutoff_hi
