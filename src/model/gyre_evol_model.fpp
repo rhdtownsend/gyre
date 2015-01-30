@@ -24,7 +24,7 @@ module gyre_evol_model
 
   use core_kinds
   use core_parallel
-  use core_spline
+  use gyre_spline
   use core_table
 
   use gyre_constants
@@ -634,7 +634,7 @@ contains
 
     ! Set up the i'th spline with the provided data
 
-    this%sp(i) = spline_t(x, y, deriv_type, dy_dx_a=0._WP)
+    this%sp(i) = spline_t(x, y, deriv_type, df_dx_a=0._WP)
 
     this%sp_def(i) = .TRUE.
 
@@ -733,7 +733,7 @@ contains
        if(ASSOCIATED(this%cc)) then
           $NAME = this%cc%lookup(j, x)
        else
-          $NAME = this%sp(j)%interp(x)
+          $NAME = this%sp(j)%f(x)
        endif
 
     else
@@ -762,7 +762,7 @@ contains
     
     if(this%sp_def(j)) then
 
-       $NAME = this%sp(j)%interp(x)
+       $NAME = this%sp(j)%f(x)
 
     else
 
@@ -824,7 +824,7 @@ contains
           d$NAME = this%cc%lookup(j_d, x)
        else
           if(x > 0._WP) then
-             d$NAME = x*this%sp(j)%deriv(x)/this%sp(j)%interp(x)
+             d$NAME = x*this%sp(j)%df_dx(x)/this%sp(j)%f(x)
           else
              d$NAME = 0._WP
           endif
@@ -857,7 +857,7 @@ contains
     if(this%sp_def(j)) then
 
        where(x > 0._WP)
-          d$NAME = x*this%sp(j)%deriv(x)/this%sp(j)%interp(x)
+          d$NAME = x*this%sp(j)%df_dx(x)/this%sp(j)%f(x)
        elsewhere
           d$NAME = 0._WP
        endwhere
@@ -897,9 +897,9 @@ contains
 
        if (this%reconstruct_As) then
           As = -this%V_2(x)*x**2/this%Gamma_1(x) - this%U(x) + 3._WP - &
-               x*this%sp(J_U)%deriv(x)/this%U(x)
+               x*this%sp(J_U)%df_dx(x)/this%U(x)
        else
-          As =  this%sp(J_AS)%interp(x)
+          As =  this%sp(J_AS)%f(x)
        endif
 
     endif
@@ -923,9 +923,9 @@ contains
 
     if (this%reconstruct_As) then
        As = -this%V_2(x)*x**2/this%Gamma_1(x) - this%U(x) + 3._WP - &
-            x*this%sp(J_U)%deriv(x)/this%U(x)
+            x*this%sp(J_U)%df_dx(x)/this%U(x)
     else
-       As =  this%sp(J_AS)%interp(x)
+       As =  this%sp(J_AS)%f(x)
     endif
 
     ! Finish
@@ -944,7 +944,7 @@ contains
 
     ! Calculate D = dlnrho/dlnx
 
-    D = this%U(x) - 3._WP + x*this%sp(J_U)%deriv(x)/this%U(x)
+    D = this%U(x) - 3._WP + x*this%sp(J_U)%df_dx(x)/this%U(x)
 
     ! Finish
 
@@ -962,7 +962,7 @@ contains
 
     ! Calculate D = dlnrho/dlnx
 
-    D = this%U(x) - 3._WP + x*this%sp(J_U)%deriv(x)/this%U(x)
+    D = this%U(x) - 3._WP + x*this%sp(J_U)%df_dx(x)/this%U(x)
 
     ! Finish
 
@@ -990,7 +990,7 @@ contains
        if (this%uniform_rot) then
           Omega_rot = this%Omega_uni
        else
-          Omega_rot = this%sp(J_OMEGA_ROT)%interp(x)
+          Omega_rot = this%sp(J_OMEGA_ROT)%f(x)
        endif
 
     endif
@@ -1015,7 +1015,7 @@ contains
     if (this%uniform_rot) then
        Omega_rot = this%Omega_uni
     else
-       Omega_rot = this%sp(J_OMEGA_ROT)%interp(x)
+       Omega_rot = this%sp(J_OMEGA_ROT)%f(x)
     endif
 
     ! Finish
