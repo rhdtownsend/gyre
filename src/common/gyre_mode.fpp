@@ -98,6 +98,7 @@ module gyre_mode
      procedure, public :: lag_g_eff => lag_g_eff_
      procedure, public :: E => E_
      procedure, public :: E_norm => E_norm_
+     procedure, public :: E_ratio => E_ratio_
      procedure, public :: W => W_
      procedure, public :: K => K_
      procedure, public :: beta => beta_
@@ -505,6 +506,37 @@ contains
     return
 
   end function E_norm_
+
+!****
+
+  function E_ratio_ (this) result (E_ratio)
+ 
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: E_ratio
+
+    logical  :: mask_i(this%n)
+    logical  :: mask_o(this%n)
+    real(WP) :: dE_dx(this%n)
+
+    ! Calculate the mode inertia ratio E_inner/E_outer, where x <
+    ! x_ref is the inner region and x > x_ref the outer region
+
+    mask_i = this%x <= this%x_ref
+    mask_o = this%x >= this%x_ref
+
+    $ASSERT(COUNT(mask_i) >= 2,Too few points in inner region)
+    $ASSERT(COUNT(mask_o) >= 2,Too few points in outer region)
+
+    dE_dx = this%dE_dx()
+
+    E_ratio = integrate(PACK(this%x, mask_i), PACK(dE_dx, mask_i)) / &
+              integrate(PACK(this%x, mask_o), PACK(dE_dx, mask_o))
+
+    ! Finish
+
+    return
+
+  end function E_ratio_
 
 !****
 
