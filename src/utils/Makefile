@@ -13,6 +13,6 @@ LDFLAGS=`mesasdk_hdf5_link` `madsdk_odepack_link`
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../common:../model
+SUBDIRS=../extern/core:../extern/astro:../common:../model:../rot:../trad
 
 include ../Make.inc

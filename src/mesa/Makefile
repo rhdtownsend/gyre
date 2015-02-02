@@ -5,9 +5,15 @@
 
 TARGETS=gyre_lib.a test_gyre_lib
 
+# Flags
+
+HDF5=yes
+
+LDFLAGS=`mesasdk_hdf5_link`
+
 # Include other makefiles
 
-SUBDIRS=../extern/core:../common:../ivp:../bvp:../matrix:../model:../ext:../frontend:../rad:../rad/bound:../rad/jacobian:../ad:../ad/bound:../ad/jacobian:../nad:../nad/bound:../nad/jacobian
+SUBDIRS=../extern/core:../extern/astro:../common:../ivp:../bvp:../matrix:../model:../ext:../frontend:../rad:../rad/bound:../rad/jacobian:../ad:../ad/bound:../ad/jacobian:../nad:../nad/bound:../nad/jacobian:../rot:../trad
 
 include ../Make.inc
 

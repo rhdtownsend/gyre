@@ -50,11 +50,14 @@ module gyre_poly_model
      real(WP)         :: dt_Gamma_1
      real(WP), public :: n_poly
      real(WP), public :: xi_1
+     real(WP), public :: Omega_uni
+     logical, public  :: uniform_rot
    contains
      private
-     $PROC_DECL(V)
+     $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
+     $PROC_DECL(D)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
@@ -145,6 +148,9 @@ contains
     ml%n_poly = n_poly
     ml%dt_Gamma_1 = Gamma_1
     ml%xi_1 = xi(n)
+    ml%Omega_uni = 0._WP
+
+    ml%uniform_rot = .FALSE.
 
     ! Finish
 
@@ -154,52 +160,63 @@ contains
 
 !****
 
-  function V_1_ (this, x) result (V)
+  function V_2_1_ (this, x) result (V_2)
 
     class(poly_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
-    real(WP)                        :: V
+    real(WP)                        :: V_2
 
     real(WP) :: xi
     real(WP) :: Theta
     real(WP) :: dTheta
 
-    ! Calculate V
+    ! Calculate V_2
 
-    xi = x*this%xi_1
+    if (x /= 0._WP) then
 
-    Theta = this%sp_Theta%interp(xi)
-    dTheta = this%sp_dTheta%interp(xi)
+       xi = x*this%xi_1
 
-    V = -(this%n_poly + 1._WP)*xi*dTheta/Theta
+       Theta = this%sp_Theta%interp(xi)
+       dTheta = this%sp_dTheta%interp(xi)
+
+       if (Theta == 0._WP) Theta = TINY(0._WP)
+
+       V_2 = -(this%n_poly + 1._WP)*xi*dTheta/(Theta*x**2)
+
+    else
+
+       V_2 = (this%n_poly + 1._WP)*this%xi_1**2/3._WP
+
+    endif
 
     ! Finish
 
     return
 
-  end function V_1_
+  end function V_2_1_
 
+  
 !****
 
-  function V_v_ (this, x) result (V)
+  function V_2_v_ (this, x) result (V_2)
 
     class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)             :: x(:)
-    real(WP)                         :: V(SIZE(x))
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: V_2(SIZE(x))
 
     integer :: i
 
-    ! Calculate V
+    ! Calculate V_2
 
     x_loop : do i = 1,SIZE(x)
-       V(i) = this%V(x(i))
+       V_2(i) = this%V_2(x(i))
     end do x_loop
 
     ! Finish
 
     return
 
-  end function V_v_
+  end function V_2_v_
 
 !****
 
@@ -211,7 +228,8 @@ contains
 
     ! Calculate As
 
-    As = this%V(x)*(this%n_poly/(this%n_poly + 1._WP) - 1._WP/this%Gamma_1(x))
+    As = this%V_2(x)*x**2 * &
+         (this%n_poly/(this%n_poly + 1._WP) - 1._WP/this%Gamma_1(x))
 
     ! Finish
 
@@ -293,6 +311,46 @@ contains
     return
 
   end function U_v_
+
+!****
+
+  function D_1_ (this, x) result (D)
+
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: D
+
+    ! Calculate D = dlnrho/dlnx
+
+    D = -this%V_2(x)*x**2*this%n_poly/(this%n_poly + 1._WP)
+    
+    ! Finish
+
+    return
+
+  end function D_1_
+
+!****
+
+  function D_v_ (this, x) result (D)
+
+    class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: D(SIZE(x))
+
+    integer :: i
+
+    ! Calculate D = dlnrho/dlnx
+
+    x_loop : do i = 1,SIZE(x)
+       D(i) = this%D(x(i))
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  end function D_v_
 
 !****
 
@@ -528,10 +586,15 @@ contains
     real(WP), intent(in)            :: x
     real(WP)                        :: Omega_rot
 
-    ! Interpolate Omega_rot
+    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
+    ! rate given by Omega_uni instead
 
-    Omega_rot = this%sp_Omega_rot%interp(x)
-       
+    if (this%uniform_rot) then
+       Omega_rot = this%Omega_uni
+    else
+       Omega_rot = this%sp_Omega_rot%interp(x)
+    endif
+
     ! Finish
 
     return
@@ -546,11 +609,14 @@ contains
     real(WP), intent(in)            :: x(:)
     real(WP)                        :: Omega_rot(SIZE(x))
 
-    integer :: j
+    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
+    ! rate given by Omega_uni instead
 
-    ! Interpolate Omega_rot
-
-    Omega_rot = this%sp_Omega_rot%interp(x)
+    if (this%uniform_rot) then
+       Omega_rot = this%Omega_uni
+    else
+       Omega_rot = this%sp_Omega_rot%interp(x)
+    endif
 
     ! Finish
 

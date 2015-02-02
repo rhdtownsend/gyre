@@ -1,0 +1,456 @@
+! Incfile  : gyre_band_sysmtx
+! Purpose  : system matrix (banded storage, template)
+!
+! Copyright 2013-2014 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+$include 'core.inc'
+
+$define $MOD_DECL $sub
+
+$local $T $1
+$local $TYPE $2
+
+$if ($DOUBLE_PRECISION)
+$if ($T eq 'r')
+$local $X D
+$else
+$local $X Z
+$endif
+$else
+$if ($T eq 'r')
+$local $X S
+$else
+$local $X C
+$endif
+$endif
+
+module gyre_${T}_band_sysmtx
+
+  ! Uses
+
+  use core_kinds
+  use core_parallel
+  use core_linalg
+
+  use gyre_ext
+  use gyre_linalg
+  use gyre_sysmtx
+
+  use ISO_FORTRAN_ENV
+
+  ! No implicit typing
+
+  implicit none
+
+  ! Parameter definitions
+
+  integer, parameter :: ALGO_LEN = 16
+
+  ! Derived-type definitions
+
+  type, extends (${T}_sysmtx_t) :: ${T}_band_sysmtx_t
+     private
+     $TYPE(WP), allocatable        :: A_b(:,:) ! Banded matrix
+     integer, allocatable          :: ipiv(:)  ! Pivot indices
+     type(${T}_ext_t)              :: S_i      ! Inner boundary scale
+     type(${T}_ext_t)              :: S_o      ! Outer boundary scale
+     type(${T}_ext_t), allocatable :: S(:)     ! Block scales
+     integer                       :: n_ul     ! Number of sub-/super-diagonals
+   contains
+     private
+     procedure, public :: set_B_i => set_B_i_
+     procedure, public :: set_B_o => set_B_o_
+     procedure, public :: set_E => set_E_
+     procedure         :: set_row_
+     procedure, public :: factorize => factorize_
+     procedure, public :: scale_rows_
+     procedure, public :: det => det_
+     procedure, public :: null_vec => null_vec_
+  end type ${T}_band_sysmtx_t
+
+  ! Interfaces
+
+  interface ${T}_band_sysmtx_t
+     module procedure ${T}_band_sysmtx_t_
+  end interface ${T}_band_sysmtx_t
+
+  ! Access specifiers
+
+  private
+
+  public :: ${T}_band_sysmtx_t
+
+  ! Procedures
+
+contains
+
+  function ${T}_band_sysmtx_t_ (n, n_e, n_i, n_o) result (sm)
+
+    integer, intent(in)      :: n
+    integer, intent(in)      :: n_e
+    integer, intent(in)      :: n_i
+    integer, intent(in)      :: n_o
+    type(${T}_band_sysmtx_t) :: sm
+
+    ! Construct the sysmtx_t
+
+    ! Note that an additional n_ul rows are added to A_b to provide
+    ! space for fill-in during factorization
+
+    sm%n_ul = n_e + n_i - 1
+
+    allocate(sm%A_b(3*sm%n_ul+1,n_e*(n+1)))
+    allocate(sm%ipiv(n_e*(n+1)))
+
+    allocate(sm%S(n))
+
+    sm%n = n
+    sm%n_e = n_e
+    sm%n_i = n_i
+    sm%n_o = n_o
+
+    ! Finish
+
+    return
+
+  end function ${T}_band_sysmtx_t_
+
+!****
+
+  subroutine set_B_i_ (this, B, S)
+
+    class(${T}_band_sysmtx_t), intent(inout) :: this
+    $TYPE(WP), intent(in)                    :: B(:,:)
+    type(${T}_ext_t), intent(in)             :: S
+
+    integer :: i_0
+    integer :: j_0
+    integer :: i
+    
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    ! Set the inner boundary conditions
+
+    i_0 = 1
+    j_0 = 1
+
+    do i = 1, this%n_i
+       call this%set_row_(i_0+i-1, j_0, B(i,:))
+    end do
+
+    this%S_i = S
+
+    ! Finish
+
+    return
+
+  end subroutine set_B_i_
+
+!****
+
+  subroutine set_B_o_ (this, B, S)
+
+    class(${T}_band_sysmtx_t), intent(inout) :: this
+    $TYPE(WP), intent(in)                    :: B(:,:)
+    type(${T}_ext_t), intent(in)             :: S
+
+    integer :: i_0
+    integer :: j_0
+    integer :: i
+
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    ! Set the outer boundary conditions
+
+    i_0 = this%n*this%n_e + this%n_i + 1
+    j_0 = this%n*this%n_e + 1
+
+    do i = 1, this%n_o
+       call this%set_row_(i_0+i-1, j_0, B(i,:))
+    end do
+
+    this%S_o = S
+
+    ! Finish
+
+    return
+
+  end subroutine set_B_o_
+
+!****
+
+  subroutine set_E_ (this, k, E_l, E_r, S)
+
+    class(${T}_band_sysmtx_t), intent(inout) :: this
+    integer, intent(in)                      :: k
+    $TYPE(WP), intent(in)                    :: E_l(:,:)
+    $TYPE(WP), intent(in)                    :: E_r(:,:)
+    type(${T}_ext_t), intent(in)             :: S
+
+    integer   :: i_0
+    integer   :: j_0
+    integer   :: i
+    $TYPE(WP) :: R(2*this%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
+
+    $ASSERT(k >= 1,Invalid block index)
+    $ASSERT(k <= this%n,Invalid block index)
+
+    ! Set the block
+
+    i_0 = this%n_e*(k-1) + this%n_i + 1
+    j_0 = this%n_e*(k-1) + 1
+
+    do i = 1, this%n_e
+
+       R = [E_l(i,:),E_r(i,:)]
+
+       call this%set_row_(i_0+i-1, j_0, R)
+
+    end do
+
+    this%S(k) = S
+
+    ! Finish
+
+    return
+
+  end subroutine set_E_
+
+!****
+
+  subroutine set_row_ (this, i_0, j_0, R)
+
+    class(${T}_band_sysmtx_t), intent(inout) :: this
+    integer, intent(in)                      :: i_0
+    integer, intent(in)                      :: j_0
+    $TYPE(WP), intent(in)                    :: R(:)
+
+    integer :: j
+    integer :: i_b
+    integer :: j_b
+
+    $ASSERT_DEBUG(ABS(i_0-j_0) <= this%n_ul,Invalid indices)
+    $ASSERT_DEBUG(ABS(i_0-(j_0+SIZE(R)-1)) <= this%n_ul,Invalid indices)
+
+    ! Set data in row i_0, starting at column j_0. The rest of the row
+    ! is zeroed out
+
+    do j = MAX(i_0-this%n_ul, 1), j_0-1
+       i_b = 2*this%n_ul + 1 + i_0 - j
+       j_b = j
+       this%A_b(i_b, j_b) = 0._WP
+    end do
+
+    do j = j_0, j_0+SIZE(R)-1
+       i_b = 2*this%n_ul + 1 + i_0 - j
+       j_b = j
+       this%A_b(i_b, j_b) = R(j-j_0+1)
+    end do
+
+    do j = j_0+SIZE(R), MIN(i_0+this%n_ul, this%n_e*(this%n+1))
+       i_b = 2*this%n_ul + 1 + i_0 - j
+       j_b = j
+       this%A_b(i_b, j_b) = 0._WP
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine set_row_
+
+!****
+
+  subroutine factorize_ (this)
+
+    class(${T}_band_sysmtx_t), intent(inout) :: this
+
+    $TYPE(WP), parameter :: ONE = 1._WP
+
+    integer :: n
+    integer :: m
+    integer :: info
+
+    ! Factorize the sysmtx using LU decomposition
+
+    call this%scale_rows_()
+
+    n = SIZE(this%A_b, 1)
+    m = SIZE(this%A_b, 2)
+
+    call ${X}GBTRF(m, m, this%n_ul, this%n_ul, this%A_b, n, this%ipiv, info)
+    $ASSERT(info == 0 .OR. info == m,Non-zero return from XGBTRF)
+
+    ! Finish
+
+    return
+
+  end subroutine factorize_
+
+!****
+
+  subroutine scale_rows_ (this)
+
+    class(${T}_band_sysmtx_t), intent(inout) :: this
+
+    integer  :: i
+    integer  :: j
+    real(WP) :: scale
+    integer  :: i_b
+    integer  :: j_b
+    integer  :: k
+
+    ! Scale the rows of the sysmtx to have maximum absolute value of unity
+
+    do i = 1, this%n_e*(this%n+1)
+
+       scale = 0._WP
+
+       do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
+          i_b = 2*this%n_ul + 1 + i - j
+          j_b = j
+          scale = MAX(scale, ABS(this%A_b(i_b,j_b)))
+       end do
+
+       do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
+          i_b = 2*this%n_ul + 1 + i - j
+          j_b = j
+          this%A_b(i_b,j_b) = this%A_b(i_b,j_b)/scale
+       end do
+
+       k = (i-1+this%n_o)/this%n_e
+
+       if (k == 0) then
+          this%S_i = this%S_i*scale
+       elseif (k == this%n+1) then
+          this%S_o = this%S_o*scale
+       else
+          this%S(k) = this%S(k)*scale
+       endif
+
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine scale_rows_
+
+!****
+
+  function det_ (this) result (det)
+
+    class(${T}_band_sysmtx_t), intent(in) :: this
+    type(${T}_ext_t)                      :: det
+
+    integer :: j
+
+    ! Evaluate the determinant
+
+    det = product([${T}_ext_t(this%A_b(2*this%n_ul+1,:)),this%S_i,this%S,this%S_o])
+ 
+    do j = 1, SIZE(this%ipiv)
+       if(this%ipiv(j) /= j) det = -det
+    enddo
+
+    ! Finish
+
+    return
+
+  end function det_
+
+!****
+
+  function null_vec_ (this) result (v)
+  
+    class(${T}_band_sysmtx_t), intent(in) :: this
+    $TYPE(WP)                             :: v(this%n_e*(this%n+1))
+
+    integer                :: i
+    $TYPE(WP), allocatable :: A_b(:,:)
+    $TYPE(WP), allocatable :: B(:,:)
+    integer, allocatable   :: ipiv(:)
+    integer                :: n2
+    integer                :: j
+    integer                :: info
+
+    ! Evaluate the null vector (working on the assumption that the
+    ! final diagonal element of the factorized matrix is zero)
+
+    associate (n => this%n, n_e => this%n_e, n_ul => this%n_ul)
+
+      ! Locate the singular element on the diagonal
+
+      sing_loop : do i = 1, n_e*(n+1)-1
+         if (this%A_b(2*this%n_ul+1,i) == 0._WP) exit sing_loop
+      end do sing_loop
+
+      $ASSERT(i > n_e*n,Singular element not in outer block)
+
+      if (i /= n_e*(n+1)) then
+         $WARN(Singular element not at outer point)
+      endif
+
+      ! Set up the reduced banded system
+
+      allocate(A_b(3*n_ul+1,i-1))
+      allocate(B(i-1,1))
+      
+      allocate(ipiv(i-1))
+
+      A_b(:2*n_ul+1,:) = this%A_b(:2*n_ul+1,:i-1)
+      A_b(2*n_ul+2:,:) = 0._WP
+
+      n2 = MIN(2*n_ul, i-1)
+
+      B(:i-n2-1,1) = 0._WP
+      B(i-n2:,1) = -this%A_b(2*n_ul+1-n2:2*n_ul,i)
+
+      do j = 1,i-1
+         ipiv(j) = j
+      enddo
+
+      ! Solve for the 1:i-1 components of the null vector
+
+      call ${X}GBTRS('N', SIZE(A_b, 2), n_ul, n_ul, 1, A_b, SIZE(A_b, 1), ipiv, B, SIZE(B, 1), info)
+      $ASSERT(info == 0,Non-zero return from XGBTRS)
+
+      v(:i-1) = B(:,1)
+
+    end associate
+       
+    ! Fill in the remainign components of the null vector
+    
+    v(i) = 1._WP
+    v(i+1:) = 0._WP
+
+    ! Finish
+
+    return
+
+  end function null_vec_
+
+end module gyre_${T}_band_sysmtx
+
+$endsub
+

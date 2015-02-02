@@ -1,7 +1,7 @@
 ! Program  : gyre_version
 ! Purpose  : versioning info
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -29,7 +29,7 @@ module gyre_version
 
   ! Parameters
 
-  character(LEN=*), parameter :: version = '3.3'
+  character(*), parameter :: version = '(4.0) development'
 
   ! Access specifiers
 

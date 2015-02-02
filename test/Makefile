@@ -10,9 +10,6 @@ SUBDIRS=ad nad
 test :
 	@for DIR in ${SUBDIRS}; do \
             make -C $${DIR}; \
-            if [ $$? -ne 0 ]; then \
-                exit $$?; \
-            fi; \
         done
 
 build_ref build_ref_arch :
@@ -20,4 +17,4 @@ build_ref build_ref_arch :
             make -C $${DIR} $@; \
         done
 
-.PHONY: test build_ref
+.PHONY: test build_ref build_ref_arch

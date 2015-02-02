@@ -1,7 +1,7 @@
 ! Module   : gyre_evol_model
 ! Purpose  : stellar evolutionary model
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2014 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,12 +24,13 @@ module gyre_evol_model
 
   use core_kinds
   use core_parallel
-  use core_spline
+  use gyre_spline
   use core_table
 
   use gyre_constants
   use gyre_model
   use gyre_cocache
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -39,14 +40,11 @@ module gyre_evol_model
 
   ! Parameters
 
-  logical, parameter :: IMPLICIT_U = .FALSE.
-  logical, parameter :: IMPLICIT_GAMMA_1 = .FALSE.
-
   integer, parameter :: J_M = 1
   integer, parameter :: J_P = 2
   integer, parameter :: J_RHO = 3
   integer, parameter :: J_T = 4
-  integer, parameter :: J_V = 5
+  integer, parameter :: J_V_2 = 5
   integer, parameter :: J_AS = 6
   integer, parameter :: J_U = 7
   integer, parameter :: J_C_1 = 8
@@ -90,8 +88,11 @@ module gyre_evol_model
      real(WP), public            :: M_star
      real(WP), public            :: R_star
      real(WP), public            :: L_star
-     real(WP)                    :: p_c
-     real(WP)                    :: rho_c
+     real(WP), public            :: Omega_uni
+     real(WP), public            :: delta_p
+     real(WP), public            :: delta_g
+     logical, public             :: uniform_rot
+     logical, public             :: reconstruct_As
    contains
      private
      procedure         :: set_sp_
@@ -99,9 +100,10 @@ module gyre_evol_model
      $PROC_DECL_GEN(p)
      $PROC_DECL_GEN(rho)
      $PROC_DECL_GEN(T)
-     $PROC_DECL(V)
+     $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
+     $PROC_DECL(D)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
      $PROC_DECL(nabla_ad)
@@ -117,12 +119,10 @@ module gyre_evol_model
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
      $PROC_DECL(tau_thm)
-     procedure, public :: pi_c => pi_c_
      procedure, public :: is_zero => is_zero_
      procedure, public :: attach_cache => attach_cache_
      procedure, public :: detach_cache => detach_cache_
      procedure, public :: fill_cache => fill_cache_
-!     procedure, public :: regularize => regularize_
   end type evol_model_t
  
   ! Interfaces
@@ -176,7 +176,7 @@ contains
 
   recursive function evol_model_t_mech_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                         Gamma_1, nabla_ad, delta, Omega_rot, &
-                                        deriv_type, regularize, add_center) result (ml)
+                                        deriv_type, add_center) result (ml)
 
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
@@ -192,22 +192,19 @@ contains
     real(WP), intent(in)          :: delta(:)
     real(WP), intent(in)          :: Omega_rot(:)
     character(LEN=*), intent(in)  :: deriv_type
-    logical, optional, intent(in) :: regularize
     logical, optional, intent(in) :: add_center
     type(evol_model_t)            :: ml
 
-    logical  :: regularize_
     logical  :: add_center_
     integer  :: n
-    real(WP) :: m_reg(SIZE(r))
-    real(WP) :: p_reg(SIZE(r))
-    real(WP) :: N2_reg(SIZE(r))
-    real(WP) :: V(SIZE(r))
+    real(WP) :: V_2(SIZE(r))
     real(WP) :: As(SIZE(r))
     real(WP) :: U(SIZE(r))
     real(WP) :: c_1(SIZE(r))
     real(WP) :: Omega_rot_(SIZE(r))
     real(WP) :: x(SIZE(r))
+    real(WP) :: f_p(SIZE(r))
+    real(WP) :: f_g(SIZE(r))
 
     $CHECK_BOUNDS(SIZE(m),SIZE(r))
     $CHECK_BOUNDS(SIZE(p),SIZE(r))
@@ -218,12 +215,6 @@ contains
     $CHECK_BOUNDS(SIZE(nabla_ad),SIZE(r))
     $CHECK_BOUNDS(SIZE(delta),SIZE(r))
     $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(r))
-
-    if (PRESENT(regularize)) then
-       regularize_ = regularize
-    else
-       regularize_ = .FALSE.
-    endif
 
     if(PRESENT(add_center)) then
        add_center_ = add_center
@@ -240,22 +231,9 @@ contains
        ! Add a central point and initialize using recursion
 
        ml = evol_model_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
-                         prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), &
+                         prep_center_(r, p), prep_center_rho_(r, m, rho), prep_center_(r, T), &
                          [0._WP,N2], prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), &
-                         prep_center_(r, Omega_rot), deriv_type, regularize, .FALSE.)
-
-    elseif (regularize_) then
-
-       ! Regularize and initialize using recursion
-
-       n = SIZE(r)
-
-       call regularize_data_(r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg, N2_reg)
-
-       ml = evol_model_t(m_reg(n), R_star, L_star, r, m_reg, &
-                         p_reg, rho, T, &
-                         N2_reg, Gamma_1, nabla_ad, delta, &
-                         Omega_rot, deriv_type, .FALSE., .FALSE.)
+                         prep_center_(r, Omega_rot), deriv_type, .FALSE.)
 
     else
        
@@ -271,21 +249,21 @@ contains
 
        ! Calculate coefficients
 
-       where(r /= 0._WP)
-          V = G_GRAVITY*m*rho/(p*r)
+       x = r/R_star
+
+       where (r /= 0._WP)
+          V_2 = G_GRAVITY*m*rho/(p*r*x**2)
           As = r**3*N2/(G_GRAVITY*m)
           U = 4._WP*PI*rho*r**3/m
           c_1 = (r/R_star)**3/(m/M_star)
        elsewhere
-          V = 0._WP
+          V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*p(1))
           As = 0._WP
           U = 3._WP
           c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
        end where
 
        Omega_rot_ = SQRT(R_star**3/(G_GRAVITY*M_star))*Omega_rot
-
-       x = r/R_star
 
        ! Initialize the model
 
@@ -301,7 +279,7 @@ contains
        !$OMP SECTION
        call ml%set_sp_(x, T, deriv_type, J_T)
        !$OMP SECTION
-       call ml%set_sp_(x, V, deriv_type, J_V)
+       call ml%set_sp_(x, V_2, deriv_type, J_V_2)
        !$OMP SECTION
        call ml%set_sp_(x, As, deriv_type, J_AS)
        !$OMP SECTION
@@ -322,8 +300,21 @@ contains
        ml%R_star = R_star
        ml%L_star = L_star
 
-       ml%p_c = p(1)
-       ml%rho_c = rho(1)
+       ml%Omega_uni = 0._WP
+
+       f_p = 1./SQRT((G_GRAVITY*M_star/R_star**3)*Gamma_1/(c_1*V_2))
+       
+       where (x /= 0._WP)
+          f_g = SQRT((G_GRAVITY*M_star/R_star**3)*MAX(As/c_1, 0._WP))/x
+       elsewhere
+          f_g = 0._WP
+       end where
+
+       ml%delta_p = 0.5_WP/integrate(x, f_p)
+       ml%delta_g = 0.5_WP*integrate(x, f_g)/PI**2
+
+       ml%uniform_rot = .FALSE.
+       ml%reconstruct_As = .FALSE.
 
     endif
 
@@ -336,14 +327,14 @@ contains
 !****
 
   recursive function evol_model_t_mech_coeffs_ (M_star, R_star, L_star, x, &
-                                                V, As, U, c_1, Gamma_1, &
+                                                V_2, As, U, c_1, Gamma_1, &
                                                 deriv_type, add_center) result (ml)
 
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
     real(WP), intent(in)          :: L_star
     real(WP), intent(in)          :: x(:)
-    real(WP), intent(in)          :: V(:)
+    real(WP), intent(in)          :: V_2(:)
     real(WP), intent(in)          :: As(:)
     real(WP), intent(in)          :: U(:)
     real(WP), intent(in)          :: c_1(:)
@@ -353,8 +344,10 @@ contains
     type(evol_model_t)            :: ml
 
     logical  :: add_center_
+    real(WP) :: f_p(SIZE(x))
+    real(WP) :: f_g(SIZE(x))
 
-    $CHECK_BOUNDS(SIZE(V),SIZE(x))
+    $CHECK_BOUNDS(SIZE(V_2),SIZE(x))
     $CHECK_BOUNDS(SIZE(As),SIZE(x))
     $CHECK_BOUNDS(SIZE(U),SIZE(x))
     $CHECK_BOUNDS(SIZE(c_1),SIZE(x))
@@ -370,12 +363,12 @@ contains
 
     ! See if we need a central point
 
-    if(add_center_) then
+    if (add_center_) then
 
        ! Add a central point and initialize using recursion
        
        ml = evol_model_t(M_star, R_star, L_star, &
-                         [0._WP,x], [0._WP,V], [0._WP,As], [3._WP,U], &
+                         [0._WP,x], prep_center_(x, V_2), [0._WP,As], [3._WP,U], &
                          prep_center_(x, c_1), prep_center_(x, Gamma_1), deriv_type, .FALSE.)
 
     else
@@ -386,7 +379,7 @@ contains
 
        !$OMP PARALLEL SECTIONS
        !$OMP SECTION
-       call ml%set_sp_(x, V, deriv_type, J_V)
+       call ml%set_sp_(x, V_2, deriv_type, J_V_2)
        !$OMP SECTION
        call ml%set_sp_(x, As, deriv_type, J_AS)
        !$OMP SECTION
@@ -403,8 +396,21 @@ contains
        ml%R_star = R_star
        ml%L_star = L_star
 
-       ml%rho_c = 0._WP
-       ml%p_c = 0._WP
+       ml%Omega_uni = 0._WP
+
+       f_p = 1./SQRT((G_GRAVITY*M_star/R_star**3)*Gamma_1/(c_1*V_2))
+       
+       where (x /= 0._WP)
+          f_g = SQRT((G_GRAVITY*M_star/R_star**3)*MAX(As/c_1, 0._WP))/x
+       elsewhere
+          f_g = 0._WP
+       end where
+
+       ml%delta_p = 0.5_WP/integrate(x, f_p)
+       ml%delta_g = 0.5_WP*integrate(x, f_g)/PI**2
+
+       ml%uniform_rot = .FALSE.
+       ml%reconstruct_As = .FALSE.
 
     endif
 
@@ -420,7 +426,7 @@ contains
                                          Gamma_1, nabla_ad, delta, Omega_rot, &
                                          nabla, kappa, kappa_rho, kappa_T, &
                                          epsilon, epsilon_rho, epsilon_T, &
-                                         deriv_type, regularize, add_center) result (ml)
+                                         deriv_type, add_center) result (ml)
 
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
@@ -443,19 +449,14 @@ contains
     real(WP), intent(in)          :: epsilon_rho(:)
     real(WP), intent(in)          :: epsilon_T(:)
     character(LEN=*), intent(in)  :: deriv_type
-    logical, optional, intent(in) :: regularize
     logical, optional, intent(in) :: add_center
     type(evol_model_t)            :: ml
 
-    logical  :: regularize_
     logical  :: add_center_
     integer  :: n
-    real(WP) :: m_reg(SIZE(r))
-    real(WP) :: p_reg(SIZE(r))
-    real(WP) :: N2_reg(SIZE(r))
     real(WP) :: x(SIZE(r))
+    real(WP) :: V_2(SIZE(r))
     real(WP) :: V(SIZE(r))
-    real(WP) :: V_x2(SIZE(r))
     real(WP) :: c_p(SIZE(r))
     real(WP) :: c_rad(SIZE(r))
     real(WP) :: c_thm(SIZE(r))
@@ -487,12 +488,6 @@ contains
     $CHECK_BOUNDS(SIZE(epsilon_rho),SIZE(r))
     $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(r))
 
-    if (PRESENT(regularize)) then
-       regularize_ = regularize
-    else
-       regularize_ = .FALSE.
-    endif
-
     if (PRESENT(add_center)) then
        add_center_ = add_center
     else
@@ -506,26 +501,11 @@ contains
        ! Add a central point and initialize using recursion
 
        ml = evol_model_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
-                         prep_center_(r, p), prep_center_(r, rho), prep_center_(r, T), [0._WP,N2], &
+                         prep_center_(r, p), prep_center_rho_(r, m, rho), prep_center_(r, T), [0._WP,N2], &
                          prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), prep_center_(r, Omega_rot), &
                          prep_center_(r, nabla), prep_center_(r, kappa), prep_center_(r, kappa_rho), prep_center_(r, kappa_T), &
                          prep_center_(r, epsilon), prep_center_(r, epsilon_rho), prep_center_(r, epsilon_T), &
-                         deriv_type, regularize, .FALSE.)
-
-    elseif (regularize_) then
-
-       ! Regularize and initialize using recursion
-
-       n = SIZE(r)
-
-       call regularize_data_(r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg, N2_reg)
-
-       ml = evol_model_t(m_reg(n), R_star, L_star, r, m_reg, &
-                         p_reg, rho, T, N2_reg, &
-                         Gamma_1, nabla_ad, delta, Omega_rot, &
-                         nabla, kappa, kappa_rho, kappa_T, &
-                         epsilon, epsilon_rho, epsilon_T, &
-                         deriv_type, .FALSE., .FALSE.)
+                         deriv_type, .FALSE.)
 
     else
 
@@ -544,16 +524,16 @@ contains
        x = r/R_star
 
        where(r /= 0._WP)
-          V_x2 = G_GRAVITY*m*rho/(p*r*x**2)
+          V_2 = G_GRAVITY*m*rho/(p*r*x**2)
        elsewhere
-          V_x2 = 4._WP*PI*G_GRAVITY*rho**2*R_star**2/(3._WP*p)
+          V_2 = 4._WP*PI*G_GRAVITY*rho**2*R_star**2/(3._WP*p)
        end where
 
-       V = V_x2*x**2
+       V = V_2*x**2
 
        c_p = p*delta/(rho*T*nabla_ad)
 
-       c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_x2/(3._WP*kappa*rho*L_star)
+       c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kappa*rho*L_star)
        c_thm = 4._WP*PI*rho*T*c_p*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
 
        kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
@@ -654,7 +634,7 @@ contains
 
     ! Set up the i'th spline with the provided data
 
-    this%sp(i) = spline_t(x, y, deriv_type, dy_dx_a=0._WP)
+    this%sp(i) = spline_t(x, y, deriv_type, df_dx_a=0._WP)
 
     this%sp_def(i) = .TRUE.
 
@@ -693,87 +673,42 @@ contains
   end function prep_center_
 
 !****
+  
+  function prep_center_rho_ (r, m, rho) result (rho_prep)
+      
+    real(WP), intent(in) :: r(:)
+    real(WP), intent(in) :: m(:)
+    real(WP), intent(in) :: rho(:)
+    real(WP)             :: rho_prep(SIZE(rho)+1)
 
-  subroutine regularize_data_ (r, m, p, rho, Gamma_1, N2, deriv_type, m_reg, p_reg, N2_reg)
-
-    real(WP), intent(in)     :: r(:)
-    real(WP), intent(in)     :: m(:)
-    real(WP), intent(in)     :: p(:)
-    real(WP), intent(in)     :: rho(:)
-    real(WP), intent(in)     :: Gamma_1(:)
-    real(WP), intent(in)     :: N2(:)
-    character(*), intent(in) :: deriv_type
-    real(WP), intent(out)    :: m_reg(:)
-    real(WP), intent(out)    :: p_reg(:)
-    real(WP), intent(out)    :: N2_reg(:)
-
-    type(spline_t) :: sp_rho
-    type(spline_t) :: sp_dm
-    type(spline_t) :: sp_N2
-    integer        :: n
-    logical        :: N2_mask(SIZE(r))
-    real(WP)       :: dlnrho_dlnr(SIZE(r))
-    real(WP)       :: g_r(SIZE(r))
+    real(WP) :: rho_bar
+    real(WP) :: a_0
+    real(WP) :: a_2
+    real(WP) :: rho_0
 
     $CHECK_BOUNDS(SIZE(m),SIZE(r))
-    $CHECK_BOUNDS(SIZE(p),SIZE(r))
     $CHECK_BOUNDS(SIZE(rho),SIZE(r))
-    $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(r))
-    $CHECK_BOUNDS(SIZE(N2),SIZE(r))
-    $CHECK_BOUNDS(SIZE(m_reg),SIZE(r))
-    $CHECK_BOUNDS(SIZE(p_reg),SIZE(r))
-    $CHECK_BOUNDS(SIZE(N2_reg),SIZE(r))
 
-    ! Regularize the model
+    $ASSERT(SIZE(rho) >= 1,Insufficient grid points)
 
-    ! Set up interpolating splines
+    ! Use mass-conserving parabola fitting to interpolate rho at the center
 
-    sp_rho = spline_t(r, rho, deriv_type, dy_dx_a=0._WP)
-    sp_dm = spline_t(r, 4._WP*PI*r**2*rho, deriv_type, dy_dx_a=0._WP)
+    rho_bar = m(1)/(4._WP*PI*r(1)**3/3._WP)
 
-    n = SIZE(N2)
+    a_0 = 5._WP*rho_bar/2._WP - 3._WP*rho(1)/2._WP
+    a_2 = 5._WP*(rho(1) - rho_bar)/2._WP
 
-    N2_mask = [.TRUE.,N2(1:n-2) > 0._WP .AND. N2(2:n-1) < 0._WP .AND. N2(3:n) > 0._WP,.TRUE.]
+    rho_0 = a_0
+      
+    ! Preprend this to the array
 
-    sp_N2 = spline_t(PACK(r, N2_mask), PACK(N2, N2_mask), deriv_type, dy_dx_a=0._WP)
-
-    ! Recalculate m
-
-    m_reg = sp_dm%integ()
-
-    ! Calculate dlnrho/dlnr
-
-    dlnrho_dlnr = r*sp_rho%deriv()/rho
-
-    ! Calculate g/r
-
-    where (r /= 0._WP)
-       g_r = G_GRAVITY*m_reg/r**3
-    elsewhere
-       g_r = 4._WP*PI*G_GRAVITY*rho
-    endwhere
-
-    ! Recalculate N2
-
-    N2_reg = sp_N2%interp(r)
-
-    ! Recalculate p
-
-    where (r /= 0._WP)
-       p_reg = -rho*g_r*r**2/(Gamma_1*(N2_reg/g_r + dlnrho_dlnr))
-    endwhere
-
-    where (r == 0._WP)
-       p_reg = MAXVAL(p_reg, MASK=r /= 0._WP)
-    endwhere
-
-    $ASSERT(ALL(p_reg > 0._WP),Negative regularized pressure)
+    rho_prep = [rho_0,rho]
 
     ! Finish
 
     return
 
-  end subroutine regularize_data_
+  end function prep_center_rho_
 
 !****
 
@@ -798,7 +733,7 @@ contains
        if(ASSOCIATED(this%cc)) then
           $NAME = this%cc%lookup(j, x)
        else
-          $NAME = this%sp(j)%interp(x)
+          $NAME = this%sp(j)%f(x)
        endif
 
     else
@@ -827,7 +762,7 @@ contains
     
     if(this%sp_def(j)) then
 
-       $NAME = this%sp(j)%interp(x)
+       $NAME = this%sp(j)%f(x)
 
     else
 
@@ -847,12 +782,12 @@ contains
   $PROC(p)
   $PROC(rho)
   $PROC(T)
-  $PROC(V)
-  $PROC(As)
+  $PROC(V_2)
+  $PROC(U)
   $PROC(c_1)
+  $PROC(Gamma_1)
   $PROC(nabla_ad)
   $PROC(delta)
-  $PROC(Omega_rot)
   $PROC(nabla)
   $PROC(c_rad)
   $PROC(c_thm)
@@ -889,7 +824,7 @@ contains
           d$NAME = this%cc%lookup(j_d, x)
        else
           if(x > 0._WP) then
-             d$NAME = x*this%sp(j)%deriv(x)/this%sp(j)%interp(x)
+             d$NAME = x*this%sp(j)%df_dx(x)/this%sp(j)%f(x)
           else
              d$NAME = 0._WP
           endif
@@ -922,7 +857,7 @@ contains
     if(this%sp_def(j)) then
 
        where(x > 0._WP)
-          d$NAME = x*this%sp(j)%deriv(x)/this%sp(j)%interp(x)
+          d$NAME = x*this%sp(j)%df_dx(x)/this%sp(j)%f(x)
        elsewhere
           d$NAME = 0._WP
        endwhere
@@ -945,27 +880,26 @@ contains
 
 !****
 
-  function U_1_ (this, x) result (U)
+  function As_1_ (this, x) result (As)
 
     class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
-    real(WP)                        :: U
+    real(WP)                        :: As
 
-    ! Calculate U. If implicit_U is .TRUE., use the c_1 based
-    ! expression; this ensures that the correct relation between U and
-    ! c_1 is preserved (see, e.g., eqn. 18 of Takata 2006, Proc. SOHO
-    ! 18/GONG 2006/HELAS I, p. 26)
+    ! Interpolate As. If reconstruct_As is .TRUE., use eqn. 21 of
+    ! [Tak2006a] instead
 
-    if(ASSOCIATED(this%cc)) then
+    if (ASSOCIATED(this%cc)) then
 
-       U = this%cc%lookup(J_U, x)
+       As = this%cc%lookup(J_AS, x)
 
     else
 
-       if(implicit_U) then
-          U = 3._WP - x*this%sp(J_C_1)%deriv(x)/this%sp(J_C_1)%interp(x)
+       if (this%reconstruct_As) then
+          As = -this%V_2(x)*x**2/this%Gamma_1(x) - this%U(x) + 3._WP - &
+               x*this%sp(J_U)%df_dx(x)/this%U(x)
        else
-          U =  this%sp(J_U)%interp(x)
+          As =  this%sp(J_AS)%f(x)
        endif
 
     endif
@@ -974,59 +908,89 @@ contains
 
     return
 
-  end function U_1_
+  end function As_1_
 
 !****
 
-  function U_v_ (this, x) result (U)
+  function As_v_ (this, x) result (As)
 
     class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
-    real(WP)                        :: U(SIZE(x))
+    real(WP)                        :: As(SIZE(x))
 
-    ! Calculate U. If implicit_U is .TRUE., use the c_1 based
-    ! expression; this ensures that the correct relation between U and
-    ! c_1 is preserved (see, e.g., eqn. 18 of Takata 2006, Proc. SOHO
-    ! 18/GONG 2006/HELAS I, p. 26)
+    ! Interpolate As. If reconstruct_As is .TRUE., use eqn. 21 of
+    ! [Tak2006a] instead
 
-    if(implicit_U) then
-       U = 3._WP - x*this%sp(J_C_1)%deriv(x)/this%sp(J_C_1)%interp(x)
+    if (this%reconstruct_As) then
+       As = -this%V_2(x)*x**2/this%Gamma_1(x) - this%U(x) + 3._WP - &
+            x*this%sp(J_U)%df_dx(x)/this%U(x)
     else
-       U =  this%sp(J_U)%interp(x)
+       As =  this%sp(J_AS)%f(x)
     endif
 
     ! Finish
 
     return
 
-  end function U_v_
+  end function As_v_
 
 !****
 
-  function Gamma_1_1_ (this, x) result (Gamma_1)
+  function D_1_ (this, x) result (D)
 
     class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x
-    real(WP)                        :: Gamma_1
+    real(WP)                        :: D
 
-    ! Calculate Gamma_1. If implicit_Gamma_1 is .TRUE., derive from
-    ! other structure coefficients
+    ! Calculate D = dlnrho/dlnx
 
-    if(ASSOCIATED(this%cc)) then
+    D = this%U(x) - 3._WP + x*this%sp(J_U)%df_dx(x)/this%U(x)
 
-       Gamma_1 = this%cc%lookup(J_GAMMA_1, x)
+    ! Finish
+
+    return
+
+  end function D_1_
+
+!****
+
+  function D_v_ (this, x) result (D)
+
+    class(evol_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: D(SIZE(x))
+
+    ! Calculate D = dlnrho/dlnx
+
+    D = this%U(x) - 3._WP + x*this%sp(J_U)%df_dx(x)/this%U(x)
+
+    ! Finish
+
+    return
+
+  end function D_v_
+
+!****
+
+  function Omega_rot_1_ (this, x) result (Omega_rot)
+
+    class(evol_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x
+    real(WP)                        :: Omega_rot
+
+    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
+    ! rate given by Omega_uni instead
+
+    if (ASSOCIATED(this%cc)) then
+
+       Omega_rot = this%cc%lookup(J_OMEGA_ROT, x)
 
     else
 
-       if(implicit_Gamma_1 .AND. x /= 0._WP) then
-
-          Gamma_1 = this%V(x)/(-this%As(x) + this%U(x) + this%V(x) - 1._WP - &
-                               x*this%sp(J_V)%deriv(x)/this%V(x))
-
+       if (this%uniform_rot) then
+          Omega_rot = this%Omega_uni
        else
-       
-          Gamma_1 = this%sp(J_GAMMA_1)%interp(x)
-
+          Omega_rot = this%sp(J_OMEGA_ROT)%f(x)
        endif
 
     endif
@@ -1035,52 +999,30 @@ contains
 
     return
 
-  end function Gamma_1_1_
+  end function Omega_rot_1_
 
 !****
 
-  function Gamma_1_v_ (this, x) result (Gamma_1)
+  function Omega_rot_v_ (this, x) result (Omega_rot)
 
     class(evol_model_t), intent(in) :: this
     real(WP), intent(in)            :: x(:)
-    real(WP)                        :: Gamma_1(SIZE(x))
+    real(WP)                        :: Omega_rot(SIZE(x))
 
-    ! Calculate Gamma_1. If implicit_Gamma_1 is .TRUE., derive from
-    ! other structure coefficients
+    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
+    ! rate given by Omega_uni instead
 
-    where(implicit_Gamma_1 .AND. x /= 0._WP)
-
-       Gamma_1 = this%V(x)/(-this%As(x) + this%U(x) + this%V(x) - 1._WP - &
-                            x*this%sp(J_V)%deriv(x)/this%V(x))
-
-    elsewhere
-
-       Gamma_1 = this%sp(J_GAMMA_1)%interp(x)
-
-    end where
+    if (this%uniform_rot) then
+       Omega_rot = this%Omega_uni
+    else
+       Omega_rot = this%sp(J_OMEGA_ROT)%f(x)
+    endif
 
     ! Finish
 
     return
 
-  end function Gamma_1_v_
-       
-!****
-
-  function pi_c_ (this) result (pi_c)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP)                         :: pi_c
-
-    ! Calculate pi_c = V/x^2 as x -> 0
-
-    pi_c = 4._WP*PI*G_GRAVITY*this%rho(0._WP)**2*this%R_star**2/(3._WP*this%p(0._WP))
-
-    ! Finish
-
-    return
-
-  end function pi_c_
+  end function Omega_rot_v_
 
 !****
 
@@ -1172,7 +1114,7 @@ contains
     !$OMP SECTION
     if (this%sp_def(J_T)) c(J_T,:) = this%T(x)
     !$OMP SECTION
-    if (this%sp_def(J_V)) c(J_V,:) = this%V(x)
+    if (this%sp_def(J_V_2)) c(J_V_2,:) = this%V_2(x)
     !$OMP SECTION
     if (this%sp_def(J_AS)) c(J_AS,:) = this%As(x)
     !$OMP SECTION
@@ -1234,9 +1176,6 @@ contains
     call bcast(ml%M_star, root_rank)
     call bcast(ml%R_star, root_rank)
     call bcast(ml%L_star, root_rank)
-
-    call bcast(ml%p_c, root_rank)
-    call bcast(ml%rho_c, root_rank)
 
     if(MPI_RANK /= root_rank) ml%cc => null()
 

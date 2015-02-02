@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_bvp
-! Purpose  : solve adiabatic BVPs
+! Purpose  : boundary-value solver (adiabatic)
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,21 +24,18 @@ module gyre_ad_bvp
   use core_kinds
 
   use gyre_bvp
-  use gyre_model
-  use gyre_cocache
-  use gyre_modepar
-  use gyre_oscpar
-  use gyre_numpar
-  use gyre_gridpar
-  use gyre_discfunc
-  use gyre_ad_shooter
-  use gyre_jacobian
+  use gyre_ext
   use gyre_ivp
-  use gyre_bound
-  use gyre_sysmtx
-  use gyre_ext_arith
-  use gyre_grid
+  use gyre_ivp_factory
   use gyre_mode
+  use gyre_mode_par
+  use gyre_model
+  use gyre_num_par
+  use gyre_osc_par
+  use gyre_sysmtx
+  use gyre_sysmtx_factory
+  use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -48,33 +45,10 @@ module gyre_ad_bvp
 
   ! Derived-type definitions
 
-  type, extends (bvp_t) :: ad_bvp_t
+  type, extends (r_bvp_t) :: ad_bvp_t
+   contains
      private
-     class(model_t), pointer        :: ml => null()
-     type(cocache_t)                :: cc
-     class(jacobian_t), allocatable :: jc
-     class(ivp_t), allocatable      :: iv
-     class(bound_t), allocatable    :: bd
-     type(ad_shooter_t)             :: sh
-     type(sysmtx_t)                 :: sm
-     type(modepar_t)                :: mp
-     type(oscpar_t)                 :: op
-     type(numpar_t)                 :: np
-     type(gridpar_t), allocatable   :: shoot_gp(:)
-     type(gridpar_t), allocatable   :: recon_gp(:)
-     real(WP), allocatable          :: x_in(:)
-     real(WP), allocatable          :: x(:)
-     integer, public                :: n
-     integer, public                :: n_e
-   contains 
-     private
-     procedure         :: discrim_r_
-     procedure         :: discrim_c_
-     procedure         :: mode_r_
-     procedure         :: mode_c_
-     procedure         :: build_
-     procedure         :: recon_
-     procedure, public :: model => model_
+     procedure, public :: recon => recon_
   end type ad_bvp_t
 
   ! Interfaces
@@ -93,126 +67,57 @@ module gyre_ad_bvp
 
 contains
 
-  function ad_bvp_t_ (ml, mp, op, np, shoot_gp, recon_gp, x_in) result (bp)
+  function ad_bvp_t_ (x, ml, mp, op, np) result (bp)
 
-    use gyre_ad_dziem_jacobian
-    use gyre_ad_jcd_jacobian
-    use gyre_ad_mix_jacobian
+    use gyre_ad_eqns
+    use gyre_ad_bound
 
-    use gyre_ad_zero_bound
-    use gyre_ad_dziem_bound
-    use gyre_ad_unno_bound
-    use gyre_ad_jcd_bound
-
-    use gyre_magnus_gl2_ivp
-    use gyre_magnus_gl4_ivp
-    use gyre_magnus_gl6_ivp
-    use gyre_colloc_gl2_ivp
-    use gyre_colloc_gl4_ivp
-    use gyre_findiff_ivp
-
+    real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(oscpar_t), intent(in)          :: op
-    type(numpar_t), intent(in)          :: np
-    type(gridpar_t), intent(in)         :: shoot_gp(:)
-    type(gridpar_t), intent(in)         :: recon_gp(:)
-    real(WP), allocatable, intent(in)   :: x_in(:)
+    type(mode_par_t), intent(in)        :: mp
+    type(osc_par_t), intent(in)         :: op
+    type(num_par_t), intent(in)         :: np
     type(ad_bvp_t), target              :: bp
 
-    integer               :: n
-    real(WP), allocatable :: x_cc(:)
+    class(r_rot_t), allocatable    :: rt
+    type(ad_eqns_t)                :: eq
+    integer                        :: n
+    real(WP)                       :: x_i
+    real(WP)                       :: x_o
+    type(ad_bound_t)               :: bd
+    class(r_ivp_t), allocatable    :: iv
+    class(r_sysmtx_t), allocatable :: sm
 
     ! Construct the ad_bvp_t
 
-    ! Store parameters
+    ! Initialize the rotational effects
 
-    bp%mp = mp
-    bp%op = op
-    bp%np = np
+    allocate(rt, SOURCE=r_rot_t(ml, mp, op))
+ 
+    ! Initialize the equations
 
-    bp%shoot_gp = shoot_gp
-    bp%recon_gp = recon_gp
-
-    ! Set up the coefficients pointer
-    
-    bp%ml => ml
-
-    ! Initialize the jacobian
-
-    select case (bp%op%variables_type)
-    case ('DZIEM')
-       allocate(bp%jc, SOURCE=ad_dziem_jacobian_t(bp%ml, bp%mp))
-    case ('JCD')
-       allocate(bp%jc, SOURCE=ad_jcd_jacobian_t(bp%ml, bp%mp))
-    case ('MIX')
-       allocate(bp%jc, SOURCE=ad_mix_jacobian_t(bp%ml, bp%mp))
-    case default
-       $ABORT(Invalid variables_type)
-    end select
+    eq = ad_eqns_t(ml, rt, op)
 
     ! Initialize the boundary conditions
 
-    select case (bp%op%outer_bound_type)
-    case ('ZERO')
-       allocate(bp%bd, SOURCE=ad_zero_bound_t(bp%ml, bp%jc, bp%mp))
-    case ('DZIEM')
-       allocate(bp%bd, SOURCE=ad_dziem_bound_t(bp%ml, bp%jc, bp%mp))
-    case ('UNNO')
-       allocate(bp%bd, SOURCE=ad_unno_bound_t(bp%ml, bp%jc, bp%mp))
-    case ('JCD')
-       allocate(bp%bd, SOURCE=ad_jcd_bound_t(bp%ml, bp%jc, bp%mp))
-    case default
-       $ABORT(Invalid bound_type)
-    end select
+    n = SIZE(x)
+
+    x_i = x(1)
+    x_o = x(n)
+
+    bd = ad_bound_t(ml, rt, eq, op, x_i, x_o)
 
     ! Initialize the IVP solver
 
-    select case (bp%np%ivp_solver_type)
-    case ('MAGNUS_GL2')
-       allocate(bp%iv, SOURCE=magnus_gl2_ivp_t(bp%jc))
-    case ('MAGNUS_GL4')
-       allocate(bp%iv, SOURCE=magnus_gl4_ivp_t(bp%jc))
-    case ('MAGNUS_GL6')
-       allocate(bp%iv, SOURCE=magnus_gl6_ivp_t(bp%jc))
-    case ('COLLOC_GL2')
-       allocate(bp%iv, SOURCE=colloc_gl2_ivp_t(bp%jc))
-    case ('COLLOC_GL4')
-       allocate(bp%iv, SOURCE=colloc_gl4_ivp_t(bp%jc))
-    case ('FINDIFF')
-       allocate(bp%iv, SOURCE=findiff_ivp_t(bp%jc))
-    case default
-       $ABORT(Invalid ivp_solver_type)
-    end select
-
-    ! Initialize the shooter
-
-    bp%sh = ad_shooter_t(bp%ml, bp%iv, bp%np)
-
-    ! Build the shooting grid
-
-    call build_grid(bp%shoot_gp, bp%ml, bp%mp, x_in, bp%x, verbose=.TRUE.)
-
-    n = SIZE(bp%x)
+    allocate(iv, SOURCE=r_ivp_t(eq, np))
 
     ! Initialize the system matrix
 
-    bp%sm = sysmtx_t(n-1, bp%jc%n_e, bp%bd%n_i, bp%bd%n_o)
+    allocate(sm, SOURCE=r_sysmtx_t(n-1, eq%n_e, bd%n_i, bd%n_o, np))
 
-    ! Other stuff
+    ! Initialize the bvp_t
 
-    if(ALLOCATED(x_in)) bp%x_in = x_in
-
-    bp%n = n
-    bp%n_e = bp%sh%n_e
-
-    ! Set up the coefficient cache
-
-    x_cc = [bp%x(1),bp%sh%abscissa(bp%x),bp%x(n)]
-
-    call bp%ml%attach_cache(bp%cc)
-    call bp%ml%fill_cache(x_cc)
-    call bp%ml%detach_cache()
+    bp%r_bvp_t = r_bvp_t(x, ml, eq, bd, iv, sm)
 
     ! Finish
 
@@ -222,258 +127,48 @@ contains
 
 !****
 
-  function discrim_r_ (this, omega) result (discrim)
+  subroutine recon_ (this, omega, x, x_ref, y, y_ref, discrim)
 
     class(ad_bvp_t), intent(inout) :: this
     real(WP), intent(in)           :: omega
-    type(ext_real_t)               :: discrim
+    real(WP), intent(in)           :: x(:)
+    real(WP), intent(in)           :: x_ref
+    real(WP), intent(out)          :: y(:,:)
+    real(WP), intent(out)          :: y_ref(:)
+    type(r_ext_t), intent(out)     :: discrim
 
-    type(ext_complex_t) :: discrim_c
+    real(WP) :: y_(4,SIZE(x))
+    real(WP) :: y_ref_(4)
+    integer  :: n
+    integer  :: i
 
-    ! Evaluate the discriminant as the determinant of the sysmtx (real
-    ! version)
+    $CHECK_BOUNDS(SIZE(y, 1),6)
+    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
 
-    call this%build_(CMPLX(omega, KIND=WP))
-
-    call this%sm%determinant(discrim_c, .TRUE., this%np%use_banded)
-
-    discrim = ext_real_t(discrim_c)
-
-    ! Finish
-
-    return
-
-  end function discrim_r_
-
-!****
-
-  function discrim_c_ (this, omega) result (discrim)
-
-    class(ad_bvp_t), intent(inout) :: this
-    complex(WP), intent(in)        :: omega
-    type(ext_complex_t)            :: discrim
-
-    ! Evaluate the discriminant as the determinant of the sysmtx
-    ! (complex version)
-
-    call this%build_(omega)
-
-    call this%sm%determinant(discrim, .FALSE., this%np%use_banded)
-
-    ! Finish
-
-    return
-
-  end function discrim_c_
-
-!****
-
-  function mode_r_ (this, omega) result (md)
-
-    class(ad_bvp_t), target, intent(inout) :: this
-    real(WP), intent(in)                   :: omega
-    type(mode_t)                           :: md
-
-    complex(WP)              :: omega_c
-    real(WP), allocatable    :: x(:)
-    complex(WP), allocatable :: y(:,:)
-    real(WP)                 :: x_ref
-    complex(WP)              :: y_ref(this%n_e)
-    type(ext_complex_t)      :: discrim_c
-    integer                  :: n
-    integer                  :: i
-    complex(WP), allocatable :: y_c(:,:)
-    complex(WP)              :: y_c_ref(6)
+    $CHECK_BOUNDS(SIZE(y_ref),6)
 
     ! Reconstruct the solution
 
-    omega_c = CMPLX(omega, KIND=WP)
+    call this%r_bvp_t%recon(omega, x, x_ref, y_, y_ref_, discrim)
 
-    call this%recon_(omega_c, x, y, x_ref, y_ref, discrim_c, .TRUE.)
-
-    ! Calculate canonical variables
+    ! Convert to the canonical (6-variable) solution
 
     n = SIZE(x)
 
-    allocate(y_c(6,n))
-
     !$OMP PARALLEL DO 
-    do i = 1,n
-       y_c(1:4,i) = MATMUL(this%jc%trans_matrix(x(i), omega_c, .TRUE.), y(:,i))
-       y_c(5:6,i) = 0._WP
+    do i = 1, n
+       y(1:4,i) = MATMUL(this%eq%T(x(i), omega, .TRUE.), y_(:,i))
+       y(5:6,i) = 0._WP
     end do
 
-    y_c_ref(1:4) = MATMUL(this%jc%trans_matrix(x_ref, omega_c, .TRUE.), y_ref)
-    y_c_ref(5:6) = 0._WP
-
-    ! Initialize the mode
-
-    md = mode_t(this%ml, this%mp, this%op, omega_c, discrim_c, x, y_c, x_ref, y_c_ref)
-
-    ! Finish
-
-    return
-
-  end function mode_r_
-
-!****
-
-  function mode_c_ (this, omega) result (md)
-
-    class(ad_bvp_t), target, intent(inout) :: this
-    complex(WP), intent(in)                :: omega
-    type(mode_t)                           :: md
-
-    real(WP), allocatable    :: x(:)
-    complex(WP), allocatable :: y(:,:)
-    real(WP)                 :: x_ref
-    complex(WP)              :: y_ref(this%n_e)
-    type(ext_complex_t)      :: discrim
-    integer                  :: n
-    integer                  :: i
-    complex(WP), allocatable :: y_c(:,:)
-    complex(WP)              :: y_c_ref(6)
-
-    ! Reconstruct the solution
-
-    call this%recon_(omega, x, y, x_ref, y_ref, discrim, .FALSE.)
-
-    ! Calculate canonical variables
-
-    n = SIZE(x)
-
-    allocate(y_c(6,n))
-
-    !$OMP PARALLEL DO 
-    do i = 1,n
-       y_c(1:4,i) = MATMUL(this%jc%trans_matrix(x(i), omega, .TRUE.), y(:,i))
-       y_c(5:6,i) = 0._WP
-    end do
-
-    y_c_ref(1:4) = MATMUL(this%jc%trans_matrix(x_ref, omega, .TRUE.), y_ref)
-    y_c_ref(5:6) = 0._WP
-
-    ! Initialize the mode
-
-    md = mode_t(this%ml, this%mp, this%op, omega, discrim, x, y_c, x_ref, y_c_ref)
-
-    ! Finish
-
-    return
-
-  end function mode_c_
-
-!****
-
-  subroutine build_ (this, omega)
-
-    class(ad_bvp_t), target, intent(inout) :: this
-    complex(WP), intent(in)                :: omega
-
-    ! Set up the sysmtx
-
-    call this%ml%attach_cache(this%cc)
-
-    call this%sm%set_inner_bound(this%bd%inner_bound(this%x(1), omega), ext_complex_t(1._WP))
-    call this%sm%set_outer_bound(this%bd%outer_bound(this%x(this%n), omega), ext_complex_t(1._WP))
-
-    call this%sh%shoot(omega, this%x, this%sm)
-
-    call this%ml%detach_cache()
-
-    call this%sm%scale_rows()
-
-    ! Finish
-
-    return
-
-  end subroutine build_
-
-!****
-
-  subroutine recon_ (this, omega, x, y, x_ref, y_ref, discrim, use_real)
-
-    class(ad_bvp_t), intent(inout)        :: this
-    complex(WP), intent(in)               :: omega
-    real(WP), allocatable, intent(out)    :: x(:)
-    complex(WP), allocatable, intent(out) :: y(:,:)
-    real(WP), intent(out)                 :: x_ref
-    complex(WP), intent(out)              :: y_ref(:)
-    type(ext_complex_t), intent(out)      :: discrim
-    logical, optional, intent(in)         :: use_real
-
-    complex(WP) :: b(this%n_e*this%n)
-    complex(WP) :: y_sh(this%n_e,this%n)
-    logical     :: same_grid
-    complex(WP) :: y_ref_(this%n_e,1)
-
-    $CHECK_BOUNDS(SIZE(y_ref),this%n_e)
-
-    ! Reconstruct the solution on the shooting grid
-
-    call this%build_(omega)
-
-    call this%sm%null_vector(b, discrim, use_real, this%np%use_banded)
-
-    y_sh = RESHAPE(b, SHAPE(y_sh))
-
-    ! Build the recon grid
-
-    this%recon_gp%omega_a = REAL(omega)
-    this%recon_gp%omega_b = REAL(omega)
-
-    call build_grid(this%recon_gp, this%ml, this%mp, this%x, x)
-
-    if(SIZE(x) == SIZE(this%x)) then
-       same_grid = ALL(x == this%x)
-    else
-       same_grid = .FALSE.
-    endif
-
-    ! Reconstruct the full solution
-
-    if(same_grid) then
-
-       y = y_sh
-
-    else
-
-       allocate(y(this%n_e,SIZE(x)))
-
-       call this%sh%recon(omega, this%x, y_sh, x, y)
-
-    endif
-
-    ! Reconstruct the solution at x_ref
-
-    x_ref = MIN(MAX(this%op%x_ref, this%x(1)), this%x(this%n))
-
-    call this%sh%recon(omega, this%x, y_sh, [x_ref], y_ref_)
-
-    y_ref = y_ref_(:,1)
+    y_ref(1:4) = MATMUL(this%eq%T(x_ref, omega, .TRUE.), y_ref_)
+    y_ref(5:6) = 0._WP
 
     ! Finish
 
     return
 
   end subroutine recon_
-
-!****
-
-  function model_ (this) result (ml)
-
-    class(ad_bvp_t), intent(in) :: this
-    class(model_t), pointer     :: ml
-
-    ! Return the model pointer
-
-    ml => this%ml
-
-    ! Finish
-
-    return
-
-  end function model_
 
 end module gyre_ad_bvp
 

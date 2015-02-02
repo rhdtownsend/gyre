@@ -24,22 +24,25 @@ module gyre_lib
   use core_kinds
   use core_parallel
 
-  use gyre_constants
-  use gyre_bvp
   use gyre_ad_bvp
-  use gyre_rad_bvp
-  use gyre_nad_bvp
-  use gyre_model
+  use gyre_bvp
+  use gyre_constants
   use gyre_evol_model
-  use gyre_mesa_file
-  use gyre_modepar
-  use gyre_oscpar
+  use gyre_ext
+  use gyre_input
+  use gyre_grid
   use gyre_gridpar
+  use gyre_mesa_file
+  use gyre_mode
+  use gyre_model
+  use gyre_modepar
+  use gyre_nad_bvp
+  use gyre_oscpar
   use gyre_numpar
+  use gyre_rad_bvp
   use gyre_scanpar
   use gyre_search
-  use gyre_mode
-  use gyre_input
+  use gyre_trad
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -77,11 +80,14 @@ module gyre_lib
 
 contains
 
-  subroutine gyre_init ()
+  subroutine gyre_init (gyre_dir)
+
+    character(*), intent(in) :: gyre_dir
 
     ! Initialize
 
     call init_parallel()
+    call init_trad(gyre_dir)
 
     call set_log_level('WARN')
 
@@ -97,8 +103,8 @@ contains
 
     ! Finalize
 
-    if(ASSOCIATED(ml_m)) deallocate(ml_m)
-    if(ALLOCATED(x_ml_m)) deallocate(x_ml_m)
+    if (ASSOCIATED(ml_m)) deallocate(ml_m)
+    if (ALLOCATED(x_ml_m)) deallocate(x_ml_m)
 
     call final_parallel()
 
@@ -119,7 +125,7 @@ contains
 
     ! Read the model
 
-    if(ASSOCIATED(ml_m)) deallocate(ml_m)
+    if (ASSOCIATED(ml_m)) deallocate(ml_m)
 
     call read_mesa_model(file, deriv_type, .FALSE., ec, x_ml_m)
 
@@ -195,10 +201,10 @@ contains
 
 !****
 
-  subroutine gyre_get_modes (l, file, non_ad, user_sub, ipar, rpar)
+  subroutine gyre_get_modes (l, filename, non_ad, user_sub, ipar, rpar)
 
     integer, intent(in)          :: l
-    character(LEN=*), intent(in) :: file
+    character(LEN=*), intent(in) :: filename
     logical, intent(in)          :: non_ad
     interface
        subroutine user_sub (md, ipar, rpar, retcode)
@@ -229,17 +235,18 @@ contains
     type(gridpar_t), allocatable :: shoot_gp_sel(:)
     type(gridpar_t), allocatable :: recon_gp_sel(:)
     type(scanpar_t), allocatable :: sp_sel(:)
-    integer                      :: n_op_sel
-    integer                      :: n_np_sel
+    real(WP)                     :: x_i
+    real(WP)                     :: x_o
     real(WP), allocatable        :: omega(:)
-    class(bvp_t), allocatable    :: ad_bp
-    class(bvp_t), allocatable    :: nad_bp
+    real(WP), allocatable        :: x_sh(:)
+    class(r_bvp_t), allocatable  :: ad_bp
+    class(c_bvp_t), allocatable  :: nad_bp
 
     $ASSERT(ASSOCIATED(ml_m),No model provided)
 
     ! Read parameters
 
-    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+    open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
     call read_modepar(unit, mp)
     call read_oscpar(unit, op)
@@ -263,50 +270,49 @@ contains
 
           ! Select parameters according to tags
 
-          call select_par(op, mp(i)%tag, op_sel)
-          call select_par(np, mp(i)%tag, np_sel)
+          call select_par(op, mp(i)%tag, op_sel, last=.TRUE.)
+          call select_par(np, mp(i)%tag, np_sel, last=.TRUE.)
           call select_par(shoot_gp, mp(i)%tag, shoot_gp_sel)
           call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
           call select_par(sp, mp(i)%tag, sp_sel)
 
-          n_op_sel = SIZE(op_sel)
-          n_np_sel = SIZE(np_sel)
-
-          $ASSERT(n_op_sel >= 1,No matching osc parameters)
-          $ASSERT(n_np_sel >= 1,No matching num parameters)
+          $ASSERT(SIZE(op_sel) == 1,No matching osc parameters)
+          $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
           $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
           $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
           $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
 
           ! Set up the frequency array
 
-          call build_scan(sp_sel, ml_m, mp(i), op_sel(1), shoot_gp_sel, x_ml_m, omega)
+          x_i = x_ml_m(1)
+          x_o = x_ml_m(SIZE(x_ml_m))
 
-          ! Store the frequency range in shoot_gp_sel
+          call build_scan(sp_sel, ml_m, mp(i), op_sel(1), x_i, x_o, omega)
 
-          shoot_gp_sel%omega_a = MINVAL(omega)
-          shoot_gp_sel%omega_b = MAXVAL(omega)
+          ! Set up the shooting grid
+          
+          call build_grid(shoot_gp_sel, ml_m, mp(i), op_sel(1), omega, x_ml_m, x_sh)
 
           ! Set up the bvp's
 
           if(mp(i)%l == 0 .AND. op_sel(1)%reduce_order) then
-             allocate(ad_bp, SOURCE=rad_bvp_t(ml_m, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+             allocate(ad_bp, SOURCE=rad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1)))
           else
-             allocate(ad_bp, SOURCE=ad_bvp_t(ml_m, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+             allocate(ad_bp, SOURCE=ad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1)))
           endif
 
           if (non_ad) then
-             allocate(nad_bp, SOURCE=nad_bvp_t(ml_m, mp(i), op_sel(1), np_sel(1), shoot_gp_sel, recon_gp_sel, x_ml_m))
+             allocate(nad_bp, SOURCE=nad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1)))
           endif
 
           ! Find modes
 
           if (non_ad) then
              n_md = 0
-             call scan_search(ad_bp, np_sel(n_np_sel), omega, store_mode)
-             call prox_search(nad_bp, np_sel(n_np_sel), md(:n_md), process_mode)
+             call scan_search(ad_bp, np_sel(1), omega, process_root_ad)
+             call prox_search(nad_bp, np_sel(1), md(:n_md), process_root_nad)
           else
-             call scan_search(ad_bp, np_sel(n_np_sel), omega, process_mode)
+             call scan_search(ad_bp, np_sel(1), omega, process_root_ad)
           endif
 
           ! Clean up
@@ -326,42 +332,130 @@ contains
 
   contains
 
-    subroutine store_mode (md_new)
+    subroutine process_root_ad (omega, n_iter, discrim_ref)
 
-      type(mode_t), intent(in) :: md_new
+      real(WP), intent(in)      :: omega
+      integer, intent(in)       :: n_iter
+      type(r_ext_t), intent(in) :: discrim_ref
 
-      ! Store the mode
+      real(WP), allocatable :: x_rc(:)
+      integer               :: n
+      real(WP)              :: x_ref
+      real(WP), allocatable :: y(:,:)
+      real(WP)              :: y_ref(6)
+      type(r_ext_t)         :: discrim
+      type(mode_t)          :: md_new
+      integer               :: retcode
 
-      n_md = n_md + 1
+      ! Build the reconstruction grid
 
-      if (n_md > d_md) then
-         d_md = 2*d_md
-         call reallocate(md, [d_md])
+      call build_grid(recon_gp_sel, ml_m, mp(i), op_sel(1), [omega], x_sh, x_rc, verbose=.FALSE.)
+
+      ! Reconstruct the solution
+
+      x_ref = MIN(MAX(op_sel(1)%x_ref, x_sh(1)), x_sh(SIZE(x_sh)))
+
+      n = SIZE(x_rc)
+
+      allocate(y(6,n))
+
+      call ad_bp%recon(omega, x_rc, x_ref, y, y_ref, discrim)
+
+      ! Create the mode
+
+      md_new = mode_t(ml_m, mp(i), op_sel(1), CMPLX(omega, KIND=WP), c_ext_t(discrim), &
+                      x_rc, CMPLX(y, KIND=WP), x_ref, CMPLX(y_ref, KIND=WP))
+
+      if (md_new%n_pg < mp(i)%n_pg_min .OR. md_new%n_pg > mp(i)%n_pg_max) return
+
+      md_new%n_iter = n_iter
+      md_new%chi = ABS(discrim)/ABS(discrim_ref)
+
+      ! Store it or process it
+
+      if (non_ad) then
+
+         n_md = n_md + 1
+
+         if (n_md > d_md) then
+            d_md = 2*d_md
+            call reallocate(md, [d_md])
+         endif
+         
+         md(n_md) = md_new
+
+         call md(n_md)%prune()
+
+      else
+
+         retcode = 0
+
+         call user_sub(md_new, ipar, rpar, retcode)
+
       endif
-
-      md(n_md) = md_new
-
-      call md(n_md)%prune()
 
       ! Finish
 
       return
 
-    end subroutine store_mode
+    end subroutine process_root_ad
 
-    subroutine process_mode (md_new)
+!****
 
-      type(mode_t), intent(in) :: md_new
+    subroutine process_root_nad (omega, n_iter, discrim_ref)
 
-      integer :: retcode
+      complex(WP), intent(in)   :: omega
+      integer, intent(in)       :: n_iter
+      type(r_ext_t), intent(in) :: discrim_ref
 
-      ! Process the mode
+      real(WP), allocatable    :: x_rc(:)
+      integer                  :: n
+      real(WP)                 :: x_ref
+      complex(WP), allocatable :: y(:,:)
+      complex(WP)              :: y_ref(6)
+      type(c_ext_t)            :: discrim
+      type(mode_t)             :: md_new
+      integer                  :: retcode
+
+      ! Build the reconstruction grid
+
+      call build_grid(recon_gp_sel, ml_m, mp(i), op_sel(1), [REAL(omega)], x_sh, x_rc, verbose=.FALSE.)
+
+      ! Reconstruct the solution
+
+      x_ref = MIN(MAX(op_sel(1)%x_ref, x_sh(1)), x_sh(SIZE(x_sh)))
+
+      n = SIZE(x_rc)
+
+      allocate(y(6,n))
+
+      call nad_bp%recon(omega, x_rc, x_ref, y, y_ref, discrim)
+
+      ! Create the mode
+
+      md_new = mode_t(ml_m, mp(i), op_sel(1), CMPLX(omega, KIND=WP), discrim, &
+           x_rc, y, x_ref, y_ref)
+
+      md_new%n_iter = n_iter
+      md_new%chi = ABS(discrim)/ABS(discrim_ref)
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 120) md_new%mp%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
+              md_new%omega, real(md_new%chi), md_new%n_iter, md_new%n
+120      format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
+      endif
+
+      ! Process it
 
       retcode = 0
 
       call user_sub(md_new, ipar, rpar, retcode)
 
-    end subroutine process_mode
+      ! Finish
+
+      return
+
+    end subroutine process_root_nad
 
   end subroutine gyre_get_modes
 

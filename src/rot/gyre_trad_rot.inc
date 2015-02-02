@@ -1,0 +1,197 @@
+! Incfile  : gyre_trad_rot
+! Purpose  : rotational effects (traditional approximation, template)
+!
+! Copyright 2013-2015 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+$include 'core.inc'
+
+$define $MOD_DECL $sub
+
+$local $T $1
+$local $TYPE $2
+
+module gyre_${T}_trad_rot
+
+  ! Uses
+
+  use core_kinds
+
+  use gyre_model
+  use gyre_mode_par
+  use gyre_trad
+  use gyre_rot
+
+  use ISO_FORTRAN_ENV
+
+  ! No implicit typing
+
+  implicit none
+
+  ! Derived-type definitions
+
+  type, extends (${T}_rot_t) :: ${T}_trad_rot_t
+     private
+     class(model_t), pointer :: ml => null()
+   contains
+     private
+     procedure, public :: omega => omega_
+     procedure         :: omega_c_1_
+     procedure         :: omega_c_v_
+     procedure         :: lambda_1_
+     procedure         :: lambda_v_
+  end type ${T}_trad_rot_t
+
+  ! Interfaces
+
+  interface ${T}_trad_rot_t
+     module procedure ${T}_trad_rot_t_
+  end interface ${T}_trad_rot_t
+
+  ! Access specifiers
+
+  private
+
+  public :: ${T}_trad_rot_t
+
+  ! Procedures
+
+contains
+
+  function ${T}_trad_rot_t_ (ml, mp) result (rt)
+
+    class(model_t), pointer, intent(in) :: ml
+    type(mode_par_t), intent(in)        :: mp
+    type(${T}_trad_rot_t)               :: rt
+
+    ! Construct the trad_rot_t
+
+    rt%ml => ml
+    rt%mp = mp
+
+    ! Finish
+
+    return
+
+  end function ${T}_trad_rot_t_
+
+!****
+
+  function omega_ (this, x, omega_c) result (omega)
+
+    class(${T}_trad_rot_t), intent(in) :: this
+    real(WP), intent(in)               :: x
+    $TYPE(WP), intent(in)              :: omega_c
+    $TYPE(WP)                          :: omega
+
+    ! Evaluate the inertial-frame frequency from the corotating-frame
+    ! frequency
+
+    omega = omega_c + this%mp%m*this%ml%Omega_rot(x)
+
+    ! Finish
+
+    return
+
+  end function omega_
+
+!****
+
+  function omega_c_1_ (this, x, omega) result (omega_c)
+
+    class(${T}_trad_rot_t), intent(in) :: this
+    real(WP), intent(in)               :: x
+    $TYPE(WP), intent(in)              :: omega
+    $TYPE(WP)                          :: omega_c
+
+    ! Evaluate the corotating-frame frequency from the inertial-frame
+    ! frequency (scalar)
+
+    omega_c = omega - this%mp%m*this%ml%Omega_rot(x)
+
+    ! Finish
+
+    return
+
+  end function omega_c_1_
+
+!****
+
+  function omega_c_v_ (this, x, omega) result (omega_c)
+
+    class(${T}_trad_rot_t), intent(in) :: this
+    real(WP), intent(in)               :: x(:)
+    $TYPE(WP), intent(in)              :: omega
+    $TYPE(WP)                          :: omega_c(SIZE(x))
+
+    ! Evaluate the corotating-frame frequency from the inertial-frame
+    ! frequency (vector)
+
+    omega_c = omega - this%mp%m*this%ml%Omega_rot(x)
+
+    ! Finish
+
+    return
+
+  end function omega_c_v_
+
+!****
+
+  function lambda_1_ (this, x, omega) result (lambda)
+
+    class(${T}_trad_rot_t), intent(in) :: this
+    real(WP), intent(in)               :: x
+    $TYPE(WP), intent(in)              :: omega
+    $TYPE(WP)                          :: lambda
+
+    $TYPE(WP) :: nu
+
+    ! Evaluate the angular eigenvalue (scalar)
+
+    nu = 2._WP*this%ml%Omega_rot(x)/this%omega_c(x, omega)
+
+    lambda = trad_lambda(nu, this%mp%l, this%mp%m)
+
+    ! Finish
+
+    return
+
+  end function lambda_1_
+
+!****
+
+  function lambda_v_ (this, x, omega) result (lambda)
+
+    class(${T}_trad_rot_t), intent(in) :: this
+    real(WP), intent(in)               :: x(:)
+    $TYPE(WP), intent(in)              :: omega
+    $TYPE(WP)                          :: lambda(SIZE(x))
+
+    integer :: i
+
+    ! Evaluate the angular eigenvalue (vector)
+
+    do i = 1, SIZE(x)
+       lambda(i) = this%lambda(x(i), omega)
+    end do
+
+    ! Finish
+
+    return
+
+  end function lambda_v_
+
+end module gyre_${T}_trad_rot
+
+$endsub

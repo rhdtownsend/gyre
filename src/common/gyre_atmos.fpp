@@ -1,7 +1,7 @@
 ! Module   : gyre_atmos
 ! Purpose  : atmosphere utility routines
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -31,9 +31,18 @@ module gyre_atmos
 
   implicit none
 
+  ! Interfaces
+
+  interface atmos_beta
+     module procedure atmos_beta_r_
+     module procedure atmos_beta_c_
+  end interface atmos_beta
+
+  ! Access specifiers
+
   private
 
-  public :: atmos_wavenumber
+  public :: atmos_beta
   public :: eval_atmos_cutoff_freqs
   public :: eval_atmos_coeffs_unno
   public :: eval_atmos_coeffs_jcd
@@ -42,99 +51,130 @@ module gyre_atmos
 
 contains
 
-  function atmos_wavenumber (V_g, As, c_1, omega, l) result (lambda)
+  function atmos_beta_r_ (V_g, As, c_1, omega, lambda) result (beta)
 
-    real(WP)                :: V_g
-    real(WP), intent(in)    :: As
-    real(WP), intent(in)    :: c_1
-    complex(WP), intent(in) :: omega
-    integer, intent(in)     :: l
-    complex(WP)             :: lambda
+    real(WP)             :: V_g
+    real(WP), intent(in) :: As
+    real(WP), intent(in) :: c_1
+    real(WP), intent(in) :: omega
+    real(WP), intent(in) :: lambda
+    real(WP)             :: beta
 
-    real(WP)    :: omega_cutoff_lo
-    real(WP)    :: omega_cutoff_hi
-    complex(WP) :: gamma
-    complex(WP) :: sgamma
+    real(WP)      :: psi2
+    logical, save :: warned = .FALSE.
 
-    ! Calculate the radial wavenumber in the atmosphere
+    ! Calculate the atmospheric radial wavenumber, as defined by
+    ! [Tow2000b] (real frequencies)
 
-    if (AIMAG(omega) == 0._WP) then
+    psi2 = (As - V_g + 4._WP)**2 + 4._WP*(lambda/(c_1*omega**2) - V_g)*(c_1*omega**2 - As)
 
-       ! Calculate cutoff frequencies
+    if (psi2 < 0._WP) then
 
-       call eval_atmos_cutoff_freqs(V_g, As, c_1, l, omega_cutoff_lo, omega_cutoff_hi)
-
-       ! Evaluate the wavenumber
-
-       gamma = -4._WP*V_g*c_1*(omega**2 - omega_cutoff_lo**2)*(omega**2 - omega_cutoff_hi**2)/omega**2
-
-       if (ABS(REAL(omega)) > omega_cutoff_hi) then
-
-          ! Acoustic waves
-
-          lambda = 0.5_WP*((V_g + As - 2._WP) - SQRT(gamma))
-
-       elseif (ABS(REAL(omega)) < omega_cutoff_lo) then
-
-          ! Gravity waves
-
-          lambda = 0.5_WP*((V_g + As - 2._WP) + SQRT(gamma))
-
-       else
-
-          ! Evanescent
-
-          lambda = 0.5_WP*((V_g + As - 2._WP) - SQRT(gamma))
-
+       if (.NOT. warned) then
+          $WARN(WARNING: Discarding imaginary part of atmospheric radial wavenumber)
+          warned = .TRUE.
        endif
+       
+       beta = 0.5_WP*(V_g + As - 2._WP)
 
     else
 
-       ! Evaluate the wavenumber
+       beta = 0.5_WP*(V_g + As - 2._WP - SQRT(psi2))
 
-       gamma = (As - V_g + 4._WP)**2 + 4*(l*(l+1)/(c_1*omega**2) - V_g)*(c_1*omega**2 - As)
-       sgamma = SQRT(gamma)
-
-       if (AIMAG(omega) > 0._WP) then
-
-          ! Decaying oscillations; choose the wave with diverging
-          ! energy density (see Townsend 2000b)
-
-          if (REAL(sgamma) > 0._WP) then
-             lambda = 0.5_WP*((V_g + As - 2._WP) + sgamma)
-          else
-             lambda = 0.5_WP*((V_g + As - 2._WP) - sgamma)
-          endif
-
-       else
-
-          ! Growing oscillations; choose the wave with non-diverging
-          ! energy density (see Townsend 2000b)
-
-          if (REAL(sgamma) > 0._WP) then
-             lambda = 0.5_WP*((V_g + As - 2._WP) - sgamma)
-          else
-             lambda = 0.5_WP*((V_g + As - 2._WP) + sgamma)
-          endif
-
-       endif
-
-    end if
+    endif
 
     ! Finish
 
     return
 
-  end function atmos_wavenumber
+  end function atmos_beta_r_
 
 !****
 
-  subroutine eval_atmos_cutoff_freqs (V_g, As, c_1, l, omega_cutoff_lo, omega_cutoff_hi)
+  function atmos_beta_c_ (V_g, As, c_1, omega, lambda) result (beta)
+
+    real(WP)                :: V_g
+    real(WP), intent(in)    :: As
+    real(WP), intent(in)    :: c_1
+    complex(WP), intent(in) :: omega
+    complex(WP), intent(in) :: lambda
+    complex(WP)             :: beta
+
+    complex(WP) :: psi2
+    complex(WP) :: psi
+
+    ! Calculate the atmospheric radial wavenumber, as defined by
+    ! [Tow2000b] (complex frequencies)
+
+    psi2 = (As - V_g + 4._WP)**2 + 4._WP*(lambda/(c_1*omega**2) - V_g)*(c_1*omega**2 - As)
+    psi = SQRT(psi2)
+
+    ! Adjust the sign of psi to choose the correct solution
+
+    if (AIMAG(omega) > 0._WP) then
+
+       ! Decaying mode; choose the solution with diverging energy density
+
+       if (REAL(psi) < 0._WP) psi = -psi
+
+    elseif (AIMAG(omega) < 0._WP) then
+
+       ! Growing mode; choose the solution with non-diverging energy
+       ! density
+
+       if (REAL(psi) > 0._WP) psi = -psi
+
+    else
+
+       ! Steady-state mode;
+
+       $ASSERT(AIMAG(psi2) == 0._WP,Steady-state mode with complex propagation discriminant)
+
+       if (REAL(psi2) > 0._WP) then
+
+          ! Evanescent wave; choose the solution with non-diverging
+          ! energy density
+
+          psi = -psi
+
+       else
+
+          if (REAL(c_1*omega**2) < As) then
+          
+             ! Gravity wave; choose the solution with downward phase
+             ! velocity
+
+             if (AIMAG(psi) < 0._WP) psi = -psi
+
+          else
+
+             ! Acoustic wave; choose the solution with upward phase
+             ! velocity
+
+             if (AIMAG(psi) > 0._WP) psi = -psi
+
+          end if
+
+       end if
+
+    end if
+
+    beta = 0.5_WP*(V_g + As - 2._WP + psi)
+             
+    ! Finish
+
+    return
+
+  end function atmos_beta_c_
+
+!****
+
+  subroutine eval_atmos_cutoff_freqs (V_g, As, c_1, lambda, omega_cutoff_lo, omega_cutoff_hi)
 
     real(WP), intent(in)  :: V_g
     real(WP), intent(in)  :: As
     real(WP), intent(in)  :: c_1
-    integer, intent(in)   :: l
+    real(WP), intent(in)  :: lambda
     real(WP), intent(out) :: omega_cutoff_lo
     real(WP), intent(out) :: omega_cutoff_hi
 
@@ -145,8 +185,8 @@ contains
     ! Evaluate the atmospheric cutoff frequencies from the supplied coefficients
 
     a = -4._WP*V_g*c_1**2
-    b = ((As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*l*(l+1))*c_1
-    c = -4._WP*l*(l+1)*As
+    b = ((As - V_g + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda)*c_1
+    c = -4._WP*lambda*As
 
     omega_cutoff_lo = SQRT((-b + SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
     omega_cutoff_hi = SQRT((-b - SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
@@ -171,7 +211,7 @@ contains
 
     ! Evaluate atmosphere coefficients (Unno et al. formulation)
 
-    V_g = ml%V(x_o)/ml%Gamma_1(x_o)
+    V_g = ml%V_2(x_o)*x_o**2/ml%Gamma_1(x_o)
     As = ml%As(x_o)
     c_1 = ml%c_1(x_o)
 
@@ -193,8 +233,8 @@ contains
 
     ! Evaluate atmosphere coefficients (JCD formulation)
 
-    V_g = ml%V(x_o)/ml%Gamma_1(x_o)
-    As = ml%V(x_o)*(1._WP-1._WP/ml%Gamma_1(x_o))
+    V_g = ml%V_2(x_o)*x_o**2/ml%Gamma_1(x_o)
+    As = ml%V_2(x_o)*x_o**2*(1._WP-1._WP/ml%Gamma_1(x_o))
     c_1 = ml%c_1(x_o)
 
     ! Finish

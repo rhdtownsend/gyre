@@ -40,7 +40,7 @@ program test_gyre_lib
   
   ! Initialize
 
-  call gyre_init()
+  call gyre_init('../../')
 
   ! Read the model
 

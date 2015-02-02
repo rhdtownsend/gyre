@@ -3,34 +3,18 @@
 
 # Variables
 
-TESTDIRS=hom poly/hom omp doppler mesa/bcep mesa/rgb mesa/spb solar
+SUBDIRS=num poly fgong mesa
 
 # Rules
 
 test :
-	@for DIR in ${TESTDIRS}; do \
-            cd $$DIR; \
-            ./test.sh; \
-            if [ $$? -ne 0 ]; then \
-                exit $$?; \
-            fi; \
-            cd ${CURDIR}; \
+	@for DIR in ${SUBDIRS}; do \
+            make -C $${DIR}; \
         done
 
-build_ref :
-	@for DIR in ${TESTDIRS}; do \
-            cd $$DIR; \
-            ./gyre_ad gyre_ad.in; \
-            for file in *.txt; do mv $$file ref/$$file; done; \
-            cd ${CURDIR}; \
-        done
-
-build_ref_arch :
-	@for DIR in ${TESTDIRS}; do \
-            cd $$DIR; \
-            ./gyre_ad gyre_ad.in; \
-            for file in *.txt; do mv $$file ref/$$file.`uname -m`-`uname -s`; done; \
-            cd ${CURDIR}; \
+build_ref build_ref_arch :
+	@for DIR in ${SUBDIRS}; do \
+            make -C $${DIR} $@; \
         done
 
 .PHONY: test build_ref build_ref_arch

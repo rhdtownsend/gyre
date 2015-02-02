@@ -15,13 +15,16 @@ MPI=no
 # Use double precision arithmetic (best left to 'yes')
 DOUBLE_PRECISION=yes
 
+# Use IEEE fortran features
+IEEE=no
+
 ############ DO NOT EDIT BELOW THIS LINE ############
 ### (unless you think you know what you're doing) ###
 #####################################################
 
 # Preprocesser flags
 
-OPTS=DEBUG OMP MPI HDF5 DOUBLE_PRECISION 
+OPTS=DEBUG OMP MPI HDF5 DOUBLE_PRECISION IEEE
 
 FPX3FLAGS:=${FPX3FLAGS} -I.:${SUBDIRS} $(foreach opt,${OPTS},$(if $(filter yes,${${opt}}),-D${opt}))
 
@@ -47,7 +50,7 @@ else
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO
 endif
 
-F9XFLAGS:=${F9XFLAGS} $(addprefix -I,${MODPATH}) ${FFLAGS} -std=f2008
+F9XFLAGS:=${F9XFLAGS} $(addprefix -I,${MODPATH}) ${FFLAGS} #-std=f2008
 F77FLAGS:=${F77FLAGS} ${FFLAGS} -ffixed-form
 
 ifeq (${OMP},yes)
@@ -86,14 +89,16 @@ vpath %.f ${SUBDIRS}
 %.f90 : %.fpp
 	@fpx3 ${FPX3FLAGS} < $< > $@
 
-%.o %.mod : %.f90
-	@echo FC $<
-	@${F9XC} ${F9XFLAGS} ${MODINCS} -c $<
-	@if [ -e $(basename $@).mod ]; then touch $(basename $@).mod; fi
-
 %.o : %.f
 	@echo FC $<
 	@$(F9XC) ${F77FLAGS} -c $<
+
+%.o : %.f90
+	@echo FC $<
+	@${F9XC} ${F9XFLAGS} ${MODINCS} -c $<
+
+%.mod : %.o
+	@true
 
 %.a :
 	@echo AR $@
@@ -114,6 +119,9 @@ install : ${TARGETS}
 
 clean :
 	rm -f ${TARGETS} $(addsuffix .f90,${TARGETS}) *.o *.mod .depend *.f90
+
+almostclean :
+	rm -f ${TARGETS} $(addsuffix .f90,${TARGETS}) *.o *.mod *.f90
 
 # Dependencies
 

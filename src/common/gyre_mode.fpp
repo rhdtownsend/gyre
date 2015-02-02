@@ -1,7 +1,7 @@
 ! Module   : gyre_mode
 ! Purpose  : mode data
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,15 +26,18 @@ module gyre_mode
   use gyre_constants
   use core_parallel
 
+  use gyre_ext
+  use gyre_freq
+  use gyre_grid
+  use gyre_mode_funcs
   use gyre_model
   $if ($MPI)
   use gyre_model_mpi
   $endif
-  use gyre_ext_arith
-  use gyre_modepar
-  use gyre_oscpar
-  use gyre_grid
-  use gyre_mode_funcs
+  use gyre_mode_par
+  use gyre_osc_par
+  use gyre_rot
+  use gyre_rot_factory
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -46,22 +49,23 @@ module gyre_mode
   ! Derived-type definitions
 
   type :: mode_t
-     class(model_t), pointer  :: ml => null()
-     type(modepar_t)          :: mp
-     type(oscpar_t)           :: op
-     type(ext_complex_t)      :: discrim
-     type(ext_real_t)         :: chi
-     real(WP), allocatable    :: x(:)
-     complex(WP), allocatable :: y(:,:)
-     real(WP)                 :: x_ref
-     complex(WP)              :: y_ref(6)
-     complex(WP)              :: omega
-     integer                  :: n_pg
-     integer                  :: n_p
-     integer                  :: n_g
-     integer                  :: n
-     integer                  :: n_iter
-     logical                  :: pruned
+     class(model_t), pointer     :: ml => null()
+     class(c_rot_t), allocatable :: rt
+     type(mode_par_t)            :: mp
+     type(osc_par_t)             :: op
+     type(c_ext_t)               :: discrim
+     type(r_ext_t)               :: chi
+     real(WP), allocatable       :: x(:)
+     complex(WP), allocatable    :: y(:,:)
+     real(WP)                    :: x_ref
+     complex(WP)                 :: y_ref(6)
+     complex(WP)                 :: omega
+     integer                     :: n_pg
+     integer                     :: n_p
+     integer                     :: n_g
+     integer                     :: n
+     integer                     :: n_iter
+     logical                     :: pruned
    contains
      private
      procedure, public :: prune => prune_
@@ -94,6 +98,7 @@ module gyre_mode
      procedure, public :: lag_g_eff => lag_g_eff_
      procedure, public :: E => E_
      procedure, public :: E_norm => E_norm_
+     procedure, public :: E_ratio => E_ratio_
      procedure, public :: W => W_
      procedure, public :: K => K_
      procedure, public :: beta => beta_
@@ -138,10 +143,10 @@ contains
   function mode_t_ (ml, mp, op, omega, discrim, x, y, x_ref, y_ref) result (md)
 
     class(model_t), pointer, intent(in) :: ml
-    type(modepar_t), intent(in)         :: mp
-    type(oscpar_t), intent(in)          :: op
+    type(mode_par_t), intent(in)        :: mp
+    type(osc_par_t), intent(in)         :: op
     complex(WP), intent(in)             :: omega
-    type(ext_complex_t), intent(in)     :: discrim
+    type(c_ext_t), intent(in)           :: discrim
     real(WP), intent(in)                :: x(:)
     complex(WP), intent(in)             :: y(:,:)
     real(WP), intent(in)                :: x_ref
@@ -160,7 +165,9 @@ contains
     ! Construct the mode_t
 
     md%ml => ml
-
+ 
+    allocate(md%rt, SOURCE=c_rot_t(ml, mp, op))
+ 
     md%mp = mp
     md%op = op
 
@@ -229,15 +236,16 @@ contains
 
 !****
 
-  function freq_ (this, freq_units) result (freq)
+  function freq_ (this, freq_units, freq_frame) result (freq)
 
     class(mode_t), intent(in)    :: this
     character(LEN=*), intent(in) :: freq_units
+    character(LEN=*), intent(in) :: freq_frame
     complex(WP)                  :: freq
 
     ! Calculate the frequency
 
-    freq = this%omega*freq_scale(this%ml, this%mp, this%op, this%x(this%n), freq_units)
+    freq = freq_from_omega(this%omega, this%ml, this%mp, this%op, this%x(1), this%x(this%n), freq_units, freq_frame)
 
     ! Finish
     
@@ -265,7 +273,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, this%n
-       ${NAME}_(k) = ${NAME}(this%ml, this%mp, this%omega, this%x(k), this%y(:,k))
+       ${NAME}_(k) = ${NAME}(this%ml, this%rt, this%omega, this%x(k), this%y(:,k))
     end do
     
     ! Finish
@@ -375,11 +383,9 @@ contains
     class(mode_t), intent(in) :: this
     $TYPE(WP)                 :: ${NAME}_ref_
 
-    integer :: k
-    
     ! Calculate $NAME at x_ref
 
-    ${NAME}_ref_ = ${NAME}(this%ml, this%mp, this%omega, this%x_ref, this%y_ref)
+    ${NAME}_ref_ = ${NAME}(this%ml, this%rt, this%omega, this%x_ref, this%y_ref)
     
     ! Finish
 
@@ -406,8 +412,8 @@ contains
     ! T_eff. This expression is based on the standard definition of
     ! effective temperature
 
-    lag_T_eff = 0.25_WP*(lag_L(this%ml, this%mp, this%omega, this%x_ref, this%y_ref) - &
-                  2._WP*xi_r(this%ml, this%mp, this%omega, this%x_ref, this%y_ref))
+    lag_T_eff = 0.25_WP*(lag_L(this%ml, this%rt, this%omega, this%x_ref, this%y_ref) - &
+                  2._WP*xi_r(this%ml, this%rt, this%omega, this%x_ref, this%y_ref))
 
     ! Finish
 
@@ -465,29 +471,25 @@ contains
     class(mode_t), intent(in) :: this
     real(WP)                  :: E_norm
 
-    real(WP)    :: E
-    complex(WP) :: xi_r(this%n)
-    complex(WP) :: xi_h(this%n)
-    complex(WP) :: xi_r_1
-    complex(WP) :: xi_h_1
-    real(WP)    :: A2
+    real(WP) :: E
+    real(WP) :: A2
 
     ! Calculate the normalized mode inertia. This expression is based
     ! on eqn. 3.140 of [Aer2010]
 
     E = this%E()
 
-    associate(l => this%mp%l)
+    associate(lambda => this%rt%lambda(this%x_ref, this%omega))
 
-      select case (this%op%inertia_norm_type)
+      select case (this%op%inertia_norm)
       case ('RADIAL')
          A2 = ABS(this%xi_r_ref())**2
       case ('HORIZ')
-         A2 = l*(l+1)*ABS(this%xi_h_ref())**2
+         A2 = ABS(lambda)*ABS(this%xi_h_ref())**2
       case ('BOTH')
-         A2 = ABS(this%xi_r_ref())**2 + l*(l+1)*ABS(this%xi_h_ref())**2
+         A2 = ABS(this%xi_r_ref())**2 + ABS(lambda)*ABS(this%xi_h_ref())**2
       case default
-         $ABORT(Invalid inertia_norm_type)
+         $ABORT(Invalid inertia_norm)
       end select
 
       if(A2 == 0._WP) then
@@ -504,6 +506,37 @@ contains
     return
 
   end function E_norm_
+
+!****
+
+  function E_ratio_ (this) result (E_ratio)
+ 
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: E_ratio
+
+    logical  :: mask_i(this%n)
+    logical  :: mask_o(this%n)
+    real(WP) :: dE_dx(this%n)
+
+    ! Calculate the mode inertia ratio E_inner/E_outer, where x <
+    ! x_ref is the inner region and x > x_ref the outer region
+
+    mask_i = this%x <= this%x_ref
+    mask_o = this%x >= this%x_ref
+
+    $ASSERT(COUNT(mask_i) >= 2,Too few points in inner region)
+    $ASSERT(COUNT(mask_o) >= 2,Too few points in outer region)
+
+    dE_dx = this%dE_dx()
+
+    E_ratio = integrate(PACK(this%x, mask_i), PACK(dE_dx, mask_i)) / &
+              integrate(PACK(this%x, mask_o), PACK(dE_dx, mask_o))
+
+    ! Finish
+
+    return
+
+  end function E_ratio_
 
 !****
 
@@ -538,9 +571,9 @@ contains
     xi_h = this%xi_h()
 
     associate(x => this%x, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
-              l => this%mp%l)
+              lambda => this%rt%lambda(this%x, this%omega))
 
-      K = (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
+      K = (ABS(xi_r)**2 + (ABS(lambda)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
 
       K = K/integrate(x, K)
 
@@ -568,10 +601,10 @@ contains
     xi_h = this%xi_h()
 
     associate(x => this%x, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
-              l => this%mp%l)
+              lambda => this%rt%lambda(this%x, this%omega))
 
-      beta = integrate(x, (ABS(xi_r)**2 + (l*(l+1)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
-             integrate(x, (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/c_1)
+      beta = integrate(x, (ABS(xi_r)**2 + (ABS(lambda)-1)*ABS(xi_h)**2 - 2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1) / &
+             integrate(x, (ABS(xi_r)**2 + ABS(lambda)*ABS(xi_h)**2)*U*x**2/c_1)
 
     end associate
 
@@ -598,17 +631,13 @@ contains
     ! expression in eqn. (1.71) of [Dup2003]
 
     associate(x => this%x, &
-              V => this%ml%V(this%x), V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
+              V_2 => this%ml%V_2(this%x), V_g => this%ml%V_2(this%x)*this%x**2/this%ml%Gamma_1(this%x), &
               As => this%ml%As(this%x), U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
               xi_r => this%xi_r(), eul_phi => this%eul_phi(), &
               lag_rho => this%lag_rho(), eul_rho => this%eul_rho(), &
               lag_P => this%lag_P())
 
-      where (x /= 0._WP)
-         x4_V = x**4/V
-      elsewhere
-         x4_V = 0._WP
-      endwhere
+      x4_V = x**2/V_2
 
       ! Work-function-like terms
 
@@ -660,12 +689,12 @@ contains
 
     ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
-    associate(x => this%x, V_g => this%ml%V(this%x)/this%ml%Gamma_1(this%x), &
+    associate(x => this%x, V_g => this%ml%V_2(this%x)*this%x**2/this%ml%Gamma_1(this%x), &
               As => this%ml%As(this%x), c_1 => this%ml%c_1(this%x), &
-              l => this%mp%l, omega_c => REAL(this%ml%omega_c(this%x, this%mp%m, this%omega)))
+              lambda => this%rt%lambda(this%x, this%omega), omega_c => this%rt%omega_c(this%x, this%omega))
 
-      prop_type = MERGE(1, 0, c_1*omega_c**2 > As) + &
-                   MERGE(-1, 0, l*(l+1)/(c_1*omega_c**2) > V_g)
+      prop_type = MERGE(1, 0, REAL(c_1*omega_c**2) > As) + &
+                  MERGE(-1, 0, REAL(lambda/(c_1*omega_c**2)) > V_g)
 
     end associate
 
@@ -733,7 +762,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the origin)
 
-       call find_x_turn(md%x, md%ml, md%mp, REAL(md%omega), x_turn)
+       call find_x_turn(md%x, md%ml, md%mp, md%op, REAL(md%omega), x_turn)
 
        x_turn_loop : do i = 1,md%n-1
           if(md%x(i) > x_turn) exit x_turn_loop
@@ -859,26 +888,27 @@ contains
     ! Calculate the Lagrangian specific entropy perturbation in units
     ! of c_p, from the energy equation
 
-    associate(V => this%ml%V(this%x), c_1 => this%ml%c_1(this%x), &
+    associate(V => this%ml%V_2(this%x)*this%x**2, c_1 => this%ml%c_1(this%x), &
               nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
               c_rad => this%ml%c_rad(this%x), dc_rad => this%ml%dc_rad(this%x), c_thm => this%ml%c_thm(this%x), &
               c_eps_ad => this%ml%c_eps_ad(this%x), c_eps_S => this%ml%c_eps_S(this%x), &              
-              l => this%mp%l, omega_c => this%ml%omega_c(this%x, this%mp%m, this%omega))
+              lambda => this%rt%lambda(this%x, this%omega), l_0 => this%rt%l_0(this%omega), &
+              omega_c => this%rt%omega_c(this%x, this%omega))
 
       where(this%x /= 0)
-         A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-         A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
+         A_6(1,:) = lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A_6(2,:) = V*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+         A_6(3,:) = lambda*nabla_ad/nabla*c_rad - V*c_eps_ad
          A_6(4,:) = 0._WP
-         A_6(5,:) = c_eps_S - l*(l+1)*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
-         A_6(6,:) = -1._WP - l
+         A_6(5,:) = c_eps_S - lambda*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+         A_6(6,:) = -1._WP - l_0
       elsewhere
-         A_6(1,:) = l*(l+1)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-         A_6(2,:) = V*c_eps_ad - l*(l+1)*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-         A_6(3,:) = l*(l+1)*nabla_ad/nabla*c_rad - V*c_eps_ad
+         A_6(1,:) = lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         A_6(2,:) = V*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+         A_6(3,:) = lambda*nabla_ad/nabla*c_rad - V*c_eps_ad
          A_6(4,:) = 0._WP
          A_6(5,:) = -HUGE(0._WP)
-         A_6(6,:) = -1._WP - l
+         A_6(6,:) = -1._WP - l_0
       endwhere
 
       dy_6 = this%x*deriv_(this%x, this%y(6,:))
@@ -890,7 +920,7 @@ contains
                      A_6(6,:)*this%y(6,:)))/A_6(5,:)
 
       where(this%x /= 0._WP)
-         lag_S_en = y_5*this%x**(l-2)
+         lag_S_en = y_5*this%x**(l_0-2._WP)
       elsewhere
          lag_S_en = 0._WP
       end where
@@ -949,17 +979,18 @@ contains
     ! Calculate the Lagrangian luminosity perturbation in units of L_star, 
     ! from the radiative diffusion equation
 
-    associate(V => this%ml%V(this%x), U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
+    associate(V => this%ml%V_2(this%x)*this%x**2, U => this%ml%U(this%x), c_1 => this%ml%c_1(this%x), &
               nabla_ad => this%ml%nabla_ad(this%x), nabla => this%ml%nabla(this%x), &
               c_dif => this%ml%c_dif(this%x), c_rad => this%ml%c_rad(this%x), &
               kappa_S => this%ml%kappa_S(this%x), &
-              l => this%mp%l, omega_c => this%ml%omega_c(this%x, this%mp%m, this%omega))
+              lambda => this%rt%lambda(this%x, this%omega), l_0 => this%rt%l_0(this%omega), &
+              omega_c => this%rt%omega_c(this%x, this%omega))
 
       A_5(1,:) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
-      A_5(2,:) = V*(l*(l+1)/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
+      A_5(2,:) = V*(lambda/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
       A_5(3,:) = V*c_dif
       A_5(4,:) = V*nabla_ad
-      A_5(5,:) = V*nabla*(4._WP - kappa_S) - (l - 2._WP)
+      A_5(5,:) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
       A_5(6,:) = -V*nabla/c_rad
 
       dy_5 = this%x*deriv_(this%x, this%y(5,:))
@@ -978,7 +1009,7 @@ contains
 
       endwhere
 
-      lag_L_rd = y_6*this%x**(l+1)
+      lag_L_rd = y_6*this%x**(l_0+1._WP)
 
     end associate
          
@@ -1032,12 +1063,16 @@ contains
 
     ! Broadcast the mode_t
 
-    if(MPI_RANK /= root_rank) then
+    if (MPI_RANK /= root_rank) then
        md%ml => ml
     endif
 
     call bcast(md%mp, root_rank)
     call bcast(md%op, root_rank)
+
+    if (MPI_RANK /= root_rank) then
+       allocate(md%rt, SOURCE=c_rot_t(ml, md%mp, md%op))
+    endif
 
     call bcast_alloc(md%x, root_rank)
     call bcast_alloc(md%y, root_rank)

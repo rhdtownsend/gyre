@@ -1,7 +1,7 @@
 ! Program  : gyre_output
 ! Purpose  : output routines
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -28,7 +28,7 @@ module gyre_output
   use gyre_model
   use gyre_evol_model
   use gyre_poly_model
-  use gyre_outpar
+  use gyre_out_par
   use gyre_mode
   use gyre_util
   use gyre_writer
@@ -52,8 +52,8 @@ contains
 
   subroutine write_summary (up, md)
 
-    type(outpar_t), intent(in)     :: up
-    type(mode_t), intent(in)       :: md(:)
+    type(out_par_t), intent(in) :: up
+    type(mode_t), intent(in)    :: md(:)
 
     class(writer_t), allocatable                      :: wr
     character(LEN(up%summary_item_list)), allocatable :: items(:)
@@ -99,7 +99,7 @@ contains
        case('omega')
           call wr%write('omega', md%omega)
        case('freq')
-          call wr%write('freq', [(md(j)%freq(up%freq_units), j=1,n_md)])
+          call wr%write('freq', [(md(j)%freq(up%freq_units, up%freq_frame), j=1,n_md)])
        case ('f_T')
           call wr%write('f_T', [(ABS(md(j)%lag_T_eff()/md(j)%xi_r_ref()), j=1,n_md)])
        case ('f_g')
@@ -114,6 +114,8 @@ contains
           call wr%write('E', [(md(j)%E(), j=1,n_md)])
        case('E_norm')
           call wr%write('E_norm', [(md(j)%E_norm(), j=1,n_md)])
+       case('E_ratio')
+          call wr%write('E_ratio', [(md(j)%E_ratio(), j=1,n_md)])
        case('W')
           call wr%write('W', [(md(j)%W(), j=1,n_md)])
        case('omega_int')
@@ -126,6 +128,8 @@ contains
           call wr%write('xi_h_ref', md(j)%xi_h_ref())
        case('freq_units')
           call wr%write('freq_units', up%freq_units)
+       case('freq_frame')
+          call wr%write('freq_frame', up%freq_frame)
        case default
           if(n_md >= 1) then
              select type (ml => md(1)%ml)
@@ -206,9 +210,9 @@ contains
 
   subroutine write_mode (up, md, j)
 
-    type(outpar_t), intent(in)     :: up
-    type(mode_t), intent(in)       :: md
-    integer, intent(in)            :: j
+    type(out_par_t), intent(in) :: up
+    type(mode_t), intent(in)    :: md
+    integer, intent(in)         :: j
 
     character(:), allocatable                      :: mode_file
     character(64)                                  :: infix
@@ -287,7 +291,7 @@ contains
        case ('omega')
           call wr%write('omega', md%omega)
        case ('freq')
-          call wr%write('freq', md%freq(up%freq_units))
+          call wr%write('freq', md%freq(up%freq_units, up%freq_frame))
        case ('f_T')
           call wr%write('f_T', ABS(md%lag_T_eff()/md%xi_r_ref()))
        case ('f_g')
@@ -302,6 +306,8 @@ contains
           call wr%write('E', md%E())
        case ('E_norm')
           call wr%write('E_norm', md%E_norm())
+       case('E_ratio')
+          call wr%write('E_ratio',md%E_ratio())
        case ('W')
           call wr%write('W', md%W())
        case('omega_int')
@@ -310,8 +316,8 @@ contains
           call wr%write('eta', md%eta())
        case ('x')
           call wr%write('x', md%x)
-       case('V')
-          call wr%write('V', md%ml%V(md%x))
+       case('V_2')
+          call wr%write('V_2', md%ml%V_2(md%x))
        case('As')
           call wr%write('As', md%ml%As(md%x))
        case('U')
@@ -320,6 +326,8 @@ contains
           call wr%write('c_1', md%ml%c_1(md%x))
        case ('Gamma_1')
           call wr%write('Gamma_1', md%ml%Gamma_1(md%x))
+       case ('nabla')
+          call wr%write('nabla', md%ml%nabla(md%x))
        case ('nabla_ad')
           call wr%write('nabla_ad', md%ml%nabla_ad(md%x))
        case ('delta')
@@ -378,6 +386,8 @@ contains
           call wr%write('K', md%K())
        case('freq_units')
           call wr%write('freq_units', up%freq_units)
+       case('freq_frame')
+          call wr%write('freq_frame', up%freq_frame)
        case default
           select type (ml => md%ml)
           type is (evol_model_t)

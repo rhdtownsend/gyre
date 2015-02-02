@@ -1,7 +1,7 @@
 ! Program  : build_poly
 ! Purpose  : build a polytrope
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2014 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,6 +24,7 @@ program build_poly
   use core_kinds
   use gyre_constants
   use core_hgroup
+  use core_system
 
   use gyre_lane_emden
 
@@ -35,32 +36,26 @@ program build_poly
 
   ! Variables
 
-  real(WP)                    :: Gamma_1
-  real(WP)                    :: Omega_rot
-  real(WP)                    :: n_poly
-  real(WP)                    :: dxi
-  real(WP)                    :: toler
-  character(LEN=FILENAME_LEN) :: file
-  real(WP), allocatable       :: xi(:)
-  real(WP), allocatable       :: Theta(:)
-  real(WP), allocatable       :: dTheta(:)
-  integer                     :: n
-  type(hgroup_t)              :: hg
-
-  namelist /poly/ n_poly, Gamma_1, Omega_rot, dxi, toler
-  namelist /output/ file
+  real(WP)                  :: n_poly
+  real(WP)                  :: Gamma_1
+  real(WP)                  :: dxi
+  real(WP)                  :: toler
+  character(:), allocatable :: filename
+  real(WP), allocatable     :: xi(:)
+  real(WP), allocatable     :: Theta(:)
+  real(WP), allocatable     :: dTheta(:)
+  integer                   :: n
+  type(hgroup_t)            :: hg
 
   ! Read parameters
 
-  Gamma_1 = 5._WP/3._WP
-  Omega_rot = 0._WP
+  $ASSERT(n_arg() == 5,Syntax: build_poly n_poly Gamma_1 dxi toler filename)
 
-  dxi = 1.E-3_WP
-  toler = EPSILON(0._WP)
-
-  read(INPUT_UNIT, NML=poly)
-  
-  read(INPUT_UNIT, NML=output)
+  call get_arg(1, n_poly)
+  call get_arg(2, Gamma_1)
+  call get_arg(3, dxi)
+  call get_arg(4, toler)
+  call get_arg(5, filename)
 
   ! Solve the Lane-Emden equation
 
@@ -70,7 +65,7 @@ program build_poly
 
   ! Write the model
 
-  hg = hgroup_t(file, CREATE_FILE)
+  hg = hgroup_t(filename, CREATE_FILE)
 
   call write_attr(hg, 'n', n)
 
@@ -80,7 +75,7 @@ program build_poly
   call write_dset(hg, 'xi', xi)
   call write_dset(hg, 'Theta', Theta)
   call write_dset(hg, 'dTheta', dTheta)
-  call write_dset(hg, 'Omega_rot', SPREAD(Omega_rot, DIM=1, NCOPIES=n))
+  call write_dset(hg, 'Omega_rot', SPREAD(0._WP, DIM=1, NCOPIES=n))
 
   call hg%final()
 

@@ -1,0 +1,109 @@
+# File     : test_support
+# Purpose  : support for GYRE test scripts
+
+# Get the platform architecture
+
+get_arch ()
+{
+
+    local hardware=`uname -m`
+    local os=`uname -s`
+
+    echo -n "${hardware}-${os}"
+
+}
+
+# Run GYRE
+
+run_gyre ()
+{
+
+    local exec=$1
+    local file=$2
+    local label=$3
+
+    export GYRE_DIR=`pwd | sed -e 's|test/.*||'`
+
+    if [ -n "$label" ]; then
+	echo "TEST $label..."
+    fi
+
+    $exec $file > /dev/null
+    retval=$?
+
+    if [ $retval -ne 0 ]; then
+	echo " ...failed: $exec returned non-zero exit status"
+    fi
+
+    return $retval
+
+}
+
+# Check output
+
+check_output ()
+{
+
+    local errval=$1
+    local fields=$2
+    local file_a=$3
+    local file_b=$4
+    local errtype=$5
+
+    if [ ! -e "$file_b" ]; then
+
+        local arch=$(get_arch)
+
+    	file_b="ref/${file_a}.${arch}"
+
+	if [ ! -e "$file_b" ]; then
+	    file_b="ref/${file_a}"
+	fi
+
+    fi
+
+    if [ ! -e "$file_a" ]; then
+	echo " ...failed: $file_a is missing"
+	return 1
+    fi
+
+    if [ ! -e "$file_b" ]; then
+	echo "  ...failed: $file_b is missing"
+	return 1
+    fi
+
+    len_a=`cat $file_a | wc -l`
+    len_b=`cat $file_b | wc -l`
+
+    if [ $len_a -ne $len_b ]; then
+	echo " ...failed: $file_a and $file_b differ in length"
+	return 1
+    fi
+
+    local ndiff_flags="-quiet -fields $fields"
+
+    if [ -n "$errval" ]; then
+
+	case $errtype in 
+	    rel|'')
+		ndiff_flags="$ndiff_flags -relerr $errval"
+		;;
+	    abs)
+		ndiff_flags="$ndiff_flags -abserr $errval"
+		;;
+	    *)
+		echo "Invalid errtype"
+		return 1
+	esac
+
+    fi
+
+    ndiff $ndiff_flags $file_a $file_b
+
+    if [ $retval -ne 0 ]; then
+	echo " ...failed: $file_a and $file_b differ in fields $fields"
+    fi
+
+    return $retval
+
+}
