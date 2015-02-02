@@ -96,8 +96,14 @@ contains
 
        ! Calculate the dimensionless frequency range in inertial frame
 
-       omega_min = omega_from_freq(sp(i)%freq_min, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
-       omega_max = omega_from_freq(sp(i)%freq_max, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
+       select case (sp(i)%freq_units)
+       case ('MIXED_DELTA')
+          omega_min = omega_from_freq(sp(i)%freq_min, ml, mp, op, x_i, x_o, 'GRAVITY_DELTA', sp(i)%freq_frame)
+          omega_max = omega_from_freq(sp(i)%freq_max, ml, mp, op, x_i, x_o, 'ACOUSTIC_DELTA', sp(i)%freq_frame)
+       case default
+          omega_min = omega_from_freq(sp(i)%freq_min, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
+          omega_max = omega_from_freq(sp(i)%freq_max, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
+       end select
 
        ! Calculate the frequency range in the grid frame
 
