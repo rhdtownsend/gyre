@@ -332,6 +332,8 @@ contains
           call wr%write('nabla_ad', md%ml%nabla_ad(md%x))
        case ('delta')
           call wr%write('delta', md%ml%delta(md%x))
+       case ('Omega_rot')
+          call wr%write('Omega_rot', md%ml%Omega_rot(md%x))
        case ('xi_r')
           call wr%write('xi_r', md%xi_r())
        case ('xi_h')
