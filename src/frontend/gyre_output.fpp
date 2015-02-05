@@ -90,6 +90,8 @@ contains
 
        case('l')
           call wr%write('l', md%mp%l)
+       case('l_0')
+          call wr%write('l_0', [(md(j)%rt%l_0(md(j)%omega), j=1,n_md)])
        case('n_p')
           call wr%write('n_p', md%n_p)
        case('n_g')
@@ -282,6 +284,8 @@ contains
           call wr%write('n', md%n)
        case ('l')
           call wr%write('l', md%mp%l)
+       case('l_0')
+          call wr%write('l_0', md%rt%l_0(md%omega))
        case ('n_p')
           call wr%write('n_p', md%n_p)
        case ('n_g')
