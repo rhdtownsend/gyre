@@ -45,6 +45,7 @@ module gyre_out_par
      character(FILENAME_LEN) :: mode_template
      character(256)          :: mode_file_format
      character(2048)         :: mode_item_list
+     character(256)          :: label
      logical                 :: prune_modes
   end type out_par_t
 
@@ -94,6 +95,7 @@ contains
     character(LEN(up%mode_template))       :: mode_template
     character(LEN(up%mode_file_format))    :: mode_file_format
     character(LEN(up%mode_item_list))      :: mode_item_list
+    character(LEN(up%label))               :: label
     logical                                :: prune_modes
 
     namelist /output/ freq_units, freq_frame, summary_file, summary_file_format, summary_item_list, &
@@ -128,6 +130,8 @@ contains
     mode_file_format = 'HDF'
     mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
 
+    label = ''
+
     prune_modes = .FALSE.
 
     rewind(unit)
@@ -144,6 +148,7 @@ contains
                   mode_template=mode_template, &
                   mode_file_format=mode_file_format, &
                   mode_item_list=mode_item_list, &
+                  label=label, &
                   prune_modes=prune_modes)
 
     ! Finish
@@ -176,6 +181,7 @@ contains
     call bcast(up%mode_template, root_rank)
     call bcast(up%mode_file_format, root_rank)
     call bcast(up%mode_item_list, root_rank)
+    call bcast(up%label, root_rank)
     
     call bcast(up%prune_modes, root_rank)
 

@@ -69,9 +69,9 @@ contains
 
     select case (up%summary_file_format)
     case ('HDF')
-       allocate(wr, SOURCE=hdf_writer_t(up%summary_file))
+       allocate(wr, SOURCE=hdf_writer_t(up%summary_file, up%label))
     case ('TXT')
-       allocate(wr, SOURCE=txt_writer_t(up%summary_file))
+       allocate(wr, SOURCE=txt_writer_t(up%summary_file, up%label))
     case default
        $ABORT(Invalid summary_file_format)
     end select
@@ -264,9 +264,9 @@ contains
 
     select case (up%mode_file_format)
     case ('HDF')
-       allocate(wr, SOURCE=hdf_writer_t(mode_file))
+       allocate(wr, SOURCE=hdf_writer_t(mode_file, up%label))
     case ('TXT')
-       allocate(wr, SOURCE=txt_writer_t(mode_file))
+       allocate(wr, SOURCE=txt_writer_t(mode_file, up%label))
     case default
        $ABORT(Invalid mode_file_format)
     end select

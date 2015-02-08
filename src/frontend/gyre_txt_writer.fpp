@@ -37,22 +37,22 @@ module gyre_txt_writer
 
   integer, parameter :: FIELD_LEN = 25
 
-  character(LEN=*), parameter :: I_FORMAT = '(I25)'
-  character(LEN=*), parameter :: R_FORMAT = '(E25.16E3)'
-  character(LEN=*), parameter :: A_FORMAT = '(A25)'
+  character(*), parameter :: I_FORMAT = '(I25)'
+  character(*), parameter :: R_FORMAT = '(E25.16E3)'
+  character(*), parameter :: A_FORMAT = '(A25)'
 
   ! Derived-type definitions
 
   type, extends (writer_t) :: txt_writer_t
      private
-     character(LEN=FIELD_LEN), allocatable :: s_data(:)
-     character(LEN=FIELD_LEN), allocatable :: v_data(:,:)
-     character(LEN=FIELD_LEN), allocatable :: s_names(:)
-     character(LEN=FIELD_LEN), allocatable :: v_names(:)
-     integer                               :: unit
-     integer                               :: n_s
-     integer                               :: n_v
-     integer                               :: n
+     character(FIELD_LEN), allocatable :: s_data(:)
+     character(FIELD_LEN), allocatable :: v_data(:,:)
+     character(FIELD_LEN), allocatable :: s_names(:)
+     character(FIELD_LEN), allocatable :: v_names(:)
+     integer                           :: unit
+     integer                           :: n_s
+     integer                           :: n_v
+     integer                           :: n
    contains
      private
      procedure, public :: final => final_
@@ -82,15 +82,19 @@ module gyre_txt_writer
 
 contains
 
-  function txt_writer_t_ (file_name) result (wr)
+  function txt_writer_t_ (file_name, label) result (wr)
 
-    character(LEN=*), intent(in) :: file_name
-    type(txt_writer_t)           :: wr
+    character(*), intent(in) :: file_name
+    character(*), intent(in) :: label
+    type(txt_writer_t)       :: wr
 
     ! Construct the txt_writer_t
 
     open(NEWUNIT=wr%unit, FILE=file_name, STATUS='REPLACE', FORM='FORMATTED', ACCESS='STREAM')
     
+    write(wr%unit, 100) label
+100 format(A)
+
     wr%n_s = 0
     wr%n_v = 0
 
@@ -108,9 +112,9 @@ contains
 
     class(txt_writer_t), intent(inout) :: this
 
-    character(LEN=:), allocatable :: fmt
-    integer                       :: i
-    integer                       :: k
+    character(:), allocatable :: fmt
+    integer                   :: i
+    integer                   :: k
 
     ! Finalize the txt_writer
 
@@ -154,7 +158,7 @@ contains
   subroutine write_${INFIX}_0_ (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
-    character(LEN=*), intent(in)       :: name
+    character(*), intent(in)           :: name
     $DATA_TYPE, intent(in)             :: data
 
     integer :: d
@@ -192,7 +196,7 @@ contains
   subroutine write_${INFIX}_1_ (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
-    character(LEN=*), intent(in)       :: name
+    character(*), intent(in)           :: name
     $DATA_TYPE, intent(in)             :: data(:)
 
     integer :: d
@@ -235,14 +239,14 @@ contains
 
   $WRITE(i,integer,I_FORMAT)
   $WRITE(r,real(WP),R_FORMAT)
-  $WRITE(a,character(LEN=*),A_FORMAT)
+  $WRITE(a,character(*),A_FORMAT)
 
 !****
   
   subroutine write_c_0_ (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
-    character(LEN=*), intent(in)       :: name
+    character(*), intent(in)           :: name
     complex(WP), intent(in)            :: data
 
     integer :: d
@@ -282,7 +286,7 @@ contains
   subroutine write_c_1_ (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
-    character(LEN=*), intent(in)       :: name
+    character(*), intent(in)           :: name
     complex(WP), intent(in)            :: data(:)
 
     integer :: d

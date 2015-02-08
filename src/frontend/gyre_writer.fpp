@@ -64,7 +64,7 @@ module gyre_writer
        use core_kinds
        import writer_t
        class(writer_t), intent(inout) :: this
-       character(LEN=*), intent(in)   :: name
+       character(*), intent(in)       :: name
        $DATA_TYPE, intent(in)         :: data$ARRAY_SPEC($DATA_RANK)
      end subroutine write_${INFIX}_${DATA_RANK}_
 
@@ -79,8 +79,8 @@ module gyre_writer
      $WRITE_(c,complex(WP),0)
      $WRITE_(c,complex(WP),1)
 
-     $WRITE_(a,character(LEN=*),0)
-     $WRITE_(a,character(LEN=*),1)
+     $WRITE_(a,character(*),0)
+     $WRITE_(a,character(*),1)
 
   end interface
 
