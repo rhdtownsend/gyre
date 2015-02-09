@@ -1,6 +1,7 @@
 
 
 
+
 1 2 3 4 5 6 7
 l n_pg n_p n_g Re(omega) Im(omega) E_norm
 1 -10 0 0  0.343610850 0. 0.
