@@ -99,7 +99,7 @@ contains
     logical                                :: prune_modes
 
     namelist /output/ freq_units, freq_frame, summary_file, summary_file_format, summary_item_list, &
-                      mode_prefix, mode_template, mode_file_format, mode_item_list, prune_modes
+                      mode_prefix, mode_template, mode_file_format, mode_item_list, label, prune_modes
 
     ! Count the number of output namelists
 
