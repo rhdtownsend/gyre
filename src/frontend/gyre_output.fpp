@@ -131,7 +131,7 @@ contains
        case ('eul_phi_ref')
           call wr%write('eul_phi_ref', [(md(j)%eul_phi_ref(), j=1,n_md)])
        case ('deul_phi_ref')
-          call wr%write('deul_phi_ref', [(md(j)%deul_phi_ref())])
+          call wr%write('deul_phi_ref', [(md(j)%deul_phi_ref(), j=1,n_md)])
        case('freq_units')
           call wr%write('freq_units', up%freq_units)
        case('freq_frame')
