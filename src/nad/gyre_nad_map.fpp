@@ -87,6 +87,8 @@ program gyre_nad_map
   complex(WP)                   :: omega
   type(c_ext_t)                 :: discrim
   character(FILENAME_LEN)       :: map_filename
+  integer                       :: i_percent
+  integer                       :: n_percent
   type(hgroup_t)                :: hg
 
   ! Initialize
@@ -193,14 +195,22 @@ program gyre_nad_map
 
   call partition_tasks(n_omega_re*n_omega_im, 1, k_part)
 
+  n_percent = 0
+
   do k = k_part(MPI_RANK+1), k_part(MPI_RANK+2)-1
 
      i = index_nd(k, [n_omega_re,n_omega_im])
 
      omega = CMPLX(omega_re(i(1)), omega_im(i(2)), KIND=WP)
 
-     print *,'Omega:',k,omega
-
+     if (MPI_RANK == 0) then
+        i_percent = FLOOR(100._WP*REAL(k-k_part(MPI_RANK+1))/REAL(k_part(MPI_RANK+2)-k_part(MPI_RANK+1)-1))
+        if (i_percent > n_percent) then
+           print *,'Percent complete: ', i_percent
+           n_percent = i_percent
+        end if
+     endif
+     
      discrim = nad_bp%discrim(omega)
 
      discrim_map_f(i(1),i(2)) = FRACTION(discrim)
