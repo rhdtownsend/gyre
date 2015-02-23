@@ -24,7 +24,7 @@ module gyre_c_root
   use core_kinds
 
   use gyre_cimplex
-  use gyre_discfunc
+  use gyre_ext_func
   use gyre_ext
   use gyre_num_par
   use gyre_status
@@ -59,9 +59,9 @@ module gyre_c_root
 
 contains
 
-  subroutine solve_ (df, np, cx_a, cx_b, cx_tol, cx_root, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+  subroutine solve_ (cf, np, cx_a, cx_b, cx_tol, cx_root, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
-    class(c_discfunc_t), intent(inout)  :: df
+    class(c_ext_func_t), intent(inout)  :: cf
     class(num_par_t), intent(in)        :: np
     type(c_ext_t), intent(in)           :: cx_a
     type(c_ext_t), intent(in)           :: cx_b
@@ -80,7 +80,7 @@ contains
     type(c_ext_t) :: f_b
 
     ! Starting from the pair [cx_a,cx_b], find a root of the function
-    ! df
+    ! cf
 
     a = cx_a
     b = cx_b
@@ -88,18 +88,18 @@ contains
     if (PRESENT(f_cx_a)) then
        f_a = f_cx_a
     else
-       call df%eval(a, f_a, status)
+       call cf%eval(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
     if (PRESENT(f_cx_b)) then
        f_b = f_cx_b
     else
-       call df%eval(b, f_b, status)
+       call cf%eval(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
-    call narrow(df, np, a, b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
+    call narrow(cf, np, a, b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
 
     cx_root = b
 
@@ -111,9 +111,9 @@ contains
 
 !****
 
-  subroutine narrow_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
-    class(c_discfunc_t), intent(inout)     :: df
+    class(c_ext_func_t), intent(inout)     :: cf
     class(num_par_t), intent(in)           :: np
     type(c_ext_t), intent(inout)           :: cx_a
     type(c_ext_t), intent(inout)           :: cx_b
@@ -125,15 +125,15 @@ contains
     type(c_ext_t), optional, intent(inout) :: f_cx_a
     type(c_ext_t), optional, intent(inout) :: f_cx_b
 
-    ! Narrow the pair [cx_a,cx_b] toward a root of the function df
+    ! Narrow the pair [cx_a,cx_b] toward a root of the function cf
 
     select case (np%c_root_solver)
     case ('SECANT')
-       call narrow_secant_(df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+       call narrow_secant_(cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
     case ('RIDDERS')
-       call narrow_ridders_(df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+       call narrow_ridders_(cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
     case ('SIMPLEX')
-       call narrow_simplex_(df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+       call narrow_simplex_(cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
     case default
        $ABORT(Invalid c_root_solver)
     end select
@@ -146,9 +146,9 @@ contains
 
 !****
 
-  subroutine narrow_secant_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_secant_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
  
-    class(c_discfunc_t), intent(inout)     :: df
+    class(c_ext_func_t), intent(inout)     :: cf
     class(num_par_t), intent(in)           :: np
     type(c_ext_t), intent(inout)           :: cx_a
     type(c_ext_t), intent(inout)           :: cx_b
@@ -178,7 +178,7 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    ! Narrow the pair [cx_a,cx_b] toward a root of the function df
+    ! Narrow the pair [cx_a,cx_b] toward a root of the function cf
     ! using the secant method
 
     ! Set up the initial state
@@ -189,14 +189,14 @@ contains
     if (PRESENT(f_cx_a)) then
        f_a = f_cx_a
     else
-       call df%eval(a, f_a, status)
+       call cf%eval(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
     if (PRESENT(f_cx_b)) then
        f_b = f_cx_b
     else
-       call df%eval(b, f_b, status)
+       call cf%eval(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
@@ -250,7 +250,7 @@ contains
        f_a = f_b
 
        b = b - f_dz/rho
-       call df%eval(b, f_b, status)
+       call cf%eval(b, f_b, status)
        if (status /= STATUS_OK) return
 
        ! Check for convergence
@@ -281,9 +281,9 @@ contains
 
 !****
 
-  subroutine narrow_ridders_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_ridders_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
-    class(c_discfunc_t), intent(inout)     :: df
+    class(c_ext_func_t), intent(inout)     :: cf
     class(num_par_t), intent(in)           :: np
     type(c_ext_t), intent(inout)           :: cx_a
     type(c_ext_t), intent(inout)           :: cx_b
@@ -318,7 +318,7 @@ contains
 
     $ASSERT(cx_a /= cx_b,Invalid initial pair)
 
-    ! Narrow the pair [cx_a,cx_b] toward a root of the function df
+    ! Narrow the pair [cx_a,cx_b] toward a root of the function cf
     ! using a complex Ridders' method (with secant updates, rather
     ! than regula falsi)
 
@@ -330,14 +330,14 @@ contains
     if (PRESENT(f_cx_a)) then
        f_a = f_cx_a
     else
-       call df%eval(a, f_a, status)
+       call cf%eval(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
     if (PRESENT(f_cx_b)) then
        f_b = f_cx_b
     else
-       call df%eval(b, f_b, status)
+       call cf%eval(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
@@ -377,7 +377,7 @@ contains
 
        c =  0.5_WP*(a + b)
 
-       call df%eval(c, f_c, status)
+       call cf%eval(c, f_c, status)
        if (status /= STATUS_OK) return
 
        ! Solve for the re-scaling exponential
@@ -409,7 +409,7 @@ contains
        f_a = f_b
 
        b = b - f_dz/rho
-       call df%eval(b, f_b, status)
+       call cf%eval(b, f_b, status)
        if (status /= STATUS_OK) return
 
        ! Check for convergence
@@ -442,9 +442,9 @@ contains
 
 !****
 
-  subroutine narrow_simplex_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_simplex_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
-    class(c_discfunc_t), intent(inout)     :: df
+    class(c_ext_func_t), intent(inout)     :: cf
     class(num_par_t), intent(in)           :: np
     type(c_ext_t), intent(inout)           :: cx_a
     type(c_ext_t), intent(inout)           :: cx_b
@@ -462,8 +462,8 @@ contains
    
     $ASSERT(cx_a /= cx_b,Invalid initial pair)
 
-    ! Narrow the pair [cx_a,cx_b] toward a root of the function df
-    ! using the simplex algorithm to minimize |df|
+    ! Narrow the pair [cx_a,cx_b] toward a root of the function cf
+    ! using the simplex algorithm to minimize |cf|
 
     ! Set up the initial state
 
@@ -474,23 +474,23 @@ contains
     if (PRESENT(f_cx_a)) then
        f_cx(1) = f_cx_a
     else
-       call df%eval(cx(1), f_cx(1), status)
+       call cf%eval(cx(1), f_cx(1), status)
        if (status /= STATUS_OK) return
     endif
 
     if (PRESENT(f_cx_b)) then
        f_cx(2) = f_cx_b
     else
-       call df%eval(cx(2), f_cx(2), status)
+       call cf%eval(cx(2), f_cx(2), status)
        if (status /= STATUS_OK) return
     endif
 
-    call df%eval(cx(3), f_cx(3), status)
+    call cf%eval(cx(3), f_cx(3), status)
     if (status /= STATUS_OK) return
 
     ! Set up the cimplex_t
 
-    cm = cimplex_t(df, cx, f_cx)
+    cm = cimplex_t(cf, cx, f_cx)
 
     ! Refine it
 
@@ -516,9 +516,9 @@ contains
 
 !****
 
-  subroutine expand_ (df, cx_a, cx_b, f_cx_tol, status, clamp_a, clamp_b, relative_tol, f_cx_a, f_cx_b)
+  subroutine expand_ (cf, cx_a, cx_b, f_cx_tol, status, clamp_a, clamp_b, relative_tol, f_cx_a, f_cx_b)
 
-    class(c_discfunc_t), intent(inout)   :: df
+    class(c_ext_func_t), intent(inout)   :: cf
     type(c_ext_t), intent(inout)         :: cx_a
     type(c_ext_t), intent(inout)         :: cx_b
     type(r_ext_t), intent(in)            :: f_cx_tol
@@ -564,10 +564,10 @@ contains
     ! Expand the pair [cx_a,cx_b] until the difference between f(cx_a)
     ! and f(cx_b) exceeds the tolerance
 
-    call df%eval(cx_a, f_a, status)
+    call cf%eval(cx_a, f_a, status)
     if (status /= STATUS_OK) return
 
-    call df%eval(cx_b, f_b, status)
+    call cf%eval(cx_b, f_b, status)
     if (status /= STATUS_OK) return
 
     status = STATUS_OK
@@ -592,11 +592,11 @@ contains
 
        if (move_a) then
           cx_a = cx_a + EXPAND_FACTOR*(cx_a - cx_b)
-          call df%eval(cx_a, f_a, status)
+          call cf%eval(cx_a, f_a, status)
           if (status /= STATUS_OK) return
        else
           cx_b = cx_b + EXPAND_FACTOR*(cx_b - cx_a)
-          call df%eval(cx_b, f_b, status)
+          call cf%eval(cx_b, f_b, status)
           if (status /= STATUS_OK) return
        endif
 

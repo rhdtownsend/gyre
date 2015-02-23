@@ -23,7 +23,7 @@ module gyre_r_root
 
   use core_kinds
 
-  use gyre_discfunc
+  use gyre_ext_func
   use gyre_ext
   use gyre_num_par
   use gyre_status
@@ -58,9 +58,9 @@ module gyre_r_root
 
 contains
 
-  subroutine solve_ (df, np, rx_a, rx_b, rx_tol, rx_root, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
+  subroutine solve_ (rf, np, rx_a, rx_b, rx_tol, rx_root, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
 
-    class(r_discfunc_t), intent(inout)  :: df
+    class(r_ext_func_t), intent(inout)  :: rf
     class(num_par_t), intent(in)        :: np
     type(r_ext_t), intent(in)           :: rx_a
     type(r_ext_t), intent(in)           :: rx_b
@@ -79,7 +79,7 @@ contains
     type(r_ext_t) :: f_b
 
     ! Starting from the bracket [rx_a,rx_b], find a root of the
-    ! function df
+    ! function rf
 
     a = rx_a
     b = rx_b
@@ -87,18 +87,18 @@ contains
     if (PRESENT(f_rx_a)) then
        f_a = f_rx_a
     else
-       call df%eval(a, f_a, status)
+       call rf%eval(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
     if (PRESENT(f_rx_b)) then
        f_b = f_rx_b
     else
-       call df%eval(b, f_b, status)
+       call rf%eval(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
-    call narrow_(df, np, a, b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
+    call narrow_(rf, np, a, b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
 
     rx_root = b
 
@@ -110,9 +110,9 @@ contains
 
 !****
 
-  subroutine narrow_ (df, np, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
+  subroutine narrow_ (rf, np, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
 
-    class(r_discfunc_t), intent(inout)     :: df
+    class(r_ext_func_t), intent(inout)     :: rf
     class(num_par_t), intent(in)           :: np
     type(r_ext_t), intent(inout)           :: rx_a
     type(r_ext_t), intent(inout)           :: rx_b
@@ -124,11 +124,11 @@ contains
     type(r_ext_t), optional, intent(inout) :: f_rx_a
     type(r_ext_t), optional, intent(inout) :: f_rx_b
 
-    ! Narrow the bracket [rx_a,rx_b] on a root of the function df
+    ! Narrow the bracket [rx_a,rx_b] on a root of the function rf
 
     select case (np%r_root_solver)
     case ('BRENT')
-       call narrow_brent_(df, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
+       call narrow_brent_(rf, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
     case default
        $ABORT(Invalid r_root_solver)
     end select
@@ -141,9 +141,9 @@ contains
 
 !****
 
-  subroutine narrow_brent_ (df, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
+  subroutine narrow_brent_ (rf, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
 
-    class(r_discfunc_t), intent(inout)     :: df
+    class(r_ext_func_t), intent(inout)     :: rf
     type(r_ext_t), intent(inout)           :: rx_a
     type(r_ext_t), intent(inout)           :: rx_b
     type(r_ext_t), intent(in)              :: rx_tol
@@ -177,7 +177,7 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    ! Narrow the bracket [rx_a,rx_b] on a root of the function df
+    ! Narrow the bracket [rx_a,rx_b] on a root of the function rf
     ! using Brent's method [based on the ALGOL 60 routine 'zero'
     ! published in [Bre1973]
 
@@ -189,14 +189,14 @@ contains
     if (PRESENT(f_rx_a)) then
        f_a = f_rx_a
     else
-       call df%eval(a, f_a, status)
+       call rf%eval(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
     if (PRESENT(f_rx_b)) then
        f_b = f_rx_b
     else
-       call df%eval(b, f_b, status)
+       call rf%eval(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
@@ -325,7 +325,7 @@ contains
           endif
        endif
 
-       call df%eval(b, f_b, status)
+       call rf%eval(b, f_b, status)
        if (status /= STATUS_OK) return
        
     end do iterate_loop
@@ -350,9 +350,9 @@ contains
 
 !****
 
-  subroutine expand_ (df, rx_a, rx_b, status, clamp_a, clamp_b, f_rx_a, f_rx_b)
+  subroutine expand_ (rf, rx_a, rx_b, status, clamp_a, clamp_b, f_rx_a, f_rx_b)
 
-    class(r_discfunc_t), intent(inout)   :: df
+    class(r_ext_func_t), intent(inout)   :: rf
     type(r_ext_t), intent(inout)         :: rx_a
     type(r_ext_t), intent(inout)         :: rx_b
     integer, intent(out)                 :: status
@@ -386,12 +386,12 @@ contains
     $ASSERT(rx_a /= rx_b,Invalid initial bracket)
 
     ! Expand the bracket [rx_a,rx_b] until it contains a root of the
-    ! function df
+    ! function rf
 
-    call df%eval(rx_a, f_a, status)
+    call rf%eval(rx_a, f_a, status)
     if (status /= STATUS_OK) return
 
-    call df%eval(rx_b, f_b, status)
+    call rf%eval(rx_b, f_b, status)
     if (status /= STATUS_OK) return
 
     status = STATUS_OK
@@ -413,14 +413,14 @@ contains
 
           rx_a = rx_a + EXPAND_FACTOR*(rx_a - rx_b)
 
-          call df%eval(rx_a, f_a, status)
+          call rf%eval(rx_a, f_a, status)
           if (status /= STATUS_OK) return
 
        else
 
           rx_b = rx_b + EXPAND_FACTOR*(rx_b - rx_a)
 
-          call df%eval(rx_b, f_b, status)
+          call rf%eval(rx_b, f_b, status)
           if (status /= STATUS_OK) return
 
        endif

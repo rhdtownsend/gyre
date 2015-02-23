@@ -23,8 +23,8 @@ module gyre_cimplex
 
   use core_kinds
 
-  use gyre_discfunc
   use gyre_ext
+  use gyre_ext_func
   use gyre_status
 
   use ISO_FORTRAN_ENV
@@ -40,7 +40,7 @@ module gyre_cimplex
      type(c_ext_t)                    :: cx(3)
      type(c_ext_t)                    :: f_cx(3)
      integer                          :: i(3)
-     class(c_discfunc_t), allocatable :: df
+     class(c_ext_func_t), allocatable :: cf
    contains
      private
      procedure         :: set_indices => set_indices_
@@ -68,14 +68,14 @@ module gyre_cimplex
 
 contains
 
-  function cimplex_t_ (df) result (cm)
+  function cimplex_t_ (cf) result (cm)
 
-    class(c_discfunc_t), intent(in) :: df
+    class(c_ext_func_t), intent(in) :: cf
     type(cimplex_t)                 :: cm
        
     ! Construct the cimplex_t
 
-    allocate(cm%df, SOURCE=df)
+    allocate(cm%cf, SOURCE=cf)
 
     ! Finish
 
@@ -85,9 +85,9 @@ contains
 
 !****
 
-  function cimplex_t_verts_ (df, cx, f_cx) result (cm)
+  function cimplex_t_verts_ (cf, cx, f_cx) result (cm)
 
-    class(c_discfunc_t), intent(in) :: df
+    class(c_ext_func_t), intent(in) :: cf
     class(c_ext_t), intent(in)      :: cx(:)
     class(c_ext_t), intent(in)      :: f_cx(:)
     type(cimplex_t)                 :: cm
@@ -97,7 +97,7 @@ contains
 
     ! Construct the cimplex_t
 
-    cm = cimplex_t(df)
+    cm = cimplex_t(cf)
 
     ! Set up the starting vertices
 
@@ -354,7 +354,7 @@ contains
 
     cx_new = cx_cen + scale*(cm%cx(i) - cx_cen)
 
-    call cm%df%eval(cx_new, f_cx_new, status)
+    call cm%cf%eval(cx_new, f_cx_new, status)
     if (status /= STATUS_OK) return
 
     ! Accept or reject the new position
@@ -395,7 +395,7 @@ contains
 
           cm%cx(j) = cm%cx(i) + scale*(cm%cx(j) - cm%cx(i))
 
-          call cm%df%eval(cm%cx(j), cm%f_cx(j), status)
+          call cm%cf%eval(cm%cx(j), cm%f_cx(j), status)
           if (status /= STATUS_OK) return
 
        endif
