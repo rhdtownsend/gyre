@@ -68,7 +68,7 @@ module gyre_rad_bvp
 
 contains
 
-  function rad_bvp_t_ (x, ml, mp, op, np) result (bp)
+  function rad_bvp_t_ (x, ml, mp, op, np, omega_min, omega_max) result (bp)
 
     use gyre_rad_eqns
     use gyre_rad_bound
@@ -78,7 +78,9 @@ contains
     type(mode_par_t), intent(in)        :: mp
     type(osc_par_t), intent(in)         :: op
     type(num_par_t), intent(in)         :: np
-    type(rad_bvp_t), target             :: bp
+    real(WP)                            :: omega_min
+    real(WP)                            :: omega_max
+    type(rad_bvp_t)                     :: bp
 
     class(r_rot_t), allocatable    :: rt
     type(rad_eqns_t)               :: eq
@@ -118,7 +120,7 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%r_bvp_t = r_bvp_t(x, ml, eq, bd, iv, sm)
+    bp%r_bvp_t = r_bvp_t(x, ml, eq, bd, iv, sm, omega_min, omega_max)
 
     ! Finish
 
