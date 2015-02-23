@@ -38,6 +38,7 @@ module gyre_r_search
   use gyre_osc_par
   use gyre_root
   use gyre_scan_par
+  use gyre_status
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -194,6 +195,7 @@ contains
     integer                    :: c_rate
     integer                    :: n_iter
     type(r_ext_t)              :: omega_root
+    integer                    :: status
     integer                    :: i
 
     ! Set up the discriminant function
@@ -225,9 +227,11 @@ contains
        n_iter = np%n_iter_max
 
        call solve(df, np, r_ext_t(omega_a(i)), r_ext_t(omega_b(i)), r_ext_t(0._WP), omega_root, &
-                  n_iter=n_iter, f_rx_a=discrim_a(i), f_rx_b=discrim_b(i))
-
-       $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
+                  status, n_iter=n_iter, f_rx_a=discrim_a(i), f_rx_b=discrim_b(i))
+       if (status /= STATUS_OK) then
+          call print_warn_(status, 'solve', [omega_a(i),omega_b(i)])
+          cycle mode_loop
+       endif
 
        ! Process it
 
@@ -246,6 +250,38 @@ contains
 
     return
 
+  contains
+
+    subroutine print_warn_ (status, text, omega)
+
+      integer, intent(in)      :: status
+      character(*), intent(in) :: text
+      real(WP), intent(in)     :: omega(:)
+
+      character(64) :: status_str
+
+      ! Print out a warning message
+
+      if (check_log_level('WARN')) then
+
+         select case (status)
+         case (STATUS_DOMAIN)
+            status_str = 'out-of-domain frequency'
+         case (STATUS_ITER)
+            status_str = 'too many iterations'
+         case default
+            status_str = 'unrecognized error'
+         end select
+
+         write(OUTPUT_UNIT, 100) 'Failed during ', text, ' : ', TRIM(status_str)
+100      format(A,A,A,A)
+         write(OUTPUT_UNIT, 110) '   Initial frequencies:', omega
+110      format(A,999E12.6)
+
+      endif
+
+    end subroutine print_warn_
+      
   end subroutine scan_search
 
 !****
@@ -265,6 +301,7 @@ contains
     integer       :: c_rate
     integer       :: i
     type(r_ext_t) :: discrim(SIZE(omega))
+    integer       :: status
     integer       :: n_brack
     integer       :: i_brack(SIZE(omega))
 
@@ -281,7 +318,8 @@ contains
 
     discrim_loop : do i = 1, n_omega
 
-       discrim(i) = df%eval(r_ext_t(omega(i)))
+       call df%eval(r_ext_t(omega(i)), discrim(i), status)
+       $ASSERT(status == STATUS_OK,Invalid status from discriminant evaluation)
 
        if (check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))

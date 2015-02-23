@@ -27,12 +27,13 @@ module gyre_c_search
   use core_parallel
 
   use gyre_bvp
-  use gyre_cimplex
   use gyre_discfunc
   use gyre_ext
   use gyre_mode
+  use gyre_mode_par
   use gyre_model
   use gyre_num_par
+  use gyre_osc_par
   use gyre_root
   use gyre_util
 
@@ -50,10 +51,12 @@ module gyre_c_search
 
 contains
 
-  subroutine prox_search (bp, np, md_in, process_root)
+  subroutine prox_search (bp, mp, np, op, md_in, process_root)
 
     class(c_bvp_t), target, intent(inout) :: bp
-    type(num_par_t), intent(in)           :: np
+    type(mode_par_t), intent(in)          :: mp
+    type(num_par_t), intent(in)           :: np 
+    type(osc_par_t), intent(in)           :: op
     type(mode_t), intent(in)              :: md_in(:)
     interface
        subroutine process_root (omega, n_iter, discrim_ref)
@@ -77,6 +80,7 @@ contains
     type(c_ext_t)            :: omega_b
     integer                  :: n_iter
     integer                  :: n_iter_def
+    integer                  :: status
     type(c_ext_t)            :: discrim_a
     type(c_ext_t)            :: discrim_b
     type(c_ext_t)            :: discrim_a_rev
@@ -133,9 +137,21 @@ contains
        omega_a = c_ext_t(md_in(i)%omega + CMPLX(0._WP, domega, KIND=WP))
        omega_b = c_ext_t(md_in(i)%omega - CMPLX(0._WP, domega, KIND=WP))
 
-       discrim_a = df%eval(omega_a)
-       discrim_b = df%eval(omega_b)
+!       call improve_omega(bp, mp, op, md_in(i)%x, omega_a)
+!       call improve_omega(bp, mp, op, md_in(i)%x, omega_b)
 
+       call df%eval(omega_a, discrim_a, status)
+       if (status /= STATUS_OK) then
+          call print_warn_(status, 'initial guess (a)', cmplx(omega_a))
+          cycle mode_loop
+       endif
+          
+       call df%eval(omega_b, discrim_b, status)
+       if (status /= STATUS_OK) then
+          call print_warn_(status, 'initial guess (b)', cmplx(omega_b))
+          cycle mode_loop
+       endif
+          
        ! If necessary, do a preliminary root find using the deflated
        ! discriminant
 
@@ -145,17 +161,10 @@ contains
 
           df%omega_def = omega_def
 
-          call narrow(df, np, omega_a, omega_b, r_ext_t(0._WP), n_iter=n_iter_def)
-
-          if (n_iter_def > np%n_iter_max) then
-
-             if (check_log_level('WARN')) then
-                write(OUTPUT_UNIT, 120) 'Failed to find mode in', n_iter_def, 'iterations (starting from omega=', REAL(md_in(i)%omega), ')'
-120             format(A,1X,I0,1X,A,E24.16,A)
-             endif
-
+          call narrow(df, np, omega_a, omega_b, r_ext_t(0._WP), status, n_iter_max=np%n_iter_max, n_iter=n_iter)
+          if (status /= STATUS_OK) then
+             call print_warn_(status, 'deflate narrow', md_in(i)%omega)
              cycle mode_loop
-
           endif
 
           deallocate(df%omega_def)
@@ -167,7 +176,11 @@ contains
              omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
           endif
 
-          call expand(df, omega_a, omega_b, r_ext_t(0._WP), f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 
+          call expand(df, omega_a, omega_b, r_ext_t(0._WP), status, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 
+          if (status /= STATUS_OK) then
+             call print_warn_(status, 'deflate re-expand', md_in(i)%omega)
+             cycle mode_loop
+          endif
 
        else
 
@@ -182,19 +195,13 @@ contains
 
        n_iter = np%n_iter_max - n_iter_def
 
-       call solve(df, np, omega_a, omega_b, r_ext_t(0._WP), omega_root, n_iter=n_iter, &
-                  f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
+       print *,'finding with:',n_iter,n_iter_def
 
-       n_iter = n_iter + n_iter_def
-
-       if (n_iter > np%n_iter_max) then
-
-          if (check_log_level('WARN')) then
-             write(OUTPUT_UNIT, 120) 'Failed to find mode in', n_iter, 'iterations (starting from omega=', md_in(i)%omega, ')'
-          endif
-
+       call solve(df, np, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
+                  n_iter=n_iter, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
+       if (status /= STATUS_OK) then
+          call print_warn_(status, 'solve', md_in(i)%omega)
           cycle mode_loop
-
        endif
 
        ! Process it
@@ -218,6 +225,83 @@ contains
 
     return
 
+  contains
+
+    subroutine print_warn_ (status, text, omega)
+
+      integer, intent(in)      :: status
+      character(*), intent(in) :: text
+      complex(WP), intent(in)  :: omega
+
+      character(64) :: status_str
+
+      ! Print out a warning message
+
+      if (check_log_level('WARN')) then
+
+         select case (status)
+         case (STATUS_DOMAIN)
+            status_str = 'out-of-domain frequency'
+         case (STATUS_ITER)
+            status_str = 'too many iterations'
+         case default
+            status_str = 'unrecognized error'
+         end select
+
+         write(OUTPUT_UNIT, 100) 'Failed during ', text, ' : ', TRIM(status_str), '[omega = ', omega, ']'
+100      format(A,A,A,A,A,2E12.6,A)
+
+      endif
+      
+      ! Finish
+
+      return
+
+    end subroutine print_warn_
+
   end subroutine prox_search
+
+!****
+
+  subroutine improve_omega (bp, mp, op, x, omega)
+
+    class(c_bvp_t), target, intent(inout) :: bp
+    type(mode_par_t), intent(in)          :: mp
+    type(osc_par_t), intent(in)           :: op
+    real(WP), intent(in)                  :: x(:)
+    type(c_ext_t), intent(inout)          :: omega
+
+    integer       :: n
+    real(WP)      :: x_ref
+    complex(WP)   :: y(6,SIZE(x))
+    complex(WP)   :: y_ref(6)
+    type(c_ext_t) :: discrim
+    type(mode_t)  :: md
+
+    ! Use the integral expression for the eigenfrequency to improve
+    ! omega
+
+    ! Reconstruct on the supplied grid
+
+    n = SIZE(x)
+
+    x_ref = x(n)
+
+    call bp%recon(cmplx(omega), x, x_ref, y, y_ref, discrim)
+
+    ! Create the mode
+
+    md = mode_t(bp%ml, mp, op, cmplx(omega), discrim, &
+                x, y, x_ref, y_ref)
+
+    ! Improve omega
+
+    omega = c_ext_t(md%omega_int())
+
+    ! Finish
+
+    return
+
+  end subroutine improve_omega
 
 end module gyre_c_search
