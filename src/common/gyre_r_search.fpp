@@ -222,14 +222,14 @@ contains
 
     mode_loop : do i = 1, SIZE(omega_a)
 
+       n_iter = 0
+
        ! Find the discriminant root
 
-       n_iter = np%n_iter_max
-
        call solve(df, np, r_ext_t(omega_a(i)), r_ext_t(omega_b(i)), r_ext_t(0._WP), omega_root, &
-                  status, n_iter=n_iter, f_rx_a=discrim_a(i), f_rx_b=discrim_b(i))
+                  status, n_iter=n_iter, n_iter_max=np%n_iter_max, f_rx_a=discrim_a(i), f_rx_b=discrim_b(i))
        if (status /= STATUS_OK) then
-          call print_warn_(status, 'solve', [omega_a(i),omega_b(i)])
+          call report_status_(status, 'solve')
           cycle mode_loop
        endif
 
@@ -252,35 +252,36 @@ contains
 
   contains
 
-    subroutine print_warn_ (status, text, omega)
+    subroutine report_status_ (status, stage_str)
 
       integer, intent(in)      :: status
-      character(*), intent(in) :: text
-      real(WP), intent(in)     :: omega(:)
+      character(*), intent(in) :: stage_str
 
-      character(64) :: status_str
-
-      ! Print out a warning message
+      ! Report the status
 
       if (check_log_level('WARN')) then
 
-         select case (status)
-         case (STATUS_DOMAIN)
-            status_str = 'out-of-domain frequency'
-         case (STATUS_ITER)
-            status_str = 'too many iterations'
-         case default
-            status_str = 'unrecognized error'
-         end select
-
-         write(OUTPUT_UNIT, 100) 'Failed during ', text, ' : ', TRIM(status_str)
-100      format(A,A,A,A)
-         write(OUTPUT_UNIT, 110) '   Initial frequencies:', omega
-110      format(A,999E12.6)
+         write(OUTPUT_UNIT, 100) 'Failed during ', stage_str, ' : ', status_str(status)
+100      format(4A)
 
       endif
 
-    end subroutine print_warn_
+      if (check_log_level('INFO')) then
+
+         write(OUTPUT_UNIT, 110) 'n_iter  :', n_iter
+110      format(3X,A,I0)
+
+         write(OUTPUT_UNIT, 120) 'omega_a :', omega_a(i)
+         write(OUTPUT_UNIT, 120) 'omega_b :', omega_b(i)
+120      format(3X,A,E24.16)
+
+      end if
+
+      ! Finish
+
+      return
+
+    end subroutine report_status_
       
   end subroutine scan_search
 
@@ -301,7 +302,7 @@ contains
     integer       :: c_rate
     integer       :: i
     type(r_ext_t) :: discrim(SIZE(omega))
-    integer       :: status
+    integer       :: status(SIZE(omega))
     integer       :: n_brack
     integer       :: i_brack(SIZE(omega))
 
@@ -318,8 +319,7 @@ contains
 
     discrim_loop : do i = 1, n_omega
 
-       call df%eval(r_ext_t(omega(i)), discrim(i), status)
-       $ASSERT(status == STATUS_OK,Invalid status from discriminant evaluation)
+       call df%eval(r_ext_t(omega(i)), discrim(i), status(i))
 
        if (check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
@@ -341,9 +341,11 @@ contains
 
     bracket_loop : do i = 1, n_omega-1
 
-       if (discrim(i)*discrim(i+1) <= r_ext_t(0._WP)) then
-          n_brack = n_brack + 1
-          i_brack(n_brack) = i
+       if (status(i) == STATUS_OK .AND. status(i+1) == STATUS_OK) then
+          if (discrim(i)*discrim(i+1) <= r_ext_t(0._WP)) then
+             n_brack = n_brack + 1
+             i_brack(n_brack) = i
+          end if
        end if
 
     end do bracket_loop

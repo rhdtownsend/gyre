@@ -192,12 +192,13 @@ contains
 
 !****
 
-  subroutine refine_ (cm, cx_tol, status, n_iter, relative_tol)
+  subroutine refine_ (cm, cx_tol, status, n_iter, n_iter_max, relative_tol)
 
     type(cimplex_t), intent(inout)   :: cm
     type(r_ext_t), intent(in)        :: cx_tol
     integer, intent(out)             :: status
-    integer, optional, intent(in)    :: n_iter
+    integer, optional, intent(out)   :: n_iter
+    integer, optional, intent(in)    :: n_iter_max
     logical, optional, intent(in)    :: relative_tol
 
     logical, parameter  :: VERBOSE = .FALSE.
@@ -229,14 +230,16 @@ contains
 
     i_iter = 0
 
+    status = STATUS_OK
+
     iterate_loop : do
 
        i_iter = i_iter + 1
 
-       if (PRESENT(n_iter)) then
-          if (i_iter > n_iter) then
-             status = STATUS_ITER
-             return
+       if (PRESENT(n_iter_max)) then
+          if (i_iter > n_iter_max) then
+             status = STATUS_ITER_MAX
+             exit iterate_loop
           end if
        end if
 
@@ -311,7 +314,7 @@ contains
        end do
     endif
 
-    status = STATUS_OK
+    if (PRESENT(n_iter)) n_iter = i_iter
 
     ! Finish
 

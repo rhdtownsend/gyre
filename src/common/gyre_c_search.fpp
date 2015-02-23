@@ -35,6 +35,7 @@ module gyre_c_search
   use gyre_num_par
   use gyre_osc_par
   use gyre_root
+  use gyre_status
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -113,6 +114,9 @@ contains
 
     mode_loop : do i = 1, n_md_in
 
+       n_iter = 0
+       n_iter_def = 0
+
        ! Set up initial guesses
 
        if (n_md_in > 1) then
@@ -142,13 +146,13 @@ contains
 
        call df%eval(omega_a, discrim_a, status)
        if (status /= STATUS_OK) then
-          call print_warn_(status, 'initial guess (a)', cmplx(omega_a))
+          call report_status_(status, 'initial guess (a)')
           cycle mode_loop
        endif
           
        call df%eval(omega_b, discrim_b, status)
        if (status /= STATUS_OK) then
-          call print_warn_(status, 'initial guess (b)', cmplx(omega_b))
+          call report_status_(status, 'initial guess (b)')
           cycle mode_loop
        endif
           
@@ -157,13 +161,11 @@ contains
 
        if (np%deflate_roots) then
 
-          n_iter_def = np%n_iter_max
-
           df%omega_def = omega_def
 
-          call narrow(df, np, omega_a, omega_b, r_ext_t(0._WP), status, n_iter_max=np%n_iter_max, n_iter=n_iter)
+          call narrow(df, np, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=np%n_iter_max)
           if (status /= STATUS_OK) then
-             call print_warn_(status, 'deflate narrow', md_in(i)%omega)
+             call report_status_(status, 'deflate narrow')
              cycle mode_loop
           endif
 
@@ -178,7 +180,7 @@ contains
 
           call expand(df, omega_a, omega_b, r_ext_t(0._WP), status, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 
           if (status /= STATUS_OK) then
-             call print_warn_(status, 'deflate re-expand', md_in(i)%omega)
+             call report_status_(status, 'deflate re-expand')
              cycle mode_loop
           endif
 
@@ -193,20 +195,16 @@ contains
 
        ! Find the discriminant root
 
-       n_iter = np%n_iter_max - n_iter_def
-
-       print *,'finding with:',n_iter,n_iter_def
-
        call solve(df, np, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
-                  n_iter=n_iter, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
+                  n_iter=n_iter, n_iter_max=np%n_iter_max-n_iter_def, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
        if (status /= STATUS_OK) then
-          call print_warn_(status, 'solve', md_in(i)%omega)
+          call report_status_(status, 'solve')
           cycle mode_loop
        endif
 
        ! Process it
 
-       call process_root(cmplx(omega_root), n_iter, max(abs(discrim_a), abs(discrim_b)))
+       call process_root(cmplx(omega_root), n_iter_def+n_iter, max(abs(discrim_a), abs(discrim_b)))
 
        ! Store the frequency in the deflation array
 
@@ -227,37 +225,37 @@ contains
 
   contains
 
-    subroutine print_warn_ (status, text, omega)
+    subroutine report_status_ (status, stage_str)
 
       integer, intent(in)      :: status
-      character(*), intent(in) :: text
-      complex(WP), intent(in)  :: omega
+      character(*), intent(in) :: stage_str
 
-      character(64) :: status_str
-
-      ! Print out a warning message
+      ! Report the status
 
       if (check_log_level('WARN')) then
 
-         select case (status)
-         case (STATUS_DOMAIN)
-            status_str = 'out-of-domain frequency'
-         case (STATUS_ITER)
-            status_str = 'too many iterations'
-         case default
-            status_str = 'unrecognized error'
-         end select
-
-         write(OUTPUT_UNIT, 100) 'Failed during ', text, ' : ', TRIM(status_str), '[omega = ', omega, ']'
-100      format(A,A,A,A,A,2E12.6,A)
+         write(OUTPUT_UNIT, 100) 'Failed during ', stage_str, ' : ', status_str(status)
+100      format(4A)
 
       endif
       
+      if (check_log_level('INFO')) then
+
+         write(OUTPUT_UNIT, 110) 'n_iter_def :', n_iter_def
+         write(OUTPUT_UNIT, 110) 'n_iter     :', n_iter
+110      format(3X,A,I0)
+
+         write(OUTPUT_UNIT, 120) 'omega_a    :', cmplx(omega_a)
+         write(OUTPUT_UNIT, 120) 'omega_b    :', cmplx(omega_b)
+120      format(3X,A,2E24.16)
+
+      end if
+
       ! Finish
 
       return
 
-    end subroutine print_warn_
+    end subroutine report_status_
 
   end subroutine prox_search
 

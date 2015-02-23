@@ -52,16 +52,13 @@ module gyre_r_root
 
   private
 
-  public :: STATUS_OK
-  public :: STATUS_DOMAIN
-  public :: STATUS_ITER
   public :: solve
   public :: expand
   public :: narrow
 
 contains
 
-  subroutine solve_ (df, np, rx_a, rx_b, rx_tol, rx_root, status, n_iter, relative_tol, f_rx_a, f_rx_b)
+  subroutine solve_ (df, np, rx_a, rx_b, rx_tol, rx_root, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
 
     class(r_discfunc_t), intent(inout)  :: df
     class(num_par_t), intent(in)        :: np
@@ -70,7 +67,8 @@ contains
     type(r_ext_t), intent(in)           :: rx_tol
     type(r_ext_t), intent(out)          :: rx_root
     integer, intent(out)                :: status
-    integer, optional, intent(in)       :: n_iter
+    integer, optional, intent(out)      :: n_iter
+    integer, optional, intent(in)       :: n_iter_max
     logical, optional, intent(in)       :: relative_tol
     type(r_ext_t), optional, intent(in) :: f_rx_a
     type(r_ext_t), optional, intent(in) :: f_rx_b
@@ -100,7 +98,7 @@ contains
        if (status /= STATUS_OK) return
     endif
 
-    call narrow(df, np, a, b, rx_tol, status, n_iter, relative_tol, f_a, f_b)
+    call narrow_(df, np, a, b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
 
     rx_root = b
 
@@ -112,7 +110,7 @@ contains
 
 !****
 
-  subroutine narrow_ (df, np, rx_a, rx_b, rx_tol, status, n_iter, relative_tol, f_rx_a, f_rx_b)
+  subroutine narrow_ (df, np, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
 
     class(r_discfunc_t), intent(inout)     :: df
     class(num_par_t), intent(in)           :: np
@@ -120,7 +118,8 @@ contains
     type(r_ext_t), intent(inout)           :: rx_b
     type(r_ext_t), intent(in)              :: rx_tol
     integer, intent(out)                   :: status
-    integer, optional, intent(in)          :: n_iter
+    integer, optional, intent(out)         :: n_iter
+    integer, optional, intent(in)          :: n_iter_max
     logical, optional, intent(in)          :: relative_tol
     type(r_ext_t), optional, intent(inout) :: f_rx_a
     type(r_ext_t), optional, intent(inout) :: f_rx_b
@@ -129,7 +128,7 @@ contains
 
     select case (np%r_root_solver)
     case ('BRENT')
-       call narrow_brent_(df, rx_a, rx_b, rx_tol, status, n_iter, relative_tol, f_rx_a, f_rx_b)
+       call narrow_brent_(df, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
     case default
        $ABORT(Invalid r_root_solver)
     end select
@@ -142,14 +141,15 @@ contains
 
 !****
 
-  subroutine narrow_brent_ (df, rx_a, rx_b, rx_tol, status, n_iter, relative_tol, f_rx_a, f_rx_b)
+  subroutine narrow_brent_ (df, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
 
     class(r_discfunc_t), intent(inout)     :: df
     type(r_ext_t), intent(inout)           :: rx_a
     type(r_ext_t), intent(inout)           :: rx_b
     type(r_ext_t), intent(in)              :: rx_tol
     integer, intent(out)                   :: status
-    integer, optional, intent(in)          :: n_iter
+    integer, optional, intent(out)         :: n_iter
+    integer, optional, intent(in)          :: n_iter_max
     logical, optional, intent(in)          :: relative_tol
     type(r_ext_t), optional, intent(inout) :: f_rx_a
     type(r_ext_t), optional, intent(inout) :: f_rx_b
@@ -212,16 +212,17 @@ contains
 
     i_iter = 0
 
+    status = STATUS_OK
+
     iterate_loop : do
 
        i_iter = i_iter + 1
 
-       if (PRESENT(n_iter)) then
-          if (i_iter > n_iter) then
-             print *,'Setting max_iter',i_iter,n_iter
-             status = STATUS_ITER
-             return
-          end if
+       if (PRESENT(n_iter_max)) then
+          if (i_iter > n_iter_max) then
+             status = STATUS_ITER_MAX
+             exit iterate_loop
+          endif
        endif
 
        ! Reorder c so that it has the opposite sign to b
@@ -334,12 +335,12 @@ contains
     rx_a = a
     rx_b = b
 
+    if (PRESENT(n_iter)) then
+       n_iter = i_iter
+    end if
+
     if (PRESENT(f_rx_a)) f_rx_a = f_a
     if (PRESENT(f_rx_b)) f_rx_b = f_b
-
-    status = STATUS_OK
-
-    print *,'Returning status_ok'
 
     ! Finish
 
@@ -393,6 +394,8 @@ contains
     call df%eval(rx_b, f_b, status)
     if (status /= STATUS_OK) return
 
+    status = STATUS_OK
+
     expand_loop : do
 
        if ((f_a > 0._WP .AND. f_b < 0._WP) .OR. &
@@ -428,8 +431,6 @@ contains
 
     if (PRESENT(f_rx_a)) f_rx_a = f_a
     if (PRESENT(f_rx_b)) f_rx_b = f_b
-
-    status = STATUS_OK
 
     ! Finish
 

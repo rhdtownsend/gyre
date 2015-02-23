@@ -59,7 +59,7 @@ module gyre_c_root
 
 contains
 
-  subroutine solve_ (df, np, cx_a, cx_b, cx_tol, cx_root, status, n_iter, relative_tol, f_cx_a, f_cx_b)
+  subroutine solve_ (df, np, cx_a, cx_b, cx_tol, cx_root, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
     class(c_discfunc_t), intent(inout)  :: df
     class(num_par_t), intent(in)        :: np
@@ -68,7 +68,8 @@ contains
     type(r_ext_t), intent(in)           :: cx_tol
     type(c_ext_t), intent(out)          :: cx_root
     integer, intent(out)                :: status
-    integer, optional, intent(in)       :: n_iter
+    integer, optional, intent(out)      :: n_iter
+    integer, optional, intent(in)       :: n_iter_max
     logical, optional, intent(in)       :: relative_tol
     type(c_ext_t), optional, intent(in) :: f_cx_a
     type(c_ext_t), optional, intent(in) :: f_cx_b
@@ -98,7 +99,7 @@ contains
        if (status /= STATUS_OK) return
     endif
 
-    call narrow(df, np, a, b, cx_tol, status, n_iter, relative_tol, f_a, f_b)
+    call narrow(df, np, a, b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
 
     cx_root = b
 
@@ -110,7 +111,7 @@ contains
 
 !****
 
-  subroutine narrow_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
     class(c_discfunc_t), intent(inout)     :: df
     class(num_par_t), intent(in)           :: np
@@ -118,7 +119,8 @@ contains
     type(c_ext_t), intent(inout)           :: cx_b
     type(r_ext_t), intent(in)              :: cx_tol
     integer, intent(out)                   :: status
-    integer, optional, intent(in)          :: n_iter
+    integer, optional, intent(out)         :: n_iter
+    integer, optional, intent(in)          :: n_iter_max
     logical, optional, intent(in)          :: relative_tol
     type(c_ext_t), optional, intent(inout) :: f_cx_a
     type(c_ext_t), optional, intent(inout) :: f_cx_b
@@ -127,11 +129,11 @@ contains
 
     select case (np%c_root_solver)
     case ('SECANT')
-       call narrow_secant_(df, np, cx_a, cx_b, cx_tol, status, n_iter, relative_tol, f_cx_a, f_cx_b)
+       call narrow_secant_(df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
     case ('RIDDERS')
-       call narrow_ridders_(df, np, cx_a, cx_b, cx_tol, status, n_iter, relative_tol, f_cx_a, f_cx_b)
+       call narrow_ridders_(df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
     case ('SIMPLEX')
-       call narrow_simplex_(df, np, cx_a, cx_b, cx_tol, status, n_iter, relative_tol, f_cx_a, f_cx_b)
+       call narrow_simplex_(df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
     case default
        $ABORT(Invalid c_root_solver)
     end select
@@ -144,7 +146,7 @@ contains
 
 !****
 
-  subroutine narrow_secant_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_secant_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
  
     class(c_discfunc_t), intent(inout)     :: df
     class(num_par_t), intent(in)           :: np
@@ -152,7 +154,8 @@ contains
     type(c_ext_t), intent(inout)           :: cx_b
     type(r_ext_t), intent(in)              :: cx_tol
     integer, intent(out)                   :: status
-    integer, optional, intent(in)          :: n_iter
+    integer, optional, intent(out)         :: n_iter
+    integer, optional, intent(in)          :: n_iter_max
     logical, optional, intent(in)          :: relative_tol
     type(c_ext_t), optional, intent(inout) :: f_cx_a
     type(c_ext_t), optional, intent(inout) :: f_cx_b
@@ -214,17 +217,18 @@ contains
 
     i_iter = 0
 
+    status = STATUS_OK
+
     iterate_loop : do
 
        if (f_b == 0._WP) exit iterate_loop
 
        i_iter = i_iter + 1
 
-       if (PRESENT(n_iter)) then
-          if (i_iter > n_iter) then
-             print *,'Exiting on iter:',i_iter,n_iter
-             status = STATUS_ITER
-             return
+       if (PRESENT(n_iter_max)) then
+          if (i_iter > n_iter_max) then
+             status = STATUS_ITER_MAX
+             exit iterate_loop
           endif
        endif
 
@@ -266,10 +270,10 @@ contains
     cx_a = a
     cx_b = b
 
+    if (PRESENT(n_iter)) n_iter = i_iter
+
     if (PRESENT(f_cx_a)) f_cx_a = f_a
     if (PRESENT(f_cx_b)) f_cx_b = f_b
-
-    status = STATUS_OK
 
     ! Finish
 
@@ -277,7 +281,7 @@ contains
 
 !****
 
-  subroutine narrow_ridders_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_ridders_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
     class(c_discfunc_t), intent(inout)     :: df
     class(num_par_t), intent(in)           :: np
@@ -285,7 +289,8 @@ contains
     type(c_ext_t), intent(inout)           :: cx_b
     type(r_ext_t), intent(in)              :: cx_tol
     integer, intent(out)                   :: status
-    integer, optional, intent(in)          :: n_iter
+    integer, optional, intent(out)         :: n_iter
+    integer, optional, intent(in)          :: n_iter_max
     logical, optional, intent(in)          :: relative_tol
     type(c_ext_t), optional, intent(inout) :: f_cx_a
     type(c_ext_t), optional, intent(inout) :: f_cx_b
@@ -353,17 +358,18 @@ contains
 
     i_iter = 0
 
+    status = STATUS_OK
+
     iterate_loop : do
 
        if (f_b == 0._WP) exit iterate_loop
 
        i_iter = i_iter + 1
 
-       if (PRESENT(n_iter)) then
-          if (i_iter > n_iter) then
-             print *,'Exiting on iter:',i_iter,n_iter
-             status = STATUS_ITER
-             return
+       if (PRESENT(n_iter_max)) then
+          if (i_iter > n_iter_max) then
+             status = STATUS_ITER_MAX
+             exit iterate_loop
           end if
        endif
 
@@ -423,18 +429,20 @@ contains
     cx_a = a
     cx_b = b
 
+    if (PRESENT(n_iter)) n_iter = i_iter
+
     if (PRESENT(f_cx_a)) f_cx_a = f_a
     if (PRESENT(f_cx_b)) f_cx_b = f_b
 
-    status = STATUS_OK
-
     ! Finish
+
+    return
 
   end subroutine narrow_ridders_
 
 !****
 
-  subroutine narrow_simplex_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_simplex_ (df, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
     class(c_discfunc_t), intent(inout)     :: df
     class(num_par_t), intent(in)           :: np
@@ -442,7 +450,8 @@ contains
     type(c_ext_t), intent(inout)           :: cx_b
     type(r_ext_t), intent(in)              :: cx_tol
     integer, intent(out)                   :: status
-    integer, optional, intent(in)          :: n_iter
+    integer, optional, intent(out)         :: n_iter
+    integer, optional, intent(in)          :: n_iter_max
     logical, optional, intent(in)          :: relative_tol
     type(c_ext_t), optional, intent(inout) :: f_cx_a
     type(c_ext_t), optional, intent(inout) :: f_cx_b
@@ -485,7 +494,7 @@ contains
 
     ! Refine it
 
-    call refine(cm, cx_tol, status, n_iter, relative_tol)
+    call refine(cm, cx_tol, status, n_iter, n_iter_max, relative_tol)
     if (status /= STATUS_OK) return
 
     ! Store the results
@@ -498,8 +507,6 @@ contains
 
     if (PRESENT(f_cx_a)) f_cx_a = f_cx(2)
     if (PRESENT(f_cx_b)) f_cx_b = f_cx(1)
-
-    status = STATUS_OK
 
     ! Finish
 
@@ -563,6 +570,8 @@ contains
     call df%eval(cx_b, f_b, status)
     if (status /= STATUS_OK) return
 
+    status = STATUS_OK
+
     expand_loop : do
 
        if (relative_tol_) then
@@ -597,8 +606,6 @@ contains
 
     if (PRESENT(f_cx_a)) f_cx_a = f_a
     if (PRESENT(f_cx_b)) f_cx_b = f_b
-
-    status = STATUS_OK
 
     ! Finish
 
