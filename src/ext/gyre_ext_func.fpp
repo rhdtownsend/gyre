@@ -1,4 +1,4 @@
-! Module   : gyre_extfunc
+! Module   : gyre_ext_func
 ! Purpose  : root finding with extended-range arithmetic
 !
 ! Copyright 2013-2014 Rich Townsend
@@ -17,11 +17,11 @@
 
 $include 'core.inc'
 
-module gyre_extfunc
+module gyre_ext_func
 
   ! Uses
 
-  use gyre_r_extfunc
-  use gyre_c_extfunc
+  use gyre_r_ext_func
+  use gyre_c_ext_func
 
-end module gyre_extfunc
+end module gyre_ext_func

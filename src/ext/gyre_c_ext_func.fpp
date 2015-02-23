@@ -1,4 +1,4 @@
-! Module   : gyre_c_extfunc
+! Module   : gyre_c_ext_func
 ! Purpose  : monovariate functions with extended-range arithmetic (complex)
 !
 ! Copyright 2013-2015 Rich Townsend
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_c_extfunc
+module gyre_c_ext_func
 
   ! Uses
 
@@ -33,28 +33,29 @@ module gyre_c_extfunc
 
   ! Derived-type definitions
 
-  type, abstract :: c_extfunc_t
+  type, abstract :: c_ext_func_t
    contains
      private
      procedure(eval_), deferred, public :: eval
-  end type c_extfunc_t
+  end type c_ext_func_t
 
   ! Interfaces
 
   abstract interface
-    function eval_ (this, cx) result (f_cx)
+     subroutine eval_ (this, cx, f_cx, status)
       use gyre_c_ext
-      import c_extfunc_t
-      class(c_extfunc_t), intent(inout) :: this
-      type(c_ext_t), intent(in)         :: cx
-      type(c_ext_t)                     :: f_cx
-    end function eval_
+      import c_ext_func_t
+      class(c_ext_func_t), intent(inout) :: this
+      type(c_ext_t), intent(in)          :: cx
+      type(c_ext_t), intent(out)         :: f_cx
+      integer, intent(out)               :: status
+    end subroutine eval_
   end interface
 
   ! Access specifiers
 
   private
 
-  public :: c_extfunc_t
+  public :: c_ext_func_t
 
-end module gyre_c_extfunc
+end module gyre_c_ext_func
