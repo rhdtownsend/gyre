@@ -34,6 +34,7 @@ module gyre_num_par
   type :: num_par_t
      integer         :: n_iter_max
      logical         :: deflate_roots
+     logical         :: restrict_roots
      character(64)   :: ivp_solver
      character(64)   :: r_root_solver
      character(64)   :: c_root_solver
@@ -81,13 +82,14 @@ contains
     integer                          :: i
     integer                          :: n_iter_max
     logical                          :: deflate_roots
+    logical                          :: restrict_roots
     character(LEN(np%ivp_solver))    :: ivp_solver
     character(LEN(np%r_root_solver)) :: r_root_solver
     character(LEN(np%c_root_solver)) :: c_root_solver
     character(LEN(np%matrix_type))   :: matrix_type
     character(LEN(np%tag_list))      :: tag_list
 
-    namelist /num/ n_iter_max, deflate_roots, &
+    namelist /num/ n_iter_max, deflate_roots, restrict_roots, &
          ivp_solver, r_root_solver, c_root_solver, matrix_type, tag_list
 
     ! Count the number of num namelists
@@ -114,6 +116,7 @@ contains
        n_iter_max = 50
 
        deflate_roots = .TRUE.
+       restrict_roots = .TRUE.
 
        ivp_solver = 'MAGNUS_GL2'
 
@@ -128,12 +131,13 @@ contains
        ! Initialize the num_par
 
        np(i) = num_par_t(n_iter_max=n_iter_max, &
-                        deflate_roots=deflate_roots, &
-                        ivp_solver=ivp_solver, &
-                        r_root_solver=r_root_solver, &
-                        c_root_solver=c_root_solver, &
-                        matrix_type=matrix_type, &
-                        tag_list=tag_list)
+                         deflate_roots=deflate_roots, &
+                         restrict_roots=restrict_roots, &
+                         ivp_solver=ivp_solver, &
+                         r_root_solver=r_root_solver, &
+                         c_root_solver=c_root_solver, &
+                         matrix_type=matrix_type, &
+                         tag_list=tag_list)
 
     end do read_loop
 
@@ -161,6 +165,7 @@ contains
     call bcast(np%n_iter_max, root_rank)
 
     call bcast(np%deflate_roots, root_rank)
+    call bcast(np%restrict_roots, root_rank)
  
     call bcast(np%ivp_solver, root_rank)
 
