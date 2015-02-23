@@ -1,5 +1,5 @@
 ! Module   : gyre_cimplex
-! Purpose  : complex root finding using downhill simplex minimization
+! Purpose  : complex discriminant function root finding using downhill simplex minimization
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -23,8 +23,9 @@ module gyre_cimplex
 
   use core_kinds
 
+  use gyre_discfunc
   use gyre_ext
-  use gyre_extfunc
+  use gyre_status
 
   use ISO_FORTRAN_ENV
 
@@ -36,10 +37,10 @@ module gyre_cimplex
 
   type :: cimplex_t
      private
-     type(c_ext_t)                   :: cx(3)
-     type(c_ext_t)                   :: f_cx(3)
-     integer                         :: i(3)
-     class(c_extfunc_t), allocatable :: cf
+     type(c_ext_t)                    :: cx(3)
+     type(c_ext_t)                    :: f_cx(3)
+     integer                          :: i(3)
+     class(c_discfunc_t), allocatable :: df
    contains
      private
      procedure         :: set_indices => set_indices_
@@ -67,14 +68,14 @@ module gyre_cimplex
 
 contains
 
-  function cimplex_t_ (cf) result (cm)
+  function cimplex_t_ (df) result (cm)
 
-    class(c_extfunc_t), intent(in) :: cf
-    type(cimplex_t)                :: cm
+    class(c_discfunc_t), intent(in) :: df
+    type(cimplex_t)                 :: cm
        
     ! Construct the cimplex_t
 
-    allocate(cm%cf, SOURCE=cf)
+    allocate(cm%df, SOURCE=df)
 
     ! Finish
 
@@ -84,31 +85,24 @@ contains
 
 !****
 
-  function cimplex_t_verts_ (cf, cx, f_cx) result (cm)
+  function cimplex_t_verts_ (df, cx, f_cx) result (cm)
 
-    class(c_extfunc_t), intent(in)       :: cf
-    class(c_ext_t), intent(in)           :: cx(:)
-    class(c_ext_t), optional, intent(in) :: f_cx(:)
-    type(cimplex_t)                      :: cm
+    class(c_discfunc_t), intent(in) :: df
+    class(c_ext_t), intent(in)      :: cx(:)
+    class(c_ext_t), intent(in)      :: f_cx(:)
+    type(cimplex_t)                 :: cm
        
     $CHECK_BOUNDS(SIZE(cx),3)
     $CHECK_BOUNDS(SIZE(f_cx),3)
 
     ! Construct the cimplex_t
 
-    cm = cimplex_t(cf)
+    cm = cimplex_t(df)
 
     ! Set up the starting vertices
 
     cm%cx = cx
-
-    if (PRESENT(f_cx)) then
-       cm%f_cx = f_cx
-    else
-       cm%f_cx(1) = cm%cf%eval(cx(1))
-       cm%f_cx(2) = cm%cf%eval(cx(2))
-       cm%f_cx(3) = cm%cf%eval(cx(3))
-    end if
+    cm%f_cx = f_cx
 
     call cm%set_indices()
 
@@ -198,11 +192,12 @@ contains
 
 !****
 
-  subroutine refine_ (cm, cx_tol, n_iter, relative_tol)
+  subroutine refine_ (cm, cx_tol, status, n_iter, relative_tol)
 
     type(cimplex_t), intent(inout)   :: cm
     type(r_ext_t), intent(in)        :: cx_tol
-    integer, optional, intent(inout) :: n_iter
+    integer, intent(out)             :: status
+    integer, optional, intent(in)    :: n_iter
     logical, optional, intent(in)    :: relative_tol
 
     logical, parameter  :: VERBOSE = .FALSE.
@@ -239,7 +234,10 @@ contains
        i_iter = i_iter + 1
 
        if (PRESENT(n_iter)) then
-          if (i_iter > n_iter) exit iterate_loop
+          if (i_iter > n_iter) then
+             status = STATUS_ITER
+             return
+          end if
        end if
 
        ! Check for convergence (equal minima)
@@ -251,25 +249,35 @@ contains
 
        ! Reflect
 
-       cm_new = ooze_(cm, -1._WP, cm%i(3))
+       cm_new = cm
+
+       call ooze_(cm_new, -1._WP, cm%i(3), status)
+       if (status /= STATUS_OK) return
 
        if (cm_new%i(1) == cm%i(3)) then
 
           ! Expand
 
-          cm_new = ooze_(cm_new, 2._WP, cm%i(3))
+          call ooze_(cm_new, 2._WP, cm%i(3), status)
+          if (status /= STATUS_OK) return
 
        elseif (cm_new%i(3) == cm%i(3)) then
 
           ! Contract
 
-          cm_new = ooze_(cm, 0.5_WP, cm%i(3))
+          cm_new = cm
+
+          call ooze_(cm_new, 0.5_WP, cm%i(3), status)
+          if (status /= STATUS_OK) return
 
           if (cm_new%i(3) == cm%i(3)) then
 
              ! Reduce
 
-             cm_new = shrink_(cm, 0.5_WP, cm%i(1))
+             cm_new = cm
+
+             call shrink_(cm_new, 0.5_WP, cm%i(1), status)
+             if (status /= STATUS_OK) return
 
           endif
 
@@ -296,16 +304,14 @@ contains
 
     end do iterate_loop
 
-    if (PRESENT(n_iter)) then
-       n_iter = i_iter
-    endif
-
     if (VERBOSE) then
        write(OUTPUT_UNIT, *) 'Final vertices:'
        do i = 1,3
           write(OUTPUT_UNIT, *) i, cmplx(cm%cx(i)), real(cm%f_cx(i))
        end do
     endif
+
+    status = STATUS_OK
 
     ! Finish
 
@@ -315,12 +321,12 @@ contains
 
 !****
 
-  function ooze_ (cm, scale, i) result (cm_new)
+  subroutine ooze_ (cm, scale, i, status)
 
     type(cimplex_t), intent(inout) :: cm
     real(WP), intent(in)           :: scale
     integer, intent(in)            :: i
-    type(cimplex_t)                :: cm_new
+    integer, intent(out)           :: status
 
     integer       :: j
     type(c_ext_t) :: cx_cen
@@ -344,55 +350,63 @@ contains
     ! Calculate the new vertex position & value
 
     cx_new = cx_cen + scale*(cm%cx(i) - cx_cen)
-    f_cx_new = cm%cf%eval(cx_new)
+
+    call cm%df%eval(cx_new, f_cx_new, status)
+    if (status /= STATUS_OK) return
 
     ! Accept or reject the new position
 
-    cm_new = cm
-
     if (ABS(f_cx_new) < ABS(cm%f_cx(i))) then
 
-       cm_new%cx(i) = cx_new
-       cm_new%f_cx(i) = f_cx_new
+       cm%cx(i) = cx_new
+       cm%f_cx(i) = f_cx_new
 
-       call cm_new%set_indices()
+       call cm%set_indices()
 
     endif
+
+    status = STATUS_OK
 
     ! Finish
 
     return
 
-  end function ooze_
+  end subroutine ooze_
 
 !****
 
-  function shrink_ (cm, scale, i) result (cm_new)
+  subroutine shrink_ (cm, scale, i, status)
 
-    type(cimplex_t), intent(in) :: cm
-    real(WP), intent(in)        :: scale
-    integer, intent(in)         :: i
-    type(cimplex_t)             :: cm_new
+    type(cimplex_t), intent(inout) :: cm
+    real(WP), intent(in)           :: scale
+    integer, intent(in)            :: i
+    integer, intent(out)           :: status
 
     integer :: j
 
     ! Shrink the cimplex by scale, keeping vertex i fixed
 
-    cm_new = cm
-
     do j = 1,3
+
        if (j /= i) then
-          cm_new%cx(j) = cm%cx(i) + scale*(cm%cx(j) - cm%cx(i))
-          cm_new%f_cx(j) = cm_new%cf%eval(cm_new%cx(j))
+
+          cm%cx(j) = cm%cx(i) + scale*(cm%cx(j) - cm%cx(i))
+
+          call cm%df%eval(cm%cx(j), cm%f_cx(j), status)
+          if (status /= STATUS_OK) return
+
        endif
+
     end do
 
-    call cm_new%set_indices()
+    call cm%set_indices()
+
+    status = STATUS_OK
     
     ! Finish
 
     return
 
-  end function shrink_
+  end subroutine shrink_
 
 end module gyre_cimplex
