@@ -50,6 +50,8 @@ check_output ()
     local file_b=$4
     local errtype=$5
 
+    # If file_b isn't set, use an arch-dependent default
+
     if [ ! -e "$file_b" ]; then
 
         local arch=$(get_arch)
@@ -62,6 +64,8 @@ check_output ()
 
     fi
 
+    # Check for the existence of the files
+
     if [ ! -e "$file_a" ]; then
 	echo " ...failed: $file_a is missing"
 	return 1
@@ -72,6 +76,8 @@ check_output ()
 	return 1
     fi
 
+    # Check that the files have the same length
+
     len_a=`cat $file_a | wc -l`
     len_b=`cat $file_b | wc -l`
 
@@ -79,6 +85,8 @@ check_output ()
 	echo " ...failed: $file_a and $file_b differ in length"
 	return 1
     fi
+
+    # Set up ndiff flags
 
     local ndiff_flags="-quiet -fields $fields"
 
@@ -98,11 +106,28 @@ check_output ()
 
     fi
 
-    ndiff $ndiff_flags $file_a $file_b
+    # Strip off file headers
+ 
+    file_a_tmp=$file_a.tmp
+    file_b_tmp=$file_b.tmp
+
+    tail -n +7 $file_a > $file_a_tmp
+    tail -n +7 $file_b > $file_b_tmp
+
+    # Do the test
+
+    ndiff $ndiff_flags $file_a_tmp $file_b_tmp
 
     if [ $retval -ne 0 ]; then
 	echo " ...failed: $file_a and $file_b differ in fields $fields"
     fi
+
+    # Clean up
+
+    rm -f $file_a_tmp
+    rm -f $file_b_tmp
+
+    # Return
 
     return $retval
 
