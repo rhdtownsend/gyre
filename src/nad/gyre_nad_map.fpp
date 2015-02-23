@@ -43,6 +43,7 @@ program gyre_nad_map
   use gyre_osc_par
   use gyre_scan_par
   use gyre_search
+  use gyre_status
   use gyre_trad
   use gyre_util
   use gyre_version
@@ -72,6 +73,8 @@ program gyre_nad_map
   real(WP)                      :: x_o
   real(WP), allocatable         :: omega_re(:)
   real(WP), allocatable         :: omega_im(:)
+  real(WP)                      :: omega_min
+  real(WP)                      :: omega_max
   real(WP), allocatable         :: x_sh(:)
   class(c_bvp_t), allocatable   :: nad_bp
   integer                       :: n_omega_re
@@ -86,6 +89,7 @@ program gyre_nad_map
   $endif
   complex(WP)                   :: omega
   type(c_ext_t)                 :: discrim
+  integer                       :: status
   character(FILENAME_LEN)       :: map_filename
   integer                       :: i_percent
   integer                       :: n_percent
@@ -175,13 +179,16 @@ program gyre_nad_map
   call build_scan(sp_re, ml, mp(1), op(1), x_i, x_o, omega_re)
   call build_scan(sp_im, ml, mp(1), op(1), x_i, x_o, omega_im)
 
+  omega_min = MINVAL(omega_re)
+  omega_max = MAXVAL(omega_re)
+
   ! Set up the shooting grid
 
   call build_grid(shoot_gp, ml, mp(1), op(1), omega_re, x_ml, x_sh, verbose=.TRUE.)
 
   ! Set up the bvp
 
-  allocate(nad_bp, SOURCE=nad_bvp_t(x_sh, ml, mp(1), op(1), np(1)))
+  allocate(nad_bp, SOURCE=nad_bvp_t(x_sh, ml, mp(1), op(1), np(1), omega_min, omega_max))
 
   ! Map the discriminant
 
@@ -211,7 +218,8 @@ program gyre_nad_map
         end if
      endif
      
-     discrim = nad_bp%discrim(omega)
+     call nad_bp%eval_discrim(omega, discrim, status)
+     $ASSERT(status == STATUS_OK,Invalid status)
 
      discrim_map_f(i(1),i(2)) = FRACTION(discrim)
      discrim_map_e(i(1),i(2)) = EXPONENT(discrim)
