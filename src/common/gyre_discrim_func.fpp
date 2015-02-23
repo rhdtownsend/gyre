@@ -1,5 +1,5 @@
-! Module   : gyre_discfunc
-! Purpose  : discriminant root finding
+! Module   : gyre_discrim_func
+! Purpose  : discriminant function
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -15,11 +15,11 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_discfunc
+module gyre_discrim_func
 
   ! Uses
 
-  use gyre_r_discfunc
-  use gyre_c_discfunc
+  use gyre_r_discrim_func
+  use gyre_c_discrim_func
 
-end module gyre_discfunc
+end module gyre_discrim_func

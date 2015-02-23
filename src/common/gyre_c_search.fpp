@@ -27,7 +27,7 @@ module gyre_c_search
   use core_parallel
 
   use gyre_bvp
-  use gyre_discfunc
+  use gyre_discrim_func
   use gyre_ext
   use gyre_mode
   use gyre_mode_par
@@ -69,7 +69,7 @@ contains
        end subroutine process_root
     end interface
     
-    type(c_discfunc_t)       :: df
+    type(c_discrim_func_t)   :: df
     complex(WP), allocatable :: omega_def(:)
     integer                  :: c_beg
     integer                  :: c_end
@@ -90,7 +90,7 @@ contains
 
     ! Set up the discriminant function
 
-    df = c_discfunc_t(bp)
+    df = c_discrim_func_t(bp)
 
     ! Initialize the frequency deflation array
 

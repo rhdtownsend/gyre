@@ -28,7 +28,7 @@ module gyre_r_search
 
   use gyre_bvp
   use gyre_constants
-  use gyre_discfunc
+  use gyre_discrim_func
   use gyre_ext
   use gyre_freq
   use gyre_mode
@@ -185,7 +185,7 @@ contains
        end subroutine process_root
     end interface
 
-    type(r_discfunc_t)         :: df
+    type(r_discrim_func_t)     :: df
     real(WP), allocatable      :: omega_a(:)
     real(WP), allocatable      :: omega_b(:)
     type(r_ext_t), allocatable :: discrim_a(:)
@@ -200,7 +200,7 @@ contains
 
     ! Set up the discriminant function
 
-    df = r_discfunc_t(bp)
+    df = r_discrim_func_t(bp)
 
     ! Find discriminant root brackets
 
@@ -289,7 +289,7 @@ contains
 
   subroutine find_root_brackets (df, omega, omega_a, omega_b, discrim_a, discrim_b)
 
-    type(r_discfunc_t), intent(inout)       :: df
+    type(r_discrim_func_t), intent(inout)   :: df
     real(WP), intent(in)                    :: omega(:)
     real(WP), allocatable, intent(out)      :: omega_a(:)
     real(WP), allocatable, intent(out)      :: omega_b(:)
@@ -448,7 +448,7 @@ contains
 
 !   subroutine find_min_brackets (df, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
 
-!     type(discfunc_t), intent(inout)            :: df
+!     type(discrim_func_t), intent(inout)        :: df
 !     real(WP), intent(in)                       :: omega(:)
 !     real(WP), allocatable, intent(out)         :: omega_a(:)
 !     real(WP), allocatable, intent(out)         :: omega_b(:)
