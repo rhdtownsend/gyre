@@ -33,9 +33,11 @@ module gyre_${T}_discfunc
   use gyre_bvp
   use gyre_ext
   use gyre_extfunc
+  use gyre_status
 
   ! This should not be needed, but it solves unresolved symbol issues
   ! with gfortran
+
   use gyre_mode
 
   use ISO_FORTRAN_ENV
@@ -46,7 +48,7 @@ module gyre_${T}_discfunc
 
   ! Derived-type definitions
 
-  type, extends (${T}_extfunc_t) :: ${T}_discfunc_t
+  type :: ${T}_discfunc_t
      private
      class(${T}_bvp_t), pointer     :: bp
      $TYPE(WP), allocatable, public :: omega_def(:)
@@ -88,11 +90,12 @@ contains
 
 !****
 
-  function eval_ (this, $VAR) result (f_$VAR)
+  subroutine eval_ (this, $VAR, f_$VAR, status)
 
     class(${T}_discfunc_t), intent(inout) :: this
     type(${T}_ext_t), intent(in)          :: $VAR
-    type(${T}_ext_t)                      :: f_$VAR
+    type(${T}_ext_t), intent(out)         :: f_$VAR
+    integer, intent(out)                  :: status
 
     $TYPE(WP) :: omega
 
@@ -106,17 +109,20 @@ contains
     $stop 'Invalid $T'
     $endif
 
-    f_$VAR = this%bp%discrim(omega)
+    call this%bp%eval_discrim(omega, f_$VAR, status)
+    if (status /= STATUS_OK) return
 
     if (ALLOCATED(this%omega_def)) then
        f_$VAR = f_$VAR*PRODUCT(omega/(omega - this%omega_def))
     endif
     
+    status = STATUS_OK
+
     ! Finish
 
     return
 
-  end function eval_
+  end subroutine eval_
 
 end module gyre_${T}_discfunc
 
