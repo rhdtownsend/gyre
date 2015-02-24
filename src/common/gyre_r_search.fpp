@@ -269,11 +269,11 @@ contains
       if (check_log_level('INFO')) then
 
          write(OUTPUT_UNIT, 110) 'n_iter  :', n_iter
-110      format(3X,A,I0)
+110      format(3X,A,1X,I0)
 
          write(OUTPUT_UNIT, 120) 'omega_a :', omega_a(i)
          write(OUTPUT_UNIT, 120) 'omega_b :', omega_b(i)
-120      format(3X,A,E24.16)
+120      format(3X,A,1X,E24.16)
 
       end if
 
