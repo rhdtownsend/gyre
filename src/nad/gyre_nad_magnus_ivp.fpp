@@ -94,7 +94,6 @@ contains
     type(c_ext_t), intent(out)          :: S
 
     logical, parameter :: RESCALE_EIGEN = .TRUE.
-!    logical, parameter :: RESCALE_EIGEN = .FALSE.
 
     real(WP)    :: x
     complex(WP) :: A(this%n_e,this%n_e)
