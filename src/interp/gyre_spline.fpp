@@ -339,7 +339,7 @@ contains
 
     call bcast(sp%n, root_rank)
 
-    call bcast_alloc(sp%x, root_rank)
+    call bcast_alloc(sp%x_, root_rank)
     call bcast_alloc(sp%f_, root_rank)
     call bcast_alloc(sp%df_dx_, root_rank)
 

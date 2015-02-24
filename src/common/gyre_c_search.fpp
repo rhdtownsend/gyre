@@ -243,11 +243,11 @@ contains
 
          write(OUTPUT_UNIT, 110) 'n_iter_def :', n_iter_def
          write(OUTPUT_UNIT, 110) 'n_iter     :', n_iter
-110      format(3X,A,I0)
+110      format(3X,A,1X,I0)
 
          write(OUTPUT_UNIT, 120) 'omega_a    :', cmplx(omega_a)
          write(OUTPUT_UNIT, 120) 'omega_b    :', cmplx(omega_b)
-120      format(3X,A,2E24.16)
+120      format(3X,A,1X,2E24.16)
 
       end if
 
