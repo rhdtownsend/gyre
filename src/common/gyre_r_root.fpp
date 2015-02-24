@@ -326,7 +326,7 @@ contains
        endif
 
        call rf%eval(b, f_b, status)
-       if (status /= STATUS_OK) return
+       if (status /= STATUS_OK) exit iterate_loop
        
     end do iterate_loop
 
@@ -414,14 +414,14 @@ contains
           rx_a = rx_a + EXPAND_FACTOR*(rx_a - rx_b)
 
           call rf%eval(rx_a, f_a, status)
-          if (status /= STATUS_OK) return
+          if (status /= STATUS_OK) exit expand_loop
 
        else
 
           rx_b = rx_b + EXPAND_FACTOR*(rx_b - rx_a)
 
           call rf%eval(rx_b, f_b, status)
-          if (status /= STATUS_OK) return
+          if (status /= STATUS_OK) exit expand_loop
 
        endif
 

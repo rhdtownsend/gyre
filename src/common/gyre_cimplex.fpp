@@ -255,14 +255,14 @@ contains
        cm_new = cm
 
        call ooze_(cm_new, -1._WP, cm%i(3), status)
-       if (status /= STATUS_OK) return
+       if (status /= STATUS_OK) exit iterate_loop
 
        if (cm_new%i(1) == cm%i(3)) then
 
           ! Expand
 
           call ooze_(cm_new, 2._WP, cm%i(3), status)
-          if (status /= STATUS_OK) return
+          if (status /= STATUS_OK) exit iterate_loop
 
        elseif (cm_new%i(3) == cm%i(3)) then
 
@@ -271,7 +271,7 @@ contains
           cm_new = cm
 
           call ooze_(cm_new, 0.5_WP, cm%i(3), status)
-          if (status /= STATUS_OK) return
+          if (status /= STATUS_OK) exit iterate_loop
 
           if (cm_new%i(3) == cm%i(3)) then
 
@@ -280,7 +280,7 @@ contains
              cm_new = cm
 
              call shrink_(cm_new, 0.5_WP, cm%i(1), status)
-             if (status /= STATUS_OK) return
+             if (status /= STATUS_OK) exit iterate_loop
 
           endif
 

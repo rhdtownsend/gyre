@@ -251,7 +251,7 @@ contains
 
        b = b - f_dz/rho
        call cf%eval(b, f_b, status)
-       if (status /= STATUS_OK) return
+       if (status /= STATUS_OK) exit iterate_loop
 
        ! Check for convergence
 
@@ -378,7 +378,7 @@ contains
        c =  0.5_WP*(a + b)
 
        call cf%eval(c, f_c, status)
-       if (status /= STATUS_OK) return
+       if (status /= STATUS_OK) exit iterate_loop
 
        ! Solve for the re-scaling exponential
 
@@ -410,7 +410,7 @@ contains
 
        b = b - f_dz/rho
        call cf%eval(b, f_b, status)
-       if (status /= STATUS_OK) return
+       if (status /= STATUS_OK) exit iterate_loop
 
        ! Check for convergence
 
@@ -495,7 +495,6 @@ contains
     ! Refine it
 
     call refine(cm, cx_tol, status, n_iter, n_iter_max, relative_tol)
-    if (status /= STATUS_OK) return
 
     ! Store the results
 
@@ -593,11 +592,11 @@ contains
        if (move_a) then
           cx_a = cx_a + EXPAND_FACTOR*(cx_a - cx_b)
           call cf%eval(cx_a, f_a, status)
-          if (status /= STATUS_OK) return
+          if (status /= STATUS_OK) exit expand_loop
        else
           cx_b = cx_b + EXPAND_FACTOR*(cx_b - cx_a)
           call cf%eval(cx_b, f_b, status)
-          if (status /= STATUS_OK) return
+          if (status /= STATUS_OK) exit expand_loop
        endif
 
     end do expand_loop
