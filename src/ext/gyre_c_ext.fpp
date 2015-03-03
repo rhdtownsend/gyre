@@ -99,6 +99,14 @@ module gyre_c_ext
      module procedure conjg_
   end interface conjg
 
+  interface real_part
+     module procedure real_part_
+  end interface real_part
+
+  interface imag_part
+     module procedure imag_part_
+  end interface imag_part
+
   interface product
      module procedure product_
   end interface product
@@ -195,6 +203,8 @@ module gyre_c_ext
   public :: r_ext_t
   public :: real
   public :: cmplx
+  public :: real_part
+  public :: imag_part
   public :: valid
   public :: conjg
   public :: product
@@ -693,6 +703,40 @@ contains
     return
 
   end function cmplx_
+
+!****
+
+  elemental function real_part_ (cx) result (rx)
+
+    type(c_ext_t), intent(in) :: cx
+    type(r_ext_t)             :: rx
+   
+    ! Extract the real part of cx
+
+    rx = scale(r_ext_t(REAL(cx%f)), cx%e)
+
+    ! Finish
+
+    return
+
+  end function real_part_
+
+!****
+
+  elemental function imag_part_ (cx) result (rx)
+
+    type(c_ext_t), intent(in) :: cx
+    type(r_ext_t)             :: rx
+   
+    ! Extract the imaginary part of cx
+
+    rx = scale(r_ext_t(AIMAG(cx%f)), cx%e)
+
+    ! Finish
+
+    return
+
+  end function imag_part_
 
 !****
 
