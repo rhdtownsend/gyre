@@ -44,6 +44,8 @@ program gyre_nad_contour
   use gyre_nad_bvp
   use gyre_num_par
   use gyre_osc_par
+  use gyre_out_par
+  use gyre_output
   use gyre_root
   use gyre_scan_par
   use gyre_search
@@ -73,6 +75,7 @@ program gyre_nad_contour
   type(scan_par_t), allocatable    :: sp(:)
   type(scan_par_t), allocatable    :: sp_re(:)
   type(scan_par_t), allocatable    :: sp_im(:)
+  type(out_par_t)                  :: up
   real(WP)                         :: x_i
   real(WP)                         :: x_o
   real(WP), allocatable            :: omega_re(:)
@@ -88,8 +91,13 @@ program gyre_nad_contour
   type(contour_map_t)              :: cm_im
   type(contour_seg_t), allocatable :: is_re(:)
   type(contour_seg_t), allocatable :: is_im(:)
-  character(FILENAME_LEN)          :: map_filename
+  character(FILENAME_LEN)          :: map_file
+  character(FILENAME_LEN)          :: re_seg_file
+  character(FILENAME_LEN)          :: im_seg_file
   type(hgroup_t)                   :: hg
+  integer                          :: n_md_nad
+  integer                          :: d_md_nad
+  type(mode_t), allocatable        :: md_nad(:)
 
   ! Initialize
 
@@ -134,7 +142,8 @@ program gyre_nad_contour
      call read_shoot_grid_par(unit, shoot_gp)
      call read_recon_grid_par(unit, recon_gp)
      call read_scan_par(unit, sp)
-     call read_out_par(unit, map_filename)
+     call read_out_par(unit, up)
+     call read_map_par(unit, map_file, re_seg_file, im_seg_file)
 
   endif
 
@@ -190,39 +199,57 @@ program gyre_nad_contour
 
   call eval_map(nad_bp, omega_re, omega_im, discrim_map)
 
-  ! Create the contour maps
-
-  cm_re = contour_map_t(r_ext_t(omega_re), r_ext_t(omega_im), real_part(discrim_map))
-  cm_im = contour_map_t(r_ext_t(omega_re), r_ext_t(omega_im), imag_part(discrim_map))
-
-  ! Search for contour intersections
-
-  call find_isects(cm_re, cm_im, is_re, is_im)
-
-  ! Find roots
-
-  call find_roots(nad_bp, mp(1), np(1), op(1), is_re, is_im)
-
-  ! Write out the segments
-
-  if (MPI_RANK == 0) then
-     call write_segs(cm_re, 'cm_re.segs')
-     call write_segs(cm_im, 'cm_im.segs')
-  endif
-
-  ! Write out the map
+  ! (Next steps are root rank only)
 
   if (MPI_RANK == 0) then
 
-     hg = hgroup_t(map_filename, CREATE_FILE)
+     ! Write out the contour map
 
-     call write_dset(hg, 'omega_re', omega_re)
-     call write_dset(hg, 'omega_im', omega_im)
+     if (map_file /= '') then
 
-     call write_dset(hg, 'discrim_map_f', FRACTION(discrim_map))
-     call write_dset(hg, 'discrim_map_e', EXPONENT(discrim_map))
+        hg = hgroup_t(map_file, CREATE_FILE)
 
-     call hg%final()
+        call write_dset(hg, 'omega_re', omega_re)
+        call write_dset(hg, 'omega_im', omega_im)
+
+        call write_dset(hg, 'discrim_map_f', FRACTION(discrim_map))
+        call write_dset(hg, 'discrim_map_e', EXPONENT(discrim_map))
+
+        call hg%final()
+
+     endif
+
+     ! Create the contour maps
+
+     cm_re = contour_map_t(r_ext_t(omega_re), r_ext_t(omega_im), real_part(discrim_map))
+     cm_im = contour_map_t(r_ext_t(omega_re), r_ext_t(omega_im), imag_part(discrim_map))
+     
+     ! Write out the segments
+
+     if (re_seg_file /= '') then
+        call write_segs(cm_re, re_seg_file)
+     endif
+
+     if (im_seg_file /= '') then
+        call write_segs(cm_im, im_seg_file)
+     endif
+
+     ! Search for contour intersections
+
+     call find_isects(cm_re, cm_im, is_re, is_im)
+
+     ! Find roots
+
+     d_md_nad = 128
+     n_md_nad = 0
+
+     allocate(md_nad(d_md_nad))
+
+     call find_roots(nad_bp, mp(1), np(1), op(1), is_re, is_im, process_root_nad)
+
+     ! Write the summary file
+
+     call write_summary(up, md_nad(:n_md_nad))
 
   end if
 
@@ -232,24 +259,26 @@ program gyre_nad_contour
 
 contains
 
-  subroutine read_out_par (unit, map_file)
+  subroutine read_map_par (unit, map_file, re_seg_file, im_seg_file)
 
     integer, intent(in)       :: unit
     character(*), intent(out) :: map_file
+    character(*), intent(out) :: re_seg_file
+    character(*), intent(out) :: im_seg_file
 
-    namelist /output/ map_file
+    namelist /map/ map_file, re_seg_file, im_seg_file
 
-    ! Read output parameters
+    ! Read map parameters
 
     rewind(unit)
 
-    read(unit, NML=output)
+    read(unit, NML=map)
 
     ! Finish
     
     return
 
-  end subroutine read_out_par
+  end subroutine read_map_par
 
 !****
 
@@ -413,7 +442,7 @@ contains
 
 !****
 
-  subroutine find_roots (bp, mp, np, op, is_re, is_im)
+  subroutine find_roots (bp, mp, np, op, is_re, is_im, process_root)
 
     class(c_bvp_t), target, intent(inout)        :: bp
     type(mode_par_t), intent(in)                 :: mp
@@ -421,6 +450,15 @@ contains
     type(osc_par_t), intent(in)                  :: op
     type(contour_seg_t), allocatable, intent(in) :: is_re(:)
     type(contour_seg_t), allocatable, intent(in) :: is_im(:)
+    interface
+       subroutine process_root (omega, n_iter, discrim_ref)
+         use core_kinds
+         use gyre_ext
+         complex(WP), intent(in)   :: omega
+         integer, intent(in)       :: n_iter
+         type(r_ext_t), intent(in) :: discrim_ref
+       end subroutine process_root
+    end interface
 
     type(c_discrim_func_t) :: df
     integer                :: j
@@ -462,9 +500,84 @@ contains
 
        print *,'Root found:',cmplx(omega_root)
 
+       call process_root(cmplx(omega_root), n_iter, max(abs(discrim_a), abs(discrim_b)))
+
     end do intseg_loop
 
+    ! Finish
+
+    return
+
   end subroutine find_roots
+
+!****
+
+  subroutine process_root_nad (omega, n_iter, discrim_ref)
+
+    complex(WP), intent(in)   :: omega
+    integer, intent(in)       :: n_iter
+    type(r_ext_t), intent(in) :: discrim_ref
+
+    real(WP), allocatable    :: x_rc(:)
+    integer                  :: n
+    real(WP)                 :: x_ref
+    complex(WP), allocatable :: y(:,:)
+    complex(WP)              :: y_ref(6)
+    type(c_ext_t)            :: discrim
+    type(mode_t)             :: md_new
+
+    ! Build the reconstruction grid
+
+    call build_grid(recon_gp, ml, mp(1), op(1), [REAL(omega)], x_sh, x_rc, verbose=.FALSE.)
+
+    ! Reconstruct the solution
+
+    x_ref = MIN(MAX(op(1)%x_ref, x_sh(1)), x_sh(SIZE(x_sh)))
+
+    n = SIZE(x_rc)
+
+    allocate(y(6,n))
+
+    call nad_bp%recon(omega, x_rc, x_ref, y, y_ref, discrim)
+
+    ! Create the mode
+
+    md_new = mode_t(ml, mp(1), op(1), omega, discrim, &
+                    x_rc, y, x_ref, y_ref)
+
+    md_new%n_iter = n_iter
+    md_new%chi = ABS(discrim)/ABS(discrim_ref)
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) md_new%mp%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
+            md_new%omega, real(md_new%chi), md_new%n_iter, md_new%n
+120    format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
+    endif
+
+    ! Store it
+
+    n_md_nad = n_md_nad + 1
+
+    if (n_md_nad > d_md_nad) then
+       d_md_nad = 2*d_md_nad
+       call reallocate(md_nad, [d_md_nad])
+    endif
+
+    md_nad(n_md_nad) = md_new
+
+    ! Write it
+
+    call write_mode(up, md_nad(n_md_nad), n_md_nad)
+
+    ! If necessary, prune it
+
+    if (up%prune_modes) call md_nad(n_md_nad)%prune()
+
+    ! Finish
+
+    return
+
+  end subroutine process_root_nad
 
 !****
 
