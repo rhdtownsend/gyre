@@ -45,11 +45,12 @@ module gyre_famdl_file
 
 contains
 
-  subroutine read_famdl_model (file, deriv_type, data_format, ml, x)
+  subroutine read_famdl_model (file, deriv_type, data_format, add_center, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
     character(*), intent(in)                     :: data_format
+    logical, intent(in)                          :: add_center
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
@@ -70,9 +71,9 @@ contains
     real(WP), allocatable     :: Gamma_1(:) 
     real(WP), allocatable     :: As(:) 
     real(WP), allocatable     :: U(:)
-    logical                   :: add_center
+    logical                   :: has_center
 
-    if(data_format /= '') then
+    if (data_format /= '') then
        data_format_ = data_format
     else
        data_format_ = '(1P4E20.13)'
@@ -80,7 +81,7 @@ contains
 
     ! Read the model from the formatted AMDL-format file
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from FAMDL file', TRIM(file)
 100    format(A,1X,A)
     endif
@@ -92,7 +93,7 @@ contains
     read(unit, 110) nmod, n, ivar
 110 format(3I10)
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 120) 'Initial points :', n
 120    format(3X,A,1X,I0)
     endif
@@ -133,22 +134,28 @@ contains
     As = var(5,:)
     U = var(6,:)
 
-    add_center = x_(1) /= 0._WP
+    has_center = x_(1) == 0._WP
 
     if (check_log_level('INFO')) then
-       if (add_center) write(OUTPUT_UNIT, 140) 'Adding central point'
-140    format(3X,A)
+       if (add_center) then
+          if (has_center) then
+             write(OUTPUT_UNIT, 140) 'No need to add central point'
+140          format(3X,A)
+          else
+             write(OUTPUT_UNIT, 140) 'Adding central point'
+          endif
+       endif
     endif
 
     ! Initialize the model
 
     ml = evol_model_t(M_star, R_star, L_star, x_, V_g*Gamma_1, As, U, c_1, Gamma_1, &
-                      deriv_type, add_center=add_center)
+                      deriv_type, add_center=add_center .AND. .NOT. has_center)
 
     ! Set up the grid
 
-    if(PRESENT(x)) then
-       if(add_center) then
+    if (PRESENT(x)) then
+       if (add_center .AND. .NOT. has_center) then
           x = [0._WP,x_]
        else
           x = x_

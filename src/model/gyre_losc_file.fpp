@@ -45,10 +45,11 @@ module gyre_losc_file
 
 contains
 
-  subroutine read_losc_model (file, deriv_type, ml, x)
+  subroutine read_losc_model (file, deriv_type, add_center, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
+    logical, intent(in)                          :: add_center
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
 
@@ -69,7 +70,7 @@ contains
     real(WP), allocatable     :: Gamma_1(:) 
     real(WP), allocatable     :: As(:) 
     real(WP), allocatable     :: U(:)
-    logical                   :: add_center
+    logical                   :: has_center
 
     ! Read data from the LOSC-format file
 
@@ -96,7 +97,7 @@ contains
     read(unit, *)
     read(unit, *) n
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 110) 'Initial points :', n
 110    format(3X,A,1X,I0)
     endif
@@ -140,22 +141,28 @@ contains
     Gamma_1 = var(5,:)
     As = -var(6,:)*var(1,:)**2
 
-    add_center = x_(1) /= 0._WP
+    has_center = x_(1) == 0._WP
 
     if (check_log_level('INFO')) then
-       if (add_center) write(OUTPUT_UNIT, 130) 'Adding central point'
-130    format(3X,A)
+       if (add_center) then
+          if (has_center) then
+             write(OUTPUT_UNIT, 130) 'No need to add central point'
+130          format(3X,A)
+          else
+             write(OUTPUT_UNIT, 130) 'Adding central point'
+          endif
+       endif
     endif
 
     ! Initialize the model
 
     ml = evol_model_t(M_star, R_star, L_star, x_, V, As, U, c_1, Gamma_1, &
-                      deriv_type, add_center=add_center)
+                      deriv_type, add_center=add_center .AND. .NOT. has_center)
 
     ! Set up the grid
 
-    if(PRESENT(x)) then
-       if(add_center) then
+    if (PRESENT(x)) then
+       if (add_center .AND. .NOT. has_center) then
           x = [0._WP,x_]
        else
           x = x_
