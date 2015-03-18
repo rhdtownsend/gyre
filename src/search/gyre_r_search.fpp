@@ -95,7 +95,7 @@ contains
 
     sp_loop : do i = 1,SIZE(sp)
 
-       ! Calculate the dimensionless frequency range in inertial frame
+       ! Calculate the dimensionless frequency range in the inertial frame
 
        select case (sp(i)%freq_units)
        case ('MIXED_DELTA')
@@ -106,57 +106,63 @@ contains
           omega_max = omega_from_freq(sp(i)%freq_max, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
        end select
 
-       ! Calculate the frequency range in the grid frame
+       ! Check that the range is valid
 
-       freq_g_min = freq_from_omega(omega_min, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
-       freq_g_max = freq_from_omega(omega_max, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
+       if (omega_max > omega_min) then
 
-       ! Set up the frequencies
+          ! Calculate the frequency range in the grid frame
 
-       allocate(freq_g(sp(i)%n_freq))
+          freq_g_min = freq_from_omega(omega_min, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
+          freq_g_max = freq_from_omega(omega_max, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
 
-       do j = 1, sp(i)%n_freq
+          ! Set up the frequencies
 
-          select case(sp(i)%grid_type)
-          case('LINEAR')
-             freq_g(j) = ((sp(i)%n_freq-j)*freq_g_min + (j-1)*freq_g_max)/(sp(i)%n_freq-1)
-          case('INVERSE')
-             freq_g(j) = (sp(i)%n_freq-1)/((sp(i)%n_freq-j)/freq_g_min + (j-1)/freq_g_max)
-          case default
-             $ABORT(Invalid grid_type)
-          end select
+          allocate(freq_g(sp(i)%n_freq))
 
-       end do
+          do j = 1, sp(i)%n_freq
+             
+             select case(sp(i)%grid_type)
+             case('LINEAR')
+                freq_g(j) = ((sp(i)%n_freq-j)*freq_g_min + (j-1)*freq_g_max)/(sp(i)%n_freq-1)
+             case('INVERSE')
+                freq_g(j) = (sp(i)%n_freq-1)/((sp(i)%n_freq-j)/freq_g_min + (j-1)/freq_g_max)
+             case default
+                $ABORT(Invalid grid_type)
+             end select
+             
+          end do
 
-       ! Store them
+          ! Store them
 
-       call reallocate(omega, [n_omega+sp(i)%n_freq])
+          call reallocate(omega, [n_omega+sp(i)%n_freq])
 
-       do j = 1, sp(i)%n_freq
-          omega(n_omega+j) = omega_from_freq(freq_g(j), ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
-       end do
+          do j = 1, sp(i)%n_freq
+             omega(n_omega+j) = omega_from_freq(freq_g(j), ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
+          end do
+          
+          n_omega = n_omega + sp(i)%n_freq
 
-       n_omega = n_omega + sp(i)%n_freq
+          deallocate(freq_g)
 
-       deallocate(freq_g)
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 110) 'added scan interval : ', omega_min, ' -> ', omega_max, ' (', sp(i)%n_freq, ' points, ', TRIM(sp(i)%grid_type), ')'
+110          format(3X,A,E24.16,A,E24.16,A,I0,A,A,A)
+          endif
+
+       else
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 120) 'ignoring scan interval :', omega_min, ' -> ', omega_max
+120          format(3X,A,E24.16,A,E24.16)
+          endif
+
+       endif
 
     end do sp_loop
-
-    $ASSERT(n_omega > 2,At least two frequency points required)
 
     ! Sort the frequencies
 
     omega = omega(sort_indices(omega))
-
-    if (check_log_level('INFO')) then
-
-       write(OUTPUT_UNIT, 110) 'omega points :', n_omega
-110    format(2X,A,1X,I0)
-
-       write(OUTPUT_UNIT, 120) 'omega range  :', MINVAL(omega), '->',  MAXVAL(omega)
-120    format(2X,A,1X,E24.16,1X,A,1X,E24.16)
-
-    endif
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, *)
