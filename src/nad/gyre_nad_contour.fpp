@@ -164,6 +164,7 @@ program gyre_nad_contour
   call select_par(sp, 'REAL', sp_re)
   call select_par(sp, 'IMAG', sp_im)
 
+  $ASSERT(SIZE(mp) == 1,No matching mode parameters)
   $ASSERT(SIZE(op) == 1,No matching osc parameters)
   $ASSERT(SIZE(np) == 1,No matching num parameters)
   $ASSERT(SIZE(shoot_gp) >= 1,No matching shoot_grid parameters)
@@ -203,7 +204,7 @@ program gyre_nad_contour
 
   if (MPI_RANK == 0) then
 
-     ! Write out the contour map
+     ! Write out the discriminant map
 
      if (map_file /= '') then
 
@@ -289,29 +290,31 @@ contains
     real(WP), intent(in)                    :: omega_im(:)
     type(c_ext_t), allocatable, intent(out) :: discrim_map(:,:)
 
-    integer              :: n_omega_re
-    integer              :: n_omega_im
-    integer, allocatable :: k_part(:)
-    integer              :: n_percent
-    integer              :: k
-    integer              :: i(2)
-    complex(WP)          :: omega
-    integer              :: i_percent
-    integer              :: status
+    integer                  :: n_omega_re
+    integer                  :: n_omega_im
+    integer, allocatable     :: k_part(:)
+    integer                  :: n_percent
+    integer                  :: k
+    integer                  :: i(2)
+    complex(WP)              :: omega
+    type(c_ext_t)            :: discrim
+    integer                  :: i_percent
+    integer                  :: status
+    complex(WP), allocatable :: discrim_map_f(:,:)
+    integer, allocatable     :: discrim_map_e(:,:)
     $if ($MPI)
-    integer              :: p
+    integer                  :: p
     $endif
 
-    ! Allocate the discriminant map
+    ! Evaluate the discriminant map
 
     n_omega_re = SIZE(omega_re)
     n_omega_im = SIZE(omega_im)
 
-    allocate(discrim_map(n_omega_re,n_omega_im))
+    allocate(discrim_map_f(n_omega_re,n_omega_im))
+    allocate(discrim_map_e(n_omega_re,n_omega_im))
 
     allocate(k_part(MPI_SIZE+1))
-
-    ! Evaluate it
 
     call partition_tasks(n_omega_re*n_omega_im, 1, k_part)
 
@@ -331,8 +334,11 @@ contains
           end if
        endif
      
-       call bp%eval_discrim(omega, discrim_map(i(1),i(2)), status)
+       call bp%eval_discrim(omega, discrim, status)
        $ASSERT(status == STATUS_OK,Invalid status)
+
+       discrim_map_f(i(1),i(2)) = fraction(discrim)
+       discrim_map_e(i(1),i(2)) = exponent(discrim)
 
     end do map_loop
 
@@ -344,6 +350,8 @@ contains
     end do
 
     $endif
+
+    discrim_map = scale(c_ext_t(discrim_map_f), discrim_map_e)
 
     ! Finish
 
@@ -421,8 +429,8 @@ contains
                       ! Lines intersect within the cell; save the
                       ! intersecting segments
 
-                      is_re = [is_re,cs_re]
-                      is_im = [is_im,cs_im]
+                      is_re = [is_re,cs_re(j_re)]
+                      is_im = [is_im,cs_im(j_im)]
 
                    end if
 
@@ -480,25 +488,35 @@ contains
 
     intseg_loop : do j = 1, SIZE(is_re)
 
+       n_iter = 0
+
        ! Set up initial guesses
 
        omega_a = omega_initial(is_re(j), .TRUE.)
        omega_b = omega_initial(is_im(j), .FALSE.)
 
        call df%eval(omega_a, discrim_a, status)
-       $ASSERT(status == STATUS_OK,Invalid status)
+       if (status /= STATUS_OK) then
+          call report_status(status, 'initial guess (a)')
+          cycle intseg_loop
+       endif
 
        call df%eval(omega_b, discrim_b, status)
-       $ASSERT(status == STATUS_OK,Invalid status)
+       if (status /= STATUS_OK) then
+          call report_status(status, 'initial guess (b)')
+          cycle intseg_loop
+       endif
 
        ! Find the discriminant root
 
        call solve(df, np, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
                   n_iter=n_iter, n_iter_max=np%n_iter_max, f_cx_a=discrim_a, f_cx_b=discrim_b)
+       if (status /= STATUS_OK) then
+          call report_status(status, 'solve')
+          cycle intseg_loop
+       endif
 
        ! Process it
-
-       print *,'Root found:',cmplx(omega_root)
 
        call process_root(cmplx(omega_root), n_iter, max(abs(discrim_a), abs(discrim_b)))
 
@@ -509,6 +527,28 @@ contains
     return
 
   end subroutine find_roots
+
+!****
+
+  subroutine report_status (status, stage_str)
+
+    integer, intent(in)      :: status
+    character(*), intent(in) :: stage_str
+
+    ! Report the status
+
+    if (check_log_level('WARN')) then
+
+       write(OUTPUT_UNIT, 100) 'Failed during ', stage_str, ' : ', status_str(status)
+100    format(4A)
+
+    endif
+      
+    ! Finish
+
+    return
+
+  end subroutine report_status
 
 !****
 
