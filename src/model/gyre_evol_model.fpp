@@ -1176,6 +1176,14 @@ contains
     call bcast(ml%M_star, root_rank)
     call bcast(ml%R_star, root_rank)
     call bcast(ml%L_star, root_rank)
+ 
+    call bcast(ml%Omega_uni, root_rank)
+
+    call bcast(ml%delta_p, root_rank)
+    call bcast(ml%delta_g, root_rank)
+
+    call bcast(ml%uniform_rot, root_rank)
+    call bcast(ml%reconstruct_As, root_rank)
 
     if(MPI_RANK /= root_rank) ml%cc => null()
 
