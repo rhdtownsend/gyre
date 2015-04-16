@@ -97,6 +97,8 @@ module gyre_mode
      procedure, public :: lag_T_eff => lag_T_eff_
      procedure, public :: lag_g_eff => lag_g_eff_
      procedure, public :: E => E_
+     procedure, public :: E_p => E_p_
+     procedure, public :: E_g => E_g_
      procedure, public :: E_norm => E_norm_
      procedure, public :: E_ratio => E_ratio_
      procedure, public :: W => W_
@@ -463,6 +465,56 @@ contains
     return
 
   end function E_
+
+!****
+
+  function E_p_ (this) result (E_p)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: E_p
+
+    real(WP) :: dE_dx(this%n)
+    logical  :: mask(this%n)
+    
+    ! Calculate the mode inertia in acoustic-wave propagation regions,
+    ! in units of M_star R_star**2
+
+    dE_dx = this%dE_dx()
+
+    mask = this%prop_type() == 1
+
+    E_p = integrate(this%x, dE_dx, mask)
+    
+    ! Finish
+
+    return
+
+  end function E_p_
+
+!****
+
+  function E_g_ (this) result (E_g)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: E_g
+
+    real(WP) :: dE_dx(this%n)
+    logical  :: mask(this%n)
+    
+    ! Calculate the mode inertia in gravity-wave propagation regions,
+    ! in units of M_star R_star**2
+
+    dE_dx = this%dE_dx()
+
+    mask = this%prop_type() == -1
+
+    E_g = integrate(this%x, dE_dx, mask)
+    
+    ! Finish
+
+    return
+
+  end function E_g_
 
 !****
 
