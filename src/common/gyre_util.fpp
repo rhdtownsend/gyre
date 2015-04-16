@@ -438,21 +438,31 @@ contains
   $local $INFIX $1
   $local $TYPE $2
 
-  function integrate_${INFIX}_ (x, y) result (int_y)
+  function integrate_${INFIX}_ (x, y, mask) result (int_y)
 
-    real(WP), intent(in)  :: x(:)
-    $TYPE(WP), intent(in) :: y(:)
-    $TYPE(WP)             :: int_y
+    real(WP), intent(in)          :: x(:)
+    $TYPE(WP), intent(in)         :: y(:)
+    logical, optional, intent(in) :: mask(:)
+    $TYPE(WP)                     :: int_y
 
     integer :: n
 
     $CHECK_BOUNDS(SIZE(y),SIZE(x))
 
-    ! Integrate y(x) using trapezoidal quadrature
+    if (PRESENT(mask)) then
+       $CHECK_BOUNDS(SIZE(mask),SIZE(x))
+    endif
+
+    ! Integrate y(x) using trapezoidal quadrature, applying the
+    ! optional mask
 
     n = SIZE(x)
 
-    int_y = SUM(0.5_WP*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)))
+    if (PRESENT(mask)) then
+       int_y = SUM(0.5_WP*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)), MASK=mask(2:) .AND. mask(:n-1))
+    else
+       int_y = SUM(0.5_WP*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)))
+    endif
 
     ! Finish
 
