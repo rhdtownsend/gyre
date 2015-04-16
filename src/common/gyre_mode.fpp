@@ -474,6 +474,7 @@ contains
     real(WP)                  :: E_p
 
     real(WP) :: dE_dx(this%n)
+    integer  :: prop_type(this%n)
     logical  :: mask(this%n)
     
     ! Calculate the mode inertia in acoustic-wave propagation regions,
@@ -481,7 +482,9 @@ contains
 
     dE_dx = this%dE_dx()
 
-    mask = this%prop_type() == 1
+    prop_type = this%prop_type()
+
+    mask = prop_type == -1
 
     E_p = integrate(this%x, dE_dx, mask)
     
@@ -499,6 +502,7 @@ contains
     real(WP)                  :: E_g
 
     real(WP) :: dE_dx(this%n)
+    integer  :: prop_type(this%n)
     logical  :: mask(this%n)
     
     ! Calculate the mode inertia in gravity-wave propagation regions,
@@ -506,7 +510,9 @@ contains
 
     dE_dx = this%dE_dx()
 
-    mask = this%prop_type() == -1
+    prop_type = this%prop_type()
+
+    mask = prop_type == -1
 
     E_g = integrate(this%x, dE_dx, mask)
     
