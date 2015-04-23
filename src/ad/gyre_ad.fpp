@@ -54,7 +54,6 @@ program gyre_ad
   ! Variables
 
   character(:), allocatable     :: filename
-  character(:), allocatable     :: gyre_dir
   integer                       :: unit
   real(WP), allocatable         :: x_ml(:)
   class(model_t), pointer       :: ml => null()
@@ -85,7 +84,7 @@ program gyre_ad
   ! Initialize
 
   call init_parallel()
-  call init_system(filename, gyre_dir)
+  call init_system(filename)
 
   call set_log_level($str($LOG_LEVEL))
 
@@ -107,8 +106,6 @@ program gyre_ad
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
 
   endif
-
-  call init_trad(gyre_dir)
 
   ! Process arguments
 
