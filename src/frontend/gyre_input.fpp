@@ -44,10 +44,9 @@ module gyre_input
 
 contains
 
-  subroutine init_system (filename, gyre_dir)
+  subroutine init_system (filename)
 
     character(:), allocatable, intent(out) :: filename
-    character(:), allocatable, intent(out) :: gyre_dir
 
     integer :: status
 
@@ -56,11 +55,6 @@ contains
     $ASSERT(n_arg() == 1,Invalid number of arguments)
 
     call get_arg(1, filename)
-
-    ! Get environment variables
-
-    call get_env('GYRE_DIR', gyre_dir, status)
-    $ASSERT(status == 0,The GYRE_DIR environment variable is not set)
 
     ! Finish
 
@@ -227,10 +221,12 @@ contains
 
     integer, intent(in) :: unit
 
-    integer :: n_cn
+    integer                   :: n_cn
+    character(:), allocatable :: gyre_dir_
+    integer                   :: status
 
     namelist /constants/ G_GRAVITY, C_LIGHT, A_RADIATION, &
-                         M_SUN, R_SUN, L_SUN
+                         M_SUN, R_SUN, L_SUN, GYRE_DIR
 
     ! Count the number of constants namelists
 
@@ -249,8 +245,13 @@ contains
 
     ! Read constants
 
+    call get_env('GYRE_DIR', gyre_dir_, status)
+    if (status == 0) GYRE_DIR = gyre_dir_
+      
     rewind(unit)
     read(unit, NML=constants)
+
+    $ASSERT(GYRE_DIR /= '',GYRE_DIR is not set)
 
     ! Finish
 
