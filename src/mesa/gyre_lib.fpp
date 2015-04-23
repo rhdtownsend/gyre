@@ -31,18 +31,17 @@ module gyre_lib
   use gyre_ext
   use gyre_input
   use gyre_grid
-  use gyre_gridpar
+  use gyre_grid_par
   use gyre_mesa_file
   use gyre_mode
   use gyre_model
-  use gyre_modepar
+  use gyre_mode_par
   use gyre_nad_bvp
-  use gyre_oscpar
-  use gyre_numpar
+  use gyre_osc_par
+  use gyre_num_par
   use gyre_rad_bvp
-  use gyre_scanpar
+  use gyre_scan_par
   use gyre_search
-  use gyre_trad
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -87,7 +86,6 @@ contains
     ! Initialize
 
     call init_parallel()
-    call init_trad(gyre_dir)
 
     call set_log_level('WARN')
 
@@ -127,7 +125,7 @@ contains
 
     if (ASSOCIATED(ml_m)) deallocate(ml_m)
 
-    call read_mesa_model(file, deriv_type, .FALSE., ec, x_ml_m)
+    call read_mesa_model(file, deriv_type, .TRUE., ec, x_ml_m)
 
     allocate(ml_m, SOURCE=ec)
 
@@ -181,11 +179,13 @@ contains
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
+    print *,'Add center:',add_center
+
     allocate(ml_m, SOURCE=evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                        Gamma_1, nabla_ad, delta, Omega_rot, &
                                        nabla, kappa, kappa_rho, kappa_T, &
                                        epsilon, epsilon_rho, epsilon_T, &
-                                       deriv_type, regularize=.FALSE., add_center=add_center))
+                                       deriv_type, add_center=add_center))
 
     if(add_center) then
        x_ml_m = [0._WP,r/R_star]
@@ -219,28 +219,30 @@ contains
     integer, intent(inout)  :: ipar(:)
     real(WP), intent(inout) :: rpar(:)
 
-    integer                      :: unit
-    type(modepar_t), allocatable :: mp(:)
-    type(oscpar_t), allocatable  :: op(:)
-    type(numpar_t), allocatable  :: np(:)
-    type(scanpar_t), allocatable :: sp(:)
-    type(gridpar_t), allocatable :: shoot_gp(:)
-    type(gridpar_t), allocatable :: recon_gp(:)
-    integer                      :: n_md
-    integer                      :: d_md
-    type(mode_t), allocatable    :: md(:)
-    integer                      :: i
-    type(oscpar_t), allocatable  :: op_sel(:)
-    type(numpar_t), allocatable  :: np_sel(:)
-    type(gridpar_t), allocatable :: shoot_gp_sel(:)
-    type(gridpar_t), allocatable :: recon_gp_sel(:)
-    type(scanpar_t), allocatable :: sp_sel(:)
-    real(WP)                     :: x_i
-    real(WP)                     :: x_o
-    real(WP), allocatable        :: omega(:)
-    real(WP), allocatable        :: x_sh(:)
-    class(r_bvp_t), allocatable  :: ad_bp
-    class(c_bvp_t), allocatable  :: nad_bp
+    integer                       :: unit
+    type(mode_par_t), allocatable :: mp(:)
+    type(osc_par_t), allocatable  :: op(:)
+    type(num_par_t), allocatable  :: np(:)
+    type(scan_par_t), allocatable :: sp(:)
+    type(grid_par_t), allocatable :: shoot_gp(:)
+    type(grid_par_t), allocatable :: recon_gp(:)
+    integer                       :: n_md
+    integer                       :: d_md
+    type(mode_t), allocatable     :: md(:)
+    integer                       :: i
+    type(osc_par_t), allocatable  :: op_sel(:)
+    type(num_par_t), allocatable  :: np_sel(:)
+    type(grid_par_t), allocatable :: shoot_gp_sel(:)
+    type(grid_par_t), allocatable :: recon_gp_sel(:)
+    type(scan_par_t), allocatable :: sp_sel(:)
+    real(WP)                      :: x_i
+    real(WP)                      :: x_o
+    real(WP), allocatable         :: omega(:)
+    real(WP)                      :: omega_min
+    real(WP)                      :: omega_max
+    real(WP), allocatable         :: x_sh(:)
+    class(r_bvp_t), allocatable   :: ad_bp
+    class(c_bvp_t), allocatable   :: nad_bp
 
     $ASSERT(ASSOCIATED(ml_m),No model provided)
 
@@ -248,12 +250,12 @@ contains
 
     open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-    call read_modepar(unit, mp)
-    call read_oscpar(unit, op)
-    call read_numpar(unit, np)
-    call read_shoot_gridpar(unit, shoot_gp)
-    call read_recon_gridpar(unit, recon_gp)
-    call read_scanpar(unit, sp)
+    call read_mode_par(unit, mp)
+    call read_osc_par(unit, op)
+    call read_num_par(unit, np)
+    call read_shoot_grid_par(unit, shoot_gp)
+    call read_recon_grid_par(unit, recon_gp)
+    call read_scan_par(unit, sp)
 
     close(unit)
 
@@ -293,16 +295,24 @@ contains
           
           call build_grid(shoot_gp_sel, ml_m, mp(i), op_sel(1), omega, x_ml_m, x_sh)
 
+          if (np_sel(1)%restrict_roots) then
+             omega_min = MINVAL(omega)
+             omega_max = MAXVAL(omega)
+          else
+             omega_min = -HUGE(0._WP)
+             omega_max = HUGE(0._WP)
+          endif
+
           ! Set up the bvp's
 
           if(mp(i)%l == 0 .AND. op_sel(1)%reduce_order) then
-             allocate(ad_bp, SOURCE=rad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1)))
+             allocate(ad_bp, SOURCE=rad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
           else
-             allocate(ad_bp, SOURCE=ad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1)))
+             allocate(ad_bp, SOURCE=ad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
           endif
 
           if (non_ad) then
-             allocate(nad_bp, SOURCE=nad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1)))
+             allocate(nad_bp, SOURCE=nad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
           endif
 
           ! Find modes
@@ -310,7 +320,7 @@ contains
           if (non_ad) then
              n_md = 0
              call scan_search(ad_bp, np_sel(1), omega, process_root_ad)
-             call prox_search(nad_bp, np_sel(1), md(:n_md), process_root_nad)
+             call prox_search(nad_bp, mp(i), np_sel(1), op_sel(1), md(:n_md), process_root_nad)
           else
              call scan_search(ad_bp, np_sel(1), omega, process_root_ad)
           endif
