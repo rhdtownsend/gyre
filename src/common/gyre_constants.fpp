@@ -33,7 +33,11 @@ module gyre_constants
   real(WP), save :: R_SUN = R_SUN_ ! Solar radius
   real(WP), save :: L_SUN = L_SUN_ ! Solar luminosity (Allen, 1973)
 
-  ! Acess specifiers
+  ! Paths
+
+  character(FILENAME_LEN), save :: GYRE_DIR = ''
+
+  ! Access specifiers
 
   private
 
@@ -52,6 +56,7 @@ module gyre_constants
   public :: L_SUN
 
   public :: FILENAME_LEN
+  public :: GYRE_DIR
 
   $if ($MPI)
   public :: bcast_constants
@@ -76,6 +81,8 @@ contains
     call bcast(M_SUN, root_rank)
     call bcast(R_SUN, root_rank)
     call bcast(L_SUN, root_rank)
+
+    call bcast(GYRE_DIR, root_rank)
 
     ! Finish
 
