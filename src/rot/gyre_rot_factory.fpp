@@ -63,7 +63,9 @@ contains
 
     use gyre_dopp_rot
     use gyre_null_rot
+    $if ($HDF5)
     use gyre_trad_rot
+    $endif
 
     class(model_t), pointer, intent(in) :: ml
     type(mode_par_t), intent(in)        :: mp
@@ -78,7 +80,11 @@ contains
     case ('NULL')
        allocate(rt, SOURCE=${T}_null_rot_t(mp))
     case ('TRAD')
+       $if ($HDF5)
        allocate(rt, SOURCE=${T}_trad_rot_t(ml, mp))
+       $else
+       $ABORT(TRAD rotation method requires HDF support be enabled)
+       $endif
     case default
        $ABORT(Invalid rotation_method)
     end select
