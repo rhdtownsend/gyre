@@ -26,6 +26,7 @@ module gyre_trad
   use core_hgroup
   use core_system
 
+  use gyre_constants
   use gyre_trad_table
 
   use ISO_FORTRAN_ENV
@@ -36,6 +37,7 @@ module gyre_trad
 
   ! Module variables
 
+  logical, save            :: inited_m = .FALSE.
   type(trad_table_t), save :: tt_m
 
   ! Interfaces
@@ -49,22 +51,19 @@ module gyre_trad
 
   private
 
-  public :: init_trad
   public :: trad_lambda
 
   ! Procedures
 
 contains
 
-  subroutine init_trad (gyre_dir)
-
-    character(*), intent(in) :: gyre_dir
+  subroutine init_ ()
 
     type(hgroup_t) :: hg
 
     ! Load the trad_table_t from the data directory
 
-    hg = hgroup_t(TRIM(gyre_dir)//'/data/trad_table.h5', OPEN_FILE)
+    hg = hgroup_t(TRIM(GYRE_DIR)//'/data/trad_table.h5', OPEN_FILE)
     call read(hg, tt_m)
     call hg%final()
 
@@ -72,7 +71,7 @@ contains
 
     return
 
-  end subroutine init_trad
+  end subroutine init_
 
 !****
 
@@ -84,6 +83,11 @@ contains
     real(WP)             :: lambda
 
     ! Evaluate the eigenvalue of Laplace's tidal equation (real)
+
+    if (.NOT. inited_m) then
+       call init_()
+       inited_m = .TRUE.
+    endif
 
     lambda = tt_m%tf(l,m)%lambda(nu)
 
@@ -103,6 +107,11 @@ contains
     complex(WP)             :: lambda
 
     ! Evaluate the eigenvalue of Laplace's tidal equation (complex)
+
+    if (.NOT. inited_m) then
+       call init_()
+       inited_m = .TRUE.
+    endif
 
     lambda = tt_m%tf(l,m)%lambda(nu)
 
