@@ -44,10 +44,9 @@ module gyre_input
 
 contains
 
-  subroutine init_system (filename, gyre_dir)
+  subroutine init_system (filename)
 
     character(:), allocatable, intent(out) :: filename
-    character(:), allocatable, intent(out) :: gyre_dir
 
     integer :: status
 
@@ -56,11 +55,6 @@ contains
     $ASSERT(n_arg() == 1,Invalid number of arguments)
 
     call get_arg(1, filename)
-
-    ! Get environment variables
-
-    call get_env('GYRE_DIR', gyre_dir, status)
-    $ASSERT(status == 0,The GYRE_DIR environment variable is not set)
 
     ! Finish
 
@@ -97,6 +91,7 @@ contains
     character(256)          :: file_format
     character(256)          :: data_format
     character(256)          :: deriv_type
+    logical                 :: add_center
     character(FILENAME_LEN) :: file
     real(WP)                :: Gamma_1
     logical                 :: reconstruct_As
@@ -107,7 +102,7 @@ contains
     type(hom_model_t)       :: hc
 
     namelist /model/ model_type, file_format, data_format, deriv_type, &
-                     file, Gamma_1, &
+                     add_center, file, Gamma_1, &
                      reconstruct_As, uniform_rot, Omega_uni
 
     ! Count the number of model namelists
@@ -131,6 +126,7 @@ contains
     file_format = ''
     data_format = ''
     deriv_type = 'MONO'
+    add_center = .TRUE.
     uniform_rot = .FALSE.
     reconstruct_As = .FALSE.
 
@@ -149,29 +145,29 @@ contains
 
        select case (file_format)
        case ('MESA')
-          call read_mesa_model(file, deriv_type, ec, x=x_bc)
+          call read_mesa_model(file, deriv_type, add_center, ec, x=x_bc)
        case('B3')
           $if($HDF5)
-          call read_b3_model(file, deriv_type, ec, x=x_bc)
+          call read_b3_model(file, deriv_type, add_center, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
        case ('GSM')
           $if($HDF5)
-          call read_gsm_model(file, deriv_type, ec, x=x_bc)
+          call read_gsm_model(file, deriv_type, add_center, ec, x=x_bc)
           $else
           $ABORT(No HDF5 support, therefore cannot read GSM-format files)
           $endif
        case ('OSC')
-          call read_osc_model(file, deriv_type, data_format, ec, x=x_bc)
+          call read_osc_model(file, deriv_type, data_format, add_center, ec, x=x_bc)
        case ('LOSC')
-          call read_losc_model(file, deriv_type, ec, x=x_bc)
+          call read_losc_model(file, deriv_type, add_center, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_model(file, deriv_type, data_format, ec, x=x_bc) 
+          call read_fgong_model(file, deriv_type, data_format, add_center, ec, x=x_bc) 
        case ('FAMDL')
-          call read_famdl_model(file, deriv_type, data_format, ec, x=x_bc)
+          call read_famdl_model(file, deriv_type, data_format, add_center, ec, x=x_bc)
        case ('AMDL')
-          call read_amdl_model(file, deriv_type, ec, x=x_bc)
+          call read_amdl_model(file, deriv_type, add_center, ec, x=x_bc)
        case default
           $ABORT(Invalid file_format)
        end select
@@ -225,10 +221,12 @@ contains
 
     integer, intent(in) :: unit
 
-    integer :: n_cn
+    integer                   :: n_cn
+    character(:), allocatable :: gyre_dir_
+    integer                   :: status
 
     namelist /constants/ G_GRAVITY, C_LIGHT, A_RADIATION, &
-                         M_SUN, R_SUN, L_SUN
+                         M_SUN, R_SUN, L_SUN, GYRE_DIR
 
     ! Count the number of constants namelists
 
@@ -247,8 +245,13 @@ contains
 
     ! Read constants
 
+    call get_env('GYRE_DIR', gyre_dir_, status)
+    if (status == 0) GYRE_DIR = gyre_dir_
+      
     rewind(unit)
     read(unit, NML=constants)
+
+    $ASSERT(GYRE_DIR /= '',GYRE_DIR is not set)
 
     ! Finish
 

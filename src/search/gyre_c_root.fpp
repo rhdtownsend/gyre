@@ -1,5 +1,5 @@
 ! Module   : gyre_c_root
-! Purpose  : root finding algorithms (complex)
+! Purpose  : root finding algorithms for discriminant functions (complex)
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -24,9 +24,10 @@ module gyre_c_root
   use core_kinds
 
   use gyre_cimplex
+  use gyre_ext_func
   use gyre_ext
-  use gyre_extfunc
   use gyre_num_par
+  use gyre_status
 
   use ISO_FORTRAN_ENV
 
@@ -58,15 +59,17 @@ module gyre_c_root
 
 contains
 
-  subroutine solve_ (cf, np, cx_a, cx_b, cx_tol, cx_root, n_iter, relative_tol, f_cx_a, f_cx_b)
+  subroutine solve_ (cf, np, cx_a, cx_b, cx_tol, cx_root, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
-    class(c_extfunc_t), intent(inout)   :: cf
+    class(c_ext_func_t), intent(inout)  :: cf
     class(num_par_t), intent(in)        :: np
     type(c_ext_t), intent(in)           :: cx_a
     type(c_ext_t), intent(in)           :: cx_b
     type(r_ext_t), intent(in)           :: cx_tol
     type(c_ext_t), intent(out)          :: cx_root
-    integer, optional, intent(inout)    :: n_iter
+    integer, intent(out)                :: status
+    integer, optional, intent(out)      :: n_iter
+    integer, optional, intent(in)       :: n_iter_max
     logical, optional, intent(in)       :: relative_tol
     type(c_ext_t), optional, intent(in) :: f_cx_a
     type(c_ext_t), optional, intent(in) :: f_cx_b
@@ -85,16 +88,18 @@ contains
     if (PRESENT(f_cx_a)) then
        f_a = f_cx_a
     else
-       f_a = cf%eval(a)
+       call cf%eval(a, f_a, status)
+       if (status /= STATUS_OK) return
     endif
 
     if (PRESENT(f_cx_b)) then
        f_b = f_cx_b
     else
-       f_b = cf%eval(b)
+       call cf%eval(b, f_b, status)
+       if (status /= STATUS_OK) return
     endif
 
-    call narrow(cf, np, a, b, cx_tol, n_iter, relative_tol, f_a, f_b)
+    call narrow(cf, np, a, b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
 
     cx_root = b
 
@@ -106,14 +111,16 @@ contains
 
 !****
 
-  subroutine narrow_ (cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
-    class(c_extfunc_t), intent(inout)      :: cf
+    class(c_ext_func_t), intent(inout)     :: cf
     class(num_par_t), intent(in)           :: np
     type(c_ext_t), intent(inout)           :: cx_a
     type(c_ext_t), intent(inout)           :: cx_b
     type(r_ext_t), intent(in)              :: cx_tol
-    integer, optional, intent(inout)       :: n_iter
+    integer, intent(out)                   :: status
+    integer, optional, intent(out)         :: n_iter
+    integer, optional, intent(in)          :: n_iter_max
     logical, optional, intent(in)          :: relative_tol
     type(c_ext_t), optional, intent(inout) :: f_cx_a
     type(c_ext_t), optional, intent(inout) :: f_cx_b
@@ -122,11 +129,11 @@ contains
 
     select case (np%c_root_solver)
     case ('SECANT')
-       call narrow_secant_(cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
+       call narrow_secant_(cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
     case ('RIDDERS')
-       call narrow_ridders_(cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
+       call narrow_ridders_(cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
     case ('SIMPLEX')
-       call narrow_simplex_(cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
+       call narrow_simplex_(cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
     case default
        $ABORT(Invalid c_root_solver)
     end select
@@ -139,14 +146,16 @@ contains
 
 !****
 
-  subroutine narrow_secant_ (cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_secant_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
  
-    class(c_extfunc_t), intent(inout)      :: cf
+    class(c_ext_func_t), intent(inout)     :: cf
     class(num_par_t), intent(in)           :: np
     type(c_ext_t), intent(inout)           :: cx_a
     type(c_ext_t), intent(inout)           :: cx_b
     type(r_ext_t), intent(in)              :: cx_tol
-    integer, optional, intent(inout)       :: n_iter
+    integer, intent(out)                   :: status
+    integer, optional, intent(out)         :: n_iter
+    integer, optional, intent(in)          :: n_iter_max
     logical, optional, intent(in)          :: relative_tol
     type(c_ext_t), optional, intent(inout) :: f_cx_a
     type(c_ext_t), optional, intent(inout) :: f_cx_b
@@ -180,13 +189,15 @@ contains
     if (PRESENT(f_cx_a)) then
        f_a = f_cx_a
     else
-       f_a = cf%eval(a)
+       call cf%eval(a, f_a, status)
+       if (status /= STATUS_OK) return
     endif
 
     if (PRESENT(f_cx_b)) then
        f_b = f_cx_b
     else
-       f_b = cf%eval(b)
+       call cf%eval(b, f_b, status)
+       if (status /= STATUS_OK) return
     endif
 
     if (ABS(f_a) < ABS(f_b)) then
@@ -206,14 +217,19 @@ contains
 
     i_iter = 0
 
+    status = STATUS_OK
+
     iterate_loop : do
 
        if (f_b == 0._WP) exit iterate_loop
 
        i_iter = i_iter + 1
 
-       if (PRESENT(n_iter)) then
-          if (i_iter > n_iter) exit iterate_loop
+       if (PRESENT(n_iter_max)) then
+          if (i_iter > n_iter_max) then
+             status = STATUS_ITER_MAX
+             exit iterate_loop
+          endif
        endif
 
        ! Calculate the correction
@@ -234,7 +250,8 @@ contains
        f_a = f_b
 
        b = b - f_dz/rho
-       f_b = cf%eval(b)
+       call cf%eval(b, f_b, status)
+       if (status /= STATUS_OK) exit iterate_loop
 
        ! Check for convergence
 
@@ -248,14 +265,12 @@ contains
 
     end do iterate_loop
 
-    if (PRESENT(n_iter)) then
-       n_iter = i_iter
-    endif
-
     ! Store the results
 
     cx_a = a
     cx_b = b
+
+    if (PRESENT(n_iter)) n_iter = i_iter
 
     if (PRESENT(f_cx_a)) f_cx_a = f_a
     if (PRESENT(f_cx_b)) f_cx_b = f_b
@@ -266,14 +281,16 @@ contains
 
 !****
 
-  subroutine narrow_ridders_ (cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_ridders_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
-    class(c_extfunc_t), intent(inout)      :: cf
+    class(c_ext_func_t), intent(inout)     :: cf
     class(num_par_t), intent(in)           :: np
     type(c_ext_t), intent(inout)           :: cx_a
     type(c_ext_t), intent(inout)           :: cx_b
     type(r_ext_t), intent(in)              :: cx_tol
-    integer, optional, intent(inout)       :: n_iter
+    integer, intent(out)                   :: status
+    integer, optional, intent(out)         :: n_iter
+    integer, optional, intent(in)          :: n_iter_max
     logical, optional, intent(in)          :: relative_tol
     type(c_ext_t), optional, intent(inout) :: f_cx_a
     type(c_ext_t), optional, intent(inout) :: f_cx_b
@@ -313,13 +330,15 @@ contains
     if (PRESENT(f_cx_a)) then
        f_a = f_cx_a
     else
-       f_a = cf%eval(a)
+       call cf%eval(a, f_a, status)
+       if (status /= STATUS_OK) return
     endif
 
     if (PRESENT(f_cx_b)) then
        f_b = f_cx_b
     else
-       f_b = cf%eval(b)
+       call cf%eval(b, f_b, status)
+       if (status /= STATUS_OK) return
     endif
 
     if (ABS(f_a) < ABS(f_b)) then
@@ -339,20 +358,27 @@ contains
 
     i_iter = 0
 
+    status = STATUS_OK
+
     iterate_loop : do
 
        if (f_b == 0._WP) exit iterate_loop
 
        i_iter = i_iter + 1
 
-       if (PRESENT(n_iter)) then
-          if (i_iter > n_iter) exit iterate_loop
+       if (PRESENT(n_iter_max)) then
+          if (i_iter > n_iter_max) then
+             status = STATUS_ITER_MAX
+             exit iterate_loop
+          end if
        endif
 
        ! Calculate the mid-point values
 
        c =  0.5_WP*(a + b)
-       f_c = cf%eval(c)
+
+       call cf%eval(c, f_c, status)
+       if (status /= STATUS_OK) exit iterate_loop
 
        ! Solve for the re-scaling exponential
 
@@ -383,7 +409,8 @@ contains
        f_a = f_b
 
        b = b - f_dz/rho
-       f_b = cf%eval(b)
+       call cf%eval(b, f_b, status)
+       if (status /= STATUS_OK) exit iterate_loop
 
        ! Check for convergence
 
@@ -397,32 +424,34 @@ contains
 
     end do iterate_loop
 
-    if (PRESENT(n_iter)) then
-       n_iter = i_iter
-    endif
-
     ! Store the results
 
     cx_a = a
     cx_b = b
+
+    if (PRESENT(n_iter)) n_iter = i_iter
 
     if (PRESENT(f_cx_a)) f_cx_a = f_a
     if (PRESENT(f_cx_b)) f_cx_b = f_b
 
     ! Finish
 
+    return
+
   end subroutine narrow_ridders_
 
 !****
 
-  subroutine narrow_simplex_ (cf, np, cx_a, cx_b, cx_tol, n_iter, relative_tol, f_cx_a, f_cx_b)
+  subroutine narrow_simplex_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
-    class(c_extfunc_t), intent(inout)      :: cf
+    class(c_ext_func_t), intent(inout)     :: cf
     class(num_par_t), intent(in)           :: np
     type(c_ext_t), intent(inout)           :: cx_a
     type(c_ext_t), intent(inout)           :: cx_b
     type(r_ext_t), intent(in)              :: cx_tol
-    integer, optional, intent(inout)       :: n_iter
+    integer, intent(out)                   :: status
+    integer, optional, intent(out)         :: n_iter
+    integer, optional, intent(in)          :: n_iter_max
     logical, optional, intent(in)          :: relative_tol
     type(c_ext_t), optional, intent(inout) :: f_cx_a
     type(c_ext_t), optional, intent(inout) :: f_cx_b
@@ -445,16 +474,19 @@ contains
     if (PRESENT(f_cx_a)) then
        f_cx(1) = f_cx_a
     else
-       f_cx(1) = cf%eval(cx(1))
+       call cf%eval(cx(1), f_cx(1), status)
+       if (status /= STATUS_OK) return
     endif
 
     if (PRESENT(f_cx_b)) then
        f_cx(2) = f_cx_b
     else
-       f_cx(2) = cf%eval(cx(2))
+       call cf%eval(cx(2), f_cx(2), status)
+       if (status /= STATUS_OK) return
     endif
 
-    f_cx(3) = cf%eval(cx(3))
+    call cf%eval(cx(3), f_cx(3), status)
+    if (status /= STATUS_OK) return
 
     ! Set up the cimplex_t
 
@@ -462,7 +494,7 @@ contains
 
     ! Refine it
 
-    call refine(cm, cx_tol, n_iter, relative_tol)
+    call refine(cm, cx_tol, status, n_iter, n_iter_max, relative_tol)
 
     ! Store the results
 
@@ -483,12 +515,13 @@ contains
 
 !****
 
-  subroutine expand_ (cf, cx_a, cx_b, f_cx_tol, clamp_a, clamp_b, relative_tol, f_cx_a, f_cx_b)
+  subroutine expand_ (cf, cx_a, cx_b, f_cx_tol, status, clamp_a, clamp_b, relative_tol, f_cx_a, f_cx_b)
 
-    class(c_extfunc_t), intent(inout)    :: cf
+    class(c_ext_func_t), intent(inout)   :: cf
     type(c_ext_t), intent(inout)         :: cx_a
     type(c_ext_t), intent(inout)         :: cx_b
     type(r_ext_t), intent(in)            :: f_cx_tol
+    integer, intent(out)                 :: status
     type(c_ext_t), optional, intent(out) :: f_cx_a
     type(c_ext_t), optional, intent(out) :: f_cx_b
     logical, optional, intent(in)        :: clamp_a
@@ -530,8 +563,13 @@ contains
     ! Expand the pair [cx_a,cx_b] until the difference between f(cx_a)
     ! and f(cx_b) exceeds the tolerance
 
-    f_a = cf%eval(cx_a)
-    f_b = cf%eval(cx_b)
+    call cf%eval(cx_a, f_a, status)
+    if (status /= STATUS_OK) return
+
+    call cf%eval(cx_b, f_b, status)
+    if (status /= STATUS_OK) return
+
+    status = STATUS_OK
 
     expand_loop : do
 
@@ -553,10 +591,12 @@ contains
 
        if (move_a) then
           cx_a = cx_a + EXPAND_FACTOR*(cx_a - cx_b)
-          f_a = cf%eval(cx_a)
+          call cf%eval(cx_a, f_a, status)
+          if (status /= STATUS_OK) exit expand_loop
        else
           cx_b = cx_b + EXPAND_FACTOR*(cx_b - cx_a)
-          f_b = cf%eval(cx_b)
+          call cf%eval(cx_b, f_b, status)
+          if (status /= STATUS_OK) exit expand_loop
        endif
 
     end do expand_loop

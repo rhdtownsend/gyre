@@ -54,7 +54,6 @@ program gyre_ad
   ! Variables
 
   character(:), allocatable     :: filename
-  character(:), allocatable     :: gyre_dir
   integer                       :: unit
   real(WP), allocatable         :: x_ml(:)
   class(model_t), pointer       :: ml => null()
@@ -74,6 +73,8 @@ program gyre_ad
   real(WP)                      :: x_i
   real(WP)                      :: x_o
   real(WP), allocatable         :: omega(:)
+  real(WP)                      :: omega_min
+  real(WP)                      :: omega_max
   real(WP), allocatable         :: x_sh(:)
   class(r_bvp_t), allocatable   :: bp
   integer                       :: n_md
@@ -83,7 +84,7 @@ program gyre_ad
   ! Initialize
 
   call init_parallel()
-  call init_system(filename, gyre_dir)
+  call init_system(filename)
 
   call set_log_level($str($LOG_LEVEL))
 
@@ -105,8 +106,6 @@ program gyre_ad
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
 
   endif
-
-  call init_trad(gyre_dir)
 
   ! Process arguments
 
@@ -171,6 +170,14 @@ program gyre_ad
 
      call build_scan(sp_sel, ml, mp(i), op_sel(1), x_i, x_o, omega)
 
+     if (np_sel(1)%restrict_roots) then
+        omega_min = MINVAL(omega)
+        omega_max = MAXVAL(omega)
+     else
+        omega_min = -HUGE(0._WP)
+        omega_max = HUGE(0._WP)
+     endif
+
      ! Set up the shooting grid
 
      call build_grid(shoot_gp_sel, ml, mp(i), op_sel(1), omega, x_ml, x_sh, verbose=.TRUE.)
@@ -178,9 +185,9 @@ program gyre_ad
      ! Set up bp
 
      if (mp(i)%l == 0 .AND. op_sel(1)%reduce_order) then
-        allocate(bp, SOURCE=rad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1)))
+        allocate(bp, SOURCE=rad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
      else
-        allocate(bp, SOURCE=ad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1)))
+        allocate(bp, SOURCE=ad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
      endif
 
      ! Find roots

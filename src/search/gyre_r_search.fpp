@@ -28,7 +28,7 @@ module gyre_r_search
 
   use gyre_bvp
   use gyre_constants
-  use gyre_discfunc
+  use gyre_discrim_func
   use gyre_ext
   use gyre_freq
   use gyre_mode
@@ -38,6 +38,7 @@ module gyre_r_search
   use gyre_osc_par
   use gyre_root
   use gyre_scan_par
+  use gyre_status
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -58,7 +59,6 @@ contains
   subroutine build_scan (sp, ml, mp, op, x_i, x_o, omega)
 
     use gyre_rot
-    use gyre_trad_rot
 
     type(scan_par_t), intent(in)        :: sp(:)
     class(model_t), pointer, intent(in) :: ml
@@ -94,7 +94,7 @@ contains
 
     sp_loop : do i = 1,SIZE(sp)
 
-       ! Calculate the dimensionless frequency range in inertial frame
+       ! Calculate the dimensionless frequency range in the inertial frame
 
        select case (sp(i)%freq_units)
        case ('MIXED_DELTA')
@@ -105,57 +105,63 @@ contains
           omega_max = omega_from_freq(sp(i)%freq_max, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
        end select
 
-       ! Calculate the frequency range in the grid frame
+       ! Check that the range is valid
 
-       freq_g_min = freq_from_omega(omega_min, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
-       freq_g_max = freq_from_omega(omega_max, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
+       if (omega_max > omega_min) then
 
-       ! Set up the frequencies
+          ! Calculate the frequency range in the grid frame
 
-       allocate(freq_g(sp(i)%n_freq))
+          freq_g_min = freq_from_omega(omega_min, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
+          freq_g_max = freq_from_omega(omega_max, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
 
-       do j = 1, sp(i)%n_freq
+          ! Set up the frequencies
 
-          select case(sp(i)%grid_type)
-          case('LINEAR')
-             freq_g(j) = ((sp(i)%n_freq-j)*freq_g_min + (j-1)*freq_g_max)/(sp(i)%n_freq-1)
-          case('INVERSE')
-             freq_g(j) = (sp(i)%n_freq-1)/((sp(i)%n_freq-j)/freq_g_min + (j-1)/freq_g_max)
-          case default
-             $ABORT(Invalid grid_type)
-          end select
+          allocate(freq_g(sp(i)%n_freq))
 
-       end do
+          do j = 1, sp(i)%n_freq
+             
+             select case(sp(i)%grid_type)
+             case('LINEAR')
+                freq_g(j) = ((sp(i)%n_freq-j)*freq_g_min + (j-1)*freq_g_max)/(sp(i)%n_freq-1)
+             case('INVERSE')
+                freq_g(j) = (sp(i)%n_freq-1)/((sp(i)%n_freq-j)/freq_g_min + (j-1)/freq_g_max)
+             case default
+                $ABORT(Invalid grid_type)
+             end select
+             
+          end do
 
-       ! Store them
+          ! Store them
 
-       call reallocate(omega, [n_omega+sp(i)%n_freq])
+          call reallocate(omega, [n_omega+sp(i)%n_freq])
 
-       do j = 1, sp(i)%n_freq
-          omega(n_omega+j) = omega_from_freq(freq_g(j), ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
-       end do
+          do j = 1, sp(i)%n_freq
+             omega(n_omega+j) = omega_from_freq(freq_g(j), ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
+          end do
+          
+          n_omega = n_omega + sp(i)%n_freq
 
-       n_omega = n_omega + sp(i)%n_freq
+          deallocate(freq_g)
 
-       deallocate(freq_g)
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 110) 'added scan interval : ', omega_min, ' -> ', omega_max, ' (', sp(i)%n_freq, ' points, ', TRIM(sp(i)%grid_type), ')'
+110          format(3X,A,E24.16,A,E24.16,A,I0,A,A,A)
+          endif
+
+       else
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 120) 'ignoring scan interval :', omega_min, ' -> ', omega_max
+120          format(3X,A,E24.16,A,E24.16)
+          endif
+
+       endif
 
     end do sp_loop
-
-    $ASSERT(n_omega > 2,At least two frequency points required)
 
     ! Sort the frequencies
 
     omega = omega(sort_indices(omega))
-
-    if (check_log_level('INFO')) then
-
-       write(OUTPUT_UNIT, 110) 'omega points :', n_omega
-110    format(2X,A,1X,I0)
-
-       write(OUTPUT_UNIT, 120) 'omega range  :', MINVAL(omega), '->',  MAXVAL(omega)
-120    format(2X,A,1X,E24.16,1X,A,1X,E24.16)
-
-    endif
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, *)
@@ -184,7 +190,7 @@ contains
        end subroutine process_root
     end interface
 
-    type(r_discfunc_t)         :: df
+    type(r_discrim_func_t)     :: df
     real(WP), allocatable      :: omega_a(:)
     real(WP), allocatable      :: omega_b(:)
     type(r_ext_t), allocatable :: discrim_a(:)
@@ -194,11 +200,12 @@ contains
     integer                    :: c_rate
     integer                    :: n_iter
     type(r_ext_t)              :: omega_root
+    integer                    :: status
     integer                    :: i
 
     ! Set up the discriminant function
 
-    df = r_discfunc_t(bp)
+    df = r_discrim_func_t(bp)
 
     ! Find discriminant root brackets
 
@@ -220,14 +227,16 @@ contains
 
     mode_loop : do i = 1, SIZE(omega_a)
 
+       n_iter = 0
+
        ! Find the discriminant root
 
-       n_iter = np%n_iter_max
-
        call solve(df, np, r_ext_t(omega_a(i)), r_ext_t(omega_b(i)), r_ext_t(0._WP), omega_root, &
-                  n_iter=n_iter, f_rx_a=discrim_a(i), f_rx_b=discrim_b(i))
-
-       $ASSERT(n_iter <= np%n_iter_max,Too many iterations)
+                  status, n_iter=n_iter, n_iter_max=np%n_iter_max, f_rx_a=discrim_a(i), f_rx_b=discrim_b(i))
+       if (status /= STATUS_OK) then
+          call report_status_(status, 'solve')
+          cycle mode_loop
+       endif
 
        ! Process it
 
@@ -246,13 +255,46 @@ contains
 
     return
 
+  contains
+
+    subroutine report_status_ (status, stage_str)
+
+      integer, intent(in)      :: status
+      character(*), intent(in) :: stage_str
+
+      ! Report the status
+
+      if (check_log_level('WARN')) then
+
+         write(OUTPUT_UNIT, 100) 'Failed during ', stage_str, ' : ', status_str(status)
+100      format(4A)
+
+      endif
+
+      if (check_log_level('INFO')) then
+
+         write(OUTPUT_UNIT, 110) 'n_iter  :', n_iter
+110      format(3X,A,1X,I0)
+
+         write(OUTPUT_UNIT, 120) 'omega_a :', omega_a(i)
+         write(OUTPUT_UNIT, 120) 'omega_b :', omega_b(i)
+120      format(3X,A,1X,E24.16)
+
+      end if
+
+      ! Finish
+
+      return
+
+    end subroutine report_status_
+      
   end subroutine scan_search
 
 !****
 
   subroutine find_root_brackets (df, omega, omega_a, omega_b, discrim_a, discrim_b)
 
-    type(r_discfunc_t), intent(inout)       :: df
+    type(r_discrim_func_t), intent(inout)   :: df
     real(WP), intent(in)                    :: omega(:)
     real(WP), allocatable, intent(out)      :: omega_a(:)
     real(WP), allocatable, intent(out)      :: omega_b(:)
@@ -265,6 +307,7 @@ contains
     integer       :: c_rate
     integer       :: i
     type(r_ext_t) :: discrim(SIZE(omega))
+    integer       :: status(SIZE(omega))
     integer       :: n_brack
     integer       :: i_brack(SIZE(omega))
 
@@ -281,7 +324,7 @@ contains
 
     discrim_loop : do i = 1, n_omega
 
-       discrim(i) = df%eval(r_ext_t(omega(i)))
+       call df%eval(r_ext_t(omega(i)), discrim(i), status(i))
 
        if (check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
@@ -303,9 +346,11 @@ contains
 
     bracket_loop : do i = 1, n_omega-1
 
-       if (discrim(i)*discrim(i+1) <= r_ext_t(0._WP)) then
-          n_brack = n_brack + 1
-          i_brack(n_brack) = i
+       if (status(i) == STATUS_OK .AND. status(i+1) == STATUS_OK) then
+          if (discrim(i)*discrim(i+1) <= r_ext_t(0._WP)) then
+             n_brack = n_brack + 1
+             i_brack(n_brack) = i
+          end if
        end if
 
     end do bracket_loop
@@ -408,7 +453,7 @@ contains
 
 !   subroutine find_min_brackets (df, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
 
-!     type(discfunc_t), intent(inout)            :: df
+!     type(discrim_func_t), intent(inout)        :: df
 !     real(WP), intent(in)                       :: omega(:)
 !     real(WP), allocatable, intent(out)         :: omega_a(:)
 !     real(WP), allocatable, intent(out)         :: omega_b(:)

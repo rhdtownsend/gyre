@@ -292,7 +292,11 @@ contains
 
     l_0 = rt%l_0(omega)
 
-    lag_L = y(6)*x**(l_0+1._WP)
+    if (x /= 0._WP) then
+       lag_L = y(6)*x**(l_0+1._WP)
+    else
+       lag_L = 0._WP
+    endif
 
     ! Finish
 

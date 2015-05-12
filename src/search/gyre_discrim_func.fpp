@@ -1,5 +1,5 @@
-! Module   : gyre_c_discfunc
-! Purpose  : discriminant root finding (complex)
+! Module   : gyre_discrim_func
+! Purpose  : discriminant function
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -15,6 +15,11 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'gyre_discfunc.inc'
+module gyre_discrim_func
 
-$MOD_DECL(c,complex)
+  ! Uses
+
+  use gyre_r_discrim_func
+  use gyre_c_discrim_func
+
+end module gyre_discrim_func

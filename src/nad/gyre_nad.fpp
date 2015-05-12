@@ -55,7 +55,6 @@ program gyre_nad
   ! Variables
 
   character(:), allocatable     :: filename
-  character(:), allocatable     :: gyre_dir
   integer                       :: unit
   real(WP), allocatable         :: x_ml(:)
   class(model_t), pointer       :: ml => null()
@@ -75,6 +74,8 @@ program gyre_nad
   real(WP)                      :: x_i
   real(WP)                      :: x_o
   real(WP), allocatable         :: omega(:)
+  real(WP)                      :: omega_min
+  real(WP)                      :: omega_max
   real(WP), allocatable         :: x_sh(:)
   class(r_bvp_t), allocatable   :: ad_bp
   class(c_bvp_t), allocatable   :: nad_bp
@@ -88,7 +89,7 @@ program gyre_nad
   ! Initialize
 
   call init_parallel()
-  call init_system(filename, gyre_dir)
+  call init_system(filename)
 
   call set_log_level($str($LOG_LEVEL))
 
@@ -110,8 +111,6 @@ program gyre_nad
      write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
 
   endif
-
-  call init_trad(gyre_dir)
 
   ! Process arguments
 
@@ -181,6 +180,14 @@ program gyre_nad
 
      call build_scan(sp_sel, ml, mp(i), op_sel(1), x_i, x_o, omega)
 
+     if (np_sel(1)%restrict_roots) then
+        omega_min = MINVAL(omega)
+        omega_max = MAXVAL(omega)
+     else
+        omega_min = -HUGE(0._WP)
+        omega_max = HUGE(0._WP)
+     endif
+
      ! Set up the shooting grid
 
      call build_grid(shoot_gp_sel, ml, mp(i), op_sel(1), omega, x_ml, x_sh, verbose=.TRUE.)
@@ -188,12 +195,12 @@ program gyre_nad
      ! Set up the bvp's
 
      if(mp(i)%l == 0 .AND. op_sel(1)%reduce_order) then
-        allocate(ad_bp, SOURCE=rad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1)))
+        allocate(ad_bp, SOURCE=rad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
      else
-        allocate(ad_bp, SOURCE=ad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1)))
+        allocate(ad_bp, SOURCE=ad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
      endif
  
-     allocate(nad_bp, SOURCE=nad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1)))
+     allocate(nad_bp, SOURCE=nad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
 
      ! Find modes
 
@@ -201,7 +208,7 @@ program gyre_nad
 
      call scan_search(ad_bp, np_sel(1), omega, process_root_ad)
 
-     call prox_search(nad_bp, np_sel(1), md_ad(:n_md_ad), process_root_nad)
+     call prox_search(nad_bp, mp(i), np_sel(1), op_sel(1), md_ad(:n_md_ad), process_root_nad)
 
      ! Clean up
 
@@ -319,7 +326,7 @@ contains
 
     ! Create the mode
 
-    md_new = mode_t(ml, mp(i), op_sel(1), CMPLX(omega, KIND=WP), discrim, &
+    md_new = mode_t(ml, mp(i), op_sel(1), omega, discrim, &
                     x_rc, y, x_ref, y_ref)
 
     md_new%n_iter = n_iter

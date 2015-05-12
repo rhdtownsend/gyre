@@ -45,10 +45,11 @@ module gyre_b3_file
 
 contains
 
-  subroutine read_b3_model (file, deriv_type, ml, x)
+  subroutine read_b3_model (file, deriv_type, add_center, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
+    logical, intent(in)                          :: add_center
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, intent(out), optional :: x(:)
 
@@ -78,7 +79,7 @@ contains
     real(WP), allocatable :: Gamma_1(:)
     real(WP), allocatable :: nabla_ad(:)
     real(WP), allocatable :: delta(:)
-    logical               :: add_center
+    logical               :: has_center
 
     ! Read data from the B3-format file
 
@@ -140,11 +141,17 @@ contains
     delta = chi_T/chi_rho
     nabla_ad = p*delta/(rho*T*c_p)
 
-    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
+    has_center = r(1) == 0._WP .AND. m(1) == 0._WP
 
     if (check_log_level('INFO')) then
-       if (add_center) write(OUTPUT_UNIT, 110) 'Adding central point'
-110    format(2X,A)
+       if (add_center) then
+          if (has_center) then
+             write(OUTPUT_UNIT, 110) 'No need to add central point'
+110          format(3X,A)
+          else
+             write(OUTPUT_UNIT, 110) 'Adding central point'
+          endif
+       endif
     endif
 
     ! Initialize the model
@@ -153,12 +160,12 @@ contains
                       N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
                       nabla, kappa, kappa_rho, kappa_T, &
                       epsilon, epsilon_rho, epsilon_T, &
-                      deriv_type, add_center=add_center)
+                      deriv_type, add_center=add_center .AND. .NOT. has_center)
 
     ! Set up the grid
 
-    if(PRESENT(x)) then
-       if(add_center) then
+    if (PRESENT(x)) then
+       if (add_center .AND. .NOT. has_center) then
           x = [0._WP,r/R_star]
        else
           x = r/R_star

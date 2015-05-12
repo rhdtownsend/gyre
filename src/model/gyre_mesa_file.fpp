@@ -46,10 +46,11 @@ module gyre_mesa_file
 
 contains
 
-  subroutine read_mesa_model (file, deriv_type, ml, x, uni_Omega_rot)
+  subroutine read_mesa_model (file, deriv_type, add_center, ml, x, uni_Omega_rot)
 
     character(*), intent(in)                     :: file
-    character(*), intent(in)                     :: deriv_type 
+    character(*), intent(in)                     :: deriv_type
+    logical, intent(in)                          :: add_center
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
     real(WP), optional, intent(in)               :: uni_Omega_rot
@@ -78,11 +79,11 @@ contains
     real(WP), allocatable :: epsilon_rho(:)
     real(WP), allocatable :: epsilon_T(:)
     real(WP), allocatable :: Omega_rot(:)
-    logical               :: add_center
+    logical               :: has_center
 
     ! Read data from the MESA-format file
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from MESA file', TRIM(file)
 100    format(A,1X,A)
     endif
@@ -95,11 +96,17 @@ contains
 
     if (PRESENT(uni_Omega_rot)) Omega_rot = uni_Omega_rot
 
-    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
+    has_center = r(1) == 0._WP .AND. m(1) == 0._WP
 
     if (check_log_level('INFO')) then
-       if (add_center) write(OUTPUT_UNIT, 110) 'Adding central point'
-110    format(3X,A)
+       if (add_center) then
+          if (has_center) then
+             write(OUTPUT_UNIT, 110) 'No need to add central point'
+110          format(3X,A)
+          else
+             write(OUTPUT_UNIT, 110) 'Adding central point'
+          endif
+       endif
     endif
 
     ! Initialize the model
@@ -108,12 +115,12 @@ contains
                       N2, Gamma_1, nabla_ad, delta, Omega_rot, &
                       nabla, kappa, kappa_rho, kappa_T, &
                       epsilon, epsilon_rho, epsilon_T, &
-                      deriv_type, add_center=add_center)
+                      deriv_type, add_center=add_center .AND. .NOT. has_center)
 
     ! Set up the grid
 
-    if(PRESENT(x)) then
-       if(add_center) then
+    if (PRESENT(x)) then
+       if (add_center .AND. .NOT. has_center) then
           x = [0._WP,r/R_star]
        else
           x = r/R_star

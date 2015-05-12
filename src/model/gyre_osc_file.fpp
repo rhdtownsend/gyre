@@ -45,11 +45,12 @@ module gyre_osc_file
 
 contains
 
-  subroutine read_osc_model (file, deriv_type, data_format, ml, x)
+  subroutine read_osc_model (file, deriv_type, data_format, add_center, ml, x)
 
     character(*), intent(in)                     :: file
     character(*), intent(in)                     :: deriv_type
     character(*), intent(in)                     :: data_format
+    logical, intent(in)                          :: add_center
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
 
@@ -84,7 +85,7 @@ contains
     real(WP), allocatable     :: epsilon_rho(:)
     real(WP), allocatable     :: epsilon_T(:)
     real(WP), allocatable     :: Omega_rot(:)
-    logical                   :: add_center
+    logical                   :: has_center
 
     if(data_format /= '') then
        data_format_ = data_format
@@ -94,7 +95,7 @@ contains
 
     ! Read data from the OSC-format file
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from OSC file', TRIM(file)
 100    format(A,1X,A)
     endif
@@ -111,7 +112,7 @@ contains
 
     read(unit, *) n, iconst, ivar, iabund, ivers
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 110) 'Initial points :', n
        write(OUTPUT_UNIT, 110) 'File version   :', ivers
 110    format(3X,A,1X,I0)
@@ -177,11 +178,17 @@ contains
     if(r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
     if(m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
 
-    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
+    has_center = r(1) == 0._WP .AND. m(1) == 0._WP
 
     if (check_log_level('INFO')) then
-       if (add_center) write(OUTPUT_UNIT, 130) 'Adding central point'
-130    format(3X,A)
+       if (add_center) then
+          if (has_center) then
+             write(OUTPUT_UNIT, 130) 'No need to add central point'
+130          format(3X,A)
+          else
+             write(OUTPUT_UNIT, 130) 'Adding central point'
+          endif
+       endif
     endif
 
     ! Initialize the model
@@ -190,12 +197,12 @@ contains
                       N2, Gamma_1, nabla_ad, delta, Omega_rot, &
                       nabla, kappa, kappa_rho, kappa_T, &
                       epsilon_, epsilon_rho, epsilon_T, &
-                      deriv_type, add_center=add_center)
+                      deriv_type, add_center=add_center .AND. .NOT. has_center)
 
     ! Set up the grid
 
-    if(PRESENT(x)) then
-       if(add_center) then
+    if (PRESENT(x)) then
+       if (add_center .AND. .NOT. has_center) then
           x = [0._WP,r/R_star]
        else
           x = r/R_star

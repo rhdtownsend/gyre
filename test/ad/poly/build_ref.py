@@ -12,7 +12,7 @@ def build_ref_0 (out_file, gamma) :
 
     f = open(out_file, 'w')
 
-    f.write("\n\n\n")
+    f.write("\n\n\n\n")
 
     f.write("1 2 3 4 5 6 7\n")
     f.write("l n_pg n_p n_g Re(omega) Im(omega) E_norm\n")
@@ -46,7 +46,7 @@ def build_ref (in_file, out_file, nu_ref, l_0) :
 
     f = open(out_file, 'w')
 
-    f.write("\n\n\n")
+    f.write("\n\n\n\n")
 
     f.write("1 2 3 4 5 6 7\n")
     f.write("l n_pg n_p n_g Re(omega) Im(omega) E_norm\n")

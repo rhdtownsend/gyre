@@ -105,7 +105,7 @@ contains
 
     call this%c_magnus_ivp_t%shoot(omega, x_a, x_b, E_l, E_r, S)
 
-    ! Rescale by the uncoupledc eigenvalues, in order to help the root
+    ! Rescale by the uncoupled eigenvalues, in order to help the root
     ! finder
 
     if (RESCALE_EIGEN) then
@@ -118,7 +118,8 @@ contains
        lambda_2 = SQRT(A(4,3)*A(3,4))
        lambda_3 = SQRT(A(6,5)*A(5,6))
 
-       S = S*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(x_b - x_a)))
+!       S = S*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(x_b - x_a)))
+       S = S*exp(c_ext_t(-(lambda_3)*(x_b - x_a)))
 
     else
 

@@ -63,7 +63,7 @@ module gyre_nad_bvp
 
 contains
 
-  function nad_bvp_t_ (x, ml, mp, op, np) result (bp)
+  function nad_bvp_t_ (x, ml, mp, op, np, omega_min, omega_max) result (bp)
 
     use gyre_nad_magnus_ivp
     use gyre_nad_findiff_ivp
@@ -76,6 +76,8 @@ contains
     type(mode_par_t), intent(in)        :: mp
     type(osc_par_t), intent(in)         :: op
     type(num_par_t), intent(in)         :: np
+    real(WP), intent(in)                :: omega_min
+    real(WP), intent(in)                :: omega_max
     type(nad_bvp_t), target             :: bp
 
     class(c_rot_t), allocatable    :: rt
@@ -127,7 +129,7 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%c_bvp_t = c_bvp_t(x, ml, eq, bd, iv, sm)
+    bp%c_bvp_t = c_bvp_t(x, ml, eq, bd, iv, sm, omega_min, omega_max)
 
     ! Finish
 

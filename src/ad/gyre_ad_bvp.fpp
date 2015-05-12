@@ -67,7 +67,7 @@ module gyre_ad_bvp
 
 contains
 
-  function ad_bvp_t_ (x, ml, mp, op, np) result (bp)
+  function ad_bvp_t_ (x, ml, mp, op, np, omega_min, omega_max) result (bp)
 
     use gyre_ad_eqns
     use gyre_ad_bound
@@ -77,7 +77,9 @@ contains
     type(mode_par_t), intent(in)        :: mp
     type(osc_par_t), intent(in)         :: op
     type(num_par_t), intent(in)         :: np
-    type(ad_bvp_t), target              :: bp
+    real(WP), intent(in)                :: omega_min
+    real(WP), intent(in)                :: omega_max
+    type(ad_bvp_t)                      :: bp
 
     class(r_rot_t), allocatable    :: rt
     type(ad_eqns_t)                :: eq
@@ -117,7 +119,7 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%r_bvp_t = r_bvp_t(x, ml, eq, bd, iv, sm)
+    bp%r_bvp_t = r_bvp_t(x, ml, eq, bd, iv, sm, omega_min, omega_max)
 
     ! Finish
 

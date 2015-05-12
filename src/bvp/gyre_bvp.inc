@@ -35,6 +35,7 @@ module gyre_${T}_bvp
   use gyre_ivp
   use gyre_model
   use gyre_rot
+  use gyre_status
   use gyre_sysmtx
 
   use ISO_FORTRAN_ENV
@@ -53,11 +54,13 @@ module gyre_${T}_bvp
      class(${T}_sysmtx_t), allocatable :: sm
      real(WP), allocatable             :: x(:)
      $TYPE(WP), allocatable            :: y(:,:)
+     real(WP)                          :: omega_min
+     real(WP)                          :: omega_max
      integer                           :: n
      integer                           :: n_e
    contains 
      private
-     procedure, public :: discrim => discrim_
+     procedure, public :: eval_discrim => eval_discrim_
      procedure         :: build_
      procedure         :: solve_
      procedure, public :: recon => recon_
@@ -78,7 +81,7 @@ module gyre_${T}_bvp
 
 contains
 
-  function ${T}_bvp_t_ (x, ml, eq, bd, iv, sm) result (bp)
+  function ${T}_bvp_t_ (x, ml, eq, bd, iv, sm, omega_min, omega_max) result (bp)
 
     real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
@@ -86,7 +89,9 @@ contains
     class(${T}_bound_t), intent(in)     :: bd
     class(${T}_ivp_t), intent(in)       :: iv
     class(${T}_sysmtx_t), intent(in)    :: sm
-    type(${T}_bvp_t), target            :: bp
+    real(WP), intent(in)                :: omega_min
+    real(WP), intent(in)                :: omega_max
+    type(${T}_bvp_t)                    :: bp
 
     $CHECK_BOUNDS(bd%n_e,eq%n_e)
 
@@ -109,6 +114,9 @@ contains
 
     bp%x = x
     allocate(bp%y(bp%n_e,bp%n))
+
+    bp%omega_min = omega_min
+    bp%omega_max = omega_max
     
     ! Finish
     
@@ -118,24 +126,35 @@ contains
 
 !****
 
-  function discrim_ (this, omega) result (discrim)
+  subroutine eval_discrim_ (this, omega, discrim, status)
 
     class(${T}_bvp_t), intent(inout) :: this
     $TYPE(WP), intent(in)            :: omega
-    type(${T}_ext_t)                 :: discrim
+    type(${T}_ext_t), intent(out)    :: discrim
+    integer, intent(out)             :: status
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
-    call this%build_(omega)
+    if (REAL(omega, WP) >= this%omega_min .AND. REAL(omega, WP) <= this%omega_max) then
 
-    call this%sm%factorize()
-    discrim = this%sm%det()
+       call this%build_(omega)
+
+       call this%sm%factorize()
+       discrim = this%sm%det()
+
+       status = STATUS_OK
+
+    else
+
+       status = STATUS_OMEGA_DOMAIN
+
+    endif
 
     ! Finish
 
     return
 
-  end function discrim_
+  end subroutine eval_discrim_
 
 !****
 

@@ -27,13 +27,15 @@ module gyre_c_search
   use core_parallel
 
   use gyre_bvp
-  use gyre_cimplex
-  use gyre_discfunc
+  use gyre_discrim_func
   use gyre_ext
   use gyre_mode
+  use gyre_mode_par
   use gyre_model
   use gyre_num_par
+  use gyre_osc_par
   use gyre_root
+  use gyre_status
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -50,10 +52,12 @@ module gyre_c_search
 
 contains
 
-  subroutine prox_search (bp, np, md_in, process_root)
+  subroutine prox_search (bp, mp, np, op, md_in, process_root)
 
     class(c_bvp_t), target, intent(inout) :: bp
-    type(num_par_t), intent(in)           :: np
+    type(mode_par_t), intent(in)          :: mp
+    type(num_par_t), intent(in)           :: np 
+    type(osc_par_t), intent(in)           :: op
     type(mode_t), intent(in)              :: md_in(:)
     interface
        subroutine process_root (omega, n_iter, discrim_ref)
@@ -65,7 +69,7 @@ contains
        end subroutine process_root
     end interface
     
-    type(c_discfunc_t)       :: df
+    type(c_discrim_func_t)   :: df
     complex(WP), allocatable :: omega_def(:)
     integer                  :: c_beg
     integer                  :: c_end
@@ -77,6 +81,7 @@ contains
     type(c_ext_t)            :: omega_b
     integer                  :: n_iter
     integer                  :: n_iter_def
+    integer                  :: status
     type(c_ext_t)            :: discrim_a
     type(c_ext_t)            :: discrim_b
     type(c_ext_t)            :: discrim_a_rev
@@ -85,7 +90,7 @@ contains
 
     ! Set up the discriminant function
 
-    df = c_discfunc_t(bp)
+    df = c_discrim_func_t(bp)
 
     ! Initialize the frequency deflation array
 
@@ -108,6 +113,9 @@ contains
     n_md_in = SIZE(md_in)
 
     mode_loop : do i = 1, n_md_in
+
+       n_iter = 0
+       n_iter_def = 0
 
        ! Set up initial guesses
 
@@ -133,29 +141,32 @@ contains
        omega_a = c_ext_t(md_in(i)%omega + CMPLX(0._WP, domega, KIND=WP))
        omega_b = c_ext_t(md_in(i)%omega - CMPLX(0._WP, domega, KIND=WP))
 
-       discrim_a = df%eval(omega_a)
-       discrim_b = df%eval(omega_b)
+!       call improve_omega(bp, mp, op, md_in(i)%x, omega_a)
+!       call improve_omega(bp, mp, op, md_in(i)%x, omega_b)
 
+       call df%eval(omega_a, discrim_a, status)
+       if (status /= STATUS_OK) then
+          call report_status_(status, 'initial guess (a)')
+          cycle mode_loop
+       endif
+          
+       call df%eval(omega_b, discrim_b, status)
+       if (status /= STATUS_OK) then
+          call report_status_(status, 'initial guess (b)')
+          cycle mode_loop
+       endif
+          
        ! If necessary, do a preliminary root find using the deflated
        ! discriminant
 
        if (np%deflate_roots) then
 
-          n_iter_def = np%n_iter_max
-
           df%omega_def = omega_def
 
-          call narrow(df, np, omega_a, omega_b, r_ext_t(0._WP), n_iter=n_iter_def)
-
-          if (n_iter_def > np%n_iter_max) then
-
-             if (check_log_level('WARN')) then
-                write(OUTPUT_UNIT, 120) 'Failed to find mode in', n_iter_def, 'iterations (starting from omega=', REAL(md_in(i)%omega), ')'
-120             format(A,1X,I0,1X,A,E24.16,A)
-             endif
-
+          call narrow(df, np, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=np%n_iter_max)
+          if (status /= STATUS_OK) then
+             call report_status_(status, 'deflate narrow')
              cycle mode_loop
-
           endif
 
           deallocate(df%omega_def)
@@ -167,7 +178,11 @@ contains
              omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
           endif
 
-          call expand(df, omega_a, omega_b, r_ext_t(0._WP), f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 
+          call expand(df, omega_a, omega_b, r_ext_t(0._WP), status, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 
+          if (status /= STATUS_OK) then
+             call report_status_(status, 'deflate re-expand')
+             cycle mode_loop
+          endif
 
        else
 
@@ -180,26 +195,16 @@ contains
 
        ! Find the discriminant root
 
-       n_iter = np%n_iter_max - n_iter_def
-
-       call solve(df, np, omega_a, omega_b, r_ext_t(0._WP), omega_root, n_iter=n_iter, &
-                  f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
-
-       n_iter = n_iter + n_iter_def
-
-       if (n_iter > np%n_iter_max) then
-
-          if (check_log_level('WARN')) then
-             write(OUTPUT_UNIT, 120) 'Failed to find mode in', n_iter, 'iterations (starting from omega=', md_in(i)%omega, ')'
-          endif
-
+       call solve(df, np, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
+                  n_iter=n_iter, n_iter_max=np%n_iter_max-n_iter_def, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
+       if (status /= STATUS_OK) then
+          call report_status_(status, 'solve')
           cycle mode_loop
-
        endif
 
        ! Process it
 
-       call process_root(cmplx(omega_root), n_iter, max(abs(discrim_a), abs(discrim_b)))
+       call process_root(cmplx(omega_root), n_iter_def+n_iter, max(abs(discrim_a), abs(discrim_b)))
 
        ! Store the frequency in the deflation array
 
@@ -218,6 +223,83 @@ contains
 
     return
 
+  contains
+
+    subroutine report_status_ (status, stage_str)
+
+      integer, intent(in)      :: status
+      character(*), intent(in) :: stage_str
+
+      ! Report the status
+
+      if (check_log_level('WARN')) then
+
+         write(OUTPUT_UNIT, 100) 'Failed during ', stage_str, ' : ', status_str(status)
+100      format(4A)
+
+      endif
+      
+      if (check_log_level('INFO')) then
+
+         write(OUTPUT_UNIT, 110) 'n_iter_def :', n_iter_def
+         write(OUTPUT_UNIT, 110) 'n_iter     :', n_iter
+110      format(3X,A,1X,I0)
+
+         write(OUTPUT_UNIT, 120) 'omega_a    :', cmplx(omega_a)
+         write(OUTPUT_UNIT, 120) 'omega_b    :', cmplx(omega_b)
+120      format(3X,A,1X,2E24.16)
+
+      end if
+
+      ! Finish
+
+      return
+
+    end subroutine report_status_
+
   end subroutine prox_search
+
+!****
+
+  subroutine improve_omega (bp, mp, op, x, omega)
+
+    class(c_bvp_t), target, intent(inout) :: bp
+    type(mode_par_t), intent(in)          :: mp
+    type(osc_par_t), intent(in)           :: op
+    real(WP), intent(in)                  :: x(:)
+    type(c_ext_t), intent(inout)          :: omega
+
+    integer       :: n
+    real(WP)      :: x_ref
+    complex(WP)   :: y(6,SIZE(x))
+    complex(WP)   :: y_ref(6)
+    type(c_ext_t) :: discrim
+    type(mode_t)  :: md
+
+    ! Use the integral expression for the eigenfrequency to improve
+    ! omega
+
+    ! Reconstruct on the supplied grid
+
+    n = SIZE(x)
+
+    x_ref = x(n)
+
+    call bp%recon(cmplx(omega), x, x_ref, y, y_ref, discrim)
+
+    ! Create the mode
+
+    md = mode_t(bp%ml, mp, op, cmplx(omega), discrim, &
+                x, y, x_ref, y_ref)
+
+    ! Improve omega
+
+    omega = c_ext_t(md%omega_int())
+
+    ! Finish
+
+    return
+
+  end subroutine improve_omega
 
 end module gyre_c_search
