@@ -240,14 +240,18 @@ contains
 
   function freq_ (this, freq_units, freq_frame) result (freq)
 
-    class(mode_t), intent(in)    :: this
-    character(LEN=*), intent(in) :: freq_units
-    character(LEN=*), intent(in) :: freq_frame
-    complex(WP)                  :: freq
+    class(mode_t), intent(in)          :: this
+    character(*), intent(in)           :: freq_units
+    character(*), optional, intent(in) :: freq_frame
+    complex(WP)                        :: freq
 
     ! Calculate the frequency
 
-    freq = freq_from_omega(this%omega, this%ml, this%mp, this%op, this%x(1), this%x(this%n), freq_units, freq_frame)
+    if (PRESENT(freq_frame)) then
+       freq = freq_from_omega(this%omega, this%ml, this%mp, this%op, this%x(1), this%x(this%n), freq_units, freq_frame)
+    else
+       freq = freq_from_omega(this%omega, this%ml, this%mp, this%op, this%x(1), this%x(this%n), freq_units, 'INERTIAL')
+    endif
 
     ! Finish
     
