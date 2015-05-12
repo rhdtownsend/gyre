@@ -79,9 +79,7 @@ module gyre_lib
 
 contains
 
-  subroutine gyre_init (gyre_dir)
-
-    character(*), intent(in) :: gyre_dir
+  subroutine gyre_init ()
 
     ! Initialize
 
@@ -178,8 +176,6 @@ contains
     m = w/(1._WP+w)*M_star
 
     add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
-
-    print *,'Add center:',add_center
 
     allocate(ml_m, SOURCE=evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
                                        Gamma_1, nabla_ad, delta, Omega_rot, &
