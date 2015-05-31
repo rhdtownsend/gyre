@@ -48,6 +48,7 @@ module gyre_nad_eqns
      class(model_t), pointer     :: ml => null()
      class(c_rot_t), allocatable :: rt
      integer                     :: vars
+     logical                     :: cowling_approx
    contains
      private
      procedure, public :: A => A_
@@ -98,6 +99,8 @@ contains
     case default
        $ABORT(Invalid variables_set)
     end select
+
+    eq%cowling_approx = op%cowling_approx
 
     eq%n_e = 6
 
@@ -182,6 +185,7 @@ contains
     complex(WP) :: lambda
     complex(WP) :: l_0
     complex(WP) :: omega_c
+    real(WP)    :: chi_cowl
          
     ! Evaluate the log(x)-space RHS matrix ([Dzi1971] formulation)
 
@@ -210,47 +214,53 @@ contains
 
     omega_c = this%rt%omega_c(x, omega)
 
+    if (this%cowling_approx) then
+       chi_cowl = 0._WP
+    else
+       chi_cowl = 1._WP
+    endif
+
     ! Set up the matrix
 
     xA(1,1) = V_g - 1._WP - l_0
     xA(1,2) = lambda/(c_1*omega_c**2) - V_g
-    xA(1,3) = V_g
-    xA(1,4) = 0._WP
+    xA(1,3) = chi_cowl*(V_g)
+    xA(1,4) = chi_cowl*(0._WP)
     xA(1,5) = delta
     xA(1,6) = 0._WP
 
     xA(2,1) = c_1*omega_c**2 - As
     xA(2,2) = As - U + 3._WP - l_0
-    xA(2,3) = -As
-    xA(2,4) = 0._WP
+    xA(2,3) = chi_cowl*(-As)
+    xA(2,4) = chi_cowl*(0._WP)
     xA(2,5) = delta
     xA(2,6) = 0._WP
 
-    xA(3,1) = 0._WP
-    xA(3,2) = 0._WP
-    xA(3,3) = 3._WP - U - l_0
-    xA(3,4) = 1._WP
-    xA(3,5) = 0._WP
-    xA(3,6) = 0._WP
+    xA(3,1) = chi_cowl*(0._WP)
+    xA(3,2) = chi_cowl*(0._WP)
+    xA(3,3) = chi_cowl*(3._WP - U - l_0)
+    xA(3,4) = chi_cowl*(1._WP)
+    xA(3,5) = chi_cowl*(0._WP)
+    xA(3,6) = chi_cowl*(0._WP)
 
-    xA(4,1) = U*As
-    xA(4,2) = U*V_g
-    xA(4,3) = lambda - U*V_g
-    xA(4,4) = -U - l_0 + 2._WP
-    xA(4,5) = -U*delta
-    xA(4,6) = 0._WP
+    xA(4,1) = chi_cowl*(U*As)
+    xA(4,2) = chi_cowl*(U*V_g)
+    xA(4,3) = chi_cowl*(lambda - U*V_g)
+    xA(4,4) = chi_cowl*(-U - l_0 + 2._WP)
+    xA(4,5) = chi_cowl*(-U*delta)
+    xA(4,6) = chi_cowl*(0._WP)
 
     xA(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
     xA(5,2) = V*(lambda/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
-    xA(5,3) = V*c_dif
-    xA(5,4) = V*nabla_ad
+    xA(5,3) = chi_cowl*(V*c_dif)
+    xA(5,4) = chi_cowl*(V*nabla_ad)
     xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
     xA(5,6) = -V*nabla/c_rad
 
     xA(6,1) = lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
     xA(6,2) = V*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-    xA(6,3) = lambda*nabla_ad/nabla*c_rad - V*c_eps_ad
-    xA(6,4) = 0._WP
+    xA(6,3) = chi_cowl*(lambda*nabla_ad/nabla*c_rad - V*c_eps_ad)
+    xA(6,4) = chi_cowl*(0._WP)
     if (x > 0._WP) then
        xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
     else
@@ -293,6 +303,7 @@ contains
     complex(WP) :: lambda
     complex(WP) :: l_0
     complex(WP) :: omega_c
+    real(WP)    :: chi_cowl
          
     ! Evaluate the log(x)-space RHS matrix ([Chr2008] formulation)
 
@@ -322,49 +333,55 @@ contains
 
     omega_c = this%rt%omega_c(x, omega)
 
+    if (this%cowling_approx) then
+       chi_cowl = 0._WP
+    else
+       chi_cowl = 1._WP
+    endif
+
     ! Set up the matrix
 
     if (l /= 0) then
 
        xA(1,1) = V_g - 1._WP - l_0
        xA(1,2) = 1._WP - V_g*c_1*omega_c**2/lambda
-       xA(1,3) = -V_g
-       xA(1,4) = 0._WP
+       xA(1,3) = chi_cowl*(-V_g)
+       xA(1,4) = chi_cowl*(0._WP)
        xA(1,5) = delta
        xA(1,6) = 0._WP
       
        xA(2,1) = lambda - As*lambda/(c_1*omega_c**2)
        xA(2,2) = As - l_0
-       xA(2,3) = As*lambda/(c_1*omega_c**2)
-       xA(2,4) = 0._WP
+       xA(2,3) = chi_cowl*(As*lambda/(c_1*omega_c**2))
+       xA(2,4) = chi_cowl*(0._WP)
        xA(2,5) = delta*lambda/(c_1*omega_c**2)
        xA(2,6) = 0._WP
       
-       xA(3,1) = 0._WP
-       xA(3,2) = 0._WP
-       xA(3,3) = 2._WP - l_0
-       xA(3,4) = 1._WP
-       xA(3,5) = 0._WP
-       xA(3,6) = 0._WP
+       xA(3,1) = chi_cowl*(0._WP)
+       xA(3,2) = chi_cowl*(0._WP)
+       xA(3,3) = chi_cowl*(2._WP - l_0)
+       xA(3,4) = chi_cowl*(1._WP)
+       xA(3,5) = chi_cowl*(0._WP)
+       xA(3,6) = chi_cowl*(0._WP)
       
-       xA(4,1) = -U*As
-       xA(4,2) = -U*V_g*c_1*omega_c**2/lambda
-       xA(4,3) = lambda + U*(As - 2._WP)
-       xA(4,4) = 2._WP*(1._WP-U) - (l_0 - 1._WP)
-       xA(4,5) = U*delta
-       xA(4,6) = 0._WP
+       xA(4,1) = chi_cowl*(-U*As)
+       xA(4,2) = chi_cowl*(-U*V_g*c_1*omega_c**2/lambda)
+       xA(4,3) = chi_cowl*(lambda + U*(As - 2._WP))
+       xA(4,4) = chi_cowl*(2._WP*(1._WP-U) - (l_0 - 1._WP))
+       xA(4,5) = chi_cowl*(U*delta)
+       xA(4,6) = chi_cowl*(0._WP)
 
        xA(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
        xA(5,2) = V*(lambda/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)*c_1*omega_c**2/lambda
-       xA(5,3) = -V*c_dif + V*nabla_ad*(1._WP-U)
-       xA(5,4) = -V*nabla_ad
+       xA(5,3) = chi_cowl*(-V*c_dif + V*nabla_ad*(1._WP-U))
+       xA(5,4) = chi_cowl*(-V*nabla_ad)
        xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
        xA(5,6) = -V*nabla/c_rad
 
        xA(6,1) = l_0*(l_0+1._WP)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
        xA(6,2) = (V*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2)))*c_1*omega_c**2/lambda
-       xA(6,3) = -(lambda*nabla_ad/nabla*c_rad - V*c_eps_ad)
-       xA(6,4) = 0._WP
+       xA(6,3) = chi_cowl*(-(lambda*nabla_ad/nabla*c_rad - V*c_eps_ad))
+       xA(6,4) = chi_cowl*(0._WP)
        if (x > 0._WP) then
           xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
        else
@@ -376,43 +393,43 @@ contains
 
        xA(1,1) = V_g - 1._WP
        xA(1,2) = -V_g*c_1*omega_c**2
-       xA(1,3) = -V_g
-       xA(1,4) = 0._WP
+       xA(1,3) = chi_cowl*(-V_g)
+       xA(1,4) = chi_cowl*(0._WP)
        xA(1,5) = delta
        xA(1,6) = 0._WP
       
        xA(2,1) = 1._WP - As/(c_1*omega_c**2)
        xA(2,2) = As
-       xA(2,3) = As/(c_1*omega_c**2)
-       xA(2,4) = 0._WP
+       xA(2,3) = chi_cowl*(As/(c_1*omega_c**2))
+       xA(2,4) = chi_cowl*(0._WP)
        xA(2,5) = delta/(c_1*omega_c**2)
        xA(2,6) = 0._WP
       
-       xA(3,1) = 0._WP
-       xA(3,2) = 0._WP
-       xA(3,3) = 2._WP
-       xA(3,4) = 1._WP
-       xA(3,5) = 0._WP
-       xA(3,6) = 0._WP
+       xA(3,1) = chi_cowl*(0._WP)
+       xA(3,2) = chi_cowl*(0._WP)
+       xA(3,3) = chi_cowl*(2._WP)
+       xA(3,4) = chi_cowl*(1._WP)
+       xA(3,5) = chi_cowl*(0._WP)
+       xA(3,6) = chi_cowl*(0._WP)
       
-       xA(4,1) = -U*As
-       xA(4,2) = -U*V_g*c_1*omega_c**2
-       xA(4,3) = U*(As - 2._WP)
-       xA(4,4) = 2._WP*(1._WP-U) + 1._WP
-       xA(4,5) = U*delta
-       xA(4,6) = 0._WP
+       xA(4,1) = chi_cowl*(-U*As)
+       xA(4,2) = chi_cowl*(-U*V_g*c_1*omega_c**2)
+       xA(4,3) = chi_cowl*(U*(As - 2._WP))
+       xA(4,4) = chi_cowl*(2._WP*(1._WP-U) + 1._WP)
+       xA(4,5) = chi_cowl*(U*delta)
+       xA(4,6) = chi_cowl*(0._WP)
 
        xA(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
        xA(5,2) = V*(-c_dif)*c_1*omega_c**2
-       xA(5,3) = -V*c_dif + V*nabla_ad*(1._WP-U)
-       xA(5,4) = -V*nabla_ad
+       xA(5,3) = chi_cowl*(-V*c_dif + V*nabla_ad*(1._WP-U))
+       xA(5,4) = chi_cowl*(-V*nabla_ad)
        xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
        xA(5,6) = -V*nabla/c_rad
 
        xA(6,1) = -V*c_eps_ad
        xA(6,2) = V*c_eps_ad*c_1*omega_c**2
-       xA(6,3) = -V*c_eps_ad
-       xA(6,4) = 0._WP
+       xA(6,3) = chi_cowl*(-V*c_eps_ad)
+       xA(6,4) = chi_cowl*(0._WP)
        xA(6,5) = c_eps_S - (0._WP,1._WP)*omega_c*c_thm
        xA(6,6) = -1._WP
 
@@ -453,6 +470,7 @@ contains
     complex(WP) :: lambda
     complex(WP) :: l_0
     complex(WP) :: omega_c
+    real(WP)    :: chi_cowl
          
     ! Evaluate the log(x)-space RHS matrix (Lagrangian pressure
     ! perturbation formulation)
@@ -483,47 +501,53 @@ contains
 
     omega_c = this%rt%omega_c(x, omega)
 
+    if (this%cowling_approx) then
+       chi_cowl = 0._WP
+    else
+       chi_cowl = 1._WP
+    endif
+
     ! Set up the matrix
 
     xA(1,1) = lambda/(c_1*omega_c**2) - 1._WP - l_0
     xA(1,2) = lambda/(c_1*omega_c**2)/V_2 - x**2/Gamma_1
-    xA(1,3) = lambda/(c_1*omega_c**2)
-    xA(1,4) = 0._WP
+    xA(1,3) = chi_cowl*(lambda/(c_1*omega_c**2))
+    xA(1,4) = chi_cowl*(0._WP)
     xA(1,5) = delta
     xA(1,6) = 0._WP
 
     xA(2,1) = -V_2*(lambda/(c_1*omega_c**2) - c_1*omega_c**2 + U - 4._WP)
     xA(2,2) = -lambda/(c_1*omega_c**2) + V - l_0
-    xA(2,3) = -V_2*lambda/(c_1*omega_c**2)
-    xA(2,4) = -V_2
+    xA(2,3) = chi_cowl*(-V_2*lambda/(c_1*omega_c**2))
+    xA(2,4) = chi_cowl*(-V_2)
     xA(2,5) = 0._WP
     xA(2,6) = 0._WP
 
-    xA(3,1) = 0._WP
-    xA(3,2) = 0._WP
-    xA(3,3) = 3._WP - U - l_0
-    xA(3,4) = 1._WP
-    xA(3,5) = 0._WP
-    xA(3,6) = 0._WP
+    xA(3,1) = chi_cowl*(0._WP)
+    xA(3,2) = chi_cowl*(0._WP)
+    xA(3,3) = chi_cowl*(3._WP - U - l_0)
+    xA(3,4) = chi_cowl*(1._WP)
+    xA(3,5) = chi_cowl*(0._WP)
+    xA(3,6) = chi_cowl*(0._WP)
 
-    xA(4,1) = -U*D
-    xA(4,2) = U*x**2/Gamma_1
-    xA(4,3) = lambda
-    xA(4,4) = -U - l_0 + 2._WP
-    xA(4,5) = -U*delta
-    xA(4,6) = 0._WP
+    xA(4,1) = chi_cowl*(-U*D)
+    xA(4,2) = chi_cowl*(U*x**2/Gamma_1)
+    xA(4,3) = chi_cowl*(lambda)
+    xA(4,4) = chi_cowl*(-U - l_0 + 2._WP)
+    xA(4,5) = chi_cowl*(-U*delta)
+    xA(4,6) = chi_cowl*(0._WP)
 
     xA(5,1) = V*(lambda/(c_1*omega_c**2)*(nabla_ad-nabla) + nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla))
     xA(5,2) = x**2*(lambda/(c_1*omega_c**2)*(nabla_ad - nabla) - c_dif)
-    xA(5,3) = V*(lambda/(c_1*omega_c**2)*(nabla_ad-nabla))
-    xA(5,4) = V*nabla_ad
+    xA(5,3) = chi_cowl*(V*(lambda/(c_1*omega_c**2)*(nabla_ad-nabla)))
+    xA(5,4) = chi_cowl*(V*nabla_ad)
     xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
     xA(5,6) = -V*nabla/c_rad
 
     xA(6,1) = lambda*c_rad*((3._WP + dc_rad)/(c_1*omega_c**2) - 1._WP)
     xA(6,2) = x**2*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))/V_2
-    xA(6,3) = lambda*c_rad*(3._WP + dc_rad)/(c_1*omega_c**2)
-    xA(6,4) = 0._WP
+    xA(6,3) = chi_cowl*(lambda*c_rad*(3._WP + dc_rad)/(c_1*omega_c**2))
+    xA(6,4) = chi_cowl*(0._WP)
     if (x > 0._WP) then
        xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
     else
