@@ -122,7 +122,7 @@ contains
     real(WP)    :: lambda_im(SIZE(lambda))
     real(WP)    :: V_l_r(SIZE(A, 1),SIZE(A, 2))
     real(WP)    :: V_r_r(SIZE(A, 1),SIZE(A, 2))
-    real(WP)    :: work(4*SIZE(A,1))
+    real(WP)    :: work(4*SIZE(A, 1))
     integer     :: info
     integer     :: i
     complex(WP) :: norm
@@ -423,12 +423,12 @@ contains
 
 !****
 
-  subroutine sing_decompose_r_ (A, sigma, U, V)
+  subroutine sing_decompose_r_ (A, sigma, U, V_T)
 
     real(WP), intent(inout) :: A(:,:)
     real(WP), intent(out)   :: sigma(:)
     real(WP), intent(out)   :: U(:,:)
-    real(WP), intent(out)   :: V(:,:)
+    real(WP), intent(out)   :: V_T(:,:)
 
     integer  :: n
     real(WP) :: work(5*SIZE(A, 1))
@@ -440,18 +440,16 @@ contains
     $CHECK_BOUNDS(SIZE(U, 1),SIZE(A, 1))
     $CHECK_BOUNDS(SIZE(U, 2),SIZE(A, 2))
     
-    $CHECK_BOUNDS(SIZE(V, 1),SIZE(A, 1))
-    $CHECK_BOUNDS(SIZE(V, 2),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(V_T, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(V_T, 2),SIZE(A, 2))
 
     ! Perform the singular-value decomposition of A
 
     n = SIZE(A, 1)
 
-    call DGESVD('A', 'A', n, n, A, n, sigma, U, n, V, n, work, SIZE(work), info)
+    call XGESVD('A', 'A', n, n, A, n, sigma, U, n, V_T, n, work, SIZE(work), info)
     $ASSERT(info == 0,Non-zero return from XGESVD)
 
-    V = TRANSPOSE(V)
-    
     ! Finish
 
     return
@@ -460,12 +458,12 @@ contains
     
 !****
 
-  subroutine sing_decompose_c_ (A, sigma, U, V)
+  subroutine sing_decompose_c_ (A, sigma, U, V_H)
 
     complex(WP), intent(inout) :: A(:,:)
     real(WP), intent(out)      :: sigma(:)
     complex(WP), intent(out)   :: U(:,:)
-    complex(WP), intent(out)   :: V(:,:)
+    complex(WP), intent(out)   :: V_H(:,:)
 
     integer     :: n
     complex(WP) :: work(3*SIZE(A, 1))
@@ -478,18 +476,16 @@ contains
     $CHECK_BOUNDS(SIZE(U, 1),SIZE(A, 1))
     $CHECK_BOUNDS(SIZE(U, 2),SIZE(A, 2))
     
-    $CHECK_BOUNDS(SIZE(V, 1),SIZE(A, 1))
-    $CHECK_BOUNDS(SIZE(V, 2),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(V_H, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(V_H, 2),SIZE(A, 2))
 
     ! Perform the singular-value decomposition of A
 
     n = SIZE(A, 1)
 
-    call ZGESVD('A', 'A', n, n, A, n, sigma, U, n, V, n, work, SIZE(work), rwork, info)
+    call XGESVD('A', 'A', n, n, A, n, sigma, U, n, V_H, n, work, SIZE(work), rwork, info)
     $ASSERT(info == 0,Non-zero return from XGESVD)
 
-    V = CONJG(TRANSPOSE(V))
-    
     ! Finish
 
     return
