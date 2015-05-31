@@ -225,10 +225,22 @@ contains
     real(WP), intent(in)          :: omega
     real(WP)                      :: B_i(this%n_i,this%n_e)
 
+    real(WP) :: chi_cowl
+
     $ASSERT(this%x_i /= 0._WP,Boundary condition invalid for x_i == 0)
 
     ! Evaluate the inner boundary conditions (zero
     ! displacement/gravity)
+
+    ! Calculate coefficients
+
+    if (this%cowling_approx) then
+       chi_cowl = 0._WP
+    else
+       chi_cowl = 1._WP
+    endif
+
+    ! Set up the boundary conditions
 
     B_i(1,1) = 1._WP
     B_i(1,2) = 0._WP
