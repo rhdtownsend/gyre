@@ -810,7 +810,7 @@ contains
 
        n_pg = n_p - n_g
 
-    elseif (md%mp%l == 1 .AND. .NOT. md%op%cowling) then
+    elseif (md%mp%l == 1 .AND. .NOT. md%op%cowling_approx) then
 
        ! Dipole modes
 
