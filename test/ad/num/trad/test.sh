@@ -14,7 +14,7 @@ OUT_FILE=gyre_ad.txt
 
 LABEL="numerics (rotation, traditional approximation)"
 
-RELERR=3E-14
+RELERR=3E-13
 FIELDS=1-5
 
 # Do the tests
