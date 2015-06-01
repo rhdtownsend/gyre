@@ -299,7 +299,7 @@ contains
     m = SIZE(this%A_b, 2)
 
     call ${X}GBTRF(m, m, this%n_ul, this%n_ul, this%A_b, n, this%ipiv, info)
-    $ASSERT(info == 0 .OR. info == m,Non-zero return from XGBTRF)
+    $ASSERT(info == 0 .OR. info > m-this%n_e,Non-zero return from XGBTRF)
 
     ! Finish
 
@@ -386,6 +386,8 @@ contains
     class(${T}_band_sysmtx_t), intent(in) :: this
     $TYPE(WP)                             :: v(this%n_e*(this%n+1))
 
+    integer                :: i_s
+    real(WP)               :: A_s
     integer                :: i
     $TYPE(WP), allocatable :: A_b(:,:)
     $TYPE(WP), allocatable :: B(:,:)
@@ -399,50 +401,50 @@ contains
 
     associate (n => this%n, n_e => this%n_e, n_ul => this%n_ul)
 
-      ! Locate the singular element on the diagonal
+      ! Locate the singular element on the diagonal of the outer block
 
-      sing_loop : do i = 1, n_e*(n+1)-1
-         if (this%A_b(2*this%n_ul+1,i) == 0._WP) exit sing_loop
+      i_s = 0
+      A_s = HUGE(0._WP)
+
+      sing_loop : do i = n_e*n+1, n_e*(n+1)
+         if (ABS(this%A_b(2*n_ul+1,i)) < A_s) then
+            A_s = ABS(this%A_b(2*n_ul+1,i))
+            i_s = i
+         end if
       end do sing_loop
-
-      $ASSERT(i > n_e*n,Singular element not in outer block)
-
-      if (i /= n_e*(n+1)) then
-         $WARN(Singular element not at outer point)
-      endif
 
       ! Set up the reduced banded system
 
-      allocate(A_b(3*n_ul+1,i-1))
-      allocate(B(i-1,1))
+      allocate(A_b(3*n_ul+1,i_s-1))
+      allocate(B(i_s-1,1))
       
-      allocate(ipiv(i-1))
+      allocate(ipiv(i_s-1))
 
-      A_b(:2*n_ul+1,:) = this%A_b(:2*n_ul+1,:i-1)
+      A_b(:2*n_ul+1,:) = this%A_b(:2*n_ul+1,:i_s-1)
       A_b(2*n_ul+2:,:) = 0._WP
 
-      n2 = MIN(2*n_ul, i-1)
+      n2 = MIN(2*n_ul, i_s-1)
 
-      B(:i-n2-1,1) = 0._WP
-      B(i-n2:,1) = -this%A_b(2*n_ul+1-n2:2*n_ul,i)
+      B(:i_s-n2-1,1) = 0._WP
+      B(i_s-n2:,1) = -this%A_b(2*n_ul+1-n2:2*n_ul,i_s)
 
-      do j = 1,i-1
+      do j = 1,i_s-1
          ipiv(j) = j
       enddo
 
-      ! Solve for the 1:i-1 components of the null vector
+      ! Solve for the 1:i_s-1 components of the null vector
 
       call ${X}GBTRS('N', SIZE(A_b, 2), n_ul, n_ul, 1, A_b, SIZE(A_b, 1), ipiv, B, SIZE(B, 1), info)
       $ASSERT(info == 0,Non-zero return from XGBTRS)
 
-      v(:i-1) = B(:,1)
+      v(:i_s-1) = B(:,1)
 
     end associate
        
     ! Fill in the remainign components of the null vector
     
-    v(i) = 1._WP
-    v(i+1:) = 0._WP
+    v(i_s) = 1._WP
+    v(i_s+1:) = 0._WP
 
     ! Finish
 
