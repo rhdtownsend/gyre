@@ -14,7 +14,7 @@ OUT_FILE=gyre_ad.txt
 
 LABEL="numerics (Cowling approximation)"
 
-RELERR=3E-14
+RELERR=5E-12
 FIELDS=1-5
 
 # Do the tests
