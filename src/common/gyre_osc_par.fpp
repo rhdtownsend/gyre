@@ -40,6 +40,7 @@ module gyre_osc_par
      character(64)   :: inertia_norm
      character(2048) :: tag_list
      logical         :: nonadiabatic
+     logical         :: cowling_approx
      logical         :: reduce_order
   end type osc_par_t
 
@@ -89,12 +90,13 @@ contains
     character(LEN(op%outer_bound))     :: outer_bound
     character(LEN(op%inertia_norm))    :: inertia_norm
     character(LEN(op%tag_list))        :: tag_list
-    logical                            :: reduce_order
     logical                            :: nonadiabatic
+    logical                            :: cowling_approx
+    logical                            :: reduce_order
     real(WP)                           :: x_ref
 
     namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, variables_set, &
-         inertia_norm, tag_list, reduce_order, nonadiabatic
+         inertia_norm, tag_list, nonadiabatic, cowling_approx, reduce_order
 
     ! Count the number of osc namelists
 
@@ -127,6 +129,7 @@ contains
        tag_list = ''
 
        nonadiabatic = .FALSE.
+       cowling_approx = .FALSE.
        reduce_order = .TRUE.
 
        read(unit, NML=osc)
@@ -141,6 +144,7 @@ contains
                         inertia_norm=inertia_norm, &
                         tag_list=tag_list, &
                         nonadiabatic=nonadiabatic, &
+                        cowling_approx=cowling_approx, &
                         reduce_order=reduce_order)
 
     end do read_loop
@@ -176,6 +180,7 @@ contains
     call bcast(op%tag_list, root_rank)
 
     call bcast(op%nonadiabatic, root_rank)
+    call bcast(op%cowling_approx, root_rank)
     call bcast(op%reduce_order, root_rank)
 
     ! Finish

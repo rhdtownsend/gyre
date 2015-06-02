@@ -117,6 +117,7 @@ check_output ()
     # Do the test
 
     ndiff $ndiff_flags $file_a_tmp $file_b_tmp
+    retval=$?
 
     if [ $retval -ne 0 ]; then
 	echo " ...failed: $file_a and $file_b differ in fields $fields"

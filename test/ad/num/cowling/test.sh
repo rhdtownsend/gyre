@@ -12,9 +12,9 @@ EXEC=./gyre_ad
 IN_FILE=gyre_ad.in
 OUT_FILE=gyre_ad.txt
 
-LABEL="numerics (rotation, traditional approximation)"
+LABEL="numerics (Cowling approximation)"
 
-RELERR=3E-13
+RELERR=5E-12
 FIELDS=1-5
 
 # Do the tests

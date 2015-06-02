@@ -784,9 +784,7 @@ contains
 
     ! Classify the mode based on its eigenfunctions
 
-    select case (md%mp%l)
-
-    case (0)
+    if (md%mp%l == 0) then
 
        ! Radial modes
        
@@ -812,7 +810,7 @@ contains
 
        n_pg = n_p - n_g
 
-    case (1)
+    elseif (md%mp%l == 1 .AND. .NOT. md%op%cowling_approx) then
 
        ! Dipole modes
 
@@ -844,7 +842,7 @@ contains
           n_pg = n_p - n_g
        endif
 
-    case default
+    else
 
        ! Other modes
 
@@ -862,7 +860,7 @@ contains
 
        n_pg = n_p - n_g
 
-    end select
+    endif
 
     ! Finish
 

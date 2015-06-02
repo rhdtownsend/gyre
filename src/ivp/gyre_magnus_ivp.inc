@@ -116,8 +116,8 @@ contains
     $TYPE(WP), intent(out)               :: E_r(:,:)
     type(${T}_ext_t), intent(out)        :: S
 
-    logical :: UPWIND = .TRUE.
-
+    logical, parameter :: UPWIND = .TRUE.
+    
     $TYPE(WP)   :: dOmega(this%n_e,this%n_e)
     complex(WP) :: lambda(this%n_e)
     complex(WP) :: V_l(this%n_e,this%n_e)
@@ -198,7 +198,7 @@ contains
        S = ${T}_ext_t(1._WP)
 
     endif
-    
+
     $endblock
 
     E_l = E_l_

@@ -405,12 +405,18 @@ contains
     class(${T}_block_sysmtx_t), intent(in) :: this
     $TYPE(WP)                              :: v(this%n_e*(this%n+1))
 
+    logical, parameter   :: USE_SVD = .FALSE.
     $TYPE(WP), parameter :: ZERO = 0._WP
     $TYPE(WP), parameter :: ONE = 1._WP
 
     $TYPE(WP) :: M(2*this%n_e,2*this%n_e)
+    real(WP)  :: sigma(2*this%n_e)
+    $TYPE(WP) :: U(2*this%n_e,2*this%n_e)
+    $TYPE(WP) :: V_H(2*this%n_e,2*this%n_e)
     integer   :: ipiv(2*this%n_e)
     integer   :: info
+    integer   :: i_s
+    real(WP)  :: M_s
     integer   :: i
     $TYPE(WP) :: v_bound(2*this%n_e)
     integer   :: l
@@ -434,30 +440,45 @@ contains
       M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
       M(n_i+n_e+1:,n_e+1:) = this%B_o
 
-      ! Factorize it
+      ! Solve for the solution at the two boundaries
 
-      call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
-      $ASSERT(info >= 0, Negative return from XGETRF)
+      if (USE_SVD) then
 
-      ! Locate the singular element on the diagonal
+         ! Use singular value decomposition
 
-      sing_loop : do i = 1, 2*n_e-1
-         if (M(i,i) == 0._WP) exit sing_loop
-      end do sing_loop
+         call sing_decompose(M, sigma, U, V_H)
 
-      if (i /= 2*n_e) then
-         $WARN(Singular element not at outer point)
+         v_bound = V_H(2*n_e,:)
+
+      else
+
+         ! Use LU decomposition
+
+         call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
+         $ASSERT(info >= 0, Negative return from XGETRF)
+
+         ! Locate the singular element on the diagonal of the outer
+         ! block
+
+         i_s = 0
+         M_s = HUGE(0._WP)
+
+         sing_loop : do i = n_e+1, 2*n_e
+            if (ABS(M(i,i)) < M_s) then
+               M_s = ABS(M(i,i))
+               i_s = i
+            end if
+         end do sing_loop
+
+         v_bound(:i_s-1) = -M(:i_s-1,i_s)
+
+         call ${X}TRSM('L', 'U', 'N', 'N', i_s-1, 1, &
+                       ONE, M, 2*n_e, v_bound, 2*n_e)
+
+         v_bound(i_s) = 1._WP
+         v_bound(i_s+1:) = 0._WP
+
       endif
-
-      ! Calculate the solutions at the two boundaries
-
-      v_bound(:i-1) = -M(:i-1,i)
-
-      call ${X}TRSM('L', 'U', 'N', 'N', i-1, 1, &
-           ONE, M, 2*n_e, v_bound, 2*n_e)
-
-      v_bound(i) = 1._WP
-      v_bound(i+1:) = 0._WP
 
       ! Backsubstitute to reconstruct the full solution vector
 

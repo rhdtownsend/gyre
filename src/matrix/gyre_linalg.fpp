@@ -38,6 +38,11 @@ module gyre_linalg
      module procedure eigen_decompose_c_
   end interface eigen_decompose
 
+  interface sing_decompose
+     module procedure sing_decompose_r_
+     module procedure sing_decompose_c_
+  end interface sing_decompose
+
   interface linear_solve
      module procedure linear_solve_vec_r_
      module procedure linear_solve_vec_c_
@@ -87,6 +92,7 @@ module gyre_linalg
   private
 
   public :: eigen_decompose
+  public :: sing_decompose
   public :: linear_solve
   public :: commutator
   public :: measure_bandwidth
@@ -108,7 +114,7 @@ contains
     complex(WP), intent(out)      :: lambda(:)
     complex(WP), intent(out)      :: V_l(:,:)
     complex(WP), intent(out)      :: V_r(:,:)
-    logical, optional, intent(in)      :: sort
+    logical, optional, intent(in) :: sort
 
     logical     :: sort_
     integer     :: n
@@ -116,7 +122,7 @@ contains
     real(WP)    :: lambda_im(SIZE(lambda))
     real(WP)    :: V_l_r(SIZE(A, 1),SIZE(A, 2))
     real(WP)    :: V_r_r(SIZE(A, 1),SIZE(A, 2))
-    real(WP)    :: work(4*SIZE(A,1))
+    real(WP)    :: work(4*SIZE(A, 1))
     integer     :: info
     integer     :: i
     complex(WP) :: norm
@@ -415,6 +421,77 @@ contains
   $EIGEN_DECOMPOSE_2(r,real)
   $EIGEN_DECOMPOSE_2(c,complex)
 
+!****
+
+  subroutine sing_decompose_r_ (A, sigma, U, V_T)
+
+    real(WP), intent(inout) :: A(:,:)
+    real(WP), intent(out)   :: sigma(:)
+    real(WP), intent(out)   :: U(:,:)
+    real(WP), intent(out)   :: V_T(:,:)
+
+    integer  :: n
+    real(WP) :: work(5*SIZE(A, 1))
+    integer  :: info
+
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(sigma),SIZE(A, 1))
+
+    $CHECK_BOUNDS(SIZE(U, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(U, 2),SIZE(A, 2))
+    
+    $CHECK_BOUNDS(SIZE(V_T, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(V_T, 2),SIZE(A, 2))
+
+    ! Perform the singular-value decomposition of A
+
+    n = SIZE(A, 1)
+
+    call XGESVD('A', 'A', n, n, A, n, sigma, U, n, V_T, n, work, SIZE(work), info)
+    $ASSERT(info == 0,Non-zero return from XGESVD)
+
+    ! Finish
+
+    return
+
+  end subroutine sing_decompose_r_
+    
+!****
+
+  subroutine sing_decompose_c_ (A, sigma, U, V_H)
+
+    complex(WP), intent(inout) :: A(:,:)
+    real(WP), intent(out)      :: sigma(:)
+    complex(WP), intent(out)   :: U(:,:)
+    complex(WP), intent(out)   :: V_H(:,:)
+
+    integer     :: n
+    complex(WP) :: work(3*SIZE(A, 1))
+    real(WP)    :: rwork(5*SIZE(A, 1))
+    integer     :: info
+
+    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(sigma),SIZE(A, 1))
+
+    $CHECK_BOUNDS(SIZE(U, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(U, 2),SIZE(A, 2))
+    
+    $CHECK_BOUNDS(SIZE(V_H, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(V_H, 2),SIZE(A, 2))
+
+    ! Perform the singular-value decomposition of A
+
+    n = SIZE(A, 1)
+
+    call XGESVD('A', 'A', n, n, A, n, sigma, U, n, V_H, n, work, SIZE(work), rwork, info)
+    $ASSERT(info == 0,Non-zero return from XGESVD)
+
+    ! Finish
+
+    return
+
+  end subroutine sing_decompose_c_
+    
 !****
 
   $define $LINEAR_SOLVE $sub
