@@ -47,6 +47,7 @@ module gyre_rad_bvp
   ! Derived-type definitions
 
   type, extends(r_bvp_t) :: rad_bvp_t
+     class(model_t), pointer :: ml => null()
    contains
      private
      procedure, public :: recon => recon_
@@ -120,7 +121,9 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%r_bvp_t = r_bvp_t(x, ml, eq, bd, iv, sm, omega_min, omega_max)
+    bp%r_bvp_t = r_bvp_t(x, eq, bd, iv, sm, omega_min, omega_max)
+
+    bp%ml => ml
 
     ! Finish
 
