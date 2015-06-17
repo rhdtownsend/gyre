@@ -33,8 +33,6 @@ module gyre_${T}_bvp
   use gyre_eqns
   use gyre_ext
   use gyre_ivp
-  use gyre_model
-  use gyre_rot
   use gyre_status
   use gyre_sysmtx
 
@@ -47,7 +45,6 @@ module gyre_${T}_bvp
   ! Derived-type definitions
 
   type :: ${T}_bvp_t
-     class(model_t), pointer           :: ml => null()
      class(${T}_eqns_t), allocatable   :: eq
      class(${T}_bound_t), allocatable  :: bd
      class(${T}_ivp_t), allocatable    :: iv
@@ -81,10 +78,9 @@ module gyre_${T}_bvp
 
 contains
 
-  function ${T}_bvp_t_ (x, ml, eq, bd, iv, sm, omega_min, omega_max) result (bp)
+  function ${T}_bvp_t_ (x, eq, bd, iv, sm, omega_min, omega_max) result (bp)
 
     real(WP), intent(in)                :: x(:)
-    class(model_t), pointer, intent(in) :: ml
     class(${T}_eqns_t), intent(in)      :: eq
     class(${T}_bound_t), intent(in)     :: bd
     class(${T}_ivp_t), intent(in)       :: iv
@@ -105,8 +101,6 @@ contains
     bp%n = SIZE(x)
     bp%n_e = eq%n_e
 
-    bp%ml => ml
-    
     allocate(bp%eq, SOURCE=eq)
     allocate(bp%bd, SOURCE=bd)
     allocate(bp%iv, SOURCE=iv)
