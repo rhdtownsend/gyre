@@ -58,8 +58,6 @@ contains
 
   subroutine build_scan (sp, ml, mp, op, x_i, x_o, omega)
 
-    use gyre_rot
-
     type(scan_par_t), intent(in)        :: sp(:)
     class(model_t), pointer, intent(in) :: ml
     type(mode_par_t), intent(in)        :: mp
