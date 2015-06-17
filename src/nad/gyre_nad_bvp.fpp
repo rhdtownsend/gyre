@@ -45,6 +45,7 @@ module gyre_nad_bvp
   ! Derived-type definitions
 
   type, extends (c_bvp_t) :: nad_bvp_t
+     class(model_t), pointer :: ml => null()
   end type nad_bvp_t
 
   ! Interfaces
@@ -67,6 +68,7 @@ contains
 
     use gyre_nad_magnus_ivp
     use gyre_nad_findiff_ivp
+    use gyre_colloc_ivp
 
     use gyre_nad_eqns
     use gyre_nad_bound
@@ -117,9 +119,13 @@ contains
        allocate(iv, SOURCE=nad_magnus_ivp_t(ml, eq, 'GL4'))
     case ('MAGNUS_GL6')
        allocate(iv, SOURCE=nad_magnus_ivp_t(ml, eq, 'GL6'))
+    case ('COLLOC_GL2')
+       allocate(iv, SOURCE=c_colloc_ivp_t(eq, 'GL2'))
+    case ('COLLOC_GL4')
+       allocate(iv, SOURCE=c_colloc_ivp_t(eq, 'GL4'))
     case ('FINDIFF')
        allocate(iv, SOURCE=nad_findiff_ivp_t(ml, eq))
-    case default
+   case default
        $ABORT(Invalid ivp_solver)
     end select
 
@@ -129,7 +135,9 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%c_bvp_t = c_bvp_t(x, ml, eq, bd, iv, sm, omega_min, omega_max)
+    bp%c_bvp_t = c_bvp_t(x, eq, bd, iv, sm, omega_min, omega_max)
+
+    bp%ml => ml
 
     ! Finish
 
