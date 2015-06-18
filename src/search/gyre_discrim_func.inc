@@ -35,11 +35,6 @@ module gyre_${T}_discrim_func
   use gyre_ext_func
   use gyre_status
 
-  ! This should not be needed, but it solves unresolved symbol issues
-  ! with gfortran
-
-  use gyre_mode
-
   use ISO_FORTRAN_ENV
 
   ! No implicit typing
