@@ -93,7 +93,7 @@ contains
     ! Evaluate the inner boundary conditions
 
     B_i(1,1) = 1._WP
-		B_i(1,2) = 0._WP
+    B_i(1,2) = 0._WP
 
     ! Finish
 
@@ -106,13 +106,13 @@ contains
   function B_o_ (this, omega) result (B_o)
 
     class(wos_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: B_o(this%n_o,this%n_e)
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: B_o(this%n_o,this%n_e)
 
     ! Evaluate the outer boundary conditions
 
     B_o(1,1) = 1._WP
-		B_o(1,2) = 0._WP
+    B_o(1,2) = 0._WP
 		
     ! Finish
 

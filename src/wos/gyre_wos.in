@@ -1,0 +1,21 @@
+&string
+	c = 1.
+	x_i = 0.
+	x_o = 1.
+	n_x = 100
+/
+
+&scan
+	omega_min = 0.
+	omega_max = 10.
+	n_omega = 100
+/
+
+&num
+	ivp_solver = 'COLLOC_GL2'
+/
+
+&out
+	out_prefix = 'out-'
+/
+ 

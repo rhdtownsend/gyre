@@ -1,9 +1,9 @@
 # File     : Makefile
-# Purpose  : makefile for src/ad subdir
+# Purpose  : makefile for src/wos subdir
 
 # Variables
 
-TARGETS=gyre_ad
+TARGETS=gyre_wos
 
 # Flags
 
@@ -13,6 +13,6 @@ LDFLAGS=`mesasdk_hdf5_link`
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../extern/astro:../common:../ivp:../bvp:../interp:../model:../matrix:../ext:../frontend:../rad:../rad/bound:../rad/jacobian:../rot:../trad
+SUBDIRS=../extern/core:../common:../ivp:../bvp:../matrix:../ext:../search
 
 include ../Make.inc

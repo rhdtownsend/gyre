@@ -24,18 +24,11 @@ module gyre_wos_bvp
   use core_kinds
 
   use gyre_bvp
-  use gyre_ext
   use gyre_ivp
   use gyre_ivp_factory
-  use gyre_mode
-  use gyre_mode_par
-  use gyre_model
   use gyre_num_par
-  use gyre_osc_par
   use gyre_sysmtx
   use gyre_sysmtx_factory
-  use gyre_rot
-  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -64,21 +57,23 @@ module gyre_wos_bvp
 
 contains
 
-  function wos_bvp_t_ (x, c, np) result (bp)
+  function wos_bvp_t_ (x, c, np, omega_min, omega_max) result (bp)
 
     use gyre_wos_eqns
     use gyre_wos_bound
 
-    real(WP), intent(in)                :: x(:)
-    real(WP), intent(in)                :: c
-    type(num_par_t), intent(in)         :: np
-    type(wos_bvp_t), target             :: bp
+    real(WP), intent(in)        :: x(:)
+    real(WP), intent(in)        :: c
+    type(num_par_t), intent(in) :: np
+    real(WP), intent(in)        :: omega_min
+    real(WP), intent(in)        :: omega_max
+    type(wos_bvp_t), target     :: bp
 
-    type(wos_eqns_t)                :: eq
+    type(wos_eqns_t)               :: eq
     integer                        :: n
     real(WP)                       :: x_i
     real(WP)                       :: x_o
-    type(wos_bound_t)               :: bd
+    type(wos_bound_t)              :: bd
     class(r_ivp_t), allocatable    :: iv
     class(r_sysmtx_t), allocatable :: sm
 
@@ -107,7 +102,7 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%r_bvp_t = r_bvp_t(x, NULL(), eq, bd, iv, sm)
+    bp%r_bvp_t = r_bvp_t(x, eq, bd, iv, sm, omega_min, omega_max)
 
     ! Finish
 

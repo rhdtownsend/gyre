@@ -37,7 +37,7 @@ module gyre_wos_eqns
 
   type, extends (r_eqns_t) :: wos_eqns_t
      private
-		 real(WP) :: c
+     real(WP) :: c
    contains
      private
      procedure, public :: A => A_
@@ -63,13 +63,13 @@ contains
 
   function wos_eqns_t_ (c) result (eq)
 
-		real(WP), intent(in)   :: c
+    real(WP), intent(in)   :: c
     type(wos_eqns_t)       :: eq
 
     ! Construct the wos_eqns_t
 
     eq%n_e = 2
-		eq%c = c
+    eq%c = c
 
     ! Finish
 
@@ -82,16 +82,17 @@ contains
   function A_ (this, x, omega) result (A)
 
     class(wos_eqns_t), intent(in) :: this
-    real(WP), intent(in)         :: x
-    real(WP), intent(in)         :: omega
-    real(WP)                     :: A(this%n_e,this%n_e)
+    real(WP), intent(in)          :: x
+    real(WP), intent(in)          :: omega
+    real(WP)                      :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
     A(1,1) = 0._WP
-		A(1,2) = 1._WP
-		A(2,1) = - omega**2 / this%c**2
-		A(2,2) = 0._WP
+    A(1,2) = 1._WP
+
+    A(2,1) = - omega**2 / this%c**2
+    A(2,2) = 0._WP
 		
     ! Finish
 
@@ -110,7 +111,7 @@ contains
     
     ! Evaluate the log(x)-space RHS matrix (=x*A)
 
-  	xA = x * this%A(x, omega)
+    xA = x * this%A(x, omega)
 		
     ! Finish
 
@@ -120,18 +121,22 @@ contains
 
 !****
 
-  function T_ (this) result (T)
+  function T_ (this, x, omega, to_canon) result (T)
 
     class(wos_eqns_t), intent(in) :: this
-    real(WP)                     :: T(this%n_e,this%n_e)
+    real(WP), intent(in)          :: x
+    real(WP), intent(in)          :: omega
+    logical, intent(in)           :: to_canon
+    real(WP)                      :: T(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert variables to/from
-    ! the canonical (DZEIM) formulation
+    ! the canonical formulation
 
-		T(1,1) = 1._WP
-		T(1,2) = 0._WP
-		T(2,1) = 0._WP
-		T(2,2) = 1._WP
+    T(1,1) = 1._WP
+    T(1,2) = 0._WP
+
+    T(2,1) = 0._WP
+    T(2,2) = 1._WP
 		
     ! Finish
 
