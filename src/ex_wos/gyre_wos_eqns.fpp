@@ -93,7 +93,7 @@ contains
 
     A(2,1) = - omega**2 / this%c**2
     A(2,2) = 0._WP
-		
+    
     ! Finish
 
     return
@@ -112,7 +112,7 @@ contains
     ! Evaluate the log(x)-space RHS matrix (=x*A)
 
     xA = x * this%A(x, omega)
-		
+    
     ! Finish
 
     return
@@ -137,7 +137,7 @@ contains
 
     T(2,1) = 0._WP
     T(2,2) = 1._WP
-		
+    
     ! Finish
 
     return

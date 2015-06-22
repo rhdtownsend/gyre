@@ -24,7 +24,7 @@ module gyre_wos_bound
   use core_kinds
 
   use gyre_bound
-	
+  
   use ISO_FORTRAN_ENV
 
   ! No implicit typing
@@ -68,7 +68,7 @@ contains
     type(wos_bound_t)    :: bd
 
     ! Construct the wos_bound_t
-		
+    
     bd%x_i = x_i
     bd%x_o = x_o
 
@@ -113,7 +113,7 @@ contains
 
     B_o(1,1) = 1._WP
     B_o(1,2) = 0._WP
-		
+    
     ! Finish
 
     return
