@@ -22,7 +22,8 @@ IVP_SOLVER = ['MAGNUS_GL2',
               'MAGNUS_GL4',
               'MAGNUS_GL6',
               'COLLOC_GL2',
-              'COLLOC_GL4']
+              'COLLOC_GL4',
+              'COLLOC_GL6']
 
 VARS_SET = ['DZIEM',
             'JCD',
@@ -155,7 +156,7 @@ def plot_data (pp, n_grid, domega, title) :
     ax.plot(n_grid, (N_GRID_MIN/n_grid.astype(float))**4, color=BLACK, ls=':', label=r'$\propto n^{-4}$')
     ax.plot(n_grid, (N_GRID_MIN/n_grid.astype(float))**6, color=BLACK, ls='-.', label=r'$\propto n^{-6}$')
 
-    ax.set_ylim(1E-14,10)
+    ax.set_ylim(1E-16,10)
 
     ax.set_xscale('log')
     ax.set_yscale('log')
@@ -168,6 +169,8 @@ def plot_data (pp, n_grid, domega, title) :
     ax.legend(loc=1)
 
     pp.savefig(fig)
+
+    plt.close(fig)
     
 #                   
 
