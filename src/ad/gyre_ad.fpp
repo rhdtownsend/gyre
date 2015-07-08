@@ -160,13 +160,7 @@ program gyre_ad
 
      ! Set up the frequency array
 
-     if (allocated(x_ml)) then
-        x_i = x_ml(1)
-        x_o = x_ml(SIZE(x_ml))
-     else
-        x_i = 0._WP
-        x_o = 1._WP
-     endif
+     call grid_range(shoot_gp_sel, x_ml, x_i, x_o)
 
      call build_scan(sp_sel, ml, mp(i), op_sel(1), x_i, x_o, omega)
 
