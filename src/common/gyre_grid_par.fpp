@@ -33,14 +33,14 @@ module gyre_grid_par
   ! Derived-type definitions
 
   type :: grid_par_t
-     real(WP)                :: x_i = 0._WP
-     real(WP)                :: x_o = 1._WP
-     real(WP)                :: alpha_osc = 0._WP
-     real(WP)                :: alpha_exp = 0._WP
-     real(WP)                :: alpha_thm = 0._WP
-     real(WP)                :: alpha_str = 0._WP
-     real(WP)                :: s = 0
-     integer                 :: n = 0
+     real(WP)                :: x_i
+     real(WP)                :: x_o
+     real(WP)                :: alpha_osc
+     real(WP)                :: alpha_exp
+     real(WP)                :: alpha_thm
+     real(WP)                :: alpha_str
+     real(WP)                :: s
+     integer                 :: n
      character(FILENAME_LEN) :: file
      character(64)           :: op_type
      character(2048)         :: tag_list
