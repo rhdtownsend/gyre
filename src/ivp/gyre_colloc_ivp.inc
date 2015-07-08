@@ -1,4 +1,4 @@
-! Incfile  : gyre_colloc_ivp
+! Incfile  : gyre_modcolloc_ivp
 ! Purpose  : initial-value solvers (collocation, template)
 !
 ! Copyright 2013-2014 Rich Townsend
@@ -44,6 +44,7 @@ module gyre_${T}_colloc_ivp
 
   integer, parameter :: GL2_SCHEME = 1
   integer, parameter :: GL4_SCHEME = 2
+  integer, parameter :: GL6_SCHEME = 3
 
   ! Derived-type definitions
 
@@ -87,6 +88,8 @@ contains
        iv%scheme = GL2_SCHEME
     case ('GL4')
        iv%scheme = GL4_SCHEME
+    case ('GL6')
+       iv%scheme = GL6_SCHEME
     case default
        $ABORT(Invalid scheme)
     end select
@@ -118,6 +121,8 @@ contains
        call shoot_GL2_(this, omega, x_a, x_b, E_l, E_r, S)
     case (GL4_SCHEME)
        call shoot_GL4_(this, omega, x_a, x_b, E_l, E_r, S)
+    case (GL6_SCHEME)
+       call shoot_GL6_(this, omega, x_a, x_b, E_l, E_r, S)
     case default
        $ABORT(Invalid scheme)
     end select
@@ -180,22 +185,66 @@ contains
     $TYPE(WP), intent(out)               :: E_r(:,:)
     type(${T}_ext_t), intent(out)        :: S
 
-    real(WP), parameter :: ALPHA_11 = 0.25_WP
-    real(WP), parameter :: ALPHA_21 = 0.25_WP + SQRT(3._WP)/6._WP
-    real(WP), parameter :: ALPHA_12 = 0.25_WP - SQRT(3._WP)/6._WP
-    real(WP), parameter :: ALPHA_22 = 0.25_WP
-    real(WP), parameter :: BETA_1 = 0.5_WP
-    real(WP), parameter :: BETA_2 = 0.5_WP
+    real(WP), parameter :: A_IJ(2,2) = RESHAPE([0.25_WP,&
+                                                0.25_WP+SQRT(3._WP)/6._WP, &
+                                                0.25_WP-SQRT(3._WP)/6._WP, &
+                                                0.25_WP], [2,2])
+    real(WP), parameter :: B_I(2) = [0.5_WP, &
+                                     0.5_WP]
+    real(WP), parameter :: C_I(2) = [0.5_WP-SQRT(3._WP)/6._WP, &
+                                     0.5_WP+SQRT(3._WP)/6._WP]
 
-    real(WP)  :: dx
-    real(WP)  :: x(2)
-    $TYPE(WP) :: A(this%n_e,this%n_e,2)
-    integer   :: n_e
-    $TYPE(WP) :: W(2*this%n_e,2*this%n_e)
-    integer   :: i
-    $TYPE(WP) :: V(2*this%n_e,this%n_e)
-    integer   :: ipiv(2*this%n_e)
-    integer   :: info
+    $TYPE(WP) :: Y(this%n_e,this%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
+ 
+    ! Set up the GL4 shooting matrices and scales
+
+    if (x_a < 0.5_WP) then
+       call shoot_irk_(this, omega, 2, x_a, x_b, A_IJ, B_I, C_I, E_l, E_r)
+    else
+       call shoot_irk_(this, omega, 2, x_b, x_a, A_IJ, B_I, C_I, E_r, E_l)
+    endif
+
+    S = ${T}_ext_t(1._WP)
+
+    ! Finish
+
+  end subroutine shoot_GL4_
+
+!****
+
+  subroutine shoot_GL6_ (this, omega, x_a, x_b, E_l, E_r, S)
+
+    class(${T}_colloc_ivp_t), intent(in) :: this
+    $TYPE(WP), intent(in)                :: omega
+    real(WP), intent(in)                 :: x_a
+    real(WP), intent(in)                 :: x_b
+    $TYPE(WP), intent(out)               :: E_l(:,:)
+    $TYPE(WP), intent(out)               :: E_r(:,:)
+    type(${T}_ext_t), intent(out)        :: S
+
+    real(WP), parameter :: A_IJ(3,3) = RESHAPE([5._WP/36._WP, &
+                                                5._WP/36._WP+SQRT(15._WP)/24._WP, &
+                                                5._WP/36._WP+SQRT(15._WP)/30._WP, &
+                                                2._WP/9._WP-SQRT(15._WP)/15._WP, &
+                                                2._WP/9._WP, &
+                                                2._WP/9._WP+SQRT(15._WP)/15._WP, &
+                                                5._WP/36._WP-SQRT(15._WP)/30._WP, &
+                                                5._WP/36._WP-SQRT(15._WP)/24._WP, &
+                                                5._WP/36._WP], [3,3])
+    real(WP), parameter :: B_I(3) = [5._WP/18._WP, &
+                                     4._WP/9._WP, &
+                                     5._WP/18._WP]
+    real(WP), parameter :: C_I(3) = [0.5_WP-SQRT(15._WP)/10._WP, &
+                                     0.5_WP, &
+                                     0.5_WP+SQRT(15._WP)/10._WP]
+
+    $TYPE(WP) :: Y(this%n_e,this%n_e)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -203,49 +252,74 @@ contains
     $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
 
-    ! Evaluate the RHS matrices
+    ! Set up the GL6 shooting matrices and scales
 
-    x = this%abscissa(x_a, x_b)
-    dx = x_b - x_a
-
-    A(:,:,1) = this%eq%A(x(1), omega)
-    A(:,:,2) = this%eq%A(x(2), omega)
-
-    ! Set up the GL4 shooting matrices and scales
-
-    n_e = this%n_e
-
-    W(:n_e,:n_e) = -dx*ALPHA_11*A(:,:,1)
-    W(n_e+1:,:n_e) = -dx*ALPHA_21*A(:,:,2)
-
-    W(:n_e,n_e+1:) = -dx*ALPHA_12*A(:,:,1)
-    W(n_e+1:,n_e+1:) = -dx*ALPHA_22*A(:,:,2)
-
-    do i = 1,2*n_e
-       W(i,i) = W(i,i) + 1._WP
-    end do
-
-    V(:n_e,:) = A(:,:,1)
-    V(n_e+1:,:) = A(:,:,2)
-
-    call XGESV(2*n_e, n_e, W, 2*n_e, ipiv, V, 2*n_e, info)
-    $ASSERT(info == 0,Non-zero return from XGESV)
-    
-    ! Set up the solution matrices and scales
-
-    E_l = -dx*(BETA_1*V(:n_e,:) + BETA_2*V(n_e+1:,:))
-    E_r = 0._WP
-
-    do i = 1,n_e
-       E_l(i,i) = E_l(i,i) - 1._WP
-       E_r(i,i) = E_r(i,i) + 1._WP
-    end do
+    if (x_a < 0.5_WP) then
+       call shoot_irk_(this, omega, 3, x_a, x_b, A_IJ, B_I, C_I, E_l, E_r)
+    else
+       call shoot_irk_(this, omega, 3, x_b, x_a, A_IJ, B_I, C_I, E_r, E_l)
+    endif
 
     S = ${T}_ext_t(1._WP)
 
     ! Finish
 
-  end subroutine shoot_GL4_
+  end subroutine shoot_GL6_
+
+!****
+
+  subroutine shoot_irk_ (this, omega, n_s, x_a, x_b, a_ij, b_i, c_i, E_a, E_b)
+
+    class(${T}_colloc_ivp_t), intent(in) :: this
+    $TYPE(WP), intent(in)                :: omega
+    integer, intent(in)                  :: n_s
+    real(WP), intent(in)                 :: x_a
+    real(WP), intent(in)                 :: x_b
+    real(WP), intent(in)                 :: a_ij(:,:)
+    real(WP), intent(in)                 :: b_i(:)
+    real(WP), intent(in)                 :: c_i(:)
+    $TYPE(WP), intent(out)               :: E_a(:,:)
+    $TYPE(WP), intent(out)               :: E_b(:,:)
+
+    $TYPE(WP) :: K(this%n_e,this%n_e,n_s)
+    real(WP)  :: dx
+    integer   :: i
+    
+    $CHECK_BOUNDS(SIZE(a_ij, 1),n_s)
+    $CHECK_BOUNDS(SIZE(a_ij, 2),n_s)
+
+    $CHECK_BOUNDS(SIZE(b_i),n_s)
+
+    $CHECK_BOUNDS(SIZE(c_i),n_s)
+
+    $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
+
+    ! Shoot across the interval [x_a,x_b] using an n_s-step implicit
+    ! Runge Kutta (IRK) scheme
+
+    ! Calculate the intermediate-state matrices
+
+    K = irk_K_(this%eq, omega, n_s, x_a, x_b, a_ij, c_i)
+
+    ! Set up the shooting matrices
+
+    E_a = identity_matrix(this%n_e)
+
+    do i = 1, n_s
+       E_a = E_a + dx*b_i(i)*K(:,:,i)
+    enddo
+
+    E_b = -identity_matrix(this%n_e)
+
+    ! Finish
+
+    return
+
+  end subroutine shoot_irk_
 
 !****
 
@@ -264,9 +338,11 @@ contains
 
     select case (this%scheme)
     case (GL2_SCHEME)
-       call recon_GL2_ (this, omega, x_a, x_b, y_a, y_b, x, y)
+       call recon_GL2_(this, omega, x_a, x_b, y_a, y_b, x, y)
     case (GL4_SCHEME)
-       call recon_GL4_ (this, omega, x_a, x_b, y_a, y_b, x, y)
+       call recon_GL4_(this, omega, x_a, x_b, y_a, y_b, x, y)
+    case (GL6_SCHEME)
+       call recon_GL6_(this, omega, x_a, x_b, y_a, y_b, x, y)
     case default
        $ABORT(Invalid scheme)
     end select
@@ -357,6 +433,46 @@ contains
 
 !****
 
+  subroutine recon_GL6_ (this, omega, x_a, x_b, y_a, y_b, x, y)
+
+    class(${T}_colloc_ivp_t), intent(in) :: this
+    $TYPE(WP), intent(in)                :: omega
+    real(WP), intent(in)                 :: x_a
+    real(WP), intent(in)                 :: x_b
+    $TYPE(WP), intent(in)                :: y_a(:)
+    $TYPE(WP), intent(in)                :: y_b(:)
+    real(WP), intent(in)                 :: x(:)
+    $TYPE(WP), intent(out)               :: y(:,:)
+
+    integer  :: i
+    real(WP) :: w
+
+    $CHECK_BOUNDS(SIZE(y_a),this%n_e)
+    $CHECK_BOUNDS(SIZE(y_b),this%n_e)
+    
+    $CHECK_BOUNDS(SIZE(y, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
+    
+    ! Reconstruct the GL4 solution
+
+    ! (This just uses straight linear interpolation, and needs to be updated)
+
+    recon_loop : do i = 1,SIZE(x)
+
+       w = (x(i) - x_a)/(x_b - x_a)
+
+       y(:,i) = y_a*(1._WP-w) + y_b*w
+
+    end do recon_loop
+
+    ! Finish
+
+    return
+
+  end subroutine recon_GL6_
+
+!****
+
   function abscissa_ (this, x_a, x_b) result (x)
 
     class(${T}_colloc_ivp_t), intent(in) :: this
@@ -371,6 +487,8 @@ contains
        x = abscissa_GL2_(this, x_a, x_b)
     case (GL4_SCHEME)
        x = abscissa_GL4_(this, x_a, x_b)
+    case (GL6_SCHEME)
+       x = abscissa_GL6_(this, x_a, x_b)
     case default
        $ABORT(Invalid scheme)
     end select
@@ -424,6 +542,116 @@ contains
     return
 
   end function abscissa_GL4_
+
+!****
+
+  function abscissa_GL6_ (this, x_a, x_b) result (x)
+
+    class(${T}_colloc_ivp_t), intent(in) :: this
+    real(WP), intent(in)                 :: x_a
+    real(WP), intent(in)                 :: x_b
+    real(WP), allocatable                :: x(:)
+
+    real(WP) :: dx
+
+    ! Set up the GL4 abscissa
+
+    dx = x_b - x_a
+
+    x = x_a + (0.5_WP+[-1._WP,0._WP,1._WP]*SQRT(15._WP)/10._WP)*dx
+
+    ! Finish
+
+    return
+
+  end function abscissa_GL6_
+
+!****
+
+  function irk_K_ (eq, omega, n_s, x_a, x_b, a_ij, c_i) result (K)
+
+    class(${T}_eqns_t), intent(in) :: eq
+    $TYPE(WP), intent(in)          :: omega
+    integer, intent(in)            :: n_s
+    real(WP), intent(in)           :: x_a
+    real(WP), intent(in)           :: x_b
+    real(WP), intent(in)           :: a_ij(:,:)
+    real(WP), intent(in)           :: c_i(:)
+    $TYPE(WP)                      :: K(eq%n_e,eq%n_e,n_s)
+
+    real(WP)  :: dx
+    $TYPE(WP) :: A(eq%n_e,eq%n_e,n_s)
+    $TYPE(WP) :: M(n_s*eq%n_e,n_s*eq%n_e)
+    integer   :: i
+    integer   :: i_a
+    integer   :: i_b
+    integer   :: j
+    integer   :: j_a
+    integer   :: j_b
+    $TYPE(WP) :: B(n_s*eq%n_e,eq%n_e)
+    integer   :: ipiv(n_s*eq%n_e)
+    integer   :: info
+
+    $CHECK_BOUNDS(SIZE(a_ij, 1),n_s)
+    $CHECK_BOUNDS(SIZE(a_ij, 2),n_s)
+
+    $CHECK_BOUNDS(SIZE(c_i),n_s)
+
+    ! Calculate the intermediate-state matrices for the n_s-step IRK
+
+    ! First, evaluate the RHS matrices
+
+    dx = x_b - x_a
+    
+    do i = 1, n_s
+       A(:,:,i) = eq%A(x_a + dx*c_i(i), omega)
+    end do
+
+    ! Set up the linear problem for K
+
+    do i = 1, n_s
+
+       i_a = (i-1)*eq%n_e + 1
+       i_b = (i-1)*eq%n_e + eq%n_e
+
+       do j = 1, n_s
+
+          j_a = (j-1)*eq%n_e + 1
+          j_b = (j-1)*eq%n_e + eq%n_e
+
+          M(i_a:i_b,j_a:j_b) = -dx*a_ij(i,j)*A(:,:,i)
+
+          if (i == j) then
+             M(i_a:i_b,j_a:j_b) = M(i_a:i_b,j_a:j_b) + identity_matrix(eq%n_e)
+          endif
+
+       end do
+
+       B(i_a:i_b,:) = A(:,:,i)
+
+    end do
+
+    ! Solve the linear system
+
+    call XGESV(n_s*eq%n_e, eq%n_e, M, n_s*eq%n_e, ipiv, B, n_s*eq%n_e, info)
+    $ASSERT(info == 0,Non-zero return from XGESV)
+
+    ! Extract the K matrices
+
+    do i = 1, n_s
+
+       i_a = (i-1)*eq%n_e + 1
+       i_b = (i-1)*eq%n_e + eq%n_e
+
+       K(:,:,i) = B(i_a:i_b,:)
+
+    end do
+
+    ! Finish
+
+    return
+
+  end function irk_K_
 
 end module gyre_${T}_colloc_ivp
 
