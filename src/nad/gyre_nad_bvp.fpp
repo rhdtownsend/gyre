@@ -123,6 +123,8 @@ contains
        allocate(iv, SOURCE=c_colloc_ivp_t(eq, 'GL2'))
     case ('COLLOC_GL4')
        allocate(iv, SOURCE=c_colloc_ivp_t(eq, 'GL4'))
+    case ('COLLOC_GL6')
+       allocate(iv, SOURCE=c_colloc_ivp_t(eq, 'GL6'))
     case ('FINDIFF')
        allocate(iv, SOURCE=nad_findiff_ivp_t(ml, eq))
    case default
