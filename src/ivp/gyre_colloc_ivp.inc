@@ -292,11 +292,11 @@ contains
 
     $CHECK_BOUNDS(SIZE(c_i),n_s)
 
-    $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_a, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_a, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_b, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_b, 2),this%n_e)
 
     ! Shoot across the interval [x_a,x_b] using an n_s-step implicit
     ! Runge Kutta (IRK) scheme
@@ -306,6 +306,8 @@ contains
     K = irk_K_(this%eq, omega, n_s, x_a, x_b, a_ij, c_i)
 
     ! Set up the shooting matrices
+
+    dx = x_b - x_a
 
     E_a = identity_matrix(this%n_e)
 
