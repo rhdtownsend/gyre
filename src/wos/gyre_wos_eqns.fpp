@@ -91,7 +91,7 @@ contains
     A(1,1) = 0._WP
     A(1,2) = 1._WP
 
-    A(2,1) = - omega**2 / this%c**2
+    A(2,1) = 0.5*x**2 - omega**2 / this%c**2
     A(2,2) = 0._WP
 		
     ! Finish
