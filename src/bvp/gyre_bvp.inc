@@ -61,7 +61,6 @@ module gyre_${T}_bvp
      procedure         :: build_
      procedure         :: solve_
      procedure, public :: recon => recon_
-     procedure, public :: abscissa => abscissa_
   end type ${T}_bvp_t
 
   ! Interfaces
@@ -311,41 +310,6 @@ contains
     return
 
   end subroutine recon_
-
-!****
-
-  function abscissa_ (this) result (x)
-
-    class(${T}_bvp_t), intent(in) :: this
-    real(WP), allocatable         :: x(:)
-
-    integer :: k
-    integer :: n_cell(this%n-1)
-    integer :: i
-
-    ! Determine the abscissa used for shooting
-
-    !$OMP PARALLEL DO SCHEDULE (DYNAMIC)
-    count_loop : do k = 1, this%n-1
-       n_cell(k) = SIZE(this%iv%abscissa(this%x(k), this%x(k+1)))
-    end do count_loop
-
-    allocate(x(SUM(n_cell)))
-
-    i = 1
-
-    cell_loop : do k = 1, this%n-1
-       x(i:i+n_cell(k)-1) = this%iv%abscissa(this%x(k), this%x(k+1))
-       i = i + n_cell(k)
-    end do cell_loop
-
-    $CHECK_BOUNDS(i,SIZE(x)+1)
-
-    ! Finish
-
-    return
-
-  end function abscissa_
 
 end module gyre_${T}_bvp
 
