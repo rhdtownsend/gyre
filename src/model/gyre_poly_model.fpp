@@ -23,10 +23,10 @@ module gyre_poly_model
 
   use core_kinds
   use core_parallel
-  use core_spline
 
-  use gyre_model
   use gyre_cocache
+  use gyre_model
+  use gyre_spline
 
   use ISO_FORTRAN_ENV
 
@@ -44,9 +44,9 @@ module gyre_poly_model
 
   type, extends(model_t) :: poly_model_t
      private
-     type(spline_t)   :: sp_Theta
-     type(spline_t)   :: sp_dTheta
-     type(spline_t)   :: sp_Omega_rot
+     type(r_spline_t) :: sp_Theta
+     type(r_spline_t) :: sp_dTheta
+     type(r_spline_t) :: sp_Omega_rot
      real(WP)         :: dt_Gamma_1
      real(WP), public :: n_poly
      real(WP), public :: xi_1
@@ -140,10 +140,10 @@ contains
 
     endif
 
-    ml%sp_Theta = spline_t(xi, Theta, dTheta)
-    ml%sp_dTheta = spline_t(xi, dTheta, d2Theta)
+    ml%sp_Theta = r_spline_t(xi, Theta, dTheta)
+    ml%sp_dTheta = r_spline_t(xi, dTheta, d2Theta)
 
-    ml%sp_Omega_rot = spline_t(xi/xi(n), Omega_rot, deriv_type, dy_dx_a=0._WP, dy_dx_b=0._WP)
+    ml%sp_Omega_rot = r_spline_t(xi/xi(n), Omega_rot, deriv_type, df_dx_a=0._WP, df_dx_b=0._WP)
 
     ml%n_poly = n_poly
     ml%dt_Gamma_1 = Gamma_1
@@ -176,8 +176,8 @@ contains
 
        xi = x*this%xi_1
 
-       Theta = this%sp_Theta%interp(xi)
-       dTheta = this%sp_dTheta%interp(xi)
+       Theta = this%sp_Theta%f(xi)
+       dTheta = this%sp_dTheta%f(xi)
 
        if (Theta == 0._WP) Theta = TINY(0._WP)
 
@@ -275,8 +275,8 @@ contains
 
     xi = x*this%xi_1
 
-    Theta = this%sp_Theta%interp(xi)
-    dTheta = this%sp_dTheta%interp(xi)
+    Theta = this%sp_Theta%f(xi)
+    dTheta = this%sp_dTheta%f(xi)
 
     if(x /= 0._WP) then
        U = -xi*Theta**this%n_poly/dTheta
@@ -368,8 +368,8 @@ contains
 
     xi = x*this%xi_1
 
-    dTheta = this%sp_dTheta%interp(xi)
-    dTheta_1 = this%sp_dTheta%interp(this%xi_1)
+    dTheta = this%sp_dTheta%f(xi)
+    dTheta_1 = this%sp_dTheta%f(this%xi_1)
 
     if(x /= 0._WP) then
        c_1 = x*dTheta_1/dTheta
@@ -592,7 +592,7 @@ contains
     if (this%uniform_rot) then
        Omega_rot = this%Omega_uni
     else
-       Omega_rot = this%sp_Omega_rot%interp(x)
+       Omega_rot = this%sp_Omega_rot%f(x)
     endif
 
     ! Finish
@@ -615,7 +615,7 @@ contains
     if (this%uniform_rot) then
        Omega_rot = this%Omega_uni
     else
-       Omega_rot = this%sp_Omega_rot%interp(x)
+       Omega_rot = this%sp_Omega_rot%f(x)
     endif
 
     ! Finish
@@ -655,7 +655,7 @@ contains
 
     xi = x*this%xi_1
 
-    is_zero = this%sp_Theta%interp(xi) == 0._WP
+    is_zero = this%sp_Theta%f(xi) == 0._WP
 
     ! Finish
 

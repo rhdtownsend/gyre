@@ -24,12 +24,12 @@ module gyre_evol_model
 
   use core_kinds
   use core_parallel
-  use gyre_spline
   use core_table
 
   use gyre_constants
-  use gyre_model
   use gyre_cocache
+  use gyre_model
+  use gyre_spline
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -82,20 +82,20 @@ module gyre_evol_model
 
   type, extends (model_t) :: evol_model_t
      private
-     type(spline_t), allocatable :: sp(:)
-     logical, allocatable        :: sp_def(:)
-     type(cocache_t), pointer    :: cc => null()
-     real(WP), public            :: M_star
-     real(WP), public            :: R_star
-     real(WP), public            :: L_star
-     real(WP), public            :: Omega_uni
-     real(WP), public            :: delta_p
-     real(WP), public            :: delta_g
-     logical, public             :: uniform_rot
-     logical, public             :: reconstruct_As
+     type(r_spline_t), allocatable :: sp(:)
+     logical, allocatable          :: sp_def(:)
+     type(cocache_t), pointer      :: cc => null()
+     real(WP), public              :: M_star
+     real(WP), public              :: R_star
+     real(WP), public              :: L_star
+     real(WP), public              :: Omega_uni
+     real(WP), public              :: delta_p
+     real(WP), public              :: delta_g
+     logical, public               :: uniform_rot
+     logical, public               :: reconstruct_As
    contains
      private
-     procedure         :: set_sp_
+     procedure :: set_sp_
      $PROC_DECL_GEN(m)
      $PROC_DECL_GEN(p)
      $PROC_DECL_GEN(rho)
@@ -628,7 +628,7 @@ contains
 
     ! Set up the i'th spline with the provided data
 
-    this%sp(i) = spline_t(x, y, deriv_type, df_dx_a=0._WP)
+    this%sp(i) = r_spline_t(x, y, deriv_type, df_dx_a=0._WP)
 
     this%sp_def(i) = .TRUE.
 
