@@ -39,9 +39,8 @@ module gyre_${T}_ivp
      integer, public :: n_e
    contains
      private
-     procedure(shoot_), deferred, public    :: shoot
-     procedure(recon_), deferred, public    :: recon
-     procedure(abscissa_), deferred, public :: abscissa
+     procedure(shoot_), deferred, public :: shoot
+     procedure(recon_), deferred, public :: recon
   end type ${T}_ivp_t
 
   ! Interfaces
@@ -73,15 +72,6 @@ module gyre_${T}_ivp
        real(WP), intent(in)          :: x(:)
        $TYPE(WP), intent(out)        :: y(:,:)
      end subroutine recon_
-
-     function abscissa_ (this, x_a, x_b) result (x)
-       use core_kinds
-       import ${T}_ivp_t
-       class(${T}_ivp_t), intent(in) :: this
-       real(WP), intent(in)          :: x_a
-       real(WP), intent(in)          :: x_b
-       real(WP), allocatable         :: x(:)
-     end function abscissa_
 
   end interface
 

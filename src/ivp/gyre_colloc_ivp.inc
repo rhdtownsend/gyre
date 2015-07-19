@@ -56,7 +56,6 @@ module gyre_${T}_colloc_ivp
      private
      procedure, public :: shoot => shoot_
      procedure, public :: recon => recon_
-     procedure, public :: abscissa => abscissa_
   end type ${T}_colloc_ivp_t
 
   ! Interfaces
@@ -147,7 +146,7 @@ contains
 
     real(WP)  :: dx
     real(WP)  :: x(1)
-    $TYPE(WP) :: A(this%n_e,this%n_e)
+    $TYPE(WP) :: A(this%n_e,this%n_e,1)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -157,15 +156,16 @@ contains
 
     ! Evaluate the RHS matrix
 
-    x = this%abscissa(x_a, x_b)
     dx = x_b - x_a
 
-    A = this%eq%A(x(1), omega)
+    x = x_a + [0.5_WP]*dx
+
+    A(:,:,1) = this%eq%A(x(1), omega)
 
     ! Set up the GL2 shooting matrices and scales
 
-    E_l = 0.5_WP*dx*A + identity_matrix(this%n_e)
-    E_r = 0.5_WP*dx*A - identity_matrix(this%n_e)
+    E_l = 0.5_WP*dx*A(:,:,1) + identity_matrix(this%n_e)
+    E_r = 0.5_WP*dx*A(:,:,1) - identity_matrix(this%n_e)
 
     S = ${T}_ext_t(1._WP)
 
@@ -193,8 +193,6 @@ contains
                                      0.5_WP]
     real(WP), parameter :: C_I(2) = [0.5_WP-SQRT(3._WP)/6._WP, &
                                      0.5_WP+SQRT(3._WP)/6._WP]
-
-    $TYPE(WP) :: Y(this%n_e,this%n_e)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -243,8 +241,6 @@ contains
     real(WP), parameter :: C_I(3) = [0.5_WP-SQRT(15._WP)/10._WP, &
                                      0.5_WP, &
                                      0.5_WP+SQRT(15._WP)/10._WP]
-
-    $TYPE(WP) :: Y(this%n_e,this%n_e)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -392,101 +388,6 @@ contains
     return
 
   end subroutine recon_GL2_
-
-!****
-
-  function abscissa_ (this, x_a, x_b) result (x)
-
-    class(${T}_colloc_ivp_t), intent(in) :: this
-    real(WP), intent(in)                 :: x_a
-    real(WP), intent(in)                 :: x_b
-    real(WP), allocatable                :: x(:)
-
-    ! Set up the abscissa
-
-    select case (this%scheme)
-    case (GL2_SCHEME)
-       x = abscissa_GL2_(this, x_a, x_b)
-    case (GL4_SCHEME)
-       x = abscissa_GL4_(this, x_a, x_b)
-    case (GL6_SCHEME)
-       x = abscissa_GL6_(this, x_a, x_b)
-    case default
-       $ABORT(Invalid scheme)
-    end select
-
-    return
-
-  end function abscissa_
-
-!****
-
-  function abscissa_GL2_ (this, x_a, x_b) result (x)
-
-    class(${T}_colloc_ivp_t), intent(in) :: this
-    real(WP), intent(in)                 :: x_a
-    real(WP), intent(in)                 :: x_b
-    real(WP), allocatable                :: x(:)
-
-    real(WP) :: dx
-
-    ! Set up the GL2 abscissa
-
-    dx = x_b - x_a
-
-    x = x_a + [0.5_WP]*dx
-
-    ! Finish
-
-    return
-
-  end function abscissa_GL2_
-
-!****
-
-  function abscissa_GL4_ (this, x_a, x_b) result (x)
-
-    class(${T}_colloc_ivp_t), intent(in) :: this
-    real(WP), intent(in)                 :: x_a
-    real(WP), intent(in)                 :: x_b
-    real(WP), allocatable                :: x(:)
-
-    real(WP) :: dx
-
-    ! Set up the GL4 abscissa
-
-    dx = x_b - x_a
-
-    x = x_a + (0.5_WP+[-1._WP,1._WP]*SQRT(3._WP)/6._WP)*dx
-
-    ! Finish
-
-    return
-
-  end function abscissa_GL4_
-
-!****
-
-  function abscissa_GL6_ (this, x_a, x_b) result (x)
-
-    class(${T}_colloc_ivp_t), intent(in) :: this
-    real(WP), intent(in)                 :: x_a
-    real(WP), intent(in)                 :: x_b
-    real(WP), allocatable                :: x(:)
-
-    real(WP) :: dx
-
-    ! Set up the GL4 abscissa
-
-    dx = x_b - x_a
-
-    x = x_a + (0.5_WP+[-1._WP,0._WP,1._WP]*SQRT(15._WP)/10._WP)*dx
-
-    ! Finish
-
-    return
-
-  end function abscissa_GL6_
 
 !****
 

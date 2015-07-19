@@ -50,7 +50,6 @@ module gyre_${T}_findiff_ivp
      procedure, public :: shoot => shoot_
      procedure, public :: shoot_w => shoot_w_
      procedure, public :: recon => recon_
-     procedure, public :: abscissa => abscissa_
   end type ${T}_findiff_ivp_t
 
   ! Interfaces
@@ -142,8 +141,9 @@ contains
 
     ! Evaluate the RHS matrix
 
-    x = this%abscissa(x_a, x_b)
     dx = x_b - x_a
+
+    x = [x_a,x_b]
 
     xA(:,:,1) = this%eq%xA(x(1), omega)
     xA(:,:,2) = this%eq%xA(x(2), omega)
@@ -198,25 +198,6 @@ contains
     return
 
   end subroutine recon_
-
-!****
-
-  function abscissa_ (this, x_a, x_b) result (x)
-
-    class(${T}_findiff_ivp_t), intent(in) :: this
-    real(WP), intent(in)                  :: x_a
-    real(WP), intent(in)                  :: x_b
-    real(WP), allocatable                 :: x(:)
-
-    ! Set up the abscissa
-
-    x = [x_a,x_b]
-
-    ! Finish
-
-    return
-
-  end function abscissa_
 
 end module gyre_${T}_findiff_ivp
 

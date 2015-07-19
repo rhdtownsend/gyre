@@ -89,12 +89,12 @@ contains
     complex(WP), intent(out)             :: E_r(:,:)
     type(c_ext_t), intent(out)           :: S
 
-    real(WP), allocatable :: x(:)
-    real(WP)              :: w(6)
+    real(WP) :: x(2)
+    real(WP) :: w(6)
 
     ! Set up the shooting matrices and scales
 
-    x = this%abscissa(x_a, x_b)
+    x = [x_a, x_b]
 
     if (ANY(this%ml%c_thm(x) > 1.E4*this%ml%c_rad(x))) then
        w = [0.5_WP,0.5_WP,0.5_WP,0.5_WP,1._WP,0._WP]
