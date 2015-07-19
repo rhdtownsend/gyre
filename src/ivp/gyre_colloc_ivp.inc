@@ -342,9 +342,9 @@ contains
     case (GL2_SCHEME)
        call recon_GL2_(this, omega, x_a, x_b, y_a, y_b, x, y)
     case (GL4_SCHEME)
-       call recon_GL4_(this, omega, x_a, x_b, y_a, y_b, x, y)
+       call recon_GL2_(this, omega, x_a, x_b, y_a, y_b, x, y)
     case (GL6_SCHEME)
-       call recon_GL6_(this, omega, x_a, x_b, y_a, y_b, x, y)
+       call recon_GL2_(this, omega, x_a, x_b, y_a, y_b, x, y)
     case default
        $ABORT(Invalid scheme)
     end select
@@ -392,86 +392,6 @@ contains
     return
 
   end subroutine recon_GL2_
-
-!****
-
-  subroutine recon_GL4_ (this, omega, x_a, x_b, y_a, y_b, x, y)
-
-    class(${T}_colloc_ivp_t), intent(in) :: this
-    $TYPE(WP), intent(in)                :: omega
-    real(WP), intent(in)                 :: x_a
-    real(WP), intent(in)                 :: x_b
-    $TYPE(WP), intent(in)                :: y_a(:)
-    $TYPE(WP), intent(in)                :: y_b(:)
-    real(WP), intent(in)                 :: x(:)
-    $TYPE(WP), intent(out)               :: y(:,:)
-
-    integer  :: i
-    real(WP) :: w
-
-    $CHECK_BOUNDS(SIZE(y_a),this%n_e)
-    $CHECK_BOUNDS(SIZE(y_b),this%n_e)
-    
-    $CHECK_BOUNDS(SIZE(y, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
-    
-    ! Reconstruct the GL4 solution
-
-    ! (This just uses straight linear interpolation, and needs to be updated)
-
-    recon_loop : do i = 1,SIZE(x)
-
-       w = (x(i) - x_a)/(x_b - x_a)
-
-       y(:,i) = y_a*(1._WP-w) + y_b*w
-
-    end do recon_loop
-
-    ! Finish
-
-    return
-
-  end subroutine recon_GL4_
-
-!****
-
-  subroutine recon_GL6_ (this, omega, x_a, x_b, y_a, y_b, x, y)
-
-    class(${T}_colloc_ivp_t), intent(in) :: this
-    $TYPE(WP), intent(in)                :: omega
-    real(WP), intent(in)                 :: x_a
-    real(WP), intent(in)                 :: x_b
-    $TYPE(WP), intent(in)                :: y_a(:)
-    $TYPE(WP), intent(in)                :: y_b(:)
-    real(WP), intent(in)                 :: x(:)
-    $TYPE(WP), intent(out)               :: y(:,:)
-
-    integer  :: i
-    real(WP) :: w
-
-    $CHECK_BOUNDS(SIZE(y_a),this%n_e)
-    $CHECK_BOUNDS(SIZE(y_b),this%n_e)
-    
-    $CHECK_BOUNDS(SIZE(y, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
-    
-    ! Reconstruct the GL4 solution
-
-    ! (This just uses straight linear interpolation, and needs to be updated)
-
-    recon_loop : do i = 1,SIZE(x)
-
-       w = (x(i) - x_a)/(x_b - x_a)
-
-       y(:,i) = y_a*(1._WP-w) + y_b*w
-
-    end do recon_loop
-
-    ! Finish
-
-    return
-
-  end subroutine recon_GL6_
 
 !****
 
