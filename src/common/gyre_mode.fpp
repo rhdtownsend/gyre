@@ -960,7 +960,7 @@ contains
          A_6(2,:) = V*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
          A_6(3,:) = lambda*nabla_ad/nabla*c_rad - V*c_eps_ad
          A_6(4,:) = 0._WP
-         A_6(5,:) = c_eps_S - lambda*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+         A_6(5,:) = c_eps_S - lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
          A_6(6,:) = -1._WP - l_0
       elsewhere
          A_6(1,:) = lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad

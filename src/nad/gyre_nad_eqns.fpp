@@ -262,7 +262,7 @@ contains
     xA(6,3) = chi_cowl*(lambda*nabla_ad/nabla*c_rad - V*c_eps_ad)
     xA(6,4) = chi_cowl*(0._WP)
     if (x > 0._WP) then
-       xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+       xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
     else
        xA(6,5) = -HUGE(0._WP)
     endif
@@ -383,7 +383,7 @@ contains
        xA(6,3) = chi_cowl*(-(lambda*nabla_ad/nabla*c_rad - V*c_eps_ad))
        xA(6,4) = chi_cowl*(0._WP)
        if (x > 0._WP) then
-          xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+          xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
        else
           xA(6,5) = -HUGE(0._WP)
        endif
@@ -430,7 +430,7 @@ contains
        xA(6,2) = V*c_eps_ad*c_1*omega_c**2
        xA(6,3) = chi_cowl*(-V*c_eps_ad)
        xA(6,4) = chi_cowl*(0._WP)
-       xA(6,5) = c_eps_S - (0._WP,1._WP)*omega_c*c_thm
+       xA(6,5) = c_eps_S + (0._WP,1._WP)*omega_c*c_thm
        xA(6,6) = -1._WP
 
     endif
@@ -549,7 +549,7 @@ contains
     xA(6,3) = chi_cowl*(lambda*c_rad*(3._WP + dc_rad)/(c_1*omega_c**2))
     xA(6,4) = chi_cowl*(0._WP)
     if (x > 0._WP) then
-       xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) - (0._WP,1._WP)*omega_c*c_thm
+       xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
     else
        xA(6,5) = -HUGE(0._WP)
     endif
