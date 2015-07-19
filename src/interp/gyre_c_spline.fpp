@@ -1,5 +1,5 @@
-! Module   : gyre_spline
-! Purpose  : cubic spline interpolators
+! Module   : gyre_c_spline
+! Purpose  : cubic spline interpolators (complex)
 !
 ! Copyright 2015 Rich Townsend
 !
@@ -15,11 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_spline
+$include 'gyre_spline.inc'
 
-  ! Uses
-
-  use gyre_r_spline
-  use gyre_c_spline
-
-end module gyre_spline
+$MOD_DECL(c,complex)
