@@ -48,7 +48,8 @@ module gyre_nad_eqns
      class(model_t), pointer     :: ml => null()
      class(c_rot_t), allocatable :: rt
      integer                     :: vars
-     logical                     :: cowling_approx
+     logical                     :: cowl_approx
+     logical                     :: narf_approx
    contains
      private
      procedure, public :: A => A_
@@ -100,7 +101,8 @@ contains
        $ABORT(Invalid variables_set)
     end select
 
-    eq%cowling_approx = op%cowling_approx
+    eq%cowl_approx = op%cowling_approx
+    eq%narf_approx = op%narf_approx
 
     eq%n_e = 6
 
@@ -186,6 +188,7 @@ contains
     complex(WP) :: l_0
     complex(WP) :: omega_c
     real(WP)    :: chi_cowl
+    real(WP)    :: chi_narf
          
     ! Evaluate the log(x)-space RHS matrix ([Dzi1971] formulation)
 
@@ -214,10 +217,16 @@ contains
 
     omega_c = this%rt%omega_c(x, omega)
 
-    if (this%cowling_approx) then
+    if (this%cowl_approx) then
        chi_cowl = 1._WP
     else
        chi_cowl = 0._WP
+    endif
+
+    if (this%narf_approx) then
+       chi_narf = 1._WP
+    else
+       chi_narf = 0._WP
     endif
 
     ! Set up the matrix
@@ -257,14 +266,14 @@ contains
     xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
     xA(5,6) = -V*nabla/c_rad
 
-    xA(6,1) = lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-    xA(6,2) = V*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-    xA(6,3) = (1._WP-chi_cowl)*(lambda*nabla_ad/nabla*c_rad - V*c_eps_ad)
+    xA(6,1) = (1._WP-chi_narf)*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+    xA(6,2) = V*c_eps_ad - lambda*c_rad*((1._WP-chi_narf)*nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+    xA(6,3) = (1._WP-chi_cowl)*((1._WP-chi_narf)*lambda*nabla_ad/nabla*c_rad - V*c_eps_ad)
     xA(6,4) = (1._WP-chi_cowl)*(0._WP)
     if (x > 0._WP) then
-       xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
+       xA(6,5) = c_eps_S - (1._WP-chi_narf)*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
     else
-       xA(6,5) = -HUGE(0._WP)
+       xA(6,5) = -(1._WP-chi_narf)*HUGE(0._WP)
     endif
     xA(6,6) = -1._WP - l_0
 
@@ -304,6 +313,7 @@ contains
     complex(WP) :: l_0
     complex(WP) :: omega_c
     real(WP)    :: chi_cowl
+    real(WP)    :: chi_narf
          
     ! Evaluate the log(x)-space RHS matrix ([Chr2008] formulation)
 
@@ -333,10 +343,16 @@ contains
 
     omega_c = this%rt%omega_c(x, omega)
 
-    if (this%cowling_approx) then
+    if (this%cowl_approx) then
        chi_cowl = 1._WP
     else
        chi_cowl = 0._WP
+    endif
+
+    if (this%narf_approx) then
+       chi_narf = 1._WP
+    else
+       chi_narf = 0._WP
     endif
 
     ! Set up the matrix
@@ -378,12 +394,13 @@ contains
        xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
        xA(5,6) = -V*nabla/c_rad
 
-       xA(6,1) = lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-       xA(6,2) = (V*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2)))*c_1*omega_c**2/lambda
-       xA(6,3) = (1._WP-chi_cowl)*(-(lambda*nabla_ad/nabla*c_rad - V*c_eps_ad))
+       xA(6,1) = (1._WP-chi_narf)*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+       xA(6,2) = (V*c_eps_ad - lambda*c_rad*((1._WP-chi_narf)*nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2)))* &
+                 c_1*omega_c**2/lambda
+       xA(6,3) = (1._WP-chi_cowl)*(-((1._WP-chi_narf)*lambda*nabla_ad/nabla*c_rad - V*c_eps_ad))
        xA(6,4) = (1._WP-chi_cowl)*(0._WP)
        if (x > 0._WP) then
-          xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
+          xA(6,5) = c_eps_S - (1._WP-chi_narf)*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
        else
           xA(6,5) = -HUGE(0._WP)
        endif
@@ -471,6 +488,7 @@ contains
     complex(WP) :: l_0
     complex(WP) :: omega_c
     real(WP)    :: chi_cowl
+    real(WP)    :: chi_narf
          
     ! Evaluate the log(x)-space RHS matrix (Lagrangian pressure
     ! perturbation formulation)
@@ -501,10 +519,16 @@ contains
 
     omega_c = this%rt%omega_c(x, omega)
 
-    if (this%cowling_approx) then
+    if (this%cowl_approx) then
        chi_cowl = 1._WP
     else
        chi_cowl = 0._WP
+    endif
+
+    if (this%narf_approx) then
+       chi_narf = 1._WP
+    else
+       chi_narf = 0._WP
     endif
 
     ! Set up the matrix
@@ -545,13 +569,13 @@ contains
     xA(5,6) = -V*nabla/c_rad
 
     xA(6,1) = lambda*c_rad*((3._WP + dc_rad)/(c_1*omega_c**2) - 1._WP)
-    xA(6,2) = x**2*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))/V_2
+    xA(6,2) = x**2*c_eps_ad - lambda*c_rad*((1._WP-chi_narf)*nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))/V_2
     xA(6,3) = (1._WP-chi_cowl)*(lambda*c_rad*(3._WP + dc_rad)/(c_1*omega_c**2))
     xA(6,4) = (1._WP-chi_cowl)*(0._WP)
     if (x > 0._WP) then
-       xA(6,5) = c_eps_S - lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
+       xA(6,5) = c_eps_S - (1._WP-chi_narf)*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
     else
-       xA(6,5) = -HUGE(0._WP)
+       xA(6,5) = -(1._WP-chi_narf)*HUGE(0._WP)
     endif
     xA(6,6) = -1._WP - l_0
 
