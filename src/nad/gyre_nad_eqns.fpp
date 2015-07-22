@@ -378,7 +378,7 @@ contains
        xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_0 - 2._WP)
        xA(5,6) = -V*nabla/c_rad
 
-       xA(6,1) = l_0*(l_0+1._WP)*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+       xA(6,1) = lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
        xA(6,2) = (V*c_eps_ad - lambda*c_rad*(nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2)))*c_1*omega_c**2/lambda
        xA(6,3) = (1._WP-chi_cowl)*(-(lambda*nabla_ad/nabla*c_rad - V*c_eps_ad))
        xA(6,4) = (1._WP-chi_cowl)*(0._WP)
