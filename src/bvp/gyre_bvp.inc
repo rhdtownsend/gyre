@@ -45,7 +45,6 @@ module gyre_${T}_bvp
   ! Derived-type definitions
 
   type :: ${T}_bvp_t
-     class(${T}_eqns_t), allocatable   :: eq
      class(${T}_bound_t), allocatable  :: bd
      class(${T}_ivp_t), allocatable    :: iv
      class(${T}_sysmtx_t), allocatable :: sm
@@ -77,10 +76,9 @@ module gyre_${T}_bvp
 
 contains
 
-  function ${T}_bvp_t_ (x, eq, bd, iv, sm, omega_min, omega_max) result (bp)
+  function ${T}_bvp_t_ (x, bd, iv, sm, omega_min, omega_max) result (bp)
 
     real(WP), intent(in)                :: x(:)
-    class(${T}_eqns_t), intent(in)      :: eq
     class(${T}_bound_t), intent(in)     :: bd
     class(${T}_ivp_t), intent(in)       :: iv
     class(${T}_sysmtx_t), intent(in)    :: sm
@@ -88,19 +86,16 @@ contains
     real(WP), intent(in)                :: omega_max
     type(${T}_bvp_t)                    :: bp
 
-    $CHECK_BOUNDS(bd%n_e,eq%n_e)
+    $CHECK_BOUNDS(bd%n_e,iv%n_e)
 
-    $CHECK_BOUNDS(iv%n_e,eq%n_e)
-    
-    $CHECK_BOUNDS(sm%n_e,eq%n_e)
+    $CHECK_BOUNDS(sm%n_e,iv%n_e)
     $CHECK_BOUNDS(sm%n,SIZE(x)-1)
 
     ! Construct the bvp_t
 
     bp%n = SIZE(x)
-    bp%n_e = eq%n_e
+    bp%n_e = iv%n_e
 
-    allocate(bp%eq, SOURCE=eq)
     allocate(bp%bd, SOURCE=bd)
     allocate(bp%iv, SOURCE=iv)
     allocate(bp%sm, SOURCE=sm)
