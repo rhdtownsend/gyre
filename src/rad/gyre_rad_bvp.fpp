@@ -35,6 +35,7 @@ module gyre_rad_bvp
   use gyre_sysmtx
   use gyre_sysmtx_factory
   use gyre_util
+  use gyre_rad_eqns
   use gyre_rot
   use gyre_rot_factory
 
@@ -48,6 +49,7 @@ module gyre_rad_bvp
 
   type, extends(r_bvp_t) :: rad_bvp_t
      class(model_t), pointer :: ml => null()
+     type(rad_eqns_t)        :: eq
    contains
      private
      procedure, public :: recon => recon_
@@ -121,9 +123,10 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%r_bvp_t = r_bvp_t(x, eq, bd, iv, sm, omega_min, omega_max)
+    bp%r_bvp_t = r_bvp_t(x, bd, iv, sm, omega_min, omega_max)
 
     bp%ml => ml
+    bp%eq = eq
 
     ! Finish
 
