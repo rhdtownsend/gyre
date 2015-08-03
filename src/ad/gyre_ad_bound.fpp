@@ -25,7 +25,7 @@ module gyre_ad_bound
 
   use gyre_atmos
   use gyre_bound
-  use gyre_eqns
+  use gyre_ad_eqns
   use gyre_model
   use gyre_osc_par
   use gyre_rot
@@ -50,14 +50,14 @@ module gyre_ad_bound
 
   type, extends (r_bound_t) :: ad_bound_t
      private
-     class(model_t), pointer      :: ml => null()
-     class(r_rot_t), allocatable  :: rt
-     class(r_eqns_t), allocatable :: eq
-     real(WP)                     :: x_i
-     real(WP)                     :: x_o
-     integer                      :: type_i
-     integer                      :: type_o
-     logical                      :: cowling_approx
+     class(model_t), pointer     :: ml => null()
+     class(r_rot_t), allocatable :: rt
+     type(ad_eqns_t)             :: eq
+     real(WP)                    :: x_i
+     real(WP)                    :: x_o
+     integer                     :: type_i
+     integer                     :: type_o
+     logical                     :: cowling_approx
    contains 
      private
      procedure, public :: B_i => B_i_
@@ -90,7 +90,7 @@ contains
 
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
-    class(r_eqns_t), intent(in)         :: eq
+    type(ad_eqns_t), intent(in)         :: eq
     type(osc_par_t), intent(in)         :: op
     real(WP)                            :: x_i
     real(WP)                            :: x_o
@@ -100,7 +100,7 @@ contains
 
     bd%ml => ml
     allocate(bd%rt, SOURCE=rt)
-    allocate(bd%eq, SOURCE=eq)
+    bd%eq = eq
 
     bd%x_i = x_i
     bd%x_o = x_o
