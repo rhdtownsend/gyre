@@ -23,6 +23,7 @@ module gyre_ad_bvp
 
   use core_kinds
 
+  use gyre_ad_eqns
   use gyre_bvp
   use gyre_ext
   use gyre_ivp
@@ -47,6 +48,7 @@ module gyre_ad_bvp
 
   type, extends (r_bvp_t) :: ad_bvp_t
      class(model_t), pointer :: ml => null()
+     type(ad_eqns_t)         :: eq
    contains
      private
      procedure, public :: recon => recon_
@@ -120,9 +122,10 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%r_bvp_t = r_bvp_t(x, eq, bd, iv, sm, omega_min, omega_max)
+    bp%r_bvp_t = r_bvp_t(x, bd, iv, sm, omega_min, omega_max)
 
     bp%ml => ml
+    bp%eq = eq
     
     ! Finish
 
