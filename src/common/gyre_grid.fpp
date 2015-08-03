@@ -63,6 +63,9 @@ module gyre_grid
 
   public :: grid_range
   public :: build_grid
+  public :: create_uniform
+  public :: create_geom
+  public :: create_log
   public :: find_x_turn
 
   ! Procedures
@@ -126,10 +129,9 @@ contains
     real(WP), allocatable, intent(out)  :: x(:)
     logical, optional, intent(in)       :: verbose
 
-    logical               :: write_info
-    integer               :: n_in
-    real(WP), allocatable :: w(:)
-    integer               :: i
+    logical :: write_info
+    integer :: n_in
+    integer :: i
 
     $ASSERT(SIZE(gp) >= 1,Empty grid_par_t)
 
@@ -157,17 +159,17 @@ contains
        n_in = SIZE(x_in)
        x = [x_in(1),0.5_WP*(x_in(:n_in-1)+x_in(2:)),x_in(n_in)]
     case ('CREATE_UNIFORM')
-       call weights_uniform(gp(1)%n, w)
-       x = (1._WP-w)*gp(1)%x_i + w*gp(1)%x_o
+       call create_uniform(gp(1)%n, x)
+       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
     case ('CREATE_GEOM')
-       call weights_geom(gp(1)%s, gp(1)%n, w)
-       x = (1._WP-w)*gp(1)%x_i + w*gp(1)%x_o
+       call create_geom(gp(1)%s, gp(1)%n, x)
+       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
     case ('CREATE_LOG')
-       call weights_log(gp(1)%s, gp(1)%n, w)
-       x = (1._WP-w)*gp(1)%x_i + w*gp(1)%x_o
+       call create_log(gp(1)%s, gp(1)%n, x)
+       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
     case ('CREATE_FROM_FILE')
-       call weights_from_file_(gp(1)%file, w)
-       x = (1._WP-w)*gp(1)%x_i + w*gp(1)%x_o
+       call create_from_file_(gp(1)%file, x)
+       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
     case default
        $ABORT(Invalid op_type (the first op_type must be CREATE_*))
     end select
@@ -217,53 +219,53 @@ contains
 
 !****
 
-  subroutine weights_uniform (n, w)
+  subroutine create_uniform (n, x)
 
     integer, intent(in)                :: n
-    real(WP), allocatable, intent(out) :: w(:)
+    real(WP), allocatable, intent(out) :: x(:)
 
     integer :: i
 
-    ! Create an n-point grid of weights with uniform spacing across
-    ! the [0,1] interval
+    ! Create an n-point grid with uniform spacing across the [0,1]
+    ! interval
 
-    allocate(w(n))
+    allocate(x(n))
 
-    w(1) = 0._WP
+    x(1) = 0._WP
 
     grid_loop : do i = 2,n-1
-       w(i) = (i-1._WP)/(n-1._WP)
+       x(i) = (i-1._WP)/(n-1._WP)
     end do grid_loop
 
-    w(n) = 1._WP
+    x(n) = 1._WP
 
     ! Finish
 
     return
 
-  end subroutine weights_uniform
+  end subroutine create_uniform
 
 !****
 
-  subroutine weights_geom (s, n, w)
+  subroutine create_geom (s, n, x)
 
     real(WP), intent(in)               :: s
     integer, intent(in)                :: n
-    real(WP), allocatable, intent(out) :: w(:)
+    real(WP), allocatable, intent(out) :: x(:)
 
     integer           :: m
     real(WP)          :: g_a
     real(WP)          :: g_b
     real(WP)          :: g
     type(geom_func_t) :: gf
-    real(WP)          :: dw
+    real(WP)          :: dx
     integer           :: k
 
-    ! Create an n-point grid of weights with geometric spacing in each
-    ! half of the [0,1] interval. The parameter s controls the ratio
-    ! between the boundary cell size and the average cell size 1/(n-1)
+    ! Create an n-point grid with geometric spacing in each half of
+    ! the [0,1] interval. The parameter s controls the ratio between
+    ! the boundary cell size and the average cell size 1/(n-1)
 
-    allocate(w(n))
+    allocate(x(n))
 
     if(MOD(n, 2) == 0) then
 
@@ -284,17 +286,17 @@ contains
 
        ! Set up the inner part of the grid
 
-       w(1) = 0._WP
-       dw = 1._WP/(s*(n-1))
+       x(1) = 0._WP
+       dx = 1._WP/(s*(n-1))
        
        even_grid_loop : do k = 1,m
-          w(k+1) = w(k) + dw
-          dw = (1._WP+g)*dw
+          x(k+1) = x(k) + dx
+          dx = (1._WP+g)*dx
        end do even_grid_loop
 
        ! Reflect to get the outer part of the grid
 
-       w(m+2:) = 1._WP - w(m+1:1:-1)
+       x(m+2:) = 1._WP - x(m+1:1:-1)
 
     else
 
@@ -315,19 +317,19 @@ contains
 
        ! Set up the inner part of the grid
 
-       w(1) = 0._WP
-       dw = 1._WP/(s*(n-1))
+       x(1) = 0._WP
+       dx = 1._WP/(s*(n-1))
        
        odd_grid_loop : do k = 1,m-1
-          w(k+1) = w(k) + dw
-          dw = (1._WP+g)*dw
+          x(k+1) = x(k) + dx
+          dx = (1._WP+g)*dx
        end do odd_grid_loop
 
        ! Reflect to get the outer part of the grid
 
-       w(m+1:) = 0.5_WP
+       x(m+1:) = 0.5_WP
 
-       w(m+2:) = 1._WP - w(m:1:-1)
+       x(m+2:) = 1._WP - x(m:1:-1)
 
     end if
 
@@ -335,7 +337,7 @@ contains
 
     return
 
-  end subroutine weights_geom
+  end subroutine create_geom
 
 !****
 
@@ -382,45 +384,45 @@ contains
 
 !****
 
-  subroutine weights_log (s, n, w)
+  subroutine create_log (s, n, x)
 
     real(WP), intent(in)               :: s
     integer, intent(in)                :: n
-    real(WP), allocatable, intent(out) :: w(:)
+    real(WP), allocatable, intent(out) :: x(:)
 
-    real(WP) :: dw_1
+    real(WP) :: dx_1
     integer  :: k
-    real(WP) :: v
+    real(WP) :: w
     real(WP) :: t
 
     ! Create an n-point grid with logarithmic spacing in each half of
     ! the [0,1] interval. The parameter s controls the ratio between
     ! the mean cell size and the boundary cell size. omega is not used
 
-    allocate(w(n))
+    allocate(x(n))
 
-    dw_1 = 1._WP/(s*(n-1))
+    dx_1 = 1._WP/(s*(n-1))
 
-    if(MOD(n, 2) == 0) then
+    if (MOD(n, 2) == 0) then
 
        ! Even number of grid points / odd number of cells
 
        ! Set up the inner part of the grid
 
-       w(1) = 0._WP
+       x(1) = 0._WP
 
        even_grid_loop : do k = 2,n/2
 
-          v = (k-1.5_WP)/(n/2-1.5_WP)
-          t = (1._WP-v)*LOG(0.5_WP) + v*LOG(dw_1)
+          w = (k-1.5_WP)/(n/2-1.5_WP)
+          t = (1._WP-w)*LOG(0.5_WP) + w*LOG(dx_1)
 
-          w(n/2-k+2) = EXP(t)
+          x(n/2-k+2) = EXP(t)
 
        enddo even_grid_loop
        
        ! Reflect to get the outer part of the grid
 
-       w(n/2+1:) = 1._WP - w(n/2:1:-1)
+       x(n/2+1:) = 1._WP - x(n/2:1:-1)
 
     else
 
@@ -428,22 +430,22 @@ contains
 
        ! Set up the inner part of the grid
 
-       w(1) = 0._WP
+       x(1) = 0._WP
 
        odd_grid_loop : do k = 2,(n-1)/2
 
-          v = (k-1._WP)/((n-1)/2-1._WP)
-          t = (1._WP-v)*LOG(0.5_WP) + v*LOG(dw_1)
+          w = (k-1._WP)/((n-1)/2-1._WP)
+          t = (1._WP-w)*LOG(0.5_WP) + w*LOG(dx_1)
 
-          w((n-1)/2-k+2) = EXP(t)
+          x((n-1)/2-k+2) = EXP(t)
 
        end do odd_grid_loop
 
-       w((n+1)/2) = 0.5_WP
+       x((n+1)/2) = 0.5_WP
 
        ! Reflect to get the outer part of the grid
 
-       w((n+1)/2+1:) = 1._WP - w((n-1)/2:1:-1)
+       x((n+1)/2+1:) = 1._WP - x((n-1)/2:1:-1)
 
     end if
 
@@ -451,20 +453,20 @@ contains
 
     return
 
-  end subroutine weights_log
+  end subroutine create_log
 
 !****
 
-  subroutine weights_from_file_ (file, w)
+  subroutine create_from_file_ (file, x)
 
     character(LEN=*), intent(in)       :: file
-    real(WP), allocatable, intent(out) :: w(:)
+    real(WP), allocatable, intent(out) :: x(:)
 
     integer :: unit
     integer :: n
     integer :: k
 
-    ! Create a grid of weights by reading from the file
+    ! Create a grid by reading from the file
 
     ! Count lines
 
@@ -483,22 +485,22 @@ contains
 
     rewind(unit)
 
-    allocate(w(n))
+    allocate(x(n))
 
     read_loop : do k = 1,n
-       read(unit, *) w(k)
+       read(unit, *) x(k)
     end do read_loop
 
     close(unit)
 
-    $ASSERT(w(1)==0._WP,First weight not at zero)
-    $ASSERT(w(n)==1._WP,Last weight not at one)
+    $ASSERT(x(1)==0._WP,First point not at zero)
+    $ASSERT(x(n)==1._WP,Last point not at one)
 
     ! Finish
 
     return
 
-  end subroutine weights_from_file_
+  end subroutine create_from_file_
 
 !****
 
