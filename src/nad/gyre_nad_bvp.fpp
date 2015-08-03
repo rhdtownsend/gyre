@@ -48,6 +48,9 @@ module gyre_nad_bvp
   type, extends (c_bvp_t) :: nad_bvp_t
      class(model_t), pointer :: ml => null()
      type(nad_eqns_t)        :: eq
+   contains
+     private
+     procedure, public :: recon => recon_
   end type nad_bvp_t
 
   ! Interfaces
@@ -149,5 +152,46 @@ contains
     return
 
   end function nad_bvp_t_
+
+!****
+
+  subroutine recon_ (this, omega, x, x_ref, y, y_ref, discrim)
+
+    class(nad_bvp_t), intent(inout) :: this
+    complex(WP), intent(in)         :: omega
+    real(WP), intent(in)            :: x(:)
+    real(WP), intent(in)            :: x_ref
+    complex(WP), intent(out)        :: y(:,:)
+    complex(WP), intent(out)        :: y_ref(:)
+    type(c_ext_t), intent(out)      :: discrim
+
+    integer  :: n
+    integer  :: i
+
+    $CHECK_BOUNDS(SIZE(y, 1),6)
+    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
+
+    $CHECK_BOUNDS(SIZE(y_ref),6)
+
+    ! Reconstruct the solution
+
+    call this%c_bvp_t%recon(omega, x, x_ref, y, y_ref, discrim)
+
+    ! Convert to the canonical solution
+
+    n = SIZE(x)
+
+    !$OMP PARALLEL DO 
+    do i = 1, n
+       y(:,i) = MATMUL(this%eq%T(x(i), omega, .TRUE.), y(:,i))
+    end do
+
+    y_ref = MATMUL(this%eq%T(x_ref, omega, .TRUE.), y_ref)
+
+    ! Finish
+
+    return
+
+  end subroutine recon_
 
 end module gyre_nad_bvp
