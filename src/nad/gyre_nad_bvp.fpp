@@ -29,6 +29,7 @@ module gyre_nad_bvp
   use gyre_mode
   use gyre_mode_par
   use gyre_model
+  use gyre_nad_eqns
   use gyre_num_par
   use gyre_osc_par
   use gyre_sysmtx
@@ -46,6 +47,7 @@ module gyre_nad_bvp
 
   type, extends (c_bvp_t) :: nad_bvp_t
      class(model_t), pointer :: ml => null()
+     type(nad_eqns_t)        :: eq
   end type nad_bvp_t
 
   ! Interfaces
@@ -137,9 +139,10 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%c_bvp_t = c_bvp_t(x, eq, bd, iv, sm, omega_min, omega_max)
+    bp%c_bvp_t = c_bvp_t(x, bd, iv, sm, omega_min, omega_max)
 
     bp%ml => ml
+    bp%eq = eq
 
     ! Finish
 
