@@ -39,7 +39,6 @@ module gyre_${T}_eqns
      private
      procedure(A_), deferred, public :: A
      procedure(A_), deferred, public :: xA
-     procedure(T_), deferred, public :: T
   end type ${T}_eqns_t
 
   ! Interfaces
@@ -54,16 +53,6 @@ module gyre_${T}_eqns
        $TYPE(WP), intent(in)          :: omega
        $TYPE(WP)                      :: A(this%n_e,this%n_e)
      end function A_
-
-     function T_ (this, x, omega, to_canon) result (T)
-       use core_kinds
-       import ${T}_eqns_t
-       class(${T}_eqns_t), intent(in) :: this
-       real(WP), intent(in)           :: x
-       $TYPE(WP), intent(in)          :: omega
-       logical, intent(in)            :: to_canon
-       $TYPE(WP)                      :: T(this%n_e,this%n_e)
-     end function T_
 
   end interface
 
