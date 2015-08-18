@@ -12,7 +12,7 @@ EXEC=./gyre_ad
 IN_FILE=gyre_ad.in
 OUT_FILE=gyre_ad.txt
 
-LABEL="MIX variables"
+LABEL="numerics (MIX variables)"
 
 RELERR=3E-10
 FIELDS=1-2,5
