@@ -35,7 +35,9 @@ module gyre_rad_bvp
   use gyre_sysmtx
   use gyre_sysmtx_factory
   use gyre_util
+  use gyre_rad_bound
   use gyre_rad_eqns
+  use gyre_rad_vars
   use gyre_rot
   use gyre_rot_factory
 
@@ -49,7 +51,7 @@ module gyre_rad_bvp
 
   type, extends(r_bvp_t) :: rad_bvp_t
      class(model_t), pointer :: ml => null()
-     type(rad_eqns_t)        :: eq
+     type(rad_vars_t)        :: vr
    contains
      private
      procedure, public :: recon => recon_
@@ -72,9 +74,6 @@ module gyre_rad_bvp
 contains
 
   function rad_bvp_t_ (x, ml, mp, op, np, omega_min, omega_max) result (bp)
-
-    use gyre_rad_eqns
-    use gyre_rad_bound
 
     real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
@@ -111,7 +110,7 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    bd = rad_bound_t(ml, rt, eq, op, x_i, x_o)
+    bd = rad_bound_t(ml, rt, op, x_i, x_o)
 
     ! Initialize the IVP solver
 
@@ -126,7 +125,7 @@ contains
     bp%r_bvp_t = r_bvp_t(x, bd, iv, sm, omega_min, omega_max)
 
     bp%ml => ml
-    bp%eq = eq
+    bp%vr = rad_vars_t(ml, rt, op)
 
     ! Finish
 
@@ -168,7 +167,7 @@ contains
 
     !$OMP PARALLEL DO 
     do i = 1, n
-       y(1:2,i) = MATMUL(this%eq%T(x(i), omega, .TRUE.), y_(:,i))
+       y(1:2,i) = MATMUL(this%vr%T(x(i), omega), y_(:,i))
        y(4,i) = -y(1,i)*this%ml%U(x(i))
        y(5:6,i) = 0._WP
     end do
@@ -188,7 +187,7 @@ contains
 
     ! Note: y_ref(3) is set to zero; need to fix this
 
-    y_ref(1:2) = MATMUL(this%eq%T(x_ref, omega, .TRUE.), y_ref_)
+    y_ref(1:2) = MATMUL(this%vr%T(x_ref, omega), y_ref_)
     y_ref(3) = 0._WP
     y_ref(4) = -y_ref_(1)*this%ml%U(x_ref)
     y_ref(5:6) = 0._WP

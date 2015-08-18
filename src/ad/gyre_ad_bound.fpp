@@ -23,6 +23,7 @@ module gyre_ad_bound
 
   use core_kinds
 
+  use gyre_ad_vars
   use gyre_atmos
   use gyre_bound
   use gyre_ad_eqns
@@ -52,7 +53,7 @@ module gyre_ad_bound
      private
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
-     type(ad_eqns_t)             :: eq
+     type(ad_vars_t)             :: vr
      real(WP)                    :: x_i
      real(WP)                    :: x_o
      integer                     :: type_i
@@ -86,11 +87,10 @@ module gyre_ad_bound
 
 contains
 
-  function ad_bound_t_ (ml, rt, eq, op, x_i, x_o) result (bd)
+  function ad_bound_t_ (ml, rt, op, x_i, x_o) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
-    type(ad_eqns_t), intent(in)         :: eq
     type(osc_par_t), intent(in)         :: op
     real(WP)                            :: x_i
     real(WP)                            :: x_o
@@ -100,7 +100,7 @@ contains
 
     bd%ml => ml
     allocate(bd%rt, SOURCE=rt)
-    bd%eq = eq
+    bd%vr = ad_vars_t(ml, rt, op)
 
     bd%x_i = x_i
     bd%x_o = x_o
@@ -158,9 +158,9 @@ contains
        $ABORT(Invalid type_i)
     end select
 
-    ! Transform to the variables used in the differential equations
+    ! Apply the variables transformation
 
-    B_i = MATMUL(B_i, this%eq%T(this%x_i, omega, .TRUE.))
+    B_i = MATMUL(B_i, this%vr%T(this%x_i, omega))
 
     ! Finish
 
@@ -281,9 +281,9 @@ contains
        $ABORT(Invalid type_o)
     end select
 
-    ! Transform to the variables used in the differential equations
+    ! Apply the variables transformation
 
-    B_o = MATMUL(B_o, this%eq%T(this%x_o, omega, .TRUE.))
+    B_o = MATMUL(B_o, this%vr%T(this%x_o, omega))
     
     ! Finish
 

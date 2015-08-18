@@ -29,7 +29,9 @@ module gyre_nad_bvp
   use gyre_mode
   use gyre_mode_par
   use gyre_model
+  use gyre_nad_bound
   use gyre_nad_eqns
+  use gyre_nad_vars
   use gyre_num_par
   use gyre_osc_par
   use gyre_sysmtx
@@ -47,7 +49,7 @@ module gyre_nad_bvp
 
   type, extends (c_bvp_t) :: nad_bvp_t
      class(model_t), pointer :: ml => null()
-     type(nad_eqns_t)        :: eq
+     type(nad_vars_t)        :: vr
    contains
      private
      procedure, public :: recon => recon_
@@ -74,9 +76,6 @@ contains
     use gyre_nad_magnus_ivp
     use gyre_nad_findiff_ivp
     use gyre_colloc_ivp
-
-    use gyre_nad_eqns
-    use gyre_nad_bound
 
     real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
@@ -113,7 +112,7 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    bd = nad_bound_t(ml, rt, eq, op, x_i, x_o)
+    bd = nad_bound_t(ml, rt, op, x_i, x_o)
 
     ! Initialize the IVP solver
 
@@ -145,7 +144,7 @@ contains
     bp%c_bvp_t = c_bvp_t(x, bd, iv, sm, omega_min, omega_max)
 
     bp%ml => ml
-    bp%eq = eq
+    bp%vr = nad_vars_t(ml, rt, op)
 
     ! Finish
 
@@ -183,10 +182,10 @@ contains
 
     !$OMP PARALLEL DO 
     do i = 1, n
-       y(:,i) = MATMUL(this%eq%T(x(i), omega, .TRUE.), y(:,i))
+       y(:,i) = MATMUL(this%vr%T(x(i), omega), y(:,i))
     end do
 
-    y_ref = MATMUL(this%eq%T(x_ref, omega, .TRUE.), y_ref)
+    y_ref = MATMUL(this%vr%T(x_ref, omega), y_ref)
 
     ! Finish
 
