@@ -119,7 +119,7 @@ contains
 
     select case (this%vars)
     case (DZIEM_VARS)
-       S = identity_matrix(4)
+       S = identity_matrix(6)
     case (JCD_VARS)
        S = this%S_jcd_(x, omega)
     case (LAGP_VARS)
