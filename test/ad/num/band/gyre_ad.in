@@ -25,7 +25,7 @@
 /
 
 &num
-	ivp_solver = 'MAGNUS_GL6'
+	ivp_solver = 'COLLOC_GL6'
 	matrix_type = 'BAND'
 /
 

@@ -10,19 +10,16 @@
 &mode
 	l = 1
 	m = -1
-	tag = 'm=-1'
 /
 
 &mode
 	l = 1
 	m = 0
-	tag = 'm=0'
 /
 
 &mode
 	l = 1
 	m = 1
-	tag = 'm=1'
 /
 
 &osc
@@ -30,15 +27,7 @@
 /
 
 &num
-	ivp_solver = 'MAGNUS_GL6'
-/
-
-&scan
-	grid_type = 'LINEAR'
-	freq_min = -0.1
-	freq_max = 10.0
-	n_freq = 20
-	tag_list = 'm=-1'
+	ivp_solver = 'COLLOC_GL6'
 /
 
 &scan
@@ -46,15 +35,8 @@
 	freq_min = 0.9
 	freq_max = 11.0
 	n_freq = 20
-	tag_list = 'm=0'
-/
-
-&scan
-	grid_type = 'LINEAR'
-	freq_min = 1.9
-	freq_max = 12.0
-	n_freq = 20
-	tag_list = 'm=1'
+	freq_frame = 'COROT_O'
+	grid_frame = 'COROT_O'
 /
 
 &shoot_grid
