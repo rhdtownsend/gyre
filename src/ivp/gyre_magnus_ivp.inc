@@ -55,7 +55,6 @@ module gyre_${T}_magnus_ivp
      private
      procedure, public :: shoot => shoot_
      procedure, public :: recon => recon_
-     procedure, public :: abscissa => abscissa_
      procedure, public :: dOmega => dOmega_
   end type ${T}_magnus_ivp_t
 
@@ -259,109 +258,6 @@ contains
 
 !****
 
-  function abscissa_ (this, x_a, x_b) result (x)
-
-    class(${T}_magnus_ivp_t), intent(in) :: this
-    real(WP), intent(in)                 :: x_a
-    real(WP), intent(in)                 :: x_b
-    real(WP), allocatable                :: x(:)
-
-    ! Set up the abscissa
-
-    select case (this%scheme)
-    case (GL2_SCHEME)
-       x = abscissa_GL2_(this, x_a, x_b)
-    case (GL4_SCHEME)
-       x = abscissa_GL4_(this, x_a, x_b)
-    case (GL6_SCHEME)
-       x = abscissa_GL6_(this, x_a, x_b)
-    case default
-       $ABORT(Invalid scheme)
-    end select
-
-    ! Finish
-
-    return
-
-  end function abscissa_
-
-!****
-
-  function abscissa_GL2_ (this, x_a, x_b) result (x)
-
-    class(${T}_magnus_ivp_t), intent(in) :: this
-    real(WP), intent(in)                 :: x_a
-    real(WP), intent(in)                 :: x_b
-    real(WP), allocatable                :: x(:)
-
-    real(WP) :: dx
-
-    ! Set up the GL2 abscissa
-
-    allocate(x(1))
-
-    dx = x_b - x_a
-
-    x = x_a + [0.5_WP]*dx
-
-    ! Finish
-
-    return
-    
-  end function abscissa_GL2_
-
-!****
-
-  function abscissa_GL4_ (this, x_a, x_b) result (x)
-
-    class(${T}_magnus_ivp_t), intent(in) :: this
-    real(WP), intent(in)                 :: x_a
-    real(WP), intent(in)                 :: x_b
-    real(WP), allocatable                :: x(:)
-
-    real(WP) :: dx
-
-    ! Set up the GL4 abscissa
-
-    dx = x_b - x_a
-
-    allocate(x(2))
-
-    x = x_a + (0.5_WP+[-1._WP,1._WP]*SQRT(3._WP)/6._WP)*dx
-
-    ! Finish
-
-    return
-
-  end function abscissa_GL4_
-
-!****
-
-  function abscissa_GL6_ (this, x_a, x_b) result (x)
-
-    class(${T}_magnus_ivp_t), intent(in) :: this
-    real(WP), intent(in)                 :: x_a
-    real(WP), intent(in)                 :: x_b
-    real(WP), allocatable                :: x(:)
-
-    real(WP) :: dx
-
-    ! Set up the GL6 abscissa
-
-    dx = x_b - x_a
-
-    allocate(x(3))
-
-    x = x_a + (0.5_WP+[-1._WP,0._WP,1._WP]*SQRT(15._WP)/10._WP)*dx
-
-    ! Finish
-
-    return
-
-  end function abscissa_GL6_
-
-!****
-
   function dOmega_ (this, omega, x_a, x_b) result (dOmega)
 
     class(${T}_magnus_ivp_t), intent(in) :: this
@@ -399,20 +295,23 @@ contains
     real(WP), intent(in)                 :: x_b
     $TYPE(WP)                            :: dOmega(this%n_e,this%n_e)
 
-    real(WP), allocatable  :: x(:)
-    $TYPE(WP) :: A(this%n_e,this%n_e)
+    real(WP)  :: dx
+    real(WP)  :: x(1)
+    $TYPE(WP) :: A(this%n_e,this%n_e,1)
 
     ! Evaluate the GL2 Magnus slope matrix
 
     ! Calculate the RHS matrix
 
-    x = this%abscissa(x_a, x_b)
+    dx = x_b - x_a
 
-    A = this%eq%A(x(1), omega)
+    x = x_a + [0.5_WP]*dx
+
+    A(:,:,1) = this%eq%A(x(1), omega)
 
     ! Set up the slope matrix
 
-    dOmega = A
+    dOmega = A(:,:,1)
 
     ! Finish
 
@@ -440,7 +339,8 @@ contains
     ! Calculate the RHS matrices
 
     dx = x_b - x_a
-    x = this%abscissa(x_a, x_b)
+
+    x = x_a + (0.5_WP+[-1._WP,1._WP]*SQRT(3._WP)/6._WP)*dx
 
     A(:,:,1) = this%eq%A(x(1), omega)
     A(:,:,2) = this%eq%A(x(2), omega)
@@ -481,7 +381,8 @@ contains
     ! Calculate the RHS matrices
 
     dx = x_b - x_a
-    x = this%abscissa(x_a, x_b)
+
+    x = x_a + (0.5_WP+[-1._WP,0._WP,1._WP]*SQRT(15._WP)/10._WP)*dx
 
     A(:,:,1) = this%eq%A(x(1), omega)
     A(:,:,2) = this%eq%A(x(2), omega)

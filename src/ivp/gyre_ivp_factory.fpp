@@ -80,6 +80,8 @@ contains
        allocate(iv, SOURCE=${T}_colloc_ivp_t(eq, 'GL2'))
     case ('COLLOC_GL4')
        allocate(iv, SOURCE=${T}_colloc_ivp_t(eq, 'GL4'))
+    case ('COLLOC_GL6')
+       allocate(iv, SOURCE=${T}_colloc_ivp_t(eq, 'GL6'))
     case ('FINDIFF')
        allocate(iv, SOURCE=${T}_findiff_ivp_t(eq))
     case default

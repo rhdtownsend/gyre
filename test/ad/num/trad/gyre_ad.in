@@ -27,7 +27,7 @@
 /
 
 &num
-	ivp_solver = 'MAGNUS_GL6'
+	ivp_solver = 'COLLOC_GL6'
 /
 
 &scan
@@ -35,6 +35,7 @@
 	freq_min = 0.9
 	freq_max = 11.0
 	freq_frame = 'COROT_O'
+	grid_frame = 'COROT_O'
 	n_freq = 20
 /
 

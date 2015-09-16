@@ -33,8 +33,6 @@ module gyre_${T}_bvp
   use gyre_eqns
   use gyre_ext
   use gyre_ivp
-  use gyre_model
-  use gyre_rot
   use gyre_status
   use gyre_sysmtx
 
@@ -47,8 +45,6 @@ module gyre_${T}_bvp
   ! Derived-type definitions
 
   type :: ${T}_bvp_t
-     class(model_t), pointer           :: ml => null()
-     class(${T}_eqns_t), allocatable   :: eq
      class(${T}_bound_t), allocatable  :: bd
      class(${T}_ivp_t), allocatable    :: iv
      class(${T}_sysmtx_t), allocatable :: sm
@@ -64,7 +60,6 @@ module gyre_${T}_bvp
      procedure         :: build_
      procedure         :: solve_
      procedure, public :: recon => recon_
-     procedure, public :: abscissa => abscissa_
   end type ${T}_bvp_t
 
   ! Interfaces
@@ -81,11 +76,9 @@ module gyre_${T}_bvp
 
 contains
 
-  function ${T}_bvp_t_ (x, ml, eq, bd, iv, sm, omega_min, omega_max) result (bp)
+  function ${T}_bvp_t_ (x, bd, iv, sm, omega_min, omega_max) result (bp)
 
     real(WP), intent(in)                :: x(:)
-    class(model_t), pointer, intent(in) :: ml
-    class(${T}_eqns_t), intent(in)      :: eq
     class(${T}_bound_t), intent(in)     :: bd
     class(${T}_ivp_t), intent(in)       :: iv
     class(${T}_sysmtx_t), intent(in)    :: sm
@@ -93,21 +86,16 @@ contains
     real(WP), intent(in)                :: omega_max
     type(${T}_bvp_t)                    :: bp
 
-    $CHECK_BOUNDS(bd%n_e,eq%n_e)
+    $CHECK_BOUNDS(bd%n_e,iv%n_e)
 
-    $CHECK_BOUNDS(iv%n_e,eq%n_e)
-    
-    $CHECK_BOUNDS(sm%n_e,eq%n_e)
+    $CHECK_BOUNDS(sm%n_e,iv%n_e)
     $CHECK_BOUNDS(sm%n,SIZE(x)-1)
 
     ! Construct the bvp_t
 
     bp%n = SIZE(x)
-    bp%n_e = eq%n_e
+    bp%n_e = iv%n_e
 
-    bp%ml => ml
-    
-    allocate(bp%eq, SOURCE=eq)
     allocate(bp%bd, SOURCE=bd)
     allocate(bp%iv, SOURCE=iv)
     allocate(bp%sm, SOURCE=sm)
@@ -317,41 +305,6 @@ contains
     return
 
   end subroutine recon_
-
-!****
-
-  function abscissa_ (this) result (x)
-
-    class(${T}_bvp_t), intent(in) :: this
-    real(WP), allocatable         :: x(:)
-
-    integer :: k
-    integer :: n_cell(this%n-1)
-    integer :: i
-
-    ! Determine the abscissa used for shooting
-
-    !$OMP PARALLEL DO SCHEDULE (DYNAMIC)
-    count_loop : do k = 1, this%n-1
-       n_cell(k) = SIZE(this%iv%abscissa(this%x(k), this%x(k+1)))
-    end do count_loop
-
-    allocate(x(SUM(n_cell)))
-
-    i = 1
-
-    cell_loop : do k = 1, this%n-1
-       x(i:i+n_cell(k)-1) = this%iv%abscissa(this%x(k), this%x(k+1))
-       i = i + n_cell(k)
-    end do cell_loop
-
-    $CHECK_BOUNDS(i,SIZE(x)+1)
-
-    ! Finish
-
-    return
-
-  end function abscissa_
 
 end module gyre_${T}_bvp
 

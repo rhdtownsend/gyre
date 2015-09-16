@@ -25,9 +25,9 @@ module gyre_rad_bound
 
   use gyre_atmos
   use gyre_bound
-  use gyre_eqns
   use gyre_model
   use gyre_osc_par
+  use gyre_rad_vars
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -50,13 +50,13 @@ module gyre_rad_bound
 
   type, extends (r_bound_t) :: rad_bound_t
      private
-     class(model_t), pointer      :: ml => null()
-     class(r_rot_t), allocatable  :: rt
-     class(r_eqns_t), allocatable :: eq
-     real(WP)                     :: x_i
-     real(WP)                     :: x_o
-     integer                      :: type_i
-     integer                      :: type_o
+     class(model_t), pointer     :: ml => null()
+     class(r_rot_t), allocatable :: rt
+     type(rad_vars_t)            :: vr
+     real(WP)                    :: x_i
+     real(WP)                    :: x_o
+     integer                     :: type_i
+     integer                     :: type_o
    contains 
      private
      procedure, public :: B_i => B_i_
@@ -85,11 +85,10 @@ module gyre_rad_bound
 
 contains
 
-  function rad_bound_t_ (ml, rt, eq, op, x_i, x_o) result (bd)
+  function rad_bound_t_ (ml, rt, op, x_i, x_o) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
-    class(r_eqns_t), intent(in)         :: eq
     type(osc_par_t), intent(in)         :: op
     real(WP)                            :: x_i
     real(WP)                            :: x_o
@@ -99,7 +98,7 @@ contains
 
     bd%ml => ml
     allocate(bd%rt, SOURCE=rt)
-    allocate(bd%eq, SOURCE=eq)
+    bd%vr = rad_vars_t(ml, rt, op)
 
     bd%x_i = x_i
     bd%x_o = x_o
@@ -155,9 +154,9 @@ contains
        $ABORT(Invalid type_i)
     end select
 
-    ! Transform to the variables used in the differential equations
+    ! Apply the variables transformation
 
-    B_i = MATMUL(B_i, this%eq%T(this%x_i, omega, .TRUE.))
+    B_i = MATMUL(B_i, this%vr%T(this%x_i, omega))
 
     ! Finish
 
@@ -253,9 +252,9 @@ contains
        $ABORT(Invalid type_o)
     end select
 
-    ! Transform to the variables used in the differential equations
+    ! Apply the variables transformation
 
-    B_o = MATMUL(B_o, this%eq%T(this%x_o, omega, .TRUE.))
+    B_o = MATMUL(B_o, this%vr%T(this%x_o, omega))
     
     ! Finish
 

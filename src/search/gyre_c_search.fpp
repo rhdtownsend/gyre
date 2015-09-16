@@ -31,7 +31,6 @@ module gyre_c_search
   use gyre_ext
   use gyre_mode
   use gyre_mode_par
-  use gyre_model
   use gyre_num_par
   use gyre_osc_par
   use gyre_root
@@ -261,45 +260,45 @@ contains
 
 !****
 
-  subroutine improve_omega (bp, mp, op, x, omega)
+  ! subroutine improve_omega (bp, mp, op, x, omega)
 
-    class(c_bvp_t), target, intent(inout) :: bp
-    type(mode_par_t), intent(in)          :: mp
-    type(osc_par_t), intent(in)           :: op
-    real(WP), intent(in)                  :: x(:)
-    type(c_ext_t), intent(inout)          :: omega
+  !   class(c_bvp_t), target, intent(inout) :: bp
+  !   type(mode_par_t), intent(in)          :: mp
+  !   type(osc_par_t), intent(in)           :: op
+  !   real(WP), intent(in)                  :: x(:)
+  !   type(c_ext_t), intent(inout)          :: omega
 
-    integer       :: n
-    real(WP)      :: x_ref
-    complex(WP)   :: y(6,SIZE(x))
-    complex(WP)   :: y_ref(6)
-    type(c_ext_t) :: discrim
-    type(mode_t)  :: md
+  !   integer       :: n
+  !   real(WP)      :: x_ref
+  !   complex(WP)   :: y(6,SIZE(x))
+  !   complex(WP)   :: y_ref(6)
+  !   type(c_ext_t) :: discrim
+  !   type(mode_t)  :: md
 
-    ! Use the integral expression for the eigenfrequency to improve
-    ! omega
+  !   ! Use the integral expression for the eigenfrequency to improve
+  !   ! omega
 
-    ! Reconstruct on the supplied grid
+  !   ! Reconstruct on the supplied grid
 
-    n = SIZE(x)
+  !   n = SIZE(x)
 
-    x_ref = x(n)
+  !   x_ref = x(n)
 
-    call bp%recon(cmplx(omega), x, x_ref, y, y_ref, discrim)
+  !   call bp%recon(cmplx(omega), x, x_ref, y, y_ref, discrim)
 
-    ! Create the mode
+  !   ! Create the mode
 
-    md = mode_t(bp%ml, mp, op, cmplx(omega), discrim, &
-                x, y, x_ref, y_ref)
+  !   md = mode_t(bp%ml, mp, op, cmplx(omega), discrim, &
+  !               x, y, x_ref, y_ref)
 
-    ! Improve omega
+  !   ! Improve omega
 
-    omega = c_ext_t(md%omega_int())
+  !   omega = c_ext_t(md%omega_int())
 
-    ! Finish
+  !   ! Finish
 
-    return
+  !   return
 
-  end subroutine improve_omega
+  ! end subroutine improve_omega
 
 end module gyre_c_search

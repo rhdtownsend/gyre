@@ -118,7 +118,7 @@ contains
        deflate_roots = .TRUE.
        restrict_roots = .TRUE.
 
-       ivp_solver = 'MAGNUS_GL2'
+       ivp_solver = 'COLLOC_GL2'
 
        r_root_solver = 'BRENT'
        c_root_solver = 'RIDDERS'

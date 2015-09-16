@@ -27,6 +27,7 @@ module gyre_rad_eqns
   use gyre_linalg
   use gyre_model
   use gyre_osc_par
+  use gyre_rad_vars
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -35,31 +36,17 @@ module gyre_rad_eqns
 
   implicit none
 
-  ! Parameter definitions
-
-  integer, parameter :: DZIEM_VARS = 1
-  integer, parameter :: JCD_VARS = 2
-  integer, parameter :: MIX_VARS = 3
-  integer, parameter :: LAGP_VARS = 4
-
   ! Derived-type definitions
 
   type, extends (r_eqns_t) :: rad_eqns_t
      private
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
-     integer                     :: vars
+     type(rad_vars_t)            :: vr
    contains
      private
      procedure, public :: A => A_
      procedure, public :: xA => xA_
-     procedure         :: xA_dziem_
-     procedure         :: xA_jcd_
-     procedure         :: xA_mix_
-     procedure         :: xA_lagp_
-     procedure, public :: T => T_
-     procedure         :: T_jcd_
-     procedure         :: T_lagp_
   end type rad_eqns_t
 
   ! Interfaces
@@ -89,19 +76,7 @@ contains
 
     eq%ml => ml
     allocate(eq%rt, SOURCE=rt)
-
-    select case (op%variables_set)
-    case ('DZIEM')
-       eq%vars = DZIEM_VARS
-    case ('JCD')
-       eq%vars = JCD_VARS
-    case ('MIX')
-       eq%vars = MIX_VARS
-    case ('LAGP')
-       eq%vars = LAGP_VARS
-    case default
-       $ABORT(Invalid variables_set)
-    end select
+    eq%vr = rad_vars_t(ml, rt, op)
 
     eq%n_e = 2
 
@@ -138,308 +113,40 @@ contains
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
     real(WP)                      :: xA(this%n_e,this%n_e)
-    
-    ! Evaluate the log(x)-space RHS matrix (=x*A)
 
-    select case (this%vars)
-    case (DZIEM_VARS)
-       xA = this%xA_dziem_(x, omega)
-    case (JCD_VARS)
-       xA = this%xA_jcd_(x, omega)
-    case (MIX_VARS)
-       xA = this%xA_mix_(x, omega)
-    case (LAGP_VARS)
-       xA = this%xA_lagp_(x, omega)
-    case default
-       $ABORT(Invalid vars)
-    end select
+    real(WP) :: V_g
+    real(WP) :: U
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: omega_c
+    
+    ! Evaluate the log(x)-space RHS matrix
+
+    ! Calculate coefficients
+
+    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
+    U = this%ml%U(x)
+    As = this%ml%As(x)
+    c_1 = this%ml%c_1(x)
+
+    omega_c = this%rt%omega_c(x, omega)
+
+    ! Set up the matrix
+
+    xA(1,1) = V_g - 1._WP
+    xA(1,2) = -V_g
+      
+    xA(2,1) = c_1*omega_c**2 + U - As
+    xA(2,2) = As - U + 3._WP
+
+    ! Apply the variables transformation
+
+    xA = MATMUL(this%vr%S(x, omega), MATMUL(xA, this%vr%T(x, omega)) - this%vr%dT(x, omega))
 
     ! Finish
 
     return
 
   end function xA_
-
-!****
-
-  function xA_dziem_ (this, x, omega) result (xA)
-
-    class(rad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: xA(this%n_e,this%n_e)
-
-    real(WP) :: V_g
-    real(WP) :: U
-    real(WP) :: As
-    real(WP) :: c_1
-    real(WP) :: omega_c
-    
-    ! Evaluate the log(x)-space RHS matrix ([Dzi1971] formulation)
-
-    ! Calculate coefficients
-
-    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
-    U = this%ml%U(x)
-    As = this%ml%As(x)
-    c_1 = this%ml%c_1(x)
-
-    omega_c = this%rt%omega_c(x, omega)
-
-    ! Set up the matrix
-
-    xA(1,1) = V_g - 1._WP
-    xA(1,2) = -V_g
-      
-    xA(2,1) = c_1*omega_c**2 + U - As
-    xA(2,2) = As - U + 3._WP
-
-    ! Finish
-
-    return
-
-  end function xA_dziem_
-
-!****
-
-  function xA_jcd_ (this, x, omega) result (xA)
-
-    class(rad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: xA(this%n_e,this%n_e)
-    
-    real(WP) :: V_g
-    real(WP) :: U
-    real(WP) :: As
-    real(WP) :: c_1
-    real(WP) :: omega_c
-    
-    ! Evaluate the log(x)-space RHS matrix ([ChrDal2008] formulation)
-
-    ! Calculate coefficients
-
-    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
-    U = this%ml%U(x)
-    As = this%ml%As(x)
-    c_1 = this%ml%c_1(x)
-
-    omega_c = this%rt%omega_c(x, omega)
-
-    ! Set up the matrix
-
-    xA(1,1) = V_g - 1._WP
-    xA(1,2) = -V_g*c_1*omega_c**2
-    
-    xA(2,1) = 1._WP - (As - U)/(c_1*omega_c**2)
-    xA(2,2) = As
-    
-    ! Finish
-
-    return
-
-  end function xA_jcd_
-
-!****
-
-  function xA_mix_ (this, x, omega) result (xA)
-
-    class(rad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: xA(this%n_e,this%n_e)
-    
-    real(WP) :: V_g
-    real(WP) :: U
-    real(WP) :: As
-    real(WP) :: c_1
-    real(WP) :: omega_c
-    
-    ! Evaluate the log(x)-space RHS matrix (mixed formulation)
-
-    ! Calculate coefficients
-
-    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
-    U = this%ml%U(x)
-    As = this%ml%As(x)
-    c_1 = this%ml%c_1(x)
-
-    omega_c = this%rt%omega_c(x, omega)
-
-    ! Set upt the matrix
-
-    xA(1,1) = V_g - 1._WP
-    xA(1,2) = -V_g
-      
-    xA(2,1) = c_1*omega_c**2 + U - As
-    xA(2,2) = As - U + 3._WP
-
-    ! Finish
-
-    return
-
-  end function xA_mix_
-
-!****
-
-  function xA_lagp_ (this, x, omega) result (xA)
-
-    class(rad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: xA(this%n_e,this%n_e)
-    
-    real(WP) :: V_2
-    real(WP) :: Gamma_1
-    real(WP) :: c_1
-    real(WP) :: omega_c
-
-    ! Evaluate the log(x)-space RHS matrix (Lagrangian pressure
-    ! perturbation formulation)
-
-    ! Calculate coefficients
-
-    V_2 = this%ml%V_2(x)
-    Gamma_1 = this%ml%Gamma_1(x)
-    c_1 = this%ml%c_1(x)
-
-    omega_c = this%rt%omega_c(x, omega)
-
-    xA(1,1) = -1._WP
-    xA(1,2) = -x**2/Gamma_1
-      
-    xA(2,1) = V_2*(4._WP + c_1*omega_c**2)
-    xA(2,2) = V_2*x**2
-
-    ! Finish
-
-    return
-
-  end function xA_lagp_
-
-!****
-
-  function T_ (this, x, omega, to_canon) result (T)
-
-    class(rad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    logical, intent(in)           :: to_canon
-    real(WP)                      :: T(this%n_e,this%n_e)
-
-    ! Evaluate the transformation matrix to convert variables to/from
-    ! the canonical (DZEIM) formulation
-
-    select case (this%vars)
-    case (DZIEM_VARS)
-       T = identity_matrix(this%n_e)
-    case (JCD_VARS)
-       T = this%T_jcd_(x, omega, to_canon)
-    case (MIX_VARS)
-       T = identity_matrix(this%n_e)
-    case (LAGP_VARS)
-       T = this%T_lagp_(x, omega, to_canon)
-    case default
-       $ABORT(Invalid vars)
-    end select
-
-    ! Finish
-
-    return
-
-  end function T_
-
-!****
-
-  function T_jcd_ (this, x, omega, to_canon) result (T)
-
-    class(rad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    logical, intent(in)           :: to_canon
-    real(WP)                      :: T(this%n_e,this%n_e)
-
-    real(WP) :: c_1
-    real(WP) :: omega_c
-
-    ! Evaluate the transformation matrix to convert JCD variables
-    ! to/from the canonical (DZEIM) formulation
-
-    ! Calculate coefficients
-
-    c_1 = this%ml%c_1(x)
-
-    omega_c = this%rt%omega_c(x, omega)
-
-    ! Set up the matrix
-
-    if (to_canon) then
-
-       T(1,1) = 1._WP
-       T(1,2) = 0._WP
-       
-       T(2,1) = 0._WP
-       T(2,2) = c_1*omega_c**2
-
-    else
-
-       T(1,1) = 1._WP
-       T(1,2) = 0._WP
-
-       T(2,1) = 0._WP
-       T(2,2) = 1._WP/(c_1*omega_c**2)
-
-    end if
-
-    ! Finish
-
-    return
-
-  end function T_jcd_
-
-!****
-
-  function T_lagp_ (this, x, omega, to_canon) result (T)
-
-    class(rad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
-    real(WP), intent(in)          :: omega
-    logical, intent(in)           :: to_canon
-    real(WP)                      :: T(this%n_e,this%n_e)
-
-    real(WP) :: V_2
-
-    ! Evaluate the transformation matrix to convert LAGP variables
-    ! to/from the canonical (DZEIM) formulation
-
-    ! Calculate coefficients
-
-    V_2 = this%ml%V_2(x)
-
-    ! Set up the matrix
-
-    if (to_canon) then
-
-       T(1,1) = 1._WP
-       T(1,2) = 0._WP
-
-       T(2,1) = 1._WP
-       T(2,2) = 1._WP/V_2
-
-    else
-
-       T(1,1) = 1._WP
-       T(1,2) = 0._WP
-
-       T(2,1) = -V_2
-       T(2,2) = V_2
-
-    end if
-
-    ! Finish
-
-    return
-
-  end function T_lagp_
 
 end module gyre_rad_eqns

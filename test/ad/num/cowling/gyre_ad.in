@@ -14,14 +14,13 @@
 /
 
 &num
-	ivp_solver = 'MAGNUS_GL6'
+	ivp_solver = 'COLLOC_GL6'
 /
 
 &scan
 	grid_type = 'LINEAR'
 	freq_min = 0.1
 	freq_max = 21.0
-	freq_frame = 'COROT_O'
 	n_freq = 100
 /
 

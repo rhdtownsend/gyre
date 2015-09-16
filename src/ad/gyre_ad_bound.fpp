@@ -23,9 +23,10 @@ module gyre_ad_bound
 
   use core_kinds
 
+  use gyre_ad_vars
   use gyre_atmos
   use gyre_bound
-  use gyre_eqns
+  use gyre_ad_eqns
   use gyre_model
   use gyre_osc_par
   use gyre_rot
@@ -50,14 +51,14 @@ module gyre_ad_bound
 
   type, extends (r_bound_t) :: ad_bound_t
      private
-     class(model_t), pointer      :: ml => null()
-     class(r_rot_t), allocatable  :: rt
-     class(r_eqns_t), allocatable :: eq
-     real(WP)                     :: x_i
-     real(WP)                     :: x_o
-     integer                      :: type_i
-     integer                      :: type_o
-     logical                      :: cowling_approx
+     class(model_t), pointer     :: ml => null()
+     class(r_rot_t), allocatable :: rt
+     type(ad_vars_t)             :: vr
+     real(WP)                    :: x_i
+     real(WP)                    :: x_o
+     integer                     :: type_i
+     integer                     :: type_o
+     logical                     :: cowling_approx
    contains 
      private
      procedure, public :: B_i => B_i_
@@ -86,11 +87,10 @@ module gyre_ad_bound
 
 contains
 
-  function ad_bound_t_ (ml, rt, eq, op, x_i, x_o) result (bd)
+  function ad_bound_t_ (ml, rt, op, x_i, x_o) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
-    class(r_eqns_t), intent(in)         :: eq
     type(osc_par_t), intent(in)         :: op
     real(WP)                            :: x_i
     real(WP)                            :: x_o
@@ -100,7 +100,7 @@ contains
 
     bd%ml => ml
     allocate(bd%rt, SOURCE=rt)
-    allocate(bd%eq, SOURCE=eq)
+    bd%vr = ad_vars_t(ml, rt, op)
 
     bd%x_i = x_i
     bd%x_o = x_o
@@ -158,9 +158,9 @@ contains
        $ABORT(Invalid type_i)
     end select
 
-    ! Transform to the variables used in the differential equations
+    ! Apply the variables transformation
 
-    B_i = MATMUL(B_i, this%eq%T(this%x_i, omega, .TRUE.))
+    B_i = MATMUL(B_i, this%vr%T(this%x_i, omega))
 
     ! Finish
 
@@ -179,7 +179,7 @@ contains
     real(WP) :: c_1
     real(WP) :: l_e
     real(WP) :: omega_c
-    real(WP) :: chi_cowl
+    real(WP) :: alpha_gr
 
     $ASSERT(this%x_i == 0._WP,Boundary condition invalid for x_i /= 0)
 
@@ -194,22 +194,22 @@ contains
     omega_c = this%rt%omega_c(this%x_i, omega)
 
     if (this%cowling_approx) then
-       chi_cowl = 0._WP
+       alpha_gr = 0._WP
     else
-       chi_cowl = 1._WP
+       alpha_gr = 1._WP
     endif
 
     ! Set up the boundary conditions
 
     B_i(1,1) = c_1*omega_c**2
     B_i(1,2) = -l_e
-    B_i(1,3) = chi_cowl*(0._WP)
-    B_i(1,4) = chi_cowl*(0._WP)
+    B_i(1,3) = alpha_gr*(0._WP)
+    B_i(1,4) = alpha_gr*(0._WP)
         
-    B_i(2,1) = chi_cowl*(0._WP)
-    B_i(2,2) = chi_cowl*(0._WP)
-    B_i(2,3) = chi_cowl*(l_e)
-    B_i(2,4) = chi_cowl*(-1._WP) + (1._WP - chi_cowl)
+    B_i(2,1) = alpha_gr*(0._WP)
+    B_i(2,2) = alpha_gr*(0._WP)
+    B_i(2,3) = alpha_gr*(l_e)
+    B_i(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
 
     ! Finish
 
@@ -225,7 +225,7 @@ contains
     real(WP), intent(in)          :: omega
     real(WP)                      :: B_i(this%n_i,this%n_e)
 
-    real(WP) :: chi_cowl
+    real(WP) :: alpha_gr
 
     $ASSERT(this%x_i /= 0._WP,Boundary condition invalid for x_i == 0)
 
@@ -235,22 +235,22 @@ contains
     ! Calculate coefficients
 
     if (this%cowling_approx) then
-       chi_cowl = 0._WP
+       alpha_gr = 0._WP
     else
-       chi_cowl = 1._WP
+       alpha_gr = 1._WP
     endif
 
     ! Set up the boundary conditions
 
     B_i(1,1) = 1._WP
     B_i(1,2) = 0._WP
-    B_i(1,3) = chi_cowl*(0._WP)
-    B_i(1,4) = chi_cowl*(0._WP)
+    B_i(1,3) = alpha_gr*(0._WP)
+    B_i(1,4) = alpha_gr*(0._WP)
         
-    B_i(2,1) = chi_cowl*(0._WP)
-    B_i(2,2) = chi_cowl*(0._WP)
-    B_i(2,3) = chi_cowl*(0._WP)
-    B_i(2,4) = chi_cowl*(1._WP) + (1._WP - chi_cowl)
+    B_i(2,1) = alpha_gr*(0._WP)
+    B_i(2,2) = alpha_gr*(0._WP)
+    B_i(2,3) = alpha_gr*(0._WP)
+    B_i(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
       
     ! Finish
 
@@ -281,9 +281,9 @@ contains
        $ABORT(Invalid type_o)
     end select
 
-    ! Transform to the variables used in the differential equations
+    ! Apply the variables transformation
 
-    B_o = MATMUL(B_o, this%eq%T(this%x_o, omega, .TRUE.))
+    B_o = MATMUL(B_o, this%vr%T(this%x_o, omega))
     
     ! Finish
 
@@ -301,7 +301,7 @@ contains
 
     real(WP) :: U
     real(WP) :: l_e
-    real(WP) :: chi_cowl
+    real(WP) :: alpha_gr
 
     ! Evaluate the outer boundary conditions (zero-pressure)
 
@@ -312,22 +312,22 @@ contains
     l_e = this%rt%l_e(this%x_o, omega)
 
     if (this%cowling_approx) then
-       chi_cowl = 0._WP
+       alpha_gr = 0._WP
     else
-       chi_cowl = 1._WP
+       alpha_gr = 1._WP
     endif
 
     ! Set up the boundary conditions
 
     B_o(1,1) = 1._WP
     B_o(1,2) = -1._WP
-    B_o(1,3) = chi_cowl*(1._WP)
-    B_o(1,4) = chi_cowl*(0._WP)
+    B_o(1,3) = alpha_gr*(1._WP)
+    B_o(1,4) = alpha_gr*(0._WP)
       
-    B_o(2,1) = chi_cowl*(U)
-    B_o(2,2) = chi_cowl*(0._WP)
-    B_o(2,3) = chi_cowl*(l_e + 1._WP) + (1._WP - chi_cowl)
-    B_o(2,4) = chi_cowl*(1._WP)
+    B_o(2,1) = alpha_gr*(U)
+    B_o(2,2) = alpha_gr*(0._WP)
+    B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+    B_o(2,4) = alpha_gr*(1._WP)
 
     ! Finish
 
@@ -348,7 +348,7 @@ contains
     real(WP) :: lambda
     real(WP) :: l_e
     real(WP) :: omega_c
-    real(WP) :: chi_cowl
+    real(WP) :: alpha_gr
 
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
@@ -363,22 +363,22 @@ contains
     omega_c = this%rt%omega_c(this%x_o, omega)
 
     if (this%cowling_approx) then
-       chi_cowl = 0._WP
+       alpha_gr = 0._WP
     else
-       chi_cowl = 1._WP
+       alpha_gr = 1._WP
     endif
 
     ! Set up the boundary conditions
 
     B_o(1,1) = 1 + (lambda/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
     B_o(1,2) = -1._WP
-    B_o(1,3) = chi_cowl*(1 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
-    B_o(1,4) = chi_cowl*(0._WP)
+    B_o(1,3) = alpha_gr*(1 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
+    B_o(1,4) = alpha_gr*(0._WP)
       
-    B_o(2,1) = chi_cowl*(0._WP)
-    B_o(2,2) = chi_cowl*(0._WP)
-    B_o(2,3) = chi_cowl*(l_e + 1._WP) + (1._WP - chi_cowl)
-    B_o(2,4) = chi_cowl*(1._WP)
+    B_o(2,1) = alpha_gr*(0._WP)
+    B_o(2,2) = alpha_gr*(0._WP)
+    B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+    B_o(2,4) = alpha_gr*(1._WP)
 
     ! Finish
 
@@ -401,7 +401,7 @@ contains
     real(WP) :: l_e
     real(WP) :: omega_c
     real(WP) :: beta
-    real(WP) :: chi_cowl
+    real(WP) :: alpha_gr
     real(WP) :: b_11
     real(WP) :: b_12
     real(WP) :: b_13
@@ -425,18 +425,18 @@ contains
     beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
     if (this%cowling_approx) then
-       chi_cowl = 0._WP
+       alpha_gr = 0._WP
     else
-       chi_cowl = 1._WP
+       alpha_gr = 1._WP
     endif
       
     b_11 = V_g - 3._WP
     b_12 = lambda/(c_1*omega_c**2) - V_g
-    b_13 = chi_cowl*(V_g)
+    b_13 = alpha_gr*(V_g)
 
     b_21 = c_1*omega_c**2 - As
     b_22 = 1._WP + As
-    b_23 = chi_cowl*(-As)
+    b_23 = alpha_gr*(-As)
     
     alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
     alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
@@ -448,10 +448,10 @@ contains
     B_o(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12)
     B_o(1,4) = 0._WP
 
-    B_o(2,1) = chi_cowl*(0._WP)
-    B_o(2,2) = chi_cowl*(0._WP)
-    B_o(2,3) = chi_cowl*(l_e + 1._WP) + (1._WP - chi_cowl)
-    B_o(2,4) = chi_cowl*(1._WP)
+    B_o(2,1) = alpha_gr*(0._WP)
+    B_o(2,2) = alpha_gr*(0._WP)
+    B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+    B_o(2,4) = alpha_gr*(1._WP)
 
     ! Finish
 
@@ -474,7 +474,7 @@ contains
     real(WP) :: l_e
     real(WP) :: omega_c
     real(WP) :: beta
-    real(WP) :: chi_cowl
+    real(WP) :: alpha_gr
     real(WP) :: b_11
     real(WP) :: b_12
 
@@ -492,9 +492,9 @@ contains
     beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
     if (this%cowling_approx) then
-       chi_cowl = 0._WP
+       alpha_gr = 0._WP
     else
-       chi_cowl = 1._WP
+       alpha_gr = 1._WP
     endif
       
     b_11 = V_g - 3._WP
@@ -504,13 +504,13 @@ contains
 
     B_o(1,1) = beta - b_11
     B_o(1,2) = -b_12
-    B_o(1,3) = chi_cowl*(b_12 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
-    B_o(1,4) = chi_cowl*(0._WP)
+    B_o(1,3) = alpha_gr*(b_12 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
+    B_o(1,4) = alpha_gr*(0._WP)
 
-    B_o(2,1) = chi_cowl*(0._WP)
-    B_o(2,2) = chi_cowl*(0._WP)
-    B_o(2,3) = chi_cowl*(l_e + 1._WP) + (1._WP - chi_cowl)
-    B_o(2,4) = chi_cowl*(1._WP)
+    B_o(2,1) = alpha_gr*(0._WP)
+    B_o(2,2) = alpha_gr*(0._WP)
+    B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+    B_o(2,4) = alpha_gr*(1._WP)
 
     ! Finish
 

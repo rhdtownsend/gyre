@@ -61,6 +61,7 @@ module gyre_grid
 
   private
 
+  public :: grid_range
   public :: build_grid
   public :: create_uniform
   public :: create_geom
@@ -70,6 +71,52 @@ module gyre_grid
   ! Procedures
 
 contains
+
+  subroutine grid_range (gp, x_in, x_i, x_o) 
+
+    type(grid_par_t), intent(in)      :: gp(:)
+    real(WP), allocatable, intent(in) :: x_in(:)
+    real(WP), intent(out)             :: x_i
+    real(WP), intent(out)             :: x_o
+
+    integer :: n
+
+    ! Determine the x range of the grid
+
+    select case (gp(1)%op_type)
+    case ('CREATE_CLONE')
+       $ASSERT(ALLOCATED(x_in),No grid to clone)
+       n = SIZE(x_in)
+       x_i = x_in(1)
+       x_o = x_in(n)
+    case ('CREATE_MIDPOINT')
+       $ASSERT(ALLOCATED(x_in),No grid to clone)
+       n = SIZE(x_in)
+       x_i = x_in(1)
+       x_o = x_in(n)
+    case ('CREATE_UNIFORM')
+       x_i = gp(1)%x_i
+       x_o = gp(1)%x_o
+    case ('CREATE_GEOM')
+       x_i = gp(1)%x_i
+       x_o = gp(1)%x_o
+    case ('CREATE_LOG')
+       x_i = gp(1)%x_i
+       x_o = gp(1)%x_o
+    case ('CREATE_FROM_FILE')
+       x_i = gp(1)%x_i
+       x_o = gp(1)%x_o
+    case default
+       $ABORT(Invalid op_type (the first op_type must be CREATE_*))
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine grid_range
+
+!****
 
   subroutine build_grid (gp, ml, mp, op, omega, x_in, x, verbose)
 
@@ -113,12 +160,16 @@ contains
        x = [x_in(1),0.5_WP*(x_in(:n_in-1)+x_in(2:)),x_in(n_in)]
     case ('CREATE_UNIFORM')
        call create_uniform(gp(1)%n, x)
+       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
     case ('CREATE_GEOM')
        call create_geom(gp(1)%s, gp(1)%n, x)
+       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
     case ('CREATE_LOG')
        call create_log(gp(1)%s, gp(1)%n, x)
+       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
     case ('CREATE_FROM_FILE')
        call create_from_file_(gp(1)%file, x)
+       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
     case default
        $ABORT(Invalid op_type (the first op_type must be CREATE_*))
     end select
@@ -210,9 +261,9 @@ contains
     real(WP)          :: dx
     integer           :: k
 
-    ! Create an n-point grid with geometric spacing in each half of the
-    ! [0,1] interval. The parameter s controls the ratio between the
-    ! boundary cell size and the average cell size 1/(n-1)
+    ! Create an n-point grid with geometric spacing in each half of
+    ! the [0,1] interval. The parameter s controls the ratio between
+    ! the boundary cell size and the average cell size 1/(n-1)
 
     allocate(x(n))
 
@@ -352,7 +403,7 @@ contains
 
     dx_1 = 1._WP/(s*(n-1))
 
-    if(MOD(n, 2) == 0) then
+    if (MOD(n, 2) == 0) then
 
        ! Even number of grid points / odd number of cells
 
@@ -363,7 +414,7 @@ contains
        even_grid_loop : do k = 2,n/2
 
           w = (k-1.5_WP)/(n/2-1.5_WP)
-          t = LOG(0.5_WP)*(1._WP-w) + LOG(dx_1)*w
+          t = (1._WP-w)*LOG(0.5_WP) + w*LOG(dx_1)
 
           x(n/2-k+2) = EXP(t)
 
@@ -384,7 +435,7 @@ contains
        odd_grid_loop : do k = 2,(n-1)/2
 
           w = (k-1._WP)/((n-1)/2-1._WP)
-          t = LOG(0.5_WP)*(1._WP-w) + LOG(dx_1)*w
+          t = (1._WP-w)*LOG(0.5_WP) + w*LOG(dx_1)
 
           x((n-1)/2-k+2) = EXP(t)
 
@@ -441,6 +492,9 @@ contains
     end do read_loop
 
     close(unit)
+
+    $ASSERT(x(1)==0._WP,First point not at zero)
+    $ASSERT(x(n)==1._WP,Last point not at one)
 
     ! Finish
 

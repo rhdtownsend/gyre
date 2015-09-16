@@ -23,6 +23,9 @@ module gyre_ad_bvp
 
   use core_kinds
 
+  use gyre_ad_bound
+  use gyre_ad_eqns
+  use gyre_ad_vars
   use gyre_bvp
   use gyre_ext
   use gyre_ivp
@@ -46,6 +49,8 @@ module gyre_ad_bvp
   ! Derived-type definitions
 
   type, extends (r_bvp_t) :: ad_bvp_t
+     class(model_t), pointer :: ml => null()
+     type(ad_vars_t)         :: vr
    contains
      private
      procedure, public :: recon => recon_
@@ -68,9 +73,6 @@ module gyre_ad_bvp
 contains
 
   function ad_bvp_t_ (x, ml, mp, op, np, omega_min, omega_max) result (bp)
-
-    use gyre_ad_eqns
-    use gyre_ad_bound
 
     real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
@@ -107,7 +109,7 @@ contains
     x_i = x(1)
     x_o = x(n)
 
-    bd = ad_bound_t(ml, rt, eq, op, x_i, x_o)
+    bd = ad_bound_t(ml, rt, op, x_i, x_o)
 
     ! Initialize the IVP solver
 
@@ -119,8 +121,11 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%r_bvp_t = r_bvp_t(x, ml, eq, bd, iv, sm, omega_min, omega_max)
+    bp%r_bvp_t = r_bvp_t(x, bd, iv, sm, omega_min, omega_max)
 
+    bp%ml => ml
+    bp%vr = ad_vars_t(ml, rt, op)
+    
     ! Finish
 
     return
@@ -159,11 +164,11 @@ contains
 
     !$OMP PARALLEL DO 
     do i = 1, n
-       y(1:4,i) = MATMUL(this%eq%T(x(i), omega, .TRUE.), y_(:,i))
+       y(1:4,i) = MATMUL(this%vr%T(x(i), omega), y_(:,i))
        y(5:6,i) = 0._WP
     end do
 
-    y_ref(1:4) = MATMUL(this%eq%T(x_ref, omega, .TRUE.), y_ref_)
+    y_ref(1:4) = MATMUL(this%vr%T(x_ref, omega), y_ref_)
     y_ref(5:6) = 0._WP
 
     ! Finish

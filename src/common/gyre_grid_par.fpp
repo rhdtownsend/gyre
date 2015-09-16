@@ -33,14 +33,14 @@ module gyre_grid_par
   ! Derived-type definitions
 
   type :: grid_par_t
-     real(WP)                :: x_i = 0._WP
-     real(WP)                :: x_o = 1._WP
-     real(WP)                :: alpha_osc = 0._WP
-     real(WP)                :: alpha_exp = 0._WP
-     real(WP)                :: alpha_thm = 0._WP
-     real(WP)                :: alpha_str = 0._WP
-     real(WP)                :: s = 0
-     integer                 :: n = 0
+     real(WP)                :: x_i
+     real(WP)                :: x_o
+     real(WP)                :: alpha_osc
+     real(WP)                :: alpha_exp
+     real(WP)                :: alpha_thm
+     real(WP)                :: alpha_str
+     real(WP)                :: s
+     integer                 :: n
      character(FILENAME_LEN) :: file
      character(64)           :: op_type
      character(2048)         :: tag_list
@@ -91,6 +91,8 @@ contains
 
     integer                     :: n_gp
     integer                     :: i
+    real(WP)                    :: x_i
+    real(WP)                    :: x_o
     real(WP)                    :: alpha_osc
     real(WP)                    :: alpha_exp
     real(WP)                    :: alpha_thm
@@ -101,7 +103,9 @@ contains
     character(LEN(gp%op_type))  :: op_type
     character(LEN(gp%tag_list)) :: tag_list
 
-    namelist /${NAME}_grid/ alpha_osc, alpha_exp, alpha_thm, alpha_str, s, n, file, op_type, tag_list
+    namelist /${NAME}_grid/ x_i, x_o, &
+                            alpha_osc, alpha_exp, alpha_thm, alpha_str, &
+                            s, n, file, op_type, tag_list
 
     ! Count the number of grid namelists
 
@@ -124,6 +128,9 @@ contains
 
     read_loop : do i = 1, n_gp
 
+       x_i = 0._WP
+       x_o = 1._WP
+
        alpha_osc = 0._WP
        alpha_exp = 0._WP
        alpha_thm = 0._WP
@@ -142,14 +149,16 @@ contains
 
        ! Initialize the grid_par
 
-       gp(i) = grid_par_t(alpha_osc=alpha_osc, &
-                         alpha_exp=alpha_exp, &
-                         alpha_thm=alpha_thm, alpha_str=alpha_str, &
-                         s=s, &
-                         n=n, &
-                         file=file, &
-                         op_type=op_type, &
-                         tag_list=tag_list)
+       gp(i) = grid_par_t(x_i=x_i, &
+                          x_o=x_o, &
+                          alpha_osc=alpha_osc, &
+                          alpha_exp=alpha_exp, &
+                          alpha_thm=alpha_thm, alpha_str=alpha_str, &
+                          s=s, &
+                          n=n, &
+                          file=file, &
+                          op_type=op_type, &
+                          tag_list=tag_list)
 
     end do read_loop
 

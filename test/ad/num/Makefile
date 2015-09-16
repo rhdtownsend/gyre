@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=omp band doppler trad cowling
+SUBDIRS=omp band doppler trad cowling vars-jcd vars-mix vars-lagp
 
 # Rules
 
