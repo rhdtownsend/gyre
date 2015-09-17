@@ -412,8 +412,7 @@ contains
     integer   :: j_a
     integer   :: j_b
     $TYPE(WP) :: B(n_s*eq%n_e,eq%n_e)
-    integer   :: ipiv(n_s*eq%n_e)
-    integer   :: info
+    $TYPE(WP) :: X(n_s*eq%n_e,eq%n_e)
 
     $CHECK_BOUNDS(SIZE(a_ij, 1),n_s)
     $CHECK_BOUNDS(SIZE(a_ij, 2),n_s)
@@ -456,8 +455,7 @@ contains
 
     ! Solve the linear system
 
-    call XGESV(n_s*eq%n_e, eq%n_e, M, n_s*eq%n_e, ipiv, B, n_s*eq%n_e, info)
-    $ASSERT(info == 0,Non-zero return from XGESV)
+    X = linear_solve(M, B)
 
     ! Extract the K matrices
 
@@ -466,7 +464,7 @@ contains
        i_a = (i-1)*eq%n_e + 1
        i_b = (i-1)*eq%n_e + eq%n_e
 
-       K(:,:,i) = B(i_a:i_b,:)
+       K(:,:,i) = X(i_a:i_b,:)
 
     end do
 
