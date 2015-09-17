@@ -531,9 +531,24 @@ contains
     $TYPE(WP), intent(in) :: B(:,:)
     $TYPE(WP)             :: X(SIZE(A, 2), SIZE(B, 2))
 
-    $TYPE(WP) :: A_(SIZE(A, 1),SIZE(A, 2))
-    integer   :: ipiv(SIZE(A, 1))
-    integer   :: info
+    $TYPE(WP)    :: A_(SIZE(A, 1),SIZE(A, 2))
+    $TYPE(WP)    :: B_(SIZE(B, 1),SIZE(B, 2))
+    integer      :: ipiv(SIZE(A, 1))
+    integer      :: info
+    $TYPE(WP)    :: Af(SIZE(A, 1),SIZE(A, 2))
+    real(WP)     :: R(SIZE(A, 1))
+    real(WP)     :: C(SIZE(A, 1))
+    real(WP)     :: rcond
+    real(WP)     :: ferr(SIZE(B, 2))
+    real(WP)     :: berr(SIZE(B, 2))
+    $if($TYPE eq 'complex')
+    $TYPE(WP)    :: work(2*SIZE(A, 1))
+    real(WP)     :: xwork(2*SIZE(A, 1))
+    $else
+    $TYPE(WP)    :: work(4*SIZE(A, 1))
+    integer      :: xwork(SIZE(A, 1))
+    $endif
+    character(1) :: equed
 
     $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
     $CHECK_BOUNDS(SIZE(B, 1),SIZE(A, 1))
@@ -541,10 +556,12 @@ contains
     ! Solve the linear system A X = B
 
     A_ = A
-    X = B
+    B_ = B
 
-    call XGESV(SIZE(A, 1), SIZE(B, 2), A_, SIZE(A, 1), ipiv, X, SIZE(B, 1), info)
-    $ASSERT(info == 0,Non-zero return from XGESV)
+    call XGESVX('E', 'N', SIZE(A_, 1), SIZE(B_, 2), A_, SIZE(A_, 1), AF, SIZE(AF, 1), ipiv, &
+                equed, R, C, B_, SIZE(B_, 1), X, SIZE(X, 1), rcond, ferr, berr, work, &
+                xwork, info)
+    $ASSERT(info == 0,Non-zero return from XGESVX)
 
     ! Finish
 
