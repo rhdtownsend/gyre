@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=build_poly_hom build_poly
+TARGETS=build_poly_hom build_poly build_poly_disc
 
 # Flags
 
