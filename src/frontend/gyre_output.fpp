@@ -55,6 +55,8 @@ contains
     type(out_par_t), intent(in) :: up
     type(mode_t), intent(in)    :: md(:)
 
+    type(hdf_writer_t)                                :: wr_hdf
+    type(txt_writer_t)                                :: wr_txt
     class(writer_t), allocatable                      :: wr
     character(LEN(up%summary_item_list)), allocatable :: items(:)
     integer                                           :: n_md
@@ -69,9 +71,11 @@ contains
 
     select case (up%summary_file_format)
     case ('HDF')
-       allocate(wr, SOURCE=hdf_writer_t(up%summary_file, up%label))
+       wr_hdf = hdf_writer_t(up%summary_file, up%label)
+       allocate(wr, SOURCE=wr_hdf)
     case ('TXT')
-       allocate(wr, SOURCE=txt_writer_t(up%summary_file, up%label))
+       wr_txt = txt_writer_t(up%summary_file, up%label)
+       allocate(wr, SOURCE=wr_txt)
     case default
        $ABORT(Invalid summary_file_format)
     end select
@@ -85,6 +89,8 @@ contains
     n_md = SIZE(md)
 
     item_loop : do i = 1, SIZE(items)
+
+       print *,'Proc item',i
 
        select case (items(i))
 
@@ -161,6 +167,7 @@ contains
     ! Close the file
 
     call wr%final()
+    print *,'closed file'
 
     ! Finish
 
@@ -228,6 +235,8 @@ contains
 
     character(:), allocatable                      :: mode_file
     character(64)                                  :: infix
+    type(hdf_writer_t)                             :: wr_hdf
+    type(txt_writer_t)                             :: wr_txt
     class(writer_t), allocatable                   :: wr
     character(LEN(up%mode_item_list)), allocatable :: items(:)
     integer                                        :: i
@@ -239,6 +248,8 @@ contains
     ! Set up the filename
 
     if (up%mode_template /= '') then
+
+       print *,' Writing file with name based on template'
 
        mode_file = up%mode_template
 
@@ -255,6 +266,8 @@ contains
        mode_file = subst_(mode_file, '%n', md%n_pg, '(SP,I0)')
 
     else
+
+       print *,' Writing file with name based on prefix'
 
        write(infix, 100) j
 100    format(I5.5)
@@ -274,9 +287,11 @@ contains
 
     select case (up%mode_file_format)
     case ('HDF')
-       allocate(wr, SOURCE=hdf_writer_t(mode_file, up%label))
+       wr_hdf = hdf_writer_t(mode_file, up%label)
+       allocate(wr, SOURCE=wr_hdf)
     case ('TXT')
-       allocate(wr, SOURCE=txt_writer_t(mode_file, up%label))
+       wr_txt = txt_writer_t(mode_file, up%label)
+       allocate(wr, SOURCE=wr_txt)
     case default
        $ABORT(Invalid mode_file_format)
     end select
