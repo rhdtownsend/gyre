@@ -90,8 +90,6 @@ contains
 
     item_loop : do i = 1, SIZE(items)
 
-       print *,'Proc item',i
-
        select case (items(i))
 
        case('l')
@@ -167,7 +165,6 @@ contains
     ! Close the file
 
     call wr%final()
-    print *,'closed file'
 
     ! Finish
 
@@ -249,8 +246,6 @@ contains
 
     if (up%mode_template /= '') then
 
-       print *,' Writing file with name based on template'
-
        mode_file = up%mode_template
 
        ! Substitute fixed-width fields
@@ -266,8 +261,6 @@ contains
        mode_file = subst_(mode_file, '%n', md%n_pg, '(SP,I0)')
 
     else
-
-       print *,' Writing file with name based on prefix'
 
        write(infix, 100) j
 100    format(I5.5)
