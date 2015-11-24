@@ -30,22 +30,30 @@ module gyre_model
   ! Derived-type definitions
 
   type, abstract :: model_t
-     integer :: n_sg
    contains
      private
-     procedure(sg_), deferred, public :: sg
+     procedure(seg_), deferred, public   :: seg
+     procedure(n_seg_), deferred, public :: n_seg
   end type model_t
 
   ! Interfaces
 
   abstract interface
 
-     function sg_ (this) result (sg)
+     function seg_ (this, s) result (sg)
        use gyre_model_seg
        import model_t
        class(model_t), intent(in)  :: this
+       integer, intent(in)         :: s
        class(model_seg_t), pointer :: sg
-     end function sg_
+     end function seg_
+
+     function n_seg_ (this) result (n_sg)
+       use gyre_model_seg
+       import model_t
+       class(model_t), intent(in) :: this
+       integer                    :: n_sg
+     end function n_seg_
 
   end interface
 
