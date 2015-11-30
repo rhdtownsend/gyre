@@ -40,7 +40,7 @@ module gyre_model
 
   abstract interface
 
-     function seg_ (this, s) result (sg)
+     function seg_(this, s) result(sg)
        use gyre_model_seg
        import model_t
        class(model_t), intent(in)  :: this
@@ -48,7 +48,7 @@ module gyre_model
        class(model_seg_t), pointer :: sg
      end function seg_
 
-     function n_seg_ (this) result (n_sg)
+     function n_seg_(this) result(n_sg)
        use gyre_model_seg
        import model_t
        class(model_t), intent(in) :: this

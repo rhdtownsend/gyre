@@ -1,7 +1,7 @@
 ! Module   : gyre_fgong_file
 ! Purpose  : read FGONG files
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -22,11 +22,10 @@ module gyre_fgong_file
   ! Uses
 
   use core_kinds
-  use core_order
 
   use gyre_constants
-  use gyre_model
   use gyre_evol_model
+  use gyre_model_par
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -45,25 +44,20 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_model (file, deriv_type, data_format, add_center, ml, x)
+  subroutine read_fgong_model(ml_p, ml)
 
-    character(*), intent(in)                     :: file
-    character(*), intent(in)                     :: deriv_type
-    character(*), intent(in)                     :: data_format
-    logical, intent(in)                          :: add_center
-    type(evol_model_t), intent(out)              :: ml
-    real(WP), allocatable, intent(out), optional :: x(:)
+    type(model_par_t), intent(in)   :: mp_l
+    type(evol_model_t), intent(out) :: ml
 
-    character(:), allocatable :: data_format_
     integer                   :: unit
     integer                   :: n
     integer                   :: iconst
     integer                   :: ivar
     integer                   :: ivers
+    character(:), allocatable :: data_format
     real(WP), allocatable     :: glob(:)
     real(WP), allocatable     :: var(:,:)
     integer                   :: i
-    integer, allocatable      :: ind(:)
     real(WP)                  :: M_star
     real(WP)                  :: R_star
     real(WP)                  :: L_star
@@ -76,15 +70,15 @@ contains
     real(WP), allocatable     :: Gamma_1(:)
     real(WP), allocatable     :: nabla_ad(:)
     real(WP), allocatable     :: delta(:)
+    real(WP), allocatable     :: x(:)
+    real(WP), allocatable     :: V_2(:)
+    real(WP), allocatable     :: As(:)
+    real(WP), allocatable     :: U(:)
+    real(WP), allocatable     :: c_1(:)
+    real(WP), allocatable     :: Omega_rot(:)
     logical                   :: has_center
 
-    if(data_format /= '') then
-       data_format_ = data_format
-    else
-       data_format_ = '(1P5E16.9)'
-    endif
-
-    ! Read data from the FGONG-format file
+    ! Open the FGONG-format file
 
     if(check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from FGONG file', TRIM(file)
@@ -110,41 +104,40 @@ contains
 
     ! Read the data
 
+    if(ml_p%data_format /= '') then
+       data_format = ml_p%data_format
+    else
+       if(ivers < 1000) then
+          data_format = '(1P5E16.9)'
+       else
+          $ABORT(Cannot handle ivers > 1000)
+       endif
+    endif
+
     allocate(glob(iconst))
     allocate(var(ivar,n))
 
-    read(unit, data_format_) glob
+    read(unit, data_format) glob
 
-    read_loop : do i = 1,n
-       read(unit, data_format_) var(:,i)
+    read_loop : do i = 1, n
+       read(unit, data_format) var(:,i)
     end do read_loop
 
     close(unit)
 
-    ind = unique_indices(var(1,:))
-
-    if (SIZE(ind) < n) then
-
-       if(check_log_level('WARN')) then
-          write(OUTPUT_UNIT, 120) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
-120       format('!!',1X,A)
-       endif
-
-       n = SIZE(ind)
-
-    endif
-
-    var = var(:,ind)
+    ! Extract structure data
 
     M_star = glob(1)
     R_star = glob(2)
     L_star = glob(3)
 
-    r = var(1,:)
+    r = var(1,:)/R_star
+
     m = EXP(var(2,:))*M_star
     T = var(3,:)
     p = var(4,:)
     rho = var(5,:)
+
     Gamma_1 = var(10,:)
     nabla_ad = var(11,:)
     delta = var(12,:)
@@ -157,45 +150,63 @@ contains
        N2 = 0._WP
     endwhere
 
-    if (r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
-    if (m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
+    if(r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
+    if(m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
 
-    if (m(1) == 0._WP .AND. r(1) /= 0._WP) then
+    if(m(1) == 0._WP .AND. r(1) /= 0._WP) then
        r(1) = 0._WP
        write(OUTPUT_UNIT, 130) 'Forcing central r == 0'
 130    format(3X,A)
-    elseif (r(1) == 0._WP .AND. m(1) /= 0._WP) then
+    elseif(r(1) == 0._WP .AND. m(1) /= 0._WP) then
        m(1) = 0._WP
        write(OUTPUT_UNIT, 130) 'Forcing central m == 0'
     endif
 
-    has_center = r(1) == 0._WP .AND. m(1) == 0._WP
+    ! Calculate dimensionless structure data
 
-    if (check_log_level('INFO')) then
-       if (add_center) then
-          if (has_center) then
-             write(OUTPUT_UNIT, 130) 'No need to add central point'
-          else
-             write(OUTPUT_UNIT, 130) 'Adding central point'
-          endif
-       endif
+    allocate(x(n))
+
+    allocate(V_2(n))
+    allocate(As(n))
+    allocate(U(n))
+    allocate(c_1(n))
+
+    allocate(Omega_rot(n))
+
+    x = r/R_star
+
+    where(x /= 0._WP)
+       V_2 = G_GRAVITY*m*rho/(p*r*x**2)
+       As = r**3*N2/(G_GRAVITY*m)
+       U = 4._WP*PI*rho*r**3/m
+       c_1 = (r/R_star)**3/(m/M_star)
+    elsewhere
+       V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*p(1))
+       As = 0._WP
+       U = 3._WP
+       c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+    end where
+
+    if(ml_p%uniform_rot) then
+       Omega_rot = mp_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+    else
+       Omega_rot = 0._WP
     endif
 
     ! Initialize the model
 
-    ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
-                      N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
-                      deriv_type, add_center=add_center .AND. .NOT. has_center)
+    ml = evol_model_t(ml_p, M_star, R_star, L_star, x)
 
-    ! Set up the grid
+    call ml%set_V_2(V_2)
+    call ml%set_As(As)
+    call ml%set_U(U)
+    call ml%set_c_1(c_1)
 
-    if (PRESENT(x)) then
-       if (add_center .AND. .NOT. has_center) then
-          x = [0._WP,r/R_star]
-       else
-          x = r/R_star
-       endif
-    endif
+    call ml%set_Gamma_1(Gamma_1)
+    call ml%set_delta(delta)
+    call ml%set_nabla_ad(nabla_ad)
+
+    call ml%set_Omega_rot(V_2)
 
     ! Finish
 
