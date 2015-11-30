@@ -146,17 +146,6 @@ contains
 
     has_center = x_(1) == 0._WP
 
-    if (check_log_level('INFO')) then
-       if (add_center) then
-          if (has_center) then
-             write(OUTPUT_UNIT, 130) 'No need to add central point'
-130          format(3X,A)
-          else
-             $ABORT(No central point in file; cannot evaluate central values)
-          endif
-       endif
-    endif
-
     if (has_center) then
 
        p_c = var(3,1)
@@ -174,6 +163,17 @@ contains
 
        V_2 = V/x_**2
 
+    endif
+
+    if (check_log_level('INFO')) then
+       if (add_center) then
+          if (has_center) then
+             write(OUTPUT_UNIT, 130) 'No need to add central point'
+130          format(3X,A)
+          else
+             write(OUTPUT_UNIT, 130) 'Adding central point'
+          endif
+       endif
     endif
 
     ! Initialize the model
