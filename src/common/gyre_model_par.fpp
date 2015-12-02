@@ -72,16 +72,16 @@ contains
     integer, intent(in)            :: unit
     type(model_par_t), intent(out) :: ml_p
 
-    integer                       :: n_ml_p
-    real(WP)                      :: Gamma_1
-    real(WP)                      :: Omega_rot
-    character(LEN(lp%model_type)) :: model_type
-    character(LEN(lp%model_type)) :: file_format
-    character(LEN(lp%model_type)) :: data_format
-    character(LEN(lp%model_type)) :: deriv_type
-    character(LEN(lp%filename))   :: file
-    logical                       :: add_center
-    logical                       :: uniform_rot
+    integer                         :: n_ml_p
+    real(WP)                        :: Gamma_1
+    real(WP)                        :: Omega_rot
+    character(LEN(ml_p%model_type)) :: model_type
+    character(LEN(ml_p%model_type)) :: file_format
+    character(LEN(ml_p%model_type)) :: data_format
+    character(LEN(ml_p%model_type)) :: deriv_type
+    character(LEN(ml_p%filename))   :: file
+    logical                         :: add_center
+    logical                         :: uniform_rot
 
     namelist /model/ Gamma_1, Omega_rot, model_type, file_format, data_format, &
                      deriv_type, file, add_center, uniform_rot
