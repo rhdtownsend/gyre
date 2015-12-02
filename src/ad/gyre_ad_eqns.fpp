@@ -1,5 +1,5 @@
 ! Module   : gyre_ad_eqns
-! Purpose  : differential equations evaluation (adiabatic)
+! Purpose  : differential equations for adibatic case
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -25,10 +25,11 @@ module gyre_ad_eqns
 
   use gyre_ad_vars
   use gyre_eqns
-  use gyre_linalg
-  use gyre_model
+  use gyre_model_seg
+  use gyre_mode_par
   use gyre_osc_par
   use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -40,7 +41,7 @@ module gyre_ad_eqns
 
   type, extends (r_eqns_t) :: ad_eqns_t
      private
-     class(model_t), pointer     :: ml => null()
+     class(model_seg_t), pointer :: ms => null()
      class(r_rot_t), allocatable :: rt
      type(ad_vars_t)             :: vr
      logical                     :: cowling_approx
@@ -66,20 +67,21 @@ module gyre_ad_eqns
 
 contains
 
-  function ad_eqns_t_ (ml, rt, op) result (eq)
+  function ad_eqns_t_ (ms, md_p, os_p) result (eq)
 
-    class(model_t), pointer, intent(in) :: ml
-    class(r_rot_t), intent(in)          :: rt
-    type(osc_par_t), intent(in)         :: op
-    type(ad_eqns_t)                     :: eq
+    class(model_seg_t), pointer, intent(in) :: ms
+    type(mode_par_t), intent(in)            :: md_p
+    type(osc_par_t), intent(in)             :: os_p
+    type(ad_eqns_t)                         :: eq
 
     ! Construct the ad_eqns_t
 
-    eq%ml => ml
-    allocate(eq%rt, SOURCE=rt)
-    eq%vr = ad_vars_t(ml, rt, op)
+    eq%ms => ms
 
-    eq%cowling_approx = op%cowling_approx
+    allocate(eq%rt, SOURCE=r_rot_t(ms, md_p, os_p))
+    eq%vr = ad_vars_t(ms, md_p, os_p)
+
+    eq%cowling_approx = os_p%cowling_approx
 
     eq%n_e = 4
 
@@ -130,10 +132,10 @@ contains
 
     ! Calculate coefficients
 
-    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
-    U = this%ml%U(x)
-    As = this%ml%As(x)
-    c_1 = this%ml%c_1(x)
+    V_g = this%ms%V_2(x)*x**2/this%ms%Gamma_1(x)
+    U = this%ms%U(x)
+    As = this%ms%As(x)
+    c_1 = this%ms%c_1(x)
 
     lambda = this%rt%lambda(x, omega)
     l_0 = this%rt%l_0(omega)

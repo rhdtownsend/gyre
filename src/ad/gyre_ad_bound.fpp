@@ -39,29 +39,27 @@ module gyre_ad_bound
 
   ! Parameter definitions
 
-  integer, parameter :: REGULAR_TYPE_I = 1
-  integer, parameter :: ZERO_TYPE_I = 2
-
-  integer, parameter :: ZERO_TYPE_O = 3
-  integer, parameter :: DZIEM_TYPE_O = 4
-  integer, parameter :: UNNO_TYPE_O = 5
-  integer, parameter :: JCD_TYPE_O = 6
+  integer, parameter :: INNER_REGULAR_TYPE = 1
+  integer, parameter :: INNER_ZERO_TYPE = 2
+  integer, parameter :: OUTER_ZERO_TYPE = 3
+  integer, parameter :: OUTER_DZIEM_TYPE = 4
+  integer, parameter :: OUTER_UNNO_TYPE = 5
+  integer, parameter :: OUTER_JCD_TYPE = 6
 
   ! Derived-type definitions
 
   type, extends (r_bound_t) :: ad_bound_t
      private
-     class(model_t), pointer     :: ml => null()
+     class(model_seg_t), pointer :: sg => null()
      class(r_rot_t), allocatable :: rt
      type(ad_vars_t)             :: vr
-     real(WP)                    :: x_i
-     real(WP)                    :: x_o
-     integer                     :: type_i
+     real(WP)                    :: x
+     integer                     :: type
      integer                     :: type_o
      logical                     :: cowling_approx
    contains 
      private
-     procedure, public :: B_i => B_i_
+     procedure, public :: build => build_
      procedure         :: B_i_regular_
      procedure         :: B_i_zero_
      procedure, public :: B_o => B_o_
@@ -87,13 +85,12 @@ module gyre_ad_bound
 
 contains
 
-  function ad_bound_t_ (ml, rt, op, x_i, x_o) result (bd)
+  function ad_bound_t_ (ml, rt, op, x, inner) result (bd)
 
-    class(model_t), pointer, intent(in) :: ml
+    class(model_t), pointer, intent(in) :: ms
     class(r_rot_t), intent(in)          :: rt
     type(osc_par_t), intent(in)         :: op
-    real(WP)                            :: x_i
-    real(WP)                            :: x_o
+    real(WP)                            :: x
     type(ad_bound_t)                    :: bd
 
     ! Construct the ad_bound_t
@@ -102,17 +99,18 @@ contains
     allocate(bd%rt, SOURCE=rt)
     bd%vr = ad_vars_t(ml, rt, op)
 
-    bd%x_i = x_i
-    bd%x_o = x_o
+    bd%x = x
 
-    select case (op%inner_bound)
-    case ('REGULAR')
-       bd%type_i = REGULAR_TYPE_I
-    case ('ZERO')
-       bd%type_i = ZERO_TYPE_I
-    case default
-       $ABORT(Invalid inner_bound)
-    end select
+    if (inner) then
+
+       select case (op%inner_bound)
+       case ('REGULAR')
+          bd%type_i = REGULAR_TYPE_I
+       case ('ZERO')
+          bd%type_i = ZERO_TYPE_I
+       case default
+          $ABORT(Invalid inner_bound)
+       end select
 
     select case (op%outer_bound)
     case ('ZERO')
