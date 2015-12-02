@@ -38,12 +38,13 @@ module gyre_${T}_null_rot
   ! Derived-type definitions
 
   type, extends (${T}_rot_t) :: ${T}_null_rot_t
-     private
    contains
      private
      procedure, public :: omega => omega_
      procedure         :: omega_c_1_
      procedure         :: omega_c_v_
+     procedure         :: l_e_1_
+     procedure         :: l_e_l_
      procedure         :: lambda_1_
      procedure         :: lambda_v_
   end type ${T}_null_rot_t
@@ -71,7 +72,8 @@ contains
 
     ! Construct the null_rot_t
 
-    rt%mp = mp
+    rt%l = md_p%l
+    rt%m = md_p%m
 
     ! Finish
 
@@ -139,6 +141,44 @@ contains
 
   end function omega_c_v_
 
+  !****
+
+  function l_e_1_ (this, x, omega) result (l_e)
+
+    class(${T}_null_rot_t), intent(in) :: this
+    real(WP), intent(in)               :: x
+    $TYPE(WP), intent(in)              :: omega
+    $TYPE(WP)                          :: l_e
+
+    ! Evaluate the effective harmonic degree (scalar)
+
+    l_e = this%l
+
+    ! Finish
+
+    return
+
+  end function l_e_1_
+
+  !****
+
+  function l_e_v_ (this, x, omega) result (l_e)
+
+    class(${T}_null_rot_t), intent(in) :: this
+    real(WP), intent(in)               :: x(:)
+    $TYPE(WP), intent(in)              :: omega
+    $TYPE(WP)                          :: l_e(SIZE(x))
+
+    ! Evaluate the effective harmonic degree (vector)
+
+    l_e = this%l
+
+    ! Finish
+
+    return
+
+  end function l_e_v_
+
 !****
 
   function lambda_1_ (this, x, omega) result (lambda)
@@ -150,7 +190,7 @@ contains
 
     ! Evaluate the angular eigenvalue (scalar)
 
-    lambda = this%mp%l*(this%mp%l+1)
+    lambda = this%l*(this%l+1)
 
     ! Finish
 
@@ -169,7 +209,7 @@ contains
 
     ! Evaluate the angular eigenvalue (vector)
 
-    lambda = this%mp%l*(this%mp%l+1)
+    lambda = this%l*(this%l+1)
 
     ! Finish
 
