@@ -67,8 +67,7 @@ module gyre_grid_par
   private
 
   public :: grid_par_t
-  public :: read_shoot_grid_par
-  public :: read_recon_grid_par
+  public :: read_grid_par
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -78,30 +77,24 @@ module gyre_grid_par
 
 contains
 
-!****
-
-  $define $READ_GRID_PAR $sub
-
-  $local $NAME $1
-
-  subroutine read_${NAME}_grid_par (unit, gp)
+  subroutine read_grid_par (unit, gd_p)
 
     integer, intent(in)                        :: unit
-    type(grid_par_t), allocatable, intent(out) :: gp(:)
+    type(grid_par_t), allocatable, intent(out) :: gd_p(:)
 
-    integer                     :: n_gp
-    integer                     :: i
-    real(WP)                    :: x_i
-    real(WP)                    :: x_o
-    real(WP)                    :: alpha_osc
-    real(WP)                    :: alpha_exp
-    real(WP)                    :: alpha_thm
-    real(WP)                    :: alpha_str
-    real(WP)                    :: s
-    integer                     :: n
-    character(LEN(gp%file))     :: file
-    character(LEN(gp%op_type))  :: op_type
-    character(LEN(gp%tag_list)) :: tag_list
+    integer                       :: n_gd_p
+    integer                       :: i
+    real(WP)                      :: x_i
+    real(WP)                      :: x_o
+    real(WP)                      :: alpha_osc
+    real(WP)                      :: alpha_exp
+    real(WP)                      :: alpha_thm
+    real(WP)                      :: alpha_str
+    real(WP)                      :: s
+    integer                       :: n
+    character(LEN(gd_p%file))     :: file
+    character(LEN(gd_p%op_type))  :: op_type
+    character(LEN(gd_p%tag_list)) :: tag_list
 
     namelist /${NAME}_grid/ x_i, x_o, &
                             alpha_osc, alpha_exp, alpha_thm, alpha_str, &
@@ -111,11 +104,11 @@ contains
 
     rewind(unit)
 
-    n_gp = 0
+    n_gd_p = 0
 
     count_loop : do
        read(unit, NML=${NAME}_grid, END=100)
-       n_gp = n_gp + 1
+       n_gd_p = n_gd_p + 1
     end do count_loop
 
 100 continue
@@ -124,9 +117,9 @@ contains
 
     rewind(unit)
 
-    allocate(gp(n_gp))
+    allocate(gd_p(n_gd_p))
 
-    read_loop : do i = 1, n_gp
+    read_loop : do i = 1, n_gd_p
 
        x_i = 0._WP
        x_o = 1._WP
@@ -149,16 +142,16 @@ contains
 
        ! Initialize the grid_par
 
-       gp(i) = grid_par_t(x_i=x_i, &
-                          x_o=x_o, &
-                          alpha_osc=alpha_osc, &
-                          alpha_exp=alpha_exp, &
-                          alpha_thm=alpha_thm, alpha_str=alpha_str, &
-                          s=s, &
-                          n=n, &
-                          file=file, &
-                          op_type=op_type, &
-                          tag_list=tag_list)
+       gd_p(i) = grid_par_t(x_i=x_i, &
+                            x_o=x_o, &
+                            alpha_osc=alpha_osc, &
+                            alpha_exp=alpha_exp, &
+                            alpha_thm=alpha_thm, alpha_str=alpha_str, &
+                            s=s, &
+                            n=n, &
+                            file=file, &
+                            op_type=op_type, &
+                            tag_list=tag_list)
 
     end do read_loop
 
@@ -166,12 +159,7 @@ contains
 
     return
 
-  end subroutine read_${NAME}_grid_par
-
-  $endsub
-
-  $READ_GRID_PAR(shoot)
-  $READ_GRID_PAR(recon)
+  end subroutine read_grid_par
 
 !****
 
@@ -181,29 +169,29 @@ contains
 
   $local $RANK $1
 
-  subroutine bcast_${RANK}_ (gp, root_rank)
+  subroutine bcast_${RANK}_ (gd_p, root_rank)
 
-    type(grid_par_t), intent(inout) :: gp$ARRAY_SPEC($RANK)
+    type(grid_par_t), intent(inout) :: gd_p$ARRAY_SPEC($RANK)
     integer, intent(in)             :: root_rank
 
     ! Broadcast the grid_par_t
 
-    call bcast(gp%x_i, root_rank)
-    call bcast(gp%x_o, root_rank)
+    call bcast(gd_p%x_i, root_rank)
+    call bcast(gd_p%x_o, root_rank)
 
-    call bcast(gp%alpha_osc, root_rank)
-    call bcast(gp%alpha_exp, root_rank)
-    call bcast(gp%alpha_thm, root_rank)
-    call bcast(gp%alpha_str, root_rank)
+    call bcast(gd_p%alpha_osc, root_rank)
+    call bcast(gd_p%alpha_exp, root_rank)
+    call bcast(gd_p%alpha_thm, root_rank)
+    call bcast(gd_p%alpha_str, root_rank)
 
-    call bcast(gp%s, root_rank)
+    call bcast(gd_p%s, root_rank)
 
-    call bcast(gp%n, root_rank)
+    call bcast(gd_p%n, root_rank)
 
-    call bcast(gp%file, root_rank)
+    call bcast(gd_p%file, root_rank)
 
-    call bcast(gp%op_type, root_rank)
-    call bcast(gp%tag_list, root_rank)
+    call bcast(gd_p%op_type, root_rank)
+    call bcast(gd_p%tag_list, root_rank)
 
     ! Finish
 
