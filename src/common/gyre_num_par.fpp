@@ -73,21 +73,21 @@ module gyre_num_par
 
 contains
 
-  subroutine read_num_par (unit, np)
+  subroutine read_num_par (unit, nm_p)
 
     integer, intent(in)                       :: unit
-    type(num_par_t), allocatable, intent(out) :: np(:)
+    type(num_par_t), allocatable, intent(out) :: nm_p(:)
 
-    integer                          :: n_np
-    integer                          :: i
-    integer                          :: n_iter_max
-    logical                          :: deflate_roots
-    logical                          :: restrict_roots
-    character(LEN(np%ivp_solver))    :: ivp_solver
-    character(LEN(np%r_root_solver)) :: r_root_solver
-    character(LEN(np%c_root_solver)) :: c_root_solver
-    character(LEN(np%matrix_type))   :: matrix_type
-    character(LEN(np%tag_list))      :: tag_list
+    integer                            :: n_nm_p
+    integer                            :: i
+    integer                            :: n_iter_max
+    logical                            :: deflate_roots
+    logical                            :: restrict_roots
+    character(LEN(nm_p%ivp_solver))    :: ivp_solver
+    character(LEN(nm_p%r_root_solver)) :: r_root_solver
+    character(LEN(nm_p%c_root_solver)) :: c_root_solver
+    character(LEN(nm_p%matrix_type))   :: matrix_type
+    character(LEN(nm_p%tag_list))      :: tag_list
 
     namelist /num/ n_iter_max, deflate_roots, restrict_roots, &
          ivp_solver, r_root_solver, c_root_solver, matrix_type, tag_list
@@ -96,11 +96,11 @@ contains
 
     rewind(unit)
 
-    n_np = 0
+    n_nm_p = 0
 
     count_loop : do
        read(unit, NML=num, END=100)
-       n_np = n_np + 1
+       n_nm_p = n_nm_p + 1
     end do count_loop
 
 100 continue
@@ -109,9 +109,9 @@ contains
 
     rewind(unit)
 
-    allocate(np(n_np))
+    allocate(nm_p(n_nm_p))
 
-    read_loop : do i = 1,n_np
+    read_loop : do i = 1,n_nm_p
 
        n_iter_max = 50
 
@@ -130,14 +130,14 @@ contains
 
        ! Initialize the num_par
 
-       np(i) = num_par_t(n_iter_max=n_iter_max, &
-                         deflate_roots=deflate_roots, &
-                         restrict_roots=restrict_roots, &
-                         ivp_solver=ivp_solver, &
-                         r_root_solver=r_root_solver, &
-                         c_root_solver=c_root_solver, &
-                         matrix_type=matrix_type, &
-                         tag_list=tag_list)
+       nm_p(i) = num_par_t(n_iter_max=n_iter_max, &
+                           deflate_roots=deflate_roots, &
+                           restrict_roots=restrict_roots, &
+                           ivp_solver=ivp_solver, &
+                           r_root_solver=r_root_solver, &
+                           c_root_solver=c_root_solver, &
+                           matrix_type=matrix_type, &
+                           tag_list=tag_list)
 
     end do read_loop
 
@@ -155,26 +155,26 @@ contains
 
   $local $RANK $1
 
-  subroutine bcast_${RANK}_ (np, root_rank)
+  subroutine bcast_${RANK}_ (nm_p, root_rank)
 
-    type(num_par_t), intent(inout) :: np$ARRAY_SPEC($RANK)
+    type(num_par_t), intent(inout) :: nm_p$ARRAY_SPEC($RANK)
     integer, intent(in)            :: root_rank
 
     ! Broadcast the num_par_t
 
-    call bcast(np%n_iter_max, root_rank)
+    call bcast(nm_p%n_iter_max, root_rank)
 
-    call bcast(np%deflate_roots, root_rank)
-    call bcast(np%restrict_roots, root_rank)
+    call bcast(nm_p%deflate_roots, root_rank)
+    call bcast(nm_p%restrict_roots, root_rank)
  
-    call bcast(np%ivp_solver, root_rank)
+    call bcast(nm_p%ivp_solver, root_rank)
 
-    call bcast(np%r_root_solver, root_rank)
-    call bcast(np%c_root_solver, root_rank)
+    call bcast(nm_p%r_root_solver, root_rank)
+    call bcast(nm_p%c_root_solver, root_rank)
 
-    call bcast(np%matrix_type, root_rank)
+    call bcast(nm_p%matrix_type, root_rank)
 
-    call bcast(np%tag_list, root_rank)
+    call bcast(nm_p%tag_list, root_rank)
 
     ! Finish
 

@@ -72,18 +72,18 @@ contains
 
 !****
 
-  subroutine read_mode_par (unit, mp)
+  subroutine read_mode_par (unit, md_p)
 
     integer, intent(in)                        :: unit
-    type(mode_par_t), allocatable, intent(out) :: mp(:)
+    type(mode_par_t), allocatable, intent(out) :: md_p(:)
 
-    integer                :: n_mp
-    integer                :: i
-    integer                :: l
-    integer                :: m
-    integer                :: n_pg_min
-    integer                :: n_pg_max
-    character(LEN(mp%tag)) :: tag
+    integer                  :: n_md_p
+    integer                  :: i
+    integer                  :: l
+    integer                  :: m
+    integer                  :: n_pg_min
+    integer                  :: n_pg_max
+    character(LEN(md_p%tag)) :: tag
 
     namelist /mode/ l, m, n_pg_min, n_pg_max, tag
 
@@ -91,11 +91,11 @@ contains
 
     rewind(unit)
 
-    n_mp = 0
+    n_md_p = 0
 
     count_loop : do
        read(unit, NML=mode, END=100)
-       n_mp = n_mp + 1
+       n_md_p = n_md_p + 1
     end do count_loop
 
 100 continue
@@ -104,9 +104,9 @@ contains
 
     rewind(unit)
 
-    allocate(mp(n_mp))
+    allocate(md_p(n_md_p))
 
-    read_loop : do i = 1,n_mp
+    read_loop : do i = 1,n_md_p
 
        l = 0
        m = 0
@@ -120,7 +120,7 @@ contains
 
        ! Initialize the mode_par
 
-       mp(i) = mode_par_t(l=l, m=m, n_pg_min=n_pg_min, n_pg_max=n_pg_max, tag=tag)
+       md_p(i) = mode_par_t(l=l, m=m, n_pg_min=n_pg_min, n_pg_max=n_pg_max, tag=tag)
 
     end do read_loop
 
@@ -138,18 +138,18 @@ contains
 
   $local $RANK $1
 
-  subroutine bcast_${RANK}_ (op, root_rank)
+  subroutine bcast_${RANK}_ (md_p, root_rank)
 
-    type(mode_par_t), intent(inout) :: op$ARRAY_SPEC($RANK)
+    type(mode_par_t), intent(inout) :: mpd_p$ARRAY_SPEC($RANK)
     integer, intent(in)             :: root_rank
 
     ! Broadcast the mode_par_t
 
-    call bcast(op%l, root_rank)
-    call bcast(op%m, root_rank)
+    call bcast(md_p%l, root_rank)
+    call bcast(md_p%m, root_rank)
 
-    call bcast(op%n_pg_min, root_rank)
-    call bcast(op%n_pg_max, root_rank)
+    call bcast(md_p%n_pg_min, root_rank)
+    call bcast(md_p%n_pg_max, root_rank)
 
     ! Finish
 

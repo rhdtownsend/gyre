@@ -73,21 +73,21 @@ module gyre_scan_par
 
 contains
 
-  subroutine read_scan_par (unit, sp)
+  subroutine read_scan_par (unit, sc_p)
 
     integer, intent(in)                        :: unit
-    type(scan_par_t), allocatable, intent(out) :: sp(:)
+    type(scan_par_t), allocatable, intent(out) :: sc_p(:)
 
-    integer                       :: n_sp
-    integer                       :: i
-    real(WP)                      :: freq_min
-    real(WP)                      :: freq_max
-    integer                       :: n_freq
-    character(LEN(sp%freq_units)) :: freq_units
-    character(LEN(sp%freq_frame)) :: freq_frame
-    character(LEN(sp%grid_type))  :: grid_type
-    character(LEN(sp%grid_frame)) :: grid_frame
-    character(LEN(sp%tag_list))   :: tag_list
+    integer                         :: n_sc_p
+    integer                         :: i
+    real(WP)                        :: freq_min
+    real(WP)                        :: freq_max
+    integer                         :: n_freq
+    character(LEN(sc_p%freq_units)) :: freq_units
+    character(LEN(sc_p%freq_frame)) :: freq_frame
+    character(LEN(sc_p%grid_type))  :: grid_type
+    character(LEN(sc_p%grid_frame)) :: grid_frame
+    character(LEN(sc_p%tag_list))   :: tag_list
 
     namelist /scan/ freq_min, freq_max, n_freq, freq_units, freq_frame, &
          grid_type, grid_frame, tag_list
@@ -96,11 +96,11 @@ contains
 
     rewind(unit)
 
-    n_sp = 0
+    n_sc_p = 0
 
     count_loop : do
        read(unit, NML=scan, END=100)
-       n_sp = n_sp + 1
+       n_sc_p = n_sc_p + 1
     end do count_loop
 
 100 continue
@@ -109,9 +109,9 @@ contains
 
     rewind(unit)
 
-    allocate(sp(n_sp))
+    allocate(sc_p(n_sc_p))
 
-    read_loop : do i = 1, n_sp
+    read_loop : do i = 1, n_sc_p
 
        freq_min = 1._WP
        freq_max = 10._WP
@@ -129,14 +129,14 @@ contains
 
        ! Initialize the scan_par
 
-       sp(i) = scan_par_t(freq_min=freq_min, &
-                         freq_max=freq_max, &
-                         n_freq=n_freq, &
-                         freq_units=freq_units, &
-                         freq_frame=freq_frame, &
-                         grid_type=grid_type, &
-                         grid_frame=grid_frame, &
-                         tag_list=tag_list)
+       sc_p(i) = scan_par_t(freq_min=freq_min, &
+                            freq_max=freq_max, &
+                            n_freq=n_freq, &
+                            freq_units=freq_units, &
+                            freq_frame=freq_frame, &
+                            grid_type=grid_type, &
+                            grid_frame=grid_frame, &
+                            tag_list=tag_list)
 
     end do read_loop
 
@@ -154,24 +154,24 @@ contains
 
   $local $RANK $1
 
-  subroutine bcast_${RANK}_ (sp, root_rank)
+  subroutine bcast_${RANK}_ (sc_p, root_rank)
 
-    type(scan_par_t), intent(inout) :: sp$ARRAY_SPEC($RANK)
+    type(scan_par_t), intent(inout) :: sc_p$ARRAY_SPEC($RANK)
     integer, intent(in)             :: root_rank
 
     ! Broadcast the scan_par_t
 
-    call bcast(sp%freq_min, root_rank)
-    call bcast(sp%freq_max, root_rank)
-    call bcast(sp%n_freq, root_rank)
+    call bcast(sc_p%freq_min, root_rank)
+    call bcast(sc_p%freq_max, root_rank)
+    call bcast(sc_p%n_freq, root_rank)
 
-    call bcast(sp%grid_type, root_rank)
-    call bcast(sp%grid_frame, root_rank)
+    call bcast(sc_p%grid_type, root_rank)
+    call bcast(sc_p%grid_frame, root_rank)
 
-    call bcast(sp%freq_units, root_rank)
-    call bcast(sp%freq_frame, root_rank)
+    call bcast(sc_p%freq_units, root_rank)
+    call bcast(sc_p%freq_frame, root_rank)
 
-    call bcast(sp%tag_list, root_rank)
+    call bcast(sc_p%tag_list, root_rank)
 
     ! Finish
 

@@ -80,23 +80,23 @@ module gyre_out_par
 
 contains
 
-  subroutine read_out_par (unit, up)
+  subroutine read_out_par (unit, ot_p)
 
     integer, intent(in)          :: unit
-    type(out_par_t), intent(out) :: up
+    type(out_par_t), intent(out) :: ot_p
 
-    integer                                :: n_up
-    character(LEN(up%freq_units))          :: freq_units
-    character(LEN(up%freq_frame))          :: freq_frame
-    character(LEN(up%summary_file))        :: summary_file
-    character(LEN(up%summary_file_format)) :: summary_file_format
-    character(LEN(up%summary_item_list))   :: summary_item_list
-    character(LEN(up%mode_prefix))         :: mode_prefix
-    character(LEN(up%mode_template))       :: mode_template
-    character(LEN(up%mode_file_format))    :: mode_file_format
-    character(LEN(up%mode_item_list))      :: mode_item_list
-    character(LEN(up%label))               :: label
-    logical                                :: prune_modes
+    integer                                  :: n_ot_p
+    character(LEN(ot_p%freq_units))          :: freq_units
+    character(LEN(ot_p%freq_frame))          :: freq_frame
+    character(LEN(ot_p%summary_file))        :: summary_file
+    character(LEN(ot_p%summary_file_format)) :: summary_file_format
+    character(LEN(ot_p%summary_item_list))   :: summary_item_list
+    character(LEN(ot_p%mode_prefix))         :: mode_prefix
+    character(LEN(ot_p%mode_template))       :: mode_template
+    character(LEN(ot_p%mode_file_format))    :: mode_file_format
+    character(LEN(ot_p%mode_item_list))      :: mode_item_list
+    character(LEN(ot_p%label))               :: label
+    logical                                  :: prune_modes
 
     namelist /output/ freq_units, freq_frame, summary_file, summary_file_format, summary_item_list, &
                       mode_prefix, mode_template, mode_file_format, mode_item_list, label, prune_modes
@@ -105,16 +105,16 @@ contains
 
     rewind(unit)
 
-    n_up = 0
+    n_ot_p = 0
 
     count_loop : do
        read(unit, NML=output, END=100)
-       n_up = n_up + 1
+       n_ot_p = n_ot_p + 1
     end do count_loop
 
 100 continue
 
-    $ASSERT(n_up == 1,Input file should contain exactly one &output namelist)
+    $ASSERT(n_ot_p == 1,Input file should contain exactly one &output namelist)
 
     ! Read output parameters
 
@@ -139,17 +139,17 @@ contains
 
     ! Initialize the out_par
 
-    up = out_par_t(freq_units=freq_units, &
-                  freq_frame=freq_frame, &
-                  summary_file=summary_file, &
-                  summary_file_format=summary_file_format, &
-                  summary_item_list=summary_item_list, &
-                  mode_prefix=mode_prefix, &
-                  mode_template=mode_template, &
-                  mode_file_format=mode_file_format, &
-                  mode_item_list=mode_item_list, &
-                  label=label, &
-                  prune_modes=prune_modes)
+    ot_p = out_par_t(freq_units=freq_units, &
+                     freq_frame=freq_frame, &
+                     summary_file=summary_file, &
+                     summary_file_format=summary_file_format, &
+                     summary_item_list=summary_item_list, &
+                     mode_prefix=mode_prefix, &
+                     mode_template=mode_template, &
+                     mode_file_format=mode_file_format, &
+                     mode_item_list=mode_item_list, &
+                     label=label, &
+                     prune_modes=prune_modes)
 
     ! Finish
 
@@ -165,25 +165,25 @@ contains
 
   $local $RANK $1
 
-  subroutine bcast_${RANK}_ (up, root_rank)
+  subroutine bcast_${RANK}_ (ot_p, root_rank)
 
-    type(out_par_t), intent(inout) :: up$ARRAY_SPEC($RANK)
+    type(out_par_t), intent(inout) :: ot_p$ARRAY_SPEC($RANK)
     integer, intent(in)            :: root_rank
 
     ! Broadcast the out_par_t
 
-    call bcast(up%freq_units, root_rank)
-    call bcast(up%freq_frame, root_rank)
-    call bcast(up%summary_file, root_rank)
-    call bcast(up%summary_file_format, root_rank)
-    call bcast(up%summary_item_list, root_rank)
-    call bcast(up%mode_prefix, root_rank)
-    call bcast(up%mode_template, root_rank)
-    call bcast(up%mode_file_format, root_rank)
-    call bcast(up%mode_item_list, root_rank)
-    call bcast(up%label, root_rank)
+    call bcast(ot_p%freq_units, root_rank)
+    call bcast(ot_p%freq_frame, root_rank)
+    call bcast(ot_p%summary_file, root_rank)
+    call bcast(ot_p%summary_file_format, root_rank)
+    call bcast(ot_p%summary_item_list, root_rank)
+    call bcast(ot_p%mode_prefix, root_rank)
+    call bcast(ot_p%mode_template, root_rank)
+    call bcast(ot_p%mode_file_format, root_rank)
+    call bcast(ot_p%mode_item_list, root_rank)
+    call bcast(ot_p%label, root_rank)
     
-    call bcast(up%prune_modes, root_rank)
+    call bcast(ot_p%prune_modes, root_rank)
 
     ! Finish
 

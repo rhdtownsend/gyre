@@ -78,24 +78,24 @@ contains
 
 !****
 
-  subroutine read_osc_par (unit, op)
+  subroutine read_osc_par (unit, os_p)
 
     integer, intent(in)                       :: unit
-    type(osc_par_t), allocatable, intent(out) :: op(:)
+    type(osc_par_t), allocatable, intent(out) :: os_p(:)
 
-    integer                            :: n_op
-    integer                            :: i
-    character(LEN(op%rotation_method)) :: rotation_method
-    character(LEN(op%variables_set))   :: variables_set
-    character(LEN(op%inner_bound))     :: inner_bound
-    character(LEN(op%outer_bound))     :: outer_bound
-    character(LEN(op%inertia_norm))    :: inertia_norm
-    character(LEN(op%tag_list))        :: tag_list
-    logical                            :: nonadiabatic
-    logical                            :: cowling_approx
-    logical                            :: narf_approx
-    logical                            :: reduce_order
-    real(WP)                           :: x_ref
+    integer                              :: n_os_p
+    integer                              :: i
+    character(LEN(os_p%rotation_method)) :: rotation_method
+    character(LEN(os_p%variables_set))   :: variables_set
+    character(LEN(os_p%inner_bound))     :: inner_bound
+    character(LEN(os_p%outer_bound))     :: outer_bound
+    character(LEN(os_p%inertia_norm))    :: inertia_norm
+    character(LEN(os_p%tag_list))        :: tag_list
+    logical                              :: nonadiabatic
+    logical                              :: cowling_approx
+    logical                              :: narf_approx
+    logical                              :: reduce_order
+    real(WP)                             :: x_ref
 
     namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, variables_set, &
          inertia_norm, tag_list, nonadiabatic, cowling_approx, narf_approx, &
@@ -105,11 +105,11 @@ contains
 
     rewind(unit)
 
-    n_op = 0
+    n_os_p = 0
 
     count_loop : do
        read(unit, NML=osc, END=100)
-       n_op = n_op + 1
+       n_os_p = n_os_p + 1
     end do count_loop
 
 100 continue
@@ -118,9 +118,9 @@ contains
 
     rewind(unit)
 
-    allocate(op(n_op))
+    allocate(os_p(n_os_p))
 
-    read_loop : do i = 1,n_op
+    read_loop : do i = 1,n_os_p
 
        x_ref = HUGE(0._WP)
 
@@ -140,17 +140,17 @@ contains
 
        ! Initialize the osc_par
 
-       op(i) = osc_par_t(x_ref=x_ref, &
-                        rotation_method=rotation_method, &
-                        variables_set=variables_set, &
-                        inner_bound=inner_bound, &
-                        outer_bound=outer_bound, &
-                        inertia_norm=inertia_norm, &
-                        tag_list=tag_list, &
-                        nonadiabatic=nonadiabatic, &
-                        cowling_approx=cowling_approx, &
-                        narf_approx=narf_approx, &
-                        reduce_order=reduce_order)
+       os_p(i) = osc_par_t(x_ref=x_ref, &
+                           rotation_method=rotation_method, &
+                           variables_set=variables_set, &
+                           inner_bound=inner_bound, &
+                           outer_bound=outer_bound, &
+                           inertia_norm=inertia_norm, &
+                           tag_list=tag_list, &
+                           nonadiabatic=nonadiabatic, &
+                           cowling_approx=cowling_approx, &
+                           narf_approx=narf_approx, &
+                           reduce_order=reduce_order)
 
     end do read_loop
 
@@ -168,26 +168,26 @@ contains
 
   $local $RANK $1
 
-  subroutine bcast_${RANK}_ (op, root_rank)
+  subroutine bcast_${RANK}_ (os_p, root_rank)
 
-    type(osc_par_t), intent(inout) :: op$ARRAY_SPEC($RANK)
+    type(osc_par_t), intent(inout) :: os_p$ARRAY_SPEC($RANK)
     integer, intent(in)            :: root_rank
 
     ! Broadcast the osc_par_t
 
-    call bcast(op%x_ref, root_rank)
+    call bcast(os_p%x_ref, root_rank)
 
-    call bcast(op%rotation_method, root_rank)
-    call bcast(op%variables_set, root_rank)
-    call bcast(op%inner_bound, root_rank)
-    call bcast(op%outer_bound, root_rank)
-    call bcast(op%inertia_norm, root_rank)
-    call bcast(op%tag_list, root_rank)
+    call bcast(os_p%rotation_method, root_rank)
+    call bcast(os_p%variables_set, root_rank)
+    call bcast(os_p%inner_bound, root_rank)
+    call bcast(os_p%outer_bound, root_rank)
+    call bcast(os_p%inertia_norm, root_rank)
+    call bcast(os_p%tag_list, root_rank)
 
-    call bcast(op%nonadiabatic, root_rank)
-    call bcast(op%cowling_approx, root_rank)
-    call bcast(op%narf_approx, root_rank)
-    call bcast(op%reduce_order, root_rank)
+    call bcast(os_p%nonadiabatic, root_rank)
+    call bcast(os_p%cowling_approx, root_rank)
+    call bcast(os_p%narf_approx, root_rank)
+    call bcast(os_p%reduce_order, root_rank)
 
     ! Finish
 
