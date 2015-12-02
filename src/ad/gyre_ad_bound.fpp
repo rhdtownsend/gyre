@@ -50,23 +50,19 @@ module gyre_ad_bound
 
   type, extends (r_bound_t) :: ad_bound_t
      private
-     class(model_seg_t), pointer :: sg => null()
+     class(model_seg_t), pointer :: ms => null()
      class(r_rot_t), allocatable :: rt
      type(ad_vars_t)             :: vr
      real(WP)                    :: x
      integer                     :: type
-     integer                     :: type_o
      logical                     :: cowling_approx
    contains 
      private
      procedure, public :: build => build_
-     procedure         :: B_i_regular_
-     procedure         :: B_i_zero_
-     procedure, public :: B_o => B_o_
-     procedure         :: B_o_zero_
-     procedure         :: B_o_dziem_
-     procedure         :: B_o_unno_
-     procedure         :: B_o_jcd_
+     procedure         :: build_inner_regular_
+     procedure         :: build_inner_zero_
+     procedure         :: build_outer_zero_
+     procedure         :: build_outer_dziem_
   end type ad_bound_t
 
   ! Interfaces
@@ -85,19 +81,21 @@ module gyre_ad_bound
 
 contains
 
-  function ad_bound_t_ (ml, rt, op, x, inner) result (bd)
+  function ad_bound_t_ (ms, md_p, os_p, x, inner) result (bd)
 
-    class(model_t), pointer, intent(in) :: ms
-    class(r_rot_t), intent(in)          :: rt
-    type(osc_par_t), intent(in)         :: op
-    real(WP)                            :: x
-    type(ad_bound_t)                    :: bd
+    class(model_seg_t), pointer, intent(in) :: ms
+    type(mode_par_t), intent(in)            :: md_p
+    type(osc_par_t), intent(in)             :: os_p
+    real(WP), intent(in)                    :: x
+    logical, intent(in)                     :: inner
+    type(ad_bound_t)                        :: bd
 
     ! Construct the ad_bound_t
 
-    bd%ml => ml
-    allocate(bd%rt, SOURCE=rt)
-    bd%vr = ad_vars_t(ml, rt, op)
+    bd%ms => ms
+    
+    allocate(bd%rt, SOURCE=r_rot_t(ms, md_p, os_p))
+    bd%vr = ad_vars_t(ms, md_p, os_p)
 
     bd%x = x
 
@@ -105,31 +103,34 @@ contains
 
        select case (op%inner_bound)
        case ('REGULAR')
-          bd%type_i = REGULAR_TYPE_I
+          bd%type = INNER_REGULAR_TYPE
        case ('ZERO')
-          bd%type_i = ZERO_TYPE_I
+          bd%type = INNER_ZERO_TYPE
        case default
           $ABORT(Invalid inner_bound)
        end select
 
-    select case (op%outer_bound)
-    case ('ZERO')
-       bd%type_o = ZERO_TYPE_O
-    case ('DZIEM')
-       bd%type_o = DZIEM_TYPE_O
-    case ('UNNO')
-       bd%type_o = UNNO_TYPE_O
-    case ('JCD')
-       bd%type_o = JCD_TYPE_O
-    case default
-       $ABORT(Invalid outer_bound)
-    end select
+    else
+
+       select case (op%outer_bound)
+       case ('ZERO')
+          bd%type = OUTER_ZERO_TYPE
+       case ('DZIEM')
+          bd%type = OUTER_DZIEM_TYPE
+       case ('UNNO')
+          bd%type = OUTER_UNNO_TYPE
+       case ('JCD')
+          bd%type = OUTER_JCD_TYPE
+       case default
+          $ABORT(Invalid outer_bound)
+       end select
+
+    endif
 
     bd%cowling_approx = op%cowling_approx
 
-    bd%n_i = 2
-    bd%n_o = 2
-    bd%n_e = bd%n_i + bd%n_o
+    bd%n = 2
+    bd%n_e = 4
 
     ! Finish
 
@@ -139,57 +140,73 @@ contains
 
 !****
 
-  function B_i_ (this, omega) result (B_i)
+  subroutine build_ (this, omega, E, S)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
-    real(WP)                      :: B_i(this%n_i,this%n_e)
+    real(WP), intent(out)         :: E(:,:)
+    type(${T}_ext_t), intent(out) :: S
 
-    ! Evaluate the inner boundary conditions
+    $CHECK_BOUNDS(SIZE(E, 1),this%n)
+    $CHECK_BOUNDS(SIZE(E, 2),this%n_e)
+    
+    ! Evaluate the boundary conditions
 
-    select case (this%type_i)
-    case (REGULAR_TYPE_I)
-       B_i = this%B_i_regular_(omega)
-    case (ZERO_TYPE_I)
-       B_i = this%B_i_zero_(omega)
+    select case (this%type)
+    case (INNER_REGULAR_TYPE)
+       call this%build_inner_regular_(omega, E, S)
+    case (INNER_ZERO_TYPE)
+       call this%build_inner_zero_(omega, E, S)
+    case (OUTER_ZERO_TYPE)
+       call this%build_outer_zero_(omega, E, S)
+    case (OUTER_DZIEM_TYPE)
+       call this%build_outer_dziem_(omega, E, S)
+    case (OUTER_UNNO_TYPE)
+       call this%build_outer_unno_(omega, E, S)
+    case (OUTER_JCD_TYPE)
+       call this%build_outer_jcd_(omega, E, S)
     case default
        $ABORT(Invalid type_i)
     end select
 
     ! Apply the variables transformation
 
-    B_i = MATMUL(B_i, this%vr%T(this%x_i, omega))
+    E = MATMUL(E, this%vr%T(this%x, omega))
 
     ! Finish
 
     return
 
-  end function B_i_
+  end subroutine build_
 
 !****
 
-  function B_i_regular_ (this, omega) result (B_i)
+  subroutine build_inner_regular_ (this, omega, E, S)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
-    real(WP)                      :: B_i(this%n_i,this%n_e)
+    real(WP), intent(out)         :: E(:,:)
+    type(${T}_ext_t), intent(out) :: S
 
     real(WP) :: c_1
     real(WP) :: l_e
     real(WP) :: omega_c
     real(WP) :: alpha_gr
 
-    $ASSERT(this%x_i == 0._WP,Boundary condition invalid for x_i /= 0)
+    $CHECK_BOUNDS(SIZE(E, 1),this%n)
+    $CHECK_BOUNDS(SIZE(E, 2),this%n_e)
+    
+    $ASSERT(this%x == 0._WP,Boundary condition invalid for x /= 0)
 
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
     ! Calculate coefficients
 
-    c_1 = this%ml%c_1(this%x_i)
+    c_1 = this%ms%c_1(this%x)
 
-    l_e = this%rt%l_e(this%x_i, omega)
+    l_e = this%rt%l_e(this%x, omega)
 
-    omega_c = this%rt%omega_c(this%x_i, omega)
+    omega_c = this%rt%omega_c(this%x, omega)
 
     if (this%cowling_approx) then
        alpha_gr = 0._WP
@@ -199,33 +216,39 @@ contains
 
     ! Set up the boundary conditions
 
-    B_i(1,1) = c_1*omega_c**2
-    B_i(1,2) = -l_e
-    B_i(1,3) = alpha_gr*(0._WP)
-    B_i(1,4) = alpha_gr*(0._WP)
+    E(1,1) = c_1*omega_c**2
+    E(1,2) = -l_e
+    E(1,3) = alpha_gr*(0._WP)
+    E(1,4) = alpha_gr*(0._WP)
         
-    B_i(2,1) = alpha_gr*(0._WP)
-    B_i(2,2) = alpha_gr*(0._WP)
-    B_i(2,3) = alpha_gr*(l_e)
-    B_i(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
+    E(2,1) = alpha_gr*(0._WP)
+    E(2,2) = alpha_gr*(0._WP)
+    E(2,3) = alpha_gr*(l_e)
+    E(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
+
+    S = r_ext_t(1._WP)
 
     ! Finish
 
     return
 
-  end function B_i_regular_
+  end subroutine build_inner_regular_
 
 !****
 
-  function B_i_zero_ (this, omega) result (B_i)
+  subroutine build_inner_zero_ (this, omega, E, S)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
-    real(WP)                      :: B_i(this%n_i,this%n_e)
+    real(WP), intent(out)         :: E(:,:)
+    type(${T}_ext_t), intent(out) :: S
 
     real(WP) :: alpha_gr
 
-    $ASSERT(this%x_i /= 0._WP,Boundary condition invalid for x_i == 0)
+    $CHECK_BOUNDS(SIZE(E, 1),this%n)
+    $CHECK_BOUNDS(SIZE(E, 2),this%n_e)
+
+    $ASSERT(this%x /= 0._WP,Boundary condition invalid for x == 0)
 
     ! Evaluate the inner boundary conditions (zero
     ! displacement/gravity)
@@ -240,74 +263,47 @@ contains
 
     ! Set up the boundary conditions
 
-    B_i(1,1) = 1._WP
-    B_i(1,2) = 0._WP
-    B_i(1,3) = alpha_gr*(0._WP)
-    B_i(1,4) = alpha_gr*(0._WP)
+    E(1,1) = 1._WP
+    E(1,2) = 0._WP
+    E(1,3) = alpha_gr*(0._WP)
+    E(1,4) = alpha_gr*(0._WP)
         
-    B_i(2,1) = alpha_gr*(0._WP)
-    B_i(2,2) = alpha_gr*(0._WP)
-    B_i(2,3) = alpha_gr*(0._WP)
-    B_i(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
+    E(2,1) = alpha_gr*(0._WP)
+    E(2,2) = alpha_gr*(0._WP)
+    E(2,3) = alpha_gr*(0._WP)
+    E(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
+
+    S = r_ext_t(1._WP)
       
     ! Finish
 
     return
 
-  end function B_i_zero_
+  end subroutine build_inner_zero_
 
 !****
 
-  function B_o_ (this, omega) result (B_o)
+  subroutine build_outer_zero_ (this, omega, E, S)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
-    real(WP)                      :: B_o(this%n_o,this%n_e)
-
-    ! Evaluate the outer boundary conditions
-
-    select case (this%type_o)
-    case (ZERO_TYPE_O)
-       B_o = this%B_o_zero_(omega)
-    case (DZIEM_TYPE_O)
-       B_o = this%B_o_dziem_(omega)
-    case (UNNO_TYPE_O)
-       B_o = this%B_o_unno_(omega)
-    case (JCD_TYPE_O)
-       B_o = this%B_o_jcd_(omega)
-    case default
-       $ABORT(Invalid type_o)
-    end select
-
-    ! Apply the variables transformation
-
-    B_o = MATMUL(B_o, this%vr%T(this%x_o, omega))
-    
-    ! Finish
-
-    return
-
-  end function B_o_
-
-!****
-
-  function B_o_zero_ (this, omega) result (B_o)
-
-    class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: B_o(this%n_o,this%n_e)
+    real(WP), intent(out)         :: E(:,:)
+    type(${T}_ext_t), intent(out) :: S
 
     real(WP) :: U
     real(WP) :: l_e
     real(WP) :: alpha_gr
 
+    $CHECK_BOUNDS(SIZE(E, 1),this%n)
+    $CHECK_BOUNDS(SIZE(E, 2),this%n_e)
+
     ! Evaluate the outer boundary conditions (zero-pressure)
 
     ! Calculate coefficients
 
-    U = this%ml%U(this%x_o)
+    U = this%ms%U(this%x)
 
-    l_e = this%rt%l_e(this%x_o, omega)
+    l_e = this%rt%l_e(this%x, omega)
 
     if (this%cowling_approx) then
        alpha_gr = 0._WP
@@ -317,29 +313,32 @@ contains
 
     ! Set up the boundary conditions
 
-    B_o(1,1) = 1._WP
-    B_o(1,2) = -1._WP
-    B_o(1,3) = alpha_gr*(1._WP)
-    B_o(1,4) = alpha_gr*(0._WP)
+    E(1,1) = 1._WP
+    E(1,2) = -1._WP
+    E(1,3) = alpha_gr*(1._WP)
+    E(1,4) = alpha_gr*(0._WP)
       
-    B_o(2,1) = alpha_gr*(U)
-    B_o(2,2) = alpha_gr*(0._WP)
-    B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-    B_o(2,4) = alpha_gr*(1._WP)
+    E(2,1) = alpha_gr*(U)
+    E(2,2) = alpha_gr*(0._WP)
+    E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+    E(2,4) = alpha_gr*(1._WP)
+
+    S = r_ext_t(1._WP)
 
     ! Finish
 
     return
 
-  end function B_o_zero_
+  end subroutine build_outer_zero_
 
 !****
 
-  function B_o_dziem_ (this, omega) result (B_o)
+  subroutine build_outer_dziem_ (this, omega, E, S)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
-    real(WP)                      :: B_o(this%n_o,this%n_e)
+    real(WP), intent(out)         :: E(:,:)
+    type(${T}_ext_t), intent(out) :: S
 
     real(WP) :: V
     real(WP) :: c_1
@@ -348,17 +347,20 @@ contains
     real(WP) :: omega_c
     real(WP) :: alpha_gr
 
+    $CHECK_BOUNDS(SIZE(E, 1),this%n)
+    $CHECK_BOUNDS(SIZE(E, 2),this%n_e)
+
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     ! Calculate coefficients
 
-    V = this%ml%V_2(this%x_o)*this%x_o**2
-    c_1 = this%ml%c_1(this%x_o)
+    V = this%ms%V_2(this%x)*this%x**2
+    c_1 = this%ms%c_1(this%x)
 
-    lambda = this%rt%lambda(this%x_o, omega)
-    l_e = this%rt%l_e(this%x_o, omega)
+    lambda = this%rt%lambda(this%x, omega)
+    l_e = this%rt%l_e(this%x, omega)
 
-    omega_c = this%rt%omega_c(this%x_o, omega)
+    omega_c = this%rt%omega_c(this%x, omega)
 
     if (this%cowling_approx) then
        alpha_gr = 0._WP
@@ -368,29 +370,32 @@ contains
 
     ! Set up the boundary conditions
 
-    B_o(1,1) = 1 + (lambda/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
-    B_o(1,2) = -1._WP
-    B_o(1,3) = alpha_gr*(1 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
-    B_o(1,4) = alpha_gr*(0._WP)
+    E(1,1) = 1 + (lambda/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
+    E(1,2) = -1._WP
+    E(1,3) = alpha_gr*(1 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
+    E(1,4) = alpha_gr*(0._WP)
       
-    B_o(2,1) = alpha_gr*(0._WP)
-    B_o(2,2) = alpha_gr*(0._WP)
-    B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-    B_o(2,4) = alpha_gr*(1._WP)
+    E(2,1) = alpha_gr*(0._WP)
+    E(2,2) = alpha_gr*(0._WP)
+    E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+    E(2,4) = alpha_gr*(1._WP)
+
+    S = r_ext_t(1._WP)
 
     ! Finish
 
     return
 
-  end function B_o_dziem_
+  end subroutine build_outer_dziem_
 
 !****
 
-  function B_o_unno_ (this, omega) result (B_o)
+  subroutine build_outer_unno_ (this, omega, E, S)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
-    real(WP)                      :: B_o(this%n_o,this%n_e)
+    real(WP), intent(out)         :: E(:,:)
+    type(${T}_ext_t), intent(out) :: S
 
     real(WP) :: V_g
     real(WP) :: As
@@ -409,16 +414,19 @@ contains
     real(WP) :: alpha_1
     real(WP) :: alpha_2
 
+    $CHECK_BOUNDS(SIZE(E, 1),this%n)
+    $CHECK_BOUNDS(SIZE(E, 2),this%n_e)
+
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
     ! Calculate coefficients
 
-    call eval_atmos_coeffs_unno(this%ml, this%x_o, V_g, As, c_1)
+    call eval_atmos_coeffs_unno(this%ms, this%x, V_g, As, c_1)
 
-    lambda = this%rt%lambda(this%x_o, omega)
-    l_e = this%rt%l_e(this%x_o, omega)
+    lambda = this%rt%lambda(this%x, omega)
+    l_e = this%rt%l_e(this%x, omega)
 
-    omega_c = this%rt%omega_c(this%x_o, omega)
+    omega_c = this%rt%omega_c(this%x, omega)
 
     beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
@@ -441,29 +449,32 @@ contains
 
     ! Set up the boundary conditions
 
-    B_o(1,1) = beta - b_11
-    B_o(1,2) = -b_12
-    B_o(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12)
-    B_o(1,4) = 0._WP
+    E(1,1) = beta - b_11
+    E(1,2) = -b_12
+    E(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12)
+    E(1,4) = 0._WP
 
-    B_o(2,1) = alpha_gr*(0._WP)
-    B_o(2,2) = alpha_gr*(0._WP)
-    B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-    B_o(2,4) = alpha_gr*(1._WP)
+    E(2,1) = alpha_gr*(0._WP)
+    E(2,2) = alpha_gr*(0._WP)
+    E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+    E(2,4) = alpha_gr*(1._WP)
+
+    S = r_ext_t(1._WP)
 
     ! Finish
 
     return
 
-  end function B_o_unno_
+  end subroutine build_outer_unno_
 
 !****
 
-  function B_o_jcd_ (this, omega) result (B_o)
+  subroutine build_outer_jcd_ (this, omega, E, S)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
-    real(WP)                      :: B_o(this%n_o,this%n_e)
+    real(WP), intent(out)         :: E(:,:)
+    type(${T}_ext_t), intent(out) :: S
 
     real(WP) :: V_g
     real(WP) :: As
@@ -476,16 +487,19 @@ contains
     real(WP) :: b_11
     real(WP) :: b_12
 
+    $CHECK_BOUNDS(SIZE(E, 1),this%n)
+    $CHECK_BOUNDS(SIZE(E, 2),this%n_e)
+
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
-    call eval_atmos_coeffs_jcd(this%ml, this%x_o, V_g, As, c_1)
+    call eval_atmos_coeffs_jcd(this%ms, this%x, V_g, As, c_1)
 
     ! Calculate coefficients
 
-    lambda = this%rt%lambda(this%x_o, omega)
-    l_e = this%rt%l_e(this%x_o, omega)
+    lambda = this%rt%lambda(this%x, omega)
+    l_e = this%rt%l_e(this%x, omega)
 
-    omega_c = this%rt%omega_c(this%x_o, omega)
+    omega_c = this%rt%omega_c(this%x, omega)
 
     beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
@@ -500,20 +514,22 @@ contains
 
     ! Set up the boundary conditions
 
-    B_o(1,1) = beta - b_11
-    B_o(1,2) = -b_12
-    B_o(1,3) = alpha_gr*(b_12 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
-    B_o(1,4) = alpha_gr*(0._WP)
+    E(1,1) = beta - b_11
+    E(1,2) = -b_12
+    E(1,3) = alpha_gr*(b_12 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
+    E(1,4) = alpha_gr*(0._WP)
 
-    B_o(2,1) = alpha_gr*(0._WP)
-    B_o(2,2) = alpha_gr*(0._WP)
-    B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-    B_o(2,4) = alpha_gr*(1._WP)
+    E(2,1) = alpha_gr*(0._WP)
+    E(2,2) = alpha_gr*(0._WP)
+    E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+    E(2,4) = alpha_gr*(1._WP)
+
+    S = r_ext_t(1._WP)
 
     ! Finish
 
     return
 
-  end function B_o_jcd_
+  end subroutine build_outer_jcd_
 
 end module gyre_ad_bound
