@@ -1,5 +1,5 @@
 ! Module   : gyre_model
-! Purpose  : stellar model (interface)
+! Purpose  : stellar model
 !
 ! Copyright 2015 Rich Townsend
 !
@@ -23,41 +23,20 @@ module gyre_model
 
   use core_kinds
 
+  use gyre_model_seg
+
   ! No implicit typing
 
   implicit none
 
   ! Derived-type definitions
 
-  type, abstract :: model_t
-   contains
-     private
-     procedure(seg_), deferred, public   :: seg
-     procedure(n_seg_), deferred, public :: n_seg
+  type :: model_t
+     type(model_seg_t), allocatable :: ms(:)
+     integer                        :: n_s
   end type model_t
 
-  ! Interfaces
-
-  abstract interface
-
-     function seg_(this, s) result(sg)
-       use gyre_model_seg
-       import model_t
-       class(model_t), intent(in)  :: this
-       integer, intent(in)         :: s
-       class(model_seg_t), pointer :: sg
-     end function seg_
-
-     function n_seg_(this) result(n_sg)
-       use gyre_model_seg
-       import model_t
-       class(model_t), intent(in) :: this
-       integer                    :: n_sg
-     end function n_seg_
-
-  end interface
-
- ! Access specifiers
+  ! Access specifiers
 
   private
 

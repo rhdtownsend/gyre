@@ -1,7 +1,7 @@
 ! Module   : gyre_evol_model
 ! Purpose  : stellar model (evolutionary)
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,10 +24,9 @@ module gyre_evol_model
   use core_kinds
   
   use gyre_constants
-  use gyre_evol_seg
-  use gyre_model
+  use gyre_evol_model_seg
+  use gyre_grid_part
   use gyre_model_par
-  use gyre_part
 
   use ISO_FORTRAN_ENV
 
@@ -42,18 +41,13 @@ module gyre_evol_model
     procedure, public :: set_${NAME} => set_${NAME}_
   $endsub
 
-  type, extends(model_t) :: evol_model_t
+  type, extends (model_t) :: evol_model_t
      private
-     type(model_par_t)             :: ml_p
-     type(evol_seg_t), allocatable :: sg(:)
-     real(WP), allocatable         :: x(:)
-     real(WP), public              :: M_star
-     real(WP), public              :: R_star
-     real(WP), public              :: L_star
+     real(WP), public :: M_star
+     real(WP), public :: R_star
+     real(WP), public :: L_star
    contains
      private
-     procedure, public :: seg => seg_
-     procedure, public :: n_seg => n_seg_
      $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
@@ -70,6 +64,7 @@ module gyre_evol_model
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
      $PROC_DECL(Omega_rot)
+     $PROC_DECL(T)
      procedure, public :: delta_p => delta_p_
      procedure, public :: delta_g => delta_g_
   end type evol_model_t
@@ -90,43 +85,26 @@ module gyre_evol_model
 
 contains
 
-  function evol_model_t_(ml_p, M_star, R_star, L_star, x)
+  function evol_model_t_ (ml_p, M_star, R_star, L_star, x) result (ml)
 
     type(model_par_t), intent(in) :: ml_p
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
     real(WP), intent(in)          :: L_star
     real(WP), intent(in)          :: x(:)
+    type(evol_model_t)            :: ml
 
-    real(WP), allocatable :: x_c(:)
-    type(part_t)          :: pt
-    integer               :: s
+    integer      :: s
 
     ! Construct the evol_model_t
-
-    ml%ml_p = ml_p
 
     ml%M_star = M_star
     ml%R_star = R_star
     ml%L_star = L_star
 
-    ! If necessary, add the central point to x
+    ml%ms = evol_model_seg_t(ml_p, M_star, R_star, L_star, x)
 
-    if(ml_p%add_center .AND. x(1) /= 0._WP) then
-       ml%x = [0._WP,x]
-    else
-       ml%x = x
-    endif
-
-    ! Create segments
-
-    pt = part_t(ml%x)
-
-    seg_loop : do s = 1, pt%n_seg()
-       ml%sg(s) = evol_seg_t(ml%x(pt%i_seg(s)))
-    end do seg_loop
-
-    end associate
+    ml%n_s = SIZE(ml%ms)
 
     ! Finish
 
@@ -136,156 +114,24 @@ contains
 
   !****
 
-  function seg_(this, s) result(sg)
-
-    class(evol_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    class(seg_t), pointer           :: sg
-
-    ! Return a pointer to the s'th segment
-
-    sg => this%sg(s)
-
-    ! Finish
-
-    return
-
-  end function seg_
-
-  !****
-
-  function n_seg_(this) result(n_seg)
-
-    class(evol_model_t), intentt(in) :: this
-    integer                          :: n_seg
-
-    ! Return the number of segments
-
-    n_seg = SIZE(this%sg)
-
-    ! Finish
-
-  end function n_seg_
-
-  !****
-
-  $define $SET_CONT $sub
+  $define $SET $sub
 
   $local $NAME $1
 
-  function set_${NAME}_(this, y) result(sp)
+  subroutine set_${NAME}_ (this, y)
 
-    class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: y(:)
+    class(evol_model_t), intent(inout) :: this
+    real(WP), intent(in)               :: y(:)
 
-    type(part_t)          :: pt
-    integer, allocatable  :: i_dbl(:)
-    integer               :: s
-    integer, allocatable  :: i_unq(:)
-    real(WP), allocatable :: x_unq(:)
-    real(WP), allocatable :: y_unq(:)
-    real(WP), allocatable :: dy_dx_unq(:)
-    real(WP), allocatable :: dy_dx(:)
-    integer, allocatable  :: i_seg(:)
+    integer :: s
 
-    $CHECK_BOUNDS(y,this%x)
+    ! Set the data for $NAME
 
-    ! Set up data for the continuous function $NAME in the s'th
-    ! segment
+    seg_loop : do s = 1, this%n_s
 
-    pt = part_t(this%x)
-
-    ! Verify continuity
-
-    i_dbl = pt%i_dbl()
-
-    cont_loop : do s = 1, SIZE(i_dbl)
-       $ASSERT(y(i_dbl(s)) == y(i_dbl(s)+1),Discontinuous $NAME at double point)
-    end do cont_loop
-
-    ! Calculate derivatives globally
-
-    i_unq = pt%i_unq()
-
-    x_unq = x(i_unq)
-    y_unq = y(i_unq)
-
-    if(x_unq(1) == 0._WP) then
-       dy_dx_unq = eval_dy_dx(x_unq, y_unq, dy_dx_a=0._WP)
-    else
-       dy_dx_unq = eval_dy_dx(x_unq, y_unq)
-    endif
-
-    dy_dx(i_unq) = dy_dx_unq
-    dy_dx(i_dbl+1) = dy_dx(i_dbl)
-
-    ! Loop through the segments
-
-    seg_loop : do s = 1, this%n_seg()
-
-       i_seg = pt%i_seg(s)
-
-       ! Store segment data
-
-       this%sg(s)%set_${NAME}(interp_t(x(i_seg), y(i_seg), dy_dx(i_seg)))
-
-    end do seg_loop
-
-    ! Finish
-
-    return
-
-  end function set_${NAME}
-
-  $endif
-
-  $SET_CONT(c_1)
-
-  !****
-
-  $define $SET_DISCONT $sub
-
-  $local $NAME $1
-
-  function set_${NAME}_(this, y) result(sp)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: y(:)
-
-    type(part_t)          :: pt
-    integer               :: s
-    integer, allocatable  :: i_seg(:)
-    real(WP), allocatable :: x_seg(:)
-    real(WP), allocatable :: y_seg(:)
-    real(WP), allocatable :: dy_dx_seg(:)
-
-    $CHECK_BOUNDS(SIZE(y),SIZE(this%x))
-
-    ! Set up data for the discontinuous function $NAME in the s'th
-    ! segment
-
-    pt = part_t(this%x)
-
-    ! Loop through the segments
-
-    seg_loop : do s = 1, this%n_seg()
-
-       i_seg = pt%i_seg(s)
-
-       ! Calculate derivatives locally
-
-       x_seg = x(i_seg)
-       y_seg = y(i_seg)
-
-       if(x_seg(1) == 0._WP) then
-          dy_dx_seg = eval_dy_dx(x_seg, y_seg, dy_dx_a=0._WP)
-       else
-          dy_dx_seg = eval_dy_dx(x_seg, y_seg)
-       endif
-
-       ! Store segment data
-       
-       this%sg(s)%set_${NAME}(interp_t(x_seg, y_seg, dy_dx_seg))
+       associate (ms => this%ms(s))
+         call ms%set_${NAME}(y(ms%i_a:ms%i_b))
+       end associate
 
     end do seg_loop
 
@@ -297,21 +143,23 @@ contains
 
   $endif
 
-  $SET_DISCONT(V_2)
-  $SET_DISCONT(A_s)
-  $SET_DISCONT(U)
-  $SET_DISCONT(Gamma_1)
-  $SET_DISCONT(delta)
-  $SET_DISCONT(nabla_ad)
-  $SET_DISCONT(nabla)
-  $SET_DISCONT(c_rad)
-  $SET_DISCONT(c_thm)
-  $SET_DISCONT(c_dif)
-  $SET_DISCONT(c_eps_ad)
-  $SET_DISCONT(c_eps_S)
-  $SET_DISCONT(kappa_ad)
-  $SET_DISCONT(kappa_S)
-  $SET_DISCONT(Omega_rot)
+  $SET(V_2)
+  $SET(A_s)
+  $SET(U)
+  $SET(c_1)
+  $SET(Gamma_1)
+  $SET(delta)
+  $SET(nabla_ad)
+  $SET(nabla)
+  $SET(c_rad)
+  $SET(c_thm)
+  $SET(c_dif)
+  $SET(c_eps_ad)
+  $SET(c_eps_S)
+  $SET(kappa_ad)
+  $SET(kappa_S)
+  $SET(Omega_rot)
+  $SET(T)
 
   !****
 
@@ -320,29 +168,30 @@ contains
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_p
 
-    real(WP)                  :: int_f
-    integer                   :: s
-    type(evol_seg_t), pointer :: sg
-    real(WP), allocatable     :: V_2(:)
-    real(WP), allocatable     :: c_1(:)
-    real(WP), allocatable     :: Gamma_1(:)
-    real(WP), allocatable     :: f(:)
+    real(WP)              :: int_f
+    integer               :: s
+    real(WP), allocatable :: V_2(:)
+    real(WP), allocatable :: c_1(:)
+    real(WP), allocatable :: Gamma_1(:)
+    real(WP), allocatable :: f(:)
 
     ! Calculate the p-mode (large) frequency separation
 
     int_f = 0._WP
 
-    seg_loop : do s = 1, this%n_seg()
+    seg_loop : do s = 1, this%n_s
 
-       sg => this%seg(s)
+       associate (ms => this%ms(s))
 
-       V_2 = sg%V_2(sg%x)
-       c_1 = sg%c_1(sg%x)
-       Gamma_1 = sg%Gamma_1(sg%x)
+         V_2 = ms%V_2(ms%x)
+         c_1 = ms%c_1(ms%x)
+         Gamma_1 = ms%Gamma_1(ms%x)
+         
+         f = Gamma_1/(c_1*V_2)
 
-       f = Gamma_1/(c_1*V_2)
+         int_f = int_f + integrate(ms%x, f)
 
-       int_f = int_f + integrate(sg%x, f)
+       end associate
 
     end do seg_loop
 
@@ -361,31 +210,32 @@ contains
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_g
 
-    real(WP)                  :: int_f
-    integer                   :: s
-    type(evol_seg_t), pointer :: sg
-    real(WP), allocatable     :: As(:)
-    real(WP), allocatable     :: c_1(:)
-    real(WP), allocatable     :: f(:)
+    real(WP)              :: int_f
+    integer               :: s
+    real(WP), allocatable :: As(:)
+    real(WP), allocatable :: c_1(:)
+    real(WP), allocatable :: f(:)
 
     ! Calculate the g-mode inverse period separation
 
     int_f = 0._WP
 
-    seg_loop : do s = 1, this%n_seg()
+    seg_loop : do s = 1, this%n_s
 
-       sg => this%seg(s)
+       associate (ms => this%ms(s))
 
-       As = sg%As(sg%x)
-       c_1 = sg%c_1(sg%x)
+         As = ms%As(ms%x)
+         c_1 = ms%c_1(ms%x)
 
-       where(sg%x /= 0._WP)
-          f = MAX(As/c_1, 0._WP))/sg%x
-       elsewhere
-          f = 0._WP
-       end where
+         where(ms%x /= 0._WP)
+            f = MAX(As/c_1, 0._WP))/ms%x
+         elsewhere
+            f = 0._WP
+         end where
 
-       int_f = int_f + integrate(sg%x, f)
+         int_f = int_f + integrate(ms%x, f)
+
+       end associate
 
     end do seg_loop
 

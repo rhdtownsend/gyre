@@ -1,5 +1,5 @@
 ! Module   : gyre_model_seg
-! Purpose  : stellar model segment (interface)
+! Purpose  : stellar model segment
 !
 ! Copyright 2015 Rich Townsend
 !
@@ -24,8 +24,6 @@ module gyre_model_seg
 
   use core_kinds
 
-  use gyre_seg
-
   ! No implicit typing
 
   implicit none
@@ -39,7 +37,7 @@ module gyre_model_seg
     generic, public           :: ${NAME} => ${NAME}_1_, ${NAME}_v_
   $endsub
 
-  type, abstract, extends(seg_t) :: model_seg_t
+  type, abstract, extends (seg) :: model_seg_t
    contains
      private
      $PROC_DECL(V_2)
@@ -62,35 +60,27 @@ module gyre_model_seg
      $PROC_DECL(kappa_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
-     procedure(scaffold_), deferred, public :: scaffold
   end type model_seg_t
 
   ! Interfaces
 
   abstract interface
 
-     function y_1_(this, x) result(y)
+     function y_1_ (this, x) result (y)
        use core_kinds
-       import model_t
-       class(model_t), intent(in) :: this
-       real(WP), intent(in)       :: x
-       real(WP)                   :: y
+       import model_seg_t
+       class(model_seg_t), intent(in) :: this
+       real(WP), intent(in)           :: x
+       real(WP)                       :: y
      end function y_1_
 
-     function y_v_(this, x) result(y)
+     function y_v_ (this, x) result (y)
        use core_kinds
-       import model_t
-       class(model_t), intent(in) :: this
-       real(WP), intent(in)       :: x(:)
-       real(WP)                   :: y(SIZE(x))
+       import model_seg_t
+       class(model_seg_t), intent(in) :: this
+       real(WP), intent(in)           :: x(:)
+       real(WP)                       :: y(SIZE(x))
      end function y_v_
-
-     subroutine scaffold_(this, x)
-       use core_kinds
-       import model_t
-       class(model_t), intent(in)         :: this
-       real(WP), allocatable, intent(out) :: x(:)
-     end subroutine scaffold_
 
   end interface
 
@@ -101,4 +91,3 @@ module gyre_model_seg
   public :: model_seg_t
 
 end module gyre_model_seg
-
