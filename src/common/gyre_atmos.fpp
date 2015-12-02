@@ -23,7 +23,7 @@ module gyre_atmos
 
   use core_kinds
 
-  use gyre_model
+  use gyre_model_seg
 
   use ISO_FORTRAN_ENV
 
@@ -201,19 +201,19 @@ contains
 
 !****
   
-  subroutine eval_atmos_coeffs_unno (ml, x_o, V_g, As, c_1)
+  subroutine eval_atmos_coeffs_unno (ms, x, V_g, As, c_1)
 
-    class(model_t), intent(in) :: ml
-    real(WP), intent(in)       :: x_o
-    real(WP), intent(out)      :: V_g
-    real(WP), intent(out)      :: As
-    real(WP), intent(out)      :: c_1
+    class(model_seg_t), intent(in) :: ms
+    real(WP), intent(in)           :: x
+    real(WP), intent(out)          :: V_g
+    real(WP), intent(out)          :: As
+    real(WP), intent(out)          :: c_1
 
     ! Evaluate atmosphere coefficients (Unno et al. formulation)
 
-    V_g = ml%V_2(x_o)*x_o**2/ml%Gamma_1(x_o)
-    As = ml%As(x_o)
-    c_1 = ml%c_1(x_o)
+    V_g = ms%V_2(x)*x**2/ms%Gamma_1(x)
+    As = ms%As(x)
+    c_1 = ms%c_1(x)
 
     ! Finish
 
@@ -223,19 +223,19 @@ contains
 
 !****
   
-  subroutine eval_atmos_coeffs_jcd (ml, x_o, V_g, As, c_1)
+  subroutine eval_atmos_coeffs_jcd (ms, x, V_g, As, c_1)
 
-    class(model_t), intent(in) :: ml
-    real(WP), intent(in)       :: x_o
-    real(WP), intent(out)      :: V_g
-    real(WP), intent(out)      :: As
-    real(WP), intent(out)      :: c_1
+    class(model_seg_t), intent(in) :: ms
+    real(WP), intent(in)           :: x
+    real(WP), intent(out)          :: V_g
+    real(WP), intent(out)          :: As
+    real(WP), intent(out)          :: c_1
 
     ! Evaluate atmosphere coefficients (JCD formulation)
 
-    V_g = ml%V_2(x_o)*x_o**2/ml%Gamma_1(x_o)
-    As = ml%V_2(x_o)*x_o**2*(1._WP-1._WP/ml%Gamma_1(x_o))
-    c_1 = ml%c_1(x_o)
+    V_g = ms%V_2(x)*x**2/ms%Gamma_1(x)
+    As = ms%V_2(x)*x**2*(1._WP-1._WP/ms%Gamma_1(x))
+    c_1 = ms%c_1(x)
 
     ! Finish
 
