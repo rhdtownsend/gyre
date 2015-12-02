@@ -138,7 +138,7 @@ contains
     c_1 = this%ms%c_1(x)
 
     lambda = this%rt%lambda(x, omega)
-    l_0 = this%rt%l_0(omega)
+    l_0 = this%rt%l_0(0._WP, omega) ! THIS NEEDS FIXING; ORIGIN IS NOT IN MODEL SEGMENT!
 
     omega_c = this%rt%omega_c(x, omega)
 
