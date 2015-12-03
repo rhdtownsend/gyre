@@ -51,11 +51,11 @@ module gyre_${T}_match
      subroutine build_ (this, omega, E_l, E_r, S)
        use core_kinds
        import ${T}_match_t
-       class(${T}_match_t), target, intent(inout) :: this
-       $TYPE(WP), intent(in)                      :: omega
-       $TYPE(WP), intent(out)                     :: E_l(:,:)
-       $TYPE(WP), intent(out)                     :: E_r(:,:)
-       type(${T}_ext_t), intent(out)              :: S
+       class(${T}_match_t), target, intent(in) :: this
+       $TYPE(WP), intent(in)                   :: omega
+       $TYPE(WP), intent(out)                  :: E_l(:,:)
+       $TYPE(WP), intent(out)                  :: E_r(:,:)
+       type(${T}_ext_t), intent(out)           :: S
      end subroutine build_
 
   end interface

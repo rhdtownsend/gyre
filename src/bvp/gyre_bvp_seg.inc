@@ -28,8 +28,12 @@ module gyre_${T}_bvp_seg
 
   use core_kinds
 
+  use gyre_eqns
   use gyre_ext
   use gyre_ivp
+  use gyre_ivp_factory
+  use gyre_num_par
+  use gyre_seg
 
   use ISO_FORTRAN_ENV
 
@@ -39,12 +43,10 @@ module gyre_${T}_bvp_seg
 
   ! Derived-type definitions
 
-  type :: ${T}_bvp_seg_t
+  type, extends (seg_t) :: ${T}_bvp_seg_t
      private
      class(${T}_ivp_t), allocatable :: iv
-     real(WP), allocatable          :: x(:)
-     $TYPE(WP), allocatable         :: y(:,:)
-     integer, public                :: n
+     $TYPE(WP), allocatable, public :: y(:,:)
      integer, public                :: n_e
    contains 
      private
@@ -65,21 +67,23 @@ module gyre_${T}_bvp_seg
 
 contains
 
-  function ${T}_bvp_seg_t_ (x, iv) result (sg)
+  function ${T}_bvp_seg_t_ (x, eq, nm_p) result (bs)
 
-    real(WP), intent(in)          :: x(:)
-    class(${T}_ivp_t), intent(in) :: iv
-    type(${T}_bvp_seg_t)          :: sg
+    real(WP), intent(in)           :: x(:)
+    class(${T}_eqns_t), intent(in) :: eq
+    type(num_par_t), intent(in)    :: nm_p
+    type(${T}_bvp_seg_t)           :: bs
 
     ! Construct the bvp_seg_t
 
-    sg%n = SIZE(x)
-    sg%n_e = iv%n_e
+    bs%x = x
+    bs%n = SIZE(x)
 
-    allocate(sg%iv, SOURCE=iv)
+    allocate(sg%iv, SOURCE=${T}_ivp_t(eq, nm_p))
 
-    sg%x = x
-    allocate(sg%y(sg%n_e,sg%n))
+    bs%n_e = eq%n_e
+
+    allocate(bs%y(bs%n_e,bs%n))
 
     ! Finish
     
