@@ -23,8 +23,6 @@ module gyre_model
 
   use core_kinds
 
-  use gyre_model_pos
-
   ! No implicit typing
 
   implicit none
@@ -33,8 +31,8 @@ module gyre_model
 
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure(y_1_), deferred :: ${NAME}_1_
-    procedure(y_v_), deferred :: ${NAME}_v_
+    procedure(f_1_), deferred :: ${NAME}_1_
+    procedure(f_v_), deferred :: ${NAME}_v_
     generic, public           :: ${NAME} => ${NAME}_1_, ${NAME}_v_
   $endsub
 
@@ -64,29 +62,37 @@ module gyre_model
      $PROC_DECL(kappa_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
+     procedure(scaffold_), deferred, public :: scaffold
   end type model_t
 
   ! Interfaces
 
   abstract interface
 
-     function y_1_ (this, mp) result (y)
+     function f_1_ (this, mc) result (f)
        use core_kinds
-       use gyre_model_pos
+       use gyre_coords
        import model_t
-       class(model_t), intent(in)    :: this
-       type(model_pos_t), intent(in) :: mp
-       real(WP)                      :: y
-     end function y_1_
+       class(model_t), intent(in)  :: this
+       class(coords_t), intent(in) :: co
+       real(WP)                    :: f
+     end function f_1_
 
-     function y_v_ (this, mp) result (y)
+     function f_v_ (this, mc) result (f)
        use core_kinds
-       use gyre_model_pos
-       import model_seg_t
-       class(model_seg_t), intent(in) :: this
-       type(model_pos_t), intent(in)  :: mp
-       real(WP)                       :: y(SIZE(mp))
-     end function y_v_
+       use gyre_coords
+       import model_t
+       class(model_t), intent(in) :: this
+       type(coords_t), intent(in) :: co
+       real(WP)                   :: f(SIZE(co))
+     end function f_v_
+
+     function scaffold_ (this) result (co)
+       use gyre_coords
+       import model_t
+       class(model_t), intent(in)   :: this
+       class(coords_t), allocatable :: co(:)
+     end function scaffold_
 
   end interface
 
