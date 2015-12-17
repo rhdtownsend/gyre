@@ -32,6 +32,9 @@ module gyre_model_coords
   type :: model_coords_t
      real(WP) :: x
      integer  :: s
+   contains
+     private
+     procedure, public :: x_s => x_s_
   end type model_coords_t
 
   ! Access specifiers
@@ -79,5 +82,23 @@ contains
     return
 
   end subroutine partition
+
+  !****
+
+  function x_s_ (this, s) result (x_s)
+
+    class(model_coords_t), intent(in) :: this
+    integer, intent(in)               :: s
+    real(WP), allocatable             :: x_s(:)
+
+    ! Return the x values for the points in segment s
+
+    x_s = PACK(this%x, MASK=(this%s == s))
+
+    ! Finish
+
+    return
+
+  end function x_s_
     
 end module gyre_model_coords
