@@ -25,6 +25,7 @@ module gyre_evol_seg
 
   use gyre_constants
   use gyre_interp
+  use gyre_model_par
 
   use ISO_FORTRAN_ENV
 
@@ -128,7 +129,7 @@ module gyre_evol_seg
 
 contains
 
-  function evol_seg_t_ (ml_px) result (es)
+  function evol_seg_t_ (ml_p) result (es)
 
     type(model_par_t), intent(in) :: ml_p
     type(evol_seg_t)              :: es
