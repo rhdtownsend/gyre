@@ -53,7 +53,7 @@ module gyre_model
      $PROC_DECL(nabla_ad)
      $PROC_DECL(dnabla_ad)
      $PROC_DECL(nabla)
-     $PROC_DECL(beta_g)
+     $PROC_DECL(beta_rad)
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_thm)
