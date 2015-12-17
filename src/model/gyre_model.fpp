@@ -23,7 +23,7 @@ module gyre_model
 
   use core_kinds
 
-  use gyre_model_seg
+  use gyre_model_pos
 
   ! No implicit typing
 
@@ -31,10 +31,64 @@ module gyre_model
 
   ! Derived-type definitions
 
+  $define $PROC_DECL $sub
+    $local $NAME $1
+    procedure(y_1_), deferred :: ${NAME}_1_
+    procedure(y_v_), deferred :: ${NAME}_v_
+    generic, public           :: ${NAME} => ${NAME}_1_, ${NAME}_v_
+  $endsub
+
   type :: model_t
-     type(model_seg_t), allocatable :: ms(:)
-     integer                        :: n_s
+     private
+     integer, public :: n_s
+   contains
+     private
+     $PROC_DECL(V_2)
+     $PROC_DECL(As)
+     $PROC_DECL(U)
+     $PROC_DECL(dU)
+     $PROC_DECL(c_1)
+     $PROC_DECL(Gamma_1)
+     $PROC_DECL(delta)
+     $PROC_DECL(nabla_ad)
+     $PROC_DECL(dnabla_ad)
+     $PROC_DECL(nabla)
+     $PROC_DECL(beta_g)
+     $PROC_DECL(c_rad)
+     $PROC_DECL(dc_rad)
+     $PROC_DECL(c_thm)
+     $PROC_DECL(c_dif)
+     $PROC_DECL(c_eps_ad)
+     $PROC_DECL(c_eps_S)
+     $PROC_DECL(kappa_ad)
+     $PROC_DECL(kappa_S)
+     $PROC_DECL(Omega_rot)
+     $PROC_DECL(dOmega_rot)
   end type model_t
+
+  ! Interfaces
+
+  abstract interface
+
+     function y_1_ (this, mp) result (y)
+       use core_kinds
+       use gyre_model_pos
+       import model_t
+       class(model_t), intent(in)    :: this
+       type(model_pos_t), intent(in) :: mp
+       real(WP)                      :: y
+     end function y_1_
+
+     function y_v_ (this, mp) result (y)
+       use core_kinds
+       use gyre_model_pos
+       import model_seg_t
+       class(model_seg_t), intent(in) :: this
+       type(model_pos_t), intent(in)  :: mp
+       real(WP)                       :: y(SIZE(mp))
+     end function y_v_
+
+  end interface
 
   ! Access specifiers
 
