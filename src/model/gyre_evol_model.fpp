@@ -35,15 +35,15 @@ module gyre_evol_model
 
   ! Derived-type definitions
 
+  $define $SET_DECL $sub
+    $local $NAME $1
+    procedure, public :: set_${NAME} => set_${NAME}_
+  $endsub
+
   $define $PROC_DECL $sub
     $local $NAME $1
     procedure :: ${NAME}_1_
     procedure :: ${NAME}_v_
-  $endsub
-
-  $define $SET_DECL $sub
-    $local $NAME $1
-    procedure, public :: set_${NAME} => set_${NAME}_
   $endsub
 
   type, extends (model_t) :: evol_model_t
@@ -171,7 +171,7 @@ contains
     ! Set the data for $NAME
 
     seg_loop : do s = 1, this%n_s
-       call this%es(s)%set_$NAME(PACK(f, MASK=this%co%s == s))
+       call this%es(s)%set_${NAME}(PACK(f, MASK=this%co%s == s))
     end do seg_loop
 
     ! Finish
@@ -206,17 +206,17 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_1_ (this, co) result ($NAME)
+  function ${NAME}_1_ (this, co) result (${NAME})
 
     class(evol_model_t), intent(in) :: this
     type(coords_t), intent(in)      :: co
-    real(WP)                        :: $NAME
+    real(WP)                        :: ${NAME}
 
     ! Evaluate $NAME
 
     associate (s => co%s, x => co%x)
 
-      $NAME = this%es(s)%$NAME(x)
+      $NAME = this%es(s)%${NAME}(x)
 
     end associate
 
@@ -329,11 +329,11 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_v_ (this, co) result($NAME)
+  function ${NAME}_v_ (this, co) result (${NAME})
 
     class(evol_model_t), intent(in) :: this
     type(coords_t), intent(in)      :: co
-    real(WP)                        :: $NAME(SIZE(co))
+    real(WP)                        :: ${NAME}(SIZE(co))
 
     integer :: i
 
@@ -341,7 +341,7 @@ contains
 
     !$OMP PARALLEL DO
     coords_loop : do i = 1, SIZE(co)
-       $NAME(i) = this%$NAME(co(i))
+       ${NAME}(i) = this%${NAME}(co(i))
     end do coords_loop
 
     ! Finish
