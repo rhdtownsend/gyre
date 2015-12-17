@@ -63,6 +63,7 @@ module gyre_evol_model_seg
      $DATA_DECL(delta)
      $DATA_DECL(nabla_ad)
      $DATA_DECL(nabla)
+     $DATA_DECL(beta_r)
      $DATA_DECL(c_rad)
      $DATA_DECL(c_thm)
      $DATA_DECL(c_dif)
@@ -75,6 +76,7 @@ module gyre_evol_model_seg
      real(WP)                  :: M_star
      real(WP)                  :: R_star
      real(WP)                  :: L_star
+     real(WP)                  :: Omega_i
      character(:), allocatable :: deriv_type
    contains
      private
@@ -86,6 +88,7 @@ module gyre_evol_model_seg
      $SET_DECL(delta)
      $SET_DECL(nabla_ad)
      $SET_DECL(nabla)
+     $SET_DECL(beta_r)
      $SET_DECL(c_rad)
      $SET_DECL(c_thm)
      $SET_DECL(c_dif)
@@ -105,6 +108,7 @@ module gyre_evol_model_seg
      $PROC_DECL(nabla_ad)
      $PROC_DECL(dnabla_ad)
      $PROC_DECL(nabla)
+     $PROC_DECL(beta_r)
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_thm)
@@ -119,12 +123,13 @@ module gyre_evol_model_seg
      $PROC_DECL(P)
      $PROC_DECL(rho)
      $PROC_DECL(T)
+     procedure :: Omega_rot_i_
   end type evol_model_seg_t
  
   ! Interfaces
 
   interface evol_model_seg_t
-     module procedure evol_model_seg_t_part_
+     module procedure evol_model_seg_t_
   end interface evol_model_seg_t
 
   ! Access specifiers
@@ -137,32 +142,33 @@ module gyre_evol_model_seg
 
 contains
 
-  function evol_model_seg_t_part_ (ml_p, M_star, R_star, L_star, x) result (ms)
+  function evol_model_seg_t_ (ml_p, M_star, R_star, L_star, Omega_rot_i) result (ms)
 
-    type(model_par_t), intent(in)       :: ml_p
-    real(WP), intent(in)                :: M_star
-    real(WP), intent(in)                :: R_star
-    real(WP), intent(in)                :: L_star
-    real(WP), intent(in)                :: x(:)
-    type(evol_model_seg_t), allocatable :: ms(:)
+    type(model_par_t), intent(in) :: ml_p
+    real(WP), intent(in)          :: M_star
+    real(WP), intent(in)          :: R_star
+    real(WP), intent(in)          :: L_star
+    real(WP), intent(in)          :: x(:)
+    type(evol_model_seg_t)        :: ms
 
-    ! Construct an array of segments, bt splitting x at double points
+    ! Construct the evol_model_seg_t
 
-    ms%seg_t = seg_t(x)
+    ms%x = x
+    ms%n = SIZE(x)
 
     ms%M_star = M_star
     ms%R_star = R_star
     ms%L_star = L_star
 
-    seg_loop : do s = 1, SIZE(ms)
-       ms(s)%deriv_type = ml_p%deriv_type
-    end do seg_loop
+    ms%Omega_i = Omega_rot_i
+
+    ms%deriv_type = ml_p%deriv_type
 
     ! Finish
 
     return
 
-  end function evol_model_seg_t_part_
+  end function evol_model_seg_t_
 
   !****
 
@@ -203,6 +209,7 @@ contains
   $SET(delta)
   $SET(nabla_ad)
   $SET(nabla)
+  $SET(beta_r)
   $SET(c_rad)
   $SET(c_thm)
   $SET(c_dif)
@@ -276,6 +283,7 @@ contains
   $PROC(delta)
   $PROC(nabla_ad)
   $PROC(nabla)
+  $PROC(beta_r)
   $PROC(c_rad)
   $PROC(c_thm)
   $PROC(c_dif)
@@ -356,7 +364,25 @@ contains
 
   !****
 
-  function M_r_1_(this, x) result(m)
+  function Omega_rot_i_ (this) result (Omega_rot_i)
+
+    class(evol_model_seg_t), intent(in) :: this
+    real(WP)                            :: Omega_rot_i
+
+    ! Return the rotation rate at the inner boundary of the overall
+    ! model (required for eigenfunction scaling)
+
+    Omega_rot_i = this%Omega_i
+
+    ! Finish
+
+    return
+
+  end function Omega_rot_i_
+
+  !****
+
+  function M_r_1_ (this, x) result (m)
 
     class(evol_model_seg_t), intent(in) :: this
     real(WP), intent(in)                :: x
@@ -374,7 +400,7 @@ contains
     
   !****
 
-  function M_r_v_(this, x) result(m)
+  function M_r_v_ (this, x) result (m)
 
     class(evol_model_seg_t), intent(in) :: this
     real(WP), intent(in)                :: x(:)
@@ -392,7 +418,7 @@ contains
     
   !****
 
-  function P_1_(this, x) result(P)
+  function P_1_ (this, x) result (P)
 
     class(evol_model_seg_t), intent(in) :: this
     real(WP), intent(in)                :: x
@@ -411,7 +437,7 @@ contains
     
   !****
 
-  function P_v_(this, x) result(P)
+  function P_v_ (this, x) result (P)
 
     class(evol_model_seg_t), intent(in) :: this
     real(WP), intent(in)                :: x(:)
@@ -430,7 +456,7 @@ contains
     
   !****
 
-  function rho_1_(this, x) result(P)
+  function rho_1_ (this, x) result (P)
 
     class(evol_model_seg_t), intent(in) :: this
     real(WP), intent(in)                :: x
@@ -448,7 +474,7 @@ contains
     
   !****
 
-  function rho_v_(this, x) result(rho)
+  function rho_v_ (this, x) result (rho)
 
     class(evol_model_seg_t), intent(in) :: this
     real(WP), intent(in)                :: x(:)
@@ -463,5 +489,41 @@ contains
     return
 
   end function rho_v_
+    
+  !****
+
+  function T_1_ (this, x) result (T)
+
+    class(evol_model_seg_t), intent(in) :: this
+    real(WP), intent(in)                :: x
+    real(WP)                            :: T
+
+    ! Calculate the temperature
+
+    T = (3._WP*this%beta_r(x)*this%P(x)/A_RADIATION)**0.25_WP
+
+    ! Finish
+
+    return
+
+  end function T_1_
+    
+  !****
+
+  function T_v_ (this, x) result (T)
+
+    class(evol_model_seg_t), intent(in) :: this
+    real(WP), intent(in)                :: x(:)
+    real(WP)                            :: T(SIZE(x))
+
+    ! Calculate the temperature
+
+    T = (3._WP*this%beta_r(x)*this%P(x)/A_RADIATION)**0.25_WP
+
+    ! Finish
+
+    return
+
+  end function T_1_
     
 end module gyre_evol_model_seg

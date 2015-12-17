@@ -50,6 +50,7 @@ module gyre_model_seg
      $PROC_DECL(nabla_ad)
      $PROC_DECL(dnabla_ad)
      $PROC_DECL(nabla)
+     $PROC_DECL(beta_g)
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_thm)
@@ -60,6 +61,7 @@ module gyre_model_seg
      $PROC_DECL(kappa_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
+     procedure, public :: Omega_rot_i => Omega_rot_i_
   end type model_seg_t
 
   ! Interfaces

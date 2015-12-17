@@ -102,7 +102,7 @@ contains
     ml%R_star = R_star
     ml%L_star = L_star
 
-    ml%ms = evol_model_seg_t(ml_p, M_star, R_star, L_star, x)
+    DONT YET KNOW HOW TO INITIALIZE THE SEGMENTS
 
     ml%n_s = SIZE(ml%ms)
 
@@ -128,6 +128,10 @@ contains
     ! Set the data for $NAME
 
     seg_loop : do s = 1, this%n_s
+
+       DONT YET KNOW HOW SEGMENTS WILL GET KORRECT DATA
+
+       NEED TO HANDLE OMEGA_ROT_I
 
        associate (ms => this%ms(s))
          call ms%set_${NAME}(y(ms%i_a:ms%i_b))
