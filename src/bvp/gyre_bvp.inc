@@ -31,6 +31,7 @@ module gyre_${T}_bvp
   use gyre_bound
   use gyre_ext
   use gyre_match
+  use gyre_num_par
   use gyre_status
   use gyre_sysmtx
   use gyre_sysmtx_factory
@@ -81,8 +82,7 @@ contains
     class(${T}_bound_t), intent(in)   :: bd_o
     class(${T}_bvp_seg_t), intent(in) :: bs
     class(${T}_match_t), intent(in)   :: mt
-    class(${T}_sysmtx_t), intent(in)  :: sm
-    type(num_par_t), intent(in)       :: nm
+    type(num_par_t), intent(in)       :: nm_p
     real(WP), intent(in)              :: omega_min
     real(WP), intent(in)              :: omega_max
     type(${T}_bvp_t)                  :: bp
@@ -188,6 +188,8 @@ contains
     call this%sm%set_B_o(E_l, S_)
 
     ! Segments
+
+    ! WHERE IS THE PARTITIONER SET UP?
 
     seg_loop : do s = 1, this%n_s
 
