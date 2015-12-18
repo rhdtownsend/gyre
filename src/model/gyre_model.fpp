@@ -73,9 +73,9 @@ module gyre_model
        use core_kinds
        use gyre_coords
        import model_t
-       class(model_t), intent(in)  :: this
-       class(coords_t), intent(in) :: co
-       real(WP)                    :: f
+       class(model_t), intent(in) :: this
+       type(coords_t), intent(in) :: co
+       real(WP)                   :: f
      end function f_1_
 
      function f_v_ (this, mc) result (f)
@@ -90,8 +90,8 @@ module gyre_model
      function scaffold_ (this) result (co)
        use gyre_coords
        import model_t
-       class(model_t), intent(in)   :: this
-       class(coords_t), allocatable :: co(:)
+       class(model_t), intent(in)  :: this
+       type(coords_t), allocatable :: co(:)
      end function scaffold_
 
   end interface
