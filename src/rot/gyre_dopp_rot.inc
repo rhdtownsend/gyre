@@ -28,7 +28,8 @@ module gyre_${T}_dopp_rot
 
   use core_kinds
 
-  use gyre_model_seg
+  use gyre_coords
+  use gyre_model
   use gyre_mode_par
   use gyre_rot
 
@@ -40,12 +41,13 @@ module gyre_${T}_dopp_rot
 
   type, extends (${T}_rot_t) :: ${T}_dopp_rot_t
      private
-     class(model_seg_t), pointer :: ms => null()
+     class(model_t), pointer :: ml => null()
    contains
      private
      procedure, public :: omega => omega_
      procedure         :: omega_c_1_
      procedure         :: omega_c_v_
+     procedure, public :: l_i => l_i_
      procedure         :: l_e_1_
      procedure         :: l_e_v_
      procedure         :: lambda_1_
@@ -70,9 +72,9 @@ contains
 
   function ${T}_dopp_rot_t_ (ml, md_p) result (rt)
 
-    class(model_seg_t), pointer, intent(in) :: ms
-    type(mode_par_t), intent(in)            :: md_p
-    type(${T}_dopp_rot_t)                   :: rt
+    class(model_t), pointer, intent(in) :: ml
+    type(mode_par_t), intent(in)        :: md_p
+    type(${T}_dopp_rot_t)               :: rt
 
     ! Construct the dopp_rot_t
 
@@ -87,19 +89,19 @@ contains
 
   end function ${T}_dopp_rot_t_
 
-!****
+  !****
 
-  function omega_ (this, x, omega_c) result (omega)
+  function omega_ (this, co, omega_c) result (omega)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    real(WP), intent(in)               :: x
+    type(coords_t), intent(in)         :: co
     $TYPE(WP), intent(in)              :: omega_c
     $TYPE(WP)                          :: omega
 
     ! Evaluate the inertial-frame frequency from the corotating-frame
     ! frequency
 
-    omega = omega_c + this%m*this%ms%Omega_rot(x)
+    omega = omega_c + this%m*this%ml%Omega_rot(co)
 
     ! Finish
 
@@ -107,19 +109,19 @@ contains
 
   end function omega_
 
-!****
+  !****
 
   function omega_c_1_ (this, x, omega) result (omega_c)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    real(WP), intent(in)               :: x
+    type(coords_t), intent(in)         :: co
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: omega_c
 
     ! Evaluate the corotating-frame frequency from the inertial-frame
     ! frequency (scalar)
 
-    omega_c = omega - this%m*this%ms%Omega_rot(x)
+    omega_c = omega - this%m*this%ms%Omega_rot(co)
 
     ! Finish
 
@@ -129,17 +131,17 @@ contains
 
 !****
 
-  function omega_c_v_ (this, x, omega) result (omega_c)
+  function omega_c_v_ (this, co, omega) result (omega_c)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    real(WP), intent(in)               :: x(:)
+    type(coords_t), intent(in)         :: co
     $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: omega_c(SIZE(x))
+    $TYPE(WP)                          :: omega_c(SIZE(co))
 
     ! Evaluate the corotating-frame frequency from the inertial-frame
     ! frequency (vector)
 
-    omega_c = omega - this%m*this%ml%Omega_rot(x)
+    omega_c = omega - this%m*this%ml%Omega_rot(co)
 
     ! Finish
 
@@ -149,10 +151,29 @@ contains
 
   !****
 
-  function l_e_1_ (this, x, omega) result (l_e)
+  function l_i_ (this, omega) result (l_i)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    real(WP), intent(in)               :: x
+    $TYPE(WP), intent(in)              :: omega
+    $TYPE(WP)                          :: l_i
+
+    ! Evaluate the effective harmonic degree at the model inner
+    ! boundary
+
+    l_i = this%l
+
+    ! Finish
+
+    return
+
+  end function l_i_
+
+  !****
+
+  function l_e_1_ (this, co, omega) result (l_e)
+
+    class(${T}_dopp_rot_t), intent(in) :: this
+    type(coords_t), intent(in)         :: co
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: l_e
 
@@ -168,12 +189,12 @@ contains
 
   !****
 
-  function l_e_v_ (this, x, omega) result (l_e)
+  function l_e_v_ (this, co, omega) result (l_e)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    real(WP), intent(in)               :: x(:)
+    type(coords_t), intent(in)         :: co(:)
     $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: l_e(SIZE(x))
+    $TYPE(WP)                          :: l_e(SIZE(co))
 
     ! Evaluate the effective harmonic degree (vector)
 
@@ -187,10 +208,10 @@ contains
 
   !****
 
-  function lambda_1_ (this, x, omega) result (lambda)
+  function lambda_1_ (this, co, omega) result (lambda)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    real(WP), intent(in)               :: x
+    type(coords_t), intent(in)         :: co
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: lambda
 
@@ -206,12 +227,12 @@ contains
 
   !****
 
-  function lambda_v_ (this, x, omega) result (lambda)
+  function lambda_v_ (this, co, omega) result (lambda)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    real(WP), intent(in)               :: x(:)
+    type(coords_t), intent(in)         :: co(:)
     $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: lambda(SIZE(x))
+    $TYPE(WP)                          :: lambda(SIZE(co))
 
     ! Evaluate the angular eigenvalue (vector)
 
