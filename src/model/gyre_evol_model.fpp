@@ -25,7 +25,7 @@ module gyre_evol_model
   
   use gyre_constants
   use gyre_coords
-  use gyre_evol_model_seg
+  use gyre_evol_seg
 
   use ISO_FORTRAN_ENV
 
@@ -48,12 +48,12 @@ module gyre_evol_model
 
   type, extends (model_t) :: evol_model_t
      private
-     type(coords_t), allocatable    :: co(:)
-     type(evol_seg_t), allocatable  :: es(:)
-     real(WP), public               :: M_star
-     real(WP), public               :: R_star
-     real(WP), public               :: L_star
-     integer                        :: n_co
+     type(coords_t), allocatable   :: co(:)
+     type(evol_seg_t), allocatable :: es(:)
+     real(WP), public              :: M_star
+     real(WP), public              :: R_star
+     real(WP), public              :: L_star
+     integer                       :: n_co
    contains
      private
      $SET_DECL(V_2)
@@ -119,22 +119,18 @@ module gyre_evol_model
 
 contains
 
-  function evol_model_t_ (ml_p, M_star, R_star, L_star, x) result (ml)
+  function evol_model_t_ (x, M_star, R_star, L_star, ml_p) result (ml)
 
-    type(model_par_t), intent(in) :: ml_p
+    real(WP), intent(in)          :: x(:)
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
     real(WP), intent(in)          :: L_star
-    real(WP), intent(in)          :: x(:)
+    type(model_par_t), intent(in) :: ml_p
     type(evol_model_t)            :: ml
 
     integer :: s
 
     ! Construct the evol_model_t
-
-    ml%M_star = M_star
-    ml%R_star = R_star
-    ml%L_star = L_star
 
     ml%n_co = SIZE(x)
 
@@ -146,6 +142,13 @@ contains
     seg_loop : do s = 1, ml%n_s
        ml%es(s) = evol_seg_t(ml_p, PACK(x, MASK=ml%co%s == s))
     end do seg_loop
+
+    ml%co_i = ml%co(1)
+    ml%co_o = ml%co(ml%n_co)
+
+    ml%M_star = M_star
+    ml%R_star = R_star
+    ml%L_star = L_star
 
     ! Finish
 
