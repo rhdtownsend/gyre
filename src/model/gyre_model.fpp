@@ -38,9 +38,9 @@ module gyre_model
 
   type :: model_t
      private
-     type(coords_t), public :: co_i
-     type(coords_t), public :: co_o
-     integer, public        :: n_s
+     real(WP), public :: x_i
+     real(WP), public :: x_o
+     integer, public  :: n_s
    contains
      private
      $PROC_DECL(V_2)

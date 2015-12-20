@@ -132,11 +132,14 @@ contains
 
     ! Construct the evol_model_t
 
+    ml%n_k = SIZE(x)
+    ml%n_s = ml%s(ml%n_k)
+
     ml%x = x
     ml%s = seg_indices_(x)
 
-    ml%n_k = SIZE(ml%s)
-    ml%n_s = ml%s(ml%n_k)
+    ml%x_i = x(1)
+    ml%x_o = x(ml%n_k)
 
     allocate(ml%es(ml%n_s))
 
