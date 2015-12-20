@@ -23,7 +23,7 @@ module gyre_rot_factory
 
   use core_kinds
 
-  use gyre_model_seg
+  use gyre_model
   use gyre_mode_par
   use gyre_osc_par
   use gyre_rot
@@ -59,7 +59,7 @@ contains
 
   $local $T $1
 
-  function ${T}_rot_t_ (ms, md_p, os_p) result (rt)
+  function ${T}_rot_t_ (ml, md_p, os_p) result (rt)
 
     use gyre_dopp_rot
     use gyre_null_rot
@@ -67,10 +67,10 @@ contains
     use gyre_trad_rot
     $endif
 
-    class(model_seg_t), pointer, intent(in) :: ms
-    type(mode_par_t), intent(in)            :: md_p
-    type(osc_par_t), intent(in)             :: os_p
-    class(${T}_rot_t), allocatable          :: rt
+    class(model_t), pointer, intent(in) :: ms
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
+    class(${T}_rot_t), allocatable      :: rt
     
     ! Create a ${T}_rot_t
 
