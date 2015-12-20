@@ -85,10 +85,11 @@ contains
 
   !****
 
-  function omega_ (this, co, omega_c) result (omega)
+  function omega_ (this, s, x, omega_c) result (omega)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co
+    integer, intent(in)                :: s
+    real(WP), intent(in)               :: x
     $TYPE(WP), intent(in)              :: omega_c
     $TYPE(WP)                          :: omega
 
@@ -105,15 +106,16 @@ contains
 
 !****
 
-  function omega_c_1_ (this, co, omega) result (omega_c)
+  function omega_c_1_ (this, s, x, omega) result (omega_c)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co
+    integer, intent(in)                :: s
+    real(WP), intent(in)               :: x
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: omega_c
 
     ! Evaluate the corotating-frame frequency from the inertial-frame
-    ! frequency (scalar)
+    ! frequency
 
     omega_c = omega
 
@@ -125,15 +127,18 @@ contains
 
   !****
 
-  function omega_c_v_ (this, x, omega) result (omega_c)
+  function omega_c_v_ (this, s, x, omega) result (omega_c)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co(:)
+    integer, intent(in)                :: s(:)
+    real(WP), intent(in)               :: x(:)
     $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: omega_c(SIZE(co))
+    $TYPE(WP)                          :: omega_c(SIZE(s))
+
+    $CHECK_BOUNDS(SIZE(x),SIZE(s))
 
     ! Evaluate the corotating-frame frequency from the inertial-frame
-    ! frequency (vector)
+    ! frequency
 
     omega_c = omega
 
@@ -164,14 +169,15 @@ contains
 
   !****
 
-  function l_e_1_ (this, co, omega) result (l_e)
+  function l_e_1_ (this, s, x, omega) result (l_e)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co
+    integer, intent(in)                :: s
+    real(WP), intent(in)               :: x
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: l_e
 
-    ! Evaluate the effective harmonic degree (scalar)
+    ! Evaluate the effective harmonic degree
 
     l_e = this%l
 
@@ -183,14 +189,17 @@ contains
 
   !****
 
-  function l_e_v_ (this, co, omega) result (l_e)
+  function l_e_v_ (this, s, x, omega) result (l_e)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co(:)
+    integer, intent(in)                :: s(:)
+    real(WP), intent(in)               :: x(:)
     $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: l_e(SIZE(co))
+    $TYPE(WP)                          :: l_e(SIZE(s))
 
-    ! Evaluate the effective harmonic degree (vector)
+    $CHECK_BOUNDS(SIZE(x),SIZE(s))
+
+    ! Evaluate the effective harmonic degree
 
     l_e = this%l
 
@@ -202,14 +211,15 @@ contains
 
   !****
 
-  function lambda_1_ (this, co, omega) result (lambda)
+  function lambda_1_ (this, s, x, omega) result (lambda)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co
+    integer, intent(in)                :: s
+    real(WP), intent(in)               :: x
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: lambda
 
-    ! Evaluate the angular eigenvalue (scalar)
+    ! Evaluate the angular eigenvalue
 
     lambda = this%l*(this%l+1)
 
@@ -221,12 +231,15 @@ contains
 
   !****
 
-  function lambda_v_ (this, co, omega) result (lambda)
+  function lambda_v_ (this, s, x, omega) result (lambda)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co(:)
+    integer, intent(in)                :: s(:)
+    real(WP), intent(in)               :: x(:)
     $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: lambda(SIZE(co))
+    $TYPE(WP)                          :: lambda(SIZE(s))
+
+    $CHECK_BOUNDS(SIZE(x),SIZE(s))
 
     ! Evaluate the angular eigenvalue (vector)
 

@@ -94,17 +94,18 @@ contains
 
   !****
 
-  function omega_ (this, co, omega_c) result (omega)
+  function omega_ (this, s, x, omega_c) result (omega)
 
     class(${T}_trad_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co
+    integer, intent(in)                :: s
+    real(WP), intent(in)               :: x
     $TYPE(WP), intent(in)              :: omega_c
     $TYPE(WP)                          :: omega
 
     ! Evaluate the inertial-frame frequency from the corotating-frame
     ! frequency
 
-    omega = omega_c + this%m*this%ms%Omega_rot(co)
+    omega = omega_c + this%m*this%ms%Omega_rot(s, x)
 
     ! Finish
 
@@ -114,17 +115,18 @@ contains
 
   !****
 
-  function omega_c_1_ (this, co, omega) result (omega_c)
+  function omega_c_1_ (this, s, x, omega) result (omega_c)
 
     class(${T}_trad_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co
+    integer, intent(in)                :: s
+    real(WP), intent(in)               :: x
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: omega_c
 
     ! Evaluate the corotating-frame frequency from the inertial-frame
-    ! frequency (scalar)
+    ! frequency
 
-    omega_c = omega - this%m*this%ms%Omega_rot(co)
+    omega_c = omega - this%m*this%ms%Omega_rot(s, x)
 
     ! Finish
 
@@ -134,17 +136,20 @@ contains
 
   !****
 
-  function omega_c_v_ (this, co, omega) result (omega_c)
+  function omega_c_v_ (this, s, x, omega) result (omega_c)
 
     class(${T}_trad_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co(:)
+    integer, intent(in)                :: s(:)
+    real(WP), intent(in)               :: x(:)
     $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: omega_c(SIZE(co))
+    $TYPE(WP)                          :: omega_c(SIZE(s))
+
+    $CHECK_BOUNDS(SIZE(x),SIZE(s))
 
     ! Evaluate the corotating-frame frequency from the inertial-frame
-    ! frequency (vector)
+    ! frequency
 
-    omega_c = omega - this%m*this%ms%Omega_rot(co)
+    omega_c = omega - this%m*this%ms%Omega_rot(s, x)
 
     ! Finish
 
@@ -173,16 +178,17 @@ contains
 
   !****
 
-  function l_e_1_ (this, co, omega) result (l_e)
+  function l_e_1_ (this, s, x, omega) result (l_e)
 
     class(${T}_trad_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co
+    integer, intent(in)                :: s
+    real(WP), intent(in)               :: x
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: l_e
 
-    ! Evaluate the effective harmonic degree (scalar)
+    ! Evaluate the effective harmonic degree
 
-    l_e = 0.5_WP*(-1._WP + SQRT(1._WP + 4._WP*this%lambda(co, omega)))
+    l_e = 0.5_WP*(-1._WP + SQRT(1._WP + 4._WP*this%lambda(s, x, omega)))
 
     ! Finish
 
@@ -192,16 +198,19 @@ contains
 
   !****
 
-  function l_e_v_ (this, co, omega) result (l_e)
+  function l_e_v_ (this, s, x, omega) result (l_e)
 
     class(${T}_trad_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co(:)
+    integer, intent(in)                :: s(:)
+    real(WP), intent(in)               :: x(:)
     $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: l_e(SIZE(co))
+    $TYPE(WP)                          :: l_e(SIZE(s))
 
-    ! Evaluate the effective harmonic degree (vector)
+    $CHECK_BOUNDS(SIZE(x),SIZE(s))
 
-    l_e = 0.5_WP*(-1._WP + SQRT(1._WP + 4._WP*this%lambda(co, omega)))
+    ! Evaluate the effective harmonic degree
+
+    l_e = 0.5_WP*(-1._WP + SQRT(1._WP + 4._WP*this%lambda(s, x, omega)))
 
     ! Finish
 
@@ -211,18 +220,19 @@ contains
 
   !****
 
-  function lambda_1_ (this, co, omega) result (lambda)
+  function lambda_1_ (this, s, x, omega) result (lambda)
 
     class(${T}_trad_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co
+    integer, intent(in)                :: s
+    real(WP), intent(in)               :: x
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: lambda
 
     $TYPE(WP) :: nu
 
-    ! Evaluate the angular eigenvalue (scalar)
+    ! Evaluate the angular eigenvalue
 
-    nu = 2._WP*this%ms%Omega_rot(co)/this%omega_c(co, omega)
+    nu = 2._WP*this%ms%Omega_rot(s, x)/this%omega_c(s, x, omega)
 
     lambda = trad_lambda(nu, this%l, this%m)
 
@@ -234,19 +244,22 @@ contains
 
   !****
 
-  function lambda_v_ (this, co, omega) result (lambda)
+  function lambda_v_ (this, s, x, omega) result (lambda)
 
     class(${T}_trad_rot_t), intent(in) :: this
-    type(coords_t), intent(in)         :: co(:)
+    integer, intent(in)                :: s(:)
+    real(WP), intent(in)               :: x(:)
     $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: lambda(SIZE(co))
+    $TYPE(WP)                          :: lambda(SIZE(s))
 
     integer :: i
 
-    ! Evaluate the angular eigenvalue (vector)
+    $CHECK_BOUNDS(SIZE(x),SIZE(s))
 
-    do i = 1, SIZE(co)
-       lambda(i) = this%lambda(co(i), omega)
+    ! Evaluate the angular eigenvalue
+
+    do i = 1, SIZE(s)
+       lambda(i) = this%lambda(s(i), x(i), omega)
     end do
 
     ! Finish
