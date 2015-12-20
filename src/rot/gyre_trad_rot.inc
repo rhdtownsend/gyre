@@ -168,7 +168,7 @@ contains
     ! Evaluate the effective harmonic degree at the model inner
     ! boundary
 
-    l_i = this%l_e(this%ml%co_i)
+    l_i = this%l_e(1, ml%x_i, omega)
 
     ! Finish
 
