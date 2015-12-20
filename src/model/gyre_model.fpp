@@ -71,30 +71,30 @@ module gyre_model
 
   abstract interface
 
-     function f_1_ (this, mc) result (f)
+     function f_1_ (this, s, x) result (f)
        use core_kinds
-       use gyre_coords
        import model_t
        class(model_t), intent(in) :: this
-       type(coords_t), intent(in) :: co
+       integer, intent(in)        :: s
+       real(WP), intent(in)       :: x
        real(WP)                   :: f
      end function f_1_
 
-     function f_v_ (this, mc) result (f)
+     function f_v_ (this, s, x) result (f)
        use core_kinds
-       use gyre_coords
        import model_t
        class(model_t), intent(in) :: this
-       type(coords_t), intent(in) :: co
-       real(WP)                   :: f(SIZE(co))
+       integer, intent(in)        :: s(:)
+       real(WP), intent(in)       :: x(:)
+       real(WP)                   :: f(SIZE(s))
      end function f_v_
 
-     function scaffold_ (this) result (co)
-       use gyre_coords
+     subroutine scaffold_ (this, s, x)
        import model_t
-       class(model_t), intent(in)  :: this
-       type(coords_t), allocatable :: co(:)
-     end function scaffold_
+       class(model_t), intent(in)         :: this
+       integer, allocatable, intent(out)  :: s(:)
+       real(WP), allocatable, intent(out) :: x(:)
+     end subroutine scaffold_
 
   end interface
 

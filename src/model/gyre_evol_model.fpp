@@ -24,7 +24,6 @@ module gyre_evol_model
   use core_kinds
   
   use gyre_constants
-  use gyre_coords
   use gyre_evol_seg
 
   use ISO_FORTRAN_ENV
@@ -48,12 +47,13 @@ module gyre_evol_model
 
   type, extends (model_t) :: evol_model_t
      private
-     type(coords_t), allocatable   :: co(:)
+     integer, allocatable          :: s(:)
+     real(WP), allocatable         :: x(:)
      type(evol_seg_t), allocatable :: es(:)
      real(WP), public              :: M_star
      real(WP), public              :: R_star
      real(WP), public              :: L_star
-     integer                       :: n_co
+     integer                       :: n_k
    contains
      private
      $SET_DECL(V_2)
@@ -132,19 +132,17 @@ contains
 
     ! Construct the evol_model_t
 
-    ml%n_co = SIZE(x)
+    ml%x = x
+    ml%s = seg_indices_(x)
 
-    allocate(ml%co(ml%n_co))
-    call partition(x, ml%co, ml%n_s)
+    ml%n_k = SIZE(ml%s)
+    ml%n_s = ml%s(ml%n_k)
 
     allocate(ml%es(ml%n_s))
 
     seg_loop : do s = 1, ml%n_s
-       ml%es(s) = evol_seg_t(ml_p, PACK(x, MASK=ml%co%s == s))
+       ml%es(s) = evol_seg_t(PACK(x, MASK=ml%s == s), ml_p)
     end do seg_loop
-
-    ml%co_i = ml%co(1)
-    ml%co_o = ml%co(ml%n_co)
 
     ml%M_star = M_star
     ml%R_star = R_star
@@ -153,6 +151,39 @@ contains
     ! Finish
 
     return
+
+  contains
+
+    function seg_indices_ (x) result (s)
+
+      real(WP), intent(in) :: x(:)
+      integer              :: s(SIZE(x))
+
+      integer :: k
+
+      $CHECK_BOUNDS(SIZE(mp),SIZE(x))
+
+      ! Partition the array x into strictly-monotonic-increasing
+      ! segments, by splitting at double points; return the resulting
+      ! segment index of each element in s
+
+      s(1) = 1
+
+      x_loop : do k = 2, SIZE(x)
+       
+         if (x(k) == x(k-1)) then
+            s(k) = s(k-1) + 1
+         else
+            s(k) = s(k-1)
+         endif
+
+      end do x_loop
+
+      ! Finish
+
+      return
+
+    end function seg_indices_
 
   end function evol_model_t_
 
@@ -169,12 +200,12 @@ contains
 
     integer :: s
 
-    $CHECK_BOUNDS(SIZE(f),this%n_co)
+    $CHECK_BOUNDS(SIZE(f),this%n_k)
 
     ! Set the data for $NAME
 
     seg_loop : do s = 1, this%n_s
-       call this%es(s)%set_${NAME}(PACK(f, MASK=this%co%s == s))
+       call this%es(s)%set_${NAME}(PACK(f, MASK=this%s == s))
     end do seg_loop
 
     ! Finish
@@ -209,19 +240,16 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_1_ (this, co) result (${NAME})
+  function ${NAME}_1_ (this, s, x) result (${NAME})
 
     class(evol_model_t), intent(in) :: this
-    type(coords_t), intent(in)      :: co
-    real(WP)                        :: ${NAME}
+    integer, intent(in)             :: s
+    real(WP), intent(in)            :: x
+    real(WP)                        :: $NAME
 
     ! Evaluate $NAME
 
-    associate (s => co%s, x => co%x)
-
-      $NAME = this%es(s)%${NAME}(x)
-
-    end associate
+    $NAME = this%es(s)%${NAME}(x)
 
     ! Finish
 
@@ -255,15 +283,16 @@ contains
 
   !****
 
-  function M_r_1_ (this, mc) result (M_r)
+  function M_r_1_ (this, s, x) result (M_r)
 
     class(evol_model_t), intent(in) :: this
-    type(coords_t), intent(in)      :: co
+    integer, intent(in)             :: s
+    real(WP), intent(in)            :: x
     real(WP)                        :: M_r
 
     ! Evaluate the fractional mass coordinate
 
-    M_r = this%M_star*(co%x**3*/this%c_1(co))
+    M_r = this%M_star*(x**3*/this%c_1(s, x))
 
     ! Finish
 
@@ -273,16 +302,17 @@ contains
     
   !****
 
-  function P_1_ (this, co) result (P)
+  function P_1_ (this, s, x) result (P)
 
     class(evol_model_t), intent(in) :: this
-    type(coords_t), intent(in)      :: co
+    integer, intent(in)             :: s
+    real(WP), intent(in)            :: x
     real(WP)                        :: P
 
     ! Evaluate the total pressure
 
     P = (G_GRAVITY*this%M_star/(4._WP*PI*this%R_star**4))*&
-        (co%x**2*this%U(co)/(this%c_1(co)*this%V(co)))
+        (x**2*this%U(s, x)/(this%c_1(s, x)*this%V(s, x)))
 
     ! Finish
 
@@ -292,15 +322,16 @@ contains
     
   !****
 
-  function rho_1_ (this, co) result (rho)
+  function rho_1_ (this, s, x) result (rho)
 
     class(evol_model_t), intent(in) :: this
-    type(coords_t), intent(in)      :: co
+    integer, intent(in)             :: s
+    real(WP), intent(in)            :: x
     real(WP)                        :: rho
 
     ! Evaluate the density
 
-    rho = (this%M_star/(4._WP*PI*this%R_star)**3*(this%U(co)/this%c_1(co))
+    rho = (this%M_star/(4._WP*PI*this%R_star)**3*(this%U(s, x)/this%c_1(s, x))
 
     ! Finish
 
@@ -310,15 +341,16 @@ contains
     
   !****
 
-  function T_1_ (this, co) result (T)
+  function T_1_ (this, s, x) result (T)
 
     class(evol_model_t), intent(in) :: this
-    type(coords_t), intent(in)      :: co
+    integer, intent(in)             :: s
+    real(WP), intent(in)            :: x
     real(WP)                        :: T
 
     ! Evaluate the temperature
 
-    T = (3._WP*this%beta_r(co)*this%P(co)/A_RADIATION)**0.25_WP
+    T = (3._WP*this%beta_rad(s, x)*this%P(s, x)/A_RADIATION)**0.25_WP
 
     ! Finish
 
@@ -335,17 +367,20 @@ contains
   function ${NAME}_v_ (this, co) result (${NAME})
 
     class(evol_model_t), intent(in) :: this
-    type(coords_t), intent(in)      :: co
-    real(WP)                        :: ${NAME}(SIZE(co))
+    integer, intent(in)             :: s(:)
+    real(WP), intent(in)            :: x(:)
+    real(WP)                        :: ${NAME}(SIZE(s))
 
-    integer :: i
+    integer :: k
+
+    $CHECK_BOUNDS(SIZE(x),SIZE(s))
 
     ! Evaluate $NAME
 
     !$OMP PARALLEL DO
-    coords_loop : do i = 1, SIZE(co)
-       ${NAME}(i) = this%${NAME}(co(i))
-    end do coords_loop
+    do k = 1, SIZE(s)
+       ${NAME}(k) = this%${NAME}(s(k), x(k))
+    end do
 
     ! Finish
 
@@ -383,14 +418,16 @@ contains
 
   !****
 
-  function scaffold_ (this) result (co)
+  subroutine scaffold_ (this, s, x)
 
-    class(evol_model_t), intent(in) :: this
-    class(coords_t), allocatable    :: co(:)
+    class(evol_model_t), intent(in)    :: this
+    integer, allocatable, intent(out)  :: s(:)
+    real(WP), allocatable, intent(out) :: x(:)
 
     ! Return the grid scaffold
 
-    co = this%co
+    s = this%s
+    x = this%x
 
     ! Finish
 
@@ -405,21 +442,27 @@ contains
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_p
 
-    real(WP) :: V_2(this%n_co)
-    real(WP) :: c_1(this%n_co)
-    real(WP) :: Gamma_1(this%n_co)
-    real(WP) :: f(this%n_co)
+    real(WP) :: V_2(this%n_k)
+    real(WP) :: c_1(this%n_k)
+    real(WP) :: Gamma_1(this%n_k)
+    real(WP) :: f(this%n_k)
 
     ! Calculate the p-mode (large) frequency separation
 
-    V_2 = this%V_2(this%co)
-    c_1 = this%c_1(this%co)
-    Gamma_1 = this%Gamma_1(this%co)
+    associate (s => this%s, &
+               x => this%x)
 
-    f = Gamma_1/(c_1*V_2)
+      V_2 = this%V_2(s, x)
+      c_1 = this%c_1(s, x)
 
-    delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
-              integrate(this%co%x, f)
+      Gamma_1 = this%Gamma_1(s, x)
+
+      f = Gamma_1/(c_1*V_2)
+
+      delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
+                integrate(x, f)
+
+    end associate
        
     ! Finish
 
@@ -429,28 +472,33 @@ contains
 
   !****
 
-  function delta_g_(this) result(delta_g)
+  function delta_g_ (this) result (delta_g)
 
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_g
 
-    real(WP) :: As(this%n_co)
-    real(WP) :: c_1(this%n_co)
-    real(WP) :: f(this%n_co)
+    real(WP) :: As(this%n_k)
+    real(WP) :: c_1(this%n_k)
+    real(WP) :: f(this%n_k)
 
     ! Calculate the g-mode inverse period separation
 
-    As = this%As(this%co)
-    c_1 = this%c_1(this%co)
+    associate (s => this%s, &
+               x => this%x)
 
-    where (this%co%x /= 0._WP)
-       f = MAX(As/c_1, 0._WP))/this%co%x
-    elsewhere
-       f = 0._WP
-    end where
+      As = this%As(s, x)
+      c_1 = this%c_1(s, x)
 
-    delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
-              integrate(this%co%x, f)
+      where (x /= 0._WP)
+         f = MAX(As/c_1, 0._WP))/x
+      elsewhere
+         f = 0._WP
+      end where
+
+      delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
+           integrate(x, f)
+
+    end associate
 
     ! Finish
 
