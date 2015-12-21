@@ -28,7 +28,6 @@ program gyre_ad
   use gyre_ad_bvp
   use gyre_bvp
   use gyre_ext
-  use gyre_grid
   use gyre_grid_par
   use gyre_input
   use gyre_mode
@@ -38,7 +37,7 @@ program gyre_ad
   use gyre_osc_par
   use gyre_out_par
   use gyre_output
-  use gyre_rad_bvp
+!  use gyre_rad_bvp
   use gyre_search
   use gyre_scan_par
   use gyre_trad
@@ -57,25 +56,18 @@ program gyre_ad
   integer                       :: unit
   real(WP), allocatable         :: x_ml(:)
   class(model_t), pointer       :: ml => null()
-  type(mode_par_t), allocatable :: mp(:)
-  type(osc_par_t), allocatable  :: op(:)
-  type(num_par_t), allocatable  :: np(:)
-  type(grid_par_t), allocatable :: shoot_gp(:)
-  type(grid_par_t), allocatable :: recon_gp(:)
-  type(scan_par_t), allocatable :: sp(:)
-  type(out_par_t)               :: up
+  type(mode_par_t), allocatable :: md_p(:)
+  type(osc_par_t), allocatable  :: os_p(:)
+  type(num_par_t), allocatable  :: nm_p(:)
+  type(grid_par_t), allocatable :: gd_p(:)
+  type(scan_par_t), allocatable :: sc_p(:)
+  type(out_par_t)               :: ot_p
   integer                       :: i
-  type(osc_par_t), allocatable  :: op_sel(:)
-  type(num_par_t), allocatable  :: np_sel(:)
-  type(grid_par_t), allocatable :: shoot_gp_sel(:)
-  type(grid_par_t), allocatable :: recon_gp_sel(:)
-  type(scan_par_t), allocatable :: sp_sel(:)
-  real(WP)                      :: x_i
-  real(WP)                      :: x_o
+  type(osc_par_t), allocatable  :: os_p_sel(:)
+  type(num_par_t), allocatable  :: nm_p_sel(:)
+  type(grid_par_t), allocatable :: gd_p_sel(:)
+  type(scan_par_t), allocatable :: sc_p_sel(:)
   real(WP), allocatable         :: omega(:)
-  real(WP)                      :: omega_min
-  real(WP)                      :: omega_max
-  real(WP), allocatable         :: x_sh(:)
   class(r_bvp_t), allocatable   :: bp
   integer                       :: n_md
   integer                       :: d_md
@@ -113,13 +105,12 @@ program gyre_ad
 
   call read_model(unit, x_ml, ml)
   call read_constants(unit)
-  call read_mode_par(unit, mp)
-  call read_osc_par(unit, op)
-  call read_num_par(unit, np)
-  call read_shoot_grid_par(unit, shoot_gp)
-  call read_recon_grid_par(unit, recon_gp)
-  call read_scan_par(unit, sp)
-  call read_out_par(unit, up)
+  call read_mode_par(unit, md_p)
+  call read_osc_par(unit, os_p)
+  call read_num_par(unit, nm_p)
+  call read_grid_par(unit, gd_p)
+  call read_scan_par(unit, sc_p)
+  call read_out_par(unit, ot_p)
 
   ! Loop through mp
 
@@ -136,8 +127,8 @@ program gyre_ad
 
         write(OUTPUT_UNIT, 100) 'Mode parameters'
 
-        write(OUTPUT_UNIT, 130) 'l :', mp(i)%l
-        write(OUTPUT_UNIT, 130) 'm :', mp(i)%m
+        write(OUTPUT_UNIT, 130) 'l :', md_p(i)%l
+        write(OUTPUT_UNIT, 130) 'm :', md_p(i)%m
 130     format(3X,A,1X,I0)
 
         write(OUTPUT_UNIT, *)
@@ -146,23 +137,21 @@ program gyre_ad
 
      ! Select parameters according to tags
 
-     call select_par(op, mp(i)%tag, op_sel, last=.TRUE.)
-     call select_par(np, mp(i)%tag, np_sel, last=.TRUE.)
-     call select_par(shoot_gp, mp(i)%tag, shoot_gp_sel)
-     call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
-     call select_par(sp, mp(i)%tag, sp_sel)
+     call select_par(os_p, md_p(i)%tag, os_p_sel, last=.TRUE.)
+     call select_par(nm_p, md_p(i)%tag, nm_p_sel, last=.TRUE.)
+     call select_par(gd_p, md_p(i)%tag, gd_p_sel)
+     call select_par(sc_p, md_p(i)%tag, sc_p_sel)
 
-     $ASSERT(SIZE(op_sel) == 1,No matching osc parameters)
-     $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
-     $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
-     $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
-     $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
+     $ASSERT(SIZE(os_p_sel) == 1,No matching osc parameters)
+     $ASSERT(SIZE(nm_p_sel) == 1,No matching num parameters)
+     $ASSERT(SIZE(gd_p_sel) >= 1,No matching grid parameters)
+     $ASSERT(SIZE(sc_p_sel) >= 1,No matching scan parameters)
 
      ! Set up the frequency array
 
-     call grid_range(shoot_gp_sel, x_ml, x_i, x_o)
+     call grid_range(ml)
 
-     call build_scan(sp_sel, ml, mp(i), op_sel(1), x_i, x_o, omega)
+     call build_scan(sp_sel, ml, mp(i), os_p_sel(1), x_i, x_o, omega)
 
      if (np_sel(1)%restrict_roots) then
         omega_min = MINVAL(omega)
@@ -174,14 +163,14 @@ program gyre_ad
 
      ! Set up the shooting grid
 
-     call build_grid(shoot_gp_sel, ml, mp(i), op_sel(1), omega, x_ml, x_sh, verbose=.TRUE.)
+     call build_grid(shoot_gp_sel, ml, mp(i), os_p_sel(1), omega, x_ml, x_sh, verbose=.TRUE.)
 
      ! Set up bp
 
-     if (mp(i)%l == 0 .AND. op_sel(1)%reduce_order) then
-        allocate(bp, SOURCE=rad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
+     if (mp(i)%l == 0 .AND. os_p_sel(1)%reduce_order) then
+        allocate(bp, SOURCE=rad_bvp_t(x_sh, ml, mp(i), os_p_sel(1), np_sel(1), omega_min, omega_max))
      else
-        allocate(bp, SOURCE=ad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
+        allocate(bp, SOURCE=ad_bvp_t(x_sh, ml, mp(i), os_p_sel(1), np_sel(1), omega_min, omega_max))
      endif
 
      ! Find roots

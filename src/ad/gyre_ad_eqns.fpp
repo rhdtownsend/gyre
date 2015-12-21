@@ -1,5 +1,5 @@
 ! Module   : gyre_ad_eqns
-! Purpose  : differential equations for adibatic case
+! Purpose  : adiabatic differential equations
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -25,7 +25,7 @@ module gyre_ad_eqns
 
   use gyre_ad_vars
   use gyre_eqns
-  use gyre_model_seg
+  use gyre_model
   use gyre_mode_par
   use gyre_osc_par
   use gyre_rot
@@ -41,9 +41,10 @@ module gyre_ad_eqns
 
   type, extends (r_eqns_t) :: ad_eqns_t
      private
-     class(model_seg_t), pointer :: ms => null()
+     class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
      type(ad_vars_t)             :: vr
+     integer                     :: s
      logical                     :: cowling_approx
    contains
      private
@@ -67,19 +68,22 @@ module gyre_ad_eqns
 
 contains
 
-  function ad_eqns_t_ (ms, md_p, os_p) result (eq)
+  function ad_eqns_t_ (ml, s, md_p, os_p) result (eq)
 
-    class(model_seg_t), pointer, intent(in) :: ms
-    type(mode_par_t), intent(in)            :: md_p
-    type(osc_par_t), intent(in)             :: os_p
-    type(ad_eqns_t)                         :: eq
+    class(model_t), pointer, intent(in) :: ml
+    integer, intent(in)                 :: s
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
+    type(ad_eqns_t)                     :: eq
 
     ! Construct the ad_eqns_t
 
-    eq%ms => ms
+    eq%ml => ml
 
-    allocate(eq%rt, SOURCE=r_rot_t(ms, md_p, os_p))
-    eq%vr = ad_vars_t(ms, md_p, os_p)
+    allocate(eq%rt, SOURCE=r_rot_t(ml, md_p, os_p))
+    eq%vr = ad_vars_t(ml, md_p, os_p)
+
+    eq%s = s
 
     eq%cowling_approx = os_p%cowling_approx
 
@@ -91,7 +95,7 @@ contains
 
   end function ad_eqns_t_
 
-!****
+  !****
 
   function A_ (this, x, omega) result (A)
 
@@ -110,7 +114,7 @@ contains
 
   end function A_
 
-!****
+  !****
 
   function xA_ (this, x, omega) result (xA)
 
@@ -124,7 +128,7 @@ contains
     real(WP) :: As
     real(WP) :: c_1
     real(WP) :: lambda
-    real(WP) :: l_0
+    real(WP) :: l_i
     real(WP) :: omega_c
     real(WP) :: alpha_gr
     
@@ -132,15 +136,19 @@ contains
 
     ! Calculate coefficients
 
-    V_g = this%ms%V_2(x)*x**2/this%ms%Gamma_1(x)
-    U = this%ms%U(x)
-    As = this%ms%As(x)
-    c_1 = this%ms%c_1(x)
+    associate (s => this%s)
 
-    lambda = this%rt%lambda(x, omega)
-    l_0 = this%rt%l_0(0._WP, omega) ! THIS NEEDS FIXING; ORIGIN IS NOT IN MODEL SEGMENT!
+      V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
+      U = this%ml%U(s, x)
+      As = this%ml%As(s, x)
+      c_1 = this%ml%c_1(s, x)
 
-    omega_c = this%rt%omega_c(x, omega)
+      lambda = this%rt%lambda(s, x, omega)
+      l_i = this%rt%l_i(omega)
+
+      omega_c = this%rt%omega_c(s, x, omega)
+
+    end associate
 
     if (this%cowling_approx) then
        alpha_gr = 0._WP
@@ -150,29 +158,29 @@ contains
 
     ! Set up the matrix
 
-    xA(1,1) = V_g - 1._WP - l_0
+    xA(1,1) = V_g - 1._WP - l_i
     xA(1,2) = lambda/(c_1*omega_c**2) - V_g
     xA(1,3) = alpha_gr*(V_g)
     xA(1,4) = alpha_gr*(0._WP)
       
     xA(2,1) = c_1*omega_c**2 - As
-    xA(2,2) = As - U + 3._WP - l_0
+    xA(2,2) = As - U + 3._WP - l_i
     xA(2,3) = alpha_gr*(-As)
     xA(2,4) = alpha_gr*(0._WP)
       
     xA(3,1) = alpha_gr*(0._WP)
     xA(3,2) = alpha_gr*(0._WP)
-    xA(3,3) = alpha_gr*(3._WP - U - l_0)
+    xA(3,3) = alpha_gr*(3._WP - U - l_i)
     xA(3,4) = alpha_gr*(1._WP)
       
     xA(4,1) = alpha_gr*(U*As)
     xA(4,2) = alpha_gr*(U*V_g)
     xA(4,3) = alpha_gr*(lambda - U*V_g)
-    xA(4,4) = alpha_gr*(-U - l_0 + 2._WP)
+    xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
 
     ! Apply the variables transformation
 
-    xA = MATMUL(this%vr%S(x, omega), MATMUL(xA, this%vr%T(x, omega)) - this%vr%dT(x, omega))
+    xA = MATMUL(this%vr%A(x, this%s, omega), MATMUL(xA, this%vr%B(x, this%s, omega)) - this%vr%dB(x, this%s, omega))
 
     ! Finish
 

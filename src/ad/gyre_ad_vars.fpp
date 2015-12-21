@@ -1,5 +1,5 @@
 ! Module   : gyre_ad_vars
-! Purpose  : variables transformations (adiabatic)
+! Purpose  : variables transformations for adiabatic case
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -23,10 +23,10 @@ module gyre_ad_vars
 
   use core_kinds
 
-  use gyre_linalg
   use gyre_model
   use gyre_osc_par
   use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -45,23 +45,23 @@ module gyre_ad_vars
 
   type :: ad_vars_t
      private
-     class(model_t), pointer     :: ml => null()
+     class(model_t), pointer     :: ms => null()
      class(r_rot_t), allocatable :: rt
      integer                     :: vars
    contains
      private
-     procedure, public :: S => S_
-     procedure         :: S_jcd_
-     procedure         :: S_mix_
-     procedure         :: S_lagp_
-     procedure, public :: T => T_
-     procedure         :: T_jcd_
-     procedure         :: T_mix_
-     procedure         :: T_lagp_
-     procedure, public :: dT => dT_
-     procedure         :: dT_jcd_
-     procedure         :: dT_mix_
-     procedure         :: dT_lagp_
+     procedure, public :: A => A_
+     procedure         :: A_jcd_
+     procedure         :: A_mix_
+     procedure         :: A_lagp_
+     procedure, public :: B => B_
+     procedure         :: B_jcd_
+     procedure         :: B_mix_
+     procedure         :: B_lagp_
+     procedure, public :: dB => dB_
+     procedure         :: dB_jcd_
+     procedure         :: dB_mix_
+     procedure         :: dB_lagp_
   end type ad_vars_t
 
   ! Interfaces
@@ -80,19 +80,20 @@ module gyre_ad_vars
 
 contains
 
-  function ad_vars_t_ (ml, rt, op) result (vr)
+  function ad_vars_t_ (ml, md_p, os_p) result (vr)
 
     class(model_t), pointer, intent(in) :: ml
-    class(r_rot_t), intent(in)          :: rt
-    type(osc_par_t), intent(in)         :: op
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
     type(ad_vars_t)                     :: vr
 
     ! Construct the ad_vars_t
 
     vr%ml => ml
-    allocate(vr%rt, SOURCE=rt)
 
-    select case (op%variables_set)
+    allocate(vr%rt, SOURCE=r_rot_t(ml, md_p, os_p))
+
+    select case (os_p%variables_set)
     case ('DZIEM')
        vr%vars = DZIEM_VARS
     case ('JCD')
@@ -111,27 +112,28 @@ contains
 
   end function ad_vars_t_
 
-!****
+  !****
 
-  function S_ (this, x, omega) result (S)
+  function A_ (this, s, x, omega) result (A)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: S(4,4)
+    real(WP)                     :: A(4,4)
 
     ! Evaluate the transformation matrix to convert variables from
     ! the canonical form
 
     select case (this%vars)
     case (DZIEM_VARS)
-       S = identity_matrix(4)
+       A = identity_matrix(4)
     case (JCD_VARS)
-       S = this%S_jcd_(x, omega)
+       A = this%A_jcd_(x, omega)
     case (MIX_VARS)
-       S = this%S_mix_(x, omega)
+       A = this%A_mix_(x, omega)
     case (LAGP_VARS)
-       S = this%S_lagp_(x, omega)
+       A = this%A_lagp_(x, omega)
     case default
        $ABORT(Invalid vars)
     end select
@@ -140,16 +142,17 @@ contains
 
     return
 
-  end function S_
+  end function A_
 
-!****
+  !****
 
-  function S_jcd_ (this, x, omega) result (S)
+  function A_jcd_ (this, s, x, omega) result (A)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: S(4,4)
+    real(WP)                     :: A(4,4)
 
     real(WP) :: U
     real(WP) :: c_1
@@ -162,59 +165,59 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(x)
-    c_1 = this%ml%c_1(x)
+    U = this%ml%U(s, x)
+    c_1 = this%ml%c_1(s, x)
 
-    l = this%rt%mp%l
-    lambda = this%rt%lambda(x, omega)
+    l = this%rt%l
+    lambda = this%rt%lambda(s, x, omega)
 
-    omega_c = this%rt%omega_c(x, omega)
+    omega_c = this%rt%omega_c(s, x, omega)
 
     ! Set up the matrix
       
     if (l /= 0) then
 
-       S(1,1) = 1._WP
-       S(1,2) = 0._WP
-       S(1,3) = 0._WP
-       S(1,4) = 0._WP
+       A(1,1) = 1._WP
+       A(1,2) = 0._WP
+       A(1,3) = 0._WP
+       A(1,4) = 0._WP
           
-       S(2,1) = 0._WP
-       S(2,2) = lambda/(c_1*omega_c**2)
-       S(2,3) = 0._WP
-       S(2,4) = 0._WP
+       A(2,1) = 0._WP
+       A(2,2) = lambda/(c_1*omega_c**2)
+       A(2,3) = 0._WP
+       A(2,4) = 0._WP
           
-       S(3,1) = 0._WP
-       S(3,2) = 0._WP
-       S(3,3) = -1._WP
-       S(3,4) = 0._WP
+       A(3,1) = 0._WP
+       A(3,2) = 0._WP
+       A(3,3) = -1._WP
+       A(3,4) = 0._WP
 
-       S(4,1) = 0._WP
-       S(4,2) = 0._WP
-       S(4,3) = -(1._WP - U)
-       S(4,4) = -1._WP
+       A(4,1) = 0._WP
+       A(4,2) = 0._WP
+       A(4,3) = -(1._WP - U)
+       A(4,4) = -1._WP
 
     else
 
-       S(1,1) = 1._WP
-       S(1,2) = 0._WP
-       S(1,3) = 0._WP
-       S(1,4) = 0._WP
+       A(1,1) = 1._WP
+       A(1,2) = 0._WP
+       A(1,3) = 0._WP
+       A(1,4) = 0._WP
 
-       S(2,1) = 0._WP
-       S(2,2) = 1._WP/(c_1*omega_c**2)
-       S(2,3) = 0._WP
-       S(2,4) = 0._WP
+       A(2,1) = 0._WP
+       A(2,2) = 1._WP/(c_1*omega_c**2)
+       A(2,3) = 0._WP
+       A(2,4) = 0._WP
 
-       S(3,1) = 0._WP
-       S(3,2) = 0._WP
-       S(3,3) = -1._WP
-       S(3,4) = 0._WP
+       A(3,1) = 0._WP
+       A(3,2) = 0._WP
+       A(3,3) = -1._WP
+       A(3,4) = 0._WP
 
-       S(4,1) = 0._WP
-       S(4,2) = 0._WP
-       S(4,3) = -(1._WP - U)
-       S(4,4) = -1._WP
+       A(4,1) = 0._WP
+       A(4,2) = 0._WP
+       A(4,3) = -(1._WP - U)
+       A(4,4) = -1._WP
 
     endif
 
@@ -222,16 +225,17 @@ contains
 
     return
 
-  end function S_jcd_
+  end function A_jcd_
 
-!****
+  !****
 
-  function S_mix_ (this, x, omega) result (S)
+  function A_mix_ (this, s, x, omega) result (A)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: S(4,4)
+    real(WP)                     :: A(4,4)
 
     real(WP) :: U
 
@@ -240,44 +244,45 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(x)
+    U = this%ml%U(s, x)
 
     ! Set up the matrix
 
-    S(1,1) = 1._WP
-    S(1,2) = 0._WP
-    S(1,3) = 0._WP
-    S(1,4) = 0._WP
+    A(1,1) = 1._WP
+    A(1,2) = 0._WP
+    A(1,3) = 0._WP
+    A(1,4) = 0._WP
 
-    S(2,1) = 0._WP
-    S(2,2) = 1._WP
-    S(2,3) = 0._WP
-    S(2,4) = 0._WP
+    A(2,1) = 0._WP
+    A(2,2) = 1._WP
+    A(2,3) = 0._WP
+    A(2,4) = 0._WP
 
-    S(3,1) = 0._WP
-    S(3,2) = 0._WP
-    S(3,3) = -1._WP
-    S(3,4) = 0._WP
+    A(3,1) = 0._WP
+    A(3,2) = 0._WP
+    A(3,3) = -1._WP
+    A(3,4) = 0._WP
 
-    S(4,1) = 0._WP
-    S(4,2) = 0._WP
-    S(4,3) = -(1._WP - U)
-    S(4,4) = -1._WP
+    A(4,1) = 0._WP
+    A(4,2) = 0._WP
+    A(4,3) = -(1._WP - U)
+    A(4,4) = -1._WP
 
     ! Finish
 
     return
 
-  end function S_mix_
+  end function A_mix_
 
-!****
+  !****
 
-  function S_lagp_ (this, x, omega) result (S)
+  function A_lagp_ (this, s, x, omega) result (A)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: S(4,4)
+    real(WP)                     :: A(4,4)
 
     real(WP) :: V_2
 
@@ -286,57 +291,58 @@ contains
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(x)
+    V_2 = this%ml%V_2(s, x)
 
     ! Set up the matrix
 
-    S(1,1) = 1._WP
-    S(1,2) = 0._WP
-    S(1,3) = 0._WP
-    S(1,4) = 0._WP
+    A(1,1) = 1._WP
+    A(1,2) = 0._WP
+    A(1,3) = 0._WP
+    A(1,4) = 0._WP
 
-    S(2,1) = -V_2
-    S(2,2) = V_2
-    S(2,3) = -V_2
-    S(2,4) = 0._WP
+    A(2,1) = -V_2
+    A(2,2) = V_2
+    A(2,3) = -V_2
+    A(2,4) = 0._WP
 
-    S(3,1) = 0._WP
-    S(3,2) = 0._WP
-    S(3,3) = 1._WP
-    S(3,4) = 0._WP
+    A(3,1) = 0._WP
+    A(3,2) = 0._WP
+    A(3,3) = 1._WP
+    A(3,4) = 0._WP
 
-    S(4,1) = 0._WP
-    S(4,2) = 0._WP
-    S(4,3) = 0._WP
-    S(4,4) = 1._WP
+    A(4,1) = 0._WP
+    A(4,2) = 0._WP
+    A(4,3) = 0._WP
+    A(4,4) = 1._WP
 
     ! Finish
 
     return
 
-  end function S_lagp_
+  end function A_lagp_
 
-!****
+  !****
 
-  function T_ (this, x, omega) result (T)
+  function B_ (this, s, x, omega) result (B)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: T(4,4)
+    real(WP)                     :: B(4,4)
 
     ! Evaluate the transformation matrix to convert variables to
     ! canonical form
 
     select case (this%vars)
     case (DZIEM_VARS)
-       T = identity_matrix(4)
+       B = identity_matrix(4)
     case (JCD_VARS)
-       T = this%T_jcd_(x, omega)
+       B = this%B_jcd_(s, x, omega)
     case (MIX_VARS)
-       T = this%T_mix_(x, omega)
+       B = this%B_mix_(s, x, omega)
     case (LAGP_VARS)
-       T = this%T_lagp_(x, omega)
+       B = this%B_lagp_(s, x, omega)
     case default
        $ABORT(Invalid vars)
     end select
@@ -345,16 +351,17 @@ contains
 
     return
 
-  end function T_
+  end function B_
 
-!****
+  !****
 
-  function T_jcd_ (this, x, omega) result (T)
+  function B_jcd_ (this, s, x, omega) result (B)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: T(4,4)
+    real(WP)                     :: B(4,4)
 
     real(WP) :: U
     real(WP) :: c_1
@@ -367,59 +374,59 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(x)
-    c_1 = this%ml%c_1(x)
+    U = this%ml%U(s, x)
+    c_1 = this%ml%c_1(s, x)
 
     l = this%rt%mp%l
-    lambda = this%rt%lambda(x, omega)
+    lambda = this%rt%lambda(s, x, omega)
 
-    omega_c = this%rt%omega_c(x, omega)
+    omega_c = this%rt%omega_c(s, x, omega)
 
     ! Set up the matrix
       
     if (l /= 0._WP) then
 
-       T(1,1) = 1._WP
-       T(1,2) = 0._WP
-       T(1,3) = 0._WP
-       T(1,4) = 0._WP
+       B(1,1) = 1._WP
+       B(1,2) = 0._WP
+       B(1,3) = 0._WP
+       B(1,4) = 0._WP
        
-       T(2,1) = 0._WP
-       T(2,2) = c_1*omega_c**2/lambda
-       T(2,3) = 0._WP
-       T(2,4) = 0._WP
+       B(2,1) = 0._WP
+       B(2,2) = c_1*omega_c**2/lambda
+       B(2,3) = 0._WP
+       B(2,4) = 0._WP
 
-       T(3,1) = 0._WP
-       T(3,2) = 0._WP
-       T(3,3) = -1._WP
-       T(3,4) = 0._WP
+       B(3,1) = 0._WP
+       B(3,2) = 0._WP
+       B(3,3) = -1._WP
+       B(3,4) = 0._WP
 
-       T(4,1) = 0._WP
-       T(4,2) = 0._WP
-       T(4,3) = 1._WP - U
-       T(4,4) = -1._WP
+       B(4,1) = 0._WP
+       B(4,2) = 0._WP
+       B(4,3) = 1._WP - U
+       B(4,4) = -1._WP
 
     else
 
-       T(1,1) = 1._WP
-       T(1,2) = 0._WP
-       T(1,3) = 0._WP
-       T(1,4) = 0._WP
+       B(1,1) = 1._WP
+       B(1,2) = 0._WP
+       B(1,3) = 0._WP
+       B(1,4) = 0._WP
 
-       T(2,1) = 0._WP
-       T(2,2) = c_1*omega_c**2
-       T(2,3) = 0._WP
-       T(2,4) = 0._WP
+       B(2,1) = 0._WP
+       B(2,2) = c_1*omega_c**2
+       B(2,3) = 0._WP
+       B(2,4) = 0._WP
 
-       T(3,1) = 0._WP
-       T(3,2) = 0._WP
-       T(3,3) = -1._WP
-       T(3,4) = 0._WP
+       B(3,1) = 0._WP
+       B(3,2) = 0._WP
+       B(3,3) = -1._WP
+       B(3,4) = 0._WP
 
-       T(4,1) = 0._WP
-       T(4,2) = 0._WP
-       T(4,3) = 1._WP - U
-       T(4,4) = -1._WP
+       B(4,1) = 0._WP
+       B(4,2) = 0._WP
+       B(4,3) = 1._WP - U
+       B(4,4) = -1._WP
 
     endif
 
@@ -427,16 +434,17 @@ contains
 
     return
 
-  end function T_jcd_
+  end function B_jcd_
 
-!****
+  !****
 
-  function T_mix_ (this, x, omega) result (T)
+  function B_mix_ (this, s, x, omega) result (B)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: T(4,4)
+    real(WP)                     :: B(4,4)
 
     real(WP) :: U
 
@@ -445,44 +453,44 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(x)
+    U = this%ml%U(s, x)
 
     ! Set up the matrix
 
-    T(1,1) = 1._WP
-    T(1,2) = 0._WP
-    T(1,3) = 0._WP
-    T(1,4) = 0._WP
+    B(1,1) = 1._WP
+    B(1,2) = 0._WP
+    B(1,3) = 0._WP
+    B(1,4) = 0._WP
 
-    T(2,1) = 0._WP
-    T(2,2) = 1._WP
-    T(2,3) = 0._WP
-    T(2,4) = 0._WP
+    B(2,1) = 0._WP
+    B(2,2) = 1._WP
+    B(2,3) = 0._WP
+    B(2,4) = 0._WP
 
-    T(3,1) = 0._WP
-    T(3,2) = 0._WP
-    T(3,3) = -1._WP
-    T(3,4) = 0._WP
+    B(3,1) = 0._WP
+    B(3,2) = 0._WP
+    B(3,3) = -1._WP
+    B(3,4) = 0._WP
 
-    T(4,1) = 0._WP
-    T(4,2) = 0._WP
-    T(4,3) = 1._WP - U
-    T(4,4) = -1._WP
+    B(4,1) = 0._WP
+    B(4,2) = 0._WP
+    B(4,3) = 1._WP - U
+    B(4,4) = -1._WP
 
     ! Finish
 
     return
 
-  end function T_mix_
+  end function B_mix_
 
-!****
+  !****
 
-  function T_lagp_ (this, x, omega) result (T)
+  function B_lagp_ (this, s, x, omega) result (B)
 
     class(ad_vars_t), intent(in) :: this
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: T(4,4)
+    real(WP)                     :: B(4,4)
 
     real(WP) :: V_2
 
@@ -491,56 +499,57 @@ contains
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(x)
+    V_2 = this%ml%V_2(s, x)
 
     ! Set up the matrix
 
-    T(1,1) = 1._WP
-    T(1,2) = 0._WP
-    T(1,3) = 0._WP
-    T(1,4) = 0._WP
+    B(1,1) = 1._WP
+    B(1,2) = 0._WP
+    B(1,3) = 0._WP
+    B(1,4) = 0._WP
 
-    T(2,1) = 1._WP
-    T(2,2) = 1._WP/V_2
-    T(2,3) = 1._WP
-    T(2,4) = 0._WP
+    B(2,1) = 1._WP
+    B(2,2) = 1._WP/V_2
+    B(2,3) = 1._WP
+    B(2,4) = 0._WP
 
-    T(3,1) = 0._WP
-    T(3,2) = 0._WP
-    T(3,3) = 1._WP
-    T(3,4) = 0._WP
+    B(3,1) = 0._WP
+    B(3,2) = 0._WP
+    B(3,3) = 1._WP
+    B(3,4) = 0._WP
 
-    T(4,1) = 0._WP
-    T(4,2) = 0._WP
-    T(4,3) = 0._WP
-    T(4,4) = 1._WP
+    B(4,1) = 0._WP
+    B(4,2) = 0._WP
+    B(4,3) = 0._WP
+    B(4,4) = 1._WP
 
     ! Finish
 
     return
 
-  end function T_lagp_
+  end function B_lagp_
 
 !****
 
-  function dT_ (this, x, omega) result (dT)
+  function dB_ (this, s, x, omega) result (dB)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: dT(4,4)
+    real(WP)                     :: dB(4,4)
 
-    ! Evaluate the derivative x dT/dx of the transformation matrix T
+    ! Evaluate the derivative x dB/dx of the transformation matrix B
 
     select case (this%vars)
     case (DZIEM_VARS)
-       dT = 0._WP
+       dB = 0._WP
     case (JCD_VARS)
-       dT = this%dT_jcd_(x, omega)
+       dB = this%dB_jcd_(s, x, omega)
     case (MIX_VARS)
-       dT = this%dT_mix_(x, omega)
+       dB = this%dB_mix_(s, x, omega)
     case (LAGP_VARS)
-       dT = this%dT_lagp_(x, omega)
+       dB = this%dB_lagp_(s, x, omega)
     case default
        $ABORT(Invalid vars)
     end select
@@ -549,16 +558,17 @@ contains
 
     return
 
-  end function dT_
+  end function dB_
 
 !****
 
-  function dT_jcd_ (this, x, omega) result (dT)
+  function dB_jcd_ (this, x, omega) result (dB)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: dT(4,4)
+    real(WP)                     :: dB(4,4)
 
     real(WP) :: V_g
     real(WP) :: As
@@ -568,67 +578,67 @@ contains
     real(WP) :: lambda
     real(WP) :: omega_c
 
-    ! Evaluate the derivative x dT/dx of the JCD-variables
-    ! transformation matrix T
+    ! Evaluate the derivative x dB/dx of the JCD-variables
+    ! transformation matrix B
 
     ! Calculate coefficients
 
-    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
-    As = this%ml%As(x) 
-    U = this%ml%U(x)
-    c_1 = this%ml%c_1(x)
+    V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
+    As = this%ml%As(s, x) 
+    U = this%ml%U(s, x)
+    c_1 = this%ml%c_1(s, x)
 
     l = this%rt%mp%l
-    lambda = this%rt%lambda(x, omega)
+    lambda = this%rt%lambda(s, x, omega)
 
-    omega_c = this%rt%omega_c(x, omega)
+    omega_c = this%rt%omega_c(s, x, omega)
 
-    ! Set up the matrix (nb: the derivatives of omega_c and lambda is
+    ! Set up the matrix (nb: the derivatives of omega_c and lambda are
     ! neglected; this is incorrect when rotation is non-zero)
       
     if (l /= 0._WP) then
 
-       dT(1,1) = 0._WP
-       dT(1,2) = 0._WP
-       dT(1,3) = 0._WP
-       dT(1,4) = 0._WP
+       dB(1,1) = 0._WP
+       dB(1,2) = 0._WP
+       dB(1,3) = 0._WP
+       dB(1,4) = 0._WP
        
-       dT(2,1) = 0._WP
-       dT(2,2) = c_1*(3._WP - U)*omega_c**2/lambda
-       dT(2,3) = 0._WP
-       dT(2,4) = 0._WP
+       dB(2,1) = 0._WP
+       dB(2,2) = c_1*(3._WP - U)*omega_c**2/lambda
+       dB(2,3) = 0._WP
+       dB(2,4) = 0._WP
 
-       dT(3,1) = 0._WP
-       dT(3,2) = 0._WP
-       dT(3,3) = 0._WP
-       dT(3,4) = 0._WP
+       dB(3,1) = 0._WP
+       dB(3,2) = 0._WP
+       dB(3,3) = 0._WP
+       dB(3,4) = 0._WP
 
-       dT(4,1) = 0._WP
-       dT(4,2) = 0._WP
-       dT(4,3) = U*(V_g + As + U - 3._WP)
-       dT(4,4) = 0._WP
+       dB(4,1) = 0._WP
+       dB(4,2) = 0._WP
+       dB(4,3) = U*(V_g + As + U - 3._WP)
+       dB(4,4) = 0._WP
 
     else
 
-       dT(1,1) = 0._WP
-       dT(1,2) = 0._WP
-       dT(1,3) = 0._WP
-       dT(1,4) = 0._WP
+       dB(1,1) = 0._WP
+       dB(1,2) = 0._WP
+       dB(1,3) = 0._WP
+       dB(1,4) = 0._WP
 
-       dT(2,1) = 0._WP
-       dT(2,2) = c_1*(3._WP - U)*omega_c**2
-       dT(2,3) = 0._WP
-       dT(2,4) = 0._WP
+       dB(2,1) = 0._WP
+       dB(2,2) = c_1*(3._WP - U)*omega_c**2
+       dB(2,3) = 0._WP
+       dB(2,4) = 0._WP
 
-       dT(3,1) = 0._WP
-       dT(3,2) = 0._WP
-       dT(3,3) = 0._WP
-       dT(3,4) = 0._WP
+       dB(3,1) = 0._WP
+       dB(3,2) = 0._WP
+       dB(3,3) = 0._WP
+       dB(3,4) = 0._WP
 
-       dT(4,1) = 0._WP
-       dT(4,2) = 0._WP
-       dT(4,3) = U*(V_g + As + U - 3._WP)
-       dT(4,4) = 0._WP
+       dB(4,1) = 0._WP
+       dB(4,2) = 0._WP
+       dB(4,3) = U*(V_g + As + U - 3._WP)
+       dB(4,4) = 0._WP
 
     endif
 
@@ -636,66 +646,68 @@ contains
 
     return
 
-  end function dT_jcd_
+  end function dB_jcd_
 
 !****
 
-  function dT_mix_ (this, x, omega) result (dT)
+  function dB_mix_ (this, s, x, omega) result (dB)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: dT(4,4)
+    real(WP)                     :: dB(4,4)
 
     real(WP) :: V_g
     real(WP) :: As
     real(WP) :: U
 
-    ! Evaluate the derivative x dT/dx of the MIX-variables
-    ! transformation matrix T
+    ! Evaluate the derivative x dB/dx of the MIX-variables
+    ! transformation matrix B
 
     ! Calculate coefficients
 
-    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
-    As = this%ml%As(x)
-    U = this%ml%U(x)
+    V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
+    As = this%ml%As(s, x)
+    U = this%ml%U(s, x)
 
     ! Set up the matrix
 
-    dT(1,1) = 0._WP
-    dT(1,2) = 0._WP
-    dT(1,3) = 0._WP
-    dT(1,4) = 0._WP
+    dB(1,1) = 0._WP
+    dB(1,2) = 0._WP
+    dB(1,3) = 0._WP
+    dB(1,4) = 0._WP
 
-    dT(2,1) = 0._WP
-    dT(2,2) = 0._WP
-    dT(2,3) = 0._WP
-    dT(2,4) = 0._WP
+    dB(2,1) = 0._WP
+    dB(2,2) = 0._WP
+    dB(2,3) = 0._WP
+    dB(2,4) = 0._WP
 
-    dT(3,1) = 0._WP
-    dT(3,2) = 0._WP
-    dT(3,3) = 0._WP
-    dT(3,4) = 0._WP
+    dB(3,1) = 0._WP
+    dB(3,2) = 0._WP
+    dB(3,3) = 0._WP
+    dB(3,4) = 0._WP
 
-    dT(4,1) = 0._WP
-    dT(4,2) = 0._WP
-    dT(4,3) = U*(V_g + As + U - 3._WP)
-    dT(4,4) = 0._WP
+    dB(4,1) = 0._WP
+    dB(4,2) = 0._WP
+    dB(4,3) = U*(V_g + As + U - 3._WP)
+    dB(4,4) = 0._WP
 
     ! Finish
 
     return
 
-  end function dT_mix_
+  end function dB_mix_
 
 !****
 
-  function dT_lagp_ (this, x, omega) result (dT)
+  function dB_lagp_ (this, s, x, omega) result (dB)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
-    real(WP)                     :: dT(4,4)
+    real(WP)                     :: dB(4,4)
 
     real(WP) :: V_2
     real(WP) :: V
@@ -703,43 +715,43 @@ contains
     real(WP) :: As
     real(WP) :: U
 
-    ! Evaluate the derivative x dT/dx of the LAGP-variables
-    ! transformation matrix T
+    ! Evaluate the derivative x dB/dx of the LAGP-variables
+    ! transformation matrix B
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(x)
+    V_2 = this%ml%V_2(s, x)
     V = V_2*x**2
-    V_g = V/this%ml%Gamma_1(x)
-    As = this%ml%As(x)
-    U = this%ml%U(x)
+    V_g = V/this%ml%Gamma_1(s, x)
+    As = this%ml%As(s, x)
+    U = this%ml%U(s, x)
 
     ! Set up the matrix
 
-    dT(1,1) = 0._WP
-    dT(1,2) = 0._WP
-    dT(1,3) = 0._WP
-    dT(1,4) = 0._WP
+    dB(1,1) = 0._WP
+    dB(1,2) = 0._WP
+    dB(1,3) = 0._WP
+    dB(1,4) = 0._WP
 
-    dT(2,1) = 0._WP
-    dT(2,2) = -(-V_g - As + U + V - 3)/V_2
-    dT(2,3) = 0._WP
-    dT(2,4) = 0._WP
+    dB(2,1) = 0._WP
+    dB(2,2) = -(-V_g - As + U + V - 3)/V_2
+    dB(2,3) = 0._WP
+    dB(2,4) = 0._WP
 
-    dT(3,1) = 0._WP
-    dT(3,2) = 0._WP
-    dT(3,3) = 0._WP
-    dT(3,4) = 0._WP
+    dB(3,1) = 0._WP
+    dB(3,2) = 0._WP
+    dB(3,3) = 0._WP
+    dB(3,4) = 0._WP
 
-    dT(4,1) = 0._WP
-    dT(4,2) = 0._WP
-    dT(4,3) = 0._WP
-    dT(4,4) = 0._WP
+    dB(4,1) = 0._WP
+    dB(4,2) = 0._WP
+    dB(4,3) = 0._WP
+    dB(4,4) = 0._WP
 
     ! Finish
 
     return
 
-  end function dT_lagp_
+  end function dB_lagp_
 
 end module gyre_ad_vars
