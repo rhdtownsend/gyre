@@ -143,13 +143,14 @@ module gyre_sol
 
 contains
 
-  function sol_t_ (ml, s, x, y, omega, md_p, os_p) result (sl)
+  function sol_t_ (ml, s, x, y, omega, k_ref, md_p, os_p) result (sl)
 
     class(model_t), pointer, intent(in) :: ml
     integer, intent(in)                 :: s(:)
     real(WP), intent(in)                :: x(:)
     complex(WP), intent(in)             :: y(:,:)
     complex(WP), intent(in)             :: omega
+    integer, intent(in)                 :: k_ref
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(sol_t)                         :: sl
@@ -175,27 +176,16 @@ contains
 
     sl%omega = omega
     sl%l_i = sl%rt%l_i(omega)
+
+    sl%k_ref = k_ref
     
-    ! Locate the reference point
-
-    this%k_ref = 0
-
-    k_ref_loop : do k = this%n_k, 1, -1
-       if (this%co(k)%x == os_p%x_ref) then
-          this%k_ref = k
-          exit k_ref_loop
-       end if
-    end do k_ref_loop
-
-    $ASSERT_DEBUG(this%k_ref > 0,Reference point not found in grid)
-
     ! Normalize the solution so that y_ref(1) is purely real, and the
     ! total mode energy is unity
 
-    phase = ATAN2(AIMAG(this%y(1,this%k_ref)), &
-                  REAL(this%y(1,this%k_ref)))
+    phase = ATAN2(AIMAG(sl%y(1,sl%k_ref)), &
+                  REAL(sl%y(1,sl%k_ref)))
 
-    this%y = this%y/SQRT(this%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+    sl%y = sl%y/SQRT(sl%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
 
     ! Classify the solution
 
