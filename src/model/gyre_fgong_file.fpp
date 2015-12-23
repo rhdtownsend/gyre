@@ -44,7 +44,7 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_model(ml_p, ml)
+  subroutine read_fgong_model (ml_p, ml)
 
     type(model_par_t), intent(in)   :: mp_l
     type(evol_model_t), intent(out) :: ml
@@ -104,10 +104,10 @@ contains
 
     ! Read the data
 
-    if(ml_p%data_format /= '') then
+    if (ml_p%data_format /= '') then
        data_format = ml_p%data_format
     else
-       if(ivers < 1000) then
+       if (ivers < 1000) then
           data_format = '(1P5E16.9)'
        else
           $ABORT(Cannot handle ivers > 1000)
@@ -144,16 +144,16 @@ contains
 
     allocate(N2(n))
 
-    where(r/R_star >= EPSILON(0._WP))
+    where (r/R_star >= EPSILON(0._WP))
        N2 = G_GRAVITY*m*var(15,:)/r**3
     elsewhere
        N2 = 0._WP
     endwhere
 
-    if(r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
-    if(m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
+    if (r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
+    if (m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
 
-    if(m(1) == 0._WP .AND. r(1) /= 0._WP) then
+    if (m(1) == 0._WP .AND. r(1) /= 0._WP) then
        r(1) = 0._WP
        write(OUTPUT_UNIT, 130) 'Forcing central r == 0'
 130    format(3X,A)
@@ -175,7 +175,7 @@ contains
 
     x = r/R_star
 
-    where(x /= 0._WP)
+    where (x /= 0._WP)
        V_2 = G_GRAVITY*m*rho/(p*r*x**2)
        As = r**3*N2/(G_GRAVITY*m)
        U = 4._WP*PI*rho*r**3/m
@@ -187,15 +187,15 @@ contains
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
     end where
 
-    if(ml_p%uniform_rot) then
-       Omega_rot = mp_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+    if (ml_p%uniform_rot) then
+       Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
     else
        Omega_rot = 0._WP
     endif
 
     ! Initialize the model
 
-    ml = evol_model_t(ml_p, M_star, R_star, L_star, x)
+    ml = evol_model_t(x, M_star, R_star, L_star, ml_p)
 
     call ml%set_V_2(V_2)
     call ml%set_As(As)
@@ -206,7 +206,7 @@ contains
     call ml%set_delta(delta)
     call ml%set_nabla_ad(nabla_ad)
 
-    call ml%set_Omega_rot(V_2)
+    call ml%set_Omega_rot(Omega_rot)
 
     ! Finish
 
