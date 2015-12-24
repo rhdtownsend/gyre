@@ -58,7 +58,7 @@ module gyre_${T}_bep_solver
      private
      procedure, public :: eval_discrim => eval_discrim_
      procedure         :: build_
-     procedure, public :: solve_ => solve
+     procedure, public :: solve => solve_
   end type ${T}_bep_solver_t
 
   ! Interfaces
@@ -75,14 +75,14 @@ module gyre_${T}_bep_solver
 
 contains
 
-  function ${T}_bep_solver_t_ (nm_p, bd_i, bd_o, df, omega_min, omega_max) result (bs)
+  function ${T}_bep_solver_t_ (bd_i, bd_o, df, omega_min, omega_max, nm_p) result (bs)
 
-    type(num_par_t), intent(in)      :: nm_p
     class(${T}_bound_t), intent(in)  :: bd_i
     class(${T}_bound_t), intent(in)  :: bd_o
     class(${T}_diff_t), intent(in)   :: df(:)
     real(WP), intent(in)             :: omega_min
     real(WP), intent(in)             :: omega_max
+    type(num_par_t), intent(in)      :: nm_p
     type(${T}_bep_solver_t)          :: bs
 
     integer :: n_k
@@ -108,15 +108,15 @@ contains
     allocate(bs%bd_i, SOURCE=bd_i)
     allocate(bs%bd_o, SOURCE=bd_o)
 
-    allocate(bs%df, SOURCE=df)
+    allocate(bs%df(n_k-1), SOURCE=df)
 
-    allocate(bs%sm, SOURCE=${T}_sysmtx_t(n_k-1, n_e, n_i, n_o, nm_p)
+    allocate(bs%sm, SOURCE=${T}_sysmtx_t(n_k-1, n_e, n_i, n_o, nm_p))
 
-    bp%n_k = n_k
-    bp%n_e = n_e
+    bs%n_k = n_k
+    bs%n_e = n_e
 
-    bp%omega_min = omega_min
-    bp%omega_max = omega_max
+    bs%omega_min = omega_min
+    bs%omega_max = omega_max
     
     ! Finish
     
@@ -165,25 +165,25 @@ contains
 
     $TYPE(WP)        :: E_l(this%n_e,this%n_e)
     $TYPE(WP)        :: E_r(this%n_e,this%n_e)
-    type(${T}_ext_t) :: scale
+    type(${T}_ext_t) :: scl
     integer          :: k
     
     ! Build the sysmtx
 
     ! Boundary conditions
 
-    call this%bd_i%build(omega, E_r, scale)
-    call this%sm%set_B_i(E_r, S_)
+    call this%bd_i%build(omega, E_r, scl)
+    call this%sm%set_B_i(E_r, scl)
 
-    call this%bd_o%build(omega, E_l, scale)
-    call this%sm%set_B_o(E_l, scale)
+    call this%bd_o%build(omega, E_l, scl)
+    call this%sm%set_B_o(E_l, scl)
 
     ! Difference equations
 
-    !$OMP PRARALLEL DO PRIVATE (E_l, E_r, scale) SCHEDULE (DYNAMIC)
+    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scl) SCHEDULE (DYNAMIC)
     sub_loop : do k = 1, this%n_k-1
-       call this%df(k)%build(omega, E_l, E_r, scale)
-       call this%sm%set_E(k, E_l, E_r, scale)
+       call this%df(k)%build(omega, E_l, E_r, scl)
+       call this%sm%set_E(k, E_l, E_r, scl)
     end do sub_loop
 
     ! Finish
