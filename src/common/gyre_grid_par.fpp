@@ -77,12 +77,12 @@ module gyre_grid_par
 
 contains
 
-  subroutine read_grid_par (unit, gd_p)
+  subroutine read_grid_par (unit, gr_p)
 
     integer, intent(in)                        :: unit
-    type(grid_par_t), allocatable, intent(out) :: gd_p(:)
+    type(grid_par_t), allocatable, intent(out) :: gr_p(:)
 
-    integer                       :: n_gd_p
+    integer                       :: n_gr_p
     integer                       :: i
     real(WP)                      :: x_i
     real(WP)                      :: x_o
@@ -92,23 +92,23 @@ contains
     real(WP)                      :: alpha_str
     real(WP)                      :: s
     integer                       :: n
-    character(LEN(gd_p%file))     :: file
-    character(LEN(gd_p%op_type))  :: op_type
-    character(LEN(gd_p%tag_list)) :: tag_list
+    character(LEN(gr_p%file))     :: file
+    character(LEN(gr_p%op_type))  :: op_type
+    character(LEN(gr_p%tag_list)) :: tag_list
 
-    namelist /${NAME}_grid/ x_i, x_o, &
-                            alpha_osc, alpha_exp, alpha_thm, alpha_str, &
-                            s, n, file, op_type, tag_list
+    namelist /grid/ x_i, x_o, &
+                    alpha_osc, alpha_exp, alpha_thm, alpha_str, &
+                    s, n, file, op_type, tag_list
 
     ! Count the number of grid namelists
 
     rewind(unit)
 
-    n_gd_p = 0
+    n_gr_p = 0
 
     count_loop : do
-       read(unit, NML=${NAME}_grid, END=100)
-       n_gd_p = n_gd_p + 1
+       read(unit, NML=grid, END=100)
+       n_gr_p = n_gr_p + 1
     end do count_loop
 
 100 continue
@@ -117,9 +117,9 @@ contains
 
     rewind(unit)
 
-    allocate(gd_p(n_gd_p))
+    allocate(gr_p(n_gr_p))
 
-    read_loop : do i = 1, n_gd_p
+    read_loop : do i = 1, n_gr_p
 
        x_i = 0._WP
        x_o = 1._WP
@@ -138,11 +138,11 @@ contains
        op_type = 'CREATE_CLONE'
        tag_list = ''
 
-       read(unit, NML=${NAME}_grid)
+       read(unit, NML=grid)
 
        ! Initialize the grid_par
 
-       gd_p(i) = grid_par_t(x_i=x_i, &
+       gr_p(i) = grid_par_t(x_i=x_i, &
                             x_o=x_o, &
                             alpha_osc=alpha_osc, &
                             alpha_exp=alpha_exp, &
@@ -169,29 +169,29 @@ contains
 
   $local $RANK $1
 
-  subroutine bcast_${RANK}_ (gd_p, root_rank)
+  subroutine bcast_${RANK}_ (gr_p, root_rank)
 
-    type(grid_par_t), intent(inout) :: gd_p$ARRAY_SPEC($RANK)
+    type(grid_par_t), intent(inout) :: gr_p$ARRAY_SPEC($RANK)
     integer, intent(in)             :: root_rank
 
     ! Broadcast the grid_par_t
 
-    call bcast(gd_p%x_i, root_rank)
-    call bcast(gd_p%x_o, root_rank)
+    call bcast(gr_p%x_i, root_rank)
+    call bcast(gr_p%x_o, root_rank)
 
-    call bcast(gd_p%alpha_osc, root_rank)
-    call bcast(gd_p%alpha_exp, root_rank)
-    call bcast(gd_p%alpha_thm, root_rank)
-    call bcast(gd_p%alpha_str, root_rank)
+    call bcast(gr_p%alpha_osc, root_rank)
+    call bcast(gr_p%alpha_exp, root_rank)
+    call bcast(gr_p%alpha_thm, root_rank)
+    call bcast(gr_p%alpha_str, root_rank)
 
-    call bcast(gd_p%s, root_rank)
+    call bcast(gr_p%s, root_rank)
 
-    call bcast(gd_p%n, root_rank)
+    call bcast(gr_p%n, root_rank)
 
-    call bcast(gd_p%file, root_rank)
+    call bcast(gr_p%file, root_rank)
 
-    call bcast(gd_p%op_type, root_rank)
-    call bcast(gd_p%tag_list, root_rank)
+    call bcast(gr_p%op_type, root_rank)
+    call bcast(gr_p%tag_list, root_rank)
 
     ! Finish
 

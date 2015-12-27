@@ -103,9 +103,9 @@ contains
        case ('PER_DAY')
           omega_l = TWOPI*freq*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/86400._WP
        case ('ACOUSTIC_DELTA')
-          omega_l = TWOPI*freq*ml%delta_p*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+          omega_l = TWOPI*freq*ml%delta_p()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case ('GRAVITY_DELTA')
-          omega_l = TWOPI*freq*ml%delta_g*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+          omega_l = TWOPI*freq*ml%delta_g()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           omega_l = freq*omega_cutoff_hi
@@ -222,9 +222,9 @@ contains
        case ('PER_DAY')
           freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*86400._WP
        case ('ACOUSTIC_DELTA')
-          freq = omega_l/(TWOPI*ml%delta_p*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+          freq = omega_l/(TWOPI*ml%delta_p()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
        case ('GRAVITY_DELTA')
-          freq = omega_l/(TWOPI*ml%delta_g*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+          freq = omega_l/(TWOPI*ml%delta_g()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
        case ('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           freq = omega_l/omega_cutoff_hi
@@ -302,12 +302,12 @@ contains
     case ('UNNO')
 
        call eval_atmos_coeffs_unno(ml, V_g, As, c_1)
-       call eval_atmos_cutoff_freqs(V_g, As, c_1, mp%l*(mp%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+       call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
     case('JCD')
 
        call eval_atmos_coeffs_jcd(ml, V_g, As, c_1)
-       call eval_atmos_cutoff_freqs(V_g, As, c_1, mp%l*(mp%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+       call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
     case default
 

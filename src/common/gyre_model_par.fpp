@@ -23,7 +23,10 @@ module gyre_model_par
   ! Uses
 
   use core_kinds
+  use core_constants
   use core_parallel
+
+  use ISO_FORTRAN_ENV
 
   ! No implicit typing
 
@@ -79,7 +82,7 @@ contains
     character(LEN(ml_p%model_type)) :: file_format
     character(LEN(ml_p%model_type)) :: data_format
     character(LEN(ml_p%model_type)) :: deriv_type
-    character(LEN(ml_p%filename))   :: file
+    character(LEN(ml_p%file))       :: file
     logical                         :: add_center
     logical                         :: uniform_rot
 

@@ -22,11 +22,11 @@ module gyre_grid
   ! Uses
 
   use core_kinds
+
   use gyre_constants
   use core_func
-  use core_order
-
   use gyre_grid_par
+  use core_order
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
@@ -42,17 +42,18 @@ module gyre_grid
 
   ! Derived-type definitions (used internally for root-finding)
 
-  type, extends (func_t) :: geom_func_t
-     real(WP) :: s
-     integer  :: n
-   contains
-     procedure :: eval_c_ => eval_geom_func_
-  end type geom_func_t
+  ! type, extends (func_t) :: geom_func_t
+  !    real(WP) :: s
+  !    integer  :: n
+  !  contains
+  !    procedure :: eval_c_ => eval_geom_func_
+  ! end type geom_func_t
 
   type, extends (func_t) :: gamma_func_t
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
      real(WP)                    :: omega
+     integer                     :: s
    contains
      procedure :: eval_c_ => eval_gamma_func_
   end type gamma_func_t
@@ -61,81 +62,35 @@ module gyre_grid
 
   private
 
-  public :: grid_range
+!  public :: grid_range
   public :: build_grid
-  public :: create_uniform
-  public :: create_geom
-  public :: create_log
-  public :: find_x_turn
+!  public :: create_uniform
+!  public :: create_geom
+!  public :: create_log
+  public :: find_turn
 
   ! Procedures
 
 contains
 
-  subroutine grid_range (gp, x_in, x_i, x_o) 
+  subroutine build_grid (ml, omega, gr_p, md_p, os_p, s, x, verbose)
 
-    type(grid_par_t), intent(in)      :: gp(:)
-    real(WP), allocatable, intent(in) :: x_in(:)
-    real(WP), intent(out)             :: x_i
-    real(WP), intent(out)             :: x_o
-
-    integer :: n
-
-    ! Determine the x range of the grid
-
-    select case (gp(1)%op_type)
-    case ('CREATE_CLONE')
-       $ASSERT(ALLOCATED(x_in),No grid to clone)
-       n = SIZE(x_in)
-       x_i = x_in(1)
-       x_o = x_in(n)
-    case ('CREATE_MIDPOINT')
-       $ASSERT(ALLOCATED(x_in),No grid to clone)
-       n = SIZE(x_in)
-       x_i = x_in(1)
-       x_o = x_in(n)
-    case ('CREATE_UNIFORM')
-       x_i = gp(1)%x_i
-       x_o = gp(1)%x_o
-    case ('CREATE_GEOM')
-       x_i = gp(1)%x_i
-       x_o = gp(1)%x_o
-    case ('CREATE_LOG')
-       x_i = gp(1)%x_i
-       x_o = gp(1)%x_o
-    case ('CREATE_FROM_FILE')
-       x_i = gp(1)%x_i
-       x_o = gp(1)%x_o
-    case default
-       $ABORT(Invalid op_type (the first op_type must be CREATE_*))
-    end select
-
-    ! Finish
-
-    return
-
-  end subroutine grid_range
-
-!****
-
-  subroutine build_grid (gp, ml, mp, op, omega, x_in, x, verbose)
-
-    type(grid_par_t), intent(in)        :: gp(:)
     class(model_t), pointer, intent(in) :: ml
-    type(mode_par_t), intent(in)        :: mp
-    type(osc_par_t), intent(in)         :: op
     real(WP), intent(in)                :: omega(:)
-    real(WP), allocatable, intent(in)   :: x_in(:)
+    type(grid_par_t), intent(in)        :: gr_p(:)
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
+    integer, allocatable, intent(out)   :: s(:)
     real(WP), allocatable, intent(out)  :: x(:)
     logical, optional, intent(in)       :: verbose
 
     logical :: write_info
-    integer :: n_in
+    integer :: n
     integer :: i
 
-    $ASSERT(SIZE(gp) >= 1,Empty grid_par_t)
+    $ASSERT(SIZE(gr_p) >= 1,Empty grid_par_t)
 
-    if(PRESENT(verbose)) then
+    if (PRESENT(verbose)) then
        write_info = verbose .AND. check_log_level('INFO')
     else
        write_info = check_log_level('DEBUG')
@@ -143,66 +98,68 @@ contains
 
     ! Build a grid using the supplied list of grid_par_t
 
-    if(write_info) then
+    if (write_info) then
 
        write(OUTPUT_UNIT, 100) 'Building x grid'
 100    format(A,1X,A)
 
     endif
 
-    select case (gp(1)%op_type)
+    ! Create the base grid
+
+    select case (gr_p(1)%op_type)
     case ('CREATE_CLONE')
-       $ASSERT(ALLOCATED(x_in),No grid to clone)
-       x = x_in
-    case ('CREATE_MIDPOINT')
-       $ASSERT(ALLOCATED(x_in),No grid to clone)
-       n_in = SIZE(x_in)
-       x = [x_in(1),0.5_WP*(x_in(:n_in-1)+x_in(2:)),x_in(n_in)]
-    case ('CREATE_UNIFORM')
-       call create_uniform(gp(1)%n, x)
-       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
-    case ('CREATE_GEOM')
-       call create_geom(gp(1)%s, gp(1)%n, x)
-       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
-    case ('CREATE_LOG')
-       call create_log(gp(1)%s, gp(1)%n, x)
-       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
-    case ('CREATE_FROM_FILE')
-       call create_from_file_(gp(1)%file, x)
-       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
+       call ml%scaffold(s, x)
+!    case ('CREATE_MIDPOINT')
+!       x = [ms%x(1),0.5_WP*(ms%x(:n-1)+ms%x(2:)),ms%x(n)]
+!    case ('CREATE_UNIFORM')
+!       call create_uniform(gr_p(1)%n, x)
+!       x = (1._WP-x)*ms%x(1) + x*ms%x(n)
+!    case ('CREATE_GEOM')
+!       call create_geom(gp(1)%s, gp(1)%n, x)
+!       x = (1._WP-x)*ms%x(1) + x*ms%x(n)
+!    case ('CREATE_LOG')
+!       call create_log(gp(1)%s, gp(1)%n, x)
+!       x = (1._WP-x)*ms%x(1) + x*ms%x(n)
+!    case ('CREATE_FROM_FILE')
+!       $ABORT(Not currently supported)
+!       call create_from_file_(gp(1)%file, x)
+!       x = (1._WP-x)*gp(1)%x_i + x*gp(1)%x_o
     case default
        $ABORT(Invalid op_type (the first op_type must be CREATE_*))
     end select
 
-    if(write_info) then
-          write(OUTPUT_UNIT, 110) 'x points :', SIZE(x), '[after', TRIM(gp(1)%op_type), 'op]'
+    if (write_info) then
+       write(OUTPUT_UNIT, 110) 'x points :', SIZE(x), '[after', TRIM(gr_p(1)%op_type), 'op]'
 110    format(2X,A,1X,I0,1X,A,1X,A,1X,A)
     endif
 
-    gp_loop : do i = 2,SIZE(gp)
+    ! Resample as necessary
 
-       select case (gp(i)%op_type)
+    gr_p_loop : do i = 2, SIZE(gr_p)
+
+       select case (gr_p(i)%op_type)
        case ('RESAMP_DISPERSION')
-          call resample_dispersion_(ml, mp, op, omega, gp(i)%alpha_osc, gp(i)%alpha_exp, x)
+          call resample_dispersion_(ml, omega, gr_p(i), md_p, os_p, s, x)
        case ('RESAMP_THERMAL')
-          call resample_thermal_(ml, mp, op, omega, gp(i)%alpha_thm, x)
-       case ('RESAMP_CENTER')
-          call resample_center_(ml, mp, op, omega, gp(i)%n, x)
+          call resample_thermal_(ml, omega, gr_p(i), md_p, os_p, s, x)
+       ! case ('RESAMP_CENTER')
+       !    call resample_center_(ml, omega, gr_p(i), md_p, op_p, s, x)
        case ('RESAMP_STRUCT')
-          call resample_struct_(ml, gp(i)%alpha_str, x)
+          call resample_struct_(ml, gr_p(i), s, x)
        case ('RESAMP_UNIFORM')
-          call resample_uniform_(gp(i)%n, x)
+          call resample_uniform_(gr_p(i), s, x)
        case default
           $ABORT(Invalid op_type (the second and subsequent op_types must be RESAMPLE_*))
        end select
 
-       if(write_info) then
-          write(OUTPUT_UNIT, 110) 'x points :', SIZE(x), '[after', TRIM(gp(i)%op_type), 'op]'
+       if (write_info) then
+          write(OUTPUT_UNIT, 110) 'x points :', SIZE(x), '[after', TRIM(gr_p(i)%op_type), 'op]'
        endif
 
-    end do gp_loop
+    end do gr_p_loop
 
-    if(write_info) then
+    if (write_info) then
 
        write(OUTPUT_UNIT, 120) 'x range  :', MINVAL(x), '->', MAXVAL(x)
 120    format(2X,A,E24.16,1X,A,1X,E24.16)
@@ -217,323 +174,342 @@ contains
 
   end subroutine build_grid
 
-!****
+  ! !****
 
-  subroutine create_uniform (n, x)
+  ! subroutine create_uniform (n, x)
 
-    integer, intent(in)                :: n
-    real(WP), allocatable, intent(out) :: x(:)
+  !   integer, intent(in)                :: n
+  !   real(WP), allocatable, intent(out) :: x(:)
 
-    integer :: i
+  !   integer :: i
 
-    ! Create an n-point grid with uniform spacing across the [0,1]
-    ! interval
+  !   ! Create an n-point grid with uniform spacing across the [0,1]
+  !   ! interval
 
-    allocate(x(n))
+  !   allocate(x(n))
 
-    x(1) = 0._WP
+  !   x(1) = 0._WP
 
-    grid_loop : do i = 2,n-1
-       x(i) = (i-1._WP)/(n-1._WP)
-    end do grid_loop
+  !   grid_loop : do i = 2,n-1
+  !      x(i) = (i-1._WP)/(n-1._WP)
+  !   end do grid_loop
 
-    x(n) = 1._WP
+  !   x(n) = 1._WP
 
-    ! Finish
+  !   ! Finish
 
-    return
+  !   return
 
-  end subroutine create_uniform
+  ! end subroutine create_uniform
 
-!****
+  !****
 
-  subroutine create_geom (s, n, x)
+!   subroutine create_geom (s, n, x)
 
-    real(WP), intent(in)               :: s
-    integer, intent(in)                :: n
-    real(WP), allocatable, intent(out) :: x(:)
+!     real(WP), intent(in)               :: s
+!     integer, intent(in)                :: n
+!     real(WP), allocatable, intent(out) :: x(:)
 
-    integer           :: m
-    real(WP)          :: g_a
-    real(WP)          :: g_b
-    real(WP)          :: g
-    type(geom_func_t) :: gf
-    real(WP)          :: dx
-    integer           :: k
+!     integer           :: m
+!     real(WP)          :: g_a
+!     real(WP)          :: g_b
+!     real(WP)          :: g
+!     type(geom_func_t) :: gf
+!     real(WP)          :: dx
+!     integer           :: k
 
-    ! Create an n-point grid with geometric spacing in each half of
-    ! the [0,1] interval. The parameter s controls the ratio between
-    ! the boundary cell size and the average cell size 1/(n-1)
+!     ! Create an n-point grid with geometric spacing in each half of
+!     ! the [0,1] interval. The parameter s controls the ratio between
+!     ! the boundary cell size and the average cell size 1/(n-1)
 
-    allocate(x(n))
+!     allocate(x(n))
 
-    if(MOD(n, 2) == 0) then
+!     if(MOD(n, 2) == 0) then
 
-       ! Even number of grid points / odd number of cells
+!        ! Even number of grid points / odd number of cells
 
-       ! Solve for the growth factor g. The upper bound is derived
-       ! by applying a Taylor expansion to the equation for g
+!        ! Solve for the growth factor g. The upper bound is derived
+!        ! by applying a Taylor expansion to the equation for g
 
-       m = n/2-1
+!        m = n/2-1
 
-       gf%n = n
-       gf%s = s
+!        gf%n = n
+!        gf%s = s
 
-       g_a = EPSILON(0._WP)
-       g_b = (s*(n-1)-2*m-1)/m
+!        g_a = EPSILON(0._WP)
+!        g_b = (s*(n-1)-2*m-1)/m
 
-       g = gf%root(g_a, g_b, 0._WP)
+!        g = gf%root(g_a, g_b, 0._WP)
 
-       ! Set up the inner part of the grid
+!        ! Set up the inner part of the grid
 
-       x(1) = 0._WP
-       dx = 1._WP/(s*(n-1))
+!        x(1) = 0._WP
+!        dx = 1._WP/(s*(n-1))
        
-       even_grid_loop : do k = 1,m
-          x(k+1) = x(k) + dx
-          dx = (1._WP+g)*dx
-       end do even_grid_loop
+!        even_grid_loop : do k = 1,m
+!           x(k+1) = x(k) + dx
+!           dx = (1._WP+g)*dx
+!        end do even_grid_loop
 
-       ! Reflect to get the outer part of the grid
+!        ! Reflect to get the outer part of the grid
 
-       x(m+2:) = 1._WP - x(m+1:1:-1)
+!        x(m+2:) = 1._WP - x(m+1:1:-1)
 
-    else
+!     else
 
-       ! Odd number of grid points / even number of cells
+!        ! Odd number of grid points / even number of cells
 
-       ! Solve for the growth factor g. The upper bound is derived
-       ! by applying a Taylor expansion to the equation for g
+!        ! Solve for the growth factor g. The upper bound is derived
+!        ! by applying a Taylor expansion to the equation for g
 
-       m = (n-1)/2
+!        m = (n-1)/2
 
-       gf%n = n
-       gf%s = s
+!        gf%n = n
+!        gf%s = s
 
-       g_a = EPSILON(0._WP)
-       g_b = (s*(n-1)-2*m)/(m*(m-1))
+!        g_a = EPSILON(0._WP)
+!        g_b = (s*(n-1)-2*m)/(m*(m-1))
 
-       g = gf%root(g_a, g_b, 0._WP)
+!        g = gf%root(g_a, g_b, 0._WP)
 
-       ! Set up the inner part of the grid
+!        ! Set up the inner part of the grid
 
-       x(1) = 0._WP
-       dx = 1._WP/(s*(n-1))
+!        x(1) = 0._WP
+!        dx = 1._WP/(s*(n-1))
        
-       odd_grid_loop : do k = 1,m-1
-          x(k+1) = x(k) + dx
-          dx = (1._WP+g)*dx
-       end do odd_grid_loop
+!        odd_grid_loop : do k = 1,m-1
+!           x(k+1) = x(k) + dx
+!           dx = (1._WP+g)*dx
+!        end do odd_grid_loop
 
-       ! Reflect to get the outer part of the grid
+!        ! Reflect to get the outer part of the grid
 
-       x(m+1:) = 0.5_WP
+!        x(m+1:) = 0.5_WP
 
-       x(m+2:) = 1._WP - x(m:1:-1)
+!        x(m+2:) = 1._WP - x(m:1:-1)
 
-    end if
+!     end if
 
-    ! Finish
+!     ! Finish
 
-    return
+!     return
 
-  end subroutine create_geom
+!   end subroutine create_geom
 
-!****
+! !****
 
-  function eval_geom_func_ (this, z) result (f_z)
+!   function eval_geom_func_ (this, z) result (f_z)
 
-    class(geom_func_t), intent(inout) :: this
-    complex(WP), intent(in)           :: z
-    complex(WP)                       :: f_z
+!     class(geom_func_t), intent(inout) :: this
+!     complex(WP), intent(in)           :: z
+!     complex(WP)                       :: f_z
 
-    real(WP) :: g
-    integer  :: m
+!     real(WP) :: g
+!     integer  :: m
 
-    ! Calcuate the discriminant for the geom grid growth factor
+!     ! Calcuate the discriminant for the geom grid growth factor
 
-    g = REAL(z)
+!     g = REAL(z)
 
-    if(MOD(this%n, 2) == 0) then
+!     if(MOD(this%n, 2) == 0) then
 
-       m = this%n/2-1
+!        m = this%n/2-1
 
-       if(1._WP+g > HUGE(0._WP)**(1._WP/m)) then
-          f_z = - (2._WP + g)
-       else
-          f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - (2._WP + g)
-       endif
+!        if(1._WP+g > HUGE(0._WP)**(1._WP/m)) then
+!           f_z = - (2._WP + g)
+!        else
+!           f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - (2._WP + g)
+!        endif
 
-    else
+!     else
 
-       m = (this%n-1)/2
+!        m = (this%n-1)/2
 
-       if(1._WP+g > HUGE(0._WP)**(1._WP/m)) then
-          f_z = -2._WP
-       else
-          f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - 2._WP
-       endif
+!        if(1._WP+g > HUGE(0._WP)**(1._WP/m)) then
+!           f_z = -2._WP
+!        else
+!           f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - 2._WP
+!        endif
 
-    endif
+!     endif
 
-    ! Finish
+!     ! Finish
 
-    return
+!     return
 
-  end function eval_geom_func_
+!   end function eval_geom_func_
 
-!****
+! !****
 
-  subroutine create_log (s, n, x)
+!   subroutine create_log (s, n, x)
 
-    real(WP), intent(in)               :: s
-    integer, intent(in)                :: n
-    real(WP), allocatable, intent(out) :: x(:)
+!     real(WP), intent(in)               :: s
+!     integer, intent(in)                :: n
+!     real(WP), allocatable, intent(out) :: x(:)
 
-    real(WP) :: dx_1
-    integer  :: k
-    real(WP) :: w
-    real(WP) :: t
+!     real(WP) :: dx_1
+!     integer  :: k
+!     real(WP) :: w
+!     real(WP) :: t
 
-    ! Create an n-point grid with logarithmic spacing in each half of
-    ! the [0,1] interval. The parameter s controls the ratio between
-    ! the mean cell size and the boundary cell size. omega is not used
+!     ! Create an n-point grid with logarithmic spacing in each half of
+!     ! the [0,1] interval. The parameter s controls the ratio between
+!     ! the mean cell size and the boundary cell size. omega is not used
 
-    allocate(x(n))
+!     allocate(x(n))
 
-    dx_1 = 1._WP/(s*(n-1))
+!     dx_1 = 1._WP/(s*(n-1))
 
-    if (MOD(n, 2) == 0) then
+!     if (MOD(n, 2) == 0) then
 
-       ! Even number of grid points / odd number of cells
+!        ! Even number of grid points / odd number of cells
 
-       ! Set up the inner part of the grid
+!        ! Set up the inner part of the grid
 
-       x(1) = 0._WP
+!        x(1) = 0._WP
 
-       even_grid_loop : do k = 2,n/2
+!        even_grid_loop : do k = 2,n/2
 
-          w = (k-1.5_WP)/(n/2-1.5_WP)
-          t = (1._WP-w)*LOG(0.5_WP) + w*LOG(dx_1)
+!           w = (k-1.5_WP)/(n/2-1.5_WP)
+!           t = (1._WP-w)*LOG(0.5_WP) + w*LOG(dx_1)
 
-          x(n/2-k+2) = EXP(t)
+!           x(n/2-k+2) = EXP(t)
 
-       enddo even_grid_loop
+!        enddo even_grid_loop
        
-       ! Reflect to get the outer part of the grid
+!        ! Reflect to get the outer part of the grid
 
-       x(n/2+1:) = 1._WP - x(n/2:1:-1)
+!        x(n/2+1:) = 1._WP - x(n/2:1:-1)
 
-    else
+!     else
 
-       ! Odd number of grid points / even number of cells
+!        ! Odd number of grid points / even number of cells
 
-       ! Set up the inner part of the grid
+!        ! Set up the inner part of the grid
 
-       x(1) = 0._WP
+!        x(1) = 0._WP
 
-       odd_grid_loop : do k = 2,(n-1)/2
+!        odd_grid_loop : do k = 2,(n-1)/2
 
-          w = (k-1._WP)/((n-1)/2-1._WP)
-          t = (1._WP-w)*LOG(0.5_WP) + w*LOG(dx_1)
+!           w = (k-1._WP)/((n-1)/2-1._WP)
+!           t = (1._WP-w)*LOG(0.5_WP) + w*LOG(dx_1)
 
-          x((n-1)/2-k+2) = EXP(t)
+!           x((n-1)/2-k+2) = EXP(t)
 
-       end do odd_grid_loop
+!        end do odd_grid_loop
 
-       x((n+1)/2) = 0.5_WP
+!        x((n+1)/2) = 0.5_WP
 
-       ! Reflect to get the outer part of the grid
+!        ! Reflect to get the outer part of the grid
 
-       x((n+1)/2+1:) = 1._WP - x((n-1)/2:1:-1)
+!        x((n+1)/2+1:) = 1._WP - x((n-1)/2:1:-1)
 
-    end if
+!     end if
 
-    ! Finish
+!     ! Finish
 
-    return
+!     return
 
-  end subroutine create_log
+!   end subroutine create_log
+
+! !****
+
+!   subroutine create_from_file_ (file, x)
+
+!     character(LEN=*), intent(in)       :: file
+!     real(WP), allocatable, intent(out) :: x(:)
+
+!     integer :: unit
+!     integer :: n
+!     integer :: k
+
+!     ! Create a grid by reading from the file
+
+!     ! Count lines
+
+!     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+
+!     n = 0
+
+!     count_loop : do
+!        read(unit, *, END=100)
+!        n = n + 1
+!     end do count_loop
+
+! 100 continue
+
+!     ! Read data
+
+!     rewind(unit)
+
+!     allocate(x(n))
+
+!     read_loop : do k = 1,n
+!        read(unit, *) x(k)
+!     end do read_loop
+
+!     close(unit)
+
+!     $ASSERT(x(1)==0._WP,First point not at zero)
+!     $ASSERT(x(n)==1._WP,Last point not at one)
+
+!     ! Finish
+
+!     return
+
+!   end subroutine create_from_file_
 
 !****
 
-  subroutine create_from_file_ (file, x)
+  subroutine resample_ (dn, s, x)
 
-    character(LEN=*), intent(in)       :: file
-    real(WP), allocatable, intent(out) :: x(:)
-
-    integer :: unit
-    integer :: n
-    integer :: k
-
-    ! Create a grid by reading from the file
-
-    ! Count lines
-
-    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
-
-    n = 0
-
-    count_loop : do
-       read(unit, *, END=100)
-       n = n + 1
-    end do count_loop
-
-100 continue
-
-    ! Read data
-
-    rewind(unit)
-
-    allocate(x(n))
-
-    read_loop : do k = 1,n
-       read(unit, *) x(k)
-    end do read_loop
-
-    close(unit)
-
-    $ASSERT(x(1)==0._WP,First point not at zero)
-    $ASSERT(x(n)==1._WP,Last point not at one)
-
-    ! Finish
-
-    return
-
-  end subroutine create_from_file_
-
-!****
-
-  subroutine resample_ (x, dn)
-
-    real(WP), allocatable, intent(inout) :: x(:)
     integer, intent(in)                  :: dn(:)
+    integer, allocatable, intent(inout)  :: s(:)
+    real(WP), allocatable, intent(inout) :: x(:)
 
-    integer               :: n
+    integer               :: n_k
+    integer, allocatable  :: s_new(:)
     real(WP), allocatable :: x_new(:)
-    integer               :: i
-    integer               :: j
+    integer               :: k_new
     integer               :: k
+    integer               :: i
     
-    $CHECK_BOUNDS(SIZE(dn),SIZE(x)-1)
+    $CHECK_BOUNDS(SIZE(s),SIZE(dn)+1)
+    $CHECK_BOUNDS(SIZE(x),SIZE(dn)+1)
 
-    ! Resample x by inserting dn additional points across the cells
+    ! Resample the grid by inserting dn additional points on a
+    ! cell-by-cell basis
     
-    n = SIZE(x)
+    n_k = SIZE(s)
 
-    allocate(x_new(SUM(dn) + n))
+    allocate(s_new(n_k + SUM(dn)))
+    allocate(x_new(n_k + SUM(dn)))
 
-    k = 1
+    k_new = 1
 
-    do i = 1,n-1
-       do j = 1,dn(i)+1
-          x_new(k) = x(i) + (j-1)*(x(i+1)-x(i))/(dn(i)+1)
-          k = k + 1
-       end do
+    do k = 1, n_k-1
+
+       if (dn(k) > 0) then
+
+          $ASSERT(s(k) == s(k+1),Attempt to add points at segment boundary)
+
+          do i = 1, dn(k)+1
+
+             s_new(k_new) = s(k)
+             x_new(k_new) = x(k) + (i-1)*(x(k+1)-x(k))/(dn(k)+1)
+
+             k_new = k_new + 1
+
+          end do
+
+       endif
+
     end do
     
-    x_new(k) = x(n)
+    s_new(k_new) = s(n_k)
+    x_new(k_new) = x(n_k)
 
+    call MOVE_ALLOC(s_new, s)
     call MOVE_ALLOC(x_new, x)
 
     ! Finish
@@ -542,27 +518,31 @@ contains
 
   end subroutine resample_
 
-!****
+  !****
 
-  subroutine resample_dispersion_ (ml, mp, op, omega, alpha_osc, alpha_exp, x)
+  subroutine resample_dispersion_ (ml, omega, gr_p, md_p, os_p, s, x)
 
     class(model_t), pointer, intent(in)  :: ml
-    type(mode_par_t), intent(in)         :: mp
-    type(osc_par_t), intent(in)          :: op
     real(WP), intent(in)                 :: omega(:)
-    real(WP), intent(in)                 :: alpha_osc
-    real(WP), intent(in)                 :: alpha_exp
+    type(grid_par_t), intent(in)         :: gr_p
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    integer, allocatable, intent(inout)  :: s(:)
     real(WP), allocatable, intent(inout) :: x(:)
 
     class(r_rot_t), allocatable :: rt
-    integer                     :: n_x
-    real(WP), allocatable       :: k_r_max(:)
-    real(WP), allocatable       :: k_i_max(:)
-    integer                     :: i
+    integer                     :: n_k
+    real(WP), allocatable       :: beta_r_max(:)
+    real(WP), allocatable       :: beta_i_max(:)
+    integer                     :: k
+    real(WP)                    :: V_g
+    real(WP)                    :: As
+    real(WP)                    :: U
+    real(WP)                    :: c_1
     integer                     :: j
     real(WP)                    :: omega_c
     real(WP)                    :: lambda
-    real(WP)                    :: l_0
+    real(WP)                    :: l_i
     real(WP)                    :: g_4
     real(WP)                    :: g_2
     real(WP)                    :: g_0
@@ -571,100 +551,111 @@ contains
     real(WP)                    :: dphi_osc
     real(WP)                    :: dphi_exp
 
-    $ASSERT(ALLOCATED(x),No input grid)
+    $CHECK_BOUNDS(SIZE(x),SIZE(s))
 
-    ! Resample x by adding points to each cell, such that there are at
-    ! least alpha_osc points per oscillatory wavelength and alpha_exp
-    ! points per exponential wavelength.
+    ! Resample the grid (s,x) by adding points to each cell, such that
+    ! there are at least alpha_osc points per oscillatory wavelength
+    ! and alpha_exp points per exponential wavelength.
     !
     ! Wavelengths are calculated based on a local dispersion analysis
     ! of the adibatic/Cowling wave equation, for inertial frequencies
     ! specified by omega
 
-    allocate(rt, SOURCE=r_rot_t(ml, mp, op))
+    allocate(rt, SOURCE=r_rot_t(ml, md_p, os_p))
 
     ! At each point of x, determine the maximum absolute value of the
-    ! real and imaginary parts of the local wavenumber
+    ! real and imaginary parts of the local radial wavenumber beta
 
-    n_x = SIZE(x)
+    n_k = SIZE(s)
 
-    allocate(k_r_max(n_x))
-    allocate(k_i_max(n_x))
+    allocate(beta_r_max(n_k))
+    allocate(beta_i_max(n_k))
 
-    k_r_max(1) = 0._WP
-    k_i_max(1) = 0._WP
+    beta_r_max(1) = 0._WP
+    beta_i_max(1) = 0._WP
 
-    wavenumber_loop : do i = 2,n_x-1
+    wavenumber_loop : do k = 2, n_k-1
 
-       associate (V_g => ml%V_2(x(i))*x(i)**2/ml%Gamma_1(x(i)), As => ml%As(x(i)), &
-                  U => ml%U(x(i)), c_1 => ml%c_1(x(i)))
+       V_g = ml%V_2(s(k), x(k))*x(k)**2/ml%Gamma_1(s(k), x(k))
+       As = ml%As(s(k), x(k))
+       U = ml%U(s(k), x(k))
+       c_1 = ml%c_1(s(k), x(k))
 
-         k_r_max(i) = 0._WP
-         k_i_max(i) = 0._WP
+       beta_r_max(k) = 0._WP
+       beta_i_max(k) = 0._WP
 
-         omega_loop : do j = 1, SIZE(omega)
+       omega_loop : do j = 1, SIZE(omega)
 
-            omega_c = rt%omega_c(x(i), omega(j))
+          omega_c = rt%omega_c(s(k), x(k), omega(j))
 
-            lambda = rt%lambda(x(i), omega(j))
-            l_0 = rt%l_0(omega(j))
+          lambda = rt%lambda(s(k), x(k), omega(j))
+          l_i = rt%l_i(omega(j))
             
-            ! Calculate the propagation discriminant gamma
+          ! Calculate the propagation discriminant gamma
 
-            g_4 = -4._WP*V_g*c_1
-            g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
-            g_0 = -4._WP*lambda*As/c_1
+          g_4 = -4._WP*V_g*c_1
+          g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
+          g_0 = -4._WP*lambda*As/c_1
 
-            gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
+          gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
 
-            ! Update the wavenumber maxima
+          ! Update the wavenumber maxima
 
-            if (gamma < 0._WP) then
+          if (gamma < 0._WP) then
                
-               ! Propagation zone
+             ! Propagation zone
 
-               k_r_max(i) = MAX(k_r_max(i), ABS(0.5_WP*SQRT(-gamma))/x(i))
-               k_i_max(i) = MAX(k_i_max(i), ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_0))/x(i))
+             beta_r_max(k) = MAX(beta_r_max(k), ABS(0.5_WP*SQRT(-gamma))/x(k))
+             beta_i_max(k) = MAX(beta_i_max(k), ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i))/x(k))
 
-            else
+          else
 
-               ! Evanescent zone
+             ! Evanescent zone
 
-               k_i_max(i) = MAX(k_i_max(i), ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_0 - SQRT(gamma)))/x(i), &
-                                            ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_0 + SQRT(gamma)))/x(i))
+             beta_i_max(k) = MAX(beta_i_max(k), &
+                  ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i - SQRT(gamma)))/x(k), &
+                  ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i + SQRT(gamma)))/x(k))
+             
+          end if
 
-            end if
-
-         end do omega_loop
-
-       end associate
+       end do omega_loop
 
     end do wavenumber_loop
 
-    k_r_max(n_x) = 0._WP
-    k_i_max(n_x) = 0._WP
+    beta_r_max(n_k) = 0._WP
+    beta_i_max(n_k) = 0._WP
 
     ! Determine how many points to add to each cell
 
-    allocate(dn(n_x-1))
+    allocate(dn(n_k-1))
 
-    sample_loop : do i = 1,n_x-1
+    cell_loop : do k = 1, n_k-1
 
-       ! Calculate the oscillatory and exponential phase change across
-       ! the cell
+       if (s(k) == s(k+1)) then
 
-       dphi_osc = MAX(k_r_max(i), k_r_max(i+1))*(x(i+1) - x(i))
-       dphi_exp = MAX(k_i_max(i), k_i_max(i+1))*(x(i+1) - x(i))
+          ! Calculate the oscillatory and exponential phase change across
+          ! the cell
 
-       ! Set up dn
+          dphi_osc = MAX(beta_r_max(k), beta_r_max(k+1))*(x(k+1) - x(k))
+          dphi_exp = MAX(beta_i_max(k), beta_i_max(k+1))*(x(k+1) - x(k))
 
-       dn(i) = MAX(FLOOR((alpha_osc*dphi_osc)/TWOPI), FLOOR((alpha_exp*dphi_exp)/TWOPI))
+          ! Set up dn
 
-    end do sample_loop
+          dn(k) = MAX(FLOOR((gr_p%alpha_osc*dphi_osc)/TWOPI), FLOOR((gr_p%alpha_exp*dphi_exp)/TWOPI))
+
+       else
+
+          ! Don't add points between segments
+
+          dn(k) = 0
+
+       endif
+
+    end do cell_loop
 
     ! Perform the resampling
 
-    call resample_(x, dn)
+    call resample_(dn, s, x)
 
     ! Finish
 
@@ -672,82 +663,98 @@ contains
 
   end subroutine resample_dispersion_
 
-!****
+  !****
 
-  subroutine resample_thermal_ (ml, mp, op, omega, alpha_thm, x)
+  subroutine resample_thermal_ (ml, omega, gr_p, md_p, os_p, s, x)
 
     class(model_t), pointer, intent(in)  :: ml
-    type(mode_par_t), intent(in)         :: mp
-    type(osc_par_t), intent(in)          :: op
     real(WP), intent(in)                 :: omega(:)
-    real(WP), intent(in)                 :: alpha_thm
+    type(grid_par_t), intent(in)         :: gr_p
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    integer, allocatable, intent(inout)  :: s(:)
     real(WP), allocatable, intent(inout) :: x(:)
 
     class(r_rot_t), allocatable :: rt
-    integer                     :: n_x
-    real(WP), allocatable       :: k_t_max(:)
-    integer                     :: i
+    integer                     :: n_k
+    real(WP), allocatable       :: beta_t_max(:)
+    integer                     :: k
+    real(WP)                    :: V
+    real(WP)                    :: nabla
+    real(WP)                    :: c_rad
+    real(WP)                    :: c_thm
     integer                     :: j
     real(WP)                    :: omega_c
     integer, allocatable        :: dn(:)
     real(WP)                    :: dphi_thm
 
-    $ASSERT(ALLOCATED(x),No input grid)
+    $CHECK_BOUNDS(SIZE(x),SIZE(s))
 
-    ! Resample x by adding points to each cell, such that there are at
-    ! least alpha_thm points per thermal length c_thm
+    ! Resample the grid (s,x) by adding points to each cell, such that
+    ! there are at least alpha_thm points per thermal length c_thm
 
-    allocate(rt, SOURCE=r_rot_t(ml, mp, op))
+    allocate(rt, SOURCE=r_rot_t(ml, md_p, os_p))
 
     ! At each point of x, determine the maximum absolute value of the
-    ! local thermal wavenumber
+    ! local thermal wavenumber beta_t
 
-    n_x = SIZE(x)
+    n_k = SIZE(s)
 
-    allocate(k_t_max(n_x))
+    allocate(beta_t_max(n_k))
 
-    k_t_max(1) = 0._WP
+    beta_t_max(1) = 0._WP
 
-    wavenumber_loop : do i = 2,n_x-1
+    wavenumber_loop : do k = 2, n_k-1
 
-       associate(V => ml%V_2(x(i))*x(i)**2, nabla => ml%nabla(x(i)), &
-                c_rad => ml%c_rad(x(i)), c_thm => ml%c_thm(x(i)))
-         
-         k_t_max(i) = 0._WP
+       V = ml%V_2(s(k), x(k))*x(k)**2
+       nabla = ml%nabla(s(k), x(k))
 
-         omega_loop : do j = 1, SIZE(omega)
+       c_rad = ml%c_rad(s(k), x(k))
+       c_thm = ml%c_thm(s(k), x(k))
 
-            omega_c = rt%omega_c(x(i), omega(j))
+       beta_t_max(k) = 0._WP
 
-            k_t_max(i) = MAX(k_t_max(i), SQRT(ABS(V*nabla*omega_c*c_thm/c_rad))/x(i))
+       omega_loop : do j = 1, SIZE(omega)
 
-         end do omega_loop
+          omega_c = rt%omega_c(s(k), x(k), omega(j))
 
-       end associate
+          beta_t_max(k) = MAX(beta_t_max(k), SQRT(ABS(V*nabla*omega_c*c_thm/c_rad))/x(k))
+
+       end do omega_loop
 
     end do wavenumber_loop
 
-    k_t_max(n_x) = 0._WP
+    beta_t_max(n_k) = 0._WP
 
     ! Determine how many points to add to each cell
 
-    allocate(dn(n_x-1))
+    allocate(dn(n_k-1))
 
-    sample_loop : do i = 1,n_x-1
+    cell_loop : do k = 1, n_k-1
 
-       ! Calculate the thermal phase change across the cell
+       if (s(k) == s(k+1)) then
 
-       dphi_thm = MAX(k_t_max(i), k_t_max(i+1))*(x(i+1) - x(i))
+          ! Calculate the thermal phase change across the cell
 
-       ! Set up dn
+          dphi_thm = MAX(beta_t_max(k), beta_t_max(k+1))*(x(k+1) - x(k))
 
-       dn(i) = FLOOR((alpha_thm*dphi_thm)/TWOPI)
+          ! Set up dn
 
-    end do sample_loop
+          dn(k) = FLOOR((gr_p%alpha_thm*dphi_thm)/TWOPI)
+
+       else
+
+          ! Don't add points between segments
+
+          dn(k) = 0
+
+       endif
+
+    end do cell_loop
 
     ! Perform the resampling
 
-    call resample_(x, dn)
+    call resample_(dn, s, x)
 
     ! Finish
 
@@ -755,104 +762,112 @@ contains
 
   end subroutine resample_thermal_
 
-!****
+  ! !****
 
-  subroutine resample_center_ (ml, mp, op, omega, n, x)
+  ! subroutine resample_center_ (ml, omega, gr_p, md_p, os_p, s, x)
 
-    class(model_t), pointer,  intent(in) :: ml
-    type(mode_par_t), intent(in)         :: mp
-    type(osc_par_t), intent(in)          :: op
-    real(WP), intent(in)                 :: omega(:)
-    integer, intent(in)                  :: n
-    real(WP), allocatable, intent(inout) :: x(:)
-
-    real(WP)             :: x_turn
-    integer              :: j
-    real(WP)             :: x_turn_j
-    integer              :: i_turn
-    integer              :: n_add
-    integer              :: n_x
-    integer, allocatable :: dn(:)
-
-    $ASSERT(ALLOCATED(x),No input grid)
-
-    ! Resample x by adding points to central cells, such that there
-    ! are n_floor points covering the evanescent region at the
-    ! center. Evanescence is determined based on a local dispersion
-    ! analysis of the adibatic/Cowling wave equation, for frequencies
-    ! in the interval [omega_min,omega_max]
-
-    ! First, locate the innermost turning point
-
-    x_turn = HUGE(0._WP)
-
-    omega_loop : do j = 1, SIZE(omega)
-       call find_x_turn(x, ml, mp, op, omega(j), x_turn_j)
-       x_turn = MIN(x_turn, x_turn_j)
-    end do omega_loop
-
-    call locate(x, x_turn, i_turn)
-
-    ! Determine how many points need to be added
-
-    n_add = MAX(n-i_turn, 0)
-
-    ! Determine how many points to add to each cell
-
-    n_x = SIZE(x)
-
-    allocate(dn(n_x-1))
-
-    dn = 0
-
-    if(i_turn >= 1 .AND. i_turn < n_x) then
-       dn(:i_turn) = CEILING(n_add*(x(i_turn+1)/x_turn)/i_turn)
-    endif
+  !   class(model_t), pointer,  intent(in) :: ml
+  !   real(WP), intent(in)                 :: omega(:)
+  !   type(grid_par_t), intent(in)         :: gr_p
+  !   type(mode_par_t), intent(in)         :: md_p
+  !   type(osc_par_t), intent(in)          :: os_p
+  !   integer, allocatable, intent(inout)  :: s(:)
+  !   real(WP), allocatable, intent(inout) :: x(:)
     
-    ! Perform the resampling
+  !   real(WP)             :: x_turn
+  !   integer              :: j
+  !   real(WP)             :: x_turn_j
+  !   integer              :: k_turn
+  !   integer              :: n_add
+  !   integer              :: n_k
+  !   integer, allocatable :: dn(:)
 
-    call resample_(x, dn)
+  !   $ASSERT(ALLOCATED(x),No input grid)
 
-    ! Finish
+  !   ! Resample the grid (s,x) by adding points to central cells, such
+  !   ! that there are n_floor points covering the evanescent region at
+  !   ! the center. Evanescence is determined based on a local
+  !   ! dispersion analysis of the adibatic/Cowling wave equation, for
+  !   ! frequencies in the interval [omega_min,omega_max]
 
-    return
+  !   ! First, locate the innermost turning point
 
-  end subroutine resample_center_
+  !   x_turn = HUGE(0._WP)
 
-!****
+  !   omega_loop : do j = 1, SIZE(omega)
+  !      call find_x_turn(ml, s, x, omega(j), md_p, os_p, x_turn_j)
+  !      x_turn = MIN(x_turn, x_turn_j)
+  !   end do omega_loop
 
-  subroutine resample_struct_ (ml, alpha_str, x)
+  !   call locate(x, x_turn, k_turn)
+
+  !   ! Determine how many points need to be added
+
+  !   n_add = MAX(gr_p%n-k_turn, 0)
+
+  !   ! Determine how many points to add to each cell
+
+  !   n_k = SIZE(S)
+
+  !   allocate(dn(n_k-1))
+
+  !   dn = 0
+
+  !   if (k_turn >= 1 .AND. k_turn < n_k) then
+  !      dn(:k_turn) = CEILING(n_add*(x(k_turn+1)/x_turn)/i_turn)
+  !   endif
+    
+  !   ! Perform the resampling
+
+  !   call resample_(dn, s, x)
+
+  !   ! Finish
+
+  !   return
+
+  ! end subroutine resample_center_
+
+  !****
+
+  subroutine resample_struct_ (ml, gr_p, s, x)
 
     class(model_t), pointer, intent(in)  :: ml
-    real(WP), intent(in)                 :: alpha_str
+    type(grid_par_t), intent(in)         :: gr_p
+    integer, allocatable, intent(inout)  :: s(:)
     real(WP), allocatable, intent(inout) :: x(:)
 
     integer :: dn(SIZE(x)-1)
-    integer :: i
+    integer :: k
 
-    $ASSERT(ALLOCATED(x),No input grid)
-
-    ! Resample x by adding points to each cell, such that there are at
-    ! least alpha_str points per dex change in the structure variables (V,
-    ! As, Gamma_1, c_1, & U)
+    ! Resample the grid (s,x) by adding points to each cell, such that
+    ! there are at least alpha_str points per dex change in the
+    ! structure variables (V, As, Gamma_1, c_1, & U)
 
     ! Calculate the number of points to add to each cell
 
     dn = 0
 
-    cell_loop : do i = 1, SIZE(x)-1
+    cell_loop : do k = 1, SIZE(x)-1
 
-       dn(i) = dn(i) + FLOOR(alpha_str*dlog_(ml%V_2(x(i)), ml%V_2(x(i+1)))) + &
-                       FLOOR(alpha_str*dlog_(ml%As(x(i)), ml%As(x(i+1)))) + &
-                       FLOOR(alpha_str*dlog_(ml%Gamma_1(x(i)), ml%Gamma_1(x(i+1)))) + &
-                       FLOOR(alpha_str*dlog_(ml%c_1(x(i)), ml%c_1(x(i+1)))) + &
-                       FLOOR(alpha_str*dlog_(ml%U(x(i)), ml%U(x(i+1))))
+       if (s(k) == s(k+1)) then
+
+          dn(k) = dn(k) + FLOOR(gr_p%alpha_str*dlog_(ml%V_2(s(k), x(k)), ml%V_2(s(k+1), x(k+1)))) + &
+                          FLOOR(gr_p%alpha_str*dlog_(ml%As(s(k), x(k)), ml%As(s(k+1), x(k+1)))) + &
+                          FLOOR(gr_p%alpha_str*dlog_(ml%Gamma_1(s(k), x(k)), ml%Gamma_1(s(k+1), x(k+1)))) + &
+                          FLOOR(gr_p%alpha_str*dlog_(ml%c_1(s(k), x(k)), ml%c_1(s(k+1), x(k+1)))) + &
+                          FLOOR(gr_p%alpha_str*dlog_(ml%U(s(k), x(k)), ml%U(s(k+1), x(k+1))))
+
+       else
+
+          dn(k) = 0
+
+       endif
 
     end do cell_loop
 
     ! Perform the resampling
 
-    call resample_(x, dn)
+    call resample_(dn, s, x)
 
     ! Finish
 
@@ -883,29 +898,37 @@ contains
 
   end subroutine resample_struct_
 
-!****
+  !****
 
-  subroutine resample_uniform_ (n, x)
+  subroutine resample_uniform_ (gr_p, s, x)
 
-    integer, intent(in)                  :: n
+    type(grid_par_t), intent(in)         :: gr_p
+    integer, allocatable, intent(inout)  :: s(:)
     real(WP), allocatable, intent(inout) :: x(:)
 
-    integer              :: n_x
+    integer              :: n_k
     integer, allocatable :: dn(:)
+    integer              :: k
 
     $ASSERT(ALLOCATED(x),No input grid)
 
     ! Resample x by adding n points to each cell
 
-    n_x = SIZE(x)
+    n_k = SIZE(s)
 
-    allocate(dn(n_x-1))
+    allocate(dn(n_k-1))
 
-    dn = n
+    cell_loop : do k = 1, n_k-1
+       if (s(k) == s(k+1)) then
+          dn = gr_p%n
+       else
+          dn = 0
+       endif
+    end do cell_loop
 
     ! Perform the resampling
 
-    call resample_(x, dn)
+    call resample_(dn, s, x)
 
     ! Finish
 
@@ -913,53 +936,64 @@ contains
 
   end subroutine resample_uniform_
 
-!****
+  !****
 
-  subroutine find_x_turn (x, ml, mp, op, omega, x_turn)
+  subroutine find_turn (ml, omega, s, x, md_p, os_p, k_turn, x_turn)
 
-    real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
-    type(mode_par_t), intent(in)        :: mp
-    type(osc_par_t), intent(in)         :: op
     real(WP), intent(in)                :: omega
-    real(WP)                            :: x_turn
+    integer, intent(in)                 :: s(:)
+    real(WP), intent(in)                :: x(:)
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
+    integer, intent(out)                :: k_turn
+    real(WP), intent(out)               :: x_turn
 
     type(gamma_func_t) :: gf
     real(WP)           :: gf_a
     real(WP)           :: gf_b
-    integer            :: i
+    integer            :: k
 
-    ! Find the inner turning point at frequency omega
+    ! Find the cell index and location of the inner turning point at
+    ! frequency omega
 
     x_turn = HUGE(0._WP)
 
     gf%ml => ml
-    allocate(gf%rt, SOURCE=r_rot_t(ml, mp, op))
-
+    allocate(gf%rt, SOURCE=r_rot_t(ml, md_p, os_p))
     gf%omega = omega
 
+    gf%s = s(1)
     gf_b = gf%eval(x(1))
 
-    turn_loop : do i = 1,SIZE(x)-1
+    turn_loop : do k = 1, SIZE(x)-2
 
-       if (.NOT. (ml%is_zero(x(i)) .OR. ml%is_zero(x(i+1)))) then
+       gf_a = gf_b
 
-          gf_a = gf_b
-          gf_b = gf%eval(x(i+1))
+       gf%s = s(k+1)
+       gf_b = gf%eval(x(k+1))
+       
+       if (gf_a > 0._WP .AND. gf_b <= 0._WP) then
 
-          if (gf_a > 0._WP .AND. gf_b <= 0._WP) then
+          k_turn = k
+
+          if (s(k) == s(k+1)) then
 
              if (ABS(gf_a) < EPSILON(0._WP)*ABS(gf_b)) then
-                x_turn = x(i)
+                x_turn = x(k_turn)
              elseif (ABS(gf_b) < EPSILON(0._WP)*ABS(gf_a)) then
-                x_turn = x(i+1)
+                x_turn = x(k_turn+1)
              else
-                x_turn = gf%root(x(i), x(i+1), 0._WP)
+                x_turn = gf%root(x(k), x(k+1), 0._WP)
              endif
 
-             exit turn_loop
+          else
+
+             x_turn = x(k_turn)
 
           end if
+
+          exit turn_loop
 
        endif
 
@@ -969,9 +1003,9 @@ contains
 
     return
 
-  end subroutine find_x_turn
+  end subroutine find_turn
 
-!****
+  !****
 
   function eval_gamma_func_ (this, z) result (gamma)
 
@@ -979,18 +1013,26 @@ contains
     complex(WP), intent(in)            :: z
     complex(WP)                        :: gamma
 
-    real(WP) :: x
+    real(WP) :: V_g
+    real(WP) :: As
+    real(WP) :: U
+    real(WP) :: c_1
+    real(WP) :: lambda
     real(WP) :: g_4
     real(WP) :: g_2
     real(WP) :: g_0
 
     ! Calculate the propagation discriminant
 
-    x = REAL(z)
+    associate (s => this%s, &
+               x => REAL(z))
 
-    associate(V_g => this%ml%V_2(x)*x**2/this%ml%Gamma_1(x), As => this%ml%As(x), &
-              U => this%ml%U(x), c_1 => this%ml%c_1(x), &
-              lambda => this%rt%lambda(x, this%omega))
+      V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
+      As = this%ml%As(s, x)
+      U = this%ml%U(s, x)
+      c_1 = this%ml%c_1(s, x)
+
+      lambda = this%rt%lambda(s, x, this%omega)
 
       g_4 = -4._WP*V_g*c_1
       g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda

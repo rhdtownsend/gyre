@@ -35,7 +35,7 @@ module gyre_num_par
      integer         :: n_iter_max
      logical         :: deflate_roots
      logical         :: restrict_roots
-     character(64)   :: ivp_solver
+     character(64)   :: diff_scheme
      character(64)   :: r_root_solver
      character(64)   :: c_root_solver
      character(64)   :: matrix_type
@@ -83,14 +83,14 @@ contains
     integer                            :: n_iter_max
     logical                            :: deflate_roots
     logical                            :: restrict_roots
-    character(LEN(nm_p%ivp_solver))    :: ivp_solver
+    character(LEN(nm_p%diff_scheme))   :: diff_scheme
     character(LEN(nm_p%r_root_solver)) :: r_root_solver
     character(LEN(nm_p%c_root_solver)) :: c_root_solver
     character(LEN(nm_p%matrix_type))   :: matrix_type
     character(LEN(nm_p%tag_list))      :: tag_list
 
     namelist /num/ n_iter_max, deflate_roots, restrict_roots, &
-         ivp_solver, r_root_solver, c_root_solver, matrix_type, tag_list
+         diff_scheme, r_root_solver, c_root_solver, matrix_type, tag_list
 
     ! Count the number of num namelists
 
@@ -118,7 +118,7 @@ contains
        deflate_roots = .TRUE.
        restrict_roots = .TRUE.
 
-       ivp_solver = 'COLLOC_GL2'
+       diff_scheme = 'COLLOC_GL2'
 
        r_root_solver = 'BRENT'
        c_root_solver = 'RIDDERS'
@@ -133,7 +133,7 @@ contains
        nm_p(i) = num_par_t(n_iter_max=n_iter_max, &
                            deflate_roots=deflate_roots, &
                            restrict_roots=restrict_roots, &
-                           ivp_solver=ivp_solver, &
+                           diff_scheme=diff_scheme, &
                            r_root_solver=r_root_solver, &
                            c_root_solver=c_root_solver, &
                            matrix_type=matrix_type, &
@@ -167,7 +167,7 @@ contains
     call bcast(nm_p%deflate_roots, root_rank)
     call bcast(nm_p%restrict_roots, root_rank)
  
-    call bcast(nm_p%ivp_solver, root_rank)
+    call bcast(nm_p%diff_scheme, root_rank)
 
     call bcast(nm_p%r_root_solver, root_rank)
     call bcast(nm_p%c_root_solver, root_rank)

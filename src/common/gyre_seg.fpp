@@ -1,5 +1,5 @@
 ! Module   : gyre_seg
-! Purpose  : segment (interface)
+! Purpose  : grid segment
 !
 ! Copyright 2015 Rich Townsend
 !
@@ -29,37 +29,66 @@ module gyre_seg
 
   ! Derived-type definitions
 
-  type, abstract :: seg_t
-   contains
-     private
-     procedure(x_min_), deferred, public :: x_min
-     procedure(x_max_), deferred, public :: x_max
+  type :: seg_t
+     real(WP), allocatable :: x(:)
+     integer               :: i_a
+     integer               :: i_b
+     integer               :: n
   end type seg_t
 
   ! Interfaces
 
-  abstract interface
-
-     function x_min_ (this) result (x_min)
-       use gyre_kinds
-       import seg_t
-       class(seg_t), intent(in) :: this
-       real(WP), intent(out)    :: x_min
-     end function x_min_
-
-     function x_max_ (this) result (x_max)
-       use gyre_kinds
-       import seg_t
-       class(seg_t), intent(in) :: this
-       real(WP), intent(out)    :: x_max
-     end function x_max_
-
-  end interface
+  interface seg_t
+     module procedure seg_t_part_
+  end interface seg_t
 
   ! Access specifiers
 
   private
 
   public :: seg_t
+
+contains
+
+  function seg_t_part_ (x) result (sg)
+
+    DONT YET KNOW HOW TO DO THIS
+
+    ! real(WP), intent(in)     :: x(:)
+    ! type(seg_t), allocatable :: sg(:)
+
+    ! logical :: mask(SIZE(x)-1)
+    ! integer :: n
+
+    ! ! Construct an array of segments, by partitioning x at double points
+
+    ! ! Set up a mask for the double points
+
+    ! n = SIZE(x)
+
+    ! mask = x(2:) == x(:n-1)
+
+    ! ! Allocate segments
+
+    ! n_s = COUNT(mask) + 1
+    
+    ! allocate(sg(n_s))
+
+    ! ! Set up index ranges giving the position of the segment in x
+
+    ! sg%i_a = [1,PACK([(i,i=2,n)], MASK=mask)]
+    ! sg%i_b = [PACK([(i,i=1,n-1)], MASK=mask),n]
+
+    ! ! Set up segment x values
+
+    ! seg_loop : do s = 1, n_s
+    !    sg%x = x(sg%i_a(s):sg%i_b(s))
+    ! end do seg_loop
+
+    ! ! Finish
+
+    ! return
+
+  end function seg_t_part_
 
 end module gyre_seg
