@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_${T}_diff
+module gyre_ad_diff
 
   ! Uses
 
@@ -27,6 +27,7 @@ module gyre_${T}_diff
   use gyre_ad_match
   use gyre_diff
   use gyre_diff_factory
+  use gyre_ext
   use gyre_model
   use gyre_mode_par
   use gyre_num_par
@@ -40,7 +41,7 @@ module gyre_${T}_diff
 
   type, extends (r_diff_t) :: ad_diff_t
      private
-     type(ad_diff_t), allocatable :: df
+     class(r_diff_t), allocatable :: df
    contains
      private
      procedure, public :: build => build_
@@ -62,17 +63,19 @@ module gyre_${T}_diff
 
 contains
 
-  subroutine ad_diff_t_ (ml, s_a, x_a, s_b, x_b, md_p, nm_p, os_p) result (df)
+  function ad_diff_t_ (ml, s_a, x_a, s_b, x_b, md_p, nm_p, os_p) result (df)
 
-    type(model_t), pointer, intent(in) :: ml
-    integer, intent(in)                :: s_a
-    real(WP), intent(in)               :: x_a
-    integer, intent(in)                :: s_b
-    real(WP), intent(in)               :: x_b
-    type(mode_par_t), intent(in)       :: md_p
-    type(num_par_t), intent(in)        :: nm_p
-    type(osc_par_t), intent(in)        :: os_p
-    type(ad_diff_t)                    :: df
+    class(model_t), pointer, intent(in) :: ml
+    integer, intent(in)                 :: s_a
+    real(WP), intent(in)                :: x_a
+    integer, intent(in)                 :: s_b
+    real(WP), intent(in)                :: x_b
+    type(mode_par_t), intent(in)        :: md_p
+    type(num_par_t), intent(in)         :: nm_p
+    type(osc_par_t), intent(in)         :: os_p
+    type(ad_diff_t)                     :: df
+
+    type(ad_eqns_t) :: eq
 
     ! Construct the ad_diff_t
 
@@ -80,7 +83,7 @@ contains
 
        eq = ad_eqns_t(ml, s_a, md_p, os_p)
        
-       allocate(df%df, SOURCE=r_diff_t(eq, x_a, x_b, nm_p)
+       allocate(df%df, SOURCE=r_diff_t(eq, x_a, x_b, nm_p))
 
     else
 
@@ -94,17 +97,17 @@ contains
 
     return
 
-  end subroutine ad_diff_t_
+  end function ad_diff_t_
 
   !****
 
-  subroutine build_ (this, omega, E_l, E_r, scale)
+  subroutine build_ (this, omega, E_l, E_r, scl)
 
     class(ad_diff_t), intent(in) :: this
     real(WP), intent(in)         :: omega
     real(WP), intent(out)        :: E_l(:,:)
     real(WP), intent(out)        :: E_r(:,:)
-    type(r_ext_t), intent(out)   :: scale
+    type(r_ext_t), intent(out)   :: scl
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -114,7 +117,7 @@ contains
 
     ! Build the difference equations
 
-    call this%df%build(omega, E_l, E_r, scale)
+    call this%df%build(omega, E_l, E_r, scl)
 
     ! Finish
 
@@ -123,5 +126,3 @@ contains
   end subroutine build_
 
 end module gyre_ad_diff
-
-$endsub

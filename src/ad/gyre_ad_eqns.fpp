@@ -180,7 +180,7 @@ contains
 
     ! Apply the variables transformation
 
-    xA = MATMUL(this%vr%A(x, this%s, omega), MATMUL(xA, this%vr%B(x, this%s, omega)) - this%vr%dB(x, this%s, omega))
+    xA = MATMUL(this%vr%A(this%s, x, omega), MATMUL(xA, this%vr%B(this%s, x, omega)) - this%vr%dB(this%s, x, omega))
 
     ! Finish
 

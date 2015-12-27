@@ -24,10 +24,13 @@ module gyre_ad_match
   use core_kinds
 
   use gyre_ad_vars
+  use gyre_diff
   use gyre_ext
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
+
+  use ISO_FORTRAN_ENV
 
   ! No implicit typing
 
@@ -55,7 +58,6 @@ module gyre_ad_match
   ! Access specifiers
 
   private
-
   public :: ad_match_t
 
 contains
@@ -93,13 +95,13 @@ contains
     
   !****
 
-  subroutine build_ (this, omega, E_l, E_r, scale)
+  subroutine build_ (this, omega, E_l, E_r, scl)
 
-    class(ad_match_t), target, intent(in) :: this
-    real(WP), intent(in)                  :: omega
-    real(WP), intent(out)                 :: E_l(:,:)
-    real(WP), intent(out)                 :: E_r(:,:)
-    type(r_ext_t), intent(out)            :: scale
+    class(ad_match_t), intent(in) :: this
+    real(WP), intent(in)          :: omega
+    real(WP), intent(out)         :: E_l(:,:)
+    real(WP), intent(out)         :: E_r(:,:)
+    type(r_ext_t), intent(out)    :: scl
 
     real(WP) :: U_l
     real(WP) :: U_r
@@ -167,7 +169,7 @@ contains
     E_r(4,3) = 0._WP
     E_r(4,4) = 1._WP
 
-    scale = r_ext_t(1._WP)
+    scl = r_ext_t(1._WP)
 
     ! Apply the variables transformation
 

@@ -23,13 +23,16 @@ module gyre_ad_bound
 
   use core_kinds
 
+  use gyre_ad_eqns
   use gyre_ad_vars
   use gyre_atmos
   use gyre_bound
-  use gyre_ad_eqns
+  use gyre_ext
   use gyre_model
+  use gyre_mode_par
   use gyre_osc_par
   use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -63,7 +66,7 @@ module gyre_ad_bound
      procedure         :: build_outer_zero_
      procedure         :: build_outer_dziem_
      procedure         :: build_outer_unno_
-     procedure         :: build_oter_jcd_
+     procedure         :: build_outer_jcd_
   end type ad_bound_t
 
   ! Interfaces
@@ -84,7 +87,7 @@ contains
 
   function ad_bound_t_ (ml, inner, md_p, os_p) result (bd)
 
-    class(model_t), pointer, intent(in) :: ms
+    class(model_t), pointer, intent(in) :: ml
     logical, intent(in)                 :: inner
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
@@ -99,7 +102,7 @@ contains
 
     if (inner) then
 
-       select case (op%inner_bound)
+       select case (os_p%inner_bound)
        case ('REGULAR')
           bd%type = INNER_REGULAR_TYPE
        case ('ZERO')
@@ -110,7 +113,7 @@ contains
 
     else
 
-       select case (op%outer_bound)
+       select case (os_p%outer_bound)
        case ('ZERO')
           bd%type = OUTER_ZERO_TYPE
        case ('DZIEM')
@@ -125,7 +128,7 @@ contains
 
     endif
 
-    bd%cowling_approx = op%cowling_approx
+    bd%cowling_approx = os_p%cowling_approx
 
     bd%n = 2
     bd%n_e = 4
@@ -138,12 +141,12 @@ contains
 
   !****
 
-  subroutine build_ (this, omega, E, scale)
+  subroutine build_ (this, omega, E, scl)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: E(:,:)
-    type(${T}_ext_t), intent(out) :: scale
+    type(r_ext_t), intent(out)    :: scl
 
     $CHECK_BOUNDS(SIZE(E, 1),this%n)
     $CHECK_BOUNDS(SIZE(E, 2),this%n_e)
@@ -152,24 +155,20 @@ contains
 
     select case (this%type)
     case (INNER_REGULAR_TYPE)
-       call this%build_inner_regular_(omega, E, scale)
+       call this%build_inner_regular_(omega, E, scl)
     case (INNER_ZERO_TYPE)
-       call this%build_inner_zero_(omega, E, scale)
+       call this%build_inner_zero_(omega, E, scl)
     case (OUTER_ZERO_TYPE)
-       call this%build_outer_zero_(omega, E, scale)
+       call this%build_outer_zero_(omega, E, scl)
     case (OUTER_DZIEM_TYPE)
-       call this%build_outer_dziem_(omega, E, scale)
+       call this%build_outer_dziem_(omega, E, scl)
     case (OUTER_UNNO_TYPE)
-       call this%build_outer_unno_(omega, E, scale)
+       call this%build_outer_unno_(omega, E, scl)
     case (OUTER_JCD_TYPE)
-       call this%build_outer_jcd_(omega, E, scale)
+       call this%build_outer_jcd_(omega, E, scl)
     case default
        $ABORT(Invalid type_i)
     end select
-
-    ! Apply the variables transformation
-
-    E = MATMUL(E, this%vr%T(this%x, omega))
 
     ! Finish
 
@@ -179,12 +178,12 @@ contains
 
   !****
 
-  subroutine build_inner_regular_ (this, omega, E, scale)
+  subroutine build_inner_regular_ (this, omega, E, scl)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: E(:,:)
-    type(${T}_ext_t), intent(out) :: scale
+    type(r_ext_t), intent(out)    :: scl
 
     real(WP) :: c_1
     real(WP) :: l_i
@@ -209,27 +208,31 @@ contains
 
       omega_c = this%rt%omega_c(s, x, omega)
 
-    end associate
+      if (this%cowling_approx) then
+         alpha_gr = 0._WP
+      else
+         alpha_gr = 1._WP
+      endif
 
-    if (this%cowling_approx) then
-       alpha_gr = 0._WP
-    else
-       alpha_gr = 1._WP
-    endif
+      ! Set up the boundary conditions
 
-    ! Set up the boundary conditions
-
-    E(1,1) = c_1*omega_c**2
-    E(1,2) = -l_i
-    E(1,3) = alpha_gr*(0._WP)
-    E(1,4) = alpha_gr*(0._WP)
+      E(1,1) = c_1*omega_c**2
+      E(1,2) = -l_i
+      E(1,3) = alpha_gr*(0._WP)
+      E(1,4) = alpha_gr*(0._WP)
         
-    E(2,1) = alpha_gr*(0._WP)
-    E(2,2) = alpha_gr*(0._WP)
-    E(2,3) = alpha_gr*(l_i)
-    E(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
+      E(2,1) = alpha_gr*(0._WP)
+      E(2,2) = alpha_gr*(0._WP)
+      E(2,3) = alpha_gr*(l_i)
+      E(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
 
-    scale = r_ext_t(1._WP)
+      scl = r_ext_t(1._WP)
+
+      ! Apply the variables transformation
+
+      E = MATMUL(E, this%vr%B(s, x, omega))
+
+    end associate
 
     ! Finish
 
@@ -239,12 +242,12 @@ contains
 
   !****
 
-  subroutine build_inner_zero_ (this, omega, E, scale)
+  subroutine build_inner_zero_ (this, omega, E, scl)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: E(:,:)
-    type(${T}_ext_t), intent(out) :: scale
+    type(r_ext_t), intent(out)    :: scl
 
     real(WP) :: alpha_gr
 
@@ -256,28 +259,37 @@ contains
     ! Evaluate the inner boundary conditions (zero
     ! displacement/gravity)
 
-    ! Calculate coefficients
+    associate (s => 1, &
+               x => this%ml%x_i)
 
-    if (this%cowling_approx) then
-       alpha_gr = 0._WP
-    else
-       alpha_gr = 1._WP
-    endif
+      ! Calculate coefficients
 
-    ! Set up the boundary conditions
+      if (this%cowling_approx) then
+         alpha_gr = 0._WP
+      else
+         alpha_gr = 1._WP
+      endif
 
-    E(1,1) = 1._WP
-    E(1,2) = 0._WP
-    E(1,3) = alpha_gr*(0._WP)
-    E(1,4) = alpha_gr*(0._WP)
+      ! Set up the boundary conditions
+
+      E(1,1) = 1._WP
+      E(1,2) = 0._WP
+      E(1,3) = alpha_gr*(0._WP)
+      E(1,4) = alpha_gr*(0._WP)
         
-    E(2,1) = alpha_gr*(0._WP)
-    E(2,2) = alpha_gr*(0._WP)
-    E(2,3) = alpha_gr*(0._WP)
-    E(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
+      E(2,1) = alpha_gr*(0._WP)
+      E(2,2) = alpha_gr*(0._WP)
+      E(2,3) = alpha_gr*(0._WP)
+      E(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
 
-    scale = r_ext_t(1._WP)
+      scl = r_ext_t(1._WP)
       
+      ! Apply the variables transformation
+
+      E = MATMUL(E, this%vr%B(s, x, omega))
+
+    end associate
+
     ! Finish
 
     return
@@ -286,12 +298,12 @@ contains
 
   !****
 
-  subroutine build_outer_zero_ (this, omega, E, scale)
+  subroutine build_outer_zero_ (this, omega, E, scl)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: E(:,:)
-    type(${T}_ext_t), intent(out) :: scale
+    type(r_ext_t), intent(out)    :: scl
 
     real(WP) :: U
     real(WP) :: l_e
@@ -311,27 +323,31 @@ contains
 
       l_e = this%rt%l_e(s, x, omega)
 
-    end associate
+      if (this%cowling_approx) then
+         alpha_gr = 0._WP
+      else
+         alpha_gr = 1._WP
+      endif
 
-    if (this%cowling_approx) then
-       alpha_gr = 0._WP
-    else
-       alpha_gr = 1._WP
-    endif
+      ! Set up the boundary conditions
 
-    ! Set up the boundary conditions
-
-    E(1,1) = 1._WP
-    E(1,2) = -1._WP
-    E(1,3) = alpha_gr*(1._WP)
-    E(1,4) = alpha_gr*(0._WP)
+      E(1,1) = 1._WP
+      E(1,2) = -1._WP
+      E(1,3) = alpha_gr*(1._WP)
+      E(1,4) = alpha_gr*(0._WP)
       
-    E(2,1) = alpha_gr*(U)
-    E(2,2) = alpha_gr*(0._WP)
-    E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-    E(2,4) = alpha_gr*(1._WP)
+      E(2,1) = alpha_gr*(U)
+      E(2,2) = alpha_gr*(0._WP)
+      E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+      E(2,4) = alpha_gr*(1._WP)
 
-    scale = r_ext_t(1._WP)
+      scl = r_ext_t(1._WP)
+
+      ! Apply the variables transformation
+
+      E = MATMUL(E, this%vr%B(s, x, omega))
+
+    end associate
 
     ! Finish
 
@@ -341,12 +357,12 @@ contains
 
   !****
 
-  subroutine build_outer_dziem_ (this, omega, E, scale)
+  subroutine build_outer_dziem_ (this, omega, E, scl)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: E(:,:)
-    type(${T}_ext_t), intent(out) :: scale
+    type(r_ext_t), intent(out)    :: scl
 
     real(WP) :: V
     real(WP) :: c_1
@@ -365,7 +381,7 @@ contains
     associate (s => this%ml%n_s, &
                x => this%ml%x_o)
 
-      V = this%ml%V_2(s, x)*this%x**2
+      V = this%ml%V_2(s, x)*x**2
       c_1 = this%ml%c_1(s, x)
 
       lambda = this%rt%lambda(s, x, omega)
@@ -373,27 +389,31 @@ contains
 
       omega_c = this%rt%omega_c(s, x, omega)
 
-    end associate
+      if (this%cowling_approx) then
+         alpha_gr = 0._WP
+      else
+         alpha_gr = 1._WP
+      endif
 
-    if (this%cowling_approx) then
-       alpha_gr = 0._WP
-    else
-       alpha_gr = 1._WP
-    endif
+      ! Set up the boundary conditions
 
-    ! Set up the boundary conditions
-
-    E(1,1) = 1 + (lambda/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
-    E(1,2) = -1._WP
-    E(1,3) = alpha_gr*(1 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
-    E(1,4) = alpha_gr*(0._WP)
+      E(1,1) = 1 + (lambda/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
+      E(1,2) = -1._WP
+      E(1,3) = alpha_gr*(1 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
+      E(1,4) = alpha_gr*(0._WP)
       
-    E(2,1) = alpha_gr*(0._WP)
-    E(2,2) = alpha_gr*(0._WP)
-    E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-    E(2,4) = alpha_gr*(1._WP)
+      E(2,1) = alpha_gr*(0._WP)
+      E(2,2) = alpha_gr*(0._WP)
+      E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+      E(2,4) = alpha_gr*(1._WP)
 
-    scale = r_ext_t(1._WP)
+      scl = r_ext_t(1._WP)
+
+      ! Apply the variables transformation
+
+      E = MATMUL(E, this%vr%B(s, x, omega))
+
+    end associate
 
     ! Finish
 
@@ -403,12 +423,12 @@ contains
 
   !****
 
-  subroutine build_outer_unno_ (this, omega, E, S)
+  subroutine build_outer_unno_ (this, omega, E, scl)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: E(:,:)
-    type(${T}_ext_t), intent(out) :: scale
+    type(r_ext_t), intent(out)    :: scl
 
     real(WP) :: V_g
     real(WP) :: As
@@ -444,40 +464,44 @@ contains
 
       omega_c = this%rt%omega_c(s, x, omega)
 
-    end associate
+      beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
-    beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
-
-    if (this%cowling_approx) then
-       alpha_gr = 0._WP
-    else
-       alpha_gr = 1._WP
-    endif
+      if (this%cowling_approx) then
+         alpha_gr = 0._WP
+      else
+         alpha_gr = 1._WP
+      endif
       
-    b_11 = V_g - 3._WP
-    b_12 = lambda/(c_1*omega_c**2) - V_g
-    b_13 = alpha_gr*(V_g)
+      b_11 = V_g - 3._WP
+      b_12 = lambda/(c_1*omega_c**2) - V_g
+      b_13 = alpha_gr*(V_g)
+      
+      b_21 = c_1*omega_c**2 - As
+      b_22 = 1._WP + As
+      b_23 = alpha_gr*(-As)
+      
+      alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
+      alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
 
-    b_21 = c_1*omega_c**2 - As
-    b_22 = 1._WP + As
-    b_23 = alpha_gr*(-As)
-    
-    alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
-    alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
+      ! Set up the boundary conditions
 
-    ! Set up the boundary conditions
+      E(1,1) = beta - b_11
+      E(1,2) = -b_12
+      E(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12)
+      E(1,4) = 0._WP
+      
+      E(2,1) = alpha_gr*(0._WP)
+      E(2,2) = alpha_gr*(0._WP)
+      E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+      E(2,4) = alpha_gr*(1._WP)
 
-    E(1,1) = beta - b_11
-    E(1,2) = -b_12
-    E(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12)
-    E(1,4) = 0._WP
+      scl = r_ext_t(1._WP)
 
-    E(2,1) = alpha_gr*(0._WP)
-    E(2,2) = alpha_gr*(0._WP)
-    E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-    E(2,4) = alpha_gr*(1._WP)
+      ! Apply the variables transformation
 
-    S = r_ext_t(1._WP)
+      E = MATMUL(E, this%vr%B(s, x, omega))
+
+    end associate
 
     ! Finish
 
@@ -487,12 +511,12 @@ contains
 
   !****
 
-  subroutine build_outer_jcd_ (this, omega, E, scale)
+  subroutine build_outer_jcd_ (this, omega, E, scl)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: E(:,:)
-    type(${T}_ext_t), intent(out) :: scale
+    type(r_ext_t), intent(out)    :: scl
 
     real(WP) :: V_g
     real(WP) :: As
@@ -522,32 +546,36 @@ contains
 
       omega_c = this%rt%omega_c(s, x, omega)
 
-    end associate
+      beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
-    beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
-
-    if (this%cowling_approx) then
-       alpha_gr = 0._WP
-    else
-       alpha_gr = 1._WP
-    endif
+      if (this%cowling_approx) then
+         alpha_gr = 0._WP
+      else
+         alpha_gr = 1._WP
+      endif
       
-    b_11 = V_g - 3._WP
-    b_12 = lambda/(c_1*omega_c**2) - V_g
+      b_11 = V_g - 3._WP
+      b_12 = lambda/(c_1*omega_c**2) - V_g
 
-    ! Set up the boundary conditions
+      ! Set up the boundary conditions
 
-    E(1,1) = beta - b_11
-    E(1,2) = -b_12
-    E(1,3) = alpha_gr*(b_12 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
-    E(1,4) = alpha_gr*(0._WP)
+      E(1,1) = beta - b_11
+      E(1,2) = -b_12
+      E(1,3) = alpha_gr*(b_12 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
+      E(1,4) = alpha_gr*(0._WP)
 
-    E(2,1) = alpha_gr*(0._WP)
-    E(2,2) = alpha_gr*(0._WP)
-    E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-    E(2,4) = alpha_gr*(1._WP)
+      E(2,1) = alpha_gr*(0._WP)
+      E(2,2) = alpha_gr*(0._WP)
+      E(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+      E(2,4) = alpha_gr*(1._WP)
 
-    scale = r_ext_t(1._WP)
+      scl = r_ext_t(1._WP)
+
+      ! Apply the variables transformation
+
+      E = MATMUL(E, this%vr%B(s, x, omega))
+
+    end associate
 
     ! Finish
 

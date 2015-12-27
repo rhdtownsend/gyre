@@ -23,7 +23,9 @@ module gyre_ad_vars
 
   use core_kinds
 
+  use gyre_linalg
   use gyre_model
+  use gyre_mode_par
   use gyre_osc_par
   use gyre_rot
   use gyre_rot_factory
@@ -36,18 +38,19 @@ module gyre_ad_vars
 
   ! Parameter definitions
 
-  integer, parameter :: DZIEM_VARS = 1
-  integer, parameter :: JCD_VARS = 2
-  integer, parameter :: MIX_VARS = 3
-  integer, parameter :: LAGP_VARS = 4
+  integer, parameter :: DZIEM_SET = 1
+  integer, parameter :: JCD_SET = 2
+  integer, parameter :: MIX_SET = 3
+  integer, parameter :: LAGP_SET = 4
 
   ! Derived-type definitions
 
   type :: ad_vars_t
      private
-     class(model_t), pointer     :: ms => null()
+     class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
-     integer                     :: vars
+     integer                     :: l
+     integer                     :: set
    contains
      private
      procedure, public :: A => A_
@@ -95,16 +98,18 @@ contains
 
     select case (os_p%variables_set)
     case ('DZIEM')
-       vr%vars = DZIEM_VARS
+       vr%set = DZIEM_SET
     case ('JCD')
-       vr%vars = JCD_VARS
+       vr%set = JCD_SET
     case ('MIX')
-       vr%vars = MIX_VARS
+       vr%set = MIX_SET
     case ('LAGP')
-       vr%vars = LAGP_VARS
+       vr%set = LAGP_SET
     case default
        $ABORT(Invalid variables_set)
     end select
+
+    vr%l = md_p%l
 
     ! Finish
 
@@ -125,17 +130,17 @@ contains
     ! Evaluate the transformation matrix to convert variables from
     ! the canonical form
 
-    select case (this%vars)
-    case (DZIEM_VARS)
+    select case (this%set)
+    case (DZIEM_SET)
        A = identity_matrix(4)
-    case (JCD_VARS)
-       A = this%A_jcd_(x, omega)
-    case (MIX_VARS)
-       A = this%A_mix_(x, omega)
-    case (LAGP_VARS)
-       A = this%A_lagp_(x, omega)
+    case (JCD_SET)
+       A = this%A_jcd_(s, x, omega)
+    case (MIX_SET)
+       A = this%A_mix_(s, x, omega)
+    case (LAGP_SET)
+       A = this%A_lagp_(s, x, omega)
     case default
-       $ABORT(Invalid vars)
+       $ABORT(Invalid set)
     end select
 
     ! Finish
@@ -168,14 +173,13 @@ contains
     U = this%ml%U(s, x)
     c_1 = this%ml%c_1(s, x)
 
-    l = this%rt%l
     lambda = this%rt%lambda(s, x, omega)
 
     omega_c = this%rt%omega_c(s, x, omega)
 
     ! Set up the matrix
       
-    if (l /= 0) then
+    if (this%l /= 0) then
 
        A(1,1) = 1._WP
        A(1,2) = 0._WP
@@ -334,17 +338,17 @@ contains
     ! Evaluate the transformation matrix to convert variables to
     ! canonical form
 
-    select case (this%vars)
-    case (DZIEM_VARS)
+    select case (this%set)
+    case (DZIEM_SET)
        B = identity_matrix(4)
-    case (JCD_VARS)
+    case (JCD_SET)
        B = this%B_jcd_(s, x, omega)
-    case (MIX_VARS)
+    case (MIX_SET)
        B = this%B_mix_(s, x, omega)
-    case (LAGP_VARS)
+    case (LAGP_SET)
        B = this%B_lagp_(s, x, omega)
     case default
-       $ABORT(Invalid vars)
+       $ABORT(Invalid set)
     end select
 
     ! Finish
@@ -377,14 +381,13 @@ contains
     U = this%ml%U(s, x)
     c_1 = this%ml%c_1(s, x)
 
-    l = this%rt%mp%l
     lambda = this%rt%lambda(s, x, omega)
 
     omega_c = this%rt%omega_c(s, x, omega)
 
     ! Set up the matrix
       
-    if (l /= 0._WP) then
+    if (this%l /= 0._WP) then
 
        B(1,1) = 1._WP
        B(1,2) = 0._WP
@@ -488,6 +491,7 @@ contains
   function B_lagp_ (this, s, x, omega) result (B)
 
     class(ad_vars_t), intent(in) :: this
+    integer, intent(in)          :: s
     real(WP), intent(in)         :: x
     real(WP), intent(in)         :: omega
     real(WP)                     :: B(4,4)
@@ -541,17 +545,17 @@ contains
 
     ! Evaluate the derivative x dB/dx of the transformation matrix B
 
-    select case (this%vars)
-    case (DZIEM_VARS)
+    select case (this%set)
+    case (DZIEM_SET)
        dB = 0._WP
-    case (JCD_VARS)
+    case (JCD_SET)
        dB = this%dB_jcd_(s, x, omega)
-    case (MIX_VARS)
+    case (MIX_SET)
        dB = this%dB_mix_(s, x, omega)
-    case (LAGP_VARS)
+    case (LAGP_SET)
        dB = this%dB_lagp_(s, x, omega)
     case default
-       $ABORT(Invalid vars)
+       $ABORT(Invalid set)
     end select
 
     ! Finish
@@ -562,7 +566,7 @@ contains
 
 !****
 
-  function dB_jcd_ (this, x, omega) result (dB)
+  function dB_jcd_ (this, s, x, omega) result (dB)
 
     class(ad_vars_t), intent(in) :: this
     integer, intent(in)          :: s
@@ -588,7 +592,6 @@ contains
     U = this%ml%U(s, x)
     c_1 = this%ml%c_1(s, x)
 
-    l = this%rt%mp%l
     lambda = this%rt%lambda(s, x, omega)
 
     omega_c = this%rt%omega_c(s, x, omega)
@@ -596,7 +599,7 @@ contains
     ! Set up the matrix (nb: the derivatives of omega_c and lambda are
     ! neglected; this is incorrect when rotation is non-zero)
       
-    if (l /= 0._WP) then
+    if (this%l /= 0._WP) then
 
        dB(1,1) = 0._WP
        dB(1,2) = 0._WP
