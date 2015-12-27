@@ -46,7 +46,7 @@ contains
 
   subroutine read_fgong_model (ml_p, ml)
 
-    type(model_par_t), intent(in)   :: mp_l
+    type(model_par_t), intent(in)   :: ml_p
     type(evol_model_t), intent(out) :: ml
 
     integer                   :: unit
@@ -81,11 +81,11 @@ contains
     ! Open the FGONG-format file
 
     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from FGONG file', TRIM(file)
+       write(OUTPUT_UNIT, 100) 'Reading from FGONG file', TRIM(ml_p%file)
 100    format(A,1X,A)
     endif
 
-    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+    open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
 
     ! Read the header
 

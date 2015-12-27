@@ -25,6 +25,9 @@ module gyre_evol_model
   
   use gyre_constants
   use gyre_evol_seg
+  use gyre_model
+  use gyre_model_par
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -95,9 +98,13 @@ module gyre_evol_model
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
      $PROC_DECL(M_r)
+     generic, public   :: M_r => M_r_1_, M_r_v_
      $PROC_DECL(P)
+     generic, public   :: P => P_1_, P_v_
      $PROC_DECL(rho)
+     generic, public   :: rho => rho_1_, rho_v_
      $PROC_DECL(T)
+     generic, public   :: T => T_1_, T_v_
      procedure, public :: scaffold => scaffold_
      procedure, public :: delta_p => delta_p_
      procedure, public :: delta_g => delta_g_
@@ -144,7 +151,7 @@ contains
     allocate(ml%es(ml%n_s))
 
     seg_loop : do s = 1, ml%n_s
-       ml%es(s) = evol_seg_t(PACK(x, MASK=ml%s == s), ml_p)
+       ml%es(s) = evol_seg_t(ml_p)
     end do seg_loop
 
     ml%M_star = M_star
@@ -201,26 +208,31 @@ contains
     class(evol_model_t), intent(inout) :: this
     real(WP), intent(in)               :: f(:)
 
-    integer :: s
+    integer              :: s
+    logical, allocatable :: mask(:)
 
     $CHECK_BOUNDS(SIZE(f),this%n_k)
 
     ! Set the data for $NAME
 
     seg_loop : do s = 1, this%n_s
-       call this%es(s)%set_${NAME}(PACK(f, MASK=this%s == s))
+
+       mask = this%s == s
+       
+       call this%es(s)%set_${NAME}(PACK(this%x, MASK=mask), PACK(f, MASK=mask))
+
     end do seg_loop
 
     ! Finish
 
     return
 
-  end function set_${NAME}_
+  end subroutine set_${NAME}_
 
-  $endif
+  $endsub
 
   $SET(V_2)
-  $SET(A_s)
+  $SET(As)
   $SET(U)
   $SET(c_1)
   $SET(Gamma_1)
@@ -295,7 +307,7 @@ contains
 
     ! Evaluate the fractional mass coordinate
 
-    M_r = this%M_star*(x**3*/this%c_1(s, x))
+    M_r = this%M_star*(x**3/this%c_1(s, x))
 
     ! Finish
 
@@ -312,10 +324,10 @@ contains
     real(WP), intent(in)            :: x
     real(WP)                        :: P
 
-    ! Evaluate the total pressure
+    ! Evaluate the total pressure CHECK THIS
 
     P = (G_GRAVITY*this%M_star/(4._WP*PI*this%R_star**4))*&
-        (x**2*this%U(s, x)/(this%c_1(s, x)*this%V(s, x)))
+        (this%U(s, x)/(this%c_1(s, x)*this%V_2(s, x)))
 
     ! Finish
 
@@ -334,7 +346,7 @@ contains
 
     ! Evaluate the density
 
-    rho = (this%M_star/(4._WP*PI*this%R_star)**3*(this%U(s, x)/this%c_1(s, x))
+    rho = (this%M_star/(4._WP*PI*this%R_star)**3)*(this%U(s, x)/this%c_1(s, x))
 
     ! Finish
 
@@ -367,7 +379,7 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_v_ (this, co) result (${NAME})
+  function ${NAME}_v_ (this, s, x) result (${NAME})
 
     class(evol_model_t), intent(in) :: this
     integer, intent(in)             :: s(:)
@@ -436,7 +448,7 @@ contains
 
     return
 
-  end function scaffold_
+  end subroutine scaffold_
 
   !****
 
@@ -493,7 +505,7 @@ contains
       c_1 = this%c_1(s, x)
 
       where (x /= 0._WP)
-         f = MAX(As/c_1, 0._WP))/x
+         f = MAX(As/c_1, 0._WP)/x
       elsewhere
          f = 0._WP
       end where

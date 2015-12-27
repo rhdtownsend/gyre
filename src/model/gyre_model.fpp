@@ -36,7 +36,7 @@ module gyre_model
     generic, public           :: ${NAME} => ${NAME}_1_, ${NAME}_v_
   $endsub
 
-  type :: model_t
+  type, abstract :: model_t
      private
      real(WP), public :: x_i
      real(WP), public :: x_o
@@ -90,6 +90,7 @@ module gyre_model
      end function f_v_
 
      subroutine scaffold_ (this, s, x)
+       use core_kinds
        import model_t
        class(model_t), intent(in)         :: this
        integer, allocatable, intent(out)  :: s(:)

@@ -24,7 +24,7 @@ module gyre_evol_seg
   use core_kinds
 
   use gyre_constants
-  use gyre_interp
+  use gyre_spline
   use gyre_model_par
 
   use ISO_FORTRAN_ENV
@@ -37,9 +37,9 @@ module gyre_evol_seg
 
   $define $DATA_DECL $sub
     $local $NAME $1
-    type(interp_t) :: ip_${NAME}
-    logical        :: df_${NAME} = .FALSE.
-  $endif
+    type(r_spline_t) :: sp_${NAME}
+    logical          :: df_${NAME} = .FALSE.
+  $endsub
 
   $define $SET_DECL $sub
     $local $NAME $1
@@ -48,8 +48,7 @@ module gyre_evol_seg
 
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure         :: ${NAME}_1_
-    procedure         :: ${NAME}_v_
+    procedure, public :: ${NAME} => ${NAME}_
   $endsub
 
   type :: evol_seg_t
@@ -71,6 +70,7 @@ module gyre_evol_seg
      $DATA_DECL(kappa_ad)
      $DATA_DECL(kappa_S)
      $DATA_DECL(Omega_rot)
+     type(model_par_t) :: ml_p
    contains
      private
      $SET_DECL(V_2)
@@ -146,7 +146,7 @@ contains
 
   !****
 
-  $def $SET $sub
+  $define $SET $sub
 
   $local $NAME $1
 
@@ -161,9 +161,9 @@ contains
     ! Set the data for $NAME
 
     if (x(1) == 0._WP) then
-       this%ip_${NAME} = interp_t(x, f, this%ml_p%deriv_type, df_dx_a=0._WP)
+       this%sp_${NAME} = r_spline_t(x, f, this%ml_p%deriv_type, df_dx_a=0._WP)
     else
-       this%ip_${NAME} = interp_t(x, f, this%ml_p%deriv_type)
+       this%sp_${NAME} = r_spline_t(x, f, this%ml_p%deriv_type)
     endif
     
     this%df_${NAME} = .TRUE.
@@ -174,7 +174,7 @@ contains
 
   end subroutine set_${NAME}_
 
-  $endif
+  $endsub
 
   $SET(V_2)
   $SET(As)
@@ -210,7 +210,7 @@ contains
 
     if (this%df_${NAME}) then
 
-       $NAME = this%ip_${NAME}%f(x)
+       $NAME = this%sp_${NAME}%f(x)
 
     else
 
@@ -259,7 +259,7 @@ contains
     if (this%df_${NAME}) then
 
        if (x > 0._WP) then
-          d$NAME = x*this%ip_${NAME}%df_dx(x)/this%ip_${NAME}%f(x)
+          d$NAME = x*this%sp_${NAME}%df_dx(x)/this%sp_${NAME}%f(x)
        else
           d$NAME = 0._WP
        endif
