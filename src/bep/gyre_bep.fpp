@@ -1,5 +1,5 @@
-! Module   : gyre_bep_solver
-! Purpose  : boundary eigenvalue problem solver
+! Module   : gyre_bep
+! Purpose  : boundary eigenvalue problems
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -15,11 +15,11 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_bep_solver
+module gyre_bep
 
   ! Uses
 
-  use gyre_r_bep_solver
-  use gyre_c_bep_solver
+  use gyre_r_bep
+  use gyre_c_bep
 
-end module gyre_bep_solver
+end module gyre_bep

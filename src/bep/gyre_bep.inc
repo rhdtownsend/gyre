@@ -1,5 +1,5 @@
-! Incfile  : gyre_bep_solver
-! Purpose  : boundary eigenvalue problem solver (template)
+! Incfile  : gyre_bep
+! Purpose  : boundary eigenvalue problems (template)
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -22,7 +22,7 @@ $define $MOD_DECL $sub
 $local $T $1
 $local $TYPE $2
 
-module gyre_${T}_bep_solver
+module gyre_${T}_bep
 
   ! Uses
 
@@ -44,7 +44,7 @@ module gyre_${T}_bep_solver
 
   ! Derived-type definitions
 
-  type :: ${T}_bep_solver_t
+  type :: ${T}_bep_t
      private
      class(${T}_bound_t), allocatable  :: bd_i
      class(${T}_bound_t), allocatable  :: bd_o
@@ -59,23 +59,24 @@ module gyre_${T}_bep_solver
      procedure, public :: eval_discrim => eval_discrim_
      procedure         :: build_
      procedure, public :: solve => solve_
-  end type ${T}_bep_solver_t
+  end type ${T}_bep_t
 
   ! Interfaces
 
-  interface ${T}_bep_solver_t
-     module procedure ${T}_bep_solver_t_
-  end interface ${T}_bep_solver_t
+  interface ${T}_bep_t
+     module procedure ${T}_bep_t
+  end interface ${T}_bep_t
 
   ! Access specifiers
 
   private
 
-  public :: ${T}_bep_solver_t
+  public :: ${T}_bep_t
+  public :: ${T}_bep_t_
 
 contains
 
-  function ${T}_bep_solver_t_ (bd_i, bd_o, df, omega_min, omega_max, nm_p) result (bs)
+  function ${T}_bep_t_ (bd_i, bd_o, df, omega_min, omega_max, nm_p) result (bp)
 
     class(${T}_bound_t), intent(in)  :: bd_i
     class(${T}_bound_t), intent(in)  :: bd_o
@@ -83,7 +84,7 @@ contains
     real(WP), intent(in)             :: omega_min
     real(WP), intent(in)             :: omega_max
     type(num_par_t), intent(in)      :: nm_p
-    type(${T}_bep_solver_t)          :: bs
+    type(${T}_bep_t)                 :: bp
 
     integer :: n_k
     integer :: n_e
@@ -103,35 +104,35 @@ contains
 
     $ASSERT_DEBUG(ALL(df%n_e == n_e),Dimension mismatch)
 
-    ! Construct the bep_solver_t
+    ! Construct the bep_t
 
-    allocate(bs%bd_i, SOURCE=bd_i)
-    allocate(bs%bd_o, SOURCE=bd_o)
+    allocate(bp%bd_i, SOURCE=bd_i)
+    allocate(bp%bd_o, SOURCE=bd_o)
 
-    allocate(bs%df(n_k-1), SOURCE=df)
+    allocate(bp%df(n_k-1), SOURCE=df)
 
-    allocate(bs%sm, SOURCE=${T}_sysmtx_t(n_k-1, n_e, n_i, n_o, nm_p))
+    allocate(bp%sm, SOURCE=${T}_sysmtx_t(n_k-1, n_e, n_i, n_o, nm_p))
 
-    bs%n_k = n_k
-    bs%n_e = n_e
+    bp%n_k = n_k
+    bp%n_e = n_e
 
-    bs%omega_min = omega_min
-    bs%omega_max = omega_max
+    bp%omega_min = omega_min
+    bp%omega_max = omega_max
     
     ! Finish
     
     return
 
-  end function ${T}_bep_solver_t_
+  end function ${T}_bep_t_
 
   !****
 
   subroutine eval_discrim_ (this, omega, discrim, status)
 
-    class(${T}_bep_solver_t), intent(inout) :: this
-    $TYPE(WP), intent(in)                   :: omega
-    type(${T}_ext_t), intent(out)           :: discrim
-    integer, intent(out)                    :: status
+    class(${T}_bep_t), intent(inout) :: this
+    $TYPE(WP), intent(in)            :: omega
+    type(${T}_ext_t), intent(out)    :: discrim
+    integer, intent(out)             :: status
 
     ! Evaluate the discriminant as the determinant of the sysmtx
 
@@ -160,8 +161,8 @@ contains
 
   subroutine build_ (this, omega)
 
-    class(${T}_bep_solver_t), target, intent(inout) :: this
-    $TYPE(WP), intent(in)                           :: omega
+    class(${T}_bep_t), target, intent(inout) :: this
+    $TYPE(WP), intent(in)                    :: omega
 
     $TYPE(WP)        :: E_l(this%n_e,this%n_e)
     $TYPE(WP)        :: E_r(this%n_e,this%n_e)
@@ -196,10 +197,10 @@ contains
 
   subroutine solve_ (this, omega, y, discrim)
 
-    class(${T}_bep_solver_t), intent(inout) :: this
-    $TYPE(WP), intent(in)                   :: omega
-    $TYPE(WP), intent(out)                  :: y(:,:)
-    type(${T}_ext_t), intent(out)           :: discrim
+    class(${T}_bep_t), intent(inout) :: this
+    $TYPE(WP), intent(in)            :: omega
+    $TYPE(WP), intent(out)           :: y(:,:)
+    type(${T}_ext_t), intent(out)    :: discrim
 
     $TYPE(WP) :: v(this%n_e*this%n_k)
 
@@ -224,6 +225,6 @@ contains
 
   end subroutine solve_
 
-end module gyre_${T}_bep_solver
+end module gyre_${T}_bep
 
 $endsub

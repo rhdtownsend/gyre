@@ -1,5 +1,5 @@
-! Module   : gyre_c_bep_solver
-! Purpose  : boundary eigenvalue problem solver (complex)
+! Module   : gyre_c_bep
+! Purpose  : boundary eigenvalue problems (complex)
 !
 ! Copyright 2013-2015 Rich Townsend
 !
@@ -15,6 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'gyre_bep_solver.inc'
+$include 'gyre_bep.inc'
 
 $MOD_DECL(c,complex)
