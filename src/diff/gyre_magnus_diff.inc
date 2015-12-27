@@ -56,10 +56,10 @@ module gyre_${T}_magnus_diff
    contains
      private
      procedure, public :: build => build_
-     procedure         :: build_GL2_
-     procedure         :: build_GL4_
-     procedure         :: build_GL6_
      procedure         :: dOmega_
+     procedure         :: dOmega_GL2_
+     procedure         :: dOmega_GL4_
+     procedure         :: dOmega_GL6_
   end type ${T}_magnus_diff_t
 
   ! Interfaces
@@ -114,13 +114,13 @@ contains
 
   !****
 
-  subroutine build_ (this, omega, E_l, E_r, scale)
+  subroutine build_ (this, omega, E_l, E_r, scl)
 
     class(${T}_magnus_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
-    type(${T}_ext_t), intent(out)         :: scale
+    type(${T}_ext_t), intent(out)         :: scl
 
     logical, parameter :: UPWIND = .TRUE.
     
@@ -181,7 +181,7 @@ contains
                      V_pos, this%n_e, V_l, this%n_e, CMPLX(0._WP, KIND=WP), &
                      E_r_, this%n_e)
 
-       scale = exp(${T}_ext_t(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*dx))
+       scl = exp(${T}_ext_t(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*dx))
 
     else
 
@@ -201,7 +201,7 @@ contains
           E_r_(i,i) = -1._WP
        end do
 
-       scale = ${T}_ext_t(1._WP)
+       scl = ${T}_ext_t(1._WP)
 
     endif
 
@@ -253,7 +253,7 @@ contains
 
     real(WP)  :: dx
     real(WP)  :: x(1)
-    $TYPE(WP) :: A(this%n_e,this%n_e)
+    $TYPE(WP) :: A(this%n_e,this%n_e,1)
 
     ! Evaluate the GL2 Magnus slope matrix
 
@@ -261,7 +261,7 @@ contains
 
     dx = this%x_b - this%x_a
 
-    x = x_a + [0.5_WP]*dx
+    x = this%x_a + [0.5_WP]*dx
 
     A(:,:,1) = this%eq%A(x(1), omega)
 

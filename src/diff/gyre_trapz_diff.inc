@@ -67,7 +67,7 @@ module gyre_${T}_trapz_diff
 
 contains
 
-  function ${T}_trapz_diff_t_ (eq, x_a, x_b, w) result (iv)
+  function ${T}_trapz_diff_t_ (eq, x_a, x_b, w) result (df)
 
     class(${T}_eqns_t), intent(in) :: eq
     real(WP), intent(in)           :: x_a
@@ -96,16 +96,15 @@ contains
 
   !****
 
-  subroutine build_ (this, omega, E_l, E_r, scale)
+  subroutine build_ (this, omega, E_l, E_r, scl)
 
     class(${T}_trapz_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                :: omega
     $TYPE(WP), intent(out)               :: E_l(:,:)
     $TYPE(WP), intent(out)               :: E_r(:,:)
-    type(${T}_ext_t), intent(out)        :: scale
+    type(${T}_ext_t), intent(out)        :: scl
 
     real(WP)  :: dx
-    real(WP)  :: x(2)
     $TYPE(WP) :: xA(this%n_e,this%n_e,2)
     real(WP)  :: x_m
 
@@ -119,19 +118,17 @@ contains
 
     dx = this%x_b - this%x_a
 
-    x = [x_a,x_b]
-
-    xA(:,:,1) = this%eq%xA(x(1), omega)
-    xA(:,:,2) = this%eq%xA(x(2), omega)
+    xA(:,:,1) = this%eq%xA(this%x_a, omega)
+    xA(:,:,2) = this%eq%xA(this%x_b, omega)
 
     ! Build the difference equations
 
-    x_m = 0.5_WP*(x_a + x_b)
+    x_m = 0.5_WP*(this%x_a + this%x_b)
 
     E_l = -x_m*identity_matrix(this%n_e) - dx*MATMUL(diagonal_matrix(1._WP-this%w), xA(:,:,1))
     E_r =  x_m*identity_matrix(this%n_e) - dx*MATMUL(diagonal_matrix(      this%w), xA(:,:,2))
 
-    scale = ${T}_ext_t(1._WP)
+    scl = ${T}_ext_t(1._WP)
 
     ! Finish
 

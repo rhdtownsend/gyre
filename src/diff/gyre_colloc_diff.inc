@@ -113,23 +113,23 @@ contains
 
 !****
 
-  subroutine build_ (this, omega, E_l, E_r, scale)
+  subroutine build_ (this, omega, E_l, E_r, scl)
 
     class(${T}_colloc_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
-    type(${T}_ext_t), intent(out)         :: scale
+    type(${T}_ext_t), intent(out)         :: scl
 
     ! Build the difference equations
 
     select case (this%scheme)
     case (GL2_SCHEME)
-       call this%build_GL2_(omega, E_l, E_r, scale)
+       call this%build_GL2_(omega, E_l, E_r, scl)
     case (GL4_SCHEME)
-       call this%build_GL4_(omega, E_l, E_r, scale)
+       call this%build_GL4_(omega, E_l, E_r, scl)
     case (GL6_SCHEME)
-       call this%build_GL6_(omega, E_l, E_r, scale)
+       call this%build_GL6_(omega, E_l, E_r, scl)
     case default
        $ABORT(Invalid scheme)
     end select
@@ -142,13 +142,13 @@ contains
   
 !****
 
-  subroutine build_GL2_ (this, omega, E_l, E_r, scale)
+  subroutine build_GL2_ (this, omega, E_l, E_r, scl)
 
     class(${T}_colloc_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
-    type(${T}_ext_t), intent(out)         :: scale
+    type(${T}_ext_t), intent(out)         :: scl
 
     real(WP)  :: dx
     real(WP)  :: x(1)
@@ -173,7 +173,7 @@ contains
     E_l = 0.5_WP*dx*A(:,:,1) + identity_matrix(this%n_e)
     E_r = 0.5_WP*dx*A(:,:,1) - identity_matrix(this%n_e)
 
-    scale = ${T}_ext_t(1._WP)
+    scl = ${T}_ext_t(1._WP)
 
     ! Finish
 
@@ -181,13 +181,13 @@ contains
 
 !****
 
-  subroutine build_GL4_ (this, omega, E_l, E_r, scale)
+  subroutine build_GL4_ (this, omega, E_l, E_r, scl)
 
     class(${T}_colloc_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
-    type(${T}_ext_t), intent(out)         :: scale
+    type(${T}_ext_t), intent(out)         :: scl
 
     real(WP), parameter :: A_IJ(2,2) = RESHAPE([0.25_WP,&
                                                 0.25_WP+SQRT(3._WP)/6._WP, &
@@ -212,7 +212,7 @@ contains
        call this%build_irk_(omega, 2, this%x_b, this%x_a, A_IJ, B_I, C_I, E_r, E_l)
     endif
 
-    scale = ${T}_ext_t(1._WP)
+    scl = ${T}_ext_t(1._WP)
 
     ! Finish
 
@@ -220,13 +220,13 @@ contains
 
 !****
 
-  subroutine build_GL6_ (this, omega, E_l, E_r, scale)
+  subroutine build_GL6_ (this, omega, E_l, E_r, scl)
 
     class(${T}_colloc_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
-    type(${T}_ext_t), intent(out)         :: scale
+    type(${T}_ext_t), intent(out)         :: scl
 
     real(WP), parameter :: A_IJ(3,3) = RESHAPE([5._WP/36._WP, &
                                                 5._WP/36._WP+SQRT(15._WP)/24._WP, &
@@ -258,7 +258,7 @@ contains
        call this%build_irk_(omega, 3, this%x_b, this%x_a, A_IJ, B_I, C_I, E_r, E_l)
     endif
 
-    scale = ${T}_ext_t(1._WP)
+    scl = ${T}_ext_t(1._WP)
 
     ! Finish
 
@@ -271,6 +271,8 @@ contains
     class(${T}_colloc_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
     integer, intent(in)                   :: n_s
+    real(WP), intent(in)                  :: x_a
+    real(WP), intent(in)                  :: x_b
     real(WP), intent(in)                  :: a_ij(:,:)
     real(WP), intent(in)                  :: b_i(:)
     real(WP), intent(in)                  :: c_i(:)
@@ -278,16 +280,16 @@ contains
     $TYPE(WP), intent(out)                :: E_b(:,:)
 
     real(WP)  :: dx
-    $TYPE(WP) :: A(eq%n_e,eq%n_e,n_s)
-    $TYPE(WP) :: M(n_s*eq%n_e,n_s*eq%n_e)
+    $TYPE(WP) :: A(this%n_e,this%n_e,n_s)
+    $TYPE(WP) :: M(n_s*this%n_e,n_s*this%n_e)
     integer   :: i
     integer   :: i_a
     integer   :: i_b
     integer   :: j
     integer   :: j_a
     integer   :: j_b
-    $TYPE(WP) :: B(n_s*eq%n_e,eq%n_e)
-    $TYPE(WP) :: X(n_s*eq%n_e,eq%n_e)
+    $TYPE(WP) :: B(n_s*this%n_e,this%n_e)
+    $TYPE(WP) :: X(n_s*this%n_e,this%n_e)
     $TYPE(WP) :: K(this%n_e,this%n_e,n_s)
     
     $CHECK_BOUNDS(SIZE(a_ij, 1),n_s)

@@ -84,7 +84,7 @@ contains
        allocate(df, SOURCE=${T}_colloc_diff_t(eq, x_a, x_b, 'GL4'))
     case ('COLLOC_GL6')
        allocate(df, SOURCE=${T}_colloc_diff_t(eq, x_a, x_b, 'GL6'))
-    case ('FINDIFF')
+    case ('TRAPZ')
        allocate(df, SOURCE=${T}_trapz_diff_t(eq, x_a, x_b, SPREAD(0.5_WP, DIM=1, NCOPIES=eq%n_e)))
     case default
        $ABORT(Invalid diff_scheme)
