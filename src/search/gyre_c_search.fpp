@@ -26,7 +26,7 @@ module gyre_c_search
   use core_order
   use core_parallel
 
-  use gyre_bvp
+  use gyre_bep
   use gyre_discrim_func
   use gyre_ext
   use gyre_mode
@@ -53,7 +53,7 @@ contains
 
   subroutine prox_search (bp, mp, np, op, md_in, process_root)
 
-    class(c_bvp_t), target, intent(inout) :: bp
+    class(c_bep_t), target, intent(inout) :: bp
     type(mode_par_t), intent(in)          :: mp
     type(num_par_t), intent(in)           :: np 
     type(osc_par_t), intent(in)           :: op
@@ -262,7 +262,7 @@ contains
 
   ! subroutine improve_omega (bp, mp, op, x, omega)
 
-  !   class(c_bvp_t), target, intent(inout) :: bp
+  !   class(c_bep_t), target, intent(inout) :: bp
   !   type(mode_par_t), intent(in)          :: mp
   !   type(osc_par_t), intent(in)           :: op
   !   real(WP), intent(in)                  :: x(:)

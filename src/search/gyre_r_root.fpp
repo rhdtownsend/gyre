@@ -58,14 +58,14 @@ module gyre_r_root
 
 contains
 
-  subroutine solve_ (rf, np, rx_a, rx_b, rx_tol, rx_root, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
+  subroutine solve_ (rf, rx_a, rx_b, rx_tol, nm_p, rx_root, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
 
     class(r_ext_func_t), intent(inout)  :: rf
-    class(num_par_t), intent(in)        :: np
     type(r_ext_t), intent(in)           :: rx_a
     type(r_ext_t), intent(in)           :: rx_b
     type(r_ext_t), intent(in)           :: rx_tol
     type(r_ext_t), intent(out)          :: rx_root
+    class(num_par_t), intent(in)        :: nm_p
     integer, intent(out)                :: status
     integer, optional, intent(out)      :: n_iter
     integer, optional, intent(in)       :: n_iter_max
@@ -98,7 +98,7 @@ contains
        if (status /= STATUS_OK) return
     endif
 
-    call narrow_(rf, np, a, b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
+    call narrow_(rf, a, b, rx_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
 
     rx_root = b
 
@@ -110,13 +110,13 @@ contains
 
 !****
 
-  subroutine narrow_ (rf, np, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
+  subroutine narrow_ (rf, rx_a, rx_b, rx_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
 
     class(r_ext_func_t), intent(inout)     :: rf
-    class(num_par_t), intent(in)           :: np
     type(r_ext_t), intent(inout)           :: rx_a
     type(r_ext_t), intent(inout)           :: rx_b
     type(r_ext_t), intent(in)              :: rx_tol
+    class(num_par_t), intent(in)           :: nm_p
     integer, intent(out)                   :: status
     integer, optional, intent(out)         :: n_iter
     integer, optional, intent(in)          :: n_iter_max
@@ -126,7 +126,7 @@ contains
 
     ! Narrow the bracket [rx_a,rx_b] on a root of the function rf
 
-    select case (np%r_root_solver)
+    select case (nm_p%r_root_solver)
     case ('BRENT')
        call narrow_brent_(rf, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
     case default
