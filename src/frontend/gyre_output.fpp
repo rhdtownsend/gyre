@@ -25,15 +25,15 @@ module gyre_output
   use core_string
 
   use gyre_constants
-  use gyre_model
   use gyre_evol_model
-  use gyre_poly_model
-  use gyre_out_par
+  use gyre_hdf_writer
   use gyre_mode
+  use gyre_model
+  use gyre_out_par
+!  use gyre_poly_model
+  use gyre_txt_writer
   use gyre_util
   use gyre_writer
-  use gyre_hdf_writer
-  use gyre_txt_writer
 
   use ISO_FORTRAN_ENV
 
@@ -50,31 +50,31 @@ module gyre_output
 
 contains
 
-  subroutine write_summary (up, md)
+  subroutine write_summary (md, ot_p)
 
-    type(out_par_t), intent(in) :: up
     type(mode_t), intent(in)    :: md(:)
+    type(out_par_t), intent(in) :: ot_p
 
-    type(hdf_writer_t)                                :: wr_hdf
-    type(txt_writer_t)                                :: wr_txt
-    class(writer_t), allocatable                      :: wr
-    character(LEN(up%summary_item_list)), allocatable :: items(:)
-    integer                                           :: n_md
-    integer                                           :: i
-    integer                                           :: j
+    type(hdf_writer_t)                                  :: wr_hdf
+    type(txt_writer_t)                                  :: wr_txt
+    class(writer_t), allocatable                        :: wr
+    character(LEN(ot_p%summary_item_list)), allocatable :: items(:)
+    integer                                             :: n_md
+    integer                                             :: i
+    integer                                             :: j
     
-    if (up%summary_file == '') return
+    if (ot_p%summary_file == '') return
 
     ! Write the summary file
 
     ! Open the file
 
-    select case (up%summary_file_format)
+    select case (ot_p%summary_file_format)
     case ('HDF')
-       wr_hdf = hdf_writer_t(up%summary_file, up%label)
+       wr_hdf = hdf_writer_t(ot_p%summary_file, ot_p%label)
        allocate(wr, SOURCE=wr_hdf)
     case ('TXT')
-       wr_txt = txt_writer_t(up%summary_file, up%label)
+       wr_txt = txt_writer_t(ot_p%summary_file, ot_p%label)
        allocate(wr, SOURCE=wr_txt)
     case default
        $ABORT(Invalid summary_file_format)
@@ -82,7 +82,7 @@ contains
 
     ! Split the item list
 
-    items = split_list(up%summary_item_list, ',')
+    items = split_list(ot_p%summary_item_list, ',')
 
     ! Write the items
 
@@ -93,11 +93,11 @@ contains
        select case (items(i))
 
        case('l')
-          call wr%write('l', md%mp%l)
-       case('l_0')
-          call wr%write('l_0', [(md(j)%rt%l_0(md(j)%omega), j=1,n_md)])
+          call wr%write('l', md%l)
+       case('l_i')
+          call wr%write('l_i', [(md(j)%l_i, j=1,n_md)])
        case('m')
-          call wr%write('m', md%mp%m)
+          call wr%write('m', md%m)
        case('n_p')
           call wr%write('n_p', md%n_p)
        case('n_g')
@@ -107,15 +107,15 @@ contains
        case('omega')
           call wr%write('omega', md%omega)
        case('freq')
-          call wr%write('freq', [(md(j)%freq(up%freq_units, up%freq_frame), j=1,n_md)])
+          call wr%write('freq', [(md(j)%freq(ot_p%freq_units, ot_p%freq_frame), j=1,n_md)])
        case ('f_T')
-          call wr%write('f_T', [(ABS(md(j)%lag_T_eff()/md(j)%xi_r_ref()), j=1,n_md)])
+          call wr%write('f_T', [(md(j)%f_T(), j=1,n_md)])
        case ('f_g')
-          call wr%write('f_g', [(ABS(md(j)%lag_g_eff()/md(j)%xi_r_ref()), j=1,n_md)])
+          call wr%write('f_g', [(md(j)%f_g(), j=1,n_md)])
        case ('psi_T')
-          call wr%write('psi_T', [(phase(md(j)%lag_T_eff()/md(j)%xi_r_ref()), j=1,n_md)])
+          call wr%write('psi_T', [(md(j)%psi_T(), j=1,n_md)])
        case ('psi_g')
-          call wr%write('psi_g', [(phase(md(j)%lag_g_eff()/md(j)%xi_r_ref()), j=1,n_md)])
+          call wr%write('psi_g', [(md(j)%psi_g(), j=1,n_md)])
        case('beta')
           call wr%write('beta', [(md(j)%beta(), j=1,n_md)])
        case('E')
@@ -127,7 +127,7 @@ contains
        case('E_norm')
           call wr%write('E_norm', [(md(j)%E_norm(), j=1,n_md)])
        case('E_ratio')
-          call wr%write('E_ratio', [(md(j)%E_ratio(), j=1,n_md)])
+          call wr%write('E_ratio', [(md(j)%E_p()/md(j)%E_g(), j=1,n_md)])
        case('W')
           call wr%write('W', [(md(j)%W(), j=1,n_md)])
        case('omega_int')
@@ -135,24 +135,24 @@ contains
        case('eta')
           call wr%write('eta', [(md(j)%eta(), j=1,n_md)])
        case ('xi_r_ref')
-          call wr%write('xi_r_ref', [(md(j)%xi_r_ref(), j=1,n_md)])
+          call wr%write('xi_r_ref', [(md(j)%xi_r(md(j)%k_ref), j=1,n_md)])
        case ('xi_h_ref')
-          call wr%write('xi_h_ref', [(md(j)%xi_h_ref(), j=1,n_md)])
+          call wr%write('xi_h_ref', [(md(j)%xi_h(md(j)%k_ref), j=1,n_md)])
        case ('eul_phi_ref')
-          call wr%write('eul_phi_ref', [(md(j)%eul_phi_ref(), j=1,n_md)])
+          call wr%write('eul_phi_ref', [(md(j)%eul_phi(md(j)%k_ref), j=1,n_md)])
        case ('deul_phi_ref')
-          call wr%write('deul_phi_ref', [(md(j)%deul_phi_ref(), j=1,n_md)])
+          call wr%write('deul_phi_ref', [(md(j)%deul_phi(md(j)%k_ref), j=1,n_md)])
        case('freq_units')
-          call wr%write('freq_units', up%freq_units)
+          call wr%write('freq_units', ot_p%freq_units)
        case('freq_frame')
-          call wr%write('freq_frame', up%freq_frame)
+          call wr%write('freq_frame', ot_p%freq_frame)
        case default
-          if(n_md >= 1) then
+          if (n_md >= 1) then
              select type (ml => md(1)%ml)
              type is (evol_model_t)
                 call write_summary_evol_(items(i), ml, wr)
-             type is (poly_model_t)
-                call write_summary_poly_(items(i), ml, wr)
+             ! type is (poly_model_t)
+             !    call write_summary_poly_(items(i), ml, wr)
              class default
                 write(ERROR_UNIT, *) 'item:', TRIM(items(i))
                 $ABORT(Invalid item)
@@ -198,66 +198,66 @@ contains
 
     end subroutine write_summary_evol_
 
-    subroutine write_summary_poly_ (item, ml, wr)
+    ! subroutine write_summary_poly_ (item, ml, wr)
 
-      character(*), intent(in)       :: item
-      type(poly_model_t), intent(in) :: ml
-      class(writer_t), intent(inout) :: wr
+    !   character(*), intent(in)       :: item
+    !   type(poly_model_t), intent(in) :: ml
+    !   class(writer_t), intent(inout) :: wr
 
-      ! Write the item
+    !   ! Write the item
 
-      select case (item)
-      case ('n_poly')
-         call wr%write('n_poly', ml%n_poly)
-      case default
-         write(ERROR_UNIT, *) 'item:', TRIM(item)
-         $ABORT(Invalid item)
-      end select
+    !   select case (item)
+    !   case ('n_poly')
+    !      call wr%write('n_poly', ml%n_poly)
+    !   case default
+    !      write(ERROR_UNIT, *) 'item:', TRIM(item)
+    !      $ABORT(Invalid item)
+    !   end select
 
-      ! Finish
+    !   ! Finish
 
-      return
+    !   return
 
-    end subroutine write_summary_poly_
+    ! end subroutine write_summary_poly_
 
   end subroutine write_summary
 
-!****
+  !****
 
-  subroutine write_mode (up, md, j)
+  subroutine write_mode (md, j, ot_p)
 
-    type(out_par_t), intent(in) :: up
     type(mode_t), intent(in)    :: md
     integer, intent(in)         :: j
+    type(out_par_t), intent(in) :: ot_p
 
-    character(:), allocatable                      :: mode_file
-    character(64)                                  :: infix
-    type(hdf_writer_t)                             :: wr_hdf
-    type(txt_writer_t)                             :: wr_txt
-    class(writer_t), allocatable                   :: wr
-    character(LEN(up%mode_item_list)), allocatable :: items(:)
-    integer                                        :: i
+    character(:), allocatable                        :: mode_file
+    character(64)                                    :: infix
+    type(hdf_writer_t)                               :: wr_hdf
+    type(txt_writer_t)                               :: wr_txt
+    class(writer_t), allocatable                     :: wr
+    character(LEN(ot_p%mode_item_list)), allocatable :: items(:)
+    integer                                          :: i
 
-    if (up%mode_template == '' .AND. up%mode_prefix == '') return
+    if (ot_p%mode_template == '' .AND. ot_p%mode_prefix == '') return
 
     ! Write the mode file
 
-    ! Set up the filename
+    ! Set ot_p the filename
 
-    if (up%mode_template /= '') then
+    if (ot_p%mode_template /= '') then
 
-       mode_file = up%mode_template
+       mode_file = ot_p%mode_template
 
        ! Substitute fixed-width fields
 
        mode_file = subst_(mode_file, '%J', j, '(I5.5)')
-       mode_file = subst_(mode_file, '%L', md%mp%l, '(I3.3)')
+       mode_file = subst_(mode_file, '%L', md%l, '(I3.3)')
        mode_file = subst_(mode_file, '%N', md%n_pg, '(SP,I6.5)')
 
        ! Substitute variable-width fields
 
        mode_file = subst_(mode_file, '%j', j, '(I0)')
-       mode_file = subst_(mode_file, '%l', md%mp%l, '(I0)')
+       mode_file = subst_(mode_file, '%l', md%l, '(I0)')
        mode_file = subst_(mode_file, '%n', md%n_pg, '(SP,I0)')
 
     else
@@ -265,11 +265,11 @@ contains
        write(infix, 100) j
 100    format(I5.5)
 
-       select case (up%mode_file_format)
+       select case (ot_p%mode_file_format)
        case ('HDF')
-          mode_file = TRIM(up%mode_prefix)//TRIM(infix)//'.h5'
+          mode_file = TRIM(ot_p%mode_prefix)//TRIM(infix)//'.h5'
        case ('TXT')
-          mode_file = TRIM(up%mode_prefix)//TRIM(infix)//'.txt'
+          mode_file = TRIM(ot_p%mode_prefix)//TRIM(infix)//'.txt'
        case default
           $ABORT(Invalid mode_file_format)
        end select
@@ -278,12 +278,12 @@ contains
 
     ! Open the file
 
-    select case (up%mode_file_format)
+    select case (ot_p%mode_file_format)
     case ('HDF')
-       wr_hdf = hdf_writer_t(mode_file, up%label)
+       wr_hdf = hdf_writer_t(mode_file, ot_p%label)
        allocate(wr, SOURCE=wr_hdf)
     case ('TXT')
-       wr_txt = txt_writer_t(mode_file, up%label)
+       wr_txt = txt_writer_t(mode_file, ot_p%label)
        allocate(wr, SOURCE=wr_txt)
     case default
        $ABORT(Invalid mode_file_format)
@@ -291,7 +291,7 @@ contains
 
     ! Split the item list
 
-    items = split_list(up%mode_item_list, ',')
+    items = split_list(ot_p%mode_item_list, ',')
 
     ! Write the items
 
@@ -299,13 +299,13 @@ contains
 
        select case (items(i))
        case ('n')
-          call wr%write('n', md%n)
+          call wr%write('n', md%n_k)
        case ('l')
-          call wr%write('l', md%mp%l)
-       case('l_0')
-          call wr%write('l_0', md%rt%l_0(md%omega))
+          call wr%write('l', md%l)
+       case('l_i')
+          call wr%write('l_i', md%l_i)
        case('m')
-          call wr%write('m', md%mp%m)
+          call wr%write('m', md%m)
        case ('n_p')
           call wr%write('n_p', md%n_p)
        case ('n_g')
@@ -315,15 +315,15 @@ contains
        case ('omega')
           call wr%write('omega', md%omega)
        case ('freq')
-          call wr%write('freq', md%freq(up%freq_units, up%freq_frame))
+          call wr%write('freq', md%freq(ot_p%freq_units, ot_p%freq_frame))
        case ('f_T')
-          call wr%write('f_T', ABS(md%lag_T_eff()/md%xi_r_ref()))
+          call wr%write('f_T', md%f_T())
        case ('f_g')
-          call wr%write('f_g', ABS(md%lag_g_eff()/md%xi_r_ref()))
+          call wr%write('f_g', md%f_g())
        case ('psi_T')
-          call wr%write('psi_T', phase(md%lag_T_eff()/md%xi_r_ref()))
+          call wr%write('psi_T', md%psi_T())
        case ('psi_g')
-          call wr%write('psi_g', phase(md%lag_g_eff()/md%xi_r_ref()))
+          call wr%write('psi_g', md%psi_g())
        case ('beta')
           call wr%write('beta', md%beta())
        case ('E')
@@ -335,7 +335,7 @@ contains
        case ('E_norm')
           call wr%write('E_norm', md%E_norm())
        case('E_ratio')
-          call wr%write('E_ratio',md%E_ratio())
+          call wr%write('E_ratio',md%E_p()/md%E_g())
        case ('W')
           call wr%write('W', md%W())
        case('omega_int')
@@ -345,43 +345,39 @@ contains
        case ('x')
           call wr%write('x', md%x)
        case('V_2')
-          call wr%write('V_2', md%ml%V_2(md%x))
+          call wr%write('V_2', md%ml%V_2(md%s, md%x))
        case('As')
-          call wr%write('As', md%ml%As(md%x))
+          call wr%write('As', md%ml%As(md%s, md%x))
        case('U')
-          call wr%write('U', md%ml%U(md%x))
+          call wr%write('U', md%ml%U(md%s, md%x))
        case('c_1')
-          call wr%write('c_1', md%ml%c_1(md%x))
+          call wr%write('c_1', md%ml%c_1(md%s, md%x))
        case ('Gamma_1')
-          call wr%write('Gamma_1', md%ml%Gamma_1(md%x))
+          call wr%write('Gamma_1', md%ml%Gamma_1(md%s, md%x))
        case ('nabla')
-          call wr%write('nabla', md%ml%nabla(md%x))
+          call wr%write('nabla', md%ml%nabla(md%s, md%x))
        case ('nabla_ad')
-          call wr%write('nabla_ad', md%ml%nabla_ad(md%x))
+          call wr%write('nabla_ad', md%ml%nabla_ad(md%s, md%x))
        case ('delta')
-          call wr%write('delta', md%ml%delta(md%x))
+          call wr%write('delta', md%ml%delta(md%s, md%x))
        case ('Omega_rot')
-          call wr%write('Omega_rot', md%ml%Omega_rot(md%x))
+          call wr%write('Omega_rot', md%ml%Omega_rot(md%s, md%x))
        case ('xi_r')
           call wr%write('xi_r', md%xi_r())
        case ('xi_h')
           call wr%write('xi_h', md%xi_h())
        case ('xi_r_ref')
-          call wr%write('xi_r_ref', md%xi_r_ref())
+          call wr%write('xi_r_ref', md%xi_r(md%k_ref))
        case ('xi_h_ref')
-          call wr%write('xi_h_ref', md%xi_h_ref())
+          call wr%write('xi_h_ref', md%xi_h(md%k_ref))
        case ('eul_phi')
           call wr%write('eul_phi', md%eul_phi())
        case ('deul_phi')
           call wr%write('deul_phi', md%deul_phi())
        case ('lag_S')
           call wr%write('lag_S', md%lag_S())
-       case ('lag_S_en')
-          call wr%write('lag_S_en', md%lag_S_en())
        case ('lag_L')
           call wr%write('lag_L', md%lag_L())
-       case ('lag_L_rd')
-          call wr%write('lag_L_rd', md%lag_L_rd())
        case ('eul_P')
           call wr%write('eul_P', md%eul_P())
        case ('lag_P')
@@ -400,8 +396,6 @@ contains
           call wr%write('dW_dx', md%dW_dx())
        case ('F_j')
           call wr%write('F_j', md%F_j())
-       case ('div_F_j')
-          call wr%write('div_F_j', md%div_F_j())
        case ('Yt_1')
           call wr%write('Yt_1', md%Yt_1())
        case ('Yt_2')
@@ -415,15 +409,15 @@ contains
        case ('K')
           call wr%write('K', md%K())
        case('freq_units')
-          call wr%write('freq_units', up%freq_units)
+          call wr%write('freq_units', ot_p%freq_units)
        case('freq_frame')
-          call wr%write('freq_frame', up%freq_frame)
+          call wr%write('freq_frame', ot_p%freq_frame)
        case default
           select type (ml => md%ml)
           type is (evol_model_t)
              call write_mode_evol_(items(i), ml, wr)
-          type is (poly_model_t)
-             call write_mode_poly_(items(i), ml, wr)
+          ! type is (poly_model_t)
+          !    call write_mode_poly_(items(i), ml, wr)
           class default
              write(ERROR_UNIT, *) 'item:', TRIM(items(i))
              $ABORT(Invalid item)
@@ -458,13 +452,13 @@ contains
       case ('L_star')
          call wr%write('L_star', ml%L_star)
       case ('M_r')
-         call wr%write('M_r', ml%m(md%x))
+         call wr%write('M_r', ml%M_r(md%s, md%x))
       case ('p')
-         call wr%write('p', ml%p(md%x))
+         call wr%write('P', ml%P(md%s, md%x))
       case ('rho')
-         call wr%write('rho', ml%rho(md%x))
+         call wr%write('rho', ml%rho(md%s, md%x))
       case ('T')
-         call wr%write('T', ml%T(md%x))
+         call wr%write('T', ml%T(md%s, md%x))
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(item)
          $ABORT(Invalid item)
@@ -476,31 +470,31 @@ contains
 
     end subroutine write_mode_evol_
 
-    subroutine write_mode_poly_ (item, ml, wr)
+    ! subroutine write_mode_poly_ (item, ml, wr)
 
-      character(*), intent(in)       :: item
-      type(poly_model_t), intent(in) :: ml
-      class(writer_t), intent(inout) :: wr
+    !   character(*), intent(in)       :: item
+    !   type(poly_model_t), intent(in) :: ml
+    !   class(writer_t), intent(inout) :: wr
 
-      ! Write the item
+    !   ! Write the item
 
-      select case (item)
-      case ('n_poly')
-         call wr%write('n_poly', ml%n_poly)
-      case default
-         write(ERROR_UNIT, *) 'item:', TRIM(item)
-         $ABORT(Invalid item)
-      end select
+    !   select case (item)
+    !   case ('n_poly')
+    !      call wr%write('n_poly', ml%n_poly)
+    !   case default
+    !      write(ERROR_UNIT, *) 'item:', TRIM(item)
+    !      $ABORT(Invalid item)
+    !   end select
 
-      ! Finish
+    !   ! Finish
 
-      return
+    !   return
 
-    end subroutine write_mode_poly_
+    ! end subroutine write_mode_poly_
     
   end subroutine write_mode
 
-!****
+  !****
 
   function subst_ (string, pattern, i, format) result (new_string)
 

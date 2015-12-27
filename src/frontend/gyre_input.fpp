@@ -27,6 +27,7 @@ module gyre_input
   use core_system
 
   use gyre_constants
+  use gyre_model_par
 
   use ISO_FORTRAN_ENV
 
@@ -64,144 +65,93 @@ contains
 
 !****
 
-  subroutine read_model (unit, x_bc, ml)
+  subroutine read_model (ml_p, ml)
 
     use gyre_model
     use gyre_evol_model
-    use gyre_poly_model
-    use gyre_hom_model
-    use gyre_mesa_file
-    use gyre_osc_file
-    use gyre_losc_file
+!    use gyre_poly_model
+!    use gyre_hom_model
+!    use gyre_mesa_file
+!    use gyre_osc_file
+!    use gyre_losc_file
     use gyre_fgong_file
-    use gyre_famdl_file
-    use gyre_amdl_file
-    $if ($HDF5)
-    use gyre_b3_file
-    use gyre_gsm_file
-    use gyre_poly_file
-    $endif
+!    use gyre_famdl_file
+!    use gyre_amdl_file
+!    $if ($HDF5)
+!    use gyre_b3_file
+!    use gyre_gsm_file
+!    use gyre_poly_file
+!    $endif
 
-    integer, intent(in)                  :: unit
-    real(WP), allocatable, intent(out)   :: x_bc(:)
+    type(model_par_t), intent(in)        :: ml_p
     class(model_t), pointer, intent(out) :: ml
 
-    integer                 :: n_ml
-    character(256)          :: model_type
-    character(256)          :: file_format
-    character(256)          :: data_format
-    character(256)          :: deriv_type
-    logical                 :: add_center
-    character(FILENAME_LEN) :: file
-    real(WP)                :: Gamma_1
-    logical                 :: reconstruct_As
-    logical                 :: uniform_rot
-    real(WP)                :: Omega_uni
-    type(evol_model_t)      :: ec
-    type(poly_model_t)      :: pc
-    type(hom_model_t)       :: hc
-
-    namelist /model/ model_type, file_format, data_format, deriv_type, &
-                     add_center, file, Gamma_1, &
-                     reconstruct_As, uniform_rot, Omega_uni
-
-    ! Count the number of model namelists
-
-    rewind(unit)
-
-    n_ml = 0
-
-    count_loop : do
-       read(unit, NML=model, END=100)
-       n_ml = n_ml + 1
-    end do count_loop
-
-100 continue
-
-    $ASSERT(n_ml == 1,Input file should contain exactly one &model namelist)
-
-    ! Read model parameters
-
-    model_type = ''
-    file_format = ''
-    data_format = ''
-    deriv_type = 'MONO'
-    add_center = .TRUE.
-    uniform_rot = .FALSE.
-    reconstruct_As = .FALSE.
-
-    file = ''
-
-    Gamma_1 = 5._WP/3._WP
-    Omega_uni = 0._WP
-
-    rewind(unit)
-    read(unit, NML=model)
+    type(evol_model_t) :: em
 
     ! Read/initialize the model
 
-    select case (model_type)
+    select case (ml_p%model_type)
     case ('EVOL')
 
-       select case (file_format)
-       case ('MESA')
-          call read_mesa_model(file, deriv_type, add_center, ec, x=x_bc)
-       case('B3')
-          $if($HDF5)
-          call read_b3_model(file, deriv_type, add_center, ec, x=x_bc)
-          $else
-          $ABORT(No HDF5 support, therefore cannot read B3-format files)
-          $endif
-       case ('GSM')
-          $if($HDF5)
-          call read_gsm_model(file, deriv_type, add_center, ec, x=x_bc)
-          $else
-          $ABORT(No HDF5 support, therefore cannot read GSM-format files)
-          $endif
-       case ('OSC')
-          call read_osc_model(file, deriv_type, data_format, add_center, ec, x=x_bc)
-       case ('LOSC')
-          call read_losc_model(file, deriv_type, add_center, ec, x=x_bc)
+       select case (ml_p%file_format)
+       ! case ('MESA')
+       !    call read_mesa_model(file, deriv_type, add_center, ec, x=x_bc)
+       ! case('B3')
+       !    $if($HDF5)
+       !    call read_b3_model(file, deriv_type, add_center, ec, x=x_bc)
+       !    $else
+       !    $ABORT(No HDF5 support, therefore cannot read B3-format files)
+       !    $endif
+       ! case ('GSM')
+       !    $if($HDF5)
+       !    call read_gsm_model(file, deriv_type, add_center, ec, x=x_bc)
+       !    $else
+       !    $ABORT(No HDF5 support, therefore cannot read GSM-format files)
+       !    $endif
+       ! case ('OSC')
+       !    call read_osc_model(file, deriv_type, data_format, add_center, ec, x=x_bc)
+       ! case ('LOSC')
+       !    call read_losc_model(file, deriv_type, add_center, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_model(file, deriv_type, data_format, add_center, ec, x=x_bc) 
-       case ('FAMDL')
-          call read_famdl_model(file, deriv_type, data_format, add_center, ec, x=x_bc)
-       case ('AMDL')
-          call read_amdl_model(file, deriv_type, add_center, ec, x=x_bc)
-       case default
-          $ABORT(Invalid file_format)
+          call read_fgong_model(ml_p, em)
+       ! case ('FAMDL')
+       !    call read_famdl_model(file, deriv_type, data_format, add_center, ec, x=x_bc)
+       ! case ('AMDL')
+       !    call read_amdl_model(file, deriv_type, add_center, ec, x=x_bc)
+       ! case default
+       !    $ABORT(Invalid file_format)
        end select
 
-       ec%Omega_uni = SQRT(ec%R_star**3/(G_GRAVITY*ec%M_star))*Omega_uni
+       !ec%Omega_uni = SQRT(ec%R_star**3/(G_GRAVITY*ec%M_star))*Omega_uni
 
-       ec%reconstruct_As = reconstruct_As
-       ec%uniform_rot = uniform_rot
+       !ec%reconstruct_As = reconstruct_As
+       !ec%uniform_rot = uniform_rot
 
-       allocate(ml, SOURCE=ec)
+       allocate(ml, SOURCE=em)
 
-    case ('POLY')
+    ! case ('POLY')
 
-       $if($HDF5)
-       call read_poly_model(file, deriv_type, pc, x=x_bc)
-       $else
-       $ABORT(No HDF5 support, therefore cannot read POLY files)
-       $endif
+    !    $if($HDF5)
+    !    call read_poly_model(file, deriv_type, pc, x=x_bc)
+    !    $else
+    !    $ABORT(No HDF5 support, therefore cannot read POLY files)
+    !    $endif
 
-       pc%Omega_uni = Omega_uni
+    !    pc%Omega_uni = Omega_uni
 
-       pc%uniform_rot = uniform_rot
+    !    pc%uniform_rot = uniform_rot
 
-       allocate(ml, SOURCE=pc)
+    !    allocate(ml, SOURCE=pc)
 
-    case ('HOM')
+    ! case ('HOM')
 
-       hc = hom_model_t(Gamma_1)
+    !    hc = hom_model_t(Gamma_1)
 
-       hc%Omega_uni = Omega_uni
+    !    hc%Omega_uni = Omega_uni
 
-       hc%uniform_rot = uniform_rot
+    !    hc%uniform_rot = uniform_rot
 
-       allocate(ml, SOURCE=hc)
+    !    allocate(ml, SOURCE=hc)
 
     case default
 
