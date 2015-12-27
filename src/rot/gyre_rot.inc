@@ -103,7 +103,7 @@ module gyre_${T}_rot
        real(WP), intent(in)          :: x
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: l_e
-     end function l_1_
+     end function l_e_1_
      
      function l_e_v_ (this, s, x, omega) result (l_e)
        use core_kinds
@@ -113,7 +113,7 @@ module gyre_${T}_rot
        real(WP), intent(in)          :: x(:)
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: l_e(SIZE(s))
-     end function l_v_
+     end function l_e_v_
      
      function lambda_1_ (this, s, x, omega) result (lambda)
        use core_kinds

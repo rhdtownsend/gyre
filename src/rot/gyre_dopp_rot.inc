@@ -28,7 +28,6 @@ module gyre_${T}_dopp_rot
 
   use core_kinds
 
-  use gyre_coords
   use gyre_model
   use gyre_mode_par
   use gyre_rot
@@ -123,7 +122,7 @@ contains
     ! Evaluate the corotating-frame frequency from the inertial-frame
     ! frequency
 
-    omega_c = omega - this%m*this%ms%Omega_rot(s, x)
+    omega_c = omega - this%m*this%ml%Omega_rot(s, x)
 
     ! Finish
 

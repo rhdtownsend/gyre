@@ -28,7 +28,6 @@ module gyre_${T}_trad_rot
 
   use core_kinds
 
-  use gyre_coords
   use gyre_model
   use gyre_mode_par
   use gyre_trad
@@ -105,7 +104,7 @@ contains
     ! Evaluate the inertial-frame frequency from the corotating-frame
     ! frequency
 
-    omega = omega_c + this%m*this%ms%Omega_rot(s, x)
+    omega = omega_c + this%m*this%ml%Omega_rot(s, x)
 
     ! Finish
 
@@ -126,7 +125,7 @@ contains
     ! Evaluate the corotating-frame frequency from the inertial-frame
     ! frequency
 
-    omega_c = omega - this%m*this%ms%Omega_rot(s, x)
+    omega_c = omega - this%m*this%ml%Omega_rot(s, x)
 
     ! Finish
 
@@ -149,7 +148,7 @@ contains
     ! Evaluate the corotating-frame frequency from the inertial-frame
     ! frequency
 
-    omega_c = omega - this%m*this%ms%Omega_rot(s, x)
+    omega_c = omega - this%m*this%ml%Omega_rot(s, x)
 
     ! Finish
 
@@ -161,14 +160,14 @@ contains
 
   function l_i_ (this, omega) result (l_i)
 
-    class(${T}_null_rot_t), intent(in) :: this
+    class(${T}_trad_rot_t), intent(in) :: this
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: l_i
 
     ! Evaluate the effective harmonic degree at the model inner
     ! boundary
 
-    l_i = this%l_e(1, ml%x_i, omega)
+    l_i = this%l_e(1, this%ml%x_i, omega)
 
     ! Finish
 
@@ -232,7 +231,7 @@ contains
 
     ! Evaluate the angular eigenvalue
 
-    nu = 2._WP*this%ms%Omega_rot(s, x)/this%omega_c(s, x, omega)
+    nu = 2._WP*this%ml%Omega_rot(s, x)/this%omega_c(s, x, omega)
 
     lambda = trad_lambda(nu, this%l, this%m)
 

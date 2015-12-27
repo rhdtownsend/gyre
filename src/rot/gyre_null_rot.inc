@@ -28,7 +28,6 @@ module gyre_${T}_null_rot
 
   use core_kinds
 
-  use gyre_coords
   use gyre_mode_par
   use gyre_rot
  
@@ -46,7 +45,7 @@ module gyre_${T}_null_rot
      procedure         :: omega_c_v_
      procedure, public :: l_i => l_i_
      procedure         :: l_e_1_
-     procedure         :: l_e_l_
+     procedure         :: l_e_v_
      procedure         :: lambda_1_
      procedure         :: lambda_v_
   end type ${T}_null_rot_t
@@ -67,9 +66,9 @@ module gyre_${T}_null_rot
 
 contains
 
-  function ${T}_null_rot_t_ (mp) result (rt)
+  function ${T}_null_rot_t_ (md_p) result (rt)
 
-    type(mode_par_t), intent(in) :: mp
+    type(mode_par_t), intent(in) :: md_p
     type(${T}_null_rot_t)        :: rt
 
     ! Construct the null_rot_t
