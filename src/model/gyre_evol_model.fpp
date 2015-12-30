@@ -57,6 +57,7 @@ module gyre_evol_model
      real(WP), public              :: R_star
      real(WP), public              :: L_star
      integer                       :: n_k
+     logical                       :: add_center
    contains
      private
      $SET_DECL(V_2)
@@ -139,14 +140,43 @@ contains
 
     ! Construct the evol_model_t
 
-    ml%x = x
-    ml%s = seg_indices_(x)
+    if (ml_p%add_center) then
 
-    ml%n_k = SIZE(x)
+       if (x(1) /= 0._WP) then
+
+          ml%x = [0._WP,x]
+          ml%add_center = .TRUE.
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 100) 'Added central point'
+100          format(3X,A)
+          endif
+
+       else
+
+          ml%x = x
+          ml%add_center = .FALSE.
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 100) 'No need to add central point'
+          endif
+
+       endif
+
+    else
+
+       ml%x = x
+       ml%add_center = .FALSE.
+
+    endif
+       
+    ml%s = seg_indices_(ml%x)
+
+    ml%n_k = SIZE(ml%x)
     ml%n_s = ml%s(ml%n_k)
 
-    ml%x_i = x(1)
-    ml%x_o = x(ml%n_k)
+    ml%x_i = ml%x(1)
+    ml%x_o = ml%x(ml%n_k)
 
     allocate(ml%es(ml%n_s))
 
@@ -200,24 +230,32 @@ contains
   $define $SET $sub
 
   $local $NAME $1
+  $local $F_C $2
 
   subroutine set_${NAME}_ (this, f)
 
     class(evol_model_t), intent(inout) :: this
     real(WP), intent(in)               :: f(:)
 
-    integer              :: s
-    logical, allocatable :: mask(:)
-
-    $CHECK_BOUNDS(SIZE(f),this%n_k)
+    real(WP), allocatable :: f_(:)
+    integer               :: s
+    logical, allocatable  :: mask(:)
 
     ! Set the data for $NAME
+
+    if (this%add_center) then
+       f_ = [$F_C,f]
+    else
+       f_ = f
+    endif
+
+    $CHECK_BOUNDS(SIZE(f_),this%n_k)
 
     seg_loop : do s = 1, this%n_s
 
        mask = this%s == s
        
-       call this%es(s)%set_${NAME}(PACK(this%x, MASK=mask), PACK(f, MASK=mask))
+       call this%es(s)%set_${NAME}(PACK(this%x, MASK=mask), PACK(f_, MASK=mask))
 
     end do seg_loop
 
@@ -225,27 +263,51 @@ contains
 
     return
 
+  contains
+
+    function f_c_ (x, f) result (f_c)
+
+      real(WP), intent(in) :: x(:)
+      real(WP), intent(in) :: f(:)
+      real(WP)             :: f_c
+
+      $ASSERT(SIZE(x) >= 2,Insufficient points for center interpolation)
+
+      $CHECK_BOUNDS(SIZE(f),SIZE(x))
+
+      ! Interpolate f at x=0 using parabolic fitting
+
+      f_c = (x(2)**2*f(1) - x(1)**2*f(2))/(x(2)**2 - x(1)**2)
+
+      print *,'Interp:',x(1:2),f(1:2),f_c
+
+      ! Finish
+
+      return
+
+    end function f_c_
+
   end subroutine set_${NAME}_
 
   $endsub
 
-  $SET(V_2)
-  $SET(As)
-  $SET(U)
-  $SET(c_1)
-  $SET(Gamma_1)
-  $SET(delta)
-  $SET(nabla_ad)
-  $SET(nabla)
-  $SET(beta_rad)
-  $SET(c_rad)
-  $SET(c_thm)
-  $SET(c_dif)
-  $SET(c_eps_ad)
-  $SET(c_eps_S)
-  $SET(kappa_ad)
-  $SET(kappa_S)
-  $SET(Omega_rot)
+  $SET(V_2,f_c_(this%x(2:),f))
+  $SET(As,0._WP)
+  $SET(U,3._WP)
+  $SET(c_1,f_c_(this%x(2:),f))
+  $SET(Gamma_1,f_c_(this%x(2:),f))
+  $SET(delta,f_c_(this%x(2:),f))
+  $SET(nabla_ad,f_c_(this%x(2:),f))
+  $SET(nabla,f_c_(this%x(2:),f))
+  $SET(beta_rad,f_c_(this%x(2:),f))
+  $SET(c_rad,f_c_(this%x(2:),f))
+  $SET(c_thm,f_c_(this%x(2:),f))
+  $SET(c_dif,f_c_(this%x(2:),f))
+  $SET(c_eps_ad,f_c_(this%x(2:),f))
+  $SET(c_eps_S,f_c_(this%x(2:),f))
+  $SET(kappa_ad,f_c_(this%x(2:),f))
+  $SET(kappa_S,f_c_(this%x(2:),f))
+  $SET(Omega_rot,f_c_(this%x(2:),f))
 
   !****
 
