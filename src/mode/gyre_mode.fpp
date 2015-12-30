@@ -161,7 +161,6 @@ contains
     type(osc_par_t), intent(in)         :: os_p
     type(mode_t)                        :: md
 
-    integer  :: k
     real(WP) :: phase
 
     $CHECK_BOUNDS(SIZE(x),SIZE(s))
@@ -834,7 +833,6 @@ contains
 
     complex(WP) :: xi_r
     complex(WP) :: xi_h
-    integer     :: l
     real(WP)    :: U
     real(WP)    :: c_1
     
@@ -874,7 +872,6 @@ contains
     complex(WP) :: xi_h
     real(WP)    :: c_1
     real(WP)    :: U
-    integer     :: m
     complex(WP) :: omega_c
     
     ! Evaluate the angle-averaged angular momentum flux due to
@@ -882,15 +879,14 @@ contains
     ! expression is based on eqn. 21 of [LeeSai1993]
 
     associate (s => this%s(k), &
-               x => this%x(k))
+               x => this%x(k), &
+               m => this%m)
 
       xi_r = this%xi_r(k)
       xi_h = this%xi_h(k)
 
       c_1 = this%ml%c_1(s, x)
       U = this%ml%U(s, x)
-
-      m = this%rt%m
 
       omega_c = this%rt%omega_c(s, x, this%omega)
 
@@ -1037,11 +1033,12 @@ contains
   $define $PROC_N $sub
 
   $local $NAME $1
+  $local $TYPE $2
 
   function ${NAME}_n_ (this) result (${NAME})
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: $NAME(this%n_k)
+    $TYPE(WP)                 :: $NAME(this%n_k)
 
     integer :: k
 
@@ -1060,27 +1057,27 @@ contains
 
   $endsub
 
-  $PROC_N(xi_r)
-  $PROC_N(xi_h)
-  $PROC_N(eul_phi)
-  $PROC_N(deul_phi)
-  $PROC_N(lag_S)
-  $PROC_N(lag_L)
-  $PROC_N(eul_P)
-  $PROC_N(lag_P)
-  $PROC_N(eul_rho)
-  $PROC_N(lag_rho)
-  $PROC_N(eul_T)
-  $PROC_N(lag_T)
-  $PROC_N(lambda)
-  $PROC_N(dE_dx)
-  $PROC_N(dW_dx)
-  $PROC_N(K_n)
-  $PROC_N(F_j)
-  $PROC_N(Yt_1)
-  $PROC_N(Yt_2)
-  $PROC_N(I_0)
-  $PROC_N(I_1)
+  $PROC_N(xi_r,complex)
+  $PROC_N(xi_h,complex)
+  $PROC_N(eul_phi,complex)
+  $PROC_N(deul_phi,complex)
+  $PROC_N(lag_S,complex)
+  $PROC_N(lag_L,complex)
+  $PROC_N(eul_P,complex)
+  $PROC_N(lag_P,complex)
+  $PROC_N(eul_rho,complex)
+  $PROC_N(lag_rho,complex)
+  $PROC_N(eul_T,complex)
+  $PROC_N(lag_T,complex)
+  $PROC_N(lambda,complex)
+  $PROC_N(dE_dx,real)
+  $PROC_N(dW_dx,real)
+  $PROC_N(K_n,real)
+  $PROC_N(F_j,real)
+  $PROC_N(Yt_1,complex)
+  $PROC_N(Yt_2,complex)
+  $PROC_N(I_0,complex)
+  $PROC_N(I_1,complex)
 
   !****
 
@@ -1376,7 +1373,6 @@ contains
 
     complex(WP) :: xi_r(this%n_k)
     complex(WP) :: xi_h(this%n_k)
-    integer     :: l
     real(WP)    :: U(this%n_k)
     real(WP)    :: c_1(this%n_k)
     real(WP)    :: dE_dx_0(this%n_k)
@@ -1515,7 +1511,7 @@ contains
 
       lambda = this%lambda()
 
-      omega_c = this%rt%omega_c(s, x, this%omega)
+      omega_c = REAL(this%rt%omega_c(s, x, this%omega))
 
       prop_type = MERGE(1, 0, REAL(c_1*omega_c**2) > As) + &
                   MERGE(-1, 0, REAL(lambda/(c_1*omega_c**2)) > V_g)
@@ -1534,7 +1530,6 @@ contains
 
     class(mode_t), intent(inout) :: this
 
-    integer  :: l
     real(WP) :: y_1(this%n_k)
     real(WP) :: y_2(this%n_k)
     integer  :: k_turn
