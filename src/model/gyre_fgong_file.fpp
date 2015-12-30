@@ -1,7 +1,7 @@
 ! Module   : gyre_fgong_file
 ! Purpose  : read FGONG files
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,6 +25,7 @@ module gyre_fgong_file
 
   use gyre_constants
   use gyre_evol_model
+  use gyre_model
   use gyre_model_par
   use gyre_util
 
@@ -46,39 +47,40 @@ contains
 
   subroutine read_fgong_model (ml_p, ml)
 
-    type(model_par_t), intent(in)   :: ml_p
-    type(evol_model_t), intent(out) :: ml
+    type(model_par_t), intent(in)        :: ml_p
+    class(model_t), pointer, intent(out) :: ml
 
-    integer                   :: unit
-    integer                   :: n
-    integer                   :: iconst
-    integer                   :: ivar
-    integer                   :: ivers
-    character(:), allocatable :: data_format
-    real(WP), allocatable     :: glob(:)
-    real(WP), allocatable     :: var(:,:)
-    integer                   :: i
-    real(WP)                  :: M_star
-    real(WP)                  :: R_star
-    real(WP)                  :: L_star
-    real(WP), allocatable     :: r(:)
-    real(WP), allocatable     :: m(:)
-    real(WP), allocatable     :: p(:)
-    real(WP), allocatable     :: rho(:) 
-    real(WP), allocatable     :: T(:) 
-    real(WP), allocatable     :: N2(:)
-    real(WP), allocatable     :: Gamma_1(:)
-    real(WP), allocatable     :: nabla_ad(:)
-    real(WP), allocatable     :: delta(:)
-    real(WP), allocatable     :: x(:)
-    real(WP), allocatable     :: V_2(:)
-    real(WP), allocatable     :: As(:)
-    real(WP), allocatable     :: U(:)
-    real(WP), allocatable     :: c_1(:)
-    real(WP), allocatable     :: Omega_rot(:)
-    logical                   :: has_center
-    real(WP)                  :: r_snap
-    real(WP)                  :: m_snap
+    integer                     :: unit
+    integer                     :: n
+    integer                     :: iconst
+    integer                     :: ivar
+    integer                     :: ivers
+    character(:), allocatable   :: data_format
+    real(WP), allocatable       :: glob(:)
+    real(WP), allocatable       :: var(:,:)
+    integer                     :: i
+    real(WP)                    :: M_star
+    real(WP)                    :: R_star
+    real(WP)                    :: L_star
+    real(WP), allocatable       :: r(:)
+    real(WP), allocatable       :: m(:)
+    real(WP), allocatable       :: p(:)
+    real(WP), allocatable       :: rho(:) 
+    real(WP), allocatable       :: T(:) 
+    real(WP), allocatable       :: N2(:)
+    real(WP), allocatable       :: Gamma_1(:)
+    real(WP), allocatable       :: nabla_ad(:)
+    real(WP), allocatable       :: delta(:)
+    real(WP), allocatable       :: x(:)
+    real(WP), allocatable       :: V_2(:)
+    real(WP), allocatable       :: As(:)
+    real(WP), allocatable       :: U(:)
+    real(WP), allocatable       :: c_1(:)
+    real(WP), allocatable       :: Omega_rot(:)
+    logical                     :: has_center
+    real(WP)                    :: r_snap
+    real(WP)                    :: m_snap
+    type(evol_model_t), pointer :: em
 
     ! Open the FGONG-format file
 
@@ -249,18 +251,22 @@ contains
 
     ! Initialize the model
 
-    ml = evol_model_t(x, M_star, R_star, L_star, ml_p)
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
 
-    call ml%set_V_2(V_2)
-    call ml%set_As(As)
-    call ml%set_U(U)
-    call ml%set_c_1(c_1)
+    call em%set_V_2(V_2)
+    call em%set_As(As)
+    call em%set_U(U)
+    call em%set_c_1(c_1)
 
-    call ml%set_Gamma_1(Gamma_1)
-    call ml%set_delta(delta)
-    call ml%set_nabla_ad(nabla_ad)
+    call em%set_Gamma_1(Gamma_1)
+    call em%set_delta(delta)
+    call em%set_nabla_ad(nabla_ad)
 
-    call ml%set_Omega_rot(Omega_rot)
+    call em%set_Omega_rot(Omega_rot)
+
+    ! Return a pointer to the model
+
+    ml => em
 
     ! Finish
 
