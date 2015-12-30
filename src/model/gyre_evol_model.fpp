@@ -139,11 +139,11 @@ contains
 
     ! Construct the evol_model_t
 
-    ml%n_k = SIZE(x)
-    ml%n_s = ml%s(ml%n_k)
-
     ml%x = x
     ml%s = seg_indices_(x)
+
+    ml%n_k = SIZE(x)
+    ml%n_s = ml%s(ml%n_k)
 
     ml%x_i = x(1)
     ml%x_o = x(ml%n_k)
@@ -170,8 +170,6 @@ contains
       integer              :: s(SIZE(x))
 
       integer :: k
-
-      $CHECK_BOUNDS(SIZE(mp),SIZE(x))
 
       ! Partition the array x into strictly-monotonic-increasing
       ! segments, by splitting at double points; return the resulting
