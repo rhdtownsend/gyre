@@ -32,6 +32,8 @@ module gyre_${T}_dopp_rot
   use gyre_mode_par
   use gyre_rot
 
+  use ISO_FORTRAN_ENV
+
   ! No implicit typing
 
   implicit none
@@ -41,6 +43,8 @@ module gyre_${T}_dopp_rot
   type, extends (${T}_rot_t) :: ${T}_dopp_rot_t
      private
      class(model_t), pointer :: ml => null()
+     integer                 :: l
+     integer                 :: m
    contains
      private
      procedure, public :: omega => omega_

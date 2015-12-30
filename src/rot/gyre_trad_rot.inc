@@ -44,6 +44,8 @@ module gyre_${T}_trad_rot
   type, extends (${T}_rot_t) :: ${T}_trad_rot_t
      private
      class(model_t), pointer :: ml => null()
+     integer                 :: l
+     integer                 :: m
    contains
      private
      procedure, public :: omega => omega_

@@ -30,6 +30,8 @@ module gyre_${T}_null_rot
 
   use gyre_mode_par
   use gyre_rot
+
+  use ISO_FORTRAN_ENV
  
   ! No implicit typing
 
@@ -38,6 +40,9 @@ module gyre_${T}_null_rot
   ! Derived-type definitions
 
   type, extends (${T}_rot_t) :: ${T}_null_rot_t
+     private
+     integer :: l
+     integer :: m
    contains
      private
      procedure, public :: omega => omega_
