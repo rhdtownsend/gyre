@@ -67,17 +67,16 @@ contains
     real(WP), allocatable       :: p(:)
     real(WP), allocatable       :: rho(:) 
     real(WP), allocatable       :: T(:) 
-    real(WP), allocatable       :: N2(:)
     real(WP), allocatable       :: Gamma_1(:)
     real(WP), allocatable       :: nabla_ad(:)
     real(WP), allocatable       :: delta(:)
+    real(WP), allocatable       :: As(:)
     real(WP), allocatable       :: x(:)
     real(WP), allocatable       :: V_2(:)
-    real(WP), allocatable       :: As(:)
     real(WP), allocatable       :: U(:)
     real(WP), allocatable       :: c_1(:)
     real(WP), allocatable       :: Omega_rot(:)
-    logical                     :: has_center
+    real(WP)                    :: dx_snap
     real(WP)                    :: r_snap
     real(WP)                    :: m_snap
     type(evol_model_t), pointer :: em
@@ -148,82 +147,52 @@ contains
     nabla_ad = var(11,:)
     delta = var(12,:)
 
-    allocate(N2(n))
-
-    where (r/R_star >= EPSILON(0._WP))
-       N2 = G_GRAVITY*m*var(15,:)/r**3
-    elsewhere
-       N2 = 0._WP
-    endwhere
+    As = var(15,:)
 
     ! If necessary, snap grid points
 
-    if (ml_p%dx_snap > 0._WP) then
+    dx_snap = MAX(ml_p%dx_snap, EPSILON(0._WP))
 
-       ! Central point
+    ! Central point
 
-       if (r(1)/R_star < ml_p%dx_snap) then
+    if (r(1)/R_star < dx_snap) then
 
-          r(1) = 0._WP
-          m(1) = 0._WP
+       r(1) = 0._WP
+       m(1) = 0._WP
 
-          if (check_log_level('INFO')) then
-             write(OUTPUT_UNIT, 120) 'Snapping central point to x=0'
-120          format(3X,A)
-          endif
-
+       if (check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 120) 'Snapping central point to x=0'
+120       format(3X,A)
        endif
-
-       ! Other points
-
-       snap_loop : do i = 2, n-1
-
-          if ((r(i+1) - r(i))/R_star < ml_p%dx_snap) then
-
-             r_snap = 0.5_WP*(r(i+1) + r(i))
-             m_snap = 0.5_WP*(m(i+1) + m(i))
-
-             r(i:i+1) = r_snap
-             m(i:i+1) = m_snap
-
-             if (check_log_level('INFO')) then
-                write(OUTPUT_UNIT, 130) 'Snapping points', i, 'and', i+1, 'to x=', r_snap/R_star
-130             format(3X,A,1X,I0,1X,A,1X,I0,1X,A,F6.4)
-             endif
-
-          end if
-
-       end do snap_loop
 
     endif
 
-!        if (m(1) == 0._WP .AND. r(1) /= 0._WP) then
-!           r(1) = 0._WP
-!           write(OUTPUT_UNIT, 130) 'Forcing central r == 0'
-! 130       format(3X,A)
-!        elseif(r(1) == 0._WP .AND. m(1) /= 0._WP) then
-!           m(1) = 0._WP
-!           write(OUTPUT_UNIT, 130) 'Forcing central m == 0'
-!        endif
+    ! Other points
 
-    ! has_center = r(1) == 0._WP .AND. m(1) == 0._WP
+    snap_loop : do i = 2, n-1
 
-    ! if (check_log_level('INFO')) then
-    !    if (add_center) then
-    !       if (has_center) then
-    !          write(OUTPUT_UNIT, 130) 'No need to add central point'
-    !       else
-    !          write(OUTPUT_UNIT, 130) 'Adding central point'
-    !       endif
-    !    endif
-    ! endif
+       if ((r(i+1) - r(i))/R_star < dx_snap) then
+          
+          r_snap = 0.5_WP*(r(i+1) + r(i))
+          m_snap = 0.5_WP*(m(i+1) + m(i))
+
+          r(i:i+1) = r_snap
+          m(i:i+1) = m_snap
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 130) 'Snapping points', i, 'and', i+1, 'to x=', r_snap/R_star
+130          format(3X,A,1X,I0,1X,A,1X,I0,1X,A,F6.4)
+          endif
+             
+       end if
+
+    end do snap_loop
 
     ! Calculate dimensionless structure data
 
     allocate(x(n))
 
     allocate(V_2(n))
-    allocate(As(n))
     allocate(U(n))
     allocate(c_1(n))
 
@@ -233,12 +202,10 @@ contains
 
     where (x /= 0._WP)
        V_2 = G_GRAVITY*m*rho/(p*r*x**2)
-       As = r**3*N2/(G_GRAVITY*m)
        U = 4._WP*PI*rho*r**3/m
        c_1 = (r/R_star)**3/(m/M_star)
     elsewhere
        V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*p(1))
-       As = 0._WP
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
     end where
