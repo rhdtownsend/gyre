@@ -77,6 +77,8 @@ contains
     real(WP), allocatable     :: c_1(:)
     real(WP), allocatable     :: Omega_rot(:)
     logical                   :: has_center
+    real(WP)                  :: r_snap
+    real(WP)                  :: m_snap
 
     ! Open the FGONG-format file
 
@@ -125,13 +127,15 @@ contains
 
     close(unit)
 
+    var = var(:,n:1:-1)
+
     ! Extract structure data
 
     M_star = glob(1)
     R_star = glob(2)
     L_star = glob(3)
 
-    r = var(1,:)/R_star
+    r = var(1,:)
 
     m = EXP(var(2,:))*M_star
     T = var(3,:)
@@ -150,17 +154,67 @@ contains
        N2 = 0._WP
     endwhere
 
-    if (r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
-    if (m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
+    ! If necessary, snap grid points
 
-    if (m(1) == 0._WP .AND. r(1) /= 0._WP) then
-       r(1) = 0._WP
-       write(OUTPUT_UNIT, 130) 'Forcing central r == 0'
-130    format(3X,A)
-    elseif(r(1) == 0._WP .AND. m(1) /= 0._WP) then
-       m(1) = 0._WP
-       write(OUTPUT_UNIT, 130) 'Forcing central m == 0'
+    if (ml_p%dx_snap > 0._WP) then
+
+       ! Central point
+
+       if (r(1)/R_star < ml_p%dx_snap) then
+
+          r(1) = 0._WP
+          m(1) = 0._WP
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 120) 'Snapping central point to x=0'
+120          format(3X,A)
+          endif
+
+       endif
+
+       ! Other points
+
+       snap_loop : do i = 2, n-1
+
+          if ((r(i+1) - r(i))/R_star < ml_p%dx_snap) then
+
+             r_snap = 0.5_WP*(r(i+1) + r(i))
+             m_snap = 0.5_WP*(m(i+1) + m(i))
+
+             r(i:i+1) = r_snap
+             m(i:i+1) = m_snap
+
+             if (check_log_level('INFO')) then
+                write(OUTPUT_UNIT, 130) 'Snapping points', i, 'and', i+1, 'to x=', r_snap/R_star
+130             format(3X,A,1X,I0,1X,A,1X,I0,1X,A,F6.4)
+             endif
+
+          end if
+
+       end do snap_loop
+
     endif
+
+!        if (m(1) == 0._WP .AND. r(1) /= 0._WP) then
+!           r(1) = 0._WP
+!           write(OUTPUT_UNIT, 130) 'Forcing central r == 0'
+! 130       format(3X,A)
+!        elseif(r(1) == 0._WP .AND. m(1) /= 0._WP) then
+!           m(1) = 0._WP
+!           write(OUTPUT_UNIT, 130) 'Forcing central m == 0'
+!        endif
+
+    ! has_center = r(1) == 0._WP .AND. m(1) == 0._WP
+
+    ! if (check_log_level('INFO')) then
+    !    if (add_center) then
+    !       if (has_center) then
+    !          write(OUTPUT_UNIT, 130) 'No need to add central point'
+    !       else
+    !          write(OUTPUT_UNIT, 130) 'Adding central point'
+    !       endif
+    !    endif
+    ! endif
 
     ! Calculate dimensionless structure data
 
