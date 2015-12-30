@@ -105,7 +105,7 @@ contains
     ! Initialize the boundary conditions
 
     bd_i = ad_bound_t(ml, .TRUE., md_p, os_p)
-    bd_i = ad_bound_t(ml, .FALSE., md_p, os_p)
+    bd_o = ad_bound_t(ml, .FALSE., md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -128,6 +128,10 @@ contains
     bp%r_bep_t = r_bep_t_(bd_i, bd_o, df, omega_min, omega_max, nm_p) 
 
     ! Other initializations
+
+    bp%ml => ml
+
+    bp%vr = ad_vars_t(ml, md_p, os_p)
 
     bp%s = s
     bp%x = x
@@ -171,6 +175,8 @@ contains
     ! Construct the mode_t
 
     md = mode_t(bp%ml, bp%s, bp%x, y_c, CMPLX(omega, KIND=WP), bp%n_k, bp%md_p, bp%os_p)
+
+    md%discrim = c_ext_t(discrim)
 
     ! Finish
 

@@ -33,6 +33,8 @@ module gyre_ad_diff
   use gyre_num_par
   use gyre_osc_par
 
+  use ISO_FORTRAN_ENV
+
   ! No implicit typing
 
   implicit none

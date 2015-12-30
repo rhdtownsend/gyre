@@ -56,7 +56,6 @@ program gyre_ad
 
   character(:), allocatable      :: filename
   integer                        :: unit
-  real(WP), allocatable          :: x_ml(:)
   type(model_par_t)              :: ml_p
   type(mode_par_t), allocatable  :: md_p(:)
   type(osc_par_t), allocatable   :: os_p(:)
@@ -207,7 +206,7 @@ contains
     md_new%chi = ABS(md_new%discrim)/ABS(discrim_ref)
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md_new%rt%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
+       write(OUTPUT_UNIT, 120) md_new%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
             md_new%omega, real(md_new%chi), md_new%n_iter, md_new%n_k
 120    format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
     endif
