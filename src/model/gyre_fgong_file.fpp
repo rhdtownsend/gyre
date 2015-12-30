@@ -114,7 +114,7 @@ contains
        if (ivers < 1000) then
           data_format = '(1P5E16.9)'
        else
-          $ABORT(Cannot handle ivers > 1000)
+          data_format = '(1P,5(X,E26.18E3)'
        endif
     endif
 
