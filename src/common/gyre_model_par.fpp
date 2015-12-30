@@ -37,6 +37,7 @@ module gyre_model_par
   type :: model_par_t
      real(WP)                :: Gamma_1
      real(WP)                :: Omega_rot
+     real(WP)                :: dx_snap
      character(256)          :: model_type
      character(256)          :: file_format
      character(256)          :: data_format
@@ -78,6 +79,7 @@ contains
     integer                         :: n_ml_p
     real(WP)                        :: Gamma_1
     real(WP)                        :: Omega_rot
+    real(WP)                        :: dx_snap
     character(LEN(ml_p%model_type)) :: model_type
     character(LEN(ml_p%model_type)) :: file_format
     character(LEN(ml_p%model_type)) :: data_format
@@ -86,7 +88,7 @@ contains
     logical                         :: add_center
     logical                         :: uniform_rot
 
-    namelist /model/ Gamma_1, Omega_rot, model_type, file_format, data_format, &
+    namelist /model/ Gamma_1, Omega_rot, dx_snap, model_type, file_format, data_format, &
                      deriv_type, file, add_center, uniform_rot
     
     ! Count the number of model namelists
@@ -108,6 +110,7 @@ contains
 
     Gamma_1 = 5._WP/3._WP
     Omega_rot = 0._WP
+    dx_snap = 0._WP
 
     model_type = ''
     file_format = ''
@@ -125,6 +128,7 @@ contains
 
     ml_p = model_par_t(Gamma_1=Gamma_1, &
                        Omega_rot=Omega_rot, &
+                       dx_snap=dx_snap, &
                        model_type=model_type, &
                        file_format=file_format, &
                        data_format=data_format, &
