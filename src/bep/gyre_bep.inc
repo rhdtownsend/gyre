@@ -52,8 +52,10 @@ module gyre_${T}_bep
      class(${T}_sysmtx_t), allocatable :: sm
      real(WP)                          :: omega_min
      real(WP)                          :: omega_max
-     integer, public                   :: n_e
      integer, public                   :: n_k
+     integer, public                   :: n_e
+     integer, public                   :: n_i
+     integer, public                   :: n_o
    contains 
      private
      procedure, public :: eval_discrim => eval_discrim_
@@ -115,6 +117,8 @@ contains
 
     bp%n_k = n_k
     bp%n_e = n_e
+    bp%n_i = n_i
+    bp%n_o = n_o
 
     bp%omega_min = omega_min
     bp%omega_max = omega_max
@@ -164,6 +168,8 @@ contains
     class(${T}_bep_t), target, intent(inout) :: this
     $TYPE(WP), intent(in)                    :: omega
 
+    $TYPE(WP)        :: B_i(this%n_i,this%n_e)
+    $TYPE(WP)        :: B_o(this%n_o,this%n_e)
     $TYPE(WP)        :: E_l(this%n_e,this%n_e)
     $TYPE(WP)        :: E_r(this%n_e,this%n_e)
     type(${T}_ext_t) :: scl
@@ -173,11 +179,11 @@ contains
 
     ! Boundary conditions
 
-    call this%bd_i%build(omega, E_r, scl)
-    call this%sm%set_B_i(E_r, scl)
+    call this%bd_i%build(omega, B_i, scl)
+    call this%sm%set_B_i(B_i, scl)
 
-    call this%bd_o%build(omega, E_l, scl)
-    call this%sm%set_B_o(E_l, scl)
+    call this%bd_o%build(omega, B_o, scl)
+    call this%sm%set_B_o(B_o, scl)
 
     ! Difference equations
 
