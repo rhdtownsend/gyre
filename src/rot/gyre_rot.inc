@@ -35,9 +35,6 @@ module gyre_${T}_rot
   ! Derived-type definitions
 
   type, abstract :: ${T}_rot_t
-     private
-     integer, public :: l
-     integer, public :: m
    contains
      private
      procedure(omega_), deferred, public :: omega
