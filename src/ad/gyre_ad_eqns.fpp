@@ -134,9 +134,9 @@ contains
     
     ! Evaluate the log(x)-space RHS matrix
 
-    ! Calculate coefficients
-
     associate (s => this%s)
+
+      ! Calculate coefficients
 
       V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
       U = this%ml%U(s, x)
@@ -148,39 +148,39 @@ contains
 
       omega_c = this%rt%omega_c(s, x, omega)
 
+      if (this%cowling_approx) then
+         alpha_gr = 0._WP
+      else
+         alpha_gr = 1._WP
+      endif
+      
+      ! Set up the matrix
+
+      xA(1,1) = V_g - 1._WP - l_i
+      xA(1,2) = lambda/(c_1*omega_c**2) - V_g
+      xA(1,3) = alpha_gr*(V_g)
+      xA(1,4) = alpha_gr*(0._WP)
+      
+      xA(2,1) = c_1*omega_c**2 - As
+      xA(2,2) = As - U + 3._WP - l_i
+      xA(2,3) = alpha_gr*(-As)
+      xA(2,4) = alpha_gr*(0._WP)
+      
+      xA(3,1) = alpha_gr*(0._WP)
+      xA(3,2) = alpha_gr*(0._WP)
+      xA(3,3) = alpha_gr*(3._WP - U - l_i)
+      xA(3,4) = alpha_gr*(1._WP)
+      
+      xA(4,1) = alpha_gr*(U*As)
+      xA(4,2) = alpha_gr*(U*V_g)
+      xA(4,3) = alpha_gr*(lambda - U*V_g)
+      xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
+
+      ! Apply the variables transformation
+
+      xA = MATMUL(this%vr%A(s, x, omega), MATMUL(xA, this%vr%B(s, x, omega)) - this%vr%dB(s, x, omega))
+
     end associate
-
-    if (this%cowling_approx) then
-       alpha_gr = 0._WP
-    else
-       alpha_gr = 1._WP
-    endif
-
-    ! Set up the matrix
-
-    xA(1,1) = V_g - 1._WP - l_i
-    xA(1,2) = lambda/(c_1*omega_c**2) - V_g
-    xA(1,3) = alpha_gr*(V_g)
-    xA(1,4) = alpha_gr*(0._WP)
-      
-    xA(2,1) = c_1*omega_c**2 - As
-    xA(2,2) = As - U + 3._WP - l_i
-    xA(2,3) = alpha_gr*(-As)
-    xA(2,4) = alpha_gr*(0._WP)
-      
-    xA(3,1) = alpha_gr*(0._WP)
-    xA(3,2) = alpha_gr*(0._WP)
-    xA(3,3) = alpha_gr*(3._WP - U - l_i)
-    xA(3,4) = alpha_gr*(1._WP)
-      
-    xA(4,1) = alpha_gr*(U*As)
-    xA(4,2) = alpha_gr*(U*V_g)
-    xA(4,3) = alpha_gr*(lambda - U*V_g)
-    xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
-
-    ! Apply the variables transformation
-
-    xA = MATMUL(this%vr%A(this%s, x, omega), MATMUL(xA, this%vr%B(this%s, x, omega)) - this%vr%dB(this%s, x, omega))
 
     ! Finish
 

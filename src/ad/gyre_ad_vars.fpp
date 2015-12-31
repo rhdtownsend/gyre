@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_vars
-! Purpose  : variables transformations for adiabatic case
+! Purpose  : adiabatic variables transformations
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -161,7 +161,6 @@ contains
 
     real(WP) :: U
     real(WP) :: c_1
-    integer  :: l
     real(WP) :: lambda
     real(WP) :: omega_c
 
@@ -369,7 +368,6 @@ contains
 
     real(WP) :: U
     real(WP) :: c_1
-    integer  :: l
     real(WP) :: lambda
     real(WP) :: omega_c
 
@@ -533,7 +531,7 @@ contains
 
   end function B_lagp_
 
-!****
+  !****
 
   function dB_ (this, s, x, omega) result (dB)
 
@@ -564,7 +562,7 @@ contains
 
   end function dB_
 
-!****
+  !****
 
   function dB_jcd_ (this, s, x, omega) result (dB)
 
@@ -578,7 +576,6 @@ contains
     real(WP) :: As
     real(WP) :: U
     real(WP) :: c_1
-    integer  :: l
     real(WP) :: lambda
     real(WP) :: omega_c
 
@@ -651,7 +648,7 @@ contains
 
   end function dB_jcd_
 
-!****
+  !****
 
   function dB_mix_ (this, s, x, omega) result (dB)
 

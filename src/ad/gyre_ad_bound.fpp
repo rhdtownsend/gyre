@@ -1,7 +1,7 @@
 ! Incfile  : gyre_ad_bound
 ! Purpose  : adiabatic boundary conditions
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,7 +23,6 @@ module gyre_ad_bound
 
   use core_kinds
 
-  use gyre_ad_eqns
   use gyre_ad_vars
   use gyre_atmos
   use gyre_bound
@@ -52,12 +51,12 @@ module gyre_ad_bound
 
   type, extends (r_bound_t) :: ad_bound_t
      private
-     class(model_t), pointer                  :: ml => null()
-     class(r_rot_t), allocatable              :: rt
-     type(ad_vars_t)                          :: vr
-     integer                                  :: type_i
-     integer                                  :: type_o
-     logical                                  :: cowling_approx
+     class(model_t), pointer     :: ml => null()
+     class(r_rot_t), allocatable :: rt
+     type(ad_vars_t)             :: vr
+     integer                     :: type_i
+     integer                     :: type_o
+     logical                     :: cowling_approx
    contains 
      private
      procedure, public :: build_i => build_i_
@@ -185,10 +184,10 @@ contains
 
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
-    ! Calculate coefficients
-
     associate (s => 1, &
                x => this%ml%x_i)
+
+      ! Calculate coefficients
 
       c_1 = this%ml%c_1(s, x)
 
@@ -335,10 +334,10 @@ contains
 
     ! Evaluate the outer boundary conditions (zero-pressure)
 
-    ! Calculate coefficients
-
     associate (s => this%ml%n_s, &
                x => this%ml%x_o)
+
+      ! Calculate coefficients
 
       U = this%ml%U(s, x)
 
@@ -397,10 +396,10 @@ contains
 
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
-    ! Calculate coefficients
-
     associate (s => this%ml%n_s, &
                x => this%ml%x_o)
+
+      ! Calculate coefficients
 
       V = this%ml%V_2(s, x)*x**2
       c_1 = this%ml%c_1(s, x)
@@ -473,12 +472,12 @@ contains
 
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
-    ! Calculate coefficients
-
-    call eval_atmos_coeffs_unno(this%ml, V_g, As, c_1)
-
     associate (s => this%ml%n_s, &
                x => this%ml%x_o)
+
+      ! Calculate coefficients
+
+      call eval_atmos_coeffs_unno(this%ml, V_g, As, c_1)
 
       lambda = this%rt%lambda(s, x, omega)
       l_e = this%rt%l_e(s, x, omega)
@@ -555,12 +554,12 @@ contains
 
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
-    call eval_atmos_coeffs_jcd(this%ml, V_g, As, c_1)
-
     ! Calculate coefficients
 
     associate (s => this%ml%n_s, &
                x => this%ml%x_o)
+
+      call eval_atmos_coeffs_jcd(this%ml, V_g, As, c_1)
 
       lambda = this%rt%lambda(s, x, omega)
       l_e = this%rt%l_e(s, x, omega)
