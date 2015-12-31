@@ -143,8 +143,8 @@ contains
           call resample_dispersion_(ml, omega, gr_p(i), md_p, os_p, s, x)
        case ('RESAMP_THERMAL')
           call resample_thermal_(ml, omega, gr_p(i), md_p, os_p, s, x)
-       ! case ('RESAMP_CENTER')
-       !    call resample_center_(ml, omega, gr_p(i), md_p, op_p, s, x)
+       case ('RESAMP_CENTER')
+          call resample_center_(ml, omega, gr_p(i), md_p, os_p, s, x)
        case ('RESAMP_STRUCT')
           call resample_struct_(ml, gr_p(i), s, x)
        case ('RESAMP_UNIFORM')
@@ -489,20 +489,14 @@ contains
 
     do k = 1, n_k-1
 
-       if (dn(k) > 0) then
+       do i = 1, dn(k)+1
 
-          $ASSERT(s(k) == s(k+1),Attempt to add points at segment boundary)
+          s_new(k_new) = s(k)
+          x_new(k_new) = x(k) + (i-1)*(x(k+1)-x(k))/(dn(k)+1)
 
-          do i = 1, dn(k)+1
+          k_new = k_new + 1
 
-             s_new(k_new) = s(k)
-             x_new(k_new) = x(k) + (i-1)*(x(k+1)-x(k))/(dn(k)+1)
-
-             k_new = k_new + 1
-
-          end do
-
-       endif
+       end do
 
     end do
     
@@ -762,70 +756,80 @@ contains
 
   end subroutine resample_thermal_
 
-  ! !****
+  !****
 
-  ! subroutine resample_center_ (ml, omega, gr_p, md_p, os_p, s, x)
+  subroutine resample_center_ (ml, omega, gr_p, md_p, os_p, s, x)
 
-  !   class(model_t), pointer,  intent(in) :: ml
-  !   real(WP), intent(in)                 :: omega(:)
-  !   type(grid_par_t), intent(in)         :: gr_p
-  !   type(mode_par_t), intent(in)         :: md_p
-  !   type(osc_par_t), intent(in)          :: os_p
-  !   integer, allocatable, intent(inout)  :: s(:)
-  !   real(WP), allocatable, intent(inout) :: x(:)
+    class(model_t), pointer,  intent(in) :: ml
+    real(WP), intent(in)                 :: omega(:)
+    type(grid_par_t), intent(in)         :: gr_p
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    integer, allocatable, intent(inout)  :: s(:)
+    real(WP), allocatable, intent(inout) :: x(:)
     
-  !   real(WP)             :: x_turn
-  !   integer              :: j
-  !   real(WP)             :: x_turn_j
-  !   integer              :: k_turn
-  !   integer              :: n_add
-  !   integer              :: n_k
-  !   integer, allocatable :: dn(:)
+    integer              :: k_turn
+    real(WP)             :: x_turn
+    integer              :: j
+    integer              :: k_turn_j
+    real(WP)             :: x_turn_j
+    integer              :: n_add
+    integer              :: n_k
+    integer, allocatable :: dn(:)
+    integer              :: k
 
-  !   $ASSERT(ALLOCATED(x),No input grid)
+    $ASSERT(ALLOCATED(x),No input grid)
 
-  !   ! Resample the grid (s,x) by adding points to central cells, such
-  !   ! that there are n_floor points covering the evanescent region at
-  !   ! the center. Evanescence is determined based on a local
-  !   ! dispersion analysis of the adibatic/Cowling wave equation, for
-  !   ! frequencies in the interval [omega_min,omega_max]
+    ! Resample the grid (s,x) by adding points to central cells, such
+    ! that there are n_floor points covering the evanescent region at
+    ! the center. Evanescence is determined based on a local
+    ! dispersion analysis of the adibatic/Cowling wave equation, for
+    ! frequencies in the interval [omega_min,omega_max]
 
-  !   ! First, locate the innermost turning point
+    ! First, locate the innermost turning point
 
-  !   x_turn = HUGE(0._WP)
+    k_turn = 0
+    x_turn = HUGE(0._WP)
 
-  !   omega_loop : do j = 1, SIZE(omega)
-  !      call find_x_turn(ml, s, x, omega(j), md_p, os_p, x_turn_j)
-  !      x_turn = MIN(x_turn, x_turn_j)
-  !   end do omega_loop
+    omega_loop : do j = 1, SIZE(omega)
+       call find_turn(ml, omega(j), s, x, md_p, os_p, k_turn_j, x_turn_j)
+       if (x_turn_j < x_turn) then
+          k_turn = k_turn_j
+          x_turn = x_turn_j
+       endif
+    end do omega_loop
 
-  !   call locate(x, x_turn, k_turn)
+    ! Determine how many points need to be added
 
-  !   ! Determine how many points need to be added
+    n_add = MAX(gr_p%n-k_turn, 0)
 
-  !   n_add = MAX(gr_p%n-k_turn, 0)
+    ! Determine how many points to add to each cell
 
-  !   ! Determine how many points to add to each cell
+    n_k = SIZE(s)
 
-  !   n_k = SIZE(S)
+    allocate(dn(n_k-1))
 
-  !   allocate(dn(n_k-1))
+    dn = 0
 
-  !   dn = 0
+    if (k_turn >= 1 .AND. k_turn < n_k) then
 
-  !   if (k_turn >= 1 .AND. k_turn < n_k) then
-  !      dn(:k_turn) = CEILING(n_add*(x(k_turn+1)/x_turn)/i_turn)
-  !   endif
+       do k = 1, k_turn
+          if (s(k) == s(k+1)) then
+             dn(k) = CEILING(n_add*(x(k_turn+1)/x_turn)/k_turn)
+          endif
+       end do
+
+    end if
     
-  !   ! Perform the resampling
+    ! Perform the resampling
 
-  !   call resample_(dn, s, x)
+    call resample_(dn, s, x)
 
-  !   ! Finish
+    ! Finish
 
-  !   return
+    return
 
-  ! end subroutine resample_center_
+  end subroutine resample_center_
 
   !****
 
