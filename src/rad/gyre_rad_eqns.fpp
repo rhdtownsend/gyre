@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_eqns
-! Purpose  : differential equations evaluation (adiabatic radial)
+! Purpose  : radial adiabatic differential equations
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,11 +24,12 @@ module gyre_rad_eqns
   use core_kinds
 
   use gyre_eqns
-  use gyre_linalg
   use gyre_model
+  use gyre_mode_par
   use gyre_osc_par
   use gyre_rad_vars
   use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -43,6 +44,7 @@ module gyre_rad_eqns
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
      type(rad_vars_t)            :: vr
+     integer                     :: s
    contains
      private
      procedure, public :: A => A_
@@ -65,18 +67,22 @@ module gyre_rad_eqns
 
 contains
 
-  function rad_eqns_t_ (ml, rt, op) result (eq)
+  function rad_eqns_t_ (ml, s, md_p, os_p) result (eq)
 
     class(model_t), pointer, intent(in) :: ml
-    class(r_rot_t), intent(in)          :: rt
-    type(osc_par_t), intent(in)         :: op
+    integer, intent(in)                 :: s
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
     type(rad_eqns_t)                    :: eq
 
     ! Construct the rad_eqns_t
 
     eq%ml => ml
-    allocate(eq%rt, SOURCE=rt)
-    eq%vr = rad_vars_t(ml, rt, op)
+
+    allocate(eq%rt, SOURCE=r_rot_t(ml, md_p, os_p))
+    eq%vr = rad_vars_t(ml, md_p, os_p)
+
+    eq%s = s
 
     eq%n_e = 2
 
@@ -86,7 +92,7 @@ contains
 
   end function rad_eqns_t_
 
-!****
+  !****
 
   function A_ (this, x, omega) result (A)
 
@@ -122,26 +128,31 @@ contains
     
     ! Evaluate the log(x)-space RHS matrix
 
-    ! Calculate coefficients
+    associate (s => this%s)
 
-    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
-    U = this%ml%U(x)
-    As = this%ml%As(x)
-    c_1 = this%ml%c_1(x)
+      ! Calculate coefficients
 
-    omega_c = this%rt%omega_c(x, omega)
+      V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
+      U = this%ml%U(s, x)
+      As = this%ml%As(s, x)
+      c_1 = this%ml%c_1(s, x)
 
-    ! Set up the matrix
+      omega_c = this%rt%omega_c(s, x, omega)
 
-    xA(1,1) = V_g - 1._WP
-    xA(1,2) = -V_g
+      ! Set up the matrix
+
+      xA(1,1) = V_g - 1._WP
+      xA(1,2) = -V_g
       
-    xA(2,1) = c_1*omega_c**2 + U - As
-    xA(2,2) = As - U + 3._WP
+      xA(2,1) = c_1*omega_c**2 + U - As
+      xA(2,2) = As - U + 3._WP
 
-    ! Apply the variables transformation
+      ! Apply the variables transformation
 
-    xA = MATMUL(this%vr%S(x, omega), MATMUL(xA, this%vr%T(x, omega)) - this%vr%dT(x, omega))
+      xA = MATMUL(this%vr%G(s, x, omega), MATMUL(xA, this%vr%H(s, x, omega)) -&
+           this%vr%dH(s, x, omega))
+
+    end associate
 
     ! Finish
 

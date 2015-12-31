@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_bvp
-! Purpose  : boundary-value solver (adiabatic radial)
+! Purpose  : adiabatic radial bounary eigenvalue problem solver
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,29 +17,25 @@
 
 $include 'core.inc'
 
-module gyre_rad_bvp
+module gyre_rad_bep
 
   ! Uses
 
   use core_kinds
 
-  use gyre_bvp
+  use gyre_bep
   use gyre_ext
-  use gyre_ivp
-  use gyre_ivp_factory
+  use gyre_grid
+  use gyre_grid_par
+  use gyre_model
   use gyre_mode
   use gyre_mode_par
-  use gyre_model
   use gyre_num_par
   use gyre_osc_par
-  use gyre_sysmtx
-  use gyre_sysmtx_factory
-  use gyre_util
   use gyre_rad_bound
-  use gyre_rad_eqns
+  use gyre_rad_diff
   use gyre_rad_vars
-  use gyre_rot
-  use gyre_rot_factory
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -49,153 +45,161 @@ module gyre_rad_bvp
 
   ! Derived-type definitions
 
-  type, extends(r_bvp_t) :: rad_bvp_t
+  type, extends (r_bep_t) :: rad_bep_t
      class(model_t), pointer :: ml => null()
+     type(mode_par_t)        :: md_p
+     type(osc_par_t)         :: os_p
      type(rad_vars_t)        :: vr
-   contains
-     private
-     procedure, public :: recon => recon_
-  end type rad_bvp_t
+     integer, allocatable    :: s(:)
+     real(WP), allocatable   :: x(:)
+  end type rad_bep_t
 
   ! Interfaces
 
-  interface rad_bvp_t
-     module procedure rad_bvp_t_
-  end interface rad_bvp_t
+  interface rad_bep_t
+     module procedure rad_bep_t_
+  end interface rad_bep_t
+
+  interface mode_t
+     module procedure mode_t_
+  end interface mode_t
 
   ! Access specifiers
 
   private
 
-  public :: rad_bvp_t
+  public :: rad_bep_t
+  public :: mode_t
 
   ! Procedures
 
 contains
 
-  function rad_bvp_t_ (x, ml, mp, op, np, omega_min, omega_max) result (bp)
+  function rad_bep_t_ (ml, omega, gr_p, md_p, nm_p, os_p) result (bp)
 
-    real(WP), intent(in)                :: x(:)
     class(model_t), pointer, intent(in) :: ml
-    type(mode_par_t), intent(in)        :: mp
-    type(osc_par_t), intent(in)         :: op
-    type(num_par_t), intent(in)         :: np
-    real(WP)                            :: omega_min
-    real(WP)                            :: omega_max
-    type(rad_bvp_t)                     :: bp
+    real(WP), intent(in)                :: omega(:)
+    type(grid_par_t), intent(in)        :: gr_p(:)
+    type(mode_par_t), intent(in)        :: md_p
+    type(num_par_t), intent(in)         :: nm_p
+    type(osc_par_t), intent(in)         :: os_p
+    type(rad_bep_t)                     :: bp
 
-    class(r_rot_t), allocatable    :: rt
-    type(rad_eqns_t)               :: eq
-    integer                        :: n
-    real(WP)                       :: x_i
-    real(WP)                       :: x_o
-    type(rad_bound_t)              :: bd
-    class(r_ivp_t), allocatable    :: iv
-    class(r_sysmtx_t), allocatable :: sm
- 
-    ! Construct the rad_bvp_t
+    integer, allocatable          :: s(:)
+    real(WP), allocatable         :: x(:)
+    integer                       :: n_k
+    type(rad_bound_t)             :: bd
+    integer                       :: k
+    type(rad_diff_t), allocatable :: df(:)
+    real(WP)                      :: omega_min
+    real(WP)                      :: omega_max
 
-    ! Initialize the rotational effects
+    ! Construct the ad_solver_t
 
-    allocate(rt, SOURCE=r_rot_t(ml, mp, op))
- 
-    ! Initialize the equations
+    ! Build the grid
 
-    eq = rad_eqns_t(ml, rt, op)
+    call build_grid(ml, omega, gr_p, md_p, os_p, s, x)
+
+    n_k = SIZE(s)
 
     ! Initialize the boundary conditions
 
-    n = SIZE(x)
+    bd = rad_bound_t(ml, md_p, os_p)
 
-    x_i = x(1)
-    x_o = x(n)
+    ! Initialize the difference equations
 
-    bd = rad_bound_t(ml, rt, op, x_i, x_o)
+    allocate(df(n_k-1))
 
-    ! Initialize the IVP solver
+    do k = 1, n_k-1
+       df(k) = rad_diff_t(ml, s(k), x(k), s(k+1), x(k+1), md_p, nm_p, os_p)
+    end do
 
-    allocate(iv, SOURCE=r_ivp_t(eq, np))
+    ! Initialize the bep_t
 
-    ! Initialize the system matrix
+    if (nm_p%restrict_roots) then
+       omega_min = MINVAL(omega)
+       omega_max = MAXVAL(omega)
+    else
+       omega_min = -HUGE(0._WP)
+       omega_max = HUGE(0._WP)
+    endif
+    
+    bp%r_bep_t = r_bep_t_(bd, df, omega_min, omega_max, nm_p) 
 
-    allocate(sm, SOURCE=r_sysmtx_t(n-1, eq%n_e, bd%n_i, bd%n_o, np))
-
-    ! Initialize the bvp_t
-
-    bp%r_bvp_t = r_bvp_t(x, bd, iv, sm, omega_min, omega_max)
+    ! Other initializations
 
     bp%ml => ml
-    bp%vr = rad_vars_t(ml, rt, op)
+
+    bp%vr = rad_vars_t(ml, md_p, os_p)
+
+    bp%s = s
+    bp%x = x
+
+    bp%md_p = md_p
+    bp%os_p = os_p
 
     ! Finish
 
     return
 
-  end function rad_bvp_t_
+  end function rad_bep_t_
 
-!****
+  !****
 
-  subroutine recon_ (this, omega, x, x_ref, y, y_ref, discrim)
+  function mode_t_ (bp, omega) result (md)
 
-    class(rad_bvp_t), intent(inout) :: this
+    class(rad_bep_t), intent(inout) :: bp
     real(WP), intent(in)            :: omega
-    real(WP), intent(in)            :: x(:)
-    real(WP), intent(in)            :: x_ref
-    real(WP), intent(out)           :: y(:,:)
-    real(WP), intent(out)           :: y_ref(:)
-    type(r_ext_t), intent(out)      :: discrim
+    type(mode_t)                    :: md
 
-    real(WP) :: y_(2,SIZE(x))
-    real(WP) :: y_ref_(2)
-    integer  :: n
-    integer  :: i
-    real(WP) :: y_4_x(SIZE(x))
-    real(WP) :: eul_phi(SIZE(x))
+    real(WP)      :: y(2,bp%n_k)
+    type(r_ext_t) :: discrim
+    integer       :: k
+    complex(WP)   :: y_c(6,bp%n_k)
+    complex(WP)   :: y_4_x(bp%n_k)
+    complex(WP)   :: eul_phi(bp%n_k)
 
-    $CHECK_BOUNDS(SIZE(y, 1),6)
-    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
+    ! Construct a mode_t from the ad_bep_t
 
-    $CHECK_BOUNDS(SIZE(y_ref),6)
+    ! Solve the BEP
 
-    ! Reconstruct the solution
+    call bp%solve(omega, y, discrim)
 
-    call this%r_bvp_t%recon(omega, x, x_ref, y_, y_ref_, discrim)
-
-    ! Convert to the canonical (6-variable) solution
-
-    n = SIZE(x)
+    ! Calculate the canonical 6-variable solution
 
     !$OMP PARALLEL DO 
-    do i = 1, n
-       y(1:2,i) = MATMUL(this%vr%T(x(i), omega), y_(:,i))
-       y(4,i) = -y(1,i)*this%ml%U(x(i))
-       y(5:6,i) = 0._WP
+    do k = 1, bp%n_k
+       y_c(1:2,k) = MATMUL(bp%vr%H(bp%s(k), bp%x(k), omega), y(:,k))
+       y_c(4,k) = -y_c(1,k)*bp%ml%U(bp%s(k), bp%x(k))
+       y_c(5:6,k) = 0._WP
     end do
 
-    ! Reconstruct the potential by integrating the gravity
+    ! Reconstruct the potential perturbation by integrating the
+    ! gravity
 
-    where (x /= 0._WP)
-       y_4_x = y(4,:)/x
+    where (bp%x /= 0._WP)
+       y_4_x = y_c(4,:)/bp%x
     elsewhere
        y_4_x = 0._WP
     end where
 
-    eul_phi = integral(x, y_4_x/this%ml%c_1(x))
+    eul_phi = integral(bp%x, y_4_x/bp%ml%c_1(bp%s, bp%x))
 
-    y(3,:) = this%ml%c_1(x)*(eul_phi - eul_phi(n))
-    y(2,:) = y(2,:) + y(3,:)
+    ! Set y_c(3), and correct y_c(2)
 
-    ! Note: y_ref(3) is set to zero; need to fix this
+    y_c(3,:) = bp%ml%c_1(bp%s, bp%x)*(eul_phi - eul_phi(bp%n_k))
+    y_c(2,:) = y_c(2,:) + y_c(3,:)
 
-    y_ref(1:2) = MATMUL(this%vr%T(x_ref, omega), y_ref_)
-    y_ref(3) = 0._WP
-    y_ref(4) = -y_ref_(1)*this%ml%U(x_ref)
-    y_ref(5:6) = 0._WP
+    ! Construct the mode_t
+
+    md = mode_t(bp%ml, bp%s, bp%x, y_c, CMPLX(omega, KIND=WP), bp%n_k, bp%md_p, bp%os_p)
+
+    md%discrim = c_ext_t(discrim)
 
     ! Finish
 
     return
 
-  end subroutine recon_
+  end function mode_t_
 
-end module gyre_rad_bvp
+end module gyre_rad_bep

@@ -1,7 +1,7 @@
-! Module   : gyre_ad_match
-! Purpose  : adiabatic match conditions
+! Module   : gyre_rad_match
+! Purpose  : adiabatic radial match conditions
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,13 +17,13 @@
 
 $include 'core.inc'
 
-module gyre_ad_match
+module gyre_rad_match
 
   ! Uses
 
   use core_kinds
 
-  use gyre_ad_vars
+  use gyre_rad_vars
   use gyre_diff
   use gyre_ext
   use gyre_model
@@ -38,31 +38,31 @@ module gyre_ad_match
 
   ! Derived-type definitions
 
-  type, extends (r_diff_t) :: ad_match_t
+  type, extends (r_diff_t) :: rad_match_t
      private
      class(model_t), pointer :: ml => null()
-     type(ad_vars_t)         :: vr
+     type(rad_vars_t)        :: vr
      integer                 :: s
      real(WP)                :: x
    contains
      private
      procedure, public :: build => build_
-  end type ad_match_t
+  end type rad_match_t
 
   ! Interfaces
 
-  interface ad_match_t
-     module procedure ad_match_t_
-  end interface ad_match_t
+  interface rad_match_t
+     module procedure rad_match_t_
+  end interface rad_match_t
   
   ! Access specifiers
 
   private
-  public :: ad_match_t
+  public :: rad_match_t
 
 contains
 
-  function ad_match_t_ (ml, s_l, x_l, s_r, x_r, md_p, os_p) result (mt)
+  function rad_match_t_ (ml, s_l, x_l, s_r, x_r, md_p, os_p) result (mt)
 
     class(model_t), pointer, intent(in) :: ml
     integer, intent(in)                 :: s_l
@@ -71,37 +71,37 @@ contains
     real(WP)                            :: x_r
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
-    type(ad_match_t)                    :: mt
+    type(rad_match_t)                   :: mt
 
     $ASSERT(s_r == s_l+1,Invalid segment jump at match point)
     $ASSERT(x_r == x_l,Segments do not join at match point)
 
-    ! Construct the ad_match_t
+    ! Construct the rad_match_t
 
     mt%ml => ml
 
-    mt%vr = ad_vars_t(ml, md_p, os_p)
+    mt%vr = rad_vars_t(ml, md_p, os_p)
 
     mt%s = s_l
     mt%x = x_l
 
-    mt%n_e = 4
+    mt%n_e = 2
 
     ! Finish
 
     return
 
-  end function ad_match_t_
+  end function rad_match_t_
     
   !****
 
   subroutine build_ (this, omega, E_l, E_r, scl)
 
-    class(ad_match_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
-    real(WP), intent(out)         :: E_l(:,:)
-    real(WP), intent(out)         :: E_r(:,:)
-    type(r_ext_t), intent(out)    :: scl
+    class(rad_match_t), intent(in) :: this
+    real(WP), intent(in)           :: omega
+    real(WP), intent(out)          :: E_l(:,:)
+    real(WP), intent(out)          :: E_r(:,:)
+    type(r_ext_t), intent(out)     :: scl
 
     real(WP) :: U_l
     real(WP) :: U_r
@@ -124,57 +124,28 @@ contains
 
     end associate
 
-    ! Evaluate the match conditions (y_1, y_3 continuous, y_2, y_4
-    ! not)
+    ! Evaluate the match conditions (y_1 continuous, y_2 not)
 
     E_l(1,1) = -1._WP
     E_l(1,2) = 0._WP
-    E_l(1,3) = 0._WP
-    E_l(1,4) = 0._WP
     
     E_l(2,1) = U_l
     E_l(2,2) = -U_l
-    E_l(2,3) = U_l
-    E_l(2,4) = 0._WP
-
-    E_l(3,1) = 0._WP
-    E_l(3,2) = 0._WP
-    E_l(3,3) = -1._WP
-    E_l(3,4) = 0._WP
-
-    E_l(4,1) = -U_l
-    E_l(4,2) = 0._WP
-    E_l(4,3) = 0._WP
-    E_l(4,4) = -1._WP
 
     !
 
     E_r(1,1) = 1._WP
     E_r(1,2) = 0._WP
-    E_r(1,3) = 0._WP
-    E_r(1,4) = 0._WP
 
     E_r(2,1) = -U_r
     E_r(2,2) = U_r
-    E_r(2,3) = -U_r
-    E_r(2,4) = 0._WP
-
-    E_r(3,1) = 0._WP
-    E_r(3,2) = 0._WP
-    E_r(3,3) = 1._WP
-    E_r(3,4) = 0._WP
-
-    E_r(4,1) = U_r
-    E_r(4,2) = 0._WP
-    E_r(4,3) = 0._WP
-    E_r(4,4) = 1._WP
 
     scl = r_ext_t(1._WP)
 
     ! Apply the variables transformation
 
-    E_l = MATMUL(E_l, this%vr%B(this%s  , this%x, omega))
-    E_r = MATMUL(E_r, this%vr%B(this%s+1, this%x, omega))
+    E_l = MATMUL(E_l, this%vr%H(this%s  , this%x, omega))
+    E_r = MATMUL(E_r, this%vr%H(this%s+1, this%x, omega))
 
     ! Finish
 
@@ -182,4 +153,4 @@ contains
 
   end subroutine build_
 
-end module gyre_ad_match
+end module gyre_rad_match

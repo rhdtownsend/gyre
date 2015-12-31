@@ -1,7 +1,7 @@
-! Incfile  : gyre_ad_diff
-! Purpose  : adiabatic difference equations
+! Incfile  : gyre_rad_diff
+! Purpose  : adiabatic radial difference equations
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,14 +17,14 @@
 
 $include 'core.inc'
 
-module gyre_ad_diff
+module gyre_rad_diff
 
   ! Uses
 
   use core_kinds
 
-  use gyre_ad_eqns
-  use gyre_ad_match
+  use gyre_rad_eqns
+  use gyre_rad_match
   use gyre_diff
   use gyre_diff_factory
   use gyre_ext
@@ -41,31 +41,31 @@ module gyre_ad_diff
 
   ! Derived-type definitions
 
-  type, extends (r_diff_t) :: ad_diff_t
+  type, extends (r_diff_t) :: rad_diff_t
      private
      class(r_diff_t), allocatable :: df
    contains
      private
      procedure, public :: build => build_
-  end type ad_diff_t
+  end type rad_diff_t
 
   ! Interfaces
 
-  interface ad_diff_t
-     module procedure ad_diff_t_
-  end interface ad_diff_t
+  interface rad_diff_t
+     module procedure rad_diff_t_
+  end interface rad_diff_t
 
   ! Access specifiers
 
   private
 
-  public :: ad_diff_t
+  public :: rad_diff_t
 
   ! Procedures
 
 contains
 
-  function ad_diff_t_ (ml, s_a, x_a, s_b, x_b, md_p, nm_p, os_p) result (df)
+  function rad_diff_t_ (ml, s_a, x_a, s_b, x_b, md_p, nm_p, os_p) result (df)
 
     class(model_t), pointer, intent(in) :: ml
     integer, intent(in)                 :: s_a
@@ -75,21 +75,21 @@ contains
     type(mode_par_t), intent(in)        :: md_p
     type(num_par_t), intent(in)         :: nm_p
     type(osc_par_t), intent(in)         :: os_p
-    type(ad_diff_t)                     :: df
+    type(rad_diff_t)                    :: df
 
-    type(ad_eqns_t) :: eq
+    type(rad_eqns_t) :: eq
 
-    ! Construct the ad_diff_t
+    ! Construct the rad_diff_t
 
     if (s_a == s_b) then
 
-       eq = ad_eqns_t(ml, s_a, md_p, os_p)
+       eq = rad_eqns_t(ml, s_a, md_p, os_p)
        
        allocate(df%df, SOURCE=r_diff_t(eq, x_a, x_b, nm_p))
 
     else
 
-       allocate(df%df, SOURCE=ad_match_t(ml, s_a, x_a, s_b, x_b, md_p, os_p))
+       allocate(df%df, SOURCE=rad_match_t(ml, s_a, x_a, s_b, x_b, md_p, os_p))
 
     endif
 
@@ -99,17 +99,17 @@ contains
 
     return
 
-  end function ad_diff_t_
+  end function rad_diff_t_
 
   !****
 
   subroutine build_ (this, omega, E_l, E_r, scl)
 
-    class(ad_diff_t), intent(in) :: this
-    real(WP), intent(in)         :: omega
-    real(WP), intent(out)        :: E_l(:,:)
-    real(WP), intent(out)        :: E_r(:,:)
-    type(r_ext_t), intent(out)   :: scl
+    class(rad_diff_t), intent(in) :: this
+    real(WP), intent(in)          :: omega
+    real(WP), intent(out)         :: E_l(:,:)
+    real(WP), intent(out)         :: E_r(:,:)
+    type(r_ext_t), intent(out)    :: scl
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -127,4 +127,4 @@ contains
 
   end subroutine build_
 
-end module gyre_ad_diff
+end module gyre_rad_diff
