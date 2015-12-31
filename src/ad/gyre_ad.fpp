@@ -1,7 +1,7 @@
 ! Program  : gyre_ad
 ! Purpose  : adiabatic oscillation code
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -38,7 +38,7 @@ program gyre_ad
   use gyre_osc_par
   use gyre_out_par
   use gyre_output
-!  use gyre_rad_bvp
+  use gyre_rad_bep
   use gyre_search
   use gyre_scan_par
   use gyre_mode
@@ -70,8 +70,7 @@ program gyre_ad
   type(grid_par_t), allocatable  :: gr_p_sel(:)
   type(scan_par_t), allocatable  :: sc_p_sel(:)
   real(WP), allocatable          :: omega(:)
-!  class(r_bep_t), allocatable    :: bp
-  class(ad_bep_t), allocatable   :: bp
+  class(r_bep_t), allocatable    :: bp
   integer                        :: n_md
   integer                        :: d_md
   type(mode_t), allocatable      :: md(:)
@@ -160,11 +159,11 @@ program gyre_ad
 
      ! Set up bp
 
-     !if (mp(i)%l == 0 .AND. os_p_sel(1)%reduce_order) then
-     !   allocate(bp, SOURCE=rad_bvp_t(x_sh, ml, mp(i), os_p_sel(1), np_sel(1), omega_min, omega_max))
-     !else
-     allocate(bp, SOURCE=ad_bep_t(ml, omega, gr_p_sel, md_p(i), nm_p_sel(1), os_p_sel(1)))
-     !endif
+     if (md_p(i)%l == 0 .AND. os_p_sel(1)%reduce_order) then
+        allocate(bp, SOURCE=rad_bep_t(ml, omega, gr_p_sel, md_p(i), nm_p_sel(1), os_p_sel(1)))
+     else
+        allocate(bp, SOURCE=ad_bep_t(ml, omega, gr_p_sel, md_p(i), nm_p_sel(1), os_p_sel(1)))
+     endif
 
      ! Find roots
 
@@ -198,7 +197,14 @@ contains
 
     ! Create the mode
 
-    md_new = mode_t(bp, omega)
+    select type (bp)
+    type is (ad_bep_t)
+       md_new = mode_t(bp, omega)
+    type is (rad_bep_t)
+       md_new = mode_t(bp, omega)
+    class default
+       $ABORT(Invalid bp class)
+    end select
 
     if (md_new%n_pg < md_p(i)%n_pg_min .OR. md_new%n_pg > md_p(i)%n_pg_max) return
 
