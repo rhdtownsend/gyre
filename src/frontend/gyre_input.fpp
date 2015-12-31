@@ -71,7 +71,7 @@ contains
     use gyre_evol_model
 !    use gyre_poly_model
 !    use gyre_hom_model
-!    use gyre_mesa_file
+    use gyre_mesa_file
 !    use gyre_osc_file
 !    use gyre_losc_file
     use gyre_fgong_file
@@ -86,16 +86,14 @@ contains
     type(model_par_t), intent(in)        :: ml_p
     class(model_t), pointer, intent(out) :: ml
 
-    type(evol_model_t) :: em
-
     ! Read/initialize the model
 
     select case (ml_p%model_type)
     case ('EVOL')
 
        select case (ml_p%file_format)
-       ! case ('MESA')
-       !    call read_mesa_model(file, deriv_type, add_center, ec, x=x_bc)
+       case ('MESA')
+          call read_mesa_model(ml_p, ml)
        ! case('B3')
        !    $if($HDF5)
        !    call read_b3_model(file, deriv_type, add_center, ec, x=x_bc)
@@ -113,7 +111,7 @@ contains
        ! case ('LOSC')
        !    call read_losc_model(file, deriv_type, add_center, ec, x=x_bc)
        case ('FGONG')
-          call read_fgong_model(ml_p, em)
+          call read_fgong_model(ml_p, ml)
        ! case ('FAMDL')
        !    call read_famdl_model(file, deriv_type, data_format, add_center, ec, x=x_bc)
        ! case ('AMDL')
@@ -126,8 +124,6 @@ contains
 
        !ec%reconstruct_As = reconstruct_As
        !ec%uniform_rot = uniform_rot
-
-       allocate(ml, SOURCE=em)
 
     ! case ('POLY')
 
