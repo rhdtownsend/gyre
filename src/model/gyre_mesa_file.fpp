@@ -1,7 +1,7 @@
 ! Module   : gyre_mesa_file
 ! Purpose  : read MESA files
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,8 +25,9 @@ module gyre_mesa_file
   use core_order
 
   use gyre_constants
-  use gyre_model
   use gyre_evol_model
+  use gyre_model
+  use gyre_model_par
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -46,86 +47,102 @@ module gyre_mesa_file
 
 contains
 
-  subroutine read_mesa_model (file, deriv_type, add_center, ml, x, uni_Omega_rot)
+  subroutine read_mesa_model (ml_p, ml)
 
-    character(*), intent(in)                     :: file
-    character(*), intent(in)                     :: deriv_type
-    logical, intent(in)                          :: add_center
-    type(evol_model_t), intent(out)              :: ml
-    real(WP), allocatable, optional, intent(out) :: x(:)
-    real(WP), optional, intent(in)               :: uni_Omega_rot
+    type(model_par_t), intent(in)        :: ml_p
+    class(model_t), pointer, intent(out) :: ml
 
-    integer               :: unit
-    integer               :: n
-    real(WP)              :: M_star
-    real(WP)              :: R_star
-    real(WP)              :: L_star
-    integer               :: n_cols
-    real(WP), allocatable :: var(:,:)
-    real(WP), allocatable :: r(:)
-    real(WP), allocatable :: m(:)
-    real(WP), allocatable :: p(:)
-    real(WP), allocatable :: rho(:)
-    real(WP), allocatable :: T(:)
-    real(WP), allocatable :: N2(:)
-    real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: nabla_ad(:)
-    real(WP), allocatable :: delta(:)
-    real(WP), allocatable :: nabla(:)
-    real(WP), allocatable :: kappa(:)
-    real(WP), allocatable :: kappa_rho(:)
-    real(WP), allocatable :: kappa_T(:)
-    real(WP), allocatable :: epsilon(:)
-    real(WP), allocatable :: epsilon_rho(:)
-    real(WP), allocatable :: epsilon_T(:)
-    real(WP), allocatable :: Omega_rot(:)
-    logical               :: has_center
+    real(WP)                    :: M_star
+    real(WP)                    :: R_star
+    real(WP)                    :: L_star
+    real(WP), allocatable       :: r(:)
+    real(WP), allocatable       :: m(:)
+    real(WP), allocatable       :: p(:)
+    real(WP), allocatable       :: rho(:)
+    real(WP), allocatable       :: T(:)
+    real(WP), allocatable       :: N2(:)
+    real(WP), allocatable       :: Gamma_1(:)
+    real(WP), allocatable       :: nabla_ad(:)
+    real(WP), allocatable       :: delta(:)
+    real(WP), allocatable       :: nabla(:)
+    real(WP), allocatable       :: kappa(:)
+    real(WP), allocatable       :: kappa_rho(:)
+    real(WP), allocatable       :: kappa_T(:)
+    real(WP), allocatable       :: epsilon(:)
+    real(WP), allocatable       :: epsilon_rho(:)
+    real(WP), allocatable       :: epsilon_T(:)
+    real(WP), allocatable       :: Omega_rot(:)
+    integer                     :: n
+    real(WP), allocatable       :: x(:)
+    real(WP), allocatable       :: V_2(:)
+    real(WP), allocatable       :: As(:)
+    real(WP), allocatable       :: U(:)
+    real(WP), allocatable       :: c_1(:)
+    type(evol_model_t), pointer :: em
 
     ! Read data from the MESA-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from MESA file', TRIM(file)
+       write(OUTPUT_UNIT, 100) 'Reading from MESA file', TRIM(ml_p%file)
 100    format(A,1X,A)
     endif
 
-    call read_mesa_data(file, M_star, R_star, L_star, r, m, p, rho, T, &
+    call read_mesa_data(ml_p%file, M_star, R_star, L_star, r, m, p, rho, T, &
                         N2, Gamma_1, nabla_ad, delta, nabla,  &
                         kappa, kappa_rho, kappa_T, &
                         epsilon, epsilon_rho, epsilon_T, &
                         Omega_rot)
 
-    if (PRESENT(uni_Omega_rot)) Omega_rot = uni_Omega_rot
+    ! Calculate dimensionless structure data
 
-    has_center = r(1) == 0._WP .AND. m(1) == 0._WP
+    n = SIZE(r)
 
-    if (check_log_level('INFO')) then
-       if (add_center) then
-          if (has_center) then
-             write(OUTPUT_UNIT, 110) 'No need to add central point'
-110          format(3X,A)
-          else
-             write(OUTPUT_UNIT, 110) 'Adding central point'
-          endif
-       endif
+    allocate(x(n))
+
+    allocate(V_2(n))
+    allocate(As(n))
+    allocate(U(n))
+    allocate(c_1(n))
+
+    x = r/R_star
+
+    where (x /= 0._WP)
+       V_2 = G_GRAVITY*m*rho/(p*r*x**2)
+       As = r**3*N2/(G_GRAVITY*m)
+       U = 4._WP*PI*rho*r**3/m
+       c_1 = (r/R_star)**3/(m/M_star)
+    elsewhere
+       V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*p(1))
+       As = 0._WP
+       U = 3._WP
+       c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+    end where
+
+    if (ml_p%uniform_rot) then
+       Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+    else
+       Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
     endif
 
     ! Initialize the model
 
-    ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
-                      N2, Gamma_1, nabla_ad, delta, Omega_rot, &
-                      nabla, kappa, kappa_rho, kappa_T, &
-                      epsilon, epsilon_rho, epsilon_T, &
-                      deriv_type, add_center=add_center .AND. .NOT. has_center)
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
 
-    ! Set up the grid
+    call em%set_V_2(V_2)
+    call em%set_As(As)
+    call em%set_U(U)
+    call em%set_c_1(c_1)
 
-    if (PRESENT(x)) then
-       if (add_center .AND. .NOT. has_center) then
-          x = [0._WP,r/R_star]
-       else
-          x = r/R_star
-       endif
-    endif
+    call em%set_Gamma_1(Gamma_1)
+    call em%set_delta(delta)
+    call em%set_nabla_ad(nabla_ad)
+
+    call em%set_Omega_rot(Omega_rot)
+
+    ! Return a pointer to the model
+
+    ml => em
+
     ! Finish
 
     return
