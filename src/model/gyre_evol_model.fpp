@@ -265,21 +265,20 @@ contains
 
   contains
 
-    function f_c_ (x, f) result (f_c)
+    function f_c_ () result (f_c)
 
-      real(WP), intent(in) :: x(:)
-      real(WP), intent(in) :: f(:)
-      real(WP)             :: f_c
-
-      $ASSERT(SIZE(x) >= 2,Insufficient points for center interpolation)
-
-      $CHECK_BOUNDS(SIZE(f),SIZE(x))
+      real(WP) :: f_c
 
       ! Interpolate f at x=0 using parabolic fitting
 
-      f_c = (x(2)**2*f(1) - x(1)**2*f(2))/(x(2)**2 - x(1)**2)
+      associate (x_1 => this%x(2), &
+                 x_2 => this%x(3), &
+                 f_1 => f(1), &
+                 f_2 => f(2))
 
-      print *,'Interp:',x(1:2),f(1:2),f_c
+        f_c = (x_2**2*f_1 - x_1**2*f_2)/(x_2**2 - x_1**2)
+
+      end associate
 
       ! Finish
 
@@ -291,23 +290,23 @@ contains
 
   $endsub
 
-  $SET(V_2,f_c_(this%x(2:),f))
+  $SET(V_2,f_c_())
   $SET(As,0._WP)
   $SET(U,3._WP)
-  $SET(c_1,f_c_(this%x(2:),f))
-  $SET(Gamma_1,f_c_(this%x(2:),f))
-  $SET(delta,f_c_(this%x(2:),f))
-  $SET(nabla_ad,f_c_(this%x(2:),f))
-  $SET(nabla,f_c_(this%x(2:),f))
-  $SET(beta_rad,f_c_(this%x(2:),f))
-  $SET(c_rad,f_c_(this%x(2:),f))
-  $SET(c_thm,f_c_(this%x(2:),f))
-  $SET(c_dif,f_c_(this%x(2:),f))
-  $SET(c_eps_ad,f_c_(this%x(2:),f))
-  $SET(c_eps_S,f_c_(this%x(2:),f))
-  $SET(kappa_ad,f_c_(this%x(2:),f))
-  $SET(kappa_S,f_c_(this%x(2:),f))
-  $SET(Omega_rot,f_c_(this%x(2:),f))
+  $SET(c_1,f_c_())
+  $SET(Gamma_1,f_c_())
+  $SET(delta,f_c_())
+  $SET(nabla_ad,f_c_())
+  $SET(nabla,f_c_())
+  $SET(beta_rad,f_c_())
+  $SET(c_rad,f_c_())
+  $SET(c_thm,f_c_())
+  $SET(c_dif,f_c_())
+  $SET(c_eps_ad,f_c_())
+  $SET(c_eps_S,f_c_())
+  $SET(kappa_ad,f_c_())
+  $SET(kappa_S,f_c_())
+  $SET(Omega_rot,f_c_())
 
   !****
 
