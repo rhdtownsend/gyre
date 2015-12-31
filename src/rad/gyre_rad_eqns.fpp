@@ -149,7 +149,7 @@ contains
 
       ! Apply the variables transformation
 
-      xA = MATMUL(this%vr%G(s, x, omega), MATMUL(xA, this%vr%H(s, x, omega)) -&
+      xA = MATMUL(this%vr%G(s, x, omega), MATMUL(xA, this%vr%H(s, x, omega)) - &
            this%vr%dH(s, x, omega))
 
     end associate
