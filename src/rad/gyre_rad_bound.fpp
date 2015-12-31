@@ -134,8 +134,6 @@ contains
 
   !****
 
-  !****
-
   subroutine build_i_ (this, omega, B_i, scl)
 
     class(rad_bound_t), intent(in) :: this
