@@ -36,26 +36,38 @@ module gyre_${T}_bound
 
   type, abstract :: ${T}_bound_t
      private
-     integer, public :: n
+     integer, public :: n_i
+     integer, public :: n_o
      integer, public :: n_e
    contains
      private
-     procedure(build_), deferred, public :: build
+     procedure(build_i_), deferred, public :: build_i
+     procedure(build_o_), deferred, public :: build_o
    end type ${T}_bound_t
 
   ! Interfaces
 
   abstract interface
 
-     subroutine build_ (this, omega, E, scl)
+     subroutine build_i_ (this, omega, B_i, scl)
        use core_kinds
        use gyre_ext
        import ${T}_bound_t
        class(${T}_bound_t), intent(in) :: this
        $TYPE(WP), intent(in)           :: omega
-       $TYPE(WP), intent(out)          :: E(:,:)
+       $TYPE(WP), intent(out)          :: B_i(:,:)
        type(${T}_ext_t), intent(out)   :: scl
-     end subroutine build_
+     end subroutine build_i_
+
+     subroutine build_o_ (this, omega, B_o, scl)
+       use core_kinds
+       use gyre_ext
+       import ${T}_bound_t
+       class(${T}_bound_t), intent(in) :: this
+       $TYPE(WP), intent(in)           :: omega
+       $TYPE(WP), intent(out)          :: B_o(:,:)
+       type(${T}_ext_t), intent(out)   :: scl
+     end subroutine build_o_
 
   end interface
 

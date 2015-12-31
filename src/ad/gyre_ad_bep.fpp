@@ -87,8 +87,7 @@ contains
     integer, allocatable         :: s(:)
     real(WP), allocatable        :: x(:)
     integer                      :: n_k
-    type(ad_bound_t)             :: bd_i
-    type(ad_bound_t)             :: bd_o
+    type(ad_bound_t)             :: bd
     integer                      :: k
     type(ad_diff_t), allocatable :: df(:)
     real(WP)                     :: omega_min
@@ -104,8 +103,7 @@ contains
 
     ! Initialize the boundary conditions
 
-    bd_i = ad_bound_t(ml, .TRUE., md_p, os_p)
-    bd_o = ad_bound_t(ml, .FALSE., md_p, os_p)
+    bd = ad_bound_t(ml, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -125,7 +123,7 @@ contains
        omega_max = HUGE(0._WP)
     endif
     
-    bp%r_bep_t = r_bep_t_(bd_i, bd_o, df, omega_min, omega_max, nm_p) 
+    bp%r_bep_t = r_bep_t_(bd, df, omega_min, omega_max, nm_p) 
 
     ! Other initializations
 

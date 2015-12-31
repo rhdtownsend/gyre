@@ -46,9 +46,8 @@ module gyre_${T}_bep
 
   type :: ${T}_bep_t
      private
-     class(${T}_bound_t), allocatable  :: bd_i
-     class(${T}_bound_t), allocatable  :: bd_o
      class(${T}_diff_t), allocatable   :: df(:)
+     class(${T}_bound_t), allocatable  :: bd
      class(${T}_sysmtx_t), allocatable :: sm
      real(WP)                          :: omega_min
      real(WP)                          :: omega_max
@@ -78,11 +77,10 @@ module gyre_${T}_bep
 
 contains
 
-  function ${T}_bep_t_ (bd_i, bd_o, df, omega_min, omega_max, nm_p) result (bp)
+  function ${T}_bep_t_ (bd, df, omega_min, omega_max, nm_p) result (bp)
 
-    class(${T}_bound_t), intent(in)  :: bd_i
-    class(${T}_bound_t), intent(in)  :: bd_o
     class(${T}_diff_t), intent(in)   :: df(:)
+    class(${T}_bound_t), intent(in)  :: bd
     real(WP), intent(in)             :: omega_min
     real(WP), intent(in)             :: omega_max
     type(num_par_t), intent(in)      :: nm_p
@@ -96,22 +94,20 @@ contains
     ! Perform basic validations
 
     n_k = SIZE(df) + 1
-    n_e = bd_i%n_e
+    n_e = bd%n_e
 
-    n_i = bd_i%n
-    n_o = bd_o%n
+    n_i = bd%n_i
+    n_o = bd%n_o
 
-    $CHECK_BOUNDS(bd_o%n_e,n_e)
     $CHECK_BOUNDS(n_i+n_o,n_e)
 
     $ASSERT_DEBUG(ALL(df%n_e == n_e),Dimension mismatch)
 
     ! Construct the bep_t
 
-    allocate(bp%bd_i, SOURCE=bd_i)
-    allocate(bp%bd_o, SOURCE=bd_o)
-
     allocate(bp%df(n_k-1), SOURCE=df)
+
+    allocate(bp%bd, SOURCE=bd)
 
     allocate(bp%sm, SOURCE=${T}_sysmtx_t(n_k-1, n_e, n_i, n_o, nm_p))
 
@@ -179,10 +175,10 @@ contains
 
     ! Boundary conditions
 
-    call this%bd_i%build(omega, B_i, scl)
+    call this%bd%build_i(omega, B_i, scl)
     call this%sm%set_B_i(B_i, scl)
 
-    call this%bd_o%build(omega, B_o, scl)
+    call this%bd%build_o(omega, B_o, scl)
     call this%sm%set_B_o(B_o, scl)
 
     ! Difference equations
