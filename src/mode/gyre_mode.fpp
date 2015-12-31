@@ -188,6 +188,11 @@ contains
     md%l = md_p%l
     md%m = md_p%m
     
+    md%md_p = md_p
+    md%os_p = os_p
+
+    md%pruned = .FALSE.
+
     ! Normalize the mode so that y_ref(1) is purely real, and the
     ! total mode energy is unity
 
@@ -199,13 +204,6 @@ contains
     ! Classify the mode
 
     call md%classify_()
-
-    ! Do other initializations
-
-    md%md_p = md_p
-    md%os_p = os_p
-
-    md%pruned = .FALSE.
 
     ! Finish
 
