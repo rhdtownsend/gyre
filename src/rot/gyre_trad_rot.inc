@@ -48,10 +48,10 @@ module gyre_${T}_trad_rot
      integer                 :: m
    contains
      private
-     procedure, public :: omega => omega_
+     procedure, public :: omega
      procedure         :: omega_c_1_
      procedure         :: omega_c_v_
-     procedure, public :: l_i => l_i_
+     procedure, public :: l_i
      procedure         :: l_e_1_
      procedure         :: l_e_v_
      procedure         :: lambda_1_
@@ -95,7 +95,7 @@ contains
 
   !****
 
-  function omega_ (this, s, x, omega_c) result (omega)
+  function omega (this, s, x, omega_c)
 
     class(${T}_trad_rot_t), intent(in) :: this
     integer, intent(in)                :: s
@@ -112,7 +112,7 @@ contains
 
     return
 
-  end function omega_
+  end function omega
 
   !****
 
@@ -160,7 +160,7 @@ contains
 
   !****
 
-  function l_i_ (this, omega) result (l_i)
+  function l_i (this, omega)
 
     class(${T}_trad_rot_t), intent(in) :: this
     $TYPE(WP), intent(in)              :: omega
@@ -169,13 +169,13 @@ contains
     ! Evaluate the effective harmonic degree at the model inner
     ! boundary
 
-    l_i = this%l_e(1, this%ml%x_i, omega)
+    l_i = this%l_e(1, this%ml%x_i(1), omega)
 
     ! Finish
 
     return
 
-  end function l_i_
+  end function l_i
 
   !****
 

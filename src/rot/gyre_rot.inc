@@ -37,24 +37,24 @@ module gyre_${T}_rot
   type, abstract :: ${T}_rot_t
    contains
      private
-     procedure(omega_), deferred, public :: omega
-     procedure(omega_c_1_), deferred     :: omega_c_1_
-     procedure(omega_c_v_), deferred     :: omega_c_v_
-     generic, public                     :: omega_c => omega_c_1_, omega_c_v_
-     procedure(l_i_), deferred, public   :: l_i
-     procedure(l_e_1_), deferred         :: l_e_1_
-     procedure(l_e_v_), deferred         :: l_e_v_
-     generic, public                     :: l_e => l_e_1_, l_e_v_
-     procedure(lambda_1_), deferred      :: lambda_1_
-     procedure(lambda_v_), deferred      :: lambda_v_
-     generic, public                     :: lambda => lambda_1_, lambda_v_
+     procedure(omega), deferred, public :: omega
+     procedure(omega_c_1_), deferred    :: omega_c_1_
+     procedure(omega_c_v_), deferred    :: omega_c_v_
+     generic, public                    :: omega_c => omega_c_1_, omega_c_v_
+     procedure(l_i), deferred, public   :: l_i
+     procedure(l_e_1_), deferred        :: l_e_1_
+     procedure(l_e_v_), deferred        :: l_e_v_
+     generic, public                    :: l_e => l_e_1_, l_e_v_
+     procedure(lambda_1_), deferred     :: lambda_1_
+     procedure(lambda_v_), deferred     :: lambda_v_
+     generic, public                    :: lambda => lambda_1_, lambda_v_
   end type ${T}_rot_t
 
   ! Interfaces
 
   abstract interface
 
-     function omega_ (this, s, x, omega_c) result (omega)
+     function omega (this, s, x, omega_c)
        use core_kinds
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
@@ -62,7 +62,7 @@ module gyre_${T}_rot
        real(WP), intent(in)          :: x
        $TYPE(WP), intent(in)         :: omega_c
        $TYPE(WP)                     :: omega
-     end function omega_
+     end function omega
 
      function omega_c_1_ (this, s, x, omega) result (omega_c)
        use core_kinds
@@ -84,13 +84,13 @@ module gyre_${T}_rot
        $TYPE(WP)                     :: omega_c(SIZE(s))
      end function omega_c_v_
 
-     function l_i_ (this, omega) result (l_i)
+     function l_i (this, omega)
        use core_kinds
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: l_i
-     end function l_i_
+     end function l_i
      
      function l_e_1_ (this, s, x, omega) result (l_e)
        use core_kinds
