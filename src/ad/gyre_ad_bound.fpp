@@ -185,7 +185,7 @@ contains
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
     associate (s => 1, &
-               x => this%ml%x_i)
+               x => this%ml%x_i(1))
 
       ! Calculate coefficients
 
@@ -247,7 +247,7 @@ contains
     ! displacement/gravity)
 
     associate (s => 1, &
-               x => this%ml%x_i)
+               x => this%ml%x_i(1))
 
       ! Calculate coefficients
 
@@ -335,7 +335,7 @@ contains
     ! Evaluate the outer boundary conditions (zero-pressure)
 
     associate (s => this%ml%n_s, &
-               x => this%ml%x_o)
+               x => this%ml%x_o(this%ml%n_s))
 
       ! Calculate coefficients
 
@@ -397,7 +397,7 @@ contains
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     associate (s => this%ml%n_s, &
-               x => this%ml%x_o)
+               x => this%ml%x_o(this%ml%n_s))
 
       ! Calculate coefficients
 
@@ -473,7 +473,7 @@ contains
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
     associate (s => this%ml%n_s, &
-               x => this%ml%x_o)
+               x => this%ml%x_o(this%ml%n_s))
 
       ! Calculate coefficients
 
@@ -557,7 +557,7 @@ contains
     ! Calculate coefficients
 
     associate (s => this%ml%n_s, &
-               x => this%ml%x_o)
+               x => this%ml%x_o(this%ml%n_s))
 
       call eval_atmos_coeffs_jcd(this%ml, V_g, As, c_1)
 
