@@ -46,7 +46,7 @@ module gyre_ad_diff
      class(r_diff_t), allocatable :: df
    contains
      private
-     procedure, public :: build => build_
+     procedure, public :: build
   end type ad_diff_t
 
   ! Interfaces
@@ -103,7 +103,7 @@ contains
 
   !****
 
-  subroutine build_ (this, omega, E_l, E_r, scl)
+  subroutine build (this, omega, E_l, E_r, scl)
 
     class(ad_diff_t), intent(in) :: this
     real(WP), intent(in)         :: omega
@@ -125,6 +125,6 @@ contains
 
     return
 
-  end subroutine build_
+  end subroutine build
 
 end module gyre_ad_diff

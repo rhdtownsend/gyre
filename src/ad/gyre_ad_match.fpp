@@ -46,7 +46,7 @@ module gyre_ad_match
      real(WP)                :: x
    contains
      private
-     procedure, public :: build => build_
+     procedure, public :: build
   end type ad_match_t
 
   ! Interfaces
@@ -95,7 +95,7 @@ contains
     
   !****
 
-  subroutine build_ (this, omega, E_l, E_r, scl)
+  subroutine build (this, omega, E_l, E_r, scl)
 
     class(ad_match_t), intent(in) :: this
     real(WP), intent(in)          :: omega
@@ -173,13 +173,13 @@ contains
 
     ! Apply the variables transformation
 
-    E_l = MATMUL(E_l, this%vr%B(this%s  , this%x, omega))
-    E_r = MATMUL(E_r, this%vr%B(this%s+1, this%x, omega))
+    E_l = MATMUL(E_l, this%vr%H(this%s  , this%x, omega))
+    E_r = MATMUL(E_r, this%vr%H(this%s+1, this%x, omega))
 
     ! Finish
 
     return
 
-  end subroutine build_
+  end subroutine build
 
 end module gyre_ad_match

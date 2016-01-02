@@ -59,10 +59,10 @@ module gyre_ad_bound
      logical                     :: cowling_approx
    contains 
      private
-     procedure, public :: build_i => build_i_
+     procedure, public :: build_i
      procedure         :: build_regular_i_
      procedure         :: build_zero_i_
-     procedure, public :: build_o => build_o_
+     procedure, public :: build_o
      procedure         :: build_zero_o_
      procedure         :: build_dziem_o_
      procedure         :: build_unno_o_
@@ -136,7 +136,7 @@ contains
 
   !****
 
-  subroutine build_i_ (this, omega, B_i, scl)
+  subroutine build_i (this, omega, B_i, scl)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
@@ -161,7 +161,7 @@ contains
 
     return
 
-  end subroutine build_i_
+  end subroutine build_i
 
   !****
 
@@ -217,7 +217,7 @@ contains
 
       ! Apply the variables transformation
 
-      B_i = MATMUL(B_i, this%vr%B(s, x, omega))
+      B_i = MATMUL(B_i, this%vr%H(s, x, omega))
 
     end associate
 
@@ -273,7 +273,7 @@ contains
       
       ! Apply the variables transformation
 
-      B_i = MATMUL(B_i, this%vr%B(s, x, omega))
+      B_i = MATMUL(B_i, this%vr%H(s, x, omega))
 
     end associate
 
@@ -285,7 +285,7 @@ contains
 
   !****
 
-  subroutine build_o_ (this, omega, B_o, scl)
+  subroutine build_o (this, omega, B_o, scl)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
@@ -314,7 +314,7 @@ contains
 
     return
 
-  end subroutine build_o_
+  end subroutine build_o
   
   !****
 
@@ -365,7 +365,7 @@ contains
 
       ! Apply the variables transformation
 
-      B_o = MATMUL(B_o, this%vr%B(s, x, omega))
+      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
 
     end associate
 
@@ -431,7 +431,7 @@ contains
 
       ! Apply the variables transformation
 
-      B_o = MATMUL(B_o, this%vr%B(s, x, omega))
+      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
 
     end associate
 
@@ -519,7 +519,7 @@ contains
 
       ! Apply the variables transformation
 
-      B_o = MATMUL(B_o, this%vr%B(s, x, omega))
+      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
 
     end associate
 
@@ -593,7 +593,7 @@ contains
 
       ! Apply the variables transformation
 
-      B_o = MATMUL(B_o, this%vr%B(s, x, omega))
+      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
 
     end associate
 

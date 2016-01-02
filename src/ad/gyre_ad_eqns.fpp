@@ -48,8 +48,8 @@ module gyre_ad_eqns
      logical                     :: cowling_approx
    contains
      private
-     procedure, public :: A => A_
-     procedure, public :: xA => xA_
+     procedure, public :: A
+     procedure, public :: xA
   end type ad_eqns_t
 
   ! Interfaces
@@ -97,7 +97,7 @@ contains
 
   !****
 
-  function A_ (this, x, omega) result (A)
+  function A (this, x, omega)
 
     class(ad_eqns_t), intent(in) :: this
     real(WP), intent(in)         :: x
@@ -112,11 +112,11 @@ contains
 
     return
 
-  end function A_
+  end function A
 
   !****
 
-  function xA_ (this, x, omega) result (xA)
+  function xA (this, x, omega)
 
     class(ad_eqns_t), intent(in) :: this
     real(WP), intent(in)         :: x
@@ -178,7 +178,8 @@ contains
 
       ! Apply the variables transformation
 
-      xA = MATMUL(this%vr%A(s, x, omega), MATMUL(xA, this%vr%B(s, x, omega)) - this%vr%dB(s, x, omega))
+      xA = MATMUL(this%vr%G(s, x, omega), MATMUL(xA, this%vr%H(s, x, omega)) - &
+                                          this%vr%dH(s, x, omega))
 
     end associate
 
@@ -186,6 +187,6 @@ contains
 
     return
 
-  end function xA_
+  end function xA
   
 end module gyre_ad_eqns

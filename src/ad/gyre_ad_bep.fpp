@@ -166,7 +166,7 @@ contains
 
     !$OMP PARALLEL DO 
     do k = 1, bp%n_k
-       y_c(1:4,k) = MATMUL(bp%vr%B(bp%s(k), bp%x(k), omega), y(:,k))
+       y_c(1:4,k) = MATMUL(bp%vr%H(bp%s(k), bp%x(k), omega), y(:,k))
        y_c(5:6,k) = 0._WP
     end do
 
