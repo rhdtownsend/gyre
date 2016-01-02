@@ -57,9 +57,9 @@ module gyre_${T}_bep
      integer, public                   :: n_o
    contains 
      private
-     procedure, public :: eval_discrim => eval_discrim_
+     procedure, public :: eval_discrim
      procedure         :: build_
-     procedure, public :: solve => solve_
+     procedure, public :: solve
   end type ${T}_bep_t
 
   ! Interfaces
@@ -127,7 +127,7 @@ contains
 
   !****
 
-  subroutine eval_discrim_ (this, omega, discrim, status)
+  subroutine eval_discrim (this, omega, discrim, status)
 
     class(${T}_bep_t), intent(inout) :: this
     $TYPE(WP), intent(in)            :: omega
@@ -155,7 +155,7 @@ contains
 
     return
 
-  end subroutine eval_discrim_
+  end subroutine eval_discrim
 
   !****
 
@@ -197,7 +197,7 @@ contains
 
   !****
 
-  subroutine solve_ (this, omega, y, discrim)
+  subroutine solve (this, omega, y, discrim)
 
     class(${T}_bep_t), intent(inout) :: this
     $TYPE(WP), intent(in)            :: omega
@@ -225,7 +225,7 @@ contains
 
     return
 
-  end subroutine solve_
+  end subroutine solve
 
 end module gyre_${T}_bep
 
