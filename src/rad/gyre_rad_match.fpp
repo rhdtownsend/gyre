@@ -46,7 +46,7 @@ module gyre_rad_match
      real(WP)                :: x
    contains
      private
-     procedure, public :: build => build_
+     procedure, public :: build
   end type rad_match_t
 
   ! Interfaces
@@ -95,7 +95,7 @@ contains
     
   !****
 
-  subroutine build_ (this, omega, E_l, E_r, scl)
+  subroutine build (this, omega, E_l, E_r, scl)
 
     class(rad_match_t), intent(in) :: this
     real(WP), intent(in)           :: omega
@@ -151,6 +151,6 @@ contains
 
     return
 
-  end subroutine build_
+  end subroutine build
 
 end module gyre_rad_match

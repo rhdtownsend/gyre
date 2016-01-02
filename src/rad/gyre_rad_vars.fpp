@@ -52,13 +52,13 @@ module gyre_rad_vars
      integer                     :: set
    contains
      private
-     procedure, public :: G => G_
+     procedure, public :: G
      procedure         :: G_jcd_
      procedure         :: G_lagp_
-     procedure, public :: H => H_
+     procedure, public :: H
      procedure         :: H_jcd_
      procedure         :: H_lagp_
-     procedure, public :: dH => dH_
+     procedure, public :: dH
      procedure         :: dH_jcd_
      procedure         :: dH_lagp_
   end type rad_vars_t
@@ -113,7 +113,7 @@ contains
 
   !****
 
-  function G_ (this, s, x, omega) result (G)
+  function G (this, s, x, omega)
 
     class(rad_vars_t), intent(in) :: this
     integer, intent(in)           :: s
@@ -141,7 +141,7 @@ contains
 
     return
     
-  end function G_
+  end function G
   
   !****
 
@@ -216,7 +216,7 @@ contains
 
   !****
 
-  function H_ (this, s, x, omega) result (H)
+  function H (this, s, x, omega)
 
     class(rad_vars_t), intent(in) :: this
     integer, intent(in)           :: s
@@ -244,7 +244,7 @@ contains
 
     return
 
-  end function H_
+  end function H
 
   !****
 
@@ -317,7 +317,7 @@ contains
 
   !****
 
-  function dH_ (this, s, x, omega) result (dH)
+  function dH (this, s, x, omega)
 
     class(rad_vars_t), intent(in) :: this
     integer, intent(in)           :: s
@@ -344,7 +344,7 @@ contains
 
     return
 
-  end function dH_
+  end function dH
 
   !****
 
