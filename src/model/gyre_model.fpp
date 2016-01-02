@@ -38,8 +38,6 @@ module gyre_model
 
   type, abstract :: model_t
      private
-     real(WP), public :: x_i
-     real(WP), public :: x_o
      integer, public  :: n_s
    contains
      private
@@ -64,7 +62,9 @@ module gyre_model
      $PROC_DECL(kappa_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
-     procedure(scaffold_), deferred, public :: scaffold
+     procedure(x_i), deferred, public :: x_i
+     procedure(x_o), deferred, public :: x_o
+     procedure(x), deferred, public   :: x
   end type model_t
 
   ! Interfaces
@@ -89,13 +89,29 @@ module gyre_model
        real(WP)                   :: f(SIZE(s))
      end function f_v_
 
-     subroutine scaffold_ (this, s, x)
+     function x_i (this, s)
        use core_kinds
        import model_t
-       class(model_t), intent(in)         :: this
-       integer, allocatable, intent(out)  :: s(:)
-       real(WP), allocatable, intent(out) :: x(:)
-     end subroutine scaffold_
+       class(model_t), intent(in) :: this
+       integer, intent(in)        :: s
+       real(WP)                   :: x_i
+     end function x_i
+
+     function x_o (this, s)
+       use core_kinds
+       import model_t
+       class(model_t), intent(in) :: this
+       integer, intent(in)        :: s
+       real(WP)                   :: x_o
+     end function x_o
+
+     function x (this, s)
+       use core_kinds
+       import model_t
+       class(model_t), intent(in) :: this
+       integer, intent(in)        :: s
+       real(WP), allocatable      :: x(:)
+     end function x
 
   end interface
 

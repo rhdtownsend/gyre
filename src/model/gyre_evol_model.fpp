@@ -51,7 +51,7 @@ module gyre_evol_model
   type, extends (model_t) :: evol_model_t
      private
      integer, allocatable          :: s(:)
-     real(WP), allocatable         :: x(:)
+     real(WP), allocatable         :: x_(:)
      type(evol_seg_t), allocatable :: es(:)
      real(WP), public              :: M_star
      real(WP), public              :: R_star
@@ -106,9 +106,11 @@ module gyre_evol_model
      generic, public   :: rho => rho_1_, rho_v_
      $PROC_DECL(T)
      generic, public   :: T => T_1_, T_v_
-     procedure, public :: scaffold => scaffold_
-     procedure, public :: delta_p => delta_p_
-     procedure, public :: delta_g => delta_g_
+     procedure, public :: x_i
+     procedure, public :: x_o
+     procedure, public :: x
+     procedure, public :: delta_p
+     procedure, public :: delta_g
   end type evol_model_t
  
   ! Interfaces
@@ -144,7 +146,7 @@ contains
 
        if (x(1) /= 0._WP) then
 
-          ml%x = [0._WP,x]
+          ml%x_ = [0._WP,x]
           ml%add_center = .TRUE.
 
           if (check_log_level('INFO')) then
@@ -154,7 +156,7 @@ contains
 
        else
 
-          ml%x = x
+          ml%x_ = x
           ml%add_center = .FALSE.
 
           if (check_log_level('INFO')) then
@@ -165,18 +167,15 @@ contains
 
     else
 
-       ml%x = x
+       ml%x_ = x
        ml%add_center = .FALSE.
 
     endif
        
-    ml%s = seg_indices_(ml%x)
+    ml%s = seg_indices_(ml%x_)
 
-    ml%n_k = SIZE(ml%x)
+    ml%n_k = SIZE(ml%x_)
     ml%n_s = ml%s(ml%n_k)
-
-    ml%x_i = ml%x(1)
-    ml%x_o = ml%x(ml%n_k)
 
     allocate(ml%es(ml%n_s))
 
@@ -255,7 +254,7 @@ contains
 
        mask = this%s == s
        
-       call this%es(s)%set_${NAME}(PACK(this%x, MASK=mask), PACK(f_, MASK=mask))
+       call this%es(s)%set_${NAME}(PACK(this%x_, MASK=mask), PACK(f_, MASK=mask))
 
     end do seg_loop
 
@@ -271,8 +270,8 @@ contains
 
       ! Interpolate f at x=0 using parabolic fitting
 
-      associate (x_1 => this%x(2), &
-                 x_2 => this%x(3), &
+      associate (x_1 => this%x_(2), &
+                 x_2 => this%x_(3), &
                  f_1 => f(1), &
                  f_2 => f(2))
 
@@ -321,6 +320,9 @@ contains
     real(WP), intent(in)            :: x
     real(WP)                        :: $NAME
 
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+
     ! Evaluate $NAME
 
     $NAME = this%es(s)%${NAME}(x)
@@ -364,6 +366,9 @@ contains
     real(WP), intent(in)            :: x
     real(WP)                        :: M_r
 
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+
     ! Evaluate the fractional mass coordinate
 
     M_r = this%M_star*(x**3/this%c_1(s, x))
@@ -382,6 +387,9 @@ contains
     integer, intent(in)             :: s
     real(WP), intent(in)            :: x
     real(WP)                        :: P
+
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
 
     ! Evaluate the total pressure CHECK THIS
 
@@ -403,6 +411,9 @@ contains
     real(WP), intent(in)            :: x
     real(WP)                        :: rho
 
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+
     ! Evaluate the density
 
     rho = (this%M_star/(4._WP*PI*this%R_star)**3)*(this%U(s, x)/this%c_1(s, x))
@@ -421,6 +432,9 @@ contains
     integer, intent(in)             :: s
     real(WP), intent(in)            :: x
     real(WP)                        :: T
+
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
 
     ! Evaluate the temperature
 
@@ -492,26 +506,70 @@ contains
 
   !****
 
-  subroutine scaffold_ (this, s, x)
+  function x_i (this, s) result (x_i)
 
-    class(evol_model_t), intent(in)    :: this
-    integer, allocatable, intent(out)  :: s(:)
-    real(WP), allocatable, intent(out) :: x(:)
+    class(evol_model_t), intent(in) :: this
+    integer, intent(in)             :: s
+    real(WP)                        :: x_i
 
-    ! Return the grid scaffold
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
 
-    s = this%s
-    x = this%x
+    ! Return the inner x value for segment s
+
+    x_i = MINVAL(this%x_, MASK=(this%s == s))
 
     ! Finish
 
     return
 
-  end subroutine scaffold_
+  end function x_i
 
   !****
 
-  function delta_p_ (this) result (delta_p)
+  function x_o (this, s) result (x_o)
+
+    class(evol_model_t), intent(in) :: this
+    integer, intent(in)             :: s
+    real(WP)                        :: x_o)
+
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+
+    ! Return the outer x value for segment s
+
+    x_o = MAXVAL(this%x_, MASK=(this%s == s))
+
+    ! Finish
+
+    return
+
+  end function x_o
+
+  !****
+
+  function x (this, s)
+
+    class(evol_model_t), intent(in) :: this
+    integer, intent(in)             :: s
+    real(WP), allocatable           :: x(:)
+
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+
+    ! Return the model grid for segment s
+
+    x = PACK(this%x_, MASK=(this%s == s))
+
+    ! Finish
+
+    return
+
+  end function x
+
+  !****
+
+  function delta_p (this)
 
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_p
@@ -542,11 +600,11 @@ contains
 
     return
 
-  end function delta_p_
+  end function delta_p
 
   !****
 
-  function delta_g_ (this) result (delta_g)
+  function delta_g (this)
 
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_g
@@ -578,6 +636,6 @@ contains
 
     return
 
-  end function delta_g_
+  end function delta_g
 
 end module gyre_evol_model
