@@ -50,7 +50,7 @@ module gyre_${T}_trapz_diff
      real(WP), allocatable           :: w(:)
    contains
      private
-     procedure, public :: build => build_
+     procedure, public :: build
   end type ${T}_trapz_diff_t
 
   ! Interfaces
@@ -96,7 +96,7 @@ contains
 
   !****
 
-  subroutine build_ (this, omega, E_l, E_r, scl)
+  subroutine build (this, omega, E_l, E_r, scl)
 
     class(${T}_trapz_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                :: omega
@@ -132,7 +132,7 @@ contains
 
     ! Finish
 
-  end subroutine build_
+  end subroutine build
   
 end module gyre_${T}_trapz_diff
 

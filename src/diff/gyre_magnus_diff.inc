@@ -55,7 +55,7 @@ module gyre_${T}_magnus_diff
      integer                         :: scheme
    contains
      private
-     procedure, public :: build => build_
+     procedure, public :: build => build
      procedure         :: dOmega_
      procedure         :: dOmega_GL2_
      procedure         :: dOmega_GL4_
@@ -114,7 +114,7 @@ contains
 
   !****
 
-  subroutine build_ (this, omega, E_l, E_r, scl)
+  subroutine build (this, omega, E_l, E_r, scl)
 
     class(${T}_magnus_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
@@ -214,7 +214,7 @@ contains
 
     return
 
-  end subroutine build_
+  end subroutine build
 
   !****
 

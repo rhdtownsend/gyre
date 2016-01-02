@@ -56,7 +56,7 @@ module gyre_${T}_colloc_diff
      integer                         :: scheme
    contains
      private
-     procedure, public :: build => build_
+     procedure, public :: build
      procedure         :: build_GL2_
      procedure         :: build_GL4_
      procedure         :: build_GL6_
@@ -111,9 +111,9 @@ contains
     
   end function ${T}_colloc_diff_t_
 
-!****
+  !****
 
-  subroutine build_ (this, omega, E_l, E_r, scl)
+  subroutine build (this, omega, E_l, E_r, scl)
 
     class(${T}_colloc_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
@@ -138,9 +138,9 @@ contains
 
     return
 
-  end subroutine build_
+  end subroutine build
   
-!****
+  !****
 
   subroutine build_GL2_ (this, omega, E_l, E_r, scl)
 
@@ -179,7 +179,7 @@ contains
 
   end subroutine build_GL2_
 
-!****
+  !****
 
   subroutine build_GL4_ (this, omega, E_l, E_r, scl)
 
@@ -218,7 +218,7 @@ contains
 
   end subroutine build_GL4_
 
-!****
+  !****
 
   subroutine build_GL6_ (this, omega, E_l, E_r, scl)
 
@@ -264,7 +264,7 @@ contains
 
   end subroutine build_GL6_
 
-!****
+  !****
 
   subroutine build_irk_ (this, omega, n_s, x_a, x_b, a_ij, b_i, c_i, E_a, E_b)
 

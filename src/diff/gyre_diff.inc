@@ -39,14 +39,14 @@ module gyre_${T}_diff
      integer, public :: n_e
    contains
      private
-     procedure(build_), deferred, public :: build
+     procedure(build), deferred, public :: build
   end type ${T}_diff_t
 
   ! Interfaces
 
   abstract interface
 
-     subroutine build_ (this, omega, E_l, E_r, scl)
+     subroutine build (this, omega, E_l, E_r, scl)
        use core_kinds
        use gyre_ext
        import ${T}_diff_t
@@ -55,7 +55,7 @@ module gyre_${T}_diff
        $TYPE(WP), intent(out)         :: E_l(:,:)
        $TYPE(WP), intent(out)         :: E_r(:,:)
        type(${T}_ext_t), intent(out)  :: scl
-     end subroutine build_
+     end subroutine build
 
   end interface
 
