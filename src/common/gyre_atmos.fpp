@@ -211,7 +211,7 @@ contains
     ! Evaluate atmosphere coefficients ([Unn1989] formulation)
 
     associate (s => ml%n_s, &
-               x => ml%x_o)
+               x => ml%x_o(ml%n_s))
 
       V_g = ml%V_2(s, x)*x**2/ml%Gamma_1(s, x)
       As = ml%As(s, x)
@@ -237,7 +237,7 @@ contains
     ! Evaluate atmosphere coefficients ([Chr2008] formulation)
 
     associate (s => ml%n_s, &
-               x => ml%x_o)
+               x => ml%x_o(ml%n_s))
 
       V_g = ml%V_2(s, x)*x**2/ml%Gamma_1(s, x)
       As = ml%V_2(s, x)*x**2*(1._WP-1._WP/ml%Gamma_1(s, x))
