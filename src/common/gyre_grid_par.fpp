@@ -33,16 +33,15 @@ module gyre_grid_par
   ! Derived-type definitions
 
   type :: grid_par_t
-     real(WP)                :: x_i
-     real(WP)                :: x_o
      real(WP)                :: alpha_osc
      real(WP)                :: alpha_exp
      real(WP)                :: alpha_thm
      real(WP)                :: alpha_str
-     real(WP)                :: s
-     integer                 :: n
+     real(WP)                :: delta_base
+     integer                 :: n_base
+     integer                 :: n_center
      character(FILENAME_LEN) :: file
-     character(64)           :: op_type
+     character(64)           :: base_type
      character(2048)         :: tag_list
   end type grid_par_t
 
@@ -82,23 +81,21 @@ contains
     integer, intent(in)                        :: unit
     type(grid_par_t), allocatable, intent(out) :: gr_p(:)
 
-    integer                       :: n_gr_p
-    integer                       :: i
-    real(WP)                      :: x_i
-    real(WP)                      :: x_o
-    real(WP)                      :: alpha_osc
-    real(WP)                      :: alpha_exp
-    real(WP)                      :: alpha_thm
-    real(WP)                      :: alpha_str
-    real(WP)                      :: s
-    integer                       :: n
-    character(LEN(gr_p%file))     :: file
-    character(LEN(gr_p%op_type))  :: op_type
-    character(LEN(gr_p%tag_list)) :: tag_list
+    integer                        :: n_gr_p
+    integer                        :: i
+    real(WP)                       :: alpha_osc
+    real(WP)                       :: alpha_exp
+    real(WP)                       :: alpha_thm
+    real(WP)                       :: alpha_str
+    real(WP)                       :: delta_base
+    integer                        :: n_base
+    integer                        :: n_center
+    character(LEN(gr_p%file))      :: file
+    character(LEN(gr_p%base_type)) :: base_type
+    character(LEN(gr_p%tag_list))  :: tag_list
 
-    namelist /grid/ x_i, x_o, &
-                    alpha_osc, alpha_exp, alpha_thm, alpha_str, &
-                    s, n, file, op_type, tag_list
+    namelist /grid/ alpha_osc, alpha_exp, alpha_thm, alpha_str, &
+                    delta_base, n_base, n_center, file, base_type, tag_list
 
     ! Count the number of grid namelists
 
@@ -121,36 +118,34 @@ contains
 
     read_loop : do i = 1, n_gr_p
 
-       x_i = 0._WP
-       x_o = 1._WP
-
        alpha_osc = 0._WP
        alpha_exp = 0._WP
        alpha_thm = 0._WP
        alpha_str = 0._WP
 
-       s = 0._WP
+       delta_base = 0._WP
 
-       n = 0
+       n_base = 0
+       n_center = 0
 
        file = ''
 
-       op_type = 'CREATE_CLONE'
+       base_type = 'MODEL'
        tag_list = ''
 
        read(unit, NML=grid)
 
        ! Initialize the grid_par
 
-       gr_p(i) = grid_par_t(x_i=x_i, &
-                            x_o=x_o, &
-                            alpha_osc=alpha_osc, &
+       gr_p(i) = grid_par_t(alpha_osc=alpha_osc, &
                             alpha_exp=alpha_exp, &
-                            alpha_thm=alpha_thm, alpha_str=alpha_str, &
-                            s=s, &
-                            n=n, &
+                            alpha_thm=alpha_thm, &
+                            alpha_str=alpha_str, &
+                            delta_base=delta_base, &
+                            n_base=n_base, &
+                            n_center=n_center, &
                             file=file, &
-                            op_type=op_type, &
+                            base_type=base_type, &
                             tag_list=tag_list)
 
     end do read_loop
@@ -161,7 +156,7 @@ contains
 
   end subroutine read_grid_par
 
-!****
+  !****
 
   $if ($MPI)
 
@@ -204,7 +199,7 @@ contains
   $BCAST(0)
   $BCAST(1)
 
-!****
+  !****
 
   $BCAST_ALLOC(type(grid_par_t),0)
   $BCAST_ALLOC(type(grid_par_t),1)
