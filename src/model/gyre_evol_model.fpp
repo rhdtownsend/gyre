@@ -51,7 +51,7 @@ module gyre_evol_model
   type, extends (model_t) :: evol_model_t
      private
      integer, allocatable          :: s(:)
-     real(WP), allocatable         :: x_(:)
+     real(WP), allocatable         :: x(:)
      type(evol_seg_t), allocatable :: es(:)
      real(WP), public              :: M_star
      real(WP), public              :: R_star
@@ -108,7 +108,7 @@ module gyre_evol_model
      generic, public   :: T => T_1_, T_v_
      procedure, public :: x_i
      procedure, public :: x_o
-     procedure, public :: x
+     procedure, public :: x_s
      procedure, public :: delta_p
      procedure, public :: delta_g
   end type evol_model_t
@@ -146,7 +146,7 @@ contains
 
        if (x(1) /= 0._WP) then
 
-          ml%x_ = [0._WP,x]
+          ml%x = [0._WP,x]
           ml%add_center = .TRUE.
 
           if (check_log_level('INFO')) then
@@ -156,7 +156,7 @@ contains
 
        else
 
-          ml%x_ = x
+          ml%x = x
           ml%add_center = .FALSE.
 
           if (check_log_level('INFO')) then
@@ -167,14 +167,14 @@ contains
 
     else
 
-       ml%x_ = x
+       ml%x = x
        ml%add_center = .FALSE.
 
     endif
        
-    ml%s = seg_indices_(ml%x_)
+    ml%s = seg_indices_(ml%x)
 
-    ml%n_k = SIZE(ml%x_)
+    ml%n_k = SIZE(ml%x)
     ml%n_s = ml%s(ml%n_k)
 
     allocate(ml%es(ml%n_s))
@@ -254,7 +254,7 @@ contains
 
        mask = this%s == s
        
-       call this%es(s)%set_${NAME}(PACK(this%x_, MASK=mask), PACK(f_, MASK=mask))
+       call this%es(s)%set_${NAME}(PACK(this%x, MASK=mask), PACK(f_, MASK=mask))
 
     end do seg_loop
 
@@ -270,8 +270,8 @@ contains
 
       ! Interpolate f at x=0 using parabolic fitting
 
-      associate (x_1 => this%x_(2), &
-                 x_2 => this%x_(3), &
+      associate (x_1 => this%x(2), &
+                 x_2 => this%x(3), &
                  f_1 => f(1), &
                  f_2 => f(2))
 
@@ -506,7 +506,7 @@ contains
 
   !****
 
-  function x_i (this, s) result (x_i)
+  function x_i (this, s)
 
     class(evol_model_t), intent(in) :: this
     integer, intent(in)             :: s
@@ -517,7 +517,7 @@ contains
 
     ! Return the inner x value for segment s
 
-    x_i = MINVAL(this%x_, MASK=(this%s == s))
+    x_i = MINVAL(this%x, MASK=(this%s == s))
 
     ! Finish
 
@@ -527,18 +527,18 @@ contains
 
   !****
 
-  function x_o (this, s) result (x_o)
+  function x_o (this, s)
 
     class(evol_model_t), intent(in) :: this
     integer, intent(in)             :: s
-    real(WP)                        :: x_o)
+    real(WP)                        :: x_o
 
     $ASSERT_DEBUG(s >= 1,Invalid segment index)
     $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
 
     ! Return the outer x value for segment s
 
-    x_o = MAXVAL(this%x_, MASK=(this%s == s))
+    x_o = MAXVAL(this%x, MASK=(this%s == s))
 
     ! Finish
 
@@ -548,24 +548,24 @@ contains
 
   !****
 
-  function x (this, s)
+  function x_s (this, s)
 
     class(evol_model_t), intent(in) :: this
     integer, intent(in)             :: s
-    real(WP), allocatable           :: x(:)
+    real(WP), allocatable           :: x_s(:)
 
     $ASSERT_DEBUG(s >= 1,Invalid segment index)
     $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
 
     ! Return the model grid for segment s
 
-    x = PACK(this%x_, MASK=(this%s == s))
+    x_s = PACK(this%x, MASK=(this%s == s))
 
     ! Finish
 
     return
 
-  end function x
+  end function x_s
 
   !****
 
