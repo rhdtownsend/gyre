@@ -57,7 +57,7 @@ contains
     real(WP)                    :: L_star
     real(WP), allocatable       :: r(:)
     real(WP), allocatable       :: m(:)
-    real(WP), allocatable       :: p(:)
+    real(WP), allocatable       :: P(:)
     real(WP), allocatable       :: rho(:)
     real(WP), allocatable       :: T(:)
     real(WP), allocatable       :: N2(:)
@@ -78,6 +78,15 @@ contains
     real(WP), allocatable       :: As(:)
     real(WP), allocatable       :: U(:)
     real(WP), allocatable       :: c_1(:)
+    real(WP), allocatable       :: beta_rad(:)
+    real(WP), allocatable       :: c_p(:)
+    real(WP), allocatable       :: c_rad(:)
+    real(WP), allocatable       :: c_thm(:)
+    real(WP), allocatable       :: c_dif(:)
+    real(WP), allocatable       :: c_eps_ad(:)
+    real(WP), allocatable       :: c_eps_S(:)
+    real(WP), allocatable       :: kappa_ad(:)
+    real(WP), allocatable       :: kappa_S(:)
     type(evol_model_t), pointer :: em
 
     ! Read data from the MESA-format file
@@ -87,7 +96,7 @@ contains
 100    format(A,1X,A)
     endif
 
-    call read_mesa_data(ml_p%file, M_star, R_star, L_star, r, m, p, rho, T, &
+    call read_mesa_data(ml_p%file, M_star, R_star, L_star, r, m, P, rho, T, &
                         N2, Gamma_1, nabla_ad, delta, nabla,  &
                         kappa, kappa_rho, kappa_T, &
                         epsilon, epsilon_rho, epsilon_T, &
@@ -95,28 +104,40 @@ contains
 
     ! Calculate dimensionless structure data
 
-    n = SIZE(r)
+    x = r/R_star
 
-    allocate(x(n))
+    n = SIZE(x)
 
     allocate(V_2(n))
     allocate(As(n))
     allocate(U(n))
     allocate(c_1(n))
 
-    x = r/R_star
-
     where (x /= 0._WP)
-       V_2 = G_GRAVITY*m*rho/(p*r*x**2)
+       V_2 = G_GRAVITY*m*rho/(P*r*x**2)
        As = r**3*N2/(G_GRAVITY*m)
        U = 4._WP*PI*rho*r**3/m
        c_1 = (r/R_star)**3/(m/M_star)
     elsewhere
-       V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*p(1))
+       V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
        As = 0._WP
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
     end where
+
+    beta_rad = A_RADIATION*T**4/(3._WP*P)
+
+    c_P = P*delta/(rho*T*nabla_ad)
+
+    kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
+    kappa_S = kappa_T - delta*kappa_rho
+
+    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kappa*rho*L_star)
+    c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
+    c_dif = (kappa_ad-4._WP*nabla_ad)*V_2*x**2*nabla
+
+    c_eps_ad = 4._WP*PI*rho*(nabla_ad*epsilon_T + epsilon_rho/Gamma_1)*R_star**3/L_star
+    c_eps_S = 4._WP*PI*rho*(epsilon_T - delta*epsilon_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
        Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
@@ -136,6 +157,16 @@ contains
     call em%set_Gamma_1(Gamma_1)
     call em%set_delta(delta)
     call em%set_nabla_ad(nabla_ad)
+    call em%set_nabla(nabla)
+    call em%set_beta_rad(beta_rad)
+
+    call em%set_c_rad(c_rad)
+    call em%set_c_thm(c_thm)
+    call em%set_c_dif(c_dif)
+    call em%set_c_eps_ad(c_eps_ad)
+    call em%set_c_eps_S(c_eps_S)
+    call em%set_kappa_ad(kappa_ad)
+    call em%set_kappa_S(kappa_S)
 
     call em%set_Omega_rot(Omega_rot)
 
@@ -149,7 +180,7 @@ contains
 
   end subroutine read_mesa_model
 
-!****
+  !****
 
   subroutine read_mesa_data (file, M_star, R_star, L_star, r, m, p, rho, T, &
                              N2, Gamma_1, nabla_ad, delta, nabla,  &
