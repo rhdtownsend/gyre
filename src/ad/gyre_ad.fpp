@@ -145,12 +145,12 @@ program gyre_ad
 
      call select_par(os_p, md_p(i)%tag, os_p_sel, last=.TRUE.)
      call select_par(nm_p, md_p(i)%tag, nm_p_sel, last=.TRUE.)
-     call select_par(gr_p, md_p(i)%tag, gr_p_sel)
+     call select_par(gr_p, md_p(i)%tag, gr_p_sel, last=.TRUE.)
      call select_par(sc_p, md_p(i)%tag, sc_p_sel)
 
      $ASSERT(SIZE(os_p_sel) == 1,No matching osc parameters)
      $ASSERT(SIZE(nm_p_sel) == 1,No matching num parameters)
-     $ASSERT(SIZE(gr_p_sel) >= 1,No matching grid parameters)
+     $ASSERT(SIZE(gr_p_sel) == 1,No matching grid parameters)
      $ASSERT(SIZE(sc_p_sel) >= 1,No matching scan parameters)
 
      ! Set up the frequency array
@@ -160,9 +160,9 @@ program gyre_ad
      ! Set up bp
 
      if (md_p(i)%l == 0 .AND. os_p_sel(1)%reduce_order) then
-        allocate(bp, SOURCE=rad_bep_t(ml, omega, gr_p_sel, md_p(i), nm_p_sel(1), os_p_sel(1)))
+        allocate(bp, SOURCE=rad_bep_t(ml, omega, gr_p_sel(1), md_p(i), nm_p_sel(1), os_p_sel(1)))
      else
-        allocate(bp, SOURCE=ad_bep_t(ml, omega, gr_p_sel, md_p(i), nm_p_sel(1), os_p_sel(1)))
+        allocate(bp, SOURCE=ad_bep_t(ml, omega, gr_p_sel(1), md_p(i), nm_p_sel(1), os_p_sel(1)))
      endif
 
      ! Find roots

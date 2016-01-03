@@ -78,7 +78,7 @@ contains
 
     class(model_t), pointer, intent(in) :: ml
     real(WP), intent(in)                :: omega(:)
-    type(grid_par_t), intent(in)        :: gr_p(:)
+    type(grid_par_t), intent(in)        :: gr_p
     type(mode_par_t), intent(in)        :: md_p
     type(num_par_t), intent(in)         :: nm_p
     type(osc_par_t), intent(in)         :: os_p

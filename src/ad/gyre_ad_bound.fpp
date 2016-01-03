@@ -180,7 +180,7 @@ contains
     $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
     
-    $ASSERT(this%ml%x_i == 0._WP,Boundary condition invalid for x /= 0)
+    $ASSERT(this%ml%x_i(1) == 0._WP,Boundary condition invalid for x /= 0)
 
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
@@ -241,7 +241,7 @@ contains
     $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
 
-    $ASSERT(this%ml%x_i /= 0._WP,Boundary condition invalid for x == 0)
+    $ASSERT(this%ml%x_i(1) /= 0._WP,Boundary condition invalid for x == 0)
 
     ! Evaluate the inner boundary conditions (zero
     ! displacement/gravity)
