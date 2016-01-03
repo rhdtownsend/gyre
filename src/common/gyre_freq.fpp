@@ -148,9 +148,9 @@ contains
     case ('INERTIAL')
        omega = omega_l
     case ('COROT_I')
-       omega = rt%omega(1, ml%x_i, omega_l)
+       omega = rt%omega(1, ml%x_i(1), omega_l)
     case ('COROT_O')
-       omega = rt%omega(ml%n_s, ml%x_o, omega_l)
+       omega = rt%omega(ml%n_s, ml%x_o(ml%n_s), omega_l)
     case default
        $ABORT(Invalid freq_frame)
     end select
@@ -199,9 +199,9 @@ contains
     case ('INERTIAL')
        omega_l = omega
     case ('COROT_I')
-       omega_l = rt%omega_c(1, ml%x_i, omega)
+       omega_l = rt%omega_c(1, ml%x_i(1), omega)
     case ('COROT_O')
-       omega_l = rt%omega_c(ml%n_s, ml%x_o, omega)
+       omega_l = rt%omega_c(ml%n_s, ml%x_o(ml%n_s), omega)
     case default
        $ABORT(Invalid freq_frame)
     end select
