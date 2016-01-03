@@ -28,7 +28,7 @@ module gyre_mode
   use gyre_constants
   use gyre_ext
   use gyre_freq
-  use gyre_grid
+  use gyre_grid_util
   use gyre_model
   $if ($MPI)
   use gyre_model_mpi
@@ -1576,7 +1576,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the origin)
 
-       call find_turn(this%ml, REAL(this%omega), this%s, this%x, this%md_p, this%os_p, k_turn, x_turn)
+       call find_turn(this%ml, this%s, this%x, REAL(this%omega), this%md_p, this%os_p, k_turn, x_turn)
 
        ! Count winding numbers
 
