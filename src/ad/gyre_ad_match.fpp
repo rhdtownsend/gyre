@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_match
 ! Purpose  : adiabatic match conditions
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2015-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
