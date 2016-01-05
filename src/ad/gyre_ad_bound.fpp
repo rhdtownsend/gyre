@@ -417,9 +417,9 @@ contains
 
       ! Set up the boundary conditions
 
-      B_o(1,1) = 1 + (lambda/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
+      B_o(1,1) = 1._WP + (lambda/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
       B_o(1,2) = -1._WP
-      B_o(1,3) = alpha_gr*(1 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
+      B_o(1,3) = alpha_gr*(1._WP + (lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
       B_o(1,4) = alpha_gr*(0._WP)
       
       B_o(2,1) = alpha_gr*(0._WP)
@@ -554,10 +554,10 @@ contains
 
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
-    ! Calculate coefficients
-
     associate (s => this%ml%n_s, &
                x => this%ml%x_o(this%ml%n_s))
+
+      ! Calculate coefficients
 
       call eval_atmos_coeffs_jcd(this%ml, V_g, As, c_1)
 
