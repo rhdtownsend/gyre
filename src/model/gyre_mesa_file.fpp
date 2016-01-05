@@ -134,7 +134,7 @@ contains
 
     c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kappa*rho*L_star)
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
-    c_dif = (kappa_ad-4._WP*nabla_ad)*V_2*x**2*nabla
+    c_dif = (kappa_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
 
     c_eps_ad = 4._WP*PI*rho*(nabla_ad*epsilon_T + epsilon_rho/Gamma_1)*R_star**3/L_star
     c_eps_S = 4._WP*PI*rho*(epsilon_T - delta*epsilon_rho)*R_star**3/L_star
