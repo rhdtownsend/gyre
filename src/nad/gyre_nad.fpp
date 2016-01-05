@@ -1,7 +1,7 @@
 ! Program  : gyre_nad
 ! Purpose  : nonadiabatic oscillation code
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,21 +25,21 @@ program gyre_nad
   use gyre_constants
   use core_parallel
 
-  use gyre_ad_bvp
-  use gyre_bvp
+  use gyre_ad_bep
+  use gyre_bep
   use gyre_ext
   use gyre_input
-  use gyre_grid
   use gyre_grid_par
   use gyre_mode
   use gyre_mode_par
   use gyre_model
-  use gyre_nad_bvp
+  use gyre_model_par
+  use gyre_nad_bep
+  use gyre_num_par
   use gyre_osc_par
   use gyre_out_par
   use gyre_output
-  use gyre_num_par
-  use gyre_rad_bvp
+  use gyre_rad_bep
   use gyre_scan_par
   use gyre_search
   use gyre_trad
@@ -56,29 +56,22 @@ program gyre_nad
 
   character(:), allocatable     :: filename
   integer                       :: unit
-  real(WP), allocatable         :: x_ml(:)
+  type(model_par_t)             :: ml_p
+  type(mode_par_t), allocatable :: md_p(:)
+  type(osc_par_t), allocatable  :: os_p(:)
+  type(num_par_t), allocatable  :: nm_p(:)
+  type(grid_par_t), allocatable :: gr_p(:)
+  type(scan_par_t), allocatable :: sc_p(:)
+  type(out_par_t)               :: ot_p
   class(model_t), pointer       :: ml => null()
-  type(mode_par_t), allocatable :: mp(:)
-  type(osc_par_t), allocatable  :: op(:)
-  type(num_par_t), allocatable  :: np(:)
-  type(grid_par_t), allocatable :: shoot_gp(:)
-  type(grid_par_t), allocatable :: recon_gp(:)
-  type(scan_par_t), allocatable :: sp(:)
-  type(out_par_t)               :: up
   integer                       :: i
-  type(osc_par_t), allocatable  :: op_sel(:)
-  type(num_par_t), allocatable  :: np_sel(:)
-  type(grid_par_t), allocatable :: shoot_gp_sel(:)
-  type(grid_par_t), allocatable :: recon_gp_sel(:)
-  type(scan_par_t), allocatable :: sp_sel(:)
-  real(WP)                      :: x_i
-  real(WP)                      :: x_o
+  type(osc_par_t), allocatable  :: os_p_sel(:)
+  type(num_par_t), allocatable  :: nm_p_sel(:)
+  type(grid_par_t), allocatable :: gr_p_sel(:)
+  type(scan_par_t), allocatable :: sc_p_sel(:)
   real(WP), allocatable         :: omega(:)
-  real(WP)                      :: omega_min
-  real(WP)                      :: omega_max
-  real(WP), allocatable         :: x_sh(:)
-  class(r_bvp_t), allocatable   :: ad_bp
-  class(c_bvp_t), allocatable   :: nad_bp
+  class(r_bep_t), allocatable   :: bp_ad
+  class(c_bep_t), allocatable   :: bp_nad
   integer                       :: n_md_ad
   integer                       :: d_md_ad
   type(mode_t), allocatable     :: md_ad(:)
@@ -93,17 +86,17 @@ program gyre_nad
 
   call set_log_level($str($LOG_LEVEL))
 
-  if(check_log_level('INFO')) then
+  if (check_log_level('INFO')) then
 
      write(OUTPUT_UNIT, 100) form_header('gyre_nad ['//TRIM(version)//']', '=')
 100  format(A)
 
-     write(OUTPUT_UNIT, 110) 'Compiler         : ', COMPILER_VERSION()
-     write(OUTPUT_UNIT, 110) 'Compiler options : ', COMPILER_OPTIONS()
-110  format(2A)
+     write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
+     write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
+110  format(A,1X,A)
 
-     write(OUTPUT_UNIT, 120) 'OpenMP Threads   : ', OMP_SIZE_MAX
-120  format(A,I0)
+     write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
+120  format(A,1X,I0)
      
      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
      write(OUTPUT_UNIT, 110) 'GYRE_DIR         :', gyre_dir
@@ -116,17 +109,20 @@ program gyre_nad
 
   open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-  call read_model(unit, x_ml, ml)
+  call read_model_par(unit, ml_p)
   call read_constants(unit)
-  call read_mode_par(unit, mp)
-  call read_osc_par(unit, op)
-  call read_num_par(unit, np)
-  call read_shoot_grid_par(unit, shoot_gp)
-  call read_recon_grid_par(unit, recon_gp)
-  call read_scan_par(unit, sp)
-  call read_out_par(unit, up)
+  call read_mode_par(unit, md_p)
+  call read_osc_par(unit, os_p)
+  call read_num_par(unit, nm_p)
+  call read_grid_par(unit, gr_p)
+  call read_scan_par(unit, sc_p)
+  call read_out_par(unit, ot_p)
 
-  ! Loop through mp
+  ! Read the model
+
+  call read_model(ml_p, ml)
+
+  ! Loop through md_p
 
   d_md_ad = 128
   n_md_ad = 0
@@ -138,7 +134,7 @@ program gyre_nad
 
   allocate(md_nad(d_md_nad))
 
-  mp_loop : do i = 1, SIZE(mp)
+  md_p_loop : do i = 1, SIZE(md_p)
 
      if (check_log_level('INFO')) then
 
@@ -146,8 +142,8 @@ program gyre_nad
 
         write(OUTPUT_UNIT, 100) 'Mode parameters'
 
-        write(OUTPUT_UNIT, 130) 'l :', mp(i)%l
-        write(OUTPUT_UNIT, 130) 'm :', mp(i)%m
+        write(OUTPUT_UNIT, 130) 'l :', md_p(i)%l
+        write(OUTPUT_UNIT, 130) 'm :', md_p(i)%m
 130     format(3X,A,1X,I0)
 
         write(OUTPUT_UNIT, *)
@@ -156,64 +152,48 @@ program gyre_nad
 
      ! Select parameters according to tags
 
-     call select_par(op, mp(i)%tag, op_sel, last=.TRUE.)
-     call select_par(np, mp(i)%tag, np_sel, last=.TRUE.)
-     call select_par(shoot_gp, mp(i)%tag, shoot_gp_sel)
-     call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
-     call select_par(sp, mp(i)%tag, sp_sel)
+     call select_par(os_p, md_p(i)%tag, os_p_sel, last=.TRUE.)
+     call select_par(nm_p, md_p(i)%tag, nm_p_sel, last=.TRUE.)
+     call select_par(gr_p, md_p(i)%tag, gr_p_sel, last=.TRUE.)
+     call select_par(sc_p, md_p(i)%tag, sc_p_sel)
 
-     $ASSERT(SIZE(op_sel) == 1,No matching osc parameters)
-     $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
-     $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
-     $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
-     $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
+     $ASSERT(SIZE(os_p_sel) == 1,No matching osc parameters)
+     $ASSERT(SIZE(nm_p_sel) == 1,No matching num parameters)
+     $ASSERT(SIZE(gr_p_sel) == 1,No matching grid parameters)
+     $ASSERT(SIZE(sc_p_sel) >= 1,No matching scan parameters)
 
      ! Set up the frequency array
 
-     call grid_range(shoot_gp_sel, x_ml, x_i, x_o)
+     call build_scan(ml, md_p(i), os_p_sel(1), sc_p_sel, omega)
 
-     call build_scan(sp_sel, ml, mp(i), op_sel(1), x_i, x_o, omega)
+     ! Set up bp_ad and bp_nad
 
-     if (np_sel(1)%restrict_roots) then
-        omega_min = MINVAL(omega)
-        omega_max = MAXVAL(omega)
+     if (md_p(i)%l == 0 .AND. os_p_sel(1)%reduce_order) then
+        allocate(bp_ad, SOURCE=rad_bep_t(ml, omega, gr_p_sel(1), md_p(i), nm_p_sel(1), os_p_sel(1)))
      else
-        omega_min = -HUGE(0._WP)
-        omega_max = HUGE(0._WP)
+        allocate(bp_ad, SOURCE=ad_bep_t(ml, omega, gr_p_sel(1), md_p(i), nm_p_sel(1), os_p_sel(1)))
      endif
 
-     ! Set up the shooting grid
-
-     call build_grid(shoot_gp_sel, ml, mp(i), op_sel(1), omega, x_ml, x_sh, verbose=.TRUE.)
-
-     ! Set up the bvp's
-
-     if(mp(i)%l == 0 .AND. op_sel(1)%reduce_order) then
-        allocate(ad_bp, SOURCE=rad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
-     else
-        allocate(ad_bp, SOURCE=ad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
-     endif
- 
-     allocate(nad_bp, SOURCE=nad_bvp_t(x_sh, ml, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
+     allocate(bp_nad, SOURCE=nad_bep_t(ml, omega, gr_p_sel(1), md_p(i), nm_p_sel(1), os_p_sel(1)))
 
      ! Find modes
 
      n_md_ad = 0
 
-     call scan_search(ad_bp, np_sel(1), omega, process_root_ad)
+     call scan_search(bp_ad, omega, process_root_ad, nm_p_sel(1))
 
-     call prox_search(nad_bp, mp(i), np_sel(1), op_sel(1), md_ad(:n_md_ad), process_root_nad)
+     call prox_search(bp_nad, md_ad(:n_md_ad), process_root_nad, md_p(i), nm_p_sel(1), os_p_sel(1))
 
      ! Clean up
 
-     deallocate(ad_bp)
-     deallocate(nad_bp)
+     deallocate(bp_ad)
+     deallocate(bp_nad)
 
-  end do mp_loop
+  end do md_p_loop
 
   ! Write the summary file
  
-  call write_summary(up, md_nad(:n_md_nad))
+  call write_summary(md_nad(:n_md_nad), ot_p)
 
   ! Finish
 
@@ -229,41 +209,27 @@ contains
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    real(WP), allocatable :: x_rc(:)
-    integer               :: n
-    real(WP)              :: x_ref
-    real(WP), allocatable :: y(:,:)
-    real(WP)              :: y_ref(6)
-    type(r_ext_t)         :: discrim
-    type(mode_t)          :: md_new
+    type(mode_t) :: md_new
 
-    ! Build the reconstruction grid
+    ! Create the mode_t
 
-    call build_grid(recon_gp_sel, ml, mp(i), op_sel(1), [omega], x_sh, x_rc, verbose=.FALSE.)
+    select type (bp_ad)
+    type is (ad_bep_t)
+       md_new = mode_t(bp_ad, omega)
+    type is (rad_bep_t)
+       md_new = mode_t(bp_ad, omega)
+    class default
+       $ABORT(Invalid bp class)
+    end select
 
-    ! Reconstruct the solution
-
-    x_ref = MIN(MAX(op_sel(1)%x_ref, x_sh(1)), x_sh(SIZE(x_sh)))
-
-    n = SIZE(x_rc)
-
-    allocate(y(6,n))
-
-    call ad_bp%recon(omega, x_rc, x_ref, y, y_ref, discrim)
-
-    ! Create the mode
-
-    md_new = mode_t(ml, mp(i), op_sel(1), CMPLX(omega, KIND=WP), c_ext_t(discrim), &
-                    x_rc, CMPLX(y, KIND=WP), x_ref, CMPLX(y_ref, KIND=WP))
-
-    if (md_new%n_pg < mp(i)%n_pg_min .OR. md_new%n_pg > mp(i)%n_pg_max) return
+    if (md_new%n_pg < md_p(i)%n_pg_min .OR. md_new%n_pg > md_p(i)%n_pg_max) return
 
     md_new%n_iter = n_iter
-    md_new%chi = ABS(discrim)/ABS(discrim_ref)
+    md_new%chi = ABS(md_new%discrim)/ABS(discrim_ref)
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md_new%mp%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
-            md_new%omega, real(md_new%chi), md_new%n_iter, md_new%n
+       write(OUTPUT_UNIT, 120) md_new%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
+            md_new%omega, real(md_new%chi), md_new%n_iter, md_new%n_k
 120    format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
     endif
 
@@ -278,9 +244,9 @@ contains
 
     md_ad(n_md_ad) = md_new
 
-    ! Prune it
+    ! If necessary, prune it
 
-    call md_ad(n_md_ad)%prune()
+    if (ot_p%prune_modes) call md_ad(n_md_ad)%prune()
 
     ! Finish
 
@@ -288,7 +254,7 @@ contains
 
   end subroutine process_root_ad
 
-!****
+  !****
 
   subroutine process_root_nad (omega, n_iter, discrim_ref)
 
@@ -296,39 +262,23 @@ contains
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    real(WP), allocatable    :: x_rc(:)
-    integer                  :: n
-    real(WP)                 :: x_ref
-    complex(WP), allocatable :: y(:,:)
-    complex(WP)              :: y_ref(6)
-    type(c_ext_t)            :: discrim
-    type(mode_t)             :: md_new
+    type(mode_t) :: md_new
 
-    ! Build the reconstruction grid
+    ! Create the mode_t
 
-    call build_grid(recon_gp_sel, ml, mp(i), op_sel(1), [REAL(omega)], x_sh, x_rc, verbose=.FALSE.)
-
-    ! Reconstruct the solution
-
-    x_ref = MIN(MAX(op_sel(1)%x_ref, x_sh(1)), x_sh(SIZE(x_sh)))
-
-    n = SIZE(x_rc)
-
-    allocate(y(6,n))
-
-    call nad_bp%recon(omega, x_rc, x_ref, y, y_ref, discrim)
-
-    ! Create the mode
-
-    md_new = mode_t(ml, mp(i), op_sel(1), omega, discrim, &
-                    x_rc, y, x_ref, y_ref)
+    select type (bp_nad)
+    type is (nad_bep_t)
+       md_new = mode_t(bp_nad, omega)
+    class default
+       $ABORT(Invalid bp_nad class)
+    end select
 
     md_new%n_iter = n_iter
-    md_new%chi = ABS(discrim)/ABS(discrim_ref)
+    md_new%chi = ABS(md_new%discrim)/ABS(discrim_ref)
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md_new%mp%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
-            md_new%omega, real(md_new%chi), md_new%n_iter, md_new%n
+       write(OUTPUT_UNIT, 120) md_new%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
+            md_new%omega, real(md_new%chi), md_new%n_iter, md_new%n_k
 120    format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
     endif
 
@@ -345,11 +295,15 @@ contains
 
     ! Write it
 
-    call write_mode(up, md_nad(n_md_nad), n_md_nad)
+    call write_mode(md_nad(n_md_nad), n_md_nad, ot_p)
 
     ! If necessary, prune it
 
-    if (up%prune_modes) call md_nad(n_md_nad)%prune()
+    if (ot_p%prune_modes) call md_nad(n_md_nad)%prune()
+
+    ! Finish
+
+    return
 
     ! Finish
 
