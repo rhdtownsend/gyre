@@ -51,12 +51,9 @@ module gyre_c_search
 
 contains
 
-  subroutine prox_search (bp, mp, np, op, md_in, process_root)
+  subroutine prox_search (bp, md_in, process_root, md_p, nm_p, os_p)
 
     class(c_bep_t), target, intent(inout) :: bp
-    type(mode_par_t), intent(in)          :: mp
-    type(num_par_t), intent(in)           :: np 
-    type(osc_par_t), intent(in)           :: op
     type(mode_t), intent(in)              :: md_in(:)
     interface
        subroutine process_root (omega, n_iter, discrim_ref)
@@ -67,6 +64,9 @@ contains
          type(r_ext_t), intent(in) :: discrim_ref
        end subroutine process_root
     end interface
+    type(mode_par_t), intent(in)          :: md_p
+    type(num_par_t), intent(in)           :: nm_p
+    type(osc_par_t), intent(in)           :: os_p
     
     type(c_discrim_func_t)   :: df
     complex(WP), allocatable :: omega_def(:)
@@ -140,8 +140,8 @@ contains
        omega_a = c_ext_t(md_in(i)%omega + CMPLX(0._WP, domega, KIND=WP))
        omega_b = c_ext_t(md_in(i)%omega - CMPLX(0._WP, domega, KIND=WP))
 
-!       call improve_omega(bp, mp, op, md_in(i)%x, omega_a)
-!       call improve_omega(bp, mp, op, md_in(i)%x, omega_b)
+!       call improve_omega(bp, md_p, os_p, md_in(i)%x, omega_a)
+!       call improve_omega(bp, md_p, os_p, md_in(i)%x, omega_b)
 
        call df%eval(omega_a, discrim_a, status)
        if (status /= STATUS_OK) then
@@ -158,11 +158,11 @@ contains
        ! If necessary, do a preliminary root find using the deflated
        ! discriminant
 
-       if (np%deflate_roots) then
+       if (nm_p%deflate_roots) then
 
           df%omega_def = omega_def
 
-          call narrow(df, np, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=np%n_iter_max)
+          call narrow(df, nm_p, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
           if (status /= STATUS_OK) then
              call report_status_(status, 'deflate narrow')
              cycle mode_loop
@@ -194,8 +194,8 @@ contains
 
        ! Find the discriminant root
 
-       call solve(df, np, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
-                  n_iter=n_iter, n_iter_max=np%n_iter_max-n_iter_def, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
+       call solve(df, nm_p, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
+                  n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
           cycle mode_loop
