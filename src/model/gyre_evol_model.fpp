@@ -1,7 +1,7 @@
 ! Module   : gyre_evol_model
 ! Purpose  : stellar model (evolutionary)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -50,9 +50,10 @@ module gyre_evol_model
 
   type, extends (model_t) :: evol_model_t
      private
-     integer, allocatable          :: s(:)
-     real(WP), allocatable         :: x(:)
      type(evol_seg_t), allocatable :: es(:)
+     real(WP), allocatable         :: x(:)
+     integer, allocatable          :: k_i(:)
+     integer, allocatable          :: k_o(:)
      real(WP), public              :: M_star
      real(WP), public              :: R_star
      real(WP), public              :: L_star
@@ -171,11 +172,11 @@ contains
        ml%add_center = .FALSE.
 
     endif
-       
-    ml%s = seg_indices_(ml%x)
 
+    call seg_indices_(ml%x, ml%k_i, ml%k_o)
+       
     ml%n_k = SIZE(ml%x)
-    ml%n_s = ml%s(ml%n_k)
+    ml%n_s = SIZE(ml%k_i)
 
     allocate(ml%es(ml%n_s))
 
@@ -193,34 +194,35 @@ contains
 
   contains
 
-    function seg_indices_ (x) result (s)
+    subroutine seg_indices_ (x, k_i, k_o)
 
-      real(WP), intent(in) :: x(:)
-      integer              :: s(SIZE(x))
+      real(WP), intent(in)              :: x(:)
+      integer, allocatable, intent(out) :: k_i(:)
+      integer, allocatable, intent(out) :: k_o(:)
 
+      integer :: n_k
+      logical :: mask(SIZE(x)-1)
+      integer :: n_s
       integer :: k
 
       ! Partition the array x into strictly-monotonic-increasing
-      ! segments, by splitting at double points; return the resulting
-      ! segment index of each element in s
+      ! segments, by splitting at double points; return the index
+      ! range of the segments in k_i/k_o
 
-      s(1) = 1
+      n_k = SIZE(x)
 
-      x_loop : do k = 2, SIZE(x)
-       
-         if (x(k) == x(k-1)) then
-            s(k) = s(k-1) + 1
-         else
-            s(k) = s(k-1)
-         endif
+      mask = x(:n_k-1) == x(2:)
 
-      end do x_loop
+      n_s = COUNT(mask)
+
+      k_i = [1,PACK([(k+1,k=1,n_k)], mask)]
+      k_o = [PACK([(k,k=1,n_k)], mask),n_k]
 
       ! Finish
 
       return
 
-    end function seg_indices_
+    end subroutine seg_indices_
 
   end function evol_model_t_
 
@@ -238,7 +240,6 @@ contains
 
     real(WP), allocatable :: f_(:)
     integer               :: s
-    logical, allocatable  :: mask(:)
 
     ! Set the data for $NAME
 
@@ -252,9 +253,12 @@ contains
 
     seg_loop : do s = 1, this%n_s
 
-       mask = this%s == s
+       associate (k_i => this%k_i(s), &
+                  k_o => this%k_o(s))
        
-       call this%es(s)%set_${NAME}(PACK(this%x, MASK=mask), PACK(f_, MASK=mask))
+         call this%es(s)%set_${NAME}(this%x(k_i:k_o), f_(k_i:k_o))
+
+       end associate
 
     end do seg_loop
 
@@ -517,7 +521,7 @@ contains
 
     ! Return the inner x value for segment s
 
-    x_i = MINVAL(this%x, MASK=(this%s == s))
+    x_i = this%x(this%k_i(s))
 
     ! Finish
 
@@ -538,7 +542,7 @@ contains
 
     ! Return the outer x value for segment s
 
-    x_o = MAXVAL(this%x, MASK=(this%s == s))
+    x_o = this%x(this%k_o(s))
 
     ! Finish
 
@@ -559,7 +563,7 @@ contains
 
     ! Return the model grid for segment s
 
-    x_s = PACK(this%x, MASK=(this%s == s))
+    x_s = this%x(this%k_i(s):this%k_o(s))
 
     ! Finish
 
@@ -574,28 +578,32 @@ contains
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_p
 
-    real(WP) :: V_2(this%n_k)
-    real(WP) :: c_1(this%n_k)
-    real(WP) :: Gamma_1(this%n_k)
+    integer  :: s
+    integer  :: k
+    real(WP) :: V_2
+    real(WP) :: c_1
+    real(WP) :: Gamma_1
     real(WP) :: f(this%n_k)
 
     ! Calculate the p-mode (large) frequency separation
 
-    associate (s => this%s, &
-               x => this%x)
+    seg_loop : do s = 1, this%n_s
 
-      V_2 = this%V_2(s, x)
-      c_1 = this%c_1(s, x)
+       do k = this%k_i(s), this%k_o(s)
 
-      Gamma_1 = this%Gamma_1(s, x)
+          V_2 = this%V_2(s, this%x(k))
+          c_1 = this%c_1(s, this%x(k))
+          Gamma_1 = this%Gamma_1(s, this%x(k))
 
-      f = Gamma_1/(c_1*V_2)
+          f(k) = Gamma_1/(c_1*V_2)
 
-      delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
-                integrate(x, f)
+       end do
 
-    end associate
-       
+    end do seg_loop
+
+    delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
+              integrate(this%x, f)
+
     ! Finish
 
     return
@@ -609,28 +617,33 @@ contains
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_g
 
-    real(WP) :: As(this%n_k)
-    real(WP) :: c_1(this%n_k)
+    integer  :: s
+    integer  :: k
+    real(WP) :: As
+    real(WP) :: c_1
     real(WP) :: f(this%n_k)
 
     ! Calculate the g-mode inverse period separation
 
-    associate (s => this%s, &
-               x => this%x)
+    seg_loop : do s = 1, this%n_s
 
-      As = this%As(s, x)
-      c_1 = this%c_1(s, x)
+       do k = this%k_i(s), this%k_o(s)
 
-      where (x /= 0._WP)
-         f = MAX(As/c_1, 0._WP)/x
-      elsewhere
-         f = 0._WP
-      end where
+          As = this%As(s, this%x(k))
+          c_1 = this%c_1(s, this%x(k))
 
-      delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
-           integrate(x, f)
+          if (this%x(k) /= 0._WP) then
+             f(k) = MAX(As/c_1, 0._WP)/this%x(k)
+          else
+             f(k) = 0._WP
+          end if
 
-    end associate
+       end do
+
+    end do seg_loop
+
+    delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
+              integrate(this%x, f)
 
     ! Finish
 
