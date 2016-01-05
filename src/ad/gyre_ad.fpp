@@ -30,18 +30,17 @@ program gyre_ad
   use gyre_ext
   use gyre_grid_par
   use gyre_input
-  use gyre_model
-  use gyre_model_par
   use gyre_mode
   use gyre_mode_par
+  use gyre_model
+  use gyre_model_par
   use gyre_num_par
   use gyre_osc_par
   use gyre_out_par
   use gyre_output
   use gyre_rad_bep
-  use gyre_search
   use gyre_scan_par
-  use gyre_mode
+  use gyre_search
   use gyre_trad
   use gyre_util
   use gyre_version
@@ -54,26 +53,26 @@ program gyre_ad
 
   ! Variables
 
-  character(:), allocatable      :: filename
-  integer                        :: unit
-  type(model_par_t)              :: ml_p
-  type(mode_par_t), allocatable  :: md_p(:)
-  type(osc_par_t), allocatable   :: os_p(:)
-  type(num_par_t), allocatable   :: nm_p(:)
-  type(grid_par_t), allocatable  :: gr_p(:)
-  type(scan_par_t), allocatable  :: sc_p(:)
-  type(out_par_t)                :: ot_p
-  class(model_t), pointer        :: ml => null()
-  integer                        :: i
-  type(osc_par_t), allocatable   :: os_p_sel(:)
-  type(num_par_t), allocatable   :: nm_p_sel(:)
-  type(grid_par_t), allocatable  :: gr_p_sel(:)
-  type(scan_par_t), allocatable  :: sc_p_sel(:)
-  real(WP), allocatable          :: omega(:)
-  class(r_bep_t), allocatable    :: bp
-  integer                        :: n_md
-  integer                        :: d_md
-  type(mode_t), allocatable      :: md(:)
+  character(:), allocatable     :: filename
+  integer                       :: unit
+  type(model_par_t)             :: ml_p
+  type(mode_par_t), allocatable :: md_p(:)
+  type(osc_par_t), allocatable  :: os_p(:)
+  type(num_par_t), allocatable  :: nm_p(:)
+  type(grid_par_t), allocatable :: gr_p(:)
+  type(scan_par_t), allocatable :: sc_p(:)
+  type(out_par_t)               :: ot_p
+  class(model_t), pointer       :: ml => null()
+  integer                       :: i
+  type(osc_par_t), allocatable  :: os_p_sel(:)
+  type(num_par_t), allocatable  :: nm_p_sel(:)
+  type(grid_par_t), allocatable :: gr_p_sel(:)
+  type(scan_par_t), allocatable :: sc_p_sel(:)
+  real(WP), allocatable         :: omega(:)
+  class(r_bep_t), allocatable   :: bp
+  integer                       :: n_md
+  integer                       :: d_md
+  type(mode_t), allocatable     :: md(:)
 
   ! Initialize
 
@@ -118,7 +117,7 @@ program gyre_ad
 
   call read_model(ml_p, ml)
 
-  ! Loop through mp
+  ! Loop through md_p
 
   d_md = 128
   n_md = 0
@@ -195,7 +194,7 @@ contains
 
     type(mode_t) :: md_new
 
-    ! Create the mode
+    ! Create the mode_t
 
     select type (bp)
     type is (ad_bep_t)
