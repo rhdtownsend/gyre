@@ -93,7 +93,7 @@ contains
     real(WP)                     :: omega_min
     real(WP)                     :: omega_max
 
-    ! Construct the ad_solver_t
+    ! Construct the ad_bep_t
 
     ! Build the grid
 
