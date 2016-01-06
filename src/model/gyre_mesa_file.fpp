@@ -145,7 +145,7 @@ contains
        Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
     endif
 
-    ! Initialize the model
+    ! Initialize the evol_model_t
 
     allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
 
@@ -170,7 +170,7 @@ contains
 
     call em%set_Omega_rot(Omega_rot)
 
-    ! Return a pointer to the model
+    ! Return a pointer
 
     ml => em
 
