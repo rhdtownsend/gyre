@@ -27,6 +27,7 @@ module gyre_evol_model
   use gyre_evol_seg
   use gyre_model
   use gyre_model_par
+  use gyre_model_util
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -173,7 +174,7 @@ contains
 
     endif
 
-    call seg_indices_(ml%x, ml%k_i, ml%k_o)
+    call seg_indices(ml%x, ml%k_i, ml%k_o)
        
     ml%n_k = SIZE(ml%x)
     ml%n_s = SIZE(ml%k_i)
@@ -191,38 +192,6 @@ contains
     ! Finish
 
     return
-
-  contains
-
-    subroutine seg_indices_ (x, k_i, k_o)
-
-      real(WP), intent(in)              :: x(:)
-      integer, allocatable, intent(out) :: k_i(:)
-      integer, allocatable, intent(out) :: k_o(:)
-
-      integer :: n_k
-      logical :: mask(SIZE(x)-1)
-      integer :: n_s
-      integer :: k
-
-      ! Partition the array x into strictly-monotonic-increasing
-      ! segments, by splitting at double points; return the index
-      ! range of the segments in k_i/k_o
-
-      n_k = SIZE(x)
-
-      mask = x(:n_k-1) == x(2:)
-
-      n_s = COUNT(mask)
-
-      k_i = [1,PACK([(k+1,k=1,n_k)], mask)]
-      k_o = [PACK([(k,k=1,n_k)], mask),n_k]
-
-      ! Finish
-
-      return
-
-    end subroutine seg_indices_
 
   end function evol_model_t_
 
