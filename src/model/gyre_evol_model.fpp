@@ -1,5 +1,5 @@
 ! Module   : gyre_evol_model
-! Purpose  : stellar model (evolutionary)
+! Purpose  : stellar evolutionary model
 !
 ! Copyright 2013-2016 Rich Townsend
 !
