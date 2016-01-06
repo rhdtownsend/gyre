@@ -251,6 +251,7 @@ contains
     real(WP), intent(in)             :: x(:)
     real(WP), intent(in)             :: f(:)
 
+    integer  :: n_k
     real(WP) :: f_(SIZE(x))
 
     $CHECK_BOUNDS(SIZE(f),SIZE(x))
@@ -263,13 +264,11 @@ contains
 
        ! Repair As at the segment boundaries, by extrapolating from within the segment
 
+       n_k = SIZE(x)
+
        f_(1) = f(2) + (x(1) - x(2))*(f(3) - f(2))/(x(3) - x(2))
-
        f_(2:n_k-1) = f(2:n_k-1)
-
        f_(n_k) = f(n_k-1) + (x(n_k) - x(n_k-1))*(f(n_k-1) - f(n_k-2))/(x(n_k-1) - x(n_k-2))
-
-       end associate
 
     else
 
