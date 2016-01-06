@@ -30,7 +30,7 @@ module gyre_output
   use gyre_mode
   use gyre_model
   use gyre_out_par
-!  use gyre_poly_model
+  use gyre_poly_model
   use gyre_txt_writer
   use gyre_util
   use gyre_writer
@@ -151,8 +151,6 @@ contains
              select type (ml => md(1)%ml)
              type is (evol_model_t)
                 call write_summary_evol_(items(i), ml, wr)
-             ! type is (poly_model_t)
-             !    call write_summary_poly_(items(i), ml, wr)
              class default
                 write(ERROR_UNIT, *) 'item:', TRIM(items(i))
                 $ABORT(Invalid item)
@@ -197,28 +195,6 @@ contains
       return
 
     end subroutine write_summary_evol_
-
-    ! subroutine write_summary_poly_ (item, ml, wr)
-
-    !   character(*), intent(in)       :: item
-    !   type(poly_model_t), intent(in) :: ml
-    !   class(writer_t), intent(inout) :: wr
-
-    !   ! Write the item
-
-    !   select case (item)
-    !   case ('n_poly')
-    !      call wr%write('n_poly', ml%n_poly)
-    !   case default
-    !      write(ERROR_UNIT, *) 'item:', TRIM(item)
-    !      $ABORT(Invalid item)
-    !   end select
-
-    !   ! Finish
-
-    !   return
-
-    ! end subroutine write_summary_poly_
 
   end subroutine write_summary
 
@@ -416,8 +392,6 @@ contains
           select type (ml => md%ml)
           type is (evol_model_t)
              call write_mode_evol_(items(i), ml, wr)
-          ! type is (poly_model_t)
-          !    call write_mode_poly_(items(i), ml, wr)
           class default
              write(ERROR_UNIT, *) 'item:', TRIM(items(i))
              $ABORT(Invalid item)
@@ -470,28 +444,6 @@ contains
 
     end subroutine write_mode_evol_
 
-    ! subroutine write_mode_poly_ (item, ml, wr)
-
-    !   character(*), intent(in)       :: item
-    !   type(poly_model_t), intent(in) :: ml
-    !   class(writer_t), intent(inout) :: wr
-
-    !   ! Write the item
-
-    !   select case (item)
-    !   case ('n_poly')
-    !      call wr%write('n_poly', ml%n_poly)
-    !   case default
-    !      write(ERROR_UNIT, *) 'item:', TRIM(item)
-    !      $ABORT(Invalid item)
-    !   end select
-
-    !   ! Finish
-
-    !   return
-
-    ! end subroutine write_mode_poly_
-    
   end subroutine write_mode
 
   !****
