@@ -1,7 +1,7 @@
 ! Module   : gyre_evol_seg
 ! Purpose  : evolutionary model segment
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2015-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -43,12 +43,12 @@ module gyre_evol_seg
 
   $define $SET_DECL $sub
     $local $NAME $1
-    procedure, public :: set_${NAME} => set_${NAME}_
+    procedure, public :: set_${NAME}
   $endsub
 
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure, public :: ${NAME} => ${NAME}_
+    procedure, public :: ${NAME}
   $endsub
 
   type :: evol_seg_t
@@ -150,7 +150,7 @@ contains
 
   $local $NAME $1
 
-  subroutine set_${NAME}_ (this, x, f)
+  subroutine set_${NAME} (this, x, f)
 
     class(evol_seg_t), intent(inout) :: this
     real(WP), intent(in)             :: x(:)
@@ -172,7 +172,7 @@ contains
 
     return
 
-  end subroutine set_${NAME}_
+  end subroutine set_${NAME}
 
   $endsub
 
@@ -200,7 +200,7 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_ (this, x) result (${NAME})
+  function ${NAME} (this, x)
 
     class(evol_seg_t), intent(in) :: this
     real(WP), intent(in)          :: x
@@ -222,7 +222,7 @@ contains
 
     return
 
-  end function ${NAME}_
+  end function ${NAME}
   
   $endsub
 
@@ -250,11 +250,13 @@ contains
 
   $local $NAME $1
 
-  function d${NAME}_ (this, x) result (d${NAME})
+  function d${NAME} (this, x)
 
     class(evol_seg_t), intent(in) :: this
     real(WP), intent(in)          :: x
     real(WP)                      :: d${NAME}
+
+    ! Interpolate dln${NAME}/dlnx
 
     if (this%df_${NAME}) then
 
@@ -274,7 +276,7 @@ contains
 
     return
 
-  end function d${NAME}_
+  end function d${NAME}
 
   $endsub
 
