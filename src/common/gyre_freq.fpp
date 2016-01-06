@@ -26,7 +26,7 @@ module gyre_freq
   use gyre_atmos
   use gyre_constants
   use gyre_evol_model
-!  use gyre_hom_model
+  use gyre_hom_model
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
@@ -125,14 +125,14 @@ contains
           $ABORT(Invalid freq_units)
        end select
 
-   ! class is (hom_model_t)
+    class is (hom_model_t)
 
-   !     select case (freq_units)
-   !     case ('NONE')
-   !        omega_l = freq
-   !     case default
-   !       $ABORT(Invalid freq_units)
-   !    end select
+       select case (freq_units)
+       case ('NONE')
+          omega_l = freq
+       case default
+          $ABORT(Invalid freq_units)
+       end select
 
     class default
 
@@ -244,14 +244,14 @@ contains
           $ABORT(Invalid freq_units)
        end select
 
-    ! class is (hom_model_t)
+    class is (hom_model_t)
 
-    !    select case (freq_units)
-    !    case ('NONE')
-    !       freq = omega_l
-    !    case default
-    !      $ABORT(Invalid freq_units)
-    !   end select
+       select case (freq_units)
+       case ('NONE')
+          freq = omega_l
+       case default
+          $ABORT(Invalid freq_units)
+       end select
 
     class default
 

@@ -70,7 +70,7 @@ contains
     use gyre_model
     use gyre_evol_model
     use gyre_poly_model
-!    use gyre_hom_model
+    use gyre_hom_model
     use gyre_mesa_file
 !    use gyre_osc_file
 !    use gyre_losc_file
@@ -139,15 +139,9 @@ contains
 
        !allocate(ml, SOURCE=pc)
 
-    ! case ('HOM')
+    case ('HOM')
 
-    !    hc = hom_model_t(Gamma_1)
-
-    !    hc%Omega_uni = Omega_uni
-
-    !    hc%uniform_rot = uniform_rot
-
-    !    allocate(ml, SOURCE=hc)
+       allocate(ml, SOURCE=hom_model_t(ml_p))
 
     case default
 
