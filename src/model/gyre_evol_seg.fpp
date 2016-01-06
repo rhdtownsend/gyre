@@ -177,7 +177,6 @@ contains
   $endsub
 
   $SET(V_2)
-  $SET(As)
   $SET(U)
   $SET(c_1)
   $SET(Gamma_1)
@@ -243,6 +242,54 @@ contains
   $PROC(kappa_ad)
   $PROC(kappa_S)
   $PROC(Omega_rot)
+
+  !****
+
+  subroutine set_As (this, x, f)
+
+    class(evol_seg_t), intent(inout) :: this
+    real(WP), intent(in)             :: x(:)
+    real(WP), intent(in)             :: f(:)
+
+    real(WP) :: f_(SIZE(x))
+
+    $CHECK_BOUNDS(SIZE(f),SIZE(x))
+
+    ! Set the data for As
+
+    if (this%ml_p%repair_As) then
+
+       $ASSERT(SIZE(x) >= 3,Insufficient points to repair As)
+
+       ! Repair As at the segment boundaries, by extrapolating from within the segment
+
+       f_(1) = f(2) + (x(1) - x(2))*(f(3) - f(2))/(x(3) - x(2))
+
+       f_(2:n_k-1) = f(2:n_k-1)
+
+       f_(n_k) = f(n_k-1) + (x(n_k) - x(n_k-1))*(f(n_k-1) - f(n_k-2))/(x(n_k-1) - x(n_k-2))
+
+       end associate
+
+    else
+
+       f_ = f
+
+    endif
+
+    if (x(1) == 0._WP) then
+       this%sp_As = r_spline_t(x, f_, this%ml_p%deriv_type, df_dx_a=0._WP)
+    else
+       this%sp_As = r_spline_t(x, f_, this%ml_p%deriv_type)
+    endif
+    
+    this%df_As = .TRUE.
+
+    ! Finish
+
+    return
+
+  end subroutine set_As
 
   !****
 

@@ -44,6 +44,7 @@ module gyre_model_par
      character(256)          :: deriv_type
      character(FILENAME_LEN) :: file
      logical                 :: add_center
+     logical                 :: repair_As
      logical                 :: uniform_rot
   end type model_par_t
    
@@ -86,10 +87,11 @@ contains
     character(LEN(ml_p%model_type)) :: deriv_type
     character(LEN(ml_p%file))       :: file
     logical                         :: add_center
+    logical                         :: repair_As
     logical                         :: uniform_rot
 
     namelist /model/ Gamma_1, Omega_rot, dx_snap, model_type, file_format, data_format, &
-                     deriv_type, file, add_center, uniform_rot
+                     deriv_type, file, add_center, repair_As, uniform_rot
     
     ! Count the number of model namelists
 
@@ -119,6 +121,7 @@ contains
     file = ''
 
     add_center = .TRUE.
+    repair_As = .FALSE.
     uniform_rot = .FALSE.
 
     rewind(unit)
@@ -135,6 +138,7 @@ contains
                        deriv_type=deriv_type, &
                        file=file, &
                        add_center=add_center, &
+                       repair_As=repair_As, &
                        uniform_rot=uniform_rot)
 
     ! Finish
