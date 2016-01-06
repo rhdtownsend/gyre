@@ -1,7 +1,7 @@
 ! Module   : gyre_poly_model
 ! Purpose  : stellar polytropic model
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -22,11 +22,11 @@ module gyre_poly_model
   ! Uses
 
   use core_kinds
-  use core_parallel
 
-  use gyre_cocache
   use gyre_model
-  use gyre_spline
+  use gyre_model_par
+  use gyre_model_util
+  use gyre_poly_seg
 
   use ISO_FORTRAN_ENV
 
@@ -42,42 +42,39 @@ module gyre_poly_model
     procedure :: ${NAME}_v_
   $endsub
 
-  type, extends(model_t) :: poly_model_t
+  type, extends (model_t) :: poly_model_t
      private
-     type(r_spline_t) :: sp_Theta
-     type(r_spline_t) :: sp_dTheta
-     type(r_spline_t) :: sp_Omega_rot
-     real(WP)         :: dt_Gamma_1
-     real(WP), public :: n_poly
-     real(WP), public :: xi_1
-     real(WP), public :: Omega_uni
-     logical, public  :: uniform_rot
+     type(poly_seg_t), allocatable :: ps(:)
+     real(WP), allocatable         :: x(:)
+     integer, allocatable          :: k_i(:)
+     integer, allocatable          :: k_o(:)
+     integer                       :: n_k
    contains
      private
      $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
-     $PROC_DECL(D)
+     $PROC_DECL(dU)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
-     $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     $PROC_DECL(nabla_ad)
+     $PROC_DECL(dnabla_ad)
+     $PROC_DECL(nabla)
+     $PROC_DECL(beta_rad)
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_thm)
      $PROC_DECL(c_dif)
      $PROC_DECL(c_eps_ad)
      $PROC_DECL(c_eps_S)
-     $PROC_DECL(nabla)
      $PROC_DECL(kappa_ad)
      $PROC_DECL(kappa_S)
-     $PROC_DECL(tau_thm)
      $PROC_DECL(Omega_rot)
-     procedure, public :: pi_c => pi_c_
-     procedure, public :: is_zero => is_zero_
-     procedure, public :: attach_cache => attach_cache_
-     procedure, public :: detach_cache => detach_cache_
-     procedure, public :: fill_cache => fill_cache_
+     $PROC_DECL(dOmega_rot)
+     procedure, public :: x_i
+     procedure, public :: x_o
+     procedure, public :: x_s
   end type poly_model_t
 
   ! Interfaces
@@ -86,71 +83,62 @@ module gyre_poly_model
      module procedure poly_model_t_
   end interface poly_model_t
 
-  $if ($MPI)
-  interface bcast
-     module procedure bcast_
-  end interface bcast
-  $endif
-
   ! Access specifiers
 
   private
 
   public :: poly_model_t
-  $if ($MPI)
-  public :: bcast
-  $endif
 
   ! Procedures
 
 contains
 
-  function poly_model_t_ (xi, Theta, dTheta, Omega_rot, n_poly, Gamma_1, deriv_type) result (ml)
+  function poly_model_t_ (xi, Theta, dTheta, n_poly, Gamma_1, ml_p) result (ml)
 
-    real(WP), intent(in)         :: xi(:)
-    real(WP), intent(in)         :: Theta(:)
-    real(WP), intent(in)         :: dTheta(:)
-    real(WP), intent(in)         :: Omega_rot(:)
-    real(WP), intent(in)         :: n_poly
-    real(WP), intent(in)         :: Gamma_1
-    character(LEN=*), intent(in) :: deriv_type
-    type(poly_model_t)           :: ml
+    real(WP), intent(in)          :: xi(:)
+    real(WP), intent(in)          :: Theta(:)
+    real(WP), intent(in)          :: dTheta(:)
+    real(WP), intent(in)          :: n_poly(:)
+    real(WP), intent(in)          :: Gamma_1
+    type(model_par_t), intent(in) :: ml_p
+    type(poly_model_t)            :: ml
 
-    integer  :: n
-    real(WP) :: d2Theta(SIZE(xi))
+    real(WP), allocatable :: mu(:)
+    real(WP), allocatable :: B(:)
+    integer               :: s
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
-    $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(xi))
+    $CHECK_BOUNDS(SIZE(dTheta),SIZE(xi))
 
-    ! Construct the poly_model_t from the polytrope functions
+    ! Construct the poly_model_t
 
-    n = SIZE(xi)
+    ml%n_k = SIZE(xi)
 
-    if(n_poly /= 0._WP) then
+    ml%x = xi/xi(ml%n_k)
+    call seg_indices(ml%x, ml%k_i, ml%k_o)
 
-       where (xi /= 0._WP)
-          d2Theta = -2._WP*dTheta/xi - Theta**n_poly
-       elsewhere
-          d2Theta = -1._WP/3._WP
-       end where
+    ml%n_s = SIZE(ml%k_i)
 
-    else
+    $CHECK_BOUNDS(SIZE(n_poly),ml%n_s)
 
-       d2Theta = -1._WP/3._WP
+    allocate(mu(ml%n_s+1))
+    allocate(B(ml%n_s))
 
-    endif
+    call eval_mu_B_(xi, dTheta, ml%k_i, ml%k_o, mu, B)
 
-    ml%sp_Theta = r_spline_t(xi, Theta, dTheta)
-    ml%sp_dTheta = r_spline_t(xi, dTheta, d2Theta)
+    allocate(ml%ps(ml%n_s))
 
-    ml%sp_Omega_rot = r_spline_t(xi/xi(n), Omega_rot, deriv_type, df_dx_a=0._WP, df_dx_b=0._WP)
+    seg_loop : do s = 1, ml%n_s
 
-    ml%n_poly = n_poly
-    ml%dt_Gamma_1 = Gamma_1
-    ml%xi_1 = xi(n)
-    ml%Omega_uni = 0._WP
+       associate (k_i => ml%k_i(s), &
+                  k_o => ml%k_o(s))
 
-    ml%uniform_rot = .FALSE.
+         ml%ps(s) = poly_seg_t(xi(k_i:k_o), Theta(k_i:k_o), dTheta(k_i:k_o), &
+                               mu(s), mu(ml%n_s+1), B(s), xi(ml%n_k), n_poly(s), Gamma_1)
+
+       end associate
+
+    end do seg_loop
 
     ! Finish
 
@@ -158,388 +146,77 @@ contains
 
   end function poly_model_t_
 
-!****
+  !****
 
-  function V_2_1_ (this, x) result (V_2)
+  subroutine eval_mu_B_ (xi, dTheta, k_i, k_o, mu, B)
 
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: V_2
+    real(WP), intent(in)  :: xi(:)
+    real(WP), intent(in)  :: dTheta(:)
+    integer, intent(in)   :: k_i(:)
+    integer, intent(in)   :: k_o(:)
+    real(WP), intent(out) :: mu(:)
+    real(WP), intent(out) :: B(:)
 
-    real(WP) :: xi
-    real(WP) :: Theta
-    real(WP) :: dTheta
+    integer  :: n_s
+    integer  :: s
+    real(WP) :: v_i
+    real(WP) :: v_o
 
-    ! Calculate V_2
+    $CHECK_BOUNDS(SIZE(dTheta),SIZE(xi))
 
-    if (x /= 0._WP) then
+    $CHECK_BOUNDS(SIZE(k_o),SIZE(k_i))
 
-       xi = x*this%xi_1
+    $CHECK_BOUNDS(SIZE(mu),SIZE(k_i)+1)
+    $CHECK_BOUNDS(SIZE(B),SIZE(k_i))
 
-       Theta = this%sp_Theta%f(xi)
-       dTheta = this%sp_dTheta%f(xi)
+    ! Calculate the mass coordinate mu and jump factor B at segment
+    ! boundaries
 
-       if (Theta == 0._WP) Theta = TINY(0._WP)
+    n_s = SIZE(k_i)
 
-       V_2 = -(this%n_poly + 1._WP)*xi*dTheta/(Theta*x**2)
+    mu(1) = 0._WP
+    B(1) = 1._WP
+    
+    seg_loop : do s = 1, n_s-1
 
-    else
+       v_i = xi(k_i(s))**2*dTheta(k_i(s))
+       v_o = xi(k_o(s))**2*dTheta(k_o(s))
 
-       V_2 = (this%n_poly + 1._WP)*this%xi_1**2/3._WP
+       mu(s+1) = mu(s) - (v_o - v_i)/B(s)
+       B(s+1) = B(s)*dTheta(k_i(s+1))/dTheta(k_o(s))
 
-    endif
+    end do seg_loop
 
-    ! Finish
+    v_i = xi(k_i(s))**2*dTheta(k_i(s))
+    v_o = xi(k_o(s))**2*dTheta(k_o(s))
 
-    return
-
-  end function V_2_1_
-
-  
-!****
-
-  function V_2_v_ (this, x) result (V_2)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: V_2(SIZE(x))
-
-    integer :: i
-
-    ! Calculate V_2
-
-    x_loop : do i = 1,SIZE(x)
-       V_2(i) = this%V_2(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function V_2_v_
-
-!****
-
-  function As_1_ (this, x) result (As)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: As
-
-    ! Calculate As
-
-    As = this%V_2(x)*x**2 * &
-         (this%n_poly/(this%n_poly + 1._WP) - 1._WP/this%Gamma_1(x))
-
-    ! Finish
-
-    return
-
-  end function As_1_
-
-!****
-
-  function As_v_ (this, x) result (As)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: As(SIZE(x))
-
-    integer :: i
-
-    ! Calculate As
-
-    x_loop : do i = 1,SIZE(x)
-       As(i) = this%As(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function As_v_
-
-!****
-
-  function U_1_ (this, x) result (U)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: U
-
-    real(WP) :: xi
-    real(WP) :: Theta
-    real(WP) :: dTheta
-
-    ! Calculate U
-
-    xi = x*this%xi_1
-
-    Theta = this%sp_Theta%f(xi)
-    dTheta = this%sp_dTheta%f(xi)
-
-    if(x /= 0._WP) then
-       U = -xi*Theta**this%n_poly/dTheta
-    else
-       U = 3._WP
-    endif
-
-    ! Finish
-
-    return
-
-  end function U_1_
-
-!****
-
-  function U_v_ (this, x) result (U)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: U(SIZE(x))
-
-    integer :: i
-
-    ! Calculate U
-
-    x_loop : do i = 1,SIZE(x)
-       U(i) = this%U(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function U_v_
-
-!****
-
-  function D_1_ (this, x) result (D)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: D
-
-    ! Calculate D = dlnrho/dlnx
-
-    D = -this%V_2(x)*x**2*this%n_poly/(this%n_poly + 1._WP)
+    mu(s+1) = mu(s) - (v_o - v_i)/B(s)
     
     ! Finish
 
     return
 
-  end function D_1_
+  end subroutine eval_mu_B_
 
-!****
+  !****
 
-  function D_v_ (this, x) result (D)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: D(SIZE(x))
-
-    integer :: i
-
-    ! Calculate D = dlnrho/dlnx
-
-    x_loop : do i = 1,SIZE(x)
-       D(i) = this%D(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function D_v_
-
-!****
-
-  function c_1_1_ (this, x) result (c_1)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: c_1
-
-    real(WP) :: xi
-    real(WP) :: dTheta
-    real(WP) :: dTheta_1
-
-    ! Calculate c_1
-
-    xi = x*this%xi_1
-
-    dTheta = this%sp_dTheta%f(xi)
-    dTheta_1 = this%sp_dTheta%f(this%xi_1)
-
-    if(x /= 0._WP) then
-       c_1 = x*dTheta_1/dTheta
-    else
-       c_1 = -3._WP*dTheta_1/this%xi_1
-    endif
-
-    ! Finish
-
-    return
-
-  end function c_1_1_
-
-!****
-
-  function c_1_v_ (this, x) result (c_1)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: c_1(SIZE(x))
-
-    integer :: i
-
-    ! Calculate c_1
-
-    x_loop : do i = 1,SIZE(x)
-       c_1(i) = this%c_1(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-    
-  end function c_1_v_
-
-!****
-
-  function Gamma_1_1_ (this, x) result (Gamma_1)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: Gamma_1
-
-    ! Calculate Gamma_1
-
-    Gamma_1 = this%dt_Gamma_1
-
-    ! Finish
-
-    return
-
-  end function Gamma_1_1_
-
-!****
-  
-  function Gamma_1_v_ (this, x) result (Gamma_1)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: Gamma_1(SIZE(x))
-
-    integer :: i
-
-    ! Calculate Gamma_1
-    
-    x_loop : do i = 1,SIZE(x)
-       Gamma_1(i) = this%Gamma_1(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function Gamma_1_v_
-
-!****
-
-  function nabla_ad_1_ (this, x) result (nabla_ad)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: nabla_ad
-
-    ! Calculate nabla_ad (assume ideal gas)
-
-    nabla_ad = 2._WP/5._WP
-
-    ! Finish
-
-    return
-
-  end function nabla_ad_1_
-
-!****
-  
-  function nabla_ad_v_ (this, x) result (nabla_ad)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: nabla_ad(SIZE(x))
-
-    integer :: i
-
-    ! Calculate nabla_ad
-    
-    x_loop : do i = 1,SIZE(x)
-       nabla_ad(i) = this%nabla_ad(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function nabla_ad_v_
-
-!****
-
-  function delta_1_ (this, x) result (delta)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: delta
-
-    ! Calculate delta (assume ideal gas)
-
-    delta = 1._WP
-
-    ! Finish
-
-    return
-
-  end function delta_1_
-
-!****
-  
-  function delta_v_ (this, x) result (delta)
-
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: delta(SIZE(x))
-
-    integer :: i
-
-    ! Calculate delta
-    
-    x_loop : do i = 1,SIZE(x)
-       delta(i) = this%delta(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function delta_v_
-
-!****
-
-  $define $PROC $sub
+  $define $PROC_1 $sub
 
   $local $NAME $1
 
-  function ${NAME}_1_ (this, x) result ($NAME)
+  function ${NAME}_1_ (this, s, x) result (${NAME})
 
     class(poly_model_t), intent(in) :: this
+    integer, intent(in)             :: s
     real(WP), intent(in)            :: x
     real(WP)                        :: $NAME
 
-    ! Abort with $NAME undefined
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
 
-    $ABORT($NAME is undefined)
+    ! Evaluate $NAME
+
+    $NAME = this%ps(s)%${NAME}(x)
 
     ! Finish
 
@@ -547,17 +224,81 @@ contains
 
   end function ${NAME}_1_
 
-!****
+  $endsub
 
-  function ${NAME}_v_ (this, x) result ($NAME)
+  $PROC_1(V_2)
+  $PROC_1(As)
+  $PROC_1(U)
+  $PROC_1(dU)
+  $PROC_1(c_1)
+  $PROC_1(Gamma_1)
+  $PROC_1(delta)
+  $PROC_1(nabla_ad)
+  $PROC_1(dnabla_ad)
+  $PROC_1(Omega_rot)
+  $PROC_1(dOmega_rot)
+
+  !****
+
+  $define $PROC_1_NULL $sub
+
+  $local $NAME $1
+
+  function ${NAME}_1_ (this, s, x) result (${NAME})
 
     class(poly_model_t), intent(in) :: this
+    integer, intent(in)             :: s
+    real(WP), intent(in)            :: x
+    real(WP)                        :: $NAME
+
+    $ABORT(Polytropic model does not define $NAME)
+
+    ! (This line to prevent unset warnings)
+
+    $NAME = 0._WP
+
+    ! Finish
+
+    return
+
+  end function ${NAME}_1_
+
+  $endsub
+
+  $PROC_1_NULL(nabla)
+  $PROC_1_NULL(beta_rad)
+  $PROC_1_NULL(c_rad)
+  $PROC_1_NULL(dc_rad)
+  $PROC_1_NULL(c_thm)
+  $PROC_1_NULL(c_dif)
+  $PROC_1_NULL(c_eps_ad)
+  $PROC_1_NULL(c_eps_S)
+  $PROC_1_NULL(kappa_ad)
+  $PROC_1_NULL(kappa_S)
+
+  !****
+
+  $define $PROC_V $sub
+
+  $local $NAME $1
+
+  function ${NAME}_v_ (this, s, x) result (${NAME})
+
+    class(poly_model_t), intent(in) :: this
+    integer, intent(in)             :: s(:)
     real(WP), intent(in)            :: x(:)
-    real(WP)                        :: $NAME(SIZE(x))
+    real(WP)                        :: ${NAME}(SIZE(s))
 
-    ! Abort with $NAME undefined
+    integer :: k
 
-    $ABORT($NAME is undefined)
+    $CHECK_BOUNDS(SIZE(x),SIZE(s))
+
+    ! Evaluate $NAME
+
+    !$OMP PARALLEL DO
+    do k = 1, SIZE(s)
+       ${NAME}(k) = this%${NAME}(s(k), x(k))
+    end do
 
     ! Finish
 
@@ -567,170 +308,89 @@ contains
 
   $endsub
 
-  $PROC(c_rad)
-  $PROC(dc_rad)
-  $PROC(c_thm)
-  $PROC(c_dif)
-  $PROC(c_eps_ad)
-  $PROC(c_eps_S)
-  $PROC(nabla)
-  $PROC(kappa_S)
-  $PROC(kappa_ad)
-  $PROC(tau_thm)
+  $PROC_V(V_2)
+  $PROC_V(As)
+  $PROC_V(U)
+  $PROC_V(dU)
+  $PROC_V(c_1)
+  $PROC_V(Gamma_1)
+  $PROC_V(delta)
+  $PROC_V(nabla_ad)
+  $PROC_V(dnabla_ad)
+  $PROC_V(nabla)
+  $PROC_V(beta_rad)
+  $PROC_V(c_rad)
+  $PROC_V(dc_rad)
+  $PROC_V(c_thm)
+  $PROC_V(c_dif)
+  $PROC_V(c_eps_ad)
+  $PROC_V(c_eps_S)
+  $PROC_V(kappa_ad)
+  $PROC_V(kappa_S)
+  $PROC_V(Omega_rot)
+  $PROC_V(dOmega_rot)
 
-!****
- 
-  function Omega_rot_1_ (this, x) result (Omega_rot)
+  !****
 
-    class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: Omega_rot
-
-    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
-    ! rate given by Omega_uni instead
-
-    if (this%uniform_rot) then
-       Omega_rot = this%Omega_uni
-    else
-       Omega_rot = this%sp_Omega_rot%f(x)
-    endif
-
-    ! Finish
-
-    return
-
-  end function Omega_rot_1_
-
-!****
-
-  function Omega_rot_v_ (this, x) result (Omega_rot)
+  function x_i (this, s)
 
     class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: Omega_rot(SIZE(x))
+    integer, intent(in)             :: s
+    real(WP)                        :: x_i
 
-    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
-    ! rate given by Omega_uni instead
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
 
-    if (this%uniform_rot) then
-       Omega_rot = this%Omega_uni
-    else
-       Omega_rot = this%sp_Omega_rot%f(x)
-    endif
+    ! Return the inner x value for segment s
+
+    x_i = this%x(this%k_i(s))
 
     ! Finish
 
     return
 
-  end function Omega_rot_v_
+  end function x_i
 
-!****
+  !****
 
-  function pi_c_ (this) result (pi_c)
+  function x_o (this, s)
 
     class(poly_model_t), intent(in) :: this
-    real(WP)                        :: pi_c
+    integer, intent(in)             :: s
+    real(WP)                        :: x_o
 
-    ! Calculate pi_c = V/x^2 as x -> 0
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
 
-    pi_c =  (this%n_poly + 1._WP)*this%xi_1**2/3._WP
+    ! Return the outer x value for segment s
+
+    x_o = this%x(this%k_o(s))
 
     ! Finish
 
     return
 
-  end function pi_c_
+  end function x_o
 
-!****
+  !****
 
-  function is_zero_ (this, x) result (is_zero)
+  function x_s (this, s)
 
     class(poly_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    logical                         :: is_zero
+    integer, intent(in)             :: s
+    real(WP), allocatable           :: x_s(:)
 
-    real(WP) :: xi
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
 
-    ! Determine whether the point at x has a vanishing pressure and/or density
+    ! Return the model grid for segment s
 
-    xi = x*this%xi_1
-
-    is_zero = this%sp_Theta%f(xi) == 0._WP
-
-    ! Finish
-
-    return
-
-  end function is_zero_
-
-!****
-
-  subroutine attach_cache_ (this, cc)
-
-    class(poly_model_t), intent(inout)    :: this
-    class(cocache_t), pointer, intent(in) :: cc
-
-    ! Enable a coefficient cache (no-op, since we don't cache)
+    x_s = this%x(this%k_i(s):this%k_o(s))
 
     ! Finish
 
     return
 
-  end subroutine attach_cache_
-
-!****
-
-  subroutine detach_cache_ (this)
-
-    class(poly_model_t), intent(inout) :: this
-
-    ! Detach the coefficient cache (no-op, since we don't cache)
-
-    ! Finish
-
-    return
-
-  end subroutine detach_cache_
-
-!****
-
-  subroutine fill_cache_ (this, x)
-
-    class(poly_model_t), intent(inout) :: this
-    real(WP), intent(in)               :: x(:)
-
-    ! Fill the coefficient cache (no-op, since we don't cache)
-
-    ! Finish
-
-    return
-
-  end subroutine fill_cache_
-
-!****
-
-  $if ($MPI)
-
-  subroutine bcast_ (ml, root_rank)
-
-    type(poly_model_t), intent(inout) :: ml
-    integer, intent(in)               :: root_rank
-
-    ! Broadcast the poly_model_t
-
-    call bcast(ml%sp_Theta, root_rank)
-    call bcast(ml%sp_dTheta, root_rank)
-
-    call bcast(ml%n_poly, root_rank)
-    call bcast(ml%dt_Gamma_1, root_rank)
-    call bcast(ml%xi_1, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_
-
-  $endif
+  end function x_s
 
 end module gyre_poly_model
