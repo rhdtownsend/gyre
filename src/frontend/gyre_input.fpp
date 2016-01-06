@@ -69,7 +69,7 @@ contains
 
     use gyre_model
     use gyre_evol_model
-!    use gyre_poly_model
+    use gyre_poly_model
 !    use gyre_hom_model
     use gyre_mesa_file
 !    use gyre_osc_file
@@ -77,11 +77,11 @@ contains
     use gyre_fgong_file
 !    use gyre_famdl_file
 !    use gyre_amdl_file
-!    $if ($HDF5)
+    $if ($HDF5)
 !    use gyre_b3_file
 !    use gyre_gsm_file
-!    use gyre_poly_file
-!    $endif
+    use gyre_poly_file
+    $endif
 
     type(model_par_t), intent(in)        :: ml_p
     class(model_t), pointer, intent(out) :: ml
@@ -125,19 +125,19 @@ contains
        !ec%reconstruct_As = reconstruct_As
        !ec%uniform_rot = uniform_rot
 
-    ! case ('POLY')
+    case ('POLY')
 
-    !    $if($HDF5)
-    !    call read_poly_model(file, deriv_type, pc, x=x_bc)
-    !    $else
-    !    $ABORT(No HDF5 support, therefore cannot read POLY files)
-    !    $endif
+       $if($HDF5)
+       call read_poly_model(ml_p, ml)
+       $else
+       $ABORT(No HDF5 support, therefore cannot read POLY files)
+       $endif
 
-    !    pc%Omega_uni = Omega_uni
+       !pc%Omega_uni = Omega_uni
 
-    !    pc%uniform_rot = uniform_rot
+       !pc%uniform_rot = uniform_rot
 
-    !    allocate(ml, SOURCE=pc)
+       !allocate(ml, SOURCE=pc)
 
     ! case ('HOM')
 
