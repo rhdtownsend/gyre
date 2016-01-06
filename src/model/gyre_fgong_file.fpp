@@ -83,7 +83,7 @@ contains
 
     ! Open the FGONG-format file
 
-    if(check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from FGONG file', TRIM(ml_p%file)
 100    format(A,1X,A)
     endif
@@ -216,7 +216,7 @@ contains
        Omega_rot = 0._WP
     endif
 
-    ! Initialize the model
+    ! Initialize the evol_model_t
 
     allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
 
@@ -231,7 +231,7 @@ contains
 
     call em%set_Omega_rot(Omega_rot)
 
-    ! Return a pointer to the model
+    ! Return a pointer
 
     ml => em
 
