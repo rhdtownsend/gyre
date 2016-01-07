@@ -1,7 +1,7 @@
 ! Module   : gyre_fgong_file
 ! Purpose  : read FGONG files
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -113,7 +113,7 @@ contains
        if (ivers < 1000) then
           data_format = '(1P5E16.9)'
        else
-          data_format = '(1P,5(X,E26.18E3)'
+          data_format = '(1P,5(X,E26.18E3))'
        endif
     endif
 
