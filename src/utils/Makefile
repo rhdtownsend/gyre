@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=build_poly_hom build_poly build_poly_disc
+TARGETS=build_poly #build_poly_disc
 
 # Flags
 
@@ -13,6 +13,6 @@ LDFLAGS=`mesasdk_hdf5_link` `madsdk_odepack_link`
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../extern/astro:../common:../model:../rot:../trad:../interp
+SUBDIRS=../extern/core:../extern/astro:../common:../model:../rot:../trad:../interp:../grid
 
 include ../Make.inc

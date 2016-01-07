@@ -1,7 +1,7 @@
 ! Program  : build_poly
-! Purpose  : build a polytrope
+! Purpose  : build a polytrope, possibly with disctontinuities
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2015-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,6 +25,7 @@ program build_poly
   use gyre_constants
   use core_hgroup
   use core_system
+  use core_memory
 
   use gyre_lane_emden
 
@@ -34,48 +35,77 @@ program build_poly
 
   implicit none
 
+  ! Parameters
+
+  integer, parameter :: D = 128
+
   ! Variables
 
-  real(WP)                  :: n_poly
+  character(:), allocatable :: in_filename
+  integer                   :: unit
+  integer                   :: n_d
+  real(WP), allocatable     :: n_poly(:)
   real(WP)                  :: Gamma_1
+  real(WP), allocatable     :: xi_d(:)
+  real(WP), allocatable     :: Delta_d(:)
   real(WP)                  :: dxi
   real(WP)                  :: toler
-  character(:), allocatable :: filename
+  character(FILENAME_LEN)   :: filename
   real(WP), allocatable     :: xi(:)
   real(WP), allocatable     :: Theta(:)
   real(WP), allocatable     :: dTheta(:)
-  integer                   :: n
   type(hgroup_t)            :: hg
+
+  namelist /poly/ n_d, n_poly, Gamma_1, xi_d, Delta_d
+  namelist /num/ dxi, toler
+  namelist /out/ filename
 
   ! Read parameters
 
-  $ASSERT(n_arg() == 5,Syntax: build_poly n_poly Gamma_1 dxi toler filename)
+  $ASSERT(n_arg() == 1,Syntax: build_poly_disc in_filename)
 
-  call get_arg(1, n_poly)
-  call get_arg(2, Gamma_1)
-  call get_arg(3, dxi)
-  call get_arg(4, toler)
-  call get_arg(5, filename)
+  call get_arg(1, in_filename)
 
-  ! Solve the Lane-Emden equation
+  open(NEWUNIT=unit, FILE=in_filename, STATUS='OLD')
 
-  call solve_lane_emden(n_poly, dxi, toler, xi, Theta, dTheta)
+  allocate(n_poly(D))
+  allocate(xi_d(D))
+  allocate(Delta_d(D))
 
-  n = SIZE(xi)
+  n_d = 0
+  Gamma_1 = 5._WP/3._WP
+
+  rewind(unit)
+  read(unit, NML=poly)
+
+  call reallocate(n_poly, [n_d+1])
+  call reallocate(xi_d, [n_d])
+  call reallocate(Delta_d, [n_d])
+
+  rewind(unit)
+  read(unit, NML=num)
+
+  rewind(unit)
+  read(unit, NML=out)
+
+  close(unit)
+
+  ! Solve the discontinuous Lane-Emden equation
+
+  call solve_lane_emden(n_poly, xi_d, Delta_d, dxi, toler, xi, Theta, dTheta)
 
   ! Write the model
 
   hg = hgroup_t(filename, CREATE_FILE)
 
-  call write_attr(hg, 'n', n)
-
+  call write_attr(hg, 'n', SIZE(xi))
+  call write_attr(hg, 'n_d', SIZE(xi_d))
   call write_attr(hg, 'n_poly', n_poly)
   call write_attr(hg, 'Gamma_1', Gamma_1)
 
   call write_dset(hg, 'xi', xi)
   call write_dset(hg, 'Theta', Theta)
   call write_dset(hg, 'dTheta', dTheta)
-  call write_dset(hg, 'Omega_rot', SPREAD(0._WP, DIM=1, NCOPIES=n))
 
   call hg%final()
 
