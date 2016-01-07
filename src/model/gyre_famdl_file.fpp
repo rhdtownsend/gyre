@@ -1,7 +1,7 @@
 ! Module   : gyre_famdl_file
-! Purpose  : read formatted AMDL files
+! Purpose  : read FAMDL files
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,8 +25,10 @@ module gyre_famdl_file
   use core_order
 
   use gyre_constants
-  use gyre_model
   use gyre_evol_model
+  use gyre_model
+  use gyre_model_par
+  use gyre_model_util
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -45,48 +47,40 @@ module gyre_famdl_file
 
 contains
 
-  subroutine read_famdl_model (file, deriv_type, data_format, add_center, ml, x)
+  subroutine read_famdl_model (ml_p, ml)
 
-    character(*), intent(in)                     :: file
-    character(*), intent(in)                     :: deriv_type
-    character(*), intent(in)                     :: data_format
-    logical, intent(in)                          :: add_center
-    type(evol_model_t), intent(out)              :: ml
-    real(WP), allocatable, intent(out), optional :: x(:)
+    type(model_par_t), intent(in)        :: ml_p
+    class(model_t), pointer, intent(out) :: ml
 
-    character(:), allocatable :: data_format_
-    integer                   :: unit
-    integer                   :: nmod
-    integer                   :: n
-    integer                   :: ivar
-    real(WP), allocatable     :: glob(:)
-    real(WP), allocatable     :: var(:,:)
-    integer, allocatable      :: ind(:)
-    real(WP)                  :: M_star
-    real(WP)                  :: R_star
-    real(WP)                  :: L_star
-    real(WP), allocatable     :: x_(:)
-    real(WP), allocatable     :: c_1(:)
-    real(WP), allocatable     :: V_g(:)
-    real(WP), allocatable     :: Gamma_1(:) 
-    real(WP), allocatable     :: As(:) 
-    real(WP), allocatable     :: U(:)
-    logical                   :: has_center
+    character(:), allocatable   :: data_format
+    integer                     :: unit
+    integer                     :: nmod
+    integer                     :: n
+    integer                     :: ivar
+    real(WP), allocatable       :: glob(:)
+    real(WP), allocatable       :: var(:,:)
+    real(WP)                    :: M_star
+    real(WP)                    :: R_star
+    real(WP)                    :: P_c
+    real(WP)                    :: rho_c
+    real(WP), allocatable       :: x(:)
+    real(WP), allocatable       :: c_1(:)
+    real(WP), allocatable       :: V_g(:)
+    real(WP), allocatable       :: Gamma_1(:) 
+    real(WP), allocatable       :: As(:) 
+    real(WP), allocatable       :: U(:)
+    real(WP), allocatable       :: V_2(:)
+    real(WP), allocatable       :: Omega_rot(:)
+    type(evol_model_t), pointer :: em
 
-    if (data_format /= '') then
-       data_format_ = data_format
-    else
-       data_format_ = '(1P4E20.13)'
-    endif
-
-    ! Read the model from the formatted AMDL-format file
+    ! Open the AMDL-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from FAMDL file', TRIM(file)
+       write(OUTPUT_UNIT, 100) 'Reading from FAMDL file', TRIM(ml_p%file)
 100    format(A,1X,A)
     endif
 
-    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+    open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
 
     ! Read the header
 
@@ -94,39 +88,33 @@ contains
 110 format(3I10)
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Initial points :', n
+       write(OUTPUT_UNIT, 120) 'Grid points  :', n
 120    format(3X,A,1X,I0)
     endif
 
     ! Read the data
 
+    if (ml_p%data_format /= '') then
+       data_format = ml_p%data_format
+    else
+       data_format = '(1P4E20.13)'
+    endif
+
     allocate(glob(8))
     allocate(var(ivar+1,n))
 
-    read(unit, data_format_) glob, var
+    read(unit, data_format) glob, var
 
     close(unit)
 
-    ind = unique_indices(var(1,:))
-
-    if (SIZE(ind) < n) then
-
-       if(check_log_level('WARN')) then
-          write(OUTPUT_UNIT, 130) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
-130       format('!!',1X,A)
-       endif
-
-       n = SIZE(var, 2)
-
-    endif
-       
-    var = var(:,ind)
+    ! Extract structure data
 
     M_star = glob(1)
     R_star = glob(2)
-    L_star = 0._WP
+    P_c = glob(3)
+    rho_c = glob(4)
 
-    x_ = var(1,:)
+    x = var(1,:)
 
     c_1 = 1._WP/var(2,:)
     V_g = var(3,:)
@@ -134,33 +122,44 @@ contains
     As = var(5,:)
     U = var(6,:)
 
-    has_center = x_(1) == 0._WP
+    ! Snap grid points
 
-    if (check_log_level('INFO')) then
-       if (add_center) then
-          if (has_center) then
-             write(OUTPUT_UNIT, 140) 'No need to add central point'
-140          format(3X,A)
-          else
-             write(OUTPUT_UNIT, 140) 'Adding central point'
-          endif
-       endif
+    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x)
+  
+    ! Calculate dimensionless structure data
+
+    allocate(V_2(n))
+
+    allocate(Omega_rot(n))
+
+    where (x /= 0._WP)
+       V_2 = V_g*Gamma_1
+    elsewhere
+       V_2 = 4._WP*PI*G_GRAVITY*rho_c**2*R_star**2/(3._WP*P_c)
+    end where
+
+    if (ml_p%uniform_rot) then
+       Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+    else
+       Omega_rot = 0._WP
     endif
 
-    ! Initialize the model
+    ! Initialize the evol_model_t
 
-    ml = evol_model_t(M_star, R_star, L_star, x_, V_g*Gamma_1, As, U, c_1, Gamma_1, &
-                      deriv_type, add_center=add_center .AND. .NOT. has_center)
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, 0._WP, ml_p))
 
-    ! Set up the grid
+    call em%set_V_2(V_2)
+    call em%set_As(As)
+    call em%set_U(U)
+    call em%set_c_1(c_1)
 
-    if (PRESENT(x)) then
-       if (add_center .AND. .NOT. has_center) then
-          x = [0._WP,x_]
-       else
-          x = x_
-       endif
-    endif
+    call em%set_Gamma_1(Gamma_1)
+
+    call em%set_Omega_rot(Omega_rot)
+
+    ! Return a pointer
+
+    ml => em
 
     ! Finish
 
