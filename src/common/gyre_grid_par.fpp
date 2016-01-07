@@ -171,9 +171,6 @@ contains
 
     ! Broadcast the grid_par_t
 
-    call bcast(gr_p%x_i, root_rank)
-    call bcast(gr_p%x_o, root_rank)
-
     call bcast(gr_p%alpha_osc, root_rank)
     call bcast(gr_p%alpha_exp, root_rank)
     call bcast(gr_p%alpha_thm, root_rank)
