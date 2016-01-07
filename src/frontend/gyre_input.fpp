@@ -1,7 +1,7 @@
 ! Program  : gyre_input
 ! Purpose  : input routines
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -75,8 +75,8 @@ contains
 !    use gyre_osc_file
 !    use gyre_losc_file
     use gyre_fgong_file
-!    use gyre_famdl_file
-!    use gyre_amdl_file
+    use gyre_famdl_file
+    use gyre_amdl_file
     $if ($HDF5)
 !    use gyre_b3_file
 !    use gyre_gsm_file
@@ -112,12 +112,12 @@ contains
        !    call read_losc_model(file, deriv_type, add_center, ec, x=x_bc)
        case ('FGONG')
           call read_fgong_model(ml_p, ml)
-       ! case ('FAMDL')
-       !    call read_famdl_model(file, deriv_type, data_format, add_center, ec, x=x_bc)
-       ! case ('AMDL')
-       !    call read_amdl_model(file, deriv_type, add_center, ec, x=x_bc)
-       ! case default
-       !    $ABORT(Invalid file_format)
+       case ('FAMDL')
+          call read_famdl_model(ml_p, ml)
+       case ('AMDL')
+          call read_amdl_model(ml_p, ml)
+       case default
+          $ABORT(Invalid file_format)
        end select
 
        !ec%Omega_uni = SQRT(ec%R_star**3/(G_GRAVITY*ec%M_star))*Omega_uni
