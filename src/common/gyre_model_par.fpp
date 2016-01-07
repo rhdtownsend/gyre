@@ -35,6 +35,8 @@ module gyre_model_par
   ! Derived-type definitions
 
   type :: model_par_t
+     real(WP)                :: x_i
+     real(WP)                :: x_o
      real(WP)                :: Gamma_1
      real(WP)                :: Omega_rot
      real(WP)                :: dx_snap
@@ -78,6 +80,8 @@ contains
     type(model_par_t), intent(out) :: ml_p
 
     integer                         :: n_ml_p
+    real(WP)                        :: x_i
+    real(WP)                        :: x_o
     real(WP)                        :: Gamma_1
     real(WP)                        :: Omega_rot
     real(WP)                        :: dx_snap
@@ -110,6 +114,8 @@ contains
 
     ! Read model parameters
 
+    x_i = 0._WP
+    x_o = 1._WP
     Gamma_1 = 5._WP/3._WP
     Omega_rot = 0._WP
     dx_snap = 0._WP
@@ -129,7 +135,9 @@ contains
 
     ! Initialize the model_par
 
-    ml_p = model_par_t(Gamma_1=Gamma_1, &
+    ml_p = model_par_t(x_i=x_i, &
+                       x_o=x_o, &
+                       Gamma_1=Gamma_1, &
                        Omega_rot=Omega_rot, &
                        dx_snap=dx_snap, &
                        model_type=model_type, &
