@@ -27,6 +27,7 @@ module gyre_fgong_file
   use gyre_evol_model
   use gyre_model
   use gyre_model_par
+  use gyre_model_util
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -62,23 +63,19 @@ contains
     real(WP)                    :: M_star
     real(WP)                    :: R_star
     real(WP)                    :: L_star
-    real(WP), allocatable       :: r(:)
+    real(WP), allocatable       :: x(:)
     real(WP), allocatable       :: m(:)
-    real(WP), allocatable       :: p(:)
+    real(WP), allocatable       :: P(:)
     real(WP), allocatable       :: rho(:) 
     real(WP), allocatable       :: T(:) 
     real(WP), allocatable       :: Gamma_1(:)
     real(WP), allocatable       :: nabla_ad(:)
     real(WP), allocatable       :: delta(:)
     real(WP), allocatable       :: As(:)
-    real(WP), allocatable       :: x(:)
     real(WP), allocatable       :: V_2(:)
     real(WP), allocatable       :: U(:)
     real(WP), allocatable       :: c_1(:)
     real(WP), allocatable       :: Omega_rot(:)
-    real(WP)                    :: dx_snap
-    real(WP)                    :: r_snap
-    real(WP)                    :: m_snap
     type(evol_model_t), pointer :: em
 
     ! Open the FGONG-format file
@@ -99,9 +96,9 @@ contains
 
     read(unit, *) n, iconst, ivar, ivers
 
-     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Initial points :', n
-       write(OUTPUT_UNIT, 110) 'File version   :', ivers
+     if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Grid points  :', n
+       write(OUTPUT_UNIT, 110) 'File version :', ivers
 110    format(3X,A,1X,I0)
     endif
 
@@ -136,11 +133,15 @@ contains
     R_star = glob(2)
     L_star = glob(3)
 
-    r = var(1,:)
+    x = var(1,:)/R_star
 
-    m = EXP(var(2,:))*M_star
+    $if ($GFORTRAN_PR_69185)
+    allocate(m(n))
+    $endif
+
+    m = EXP(var(2,:))
     T = var(3,:)
-    p = var(4,:)
+    P = var(4,:)
     rho = var(5,:)
 
     Gamma_1 = var(10,:)
@@ -149,48 +150,11 @@ contains
 
     As = var(15,:)
 
-    ! If necessary, snap grid points
+    ! Snap grid points
 
-    dx_snap = MAX(ml_p%dx_snap, EPSILON(0._WP))
-
-    ! Central point
-
-    if (r(1)/R_star < dx_snap) then
-
-       r(1) = 0._WP
-       m(1) = 0._WP
-
-       if (check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 120) 'Snapping central point to x=0'
-120       format(3X,A)
-       endif
-
-    endif
-
-    ! Other points
-
-    snap_loop : do i = 2, n-1
-
-       if ((r(i+1) - r(i))/R_star < dx_snap) then
-          
-          r_snap = 0.5_WP*(r(i+1) + r(i))
-          m_snap = 0.5_WP*(m(i+1) + m(i))
-
-          r(i:i+1) = r_snap
-          m(i:i+1) = m_snap
-
-          if (check_log_level('INFO')) then
-             write(OUTPUT_UNIT, 130) 'Snapping points', i, 'and', i+1, 'to x=', r_snap/R_star
-130          format(3X,A,1X,I0,1X,A,1X,I0,1X,A,F6.4)
-          endif
-             
-       end if
-
-    end do snap_loop
+    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x, m)
 
     ! Calculate dimensionless structure data
-
-    allocate(x(n))
 
     allocate(V_2(n))
     allocate(U(n))
@@ -198,14 +162,12 @@ contains
 
     allocate(Omega_rot(n))
 
-    x = r/R_star
-
     where (x /= 0._WP)
-       V_2 = G_GRAVITY*m*rho/(p*r*x**2)
-       U = 4._WP*PI*rho*r**3/m
-       c_1 = (r/R_star)**3/(m/M_star)
+       V_2 = G_GRAVITY*(m*M_star)*rho/(P*x**3*R_star)
+       U = 4._WP*PI*rho*(x*R_star)**3/(m*M_star)
+       c_1 = x**3/m
     elsewhere
-       V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*p(1))
+       V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
     end where
