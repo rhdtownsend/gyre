@@ -53,13 +53,15 @@ contains
     logical :: mask(SIZE(x)-1)
     integer :: n_s
     integer :: k
-    
+
     ! Partition the monotonic array x into strictly-monotonic
     ! segments, by splitting at duplicate points; return the index
     ! range of the segments in k_i/k_o
 
     n_k = SIZE(x)
 
+    $ASSERT_DEBUG(ALL(x(2:) >= x(:n_k-1)),Non-monotonic data)
+    
     mask = x(:n_k-1) == x(2:)
 
     n_s = COUNT(mask)
