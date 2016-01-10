@@ -72,7 +72,7 @@ module gyre_hom_model
      $PROC_DECL(dOmega_rot)
      procedure, public :: x_i
      procedure, public :: x_o
-     procedure, public :: x_s
+     procedure, public :: x_base
   end type hom_model_t
 
   ! Interfaces
@@ -482,22 +482,22 @@ contains
 
   !****
 
-  function x_s (this, s)
+  function x_base (this, s)
 
     class(hom_model_t), intent(in) :: this
     integer, intent(in)             :: s
-    real(WP), allocatable           :: x_s(:)
+    real(WP), allocatable           :: x_base(:)
 
     $ASSERT_DEBUG(s == 1,Invalid segment index)
 
     ! Return the model grid for segment s
 
-    x_s = [this%x_i_,this%x_o_]
+    x_base = [this%x_i_,this%x_o_]
 
     ! Finish
 
     return
 
-  end function x_s
+  end function x_base
 
 end module gyre_hom_model

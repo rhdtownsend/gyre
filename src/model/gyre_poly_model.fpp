@@ -74,7 +74,7 @@ module gyre_poly_model
      $PROC_DECL(dOmega_rot)
      procedure, public :: x_i
      procedure, public :: x_o
-     procedure, public :: x_s
+     procedure, public :: x_base
   end type poly_model_t
 
   ! Interfaces
@@ -374,23 +374,23 @@ contains
 
   !****
 
-  function x_s (this, s)
+  function x_base (this, s)
 
     class(poly_model_t), intent(in) :: this
     integer, intent(in)             :: s
-    real(WP), allocatable           :: x_s(:)
+    real(WP), allocatable           :: x_base(:)
 
     $ASSERT_DEBUG(s >= 1,Invalid segment index)
     $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
 
-    ! Return the model grid for segment s
+    ! Return the base grid for segment s
 
-    x_s = this%x(this%k_i(s):this%k_o(s))
+    x_base = this%x(this%k_i(s):this%k_o(s))
 
     ! Finish
 
     return
 
-  end function x_s
+  end function x_base
 
 end module gyre_poly_model

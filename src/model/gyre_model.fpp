@@ -62,9 +62,9 @@ module gyre_model
      $PROC_DECL(kappa_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
-     procedure(x_i), deferred, public :: x_i
-     procedure(x_o), deferred, public :: x_o
-     procedure(x_s), deferred, public :: x_s
+     procedure(x_i), deferred, public    :: x_i
+     procedure(x_o), deferred, public    :: x_o
+     procedure(x_base), deferred, public :: x_base
   end type model_t
 
   ! Interfaces
@@ -105,13 +105,13 @@ module gyre_model
        real(WP)                   :: x_o
      end function x_o
 
-     function x_s (this, s)
+     function x_base (this, s)
        use core_kinds
        import model_t
        class(model_t), intent(in) :: this
        integer, intent(in)        :: s
-       real(WP), allocatable      :: x_s(:)
-     end function x_s
+       real(WP), allocatable      :: x_base(:)
+     end function x_base
 
   end interface
 
