@@ -25,16 +25,17 @@ module gyre_nad_bep
 
   use gyre_nad_bound
   use gyre_nad_diff
+  use gyre_nad_eqns
   use gyre_nad_vars
   use gyre_bep
   use gyre_ext
   use gyre_grid
   use gyre_grid_par
   use gyre_model
-  use gyre_mode
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_sol
 
   use ISO_FORTRAN_ENV
 
@@ -46,11 +47,12 @@ module gyre_nad_bep
 
   type, extends (c_bep_t) :: nad_bep_t
      class(model_t), pointer :: ml => null()
-     type(mode_par_t)        :: md_p
-     type(osc_par_t)         :: os_p
-     type(nad_vars_t)        :: vr
-     integer, allocatable    :: s(:)
-     real(WP), allocatable   :: x(:)
+     type(nad_eqns_t), allocatable :: eq(:)
+     type(mode_par_t)              :: md_p
+     type(osc_par_t)               :: os_p
+     type(nad_vars_t)              :: vr
+     integer, allocatable          :: s(:)
+     real(WP), allocatable         :: x(:)
   end type nad_bep_t
 
   ! Interfaces
@@ -59,16 +61,16 @@ module gyre_nad_bep
      module procedure nad_bep_t_
   end interface nad_bep_t
 
-  interface mode_t
-     module procedure mode_t_
-  end interface mode_t
+  interface sol_t
+     module procedure sol_t_
+  end interface sol_t
 
   ! Access specifiers
 
   private
 
   public :: nad_bep_t
-  public :: mode_t
+  public :: sol_t
 
   ! Procedures
 
@@ -129,6 +131,12 @@ contains
 
     bp%ml => ml
 
+    allocate(bp%eq(n_k))
+
+    do k = 1, n_k
+       bp%eq(k) = nad_eqns_t(ml, s(k), md_p, os_p)
+    end do
+
     bp%vr = nad_vars_t(ml, md_p, os_p)
 
     bp%s = s
@@ -145,40 +153,80 @@ contains
 
   !****
 
-  function mode_t_ (bp, omega) result (md)
+  function sol_t_ (bp, omega) result (sl)
 
     class(nad_bep_t), intent(inout) :: bp
     complex(WP), intent(in)         :: omega
-    type(mode_t)                    :: md
+    type(sol_t)                     :: sl
 
     complex(WP)   :: y(6,bp%n_k)
     type(c_ext_t) :: discrim
     integer       :: k
+    complex(WP)   :: xA(6,6)
+    complex(WP)   :: dy_dx(6,bp%n_k)
+    complex(WP)   :: H(6,6)
+    complex(WP)   :: dH(6,6)
     complex(WP)   :: y_c(6,bp%n_k)
+    complex(WP)   :: dy_c_dx(6,bp%n_k)
+    integer       :: i
 
-    ! Construct a mode_t from the ad_bep_t
-
-    ! Solve the BEP
+    ! Calculate the solution vector y
 
     call bp%solve(omega, y, discrim)
 
-    ! Calculate the canonical 6-variable solution
+    ! Calculate its derivatives
 
-    !$OMP PARALLEL DO 
+    !$OMP PARALLEL DO PRIVATE (xA)
     do k = 1, bp%n_k
-       y_c(:,k) = MATMUL(bp%vr%H(bp%s(k), bp%x(k), omega), y(:,k))
+
+       associate (x => bp%x(k))
+
+         xA = bp%eq(k)%xA(x, omega)
+
+         if (x /= 0._WP) then
+            dy_dx(:,k) = MATMUL(xA, y(:,k))/x
+         else
+            dy_dx(:,k) = 0._WP
+         endif
+
+       end associate
+
     end do
 
-    ! Construct the mode_t
+    ! Convert to canonical form
 
-    md = mode_t(bp%ml, bp%s, bp%x, y_c, CMPLX(omega, KIND=WP), bp%n_k, bp%md_p, bp%os_p)
+    !$OMP PARALLEL DO PRIVATE (H, dH)
+    do k = 1, bp%n_k
 
-    md%discrim = discrim
+       associate (s => bp%s(k), x => bp%x(k))
+
+         H = bp%vr%H(s, x, omega)
+         dH = bp%vr%dH(s, x, omega)
+
+         y_c(:,k) = MATMUL(H, y(:,k))
+
+         if (x /= 0._WP) then
+            dy_c_dx(:,k) = MATMUL(dH/x + H, y(:,k))
+         else
+            dy_c_dx(:,k) = 0._WP
+         endif
+
+       end associate
+
+    end do
+
+    ! Construct the sol_t
+
+    sl = sol_t(bp%s, bp%x, omega, discrim)
+
+    do i = 1, 6
+       call sl%set_y(i, y_c(i,:), dy_c_dx(i,:))
+    end do
 
     ! Finish
 
     return
 
-  end function mode_t_
+  end function sol_t_
 
 end module gyre_nad_bep
