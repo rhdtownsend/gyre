@@ -192,40 +192,54 @@ contains
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    type(mode_t) :: md_new
+    type(sol_t)   :: sl
+    type(mode_t)  :: md_new
+    type(r_ext_t) :: chi
 
-    ! Create the mode_t
+    ! Construct the sol_t
 
     select type (bp)
     type is (ad_bep_t)
-       md_new = mode_t(bp, omega)
+       sl = sol_t(bp, omega)
     type is (rad_bep_t)
-       md_new = mode_t(bp, omega)
+       sl = sol_t(bp, omega)
     class default
        $ABORT(Invalid bp class)
     end select
 
+    ! Construct the new mode
+
+    md_new = mode_t(ml, sl, md_p(i), os_p_sel(1))
+
     if (md_new%n_pg < md_p(i)%n_pg_min .OR. md_new%n_pg > md_p(i)%n_pg_max) return
 
-    md_new%n_iter = n_iter
-    md_new%chi = ABS(md_new%discrim)/ABS(discrim_ref)
+    chi = ABS(sl%discrim)/ABS(discrim_ref)
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 120) md_new%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
-            md_new%omega, real(md_new%chi), md_new%n_iter, md_new%n_k
-120    format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
+            md_new%omega, real(chi), n_iter
+120    format(4(2X,I8),3(2X,E24.16),2X,I6)
     endif
 
+    print *,'Done create mode'
+
     ! Store it
+
+    print *,'Storing mode'
 
     n_md = n_md + 1
 
     if (n_md > d_md) then
        d_md = 2*d_md
+       print *,'Go realloc'
        call reallocate(md, [d_md])
     endif
 
+    print *,'Go assign',n_md,allocated(md)
+    
     md(n_md) = md_new
+
+    print *,'Done storing mode'
 
     ! Write it
 
