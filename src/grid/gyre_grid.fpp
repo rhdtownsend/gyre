@@ -61,10 +61,9 @@ contains
     real(WP), allocatable, intent(out)  :: x(:)
     logical, optional, intent(in)       :: verbose
 
-    logical               :: write_info
-    integer               :: n_s
-    integer               :: s_
-    real(WP), allocatable :: x_(:)
+    logical              :: write_info
+    logical, allocatable :: mask(:)
+    integer              :: s_
 
     if (PRESENT(verbose)) then
        write_info = verbose .AND. check_log_level('INFO')
@@ -81,39 +80,36 @@ contains
 
     endif
 
-    ! Create the base grid, segment-by-segment
+    ! Create the base grid
 
-    n_s = ml%n_s
-
-    allocate(x(0))
-    allocate(s(0))
-
-    seg_loop : do s_ = 1, ml%n_s
-
-       x_ = seg_grid_(ml, s_, omega, gr_p, md_p, os_p)
-
-       x = [x,x_]
-       s = [s,SPREAD(s_, 1, SIZE(x_))]
-
-       if (write_info) then
-          write(OUTPUT_UNIT, 110) 'segment', s_, ':', SIZE(x_), 'points, x range', MINVAL(x_), '->', MAXVAL(x_)
-110       format(3X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
-       endif
-
-    end do seg_loop
+    call build_base_(ml, omega, gr_p, md_p, os_p, s, x)
 
     ! Add points at the center
 
-    ! k_turn = 0
-    ! x_turn = HUGE(0._WP)
+    call add_center_(ml, omega, gr_p, md_p, os_p, s, x)
 
-    ! omega_loop : do j = 1, SIZE(omega)
-    !    call find_turn(ml, s, x, omega(j), md_p, os_p, k_turn_j, x_turn_j)
-    !    if (x_turn_j < x_turn) then
-    !       k_turn = k_turn_j
-    !       x_turn = x_turn_j
-    !    endif
-    ! end do omega_loop
+    ! Add points globally
+
+    call add_global_(ml, omega, gr_p, md_p, os_p, s, x)
+
+    ! Report on the grid
+
+    if (write_info) then
+
+       allocate(mask(SIZE(s)))
+
+       seg_loop : do s_ = 1, ml%n_s
+
+          mask  = s == s_
+
+          write(OUTPUT_UNIT, 110) 'segment', s_, ':', COUNT(mask), 'points, x range', MINVAL(x, mask), '->', MAXVAL(x, mask)
+110       format(3X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
+
+
+       end do seg_loop
+
+    end if
+       
 
     ! Finish
 
@@ -123,83 +119,220 @@ contains
 
   !****
 
-  function seg_grid_ (ml, s, omega, gr_p, md_p, os_p) result (x)
+  subroutine build_base_ (ml, omega, gr_p, md_p, os_p, s, x)
 
     class(model_t), pointer, intent(in) :: ml
-    integer, intent(in)                 :: s
     real(WP), intent(in)                :: omega(:)
     type(grid_par_t), intent(in)        :: gr_p
     type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    real(WP), allocatable               :: x(:)
+    type(osc_par_t), intent(in)         :: os_p 
+    integer, allocatable, intent(out)   :: s(:)
+    real(WP), allocatable, intent(out)  :: x(:)
 
+    integer               :: s_
+    real(WP), allocatable :: x_s(:)
     real(WP), allocatable :: w(:)
-    integer, allocatable  :: dn(:)
-    integer               :: n_k
-    real(WP), allocatable :: x_res(:)
-    integer               :: i
-    integer               :: j
-    integer               :: k
 
-    ! Construct the grid for the s'th segment
+    ! Build the base grid, segment by segment
 
-    ! First, make the base grid
+    allocate(s(0))
+    allocate(x(0))
 
-    select case (gr_p%base_type)
-    case ('MODEL')
-       x = ml%x_base(s)
-    case ('UNIFORM')
-       w = uni_weights(gr_p%n_base)
-       x = (1._WP-w)*ml%x_i(s) + w*ml%x_o(s)
-    case ('GEOM')
-       w = geo_weights(gr_p%n_base, gr_p%delta_base)
-       x = (1._WP-w)*ml%x_i(s) + w*ml%x_o(s)
-    case ('LOG')
-       w = log_weights(gr_p%n_base, gr_p%delta_base)
-       x = (1._WP-w)*ml%x_i(s) + w*ml%x_o(s)
-    case default
-       $ABORT(Invalid base_type)
-    end select
+    seg_loop : do s_ = 1, ml%n_s
 
-    ! Now resample it by adding dn points to each subinterval
+       select case (gr_p%base_type)
+       case ('MODEL')
+          x_s = ml%x_base(s_)
+       case ('UNIFORM')
+          w = uni_weights(gr_p%n_base)
+          x_s = (1._WP-w)*ml%x_i(s_) + w*ml%x_o(s_)
+       case ('GEOM')
+          w = geo_weights(gr_p%n_base, gr_p%delta_base)
+          x_s = (1._WP-w)*ml%x_i(s_) + w*ml%x_o(s_)
+       case ('LOG')
+          w = log_weights(gr_p%n_base, gr_p%delta_base)
+          x_s = (1._WP-w)*ml%x_i(s_) + w*ml%x_o(s_)
+       case default
+          $ABORT(Invalid base_type)
+       end select
 
-    ! First, determine dn
+       s = [s,SPREAD(s_, 1, SIZE(x_s))]
+       x = [x,x_s]
 
-    dn = MAX(dn_dispersion_(ml, s, x, omega, gr_p, md_p, os_p), &
-             dn_thermal_(ml, s, x, omega, gr_p, md_p, os_p), &
-             dn_struct_(ml, s, x, gr_p))
-
-    ! Add points
-
-    n_k = SIZE(x)
-
-    allocate(x_res(n_k + SUM(dn)))
-
-    j = 1
-
-    do k = 1, n_k-1
-       do i = 1, dn(k)+1
-          x_res(j) = x(k) + (i-1)*(x(k+1)-x(k))/(dn(k)+1)
-          j = j + 1
-       end do
-    end do
-    
-    x_res(j) = x(n_k)
-
-    call MOVE_ALLOC(x_res, x)
+    end do seg_loop
 
     ! Finish
 
     return
 
-  end function seg_grid_
+  end subroutine build_base_
+
+  !****
+
+  subroutine add_center_ (ml, omega, gr_p, md_p, os_p, s, x)
+
+    class(model_t), pointer, intent(in)  :: ml
+    real(WP), intent(in)                 :: omega(:)
+    type(grid_par_t), intent(in)         :: gr_p
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    integer, allocatable, intent(inout)  :: s(:)
+    real(WP), allocatable, intent(inout) :: x(:)
+
+    integer  :: n_k
+    integer  :: k_turn
+    real(WP) :: x_turn
+    integer  :: j
+    integer  :: k_turn_omega
+    real(WP) :: x_turn_omega
+    real(WP) :: dx_max
+    integer  :: k
+    integer  :: dn(SIZE(s)-1)
+
+    ! Add points at the center, to ensure that no cell is larger than
+    ! dx_max = x_turn/n_center
+
+    n_k = SIZE(s)
+
+    x_turn = HUGE(0._WP)
+    k_turn = n_k
+
+    if (gr_p%n_center > 0) then
+
+       ! First, determine the inner turning point (over all
+       ! frequencies) closest to the center
+
+       omega_loop : do j = 1, SIZE(omega)
+
+          call find_turn(ml, s, x, omega(j), md_p, os_p, k_turn_omega, x_turn_omega)
+
+          if (x_turn_omega < x_turn) then
+             k_turn = k_turn_omega
+             x_turn = x_turn_omega
+          endif
+
+       end do omega_loop
+
+       ! Add points to the cell containing the turning point, and each
+       ! cell inside it, so that none is larger than dx_max
+
+       dx_max = x_turn/gr_p%n_center
+
+       cell_loop : do k = 1, MAX(k_turn, n_k-1)
+          dn(k) = FLOOR((x(k+1) - x(k))/dx_max)
+       end do cell_loop
+
+       dn(k:) = 0
+
+       call add_points_(dn, s, x)
+
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine add_center_
+
+  !****
+
+  subroutine add_global_ (ml, omega, gr_p, md_p, os_p, s, x)
+
+    class(model_t), pointer, intent(in)  :: ml
+    real(WP), intent(in)                 :: omega(:)
+    type(grid_par_t), intent(in)         :: gr_p
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    integer, allocatable, intent(inout)  :: s(:)
+    real(WP), allocatable, intent(inout) :: x(:)
+
+    integer :: dn(SIZE(s)-1)
+
+    ! Add points globally, as determined by the various
+    ! grid-resampling parameters in gr_p
+    
+    dn = MAX(dn_dispersion_(ml, s, x, omega, gr_p, md_p, os_p), &
+             dn_thermal_(ml, s, x, omega, gr_p, md_p, os_p), &
+             dn_struct_(ml, s, x, gr_p))
+
+    call add_points_(dn, s, x)
+
+    ! Finish
+
+    return
+
+  end subroutine add_global_
+
+  !****
+
+  subroutine add_points_ (dn, s, x)
+
+    integer, intent(in)                  :: dn(:)
+    integer, allocatable, intent(inout)  :: s(:)
+    real(WP), allocatable, intent(inout) :: x(:)
+
+    integer               :: n_k
+    integer, allocatable  :: s_new(:)
+    real(WP), allocatable :: x_new(:)
+    integer               :: i
+    integer               :: j
+    integer               :: k
+
+    $CHECK_BOUNDS(SIZE(s),SIZE(dn)+1)
+    $CHECK_BOUNDS(SIZE(x),SIZE(dn)+1)
+
+    ! Add points to the grid
+
+    n_k = SIZE(x)
+
+    allocate(s_new(n_k + SUM(dn)))
+    allocate(x_new(n_k + SUM(dn)))
+
+    j = 1
+
+    cell_loop : do k = 1, n_k-1
+
+       if (s(k) == s(k+1)) then
+
+          do i = 1, dn(k)+1
+             s_new(j) = s(k)
+             x_new(j) = x(k) + (i-1)*(x(k+1)-x(k))/(dn(k)+1)
+             j = j + 1
+          end do
+
+       else
+
+          $ASSERT(dn(k) == 0,Attempt to add points at cell boundary)
+
+          s_new(j) = s(k)
+          x_new(j) = x(k)
+
+          j = j + 1
+
+       endif
+
+    end do cell_loop
+
+    s_new(j) = s(n_k)
+    x_new(j) = x(n_k)
+
+    $ASSERT_DEBUG(j == SIZE(s_new),Point mismatch)
+
+    call MOVE_ALLOC(s_new, s)
+    call MOVE_ALLOC(x_new, x)
+
+    ! Finish
+
+    return
+
+  end subroutine add_points_
 
   !****
 
   function dn_dispersion_ (ml, s, x, omega, gr_p, md_p, os_p) result (dn)
 
     class(model_t), pointer, intent(in) :: ml
-    integer, intent(in)                 :: s
+    integer, intent(in)                 :: s(:)
     real(WP), intent(in)                :: x(:)
     real(WP), intent(in)                :: omega(:)
     type(grid_par_t), intent(in)        :: gr_p
@@ -227,7 +360,9 @@ contains
     real(WP)                    :: dphi_osc
     real(WP)                    :: dphi_exp
 
-    ! Determine how many points dn to add to each cell of the grid x,
+    $CHECK_BOUNDS(SIZE(x), SIZE(s))
+
+    ! Determine how many points dn to add to each cell of the grid,
     ! such there are at least alpha_osc points per oscillatory
     ! wavelength and alpha_exp points per exponential wavelength
     !
@@ -243,26 +378,26 @@ contains
        ! real and imaginary parts of the local radial wavenumber beta,
        ! for all possible omega values
 
-       n_k = SIZE(x)
+       n_k = SIZE(s)
 
        beta_r_max(1) = 0._WP
        beta_i_max(1) = 0._WP
 
        wavenumber_loop : do k = 2, n_k-1
 
-          V_g = ml%V_2(s, x(k))*x(k)**2/ml%Gamma_1(s, x(k))
-          As = ml%As(s, x(k))
-          U = ml%U(s, x(k))
-          c_1 = ml%c_1(s, x(k))
+          V_g = ml%V_2(s(k), x(k))*x(k)**2/ml%Gamma_1(s(k), x(k))
+          As = ml%As(s(k), x(k))
+          U = ml%U(s(k), x(k))
+          c_1 = ml%c_1(s(k), x(k))
 
           beta_r_max(k) = 0._WP
           beta_i_max(k) = 0._WP
 
           omega_loop : do j = 1, SIZE(omega)
 
-             omega_c = rt%omega_c(s, x(k), omega(j))
+             omega_c = rt%omega_c(s(k), x(k), omega(j))
 
-             lambda = rt%lambda(s, x(k), omega(j))
+             lambda = rt%lambda(s(k), x(k), omega(j))
              l_i = rt%l_i(omega(j))
             
              ! Calculate the propagation discriminant gamma
@@ -303,15 +438,23 @@ contains
 
        cell_loop : do k = 1, n_k-1
 
-          ! Calculate the oscillatory and exponential phase change across
-          ! the cell
+          if (s(k) == s(k+1)) then
 
-          dphi_osc = MAX(beta_r_max(k), beta_r_max(k+1))*(x(k+1) - x(k))
-          dphi_exp = MAX(beta_i_max(k), beta_i_max(k+1))*(x(k+1) - x(k))
+             ! Calculate the oscillatory and exponential phase change across
+             ! the cell
 
-          ! Set up dn
+             dphi_osc = MAX(beta_r_max(k), beta_r_max(k+1))*(x(k+1) - x(k))
+             dphi_exp = MAX(beta_i_max(k), beta_i_max(k+1))*(x(k+1) - x(k))
 
-          dn(k) = MAX(FLOOR((gr_p%alpha_osc*dphi_osc)/TWOPI), FLOOR((gr_p%alpha_exp*dphi_exp)/TWOPI))
+             ! Set up dn
+
+             dn(k) = MAX(FLOOR((gr_p%alpha_osc*dphi_osc)/TWOPI), FLOOR((gr_p%alpha_exp*dphi_exp)/TWOPI))
+
+          else
+
+             dn(k) = 0
+
+          endif
 
        end do cell_loop
 
@@ -332,7 +475,7 @@ contains
   function dn_thermal_ (ml, s, x, omega, gr_p, md_p, os_p) result (dn)
 
     class(model_t), pointer, intent(in)  :: ml
-    integer, intent(in)                  :: s
+    integer, intent(in)                  :: s(:)
     real(WP), intent(in)                 :: x(:)
     real(WP), intent(in)                 :: omega(:)
     type(grid_par_t), intent(in)         :: gr_p
@@ -352,7 +495,9 @@ contains
     real(WP)                    :: omega_c
     real(WP)                    :: dphi_thm
 
-    ! Determine how many points dn to add to each cell of the grid x,
+    $CHECK_BOUNDS(SIZE(x), SIZE(s))
+
+    ! Determine how many points dn to add to each cell of the grid,
     ! such there are at least alpha_thm points per thermal length
 
     if (gr_p%alpha_thm > 0._WP) then
@@ -369,17 +514,17 @@ contains
 
        wavenumber_loop : do k = 2, n_k-1
 
-          V = ml%V_2(s, x(k))*x(k)**2
-          nabla = ml%nabla(s, x(k))
+          V = ml%V_2(s(k), x(k))*x(k)**2
+          nabla = ml%nabla(s(k), x(k))
 
-          c_rad = ml%c_rad(s, x(k))
-          c_thm = ml%c_thm(s, x(k))
+          c_rad = ml%c_rad(s(k), x(k))
+          c_thm = ml%c_thm(s(k), x(k))
 
           beta_t_max(k) = 0._WP
 
           omega_loop : do j = 1, SIZE(omega)
 
-             omega_c = rt%omega_c(s, x(k), omega(j))
+             omega_c = rt%omega_c(s(k), x(k), omega(j))
 
              beta_t_max(k) = MAX(beta_t_max(k), SQRT(ABS(V*nabla*omega_c*c_thm/c_rad))/x(k))
 
@@ -393,13 +538,21 @@ contains
        
        cell_loop : do k = 1, n_k-1
 
-          ! Calculate the thermal phase change across the cell
+          if (s(k) == s(k+1)) then
 
-          dphi_thm = MAX(beta_t_max(k), beta_t_max(k+1))*(x(k+1) - x(k))
+             ! Calculate the thermal phase change across the cell
 
-          ! Set up dn
+             dphi_thm = MAX(beta_t_max(k), beta_t_max(k+1))*(x(k+1) - x(k))
 
-          dn(k) = FLOOR((gr_p%alpha_thm*dphi_thm)/TWOPI)
+             ! Set up dn
+
+             dn(k) = FLOOR((gr_p%alpha_thm*dphi_thm)/TWOPI)
+
+          else
+
+             dn(k) = 0
+
+          endif
 
        end do cell_loop
 
@@ -422,16 +575,19 @@ contains
   function dn_struct_ (ml, s, x, gr_p) result (dn)
 
     class(model_t), pointer, intent(in)  :: ml
-    integer, intent(in)                  :: s
+    integer, intent(in)                  :: s(:)
     real(WP), intent(in)                 :: x(:)
     type(grid_par_t), intent(in)         :: gr_p
     integer                              :: dn(SIZE(x)-1)
 
     integer :: k
 
+    $CHECK_BOUNDS(SIZE(x), SIZE(s))
+
     ! Determine how many points dn to add to each cell of the grid x,
     ! such there are at least alpha_str points per dex change in the
-    ! structure variables (V, As, Gamma_1, c_1, & U)
+    ! structure variables (V, As, Gamma_1, c_1, & U). Segment
+    ! boundaries are excluded
 
     if (gr_p%alpha_str > 0) then
 
@@ -439,11 +595,21 @@ contains
 
        cell_loop : do k = 1, SIZE(x)-1
 
-          dn(k) = FLOOR(gr_p%alpha_str*dlog_(ml%V_2(s, x(k)), ml%V_2(s, x(k+1)))) + &
-                  FLOOR(gr_p%alpha_str*dlog_(ml%As(s, x(k)), ml%As(s, x(k+1)))) + &
-                  FLOOR(gr_p%alpha_str*dlog_(ml%Gamma_1(s, x(k)), ml%Gamma_1(s, x(k+1)))) + &
-                  FLOOR(gr_p%alpha_str*dlog_(ml%c_1(s, x(k)), ml%c_1(s, x(k+1)))) + &
-                  FLOOR(gr_p%alpha_str*dlog_(ml%U(s, x(k)), ml%U(s, x(k+1))))
+          if (s(k) == s(k+1)) then
+
+             dn(k) = 0
+
+             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%V_2(s(k), x(k)), ml%V_2(s(k+1), x(k+1)))))
+             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%As(s(k), x(k)), ml%As(s(k+1), x(k+1)))))
+             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%Gamma_1(s(k), x(k)), ml%Gamma_1(s(k+1), x(k+1)))))
+             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%c_1(s(k), x(k)), ml%c_1(s(k+1), x(k+1)))))
+             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%U(s(k+1), x(k)), ml%U(s(k+1), x(k+1)))))
+
+          else
+
+             dn(k) = 0
+
+          endif
 
        end do cell_loop
 

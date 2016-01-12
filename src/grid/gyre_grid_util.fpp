@@ -68,6 +68,7 @@ contains
     integer, intent(out)                :: k_turn
     real(WP), intent(out)               :: x_turn
 
+    integer            :: n_k
     type(gamma_func_t) :: gf
     real(WP)           :: gf_a
     real(WP)           :: gf_b
@@ -76,6 +77,9 @@ contains
     ! Find the cell index and location of the inner turning point at
     ! frequency omega
 
+    n_k = SIZE(s)
+
+    k_turn = n_k
     x_turn = HUGE(0._WP)
 
     gf%ml => ml
@@ -85,7 +89,7 @@ contains
     gf%s = s(1)
     gf_b = gf%eval(x(1))
 
-    turn_loop : do k = 1, SIZE(x)-2
+    turn_loop : do k = 1, n_k-1
 
        gf_a = gf_b
 
