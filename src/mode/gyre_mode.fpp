@@ -64,6 +64,7 @@ module gyre_mode
      complex(WP)                 :: omega
      complex(WP)                 :: l_i
      complex(WP)                 :: scl
+     real(WP)                    :: K_d
      integer, allocatable        :: s(:)
      real(WP), allocatable       :: x(:)
      integer                     :: s_ref
@@ -95,7 +96,7 @@ module gyre_mode
      $PROC_DECL(lambda)
      $PROC_DECL(dE_dx)
      $PROC_DECL(dW_dx)
-     $PROC_DECL(K_n)
+     $PROC_DECL(dC_dx)
      $PROC_DECL(F_j)
      $PROC_DECL(Yt_1)
      $PROC_DECL(Yt_2)
@@ -113,8 +114,7 @@ module gyre_mode
      procedure, public :: E_g
      procedure, public :: E_norm
      procedure, public :: W
-     procedure, public :: K
-     procedure, public :: beta
+     procedure, public :: C
      procedure, public :: omega_int
      procedure, public :: eta
      procedure         :: classify_
@@ -851,21 +851,23 @@ contains
 
   !****
 
-  function K_n_1_ (this, s, x) result (K_n)
+  function dC_dx_1_ (this, s, x) result (dC_dx)
 
     class(mode_t), intent(in) :: this
     integer, intent(in)       :: s
     real(WP), intent(in)      :: x
-    real(WP)                  :: K_n
+    real(WP)                  :: dC_dx
 
     complex(WP) :: xi_r
     complex(WP) :: xi_h
     real(WP)    :: U
     real(WP)    :: c_1
     complex(WP) :: lambda
+    real(WP)    :: E
     
-    ! Calculate the numerator of the rotation splitting kernel. This
-    ! expression is based on equation 3.356 of [Aer2010]
+    ! Calculate the (unnormalized) rotation splitting kernel. This is
+    ! based on based on equations 3.356 & 3.357 of [Aer2010], with
+    ! dC_dx = beta*K
 
     associate (l => this%l)
 
@@ -877,8 +879,12 @@ contains
 
       lambda = this%lambda(s, x)
 
-      K_n = (ABS(xi_r)**2 + (lambda-1._WP)*ABS(xi_h)**2 - &
-           2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1
+      ! (The following holds due to the standard normalization)
+ 
+      E = 1._WP
+
+      dC_dx = REAL((ABS(xi_r)**2 + (lambda-1._WP)*ABS(xi_h)**2 - &
+                   2._WP*xi_r*CONJG(xi_h))*U*x**2/c_1)/E
 
     end associate
 
@@ -886,7 +892,7 @@ contains
 
     return
 
-  end function K_n_1_
+  end function dC_dx_1_
 
   !****
 
@@ -1181,7 +1187,7 @@ contains
   $PROC_V(lambda,complex(WP))
   $PROC_V(dE_dx,real(WP))
   $PROC_V(dW_dx,real(WP))
-  $PROC_V(K_n,real(WP))
+  $PROC_V(dC_dx,real(WP))
   $PROC_V(F_j,real(WP))
   $PROC_V(Yt_1,complex(WP))
   $PROC_V(Yt_2,complex(WP))
@@ -1431,7 +1437,9 @@ contains
 
     associate (s => this%s_ref, x => this%x_ref)
 
-      E = this%E()
+      ! (The following holds due to the standard normalization)
+
+      E = 1._WP
 
       xi_r = this%xi_r(s, x)
       xi_h = this%xi_h(s, x)
@@ -1487,68 +1495,24 @@ contains
 
   !****
 
-  function K (this)
+  function C (this)
 
     class(mode_t), intent(in) :: this
-    complex(WP)               :: K(this%n_k)
+    real(WP)                  :: C
+    
+    ! Calculate the Ledoux rotational splitting coefficient
 
-    stop 'Not yet implemented'
+    associate (s => this%s, x => this%x)
 
-    ! real(WP) :: K_n(this%n_k)
-    ! real(WP) :: K_d
+      C = integrate(x, this%dC_dx(s, x))
 
-    ! ! Calculate the rotation splitting kernel
-
-    ! K_n = this%K_n()
-    ! K_d = integrate(this%x, K_n)
-
-    ! K = K_n/K_d
+    end associate
 
     ! Finish
 
     return
 
-  end function K
-
-  !****
-
-  function beta (this)
-
-    class(mode_t), intent(in) :: this
-    complex(WP)               :: beta
-
-    stop 'Not yet implemented'
-
-    ! complex(WP) :: xi_r(this%n_k)
-    ! complex(WP) :: xi_h(this%n_k)
-    ! real(WP)    :: U(this%n_k)
-    ! real(WP)    :: c_1(this%n_k)
-    ! real(WP)    :: dE_dx_0(this%n_k)
-
-    ! ! Calculate the rotation splitting scale
-
-    ! associate (s => this%s, &
-    !            x => this%x, &
-    !            l => this%l)
-
-    !   xi_r = this%xi_r()
-    !   xi_h = this%xi_h()
-
-    !   U = this%ml%U(s, x)
-    !   c_1 = this%ml%c_1(s, x)
-
-    !   dE_dx_0 = (ABS(xi_r)**2 + l*(l+1)*ABS(xi_h)**2)*U*x**2/(4._WP*PI*c_1)
-
-    ! end associate
-
-    ! beta = integrate(this%x, this%K_n())/ &
-    !        integrate(this%x, dE_dx_0)
-      
-    ! Finish
-
-    return
-
-  end function beta
+  end function C
 
   !****
 
@@ -1557,103 +1521,67 @@ contains
     class(mode_t), intent(in) :: this
     complex(WP)               :: omega_int
 
-    stop 'Not yet implemented'
+    integer     :: k
+    complex(WP) :: xi_r
+    complex(WP) :: eul_phi
+    complex(WP) :: eul_rho
+    complex(WP) :: lag_rho
+    complex(WP) :: lag_P
+    real(WP)    :: V_2
+    real(WP)    :: As
+    real(WP)    :: U
+    real(WP)    :: c_1
+    real(WP)    :: Gamma_1
+    real(WP)    :: V_g
+    real(WP)    :: x4_V
+    complex(WP) :: f_th(this%n_k)
+    complex(WP) :: f_re(this%n_k)
+    complex(WP) :: f_gr(this%n_k)
+    complex(WP) :: f_xi(this%n_k)
+    complex(WP) :: W_th
+    complex(WP) :: W_re
+    complex(WP) :: W_gr
+    complex(WP) :: W_xi
 
-    ! complex(WP) :: xi_r(this%n_k)
-    ! complex(WP) :: eul_phi(this%n_k)
-    ! complex(WP) :: eul_rho(this%n_k)
-    ! complex(WP) :: lag_rho(this%n_k)
-    ! complex(WP) :: lag_P(this%n_k)
-    ! real(WP)    :: V_2(this%n_k)
-    ! real(WP)    :: As(this%n_k)
-    ! real(WP)    :: U(this%n_k)
-    ! real(WP)    :: c_1(this%n_k)
-    ! real(WP)    :: Gamma_1(this%n_k)
-    ! real(WP)    :: V_g(this%n_k)
-    ! real(WP)    :: x4_V(this%n_k)
-    ! complex(WP) :: W_th
-    ! complex(WP) :: W_re
-    ! complex(WP) :: W_gr
-    ! complex(WP) :: W_xi
+    ! Calculate the dimensionless frequency from the integral
+    ! expression in eqn. (1.71) of [Dup2003]
 
-    ! ! Calculate the dimensionless frequency from the integral
-    ! ! expression in eqn. (1.71) of [Dup2003]
+    do k = 1, this%n_k
 
-    ! seg_loop : do s = 1, this%n_s
+       associate (s => this%s(k), x => this%x(k))
 
-    !    do k = this%k_i(s), this%k_o(s)
+         xi_r = this%xi_r(s, x)
+         eul_phi = this%eul_phi(s, x)
+         eul_rho = this%eul_rho(s, x)
+         lag_rho = this%lag_rho(s, x)
+         lag_P = this%lag_P(s, x)
 
-    !       associate (x => this%x(k))
+         V_2 = this%ml%V_2(s, x)
+         As = this%ml%As(s, x)
+         U = this%ml%U(s, x)
+         c_1 = this%ml%c_1(s, x)
 
-    !         xi_r = this%xi_r(s, x)
-    !         eul_phi = this%eul_phi(s, x)
-    !         eul_rho = this%eul_rho(s, x)
-    !         lag_rho = this%lag_rho(s, x)
-    !         lag_P = this%lag_P(s, x)
+         Gamma_1 = this%ml%Gamma_1(s, x)
 
-    !         V_2 = this%ml%V_2(s, x)
-    !         As = this%ml%As(s, x)
-    !         U = this%ml%U(s, x)
-    !         c_1 = this%ml%c_1(s, x)
+         V_g = V_2*x**2/Gamma_1
+         x4_V = x**2/V_2
 
-    !         Gamma_1 = this%ml%Gamma_1(s, x)
+         f_th(k) = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2))
+         f_re(k) = 2._WP*REAL(lag_rho*CONJG(xi_r)*(x/c_1)*(x**2*U/c_1))
+         f_gr(k) = CONJG(eul_rho)*eul_phi*(x**2*U/c_1)
+         f_xi(k) = -ABS(xi_r)**2*(x/c_1)*(x*U*(-V_g-As)/c_1)
 
-    !         V_g = V_2*x**2/Gamma_1
-    !         x4_V = x**2/V_2
+       end associate
 
-    !         W_th = integrate(x, CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)))
+    end do
 
-    !         W_re = integrate(x, 2._WP*REAL(lag_rho*CONJG(xi_r)*(x/c_1)*(x**2*U/c_1)))
+    W_th = integrate(this%x, f_th)
+    W_re = integrate(this%x, f_re)
+    W_gr = integrate(this%x, f_gr)
+    W_xi = integrate(this%x, f_xi)
 
-    !         W_gr = integrate(x, CONJG(eul_rho)*eul_phi*(x**2*U/c_1))
+    omega_int = SQRT(4._WP*PI*(W_th + W_re + W_gr + W_xi)/this%E())
 
-    !         W_xi = integrate(x, -ABS(xi_r)**2*(x/c_1)*(x*U*(-V_g-As)/c_1))
-
-    !         omega_int = SQRT(4._WP*PI*(W_th + W_re + W_gr + W_xi)/this%E())
-
-
-
-            
-
-    !         V_2 = this%V_2(s, this%x(k))
-    !         c_1 = this%c_1(s, this%x(k))
-    !         Gamma_1 = this%Gamma_1(s, this%x(k))
-
-    !         f(k) = Gamma_1/(c_1*V_2)
-
-    !    end do
-
-    ! associate (s => this%s, &
-    !      x => this%x)
-
-    !   xi_r = this%xi_r()
-    !   eul_phi = this%eul_phi()
-    !   eul_rho = this%eul_rho()
-    !   lag_rho = this%lag_rho()
-    !   lag_P = this%lag_P()
-
-    !   V_2 = this%ml%V_2(s, x)
-    !   As = this%ml%As(s, x)
-    !   U = this%ml%U(s, x)
-    !   c_1 = this%ml%c_1(s, x)
-
-    !   Gamma_1 = this%ml%Gamma_1(s, x)
-
-    !   V_g = V_2*x**2/Gamma_1
-    !   x4_V = x**2/V_2
-
-    !   W_th = integrate(x, CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)))
-
-    !   W_re = integrate(x, 2._WP*REAL(lag_rho*CONJG(xi_r)*(x/c_1)*(x**2*U/c_1)))
-
-    !   W_gr = integrate(x, CONJG(eul_rho)*eul_phi*(x**2*U/c_1))
-
-    !   W_xi = integrate(x, -ABS(xi_r)**2*(x/c_1)*(x*U*(-V_g-As)/c_1))
-
-    !   omega_int = SQRT(4._WP*PI*(W_th + W_re + W_gr + W_xi)/this%E())
-
-    ! end associate
-    
     ! Finish
 
     return
