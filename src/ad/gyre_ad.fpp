@@ -221,25 +221,16 @@ contains
 120    format(4(2X,I8),3(2X,E24.16),2X,I6)
     endif
 
-    print *,'Done create mode'
-
     ! Store it
-
-    print *,'Storing mode'
 
     n_md = n_md + 1
 
     if (n_md > d_md) then
        d_md = 2*d_md
-       print *,'Go realloc'
        call reallocate(md, [d_md])
     endif
 
-    print *,'Go assign',n_md,allocated(md)
-    
     md(n_md) = md_new
-
-    print *,'Done storing mode'
 
     ! Write it
 
