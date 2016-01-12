@@ -209,7 +209,9 @@ contains
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    type(mode_t) :: md_new
+    type(sol_t)   :: sl
+    type(mode_t)  :: md_new
+    type(r_ext_t) :: chi
 
     ! Create the sol_t
 
@@ -265,24 +267,29 @@ contains
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    type(mode_t) :: md_new
+    type(sol_t)   :: sl
+    type(mode_t)  :: md_new
+    type(r_ext_t) :: chi
 
-    ! Create the mode_t
+    ! Create the sol_t
 
     select type (bp_nad)
     type is (nad_bep_t)
-       md_new = mode_t(bp_nad, omega)
+       sl = sol_t(bp_nad, omega)
     class default
        $ABORT(Invalid bp_nad class)
     end select
 
-    md_new%n_iter = n_iter
-    md_new%chi = ABS(md_new%discrim)/ABS(discrim_ref)
+    ! Construct the new mode
+
+    md_new = mode_t(ml, sl, md_p(i), os_p_sel(1))
+
+    chi = ABS(sl%discrim)/ABS(discrim_ref)
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 120) md_new%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
-            md_new%omega, real(md_new%chi), md_new%n_iter, md_new%n_k
-120    format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
+            md_new%omega, real(chi), n_iter, md_new%n_k
+120    format(4(2X,I8),3(2X,E24.16),2X,I6)
     endif
 
     ! Store it
