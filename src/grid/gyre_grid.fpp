@@ -147,7 +147,7 @@ contains
 
     select case (gr_p%base_type)
     case ('MODEL')
-       x = ml%x_s(s)
+       x = ml%x_base(s)
     case ('UNIFORM')
        w = uni_weights(gr_p%n_base)
        x = (1._WP-w)*ml%x_i(s) + w*ml%x_o(s)
