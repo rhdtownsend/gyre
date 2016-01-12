@@ -28,13 +28,14 @@ module gyre_rad_bep
   use gyre_grid
   use gyre_grid_par
   use gyre_model
-  use gyre_mode
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
   use gyre_rad_bound
   use gyre_rad_diff
+  use gyre_rad_eqns
   use gyre_rad_vars
+  use gyre_sol
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -46,12 +47,13 @@ module gyre_rad_bep
   ! Derived-type definitions
 
   type, extends (r_bep_t) :: rad_bep_t
-     class(model_t), pointer :: ml => null()
-     type(mode_par_t)        :: md_p
-     type(osc_par_t)         :: os_p
-     type(rad_vars_t)        :: vr
-     integer, allocatable    :: s(:)
-     real(WP), allocatable   :: x(:)
+     class(model_t), pointer       :: ml => null()
+     type(rad_eqns_t), allocatable :: eq(:)
+     type(mode_par_t)              :: md_p
+     type(osc_par_t)               :: os_p
+     type(rad_vars_t)              :: vr
+     integer, allocatable          :: s(:)
+     real(WP), allocatable         :: x(:)
   end type rad_bep_t
 
   ! Interfaces
@@ -60,16 +62,16 @@ module gyre_rad_bep
      module procedure rad_bep_t_
   end interface rad_bep_t
 
-  interface mode_t
-     module procedure mode_t_
-  end interface mode_t
+  interface sol_t
+     module procedure sol_t_
+  end interface sol_t
 
   ! Access specifiers
 
   private
 
   public :: rad_bep_t
-  public :: mode_t
+  public :: sol_t
 
   ! Procedures
 
@@ -130,6 +132,12 @@ contains
 
     bp%ml => ml
 
+    allocate(bp%eq(n_k))
+
+    do k = 1, n_k
+       bp%eq(k) = rad_eqns_t(ml, s(k), md_p, os_p)
+    end do
+
     bp%vr = rad_vars_t(ml, md_p, os_p)
 
     bp%s = s
@@ -146,60 +154,83 @@ contains
 
   !****
 
-  function mode_t_ (bp, omega) result (md)
+  function sol_t_ (bp, omega) result (sl)
 
     class(rad_bep_t), intent(inout) :: bp
     real(WP), intent(in)            :: omega
-    type(mode_t)                    :: md
+    type(sol_t)                     :: sl
 
     real(WP)      :: y(2,bp%n_k)
     type(r_ext_t) :: discrim
     integer       :: k
-    complex(WP)   :: y_c(6,bp%n_k)
-    complex(WP)   :: y_4_x(bp%n_k)
-    complex(WP)   :: eul_phi(bp%n_k)
+    real(WP)      :: xA(2,2)
+    real(WP)      :: dy_dx(2,bp%n_k)
+    real(WP)      :: H(2,2)
+    real(WP)      :: dH(2,2)
+    complex(WP)   :: y_c(2,bp%n_k)
+    complex(WP)   :: dy_c_dx(2,bp%n_k)
+    integer       :: i
 
-    ! Construct a mode_t from the ad_bep_t
-
-    ! Solve the BEP
+    ! Calculate the solution vector y
 
     call bp%solve(omega, y, discrim)
 
-    ! Calculate the canonical 6-variable solution
+    ! Calculate its derivatives
 
-    !$OMP PARALLEL DO 
+    !$OMP PARALLEL DO PRIVATE (xA)
     do k = 1, bp%n_k
-       y_c(1:2,k) = MATMUL(bp%vr%H(bp%s(k), bp%x(k), omega), y(:,k))
-       y_c(4,k) = -y_c(1,k)*bp%ml%U(bp%s(k), bp%x(k))
-       y_c(5:6,k) = 0._WP
+
+       associate (x => bp%x(k))
+
+         xA = bp%eq(k)%xA(x, omega)
+
+         if (x /= 0._WP) then
+            dy_dx(:,k) = MATMUL(xA, y(:,k))/x
+         else
+            dy_dx(:,k) = 0._WP
+         endif
+
+       end associate
+
     end do
 
-    ! Reconstruct the potential perturbation by integrating the
-    ! gravity
+    ! Convert to canonical form (needs to be fixed to calculate y_2 correctly)
 
-    where (bp%x /= 0._WP)
-       y_4_x = y_c(4,:)/bp%x
-    elsewhere
-       y_4_x = 0._WP
-    end where
+    !$OMP PARALLEL DO PRIVATE (H, dH)
+    do k = 1, bp%n_k
 
-    eul_phi = integral(bp%x, y_4_x/bp%ml%c_1(bp%s, bp%x))
+       associate (s => bp%s(k), x => bp%x(k))
 
-    ! Set y_c(3), and correct y_c(2)
+         H = bp%vr%H(s, x, omega)
+         dH = bp%vr%dH(s, x, omega)
 
-    y_c(3,:) = bp%ml%c_1(bp%s, bp%x)*(eul_phi - eul_phi(bp%n_k))
-    y_c(2,:) = y_c(2,:) + y_c(3,:)
+         y_c(:,k) = MATMUL(H, y(:,k))
 
-    ! Construct the mode_t
+         if (x /= 0._WP) then
+            dy_c_dx(:,k) = MATMUL(dH/x + H, y(:,k))
+         else
+            dy_c_dx(:,k) = 0._WP
+         endif
 
-    md = mode_t(bp%ml, bp%s, bp%x, y_c, CMPLX(omega, KIND=WP), bp%n_k, bp%md_p, bp%os_p)
+       end associate
 
-    md%discrim = c_ext_t(discrim)
+    end do
+
+    ! Construct the sol_t
+
+    sl = sol_t(bp%s, bp%x, CMPLX(omega, KIND=WP), c_ext_t(discrim))
+
+    do i = 1, 2
+       call sl%set_y(i, y_c(i,:), dy_c_dx(i,:))
+    end do
+
+    call sl%set_y(5, SPREAD(CMPLX(0._WP, KIND=WP), 1, bp%n_k), &
+                     SPREAD(CMPLX(0._WP, KIND=WP), 1, bp%n_k))
 
     ! Finish
 
     return
 
-  end function mode_t_
+  end function sol_t_
 
 end module gyre_rad_bep
