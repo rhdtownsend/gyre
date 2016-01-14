@@ -602,7 +602,7 @@ contains
           c_1 = this%c_1(s, this%x(k))
 
           if (this%x(k) /= 0._WP) then
-             f(k) = MAX(As/c_1, 0._WP)/this%x(k)
+             f(k) = SQRT(MAX(As/c_1, 0._WP))/this%x(k)
           else
              f(k) = 0._WP
           end if
