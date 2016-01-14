@@ -40,7 +40,7 @@ module gyre_evol_model
 
   $define $SET_DECL $sub
     $local $NAME $1
-    procedure, public :: set_${NAME} => set_${NAME}_
+    procedure, public :: set_${NAME}
   $endsub
 
   $define $PROC_DECL $sub
@@ -60,6 +60,7 @@ module gyre_evol_model
      real(WP), public              :: L_star
      integer                       :: n_k
      logical                       :: add_center
+     logical                       :: repair_As
    contains
      private
      $SET_DECL(V_2)
@@ -185,6 +186,8 @@ contains
        ml%es(s) = evol_seg_t(ml_p)
     end do seg_loop
 
+    ml%repair_As = ml_p%repair_As
+
     ml%M_star = M_star
     ml%R_star = R_star
     ml%L_star = L_star
@@ -202,7 +205,7 @@ contains
   $local $NAME $1
   $local $F_C $2
 
-  subroutine set_${NAME}_ (this, f)
+  subroutine set_${NAME} (this, f)
 
     class(evol_model_t), intent(inout) :: this
     real(WP), intent(in)               :: f(:)
@@ -222,10 +225,11 @@ contains
 
     seg_loop : do s = 1, this%n_s
 
-       associate (k_i => this%k_i(s), &
+       associate (x => this%x, &
+                  k_i => this%k_i(s), &
                   k_o => this%k_o(s))
        
-         call this%es(s)%set_${NAME}(this%x(k_i:k_o), f_(k_i:k_o))
+         call this%es(s)%set_${NAME}(x(k_i:k_o), f_(k_i:k_o))
 
        end associate
 
@@ -258,12 +262,11 @@ contains
 
     end function f_c_
 
-  end subroutine set_${NAME}_
+  end subroutine set_${NAME}
 
   $endsub
 
   $SET(V_2,f_c_())
-  $SET(As,0._WP)
   $SET(U,3._WP)
   $SET(c_1,f_c_())
   $SET(Gamma_1,f_c_())
@@ -279,6 +282,58 @@ contains
   $SET(kappa_ad,f_c_())
   $SET(kappa_S,f_c_())
   $SET(Omega_rot,f_c_())
+
+  !****
+
+  subroutine set_As (this, f)
+
+    class(evol_model_t), intent(inout) :: this
+    real(WP), intent(in)               :: f(:)
+
+    real(WP), allocatable :: f_(:)
+    integer               :: s
+
+    ! Set the data for As
+
+    if (this%add_center) then
+       f_ = [0._WP,f]
+    else
+       f_ = f
+    endif
+
+    $CHECK_BOUNDS(SIZE(f_),this%n_k)
+
+    seg_loop : do s = 1, this%n_s
+
+       associate (x => this%x, &
+                  k_i => this%k_i(s), &
+                  k_o => this%k_o(s))
+
+         if (this%repair_As) then
+
+            ! Repair the segment boundaries
+
+            if (s > 1 .AND. k_i + 2 <= k_o) then
+               f_(k_i) = f(k_i+1) + (x(k_i) - x(k_i+1))*(f(k_i+2) - f(k_i+1))/(x(k_i+2) - x(k_i+1))
+            endif
+               
+            if (s < this%n_s .AND. k_o - 2 >= k_i) then
+               f_(k_o) = f(k_o-1) + (x(k_o) - x(k_o-1))*(f(k_o-1) - f(k_o-2))/(x(k_o-1) - x(k_o-2))
+            endif
+
+         endif
+               
+         call this%es(s)%set_As(x(k_i:k_o), f_(k_i:k_o))
+
+       end associate
+
+    end do seg_loop
+
+    ! Finish
+
+    return
+
+  end subroutine set_As
 
   !****
 
