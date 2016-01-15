@@ -147,10 +147,10 @@ contains
           w = uni_weights(gr_p%n_base)
           x_s = (1._WP-w)*ml%x_i(s_) + w*ml%x_o(s_)
        case ('GEOM')
-          w = geo_weights(gr_p%n_base, gr_p%delta_base)
+          w = geo_weights(gr_p%n_base, gr_p%s_base)
           x_s = (1._WP-w)*ml%x_i(s_) + w*ml%x_o(s_)
        case ('LOG')
-          w = log_weights(gr_p%n_base, gr_p%delta_base)
+          w = log_weights(gr_p%n_base, gr_p%s_base)
           x_s = (1._WP-w)*ml%x_i(s_) + w*ml%x_o(s_)
        case default
           $ABORT(Invalid base_type)

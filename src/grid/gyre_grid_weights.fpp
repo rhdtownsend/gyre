@@ -31,7 +31,7 @@ module gyre_grid_weights
   ! Derived-type definitions (used internally for root-finding)
 
   type, extends (func_t) :: geom_func_t
-     real(WP) :: delta
+     real(WP) :: s
      integer  :: n
    contains
      procedure :: eval_c_ => eval_geom_func_
@@ -72,12 +72,11 @@ contains
 
   !****
 
-  function geo_weights (n, delta) result (w)
+  function geo_weights (n, s) result (w)
 
     integer, intent(in)   :: n
-    real(WP), intent(in)  :: delta
+    real(WP), intent(in)  :: s
     real(WP)              :: w(n)
-
 
     integer           :: m
     real(WP)          :: g_a
@@ -88,7 +87,7 @@ contains
     integer           :: k
 
     ! Create an n-point array of weights with geometric spacing in
-    ! each half of the [0,1] interval. The parameter delta controls
+    ! each half of the [0,1] interval. The parameter s controls
     ! the ratio between the boundary cell size and the average cell
     ! size 1/(n-1)
 
@@ -102,17 +101,17 @@ contains
        m = n/2-1
 
        gf%n = n
-       gf%delta = delta
+       gf%s = s
 
        g_a = EPSILON(0._WP)
-       g_b = (delta*(n-1)-2*m-1)/m
+       g_b = (s*(n-1)-2*m-1)/m
 
        g = gf%root(g_a, g_b, 0._WP)
 
        ! Set up weights for the inner part of the interval
 
        w(1) = 0._WP
-       dw = 1._WP/(delta*(n-1))
+       dw = 1._WP/(s*(n-1))
        
        even_weight_loop : do k = 1, m
           w(k+1) = w(k) + dw
@@ -133,17 +132,17 @@ contains
        m = (n-1)/2
 
        gf%n = n
-       gf%delta = delta
+       gf%s = s
 
        g_a = EPSILON(0._WP)
-       g_b = (delta*(n-1)-2*m)/(m*(m-1))
+       g_b = (s*(n-1)-2*m)/(m*(m-1))
 
        g = gf%root(g_a, g_b, 0._WP)
 
        ! Set up the inner part of the interval
 
        w(1) = 0._WP
-       dw = 1._WP/(delta*(n-1))
+       dw = 1._WP/(s*(n-1))
        
        odd_weight_loop : do k = 1, m-1
           w(k+1) = w(k) + dw
@@ -186,7 +185,7 @@ contains
         if (1._WP+g > HUGE(0._WP)**(1._WP/m)) then
            f_z = - (2._WP + g)
         else
-           f_z = (2._WP + this%delta*(this%n-1)*g)/(1._WP + g)**m - (2._WP + g)
+           f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - (2._WP + g)
         endif
 
      else
@@ -196,7 +195,7 @@ contains
         if(1._WP+g > HUGE(0._WP)**(1._WP/m)) then
            f_z = -2._WP
         else
-           f_z = (2._WP + this%delta*(this%n-1)*g)/(1._WP + g)**m - 2._WP
+           f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - 2._WP
         endif
         
      endif
@@ -209,23 +208,23 @@ contains
 
   !****
 
-  function log_weights (n, delta) result (w)
+  function log_weights (n, s) result (w)
 
     integer, intent(in)  :: n
-    real(WP), intent(in) :: delta
+    real(WP), intent(in) :: s
     real(WP)             :: w(n)
 
     real(WP) :: dw_1
     integer  :: k
-    real(WP) :: s
+    real(WP) :: v
     real(WP) :: t
 
     ! Create an n-point array of weights with geometric spacing in
-    ! each half of the [0,1] interval. The parameter delta controls
+    ! each half of the [0,1] interval. The parameter s controls
     ! the ratio between the boundary cell size and the average cell
     ! size 1/(n-1)
 
-    dw_1 = 1._WP/(delta*(n-1))
+    dw_1 = 1._WP/(s*(n-1))
 
     if (MOD(n, 2) == 0) then
 
@@ -237,8 +236,8 @@ contains
 
        even_weight_loop : do k = 2, n/2
 
-          s = (k-1.5_WP)/(n/2-1.5_WP)
-          t = (1._WP-s)*LOG(0.5_WP) + s*LOG(dw_1)
+          v = (k-1.5_WP)/(n/2-1.5_WP)
+          t = (1._WP-v)*LOG(0.5_WP) + v*LOG(dw_1)
 
           w(n/2-k+2) = EXP(t)
 
@@ -258,8 +257,8 @@ contains
 
        odd_weight_loop : do k = 2, (n-1)/2
 
-          s = (k-1._WP)/((n-1)/2-1._WP)
-          t = (1._WP-s)*LOG(0.5_WP) + s*LOG(dw_1)
+          v = (k-1._WP)/((n-1)/2-1._WP)
+          t = (1._WP-v)*LOG(0.5_WP) + v*LOG(dw_1)
 
           w((n-1)/2-k+2) = EXP(t)
 
