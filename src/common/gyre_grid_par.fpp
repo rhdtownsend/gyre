@@ -37,7 +37,7 @@ module gyre_grid_par
      real(WP)                :: alpha_exp
      real(WP)                :: alpha_thm
      real(WP)                :: alpha_str
-     real(WP)                :: delta_base
+     real(WP)                :: s_base
      integer                 :: n_base
      integer                 :: n_center
      character(FILENAME_LEN) :: file
@@ -87,7 +87,7 @@ contains
     real(WP)                       :: alpha_exp
     real(WP)                       :: alpha_thm
     real(WP)                       :: alpha_str
-    real(WP)                       :: delta_base
+    real(WP)                       :: s_base
     integer                        :: n_base
     integer                        :: n_center
     character(LEN(gr_p%file))      :: file
@@ -95,7 +95,7 @@ contains
     character(LEN(gr_p%tag_list))  :: tag_list
 
     namelist /grid/ alpha_osc, alpha_exp, alpha_thm, alpha_str, &
-                    delta_base, n_base, n_center, file, base_type, tag_list
+                    s_base, n_base, n_center, file, base_type, tag_list
 
     ! Count the number of grid namelists
 
@@ -123,9 +123,9 @@ contains
        alpha_thm = 0._WP
        alpha_str = 0._WP
 
-       delta_base = 0._WP
-
+       s_base = 0._WP
        n_base = 0
+
        n_center = 0
 
        file = ''
@@ -141,7 +141,7 @@ contains
                             alpha_exp=alpha_exp, &
                             alpha_thm=alpha_thm, &
                             alpha_str=alpha_str, &
-                            delta_base=delta_base, &
+                            s_base=s_base, &
                             n_base=n_base, &
                             n_center=n_center, &
                             file=file, &
