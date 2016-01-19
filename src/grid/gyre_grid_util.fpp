@@ -44,7 +44,7 @@ module gyre_grid_util
      real(WP)                    :: omega
      integer                     :: s
    contains
-     procedure :: eval_c_ => eval_gamma_func_
+     procedure :: eval_c_
   end type gamma_func_t
 
   ! Access specifiers
@@ -68,11 +68,12 @@ contains
     integer, intent(out)                :: k_turn
     real(WP), intent(out)               :: x_turn
 
-    integer            :: n_k
-    type(gamma_func_t) :: gf
-    real(WP)           :: gf_a
-    real(WP)           :: gf_b
-    integer            :: k
+    integer                     :: n_k
+    class(r_rot_t), allocatable :: rt
+    real(WP)                    :: gamma_a
+    real(WP)                    :: gamma_b
+    integer                     :: k
+    type(gamma_func_t)          :: gf
 
     ! Find the cell index and location of the inner turning point at
     ! frequency omega
@@ -82,32 +83,38 @@ contains
     k_turn = n_k
     x_turn = HUGE(0._WP)
 
-    gf%ml => ml
-    allocate(gf%rt, SOURCE=r_rot_t(ml, md_p, os_p))
-    gf%omega = omega
+    allocate(rt, SOURCE=r_rot_t(ml, md_p, os_p))
 
-    gf%s = s(1)
-    gf_b = gf%eval(x(1))
+    gamma_b = gamma_(ml, rt, s(1), x(1), omega)
 
     turn_loop : do k = 1, n_k-1
 
-       gf_a = gf_b
+       gamma_a = gamma_b
+       gamma_b = gamma_(ml, rt, s(k+1), x(k+1), omega)
 
-       gf%s = s(k+1)
-       gf_b = gf%eval(x(k+1))
-       
-       if (gf_a > 0._WP .AND. gf_b <= 0._WP) then
+       if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
 
           k_turn = k
 
           if (s(k) == s(k+1)) then
 
-             if (ABS(gf_a) < EPSILON(0._WP)*ABS(gf_b)) then
+             if (ABS(gamma_a) < EPSILON(0._WP)*ABS(gamma_b)) then
+
                 x_turn = x(k_turn)
-             elseif (ABS(gf_b) < EPSILON(0._WP)*ABS(gf_a)) then
+
+             elseif (ABS(gamma_b) < EPSILON(0._WP)*ABS(gamma_a)) then
+
                 x_turn = x(k_turn+1)
+
              else
+
+                gf%ml => ml
+                allocate(gf%rt, SOURCE=rt)
+                gf%s = s(k)
+                gf%omega = omega
+                
                 x_turn = gf%root(x(k), x(k+1), 0._WP)
+
              endif
 
           else
@@ -130,11 +137,14 @@ contains
 
   !****
 
-  function eval_gamma_func_ (this, z) result (gamma)
+  function gamma_ (ml, rt, s, x, omega) result (gamma)
 
-    class(gamma_func_t), intent(inout) :: this
-    complex(WP), intent(in)            :: z
-    complex(WP)                        :: gamma
+    class(model_t), pointer, intent(in) :: ml
+    class(r_rot_t), intent(in)          :: rt
+    integer, intent(in)                 :: s
+    real(WP), intent(in)                :: x
+    real(WP), intent(in)                :: omega
+    real(WP)                            :: gamma
 
     real(WP) :: V_g
     real(WP) :: As
@@ -145,30 +155,53 @@ contains
     real(WP) :: g_2
     real(WP) :: g_0
 
-    ! Calculate the propagation discriminant
+    ! Calculate the propagation discriminant gamma (> 0 : propagation,
+    ! < 0 : evanescence)
 
-    associate (s => this%s, &
-               x => REAL(z))
+    U = ml%U(s, x)
 
-      V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
-      As = this%ml%As(s, x)
-      U = this%ml%U(s, x)
-      c_1 = this%ml%c_1(s, x)
+    if (U > 0._WP) then
 
-      lambda = this%rt%lambda(s, x, this%omega)
+       V_g = ml%V_2(s, x)*x**2/ml%Gamma_1(s, x)
+       As = ml%As(s, x)
+       c_1 = ml%c_1(s, x)
 
-      g_4 = -4._WP*V_g*c_1
-      g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
-      g_0 = -4._WP*lambda*As/c_1
+       lambda = rt%lambda(s, x, omega)
 
-      gamma = (g_4*this%omega**4 + g_2*this%omega**2 + g_0)/this%omega**2
+       g_4 = -4._WP*V_g*c_1
+       g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
+       g_0 = -4._WP*lambda*As/c_1
 
-    end associate
+       gamma = (g_4*omega**4 + g_2*omega**2 + g_0)/omega**2
+
+    else
+
+       gamma = HUGE(0._WP)
+
+    endif
 
     ! Finish
 
     return
 
-  end function eval_gamma_func_
+  end function gamma_
+
+  !****
+
+  function eval_c_ (this, z) result (gamma)
+
+    class(gamma_func_t), intent(inout) :: this
+    complex(WP), intent(in)            :: z
+    complex(WP)                        :: gamma
+
+    ! Evaluate the gamma_func_t
+
+    gamma = gamma_(this%ml, this%rt, this%s, REAL(z), this%omega)
+
+    ! Finish
+
+    return
+
+  end function eval_c_
 
 end module gyre_grid_util
