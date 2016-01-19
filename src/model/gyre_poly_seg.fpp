@@ -82,9 +82,9 @@ module gyre_poly_seg
 
 contains
 
-  function poly_seg_t_ (xi, Theta, dTheta, mu_i, mu_s, B, xi_s, n_poly, Gamma_1) result (ps)
+  function poly_seg_t_ (x, Theta, dTheta, mu_i, mu_s, B, xi_s, n_poly, Gamma_1) result (ps)
 
-    real(WP), intent(in) :: xi(:)
+    real(WP), intent(in) :: x(:)
     real(WP), intent(in) :: Theta(:)
     real(WP), intent(in) :: dTheta(:)
     real(WP), intent(in) :: mu_i
@@ -95,12 +95,15 @@ contains
     real(WP), intent(in) :: Gamma_1
     type(poly_seg_t)     :: ps
 
-    real(WP) :: d2Theta(SIZE(xi))
+    real(WP) :: xi(SIZE(x))
+    real(WP) :: d2Theta(SIZE(x))
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
     $CHECK_BOUNDS(SIZE(dTheta),SIZE(xi))
 
     ! Construct the poly_seg_t
+
+    xi = x*xi_s
 
     if (n_poly /= 0._WP) then
 
@@ -116,8 +119,8 @@ contains
 
     endif
 
-    ps%sp_Theta = r_spline_t(xi, Theta, dTheta)
-    ps%sp_dTheta = r_spline_t(xi, dTheta, d2Theta)
+    ps%sp_Theta = r_spline_t(x, Theta, dTheta*xi_s)
+    ps%sp_dTheta = r_spline_t(x, dTheta, d2Theta*xi_s)
 
     ps%mu_i = mu_i
     ps%mu_s = mu_s
@@ -150,7 +153,7 @@ contains
     ! Calculate the mass coordinate mu
 
     xi = x*this%xi_s
-    v = xi**2*this%sp_dTheta%f(xi)
+    v = xi**2*this%sp_dTheta%f(x)
 
     mu = this%mu_i - (v - this%v_i)/this%B
 
@@ -178,8 +181,8 @@ contains
 
        xi = x*this%xi_s
 
-       Theta = this%sp_Theta%f(xi)
-       dTheta = this%sp_dTheta%f(xi)
+       Theta = this%sp_Theta%f(x)
+       dTheta = this%sp_dTheta%f(x)
 
        if (Theta == 0._WP) Theta = TINY(0._WP)
 
@@ -233,7 +236,7 @@ contains
 
        xi = x*this%xi_s
 
-       Theta = this%sp_Theta%f(xi)
+       Theta = this%sp_Theta%f(x)
 
        U = xi**3*Theta**this%n_poly/this%mu(x)
 
@@ -267,8 +270,8 @@ contains
 
        xi = x*this%xi_s
 
-       Theta = this%sp_Theta%f(xi)
-       dTheta = this%sp_dTheta%f(xi)
+       Theta = this%sp_Theta%f(x)
+       dTheta = this%sp_dTheta%f(x)
        
        if (Theta == 0._WP) Theta = TINY(0._WP)
 

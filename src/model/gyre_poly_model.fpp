@@ -133,7 +133,7 @@ contains
        associate (k_i => ml%k_i(s), &
                   k_o => ml%k_o(s))
 
-         ml%ps(s) = poly_seg_t(xi(k_i:k_o), Theta(k_i:k_o), dTheta(k_i:k_o), &
+         ml%ps(s) = poly_seg_t(ml%x(k_i:k_o), Theta(k_i:k_o), dTheta(k_i:k_o), &
                                mu(s), mu(ml%n_s+1), B(s), xi(ml%n_k), n_poly(s), Gamma_1)
 
        end associate
