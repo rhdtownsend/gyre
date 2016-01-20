@@ -266,7 +266,11 @@ contains
     ! Calculate the right-hand side vector
 
     dy_dx(1) = y(2)
-    dy_dx(2) = -B_m*ABS(y(1))**n_poly_m - 2._WP*y(2)/x
+    if (n_poly_m /= 0._WP) then
+       dy_dx(2) = -B_m*ABS(y(1))**n_poly_m - 2._WP*y(2)/x
+    else
+       dy_dx(2) = -B_m - 2._WP*y(2)/x
+    endif
 
     ! Finish
 
