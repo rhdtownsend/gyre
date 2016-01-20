@@ -1059,7 +1059,7 @@ contains
       y_4 = this%y(4, s, x)
 
       U = this%ml%U(s, x)
-      c_1 = this%ml%U(s, x)
+      c_1 = this%ml%c_1(s, x)
 
       omega_c = this%rt%omega_c(s, x, this%omega)
 
