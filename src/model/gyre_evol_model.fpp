@@ -421,8 +421,8 @@ contains
 
     ! Evaluate the total pressure CHECK THIS
 
-    P = (G_GRAVITY*this%M_star/(4._WP*PI*this%R_star**4))*&
-        (this%U(s, x)/(this%c_1(s, x)*this%V_2(s, x)))
+    P = (G_GRAVITY*this%M_star**2/(4._WP*PI*this%R_star**4))*&
+        (this%U(s, x)/(this%c_1(s, x)**2*this%V_2(s, x)))
 
     ! Finish
 
@@ -444,7 +444,7 @@ contains
 
     ! Evaluate the density
 
-    rho = (this%M_star/(4._WP*PI*this%R_star)**3)*(this%U(s, x)/this%c_1(s, x))
+    rho = (this%M_star/(4._WP*PI*this%R_star**3))*(this%U(s, x)/this%c_1(s, x))
 
     ! Finish
 
