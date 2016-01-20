@@ -38,6 +38,7 @@ module gyre_rad_vars
 
   ! Parameter definitions
 
+  integer, parameter :: CANON_SET = 0
   integer, parameter :: DZIEM_SET = 1
   integer, parameter :: JCD_SET = 2
   integer, parameter :: MIX_SET = 3
@@ -93,6 +94,8 @@ contains
     allocate(vr%rt, SOURCE=r_rot_t(ml, md_p, os_p))
 
     select case (os_p%variables_set)
+    case ('')
+       vr%set = CANON_SET
     case ('DZIEM')
        vr%set = DZIEM_SET
     case ('JCD')
@@ -125,6 +128,8 @@ contains
     ! the canonical form
 
     select case (this%set)
+    case (CANON_SET)
+       G = identity_matrix(2)
     case (DZIEM_SET)
        G = identity_matrix(2)
     case (JCD_SET)
@@ -228,6 +233,8 @@ contains
     ! canonical form
 
     select case (this%set)
+    case (CANON_SET)
+       H = identity_matrix(2)
     case (DZIEM_SET)
        H = identity_matrix(2)
     case (JCD_SET)
@@ -328,6 +335,8 @@ contains
     ! Evaluate the derivative x dH/dx of the transformation matrix H
 
     select case (this%set)
+    case (CANON_SET)
+       dH = 0._WP
     case (DZIEM_SET)
        dH = 0._WP
     case (JCD_SET)

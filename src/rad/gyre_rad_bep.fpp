@@ -169,6 +169,10 @@ contains
     real(WP)      :: dH(2,2)
     complex(WP)   :: y_c(2,bp%n_k)
     complex(WP)   :: dy_c_dx(2,bp%n_k)
+    complex(WP)   :: y_g(bp%n_k)
+    complex(WP)   :: dy_g_dx(bp%n_k)
+    real(WP)      :: U
+    real(WP)      :: dU
     integer       :: i
 
     ! Calculate the solution vector y
@@ -194,7 +198,7 @@ contains
 
     end do
 
-    ! Convert to canonical form (needs to be fixed to calculate y_2 correctly)
+    ! Convert to canonical form
 
     !$OMP PARALLEL DO PRIVATE (H, dH)
     do k = 1, bp%n_k
@@ -216,6 +220,27 @@ contains
 
     end do
 
+    ! Calculate the gravity perturbation y_g and its derivative
+
+    !$OMP PARALLEL DO PRIVATE (U, dU)
+    do k = 1, bp%n_k
+
+       associate (s => bp%s(k), x => bp%x(k))
+
+         U = bp%ml%U(s, x)
+         dU = bp%ml%dU(s, x)
+
+         y_g(k) = -U*y_c(1,k)
+
+         if (x /= 0._WP) then
+            dy_g_dx(k) = -U*dy_c_dx(1,k) - U*dU*y_c(1,k)/x
+         else
+            dy_g_dx(k) = 0._WP
+         endif
+
+       end associate
+    end do
+
     ! Construct the sol_t
 
     sl = sol_t(bp%s, bp%x, CMPLX(omega, KIND=WP), c_ext_t(discrim))
@@ -223,6 +248,8 @@ contains
     do i = 1, 2
        call sl%set_y(i, y_c(i,:), dy_c_dx(i,:))
     end do
+
+    call sl%set_y(4, y_g, dy_g_dx)
 
     call sl%set_y(5, SPREAD(CMPLX(0._WP, KIND=WP), 1, bp%n_k), &
                      SPREAD(CMPLX(0._WP, KIND=WP), 1, bp%n_k))
