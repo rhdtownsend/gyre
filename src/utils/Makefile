@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=build_poly #build_poly_disc
+TARGETS=build_poly poly_to_fgong
 
 # Flags
 
