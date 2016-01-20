@@ -45,10 +45,10 @@ module gyre_util
   ! Interfaces
 
   interface select_par
-     module procedure select_par_op_
-     module procedure select_par_np_
-     module procedure select_par_gp_
-     module procedure select_par_sp_
+     module procedure select_par_os_
+     module procedure select_par_nm_
+     module procedure select_par_gr_
+     module procedure select_par_sc_
   end interface select_par
 
   interface sprint
@@ -241,7 +241,7 @@ contains
     ! If necessary, shrink par_sel to contain only the last element
 
     if(last_ .AND. n_par_sel > 1) then
-       par_sel = par_sel(1:1)
+       par_sel = par_sel(n_par_sel:n_par_sel)
     endif
 
     ! Finish
@@ -252,10 +252,10 @@ contains
 
   $endsub
 
-  $SELECT_PAR(gp,grid_par_t)
-  $SELECT_PAR(np,num_par_t)
-  $SELECT_PAR(op,osc_par_t)
-  $SELECT_PAR(sp,scan_par_t)
+  $SELECT_PAR(gr,grid_par_t)
+  $SELECT_PAR(nm,num_par_t)
+  $SELECT_PAR(os,osc_par_t)
+  $SELECT_PAR(sc,scan_par_t)
 
 !****
 
