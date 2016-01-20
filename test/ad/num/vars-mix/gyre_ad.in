@@ -11,6 +11,11 @@
 /
 
 &mode
+	l = 0
+	tag = 'l=0r'
+/
+
+&mode
 	l = 1
 	tag = 'l=1'
 /
@@ -27,6 +32,13 @@
 
 &osc
 	variables_set = 'MIX'
+	reduce_order = .FALSE. 
+/
+
+&osc
+	variables_set = 'MIX'
+	reduce_order = .TRUE.
+	tag_list = 'l=0r'
 /
 
 &num
@@ -38,7 +50,7 @@
         freq_min = 0.9
         freq_max = 18.7
         n_freq = 30
-        tag_list = 'l=0'
+        tag_list = 'l=0r,l=0'
 /
 
 &scan
