@@ -195,15 +195,15 @@ contains
 
       xA(1,1) = V_g - 1._WP - l_i
       xA(1,2) = lambda/(c_1*omega_c**2) - V_g
-      xA(1,3) = alpha_gr*(V_g)
+      xA(1,3) = alpha_gr*(lambda/(c_1*omega_c**2))
       xA(1,4) = alpha_gr*(0._WP)
       xA(1,5) = delta
       xA(1,6) = 0._WP
 
       xA(2,1) = c_1*omega_c**2 - As
       xA(2,2) = As - U + 3._WP - l_i
-      xA(2,3) = alpha_gr*(-As)
-      xA(2,4) = alpha_gr*(0._WP)
+      xA(2,3) = alpha_gr*(0._WP)
+      xA(2,4) = alpha_gr*(-1._WP)
       xA(2,5) = delta
       xA(2,6) = 0._WP
 
@@ -216,21 +216,21 @@ contains
 
       xA(4,1) = alpha_gr*(U*As)
       xA(4,2) = alpha_gr*(U*V_g)
-      xA(4,3) = alpha_gr*(lambda - U*V_g)
+      xA(4,3) = alpha_gr*(lambda)
       xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
       xA(4,5) = alpha_gr*(-U*delta)
       xA(4,6) = alpha_gr*(0._WP)
 
       xA(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif + nabla_ad*dnabla_ad)
       xA(5,2) = V*(lambda/(c_1*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))
-      xA(5,3) = alpha_gr*(V*(c_dif + nabla_ad*dnabla_ad))
+      xA(5,3) = alpha_gr*(V*lambda/(c_1*omega_c**2)*(nabla_ad - nabla))
       xA(5,4) = alpha_gr*(V*nabla_ad)
       xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_i - 2._WP)
       xA(5,6) = -V*nabla/c_rad
 
       xA(6,1) = alpha_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
       xA(6,2) = V*c_eps_ad - lambda*c_rad*(alpha_hf*nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-      xA(6,3) = alpha_gr*(alpha_hf*lambda*nabla_ad/nabla*c_rad - V*c_eps_ad)
+      xA(6,3) = alpha_gr*(lambda*c_rad*(3._WP + dc_rad)/(c_1*omega_c**2))
       xA(6,4) = alpha_gr*(0._WP)
       if (x > 0._WP) then
          xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm

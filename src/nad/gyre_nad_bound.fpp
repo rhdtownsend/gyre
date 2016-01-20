@@ -205,7 +205,7 @@ contains
 
       B_i(1,1) = c_1*omega_c**2
       B_i(1,2) = -l_i
-      B_i(1,3) = alpha_gr*(0._WP)
+      B_i(1,3) = alpha_gr*(-l_i)
       B_i(1,4) = alpha_gr*(0._WP)
       B_i(1,5) = 0._WP
       B_i(1,6) = 0._WP
@@ -379,7 +379,7 @@ contains
 
       B_o(1,1) = 1._WP
       B_o(1,2) = -1._WP
-      B_o(1,3) = alpha_gr*(1._WP)
+      B_o(1,3) = alpha_gr*(0._WP)
       B_o(1,4) = alpha_gr*(0._WP)
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
@@ -393,7 +393,7 @@ contains
 
       B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
       B_o(3,2) = 4._WP*nabla_ad*V
-      B_o(3,3) = alpha_gr*(-4._WP*nabla_ad*V)
+      B_o(3,3) = alpha_gr*(0._WP)
       B_o(3,4) = alpha_gr*(0._WP)
       B_o(3,5) = 4._WP
       B_o(3,6) = -1._WP
@@ -458,7 +458,7 @@ contains
 
       B_o(1,1) = 1._WP + (lambda/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
       B_o(1,2) = -1._WP
-      B_o(1,3) = alpha_gr*(1._WP + (lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
+      B_o(1,3) = alpha_gr*((lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
       B_o(1,4) = alpha_gr*(0._WP)
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
@@ -472,7 +472,7 @@ contains
 
       B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
       B_o(3,2) = 4._WP*nabla_ad*V
-      B_o(3,3) = alpha_gr*(-4._WP*nabla_ad*V)
+      B_o(3,3) = alpha_gr*(0._WP)
       B_o(3,4) = alpha_gr*(0._WP)
       B_o(3,5) = 4._WP
       B_o(3,6) = -1._WP
@@ -562,7 +562,7 @@ contains
 
       B_o(1,1) = beta - b_11
       B_o(1,2) = -b_12
-      B_o(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12)
+      B_o(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12)
       B_o(1,4) = 0._WP
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
@@ -576,7 +576,7 @@ contains
     
       B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
       B_o(3,2) = 4._WP*nabla_ad*V
-      B_o(3,3) = alpha_gr*(-4._WP*nabla_ad*V)
+      B_o(3,3) = alpha_gr*(0._WP)
       B_o(3,4) = alpha_gr*(0._WP)
       B_o(3,5) = 4._WP
       B_o(3,6) = -1._WP
@@ -652,7 +652,7 @@ contains
 
       B_o(1,1) = beta - b_11
       B_o(1,2) = -b_12
-      B_o(1,3) = alpha_gr*(b_12 + (lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
+      B_o(1,3) = alpha_gr*((lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
       B_o(1,4) = alpha_gr*(0._WP)
       B_o(1,5) = 0._WP
       B_o(1,6) = 0._WP
@@ -666,7 +666,7 @@ contains
     
       B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
       B_o(3,2) = 4._WP*nabla_ad*V
-      B_o(3,3) = alpha_gr*(-4._WP*nabla_ad*V)
+      B_o(3,3) = alpha_gr*(0._WP)
       B_o(3,4) = alpha_gr*(0._WP)
       B_o(3,5) = 4._WP
       B_o(3,6) = -1._WP

@@ -38,6 +38,7 @@ module gyre_nad_vars
 
   ! Parameter definitions
 
+  integer, parameter :: CANON_SET = 0
   integer, parameter :: DZIEM_SET = 1
   integer, parameter :: JCD_SET = 2
   integer, parameter :: LAGP_SET = 3
@@ -53,9 +54,11 @@ module gyre_nad_vars
    contains
      private
      procedure, public :: G
+     procedure         :: G_dziem_
      procedure         :: G_jcd_
      procedure         :: G_lagp_
      procedure, public :: H
+     procedure         :: H_dziem_
      procedure         :: H_jcd_
      procedure         :: H_lagp_
      procedure, public :: dH
@@ -93,6 +96,8 @@ contains
     allocate(vr%rt, SOURCE=c_rot_t(ml, md_p, os_p))
 
     select case (os_p%variables_set)
+    case ('')
+       vr%set = CANON_SET
     case ('DZIEM')
        vr%set = DZIEM_SET
     case ('JCD')
@@ -125,8 +130,10 @@ contains
     ! the canonical form
 
     select case (this%set)
-    case (DZIEM_SET)
+    case (CANON_SET)
        G = identity_matrix(6)
+    case (DZIEM_SET)
+       G = this%G_dziem_(s, x, omega)
     case (JCD_SET)
        G = this%G_jcd_(s, x, omega)
     case (LAGP_SET)
@@ -140,6 +147,69 @@ contains
     return
 
   end function G
+
+  !****
+
+  function G_dziem_ (this, s, x, omega) result (G)
+
+    class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    complex(WP)                   :: G(6,6)
+
+    ! Evaluate the transformation matrix to convert DZIEM variables
+    ! from the canonical form
+
+    ! Set up the matrix
+
+    G(1,1) = 1._WP
+    G(1,2) = 0._WP
+    G(1,3) = 0._WP
+    G(1,4) = 0._WP
+    G(1,5) = 0._WP
+    G(1,6) = 0._WP
+
+    G(2,1) = 0._WP
+    G(2,2) = 1._WP
+    G(2,3) = 1._WP
+    G(2,4) = 0._WP
+    G(2,5) = 0._WP
+    G(2,6) = 0._WP
+
+    G(3,1) = 0._WP
+    G(3,2) = 0._WP
+    G(3,3) = 1._WP
+    G(3,4) = 0._WP
+    G(3,5) = 0._WP
+    G(3,6) = 0._WP
+
+    G(4,1) = 0._WP
+    G(4,2) = 0._WP
+    G(4,3) = 0._WP
+    G(4,4) = 1._WP
+    G(4,5) = 0._WP
+    G(4,6) = 0._WP
+
+    G(5,1) = 0._WP
+    G(5,2) = 0._WP
+    G(5,3) = 0._WP
+    G(5,4) = 0._WP
+    G(5,5) = 1._WP
+    G(5,6) = 0._WP
+
+    G(6,1) = 0._WP
+    G(6,2) = 0._WP
+    G(6,3) = 0._WP
+    G(6,4) = 0._WP
+    G(6,5) = 0._WP
+    G(6,6) = 1._WP
+
+    ! Finish
+
+    return
+
+  end function G_dziem_
 
   !****
 
@@ -181,7 +251,7 @@ contains
 
        G(2,1) = 0._WP
        G(2,2) = lambda/(c_1*omega_c**2)
-       G(2,3) = 0._WP
+       G(2,3) = lambda/(c_1*omega_c**2)
        G(2,4) = 0._WP
        G(2,5) = 0._WP
        G(2,6) = 0._WP
@@ -225,7 +295,7 @@ contains
 
        G(2,1) = 0._WP
        G(2,2) = 1._WP/(c_1*omega_c**2)
-       G(2,3) = 0._WP
+       G(2,3) = 1._WP/(c_1*omega_c**2)
        G(2,4) = 0._WP
        G(2,5) = 0._WP
        G(2,6) = 0._WP
@@ -296,7 +366,7 @@ contains
 
     G(2,1) = -V_2
     G(2,2) = V_2
-    G(2,3) = -V_2
+    G(2,3) = 0._WP
     G(2,4) = 0._WP
     G(2,5) = 0._WP
     G(2,6) = 0._WP
@@ -349,8 +419,10 @@ contains
     ! canonical form
 
     select case (this%set)
-    case (DZIEM_SET)
+    case (CANON_SET)
        H = identity_matrix(6)
+    case (DZIEM_SET)
+       H = this%H_dziem_(s, x, omega)
     case (JCD_SET)
        H = this%H_jcd_(s, x, omega)
     case (LAGP_SET)
@@ -364,6 +436,69 @@ contains
     return
 
   end function H
+
+  !****
+
+  function H_dziem_ (this, s, x, omega) result (H)
+
+    class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    complex(WP)                   :: H(6,6)
+
+    ! Evaluate the transformation matrix to convert DZIEM variables
+    ! to the canonical form
+
+    ! Set up the matrix
+
+    H(1,1) = 1._WP
+    H(1,2) = 0._WP
+    H(1,3) = 0._WP
+    H(1,4) = 0._WP
+    H(1,5) = 0._WP
+    H(1,6) = 0._WP
+
+    H(2,1) = 0._WP
+    H(2,2) = 1._WP
+    H(2,3) = -1._WP
+    H(2,4) = 0._WP
+    H(2,5) = 0._WP
+    H(2,6) = 0._WP
+
+    H(3,1) = 0._WP
+    H(3,2) = 0._WP
+    H(3,3) = 1._WP
+    H(3,4) = 0._WP
+    H(3,5) = 0._WP
+    H(3,6) = 0._WP
+
+    H(4,1) = 0._WP
+    H(4,2) = 0._WP
+    H(4,3) = 0._WP
+    H(4,4) = 1._WP
+    H(4,5) = 0._WP
+    H(4,6) = 0._WP
+         
+    H(5,1) = 0._WP
+    H(5,2) = 0._WP
+    H(5,3) = 0._WP
+    H(5,4) = 0._WP
+    H(5,5) = 1._WP
+    H(5,6) = 0._WP
+
+    H(6,1) = 0._WP
+    H(6,2) = 0._WP
+    H(6,3) = 0._WP
+    H(6,4) = 0._WP
+    H(6,5) = 0._WP
+    H(6,6) = 1._WP
+    
+    ! Finish
+
+    return
+
+  end function H_dziem_
 
   !****
 
@@ -405,7 +540,7 @@ contains
 
        H(2,1) = 0._WP
        H(2,2) = c_1*omega_c**2/lambda
-       H(2,3) = 0._WP
+       H(2,3) = 1._WP
        H(2,4) = 0._WP
        H(2,5) = 0._WP
        H(2,6) = 0._WP
@@ -449,7 +584,7 @@ contains
 
        H(2,1) = 0._WP
        H(2,2) = c_1*omega_c**2
-       H(2,3) = 0._WP
+       H(2,3) = 1._WP
        H(2,4) = 0._WP
        H(2,5) = 0._WP
        H(2,6) = 0._WP
@@ -520,7 +655,7 @@ contains
 
     H(2,1) = 1._WP
     H(2,2) = 1._WP/V_2
-    H(2,3) = 1._WP
+    H(2,3) = 0._WP
     H(2,4) = 0._WP
     H(2,5) = 0._WP
     H(2,6) = 0._WP
@@ -572,6 +707,8 @@ contains
     ! Evaluate the derivative x dH/dx of the transformation matrix H
 
     select case (this%set)
+    case (CANON_SET)
+       dH = 0._WP
     case (DZIEM_SET)
        dH = 0._WP
     case (JCD_SET)
