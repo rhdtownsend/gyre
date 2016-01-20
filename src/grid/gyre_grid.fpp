@@ -218,7 +218,7 @@ contains
 
        dx_max = x_turn/gr_p%n_center
 
-       cell_loop : do k = 1, MAX(k_turn, n_k-1)
+       cell_loop : do k = 1, MIN(k_turn, n_k-1)
           dn(k) = FLOOR((x(k+1) - x(k))/dx_max)
        end do cell_loop
 
