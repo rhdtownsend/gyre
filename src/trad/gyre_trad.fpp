@@ -89,6 +89,8 @@ contains
        inited_m = .TRUE.
     endif
 
+    $ASSERT(l <= tt_m%l_max,l above maximum extent of trad_table_t)
+
     lambda = tt_m%tf(l,m)%lambda(nu)
 
     ! Finish
@@ -112,6 +114,8 @@ contains
        call init_()
        inited_m = .TRUE.
     endif
+
+    $ASSERT(l <= tt_m%l_max,l above maximum extent of trad_table_t)
 
     lambda = tt_m%tf(l,m)%lambda(nu)
 
