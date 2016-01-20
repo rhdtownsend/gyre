@@ -947,8 +947,8 @@ contains
     complex(WP) :: y_4
     real(WP)    :: J
 
-    ! Evaluate the Takata Y_1 function. This expression is based on
-    ! eqn. 69 of [Tak2006b]
+    ! Evaluate the Takata Y_1 function. This expression is equivalent to
+    ! eqn. 69 of [Tak2006b], divided by x**(2-l)
 
     y_1 = this%y(1, s, x)
     y_3 = this%y(3, s, x)
@@ -977,8 +977,8 @@ contains
     complex(WP) :: y_2
     complex(WP) :: y_3
 
-    ! Evaluate the Takata Y_2 function. This expression is based on
-    ! eqn. 70 of [Tak2006b], divided through by V
+    ! Evaluate the Takata Y_2 function. This expression is equivalent to 
+    ! eqn. 70 of [Tak2006b], divided by V
 
     y_1 = this%y(1, s, x)
     y_2 = this%y(2, s, x)
