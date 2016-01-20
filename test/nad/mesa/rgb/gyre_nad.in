@@ -27,7 +27,7 @@
 /
 
 &num
-	ivp_solver = 'COLLOC_GL4'
+	diff_scheme = 'COLLOC_GL4'
 /
 
 &scan
@@ -38,22 +38,11 @@
 	n_freq = 200,
 /
 
-&shoot_grid
-	op_type = 'CREATE_CLONE'
-/
-
-&shoot_grid
-	op_type = 'RESAMP_DISPERSION'
+&grid
+	base_type = 'MODEL'
+	n_center = 5
 	alpha_osc = 10
 	alpha_exp = 2
-/
-
-&shoot_grid
-	op_type = 'RESAMP_CENTER'
-	n = 5
-/
-
-&recon_grid
 /
 
 &output

@@ -16,7 +16,7 @@
 /
 
 &num
-	ivp_solver = 'COLLOC_GL6'
+	diff_scheme = 'COLLOC_GL6'
 /
 
 &scan
@@ -27,17 +27,10 @@
 	n_freq = 10
 /
 
-&shoot_grid
-	op_type = 'CREATE_CLONE'
-/
-
-&shoot_grid
-	op_type = 'RESAMP_DISPERSION'
+&grid
+	base_type = 'MODEL'
 	alpha_osc = 5.
 	alpha_exp = 1.
-/
-
-&recon_grid
 /
 
 &output

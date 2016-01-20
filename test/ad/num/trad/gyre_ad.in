@@ -4,7 +4,7 @@
 &model
 	model_type = 'HOM'
 	uniform_rot = .TRUE.
-	Omega_uni = 1.0
+	Omega_rot = 1.0
 /
 
 &mode
@@ -27,7 +27,7 @@
 /
 
 &num
-	ivp_solver = 'COLLOC_GL6'
+	diff_scheme = 'COLLOC_GL6'
 /
 
 &scan
@@ -39,13 +39,10 @@
 	n_freq = 20
 /
 
-&shoot_grid
-	op_type = 'CREATE_GEOM'
-	s = 1000.
-	n = 1000
-/
-
-&recon_grid
+&grid
+	base_type = 'GEOM'
+	s_base = 1000.
+	n_base = 1000
 /
 
 &output

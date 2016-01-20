@@ -30,7 +30,7 @@
 /
 
 &num
-	ivp_solver = 'COLLOC_GL6'
+	diff_scheme = 'COLLOC_GL6'
 /
 
 &scan
@@ -65,13 +65,10 @@
         tag_list = 'l=3'
 /
 
-&shoot_grid
-	op_type = 'CREATE_GEOM'
-        n = 1000
-        s = 1000
-/
-
-&recon_grid
+&grid
+	base_type = 'GEOM'
+        n_base = 1000
+        s_base = 1000
 /
 
 &output
