@@ -357,43 +357,45 @@ contains
     complex(WP)               :: xi_h
 
     complex(WP) :: y_2
+    complex(WP) :: y_3
     real(WP)    :: c_1
     complex(WP) :: omega_c
 
     ! Evaluate the horizontal displacement perturbation, in units of
     ! R_star
 
-    associate (l_i => this%l_i)
+    if (this%l /= 0) then
 
-      y_2 = this%y(2, s, x)
+       associate (l_i => this%l_i)
 
-      c_1 = this%ml%c_1(s, x)
+         y_2 = this%y(2, s, x)
+         y_3 = this%y(3, s, x)
 
-      omega_c = this%rt%omega_c(s, x, this%omega)
+         c_1 = this%ml%c_1(s, x)
+
+         omega_c = this%rt%omega_c(s, x, this%omega)
       
-      if (l_i /= 0._WP) then
-
          if (l_i /= 1._WP) then
 
             if (x /= 0._WP) then
-               xi_h = y_2*x**(l_i-1._WP)/(c_1*omega_c**2)
+               xi_h = (y_2+y_3)*x**(l_i-1._WP)/(c_1*omega_c**2)
             else
                xi_h = 0._WP
             end if
 
          else
             
-            xi_h = y_2/(c_1*omega_c**2)
+            xi_h = (y_2+y_3)/(c_1*omega_c**2)
 
          endif
 
-      else
+       end associate
 
-         xi_h = 0._WP
+    else
 
-      end if
+       xi_h = 0._WP
 
-    end associate
+    end if
 
     ! Finish
 
@@ -590,7 +592,6 @@ contains
 
     complex(WP) :: y_1
     complex(WP) :: y_2
-    complex(WP) :: y_3
     real(WP)    :: V_2
 
     ! Evaluate the Lagrangian pressure perturbation, in units of P
@@ -599,21 +600,20 @@ contains
 
       y_1 = this%y(1, s, x)
       y_2 = this%y(2, s, x)
-      y_3 = this%y(3, s, x)
 
       V_2 = this%ml%V_2(s, x)
 
       if (l_i /= 0._WP) then
 
          if (x /= 0._WP) then
-            lag_P = V_2*(y_2 - y_1 - y_3)*x**l_i
+            lag_P = V_2*(y_2 - y_1)*x**l_i
          else
             lag_P = 0._WP
          end if
 
       else
 
-         lag_P = V_2*(y_2 - y_1 - y_3)
+         lag_P = V_2*(y_2 - y_1)
 
       endif
 
@@ -975,16 +975,14 @@ contains
 
     complex(WP) :: y_1
     complex(WP) :: y_2
-    complex(WP) :: y_3
 
     ! Evaluate the Takata Y_2 function. This expression is equivalent to 
     ! eqn. 70 of [Tak2006b], divided by V
 
     y_1 = this%y(1, s, x)
     y_2 = this%y(2, s, x)
-    y_3 = this%y(3, s, x)
 
-    Yt_2 = y_2 - y_1 - y_3
+    Yt_2 = y_2 - y_1
 
     ! Finish
 
@@ -1065,7 +1063,7 @@ contains
 
       if (x /= 0._WP) then
          I_1 = x**(l_i+2._WP)*(c_1*omega_c**2*U*y_1 - U*y_2 + &
-               (U - c_1*omega_c**2 - 2._WP)*y_3 + (c_1*omega_c**2 - 1._WP)*y_4)/c_1**2
+               (c_1*omega_c**2 - 2._WP)*y_3 + (c_1*omega_c**2 - 1._WP)*y_4)/c_1**2
       else
          I_1 = 0._WP
       endif
@@ -1688,7 +1686,7 @@ contains
        ! Other modes
 
        y_1 = REAL(this%y(1, this%s, this%x))
-       y_2 = REAL(this%y(2, this%s, this%x))
+       y_2 = REAL(this%y(2, this%s, this%x) + this%y(3, this%s, this%x))
 
        ! Count winding numbers
 
