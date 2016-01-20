@@ -36,13 +36,13 @@ module gyre_sol
 
   type :: sol_t
      private
-     type(sol_seg_t), allocatable  :: ss(:)
-     integer, allocatable, public  :: s(:)
-     real(WP), allocatable, public :: x(:)
-     complex(WP), public           :: omega
-     type(c_ext_t), public         :: discrim
-     integer, public               :: n_s
-     integer, public               :: n_k
+     type(sol_seg_t), allocatable :: ss(:)
+     integer, allocatable         :: s(:)
+     real(WP), allocatable        :: x(:)
+     complex(WP), public          :: omega
+     type(c_ext_t), public        :: discrim
+     integer                      :: n_s
+     integer                      :: n_k
    contains
      private
      procedure, public :: set_y

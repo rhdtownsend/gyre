@@ -150,10 +150,12 @@ module gyre_mode
 
 contains
 
-  function mode_t_ (ml, sl, md_p, os_p) result (md)
+  function mode_t_ (ml, sl, s, x, md_p, os_p) result (md)
 
     class(model_t), pointer, intent(in) :: ml
     type(sol_t), intent(in)             :: sl
+    integer, intent(in)                 :: s(:)
+    real(WP), intent(in)                :: x(:)
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(mode_t)                        :: md
@@ -178,10 +180,10 @@ contains
     md%md_p = md_p
     md%os_p = os_p
 
-    md%s = sl%s
-    md%x = sl%x
+    md%s = s
+    md%x = x
 
-    md%n_k = sl%n_k
+    md%n_k = SIZE(s)
 
     md%pruned = .FALSE.
 

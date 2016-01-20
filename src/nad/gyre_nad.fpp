@@ -209,24 +209,30 @@ contains
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    type(sol_t)   :: sl
-    type(mode_t)  :: md_new
-    type(r_ext_t) :: chi
+    type(sol_t)           :: sl
+    integer, allocatable  :: s(:)
+    real(WP), allocatable :: x(:)
+    type(mode_t)          :: md_new
+    type(r_ext_t)         :: chi
 
     ! Create the sol_t
 
     select type (bp_ad)
     type is (ad_bep_t)
        sl = sol_t(bp_ad, omega)
+       s = bp_ad%s
+       x = bp_ad%x
     type is (rad_bep_t)
        sl = sol_t(bp_ad, omega)
+       s = bp_ad%s
+       x = bp_ad%x
     class default
        $ABORT(Invalid bp class)
     end select
 
     ! Construct the new mode
 
-    md_new = mode_t(ml, sl, md_p(i), os_p_sel(1))
+    md_new = mode_t(ml, sl, s, x, md_p(i), os_p_sel(1))
 
     if (md_new%n_pg < md_p(i)%n_pg_min .OR. md_new%n_pg > md_p(i)%n_pg_max) return
 
@@ -267,22 +273,26 @@ contains
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    type(sol_t)   :: sl
-    type(mode_t)  :: md_new
-    type(r_ext_t) :: chi
+    type(sol_t)           :: sl
+    integer, allocatable  :: s(:)
+    real(WP), allocatable :: x(:)
+    type(mode_t)          :: md_new
+    type(r_ext_t)         :: chi
 
     ! Create the sol_t
 
     select type (bp_nad)
     type is (nad_bep_t)
        sl = sol_t(bp_nad, omega)
+       s = bp_nad%s
+       x = bp_nad%x
     class default
        $ABORT(Invalid bp_nad class)
     end select
 
     ! Construct the new mode
 
-    md_new = mode_t(ml, sl, md_p(i), os_p_sel(1))
+    md_new = mode_t(ml, sl, s, x, md_p(i), os_p_sel(1))
 
     chi = ABS(sl%discrim)/ABS(discrim_ref)
 

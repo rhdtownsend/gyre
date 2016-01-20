@@ -192,24 +192,30 @@ contains
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    type(sol_t)   :: sl
-    type(mode_t)  :: md_new
-    type(r_ext_t) :: chi
+    type(sol_t)           :: sl
+    integer, allocatable  :: s(:)
+    real(WP), allocatable :: x(:)
+    type(mode_t)          :: md_new
+    type(r_ext_t)         :: chi
 
     ! Construct the sol_t
 
     select type (bp)
     type is (ad_bep_t)
        sl = sol_t(bp, omega)
+       s = bp%s
+       x = bp%x
     type is (rad_bep_t)
        sl = sol_t(bp, omega)
+       s = bp%s
+       x = bp%x
     class default
        $ABORT(Invalid bp class)
     end select
 
     ! Construct the new mode
 
-    md_new = mode_t(ml, sl, md_p(i), os_p_sel(1))
+    md_new = mode_t(ml, sl, s, x, md_p(i), os_p_sel(1))
 
     if (md_new%n_pg < md_p(i)%n_pg_min .OR. md_new%n_pg > md_p(i)%n_pg_max) return
 
