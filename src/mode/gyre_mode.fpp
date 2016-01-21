@@ -28,7 +28,6 @@ module gyre_mode
   use gyre_constants
   use gyre_ext
   use gyre_freq
-  use gyre_grid_util
   use gyre_model
   $if ($MPI)
   use gyre_model_mpi
@@ -1087,31 +1086,67 @@ contains
     real(WP), intent(in)      :: x
     integer                   :: prop_type
 
-    real(WP)    :: V_g
-    real(WP)    :: As
-    real(WP)    :: c_1
-    complex(WP) :: lambda
-    real(WP)    :: omega_c
+    real(WP) :: V_g
+    real(WP) :: As
+    real(WP) :: U
+    real(WP) :: c_1
+    real(WP) :: lambda
+    real(WP) :: omega_c
+    real(WP) :: g_4
+    real(WP) :: g_2
+    real(WP) :: g_0
+    real(WP) :: gamma
 
     ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
-    V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
-    As = this%ml%As(s, x)
-    c_1 = this%ml%c_1(s, x)
+    U = this%ml%U(s, x)
 
-    lambda = this%lambda(s, x)
+    if (U > 0._WP) then
 
-    omega_c = REAL(this%rt%omega_c(s, x, this%omega))
+       ! Calculate the discriminant gamma
 
-    prop_type = MERGE(1, 0, REAL(c_1*omega_c**2) > As) + &
-                MERGE(-1, 0, REAL(lambda/(c_1*omega_c**2)) > V_g)
+       V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
+       As = this%ml%As(s, x)
+       c_1 = this%ml%c_1(s, x)
 
+       lambda = this%lambda(s, x)
+
+       omega_c = REAL(this%rt%omega_c(s, x, this%omega))
+
+       g_4 = -4._WP*V_g*c_1
+       g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
+       g_0 = -4._WP*lambda*As/c_1
+       
+       gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
+
+       ! Use the sign of gamma to set up prop_type
+
+       if (gamma > 0._WP) then
+
+          prop_type = 0
+
+       else
+
+          if (REAL(c_1*omega_c**2) < As) then
+             prop_type = -1
+          else
+             prop_type = 1
+          endif
+
+       endif
+
+    else
+
+       prop_type = 0
+
+    endif
+    
     ! Finish
 
     return
 
   end function prop_type_1_
-  
+
   !****
 
   function y_v_ (this, i, s, x) result (y)
@@ -1621,9 +1656,8 @@ contains
 
     real(WP) :: y_1(this%n_k)
     real(WP) :: y_2(this%n_k)
-    integer  :: k_turn
-    real(WP) :: x_turn
-    integer  :: k
+    integer  :: k_i
+    integer  :: k_o
     integer  :: n_c
     integer  :: n_a
 
@@ -1639,14 +1673,14 @@ contains
        y_1 = REAL(this%y(1, this%s, this%x))
        y_2 = REAL(this%y(2, this%s, this%x))
 
-       mono_loop : do k = 2, this%n_k-1
-          if ((y_1(k) >= y_1(k-1) .AND. y_1(k+1) >= y_1(k)) .OR. &
-              (y_1(k) <= y_1(k-1) .AND. y_1(k+1) <= y_1(k))) exit mono_loop
+       mono_loop : do k_i = 2, this%n_k-1
+          if ((y_1(k_i) >= y_1(k_i-1) .AND. y_1(k_i+1) >= y_1(k_i)) .OR. &
+              (y_1(k_i) <= y_1(k_i-1) .AND. y_1(k_i+1) <= y_1(k_i))) exit mono_loop
        end do mono_loop
 
        ! Count winding numbers
 
-       call count_windings_(y_1(k:), y_2(k:), n_c, n_a)
+       call count_windings_(y_1(k_i:), y_2(k_i:), n_c, n_a)
 
        ! Classify (the additional 1 is for the node at the center)
 
@@ -1664,15 +1698,23 @@ contains
        y_1 = REAL(this%Yt_1(this%s, this%x))
        y_2 = REAL(this%Yt_2(this%s, this%x))
 
-       ! Find the inner turning point (this is to deal with noisy
-       ! near-zero solutions at the origin)
-
-       call find_turn(this%ml, this%s, this%x, REAL(this%omega), this%md_p, this%os_p, k_turn, x_turn)
-
        ! Count winding numbers
 
-!       call count_windings(y_1(i:), y_2(i:), n_c, n_a, this%x)
-       call count_windings_(y_1(k_turn+1:), y_2(k_turn+1:), n_c, n_a)
+       if (y_1(1) == 0._WP) then
+          k_i = 2
+       else
+          k_i = 1
+       endif
+
+       if (y_1(this%n_k) == 0._WP) then
+          k_o = this%n_k-1
+       else
+          k_o = this%n_k
+       endif
+       
+       call count_windings_(y_1(k_i:k_o), y_2(k_i:k_o), n_c, n_a)
+
+       ! Classify
 
        this%n_p = n_a
        this%n_g = n_c
