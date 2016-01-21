@@ -114,7 +114,7 @@ contains
 
     snap_loop : do i = 2, SIZE(x)-1
 
-       if (x(i+1) - x(i) < dx_snap) then
+       if (x(i+1) - x(i) > 0._WP .AND. x(i+1) - x(i) < dx_snap) then
           
           x_snap = 0.5_WP*(x(i+1) + x(i))
           x(i:i+1) = x_snap
