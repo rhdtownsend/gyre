@@ -32,7 +32,7 @@
 
 &scan
 	grid_type = 'LINEAR'
-	freq_min = 0.9
+	freq_min = 0.8
 	freq_max = 11.0
 	freq_frame = 'COROT_O'
 	grid_frame = 'COROT_O'
