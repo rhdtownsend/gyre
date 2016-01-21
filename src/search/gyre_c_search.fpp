@@ -102,8 +102,8 @@ contains
        write(OUTPUT_UNIT, 100) 'Root Solving'
 100    format(A)
 
-       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110    format(4(2X,A8),3(2X,A24),2X,A6)
+       write(OUTPUT_UNIT, 110) 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
+110    format(5(2X,A8),3(2X,A24),2X,A6)
        
     endif
 

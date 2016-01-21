@@ -222,9 +222,9 @@ contains
     chi = ABS(sl%discrim)/ABS(discrim_ref)
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md_new%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
+       write(OUTPUT_UNIT, 120) md_new%l, md_new%m, md_new%n_pg, md_new%n_p, md_new%n_g, &
             md_new%omega, real(chi), n_iter
-120    format(4(2X,I8),3(2X,E24.16),2X,I6)
+120    format(5(2X,I8),3(2X,E24.16),2X,I6)
     endif
 
     ! Store it
