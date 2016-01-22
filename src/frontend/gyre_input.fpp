@@ -49,8 +49,6 @@ contains
 
     character(:), allocatable, intent(out) :: filename
 
-    integer :: status
-
     ! Get command-line arguments
 
     $ASSERT(n_arg() == 1,Invalid number of arguments)
