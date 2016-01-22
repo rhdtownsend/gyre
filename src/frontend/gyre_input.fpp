@@ -72,13 +72,13 @@ contains
     use gyre_poly_model
     use gyre_hom_model
     use gyre_mesa_file
-!    use gyre_osc_file
+    use gyre_osc_file
 !    use gyre_losc_file
     use gyre_fgong_file
     use gyre_famdl_file
     use gyre_amdl_file
     $if ($HDF5)
-!    use gyre_b3_file
+    use gyre_b3_file
 !    use gyre_gsm_file
     use gyre_poly_file
     $endif
@@ -96,7 +96,7 @@ contains
           call read_mesa_model(ml_p, ml)
        case ('B3')
           $if($HDF5) 
-          call read_mesa_model(ml_p, ml)
+          call read_b3_model(ml_p, ml)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
@@ -106,8 +106,8 @@ contains
        !    $else
        !    $ABORT(No HDF5 support, therefore cannot read GSM-format files)
        !    $endif
-       ! case ('OSC')
-       !    call read_osc_model(file, deriv_type, data_format, add_center, ec, x=x_bc)
+       case ('OSC')
+          call read_osc_model(ml_p, ml)
        ! case ('LOSC')
        !    call read_losc_model(file, deriv_type, add_center, ec, x=x_bc)
        case ('FGONG')
