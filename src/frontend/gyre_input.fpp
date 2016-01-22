@@ -94,12 +94,12 @@ contains
        select case (ml_p%file_format)
        case ('MESA')
           call read_mesa_model(ml_p, ml)
-       ! case('B3')
-       !    $if($HDF5)
-       !    call read_b3_model(file, deriv_type, add_center, ec, x=x_bc)
-       !    $else
-       !    $ABORT(No HDF5 support, therefore cannot read B3-format files)
-       !    $endif
+       case ('B3')
+          $if($HDF5) 
+          call read_mesa_model(ml_p, ml)
+          $else
+          $ABORT(No HDF5 support, therefore cannot read B3-format files)
+          $endif
        ! case ('GSM')
        !    $if($HDF5)
        !    call read_gsm_model(file, deriv_type, add_center, ec, x=x_bc)
