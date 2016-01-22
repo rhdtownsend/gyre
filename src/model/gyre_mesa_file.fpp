@@ -79,7 +79,7 @@ contains
     real(WP), allocatable       :: U(:)
     real(WP), allocatable       :: c_1(:)
     real(WP), allocatable       :: beta_rad(:)
-    real(WP), allocatable       :: c_p(:)
+    real(WP), allocatable       :: c_P(:)
     real(WP), allocatable       :: c_rad(:)
     real(WP), allocatable       :: c_thm(:)
     real(WP), allocatable       :: c_dif(:)
