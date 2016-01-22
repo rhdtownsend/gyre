@@ -109,8 +109,6 @@ contains
 
     close(unit)
 
-    var = var(:,n:1-1)
-
     ! Extract structure data
 
     M_star = glob(2)
@@ -133,6 +131,8 @@ contains
     c_1 = M_star/(R_star**3*var(2,:))
 
     Gamma_1 = var(5,:)
+
+    allocate(Omega_rot(n))
 
     if (ml_p%uniform_rot) then
        Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
