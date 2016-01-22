@@ -407,7 +407,7 @@ contains
   function f_n_ (this) result (f)
 
     class(${T}_spline_t), intent(in) :: this
-    real(WP)                         :: f(this%n)
+    $TYPE(WP)                        :: f(this%n)
 
     ! Return f at abscissa points
 
@@ -629,9 +629,9 @@ contains
     $TYPE(WP), intent(in), optional :: df_dx_b
     $TYPE(WP)                       :: df_dx(SIZE(x))
 
-    integer  :: n
-    real(WP) :: h(SIZE(x)-1)
-    real(WP) :: s(SIZE(x)-1)
+    integer   :: n
+    real(WP)  :: h(SIZE(x)-1)
+    $TYPE(WP) :: s(SIZE(x)-1)
 
     $CHECK_BOUNDS(SIZE(f),SIZE(x))
 
