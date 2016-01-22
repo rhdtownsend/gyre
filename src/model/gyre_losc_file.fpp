@@ -25,8 +25,9 @@ module gyre_losc_file
   use core_order
 
   use gyre_constants
-  use gyre_model
   use gyre_evol_model
+  use gyre_model
+  use gyre_model_par
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -45,44 +46,37 @@ module gyre_losc_file
 
 contains
 
-  subroutine read_losc_model (file, deriv_type, add_center, ml, x)
+  subroutine read_losc_model (ml_p, ml)
 
-    character(*), intent(in)                     :: file
-    character(*), intent(in)                     :: deriv_type
-    logical, intent(in)                          :: add_center
-    type(evol_model_t), intent(out)              :: ml
-    real(WP), allocatable, optional, intent(out) :: x(:)
+    type(model_par_t), intent(in)        :: ml_p
+    class(model_t), pointer, intent(out) :: ml
 
-    integer               :: unit
-    character(256)        :: line
-    integer               :: n
-    real(WP)              :: glob(3)
-    real(WP), allocatable :: var(:,:)
-    integer               :: i
-    integer               :: k
-    integer, allocatable  :: ind(:)
-    real(WP)              :: M_star
-    real(WP)              :: R_star
-    real(WP)              :: L_star
-    real(WP), allocatable :: x_(:)
-    real(WP), allocatable :: c_1(:)
-    real(WP), allocatable :: V(:)
-    real(WP), allocatable :: Gamma_1(:) 
-    real(WP), allocatable :: As(:) 
-    real(WP), allocatable :: U(:)
-    logical               :: has_center
-    real(WP)              :: p_c
-    real(WP)              :: rho_c
-    real(WP), allocatable :: V_2(:)
+    integer                     :: unit
+    character(256)              :: line
+    integer                     :: n
+    real(WP)                    :: glob(3)
+    real(WP), allocatable       :: var(:,:)
+    integer                     :: i
+    integer                     :: k
+    real(WP)                    :: M_star
+    real(WP)                    :: R_star
+    real(WP), allocatable       :: x(:)
+    real(WP), allocatable       :: V_2(:)
+    real(WP), allocatable       :: As(:) 
+    real(WP), allocatable       :: U(:)
+    real(WP), allocatable       :: c_1(:)
+    real(WP), allocatable       :: Gamma_1(:) 
+    real(WP), allocatable       :: Omega_rot(:)
+    type(evol_model_t), pointer :: em
 
-    ! Read data from the LOSC-format file
+    ! Open the LOSC-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from LOSC file', TRIM(file)
+       write(OUTPUT_UNIT, 100) 'Reading from LOSC file', TRIM(ml_p%file)
 100    format(A,1X,A)
     endif
           
-    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+    open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
 
     ! Read the header
 
@@ -115,81 +109,53 @@ contains
 
     close(unit)
 
-    ind = unique_indices(var(1,:))
+    var = var(:,n:1-1)
 
-    if (SIZE(ind) < n) then
-
-       if(check_log_level('WARN')) then
-          write(OUTPUT_UNIT, 120) 'WARNING: Duplicate r-point(s) found, using innermost value(s)'
-120       format('!!',1X,A)
-       endif
-
-       n = SIZE(var, 2)
-
-    endif
-       
-    var = var(:,ind)
+    ! Extract structure data
 
     M_star = glob(2)
     R_star = glob(1)
-    L_star = 0._WP
 
     G_gravity = glob(3)
 
-    x_ = var(1,:)/R_star
+    x = var(1,:)/R_star
 
-    c_1 = M_star/(R_star**3*var(2,:))
-    V = var(4,:)*G_GRAVITY*var(2,:)*var(1,:)**2/var(3,:)
-    U = 4._WP*PI*var(4,:)/var(2,:)
-    Gamma_1 = var(5,:)
+    allocate(V_2(n))
+
+    where (x /= 0._WP)
+       V_2 = G_GRAVITY*var(4,:)*var(2,:)*R_star**2/var(3,:)
+    elsewhere
+       V_2 = 4._WP*PI*G_GRAVITY*var(4,:)**2*R_star**2/(3._WP*var(3,:))
+    endwhere
+       
     As = -var(6,:)*var(1,:)**2
+    U = 4._WP*PI*var(4,:)/var(2,:)
+    c_1 = M_star/(R_star**3*var(2,:))
 
-    has_center = x_(1) == 0._WP
+    Gamma_1 = var(5,:)
 
-    if (check_log_level('INFO')) then
-       if (add_center) then
-          if (has_center) then
-             write(OUTPUT_UNIT, 130) 'No need to add central point'
-130          format(3X,A)
-          else
-             $ABORT(No central point in file; cannot evaluate central values)
-          endif
-       endif
-    endif
-
-    if (has_center) then
-
-       p_c = var(3,1)
-       rho_c = var(4,1)
-
-       allocate(V_2(n))
-
-       where (x_ /= 0._WP)
-          V_2 = V/x_**2
-       elsewhere
-          V_2 = 4._WP*PI*G_GRAVITY*rho_c**2*R_star**2/(3._WP*p_c)
-       end where
-
+    if (ml_p%uniform_rot) then
+       Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
     else
-
-       V_2 = V/x_**2
-
+       Omega_rot = 0._WP
     endif
 
-    ! Initialize the model
+    ! Initialize the evol_model_t
 
-    ml = evol_model_t(M_star, R_star, L_star, x_, V_2, As, U, c_1, Gamma_1, &
-                      deriv_type, add_center=add_center .AND. .NOT. has_center)
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, 0._WP, ml_p))
 
-    ! Set up the grid
+    call em%set_V_2(V_2)
+    call em%set_As(As)
+    call em%set_U(U)
+    call em%set_c_1(c_1)
 
-    if (PRESENT(x)) then
-       if (add_center .AND. .NOT. has_center) then
-          x = [0._WP,x_]
-       else
-          x = x_
-       endif
-    endif
+    call em%set_Gamma_1(Gamma_1)
+
+    call em%set_Omega_rot(Omega_rot)
+
+    ! Return a pointer
+
+    ml => em
 
     ! Finish
 

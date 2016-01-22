@@ -71,7 +71,7 @@ contains
     use gyre_hom_model
     use gyre_mesa_file
     use gyre_osc_file
-!    use gyre_losc_file
+    use gyre_losc_file
     use gyre_fgong_file
     use gyre_famdl_file
     use gyre_amdl_file
@@ -90,30 +90,30 @@ contains
     case ('EVOL')
 
        select case (ml_p%file_format)
-       case ('MESA')
-          call read_mesa_model(ml_p, ml)
+       case ('AMDL')
+          call read_amdl_model(ml_p, ml)
        case ('B3')
           $if($HDF5) 
           call read_b3_model(ml_p, ml)
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
+       case ('FGONG')
+          call read_fgong_model(ml_p, ml)
+       case ('FAMDL')
+          call read_famdl_model(ml_p, ml)
        ! case ('GSM')
        !    $if($HDF5)
        !    call read_gsm_model(file, deriv_type, add_center, ec, x=x_bc)
        !    $else
        !    $ABORT(No HDF5 support, therefore cannot read GSM-format files)
        !    $endif
+       case ('LOSC')
+          call read_losc_model(ml_p, ml)
+       case ('MESA')
+          call read_mesa_model(ml_p, ml)
        case ('OSC')
           call read_osc_model(ml_p, ml)
-       ! case ('LOSC')
-       !    call read_losc_model(file, deriv_type, add_center, ec, x=x_bc)
-       case ('FGONG')
-          call read_fgong_model(ml_p, ml)
-       case ('FAMDL')
-          call read_famdl_model(ml_p, ml)
-       case ('AMDL')
-          call read_amdl_model(ml_p, ml)
        case default
           $ABORT(Invalid file_format)
        end select
