@@ -46,7 +46,7 @@ module gyre_b3_file
 
 contains
 
-  subroutine read_fgong_model (ml_p, ml)
+  subroutine read_b3_model (ml_p, ml)
 
     type(model_par_t), intent(in)        :: ml_p
     class(model_t), pointer, intent(out) :: ml
@@ -93,14 +93,14 @@ contains
     real(WP), allocatable       :: Omega_rot(:)
     type(evol_model_t), pointer :: em
 
-    ! Read data from the B3-format file
+    ! Open the B3-format file
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from B3 file', TRIM(ml_p%file)
 100    format(A,1X,A)
     endif
 
-    hg = hgroup_t(file, OPEN_FILE)
+    hg = hgroup_t(ml_p%file, OPEN_FILE)
 
     ! Read the header
 
