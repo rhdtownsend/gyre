@@ -58,38 +58,4 @@ module gyre_constants
   public :: FILENAME_LEN
   public :: GYRE_DIR
 
-  $if ($MPI)
-  public :: bcast_constants
-  $endif
-
-  ! Procedures
-
-contains
-
-  $if ($MPI)
-
-  subroutine bcast_constants (root_rank)
-
-    integer, intent(in) :: root_rank
-
-    ! Broadcast the mutable constants
-
-    call bcast(G_GRAVITY, root_rank)
-    call bcast(C_LIGHT, root_rank)
-    call bcast(A_RADIATION, root_rank)
-
-    call bcast(M_SUN, root_rank)
-    call bcast(R_SUN, root_rank)
-    call bcast(L_SUN, root_rank)
-
-    call bcast(GYRE_DIR, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_constants
-
-  $endif
-
 end module gyre_constants

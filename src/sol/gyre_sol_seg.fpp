@@ -54,17 +54,14 @@ module gyre_sol_seg
   end interface sol_seg_t
 
   $if ($MPI)
-
   interface bcast
      module procedure bcast_0_
      module procedure bcast_1_
   end interface bcast
-
   interface bcast_alloc
      module procedure bcast_alloc_0_
      module procedure bcast_alloc_1_
   end interface bcast_alloc
-
   $endif
 
   ! Access specifiers

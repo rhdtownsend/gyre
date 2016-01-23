@@ -164,7 +164,7 @@ contains
 
     ! Check whether we should write log output
 
-    if(MPI_RANK == rank_) then
+    if (MPI_RANK == rank_) then
        
        select case (log_level)
        case ('DEBUG')
