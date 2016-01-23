@@ -1206,7 +1206,7 @@ contains
        As = this%ml%As(s, x)
        c_1 = this%ml%c_1(s, x)
 
-       lambda = this%lambda(s, x)
+       lambda = REAL(this%lambda(s, x))
 
        omega_c = REAL(this%rt%omega_c(s, x, this%omega))
 
