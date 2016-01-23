@@ -164,8 +164,8 @@ contains
     ! deriv_type
 
     select case (deriv_type)
-    case ('NATURAL')
-       df_dx = natural_df_dx_(x, f, df_dx_a, df_dx_b)
+    case ('SPLINE')
+       df_dx = spline_df_dx_(x, f, df_dx_a, df_dx_b)
     case('FINDIFF')
        df_dx = findiff_df_dx_(x, f, df_dx_a, df_dx_b)
     $if ($T eq 'r')
@@ -548,7 +548,7 @@ contains
 
   !****
 
-  function natural_df_dx_ (x, f, df_dx_a, df_dx_b) result (df_dx)
+  function spline_df_dx_ (x, f, df_dx_a, df_dx_b) result (df_dx)
 
     real(WP), intent(in)            :: x(:)
     $TYPE(WP), intent(in)           :: f(:)
@@ -566,8 +566,8 @@ contains
 
     $CHECK_BOUNDS(SIZE(f),SIZE(x))
     
-    ! Calcualte the first derivatives for a natural interp (ensuring
-    ! the second derivatives are continuous)
+    ! Calcualte the first derivatives for a cubic spline interp
+    ! (ensuring the second derivatives are continuous)
 
     n = SIZE(x)
 
@@ -617,7 +617,7 @@ contains
 
     return
 
-  end function natural_df_dx_
+  end function spline_df_dx_
 
   !****
 
