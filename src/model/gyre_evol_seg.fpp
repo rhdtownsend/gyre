@@ -24,7 +24,7 @@ module gyre_evol_seg
   use core_kinds
 
   use gyre_constants
-  use gyre_spline
+  use gyre_interp
   use gyre_model_par
 
   use ISO_FORTRAN_ENV
@@ -37,7 +37,7 @@ module gyre_evol_seg
 
   $define $DATA_DECL $sub
     $local $NAME $1
-    type(r_spline_t) :: sp_${NAME}
+    type(r_interp_t) :: in_${NAME}
     logical          :: df_${NAME} = .FALSE.
   $endsub
 
@@ -162,9 +162,9 @@ contains
     ! Set the data for $NAME
 
     if (x(1) == 0._WP) then
-       this%sp_${NAME} = r_spline_t(x, f, this%deriv_type, df_dx_a=0._WP)
+       this%in_${NAME} = r_interp_t(x, f, this%deriv_type, df_dx_a=0._WP)
     else
-       this%sp_${NAME} = r_spline_t(x, f, this%deriv_type)
+       this%in_${NAME} = r_interp_t(x, f, this%deriv_type)
     endif
     
     this%df_${NAME} = .TRUE.
@@ -211,7 +211,7 @@ contains
 
     if (this%df_${NAME}) then
 
-       $NAME = this%sp_${NAME}%f(x)
+       $NAME = this%in_${NAME}%f(x)
 
     else
 
@@ -262,7 +262,7 @@ contains
     if (this%df_${NAME}) then
 
        if (x > 0._WP) then
-          d$NAME = x*this%sp_${NAME}%df_dx(x)/this%sp_${NAME}%f(x)
+          d$NAME = x*this%in_${NAME}%df_dx(x)/this%in_${NAME}%f(x)
        else
           d$NAME = 0._WP
        endif

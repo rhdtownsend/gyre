@@ -25,7 +25,7 @@ module gyre_sol_seg
   use core_kinds
   use core_parallel
 
-  use gyre_spline
+  use gyre_interp
 
   use ISO_FORTRAN_ENV
 
@@ -37,7 +37,7 @@ module gyre_sol_seg
 
   type :: sol_seg_t
      private
-     type(c_spline_t) :: sp_y(6)
+     type(c_interp_t) :: in_y(6)
      logical          :: df_y(6) = .FALSE.
    contains
      private
@@ -109,7 +109,7 @@ contains
     this%df_y = that%df_y
 
     do i = 1, 6
-       if (this%df_y(i)) this%sp_y(i) = that%sp_y(i)
+       if (this%df_y(i)) this%in_y(i) = that%in_y(i)
     end do
     
     ! Finish
@@ -134,7 +134,7 @@ contains
     call bcast(ss%df_y, root_rank)
 
     do i = 1, 6
-       if (ss%df_y(i)) call bcast(ss%sp_y(i), root_rank)
+       if (ss%df_y(i)) call bcast(ss%in_y(i), root_rank)
     end do
 
     ! Finish
@@ -168,7 +168,7 @@ contains
 
     ! Set the data for y(i)
 
-    this%sp_y(i) = c_spline_t(x, y, dy_dx)
+    this%in_y(i) = c_interp_t(x, y, dy_dx)
     
     this%df_y(i) = .TRUE.
 
@@ -191,7 +191,7 @@ contains
 
     if (this%df_y(i)) then
 
-       y = this%sp_y(i)%f(x)
+       y = this%in_y(i)%f(x)
        
     else
 

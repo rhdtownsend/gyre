@@ -23,7 +23,7 @@ module gyre_poly_seg
 
   use core_kinds
 
-  use gyre_spline
+  use gyre_interp
   use gyre_model_par
 
   use ISO_FORTRAN_ENV
@@ -41,8 +41,8 @@ module gyre_poly_seg
 
   type :: poly_seg_t
      private
-     type(r_spline_t) :: sp_Theta
-     type(r_spline_t) :: sp_dTheta
+     type(r_interp_t) :: in_Theta
+     type(r_interp_t) :: in_dTheta
      real(WP)         :: mu_i
      real(WP)         :: mu_s
      real(WP)         :: B
@@ -119,8 +119,8 @@ contains
 
     endif
 
-    ps%sp_Theta = r_spline_t(x, Theta, dTheta*xi_s)
-    ps%sp_dTheta = r_spline_t(x, dTheta, d2Theta*xi_s)
+    ps%in_Theta = r_interp_t(x, Theta, dTheta*xi_s)
+    ps%in_dTheta = r_interp_t(x, dTheta, d2Theta*xi_s)
 
     ps%mu_i = mu_i
     ps%mu_s = mu_s
@@ -153,7 +153,7 @@ contains
     ! Calculate the mass coordinate mu
 
     xi = x*this%xi_s
-    v = xi**2*this%sp_dTheta%f(x)
+    v = xi**2*this%in_dTheta%f(x)
 
     mu = this%mu_i - (v - this%v_i)/this%B
 
@@ -181,8 +181,8 @@ contains
 
        xi = x*this%xi_s
 
-       Theta = this%sp_Theta%f(x)
-       dTheta = this%sp_dTheta%f(x)
+       Theta = this%in_Theta%f(x)
+       dTheta = this%in_dTheta%f(x)
 
        if (Theta == 0._WP) Theta = TINY(0._WP)
 
@@ -236,7 +236,7 @@ contains
 
        xi = x*this%xi_s
 
-       Theta = this%sp_Theta%f(x)
+       Theta = this%in_Theta%f(x)
 
        U = xi**3*Theta**this%n_poly/this%mu(x)
 
@@ -270,8 +270,8 @@ contains
 
        xi = x*this%xi_s
 
-       Theta = this%sp_Theta%f(x)
-       dTheta = this%sp_dTheta%f(x)
+       Theta = this%in_Theta%f(x)
+       dTheta = this%in_dTheta%f(x)
        
        if (Theta == 0._WP) Theta = TINY(0._WP)
 
