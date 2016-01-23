@@ -97,10 +97,10 @@ contains
 
   !****
 
-  elemental subroutine op_assign_ (this, that)
+  subroutine op_assign_ (this, that)
 
     class(sol_seg_t), intent(out) :: this
-    class(sol_seg_t), intent(in)  :: that
+    type(sol_seg_t), intent(in)   :: that
 
     integer :: i
 
