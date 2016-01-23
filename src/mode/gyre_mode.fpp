@@ -73,6 +73,8 @@ module gyre_mode
      logical                     :: pruned
    contains
      private
+     procedure         :: op_assign_
+     generic, public   :: assignment(=) => op_assign_
      procedure, public :: prune
      procedure, public :: freq
      $PROC_DECL(y)
@@ -228,6 +230,52 @@ contains
     end subroutine set_ref_
 
   end function mode_t_
+
+  !****
+
+  subroutine op_assign_ (this, that)
+
+    class(mode_t), intent(out) :: this
+    type(mode_t), intent(in)   :: that
+
+    ! Assign the mode_t (this routine shouldn't be necessary, but
+    ! gfortran 4.9.x has memory issues using intrinsic assignment)
+
+    this%ml => that%ml
+
+    this%sl = that%sl
+    allocate(this%rt, SOURCE=that%rt)
+
+    this%omega = that%omega
+    this%l_i = that%l_i
+
+    this%l = that%l
+    this%m = that%m
+    
+    this%md_p = that%md_p
+    this%os_p = that%os_p
+
+    this%s = that%s
+    this%x = that%x
+
+    this%n_k = that%n_k
+
+    this%pruned = that%pruned
+
+    this%s_ref = that%s_ref
+    this%x_ref = that%x_ref
+
+    this%scl = that%scl
+
+    this%n_pg = that%n_pg
+    this%n_p = that%n_p
+    this%n_g = that%n_g
+
+    ! Finish
+
+    return
+
+  end subroutine op_assign_
 
   !****
 
