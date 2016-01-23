@@ -55,8 +55,14 @@ module gyre_model_par
   $if ($MPI)
 
   interface bcast
-     module procedure bcast_
+     module procedure bcast_0_
+     module procedure bcast_1_
   end interface bcast
+
+  interface bcast_alloc
+     module procedure bcast_alloc_0_
+     module procedure bcast_alloc_1_
+  end interface bcast_alloc
 
   $endif
 
@@ -68,6 +74,7 @@ module gyre_model_par
   public :: read_model_par
   $if ($MPI)
   public :: bcast
+  public :: bcast_alloc
   $endif
 
   ! Procedures
@@ -170,14 +177,22 @@ contains
 
     ! Broadcast the out_par_t
 
+    call bcast(ml_p%x_i, root_rank)
+    call bcast(ml_p%x_o, root_rank)
     call bcast(ml_p%Gamma_1, root_rank)
+
     call bcast(ml_p%Omega_rot, root_rank)
+    call bcast(ml_p%dx_snap, root_rank)
+
     call bcast(ml_p%model_type, root_rank)
     call bcast(ml_p%file_format, root_rank)
     call bcast(ml_p%data_format, root_rank)
     call bcast(ml_p%deriv_type, root_rank)
     call bcast(ml_p%file, root_rank)
+
     call bcast(ml_p%add_center, root_rank)
+    call bcast(ml_p%repair_As, root_rank)
+
     call bcast(ml_p%uniform_rot, root_rank)
 
     ! Finish

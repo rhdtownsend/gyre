@@ -16,12 +16,14 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_parallel.inc'
 
 module gyre_sol
 
   ! Uses
 
   use core_kinds
+  use core_parallel
 
   use gyre_ext
   use gyre_sol_seg
@@ -57,11 +59,29 @@ module gyre_sol
      module procedure sol_t_
   end interface sol_t
 
+  $if ($MPI)
+
+  interface bcast
+     module procedure bcast_0_
+     module procedure bcast_1_
+  end interface bcast
+
+  interface bcast_alloc
+     module procedure bcast_alloc_0_
+     module procedure bcast_alloc_1_
+  end interface bcast_alloc
+
+  $endif
+
   ! Access specifiers
 
   private
 
   public :: sol_t
+  $if ($MPI)
+  public :: bcast
+  public :: bcast_alloc
+  $endif
 
   ! Procedures
 
@@ -95,6 +115,40 @@ contains
     return
 
   end function sol_t_
+
+  !****
+
+  $if ($MPI)
+
+  subroutine bcast_0_ (sl, root_rank)
+
+    type(sol_t), intent(inout) :: sl
+    integer, intent(in)        :: root_rank
+
+    ! Broadcast the sol_t
+
+    call bcast_alloc(sl%ss, root_rank)
+    call bcast_alloc(sl%s, root_rank)
+    call bcast_alloc(sl%x, root_rank)
+
+    call bcast(sl%omega, root_rank)
+    call bcast(sl%discrim, root_rank)
+
+    call bcast(sl%n_s, root_rank)
+    call bcast(sl%n_k, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_0_
+
+  $BCAST(type(sol_t),1)
+
+  $BCAST_ALLOC(type(sol_t),0)
+  $BCAST_ALLOC(type(sol_t),1)
+
+  $endif
 
   !****
 

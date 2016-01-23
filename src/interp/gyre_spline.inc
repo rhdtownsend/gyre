@@ -1,7 +1,7 @@
 ! Module   : gyre_spline
 ! Purpose  : cubic spline interpolator (template)
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2015-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -145,7 +145,7 @@ contains
 
   end function ${T}_spline_t_
   
-!****
+  !****
 
   function ${T}_spline_t_eval_derivs_ (x, f, deriv_type, df_dx_a, df_dx_b) result (sp)
 
@@ -184,7 +184,7 @@ contains
 
   end function ${T}_spline_t_eval_derivs_
 
-!****
+  !****
 
   $if ($HDF5)
 
@@ -211,7 +211,7 @@ contains
 
   end subroutine read_
 
-!****
+  !****
 
   subroutine write_ (hg, sp)
 
@@ -234,7 +234,7 @@ contains
 
   $endif
 
-!****
+  !****
 
   $if ($MPI)
 
@@ -257,20 +257,20 @@ contains
 
   end subroutine bcast_0_
 
-  $BCAST(type(spline_t),1)
-  $BCAST(type(spline_t),2)
-  $BCAST(type(spline_t),3)
-  $BCAST(type(spline_t),4)
+  $BCAST(type(${T}_spline_t),1)
+  $BCAST(type(${T}_spline_t),2)
+  $BCAST(type(${T}_spline_t),3)
+  $BCAST(type(${T}_spline_t),4)
 
-  $BCAST_ALLOC(type(spline_t),0)
-  $BCAST_ALLOC(type(spline_t),1)
-  $BCAST_ALLOC(type(spline_t),2)
-  $BCAST_ALLOC(type(spline_t),3)
-  $BCAST_ALLOC(type(spline_t),4)
+  $BCAST_ALLOC(type(${T}_spline_t),0)
+  $BCAST_ALLOC(type(${T}_spline_t),1)
+  $BCAST_ALLOC(type(${T}_spline_t),2)
+  $BCAST_ALLOC(type(${T}_spline_t),3)
+  $BCAST_ALLOC(type(${T}_spline_t),4)
 
   $endif
 
-!****
+  !****
 
   function x_n_ (this) result (x)
 
@@ -285,7 +285,7 @@ contains
 
   end function x_n_
 
-!****
+  !****
 
   function x_min_ (this) result (x_min)
 
@@ -302,7 +302,7 @@ contains
 
   end function x_min_
 
-!****
+  !****
 
   function x_max_ (this) result (x_max)
 
@@ -319,7 +319,7 @@ contains
 
   end function x_max_
 
-!****
+  !****
 
   function f_1_ (this, x) result (f)
 
@@ -358,7 +358,7 @@ contains
 
   end function f_1_
 
-!****
+  !****
 
   function f_v_ (this, x) result (f)
 
@@ -402,7 +402,7 @@ contains
 
   end function f_v_
 
-!****
+  !****
 
   function f_n_ (this) result (f)
 
@@ -417,7 +417,7 @@ contains
 
   end function f_n_
 
-!****
+  !****
 
   function df_dx_1_ (this, x) result (df_dx)
 
@@ -456,7 +456,7 @@ contains
 
   end function df_dx_1_
 
-!****
+  !****
 
   function df_dx_v_ (this, x) result (df_dx)
 
@@ -500,7 +500,7 @@ contains
 
   end function df_dx_v_
 
-!****
+  !****
 
   function df_dx_n_ (this) result (df_dx)
 
@@ -517,7 +517,7 @@ contains
 
   end function df_dx_n_
 
-!****
+  !****
 
   function int_f_n_ (this) result (int_f)
 
@@ -546,7 +546,7 @@ contains
 
   end function int_f_n_
 
-!****
+  !****
 
   function natural_df_dx_ (x, f, df_dx_a, df_dx_b) result (df_dx)
 
@@ -619,7 +619,7 @@ contains
 
   end function natural_df_dx_
 
-!****
+  !****
 
   function findiff_df_dx_ (x, f, df_dx_a, df_dx_b) result (df_dx)
 
@@ -663,7 +663,7 @@ contains
 
   end function findiff_df_dx_
 
-!****
+  !****
 
   $if ($T eq 'r')
 
@@ -727,7 +727,7 @@ contains
 
   $endif
 
-!****
+  !****
 
   function phi_ (t)
 
@@ -742,7 +742,7 @@ contains
 
   end function phi_
 
-!****
+  !****
 
   function psi_ (t)
 
@@ -757,7 +757,7 @@ contains
 
   end function psi_
 
-!****
+  !****
 
   function dphi_dt_ (t)
 
@@ -772,7 +772,7 @@ contains
 
   end function dphi_dt_
 
-!****
+  !****
 
   function dpsi_dt_ (t)
 

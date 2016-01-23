@@ -174,13 +174,16 @@ contains
 
     call bcast(ot_p%freq_units, root_rank)
     call bcast(ot_p%freq_frame, root_rank)
+
     call bcast(ot_p%summary_file, root_rank)
     call bcast(ot_p%summary_file_format, root_rank)
     call bcast(ot_p%summary_item_list, root_rank)
+
     call bcast(ot_p%mode_prefix, root_rank)
     call bcast(ot_p%mode_template, root_rank)
     call bcast(ot_p%mode_file_format, root_rank)
     call bcast(ot_p%mode_item_list, root_rank)
+
     call bcast(ot_p%label, root_rank)
     
     call bcast(ot_p%prune_modes, root_rank)

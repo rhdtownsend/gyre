@@ -16,12 +16,14 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_parallel.inc'
 
 module gyre_sol_seg
 
   ! Uses
 
   use core_kinds
+  use core_parallel
 
   use gyre_spline
 
@@ -39,6 +41,8 @@ module gyre_sol_seg
      logical          :: df_y(6) = .FALSE.
    contains
      private
+     procedure         :: op_assign_
+     generic, public   :: assignment(=) => op_assign_
      procedure, public :: set_y
      procedure, public :: y
   end type sol_seg_t
@@ -49,11 +53,29 @@ module gyre_sol_seg
      module procedure sol_seg_t_
   end interface sol_seg_t
 
+  $if ($MPI)
+
+  interface bcast
+     module procedure bcast_0_
+     module procedure bcast_1_
+  end interface bcast
+
+  interface bcast_alloc
+     module procedure bcast_alloc_0_
+     module procedure bcast_alloc_1_
+  end interface bcast_alloc
+
+  $endif
+
   ! Access specifiers
 
   private
 
   public :: sol_seg_t
+  $if ($MPI)
+  public :: bcast
+  public :: bcast_alloc
+  $endif
 
   ! Procedures
 
@@ -70,6 +92,61 @@ contains
     return
 
   end function sol_seg_t_
+
+  !****
+
+  subroutine op_assign_ (this, that)
+
+    class(sol_seg_t), intent(out) :: this
+    class(sol_seg_t), intent(in)  :: that
+
+    integer :: i
+
+    ! Assign the sol_seg_t
+
+    this%df_y = that%df_y
+
+    do i = 1, 6
+       if (this%df_y(i)) this%sp_y(i) = that%sp_y(i)
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine op_assign_
+
+  !****
+
+  $if ($MPI)
+
+  subroutine bcast_0_ (ss, root_rank)
+
+    type(sol_seg_t), intent(inout) :: ss
+    integer, intent(in)            :: root_rank
+
+    integer :: i
+
+    ! Broadcast the sol_t
+
+    call bcast(ss%df_y, root_rank)
+
+    do i = 1, 6
+       if (ss%df_y(i)) call bcast(ss%sp_y(i), root_rank)
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_0_
+
+  $BCAST(type(sol_seg_t),1)
+
+  $BCAST_ALLOC(type(sol_seg_t),0)
+  $BCAST_ALLOC(type(sol_seg_t),1)
+
+  $endif
 
   !****
 

@@ -29,9 +29,6 @@ module gyre_mode
   use gyre_ext
   use gyre_freq
   use gyre_model
-  $if ($MPI)
-  use gyre_model_mpi
-  $endif
   use gyre_mode_par
   use gyre_osc_par
   use gyre_rot
@@ -63,7 +60,6 @@ module gyre_mode
      complex(WP)                 :: omega
      complex(WP)                 :: l_i
      complex(WP)                 :: scl
-     real(WP)                    :: K_d
      integer, allocatable        :: s(:)
      real(WP), allocatable       :: x(:)
      integer                     :: s_ref
@@ -167,7 +163,6 @@ contains
     md%ml => ml
 
     allocate(md%sl, SOURCE=sl)
-
     allocate(md%rt, SOURCE=c_rot_t(ml, md_p, os_p))
 
     md%omega = sl%omega
@@ -237,6 +232,60 @@ contains
   !****
 
   $REALLOCATE(type(mode_t),1)
+
+  !****
+
+  $if($MPI)
+
+  subroutine bcast_ (md, root_rank, ml)
+
+    class(mode_t), intent(inout)       :: md
+    integer, intent(in)                :: root_rank
+    class(model_t), intent(in), target :: ml
+
+    ! Broadcast the mode_t
+
+    if (MPI_RANK /= root_rank) then
+       md%ml => ml
+    endif
+
+    call bcast_alloc(md%sl, root_rank)
+
+    call bcast(md%md_p, root_rank)
+    call bcast(md%os_p, root_rank)
+
+    if (MPI_RANK /= root_rank) then
+       allocate(md%rt, SOURCE=c_rot_t(ml, md%md_p, md%os_p))
+    endif
+
+    call bcast(md%omega, root_rank)
+
+    call bcast(md%l_i, root_rank)
+    call bcast(md%scl, root_rank)
+
+    call bcast_alloc(md%s, root_rank)
+    call bcast_alloc(md%x, root_rank)
+    call bcast(md%s_ref, root_rank)
+    call bcast(md%x_ref, root_rank)
+
+    call bcast(md%l, root_rank)
+    call bcast(md%m, root_rank)
+
+    call bcast(md%n_p, root_rank)
+    call bcast(md%n_g, root_rank)
+    call bcast(md%n_pg, root_rank)
+
+    call bcast(md%n_k, root_rank)
+
+    call bcast(md%pruned, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_
+
+  $endif
 
   !****
 
@@ -1816,53 +1865,5 @@ contains
     end subroutine count_windings_
 
   end subroutine classify_
-
-  !****
-
-  $if($MPI)
-
-  subroutine bcast_ (md, root_rank, ml)
-
-    class(mode_t), intent(inout)       :: md
-    integer, intent(in)                :: root_rank
-    class(model_t), intent(in), target :: ml
-
-    ! Broadcast the mode_t
-
-    if (MPI_RANK /= root_rank) then
-       md%ml => ml
-    endif
-
-    call bcast(md%mp, root_rank)
-    call bcast(md%op, root_rank)
-
-    if (MPI_RANK /= root_rank) then
-       allocate(md%rt, SOURCE=c_rot_t(ml, md%mp, md%op))
-    endif
-
-    call bcast_alloc(md%x, root_rank)
-    call bcast_alloc(md%y, root_rank)
-    
-    call bcast(md%x_ref, root_rank)
-    call bcast(md%y_ref, root_rank)
-
-    call bcast(md%omega, root_rank)
-
-    call bcast(md%n_p, root_rank)
-    call bcast(md%n_g, root_rank)
-    call bcast(md%n_pg, root_rank)
-
-    call bcast(md%n, root_rank)
-    call bcast(md%n_iter, root_rank)
-
-    call bcast(md%pruned, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_
-
-  $endif
 
 end module gyre_mode

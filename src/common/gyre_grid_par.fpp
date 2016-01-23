@@ -176,13 +176,14 @@ contains
     call bcast(gr_p%alpha_thm, root_rank)
     call bcast(gr_p%alpha_str, root_rank)
 
-    call bcast(gr_p%s, root_rank)
+    call bcast(gr_p%s_base, root_rank)
+    call bcast(gr_p%n_base, root_rank)
 
-    call bcast(gr_p%n, root_rank)
+    call bcast(gr_p%n_center, root_rank)
 
     call bcast(gr_p%file, root_rank)
 
-    call bcast(gr_p%op_type, root_rank)
+    call bcast(gr_p%base_type, root_rank)
     call bcast(gr_p%tag_list, root_rank)
 
     ! Finish

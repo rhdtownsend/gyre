@@ -70,8 +70,6 @@ module gyre_mode_par
 
 contains
 
-!****
-
   subroutine read_mode_par (unit, md_p)
 
     integer, intent(in)                        :: unit
@@ -130,7 +128,7 @@ contains
 
   end subroutine read_mode_par
 
-!****
+  !****
 
   $if ($MPI)
 
@@ -140,7 +138,7 @@ contains
 
   subroutine bcast_${RANK}_ (md_p, root_rank)
 
-    type(mode_par_t), intent(inout) :: mpd_p$ARRAY_SPEC($RANK)
+    type(mode_par_t), intent(inout) :: md_p$ARRAY_SPEC($RANK)
     integer, intent(in)             :: root_rank
 
     ! Broadcast the mode_par_t
@@ -150,6 +148,8 @@ contains
 
     call bcast(md_p%n_pg_min, root_rank)
     call bcast(md_p%n_pg_max, root_rank)
+
+    call bcast(md_p%tag, root_rank)
 
     ! Finish
 
@@ -161,8 +161,6 @@ contains
 
   $BCAST(0)
   $BCAST(1)
-
-!****
 
   $BCAST_ALLOC(type(mode_par_t),0)
   $BCAST_ALLOC(type(mode_par_t),1)
