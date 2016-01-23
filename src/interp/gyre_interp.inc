@@ -1,5 +1,5 @@
-! Module   : gyre_spline
-! Purpose  : cubic spline interpolator (template)
+! Module   : gyre_interp
+! Purpose  : piecewise cubic interpolation (template)
 !
 ! Copyright 2015-2016 Rich Townsend
 !
@@ -23,7 +23,7 @@ $define $MOD_DECL $sub
 $local $T $1
 $local $TYPE $2
 
-module gyre_${T}_spline
+module gyre_${T}_interp
 
   ! Uses
 
@@ -43,7 +43,7 @@ module gyre_${T}_spline
 
   ! Derived-type definitions
 
-  type ${T}_spline_t
+  type ${T}_interp_t
      private
      real(WP), allocatable  :: x_(:)     ! Abscissa
      $TYPE(WP), allocatable :: f_(:)     ! Ordinate
@@ -65,14 +65,14 @@ module gyre_${T}_spline
      generic, public   :: df_dx => df_dx_1_, df_dx_v_, df_dx_n_
      procedure         :: int_f_n_
      generic, public   :: int_f => int_f_n_
-  end type ${T}_spline_t
+  end type ${T}_interp_t
 
   ! Interfaces
 
-  interface ${T}_spline_t
-     module procedure ${T}_spline_t_
-     module procedure ${T}_spline_t_eval_derivs_
-  end interface ${T}_spline_t
+  interface ${T}_interp_t
+     module procedure ${T}_interp_t_
+     module procedure ${T}_interp_t_eval_derivs_
+  end interface ${T}_interp_t
 
   $if ($HDF5)
   interface read
@@ -104,7 +104,7 @@ module gyre_${T}_spline
 
   private
 
-  public :: ${T}_spline_t
+  public :: ${T}_interp_t
   $if ($HDF5)
   public :: read
   public :: write
@@ -118,49 +118,49 @@ module gyre_${T}_spline
 
 contains
 
-  function ${T}_spline_t_ (x, f, df_dx) result (sp)
+  function ${T}_interp_t_ (x, f, df_dx) result (in)
 
     real(WP), intent(in)  :: x(:)
     $TYPE(WP), intent(in) :: f(:)
     $TYPE(WP), intent(in) :: df_dx(:)
-    type(${T}_spline_t)   :: sp
+    type(${T}_interp_t)   :: in
     
     $CHECK_BOUNDS(SIZE(f),SIZE(x))
     $CHECK_BOUNDS(SIZE(df_dx),SIZE(x))
 
     $ASSERT(ALL(x(2:) > x(:SIZE(x)-1)),Non-monotonic abscissa)
 
-    ! Construct the spline_t
+    ! Construct the interp_t
 
-    sp%x_ = x
-    sp%f_ = f
+    in%x_ = x
+    in%f_ = f
 
-    sp%df_dx_ = df_dx
+    in%df_dx_ = df_dx
 
-    sp%n = SIZE(x)
+    in%n = SIZE(x)
 
     ! Finish
 
     return
 
-  end function ${T}_spline_t_
+  end function ${T}_interp_t_
   
   !****
 
-  function ${T}_spline_t_eval_derivs_ (x, f, deriv_type, df_dx_a, df_dx_b) result (sp)
+  function ${T}_interp_t_eval_derivs_ (x, f, deriv_type, df_dx_a, df_dx_b) result (in)
 
     real(WP), intent(in)            :: x(:)
     $TYPE(WP), intent(in)           :: f(:)
     character(*), intent(in)        :: deriv_type
     $TYPE(WP), optional, intent(in) :: df_dx_a
     $TYPE(WP), optional, intent(in) :: df_dx_b
-    type(${T}_spline_t)             :: sp
+    type(${T}_interp_t)             :: in
 
     $TYPE(WP) :: df_dx(SIZE(x))
 
     $CHECK_BOUNDS(SIZE(f),SIZE(x))
 
-    ! Construct the spline_t, with derivatives calculated according to
+    ! Construct the interp_t, with derivatives calculated according to
     ! deriv_type
 
     select case (deriv_type)
@@ -176,34 +176,34 @@ contains
        $ABORT(Invalid deriv_type)
     end select
 
-    sp = ${T}_spline_t(x, f, df_dx)
+    in = ${T}_interp_t(x, f, df_dx)
 
     ! Finish
 
     return
 
-  end function ${T}_spline_t_eval_derivs_
+  end function ${T}_interp_t_eval_derivs_
 
   !****
 
   $if ($HDF5)
 
-  subroutine read_ (hg, sp)
+  subroutine read_ (hg, in)
 
     type(hgroup_t), intent(inout)    :: hg
-    type(${T}_spline_t), intent(out) :: sp
+    type(${T}_interp_t), intent(out) :: in
 
     real(WP), allocatable  :: x(:)
     $TYPE(WP), allocatable :: f(:)
     $TYPE(WP), allocatable :: df_dx(:)
 
-    ! Read the spline_t
+    ! Read the interp_t
 
     call read_dset_alloc(hg, 'x', x)
     call read_dset_alloc(hg, 'f', f)
     call read_dset_alloc(hg, 'df_dx', df_dx)
 
-    sp = ${T}_spline_t(x, f, df_dx)
+    in = ${T}_interp_t(x, f, df_dx)
 
     ! Finish
 
@@ -213,18 +213,18 @@ contains
 
   !****
 
-  subroutine write_ (hg, sp)
+  subroutine write_ (hg, in)
 
     type(hgroup_t), intent(inout)   :: hg
-    type(${T}_spline_t), intent(in) :: sp
+    type(${T}_interp_t), intent(in) :: in
 
-    ! Write the spline_t
+    ! Write the interp_t
 
-    call write_attr(hg, 'n', sp%n)
+    call write_attr(hg, 'n', in%n)
 
-    call write_dset(hg, 'x', sp%x_)
-    call write_dset(hg, 'f', sp%f_)
-    call write_dset(hg, 'df_dx', sp%df_dx_)
+    call write_dset(hg, 'x', in%x_)
+    call write_dset(hg, 'f', in%f_)
+    call write_dset(hg, 'df_dx', in%df_dx_)
 
     ! Finish
 
@@ -238,18 +238,18 @@ contains
 
   $if ($MPI)
 
-  subroutine bcast_0_ (sp, root_rank)
+  subroutine bcast_0_ (in, root_rank)
 
-    class(${T}_spline_t), intent(inout) :: sp
+    class(${T}_interp_t), intent(inout) :: in
     integer, intent(in)                 :: root_rank
 
-    ! Broadcast the spline
+    ! Broadcast the interp
 
-    call bcast(sp%n, root_rank)
+    call bcast(in%n, root_rank)
 
-    call bcast_alloc(sp%x_, root_rank)
-    call bcast_alloc(sp%f_, root_rank)
-    call bcast_alloc(sp%df_dx_, root_rank)
+    call bcast_alloc(in%x_, root_rank)
+    call bcast_alloc(in%f_, root_rank)
+    call bcast_alloc(in%df_dx_, root_rank)
 
     ! Finish
 
@@ -257,16 +257,16 @@ contains
 
   end subroutine bcast_0_
 
-  $BCAST(type(${T}_spline_t),1)
-  $BCAST(type(${T}_spline_t),2)
-  $BCAST(type(${T}_spline_t),3)
-  $BCAST(type(${T}_spline_t),4)
+  $BCAST(type(${T}_interp_t),1)
+  $BCAST(type(${T}_interp_t),2)
+  $BCAST(type(${T}_interp_t),3)
+  $BCAST(type(${T}_interp_t),4)
 
-  $BCAST_ALLOC(type(${T}_spline_t),0)
-  $BCAST_ALLOC(type(${T}_spline_t),1)
-  $BCAST_ALLOC(type(${T}_spline_t),2)
-  $BCAST_ALLOC(type(${T}_spline_t),3)
-  $BCAST_ALLOC(type(${T}_spline_t),4)
+  $BCAST_ALLOC(type(${T}_interp_t),0)
+  $BCAST_ALLOC(type(${T}_interp_t),1)
+  $BCAST_ALLOC(type(${T}_interp_t),2)
+  $BCAST_ALLOC(type(${T}_interp_t),3)
+  $BCAST_ALLOC(type(${T}_interp_t),4)
 
   $endif
 
@@ -274,7 +274,7 @@ contains
 
   function x_n_ (this) result (x)
 
-    class(${T}_spline_t), intent(in) :: this
+    class(${T}_interp_t), intent(in) :: this
     real(WP)                         :: x(this%n)
 
     ! Return the abscissa points
@@ -289,7 +289,7 @@ contains
 
   function x_min_ (this) result (x_min)
 
-    class(${T}_spline_t), intent(in) :: this
+    class(${T}_interp_t), intent(in) :: this
     real(WP)                         :: x_min
 
     ! Return the minimum abscissa point
@@ -306,7 +306,7 @@ contains
 
   function x_max_ (this) result (x_max)
 
-    class(${T}_spline_t), intent(in) :: this
+    class(${T}_interp_t), intent(in) :: this
     real(WP)                         :: x_max
 
     ! Return the maximum abscissa point
@@ -323,7 +323,7 @@ contains
 
   function f_1_ (this, x) result (f)
 
-    class(${T}_spline_t), intent(in) :: this
+    class(${T}_interp_t), intent(in) :: this
     real(WP), intent(in)             :: x
     $TYPE(WP)                        :: f
 
@@ -362,7 +362,7 @@ contains
 
   function f_v_ (this, x) result (f)
 
-    class(${T}_spline_t), intent(in) :: this
+    class(${T}_interp_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     $TYPE(WP)                        :: f(SIZE(x))
 
@@ -406,7 +406,7 @@ contains
 
   function f_n_ (this) result (f)
 
-    class(${T}_spline_t), intent(in) :: this
+    class(${T}_interp_t), intent(in) :: this
     $TYPE(WP)                        :: f(this%n)
 
     ! Return f at abscissa points
@@ -421,7 +421,7 @@ contains
 
   function df_dx_1_ (this, x) result (df_dx)
 
-    class(${T}_spline_t), intent(in) :: this
+    class(${T}_interp_t), intent(in) :: this
     real(WP), intent(in)             :: x
     $TYPE(WP)                        :: df_dx
 
@@ -460,7 +460,7 @@ contains
 
   function df_dx_v_ (this, x) result (df_dx)
 
-    class(${T}_spline_t), intent(in) :: this
+    class(${T}_interp_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     $TYPE(WP)                        :: df_dx(SIZE(x))
 
@@ -504,7 +504,7 @@ contains
 
   function df_dx_n_ (this) result (df_dx)
 
-    class(${T}_spline_t), intent(in) :: this
+    class(${T}_interp_t), intent(in) :: this
     $TYPE(WP)                   :: df_dx(this%n)
 
     ! Return df_dx at abscissa points
@@ -521,7 +521,7 @@ contains
 
   function int_f_n_ (this) result (int_f)
 
-    class(${T}_spline_t), intent(in) :: this
+    class(${T}_interp_t), intent(in) :: this
     $TYPE(WP)                        :: int_f(this%n)
 
     integer  :: i
@@ -566,7 +566,7 @@ contains
 
     $CHECK_BOUNDS(SIZE(f),SIZE(x))
     
-    ! Calcualte the first derivatives for a natural spline (ensuring
+    ! Calcualte the first derivatives for a natural interp (ensuring
     ! the second derivatives are continuous)
 
     n = SIZE(x)
@@ -787,7 +787,7 @@ contains
 
   end function dpsi_dt_
 
-end module gyre_${T}_spline
+end module gyre_${T}_interp
 
 $endsub
 

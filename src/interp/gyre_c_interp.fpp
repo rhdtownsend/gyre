@@ -1,7 +1,7 @@
-! Module   : gyre_c_spline
-! Purpose  : cubic spline interpolators (complex)
+! Module   : gyre_c_interp
+! Purpose  : piecewise cubic interpolators (complex)
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2015-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,6 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'gyre_spline.inc'
+$include 'gyre_interp.inc'
 
 $MOD_DECL(c,complex)
