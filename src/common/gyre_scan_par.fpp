@@ -150,13 +150,9 @@ contains
 
   $if ($MPI)
 
-  $define $BCAST $sub
+  subroutine bcast_0_ (sc_p, root_rank)
 
-  $local $RANK $1
-
-  subroutine bcast_${RANK}_ (sc_p, root_rank)
-
-    type(scan_par_t), intent(inout) :: sc_p$ARRAY_SPEC($RANK)
+    type(scan_par_t), intent(inout) :: sc_p
     integer, intent(in)             :: root_rank
 
     ! Broadcast the scan_par_t
@@ -177,14 +173,9 @@ contains
 
     return
 
-  end subroutine bcast_${RANK}_
+  end subroutine bcast_0_
 
-  $endsub
-
-  $BCAST(0)
-  $BCAST(1)
-
-!****
+  $BCAST(type(scan_par_t),1)
 
   $BCAST_ALLOC(type(scan_par_t),0)
   $BCAST_ALLOC(type(scan_par_t),1)

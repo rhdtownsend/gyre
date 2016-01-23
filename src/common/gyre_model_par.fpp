@@ -166,13 +166,9 @@ contains
 
   $if ($MPI)
 
-  $define $BCAST $sub
+  subroutine bcast_0_ (ml_p, root_rank)
 
-  $local $RANK $1
-
-  subroutine bcast_${RANK}_ (ml_p, root_rank)
-
-    type(model_par_t), intent(inout) :: ml_p$ARRAY_SPEC($RANK)
+    type(model_par_t), intent(inout) :: ml_p
     integer, intent(in)              :: root_rank
 
     ! Broadcast the out_par_t
@@ -199,14 +195,9 @@ contains
 
     return
 
-  end subroutine bcast_${RANK}_
+  end subroutine bcast_0_
 
-  $endsub
-
-  $BCAST(0)
-  $BCAST(1)
-
-  !****
+  $BCAST(type(model_par_t),1)
 
   $BCAST_ALLOC(type(model_par_t),0)
   $BCAST_ALLOC(type(model_par_t),1)
