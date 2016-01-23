@@ -85,6 +85,8 @@ contains
 
     type(sol_seg_t) :: ss
 
+    integer :: i
+
     ! Construct the sol_seg_t
 
     ! Finish
@@ -95,7 +97,7 @@ contains
 
   !****
 
-  subroutine op_assign_ (this, that)
+  elemental subroutine op_assign_ (this, that)
 
     class(sol_seg_t), intent(out) :: this
     class(sol_seg_t), intent(in)  :: that
@@ -109,7 +111,7 @@ contains
     do i = 1, 6
        if (this%df_y(i)) this%sp_y(i) = that%sp_y(i)
     end do
-
+    
     ! Finish
 
     return
