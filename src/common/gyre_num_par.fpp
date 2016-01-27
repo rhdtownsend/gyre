@@ -1,7 +1,7 @@
 ! Module   : gyre_num_par
 ! Purpose  : numerics parameters
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -16,14 +16,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_num_par
 
   ! Uses
 
   use core_kinds
-  use core_parallel
 
   ! No implicit typing
 
@@ -42,32 +40,12 @@ module gyre_num_par
      character(2048) :: tag_list
   end type num_par_t
 
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
-
   ! Access specifiers
 
   private
 
   public :: num_par_t
   public :: read_num_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -146,43 +124,5 @@ contains
     return
 
   end subroutine read_num_par
-
-!****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (nm_p, root_rank)
-
-    type(num_par_t), intent(inout) :: nm_p
-    integer, intent(in)            :: root_rank
-
-    ! Broadcast the num_par_t
-
-    call bcast(nm_p%n_iter_max, root_rank)
-
-    call bcast(nm_p%deflate_roots, root_rank)
-    call bcast(nm_p%restrict_roots, root_rank)
- 
-    call bcast(nm_p%diff_scheme, root_rank)
-
-    call bcast(nm_p%r_root_solver, root_rank)
-    call bcast(nm_p%c_root_solver, root_rank)
-
-    call bcast(nm_p%matrix_type, root_rank)
-
-    call bcast(nm_p%tag_list, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(num_par_t),1)
-
-  $BCAST_ALLOC(type(num_par_t),0)
-  $BCAST_ALLOC(type(num_par_t),1)
-
-  $endif
 
 end module gyre_num_par

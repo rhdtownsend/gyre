@@ -1,7 +1,7 @@
 ! Module   : gyre_scan_par
 ! Purpose  : frequency scan parameters
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -16,14 +16,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_scan_par
 
   ! Uses
 
   use core_kinds
-  use core_parallel
 
   ! No implicit typing
 
@@ -42,32 +40,12 @@ module gyre_scan_par
      character(2048) :: tag_list
   end type scan_par_t
 
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
-
   ! Access specifiers
 
   private
 
   public :: scan_par_t
   public :: read_scan_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -145,41 +123,5 @@ contains
     return
 
   end subroutine read_scan_par
-
-!****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (sc_p, root_rank)
-
-    type(scan_par_t), intent(inout) :: sc_p
-    integer, intent(in)             :: root_rank
-
-    ! Broadcast the scan_par_t
-
-    call bcast(sc_p%freq_min, root_rank)
-    call bcast(sc_p%freq_max, root_rank)
-    call bcast(sc_p%n_freq, root_rank)
-
-    call bcast(sc_p%grid_type, root_rank)
-    call bcast(sc_p%grid_frame, root_rank)
-
-    call bcast(sc_p%freq_units, root_rank)
-    call bcast(sc_p%freq_frame, root_rank)
-
-    call bcast(sc_p%tag_list, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(scan_par_t),1)
-
-  $BCAST_ALLOC(type(scan_par_t),0)
-  $BCAST_ALLOC(type(scan_par_t),1)
-
-  $endif
 
 end module gyre_scan_par

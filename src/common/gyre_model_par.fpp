@@ -1,7 +1,7 @@
-! Module   : gyre_osc_par
+! Module   : gyre_model_par
 ! Purpose  : model parameters
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2015-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -16,15 +16,13 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_model_par
 
   ! Uses
 
   use core_kinds
-  use core_constants
-  use core_parallel
+  use core_constants, only : FILENAME_LEN
 
   use ISO_FORTRAN_ENV
 
@@ -50,32 +48,12 @@ module gyre_model_par
      logical                 :: uniform_rot
   end type model_par_t
    
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
-
  ! Access specifiers
 
   private
 
   public :: model_par_t
   public :: read_model_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -161,47 +139,5 @@ contains
     return
 
   end subroutine read_model_par
-
-  !****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (ml_p, root_rank)
-
-    type(model_par_t), intent(inout) :: ml_p
-    integer, intent(in)              :: root_rank
-
-    ! Broadcast the out_par_t
-
-    call bcast(ml_p%x_i, root_rank)
-    call bcast(ml_p%x_o, root_rank)
-    call bcast(ml_p%Gamma_1, root_rank)
-
-    call bcast(ml_p%Omega_rot, root_rank)
-    call bcast(ml_p%dx_snap, root_rank)
-
-    call bcast(ml_p%model_type, root_rank)
-    call bcast(ml_p%file_format, root_rank)
-    call bcast(ml_p%data_format, root_rank)
-    call bcast(ml_p%deriv_type, root_rank)
-    call bcast(ml_p%file, root_rank)
-
-    call bcast(ml_p%add_center, root_rank)
-    call bcast(ml_p%repair_As, root_rank)
-
-    call bcast(ml_p%uniform_rot, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(model_par_t),1)
-
-  $BCAST_ALLOC(type(model_par_t),0)
-  $BCAST_ALLOC(type(model_par_t),1)
-
-  $endif
 
 end module gyre_model_par

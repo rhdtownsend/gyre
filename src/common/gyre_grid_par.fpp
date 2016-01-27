@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_par
 ! Purpose  : grid parameters
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -16,15 +16,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_grid_par
 
   ! Uses
 
   use core_kinds
-  use gyre_constants
-  use core_parallel
 
   ! No implicit typing
 
@@ -33,33 +30,16 @@ module gyre_grid_par
   ! Derived-type definitions
 
   type :: grid_par_t
-     real(WP)                :: alpha_osc
-     real(WP)                :: alpha_exp
-     real(WP)                :: alpha_thm
-     real(WP)                :: alpha_str
-     real(WP)                :: s_base
-     integer                 :: n_base
-     integer                 :: n_center
-     character(FILENAME_LEN) :: file
-     character(64)           :: base_type
-     character(2048)         :: tag_list
+     real(WP)        :: alpha_osc
+     real(WP)        :: alpha_exp
+     real(WP)        :: alpha_thm
+     real(WP)        :: alpha_str
+     real(WP)        :: s_base
+     integer         :: n_base
+     integer         :: n_center
+     character(64)   :: base_type
+     character(2048) :: tag_list
   end type grid_par_t
-
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
 
   ! Access specifiers
 
@@ -67,10 +47,6 @@ module gyre_grid_par
 
   public :: grid_par_t
   public :: read_grid_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -90,12 +66,11 @@ contains
     real(WP)                       :: s_base
     integer                        :: n_base
     integer                        :: n_center
-    character(LEN(gr_p%file))      :: file
     character(LEN(gr_p%base_type)) :: base_type
     character(LEN(gr_p%tag_list))  :: tag_list
 
     namelist /grid/ alpha_osc, alpha_exp, alpha_thm, alpha_str, &
-                    s_base, n_base, n_center, file, base_type, tag_list
+                    s_base, n_base, n_center, base_type, tag_list
 
     ! Count the number of grid namelists
 
@@ -128,8 +103,6 @@ contains
 
        n_center = 0
 
-       file = ''
-
        base_type = 'MODEL'
        tag_list = ''
 
@@ -144,7 +117,6 @@ contains
                             s_base=s_base, &
                             n_base=n_base, &
                             n_center=n_center, &
-                            file=file, &
                             base_type=base_type, &
                             tag_list=tag_list)
 
@@ -155,44 +127,5 @@ contains
     return
 
   end subroutine read_grid_par
-
-  !****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (gr_p, root_rank)
-
-    type(grid_par_t), intent(inout) :: gr_p
-    integer, intent(in)             :: root_rank
-
-    ! Broadcast the grid_par_t
-
-    call bcast(gr_p%alpha_osc, root_rank)
-    call bcast(gr_p%alpha_exp, root_rank)
-    call bcast(gr_p%alpha_thm, root_rank)
-    call bcast(gr_p%alpha_str, root_rank)
-
-    call bcast(gr_p%s_base, root_rank)
-    call bcast(gr_p%n_base, root_rank)
-
-    call bcast(gr_p%n_center, root_rank)
-
-    call bcast(gr_p%file, root_rank)
-
-    call bcast(gr_p%base_type, root_rank)
-    call bcast(gr_p%tag_list, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(grid_par_t),1)
-
-  $BCAST_ALLOC(type(grid_par_t),0)
-  $BCAST_ALLOC(type(grid_par_t),1)
-
-  $endif
 
 end module gyre_grid_par

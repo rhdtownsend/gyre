@@ -1,7 +1,7 @@
 ! Module   : gyre_out_par
 ! Purpose  : output parameters
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -16,14 +16,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_out_par
 
   ! Uses
 
   use core_kinds
-  use core_parallel
 
   use gyre_constants
 
@@ -49,32 +47,12 @@ module gyre_out_par
      logical                 :: prune_modes
   end type out_par_t
 
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
-
  ! Access specifiers
 
   private
 
   public :: out_par_t
   public :: read_out_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -164,45 +142,5 @@ contains
     return
 
   end subroutine read_out_par
-
-  !****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (ot_p, root_rank)
-
-    type(out_par_t), intent(inout) :: ot_p
-    integer, intent(in)            :: root_rank
-
-    ! Broadcast the out_par_t
-
-    call bcast(ot_p%freq_units, root_rank)
-    call bcast(ot_p%freq_frame, root_rank)
-
-    call bcast(ot_p%summary_file, root_rank)
-    call bcast(ot_p%summary_file_format, root_rank)
-    call bcast(ot_p%summary_item_list, root_rank)
-
-    call bcast(ot_p%mode_prefix, root_rank)
-    call bcast(ot_p%mode_template, root_rank)
-    call bcast(ot_p%mode_file_format, root_rank)
-    call bcast(ot_p%mode_item_list, root_rank)
-
-    call bcast(ot_p%label, root_rank)
-    
-    call bcast(ot_p%prune_modes, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(out_par_t),1)
-
-  $BCAST_ALLOC(type(out_par_t),0)
-  $BCAST_ALLOC(type(out_par_t),1)
-
-  $endif
 
 end module gyre_out_par
