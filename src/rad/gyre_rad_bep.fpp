@@ -179,7 +179,8 @@ contains
 
     call bp%solve(omega, y, discrim)
 
-    ! Calculate its derivatives
+    ! Calculate its derivatives (nb: the vacuum check prevents errors, but
+    ! leads to incorrect values for dy_dx)
 
     !$OMP PARALLEL DO PRIVATE (xA)
     do k = 1, bp%n_k
@@ -187,15 +188,9 @@ contains
        associate (s => bp%s(k), x => bp%x(k))
 
          if (bp%ml%vacuum(s, x)) then
-
-            ! This needs to be fixed by applying a proper surface expansion
-
             xA = 0._WP
-
          else
-
             xA = bp%eq(k)%xA(x, omega)
-
          endif
 
          if (x /= 0._WP) then
@@ -208,7 +203,8 @@ contains
 
     end do
 
-    ! Convert to canonical form
+    ! Convert to canonical form (nb: the vacuum check prevents errors, but
+    ! leads to incorrect values for dy_c_dx)
 
     !$OMP PARALLEL DO PRIVATE (H, dH)
     do k = 1, bp%n_k
@@ -216,9 +212,14 @@ contains
        associate (s => bp%s(k), x => bp%x(k))
 
          H = bp%vr%H(s, x, omega)
-         dH = bp%vr%dH(s, x, omega)
 
          y_c(:,k) = MATMUL(H, y(:,k))
+
+         if (bp%ml%vacuum(s, x)) then
+            dH = 0._WP
+         else
+            dH = bp%vr%dH(s, x, omega)
+         endif
 
          if (x /= 0._WP) then
             dy_c_dx(:,k) = MATMUL(dH/x, y(:,k)) + MATMUL(H, dy_dx(:,k))
@@ -230,7 +231,9 @@ contains
 
     end do
 
-    ! Calculate the gravity perturbation y_g and its derivative
+    ! Calculate the gravity perturbation y_g and its derivative (nb:
+    ! the vacuum check prevents errors, but leads to incorrect values
+    ! for dy_g_dx)
 
     !$OMP PARALLEL DO PRIVATE (U, dU)
     do k = 1, bp%n_k
@@ -239,19 +242,13 @@ contains
 
          U = bp%ml%U(s, x)
 
-         if (bp%ml%vacuum(s, x)) then
-
-            ! This needs to be fixed by applying a proper surface expansion
-
-            dU = 0._WP
-
-         else
-
-            dU = bp%ml%dU(s, x)
-
-         endif
-
          y_g(k) = -U*y_c(1,k)
+
+         if (bp%ml%vacuum(s, x)) then
+            dU = 0._WP
+         else
+            dU = bp%ml%dU(s, x)
+         endif
 
          if (x /= 0._WP) then
             dy_g_dx(k) = -U*dy_c_dx(1,k) - U*dU*y_c(1,k)/x
