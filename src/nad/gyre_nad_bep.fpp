@@ -174,14 +174,19 @@ contains
 
     call bp%solve(omega, y, discrim)
 
-    ! Calculate its derivatives
+    ! Calculate its derivatives (nb: the vacuum check prevents errors, but
+    ! leads to incorrect values for dy_dx)
 
     !$OMP PARALLEL DO PRIVATE (xA)
     do k = 1, bp%n_k
 
-       associate (x => bp%x(k))
+       associate (s => bp%s(k), x => bp%x(k))
 
-         xA = bp%eq(k)%xA(x, omega)
+         if (bp%ml%vacuum(s, x)) then
+            xA = 0._WP
+         else
+            xA = bp%eq(k)%xA(x, omega)
+         endif
 
          if (x /= 0._WP) then
             dy_dx(:,k) = MATMUL(xA, y(:,k))/x
@@ -193,7 +198,8 @@ contains
 
     end do
 
-    ! Convert to canonical form
+    ! Convert to canonical form (nb: the vacuum check prevents errors, but
+    ! leads to incorrect values for dy_c_dx)
 
     !$OMP PARALLEL DO PRIVATE (H, dH)
     do k = 1, bp%n_k
@@ -201,9 +207,14 @@ contains
        associate (s => bp%s(k), x => bp%x(k))
 
          H = bp%vr%H(s, x, omega)
-         dH = bp%vr%dH(s, x, omega)
 
          y_c(:,k) = MATMUL(H, y(:,k))
+
+         if (bp%ml%vacuum(s, x)) then
+            dH = 0._WP
+         else
+            dH = bp%vr%dH(s, x, omega)
+         endif
 
          if (x /= 0._WP) then
             dy_c_dx(:,k) = MATMUL(dH/x, y(:,k)) + MATMUL(H, dy_dx(:,k))
