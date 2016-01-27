@@ -82,8 +82,6 @@ contains
 
     type(sol_seg_t) :: ss
 
-    integer :: i
-
     ! Construct the sol_seg_t
 
     ! Finish
