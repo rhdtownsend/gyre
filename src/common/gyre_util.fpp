@@ -30,6 +30,7 @@ module gyre_util
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_out_par
   use gyre_scan_par
 
   use ISO_FORTRAN_ENV
@@ -45,10 +46,16 @@ module gyre_util
   ! Interfaces
 
   interface select_par
-     module procedure select_par_os_
-     module procedure select_par_nm_
-     module procedure select_par_gr_
-     module procedure select_par_sc_
+     module procedure select_par_gr_1_
+     module procedure select_par_nm_1_
+     module procedure select_par_os_1_
+     module procedure select_par_ot_1_
+     module procedure select_par_sc_1_
+     module procedure select_par_gr_v_
+     module procedure select_par_os_v_
+     module procedure select_par_ot_v_
+     module procedure select_par_nm_v_
+     module procedure select_par_sc_v_
   end interface select_par
 
   interface sprint
@@ -122,7 +129,7 @@ contains
 
   end function form_header
 
-!****
+  !****
 
   subroutine set_log_level (log_level)
 
@@ -146,7 +153,7 @@ contains
 
   end subroutine set_log_level
 
-!****
+  !****
 
   function check_log_level (log_level, rank)
 
@@ -192,72 +199,98 @@ contains
 
   end function check_log_level
 
-!****
+  !****
    
-   $define $SELECT_PAR $sub
+  $define $SELECT_PAR_1 $sub
 
-   $local $INFIX $1
-   $local $PAR_TYPE $2
+  $local $INFIX $1
+  $local $PAR_TYPE $2
 
-   subroutine select_par_${INFIX}_ (par, tag, par_sel, last)
+  subroutine select_par_${INFIX}_1_ (par, tag, par_sel)
 
-     type($PAR_TYPE), intent(in)               :: par(:)
-     character(*), intent(in)                  :: tag
-     type($PAR_TYPE), allocatable, intent(out) :: par_sel(:)
-     logical, optional, intent(in)             :: last
+    type($PAR_TYPE), intent(in)   :: par(:)
+    character(*), intent(in)      :: tag
+    type($PAR_TYPE), intent(out)  :: par_sel
 
-     logical :: last_
-     integer :: i
-     logical :: mask(SIZE(par))
-     integer :: n_par_sel
-     integer :: j
+    type($PAR_TYPE), allocatable :: par_sel_(:)
 
-     if(PRESENT(last)) then
-        last_ = last
-     else
-        last_ = .FALSE.
-     endif
+    ! Select the last parameter whose tag_list matches tag
 
-     ! Select all parameters whose tag_list matches tag
+    call select_par(par, tag, par_sel_)
 
-     mask_loop : do i = 1,SIZE(par)
-        mask(i) = (par(i)%tag_list == '') .OR. &
-                  (tag /= '' .AND. ANY(split_list(par(i)%tag_list, ',') == tag))
+    par_sel = par_sel_(SIZE(par_sel_))
+
+    ! Finish
+     
+    return
+
+  end subroutine select_par_${INFIX}_1_
+
+  $endsub
+
+  $SELECT_PAR_1(gr,grid_par_t)
+  $SELECT_PAR_1(nm,num_par_t)
+  $SELECT_PAR_1(os,osc_par_t)
+  $SELECT_PAR_1(sc,scan_par_t)
+  $SELECT_PAR_1(ot,out_par_t)
+
+  !****
+   
+  $define $SELECT_PAR_V $sub
+
+  $local $INFIX $1
+  $local $VAR $2
+  $local $PAR_TYPE $3
+  $local $PAR_NAME $4
+
+  subroutine select_par_${INFIX}_v_ (par, $VAR, par_sel)
+
+    type($PAR_TYPE), intent(in)               :: par(:)
+    character(*), intent(in)                  :: $VAR
+    type($PAR_TYPE), allocatable, intent(out) :: par_sel(:)
+
+    integer :: i
+    logical :: mask(SIZE(par))
+    integer :: n_par_sel
+    integer :: j
+
+    ! Select all parameters whose $VAR_list matches $VAR
+
+    mask_loop : do i = 1,SIZE(par)
+       mask(i) = (par(i)%${VAR}_list == '') .OR. &
+                 ($VAR /= '' .AND. ANY(split_list(par(i)%${VAR}_list, ',') == $VAR))
     end do mask_loop
 
     n_par_sel = COUNT(mask)
 
+    $ASSERT(n_par_sel >= 1,No matching $PAR_NAME namelists)
+    
     allocate(par_sel(n_par_sel))
 
     j = 0
 
     select_loop : do i = 1,SIZE(par)
-       if(mask(i)) then
+       if (mask(i)) then
           j = j + 1
           par_sel(j) = par(i)
        endif
     end do select_loop
 
-    ! If necessary, shrink par_sel to contain only the last element
-
-    if(last_ .AND. n_par_sel > 1) then
-       par_sel = par_sel(n_par_sel:n_par_sel)
-    endif
-
     ! Finish
-
+     
     return
 
-  end subroutine select_par_${INFIX}_
+  end subroutine select_par_${INFIX}_v_
 
   $endsub
 
-  $SELECT_PAR(gr,grid_par_t)
-  $SELECT_PAR(nm,num_par_t)
-  $SELECT_PAR(os,osc_par_t)
-  $SELECT_PAR(sc,scan_par_t)
+  $SELECT_PAR_V(gr,tag,grid_par_t,&grid)
+  $SELECT_PAR_V(nm,tag,num_par_t,&num)
+  $SELECT_PAR_V(os,tag,osc_par_t,&osc)
+  $SELECT_PAR_V(sc,tag,scan_par_t,&scan)
+  $SELECT_PAR_V(ot,stage,out_par_t,&output)
 
-!****
+  !****
 
   function split_list (list, delim) result (elems)
 
