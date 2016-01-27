@@ -238,7 +238,18 @@ contains
        associate (s => bp%s(k), x => bp%x(k))
 
          U = bp%ml%U(s, x)
-         dU = bp%ml%dU(s, x)
+
+         if (bl%ml%vacuum(s, x)) then
+
+            ! This needs to be fixed by applying a proper surface expansion
+
+            dU = 0._WP
+
+         else
+
+            dU = bp%ml%dU(s, x)
+
+         endif
 
          y_g(k) = -U*y_c(1,k)
 
