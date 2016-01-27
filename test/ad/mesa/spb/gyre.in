@@ -3,7 +3,7 @@
 
 &model
 	model_type = 'EVOL'
-	file = 'rgb.mesa'
+	file = 'spb.mesa'
 	file_format = 'MESA'
 /
 
@@ -32,10 +32,16 @@
 
 &scan
 	grid_type = 'INVERSE'
-	freq_min = 39,
-	freq_max = 41,
-	freq_units = 'UHZ'
-	n_freq = 200,
+	freq_min = 0.15
+	freq_max = 1
+	n_freq = 200
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 1
+	freq_max = 10
+	n_freq = 100
 /
 
 &grid
@@ -46,7 +52,7 @@
 /
 
 &output
-	summary_file = 'gyre_ad.txt'
+	summary_file = 'summary.txt'
 	summary_file_format = 'TXT'
 	summary_item_list = 'l,n_pg,n_p,n_g,omega'
 /
