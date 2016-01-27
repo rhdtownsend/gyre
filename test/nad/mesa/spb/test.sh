@@ -1,16 +1,16 @@
 #!/bin/bash
 #
-# File     : gyre.sh
+# File     : test.sh
 # Purpose  : GYRE testing script
 
 . test_support
 
 # Settings
 
-EXEC=./gyre_nad
+EXEC=./gyre
 
-IN_FILE=gyre_nad.in
-OUT_FILE=gyre_nad.txt
+IN_FILE=gyre.in
+OUT_FILE=summary.txt
 
 LABEL="MESA model for slowly pulsating B-type star"
 

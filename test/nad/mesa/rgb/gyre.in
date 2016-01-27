@@ -3,7 +3,7 @@
 
 &model
 	model_type = 'EVOL'
-	file = 'bcep.mesa'
+	file = 'rgb.mesa'
 	file_format = 'MESA'
 /
 
@@ -24,6 +24,7 @@
 /
 
 &osc
+	nonadiabatic = .TRUE.
 /
 
 &num
@@ -31,10 +32,11 @@
 /
 
 &scan
-	grid_type = 'LINEAR'
-	freq_min = 1
-	freq_max = 20.0
-	n_freq = 200
+	grid_type = 'INVERSE'
+	freq_min = 39,
+	freq_max = 39.5
+	freq_units = 'UHZ'
+	n_freq = 200,
 /
 
 &grid
@@ -45,7 +47,13 @@
 /
 
 &output
-	summary_file = 'gyre_nad.txt'
+	summary_file = ''
+	stage_list = 'ad'
+/
+
+&output
+	summary_file = 'summary.txt'
 	summary_file_format = 'TXT'
 	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+	stage_list = 'nad'
 /
