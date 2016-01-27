@@ -1820,9 +1820,12 @@ contains
        y_1 = REAL(this%Yt_1(this%s, this%x))
        y_2 = REAL(this%Yt_2(this%s, this%x))
 
-       ! Count winding numbers
+       ! Count winding numbers, taking care to avoid counting nodes at
+       ! the center and surface (check x(1) rather than Yt_1(1),
+       ! because the latter can be non-zero at x=0 due to rounding
+       ! errors)
 
-       if (y_1(1) == 0._WP) then
+       if (this%x(1) == 0._WP) then
           k_i = 2
        else
           k_i = 1
