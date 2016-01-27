@@ -949,6 +949,31 @@ contains
 
   !****
 
+  function dW_dx_eps_1_ (this, s, x) result (dW_dx_eps)
+
+    use gyre_evol_model
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: s
+    real(WP), intent(in)      :: x
+    real(WP)                  :: dW_dx_eps
+
+    ! Evaluate the differential work associated with nuclear
+    ! processes, in units of G M_star**2/R_star.  This expression is
+    ! based on eqn. X.XX of [Unn1989]
+
+    dW_dx_eps = 0._WP
+
+    $ABORT(Not yet implemented)
+
+    ! Finish
+
+    return
+
+  end function dW_dx_eps_1_
+
+  !****
+
   function dC_dx_1_ (this, s, x) result (dC_dx)
 
     class(mode_t), intent(in) :: this
