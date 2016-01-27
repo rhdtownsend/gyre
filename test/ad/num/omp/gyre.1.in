@@ -42,7 +42,7 @@
 /
 
 &output
-	summary_file = 'gyre_ad.n.txt'
+	summary_file = 'summary.1.txt'
 	summary_file_format = 'TXT'
 	summary_item_list = 'l,n_pg,n_p,n_g,omega'
 /

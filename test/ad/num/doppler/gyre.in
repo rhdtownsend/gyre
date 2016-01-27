@@ -23,7 +23,7 @@
 /
 
 &osc
-	rotation_method = 'TRAD'
+	rotation_method = 'DOPPLER'
 /
 
 &num
@@ -32,11 +32,11 @@
 
 &scan
 	grid_type = 'LINEAR'
-	freq_min = 0.8
+	freq_min = 0.9
 	freq_max = 11.0
+	n_freq = 20
 	freq_frame = 'COROT_O'
 	grid_frame = 'COROT_O'
-	n_freq = 20
 /
 
 &grid
@@ -46,7 +46,7 @@
 /
 
 &output
-	summary_file = 'gyre_ad.txt'
+	summary_file = 'summary.txt'
 	summary_file_format = 'TXT'
 	summary_item_list = 'l,n_pg,n_p,n_g,omega'
 /

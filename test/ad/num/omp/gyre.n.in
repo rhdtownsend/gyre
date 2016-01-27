@@ -26,7 +26,6 @@
 
 &num
 	diff_scheme = 'COLLOC_GL6'
-	matrix_type = 'BAND'
 /
 
 &scan
@@ -43,7 +42,7 @@
 /
 
 &output
-	summary_file = 'gyre_ad.txt'
+	summary_file = 'summary.n.txt'
 	summary_file_format = 'TXT'
 	summary_item_list = 'l,n_pg,n_p,n_g,omega'
 /
