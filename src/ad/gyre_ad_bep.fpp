@@ -179,9 +179,19 @@ contains
     !$OMP PARALLEL DO PRIVATE (xA)
     do k = 1, bp%n_k
 
-       associate (x => bp%x(k))
+       associate (s => bp%s(k), x => bp%x(k))
 
-         xA = bp%eq(k)%xA(x, omega)
+         if (bp%ml%vacuum(s, x)) then
+
+            ! This needs to be fixed by applying a proper surface expansion
+
+            xA = 0._WP
+
+         else
+
+            xA = bp%eq(k)%xA(x, omega)
+
+         endif
 
          if (x /= 0._WP) then
             dy_dx(:,k) = MATMUL(xA, y(:,k))/x
@@ -206,7 +216,7 @@ contains
          y_c(:,k) = MATMUL(H, y(:,k))
 
          if (x /= 0._WP) then
-            dy_c_dx(:,k) = MATMUL(dH/x + H, y(:,k))
+            dy_c_dx(:,k) = MATMUL(dH/x, y(:,k)) + MATMUL(H, dy_dx(:,k))
          else
             dy_c_dx(:,k) = 0._WP
          endif

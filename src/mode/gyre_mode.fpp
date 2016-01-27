@@ -1221,14 +1221,17 @@ contains
 
     ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
-    U = this%ml%U(s, x)
+    if (this%ml%vacuum(s, x)) then
 
-    if (U > 0._WP) then
+       prop_type = 0
+
+    else
 
        ! Calculate the discriminant gamma
 
        V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
        As = this%ml%As(s, x)
+       U = this%ml%U(s, x)
        c_1 = this%ml%c_1(s, x)
 
        lambda = REAL(this%lambda(s, x))
@@ -1256,10 +1259,6 @@ contains
           endif
 
        endif
-
-    else
-
-       prop_type = 0
 
     endif
     

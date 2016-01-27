@@ -336,23 +336,34 @@ contains
     associate (s => this%ml%n_s, &
                x => this%ml%x_o(this%ml%n_s))
 
-      ! Calculate coefficients
+      if (this%ml%vacuum(s, x)) then
 
-      V = this%ml%V_2(s, x)*x**2
-      c_1 = this%ml%c_1(s, x)
+         ! For a vacuum, the boundary condition reduces to the zero
+         ! condition
 
-      omega_c = this%rt%omega_c(s, x, omega)
+         call this%build_zero_o_(omega, B_o, scl)
 
-      ! Set up the boundary conditions
+      else
+
+         ! Calculate coefficients
+
+         V = this%ml%V_2(s, x)*x**2
+         c_1 = this%ml%c_1(s, x)
+
+         omega_c = this%rt%omega_c(s, x, omega)
+
+         ! Set up the boundary conditions
         
-      B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
-      B_o(1,2) = -1._WP
+         B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
+         B_o(1,2) = -1._WP
 
-      scl = r_ext_t(1._WP)
+         scl = r_ext_t(1._WP)
 
-      ! Apply the variables transformation
+         ! Apply the variables transformation
 
-      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+
+      endif
 
     end associate
 
@@ -363,9 +374,7 @@ contains
   end subroutine build_dziem_o_
 
   !****
-
-  !****
-
+  
   subroutine build_unno_o_ (this, omega, B_o, scl)
 
     class(rad_bound_t), intent(in) :: this
@@ -389,27 +398,38 @@ contains
     associate (s => this%ml%n_s, &
                x => this%ml%x_o(this%ml%n_s))
 
-      ! Calculate coefficients
+      if (this%ml%vacuum(s, x)) then
 
-      call eval_atmos_coeffs_unno(this%ml, V_g, As, c_1)
+         ! For a vacuum, the boundary condition reduces to the zero
+         ! condition
 
-      omega_c = this%rt%omega_c(s, x, omega)
+         call this%build_zero_o_(omega, B_o, scl)
 
-      beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
+      else
+
+         ! Calculate coefficients
+
+         call eval_atmos_coeffs_unno(this%ml, V_g, As, c_1)
+
+         omega_c = this%rt%omega_c(s, x, omega)
+
+         beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
       
-      b_11 = V_g - 3._WP
-      b_12 = -V_g
+         b_11 = V_g - 3._WP
+         b_12 = -V_g
     
-      ! Set up the boundary conditions
+         ! Set up the boundary conditions
       
-      B_o(1,1) = beta - b_11
-      B_o(1,2) = -b_12
+         B_o(1,1) = beta - b_11
+         B_o(1,2) = -b_12
 
-      scl = r_ext_t(1._WP)
+         scl = r_ext_t(1._WP)
 
-      ! Apply the variables transformation
+         ! Apply the variables transformation
 
-      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+
+      endif
 
     end associate
 
@@ -446,23 +466,34 @@ contains
     associate (s => this%ml%n_s, &
                x => this%ml%x_o(this%ml%n_s))
 
-      call eval_atmos_coeffs_jcd(this%ml, V_g, As, c_1)
+      if (this%ml%vacuum(s, x)) then
 
-      omega_c = this%rt%omega_c(s, x, omega)
+         ! For a vacuum, the boundary condition reduces to the zero
+         ! condition
 
-      beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
+         call this%build_zero_o_(omega, B_o, scl)
 
-      b_11 = V_g - 3._WP
-      b_12 = -V_g
+      else
 
-      ! Set up the boundary conditions
+         call eval_atmos_coeffs_jcd(this%ml, V_g, As, c_1)
 
-      B_o(1,1) = beta - b_11
-      B_o(1,2) = -b_12
+         omega_c = this%rt%omega_c(s, x, omega)
 
-      ! Apply the variables transformation
+         beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
 
-      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+         b_11 = V_g - 3._WP
+         b_12 = -V_g
+
+         ! Set up the boundary conditions
+
+         B_o(1,1) = beta - b_11
+         B_o(1,2) = -b_12
+
+         ! Apply the variables transformation
+
+         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+
+      endif
 
     end associate
 

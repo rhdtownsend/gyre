@@ -437,51 +437,62 @@ contains
     associate (s => this%ml%n_s, &
                x => this%ml%x_o(this%ml%n_s))
 
-      ! Calculate coefficients
+      if (this%ml%vacuum(s, x)) then
 
-      V = this%ml%V_2(s, x)*x**2
-      c_1 = this%ml%c_1(s, x)
-      nabla_ad = this%ml%nabla_ad(s, x)
+         ! For a vacuum, the boundary condition reduces to the zero
+         ! condition
 
-      lambda = this%rt%lambda(s, x, omega)
-      l_e = this%rt%l_e(s, x, omega)
-    
-      omega_c = this%rt%omega_c(s, x, omega)
+         call this%build_zero_o_(omega, B_o, scl)
 
-      if (this%cowling_approx) then
-         alpha_gr = 0._WP
       else
-         alpha_gr = 1._WP
+
+         ! Calculate coefficients
+
+         V = this%ml%V_2(s, x)*x**2
+         c_1 = this%ml%c_1(s, x)
+         nabla_ad = this%ml%nabla_ad(s, x)
+
+         lambda = this%rt%lambda(s, x, omega)
+         l_e = this%rt%l_e(s, x, omega)
+
+         omega_c = this%rt%omega_c(s, x, omega)
+
+         if (this%cowling_approx) then
+            alpha_gr = 0._WP
+         else
+            alpha_gr = 1._WP
+         endif
+
+         ! Set up the boundary conditions
+
+         B_o(1,1) = 1._WP + (lambda/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
+         B_o(1,2) = -1._WP
+         B_o(1,3) = alpha_gr*((lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
+         B_o(1,4) = alpha_gr*(0._WP)
+         B_o(1,5) = 0._WP
+         B_o(1,6) = 0._WP
+
+         B_o(2,1) = alpha_gr*(0._WP)
+         B_o(2,2) = alpha_gr*(0._WP)
+         B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+         B_o(2,4) = alpha_gr*(1._WP)
+         B_o(2,5) = alpha_gr*(0._WP)
+         B_o(2,6) = alpha_gr*(0._WP)
+
+         B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
+         B_o(3,2) = 4._WP*nabla_ad*V
+         B_o(3,3) = alpha_gr*(0._WP)
+         B_o(3,4) = alpha_gr*(0._WP)
+         B_o(3,5) = 4._WP
+         B_o(3,6) = -1._WP
+
+         scl = c_ext_t(1._WP)
+
+         ! Apply the variables transformation
+
+         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+
       endif
-
-      ! Set up the boundary conditions
-
-      B_o(1,1) = 1._WP + (lambda/(c_1*omega_c**2) - 4._WP - c_1*omega_c**2)/V
-      B_o(1,2) = -1._WP
-      B_o(1,3) = alpha_gr*((lambda/(c_1*omega_c**2) - l_e - 1._WP)/V)
-      B_o(1,4) = alpha_gr*(0._WP)
-      B_o(1,5) = 0._WP
-      B_o(1,6) = 0._WP
-     
-      B_o(2,1) = alpha_gr*(0._WP)
-      B_o(2,2) = alpha_gr*(0._WP)
-      B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B_o(2,4) = alpha_gr*(1._WP)
-      B_o(2,5) = alpha_gr*(0._WP)
-      B_o(2,6) = alpha_gr*(0._WP)
-
-      B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
-      B_o(3,2) = 4._WP*nabla_ad*V
-      B_o(3,3) = alpha_gr*(0._WP)
-      B_o(3,4) = alpha_gr*(0._WP)
-      B_o(3,5) = 4._WP
-      B_o(3,6) = -1._WP
-
-      scl = c_ext_t(1._WP)
-
-      ! Apply the variables transformation
-
-      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
 
     end associate
 
@@ -527,65 +538,76 @@ contains
     associate (s => this%ml%n_s, &
                x => this%ml%x_o(this%ml%n_s))
 
-      ! Calculate coefficients
+      if (this%ml%vacuum(s, x)) then
 
-      call eval_atmos_coeffs_unno(this%ml, V_g, As, c_1)
+         ! For a vacuum, the boundary condition reduces to the zero
+         ! condition
 
-      V = this%ml%V_2(s, x)*x**2
-      nabla_ad = this%ml%nabla_ad(s, x)
+         call this%build_zero_o_(omega, B_o, scl)
 
-      lambda = this%rt%lambda(s, x, omega)
-      l_e = this%rt%l_e(s, x, omega)
-
-      omega_c = this%rt%omega_c(s, x, omega)
-
-      beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
-
-      if (this%cowling_approx) then
-         alpha_gr = 0._WP
       else
-         alpha_gr = 1._WP
+
+         ! Calculate coefficients
+         
+         call eval_atmos_coeffs_unno(this%ml, V_g, As, c_1)
+
+         V = this%ml%V_2(s, x)*x**2
+         nabla_ad = this%ml%nabla_ad(s, x)
+
+         lambda = this%rt%lambda(s, x, omega)
+         l_e = this%rt%l_e(s, x, omega)
+
+         omega_c = this%rt%omega_c(s, x, omega)
+
+         beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
+
+         if (this%cowling_approx) then
+            alpha_gr = 0._WP
+         else
+            alpha_gr = 1._WP
+         endif
+
+         b_11 = V_g - 3._WP
+         b_12 = lambda/(c_1*omega_c**2) - V_g
+         b_13 = alpha_gr*(V_g)
+
+         b_21 = c_1*omega_c**2 - As
+         b_22 = 1._WP + As
+         b_23 = alpha_gr*(-As)
+
+         alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
+         alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
+
+         ! Set up the boundary conditions
+
+         B_o(1,1) = beta - b_11
+         B_o(1,2) = -b_12
+         B_o(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12)
+         B_o(1,4) = 0._WP
+         B_o(1,5) = 0._WP
+         B_o(1,6) = 0._WP
+
+         B_o(2,1) = alpha_gr*(0._WP)
+         B_o(2,2) = alpha_gr*(0._WP)
+         B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+         B_o(2,4) = alpha_gr*(1._WP)
+         B_o(2,5) = alpha_gr*(0._WP)
+         B_o(2,6) = alpha_gr*(0._WP)
+
+         B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
+         B_o(3,2) = 4._WP*nabla_ad*V
+         B_o(3,3) = alpha_gr*(0._WP)
+         B_o(3,4) = alpha_gr*(0._WP)
+         B_o(3,5) = 4._WP
+         B_o(3,6) = -1._WP
+
+         scl = c_ext_t(1._WP)
+
+         ! Apply the variables transformation
+
+         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+
       endif
-
-      b_11 = V_g - 3._WP
-      b_12 = lambda/(c_1*omega_c**2) - V_g
-      b_13 = alpha_gr*(V_g)
-      
-      b_21 = c_1*omega_c**2 - As
-      b_22 = 1._WP + As
-      b_23 = alpha_gr*(-As)
-    
-      alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
-      alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
-
-      ! Set up the boundary conditions
-
-      B_o(1,1) = beta - b_11
-      B_o(1,2) = -b_12
-      B_o(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12)
-      B_o(1,4) = 0._WP
-      B_o(1,5) = 0._WP
-      B_o(1,6) = 0._WP
-
-      B_o(2,1) = alpha_gr*(0._WP)
-      B_o(2,2) = alpha_gr*(0._WP)
-      B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B_o(2,4) = alpha_gr*(1._WP)
-      B_o(2,5) = alpha_gr*(0._WP)
-      B_o(2,6) = alpha_gr*(0._WP)
-    
-      B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
-      B_o(3,2) = 4._WP*nabla_ad*V
-      B_o(3,3) = alpha_gr*(0._WP)
-      B_o(3,4) = alpha_gr*(0._WP)
-      B_o(3,5) = 4._WP
-      B_o(3,6) = -1._WP
- 
-      scl = c_ext_t(1._WP)
-
-      ! Apply the variables transformation
-
-      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
 
     end associate
 
@@ -625,57 +647,68 @@ contains
     associate (s => this%ml%n_s, &
                x => this%ml%x_o(this%ml%n_s))
 
-      ! Calculate coefficients
+      if (this%ml%vacuum(s, x)) then
 
-      call eval_atmos_coeffs_jcd(this%ml, V_g, As, c_1)
+         ! For a vacuum, the boundary condition reduces to the zero
+         ! condition
 
-      V = this%ml%V_2(s, x)*x**2
-      nabla_ad = this%ml%nabla_ad(s, x)
-    
-      lambda = this%rt%lambda(s, x, omega)
-      l_e = this%rt%l_e(s, x, omega)
+         call this%build_zero_o_(omega, B_o, scl)
 
-      omega_c = this%rt%omega_c(s, x, omega)
-
-      beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
-
-      if (this%cowling_approx) then
-         alpha_gr = 0._WP
       else
-         alpha_gr = 1._WP
+
+         ! Calculate coefficients
+         
+         call eval_atmos_coeffs_jcd(this%ml, V_g, As, c_1)
+
+         V = this%ml%V_2(s, x)*x**2
+         nabla_ad = this%ml%nabla_ad(s, x)
+
+         lambda = this%rt%lambda(s, x, omega)
+         l_e = this%rt%l_e(s, x, omega)
+
+         omega_c = this%rt%omega_c(s, x, omega)
+
+         beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
+
+         if (this%cowling_approx) then
+            alpha_gr = 0._WP
+         else
+            alpha_gr = 1._WP
+         endif
+
+         b_11 = V_g - 3._WP
+         b_12 = lambda/(c_1*omega_c**2) - V_g
+
+         ! Set up the boundary conditions
+
+         B_o(1,1) = beta - b_11
+         B_o(1,2) = -b_12
+         B_o(1,3) = alpha_gr*((lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
+         B_o(1,4) = alpha_gr*(0._WP)
+         B_o(1,5) = 0._WP
+         B_o(1,6) = 0._WP
+
+         B_o(2,1) = alpha_gr*(0._WP)
+         B_o(2,2) = alpha_gr*(0._WP)
+         B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+         B_o(2,4) = alpha_gr*(1._WP)
+         B_o(2,5) = alpha_gr*(0._WP)
+         B_o(2,6) = alpha_gr*(0._WP)
+
+         B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
+         B_o(3,2) = 4._WP*nabla_ad*V
+         B_o(3,3) = alpha_gr*(0._WP)
+         B_o(3,4) = alpha_gr*(0._WP)
+         B_o(3,5) = 4._WP
+         B_o(3,6) = -1._WP
+
+         scl = c_ext_t(1._WP)
+
+         ! Apply the variables transformation
+
+         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+
       endif
-
-      b_11 = V_g - 3._WP
-      b_12 = lambda/(c_1*omega_c**2) - V_g
-
-      ! Set up the boundary conditions
-
-      B_o(1,1) = beta - b_11
-      B_o(1,2) = -b_12
-      B_o(1,3) = alpha_gr*((lambda/(c_1*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
-      B_o(1,4) = alpha_gr*(0._WP)
-      B_o(1,5) = 0._WP
-      B_o(1,6) = 0._WP
-    
-      B_o(2,1) = alpha_gr*(0._WP)
-      B_o(2,2) = alpha_gr*(0._WP)
-      B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B_o(2,4) = alpha_gr*(1._WP)
-      B_o(2,5) = alpha_gr*(0._WP)
-      B_o(2,6) = alpha_gr*(0._WP)
-    
-      B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
-      B_o(3,2) = 4._WP*nabla_ad*V
-      B_o(3,3) = alpha_gr*(0._WP)
-      B_o(3,4) = alpha_gr*(0._WP)
-      B_o(3,5) = 4._WP
-      B_o(3,6) = -1._WP
-
-      scl = c_ext_t(1._WP)
-
-      ! Apply the variables transformation
-
-      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
 
     end associate
 

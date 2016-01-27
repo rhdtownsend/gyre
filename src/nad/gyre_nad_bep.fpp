@@ -206,7 +206,7 @@ contains
          y_c(:,k) = MATMUL(H, y(:,k))
 
          if (x /= 0._WP) then
-            dy_c_dx(:,k) = MATMUL(dH/x + H, y(:,k))
+            dy_c_dx(:,k) = MATMUL(dH/x, y(:,k)) + MATMUL(H, dy_dx(:,k))
          else
             dy_c_dx(:,k) = 0._WP
          endif
