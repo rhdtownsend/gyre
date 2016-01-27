@@ -1,7 +1,7 @@
 ! Program  : gyre_output
 ! Purpose  : output routines
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -55,27 +55,23 @@ contains
     type(mode_t), intent(in)    :: md(:)
     type(out_par_t), intent(in) :: ot_p
 
-    type(hdf_writer_t)                                  :: wr_hdf
-    type(txt_writer_t)                                  :: wr_txt
     class(writer_t), allocatable                        :: wr
     character(LEN(ot_p%summary_item_list)), allocatable :: items(:)
     integer                                             :: n_md
     integer                                             :: i
     integer                                             :: j
-    
-    if (ot_p%summary_file == '') return
 
     ! Write the summary file
+
+    if (SIZE(md) == 0 .OR. ot_p%summary_file == '') return
 
     ! Open the file
 
     select case (ot_p%summary_file_format)
     case ('HDF')
-       wr_hdf = hdf_writer_t(ot_p%summary_file, ot_p%label)
-       allocate(wr, SOURCE=wr_hdf)
+       allocate(wr, SOURCE=hdf_writer_t(ot_p%summary_file, ot_p%label))
     case ('TXT')
-       wr_txt = txt_writer_t(ot_p%summary_file, ot_p%label)
-       allocate(wr, SOURCE=wr_txt)
+       allocate(wr, SOURCE=txt_writer_t(ot_p%summary_file, ot_p%label))
     case default
        $ABORT(Invalid summary_file_format)
     end select
@@ -94,8 +90,8 @@ contains
 
        case('l')
           call wr%write('l', md%l)
-!       case('l_i')
-!          call wr%write('l_i', [(md(j)%l_i, j=1,n_md)])
+       case('l_i')
+          call wr%write('l_i', [(md(j)%l_i, j=1,n_md)])
        case('m')
           call wr%write('m', md%m)
        case('n_p')
@@ -207,60 +203,33 @@ contains
     type(out_par_t), intent(in) :: ot_p
 
     character(:), allocatable                        :: mode_file
-    character(64)                                    :: infix
-    type(hdf_writer_t)                               :: wr_hdf
-    type(txt_writer_t)                               :: wr_txt
     class(writer_t), allocatable                     :: wr
     character(LEN(ot_p%mode_item_list)), allocatable :: items(:)
     integer                                          :: i
 
-    if (ot_p%mode_template == '' .AND. ot_p%mode_prefix == '') return
-
     ! Write the mode file
 
-    ! Set ot_p the filename
+    if (ot_p%mode_template == '') return
 
-    if (ot_p%mode_template /= '') then
+    ! Set up the filename
 
-       mode_file = ot_p%mode_template
+    mode_file = ot_p%mode_template
 
-       ! Substitute fixed-width fields
+    mode_file = subst_(mode_file, '%J', j, '(I5.5)')
+    mode_file = subst_(mode_file, '%L', md%l, '(I3.3)')
+    mode_file = subst_(mode_file, '%N', md%n_pg, '(SP,I6.5)')
 
-       mode_file = subst_(mode_file, '%J', j, '(I5.5)')
-       mode_file = subst_(mode_file, '%L', md%l, '(I3.3)')
-       mode_file = subst_(mode_file, '%N', md%n_pg, '(SP,I6.5)')
-
-       ! Substitute variable-width fields
-
-       mode_file = subst_(mode_file, '%j', j, '(I0)')
-       mode_file = subst_(mode_file, '%l', md%l, '(I0)')
-       mode_file = subst_(mode_file, '%n', md%n_pg, '(SP,I0)')
-
-    else
-
-       write(infix, 100) j
-100    format(I5.5)
-
-       select case (ot_p%mode_file_format)
-       case ('HDF')
-          mode_file = TRIM(ot_p%mode_prefix)//TRIM(infix)//'.h5'
-       case ('TXT')
-          mode_file = TRIM(ot_p%mode_prefix)//TRIM(infix)//'.txt'
-       case default
-          $ABORT(Invalid mode_file_format)
-       end select
-
-    endif
+    mode_file = subst_(mode_file, '%j', j, '(I0)')
+    mode_file = subst_(mode_file, '%l', md%l, '(I0)')
+    mode_file = subst_(mode_file, '%n', md%n_pg, '(SP,I0)')
 
     ! Open the file
 
     select case (ot_p%mode_file_format)
     case ('HDF')
-       wr_hdf = hdf_writer_t(mode_file, ot_p%label)
-       allocate(wr, SOURCE=wr_hdf)
+       allocate(wr, SOURCE=hdf_writer_t(mode_file, ot_p%label))
     case ('TXT')
-       wr_txt = txt_writer_t(mode_file, ot_p%label)
-       allocate(wr, SOURCE=wr_txt)
+       allocate(wr, SOURCE=txt_writer_t(mode_file, ot_p%label))
     case default
        $ABORT(Invalid mode_file_format)
     end select
