@@ -41,10 +41,10 @@ module gyre_out_par
      character(FILENAME_LEN) :: summary_file
      character(256)          :: summary_file_format
      character(2048)         :: summary_item_list
-     character(FILENAME_LEN) :: mode_prefix
      character(FILENAME_LEN) :: mode_template
-     character(256)          :: mode_file_format
+     character(256)          :: mode_file_format 
      character(2048)         :: mode_item_list
+     character(256)          :: stage_list
      character(256)          :: label
      logical                 :: prune_modes
   end type out_par_t
@@ -82,24 +82,27 @@ contains
 
   subroutine read_out_par (unit, ot_p)
 
-    integer, intent(in)          :: unit
-    type(out_par_t), intent(out) :: ot_p
+    integer, intent(in)                       :: unit
+    type(out_par_t), allocatable, intent(out) :: ot_p(:)
 
     integer                                  :: n_ot_p
+    integer                                  :: i
     character(LEN(ot_p%freq_units))          :: freq_units
     character(LEN(ot_p%freq_frame))          :: freq_frame
     character(LEN(ot_p%summary_file))        :: summary_file
     character(LEN(ot_p%summary_file_format)) :: summary_file_format
     character(LEN(ot_p%summary_item_list))   :: summary_item_list
-    character(LEN(ot_p%mode_prefix))         :: mode_prefix
     character(LEN(ot_p%mode_template))       :: mode_template
     character(LEN(ot_p%mode_file_format))    :: mode_file_format
     character(LEN(ot_p%mode_item_list))      :: mode_item_list
+    character(LEN(ot_p%stage_list))          :: stage_list
     character(LEN(ot_p%label))               :: label
     logical                                  :: prune_modes
 
-    namelist /output/ freq_units, freq_frame, summary_file, summary_file_format, summary_item_list, &
-                      mode_prefix, mode_template, mode_file_format, mode_item_list, label, prune_modes
+    namelist /output/ freq_units, freq_frame, &
+                      summary_file, summary_file_format, summary_item_list, &
+                      mode_template, mode_file_format, mode_item_list, &
+                      stage_list, label, prune_modes
 
     ! Count the number of output namelists
 
@@ -114,42 +117,47 @@ contains
 
 100 continue
 
-    $ASSERT(n_ot_p == 1,Input file should contain exactly one &output namelist)
-
     ! Read output parameters
 
-    freq_units = 'NONE'
-    freq_frame = 'INERTIAL'
-
-    summary_file = ''
-    summary_file_format = 'HDF'
-    summary_item_list = 'l,n_pg,omega,freq'
-    
-    mode_prefix = ''
-    mode_template = ''
-    mode_file_format = 'HDF'
-    mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
-
-    label = ''
-
-    prune_modes = .FALSE.
-
     rewind(unit)
-    read(unit, NML=output)
 
-    ! Initialize the out_par
+    allocate(ot_p(n_ot_p))
 
-    ot_p = out_par_t(freq_units=freq_units, &
-                     freq_frame=freq_frame, &
-                     summary_file=summary_file, &
-                     summary_file_format=summary_file_format, &
-                     summary_item_list=summary_item_list, &
-                     mode_prefix=mode_prefix, &
-                     mode_template=mode_template, &
-                     mode_file_format=mode_file_format, &
-                     mode_item_list=mode_item_list, &
-                     label=label, &
-                     prune_modes=prune_modes)
+    read_loop : do i = 1, n_ot_p
+
+       freq_units = 'NONE'
+       freq_frame = 'INERTIAL'
+
+       summary_file = 'summary.h5'
+       summary_file_format = 'HDF'
+       summary_item_list = 'l,n_pg,omega,freq'
+    
+       mode_template = ''
+       mode_file_format = 'HDF'
+       mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
+       
+       stage_list = ''
+       label = ''
+       
+       prune_modes = .FALSE.
+
+       read(unit, NML=output)
+
+       ! Initialize the out_par
+
+       ot_p(i) = out_par_t(freq_units=freq_units, &
+                           freq_frame=freq_frame, &
+                           summary_file=summary_file, &
+                           summary_file_format=summary_file_format, &
+                           summary_item_list=summary_item_list, &
+                           mode_template=mode_template, &
+                           mode_file_format=mode_file_format, &
+                           mode_item_list=mode_item_list, &
+                           stage_list=stage_list, &
+                           label=label, &
+                           prune_modes=prune_modes)
+
+    end do read_loop
 
     ! Finish
 
@@ -157,7 +165,7 @@ contains
 
   end subroutine read_out_par
 
-!****
+  !****
 
   $if ($MPI)
 
