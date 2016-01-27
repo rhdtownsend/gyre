@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=ad nad
+SUBDIRS=frontend
 
 # Rules
 
