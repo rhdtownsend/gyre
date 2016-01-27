@@ -109,6 +109,7 @@ module gyre_evol_model
      generic, public   :: rho => rho_1_, rho_v_
      $PROC_DECL(T)
      generic, public   :: T => T_1_, T_v_
+     procedure, public :: vacuum
      procedure, public :: x_i
      procedure, public :: x_o
      procedure, public :: x_base
@@ -531,6 +532,28 @@ contains
   $PROC_V(P)
   $PROC_V(rho)
   $PROC_V(T)
+
+  !****
+
+  function vacuum (this, s, x)
+
+    class(evol_model_t), intent(in) :: this
+    integer, intent(in)        :: s
+    real(WP), intent(in)       :: x
+    logical                    :: vacuum
+
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+
+    ! Evaluate the vacuum condition
+
+    vacuum = this%es(s)%vacuum(x)
+
+    ! Finish
+
+    return
+
+  end function vacuum
 
   !****
 

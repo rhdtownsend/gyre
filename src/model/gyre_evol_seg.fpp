@@ -111,8 +111,8 @@ module gyre_evol_seg
      $PROC_DECL(kappa_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
+     procedure, public :: vacuum
   end type evol_seg_t
-
   
   ! Interfaces
 
@@ -285,5 +285,23 @@ contains
   $DPROC(nabla_ad)
   $DPROC(c_rad)
   $DPROC(Omega_rot)
+
+  !****
+
+  function vacuum (this, x)
+
+    class(evol_seg_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    logical                       :: vacuum
+
+    ! Evaluate the vacuum condition
+
+    vacuum = this%U(x) == 0._WP
+
+    ! Finish
+
+    return
+
+  end function vacuum
 
 end module gyre_evol_seg

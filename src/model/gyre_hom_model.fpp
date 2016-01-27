@@ -70,6 +70,7 @@ module gyre_hom_model
      $PROC_DECL(kappa_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
+     procedure, public :: vacuum
      procedure, public :: x_i
      procedure, public :: x_o
      procedure, public :: x_base
@@ -130,11 +131,7 @@ contains
 
     ! Calculate V_2
 
-    if (x /= 1. _WP) then
-       V_2 = 2._WP/(1._WP - x**2)
-    else
-       V_2 = 2._WP/EPSILON(0._WP)
-    endif
+    V_2 = 2._WP/(1._WP - x**2)
 
     ! Finish
 
@@ -439,6 +436,25 @@ contains
   $PROC_V(kappa_S)
   $PROC_V(Omega_rot)
   $PROC_V(dOmega_rot)
+
+  !****
+
+  function vacuum (this, s, x)
+
+    class(hom_model_t), intent(in) :: this
+    integer, intent(in)            :: s
+    real(WP), intent(in)           :: x
+    logical                        :: vacuum
+
+    ! Evaluate the vacuum condition
+
+    vacuum = (1._WP - x**2) == 0._WP
+
+    ! Finish
+
+    return
+
+  end function vacuum
 
   !****
 

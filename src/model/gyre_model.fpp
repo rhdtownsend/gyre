@@ -62,6 +62,7 @@ module gyre_model
      $PROC_DECL(kappa_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
+     procedure(vacuum), deferred, public :: vacuum
      procedure(x_i), deferred, public    :: x_i
      procedure(x_o), deferred, public    :: x_o
      procedure(x_base), deferred, public :: x_base
@@ -88,6 +89,15 @@ module gyre_model
        real(WP), intent(in)       :: x(:)
        real(WP)                   :: f(SIZE(s))
      end function f_v_
+
+     function vacuum (this, s, x)
+       use core_kinds
+       import model_t
+       class(model_t), intent(in) :: this
+       integer, intent(in)        :: s
+       real(WP), intent(in)       :: x
+       logical                    :: vacuum
+     end function vacuum
 
      function x_i (this, s)
        use core_kinds

@@ -64,6 +64,7 @@ module gyre_poly_seg
      $PROC_DECL(dnabla_ad)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
+     procedure, public :: vacuum
   end type poly_seg_t
  
   ! Interfaces
@@ -184,8 +185,6 @@ contains
        Theta = this%in_Theta%f(x)
        dTheta = this%in_dTheta%f(x)
 
-       if (Theta == 0._WP) Theta = TINY(0._WP)
-
        V_2 = -(this%n_poly + 1._WP)*xi*dTheta/(Theta*x**2)
 
     else
@@ -273,8 +272,6 @@ contains
        Theta = this%in_Theta%f(x)
        dTheta = this%in_dTheta%f(x)
        
-       if (Theta == 0._WP) Theta = TINY(0._WP)
-
        dU = 3._WP + this%n_poly*xi*dTheta/Theta - xi**3*Theta**this%n_poly/this%mu(x)
 
     else
@@ -418,5 +415,30 @@ contains
     return
 
   end function dOmega_rot
+
+  !****
   
+  function vacuum (this, x)
+
+    class(poly_seg_t), intent(in) :: this
+    real(WP), intent(in)          :: x
+    logical                       :: vacuum
+
+    real(WP) :: xi
+    real(WP) :: Theta
+
+    ! Evaluate the vacuum condition
+
+    xi = x*this%xi_s
+
+    Theta = this%in_Theta%f(x)
+
+    vacuum = Theta == 0._WP
+
+    ! Finish
+
+    return
+
+  end function vacuum
+
 end module gyre_poly_seg

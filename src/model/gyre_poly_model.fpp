@@ -72,6 +72,7 @@ module gyre_poly_model
      $PROC_DECL(kappa_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
+     procedure, public :: vacuum
      procedure, public :: x_i
      procedure, public :: x_o
      procedure, public :: x_base
@@ -329,6 +330,28 @@ contains
   $PROC_V(kappa_S)
   $PROC_V(Omega_rot)
   $PROC_V(dOmega_rot)
+
+  !****
+
+  function vacuum (this, s, x)
+
+    class(poly_model_t), intent(in) :: this
+    integer, intent(in)             :: s
+    real(WP), intent(in)            :: x
+    logical                         :: vacuum
+
+    $ASSERT_DEBUG(s >= 1,Invalid segment index)
+    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+
+    ! Evaluate the vacuum condition
+
+    vacuum = this%ps(s)%vacuum(x)
+
+    ! Finish
+
+    return
+
+  end function vacuum
 
   !****
 
