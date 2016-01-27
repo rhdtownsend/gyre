@@ -34,7 +34,7 @@
 /
 
 &output
-	summary_file = 'gyre_ad.txt'
+	summary_file = 'summary.txt'
 	summary_file_format = 'TXT'
 	summary_item_list = 'l,n_pg,n_p,n_g,freq'
 	freq_units = 'UHZ'
