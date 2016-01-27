@@ -239,7 +239,7 @@ contains
 
          U = bp%ml%U(s, x)
 
-         if (bl%ml%vacuum(s, x)) then
+         if (bp%ml%vacuum(s, x)) then
 
             ! This needs to be fixed by applying a proper surface expansion
 
