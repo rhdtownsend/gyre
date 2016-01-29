@@ -2,7 +2,9 @@
 /
 
 &model
-	model_type = 'HOM'
+	model_type = 'EVOL'
+	file = 'fgong.l5bi.d.15c'
+	file_format = 'FGONG'
 /
 
 &mode
@@ -65,7 +67,7 @@
         grid_type = 'LINEAR'
         freq_min = 2.8
         freq_max = 20.4
-        n_freq = 30
+        n_freq = 100
         tag_list = 'l=2'
 /
 
@@ -78,9 +80,10 @@
 /
 
 &grid
-	base_type = 'GEOM'
-	s_base = 1000.
-	n_base = 1000
+	base_type = 'MODEL'
+	n_center = 10
+	alpha_osc = 10.
+	alpha_exp = 2.
 /
 
 &output

@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.txt
 
-LABEL="numerics (DZIEM variables)"
+LABEL="numerics (canonical variables)"
 
 RELERR=3E-10
 FIELDS=1-5

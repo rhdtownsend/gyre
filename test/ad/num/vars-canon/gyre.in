@@ -33,12 +33,12 @@
 /
 
 &osc
-	variables_set = 'LAGP'
+	variables_set = ''
 	reduce_order = .FALSE.
 /
 
 &osc
-	variables_set = 'LAGP'
+	variables_set = ''
 	reduce_order = .TRUE.
 	tag_list = 'l=0r'
 /
