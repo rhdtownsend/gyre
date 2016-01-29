@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=frontend
+SUBDIRS=build
 
 # Rules
 
