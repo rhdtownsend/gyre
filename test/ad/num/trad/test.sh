@@ -15,7 +15,7 @@ OUT_FILE=summary.txt
 LABEL="numerics (rotation, traditional approximation)"
 
 RELERR=3E-13
-FIELDS=1-5
+FIELDS=1-6
 
 # Do the tests
 
