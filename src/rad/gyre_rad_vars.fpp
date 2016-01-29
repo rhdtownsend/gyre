@@ -198,6 +198,8 @@ contains
 
     real(WP) :: V_2
 
+    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
+
     ! Evaluate the transformation matrix to convert LAGP variables
     ! from the canonical form
 
@@ -300,6 +302,8 @@ contains
     real(WP)                      :: H(2,2)
 
     real(WP) :: V_2
+
+    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! to the canonical form
@@ -409,6 +413,8 @@ contains
     real(WP) :: V_g
     real(WP) :: As
     real(WP) :: U
+
+    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the derivative x dH/dx of the LAGP-variables
     ! transformation matrix H
