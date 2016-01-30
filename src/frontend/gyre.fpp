@@ -113,8 +113,9 @@ program gyre
 
   open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-  call read_model_par(unit, ml_p)
   call read_constants(unit)
+
+  call read_model_par(unit, ml_p)
   call read_mode_par(unit, md_p)
   call read_osc_par(unit, os_p)
   call read_num_par(unit, nm_p)
