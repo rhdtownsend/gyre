@@ -105,14 +105,14 @@ contains
 
 100 continue
 
-    $ASSERT(n_ot_p == 1,Input file should contain exactly one output namelist per stage)
+    $ASSERT(n_ot_p == 1,Input file should contain exactly one &ad_output and one &nad_output namelist)
 
     ! Read output parameters
 
     freq_units = 'NONE'
     freq_frame = 'INERTIAL'
 
-    summary_file = 'summary.h5'
+    summary_file = ''
     summary_file_format = 'HDF'
     summary_item_list = 'l,n_pg,omega,freq'
     
