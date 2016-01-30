@@ -45,14 +45,11 @@
 	alpha_exp = 2
 /
 
-&output
-	summary_file = ''
-	stage_list = 'ad'
+&ad_output
 /
 
-&output
+&nad_output
 	summary_file = 'summary.txt'
 	summary_file_format = 'TXT'
 	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
-	stage_list = 'nad'
 /
