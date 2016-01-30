@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.txt
 
-LABEL="MESA model for beta Cephei star"
+LABEL="MESA model for beta Cephei star (adiabatic)"
 
 RELERR=6E-15
 FIELDS=1-5

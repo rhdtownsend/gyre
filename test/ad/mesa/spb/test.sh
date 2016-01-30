@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.txt
 
-LABEL="MESA model for slowly pulsating B-type star"
+LABEL="MESA model for slowly pulsating B-type star (adiabatic)"
 
 RELERR=2E-15
 FIELDS=1-5

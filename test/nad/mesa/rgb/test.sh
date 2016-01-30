@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.txt
 
-LABEL="MESA model for RGB star"
+LABEL="MESA model for RGB star (non-adiabatic)"
 
 RELERR=4E-12
 FIELDS=1-5
