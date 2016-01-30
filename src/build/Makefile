@@ -1,18 +1,18 @@
 # File     : Makefile
-# Purpose  : makefile for src/nad subdir
+# Purpose  : makefile for build subdir
 
 # Variables
 
-TARGETS=gyre
+TARGETS=gyre build_poly poly_to_fgong
 
 # Flags
 
 HDF5=yes
 
-LDFLAGS=`mesasdk_hdf5_link`
+LDFLAGS=`mesasdk_hdf5_link` `madsdk_odepack_link`
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../extern/astro:../common:../diff:../bep:../interp:../model:../matrix:../search:../ext:../frontend:../ad:../rad:../nad:../rot:../trad:../mode:../sol:../grid:../frontend
+SUBDIRS=../extern/core:../extern/astro:../common:../diff:../bep:../interp:../model:../matrix:../search:../ext:../frontend:../ad:../rad:../nad:../rot:../trad:../mode:../sol:../grid:../frontend:../poly
 
 include Make.inc
