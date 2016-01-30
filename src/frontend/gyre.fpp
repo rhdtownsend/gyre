@@ -22,17 +22,18 @@ program gyre
   ! Uses
 
   use core_kinds, only : WP
-  use gyre_constants
   use core_parallel
+  use core_system
 
   use gyre_ad_bep
   use gyre_bep
+  use gyre_constants
   use gyre_ext
   use gyre_grid_par
-  use gyre_input
   use gyre_mode
   use gyre_mode_par
   use gyre_model
+  use gyre_model_factory
   use gyre_model_par
   use gyre_nad_bep
   use gyre_num_par
@@ -82,10 +83,15 @@ program gyre
   integer                       :: i_ad_b
   type(mode_t), allocatable     :: md_nad(:)
 
+  ! Read command-line arguments
+
+  $ASSERT(n_arg() == 1,Syntax: gyre <filename>)
+
+  call get_arg(1, filename)
+
   ! Initialize
 
   call init_parallel()
-  call init_system(filename)
 
   call set_log_level($str($LOG_LEVEL))
 
@@ -123,9 +129,9 @@ program gyre
   call read_out_par(unit, 'ad', ot_p_ad)
   call read_out_par(unit, 'nad', ot_p_nad)
 
-  ! Read the model
+  ! Construct the model
 
-  call read_model(ml_p, ml)
+  ml => model_t(ml_p)
 
   ! Loop through md_p
 
