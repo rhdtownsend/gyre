@@ -64,7 +64,6 @@ contains
     type(out_par_t), intent(out) :: ot_p
 
     integer                                  :: n_ot_p
-    integer                                  :: i
     character(LEN(ot_p%freq_units))          :: freq_units
     character(LEN(ot_p%freq_frame))          :: freq_frame
     character(LEN(ot_p%summary_file))        :: summary_file
