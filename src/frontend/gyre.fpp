@@ -62,7 +62,6 @@ program gyre
   type(num_par_t), allocatable  :: nm_p(:)
   type(grid_par_t), allocatable :: gr_p(:)
   type(scan_par_t), allocatable :: sc_p(:)
-  type(out_par_t), allocatable  :: ot_p(:)
   type(out_par_t)               :: ot_p_ad
   type(out_par_t)               :: ot_p_nad
   class(model_t), pointer       :: ml => null()
@@ -92,7 +91,7 @@ program gyre
 
   if (check_log_level('INFO')) then
 
-     write(OUTPUT_UNIT, 100) form_header('gyre ['//TRIM(version)//']', '=')
+     write(OUTPUT_UNIT, 100) form_header('gyre ['//VERSION//']', '=')
 100  format(A)
 
      write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
@@ -121,10 +120,8 @@ program gyre
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
   call read_scan_par(unit, sc_p)
-  call read_out_par(unit, ot_p)
-
-  call select_par(ot_p, 'ad', ot_p_ad)
-  call select_par(ot_p, 'nad', ot_p_nad)
+  call read_out_par(unit, 'ad', ot_p_ad)
+  call read_out_par(unit, 'nad', ot_p_nad)
 
   ! Read the model
 
