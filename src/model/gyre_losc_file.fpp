@@ -114,7 +114,9 @@ contains
     M_star = glob(2)
     R_star = glob(1)
 
-    $WARN(Gravitational constant specified in LOSC files is ignored)
+    if (glob(3) /= G_GRAVITY) then
+       $WARN(Gravitational constant in LOSC file does not match value specified in &constants)
+    endif
 
     x = var(1,:)/R_star
 
