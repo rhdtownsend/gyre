@@ -22,11 +22,8 @@ module gyre_input
   ! Uses
 
   use core_kinds
-  use core_order
-  use core_parallel
   use core_system
 
-  use gyre_constants
   use gyre_model_par
 
   use ISO_FORTRAN_ENV
@@ -40,7 +37,6 @@ module gyre_input
   private
 
   public :: init_system
-  public :: read_constants
   public :: read_model
 
 contains
@@ -141,49 +137,5 @@ contains
     return
 
   end subroutine read_model
-
-!****
-
-  subroutine read_constants (unit)
-
-    integer, intent(in) :: unit
-
-    integer                   :: n_cn
-    character(:), allocatable :: gyre_dir_
-    integer                   :: status
-
-    namelist /constants/ G_GRAVITY, C_LIGHT, A_RADIATION, &
-                         M_SUN, R_SUN, L_SUN, GYRE_DIR
-
-    ! Count the number of constants namelists
-
-    rewind(unit)
-
-    n_cn = 0
-
-    count_loop : do
-       read(unit, NML=constants, END=100)
-       n_cn = n_cn + 1
-    end do count_loop
-
-100 continue
-
-    $ASSERT(n_cn == 1,Input file should contain exactly one &constants namelist)
-
-    ! Read constants
-
-    call get_env('GYRE_DIR', gyre_dir_, status)
-    if (status == 0) GYRE_DIR = gyre_dir_
-      
-    rewind(unit)
-    read(unit, NML=constants)
-
-    $ASSERT(GYRE_DIR /= '',GYRE_DIR is not set)
-
-    ! Finish
-
-    return
-
-  end subroutine read_constants
 
 end module gyre_input
