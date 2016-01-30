@@ -67,7 +67,7 @@ contains
     type(num_par_t), intent(in)     :: np
     class(${T}_ivp_t), allocatable  :: iv
     
-    ! Create a ${T}_ivp_t
+    ! Construct the ${T}_ivp_t
 
     select case (np%ivp_solver)
     case ('MAGNUS_GL2')
