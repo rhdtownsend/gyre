@@ -114,7 +114,7 @@ contains
     M_star = glob(2)
     R_star = glob(1)
 
-    G_gravity = glob(3)
+    $WARN(Gravitational constant specified in LOSC files is ignored)
 
     x = var(1,:)/R_star
 
