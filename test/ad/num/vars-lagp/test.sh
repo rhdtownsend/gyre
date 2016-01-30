@@ -14,7 +14,7 @@ OUT_FILE=summary.txt
 
 LABEL="numerics (LAGP variables)"
 
-RELERR=3E-4
+RELERR=4E-6
 FIELDS=1-5
 
 # Do the tests

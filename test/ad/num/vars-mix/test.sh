@@ -14,7 +14,7 @@ OUT_FILE=summary.txt
 
 LABEL="numerics (MIX variables)"
 
-RELERR=1.1E-4
+RELERR=3E-9
 FIELDS=1-5
 
 # Do the tests

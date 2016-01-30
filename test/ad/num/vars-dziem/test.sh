@@ -14,7 +14,7 @@ OUT_FILE=summary.txt
 
 LABEL="numerics (DZIEM variables)"
 
-RELERR=3E-10
+RELERR=1E-14
 FIELDS=1-5
 
 # Do the tests

@@ -14,7 +14,7 @@ OUT_FILE=summary.txt
 
 LABEL="numerics (JCD variables)"
 
-RELERR=1.1E-4
+RELERR=1E-8
 FIELDS=1-5
 
 # Do the tests
