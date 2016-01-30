@@ -95,7 +95,7 @@ contains
 
     ! Central point
 
-    if (x(1) < dx_snap) then
+    if (x(1) > 0._WP .AND. x(1) < dx_snap) then
 
        x(1) = 0._WP
 
