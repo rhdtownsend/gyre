@@ -257,7 +257,7 @@ contains
 
     count_loop : do
        select case (axis)
-       case ('ad')
+       case ('re')
           read(unit, NML=re_scan, END=100)
        case ('im')
           read(unit, NML=im_scan, END=100)
