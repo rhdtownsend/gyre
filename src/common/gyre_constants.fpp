@@ -22,6 +22,7 @@ module gyre_constants
   ! Uses
 
   use core_kinds
+  use core_system
   use core_constants, &
        G_GRAVITY_ => G_GRAVITY, &
        C_LIGHT_ => C_LIGHT, &
@@ -29,7 +30,6 @@ module gyre_constants
        M_SUN_ => M_SUN, &
        R_SUN_ => R_SUN, &
        L_SUN_ => L_SUN
-  use core_system
 
   use ISO_FORTRAN_ENV
 
