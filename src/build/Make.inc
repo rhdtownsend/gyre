@@ -10,7 +10,7 @@ DEBUG=yes
 OMP=yes
 
 # Enable MPI parallelization
-MPI=no
+MPI=yes
 
 # Use double precision arithmetic (best left to 'yes')
 DOUBLE_PRECISION=yes
@@ -34,6 +34,7 @@ export F9XC
 
 ifeq (${MPI},yes)
   F9XC=mpif90
+  LDFLAGS:=${LDFLAGS} -lpciaccess -lnuma
 else
   F9XC=gfortran
 endif
