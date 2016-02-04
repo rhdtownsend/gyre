@@ -189,6 +189,8 @@ contains
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
 
+    logical :: BALANCE = .TRUE.
+
     real(WP), parameter :: A_IJ(2,2) = RESHAPE([0.25_WP,&
                                                 0.25_WP+SQRT(3._WP)/6._WP, &
                                                 0.25_WP-SQRT(3._WP)/6._WP, &
@@ -196,7 +198,12 @@ contains
     real(WP), parameter :: B_I(2) = [0.5_WP, &
                                      0.5_WP]
     real(WP), parameter :: C_I(2) = [0.5_WP-SQRT(3._WP)/6._WP, &
-                                     0.5_WP+SQRT(3._WP)/6._WP]
+         0.5_WP+SQRT(3._WP)/6._WP]
+
+    $TYPE(WP) :: E_l_a(this%n_e,this%n_e)
+    $TYPE(WP) :: E_r_a(this%n_e,this%n_e)
+    $TYPE(WP) :: E_l_b(this%n_e,this%n_e)
+    $TYPE(WP) :: E_r_b(this%n_e,this%n_e)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -206,10 +213,22 @@ contains
  
     ! Build the GL4 difference equations
 
-    if (this%x_a < 0.5_WP) then
-       call this%build_irk_(omega, 2, this%x_a, this%x_b, A_IJ, B_I, C_I, E_l, E_r)
+    if (BALANCE) then
+       
+       call this%build_irk_(omega, 2, this%x_a, this%x_b, A_IJ, B_I, C_I, E_l_a, E_r_a)
+       call this%build_irk_(omega, 2, this%x_b, this%x_a, A_IJ, B_I, C_I, E_l_b, E_r_b)
+
+       E_l =  E_l_a - E_r_b
+       E_r = -E_l_b + E_r_a
+
     else
-       call this%build_irk_(omega, 2, this%x_b, this%x_a, A_IJ, B_I, C_I, E_r, E_l)
+
+       if (this%x_a < 0.5_WP) then
+          call this%build_irk_(omega, 2, this%x_a, this%x_b, A_IJ, B_I, C_I, E_l, E_r)
+       else
+          call this%build_irk_(omega, 2, this%x_b, this%x_a, A_IJ, B_I, C_I, E_r, E_l)
+       endif
+
     endif
 
     scl = ${T}_ext_t(1._WP)
