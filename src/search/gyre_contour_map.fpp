@@ -1,7 +1,7 @@
 ! Module   : gyre_contour_map
 ! Purpose  : contour mapping
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2015-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -35,7 +35,7 @@ module gyre_contour_map
   ! Derived-type definitions
 
   type :: contour_map_t
-!     private
+     private
      type(r_ext_t), allocatable :: f(:,:)
      type(r_ext_t), allocatable :: x(:)
      type(r_ext_t), allocatable :: y(:)
@@ -88,7 +88,7 @@ contains
 
   end function contour_map_t_
 
-!****
+  !****
 
   subroutine get_segs_ (this, i_x, i_y, cs)
 
