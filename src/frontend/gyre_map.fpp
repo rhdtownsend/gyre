@@ -39,8 +39,8 @@ program gyre_map
   use gyre_nad_bep
   use gyre_num_par
   use gyre_osc_par
-  use gyre_search
   use gyre_scan_par, only : scan_par_t
+  use gyre_search
   use gyre_status
   use gyre_util
   use gyre_version
@@ -71,7 +71,7 @@ program gyre_map
   type(scan_par_t), allocatable :: sc_p_im_sel(:)
   real(WP), allocatable         :: omega_re(:)
   real(WP), allocatable         :: omega_im(:)
-  type(nad_bep_t), allocatable  :: bp
+  type(nad_bep_t)               :: bp
   integer                       :: n_omega_re
   integer                       :: n_omega_im
   complex(WP), allocatable      :: discrim_map_f(:,:)
