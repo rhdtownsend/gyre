@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=gyre gyre_map # build_poly poly_to_fgong
+TARGETS=gyre gyre_map gyre_contour # build_poly poly_to_fgong
 
 # Flags
 
