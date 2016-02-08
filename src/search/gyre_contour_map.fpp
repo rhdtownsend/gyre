@@ -39,8 +39,8 @@ module gyre_contour_map
      type(r_ext_t), allocatable :: f(:,:)
      type(r_ext_t), allocatable :: x(:)
      type(r_ext_t), allocatable :: y(:)
-     integer                    :: n_x
-     integer                    :: n_y
+     integer, public            :: n_x
+     integer, public            :: n_y
    contains
      private
      procedure, public :: get_segs => get_segs_
