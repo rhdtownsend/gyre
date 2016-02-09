@@ -189,7 +189,7 @@ contains
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
 
-    logical :: BALANCE = .TRUE.
+    logical :: BALANCE = .FALSE.
 
     real(WP), parameter :: A_IJ(2,2) = RESHAPE([0.25_WP,&
                                                 0.25_WP+SQRT(3._WP)/6._WP, &
