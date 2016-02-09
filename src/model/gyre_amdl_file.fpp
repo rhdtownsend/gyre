@@ -118,14 +118,7 @@ contains
     P_c = glob(3)
     rho_c = glob(4)
 
-<<<<<<< local
-    p_c = glob(3)
-    rho_c = glob(4)
-
-    x_ = var(1,:)
-=======
     x = var(1,:)
->>>>>>> other
 
     c_1 = 1._WP/var(2,:)
     V_g = var(3,:)
@@ -135,25 +128,6 @@ contains
 
     ! Snap grid points
 
-<<<<<<< local
-    allocate(V_2(n))
-
-    where (x_ /= 0._WP)
-       V_2 = V_g*Gamma_1/x_**2
-    elsewhere
-       V_2 = 4._WP*PI*G_GRAVITY*rho_c**2*R_star**2/(3._WP*p_c)
-    end where
-
-    if (check_log_level('INFO')) then
-       if (add_center) then
-          if (has_center) then
-             write(OUTPUT_UNIT, 140) 'No need to add central point'
-140          format(3X,A)
-          else
-             write(OUTPUT_UNIT, 140) 'Adding central point'
-          endif
-       endif
-=======
     call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x)
   
     ! Calculate dimensionless structure data
@@ -172,17 +146,11 @@ contains
        Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
     else
        Omega_rot = 0._WP
->>>>>>> other
     endif
 
     ! Initialize the evol_model_t
 
-<<<<<<< local
-    ml = evol_model_t(M_star, R_star, L_star, x_, V_2, As, U, c_1, Gamma_1, &
-                      deriv_type, add_center=add_center .AND. .NOT. has_center)
-=======
     allocate(em, SOURCE=evol_model_t(x, M_star, R_star, 0._WP, ml_p))
->>>>>>> other
 
     call em%set_V_2(V_2)
     call em%set_As(As)
