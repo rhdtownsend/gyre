@@ -1,19 +1,19 @@
 #!/bin/bash
 #
-# File     : gyre.sh
+# File     : test.sh
 # Purpose  : GYRE testing script
 
 . test_support
 
 # Settings
 
-EXEC=./gyre_ad
+EXEC=./gyre
 
-IN_FILE_N=gyre_ad.n.in
-IN_FILE_1=gyre_ad.1.in
+IN_FILE_N=gyre.n.in
+IN_FILE_1=gyre.1.in
 
-OUT_FILE_N=gyre_ad.n.txt
-OUT_FILE_1=gyre_ad.1.txt
+OUT_FILE_N=summary.n.txt
+OUT_FILE_1=summary.1.txt
 
 FIELDS=1-5
 

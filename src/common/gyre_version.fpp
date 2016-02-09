@@ -19,17 +19,13 @@ $include 'core.inc'
 
 module gyre_version
 
-  ! Uses
-
-  use ISO_FORTRAN_ENV
-
   ! No implicit typing
 
   implicit none
 
   ! Parameters
 
-  character(*), parameter :: version = '(4.3)'
+  character(*), parameter :: VERSION = '5.0beta'
 
   ! Access specifiers
 

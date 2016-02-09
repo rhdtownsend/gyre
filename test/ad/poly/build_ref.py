@@ -68,11 +68,11 @@ def build_ref (in_file, out_file, nu_ref, l_0) :
 
 gamma = 5./3.
 
-build_ref_0('0.0/ref/gyre_ad.txt', gamma)
+build_ref_0('0.0/ref/summary.txt', gamma)
 
 nu_ref = 99.855377
 
-build_ref('data/poly-freqs-1.5.dat', '1.5/ref/gyre_ad.txt', nu_ref, 0)
-build_ref('data/poly-freqs-3.0.dat', '3.0/ref/gyre_ad.txt', nu_ref, 0)
-build_ref('data/poly-freqs-3.0-g.dat', '3.0-g/ref/gyre_ad.txt', nu_ref, 1)
-build_ref('data/poly-freqs-4.0.dat', '4.0/ref/gyre_ad.txt', nu_ref, 0)
+build_ref('data/poly-freqs-1.5.dat', '1.5/ref/summary.txt', nu_ref, 0)
+build_ref('data/poly-freqs-3.0.dat', '3.0/ref/summary.txt', nu_ref, 0)
+build_ref('data/poly-freqs-3.0-g.dat', '3.0-g/ref/summary.txt', nu_ref, 1)
+build_ref('data/poly-freqs-4.0.dat', '4.0/ref/summary.txt', nu_ref, 0)

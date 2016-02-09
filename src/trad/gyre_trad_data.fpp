@@ -58,12 +58,6 @@ module gyre_trad_data
   end interface write
   $endif
 
-  $if ($MPI)
-  interface bcast
-     module procedure bcast_
-  end interface bcast
-  $endif
-
   ! Access specifiers
 
   private
@@ -162,32 +156,6 @@ contains
     return
 
   end subroutine write_
-
-  $endif
-
-!****
-
-  $if ($MPI)
-
-  subroutine bcast_ (tr, root_rank)
-
-    class(trad_t), intent(inout) :: tr
-    integer, intent(in)          :: root_rank
-
-    ! Broadcast the trad
-
-    call bcast(tr%m, root_rank)
-    call bcast(tr%k, root_rank)
-
-    call bcast(tr%cb_neg, root_rank)
-    call bcast(tr%cb_pos, root_rank)
-    call bcast(tr%cb_ctr, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_
 
   $endif
 

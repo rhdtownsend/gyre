@@ -59,7 +59,7 @@ contains
 
   $local $T $1
 
-  function ${T}_rot_t_ (ml, mp, op) result (rt)
+  function ${T}_rot_t_ (ml, md_p, os_p) result (rt)
 
     use gyre_dopp_rot
     use gyre_null_rot
@@ -68,20 +68,20 @@ contains
     $endif
 
     class(model_t), pointer, intent(in) :: ml
-    type(mode_par_t), intent(in)        :: mp
-    type(osc_par_t), intent(in)         :: op
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
     class(${T}_rot_t), allocatable      :: rt
     
     ! Create a ${T}_rot_t
 
-    select case (op%rotation_method)
+    select case (os_p%rotation_method)
     case ('DOPPLER')
-       allocate(rt, SOURCE=${T}_dopp_rot_t(ml, mp))
+       allocate(rt, SOURCE=${T}_dopp_rot_t(ml, md_p))
     case ('NULL')
-       allocate(rt, SOURCE=${T}_null_rot_t(mp))
+       allocate(rt, SOURCE=${T}_null_rot_t(md_p))
     case ('TRAD')
        $if ($HDF5)
-       allocate(rt, SOURCE=${T}_trad_rot_t(ml, mp))
+       allocate(rt, SOURCE=${T}_trad_rot_t(ml, md_p))
        $else
        $ABORT(TRAD rotation method requires HDF support be enabled)
        $endif

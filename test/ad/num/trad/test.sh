@@ -1,21 +1,21 @@
 #!/bin/bash
 #
-# File     : gyre.sh
+# File     : test.sh
 # Purpose  : GYRE testing script
 
 . test_support
 
 # Settings
 
-EXEC=./gyre_ad
+EXEC=./gyre
 
-IN_FILE=gyre_ad.in
-OUT_FILE=gyre_ad.txt
+IN_FILE=gyre.in
+OUT_FILE=summary.txt
 
 LABEL="numerics (rotation, traditional approximation)"
 
 RELERR=3E-13
-FIELDS=1-5
+FIELDS=1-6
 
 # Do the tests
 

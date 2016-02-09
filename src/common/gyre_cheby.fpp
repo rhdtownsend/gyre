@@ -27,7 +27,6 @@ module gyre_cheby
   use core_hgroup
   $endif
   use core_memory
-  use core_parallel
 
   ! No implicit typing
 
@@ -65,12 +64,6 @@ module gyre_cheby
   end interface write
   $endif
 
-  $if ($MPI)
-  interface bcast
-     module procedure bcast_
-  end interface bcast
-  $endif
-
   ! Access specifiers
 
   private
@@ -79,9 +72,6 @@ module gyre_cheby
   $if ($HDF5)
   public :: read
   public :: write
-  $endif
-  $if ($MPI)
-  public :: bcast
   $endif
 
   ! Procedures
@@ -110,7 +100,7 @@ contains
 
   end function cheby_t_coeff_
 
-!****
+  !****
 
   function cheby_t_func_ (x_a, x_b, n, func) result (cb)
 
@@ -177,7 +167,7 @@ contains
 
   end function cheby_t_func_
 
-!****
+  !****
 
   $if ($HDF5)
 
@@ -205,7 +195,7 @@ contains
 
   end subroutine read_
 
-!****
+  !****
 
   subroutine write_ (hg, cb)
 
@@ -227,31 +217,7 @@ contains
 
   $endif
 
-!****
-
-  $if ($MPI)
-
-  subroutine bcast_ (cb, root_rank)
-
-    type(cheby_t), intent(inout) :: cb
-    integer, intent(in)          :: root_rank
-
-    ! Broadcast the cheby_t
-
-    call bcast(cb%x_a, root_rank)
-    call bcast(cb%x_b, root_rank)
-
-    call bcast_alloc(cb%c, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_
-
-  $endif
-
-!****
+  !****
 
   subroutine truncate_ (this, tol)
 
@@ -282,7 +248,7 @@ contains
 
   end subroutine truncate_
 
-!****
+  !****
 
   function eval_r_ (this, x) result (f)
 
@@ -319,7 +285,7 @@ contains
 
   end function eval_r_
 
-!****
+  !****
 
   function eval_c_ (this, z) result (f)
 

@@ -1,18 +1,18 @@
 #!/bin/bash
 #
-# File     : gyre.sh
+# File     : test.sh
 # Purpose  : GYRE testing script
 
 . test_support
 
 # Settings
 
-EXEC=./gyre_nad
+EXEC=./gyre
 
-IN_FILE=gyre_nad.in
-OUT_FILE=gyre_nad.txt
+IN_FILE=gyre.in
+OUT_FILE=summary.txt
 
-LABEL="MESA model for beta Cephei star"
+LABEL="MESA model for beta Cephei star (non-adiabatic)"
 
 RELERR=2E-12
 FIELDS=1-5

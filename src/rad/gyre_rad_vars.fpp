@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_vars
-! Purpose  : variables transformations (adiabatic radial)
+! Purpose  : adiabatic radial variables transformations
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,8 +25,10 @@ module gyre_rad_vars
 
   use gyre_linalg
   use gyre_model
+  use gyre_mode_par
   use gyre_osc_par
   use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -36,10 +38,11 @@ module gyre_rad_vars
 
   ! Parameter definitions
 
-  integer, parameter :: DZIEM_VARS = 1
-  integer, parameter :: JCD_VARS = 2
-  integer, parameter :: MIX_VARS = 3
-  integer, parameter :: LAGP_VARS = 4
+  integer, parameter :: CANON_SET = 0
+  integer, parameter :: DZIEM_SET = 1
+  integer, parameter :: JCD_SET = 2
+  integer, parameter :: MIX_SET = 3
+  integer, parameter :: LAGP_SET = 4
 
   ! Derived-type definitions
 
@@ -47,18 +50,18 @@ module gyre_rad_vars
      private
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
-     integer                     :: vars
+     integer                     :: set
    contains
      private
-     procedure, public :: S => S_
-     procedure         :: S_jcd_
-     procedure         :: S_lagp_
-     procedure, public :: T => T_
-     procedure         :: T_jcd_
-     procedure         :: T_lagp_
-     procedure, public :: dT => dT_
-     procedure         :: dT_jcd_
-     procedure         :: dT_lagp_
+     procedure, public :: G
+     procedure         :: G_jcd_
+     procedure         :: G_lagp_
+     procedure, public :: H
+     procedure         :: H_jcd_
+     procedure         :: H_lagp_
+     procedure, public :: dH
+     procedure         :: dH_jcd_
+     procedure         :: dH_lagp_
   end type rad_vars_t
 
   ! Interfaces
@@ -77,27 +80,30 @@ module gyre_rad_vars
 
 contains
 
-  function rad_vars_t_ (ml, rt, op) result (vr)
+  function rad_vars_t_ (ml, md_p, os_p) result (vr)
 
     class(model_t), pointer, intent(in) :: ml
-    class(r_rot_t), intent(in)          :: rt
-    type(osc_par_t), intent(in)         :: op
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
     type(rad_vars_t)                    :: vr
 
-    ! Construct the ad_vars_t
+    ! Construct the rad_vars_t
 
     vr%ml => ml
-    allocate(vr%rt, SOURCE=rt)
 
-    select case (op%variables_set)
+    allocate(vr%rt, SOURCE=r_rot_t(ml, md_p, os_p))
+
+    select case (os_p%variables_set)
+    case ('')
+       vr%set = CANON_SET
     case ('DZIEM')
-       vr%vars = DZIEM_VARS
+       vr%set = DZIEM_SET
     case ('JCD')
-       vr%vars = JCD_VARS
+       vr%set = JCD_SET
     case ('MIX')
-       vr%vars = MIX_VARS
+       vr%set = MIX_SET
     case ('LAGP')
-       vr%vars = LAGP_VARS
+       vr%set = LAGP_SET
     case default
        $ABORT(Invalid variables_set)
     end select
@@ -108,50 +114,52 @@ contains
 
   end function rad_vars_t_
 
-!****
+  !****
 
-  function S_ (this, x, omega) result (S)
+  function G (this, s, x, omega)
 
     class(rad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
-    real(WP)                      :: S(2,2)
+    real(WP)                      :: G(2,2)
 
     ! Evaluate the transformation matrix to convert variables from
     ! the canonical form
 
-    select case (this%vars)
-    case (DZIEM_VARS)
-       S = identity_matrix(2)
-    case (JCD_VARS)
-       S = this%S_jcd_(x, omega)
-    case (MIX_VARS)
-       S = identity_matrix(2)
-    case (LAGP_VARS)
-       S = this%S_lagp_(x, omega)
+    select case (this%set)
+    case (CANON_SET)
+       G = identity_matrix(2)
+    case (DZIEM_SET)
+       G = identity_matrix(2)
+    case (JCD_SET)
+       G = this%G_jcd_(s, x, omega)
+    case (MIX_SET)
+       G = identity_matrix(2)
+    case (LAGP_SET)
+       G = this%G_lagp_(s, x, omega)
     case default
-       $ABORT(Invalid vars)
+       $ABORT(Invalid set)
     end select
 
     ! Finish
 
     return
+    
+  end function G
+  
+  !****
 
-  end function S_
-
-!****
-
-  function S_jcd_ (this, x, omega) result (S)
+  function G_jcd_ (this, s, x, omega) result (G)
 
     class(rad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
-    real(WP)                      :: S(2,2)
+    real(WP)                      :: G(2,2)
 
     real(WP) :: U
     real(WP) :: c_1
-    integer  :: l
-    real(WP) :: lambda
     real(WP) :: omega_c
 
     ! Evaluate the transformation matrix to convert JCD variables
@@ -159,81 +167,84 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(x)
-    c_1 = this%ml%c_1(x)
+    U = this%ml%U(s, x)
+    c_1 = this%ml%c_1(s, x)
 
-    l = this%rt%mp%l
-    lambda = this%rt%lambda(x, omega)
-
-    omega_c = this%rt%omega_c(x, omega)
+    omega_c = this%rt%omega_c(s, x, omega)
 
     ! Set up the matrix
 
-    S(1,1) = 1._WP
-    S(1,2) = 0._WP
+    G(1,1) = 1._WP
+    G(1,2) = 0._WP
 
-    S(2,1) = 0._WP
-    S(2,2) = 1._WP/(c_1*omega_c**2)
+    G(2,1) = 0._WP
+    G(2,2) = 1._WP/(c_1*omega_c**2)
 
     ! Finish
 
     return
 
-  end function S_jcd_
+  end function G_jcd_
 
-!****
+  !****
 
-  function S_lagp_ (this, x, omega) result (S)
+  function G_lagp_ (this, s, x, omega) result (G)
 
     class(rad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
-    real(WP)                      :: S(2,2)
+    real(WP)                      :: G(2,2)
 
     real(WP) :: V_2
+
+    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! from the canonical form
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(x)
+    V_2 = this%ml%V_2(s, x)
 
     ! Set up the matrix
 
-    S(1,1) = 1._WP
-    S(1,2) = 0._WP
+    G(1,1) = 1._WP
+    G(1,2) = 0._WP
 
-    S(2,1) = -V_2
-    S(2,2) = V_2
+    G(2,1) = -V_2
+    G(2,2) = V_2
 
     ! Finish
 
     return
 
-  end function S_lagp_
+  end function G_lagp_
 
-!****
+  !****
 
-  function T_ (this, x, omega) result (T)
+  function H (this, s, x, omega)
 
     class(rad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
-    real(WP)                      :: T(2,2)
+    real(WP)                      :: H(2,2)
 
     ! Evaluate the transformation matrix to convert variables to
     ! canonical form
 
-    select case (this%vars)
-    case (DZIEM_VARS)
-       T = identity_matrix(2)
-    case (JCD_VARS)
-       T = this%T_jcd_(x, omega)
-    case (MIX_VARS)
-       T = identity_matrix(2)
-    case (LAGP_VARS)
-       T = this%T_lagp_(x, omega)
+    select case (this%set)
+    case (CANON_SET)
+       H = identity_matrix(2)
+    case (DZIEM_SET)
+       H = identity_matrix(2)
+    case (JCD_SET)
+       H = this%H_jcd_(s, x, omega)
+    case (MIX_SET)
+       H = identity_matrix(2)
+    case (LAGP_SET)
+       H = this%H_lagp_(s, x, omega)
     case default
        $ABORT(Invalid vars)
     end select
@@ -242,16 +253,17 @@ contains
 
     return
 
-  end function T_
+  end function H
 
-!****
+  !****
 
-  function T_jcd_ (this, x, omega) result (T)
+  function H_jcd_ (this, s, x, omega) result (H)
 
     class(rad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
-    real(WP)                      :: T(2,2)
+    real(WP)                      :: H(2,2)
 
     real(WP) :: c_1
     real(WP) :: omega_c
@@ -261,136 +273,140 @@ contains
 
     ! Calculate coefficients
 
-    c_1 = this%ml%c_1(x)
+    c_1 = this%ml%c_1(s, x)
 
-    omega_c = this%rt%omega_c(x, omega)
+    omega_c = this%rt%omega_c(s, x, omega)
 
     ! Set up the matrix
       
-    T(1,1) = 1._WP
-    T(1,2) = 0._WP
+    H(1,1) = 1._WP
+    H(1,2) = 0._WP
 
-    T(2,1) = 0._WP
-    T(2,2) = c_1*omega_c**2
+    H(2,1) = 0._WP
+    H(2,2) = c_1*omega_c**2
 
     ! Finish
 
     return
 
-  end function T_jcd_
+  end function H_jcd_
 
-!****
+  !****
 
-  function T_lagp_ (this, x, omega) result (T)
+  function H_lagp_ (this, s, x, omega) result (H)
 
     class(rad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
-    real(WP)                      :: T(2,2)
+    real(WP)                      :: H(2,2)
 
     real(WP) :: V_2
+
+    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! to the canonical form
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(x)
+    V_2 = this%ml%V_2(s, x)
 
     ! Set up the matrix
 
-    T(1,1) = 1._WP
-    T(1,2) = 0._WP
+    H(1,1) = 1._WP
+    H(1,2) = 0._WP
 
-    T(2,1) = 1._WP
-    T(2,2) = 1._WP/V_2
+    H(2,1) = 1._WP
+    H(2,2) = 1._WP/V_2
 
     ! Finish
 
     return
 
-  end function T_lagp_
+  end function H_lagp_
 
-!****
+  !****
 
-  function dT_ (this, x, omega) result (dT)
+  function dH (this, s, x, omega)
 
     class(rad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
-    real(WP)                      :: dT(2,2)
+    real(WP)                      :: dH(2,2)
 
-    ! Evaluate the derivative x dT/dx of the transformation matrix T
+    ! Evaluate the derivative x dH/dx of the transformation matrix H
 
-    select case (this%vars)
-    case (DZIEM_VARS)
-       dT = 0._WP
-    case (JCD_VARS)
-       dT = this%dT_jcd_(x, omega)
-    case (MIX_VARS)
-       dT = 0._WP
-    case (LAGP_VARS)
-       dT = this%dT_lagp_(x, omega)
+    select case (this%set)
+    case (CANON_SET)
+       dH = 0._WP
+    case (DZIEM_SET)
+       dH = 0._WP
+    case (JCD_SET)
+       dH = this%dH_jcd_(s, x, omega)
+    case (MIX_SET)
+       dH = 0._WP
+    case (LAGP_SET)
+       dH = this%dH_lagp_(s, x, omega)
     case default
-       $ABORT(Invalid vars)
+       $ABORT(Invalid set)
     end select
 
     ! Finish
 
     return
 
-  end function dT_
+  end function dH
 
-!****
+  !****
 
-  function dT_jcd_ (this, x, omega) result (dT)
+  function dH_jcd_ (this, s, x, omega) result (dH)
 
     class(rad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
-    real(WP)                      :: dT(2,2)
+    real(WP)                      :: dH(2,2)
 
-    real(WP) :: V_g
-    real(WP) :: As
     real(WP) :: U
     real(WP) :: c_1
     real(WP) :: omega_c
 
-    ! Evaluate the derivative x dT/dx of the JCD-variables
-    ! transformation matrix T
+    ! Evaluate the derivative x dH/dx of the JCD-variables
+    ! transformation matrix H
 
     ! Calculate coefficients
 
-    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
-    As = this%ml%As(x) 
-    U = this%ml%U(x)
-    c_1 = this%ml%c_1(x)
+    U = this%ml%U(s, x)
+    c_1 = this%ml%c_1(s, x)
 
-    omega_c = this%rt%omega_c(x, omega)
+    omega_c = this%rt%omega_c(s, x, omega)
 
     ! Set up the matrix (nb: the derivative of omega_c is neglected;
     ! this is incorrect when rotation is non-zero)
       
-    dT(1,1) = 0._WP
-    dT(1,2) = 0._WP
+    dH(1,1) = 0._WP
+    dH(1,2) = 0._WP
 
-    dT(2,1) = 0._WP
-    dT(2,2) = c_1*(3._WP - U)*omega_c**2
+    dH(2,1) = 0._WP
+    dH(2,2) = c_1*(3._WP - U)*omega_c**2
 
     ! Finish
 
     return
 
-  end function dT_jcd_
+  end function dH_jcd_
 
-!****
+  !****
 
-  function dT_lagp_ (this, x, omega) result (dT)
+  function dH_lagp_ (this, s, x, omega) result (dH)
 
     class(rad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     real(WP), intent(in)          :: omega
-    real(WP)                      :: dT(2,2)
+    real(WP)                      :: dH(2,2)
 
     real(WP) :: V_2
     real(WP) :: V
@@ -398,29 +414,31 @@ contains
     real(WP) :: As
     real(WP) :: U
 
-    ! Evaluate the derivative x dT/dx of the LAGP-variables
-    ! transformation matrix T
+    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
+
+    ! Evaluate the derivative x dH/dx of the LAGP-variables
+    ! transformation matrix H
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(x)
+    V_2 = this%ml%V_2(s, x)
     V = V_2*x**2
-    V_g = V/this%ml%Gamma_1(x)
-    As = this%ml%As(x)
-    U = this%ml%U(x)
+    V_g = V/this%ml%Gamma_1(s, x)
+    As = this%ml%As(s, x)
+    U = this%ml%U(s, x)
 
     ! Set up the matrix
 
-    dT(1,1) = 0._WP
-    dT(1,2) = 0._WP
+    dH(1,1) = 0._WP
+    dH(1,2) = 0._WP
 
-    dT(2,1) = 0._WP
-    dT(2,2) = -(-V_g - As + U + V - 3)/V_2
+    dH(2,1) = 0._WP
+    dH(2,2) = -(-V_g - As + U + V - 3)/V_2
 
     ! Finish
 
     return
 
-  end function dT_lagp_
+  end function dH_lagp_
   
 end module gyre_rad_vars

@@ -27,14 +27,14 @@ module gyre_${T}_bvp
   ! Uses
 
   use core_kinds
-  use core_order
 
   use gyre_bound
-  use gyre_eqns
   use gyre_ext
-  use gyre_ivp
+  use gyre_match
+  use gyre_num_par
   use gyre_status
   use gyre_sysmtx
+  use gyre_sysmtx_factory
 
   use ISO_FORTRAN_ENV
 
@@ -45,20 +45,20 @@ module gyre_${T}_bvp
   ! Derived-type definitions
 
   type :: ${T}_bvp_t
-     class(${T}_bound_t), allocatable  :: bd
-     class(${T}_ivp_t), allocatable    :: iv
-     class(${T}_sysmtx_t), allocatable :: sm
-     real(WP), allocatable             :: x(:)
-     $TYPE(WP), allocatable            :: y(:,:)
-     real(WP)                          :: omega_min
-     real(WP)                          :: omega_max
-     integer                           :: n
-     integer                           :: n_e
+     private
+     class(${T}_bound_t), allocatable          :: bd_i
+     class(${T}_bound_t), allocatable          :: bd_o
+     type(${T}_bvp_seg_t), allocatable, public :: bs(:)
+     type(${T}_match_t), allocatable           :: mt(:)
+     class(${T}_sysmtx_t), allocatable         :: sm
+     real(WP)                                  :: omega_min
+     real(WP)                                  :: omega_max
+     integer, public                           :: n_e
+     integer, public                           :: n_s
    contains 
      private
      procedure, public :: eval_discrim => eval_discrim_
      procedure         :: build_
-     procedure         :: solve_
      procedure, public :: recon => recon_
   end type ${T}_bvp_t
 
@@ -76,32 +76,50 @@ module gyre_${T}_bvp
 
 contains
 
-  function ${T}_bvp_t_ (x, bd, iv, sm, omega_min, omega_max) result (bp)
+  function ${T}_bvp_t_ (bd_i, bd_o, bs, mt, nm_p, omega_min, omega_max) result (bp)
 
-    real(WP), intent(in)                :: x(:)
-    class(${T}_bound_t), intent(in)     :: bd
-    class(${T}_ivp_t), intent(in)       :: iv
-    class(${T}_sysmtx_t), intent(in)    :: sm
-    real(WP), intent(in)                :: omega_min
-    real(WP), intent(in)                :: omega_max
-    type(${T}_bvp_t)                    :: bp
+    class(${T}_bound_t), intent(in)   :: bd_i
+    class(${T}_bound_t), intent(in)   :: bd_o
+    class(${T}_bvp_seg_t), intent(in) :: bs
+    class(${T}_match_t), intent(in)   :: mt
+    type(num_par_t), intent(in)       :: nm_p
+    real(WP), intent(in)              :: omega_min
+    real(WP), intent(in)              :: omega_max
+    type(${T}_bvp_t)                  :: bp
 
-    $CHECK_BOUNDS(bd%n_e,iv%n_e)
+    integer :: n_e
+    integer :: n_s
+    integer :: n_i
+    integer :: n_o
 
-    $CHECK_BOUNDS(sm%n_e,iv%n_e)
-    $CHECK_BOUNDS(sm%n,SIZE(x)-1)
+    ! Perform basic validations
+
+    n_e = bd_i%n_e
+    n_s = SIZE(bs)
+
+    n_i = bd_i%n
+    n_o = bd_o%n
+
+    $CHECK_BOUNDS(bd_o%n_e,n_e)
+    $CHECK_BOUNDS(bd_i%n+bd_o%n,n_e)
+
+    $ASSERT_DEBUG(ALL(bs%n_e == n_e),Dimension mismatch)
+    $ASSERT_DEBUG(ALL(mt%n_e == n_e),Dimension mismatch)
+
+    $CHECK_BOUNDS(SIZE(mt),n_s-1)
 
     ! Construct the bvp_t
 
-    bp%n = SIZE(x)
-    bp%n_e = iv%n_e
+    allocate(bp%bd_i, SOURCE=bd_i)
+    allocate(bp%bd_o, SOURCE=bd_o)
 
-    allocate(bp%bd, SOURCE=bd)
-    allocate(bp%iv, SOURCE=iv)
-    allocate(bp%sm, SOURCE=sm)
+    allocate(bp%bs, SOURCE=bs)
+    allocate(bp%mt, SOURCE=mt)
 
-    bp%x = x
-    allocate(bp%y(bp%n_e,bp%n))
+    allocate(bp%sm, SOURCE=${T}_sysmtx_t(SUM(bs%n)-1, n_e, n_i, n_o, nm_p)
+
+    bp%n_e = n_e
+    bp%n_s = n_s
 
     bp%omega_min = omega_min
     bp%omega_max = omega_max
@@ -112,7 +130,7 @@ contains
 
   end function ${T}_bvp_t_
 
-!****
+  !****
 
   subroutine eval_discrim_ (this, omega, discrim, status)
 
@@ -144,32 +162,65 @@ contains
 
   end subroutine eval_discrim_
 
-!****
+  !****
 
   subroutine build_ (this, omega)
 
     class(${T}_bvp_t), target, intent(inout) :: this
     $TYPE(WP), intent(in)                    :: omega
 
-    integer          :: k
-    $TYPE(WP)        :: E_l(this%n_e,this%n_e)
-    $TYPE(WP)        :: E_r(this%n_e,this%n_e)
-    type(${T}_ext_t) :: S
+    $TYPE(WP)            :: E_l(this%n_e,this%n_e)
+    $TYPE(WP)            :: E_r(this%n_e,this%n_e)
+    type(${T}_ext_t)     :: S_
+    integer              :: k
+    integer              :: s
+    integer, allocatable :: i_seg(:)
+    integer              :: i_dbl(this%pt%n_dbl)
     
     ! Build the sysmtx
 
     ! Boundary conditions
 
-    call this%sm%set_B_i(this%bd%B_i(omega), ${T}_ext_t(1._WP))
-    call this%sm%set_B_o(this%bd%B_o(omega), ${T}_ext_t(1._WP))
+    call this%bd_i%build(omega, E_r, S_)
+    call this%sm%set_B_i(E_r, S_)
 
-    ! Subintervals
+    call this%bd_o%build(omega, E_l, S_)
+    call this%sm%set_B_o(E_l, S_)
 
-    !$OMP PARALLEL DO PRIVATE (E_l, E_r, S) SCHEDULE (DYNAMIC)
-    sub_loop : do k = 1, this%n-1
-       call this%iv%shoot(omega, this%x(k), this%x(k+1), E_l, E_r, S)
-       call this%sm%set_E(k, E_l, E_r, S)
-    end do sub_loop
+    ! Segments
+
+    ! WHERE IS THE PARTITIONER SET UP?
+
+    seg_loop : do s = 1, this%n_s
+
+       i_seg = this%pt%i_seg(s)
+
+       associate (bs => this%bs(s))
+
+         !$OMP PARALLEL DO PRIVATE (E_l, E_r, S_) SCHEDULE (DYNAMIC)
+         sub_loop : do i = 1, bs%n-1
+            call bs%build(omega, i, E_l, E_r, S_)
+            call this%sm%set_E(i_seg(i), E_l, E_r, S_)
+         end do sub_loop
+
+       end associate
+
+    end do seg_loop
+
+    ! Match conditions
+
+    i_dbl = this%pt%i_dbl()
+
+    match_loop : do s = 1, this%n_s-1
+
+       associate (bs => this%bs(s))
+
+         call this%mt(s)%build(omega, E_l, E_r, S_)
+         call this%sm%set_E(i_dbl(s), E_l, E_r, S_)
+
+       end associate
+
+    end do match_loop
 
     ! Finish
 
@@ -177,18 +228,19 @@ contains
 
   end subroutine build_
 
-!****
+  !****
 
-  subroutine solve_ (this, omega, discrim)
+  subroutine recon_ (this, omega, discrim)
 
     class(${T}_bvp_t), intent(inout) :: this
     $TYPE(WP), intent(in)            :: omega
     type(${T}_ext_t), intent(out)    :: discrim
 
     $TYPE(WP) :: v(this%n_e*this%n)
+    $TYPE(WP) :: y(this%n_e,this%n)
 
-    ! Solve for the solution on the shooting grid, by calculating
-    ! the null vector of the sysmtx
+    ! Reconstruct the solution, by calculating the null vector of the
+    ! sysmtx
 
     call this%build_(omega)
 
@@ -196,109 +248,11 @@ contains
     discrim = this%sm%det()
     v = this%sm%null_vec()
 
-    this%y = RESHAPE(v, SHAPE(this%y))
+    y = RESHAPE(v, SHAPE(y))
 
-    ! Finish
+    ! Copy y into the segments
 
-    return
-
-  end subroutine solve_
-
-!****
-
-  subroutine recon_ (this, omega, x, x_ref, y, y_ref, discrim)
-
-    class(${T}_bvp_t), intent(inout) :: this
-    $TYPE(WP), intent(in)            :: omega
-    real(WP), intent(in)             :: x(:)
-    real(WP), intent(in)             :: x_ref
-    $TYPE(WP), intent(out)           :: y(:,:)
-    $TYPE(WP), intent(out)           :: y_ref(:)
-    type(${T}_ext_t), intent(out)    :: discrim
-
-    logical   :: same_grid
-    integer   :: n
-    integer   :: k
-    integer   :: i_k(this%n)
-    integer   :: i_a
-    integer   :: i_b
-    integer   :: k_ref
-    $TYPE(WP) :: y_ref_(this%n_e,1)
-
-    $CHECK_BOUNDS(SIZE(y, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(y, 2),SIZE(x))
-
-    $CHECK_BOUNDS(SIZE(y_ref),this%n_e)
-
-    ! Reconstruct the solution
-    ! Solve for y on the shooting grid
-
-    call this%solve_(omega, discrim)
-
-    ! Reconstruct the full solution in each subinterval
-
-    if (SIZE(x) == SIZE(this%x)) then
-       same_grid = ALL(x == this%x)
-    else
-       same_grid = .FALSE.
-    endif
-
-    if (same_grid) then
-
-       y = this%y
-
-    else
-
-       n = SIZE(x)
-
-       ! Determine where the shooting grid points lie in x
-
-       call locate(x, this%x(1), i_k(1))
-
-       do k = 2, this%n
-          i_k(k) = i_k(k-1)
-          call locate(x, this%x(k), i_k(k))
-       end do
-
-       ! Loop through subintervals
-
-       !$OMP PARALLEL DO PRIVATE (i_a,i_b) SCHEDULE (DYNAMIC)
-       sub_loop : do k = 1, this%n-1
-
-          ! Select the points falling in the subinterval
-
-          if (k == 1) then
-             i_a = 1
-             i_b = i_k(2)
-          elseif (k == this%n-1) then
-             i_a = i_k(this%n-1) + 1
-             i_b = n
-          else
-             i_a = i_k(k) + 1
-             i_b = i_k(k+1)
-          endif
-
-          ! Reconstruct in the subinterval
-
-          if (i_b >= i_a) then
-             call this%iv%recon(omega, this%x(k), this%x(k+1), this%y(:,k), this%y(:,k+1), &
-                                x(i_a:i_b), y(:,i_a:i_b))
-          endif
-
-       end do sub_loop
-          
-    endif
-
-    ! Reconstruct the solution at x_ref
-
-    call locate(this%x, x_ref, k_ref)
-
-    k_ref = MIN(MAX(k_ref, 1), this%n-1)
-    
-    call this%iv%recon(omega, this%x(k_ref), this%x(k_ref+1), this%y(:,k_ref), this%y(:,k_ref+1), &
-                       [x_ref], y_ref_)
-
-    y_ref = y_ref_(:,1)
+    DONT YET KNOW HOW TO COPY INTO SEGMENTS
 
     ! Finish
 

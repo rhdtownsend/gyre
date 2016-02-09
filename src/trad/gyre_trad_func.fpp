@@ -68,12 +68,6 @@ module gyre_trad_func
   end interface write
   $endif
 
-  $if ($MPI)
-  interface bcast
-     module procedure bcast_
-  end interface bcast
-  $endif
-
   ! Access specifiers
 
   private
@@ -82,9 +76,6 @@ module gyre_trad_func
   $if ($HDF5)
   public :: read
   public :: write
-  $endif
-  $if ($MPI)
-  public :: bcast
   $endif
 
   ! Procedures
@@ -247,32 +238,6 @@ contains
     return
 
   end subroutine write_
-
-  $endif
-
-!****
-
-  $if ($MPI)
-
-  subroutine bcast_ (tf, root_rank)
-
-    type(trad_func_t), intent(inout) :: tf
-    integer, intent(in)              :: root_rank
-
-    ! Broadcast the trad_func_t
-
-    call bcast(tf%m, root_rank)
-    call bcast(tf%k, root_rank)
-
-    call bcast(tf%cb_neg, root_rank)
-    call bcast(tf%cb_pos, root_rank)
-    call bcast(tf%cb_ctr, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_
 
   $endif
 

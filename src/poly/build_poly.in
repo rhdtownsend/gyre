@@ -1,0 +1,15 @@
+&poly
+	n_d = 3
+	xi_d = 0.5, 1., 30.
+	Delta_d = 0., -0.03, 0.
+	n_poly = 10., -2., 10., 1.5
+/
+
+&num
+	dxi = 1E-2
+	toler = 1E-9
+/
+
+&out
+	filename = 'poly.h5'
+/

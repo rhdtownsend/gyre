@@ -1,7 +1,7 @@
-! Module   : gyre_nad_vars
-! Purpose  : variables transformations (nonadiabatic)
+! Module   : gyre_ad_vars
+! Purpose  : nonadiabatic variables transformations
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,8 +25,10 @@ module gyre_nad_vars
 
   use gyre_linalg
   use gyre_model
+  use gyre_mode_par
   use gyre_osc_par
   use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -36,9 +38,10 @@ module gyre_nad_vars
 
   ! Parameter definitions
 
-  integer, parameter :: DZIEM_VARS = 1
-  integer, parameter :: JCD_VARS = 2
-  integer, parameter :: LAGP_VARS = 3
+  integer, parameter :: CANON_SET = 0
+  integer, parameter :: DZIEM_SET = 1
+  integer, parameter :: JCD_SET = 2
+  integer, parameter :: LAGP_SET = 3
 
   ! Derived-type definitions
 
@@ -46,20 +49,23 @@ module gyre_nad_vars
      private
      class(model_t), pointer     :: ml => null()
      class(c_rot_t), allocatable :: rt
-     integer                     :: vars
+     integer                     :: l
+     integer                     :: set
    contains
      private
-     procedure, public :: S => S_
-     procedure         :: S_jcd_
-     procedure         :: S_lagp_
-     procedure, public :: T => T_
-     procedure         :: T_jcd_
-     procedure         :: T_lagp_
-     procedure, public :: dT => dT_
-     procedure         :: dT_jcd_
-     procedure         :: dT_lagp_
+     procedure, public :: G
+     procedure         :: G_dziem_
+     procedure         :: G_jcd_
+     procedure         :: G_lagp_
+     procedure, public :: H
+     procedure         :: H_dziem_
+     procedure         :: H_jcd_
+     procedure         :: H_lagp_
+     procedure, public :: dH
+     procedure         :: dH_jcd_
+     procedure         :: dH_lagp_
   end type nad_vars_t
-
+  
   ! Interfaces
 
   interface nad_vars_t
@@ -76,28 +82,33 @@ module gyre_nad_vars
 
 contains
 
-  function nad_vars_t_ (ml, rt, op) result (vr)
+  function nad_vars_t_ (ml, md_p, os_p) result (vr)
 
     class(model_t), pointer, intent(in) :: ml
-    class(c_rot_t), intent(in)          :: rt
-    type(osc_par_t), intent(in)         :: op
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
     type(nad_vars_t)                    :: vr
 
     ! Construct the nad_vars_t
 
     vr%ml => ml
-    allocate(vr%rt, SOURCE=rt)
 
-    select case (op%variables_set)
+    allocate(vr%rt, SOURCE=c_rot_t(ml, md_p, os_p))
+
+    select case (os_p%variables_set)
+    case ('')
+       vr%set = CANON_SET
     case ('DZIEM')
-       vr%vars = DZIEM_VARS
+       vr%set = DZIEM_SET
     case ('JCD')
-       vr%vars = JCD_VARS
+       vr%set = JCD_SET
     case ('LAGP')
-       vr%vars = LAGP_VARS
+       vr%set = LAGP_SET
     case default
        $ABORT(Invalid variables_set)
     end select
+
+    vr%l = md_p%l
 
     ! Finish
 
@@ -105,47 +116,113 @@ contains
 
   end function nad_vars_t_
 
-!****
+  !****
 
-  function S_ (this, x, omega) result (S)
+  function G (this, s, x, omega)
 
     class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     complex(WP), intent(in)       :: omega
-    complex(WP)                   :: S(6,6)
+    complex(WP)                   :: G(6,6)
 
     ! Evaluate the transformation matrix to convert variables from
     ! the canonical form
 
-    select case (this%vars)
-    case (DZIEM_VARS)
-       S = identity_matrix(6)
-    case (JCD_VARS)
-       S = this%S_jcd_(x, omega)
-    case (LAGP_VARS)
-       S = this%S_lagp_(x, omega)
+    select case (this%set)
+    case (CANON_SET)
+       G = identity_matrix(6)
+    case (DZIEM_SET)
+       G = this%G_dziem_(s, x, omega)
+    case (JCD_SET)
+       G = this%G_jcd_(s, x, omega)
+    case (LAGP_SET)
+       G = this%G_lagp_(s, x, omega)
     case default
-       $ABORT(Invalid vars)
+       $ABORT(Invalid set)
     end select
 
     ! Finish
 
     return
 
-  end function S_
+  end function G
 
-!****
+  !****
 
-  function S_jcd_ (this, x, omega) result (S)
+  function G_dziem_ (this, s, x, omega) result (G)
 
     class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     complex(WP), intent(in)       :: omega
-    complex(WP)                   :: S(6,6)
+    complex(WP)                   :: G(6,6)
+
+    ! Evaluate the transformation matrix to convert DZIEM variables
+    ! from the canonical form
+
+    ! Set up the matrix
+
+    G(1,1) = 1._WP
+    G(1,2) = 0._WP
+    G(1,3) = 0._WP
+    G(1,4) = 0._WP
+    G(1,5) = 0._WP
+    G(1,6) = 0._WP
+
+    G(2,1) = 0._WP
+    G(2,2) = 1._WP
+    G(2,3) = 1._WP
+    G(2,4) = 0._WP
+    G(2,5) = 0._WP
+    G(2,6) = 0._WP
+
+    G(3,1) = 0._WP
+    G(3,2) = 0._WP
+    G(3,3) = 1._WP
+    G(3,4) = 0._WP
+    G(3,5) = 0._WP
+    G(3,6) = 0._WP
+
+    G(4,1) = 0._WP
+    G(4,2) = 0._WP
+    G(4,3) = 0._WP
+    G(4,4) = 1._WP
+    G(4,5) = 0._WP
+    G(4,6) = 0._WP
+
+    G(5,1) = 0._WP
+    G(5,2) = 0._WP
+    G(5,3) = 0._WP
+    G(5,4) = 0._WP
+    G(5,5) = 1._WP
+    G(5,6) = 0._WP
+
+    G(6,1) = 0._WP
+    G(6,2) = 0._WP
+    G(6,3) = 0._WP
+    G(6,4) = 0._WP
+    G(6,5) = 0._WP
+    G(6,6) = 1._WP
+
+    ! Finish
+
+    return
+
+  end function G_dziem_
+
+  !****
+
+  function G_jcd_ (this, s, x, omega) result (G)
+
+    class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    complex(WP)                   :: G(6,6)
 
     real(WP)    :: U
     real(WP)    :: c_1
-    integer     :: l
     complex(WP) :: lambda
     complex(WP) :: omega_c
 
@@ -154,103 +231,102 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(x)
-    c_1 = this%ml%c_1(x)
+    U = this%ml%U(s, x)
+    c_1 = this%ml%c_1(s, x)
 
-    l = this%rt%mp%l
-    lambda = this%rt%lambda(x, omega)
+    lambda = this%rt%lambda(s, x, omega)
 
-    omega_c = this%rt%omega_c(x, omega)
+    omega_c = this%rt%omega_c(s, x, omega)
 
     ! Set up the matrix
 
-    if (l /= 0) then
+    if (this%l /= 0) then
 
-       S(1,1) = 1._WP
-       S(1,2) = 0._WP
-       S(1,3) = 0._WP
-       S(1,4) = 0._WP
-       S(1,5) = 0._WP
-       S(1,6) = 0._WP
+       G(1,1) = 1._WP
+       G(1,2) = 0._WP
+       G(1,3) = 0._WP
+       G(1,4) = 0._WP
+       G(1,5) = 0._WP
+       G(1,6) = 0._WP
 
-       S(2,1) = 0._WP
-       S(2,2) = lambda/(c_1*omega_c**2)
-       S(2,3) = 0._WP
-       S(2,4) = 0._WP
-       S(2,5) = 0._WP
-       S(2,6) = 0._WP
+       G(2,1) = 0._WP
+       G(2,2) = lambda/(c_1*omega_c**2)
+       G(2,3) = lambda/(c_1*omega_c**2)
+       G(2,4) = 0._WP
+       G(2,5) = 0._WP
+       G(2,6) = 0._WP
 
-       S(3,1) = 0._WP
-       S(3,2) = 0._WP
-       S(3,3) = -1._WP
-       S(3,4) = 0._WP
-       S(3,5) = 0._WP
-       S(3,6) = 0._WP
+       G(3,1) = 0._WP
+       G(3,2) = 0._WP
+       G(3,3) = -1._WP
+       G(3,4) = 0._WP
+       G(3,5) = 0._WP
+       G(3,6) = 0._WP
 
-       S(4,1) = 0._WP
-       S(4,2) = 0._WP
-       S(4,3) = -(1._WP - U)
-       S(4,4) = -1._WP
-       S(4,5) = 0._WP
-       S(4,6) = 0._WP
+       G(4,1) = 0._WP
+       G(4,2) = 0._WP
+       G(4,3) = -(1._WP - U)
+       G(4,4) = -1._WP
+       G(4,5) = 0._WP
+       G(4,6) = 0._WP
 
-       S(5,1) = 0._WP
-       S(5,2) = 0._WP
-       S(5,3) = 0._WP
-       S(5,4) = 0._WP
-       S(5,5) = 1._WP
-       S(5,6) = 0._WP
+       G(5,1) = 0._WP
+       G(5,2) = 0._WP
+       G(5,3) = 0._WP
+       G(5,4) = 0._WP
+       G(5,5) = 1._WP
+       G(5,6) = 0._WP
 
-       S(6,1) = 0._WP
-       S(6,2) = 0._WP
-       S(6,3) = 0._WP
-       S(6,4) = 0._WP
-       S(6,5) = 0._WP
-       S(6,6) = 1._WP
+       G(6,1) = 0._WP
+       G(6,2) = 0._WP
+       G(6,3) = 0._WP
+       G(6,4) = 0._WP
+       G(6,5) = 0._WP
+       G(6,6) = 1._WP
           
     else
 
-       S(1,1) = 1._WP
-       S(1,2) = 0._WP
-       S(1,3) = 0._WP
-       S(1,4) = 0._WP
-       S(1,5) = 0._WP
-       S(1,6) = 0._WP
+       G(1,1) = 1._WP
+       G(1,2) = 0._WP
+       G(1,3) = 0._WP
+       G(1,4) = 0._WP
+       G(1,5) = 0._WP
+       G(1,6) = 0._WP
 
-       S(2,1) = 0._WP
-       S(2,2) = 1._WP/(c_1*omega_c**2)
-       S(2,3) = 0._WP
-       S(2,4) = 0._WP
-       S(2,5) = 0._WP
-       S(2,6) = 0._WP
+       G(2,1) = 0._WP
+       G(2,2) = 1._WP/(c_1*omega_c**2)
+       G(2,3) = 1._WP/(c_1*omega_c**2)
+       G(2,4) = 0._WP
+       G(2,5) = 0._WP
+       G(2,6) = 0._WP
 
-       S(3,1) = 0._WP
-       S(3,2) = 0._WP
-       S(3,3) = -1._WP
-       S(3,4) = 0._WP
-       S(3,5) = 0._WP
-       S(3,6) = 0._WP
+       G(3,1) = 0._WP
+       G(3,2) = 0._WP
+       G(3,3) = -1._WP
+       G(3,4) = 0._WP
+       G(3,5) = 0._WP
+       G(3,6) = 0._WP
 
-       S(4,1) = 0._WP
-       S(4,2) = 0._WP
-       S(4,3) = -(1._WP - U)
-       S(4,4) = -1._WP
-       S(4,5) = 0._WP
-       S(4,6) = 0._WP
+       G(4,1) = 0._WP
+       G(4,2) = 0._WP
+       G(4,3) = -(1._WP - U)
+       G(4,4) = -1._WP
+       G(4,5) = 0._WP
+       G(4,6) = 0._WP
 
-       S(5,1) = 0._WP
-       S(5,2) = 0._WP
-       S(5,3) = 0._WP
-       S(5,4) = 0._WP
-       S(5,5) = 1._WP
-       S(5,6) = 0._WP
+       G(5,1) = 0._WP
+       G(5,2) = 0._WP
+       G(5,3) = 0._WP
+       G(5,4) = 0._WP
+       G(5,5) = 1._WP
+       G(5,6) = 0._WP
           
-       S(6,1) = 0._WP
-       S(6,2) = 0._WP
-       S(6,3) = 0._WP
-       S(6,4) = 0._WP
-       S(6,5) = 0._WP
-       S(6,6) = 1._WP
+       G(6,1) = 0._WP
+       G(6,2) = 0._WP
+       G(6,3) = 0._WP
+       G(6,4) = 0._WP
+       G(6,5) = 0._WP
+       G(6,6) = 1._WP
 
     end if
 
@@ -258,117 +334,186 @@ contains
 
     return
 
-  end function S_jcd_
+  end function G_jcd_
 
-!****
+  !****
 
-  function S_lagp_ (this, x, omega) result (S)
+  function G_lagp_ (this, s, x, omega) result (G)
 
     class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     complex(WP), intent(in)       :: omega
-    complex(WP)                   :: S(6,6)
+    complex(WP)                   :: G(6,6)
 
     real(WP) :: V_2
+
+    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! from the canonical form
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(x)
+    V_2 = this%ml%V_2(s, x)
 
     ! Set up the matrix
 
-    S(1,1) = 1._WP
-    S(1,2) = 0._WP
-    S(1,3) = 0._WP
-    S(1,4) = 0._WP
-    S(1,5) = 0._WP
-    S(1,6) = 0._WP
+    G(1,1) = 1._WP
+    G(1,2) = 0._WP
+    G(1,3) = 0._WP
+    G(1,4) = 0._WP
+    G(1,5) = 0._WP
+    G(1,6) = 0._WP
 
-    S(2,1) = -V_2
-    S(2,2) = V_2
-    S(2,3) = -V_2
-    S(2,4) = 0._WP
-    S(2,5) = 0._WP
-    S(2,6) = 0._WP
+    G(2,1) = -V_2
+    G(2,2) = V_2
+    G(2,3) = 0._WP
+    G(2,4) = 0._WP
+    G(2,5) = 0._WP
+    G(2,6) = 0._WP
 
-    S(3,1) = 0._WP
-    S(3,2) = 0._WP
-    S(3,3) = 1._WP
-    S(3,4) = 0._WP
-    S(3,5) = 0._WP
-    S(3,6) = 0._WP
+    G(3,1) = 0._WP
+    G(3,2) = 0._WP
+    G(3,3) = 1._WP
+    G(3,4) = 0._WP
+    G(3,5) = 0._WP
+    G(3,6) = 0._WP
 
-    S(4,1) = 0._WP
-    S(4,2) = 0._WP
-    S(4,3) = 0._WP
-    S(4,4) = 1._WP
-    S(4,5) = 0._WP
-    S(4,6) = 0._WP
+    G(4,1) = 0._WP
+    G(4,2) = 0._WP
+    G(4,3) = 0._WP
+    G(4,4) = 1._WP
+    G(4,5) = 0._WP
+    G(4,6) = 0._WP
 
-    S(5,1) = 0._WP
-    S(5,2) = 0._WP
-    S(5,3) = 0._WP
-    S(5,4) = 0._WP
-    S(5,5) = 1._WP
-    S(5,6) = 0._WP
+    G(5,1) = 0._WP
+    G(5,2) = 0._WP
+    G(5,3) = 0._WP
+    G(5,4) = 0._WP
+    G(5,5) = 1._WP
+    G(5,6) = 0._WP
 
-    S(6,1) = 0._WP
-    S(6,2) = 0._WP
-    S(6,3) = 0._WP
-    S(6,4) = 0._WP
-    S(6,5) = 0._WP
-    S(6,6) = 1._WP
+    G(6,1) = 0._WP
+    G(6,2) = 0._WP
+    G(6,3) = 0._WP
+    G(6,4) = 0._WP
+    G(6,5) = 0._WP
+    G(6,6) = 1._WP
     
     ! Finish
 
     return
 
-  end function S_lagp_
+  end function G_lagp_
 
-!****
+  !****
 
-  function T_ (this, x, omega) result (T)
+  function H (this, s, x, omega)
 
     class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     complex(WP), intent(in)       :: omega
-    complex(WP)                   :: T(6,6)
+    complex(WP)                   :: H(6,6)
 
     ! Evaluate the transformation matrix to convert variables to
     ! canonical form
 
-    select case (this%vars)
-    case (DZIEM_VARS)
-       T = identity_matrix(6)
-    case (JCD_VARS)
-       T = this%T_jcd_(x, omega)
-    case (LAGP_VARS)
-       T = this%T_lagp_(x, omega)
+    select case (this%set)
+    case (CANON_SET)
+       H = identity_matrix(6)
+    case (DZIEM_SET)
+       H = this%H_dziem_(s, x, omega)
+    case (JCD_SET)
+       H = this%H_jcd_(s, x, omega)
+    case (LAGP_SET)
+       H = this%H_lagp_(s, x, omega)
     case default
-       $ABORT(Invalid vars)
+       $ABORT(Invalid set)
     end select
 
     ! Finish
 
     return
 
-  end function T_
+  end function H
 
-!****
+  !****
 
-  function T_jcd_ (this, x, omega) result (T)
+  function H_dziem_ (this, s, x, omega) result (H)
 
     class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     complex(WP), intent(in)       :: omega
-    complex(WP)                   :: T(6,6)
+    complex(WP)                   :: H(6,6)
+
+    ! Evaluate the transformation matrix to convert DZIEM variables
+    ! to the canonical form
+
+    ! Set up the matrix
+
+    H(1,1) = 1._WP
+    H(1,2) = 0._WP
+    H(1,3) = 0._WP
+    H(1,4) = 0._WP
+    H(1,5) = 0._WP
+    H(1,6) = 0._WP
+
+    H(2,1) = 0._WP
+    H(2,2) = 1._WP
+    H(2,3) = -1._WP
+    H(2,4) = 0._WP
+    H(2,5) = 0._WP
+    H(2,6) = 0._WP
+
+    H(3,1) = 0._WP
+    H(3,2) = 0._WP
+    H(3,3) = 1._WP
+    H(3,4) = 0._WP
+    H(3,5) = 0._WP
+    H(3,6) = 0._WP
+
+    H(4,1) = 0._WP
+    H(4,2) = 0._WP
+    H(4,3) = 0._WP
+    H(4,4) = 1._WP
+    H(4,5) = 0._WP
+    H(4,6) = 0._WP
+         
+    H(5,1) = 0._WP
+    H(5,2) = 0._WP
+    H(5,3) = 0._WP
+    H(5,4) = 0._WP
+    H(5,5) = 1._WP
+    H(5,6) = 0._WP
+
+    H(6,1) = 0._WP
+    H(6,2) = 0._WP
+    H(6,3) = 0._WP
+    H(6,4) = 0._WP
+    H(6,5) = 0._WP
+    H(6,6) = 1._WP
+    
+    ! Finish
+
+    return
+
+  end function H_dziem_
+
+  !****
+
+  function H_jcd_ (this, s, x, omega) result (H)
+
+    class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
+    real(WP), intent(in)          :: x
+    complex(WP), intent(in)       :: omega
+    complex(WP)                   :: H(6,6)
 
     real(WP)    :: U
     real(WP)    :: c_1
-    integer     :: l
     complex(WP) :: lambda
     complex(WP) :: omega_c
 
@@ -377,103 +522,102 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(x)
-    c_1 = this%ml%c_1(x)
+    U = this%ml%U(s, x)
+    c_1 = this%ml%c_1(s, x)
 
-    l = this%rt%mp%l
-    lambda = this%rt%lambda(x, omega)
+    lambda = this%rt%lambda(s, x, omega)
 
-    omega_c = this%rt%omega_c(x, omega)
+    omega_c = this%rt%omega_c(s, x, omega)
 
     ! Set up the matrix
 
-    if (l /= 0) then
+    if (this%l /= 0) then
 
-       T(1,1) = 1._WP
-       T(1,2) = 0._WP
-       T(1,3) = 0._WP
-       T(1,4) = 0._WP
-       T(1,5) = 0._WP
-       T(1,6) = 0._WP
+       H(1,1) = 1._WP
+       H(1,2) = 0._WP
+       H(1,3) = 0._WP
+       H(1,4) = 0._WP
+       H(1,5) = 0._WP
+       H(1,6) = 0._WP
 
-       T(2,1) = 0._WP
-       T(2,2) = c_1*omega_c**2/lambda
-       T(2,3) = 0._WP
-       T(2,4) = 0._WP
-       T(2,5) = 0._WP
-       T(2,6) = 0._WP
+       H(2,1) = 0._WP
+       H(2,2) = c_1*omega_c**2/lambda
+       H(2,3) = 1._WP
+       H(2,4) = 0._WP
+       H(2,5) = 0._WP
+       H(2,6) = 0._WP
 
-       T(3,1) = 0._WP
-       T(3,2) = 0._WP
-       T(3,3) = -1._WP
-       T(3,4) = 0._WP
-       T(3,5) = 0._WP
-       T(3,6) = 0._WP
+       H(3,1) = 0._WP
+       H(3,2) = 0._WP
+       H(3,3) = -1._WP
+       H(3,4) = 0._WP
+       H(3,5) = 0._WP
+       H(3,6) = 0._WP
 
-       T(4,1) = 0._WP
-       T(4,2) = 0._WP
-       T(4,3) = 1._WP - U
-       T(4,4) = -1._WP
-       T(4,5) = 0._WP
-       T(4,6) = 0._WP
+       H(4,1) = 0._WP
+       H(4,2) = 0._WP
+       H(4,3) = 1._WP - U
+       H(4,4) = -1._WP
+       H(4,5) = 0._WP
+       H(4,6) = 0._WP
          
-       T(5,1) = 0._WP
-       T(5,2) = 0._WP
-       T(5,3) = 0._WP
-       T(5,4) = 0._WP
-       T(5,5) = 1._WP
-       T(5,6) = 0._WP
+       H(5,1) = 0._WP
+       H(5,2) = 0._WP
+       H(5,3) = 0._WP
+       H(5,4) = 0._WP
+       H(5,5) = 1._WP
+       H(5,6) = 0._WP
 
-       T(6,1) = 0._WP
-       T(6,2) = 0._WP
-       T(6,3) = 0._WP
-       T(6,4) = 0._WP
-       T(6,5) = 0._WP
-       T(6,6) = 1._WP
+       H(6,1) = 0._WP
+       H(6,2) = 0._WP
+       H(6,3) = 0._WP
+       H(6,4) = 0._WP
+       H(6,5) = 0._WP
+       H(6,6) = 1._WP
 
     else
 
-       T(1,1) = 1._WP
-       T(1,2) = 0._WP
-       T(1,3) = 0._WP
-       T(1,4) = 0._WP
-       T(1,5) = 0._WP
-       T(1,6) = 0._WP
+       H(1,1) = 1._WP
+       H(1,2) = 0._WP
+       H(1,3) = 0._WP
+       H(1,4) = 0._WP
+       H(1,5) = 0._WP
+       H(1,6) = 0._WP
 
-       T(2,1) = 0._WP
-       T(2,2) = c_1*omega_c**2
-       T(2,3) = 0._WP
-       T(2,4) = 0._WP
-       T(2,5) = 0._WP
-       T(2,6) = 0._WP
+       H(2,1) = 0._WP
+       H(2,2) = c_1*omega_c**2
+       H(2,3) = 1._WP
+       H(2,4) = 0._WP
+       H(2,5) = 0._WP
+       H(2,6) = 0._WP
 
-       T(3,1) = 0._WP
-       T(3,2) = 0._WP
-       T(3,3) = -1._WP
-       T(3,4) = 0._WP
-       T(3,5) = 0._WP
-       T(3,6) = 0._WP
+       H(3,1) = 0._WP
+       H(3,2) = 0._WP
+       H(3,3) = -1._WP
+       H(3,4) = 0._WP
+       H(3,5) = 0._WP
+       H(3,6) = 0._WP
 
-       T(4,1) = 0._WP
-       T(4,2) = 0._WP
-       T(4,3) = 1._WP - U
-       T(4,4) = -1._WP
-       T(4,5) = 0._WP
-       T(4,6) = 0._WP
+       H(4,1) = 0._WP
+       H(4,2) = 0._WP
+       H(4,3) = 1._WP - U
+       H(4,4) = -1._WP
+       H(4,5) = 0._WP
+       H(4,6) = 0._WP
          
-       T(5,1) = 0._WP
-       T(5,2) = 0._WP
-       T(5,3) = 0._WP
-       T(5,4) = 0._WP
-       T(5,5) = 1._WP
-       T(5,6) = 0._WP
+       H(5,1) = 0._WP
+       H(5,2) = 0._WP
+       H(5,3) = 0._WP
+       H(5,4) = 0._WP
+       H(5,5) = 1._WP
+       H(5,6) = 0._WP
 
-       T(6,1) = 0._WP
-       T(6,2) = 0._WP
-       T(6,3) = 0._WP
-       T(6,4) = 0._WP
-       T(6,5) = 0._WP
-       T(6,6) = 1._WP
+       H(6,1) = 0._WP
+       H(6,2) = 0._WP
+       H(6,3) = 0._WP
+       H(6,4) = 0._WP
+       H(6,5) = 0._WP
+       H(6,6) = 1._WP
 
     end if
 
@@ -481,228 +625,233 @@ contains
 
     return
 
-  end function T_jcd_
+  end function H_jcd_
 
-!****
+  !****
 
-  function T_lagp_ (this, x, omega) result (T)
+  function H_lagp_ (this, s, x, omega) result (H)
 
     class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     complex(WP), intent(in)       :: omega
-    complex(WP)                   :: T(6,6)
+    complex(WP)                   :: H(6,6)
 
     real(WP) :: V_2
+
+    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! to the canonical form
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(x)
+    V_2 = this%ml%V_2(s, x)
 
     ! Set up the matrix
 
-    T(1,1) = 1._WP
-    T(1,2) = 0._WP
-    T(1,3) = 0._WP
-    T(1,4) = 0._WP
-    T(1,5) = 0._WP
-    T(1,6) = 0._WP
+    H(1,1) = 1._WP
+    H(1,2) = 0._WP
+    H(1,3) = 0._WP
+    H(1,4) = 0._WP
+    H(1,5) = 0._WP
+    H(1,6) = 0._WP
 
-    T(2,1) = 1._WP
-    T(2,2) = 1._WP/V_2
-    T(2,3) = 1._WP
-    T(2,4) = 0._WP
-    T(2,5) = 0._WP
-    T(2,6) = 0._WP
+    H(2,1) = 1._WP
+    H(2,2) = 1._WP/V_2
+    H(2,3) = 0._WP
+    H(2,4) = 0._WP
+    H(2,5) = 0._WP
+    H(2,6) = 0._WP
 
-    T(3,1) = 0._WP
-    T(3,2) = 0._WP
-    T(3,3) = 1._WP
-    T(3,4) = 0._WP
-    T(3,5) = 0._WP
-    T(3,6) = 0._WP
+    H(3,1) = 0._WP
+    H(3,2) = 0._WP
+    H(3,3) = 1._WP
+    H(3,4) = 0._WP
+    H(3,5) = 0._WP
+    H(3,6) = 0._WP
 
-    T(4,1) = 0._WP
-    T(4,2) = 0._WP
-    T(4,3) = 0._WP
-    T(4,4) = 1._WP
-    T(4,5) = 0._WP
-    T(4,6) = 0._WP
+    H(4,1) = 0._WP
+    H(4,2) = 0._WP
+    H(4,3) = 0._WP
+    H(4,4) = 1._WP
+    H(4,5) = 0._WP
+    H(4,6) = 0._WP
 
-    T(5,1) = 0._WP
-    T(5,2) = 0._WP
-    T(5,3) = 0._WP
-    T(5,4) = 0._WP
-    T(5,5) = 1._WP
-    T(5,6) = 0._WP
+    H(5,1) = 0._WP
+    H(5,2) = 0._WP
+    H(5,3) = 0._WP
+    H(5,4) = 0._WP
+    H(5,5) = 1._WP
+    H(5,6) = 0._WP
 
-    T(6,1) = 0._WP
-    T(6,2) = 0._WP
-    T(6,3) = 0._WP
-    T(6,4) = 0._WP
-    T(6,5) = 0._WP
-    T(6,6) = 1._WP
+    H(6,1) = 0._WP
+    H(6,2) = 0._WP
+    H(6,3) = 0._WP
+    H(6,4) = 0._WP
+    H(6,5) = 0._WP
+    H(6,6) = 1._WP
 
     ! Finish
 
     return
 
-  end function T_lagp_
+  end function H_lagp_
 
-!****
+  !****
 
-  function dT_ (this, x, omega) result (dT)
+  function dH (this, s, x, omega)
 
     class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     complex(WP), intent(in)       :: omega
-    complex(WP)                   :: dT(6,6)
+    complex(WP)                   :: dH(6,6)
 
-    ! Evaluate the derivative x dT/dx of the transformation matrix T
+    ! Evaluate the derivative x dH/dx of the transformation matrix H
 
-    select case (this%vars)
-    case (DZIEM_VARS)
-       dT = 0._WP
-    case (JCD_VARS)
-       dT = this%dT_jcd_(x, omega)
-    case (LAGP_VARS)
-       dT = this%dT_lagp_(x, omega)
+    select case (this%set)
+    case (CANON_SET)
+       dH = 0._WP
+    case (DZIEM_SET)
+       dH = 0._WP
+    case (JCD_SET)
+       dH = this%dH_jcd_(s, x, omega)
+    case (LAGP_SET)
+       dH = this%dH_lagp_(s, x, omega)
     case default
-       $ABORT(Invalid vars)
+       $ABORT(Invalid set)
     end select
 
     ! Finish
 
     return
 
-  end function dT_
+  end function dH
 
-!****
+  !****
 
-  function dT_jcd_ (this, x, omega) result (dT)
+  function dH_jcd_ (this, s, x, omega) result (dH)
 
     class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     complex(WP), intent(in)       :: omega
-    complex(WP)                   :: dT(6,6)
+    complex(WP)                   :: dH(6,6)
 
     real(WP)    :: V_g
     real(WP)    :: As
     real(WP)    :: U
     real(WP)    :: c_1
-    integer     :: l
     complex(WP) :: lambda
     complex(WP) :: omega_c
 
-    ! Evaluate the derivative x dT/dx of the JCD-variables
-    ! transformation matrix T
+    ! Evaluate the derivative x dH/dx of the JCD-variables
+    ! transformation matrix H
 
     ! Calculate coefficients
 
-    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
-    As = this%ml%As(x) 
-    U = this%ml%U(x)
-    c_1 = this%ml%c_1(x)
+    V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
+    As = this%ml%As(s, x) 
+    U = this%ml%U(s, x)
+    c_1 = this%ml%c_1(s, x)
 
-    l = this%rt%mp%l
-    lambda = this%rt%lambda(x, omega)
+    lambda = this%rt%lambda(s, x, omega)
 
-    omega_c = this%rt%omega_c(x, omega)
+    omega_c = this%rt%omega_c(s, x, omega)
 
     ! Set up the matrix (nb: the derivatives of omega_c and lambda is
     ! neglected; this is incorrect when rotation is non-zero)
 
     ! Set up the matrix
 
-    if (l /= 0) then
+    if (this%l /= 0) then
 
-       dT(1,1) = 0._WP
-       dT(1,2) = 0._WP
-       dT(1,3) = 0._WP
-       dT(1,4) = 0._WP
-       dT(1,5) = 0._WP
-       dT(1,6) = 0._WP
+       dH(1,1) = 0._WP
+       dH(1,2) = 0._WP
+       dH(1,3) = 0._WP
+       dH(1,4) = 0._WP
+       dH(1,5) = 0._WP
+       dH(1,6) = 0._WP
 
-       dT(2,1) = 0._WP
-       dT(2,2) = c_1*(3._WP - U)*omega_c**2/lambda
-       dT(2,3) = 0._WP
-       dT(2,4) = 0._WP
-       dT(2,5) = 0._WP
-       dT(2,6) = 0._WP
+       dH(2,1) = 0._WP
+       dH(2,2) = c_1*(3._WP - U)*omega_c**2/lambda
+       dH(2,3) = 0._WP
+       dH(2,4) = 0._WP
+       dH(2,5) = 0._WP
+       dH(2,6) = 0._WP
 
-       dT(3,1) = 0._WP
-       dT(3,2) = 0._WP
-       dT(3,3) = 0._WP
-       dT(3,4) = 0._WP
-       dT(3,5) = 0._WP
-       dT(3,6) = 0._WP
+       dH(3,1) = 0._WP
+       dH(3,2) = 0._WP
+       dH(3,3) = 0._WP
+       dH(3,4) = 0._WP
+       dH(3,5) = 0._WP
+       dH(3,6) = 0._WP
 
-       dT(4,1) = 0._WP
-       dT(4,2) = 0._WP
-       dT(4,3) = U*(V_g + As + U - 3._WP)
-       dT(4,4) = 0._WP
-       dT(4,5) = 0._WP
-       dT(4,6) = 0._WP
+       dH(4,1) = 0._WP
+       dH(4,2) = 0._WP
+       dH(4,3) = U*(V_g + As + U - 3._WP)
+       dH(4,4) = 0._WP
+       dH(4,5) = 0._WP
+       dH(4,6) = 0._WP
          
-       dT(5,1) = 0._WP
-       dT(5,2) = 0._WP
-       dT(5,3) = 0._WP
-       dT(5,4) = 0._WP
-       dT(5,5) = 0._WP
-       dT(5,6) = 0._WP
+       dH(5,1) = 0._WP
+       dH(5,2) = 0._WP
+       dH(5,3) = 0._WP
+       dH(5,4) = 0._WP
+       dH(5,5) = 0._WP
+       dH(5,6) = 0._WP
 
-       dT(6,1) = 0._WP
-       dT(6,2) = 0._WP
-       dT(6,3) = 0._WP
-       dT(6,4) = 0._WP
-       dT(6,5) = 0._WP
-       dT(6,6) = 0._WP
+       dH(6,1) = 0._WP
+       dH(6,2) = 0._WP
+       dH(6,3) = 0._WP
+       dH(6,4) = 0._WP
+       dH(6,5) = 0._WP
+       dH(6,6) = 0._WP
 
     else
 
-       dT(1,1) = 0._WP
-       dT(1,2) = 0._WP
-       dT(1,3) = 0._WP
-       dT(1,4) = 0._WP
-       dT(1,5) = 0._WP
-       dT(1,6) = 0._WP
+       dH(1,1) = 0._WP
+       dH(1,2) = 0._WP
+       dH(1,3) = 0._WP
+       dH(1,4) = 0._WP
+       dH(1,5) = 0._WP
+       dH(1,6) = 0._WP
 
-       dT(2,1) = 0._WP
-       dT(2,2) = c_1*(3._WP - U)*omega_c**2
-       dT(2,3) = 0._WP
-       dT(2,4) = 0._WP
-       dT(2,5) = 0._WP
-       dT(2,6) = 0._WP
+       dH(2,1) = 0._WP
+       dH(2,2) = c_1*(3._WP - U)*omega_c**2
+       dH(2,3) = 0._WP
+       dH(2,4) = 0._WP
+       dH(2,5) = 0._WP
+       dH(2,6) = 0._WP
 
-       dT(3,1) = 0._WP
-       dT(3,2) = 0._WP
-       dT(3,3) = 0._WP
-       dT(3,4) = 0._WP
-       dT(3,5) = 0._WP
-       dT(3,6) = 0._WP
+       dH(3,1) = 0._WP
+       dH(3,2) = 0._WP
+       dH(3,3) = 0._WP
+       dH(3,4) = 0._WP
+       dH(3,5) = 0._WP
+       dH(3,6) = 0._WP
 
-       dT(4,1) = 0._WP
-       dT(4,2) = 0._WP
-       dT(4,3) = U*(V_g + As + U - 3._WP)
-       dT(4,4) = 0._WP
-       dT(4,5) = 0._WP
-       dT(4,6) = 0._WP
+       dH(4,1) = 0._WP
+       dH(4,2) = 0._WP
+       dH(4,3) = U*(V_g + As + U - 3._WP)
+       dH(4,4) = 0._WP
+       dH(4,5) = 0._WP
+       dH(4,6) = 0._WP
          
-       dT(5,1) = 0._WP
-       dT(5,2) = 0._WP
-       dT(5,3) = 0._WP
-       dT(5,4) = 0._WP
-       dT(5,5) = 0._WP
-       dT(5,6) = 0._WP
+       dH(5,1) = 0._WP
+       dH(5,2) = 0._WP
+       dH(5,3) = 0._WP
+       dH(5,4) = 0._WP
+       dH(5,5) = 0._WP
+       dH(5,6) = 0._WP
 
-       dT(6,1) = 0._WP
-       dT(6,2) = 0._WP
-       dT(6,3) = 0._WP
-       dT(6,4) = 0._WP
-       dT(6,5) = 0._WP
-       dT(6,6) = 0._WP
+       dH(6,1) = 0._WP
+       dH(6,2) = 0._WP
+       dH(6,3) = 0._WP
+       dH(6,4) = 0._WP
+       dH(6,5) = 0._WP
+       dH(6,6) = 0._WP
 
     end if
 
@@ -710,16 +859,17 @@ contains
 
     return
 
-  end function dT_jcd_
+  end function dH_jcd_
 
-!****
+  !****
 
-  function dT_lagp_ (this, x, omega) result (dT)
+  function dH_lagp_ (this, s, x, omega) result (dH)
 
     class(nad_vars_t), intent(in) :: this
+    integer, intent(in)           :: s
     real(WP), intent(in)          :: x
     complex(WP), intent(in)       :: omega
-    complex(WP)                   :: dT(6,6)
+    complex(WP)                   :: dH(6,6)
 
     real(WP) :: V_2
     real(WP) :: V
@@ -727,65 +877,67 @@ contains
     real(WP) :: As
     real(WP) :: U
 
-    ! Evaluate the derivative x dT/dx of the LAGP-variables
+    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
+
+    ! Evaluate the derivative x dH/dx of the LAGP-variables
     ! transformation matrix T
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(x)
+    V_2 = this%ml%V_2(s, x)
     V = V_2*x**2
-    V_g = V/this%ml%Gamma_1(x)
-    As = this%ml%As(x)
-    U = this%ml%U(x)
+    V_g = V/this%ml%Gamma_1(s, x)
+    As = this%ml%As(s, x)
+    U = this%ml%U(s, x)
 
     ! Set up the matrix
 
-    dT(1,1) = 0._WP
-    dT(1,2) = 0._WP
-    dT(1,3) = 0._WP
-    dT(1,4) = 0._WP
-    dT(1,5) = 0._WP
-    dT(1,6) = 0._WP
+    dH(1,1) = 0._WP
+    dH(1,2) = 0._WP
+    dH(1,3) = 0._WP
+    dH(1,4) = 0._WP
+    dH(1,5) = 0._WP
+    dH(1,6) = 0._WP
 
-    dT(2,1) = 0._WP
-    dT(2,2) = -(-V_g - As + U + V - 3)/V_2
-    dT(2,3) = 0._WP
-    dT(2,4) = 0._WP
-    dT(2,5) = 0._WP
-    dT(2,6) = 0._WP
+    dH(2,1) = 0._WP
+    dH(2,2) = -(-V_g - As + U + V - 3)/V_2
+    dH(2,3) = 0._WP
+    dH(2,4) = 0._WP
+    dH(2,5) = 0._WP
+    dH(2,6) = 0._WP
 
-    dT(3,1) = 0._WP
-    dT(3,2) = 0._WP
-    dT(3,3) = 0._WP
-    dT(3,4) = 0._WP
-    dT(3,5) = 0._WP
-    dT(3,6) = 0._WP
+    dH(3,1) = 0._WP
+    dH(3,2) = 0._WP
+    dH(3,3) = 0._WP
+    dH(3,4) = 0._WP
+    dH(3,5) = 0._WP
+    dH(3,6) = 0._WP
 
-    dT(4,1) = 0._WP
-    dT(4,2) = 0._WP
-    dT(4,3) = 0._WP
-    dT(4,4) = 0._WP
-    dT(4,5) = 0._WP
-    dT(4,6) = 0._WP
+    dH(4,1) = 0._WP
+    dH(4,2) = 0._WP
+    dH(4,3) = 0._WP
+    dH(4,4) = 0._WP
+    dH(4,5) = 0._WP
+    dH(4,6) = 0._WP
 
-    dT(5,1) = 0._WP
-    dT(5,2) = 0._WP
-    dT(5,3) = 0._WP
-    dT(5,4) = 0._WP
-    dT(5,5) = 0._WP
-    dT(5,6) = 0._WP
+    dH(5,1) = 0._WP
+    dH(5,2) = 0._WP
+    dH(5,3) = 0._WP
+    dH(5,4) = 0._WP
+    dH(5,5) = 0._WP
+    dH(5,6) = 0._WP
 
-    dT(6,1) = 0._WP
-    dT(6,2) = 0._WP
-    dT(6,3) = 0._WP
-    dT(6,4) = 0._WP
-    dT(6,5) = 0._WP
-    dT(6,6) = 0._WP
+    dH(6,1) = 0._WP
+    dH(6,2) = 0._WP
+    dH(6,3) = 0._WP
+    dH(6,4) = 0._WP
+    dH(6,5) = 0._WP
+    dH(6,6) = 0._WP
 
     ! Finish
 
     return
 
-  end function dT_lagp_
+  end function dH_lagp_
 
 end module gyre_nad_vars

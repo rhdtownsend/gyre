@@ -7,11 +7,11 @@ test :
 	@./test.sh
 
 build_ref :
-	./gyre_ad gyre_ad.in; \
+	./gyre gyre.in; \
         for file in *.txt; do mv $$file ref/$$file; done
 
 build_ref_arch :
-	./gyre_ad gyre_ad.in; \
+	./gyre gyre.in; \
         for file in *.txt; do mv $$file ref/$$file.`uname -m`-`uname -s`; done
 
 .PHONY: test build_ref build_ref_arch

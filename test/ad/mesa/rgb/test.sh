@@ -1,18 +1,18 @@
 #!/bin/bash
 #
-# File     : gyre.sh
+# File     : test.sh
 # Purpose  : GYRE testing script
 
 . test_support
 
 # Settings
 
-EXEC=./gyre_ad
+EXEC=./gyre
 
-IN_FILE=gyre_ad.in
-OUT_FILE=gyre_ad.txt
+IN_FILE=gyre.in
+OUT_FILE=summary.txt
 
-LABEL="MESA model for RGB star"
+LABEL="MESA model for RGB star (adiabatic)"
 
 RELERR=4E-12
 FIELDS=1-5

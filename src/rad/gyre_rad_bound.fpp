@@ -1,7 +1,7 @@
 ! Incfile  : gyre_rad_bound
-! Purpose  : boundary conditions (radial adiabatic)
+! Purpose  : adiabatic radial boundary conditions
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,10 +25,13 @@ module gyre_rad_bound
 
   use gyre_atmos
   use gyre_bound
+  use gyre_ext
   use gyre_model
+  use gyre_mode_par
   use gyre_osc_par
   use gyre_rad_vars
   use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -38,13 +41,11 @@ module gyre_rad_bound
 
   ! Parameter definitions
 
-  integer, parameter :: REGULAR_TYPE_I = 1
-  integer, parameter :: ZERO_TYPE_I = 2
-
-  integer, parameter :: ZERO_TYPE_O = 3
-  integer, parameter :: DZIEM_TYPE_O = 4
-  integer, parameter :: UNNO_TYPE_O = 5
-  integer, parameter :: JCD_TYPE_O = 6
+  integer, parameter :: REGULAR_TYPE = 1
+  integer, parameter :: ZERO_TYPE = 2
+  integer, parameter :: DZIEM_TYPE = 3
+  integer, parameter :: UNNO_TYPE = 4
+  integer, parameter :: JCD_TYPE = 5
 
   ! Derived-type definitions
 
@@ -53,20 +54,19 @@ module gyre_rad_bound
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
      type(rad_vars_t)            :: vr
-     real(WP)                    :: x_i
-     real(WP)                    :: x_o
      integer                     :: type_i
      integer                     :: type_o
+     logical                     :: cowling_approx
    contains 
      private
-     procedure, public :: B_i => B_i_
-     procedure         :: B_i_regular_
-     procedure         :: B_i_zero_
-     procedure, public :: B_o => B_o_
-     procedure         :: B_o_zero_
-     procedure         :: B_o_dziem_
-     procedure         :: B_o_unno_
-     procedure         :: B_o_jcd_
+     procedure, public :: build_i
+     procedure         :: build_regular_i_
+     procedure         :: build_zero_i_
+     procedure, public :: build_o
+     procedure         :: build_zero_o_
+     procedure         :: build_dziem_o_
+     procedure         :: build_unno_o_
+     procedure         :: build_jcd_o_
   end type rad_bound_t
 
   ! Interfaces
@@ -85,49 +85,46 @@ module gyre_rad_bound
 
 contains
 
-  function rad_bound_t_ (ml, rt, op, x_i, x_o) result (bd)
+  function rad_bound_t_ (ml, md_p, os_p) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
-    class(r_rot_t), intent(in)          :: rt
-    type(osc_par_t), intent(in)         :: op
-    real(WP)                            :: x_i
-    real(WP)                            :: x_o
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
     type(rad_bound_t)                   :: bd
 
-    ! Construct the rad_bound_t
+    ! Construct the ad_bound_t
 
     bd%ml => ml
-    allocate(bd%rt, SOURCE=rt)
-    bd%vr = rad_vars_t(ml, rt, op)
+    
+    allocate(bd%rt, SOURCE=r_rot_t(ml, md_p, os_p))
+    bd%vr = rad_vars_t(ml, md_p, os_p)
 
-    bd%x_i = x_i
-    bd%x_o = x_o
-
-    select case (op%inner_bound)
+    select case (os_p%inner_bound)
     case ('REGULAR')
-       bd%type_i = REGULAR_TYPE_I
+       bd%type_i = REGULAR_TYPE
     case ('ZERO')
-       bd%type_i = ZERO_TYPE_I
+       bd%type_i = ZERO_TYPE
     case default
        $ABORT(Invalid inner_bound)
     end select
 
-    select case (op%outer_bound)
+    select case (os_p%outer_bound)
     case ('ZERO')
-       bd%type_o = ZERO_TYPE_O
+       bd%type_o = ZERO_TYPE
     case ('DZIEM')
-       bd%type_o = DZIEM_TYPE_O
+       bd%type_o = DZIEM_TYPE
     case ('UNNO')
-       bd%type_o = UNNO_TYPE_O
+       bd%type_o = UNNO_TYPE
     case ('JCD')
-       bd%type_o = JCD_TYPE_O
+       bd%type_o = JCD_TYPE
     case default
        $ABORT(Invalid outer_bound)
     end select
 
     bd%n_i = 1
     bd%n_o = 1
-    bd%n_e = bd%n_i + bd%n_o
+
+    bd%n_e = 2
 
     ! Finish
 
@@ -135,231 +132,255 @@ contains
     
   end function rad_bound_t_
 
-!****
+  !****
 
-  function B_i_ (this, omega) result (B_i)
+  subroutine build_i (this, omega, B_i, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP)                       :: B_i(this%n_i,this%n_e)
+    real(WP), intent(out)          :: B_i(:,:)
+    type(r_ext_t), intent(out)     :: scl
 
+    $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
+    
     ! Evaluate the inner boundary conditions
 
     select case (this%type_i)
-    case (REGULAR_TYPE_I)
-       B_i = this%B_i_regular_(omega)
-    case (ZERO_TYPE_I)
-       B_i = this%B_i_zero_(omega)
+    case (REGULAR_TYPE)
+       call this%build_regular_i_(omega, B_i, scl)
+    case (ZERO_TYPE)
+       call this%build_zero_i_(omega, B_i, scl)
     case default
        $ABORT(Invalid type_i)
     end select
 
-    ! Apply the variables transformation
-
-    B_i = MATMUL(B_i, this%vr%T(this%x_i, omega))
-
     ! Finish
 
     return
 
-  end function B_i_
+  end subroutine build_i
 
-!****
+  !****
 
-  function B_i_regular_ (this, omega) result (B_i)
+  subroutine build_regular_i_ (this, omega, B_i, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP)                       :: B_i(this%n_i,this%n_e)
+    real(WP), intent(out)          :: B_i(:,:)
+    type(r_ext_t), intent(out)     :: scl
 
     real(WP) :: c_1
     real(WP) :: omega_c
 
-    $ASSERT(this%x_i == 0._WP,Boundary condition invalid for x_i /= 0)
+    $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
+    
+    $ASSERT(this%ml%x_i(1) == 0._WP,Boundary condition invalid for x /= 0)
 
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
-    ! Calculate coefficients
+    associate (s => 1, &
+               x => this%ml%x_i(1))
 
-    c_1 = this%ml%c_1(this%x_i)
+      ! Calculate coefficients
 
-    omega_c = this%rt%omega_c(this%x_i, omega)
+      c_1 = this%ml%c_1(s, x)
 
-    ! Set up the boundary conditions
+      omega_c = this%rt%omega_c(s, x, omega)
 
-    B_i(1,1) = c_1*omega_c**2
-    B_i(1,2) = 0._WP
+      ! Set up the boundary conditions
+
+      B_i(1,1) = c_1*omega_c**2
+      B_i(1,2) = 0._WP
+
+      scl = r_ext_t(1._WP)
+
+      ! Apply the variables transformation
+
+      B_i = MATMUL(B_i, this%vr%H(s, x, omega))
+
+    end associate
 
     ! Finish
 
     return
 
-  end function B_i_regular_
+  end subroutine build_regular_i_
 
-!****
+  !****
 
-  function B_i_zero_ (this, omega) result (B_i)
+  subroutine build_zero_i_ (this, omega, B_i, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP)                       :: B_i(this%n_i,this%n_e)
+    real(WP), intent(out)          :: B_i(:,:)
+    type(r_ext_t), intent(out)     :: scl
 
-    real(WP) :: c_1
-    real(WP) :: omega_c
+    $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
 
-    $ASSERT(this%x_i /= 0._WP,Boundary condition invalid for x_i == 0)
+    $ASSERT(this%ml%x_i(1) /= 0._WP,Boundary condition invalid for x == 0)
 
-    ! Evaluate the inner boundary conditions (zero
-    ! displacement/gravity)
+    ! Evaluate the inner boundary conditions (zero displacement)
 
-    ! Calculate coefficients
+    associate (s => 1, &
+               x => this%ml%x_i(1))
 
-    c_1 = this%ml%c_1(this%x_i)
+      ! Set up the boundary conditions
 
-    omega_c = this%rt%omega_c(this%x_i, omega)
+      B_i(1,1) = 1._WP
+      B_i(1,2) = 0._WP
 
-    ! Set up the boundary conditions
+      scl = r_ext_t(1._WP)
+      
+      ! Apply the variables transformation
 
-    B_i(1,1) = c_1*omega_c**2
-    B_i(1,2) = 0._WP
+      B_i = MATMUL(B_i, this%vr%H(s, x, omega))
+
+    end associate
 
     ! Finish
 
     return
 
-  end function B_i_zero_
+  end subroutine build_zero_i_
 
-!****
+  !****
 
-  function B_o_ (this, omega) result (B_o)
+  subroutine build_o (this, omega, B_o, scl)
 
     class(rad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: B_o(this%n_o,this%n_e)
+    real(WP), intent(in)           :: omega
+    real(WP), intent(out)          :: B_o(:,:)
+    type(r_ext_t), intent(out)     :: scl
 
+    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    
     ! Evaluate the outer boundary conditions
 
     select case (this%type_o)
-    case (ZERO_TYPE_O)
-       B_o = this%B_o_zero_(omega)
-    case (DZIEM_TYPE_O)
-       B_o = this%B_o_dziem_(omega)
-    case (UNNO_TYPE_O)
-       B_o = this%B_o_unno_(omega)
-    case (JCD_TYPE_O)
-       B_o = this%B_o_jcd_(omega)
+    case (ZERO_TYPE)
+       call this%build_zero_o_(omega, B_o, scl)
+    case (DZIEM_TYPE)
+       call this%build_dziem_o_(omega, B_o, scl)
+    case (UNNO_TYPE)
+       call this%build_unno_o_(omega, B_o, scl)
+    case (JCD_TYPE)
+       call this%build_jcd_o_(omega, B_o, scl)
     case default
        $ABORT(Invalid type_o)
     end select
 
-    ! Apply the variables transformation
-
-    B_o = MATMUL(B_o, this%vr%T(this%x_o, omega))
-    
     ! Finish
 
     return
 
-  end function B_o_
+  end subroutine build_o
+  
+  !****
 
-!****
-
-  function B_o_zero_ (this, omega) result (B_o)
+  subroutine build_zero_o_ (this, omega, B_o, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP)                       :: B_o(this%n_o,this%n_e)
+    real(WP), intent(out)          :: B_o(:,:)
+    type(r_ext_t), intent(out)     :: scl
+
+    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
 
     ! Evaluate the outer boundary conditions (zero-pressure)
 
-    B_o(1,1) = 1._WP
-    B_o(1,2) = -1._WP
+    associate (s => this%ml%n_s, &
+               x => this%ml%x_o(this%ml%n_s))
+    
+      ! Set up the boundary conditions
+
+      B_o(1,1) = 1._WP
+      B_o(1,2) = -1._WP
+      
+      scl = r_ext_t(1._WP)
+    
+      ! Apply the variables transformation
+
+      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+
+    end associate
 
     ! Finish
 
     return
 
-  end function B_o_zero_
+  end subroutine build_zero_o_
 
-!****
+  !****
 
-  function B_o_dziem_ (this, omega) result (B_o)
+  subroutine build_dziem_o_ (this, omega, B_o, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP)                       :: B_o(this%n_o,this%n_e)
+    real(WP), intent(out)          :: B_o(:,:)
+    type(r_ext_t), intent(out)     :: scl
 
     real(WP) :: V
     real(WP) :: c_1
     real(WP) :: omega_c
 
+    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
-    ! Calculate coefficients
+    associate (s => this%ml%n_s, &
+               x => this%ml%x_o(this%ml%n_s))
 
-    V = this%ml%V_2(this%x_o)*this%x_o**2
-    c_1 = this%ml%c_1(this%x_o)
+      if (this%ml%vacuum(s, x)) then
 
-    omega_c = this%rt%omega_c(this%x_o, omega)
+         ! For a vacuum, the boundary condition reduces to the zero
+         ! condition
 
-    ! Set up the boundary conditions
+         call this%build_zero_o_(omega, B_o, scl)
+
+      else
+
+         ! Calculate coefficients
+
+         V = this%ml%V_2(s, x)*x**2
+         c_1 = this%ml%c_1(s, x)
+
+         omega_c = this%rt%omega_c(s, x, omega)
+
+         ! Set up the boundary conditions
         
-    B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
-    B_o(1,2) = -1._WP
+         B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
+         B_o(1,2) = -1._WP
+
+         scl = r_ext_t(1._WP)
+
+         ! Apply the variables transformation
+
+         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+
+      endif
+
+    end associate
 
     ! Finish
 
     return
 
-  end function B_o_dziem_
+  end subroutine build_dziem_o_
 
-!****
-
-  function B_o_unno_ (this, omega) result (B_o)
-
-    class(rad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: B_o(this%n_o,this%n_e)
-
-    real(WP) :: V_g
-    real(WP) :: As
-    real(WP) :: c_1
-    real(WP) :: omega_c
-    real(WP) :: beta
-    real(WP) :: b_11
-    real(WP) :: b_12
-
-    ! Evaluate the outer boundary conditions ([Unn1989] formulation)
-
-    ! Calculate coefficients
-
-    call eval_atmos_coeffs_unno(this%ml, this%x_o, V_g, As, c_1)
-
-    omega_c = this%rt%omega_c(this%x_o, omega)
-
-    beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
-      
-    b_11 = V_g - 3._WP
-    b_12 = -V_g
-    
-    ! Set up the boundary conditions
-
-    B_o(1,1) = beta - b_11
-    B_o(1,2) = -b_12
-
-    ! Finish
-
-    return
-
-  end function B_o_unno_
-
-!****
-
-  function B_o_jcd_ (this, omega) result (B_o)
+  !****
+  
+  subroutine build_unno_o_ (this, omega, B_o, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP)                       :: B_o(this%n_o,this%n_e)
+    real(WP), intent(out)          :: B_o(:,:)
+    type(r_ext_t), intent(out)     :: scl
 
     real(WP) :: V_g
     real(WP) :: As
@@ -368,29 +389,118 @@ contains
     real(WP) :: beta
     real(WP) :: b_11
     real(WP) :: b_12
+
+    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+
+    ! Evaluate the outer boundary conditions ([Unn1989] formulation)
+
+    associate (s => this%ml%n_s, &
+               x => this%ml%x_o(this%ml%n_s))
+
+      if (this%ml%vacuum(s, x)) then
+
+         ! For a vacuum, the boundary condition reduces to the zero
+         ! condition
+
+         call this%build_zero_o_(omega, B_o, scl)
+
+      else
+
+         ! Calculate coefficients
+
+         call eval_atmos_coeffs_unno(this%ml, V_g, As, c_1)
+
+         omega_c = this%rt%omega_c(s, x, omega)
+
+         beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
+      
+         b_11 = V_g - 3._WP
+         b_12 = -V_g
+    
+         ! Set up the boundary conditions
+      
+         B_o(1,1) = beta - b_11
+         B_o(1,2) = -b_12
+
+         scl = r_ext_t(1._WP)
+
+         ! Apply the variables transformation
+
+         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end subroutine build_unno_o_
+
+  !****
+
+  subroutine build_jcd_o_ (this, omega, B_o, scl)
+
+    class(rad_bound_t), intent(in) :: this
+    real(WP), intent(in)          :: omega
+    real(WP), intent(out)         :: B_o(:,:)
+    type(r_ext_t), intent(out)    :: scl
+
+    real(WP) :: V_g
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: omega_c
+    real(WP) :: beta
+    real(WP) :: b_11
+    real(WP) :: b_12
+
+    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
 
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
     ! Calculate coefficients
 
-    call eval_atmos_coeffs_jcd(this%ml, this%x_o, V_g, As, c_1)
+    associate (s => this%ml%n_s, &
+               x => this%ml%x_o(this%ml%n_s))
 
-    omega_c = this%rt%omega_c(this%x_o, omega)
+      if (this%ml%vacuum(s, x)) then
 
-    beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
+         ! For a vacuum, the boundary condition reduces to the zero
+         ! condition
 
-    b_11 = V_g - 3._WP
-    b_12 = -V_g
+         call this%build_zero_o_(omega, B_o, scl)
 
-    ! Set up the boundary conditions
+      else
 
-    B_o(1,1) = beta - b_11
-    B_o(1,2) = -b_12
+         call eval_atmos_coeffs_jcd(this%ml, V_g, As, c_1)
+
+         omega_c = this%rt%omega_c(s, x, omega)
+
+         beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
+
+         b_11 = V_g - 3._WP
+         b_12 = -V_g
+
+         ! Set up the boundary conditions
+
+         B_o(1,1) = beta - b_11
+         B_o(1,2) = -b_12
+
+         ! Apply the variables transformation
+
+         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+
+      endif
+
+    end associate
 
     ! Finish
 
     return
 
-  end function B_o_jcd_
+  end subroutine build_jcd_o_
 
 end module gyre_rad_bound
