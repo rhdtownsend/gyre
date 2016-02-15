@@ -1,7 +1,7 @@
 ! Module   : gyre_mesa_file
 ! Purpose  : read MESA files
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -90,11 +90,6 @@ contains
     type(evol_model_t), pointer :: em
 
     ! Read data from the MESA-format file
-
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from MESA file', TRIM(ml_p%file)
-100    format(A,1X,A)
-    endif
 
     call read_mesa_data(ml_p%file, M_star, R_star, L_star, r, m, P, rho, T, &
                         N2, Gamma_1, nabla_ad, delta, nabla,  &
@@ -212,42 +207,53 @@ contains
 
     integer  :: unit
     integer  :: n
-    integer  :: n_cols
+    integer  :: version
     
     ! Read data from the MESA-format file
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from MESA file', TRIM(file)
+100    format(A,1X,A)
+    endif
+
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
-    ! Read the header
+    ! Read the header to determine the version
 
-    read(unit, *) n, M_star, R_star, L_star, n_cols
+    read(unit, *) n, M_star, R_star, L_star, version
 
-    if(n_cols == 1) then
-
-       ! Old variant (n_cols not specified)
-
-       n_cols = 18
+    select case (version)
+    case (1)
 
        backspace(unit)
 
-       if(check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 100) 'Detected old-variant file'
-100       format(3X,A)
-       endif
+       if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Detected version 0.01 file'
+      endif
 
-       call read_mesa_data_old_()
+       call read_mesa_data_v0_01_()
 
-    else
+    case (19)
 
-       ! New variant (n_cols specified)
+       if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Detected version 0.19 file'
+      endif
 
-       if(check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 100) 'Detected new-variant file'
-       endif
+       call read_mesa_data_v0_19_()
 
-       call read_mesa_data_new_()
+    case (100)
 
-    endif
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Detected version 1.00 file'
+      endif
+
+       call read_mesa_data_v1_00_()
+
+    case default
+
+       $ABORT(Unrecognized MESA file version)
+
+    end select
 
     close(unit)
 
@@ -257,56 +263,40 @@ contains
 
   contains
 
-    subroutine read_mesa_data_old_ ()
+    subroutine read_mesa_data_v0_01_ ()
 
-      real(WP), allocatable :: var(:,:)
+      real(WP), allocatable :: point_data(:,:)
       integer               :: k
       integer               :: k_chk
-      integer, allocatable  :: ind(:)
 
-      ! Read data from the old-variant file
+      ! Read data from the version-0.01 file (this is the old variant
+      ! with no version number; the 1 comes from reading the first
+      ! field of the following record)
 
-      allocate(var(18,n))
+      allocate(point_data(18,n))
 
       read_loop : do k = 1,n
-         read(unit, *) k_chk, var(:,k)
+         read(unit, *) k_chk, point_data(:,k)
          $ASSERT(k == k_chk,Index mismatch)
       end do read_loop
 
-      close(unit)
+      r = point_data(1,:)
+      m = point_data(2,:)/(1._WP+point_data(2,:))*M_star
+      P = point_data(4,:)
+      T = point_data(5,:)
+      rho = point_data(6,:)
+      nabla = point_data(7,:)
+      N2 = point_data(8,:)
+      Gamma_1 = point_data(12,:)*point_data(10,:)/point_data(9,:)
+      delta = point_data(11,:)/point_data(12,:)
+      kappa = point_data(13,:)
+      kappa_T = point_data(14,:)
+      kappa_rho = point_data(15,:)
+      epsilon = point_data(16,:)
+      epsilon_T = point_data(17,:)
+      epsilon_rho = point_data(18,:)
 
-      ind = unique_indices(var(1,:))
-
-      if (SIZE(ind) < n) then
-
-         if(check_log_level('WARN')) then
-            write(OUTPUT_UNIT, 110) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
-110         format('!!',1X,A)
-         endif
-
-         n = SIZE(var, 2)
-
-      endif
-       
-      var = var(:,ind)
-
-      r = var(1,:)
-      m = var(2,:)/(1._WP+var(2,:))*M_star
-      p = var(4,:)
-      T = var(5,:)
-      rho = var(6,:)
-      nabla = var(7,:)
-      N2 = var(8,:)
-      Gamma_1 = var(12,:)*var(10,:)/var(9,:)
-      delta = var(11,:)/var(12,:)
-      kappa = var(13,:)
-      kappa_T = var(14,:)
-      kappa_rho = var(15,:)
-      epsilon = var(16,:)
-      epsilon_T = var(17,:)
-      epsilon_rho = var(18,:)
-
-      nabla_ad = p*delta/(rho*T*var(10,:))
+      nabla_ad = p*delta/(rho*T*point_data(10,:))
 
       allocate(Omega_rot(n))
       Omega_rot = 0._WP
@@ -315,7 +305,7 @@ contains
 
       k = MAXLOC(ABS(epsilon_T), DIM=1)
 
-      if(ABS(epsilon_T(k)) < 1E-3*ABS(epsilon(k))) then
+      if (ABS(epsilon_T(k)) < 1E-3*ABS(epsilon(k))) then
 
          epsilon_T = epsilon_T*epsilon
          epsilon_rho = epsilon_rho*epsilon
@@ -331,66 +321,86 @@ contains
 
       return
 
-    end subroutine read_mesa_data_old_
+    end subroutine read_mesa_data_v0_01_
 
-    subroutine read_mesa_data_new_ ()
+    subroutine read_mesa_data_v0_19_ ()
 
-      real(WP), allocatable :: var(:,:)
+      real(WP), allocatable :: point_data(:,:)
       integer               :: k
       integer               :: k_chk
-      integer, allocatable  :: ind(:)
 
-      $ASSERT(n_cols >= 18,Too few columns)
+      ! Read data from the version-0.01 file (this is the old variant
+      ! with no version number; the 19 comes from reading the column count)
 
-      ! Read data from the new-variant file
-
-      allocate(var(n_cols-1,n))
+      allocate(point_data(18,n))
 
       read_loop : do k = 1,n
-         read(unit, *) k_chk, var(:,k)
+         read(unit, *) k_chk, point_data(:,k)
          $ASSERT(k == k_chk,Index mismatch)
       end do read_loop
 
-      close(unit)
-
-      ind = unique_indices(var(1,:))
-
-      if (SIZE(ind) < n) then
-
-         if(check_log_level('WARN')) then
-            write(OUTPUT_UNIT, 110) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
-110         format('!!',1X,A)
-         endif
-
-         n = SIZE(var, 2)
-
-      endif
-       
-      var = var(:,ind)
-
-      r = var(1,:)
-      m = var(2,:)/(1._WP+var(2,:))*M_star
-      p = var(4,:)
-      T = var(5,:)
-      rho = var(6,:)
-      nabla = var(7,:)
-      N2 = var(8,:)
-      Gamma_1 = var(9,:)
-      nabla_ad = var(10,:)
-      delta = var(11,:)
-      kappa = var(12,:)
-      kappa_T = var(13,:)
-      kappa_rho = var(14,:)
-      epsilon = var(15,:)
-      epsilon_T = var(16,:)
-      epsilon_rho = var(17,:)
-      Omega_rot = var(18,:)
+      r = point_data(1,:)
+      m = point_data(2,:)/(1._WP+point_data(2,:))*M_star
+      P = point_data(4,:)
+      T = point_data(5,:)
+      rho = point_data(6,:)
+      nabla = point_data(7,:)
+      N2 = point_data(8,:)
+      Gamma_1 = point_data(9,:)
+      nabla_ad = point_data(10,:)
+      delta = point_data(11,:)
+      kappa = point_data(12,:)
+      kappa_T = point_data(13,:)
+      kappa_rho = point_data(14,:)
+      epsilon = point_data(15,:)
+      epsilon_T = point_data(16,:)
+      epsilon_rho = point_data(17,:)
+      Omega_rot = point_data(18,:)
 
       ! Finish
 
       return
 
-    end subroutine read_mesa_data_new_
+    end subroutine read_mesa_data_v0_19_
+
+    subroutine read_mesa_data_v1_00_ ()
+
+      real(WP), allocatable :: point_data(:,:)
+      integer               :: k
+      integer               :: k_chk
+
+      ! Read data from the version-1.00 file
+
+      allocate(point_data(18,n))
+
+      read_loop : do k = 1,n
+         read(unit, *) k_chk, point_data(:,k)
+         $ASSERT(k == k_chk,Index mismatch)
+      end do read_loop
+
+      r = point_data(1,:)
+      m = point_data(2,:)
+      P = point_data(4,:)
+      T = point_data(5,:)
+      rho = point_data(6,:)
+      nabla = point_data(7,:)
+      N2 = point_data(8,:)
+      Gamma_1 = point_data(9,:)
+      nabla_ad = point_data(10,:)
+      delta = point_data(11,:)
+      kappa = point_data(12,:)
+      kappa_T = point_data(13,:)/point_data(12,:)
+      kappa_rho = point_data(14,:)/point_data(12,:)
+      epsilon = point_data(15,:)
+      epsilon_T = point_data(16,:)
+      epsilon_rho = point_data(17,:)
+      Omega_rot = point_data(18,:)
+
+      ! Finish
+
+      return
+
+    end subroutine read_mesa_data_v1_00_
 
   end subroutine read_mesa_data
 
