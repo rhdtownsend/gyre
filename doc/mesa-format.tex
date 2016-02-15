@@ -43,12 +43,12 @@
 \section*{MESA Stellar Model Format}
 
 MESA-format files store data describing a stellar model in an ASCII
-text file. There are two variants of this format, `old' and `new',
-differentiated by their header lines.
+text file. There are a number of variants of this format, which can be
+distinguished by the initial header line.
 
-\subsection*{Old Variant}
+\subsection*{Version 0.01}
 
-The first line of old-variant MESA files is a header with the following
+The first line of version-0.01 MESA files is a header with the following
 columns:
 
 \begin{table}[h!]
@@ -89,9 +89,9 @@ Column & Name & Datatype & Definition \\ \hline
 \end{tabular}
 \end{table}
 
-\subsection*{New Variant}
+\subsection*{Version 0.19}
 
-The first line of new-variant MESA files is a header with the following
+The first line of version-0.19 MESA files is a header with the following
 columns:
 
 \begin{table}[h!]
@@ -101,7 +101,7 @@ Column & Variable & Datatype & Definition \\ \hline
 2      & \Mstar & real & Stellar mass ($\gram$) \\
 3      & \Rstar & real & Stellar radius ($\cm$) \\
 4      & \Lstar & real & Stellar luminosity ($\erg\,\second^{-1}$) \\
-5      & $n_{\rm col}$ & integer & Number of columns in subsequent lines \\ \hline
+5      & 19     & integer & Version number $\times 100$ \\ \hline
 \end{tabular}
 \end{table}
 
@@ -132,5 +132,52 @@ Column & Name & Datatype & Definition \\ \hline
 19     & $\Omega_{\rm rot}$ & real & Rotation angular velocity (${\rm rad}\,\second^{-1}$) \\  \hline
 \end{tabular}
 \end{table}
+
+\subsection*{Version 1.00}
+
+The first line of version-1.00 MESA files is a header with the following
+columns:
+
+\begin{table}[h!]
+\begin{tabular}{|l|c|l|l|} \hline
+Column & Variable & Datatype & Definition \\ \hline
+1      & $n$ & integer & Number of grid points \\
+2      & \Mstar & real & Stellar mass ($\gram$) \\
+3      & \Rstar & real & Stellar radius ($\cm$) \\
+4      & \Lstar & real & Stellar luminosity ($\erg\,\second^{-1}$) \\
+5      & 100    & integer & Version number $\times 100$ \\ \hline
+\end{tabular}
+\end{table}
+
+The subsequent $n$ lines contain the model data, one line per
+grid point extending from the center to the surface, with the following columns:
+
+\begin{table}[h!]
+\begin{tabular}{|l|c|l|l|} \hline
+Column & Name & Datatype & Definition \\ \hline
+1      & $k$ & integer & Grid point index ($k=1,\ldots,n$) \\
+2      & $r$ & real    & Radius ($\cm$) \\
+3      & $M_{r}$ & real  & Interior mass ($g$) \\
+4      & $L_{r}$ & real & Luminosity ($\erg\,\second^{-1}$) \\
+5      & $p$ & real    & Total pressure ($\dyne\,\cm^{-2}$) \\
+6      & $T$ & real    & Temperature ($\kelvin$) \\
+7      & $\rho$ & real & Density ($\gram\,\cm^{-3}$) \\
+8      & $\nabla$ & real & $\diff \ln T/\diff \ln p$ \\
+9      & $N^{2}$ & real & Brunt-V\"ais\"al\"a frequency squared ($\second^{-2}$) \\
+10     & $\Gamma_{1}$ & real & $(\partial \ln p/\partial \ln \rho)_{\rm ad}$ \\
+11     & $\nabla_{\rm ad}$ & real & $(\diff \ln T/\diff \ln p)_{\rm ad}$ \\
+12     & $\delta$ & real & $-(\partial \ln \rho/\partial \ln T)_{p}$  \\
+13     & $\kappa$ & real & Opacity ($\cm^{2}\,\gram^{-1}$) \\
+14     & $\kappa_{T}$ & real & $(\partial \kappa/\partial \ln T)_{\rho}$ ($\cm^{2}\,\gram^{-1}$) \\
+15     & $\kappa_{\rho}$ & real & $(\partial \kappa/\partial \ln \rho)_{T}$ ($\cm^{2}\,\gram^{-1}$) \\
+16     & $\epsilon$ & real & Energy generation/loss rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
+17     & $\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+18     & $\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+19     & $\Omega_{\rm rot}$ & real & Rotation angular velocity (${\rm rad}\,\second^{-1}$) \\  \hline
+\end{tabular}
+\end{table}
+
+Note that the definition of $\kappa_{T}$ and $\kappa_{\rho}$ is
+slightly different than in previous versions.
 
 \end{document}
