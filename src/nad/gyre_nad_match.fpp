@@ -146,7 +146,7 @@ contains
     
     E_l(2,1) = U_l
     E_l(2,2) = -U_l
-    E_l(2,3) = U_l
+    E_l(2,3) = 0._WP
     E_l(2,4) = 0._WP
     E_l(2,5) = 0._WP
     E_l(2,6) = 0._WP
@@ -162,12 +162,12 @@ contains
     E_l(4,2) = 0._WP
     E_l(4,3) = 0._WP
     E_l(4,4) = -1._WP
-    E_l(4,5) = -1._WP
-    E_l(4,6) = -1._WP
+    E_l(4,5) = 0._WP
+    E_l(4,6) = 0._WP
 
     E_l(5,1) = V_l*nabla_ad_l
     E_l(5,2) = -V_l*nabla_ad_l
-    E_l(5,3) = V_l*nabla_ad_l
+    E_l(5,3) = 0._WP
     E_l(5,4) = 0._WP
     E_l(5,5) = -1._WP
     E_l(5,6) = 0._WP
@@ -190,7 +190,7 @@ contains
 
     E_r(2,1) = -U_r
     E_r(2,2) = U_r
-    E_r(2,3) = -U_r
+    E_r(2,3) = 0._WP
     E_r(2,4) = 0._WP
     E_r(2,5) = 0._WP
     E_r(2,6) = 0._WP
@@ -211,7 +211,7 @@ contains
 
     E_r(5,1) = -V_r*nabla_ad_r
     E_r(5,2) = V_r*nabla_ad_r
-    E_r(5,3) = -V_r*nabla_ad_r
+    E_r(5,3) = 0._WP
     E_r(5,4) = 0._WP
     E_r(5,5) = 1._WP
     E_r(5,6) = 0._WP
