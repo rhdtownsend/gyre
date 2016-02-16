@@ -134,7 +134,7 @@ contains
     
     E_l(2,1) = U_l
     E_l(2,2) = -U_l
-    E_l(2,3) = U_l
+    E_l(2,3) = 0._WP
     E_l(2,4) = 0._WP
 
     E_l(3,1) = 0._WP
@@ -156,7 +156,7 @@ contains
 
     E_r(2,1) = -U_r
     E_r(2,2) = U_r
-    E_r(2,3) = -U_r
+    E_r(2,3) = 0._WP
     E_r(2,4) = 0._WP
 
     E_r(3,1) = 0._WP
