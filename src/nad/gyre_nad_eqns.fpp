@@ -141,8 +141,8 @@ contains
     real(WP)    :: c_dif
     real(WP)    :: c_eps_ad
     real(WP)    :: c_eps_S
-    real(WP)    :: kappa_ad
-    real(WP)    :: kappa_S
+    real(WP)    :: kap_ad
+    real(WP)    :: kap_S
     complex(WP) :: lambda
     complex(WP) :: l_i
     complex(WP) :: omega_c
@@ -171,8 +171,8 @@ contains
       c_dif = this%ml%c_dif(s, x)
       c_eps_ad = this%ml%c_eps_ad(s, x)
       c_eps_S = this%ml%c_eps_S(s, x)
-      kappa_ad = this%ml%kappa_ad(s, x)
-      kappa_S = this%ml%kappa_S(s, x)
+      kap_ad = this%ml%kap_ad(s, x)
+      kap_S = this%ml%kap_S(s, x)
 
       lambda = this%rt%lambda(s, x, omega)
       l_i = this%rt%l_i(omega)
@@ -225,7 +225,7 @@ contains
       xA(5,2) = V*(lambda/(c_1*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))
       xA(5,3) = alpha_gr*(V*lambda/(c_1*omega_c**2)*(nabla_ad - nabla))
       xA(5,4) = alpha_gr*(V*nabla_ad)
-      xA(5,5) = V*nabla*(4._WP - kappa_S) - (l_i - 2._WP)
+      xA(5,5) = V*nabla*(4._WP - kap_S) - (l_i - 2._WP)
       xA(5,6) = -V*nabla/c_rad
 
       xA(6,1) = alpha_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
