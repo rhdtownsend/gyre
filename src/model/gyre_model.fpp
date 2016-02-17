@@ -58,8 +58,8 @@ module gyre_model
      $PROC_DECL(c_dif)
      $PROC_DECL(c_eps_ad)
      $PROC_DECL(c_eps_S)
-     $PROC_DECL(kappa_ad)
-     $PROC_DECL(kappa_S)
+     $PROC_DECL(kap_ad)
+     $PROC_DECL(kap_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
      procedure(vacuum), deferred, public :: vacuum

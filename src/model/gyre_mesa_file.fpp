@@ -56,7 +56,7 @@ contains
     real(WP)                    :: R_star
     real(WP)                    :: L_star
     real(WP), allocatable       :: r(:)
-    real(WP), allocatable       :: m(:)
+    real(WP), allocatable       :: M_r(:)
     real(WP), allocatable       :: P(:)
     real(WP), allocatable       :: rho(:)
     real(WP), allocatable       :: T(:)
@@ -65,12 +65,12 @@ contains
     real(WP), allocatable       :: nabla_ad(:)
     real(WP), allocatable       :: delta(:)
     real(WP), allocatable       :: nabla(:)
-    real(WP), allocatable       :: kappa(:)
-    real(WP), allocatable       :: kappa_rho(:)
-    real(WP), allocatable       :: kappa_T(:)
-    real(WP), allocatable       :: epsilon(:)
-    real(WP), allocatable       :: epsilon_rho(:)
-    real(WP), allocatable       :: epsilon_T(:)
+    real(WP), allocatable       :: kap(:)
+    real(WP), allocatable       :: kap_rho(:)
+    real(WP), allocatable       :: kap_T(:)
+    real(WP), allocatable       :: eps(:)
+    real(WP), allocatable       :: eps_rho(:)
+    real(WP), allocatable       :: eps_T(:)
     real(WP), allocatable       :: Omega_rot(:)
     integer                     :: n
     real(WP), allocatable       :: x(:)
@@ -85,16 +85,15 @@ contains
     real(WP), allocatable       :: c_dif(:)
     real(WP), allocatable       :: c_eps_ad(:)
     real(WP), allocatable       :: c_eps_S(:)
-    real(WP), allocatable       :: kappa_ad(:)
-    real(WP), allocatable       :: kappa_S(:)
+    real(WP), allocatable       :: kap_ad(:)
+    real(WP), allocatable       :: kap_S(:)
     type(evol_model_t), pointer :: em
 
     ! Read data from the MESA-format file
 
-    call read_mesa_data(ml_p%file, M_star, R_star, L_star, r, m, P, rho, T, &
+    call read_mesa_data(ml_p%file, M_star, R_star, L_star, r, M_r, P, rho, T, &
                         N2, Gamma_1, nabla_ad, delta, nabla,  &
-                        kappa, kappa_rho, kappa_T, &
-                        epsilon, epsilon_rho, epsilon_T, &
+                        kap, kap_rho, kap_T, eps, eps_rho, eps_T, &
                         Omega_rot)
 
     ! Calculate dimensionless structure data
@@ -109,10 +108,10 @@ contains
     allocate(c_1(n))
 
     where (x /= 0._WP)
-       V_2 = G_GRAVITY*m*rho/(P*r*x**2)
-       As = r**3*N2/(G_GRAVITY*m)
-       U = 4._WP*PI*rho*r**3/m
-       c_1 = (r/R_star)**3/(m/M_star)
+       V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
+       As = r**3*N2/(G_GRAVITY*M_r)
+       U = 4._WP*PI*rho*r**3/M_r
+       c_1 = (r/R_star)**3/(M_r/M_star)
     elsewhere
        V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
        As = 0._WP
@@ -124,15 +123,15 @@ contains
 
     c_P = P*delta/(rho*T*nabla_ad)
 
-    kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
-    kappa_S = kappa_T - delta*kappa_rho
+    kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
+    kap_S = kap_T - delta*kap_rho
 
-    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kappa*rho*L_star)
+    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
-    c_dif = (kappa_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
+    c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
 
-    c_eps_ad = 4._WP*PI*rho*(nabla_ad*epsilon_T + epsilon_rho/Gamma_1)*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*(epsilon_T - delta*epsilon_rho)*R_star**3/L_star
+    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*R_star**3/L_star
+    c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
        Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
@@ -160,8 +159,8 @@ contains
     call em%set_c_dif(c_dif)
     call em%set_c_eps_ad(c_eps_ad)
     call em%set_c_eps_S(c_eps_S)
-    call em%set_kappa_ad(kappa_ad)
-    call em%set_kappa_S(kappa_S)
+    call em%set_kap_ad(kap_ad)
+    call em%set_kap_S(kap_S)
 
     call em%set_Omega_rot(Omega_rot)
 
@@ -177,10 +176,9 @@ contains
 
   !****
 
-  subroutine read_mesa_data (file, M_star, R_star, L_star, r, m, p, rho, T, &
+  subroutine read_mesa_data (file, M_star, R_star, L_star, r, M_r, P, rho, T, &
                              N2, Gamma_1, nabla_ad, delta, nabla,  &
-                             kappa, kappa_rho, kappa_T, &
-                             epsilon, epsilon_rho, epsilon_T, &
+                             kap, kap_rho, kap_T, eps, eps_rho, eps_T, &
                              Omega_rot)
 
     character(*), intent(in)           :: file
@@ -188,8 +186,8 @@ contains
     real(WP), intent(out)              :: R_star
     real(WP), intent(out)              :: L_star
     real(WP), allocatable, intent(out) :: r(:)
-    real(WP), allocatable, intent(out) :: m(:)
-    real(WP), allocatable, intent(out) :: p(:)
+    real(WP), allocatable, intent(out) :: M_r(:)
+    real(WP), allocatable, intent(out) :: P(:)
     real(WP), allocatable, intent(out) :: rho(:)
     real(WP), allocatable, intent(out) :: T(:)
     real(WP), allocatable, intent(out) :: N2(:)
@@ -197,12 +195,12 @@ contains
     real(WP), allocatable, intent(out) :: nabla_ad(:)
     real(WP), allocatable, intent(out) :: delta(:)
     real(WP), allocatable, intent(out) :: nabla(:)
-    real(WP), allocatable, intent(out) :: kappa(:)
-    real(WP), allocatable, intent(out) :: kappa_rho(:)
-    real(WP), allocatable, intent(out) :: kappa_T(:)
-    real(WP), allocatable, intent(out) :: epsilon(:)
-    real(WP), allocatable, intent(out) :: epsilon_rho(:)
-    real(WP), allocatable, intent(out) :: epsilon_T(:)
+    real(WP), allocatable, intent(out) :: kap(:)
+    real(WP), allocatable, intent(out) :: kap_rho(:)
+    real(WP), allocatable, intent(out) :: kap_T(:)
+    real(WP), allocatable, intent(out) :: eps(:)
+    real(WP), allocatable, intent(out) :: eps_rho(:)
+    real(WP), allocatable, intent(out) :: eps_T(:)
     real(WP), allocatable, intent(out) :: Omega_rot(:)
 
     integer  :: unit
@@ -218,9 +216,11 @@ contains
 
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
 
-    ! Read the header to determine the version
+    ! Read the header and determine the version
 
     read(unit, *) n, M_star, R_star, L_star, version
+
+    ! Read the data
 
     select case (version)
     case (1)
@@ -228,8 +228,8 @@ contains
        backspace(unit)
 
        if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 100) 'Detected version 0.01 file'
-      endif
+          write(OUTPUT_UNIT, 100) 'Detected version 0.01 file'
+       endif
 
        call read_mesa_data_v0_01_()
 
@@ -281,7 +281,7 @@ contains
       end do read_loop
 
       r = point_data(1,:)
-      m = point_data(2,:)/(1._WP+point_data(2,:))*M_star
+      M_r = point_data(2,:)/(1._WP+point_data(2,:))*M_star
       P = point_data(4,:)
       T = point_data(5,:)
       rho = point_data(6,:)
@@ -289,26 +289,26 @@ contains
       N2 = point_data(8,:)
       Gamma_1 = point_data(12,:)*point_data(10,:)/point_data(9,:)
       delta = point_data(11,:)/point_data(12,:)
-      kappa = point_data(13,:)
-      kappa_T = point_data(14,:)
-      kappa_rho = point_data(15,:)
-      epsilon = point_data(16,:)
-      epsilon_T = point_data(17,:)
-      epsilon_rho = point_data(18,:)
+      kap = point_data(13,:)
+      kap_T = point_data(14,:)
+      kap_rho = point_data(15,:)
+      eps = point_data(16,:)
+      eps_T = point_data(17,:)
+      eps_rho = point_data(18,:)
 
       nabla_ad = p*delta/(rho*T*point_data(10,:))
 
       allocate(Omega_rot(n))
       Omega_rot = 0._WP
 
-      ! Decide whether epsilon_T and epsilon_rho need rescaling
+      ! Decide whether eps_T and eps_rho need rescaling
 
-      k = MAXLOC(ABS(epsilon_T), DIM=1)
+      k = MAXLOC(ABS(eps_T), DIM=1)
 
-      if (ABS(epsilon_T(k)) < 1E-3*ABS(epsilon(k))) then
+      if (ABS(eps_T(k)) < 1E-3*ABS(eps(k))) then
 
-         epsilon_T = epsilon_T*epsilon
-         epsilon_rho = epsilon_rho*epsilon
+         eps_T = eps_T*eps
+         eps_rho = eps_rho*eps
 
          if(check_log_level('INFO')) then
             write(OUTPUT_UNIT, 120) 'Rescaled epsilon derivatives'
@@ -340,7 +340,7 @@ contains
       end do read_loop
 
       r = point_data(1,:)
-      m = point_data(2,:)/(1._WP+point_data(2,:))*M_star
+      M_r = point_data(2,:)/(1._WP+point_data(2,:))*M_star
       P = point_data(4,:)
       T = point_data(5,:)
       rho = point_data(6,:)
@@ -349,12 +349,12 @@ contains
       Gamma_1 = point_data(9,:)
       nabla_ad = point_data(10,:)
       delta = point_data(11,:)
-      kappa = point_data(12,:)
-      kappa_T = point_data(13,:)
-      kappa_rho = point_data(14,:)
-      epsilon = point_data(15,:)
-      epsilon_T = point_data(16,:)
-      epsilon_rho = point_data(17,:)
+      kap = point_data(12,:)
+      kap_T = point_data(13,:)
+      kap_rho = point_data(14,:)
+      eps = point_data(15,:)
+      eps_T = point_data(16,:)
+      eps_rho = point_data(17,:)
       Omega_rot = point_data(18,:)
 
       ! Finish
@@ -379,7 +379,7 @@ contains
       end do read_loop
 
       r = point_data(1,:)
-      m = point_data(2,:)
+      M_r = point_data(2,:)
       P = point_data(4,:)
       T = point_data(5,:)
       rho = point_data(6,:)
@@ -388,12 +388,12 @@ contains
       Gamma_1 = point_data(9,:)
       nabla_ad = point_data(10,:)
       delta = point_data(11,:)
-      kappa = point_data(12,:)
-      kappa_T = point_data(13,:)/point_data(12,:)
-      kappa_rho = point_data(14,:)/point_data(12,:)
-      epsilon = point_data(15,:)
-      epsilon_T = point_data(16,:)
-      epsilon_rho = point_data(17,:)
+      kap = point_data(12,:)
+      kap_T = point_data(13,:)/point_data(12,:)
+      kap_rho = point_data(14,:)/point_data(12,:)
+      eps = point_data(15,:)
+      eps_T = point_data(16,:)
+      eps_rho = point_data(17,:)
       Omega_rot = point_data(18,:)
 
       ! Finish

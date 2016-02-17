@@ -67,8 +67,8 @@ module gyre_evol_seg
      $DATA_DECL(c_dif)
      $DATA_DECL(c_eps_ad)
      $DATA_DECL(c_eps_S)
-     $DATA_DECL(kappa_ad)
-     $DATA_DECL(kappa_S)
+     $DATA_DECL(kap_ad)
+     $DATA_DECL(kap_S)
      $DATA_DECL(Omega_rot)
      character(:), allocatable :: deriv_type
    contains
@@ -87,8 +87,8 @@ module gyre_evol_seg
      $SET_DECL(c_dif)
      $SET_DECL(c_eps_ad)
      $SET_DECL(c_eps_S)
-     $SET_DECL(kappa_ad)
-     $SET_DECL(kappa_S)
+     $SET_DECL(kap_ad)
+     $SET_DECL(kap_S)
      $SET_DECL(Omega_rot)
      $PROC_DECL(V_2)
      $PROC_DECL(As)
@@ -107,8 +107,8 @@ module gyre_evol_seg
      $PROC_DECL(c_dif)
      $PROC_DECL(c_eps_ad)
      $PROC_DECL(c_eps_S)
-     $PROC_DECL(kappa_ad)
-     $PROC_DECL(kappa_S)
+     $PROC_DECL(kap_ad)
+     $PROC_DECL(kap_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
      procedure, public :: vacuum
@@ -191,8 +191,8 @@ contains
   $SET(c_dif)
   $SET(c_eps_ad)
   $SET(c_eps_S)
-  $SET(kappa_ad)
-  $SET(kappa_S)
+  $SET(kap_ad)
+  $SET(kap_S)
   $SET(Omega_rot)
 
   !****
@@ -241,8 +241,8 @@ contains
   $PROC(c_dif)
   $PROC(c_eps_ad)
   $PROC(c_eps_S)
-  $PROC(kappa_ad)
-  $PROC(kappa_S)
+  $PROC(kap_ad)
+  $PROC(kap_S)
   $PROC(Omega_rot)
 
   !****

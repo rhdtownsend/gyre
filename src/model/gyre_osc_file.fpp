@@ -75,12 +75,12 @@ contains
     real(WP), allocatable       :: delta(:)
     real(WP), allocatable       :: As(:)
     real(WP), allocatable       :: nabla(:)
-    real(WP), allocatable       :: kappa(:)
-    real(WP), allocatable       :: kappa_rho(:)
-    real(WP), allocatable       :: kappa_T(:)
-    real(WP), allocatable       :: epsilon_(:)
-    real(WP), allocatable       :: epsilon_rho(:)
-    real(WP), allocatable       :: epsilon_T(:)
+    real(WP), allocatable       :: kap(:)
+    real(WP), allocatable       :: kap_rho(:)
+    real(WP), allocatable       :: kap_T(:)
+    real(WP), allocatable       :: eps(:)
+    real(WP), allocatable       :: eps_rho(:)
+    real(WP), allocatable       :: eps_T(:)
     real(WP), allocatable       :: Omega_rot(:)
     real(WP), allocatable       :: x(:)
     real(WP), allocatable       :: V_2(:)
@@ -93,8 +93,8 @@ contains
     real(WP), allocatable       :: c_dif(:)
     real(WP), allocatable       :: c_eps_ad(:)
     real(WP), allocatable       :: c_eps_S(:)
-    real(WP), allocatable       :: kappa_ad(:)
-    real(WP), allocatable       :: kappa_S(:)
+    real(WP), allocatable       :: kap_ad(:)
+    real(WP), allocatable       :: kap_S(:)
     type(evol_model_t), pointer :: em
 
     ! Open the OSC-format file
@@ -163,12 +163,12 @@ contains
     As = var(15,:)
 
     nabla = var(6,:)
-    kappa = var(8,:)
-    kappa_T = var(17,:)
-    kappa_rho = var(18,:)
-    epsilon_ = var(9,:)
-    epsilon_T = var(19,:)
-    epsilon_rho = var(20,:)
+    kap = var(8,:)
+    kap_T = var(17,:)
+    kap_rho = var(18,:)
+    eps = var(9,:)
+    eps_T = var(19,:)
+    eps_rho = var(20,:)
 
     Omega_rot = var(16,:)
 
@@ -198,15 +198,15 @@ contains
 
     c_P = P*delta/(rho*T*nabla_ad)
 
-    kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
-    kappa_S = kappa_T - delta*kappa_rho
+    kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
+    kap_S = kap_T - delta*kap_rho
 
-    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kappa*rho*L_star)
+    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
-    c_dif = (kappa_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
+    c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
 
-    c_eps_ad = 4._WP*PI*rho*(nabla_ad*epsilon_T + epsilon_rho/Gamma_1)*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*(epsilon_T - delta*epsilon_rho)*R_star**3/L_star
+    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*R_star**3/L_star
+    c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
        Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
@@ -234,8 +234,8 @@ contains
     call em%set_c_dif(c_dif)
     call em%set_c_eps_ad(c_eps_ad)
     call em%set_c_eps_S(c_eps_S)
-    call em%set_kappa_ad(kappa_ad)
-    call em%set_kappa_S(kappa_S)
+    call em%set_kap_ad(kap_ad)
+    call em%set_kap_S(kap_S)
 
     call em%set_Omega_rot(Omega_rot)
 

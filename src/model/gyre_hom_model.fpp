@@ -66,8 +66,8 @@ module gyre_hom_model
      $PROC_DECL(c_dif)
      $PROC_DECL(c_eps_ad)
      $PROC_DECL(c_eps_S)
-     $PROC_DECL(kappa_ad)
-     $PROC_DECL(kappa_S)
+     $PROC_DECL(kap_ad)
+     $PROC_DECL(kap_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
      procedure, public :: vacuum
@@ -380,8 +380,8 @@ contains
   $PROC_1_NULL(c_dif)
   $PROC_1_NULL(c_eps_ad)
   $PROC_1_NULL(c_eps_S)
-  $PROC_1_NULL(kappa_ad)
-  $PROC_1_NULL(kappa_S)
+  $PROC_1_NULL(kap_ad)
+  $PROC_1_NULL(kap_S)
 
   !****
 
@@ -432,8 +432,8 @@ contains
   $PROC_V(c_dif)
   $PROC_V(c_eps_ad)
   $PROC_V(c_eps_S)
-  $PROC_V(kappa_ad)
-  $PROC_V(kappa_S)
+  $PROC_V(kap_ad)
+  $PROC_V(kap_S)
   $PROC_V(Omega_rot)
   $PROC_V(dOmega_rot)
 

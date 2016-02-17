@@ -67,12 +67,12 @@ contains
     real(WP), allocatable       :: chi_rho(:)
     real(WP), allocatable       :: chi_T(:)
     real(WP), allocatable       :: nabla(:)
-    real(WP), allocatable       :: kappa(:)
-    real(WP), allocatable       :: kappa_rho(:)
-    real(WP), allocatable       :: kappa_T(:)
-    real(WP), allocatable       :: epsilon(:)
-    real(WP), allocatable       :: epsilon_rho(:)
-    real(WP), allocatable       :: epsilon_T(:)
+    real(WP), allocatable       :: kap(:)
+    real(WP), allocatable       :: kap_rho(:)
+    real(WP), allocatable       :: kap_T(:)
+    real(WP), allocatable       :: eps(:)
+    real(WP), allocatable       :: eps_rho(:)
+    real(WP), allocatable       :: eps_T(:)
     real(WP), allocatable       :: Gamma_1(:)
     real(WP), allocatable       :: nabla_ad(:)
     real(WP), allocatable       :: delta(:)
@@ -88,8 +88,8 @@ contains
     real(WP), allocatable       :: c_dif(:)
     real(WP), allocatable       :: c_eps_ad(:)
     real(WP), allocatable       :: c_eps_S(:)
-    real(WP), allocatable       :: kappa_ad(:)
-    real(WP), allocatable       :: kappa_S(:)
+    real(WP), allocatable       :: kap_ad(:)
+    real(WP), allocatable       :: kap_S(:)
     real(WP), allocatable       :: Omega_rot(:)
     type(evol_model_t), pointer :: em
 
@@ -128,12 +128,12 @@ contains
     call read_dset_alloc(hg, 'c_p', c_P)
     call read_dset_alloc(hg, 'chi_rho', chi_rho)
     call read_dset_alloc(hg, 'chi_T', chi_T)
-    call read_dset_alloc(hg, 'epsilon', epsilon)
-    call read_dset_alloc(hg, 'epsilon_rho', epsilon_rho)
-    call read_dset_alloc(hg, 'epsilon_T', epsilon_T)
-    call read_dset_alloc(hg, 'kappa', kappa)
-    call read_dset_alloc(hg, 'kappa_rho', kappa_rho)
-    call read_dset_alloc(hg, 'kappa_T', kappa_T)
+    call read_dset_alloc(hg, 'epsilon', eps)
+    call read_dset_alloc(hg, 'epsilon_rho', eps_rho)
+    call read_dset_alloc(hg, 'epsilon_T', eps_T)
+    call read_dset_alloc(hg, 'kappa', kap)
+    call read_dset_alloc(hg, 'kappa_rho', kap_rho)
+    call read_dset_alloc(hg, 'kappa_T', kap_T)
 
     call hg%final()
 
@@ -148,11 +148,11 @@ contains
     
     c_V = c_V*1.E4_WP
     c_P = c_P*1.E4_WP
-    kappa = kappa*1.E1_WP
-    epsilon = epsilon*1.E4_WP
+    kap = kap*1.E1_WP
+    eps = eps*1.E4_WP
     
-    epsilon_rho = epsilon_rho*epsilon
-    epsilon_T = epsilon_T*epsilon
+    eps_rho = eps_rho*eps
+    eps_T = eps_T*eps
 
     Gamma_1 = chi_rho*c_p/c_V
     delta = chi_T/chi_rho
@@ -182,15 +182,15 @@ contains
 
     beta_rad = A_RADIATION*T**4/(3._WP*P)
 
-    kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
-    kappa_S = kappa_T - delta*kappa_rho
+    kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
+    kap_S = kap_T - delta*kap_rho
 
-    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kappa*rho*L_star)
+    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
-    c_dif = (kappa_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
+    c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
 
-    c_eps_ad = 4._WP*PI*rho*(nabla_ad*epsilon_T + epsilon_rho/Gamma_1)*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*(epsilon_T - delta*epsilon_rho)*R_star**3/L_star
+    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*R_star**3/L_star
+    c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
        Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
@@ -218,8 +218,8 @@ contains
     call em%set_c_dif(c_dif)
     call em%set_c_eps_ad(c_eps_ad)
     call em%set_c_eps_S(c_eps_S)
-    call em%set_kappa_ad(kappa_ad)
-    call em%set_kappa_S(kappa_S)
+    call em%set_kap_ad(kap_ad)
+    call em%set_kap_S(kap_S)
 
     call em%set_Omega_rot(Omega_rot)
 
