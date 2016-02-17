@@ -55,21 +55,21 @@ The root group atributes and datasets of version-0.00 GSM files are as follows:
 \begin{tabular}{|c|l|c|l|l|} \hline
 Variable & Object name & (A)ttribute / & Object datatype & Definition \\
          &             & (D)ataset     &                 &            \\ \hline
+$n$               & \texttt{n}            & A &\texttt{H5T\_STD\_I64LE}  & Number of grid points \\ 
 \Rstar            & \texttt{R\_star}      & A & \texttt{H5T\_IEEE\_F64LE} & Stellar radius ($\cm$) \\
 \Mstar            & \texttt{M\_star}      & A & \texttt{H5T\_IEEE\_F64LE} & Stellar mass ($\gram$) \\
 \Lstar            & \texttt{L\_star}      & A & \texttt{H5T\_IEEE\_F64LE} & Stellar luminosity ($\erg\,\second^{-1}$) \\
-$n$               & \texttt{n}            & A &\texttt{H5T\_STD\_I64LE}  & Number of grid points \\ 
 $r$               & \texttt{r}            & D & \texttt{H5T\_IEEE\_F64LE} & Radius ($\cm$) \\
 $w$               & \texttt{w}            & D & \texttt{H5T\_IEEE\_F64LE} & $M_{r}/(\Mstar-M_{r})$ \\
 $L_{r}$           & \texttt{L\_r}         & D & \texttt{H5T\_IEEE\_F64LE} & Luminosity ($\erg\,\second^{-1}$) \\
-$p$               & \texttt{p}            & D & \texttt{H5T\_IEEE\_F64LE} & Total pressure ($\dyne\,\cm^{-2}$) \\
-$T$               & \texttt{T}            & D & \texttt{H5T\_IEEE\_F64LE} & Temperature ($\kelvin$) \\
+$P$               & \texttt{p}            & D & \texttt{H5T\_IEEE\_F64LE} & Total pressure ($\dyne\,\cm^{-2}$) \\
 $\rho$            & \texttt{rho}          & D & \texttt{H5T\_IEEE\_F64LE} & Density ($\gram\,\cm^{-3}$) \\
+$T$               & \texttt{T}            & D & \texttt{H5T\_IEEE\_F64LE} & Temperature ($\kelvin$) \\
 $N^{2}$           & \texttt{N2}           & D & \texttt{H5T\_IEEE\_F64LE} & Brunt-V\"ais\"al\"a frequency squared ($\second^{-2}$) \\
-$\Gamma_{1}$      & \texttt{Gamma\_1}      & D & \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln p/\partial \ln \rho)_{\rm ad}$ \\
-$\nabla_{\rm ad}$  & \texttt{nabla\_ad}      & D & \texttt{H5T\_IEEE\_F64LE} & $(\diff \ln T/\diff \ln p)_{\rm ad}$ \\
-$\delta$      & \texttt{delta}            & D & \texttt{H5T\_IEEE\_F64LE} & $-(\partial \ln \rho/\partial \ln T)_{p}$  \\
-$\nabla$          & \texttt{nabla}        & D & \texttt{H5T\_IEEE\_F64LE} & $\diff \ln T/\diff \ln p$ \\
+$\Gamma_{1}$      & \texttt{Gamma\_1}      & D & \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln P/\partial \ln \rho)_{\rm ad}$ \\
+$\nabla_{\rm ad}$  & \texttt{nabla\_ad}      & D & \texttt{H5T\_IEEE\_F64LE} & $(\diff \ln T/\diff \ln P)_{\rm ad}$ \\
+$\delta$      & \texttt{delta}            & D & \texttt{H5T\_IEEE\_F64LE} & $-(\partial \ln \rho/\partial \ln T)_{P}$  \\
+$\nabla$          & \texttt{nabla}        & D & \texttt{H5T\_IEEE\_F64LE} & $\diff \ln T/\diff \ln P$ \\
 $\kappa$          & \texttt{kappa}       & D &  \texttt{H5T\_IEEE\_F64LE} & Opacity ($\cm^{2}\,\gram^{-1}$) \\
 $\kappa_{T}$      & \texttt{kappa\_T}     & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln \kappa/\partial \ln T)_{\rho}$ \\
 $\kappa_{\rho}$   & \texttt{kappa\_rho}   & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln \kappa/\partial \ln \rho)_{T}$ \\
@@ -88,28 +88,28 @@ The root group atributes and datasets of version-1.00 GSM files are as follows:
 \begin{tabular}{|c|l|c|l|l|} \hline
 Variable & Object name & (A)ttribute / & Object datatype & Definition \\
 &             & (D)ataset     &                 &            \\ \hline
+$n$               & \texttt{n}            & A &\texttt{H5T\_STD\_I64LE}  & Number of grid points \\ 
 version $\times 100$ & \texttt{version}   & A & \texttt{H5T\_STD\_I32LE}  & 100 \\
 \Rstar            & \texttt{R\_star}      & A & \texttt{H5T\_IEEE\_F64LE} & Stellar radius ($\cm$) \\
 \Mstar            & \texttt{M\_star}      & A & \texttt{H5T\_IEEE\_F64LE} & Stellar mass ($\gram$) \\
 \Lstar            & \texttt{L\_star}      & A & \texttt{H5T\_IEEE\_F64LE} & Stellar luminosity ($\erg\,\second^{-1}$) \\
-$n$               & \texttt{n}            & A &\texttt{H5T\_STD\_I64LE}  & Number of grid points \\ 
 $r$               & \texttt{r}            & D & \texttt{H5T\_IEEE\_F64LE} & Radius ($\cm$) \\
 $M_{r}$           & \texttt{M\_r}            & D & \texttt{H5T\_IEEE\_F64LE} & Interior mass ($\gram$) \\
 $L_{r}$           & \texttt{L\_r}         & D & \texttt{H5T\_IEEE\_F64LE} & Luminosity ($\erg\,\second^{-1}$) \\
-$p$               & \texttt{p}            & D & \texttt{H5T\_IEEE\_F64LE} & Total pressure ($\dyne\,\cm^{-2}$) \\
-$T$               & \texttt{T}            & D & \texttt{H5T\_IEEE\_F64LE} & Temperature ($\kelvin$) \\
+$P$               & \texttt{P}            & D & \texttt{H5T\_IEEE\_F64LE} & Total pressure ($\dyne\,\cm^{-2}$) \\
 $\rho$            & \texttt{rho}          & D & \texttt{H5T\_IEEE\_F64LE} & Density ($\gram\,\cm^{-3}$) \\
+$T$               & \texttt{T}            & D & \texttt{H5T\_IEEE\_F64LE} & Temperature ($\kelvin$) \\
 $N^{2}$           & \texttt{N2}           & D & \texttt{H5T\_IEEE\_F64LE} & Brunt-V\"ais\"al\"a frequency squared ($\second^{-2}$) \\
-$\Gamma_{1}$      & \texttt{Gamma\_1}      & D & \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln p/\partial \ln \rho)_{\rm ad}$ \\
-$\nabla_{\rm ad}$  & \texttt{nabla\_ad}      & D & \texttt{H5T\_IEEE\_F64LE} & $(\diff \ln T/\diff \ln p)_{\rm ad}$ \\
-$\delta$      & \texttt{delta}            & D & \texttt{H5T\_IEEE\_F64LE} & $-(\partial \ln \rho/\partial \ln T)_{p}$  \\
-$\nabla$          & \texttt{nabla}        & D & \texttt{H5T\_IEEE\_F64LE} & $\diff \ln T/\diff \ln p$ \\
-$\kappa$          & \texttt{kappa}       & D &  \texttt{H5T\_IEEE\_F64LE} & Opacity ($\cm^{2}\,\gram^{-1}$) \\
-$\kappa_{T}$      & \texttt{kappa\_T}     & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \kappa/\partial \ln T)_{\rho}$ ($\cm^{2}\,\gram^{-1}$) \\
-$\kappa_{\rho}$   & \texttt{kappa\_rho}   & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \kappa/\partial \ln \rho)_{T}$ ($\cm^{2}\,\gram^{-1}$) \\
-$\epsilon$        & \texttt{epsilon}      & D &  \texttt{H5T\_IEEE\_F64LE} & Energy generation rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
-$\epsilon_{T}$    & \texttt{epsilon\_T}   & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
-$\epsilon_{\rho}$ & \texttt{epsilon\_rho} & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+$\Gamma_{1}$      & \texttt{Gamma\_1}      & D & \texttt{H5T\_IEEE\_F64LE} & $(\partial \ln P/\partial \ln \rho)_{\rm ad}$ \\
+$\nabla_{\rm ad}$  & \texttt{nabla\_ad}      & D & \texttt{H5T\_IEEE\_F64LE} & $(\diff \ln T/\diff \ln P)_{\rm ad}$ \\
+$\delta$          & \texttt{delta}            & D & \texttt{H5T\_IEEE\_F64LE} & $-(\partial \ln \rho/\partial \ln T)_{P}$  \\
+$\nabla$          & \texttt{nabla}        & D & \texttt{H5T\_IEEE\_F64LE} & $\diff \ln T/\diff \ln P$ \\
+$\kappa$          & \texttt{kap}       & D &  \texttt{H5T\_IEEE\_F64LE} & Opacity ($\cm^{2}\,\gram^{-1}$) \\
+$\kappa_{T}$      & \texttt{kap\_T}     & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \kappa/\partial \ln T)_{\rho}$ ($\cm^{2}\,\gram^{-1}$) \\
+$\kappa_{\rho}$   & \texttt{kap\_rho}   & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \kappa/\partial \ln \rho)_{T}$ ($\cm^{2}\,\gram^{-1}$) \\
+$\epsilon$        & \texttt{eps}      & D &  \texttt{H5T\_IEEE\_F64LE} & Energy generation rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
+$\epsilon_{T}$    & \texttt{eps\_T}   & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+$\epsilon_{\rho}$ & \texttt{eps\_rho} & D &  \texttt{H5T\_IEEE\_F64LE} & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
 $\Omega_{\rm rot}$ & \texttt{Omega\_rot}   & D & \texttt{H5T\_IEEE\_F64LE} & Rotation angular velocity (${\rm rad}\,\second^{-1}$) \\  \hline
 \end{tabular}
 \end{table}

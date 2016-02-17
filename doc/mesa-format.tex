@@ -71,15 +71,15 @@ Column & Name & Datatype & Definition \\ \hline
 2      & $r$ & real    & Radius ($\cm$) \\
 3      & $w$ & real    & $M_{r}/(\Mstar-M_{r})$ \\
 4      & $L_{r}$ & real & Luminosity ($\erg\,\second^{-1}$) \\
-5      & $p$ & real    & Total pressure ($\dyne\,\cm^{-2}$) \\
+5      & $P$ & real    & Total pressure ($\dyne\,\cm^{-2}$) \\
 6      & $T$ & real    & Temperature ($\kelvin$) \\
 7      & $\rho$ & real & Density ($\gram\,\cm^{-3}$) \\
 8      & $\nabla$ & real & $\diff \ln T/\diff \ln p$ \\
 9      & $N^{2}$ & real & Brunt-V\"ais\"al\"a frequency squared ($\second^{-2}$) \\
 10      & $c_{V}$ & real & Specific heat at constant volume ($\erg\,\gram^{-1}\,\kelvin^{-1}$) \\
-11     & $c_{p}$ & real & Specific heat at constant pressure ($\erg\,\gram^{-1}\,\kelvin^{-1}$) \\
-12     & $\chi_{T}$ & real & $(\partial \ln p/\partial \ln T)_{\rho} $ \\
-13     & $\chi_{\rho}$ & real & $(\partial \ln p/\partial \ln \rho)_{T} $ \\
+11     & $c_{P}$ & real & Specific heat at constant pressure ($\erg\,\gram^{-1}\,\kelvin^{-1}$) \\
+12     & $\chi_{T}$ & real & $(\partial \ln P/\partial \ln T)_{\rho} $ \\
+13     & $\chi_{\rho}$ & real & $(\partial \ln P/\partial \ln \rho)_{T} $ \\
 14     & $\kappa$ & real & Opacity ($\cm^{2}\,\gram^{-1}$) \\
 15     & $\kappa_{T}$ & real & $(\partial \ln \kappa/\partial \ln T)_{\rho}$ \\
 16     & $\kappa_{\rho}$ & real & $(\partial \ln \kappa/\partial \ln \rho)_{T}$ \\
@@ -115,14 +115,14 @@ Column & Name & Datatype & Definition \\ \hline
 2      & $r$ & real    & Radius ($\cm$) \\
 3      & $w$ & real    & $M_{r}/(\Mstar-M_{r})$ \\
 4      & $L_{r}$ & real & Luminosity ($\erg\,\second^{-1}$) \\
-5      & $p$ & real    & Total pressure ($\dyne\,\cm^{-2}$) \\
+5      & $P$ & real    & Total pressure ($\dyne\,\cm^{-2}$) \\
 6      & $T$ & real    & Temperature ($\kelvin$) \\
 7      & $\rho$ & real & Density ($\gram\,\cm^{-3}$) \\
 8      & $\nabla$ & real & $\diff \ln T/\diff \ln p$ \\
 9      & $N^{2}$ & real & Brunt-V\"ais\"al\"a frequency squared ($\second^{-2}$) \\
-10     & $\Gamma_{1}$ & real & $(\partial \ln p/\partial \ln \rho)_{\rm ad}$ \\
-11     & $\nabla_{\rm ad}$ & real & $(\diff \ln T/\diff \ln p)_{\rm ad}$ \\
-12     & $\delta$ & real & $-(\partial \ln \rho/\partial \ln T)_{p}$  \\
+10     & $\Gamma_{1}$ & real & $(\partial \ln P/\partial \ln \rho)_{\rm ad}$ \\
+11     & $\nabla_{\rm ad}$ & real & $(\diff \ln T/\diff \ln P)_{\rm ad}$ \\
+12     & $\delta$ & real & $-(\partial \ln \rho/\partial \ln T)_{P}$  \\
 13     & $\kappa$ & real & Opacity ($\cm^{2}\,\gram^{-1}$) \\
 14     & $\kappa_{T}$ & real & $(\partial \ln \kappa/\partial \ln T)_{\rho}$ \\
 15     & $\kappa_{\rho}$ & real & $(\partial \ln \kappa/\partial \ln \rho)_{T}$ \\
@@ -159,14 +159,14 @@ Column & Name & Datatype & Definition \\ \hline
 2      & $r$ & real    & Radius ($\cm$) \\
 3      & $M_{r}$ & real  & Interior mass ($\gram$) \\
 4      & $L_{r}$ & real & Luminosity ($\erg\,\second^{-1}$) \\
-5      & $p$ & real    & Total pressure ($\dyne\,\cm^{-2}$) \\
+5      & $P$ & real    & Total pressure ($\dyne\,\cm^{-2}$) \\
 6      & $T$ & real    & Temperature ($\kelvin$) \\
 7      & $\rho$ & real & Density ($\gram\,\cm^{-3}$) \\
 8      & $\nabla$ & real & $\diff \ln T/\diff \ln p$ \\
 9      & $N^{2}$ & real & Brunt-V\"ais\"al\"a frequency squared ($\second^{-2}$) \\
-10     & $\Gamma_{1}$ & real & $(\partial \ln p/\partial \ln \rho)_{\rm ad}$ \\
-11     & $\nabla_{\rm ad}$ & real & $(\diff \ln T/\diff \ln p)_{\rm ad}$ \\
-12     & $\delta$ & real & $-(\partial \ln \rho/\partial \ln T)_{p}$  \\
+10     & $\Gamma_{1}$ & real & $(\partial \ln P/\partial \ln \rho)_{\rm ad}$ \\
+11     & $\nabla_{\rm ad}$ & real & $(\diff \ln T/\diff \ln P)_{\rm ad}$ \\
+12     & $\delta$ & real & $-(\partial \ln \rho/\partial \ln T)_{P}$  \\
 13     & $\kappa$ & real & Opacity ($\cm^{2}\,\gram^{-1}$) \\
 14     & $\kappa_{T}$ & real & $(\partial \kappa/\partial \ln T)_{\rho}$ ($\cm^{2}\,\gram^{-1}$) \\
 15     & $\kappa_{\rho}$ & real & $(\partial \kappa/\partial \ln \rho)_{T}$ ($\cm^{2}\,\gram^{-1}$) \\
