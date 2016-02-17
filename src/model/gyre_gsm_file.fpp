@@ -42,7 +42,6 @@ module gyre_gsm_file
 
   public :: read_gsm_model
   public :: read_gsm_data
-!  public :: write_gsm_data
 
   ! Procedures
 
@@ -221,15 +220,15 @@ contains
 
     call read_attr(hg, 'n', n)
 
-    call read_attr(hg, 'M_star', M_star)
-    call read_attr(hg, 'R_star', R_star)
-    call read_attr(hg, 'L_star', L_star)
-
     if (attr_exists(hg, 'version')) then
        call read_attr(hg, 'version', version)
     else
        version = 0
     endif
+
+    call read_attr(hg, 'M_star', M_star)
+    call read_attr(hg, 'R_star', R_star)
+    call read_attr(hg, 'L_star', L_star)
 
     ! Read the data
 
@@ -329,79 +328,5 @@ contains
     end subroutine read_gsm_data_v1_00_
 
   end subroutine read_gsm_data
-
-  ! !****
-
-  ! subroutine write_gsm_data (file, M_star, R_star, L_star, r, M_r, L_r, P, rho, T, &
-  !                            N2, Gamma_1, nabla_ad, delta, nabla,  &
-  !                            kap, kap_rho, kap_T, eps, eps_rho, eps_T, &
-  !                            Omega_rot)
-
-  !   character(*), intent(in) :: file
-  !   real(WP), intent(in)     :: M_star
-  !   real(WP), intent(in)     :: R_star
-  !   real(WP), intent(in)     :: L_star
-  !   real(WP), intent(in)     :: r(:)
-  !   real(WP), intent(in)     :: M_r(:)
-  !   real(WP), intent(in)     :: L_r(:)
-  !   real(WP), intent(in)     :: P(:)
-  !   real(WP), intent(in)     :: rho(:)
-  !   real(WP), intent(in)     :: T(:)
-  !   real(WP), intent(in)     :: N2(:)
-  !   real(WP), intent(in)     :: Gamma_1(:)
-  !   real(WP), intent(in)     :: nabla_ad(:)
-  !   real(WP), intent(in)     :: delta(:)
-  !   real(WP), intent(in)     :: nabla(:)
-  !   real(WP), intent(in)     :: kap(:)
-  !   real(WP), intent(in)     :: kap_rho(:)
-  !   real(WP), intent(in)     :: kap_T(:)
-  !   real(WP), intent(in)     :: eps(:)
-  !   real(WP), intent(in)     :: eps_rho(:)
-  !   real(WP), intent(in)     :: eps_T(:)
-  !   real(WP), intent(in)     :: Omega_rot(:)
-
-  !   type(hgroup_t) :: hg
-
-  !   ! Write data to the GSM-format file
-
-  !   hg = hgroup_t(file, CREATE_FILE)
-
-  !   ! Write the header
-
-  !   call write_attr(hg, 'n', SIZE(r))
-  !   call write_attr(hg, 'version', 100)
-
-  !   call write_attr(hg, 'M_star', M_star)
-  !   call write_attr(hg, 'R_star', R_star)
-  !   call write_attr(hg, 'L_star', L_star)
-
-  !   ! Write the data
-
-  !   call write_dset(hg, 'r', r)
-  !   call write_dset(hg, 'M_r', M_r)
-  !   call write_dset(hg, 'L_r', L_r)
-  !   call write_dset(hg, 'P', P)
-  !   call write_dset(hg, 'rho', rho)
-  !   call write_dset(hg, 'T', T)
-  !   call write_dset(hg, 'N2', N2)
-  !   call write_dset(hg, 'Gamma_1', Gamma_1)
-  !   call write_dset(hg, 'nabla_ad', nabla_ad)
-  !   call write_dset(hg, 'delta', delta)
-  !   call write_dset(hg, 'nabla', nabla)
-  !   call write_dset(hg, 'kap', kap)
-  !   call write_dset(hg, 'kap_rho', kap_rho)
-  !   call write_dset(hg, 'kap_T', kap_T)
-  !   call write_dset(hg, 'eps', eps)
-  !   call write_dset(hg, 'eps_rho', eps_rho)
-  !   call write_dset(hg, 'eps_T', eps_T)
-  !   call write_dset(hg, 'Omega_rot', Omega_rot)
-
-  !   call hg%final()
-
-  !   ! Finish
-
-  !   return
-
-  ! end subroutine write_gsm_data
 
 end module gyre_gsm_file
