@@ -59,8 +59,8 @@ contains
     integer                     :: ivar
     integer                     :: iabund
     integer                     :: ivers
-    real(WP), allocatable       :: glob(:)
-    real(WP), allocatable       :: var(:,:)
+    real(WP), allocatable       :: global_data(:)
+    real(WP), allocatable       :: point_data(:,:)
     integer                     :: i
     real(WP)                    :: M_star
     real(WP)                    :: R_star
@@ -130,47 +130,47 @@ contains
        data_format = '(1P5E19.12)'
     endif
 
-    allocate(glob(iconst))
-    allocate(var(ivar+iabund,n))
+    allocate(global_data(iconst))
+    allocate(point_data(ivar+iabund,n))
 
-    read(unit, data_format) glob
+    read(unit, data_format) global_data
 
     read_loop : do i = 1,n
-       read(unit, data_format) var(:,i)
+       read(unit, data_format) point_data(:,i)
     end do read_loop
 
     close(unit)
 
-    var = var(:,n:1:-1)
+    point_data = point_data(:,n:1:-1)
 
     ! Extract structure data
 
-    M_star = glob(1)
-    R_star = glob(2)
-    L_star = glob(3)
+    M_star = global_data(1)
+    R_star = global_data(2)
+    L_star = global_data(3)
 
-    r = var(1,:)
-    m = EXP(var(2,:))
+    r = point_data(1,:)
+    m = EXP(point_data(2,:))
 
-    T = var(3,:)
-    P = var(4,:)
-    rho = var(5,:)
+    T = point_data(3,:)
+    P = point_data(4,:)
+    rho = point_data(5,:)
 
-    Gamma_1 = var(10,:)
-    nabla_ad = var(11,:)
-    delta = var(12,:)
+    Gamma_1 = point_data(10,:)
+    nabla_ad = point_data(11,:)
+    delta = point_data(12,:)
 
-    As = var(15,:)
+    As = point_data(15,:)
 
-    nabla = var(6,:)
-    kap = var(8,:)
-    kap_T = var(17,:)
-    kap_rho = var(18,:)
-    eps = var(9,:)
-    eps_T = var(19,:)
-    eps_rho = var(20,:)
+    nabla = point_data(6,:)
+    kap = point_data(8,:)
+    kap_T = point_data(17,:)
+    kap_rho = point_data(18,:)
+    eps = point_data(9,:)
+    eps_T = point_data(19,:)
+    eps_rho = point_data(20,:)
 
-    Omega_rot = var(16,:)
+    Omega_rot = point_data(16,:)
 
     ! Snap grid points
 
