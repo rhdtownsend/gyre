@@ -149,7 +149,7 @@ contains
                 call write_summary_evol_(items(i), ml, wr)
              class default
                 write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-                $ABORT(Invalid item)
+                $ABORT(Invalid item in summary_item_list)
              end select
           endif
        end select
@@ -210,6 +210,8 @@ contains
     ! Write the mode file
 
     if (ot_p%mode_template == '') return
+
+    if (filter_mode_(md, ot_p)) return
 
     ! Set up the filename
 
@@ -378,7 +380,7 @@ contains
                call write_mode_evol_(ml)
                class default
                write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-               $ABORT(Invalid item)
+               $ABORT(Invalid item in mode_item_list)
             end select
          end select
 
@@ -433,6 +435,42 @@ contains
     end subroutine write_mode_evol_
 
   end subroutine write_mode
+
+  !****
+
+  function filter_mode_ (md, ot_p) result (filter_mode)
+
+    type(mode_t), intent(in)    :: md
+    type(out_par_t), intent(in) :: ot_p
+    logical                     :: filter_mode
+
+    character(LEN(ot_p%mode_filter_list)), allocatable :: filters(:)
+    integer                                            :: i
+
+    ! Decide whether to filter the mode
+
+    filters = split_list(ot_p%mode_filter_list, ',')
+
+    filter_mode = .FALSE.
+
+    item_loop : do i = 1, SIZE(filters)
+
+       select case (filters(i))
+       case ('stable')
+          filter_mode = filter_mode .OR. AIMAG(md%omega) <= 0._WP
+       case ('unstable')
+          filter_mode = filter_mode .OR. AIMAG(md%omega) > 0._WP
+       case default
+          $ABORT(Unrecognized filter in mode_filter_list)
+       end select
+
+    end do item_loop
+
+    ! Finish
+
+    return
+
+  end function filter_mode_
 
   !****
 

@@ -42,6 +42,7 @@ module gyre_out_par
      character(FILENAME_LEN) :: mode_template
      character(256)          :: mode_file_format 
      character(2048)         :: mode_item_list
+     character(2048)         :: mode_filter_list
      character(256)          :: label
      logical                 :: prune_modes
   end type out_par_t
@@ -72,6 +73,7 @@ contains
     character(LEN(ot_p%mode_template))       :: mode_template
     character(LEN(ot_p%mode_file_format))    :: mode_file_format
     character(LEN(ot_p%mode_item_list))      :: mode_item_list
+    character(LEN(ot_p%mode_filter_list))    :: mode_filter_list
     character(LEN(ot_p%label))               :: label
     logical                                  :: prune_modes
 
@@ -82,7 +84,7 @@ contains
 
     namelist /nad_output/ freq_units, freq_frame, &
                           summary_file, summary_file_format, summary_item_list, &
-                          mode_template, mode_file_format, mode_item_list, &
+                          mode_template, mode_file_format, mode_item_list, mode_filter_list, &
                           label, prune_modes
 
     ! Count the number of output namelists
@@ -119,6 +121,7 @@ contains
     mode_template = ''
     mode_file_format = 'HDF'
     mode_item_list = TRIM(summary_item_list)//',x,xi_r,xi_h'
+    mode_filter_list = ''
        
     label = ''
        
@@ -145,6 +148,7 @@ contains
                      mode_template=mode_template, &
                      mode_file_format=mode_file_format, &
                      mode_item_list=mode_item_list, &
+                     mode_filter_list=mode_filter_list, &
                      label=label, &
                      prune_modes=prune_modes)
 
