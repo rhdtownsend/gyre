@@ -33,8 +33,12 @@
 
    mixing_length_alpha = 1.5
 
-   overshoot_f_above_burn_h_core = 0.010
-   overshoot_f0_above_burn_h_core = 0.0025
+   overshoot_f_above_burn_h_core = 0.024
+   overshoot_f0_above_burn_h_core = 0.006
+
+   ! Brunt-Vaisala smoothing
+
+   num_cells_for_smooth_brunt_B = 0
    
    ! Output to files and terminal
 
@@ -47,7 +51,7 @@
    pulse_data_format = 'GYRE'
    add_center_point_to_pulse_data = .TRUE.
    add_double_points_to_pulse_data = .TRUE.
-   threshold_grad_mu_for_double_point = 10.
+   threshold_grad_mu_for_double_point = 10
 
    ! When to stop
 

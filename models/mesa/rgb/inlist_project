@@ -36,6 +36,10 @@
    overshoot_f_above_burn_h_core = 0.010
    overshoot_f0_above_burn_h_core = 0.0025
    
+   ! Brunt-Vaisala smoothing
+
+   num_cells_for_smooth_brunt_B = 0
+   
    ! Output to files and terminal
 
    photostep = 0

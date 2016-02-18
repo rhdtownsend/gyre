@@ -33,8 +33,12 @@
 
    mixing_length_alpha = 1.5
 
-   overshoot_f_above_burn_h_core = 0.010
-   overshoot_f0_above_burn_h_core = 0.0025
+   overshoot_f_above_burn_h_core = 0.024
+   overshoot_f0_above_burn_h_core = 0.006
+   
+   ! Brunt-Vaisala smoothing
+
+   num_cells_for_smooth_brunt_B = 0
    
    ! Output to files and terminal
 
