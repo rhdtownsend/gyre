@@ -99,7 +99,7 @@ contains
 
     ! Build the grid
 
-    call build_grid(ml, omega, gr_p, md_p, os_p, s, x)
+    call build_grid(ml, omega, gr_p, md_p, os_p, s, x, verbose=.TRUE.)
 
     n_k = SIZE(s)
 
