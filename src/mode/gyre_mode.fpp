@@ -95,6 +95,9 @@ module gyre_mode
      $PROC_DECL(dW_dx)
      $PROC_DECL(dC_dx)
      $PROC_DECL(F_j)
+!     $PROC_DECL(tau_reyn)
+     $PROC_DECL(tau_wave)
+     $PROC_DECL(tau_grav)
      $PROC_DECL(Yt_1)
      $PROC_DECL(Yt_2)
      $PROC_DECL(I_0)
@@ -1055,7 +1058,83 @@ contains
     return
 
   end function F_j_1_
-  
+
+  !****
+
+  function tau_wave_1_ (this, s, x) result (tau_wave)
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: s
+    real(WP), intent(in)      :: x
+    real(WP)                  :: tau_wave
+
+    complex(WP) :: eul_rho
+    complex(WP) :: xi_h
+    real(WP)    :: c_1
+    real(WP)    :: U
+    complex(WP) :: omega_c
+    
+    ! Evaluate the torque density due to wave growth/decay, in units
+    ! of G M_star**2/R_star**4.
+
+    associate (m => this%m)
+
+      eul_rho = this%eul_rho(s, x)
+      xi_h = this%xi_h(s, x)
+
+      c_1 = this%ml%c_1(s, x)
+      U = this%ml%U(s, x)
+
+      omega_c = this%rt%omega_c(s, x, this%omega)
+
+      tau_wave = m*U*AIMAG(omega_c)*REAL(CONJG(omega_c*xi_h)*eul_rho)/(16._WP*PI**2*c_1)
+
+    end associate
+
+    ! Finish
+
+    return
+    
+  end function tau_wave_1_
+
+  !****
+
+  function tau_grav_1_ (this, s, x) result (tau_grav)
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: s
+    real(WP), intent(in)      :: x
+    real(WP)                  :: tau_grav
+
+    complex(WP) :: eul_rho
+    complex(WP) :: eul_phi
+    real(WP)    :: c_1
+    real(WP)    :: U
+    complex(WP) :: omega_c
+    
+    ! Evaluate the torque density due to self-gravitational torquing,
+    ! in units of G M_star**2/R_star**5.
+
+    associate (m => this%m)
+
+      eul_rho = this%eul_rho(s, x)
+      eul_phi = this%eul_phi(s, x)
+
+      c_1 = this%ml%c_1(s, x)
+      U = this%ml%U(s, x)
+
+      omega_c = this%rt%omega_c(s, x, this%omega)
+
+      tau_grav = -m*U*AIMAG(eul_rho*CONJG(eul_phi))/(32._WP*PI**2*c_1)
+
+    end associate
+
+    ! Finish
+
+    return
+    
+  end function tau_grav_1_
+
   !****
 
   function Yt_1_1_ (this, s, x) result (Yt_1)
@@ -1345,6 +1424,9 @@ contains
   $PROC_V(dW_dx,real(WP))
   $PROC_V(dC_dx,real(WP))
   $PROC_V(F_j,real(WP))
+!  $PROC_V(tau_reyn,real(WP))
+  $PROC_V(tau_wave,real(WP))
+  $PROC_V(tau_grav,real(WP))
   $PROC_V(Yt_1,complex(WP))
   $PROC_V(Yt_2,complex(WP))
   $PROC_V(I_0,complex(WP))
