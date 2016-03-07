@@ -51,8 +51,10 @@ contains
     class(model_t), pointer, intent(out) :: ml
 
     type(hgroup_t)              :: hg
-    real(WP)                    :: Gamma_1
     real(WP), allocatable       :: n_poly(:)
+    integer                     :: n_d
+    real(WP), allocatable       :: Delta_d(:)
+    real(WP)                    :: Gamma_1
     real(WP), allocatable       :: xi(:)
     real(WP), allocatable       :: Theta(:)
     real(WP), allocatable       :: dTheta(:)
@@ -67,8 +69,15 @@ contains
 
     hg = hgroup_t(ml_p%file, OPEN_FILE)
 
-    call read_attr(hg, 'Gamma_1', Gamma_1)
+    call read_attr(hg, 'n_d', n_d)
+
     call read_attr_alloc(hg, 'n_poly', n_poly)
+    if (n_d > 0) then
+       call read_attr_alloc(hg, 'Delta_d', Delta_d)
+    else
+       allocate(Delta_d(0))
+    endif
+    call read_attr(hg, 'Gamma_1', Gamma_1)
 
     call read_dset_alloc(hg, 'xi', xi)
     call read_dset_alloc(hg, 'Theta', Theta)
@@ -78,7 +87,7 @@ contains
 
     ! Initialize the poly_model_t
 
-    allocate(pm, SOURCE=poly_model_t(xi, Theta, dTheta, n_poly, Gamma_1, ml_p))
+    allocate(pm, SOURCE=poly_model_t(xi, Theta, dTheta, n_poly, Delta_d, Gamma_1, ml_p))
 
     ! Return a pointer
 

@@ -54,6 +54,8 @@ program build_poly
   real(WP), allocatable     :: xi(:)
   real(WP), allocatable     :: Theta(:)
   real(WP), allocatable     :: dTheta(:)
+  real(WP), allocatable     :: B(:)
+  real(WP), allocatable     :: t(:)
   type(hgroup_t)            :: hg
 
   namelist /poly/ n_d, n_poly, Gamma_1, xi_d, Delta_d
@@ -99,8 +101,11 @@ program build_poly
   hg = hgroup_t(filename, CREATE_FILE)
 
   call write_attr(hg, 'n', SIZE(xi))
-  call write_attr(hg, 'n_d', SIZE(xi_d))
+  call write_attr(hg, 'n_d', n_d)
   call write_attr(hg, 'n_poly', n_poly)
+  if (n_d > 0) then
+     call write_attr(hg, 'Delta_d', Delta_d)
+  endif
   call write_attr(hg, 'Gamma_1', Gamma_1)
 
   call write_dset(hg, 'xi', xi)

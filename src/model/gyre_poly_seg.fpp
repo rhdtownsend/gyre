@@ -44,11 +44,12 @@ module gyre_poly_seg
      type(r_interp_t) :: in_Theta
      type(r_interp_t) :: in_dTheta
      real(WP)         :: mu_i
-     real(WP)         :: mu_s
-     real(WP)         :: B
      real(WP)         :: v_i
+     real(WP)         :: mu_s
      real(WP)         :: xi_s
      real(WP)         :: n_poly
+     real(WP)         :: B
+     real(WP)         :: t
      real(WP)         :: Gamma_1_
    contains
      private
@@ -83,26 +84,30 @@ module gyre_poly_seg
 
 contains
 
-  function poly_seg_t_ (x, Theta, dTheta, mu_i, mu_s, B, xi_s, n_poly, Gamma_1) result (ps)
+  function poly_seg_t_ (x, Theta, dTheta, mu_i, mu_s, xi_s, n_poly, B, t, Gamma_1) result (ps)
 
     real(WP), intent(in) :: x(:)
     real(WP), intent(in) :: Theta(:)
     real(WP), intent(in) :: dTheta(:)
     real(WP), intent(in) :: mu_i
     real(WP), intent(in) :: mu_s
-    real(WP), intent(in) :: B
     real(WP), intent(in) :: xi_s
     real(WP), intent(in) :: n_poly
+    real(WP), intent(in) :: B
+    real(WP), intent(in) :: t
     real(WP), intent(in) :: Gamma_1
     type(poly_seg_t)     :: ps
 
     real(WP) :: xi(SIZE(x))
     real(WP) :: d2Theta(SIZE(x))
+    integer  :: n
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
     $CHECK_BOUNDS(SIZE(dTheta),SIZE(xi))
 
     ! Construct the poly_seg_t
+
+    n = SIZE(x)
 
     xi = x*xi_s
 
@@ -123,15 +128,16 @@ contains
     ps%in_Theta = r_interp_t(x, Theta, dTheta*xi_s)
     ps%in_dTheta = r_interp_t(x, dTheta, d2Theta*xi_s)
 
-    ps%mu_i = mu_i
-    ps%mu_s = mu_s
-
-    ps%B = B
     ps%v_i = xi(1)**2*dTheta(1)
+    ps%mu_i = mu_i
 
+    ps%mu_s = mu_s
     ps%xi_s = xi_s
 
     ps%n_poly = n_poly
+    ps%B = B
+    ps%t = t
+    
     ps%Gamma_1_ = Gamma_1
 
     ! Finish
@@ -156,8 +162,8 @@ contains
     xi = x*this%xi_s
     v = xi**2*this%in_dTheta%f(x)
 
-    mu = this%mu_i - (v - this%v_i)/this%B
-
+    mu = this%mu_i - (v - this%v_i)*this%t/this%B
+    
     ! Finish
 
     return
@@ -237,7 +243,7 @@ contains
 
        Theta = this%in_Theta%f(x)
 
-       U = xi**3*Theta**this%n_poly/this%mu(x)
+       U = xi**3*this%t*Theta**this%n_poly/this%mu(x)
 
     else
 

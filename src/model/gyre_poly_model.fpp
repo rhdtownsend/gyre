@@ -94,22 +94,26 @@ module gyre_poly_model
 
 contains
 
-  function poly_model_t_ (xi, Theta, dTheta, n_poly, Gamma_1, ml_p) result (ml)
+  function poly_model_t_ (xi, Theta, dTheta, n_poly, Delta_d, Gamma_1, ml_p) result (ml)
 
     real(WP), intent(in)          :: xi(:)
     real(WP), intent(in)          :: Theta(:)
     real(WP), intent(in)          :: dTheta(:)
     real(WP), intent(in)          :: n_poly(:)
+    real(WP), intent(in)          :: Delta_d(:)
     real(WP), intent(in)          :: Gamma_1
     type(model_par_t), intent(in) :: ml_p
     type(poly_model_t)            :: ml
 
-    real(WP), allocatable :: mu(:)
-    real(WP), allocatable :: B(:)
-    integer               :: s
+    real(WP) :: mu(SIZE(n_poly)+1)
+    real(WP) :: B(SIZE(n_poly))
+    real(WP) :: t(SIZE(n_poly))
+    integer  :: s
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
     $CHECK_BOUNDS(SIZE(dTheta),SIZE(xi))
+
+    $CHECK_BOUNDS(SIZE(Delta_d),SIZE(n_poly)-1)
 
     ! Construct the poly_model_t
 
@@ -122,10 +126,7 @@ contains
 
     $CHECK_BOUNDS(SIZE(n_poly),ml%n_s)
 
-    allocate(mu(ml%n_s+1))
-    allocate(B(ml%n_s))
-
-    call eval_mu_B_(xi, dTheta, ml%k_i, ml%k_o, mu, B)
+    call eval_mu_B_t_(xi, Theta, dTheta, n_poly, Delta_d, ml%k_i, ml%k_o, mu, B, t)
 
     allocate(ml%ps(ml%n_s))
 
@@ -135,7 +136,8 @@ contains
                   k_o => ml%k_o(s))
 
          ml%ps(s) = poly_seg_t(ml%x(k_i:k_o), Theta(k_i:k_o), dTheta(k_i:k_o), &
-                               mu(s), mu(ml%n_s+1), B(s), xi(ml%n_k), n_poly(s), Gamma_1)
+                               mu(s), mu(ml%n_s+1), xi(ml%n_k), &
+                               n_poly(s), B(s), t(s), Gamma_1)
 
        end associate
 
@@ -149,55 +151,68 @@ contains
 
   !****
 
-  subroutine eval_mu_B_ (xi, dTheta, k_i, k_o, mu, B)
+  subroutine eval_mu_B_t_(xi, Theta, dTheta, n_poly, Delta_d, k_i, k_o, mu, B, t)
 
     real(WP), intent(in)  :: xi(:)
+    real(WP), intent(in)  :: Theta(:)
     real(WP), intent(in)  :: dTheta(:)
+    real(WP), intent(in)  :: n_poly(:)
+    real(WP), intent(in)  :: Delta_d(:)
     integer, intent(in)   :: k_i(:)
     integer, intent(in)   :: k_o(:)
     real(WP), intent(out) :: mu(:)
     real(WP), intent(out) :: B(:)
+    real(WP), intent(out) :: t(:)
 
     integer  :: n_s
     integer  :: s
     real(WP) :: v_i
     real(WP) :: v_o
 
+    $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
     $CHECK_BOUNDS(SIZE(dTheta),SIZE(xi))
 
-    $CHECK_BOUNDS(SIZE(k_o),SIZE(k_i))
+    $CHECK_BOUNDS(SIZE(Delta_d),SIZE(n_poly)-1)
 
-    $CHECK_BOUNDS(SIZE(mu),SIZE(k_i)+1)
-    $CHECK_BOUNDS(SIZE(B),SIZE(k_i))
+    $CHECK_BOUNDS(SIZE(k_i),SIZE(n_poly))
+    $CHECK_BOUNDS(SIZE(k_o),SIZE(n_poly))
 
-    ! Calculate the mass coordinate mu and jump factor B at segment
-    ! boundaries
+    $CHECK_BOUNDS(SIZE(mu),SIZE(n_poly)+1)
+    $CHECK_BOUNDS(SIZE(B),SIZE(n_poly))
+    $CHECK_BOUNDS(SIZE(t),SIZE(n_poly))
+
+    ! Calculate the mass coordinate mu at segment boundaries, together
+    ! with the B parameter
 
     n_s = SIZE(k_i)
 
     mu(1) = 0._WP
     B(1) = 1._WP
-    
+    t(1) = 1._WP
+
     seg_loop : do s = 1, n_s-1
 
        v_i = xi(k_i(s))**2*dTheta(k_i(s))
        v_o = xi(k_o(s))**2*dTheta(k_o(s))
 
-       mu(s+1) = mu(s) - (v_o - v_i)/B(s)
-       B(s+1) = B(s)*dTheta(k_i(s+1))/dTheta(k_o(s))
+       mu(s+1) = mu(s) - (v_o - v_i)*t(s)/B(s)
+
+       t(s+1) = t(s)*EXP(n_poly(s)*LOG(Theta(k_o(s))) + Delta_d(s))
+
+       B(s+1) = dTheta(k_i(s+1))/dTheta(k_o(s))*(t(s+1)/t(s))*B(s)
 
     end do seg_loop
 
     v_i = xi(k_i(s))**2*dTheta(k_i(s))
     v_o = xi(k_o(s))**2*dTheta(k_o(s))
 
-    mu(s+1) = mu(s) - (v_o - v_i)/B(s)
-    
+    mu(s+1) = mu(s) - (v_o - v_i)*t(s)/B(s)
+
     ! Finish
 
     return
 
-  end subroutine eval_mu_B_
+  end subroutine eval_mu_B_t_
 
   !****
 

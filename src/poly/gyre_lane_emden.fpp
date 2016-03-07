@@ -77,6 +77,7 @@ contains
     real(WP)              :: rwork(22+NEQ*MAX(16,NEQ+9)+3*NG)
     integer               :: iwork(20+NEQ)
     integer               :: jroot(NG)
+    real(WP)              :: t_t
     real(WP)              :: f
 
     $CHECK_BOUNDS(SIZE(xi_d),SIZE(n_poly)-1)
@@ -182,16 +183,18 @@ contains
 
        x(n) = x(n-1)
 
-       y(1,n) = EXP((n_poly(i)*LOG(y(1,n-1)) + Delta_d(i))/n_poly(i+1))
+       t_t = EXP(n_poly(i)*LOG(y(1,n-1)) + Delta_d(i))
+
+       y(1,n) = 1._WP
 
        f = ((n_poly(i  )+1._WP)*y(1,n  )**(n_poly(i+1)+1._WP))/ &
            ((n_poly(i+1)+1._WP)*y(1,n-1)**(n_poly(i  )+1._WP))
 
-       y(2,n) = f*y(2,n-1)
+       y(2,n) = f*t_t*y(2,n-1)
 
        ! Update B 
 
-       B_m = f*B_m
+       B_m = f*t_t**2*B_m
 
     end do
 
