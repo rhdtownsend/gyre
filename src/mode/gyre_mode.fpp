@@ -94,10 +94,10 @@ module gyre_mode
      $PROC_DECL(dE_dx)
      $PROC_DECL(dW_dx)
      $PROC_DECL(dC_dx)
-     $PROC_DECL(F_j)
-!     $PROC_DECL(tau_reyn)
-     $PROC_DECL(tau_wave)
-     $PROC_DECL(tau_grav)
+     $PROC_DECL(F_j_wave)
+     $PROC_DECL(tau_j_wave)
+     $PROC_DECL(tau_j_grow)
+     $PROC_DECL(tau_j_grav)
      $PROC_DECL(Yt_1)
      $PROC_DECL(Yt_2)
      $PROC_DECL(I_0)
@@ -1022,12 +1022,12 @@ contains
 
   !****
 
-  function F_j_1_ (this, s, x) result (F_j)
+  function F_j_wave_1_ (this, s, x) result (F_j_wave)
 
     class(mode_t), intent(in) :: this
     integer, intent(in)       :: s
     real(WP), intent(in)      :: x
-    real(WP)                  :: F_j
+    real(WP)                  :: F_j_wave
 
     complex(WP) :: xi_r
     complex(WP) :: xi_h
@@ -1035,9 +1035,9 @@ contains
     real(WP)    :: U
     complex(WP) :: omega_c
     
-    ! Evaluate the angle-averaged angular momentum flux due to
-    ! Reynolds stress, in units of G M_star**2/R_star**3.  This
-    ! expression is based on eqn. 21 of [LeeSai1993]
+    ! Evaluate the angle-averaged angular momentum flux due to wave
+    ! transport by Reynolds stress, in units of G M_star**2/R_star**3.
+    ! This expression is based on eqn. 21 of [LeeSai1993]
 
     associate (m => this%m)
 
@@ -1049,7 +1049,7 @@ contains
 
       omega_c = this%rt%omega_c(s, x, this%omega)
 
-      F_j = -m*ABS(omega_c**2)*x*U*AIMAG(CONJG(xi_r)*xi_h)/(32._WP*PI**2*c_1)
+      F_j_wave = -m*ABS(omega_c**2)*x*U*AIMAG(CONJG(xi_r)*xi_h)/(32._WP*PI**2*c_1)
 
     end associate
 
@@ -1057,16 +1057,66 @@ contains
 
     return
 
-  end function F_j_1_
+  end function F_j_wave_1_
 
   !****
 
-  function tau_wave_1_ (this, s, x) result (tau_wave)
+  function tau_j_wave_1_ (this, s, x) result (tau_j_wave)
 
     class(mode_t), intent(in) :: this
     integer, intent(in)       :: s
     real(WP), intent(in)      :: x
-    real(WP)                  :: tau_wave
+    real(WP)                  :: tau_j_wave
+
+    complex(WP) :: xi_r
+    complex(WP) :: eul_P
+    complex(WP) :: lag_rho
+    complex(WP) :: eul_rho
+    complex(WP) :: eul_Phi
+    real(WP)    :: V_2
+    real(WP)    :: c_1
+    real(WP)    :: U
+    complex(WP) :: omega_c
+    
+    ! Evaluate the torque density due to wave transport by Reynolds
+    ! stress, in units of G M_star**2/R_star**4.
+
+    associate (m => this%m)
+
+      xi_r = this%xi_r(s, x)
+
+      eul_P = this%eul_P(s, x)
+
+      lag_rho = this%lag_rho(s, x)
+      eul_rho = this%eul_rho(s, x)
+
+      eul_phi = this%eul_phi(s, x)
+
+      V_2 = this%ml%V_2(s, x)
+      c_1 = this%ml%c_1(s, x)
+      U = this%ml%U(s, x)
+
+      omega_c = this%rt%omega_c(s, x, this%omega)
+
+      tau_j_wave = m*U*ABS(omega_c)**2*AIMAG((lag_rho*CONJG(eul_P)/(c_1*V_2) + &
+                                              eul_rho*CONJG(eul_Phi) + &
+                                              xi_r*CONJG(eul_rho)*x/c_1)/CONJG(omega_c)**2)/(32._WP*PI**2*c_1)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function tau_j_wave_1_
+
+  !****
+
+  function tau_j_grow_1_ (this, s, x) result (tau_j_grow)
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: s
+    real(WP), intent(in)      :: x
+    real(WP)                  :: tau_j_grow
 
     complex(WP) :: eul_rho
     complex(WP) :: xi_h
@@ -1074,8 +1124,8 @@ contains
     real(WP)    :: U
     complex(WP) :: omega_c
     
-    ! Evaluate the torque density due to wave growth/decay, in units
-    ! of G M_star**2/R_star**4.
+    ! Evaluate the torque density due to amplitude growth/decay, in
+    ! units of G M_star**2/R_star**4.
 
     associate (m => this%m)
 
@@ -1087,7 +1137,7 @@ contains
 
       omega_c = this%rt%omega_c(s, x, this%omega)
 
-      tau_wave = m*U*AIMAG(omega_c)*REAL(eul_rho*CONJG(omega_c*xi_h))/(16._WP*PI**2*c_1)
+      tau_j_grow = m*x*U*AIMAG(omega_c)*REAL(eul_rho*CONJG(omega_c*xi_h))/(16._WP*PI**2*c_1)
 
     end associate
 
@@ -1095,16 +1145,16 @@ contains
 
     return
     
-  end function tau_wave_1_
+  end function tau_j_grow_1_
 
   !****
 
-  function tau_grav_1_ (this, s, x) result (tau_grav)
+  function tau_j_grav_1_ (this, s, x) result (tau_j_grav)
 
     class(mode_t), intent(in) :: this
     integer, intent(in)       :: s
     real(WP), intent(in)      :: x
-    real(WP)                  :: tau_grav
+    real(WP)                  :: tau_j_grav
 
     complex(WP) :: eul_rho
     complex(WP) :: eul_phi
@@ -1112,8 +1162,8 @@ contains
     real(WP)    :: U
     complex(WP) :: omega_c
     
-    ! Evaluate the torque density due to self-gravitational torquing,
-    ! in units of G M_star**2/R_star**5.
+    ! Evaluate the torque density due to self-gravity, in units of G
+    ! M_star**2/R_star**4.
 
     associate (m => this%m)
 
@@ -1125,7 +1175,7 @@ contains
 
       omega_c = this%rt%omega_c(s, x, this%omega)
 
-      tau_grav = -m*U*AIMAG(eul_rho*CONJG(eul_phi))/(32._WP*PI**2*c_1)
+      tau_j_grav = -m*U*AIMAG(eul_rho*CONJG(eul_phi))/(32._WP*PI**2*c_1)
 
     end associate
 
@@ -1133,7 +1183,7 @@ contains
 
     return
     
-  end function tau_grav_1_
+  end function tau_j_grav_1_
 
   !****
 
@@ -1423,10 +1473,10 @@ contains
   $PROC_V(dE_dx,real(WP))
   $PROC_V(dW_dx,real(WP))
   $PROC_V(dC_dx,real(WP))
-  $PROC_V(F_j,real(WP))
-!  $PROC_V(tau_reyn,real(WP))
-  $PROC_V(tau_wave,real(WP))
-  $PROC_V(tau_grav,real(WP))
+  $PROC_V(F_j_wave,real(WP))
+  $PROC_V(tau_j_wave,real(WP))
+  $PROC_V(tau_j_grow,real(WP))
+  $PROC_V(tau_j_grav,real(WP))
   $PROC_V(Yt_1,complex(WP))
   $PROC_V(Yt_2,complex(WP))
   $PROC_V(I_0,complex(WP))
