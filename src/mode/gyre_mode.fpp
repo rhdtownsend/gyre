@@ -1087,7 +1087,7 @@ contains
 
       omega_c = this%rt%omega_c(s, x, this%omega)
 
-      tau_wave = m*U*AIMAG(omega_c)*REAL(CONJG(omega_c*xi_h)*eul_rho)/(16._WP*PI**2*c_1)
+      tau_wave = m*U*AIMAG(omega_c)*REAL(eul_rho*CONJG(omega_c*xi_h))/(16._WP*PI**2*c_1)
 
     end associate
 
