@@ -32,6 +32,7 @@ module gyre_mode_par
   ! Derived-type definitions
 
   type :: mode_par_t
+     integer       :: i
      integer       :: l
      integer       :: m
      integer       :: n_pg_min
@@ -104,7 +105,7 @@ contains
 
     allocate(md_p(n_md_p))
 
-    read_loop : do i = 1,n_md_p
+    read_loop : do i = 1, n_md_p
 
        l = 0
        m = 0
@@ -118,7 +119,7 @@ contains
 
        ! Initialize the mode_par
 
-       md_p(i) = mode_par_t(l=l, m=m, n_pg_min=n_pg_min, n_pg_max=n_pg_max, tag=tag)
+       md_p(i) = mode_par_t(i=i, l=l, m=m, n_pg_min=n_pg_min, n_pg_max=n_pg_max, tag=tag)
 
     end do read_loop
 
