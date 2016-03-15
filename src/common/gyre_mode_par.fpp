@@ -140,6 +140,8 @@ contains
 
     ! Broadcast the mode_par_t
 
+    call bcast(md_p%i, root_rank)
+
     call bcast(md_p%l, root_rank)
     call bcast(md_p%m, root_rank)
 

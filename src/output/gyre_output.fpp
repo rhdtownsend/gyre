@@ -156,6 +156,13 @@ contains
 
     end do item_loop
 
+    ! Write restart metadata to HDF5 files
+
+    select case (ot_p%summary_file_format)
+    case ('HDF')
+       call wr%write('i', [(md(j)%md_p%i, j=1,n_md)])
+    end select
+
     ! Close the file
 
     call wr%final()
