@@ -55,6 +55,8 @@ contains
     type(out_par_t), intent(in) :: up
     type(mode_t), intent(in)    :: md(:)
 
+    type(hdf_writer_t)                                :: wr_hdf
+    type(txt_writer_t)                                :: wr_txt
     class(writer_t), allocatable                      :: wr
     character(LEN(up%summary_item_list)), allocatable :: items(:)
     integer                                           :: n_md
@@ -69,9 +71,11 @@ contains
 
     select case (up%summary_file_format)
     case ('HDF')
-       allocate(wr, SOURCE=hdf_writer_t(up%summary_file, up%label))
+       wr_hdf = hdf_writer_t(up%summary_file, up%label)
+       allocate(wr, SOURCE=wr_hdf)
     case ('TXT')
-       allocate(wr, SOURCE=txt_writer_t(up%summary_file, up%label))
+       wr_txt = txt_writer_t(up%summary_file, up%label)
+       allocate(wr, SOURCE=wr_txt)
     case default
        $ABORT(Invalid summary_file_format)
     end select
@@ -228,6 +232,8 @@ contains
 
     character(:), allocatable                      :: mode_file
     character(64)                                  :: infix
+    type(hdf_writer_t)                             :: wr_hdf
+    type(txt_writer_t)                             :: wr_txt
     class(writer_t), allocatable                   :: wr
     character(LEN(up%mode_item_list)), allocatable :: items(:)
     integer                                        :: i
@@ -274,9 +280,11 @@ contains
 
     select case (up%mode_file_format)
     case ('HDF')
-       allocate(wr, SOURCE=hdf_writer_t(mode_file, up%label))
+       wr_hdf = hdf_writer_t(mode_file, up%label)
+       allocate(wr, SOURCE=wr_hdf)
     case ('TXT')
-       allocate(wr, SOURCE=txt_writer_t(mode_file, up%label))
+       wr_txt = txt_writer_t(mode_file, up%label)
+       allocate(wr, SOURCE=wr_txt)
     case default
        $ABORT(Invalid mode_file_format)
     end select

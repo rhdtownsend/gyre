@@ -53,24 +53,27 @@ contains
     type(evol_model_t), intent(out)              :: ml
     real(WP), allocatable, optional, intent(out) :: x(:)
 
-    integer                   :: unit
-    character(256)            :: line
-    integer                   :: n
-    real(WP)                  :: glob(3)
-    real(WP), allocatable     :: var(:,:)
-    integer                   :: i
-    integer                   :: k
-    integer, allocatable      :: ind(:)
-    real(WP)                  :: M_star
-    real(WP)                  :: R_star
-    real(WP)                  :: L_star
-    real(WP), allocatable     :: x_(:)
-    real(WP), allocatable     :: c_1(:)
-    real(WP), allocatable     :: V(:)
-    real(WP), allocatable     :: Gamma_1(:) 
-    real(WP), allocatable     :: As(:) 
-    real(WP), allocatable     :: U(:)
-    logical                   :: has_center
+    integer               :: unit
+    character(256)        :: line
+    integer               :: n
+    real(WP)              :: glob(3)
+    real(WP), allocatable :: var(:,:)
+    integer               :: i
+    integer               :: k
+    integer, allocatable  :: ind(:)
+    real(WP)              :: M_star
+    real(WP)              :: R_star
+    real(WP)              :: L_star
+    real(WP), allocatable :: x_(:)
+    real(WP), allocatable :: c_1(:)
+    real(WP), allocatable :: V(:)
+    real(WP), allocatable :: Gamma_1(:) 
+    real(WP), allocatable :: As(:) 
+    real(WP), allocatable :: U(:)
+    logical               :: has_center
+    real(WP)              :: p_c
+    real(WP)              :: rho_c
+    real(WP), allocatable :: V_2(:)
 
     ! Read data from the LOSC-format file
 
@@ -143,6 +146,25 @@ contains
 
     has_center = x_(1) == 0._WP
 
+    if (has_center) then
+
+       p_c = var(3,1)
+       rho_c = var(4,1)
+
+       allocate(V_2(n))
+
+       where (x_ /= 0._WP)
+          V_2 = V/x_**2
+       elsewhere
+          V_2 = 4._WP*PI*G_GRAVITY*rho_c**2*R_star**2/(3._WP*p_c)
+       end where
+
+    else
+
+       V_2 = V/x_**2
+
+    endif
+
     if (check_log_level('INFO')) then
        if (add_center) then
           if (has_center) then
@@ -156,7 +178,7 @@ contains
 
     ! Initialize the model
 
-    ml = evol_model_t(M_star, R_star, L_star, x_, V, As, U, c_1, Gamma_1, &
+    ml = evol_model_t(M_star, R_star, L_star, x_, V_2, As, U, c_1, Gamma_1, &
                       deriv_type, add_center=add_center .AND. .NOT. has_center)
 
     ! Set up the grid
