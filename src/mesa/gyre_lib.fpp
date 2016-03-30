@@ -135,59 +135,56 @@ contains
   
 !****
 
-  subroutine gyre_set_model (M_star, R_star, L_star, r, w, p, rho, T, &
-                             N2, Gamma_1, nabla_ad, delta, nabla,  &
-                             kappa, kappa_rho, kappa_T, &
-                             epsilon, epsilon_rho, epsilon_T, &
-                             Omega_rot, deriv_type)
+  subroutine gyre_set_model (global_data, point_data, deriv_type)
 
-    real(WP), intent(in)         :: M_star
-    real(WP), intent(in)         :: R_star
-    real(WP), intent(in)         :: L_star
-    real(WP), intent(in)         :: r(:)
-    real(WP), intent(in)         :: w(:)
-    real(WP), intent(in)         :: p(:)
-    real(WP), intent(in)         :: rho(:)
-    real(WP), intent(in)         :: T(:)
-    real(WP), intent(in)         :: N2(:)
-    real(WP), intent(in)         :: Gamma_1(:)
-    real(WP), intent(in)         :: nabla_ad(:)
-    real(WP), intent(in)         :: delta(:)
-    real(WP), intent(in)         :: nabla(:)
-    real(WP), intent(in)         :: kappa(:)
-    real(WP), intent(in)         :: kappa_rho(:)
-    real(WP), intent(in)         :: kappa_T(:)
-    real(WP), intent(in)         :: epsilon(:)
-    real(WP), intent(in)         :: epsilon_rho(:)
-    real(WP), intent(in)         :: epsilon_T(:)
-    real(WP), intent(in)         :: Omega_rot(:)
+    real(WP), intent(in)         :: global_data(:)
+    real(WP), intent(in)         :: point_data(:,:)
     character(LEN=*), intent(in) :: deriv_type
 
-    real(WP), allocatable :: m(:)
-    logical               :: add_center
+    logical :: add_center
 
-    ! Allocate the model
+    ! Initialize the model
 
     if(ASSOCIATED(ml_m)) deallocate(ml_m)
-    allocate(evol_model_t::ml_m)
 
-    ! Set the model by storing coefficients
+    associate ( &
+         M_star => global_data(1), &
+         R_star => global_data(2), &
+         L_star => global_data(3), &
+         r => point_data(1,:), &
+         m => point_data(2,:), &
+         L => point_data(3,:), &
+         P => point_data(4,:), &
+         T => point_data(5,:), &
+         rho => point_data(6,:), &
+         nabla => point_data(7,:), &
+         N2 => point_data(8,:), &
+         Gamma_1 => point_data(9,:), &
+         nabla_ad => point_data(10,:), &
+         delta => point_data(11,:), &
+         kap => point_data(12,:), &
+         kap_T => point_data(13,:), &
+         kap_rho => point_data(14,:), &
+         eps => point_data(15,:), &
+         eps_T => point_data(16,:), &
+         eps_rho => point_data(17,:), &
+         omega => point_data(18,:))
+      
+      add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
 
-    m = w/(1._WP+w)*M_star
+      allocate(ml_m, SOURCE=evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
+                                         Gamma_1, nabla_ad, delta, omega, &
+                                         nabla, kap, kap_rho, kap_T, &
+                                         eps, eps_rho, eps_T, &
+                                         deriv_type, add_center=add_center))
 
-    add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
+      if(add_center) then
+         x_ml_m = [0._WP,r/R_star]
+      else
+         x_ml_m = r/R_star
+      endif
 
-    allocate(ml_m, SOURCE=evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                                       Gamma_1, nabla_ad, delta, Omega_rot, &
-                                       nabla, kappa, kappa_rho, kappa_T, &
-                                       epsilon, epsilon_rho, epsilon_T, &
-                                       deriv_type, add_center=add_center))
-
-    if(add_center) then
-       x_ml_m = [0._WP,r/R_star]
-    else
-       x_ml_m = r/R_star
-    endif
+    end associate
 
     ! Finish
 
