@@ -86,7 +86,6 @@ contains
     type(point_t)                  :: pt_o
     $TYPE(WP)                      :: omega_l
     class(${T}_rot_t), allocatable :: rt
-    type(grid_t)                   :: gr
     real(WP)                       :: omega_cutoff_lo
     real(WP)                       :: omega_cutoff_hi
 
@@ -196,7 +195,6 @@ contains
     type(point_t)                  :: pt_i
     type(point_t)                  :: pt_o
     class(${T}_rot_t), allocatable :: rt
-    type(grid_t)                   :: gr
     $TYPE(WP)                      :: omega_l
     real(WP)                       :: omega_cutoff_lo
     real(WP)                       :: omega_cutoff_hi
