@@ -26,8 +26,6 @@ module gyre_${T}_rot
 
   ! Uses
 
-  use core_kinds
-
   ! No implicit typing
 
   implicit none
@@ -54,34 +52,34 @@ module gyre_${T}_rot
 
   abstract interface
 
-     function omega (this, s, x, omega_c)
+     function omega (this, pt, omega_c)
        use core_kinds
+       use gyre_point
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: s
-       real(WP), intent(in)          :: x
+       type(point_t), intent(in)     :: pt
        $TYPE(WP), intent(in)         :: omega_c
        $TYPE(WP)                     :: omega
      end function omega
 
-     function omega_c_1_ (this, s, x, omega) result (omega_c)
+     function omega_c_1_ (this, pt, omega) result (omega_c)
        use core_kinds
+       use gyre_point
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: s
-       real(WP), intent(in)          :: x
+       type(point_t), intent(in)     :: pt
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: omega_c
      end function omega_c_1_
 
-     function omega_c_v_ (this, s, x, omega) result (omega_c)
+     function omega_c_v_ (this, pt, omega) result (omega_c)
        use core_kinds
+       use gyre_point
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: s(:)
-       real(WP), intent(in)          :: x(:)
+       type(point_t), intent(in)     :: pt(:)
        $TYPE(WP), intent(in)         :: omega
-       $TYPE(WP)                     :: omega_c(SIZE(s))
+       $TYPE(WP)                     :: omega_c(SIZE(pt))
      end function omega_c_v_
 
      function l_i (this, omega)
@@ -92,44 +90,44 @@ module gyre_${T}_rot
        $TYPE(WP)                     :: l_i
      end function l_i
      
-     function l_e_1_ (this, s, x, omega) result (l_e)
+     function l_e_1_ (this, pt, omega) result (l_e)
        use core_kinds
+       use gyre_point
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: s
-       real(WP), intent(in)          :: x
+       type(point_t), intent(in)     :: pt
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: l_e
      end function l_e_1_
      
-     function l_e_v_ (this, s, x, omega) result (l_e)
+     function l_e_v_ (this, pt, omega) result (l_e)
        use core_kinds
+       use gyre_point
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: s(:)
-       real(WP), intent(in)          :: x(:)
+       type(point_t), intent(in)     :: pt(:)
        $TYPE(WP), intent(in)         :: omega
-       $TYPE(WP)                     :: l_e(SIZE(s))
+       $TYPE(WP)                     :: l_e(SIZE(pt))
      end function l_e_v_
      
-     function lambda_1_ (this, s, x, omega) result (lambda)
+     function lambda_1_ (this, pt, omega) result (lambda)
        use core_kinds
+       use gyre_point
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: s
-       real(WP), intent(in)          :: x
+       type(point_t), intent(in)     :: pt
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: lambda
      end function lambda_1_
      
-     function lambda_v_ (this, s, x, omega) result (lambda)
+     function lambda_v_ (this, pt, omega) result (lambda)
        use core_kinds
+       use gyre_point
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: s(:)
-       real(WP), intent(in)          :: x(:)
+       type(point_t), intent(in)     :: pt(:)
        $TYPE(WP), intent(in)         :: omega
-       $TYPE(WP)                     :: lambda(SIZE(s))
+       $TYPE(WP)                     :: lambda(SIZE(pt))
      end function lambda_v_
      
   end interface

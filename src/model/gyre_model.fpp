@@ -37,8 +37,6 @@ module gyre_model
   $endsub
 
   type, abstract :: model_t
-     private
-     integer, public  :: n_s
    contains
      private
      $PROC_DECL(V_2)
@@ -62,66 +60,47 @@ module gyre_model
      $PROC_DECL(kap_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
+     procedure(grid), deferred, public   :: grid
      procedure(vacuum), deferred, public :: vacuum
-     procedure(x_i), deferred, public    :: x_i
-     procedure(x_o), deferred, public    :: x_o
-     procedure(x_base), deferred, public :: x_base
   end type model_t
 
   ! Interfaces
 
   abstract interface
 
-     function f_1_ (this, s, x) result (f)
+     function f_1_ (this, pt) result (f)
        use core_kinds
+       use gyre_point
        import model_t
        class(model_t), intent(in) :: this
-       integer, intent(in)        :: s
-       real(WP), intent(in)       :: x
+       type(point_t), intent(in)  :: pt
        real(WP)                   :: f
      end function f_1_
 
-     function f_v_ (this, s, x) result (f)
+     function f_v_ (this, pt) result (f)
        use core_kinds
+       use gyre_point
        import model_t
        class(model_t), intent(in) :: this
-       integer, intent(in)        :: s(:)
-       real(WP), intent(in)       :: x(:)
-       real(WP)                   :: f(SIZE(s))
+       type(point_t), intent(in)  :: pt(:)
+       real(WP)                   :: f(SIZE(pt))
      end function f_v_
 
-     function vacuum (this, s, x)
-       use core_kinds
+     function grid (this) result (gr)
+       use gyre_grid
        import model_t
        class(model_t), intent(in) :: this
-       integer, intent(in)        :: s
-       real(WP), intent(in)       :: x
+       type(grid_t)               :: gr
+     end function grid
+
+     function vacuum (this, pt)
+       use core_kinds
+       use gyre_point
+       import model_t
+       class(model_t), intent(in) :: this
+       type(point_t), intent(in)  :: pt
        logical                    :: vacuum
      end function vacuum
-
-     function x_i (this, s)
-       use core_kinds
-       import model_t
-       class(model_t), intent(in) :: this
-       integer, intent(in)        :: s
-       real(WP)                   :: x_i
-     end function x_i
-
-     function x_o (this, s)
-       use core_kinds
-       import model_t
-       class(model_t), intent(in) :: this
-       integer, intent(in)        :: s
-       real(WP)                   :: x_o
-     end function x_o
-
-     function x_base (this, s)
-       use core_kinds
-       import model_t
-       class(model_t), intent(in) :: this
-       integer, intent(in)        :: s
-       real(WP), allocatable      :: x_base(:)
-     end function x_base
 
   end interface
 

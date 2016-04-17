@@ -30,12 +30,14 @@ module gyre_nad_bep
   use gyre_bep
   use gyre_ext
   use gyre_grid
+  use gyre_grid_build
   use gyre_grid_par
   use gyre_model
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
-  use gyre_sol
+  use gyre_point
+  use gyre_soln
 
   use ISO_FORTRAN_ENV
 
@@ -47,12 +49,11 @@ module gyre_nad_bep
 
   type, extends (c_bep_t) :: nad_bep_t
      class(model_t), pointer :: ml => null()
-     type(nad_eqns_t), allocatable :: eq(:)
-     type(mode_par_t)              :: md_p
-     type(osc_par_t)               :: os_p
-     type(nad_vars_t)              :: vr
-     integer, allocatable          :: s(:)
-     real(WP), allocatable         :: x(:)
+     type(grid_t)            :: gr
+     type(nad_eqns_t)        :: eq
+     type(mode_par_t)        :: md_p
+     type(osc_par_t)         :: os_p
+     type(nad_vars_t)        :: vr
   end type nad_bep_t
 
   ! Interfaces
@@ -61,16 +62,16 @@ module gyre_nad_bep
      module procedure nad_bep_t_
   end interface nad_bep_t
 
-  interface sol_t
-     module procedure sol_t_
-  end interface sol_t
+  interface soln_t
+     module procedure soln_t_
+  end interface soln_t
 
   ! Access specifiers
 
   private
 
   public :: nad_bep_t
-  public :: sol_t
+  public :: soln_t
 
   ! Procedures
 
@@ -86,8 +87,7 @@ contains
     type(osc_par_t), intent(in)         :: os_p
     type(nad_bep_t)                     :: bp
 
-    integer, allocatable          :: s(:)
-    real(WP), allocatable         :: x(:)
+    type(grid_t)                  :: gr
     integer                       :: n_k
     type(nad_bound_t)             :: bd
     integer                       :: k
@@ -99,20 +99,20 @@ contains
 
     ! Build the grid
 
-    call build_grid(ml, omega, gr_p, md_p, os_p, s, x, verbose=.TRUE.)
+    call build_grid(ml, omega, gr_p, md_p, os_p, gr, verbose=.TRUE.)
 
-    n_k = SIZE(s)
+    n_k = gr%n_k()
 
     ! Initialize the boundary conditions
 
-    bd = nad_bound_t(ml, md_p, os_p)
+    bd = nad_bound_t(ml, gr, md_p, os_p)
 
     ! Initialize the difference equations
 
     allocate(df(n_k-1))
 
     do k = 1, n_k-1
-       df(k) = nad_diff_t(ml, s(k), x(k), s(k+1), x(k+1), md_p, nm_p, os_p)
+       df(k) = nad_diff_t(ml, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bep_t
@@ -130,17 +130,10 @@ contains
     ! Other initializations
 
     bp%ml => ml
+    bp%gr = gr
 
-    allocate(bp%eq(n_k))
-
-    do k = 1, n_k
-       bp%eq(k) = nad_eqns_t(ml, s(k), md_p, os_p)
-    end do
-
+    bp%eq = nad_eqns_t(ml, md_p, os_p)
     bp%vr = nad_vars_t(ml, md_p, os_p)
-
-    bp%s = s
-    bp%x = x
 
     bp%md_p = md_p
     bp%os_p = os_p
@@ -153,15 +146,16 @@ contains
 
   !****
 
-  function sol_t_ (bp, omega) result (sl)
+  function soln_t_ (bp, omega) result (sl)
 
     class(nad_bep_t), intent(inout) :: bp
     complex(WP), intent(in)         :: omega
-    type(sol_t)                     :: sl
+    type(soln_t)                    :: sl
 
     complex(WP)   :: y(6,bp%n_k)
     type(c_ext_t) :: discrim
     integer       :: k
+    type(point_t) :: pt
     complex(WP)   :: xA(6,6)
     complex(WP)   :: dy_dx(6,bp%n_k)
     complex(WP)   :: H(6,6)
@@ -177,58 +171,54 @@ contains
     ! Calculate its derivatives (nb: the vacuum check prevents errors, but
     ! leads to incorrect values for dy_dx)
 
-    !$OMP PARALLEL DO PRIVATE (xA)
+    !$OMP PARALLEL DO PRIVATE (pt, xA)
     do k = 1, bp%n_k
 
-       associate (s => bp%s(k), x => bp%x(k))
+       pt = bp%gr%pt(k)
 
-         if (bp%ml%vacuum(s, x)) then
-            xA = 0._WP
-         else
-            xA = bp%eq(k)%xA(x, omega)
-         endif
+       if (bp%ml%vacuum(pt)) then
+          xA = 0._WP
+       else
+          xA = bp%eq%xA(pt, omega)
+       endif
 
-         if (x /= 0._WP) then
-            dy_dx(:,k) = MATMUL(xA, y(:,k))/x
-         else
-            dy_dx(:,k) = 0._WP
-         endif
-
-       end associate
+       if (pt%x /= 0._WP) then
+          dy_dx(:,k) = MATMUL(xA, y(:,k))/pt%x
+       else
+          dy_dx(:,k) = 0._WP
+       endif
 
     end do
 
     ! Convert to canonical form (nb: the vacuum check prevents errors, but
     ! leads to incorrect values for dy_c_dx)
 
-    !$OMP PARALLEL DO PRIVATE (H, dH)
+    !$OMP PARALLEL DO PRIVATE (pt, H, dH)
     do k = 1, bp%n_k
 
-       associate (s => bp%s(k), x => bp%x(k))
+       pt = bp%gr%pt(k)
 
-         H = bp%vr%H(s, x, omega)
+       H = bp%vr%H(pt, omega)
 
-         y_c(:,k) = MATMUL(H, y(:,k))
+       y_c(:,k) = MATMUL(H, y(:,k))
 
-         if (bp%ml%vacuum(s, x)) then
-            dH = 0._WP
-         else
-            dH = bp%vr%dH(s, x, omega)
-         endif
+       if (bp%ml%vacuum(pt)) then
+          dH = 0._WP
+       else
+          dH = bp%vr%dH(pt, omega)
+       endif
 
-         if (x /= 0._WP) then
-            dy_c_dx(:,k) = MATMUL(dH/x, y(:,k)) + MATMUL(H, dy_dx(:,k))
-         else
-            dy_c_dx(:,k) = 0._WP
-         endif
-
-       end associate
+       if (pt%x /= 0._WP) then
+          dy_c_dx(:,k) = MATMUL(dH/pt%x, y(:,k)) + MATMUL(H, dy_dx(:,k))
+       else
+          dy_c_dx(:,k) = 0._WP
+       endif
 
     end do
 
-    ! Construct the sol_t
+    ! Construct the soln_t
 
-    sl = sol_t(bp%s, bp%x, omega, discrim)
+    sl = soln_t(bp%gr, omega, discrim)
 
     do i = 1, 6
        call sl%set_y(i, y_c(i,:), dy_c_dx(i,:))
@@ -238,6 +228,6 @@ contains
 
     return
 
-  end function sol_t_
+  end function soln_t_
 
 end module gyre_nad_bep

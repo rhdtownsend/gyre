@@ -29,6 +29,7 @@ module gyre_ad_match
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
+  use gyre_point
 
   use ISO_FORTRAN_ENV
 
@@ -42,8 +43,8 @@ module gyre_ad_match
      private
      class(model_t), pointer :: ml => null()
      type(ad_vars_t)         :: vr
-     integer                 :: s
-     real(WP)                :: x
+     type(point_t)           :: pt_a
+     type(point_t)           :: pt_b
    contains
      private
      procedure, public :: build
@@ -62,19 +63,17 @@ module gyre_ad_match
 
 contains
 
-  function ad_match_t_ (ml, s_l, x_l, s_r, x_r, md_p, os_p) result (mt)
+  function ad_match_t_ (ml, pt_a, pt_b, md_p, os_p) result (mt)
 
     class(model_t), pointer, intent(in) :: ml
-    integer, intent(in)                 :: s_l
-    real(WP)                            :: x_l
-    integer, intent(in)                 :: s_r
-    real(WP)                            :: x_r
+    type(point_t), intent(in)           :: pt_a
+    type(point_t), intent(in)           :: pt_b
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(ad_match_t)                    :: mt
 
-    $ASSERT(s_r == s_l+1,Invalid segment jump at match point)
-    $ASSERT(x_r == x_l,Segments do not join at match point)
+    $ASSERT_DEBUG(pt_b%s == pt_a%s+1,Mismatched segments)
+    $ASSERT_DEBUG(pt_b%x == pt_a%x,Mismatched abscissae)
 
     ! Construct the ad_match_t
 
@@ -82,8 +81,8 @@ contains
 
     mt%vr = ad_vars_t(ml, md_p, os_p)
 
-    mt%s = s_l
-    mt%x = x_l
+    mt%pt_a = pt_a
+    mt%pt_b = pt_b
 
     mt%n_e = 4
 
@@ -116,11 +115,11 @@ contains
 
     ! Calculate coefficients
 
-    associate (s => this%s, &
-               x => this%x)
+    associate (pt_a => this%pt_a, &
+               pt_b => this%pt_b)
 
-      U_l = this%ml%U(s  , x)
-      U_r = this%ml%U(s+1, x)
+      U_l = this%ml%U(pt_a)
+      U_r = this%ml%U(pt_b)
 
     end associate
 
@@ -173,8 +172,8 @@ contains
 
     ! Apply the variables transformation
 
-    E_l = MATMUL(E_l, this%vr%H(this%s  , this%x, omega))
-    E_r = MATMUL(E_r, this%vr%H(this%s+1, this%x, omega))
+    E_l = MATMUL(E_l, this%vr%H(this%pt_a, omega))
+    E_r = MATMUL(E_r, this%vr%H(this%pt_b, omega))
 
     ! Finish
 

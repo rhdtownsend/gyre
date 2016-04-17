@@ -1,4 +1,4 @@
-! Module   : gyre_sol_seg
+! Module   : gyre_soln_seg
 ! Purpose  : solution data segment
 !
 ! Copyright 2016 Rich Townsend
@@ -18,7 +18,7 @@
 $include 'core.inc'
 $include 'core_parallel.inc'
 
-module gyre_sol_seg
+module gyre_soln_seg
 
   ! Uses
 
@@ -35,7 +35,7 @@ module gyre_sol_seg
 
   ! Derived-type definitions
 
-  type :: sol_seg_t
+  type :: soln_seg_t
      private
      type(c_interp_t) :: in_y(6)
      logical          :: df_y(6) = .FALSE.
@@ -45,13 +45,13 @@ module gyre_sol_seg
      generic, public   :: assignment(=) => op_assign_
      procedure, public :: set_y
      procedure, public :: y
-  end type sol_seg_t
+  end type soln_seg_t
 
   ! Interfaces
 
-  interface sol_seg_t
-     module procedure sol_seg_t_
-  end interface sol_seg_t
+  interface soln_seg_t
+     module procedure soln_seg_t_
+  end interface soln_seg_t
 
   $if ($MPI)
   interface bcast
@@ -68,7 +68,7 @@ module gyre_sol_seg
 
   private
 
-  public :: sol_seg_t
+  public :: soln_seg_t
   $if ($MPI)
   public :: bcast
   public :: bcast_alloc
@@ -78,28 +78,28 @@ module gyre_sol_seg
 
 contains
 
-  function sol_seg_t_ () result (ss)
+  function soln_seg_t_ () result (ss)
 
-    type(sol_seg_t) :: ss
+    type(soln_seg_t) :: ss
 
-    ! Construct the sol_seg_t
+    ! Construct the soln_seg_t
 
     ! Finish
 
     return
 
-  end function sol_seg_t_
+  end function soln_seg_t_
 
   !****
 
   subroutine op_assign_ (this, that)
 
-    class(sol_seg_t), intent(out) :: this
-    type(sol_seg_t), intent(in)   :: that
+    class(soln_seg_t), intent(out) :: this
+    type(soln_seg_t), intent(in)   :: that
 
     integer :: i
 
-    ! Assign the sol_seg_t
+    ! Assign the soln_seg_t
 
     this%df_y = that%df_y
 
@@ -119,8 +119,8 @@ contains
 
   subroutine bcast_0_ (ss, root_rank)
 
-    type(sol_seg_t), intent(inout) :: ss
-    integer, intent(in)            :: root_rank
+    type(soln_seg_t), intent(inout) :: ss
+    integer, intent(in)             :: root_rank
 
     integer :: i
 
@@ -138,10 +138,10 @@ contains
 
   end subroutine bcast_0_
 
-  $BCAST(type(sol_seg_t),1)
+  $BCAST(type(soln_seg_t),1)
 
-  $BCAST_ALLOC(type(sol_seg_t),0)
-  $BCAST_ALLOC(type(sol_seg_t),1)
+  $BCAST_ALLOC(type(soln_seg_t),0)
+  $BCAST_ALLOC(type(soln_seg_t),1)
 
   $endif
 
@@ -149,11 +149,11 @@ contains
 
   subroutine set_y (this, i, x, y, dy_dx)
 
-    class(sol_seg_t), intent(inout) :: this
-    integer, intent(in)             :: i
-    real(WP), intent(in)            :: x(:)
-    complex(WP), intent(in)         :: y(:)
-    complex(WP), intent(in)         :: dy_dx(:)
+    class(soln_seg_t), intent(inout) :: this
+    integer, intent(in)              :: i
+    real(WP), intent(in)             :: x(:)
+    complex(WP), intent(in)          :: y(:)
+    complex(WP), intent(in)          :: dy_dx(:)
 
     $ASSERT_DEBUG(i >= 1,Invalid index)
     $ASSERT_DEBUG(i <= 6,Invalid index)
@@ -177,7 +177,7 @@ contains
 
   function y (this, i, x)
 
-    class(sol_seg_t), intent(in) :: this
+    class(soln_seg_t), intent(in) :: this
     integer, intent(in)          :: i
     real(WP), intent(in)         :: x
     complex(WP)                  :: y
@@ -202,4 +202,4 @@ contains
 
   end function y
 
-end module gyre_sol_seg
+end module gyre_soln_seg

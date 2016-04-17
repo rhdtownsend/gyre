@@ -25,9 +25,11 @@ module gyre_evol_model
   
   use gyre_constants
   use gyre_evol_seg
+  use gyre_grid
   use gyre_model
   use gyre_model_par
   use gyre_model_util
+  use gyre_point
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -51,14 +53,14 @@ module gyre_evol_model
 
   type, extends (model_t) :: evol_model_t
      private
+     type(grid_t)                  :: gr
      type(evol_seg_t), allocatable :: es(:)
-     real(WP), allocatable         :: x(:)
-     integer, allocatable          :: k_i(:)
-     integer, allocatable          :: k_o(:)
+     integer                       :: s_i
+     integer                       :: s_o
+     integer                       :: n_k
      real(WP), public              :: M_star
      real(WP), public              :: R_star
      real(WP), public              :: L_star
-     integer                       :: n_k
      logical                       :: add_center
      logical                       :: repair_As
    contains
@@ -109,10 +111,8 @@ module gyre_evol_model
      generic, public   :: rho => rho_1_, rho_v_
      $PROC_DECL(T)
      generic, public   :: T => T_1_, T_v_
+     procedure, public :: grid
      procedure, public :: vacuum
-     procedure, public :: x_i
-     procedure, public :: x_o
-     procedure, public :: x_base
      procedure, public :: delta_p
      procedure, public :: delta_g
   end type evol_model_t
@@ -146,11 +146,13 @@ contains
 
     ! Construct the evol_model_t
 
+    ! Create the grid
+    
     if (ml_p%add_center) then
 
        if (x(1) /= 0._WP) then
 
-          ml%x = [0._WP,x]
+          ml%gr = grid_t([0._WP,x])
           ml%add_center = .TRUE.
 
           if (check_log_level('INFO')) then
@@ -160,7 +162,7 @@ contains
 
        else
 
-          ml%x = x
+          ml%gr = grid_t(x)
           ml%add_center = .FALSE.
 
           if (check_log_level('INFO')) then
@@ -171,19 +173,21 @@ contains
 
     else
 
-       ml%x = x
+       ml%gr = grid_t(x)
        ml%add_center = .FALSE.
 
     endif
 
-    call seg_indices(ml%x, ml%k_i, ml%k_o)
-       
-    ml%n_k = SIZE(ml%x)
-    ml%n_s = SIZE(ml%k_i)
+    ml%s_i = ml%gr%s_i()
+    ml%s_o = ml%gr%s_o()
 
-    allocate(ml%es(ml%n_s))
+    ml%n_k = ml%gr%n_k()
 
-    seg_loop : do s = 1, ml%n_s
+    ! Create segments
+
+    allocate(ml%es(ml%s_i:ml%s_o))
+
+    seg_loop : do s = ml%s_i, ml%s_o
        ml%es(s) = evol_seg_t(ml_p)
     end do seg_loop
 
@@ -211,10 +215,15 @@ contains
     class(evol_model_t), intent(inout) :: this
     real(WP), intent(in)               :: f(:)
 
+    type(point_t)         :: pt(this%n_k)
     real(WP), allocatable :: f_(:)
     integer               :: s
+    integer               :: k_i
+    integer               :: k_o
 
     ! Set the data for $NAME
+
+    pt = this%gr%pt()
 
     if (this%add_center) then
        f_ = [$F_C,f]
@@ -224,16 +233,13 @@ contains
 
     $CHECK_BOUNDS(SIZE(f_),this%n_k)
 
-    seg_loop : do s = 1, this%n_s
+    seg_loop : do s = this%s_i, this%s_o
 
-       associate (x => this%x, &
-                  k_i => this%k_i(s), &
-                  k_o => this%k_o(s))
+       k_i = this%gr%k_i(s)
+       k_o = this%gr%k_o(s)
+
+       call this%es(s)%set_${NAME}(pt(k_i:k_o)%x, f_(k_i:k_o))
        
-         call this%es(s)%set_${NAME}(x(k_i:k_o), f_(k_i:k_o))
-
-       end associate
-
     end do seg_loop
 
     ! Finish
@@ -248,8 +254,8 @@ contains
 
       ! Interpolate f at x=0 using parabolic fitting
 
-      associate (x_1 => this%x(2), &
-                 x_2 => this%x(3), &
+      associate (x_1 => pt(2)%x, &
+                 x_2 => pt(3)%x, &
                  f_1 => f(1), &
                  f_2 => f(2))
 
@@ -291,10 +297,15 @@ contains
     class(evol_model_t), intent(inout) :: this
     real(WP), intent(in)               :: f(:)
 
+    type(point_t)         :: pt(this%n_k)
     real(WP), allocatable :: f_(:)
     integer               :: s
+    integer               :: k_i
+    integer               :: k_o
 
     ! Set the data for As
+
+    pt = this%gr%pt()
 
     if (this%add_center) then
        f_ = [0._WP,f]
@@ -302,31 +313,26 @@ contains
        f_ = f
     endif
 
-    $CHECK_BOUNDS(SIZE(f_),this%n_k)
+    seg_loop : do s = this%s_i, this%s_o
 
-    seg_loop : do s = 1, this%n_s
+       k_i = this%gr%k_i(s)
+       k_o = this%gr%k_o(s)
 
-       associate (x => this%x, &
-                  k_i => this%k_i(s), &
-                  k_o => this%k_o(s))
+       if (this%repair_As) then
 
-         if (this%repair_As) then
+          ! Repair the segment boundaries
 
-            ! Repair the segment boundaries
-
-            if (s > 1 .AND. k_i + 2 <= k_o) then
-               f_(k_i) = f(k_i+1) + (x(k_i) - x(k_i+1))*(f(k_i+2) - f(k_i+1))/(x(k_i+2) - x(k_i+1))
-            endif
+          if (s > this%s_i .AND. k_i + 2 <= k_o) then
+             f_(k_i) = f(k_i+1) + (pt(k_i)%x - pt(k_i+1)%x)*(f(k_i+2) - f(k_i+1))/(pt(k_i+2)%x - pt(k_i+1)%x)
+          endif
                
-            if (s < this%n_s .AND. k_o - 2 >= k_i) then
-               f_(k_o) = f(k_o-1) + (x(k_o) - x(k_o-1))*(f(k_o-1) - f(k_o-2))/(x(k_o-1) - x(k_o-2))
-            endif
+          if (s < this%s_o .AND. k_o - 2 >= k_i) then
+             f_(k_o) = f(k_o-1) + (pt(k_o)%x - pt(k_o-1)%x)*(f(k_o-1) - f(k_o-2))/(pt(k_o-1)%x - pt(k_o-2)%x)
+          endif
 
-         endif
+       endif
                
-         call this%es(s)%set_As(x(k_i:k_o), f_(k_i:k_o))
-
-       end associate
+       call this%es(s)%set_As(pt(k_i:k_o)%x, f_(k_i:k_o))
 
     end do seg_loop
 
@@ -342,19 +348,18 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_1_ (this, s, x) result (${NAME})
+  function ${NAME}_1_ (this, pt) result (${NAME})
 
     class(evol_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), intent(in)            :: x
+    type(point_t), intent(in)       :: pt
     real(WP)                        :: $NAME
 
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+    $ASSERT_DEBUG(pt%s >= this%s_i,Invalid segment)
+    $ASSERT_DEBUG(pt%s <= this%s_o,Invalid segment)
 
-    ! Evaluate $NAME
+    ! Evaluate $NAME at point pt
 
-    $NAME = this%es(s)%${NAME}(x)
+    $NAME = this%es(pt%s)%${NAME}(pt%x)
 
     ! Finish
 
@@ -388,19 +393,15 @@ contains
 
   !****
 
-  function M_r_1_ (this, s, x) result (M_r)
+  function M_r_1_ (this, pt) result (M_r)
 
     class(evol_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), intent(in)            :: x
+    type(point_t), intent(in)       :: pt
     real(WP)                        :: M_r
 
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+    ! Evaluate the fractional mass coordinate at point pt
 
-    ! Evaluate the fractional mass coordinate
-
-    M_r = this%M_star*(x**3/this%c_1(s, x))
+    M_r = this%M_star*(pt%x**3/this%c_1(pt))
 
     ! Finish
 
@@ -410,20 +411,18 @@ contains
     
   !****
 
-  function P_1_ (this, s, x) result (P)
+  function P_1_ (this, pt) result (P)
 
     class(evol_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), intent(in)            :: x
+    type(point_t), intent(in)       :: pt
     real(WP)                        :: P
 
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+    ! Evaluate the total pressure at point pt
 
-    ! Evaluate the total pressure CHECK THIS
+    ! XXX CHECK THIS
 
     P = (G_GRAVITY*this%M_star**2/(4._WP*PI*this%R_star**4))*&
-        (this%U(s, x)/(this%c_1(s, x)**2*this%V_2(s, x)))
+        (this%U(pt)/(this%c_1(pt)**2*this%V_2(pt)))
 
     ! Finish
 
@@ -433,19 +432,15 @@ contains
     
   !****
 
-  function rho_1_ (this, s, x) result (rho)
+  function rho_1_ (this, pt) result (rho)
 
     class(evol_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), intent(in)            :: x
+    type(point_t), intent(in)       :: pt
     real(WP)                        :: rho
 
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+    ! Evaluate the density at point pt
 
-    ! Evaluate the density
-
-    rho = (this%M_star/(4._WP*PI*this%R_star**3))*(this%U(s, x)/this%c_1(s, x))
+    rho = (this%M_star/(4._WP*PI*this%R_star**3))*(this%U(pt)/this%c_1(pt))
 
     ! Finish
 
@@ -455,19 +450,15 @@ contains
     
   !****
 
-  function T_1_ (this, s, x) result (T)
+  function T_1_ (this, pt) result (T)
 
     class(evol_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), intent(in)            :: x
+    type(point_t), intent(in)       :: pt
     real(WP)                        :: T
 
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+    ! Evaluate the temperature at point pt
 
-    ! Evaluate the temperature
-
-    T = (3._WP*this%beta_rad(s, x)*this%P(s, x)/A_RADIATION)**0.25_WP
+    T = (3._WP*this%beta_rad(pt)*this%P(pt)/A_RADIATION)**0.25_WP
 
     ! Finish
 
@@ -481,22 +472,19 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_v_ (this, s, x) result (${NAME})
+  function ${NAME}_v_ (this, pt) result (${NAME})
 
     class(evol_model_t), intent(in) :: this
-    integer, intent(in)             :: s(:)
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: ${NAME}(SIZE(s))
+    type(point_t), intent(in)       :: pt(:)
+    real(WP)                        :: ${NAME}(SIZE(pt))
 
-    integer :: k
+    integer :: j
 
-    $CHECK_BOUNDS(SIZE(x),SIZE(s))
-
-    ! Evaluate $NAME
+    ! Evaluate $NAME at points pt
 
     !$OMP PARALLEL DO
-    do k = 1, SIZE(s)
-       ${NAME}(k) = this%${NAME}(s(k), x(k))
+    do j = 1, SIZE(pt)
+       ${NAME}(j) = this%${NAME}(pt(j))
     end do
 
     ! Finish
@@ -535,19 +523,35 @@ contains
 
   !****
 
-  function vacuum (this, s, x)
+  function grid (this) result (gr)
 
     class(evol_model_t), intent(in) :: this
-    integer, intent(in)        :: s
-    real(WP), intent(in)       :: x
-    logical                    :: vacuum
+    type(grid_t)                    :: gr
 
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+    ! Return the grid
 
-    ! Evaluate the vacuum condition
+    gr = this%gr
 
-    vacuum = this%es(s)%vacuum(x)
+    ! Finish
+
+    return
+
+  end function grid
+
+  !****
+
+  function vacuum (this, pt)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    logical                         :: vacuum
+
+    $ASSERT_DEBUG(pt%s >= this%s_i,Invalid segment)
+    $ASSERT_DEBUG(pt%s <= this%s_o,Invalid segment)
+
+    ! Evaluate the vacuum condition at point pt
+
+    vacuum = this%es(pt%s)%vacuum(pt%x)
 
     ! Finish
 
@@ -557,99 +561,29 @@ contains
 
   !****
 
-  function x_i (this, s)
-
-    class(evol_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP)                        :: x_i
-
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
-
-    ! Return the inner x value for segment s
-
-    x_i = this%x(this%k_i(s))
-
-    ! Finish
-
-    return
-
-  end function x_i
-
-  !****
-
-  function x_o (this, s)
-
-    class(evol_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP)                        :: x_o
-
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
-
-    ! Return the outer x value for segment s
-
-    x_o = this%x(this%k_o(s))
-
-    ! Finish
-
-    return
-
-  end function x_o
-
-  !****
-
-  function x_base (this, s)
-
-    class(evol_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), allocatable           :: x_base(:)
-
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
-
-    ! Return the base grid for segment s
-
-    x_base = this%x(this%k_i(s):this%k_o(s))
-
-    ! Finish
-
-    return
-
-  end function x_base
-
-  !****
-
   function delta_p (this)
 
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_p
 
-    integer  :: s
-    integer  :: k
-    real(WP) :: V_2
-    real(WP) :: c_1
-    real(WP) :: Gamma_1
-    real(WP) :: f(this%n_k)
+    type(point_t) :: pt(this%n_k)
+    real(WP)      :: V_2(this%n_k)
+    real(WP)      :: c_1(this%n_k)
+    real(WP)      :: Gamma_1(this%n_k)
+    real(WP)      :: f(this%n_k)
 
     ! Calculate the p-mode (large) frequency separation
 
-    seg_loop : do s = 1, this%n_s
+    pt = this%gr%pt()
 
-       do k = this%k_i(s), this%k_o(s)
+    V_2 = this%V_2(pt)
+    c_1 = this%c_1(pt)
+    Gamma_1 = this%Gamma_1(pt)
 
-          V_2 = this%V_2(s, this%x(k))
-          c_1 = this%c_1(s, this%x(k))
-          Gamma_1 = this%Gamma_1(s, this%x(k))
-
-          f(k) = Gamma_1/(c_1*V_2)
-
-       end do
-
-    end do seg_loop
+    f = Gamma_1/(c_1*V_2)
 
     delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
-              integrate(this%x, f)
+              integrate(pt%x, f)
 
     ! Finish
 
@@ -664,33 +598,26 @@ contains
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_g
 
-    integer  :: s
-    integer  :: k
-    real(WP) :: As
-    real(WP) :: c_1
-    real(WP) :: f(this%n_k)
+    type(point_t) :: pt(this%n_k)
+    real(WP)      :: As(this%n_k)
+    real(WP)      :: c_1(this%n_k)
+    real(WP)      :: f(this%n_k)
 
     ! Calculate the g-mode inverse period separation
 
-    seg_loop : do s = 1, this%n_s
+    pt = this%gr%pt()
 
-       do k = this%k_i(s), this%k_o(s)
+    As = this%As(pt)
+    c_1 = this%c_1(pt)
 
-          As = this%As(s, this%x(k))
-          c_1 = this%c_1(s, this%x(k))
-
-          if (this%x(k) /= 0._WP) then
-             f(k) = SQRT(MAX(As/c_1, 0._WP))/this%x(k)
-          else
-             f(k) = 0._WP
-          end if
-
-       end do
-
-    end do seg_loop
+    where (pt%x /= 0._WP)
+       f = SQRT(MAX(As/c_1, 0._WP))/pt%x
+    elsewhere
+       f = 0._WP
+    end where
 
     delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
-              integrate(this%x, f)
+              integrate(pt%x, f)
 
     ! Finish
 

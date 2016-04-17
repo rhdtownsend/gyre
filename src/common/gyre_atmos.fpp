@@ -23,6 +23,7 @@ module gyre_atmos
 
   use core_kinds
 
+  use gyre_point
   use gyre_model
 
   use ISO_FORTRAN_ENV
@@ -201,23 +202,19 @@ contains
 
   !****
   
-  subroutine eval_atmos_coeffs_unno (ml, V_g, As, c_1)
+  subroutine eval_atmos_coeffs_unno (ml, pt, V_g, As, c_1)
 
     class(model_t), intent(in) :: ml
+    type(point_t), intent(in)  :: pt
     real(WP), intent(out)      :: V_g
     real(WP), intent(out)      :: As
     real(WP), intent(out)      :: c_1
 
     ! Evaluate atmosphere coefficients ([Unn1989] formulation)
 
-    associate (s => ml%n_s, &
-               x => ml%x_o(ml%n_s))
-
-      V_g = ml%V_2(s, x)*x**2/ml%Gamma_1(s, x)
-      As = ml%As(s, x)
-      c_1 = ml%c_1(s, x)
-
-    end associate
+    V_g = ml%V_2(pt)*pt%x**2/ml%Gamma_1(pt)
+    As = ml%As(pt)
+    c_1 = ml%c_1(pt)
 
     ! Finish
 
@@ -227,23 +224,19 @@ contains
 
   !****
   
-  subroutine eval_atmos_coeffs_jcd (ml, V_g, As, c_1)
+  subroutine eval_atmos_coeffs_jcd (ml, pt, V_g, As, c_1)
 
     class(model_t), intent(in) :: ml
+    type(point_t), intent(in)  :: pt
     real(WP), intent(out)      :: V_g
     real(WP), intent(out)      :: As
     real(WP), intent(out)      :: c_1
 
     ! Evaluate atmosphere coefficients ([Chr2008] formulation)
 
-    associate (s => ml%n_s, &
-               x => ml%x_o(ml%n_s))
-
-      V_g = ml%V_2(s, x)*x**2/ml%Gamma_1(s, x)
-      As = ml%V_2(s, x)*x**2*(1._WP-1._WP/ml%Gamma_1(s, x))
-      c_1 = ml%c_1(s, x)
-
-    end associate
+    V_g = ml%V_2(pt)*pt%x**2/ml%Gamma_1(pt)
+    As = ml%V_2(pt)*pt%x**2*(1._WP-1._WP/ml%Gamma_1(pt))
+    c_1 = ml%c_1(pt)
 
     ! Finish
 

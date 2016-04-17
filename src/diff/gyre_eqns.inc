@@ -45,11 +45,12 @@ module gyre_${T}_eqns
 
   abstract interface
 
-     function A_ (this, x, omega) result (A)
+     function A_ (this, pt, omega) result (A)
        use core_kinds
+       use gyre_point
        import ${T}_eqns_t
        class(${T}_eqns_t), intent(in) :: this
-       real(WP), intent(in)           :: x
+       type(point_t), intent(in)      :: pt
        $TYPE(WP), intent(in)          :: omega
        $TYPE(WP)                      :: A(this%n_e,this%n_e)
      end function A_

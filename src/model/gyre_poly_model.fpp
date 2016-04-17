@@ -23,9 +23,11 @@ module gyre_poly_model
 
   use core_kinds
 
+  use gyre_grid
   use gyre_model
   use gyre_model_par
   use gyre_model_util
+  use gyre_point
   use gyre_poly_seg
 
   use ISO_FORTRAN_ENV
@@ -44,10 +46,10 @@ module gyre_poly_model
 
   type, extends (model_t) :: poly_model_t
      private
+     type(grid_t)                  :: gr
      type(poly_seg_t), allocatable :: ps(:)
-     real(WP), allocatable         :: x(:)
-     integer, allocatable          :: k_i(:)
-     integer, allocatable          :: k_o(:)
+     integer                       :: s_i
+     integer                       :: s_o
      integer                       :: n_k
    contains
      private
@@ -72,10 +74,8 @@ module gyre_poly_model
      $PROC_DECL(kap_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
+     procedure, public :: grid
      procedure, public :: vacuum
-     procedure, public :: x_i
-     procedure, public :: x_o
-     procedure, public :: x_base
   end type poly_model_t
 
   ! Interfaces
@@ -105,10 +105,15 @@ contains
     type(model_par_t), intent(in) :: ml_p
     type(poly_model_t)            :: ml
 
+    integer  :: n_k
+    real(WP) :: x(SIZE(xi))
+    integer  :: k_i(SIZE(n_poly))
+    integer  :: k_o(SIZE(n_poly))
     real(WP) :: mu(SIZE(n_poly)+1)
     real(WP) :: B(SIZE(n_poly))
     real(WP) :: t(SIZE(n_poly))
     integer  :: s
+    integer  :: i
 
     $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
     $CHECK_BOUNDS(SIZE(dTheta),SIZE(xi))
@@ -117,29 +122,42 @@ contains
 
     ! Construct the poly_model_t
 
-    ml%n_k = SIZE(xi)
+    n_k = SIZE(xi)
 
-    ml%x = xi/xi(ml%n_k)
-    call seg_indices(ml%x, ml%k_i, ml%k_o)
+    x = xi/xi(n_k)
 
-    ml%n_s = SIZE(ml%k_i)
+    ! Create the grid
 
-    $CHECK_BOUNDS(SIZE(n_poly),ml%n_s)
+    ml%gr = grid_t(x)
 
-    call eval_mu_B_t_(xi, Theta, dTheta, n_poly, Delta_d, ml%k_i, ml%k_o, mu, B, t)
+    ml%s_i = ml%gr%s_i()
+    ml%s_o = ml%gr%s_o()
 
-    allocate(ml%ps(ml%n_s))
+    ml%n_k = ml%gr%n_k()
 
-    seg_loop : do s = 1, ml%n_s
+    $CHECK_BOUNDS(SIZE(n_poly),ml%s_o-ml%s_i+1)
 
-       associate (k_i => ml%k_i(s), &
-                  k_o => ml%k_o(s))
+    ! Evaluate mu, B and t
 
-         ml%ps(s) = poly_seg_t(ml%x(k_i:k_o), Theta(k_i:k_o), dTheta(k_i:k_o), &
-                               mu(s), mu(ml%n_s+1), xi(ml%n_k), &
-                               n_poly(s), B(s), t(s), Gamma_1)
+    do s = ml%s_i, ml%s_o
+       i = s - ml%s_i + 1
+       k_i(i) = ml%gr%k_i(s)
+       k_o(i) = ml%gr%k_o(s)
+    end do
 
-       end associate
+    call eval_mu_B_t_(xi, Theta, dTheta, n_poly, Delta_d, k_i, k_o, mu, B, t)
+
+    ! Create segments
+
+    allocate(ml%ps(ml%s_i:ml%s_o))
+
+    seg_loop : do s = ml%s_i, ml%s_o
+
+       i = s - ml%s_i + 1
+
+       ml%ps(s) = poly_seg_t(x(k_i(i):k_o(i)), Theta(k_i(i):k_o(i)), dTheta(k_i(i):k_o(i)), &
+                             mu(i), mu(ml%s_o-ml%s_i+1), xi(n_k), &
+                             n_poly(i), B(i), t(i), Gamma_1)
 
     end do seg_loop
 
@@ -182,7 +200,7 @@ contains
     $CHECK_BOUNDS(SIZE(t),SIZE(n_poly))
 
     ! Calculate the mass coordinate mu at segment boundaries, together
-    ! with the B parameter
+    ! with the B and t parameter (see mixed-poly-mod.pdf)
 
     n_s = SIZE(k_i)
 
@@ -220,19 +238,18 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_1_ (this, s, x) result (${NAME})
+  function ${NAME}_1_ (this, pt) result (${NAME})
 
     class(poly_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), intent(in)            :: x
+    type(point_t), intent(in)       :: pt
     real(WP)                        :: $NAME
 
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+    $ASSERT_DEBUG(pt%s >= this%s_i,Invalid index)
+    $ASSERT_DEBUG(pt%s <= this%s_o,Invalid index)
 
     ! Evaluate $NAME
 
-    $NAME = this%ps(s)%${NAME}(x)
+    $NAME = this%ps(pt%s)%${NAME}(pt%x)
 
     ! Finish
 
@@ -260,11 +277,10 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_1_ (this, s, x) result (${NAME})
+  function ${NAME}_1_ (this, pt) result (${NAME})
 
     class(poly_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), intent(in)            :: x
+    type(point_t), intent(in)       :: pt
     real(WP)                        :: $NAME
 
     $ABORT(Polytropic model does not define $NAME)
@@ -298,22 +314,19 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_v_ (this, s, x) result (${NAME})
+  function ${NAME}_v_ (this, pt) result (${NAME})
 
     class(poly_model_t), intent(in) :: this
-    integer, intent(in)             :: s(:)
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: ${NAME}(SIZE(s))
+    type(point_t), intent(in)       :: pt(:)
+    real(WP)                        :: ${NAME}(SIZE(pt))
 
-    integer :: k
-
-    $CHECK_BOUNDS(SIZE(x),SIZE(s))
+    integer :: j
 
     ! Evaluate $NAME
 
     !$OMP PARALLEL DO
-    do k = 1, SIZE(s)
-       ${NAME}(k) = this%${NAME}(s(k), x(k))
+    do j = 1, SIZE(pt)
+       ${NAME}(j) = this%${NAME}(pt(j))
     end do
 
     ! Finish
@@ -348,87 +361,40 @@ contains
 
   !****
 
-  function vacuum (this, s, x)
+  function grid (this) result (gr)
 
     class(poly_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), intent(in)            :: x
+    type(grid_t)                    :: gr
+
+    ! Return the grid
+
+    gr = this%gr
+
+    ! Finish
+
+    return
+
+  end function grid
+
+  !****
+
+  function vacuum (this, pt)
+
+    class(poly_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
     logical                         :: vacuum
 
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
+    $ASSERT_DEBUG(pt%s >= this%s_i,Invalid segment)
+    $ASSERT_DEBUG(pt%s <= this%s_o,Invalid segment)
 
     ! Evaluate the vacuum condition
 
-    vacuum = this%ps(s)%vacuum(x)
+    vacuum = this%ps(pt%s)%vacuum(pt%x)
 
     ! Finish
 
     return
 
   end function vacuum
-
-  !****
-
-  function x_i (this, s)
-
-    class(poly_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP)                        :: x_i
-
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
-
-    ! Return the inner x value for segment s
-
-    x_i = this%x(this%k_i(s))
-
-    ! Finish
-
-    return
-
-  end function x_i
-
-  !****
-
-  function x_o (this, s)
-
-    class(poly_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP)                        :: x_o
-
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
-
-    ! Return the outer x value for segment s
-
-    x_o = this%x(this%k_o(s))
-
-    ! Finish
-
-    return
-
-  end function x_o
-
-  !****
-
-  function x_base (this, s)
-
-    class(poly_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), allocatable           :: x_base(:)
-
-    $ASSERT_DEBUG(s >= 1,Invalid segment index)
-    $ASSERT_DEBUG(s <= this%n_s,Invalid segment index)
-
-    ! Return the base grid for segment s
-
-    x_base = this%x(this%k_i(s):this%k_o(s))
-
-    ! Finish
-
-    return
-
-  end function x_base
 
 end module gyre_poly_model

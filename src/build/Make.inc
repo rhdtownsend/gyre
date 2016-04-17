@@ -4,7 +4,7 @@
 # The following flags can be edited (set to either yes or no)
 
 # Enable debugging (with a performance penalty)
-DEBUG=no
+DEBUG=yes
 
 # Enable OpenMP parallelization
 OMP=yes
@@ -41,7 +41,7 @@ endif
 
 MODPATH=${MESASDK_ROOT}/include
 
-FFLAGS:=${FFLAGS} -finit-real=snan -ffpe-trap=invalid,overflow,zero -fbacktrace 
+FFLAGS:=${FFLAGS} -finit-real=snan -ffpe-trap=invalid,overflow,zero -fbacktrace -fmax-errors=25
 
 ifeq (${DEBUG},yes)
   FFLAGS:=${FFLAGS} -fcheck=all -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0 -g

@@ -28,6 +28,7 @@ module gyre_diff_factory
   use gyre_eqns
   use gyre_magnus_diff
   use gyre_num_par
+  use gyre_point
   use gyre_trapz_diff
 
   use ISO_FORTRAN_ENV
@@ -61,11 +62,11 @@ contains
 
   $local $T $1
 
-  function ${T}_diff_t_ (eq, x_a, x_b, nm_p) result (df)
+  function ${T}_diff_t_ (eq, pt_a, pt_b, nm_p) result (df)
 
     class(${T}_eqns_t), intent(in)  :: eq
-    real(WP), intent(in)            :: x_a
-    real(WP), intent(in)            :: x_b
+    type(point_t), intent(in)       :: pt_a
+    type(point_t), intent(in)       :: pt_b
     type(num_par_t), intent(in)     :: nm_p
     class(${T}_diff_t), allocatable :: df
     
@@ -73,19 +74,19 @@ contains
 
     select case (nm_p%diff_scheme)
     case ('MAGNUS_GL2')
-       allocate(df, SOURCE=${T}_magnus_diff_t(eq, x_a, x_b, 'GL2'))
+       allocate(df, SOURCE=${T}_magnus_diff_t(eq, pt_a, pt_b, 'GL2'))
     case ('MAGNUS_GL4')
-       allocate(df, SOURCE=${T}_magnus_diff_t(eq, x_a, x_b, 'GL4'))
+       allocate(df, SOURCE=${T}_magnus_diff_t(eq, pt_a, pt_b, 'GL4'))
     case ('MAGNUS_GL6')
-       allocate(df, SOURCE=${T}_magnus_diff_t(eq, x_a, x_b, 'GL6'))
+       allocate(df, SOURCE=${T}_magnus_diff_t(eq, pt_a, pt_b, 'GL6'))
     case ('COLLOC_GL2')
-       allocate(df, SOURCE=${T}_colloc_diff_t(eq, x_a, x_b, 'GL2'))
+       allocate(df, SOURCE=${T}_colloc_diff_t(eq, pt_a, pt_b, 'GL2'))
     case ('COLLOC_GL4')
-       allocate(df, SOURCE=${T}_colloc_diff_t(eq, x_a, x_b, 'GL4'))
+       allocate(df, SOURCE=${T}_colloc_diff_t(eq, pt_a, pt_b, 'GL4'))
     case ('COLLOC_GL6')
-       allocate(df, SOURCE=${T}_colloc_diff_t(eq, x_a, x_b, 'GL6'))
+       allocate(df, SOURCE=${T}_colloc_diff_t(eq, pt_a, pt_b, 'GL6'))
     case ('TRAPZ')
-       allocate(df, SOURCE=${T}_trapz_diff_t(eq, x_a, x_b, SPREAD(0.5_WP, DIM=1, NCOPIES=eq%n_e)))
+       allocate(df, SOURCE=${T}_trapz_diff_t(eq, pt_a, pt_b, SPREAD(0.5_WP, DIM=1, NCOPIES=eq%n_e)))
     case default
        $ABORT(Invalid diff_scheme)
     end select

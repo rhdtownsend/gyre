@@ -29,6 +29,7 @@ module gyre_nad_eqns
   use gyre_model
   use gyre_nad_vars
   use gyre_osc_par
+  use gyre_point
   use gyre_rot
   use gyre_rot_factory
 
@@ -45,7 +46,6 @@ module gyre_nad_eqns
      class(model_t), pointer     :: ml => null()
      class(c_rot_t), allocatable :: rt
      type(nad_vars_t)            :: vr
-     integer                     :: s
      logical                     :: cowling_approx
      logical                     :: narf_approx
    contains
@@ -70,10 +70,9 @@ module gyre_nad_eqns
 
 contains
 
-  function nad_eqns_t_ (ml, s, md_p, os_p) result (eq)
+  function nad_eqns_t_ (ml, md_p, os_p) result (eq)
 
     class(model_t), pointer, intent(in) :: ml
-    integer, intent(in)                 :: s
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(nad_eqns_t)                    :: eq
@@ -84,8 +83,6 @@ contains
 
     allocate(eq%rt, SOURCE=c_rot_t(ml, md_p, os_p))
     eq%vr = nad_vars_t(ml, md_p, os_p)
-
-    eq%s = s
 
     eq%cowling_approx = os_p%cowling_approx
     eq%narf_approx = os_p%narf_approx
@@ -100,16 +97,16 @@ contains
 
   !****
 
-  function A (this, x, omega)
+  function A (this, pt, omega)
 
     class(nad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(x, omega)/x
+    A = this%xA(pt, omega)/pt%x
 
     ! Finish
 
@@ -119,10 +116,10 @@ contains
 
   !****
 
-  function xA (this, x, omega)
+  function xA (this, pt, omega)
 
     class(nad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: xA(this%n_e,this%n_e)
 
@@ -151,100 +148,96 @@ contains
          
     ! Evaluate the log(x)-space RHS matrix
 
-    associate (s => this%s)
+    ! Calculate coefficients
 
-      ! Calculate coefficients
+    V = this%ml%V_2(pt)*pt%x**2
+    V_g = V/this%ml%Gamma_1(pt)
+    U = this%ml%U(pt)
+    As = this%ml%As(pt)
+    c_1 = this%ml%c_1(pt)
 
-      V = this%ml%V_2(s, x)*x**2
-      V_g = V/this%ml%Gamma_1(s, x)
-      U = this%ml%U(s, x)
-      As = this%ml%As(s, x)
-      c_1 = this%ml%c_1(s, x)
+    nabla = this%ml%nabla(pt)
+    nabla_ad = this%ml%nabla_ad(pt)
+    dnabla_ad = this%ml%dnabla_ad(pt)
+    delta = this%ml%delta(pt)
+    c_rad = this%ml%c_rad(pt)
+    dc_rad = this%ml%dc_rad(pt)
+    c_thm = this%ml%c_thm(pt)
+    c_dif = this%ml%c_dif(pt)
+    c_eps_ad = this%ml%c_eps_ad(pt)
+    c_eps_S = this%ml%c_eps_S(pt)
+    kap_ad = this%ml%kap_ad(pt)
+    kap_S = this%ml%kap_S(pt)
 
-      nabla = this%ml%nabla(s, x)
-      nabla_ad = this%ml%nabla_ad(s, x)
-      dnabla_ad = this%ml%dnabla_ad(s, x)
-      delta = this%ml%delta(s, x)
-      c_rad = this%ml%c_rad(s, x)
-      dc_rad = this%ml%dc_rad(s, x)
-      c_thm = this%ml%c_thm(s, x)
-      c_dif = this%ml%c_dif(s, x)
-      c_eps_ad = this%ml%c_eps_ad(s, x)
-      c_eps_S = this%ml%c_eps_S(s, x)
-      kap_ad = this%ml%kap_ad(s, x)
-      kap_S = this%ml%kap_S(s, x)
+    lambda = this%rt%lambda(pt, omega)
+    l_i = this%rt%l_i(omega)
 
-      lambda = this%rt%lambda(s, x, omega)
-      l_i = this%rt%l_i(omega)
+    omega_c = this%rt%omega_c(pt, omega)
 
-      omega_c = this%rt%omega_c(s, x, omega)
+    if (this%cowling_approx) then
+       alpha_gr = 0._WP
+    else
+       alpha_gr = 1._WP
+    endif
 
-      if (this%cowling_approx) then
-         alpha_gr = 0._WP
-      else
-         alpha_gr = 1._WP
-      endif
-      
-      if (this%narf_approx) then
-         alpha_hf = 0._WP
-      else
-         alpha_hf = 1._WP
-      endif
+    if (this%narf_approx) then
+       alpha_hf = 0._WP
+    else
+       alpha_hf = 1._WP
+    endif
 
-      ! Set up the matrix
+    ! Set up the matrix
 
-      xA(1,1) = V_g - 1._WP - l_i
-      xA(1,2) = lambda/(c_1*omega_c**2) - V_g
-      xA(1,3) = alpha_gr*(lambda/(c_1*omega_c**2))
-      xA(1,4) = alpha_gr*(0._WP)
-      xA(1,5) = delta
-      xA(1,6) = 0._WP
+    xA(1,1) = V_g - 1._WP - l_i
+    xA(1,2) = lambda/(c_1*omega_c**2) - V_g
+    xA(1,3) = alpha_gr*(lambda/(c_1*omega_c**2))
+    xA(1,4) = alpha_gr*(0._WP)
+    xA(1,5) = delta
+    xA(1,6) = 0._WP
 
-      xA(2,1) = c_1*omega_c**2 - As
-      xA(2,2) = As - U + 3._WP - l_i
-      xA(2,3) = alpha_gr*(0._WP)
-      xA(2,4) = alpha_gr*(-1._WP)
-      xA(2,5) = delta
-      xA(2,6) = 0._WP
+    xA(2,1) = c_1*omega_c**2 - As
+    xA(2,2) = As - U + 3._WP - l_i
+    xA(2,3) = alpha_gr*(0._WP)
+    xA(2,4) = alpha_gr*(-1._WP)
+    xA(2,5) = delta
+    xA(2,6) = 0._WP
 
-      xA(3,1) = alpha_gr*(0._WP)
-      xA(3,2) = alpha_gr*(0._WP)
-      xA(3,3) = alpha_gr*(3._WP - U - l_i)
-      xA(3,4) = alpha_gr*(1._WP)
-      xA(3,5) = alpha_gr*(0._WP)
-      xA(3,6) = alpha_gr*(0._WP)
+    xA(3,1) = alpha_gr*(0._WP)
+    xA(3,2) = alpha_gr*(0._WP)
+    xA(3,3) = alpha_gr*(3._WP - U - l_i)
+    xA(3,4) = alpha_gr*(1._WP)
+    xA(3,5) = alpha_gr*(0._WP)
+    xA(3,6) = alpha_gr*(0._WP)
 
-      xA(4,1) = alpha_gr*(U*As)
-      xA(4,2) = alpha_gr*(U*V_g)
-      xA(4,3) = alpha_gr*(lambda)
-      xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
-      xA(4,5) = alpha_gr*(-U*delta)
-      xA(4,6) = alpha_gr*(0._WP)
+    xA(4,1) = alpha_gr*(U*As)
+    xA(4,2) = alpha_gr*(U*V_g)
+    xA(4,3) = alpha_gr*(lambda)
+    xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
+    xA(4,5) = alpha_gr*(-U*delta)
+    xA(4,6) = alpha_gr*(0._WP)
 
-      xA(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif + nabla_ad*dnabla_ad)
-      xA(5,2) = V*(lambda/(c_1*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))
-      xA(5,3) = alpha_gr*(V*lambda/(c_1*omega_c**2)*(nabla_ad - nabla))
-      xA(5,4) = alpha_gr*(V*nabla_ad)
-      xA(5,5) = V*nabla*(4._WP - kap_S) - (l_i - 2._WP)
-      xA(5,6) = -V*nabla/c_rad
+    xA(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif + nabla_ad*dnabla_ad)
+    xA(5,2) = V*(lambda/(c_1*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))
+    xA(5,3) = alpha_gr*(V*lambda/(c_1*omega_c**2)*(nabla_ad - nabla))
+    xA(5,4) = alpha_gr*(V*nabla_ad)
+    xA(5,5) = V*nabla*(4._WP - kap_S) - (l_i - 2._WP)
+    xA(5,6) = -V*nabla/c_rad
 
-      xA(6,1) = alpha_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-      xA(6,2) = V*c_eps_ad - lambda*c_rad*(alpha_hf*nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-      xA(6,3) = alpha_gr*(lambda*c_rad*(3._WP + dc_rad)/(c_1*omega_c**2))
-      xA(6,4) = alpha_gr*(0._WP)
-      if (x > 0._WP) then
-         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
-      else
-         xA(6,5) = -alpha_hf*HUGE(0._WP)
-      endif
-      xA(6,6) = -1._WP - l_i
+    xA(6,1) = alpha_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+    xA(6,2) = V*c_eps_ad - lambda*c_rad*(alpha_hf*nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
+    xA(6,3) = alpha_gr*(lambda*c_rad*(3._WP + dc_rad)/(c_1*omega_c**2))
+    xA(6,4) = alpha_gr*(0._WP)
+    if (pt%x > 0._WP) then
+       xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
+    else
+       xA(6,5) = -alpha_hf*HUGE(0._WP)
+    endif
+    xA(6,6) = -1._WP - l_i
 
-      ! Apply the variables transformation
+    ! Apply the variables transformation
 
-      xA = MATMUL(this%vr%G(s, x, omega), MATMUL(xA, this%vr%H(s, x, omega)) - &
-                                          this%vr%dH(s, x, omega))
-
-    end associate
+    xA = MATMUL(this%vr%G(pt, omega), MATMUL(xA, this%vr%H(pt, omega)) - &
+                                                 this%vr%dH(pt, omega))
 
     ! Finish
 

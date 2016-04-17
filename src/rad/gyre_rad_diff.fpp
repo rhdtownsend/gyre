@@ -32,6 +32,7 @@ module gyre_rad_diff
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_point
 
   use ISO_FORTRAN_ENV
 
@@ -65,13 +66,11 @@ module gyre_rad_diff
 
 contains
 
-  function rad_diff_t_ (ml, s_a, x_a, s_b, x_b, md_p, nm_p, os_p) result (df)
+  function rad_diff_t_ (ml, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
     class(model_t), pointer, intent(in) :: ml
-    integer, intent(in)                 :: s_a
-    real(WP), intent(in)                :: x_a
-    integer, intent(in)                 :: s_b
-    real(WP), intent(in)                :: x_b
+    type(point_t), intent(in)           :: pt_a
+    type(point_t), intent(in)           :: pt_b
     type(mode_par_t), intent(in)        :: md_p
     type(num_par_t), intent(in)         :: nm_p
     type(osc_par_t), intent(in)         :: os_p
@@ -81,15 +80,15 @@ contains
 
     ! Construct the rad_diff_t
 
-    if (s_a == s_b) then
+    if (pt_a%s == pt_b%s) then
 
-       eq = rad_eqns_t(ml, s_a, md_p, os_p)
+       eq = rad_eqns_t(ml, md_p, os_p)
        
-       allocate(df%df, SOURCE=r_diff_t(eq, x_a, x_b, nm_p))
+       allocate(df%df, SOURCE=r_diff_t(eq, pt_a, pt_b, nm_p))
 
     else
 
-       allocate(df%df, SOURCE=rad_match_t(ml, s_a, x_a, s_b, x_b, md_p, os_p))
+       allocate(df%df, SOURCE=rad_match_t(ml, pt_a, pt_b, md_p, os_p))
 
     endif
 

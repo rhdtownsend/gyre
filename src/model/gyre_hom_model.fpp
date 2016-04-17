@@ -24,8 +24,10 @@ module gyre_hom_model
   use core_kinds
   use core_parallel
 
+  use gyre_grid
   use gyre_model
   use gyre_model_par
+  use gyre_point
 
   use ISO_FORTRAN_ENV
 
@@ -43,10 +45,9 @@ module gyre_hom_model
 
   type, extends (model_t) :: hom_model_t
      private
-     real(WP) :: x_i_
-     real(WP) :: x_o_
-     real(WP) :: Gamma_1_
-     real(WP) :: Omega_rot_
+     type(grid_t) :: gr
+     real(WP)     :: Gamma_1_
+     real(WP)     :: Omega_rot_
    contains
      private
      $PROC_DECL(V_2)
@@ -70,10 +71,8 @@ module gyre_hom_model
      $PROC_DECL(kap_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
+     procedure, public :: grid
      procedure, public :: vacuum
-     procedure, public :: x_i
-     procedure, public :: x_o
-     procedure, public :: x_base
   end type hom_model_t
 
   ! Interfaces
@@ -99,8 +98,7 @@ contains
 
     ! Construct the hom_model_t
 
-    ml%x_i_ = ml_p%x_i
-    ml%x_o_ = ml_p%x_o
+    ml%gr = grid_t([ml_p%x_i,ml_p%x_o])
 
     ml%Gamma_1_ = ml_p%Gamma_1
 
@@ -110,8 +108,6 @@ contains
        ml%Omega_rot_ = 0._WP
     endif
 
-    ml%n_s = 1
-
     ! Finish
 
     return
@@ -120,18 +116,17 @@ contains
 
   !****
 
-  function V_2_1_ (this, s, x) result (V_2)
+  function V_2_1_ (this, pt) result (V_2)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: V_2
 
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate V_2
 
-    V_2 = 2._WP/(1._WP - x**2)
+    V_2 = 2._WP/(1._WP - pt%x**2)
 
     ! Finish
 
@@ -141,18 +136,17 @@ contains
 
   !****
 
-  function As_1_ (this, s, x) result (As)
+  function As_1_ (this, pt) result (As)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: As
 
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate As
 
-    As = -this%V_2(s, x)*x**2/this%Gamma_1_
+    As = -this%V_2(pt)*pt%x**2/this%Gamma_1_
 
     ! Finish
 
@@ -162,12 +156,13 @@ contains
 
   !****
 
-  function U_1_ (this, s, x) result (U)
+  function U_1_ (this, pt) result (U)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: U
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate U
 
@@ -181,12 +176,13 @@ contains
 
   !****
 
-  function dU_1_ (this, s, x) result (dU)
+  function dU_1_ (this, pt) result (dU)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: dU
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate dlnU/dlnx
 
@@ -200,14 +196,13 @@ contains
 
   !****
 
-  function c_1_1_ (this, s, x) result (c_1)
+  function c_1_1_ (this, pt) result (c_1)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: c_1
 
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate c_1
 
@@ -221,14 +216,13 @@ contains
 
   !****
 
-  function Gamma_1_1_ (this, s, x) result (Gamma_1)
+  function Gamma_1_1_ (this, pt) result (Gamma_1)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: Gamma_1
 
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate Gamma_1
 
@@ -242,14 +236,13 @@ contains
 
   !****
 
-  function delta_1_ (this, s, x) result (delta)
+  function delta_1_ (this, pt) result (delta)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: delta
 
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate delta (assume ideal gas)
 
@@ -263,14 +256,13 @@ contains
 
   !****
 
-  function nabla_ad_1_ (this, s, x) result (nabla_ad)
+  function nabla_ad_1_ (this, pt) result (nabla_ad)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: nabla_ad
 
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate nabla_ad (assume ideal gas)
 
@@ -284,14 +276,13 @@ contains
 
   !****
 
-  function dnabla_ad_1_ (this, s, x) result (dnabla_ad)
+  function dnabla_ad_1_ (this, pt) result (dnabla_ad)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: dnabla_ad
 
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate dlnnabla_ad/dlnx
 
@@ -305,14 +296,13 @@ contains
 
   !****
 
-  function Omega_rot_1_ (this, s, x) result (Omega_rot)
+  function Omega_rot_1_ (this, pt) result (Omega_rot)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: Omega_rot
 
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate Omega_rot
 
@@ -326,14 +316,13 @@ contains
 
   !****
 
-  function dOmega_rot_1_ (this, s, x) result (dOmega_rot)
+  function dOmega_rot_1_ (this, pt) result (dOmega_rot)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: dOmega_rot
 
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate dlnOmega_rot/dlnx
 
@@ -351,11 +340,10 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_1_ (this, s, x) result (${NAME})
+  function ${NAME}_1_ (this, pt) result (${NAME})
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: $NAME
 
     $ABORT(Homogeneous model does not define $NAME)
@@ -389,22 +377,19 @@ contains
 
   $local $NAME $1
 
-  function ${NAME}_v_ (this, s, x) result (${NAME})
+  function ${NAME}_v_ (this, pt) result (${NAME})
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s(:)
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: ${NAME}(SIZE(s))
+    type(point_t), intent(in)      :: pt(:)
+    real(WP)                       :: ${NAME}(SIZE(pt))
 
-    integer :: k
-
-    $CHECK_BOUNDS(SIZE(x),SIZE(s))
+    integer :: j
 
     ! Evaluate $NAME
 
     !$OMP PARALLEL DO
-    do k = 1, SIZE(s)
-       ${NAME}(k) = this%${NAME}(s(k), x(k))
+    do j = 1, SIZE(pt)
+       ${NAME}(j) = this%${NAME}(pt(j))
     end do
 
     ! Finish
@@ -439,81 +424,39 @@ contains
 
   !****
 
-  function vacuum (this, s, x)
+  function grid (this) result (gr)
 
     class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP), intent(in)           :: x
+    type(grid_t)                   :: gr
+
+    ! Return the grid
+
+    gr = this%gr
+
+    ! Finish
+
+    return
+
+  end function grid
+
+  !****
+
+  function vacuum (this, pt)
+
+    class(hom_model_t), intent(in) :: this
+    type(point_t), intent(in)      :: pt
     logical                        :: vacuum
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Evaluate the vacuum condition
 
-    vacuum = (1._WP - x**2) == 0._WP
+    vacuum = (1._WP - pt%x**2) == 0._WP
 
     ! Finish
 
     return
 
   end function vacuum
-
-  !****
-
-  function x_i (this, s)
-
-    class(hom_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP)                        :: x_i
-
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
-
-    ! Return the inner x value for segment s
-
-    x_i = this%x_i_
-
-    ! Finish
-
-    return
-
-  end function x_i
-
-  !****
-
-  function x_o (this, s)
-
-    class(hom_model_t), intent(in) :: this
-    integer, intent(in)            :: s
-    real(WP)                       :: x_o
-
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
-
-    ! Return the outer x value for segment s
-
-    x_o = this%x_o_
-
-    ! Finish
-
-    return
-
-  end function x_o
-
-  !****
-
-  function x_base (this, s)
-
-    class(hom_model_t), intent(in) :: this
-    integer, intent(in)             :: s
-    real(WP), allocatable           :: x_base(:)
-
-    $ASSERT_DEBUG(s == 1,Invalid segment index)
-
-    ! Return the model grid for segment s
-
-    x_base = [this%x_i_,this%x_o_]
-
-    ! Finish
-
-    return
-
-  end function x_base
 
 end module gyre_hom_model

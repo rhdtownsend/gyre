@@ -27,6 +27,7 @@ module gyre_nad_vars
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
+  use gyre_point
   use gyre_rot
   use gyre_rot_factory
 
@@ -118,11 +119,10 @@ contains
 
   !****
 
-  function G (this, s, x, omega)
+  function G (this, pt, omega)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: G(6,6)
 
@@ -133,11 +133,11 @@ contains
     case (CANON_SET)
        G = identity_matrix(6)
     case (DZIEM_SET)
-       G = this%G_dziem_(s, x, omega)
+       G = this%G_dziem_(pt, omega)
     case (JCD_SET)
-       G = this%G_jcd_(s, x, omega)
+       G = this%G_jcd_(pt, omega)
     case (LAGP_SET)
-       G = this%G_lagp_(s, x, omega)
+       G = this%G_lagp_(pt, omega)
     case default
        $ABORT(Invalid set)
     end select
@@ -150,11 +150,10 @@ contains
 
   !****
 
-  function G_dziem_ (this, s, x, omega) result (G)
+  function G_dziem_ (this, pt, omega) result (G)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: G(6,6)
 
@@ -213,11 +212,10 @@ contains
 
   !****
 
-  function G_jcd_ (this, s, x, omega) result (G)
+  function G_jcd_ (this, pt, omega) result (G)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: G(6,6)
 
@@ -231,12 +229,12 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(s, x)
-    c_1 = this%ml%c_1(s, x)
+    U = this%ml%U(pt)
+    c_1 = this%ml%c_1(pt)
 
-    lambda = this%rt%lambda(s, x, omega)
+    lambda = this%rt%lambda(pt, omega)
 
-    omega_c = this%rt%omega_c(s, x, omega)
+    omega_c = this%rt%omega_c(pt, omega)
 
     ! Set up the matrix
 
@@ -338,24 +336,23 @@ contains
 
   !****
 
-  function G_lagp_ (this, s, x, omega) result (G)
+  function G_lagp_ (this, pt, omega) result (G)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: G(6,6)
 
     real(WP) :: V_2
 
-    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
+    $ASSERT(.NOT. this%ml%vacuum(pt),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! from the canonical form
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(s, x)
+    V_2 = this%ml%V_2(pt)
 
     ! Set up the matrix
 
@@ -409,11 +406,10 @@ contains
 
   !****
 
-  function H (this, s, x, omega)
+  function H (this, pt, omega)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: H(6,6)
 
@@ -424,11 +420,11 @@ contains
     case (CANON_SET)
        H = identity_matrix(6)
     case (DZIEM_SET)
-       H = this%H_dziem_(s, x, omega)
+       H = this%H_dziem_(pt, omega)
     case (JCD_SET)
-       H = this%H_jcd_(s, x, omega)
+       H = this%H_jcd_(pt, omega)
     case (LAGP_SET)
-       H = this%H_lagp_(s, x, omega)
+       H = this%H_lagp_(pt, omega)
     case default
        $ABORT(Invalid set)
     end select
@@ -441,11 +437,10 @@ contains
 
   !****
 
-  function H_dziem_ (this, s, x, omega) result (H)
+  function H_dziem_ (this, pt, omega) result (H)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: H(6,6)
 
@@ -504,11 +499,10 @@ contains
 
   !****
 
-  function H_jcd_ (this, s, x, omega) result (H)
+  function H_jcd_ (this, pt, omega) result (H)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: H(6,6)
 
@@ -522,12 +516,12 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(s, x)
-    c_1 = this%ml%c_1(s, x)
+    U = this%ml%U(pt)
+    c_1 = this%ml%c_1(pt)
 
-    lambda = this%rt%lambda(s, x, omega)
+    lambda = this%rt%lambda(pt, omega)
 
-    omega_c = this%rt%omega_c(s, x, omega)
+    omega_c = this%rt%omega_c(pt, omega)
 
     ! Set up the matrix
 
@@ -629,24 +623,23 @@ contains
 
   !****
 
-  function H_lagp_ (this, s, x, omega) result (H)
+  function H_lagp_ (this, pt, omega) result (H)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: H(6,6)
 
     real(WP) :: V_2
 
-    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
+    $ASSERT(.NOT. this%ml%vacuum(pt),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! to the canonical form
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(s, x)
+    V_2 = this%ml%V_2(pt)
 
     ! Set up the matrix
 
@@ -700,11 +693,10 @@ contains
 
   !****
 
-  function dH (this, s, x, omega)
+  function dH (this, pt, omega)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: dH(6,6)
 
@@ -716,9 +708,9 @@ contains
     case (DZIEM_SET)
        dH = 0._WP
     case (JCD_SET)
-       dH = this%dH_jcd_(s, x, omega)
+       dH = this%dH_jcd_(pt, omega)
     case (LAGP_SET)
-       dH = this%dH_lagp_(s, x, omega)
+       dH = this%dH_lagp_(pt, omega)
     case default
        $ABORT(Invalid set)
     end select
@@ -731,11 +723,10 @@ contains
 
   !****
 
-  function dH_jcd_ (this, s, x, omega) result (dH)
+  function dH_jcd_ (this, pt, omega) result (dH)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: dH(6,6)
 
@@ -751,14 +742,14 @@ contains
 
     ! Calculate coefficients
 
-    V_g = this%ml%V_2(s, x)*x**2/this%ml%Gamma_1(s, x)
-    As = this%ml%As(s, x) 
-    U = this%ml%U(s, x)
-    c_1 = this%ml%c_1(s, x)
+    V_g = this%ml%V_2(pt)*pt%x**2/this%ml%Gamma_1(pt)
+    As = this%ml%As(pt) 
+    U = this%ml%U(pt)
+    c_1 = this%ml%c_1(pt)
 
-    lambda = this%rt%lambda(s, x, omega)
+    lambda = this%rt%lambda(pt, omega)
 
-    omega_c = this%rt%omega_c(s, x, omega)
+    omega_c = this%rt%omega_c(pt, omega)
 
     ! Set up the matrix (nb: the derivatives of omega_c and lambda is
     ! neglected; this is incorrect when rotation is non-zero)
@@ -863,11 +854,10 @@ contains
 
   !****
 
-  function dH_lagp_ (this, s, x, omega) result (dH)
+  function dH_lagp_ (this, pt, omega) result (dH)
 
     class(nad_vars_t), intent(in) :: this
-    integer, intent(in)           :: s
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     complex(WP), intent(in)       :: omega
     complex(WP)                   :: dH(6,6)
 
@@ -877,18 +867,18 @@ contains
     real(WP) :: As
     real(WP) :: U
 
-    $ASSERT(.NOT. this%ml%vacuum(s, x),Cannot use LAGP variables at vacuum points)
+    $ASSERT(.NOT. this%ml%vacuum(pt),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the derivative x dH/dx of the LAGP-variables
     ! transformation matrix T
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(s, x)
-    V = V_2*x**2
-    V_g = V/this%ml%Gamma_1(s, x)
-    As = this%ml%As(s, x)
-    U = this%ml%U(s, x)
+    V_2 = this%ml%V_2(pt)
+    V = V_2*pt%x**2
+    V_g = V/this%ml%Gamma_1(pt)
+    As = this%ml%As(pt)
+    U = this%ml%U(pt)
 
     ! Set up the matrix
 

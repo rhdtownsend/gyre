@@ -26,10 +26,13 @@ module gyre_freq
   use gyre_atmos
   use gyre_constants
   use gyre_evol_model
+  use gyre_grid
+  use gyre_grid_util
   use gyre_hom_model
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
+  use gyre_point
   use gyre_poly_model
   use gyre_rot
   use gyre_rot_factory
@@ -79,15 +82,22 @@ contains
     type(osc_par_t), intent(in)         :: os_p
     $TYPE(WP)                           :: omega
 
+    type(point_t)                  :: pt_i
+    type(point_t)                  :: pt_o
     $TYPE(WP)                      :: omega_l
     class(${T}_rot_t), allocatable :: rt
+    type(grid_t)                   :: gr
     real(WP)                       :: omega_cutoff_lo
     real(WP)                       :: omega_cutoff_hi
 
     ! Calculate the dimensionless inertial-frame frequency omega from
     ! the dimensioned local-frame frequency freq
 
-    ! First calculate the dimensionless frequency in the local frame
+    ! Get boundary points
+
+    call get_bound_pt(ml, os_p, pt_i, pt_o)
+
+    ! Calculate the dimensionless frequency in the local frame
 
     select type (ml)
 
@@ -107,10 +117,10 @@ contains
        case ('GRAVITY_DELTA')
           omega_l = TWOPI*freq*ml%delta_g()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case('ACOUSTIC_CUTOFF')
-          call eval_cutoff_freqs(ml, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
+          call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           omega_l = freq*omega_cutoff_hi
        case('GRAVITY_CUTOFF')
-          call eval_cutoff_freqs(ml, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
+          call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           omega_l = freq*omega_cutoff_lo
        case default
           $ABORT(Invalid freq_units)
@@ -148,9 +158,9 @@ contains
     case ('INERTIAL')
        omega = omega_l
     case ('COROT_I')
-       omega = rt%omega(1, ml%x_i(1), omega_l)
+       omega = rt%omega(pt_i, omega_l)
     case ('COROT_O')
-       omega = rt%omega(ml%n_s, ml%x_o(ml%n_s), omega_l)
+       omega = rt%omega(pt_o, omega_l)
     case default
        $ABORT(Invalid freq_frame)
     end select
@@ -183,15 +193,22 @@ contains
     type(osc_par_t), intent(in)         :: os_p
     $TYPE(WP)                           :: freq
 
-    $TYPE(WP)                      :: omega_l
+    type(point_t)                  :: pt_i
+    type(point_t)                  :: pt_o
     class(${T}_rot_t), allocatable :: rt
+    type(grid_t)                   :: gr
+    $TYPE(WP)                      :: omega_l
     real(WP)                       :: omega_cutoff_lo
     real(WP)                       :: omega_cutoff_hi
 
     ! Calculate the dimensioned local-frame frequency freq from the
     ! dimensionless inertial-frame frequency omega
 
-    ! First convert from the inertial frame
+    ! Get boundary points
+
+    call get_bound_pt(ml, os_p, pt_i, pt_o)
+
+    ! Convert from the inertial frame
 
     allocate(rt, SOURCE=${T}_rot_t(ml, md_p, os_p))
 
@@ -199,9 +216,9 @@ contains
     case ('INERTIAL')
        omega_l = omega
     case ('COROT_I')
-       omega_l = rt%omega_c(1, ml%x_i(1), omega)
+       omega_l = rt%omega_c(pt_i, omega)
     case ('COROT_O')
-       omega_l = rt%omega_c(ml%n_s, ml%x_o(ml%n_s), omega)
+       omega_l = rt%omega_c(pt_o, omega)
     case default
        $ABORT(Invalid freq_frame)
     end select
@@ -226,10 +243,10 @@ contains
        case ('GRAVITY_DELTA')
           freq = omega_l/(TWOPI*ml%delta_g()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
        case ('ACOUSTIC_CUTOFF')
-          call eval_cutoff_freqs(ml, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
+          call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           freq = omega_l/omega_cutoff_hi
        case('GRAVITY_CUTOFF')
-          call eval_cutoff_freqs(ml, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
+          call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           freq = omega_l/omega_cutoff_lo
        case default
           $ABORT(Invalid freq_units)
@@ -272,14 +289,15 @@ contains
 
 !****
 
-  subroutine eval_cutoff_freqs (ml, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
+  subroutine eval_cutoff_freqs (ml, pt, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
 
     class(model_t), intent(in)   :: ml
+    type(point_t), intent(in)    :: pt
     type(mode_par_t), intent(in) :: md_p
     type(osc_par_t), intent(in)  :: os_p
     real(WP), intent(out)        :: omega_cutoff_lo
     real(WP), intent(out)        :: omega_cutoff_hi
-    
+
     real(WP)      :: V_g
     real(WP)      :: As
     real(WP)      :: c_1
@@ -301,12 +319,12 @@ contains
 
     case ('UNNO')
 
-       call eval_atmos_coeffs_unno(ml, V_g, As, c_1)
+       call eval_atmos_coeffs_unno(ml, pt, V_g, As, c_1)
        call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
     case('JCD')
 
-       call eval_atmos_coeffs_jcd(ml, V_g, As, c_1)
+       call eval_atmos_coeffs_jcd(ml, pt, V_g, As, c_1)
        call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
     case default

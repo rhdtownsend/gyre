@@ -24,9 +24,11 @@ module gyre_grid_util
   use core_kinds
   use core_func
 
+  use gyre_grid
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
+  use gyre_point
   use gyre_rot
   use gyre_rot_factory
   
@@ -52,16 +54,16 @@ module gyre_grid_util
   private
 
   public :: find_turn
+  public :: get_bound_pt
 
   ! Procedures
 
 contains
 
-  subroutine find_turn (ml, s, x, omega, md_p, os_p, k_turn, x_turn)
+  subroutine find_turn (ml, gr, omega, md_p, os_p, k_turn, x_turn)
 
     class(model_t), pointer, intent(in) :: ml
-    integer, intent(in)                 :: s(:)
-    real(WP), intent(in)                :: x(:)
+    type(grid_t), intent(in)            :: gr
     real(WP), intent(in)                :: omega
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
@@ -74,52 +76,59 @@ contains
     real(WP)                    :: gamma_b
     integer                     :: k
     type(gamma_func_t)          :: gf
+    type(point_t)               :: pt_a
+    type(point_t)               :: pt_b
 
-    ! Find the cell index and location of the inner turning point at
+    ! Find the cell index and abscissa of the inner turning point at
     ! frequency omega
 
-    n_k = SIZE(s)
+    n_k = gr%n_k()
 
     k_turn = n_k
     x_turn = HUGE(0._WP)
 
     allocate(rt, SOURCE=r_rot_t(ml, md_p, os_p))
 
-    gamma_b = gamma_(ml, rt, s(1), x(1), omega)
+    gamma_b = gamma_(ml, rt, gr%pt(1), omega)
 
     turn_loop : do k = 1, n_k-1
 
+       ! Check for a sign change in gamma
+
        gamma_a = gamma_b
-       gamma_b = gamma_(ml, rt, s(k+1), x(k+1), omega)
+       gamma_b = gamma_(ml, rt, gr%pt(k+1), omega)
 
        if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
 
           k_turn = k
 
-          if (s(k) == s(k+1)) then
+          pt_a = gr%pt(k)
+          pt_b = gr%pt(k+1)
+
+          if (pt_a%s == pt_b%s) then
 
              if (ABS(gamma_a) < EPSILON(0._WP)*ABS(gamma_b)) then
 
-                x_turn = x(k_turn)
+                x_turn = pt_a%x
 
              elseif (ABS(gamma_b) < EPSILON(0._WP)*ABS(gamma_a)) then
 
-                x_turn = x(k_turn+1)
+                x_turn = pt_b%x
 
              else
 
                 gf%ml => ml
                 allocate(gf%rt, SOURCE=rt)
-                gf%s = s(k)
+                gf%s = pt_a%s
                 gf%omega = omega
                 
-                x_turn = gf%root(x(k), x(k+1), 0._WP)
+                x_turn = gf%root(pt_a%x, pt_b%x, 0._WP)
 
              endif
 
           else
 
-             x_turn = x(k_turn)
+             x_turn = pt_a%x
 
           end if
 
@@ -137,12 +146,11 @@ contains
 
   !****
 
-  function gamma_ (ml, rt, s, x, omega) result (gamma)
+  function gamma_ (ml, rt, pt, omega) result (gamma)
 
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
-    integer, intent(in)                 :: s
-    real(WP), intent(in)                :: x
+    type(point_t), intent(in)           :: pt
     real(WP), intent(in)                :: omega
     real(WP)                            :: gamma
 
@@ -158,15 +166,15 @@ contains
     ! Calculate the propagation discriminant gamma (> 0 : propagation,
     ! < 0 : evanescence)
 
-    U = ml%U(s, x)
+    U = ml%U(pt)
 
     if (U > 0._WP) then
 
-       V_g = ml%V_2(s, x)*x**2/ml%Gamma_1(s, x)
-       As = ml%As(s, x)
-       c_1 = ml%c_1(s, x)
+       V_g = ml%V_2(pt)*pt%x**2/ml%Gamma_1(pt)
+       As = ml%As(pt)
+       c_1 = ml%c_1(pt)
 
-       lambda = rt%lambda(s, x, omega)
+       lambda = rt%lambda(pt, omega)
 
        g_4 = -4._WP*V_g*c_1
        g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
@@ -194,14 +202,56 @@ contains
     complex(WP), intent(in)            :: z
     complex(WP)                        :: gamma
 
+    type(point_t) :: pt
+
     ! Evaluate the gamma_func_t
 
-    gamma = gamma_(this%ml, this%rt, this%s, REAL(z), this%omega)
+    pt = point_t(this%s, REAL(z))
+
+    gamma = gamma_(this%ml, this%rt, pt, this%omega)
 
     ! Finish
 
     return
 
   end function eval_c_
+
+  !****
+
+  subroutine get_bound_pt (ml, os_p, pt_i, pt_o)
+
+    class(model_t), intent(in)           :: ml
+    type(osc_par_t), intent(in)          :: os_p
+    type(point_t), intent(out), optional :: pt_i
+    type(point_t), intent(out), optional :: pt_o
+
+    type(grid_t) :: gr
+
+    ! Get the points where boundary conditions are applied (as
+    ! determined by os_p%x_i and os_p%x_i)
+
+    gr = ml%grid()
+
+    if (PRESENT(pt_i)) then
+       pt_i = gr%pt(1)
+       pt_i%x = MAX(os_p%x_i, pt_i%x)
+       call gr%locate(pt_i%x, pt_i%s, back=.TRUE.)
+       $ASSERT(pt_i%s >= gr%s_i(),Invalid segment)
+       $ASSERT(pt_i%s <= gr%s_o(),Invalid segment)
+    endif
+
+    if (PRESENT(pt_o)) then
+       pt_o = gr%pt(gr%n_k())
+       pt_o%x = MIN(os_p%x_o, pt_o%x)
+       call gr%locate(pt_o%x, pt_o%s, back=.FALSE.)
+       $ASSERT(pt_o%s >= gr%s_i(),Invalid segment)
+       $ASSERT(pt_o%s <= gr%s_o(),Invalid segment)
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine get_bound_pt
 
 end module gyre_grid_util

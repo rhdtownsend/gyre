@@ -29,10 +29,11 @@ module gyre_${T}_colloc_diff
   use core_kinds
   use core_linalg
 
+  use gyre_diff
   use gyre_eqns
   use gyre_ext
-  use gyre_diff
   use gyre_linalg
+  use gyre_point
 
   use ISO_FORTRAN_ENV
 
@@ -51,8 +52,8 @@ module gyre_${T}_colloc_diff
   type, extends (${T}_diff_t) :: ${T}_colloc_diff_t
      private
      class(${T}_eqns_t), allocatable :: eq
-     real(WP)                        :: x_a
-     real(WP)                        :: x_b
+     type(point_t)                   :: pt_a
+     type(point_t)                   :: pt_b
      integer                         :: scheme
    contains
      private
@@ -77,20 +78,22 @@ module gyre_${T}_colloc_diff
 
 contains
 
-  function ${T}_colloc_diff_t_ (eq, x_a, x_b, scheme) result (df)
+  function ${T}_colloc_diff_t_ (eq, pt_a, pt_b, scheme) result (df)
 
     class(${T}_eqns_t), intent(in) :: eq
-    real(WP), intent(in)           :: x_a
-    real(WP), intent(in)           :: x_b
+    type(point_t), intent(in)      :: pt_a
+    type(point_t), intent(in)      :: pt_b
     character(*), intent(in)       :: scheme
     type(${T}_colloc_diff_t)       :: df
+
+    $ASSERT_DEBUG(pt_a%s == pt_b%s,Segment mismatch)
 
     ! Construct the colloc_diff_t
 
     allocate(df%eq, SOURCE=eq)
 
-    df%x_a = x_a
-    df%x_b = x_b
+    df%pt_a = pt_a
+    df%pt_b = pt_b
        
     select case (scheme)
     case ('GL2')
@@ -150,9 +153,9 @@ contains
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
 
-    real(WP)  :: dx
-    real(WP)  :: x(1)
-    $TYPE(WP) :: A(this%n_e,this%n_e,1)
+    real(WP)      :: dx
+    type(point_t) :: pt
+    $TYPE(WP)     :: A(this%n_e,this%n_e,1)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -162,11 +165,12 @@ contains
 
     ! Evaluate the RHS matrix
 
-    dx = this%x_b - this%x_a
+    dx = this%pt_b%x - this%pt_a%x
 
-    x = this%x_a + [0.5_WP]*dx
+    pt%s = this%pt_a%s
+    pt%x = this%pt_a%x + dx
 
-    A(:,:,1) = this%eq%A(x(1), omega)
+    A(:,:,1) = this%eq%A(pt, omega)
 
     ! Build the GL2 difference equations
 
@@ -215,18 +219,18 @@ contains
 
     if (BALANCE) then
        
-       call this%build_irk_(omega, 2, this%x_a, this%x_b, A_IJ, B_I, C_I, E_l_a, E_r_a)
-       call this%build_irk_(omega, 2, this%x_b, this%x_a, A_IJ, B_I, C_I, E_l_b, E_r_b)
+       call this%build_irk_(omega, 2, this%pt_a, this%pt_b, A_IJ, B_I, C_I, E_l_a, E_r_a)
+       call this%build_irk_(omega, 2, this%pt_b, this%pt_a, A_IJ, B_I, C_I, E_l_b, E_r_b)
 
        E_l =  E_l_a - E_r_b
        E_r = -E_l_b + E_r_a
 
     else
 
-       if (this%x_a < 0.5_WP) then
-          call this%build_irk_(omega, 2, this%x_a, this%x_b, A_IJ, B_I, C_I, E_l, E_r)
+       if (this%pt_a%x < 0.5_WP) then
+          call this%build_irk_(omega, 2, this%pt_a, this%pt_b, A_IJ, B_I, C_I, E_l, E_r)
        else
-          call this%build_irk_(omega, 2, this%x_b, this%x_a, A_IJ, B_I, C_I, E_r, E_l)
+          call this%build_irk_(omega, 2, this%pt_b, this%pt_a, A_IJ, B_I, C_I, E_r, E_l)
        endif
 
     endif
@@ -271,10 +275,10 @@ contains
 
     ! Build the GL6 difference equations
 
-    if (this%x_a < 0.5_WP) then
-       call this%build_irk_(omega, 3, this%x_a, this%x_b, A_IJ, B_I, C_I, E_l, E_r)
+    if (this%pt_a%x < 0.5_WP) then
+       call this%build_irk_(omega, 3, this%pt_a, this%pt_b, A_IJ, B_I, C_I, E_l, E_r)
     else
-       call this%build_irk_(omega, 3, this%x_b, this%x_a, A_IJ, B_I, C_I, E_r, E_l)
+       call this%build_irk_(omega, 3, this%pt_b, this%pt_a, A_IJ, B_I, C_I, E_r, E_l)
     endif
 
     scl = ${T}_ext_t(1._WP)
@@ -285,31 +289,32 @@ contains
 
   !****
 
-  subroutine build_irk_ (this, omega, n_s, x_a, x_b, a_ij, b_i, c_i, E_a, E_b)
+  subroutine build_irk_ (this, omega, n_s, pt_a, pt_b, a_ij, b_i, c_i, E_a, E_b)
 
     class(${T}_colloc_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
     integer, intent(in)                   :: n_s
-    real(WP), intent(in)                  :: x_a
-    real(WP), intent(in)                  :: x_b
+    type(point_t), intent(in)             :: pt_a
+    type(point_t), intent(in)             :: pt_b
     real(WP), intent(in)                  :: a_ij(:,:)
     real(WP), intent(in)                  :: b_i(:)
     real(WP), intent(in)                  :: c_i(:)
     $TYPE(WP), intent(out)                :: E_a(:,:)
     $TYPE(WP), intent(out)                :: E_b(:,:)
 
-    real(WP)  :: dx
-    $TYPE(WP) :: A(this%n_e,this%n_e,n_s)
-    $TYPE(WP) :: M(n_s*this%n_e,n_s*this%n_e)
-    integer   :: i
-    integer   :: i_a
-    integer   :: i_b
-    integer   :: j
-    integer   :: j_a
-    integer   :: j_b
-    $TYPE(WP) :: B(n_s*this%n_e,this%n_e)
-    $TYPE(WP) :: X(n_s*this%n_e,this%n_e)
-    $TYPE(WP) :: K(this%n_e,this%n_e,n_s)
+    real(WP)      :: dx
+    type(point_t) :: pt
+    $TYPE(WP)     :: A(this%n_e,this%n_e,n_s)
+    $TYPE(WP)     :: M(n_s*this%n_e,n_s*this%n_e)
+    integer       :: i
+    integer       :: i_a
+    integer       :: i_b
+    integer       :: j
+    integer       :: j_a
+    integer       :: j_b
+    $TYPE(WP)     :: B(n_s*this%n_e,this%n_e)
+    $TYPE(WP)     :: X(n_s*this%n_e,this%n_e)
+    $TYPE(WP)     :: K(this%n_e,this%n_e,n_s)
     
     $CHECK_BOUNDS(SIZE(a_ij, 1),n_s)
     $CHECK_BOUNDS(SIZE(a_ij, 2),n_s)
@@ -330,10 +335,15 @@ contains
 
     ! Evaluate the RHS matrices
 
-    dx = x_b - x_a
-    
+    dx = pt_b%x - pt_a%x
+
     do i = 1, n_s
-       A(:,:,i) = this%eq%A(x_a + dx*c_i(i), omega)
+
+       pt%s = pt_a%s
+       pt%x = pt_a%x + dx*c_i(i)
+
+       A(:,:,i) = this%eq%A(pt, omega)
+
     end do
 
     ! Calculate the intermediate-state matrices K

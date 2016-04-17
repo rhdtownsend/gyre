@@ -26,9 +26,12 @@ module gyre_rad_bound
   use gyre_atmos
   use gyre_bound
   use gyre_ext
+  use gyre_grid
+  use gyre_grid_util
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
+  use gyre_point
   use gyre_rad_vars
   use gyre_rot
   use gyre_rot_factory
@@ -54,6 +57,8 @@ module gyre_rad_bound
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
      type(rad_vars_t)            :: vr
+     type(point_t)               :: pt_i
+     type(point_t)               :: pt_o
      integer                     :: type_i
      integer                     :: type_o
      logical                     :: cowling_approx
@@ -85,9 +90,10 @@ module gyre_rad_bound
 
 contains
 
-  function rad_bound_t_ (ml, md_p, os_p) result (bd)
+  function rad_bound_t_ (ml, gr, md_p, os_p) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(rad_bound_t)                   :: bd
@@ -99,10 +105,14 @@ contains
     allocate(bd%rt, SOURCE=r_rot_t(ml, md_p, os_p))
     bd%vr = rad_vars_t(ml, md_p, os_p)
 
+    call get_bound_pt(ml, os_p, bd%pt_i, bd%pt_o)
+
     select case (os_p%inner_bound)
     case ('REGULAR')
+       $ASSERT(bd%pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
        bd%type_i = REGULAR_TYPE
     case ('ZERO')
+       $ASSERT(bd%pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
        bd%type_i = ZERO_TYPE
     case default
        $ABORT(Invalid inner_bound)
@@ -176,18 +186,15 @@ contains
     $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
     
-    $ASSERT(this%ml%x_i(1) == 0._WP,Boundary condition invalid for x /= 0)
-
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
-    associate (s => 1, &
-               x => this%ml%x_i(1))
+    associate (pt => this%pt_i)
 
       ! Calculate coefficients
 
-      c_1 = this%ml%c_1(s, x)
+      c_1 = this%ml%c_1(pt)
 
-      omega_c = this%rt%omega_c(s, x, omega)
+      omega_c = this%rt%omega_c(pt, omega)
 
       ! Set up the boundary conditions
 
@@ -198,7 +205,7 @@ contains
 
       ! Apply the variables transformation
 
-      B_i = MATMUL(B_i, this%vr%H(s, x, omega))
+      B_i = MATMUL(B_i, this%vr%H(pt, omega))
 
     end associate
 
@@ -220,12 +227,9 @@ contains
     $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
 
-    $ASSERT(this%ml%x_i(1) /= 0._WP,Boundary condition invalid for x == 0)
-
     ! Evaluate the inner boundary conditions (zero displacement)
 
-    associate (s => 1, &
-               x => this%ml%x_i(1))
+    associate (pt => this%pt_i)
 
       ! Set up the boundary conditions
 
@@ -236,7 +240,7 @@ contains
       
       ! Apply the variables transformation
 
-      B_i = MATMUL(B_i, this%vr%H(s, x, omega))
+      B_i = MATMUL(B_i, this%vr%H(pt, omega))
 
     end associate
 
@@ -293,8 +297,7 @@ contains
 
     ! Evaluate the outer boundary conditions (zero-pressure)
 
-    associate (s => this%ml%n_s, &
-               x => this%ml%x_o(this%ml%n_s))
+    associate (pt => this%pt_o)
     
       ! Set up the boundary conditions
 
@@ -305,7 +308,7 @@ contains
     
       ! Apply the variables transformation
 
-      B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+      B_o = MATMUL(B_o, this%vr%H(pt, omega))
 
     end associate
 
@@ -333,10 +336,9 @@ contains
 
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
-    associate (s => this%ml%n_s, &
-               x => this%ml%x_o(this%ml%n_s))
+    associate (pt => this%pt_o)
 
-      if (this%ml%vacuum(s, x)) then
+      if (this%ml%vacuum(pt)) then
 
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
@@ -347,10 +349,10 @@ contains
 
          ! Calculate coefficients
 
-         V = this%ml%V_2(s, x)*x**2
-         c_1 = this%ml%c_1(s, x)
+         V = this%ml%V_2(pt)*pt%x**2
+         c_1 = this%ml%c_1(pt)
 
-         omega_c = this%rt%omega_c(s, x, omega)
+         omega_c = this%rt%omega_c(pt, omega)
 
          ! Set up the boundary conditions
         
@@ -361,7 +363,7 @@ contains
 
          ! Apply the variables transformation
 
-         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+         B_o = MATMUL(B_o, this%vr%H(pt, omega))
 
       endif
 
@@ -395,10 +397,9 @@ contains
 
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
-    associate (s => this%ml%n_s, &
-               x => this%ml%x_o(this%ml%n_s))
+    associate (pt => this%pt_o)
 
-      if (this%ml%vacuum(s, x)) then
+      if (this%ml%vacuum(pt)) then
 
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
@@ -409,9 +410,9 @@ contains
 
          ! Calculate coefficients
 
-         call eval_atmos_coeffs_unno(this%ml, V_g, As, c_1)
+         call eval_atmos_coeffs_unno(this%ml, pt, V_g, As, c_1)
 
-         omega_c = this%rt%omega_c(s, x, omega)
+         omega_c = this%rt%omega_c(pt, omega)
 
          beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
       
@@ -427,7 +428,7 @@ contains
 
          ! Apply the variables transformation
 
-         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+         B_o = MATMUL(B_o, this%vr%H(pt, omega))
 
       endif
 
@@ -463,10 +464,9 @@ contains
 
     ! Calculate coefficients
 
-    associate (s => this%ml%n_s, &
-               x => this%ml%x_o(this%ml%n_s))
+    associate (pt => this%pt_o)
 
-      if (this%ml%vacuum(s, x)) then
+      if (this%ml%vacuum(pt)) then
 
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
@@ -475,9 +475,9 @@ contains
 
       else
 
-         call eval_atmos_coeffs_jcd(this%ml, V_g, As, c_1)
+         call eval_atmos_coeffs_jcd(this%ml, pt, V_g, As, c_1)
 
-         omega_c = this%rt%omega_c(s, x, omega)
+         omega_c = this%rt%omega_c(pt, omega)
 
          beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
 
@@ -491,7 +491,7 @@ contains
 
          ! Apply the variables transformation
 
-         B_o = MATMUL(B_o, this%vr%H(s, x, omega))
+         B_o = MATMUL(B_o, this%vr%H(pt, omega))
 
       endif
 

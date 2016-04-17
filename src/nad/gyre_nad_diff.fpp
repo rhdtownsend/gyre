@@ -33,6 +33,7 @@ module gyre_nad_diff
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_point
 
   use ISO_FORTRAN_ENV
 
@@ -46,8 +47,8 @@ module gyre_nad_diff
      private
      class(c_diff_t), allocatable :: df
      type(nad_eqns_t)             :: eq
-     real(WP)                     :: x_a
-     real(WP)                     :: x_b
+     type(point_t)                :: pt_a
+     type(point_t)                :: pt_b
    contains
      private
      procedure, public :: build
@@ -69,13 +70,11 @@ module gyre_nad_diff
 
 contains
 
-  function nad_diff_t_ (ml, s_a, x_a, s_b, x_b, md_p, nm_p, os_p) result (df)
+  function nad_diff_t_ (ml, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
     class(model_t), pointer, intent(in) :: ml
-    integer, intent(in)                 :: s_a
-    real(WP), intent(in)                :: x_a
-    integer, intent(in)                 :: s_b
-    real(WP), intent(in)                :: x_b
+    type(point_t), intent(in)           :: pt_a
+    type(point_t), intent(in)           :: pt_b
     type(mode_par_t), intent(in)        :: md_p
     type(num_par_t), intent(in)         :: nm_p
     type(osc_par_t), intent(in)         :: os_p
@@ -85,25 +84,25 @@ contains
 
     ! Construct the nad_diff_t
 
-    if (s_a == s_b) then
+    if (pt_a%s == pt_b%s) then
 
-       eq = nad_eqns_t(ml, s_a, md_p, os_p)
+       eq = nad_eqns_t(ml, md_p, os_p)
 
        select case (nm_p%diff_scheme)
        case ('TRAPZ')
-          allocate(df%df, SOURCE=c_trapz_diff_t(eq, x_a, x_b, [0.5_WP,0.5_WP,0.5_WP,0.5_WP,0._WP,1._WP]))
+          allocate(df%df, SOURCE=c_trapz_diff_t(eq, pt_a, pt_b, [0.5_WP,0.5_WP,0.5_WP,0.5_WP,0._WP,1._WP]))
        case default
-          allocate(df%df, SOURCE=c_diff_t(eq, x_a, x_b, nm_p))
+          allocate(df%df, SOURCE=c_diff_t(eq, pt_a, pt_b, nm_p))
        end select
-
+ 
        df%eq = eq
 
-       df%x_a = x_a
-       df%x_b = x_b
+       df%pt_a = pt_a
+       df%pt_b = pt_b
 
-    else
+   else
 
-       allocate(df%df, SOURCE=nad_match_t(ml, s_a, x_a, s_b, x_b, md_p, os_p))
+       allocate(df%df, SOURCE=nad_match_t(ml, pt_a, pt_b, md_p, os_p))
 
     endif
 
@@ -128,11 +127,11 @@ contains
     complex(WP), intent(out)      :: E_r(:,:)
     type(c_ext_t), intent(out)    :: scl
 
-    real(WP)    :: x
-    complex(WP) :: A(this%n_e,this%n_e)
-    complex(WP) :: lambda_1
-    complex(WP) :: lambda_2
-    complex(WP) :: lambda_3
+    type(point_t) :: pt
+    complex(WP)   :: A(this%n_e,this%n_e)
+    complex(WP)   :: lambda_1
+    complex(WP)   :: lambda_2
+    complex(WP)   :: lambda_3
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -153,27 +152,29 @@ contains
        ! Rescale by the uncoupled eigenvalues, in order to help the root
        ! finder
 
-       x = 0.5_WP*(this%x_a + this%x_b)
+       pt%s = this%pt_a%s
+       pt%x = 0.5_WP*(this%pt_a%x + this%pt_b%x)
 
-       A = this%eq%A(x, omega)
-
-       lambda_1 = SQRT(A(2,1)*A(1,2))
-       lambda_2 = SQRT(A(4,3)*A(3,4))
-       lambda_3 = SQRT(A(6,5)*A(5,6))
-
-       scl = scl*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(this%x_b - this%x_a)))
-
-    class is (c_colloc_diff_t)
-
-       x = 0.5_WP*(this%x_a + this%x_b)
-
-       A = this%eq%A(x, omega)
+       A = this%eq%A(pt, omega)
 
        lambda_1 = SQRT(A(2,1)*A(1,2))
        lambda_2 = SQRT(A(4,3)*A(3,4))
        lambda_3 = SQRT(A(6,5)*A(5,6))
 
-       scl = scl*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(this%x_b - this%x_a)))
+       scl = scl*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(this%pt_b%x - this%pt_a%x)))
+
+    ! class is (c_colloc_diff_t)
+
+    !    pt%s = this%pt_a%s
+    !    pt%x = 0.5_WP*(this%pt_a%x + this%pt_b%x)
+
+    !    A = this%eq%A(pt, omega)
+
+    !    lambda_1 = SQRT(A(2,1)*A(1,2))
+    !    lambda_2 = SQRT(A(4,3)*A(3,4))
+    !    lambda_3 = SQRT(A(6,5)*A(5,6))
+
+    !    scl = scl*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(this%pt_b%x - this%pt_a%x)))
 
     end select
 

@@ -1,5 +1,5 @@
 ! Module   : gyre_grid
-! Purpose  : grid construction
+! Purpose  : segmented grids
 !
 ! Copyright 2013-2016 Rich Townsend
 !
@@ -23,16 +23,7 @@ module gyre_grid
 
   use core_kinds
 
-  use gyre_constants
-  use gyre_grid_par
-  use gyre_grid_weights
-  use gyre_grid_util
-  use gyre_model
-  use gyre_mode_par
-  use gyre_osc_par
-  use gyre_rot
-  use gyre_rot_factory
-  use gyre_util
+  use gyre_point
 
   use ISO_FORTRAN_ENV
 
@@ -40,683 +31,376 @@ module gyre_grid
 
   implicit none
 
+  ! Derived-type definitions
+
+  type :: grid_t
+     private
+     type(point_t), allocatable :: pt_(:)
+   contains
+     private
+     procedure, public :: n_k
+     procedure         :: pt_k_
+     procedure         :: pt_f_
+     generic, public   :: pt => pt_f_, pt_k_
+     procedure, public :: k_i
+     procedure, public :: k_o
+     procedure, public :: s_i
+     procedure, public :: s_o
+     procedure, public :: locate
+  end type grid_t
+
+  ! Interfaces
+
+  interface grid_t
+     module procedure grid_t_x_
+     module procedure grid_t_subset_
+     module procedure grid_t_resamp_
+  end interface grid_t
+
   ! Access specifiers
 
   private
 
-  public :: build_grid
+  public :: grid_t
 
   ! Procedures
 
 contains
 
-  subroutine build_grid (ml, omega, gr_p, md_p, os_p, s, x, verbose)
+  function grid_t_x_ (x) result (gr)
 
-    class(model_t), pointer, intent(in) :: ml
-    real(WP), intent(in)                :: omega(:)
-    type(grid_par_t), intent(in)        :: gr_p
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    integer, allocatable, intent(out)   :: s(:)
-    real(WP), allocatable, intent(out)  :: x(:)
-    logical, optional, intent(in)       :: verbose
+    real(WP), intent(in) :: x(:)
+    type(grid_t)         :: gr
 
-    logical              :: write_info
-    logical, allocatable :: mask(:)
-    integer              :: s_
+    integer :: n_k
+    integer :: k
 
-    if (PRESENT(verbose)) then
-       write_info = verbose .AND. check_log_level('INFO')
-    else
-       write_info = check_log_level('DEBUG')
-    endif
+    ! Construct a grid_t from the input abscissae x (with segment
+    ! boundaries delineated by double points)
 
-    ! Build a grid
+    n_k = SIZE(x)
 
-    if (write_info) then
+    if (n_k > 0) then
 
-       write(OUTPUT_UNIT, 100) 'Building x grid'
-100    format(A)
+       $ASSERT_DEBUG(ALL(x(2:) >= x(:n_k-1)),Non-monotonic data)
+       
+       allocate(gr%pt_(n_k))
 
-    endif
+       gr%pt_(1)%x = x(1)
+       gr%pt_(1)%s = 1
 
-    ! Create the base grid
+       do k = 2, n_k
 
-    call build_base_(ml, omega, gr_p, md_p, os_p, s, x)
+          gr%pt_(k)%x = x(k)
 
-    ! Add points at the center
+          if (x(k) == x(k-1)) then
+             gr%pt_(k)%s = gr%pt_(k-1)%s + 1
+          else
+             gr%pt_(k)%s = gr%pt_(k-1)%s
+          endif
 
-    call add_center_(ml, omega, gr_p, md_p, os_p, s, x)
-
-    ! Add points globally
-
-    call add_global_(ml, omega, gr_p, md_p, os_p, s, x)
-
-    ! Report on the grid
-
-    if (write_info) then
-
-       allocate(mask(SIZE(s)))
-
-       seg_loop : do s_ = 1, ml%n_s
-
-          mask  = s == s_
-
-          write(OUTPUT_UNIT, 110) 'segment', s_, ':', COUNT(mask), 'points, x range', MINVAL(x, mask), '->', MAXVAL(x, mask)
-110       format(3X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
-
-
-       end do seg_loop
+       end do
 
     end if
-       
 
     ! Finish
 
     return
 
-  end subroutine build_grid
+  end function grid_t_x_
 
   !****
 
-  subroutine build_base_ (ml, omega, gr_p, md_p, os_p, s, x)
+  function grid_t_subset_ (gr_base, x_min, x_max) result (gr)
 
-    class(model_t), pointer, intent(in) :: ml
-    real(WP), intent(in)                :: omega(:)
-    type(grid_par_t), intent(in)        :: gr_p
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p 
-    integer, allocatable, intent(out)   :: s(:)
-    real(WP), allocatable, intent(out)  :: x(:)
+    type(grid_t), intent(in) :: gr_base
+    real(WP), intent(in)     :: x_min
+    real(WP), intent(in)     :: x_max
+    type(grid_t)             :: gr
 
-    integer               :: s_
-    real(WP), allocatable :: x_s(:)
-    real(WP), allocatable :: w(:)
+    integer :: n_k
+    integer :: k_a
+    integer :: k_b
 
-    ! Build the base grid, segment by segment
+    ! Construct a grid_t as a subset of gr_base
 
-    allocate(s(0))
-    allocate(x(0))
+    n_k = gr_base%n_k()
 
-    seg_loop : do s_ = 1, ml%n_s
+    k_a_loop : do k_a = 1, n_k
+       if (gr_base%pt_(k_a)%x > x_min) exit k_a_loop
+    end do k_a_loop
 
-       select case (gr_p%base_type)
-       case ('MODEL')
-          x_s = ml%x_base(s_)
-       case ('UNIFORM')
-          w = uni_weights(gr_p%n_base)
-          x_s = (1._WP-w)*ml%x_i(s_) + w*ml%x_o(s_)
-       case ('GEOM')
-          w = geo_weights(gr_p%n_base, gr_p%s_base)
-          x_s = (1._WP-w)*ml%x_i(s_) + w*ml%x_o(s_)
-       case ('LOG')
-          w = log_weights(gr_p%n_base, gr_p%s_base)
-          x_s = (1._WP-w)*ml%x_i(s_) + w*ml%x_o(s_)
-       case default
-          $ABORT(Invalid base_type)
-       end select
+    if (k_a > 1) then
+       if (gr_base%pt_(k_a-1)%x == x_min) k_a = k_a-1
+    endif
 
-       s = [s,SPREAD(s_, 1, SIZE(x_s))]
-       x = [x,x_s]
+    k_b_loop : do k_b = n_k, 1, -1
+       if (gr_base%pt_(k_b)%x < x_max) exit k_b_loop
+    end do k_b_loop
 
+    if (k_b < n_k) then
+       if (gr_base%pt_(k_b+1)%x == x_max) k_b = k_b+1
+    endif
+
+    gr%pt_ = gr_base%pt_(k_a:k_b)
+
+    ! Finish
+
+    return
+
+  end function grid_t_subset_
+
+  !****
+
+  function grid_t_resamp_ (gr_base, dn) result (gr)
+
+    type(grid_t), intent(in) :: gr_base
+    integer, intent(in)      :: dn(:)
+    type(grid_t)             :: gr
+
+    integer  :: n_k_base
+    integer  :: n_k
+    integer  :: k
+    integer  :: j
+    integer  :: i
+    real(WP) :: w
+
+    $CHECK_BOUNDS(SIZE(dn),gr_base%n_k()-1)
+
+    ! Add points to the grid
+
+    n_k_base = gr_base%n_k()
+    n_k = n_k_base + SUM(dn)
+
+    allocate(gr%pt_(n_k))
+
+    k = 1
+
+    cell_loop : do j = 1, n_k_base-1
+
+       associate (pt_a => gr_base%pt_(j), &
+                  pt_b => gr_base%pt_(j+1))
+
+         if (pt_a%s == pt_b%s) then
+
+            do i = 1, dn(j)+1
+
+               w = REAL(i-1, WP)/REAL(dn(j)+1, WP)
+
+               gr%pt_(k)%s = pt_a%s
+               gr%pt_(k)%x = (1._WP-w)*pt_a%x + w*pt_b%x
+
+               k = k + 1
+
+            end do
+
+         else
+
+            $ASSERT(dn(j) == 0,Attempt to add points at cell boundary)
+
+            gr%pt_(k)%s = pt_a%s
+            gr%pt_(k)%x = pt_a%x
+
+            k = k + 1
+
+         endif
+
+       end associate
+
+    end do cell_loop
+
+    gr%pt_(k) = gr_base%pt_(n_k_base)
+
+    ! Finish
+
+    return
+
+  end function grid_t_resamp_
+
+  !****
+
+  pure function n_k (this)
+
+    class(grid_t), intent(in) :: this
+    integer                   :: n_k
+
+    ! Return the size of the grid
+
+    n_k = SIZE(this%pt_)
+
+    ! Finish
+
+    return
+
+  end function n_k
+
+  !****
+
+  function pt_k_ (this, k) result (pt)
+
+    class(grid_t), intent(in) :: this
+    integer, intent(in)       :: k
+    type(point_t)             :: pt
+
+    $ASSERT_DEBUG(k >= 1,Invalid index)
+    $ASSERT_DEBUG(k <= this%n_k(),Invalid index)
+    
+    ! Return the k'th point in the grid
+
+    pt = this%pt_(k)
+
+    ! Finish
+
+    return
+
+  end function pt_k_
+
+  !****
+
+  function pt_f_ (this) result (pt)
+
+    class(grid_t), intent(in) :: this
+    type(point_t)             :: pt(this%n_k())
+
+    ! Return all points in the grid
+
+    pt = this%pt_(:)
+
+    ! Finish
+
+    return
+
+  end function pt_f_
+       
+  !****
+
+  function k_i (this, s)
+
+    class(grid_t), intent(in) :: this
+    integer, intent(in)       :: s
+    integer                   :: k_i
+
+    $ASSERT_DEBUG(s >= this%s_i(),Invalid segment)
+    $ASSERT_DEBUG(s <= this%s_o(),Invalid segment)
+
+    ! Return the index of the innermost point in segment s
+
+    do k_i = 1, this%n_k()
+       if (this%pt_(k_i)%s == s) exit
+    end do
+
+    ! Finish
+
+    return
+
+  end function k_i
+
+  !****
+
+  function k_o (this, s)
+
+    class(grid_t), intent(in) :: this
+    integer, intent(in)       :: s
+    integer                   :: k_o
+
+    $ASSERT_DEBUG(s >= this%s_i(),Invalid segment)
+    $ASSERT_DEBUG(s <= this%s_o(),Invalid segment)
+
+    ! Return the index of the outermost point in segment s
+
+    do k_o = this%n_k(), 1, -1
+       if (this%pt_(k_o)%s == s) exit
+    end do
+
+    ! Finish
+
+    return
+
+  end function k_o
+
+  !****
+
+  function s_i (this)
+
+    class(grid_t), intent(in) :: this
+    integer                   :: s_i
+
+    ! Return the innermost segment of the grid
+
+    s_i = this%pt_(1)%s
+
+    ! Finish
+
+    return
+
+  end function s_i
+
+  !****
+
+  function s_o (this)
+
+    class(grid_t), intent(in) :: this
+    integer                   :: s_o
+
+    ! Return the outermost segment of the grid
+
+    s_o = this%pt_(this%n_k())%s
+
+    ! Finish
+
+    return
+
+  end function s_o
+
+  !****
+
+  subroutine locate (this, x, s, back)
+
+    class(grid_t), intent(in)     :: this
+    real(WP), intent(in)          :: x
+    integer, intent(out)          :: s
+    logical, intent(in), optional :: back
+
+    logical  :: back_
+    integer  :: s_a
+    integer  :: s_b
+    integer  :: ds
+    real(WP) :: x_i
+    real(WP) :: x_o
+
+    if (PRESENT(back)) then
+       back_ = back
+    else
+       back_ = .FALSE.
+    endif
+
+    ! Locate the segment which brackets the abcissa x. If back is
+    ! present and .TRUE., the search is done outside-in; otherwise, it
+    ! is inside-out
+
+    if (back_) then
+       s_a = this%pt_(this%n_k())%s
+       s_b = this%pt_(1)%s
+       ds = -1
+    else
+       s_a = this%pt_(1)%s
+       s_b = this%pt_(this%n_k())%s
+       ds = 1
+    endif
+
+    seg_loop : do s = s_a, s_b, ds
+
+       x_i = this%pt_(this%k_i(s))%x
+       x_o = this%pt_(this%k_o(s))%x
+         
+       if (x >= x_i .AND. x <= x_o) exit seg_loop
+       
     end do seg_loop
 
     ! Finish
 
     return
 
-  end subroutine build_base_
-
-  !****
-
-  subroutine add_center_ (ml, omega, gr_p, md_p, os_p, s, x)
-
-    class(model_t), pointer, intent(in)  :: ml
-    real(WP), intent(in)                 :: omega(:)
-    type(grid_par_t), intent(in)         :: gr_p
-    type(mode_par_t), intent(in)         :: md_p
-    type(osc_par_t), intent(in)          :: os_p
-    integer, allocatable, intent(inout)  :: s(:)
-    real(WP), allocatable, intent(inout) :: x(:)
-
-    integer  :: n_k
-    integer  :: k_turn
-    real(WP) :: x_turn
-    integer  :: j
-    integer  :: k_turn_omega
-    real(WP) :: x_turn_omega
-    real(WP) :: dx_max
-    integer  :: k
-    integer  :: dn(SIZE(s)-1)
-
-    ! Add points at the center, to ensure that no cell is larger than
-    ! dx_max = x_turn/n_center
-
-    n_k = SIZE(s)
-
-    x_turn = HUGE(0._WP)
-    k_turn = n_k
-
-    if (gr_p%n_center > 0) then
-
-       ! First, determine the inner turning point (over all
-       ! frequencies) closest to the center
-
-       omega_loop : do j = 1, SIZE(omega)
-
-          call find_turn(ml, s, x, omega(j), md_p, os_p, k_turn_omega, x_turn_omega)
-
-          if (x_turn_omega < x_turn) then
-             k_turn = k_turn_omega
-             x_turn = x_turn_omega
-          endif
-
-       end do omega_loop
-
-       ! Add points to the cell containing the turning point, and each
-       ! cell inside it, so that none is larger than dx_max
-
-       dx_max = x_turn/gr_p%n_center
-
-       cell_loop : do k = 1, MIN(k_turn, n_k-1)
-          dn(k) = FLOOR((x(k+1) - x(k))/dx_max)
-       end do cell_loop
-
-       dn(k:) = 0
-
-       call add_points_(dn, s, x)
-
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine add_center_
-
-  !****
-
-  subroutine add_global_ (ml, omega, gr_p, md_p, os_p, s, x)
-
-    class(model_t), pointer, intent(in)  :: ml
-    real(WP), intent(in)                 :: omega(:)
-    type(grid_par_t), intent(in)         :: gr_p
-    type(mode_par_t), intent(in)         :: md_p
-    type(osc_par_t), intent(in)          :: os_p
-    integer, allocatable, intent(inout)  :: s(:)
-    real(WP), allocatable, intent(inout) :: x(:)
-
-    integer :: dn(SIZE(s)-1)
-
-    ! Add points globally, as determined by the various
-    ! grid-resampling parameters in gr_p
-    
-    dn = MAX(dn_dispersion_(ml, s, x, omega, gr_p, md_p, os_p), &
-             dn_thermal_(ml, s, x, omega, gr_p, md_p, os_p), &
-             dn_struct_(ml, s, x, gr_p))
-
-    call add_points_(dn, s, x)
-
-    ! Finish
-
-    return
-
-  end subroutine add_global_
-
-  !****
-
-  subroutine add_points_ (dn, s, x)
-
-    integer, intent(in)                  :: dn(:)
-    integer, allocatable, intent(inout)  :: s(:)
-    real(WP), allocatable, intent(inout) :: x(:)
-
-    integer               :: n_k
-    integer, allocatable  :: s_new(:)
-    real(WP), allocatable :: x_new(:)
-    integer               :: i
-    integer               :: j
-    integer               :: k
-
-    $CHECK_BOUNDS(SIZE(s),SIZE(dn)+1)
-    $CHECK_BOUNDS(SIZE(x),SIZE(dn)+1)
-
-    ! Add points to the grid
-
-    n_k = SIZE(x)
-
-    allocate(s_new(n_k + SUM(dn)))
-    allocate(x_new(n_k + SUM(dn)))
-
-    j = 1
-
-    cell_loop : do k = 1, n_k-1
-
-       if (s(k) == s(k+1)) then
-
-          do i = 1, dn(k)+1
-             s_new(j) = s(k)
-             x_new(j) = x(k) + (i-1)*(x(k+1)-x(k))/(dn(k)+1)
-             j = j + 1
-          end do
-
-       else
-
-          $ASSERT(dn(k) == 0,Attempt to add points at cell boundary)
-
-          s_new(j) = s(k)
-          x_new(j) = x(k)
-
-          j = j + 1
-
-       endif
-
-    end do cell_loop
-
-    s_new(j) = s(n_k)
-    x_new(j) = x(n_k)
-
-    $ASSERT_DEBUG(j == SIZE(s_new),Point mismatch)
-
-    call MOVE_ALLOC(s_new, s)
-    call MOVE_ALLOC(x_new, x)
-
-    ! Finish
-
-    return
-
-  end subroutine add_points_
-
-  !****
-
-  function dn_dispersion_ (ml, s, x, omega, gr_p, md_p, os_p) result (dn)
-
-    class(model_t), pointer, intent(in) :: ml
-    integer, intent(in)                 :: s(:)
-    real(WP), intent(in)                :: x(:)
-    real(WP), intent(in)                :: omega(:)
-    type(grid_par_t), intent(in)        :: gr_p
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    integer                             :: dn(SIZE(x)-1)
-
-    class(r_rot_t), allocatable :: rt
-    integer                     :: n_k
-    real(WP)                    :: beta_r_max(SIZE(x))
-    real(WP)                    :: beta_i_max(SIZE(x))
-    integer                     :: k
-    real(WP)                    :: V_g
-    real(WP)                    :: As
-    real(WP)                    :: U
-    real(WP)                    :: c_1
-    integer                     :: j
-    real(WP)                    :: omega_c
-    real(WP)                    :: lambda
-    real(WP)                    :: l_i
-    real(WP)                    :: g_4
-    real(WP)                    :: g_2
-    real(WP)                    :: g_0
-    real(WP)                    :: gamma
-    real(WP)                    :: dphi_osc
-    real(WP)                    :: dphi_exp
-
-    $CHECK_BOUNDS(SIZE(x), SIZE(s))
-
-    ! Determine how many points dn to add to each cell of the grid,
-    ! such there are at least alpha_osc points per oscillatory
-    ! wavelength and alpha_exp points per exponential wavelength
-    !
-    ! Wavelengths are calculated based on a local dispersion analysis
-    ! of the adibatic/Cowling wave equation, for inertial frequencies
-    ! specified by omega
-
-    if (gr_p%alpha_osc > 0._WP .OR. gr_p%alpha_exp > 0._WP) then
-
-       allocate(rt, SOURCE=r_rot_t(ml, md_p, os_p))
-
-       ! At each point, determine the maximum absolute value of the
-       ! real and imaginary parts of the local radial wavenumber beta,
-       ! for all possible omega values
-
-       n_k = SIZE(s)
-
-       beta_r_max(1) = 0._WP
-       beta_i_max(1) = 0._WP
-
-       wavenumber_loop : do k = 2, n_k-1
-
-          V_g = ml%V_2(s(k), x(k))*x(k)**2/ml%Gamma_1(s(k), x(k))
-          As = ml%As(s(k), x(k))
-          U = ml%U(s(k), x(k))
-          c_1 = ml%c_1(s(k), x(k))
-
-          beta_r_max(k) = 0._WP
-          beta_i_max(k) = 0._WP
-
-          omega_loop : do j = 1, SIZE(omega)
-
-             omega_c = rt%omega_c(s(k), x(k), omega(j))
-
-             lambda = rt%lambda(s(k), x(k), omega(j))
-             l_i = rt%l_i(omega(j))
-            
-             ! Calculate the propagation discriminant gamma
-
-             g_4 = -4._WP*V_g*c_1
-             g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
-             g_0 = -4._WP*lambda*As/c_1
-
-             gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
-
-             ! Update the wavenumber maxima
-
-             if (gamma < 0._WP) then
-               
-                ! Propagation zone
-
-                beta_r_max(k) = MAX(beta_r_max(k), ABS(0.5_WP*SQRT(-gamma))/x(k))
-                beta_i_max(k) = MAX(beta_i_max(k), ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i))/x(k))
-
-             else
-
-                ! Evanescent zone
-
-                beta_i_max(k) = MAX(beta_i_max(k), &
-                     ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i - SQRT(gamma)))/x(k), &
-                     ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i + SQRT(gamma)))/x(k))
-             
-             end if
-
-          end do omega_loop
-
-       end do wavenumber_loop
-
-       beta_r_max(n_k) = 0._WP
-       beta_i_max(n_k) = 0._WP
-
-       ! Set up dn
-
-       cell_loop : do k = 1, n_k-1
-
-          if (s(k) == s(k+1)) then
-
-             ! Calculate the oscillatory and exponential phase change across
-             ! the cell
-
-             dphi_osc = MAX(beta_r_max(k), beta_r_max(k+1))*(x(k+1) - x(k))
-             dphi_exp = MAX(beta_i_max(k), beta_i_max(k+1))*(x(k+1) - x(k))
-
-             ! Set up dn
-
-             dn(k) = MAX(FLOOR((gr_p%alpha_osc*dphi_osc)/TWOPI), FLOOR((gr_p%alpha_exp*dphi_exp)/TWOPI))
-
-          else
-
-             dn(k) = 0
-
-          endif
-
-       end do cell_loop
-
-    else
-
-       dn = 0
-
-    endif
-
-    ! Finish
-
-    return
-
-  end function dn_dispersion_
-
-  !****
-
-  function dn_thermal_ (ml, s, x, omega, gr_p, md_p, os_p) result (dn)
-
-    class(model_t), pointer, intent(in)  :: ml
-    integer, intent(in)                  :: s(:)
-    real(WP), intent(in)                 :: x(:)
-    real(WP), intent(in)                 :: omega(:)
-    type(grid_par_t), intent(in)         :: gr_p
-    type(mode_par_t), intent(in)         :: md_p
-    type(osc_par_t), intent(in)          :: os_p
-    integer                              :: dn(SIZE(x)-1)
-
-    class(r_rot_t), allocatable :: rt
-    integer                     :: n_k
-    real(WP)                    :: beta_t_max(SIZE(x))
-    integer                     :: k
-    real(WP)                    :: V
-    real(WP)                    :: nabla
-    real(WP)                    :: c_rad
-    real(WP)                    :: c_thm
-    integer                     :: j
-    real(WP)                    :: omega_c
-    real(WP)                    :: dphi_thm
-
-    $CHECK_BOUNDS(SIZE(x), SIZE(s))
-
-    ! Determine how many points dn to add to each cell of the grid,
-    ! such there are at least alpha_thm points per thermal length
-
-    if (gr_p%alpha_thm > 0._WP) then
-
-       allocate(rt, SOURCE=r_rot_t(ml, md_p, os_p))
-
-       ! At each point, determine the maximum absolute value of the
-       ! local thermal wavenumber beta_t, for all possible omega
-       ! values
-
-       n_k = SIZE(x)
-
-       beta_t_max(1) = 0._WP
-
-       wavenumber_loop : do k = 2, n_k-1
-
-          V = ml%V_2(s(k), x(k))*x(k)**2
-          nabla = ml%nabla(s(k), x(k))
-
-          c_rad = ml%c_rad(s(k), x(k))
-          c_thm = ml%c_thm(s(k), x(k))
-
-          beta_t_max(k) = 0._WP
-
-          omega_loop : do j = 1, SIZE(omega)
-
-             omega_c = rt%omega_c(s(k), x(k), omega(j))
-
-             beta_t_max(k) = MAX(beta_t_max(k), SQRT(ABS(V*nabla*omega_c*c_thm/c_rad))/x(k))
-
-          end do omega_loop
-
-       end do wavenumber_loop
-
-       beta_t_max(n_k) = 0._WP
-
-       ! Set up dn
-       
-       cell_loop : do k = 1, n_k-1
-
-          if (s(k) == s(k+1)) then
-
-             ! Calculate the thermal phase change across the cell
-
-             dphi_thm = MAX(beta_t_max(k), beta_t_max(k+1))*(x(k+1) - x(k))
-
-             ! Set up dn
-
-             dn(k) = FLOOR((gr_p%alpha_thm*dphi_thm)/TWOPI)
-
-          else
-
-             dn(k) = 0
-
-          endif
-
-       end do cell_loop
-
-    else
-
-       dn = 0
-
-    endif
-
-    ! Finish
-
-    return
-
-    return
-
-  end function dn_thermal_
-
-  !****
-
-  function dn_struct_ (ml, s, x, gr_p) result (dn)
-
-    class(model_t), pointer, intent(in)  :: ml
-    integer, intent(in)                  :: s(:)
-    real(WP), intent(in)                 :: x(:)
-    type(grid_par_t), intent(in)         :: gr_p
-    integer                              :: dn(SIZE(x)-1)
-
-    integer :: k
-
-    $CHECK_BOUNDS(SIZE(x), SIZE(s))
-
-    ! Determine how many points dn to add to each cell of the grid x,
-    ! such there are at least alpha_str points per dex change in the
-    ! structure variables (V, As, Gamma_1, c_1, & U). Segment
-    ! boundaries are excluded
-
-    if (gr_p%alpha_str > 0) then
-
-       ! Set up dn
-
-       cell_loop : do k = 1, SIZE(x)-1
-
-          if (s(k) == s(k+1)) then
-
-             dn(k) = 0
-
-             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%V_2(s(k), x(k)), ml%V_2(s(k+1), x(k+1)))))
-             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%As(s(k), x(k)), ml%As(s(k+1), x(k+1)))))
-             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%Gamma_1(s(k), x(k)), ml%Gamma_1(s(k+1), x(k+1)))))
-             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%c_1(s(k), x(k)), ml%c_1(s(k+1), x(k+1)))))
-             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%U(s(k+1), x(k)), ml%U(s(k+1), x(k+1)))))
-
-          else
-
-             dn(k) = 0
-
-          endif
-
-       end do cell_loop
-
-    else
-
-       dn = 0
-
-    end if
-
-    ! Finish
-
-    return
-
-  contains
-
-    function dlog_ (y_a, y_b) result (dlog)
-
-      real(WP), intent(in) :: y_a
-      real(WP), intent(in) :: y_b
-      real(WP)             :: dlog
-
-      ! Calculate the logarithmic change between y_a and y_b
-
-      if ((y_a > 0._WP .AND. y_b > 0._WP) .OR. &
-          (y_a < 0._WP .AND. y_b < 0._WP)) then
-         dlog = ABS(LOG10(y_b/y_a))
-      else
-         dlog = 0._WP
-      endif
-
-      ! Finish
-
-      return
-
-    end function dlog_
-
-  end function dn_struct_
-
-  ! !****
-
-  ! function dn_center_ (ml, s, x, omega, gr_p, md_p, os_p) result (dn)
-
-  !   class(model_t), pointer,  intent(in) :: ml
-  !   integer, intent(in)                  :: s
-  !   real(WP), intent(in)                 :: x(:)
-  !   real(WP), intent(in)                 :: omega(:)
-  !   type(grid_par_t), intent(in)         :: gr_p
-  !   type(mode_par_t), intent(in)         :: md_p
-  !   type(osc_par_t), intent(in)          :: os_p
-  !   integer                              :: dn(SIZE(x)-1)
-    
-  !   integer  :: k_turn
-  !   real(WP) :: x_turn
-  !   integer  :: j
-  !   integer  :: k_turn_j
-  !   real(WP) :: x_turn_j
-  !   integer  :: n_add
-  !   integer  :: n_k
-  !   integer  :: k
-
-  !   ! Determine how many points dn to add to each cell of the grid x,
-  !   ! such there are at least n_center points covering the evanescent
-  !   ! region at the center
-  !   !
-  !   ! Evanescence is determined based on a local dispersion analysis
-  !   ! of the adibatic/Cowling wave equation, for all possible omega
-  !   ! values
-
-  !   if (gr_p%n_center > 0) then
-
-  !      ! Locate the innermost turning point
-
-  !      k_turn = 0
-  !      x_turn = HUGE(0._WP)
-
-  !      omega_loop : do j = 1, SIZE(omega)
-  !         call find_turn(ml, s, x, omega(j), md_p, os_p, k_turn_j, x_turn_j)
-  !         if (x_turn_j < x_turn) then
-  !            k_turn = k_turn_j
-  !            x_turn = x_turn_j
-  !         endif
-  !      end do omega_loop
-
-  !      ! Determine how many points need to be added
-
-  !      n_add = MAX(gr_p%n_center-k_turn, 0)
-
-  !      ! Set up dn
-
-  !      cell_loop : do k = 1, n_k-1
-  !         if (k <= k_turn) then
-  !            dn(k) = CEILING(n_add*(x(k_turn+1)/x_turn)/k_turn)
-  !         else
-  !            dn(k) = 0
-  !         endif
-  !      end do cell_loop
-
-  !   else
-
-  !      dn = 0
-
-  !   endif
-
-  !   ! Finish
-
-  !   return
-
-  ! end function dn_center_
+  end subroutine locate
 
 end module gyre_grid

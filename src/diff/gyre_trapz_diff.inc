@@ -33,6 +33,7 @@ module gyre_${T}_trapz_diff
   use gyre_eqns
   use gyre_ext
   use gyre_linalg
+  use gyre_point
 
   use ISO_FORTRAN_ENV
 
@@ -44,9 +45,9 @@ module gyre_${T}_trapz_diff
 
   type, extends (${T}_diff_t) :: ${T}_trapz_diff_t
      private
-     class(${T}_eqns_t), allocatable :: eq 
-     real(WP)                        :: x_a
-     real(WP)                        :: x_b
+     class(${T}_eqns_t), allocatable :: eq
+     type(point_t)                   :: pt_a
+     type(point_t)                   :: pt_b
      real(WP), allocatable           :: w(:)
    contains
      private
@@ -67,13 +68,15 @@ module gyre_${T}_trapz_diff
 
 contains
 
-  function ${T}_trapz_diff_t_ (eq, x_a, x_b, w) result (df)
+  function ${T}_trapz_diff_t_ (eq, pt_a, pt_b, w) result (df)
 
     class(${T}_eqns_t), intent(in) :: eq
-    real(WP), intent(in)           :: x_a
-    real(WP), intent(in)           :: x_b
+    type(point_t), intent(in)      :: pt_a
+    type(point_t), intent(in)      :: pt_b
     real(WP), intent(in)           :: w(:)
     type(${T}_trapz_diff_t)        :: df
+
+    $ASSERT_DEBUG(pt_a%s == pt_b%s,Segment mismatch)
 
     $CHECK_BOUNDS(SIZE(w),eq%n_e)
 
@@ -81,8 +84,8 @@ contains
 
     allocate(df%eq, SOURCE=eq)
 
-    df%x_a = x_a
-    df%x_b = x_b
+    df%pt_a = pt_a
+    df%pt_b = pt_b
 
     df%w = w
 
@@ -116,14 +119,14 @@ contains
 
     ! Evaluate the RHS matrix
 
-    dx = this%x_b - this%x_a
+    dx = this%pt_b%x - this%pt_a%x
 
-    xA(:,:,1) = this%eq%xA(this%x_a, omega)
-    xA(:,:,2) = this%eq%xA(this%x_b, omega)
+    xA(:,:,1) = this%eq%xA(this%pt_a, omega)
+    xA(:,:,2) = this%eq%xA(this%pt_b, omega)
 
     ! Build the difference equations
 
-    x_m = 0.5_WP*(this%x_a + this%x_b)
+    x_m = 0.5_WP*(this%pt_a%x + this%pt_b%x)
 
     E_l = -x_m*identity_matrix(this%n_e) - dx*MATMUL(diagonal_matrix(1._WP-this%w), xA(:,:,1))
     E_r =  x_m*identity_matrix(this%n_e) - dx*MATMUL(diagonal_matrix(      this%w), xA(:,:,2))
