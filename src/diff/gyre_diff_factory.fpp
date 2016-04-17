@@ -70,7 +70,7 @@ contains
     type(num_par_t), intent(in)     :: nm_p
     class(${T}_diff_t), allocatable :: df
     
-    ! Create a ${T}_diff_t
+    ! Construct the ${T}_diff_t
 
     select case (nm_p%diff_scheme)
     case ('MAGNUS_GL2')
