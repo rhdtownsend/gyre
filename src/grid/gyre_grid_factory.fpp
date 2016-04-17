@@ -26,7 +26,6 @@ module gyre_grid_factory
   use gyre_constants
   use gyre_grid
   use gyre_grid_par
-  use gyre_grid_weights
   use gyre_grid_util
   use gyre_model
   use gyre_mode_par
@@ -46,6 +45,7 @@ module gyre_grid_factory
 
   interface grid_t
      module procedure grid_t_model_
+     module procedure grid_t_weight_
   end interface grid_t
 
   ! Access specifiers
@@ -122,6 +122,26 @@ contains
     return
 
   end function grid_t_model_
+
+  !****
+
+  function grid_t_weight_ (w, x_i, x_o) result (gr)
+
+    real(WP), intent(in) :: w(:)
+    real(WP), intent(in) :: x_i
+    real(WP), intent(in) :: x_o
+    type(grid_t)         :: gr
+
+    ! Construct the grid_t using the supplied weight function and
+    ! range (x_i,x_o)
+
+    gr = grid_t((1._WP-w)*x_i + w*x_o)
+
+    ! Finish
+
+    return
+
+  end function grid_t_weight_
 
   !****
 
