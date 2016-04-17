@@ -101,7 +101,7 @@ contains
     sl%s_i = gr%s_i()
     sl%s_o = gr%s_o()
 
-    sl%n_k = gr%n_k()
+    sl%n_k = gr%n_k
 
     allocate(sl%ss(sl%s_i:sl%s_o))
 
@@ -153,14 +153,11 @@ contains
     complex(WP), intent(in)      :: y(:)
     complex(WP), intent(in)      :: dy_dx(:)
 
-    type(point_t) :: pt(this%n_k)
-    integer       :: s
-    integer       :: k_i
-    integer       :: k_o
+    integer :: s
+    integer :: k_i
+    integer :: k_o
 
     ! Set the data for y(i)
-
-    pt = this%gr%pt()
 
     $CHECK_BOUNDS(SIZE(y),this%n_k)
     $CHECK_BOUNDS(SIZE(dy_dx),this%n_k)
@@ -170,7 +167,9 @@ contains
        k_i = this%gr%k_i(s)
        k_o = this%gr%k_o(s)
 
-       call this%ss(s)%set_y(i, pt(k_i:k_o)%x, y(k_i:k_o), dy_dx(k_i:k_o))
+       associate (pt => this%gr%pt)
+         call this%ss(s)%set_y(i, pt(k_i:k_o)%x, y(k_i:k_o), dy_dx(k_i:k_o))
+       end associate
 
     end do seg_loop
 

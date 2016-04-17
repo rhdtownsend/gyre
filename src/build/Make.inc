@@ -45,10 +45,10 @@ FFLAGS:=${FFLAGS} -finit-real=snan -ffpe-trap=invalid,overflow,zero -fbacktrace 
 
 ifeq (${DEBUG},yes)
   FFLAGS:=${FFLAGS} -fcheck=all -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0 -g
-  FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG -DGFORTRAN_PR_69185
+  FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG -DGFORTRAN_PR_69185 -DGFORTRAN_PR_49636
 else
   FFLAGS:=${FFLAGS} -O2 -march=native -mno-avx -mno-bmi2
-  FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO
+  FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO -DGFORTRAN_PR_49636
 endif
 
 F9XFLAGS:=${F9XFLAGS} $(addprefix -I,${MODPATH}) ${FFLAGS} #-std=f2008

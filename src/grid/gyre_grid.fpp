@@ -34,14 +34,10 @@ module gyre_grid
   ! Derived-type definitions
 
   type :: grid_t
-     private
-     type(point_t), allocatable :: pt_(:)
+     type(point_t), allocatable :: pt(:)
+     integer                    :: n_k
    contains
      private
-     procedure, public :: n_k
-     procedure         :: pt_k_
-     procedure         :: pt_f_
-     generic, public   :: pt => pt_f_, pt_k_
      procedure, public :: k_i
      procedure, public :: k_o
      procedure, public :: s_i
@@ -84,24 +80,26 @@ contains
 
        $ASSERT_DEBUG(ALL(x(2:) >= x(:n_k-1)),Non-monotonic data)
        
-       allocate(gr%pt_(n_k))
+       allocate(gr%pt(n_k))
 
-       gr%pt_(1)%x = x(1)
-       gr%pt_(1)%s = 1
+       gr%pt(1)%x = x(1)
+       gr%pt(1)%s = 1
 
        do k = 2, n_k
 
-          gr%pt_(k)%x = x(k)
+          gr%pt(k)%x = x(k)
 
           if (x(k) == x(k-1)) then
-             gr%pt_(k)%s = gr%pt_(k-1)%s + 1
+             gr%pt(k)%s = gr%pt(k-1)%s + 1
           else
-             gr%pt_(k)%s = gr%pt_(k-1)%s
+             gr%pt(k)%s = gr%pt(k-1)%s
           endif
 
        end do
 
     end if
+
+    gr%n_k = n_k
 
     ! Finish
 
@@ -118,31 +116,29 @@ contains
     real(WP), intent(in)     :: x_max
     type(grid_t)             :: gr
 
-    integer :: n_k
     integer :: k_a
     integer :: k_b
 
     ! Construct a grid_t as a subset of gr_base
 
-    n_k = gr_base%n_k()
-
-    k_a_loop : do k_a = 1, n_k
-       if (gr_base%pt_(k_a)%x > x_min) exit k_a_loop
+    k_a_loop : do k_a = 1, gr_base%n_k
+       if (gr_base%pt(k_a)%x > x_min) exit k_a_loop
     end do k_a_loop
 
     if (k_a > 1) then
-       if (gr_base%pt_(k_a-1)%x == x_min) k_a = k_a-1
+       if (gr_base%pt(k_a-1)%x == x_min) k_a = k_a-1
     endif
 
-    k_b_loop : do k_b = n_k, 1, -1
-       if (gr_base%pt_(k_b)%x < x_max) exit k_b_loop
+    k_b_loop : do k_b = gr_base%n_k, 1, -1
+       if (gr_base%pt(k_b)%x < x_max) exit k_b_loop
     end do k_b_loop
 
-    if (k_b < n_k) then
-       if (gr_base%pt_(k_b+1)%x == x_max) k_b = k_b+1
+    if (k_b < gr_base%n_k) then
+       if (gr_base%pt(k_b+1)%x == x_max) k_b = k_b+1
     endif
 
-    gr%pt_ = gr_base%pt_(k_a:k_b)
+    gr%pt = gr_base%pt(k_a:k_b)
+    gr%n_k = SIZE(gr%pt)
 
     ! Finish
 
@@ -165,21 +161,21 @@ contains
     integer  :: i
     real(WP) :: w
 
-    $CHECK_BOUNDS(SIZE(dn),gr_base%n_k()-1)
+    $CHECK_BOUNDS(SIZE(dn),gr_base%n_k-1)
 
     ! Add points to the grid
 
-    n_k_base = gr_base%n_k()
+    n_k_base = gr_base%n_k
     n_k = n_k_base + SUM(dn)
 
-    allocate(gr%pt_(n_k))
+    allocate(gr%pt(n_k))
 
     k = 1
 
     cell_loop : do j = 1, n_k_base-1
 
-       associate (pt_a => gr_base%pt_(j), &
-                  pt_b => gr_base%pt_(j+1))
+       associate (pt_a => gr_base%pt(j), &
+                  pt_b => gr_base%pt(j+1))
 
          if (pt_a%s == pt_b%s) then
 
@@ -187,8 +183,8 @@ contains
 
                w = REAL(i-1, WP)/REAL(dn(j)+1, WP)
 
-               gr%pt_(k)%s = pt_a%s
-               gr%pt_(k)%x = (1._WP-w)*pt_a%x + w*pt_b%x
+               gr%pt(k)%s = pt_a%s
+               gr%pt(k)%x = (1._WP-w)*pt_a%x + w*pt_b%x
 
                k = k + 1
 
@@ -198,8 +194,8 @@ contains
 
             $ASSERT(dn(j) == 0,Attempt to add points at cell boundary)
 
-            gr%pt_(k)%s = pt_a%s
-            gr%pt_(k)%x = pt_a%x
+            gr%pt(k)%s = pt_a%s
+            gr%pt(k)%x = pt_a%x
 
             k = k + 1
 
@@ -209,7 +205,9 @@ contains
 
     end do cell_loop
 
-    gr%pt_(k) = gr_base%pt_(n_k_base)
+    gr%pt(k) = gr_base%pt(n_k_base)
+
+    gr%n_k = n_k
 
     ! Finish
 
@@ -217,61 +215,6 @@ contains
 
   end function grid_t_resamp_
 
-  !****
-
-  pure function n_k (this)
-
-    class(grid_t), intent(in) :: this
-    integer                   :: n_k
-
-    ! Return the size of the grid
-
-    n_k = SIZE(this%pt_)
-
-    ! Finish
-
-    return
-
-  end function n_k
-
-  !****
-
-  function pt_k_ (this, k) result (pt)
-
-    class(grid_t), intent(in) :: this
-    integer, intent(in)       :: k
-    type(point_t)             :: pt
-
-    $ASSERT_DEBUG(k >= 1,Invalid index)
-    $ASSERT_DEBUG(k <= this%n_k(),Invalid index)
-    
-    ! Return the k'th point in the grid
-
-    pt = this%pt_(k)
-
-    ! Finish
-
-    return
-
-  end function pt_k_
-
-  !****
-
-  function pt_f_ (this) result (pt)
-
-    class(grid_t), intent(in) :: this
-    type(point_t)             :: pt(this%n_k())
-
-    ! Return all points in the grid
-
-    pt = this%pt_(:)
-
-    ! Finish
-
-    return
-
-  end function pt_f_
-       
   !****
 
   function k_i (this, s)
@@ -285,8 +228,8 @@ contains
 
     ! Return the index of the innermost point in segment s
 
-    do k_i = 1, this%n_k()
-       if (this%pt_(k_i)%s == s) exit
+    do k_i = 1, this%n_k
+       if (this%pt(k_i)%s == s) exit
     end do
 
     ! Finish
@@ -308,8 +251,8 @@ contains
 
     ! Return the index of the outermost point in segment s
 
-    do k_o = this%n_k(), 1, -1
-       if (this%pt_(k_o)%s == s) exit
+    do k_o = this%n_k, 1, -1
+       if (this%pt(k_o)%s == s) exit
     end do
 
     ! Finish
@@ -327,7 +270,7 @@ contains
 
     ! Return the innermost segment of the grid
 
-    s_i = this%pt_(1)%s
+    s_i = this%pt(1)%s
 
     ! Finish
 
@@ -344,7 +287,7 @@ contains
 
     ! Return the outermost segment of the grid
 
-    s_o = this%pt_(this%n_k())%s
+    s_o = this%pt(this%n_k)%s
 
     ! Finish
 
@@ -379,19 +322,19 @@ contains
     ! is inside-out
 
     if (back_) then
-       s_a = this%pt_(this%n_k())%s
-       s_b = this%pt_(1)%s
+       s_a = this%pt(this%n_k)%s
+       s_b = this%pt(1)%s
        ds = -1
     else
-       s_a = this%pt_(1)%s
-       s_b = this%pt_(this%n_k())%s
+       s_a = this%pt(1)%s
+       s_b = this%pt(this%n_k)%s
        ds = 1
     endif
 
     seg_loop : do s = s_a, s_b, ds
 
-       x_i = this%pt_(this%k_i(s))%x
-       x_o = this%pt_(this%k_o(s))%x
+       x_i = this%pt(this%k_i(s))%x
+       x_o = this%pt(this%k_o(s))%x
          
        if (x >= x_i .AND. x <= x_o) exit seg_loop
        

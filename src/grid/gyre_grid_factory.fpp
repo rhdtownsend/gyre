@@ -1,5 +1,5 @@
-! Module   : gyre_grid_build
-! Purpose  : grid construction
+! Module   : gyre_grid_factory
+! Purpose  : factory procedures for grid_t type
 !
 ! Copyright 2013-2016 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_grid_build
+module gyre_grid_factory
 
   ! Uses
 
@@ -42,25 +42,31 @@ module gyre_grid_build
 
   implicit none
 
+  ! Interfaces
+
+  interface grid_t
+     module procedure grid_t_model_
+  end interface grid_t
+
   ! Access specifiers
 
   private
 
-  public :: build_grid
+  public :: grid_t
 
   ! Procedures
 
 contains
 
-  subroutine build_grid (ml, omega, gr_p, md_p, os_p, gr, verbose)
+  function grid_t_model_ (ml, omega, gr_p, md_p, os_p, verbose) result (gr)
 
     class(model_t), pointer, intent(in) :: ml
     real(WP), intent(in)                :: omega(:)
     type(grid_par_t), intent(in)        :: gr_p
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
-    type(grid_t), intent(out)           :: gr
     logical, optional, intent(in)       :: verbose
+    type(grid_t)                        :: gr
 
     logical              :: write_info
     integer              :: s
@@ -75,16 +81,12 @@ contains
        write_info = check_log_level('DEBUG')
     endif
 
-    ! Build a grid
+    ! Construct the grid_t using the supplied model grid as the base
 
     if (write_info) then
-
        write(OUTPUT_UNIT, 100) 'Building x grid'
 100    format(A)
-
     endif
-
-    ! Initialize the grid from the supplied model grid
 
     gr = grid_t(ml%grid(), os_p%x_i, os_p%x_o)
 
@@ -111,17 +113,15 @@ contains
           write(OUTPUT_UNIT, 110) 'segment', s, ':', k_o-k_i+1, 'points, x range', pt_i%x, '->', pt_o%x
 110       format(3X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
 
-
        end do seg_loop
 
     end if
-       
 
     ! Finish
 
     return
 
-  end subroutine build_grid
+  end function grid_t_model_
 
   !****
 
@@ -134,7 +134,6 @@ contains
     type(osc_par_t), intent(in)          :: os_p
     type(grid_t), intent(inout)          :: gr
 
-    integer       :: n_k
     integer       :: k_turn
     real(WP)      :: x_turn
     integer       :: j
@@ -142,17 +141,15 @@ contains
     real(WP)      :: x_turn_omega
     real(WP)      :: dx_max
     integer       :: k
-    integer       :: dn(gr%n_k()-1)
+    integer       :: dn(gr%n_k-1)
     type(point_t) :: pt_a
     type(point_t) :: pt_b
 
     ! Add points at the center of grid gr, to ensure that no cell is
     ! larger than dx_max = x_turn/n_center
 
-    n_k = gr%n_k()
-
     x_turn = HUGE(0._WP)
-    k_turn = n_k
+    k_turn = gr%n_k
 
     if (gr_p%n_center > 0) then
 
@@ -170,7 +167,7 @@ contains
 
        end do omega_loop
 
-       k_turn = MIN(k_turn, n_k-1)
+       k_turn = MIN(k_turn, gr%n_k-1)
 
        ! Add points to the cell containing the turning point, and each
        ! cell inside it, so that none is larger than dx_max
@@ -210,7 +207,7 @@ contains
     type(osc_par_t), intent(in)          :: os_p
     type(grid_t), intent(inout)          :: gr
 
-    integer :: dn(gr%n_k()-1)
+    integer :: dn(gr%n_k-1)
 
     ! Add points globally, as determined by the various
     ! grid-resampling parameters in gr_p
@@ -237,12 +234,11 @@ contains
     type(grid_par_t), intent(in)        :: gr_p
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
-    integer                             :: dn(gr%n_k()-1)
+    integer                             :: dn(gr%n_k-1)
 
     class(r_rot_t), allocatable :: rt
-    integer                     :: n_k
-    real(WP)                    :: beta_r_max(gr%n_k())
-    real(WP)                    :: beta_i_max(gr%n_k())
+    real(WP)                    :: beta_r_max(gr%n_k)
+    real(WP)                    :: beta_i_max(gr%n_k)
     integer                     :: k
     type(point_t)               :: pt
     real(WP)                    :: V_g
@@ -278,13 +274,11 @@ contains
        ! real and imaginary parts of the local radial wavenumber beta,
        ! for all possible omega values
 
-       n_k = gr%n_k()
-
        beta_r_max(1) = 0._WP
        beta_i_max(1) = 0._WP
 
        !$OMP PARALLEL DO PRIVATE (pt, V_g, As, U, c_1, j, omega_c, lambda, l_i, g_4, g_2, g_0, gamma)
-       wavenumber_loop : do k = 2, n_k-1
+       wavenumber_loop : do k = 2, gr%n_k-1
 
           pt = gr%pt(k)
 
@@ -334,13 +328,13 @@ contains
 
        end do wavenumber_loop
 
-       beta_r_max(n_k) = 0._WP
-       beta_i_max(n_k) = 0._WP
+       beta_r_max(gr%n_k) = 0._WP
+       beta_i_max(gr%n_k) = 0._WP
 
        ! Set up dn
 
        !$OMP PARALLEL DO PRIVATE (pt_a, pt_b, dphi_osc, dphi_exp)
-       cell_loop : do k = 1, n_k-1
+       cell_loop : do k = 1, gr%n_k-1
 
           pt_a = gr%pt(k)
           pt_b = gr%pt(k+1)
@@ -387,12 +381,11 @@ contains
     type(grid_par_t), intent(in)         :: gr_p
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
-    integer                              :: dn(gr%n_k()-1)
+    integer                              :: dn(gr%n_k-1)
 
     type(point_t)               :: pt
     class(r_rot_t), allocatable :: rt
-    integer                     :: n_k
-    real(WP)                    :: beta_t_max(gr%n_k())
+    real(WP)                    :: beta_t_max(gr%n_k)
     integer                     :: k
     real(WP)                    :: V
     real(WP)                    :: nabla
@@ -415,12 +408,10 @@ contains
        ! local thermal wavenumber beta_t, for all possible omega
        ! values
 
-       n_k = gr%n_k()
-
        beta_t_max(1) = 0._WP
 
        !$OMP PARALLEL DO PRIVATE (pt, V, nabla, c_rad, c_thm, j, omega_c)
-       wavenumber_loop : do k = 2, n_k-1
+       wavenumber_loop : do k = 2, gr%n_k-1
 
           pt = gr%pt(k)
 
@@ -442,12 +433,12 @@ contains
 
        end do wavenumber_loop
 
-       beta_t_max(n_k) = 0._WP
+       beta_t_max(gr%n_k) = 0._WP
 
        ! Set up dn
 
        !$OMP PARALLEL DO PRIVATE (pt_a, pt_b, dphi_thm)
-       cell_loop : do k = 1, n_k-1
+       cell_loop : do k = 1, gr%n_k-1
 
           pt_a = gr%pt(k)
           pt_b = gr%pt(k+1)
@@ -491,9 +482,8 @@ contains
     class(model_t), pointer, intent(in)  :: ml
     type(grid_t), intent(in)             :: gr
     type(grid_par_t), intent(in)         :: gr_p
-    integer                              :: dn(gr%n_k()-1)
+    integer                              :: dn(gr%n_k-1)
 
-    integer       :: n_k
     integer       :: k
     type(point_t) :: pt_a
     type(point_t) :: pt_b
@@ -507,10 +497,8 @@ contains
 
        ! Set up dn
 
-       n_k = gr%n_k()
-
        !$OMP PARALLEL DO PRIVATE (pt_a, pt_b)
-       cell_loop : do k = 1, n_k-1
+       cell_loop : do k = 1, gr%n_k-1
 
           pt_a = gr%pt(k)
           pt_b = gr%pt(k+1)
@@ -568,4 +556,4 @@ contains
 
   end function dn_struct_
   
-end module gyre_grid_build
+end module gyre_grid_factory

@@ -177,7 +177,7 @@ contains
     md%omega = sl%omega
     md%l_i = md%rt%l_i(md%omega)
 
-    md%n_k = gr%n_k()
+    md%n_k = gr%n_k
 
     md%l = md_p%l
     md%m = md_p%m
@@ -190,7 +190,7 @@ contains
     ! Locate the reference point
 
     associate (pt => md%pt_ref)
-      pt = gr%pt(gr%n_k())
+      pt = gr%pt(gr%n_k)
       pt%x = MIN(os_p%x_ref, pt%x)
       call gr%locate(pt%x, pt%s)
       $ASSERT(pt%s >= gr%s_i(),Invalid segment)
@@ -530,13 +530,9 @@ contains
     class(mode_t), intent(in) :: this
     real(WP)                  :: E
 
-    type(point_t) :: pt(this%n_k)
-
     ! Calculate the mode inertia, in units of M_star R_star**2
 
-    pt = this%gr%pt()
-
-    E = integrate(pt%x, this%dE_dx())
+    E = integrate(this%gr%pt%x, this%dE_dx())
 
     ! Finish
 
@@ -551,14 +547,10 @@ contains
     class(mode_t), intent(in) :: this
     real(WP)                  :: E_p
 
-    type(point_t) :: pt(this%n_k)
-
     ! Calculate the mode inertia in acoustic-wave propagation regions,
     ! in units of M_star R_star**2
 
-    pt = this%gr%pt()
-
-    E_p = integrate(pt%x, this%dE_dx(), mask=(this%prop_type() == 1))
+    E_p = integrate(this%gr%pt%x, this%dE_dx(), mask=(this%prop_type() == 1))
 
     ! Finish
 
@@ -573,14 +565,10 @@ contains
     class(mode_t), intent(in) :: this
     real(WP)                  :: E_g
 
-    type(point_t) :: pt(this%n_k)
-    
     ! Calculate the mode inertia in gravity-wave propagation regions,
     ! in units of M_star R_star**2
 
-    pt = this%gr%pt()
-
-    E_g = integrate(pt%x, this%dE_dx(), mask=(this%prop_type() == -1))
+    E_g = integrate(this%gr%pt%x, this%dE_dx(), mask=(this%prop_type() == -1))
 
     ! Finish
 
@@ -648,13 +636,9 @@ contains
     class(mode_t), intent(in) :: this
     real(WP)                  :: W
     
-    type(point_t) :: pt(this%n_k)
-    
     ! Calculate the total work, in units of G M_star**2/R_star
 
-    pt = this%gr%pt()
-
-    W = integrate(pt%x, this%dW_dx())
+    W = integrate(this%gr%pt%x, this%dW_dx())
 
     ! Finish
 
@@ -669,13 +653,9 @@ contains
     class(mode_t), intent(in) :: this
     real(WP)                  :: C
      
-    type(point_t) :: pt(this%n_k)
-    
     ! Calculate the Ledoux rotational splitting coefficient
 
-    pt = this%gr%pt()
-
-    C = integrate(pt%x, this%dC_dx())
+    C = integrate(this%gr%pt%x, this%dC_dx())
 
     ! Finish
 
@@ -690,7 +670,6 @@ contains
     class(mode_t), intent(in) :: this
     complex(WP)               :: omega_int
 
-    type(point_t) :: pt(this%n_k)
     complex(WP)   :: f_th(this%n_k)
     complex(WP)   :: f_re(this%n_k)
     complex(WP)   :: f_gr(this%n_k)
@@ -716,37 +695,39 @@ contains
     ! Calculate the dimensionless frequency from the integral
     ! expression in eqn. (1.71) of [Dup2003]
 
-    pt = this%gr%pt()
-
     do k = 1, this%n_k
 
-       xi_r = this%xi_r(pt(k))
-       eul_phi = this%eul_phi(pt(k))
-       eul_rho = this%eul_rho(pt(k))
-       lag_rho = this%lag_rho(pt(k))
-       lag_P = this%lag_P(pt(k))
+       associate (pt => this%gr%pt(k))
 
-       V_2 = this%ml%V_2(pt(k))
-       As = this%ml%As(pt(k))
-       U = this%ml%U(pt(k))
-       c_1 = this%ml%c_1(pt(k))
+         xi_r = this%xi_r(pt)
+         eul_phi = this%eul_phi(pt)
+         eul_rho = this%eul_rho(pt)
+         lag_rho = this%lag_rho(pt)
+         lag_P = this%lag_P(pt)
 
-       Gamma_1 = this%ml%Gamma_1(pt(k))
+         V_2 = this%ml%V_2(pt)
+         As = this%ml%As(pt)
+         U = this%ml%U(pt)
+         c_1 = this%ml%c_1(pt)
 
-       V_g = V_2*pt(k)%x**2/Gamma_1
-       x4_V = pt(k)%x**2/V_2
+         Gamma_1 = this%ml%Gamma_1(pt)
 
-       f_th(k) = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2))
-       f_re(k) = 2._WP*REAL(lag_rho*CONJG(xi_r)*(pt(k)%x/c_1)*(pt(k)%x**2*U/c_1))
-       f_gr(k) = CONJG(eul_rho)*eul_phi*(pt(k)%x**2*U/c_1)
-       f_xi(k) = -ABS(xi_r)**2*(pt(k)%x/c_1)*(pt(k)%x*U*(-V_g-As)/c_1)
+         V_g = V_2*pt%x**2/Gamma_1
+         x4_V = pt%x**2/V_2
+
+         f_th(k) = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2))
+         f_re(k) = 2._WP*REAL(lag_rho*CONJG(xi_r)*(pt%x/c_1)*(pt%x**2*U/c_1))
+         f_gr(k) = CONJG(eul_rho)*eul_phi*(pt%x**2*U/c_1)
+         f_xi(k) = -ABS(xi_r)**2*(pt%x/c_1)*(pt%x*U*(-V_g-As)/c_1)
+
+       end associate
 
     end do
 
-    W_th = integrate(pt%x, f_th)
-    W_re = integrate(pt%x, f_re)
-    W_gr = integrate(pt%x, f_gr)
-    W_xi = integrate(pt%x, f_xi)
+    W_th = integrate(this%gr%pt%x, f_th)
+    W_re = integrate(this%gr%pt%x, f_re)
+    W_gr = integrate(this%gr%pt%x, f_gr)
+    W_xi = integrate(this%gr%pt%x, f_xi)
 
     omega_int = SQRT(4._WP*PI*(W_th + W_re + W_gr + W_xi)/this%E())
 
@@ -763,16 +744,13 @@ contains
     class(mode_t), intent(in) :: this
     real(WP)                  :: eta
 
-    type(point_t) :: pt(this%n_k)
-    real(WP)      :: dW_dx(this%n_k)
+    real(WP) :: dW_dx(this%n_k)
 
     ! Calculate the normalized growth rate defined by [Stel1978]
 
-    pt = this%gr%pt()
-
     dW_dx = this%dW_dx()
 
-    eta = integrate(pt%x, dW_dx)/integrate(pt%x, ABS(dW_dx))
+    eta = integrate(this%gr%pt%x, dW_dx)/integrate(this%gr%pt%x, ABS(dW_dx))
 
     ! Finish
 

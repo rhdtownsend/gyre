@@ -26,7 +26,7 @@ module gyre_rad_bep
   use gyre_bep
   use gyre_ext
   use gyre_grid
-  use gyre_grid_build
+  use gyre_grid_factory
   use gyre_grid_par
   use gyre_model
   use gyre_mode_par
@@ -89,7 +89,6 @@ contains
     type(rad_bep_t)                     :: bp
 
     type(grid_t)                  :: gr
-    integer                       :: n_k
     type(rad_bound_t)             :: bd
     integer                       :: k
     type(rad_diff_t), allocatable :: df(:)
@@ -100,9 +99,7 @@ contains
 
     ! Build the grid
 
-    call build_grid(ml, omega, gr_p, md_p, os_p, gr, verbose=.TRUE.)
-
-    n_k = gr%n_k()
+    gr = grid_t(ml, omega, gr_p, md_p, os_p, verbose=.TRUE.)
 
     ! Initialize the boundary conditions
 
@@ -110,9 +107,9 @@ contains
 
     ! Initialize the difference equations
 
-    allocate(df(n_k-1))
+    allocate(df(gr%n_k-1))
 
-    do k = 1, n_k-1
+    do k = 1, gr%n_k-1
        df(k) = rad_diff_t(ml, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
@@ -156,7 +153,6 @@ contains
     real(WP)      :: y(2,bp%n_k)
     type(r_ext_t) :: discrim
     integer       :: k
-    type(point_t) :: pt
     real(WP)      :: xA(2,2)
     real(WP)      :: dy_dx(2,bp%n_k)
     real(WP)      :: H(2,2)
@@ -176,75 +172,81 @@ contains
     ! Calculate its derivatives (nb: the vacuum check prevents errors, but
     ! leads to incorrect values for dy_dx)
 
-    !$OMP PARALLEL DO PRIVATE (pt, xA)
+    !$OMP PARALLEL DO PRIVATE (xA)
     do k = 1, bp%n_k
 
-       pt = bp%gr%pt(k)
+       associate (pt => bp%gr%pt(k))
 
-       if (bp%ml%vacuum(pt)) then
-          xA = 0._WP
-       else
-          xA = bp%eq%xA(pt, omega)
-       endif
+         if (bp%ml%vacuum(pt)) then
+            xA = 0._WP
+         else
+            xA = bp%eq%xA(pt, omega)
+         endif
 
-       if (pt%x /= 0._WP) then
-          dy_dx(:,k) = MATMUL(xA, y(:,k))/pt%x
-       else
-          dy_dx(:,k) = 0._WP
-       endif
+         if (pt%x /= 0._WP) then
+            dy_dx(:,k) = MATMUL(xA, y(:,k))/pt%x
+         else
+            dy_dx(:,k) = 0._WP
+         endif
+
+       end associate
 
     end do
 
     ! Convert to canonical form (nb: the vacuum check prevents errors, but
     ! leads to incorrect values for dy_c_dx)
 
-    !$OMP PARALLEL DO PRIVATE (pt, H, dH)
+    !$OMP PARALLEL DO PRIVATE (H, dH)
     do k = 1, bp%n_k
 
-       pt = bp%gr%pt(k)
+       associate (pt => bp%gr%pt(k))
 
-       H = bp%vr%H(pt, omega)
+         H = bp%vr%H(pt, omega)
 
-       y_c(:,k) = MATMUL(H, y(:,k))
+         y_c(:,k) = MATMUL(H, y(:,k))
 
-       if (bp%ml%vacuum(pt)) then
-          dH = 0._WP
-       else
-          dH = bp%vr%dH(pt, omega)
-       endif
+         if (bp%ml%vacuum(pt)) then
+            dH = 0._WP
+         else
+            dH = bp%vr%dH(pt, omega)
+         endif
+         
+         if (pt%x /= 0._WP) then
+            dy_c_dx(:,k) = MATMUL(dH/pt%x, y(:,k)) + MATMUL(H, dy_dx(:,k))
+         else
+            dy_c_dx(:,k) = 0._WP
+         endif
 
-       if (pt%x /= 0._WP) then
-          dy_c_dx(:,k) = MATMUL(dH/pt%x, y(:,k)) + MATMUL(H, dy_dx(:,k))
-       else
-          dy_c_dx(:,k) = 0._WP
-       endif
-
+       end associate
+         
     end do
 
     ! Calculate the gravity perturbation y_g and its derivative (nb:
     ! the vacuum check prevents errors, but leads to incorrect values
     ! for dy_g_dx)
 
-    !$OMP PARALLEL DO PRIVATE (pt, U, dU)
+    !$OMP PARALLEL DO PRIVATE (U, dU)
     do k = 1, bp%n_k
 
-       pt = bp%gr%pt(k)
+       associate (pt => bp%gr%pt(k))
 
-       U = bp%ml%U(pt)
+         U = bp%ml%U(pt)
+         
+         y_g(k) = -U*y_c(1,k)
 
-       y_g(k) = -U*y_c(1,k)
+         if (bp%ml%vacuum(pt)) then
+            dU = 0._WP
+         else
+            dU = bp%ml%dU(pt)
+         endif
 
-       if (bp%ml%vacuum(pt)) then
-          dU = 0._WP
-       else
-          dU = bp%ml%dU(pt)
-       endif
+         if (pt%x /= 0._WP) then
+            dy_g_dx(k) = -U*dy_c_dx(1,k) - U*dU*y_c(1,k)/pt%x
+         else
+            dy_g_dx(k) = 0._WP
+         endif
 
-       if (pt%x /= 0._WP) then
-          dy_g_dx(k) = -U*dy_c_dx(1,k) - U*dU*y_c(1,k)/pt%x
-       else
-          dy_g_dx(k) = 0._WP
-       endif
+       end associate
 
     end do
 

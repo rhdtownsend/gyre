@@ -133,7 +133,7 @@ contains
     ml%s_i = ml%gr%s_i()
     ml%s_o = ml%gr%s_o()
 
-    ml%n_k = ml%gr%n_k()
+    ml%n_k = ml%gr%n_k
 
     $CHECK_BOUNDS(SIZE(n_poly),ml%s_o-ml%s_i+1)
 

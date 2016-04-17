@@ -181,7 +181,7 @@ contains
     ml%s_i = ml%gr%s_i()
     ml%s_o = ml%gr%s_o()
 
-    ml%n_k = ml%gr%n_k()
+    ml%n_k = ml%gr%n_k
 
     ! Create segments
 
@@ -215,7 +215,6 @@ contains
     class(evol_model_t), intent(inout) :: this
     real(WP), intent(in)               :: f(:)
 
-    type(point_t)         :: pt(this%n_k)
     real(WP), allocatable :: f_(:)
     integer               :: s
     integer               :: k_i
@@ -223,22 +222,22 @@ contains
 
     ! Set the data for $NAME
 
-    pt = this%gr%pt()
-
     if (this%add_center) then
        f_ = [$F_C,f]
     else
        f_ = f
     endif
 
-    $CHECK_BOUNDS(SIZE(f_),this%n_k)
+    $CHECK_BOUNDS(SIZE(f_),this%gr%n_k)
 
     seg_loop : do s = this%s_i, this%s_o
 
        k_i = this%gr%k_i(s)
        k_o = this%gr%k_o(s)
 
-       call this%es(s)%set_${NAME}(pt(k_i:k_o)%x, f_(k_i:k_o))
+       associate (pt => this%gr%pt)
+         call this%es(s)%set_${NAME}(pt(k_i:k_o)%x, f_(k_i:k_o))
+       end associate
        
     end do seg_loop
 
@@ -254,8 +253,8 @@ contains
 
       ! Interpolate f at x=0 using parabolic fitting
 
-      associate (x_1 => pt(2)%x, &
-                 x_2 => pt(3)%x, &
+      associate (x_1 => this%gr%pt(2)%x, &
+                 x_2 => this%gr%pt(3)%x, &
                  f_1 => f(1), &
                  f_2 => f(2))
 
@@ -297,15 +296,12 @@ contains
     class(evol_model_t), intent(inout) :: this
     real(WP), intent(in)               :: f(:)
 
-    type(point_t)         :: pt(this%n_k)
     real(WP), allocatable :: f_(:)
     integer               :: s
     integer               :: k_i
     integer               :: k_o
 
     ! Set the data for As
-
-    pt = this%gr%pt()
 
     if (this%add_center) then
        f_ = [0._WP,f]
@@ -318,21 +314,25 @@ contains
        k_i = this%gr%k_i(s)
        k_o = this%gr%k_o(s)
 
-       if (this%repair_As) then
+       associate (pt => this%gr%pt)
 
-          ! Repair the segment boundaries
+         if (this%repair_As) then
 
-          if (s > this%s_i .AND. k_i + 2 <= k_o) then
-             f_(k_i) = f(k_i+1) + (pt(k_i)%x - pt(k_i+1)%x)*(f(k_i+2) - f(k_i+1))/(pt(k_i+2)%x - pt(k_i+1)%x)
-          endif
+            ! Repair the segment boundaries
+
+            if (s > this%s_i .AND. k_i + 2 <= k_o) then
+               f_(k_i) = f(k_i+1) + (pt(k_i)%x - pt(k_i+1)%x)*(f(k_i+2) - f(k_i+1))/(pt(k_i+2)%x - pt(k_i+1)%x)
+            endif
                
-          if (s < this%s_o .AND. k_o - 2 >= k_i) then
-             f_(k_o) = f(k_o-1) + (pt(k_o)%x - pt(k_o-1)%x)*(f(k_o-1) - f(k_o-2))/(pt(k_o-1)%x - pt(k_o-2)%x)
-          endif
+            if (s < this%s_o .AND. k_o - 2 >= k_i) then
+               f_(k_o) = f(k_o-1) + (pt(k_o)%x - pt(k_o-1)%x)*(f(k_o-1) - f(k_o-2))/(pt(k_o-1)%x - pt(k_o-2)%x)
+            endif
 
-       endif
+         endif
                
-       call this%es(s)%set_As(pt(k_i:k_o)%x, f_(k_i:k_o))
+         call this%es(s)%set_As(pt(k_i:k_o)%x, f_(k_i:k_o))
+
+       end associate
 
     end do seg_loop
 
@@ -566,24 +566,30 @@ contains
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_p
 
-    type(point_t) :: pt(this%n_k)
-    real(WP)      :: V_2(this%n_k)
-    real(WP)      :: c_1(this%n_k)
-    real(WP)      :: Gamma_1(this%n_k)
-    real(WP)      :: f(this%n_k)
+    real(WP) :: V_2(this%n_k)
+    real(WP) :: c_1(this%n_k)
+    real(WP) :: Gamma_1(this%n_k)
+    real(WP) :: f(this%n_k)
 
     ! Calculate the p-mode (large) frequency separation
 
-    pt = this%gr%pt()
+    associate (pt => this%gr%pt)
 
-    V_2 = this%V_2(pt)
-    c_1 = this%c_1(pt)
-    Gamma_1 = this%Gamma_1(pt)
+      V_2 = this%V_2(pt)
+      c_1 = this%c_1(pt)
+      Gamma_1 = this%Gamma_1(pt)
 
-    f = Gamma_1/(c_1*V_2)
+      f = Gamma_1/(c_1*V_2)
 
-    delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
-              integrate(pt%x, f)
+      $if ($GFORTRAN_PR_49636)
+      delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
+                integrate(this%gr%pt%x, f)
+      $else
+      delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
+                integrate(pt%x, f)
+      $endif
+
+    end associate
 
     ! Finish
 
@@ -598,26 +604,38 @@ contains
     class(evol_model_t), intent(in) :: this
     real(WP)                        :: delta_g
 
-    type(point_t) :: pt(this%n_k)
-    real(WP)      :: As(this%n_k)
-    real(WP)      :: c_1(this%n_k)
-    real(WP)      :: f(this%n_k)
+    real(WP) :: As(this%n_k)
+    real(WP) :: c_1(this%n_k)
+    real(WP) :: f(this%n_k)
 
     ! Calculate the g-mode inverse period separation
 
-    pt = this%gr%pt()
+    associate (pt => this%gr%pt)
 
-    As = this%As(pt)
-    c_1 = this%c_1(pt)
+      As = this%As(pt)
+      c_1 = this%c_1(pt)
 
-    where (pt%x /= 0._WP)
-       f = SQRT(MAX(As/c_1, 0._WP))/pt%x
-    elsewhere
-       f = 0._WP
-    end where
+      $if ($GFORTRAN_PR_49636)
+      where (this%gr%pt%x /= 0._WP)
+         f = SQRT(MAX(As/c_1, 0._WP))/this%gr%pt%x
+      elsewhere
+         f = 0._WP
+      end where
 
-    delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
-              integrate(pt%x, f)
+      delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
+           integrate(this%gr%pt%x, f)
+      $else
+      where (pt%x /= 0._WP)
+         f = SQRT(MAX(As/c_1, 0._WP))/pt%x
+      elsewhere
+         f = 0._WP
+      end where
+
+      delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
+                integrate(pt%x, f)
+      $endif
+
+    end associate
 
     ! Finish
 

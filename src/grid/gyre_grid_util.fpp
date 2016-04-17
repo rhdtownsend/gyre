@@ -70,7 +70,6 @@ contains
     integer, intent(out)                :: k_turn
     real(WP), intent(out)               :: x_turn
 
-    integer                     :: n_k
     class(r_rot_t), allocatable :: rt
     real(WP)                    :: gamma_a
     real(WP)                    :: gamma_b
@@ -82,16 +81,14 @@ contains
     ! Find the cell index and abscissa of the inner turning point at
     ! frequency omega
 
-    n_k = gr%n_k()
-
-    k_turn = n_k
+    k_turn = gr%n_k
     x_turn = HUGE(0._WP)
 
     allocate(rt, SOURCE=r_rot_t(ml, md_p, os_p))
 
     gamma_b = gamma_(ml, rt, gr%pt(1), omega)
 
-    turn_loop : do k = 1, n_k-1
+    turn_loop : do k = 1, gr%n_k-1
 
        ! Check for a sign change in gamma
 
@@ -241,7 +238,7 @@ contains
     endif
 
     if (PRESENT(pt_o)) then
-       pt_o = gr%pt(gr%n_k())
+       pt_o = gr%pt(gr%n_k)
        pt_o%x = MIN(os_p%x_o, pt_o%x)
        call gr%locate(pt_o%x, pt_o%s, back=.FALSE.)
        $ASSERT(pt_o%s >= gr%s_i(),Invalid segment)
