@@ -618,22 +618,19 @@ contains
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    type(sol_t)           :: sl
+    type(soln_t)          :: sl
     integer, allocatable  :: s(:)
     real(WP), allocatable :: x(:)
     type(mode_t)          :: md_new
     type(r_ext_t)         :: chi
 
-    ! Create the sol_t
+    ! Create the soln_t
 
-    sl = sol_t(bp, omega)
-
-    s = bp%s
-    x = bp%x
+    sl = soln_t(bp, omega)
 
     ! Construct the new mode
 
-    md_new = mode_t(ml, sl, s, x, md_p(1), os_p_sel)
+    md_new = mode_t(ml, sl, md_p(1), os_p_sel)
 
     chi = ABS(sl%discrim)/ABS(discrim_ref)
 
