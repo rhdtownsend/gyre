@@ -156,7 +156,7 @@ contains
        i = s - ml%s_i + 1
 
        ml%ps(s) = poly_seg_t(x(k_i(i):k_o(i)), Theta(k_i(i):k_o(i)), dTheta(k_i(i):k_o(i)), &
-                             mu(i), mu(ml%s_o-ml%s_i+1), xi(n_k), &
+                             mu(i), mu(ml%s_o-ml%s_i+2), xi(n_k), &
                              n_poly(i), B(i), t(i), Gamma_1)
 
     end do seg_loop
