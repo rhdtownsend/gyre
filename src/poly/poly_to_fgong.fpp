@@ -25,6 +25,7 @@ program poly_to_fgong
   use core_system
 
   use gyre_constants
+  use gyre_grid
   use gyre_model
   use gyre_model_par
   use gyre_poly_file
@@ -48,23 +49,22 @@ program poly_to_fgong
   character(:), allocatable :: out_filename
   logical                   :: drop_outer
 
-  type(model_par_t)         :: ml_p
-  class(model_t), pointer   :: ml
-  integer, allocatable      :: s(:)
-  real(WP), allocatable     :: x(:)
-  real(WP), allocatable     :: V_2(:)
-  real(WP), allocatable     :: As(:)
-  real(WP), allocatable     :: U(:)
-  real(WP), allocatable     :: c_1(:)
-  real(WP), allocatable     :: Gamma_1(:)
-  real(WP), allocatable     :: M_r(:)
-  real(WP), allocatable     :: P(:)
-  real(WP), allocatable     :: rho(:)
-  integer                   :: n
-  real(WP), allocatable     :: glob(:)
-  real(WP), allocatable     :: var(:,:)
-  integer                   :: unit
-  integer                   :: i
+  type(model_par_t)       :: ml_p
+  class(model_t), pointer :: ml
+  type(grid_t)            :: gr
+  real(WP), allocatable   :: V_2(:)
+  real(WP), allocatable   :: As(:)
+  real(WP), allocatable   :: U(:)
+  real(WP), allocatable   :: c_1(:)
+  real(WP), allocatable   :: Gamma_1(:)
+  real(WP), allocatable   :: M_r(:)
+  real(WP), allocatable   :: P(:)
+  real(WP), allocatable   :: rho(:)
+  integer                 :: n_k
+  real(WP), allocatable   :: glob(:)
+  real(WP), allocatable   :: var(:,:)
+  integer                 :: unit
+  integer                 :: k
 
   ! Read parameters
 
@@ -82,37 +82,51 @@ program poly_to_fgong
 
   ! Set up the grid
 
-  call set_grid(ml, drop_outer, s, x)
+  gr = ml%grid()
 
-  ! Calculate dimensionless structure data
+  if (drop_outer) then
+     gr = grid_t(gr%pt(:gr%n_k-1)%x)
+  endif
 
-  V_2 = ml%V_2(s, x)
-  As = ml%As(s, x)
-  U = ml%U(s, x)
-  c_1 = ml%c_1(s, x)
-  Gamma_1 = ml%Gamma_1(s, x)
+  ! Extract data from the model
 
-  ! Calculate physical data
+  associate (pt => gr%pt)
 
-  M_r = M_SUN*(x**3/c_1)
+    ! Dimensionless structure variables
 
-  P = (G_GRAVITY*M_SUN**2/(4._WP*PI*R_SUN**4))*&
-       (U/(c_1**2*V_2))
+    V_2 = ml%V_2(pt)
+    As = ml%As(pt)
+    U = ml%U(pt)
+    c_1 = ml%c_1(pt)
+    Gamma_1 = ml%Gamma_1(pt)
 
-  rho = (M_SUN/(4._WP*PI*R_SUN**3))*(U/c_1)
+    ! Physical structure variables
+
+    $if ($GFORTRAN_PR_49636)
+    M_r = M_SUN*(gr%pt%x**3/c_1)
+    $else
+    M_r = M_SUN*(pt%x**3/c_1)
+    $endif
+
+    P = (G_GRAVITY*M_SUN**2/(4._WP*PI*R_SUN**4))*&
+        (U/(c_1**2*V_2))
+
+    rho = (M_SUN/(4._WP*PI*R_SUN**3))*(U/c_1)
+
+  end associate
 
   ! Store into var array
 
-  n = SIZE(s)
+  n_k = gr%n_k
 
   allocate(glob(ICONST))
-  allocate(var(IVAR,n))
+  allocate(var(IVAR,n_k))
 
   glob(1) = M_SUN
   glob(2) = R_SUN
   glob(3:) = 0._WP
 
-  var(1,:) = x*R_SUN
+  var(1,:) = gr%pt%x*R_SUN
 
   where (M_r /= 0._WP)
      var(2,:) = LOG(M_r/M_SUN)
@@ -129,7 +143,7 @@ program poly_to_fgong
   var(15,:) = As
   var(16,:) = 0._WP
 
-  var = var(:,n:1:-1)
+  var = var(:,n_k:1:-1)
 
   ! Write out the FGONG file
 
@@ -141,55 +155,18 @@ program poly_to_fgong
   write(unit, 100) 'Fum'
 100 format(A)
 
-  write(unit, 110) n, ICONST, IVAR, IVERS
+  write(unit, 110) n_k, ICONST, IVAR, IVERS
 110 format(4I10)
 
   write(unit, 120) glob
 120  format(1P,5(X,E26.18E3))
 
-  do i = 1, n
-     write(unit, 120) var(:,i)
+  do k = 1, n_k
+     write(unit, 120) var(:,k)
   end do
 
   close(unit)
 
   ! Finish
 
-contains
-
-  subroutine set_grid (ml, drop_outer, s, x)
-
-    class(model_t), pointer, intent(in) :: ml
-    logical, intent(in)                 :: drop_outer
-    integer, allocatable, intent(out)   :: s(:)
-    real(WP), allocatable, intent(out)  :: x(:)
-
-    integer               :: s_
-    real(WP), allocatable :: x_s(:)
-
-    ! Set up the grid
-
-    allocate(s(0))
-    allocate(x(0))
-
-    seg_loop : do s_ = 1, ml%n_s
-
-       x_s = ml%x_base(s_)
-
-       s = [s,SPREAD(s_, 1, SIZE(x_s))]
-       x = [x,x_s]
-
-    end do seg_loop
-
-    if (drop_outer) then
-       s = s(:SIZE(s)-1)
-       x = x(:SIZE(x)-1)
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine set_grid
-    
 end program poly_to_fgong
