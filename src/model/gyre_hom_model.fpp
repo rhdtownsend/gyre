@@ -25,6 +25,8 @@ module gyre_hom_model
   use core_parallel
 
   use gyre_grid
+  use gyre_grid_factory
+  use gyre_grid_weights
   use gyre_model
   use gyre_model_par
   use gyre_point
@@ -96,9 +98,22 @@ contains
     type(model_par_t), intent(in) :: ml_p
     type(hom_model_t)             :: ml
 
+    real(WP), allocatable :: w(:)
+
     ! Construct the hom_model_t
 
-    ml%gr = grid_t([ml_p%x_i,ml_p%x_o])
+    select case (ml_p%grid_type)
+    case ('UNI')
+       w = uni_weights(ml_p%n)
+    case ('GEO')
+       w = geo_weights(ml_p%n, ml_p%s)
+    case ('LOG')
+       w = log_weights(ml_p%n, ml_p%s)
+    case default
+       $ABORT(Invalid grid_type)
+    end select
+
+    ml%gr = grid_t(w, ml_p%x_i, ml_p%x_o)
 
     ml%Gamma_1_ = ml_p%Gamma_1
 
