@@ -29,6 +29,8 @@ program gyre
   use gyre_bep
   use gyre_constants
   use gyre_ext
+  use gyre_grid
+  use gyre_grid_factory
   use gyre_grid_par
   use gyre_mode
   use gyre_mode_par
@@ -71,7 +73,11 @@ program gyre
   type(num_par_t)               :: nm_p_sel
   type(grid_par_t)              :: gr_p_sel
   type(scan_par_t), allocatable :: sc_p_sel(:)
+  type(grid_t)                  :: gr
   real(WP), allocatable         :: omega(:)
+  integer                       :: s
+  integer                       :: k_i
+  integer                       :: k_o
   class(r_bep_t), allocatable   :: bp_ad
   class(c_bep_t), allocatable   :: bp_nad
   integer                       :: n_md_ad
@@ -168,16 +174,37 @@ program gyre
      call select_par(gr_p, md_p(i)%tag, gr_p_sel)
      call select_par(sc_p, md_p(i)%tag, sc_p_sel)
 
+     ! Create the scaffold grid (used in setting up the frequency array)
+
+     gr = grid_t(ml%grid(), gr_p_sel%x_i, gr_p_sel%x_o)
+
      ! Set up the frequency array
 
-     call build_scan(ml, md_p(i), os_p_sel, sc_p_sel, omega)
+     call build_scan(ml, gr, md_p(i), os_p_sel, sc_p_sel, omega)
+
+     ! Create the full grid
+
+     if (check_log_level('INFO')) then
+        write(OUTPUT_UNIT, 100) 'Building x grid'
+     endif
+
+     gr = grid_t(ml, omega, gr_p_sel, md_p(i), os_p_sel)
+
+     if (check_log_level('INFO')) then
+        seg_loop : do s = gr%s_i(), gr%s_o()
+           k_i = gr%k_i(s)
+           k_o = gr%k_o(s)
+           write(OUTPUT_UNIT, 140) 'segment', s, ':', k_o-k_i+1, 'points, x range', gr%pt(k_i)%x, '->', gr%pt(k_o)%x
+140        format(3X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
+        end do seg_loop
+     end if
 
      ! Find adiabatic modes
 
      if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-        allocate(bp_ad, SOURCE=rad_bep_t(ml, omega, gr_p_sel, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_ad, SOURCE=rad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
      else
-        allocate(bp_ad, SOURCE=ad_bep_t(ml, omega, gr_p_sel, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_ad, SOURCE=ad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
      endif
 
      i_ad_a = n_md_ad + 1
@@ -190,7 +217,7 @@ program gyre
 
      if (os_p_sel%nonadiabatic) then
 
-        allocate(bp_nad, SOURCE=nad_bep_t(ml, omega, gr_p_sel, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_nad, SOURCE=nad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
 
         i_ad_b = n_md_ad
 
