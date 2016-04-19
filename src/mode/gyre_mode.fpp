@@ -172,7 +172,7 @@ contains
     allocate(md%sl, SOURCE=sl)
     allocate(md%gr, SOURCE=gr)
 
-    allocate(md%rt, SOURCE=c_rot_t(ml, md_p, os_p))
+    allocate(md%rt, SOURCE=c_rot_t(ml, gr, md_p, os_p))
 
     md%omega = sl%omega
     md%l_i = md%rt%l_i(md%omega)
@@ -190,9 +190,8 @@ contains
     ! Locate the reference point
 
     associate (pt => md%pt_ref)
-      pt = gr%pt(gr%n_k)
-      pt%x = MIN(os_p%x_ref, pt%x)
-      call gr%locate(pt%x, pt%s)
+      pt%x = MAX(gr%pt(1)%x, MIN(gr%pt(gr%n_k)%x, os_p%x_ref))
+      pt%s = gr%s_x(pt%x)
       $ASSERT(pt%s >= gr%s_i(),Invalid segment)
       $ASSERT(pt%s <= gr%s_o(),Invalid segment)
     end associate
@@ -353,9 +352,9 @@ contains
     ! Calculate the frequency
 
     if (PRESENT(freq_frame)) then
-       freq = freq_from_omega(this%omega, this%ml, freq_units, freq_frame, this%md_p, this%os_p)
+       freq = freq_from_omega(this%omega, this%ml, this%gr, freq_units, freq_frame, this%md_p, this%os_p)
     else
-       freq = freq_from_omega(this%omega, this%ml, freq_units, 'INERTIAL', this%md_p, this%os_p)
+       freq = freq_from_omega(this%omega, this%ml, this%gr, freq_units, 'INERTIAL', this%md_p, this%os_p)
     endif
 
     ! Finish
