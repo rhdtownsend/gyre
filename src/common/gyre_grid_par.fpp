@@ -30,14 +30,13 @@ module gyre_grid_par
   ! Derived-type definitions
 
   type :: grid_par_t
+     real(WP)        :: x_i
+     real(WP)        :: x_o
      real(WP)        :: alpha_osc
      real(WP)        :: alpha_exp
      real(WP)        :: alpha_thm
      real(WP)        :: alpha_str
-     real(WP)        :: s_base
-     integer         :: n_base
      integer         :: n_center
-     character(64)   :: base_type
      character(2048) :: tag_list
   end type grid_par_t
 
@@ -59,18 +58,17 @@ contains
 
     integer                        :: n_gr_p
     integer                        :: i
+    real(WP)                       :: x_i
+    real(WP)                       :: x_o
     real(WP)                       :: alpha_osc
     real(WP)                       :: alpha_exp
     real(WP)                       :: alpha_thm
     real(WP)                       :: alpha_str
-    real(WP)                       :: s_base
-    integer                        :: n_base
     integer                        :: n_center
-    character(LEN(gr_p%base_type)) :: base_type
     character(LEN(gr_p%tag_list))  :: tag_list
 
-    namelist /grid/ alpha_osc, alpha_exp, alpha_thm, alpha_str, &
-                    s_base, n_base, n_center, base_type, tag_list
+    namelist /grid/ x_i, x_i, alpha_osc, alpha_exp, alpha_thm, alpha_str, &
+                    n_center, tag_list
 
     ! Count the number of grid namelists
 
@@ -93,31 +91,29 @@ contains
 
     read_loop : do i = 1, n_gr_p
 
+       x_i = -HUGE(0._WP)
+       x_o = HUGE(0._WP)
+
        alpha_osc = 0._WP
        alpha_exp = 0._WP
        alpha_thm = 0._WP
        alpha_str = 0._WP
 
-       s_base = 0._WP
-       n_base = 0
-
        n_center = 0
 
-       base_type = 'MODEL'
        tag_list = ''
 
        read(unit, NML=grid)
 
        ! Initialize the grid_par
 
-       gr_p(i) = grid_par_t(alpha_osc=alpha_osc, &
+       gr_p(i) = grid_par_t(x_i=x_i, &
+                            x_o=x_o, &
+                            alpha_osc=alpha_osc, &
                             alpha_exp=alpha_exp, &
                             alpha_thm=alpha_thm, &
                             alpha_str=alpha_str, &
-                            s_base=s_base, &
-                            n_base=n_base, &
                             n_center=n_center, &
-                            base_type=base_type, &
                             tag_list=tag_list)
 
     end do read_loop
