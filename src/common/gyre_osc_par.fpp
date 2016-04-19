@@ -32,8 +32,6 @@ module gyre_osc_par
   ! Derived-type definitions
 
   type :: osc_par_t
-     real(WP)        :: x_i
-     real(WP)        :: x_o
      real(WP)        :: x_ref
      character(64)   :: rotation_method
      character(64)   :: variables_set
@@ -87,8 +85,6 @@ contains
 
     integer                              :: n_os_p
     integer                              :: i
-    real(WP)                             :: x_i
-    real(WP)                             :: x_o
     real(WP)                             :: x_ref
     character(LEN(os_p%rotation_method)) :: rotation_method
     character(LEN(os_p%variables_set))   :: variables_set
@@ -101,7 +97,7 @@ contains
     logical                              :: narf_approx
     logical                              :: reduce_order
 
-    namelist /osc/ x_ref, x_i, x_o, rotation_method, inner_bound, outer_bound, &
+    namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, &
          variables_set, inertia_norm, tag_list, nonadiabatic, cowling_approx, &
          narf_approx, reduce_order
 
@@ -128,9 +124,6 @@ contains
 
        x_ref = HUGE(0._WP)
 
-       x_i = -HUGE(0._WP)
-       x_o = HUGE(0._WP)
-
        rotation_method = 'NULL'
        variables_set = ''
        inner_bound = 'REGULAR'
@@ -147,9 +140,7 @@ contains
 
        ! Initialize the osc_par
 
-       os_p(i) = osc_par_t(x_i=x_i, &
-                           x_o=x_o, &
-                           x_ref=x_ref, &
+       os_p(i) = osc_par_t(x_ref=x_ref, &
                            rotation_method=rotation_method, &
                            variables_set=variables_set, &
                            inner_bound=inner_bound, &
@@ -180,8 +171,6 @@ contains
 
     ! Broadcast the osc_par_t
 
-    call bcast(os_p%x_i, root_rank)
-    call bcast(os_p%x_o, root_rank)
     call bcast(os_p%x_ref, root_rank)
 
     call bcast(os_p%rotation_method, root_rank)
