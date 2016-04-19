@@ -45,7 +45,7 @@ module gyre_grid_factory
 
   interface grid_t
      module procedure grid_t_model_
-     module procedure grid_t_weight_
+     module procedure grid_t_weights_
   end interface grid_t
 
   ! Access specifiers
@@ -58,37 +58,20 @@ module gyre_grid_factory
 
 contains
 
-  function grid_t_model_ (ml, omega, gr_p, md_p, os_p, verbose) result (gr)
+  function grid_t_model_ (ml, omega, gr_p, md_p, os_p) result (gr)
 
     class(model_t), pointer, intent(in) :: ml
     real(WP), intent(in)                :: omega(:)
     type(grid_par_t), intent(in)        :: gr_p
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
-    logical, optional, intent(in)       :: verbose
     type(grid_t)                        :: gr
-
-    logical              :: write_info
-    integer              :: s
-    integer              :: k_i
-    integer              :: k_o
-    type(point_t)        :: pt_i
-    type(point_t)        :: pt_o
-
-    if (PRESENT(verbose)) then
-       write_info = verbose .AND. check_log_level('INFO')
-    else
-       write_info = check_log_level('DEBUG')
-    endif
 
     ! Construct the grid_t using the supplied model grid as the base
 
-    if (write_info) then
-       write(OUTPUT_UNIT, 100) 'Building x grid'
-100    format(A)
-    endif
+    ! Create the scaffold grid
 
-    gr = grid_t(ml%grid(), os_p%x_i, os_p%x_o)
+    gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
 
     ! Add points at the center
 
@@ -98,25 +81,6 @@ contains
 
     call add_global_(ml, omega, gr_p, md_p, os_p, gr)
 
-    ! Report on the grid
-
-    if (write_info) then
-
-       seg_loop : do s = gr%s_i(), gr%s_o()
-
-          k_i = gr%k_i(s)
-          k_o = gr%k_o(s)
-
-          pt_i = gr%pt(k_i)
-          pt_o = gr%pt(k_o)
-
-          write(OUTPUT_UNIT, 110) 'segment', s, ':', k_o-k_i+1, 'points, x range', pt_i%x, '->', pt_o%x
-110       format(3X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
-
-       end do seg_loop
-
-    end if
-
     ! Finish
 
     return
@@ -125,15 +89,15 @@ contains
 
   !****
 
-  function grid_t_weight_ (w, x_i, x_o) result (gr)
+  function grid_t_weights_ (w, x_i, x_o) result (gr)
 
     real(WP), intent(in) :: w(:)
     real(WP), intent(in) :: x_i
     real(WP), intent(in) :: x_o
     type(grid_t)         :: gr
 
-    ! Construct the grid_t using the supplied weight function and
-    ! range (x_i,x_o)
+    ! Construct the grid_t using the supplied weights array and range
+    ! (x_i,x_o)
 
     gr = grid_t((1._WP-w)*x_i + w*x_o)
 
@@ -141,7 +105,7 @@ contains
 
     return
 
-  end function grid_t_weight_
+  end function grid_t_weights_
 
   !****
 
@@ -288,7 +252,7 @@ contains
 
     if (gr_p%alpha_osc > 0._WP .OR. gr_p%alpha_exp > 0._WP) then
 
-       allocate(rt, SOURCE=r_rot_t(ml, md_p, os_p))
+       allocate(rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
 
        ! At each point, determine the maximum absolute value of the
        ! real and imaginary parts of the local radial wavenumber beta,
@@ -422,7 +386,7 @@ contains
 
     if (gr_p%alpha_thm > 0._WP) then
 
-       allocate(rt, SOURCE=r_rot_t(ml, md_p, os_p))
+       allocate(rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
 
        ! At each point, determine the maximum absolute value of the
        ! local thermal wavenumber beta_t, for all possible omega
