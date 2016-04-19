@@ -1,4 +1,4 @@
-#!/usr/bin/env ipython
+#!/usr/bin/env python
 #
 # Build polytrope files
 
@@ -57,10 +57,10 @@ if __name__ == "__main__":
 
     Gamma_1 = 1.66666666666666667
 
-    build_poly([0.0], [], [], Gamma_1, 0.000244949, 1E-10, '0.0/poly.h5')
-    build_poly([0.0,0.0], [0.0], [1.], Gamma_1, 0.000244949, 1E-10, '0.0+0.0/poly.h5')
-    build_poly([0.0,0.0], [0.0], [1.], Gamma_1, 0.000244949, 1E-10, '0.0+0.0/poly.h5')
-    build_poly([1.5], [], [], Gamma_1, 0.000365375, 1E-10, '1.5/poly.h5')
-    build_poly([3.0], [], [], Gamma_1, 0.000689685, 1E-10, '3.0/poly.h5')
-    build_poly([3.0,3.0], [0.0], [2.], Gamma_1, 0.000689685, 1E-10, '3.0+3.0/poly.h5')
-    build_poly([4.0], [], [], Gamma_1, 0.001497155, 1E-10, '4.0/poly.h5')
+    build_poly([0.0], [], [], Gamma_1, 0.00244949, 1E-10, '0.0/poly.h5')
+    build_poly([0.0,0.0], [0.0], [1.], Gamma_1, 0.00244949, 1E-10, '0.0+0.0/poly.h5')
+    build_poly([0.0,0.0], [0.0], [1.], Gamma_1, 0.00244949, 1E-10, '0.0+0.0/poly.h5')
+    build_poly([1.5], [], [], Gamma_1, 0.00365375, 1E-10, '1.5/poly.h5')
+    build_poly([3.0], [], [], Gamma_1, 0.00689685, 1E-10, '3.0/poly.h5')
+    build_poly([3.0,3.0], [0.0], [2.], Gamma_1, 0.00689685, 1E-10, '3.0+3.0/poly.h5')
+    build_poly([4.0], [], [], Gamma_1, 0.01497155, 1E-10, '4.0/poly.h5')
