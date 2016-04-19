@@ -77,19 +77,17 @@ module gyre_${T}_trad_rot
 
 contains
 
-  function ${T}_trad_rot_t_ (ml, md_p) result (rt)
+  function ${T}_trad_rot_t_ (ml, gr, md_p) result (rt)
 
     class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
     type(mode_par_t), intent(in)        :: md_p
     type(${T}_trad_rot_t)               :: rt
-
-    type(grid_t) :: gr
 
     ! Construct the trad_rot_t
 
     rt%ml => ml
 
-    gr = ml%grid()
     rt%pt_i = gr%pt(1)
 
     rt%l = md_p%l
