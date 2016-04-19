@@ -38,7 +38,6 @@
 /
 
 &grid
-	base_type = 'MODEL'
 	alpha_osc = 10
 	alpha_exp = 2
 	n_center = 5

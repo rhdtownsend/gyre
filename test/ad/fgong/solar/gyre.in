@@ -28,7 +28,6 @@
 /
 
 &grid
-	base_type = 'MODEL'
 	alpha_osc = 5.
 	alpha_exp = 1.
 /
