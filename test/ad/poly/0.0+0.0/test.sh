@@ -14,7 +14,7 @@ OUT_FILE=summary.txt
 
 LABEL="polytrope model (n_poly=0.0 w/ double point)"
 
-RELERR=5E-8
+RELERR=6E-8
 FIELDS=1-2,5
 
 # Do the tests
