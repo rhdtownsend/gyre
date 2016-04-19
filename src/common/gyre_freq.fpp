@@ -27,7 +27,6 @@ module gyre_freq
   use gyre_constants
   use gyre_evol_model
   use gyre_grid
-  use gyre_grid_util
   use gyre_hom_model
   use gyre_model
   use gyre_mode_par
@@ -72,10 +71,11 @@ contains
   $local $T $1
   $local $TYPE $2
 
-  function omega_from_freq_${T}_ (freq, ml, freq_units, freq_frame, md_p, os_p) result (omega)
+  function omega_from_freq_${T}_ (freq, ml, gr, freq_units, freq_frame, md_p, os_p) result (omega)
 
     $TYPE(WP), intent(in)               :: freq
     class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
     character(*), intent(in)            :: freq_units
     character(*), intent(in)            :: freq_frame
     type(mode_par_t), intent(in)        :: md_p
@@ -92,9 +92,10 @@ contains
     ! Calculate the dimensionless inertial-frame frequency omega from
     ! the dimensioned local-frame frequency freq
 
-    ! Get boundary points
+    ! Determine boundary points
 
-    call get_bound_pt(ml, os_p, pt_i, pt_o)
+    pt_i = gr%pt(1)
+    pt_o = gr%pt(gr%n_k)
 
     ! Calculate the dimensionless frequency in the local frame
 
@@ -151,7 +152,7 @@ contains
 
     ! Now convert to the inertial frame
 
-    allocate(rt, SOURCE=${T}_rot_t(ml, md_p, os_p))
+    allocate(rt, SOURCE=${T}_rot_t(ml, gr, md_p, os_p))
 
     select case (freq_frame)
     case ('INERTIAL')
@@ -182,10 +183,11 @@ contains
   $local $T $1
   $local $TYPE $2
 
-  function freq_from_omega_${T}_ (omega, ml, freq_units, freq_frame, md_p, os_p) result (freq)
+  function freq_from_omega_${T}_ (omega, ml, gr, freq_units, freq_frame, md_p, os_p) result (freq)
 
     $TYPE(WP), intent(in)               :: omega
     class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
     character(*), intent(in)            :: freq_units
     character(*), intent(in)            :: freq_frame
     type(mode_par_t), intent(in)        :: md_p
@@ -202,13 +204,14 @@ contains
     ! Calculate the dimensioned local-frame frequency freq from the
     ! dimensionless inertial-frame frequency omega
 
-    ! Get boundary points
+    ! Determine boundary points
 
-    call get_bound_pt(ml, os_p, pt_i, pt_o)
+    pt_i = gr%pt(1)
+    pt_o = gr%pt(gr%n_k)
 
     ! Convert from the inertial frame
 
-    allocate(rt, SOURCE=${T}_rot_t(ml, md_p, os_p))
+    allocate(rt, SOURCE=${T}_rot_t(ml, gr, md_p, os_p))
 
     select case (freq_frame)
     case ('INERTIAL')
