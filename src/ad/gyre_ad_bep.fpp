@@ -31,7 +31,6 @@ module gyre_ad_bep
   use gyre_ext
   use gyre_grid
   use gyre_grid_factory
-  use gyre_grid_par
   use gyre_model
   use gyre_mode_par
   use gyre_num_par
@@ -77,17 +76,16 @@ module gyre_ad_bep
 
 contains
 
-  function ad_bep_t_ (ml, omega, gr_p, md_p, nm_p, os_p) result (bp)
+  function ad_bep_t_ (ml, gr, omega, md_p, nm_p, os_p) result (bp)
 
     class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
     real(WP), intent(in)                :: omega(:)
-    type(grid_par_t), intent(in)        :: gr_p
     type(mode_par_t), intent(in)        :: md_p
     type(num_par_t), intent(in)         :: nm_p
     type(osc_par_t), intent(in)         :: os_p
     type(ad_bep_t)                      :: bp
 
-    type(grid_t)                 :: gr
     type(ad_bound_t)             :: bd
     integer                      :: k
     type(ad_diff_t), allocatable :: df(:)
@@ -95,10 +93,6 @@ contains
     real(WP)                     :: omega_max
 
     ! Construct the ad_bep_t
-
-    ! Build the grid
-
-    gr = grid_t(ml, omega, gr_p, md_p, os_p, verbose=.TRUE.)
 
     ! Initialize the boundary conditions
 
@@ -109,7 +103,7 @@ contains
     allocate(df(gr%n_k-1))
 
     do k = 1, gr%n_k-1
-       df(k) = ad_diff_t(ml, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = ad_diff_t(ml, gr, k, md_p, nm_p, os_p)
     end do
 
     ! Initialize the bep_t
@@ -129,8 +123,8 @@ contains
     bp%ml => ml
     bp%gr = gr
 
-    bp%eq = ad_eqns_t(ml, md_p, os_p)
-    bp%vr = ad_vars_t(ml, md_p, os_p)
+    bp%eq = ad_eqns_t(ml, gr, md_p, os_p)
+    bp%vr = ad_vars_t(ml, gr, md_p, os_p)
 
     bp%md_p = md_p
     bp%os_p = os_p

@@ -31,7 +31,6 @@ module gyre_nad_bep
   use gyre_ext
   use gyre_grid
   use gyre_grid_factory
-  use gyre_grid_par
   use gyre_model
   use gyre_mode_par
   use gyre_num_par
@@ -77,18 +76,16 @@ module gyre_nad_bep
 
 contains
 
-  function nad_bep_t_ (ml, omega, gr_p, md_p, nm_p, os_p) result (bp)
+  function nad_bep_t_ (ml, gr, omega, md_p, nm_p, os_p) result (bp)
 
     class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
     real(WP), intent(in)                :: omega(:)
-    type(grid_par_t), intent(in)        :: gr_p
     type(mode_par_t), intent(in)        :: md_p
     type(num_par_t), intent(in)         :: nm_p
     type(osc_par_t), intent(in)         :: os_p
     type(nad_bep_t)                     :: bp
 
-    type(grid_t)                  :: gr
-    integer                       :: n_k
     type(nad_bound_t)             :: bd
     integer                       :: k
     type(nad_diff_t), allocatable :: df(:)
@@ -97,22 +94,16 @@ contains
 
     ! Construct the nad_bep_t
 
-    ! Build the grid
-
-    gr = grid_t(ml, omega, gr_p, md_p, os_p, verbose=.TRUE.)
-
-    n_k = gr%n_k
-
     ! Initialize the boundary conditions
 
     bd = nad_bound_t(ml, gr, md_p, os_p)
 
     ! Initialize the difference equations
 
-    allocate(df(n_k-1))
+    allocate(df(gr%n_k-1))
 
-    do k = 1, n_k-1
-       df(k) = nad_diff_t(ml, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+    do k = 1, gr%n_k-1
+       df(k) = nad_diff_t(ml, gr, k, md_p, nm_p, os_p)
     end do
 
     ! Initialize the bep_t
@@ -132,8 +123,8 @@ contains
     bp%ml => ml
     bp%gr = gr
 
-    bp%eq = nad_eqns_t(ml, md_p, os_p)
-    bp%vr = nad_vars_t(ml, md_p, os_p)
+    bp%eq = nad_eqns_t(ml, gr, md_p, os_p)
+    bp%vr = nad_vars_t(ml, gr, md_p, os_p)
 
     bp%md_p = md_p
     bp%os_p = os_p

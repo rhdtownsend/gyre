@@ -24,6 +24,7 @@ module gyre_rad_vars
   use core_kinds
 
   use gyre_linalg
+  use gyre_grid
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
@@ -81,9 +82,10 @@ module gyre_rad_vars
 
 contains
 
-  function rad_vars_t_ (ml, md_p, os_p) result (vr)
+  function rad_vars_t_ (ml, gr, md_p, os_p) result (vr)
 
     class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(rad_vars_t)                    :: vr
@@ -92,7 +94,7 @@ contains
 
     vr%ml => ml
 
-    allocate(vr%rt, SOURCE=r_rot_t(ml, md_p, os_p))
+    allocate(vr%rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
 
     select case (os_p%variables_set)
     case ('')

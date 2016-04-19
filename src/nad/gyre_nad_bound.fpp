@@ -27,7 +27,6 @@ module gyre_nad_bound
   use gyre_bound
   use gyre_ext
   use gyre_grid
-  use gyre_grid_util
   use gyre_mode_par
   use gyre_model
   use gyre_nad_vars
@@ -102,11 +101,12 @@ contains
 
     bd%ml => ml
     
-    allocate(bd%rt, SOURCE=c_rot_t(ml, md_p, os_p))
-    bd%vr = nad_vars_t(ml, md_p, os_p)
- 
-    call get_bound_pt(ml, os_p, bd%pt_i, bd%pt_o)
+    allocate(bd%rt, SOURCE=c_rot_t(ml, gr, md_p, os_p))
+    bd%vr = nad_vars_t(ml, gr, md_p, os_p)
 
+    bd%pt_i = gr%pt(1)
+    bd%pt_o = gr%pt(gr%n_k)
+ 
     select case (os_p%inner_bound)
     case ('REGULAR')
        $ASSERT(bd%pt_i%x == 0._WP,Boundary condition invalid for x /= 0)

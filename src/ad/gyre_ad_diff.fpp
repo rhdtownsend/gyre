@@ -28,6 +28,7 @@ module gyre_ad_diff
   use gyre_diff
   use gyre_diff_factory
   use gyre_ext
+  use gyre_grid
   use gyre_model
   use gyre_mode_par
   use gyre_num_par
@@ -66,11 +67,11 @@ module gyre_ad_diff
 
 contains
 
-  function ad_diff_t_ (ml, pt_a, pt_b, md_p, nm_p, os_p) result (df)
+  function ad_diff_t_ (ml, gr, k, md_p, nm_p, os_p) result (df)
 
     class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_a
-    type(point_t), intent(in)           :: pt_b
+    type(grid_t), intent(in)            :: gr
+    integer, intent(in)                 :: k
     type(mode_par_t), intent(in)        :: md_p
     type(num_par_t), intent(in)         :: nm_p
     type(osc_par_t), intent(in)         :: os_p
@@ -78,17 +79,20 @@ contains
 
     type(ad_eqns_t) :: eq
 
+    $ASSERT_DEBUG(k >= 1,Invalid index)
+    $ASSERT_DEBUG(k < gr%n_k,Invalid index)
+
     ! Construct the ad_diff_t
 
-    if (pt_a%s == pt_b%s) then
+    if (gr%pt(k+1)%s == gr%pt(k)%s) then
 
-       eq = ad_eqns_t(ml, md_p, os_p)
+       eq = ad_eqns_t(ml, gr, md_p, os_p)
        
-       allocate(df%df, SOURCE=r_diff_t(eq, pt_a, pt_b, nm_p))
+       allocate(df%df, SOURCE=r_diff_t(eq, gr%pt(k), gr%pt(k+1), nm_p))
 
     else
 
-       allocate(df%df, SOURCE=ad_match_t(ml, pt_a, pt_b, md_p, os_p))
+       allocate(df%df, SOURCE=ad_match_t(ml, gr, k, md_p, os_p))
 
     endif
 

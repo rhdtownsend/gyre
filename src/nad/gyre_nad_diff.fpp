@@ -23,14 +23,15 @@ module gyre_nad_diff
 
   use core_kinds
 
-  use gyre_nad_eqns
-  use gyre_nad_match
   use gyre_diff
   use gyre_diff_factory
   use gyre_trapz_diff
   use gyre_ext
+  use gyre_grid
   use gyre_model
   use gyre_mode_par
+  use gyre_nad_eqns
+  use gyre_nad_match
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
@@ -70,11 +71,11 @@ module gyre_nad_diff
 
 contains
 
-  function nad_diff_t_ (ml, pt_a, pt_b, md_p, nm_p, os_p) result (df)
+  function nad_diff_t_ (ml, gr, k, md_p, nm_p, os_p) result (df)
 
     class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_a
-    type(point_t), intent(in)           :: pt_b
+    type(grid_t), intent(in)            :: gr
+    integer, intent(in)                 :: k
     type(mode_par_t), intent(in)        :: md_p
     type(num_par_t), intent(in)         :: nm_p
     type(osc_par_t), intent(in)         :: os_p
@@ -82,27 +83,30 @@ contains
 
     type(nad_eqns_t) :: eq
 
+    $ASSERT_DEBUG(k >= 1,Invalid index)
+    $ASSERT_DEBUG(k < gr%n_k,Invalid index)
+
     ! Construct the nad_diff_t
 
-    if (pt_a%s == pt_b%s) then
+    if (gr%pt(k+1)%s == gr%pt(k)%s) then
 
-       eq = nad_eqns_t(ml, md_p, os_p)
+       eq = nad_eqns_t(ml, gr, md_p, os_p)
 
        select case (nm_p%diff_scheme)
        case ('TRAPZ')
-          allocate(df%df, SOURCE=c_trapz_diff_t(eq, pt_a, pt_b, [0.5_WP,0.5_WP,0.5_WP,0.5_WP,0._WP,1._WP]))
+          allocate(df%df, SOURCE=c_trapz_diff_t(eq, gr%pt(k), gr%pt(k+1), [0.5_WP,0.5_WP,0.5_WP,0.5_WP,0._WP,1._WP]))
        case default
-          allocate(df%df, SOURCE=c_diff_t(eq, pt_a, pt_b, nm_p))
+          allocate(df%df, SOURCE=c_diff_t(eq, gr%pt(k), gr%pt(k+1), nm_p))
        end select
  
        df%eq = eq
 
-       df%pt_a = pt_a
-       df%pt_b = pt_b
+       df%pt_a = gr%pt(k)
+       df%pt_b = gr%pt(k+1)
 
    else
 
-       allocate(df%df, SOURCE=nad_match_t(ml, pt_a, pt_b, md_p, os_p))
+       allocate(df%df, SOURCE=nad_match_t(ml, gr, k, md_p, os_p))
 
     endif
 

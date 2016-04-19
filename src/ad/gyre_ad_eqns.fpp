@@ -25,6 +25,7 @@ module gyre_ad_eqns
 
   use gyre_ad_vars
   use gyre_eqns
+  use gyre_grid
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
@@ -68,9 +69,10 @@ module gyre_ad_eqns
 
 contains
 
-  function ad_eqns_t_ (ml, md_p, os_p) result (eq)
+  function ad_eqns_t_ (ml, gr, md_p, os_p) result (eq)
 
     class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(ad_eqns_t)                     :: eq
@@ -79,8 +81,8 @@ contains
 
     eq%ml => ml
 
-    allocate(eq%rt, SOURCE=r_rot_t(ml, md_p, os_p))
-    eq%vr = ad_vars_t(ml, md_p, os_p)
+    allocate(eq%rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
+    eq%vr = ad_vars_t(ml, gr, md_p, os_p)
 
     eq%cowling_approx = os_p%cowling_approx
 

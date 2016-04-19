@@ -24,6 +24,7 @@ module gyre_nad_eqns
   use core_kinds
 
   use gyre_eqns
+  use gyre_grid
   use gyre_linalg
   use gyre_mode_par
   use gyre_model
@@ -70,9 +71,10 @@ module gyre_nad_eqns
 
 contains
 
-  function nad_eqns_t_ (ml, md_p, os_p) result (eq)
+  function nad_eqns_t_ (ml, gr, md_p, os_p) result (eq)
 
     class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(nad_eqns_t)                    :: eq
@@ -81,8 +83,8 @@ contains
 
     eq%ml => ml
 
-    allocate(eq%rt, SOURCE=c_rot_t(ml, md_p, os_p))
-    eq%vr = nad_vars_t(ml, md_p, os_p)
+    allocate(eq%rt, SOURCE=c_rot_t(ml, gr, md_p, os_p))
+    eq%vr = nad_vars_t(ml, gr, md_p, os_p)
 
     eq%cowling_approx = os_p%cowling_approx
     eq%narf_approx = os_p%narf_approx

@@ -23,11 +23,12 @@ module gyre_nad_match
 
   use core_kinds
 
-  use gyre_nad_vars
   use gyre_diff
   use gyre_ext
+  use gyre_grid
   use gyre_model
   use gyre_mode_par
+  use gyre_nad_vars
   use gyre_osc_par
   use gyre_point
 
@@ -63,26 +64,29 @@ module gyre_nad_match
 
 contains
 
-  function nad_match_t_ (ml, pt_a, pt_b, md_p, os_p) result (mt)
+  function nad_match_t_ (ml, gr, k, md_p, os_p) result (mt)
 
     class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_a
-    type(point_t), intent(in)           :: pt_b
+    type(grid_t), intent(in)            :: gr
+    integer, intent(in)                 :: k
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(nad_match_t)                   :: mt
 
-    $ASSERT_DEBUG(pt_b%s == pt_a%s+1,Mismatched segments)
-    $ASSERT_DEBUG(pt_b%x == pt_a%x,Mismatched abscissae)
+    $ASSERT_DEBUG(k >= 1,Invalid index)
+    $ASSERT_DEBUG(k < gr%n_k,Invalid index)
+
+    $ASSERT_DEBUG(gr%pt(k+1)%s == gr%pt(k)%s+1,Mismatched segments)
+    $ASSERT_DEBUG(gr%pt(k+1)%x == gr%pt(k)%x,Mismatched abscissae)
 
     ! Construct the nad_match_t
 
     mt%ml => ml
 
-    mt%vr = nad_vars_t(ml, md_p, os_p)
+    mt%vr = nad_vars_t(ml, gr, md_p, os_p)
 
-    mt%pt_a = pt_a
-    mt%pt_b = pt_b
+    mt%pt_a = gr%pt(k)
+    mt%pt_b = gr%pt(k+1)
 
     mt%n_e = 6
 
