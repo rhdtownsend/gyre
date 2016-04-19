@@ -31,6 +31,7 @@ module gyre_r_search
   use gyre_discrim_func
   use gyre_ext
   use gyre_freq
+  use gyre_grid
   use gyre_mode
   use gyre_model
   use gyre_mode_par
@@ -56,9 +57,10 @@ module gyre_r_search
 
 contains
 
-  subroutine build_scan (ml, md_p, os_p, sc_p, omega)
+  subroutine build_scan (ml, gr, md_p, os_p, sc_p, omega)
 
     class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(scan_par_t), intent(in)        :: sc_p(:)
@@ -102,11 +104,11 @@ contains
          
          select case (freq_units)
          case ('MIXED_DELTA')
-            omega_min = omega_from_freq(freq_min, ml, 'GRAVITY_DELTA', freq_frame, md_p, os_p)
-            omega_max = omega_from_freq(freq_max, ml, 'ACOUSTIC_DELTA', freq_frame, md_p, os_p)
+            omega_min = omega_from_freq(freq_min, ml, gr, 'GRAVITY_DELTA', freq_frame, md_p, os_p)
+            omega_max = omega_from_freq(freq_max, ml, gr, 'ACOUSTIC_DELTA', freq_frame, md_p, os_p)
          case default
-            omega_min = omega_from_freq(freq_min, ml, freq_units, freq_frame, md_p, os_p)
-            omega_max = omega_from_freq(freq_max, ml, freq_units, freq_frame, md_p, os_p)
+            omega_min = omega_from_freq(freq_min, ml, gr, freq_units, freq_frame, md_p, os_p)
+            omega_max = omega_from_freq(freq_max, ml, gr, freq_units, freq_frame, md_p, os_p)
          end select
 
          ! Check that the range is valid
@@ -115,8 +117,8 @@ contains
 
             ! Calculate the frequency range in the grid frame
 
-            freq_g_min = freq_from_omega(omega_min, ml, 'NONE', grid_frame, md_p, os_p)
-            freq_g_max = freq_from_omega(omega_max, ml, 'NONE', grid_frame, md_p, os_p)
+            freq_g_min = freq_from_omega(omega_min, ml, gr, 'NONE', grid_frame, md_p, os_p)
+            freq_g_max = freq_from_omega(omega_max, ml, gr, 'NONE', grid_frame, md_p, os_p)
 
             ! Set up the frequencies
 
@@ -140,7 +142,7 @@ contains
             call reallocate(omega, [n_omega+n_freq])
 
             do j = 1, n_freq
-               omega(n_omega+j) = omega_from_freq(freq_g(j), ml, 'NONE', grid_frame, md_p, os_p)
+               omega(n_omega+j) = omega_from_freq(freq_g(j), ml, gr, 'NONE', grid_frame, md_p, os_p)
             end do
           
             n_omega = n_omega + n_freq
