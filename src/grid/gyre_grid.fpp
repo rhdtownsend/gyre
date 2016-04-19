@@ -42,14 +42,14 @@ module gyre_grid
      procedure, public :: k_o
      procedure, public :: s_i
      procedure, public :: s_o
-     procedure, public :: locate
+     procedure, public :: s_x
   end type grid_t
 
   ! Interfaces
 
   interface grid_t
      module procedure grid_t_x_
-     module procedure grid_t_subset_
+     module procedure grid_t_nest_
      module procedure grid_t_resamp_
   end interface grid_t
 
@@ -109,42 +109,64 @@ contains
 
   !****
 
-  function grid_t_subset_ (gr_base, x_min, x_max) result (gr)
+  function grid_t_nest_ (gr_base, x_i, x_o) result (gr)
 
     type(grid_t), intent(in) :: gr_base
-    real(WP), intent(in)     :: x_min
-    real(WP), intent(in)     :: x_max
+    real(WP), intent(in)     :: x_i
+    real(WP), intent(in)     :: x_o
     type(grid_t)             :: gr
 
-    integer :: k_a
-    integer :: k_b
+    real(WP)                   :: x_i_
+    real(WP)                   :: x_o_
+    logical                    :: mask(gr_base%n_k)
+    integer                    :: n_mask
+    type(point_t), allocatable :: pt_int(:)
+    type(point_t)              :: pt_i
+    type(point_t)              :: pt_o
 
-    ! Construct a grid_t as a subset of gr_base
+    ! Construct a grid_t as a nesting of gr_base, with limits
+    ! (x_i,x_o)
 
-    k_a_loop : do k_a = 1, gr_base%n_k
-       if (gr_base%pt(k_a)%x > x_min) exit k_a_loop
-    end do k_a_loop
+    ! First, restrict the limits to the range of gr_base
 
-    if (k_a > 1) then
-       if (gr_base%pt(k_a-1)%x == x_min) k_a = k_a-1
-    endif
+    x_i_ = MAX(x_i, gr_base%pt(1)%x)
+    x_o_ = MIN(x_o, gr_base%pt(gr_base%n_k)%x)
 
-    k_b_loop : do k_b = gr_base%n_k, 1, -1
-       if (gr_base%pt(k_b)%x < x_max) exit k_b_loop
-    end do k_b_loop
+    ! Set up a mask for the points from gr_base to include (excluding
+    ! boundary points)
 
-    if (k_b < gr_base%n_k) then
-       if (gr_base%pt(k_b+1)%x == x_max) k_b = k_b+1
-    endif
+    mask = gr_base%pt%x > x_i_ .AND. gr_base%pt%x < x_o_
 
-    gr%pt = gr_base%pt(k_a:k_b)
+    n_mask = COUNT(mask)
+
+    ! Set up the internal and boundary points
+
+    if (n_mask > 0) then
+
+       pt_int = PACK(gr_base%pt, mask)
+       
+       pt_i = point_t(pt_int(1)%s, x_i_)
+       pt_o = point_t(pt_int(n_mask)%s, x_o_)
+
+    else
+
+       allocate(pt_int(0))
+
+       pt_i = point_t(gr_base%s_x(x_i_, back=.TRUE.), x_i_)
+       pt_o = point_t(gr_base%s_x(x_o_, back=.FALSE.), x_o_)
+
+    end if
+
+    ! Create the grid_t
+
+    gr%pt = [pt_i,pt_int,pt_o]
     gr%n_k = SIZE(gr%pt)
 
     ! Finish
 
     return
 
-  end function grid_t_subset_
+  end function grid_t_nest_
 
   !****
 
@@ -163,7 +185,8 @@ contains
 
     $CHECK_BOUNDS(SIZE(dn),gr_base%n_k-1)
 
-    ! Add points to the grid
+    ! Construct a grid_t by resampling gr_base, with dn additional
+    ! points placed uniformly in each cell
 
     n_k_base = gr_base%n_k
     n_k = n_k_base + SUM(dn)
@@ -297,19 +320,19 @@ contains
 
   !****
 
-  subroutine locate (this, x, s, back)
+  function s_x (this, x, back) result (s)
 
     class(grid_t), intent(in)     :: this
     real(WP), intent(in)          :: x
-    integer, intent(out)          :: s
     logical, intent(in), optional :: back
+    integer                       :: s
 
-    logical  :: back_
-    integer  :: s_a
-    integer  :: s_b
-    integer  :: ds
-    real(WP) :: x_i
-    real(WP) :: x_o
+    logical :: back_
+    integer :: s_a
+    integer :: s_b
+    integer :: ds
+    integer :: k_i
+    integer :: k_o
 
     if (PRESENT(back)) then
        back_ = back
@@ -333,10 +356,10 @@ contains
 
     seg_loop : do s = s_a, s_b, ds
 
-       x_i = this%pt(this%k_i(s))%x
-       x_o = this%pt(this%k_o(s))%x
+       k_i = this%k_i(s)
+       k_o = this%k_o(s)
          
-       if (x >= x_i .AND. x <= x_o) exit seg_loop
+       if (x >= this%pt(k_i)%x .AND. x <= this%pt(k_o)%x) exit seg_loop
        
     end do seg_loop
 
@@ -344,6 +367,6 @@ contains
 
     return
 
-  end subroutine locate
+  end function s_x
 
 end module gyre_grid
