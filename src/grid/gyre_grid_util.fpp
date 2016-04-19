@@ -25,6 +25,7 @@ module gyre_grid_util
   use core_func
 
   use gyre_grid
+  use gyre_grid_par
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
@@ -54,7 +55,6 @@ module gyre_grid_util
   private
 
   public :: find_turn
-  public :: get_bound_pt
 
   ! Procedures
 
@@ -84,7 +84,7 @@ contains
     k_turn = gr%n_k
     x_turn = HUGE(0._WP)
 
-    allocate(rt, SOURCE=r_rot_t(ml, md_p, os_p))
+    allocate(rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
 
     gamma_b = gamma_(ml, rt, gr%pt(1), omega)
 
@@ -212,43 +212,5 @@ contains
     return
 
   end function eval_c_
-
-  !****
-
-  subroutine get_bound_pt (ml, os_p, pt_i, pt_o)
-
-    class(model_t), intent(in)           :: ml
-    type(osc_par_t), intent(in)          :: os_p
-    type(point_t), intent(out), optional :: pt_i
-    type(point_t), intent(out), optional :: pt_o
-
-    type(grid_t) :: gr
-
-    ! Get the points where boundary conditions are applied (as
-    ! determined by os_p%x_i and os_p%x_i)
-
-    gr = ml%grid()
-
-    if (PRESENT(pt_i)) then
-       pt_i = gr%pt(1)
-       pt_i%x = MAX(os_p%x_i, pt_i%x)
-       call gr%locate(pt_i%x, pt_i%s, back=.TRUE.)
-       $ASSERT(pt_i%s >= gr%s_i(),Invalid segment)
-       $ASSERT(pt_i%s <= gr%s_o(),Invalid segment)
-    endif
-
-    if (PRESENT(pt_o)) then
-       pt_o = gr%pt(gr%n_k)
-       pt_o%x = MIN(os_p%x_o, pt_o%x)
-       call gr%locate(pt_o%x, pt_o%s, back=.FALSE.)
-       $ASSERT(pt_o%s >= gr%s_i(),Invalid segment)
-       $ASSERT(pt_o%s <= gr%s_o(),Invalid segment)
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine get_bound_pt
 
 end module gyre_grid_util
