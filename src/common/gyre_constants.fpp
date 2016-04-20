@@ -49,7 +49,7 @@ module gyre_constants
 
   real(WP), save, protected :: M_SUN = M_SUN_ ! Solar mass
   real(WP), save, protected :: R_SUN = R_SUN_ ! Solar radius
-  real(WP), save, protected :: L_SUN = L_SUN_ ! Solar luminosity (Allen, 1973)
+  real(WP), save, protected :: L_SUN = L_SUN_ ! Solar luminosity
 
   ! Paths
 
