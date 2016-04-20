@@ -28,7 +28,8 @@
 /
 
 &num
-	diff_scheme = 'COLLOC_GL4'
+	diff_scheme = 'MAGNUS_GL2'
+	restrict_roots = .FALSE.
 /
 
 &scan
@@ -39,7 +40,6 @@
 /
 
 &grid
-	base_type = 'MODEL'
 	n_center = 5
 	alpha_osc = 10
 	alpha_exp = 2
