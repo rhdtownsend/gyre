@@ -28,6 +28,7 @@ module gyre_gsm_file
   use gyre_evol_model
   use gyre_model
   use gyre_model_par
+  use gyre_model_util
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -96,9 +97,13 @@ contains
                        kap, kap_rho, kap_T, eps, eps_rho, eps_T, &
                        Omega_rot)
 
-    ! Calculate dimensionless structure data
+    ! Snap grid points
 
     x = r/R_star
+
+    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), M_r)
+  
+    ! Calculate dimensionless structure data
 
     n = SIZE(x)
 
@@ -134,7 +139,8 @@ contains
     c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
-       Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+       allocate(Omega_rot(n))
+       call set_uniform_rot(ml_p, M_star, R_star, Omega_rot)
     else
        Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
     endif
