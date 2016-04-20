@@ -160,8 +160,6 @@ contains
     allocate(U(n))
     allocate(c_1(n))
 
-    allocate(Omega_rot(n))
-
     where (x /= 0._WP)
        V_2 = G_GRAVITY*(m*M_star)*rho/(P*x**3*R_star)
        U = 4._WP*PI*rho*(x*R_star)**3/(m*M_star)
@@ -172,8 +170,10 @@ contains
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
     end where
 
+    allocate(Omega_rot(n))
+
     if (ml_p%uniform_rot) then
-       Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+       call set_uniform_rot(ml_p, M_star, R_star, Omega_rot)
     else
        Omega_rot = 0._WP
     endif
