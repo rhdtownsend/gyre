@@ -28,6 +28,7 @@ module gyre_losc_file
   use gyre_evol_model
   use gyre_model
   use gyre_model_par
+  use gyre_model_util
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -134,10 +135,16 @@ contains
 
     Gamma_1 = var(5,:)
 
+    ! Snap grid points
+
+    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x)
+
+    ! Calculate dimensionless structure data
+
     allocate(Omega_rot(n))
 
     if (ml_p%uniform_rot) then
-       Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+       call set_uniform_rot(ml_p, M_star, R_star, Omega_rot)
     else
        Omega_rot = 0._WP
     endif
