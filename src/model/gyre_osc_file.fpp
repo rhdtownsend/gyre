@@ -174,11 +174,11 @@ contains
 
     ! Snap grid points
 
+    x = r/R_star
+
     call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x, m)
 
     ! Calculate dimensionless structure data
-
-    x = r/R_star
 
     allocate(V_2(n))
     allocate(U(n))
@@ -209,7 +209,8 @@ contains
     c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
-       Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+       allocate(Omega_rot(n))
+       call set_uniform_rot(ml_p, M_star, R_star, Omega_rot)
     else
        Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
     endif
