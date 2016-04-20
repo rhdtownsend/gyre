@@ -693,7 +693,7 @@ contains
     complex(WP)   :: W_xi
 
     ! Calculate the dimensionless frequency from the integral
-    ! expression in eqn. (1.71) of [Dup2003]
+    ! expression in eqn. (1.71) of [Dup2002]
 
     do k = 1, this%n_k
 
@@ -746,7 +746,7 @@ contains
 
     real(WP) :: dW_dx(this%n_k)
 
-    ! Calculate the normalized growth rate defined by [Stel1978]
+    ! Calculate the normalized growth rate defined (as eta') by [Stel1978]
 
     dW_dx = this%dW_dx()
 
@@ -1969,14 +1969,14 @@ contains
   $PROC_F(xi_h,complex(WP))
   $PROC_F(eul_phi,complex(WP))
   $PROC_F(deul_phi,complex(WP))
+  $PROC_F(eul_P,complex(WP))
+  $PROC_F(eul_rho,complex(WP))
+  $PROC_F(eul_T,complex(WP))
+  $PROC_F(lag_P,complex(WP))
+  $PROC_F(lag_rho,complex(WP))
+  $PROC_F(lag_T,complex(WP))
   $PROC_F(lag_S,complex(WP))
   $PROC_F(lag_L,complex(WP))
-  $PROC_F(eul_P,complex(WP))
-  $PROC_F(lag_P,complex(WP))
-  $PROC_F(eul_rho,complex(WP))
-  $PROC_F(lag_rho,complex(WP))
-  $PROC_F(eul_T,complex(WP))
-  $PROC_F(lag_T,complex(WP))
   $PROC_F(lambda,complex(WP))
   $PROC_F(dE_dx,real(WP))
   $PROC_F(dW_dx,real(WP))
