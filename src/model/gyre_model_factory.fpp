@@ -83,10 +83,10 @@ contains
           $else
           $ABORT(No HDF5 support, therefore cannot read B3-format files)
           $endif
-       case ('FGONG')
-          call read_fgong_model(ml_p, ml)
        case ('FAMDL')
           call read_famdl_model(ml_p, ml)
+       case ('FGONG')
+          call read_fgong_model(ml_p, ml)
        case ('GSM')
           $if($HDF5)
           call read_gsm_model(ml_p, ml)
