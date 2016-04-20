@@ -44,6 +44,7 @@ module gyre_model_par
      character(256)          :: file_format
      character(256)          :: data_format
      character(256)          :: deriv_type
+     character(256)          :: Omega_units
      character(FILENAME_LEN) :: file
      integer                 :: n
      logical                 :: add_center
@@ -79,6 +80,7 @@ contains
     character(LEN(ml_p%file_format)) :: file_format
     character(LEN(ml_p%data_format)) :: data_format
     character(LEN(ml_p%deriv_type))  :: deriv_type
+    character(LEN(ml_p%Omega_units)) :: Omega_units
     character(LEN(ml_p%file))        :: file
     integer                          :: n
     logical                          :: add_center
@@ -119,6 +121,7 @@ contains
     file_format = ''
     data_format = ''
     deriv_type = 'MONO'
+    Omega_units = ''
     file = ''
 
     n = 10
@@ -143,6 +146,7 @@ contains
                        file_format=file_format, &
                        data_format=data_format, &
                        deriv_type=deriv_type, &
+                       Omega_units=Omega_units, &
                        file=file, &
                        n=n, &
                        add_center=add_center, &
