@@ -34,6 +34,7 @@ program gyre_contour
   use gyre_discrim_func
   use gyre_ext
   use gyre_grid
+  use gyre_grid_factory
   use gyre_grid_par
   use gyre_mode
   use gyre_mode_par
@@ -79,6 +80,7 @@ program gyre_contour
   type(grid_par_t)                 :: gr_p_sel
   type(scan_par_t), allocatable    :: sc_p_re_sel(:)
   type(scan_par_t), allocatable    :: sc_p_im_sel(:)
+  type(grid_t)                     :: gr
   real(WP), allocatable            :: omega_re(:)
   real(WP), allocatable            :: omega_im(:)
   type(nad_bep_t), allocatable     :: bp
@@ -154,14 +156,22 @@ program gyre_contour
   call select_par(sc_p_re, md_p(1)%tag, sc_p_re_sel)
   call select_par(sc_p_im, md_p(1)%tag, sc_p_im_sel)
   
+  ! Create the scaffold grid (used in setting up the frequency arrays)
+
+  gr = grid_t(ml%grid(), gr_p_sel%x_i, gr_p_sel%x_o)
+
   ! Set up the frequency arrays
 
-  call build_scan(ml, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
-  call build_scan(ml, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
+  call build_scan(ml, gr, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
+  call build_scan(ml, gr, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
+
+  ! Create the full grid
+
+  gr = grid_t(ml, omega_re, gr_p_sel, md_p(1), os_p_sel)
 
   ! Set up the bep
 
-  bp = nad_bep_t(ml, omega_re, gr_p_sel, md_p(1), nm_p_sel, os_p_sel)
+  bp = nad_bep_t(ml, gr, omega_re, md_p(1), nm_p_sel, os_p_sel)
 
   ! Evaluate the discriminant map
 
@@ -618,11 +628,9 @@ contains
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    type(soln_t)          :: sl
-    integer, allocatable  :: s(:)
-    real(WP), allocatable :: x(:)
-    type(mode_t)          :: md_new
-    type(r_ext_t)         :: chi
+    type(soln_t)  :: sl
+    type(mode_t)  :: md_new
+    type(r_ext_t) :: chi
 
     ! Create the soln_t
 
