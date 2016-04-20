@@ -121,7 +121,7 @@ contains
     file_format = ''
     data_format = ''
     deriv_type = 'MONO'
-    Omega_units = ''
+    Omega_units = 'NONE'
     file = ''
 
     n = 10
