@@ -23,6 +23,7 @@ module gyre_model_util
 
   use core_kinds
 
+  use gyre_constants
   use gyre_model_par
   use gyre_util
 
@@ -36,12 +37,43 @@ module gyre_model_util
 
   private
 
+  public :: set_uniform_rot
   public :: snap_points
 
   ! Procedures
 
 contains
 
+  !****
+
+  subroutine set_uniform_rot (ml_p, M_star, R_star, Omega_rot)
+
+    type(model_par_t), intent(in) :: ml_p
+    real(WP), intent(in)          :: M_star
+    real(WP), intent(in)          :: R_star
+    real(WP), intent(out)         :: Omega_rot(:)
+
+    ! Set the uniform dimensionless rotation rate
+
+    select case (ml_p%Omega_units)
+    case ('HZ')
+       Omega_rot = TWOPI*ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+    case ('UHZ')
+       Omega_rot = TWOPI*ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))/1E6
+    case ('PER_DAY')
+       Omega_rot = TWOPI*ml_p%Omega_rot/86400._WP
+    case ('CRITICAL')
+       Omega_rot = ml_p%Omega_rot*SQRT(8._WP/27._WP)
+    case default
+       Omega_rot = ml_p%Omega_rot
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine set_uniform_rot
+    
   !****
 
   subroutine snap_points (dx_snap, x, m)
