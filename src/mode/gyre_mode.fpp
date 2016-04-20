@@ -29,6 +29,7 @@ module gyre_mode
   use gyre_ext
   use gyre_freq
   use gyre_grid
+  use gyre_grid_util
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
@@ -767,6 +768,7 @@ contains
     real(WP)      :: y_2(this%n_k)
     integer       :: k_i
     integer       :: k_o
+    real(WP)      :: x_i
     integer       :: n_c
     integer       :: n_a
     type(point_t) :: pt_i
@@ -808,18 +810,13 @@ contains
        y_1 = REAL(this%Yt_1())
        y_2 = REAL(this%Yt_2())
 
+       ! Find the inner turning point (this is to deal with noisy
+       ! near-zero solutions at the origin)
+
+       call find_turn(this%ml, this%gr, REAL(this%omega), this%md_p, this%os_p, k_i, x_i)
+
        ! Count winding numbers, taking care to avoid counting nodes at
-       ! the center and surface (check x(1) rather than Yt_1(1),
-       ! because the latter can be non-zero at x=0 due to rounding
-       ! errors)
-
-       pt_i = this%gr%pt(1)
-
-       if (pt_i%x == 0._WP) then
-          k_i = 2
-       else
-          k_i = 1
-       endif
+       ! the center and surface
 
        if (y_1(this%n_k) == 0._WP) then
           k_o = this%n_k-1
