@@ -44,8 +44,6 @@ module gyre_model_util
 
 contains
 
-  !****
-
   subroutine set_uniform_rot (ml_p, M_star, R_star, Omega_rot)
 
     type(model_par_t), intent(in) :: ml_p
@@ -56,6 +54,8 @@ contains
     ! Set the uniform dimensionless rotation rate
 
     select case (ml_p%Omega_units)
+    case ('NONE')
+       Omega_rot = ml_p%Omega_rot
     case ('HZ')
        Omega_rot = TWOPI*ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
     case ('UHZ')
@@ -65,7 +65,7 @@ contains
     case ('CRITICAL')
        Omega_rot = ml_p%Omega_rot*SQRT(8._WP/27._WP)
     case default
-       Omega_rot = ml_p%Omega_rot
+       $ABORT(Invalid Omega_units)
     end select
 
     ! Finish
