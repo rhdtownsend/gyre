@@ -36,44 +36,11 @@ module gyre_model_util
 
   private
 
-  public :: seg_indices
   public :: snap_points
 
   ! Procedures
 
 contains
-
-  subroutine seg_indices (x, k_i, k_o)
-
-    real(WP), intent(in)              :: x(:)
-    integer, allocatable, intent(out) :: k_i(:)
-    integer, allocatable, intent(out) :: k_o(:)
-
-    integer :: n_k
-    logical :: mask(SIZE(x)-1)
-    integer :: n_s
-    integer :: k
-
-    ! Partition the monotonic array x into strictly-monotonic
-    ! segments, by splitting at duplicate points; return the index
-    ! range of the segments in k_i/k_o
-
-    n_k = SIZE(x)
-
-    $ASSERT_DEBUG(ALL(x(2:) >= x(:n_k-1)),Non-monotonic data)
-    
-    mask = x(:n_k-1) == x(2:)
-
-    n_s = COUNT(mask)
-
-    k_i = [1,PACK([(k+1,k=1,n_k)], mask)]
-    k_o = [PACK([(k,k=1,n_k)], mask),n_k]
-
-    ! Finish
-
-    return
-
-  end subroutine seg_indices
 
   !****
 
