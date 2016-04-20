@@ -28,6 +28,7 @@ module gyre_b3_file
   use gyre_evol_model
   use gyre_model
   use gyre_model_par
+  use gyre_model_util
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -58,6 +59,7 @@ contains
     real(WP)                    :: L_star
     real(WP), allocatable       :: r(:)
     real(WP), allocatable       :: w(:)
+    real(WP), allocatable       :: M_r(:)
     real(WP), allocatable       :: P(:)
     real(WP), allocatable       :: rho(:)
     real(WP), allocatable       :: T(:)
@@ -77,7 +79,6 @@ contains
     real(WP), allocatable       :: nabla_ad(:)
     real(WP), allocatable       :: delta(:)
     real(WP), allocatable       :: x(:)
-    real(WP), allocatable       :: m(:)
     real(WP), allocatable       :: V_2(:)
     real(WP), allocatable       :: As(:)
     real(WP), allocatable       :: U(:)
@@ -142,6 +143,7 @@ contains
     L_star = L_star*1.E7_WP
 
     r = r*1.E2_WP
+    M_r = w/(1._WP+w)*M_star
 
     P = p*1.E1_WP
     rho = rho*1.E-3_WP
@@ -158,10 +160,13 @@ contains
     delta = chi_T/chi_rho
     nabla_ad = p*delta/(rho*T*c_p)
 
-    ! Calculate dimensionless structure data
+    ! Snap grid points
 
     x = r/R_star
-    m = w/(1._WP+w)
+
+    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x, M_r)
+  
+    ! Calculate dimensionless structure data
 
     allocate(V_2(n))
     allocate(As(n))
@@ -169,10 +174,10 @@ contains
     allocate(c_1(n))
 
     where (x /= 0._WP)
-       V_2 = G_GRAVITY*m*rho/(P*r*x**2)
-       As = r**3*N2/(G_GRAVITY*m)
-       U = 4._WP*PI*rho*r**3/m
-       c_1 = (r/R_star)**3/(m/M_star)
+       V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
+       As = r**3*N2/(G_GRAVITY*M_r)
+       U = 4._WP*PI*rho*r**3/M_r
+       c_1 = (r/R_star)**3/(M_r/M_star)
     elsewhere
        V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
        As = 0._WP
@@ -191,6 +196,8 @@ contains
 
     c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*R_star**3/L_star
     c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
+
+    allocate(Omega_rot(n))
 
     if (ml_p%uniform_rot) then
        Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
