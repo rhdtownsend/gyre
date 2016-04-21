@@ -191,12 +191,16 @@ program gyre
      gr = grid_t(ml, omega, gr_p_sel, md_p(i), os_p_sel)
 
      if (check_log_level('INFO')) then
+
         seg_loop : do s = gr%s_i(), gr%s_o()
            k_i = gr%k_i(s)
            k_o = gr%k_o(s)
            write(OUTPUT_UNIT, 140) 'segment', s, ':', k_o-k_i+1, 'points, x range', gr%pt(k_i)%x, '->', gr%pt(k_o)%x
 140        format(3X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
         end do seg_loop
+
+        write(OUTPUT_UNIT, *)
+        
      end if
 
      ! Find adiabatic modes
@@ -209,6 +213,11 @@ program gyre
 
      i_ad_a = n_md_ad + 1
 
+     if (check_log_level('INFO')) then
+        write(OUTPUT_UNIT, 100) 'Starting search (adiabatic)'
+        write(OUTPUT_UNIT, *)
+     endif
+
      call scan_search(bp_ad, omega, process_root_ad, nm_p_sel)
 
      deallocate(bp_ad)
@@ -220,6 +229,11 @@ program gyre
         allocate(bp_nad, SOURCE=nad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
 
         i_ad_b = n_md_ad
+
+        if (check_log_level('INFO')) then
+           write(OUTPUT_UNIT, 100) 'Starting search (non-adiabatic)'
+           write(OUTPUT_UNIT, *)
+        endif
 
         call prox_search(bp_nad, md_ad(i_ad_a:i_ad_b), process_root_nad, md_p(i), nm_p_sel, os_p_sel)
 
