@@ -213,7 +213,6 @@ contains
     character(:), allocatable                        :: mode_file
     class(writer_t), allocatable                     :: wr
     character(LEN(ot_p%mode_item_list)), allocatable :: items(:)
-    type(point_t), allocatable                       :: pt(:)
     integer                                          :: i
 
     ! Write the mode file
@@ -228,10 +227,12 @@ contains
 
     mode_file = subst_(mode_file, '%J', j, '(I5.5)')
     mode_file = subst_(mode_file, '%L', md%l, '(I3.3)')
+    mode_file = subst_(mode_file, '%M', md%m, '(SP,I3.2)')
     mode_file = subst_(mode_file, '%N', md%n_pg, '(SP,I6.5)')
 
     mode_file = subst_(mode_file, '%j', j, '(I0)')
     mode_file = subst_(mode_file, '%l', md%l, '(I0)')
+    mode_file = subst_(mode_file, '%m', md%m, '(SP,I0)')
     mode_file = subst_(mode_file, '%n', md%n_pg, '(SP,I0)')
 
     ! Open the file
@@ -420,25 +421,29 @@ contains
       
       ! Write the item
 
-      select case (items(i))
-      case ('M_star')
-         call wr%write('M_star', ml%M_star)
-      case ('R_star')
-         call wr%write('R_star', ml%R_star)
-      case ('L_star')
-         call wr%write('L_star', ml%L_star)
-      case ('M_r')
-         call wr%write('M_r', ml%M_r(pt))
-      case ('P')
-         call wr%write('P', ml%P(pt))
-      case ('rho')
-         call wr%write('rho', ml%rho(pt))
-      case ('T')
-         call wr%write('T', ml%T(pt))
-      case default
-         write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-         $ABORT(Invalid item)
-      end select
+      associate (pt => md%gr%pt)
+      
+        select case (items(i))
+        case ('M_star')
+           call wr%write('M_star', ml%M_star)
+        case ('R_star')
+           call wr%write('R_star', ml%R_star)
+        case ('L_star')
+           call wr%write('L_star', ml%L_star)
+        case ('M_r')
+           call wr%write('M_r', ml%M_r(pt))
+        case ('P')
+           call wr%write('P', ml%P(pt))
+        case ('rho')
+           call wr%write('rho', ml%rho(pt))
+        case ('T')
+           call wr%write('T', ml%T(pt))
+        case default
+           write(ERROR_UNIT, *) 'item:', TRIM(items(i))
+           $ABORT(Invalid item)
+        end select
+
+      end associate
 
       ! Finish
 
