@@ -160,15 +160,18 @@ contains
     real(WP) :: g_2
     real(WP) :: g_0
 
-    ! Calculate the propagation discriminant gamma (> 0 : propagation,
-    ! < 0 : evanescence)
+    ! Calculate the propagation discriminant gamma (< 0 : propagation,
+    ! > 0 : evanescence)
 
-    U = ml%U(pt)
+    if (ml%vacuum(pt)) then
 
-    if (U > 0._WP) then
+       gamma = HUGE(0._WP)
+
+    else
 
        V_g = ml%V_2(pt)*pt%x**2/ml%Gamma_1(pt)
        As = ml%As(pt)
+       U = ml%U(pt)
        c_1 = ml%c_1(pt)
 
        lambda = rt%lambda(pt, omega)
@@ -178,10 +181,6 @@ contains
        g_0 = -4._WP*lambda*As/c_1
 
        gamma = (g_4*omega**4 + g_2*omega**2 + g_0)/omega**2
-
-    else
-
-       gamma = HUGE(0._WP)
 
     endif
 
