@@ -419,8 +419,6 @@ contains
 
     ! Evaluate the total pressure at point pt
 
-    ! XXX CHECK THIS
-
     P = (G_GRAVITY*this%M_star**2/(4._WP*PI*this%R_star**4))*&
         (this%U(pt)/(this%c_1(pt)**2*this%V_2(pt)))
 
