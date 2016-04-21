@@ -3,13 +3,23 @@
 
 # Variables
 
-TARGETS=gyre # gyre_map gyre_contour # build_poly poly_to_fgong
+ODEPACK=$(shell which madsdk_odepack_link >& /dev/null && echo "yes" || echo "no")
+
+ifeq ($(ODEPACK),yes)
+  TARGETS=gyre poly_to_fgong build_poly
+else
+  TARGETS=gyre poly_to_fgong
+endif   
 
 # Flags
 
 HDF5=yes
 
-LDFLAGS=`mesasdk_hdf5_link` `madsdk_odepack_link`
+ifeq ($(ODEPACK),yes)
+  LDFLAGS=`mesasdk_hdf5_link` `madsdk_odepack_link`
+else
+  LDFLAGS=`mesasdk_hdf5_link`
+endif
 
 # Include other makefiles
 
