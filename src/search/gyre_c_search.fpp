@@ -215,7 +215,7 @@ contains
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
-130    format(2X,A,1X,F10.3,1X,A)
+130    format(2X,A,1X,F10.3,1X,A/)
     endif
 
     ! Finish
