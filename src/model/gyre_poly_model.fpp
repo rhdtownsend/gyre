@@ -25,8 +25,6 @@ module gyre_poly_model
 
   use gyre_grid
   use gyre_model
-  use gyre_model_par
-  use gyre_model_util
   use gyre_point
   use gyre_poly_seg
 
@@ -76,6 +74,7 @@ module gyre_poly_model
      $PROC_DECL(dOmega_rot)
      procedure, public :: grid
      procedure, public :: vacuum
+     procedure, public :: nonad_cap
   end type poly_model_t
 
   ! Interfaces
@@ -94,7 +93,7 @@ module gyre_poly_model
 
 contains
 
-  function poly_model_t_ (xi, Theta, dTheta, n_poly, Delta_d, Gamma_1, ml_p) result (ml)
+  function poly_model_t_ (xi, Theta, dTheta, n_poly, Delta_d, Gamma_1, Omega_rot) result (ml)
 
     real(WP), intent(in)          :: xi(:)
     real(WP), intent(in)          :: Theta(:)
@@ -102,7 +101,7 @@ contains
     real(WP), intent(in)          :: n_poly(:)
     real(WP), intent(in)          :: Delta_d(:)
     real(WP), intent(in)          :: Gamma_1
-    type(model_par_t), intent(in) :: ml_p
+    real(WP), intent(in)          :: Omega_rot
     type(poly_model_t)            :: ml
 
     integer  :: n_k
@@ -156,8 +155,8 @@ contains
        i = s - ml%s_i + 1
 
        ml%ps(s) = poly_seg_t(x(k_i(i):k_o(i)), Theta(k_i(i):k_o(i)), dTheta(k_i(i):k_o(i)), &
-                             mu(i), mu(ml%s_o-ml%s_i+2), xi(n_k), &
-                             n_poly(i), B(i), t(i), Gamma_1)
+                             mu(i), mu(ml%s_o-ml%s_i+2), xi(n_k), n_poly(i), B(i), t(i), &
+                             Gamma_1, Omega_rot)
 
     end do seg_loop
 
@@ -396,5 +395,22 @@ contains
     return
 
   end function vacuum
+
+  !****
+
+  function nonad_cap (this)
+
+    class(poly_model_t), intent(in) :: this
+    logical                         :: nonad_cap
+
+    ! Return the non-adiabatic capability
+
+    nonad_cap = .TRUE.
+
+    ! Finish
+
+    return
+
+  end function nonad_cap
 
 end module gyre_poly_model

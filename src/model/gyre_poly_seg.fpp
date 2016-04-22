@@ -51,6 +51,7 @@ module gyre_poly_seg
      real(WP)         :: B
      real(WP)         :: t
      real(WP)         :: Gamma_1_
+     real(WP)         :: Omega_rot_
    contains
      private
      procedure :: mu
@@ -84,7 +85,7 @@ module gyre_poly_seg
 
 contains
 
-  function poly_seg_t_ (x, Theta, dTheta, mu_i, mu_s, xi_s, n_poly, B, t, Gamma_1) result (ps)
+  function poly_seg_t_ (x, Theta, dTheta, mu_i, mu_s, xi_s, n_poly, B, t, Gamma_1, Omega_rot) result (ps)
 
     real(WP), intent(in) :: x(:)
     real(WP), intent(in) :: Theta(:)
@@ -96,6 +97,7 @@ contains
     real(WP), intent(in) :: B
     real(WP), intent(in) :: t
     real(WP), intent(in) :: Gamma_1
+    real(WP), intent(in) :: Omega_rot
     type(poly_seg_t)     :: ps
 
     real(WP) :: xi(SIZE(x))
@@ -139,6 +141,7 @@ contains
     ps%t = t
     
     ps%Gamma_1_ = Gamma_1
+    ps%Omega_rot_ = Omega_rot
 
     ! Finish
 
@@ -396,7 +399,7 @@ contains
 
     ! Calculate Omega_rot
 
-    Omega_rot = 0._WP
+    Omega_rot = this%Omega_rot_
 
     ! Finish
 
