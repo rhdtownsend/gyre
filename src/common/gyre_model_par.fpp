@@ -89,7 +89,7 @@ contains
 
     namelist /model/ Gamma_1, Omega_rot, dx_snap, x_i, x_o, s, &
                      model_type, grid_type, file_format, data_format, deriv_type, &
-                     file, n, add_center, repair_As, uniform_rot
+                     Omega_units, file, n, add_center, repair_As, uniform_rot
     
     ! Count the number of model namelists
 
