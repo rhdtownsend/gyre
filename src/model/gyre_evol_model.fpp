@@ -61,6 +61,7 @@ module gyre_evol_model
      real(WP), public              :: M_star
      real(WP), public              :: R_star
      real(WP), public              :: L_star
+     logical                       :: nonad_cap_
      logical                       :: add_center
      logical                       :: repair_As
    contains
@@ -113,6 +114,7 @@ module gyre_evol_model
      generic, public   :: T => T_1_, T_v_
      procedure, public :: grid
      procedure, public :: vacuum
+     procedure, public :: nonad_cap
      procedure, public :: delta_p
      procedure, public :: delta_g
   end type evol_model_t
@@ -133,12 +135,13 @@ module gyre_evol_model
 
 contains
 
-  function evol_model_t_ (x, M_star, R_star, L_star, ml_p) result (ml)
+  function evol_model_t_ (x, M_star, R_star, L_star, nonad_cap, ml_p) result (ml)
 
     real(WP), intent(in)          :: x(:)
     real(WP), intent(in)          :: M_star
     real(WP), intent(in)          :: R_star
     real(WP), intent(in)          :: L_star
+    logical, intent(in)           :: nonad_cap
     type(model_par_t), intent(in) :: ml_p
     type(evol_model_t)            :: ml
 
@@ -191,11 +194,15 @@ contains
        ml%es(s) = evol_seg_t(ml_p)
     end do seg_loop
 
+    ! Other initializations
+
     ml%repair_As = ml_p%repair_As
 
     ml%M_star = M_star
     ml%R_star = R_star
     ml%L_star = L_star
+
+    ml%nonad_cap_ = nonad_cap
 
     ! Finish
 
@@ -556,6 +563,23 @@ contains
     return
 
   end function vacuum
+
+  !****
+
+  function nonad_cap (this)
+
+    class(evol_model_t), intent(in) :: this
+    logical                         :: nonad_cap
+
+    ! Return the non-adiabatic capability
+
+    nonad_cap = this%nonad_cap_
+
+    ! Finish
+
+    return
+
+  end function nonad_cap
 
   !****
 

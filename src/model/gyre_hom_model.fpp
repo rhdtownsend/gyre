@@ -29,6 +29,7 @@ module gyre_hom_model
   use gyre_grid_weights
   use gyre_model
   use gyre_model_par
+  use gyre_model_util
   use gyre_point
 
   use ISO_FORTRAN_ENV
@@ -75,6 +76,7 @@ module gyre_hom_model
      $PROC_DECL(dOmega_rot)
      procedure, public :: grid
      procedure, public :: vacuum
+     procedure, public :: nonad_cap
   end type hom_model_t
 
   ! Interfaces
@@ -118,7 +120,7 @@ contains
     ml%Gamma_1_ = ml_p%Gamma_1
 
     if (ml_p%uniform_rot) then
-       ml%Omega_rot_ = ml_p%Omega_rot
+       ml%Omega_rot_ = uniform_Omega_rot(ml_p)
     else
        ml%Omega_rot_ = 0._WP
     endif
@@ -473,5 +475,22 @@ contains
     return
 
   end function vacuum
+
+  !****
+
+  function nonad_cap (this)
+
+    class(hom_model_t), intent(in) :: this
+    logical                        :: nonad_cap
+
+    ! Return the non-adiabatic capability
+
+    nonad_cap = .TRUE.
+
+    ! Finish
+
+    return
+
+  end function nonad_cap
 
 end module gyre_hom_model

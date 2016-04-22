@@ -60,8 +60,9 @@ module gyre_model
      $PROC_DECL(kap_S)
      $PROC_DECL(Omega_rot)
      $PROC_DECL(dOmega_rot)
-     procedure(grid), deferred, public   :: grid
-     procedure(vacuum), deferred, public :: vacuum
+     procedure(grid), deferred, public      :: grid
+     procedure(vacuum), deferred, public    :: vacuum
+     procedure(nonad_cap), deferred, public :: nonad_cap
   end type model_t
 
   ! Interfaces
@@ -101,6 +102,13 @@ module gyre_model
        type(point_t), intent(in)  :: pt
        logical                    :: vacuum
      end function vacuum
+
+     function nonad_cap (this)
+       use core_kinds
+       import model_t
+       class(model_t), intent(in) :: this
+       logical                    :: nonad_cap
+     end function nonad_cap
 
   end interface
 

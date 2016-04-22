@@ -37,42 +37,77 @@ module gyre_model_util
 
   private
 
-  public :: set_uniform_rot
+  public :: uniform_Omega_rot
   public :: snap_points
 
   ! Procedures
 
 contains
 
-  subroutine set_uniform_rot (ml_p, M_star, R_star, Omega_rot)
+  function uniform_Omega_rot (ml_p, M_star, R_star) result (Omega_rot)
 
-    type(model_par_t), intent(in) :: ml_p
-    real(WP), intent(in)          :: M_star
-    real(WP), intent(in)          :: R_star
-    real(WP), intent(out)         :: Omega_rot(:)
+    type(model_par_t), intent(in)  :: ml_p
+    real(WP), optional, intent(in) :: M_star
+    real(WP), optional, intent(in) :: R_star
+    real(WP)                       :: Omega_rot
 
-    ! Set the uniform dimensionless rotation rate
+    ! Calculate the uniform dimensionless rotation rate
 
-    select case (ml_p%Omega_units)
-    case ('NONE')
-       Omega_rot = ml_p%Omega_rot
-    case ('HZ')
-       Omega_rot = TWOPI*ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
-    case ('UHZ')
-       Omega_rot = TWOPI*ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))/1E6
-    case ('PER_DAY')
-       Omega_rot = TWOPI*ml_p%Omega_rot/86400._WP
-    case ('CRITICAL')
-       Omega_rot = ml_p%Omega_rot*SQRT(8._WP/27._WP)
+    select case (ml_p%model_type)
+
+    case ('EVOL')
+
+       select case (ml_p%Omega_units)
+       case ('NONE')
+          Omega_rot = ml_p%Omega_rot
+       case ('HZ')
+          $ASSERT(PRESENT(M_star) .AND. PRESENT(R_star),Insufficient data)
+          Omega_rot = TWOPI*ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+       case ('UHZ')
+          $ASSERT(PRESENT(M_star) .AND. PRESENT(R_star),Insufficient data)
+          Omega_rot = TWOPI*ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))/1E6
+       case ('PER_DAY')
+          $ASSERT(PRESENT(M_star) .AND. PRESENT(R_star),Insufficient data)
+          Omega_rot = TWOPI*ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))/86400._WP
+       case ('CRITICAL')
+          Omega_rot = ml_p%Omega_rot*SQRT(8._WP/27._WP)
+       case default
+          $ABORT(Invalid Omega_units)
+       end select
+
+    case ('POLY')
+
+       select case (ml_p%Omega_units)
+       case ('NONE')
+          Omega_rot = ml_p%Omega_rot
+       case ('CRITICAL')
+          Omega_rot = ml_p%Omega_rot*SQRT(8._WP/27._WP)
+       case default
+          $ABORT(Invalid Omega_units)
+       end select
+
+    case ('HOM')
+
+       select case (ml_p%Omega_units)
+       case ('NONE')
+          Omega_rot = ml_p%Omega_rot
+       case ('CRITICAL')
+          Omega_rot = ml_p%Omega_rot*SQRT(8._WP/27._WP)
+       case default
+          $ABORT(Invalid Omega_units)
+       end select
+
     case default
-       $ABORT(Invalid Omega_units)
+
+       $ABORT(Invalid model_type)
+
     end select
 
     ! Finish
 
     return
 
-  end subroutine set_uniform_rot
+  end function uniform_Omega_rot
     
   !****
 

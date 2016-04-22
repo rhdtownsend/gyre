@@ -26,6 +26,7 @@ module gyre_poly_file
 
   use gyre_model
   use gyre_model_par
+  use gyre_model_util
   use gyre_poly_model
   use gyre_util
 
@@ -58,6 +59,7 @@ contains
     real(WP), allocatable       :: xi(:)
     real(WP), allocatable       :: Theta(:)
     real(WP), allocatable       :: dTheta(:)
+    real(WP)                    :: Omega_rot
     type(poly_model_t), pointer :: pm
 
     ! Read the POLY-format file
@@ -85,9 +87,17 @@ contains
 
     call hg%final()
 
+    ! Set up Omega_rot
+
+    if (ml_p%uniform_rot) then
+       Omega_rot = uniform_Omega_rot(ml_p)
+    else
+       Omega_rot = 0._WP
+    endif
+
     ! Initialize the poly_model_t
 
-    allocate(pm, SOURCE=poly_model_t(xi, Theta, dTheta, n_poly, Delta_d, Gamma_1, ml_p))
+    allocate(pm, SOURCE=poly_model_t(xi, Theta, dTheta, n_poly, Delta_d, Gamma_1, Omega_rot))
 
     ! Return a pointer
 

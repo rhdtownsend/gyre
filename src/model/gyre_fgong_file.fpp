@@ -173,14 +173,14 @@ contains
     allocate(Omega_rot(n))
 
     if (ml_p%uniform_rot) then
-       call set_uniform_rot(ml_p, M_star, R_star, Omega_rot)
+       Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
     else
        Omega_rot = 0._WP
     endif
 
     ! Initialize the evol_model_t
 
-    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, .FALSE., ml_p))
 
     call em%set_V_2(V_2)
     call em%set_As(As)

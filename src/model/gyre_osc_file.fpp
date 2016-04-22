@@ -210,14 +210,14 @@ contains
 
     if (ml_p%uniform_rot) then
        allocate(Omega_rot(n))
-       call set_uniform_rot(ml_p, M_star, R_star, Omega_rot)
+       Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
     else
        Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
     endif
 
     ! Initialize the evol_model_t
 
-    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, .TRUE., ml_p))
 
     call em%set_V_2(V_2)
     call em%set_As(As)
