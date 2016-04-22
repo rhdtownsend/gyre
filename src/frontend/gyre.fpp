@@ -226,6 +226,8 @@ program gyre
 
      if (os_p_sel%nonadiabatic) then
 
+        $ASSERT(ml%nonad_cap(),Model does not have capability for nonadibatic calculations)
+
         allocate(bp_nad, SOURCE=nad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
 
         i_ad_b = n_md_ad
