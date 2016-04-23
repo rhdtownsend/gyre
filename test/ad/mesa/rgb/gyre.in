@@ -19,10 +19,6 @@
 	l = 2
 /
 
-&mode
-	l = 3
-/
-
 &osc
 /
 
@@ -32,16 +28,16 @@
 
 &scan
 	grid_type = 'INVERSE'
-	freq_min = 39,
-	freq_max = 41,
+	freq_min = 41
+	freq_max = 42
 	freq_units = 'UHZ'
-	n_freq = 200,
+	n_freq = 50
 /
 
 &grid
+	n_center = 5
 	alpha_osc = 10
 	alpha_exp = 2
-	n_center = 5
 /
 
 &ad_output
@@ -52,4 +48,3 @@
 
 &nad_output
 /
-

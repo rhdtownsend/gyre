@@ -8,19 +8,18 @@
 /
 
 &mode
-	l = 0
-/
-
-&mode
 	l = 1
+	tag = 'l=1'
 /
 
 &mode
 	l = 2
+	tag = 'l=2'
 /
 
 &mode
 	l = 3
+	tag = 'l=3'
 /
 
 &osc
@@ -33,15 +32,25 @@
 &scan
 	grid_type = 'INVERSE'
 	freq_min = 0.15
-	freq_max = 1
-	n_freq = 200
+	freq_max = 0.45
+	n_freq = 100
+	tag_list = 'l=1'
 /
 
 &scan
-	grid_type = 'LINEAR'
-	freq_min = 1
-	freq_max = 10
+	grid_type = 'INVERSE'
+	freq_min = 0.2
+	freq_max = 0.75
 	n_freq = 100
+	tag_list = 'l=2'
+/
+
+&scan
+	grid_type = 'INVERSE'
+	freq_min = 0.25
+	freq_max = 1
+	n_freq = 100
+	tag_list = 'l=3'
 /
 
 &grid
