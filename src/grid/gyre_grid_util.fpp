@@ -78,8 +78,9 @@ contains
     type(point_t)               :: pt_a
     type(point_t)               :: pt_b
 
-    ! Find the cell index and abscissa of the inner turning point at
-    ! frequency omega
+    ! Find the cell index and abscissa of the inner turning point,
+    ! where the local solution at frequency omega first becomes
+    ! propagative
 
     k_turn = gr%n_k
     x_turn = HUGE(0._WP)
@@ -88,52 +89,63 @@ contains
 
     gamma_b = gamma_(ml, rt, gr%pt(1), omega)
 
-    turn_loop : do k = 1, gr%n_k-1
+    if (gamma_b <= 0._WP) then
 
-       ! Check for a sign change in gamma
+       ! Inner point is already propagative
 
-       gamma_a = gamma_b
-       gamma_b = gamma_(ml, rt, gr%pt(k+1), omega)
+       k_turn = 1
+       x_turn = gr%pt(1)%x
 
-       if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
+    else
 
-          k_turn = k
+       turn_loop : do k = 1, gr%n_k-1
 
-          pt_a = gr%pt(k)
-          pt_b = gr%pt(k+1)
+          ! Check for a sign change in gamma
 
-          if (pt_a%s == pt_b%s) then
+          gamma_a = gamma_b
+          gamma_b = gamma_(ml, rt, gr%pt(k+1), omega)
 
-             if (ABS(gamma_a) < EPSILON(0._WP)*ABS(gamma_b)) then
+          if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
 
-                x_turn = pt_a%x
+             k_turn = k
+             
+             pt_a = gr%pt(k)
+             pt_b = gr%pt(k+1)
+             
+             if (pt_a%s == pt_b%s) then
 
-             elseif (ABS(gamma_b) < EPSILON(0._WP)*ABS(gamma_a)) then
+                if (ABS(gamma_a) < EPSILON(0._WP)*ABS(gamma_b)) then
 
-                x_turn = pt_b%x
+                   x_turn = pt_a%x
+
+                elseif (ABS(gamma_b) < EPSILON(0._WP)*ABS(gamma_a)) then
+
+                   x_turn = pt_b%x
+
+                else
+                   
+                   gf%ml => ml
+                   allocate(gf%rt, SOURCE=rt)
+                   gf%s = pt_a%s
+                   gf%omega = omega
+                   
+                   x_turn = gf%root(pt_a%x, pt_b%x, 0._WP)
+
+                endif
 
              else
 
-                gf%ml => ml
-                allocate(gf%rt, SOURCE=rt)
-                gf%s = pt_a%s
-                gf%omega = omega
-                
-                x_turn = gf%root(pt_a%x, pt_b%x, 0._WP)
+                x_turn = pt_a%x
 
-             endif
+             end if
 
-          else
+             exit turn_loop
 
-             x_turn = pt_a%x
+          endif
 
-          end if
+       end do turn_loop
 
-          exit turn_loop
-
-       endif
-
-    end do turn_loop
+    endif
 
     ! Finish
 
