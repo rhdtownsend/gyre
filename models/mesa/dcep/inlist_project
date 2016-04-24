@@ -1,0 +1,66 @@
+! Inlist for delta Cephei model
+!
+! Used with MESA r8548
+
+&star_job
+
+   ! EOS & opacities
+
+   eos_file_prefix = 'mesa'
+   kappa_file_prefix = 'gs98'
+      
+   ! Output
+
+   write_profile_when_terminate = .TRUE.
+   filename_for_profile_when_terminate = 'dcep.profile'
+
+   save_pulse_data_when_terminate = .TRUE.
+   save_pulse_data_filename = 'dcep.mesa'
+
+/
+
+&controls
+
+   ! Starting parameters
+
+   initial_mass = 8.5
+
+   ! Mesh
+
+   mesh_delta_coeff = 0.5
+
+   min_timestep_factor = 0.
+   delta_lg_XH_cntr_max = -1.
+
+   ! Convection
+
+   mixing_length_alpha = 1.5
+
+   overshoot_f_above_burn_h_core = 0.024
+   overshoot_f0_above_burn_h_core = 0.006
+
+   ! Brunt-Vaisala smoothing
+
+   num_cells_for_smooth_brunt_B = 0
+   
+   ! Output to files and terminal
+
+   photostep = 0
+   profile_interval = 0
+   history_interval = 0
+   terminal_interval = 10
+   write_header_frequency = 10
+
+   pulse_data_format = 'GYRE'
+   add_center_point_to_pulse_data = .TRUE.
+   add_double_points_to_pulse_data = .TRUE.
+   threshold_grad_mu_for_double_point = 10
+
+   ! When to stop
+
+   log_Teff_lower_limit = 3.7
+
+/
+
+&pgstar
+/
