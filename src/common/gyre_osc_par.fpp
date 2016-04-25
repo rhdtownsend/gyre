@@ -125,7 +125,7 @@ contains
        x_ref = HUGE(0._WP)
 
        rotation_method = 'NULL'
-       variables_set = ''
+       variables_set = 'GYRE'
        inner_bound = 'REGULAR'
        outer_bound = 'ZERO'
        inertia_norm = 'BOTH'

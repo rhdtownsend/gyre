@@ -40,7 +40,7 @@ module gyre_ad_vars
 
   ! Parameter definitions
 
-  integer, parameter :: CANON_SET = 0
+  integer, parameter :: GYRE_SET = 0
   integer, parameter :: DZIEM_SET = 1
   integer, parameter :: JCD_SET = 2
   integer, parameter :: MIX_SET = 3
@@ -103,8 +103,8 @@ contains
     allocate(vr%rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
 
     select case (os_p%variables_set)
-    case ('')
-       vr%set = CANON_SET
+    case ('GYRE')
+       vr%set = GYRE_SET
     case ('DZIEM')
        vr%set = DZIEM_SET
     case ('JCD')
@@ -138,7 +138,7 @@ contains
     ! the canonical form
 
     select case (this%set)
-    case (CANON_SET)
+    case (GYRE_SET)
        G = identity_matrix(4)
     case (DZIEM_SET)
        G = this%G_dziem_(pt, omega)
@@ -385,7 +385,7 @@ contains
     ! canonical form
 
     select case (this%set)
-    case (CANON_SET)
+    case (GYRE_SET)
        H = identity_matrix(4)
     case (DZIEM_SET)
        H = this%H_dziem_(pt, omega)
@@ -631,7 +631,7 @@ contains
     ! Evaluate the derivative x dH/dx of the transformation matrix H
 
     select case (this%set)
-    case (CANON_SET)
+    case (GYRE_SET)
        dH = 0._WP
     case (DZIEM_SET)
        dH = 0._WP
