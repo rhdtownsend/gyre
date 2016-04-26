@@ -139,7 +139,6 @@ contains
     c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
-       allocate(Omega_rot(n))
        Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
     else
        Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
@@ -234,7 +233,8 @@ contains
        backspace(unit)
 
        if (check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 100) 'Detected version 0.01 file'
+          write(OUTPUT_UNIT, 110) 'Detected version 0.01 file'
+110          format(3X,A)
        endif
 
        call read_mesa_data_v0_01_()
@@ -242,7 +242,7 @@ contains
     case (19)
 
        if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 100) 'Detected version 0.19 file'
+         write(OUTPUT_UNIT, 110) 'Detected version 0.19 file'
       endif
 
        call read_mesa_data_v0_19_()
@@ -250,7 +250,7 @@ contains
     case (100)
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 100) 'Detected version 1.00 file'
+         write(OUTPUT_UNIT, 110) 'Detected version 1.00 file'
       endif
 
        call read_mesa_data_v1_00_()
@@ -263,6 +263,11 @@ contains
 
     close(unit)
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Read', n, 'points'
+120    format(3X,A,1X,I0,1X,A)
+    endif
+    
     ! Finish
 
     return
