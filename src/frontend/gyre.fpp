@@ -182,6 +182,8 @@ program gyre
 
      call build_scan(ml, gr, md_p(i), os_p_sel, sc_p_sel, omega)
 
+     call check_scan(ml, gr, omega, md_p(i), os_p_sel)
+
      ! Create the full grid
 
      if (check_log_level('INFO')) then
