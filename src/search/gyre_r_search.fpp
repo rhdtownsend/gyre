@@ -38,6 +38,8 @@ module gyre_r_search
   use gyre_num_par
   use gyre_osc_par
   use gyre_root
+  use gyre_rot
+  use gyre_rot_factory
   use gyre_scan_par
   use gyre_status
   use gyre_util
@@ -53,6 +55,7 @@ module gyre_r_search
   private
 
   public :: build_scan
+  public :: check_scan
   public :: scan_search
 
 contains
@@ -180,6 +183,45 @@ contains
     return
 
   end subroutine build_scan
+
+  !****
+
+  subroutine check_scan (ml, gr, omega, md_p, os_p)
+
+    class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
+    real(WP), intent(in)                :: omega(:)
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
+
+    class(r_rot_t), allocatable :: rt
+    real(WP)                    :: omega_c(gr%n_k)
+    real(WP)                    :: omega_c_prev(gr%n_k)
+    integer                     :: j
+
+    ! Check the frequency scan to ensure no zero crossings in omega_c
+    ! arise
+
+    allocate(rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
+
+    omega_c = rt%omega_c(gr%pt, omega(1))
+
+    $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
+
+    do j = 2, SIZE(omega)
+
+       omega_c_prev = omega_c
+       omega_c = rt%omega_c(gr%pt, omega(j))
+
+       $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)
+
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine check_scan
 
   !****
 
