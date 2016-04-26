@@ -66,6 +66,9 @@ contains
        case ('UHZ')
           $ASSERT(PRESENT(M_star) .AND. PRESENT(R_star),Insufficient data)
           Omega_rot = TWOPI*ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))/1E6
+       case ('RAD_PER_SEC')
+          $ASSERT(PRESENT(M_star) .AND. PRESENT(R_star),Insufficient data)
+          Omega_rot = ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
        case ('PER_DAY')
           $ASSERT(PRESENT(M_star) .AND. PRESENT(R_star),Insufficient data)
           Omega_rot = TWOPI*ml_p%Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))/86400._WP
