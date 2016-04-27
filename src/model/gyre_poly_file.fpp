@@ -87,6 +87,11 @@ contains
 
     call hg%final()
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Read', SIZE(xi), 'points'
+110    format(3X,A,1X,I0,1X,A)
+    endif
+
     ! Set up Omega_rot
 
     if (ml_p%uniform_rot) then

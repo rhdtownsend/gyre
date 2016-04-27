@@ -117,10 +117,10 @@ contains
     read(unit, *) n, iconst, ivar, iabund, ivers
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Initial points :', n
-       write(OUTPUT_UNIT, 110) 'File version   :', ivers
-110    format(3X,A,1X,I0)
+       write(OUTPUT_UNIT, 110) 'Detected version', ivers, 'file'
+110    format(3X,A,1X,I0,1X,A)
     endif
+
 
     ! Read the data
 
@@ -142,6 +142,11 @@ contains
     close(unit)
 
     point_data = point_data(:,n:1:-1)
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Read', n, 'points'
+120    format(3X,A,1X,I0,1X,A)
+    endif
 
     ! Extract structure data
 

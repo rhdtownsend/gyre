@@ -95,6 +95,7 @@ module gyre_mode
      $PROC_DECL(lambda)
      $PROC_DECL(dE_dx)
      $PROC_DECL(dW_dx)
+     $PROC_DECL(dW_eps_dx)
      $PROC_DECL(dC_dx)
      $PROC_DECL(F_j_wave)
      $PROC_DECL(tau_j_wave)
@@ -116,6 +117,7 @@ module gyre_mode
      procedure, public :: E_g
      procedure, public :: E_norm
      procedure, public :: W
+     procedure, public :: W_eps
      procedure, public :: C
      procedure, public :: omega_int
      procedure, public :: eta
@@ -645,6 +647,24 @@ contains
     return
 
   end function W
+
+  !****
+
+  function W_eps (this)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: W_eps
+    
+    ! Calculate the total work associated with nuclear processes, in
+    ! units of G M_star**2/R_star
+
+    W_eps = integrate(this%gr%pt%x, this%dW_eps_dx())
+
+    ! Finish
+
+    return
+
+  end function W_eps
 
   !****
 
@@ -1502,13 +1522,13 @@ contains
 
   !****
 
-  function dW_dx_eps_1_ (this, pt) result (dW_dx_eps)
+  function dW_eps_dx_1_ (this, pt) result (dW_eps_dx)
 
     use gyre_evol_model
 
     class(mode_t), intent(in) :: this
     type(point_t), intent(in) :: pt
-    real(WP)                  :: dW_dx_eps
+    real(WP)                  :: dW_eps_dx
 
     real(WP)    :: t_dyn
     real(WP)    :: t_kh
@@ -1541,13 +1561,13 @@ contains
 
     omega_R = REAL(this%omega)
 
-    dW_dx_eps = PI/omega_R*REAL(CONJG(lag_T)*(c_eps_ad*lag_P + c_eps_S*lag_S))*pt%x**2*t_dyn/t_kh
+    dW_eps_dx = PI/omega_R*REAL(CONJG(lag_T)*(c_eps_ad*lag_P + c_eps_S*lag_S))*pt%x**2*t_dyn/t_kh
 
     ! Finish
 
     return
 
-  end function dW_dx_eps_1_
+  end function dW_eps_dx_1_
 
   !****
 
@@ -2005,6 +2025,7 @@ contains
   $PROC_F(lambda,complex(WP))
   $PROC_F(dE_dx,real(WP))
   $PROC_F(dW_dx,real(WP))
+  $PROC_F(dW_eps_dx,real(WP))
   $PROC_F(dC_dx,real(WP))
   $PROC_F(F_j_wave,real(WP))
   $PROC_F(tau_j_wave,real(WP))

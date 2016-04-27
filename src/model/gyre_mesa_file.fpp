@@ -225,40 +225,23 @@ contains
 
     read(unit, *) n, M_star, R_star, L_star, version
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Detected version', version, 'file'
+110    format(3X,A,1X,F4.2,1X,A)
+    endif
+
     ! Read the data
 
     select case (version)
     case (1)
-
        backspace(unit)
-
-       if (check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 110) 'Detected version 0.01 file'
-110          format(3X,A)
-       endif
-
        call read_mesa_data_v0_01_()
-
     case (19)
-
-       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 110) 'Detected version 0.19 file'
-      endif
-
        call read_mesa_data_v0_19_()
-
     case (100)
-
-      if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 110) 'Detected version 1.00 file'
-      endif
-
        call read_mesa_data_v1_00_()
-
     case default
-
        $ABORT(Unrecognized MESA file version)
-
     end select
 
     close(unit)
