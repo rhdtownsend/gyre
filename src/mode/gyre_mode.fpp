@@ -1510,13 +1510,38 @@ contains
     type(point_t), intent(in) :: pt
     real(WP)                  :: dW_dx_eps
 
+    real(WP)    :: t_dyn
+    real(WP)    :: t_kh
+    complex(WP) :: lag_T
+    complex(WP) :: lag_P
+    complex(WP) :: lag_S
+    real(WP)    :: c_eps_ad
+    real(WP)    :: c_eps_S
+    real(WP)    :: omega_R
+
     ! Evaluate the differential work associated with nuclear
     ! processes, in units of G M_star**2/R_star.  This expression is
-    ! based on eqn. X.XX of [Unn1989]
+    ! based on eqn. 25.9 of [Unn1989]
 
-    dW_dx_eps = 0._WP
+    select type (ml => this%ml)
+    class is (evol_model_t)
+       t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
+    class default
+       t_dyn = 1._WP
+       t_kh = 1._WP
+    end select
 
-    $ABORT(Not yet implemented)
+    lag_T = this%lag_T(pt)
+    lag_P = this%lag_P(pt)
+    lag_S = this%lag_S(pt)
+    
+    c_eps_ad = this%ml%c_eps_ad(pt)
+    c_eps_S = this%ml%c_eps_S(pt)
+
+    omega_R = REAL(this%omega)
+
+    dW_dx_eps = PI/omega_R*REAL(CONJG(lag_T)*(c_eps_ad*lag_P + c_eps_S*lag_S))*pt%x**2*t_dyn/t_kh
 
     ! Finish
 
