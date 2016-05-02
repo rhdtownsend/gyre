@@ -73,7 +73,7 @@ contains
 
   end subroutine init_
 
-!****
+  !****
 
   function trad_lambda_r_ (nu, l, m) result (lambda)
 
@@ -99,7 +99,7 @@ contains
 
   end function trad_lambda_r_
 
-!****
+  !****
 
   function trad_lambda_c_ (nu, l, m) result (lambda)
 
