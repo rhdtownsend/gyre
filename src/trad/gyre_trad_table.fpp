@@ -39,7 +39,9 @@ module gyre_trad_table
 
   type :: trad_table_t
      type(trad_func_t), allocatable :: tf(:,:)
-     integer                        :: l_max
+     integer                        :: m_max
+     integer                        :: k_min
+     integer                        :: k_max
   end type trad_table_t
 
   ! Interfaces
@@ -71,16 +73,21 @@ module gyre_trad_table
 
 contains
 
-  function trad_table_t_ (l_max) result (tt)
+  function trad_table_t_ (m_max, k_min, k_max) result (tt)
 
-    integer, intent(in) :: l_max 
+    integer, intent(in) :: m_max 
+    integer, intent(in) :: k_min
+    integer, intent(in) :: k_max 
     type(trad_table_t)  :: tt
 
     ! Construct the trad_table_t
 
-    allocate(tt%tf(0:l_max,-l_max:l_max))
+    allocate(tt%tf(0:m_max,k_min:k_max))
 
-    tt%l_max = l_max
+    tt%m_max = m_max
+
+    tt%k_min = k_min
+    tt%k_max = k_max
 
     ! Finish
 
@@ -88,7 +95,7 @@ contains
 
   end function trad_table_t_
 
-!****
+  !****
 
   $if ($HDF5)
 
@@ -97,21 +104,27 @@ contains
     type(hgroup_t), intent(inout)   :: hg
     type(trad_table_t), intent(out) :: tt
 
-    integer        :: l_max
-    integer        :: l
+    integer        :: m_max
+    integer        :: k_min
+    integer        :: k_max
     integer        :: m
+    integer        :: k
     type(hgroup_t) :: hg_comp
 
     ! Read the trad_table_t
 
-    call read_attr(hg, 'l_max', l_max)
+    call read_attr(hg, 'm_max', m_max)
 
-    tt = trad_table_t(l_max)
+    call read_attr(hg, 'k_min', k_min)
+    call read_attr(hg, 'k_max', k_max)
 
-    do l = 0, l_max
-       do m = -l, l
-          hg_comp = hgroup_t(hg, elem_group_name('tf', [l,m]))
-          call read(hg_comp, tt%tf(l,m))
+    tt = trad_table_t(m_max, k_min, k_max)
+
+    do m = 0, m_max
+       do k = k_min, k_max
+          if (m == 0 .AND. k < 0) cycle
+          hg_comp = hgroup_t(hg, elem_group_name('tf', [m,k]))
+          call read(hg_comp, tt%tf(m,k))
           call hg_comp%final()
        end do
     end do
@@ -122,25 +135,29 @@ contains
 
   end subroutine read_
 
-!****
+  !****
 
   subroutine write_ (hg, tt)
 
     type(hgroup_t), intent(inout)  :: hg
     type(trad_table_t), intent(in) :: tt
 
-    integer        :: l
     integer        :: m
+    integer        :: k
     type(hgroup_t) :: hg_comp
 
     ! Write the trad_table_t
 
-    call write_attr(hg, 'l_max', tt%l_max)
+    call write_attr(hg, 'm_max', tt%m_max)
 
-    do l = 0, tt%l_max
-       do m = -l, l
-          hg_comp = hgroup_t(hg, elem_group_name('tf', [l,m]))
-          call write(hg_comp, tt%tf(l,m))
+    call write_attr(hg, 'k_min', tt%k_min)
+    call write_attr(hg, 'k_max', tt%k_max)
+
+    do m = 0, tt%m_max
+       do k = tt%k_min, tt%k_max
+          if (m == 0 .AND. k < 0) cycle
+          hg_comp = hgroup_t(hg, elem_group_name('tf', [m,k]))
+          call write(hg_comp, tt%tf(m,k))
           call hg_comp%final()
        end do
     end do
