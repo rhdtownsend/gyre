@@ -44,6 +44,7 @@ module gyre_trad_func
      type(cheby_t)   :: cb_neg
      type(cheby_t)   :: cb_pos
      type(cheby_t)   :: cb_ctr
+     real(WP)        :: nu_t
      integer, public :: m
      integer, public :: k
    contains
@@ -91,7 +92,7 @@ contains
     integer, intent(in)  :: cheby_n
     type(trad_func_t)    :: tf
 
-    $ASSERT(k >= 0,Invalid k)
+    integer :: l
 
     ! Construct the trad_func_t with the specified tolerances and
     ! Chebyshev fit order
@@ -99,35 +100,57 @@ contains
     tf%m = m
     tf%k = k
 
-    tf%cb_neg = cheby_t(-1._WP, 0._WP, cheby_n, f_outer)
-    tf%cb_pos = cheby_t(0._WP , 1._WP, cheby_n, f_outer)
-    tf%cb_ctr = cheby_t(-1._WP, 1._WP, cheby_n, f_inner)
+    if (k >= 0) then
 
-    call tf%cb_neg%truncate(cheby_tol)
-    call tf%cb_pos%truncate(cheby_tol)
-    call tf%cb_ctr%truncate(cheby_tol)
+       ! Gravity waves
 
+       tf%nu_t = 1._WP
+
+       tf%cb_neg = cheby_t(-1._WP, 0._WP, cheby_n, f_grav_o_)
+       tf%cb_pos = cheby_t(0._WP , 1._WP, cheby_n, f_grav_o_)
+       tf%cb_ctr = cheby_t(-1._WP, 1._WP, cheby_n, f_grav_i_)
+
+       call tf%cb_neg%truncate(cheby_tol)
+       call tf%cb_pos%truncate(cheby_tol)
+       call tf%cb_ctr%truncate(cheby_tol)
+
+    else
+
+       $ASSERT(m /= 0,Invalid m for Rossby waves)
+
+       ! Rossby waves
+
+       l = ABS(m) + ABS(k) - 1
+       tf%nu_t = REAL(l*(l+1), WP)/REAL(m)
+
+       tf%cb_neg = cheby_t(-1._WP, 0._WP, cheby_n, f_ross_)
+
+       call tf%cb_neg%truncate(cheby_tol)
+
+    endif
+       
     ! Finish
 
     return
 
   contains
 
-    function f_inner (x) 
+    function f_grav_i_ (x) result (f)
 
       real(WP), intent(in) :: x
-      real(WP)             :: f_inner
+      real(WP)             :: f
 
-      ! Calculate the eigenvalue function in the inner region
+      ! Calculate the gravity-wave eigenvalue function in the inner
+      ! region (|nu| < nu_t)
 
       if (m == 0._WP .AND. k == 0._WP) then
          
-         f_inner = 1._WP
+         f = 1._WP
 
       else
 
-         associate (nu => x)
-           f_inner = lambda(nu, m, k, lambda_tol)/lambda_norm_r_(nu, m, k)
+         associate (nu => tf%nu_t*x)
+           f = lambda(nu, m, k, lambda_tol)/lambda_norm_grav_i_r_(nu, m, k)
          end associate
 
       endif
@@ -136,29 +159,30 @@ contains
 
       return
 
-    end function f_inner
+    end function f_grav_i_
 
-    function f_outer (x)
+    function f_grav_o_ (x) result (f)
 
       real(WP), intent(in) :: x
-      real(WP)             :: f_outer
+      real(WP)             :: f
 
-      ! Calculate the eigenvalue function in the outer region
+      ! Calculate the gravity-wave eigenvalue function in the outer
+      ! region (|nu| > nu_t)
 
       if (m == 0._WP .AND. k == 0._WP) then
 
-         f_outer = 1._WP
+         f = 1._WP
 
       else
 
          if (x == 0._WP) then
 
-            f_outer = 1._WP
+            f = 1._WP
 
          else
 
-            associate (nu => 1._WP/x)
-              f_outer = lambda(nu, m, k, lambda_tol)/lambda_norm_r_(nu, m, k)
+            associate (nu => tf%nu_t/x)
+              f = lambda(nu, m, k, lambda_tol)/lambda_norm_grav_o_r_(nu, m, k)
             end associate
 
          endif
@@ -169,11 +193,36 @@ contains
 
       return
 
-    end function f_outer
+    end function f_grav_o_
+
+    function f_ross_ (x) result (f)
+
+      real(WP), intent(in) :: x
+      real(WP)             :: f
+
+      ! Calculate the Rossby-wave eigenvaule function
+
+      if (x == 0._WP) then
+
+         f = 1._WP
+
+      elseif (x == -1._WP) then
+
+         f = 0._WP
+
+      else
+
+         associate (nu => tf%nu_t/x)
+           f = lambda(nu, m, k, lambda_tol)/lambda_norm_ross_r_(nu, m, k)
+         end associate
+
+      endif
+
+    end function f_ross_
 
   end function trad_func_t_tol_
 
-!****
+  !****
 
   $if ($HDF5)
 
@@ -189,17 +238,23 @@ contains
     call read_attr(hg, 'm', tf%m)
     call read_attr(hg, 'k', tf%k)
 
+    call read_attr(hg, 'nu_t', tf%nu_t)
+
     hg_comp = hgroup_t(hg, 'cb_neg')
     call read(hg_comp, tf%cb_neg)
     call hg_comp%final()
 
-    hg_comp = hgroup_t(hg, 'cb_pos')
-    call read(hg_comp, tf%cb_pos)
-    call hg_comp%final()
+    if (tf%k >= 0) then
 
-    hg_comp = hgroup_t(hg, 'cb_ctr')
-    call read(hg_comp, tf%cb_ctr)
-    call hg_comp%final()
+       hg_comp = hgroup_t(hg, 'cb_pos')
+       call read(hg_comp, tf%cb_pos)
+       call hg_comp%final()
+       
+       hg_comp = hgroup_t(hg, 'cb_ctr')
+       call read(hg_comp, tf%cb_ctr)
+       call hg_comp%final()
+
+    end if
 
     ! Finish
 
@@ -207,7 +262,7 @@ contains
 
   end subroutine read_
 
-!****
+  !****
 
   subroutine write_ (hg, tf)
 
@@ -221,17 +276,23 @@ contains
     call write_attr(hg, 'm', tf%m)
     call write_attr(hg, 'k', tf%k)
 
+    call write_attr(hg, 'nu_t', tf%nu_t)
+
     hg_comp = hgroup_t(hg, 'cb_neg')
     call write(hg_comp, tf%cb_neg)
     call hg_comp%final()
 
-    hg_comp = hgroup_t(hg, 'cb_pos')
-    call write(hg_comp, tf%cb_pos)
-    call hg_comp%final()
+    if (tf%k >= 0) then
 
-    hg_comp = hgroup_t(hg, 'cb_ctr')
-    call write(hg_comp, tf%cb_ctr)
-    call hg_comp%final()
+       hg_comp = hgroup_t(hg, 'cb_pos')
+       call write(hg_comp, tf%cb_pos)
+       call hg_comp%final()
+
+       hg_comp = hgroup_t(hg, 'cb_ctr')
+       call write(hg_comp, tf%cb_ctr)
+       call hg_comp%final()
+
+    endif
 
     ! Finish
 
@@ -241,7 +302,7 @@ contains
 
   $endif
 
-!****
+  !****
 
   function lambda_r_ (this, nu) result (lambda)
 
@@ -251,13 +312,29 @@ contains
 
     ! Evaluate the eigenvalue of Laplace's tidal equation (real)
 
-    if (nu < -1._WP) then
-       lambda = this%cb_neg%eval(1._WP/nu)*lambda_norm_r_(nu, this%m, this%k)
-    elseif (nu > 1._WP) then
-       lambda = this%cb_pos%eval(1._WP/nu)*lambda_norm_r_(nu, this%m, this%k)
+    if (this%k >= 0) then
+
+       ! Gravity waves
+
+       if (nu <= -this%nu_t) then
+          lambda = this%cb_neg%eval(this%nu_t/nu)*lambda_norm_grav_o_r_(nu, this%m, this%k)
+       elseif (nu >= this%nu_t) then
+          lambda = this%cb_pos%eval(this%nu_t/nu)*lambda_norm_grav_o_r_(nu, this%m, this%k)
+       else
+          lambda = this%cb_ctr%eval(nu/this%nu_t)*lambda_norm_grav_i_r_(nu, this%m, this%k)
+       endif
+
     else
-       lambda = this%cb_ctr%eval(nu)*lambda_norm_r_(nu, this%m, this%k)
-    endif
+
+       ! Rossby waves
+
+       if (nu <= -this%nu_t) then
+          lambda = this%cb_neg%eval(this%nu_t/nu)*lambda_norm_ross_r_(nu, this%m, this%k)
+       else
+          $ABORT(Invalid nu for Rossby waves)
+       end if
+
+    end if
 
     ! Finish
 
@@ -265,7 +342,7 @@ contains
 
   end function lambda_r_
 
-!****
+  !****
 
   function lambda_c_ (this, nu) result (lambda)
 
@@ -275,13 +352,29 @@ contains
 
     ! Evaluate the eigenvalue of Laplace's tidal equation (complex)
 
-    if (REAL(nu) < -1._WP) then
-       lambda = this%cb_neg%eval(1._WP/nu)*lambda_norm_c_(nu, this%m, this%k)
-    elseif (REAL(nu) > 1._WP) then
-       lambda = this%cb_pos%eval(1._WP/nu)*lambda_norm_c_(nu, this%m, this%k)
+    if (this%k >= 0) then
+
+       ! Gravity waves
+
+       if (REAL(nu) < -this%nu_t) then
+          lambda = this%cb_neg%eval(this%nu_t/nu)*lambda_norm_grav_o_c_(nu, this%m, this%k)
+       elseif (REAL(nu) > this%nu_t) then
+          lambda = this%cb_pos%eval(this%nu_t/nu)*lambda_norm_grav_o_c_(nu, this%m, this%k)
+       else
+          lambda = this%cb_ctr%eval(nu/this%nu_t)*lambda_norm_grav_i_c_(nu, this%m, this%k)
+       endif
+
     else
-       lambda = this%cb_ctr%eval(nu)*lambda_norm_c_(nu, this%m, this%k)
-    endif
+
+       ! Rossby waves
+
+       if (REAL(nu) <= -this%nu_t) then
+          lambda = this%cb_neg%eval(this%nu_t/nu)*lambda_norm_ross_c_(nu, this%m, this%k)
+       else
+          $ABORT(Invalid nu for Rossby waves)
+       end if
+
+    end if
 
     ! Finish
 
@@ -289,63 +382,78 @@ contains
 
   end function lambda_c_
 
-!****
+  !****
 
-  function lambda_norm_r_ (nu, m, k) result (lambda_norm)
+  $define $LAMBDA_NORM $sub
 
-    real(WP), intent(in) :: nu
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: lambda_norm
+  $local $SUFFIX $1
+  $local $TYPE $2
 
-    ! Evaluate the eigenvalue normalization function (used to scale
-    ! the Chebychev fits to lambda)
+  function lambda_norm_grav_i_${SUFFIX}_ (nu, m, k) result (lambda_norm)
 
-    if (nu < -1._WP) then
-       lambda_norm = lambda_asymp_r_(nu, m, k)
-    elseif (nu > 1._WP) then
-       lambda_norm = lambda_asymp_r_(nu, m, k)
-     else
-       associate (l => ABS(m) + k)
-         lambda_norm = l*(l+1)
-       end associate
-    end if
+    $TYPE(WP), intent(in) :: nu
+    integer, intent(in)   :: m
+    integer, intent(in)   :: k
+    $TYPE(WP)             :: lambda_norm
+
+    ! Evaluate the gravity-wave eigenvalue normalization function in
+    ! the inner region (|nu| < nu_t)
+
+    associate (l => ABS(m) + k)
+      lambda_norm = l*(l+1)
+    end associate
 
     ! Finish
 
     return
     
-  end function lambda_norm_r_
+  end function lambda_norm_grav_i_${SUFFIX}_
   
-!****
+  !****
 
-  function lambda_norm_c_ (nu, m, k) result (lambda_norm)
+  function lambda_norm_grav_o_${SUFFIX}_ (nu, m, k) result (lambda_norm)
 
-    complex(WP), intent(in) :: nu
-    integer, intent(in)     :: m
-    integer, intent(in)     :: k
-    complex(WP)             :: lambda_norm
+    $TYPE(WP), intent(in) :: nu
+    integer, intent(in)   :: m
+    integer, intent(in)   :: k
+    $TYPE(WP)             :: lambda_norm
 
-    ! Evaluate the eigenvalue normalization function (used to scale
-    ! the Chebychev fits to lambda)
+    ! Evaluate the gravity-wave eigenvalue normalization function in
+    ! the outer region (|nu| > nu_t)
 
-    if (REAL(nu) < -1._WP) then
-       lambda_norm = lambda_asymp_c_(nu, m, k)
-    elseif (REAL(nu) > 1._WP) then
-       lambda_norm = lambda_asymp_c_(nu, m, k)
-    else
-       associate (l => ABS(m) + k)
-         lambda_norm = l*(l+1)
-       end associate
-    end if
+    lambda_norm = lambda_asymp_${SUFFIX}_(nu, m, k)
 
     ! Finish
 
     return
+    
+  end function lambda_norm_grav_o_${SUFFIX}_
+  
+  !****
 
-  end function lambda_norm_c_
+  function lambda_norm_ross_${SUFFIX}_ (nu, m, k) result (lambda_norm)
 
-!****
+    $TYPE(WP), intent(in) :: nu
+    integer, intent(in)   :: m
+    integer, intent(in)   :: k
+    $TYPE(WP)             :: lambda_norm
+
+    ! Evaluate the Rossby-wave eigenvalue normalization function
+
+    lambda_norm = lambda_asymp_${SUFFIX}_(nu, m, k)
+
+    ! Finish
+
+    return
+    
+  end function lambda_norm_ross_${SUFFIX}_
+
+  $endsub
+
+  $LAMBDA_NORM(r,real)
+  $LAMBDA_NORM(c,complex)
+  
+  !****
 
   function lambda_asymp_r_ (nu, m, k) result (lambda)
 
@@ -408,7 +516,7 @@ contains
 
   end function lambda_asymp_r_
 
-!****
+  !****
 
   function lambda_asymp_c_ (nu, m, k) result (lambda)
 
