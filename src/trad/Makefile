@@ -15,4 +15,4 @@ LDFLAGS=`mesasdk_hdf5_link`
 
 SUBDIRS=../extern/core:../extern/astro:../common
 
-include ../Make.inc
+include ../build/Make.inc

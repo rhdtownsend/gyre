@@ -47,8 +47,8 @@ program test_trad_table
 
   type(hgroup_t)        :: hg
   type(trad_table_t)    :: tt
-  integer               :: l
   integer               :: m
+  integer               :: k
   integer               :: i
   real(WP)              :: nu
   real(WP)              :: lambda_tab
@@ -76,15 +76,17 @@ program test_trad_table
 
   allocate(err(n_nu))
 
-  do l = 0, tt%l_max
-     do m = -l, l
+  do m = 0, tt%m_max
+     do k = tt%k_min, tt%k_max
+
+        if (m == 0 .AND. k < 0) cycle
 
         do i = 1, n_nu
 
            nu = (nu_min*(n_nu-i) + nu_max*(i-1))/(n_nu-1)
 
-           lambda_tab = tt%tf(l,m)%lambda(nu)
-           lambda_chk = lambda(nu, m, l-ABS(m), lambda_tol)
+           lambda_tab = tt%tf(m,k)%lambda(nu)
+           lambda_chk = lambda(nu, m, k, lambda_tol)
 
            lambda_nrm = MIN(ABS(lambda_tab), ABS(lambda_chk))
 
@@ -96,7 +98,7 @@ program test_trad_table
 
         end do
 
-        write(OUTPUT_UNIT, *) 'Processed:', l, m, MINVAL(err), MAXVAL(err)
+        write(OUTPUT_UNIT, *) 'Processed:', m, k, MINVAL(err), MAXVAL(err)
 
      end do
   end do

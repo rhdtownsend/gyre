@@ -37,39 +37,42 @@ program build_trad_table
 
   ! Variables
 
-  integer                   :: l_max
+  integer                   :: m_max
+  integer                   :: k_min
+  integer                   :: k_max
   real(WP)                  :: lambda_tol
   real(WP)                  :: cheby_tol
   integer                   :: cheby_n
   character(:), allocatable :: filename
 
   type(trad_table_t) :: tt
-  integer            :: l
   integer            :: m
+  integer            :: k
   type(hgroup_t)     :: hg
 
   ! Read parameters
 
-  $ASSERT(n_arg() == 5,Syntax: build_trad_table l_max lambda_tol cheby_tol cheby_n filename)
+  $ASSERT(n_arg() == 7,Syntax: build_trad_table m_max k_min k_max lambda_tol cheby_tol cheby_n filename)
 
-  call get_arg(1, l_max)
-  call get_arg(2, lambda_tol)
-  call get_arg(3, cheby_tol)
-  call get_arg(4, cheby_n)
-  call get_arg(5, filename)
+  call get_arg(1, m_max)
+  call get_arg(2, k_min)
+  call get_arg(3, k_max)
+  call get_arg(4, lambda_tol)
+  call get_arg(5, cheby_tol)
+  call get_arg(6, cheby_n)
+  call get_arg(7, filename)
 
   ! Construct the trad_table_t
 
-  tt = trad_table_t(l_max)
+  tt = trad_table_t(m_max, k_min, k_max)
 
   ! Fill in the entries
 
-  do l = 0, l_max
-     do m = -l, l
-        write(OUTPUT_UNIT, *) 'Processing:', l, m
-        associate(k => l - ABS(m))
-          tt%tf(l,m) = trad_func_t(m, k, lambda_tol, cheby_tol, cheby_n)
-        end associate
+  do m = 0, m_max
+     do k = k_min, k_max
+        write(OUTPUT_UNIT, *) 'Processing:', m, k
+        if (m == 0 .AND. k < 0) cycle
+        tt%tf(m,k) = trad_func_t(m, k, lambda_tol, cheby_tol, cheby_n)
      end do
   end do
 
