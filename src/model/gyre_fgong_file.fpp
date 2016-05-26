@@ -81,8 +81,10 @@ contains
     ! Open the FGONG-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from FGONG file', TRIM(ml_p%file)
-100    format(A,1X,A)
+       write(OUTPUT_UNIT, 100) 'Reading from FGONG file'
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(ml_p%file)
+110    format(3X,A,1X,A)
     endif
 
     open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
@@ -96,10 +98,9 @@ contains
 
     read(unit, *) n, iconst, ivar, ivers
 
-     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Grid points  :', n
-       write(OUTPUT_UNIT, 110) 'File version :', ivers
-110    format(3X,A,1X,I0)
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'File version', ivers
+120    format(3X,A,1X,F4.2,1X,A)
     endif
 
     ! Read the data
@@ -127,6 +128,11 @@ contains
 
     var = var(:,n:1:-1)
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 130) 'Read', n, 'points'
+130    format(3X,A,1X,I0,1X,A)
+    endif
+    
     ! Extract structure data
 
     M_star = glob(1)

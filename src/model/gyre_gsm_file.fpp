@@ -217,7 +217,9 @@ contains
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Reading from GSM file', TRIM(file)
-100    format(A,1X,A)
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(file)
+110    format(3X,A,1X,A)
     endif
 
     hg = hgroup_t(file, OPEN_FILE)
@@ -236,30 +238,20 @@ contains
     call read_attr(hg, 'R_star', R_star)
     call read_attr(hg, 'L_star', L_star)
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'File version', version/100._WP
+120    format(3X,A,1X,F4.2,1X,A)
+    endif
+
     ! Read the data
 
     select case (version)
-
     case (0)
-
-       if (check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 100) 'Detected version 0.00 file'
-       endif
-
        call read_gsm_data_v0_00_()
-
     case (100)
-
-       if (check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 100) 'Detected version 1.00 file'
-       endif
-
        call read_gsm_data_v1_00_()
-
     case default
-
        $ABORT(Unrecognized GSM file version)
-
     end select
 
     call hg%final()

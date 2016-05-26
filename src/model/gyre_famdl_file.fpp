@@ -76,21 +76,18 @@ contains
     ! Open the AMDL-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from FAMDL file', TRIM(ml_p%file)
-100    format(A,1X,A)
+       write(OUTPUT_UNIT, 100) 'Reading from FAMDL file'
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(ml_p%file)
+110    format(3X,A,1X,A)
     endif
 
     open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
 
     ! Read the header
 
-    read(unit, 110) nmod, n, ivar
-110 format(3I10)
-
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Grid points  :', n
-120    format(3X,A,1X,I0)
-    endif
+    read(unit, 120) nmod, n, ivar
+120 format(3I10)
 
     ! Read the data
 
@@ -106,6 +103,11 @@ contains
     read(unit, data_format) glob, var
 
     close(unit)
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 130) 'Read', n, 'points'
+130    format(3X,A,1X,I0,1X,A)
+    endif
 
     ! Extract structure data
 

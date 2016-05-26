@@ -73,8 +73,10 @@ contains
     ! Open the LOSC-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from LOSC file', TRIM(ml_p%file)
-100    format(A,1X,A)
+       write(OUTPUT_UNIT, 100) 'Reading from LOSC file'
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(ml_p%file)
+110    format(3X,A,1X,A)
     endif
           
     open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
@@ -95,11 +97,6 @@ contains
     read(unit, *)
     read(unit, *) n
 
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Initial points :', n
-110    format(3X,A,1X,I0)
-    endif
-
     ! Read the data
 
     allocate(var(6,n))
@@ -110,6 +107,11 @@ contains
 
     close(unit)
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Read', n, 'points'
+120    format(3X,A,1X,I0,1X,A)
+    endif
+    
     ! Extract structure data
 
     M_star = glob(2)

@@ -100,8 +100,10 @@ contains
     ! Open the OSC-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from OSC file', TRIM(ml_p%file)
-100    format(A,1X,A)
+       write(OUTPUT_UNIT, 100) 'Reading from OSC file'
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(ml_p%file)
+110    format(3X,A,1X,A)
     endif
           
     open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
@@ -117,10 +119,9 @@ contains
     read(unit, *) n, iconst, ivar, iabund, ivers
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Detected version', ivers, 'file'
-110    format(3X,A,1X,I0,1X,A)
+       write(OUTPUT_UNIT, 120) 'File version', ivers
+120    format(3X,A,1X,F4.2,1X,A)
     endif
-
 
     ! Read the data
 
@@ -144,10 +145,10 @@ contains
     point_data = point_data(:,n:1:-1)
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Read', n, 'points'
-120    format(3X,A,1X,I0,1X,A)
+       write(OUTPUT_UNIT, 130) 'Read', n, 'points'
+130    format(3X,A,1X,I0,1X,A)
     endif
-
+    
     ! Extract structure data
 
     M_star = global_data(1)

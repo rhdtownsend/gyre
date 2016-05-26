@@ -76,8 +76,10 @@ contains
     ! Open the AMDL-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from AMDL file', TRIM(ml_p%file)
-100    format(A,1X,A)
+       write(OUTPUT_UNIT, 100) 'Reading from AMDL file'
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(ml_p%file)
+110    format(3X,A,1X,A)
     endif
 
     open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD', FORM='UNFORMATTED')
@@ -96,11 +98,6 @@ contains
        ivar = 5
     endif
        
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Grid points :', n
-120    format(3X,A,1X,I0)
-    endif
-
     ! Read the data
 
     rewind(unit)
@@ -111,6 +108,11 @@ contains
 
     close(unit)
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'Read', n, 'points'
+120    format(3X,A,1X,I0,1X,A)
+    endif
+    
     ! Extract structure data
 
     M_star = glob(1)

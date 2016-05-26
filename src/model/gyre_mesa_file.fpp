@@ -215,8 +215,10 @@ contains
     ! Read data from the MESA-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from MESA file', TRIM(file)
-100    format(A,1X,A)
+       write(OUTPUT_UNIT, 100) 'Reading from MESA file'
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(file)
+110    format(3X,A,1X,A)
     endif
 
     open(NEWUNIT=unit, FILE=file, STATUS='OLD')
@@ -226,8 +228,8 @@ contains
     read(unit, *) n, M_star, R_star, L_star, version
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Detected version', version, 'file'
-110    format(3X,A,1X,F4.2,1X,A)
+       write(OUTPUT_UNIT, 120) 'File version', version/100._WP
+120    format(3X,A,1X,F4.2,1X,A)
     endif
 
     ! Read the data
@@ -247,8 +249,8 @@ contains
     close(unit)
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Read', n, 'points'
-120    format(3X,A,1X,I0,1X,A)
+       write(OUTPUT_UNIT, 130) 'Read', n, 'points'
+130    format(3X,A,1X,I0,1X,A)
     endif
     
     ! Finish
