@@ -42,7 +42,6 @@ program build_trad_table
   integer                   :: k_max
   real(WP)                  :: lambda_tol
   real(WP)                  :: cheby_tol
-  integer                   :: cheby_n
   character(:), allocatable :: filename
 
   type(trad_table_t) :: tt
@@ -52,15 +51,14 @@ program build_trad_table
 
   ! Read parameters
 
-  $ASSERT(n_arg() == 7,Syntax: build_trad_table m_max k_min k_max lambda_tol cheby_tol cheby_n filename)
+  $ASSERT(n_arg() == 6,Syntax: build_trad_table m_max k_min k_max lambda_tol cheby_tol filename)
 
   call get_arg(1, m_max)
   call get_arg(2, k_min)
   call get_arg(3, k_max)
   call get_arg(4, lambda_tol)
   call get_arg(5, cheby_tol)
-  call get_arg(6, cheby_n)
-  call get_arg(7, filename)
+  call get_arg(6, filename)
 
   ! Construct the trad_table_t
 
@@ -72,7 +70,7 @@ program build_trad_table
      do k = k_min, k_max
         write(OUTPUT_UNIT, *) 'Processing:', m, k
         if (m == 0 .AND. k < 0) cycle
-        tt%tf(m,k) = trad_func_t(m, k, lambda_tol, cheby_tol, cheby_n)
+        tt%tf(m,k) = trad_func_t(m, k, lambda_tol, cheby_tol)
      end do
   end do
 
