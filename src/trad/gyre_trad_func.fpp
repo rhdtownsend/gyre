@@ -83,13 +83,12 @@ module gyre_trad_func
 
 contains
 
-  function trad_func_t_tol_ (m, k, lambda_tol, cheby_tol, cheby_n) result (tf)
+  function trad_func_t_tol_ (m, k, lambda_tol, cheby_tol) result (tf)
 
     integer, intent(in)  :: m
     integer, intent(in)  :: k
     real(WP), intent(in) :: lambda_tol
     real(WP), intent(in) :: cheby_tol
-    integer, intent(in)  :: cheby_n
     type(trad_func_t)    :: tf
 
     integer :: l
@@ -106,13 +105,9 @@ contains
 
        tf%nu_t = 1._WP
 
-       tf%cb_neg = cheby_t(-1._WP, 0._WP, cheby_n, f_grav_o_)
-       tf%cb_pos = cheby_t(0._WP , 1._WP, cheby_n, f_grav_o_)
-       tf%cb_ctr = cheby_t(-1._WP, 1._WP, cheby_n, f_grav_i_)
-
-       call tf%cb_neg%truncate(cheby_tol)
-       call tf%cb_pos%truncate(cheby_tol)
-       call tf%cb_ctr%truncate(cheby_tol)
+       tf%cb_neg = cheby_t(-1._WP, 0._WP, cheby_tol, f_grav_o_)
+       tf%cb_pos = cheby_t(0._WP , 1._WP, cheby_tol, f_grav_o_)
+       tf%cb_ctr = cheby_t(-1._WP, 1._WP, cheby_tol, f_grav_i_)
 
     else
 
@@ -123,9 +118,7 @@ contains
        l = ABS(m) + ABS(k) - 1
        tf%nu_t = REAL(l*(l+1), WP)/REAL(m)
 
-       tf%cb_neg = cheby_t(-1._WP, 0._WP, cheby_n, f_ross_)
-
-       call tf%cb_neg%truncate(cheby_tol)
+       tf%cb_neg = cheby_t(-1._WP, 0._WP, cheby_tol, f_ross_)
 
     endif
        
@@ -182,6 +175,10 @@ contains
          else
 
             associate (nu => tf%nu_t/x)
+              if (ABS(nu) > 1E3_WP) then
+                 print *,'nu:',nu
+                 $WARN(Evaluating lambda for |nu| > 1E4 is problematic)
+              endif
               f = lambda(nu, m, k, lambda_tol)/lambda_norm_grav_o_r_(nu, m, k)
             end associate
 
@@ -249,7 +246,7 @@ contains
        hg_comp = hgroup_t(hg, 'cb_pos')
        call read(hg_comp, tf%cb_pos)
        call hg_comp%final()
-       
+
        hg_comp = hgroup_t(hg, 'cb_ctr')
        call read(hg_comp, tf%cb_ctr)
        call hg_comp%final()
