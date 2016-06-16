@@ -75,13 +75,16 @@ contains
 
   !****
 
-  function trad_lambda_r_ (nu, l, m) result (lambda)
+  function trad_lambda_r_ (nu, l, m, rossby) result (lambda)
 
+    real(WP), intent(in) :: nu
     integer, intent(in)  :: l
     integer, intent(in)  :: m
-    real(WP), intent(in) :: nu
+    logical, intent(in)  :: rossby
     real(WP)             :: lambda
 
+    integer :: k
+    
     ! Evaluate the eigenvalue of Laplace's tidal equation (real)
 
     if (.NOT. inited_m) then
@@ -89,9 +92,24 @@ contains
        inited_m = .TRUE.
     endif
 
-    $ASSERT(l <= tt_m%l_max,l above maximum extent of trad_table_t)
+    $ASSERT(ABS(m) <= tt_m%m_max,Out-of-bounds of trad_table_t)
 
-    lambda = tt_m%tf(l,m)%lambda(nu)
+    if (rossby) then
+       k = -(l - ABS(m) + 1)
+    else
+       k = l - ABS(m)
+    endif
+
+    $ASSERT(k >= tt_m%k_min,Out-of-bounds of trad_table_t)
+    $ASSERT(k <= tt_m%k_max,Out-of-bounds of trad_table_t)
+
+    $ASSERT(.NOT. (m == 0 .AND. k < 0),Invalid Rossby mode)
+
+    if (m >= 0) then
+       lambda = tt_m%tf(m,k)%lambda(nu)
+    else
+       lambda = tt_m%tf(-m,k)%lambda(-nu)
+    endif
 
     ! Finish
 
@@ -101,12 +119,15 @@ contains
 
   !****
 
-  function trad_lambda_c_ (nu, l, m) result (lambda)
+  function trad_lambda_c_ (nu, l, m, rossby) result (lambda)
 
+    complex(WP), intent(in) :: nu
     integer, intent(in)     :: l
     integer, intent(in)     :: m
-    complex(WP), intent(in) :: nu
+    logical, intent(in)     :: rossby
     complex(WP)             :: lambda
+
+    integer :: k
 
     ! Evaluate the eigenvalue of Laplace's tidal equation (complex)
 
@@ -115,9 +136,24 @@ contains
        inited_m = .TRUE.
     endif
 
-    $ASSERT(l <= tt_m%l_max,l above maximum extent of trad_table_t)
+    $ASSERT(ABS(m) <= tt_m%m_max,Out-of-bounds of trad_table_t)
 
-    lambda = tt_m%tf(l,m)%lambda(nu)
+    if (rossby) then
+       k = -(l - ABS(m) + 1)
+    else
+       k = l - ABS(m)
+    endif
+
+    $ASSERT(k >= tt_m%k_min,Out-of-bounds of trad_table_t)
+    $ASSERT(k <= tt_m%k_max,Out-of-bounds of trad_table_t)
+
+    $ASSERT(.NOT. (m == 0 .AND. k < 0),Invalid Rossby mode)
+
+    if (m >= 0) then
+       lambda = tt_m%tf(m,k)%lambda(nu)
+    else
+       lambda = tt_m%tf(-m,k)%lambda(-nu)
+    endif
 
     ! Finish
 
