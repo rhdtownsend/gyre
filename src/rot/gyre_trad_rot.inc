@@ -49,6 +49,7 @@ module gyre_${T}_trad_rot
      type(point_t)           :: pt_i
      integer                 :: l
      integer                 :: m
+     logical                 :: rossby
    contains
      private
      procedure, public :: omega
@@ -92,6 +93,8 @@ contains
 
     rt%l = md_p%l
     rt%m = md_p%m
+
+    rt%rossby = md_p%rossby
 
     ! Finish
 
@@ -231,7 +234,7 @@ contains
 
     nu = 2._WP*this%ml%Omega_rot(pt)/this%omega_c(pt, omega)
 
-    lambda = trad_lambda(nu, this%l, this%m)
+    lambda = trad_lambda(nu, this%l, this%m, this%rossby)
 
     ! Finish
 
