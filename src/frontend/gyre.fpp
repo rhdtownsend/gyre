@@ -114,13 +114,10 @@ program gyre
 120  format(A,1X,I0)
      
      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
-     write(OUTPUT_UNIT, 110) 'GYRE_DIR         :', gyre_dir
-
-     write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
 
   endif
 
-  ! Process arguments
+  ! Read the namelist file
 
   open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
@@ -135,7 +132,11 @@ program gyre
   call read_out_par(unit, 'ad', ot_p_ad)
   call read_out_par(unit, 'nad', ot_p_nad)
 
-  ! Construct the model
+  ! Initialize the model
+
+  if (check_log_level('INFO')) then
+     write(OUTPUT_UNIT, 100) form_header('Model Init', '=')
+  endif
 
   ml => model_t(ml_p)
 
