@@ -37,6 +37,7 @@ module gyre_mode_par
      integer       :: m
      integer       :: n_pg_min
      integer       :: n_pg_max
+     logical       :: rossby
      character(64) :: tag
   end type mode_par_t
 
@@ -82,9 +83,10 @@ contains
     integer                  :: m
     integer                  :: n_pg_min
     integer                  :: n_pg_max
+    logical                  :: rossby
     character(LEN(md_p%tag)) :: tag
 
-    namelist /mode/ l, m, n_pg_min, n_pg_max, tag
+    namelist /mode/ l, m, n_pg_min, n_pg_max, rossby, tag
 
     ! Count the number of mode namelists
 
@@ -113,13 +115,17 @@ contains
        n_pg_min = -HUGE(0)
        n_pg_max = HUGE(0)
 
+       rossby = .FALSE.
+
        tag = ''
 
        read(unit, NML=mode)
 
        ! Initialize the mode_par
 
-       md_p(i) = mode_par_t(i=i, l=l, m=m, n_pg_min=n_pg_min, n_pg_max=n_pg_max, tag=tag)
+       md_p(i) = mode_par_t(i=i, l=l, m=m, &
+                            n_pg_min=n_pg_min, n_pg_max=n_pg_max, &
+                            rossby=rossby, tag=tag)
 
     end do read_loop
 
@@ -147,6 +153,8 @@ contains
 
     call bcast(md_p%n_pg_min, root_rank)
     call bcast(md_p%n_pg_max, root_rank)
+
+    call bcast(md_p%rossby, root_rank)
 
     call bcast(md_p%tag, root_rank)
 
