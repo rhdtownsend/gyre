@@ -1,7 +1,7 @@
 ! Incfile  : gyre_cheby
-! Purpose  : Chebyshev fitting functions
+! Purpose  : Chebyshev interpolation & expansions
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -28,6 +28,8 @@ module gyre_cheby
   $endif
   use core_memory
 
+  use ISO_FORTRAN_ENV
+
   ! No implicit typing
 
   implicit none
@@ -35,24 +37,25 @@ module gyre_cheby
   ! Derived-type definitions
 
   type :: cheby_t
-     private
+!     private
+     real(WP), allocatable :: f(:)
      real(WP), allocatable :: c(:)
      real(WP)              :: x_a
      real(WP)              :: x_b
      integer               :: n
    contains 
      private
-     procedure, public :: truncate => truncate_
-     procedure         :: eval_r_
-     procedure         :: eval_c_
-     generic, public   :: eval => eval_r_, eval_c_
+     procedure       :: eval_r_
+     procedure       :: eval_c_
+     generic, public :: eval => eval_r_, eval_c_
   end type cheby_t
 
   ! Interfaces
 
   interface cheby_t
-     module procedure cheby_t_coeff_
      module procedure cheby_t_func_
+     module procedure cheby_t_coeffs_
+     module procedure cheby_t_tol_
   end interface cheby_t
   
   $if ($HDF5)
@@ -78,30 +81,6 @@ module gyre_cheby
 
 contains
 
-  function cheby_t_coeff_ (x_a, x_b, c) result (cb)
-
-    real(WP), intent(in) :: x_a
-    real(WP), intent(in) :: x_b
-    real(WP), intent(in) :: c(:)
-    type(cheby_t)        :: cb
-
-    ! Construct the cheby_t using the coefficients
-
-    cb%c = c
-
-    cb%x_a = x_a
-    cb%x_b = x_b
-
-    cb%n = SIZE(c)
-
-    ! Finish
-
-    return
-
-  end function cheby_t_coeff_
-
-  !****
-
   function cheby_t_func_ (x_a, x_b, n, func) result (cb)
 
     real(WP), intent(in) :: x_a
@@ -116,56 +95,148 @@ contains
     end interface
     type(cheby_t)        :: cb
 
-    real(WP) :: b_m
-    real(WP) :: b_p
+    real(WP) :: f(n+1)
     integer  :: j
-    integer  :: k
-    real(WP) :: y
-    real(WP) :: f(n)
-    real(WP) :: fac
-    real(DP) :: sum
+    real(WP) :: x
+    real(WP) :: u
 
-    ! Construct the cheby_t, with n terms, from the function func
-    ! defined on the domain [x_a,x_b]
+    ! Construct the cheby_t of degree n, by sampling the function at
+    ! the n+1 extremal points of T_n
 
-    ! Set up the coefficients
+    do j = 1, n+1
 
-    allocate(cb%c(n))
+       if (j == 1) then
+          x = x_a
+       elseif (j == n+1) then
+          x = x_b
+       else
+          u = COS((j-1)*PI/n)
+          x = 0.5_WP*((1._WP+u)*x_a + (1._WP-u)*x_b)
+       endif
 
-    b_m = 0.5_WP*(x_b - x_a)
-    b_p = 0.5_WP*(x_b + x_a)
+       f(j) = func(x)
 
-    do k = 1, n
-       y = COS(PI*(k-0.5_DP)/n)
-       f(k) = func(y*b_m + b_p)
     end do
 
-    fac = 2._WP/n
-
-    do j = 1, n
-       sum = 0._DP
-       do k = 1, n
-          sum = sum + f(k)*COS((PI*(j-1))*((k-0.5_DP)/n))
-       end do
-       cb%c(j) = fac*sum
-    end do
-
-    ! Fold the -0.5*c(1) correction into the coefficients
-
-    cb%c(1) = 0.5_WP*cb%c(1)
-
-    ! Set other components
-
-    cb%x_a = x_a
-    cb%x_b = x_b
-
-    cb%n = n
+    cb = cheby_t_vals_(x_a, x_b, f)
 
     ! Finish
 
     return
 
   end function cheby_t_func_
+
+  !****
+
+  function cheby_t_tol_ (x_a, x_b, tol, func) result (cb)
+
+    real(WP), intent(in) :: x_a
+    real(WP), intent(in) :: x_b
+    real(WP), intent(in) :: tol
+    interface
+       function func (x)
+         use core_kinds
+         real(WP), intent(in) :: x
+         real(WP)             :: func
+       end function func
+    end interface
+    type(cheby_t)        :: cb
+
+    integer, parameter  :: N_0 = 16
+    integer, parameter  :: M = 8
+    real(WP), parameter :: EPS = EPSILON(1._WP)
+
+    integer  :: n
+    integer  :: j
+    real(WP) :: toler
+
+    ! Construct a cheby_t by choosing an n such that all high-order
+    ! (neglected) coefficients are below a (relative) tolerance toler
+
+    ! Starting n
+
+    n = N_0
+
+    ! Increase n until at least M trailing coefficients of the cheby_t
+    ! are below toler
+
+    do
+
+       cb = cheby_t_func_(x_a, x_b, n, func)
+
+       toler = (tol + 10._WP*EPS)*MAXVAL(ABS(cb%f))
+
+       do j = n+1, 1, -1
+          if (cb%c(j) > toler) exit
+       end do
+
+       if (n+1-j >= M) exit
+
+       n = n*2
+
+    end do
+
+    ! Re-create the cheby_t with the optimal n
+
+    cb = cheby_t_func_(x_a, x_b, j, func)
+
+    ! Finish
+
+    return
+
+  end function cheby_t_tol_
+
+  !****
+
+  function cheby_t_vals_ (x_a, x_b, f) result (cb)
+
+    real(WP), intent(in) :: x_a
+    real(WP), intent(in) :: x_b
+    real(WP), intent(in) :: f(:)
+    type(cheby_t)        :: cb
+
+    ! Construct the cheby_t of degree n, using the supplied function
+    ! values at the extremal points of T_n
+
+    cb%f = f
+    cb%c = c_from_f(f)
+
+    cb%x_a = x_a
+    cb%x_b = x_b
+    
+    cb%n = SIZE(f) - 1
+    
+    ! Finish
+
+    return
+
+  end function cheby_t_vals_
+
+  !****
+
+  function cheby_t_coeffs_ (x_a, x_b, c) result (cb)
+
+    real(WP), intent(in) :: x_a
+    real(WP), intent(in) :: x_b
+    real(WP), intent(in) :: c(:)
+    type(cheby_t)        :: cb
+
+    ! Construct the cheby_t of degree n, using the supplied expansion
+    ! coefficients
+
+    cb%c = c
+    cb%f = f_from_c(c)
+
+    cb%x_a = x_a
+    cb%x_b = x_b
+    
+    cb%n = SIZE(c)
+
+    ! Finish
+
+    return
+
+  end function cheby_t_coeffs_
 
   !****
 
@@ -178,16 +249,16 @@ contains
 
     real(WP)              :: x_a
     real(WP)              :: x_b
-    real(WP), allocatable :: c(:)
+    real(WP), allocatable :: f(:)
 
     ! Read the cheby_t
 
     call read_attr(hg, 'x_a', x_a)
     call read_attr(hg, 'x_b', x_b)
 
-    call read_dset_alloc(hg, 'c', c)
+    call read_dset_alloc(hg, 'f', f)
 
-    cb = cheby_t(x_a, x_b, c)
+    cb = cheby_t_vals_(x_a, x_b, f)
 
     ! Finish
 
@@ -207,7 +278,7 @@ contains
     call write_attr(hg, 'x_a', cb%x_a)
     call write_attr(hg, 'x_b', cb%x_b)
 
-    call write_dset(hg, 'c', cb%c)
+    call write_dset(hg, 'f', cb%f)
 
     ! Finish
 
@@ -219,107 +290,174 @@ contains
 
   !****
 
-  subroutine truncate_ (this, tol)
+  $define $EVAL $sub
 
-    class(cheby_t), intent(inout) :: this
-    real(WP), intent(in)          :: tol
-    
-    real(WP) :: c_max
-    integer  :: j
+  $local $SUFFIX $1
+  $local $TYPE $2
 
-    ! Truncate the Chebyshev series to relative tolerance tol (i.e.,
-    ! assuming that the discarded terms are all smaller than tol times
-    ! the maximum term)
+  function eval_${SUFFIX}_ (this, x) result (f)
 
-    c_max = MAXVAL(ABS(this%c))
+    class(cheby_t), intent(in) :: this
+    $TYPE(WP), intent(in)      :: x
+    $TYPE(WP)                  :: f
 
-    do j = 1, this%n
-       if (ALL(ABS(this%c(j:)) < tol*c_max)) exit
+    $TYPE(WP) :: u
+    $TYPE(WP) :: l
+    $TYPE(WP) :: s
+    integer   :: j
+    real(WP)  :: u_j
+    real(WP)  :: w
+
+    ! Evaluate the cheby_t at x, using Barycentric interpolation
+    ! following eqn. 5.9 of Trefethen (Approximation Theory &
+    ! Approximation Practice)
+
+    if (x == this%x_a) then
+       u = 1._WP
+    elseif (x == this%x_b) then
+       u = -1._WP
+    else
+       u = (2._WP*x - (this%x_a + this%x_b))/(this%x_a - this%x_b)
+    endif
+
+    l = 1._WP
+    s = 0._WP
+
+    do j = 1, this%n+1
+
+       if (j == 1) then
+          u_j = 1._WP
+       elseif (j == this%n+1) then
+          u_j = -1._WP
+       else
+          u_j = COS((j-1)*PI/this%n)
+       endif
+
+       if (u == u_j) then
+          f = this%f(j)
+          return
+       endif
+
+       ! Calculate weights w =lambda / [2**(n-1)/n]
+
+       if (j == 1 .OR. j == this%n+1) then
+          w = 0.5_WP*(-1._WP)**(j-1)
+       else
+          w = (-1._WP)**(j-1)
+       endif
+
+       ! Update sum s and product l
+       
+       s = s + w*this%f(j)/(u - u_j)
+       l = l*(u - u_j)
+
     end do
 
-    if (j <= this%n) then
-       this%n = j - 1
-       call reallocate(this%c, [this%n])
-    end if
+    f = l*s*(2._WP)**(this%n-1)/this%n
 
     ! Finish
 
     return
 
-  end subroutine truncate_
+  end function eval_${SUFFIX}_
+
+  $endsub
+
+  $EVAL(r,real)
+  $EVAL(c,complex)
+  
+  function c_from_f (f) result (c)
+
+    real(WP), intent(in) :: f(:)
+    real(WP)             :: c(SIZE(f))
+
+    integer  :: n
+    integer  :: k
+    integer  :: j
+    real(WP) :: v
+    real(WP) :: w
+
+    ! Calculate the Chebyshev expansion coefficients c from the
+    ! function f sampled at the extremal points of T_n
+
+    n = SIZE(c) - 1
+   
+    do k = 1, n+1
+
+       c(k) = 0._WP
+
+       do j = 1, n+1
+
+          if (j == 1) then
+             v = 1._WP
+             w = 0.5_WP
+          elseif (j == n+1) then
+             v = (-1._WP)**(k-1)
+             w = 0.5_WP
+          else
+             v = COS((j-1)*(k-1)*PI/n)
+             w = 1._WP
+          endif
+          
+          c(k) = c(k) + w*v*f(j)
+
+       end do
+
+       if (k == 1 .OR. k == n+1) then
+          c(k) = c(k)/n
+       else
+          c(k) = 2._WP*c(k)/n
+       end if
+
+    end do
+
+    ! Finish
+
+    return
+
+  end function c_from_f
 
   !****
 
-  function eval_r_ (this, x) result (f)
+  function f_from_c (c) result (f)
 
-    class(cheby_t), intent(in) :: this
-    real(WP), intent(in)      :: x
-    real(WP)                  :: f
+    real(WP), intent(in) :: c(:)
+    real(WP)             :: f(SIZE(c))
 
-    real(WP) :: d
-    real(WP) :: dd
-    real(WP) :: y
-    real(WP) :: y2
+    integer  :: n
     integer  :: j
-    real(WP) :: sv
+    integer  :: k
+    real(WP) :: v
 
-    ! Evaluate the polynomial at x
+    ! Calculate the function f sampled at the extremal points of T_n,
+    ! from the Chebyshev expansion coefficients c
 
-    d = 0._WP
-    dd = 0._WP
+    n = SIZE(c)-1
 
-    y = (2._WP*x - this%x_a - this%x_b)/(this%x_b - this%x_a)
-    y2 = 2._WP*y
+    do j = 1, n+1
 
-    do j = this%n, 2, -1
-       sv = d
-       d = y2*d - dd + this%c(j)
-       dd = sv
+       f(j) = 0._WP
+
+       do k = 1, n+1
+
+          if (k == 1) then
+             v = 1._WP
+          elseif (k == n+1) then
+             v = (-1._WP)**(j-1)
+          else
+             v = COS((j-1)*(k-1)*PI/n)
+          endif
+
+          f(j) = f(j) + v*c(k)
+
+       end do
+
     end do
-
-    f = y*d - dd + this%c(1)
 
     ! Finish
 
     return
 
-  end function eval_r_
-
-  !****
-
-  function eval_c_ (this, z) result (f)
-
-    class(cheby_t), intent(in) :: this
-    complex(WP), intent(in)    :: z
-    complex(WP)                :: f
-
-    complex(WP) :: d
-    complex(WP) :: dd
-    complex(WP) :: y
-    complex(WP) :: y2
-    integer     :: j
-    complex(WP) :: sv
-
-    ! Evaluate the polynomial at x
-
-    d = 0._WP
-    dd = 0._WP
-
-    y = (2._WP*z - this%x_a - this%x_b)/(this%x_b - this%x_a)
-    y2 = 2._WP*y
-
-    do j = this%n, 2, -1
-       sv = d
-       d = y2*d - dd + this%c(j)
-       dd = sv
-    end do
-
-    f = y*d - dd + this%c(1)
-
-    ! Finish
-
-    return
-
-  end function eval_c_
+  end function f_from_c
 
 end module gyre_cheby
