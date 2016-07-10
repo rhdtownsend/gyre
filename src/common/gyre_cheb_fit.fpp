@@ -1,7 +1,7 @@
-! Incfile  : gyre_cheby
-! Purpose  : Chebyshev interpolation & expansions
+! Incfile  : gyre_cheb_fit
+! Purpose  : Chebyshev function fitting
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_cheby
+module gyre_cheb_fit
 
   ! Uses
 
@@ -36,8 +36,7 @@ module gyre_cheby
 
   ! Derived-type definitions
 
-  type :: cheby_t
-!     private
+  type :: cheb_fit_t
      real(WP), allocatable :: f(:)
      real(WP), allocatable :: c(:)
      real(WP)              :: x_a
@@ -48,15 +47,15 @@ module gyre_cheby
      procedure       :: eval_r_
      procedure       :: eval_c_
      generic, public :: eval => eval_r_, eval_c_
-  end type cheby_t
+  end type cheb_fit_t
 
   ! Interfaces
 
-  interface cheby_t
-     module procedure cheby_t_func_
-     module procedure cheby_t_coeffs_
-     module procedure cheby_t_tol_
-  end interface cheby_t
+  interface cheb_fit_t
+     module procedure cheb_fit_t_func_
+     module procedure cheb_fit_t_coeffs_
+     module procedure cheb_fit_t_tol_
+  end interface cheb_fit_t
   
   $if ($HDF5)
   interface read
@@ -71,7 +70,7 @@ module gyre_cheby
 
   private
 
-  public :: cheby_t
+  public :: cheb_fit_t
   $if ($HDF5)
   public :: read
   public :: write
@@ -81,7 +80,7 @@ module gyre_cheby
 
 contains
 
-  function cheby_t_func_ (x_a, x_b, n, func) result (cb)
+  function cheb_fit_t_func_ (x_a, x_b, n, func) result (cb)
 
     real(WP), intent(in) :: x_a
     real(WP), intent(in) :: x_b
@@ -93,14 +92,14 @@ contains
          real(WP)             :: func
        end function func
     end interface
-    type(cheby_t)        :: cb
+    type(cheb_fit_t)     :: cb
 
     real(WP) :: f(n+1)
     integer  :: j
     real(WP) :: x
     real(WP) :: u
 
-    ! Construct the cheby_t of degree n, by sampling the function at
+    ! Construct the cheb_fit_t of degree n, by sampling the function at
     ! the n+1 extremal points of T_n
 
     do j = 1, n+1
@@ -118,17 +117,17 @@ contains
 
     end do
 
-    cb = cheby_t_vals_(x_a, x_b, f)
+    cb = cheb_fit_t_vals_(x_a, x_b, f)
 
     ! Finish
 
     return
 
-  end function cheby_t_func_
+  end function cheb_fit_t_func_
 
   !****
 
-  function cheby_t_tol_ (x_a, x_b, tol, func) result (cb)
+  function cheb_fit_t_tol_ (x_a, x_b, tol, func) result (cb)
 
     real(WP), intent(in) :: x_a
     real(WP), intent(in) :: x_b
@@ -140,7 +139,7 @@ contains
          real(WP)             :: func
        end function func
     end interface
-    type(cheby_t)        :: cb
+    type(cheb_fit_t)     :: cb
 
     integer, parameter  :: N_0 = 16
     integer, parameter  :: M = 8
@@ -150,19 +149,19 @@ contains
     integer  :: j
     real(WP) :: toler
 
-    ! Construct a cheby_t by choosing an n such that all high-order
+    ! Construct a cheb_fit_t by choosing an n such that all high-order
     ! (neglected) coefficients are below a (relative) tolerance toler
 
     ! Starting n
 
     n = N_0
 
-    ! Increase n until at least M trailing coefficients of the cheby_t
+    ! Increase n until at least M trailing coefficients of the cheb_fit_t
     ! are below toler
 
     do
 
-       cb = cheby_t_func_(x_a, x_b, n, func)
+       cb = cheb_fit_t_func_(x_a, x_b, n, func)
 
        toler = (tol + 10._WP*EPS)*MAXVAL(ABS(cb%f))
 
@@ -176,26 +175,26 @@ contains
 
     end do
 
-    ! Re-create the cheby_t with the optimal n
+    ! Re-create the cheb_fit_t with the optimal n
 
-    cb = cheby_t_func_(x_a, x_b, j, func)
+    cb = cheb_fit_t_func_(x_a, x_b, j, func)
 
     ! Finish
 
     return
 
-  end function cheby_t_tol_
+  end function cheb_fit_t_tol_
 
   !****
 
-  function cheby_t_vals_ (x_a, x_b, f) result (cb)
+  function cheb_fit_t_vals_ (x_a, x_b, f) result (cb)
 
     real(WP), intent(in) :: x_a
     real(WP), intent(in) :: x_b
     real(WP), intent(in) :: f(:)
-    type(cheby_t)        :: cb
+    type(cheb_fit_t)     :: cb
 
-    ! Construct the cheby_t of degree n, using the supplied function
+    ! Construct the cheb_fit_t of degree n, using the supplied function
     ! values at the extremal points of T_n
 
     cb%f = f
@@ -210,18 +209,18 @@ contains
 
     return
 
-  end function cheby_t_vals_
+  end function cheb_fit_t_vals_
 
   !****
 
-  function cheby_t_coeffs_ (x_a, x_b, c) result (cb)
+  function cheb_fit_t_coeffs_ (x_a, x_b, c) result (cb)
 
     real(WP), intent(in) :: x_a
     real(WP), intent(in) :: x_b
     real(WP), intent(in) :: c(:)
-    type(cheby_t)        :: cb
+    type(cheb_fit_t)     :: cb
 
-    ! Construct the cheby_t of degree n, using the supplied expansion
+    ! Construct the cheb_fit_t of degree n, using the supplied expansion
     ! coefficients
 
     cb%c = c
@@ -230,13 +229,13 @@ contains
     cb%x_a = x_a
     cb%x_b = x_b
     
-    cb%n = SIZE(c)
+    cb%n = SIZE(c) - 1
 
     ! Finish
 
     return
 
-  end function cheby_t_coeffs_
+  end function cheb_fit_t_coeffs_
 
   !****
 
@@ -245,20 +244,20 @@ contains
   subroutine read_ (hg, cb)
 
     type(hgroup_t), intent(inout) :: hg
-    type(cheby_t), intent(out)    :: cb
+    type(cheb_fit_t), intent(out) :: cb
 
     real(WP)              :: x_a
     real(WP)              :: x_b
     real(WP), allocatable :: f(:)
 
-    ! Read the cheby_t
+    ! Read the cheb_fit_t
 
     call read_attr(hg, 'x_a', x_a)
     call read_attr(hg, 'x_b', x_b)
 
     call read_dset_alloc(hg, 'f', f)
 
-    cb = cheby_t_vals_(x_a, x_b, f)
+    cb = cheb_fit_t_vals_(x_a, x_b, f)
 
     ! Finish
 
@@ -271,9 +270,9 @@ contains
   subroutine write_ (hg, cb)
 
     type(hgroup_t), intent(inout) :: hg
-    type(cheby_t), intent(in)     :: cb
+    type(cheb_fit_t), intent(in)  :: cb
 
-    ! Write the cheby_t
+    ! Write the cheb_fit_t
 
     call write_attr(hg, 'x_a', cb%x_a)
     call write_attr(hg, 'x_b', cb%x_b)
@@ -297,9 +296,9 @@ contains
 
   function eval_${SUFFIX}_ (this, x) result (f)
 
-    class(cheby_t), intent(in) :: this
-    $TYPE(WP), intent(in)      :: x
-    $TYPE(WP)                  :: f
+    class(cheb_fit_t), intent(in) :: this
+    $TYPE(WP), intent(in)         :: x
+    $TYPE(WP)                     :: f
 
     $TYPE(WP) :: u
     $TYPE(WP) :: l
@@ -308,7 +307,7 @@ contains
     real(WP)  :: u_j
     real(WP)  :: w
 
-    ! Evaluate the cheby_t at x, using Barycentric interpolation
+    ! Evaluate the cheb_fit_t at x, using Barycentric interpolation
     ! following eqn. 5.9 of Trefethen (Approximation Theory &
     ! Approximation Practice)
 
@@ -378,7 +377,10 @@ contains
     real(WP) :: w
 
     ! Calculate the Chebyshev expansion coefficients c from the
-    ! function f sampled at the extremal points of T_n
+    ! function f sampled at the extremal points of T_n, by taking the
+    ! discrete cosine transform (DCT-I) of f (see eqn. 3.60 of
+    ! "Numerical Methods for Special Functions", by Gil, Segura &
+    ! Temme, 2007, SIAM)
 
     n = SIZE(c) - 1
    
@@ -460,4 +462,4 @@ contains
 
   end function f_from_c
 
-end module gyre_cheby
+end module gyre_cheb_fit
