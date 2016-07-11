@@ -27,7 +27,7 @@ module gyre_trad
   use core_system
 
   use gyre_constants
-  use gyre_trad_table
+  use gyre_trad_fit
 
   use ISO_FORTRAN_ENV
   
@@ -37,8 +37,8 @@ module gyre_trad
 
   ! Module variables
 
-  logical, save            :: inited_m = .FALSE.
-  type(trad_table_t), save :: tt_m
+  type(trad_fit_t), save :: tf_m
+  logical, save          :: loaded_m = .FALSE.
 
   ! Interfaces
 
@@ -57,108 +57,73 @@ module gyre_trad
 
 contains
 
-  subroutine init_ ()
+  subroutine load_fit_ (l, m, rossby)
 
-    type(hgroup_t) :: hg
+    integer, intent(in) :: l
+    integer, intent(in) :: m
+    logical, intent(in) :: rossby
 
-    ! Load the trad_table_t from the data directory
+    integer                 :: k
+    character(FILENAME_LEN) :: filename
+    type(hgroup_t)          :: hg
 
-    hg = hgroup_t(TRIM(GYRE_DIR)//'/data/trad_table.h5', OPEN_FILE)
-    call read(hg, tt_m)
+    ! Load the appropriate trad_fit_t from the data directory
+
+    if (rossby) then
+       k = -(l - ABS(m) + 1)
+    else
+       k = l - ABS(m)
+    endif
+
+    if (loaded_m) then
+       if (tf_m%m == m .AND. tf_m%k == k) return
+    endif
+
+    write(filename, 100) m, k
+100 format(SP,'trad_fit.m',I0,'.k',I0,'.h5')
+
+    hg = hgroup_t(TRIM(GYRE_DIR)//'/data/trad/'//TRIM(filename), OPEN_FILE)
+    call read(hg, tf_m)
     call hg%final()
+
+    loaded_m = .TRUE.
 
     ! Finish
 
     return
 
-  end subroutine init_
+  end subroutine load_fit_
 
   !****
 
-  function trad_lambda_r_ (nu, l, m, rossby) result (lambda)
+  $define $TRAD_LAMBDA $sub
 
-    real(WP), intent(in) :: nu
+  $local $SUFFIX $1
+  $local $TYPE $2
+
+  function trad_lambda_${SUFFIX}_ (nu, l, m, rossby) result (lambda)
+
+    $TYPE(WP), intent(in) :: nu
     integer, intent(in)  :: l
     integer, intent(in)  :: m
     logical, intent(in)  :: rossby
-    real(WP)             :: lambda
+    $TYPE(WP)            :: lambda
 
-    integer :: k
-    
-    ! Evaluate the eigenvalue of Laplace's tidal equation (real)
+    ! Evaluate the eigenvalue of Laplace's tidal equation
 
-    if (.NOT. inited_m) then
-       call init_()
-       inited_m = .TRUE.
-    endif
+    call load_fit_(l, m, rossby)
 
-    $ASSERT(ABS(m) <= tt_m%m_max,Out-of-bounds of trad_table_t)
-
-    if (rossby) then
-       k = -(l - ABS(m) + 1)
-    else
-       k = l - ABS(m)
-    endif
-
-    $ASSERT(k >= tt_m%k_min,Out-of-bounds of trad_table_t)
-    $ASSERT(k <= tt_m%k_max,Out-of-bounds of trad_table_t)
-
-    $ASSERT(.NOT. (m == 0 .AND. k < 0),Invalid Rossby mode)
-
-    if (m >= 0) then
-       lambda = tt_m%tf(m,k)%lambda(nu)
-    else
-       lambda = tt_m%tf(-m,k)%lambda(-nu)
-    endif
+    lambda = tf_m%lambda(nu)
 
     ! Finish
 
     return
 
-  end function trad_lambda_r_
+  end function trad_lambda_${SUFFIX}_
 
-  !****
+  $endsub
 
-  function trad_lambda_c_ (nu, l, m, rossby) result (lambda)
-
-    complex(WP), intent(in) :: nu
-    integer, intent(in)     :: l
-    integer, intent(in)     :: m
-    logical, intent(in)     :: rossby
-    complex(WP)             :: lambda
-
-    integer :: k
-
-    ! Evaluate the eigenvalue of Laplace's tidal equation (complex)
-
-    if (.NOT. inited_m) then
-       call init_()
-       inited_m = .TRUE.
-    endif
-
-    $ASSERT(ABS(m) <= tt_m%m_max,Out-of-bounds of trad_table_t)
-
-    if (rossby) then
-       k = -(l - ABS(m) + 1)
-    else
-       k = l - ABS(m)
-    endif
-
-    $ASSERT(k >= tt_m%k_min,Out-of-bounds of trad_table_t)
-    $ASSERT(k <= tt_m%k_max,Out-of-bounds of trad_table_t)
-
-    $ASSERT(.NOT. (m == 0 .AND. k < 0),Invalid Rossby mode)
-
-    if (m >= 0) then
-       lambda = tt_m%tf(m,k)%lambda(nu)
-    else
-       lambda = tt_m%tf(-m,k)%lambda(-nu)
-    endif
-
-    ! Finish
-
-    return
-
-  end function trad_lambda_c_
+  $TRAD_LAMBDA(r,real)
+  $TRAD_LAMBDA(c,complex)
 
 end module gyre_trad
