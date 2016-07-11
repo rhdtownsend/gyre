@@ -100,7 +100,7 @@ contains
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 120) 'File version', ivers
-120    format(3X,A,1X,F4.2,1X,A)
+120    format(3X,A,1X,I0)
     endif
 
     ! Read the data
