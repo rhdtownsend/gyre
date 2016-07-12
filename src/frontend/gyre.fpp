@@ -80,6 +80,7 @@ program gyre
   integer                       :: k_o
   class(r_bep_t), allocatable   :: bp_ad
   class(c_bep_t), allocatable   :: bp_nad
+  integer                       :: j_md
   integer                       :: n_md_ad
   integer                       :: d_md_ad
   type(mode_t), allocatable     :: md_ad(:)
@@ -221,7 +222,7 @@ program gyre
         write(OUTPUT_UNIT, *)
      endif
 
-     call scan_search(bp_ad, omega, process_root_ad, nm_p_sel)
+     call scan_search(bp_ad, omega, process_mode_ad, nm_p_sel)
 
      deallocate(bp_ad)
 
@@ -240,7 +241,7 @@ program gyre
            write(OUTPUT_UNIT, *)
         endif
 
-        call prox_search(bp_nad, md_ad(i_ad_a:i_ad_b), process_root_nad, md_p(i), nm_p_sel, os_p_sel)
+        call prox_search(bp_nad, md_ad(i_ad_a:i_ad_b), process_mode_nad, md_p(i), nm_p_sel, os_p_sel)
 
         deallocate(bp_nad)
 
@@ -268,38 +269,19 @@ program gyre
 
 contains
 
-  subroutine process_root_ad (omega, n_iter, discrim_ref)
+  subroutine process_mode_ad (md, n_iter, chi)
 
-    real(WP), intent(in)      :: omega
+    type(mode_t), intent(in)  :: md
     integer, intent(in)       :: n_iter
-    type(r_ext_t), intent(in) :: discrim_ref
+    type(r_ext_t), intent(in) :: chi
 
-    type(soln_t)  :: sl
-    type(mode_t)  :: md_new
-    type(r_ext_t) :: chi
+    ! Process the adiabatic mode
 
-    ! Create the soln_t
-
-    select type (bp_ad)
-    type is (ad_bep_t)
-       sl = soln_t(bp_ad, omega)
-    type is (rad_bep_t)
-       sl = soln_t(bp_ad, omega)
-    class default
-       $ABORT(Invalid bp class)
-    end select
-
-    ! Construct the new mode
-
-    md_new = mode_t(ml, sl, md_p(i), os_p_sel)
-
-    if (md_new%n_pg < md_p(i)%n_pg_min .OR. md_new%n_pg > md_p(i)%n_pg_max) return
-
-    chi = ABS(sl%discrim)/ABS(discrim_ref)
+    if (md%n_pg < md_p(i)%n_pg_min .OR. md%n_pg > md_p(i)%n_pg_max) return
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md_new%l, md_new%m, md_new%n_pg, md_new%n_p, md_new%n_g, &
-            md_new%omega, real(chi), n_iter
+       write(OUTPUT_UNIT, 120) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+            md%omega, real(chi), n_iter
 120    format(5(2X,I8),3(2X,E24.16),2X,I6)
     endif
 
@@ -312,7 +294,7 @@ contains
        call reallocate(md_ad, [d_md_ad])
     endif
 
-    md_ad(n_md_ad) = md_new
+    md_ad(n_md_ad) = md
 
     ! Write it
 
@@ -326,38 +308,21 @@ contains
 
     return
 
-  end subroutine process_root_ad
+  end subroutine process_mode_ad
 
   !****
 
-  subroutine process_root_nad (omega, n_iter, discrim_ref)
+  subroutine process_mode_nad (md, n_iter, chi)
 
-    complex(WP), intent(in)   :: omega
+    type(mode_t), intent(in)  :: md
     integer, intent(in)       :: n_iter
-    type(r_ext_t), intent(in) :: discrim_ref
+    type(r_ext_t), intent(in) :: chi
 
-    type(soln_t)  :: sl
-    type(mode_t)  :: md_new
-    type(r_ext_t) :: chi
-
-    ! Create the soln_t
-
-    select type (bp_nad)
-    type is (nad_bep_t)
-       sl = soln_t(bp_nad, omega)
-    class default
-       $ABORT(Invalid bp_nad class)
-    end select
-
-    ! Construct the new mode
-
-    md_new = mode_t(ml, sl, md_p(i), os_p_sel)
-
-    chi = ABS(sl%discrim)/ABS(discrim_ref)
+    ! Process the non-adiabatic mode
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md_new%l, md_new%m, md_new%n_pg, md_new%n_p, md_new%n_g, &
-            md_new%omega, real(chi), n_iter
+       write(OUTPUT_UNIT, 120) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+            md%omega, real(chi), n_iter
 120    format(5(2X,I8),3(2X,E24.16),2X,I6)
     endif
 
@@ -370,7 +335,7 @@ contains
        call reallocate(md_nad, [d_md_nad])
     endif
 
-    md_nad(n_md_nad) = md_new
+    md_nad(n_md_nad) = md
 
     ! Write it
 
@@ -384,6 +349,6 @@ contains
 
     return
 
-  end subroutine process_root_nad
+  end subroutine process_mode_nad
 
 end program gyre
