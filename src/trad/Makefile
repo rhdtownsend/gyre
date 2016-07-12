@@ -16,3 +16,8 @@ LDFLAGS=`mesasdk_hdf5_link`
 SUBDIRS=../extern/core:../common
 
 include ../build/Make.inc
+
+# Disable floating-point checks
+
+FFLAGS:=${filter-out ${FFLAGS},-ffpe-trap=%}
+
