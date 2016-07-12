@@ -298,7 +298,7 @@ contains
 
     ! Write it
 
-    call write_mode(md_ad(n_md_ad), n_md_ad, ot_p_ad)
+    call write_mode(md_ad(n_md_ad), ot_p_ad)
 
     ! If necessary, prune it
 
@@ -339,7 +339,7 @@ contains
 
     ! Write it
 
-    call write_mode(md_nad(n_md_nad), n_md_nad, ot_p_nad)
+    call write_mode(md_nad(n_md_nad), ot_p_nad)
 
     ! If necessary, prune it
 

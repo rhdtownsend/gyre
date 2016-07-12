@@ -60,8 +60,8 @@ contains
     character(LEN(ot_p%summary_item_list)), allocatable :: items(:)
     integer                                             :: n_md
     integer                                             :: i
-    integer                                             :: j
-
+    integer                                             :: i_md
+    
     ! Write the summary file
 
     if (SIZE(md) == 0 .OR. ot_p%summary_file == '') return
@@ -89,10 +89,12 @@ contains
 
        select case (items(i))
 
+       case ('j')
+            call wr%write('j', md%j)
        case ('l')
           call wr%write('l', md%l)
        case ('l_i')
-          call wr%write('l_i', [(md(j)%l_i, j=1,n_md)])
+          call wr%write('l_i', md%l_i)
        case ('m')
           call wr%write('m', md%m)
        case ('n_p')
@@ -104,47 +106,47 @@ contains
        case ('omega')
           call wr%write('omega', md%omega)
        case ('omega_int')
-          call wr%write('omega_int', [(md(j)%omega_int(), j=1,n_md)])
+          call wr%write('omega_int', [(md(i_md)%omega_int(), i_md=1,n_md)])
        case ('freq')
-          call wr%write('freq', [(md(j)%freq(ot_p%freq_units, ot_p%freq_frame), j=1,n_md)])
+          call wr%write('freq', [(md(i_md)%freq(ot_p%freq_units, ot_p%freq_frame), i_md=1,n_md)])
        case ('freq_units')
           call wr%write('freq_units', ot_p%freq_units)
        case ('freq_frame')
           call wr%write('freq_frame', ot_p%freq_frame)
        case ('eta')
-          call wr%write('eta', [(md(j)%eta(), j=1,n_md)])
+          call wr%write('eta', [(md(i_md)%eta(), i_md=1,n_md)])
        case ('f_T')
-          call wr%write('f_T', [(md(j)%f_T(), j=1,n_md)])
+          call wr%write('f_T', [(md(i_md)%f_T(), i_md=1,n_md)])
        case ('f_g')
-          call wr%write('f_g', [(md(j)%f_g(), j=1,n_md)])
+          call wr%write('f_g', [(md(i_md)%f_g(), i_md=1,n_md)])
        case ('psi_T')
-          call wr%write('psi_T', [(md(j)%psi_T(), j=1,n_md)])
+          call wr%write('psi_T', [(md(i_md)%psi_T(), i_md=1,n_md)])
        case ('psi_g')
-          call wr%write('psi_g', [(md(j)%psi_g(), j=1,n_md)])
+          call wr%write('psi_g', [(md(i_md)%psi_g(), i_md=1,n_md)])
        case ('E')
-          call wr%write('E', [(md(j)%E(), j=1,n_md)])
+          call wr%write('E', [(md(i_md)%E(), i_md=1,n_md)])
        case ('E_p')
-          call wr%write('E_p', [(md(j)%E_p(), j=1,n_md)])
+          call wr%write('E_p', [(md(i_md)%E_p(), i_md=1,n_md)])
        case ('E_g')
-          call wr%write('E_g', [(md(j)%E_g(), j=1,n_md)])
+          call wr%write('E_g', [(md(i_md)%E_g(), i_md=1,n_md)])
        case ('E_norm')
-          call wr%write('E_norm', [(md(j)%E_norm(), j=1,n_md)])
+          call wr%write('E_norm', [(md(i_md)%E_norm(), i_md=1,n_md)])
        case ('W')
-          call wr%write('W', [(md(j)%W(), j=1,n_md)])
+          call wr%write('W', [(md(i_md)%W(), i_md=1,n_md)])
        case ('W_eps')
-          call wr%write('W_eps', [(md(j)%W_eps(), j=1,n_md)])
+          call wr%write('W_eps', [(md(i_md)%W_eps(), i_md=1,n_md)])
        case ('C')
-          call wr%write('C', [(md(j)%C(), j=1,n_md)])
+          call wr%write('C', [(md(i_md)%C(), i_md=1,n_md)])
        case ('x_ref')
-          call wr%write('x_ref', [(md(j)%x_ref, j=1,n_md)])
+          call wr%write('x_ref', [(md(i_md)%x_ref, i_md=1,n_md)])
        case ('xi_r_ref')
-          call wr%write('xi_r_ref', [(md(j)%xi_r(md(j)%pt_ref), j=1,n_md)])
+          call wr%write('xi_r_ref', [(md(i_md)%xi_r(md(i_md)%pt_ref), i_md=1,n_md)])
        case ('xi_h_ref')
-          call wr%write('xi_h_ref', [(md(j)%xi_h(md(j)%pt_ref), j=1,n_md)])
+          call wr%write('xi_h_ref', [(md(i_md)%xi_h(md(i_md)%pt_ref), i_md=1,n_md)])
        case ('eul_phi_ref')
-          call wr%write('eul_phi_ref', [(md(j)%eul_phi(md(j)%pt_ref), j=1,n_md)])
+          call wr%write('eul_phi_ref', [(md(i_md)%eul_phi(md(i_md)%pt_ref), i_md=1,n_md)])
        case ('deul_phi_ref')
-          call wr%write('deul_phi_ref', [(md(j)%deul_phi(md(j)%pt_ref), j=1,n_md)])
+          call wr%write('deul_phi_ref', [(md(i_md)%deul_phi(md(i_md)%pt_ref), i_md=1,n_md)])
        case default
           if (n_md >= 1) then
              select type (ml => md(1)%ml)
@@ -163,7 +165,7 @@ contains
 
     select case (ot_p%summary_file_format)
     case ('HDF')
-       call wr%write('i', [(md(j)%md_p%i, j=1,n_md)])
+       call wr%write('i', [(md(i_md)%md_p%i, i_md=1,n_md)])
     end select
 
     ! Close the file
@@ -206,10 +208,9 @@ contains
 
   !****
 
-  subroutine write_mode (md, j, ot_p)
+  subroutine write_mode (md, ot_p)
 
     type(mode_t), intent(in)    :: md
-    integer, intent(in)         :: j
     type(out_par_t), intent(in) :: ot_p
 
     character(:), allocatable                        :: mode_file
@@ -227,12 +228,12 @@ contains
 
     mode_file = ot_p%mode_template
 
-    mode_file = subst_(mode_file, '%J', j, '(I5.5)')
+    mode_file = subst_(mode_file, '%J', md%j, '(I5.5)')
     mode_file = subst_(mode_file, '%L', md%l, '(I3.3)')
     mode_file = subst_(mode_file, '%M', md%m, '(SP,I3.2)')
     mode_file = subst_(mode_file, '%N', md%n_pg, '(SP,I6.5)')
 
-    mode_file = subst_(mode_file, '%j', j, '(I0)')
+    mode_file = subst_(mode_file, '%j', md%j, '(I0)')
     mode_file = subst_(mode_file, '%l', md%l, '(I0)')
     mode_file = subst_(mode_file, '%m', md%m, '(SP,I0)')
     mode_file = subst_(mode_file, '%n', md%n_pg, '(SP,I0)')
@@ -261,6 +262,8 @@ contains
          select case (items(i))
          case ('n')
             call wr%write('n', md%n_k)
+         case ('j')
+            call wr%write('j', md%j)
          case ('l')
             call wr%write('l', md%l)
          case ('l_i')
