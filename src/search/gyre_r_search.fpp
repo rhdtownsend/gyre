@@ -26,6 +26,7 @@ module gyre_r_search
   use core_order
   use core_parallel
 
+  use gyre_ad_bep
   use gyre_bep
   use gyre_constants
   use gyre_discrim_func
@@ -37,6 +38,7 @@ module gyre_r_search
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_rad_bep
   use gyre_root
   use gyre_rot
   use gyre_rot_factory
@@ -49,6 +51,10 @@ module gyre_r_search
   ! No implicit typing
 
   implicit none
+
+  ! Module variables
+
+  integer, save :: j_m = 0
 
   ! Access specifiers
 
@@ -225,18 +231,19 @@ contains
 
   !****
 
-  subroutine scan_search (bp, omega, process_root, nm_p)
+  subroutine scan_search (bp, omega, process_mode, nm_p)
 
     class(r_bep_t), target, intent(inout) :: bp
     real(WP), intent(in)                  :: omega(:)
     interface
-       subroutine process_root (omega, n_iter, discrim_ref)
+       subroutine process_mode (md, n_iter, chi)
          use core_kinds
          use gyre_ext
-         real(WP), intent(in)      :: omega
+         use gyre_mode
+         type(mode_t), intent(in)  :: md
          integer, intent(in)       :: n_iter
-         type(r_ext_t), intent(in) :: discrim_ref
-       end subroutine process_root
+         type(r_ext_t), intent(in) :: chi
+       end subroutine process_mode
     end interface
     type(num_par_t), intent(in)           :: nm_p
 
@@ -252,6 +259,8 @@ contains
     type(r_ext_t)              :: omega_root
     integer                    :: status
     integer                    :: i
+    type(mode_t)               :: md
+    type(r_ext_t)              :: chi
 
     ! Set up the discriminant function
 
@@ -288,9 +297,24 @@ contains
           cycle mode_loop
        endif
 
+       ! Construct the mode_t
+
+       j_m = j_m + 1
+
+       select type (bp)
+       type is (ad_bep_t)
+          md = mode_t(bp, j_m, real(omega_root))
+       type is (rad_bep_t)
+          md = mode_t(bp, j_m, real(omega_root))
+       class default
+          $ABORT(Invalid bp class)
+       end select
+
        ! Process it
 
-       call process_root(real(omega_root), n_iter, MAX(ABS(discrim_a(i)), ABS(discrim_b(i))))
+       chi = abs(md%sl%discrim)/max(abs(discrim_a(i)), abs(discrim_b(i)))
+       
+       call process_mode(md, n_iter, chi)
 
     end do mode_loop
 

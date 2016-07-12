@@ -31,6 +31,7 @@ module gyre_c_search
   use gyre_ext
   use gyre_mode
   use gyre_mode_par
+  use gyre_nad_bep
   use gyre_num_par
   use gyre_osc_par
   use gyre_root
@@ -51,18 +52,19 @@ module gyre_c_search
 
 contains
 
-  subroutine prox_search (bp, md_in, process_root, md_p, nm_p, os_p)
+  subroutine prox_search (bp, md_in, process_mode, md_p, nm_p, os_p)
 
     class(c_bep_t), target, intent(inout) :: bp
     type(mode_t), intent(in)              :: md_in(:)
     interface
-       subroutine process_root (omega, n_iter, discrim_ref)
+       subroutine process_mode (md, n_iter, chi)
          use core_kinds
          use gyre_ext
-         complex(WP), intent(in)   :: omega
+         use gyre_mode
+         type(mode_t), intent(in)  :: md
          integer, intent(in)       :: n_iter
-         type(r_ext_t), intent(in) :: discrim_ref
-       end subroutine process_root
+         type(r_ext_t), intent(in) :: chi
+       end subroutine process_mode
     end interface
     type(mode_par_t), intent(in)          :: md_p
     type(num_par_t), intent(in)           :: nm_p
@@ -86,6 +88,8 @@ contains
     type(c_ext_t)            :: discrim_a_rev
     type(c_ext_t)            :: discrim_b_rev
     type(c_ext_t)            :: omega_root
+    type(mode_t)             :: md
+    type(r_ext_t)              :: chi
 
     ! Set up the discriminant function
 
@@ -201,9 +205,20 @@ contains
           cycle mode_loop
        endif
 
+       ! Construct the mode_t
+
+       select type (bp)
+       type is (nad_bep_t)
+          md = mode_t(bp, md_in(i)%j, cmplx(omega_root))
+       class default
+          $ABORT(Invalid bp class)
+       end select
+
        ! Process it
 
-       call process_root(cmplx(omega_root), n_iter_def+n_iter, max(abs(discrim_a), abs(discrim_b)))
+       chi = abs(md%sl%discrim)/max(abs(discrim_a), abs(discrim_b))
+       
+       call process_mode(md, n_iter_def+n_iter, chi)
 
        ! Store the frequency in the deflation array
 
