@@ -10,7 +10,7 @@ K_MAX = 5
 M_MIN = -5
 M_MAX = 5
 
-TOLER = 1E-15
+TOLER = 0.
 
 # Loop over parameter combinations
 
