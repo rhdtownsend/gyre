@@ -163,10 +163,10 @@ contains
 
        cb = cheb_fit_t_func_(x_a, x_b, n, func)
 
-       toler = (tol + 10._WP*EPS)*MAXVAL(ABS(cb%f))
+       toler = (tol + 2._WP*SQRT(REAL(n, WP))*EPS)*MAXVAL(ABS(cb%c))
 
        do j = n+1, 1, -1
-          if (cb%c(j) > toler) exit
+          if (ABS(cb%c(j)) > toler) exit
        end do
 
        if (n+1-j >= M) exit
