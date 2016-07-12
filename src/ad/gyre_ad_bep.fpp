@@ -32,6 +32,7 @@ module gyre_ad_bep
   use gyre_grid
   use gyre_grid_factory
   use gyre_model
+  use gyre_mode
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
@@ -61,16 +62,16 @@ module gyre_ad_bep
      module procedure ad_bep_t_
   end interface ad_bep_t
 
-  interface soln_t
-     module procedure soln_t_
-  end interface soln_t
+  interface mode_t
+     module procedure mode_t_
+  end interface mode_t
 
   ! Access specifiers
 
   private
 
   public :: ad_bep_t
-  public :: soln_t
+  public :: mode_t
 
   ! Procedures
 
@@ -134,6 +135,29 @@ contains
     return
 
   end function ad_bep_t_
+
+  !****
+
+  function mode_t_ (bp, j, omega) result (md)
+
+    class(ad_bep_t), intent(inout) :: bp
+    integer, intent(in)            :: j
+    real(WP), intent(in)           :: omega
+    type(mode_t)                   :: md
+
+    type(soln_t) :: sl
+
+    ! Construct the mode_t
+
+    sl = soln_t_(bp, omega)
+
+    md = mode_t(bp%ml, sl, j, bp%md_p, bp%os_p)
+
+    ! Finish
+
+    return
+
+  end function mode_t_
 
   !****
 
