@@ -67,6 +67,7 @@ module gyre_mode
      complex(WP)                 :: scl
      real(WP)                    :: x_ref
      integer                     :: n_k
+     integer                     :: j
      integer                     :: l
      integer                     :: m
      integer                     :: n_pg
@@ -154,10 +155,11 @@ module gyre_mode
 
 contains
 
-  function mode_t_ (ml, sl, md_p, os_p) result (md)
+  function mode_t_ (ml, sl, j, md_p, os_p) result (md)
 
     class(model_t), pointer, intent(in) :: ml
     type(soln_t), intent(in)            :: sl
+    integer, intent(in)                 :: j
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(mode_t)                        :: md
@@ -182,6 +184,7 @@ contains
 
     md%n_k = gr%n_k
 
+    md%j = j
     md%l = md_p%l
     md%m = md_p%m
     
@@ -244,6 +247,7 @@ contains
 
     this%n_k = that%n_k
 
+    this%j = that%j
     this%l = that%l
     this%m = that%m
     
