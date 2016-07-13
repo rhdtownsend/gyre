@@ -118,12 +118,16 @@ contains
           omega_l = TWOPI*freq*ml%delta_p()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case ('GRAVITY_DELTA')
           omega_l = TWOPI*freq*ml%delta_g()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
-       case('ACOUSTIC_CUTOFF')
+       case ('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           omega_l = freq*omega_cutoff_hi
-       case('GRAVITY_CUTOFF')
+       case ('GRAVITY_CUTOFF')
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           omega_l = freq*omega_cutoff_lo
+       case ('ROSSBY_I')
+          omega_l = -freq*2._WP*md_p%m*ml%Omega_rot(pt_i)/(md_p%l*(md_p%l+1))
+       case ('ROSSBY_O')
+          omega_l = -freq*2._WP*md_p%m*ml%Omega_rot(pt_o)/(md_p%l*(md_p%l+1))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -134,6 +138,7 @@ contains
        case ('NONE')
           omega_l = freq
        case default
+
           $ABORT(Invalid freq_units)
        end select
 
@@ -253,6 +258,10 @@ contains
        case('GRAVITY_CUTOFF')
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           freq = omega_l/omega_cutoff_lo
+       case ('ROSSBY_I')
+          freq = -omega_l/(2._WP*md_p%m*ml%Omega_rot(pt_i)/(md_p%l*(md_p%l+1)))
+       case ('ROSSBY_O')
+          omega_l = -omega_l/(2._WP*md_p%m*ml%Omega_rot(pt_o)/(md_p%l*(md_p%l+1)))
        case default
           $ABORT(Invalid freq_units)
        end select
