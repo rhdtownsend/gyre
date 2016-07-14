@@ -25,7 +25,7 @@
 /
 
 &osc
-	rotation_method = 'TRAD'
+	rotation_method = 'TAR'
 /
 
 &num
