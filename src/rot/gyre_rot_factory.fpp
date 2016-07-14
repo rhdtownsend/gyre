@@ -65,7 +65,7 @@ contains
     use gyre_dopp_rot
     use gyre_null_rot
     $if ($HDF5)
-    use gyre_trad_rot
+    use gyre_tar_rot
     $endif
 
     class(model_t), pointer, intent(in) :: ml
@@ -81,11 +81,11 @@ contains
        allocate(rt, SOURCE=${T}_dopp_rot_t(ml, md_p))
     case ('NULL')
        allocate(rt, SOURCE=${T}_null_rot_t(md_p))
-    case ('TRAD')
+    case ('TAR')
        $if ($HDF5)
-       allocate(rt, SOURCE=${T}_trad_rot_t(ml, gr, md_p))
+       allocate(rt, SOURCE=${T}_tar_rot_t(ml, gr, md_p))
        $else
-       $ABORT(TRAD rotation method requires HDF support be enabled)
+       $ABORT(TAR rotation method requires HDF support be enabled)
        $endif
     case default
        $ABORT(Invalid rotation_method)

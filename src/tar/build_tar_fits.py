@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+#
+# Generate tar_fit files for the data/tar directory
 
 import os
 
@@ -21,6 +23,6 @@ for k in range(K_MIN, K_MAX+1):
 
         infix = 'm{:+d}.k{:+d}'.format(m, k)
 
-        # Run build_trad_fit
+        # Run build_tar_fit
 
-        os.system('./build_trad_fit {:d} {:d} {:e} ../../data/trad/trad_fit.{:s}.h5'.format(m, k, TOLER, infix))
+        os.system('./build_tar_fit {:d} {:d} {:e} ../../data/tar/tar_fit.{:s}.h5'.format(m, k, TOLER, infix))

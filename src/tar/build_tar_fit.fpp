@@ -1,5 +1,5 @@
-! Program  : build_trad_fit
-! Purpose  : build trad_fit_t types
+! Program  : build_tar_fit
+! Purpose  : build tar_fit_t types
 !
 ! Copyright 2016 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-program build_trad_fit
+program build_tar_fit
 
   ! Uses
 
@@ -26,7 +26,7 @@ program build_trad_fit
   use core_hgroup
   use core_system
 
-  use gyre_trad_fit
+  use gyre_tar_fit
 
   use ISO_FORTRAN_ENV
 
@@ -41,21 +41,21 @@ program build_trad_fit
   real(WP)                  :: cheb_tol
   character(:), allocatable :: filename
 
-  type(trad_fit_t) :: tf
-  type(hgroup_t)   :: hg
+  type(tar_fit_t) :: tf
+  type(hgroup_t)  :: hg
 
   ! Read parameters
 
-  $ASSERT(n_arg() == 4,Syntax: build_trad_fit m k cheb_tol filename)
+  $ASSERT(n_arg() == 4,Syntax: build_tar_fit m k cheb_tol filename)
 
   call get_arg(1, m)
   call get_arg(2, k)
   call get_arg(3, cheb_tol)
   call get_arg(4, filename)
 
-  ! Construct the trad_fit_t
+  ! Construct the tar_fit_t
 
-  tf = trad_fit_t(m, k, cheb_tol)
+  tf = tar_fit_t(m, k, cheb_tol)
 
   ! Write it out
 
@@ -65,4 +65,4 @@ program build_trad_fit
 
   ! Finish
 
-end program build_trad_fit
+end program build_tar_fit

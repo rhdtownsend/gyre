@@ -1,7 +1,7 @@
-! Program  : gyre_trad
-! Purpose  : traditional approximation support
+! Program  : gyre_tar
+! Purpose  : traditional approximation of rotation (TAR) eigenvalue evaluation
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_trad
+module gyre_tar
 
   ! Uses
 
@@ -27,7 +27,7 @@ module gyre_trad
   use core_system
 
   use gyre_constants
-  use gyre_trad_fit
+  use gyre_tar_fit
 
   use ISO_FORTRAN_ENV
   
@@ -37,21 +37,21 @@ module gyre_trad
 
   ! Module variables
 
-  type(trad_fit_t), save :: tf_m
-  logical, save          :: loaded_m = .FALSE.
+  type(tar_fit_t), save :: tf_m
+  logical, save         :: loaded_m = .FALSE.
 
   ! Interfaces
 
-  interface trad_lambda
-     module procedure trad_lambda_r_
-     module procedure trad_lambda_c_
-  end interface trad_lambda
+  interface tar_lambda
+     module procedure tar_lambda_r_
+     module procedure tar_lambda_c_
+  end interface tar_lambda
 
   ! Access specifiers
 
   private
 
-  public :: trad_lambda
+  public :: tar_lambda
 
   ! Procedures
 
@@ -67,7 +67,7 @@ contains
     character(FILENAME_LEN) :: filename
     type(hgroup_t)          :: hg
 
-    ! Load the appropriate trad_fit_t from the data directory
+    ! Load the appropriate tar_fit_t from the data directory
 
     if (rossby) then
        k = -(l - ABS(m) + 1)
@@ -80,9 +80,9 @@ contains
     endif
 
     write(filename, 100) m, k
-100 format(SP,'trad_fit.m',I0,'.k',I0,'.h5')
+100 format(SP,'tar_fit.m',I0,'.k',I0,'.h5')
 
-    hg = hgroup_t(TRIM(GYRE_DIR)//'/data/trad/'//TRIM(filename), OPEN_FILE)
+    hg = hgroup_t(TRIM(GYRE_DIR)//'/data/tar/'//TRIM(filename), OPEN_FILE)
     call read(hg, tf_m)
     call hg%final()
 
@@ -96,12 +96,12 @@ contains
 
   !****
 
-  $define $TRAD_LAMBDA $sub
+  $define $TAR_LAMBDA $sub
 
   $local $SUFFIX $1
   $local $TYPE $2
 
-  function trad_lambda_${SUFFIX}_ (nu, l, m, rossby) result (lambda)
+  function tar_lambda_${SUFFIX}_ (nu, l, m, rossby) result (lambda)
 
     $TYPE(WP), intent(in) :: nu
     integer, intent(in)  :: l
@@ -119,11 +119,11 @@ contains
 
     return
 
-  end function trad_lambda_${SUFFIX}_
+  end function tar_lambda_${SUFFIX}_
 
   $endsub
 
-  $TRAD_LAMBDA(r,real)
-  $TRAD_LAMBDA(c,complex)
+  $TAR_LAMBDA(r,real)
+  $TAR_LAMBDA(c,complex)
 
-end module gyre_trad
+end module gyre_tar

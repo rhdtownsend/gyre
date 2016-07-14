@@ -45,7 +45,6 @@ program gyre
   use gyre_rad_bep
   use gyre_scan_par
   use gyre_search
-  use gyre_trad
   use gyre_util
   use gyre_version
 

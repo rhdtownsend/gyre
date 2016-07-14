@@ -1,5 +1,5 @@
-! Program  : gyre_trad_eigen
-! Purpose  : Hough eigenvalue calculation (to replace astro_hough)
+! Program  : gyre_tar_eigen
+! Purpose  : traditional approximation of rotation (TAR) eigenvalue calculation
 !
 ! Copyright 2016 Rich Townsend
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_trad_eigen
+module gyre_tar_eigen
 
   ! Uses
 
@@ -987,4 +987,4 @@ contains
 
   $endif
 
-end module gyre_trad_eigen
+end module gyre_tar_eigen

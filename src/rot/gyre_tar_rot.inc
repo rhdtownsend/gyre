@@ -1,7 +1,7 @@
-! Incfile  : gyre_trad_rot
-! Purpose  : rotational effects (traditional approximation, template)
+! Incfile  : gyre_tar_rot
+! Purpose  : rotational effects (traditional approximation of rotation, template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -22,7 +22,7 @@ $define $MOD_DECL $sub
 $local $T $1
 $local $TYPE $2
 
-module gyre_${T}_trad_rot
+module gyre_${T}_tar_rot
 
   ! Uses
 
@@ -32,7 +32,7 @@ module gyre_${T}_trad_rot
   use gyre_model
   use gyre_mode_par
   use gyre_point
-  use gyre_trad
+  use gyre_tar
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -43,7 +43,7 @@ module gyre_${T}_trad_rot
 
   ! Derived-type definitions
 
-  type, extends (${T}_rot_t) :: ${T}_trad_rot_t
+  type, extends (${T}_rot_t) :: ${T}_tar_rot_t
      private
      class(model_t), pointer :: ml => null()
      type(point_t)           :: pt_i
@@ -60,32 +60,32 @@ module gyre_${T}_trad_rot
      procedure         :: l_e_v_
      procedure         :: lambda_1_
      procedure         :: lambda_v_
-  end type ${T}_trad_rot_t
+  end type ${T}_tar_rot_t
 
   ! Interfaces
 
-  interface ${T}_trad_rot_t
-     module procedure ${T}_trad_rot_t_
-  end interface ${T}_trad_rot_t
+  interface ${T}_tar_rot_t
+     module procedure ${T}_tar_rot_t_
+  end interface ${T}_tar_rot_t
 
   ! Access specifiers
 
   private
 
-  public :: ${T}_trad_rot_t
+  public :: ${T}_tar_rot_t
 
   ! Procedures
 
 contains
 
-  function ${T}_trad_rot_t_ (ml, gr, md_p) result (rt)
+  function ${T}_tar_rot_t_ (ml, gr, md_p) result (rt)
 
     class(model_t), pointer, intent(in) :: ml
     type(grid_t), intent(in)            :: gr
     type(mode_par_t), intent(in)        :: md_p
-    type(${T}_trad_rot_t)               :: rt
+    type(${T}_tar_rot_t)                :: rt
 
-    ! Construct the trad_rot_t
+    ! Construct the tar_rot_t
 
     rt%ml => ml
 
@@ -100,16 +100,16 @@ contains
 
     return
 
-  end function ${T}_trad_rot_t_
+  end function ${T}_tar_rot_t_
 
   !****
 
   function omega (this, pt, omega_c)
 
-    class(${T}_trad_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
-    $TYPE(WP), intent(in)              :: omega_c
-    $TYPE(WP)                          :: omega
+    class(${T}_tar_rot_t), intent(in) :: this
+    type(point_t), intent(in)         :: pt
+    $TYPE(WP), intent(in)             :: omega_c
+    $TYPE(WP)                         :: omega
 
     ! Evaluate the inertial-frame frequency from the corotating-frame
     ! frequency
@@ -126,10 +126,10 @@ contains
 
   function omega_c_1_ (this, pt,  omega) result (omega_c)
 
-    class(${T}_trad_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: omega_c
+    class(${T}_tar_rot_t), intent(in) :: this
+    type(point_t), intent(in)         :: pt
+    $TYPE(WP), intent(in)             :: omega
+    $TYPE(WP)                         :: omega_c
 
     ! Evaluate the corotating-frame frequency from the inertial-frame
     ! frequency
@@ -146,10 +146,10 @@ contains
 
   function omega_c_v_ (this, pt, omega) result (omega_c)
 
-    class(${T}_trad_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt(:)
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: omega_c(SIZE(pt))
+    class(${T}_tar_rot_t), intent(in) :: this
+    type(point_t), intent(in)         :: pt(:)
+    $TYPE(WP), intent(in)             :: omega
+    $TYPE(WP)                         :: omega_c(SIZE(pt))
 
     ! Evaluate the corotating-frame frequency from the inertial-frame
     ! frequency
@@ -166,9 +166,9 @@ contains
 
   function l_i (this, omega)
 
-    class(${T}_trad_rot_t), intent(in) :: this
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: l_i
+    class(${T}_tar_rot_t), intent(in) :: this
+    $TYPE(WP), intent(in)             :: omega
+    $TYPE(WP)                         :: l_i
 
     ! Evaluate the effective harmonic degree at the model inner
     ! boundary
@@ -185,10 +185,10 @@ contains
 
   function l_e_1_ (this, pt, omega) result (l_e)
 
-    class(${T}_trad_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: l_e
+    class(${T}_tar_rot_t), intent(in) :: this
+    type(point_t), intent(in)         :: pt
+    $TYPE(WP), intent(in)             :: omega
+    $TYPE(WP)                         :: l_e
 
     ! Evaluate the effective harmonic degree
 
@@ -204,10 +204,10 @@ contains
 
   function l_e_v_ (this, pt, omega) result (l_e)
 
-    class(${T}_trad_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt(:)
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: l_e(SIZE(pt))
+    class(${T}_tar_rot_t), intent(in) :: this
+    type(point_t), intent(in)         :: pt(:)
+    $TYPE(WP), intent(in)             :: omega
+    $TYPE(WP)                         :: l_e(SIZE(pt))
 
     ! Evaluate the effective harmonic degree
 
@@ -223,10 +223,10 @@ contains
 
   function lambda_1_ (this, pt, omega) result (lambda)
 
-    class(${T}_trad_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: lambda
+    class(${T}_tar_rot_t), intent(in) :: this
+    type(point_t), intent(in)         :: pt
+    $TYPE(WP), intent(in)             :: omega
+    $TYPE(WP)                         :: lambda
 
     $TYPE(WP) :: nu
 
@@ -234,7 +234,7 @@ contains
 
     nu = 2._WP*this%ml%Omega_rot(pt)/this%omega_c(pt, omega)
 
-    lambda = trad_lambda(nu, this%l, this%m, this%rossby)
+    lambda = tar_lambda(nu, this%l, this%m, this%rossby)
 
     ! Finish
 
@@ -246,10 +246,10 @@ contains
 
   function lambda_v_ (this, pt, omega) result (lambda)
 
-    class(${T}_trad_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt(:)
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: lambda(SIZE(pt))
+    class(${T}_tar_rot_t), intent(in) :: this
+    type(point_t), intent(in)         :: pt(:)
+    $TYPE(WP), intent(in)             :: omega
+    $TYPE(WP)                         :: lambda(SIZE(pt))
 
     integer :: j
     
@@ -265,6 +265,6 @@ contains
 
   end function lambda_v_
 
-end module gyre_${T}_trad_rot
+end module gyre_${T}_tar_rot
 
 $endsub

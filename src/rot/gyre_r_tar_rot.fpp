@@ -1,7 +1,7 @@
-! Module   : gyre_trad_rot
-! Purpose  : rotational effects (traditional approximation)
+! Module   : gyre_r_tar_rot
+! Purpose  : rotational effects (traditional approximation of rotation, real)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,11 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_trad_rot
+$include 'gyre_tar_rot.inc'
 
-  ! Uses
-
-  use gyre_r_trad_rot
-  use gyre_c_trad_rot
-
-end module gyre_trad_rot
+$MOD_DECL(r,real)
