@@ -394,6 +394,13 @@ contains
                            (1._WP/lambda_A_lapack_(SIGN(NU_TRANS, nu), m, k, n) - lambda_asymp_(SIGN(NU_TRANS, nu), m, k))/nu**2)
     endif
     
+    ! Check to see if lambda_est is +/- HUGE, indicating a Rossby mode
+
+    if (lambda_est == HUGE(0._WP) .OR. lambda_est == -HUGE(0._WP)) then
+       lambda = lambda_est
+       return
+    end if
+
     ! Assemble the A-matrix
 
     parity = MOD(k, 2) == 0
@@ -450,7 +457,7 @@ contains
       integer  :: P_m
       
       $CHECK_BOUNDS(SIZE(A_E),SIZE(A_D))
-    
+
       ! Set up a bracket around the estimated eigenvalue lambda_est
 
       if (lambda_est > 0._WP) then
@@ -544,6 +551,8 @@ contains
       integer  :: i
 
       $CHECK_BOUNDS(SIZE(A_E),SIZE(A_D))
+
+      $ASSERT(SIZE(A_D) > 0,Empty matrix)
 
       ! Calculate the number P of eigenvalues of A which are less than
       ! lambda, using the algorithm in Barth, Martin & Wilkinson
