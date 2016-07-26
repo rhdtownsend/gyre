@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=build_trad_fit
+TARGETS=build_tar_fit
 
 # Flags
 
