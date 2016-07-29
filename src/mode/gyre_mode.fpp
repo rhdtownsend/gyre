@@ -99,9 +99,9 @@ module gyre_mode
      $PROC_DECL(dW_eps_dx)
      $PROC_DECL(dC_dx)
      $PROC_DECL(F_j_wave)
-     $PROC_DECL(tau_j_wave)
-     $PROC_DECL(tau_j_grow)
-     $PROC_DECL(tau_j_grav)
+     $PROC_DECL(dj_dt_wave)
+     $PROC_DECL(dj_dt_grow)
+     $PROC_DECL(dj_dt_grav)
      $PROC_DECL(Yt_1)
      $PROC_DECL(Yt_2)
      $PROC_DECL(I_0)
@@ -1657,11 +1657,11 @@ contains
 
   !****
 
-  function tau_j_wave_1_ (this, pt) result (tau_j_wave)
+  function dj_dt_wave_1_ (this, pt) result (dj_dt_wave)
 
     class(mode_t), intent(in) :: this
     type(point_t), intent(in) :: pt
-    real(WP)                  :: tau_j_wave
+    real(WP)                  :: dj_dt_wave
 
     complex(WP) :: xi_r
     complex(WP) :: eul_P
@@ -1693,7 +1693,7 @@ contains
 
       omega_c = this%rt%omega_c(pt, this%omega)
 
-      tau_j_wave = m*U*ABS(omega_c)**2*AIMAG((lag_rho*CONJG(eul_P)/(c_1*V_2) + &
+      dj_dt_wave = m*U*ABS(omega_c)**2*AIMAG((lag_rho*CONJG(eul_P)/(c_1*V_2) + &
                                               eul_rho*CONJG(eul_Phi) + &
                                               xi_r*CONJG(eul_rho)*pt%x/c_1)/CONJG(omega_c)**2)/(32._WP*PI**2*c_1)
     end associate
@@ -1702,15 +1702,15 @@ contains
 
     return
 
-  end function tau_j_wave_1_
+  end function dj_dt_wave_1_
 
   !****
 
-  function tau_j_grow_1_ (this, pt) result (tau_j_grow)
+  function dj_dt_grow_1_ (this, pt) result (dj_dt_grow)
 
     class(mode_t), intent(in) :: this
     type(point_t), intent(in) :: pt
-    real(WP)                  :: tau_j_grow
+    real(WP)                  :: dj_dt_grow
 
     complex(WP) :: eul_rho
     complex(WP) :: xi_h
@@ -1731,7 +1731,7 @@ contains
 
       omega_c = this%rt%omega_c(pt, this%omega)
 
-      tau_j_grow = m*pt%x*U*AIMAG(omega_c)*REAL(eul_rho*CONJG(omega_c*xi_h))/(16._WP*PI**2*c_1)
+      dj_dt_grow = m*pt%x*U*AIMAG(omega_c)*REAL(eul_rho*CONJG(omega_c*xi_h))/(16._WP*PI**2*c_1)
 
     end associate
 
@@ -1739,15 +1739,15 @@ contains
 
     return
     
-  end function tau_j_grow_1_
+  end function dj_dt_grow_1_
 
   !****
 
-  function tau_j_grav_1_ (this, pt) result (tau_j_grav)
+  function dj_dt_grav_1_ (this, pt) result (dj_dt_grav)
 
     class(mode_t), intent(in) :: this
     type(point_t), intent(in) :: pt
-    real(WP)                  :: tau_j_grav
+    real(WP)                  :: dj_dt_grav
 
     complex(WP) :: eul_rho
     complex(WP) :: eul_phi
@@ -1768,7 +1768,7 @@ contains
 
       omega_c = this%rt%omega_c(pt, this%omega)
 
-      tau_j_grav = -m*U*AIMAG(eul_rho*CONJG(eul_phi))/(32._WP*PI**2*c_1)
+      dj_dt_grav = -m*U*AIMAG(eul_rho*CONJG(eul_phi))/(32._WP*PI**2*c_1)
 
     end associate
 
@@ -1776,7 +1776,7 @@ contains
 
     return
     
-  end function tau_j_grav_1_
+  end function dj_dt_grav_1_
 
   !****
 
@@ -2032,9 +2032,9 @@ contains
   $PROC_F(dW_eps_dx,real(WP))
   $PROC_F(dC_dx,real(WP))
   $PROC_F(F_j_wave,real(WP))
-  $PROC_F(tau_j_wave,real(WP))
-  $PROC_F(tau_j_grow,real(WP))
-  $PROC_F(tau_j_grav,real(WP))
+  $PROC_F(dj_dt_wave,real(WP))
+  $PROC_F(dj_dt_grow,real(WP))
+  $PROC_F(dj_dt_grav,real(WP))
   $PROC_F(Yt_1,complex(WP))
   $PROC_F(Yt_2,complex(WP))
   $PROC_F(I_0,complex(WP))
