@@ -16,12 +16,14 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_parallel.inc'
 
 module gyre_grid
 
   ! Uses
 
   use core_kinds
+  use core_parallel
 
   use gyre_point
 
@@ -53,11 +55,24 @@ module gyre_grid
      module procedure grid_t_resamp_
   end interface grid_t
 
+  $if ($MPI)
+  interface bcast
+     module procedure bcast_0_
+  end interface bcast
+  interface bcast_alloc
+     module procedure bcast_alloc_0_
+  end interface bcast_alloc
+  $endif
+
   ! Access specifiers
 
   private
 
   public :: grid_t
+  $if ($MPI)
+  public :: bcast
+  public :: bcast_alloc
+  $endif
 
   ! Procedures
 
@@ -237,6 +252,31 @@ contains
     return
 
   end function grid_t_resamp_
+
+  !****
+
+  $if ($MPI)
+
+  subroutine bcast_0_ (gr, root_rank)
+
+    type(grid_t), intent(inout) :: gr
+    integer, intent(in)         :: root_rank
+
+    ! Broadcast the grid_t
+
+    call bcast_alloc(gr%pt, root_rank)
+
+    call bcast(gr%n_k, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_0_
+
+  $BCAST_ALLOC(type(grid_t),0)
+
+  $endif
 
   !****
 
