@@ -89,7 +89,7 @@ contains
     type(c_ext_t)            :: discrim_b_rev
     type(c_ext_t)            :: omega_root
     type(mode_t)             :: md
-    type(r_ext_t)              :: chi
+    type(r_ext_t)            :: chi
 
     ! Set up the discriminant function
 
