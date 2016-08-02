@@ -14,7 +14,7 @@ OUT_FILE=summary.txt
 
 LABEL="MESA model for delta Cephei star (adiabatic)"
 
-RELERR=2E-15
+RELERR=6E-15
 FIELDS=1-5
 
 # Do the tests
