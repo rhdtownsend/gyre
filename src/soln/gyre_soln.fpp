@@ -65,11 +65,9 @@ module gyre_soln
   $if ($MPI)
   interface bcast
      module procedure bcast_0_
-     module procedure bcast_1_
   end interface bcast
   interface bcast_alloc
      module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
   end interface bcast_alloc
   $endif
 
@@ -137,10 +135,7 @@ contains
 
   end subroutine bcast_0_
 
-  $BCAST(type(soln_t),1)
-
   $BCAST_ALLOC(type(soln_t),0)
-  $BCAST_ALLOC(type(soln_t),1)
 
   $endif
 
