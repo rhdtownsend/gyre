@@ -120,7 +120,7 @@ contains
 
     call read_dset_alloc(hg, 'r', r)
     call read_dset_alloc(hg, 'w', w)
-    call read_dset_alloc(hg, 'P', P)
+    call read_dset_alloc(hg, 'p', P)
     call read_dset_alloc(hg, 'rho', rho)
     call read_dset_alloc(hg, 'T', T)
     call read_dset_alloc(hg, 'nabla', nabla)
