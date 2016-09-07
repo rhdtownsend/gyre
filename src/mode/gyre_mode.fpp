@@ -1731,7 +1731,7 @@ contains
 
       omega_c = this%rt%omega_c(pt, this%omega)
 
-      dj_dt_grow = m*pt%x*U*AIMAG(omega_c)*REAL(eul_rho*CONJG(omega_c*xi_h))/(16._WP*PI**2*c_1)
+      dj_dt_grow = -m*pt%x*U*AIMAG(omega_c)*REAL(eul_rho*CONJG(omega_c*xi_h))/(16._WP*PI**2*c_1)
 
     end associate
 
