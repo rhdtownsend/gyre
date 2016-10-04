@@ -1,0 +1,40 @@
+&constants
+/
+
+&model
+	model_type = 'HOM'
+	grid_type = 'GEO'
+	s = 1000.
+	n = 1000
+/
+
+&mode
+	l = 1
+/
+
+&osc
+	cowling_approx = .TRUE.
+/
+
+&num
+	diff_scheme = 'COLLOC_GL6'
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 0.1
+	freq_max = 21.0
+	n_freq = 100
+/
+
+&grid
+/
+
+&ad_output
+	summary_file = 'summary.txt'
+	summary_file_format = 'TXT'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega'
+/
+
+&nad_output
+/

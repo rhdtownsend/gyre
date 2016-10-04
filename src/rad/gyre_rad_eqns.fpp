@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_eqns
-! Purpose  : differential equations evaluation (adiabatic radial)
+! Purpose  : radial adiabatic differential equations
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,11 +24,14 @@ module gyre_rad_eqns
   use core_kinds
 
   use gyre_eqns
-  use gyre_linalg
+  use gyre_grid
   use gyre_model
+  use gyre_mode_par
   use gyre_osc_par
+  use gyre_point
   use gyre_rad_vars
   use gyre_rot
+  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -45,8 +48,8 @@ module gyre_rad_eqns
      type(rad_vars_t)            :: vr
    contains
      private
-     procedure, public :: A => A_
-     procedure, public :: xA => xA_
+     procedure, public :: A
+     procedure, public :: xA
   end type rad_eqns_t
 
   ! Interfaces
@@ -65,18 +68,20 @@ module gyre_rad_eqns
 
 contains
 
-  function rad_eqns_t_ (ml, rt, op) result (eq)
+  function rad_eqns_t_ (ml, gr, md_p, os_p) result (eq)
 
     class(model_t), pointer, intent(in) :: ml
-    class(r_rot_t), intent(in)          :: rt
-    type(osc_par_t), intent(in)         :: op
+    type(grid_t), intent(in)            :: gr
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
     type(rad_eqns_t)                    :: eq
 
     ! Construct the rad_eqns_t
 
     eq%ml => ml
-    allocate(eq%rt, SOURCE=rt)
-    eq%vr = rad_vars_t(ml, rt, op)
+
+    allocate(eq%rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
+    eq%vr = rad_vars_t(ml, gr, md_p, os_p)
 
     eq%n_e = 2
 
@@ -86,31 +91,31 @@ contains
 
   end function rad_eqns_t_
 
-!****
+  !****
 
-  function A_ (this, x, omega) result (A)
+  function A (this, pt, omega)
 
     class(rad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     real(WP), intent(in)          :: omega
     real(WP)                      :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(x, omega)/x
+    A = this%xA(pt, omega)/pt%x
 
     ! Finish
 
     return
 
-  end function A_
+  end function A
 
-!****
+  !****
 
-  function xA_ (this, x, omega) result (xA)
+  function xA (this, pt, omega)
 
     class(rad_eqns_t), intent(in) :: this
-    real(WP), intent(in)          :: x
+    type(point_t), intent(in)     :: pt
     real(WP), intent(in)          :: omega
     real(WP)                      :: xA(this%n_e,this%n_e)
 
@@ -124,12 +129,12 @@ contains
 
     ! Calculate coefficients
 
-    V_g = this%ml%V_2(x)*x**2/this%ml%Gamma_1(x)
-    U = this%ml%U(x)
-    As = this%ml%As(x)
-    c_1 = this%ml%c_1(x)
+    V_g = this%ml%V_2(pt)*pt%x**2/this%ml%Gamma_1(pt)
+    U = this%ml%U(pt)
+    As = this%ml%As(pt)
+    c_1 = this%ml%c_1(pt)
 
-    omega_c = this%rt%omega_c(x, omega)
+    omega_c = this%rt%omega_c(pt, omega)
 
     ! Set up the matrix
 
@@ -141,12 +146,13 @@ contains
 
     ! Apply the variables transformation
 
-    xA = MATMUL(this%vr%S(x, omega), MATMUL(xA, this%vr%T(x, omega)) - this%vr%dT(x, omega))
+    xA = MATMUL(this%vr%G(pt, omega), MATMUL(xA, this%vr%H(pt, omega)) - &
+                                                 this%vr%dH(pt, omega))
 
     ! Finish
 
     return
 
-  end function xA_
+  end function xA
 
 end module gyre_rad_eqns

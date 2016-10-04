@@ -26,11 +26,12 @@ module gyre_c_search
   use core_order
   use core_parallel
 
-  use gyre_bvp
+  use gyre_bep
   use gyre_discrim_func
   use gyre_ext
   use gyre_mode
   use gyre_mode_par
+  use gyre_nad_bep
   use gyre_num_par
   use gyre_osc_par
   use gyre_root
@@ -51,22 +52,23 @@ module gyre_c_search
 
 contains
 
-  subroutine prox_search (bp, mp, np, op, md_in, process_root)
+  subroutine prox_search (bp, md_in, process_mode, md_p, nm_p, os_p)
 
-    class(c_bvp_t), target, intent(inout) :: bp
-    type(mode_par_t), intent(in)          :: mp
-    type(num_par_t), intent(in)           :: np 
-    type(osc_par_t), intent(in)           :: op
+    class(c_bep_t), target, intent(inout) :: bp
     type(mode_t), intent(in)              :: md_in(:)
     interface
-       subroutine process_root (omega, n_iter, discrim_ref)
+       subroutine process_mode (md, n_iter, chi)
          use core_kinds
          use gyre_ext
-         complex(WP), intent(in)   :: omega
+         use gyre_mode
+         type(mode_t), intent(in)  :: md
          integer, intent(in)       :: n_iter
-         type(r_ext_t), intent(in) :: discrim_ref
-       end subroutine process_root
+         type(r_ext_t), intent(in) :: chi
+       end subroutine process_mode
     end interface
+    type(mode_par_t), intent(in)          :: md_p
+    type(num_par_t), intent(in)           :: nm_p
+    type(osc_par_t), intent(in)           :: os_p
     
     type(c_discrim_func_t)   :: df
     complex(WP), allocatable :: omega_def(:)
@@ -86,6 +88,8 @@ contains
     type(c_ext_t)            :: discrim_a_rev
     type(c_ext_t)            :: discrim_b_rev
     type(c_ext_t)            :: omega_root
+    type(mode_t)             :: md
+    type(r_ext_t)            :: chi
 
     ! Set up the discriminant function
 
@@ -102,8 +106,8 @@ contains
        write(OUTPUT_UNIT, 100) 'Root Solving'
 100    format(A)
 
-       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
-110    format(4(2X,A8),3(2X,A24),2X,A6,2X,A7)
+       write(OUTPUT_UNIT, 110) 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
+110    format(5(2X,A8),3(2X,A24),2X,A6)
        
     endif
 
@@ -140,8 +144,8 @@ contains
        omega_a = c_ext_t(md_in(i)%omega + CMPLX(0._WP, domega, KIND=WP))
        omega_b = c_ext_t(md_in(i)%omega - CMPLX(0._WP, domega, KIND=WP))
 
-!       call improve_omega(bp, mp, op, md_in(i)%x, omega_a)
-!       call improve_omega(bp, mp, op, md_in(i)%x, omega_b)
+!       call improve_omega(bp, md_p, os_p, md_in(i)%x, omega_a)
+!       call improve_omega(bp, md_p, os_p, md_in(i)%x, omega_b)
 
        call df%eval(omega_a, discrim_a, status)
        if (status /= STATUS_OK) then
@@ -158,11 +162,11 @@ contains
        ! If necessary, do a preliminary root find using the deflated
        ! discriminant
 
-       if (np%deflate_roots) then
+       if (nm_p%deflate_roots) then
 
           df%omega_def = omega_def
 
-          call narrow(df, np, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=np%n_iter_max)
+          call narrow(df, nm_p, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
           if (status /= STATUS_OK) then
              call report_status_(status, 'deflate narrow')
              cycle mode_loop
@@ -194,16 +198,27 @@ contains
 
        ! Find the discriminant root
 
-       call solve(df, np, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
-                  n_iter=n_iter, n_iter_max=np%n_iter_max-n_iter_def, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
+       call solve(df, nm_p, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
+                  n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
           cycle mode_loop
        endif
 
+       ! Construct the mode_t
+
+       select type (bp)
+       type is (nad_bep_t)
+          md = mode_t(bp, md_in(i)%j, cmplx(omega_root))
+       class default
+          $ABORT(Invalid bp class)
+       end select
+
        ! Process it
 
-       call process_root(cmplx(omega_root), n_iter_def+n_iter, max(abs(discrim_a), abs(discrim_b)))
+       chi = abs(md%sl%discrim)/max(abs(discrim_a), abs(discrim_b))
+       
+       call process_mode(md, n_iter_def+n_iter, chi)
 
        ! Store the frequency in the deflation array
 
@@ -215,7 +230,7 @@ contains
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
-130    format(2X,A,1X,F10.3,1X,A)
+130    format(2X,A,1X,F10.3,1X,A/)
     endif
 
     ! Finish
@@ -262,7 +277,7 @@ contains
 
   ! subroutine improve_omega (bp, mp, op, x, omega)
 
-  !   class(c_bvp_t), target, intent(inout) :: bp
+  !   class(c_bep_t), target, intent(inout) :: bp
   !   type(mode_par_t), intent(in)          :: mp
   !   type(osc_par_t), intent(in)           :: op
   !   real(WP), intent(in)                  :: x(:)

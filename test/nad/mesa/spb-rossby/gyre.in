@@ -1,0 +1,52 @@
+&constants
+/
+
+&model
+	model_type = 'EVOL'
+	file = 'spb.mesa'
+	file_format = 'MESA'
+ 	uniform_rot = .TRUE.
+	Omega_rot = 0.5
+	Omega_units = 'CRITICAL'
+/
+
+&mode
+	l = 2
+	m = -2
+	rossby = .true.
+	tag = 'l=1'
+/
+
+&osc
+	nonadiabatic = .TRUE.
+	rotation_method = 'TAR'
+/
+
+&num
+	diff_scheme = 'COLLOC_GL4'
+/
+
+&scan
+	grid_type = 'INVERSE'
+	grid_frame = 'COROT_O'
+	freq_min = 0.85
+	freq_max = 0.99
+	freq_units = 'ROSSBY_O'
+	freq_frame = 'COROT_O'
+	n_freq = 200
+/
+
+&grid
+	alpha_osc = 10
+	alpha_exp = 2
+	n_center = 5
+/
+
+&ad_output
+/
+
+&nad_output
+	summary_file = 'summary.txt'
+	summary_file_format = 'TXT'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+/

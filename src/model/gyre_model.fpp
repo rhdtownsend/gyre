@@ -1,7 +1,7 @@
 ! Module   : gyre_model
-! Purpose  : stellar model (interface)
+! Purpose  : stellar model
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2015 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -31,8 +31,8 @@ module gyre_model
 
   $define $PROC_DECL $sub
     $local $NAME $1
-    procedure(y_1_), deferred :: ${NAME}_1_
-    procedure(y_v_), deferred :: ${NAME}_v_
+    procedure(f_1_), deferred :: ${NAME}_1_
+    procedure(f_v_), deferred :: ${NAME}_v_
     generic, public           :: ${NAME} => ${NAME}_1_, ${NAME}_v_
   $endsub
 
@@ -42,78 +42,77 @@ module gyre_model
      $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
-     $PROC_DECL(D)
+     $PROC_DECL(dU)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
-     $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     $PROC_DECL(nabla_ad)
+     $PROC_DECL(dnabla_ad)
+     $PROC_DECL(nabla)
+     $PROC_DECL(beta_rad)
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_thm)
      $PROC_DECL(c_dif)
      $PROC_DECL(c_eps_ad)
      $PROC_DECL(c_eps_S)
-     $PROC_DECL(nabla)
-     $PROC_DECL(kappa_ad)
-     $PROC_DECL(kappa_S)
-     $PROC_DECL(tau_thm)
+     $PROC_DECL(kap_ad)
+     $PROC_DECL(kap_S)
      $PROC_DECL(Omega_rot)
-     procedure(is_zero_), deferred, public      :: is_zero
-     procedure(attach_cache_), deferred, public :: attach_cache
-     procedure(detach_cache_), deferred, public :: detach_cache
-     procedure(fill_cache_), deferred, public   :: fill_cache
+     $PROC_DECL(dOmega_rot)
+     procedure(grid), deferred, public      :: grid
+     procedure(vacuum), deferred, public    :: vacuum
+     procedure(nonad_cap), deferred, public :: nonad_cap
   end type model_t
 
   ! Interfaces
 
   abstract interface
 
-     function y_1_ (this, x) result (y)
+     function f_1_ (this, pt) result (f)
+       use core_kinds
+       use gyre_point
+       import model_t
+       class(model_t), intent(in) :: this
+       type(point_t), intent(in)  :: pt
+       real(WP)                   :: f
+     end function f_1_
+
+     function f_v_ (this, pt) result (f)
+       use core_kinds
+       use gyre_point
+       import model_t
+       class(model_t), intent(in) :: this
+       type(point_t), intent(in)  :: pt(:)
+       real(WP)                   :: f(SIZE(pt))
+     end function f_v_
+
+     function grid (this) result (gr)
+       use gyre_grid
+       import model_t
+       class(model_t), intent(in) :: this
+       type(grid_t)               :: gr
+     end function grid
+
+     function vacuum (this, pt)
+       use core_kinds
+       use gyre_point
+       import model_t
+       class(model_t), intent(in) :: this
+       type(point_t), intent(in)  :: pt
+       logical                    :: vacuum
+     end function vacuum
+
+     function nonad_cap (this)
        use core_kinds
        import model_t
        class(model_t), intent(in) :: this
-       real(WP), intent(in)       :: x
-       real(WP)                   :: y
-     end function y_1_
-
-     function y_v_ (this, x) result (y)
-       use core_kinds
-       import model_t
-       class(model_t), intent(in) :: this
-       real(WP), intent(in)       :: x(:)
-       real(WP)                   :: y(SIZE(x))
-     end function y_v_
-
-     function is_zero_ (this, x) result (is_zero)
-       use core_kinds
-       import model_t
-       class(model_t), intent(in) :: this
-       real(WP), intent(in)       :: x
-       logical                    :: is_zero
-     end function is_zero_
-
-     subroutine attach_cache_ (this, cc)
-       use gyre_cocache
-       import model_t
-       class(model_t), intent(inout)         :: this
-       class(cocache_t), pointer, intent(in) :: cc
-     end subroutine attach_cache_
-
-     subroutine detach_cache_ (this)
-       import model_t
-       class(model_t), intent(inout) :: this
-     end subroutine detach_cache_
-
-     subroutine fill_cache_ (this, x)
-       use core_kinds
-       import model_t
-       class(model_t), intent(inout) :: this
-       real(WP), intent(in)          :: x(:)
-     end subroutine fill_cache_
+       logical                    :: nonad_cap
+     end function nonad_cap
 
   end interface
 
- ! Access specifiers
+  ! Access specifiers
 
   private
 

@@ -26,17 +26,22 @@ module gyre_r_search
   use core_order
   use core_parallel
 
-  use gyre_bvp
+  use gyre_ad_bep
+  use gyre_bep
   use gyre_constants
   use gyre_discrim_func
   use gyre_ext
   use gyre_freq
+  use gyre_grid
   use gyre_mode
   use gyre_model
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_rad_bep
   use gyre_root
+  use gyre_rot
+  use gyre_rot_factory
   use gyre_scan_par
   use gyre_status
   use gyre_util
@@ -47,23 +52,27 @@ module gyre_r_search
 
   implicit none
 
+  ! Module variables
+
+  integer, save :: j_m = 0
+
   ! Access specifiers
 
   private
 
   public :: build_scan
+  public :: check_scan
   public :: scan_search
 
 contains
 
-  subroutine build_scan (sp, ml, mp, op, x_i, x_o, omega)
+  subroutine build_scan (ml, gr, md_p, os_p, sc_p, omega)
 
-    type(scan_par_t), intent(in)        :: sp(:)
     class(model_t), pointer, intent(in) :: ml
-    type(mode_par_t), intent(in)        :: mp
-    type(osc_par_t), intent(in)         :: op
-    real(WP), intent(in)                :: x_i
-    real(WP), intent(in)                :: x_o
+    type(grid_t), intent(in)            :: gr
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
+    type(scan_par_t), intent(in)        :: sc_p(:)
     real(WP), allocatable, intent(out)  :: omega(:)
 
     integer               :: n_omega
@@ -75,7 +84,7 @@ contains
     real(WP), allocatable :: freq_g(:)
     integer               :: j
 
-    $ASSERT(SIZE(sp) >=1,Empty scan_par_t)
+    $ASSERT(SIZE(sc_p) >=1,Empty scan_par_t)
 
     ! Build the frequency scan grid
 
@@ -90,72 +99,82 @@ contains
 
     allocate(omega(0))
 
-    sp_loop : do i = 1,SIZE(sp)
+    sc_p_loop : do i = 1,SIZE(sc_p)
 
-       ! Calculate the dimensionless frequency range in the inertial frame
+       associate (freq_min => sc_p(i)%freq_min, &
+                  freq_max => sc_p(i)%freq_max, &
+                  n_freq => sc_p(i)%n_freq, &
+                  freq_units => sc_p(i)%freq_units, &
+                  freq_frame => sc_p(i)%freq_frame, &
+                  grid_frame => sc_p(i)%grid_frame, &
+                  grid_type => sc_p(i)%grid_type)
+         
+         ! Calculate the dimensionless frequency range in the inertial frame
+         
+         select case (freq_units)
+         case ('MIXED_DELTA')
+            omega_min = omega_from_freq(freq_min, ml, gr, 'GRAVITY_DELTA', freq_frame, md_p, os_p)
+            omega_max = omega_from_freq(freq_max, ml, gr, 'ACOUSTIC_DELTA', freq_frame, md_p, os_p)
+         case default
+            omega_min = omega_from_freq(freq_min, ml, gr, freq_units, freq_frame, md_p, os_p)
+            omega_max = omega_from_freq(freq_max, ml, gr, freq_units, freq_frame, md_p, os_p)
+         end select
 
-       select case (sp(i)%freq_units)
-       case ('MIXED_DELTA')
-          omega_min = omega_from_freq(sp(i)%freq_min, ml, mp, op, x_i, x_o, 'GRAVITY_DELTA', sp(i)%freq_frame)
-          omega_max = omega_from_freq(sp(i)%freq_max, ml, mp, op, x_i, x_o, 'ACOUSTIC_DELTA', sp(i)%freq_frame)
-       case default
-          omega_min = omega_from_freq(sp(i)%freq_min, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
-          omega_max = omega_from_freq(sp(i)%freq_max, ml, mp, op, x_i, x_o, sp(i)%freq_units, sp(i)%freq_frame)
-       end select
+         ! Check that the range is valid
 
-       ! Check that the range is valid
+         if (omega_max > omega_min) then
 
-       if (omega_max > omega_min) then
+            ! Calculate the frequency range in the grid frame
 
-          ! Calculate the frequency range in the grid frame
+            freq_g_min = freq_from_omega(omega_min, ml, gr, 'NONE', grid_frame, md_p, os_p)
+            freq_g_max = freq_from_omega(omega_max, ml, gr, 'NONE', grid_frame, md_p, os_p)
 
-          freq_g_min = freq_from_omega(omega_min, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
-          freq_g_max = freq_from_omega(omega_max, ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
+            ! Set up the frequencies
 
-          ! Set up the frequencies
+            allocate(freq_g(n_freq))
 
-          allocate(freq_g(sp(i)%n_freq))
-
-          do j = 1, sp(i)%n_freq
+            do j = 1, n_freq
              
-             select case(sp(i)%grid_type)
-             case('LINEAR')
-                freq_g(j) = ((sp(i)%n_freq-j)*freq_g_min + (j-1)*freq_g_max)/(sp(i)%n_freq-1)
-             case('INVERSE')
-                freq_g(j) = (sp(i)%n_freq-1)/((sp(i)%n_freq-j)/freq_g_min + (j-1)/freq_g_max)
-             case default
-                $ABORT(Invalid grid_type)
-             end select
-             
-          end do
+               select case(grid_type)
+               case('LINEAR')
+                  freq_g(j) = ((n_freq-j)*freq_g_min + (j-1)*freq_g_max)/(n_freq-1)
+               case('INVERSE')
+                  freq_g(j) = (n_freq-1)/((n_freq-j)/freq_g_min + (j-1)/freq_g_max)
+               case default
+                  $ABORT(Invalid grid_type)
+               end select
+               
+            end do
 
-          ! Store them
+            ! Store them
 
-          call reallocate(omega, [n_omega+sp(i)%n_freq])
+            call reallocate(omega, [n_omega+n_freq])
 
-          do j = 1, sp(i)%n_freq
-             omega(n_omega+j) = omega_from_freq(freq_g(j), ml, mp, op, x_i, x_o, 'NONE', sp(i)%grid_frame)
-          end do
+            do j = 1, n_freq
+               omega(n_omega+j) = omega_from_freq(freq_g(j), ml, gr, 'NONE', grid_frame, md_p, os_p)
+            end do
           
-          n_omega = n_omega + sp(i)%n_freq
+            n_omega = n_omega + n_freq
 
-          deallocate(freq_g)
+            deallocate(freq_g)
 
-          if (check_log_level('INFO')) then
-             write(OUTPUT_UNIT, 110) 'added scan interval : ', omega_min, ' -> ', omega_max, ' (', sp(i)%n_freq, ' points, ', TRIM(sp(i)%grid_type), ')'
-110          format(3X,A,E24.16,A,E24.16,A,I0,A,A,A)
-          endif
+            if (check_log_level('INFO')) then
+               write(OUTPUT_UNIT, 110) 'added scan interval : ', omega_min, ' -> ', omega_max, ' (', n_freq, ' points, ', TRIM(grid_type), ')'
+110            format(3X,A,E24.16,A,E24.16,A,I0,A,A,A)
+            endif
 
-       else
+         else
 
-          if (check_log_level('INFO')) then
-             write(OUTPUT_UNIT, 120) 'ignoring scan interval :', omega_min, ' -> ', omega_max
-120          format(3X,A,E24.16,A,E24.16)
-          endif
+            if (check_log_level('INFO')) then
+               write(OUTPUT_UNIT, 120) 'ignoring scan interval :', omega_min, ' -> ', omega_max
+120            format(3X,A,E24.16,A,E24.16)
+            endif
 
-       endif
+         endif
 
-    end do sp_loop
+       end associate
+
+    end do sc_p_loop
 
     ! Sort the frequencies
 
@@ -171,22 +190,62 @@ contains
 
   end subroutine build_scan
 
-!****
+  !****
 
-  subroutine scan_search (bp, np, omega, process_root)
+  subroutine check_scan (ml, gr, omega, md_p, os_p)
 
-    class(r_bvp_t), target, intent(inout) :: bp
-    type(num_par_t), intent(in)           :: np
+    class(model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)            :: gr
+    real(WP), intent(in)                :: omega(:)
+    type(mode_par_t), intent(in)        :: md_p
+    type(osc_par_t), intent(in)         :: os_p
+
+    class(r_rot_t), allocatable :: rt
+    real(WP)                    :: omega_c(gr%n_k)
+    real(WP)                    :: omega_c_prev(gr%n_k)
+    integer                     :: j
+
+    ! Check the frequency scan to ensure no zero crossings in omega_c
+    ! arise
+
+    allocate(rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
+
+    omega_c = rt%omega_c(gr%pt, omega(1))
+
+    $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
+
+    do j = 2, SIZE(omega)
+
+       omega_c_prev = omega_c
+       omega_c = rt%omega_c(gr%pt, omega(j))
+
+       $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)
+
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine check_scan
+
+  !****
+
+  subroutine scan_search (bp, omega, process_mode, nm_p)
+
+    class(r_bep_t), target, intent(inout) :: bp
     real(WP), intent(in)                  :: omega(:)
     interface
-       subroutine process_root (omega, n_iter, discrim_ref)
+       subroutine process_mode (md, n_iter, chi)
          use core_kinds
          use gyre_ext
-         real(WP), intent(in)      :: omega
+         use gyre_mode
+         type(mode_t), intent(in)  :: md
          integer, intent(in)       :: n_iter
-         type(r_ext_t), intent(in) :: discrim_ref
-       end subroutine process_root
+         type(r_ext_t), intent(in) :: chi
+       end subroutine process_mode
     end interface
+    type(num_par_t), intent(in)           :: nm_p
 
     type(r_discrim_func_t)     :: df
     real(WP), allocatable      :: omega_a(:)
@@ -200,6 +259,8 @@ contains
     type(r_ext_t)              :: omega_root
     integer                    :: status
     integer                    :: i
+    type(mode_t)               :: md
+    type(r_ext_t)              :: chi
 
     ! Set up the discriminant function
 
@@ -216,8 +277,8 @@ contains
        write(OUTPUT_UNIT, 100) 'Root Solving'
 100    format(A)
 
-       write(OUTPUT_UNIT, 110) 'l', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter', 'n'
-110    format(4(2X,A8),3(2X,A24),2X,A6,2X,A7)
+       write(OUTPUT_UNIT, 110) 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
+110    format(5(2X,A8),3(2X,A24),2X,A6)
        
     endif
 
@@ -229,16 +290,31 @@ contains
 
        ! Find the discriminant root
 
-       call solve(df, np, r_ext_t(omega_a(i)), r_ext_t(omega_b(i)), r_ext_t(0._WP), omega_root, &
-                  status, n_iter=n_iter, n_iter_max=np%n_iter_max, f_rx_a=discrim_a(i), f_rx_b=discrim_b(i))
+       call solve(df, r_ext_t(omega_a(i)), r_ext_t(omega_b(i)), r_ext_t(0._WP), nm_p, &
+                  omega_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, f_rx_a=discrim_a(i), f_rx_b=discrim_b(i))
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
           cycle mode_loop
        endif
 
+       ! Construct the mode_t
+
+       j_m = j_m + 1
+
+       select type (bp)
+       type is (ad_bep_t)
+          md = mode_t(bp, j_m, real(omega_root))
+       type is (rad_bep_t)
+          md = mode_t(bp, j_m, real(omega_root))
+       class default
+          $ABORT(Invalid bp class)
+       end select
+
        ! Process it
 
-       call process_root(real(omega_root), n_iter, MAX(ABS(discrim_a(i)), ABS(discrim_b(i))))
+       chi = abs(md%sl%discrim)/max(abs(discrim_a(i)), abs(discrim_b(i)))
+       
+       call process_mode(md, n_iter, chi)
 
     end do mode_loop
 
@@ -246,7 +322,7 @@ contains
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
-130    format(2X,A,1X,F10.3,1X,A)
+130    format(2X,A,1X,F10.3,1X,A/)
     endif
 
     ! Finish
@@ -288,7 +364,7 @@ contains
       
   end subroutine scan_search
 
-!****
+  !****
 
   subroutine find_root_brackets (df, omega, omega_a, omega_b, discrim_a, discrim_b)
 
@@ -371,7 +447,7 @@ contains
 
 !   subroutine min_search (bp, omega, process_mode)
 
-!     class(bvp_t), intent(inout) :: bp
+!     class(bep_t), intent(inout) :: bp
 !     real(WP), intent(in)        :: omega(:)
 !     interface
 !        subroutine process_mode (md)

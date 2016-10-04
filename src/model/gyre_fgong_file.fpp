@@ -1,7 +1,7 @@
 ! Module   : gyre_fgong_file
 ! Purpose  : read FGONG files
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -22,11 +22,12 @@ module gyre_fgong_file
   ! Uses
 
   use core_kinds
-  use core_order
 
   use gyre_constants
-  use gyre_model
   use gyre_evol_model
+  use gyre_model
+  use gyre_model_par
+  use gyre_model_util
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -45,53 +46,48 @@ module gyre_fgong_file
 
 contains
 
-  subroutine read_fgong_model (file, deriv_type, data_format, add_center, ml, x)
+  subroutine read_fgong_model (ml_p, ml)
 
-    character(*), intent(in)                     :: file
-    character(*), intent(in)                     :: deriv_type
-    character(*), intent(in)                     :: data_format
-    logical, intent(in)                          :: add_center
-    type(evol_model_t), intent(out)              :: ml
-    real(WP), allocatable, intent(out), optional :: x(:)
+    type(model_par_t), intent(in)        :: ml_p
+    class(model_t), pointer, intent(out) :: ml
 
-    character(:), allocatable :: data_format_
-    integer                   :: unit
-    integer                   :: n
-    integer                   :: iconst
-    integer                   :: ivar
-    integer                   :: ivers
-    real(WP), allocatable     :: glob(:)
-    real(WP), allocatable     :: var(:,:)
-    integer                   :: i
-    integer, allocatable      :: ind(:)
-    real(WP)                  :: M_star
-    real(WP)                  :: R_star
-    real(WP)                  :: L_star
-    real(WP), allocatable     :: r(:)
-    real(WP), allocatable     :: m(:)
-    real(WP), allocatable     :: p(:)
-    real(WP), allocatable     :: rho(:) 
-    real(WP), allocatable     :: T(:) 
-    real(WP), allocatable     :: N2(:)
-    real(WP), allocatable     :: Gamma_1(:)
-    real(WP), allocatable     :: nabla_ad(:)
-    real(WP), allocatable     :: delta(:)
-    logical                   :: has_center
+    integer                     :: unit
+    integer                     :: n
+    integer                     :: iconst
+    integer                     :: ivar
+    integer                     :: ivers
+    character(:), allocatable   :: data_format
+    real(WP), allocatable       :: glob(:)
+    real(WP), allocatable       :: var(:,:)
+    integer                     :: i
+    real(WP)                    :: M_star
+    real(WP)                    :: R_star
+    real(WP)                    :: L_star
+    real(WP), allocatable       :: x(:)
+    real(WP), allocatable       :: m(:)
+    real(WP), allocatable       :: P(:)
+    real(WP), allocatable       :: rho(:) 
+    real(WP), allocatable       :: T(:) 
+    real(WP), allocatable       :: Gamma_1(:)
+    real(WP), allocatable       :: nabla_ad(:)
+    real(WP), allocatable       :: delta(:)
+    real(WP), allocatable       :: V_2(:)
+    real(WP), allocatable       :: As(:)
+    real(WP), allocatable       :: U(:)
+    real(WP), allocatable       :: c_1(:)
+    real(WP), allocatable       :: Omega_rot(:)
+    type(evol_model_t), pointer :: em
 
-    if(data_format /= '') then
-       data_format_ = data_format
-    else
-       data_format_ = '(1P5E16.9)'
+    ! Open the FGONG-format file
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from FGONG file'
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(ml_p%file)
+110    format(3X,A,1X,A)
     endif
 
-    ! Read data from the FGONG-format file
-
-    if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from FGONG file', TRIM(file)
-100    format(A,1X,A)
-    endif
-
-    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+    open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
 
     ! Read the header
 
@@ -102,100 +98,110 @@ contains
 
     read(unit, *) n, iconst, ivar, ivers
 
-     if(check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Initial points :', n
-       write(OUTPUT_UNIT, 110) 'File version   :', ivers
-110    format(3X,A,1X,I0)
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'File version', ivers
+120    format(3X,A,1X,I0)
     endif
 
     ! Read the data
 
+    if (ml_p%data_format /= '') then
+       data_format = ml_p%data_format
+    else
+       if (ivers < 1000) then
+          data_format = '(1P5E16.9)'
+       else
+          data_format = '(1P,5(X,E26.18E3))'
+       endif
+    endif
+
     allocate(glob(iconst))
     allocate(var(ivar,n))
 
-    read(unit, data_format_) glob
+    read(unit, data_format) glob
 
-    read_loop : do i = 1,n
-       read(unit, data_format_) var(:,i)
+    read_loop : do i = 1, n
+       read(unit, data_format) var(:,i)
     end do read_loop
 
     close(unit)
 
-    ind = unique_indices(var(1,:))
+    var = var(:,n:1:-1)
 
-    if (SIZE(ind) < n) then
-
-       if(check_log_level('WARN')) then
-          write(OUTPUT_UNIT, 120) 'WARNING: Duplicate x-point(s) found, using innermost value(s)'
-120       format('!!',1X,A)
-       endif
-
-       n = SIZE(ind)
-
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 130) 'Read', n, 'points'
+130    format(3X,A,1X,I0,1X,A)
     endif
-
-    var = var(:,ind)
+    
+    ! Extract structure data
 
     M_star = glob(1)
     R_star = glob(2)
     L_star = glob(3)
 
-    r = var(1,:)
-    m = EXP(var(2,:))*M_star
+    x = var(1,:)/R_star
+
+    $if ($GFORTRAN_PR_69185)
+    allocate(m(n))
+    $endif
+
+    m = EXP(var(2,:))
     T = var(3,:)
-    p = var(4,:)
+    P = var(4,:)
     rho = var(5,:)
+
     Gamma_1 = var(10,:)
     nabla_ad = var(11,:)
     delta = var(12,:)
 
-    allocate(N2(n))
+    As = var(15,:)
 
-    where(r/R_star >= EPSILON(0._WP))
-       N2 = G_GRAVITY*m*var(15,:)/r**3
+    ! Snap grid points
+
+    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x, m)
+
+    ! Calculate dimensionless structure data
+
+    allocate(V_2(n))
+    allocate(U(n))
+    allocate(c_1(n))
+
+    where (x /= 0._WP)
+       V_2 = G_GRAVITY*(m*M_star)*rho/(P*x**3*R_star)
+       U = 4._WP*PI*rho*(x*R_star)**3/(m*M_star)
+       c_1 = x**3/m
     elsewhere
-       N2 = 0._WP
-    endwhere
+       V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
+       U = 3._WP
+       c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+    end where
 
-    if (r(1)/R_star < EPSILON(0._WP)) r(1) = 0._WP
-    if (m(1)/M_star < EPSILON(0._WP)) m(1) = 0._WP
+    allocate(Omega_rot(n))
 
-    if (m(1) == 0._WP .AND. r(1) /= 0._WP) then
-       r(1) = 0._WP
-       write(OUTPUT_UNIT, 130) 'Forcing central r == 0'
-130    format(3X,A)
-    elseif (r(1) == 0._WP .AND. m(1) /= 0._WP) then
-       m(1) = 0._WP
-       write(OUTPUT_UNIT, 130) 'Forcing central m == 0'
+    if (ml_p%uniform_rot) then
+       Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
+    else
+       Omega_rot = 0._WP
     endif
 
-    has_center = r(1) == 0._WP .AND. m(1) == 0._WP
+    ! Initialize the evol_model_t
 
-    if (check_log_level('INFO')) then
-       if (add_center) then
-          if (has_center) then
-             write(OUTPUT_UNIT, 130) 'No need to add central point'
-          else
-             write(OUTPUT_UNIT, 130) 'Adding central point'
-          endif
-       endif
-    endif
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, .FALSE., ml_p))
 
-    ! Initialize the model
+    call em%set_V_2(V_2)
+    call em%set_As(As)
+    call em%set_U(U)
+    call em%set_c_1(c_1)
 
-    ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
-                      N2, Gamma_1, nabla_ad, delta, SPREAD(0._WP, DIM=1, NCOPIES=n), &
-                      deriv_type, add_center=add_center .AND. .NOT. has_center)
+    call em%set_Gamma_1(Gamma_1)
+    call em%set_delta(delta)
+    call em%set_nabla_ad(nabla_ad)
 
-    ! Set up the grid
+    call em%set_Omega_rot(Omega_rot)
 
-    if (PRESENT(x)) then
-       if (add_center .AND. .NOT. has_center) then
-          x = [0._WP,r/R_star]
-       else
-          x = r/R_star
-       endif
-    endif
+    ! Return a pointer
+
+    ml => em
 
     ! Finish
 

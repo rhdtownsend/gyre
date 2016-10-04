@@ -2,6 +2,10 @@
 
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{natbib}
+
+\usepackage{textcomp,upquote}
+\usepackage{regexpatch}
 
 % Page size
 
@@ -22,761 +26,340 @@
 \setlength{\abovecaptionskip}{0pt}
 \setlength{\belowcaptionskip}{0pt} 
 
-% Macros
+% Fix quote typesetting
 
-\newcommand{\diff}{\ensuremath{\mathrm{d}}}
-\newcommand{\ii}{\ensuremath{\mathrm{i}}}
+\makeatletter
+\def\active@text@prime{\ifin@texttt\textquotesingle\else'\fi}
+\def\active@math@prime{^\bgroup\prim@s}
+\newif\ifin@texttt
 
-\newcommand{\Vg}{\ensuremath{\frac{V}{\Gamma_{1}}}}
-\newcommand{\As}{\ensuremath{A^{\ast}}}
+\regexpatchcmd{\pr@m@s}{\'}{\cA\'}{}{}
+\xapptocmd{\ttfamily}{\in@texttttrue}{}{}
 
-\newcommand{\nabad}{\ensuremath{\nabla_{\rm ad}}}
+\begingroup\lccode`\~=`\'
+\lowercase{\endgroup\protected\def~}{%
+  \ifmmode
+    \expandafter\active@math@prime
+  \else
+    \expandafter\active@text@prime
+  \fi}
+\AtBeginDocument{\catcode`\'=\active}
 
-\newcommand{\kapad}{\ensuremath{\kappa_{\rm ad}}}
-\newcommand{\kapS}{\ensuremath{\kappa_{S}}}
-\newcommand{\epsad}{\ensuremath{\epsilon_{\rm ad}}}
-\newcommand{\epsS}{\ensuremath{\epsilon_{S}}}
+\begingroup
+\obeylines\obeyspaces%
+\gdef\@resetactivechars{%
+\def^^M{\@activechar@info{EOL}\space}%
+\def {\@activechar@info{space}\space}%
+}%
+\endgroup
 
-\newcommand{\crad}{\ensuremath{c_{\rm rad}}}
-\newcommand{\cepsad}{\ensuremath{c_{\epsilon,{\rm ad}}}}
-\newcommand{\cepsS}{\ensuremath{c_{\epsilon,S}}}
-\newcommand{\cthm}{\ensuremath{c_{\rm thm}}}
-\newcommand{\ckap}{\ensuremath{c_{\rm kap}}}
+% Journals
 
-\newcommand{\Rstar}{\ensuremath{R_{\ast}}}
-\newcommand{\Mstar}{\ensuremath{M_{\ast}}}
-\newcommand{\Lrad}{\ensuremath{L_{\rm rad}}}
-\newcommand{\Lstar}{\ensuremath{L_{\ast}}}
+\newcommand{\actaa}{Act. Ast.}
+\newcommand{\apj}{ApJ}
+\newcommand{\apjs}{ApJS}
+\newcommand{\apjl}{ApJ}
+\newcommand{\apss}{Ap\&SS}
+\newcommand{\aap}{A\&A}
+\newcommand{\aaps}{A\&AS}
+\newcommand{\aapr}{A\&A~Rev.}
+\newcommand{\aj}{AJ}
+\newcommand{\mnras}{MNRAS}
+\newcommand{\araa}{ARAA}
+\newcommand{\pasp}{PASP}
+\newcommand{\pasa}{PASA}
+\newcommand{\spie}{SPIE}
+
+% Abbreviations
+
+\newcommand{\gyre}{GYRE}
+
+% Math symbols
+
+\newcommand{\diff}{\mathrm{d}}
+\newcommand{\ii}{\mathrm{i}}
+
+\newcommand{\omegac}{\omega_{\rm c}}
+
+\newcommand{\elle}{\ell_{\rm e}}
+\newcommand{\elli}{\ell_{\rm i}}
+
+\newcommand{\Vg}{\frac{V}{\Gamma_{1}}}
+\newcommand{\As}{A^{\ast}}
+
+\newcommand{\nabad}{\nabla_{\rm ad}}
+\newcommand{\dnabad}{\partial\nabad}
+
+\newcommand{\kapad}{\kappa_{\rm ad}}
+\newcommand{\kapS}{\kappa_{S}}
+\newcommand{\epsad}{\epsilon_{\rm ad}}
+\newcommand{\epsS}{\epsilon_{S}}
+
+\newcommand{\crad}{c_{\rm rad}}
+\newcommand{\dcrad}{\partial\crad}
+\newcommand{\cepsad}{c_{\epsilon,{\rm ad}}}
+\newcommand{\cepsS}{c_{\epsilon,S}}
+\newcommand{\cthm}{c_{\rm thm}}
+\newcommand{\cdif}{c_{\rm dif}}
+
+\newcommand{\agr}{\alpha_{\rm gr}}
+\newcommand{\ahf}{\alpha_{\rm hf}}
+
+\newcommand{\Rstar}{R_{\ast}}
+\newcommand{\Mstar}{M_{\ast}}
+\newcommand{\Lrad}{L_{\rm rad}}
+\newcommand{\Lstar}{L_{\ast}}
+
+% Main document
 
 \begin{document}
 
-%%% DZIEM %%%%
+\begin{center}
+  {\LARGE \textbf{\gyre\ Equations \& Variables}}
+\end{center}
 
-\section*{DZIEM Formulation}
+\section*{Preliminaries}
 
-\subsection*{Radial Adiabatic}
-
-\subsubsection*{Variables}
-
-\begin{align*}
-x     &= \frac{r}{\Rstar} \\
-y_{1} &= x^{2}\, \frac{\xi_{r}}{r} \\
-y_{2} &= x^{2}\, \frac{1}{gr} \left( \frac{p'}{\rho} \right) \\
-\end{align*}
-
-\subsubsection*{Differential Equations}
-
-\begin{align*}
-x \frac{\diff y_{1}}{\diff x} &=
-\left(\Vg - 1 \right) y_{1} 
-- \Vg y_{2} \\
-x \frac{\diff y_{2}}{\diff x} &=
-(c_{1} \omega^{2} + U - \As ) y_{1} +
-(3 - U + \As) y_{2}
-\end{align*}
-
-\subsubsection*{Jump Conditions}
-
-At a density discontinuity, $y_{1}$ is continuous, while
-
-\begin{align*}
-U^{\rm +} y_{2}^{+} - U^{-} y_{2}^{-} &= y_{1} (U^{+} - U^{-})
-\end{align*}
-
-\subsubsection*{Boundary Conditions}
-
+\gyre\ radial eigenfunctions are expressed in terms of a set of
+dimensionless variables $y_{i}(x)$ ($i=1,2,\ldots$), where $x\equiv
+r/R$ is the dimensionless radial coordinate. The equations governing
+these eigenfunctions depend on the underlying stellar structure, and
+on the dimensionless oscillation frequency in the co-rotating frame,
 \begin{equation*}
-\begin{aligned}
-y_{1} &= 0
-\end{aligned}
-\text{as}\ x \rightarrow 0
+  \omegac = \omega - m \Omega(x).
 \end{equation*}
+Here, $\Omega(x)$ is the rotation angular frequency, $m$ is the
+azimuthal order, and $\omega$ is the corresponding dimensionless
+frequency in an inertial frame.
 
+The equations also depend on the effective harmonic degree $\elle$. In
+the non-rotating limit, $\elle$ reduces to the ordinary spherical
+harmonic degree $\ell$. Within the traditional approximation of
+rotation (TAR), $\elle$ is obtained by solving
 \begin{equation*}
-\begin{aligned}
-y_{1} - y_{2} &= 0
-\end{aligned}
-\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
+  \elle(\elle+1) = \lambda(\ell,m;\nu),
 \end{equation*}
-
-%%
-
-\newpage
-
-\subsection*{Non-Radial Adiabatic}
-
-\subsubsection*{Variables}
-
-\begin{align*}
-x     &= \frac{r}{\Rstar} \\
-y_{1} &= x^{2-\ell}\, \frac{\xi_{r}}{r} \\
-y_{2} &= x^{2-\ell}\, \frac{1}{gr} \left( \frac{p'}{\rho} + \Phi' \right) \\
-y_{3} &= x^{2-\ell}\, \frac{\Phi'}{gr} \\
-y_{4} &= x^{2-\ell}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r} \\
-\end{align*}
-
-\subsubsection*{Differential Equations}
-
-\begin{align*}
-x \frac{\diff y_{1}}{\diff x} &=
-\left(\Vg - 1 - \ell \right) y_{1} +
-\left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - \Vg \right) y_{2} +
-\Vg y_{3} \\
-x \frac{\diff y_{2}}{\diff x} &=
-(c_{1} \omega^{2} - \As ) y_{1} +
-(3 - U + \As - \ell) y_{2} -
-\As y_{3} \\
-x \frac{\diff y_{3}}{\diff x} &=
-(3 - U - \ell) y_{3} +
-y_{4} \\
-x \frac{\diff y_{4}}{\diff x} &=
-\As U y_{1} +
-\Vg U y_{2} +
-\left[ \ell(\ell+1) - \Vg U \right] y_{3} -
-(U + \ell - 2) y_{4} \\
-\end{align*}
-
-\subsubsection*{Jump Conditions}
-
-At a density discontinuity, $y_{1}$ and $y_{3}$ are continuous, while
-
-\begin{align*}
-U^{+} y_{2}^{+} - U^{-} y_{2}^{-} &= (y_{1} + y_{3}) (U^{+} - U^{-}) \\
-y_{4}^{+} - y_{4}^{-} &= -y_{1} (U^{+} - U^{-}) \\
-\end{align*}
-
-\subsubsection*{Boundary Conditions}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
-\ell y_{3} - y_{4} &= 0
-\end{aligned}
-\right\}
-\text{as}\ x \rightarrow 0
-\end{equation*}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-y_{1} - y_{2} + y_{3} &= 0 \\
-U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0
-\end{aligned}
-\right\}
-\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
-\end{equation*}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
-y_{2} +
-\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
-(\ell + 1) y_{3} + y_{4} &= 0
-\end{aligned}
-\right\} 
-\text{as}\ x \rightarrow 1 \qquad \text{(Dziembowski)}
-\end{equation*}
-
-%%
-
-\newpage
-
-\subsection*{Non-Radial Non-Adiabatic}
-
-\subsubsection*{Variables}
-
-\begin{align*}
-x     &= \frac{r}{\Rstar} \\
-y_{1} &= x^{2-\ell}\, \frac{\xi_{r}}{r} \\
-y_{2} &= x^{2-\ell}\, \frac{1}{gr} \left( \frac{p'}{\rho} + \Phi' \right)\\
-y_{3} &= x^{2-\ell}\, \frac{\Phi'}{gr}\\
-y_{4} &= x^{2-\ell}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r}\\
-y_{5} &= x^{2-\ell}\, \frac{\delta S}{c_{p}}\\
-y_{6} &= x^{-1-\ell}\, \frac{\delta \Lrad}{\Lstar}
-\end{align*}
-
-\subsubsection*{Differential Equations}
-
-\begin{align*}
-x \frac{\diff y_{1}}{\diff x} &=
-\left(\Vg - 1 - \ell \right) y_{1} +
-\left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - \Vg \right) y_{2} +
-\Vg y_{3} +
-\delta y_{5} \\
-x \frac{\diff y_{2}}{\diff x} &=
-(c_{1} \omega^{2} - \As ) y_{1} +
-(3 - U + \As - \ell) y_{2} -
-\As y_{3} +
-\delta y_{5} \\
-x \frac{\diff y_{3}}{\diff x} &=
-(3 - U - \ell) y_{3} +
-y_{4} \\
-x \frac{\diff y_{4}}{\diff x} &=
-\As U y_{1} +
-\Vg U y_{2} +
-\left[ \ell(\ell+1) - \Vg U \right] y_{3} -
-(U + \ell - 2) y_{4}
-- \delta U y_{5} \\
-x \frac{\diff y_{5}}{\diff x} &=
-V \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \ckap \right] y_{1} + 
-V \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} (\nabad - \nabla) - \ckap \right] y_{2} + \mbox{} \\
-& 
-V \ckap y_{3} + 
-V \nabad y_{4} + 
-\left[ V \nabla (4 - \kapS) + 2 - \ell \right] y_{5} -
-\frac{V \nabla}{\crad} y_{6} \\
-x \frac{\diff y_{6}}{\diff x} &=
-\left[ \ell(\ell+1)\left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} +
-\left[ V \cepsad - \ell(\ell+1)\crad \left( \frac{\nabad}{\nabla} - \frac{3 + \crad'}{c_{1}\omega^{2}} \right) \right] y_{2} + \mbox{} \\
-&
-\left[ \ell(\ell+1) \frac{\nabad}{\nabla} \crad - V \cepsad \right] y_{3} +
-\left[ \cepsS - \frac{\ell(\ell+1)\crad}{\nabla V} - \ii \omega \cthm\right] y_{5} -
-\left[ 1 + \ell \right] y_{6}
-\end{align*}
-
-\subsubsection*{Boundary Conditions}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
-\ell y_{3} - y_{4} &= 0 \\
-y_{5} &= 0
-\end{aligned}
-\right\}
-\text{as}\ x \rightarrow 0
-\end{equation*}
-
-\subsubsection*{Outer}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-y_{1} - y_{2} + y_{3} &= 0 \\
-U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0 \\
-(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
-\end{aligned}
-\right\}
-\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
-\end{equation*}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
-y_{2} +
-\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
-(\ell + 1) y_{3} + y_{4} &= 0 \\
-(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
-\end{aligned}
-\right\}
-\text{as}\ x \rightarrow 1 \qquad \text{(Dziembowski)}
-\end{equation*}
-
-%%%% JCD FORMULATION %%%%
-
-\newpage
-
-\section*{JCD Formulation}
-
-\subsection*{Radial Adiabatic}
-
-\subsubsection*{Variables}
-
-\begin{align*}
-x     &= \frac{r}{\Rstar} \\
-y_{1} &= x^{2}\, \frac{\xi_{r}}{r} \\
-y_{2} &= x^{2}\, \frac{1}{\sigma^{2} r^{2}} \left( \frac{p'}{\rho} \right) \\
-\end{align*}
-
-\subsubsection*{Differential Equations}
-
-\begin{align*}
-x \frac{\diff y_{1}}{\diff x} &=
-\left(\Vg - 1 \right) y_{1} +
-- \Vg c_{1} \omega^{2} y_{2} \\
-x \frac{\diff y_{2}}{\diff x} &=
-\left(1 + \frac{U - \As}{c_{1} \omega^{2}} \right) y_{1} +
-\As y_{2}
-\end{align*}
-
-\subsubsection*{Jump Conditions}
-
-At a density discontinuity, $y_{1}$ is continuous, while
-
-\begin{align*}
-U^{\rm +} y_{2}^{+} - U^{-} y_{2}^{-} &= \frac{y_{1}}{c_{1}\omega^{2}} (U^{+} - U^{-})
-\end{align*}
-
-\subsubsection*{Boundary Conditions}
-
-\begin{equation*}
-\begin{aligned}
-y_{1} &= 0
-\end{aligned}
-\text{as}\ x \rightarrow 0
-\end{equation*}
-
-\begin{equation*}
-\begin{aligned}
-y_{1} - \frac{y_{2}}{c_{1} \omega^{2}} &= 0
-\end{aligned}
-\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
-\end{equation*}
-
-%%
-
-\newpage
-
-\subsection*{Non-Radial Adiabatic}
-
-\subsubsection*{Variables}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-x     &= \frac{r}{\Rstar} \\
-y_{1} &= x^{2-\ell}\, \frac{\xi_{r}}{r} \\
-y_{2} &= x^{2-\ell}\, \frac{\ell(\ell+1)}{r^{2} \sigma^{2}} \left( \frac{p'}{\rho} + \Phi' \right) \\
-y_{3} &= - x^{2-\ell}\, \frac{\Phi'}{gr} \\
-y_{4} &= - x^{2-\ell}\, r \frac{\diff}{\diff r} \left( \frac{\Phi'}{g r} \right) \\
-\end{aligned}
-\quad \right\} \ell \neq 0
-\end{equation*}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-x     &= \frac{r}{\Rstar} \\
-y_{1} &= x^{2}\, \frac{\xi_{r}}{r} \\
-y_{2} &= x^{2}\, \frac{1}{r^{2} \sigma^{2}} \left( \frac{p'}{\rho} \right) \\
-y_{3} &= - x^{2}\, \frac{\Phi'}{gr} \\
-y_{4} &= - x^{2}\, r \frac{\diff}{\diff r} \left( \frac{\Phi'}{g r} \right) \\
-\end{aligned}
-\quad \right\} \ell = 0
-\end{equation*}
-
-\subsubsection*{Differential Equations}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-x \frac{\diff y_{1}}{\diff x} &=
-\left(\Vg - 1 - \ell \right) y_{1} +
-\left(1 - \Vg \frac{c_{1} \omega^{2}}{\ell(\ell+1)} \right) y_{2} -
-\Vg y_{3} \\
-x \frac{\diff y_{2}}{\diff x} &=
-\left( \ell(\ell+1) - \frac{\ell(\ell+1)}{c_{1} \omega^{2}} \As \right) y_{1} +
-(\As - \ell) y_{2} +
-\frac{\ell(\ell+1)}{c_{1} \omega^{2}} \As y_{3} \\
-x \frac{\diff y_{3}}{\diff x} &=
-(2 - \ell) y_{3} + y_{4} \\
-x \frac{\diff y_{4}}{\diff x} &=
-- \As U y_{1} 
-- \Vg U \frac{c_{1} \omega^{2}}{\ell(\ell+1)} y_{2} +
-\left[ \ell(\ell+1) + U(\As - 2) \right] y_{3} +
-( 3 - 2U - \ell ) y_{4} \\
-\end{aligned}
-\quad \right\} \ell \neq 0
-\end{equation*}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-x \frac{\diff y_{1}}{\diff x} &=
-\left(\Vg - 1 \right) y_{1} +
-- \Vg c_{1} \omega^{2} y_{2} -
-\Vg y_{3} \\
-x \frac{\diff y_{2}}{\diff x} &=
-(1 - \frac{\As}{c_{1} \omega^{2}} ) y_{1} +
-\As y_{2} +
-\frac{\As}{c_{1} \omega^{2}} y_{3} \\
-x \frac{\diff y_{3}}{\diff x} &=
-2 y_{3} + y_{4} \\
-x \frac{\diff y_{4}}{\diff x} &=
-\As U y_{1} +
-\Vg U c_{1} \omega^{2} y_{2} +
-U (\As - 2) y_{3} +
-(3 - 2 U) y_{4} \\
-\end{aligned}
-\quad \right\} \ell = 0
-\end{equation*}
-
-\subsubsection*{Jump Conditions}
-
-At a density discontinuity, $y_{1}$ and $y_{3}$ are continuous, while
-
-\begin{equation*}
-\left.
-\begin{aligned}
-U^{+} y_{2}^{+} - U^{-} y_{2}^{-} &= \frac{\ell(\ell+1)}{c_{1}\omega^{2}}(y_{1} + y_{3}) (U^{+} - U^{-}) \\
-y_{4}^{+} - y_{4}^{-} &= -(y_{1}+y_{3}) (U^{+} - U^{-}) \\
-\end{aligned}
-\quad \right\} \ell \neq 0
-\end{equation*}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-U^{+} y_{2}^{+} - U^{-} y_{2}^{-} &= \frac{1}{c_{1}\omega^{2}}(y_{1} + y_{3}) (U^{+} - U^{-}) \\
-y_{4}^{+} - y_{4}^{-} &= -(y_{1}+y_{3}) (U^{+} - U^{-}) \\
-\end{aligned}
-\quad \right\} \ell = 0
-\end{equation*}
-
-\subsubsection*{Boundary Conditions}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
-\ell y_{3} - y_{4} &= 0
-\end{aligned}
-\right\}
-\text{as}\ x \rightarrow 0
-\end{equation*}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-y_{1} - y_{2} + y_{3} &= 0 \\
-U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0
-\end{aligned}
-\right\}
-\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
-\end{equation*}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
-y_{2} +
-\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
-(\ell + 1) y_{3} + y_{4} &= 0
-\end{aligned}
-\right\} 
-\text{as}\ x \rightarrow 1 \qquad \text{(Dziembowski)}
-\end{equation*}
-
-%%
-
-\newpage
-
-\subsection*{Non-Radial Non-Adiabatic}
-
-\subsubsection*{Variables}
-
-\begin{align*}
-x     &= \frac{r}{\Rstar} \\
-y_{1} &= x^{2-\ell}\, \frac{\xi_{r}}{r} \\
-y_{2} &= x^{2-\ell}\, \frac{1}{gr} \left( \frac{p'}{\rho} + \Phi' \right)\\
-y_{3} &= x^{2-\ell}\, \frac{\Phi'}{gr}\\
-y_{4} &= x^{2-\ell}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r}\\
-y_{5} &= x^{2-\ell}\, \frac{\delta S}{c_{p}}\\
-y_{6} &= x^{-1-\ell}\, \frac{\delta \Lrad}{\Lstar}
-\end{align*}
-
-\subsubsection*{Differential Equations}
-
-\begin{align*}
-x \frac{\diff y_{1}}{\diff x} &=
-\left(\Vg - 1 - \ell \right) y_{1} +
-\left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - \Vg \right) y_{2} +
-\Vg y_{3} +
-\delta y_{5} \\
-x \frac{\diff y_{2}}{\diff x} &=
-(c_{1} \omega^{2} - \As ) y_{1} +
-(3 - U + \As - \ell) y_{2} -
-\As y_{3} +
-\delta y_{5} \\
-x \frac{\diff y_{3}}{\diff x} &=
-(3 - U - \ell) y_{3} +
-y_{4} \\
-x \frac{\diff y_{4}}{\diff x} &=
-\As U y_{1} +
-\Vg U y_{2} +
-\left[ \ell(\ell+1) - \Vg U \right] y_{3} -
-(U + \ell - 2) y_{4}
-- \delta U y_{5} \\
-x \frac{\diff y_{5}}{\diff x} &=
-V \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \ckap \right] y_{1} + 
-V \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} (\nabad - \nabla) - \ckap \right] y_{2} + \mbox{} \\
-& 
-V \ckap y_{3} + 
-V \nabad y_{4} + 
-\left[ V \nabla (4 - \kapS) + 2 - \ell \right] y_{5} -
-\frac{V \nabla}{\crad} y_{6} \\
-x \frac{\diff y_{6}}{\diff x} &=
-\left[ \ell(\ell+1)\left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} +
-\left[ V \cepsad - \ell(\ell+1)\crad \left( \frac{\nabad}{\nabla} - \frac{3 + \crad'}{c_{1}\omega^{2}} \right) \right] y_{2} + \mbox{} \\
-&
-\left[ \ell(\ell+1) \frac{\nabad}{\nabla} \crad - V \cepsad \right] y_{3} +
-\left[ \cepsS - \frac{\ell(\ell+1)\crad}{\nabla V} - \ii \omega \cthm\right] y_{5} -
-\left[ 1 + \ell \right] y_{6}
-\end{align*}
-
-\subsubsection*{Boundary Conditions}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
-\ell y_{3} - y_{4} &= 0 \\
-y_{5} &= 0
-\end{aligned}
-\right\}
-\text{as}\ x \rightarrow 0
-\end{equation*}
-
-\subsubsection*{Outer}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-y_{1} - y_{2} + y_{3} &= 0 \\
-U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0 \\
-(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
-\end{aligned}
-\right\}
-\text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
-\end{equation*}
-
-\begin{equation*}
-\left.
-\begin{aligned}
-\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
-y_{2} +
-\left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
-(\ell + 1) y_{3} + y_{4} &= 0 \\
-(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} - 4 \nabad V y_{3} + 4 y_{5} - y_{6} &= 0
-\end{aligned}
-\right\}
-\text{as}\ x \rightarrow 1 \qquad \text{(Dziembowski)}
-\end{equation*}
-
-%%%% LAGP FORMULATION %%%%
-
-\newpage
-
-\section*{LAGP Formulation}
-
-\subsection*{Radial Adiabatic}
-
-\subsubsection*{Variables}
-
-\begin{align*}
-x     &= \frac{r}{\Rstar} \\
-y_{1} &= x^{2}\, \frac{\xi_{r}}{r} \\
-y_{2} &=         \frac{\delta p}{p} \\
-\end{align*}
-
-\subsubsection*{Differential Equations}
-
-\begin{align*}
-x \frac{\diff y_{1}}{\diff x} &=
-- y_{1} - \frac{x^{2}}{\Gamma_{1}} y_{2} \\
-x \frac{\diff y_{2}}{\diff x} &=
-\frac{V}{x^{2}} \left(4 + c_{1} \omega^{2} \right) y_{1} +
-V y_{2}
-\end{align*}
-
-\subsubsection*{Jump Conditions}
-
-At a density discontinuity, $y_{1}$ and $y_{2}$ are continuous.
-
-\subsubsection*{Boundary Conditions}
-
-%% \begin{equation*}
-%% \begin{aligned}
-%% y_{1} &= 0
-%% \end{aligned}
-%% \text{as}\ x \rightarrow 0
-%% \end{equation*}
-
-%% \begin{equation*}
-%% \begin{aligned}
-%% y_{1} - \frac{y_{2}}{c_{1} \omega^{2}} &= 0
-%% \end{aligned}
-%% \text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
-%% \end{equation*}
-
-%%
-
-\newpage
-
-\subsection*{Non-Radial Adiabatic}
-
-\subsubsection*{Variables}
-
-\begin{align*}
-x     &= \frac{r}{\Rstar} \\
-y_{1} &= x^{2-\ell}\, \frac{\xi_{r}}{r} \\
-y_{2} &= x^{ -\ell}\, \frac{\delta p}{p} \\
-y_{3} &= x^{2-\ell}\, \frac{\Phi'}{gr} \\
-y_{4} &= x^{2-\ell}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r} \\
-\end{align*}
-
-\subsubsection*{Differential Equations}
-
-\begin{align*}
-x \frac{\diff y_{1}}{\diff x} &=
-\left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - 1 - \ell \right) y_{1} +
-\frac{x^{2}}{V} \left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - \Vg \right) y_{2} +
-\frac{\ell(\ell+1)}{c_{1} \omega^{2}} \\
-x \frac{\diff y_{2}}{\diff x} &=
--\frac{V}{x^{2}} \left( \frac{\ell(\ell+1)}{c_{1} \omega^{2}} + U - 4 - c_{1} \omega^{2} \right) y_{1} -
-\left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - V + l\right) y_{2} -
-\frac{V}{x^{2}} \frac{\ell(\ell+1)}{c_{1} \omega^{2}} y_{3} -
-\frac{V}{x^{2}} y_{4} \\
-x \frac{\diff y_{3}}{\diff x} &=
-(3 - U - \ell) y_{3} +
-y_{4} \\
-x \frac{\diff y_{4}}{\diff x} &=
-- D U y_{1} +
-\frac{x^{2}}{\Gamma_{1}} U y_{2} +
-\ell(\ell+1) y_{3} -
-(U + \ell - 2) y_{4} \\
-\end{align*}
-
-\subsubsection*{Jump Conditions}
-
-At a density discontinuity, $y_{1}-y_{3}$ are continuous, while
-
-\begin{equation*}
-\left.
-\begin{aligned}
-U^{+} y_{2}^{+} - U^{-} y_{2}^{-} &= \frac{1}{c_{1}\omega^{2}}(y_{1} + y_{3}) (U^{+} - U^{-}) \\
-y_{4}^{+} - y_{4}^{-} &= -(y_{1}+y_{3}) (U^{+} - U^{-}) \\
-\end{aligned}
-\quad \right\} \ell = 0
-\end{equation*}
-
-(NEEDS TO BE CHECKED)
-
-%% \subsubsection*{Boundary Conditions}
-
-%% \begin{equation*}
-%% \left.
-%% \begin{aligned}
-%% c_{1} \omega^{2} y_{1} - \ell y_{2} &= 0 \\
-%% \ell y_{3} - y_{4} &= 0
-%% \end{aligned}
-%% \right\}
-%% \text{as}\ x \rightarrow 0
-%% \end{equation*}
-
-%% \begin{equation*}
-%% \left.
-%% \begin{aligned}
-%% y_{1} - y_{2} + y_{3} &= 0 \\
-%% U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0
-%% \end{aligned}
-%% \right\}
-%% \text{as}\ x \rightarrow 1 \qquad \text{(Zero)}
-%% \end{equation*}
-
-%% \begin{equation*}
-%% \left.
-%% \begin{aligned}
-%% \left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - 4 - \omega^{2} \right] \right\} y_{1} -
-%% y_{2} +
-%% \left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{\omega^{2}} - \ell - 1 \right] \right\} y_{3} &= 0 \\
-%% (\ell + 1) y_{3} + y_{4} &= 0
-%% \end{aligned}
-%% \right\} 
-%% \text{as}\ x \rightarrow 1 \qquad \text{(Dziembowski)}
-%% \end{equation*}
-
-%%
-
-\newpage
-
-\subsection*{Non-Radial Non-Adiabatic}
-
-\subsubsection*{Variables}
-
-\begin{align*}
-x     &= \frac{r}{\Rstar} \\
-y_{1} &= x^{2-\ell}\, \frac{\xi_{r}}{r} \\
-y_{2} &= x^{ -\ell}\, \frac{\delta p}{p} \\
-y_{3} &= x^{2-\ell}\, \frac{\Phi'}{gr} \\
-y_{4} &= x^{2-\ell}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r} \\
-y_{5} &= x^{2-\ell}\, \frac{\delta S}{c_{p}}\\
-y_{6} &= x^{-1-\ell}\, \frac{\delta \Lrad}{\Lstar}
-\end{align*}
-
-\subsubsection*{Differential Equations}
-
-\begin{align*}
-x \frac{\diff y_{1}}{\diff x} &=
-\left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - 1 - \ell \right) y_{1} +
-\frac{x^{2}}{V} \left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - \Vg \right) y_{2} +
-\frac{\ell(\ell+1)}{c_{1} \omega^{2}} + \delta y_{5} \\
-x \frac{\diff y_{2}}{\diff x} &=
--\frac{V}{x^{2}} \left( \frac{\ell(\ell+1)}{c_{1} \omega^{2}} + U - 4 - c_{1} \omega^{2} \right) y_{1} -
-\left(\frac{\ell(\ell+1)}{c_{1} \omega^{2}} - V + l\right) y_{2} -
-\frac{V}{x^{2}} \frac{\ell(\ell+1)}{c_{1} \omega^{2}} y_{3} -
-\frac{V}{x^{2}} y_{4} \\
-x \frac{\diff y_{3}}{\diff x} &=
-(3 - U - \ell) y_{3} +
-y_{4} \\
-x \frac{\diff y_{4}}{\diff x} &=
-- D U y_{1} +
-\frac{x^{2}}{\Gamma_{1}} U y_{2} +
-\ell(\ell+1) y_{3} -
-(U + \ell - 2) y_{4} - \delta U y_{5} \\
-x \frac{\diff y_{5}}{\diff x} &=
-V \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} (\nabad - \nabla) + \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) \right] y_{1} + 
-x^{2} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} (\nabad - \nabla) - \ckap \right] y_{2} + \mbox{} \\
-& 
-V \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} (\nabad - \nabla) \right] y_{3} + 
-V \nabad y_{4} + 
-\left[ V \nabla (4 - \kapS) + 2 - \ell \right] y_{5} -
-\frac{V \nabla}{\crad} y_{6} \\
-x \frac{\diff y_{6}}{\diff x} &=
-\left[ \ell(\ell+1) \crad \left( \frac{3 + \crad'}{c_{1}\omega^{2}} - 1 \right) \right] y_{1} +
-\frac{x^{2}}{V} \left[ V \cepsad - \ell(\ell+1) \crad \left( \frac{\nabad}{\nabla} - \frac{3 + \crad'}{c_{1}\omega^{2}} \right) \right] y_{2} + \mbox{} \\
-&
-\left[ \ell(\ell+1) \crad \frac{3 + \crad'}{c_{1}\omega^{2}} \right] y_{3} +
-\left[ \cepsS - \frac{\ell(\ell+1)\crad}{\nabla V} - \ii \omega \cthm\right] y_{5} -
-\left[ 1 + \ell \right] y_{6}
-\end{align*}
-
-%%%% STRUCTURE COEFFS %%%%
-
-\newpage
+where $\lambda(\ell,m;\nu)$ is the eigenvalue of Laplace's tidal
+equation \citep[see, e.g.,][]{Townsend:2003aa} for the indicated
+$\ell$ and $m$, and for spin parameter $\nu \equiv 2
+\Omega/\omegac$. Due to its dependence on $\Omega$ (both directly, and
+through $\omegac$), $\elle$ varies with position in a differentially
+rotating star. The value of $\elle$ at the inner boundary is denoted
+$\elli$, and the dependent variables $y_{i}$ are scaled using $\elli$
+so that they approach constant values at this boundary.
 
 \section*{Structure Coefficients}
+
+The properties of the underlying stellar structure are described by a
+set of dimensionless structure coefficients, which largely follow the
+definitions in \citet{Unno:1989aa}.
 
 \subsection*{Mechanical}
 
 \begin{gather*}
-V = -\frac{\diff \ln p}{\diff \ln r} \qquad
-\As = \frac{1}{\Gamma_{1}} \frac{\diff \ln p}{\diff \ln r} - \frac{\diff \ln \rho}{\diff \ln r} \qquad
+V = -\frac{\diff \ln P}{\diff \ln r} \qquad
+\As = \frac{1}{\Gamma_{1}} \frac{\diff \ln P}{\diff \ln r} - \frac{\diff \ln \rho}{\diff \ln r} \qquad
 U = \frac{\diff \ln M_{r}}{\diff \ln r} \qquad
-D = \frac{\diff \ln \rho}{\diff \ln r} \\
 c_1 = \frac{r^{3}}{\Rstar^{3}} \frac{\Mstar}{M_{r}} \qquad
-\Gamma_{1} = \left( \frac{\partial \ln p}{\partial \ln \rho} \right)_{S}
+\Gamma_{1} = \left( \frac{\partial \ln P}{\partial \ln \rho} \right)_{S}
 \end{gather*}
 
 \subsection*{Thermal}
 
 \begin{gather*}
-\nabla = \frac{\diff \ln T}{\diff \ln p} \qquad
-\nabad = \left( \frac{\partial \ln T}{\partial \ln p} \right)_{S} \qquad
-\delta = - \left( \frac{\partial \ln \rho}{\partial \ln T} \right)_{p} \qquad \\
+\nabla = \frac{\diff \ln T}{\diff \ln P} \qquad
+\nabad = \left( \frac{\partial \ln T}{\partial \ln P} \right)_{S} \qquad
+\partial\nabad = \frac{\diff \ln \nabad}{\diff \ln r} \qquad
+\delta = - \left( \frac{\partial \ln \rho}{\partial \ln T} \right)_{P} \qquad \\
 \crad = x^{-3} \frac{\Lrad}{\Lstar} \qquad
-\crad' = \frac{\diff \ln \crad}{\diff \ln r} \\
+\partial\crad = \frac{\diff \ln \crad}{\diff \ln r} \\
 \cepsad = x^{-3} \frac{4\pi r^{3} \epsad \rho}{\Lstar} \qquad
 \cepsS = x^{-3} \frac{4\pi r^{3} \epsS \rho}{\Lstar} \qquad
 \cthm = x^{-3} \frac{4\pi r^{3} c_{p} T \rho}{\Lstar} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \\
-\ckap = \left( \kapad - 4 \nabad \right) V \nabla + \nabad \left( \frac{\diff \ln \nabad}{\diff \ln r} + V \right) \\
-\kapad = \left( \frac{\partial \ln \kappa}{\partial \ln p} \right)_{S} \qquad
-\kapS = c_{p} T \left( \frac{\partial \ln \kappa}{\partial S} \right)_{p} \\
-\epsad = \left( \frac{\partial \epsilon}{\partial \ln p} \right)_{S} \qquad
-\epsS = c_{p} T \left( \frac{\partial \epsilon}{\partial S} \right)_{p}
+\cdif = \left( \kapad - 4 \nabad \right) V \nabla + \nabad V \\
+\kapad = \left( \frac{\partial \ln \kappa}{\partial \ln P} \right)_{S} \qquad
+\kapS = c_{p} \left( \frac{\partial \ln \kappa}{\partial S} \right)_{P} \\
+\epsad = \left( \frac{\partial \epsilon}{\partial \ln P} \right)_{S} \qquad
+\epsS = c_{p} \left( \frac{\partial \epsilon}{\partial S} \right)_{P}
 \end{gather*}
+
+%%
+
+\section*{Dimensionless Variables}
+
+For non-radial non-adiabatic calculations, \gyre\ uses a set of
+six dimensionless variables:
+\begin{align*}
+x     &= \frac{r}{\Rstar}, \\
+y_{1} &= x^{2-\elli}\, \frac{\xi_{r}}{r}, \\
+y_{2} &= x^{2-\elli}\, \frac{P'}{\rho g r}, \\
+y_{3} &= x^{2-\elli}\, \frac{\Phi'}{gr}, \\
+y_{4} &= x^{2-\elli}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r}, \\
+y_{5} &= x^{2-\elli}\, \frac{\delta S}{c_{p}}, \\
+y_{6} &= x^{-1-\elli}\, \frac{\delta \Lrad}{\Lstar}.
+\end{align*}
+Here, $\xi_{r}$ is the radial displacement perturbation, primes
+indicate Eulerian perturbations, and $\delta$ denotes the Legrangian
+perturbation. As discussed previously, the $x^{\ldots}$ scaling of
+the variables ensures that they approach constant values at the
+inner boundary.
+
+For non-radial adiabatic calculations, only the first four variables
+are used; and for radial adiabatic calculations with
+\texttt{reduce\_order=.TRUE.} , only the first two.
+
+%%
+
+\section*{Differential Equations}
+
+For non-radial non-adiabatic calculations, \gyre\ solves a system of
+six coupled, first-order differential equations:
+\begin{align*}
+x \frac{\diff y_{1}}{\diff x} &=
+\left(\Vg - 1 - \elli \right) y_{1} +
+\left(\frac{\lambda}{c_{1} \omega^{2}} - \Vg \right) y_{2} +
+\agr \frac{\lambda}{c_{1} \omega^{2}} y_{3} +
+\delta y_{5}, \\
+x \frac{\diff y_{2}}{\diff x} &=
+(c_{1} \omega^{2} - \As ) y_{1} +
+(3 - U + \As - \elli) y_{2} -
+\agr y_{4} +
+\delta y_{5}, \\
+x \frac{\diff y_{3}}{\diff x} &=
+\agr (3 - U - \elli) y_{3} +
+\agr y_{4}, \\
+x \frac{\diff y_{4}}{\diff x} &=
+\agr \As U y_{1} +
+\agr \Vg U y_{2} +
+\agr \lambda y_{3} -
+\agr (U + \elli - 2) y_{4}
+- \agr \delta U y_{5}, \\
+x \frac{\diff y_{5}}{\diff x} &=
+V \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \cdif + \nabad \dnabad \right] y_{1} + \mbox{} \\
+&
+V \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) - \cdif - \nabad \dnabad \right] y_{2} +
+\agr V \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) \right] y_{3} + \agr V \nabad y_{4} + \mbox{} \\
+& 
+\left[ V \nabla (4 - \kapS) + 2 - \elli \right] y_{5} -
+\frac{V \nabla}{\crad} y_{6}, \\
+x \frac{\diff y_{6}}{\diff x} &=
+\left[ \ahf \lambda\left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} +
+\left[ V \cepsad - \lambda \crad \left( \ahf \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omega^{2}} \right) \right] y_{2} + \mbox{} \\
+&
+\agr \left[ \lambda \crad \frac{3 + \dcrad}{c_{1}\omega^{2}} \right] y_{3} +
+\agr \left[ \cepsS - \ahf \frac{\lambda\crad}{\nabla V} + \ii \omega \cthm\right] y_{5} -
+\left[ 1 + \elli \right] y_{6}.
+\end{align*}
+The $\agr$ coefficient is set to zero in the \citet{Cowling:1941aa}
+approximation (\texttt{cowling\_approx=.TRUE.}), and to one
+otherwise. Likewise, the $\ahf$ is set to zero in the NARF
+approximation (\texttt{narf\_approx=.TRUE.}; see
+  \citealp{Townsend:2005ab}), and to one otherwise.
+
+For non-radial adiabatic calculations, the last two equations are set
+aside and the $y_{5}$ terms dropped from the first four equations. For
+radial adiabatic calculations with \texttt{reduce\_order=.TRUE.}, the
+last four equations are set aside and the first two replaced by
+\begin{align*}
+x \frac{\diff y_{1}}{\diff x} &=
+\left(\Vg - 1 \right) y_{1} 
+- \Vg y_{2}, \\
+x \frac{\diff y_{2}}{\diff x} &=
+(c_{1} \omega^{2} + U - \As ) y_{1} +
+(3 - U + \As) y_{2}.
+\end{align*}
+
+\section*{Boundary Conditions}
+
+\subsection*{Inner Boundary}
+
+When \texttt{inner\_bound='REGULAR'}, \gyre\ applies
+regularity-enforcing conditions at the inner boundary:
+\begin{align*}
+c_{1} \omega^{2} y_{1} - \ell y_{2} - \agr y_{3} &= 0, \\
+\agr \ell y_{3} - (2\agr - 1) y_{4} &= 0, \\
+y_{5} &= 0.
+\end{align*}
+When \texttt{inner\_bound='ZERO'}, the first and second conditions are replaced with zero radial displacement conditions,
+\begin{align*}
+y_{1} &= 0, \\
+y_{4} &= 0.
+\end{align*}
+
+\subsection*{Outer Boundary}
+ 
+When \texttt{outer\_bound='ZERO'}, \gyre\ applies zero surface
+pressure conditions at the outer boundary:
+\begin{align*}
+y_{1} - y_{2} &= 0 \\
+\agr U y_{1} + (\agr \elle + 1) y_{3} + \agr y_{4} &= 0 \\
+(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} + 4 y_{5} - y_{6} &= 0
+\end{align*}
+When \texttt{outer\_bound='DZIEM'}, the first condition is replaced by
+the \citet{Dziembowski:1971aa} outer mechanical boundary condition,
+\begin{equation*}
+\left\{ 1 + V^{-1} \left[ \frac{\lambda}{c_{1} \omega^{2}} - 4 - c_{1} \omega^{2} \right] \right\} y_{1} -
+y_{2} = 0.
+\end{equation*}
+When \texttt{outer\_bound='UNNO'} or \texttt{outer\_bound='JCD'}, the
+first condition is replaced by the (possibly-leaky) outer mechanical
+boundary conditions described by \citet{Unno:1989aa} and
+\citet{Christensen-Dalsgaard:2008ab}, respectively.
+  
+\section*{Jump Conditions}
+
+Across density discontinuities, \gyre\ enforces conservation of mass,
+momentum and energy by applying the jump conditions
+\begin{align*}
+U^{+} y_{2}^{+} - U^{-} y_{2}^{-} &= y_{1} (U^{+} - U^{-}) \\
+y_{4}^{+} - y_{4}^{-} &= -y_{1} (U^{+} - U^{-}) \\
+y_{5}^{+} - y_{5}^{-} &= - V^{+} \nabad^{+} (y_{2}^{+} - y_{1}) +
+V^{-} \nabad^{-} (y_{2}^{-} - y_{1})
+\end{align*}
+Here, + (-) superscripts indicate quantities evaluated on the inner
+(outer) side of the discontinuity. $y_{1}$, $y_{3}$ and $y_{6}$ remain
+continuous across discontinuites, and therefore don't need these
+superscripts.
+
+\section*{Alternative Variable Sets}
+
+\gyre\ offers the option to use different sets of dimensionless
+variables, instead of the canonical set defined above. When
+\texttt{variables\_set='DZIEM'}, \gyre\ uses a set based on the
+formulation by \citet{Dziembowski:1971aa}:
+\begin{align*}
+y_{1} &= x^{2-\elli}\, \frac{\xi_{r}}{r}, \\
+y_{2} &= x^{2-\elli}\, \frac{1}{g r} \left( \frac{P'}{\rho} + \Phi' \right), \\
+y_{3} &= x^{2-\elli}\, \frac{\Phi'}{gr}, \\
+y_{4} &= x^{2-\elli}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r},
+\end{align*}
+with $y_{5}$ and $y_{6}$ defined as before. When
+\texttt{variables\_set='JCD'}, \gyre\ uses a set based on the
+formulation in the ADIPLS code \citep{Christensen-Dalsgaard:2008ab}:
+\begin{align*}
+y_{1} &= x^{2-\elli}\, \frac{\xi_{r}}{r}, \\
+y_{2} &= x^{2-\elli}\, \frac{\lambda}{r^{2} \sigma^{2}} \left( \frac{P'}{\rho} + \Phi' \right), \\
+y_{3} &= - x^{2-\elli}\, \frac{\Phi'}{gr}, \\
+y_{4} &= - x^{2-\elli}\, r \frac{\diff}{\diff r} \left( \frac{\Phi'}{g r} \right),
+\end{align*}
+for non-radial calculations, while
+\begin{align*}
+y_{1} &= x^{2}\, \frac{\xi_{r}}{r}, \\
+y_{2} &= x^{2}\, \frac{1}{r^{2} \sigma^{2}} \left( \frac{P'}{\rho} \right), \\
+y_{3} &= - x^{2}\, \frac{\Phi'}{gr}, \\
+y_{4} &= - x^{2}\, r \frac{\diff}{\diff r} \left( \frac{\Phi'}{g r} \right),
+\end{align*}
+in the radial case when \texttt{reduce\_order=.FALSE.}. When
+\texttt{variables\_set='LAGP'}, \gyre\ uses a set which replaces the
+Eulerian pressure perturbation with the Lagrangian one:
+\begin{align*}
+y_{1} &= x^{2-\elli}\, \frac{\xi_{r}}{r}, \\
+y_{2} &= x^{ -\elli}\, \frac{\delta P}{P}, \\
+y_{3} &= x^{2-\elli}\, \frac{\Phi'}{gr}, \\
+y_{4} &= x^{2-\elli}\, \frac{1}{g} \frac{\diff \Phi'}{\diff r}.
+\end{align*}
+
+\bibliographystyle{gyre}
+\bibliography{equations}
 
 \end{document}

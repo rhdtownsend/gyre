@@ -1,7 +1,7 @@
 ! Module   : gyre_hom_model
-! Purpose  : homogeneous compressible model
+! Purpose  : stellar homogeneous compressible model
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,8 +24,13 @@ module gyre_hom_model
   use core_kinds
   use core_parallel
 
+  use gyre_grid
+  use gyre_grid_factory
+  use gyre_grid_weights
   use gyre_model
-  use gyre_cocache
+  use gyre_model_par
+  use gyre_model_util
+  use gyre_point
 
   use ISO_FORTRAN_ENV
 
@@ -41,36 +46,37 @@ module gyre_hom_model
     procedure :: ${NAME}_v_
   $endsub
 
-  type, extends(model_t) :: hom_model_t
+  type, extends (model_t) :: hom_model_t
      private
-     real(WP)         :: dt_Gamma_1
-     real(WP), public :: Omega_uni
-     logical, public  :: uniform_rot
+     type(grid_t) :: gr
+     real(WP)     :: Gamma_1_
+     real(WP)     :: Omega_rot_
    contains
      private
      $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
-     $PROC_DECL(D)
+     $PROC_DECL(dU)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
-     $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
+     $PROC_DECL(nabla_ad)
+     $PROC_DECL(dnabla_ad)
+     $PROC_DECL(nabla)
+     $PROC_DECL(beta_rad)
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_thm)
      $PROC_DECL(c_dif)
      $PROC_DECL(c_eps_ad)
      $PROC_DECL(c_eps_S)
-     $PROC_DECL(nabla)
-     $PROC_DECL(kappa_ad)
-     $PROC_DECL(kappa_S)
-     $PROC_DECL(tau_thm)
+     $PROC_DECL(kap_ad)
+     $PROC_DECL(kap_S)
      $PROC_DECL(Omega_rot)
-     procedure, public :: is_zero => is_zero_
-     procedure, public :: attach_cache => attach_cache_
-     procedure, public :: detach_cache => detach_cache_
-     procedure, public :: fill_cache => fill_cache_
+     $PROC_DECL(dOmega_rot)
+     procedure, public :: grid
+     procedure, public :: vacuum
+     procedure, public :: nonad_cap
   end type hom_model_t
 
   ! Interfaces
@@ -79,37 +85,45 @@ module gyre_hom_model
      module procedure hom_model_t_
   end interface hom_model_t
 
-  $if ($MPI)
-  interface bcast
-     module procedure bcast_
-  end interface bcast
-  $endif
-
   ! Access specifiers
 
   private
 
   public :: hom_model_t
-  $if ($MPI)
-  public :: bcast
-  $endif
 
   ! Procedures
 
 contains
 
-  function hom_model_t_ (Gamma_1) result (ml)
+  function hom_model_t_ (ml_p) result (ml)
 
-    real(WP), intent(in) :: Gamma_1
-    type(hom_model_t)    :: ml
+    type(model_par_t), intent(in) :: ml_p
+    type(hom_model_t)             :: ml
+
+    real(WP), allocatable :: w(:)
 
     ! Construct the hom_model_t
 
-    ml%dt_Gamma_1 = Gamma_1
-    ml%Omega_uni = 0._WP
+    select case (ml_p%grid_type)
+    case ('UNI')
+       w = uni_weights(ml_p%n)
+    case ('GEO')
+       w = geo_weights(ml_p%n, ml_p%s)
+    case ('LOG')
+       w = log_weights(ml_p%n, ml_p%s)
+    case default
+       $ABORT(Invalid grid_type)
+    end select
 
-    ml%uniform_rot = .FALSE.
+    ml%gr = grid_t(w, ml_p%x_i, ml_p%x_o)
 
+    ml%Gamma_1_ = ml_p%Gamma_1
+
+    if (ml_p%uniform_rot) then
+       ml%Omega_rot_ = uniform_Omega_rot(ml_p)
+    else
+       ml%Omega_rot_ = 0._WP
+    endif
 
     ! Finish
 
@@ -117,21 +131,19 @@ contains
 
   end function hom_model_t_
 
-!****
+  !****
 
-  function V_2_1_ (this, x) result (V_2)
+  function V_2_1_ (this, pt) result (V_2)
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: V_2
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate V_2
 
-    if (x /= 1. _WP) then
-       V_2 = 2._WP/(1._WP - x**2)
-    else
-       V_2 = 2._WP/TINY(0._WP)
-    endif
+    V_2 = 2._WP/(1._WP - pt%x**2)
 
     ! Finish
 
@@ -139,39 +151,19 @@ contains
 
   end function V_2_1_
 
-!****
-  
-  function V_2_v_ (this, x) result (V_2)
+  !****
+
+  function As_1_ (this, pt) result (As)
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: V_2(SIZE(x))
-
-    integer :: i
-
-    ! Calculate V_2
-
-    x_loop : do i = 1,SIZE(x)
-       V_2(i) = this%V_2(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function V_2_v_
-
-!****
-
-  function As_1_ (this, x) result (As)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: As
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate As
 
-    As = -this%V_2(x)*x**2/this%dt_Gamma_1
+    As = -this%V_2(pt)*pt%x**2/this%Gamma_1_
 
     ! Finish
 
@@ -179,35 +171,15 @@ contains
 
   end function As_1_
 
-!****
-  
-  function As_v_ (this, x) result (As)
+  !****
+
+  function U_1_ (this, pt) result (U)
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: As(SIZE(x))
-
-    integer :: i
-
-    ! Calculate As
-
-    x_loop : do i = 1,SIZE(x)
-       As(i) = this%As(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function As_v_
-
-!****
-
-  function U_1_ (this, x) result (U)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: U
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate U
 
@@ -219,75 +191,35 @@ contains
 
   end function U_1_
 
-!****
-  
-  function U_v_ (this, x) result (U)
+  !****
+
+  function dU_1_ (this, pt) result (dU)
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: U(SIZE(x))
+    type(point_t), intent(in)      :: pt
+    real(WP)                       :: dU
 
-    integer :: i
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
-    ! Calculate U
+    ! Calculate dlnU/dlnx
 
-    x_loop : do i = 1,SIZE(x)
-       U(i) = this%U(x(i))
-    end do x_loop
+    dU = 0._WP
 
     ! Finish
 
     return
 
-  end function U_v_
+  end function dU_1_
 
-!****
+  !****
 
-  function D_1_ (this, x) result (D)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: D
-
-    ! Calculate D = dlnrho/dlnx
-
-    D = 0._WP
-
-    ! Finish
-
-    return
-
-  end function D_1_
-
-!****
-  
-  function D_v_ (this, x) result (D)
+  function c_1_1_ (this, pt) result (c_1)
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: D(SIZE(x))
-
-    integer :: i
-
-    ! Calculate D = dlnrho/dlnx
-
-    x_loop : do i = 1,SIZE(x)
-       D(i) = this%D(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function D_v_
-
-!****
-
-  function c_1_1_ (this, x) result (c_1)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: c_1
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate c_1
 
@@ -299,39 +231,19 @@ contains
 
   end function c_1_1_
 
-!****
-  
-  function c_1_v_ (this, x) result (c_1)
+  !****
+
+  function Gamma_1_1_ (this, pt) result (Gamma_1)
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: c_1(SIZE(x))
-
-    integer :: i
-
-    ! Calculate c_1
-
-    x_loop : do i = 1,SIZE(x)
-       c_1(i) = this%c_1(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function c_1_v_
-
-!****
-
-  function Gamma_1_1_ (this, x) result (Gamma_1)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: Gamma_1
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate Gamma_1
 
-    Gamma_1 = this%dt_Gamma_1
+    Gamma_1 = this%Gamma_1_
 
     ! Finish
 
@@ -339,75 +251,15 @@ contains
 
   end function Gamma_1_1_
 
-!****
-  
-  function Gamma_1_v_ (this, x) result (Gamma_1)
+  !****
+
+  function delta_1_ (this, pt) result (delta)
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: Gamma_1(SIZE(x))
-
-    integer :: i
-
-    ! Calculate Gamma_1
-    
-    x_loop : do i = 1,SIZE(x)
-       Gamma_1(i) = this%Gamma_1(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function Gamma_1_v_
-
-!****
-
-  function nabla_ad_1_ (this, x) result (nabla_ad)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: nabla_ad
-
-    ! Calculate nabla_ad (assume ideal gas)
-
-    nabla_ad = 2._WP/5._WP
-
-    ! Finish
-
-    return
-
-  end function nabla_ad_1_
-
-!****
-  
-  function nabla_ad_v_ (this, x) result (nabla_ad)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: nabla_ad(SIZE(x))
-
-    integer :: i
-
-    ! Calculate nabla_ad
-    
-    x_loop : do i = 1,SIZE(x)
-       nabla_ad(i) = this%nabla_ad(x(i))
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function nabla_ad_v_
-
-!****
-
-  function delta_1_ (this, x) result (delta)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: delta
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
     ! Calculate delta (assume ideal gas)
 
@@ -419,43 +271,103 @@ contains
 
   end function delta_1_
 
-!****
-  
-  function delta_v_ (this, x) result (delta)
+  !****
+
+  function nabla_ad_1_ (this, pt) result (nabla_ad)
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: delta(SIZE(x))
+    type(point_t), intent(in)      :: pt
+    real(WP)                       :: nabla_ad
 
-    integer :: i
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
-    ! Calculate delta
-    
-    x_loop : do i = 1,SIZE(x)
-       delta(i) = this%delta(x(i))
-    end do x_loop
+    ! Calculate nabla_ad (assume ideal gas)
+
+    nabla_ad = 2._WP/5._WP
 
     ! Finish
 
     return
 
-  end function delta_v_
+  end function nabla_ad_1_
 
-!****
+  !****
 
-  $define $PROC $sub
+  function dnabla_ad_1_ (this, pt) result (dnabla_ad)
+
+    class(hom_model_t), intent(in) :: this
+    type(point_t), intent(in)      :: pt
+    real(WP)                       :: dnabla_ad
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
+
+    ! Calculate dlnnabla_ad/dlnx
+
+    dnabla_ad = 0._WP
+
+    ! Finish
+
+    return
+
+  end function dnabla_ad_1_
+
+  !****
+
+  function Omega_rot_1_ (this, pt) result (Omega_rot)
+
+    class(hom_model_t), intent(in) :: this
+    type(point_t), intent(in)      :: pt
+    real(WP)                       :: Omega_rot
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
+
+    ! Calculate Omega_rot
+
+    Omega_rot = this%Omega_rot_
+
+    ! Finish
+
+    return
+
+  end function Omega_rot_1_
+
+  !****
+
+  function dOmega_rot_1_ (this, pt) result (dOmega_rot)
+
+    class(hom_model_t), intent(in) :: this
+    type(point_t), intent(in)      :: pt
+    real(WP)                       :: dOmega_rot
+
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
+
+    ! Calculate dlnOmega_rot/dlnx
+
+    dOmega_rot = 0._WP
+
+    ! Finish
+
+    return
+
+  end function dOmega_rot_1_
+
+  !****
+
+  $define $PROC_1_NULL $sub
 
   $local $NAME $1
 
-  function ${NAME}_1_ (this, x) result ($NAME)
+  function ${NAME}_1_ (this, pt) result (${NAME})
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
+    type(point_t), intent(in)      :: pt
     real(WP)                       :: $NAME
 
-    ! Abort with $NAME undefined
+    $ABORT(Homogeneous model does not define $NAME)
 
-    $ABORT($NAME is undefined)
+    ! (This line to prevent unset warnings)
+
+    $NAME = 0._WP
 
     ! Finish
 
@@ -463,17 +375,39 @@ contains
 
   end function ${NAME}_1_
 
-!****
+  $endsub
 
-  function ${NAME}_v_ (this, x) result ($NAME)
+  $PROC_1_NULL(nabla)
+  $PROC_1_NULL(beta_rad)
+  $PROC_1_NULL(c_rad)
+  $PROC_1_NULL(dc_rad)
+  $PROC_1_NULL(c_thm)
+  $PROC_1_NULL(c_dif)
+  $PROC_1_NULL(c_eps_ad)
+  $PROC_1_NULL(c_eps_S)
+  $PROC_1_NULL(kap_ad)
+  $PROC_1_NULL(kap_S)
+
+  !****
+
+  $define $PROC_V $sub
+
+  $local $NAME $1
+
+  function ${NAME}_v_ (this, pt) result (${NAME})
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: $NAME(SIZE(x))
+    type(point_t), intent(in)      :: pt(:)
+    real(WP)                       :: ${NAME}(SIZE(pt))
 
-    ! Abort with $NAME undefined
+    integer :: j
 
-    $ABORT($NAME is undefined)
+    ! Evaluate $NAME
+
+    !$OMP PARALLEL DO
+    do j = 1, SIZE(pt)
+       ${NAME}(j) = this%${NAME}(pt(j))
+    end do
 
     ! Finish
 
@@ -483,143 +417,80 @@ contains
 
   $endsub
 
-  $PROC(c_rad)
-  $PROC(dc_rad)
-  $PROC(c_thm)
-  $PROC(c_dif)
-  $PROC(c_eps_ad)
-  $PROC(c_eps_S)
-  $PROC(nabla)
-  $PROC(kappa_S)
-  $PROC(kappa_ad)
-  $PROC(tau_thm)
+  $PROC_V(V_2)
+  $PROC_V(As)
+  $PROC_V(U)
+  $PROC_V(dU)
+  $PROC_V(c_1)
+  $PROC_V(Gamma_1)
+  $PROC_V(delta)
+  $PROC_V(nabla_ad)
+  $PROC_V(dnabla_ad)
+  $PROC_V(nabla)
+  $PROC_V(beta_rad)
+  $PROC_V(c_rad)
+  $PROC_V(dc_rad)
+  $PROC_V(c_thm)
+  $PROC_V(c_dif)
+  $PROC_V(c_eps_ad)
+  $PROC_V(c_eps_S)
+  $PROC_V(kap_ad)
+  $PROC_V(kap_S)
+  $PROC_V(Omega_rot)
+  $PROC_V(dOmega_rot)
 
-!****
+  !****
 
-  function Omega_rot_1_ (this, x) result (Omega_rot)
-
-    class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    real(WP)                       :: Omega_rot
-
-    ! Calculate Omega_rot. If uniform_rot is .TRUE., use the uniform
-    ! rate given by Omega_uni
-
-    if (this%uniform_rot) then
-       Omega_rot = this%Omega_uni
-    else
-       Omega_rot = 0._WP
-    endif
-
-    ! Finish
-
-    return
-
-  end function Omega_rot_1_
-
-!****
-  
-  function Omega_rot_v_ (this, x) result (Omega_rot)
+  function grid (this) result (gr)
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x(:)
-    real(WP)                       :: Omega_rot(SIZE(x))
+    type(grid_t)                   :: gr
 
-    integer :: i
+    ! Return the grid
 
-    ! Calculate Omega_rot
-
-    x_loop : do i = 1,SIZE(x)
-       Omega_rot(i) = this%Omega_rot(x(i))
-    end do x_loop
+    gr = this%gr
 
     ! Finish
 
     return
 
-  end function Omega_rot_v_
+  end function grid
 
-!****
+  !****
 
-  function is_zero_ (this, x) result (is_zero)
+  function vacuum (this, pt)
 
     class(hom_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x
-    logical                        :: is_zero
+    type(point_t), intent(in)      :: pt
+    logical                        :: vacuum
 
-    ! Determine whether the point at x has a vanishing pressure and/or density
+    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
 
-    is_zero = x >= 1._WP
+    ! Evaluate the vacuum condition
 
-    ! Finish
-
-    return
-
-  end function is_zero_
-
-!****
-
-  subroutine attach_cache_ (this, cc)
-
-    class(hom_model_t), intent(inout)     :: this
-    class(cocache_t), pointer, intent(in) :: cc
-
-    ! Attach a coefficient cache (no-op, since we don't cache)
+    vacuum = (1._WP - pt%x**2) == 0._WP
 
     ! Finish
 
     return
 
-  end subroutine attach_cache_
+  end function vacuum
 
-!****
+  !****
 
-  subroutine detach_cache_ (this)
+  function nonad_cap (this)
 
-    class(hom_model_t), intent(inout) :: this
+    class(hom_model_t), intent(in) :: this
+    logical                        :: nonad_cap
 
-    ! Detach the coefficient cache (no-op, since we don't cache)
+    ! Return the non-adiabatic capability
 
-    ! Finish
-
-    return
-
-  end subroutine detach_cache_
-
-!****
-
-  subroutine fill_cache_ (this, x)
-
-    class(hom_model_t), intent(inout) :: this
-    real(WP), intent(in)              :: x(:)
-
-    ! Fill the coefficient cache (no-op, since we don't cache)
+    nonad_cap = .TRUE.
 
     ! Finish
 
     return
 
-  end subroutine fill_cache_
-
-!****
-
-  $if ($MPI)
-
-  subroutine bcast_ (ml, root_rank)
-
-    class(hom_model_t), intent(inout) :: ml
-    integer, intent(in)               :: root_rank
-
-    ! Broadcast the hom_model_t
-
-    call bcast(ml%dt_Gamma_1, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_
-
-  $endif
+  end function nonad_cap
 
 end module gyre_hom_model

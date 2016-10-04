@@ -1,7 +1,7 @@
 ! Module   : gyre_evol_model
 ! Purpose  : stellar evolutionary model
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -16,20 +16,20 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_evol_model
 
   ! Uses
 
   use core_kinds
-  use core_parallel
-  use core_table
-
+  
   use gyre_constants
-  use gyre_cocache
+  use gyre_evol_seg
+  use gyre_grid
   use gyre_model
-  use gyre_spline
+  use gyre_model_par
+  use gyre_model_util
+  use gyre_point
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -38,34 +38,12 @@ module gyre_evol_model
 
   implicit none
 
-  ! Parameters
-
-  integer, parameter :: J_M = 1
-  integer, parameter :: J_P = 2
-  integer, parameter :: J_RHO = 3
-  integer, parameter :: J_T = 4
-  integer, parameter :: J_V_2 = 5
-  integer, parameter :: J_AS = 6
-  integer, parameter :: J_U = 7
-  integer, parameter :: J_C_1 = 8
-  integer, parameter :: J_GAMMA_1 = 9
-  integer, parameter :: J_NABLA_AD = 10
-  integer, parameter :: J_DELTA = 11
-  integer, parameter :: J_OMEGA_ROT = 12
-  integer, parameter :: J_NABLA = 13
-  integer, parameter :: J_C_RAD = 14
-  integer, parameter :: J_DC_RAD = 15
-  integer, parameter :: J_C_THM = 16
-  integer, parameter :: J_C_DIF = 17
-  integer, parameter :: J_C_EPS_AD = 18
-  integer, parameter :: J_C_EPS_S = 19
-  integer, parameter :: J_KAPPA_AD = 20
-  integer, parameter :: J_KAPPA_S = 21
-  integer, parameter :: J_TAU_THM = 22
-
-  integer, parameter :: N_J = 22
-
   ! Derived-type definitions
+
+  $define $SET_DECL $sub
+    $local $NAME $1
+    procedure, public :: set_${NAME}
+  $endsub
 
   $define $PROC_DECL $sub
     $local $NAME $1
@@ -73,98 +51,158 @@ module gyre_evol_model
     procedure :: ${NAME}_v_
   $endsub
 
-  $define $PROC_DECL_GEN $sub
-    $local $NAME $1
-    procedure       :: ${NAME}_1_
-    procedure       :: ${NAME}_v_
-    generic, public :: ${NAME} => ${NAME}_1_, ${NAME}_v_
-  $endsub
-
   type, extends (model_t) :: evol_model_t
      private
-     type(r_spline_t), allocatable :: sp(:)
-     logical, allocatable          :: sp_def(:)
-     type(cocache_t), pointer      :: cc => null()
+     type(grid_t)                  :: gr
+     type(evol_seg_t), allocatable :: es(:)
+     integer                       :: s_i
+     integer                       :: s_o
+     integer                       :: n_k
      real(WP), public              :: M_star
      real(WP), public              :: R_star
      real(WP), public              :: L_star
-     real(WP), public              :: Omega_uni
-     real(WP), public              :: delta_p
-     real(WP), public              :: delta_g
-     logical, public               :: uniform_rot
-     logical, public               :: reconstruct_As
+     logical                       :: nonad_cap_
+     logical                       :: add_center
+     logical                       :: repair_As
    contains
      private
-     procedure :: set_sp_
-     $PROC_DECL_GEN(m)
-     $PROC_DECL_GEN(p)
-     $PROC_DECL_GEN(rho)
-     $PROC_DECL_GEN(T)
+     $SET_DECL(V_2)
+     $SET_DECL(As)
+     $SET_DECL(U)
+     $SET_DECL(c_1)
+     $SET_DECL(Gamma_1)
+     $SET_DECL(delta)
+     $SET_DECL(nabla_ad)
+     $SET_DECL(nabla)
+     $SET_DECL(beta_rad)
+     $SET_DECL(c_rad)
+     $SET_DECL(c_thm)
+     $SET_DECL(c_dif)
+     $SET_DECL(c_eps_ad)
+     $SET_DECL(c_eps_S)
+     $SET_DECL(kap_ad)
+     $SET_DECL(kap_S)
+     $SET_DECL(Omega_rot)
      $PROC_DECL(V_2)
      $PROC_DECL(As)
      $PROC_DECL(U)
-     $PROC_DECL(D)
+     $PROC_DECL(dU)
      $PROC_DECL(c_1)
      $PROC_DECL(Gamma_1)
-     $PROC_DECL(nabla_ad)
      $PROC_DECL(delta)
-     $PROC_DECL(Omega_rot)
+     $PROC_DECL(nabla_ad)
+     $PROC_DECL(dnabla_ad)
+     $PROC_DECL(nabla)
+     $PROC_DECL(beta_rad)
      $PROC_DECL(c_rad)
      $PROC_DECL(dc_rad)
      $PROC_DECL(c_thm)
      $PROC_DECL(c_dif)
      $PROC_DECL(c_eps_ad)
      $PROC_DECL(c_eps_S)
-     $PROC_DECL(nabla)
-     $PROC_DECL(kappa_ad)
-     $PROC_DECL(kappa_S)
-     $PROC_DECL(tau_thm)
-     procedure, public :: is_zero => is_zero_
-     procedure, public :: attach_cache => attach_cache_
-     procedure, public :: detach_cache => detach_cache_
-     procedure, public :: fill_cache => fill_cache_
+     $PROC_DECL(kap_ad)
+     $PROC_DECL(kap_S)
+     $PROC_DECL(Omega_rot)
+     $PROC_DECL(dOmega_rot)
+     $PROC_DECL(M_r)
+     generic, public   :: M_r => M_r_1_, M_r_v_
+     $PROC_DECL(P)
+     generic, public   :: P => P_1_, P_v_
+     $PROC_DECL(rho)
+     generic, public   :: rho => rho_1_, rho_v_
+     $PROC_DECL(T)
+     generic, public   :: T => T_1_, T_v_
+     procedure, public :: grid
+     procedure, public :: vacuum
+     procedure, public :: nonad_cap
+     procedure, public :: delta_p
+     procedure, public :: delta_g
   end type evol_model_t
  
   ! Interfaces
 
   interface evol_model_t
      module procedure evol_model_t_
-     module procedure evol_model_t_mech_
-     module procedure evol_model_t_mech_coeffs_
-     module procedure evol_model_t_full_
   end interface evol_model_t
-
-  $if ($MPI)
-  interface bcast
-     module procedure bcast_
-  end interface bcast
-  $endif
 
   ! Access specifiers
 
   private
 
   public :: evol_model_t
-  $if ($MPI)
-  public :: bcast
-  $endif
 
   ! Procedures
 
 contains
 
-  function evol_model_t_ () result (ml)
+  function evol_model_t_ (x, M_star, R_star, L_star, nonad_cap, ml_p) result (ml)
 
-    type(evol_model_t) :: ml
+    real(WP), intent(in)          :: x(:)
+    real(WP), intent(in)          :: M_star
+    real(WP), intent(in)          :: R_star
+    real(WP), intent(in)          :: L_star
+    logical, intent(in)           :: nonad_cap
+    type(model_par_t), intent(in) :: ml_p
+    type(evol_model_t)            :: ml
+
+    integer :: s
 
     ! Construct the evol_model_t
 
-    allocate(ml%sp(N_J))
+    ! Create the grid
+    
+    if (ml_p%add_center) then
 
-    allocate(ml%sp_def(N_J))
-    ml%sp_def = .FALSE.
+       if (x(1) /= 0._WP) then
 
-    ml%cc => null()
+          ml%gr = grid_t([0._WP,x])
+          ml%add_center = .TRUE.
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 100) 'Added central point'
+100          format(3X,A)
+          endif
+
+       else
+
+          ml%gr = grid_t(x)
+          ml%add_center = .FALSE.
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 100) 'No need to add central point'
+          endif
+
+       endif
+
+    else
+
+       ml%gr = grid_t(x)
+       ml%add_center = .FALSE.
+
+    endif
+
+    ml%s_i = ml%gr%s_i()
+    ml%s_o = ml%gr%s_o()
+
+    ml%n_k = ml%gr%n_k
+
+    ! Create segments
+
+    allocate(ml%es(ml%s_i:ml%s_o))
+
+    seg_loop : do s = ml%s_i, ml%s_o
+       ml%es(s) = evol_seg_t(ml_p)
+    end do seg_loop
+
+    ! Other initializations
+
+    ml%repair_As = ml_p%repair_As
+
+    ml%M_star = M_star
+    ml%R_star = R_star
+    ml%L_star = L_star
+
+    ml%nonad_cap_ = nonad_cap
 
     ! Finish
 
@@ -172,412 +210,43 @@ contains
 
   end function evol_model_t_
 
-!****
+  !****
 
-  recursive function evol_model_t_mech_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                                        Gamma_1, nabla_ad, delta, Omega_rot, &
-                                        deriv_type, add_center) result (ml)
+  $define $SET $sub
 
-    real(WP), intent(in)          :: M_star
-    real(WP), intent(in)          :: R_star
-    real(WP), intent(in)          :: L_star
-    real(WP), intent(in)          :: r(:)
-    real(WP), intent(in)          :: m(:)
-    real(WP), intent(in)          :: p(:)
-    real(WP), intent(in)          :: rho(:)
-    real(WP), intent(in)          :: T(:)
-    real(WP), intent(in)          :: N2(:)
-    real(WP), intent(in)          :: Gamma_1(:)
-    real(WP), intent(in)          :: nabla_ad(:)
-    real(WP), intent(in)          :: delta(:)
-    real(WP), intent(in)          :: Omega_rot(:)
-    character(LEN=*), intent(in)  :: deriv_type
-    logical, optional, intent(in) :: add_center
-    type(evol_model_t)            :: ml
+  $local $NAME $1
+  $local $F_C $2
 
-    logical  :: add_center_
-    integer  :: n
-    real(WP) :: V_2(SIZE(r))
-    real(WP) :: As(SIZE(r))
-    real(WP) :: U(SIZE(r))
-    real(WP) :: c_1(SIZE(r))
-    real(WP) :: Omega_rot_(SIZE(r))
-    real(WP) :: x(SIZE(r))
-    real(WP) :: f_p(SIZE(r))
-    real(WP) :: f_g(SIZE(r))
+  subroutine set_${NAME} (this, f)
 
-    $CHECK_BOUNDS(SIZE(m),SIZE(r))
-    $CHECK_BOUNDS(SIZE(p),SIZE(r))
-    $CHECK_BOUNDS(SIZE(rho),SIZE(r))
-    $CHECK_BOUNDS(SIZE(T),SIZE(r))
-    $CHECK_BOUNDS(SIZE(N2),SIZE(r))
-    $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(r))
-    $CHECK_BOUNDS(SIZE(nabla_ad),SIZE(r))
-    $CHECK_BOUNDS(SIZE(delta),SIZE(r))
-    $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(r))
+    class(evol_model_t), intent(inout) :: this
+    real(WP), intent(in)               :: f(:)
 
-    if(PRESENT(add_center)) then
-       add_center_ = add_center
+    real(WP), allocatable :: f_(:)
+    integer               :: s
+    integer               :: k_i
+    integer               :: k_o
+
+    ! Set the data for $NAME
+
+    if (this%add_center) then
+       f_ = [$F_C,f]
     else
-       add_center_ = .FALSE.
+       f_ = f
     endif
 
-    ! Construct the evol_model_t using the mechanical structure data
+    $CHECK_BOUNDS(SIZE(f_),this%gr%n_k)
 
-    ! See if we need a central point
+    seg_loop : do s = this%s_i, this%s_o
 
-    if (add_center_) then
+       k_i = this%gr%k_i(s)
+       k_o = this%gr%k_o(s)
 
-       ! Add a central point and initialize using recursion
-
-       ml = evol_model_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
-                         prep_center_(r, p), prep_center_rho_(r, m, rho), prep_center_(r, T), &
-                         [0._WP,N2], prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), &
-                         prep_center_(r, Omega_rot), deriv_type, .FALSE.)
-
-    else
+       associate (pt => this%gr%pt)
+         call this%es(s)%set_${NAME}(pt(k_i:k_o)%x, f_(k_i:k_o))
+       end associate
        
-       ! Perform basic validations
-       
-       n = SIZE(r)
-
-       $ASSERT(ALL(r(2:) > r(:n-1)),Non-monotonic radius data)
-       $ASSERT(ALL(m(2:) >= m(:n-1)),Non-monotonic mass data)
-
-       ! Calculate coefficients
-
-       x = r/R_star
-
-       where (r /= 0._WP)
-          V_2 = G_GRAVITY*m*rho/(p*r*x**2)
-          As = r**3*N2/(G_GRAVITY*m)
-          U = 4._WP*PI*rho*r**3/m
-          c_1 = (r/R_star)**3/(m/M_star)
-       elsewhere
-          V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*p(1))
-          As = 0._WP
-          U = 3._WP
-          c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
-       end where
-
-       Omega_rot_ = SQRT(R_star**3/(G_GRAVITY*M_star))*Omega_rot
-
-       ! Initialize the model
-
-       ml = evol_model_t()
-
-       !$OMP PARALLEL SECTIONS
-       !$OMP SECTION
-       call ml%set_sp_(x, m, deriv_type, J_M)
-       !$OMP SECTION
-       call ml%set_sp_(x, p, deriv_type, J_P)
-       !$OMP SECTION
-       call ml%set_sp_(x, rho, deriv_type, J_RHO)
-       !$OMP SECTION
-       call ml%set_sp_(x, T, deriv_type, J_T)
-       !$OMP SECTION
-       call ml%set_sp_(x, V_2, deriv_type, J_V_2)
-       !$OMP SECTION
-       call ml%set_sp_(x, As, deriv_type, J_AS)
-       !$OMP SECTION
-       call ml%set_sp_(x, U, deriv_type, J_U)
-       !$OMP SECTION
-       call ml%set_sp_(x, c_1, deriv_type, J_C_1)
-       !$OMP SECTION
-       call ml%set_sp_(x, Gamma_1, deriv_type, J_GAMMA_1)
-       !$OMP SECTION
-       call ml%set_sp_(x, nabla_ad, deriv_type, J_NABLA_AD)
-       !$OMP SECTION
-       call ml%set_sp_(x, delta, deriv_type, J_DELTA)
-       !$OMP SECTION
-       call ml%set_sp_(x, Omega_rot_, deriv_type, J_OMEGA_ROT)
-       !$OMP END PARALLEL SECTIONS
-
-       ml%M_star = M_star
-       ml%R_star = R_star
-       ml%L_star = L_star
-
-       ml%Omega_uni = 0._WP
-
-       f_p = 1./SQRT((G_GRAVITY*M_star/R_star**3)*Gamma_1/(c_1*V_2))
-       
-       where (x /= 0._WP)
-          f_g = SQRT((G_GRAVITY*M_star/R_star**3)*MAX(As/c_1, 0._WP))/x
-       elsewhere
-          f_g = 0._WP
-       end where
-
-       ml%delta_p = 0.5_WP/integrate(x, f_p)
-       ml%delta_g = 0.5_WP*integrate(x, f_g)/PI**2
-
-       ml%uniform_rot = .FALSE.
-       ml%reconstruct_As = .FALSE.
-
-    endif
-
-    ! Finish
-
-    return
-
-  end function evol_model_t_mech_
-
-!****
-
-  recursive function evol_model_t_mech_coeffs_ (M_star, R_star, L_star, x, &
-                                                V_2, As, U, c_1, Gamma_1, &
-                                                deriv_type, add_center) result (ml)
-
-    real(WP), intent(in)          :: M_star
-    real(WP), intent(in)          :: R_star
-    real(WP), intent(in)          :: L_star
-    real(WP), intent(in)          :: x(:)
-    real(WP), intent(in)          :: V_2(:)
-    real(WP), intent(in)          :: As(:)
-    real(WP), intent(in)          :: U(:)
-    real(WP), intent(in)          :: c_1(:)
-    real(WP), intent(in)          :: Gamma_1(:)
-    character(LEN=*), intent(in)  :: deriv_type
-    logical, optional, intent(in) :: add_center
-    type(evol_model_t)            :: ml
-
-    logical  :: add_center_
-    real(WP) :: f_p(SIZE(x))
-    real(WP) :: f_g(SIZE(x))
-
-    $CHECK_BOUNDS(SIZE(V_2),SIZE(x))
-    $CHECK_BOUNDS(SIZE(As),SIZE(x))
-    $CHECK_BOUNDS(SIZE(U),SIZE(x))
-    $CHECK_BOUNDS(SIZE(c_1),SIZE(x))
-    $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(x))
-
-    if(PRESENT(add_center)) then
-       add_center_ = add_center
-    else
-       add_center_ = .FALSE.
-    endif
-
-    ! Construct the evol_model_t using the dimensionless coefficients
-
-    ! See if we need a central point
-
-    if (add_center_) then
-
-       ! Add a central point and initialize using recursion
-       
-       ml = evol_model_t(M_star, R_star, L_star, &
-                         [0._WP,x], prep_center_(x, V_2), [0._WP,As], [3._WP,U], &
-                         prep_center_(x, c_1), prep_center_(x, Gamma_1), deriv_type, .FALSE.)
-
-    else
-
-       ! Initialize the model
-
-       ml = evol_model_t()
-
-       !$OMP PARALLEL SECTIONS
-       !$OMP SECTION
-       call ml%set_sp_(x, V_2, deriv_type, J_V_2)
-       !$OMP SECTION
-       call ml%set_sp_(x, As, deriv_type, J_AS)
-       !$OMP SECTION
-       call ml%set_sp_(x, U, deriv_type, J_U)
-       !$OMP SECTION
-       call ml%set_sp_(x, c_1, deriv_type, J_C_1)
-       !$OMP SECTION
-       call ml%set_sp_(x, Gamma_1, deriv_type, J_GAMMA_1)
-       !$OMP SECTION
-       call ml%set_sp_(x, SPREAD(0._WP, 1, SIZE(x)), deriv_type, J_OMEGA_ROT)
-       !$OMP END PARALLEL SECTIONS
-
-       ml%M_star = M_star
-       ml%R_star = R_star
-       ml%L_star = L_star
-
-       ml%Omega_uni = 0._WP
-
-       f_p = 1./SQRT((G_GRAVITY*M_star/R_star**3)*Gamma_1/(c_1*V_2))
-       
-       where (x /= 0._WP)
-          f_g = SQRT((G_GRAVITY*M_star/R_star**3)*MAX(As/c_1, 0._WP))/x
-       elsewhere
-          f_g = 0._WP
-       end where
-
-       ml%delta_p = 0.5_WP/integrate(x, f_p)
-       ml%delta_g = 0.5_WP*integrate(x, f_g)/PI**2
-
-       ml%uniform_rot = .FALSE.
-       ml%reconstruct_As = .FALSE.
-
-    endif
-
-    ! Finish
-
-    return
-
-  end function evol_model_t_mech_coeffs_
-
-!****
-
-  recursive function evol_model_t_full_ (M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                                         Gamma_1, nabla_ad, delta, Omega_rot, &
-                                         nabla, kappa, kappa_rho, kappa_T, &
-                                         epsilon, epsilon_rho, epsilon_T, &
-                                         deriv_type, add_center) result (ml)
-
-    real(WP), intent(in)          :: M_star
-    real(WP), intent(in)          :: R_star
-    real(WP), intent(in)          :: L_star
-    real(WP), intent(in)          :: r(:)
-    real(WP), intent(in)          :: m(:)
-    real(WP), intent(in)          :: p(:)
-    real(WP), intent(in)          :: rho(:)
-    real(WP), intent(in)          :: T(:)
-    real(WP), intent(in)          :: N2(:)
-    real(WP), intent(in)          :: Gamma_1(:)
-    real(WP), intent(in)          :: nabla_ad(:)
-    real(WP), intent(in)          :: delta(:)
-    real(WP), intent(in)          :: Omega_rot(:)
-    real(WP), intent(in)          :: nabla(:)
-    real(WP), intent(in)          :: kappa(:)
-    real(WP), intent(in)          :: kappa_rho(:)
-    real(WP), intent(in)          :: kappa_T(:)
-    real(WP), intent(in)          :: epsilon(:)
-    real(WP), intent(in)          :: epsilon_rho(:)
-    real(WP), intent(in)          :: epsilon_T(:)
-    character(LEN=*), intent(in)  :: deriv_type
-    logical, optional, intent(in) :: add_center
-    type(evol_model_t)            :: ml
-
-    logical  :: add_center_
-    integer  :: n
-    real(WP) :: x(SIZE(r))
-    real(WP) :: V_2(SIZE(r))
-    real(WP) :: V(SIZE(r))
-    real(WP) :: c_p(SIZE(r))
-    real(WP) :: c_rad(SIZE(r))
-    real(WP) :: c_thm(SIZE(r))
-    real(WP) :: c_dif(SIZE(r))
-    real(WP) :: kappa_ad(SIZE(r))
-    real(WP) :: kappa_S(SIZE(r))
-    real(WP) :: epsilon_ad(SIZE(r))
-    real(WP) :: epsilon_S(SIZE(r))
-    real(WP) :: c_eps_ad(SIZE(r))
-    real(WP) :: c_eps_S(SIZE(r))
-    real(WP) :: dtau_thm(SIZE(r))
-    real(WP) :: tau_thm(SIZE(r))
-    integer  :: i
-
-    $CHECK_BOUNDS(SIZE(m),SIZE(r))
-    $CHECK_BOUNDS(SIZE(p),SIZE(r))
-    $CHECK_BOUNDS(SIZE(rho),SIZE(r))
-    $CHECK_BOUNDS(SIZE(T),SIZE(r))
-    $CHECK_BOUNDS(SIZE(N2),SIZE(r))
-    $CHECK_BOUNDS(SIZE(Gamma_1),SIZE(r))
-    $CHECK_BOUNDS(SIZE(nabla_ad),SIZE(r))
-    $CHECK_BOUNDS(SIZE(delta),SIZE(r))
-    $CHECK_BOUNDS(SIZE(nabla),SIZE(r))
-    $CHECK_BOUNDS(SIZE(kappa),SIZE(r))
-    $CHECK_BOUNDS(SIZE(kappa_T),SIZE(r))
-    $CHECK_BOUNDS(SIZE(kappa_rho),SIZE(r))
-    $CHECK_BOUNDS(SIZE(epsilon),SIZE(r))
-    $CHECK_BOUNDS(SIZE(epsilon_T),SIZE(r))
-    $CHECK_BOUNDS(SIZE(epsilon_rho),SIZE(r))
-    $CHECK_BOUNDS(SIZE(Omega_rot),SIZE(r))
-
-    if (PRESENT(add_center)) then
-       add_center_ = add_center
-    else
-       add_center_ = .FALSE.
-    endif
-
-    ! Construct the evol_model using the full structure data
-
-    if (add_center_) then
-
-       ! Add a central point and initialize using recursion
-
-       ml = evol_model_t(M_star, R_star, L_star, [0._WP,r], [0._WP,m], &
-                         prep_center_(r, p), prep_center_rho_(r, m, rho), prep_center_(r, T), [0._WP,N2], &
-                         prep_center_(r, Gamma_1), prep_center_(r, nabla_ad), prep_center_(r, delta), prep_center_(r, Omega_rot), &
-                         prep_center_(r, nabla), prep_center_(r, kappa), prep_center_(r, kappa_rho), prep_center_(r, kappa_T), &
-                         prep_center_(r, epsilon), prep_center_(r, epsilon_rho), prep_center_(r, epsilon_T), &
-                         deriv_type, .FALSE.)
-
-    else
-
-       ! Perform basic validations
-       
-       n = SIZE(r)
-
-       $ASSERT(ALL(r(2:) > r(:n-1)),Non-monotonic radius data)
-       $ASSERT(ALL(m(2:) >= m(:n-1)),Non-monotonic mass data)
-
-       ! Calculate coefficients
-
-       x = r/R_star
-
-       where(r /= 0._WP)
-          V_2 = G_GRAVITY*m*rho/(p*r*x**2)
-       elsewhere
-          V_2 = 4._WP*PI*G_GRAVITY*rho**2*R_star**2/(3._WP*p)
-       end where
-
-       V = V_2*x**2
-
-       c_p = p*delta/(rho*T*nabla_ad)
-
-       c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kappa*rho*L_star)
-       c_thm = 4._WP*PI*rho*T*c_p*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
-
-       kappa_ad = nabla_ad*kappa_T + kappa_rho/Gamma_1
-       kappa_S = kappa_T - delta*kappa_rho
-
-       c_dif = (kappa_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dlny_dlnx_(x, nabla_ad)+V)
-
-       epsilon_ad = nabla_ad*epsilon_T + epsilon_rho/Gamma_1
-       epsilon_S = epsilon_T - delta*epsilon_rho
-
-       c_eps_ad = 4._WP*PI*rho*epsilon_ad*R_star**3/L_star
-       c_eps_S = 4._WP*PI*rho*epsilon_S*R_star**3/L_star
-
-       dtau_thm = 4._WP*PI*rho*r**2*T*c_p*SQRT(G_GRAVITY*M_star/R_star**3)/L_star
-
-       tau_thm(n) = 0._WP
-
-       do i = n-1,1,-1
-          tau_thm(i) = tau_thm(i+1) + &
-               0.5_WP*(dtau_thm(i+1) + dtau_thm(i))*(r(i+1) - r(i))
-       end do
-
-       ! Initialize the model
-
-       ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                         Gamma_1, nabla_ad, delta, Omega_rot, &
-                         deriv_type, .FALSE.)
-
-       !$OMP PARALLEL SECTIONS
-       !$OMP SECTION
-       call ml%set_sp_(x, c_rad, deriv_type, J_C_RAD)
-       !$OMP SECTION
-       call ml%set_sp_(x, c_thm, deriv_type, J_C_THM)
-       !$OMP SECTION
-       call ml%set_sp_(x, c_dif, deriv_type, J_C_DIF)
-       !$OMP SECTION
-       call ml%set_sp_(x, c_eps_ad, deriv_type, J_C_EPS_AD)
-       !$OMP SECTION
-       call ml%set_sp_(x, c_eps_S, deriv_type, J_C_EPS_S)
-       !$OMP SECTION
-       call ml%set_sp_(x, nabla, deriv_type, J_NABLA)
-       !$OMP SECTION
-       call ml%set_sp_(x, kappa_S, deriv_type, J_KAPPA_S)
-       !$OMP SECTION
-       call ml%set_sp_(x, kappa_ad, deriv_type, J_KAPPA_AD)
-       !$OMP SECTION
-       call ml%set_sp_(x, tau_thm, deriv_type, J_TAU_THM)
-       !$OMP END PARALLEL SECTIONS
-
-    endif
+    end do seg_loop
 
     ! Finish
 
@@ -585,184 +254,243 @@ contains
 
   contains
 
-    function dlny_dlnx_ (x, y)
+    function f_c_ () result (f_c)
 
-      real(WP), intent(in) :: x(:)
-      real(WP), intent(in) :: y(:)
-      real(WP)             :: dlny_dlnx_(SIZE(x))
+      real(WP) :: f_c
 
-      integer :: n
-      integer :: i
+      ! Interpolate f at x=0 using parabolic fitting
 
-      $CHECK_BOUNDS(SIZE(y),SIZE(x))
+      associate (x_1 => this%gr%pt(2)%x, &
+                 x_2 => this%gr%pt(3)%x, &
+                 f_1 => f(1), &
+                 f_2 => f(2))
 
-      ! Calculate the logarithmic derivative of y wrt x
+        f_c = (x_2**2*f_1 - x_1**2*f_2)/(x_2**2 - x_1**2)
 
-      n = SIZE(x)
-
-      dlny_dlnx_(1) = 0._WP
-
-      do i = 2,n-1
-         dlny_dlnx_(i) = x(i)*0.5_WP*((y(i)-y(i-1))/(x(i)-x(i-1)) + (y(i+1)-y(i))/(x(i+1)-x(i)))/y(i)
-      end do
-
-      dlny_dlnx_(n) = x(n)*(y(n)-y(n-1))/(x(n)-x(n-1))/y(n)
+      end associate
 
       ! Finish
 
-    end function dlny_dlnx_
+      return
 
-  end function evol_model_t_full_
+    end function f_c_
 
-!****
+  end subroutine set_${NAME}
 
-  subroutine set_sp_ (this, x, y, deriv_type, i)
+  $endsub
+
+  $SET(V_2,f_c_())
+  $SET(U,3._WP)
+  $SET(c_1,f_c_())
+  $SET(Gamma_1,f_c_())
+  $SET(delta,f_c_())
+  $SET(nabla_ad,f_c_())
+  $SET(nabla,f_c_())
+  $SET(beta_rad,f_c_())
+  $SET(c_rad,f_c_())
+  $SET(c_thm,f_c_())
+  $SET(c_dif,f_c_())
+  $SET(c_eps_ad,f_c_())
+  $SET(c_eps_S,f_c_())
+  $SET(kap_ad,f_c_())
+  $SET(kap_S,f_c_())
+  $SET(Omega_rot,f_c_())
+
+  !****
+
+  subroutine set_As (this, f)
 
     class(evol_model_t), intent(inout) :: this
-    real(WP), intent(in)               :: x(:)
-    real(WP), intent(in)               :: y(:)
-    character(LEN=*), intent(in)       :: deriv_type
-    integer, intent(in)                :: i
+    real(WP), intent(in)               :: f(:)
 
-    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+    real(WP), allocatable :: f_(:)
+    integer               :: s
+    integer               :: k_i
+    integer               :: k_o
 
-    ! Set up the i'th spline with the provided data
+    ! Set the data for As
 
-    this%sp(i) = r_spline_t(x, y, deriv_type, df_dx_a=0._WP)
+    if (this%add_center) then
+       f_ = [0._WP,f]
+    else
+       f_ = f
+    endif
 
-    this%sp_def(i) = .TRUE.
+    seg_loop : do s = this%s_i, this%s_o
 
-    ! Finish
+       k_i = this%gr%k_i(s)
+       k_o = this%gr%k_o(s)
 
-    return
+       associate (pt => this%gr%pt)
 
-  end subroutine set_sp_
+         if (this%repair_As) then
 
-!****
-  
-  function prep_center_ (x, y) result (y_prep)
-      
-    real(WP), intent(in) :: x(:)
-    real(WP), intent(in) :: y(:)
-    real(WP)             :: y_prep(SIZE(y)+1)
+            ! Repair the segment boundaries
 
-    real(WP) :: y_0
+            if (s > this%s_i .AND. k_i + 2 <= k_o) then
+               f_(k_i) = f(k_i+1) + (pt(k_i)%x - pt(k_i+1)%x)*(f(k_i+2) - f(k_i+1))/(pt(k_i+2)%x - pt(k_i+1)%x)
+            endif
+               
+            if (s < this%s_o .AND. k_o - 2 >= k_i) then
+               f_(k_o) = f(k_o-1) + (pt(k_o)%x - pt(k_o-1)%x)*(f(k_o-1) - f(k_o-2))/(pt(k_o-1)%x - pt(k_o-2)%x)
+            endif
 
-    $CHECK_BOUNDS(SIZE(x),SIZE(y))
+         endif
+               
+         call this%es(s)%set_As(pt(k_i:k_o)%x, f_(k_i:k_o))
 
-    $ASSERT(SIZE(y) >= 2,Insufficient grid points)
+       end associate
 
-    ! Use parabola fitting to interpolate y at the center
-      
-    y_0 = (x(2)**2*y(1) - x(1)**2*y(2))/(x(2)**2 - x(1)**2)
-
-    ! Preprend this to the array
-
-    y_prep = [y_0,y]
-
-    ! Finish
-
-    return
-
-  end function prep_center_
-
-!****
-  
-  function prep_center_rho_ (r, m, rho) result (rho_prep)
-      
-    real(WP), intent(in) :: r(:)
-    real(WP), intent(in) :: m(:)
-    real(WP), intent(in) :: rho(:)
-    real(WP)             :: rho_prep(SIZE(rho)+1)
-
-    real(WP) :: rho_bar
-    real(WP) :: a_0
-    real(WP) :: a_2
-    real(WP) :: rho_0
-
-    $CHECK_BOUNDS(SIZE(m),SIZE(r))
-    $CHECK_BOUNDS(SIZE(rho),SIZE(r))
-
-    $ASSERT(SIZE(rho) >= 1,Insufficient grid points)
-
-    ! Use mass-conserving parabola fitting to interpolate rho at the center
-
-    rho_bar = m(1)/(4._WP*PI*r(1)**3/3._WP)
-
-    a_0 = 5._WP*rho_bar/2._WP - 3._WP*rho(1)/2._WP
-    a_2 = 5._WP*(rho(1) - rho_bar)/2._WP
-
-    rho_0 = a_0
-      
-    ! Preprend this to the array
-
-    rho_prep = [rho_0,rho]
+    end do seg_loop
 
     ! Finish
 
     return
 
-  end function prep_center_rho_
+  end subroutine set_As
 
-!****
+  !****
 
-  $define $PROC $sub
+  $define $PROC_1 $sub
 
   $local $NAME $1
 
-  function ${NAME}_1_ (this, x) result ($NAME)
+  function ${NAME}_1_ (this, pt) result (${NAME})
 
     class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
+    type(point_t), intent(in)       :: pt
     real(WP)                        :: $NAME
 
-    integer :: j
+    $ASSERT_DEBUG(pt%s >= this%s_i,Invalid segment)
+    $ASSERT_DEBUG(pt%s <= this%s_o,Invalid segment)
 
-    ! Interpolate $NAME
+    ! Evaluate $NAME at point pt
 
-    j = J_$eval(uc($NAME))
+    $NAME = this%es(pt%s)%${NAME}(pt%x)
 
-    if(this%sp_def(j)) then
-
-       if(ASSOCIATED(this%cc)) then
-          $NAME = this%cc%lookup(j, x)
-       else
-          $NAME = this%sp(j)%f(x)
-       endif
-
-    else
-
-       $ABORT($NAME is undefined)
-
-    endif
-       
     ! Finish
 
     return
 
   end function ${NAME}_1_
 
-  function ${NAME}_v_ (this, x) result ($NAME)
+  $endsub
+
+  $PROC_1(V_2)
+  $PROC_1(As)
+  $PROC_1(U)
+  $PROC_1(dU)
+  $PROC_1(c_1)
+  $PROC_1(Gamma_1)
+  $PROC_1(delta)
+  $PROC_1(nabla_ad)
+  $PROC_1(dnabla_ad)
+  $PROC_1(nabla)
+  $PROC_1(beta_rad)
+  $PROC_1(c_rad)
+  $PROC_1(dc_rad)
+  $PROC_1(c_thm)
+  $PROC_1(c_dif)
+  $PROC_1(c_eps_ad)
+  $PROC_1(c_eps_S)
+  $PROC_1(kap_ad)
+  $PROC_1(kap_S)
+  $PROC_1(Omega_rot)
+  $PROC_1(dOmega_rot)
+
+  !****
+
+  function M_r_1_ (this, pt) result (M_r)
 
     class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: $NAME(SIZE(x))
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: M_r
+
+    ! Evaluate the fractional mass coordinate at point pt
+
+    M_r = this%M_star*(pt%x**3/this%c_1(pt))
+
+    ! Finish
+
+    return
+
+  end function M_r_1_
+    
+  !****
+
+  function P_1_ (this, pt) result (P)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: P
+
+    ! Evaluate the total pressure at point pt
+
+    P = (G_GRAVITY*this%M_star**2/(4._WP*PI*this%R_star**4))*&
+        (this%U(pt)/(this%c_1(pt)**2*this%V_2(pt)))
+
+    ! Finish
+
+    return
+
+  end function P_1_
+    
+  !****
+
+  function rho_1_ (this, pt) result (rho)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: rho
+
+    ! Evaluate the density at point pt
+
+    rho = (this%M_star/(4._WP*PI*this%R_star**3))*(this%U(pt)/this%c_1(pt))
+
+    ! Finish
+
+    return
+
+  end function rho_1_
+    
+  !****
+
+  function T_1_ (this, pt) result (T)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: T
+
+    ! Evaluate the temperature at point pt
+
+    T = (3._WP*this%beta_rad(pt)*this%P(pt)/A_RADIATION)**0.25_WP
+
+    ! Finish
+
+    return
+
+  end function T_1_
+    
+  !****
+
+  $define $PROC_V $sub
+
+  $local $NAME $1
+
+  function ${NAME}_v_ (this, pt) result (${NAME})
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt(:)
+    real(WP)                        :: ${NAME}(SIZE(pt))
 
     integer :: j
 
-    ! Interpolate $NAME
+    ! Evaluate $NAME at points pt
 
-    j = J_$eval(uc($NAME))
-    
-    if(this%sp_def(j)) then
-
-       $NAME = this%sp(j)%f(x)
-
-    else
-
-       $ABORT($NAME is undefined)
-
-    endif
+    !$OMP PARALLEL DO
+    do j = 1, SIZE(pt)
+       ${NAME}(j) = this%${NAME}(pt(j))
+    end do
 
     ! Finish
 
@@ -772,421 +500,169 @@ contains
 
   $endsub
 
-  $PROC(m)
-  $PROC(p)
-  $PROC(rho)
-  $PROC(T)
-  $PROC(V_2)
-  $PROC(U)
-  $PROC(c_1)
-  $PROC(Gamma_1)
-  $PROC(nabla_ad)
-  $PROC(delta)
-  $PROC(nabla)
-  $PROC(c_rad)
-  $PROC(c_thm)
-  $PROC(c_dif)
-  $PROC(c_eps_ad)
-  $PROC(c_eps_S)
-  $PROC(kappa_S)
-  $PROC(kappa_ad)
-  $PROC(tau_thm)
+  $PROC_V(V_2)
+  $PROC_V(As)
+  $PROC_V(U)
+  $PROC_V(dU)
+  $PROC_V(c_1)
+  $PROC_V(Gamma_1)
+  $PROC_V(delta)
+  $PROC_V(nabla_ad)
+  $PROC_V(dnabla_ad)
+  $PROC_V(nabla)
+  $PROC_V(beta_rad)
+  $PROC_V(c_rad)
+  $PROC_V(dc_rad)
+  $PROC_V(c_thm)
+  $PROC_V(c_dif)
+  $PROC_V(c_eps_ad)
+  $PROC_V(c_eps_S)
+  $PROC_V(kap_ad)
+  $PROC_V(kap_S)
+  $PROC_V(Omega_rot)
+  $PROC_V(dOmega_rot)
+  $PROC_V(M_r)
+  $PROC_V(P)
+  $PROC_V(rho)
+  $PROC_V(T)
 
-!****
+  !****
 
-  $define $DPROC $sub
-
-  $local $NAME $1
-
-  function d${NAME}_1_ (this, x) result (d$NAME)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: d$NAME
-
-    integer :: j
-    integer :: j_d
-
-    ! Interpolate dln$NAME/dlnx
-
-    j = J_$eval(uc($NAME))
-    j_d = J_D$eval(uc($NAME))
-
-    if(this%sp_def(j)) then
-    
-       if(ASSOCIATED(this%cc)) then
-          d$NAME = this%cc%lookup(j_d, x)
-       else
-          if(x > 0._WP) then
-             d$NAME = x*this%sp(j)%df_dx(x)/this%sp(j)%f(x)
-          else
-             d$NAME = 0._WP
-          endif
-       endif
-
-    else
-
-       $ABORT($NAME is undefined)
-
-    endif
-
-    ! Finish
-
-    return
-
-  end function d${NAME}_1_
-
-  function d${NAME}_v_ (this, x) result (d$NAME)
+  function grid (this) result (gr)
 
     class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: d$NAME(SIZE(x))
+    type(grid_t)                    :: gr
 
-    integer :: j
+    ! Return the grid
 
-    ! Interpolate dln$NAME/dlnx
+    gr = this%gr
 
-    j = J_$eval(uc($NAME))
-
-    if(this%sp_def(j)) then
-
-       where(x > 0._WP)
-          d$NAME = x*this%sp(j)%df_dx(x)/this%sp(j)%f(x)
-       elsewhere
-          d$NAME = 0._WP
-       endwhere
-
-    else
-
-       $ABORT($NAME is undefined)
-
-    endif
-       
     ! Finish
 
     return
 
-  end function d${NAME}_v_
+  end function grid
 
-  $endsub
+  !****
 
-  $DPROC(c_rad)
-
-!****
-
-  function As_1_ (this, x) result (As)
+  function vacuum (this, pt)
 
     class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: As
+    type(point_t), intent(in)       :: pt
+    logical                         :: vacuum
 
-    ! Interpolate As. If reconstruct_As is .TRUE., use eqn. 21 of
-    ! [Tak2006a] instead
+    $ASSERT_DEBUG(pt%s >= this%s_i,Invalid segment)
+    $ASSERT_DEBUG(pt%s <= this%s_o,Invalid segment)
 
-    if (ASSOCIATED(this%cc)) then
+    ! Evaluate the vacuum condition at point pt
 
-       As = this%cc%lookup(J_AS, x)
-
-    else
-
-       if (this%reconstruct_As) then
-          As = -this%V_2(x)*x**2/this%Gamma_1(x) - this%U(x) + 3._WP - &
-               x*this%sp(J_U)%df_dx(x)/this%U(x)
-       else
-          As =  this%sp(J_AS)%f(x)
-       endif
-
-    endif
+    vacuum = this%es(pt%s)%vacuum(pt%x)
 
     ! Finish
 
     return
 
-  end function As_1_
+  end function vacuum
 
-!****
+  !****
 
-  function As_v_ (this, x) result (As)
+  function nonad_cap (this)
 
     class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: As(SIZE(x))
+    logical                         :: nonad_cap
 
-    ! Interpolate As. If reconstruct_As is .TRUE., use eqn. 21 of
-    ! [Tak2006a] instead
+    ! Return the non-adiabatic capability
 
-    if (this%reconstruct_As) then
-       As = -this%V_2(x)*x**2/this%Gamma_1(x) - this%U(x) + 3._WP - &
-            x*this%sp(J_U)%df_dx(x)/this%U(x)
-    else
-       As =  this%sp(J_AS)%f(x)
-    endif
+    nonad_cap = this%nonad_cap_
 
     ! Finish
 
     return
 
-  end function As_v_
+  end function nonad_cap
 
-!****
+  !****
 
-  function D_1_ (this, x) result (D)
+  function delta_p (this)
 
     class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: D
+    real(WP)                        :: delta_p
 
-    ! Calculate D = dlnrho/dlnx
+    real(WP) :: V_2(this%n_k)
+    real(WP) :: c_1(this%n_k)
+    real(WP) :: Gamma_1(this%n_k)
+    real(WP) :: f(this%n_k)
 
-    D = this%U(x) - 3._WP + x*this%sp(J_U)%df_dx(x)/this%U(x)
+    ! Calculate the p-mode (large) frequency separation
+
+    associate (pt => this%gr%pt)
+
+      V_2 = this%V_2(pt)
+      c_1 = this%c_1(pt)
+      Gamma_1 = this%Gamma_1(pt)
+
+      f = Gamma_1/(c_1*V_2)
+
+      $if ($GFORTRAN_PR_49636)
+      delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
+                integrate(this%gr%pt%x, f)
+      $else
+      delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
+                integrate(pt%x, f)
+      $endif
+
+    end associate
 
     ! Finish
 
     return
 
-  end function D_1_
+  end function delta_p
 
-!****
+  !****
 
-  function D_v_ (this, x) result (D)
+  function delta_g (this)
 
     class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: D(SIZE(x))
+    real(WP)                        :: delta_g
 
-    ! Calculate D = dlnrho/dlnx
+    real(WP) :: As(this%n_k)
+    real(WP) :: c_1(this%n_k)
+    real(WP) :: f(this%n_k)
 
-    D = this%U(x) - 3._WP + x*this%sp(J_U)%df_dx(x)/this%U(x)
+    ! Calculate the g-mode inverse period separation
 
-    ! Finish
+    associate (pt => this%gr%pt)
 
-    return
+      As = this%As(pt)
+      c_1 = this%c_1(pt)
 
-  end function D_v_
+      $if ($GFORTRAN_PR_49636)
+      where (this%gr%pt%x /= 0._WP)
+         f = SQRT(MAX(As/c_1, 0._WP))/this%gr%pt%x
+      elsewhere
+         f = 0._WP
+      end where
 
-!****
+      delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
+           integrate(this%gr%pt%x, f)
+      $else
+      where (pt%x /= 0._WP)
+         f = SQRT(MAX(As/c_1, 0._WP))/pt%x
+      elsewhere
+         f = 0._WP
+      end where
 
-  function Omega_rot_1_ (this, x) result (Omega_rot)
+      delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
+                integrate(pt%x, f)
+      $endif
 
-    class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    real(WP)                        :: Omega_rot
-
-    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
-    ! rate given by Omega_uni instead
-
-    if (ASSOCIATED(this%cc)) then
-
-       Omega_rot = this%cc%lookup(J_OMEGA_ROT, x)
-
-    else
-
-       if (this%uniform_rot) then
-          Omega_rot = this%Omega_uni
-       else
-          Omega_rot = this%sp(J_OMEGA_ROT)%f(x)
-       endif
-
-    endif
+    end associate
 
     ! Finish
 
     return
 
-  end function Omega_rot_1_
-
-!****
-
-  function Omega_rot_v_ (this, x) result (Omega_rot)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x(:)
-    real(WP)                        :: Omega_rot(SIZE(x))
-
-    ! Interpolate Omega_rot. If uniform_rot is .TRUE., use the uniform
-    ! rate given by Omega_uni instead
-
-    if (this%uniform_rot) then
-       Omega_rot = this%Omega_uni
-    else
-       Omega_rot = this%sp(J_OMEGA_ROT)%f(x)
-    endif
-
-    ! Finish
-
-    return
-
-  end function Omega_rot_v_
-
-!****
-
-  function is_zero_ (this, x) result (is_zero)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP), intent(in)            :: x
-    logical                         :: is_zero
-
-    logical :: p_zero
-    logical :: rho_zero
-
-    ! Determine whether the point at x has a vanishing pressure and/or
-    ! density
-
-    if(this%sp_def(J_P)) then
-       p_zero = this%p(x) == 0._WP
-    else
-       p_zero = .FALSE.
-    endif
-
-    if(this%sp_def(J_RHO)) then
-       rho_zero = this%rho(x) == 0._WP
-    else
-       rho_zero = .FALSE.
-    endif
-
-    is_zero = P_ZERO .OR. RHO_ZERO
-
-    ! Finish
-
-    return
-
-  end function is_zero_
-
-!****
-
-  subroutine attach_cache_ (this, cc)
-
-    class(evol_model_t), intent(inout)    :: this
-    class(cocache_t), pointer, intent(in) :: cc
-
-    ! Attach a coefficient cache
-
-    this%cc => cc
-
-    ! Finish
-
-    return
-
-  end subroutine attach_cache_
-
-!****
-
-  subroutine detach_cache_ (this)
-
-    class(evol_model_t), intent(inout) :: this
-
-    ! Detach the coefficient cache
-
-    this%cc => null()
-
-    ! Finish
-
-    return
-
-  end subroutine detach_cache_
-
-!****
-
-  subroutine fill_cache_ (this, x)
-
-    class(evol_model_t), intent(inout) :: this
-    real(WP), intent(in)               :: x(:)
-
-    real(WP) :: c(N_J,SIZE(x))
-
-    $ASSERT_DEBUG(ASSOCIATED(this%cc),No cache attached)
-
-    ! Fill the coefficient cache
-
-    !$OMP PARALLEL SECTIONS
-    !$OMP SECTION
-    if (this%sp_def(J_M)) c(J_M,:) = this%m(x)
-    !$OMP SECTION
-    if (this%sp_def(J_P)) c(J_P,:) = this%p(x)
-    !$OMP SECTION
-    if (this%sp_def(J_RHO)) c(J_RHO,:) = this%rho(x)
-    !$OMP SECTION
-    if (this%sp_def(J_T)) c(J_T,:) = this%T(x)
-    !$OMP SECTION
-    if (this%sp_def(J_V_2)) c(J_V_2,:) = this%V_2(x)
-    !$OMP SECTION
-    if (this%sp_def(J_AS)) c(J_AS,:) = this%As(x)
-    !$OMP SECTION
-    if (this%sp_def(J_U)) c(J_U,:) = this%U(x)
-    !$OMP SECTION
-    if (this%sp_def(J_C_1)) c(J_C_1,:) = this%c_1(x)
-    !$OMP SECTION
-    if (this%sp_def(J_GAMMA_1)) c(J_GAMMA_1,:) = this%Gamma_1(x)
-    !$OMP SECTION
-    if (this%sp_def(J_NABLA_AD)) c(J_NABLA_AD,:) = this%nabla_ad(x)
-    !$OMP SECTION
-    if (this%sp_def(J_DELTA)) c(J_DELTA,:) = this%delta(x)
-    !$OMP SECTION
-    if (this%sp_def(J_OMEGA_ROT)) c(J_OMEGA_ROT,:) = this%Omega_rot(x)
-    !$OMP SECTION
-    if (this%sp_def(J_NABLA)) c(J_NABLA,:) = this%nabla(x)
-    !$OMP SECTION
-    if (this%sp_def(J_C_RAD)) c(J_C_RAD,:) = this%c_rad(x)
-    !$OMP SECTION
-    if (this%sp_def(J_C_RAD)) c(J_DC_RAD,:) = this%dc_rad(x)
-    !$OMP SECTION
-    if (this%sp_def(J_C_THM)) c(J_C_THM,:) = this%c_thm(x)
-    !$OMP SECTION
-    if (this%sp_def(J_C_DIF)) c(J_C_DIF,:) = this%c_dif (x)
-    !$OMP SECTION
-    if (this%sp_def(J_C_EPS_AD)) c(J_C_EPS_AD,:) = this%c_eps_ad(x)
-    !$OMP SECTION
-    if (this%sp_def(J_C_EPS_S)) c(J_C_EPS_S,:) = this%c_eps_S(x)
-    !$OMP SECTION
-    if (this%sp_def(J_KAPPA_S)) c(J_KAPPA_S,:) = this%kappa_S(x)
-    !$OMP SECTION
-    if (this%sp_def(J_KAPPA_AD)) c(J_KAPPA_AD,:) = this%kappa_ad(x)
-    !$OMP SECTION
-    if (this%sp_def(J_TAU_THM)) c(J_TAU_THM,:) = this%tau_thm(x)
-    !$OMP END PARALLEL SECTIONS
-
-    this%cc = cocache_t(x, c)
-
-    ! Finish
-
-    return
-
-  end subroutine fill_cache_
-
-!****
-
-  $if ($MPI)
-
-  subroutine bcast_ (ml, root_rank)
-
-    type(evol_model_t), intent(inout) :: ml
-    integer, intent(in)               :: root_rank
-
-    ! Broadcast the evol_model_t
-
-    call bcast_alloc(ml%sp, root_rank)
-    call bcast_alloc(ml%sp_def, root_rank)
-
-    call bcast(ml%M_star, root_rank)
-    call bcast(ml%R_star, root_rank)
-    call bcast(ml%L_star, root_rank)
- 
-    call bcast(ml%Omega_uni, root_rank)
-
-    call bcast(ml%delta_p, root_rank)
-    call bcast(ml%delta_g, root_rank)
-
-    call bcast(ml%uniform_rot, root_rank)
-    call bcast(ml%reconstruct_As, root_rank)
-
-    if(MPI_RANK /= root_rank) ml%cc => null()
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_
-
-  $endif
+  end function delta_g
 
 end module gyre_evol_model

@@ -1,0 +1,54 @@
+&constants
+/
+
+&model
+	model_type = 'POLY'
+        file = 'poly.h5'
+	uniform_rot = .TRUE.
+	Omega_rot = 0.2
+	Omega_units = 'CRITICAL'
+/
+
+&mode
+	l = 1
+	m = -1
+/
+
+&mode
+	l = 1
+	m = 0
+/
+
+&mode
+	l = 1
+	m = 1
+/
+
+&osc
+	rotation_method = 'DOPPLER'
+/
+
+&num
+	diff_scheme = 'COLLOC_GL6'
+/
+
+&scan
+	grid_type = 'INVERSE'
+	freq_min = 0.25
+	freq_max = 1.0
+	n_freq = 50
+	freq_frame = 'COROT_O'
+	grid_frame = 'COROT_O'
+/
+
+&grid
+/
+
+&ad_output
+	summary_file = 'summary.txt'
+	summary_file_format = 'TXT'
+	summary_item_list = 'l,m,n_pg,n_p,n_g,omega'
+/
+
+&nad_output
+/

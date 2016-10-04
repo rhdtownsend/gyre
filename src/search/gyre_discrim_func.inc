@@ -30,7 +30,7 @@ module gyre_${T}_discrim_func
 
   use core_kinds
 
-  use gyre_bvp
+  use gyre_bep
   use gyre_ext
   use gyre_ext_func
   use gyre_status
@@ -45,7 +45,7 @@ module gyre_${T}_discrim_func
 
   type, extends (${T}_ext_func_t) :: ${T}_discrim_func_t
      private
-     class(${T}_bvp_t), pointer     :: bp
+     class(${T}_bep_t), pointer     :: bp
      $TYPE(WP), allocatable, public :: omega_def(:)
    contains 
      private
@@ -70,7 +70,7 @@ contains
 
   function ${T}_discrim_func_t_ (bp) result (df)
 
-    class(${T}_bvp_t), pointer, intent(in) :: bp
+    class(${T}_bep_t), pointer, intent(in) :: bp
     type(${T}_discrim_func_t)              :: df
 
     ! Construct the discrim_func_t

@@ -1,0 +1,77 @@
+&constants
+/
+
+&model
+	model_type = 'EVOL'
+	file = 'poly-3.fgong'
+	file_format = 'FGONG'
+/
+
+&mode
+	l = 0
+	tag = 'l=0r'
+/
+
+&mode
+	l = 0
+	tag = 'l=0'
+/
+
+&mode
+	l = 1
+	tag = 'l=1'
+/
+
+&mode
+	l = 2
+	tag = 'l=2'
+/
+
+&mode
+	l = 3
+	tag = 'l=3'
+/
+
+&osc
+	variables_set = 'LAGP'
+	reduce_order = .FALSE.
+/
+
+&osc
+	variables_set = 'LAGP'
+	reduce_order = .TRUE.
+	tag_list = 'l=0r'
+/
+
+&num
+	diff_scheme = 'COLLOC_GL6'
+/
+
+&scan
+        grid_type = 'LINEAR'
+        freq_min = 0.9
+        freq_max = 10.1
+        n_freq = 30
+/
+
+&scan
+        grid_type = 'INVERSE'
+        freq_min = 0.9
+        freq_max = 10.1
+        n_freq = 30
+/
+
+&grid
+	n_center = 10
+	alpha_osc = 10.
+	alpha_exp = 2.
+/
+
+&ad_output
+	summary_file = 'summary.txt'
+	summary_file_format = 'TXT'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega,E_norm'
+/
+
+&nad_output
+/

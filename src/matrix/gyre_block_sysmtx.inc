@@ -1,7 +1,7 @@
 ! Incfile  : gyre_block_sysmtx
 ! Purpose  : system matrix (block storage, template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -123,7 +123,7 @@ contains
 
   end function ${T}_block_sysmtx_t_
 
-!****
+  !****
 
   subroutine set_B_i_ (this, B, S)
 
@@ -145,7 +145,7 @@ contains
 
   end subroutine set_B_i_
 
-!****
+  !****
 
   subroutine set_B_o_ (this, B, S)
 
@@ -167,7 +167,7 @@ contains
 
   end subroutine set_B_o_
 
-!****
+  !****
 
   subroutine set_E_ (this, k, E_l, E_r, S)
 
@@ -199,7 +199,7 @@ contains
 
   end subroutine set_E_
 
-!****
+  !****
 
   subroutine factorize_ (this)
 
@@ -310,7 +310,7 @@ contains
 
   end subroutine factorize_
 
-!****
+  !****
 
   subroutine scale_rows_ (this)
 
@@ -351,7 +351,7 @@ contains
 
   end subroutine scale_rows_
 
-!****
+  !****
 
   function det_ (this) result (det)
 
@@ -398,7 +398,7 @@ contains
 
   end function det_
 
-!****
+  !****
 
   function null_vec_ (this) result (v)
 

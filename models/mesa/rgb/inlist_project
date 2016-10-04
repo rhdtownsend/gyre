@@ -1,44 +1,69 @@
-! $Id$
+! Inlist for RGB model
 !
-! Inlist for mid-MS slowly pulsating B star model
+! Used with MESA r8548
 
 &star_job
 
-      eos_file_prefix = 'mesa'
-      kappa_file_prefix = 'gs98'
+   ! EOS & opacities
+
+   eos_file_prefix = 'mesa'
+   kappa_file_prefix = 'gs98'
       
-  ! write output
-      save_pulsation_info_when_terminate = .true.
-      save_pulsation_info_filename = 'rgb.mesa'
+   ! Output
+
+   write_profile_when_terminate = .TRUE.
+   filename_for_profile_when_terminate = 'rgb.profile'
+
+   save_pulse_data_when_terminate = .TRUE.
+   save_pulse_data_filename = 'rgb.mesa'
 
 /
 
 &controls
 
-  ! starting specifications
-      initial_mass = 2d0 ! in Msun units
-      initial_Z = 0.02
-      initial_Y = 0.28
+   ! Starting parameters
+
+   initial_mass = 2.0
+
+   ! Mesh
+
+   mesh_delta_coeff = 0.5
+
+   ! Convection
+
+   mixing_length_alpha = 1.5
+
+   overshoot_f_above_burn_h_core = 0.010
+   overshoot_f0_above_burn_h_core = 0.0025
    
-   ! output to files and terminal
-      photostep = 0
-      profile_interval = 0
-      history_interval = 0
-      terminal_interval = 10
-      write_header_frequency = 10
+   ! Brunt-Vaisala smoothing
 
-  ! mass gain or loss
-      RGB_wind_scheme = 'Reimers'
-      AGB_wind_scheme = 'Blocker'
-      RGB_to_AGB_wind_switch = 1d-4
-      Reimers_wind_eta = 0.8d0  
-      Blocker_wind_eta = 0.5d0  
+   num_cells_for_smooth_brunt_B = 0
+   
+   ! Output to files and terminal
 
-  ! when to stop
-      log_L_upper_limit = 1.8
+   photostep = 0
+   profile_interval = 0
+   history_interval = 0
+   terminal_interval = 10
+   write_header_frequency = 10
 
-  ! Pulsation output
-      pulse_info_format = 'GYRE'
+   pulse_data_format = 'GYRE'
+   add_center_point_to_pulse_data = .TRUE.
+   add_double_points_to_pulse_data = .TRUE.
+   threshold_grad_mu_for_double_point = 10.
+
+   ! When to stop
+
+   log_L_upper_limit = 1.8
+
+   ! Winds
+
+   cool_wind_RGB_scheme = 'Reimers'
+   Reimers_scaling_factor = 0.8
+   cool_wind_AGB_scheme = 'Blocker'
+   Blocker_scaling_factor = 0.5
+   RGB_to_AGB_wind_switch = 1d-4
 
 /
 

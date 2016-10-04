@@ -1,0 +1,13 @@
+README for GYRE doc Subdirectory
+================================
+
+The files in this directory provide partial documentation for the GYRE oscillation code, as follows:
+
+equations.pdf (plus LaTeX files) -- a description of the equations GYRE solves
+gsm-format.pdf (plus LaTeX files) -- a description of the GSM (GYRE Stellar Model) file format
+mesa-format.pdf (plus LaTeX files) -- a description of the MESA file format
+poly-format.pdf (plus LaTeX files) -- a description of the POLY file format
+
+Full documentation for the code can be found online at:
+
+  https://bitbucket.org/rhdtownsend/gyre/wiki/Home

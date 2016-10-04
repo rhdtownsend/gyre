@@ -25,8 +25,10 @@ module gyre_gsm_file
   use core_hgroup
 
   use gyre_constants
-  use gyre_model
   use gyre_evol_model
+  use gyre_model
+  use gyre_model_par
+  use gyre_model_util
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -41,91 +43,136 @@ module gyre_gsm_file
 
   public :: read_gsm_model
   public :: read_gsm_data
-  public :: write_gsm_data
 
   ! Procedures
 
 contains
 
-  subroutine read_gsm_model (file, deriv_type, add_center, ml, x)
+  subroutine read_gsm_model (ml_p, ml)
 
-    character(*), intent(in)                     :: file
-    character(*), intent(in)                     :: deriv_type
-    logical, intent(in)                          :: add_center
-    type(evol_model_t), intent(out)              :: ml
-    real(WP), allocatable, optional, intent(out) :: x(:)
+    type(model_par_t), intent(in)        :: ml_p
+    class(model_t), pointer, intent(out) :: ml
 
-    real(WP)              :: M_star
-    real(WP)              :: R_star
-    real(WP)              :: L_star
-    real(WP), allocatable :: r(:)
-    real(WP), allocatable :: w(:)
-    real(WP), allocatable :: p(:)
-    real(WP), allocatable :: rho(:)
-    real(WP), allocatable :: T(:)
-    real(WP), allocatable :: N2(:)
-    real(WP), allocatable :: Gamma_1(:)
-    real(WP), allocatable :: nabla_ad(:)
-    real(WP), allocatable :: delta(:)
-    real(WP), allocatable :: nabla(:)
-    real(WP), allocatable :: kappa(:)
-    real(WP), allocatable :: kappa_rho(:)
-    real(WP), allocatable :: kappa_T(:)
-    real(WP), allocatable :: epsilon(:)
-    real(WP), allocatable :: epsilon_rho(:)
-    real(WP), allocatable :: epsilon_T(:)
-    real(WP), allocatable :: Omega_rot(:)
-    integer               :: n
-    real(WP), allocatable :: m(:)
-    logical               :: has_center
+    real(WP)                    :: M_star
+    real(WP)                    :: R_star
+    real(WP)                    :: L_star
+    real(WP), allocatable       :: r(:)
+    real(WP), allocatable       :: M_r(:)
+    real(WP), allocatable       :: P(:)
+    real(WP), allocatable       :: rho(:)
+    real(WP), allocatable       :: T(:)
+    real(WP), allocatable       :: N2(:)
+    real(WP), allocatable       :: Gamma_1(:)
+    real(WP), allocatable       :: nabla_ad(:)
+    real(WP), allocatable       :: delta(:)
+    real(WP), allocatable       :: nabla(:)
+    real(WP), allocatable       :: kap(:)
+    real(WP), allocatable       :: kap_rho(:)
+    real(WP), allocatable       :: kap_T(:)
+    real(WP), allocatable       :: eps(:)
+    real(WP), allocatable       :: eps_rho(:)
+    real(WP), allocatable       :: eps_T(:)
+    real(WP), allocatable       :: Omega_rot(:)
+    integer                     :: n
+    real(WP), allocatable       :: x(:)
+    real(WP), allocatable       :: V_2(:)
+    real(WP), allocatable       :: As(:)
+    real(WP), allocatable       :: U(:)
+    real(WP), allocatable       :: c_1(:)
+    real(WP), allocatable       :: beta_rad(:)
+    real(WP), allocatable       :: c_P(:)
+    real(WP), allocatable       :: c_rad(:)
+    real(WP), allocatable       :: c_thm(:)
+    real(WP), allocatable       :: c_dif(:)
+    real(WP), allocatable       :: c_eps_ad(:)
+    real(WP), allocatable       :: c_eps_S(:)
+    real(WP), allocatable       :: kap_ad(:)
+    real(WP), allocatable       :: kap_S(:)
+    type(evol_model_t), pointer :: em
 
     ! Read data from the GSM-format file
 
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from GSM file', TRIM(file)
-100    format(A,1X,A)
-    endif
-
-    call read_gsm_data(file, M_star, R_star, L_star, r, w, p, rho, T, &
+    call read_gsm_data(ml_p%file, M_star, R_star, L_star, r, M_r, P, rho, T, &
                        N2, Gamma_1, nabla_ad, delta, nabla,  &
-                       kappa, kappa_rho, kappa_T, &
-                       epsilon, epsilon_rho, epsilon_T, &
+                       kap, kap_rho, kap_T, eps, eps_rho, eps_T, &
                        Omega_rot)
 
-    n = SIZE(r)
+    ! Snap grid points
 
-    m = [w(:n-1)/(1._WP+w(:n-1))*M_star,M_star]
+    x = r/R_star
 
-    has_center = r(1) == 0._WP .AND. m(1) == 0._WP
+    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), M_r)
+  
+    ! Calculate dimensionless structure data
 
-    if (check_log_level('INFO')) then
-       if (add_center) then
-          if (has_center) then
-             write(OUTPUT_UNIT, 110) 'No need to add central point'
-110          format(3X,A)
-          else
-             write(OUTPUT_UNIT, 110) 'Adding central point'
-          endif
-       endif
+    n = SIZE(x)
+
+    allocate(V_2(n))
+    allocate(As(n))
+    allocate(U(n))
+    allocate(c_1(n))
+
+    where (x /= 0._WP)
+       V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
+       As = r**3*N2/(G_GRAVITY*M_r)
+       U = 4._WP*PI*rho*r**3/M_r
+       c_1 = (r/R_star)**3/(M_r/M_star)
+    elsewhere
+       V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
+       As = 0._WP
+       U = 3._WP
+       c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+    end where
+
+    beta_rad = A_RADIATION*T**4/(3._WP*P)
+
+    c_P = P*delta/(rho*T*nabla_ad)
+
+    kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
+    kap_S = kap_T - delta*kap_rho
+
+    c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
+    c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
+    c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
+
+    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*R_star**3/L_star
+    c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
+
+    if (ml_p%uniform_rot) then
+       allocate(Omega_rot(n))
+       Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
+    else
+       Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
     endif
 
-    ! Initialize the model
+    ! Initialize the evol_model_t
 
-    ml = evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, &
-                      N2, Gamma_1, nabla_ad, delta, Omega_rot, &
-                      nabla, kappa, kappa_rho, kappa_T, &
-                      epsilon, epsilon_rho, epsilon_T, &
-                      deriv_type, add_center=add_center .AND. .NOT. has_center)
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, .TRUE., ml_p))
 
-    ! Set up the grid
+    call em%set_V_2(V_2)
+    call em%set_As(As)
+    call em%set_U(U)
+    call em%set_c_1(c_1)
 
-    if (PRESENT(x)) then
-       if (add_center .AND. .NOT. has_center) then
-          x = [0._WP,r/R_star]
-       else
-          x = r/R_star
-       endif
-    endif
+    call em%set_Gamma_1(Gamma_1)
+    call em%set_delta(delta)
+    call em%set_nabla_ad(nabla_ad)
+    call em%set_nabla(nabla)
+    call em%set_beta_rad(beta_rad)
+
+    call em%set_c_rad(c_rad)
+    call em%set_c_thm(c_thm)
+    call em%set_c_dif(c_dif)
+    call em%set_c_eps_ad(c_eps_ad)
+    call em%set_c_eps_S(c_eps_S)
+    call em%set_kap_ad(kap_ad)
+    call em%set_kap_S(kap_S)
+
+    call em%set_Omega_rot(Omega_rot)
+
+    ! Return a pointer
+
+    ml => em
 
     ! Finish
 
@@ -133,12 +180,11 @@ contains
 
   end subroutine read_gsm_model
 
-!****
+  !****
 
-  subroutine read_gsm_data (file, M_star, R_star, L_star, r, w, p, rho, T, &
+  subroutine read_gsm_data (file, M_star, R_star, L_star, r, M_r, P, rho, T, &
                             N2, Gamma_1, nabla_ad, delta, nabla,  &
-                            kappa, kappa_rho, kappa_T, &
-                            epsilon, epsilon_rho, epsilon_T, &
+                            kap, kap_rho, kap_T, eps, eps_rho, eps_T, &
                             Omega_rot)
 
     character(*), intent(in)           :: file
@@ -146,8 +192,8 @@ contains
     real(WP), intent(out)              :: R_star
     real(WP), intent(out)              :: L_star
     real(WP), allocatable, intent(out) :: r(:)
-    real(WP), allocatable, intent(out) :: w(:)
-    real(WP), allocatable, intent(out) :: p(:)
+    real(WP), allocatable, intent(out) :: M_r(:)
+    real(WP), allocatable, intent(out) :: P(:)
     real(WP), allocatable, intent(out) :: rho(:)
     real(WP), allocatable, intent(out) :: T(:)
     real(WP), allocatable, intent(out) :: N2(:)
@@ -155,145 +201,130 @@ contains
     real(WP), allocatable, intent(out) :: nabla_ad(:)
     real(WP), allocatable, intent(out) :: delta(:)
     real(WP), allocatable, intent(out) :: nabla(:)
-    real(WP), allocatable, intent(out) :: kappa(:)
-    real(WP), allocatable, intent(out) :: kappa_rho(:)
-    real(WP), allocatable, intent(out) :: kappa_T(:)
-    real(WP), allocatable, intent(out) :: epsilon(:)
-    real(WP), allocatable, intent(out) :: epsilon_rho(:)
-    real(WP), allocatable, intent(out) :: epsilon_T(:)
+    real(WP), allocatable, intent(out) :: kap(:)
+    real(WP), allocatable, intent(out) :: kap_rho(:)
+    real(WP), allocatable, intent(out) :: kap_T(:)
+    real(WP), allocatable, intent(out) :: eps(:)
+    real(WP), allocatable, intent(out) :: eps_rho(:)
+    real(WP), allocatable, intent(out) :: eps_T(:)
     real(WP), allocatable, intent(out) :: Omega_rot(:)
 
     type(hgroup_t) :: hg
     integer        :: n
+    integer        :: version
 
     ! Read data from the GSM-format file
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from GSM file', TRIM(file)
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(file)
+110    format(3X,A,1X,A)
+    endif
+
     hg = hgroup_t(file, OPEN_FILE)
 
-    ! Read the header
+    ! Read the header and determine the version
 
     call read_attr(hg, 'n', n)
+
+    if (attr_exists(hg, 'version')) then
+       call read_attr(hg, 'version', version)
+    else
+       version = 0
+    endif
 
     call read_attr(hg, 'M_star', M_star)
     call read_attr(hg, 'R_star', R_star)
     call read_attr(hg, 'L_star', L_star)
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'File version', version/100._WP
+120    format(3X,A,1X,F4.2,1X,A)
+    endif
+
     ! Read the data
 
-    call read_dset_alloc(hg, 'r', r)
-    call read_dset_alloc(hg, 'w', w)
-    call read_dset_alloc(hg, 'p', p)
-    call read_dset_alloc(hg, 'rho', rho)
-    call read_dset_alloc(hg, 'T', T)
-    call read_dset_alloc(hg, 'N2', N2)
-    call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
-    call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
-    call read_dset_alloc(hg, 'delta', delta)
-    call read_dset_alloc(hg, 'nabla', nabla)
-    call read_dset_alloc(hg, 'epsilon', epsilon)
-    call read_dset_alloc(hg, 'epsilon_rho', epsilon_rho)
-    call read_dset_alloc(hg, 'epsilon_T', epsilon_T)
-    call read_dset_alloc(hg, 'kappa', kappa)
-    call read_dset_alloc(hg, 'kappa_rho', kappa_rho)
-    call read_dset_alloc(hg, 'kappa_T', kappa_T)
-    call read_dset_alloc(hg, 'Omega_rot', Omega_rot)
+    select case (version)
+    case (0)
+       call read_gsm_data_v0_00_()
+    case (100)
+       call read_gsm_data_v1_00_()
+    case default
+       $ABORT(Unrecognized GSM file version)
+    end select
 
     call hg%final()
-
-    $CHECK_BOUNDS(SIZE(r),n)
-    $CHECK_BOUNDS(SIZE(w),n)
-    $CHECK_BOUNDS(SIZE(p),n)
-    $CHECK_BOUNDS(SIZE(rho),n)
-    $CHECK_BOUNDS(SIZE(T),n)
-    $CHECK_BOUNDS(SIZE(N2),n)
-    $CHECK_BOUNDS(SIZE(Gamma_1),n)
-    $CHECK_BOUNDS(SIZE(nabla_ad),n)
-    $CHECK_BOUNDS(SIZE(delta),n)
-    $CHECK_BOUNDS(SIZE(nabla),n)
-    $CHECK_BOUNDS(SIZE(epsilon),n)
-    $CHECK_BOUNDS(SIZE(epsilon_rho),n)
-    $CHECK_BOUNDS(SIZE(epsilon_T),n)
-    $CHECK_BOUNDS(SIZE(kappa),n)
-    $CHECK_BOUNDS(SIZE(kappa_rho),n)
-    $CHECK_BOUNDS(SIZE(kappa_T),n)
-    $CHECK_BOUNDS(SIZE(Omega_rot),n)
 
     ! Finish
 
     return
+
+  contains
+
+    subroutine read_gsm_data_v0_00_ ()
+
+      real(WP), allocatable :: w(:)
+
+      ! Read data from the version-0.00 file
+
+      call read_dset_alloc(hg, 'r', r)
+      call read_dset_alloc(hg, 'w', w)
+      call read_dset_alloc(hg, 'p', P)
+      call read_dset_alloc(hg, 'rho', rho)
+      call read_dset_alloc(hg, 'T', T)
+      call read_dset_alloc(hg, 'N2', N2)
+      call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
+      call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
+      call read_dset_alloc(hg, 'delta', delta)
+      call read_dset_alloc(hg, 'nabla', nabla)
+      call read_dset_alloc(hg, 'kappa', kap)
+      call read_dset_alloc(hg, 'kappa_rho', kap_rho)
+      call read_dset_alloc(hg, 'kappa_T', kap_T)
+      call read_dset_alloc(hg, 'epsilon', eps)
+      call read_dset_alloc(hg, 'epsilon_rho', eps_rho)
+      call read_dset_alloc(hg, 'epsilon_T', eps_T)
+      call read_dset_alloc(hg, 'Omega_rot', Omega_rot)
+
+      M_r = w/(1._WP+w)*M_star
+
+      ! Finish
+
+      return
+
+    end subroutine read_gsm_data_v0_00_
+
+    subroutine read_gsm_data_v1_00_ ()
+
+      ! Read data from the version-1.00 file
+
+      call read_dset_alloc(hg, 'r', r)
+      call read_dset_alloc(hg, 'M_r', M_r)
+      call read_dset_alloc(hg, 'P', P)
+      call read_dset_alloc(hg, 'rho', rho)
+      call read_dset_alloc(hg, 'T', T)
+      call read_dset_alloc(hg, 'N2', N2)
+      call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
+      call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
+      call read_dset_alloc(hg, 'delta', delta)
+      call read_dset_alloc(hg, 'nabla', nabla)
+      call read_dset_alloc(hg, 'kap', kap)
+      call read_dset_alloc(hg, 'kap_rho', kap_rho)
+      call read_dset_alloc(hg, 'kap_T', kap_T)
+      call read_dset_alloc(hg, 'eps', eps)
+      call read_dset_alloc(hg, 'eps_rho', eps_rho)
+      call read_dset_alloc(hg, 'eps_T', eps_T)
+      call read_dset_alloc(hg, 'Omega_rot', Omega_rot)
+
+      kap_rho = kap_rho/kap
+      kap_T = kap_T/kap
+
+      ! Finish
+
+      return
+
+    end subroutine read_gsm_data_v1_00_
 
   end subroutine read_gsm_data
-
-!****
-
-  subroutine write_gsm_data (file, M_star, R_star, L_star, r, w, p, rho, T, &
-                             N2, Gamma_1, nabla_ad, delta, nabla,  &
-                             kappa, kappa_rho, kappa_T, &
-                             epsilon, epsilon_rho, epsilon_T, &
-                             Omega_rot)
-
-    character(*), intent(in) :: file
-    real(WP), intent(in)     :: M_star
-    real(WP), intent(in)     :: R_star
-    real(WP), intent(in)     :: L_star
-    real(WP), intent(in)     :: r(:)
-    real(WP), intent(in)     :: w(:)
-    real(WP), intent(in)     :: p(:)
-    real(WP), intent(in)     :: rho(:)
-    real(WP), intent(in)     :: T(:)
-    real(WP), intent(in)     :: N2(:)
-    real(WP), intent(in)     :: Gamma_1(:)
-    real(WP), intent(in)     :: nabla_ad(:)
-    real(WP), intent(in)     :: delta(:)
-    real(WP), intent(in)     :: nabla(:)
-    real(WP), intent(in)     :: kappa(:)
-    real(WP), intent(in)     :: kappa_rho(:)
-    real(WP), intent(in)     :: kappa_T(:)
-    real(WP), intent(in)     :: epsilon(:)
-    real(WP), intent(in)     :: epsilon_rho(:)
-    real(WP), intent(in)     :: epsilon_T(:)
-    real(WP), intent(in)     :: Omega_rot(:)
-
-    type(hgroup_t) :: hg
-
-    ! Write data to the GSM-format file
-
-    hg = hgroup_t(file, CREATE_FILE)
-
-    ! Write the header
-
-    call write_attr(hg, 'n', SIZE(r))
-
-    call write_attr(hg, 'M_star', M_star)
-    call write_attr(hg, 'R_star', R_star)
-    call write_attr(hg, 'L_star', L_star)
-
-    ! Write the data
-
-    call write_dset(hg, 'r', r)
-    call write_dset(hg, 'w', w)
-    call write_dset(hg, 'p', p)
-    call write_dset(hg, 'rho', rho)
-    call write_dset(hg, 'T', T)
-    call write_dset(hg, 'N2', N2)
-    call write_dset(hg, 'Gamma_1', Gamma_1)
-    call write_dset(hg, 'nabla_ad', nabla_ad)
-    call write_dset(hg, 'delta', delta)
-    call write_dset(hg, 'nabla', nabla)
-    call write_dset(hg, 'epsilon', epsilon)
-    call write_dset(hg, 'epsilon_rho', epsilon_rho)
-    call write_dset(hg, 'epsilon_T', epsilon_T)
-    call write_dset(hg, 'kappa', kappa)
-    call write_dset(hg, 'kappa_rho', kappa_rho)
-    call write_dset(hg, 'kappa_T', kappa_T)
-    call write_dset(hg, 'Omega_rot', Omega_rot)
-
-    call hg%final()
-
-    ! Finish
-
-    return
-
-  end subroutine write_gsm_data
 
 end module gyre_gsm_file

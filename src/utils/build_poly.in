@@ -1,8 +1,0 @@
-&poly
-	n_poly = 4.97
-	dxi = 1E-2
-/
-
-&output
-	file = 'poly.h5'
-/
