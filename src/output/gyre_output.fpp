@@ -26,6 +26,7 @@ module gyre_output
 
   use gyre_constants
   use gyre_evol_model
+  use gyre_freq
   use gyre_hdf_writer
   use gyre_mode
   use gyre_model
@@ -113,6 +114,10 @@ contains
           call wr%write('freq_units', ot_p%freq_units)
        case ('freq_frame')
           call wr%write('freq_frame', ot_p%freq_frame)
+       case ('Delta_p')
+          call wr%write('Delta_p', [(Delta_p(md(i_md)%ml), i_md=1,n_md)])
+       case ('Delta_g')
+          call wr%write('Delta_g', [(Delta_g(md(i_md)%ml, md(i_md)%l), i_md=1,n_md)])
        case ('eta')
           call wr%write('eta', [(md(i_md)%eta(), i_md=1,n_md)])
        case ('f_T')
@@ -288,6 +293,10 @@ contains
             call wr%write('freq_units', ot_p%freq_units)
          case ('freq_frame')
             call wr%write('freq_frame', ot_p%freq_frame)
+         case ('Delta_p')
+            call wr%write('Delta_p', Delta_p(md%ml))
+         case ('Delta_g')
+            call wr%write('Delta_g', Delta_g(md%ml, md%l))
          case ('eta')
             call wr%write('eta', md%eta())
          case ('E')
