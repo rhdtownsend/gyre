@@ -35,6 +35,7 @@ module gyre_freq
   use gyre_poly_model
   use gyre_rot
   use gyre_rot_factory
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -61,6 +62,8 @@ module gyre_freq
   public :: omega_from_freq
   public :: freq_from_omega
   public :: eval_cutoff_freqs
+  public :: Delta_p
+  public :: Delta_g
 
   ! Procedures
 
@@ -84,8 +87,8 @@ contains
 
     type(point_t)                  :: pt_i
     type(point_t)                  :: pt_o
-    $TYPE(WP)                      :: omega_l
     class(${T}_rot_t), allocatable :: rt
+    $TYPE(WP)                      :: omega_l
     real(WP)                       :: omega_cutoff_lo
     real(WP)                       :: omega_cutoff_hi
 
@@ -115,9 +118,9 @@ contains
        case ('CYC_PER_DAY')
           omega_l = TWOPI*freq*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/86400._WP
        case ('ACOUSTIC_DELTA')
-          omega_l = TWOPI*freq*ml%delta_p()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+          omega_l = TWOPI*freq*Delta_p(ml)
        case ('GRAVITY_DELTA')
-          omega_l = TWOPI*freq*ml%delta_g()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+          omega_l = TWOPI*freq*Delta_g(ml, md_p%l)
        case ('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           omega_l = freq*omega_cutoff_hi
@@ -137,8 +140,11 @@ contains
        select case (freq_units)
        case ('NONE')
           omega_l = freq
+       case ('ACOUSTIC_DELTA')
+          omega_l = TWOPI*freq*Delta_p(ml)
+       case ('GRAVITY_DELTA')
+          omega_l = TWOPI*freq*Delta_g(ml, md_p%l)
        case default
-
           $ABORT(Invalid freq_units)
        end select
 
@@ -147,6 +153,10 @@ contains
        select case (freq_units)
        case ('NONE')
           omega_l = freq
+       case ('ACOUSTIC_DELTA')
+          omega_l = TWOPI*freq*Delta_p(ml)
+       case ('GRAVITY_DELTA')
+          omega_l = TWOPI*freq*Delta_g(ml, md_p%l)
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -249,9 +259,9 @@ contains
        case ('CYC_PER_DAY')
           freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*86400._WP
        case ('ACOUSTIC_DELTA')
-          freq = omega_l/(TWOPI*ml%delta_p()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+          freq = omega_l/(TWOPI*Delta_p(ml))
        case ('GRAVITY_DELTA')
-          freq = omega_l/(TWOPI*ml%delta_g()*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+          freq = omega_l/(TWOPI*Delta_g(ml, md_p%l))
        case ('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           freq = omega_l/omega_cutoff_hi
@@ -271,6 +281,10 @@ contains
        select case (freq_units)
        case ('NONE')
           freq = omega_l
+       case ('ACOUSTIC_DELTA')
+          freq = omega_l/(TWOPI*Delta_p(ml))
+       case ('GRAVITY_DELTA')
+          freq = omega_l/(TWOPI*Delta_g(ml, md_p%l))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -280,6 +294,10 @@ contains
        select case (freq_units)
        case ('NONE')
           freq = omega_l
+       case ('ACOUSTIC_DELTA')
+          freq = omega_l/(TWOPI*Delta_p(ml))
+       case ('GRAVITY_DELTA')
+          freq = omega_l/(TWOPI*Delta_g(ml, md_p%l))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -357,5 +375,96 @@ contains
     return
 
   end subroutine eval_cutoff_freqs
+
+  !****
+
+  function Delta_p (ml)
+
+    class(model_t), intent(in) :: ml
+    real(WP)                   :: Delta_p
+
+    type(grid_t)          :: gr
+    real(WP), allocatable :: V_2(:)
+    real(WP), allocatable :: c_1(:)
+    real(WP), allocatable :: Gamma_1(:)
+    real(WP), allocatable :: f(:)
+
+    ! Evaluate the dimensionless p-mode frequency separation
+
+    gr = ml%grid()
+
+    associate (pt => gr%pt)
+
+      V_2 = ml%V_2(pt)
+      c_1 = ml%c_1(pt)
+      Gamma_1 = ml%Gamma_1(pt)
+
+      f = Gamma_1/(c_1*V_2)
+
+      $if ($GFORTRAN_PR_49636)
+      Delta_p = 0.5_WP/integrate(gr%pt%x, f)
+      $else
+      Delta_p = 0.5_WP/integrate(pt%x, f)
+      $endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function Delta_p
+
+  !****
+
+  function Delta_g (ml, l)
+
+    class(model_t), intent(in) :: ml
+    integer, intent(in)        :: l
+    real(WP)                   :: Delta_g
+
+    type(grid_t)          :: gr
+    real(WP), allocatable :: As(:)
+    real(WP), allocatable :: c_1(:)
+    real(WP), allocatable :: f(:)
+
+    ! Calculate the dimensionless g-mode inverse period separation
+
+    gr = ml%grid()
+
+    associate (pt => gr%pt)
+
+      As = ml%As(pt)
+      c_1 = ml%c_1(pt)
+
+      $if ($GFORTRAN_PR_49636)
+      allocate(f(gr%n_k))
+      
+      where (gr%pt%x /= 0._WP)
+         f = SQRT(MAX(As/c_1, 0._WP))/gr%pt%x
+      elsewhere
+         f = 0._WP
+      end where
+
+      Delta_g = SQRT(l*(l+1._WP))/(2._WP*PI**2)*integrate(gr%pt%x, f)
+      $else
+      allocate(f(gr%n_k))
+      
+      where (pt%x /= 0._WP)
+         f = SQRT(MAX(As/c_1, 0._WP))/pt%x
+      elsewhere
+         f = 0._WP
+      end where
+
+      Delta_g = SQRT(l*(l+1._WP))/(2._WP*PI**2)*integrate(pt%x, f)
+      $endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function Delta_g
 
 end module gyre_freq
