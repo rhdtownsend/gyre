@@ -405,7 +405,7 @@ contains
 
     ! Return the non-adiabatic capability
 
-    nonad_cap = .TRUE.
+    nonad_cap = .FALSE.
 
     ! Finish
 
