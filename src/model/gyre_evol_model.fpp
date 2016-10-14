@@ -115,8 +115,6 @@ module gyre_evol_model
      procedure, public :: grid
      procedure, public :: vacuum
      procedure, public :: nonad_cap
-     procedure, public :: delta_p
-     procedure, public :: delta_g
   end type evol_model_t
  
   ! Interfaces
@@ -580,89 +578,5 @@ contains
     return
 
   end function nonad_cap
-
-  !****
-
-  function delta_p (this)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP)                        :: delta_p
-
-    real(WP) :: V_2(this%n_k)
-    real(WP) :: c_1(this%n_k)
-    real(WP) :: Gamma_1(this%n_k)
-    real(WP) :: f(this%n_k)
-
-    ! Calculate the p-mode (large) frequency separation
-
-    associate (pt => this%gr%pt)
-
-      V_2 = this%V_2(pt)
-      c_1 = this%c_1(pt)
-      Gamma_1 = this%Gamma_1(pt)
-
-      f = Gamma_1/(c_1*V_2)
-
-      $if ($GFORTRAN_PR_49636)
-      delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
-                integrate(this%gr%pt%x, f)
-      $else
-      delta_p = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/ &
-                integrate(pt%x, f)
-      $endif
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function delta_p
-
-  !****
-
-  function delta_g (this)
-
-    class(evol_model_t), intent(in) :: this
-    real(WP)                        :: delta_g
-
-    real(WP) :: As(this%n_k)
-    real(WP) :: c_1(this%n_k)
-    real(WP) :: f(this%n_k)
-
-    ! Calculate the g-mode inverse period separation
-
-    associate (pt => this%gr%pt)
-
-      As = this%As(pt)
-      c_1 = this%c_1(pt)
-
-      $if ($GFORTRAN_PR_49636)
-      where (this%gr%pt%x /= 0._WP)
-         f = SQRT(MAX(As/c_1, 0._WP))/this%gr%pt%x
-      elsewhere
-         f = 0._WP
-      end where
-
-      delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
-           integrate(this%gr%pt%x, f)
-      $else
-      where (pt%x /= 0._WP)
-         f = SQRT(MAX(As/c_1, 0._WP))/pt%x
-      elsewhere
-         f = 0._WP
-      end where
-
-      delta_g = 0.5_WP*SQRT(G_GRAVITY*this%M_star/this%R_star**3)/PI**2* &
-                integrate(pt%x, f)
-      $endif
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function delta_g
 
 end module gyre_evol_model
