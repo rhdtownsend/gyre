@@ -103,12 +103,14 @@ program gyre
 
   if (check_log_level('INFO')) then
 
-     write(OUTPUT_UNIT, 100) form_header('gyre ['//VERSION//']', '=')
+     write(OUTPUT_UNIT, 100) form_header('gyre ['//VERSION//']', '-')
 100  format(A)
 
-     write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
-     write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
-110  format(A,1X,A)
+     if (check_log_level('DEBUG')) then
+        write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
+        write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
+110     format(A,1X,A)
+     endif
 
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
 120  format(A,1X,I0)
@@ -135,7 +137,7 @@ program gyre
   ! Initialize the model
 
   if (check_log_level('INFO')) then
-     write(OUTPUT_UNIT, 100) form_header('Model Init', '=')
+     write(OUTPUT_UNIT, 100) form_header('Model Init', '-')
   endif
 
   ml => model_t(ml_p)
@@ -156,7 +158,7 @@ program gyre
 
      if (check_log_level('INFO')) then
 
-        write(OUTPUT_UNIT, 100) form_header('Mode Search', '=')
+        write(OUTPUT_UNIT, 100) form_header('Mode Search', '-')
 
         write(OUTPUT_UNIT, 100) 'Mode parameters'
 
