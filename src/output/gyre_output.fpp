@@ -59,6 +59,7 @@ contains
 
     class(writer_t), allocatable                        :: wr
     character(LEN(ot_p%summary_item_list)), allocatable :: items(:)
+    logical                                             :: invalid_items
     integer                                             :: n_md
     integer                                             :: i
     integer                                             :: i_md
@@ -84,6 +85,8 @@ contains
 
     ! Write the items
 
+    invalid_items = .FALSE.
+
     n_md = SIZE(md)
 
     item_loop : do i = 1, SIZE(items)
@@ -91,7 +94,7 @@ contains
        select case (items(i))
 
        case ('j')
-            call wr%write('j', md%j)
+          call wr%write('j', md%j)
        case ('l')
           call wr%write('l', md%l)
        case ('l_i')
@@ -159,7 +162,7 @@ contains
                 call write_summary_evol_(items(i), ml, wr)
              class default
                 write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-                $ABORT(Invalid item in summary_item_list)
+                invalid_items = .TRUE.
              end select
           endif
        end select
@@ -176,6 +179,12 @@ contains
     ! Close the file
 
     call wr%final()
+
+    ! Check whether any invalid items were found
+
+    if (invalid_items) then
+       $ABORT(Invalid item(s) in summary_item_list)
+    end if
 
     ! Finish
 
@@ -200,7 +209,7 @@ contains
          call wr%write('L_star', ml%L_star)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-         $ABORT(Invalid item)
+         invalid_items = .TRUE.
       end select
 
       ! Finish
@@ -221,6 +230,7 @@ contains
     character(:), allocatable                        :: mode_file
     class(writer_t), allocatable                     :: wr
     character(LEN(ot_p%mode_item_list)), allocatable :: items(:)
+    logical                                          :: invalid_items
     integer                                          :: i
 
     ! Write the mode file
@@ -253,12 +263,14 @@ contains
     case default
        $ABORT(Invalid mode_file_format)
     end select
-
+    
     ! Split the item list
 
     items = split_list(ot_p%mode_item_list, ',')
 
     ! Write the items
+
+    invalid_items = .FALSE.
 
     associate (pt => md%gr%pt)
 
@@ -417,9 +429,9 @@ contains
             select type (ml => md%ml)
             type is (evol_model_t)
                call write_mode_evol_(ml)
-               class default
+            class default
                write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-               $ABORT(Invalid item in mode_item_list)
+               invalid_items = .TRUE.
             end select
          end select
 
@@ -430,6 +442,12 @@ contains
     ! Close the file
 
     call wr%final()
+
+    ! Check whether any invalid items were found
+
+    if (invalid_items) then
+       $ABORT(Invalid item(s) in mode_item_list)
+    end if
 
     ! Finish
 
@@ -462,7 +480,7 @@ contains
            call wr%write('T', ml%T(pt))
         case default
            write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-           $ABORT(Invalid item)
+           invalid_items = .TRUE.
         end select
 
       end associate
