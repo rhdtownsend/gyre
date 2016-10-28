@@ -166,7 +166,7 @@ contains
 
     type(grid_t) :: gr
     complex(WP)  :: y_1_ref
-    real(WP)     :: phase
+    complex(WP)  :: f_phase
 
     ! Construct the mode_t
 
@@ -209,9 +209,9 @@ contains
     
     y_1_ref = md%y_i(1, md%pt_ref)
 
-    phase = ATAN2(AIMAG(y_1_ref), REAL(y_1_ref))
+    f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
 
-    md%scl = 1._WP/SQRT(md%E())*EXP(CMPLX(0._WP, -phase, KIND=WP))
+    md%scl = 1._WP/SQRT(md%E())*f_phase
 
     ! Classify the mode
 
