@@ -49,6 +49,7 @@ module gyre_${T}_sysmtx
      procedure(set_E_), deferred, public     :: set_E
      procedure(factorize_), deferred, public :: factorize
      procedure(det_), deferred, public       :: det
+     procedure(soln_vec_), deferred, public  :: soln_vec
      procedure(null_vec_), deferred, public  :: null_vec
   end type ${T}_sysmtx_t
 
@@ -87,6 +88,15 @@ module gyre_${T}_sysmtx
        class(${T}_sysmtx_t), intent(in) :: this
        type(${T}_ext_t)                 :: det
      end function det_
+
+     function soln_vec_ (this, w_nz) result (v)
+       use core_kinds
+       use gyre_ext
+       import ${T}_sysmtx_t
+       class(${T}_sysmtx_t), intent(in) :: this
+       $TYPE(WP), intent(in)            :: w_nz(:)
+       $TYPE(WP)                        :: v(this%n_e*(this%n+1))
+     end function soln_vec_
 
      function null_vec_ (this) result (v)
        use core_kinds

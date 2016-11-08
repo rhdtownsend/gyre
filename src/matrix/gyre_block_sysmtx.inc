@@ -73,7 +73,9 @@ module gyre_${T}_block_sysmtx
      procedure, public :: factorize => factorize_
      procedure, public :: scale_rows_
      procedure, public :: det => det_
+     procedure, public :: soln_vec => soln_vec_
      procedure, public :: null_vec => null_vec_
+     procedure         :: backsub_
   end type ${T}_block_sysmtx_t
 
   ! Interfaces
@@ -400,6 +402,66 @@ contains
 
   !****
 
+  function soln_vec_ (this, w_nz) result (v)
+
+    class(${T}_block_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                  :: w_nz(:)
+    $TYPE(WP)                              :: v(this%n_e*(this%n+1))
+
+    $TYPE(WP) :: M(2*this%n_e,2*this%n_e)
+    integer   :: ipiv(2*this%n_e)
+    integer   :: info
+    $TYPE(WP) :: B(2*this%n_e, 1)
+    $TYPE(WP) :: v_bound(2*this%n_e)
+
+    $CHECK_BOUNDS(SIZE(w_nz),this%n_e)
+
+    ! Evaluate the solution vector v of the linear system S v = w,
+    ! where the right-hand side vector w has non-zero components in
+    ! only the n_i first and n_o last rows (these components are
+    ! supplied in w_nz)
+    
+    associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+
+      ! Set up the reduced 2x2-block matrix and rhs matrix
+
+      M(:n_i,:n_e) = this%B_i
+      M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
+      M(n_i+n_e+1:,:n_e) = 0._WP
+
+      M(:n_i,n_e+1:) = 0._WP
+      M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
+      M(n_i+n_e+1:,n_e+1:) = this%B_o
+
+      B(:n_i,1) = w_nz(:n_i)
+      B(n_i+1:n_i+n_e,1) = 0._WP
+      B(n_i+n_e+1:,1) = w_nz(n_i+1:)
+
+      ! Solve for the solution at the two boundaries using LU
+      ! decomposition
+
+      call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
+      $ASSERT(info >= 0,Negative return from XGETRF)
+
+      call XGETRS('N', 2*n_e, 1, M, 2*n_e, ipiv, B, 2*n_e, info)
+      $ASSERT(info >= 0,Negative return from XGETRS)
+
+      v_bound = B(:,1)
+
+    end associate
+
+    ! Backsubstitute to reconstruct the full solution vector
+
+    call this%backsub_(v_bound, v)
+
+    ! Finish
+
+    return
+
+  end function soln_vec_
+
+  !****
+
   function null_vec_ (this) result (v)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
@@ -419,14 +481,10 @@ contains
     real(WP)  :: M_s
     integer   :: i
     $TYPE(WP) :: v_bound(2*this%n_e)
-    integer   :: l
-    integer   :: k
-    integer   :: i_a
-    integer   :: i_b
-    integer   :: i_c
 
-    ! Evaluate the null vector (working on the assumption that the
-    ! final diagonal element of the factorized matrix is zero)
+    ! Evaluate the null vector v of the linear system S v = 0, working
+    ! on the assumption that the final diagonal element of the
+    ! factorized matrix S is zero
 
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
@@ -480,7 +538,42 @@ contains
 
       endif
 
-      ! Backsubstitute to reconstruct the full solution vector
+    end associate
+
+    ! Backsubstitute to reconstruct the full solution vector
+
+    call this%backsub_(v_bound, v)
+
+    ! Finish
+
+    return
+
+  end function null_vec_
+
+  !****
+
+  subroutine backsub_ (this, v_bound, v)
+
+    class(${T}_block_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                  :: v_bound(:)
+    $TYPE(WP), intent(out)                 :: v(:)
+
+    $TYPE(WP), parameter :: ZERO = 0._WP
+    $TYPE(WP), parameter :: ONE = 1._WP
+
+    integer   :: l
+    integer   :: k
+    integer   :: i_a
+    integer   :: i_b
+    integer   :: i_c
+
+    $CHECK_BOUNDS(SIZE(v_bound),this%n_e)
+    $CHECK_BOUNDS(SIZE(v),this%n_e*(this%n+1))
+
+    ! Given the solution vector v_bound at the boundaries,
+    ! backsubstitute to reconstruct the full solution vector v
+
+    associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
       v(:n_e) = v_bound(:n_e)
       v(n_e*n+1:) = v_bound(n_e+1:)
@@ -520,7 +613,7 @@ contains
 
     return
 
-  end function null_vec_
+  end subroutine backsub_
 
 end module gyre_${T}_block_sysmtx
 
