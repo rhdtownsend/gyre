@@ -355,6 +355,8 @@ contains
             call wr%write('Omega_rot', md%ml%Omega_rot(pt))
          case ('c_dif')
             call wr%write('c_dif', md%ml%c_dif(pt))
+         case ('c_thm')
+            call wr%write('c_thm', md%ml%c_thm(pt))
          case ('y_1')
             call wr%write('y_1', md%y_i(1))
          case ('y_2')
