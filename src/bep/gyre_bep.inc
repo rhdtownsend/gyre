@@ -60,6 +60,7 @@ module gyre_${T}_bep
      procedure, public :: eval_discrim
      procedure         :: build_
      procedure, public :: solve
+     procedure, public :: solve_forced
   end type ${T}_bep_t
 
   ! Interfaces
@@ -226,6 +227,40 @@ contains
     return
 
   end subroutine solve
+
+  !****
+
+  subroutine solve_forced (this, omega, w_nz, y)
+
+    class(${T}_bep_t), intent(inout) :: this
+    $TYPE(WP), intent(in)            :: omega
+    $TYPE(WP), intent(in)            :: w_nz(:)
+    $TYPE(WP), intent(out)           :: y(:,:)
+
+    $TYPE(WP) :: v(this%n_e*this%n_k)
+
+    $CHECK_BOUNDS(SIZE(w_nz),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(y, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(y, 2),this%n_k)
+
+    ! Solve for the solution vector
+
+    call this%build_(omega)
+
+    call this%sm%factorize()
+
+    v = this%sm%soln_vec(w_nz)
+
+    ! Pack the solution vector into the solution vector
+
+    y = RESHAPE(v, SHAPE(y))
+    
+    ! Finish
+
+    return
+
+  end subroutine solve_forced
 
 end module gyre_${T}_bep
 
