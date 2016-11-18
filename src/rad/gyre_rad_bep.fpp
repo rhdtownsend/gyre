@@ -51,9 +51,9 @@ module gyre_rad_bep
      class(model_t), pointer :: ml => null()
      type(grid_t)            :: gr
      type(rad_eqns_t)        :: eq
+     type(rad_vars_t)        :: vr
      type(mode_par_t)        :: md_p
      type(osc_par_t)         :: os_p
-     type(rad_vars_t)        :: vr
   end type rad_bep_t
 
   ! Interfaces
@@ -95,6 +95,10 @@ contains
 
     ! Construct the rad_bep_t
 
+    if (os_p%cowling_approx) then
+       $WARN(cowling_approx is ignored in 2nd-order radial equations)
+    endif
+    
     ! Initialize the boundary conditions
 
     bd = rad_bound_t(ml, gr, md_p, os_p)
