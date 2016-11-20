@@ -47,7 +47,9 @@ module gyre_nad_eqns
      class(model_t), pointer     :: ml => null()
      class(c_rot_t), allocatable :: rt
      type(nad_vars_t)            :: vr
-     logical                     :: cowling_approx
+     real(WP)                    :: alpha_gr
+     real(WP)                    :: alpha_hf
+     real(WP)                    :: alpha_om
      logical                     :: narf_approx
    contains
      private
@@ -86,8 +88,26 @@ contains
     allocate(eq%rt, SOURCE=c_rot_t(ml, gr, md_p, os_p))
     eq%vr = nad_vars_t(ml, gr, md_p, os_p)
 
-    eq%cowling_approx = os_p%cowling_approx
-    eq%narf_approx = os_p%narf_approx
+    if (os_p%cowling_approx) then
+       eq%alpha_gr = 0._WP
+    else
+       eq%alpha_gr = 1._WP
+    endif
+
+    if (os_p%narf_approx) then
+       eq%alpha_hf = 0._WP
+    else
+       eq%alpha_hf = 1._WP
+    endif
+
+    select case (os_p%time_factor)
+    case ('OSC')
+       eq%alpha_om = 1._WP
+    case ('EXP')
+       eq%alpha_om = -1._WP
+    case default
+       $ABORT(Invalid time_factor)
+    end select
 
     eq%n_e = 6
 
@@ -147,6 +167,7 @@ contains
     complex(WP) :: omega_c
     real(WP)    :: alpha_gr
     real(WP)    :: alpha_hf
+    real(WP)    :: alpha_om
          
     ! Evaluate the log(x)-space RHS matrix
 
@@ -176,28 +197,20 @@ contains
 
     omega_c = this%rt%omega_c(pt, omega)
 
-    if (this%cowling_approx) then
-       alpha_gr = 0._WP
-    else
-       alpha_gr = 1._WP
-    endif
-
-    if (this%narf_approx) then
-       alpha_hf = 0._WP
-    else
-       alpha_hf = 1._WP
-    endif
+    alpha_gr = this%alpha_gr
+    alpha_hf = this%alpha_hf
+    alpha_om = this%alpha_om
 
     ! Set up the matrix
 
     xA(1,1) = V_g - 1._WP - l_i
-    xA(1,2) = lambda/(c_1*omega_c**2) - V_g
-    xA(1,3) = alpha_gr*(lambda/(c_1*omega_c**2))
+    xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V_g
+    xA(1,3) = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
     xA(1,4) = alpha_gr*(0._WP)
     xA(1,5) = delta
     xA(1,6) = 0._WP
 
-    xA(2,1) = c_1*omega_c**2 - As
+    xA(2,1) = c_1*alpha_om*omega_c**2 - As
     xA(2,2) = As - U + 3._WP - l_i
     xA(2,3) = alpha_gr*(0._WP)
     xA(2,4) = alpha_gr*(-1._WP)
@@ -218,19 +231,19 @@ contains
     xA(4,5) = alpha_gr*(-U*delta)
     xA(4,6) = alpha_gr*(0._WP)
 
-    xA(5,1) = V*(nabla_ad*(U - c_1*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif + nabla_ad*dnabla_ad)
-    xA(5,2) = V*(lambda/(c_1*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))
-    xA(5,3) = alpha_gr*(V*lambda/(c_1*omega_c**2)*(nabla_ad - nabla))
+    xA(5,1) = V*(nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif + nabla_ad*dnabla_ad)
+    xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))
+    xA(5,3) = alpha_gr*(V*lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))
     xA(5,4) = alpha_gr*(V*nabla_ad)
     xA(5,5) = V*nabla*(4._WP - kap_S) - (l_i - 2._WP)
     xA(5,6) = -V*nabla/c_rad
 
     xA(6,1) = alpha_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-    xA(6,2) = V*c_eps_ad - lambda*c_rad*(alpha_hf*nabla_ad/nabla - (3._WP + dc_rad)/(c_1*omega_c**2))
-    xA(6,3) = alpha_gr*(lambda*c_rad*(3._WP + dc_rad)/(c_1*omega_c**2))
+    xA(6,2) = V*c_eps_ad - lambda*c_rad*(alpha_hf*nabla_ad/nabla - (3._WP + dc_rad)/(c_1*alpha_om*omega_c**2))
+    xA(6,3) = alpha_gr*(lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_om*omega_c**2))
     xA(6,4) = alpha_gr*(0._WP)
     if (pt%x > 0._WP) then
-       xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*omega_c*c_thm
+       xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c*c_thm
     else
        xA(6,5) = -alpha_hf*HUGE(0._WP)
     endif

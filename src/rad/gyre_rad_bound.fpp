@@ -58,9 +58,9 @@ module gyre_rad_bound
      type(rad_vars_t)            :: vr
      type(point_t)               :: pt_i
      type(point_t)               :: pt_o
+     real(WP)                    :: alpha_om
      integer                     :: type_i
      integer                     :: type_o
-     logical                     :: cowling_approx
    contains 
      private
      procedure, public :: build_i
@@ -106,7 +106,7 @@ contains
 
     bd%pt_i = gr%pt(1)
     bd%pt_o = gr%pt(gr%n_k)
- 
+
     select case (os_p%inner_bound)
     case ('REGULAR')
        $ASSERT(bd%pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
@@ -129,6 +129,15 @@ contains
        bd%type_o = JCD_TYPE
     case default
        $ABORT(Invalid outer_bound)
+    end select
+
+    select case (os_p%time_factor)
+    case ('OSC')
+       bd%alpha_om = 1._WP
+    case ('EXP')
+       bd%alpha_om = -1._WP
+    case default
+       $ABORT(Invalid time_factor)
     end select
 
     bd%n_i = 1
@@ -182,6 +191,7 @@ contains
 
     real(WP) :: c_1
     real(WP) :: omega_c
+    real(WP) :: alpha_om
 
     $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
@@ -196,9 +206,11 @@ contains
 
       omega_c = this%rt%omega_c(pt, omega)
 
+      alpha_om = this%alpha_om
+
       ! Set up the boundary conditions
 
-      B_i(1,1) = c_1*omega_c**2
+      B_i(1,1) = c_1*alpha_om*omega_c**2
       B_i(1,2) = 0._WP
 
       scl = r_ext_t(1._WP)
@@ -330,6 +342,7 @@ contains
     real(WP) :: V
     real(WP) :: c_1
     real(WP) :: omega_c
+    real(WP) :: alpha_om
 
     $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
@@ -354,9 +367,11 @@ contains
 
          omega_c = this%rt%omega_c(pt, omega)
 
+         alpha_om = this%alpha_om
+
          ! Set up the boundary conditions
         
-         B_o(1,1) = 1 - (4._WP + c_1*omega_c**2)/V
+         B_o(1,1) = 1 - (4._WP + c_1*alpha_om*omega_c**2)/V
          B_o(1,2) = -1._WP
 
          scl = r_ext_t(1._WP)

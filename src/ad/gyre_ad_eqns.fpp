@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_eqns
 ! Purpose  : adiabatic differential equations
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -46,7 +46,8 @@ module gyre_ad_eqns
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
      type(ad_vars_t)             :: vr
-     logical                     :: cowling_approx
+     real(WP)                    :: alpha_gr
+     real(WP)                    :: alpha_om
    contains
      private
      procedure, public :: A
@@ -84,7 +85,20 @@ contains
     allocate(eq%rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
     eq%vr = ad_vars_t(ml, gr, md_p, os_p)
 
-    eq%cowling_approx = os_p%cowling_approx
+    if (os_p%cowling_approx) then
+       eq%alpha_gr = 0._WP
+    else
+       eq%alpha_gr = 1._WP
+    endif
+
+    select case (os_p%time_factor)
+    case ('OSC')
+       eq%alpha_om = 1._WP
+    case ('EXP')
+       eq%alpha_om = -1._WP
+    case default
+       $ABORT(Invalid time_factor)
+    end select
 
     eq%n_e = 4
 
@@ -130,6 +144,7 @@ contains
     real(WP) :: l_i
     real(WP) :: omega_c
     real(WP) :: alpha_gr
+    real(WP) :: alpha_om
     
     ! Evaluate the log(x)-space RHS matrix
 
@@ -145,20 +160,17 @@ contains
 
     omega_c = this%rt%omega_c(pt, omega)
 
-    if (this%cowling_approx) then
-       alpha_gr = 0._WP
-    else
-       alpha_gr = 1._WP
-    endif
+    alpha_gr = this%alpha_gr
+    alpha_om = this%alpha_om
 
     ! Set up the matrix
 
     xA(1,1) = V_g - 1._WP - l_i
-    xA(1,2) = lambda/(c_1*omega_c**2) - V_g
-    xA(1,3) = alpha_gr*(lambda/(c_1*omega_c**2))
+    xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V_g
+    xA(1,3) = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
     xA(1,4) = alpha_gr*(0._WP)
 
-    xA(2,1) = c_1*omega_c**2 - As
+    xA(2,1) = c_1*alpha_om*omega_c**2 - As
     xA(2,2) = As - U + 3._WP - l_i
     xA(2,3) = alpha_gr*(0._WP)
     xA(2,4) = alpha_gr*(-1._WP)

@@ -46,6 +46,7 @@ module gyre_rad_eqns
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
      type(rad_vars_t)            :: vr
+     real(WP)                    :: alpha_om
    contains
      private
      procedure, public :: A
@@ -82,6 +83,15 @@ contains
 
     allocate(eq%rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
     eq%vr = rad_vars_t(ml, gr, md_p, os_p)
+
+    select case (os_p%time_factor)
+    case ('OSC')
+       eq%alpha_om = 1._WP
+    case ('EXP')
+       eq%alpha_om = -1._WP
+    case default
+       $ABORT(Invalid time_factor)
+    end select
 
     eq%n_e = 2
 
@@ -124,6 +134,7 @@ contains
     real(WP) :: As
     real(WP) :: c_1
     real(WP) :: omega_c
+    real(WP) :: alpha_om
     
     ! Evaluate the log(x)-space RHS matrix
 
@@ -136,12 +147,14 @@ contains
 
     omega_c = this%rt%omega_c(pt, omega)
 
+    alpha_om = this%alpha_om
+
     ! Set up the matrix
 
     xA(1,1) = V_g - 1._WP
     xA(1,2) = -V_g
       
-    xA(2,1) = c_1*omega_c**2 + U - As
+    xA(2,1) = c_1*alpha_om*omega_c**2 + U - As
     xA(2,2) = As - U + 3._WP
 
     ! Apply the variables transformation

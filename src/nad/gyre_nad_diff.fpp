@@ -180,6 +180,25 @@ contains
 
     !    scl = scl*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(this%pt_b%x - this%pt_a%x)))
 
+    class is (c_colloc_diff_t)
+
+       pt%s = this%pt_a%s
+       pt%x = 0.5_WP*(this%pt_a%x + this%pt_b%x)
+
+!       if (this%eq%ml%c_thm(pt) > 3E6) then
+!          E_l(6,:) = [0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
+          !          E_r(6,:) = [0._WP,0._WP,0._WP,0._WP,-1._WP,0._WP]
+!          scl = scl/omega
+!       endif
+
+       ! lambda_1 = SQRT(A(2,1)*A(1,2))
+       ! lambda_2 = SQRT(A(4,3)*A(3,4))
+       ! lambda_3 = SQRT(A(6,5)*A(5,6))
+
+       ! scl = scl/(lambda_1*lambda_2*lambda_3)
+
+       scl = scl/SQRT(omega)
+
     end select
 
     ! Finish
