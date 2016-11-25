@@ -106,12 +106,14 @@ program gyre_map
 
   if (check_log_level('INFO')) then
 
-     write(OUTPUT_UNIT, 100) form_header('gyre_map ['//VERSION//']', '=')
+     write(OUTPUT_UNIT, 100) form_header('gyre_map ['//VERSION//']', '-')
 100  format(A)
 
-     write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
-     write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
-110  format(A,1X,A)
+     if (check_log_level('DEBUG')) then
+        write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
+        write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
+110     format(A,1X,A)
+     endif
 
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
      write(OUTPUT_UNIT, 120) 'MPI Processors   :', MPI_SIZE
@@ -120,7 +122,7 @@ program gyre_map
      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
      write(OUTPUT_UNIT, 110) 'GYRE_DIR         :', gyre_dir
 
-     write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
+     write(OUTPUT_UNIT, 100) form_header('Initialization', '-')
 
   endif
 
