@@ -567,7 +567,7 @@ contains
     integer   :: i_b
     integer   :: i_c
 
-    $CHECK_BOUNDS(SIZE(v_bound),this%n_e)
+    $CHECK_BOUNDS(SIZE(v_bound),2*this%n_e)
     $CHECK_BOUNDS(SIZE(v),this%n_e*(this%n+1))
 
     ! Given the solution vector v_bound at the boundaries,
