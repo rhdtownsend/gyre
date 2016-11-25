@@ -131,11 +131,11 @@ contains
     complex(WP), intent(out)      :: E_r(:,:)
     type(c_ext_t), intent(out)    :: scl
 
+    logical, parameter :: MAGNUS_EIGVAL_MASK(3) = [.FALSE.,.FALSE.,.TRUE.]
+
     type(point_t) :: pt
     complex(WP)   :: A(this%n_e,this%n_e)
-    complex(WP)   :: lambda_1
-    complex(WP)   :: lambda_2
-    complex(WP)   :: lambda_3
+    complex(WP)   :: lambda(3)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -161,41 +161,13 @@ contains
 
        A = this%eq%A(pt, omega)
 
-       lambda_1 = SQRT(A(2,1)*A(1,2))
-       lambda_2 = SQRT(A(4,3)*A(3,4))
-       lambda_3 = SQRT(A(6,5)*A(5,6))
+       lambda(1) = SQRT(A(2,1)*A(1,2))
+       lambda(2) = SQRT(A(4,3)*A(3,4))
+       lambda(3) = SQRT(A(6,5)*A(5,6))
 
-       scl = scl*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(this%pt_b%x - this%pt_a%x)))
-
-    ! class is (c_colloc_diff_t)
-
-    !    pt%s = this%pt_a%s
-    !    pt%x = 0.5_WP*(this%pt_a%x + this%pt_b%x)
-
-    !    A = this%eq%A(pt, omega)
-
-    !    lambda_1 = SQRT(A(2,1)*A(1,2))
-    !    lambda_2 = SQRT(A(4,3)*A(3,4))
-    !    lambda_3 = SQRT(A(6,5)*A(5,6))
-
-    !    scl = scl*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(this%pt_b%x - this%pt_a%x)))
+       scl = scl*exp(c_ext_t(-SUM(lambda, MASK=MAGNUS_EIGVAL_MASK)*(this%pt_b%x - this%pt_a%x)))
 
     class is (c_colloc_diff_t)
-
-       pt%s = this%pt_a%s
-       pt%x = 0.5_WP*(this%pt_a%x + this%pt_b%x)
-
-!       if (this%eq%ml%c_thm(pt) > 3E6) then
-!          E_l(6,:) = [0._WP,0._WP,0._WP,0._WP,1._WP,0._WP]
-          !          E_r(6,:) = [0._WP,0._WP,0._WP,0._WP,-1._WP,0._WP]
-!          scl = scl/omega
-!       endif
-
-       ! lambda_1 = SQRT(A(2,1)*A(1,2))
-       ! lambda_2 = SQRT(A(4,3)*A(3,4))
-       ! lambda_3 = SQRT(A(6,5)*A(5,6))
-
-       ! scl = scl/(lambda_1*lambda_2*lambda_3)
 
        scl = scl/SQRT(omega)
 
