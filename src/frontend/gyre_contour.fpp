@@ -529,10 +529,11 @@ contains
     type(contour_seg_t), allocatable, intent(in) :: is_re(:)
     type(contour_seg_t), allocatable, intent(in) :: is_im(:)
     interface
-       subroutine process_root (omega, n_iter, discrim_ref)
+       subroutine process_root (omega, j, n_iter, discrim_ref)
          use core_kinds
          use gyre_ext
          complex(WP), intent(in)   :: omega
+         integer, intent(in)       :: j
          integer, intent(in)       :: n_iter
          type(r_ext_t), intent(in) :: discrim_ref
        end subroutine process_root
@@ -588,7 +589,7 @@ contains
 
        ! Process it
 
-       call process_root(cmplx(omega_root), n_iter, max(abs(discrim_a), abs(discrim_b)))
+       call process_root(cmplx(omega_root), j, n_iter, max(abs(discrim_a), abs(discrim_b)))
 
     end do intseg_loop
 
@@ -622,25 +623,21 @@ contains
 
   !****
 
-  subroutine process_root (omega, n_iter, discrim_ref)
+  subroutine process_root (omega, j, n_iter, discrim_ref)
 
     complex(WP), intent(in)   :: omega
+    integer, intent(in)       :: j
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    type(soln_t)  :: sl
     type(mode_t)  :: md_new
     type(r_ext_t) :: chi
 
-    ! Create the soln_t
+    ! Construct the new mode_t
+    
+    md_new = mode_t(bp, j, omega)
 
-    sl = soln_t(bp, omega)
-
-    ! Construct the new mode
-
-    md_new = mode_t(ml, sl, md_p(1), os_p_sel)
-
-    chi = ABS(sl%discrim)/ABS(discrim_ref)
+    chi = abs(md_new%sl%discrim)/discrim_ref
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 120) md_new%l, md_new%m, md_new%n_pg, md_new%n_p, md_new%n_g, &
@@ -661,7 +658,7 @@ contains
 
     ! Write it
 
-    call write_mode(md(n_md), n_md, ot_p)
+    call write_mode(md(n_md), ot_p)
 
     ! If necessary, prune it
 
