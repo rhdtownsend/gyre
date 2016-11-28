@@ -67,7 +67,7 @@ contains
     integer                        :: n_center
     character(LEN(gr_p%tag_list))  :: tag_list
 
-    namelist /grid/ x_i, x_i, alpha_osc, alpha_exp, alpha_thm, alpha_str, &
+    namelist /grid/ x_i, x_o, alpha_osc, alpha_exp, alpha_thm, alpha_str, &
                     n_center, tag_list
 
     ! Count the number of grid namelists
