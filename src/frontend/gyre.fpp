@@ -281,9 +281,9 @@ contains
     if (md%n_pg < md_p(i)%n_pg_min .OR. md%n_pg > md_p(i)%n_pg_max) return
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+       write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
             md%omega, real(chi), n_iter
-120    format(5(2X,I8),3(2X,E24.16),2X,I6)
+100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
     endif
 
     ! Store it
@@ -322,9 +322,9 @@ contains
     ! Process the non-adiabatic mode
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+       write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
             md%omega, real(chi), n_iter
-120    format(5(2X,I8),3(2X,E24.16),2X,I6)
+100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
     endif
 
     ! Store it

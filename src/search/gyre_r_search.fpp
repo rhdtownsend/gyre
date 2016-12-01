@@ -86,10 +86,10 @@ contains
 
     $ASSERT(SIZE(sc_p) >=1,Empty scan_par_t)
 
-    ! Build the frequency scan grid
+    ! Build the frequency scan
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Building omega grid'
+       write(OUTPUT_UNIT, 100) 'Building frequency scan'
 100    format(A)
     endif
 
@@ -160,7 +160,7 @@ contains
 
             if (check_log_level('INFO')) then
                write(OUTPUT_UNIT, 110) 'added scan interval : ', omega_min, ' -> ', omega_max, ' (', n_freq, ' points, ', TRIM(grid_type), ')'
-110            format(3X,A,E24.16,A,E24.16,A,I0,A,A,A)
+110            format(3X,A,E11.4,A,E11.4,A,I0,A,A,A)
             endif
 
          else
@@ -278,7 +278,7 @@ contains
 100    format(A)
 
        write(OUTPUT_UNIT, 110) 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110    format(5(2X,A8),3(2X,A24),2X,A6)
+110    format(1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
        
     endif
 
