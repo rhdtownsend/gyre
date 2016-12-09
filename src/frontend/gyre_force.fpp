@@ -25,8 +25,8 @@ program gyre_force
   use core_parallel
   use core_system
 
-  use gyre_ad_bep
-  use gyre_bep
+  use gyre_ad_bvp
+  use gyre_bvp
   use gyre_constants
   use gyre_ext
   use gyre_evol_model
@@ -39,12 +39,12 @@ program gyre_force
   use gyre_model
   use gyre_model_factory
   use gyre_model_par
-  use gyre_nad_bep
+  use gyre_nad_bvp
   use gyre_num_par
   use gyre_osc_par
   use gyre_out_par
   use gyre_output
-  use gyre_rad_bep
+  use gyre_rad_bvp
   use gyre_scan_par
   use gyre_search
   use gyre_util
@@ -89,8 +89,8 @@ program gyre_force
   integer                       :: s
   integer                       :: k_i
   integer                       :: k_o
-  class(r_bep_t), allocatable   :: bp_ad
-  class(c_bep_t), allocatable   :: bp_nad
+  class(r_bvp_t), allocatable   :: bp_ad
+  class(c_bvp_t), allocatable   :: bp_nad
 
   namelist /force/ q, c_lmk, n_P, P
 
@@ -223,7 +223,7 @@ program gyre_force
 
         $ASSERT(ml%nonad_cap(),Model does not have capability for nonadibatic calculations)
 
-        allocate(bp_nad, SOURCE=nad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_nad, SOURCE=nad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
 
         call scan_force_c(bp_nad, omega)
 
@@ -232,9 +232,9 @@ program gyre_force
      else
 
         if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-           allocate(bp_ad, SOURCE=rad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
+           allocate(bp_ad, SOURCE=rad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
         else
-           allocate(bp_ad, SOURCE=ad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
+           allocate(bp_ad, SOURCE=ad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
         endif
 
         call scan_force_r(bp_ad, omega)
@@ -264,13 +264,14 @@ contains
 
   subroutine scan_force_${T} (bp, omega)
 
-    type(${T}_bep_t), intent(inout) :: bp
+    type(${T}_bvp_t), intent(inout) :: bp
     real(WP), intent(in)            :: omega(:)
 
     real(WP)  :: a
     real(WP)  :: eps_T
     real(WP)  :: alpha_fc
-    $TYPE(WP) :: w_nz(bp%n_e)
+    $TYPE(WP) :: w_i(bp%n_i)
+    $TYPE(WP) :: w_o(bp%n_i)
     integer   :: n_omega
     integer   :: j
     $TYPE(WP) :: y(bp%n_e,bp%n_k)
@@ -295,23 +296,23 @@ contains
 
        print *,i,alpha_fc
 
-       ! Set up the inhomogeneous boundary term
+       ! Set up the inhomogeneous boundary terms
 
-       w_nz = 0._WP
+       w_i = 0._WP
 
-       $if ($T eq 'c')
-       w_nz(5) = alpha_fc
-       $else
-       w_nz(4) = alpha_fc
-       $endif
+       w_o(1) = 0._WP
+       w_o(2) = alpha_fc
+       w_o(3) = 0._WP
 
-       ! Solve the linear system
+       ! Build and solve the linear system
 
        $if($T eq 'c')
-       call bp%solve_forced(CMPLX(omega(j), KIND=WP), w_nz, y)
+       call bp%build(CMPLX(omega(j), KIND=WP))
        $else
-       call bp%solve_forced(omega(j), w_nz, y)
+       call bp%build(omega(j))
        $endif
+
+       y = bp%soln_vec(w_i, w_o)
 
        ! Print out the tidal response
 
