@@ -73,8 +73,8 @@ module gyre_${T}_block_sysmtx
      procedure, public :: factorize => factorize_
      procedure, public :: scale_rows_
      procedure, public :: det => det_
-     procedure, public :: soln_vec => soln_vec_
-     procedure, public :: null_vec => null_vec_
+     procedure         :: soln_vec_hom_
+     procedure         :: soln_vec_inhom_
      procedure         :: backsub_
   end type ${T}_block_sysmtx_t
 
@@ -402,67 +402,7 @@ contains
 
   !****
 
-  function soln_vec_ (this, w_nz) result (v)
-
-    class(${T}_block_sysmtx_t), intent(in) :: this
-    $TYPE(WP), intent(in)                  :: w_nz(:)
-    $TYPE(WP)                              :: v(this%n_e*(this%n+1))
-
-    $TYPE(WP) :: M(2*this%n_e,2*this%n_e)
-    integer   :: ipiv(2*this%n_e)
-    integer   :: info
-    $TYPE(WP) :: B(2*this%n_e, 1)
-    $TYPE(WP) :: v_bound(2*this%n_e)
-
-    $CHECK_BOUNDS(SIZE(w_nz),this%n_e)
-
-    ! Evaluate the solution vector v of the linear system S v = w,
-    ! where the right-hand side vector w has non-zero components in
-    ! only the n_i first and n_o last rows (these components are
-    ! supplied in w_nz)
-    
-    associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
-
-      ! Set up the reduced 2x2-block matrix and rhs matrix
-
-      M(:n_i,:n_e) = this%B_i
-      M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
-      M(n_i+n_e+1:,:n_e) = 0._WP
-
-      M(:n_i,n_e+1:) = 0._WP
-      M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
-      M(n_i+n_e+1:,n_e+1:) = this%B_o
-
-      B(:n_i,1) = w_nz(:n_i)
-      B(n_i+1:n_i+n_e,1) = 0._WP
-      B(n_i+n_e+1:,1) = w_nz(n_i+1:)
-
-      ! Solve for the solution at the two boundaries using LU
-      ! decomposition
-
-      call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
-      $ASSERT(info >= 0,Negative return from XGETRF)
-
-      call XGETRS('N', 2*n_e, 1, M, 2*n_e, ipiv, B, 2*n_e, info)
-      $ASSERT(info >= 0,Negative return from XGETRS)
-
-      v_bound = B(:,1)
-
-    end associate
-
-    ! Backsubstitute to reconstruct the full solution vector
-
-    call this%backsub_(v_bound, v)
-
-    ! Finish
-
-    return
-
-  end function soln_vec_
-
-  !****
-
-  function null_vec_ (this) result (v)
+  function soln_vec_hom_ (this) result (v)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
     $TYPE(WP)                              :: v(this%n_e*(this%n+1))
@@ -481,10 +421,12 @@ contains
     real(WP)  :: M_s
     integer   :: i
     $TYPE(WP) :: v_bound(2*this%n_e)
-
-    ! Evaluate the null vector v of the linear system S v = 0, working
-    ! on the assumption that the final diagonal element of the
-    ! factorized matrix S is zero
+ 
+    ! Evaluate the solution vector v of the homogeneous linear system
+    ! S v = 0. It is assumed that the nullity nul(S) >= 1; if nul(S) =
+    ! 0, then this routine will return the vector which minimizes the
+    ! norm of S v. When nul(S) > 1, the routine returns the null
+    ! vector associated with the smallest eigenvalue.
 
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
@@ -515,8 +457,8 @@ contains
          call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
          $ASSERT(info >= 0, Negative return from XGETRF)
 
-         ! Locate the singular element on the diagonal of the outer
-         ! block
+         ! Locate the smallest element on the diagonal of the outer
+         ! block (this will be taken to be the singular element)
 
          i_s = 0
          M_s = HUGE(0._WP)
@@ -548,7 +490,71 @@ contains
 
     return
 
-  end function null_vec_
+  end function soln_vec_hom_
+
+  !****
+
+  function soln_vec_inhom_ (this, w_i, w_o) result (v)
+
+    class(${T}_block_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                  :: w_i(:)
+    $TYPE(WP), intent(in)                  :: w_o(:)
+    $TYPE(WP)                              :: v(this%n_e*(this%n+1))
+
+    $TYPE(WP) :: M(2*this%n_e,2*this%n_e)
+    integer   :: ipiv(2*this%n_e)
+    integer   :: info
+    $TYPE(WP) :: B(2*this%n_e, 1)
+    $TYPE(WP) :: v_bound(2*this%n_e)
+
+    $CHECK_BOUNDS(SIZE(w_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(w_o),this%n_o)
+
+    ! Evaluate the solution vector v of the inhomogeneous linear
+    ! system S v = w. It is assumed that the right-hand side vector w
+    ! has non-zero components in only the n_i first and n_o last rows
+    ! (corresponding to the inner and outer boundary
+    ! conditions). These components are supplied in w_i and w_o,
+    ! respectively.
+    
+    associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+
+      ! Set up the reduced 2x2-block matrix and rhs matrix
+
+      M(:n_i,:n_e) = this%B_i
+      M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
+      M(n_i+n_e+1:,:n_e) = 0._WP
+
+      M(:n_i,n_e+1:) = 0._WP
+      M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
+      M(n_i+n_e+1:,n_e+1:) = this%B_o
+
+      B(:n_i,1) = w_i
+      B(n_i+1:n_i+n_e,1) = 0._WP
+      B(n_i+n_e+1:,1) = w_o
+
+      ! Solve for the solution at the two boundaries using LU
+      ! decomposition
+
+      call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
+      $ASSERT(info >= 0,Negative return from XGETRF)
+
+      call XGETRS('N', 2*n_e, 1, M, 2*n_e, ipiv, B, 2*n_e, info)
+      $ASSERT(info >= 0,Negative return from XGETRS)
+
+      v_bound = B(:,1)
+
+    end associate
+
+    ! Backsubstitute to reconstruct the full solution vector
+
+    call this%backsub_(v_bound, v)
+
+    ! Finish
+
+    return
+
+  end function soln_vec_inhom_
 
   !****
 

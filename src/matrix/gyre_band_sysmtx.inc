@@ -77,8 +77,8 @@ module gyre_${T}_band_sysmtx
      procedure, public :: factorize => factorize_
      procedure, public :: scale_rows_
      procedure, public :: det => det_
-     procedure, public :: soln_vec => soln_vec_
-     procedure, public :: null_vec => null_vec_
+     procedure         :: soln_vec_hom_
+     procedure         :: soln_vec_inhom_
   end type ${T}_band_sysmtx_t
 
   ! Interfaces
@@ -382,49 +382,7 @@ contains
 
   !****
 
-  function soln_vec_ (this, w_nz) result (v)
-  
-    class(${T}_band_sysmtx_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: w_nz(:)
-    $TYPE(WP)                             :: v(this%n_e*(this%n+1))
-
-    $TYPE(WP) :: B(this%n_e*(this%n+1),1)
-    integer   :: info
-
-    $CHECK_BOUNDS(SIZE(w_nz),this%n_e)
-
-    ! Evaluate the solution vector v of the linear system S v = w,
-    ! where the right-hand side vector w has non-zero components in
-    ! only the n_i first and n_o last rows (these components are
-    ! supplied in w_nz)
-    
-    associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_ul => this%n_ul)
-
-      ! Set up the banded system
-
-      B(:n_i,1) = w_nz(:n_i)
-      B(n_i+1:n_i+n*n_e,1) = 0._WP
-      B(n_i+n*n_e+1:,1) = w_nz(n_i+1:)
-
-      ! Solve for v
-
-      call ${X}GBTRS('N', n_e*(n+1), n_ul, n_ul, 1, &
-                     this%A_b, SIZE(this%A_b, 1), this%ipiv, B, n_e*(n+1), info)
-      $ASSERT(info == 0,Non-zero return from XGBTRS)
-
-      v = B(:,1)
-
-    end associate
-       
-    ! Finish
-
-    return
-
-  end function soln_vec_
-
-  !****
-
-  function null_vec_ (this) result (v)
+  function soln_vec_hom_ (this) result (v)
   
     class(${T}_band_sysmtx_t), intent(in) :: this
     $TYPE(WP)                             :: v(this%n_e*(this%n+1))
@@ -439,13 +397,13 @@ contains
     integer                :: j
     integer                :: info
 
-    ! Evaluate the null vector v of the linear system S v = 0, working
-    ! on the assumption that the final diagonal element of the
-    ! factorized matrix S is zero
+    ! Evaluate the solution vector v of the homogeneous linear system
+    ! S v = 0. It is assumed that the nullity nul(S) >= 1
 
     associate (n => this%n, n_e => this%n_e, n_ul => this%n_ul)
 
-      ! Locate the singular element on the diagonal of the outer block
+      ! Locate the smallest element on the diagonal of the outer
+      ! block (this will be taken to be the singular element)
 
       i_s = 0
       A_s = HUGE(0._WP)
@@ -494,7 +452,53 @@ contains
 
     return
 
-  end function null_vec_
+  end function soln_vec_hom_
+
+  !****
+
+  function soln_vec_inhom_ (this, w_i, w_o) result (v)
+  
+    class(${T}_band_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                 :: w_i(:)
+    $TYPE(WP), intent(in)                 :: w_o(:)
+    $TYPE(WP)                             :: v(this%n_e*(this%n+1))
+
+    $TYPE(WP) :: B(this%n_e*(this%n+1),1)
+    integer   :: info
+
+    $CHECK_BOUNDS(SIZE(w_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(w_o),this%n_o)
+
+    ! Evaluate the solution vector v of the inhomogeneous linear
+    ! system S v = w. It is assumed that the right-hand side vector w
+    ! has non-zero components in only the n_i first and n_o last rows
+    ! (corresponding to the inner and outer boundary
+    ! conditions). These components are supplied in w_i and w_o,
+    ! respectively.
+    
+    associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_ul => this%n_ul)
+
+      ! Set up the banded system
+
+      B(:n_i,1) = w_i
+      B(n_i+1:n_i+n*n_e,1) = 0._WP
+      B(n_i+n*n_e+1:,1) = w_o
+
+      ! Solve for v
+
+      call ${X}GBTRS('N', n_e*(n+1), n_ul, n_ul, 1, &
+                     this%A_b, SIZE(this%A_b, 1), this%ipiv, B, n_e*(n+1), info)
+      $ASSERT(info == 0,Non-zero return from XGBTRS)
+
+      v = B(:,1)
+
+    end associate
+       
+    ! Finish
+
+    return
+
+  end function soln_vec_inhom_
 
 end module gyre_${T}_band_sysmtx
 

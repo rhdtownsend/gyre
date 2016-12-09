@@ -49,8 +49,9 @@ module gyre_${T}_sysmtx
      procedure(set_E_), deferred, public     :: set_E
      procedure(factorize_), deferred, public :: factorize
      procedure(det_), deferred, public       :: det
-     procedure(soln_vec_), deferred, public  :: soln_vec
-     procedure(null_vec_), deferred, public  :: null_vec
+     procedure(soln_vec_hom_), deferred      :: soln_vec_hom_
+     procedure(soln_vec_inhom_), deferred    :: soln_vec_inhom_
+     generic, public                         :: soln_vec => soln_vec_hom_, soln_vec_inhom_
   end type ${T}_sysmtx_t
 
   ! Interfaces
@@ -89,22 +90,23 @@ module gyre_${T}_sysmtx
        type(${T}_ext_t)                 :: det
      end function det_
 
-     function soln_vec_ (this, w_nz) result (v)
+     function soln_vec_hom_ (this) result (v)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(in) :: this
-       $TYPE(WP), intent(in)            :: w_nz(:)
        $TYPE(WP)                        :: v(this%n_e*(this%n+1))
-     end function soln_vec_
+     end function soln_vec_hom_
 
-     function null_vec_ (this) result (v)
+     function soln_vec_inhom_ (this, w_i, w_o) result (v)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(in) :: this
+       $TYPE(WP), intent(in)            :: w_i(:)
+       $TYPE(WP), intent(in)            :: w_o(:)
        $TYPE(WP)                        :: v(this%n_e*(this%n+1))
-     end function null_vec_
+     end function soln_vec_inhom_
 
   end interface
 
