@@ -1,7 +1,7 @@
-! Module   : gyre_c_bep
-! Purpose  : boundary eigenvalue problems (complex)
+! Module   : gyre_r_bvp
+! Purpose  : parametric boundary value problems (real)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,6 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'gyre_bep.inc'
+$include 'gyre_bvp.inc'
 
-$MOD_DECL(c,complex)
+$MOD_DECL(r,real)

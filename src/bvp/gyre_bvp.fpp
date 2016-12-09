@@ -1,7 +1,7 @@
-! Module   : gyre_bep
-! Purpose  : boundary eigenvalue problems
+! Module   : gyre_bvp
+! Purpose  : parametric boundary value problems
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,11 +15,11 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_bep
+module gyre_bvp
 
   ! Uses
 
-  use gyre_r_bep
-  use gyre_c_bep
+  use gyre_r_bvp
+  use gyre_c_bvp
 
-end module gyre_bep
+end module gyre_bvp
