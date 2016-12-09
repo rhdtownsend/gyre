@@ -1,7 +1,7 @@
 ! Module   : gyre_r_search
 ! Purpose  : mode searching (real)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,8 +26,8 @@ module gyre_r_search
   use core_order
   use core_parallel
 
-  use gyre_ad_bep
-  use gyre_bep
+  use gyre_ad_bvp
+  use gyre_bvp
   use gyre_constants
   use gyre_discrim_func
   use gyre_ext
@@ -38,7 +38,7 @@ module gyre_r_search
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
-  use gyre_rad_bep
+  use gyre_rad_bvp
   use gyre_root
   use gyre_rot
   use gyre_rot_factory
@@ -231,10 +231,12 @@ contains
 
   !****
 
-  subroutine scan_search (bp, omega, process_mode, nm_p)
+  subroutine scan_search (bp, omega, omega_min, omega_max, process_mode, nm_p)
 
-    class(r_bep_t), target, intent(inout) :: bp
+    class(r_bvp_t), target, intent(inout) :: bp
     real(WP), intent(in)                  :: omega(:)
+    real(WP), intent(in)                  :: omega_min
+    real(WP), intent(in)                  :: omega_max
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -264,7 +266,7 @@ contains
 
     ! Set up the discriminant function
 
-    df = r_discrim_func_t(bp)
+    df = r_discrim_func_t(bp, omega_min, omega_max)
 
     ! Find discriminant root brackets
 
@@ -302,9 +304,9 @@ contains
        j_m = j_m + 1
 
        select type (bp)
-       type is (ad_bep_t)
+       type is (ad_bvp_t)
           md = mode_t(bp, j_m, real(omega_root))
-       type is (rad_bep_t)
+       type is (rad_bvp_t)
           md = mode_t(bp, j_m, real(omega_root))
        class default
           $ABORT(Invalid bp class)
@@ -447,7 +449,7 @@ contains
 
 !   subroutine min_search (bp, omega, process_mode)
 
-!     class(bep_t), intent(inout) :: bp
+!     class(bvp_t), intent(inout) :: bp
 !     real(WP), intent(in)        :: omega(:)
 !     interface
 !        subroutine process_mode (md)
