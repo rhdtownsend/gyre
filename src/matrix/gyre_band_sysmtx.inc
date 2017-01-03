@@ -70,13 +70,13 @@ module gyre_${T}_band_sysmtx
      integer                       :: n_ul     ! Number of sub-/super-diagonals
    contains
      private
-     procedure, public :: set_B_i => set_B_i_
-     procedure, public :: set_B_o => set_B_o_
-     procedure, public :: set_E => set_E_
+     procedure, public :: set_B_i
+     procedure, public :: set_B_o
+     procedure, public :: set_E
      procedure         :: set_row_
-     procedure, public :: factorize => factorize_
-     procedure, public :: scale_rows_
-     procedure, public :: det => det_
+     procedure, public :: factorize
+     procedure         :: scale_rows_
+     procedure, public :: det
      procedure         :: soln_vec_hom_
      procedure         :: soln_vec_inhom_
   end type ${T}_band_sysmtx_t
@@ -130,7 +130,7 @@ contains
 
   !****
 
-  subroutine set_B_i_ (this, B, S)
+  subroutine set_B_i (this, B, S)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                    :: B(:,:)
@@ -158,11 +158,11 @@ contains
 
     return
 
-  end subroutine set_B_i_
+  end subroutine set_B_i
 
   !****
 
-  subroutine set_B_o_ (this, B, S)
+  subroutine set_B_o (this, B, S)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                    :: B(:,:)
@@ -190,11 +190,11 @@ contains
 
     return
 
-  end subroutine set_B_o_
+  end subroutine set_B_o
 
   !****
 
-  subroutine set_E_ (this, k, E_l, E_r, S)
+  subroutine set_E (this, k, E_l, E_r, S)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     integer, intent(in)                      :: k
@@ -235,7 +235,7 @@ contains
 
     return
 
-  end subroutine set_E_
+  end subroutine set_E
 
   !****
 
@@ -282,7 +282,7 @@ contains
 
   !****
 
-  subroutine factorize_ (this)
+  subroutine factorize (this)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
 
@@ -306,7 +306,7 @@ contains
 
     return
 
-  end subroutine factorize_
+  end subroutine factorize
 
   !****
 
@@ -359,7 +359,7 @@ contains
 
 !****
 
-  function det_ (this) result (det)
+  function det (this)
 
     class(${T}_band_sysmtx_t), intent(in) :: this
     type(${T}_ext_t)                      :: det
@@ -378,7 +378,7 @@ contains
 
     return
 
-  end function det_
+  end function det
 
   !****
 
