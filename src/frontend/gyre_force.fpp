@@ -300,9 +300,8 @@ contains
 
        w_i = 0._WP
 
-       w_o(1) = 0._WP
-       w_o(2) = alpha_fc
-       w_o(3) = 0._WP
+       w_o = 0._WP
+       w_o(2) = -alpha_fc
 
        ! Build and solve the linear system
 
