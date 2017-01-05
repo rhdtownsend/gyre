@@ -326,7 +326,6 @@ contains
     real(WP) :: scale
     integer  :: i_b
     integer  :: j_b
-    integer  :: k
 
     ! Scale the rows of the sysmtx to have maximum absolute value of unity
 
@@ -346,14 +345,22 @@ contains
           this%A_b(i_b,j_b) = this%A_b(i_b,j_b)/scale
        end do
 
-       k = (i-1+this%n_o)/this%n_e
+       if (i <= this%n_i) then
 
-       if (k == 0) then
           this%S_i(i) = this%S_i(i)*scale
-       elseif (k == this%n+1) then
-          this%S_o(i-this%n_e*this%n) = this%S_o(i-this%n_e*this%n)*scale
+
+       elseif (i > this%n_e*this%n + this%n_i) then
+
+          associate (i_ => i-this%n_e*this%n-this%n_i)
+            this%S_o(i_) = this%S_o(i_)*scale
+          end associate
+
        else
-          this%S(k) = this%S(k)*scale
+
+          associate (k => (i-1+this%n_o)/this%n_e)
+            this%S(k) = this%S(k)*scale
+          end associate
+
        endif
 
     end do
