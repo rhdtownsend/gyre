@@ -49,24 +49,24 @@ module gyre_${T}_bound
 
   abstract interface
 
-     subroutine build_i (this, omega, B_i, scl)
+     subroutine build_i (this, omega, B_i, scl_i)
        use core_kinds
        use gyre_ext
        import ${T}_bound_t
        class(${T}_bound_t), intent(in) :: this
        $TYPE(WP), intent(in)           :: omega
        $TYPE(WP), intent(out)          :: B_i(:,:)
-       type(${T}_ext_t), intent(out)   :: scl
+       type(${T}_ext_t), intent(out)   :: scl_i(:)
      end subroutine build_i
 
-     subroutine build_o (this, omega, B_o, scl)
+     subroutine build_o (this, omega, B_o, scl_o)
        use core_kinds
        use gyre_ext
        import ${T}_bound_t
        class(${T}_bound_t), intent(in) :: this
        $TYPE(WP), intent(in)           :: omega
        $TYPE(WP), intent(out)          :: B_o(:,:)
-       type(${T}_ext_t), intent(out)   :: scl
+       type(${T}_ext_t), intent(out)   :: scl_o(:)
      end subroutine build_o
 
   end interface

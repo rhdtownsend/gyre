@@ -131,6 +131,8 @@ contains
     $TYPE(WP)        :: B_o(this%n_o,this%n_e)
     $TYPE(WP)        :: E_l(this%n_e,this%n_e)
     $TYPE(WP)        :: E_r(this%n_e,this%n_e)
+    type(${T}_ext_t) :: scl_i(this%n_i)
+    type(${T}_ext_t) :: scl_o(this%n_o)
     type(${T}_ext_t) :: scl
     integer          :: k
     
@@ -138,11 +140,11 @@ contains
 
     ! Set up boundary conditions
 
-    call this%bd%build_i(omega, B_i, scl)
-    call this%sm%set_B_i(B_i, scl)
+    call this%bd%build_i(omega, B_i, scl_i)
+    call this%sm%set_B_i(B_i, scl_i)
 
-    call this%bd%build_o(omega, B_o, scl)
-    call this%sm%set_B_o(B_o, scl)
+    call this%bd%build_o(omega, B_o, scl_o)
+    call this%sm%set_B_o(B_o, scl_o)
 
     ! Set up difference equations
 
