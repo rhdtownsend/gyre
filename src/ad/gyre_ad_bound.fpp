@@ -160,23 +160,25 @@ contains
 
   !****
 
-  subroutine build_i (this, omega, B_i, scl)
+  subroutine build_i (this, omega, B_i, scl_i)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: B_i(:,:)
-    type(r_ext_t), intent(out)    :: scl
+    type(r_ext_t), intent(out)    :: scl_i(:)
 
     $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
     
+    $CHECK_BOUNDS(SIZE(scl_i),this%n_i)
+
     ! Evaluate the inner boundary conditions
 
     select case (this%type_i)
     case (REGULAR_TYPE)
-       call this%build_regular_i_(omega, B_i, scl)
+       call this%build_regular_i_(omega, B_i, scl_i)
     case (ZERO_TYPE)
-       call this%build_zero_i_(omega, B_i, scl)
+       call this%build_zero_i_(omega, B_i, scl_i)
     case default
        $ABORT(Invalid type_i)
     end select
@@ -189,12 +191,12 @@ contains
 
   !****
 
-  subroutine build_regular_i_ (this, omega, B_i, scl)
+  subroutine build_regular_i_ (this, omega, B_i, scl_i)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: B_i(:,:)
-    type(r_ext_t), intent(out)    :: scl
+    type(r_ext_t), intent(out)    :: scl_i(:)
 
     real(WP) :: c_1
     real(WP) :: l_i
@@ -205,6 +207,8 @@ contains
     $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
     
+    $CHECK_BOUNDS(SIZE(scl_i),this%n_i)
+
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
     associate (pt => this%pt_i)
@@ -232,7 +236,7 @@ contains
       B_i(2,3) = alpha_gr*(l_i)
       B_i(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
 
-      scl = r_ext_t(1._WP)
+      scl_i = r_ext_t(1._WP)
 
       ! Apply the variables transformation
 
@@ -248,17 +252,19 @@ contains
 
   !****
 
-  subroutine build_zero_i_ (this, omega, B_i, scl)
+  subroutine build_zero_i_ (this, omega, B_i, scl_i)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: B_i(:,:)
-    type(r_ext_t), intent(out)    :: scl
+    type(r_ext_t), intent(out)    :: scl_i(:)
 
     real(WP) :: alpha_gr
 
     $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(scl_i),this%n_i)
 
     ! Evaluate the inner boundary conditions (zero
     ! displacement/gravity)
@@ -281,7 +287,7 @@ contains
       B_i(2,3) = alpha_gr*(0._WP)
       B_i(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
 
-      scl = r_ext_t(1._WP)
+      scl_i = r_ext_t(1._WP)
       
       ! Apply the variables transformation
 
@@ -297,27 +303,29 @@ contains
 
   !****
 
-  subroutine build_o (this, omega, B_o, scl)
+  subroutine build_o (this, omega, B_o, scl_o)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: B_o(:,:)
-    type(r_ext_t), intent(out)    :: scl
+    type(r_ext_t), intent(out)    :: scl_o(:)
 
     $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
     
+    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+
     ! Evaluate the outer boundary conditions
 
     select case (this%type_o)
     case (ZERO_TYPE)
-       call this%build_zero_o_(omega, B_o, scl)
+       call this%build_zero_o_(omega, B_o, scl_o)
     case (DZIEM_TYPE)
-       call this%build_dziem_o_(omega, B_o, scl)
+       call this%build_dziem_o_(omega, B_o, scl_o)
     case (UNNO_TYPE)
-       call this%build_unno_o_(omega, B_o, scl)
+       call this%build_unno_o_(omega, B_o, scl_o)
     case (JCD_TYPE)
-       call this%build_jcd_o_(omega, B_o, scl)
+       call this%build_jcd_o_(omega, B_o, scl_o)
     case default
        $ABORT(Invalid type_o)
     end select
@@ -330,12 +338,12 @@ contains
   
   !****
 
-  subroutine build_zero_o_ (this, omega, B_o, scl)
+  subroutine build_zero_o_ (this, omega, B_o, scl_o)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: B_o(:,:)
-    type(r_ext_t), intent(out)    :: scl
+    type(r_ext_t), intent(out)    :: scl_o(:)
 
     real(WP) :: U
     real(WP) :: l_e
@@ -343,6 +351,8 @@ contains
 
     $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
 
     ! Evaluate the outer boundary conditions (zero-pressure)
 
@@ -368,7 +378,7 @@ contains
       B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
       B_o(2,4) = alpha_gr*(1._WP)
 
-      scl = r_ext_t(1._WP)
+      scl_o = r_ext_t(1._WP)
 
       ! Apply the variables transformation
 
@@ -384,12 +394,12 @@ contains
 
   !****
 
-  subroutine build_dziem_o_ (this, omega, B_o, scl)
+  subroutine build_dziem_o_ (this, omega, B_o, scl_o)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: B_o(:,:)
-    type(r_ext_t), intent(out)    :: scl
+    type(r_ext_t), intent(out)    :: scl_o(:)
 
     real(WP) :: V
     real(WP) :: c_1
@@ -402,6 +412,8 @@ contains
     $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
 
+    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     associate (pt => this%pt_o)
@@ -411,7 +423,7 @@ contains
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
 
-         call this%build_zero_o_(omega, B_o, scl)
+         call this%build_zero_o_(omega, B_o, scl_o)
 
       else
 
@@ -440,7 +452,7 @@ contains
          B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
          B_o(2,4) = alpha_gr*(1._WP)
 
-         scl = r_ext_t(1._WP)
+         scl_o = r_ext_t(1._WP)
 
          ! Apply the variables transformation
 
@@ -458,12 +470,12 @@ contains
 
   !****
 
-  subroutine build_unno_o_ (this, omega, B_o, scl)
+  subroutine build_unno_o_ (this, omega, B_o, scl_o)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: B_o(:,:)
-    type(r_ext_t), intent(out)    :: scl
+    type(r_ext_t), intent(out)    :: scl_o(:)
 
     real(WP) :: V_g
     real(WP) :: As
@@ -486,6 +498,8 @@ contains
     $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
 
+    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
     associate (pt => this%pt_o)
@@ -495,7 +509,7 @@ contains
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
 
-         call this%build_zero_o_(omega, B_o, scl)
+         call this%build_zero_o_(omega, B_o, scl_o)
 
       else
 
@@ -536,7 +550,7 @@ contains
          B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
          B_o(2,4) = alpha_gr*(1._WP)
 
-         scl = r_ext_t(1._WP)
+         scl_o = r_ext_t(1._WP)
 
          ! Apply the variables transformation
 
@@ -554,12 +568,12 @@ contains
 
   !****
 
-  subroutine build_jcd_o_ (this, omega, B_o, scl)
+  subroutine build_jcd_o_ (this, omega, B_o, scl_o)
 
     class(ad_bound_t), intent(in) :: this
     real(WP), intent(in)          :: omega
     real(WP), intent(out)         :: B_o(:,:)
-    type(r_ext_t), intent(out)    :: scl
+    type(r_ext_t), intent(out)    :: scl_o(:)
 
     real(WP) :: V_g
     real(WP) :: As
@@ -576,6 +590,8 @@ contains
     $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
 
+    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
     associate (pt => this%pt_o)
@@ -585,7 +601,7 @@ contains
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
 
-         call this%build_zero_o_(omega, B_o, scl)
+         call this%build_zero_o_(omega, B_o, scl_o)
 
       else
 
@@ -618,7 +634,7 @@ contains
          B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
          B_o(2,4) = alpha_gr*(1._WP)
 
-         scl = r_ext_t(1._WP)
+         scl_o = r_ext_t(1._WP)
 
          ! Apply the variables transformation
 
