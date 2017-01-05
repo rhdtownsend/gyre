@@ -64,7 +64,7 @@ module gyre_${T}_sysmtx
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(inout) :: this
        $TYPE(WP), intent(in)               :: B(:,:)
-       type(${T}_ext_t), intent(in)        :: S
+       type(${T}_ext_t), intent(in)        :: S(:)
      end subroutine set_B_
        
      subroutine set_E_ (this, k, E_l, E_r, S)

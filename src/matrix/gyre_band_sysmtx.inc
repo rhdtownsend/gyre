@@ -64,8 +64,8 @@ module gyre_${T}_band_sysmtx
      private
      $TYPE(WP), allocatable        :: A_b(:,:) ! Banded matrix
      integer, allocatable          :: ipiv(:)  ! Pivot indices
-     type(${T}_ext_t)              :: S_i      ! Inner boundary scale
-     type(${T}_ext_t)              :: S_o      ! Outer boundary scale
+     type(${T}_ext_t), allocatable :: S_i(:)   ! Inner boundary scales
+     type(${T}_ext_t), allocatable :: S_o(:)   ! Outer boundary scales
      type(${T}_ext_t), allocatable :: S(:)     ! Block scales
      integer                       :: n_ul     ! Number of sub-/super-diagonals
    contains
@@ -115,6 +115,9 @@ contains
     allocate(sm%A_b(3*sm%n_ul+1,n_e*(n+1)))
     allocate(sm%ipiv(n_e*(n+1)))
 
+    allocate(sm%S_i(n_i))
+    allocate(sm%S_o(n_o))
+
     allocate(sm%S(n))
 
     sm%n = n
@@ -134,7 +137,7 @@ contains
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                    :: B(:,:)
-    type(${T}_ext_t), intent(in)             :: S
+    type(${T}_ext_t), intent(in)             :: S(:)
 
     integer :: i_0
     integer :: j_0
@@ -142,6 +145,8 @@ contains
     
     $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(S),this%n_i)
 
     ! Set the inner boundary conditions
 
@@ -166,7 +171,7 @@ contains
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                    :: B(:,:)
-    type(${T}_ext_t), intent(in)             :: S
+    type(${T}_ext_t), intent(in)             :: S(:)
 
     integer :: i_0
     integer :: j_0
@@ -174,6 +179,8 @@ contains
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(S),this%n_o)
 
     ! Set the outer boundary conditions
 
@@ -342,9 +349,9 @@ contains
        k = (i-1+this%n_o)/this%n_e
 
        if (k == 0) then
-          this%S_i = this%S_i*scale
+          this%S_i(i) = this%S_i(i)*scale
        elseif (k == this%n+1) then
-          this%S_o = this%S_o*scale
+          this%S_o(i-this%n_e*this%n) = this%S_o(i-this%n_e*this%n)*scale
        else
           this%S(k) = this%S(k)*scale
        endif
@@ -480,9 +487,15 @@ contains
 
       ! Set up the banded system
 
-      B(:n_i,1) = w_i
+      $if ($T eq 'c')
+      B(:n_i,1) = w_i/cmplx(this%S_i)
       B(n_i+1:n_i+n*n_e,1) = 0._WP
-      B(n_i+n*n_e+1:,1) = w_o
+      B(n_i+n*n_e+1:,1) = w_o/cmplx(this%S_o)
+      $else
+      B(:n_i,1) = w_i/real(this%S_i)
+      B(n_i+1:n_i+n*n_e,1) = 0._WP
+      B(n_i+n*n_e+1:,1) = w_o/real(this%S_o)
+      $endif
 
       ! Solve for v
 

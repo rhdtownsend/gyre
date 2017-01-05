@@ -62,8 +62,8 @@ module gyre_${T}_block_sysmtx
      $TYPE(WP), allocatable        :: B_o(:,:)   ! Outer boundary conditions
      $TYPE(WP), allocatable        :: E_l(:,:,:) ! Left equation blocks
      $TYPE(WP), allocatable        :: E_r(:,:,:) ! Right equation blocks
-     type(${T}_ext_t)              :: S_i        ! Inner boundary scale
-     type(${T}_ext_t)              :: S_o        ! Outer boundary scale
+     type(${T}_ext_t), allocatable :: S_i(:)     ! Inner boundary scales
+     type(${T}_ext_t), allocatable :: S_o(:)     ! Outer boundary scales
      type(${T}_ext_t), allocatable :: S(:)       ! Block scales
    contains
      private
@@ -112,6 +112,9 @@ contains
     allocate(sm%B_i(n_i,n_e))
     allocate(sm%B_o(n_o,n_e))
 
+    allocate(sm%S_i(n_i))
+    allocate(sm%S_o(n_o))
+
     allocate(sm%S(n))
 
     sm%n = n
@@ -131,10 +134,12 @@ contains
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                     :: B(:,:)
-    type(${T}_ext_t), intent(in)              :: S
+    type(${T}_ext_t), intent(in)              :: S(:)
     
     $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(S),this%n_i)
 
     ! Set the inner boundary conditions
 
@@ -153,10 +158,12 @@ contains
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                     :: B(:,:)
-    type(${T}_ext_t), intent(in)              :: S
+    type(${T}_ext_t), intent(in)              :: S(:)
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(S),this%n_o)
 
     ! Set the outer boundary conditions
 
@@ -328,7 +335,7 @@ contains
     do i = 1, this%n_i
        scale = MAXVAL(ABS(this%B_i(i,:)))
        this%B_i(i,:) = this%B_i(i,:)/scale
-       this%S_i = this%S_i*scale
+       this%S_i(i) = this%S_i(i)*scale
     end do
 
     !$OMP PARALLEL DO PRIVATE (i, scale)
@@ -344,7 +351,7 @@ contains
     do i = 1, this%n_o
        scale = MAXVAL(ABS(this%B_o(i,:)))
        this%B_o(i,:) = this%B_o(i,:)/scale
-       this%S_o = this%S_o*scale
+       this%S_o(i) = this%S_o(i)*scale
     end do
 
     ! Finish
@@ -529,9 +536,15 @@ contains
       M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
       M(n_i+n_e+1:,n_e+1:) = this%B_o
 
-      B(:n_i,1) = w_i
+      $if ($T eq 'c')
+      B(:n_i,1) = w_i/cmplx(this%S_i)
       B(n_i+1:n_i+n_e,1) = 0._WP
-      B(n_i+n_e+1:,1) = w_o
+      B(n_i+n_e+1:,1) = w_o/cmplx(this%S_o)
+      $else
+      B(:n_i,1) = w_i/real(this%S_i)
+      B(n_i+1:n_i+n_e,1) = 0._WP
+      B(n_i+n_e+1:,1) = w_o/real(this%S_o)
+      $endif
 
       ! Solve for the solution at the two boundaries using LU
       ! decomposition
