@@ -172,7 +172,7 @@ program gyre_map
 
   if (nm_p_sel%restrict_roots) then
      omega_min = MINVAL(omega_re)
-     omega_max = MAXVAL(omega_im)
+     omega_max = MAXVAL(omega_re)
   else
      omega_min = -HUGE(0._WP)
      omega_max = HUGE(0._WP)
