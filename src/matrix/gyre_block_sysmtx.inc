@@ -62,9 +62,9 @@ module gyre_${T}_block_sysmtx
      $TYPE(WP), allocatable        :: B_o(:,:)   ! Outer boundary conditions
      $TYPE(WP), allocatable        :: E_l(:,:,:) ! Left equation blocks
      $TYPE(WP), allocatable        :: E_r(:,:,:) ! Right equation blocks
-     type(${T}_ext_t), allocatable :: S_i(:)     ! Inner boundary scales
-     type(${T}_ext_t), allocatable :: S_o(:)     ! Outer boundary scales
-     type(${T}_ext_t), allocatable :: S(:)       ! Block scales
+     $TYPE(WP), allocatable        :: scl_i(:)   ! Inner boundary scales
+     $TYPE(WP), allocatable        :: scl_o(:)   ! Outer boundary scales
+     type(${T}_ext_t), allocatable :: scl(:)     ! Block scales
    contains
      private
      procedure, public :: set_B_i
@@ -112,10 +112,10 @@ contains
     allocate(sm%B_i(n_i,n_e))
     allocate(sm%B_o(n_o,n_e))
 
-    allocate(sm%S_i(n_i))
-    allocate(sm%S_o(n_o))
+    allocate(sm%scl_i(n_i))
+    allocate(sm%scl_o(n_o))
 
-    allocate(sm%S(n))
+    allocate(sm%scl(n))
 
     sm%n = n
     sm%n_e = n_e
@@ -130,21 +130,21 @@ contains
 
   !****
 
-  subroutine set_B_i (this, B, S)
+  subroutine set_B_i (this, B, scl)
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                     :: B(:,:)
-    type(${T}_ext_t), intent(in)              :: S(:)
+    $TYPE(WP), intent(in)                     :: scl(:)
     
     $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(S),this%n_i)
+    $CHECK_BOUNDS(SIZE(scl),this%n_i)
 
     ! Set the inner boundary conditions
 
     this%B_i = B
-    this%S_i = S
+    this%scl_i = scl
 
     ! Finish
 
@@ -154,21 +154,21 @@ contains
 
   !****
 
-  subroutine set_B_o (this, B, S)
+  subroutine set_B_o (this, B, scl)
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                     :: B(:,:)
-    type(${T}_ext_t), intent(in)              :: S(:)
+    $TYPE(WP), intent(in)                     :: scl(:)
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(S),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Set the outer boundary conditions
 
     this%B_o = B
-    this%S_o = S
+    this%scl_o = scl
 
     ! Finish
 
@@ -178,13 +178,13 @@ contains
 
   !****
 
-  subroutine set_E (this, k, E_l, E_r, S)
+  subroutine set_E (this, k, E_l, E_r, scl)
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
     integer, intent(in)                       :: k
     $TYPE(WP), intent(in)                     :: E_l(:,:)
     $TYPE(WP), intent(in)                     :: E_r(:,:)
-    type(${T}_ext_t), intent(in)              :: S
+    type(${T}_ext_t), intent(in)              :: scl
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -200,7 +200,7 @@ contains
     this%E_l(:,:,k) = E_l
     this%E_r(:,:,k) = E_r
 
-    this%S(k) = S
+    this%scl(k) = scl
 
     ! Finish
 
@@ -295,12 +295,12 @@ contains
             this%E_l(:,:,k+l) = M_G(:n_e,:)
             this%E_r(:,:,k+l) = M_E(:n_e,:)
 
-            ! Fold the factorization determinant into S
+            ! Fold the factorization determinant into the scale
 
-            this%S(k) = this%S(k)*product(${T}_ext_t(diagonal(M_U)))
+            this%scl(k) = this%scl(k)*PRODUCT(diagonal(M_U))
 
             do i = 1,n_e
-               if (ipiv(i) /= i) this%S(k) = -this%S(k)
+               if (ipiv(i) /= i) this%scl(k) = -this%scl(k)
             end do
 
          end do reduce_loop
@@ -325,7 +325,7 @@ contains
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
 
-    real(WP) :: scale
+    real(WP) :: scl
     integer  :: i
     integer  :: k
 
@@ -333,25 +333,25 @@ contains
     ! unity
 
     do i = 1, this%n_i
-       scale = MAXVAL(ABS(this%B_i(i,:)))
-       this%B_i(i,:) = this%B_i(i,:)/scale
-       this%S_i(i) = this%S_i(i)*scale
+       scl = MAXVAL(ABS(this%B_i(i,:)))
+       this%B_i(i,:) = this%B_i(i,:)/scl
+       this%scl_i(i) = this%scl_i(i)*scl
     end do
 
-    !$OMP PARALLEL DO PRIVATE (i, scale)
+    !$OMP PARALLEL DO PRIVATE (i, scl)
     do k = 1, this%n
        do i = 1, this%n_e
-          scale = MAX(MAXVAL(ABS(this%E_l(i,:,k))), MAXVAL(ABS(this%E_r(i,:,k))))
-          this%E_l(i,:,k) = this%E_l(i,:,k)/scale
-          this%E_r(i,:,k) = this%E_r(i,:,k)/scale
-          this%S(k) = this%S(k)*scale
+          scl = MAX(MAXVAL(ABS(this%E_l(i,:,k))), MAXVAL(ABS(this%E_r(i,:,k))))
+          this%E_l(i,:,k) = this%E_l(i,:,k)/scl
+          this%E_r(i,:,k) = this%E_r(i,:,k)/scl
+          this%scl(k) = this%scl(k)*scl
        end do
     end do
 
     do i = 1, this%n_o
-       scale = MAXVAL(ABS(this%B_o(i,:)))
-       this%B_o(i,:) = this%B_o(i,:)/scale
-       this%S_o(i) = this%S_o(i)*scale
+       scl = MAXVAL(ABS(this%B_o(i,:)))
+       this%B_o(i,:) = this%B_o(i,:)/scl
+       this%scl_o(i) = this%scl_o(i)*scl
     end do
 
     ! Finish
@@ -393,7 +393,7 @@ contains
 
       ! Add together all the contributions to the determinant
 
-      det = product([${T}_ext_t(diagonal(M)),this%S_i,this%S,this%S_o])
+      det = product([${T}_ext_t(diagonal(M)),${T}_ext_t(this%scl_i),this%scl,${T}_ext_t(this%scl_o)])
 
       do i = 1,2*n_e
          if(ipiv(i) /= i) det = -det
@@ -536,15 +536,9 @@ contains
       M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
       M(n_i+n_e+1:,n_e+1:) = this%B_o
 
-      $if ($T eq 'c')
-      B(:n_i,1) = w_i/cmplx(this%S_i)
+      B(:n_i,1) = w_i/this%scl_i
       B(n_i+1:n_i+n_e,1) = 0._WP
-      B(n_i+n_e+1:,1) = w_o/cmplx(this%S_o)
-      $else
-      B(:n_i,1) = w_i/real(this%S_i)
-      B(n_i+1:n_i+n_e,1) = 0._WP
-      B(n_i+n_e+1:,1) = w_o/real(this%S_o)
-      $endif
+      B(n_i+n_e+1:,1) = w_o/this%scl_o
 
       ! Solve for the solution at the two boundaries using LU
       ! decomposition

@@ -25,7 +25,6 @@ module gyre_nad_bound
 
   use gyre_atmos
   use gyre_bound
-  use gyre_ext
   use gyre_grid
   use gyre_mode_par
   use gyre_model
@@ -160,25 +159,20 @@ contains
 
   !****
 
-  subroutine build_i (this, omega, B_i, scl_i)
+  subroutine build_i (this, omega, B, scl)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
-    complex(WP), intent(out)       :: B_i(:,:)
-    type(c_ext_t), intent(out)     :: scl_i(:)
-
-    $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
-    $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
-    
-    $CHECK_BOUNDS(SIZE(scl_i),this%n_i)
+    complex(WP), intent(out)       :: B(:,:)
+    complex(WP), intent(out)       :: scl(:)
 
     ! Evaluate the inner boundary conditions
 
     select case (this%type_i)
     case (REGULAR_TYPE)
-       call this%build_regular_i_(omega, B_i, scl_i)
+       call this%build_regular_i_(omega, B, scl)
     case (ZERO_TYPE)
-       call this%build_zero_i_(omega, B_i, scl_i)
+       call this%build_zero_i_(omega, B, scl)
     case default
        $ABORT(Invalid type_i)
     end select
@@ -191,12 +185,12 @@ contains
 
   !****
 
-  subroutine build_regular_i_ (this, omega, B_i, scl_i)
+  subroutine build_regular_i_ (this, omega, B, scl)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
-    complex(WP), intent(out)       :: B_i(:,:)
-    type(c_ext_t), intent(out)     :: scl_i(:)
+    complex(WP), intent(out)       :: B(:,:)
+    complex(WP), intent(out)       :: scl(:)
 
     real(WP)    :: c_1
     complex(WP) :: l_i
@@ -204,10 +198,10 @@ contains
     real(WP)    :: alpha_gr
     complex(WP) :: alpha_om
 
-    $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
-    $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
     
-    $CHECK_BOUNDS(SIZE(scl_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(scl),this%n_i)
 
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
@@ -226,32 +220,32 @@ contains
 
       ! Set up the boundary conditions
 
-      B_i(1,1) = c_1*alpha_om*omega_c**2
-      B_i(1,2) = -l_i
-      B_i(1,3) = alpha_gr*(-l_i)
-      B_i(1,4) = alpha_gr*(0._WP)
-      B_i(1,5) = 0._WP
-      B_i(1,6) = 0._WP
+      B(1,1) = c_1*alpha_om*omega_c**2
+      B(1,2) = -l_i
+      B(1,3) = alpha_gr*(-l_i)
+      B(1,4) = alpha_gr*(0._WP)
+      B(1,5) = 0._WP
+      B(1,6) = 0._WP
 
-      B_i(2,1) = alpha_gr*(0._WP)
-      B_i(2,2) = alpha_gr*(0._WP)
-      B_i(2,3) = alpha_gr*(l_i)
-      B_i(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
-      B_i(2,5) = alpha_gr*(0._WP)
-      B_i(2,6) = alpha_gr*(0._WP)
+      B(2,1) = alpha_gr*(0._WP)
+      B(2,2) = alpha_gr*(0._WP)
+      B(2,3) = alpha_gr*(l_i)
+      B(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
+      B(2,5) = alpha_gr*(0._WP)
+      B(2,6) = alpha_gr*(0._WP)
 
-      B_i(3,1) = 0._WP
-      B_i(3,2) = 0._WP
-      B_i(3,3) = alpha_gr*(0._WP)
-      B_i(3,4) = alpha_gr*(0._WP)
-      B_i(3,5) = 1._WP
-      B_i(3,6) = 0._WP
+      B(3,1) = 0._WP
+      B(3,2) = 0._WP
+      B(3,3) = alpha_gr*(0._WP)
+      B(3,4) = alpha_gr*(0._WP)
+      B(3,5) = 1._WP
+      B(3,6) = 0._WP
 
-      scl_i = c_ext_t(1._WP)
+      scl = 1._WP
 
       ! Apply the variables transformation
 
-      B_i = MATMUL(B_i, this%vr%H(pt, omega))
+      B = MATMUL(B, this%vr%H(pt, omega))
 
     end associate
 
@@ -263,19 +257,19 @@ contains
 
   !****
 
-  subroutine build_zero_i_ (this, omega, B_i, scl_i)
+  subroutine build_zero_i_ (this, omega, B, scl)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
-    complex(WP), intent(out)       :: B_i(:,:)
-    type(c_ext_t), intent(out)     :: scl_i(:)
+    complex(WP), intent(out)       :: B(:,:)
+    complex(WP), intent(out)       :: scl(:)
 
     real(WP) :: alpha_gr
 
-    $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
-    $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(scl),this%n_i)
 
     ! Evaluate the inner boundary conditions (zero
     ! displacement/gravity)
@@ -288,32 +282,32 @@ contains
 
       ! Set up the boundary conditions
 
-      B_i(1,1) = 1._WP
-      B_i(1,2) = 0._WP
-      B_i(1,3) = alpha_gr*(0._WP)
-      B_i(1,4) = alpha_gr*(0._WP)
-      B_i(1,5) = 0._WP
-      B_i(1,6) = 0._WP
+      B(1,1) = 1._WP
+      B(1,2) = 0._WP
+      B(1,3) = alpha_gr*(0._WP)
+      B(1,4) = alpha_gr*(0._WP)
+      B(1,5) = 0._WP
+      B(1,6) = 0._WP
         
-      B_i(2,1) = alpha_gr*(0._WP)
-      B_i(2,2) = alpha_gr*(0._WP)
-      B_i(2,3) = alpha_gr*(0._WP)
-      B_i(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
-      B_i(2,5) = alpha_gr*(0._WP)
-      B_i(2,6) = alpha_gr*(0._WP)
+      B(2,1) = alpha_gr*(0._WP)
+      B(2,2) = alpha_gr*(0._WP)
+      B(2,3) = alpha_gr*(0._WP)
+      B(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
+      B(2,5) = alpha_gr*(0._WP)
+      B(2,6) = alpha_gr*(0._WP)
       
-      B_i(3,1) = 0._WP
-      B_i(3,2) = 0._WP
-      B_i(3,3) = alpha_gr*(0._WP)
-      B_i(3,4) = alpha_gr*(0._WP)
-      B_i(3,5) = 1._WP
-      B_i(3,6) = 0._WP
+      B(3,1) = 0._WP
+      B(3,2) = 0._WP
+      B(3,3) = alpha_gr*(0._WP)
+      B(3,4) = alpha_gr*(0._WP)
+      B(3,5) = 1._WP
+      B(3,6) = 0._WP
 
-      scl_i = c_ext_t(1._WP)
+      scl = 1._WP
       
       ! Apply the variables transformation
 
-      B_i = MATMUL(B_i, this%vr%H(pt, omega))
+      B = MATMUL(B, this%vr%H(pt, omega))
 
     end associate
 
@@ -325,27 +319,24 @@ contains
 
   !****
 
-  subroutine build_o (this, omega, B_o, scl_o)
+  subroutine build_o (this, omega, B, scl)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
-    complex(WP), intent(out)       :: B_o(:,:)
-    type(c_ext_t), intent(out)     :: scl_o(:)
+    complex(WP), intent(out)       :: B(:,:)
+    complex(WP), intent(out)       :: scl(:)
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
-    
     ! Evaluate the outer boundary conditions
 
     select case (this%type_o)
     case (ZERO_TYPE)
-       call this%build_zero_o_(omega, B_o, scl_o)
+       call this%build_zero_o_(omega, B, scl)
     case (DZIEM_TYPE)
-       call this%build_dziem_o_(omega, B_o, scl_o)
+       call this%build_dziem_o_(omega, B, scl)
     case (UNNO_TYPE)
-       call this%build_unno_o_(omega, B_o, scl_o)
+       call this%build_unno_o_(omega, B, scl)
     case (JCD_TYPE)
-       call this%build_jcd_o_(omega, B_o, scl_o)
+       call this%build_jcd_o_(omega, B, scl)
     case default
        $ABORT(Invalid type_o)
     end select
@@ -358,12 +349,12 @@ contains
   
   !****
 
-  subroutine build_zero_o_ (this, omega, B_o, scl_o)
+  subroutine build_zero_o_ (this, omega, B, scl)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
-    complex(WP), intent(out)       :: B_o(:,:)
-    type(c_ext_t), intent(out)     :: scl_o(:)
+    complex(WP), intent(out)       :: B(:,:)
+    complex(WP), intent(out)       :: scl(:)
 
     real(WP)    :: V
     real(WP)    :: U
@@ -371,10 +362,10 @@ contains
     complex(WP) :: l_e
     real(WP)    :: alpha_gr
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Evaluate the outer boundary conditions (zero-pressure)
 
@@ -392,32 +383,32 @@ contains
 
       ! Set up the boundary conditions
 
-      B_o(1,1) = 1._WP
-      B_o(1,2) = -1._WP
-      B_o(1,3) = alpha_gr*(0._WP)
-      B_o(1,4) = alpha_gr*(0._WP)
-      B_o(1,5) = 0._WP
-      B_o(1,6) = 0._WP
+      B(1,1) = 1._WP
+      B(1,2) = -1._WP
+      B(1,3) = alpha_gr*(0._WP)
+      B(1,4) = alpha_gr*(0._WP)
+      B(1,5) = 0._WP
+      B(1,6) = 0._WP
       
-      B_o(2,1) = alpha_gr*(U)
-      B_o(2,2) = alpha_gr*(0._WP)
-      B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B_o(2,4) = alpha_gr*(1._WP)
-      B_o(2,5) = alpha_gr*(0._WP)
-      B_o(2,6) = alpha_gr*(0._WP)
+      B(2,1) = alpha_gr*(U)
+      B(2,2) = alpha_gr*(0._WP)
+      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+      B(2,4) = alpha_gr*(1._WP)
+      B(2,5) = alpha_gr*(0._WP)
+      B(2,6) = alpha_gr*(0._WP)
 
-      B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
-      B_o(3,2) = 4._WP*nabla_ad*V
-      B_o(3,3) = alpha_gr*(0._WP)
-      B_o(3,4) = alpha_gr*(0._WP)
-      B_o(3,5) = 4._WP
-      B_o(3,6) = -1._WP
+      B(3,1) = 2._WP - 4._WP*nabla_ad*V
+      B(3,2) = 4._WP*nabla_ad*V
+      B(3,3) = alpha_gr*(0._WP)
+      B(3,4) = alpha_gr*(0._WP)
+      B(3,5) = 4._WP
+      B(3,6) = -1._WP
 
-      scl_o = c_ext_t(1._WP)
+      scl = 1._WP
 
       ! Apply the variables transformation
 
-      B_o = MATMUL(B_o, this%vr%H(pt, omega))
+      B = MATMUL(B, this%vr%H(pt, omega))
 
     end associate
 
@@ -429,12 +420,12 @@ contains
 
   !****
 
-  subroutine build_dziem_o_ (this, omega, B_o, scl_o)
+  subroutine build_dziem_o_ (this, omega, B, scl)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
-    complex(WP), intent(out)       :: B_o(:,:)
-    type(c_ext_t), intent(out)     :: scl_o(:)
+    complex(WP), intent(out)       :: B(:,:)
+    complex(WP), intent(out)       :: scl(:)
 
     real(WP)    :: V
     real(WP)    :: c_1
@@ -445,10 +436,10 @@ contains
     real(WP)    :: alpha_gr
     complex(WP) :: alpha_om
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
@@ -459,7 +450,7 @@ contains
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
 
-         call this%build_zero_o_(omega, B_o, scl_o)
+         call this%build_zero_o_(omega, B, scl)
 
       else
 
@@ -479,32 +470,32 @@ contains
 
          ! Set up the boundary conditions
 
-         B_o(1,1) = 1._WP + (lambda/(c_1*alpha_om*omega_c**2) - 4._WP - c_1*alpha_om*omega_c**2)/V
-         B_o(1,2) = -1._WP
-         B_o(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)/V)
-         B_o(1,4) = alpha_gr*(0._WP)
-         B_o(1,5) = 0._WP
-         B_o(1,6) = 0._WP
+         B(1,1) = 1._WP + (lambda/(c_1*alpha_om*omega_c**2) - 4._WP - c_1*alpha_om*omega_c**2)/V
+         B(1,2) = -1._WP
+         B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)/V)
+         B(1,4) = alpha_gr*(0._WP)
+         B(1,5) = 0._WP
+         B(1,6) = 0._WP
 
-         B_o(2,1) = alpha_gr*(0._WP)
-         B_o(2,2) = alpha_gr*(0._WP)
-         B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-         B_o(2,4) = alpha_gr*(1._WP)
-         B_o(2,5) = alpha_gr*(0._WP)
-         B_o(2,6) = alpha_gr*(0._WP)
+         B(2,1) = alpha_gr*(0._WP)
+         B(2,2) = alpha_gr*(0._WP)
+         B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+         B(2,4) = alpha_gr*(1._WP)
+         B(2,5) = alpha_gr*(0._WP)
+         B(2,6) = alpha_gr*(0._WP)
 
-         B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
-         B_o(3,2) = 4._WP*nabla_ad*V
-         B_o(3,3) = alpha_gr*(0._WP)
-         B_o(3,4) = alpha_gr*(0._WP)
-         B_o(3,5) = 4._WP
-         B_o(3,6) = -1._WP
+         B(3,1) = 2._WP - 4._WP*nabla_ad*V
+         B(3,2) = 4._WP*nabla_ad*V
+         B(3,3) = alpha_gr*(0._WP)
+         B(3,4) = alpha_gr*(0._WP)
+         B(3,5) = 4._WP
+         B(3,6) = -1._WP
 
-         scl_o = c_ext_t(1._WP)
+         scl = 1._WP
 
          ! Apply the variables transformation
 
-         B_o = MATMUL(B_o, this%vr%H(pt, omega))
+         B = MATMUL(B, this%vr%H(pt, omega))
 
       endif
 
@@ -518,12 +509,12 @@ contains
 
   !****
 
-  subroutine build_unno_o_ (this, omega, B_o, scl_o)
+  subroutine build_unno_o_ (this, omega, B, scl)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
-    complex(WP), intent(out)       :: B_o(:,:)
-    type(c_ext_t), intent(out)     :: scl_o(:)
+    complex(WP), intent(out)       :: B(:,:)
+    complex(WP), intent(out)       :: scl(:)
 
     real(WP)    :: V_g
     real(WP)    :: V
@@ -545,10 +536,10 @@ contains
     complex(WP) :: alpha_1
     complex(WP) :: alpha_2
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
@@ -559,7 +550,7 @@ contains
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
 
-         call this%build_zero_o_(omega, B_o, scl_o)
+         call this%build_zero_o_(omega, B, scl)
 
       else
 
@@ -593,32 +584,32 @@ contains
 
          ! Set up the boundary conditions
 
-         B_o(1,1) = beta - b_11
-         B_o(1,2) = -b_12
-         B_o(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12)
-         B_o(1,4) = 0._WP
-         B_o(1,5) = 0._WP
-         B_o(1,6) = 0._WP
+         B(1,1) = beta - b_11
+         B(1,2) = -b_12
+         B(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12)
+         B(1,4) = 0._WP
+         B(1,5) = 0._WP
+         B(1,6) = 0._WP
 
-         B_o(2,1) = alpha_gr*(0._WP)
-         B_o(2,2) = alpha_gr*(0._WP)
-         B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-         B_o(2,4) = alpha_gr*(1._WP)
-         B_o(2,5) = alpha_gr*(0._WP)
-         B_o(2,6) = alpha_gr*(0._WP)
+         B(2,1) = alpha_gr*(0._WP)
+         B(2,2) = alpha_gr*(0._WP)
+         B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+         B(2,4) = alpha_gr*(1._WP)
+         B(2,5) = alpha_gr*(0._WP)
+         B(2,6) = alpha_gr*(0._WP)
 
-         B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
-         B_o(3,2) = 4._WP*nabla_ad*V
-         B_o(3,3) = alpha_gr*(0._WP)
-         B_o(3,4) = alpha_gr*(0._WP)
-         B_o(3,5) = 4._WP
-         B_o(3,6) = -1._WP
+         B(3,1) = 2._WP - 4._WP*nabla_ad*V
+         B(3,2) = 4._WP*nabla_ad*V
+         B(3,3) = alpha_gr*(0._WP)
+         B(3,4) = alpha_gr*(0._WP)
+         B(3,5) = 4._WP
+         B(3,6) = -1._WP
 
-         scl_o = c_ext_t(1._WP)
+         scl = 1._WP
 
          ! Apply the variables transformation
 
-         B_o = MATMUL(B_o, this%vr%H(pt, omega))
+         B = MATMUL(B, this%vr%H(pt, omega))
 
       endif
 
@@ -632,12 +623,12 @@ contains
 
   !****
 
-  subroutine build_jcd_o_ (this, omega, B_o, scl_o)
+  subroutine build_jcd_o_ (this, omega, B, scl)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
-    complex(WP), intent(out)       :: B_o(:,:)
-    type(c_ext_t), intent(out)     :: scl_o(:)
+    complex(WP), intent(out)       :: B(:,:)
+    complex(WP), intent(out)       :: scl(:)
 
     real(WP)    :: V_g
     real(WP)    :: V
@@ -653,10 +644,10 @@ contains
     complex(WP) :: b_11
     complex(WP) :: b_12
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
@@ -667,7 +658,7 @@ contains
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
 
-         call this%build_zero_o_(omega, B_o, scl_o)
+         call this%build_zero_o_(omega, B, scl)
 
       else
 
@@ -693,32 +684,32 @@ contains
 
          ! Set up the boundary conditions
 
-         B_o(1,1) = beta - b_11
-         B_o(1,2) = -b_12
-         B_o(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
-         B_o(1,4) = alpha_gr*(0._WP)
-         B_o(1,5) = 0._WP
-         B_o(1,6) = 0._WP
+         B(1,1) = beta - b_11
+         B(1,2) = -b_12
+         B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
+         B(1,4) = alpha_gr*(0._WP)
+         B(1,5) = 0._WP
+         B(1,6) = 0._WP
 
-         B_o(2,1) = alpha_gr*(0._WP)
-         B_o(2,2) = alpha_gr*(0._WP)
-         B_o(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-         B_o(2,4) = alpha_gr*(1._WP)
-         B_o(2,5) = alpha_gr*(0._WP)
-         B_o(2,6) = alpha_gr*(0._WP)
+         B(2,1) = alpha_gr*(0._WP)
+         B(2,2) = alpha_gr*(0._WP)
+         B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+         B(2,4) = alpha_gr*(1._WP)
+         B(2,5) = alpha_gr*(0._WP)
+         B(2,6) = alpha_gr*(0._WP)
 
-         B_o(3,1) = 2._WP - 4._WP*nabla_ad*V
-         B_o(3,2) = 4._WP*nabla_ad*V
-         B_o(3,3) = alpha_gr*(0._WP)
-         B_o(3,4) = alpha_gr*(0._WP)
-         B_o(3,5) = 4._WP
-         B_o(3,6) = -1._WP
+         B(3,1) = 2._WP - 4._WP*nabla_ad*V
+         B(3,2) = 4._WP*nabla_ad*V
+         B(3,3) = alpha_gr*(0._WP)
+         B(3,4) = alpha_gr*(0._WP)
+         B(3,5) = 4._WP
+         B(3,6) = -1._WP
 
-         scl_o = c_ext_t(1._WP)
+         scl = 1._WP
 
          ! Apply the variables transformation
 
-         B_o = MATMUL(B_o, this%vr%H(pt, omega))
+         B = MATMUL(B, this%vr%H(pt, omega))
 
       endif
 

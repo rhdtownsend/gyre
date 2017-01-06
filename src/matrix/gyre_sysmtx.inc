@@ -58,16 +58,16 @@ module gyre_${T}_sysmtx
 
   abstract interface
 
-     subroutine set_B_ (this, B, S)
+     subroutine set_B_ (this, B, scl)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(inout) :: this
        $TYPE(WP), intent(in)               :: B(:,:)
-       type(${T}_ext_t), intent(in)        :: S(:)
+       $TYPE(WP), intent(in)               :: scl(:)
      end subroutine set_B_
        
-     subroutine set_E_ (this, k, E_l, E_r, S)
+     subroutine set_E_ (this, k, E_l, E_r, scl)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
@@ -75,7 +75,7 @@ module gyre_${T}_sysmtx
        integer, intent(in)                 :: k
        $TYPE(WP), intent(in)               :: E_l(:,:)
        $TYPE(WP), intent(in)               :: E_r(:,:)
-       type(${T}_ext_t), intent(in)        :: S
+       type(${T}_ext_t), intent(in)        :: scl
      end subroutine set_E_
 
      subroutine factorize_ (this)

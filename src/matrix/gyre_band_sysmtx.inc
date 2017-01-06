@@ -64,9 +64,9 @@ module gyre_${T}_band_sysmtx
      private
      $TYPE(WP), allocatable        :: A_b(:,:) ! Banded matrix
      integer, allocatable          :: ipiv(:)  ! Pivot indices
-     type(${T}_ext_t), allocatable :: S_i(:)   ! Inner boundary scales
-     type(${T}_ext_t), allocatable :: S_o(:)   ! Outer boundary scales
-     type(${T}_ext_t), allocatable :: S(:)     ! Block scales
+     $TYPE(WP), allocatable        :: scl_i(:) ! Inner boundary scales
+     $TYPE(WP), allocatable        :: scl_o(:) ! Outer boundary scales
+     type(${T}_ext_t), allocatable :: scl(:)   ! Block scales
      integer                       :: n_ul     ! Number of sub-/super-diagonals
    contains
      private
@@ -115,10 +115,10 @@ contains
     allocate(sm%A_b(3*sm%n_ul+1,n_e*(n+1)))
     allocate(sm%ipiv(n_e*(n+1)))
 
-    allocate(sm%S_i(n_i))
-    allocate(sm%S_o(n_o))
+    allocate(sm%scl_i(n_i))
+    allocate(sm%scl_o(n_o))
 
-    allocate(sm%S(n))
+    allocate(sm%scl(n))
 
     sm%n = n
     sm%n_e = n_e
@@ -133,11 +133,11 @@ contains
 
   !****
 
-  subroutine set_B_i (this, B, S)
+  subroutine set_B_i (this, B, scl)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                    :: B(:,:)
-    type(${T}_ext_t), intent(in)             :: S(:)
+    $TYPE(WP), intent(in)                    :: scl(:)
 
     integer :: i_0
     integer :: j_0
@@ -146,7 +146,7 @@ contains
     $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(S),this%n_i)
+    $CHECK_BOUNDS(SIZE(scl),this%n_i)
 
     ! Set the inner boundary conditions
 
@@ -157,7 +157,7 @@ contains
        call this%set_row_(i_0+i-1, j_0, B(i,:))
     end do
 
-    this%S_i = S
+    this%scl_i = scl
 
     ! Finish
 
@@ -167,11 +167,11 @@ contains
 
   !****
 
-  subroutine set_B_o (this, B, S)
+  subroutine set_B_o (this, B, scl)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                    :: B(:,:)
-    type(${T}_ext_t), intent(in)             :: S(:)
+    $TYPE(WP), intent(in)                    :: scl(:)
 
     integer :: i_0
     integer :: j_0
@@ -180,7 +180,7 @@ contains
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(S),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Set the outer boundary conditions
 
@@ -191,7 +191,7 @@ contains
        call this%set_row_(i_0+i-1, j_0, B(i,:))
     end do
 
-    this%S_o = S
+    this%scl_o = scl
 
     ! Finish
 
@@ -201,13 +201,13 @@ contains
 
   !****
 
-  subroutine set_E (this, k, E_l, E_r, S)
+  subroutine set_E (this, k, E_l, E_r, scl)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     integer, intent(in)                      :: k
     $TYPE(WP), intent(in)                    :: E_l(:,:)
     $TYPE(WP), intent(in)                    :: E_r(:,:)
-    type(${T}_ext_t), intent(in)             :: S
+    type(${T}_ext_t), intent(in)             :: scl
 
     integer   :: i_0
     integer   :: j_0
@@ -236,7 +236,7 @@ contains
 
     end do
 
-    this%S(k) = S
+    this%scl(k) = scl
 
     ! Finish
 
@@ -323,7 +323,7 @@ contains
 
     integer  :: i
     integer  :: j
-    real(WP) :: scale
+    real(WP) :: scl
     integer  :: i_b
     integer  :: j_b
 
@@ -331,34 +331,34 @@ contains
 
     do i = 1, this%n_e*(this%n+1)
 
-       scale = 0._WP
+       scl = 0._WP
 
        do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
           i_b = 2*this%n_ul + 1 + i - j
           j_b = j
-          scale = MAX(scale, ABS(this%A_b(i_b,j_b)))
+          scl = MAX(scl, ABS(this%A_b(i_b,j_b)))
        end do
 
        do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
           i_b = 2*this%n_ul + 1 + i - j
           j_b = j
-          this%A_b(i_b,j_b) = this%A_b(i_b,j_b)/scale
+          this%A_b(i_b,j_b) = this%A_b(i_b,j_b)/scl
        end do
 
        if (i <= this%n_i) then
 
-          this%S_i(i) = this%S_i(i)*scale
+          this%scl_i(i) = this%scl_i(i)*scl
 
        elseif (i > this%n_e*this%n + this%n_i) then
 
           associate (i_ => i-this%n_e*this%n-this%n_i)
-            this%S_o(i_) = this%S_o(i_)*scale
+            this%scl_o(i_) = this%scl_o(i_)*scl
           end associate
 
        else
 
           associate (k => (i-1+this%n_o)/this%n_e)
-            this%S(k) = this%S(k)*scale
+            this%scl(k) = this%scl(k)*scl
           end associate
 
        endif
@@ -371,7 +371,7 @@ contains
 
   end subroutine scale_rows_
 
-!****
+  !****
 
   function det (this)
 
@@ -382,7 +382,7 @@ contains
 
     ! Evaluate the determinant
 
-    det = product([${T}_ext_t(this%A_b(2*this%n_ul+1,:)),this%S_i,this%S,this%S_o])
+    det = product([${T}_ext_t(this%A_b(2*this%n_ul+1,:)),${T}_ext_t(this%scl_i),this%scl,${T}_ext_t(this%scl_o)])
  
     do j = 1, SIZE(this%ipiv)
        if(this%ipiv(j) /= j) det = -det
@@ -494,15 +494,9 @@ contains
 
       ! Set up the banded system
 
-      $if ($T eq 'c')
-      B(:n_i,1) = w_i/cmplx(this%S_i)
+      B(:n_i,1) = w_i/this%scl_i
       B(n_i+1:n_i+n*n_e,1) = 0._WP
-      B(n_i+n*n_e+1:,1) = w_o/cmplx(this%S_o)
-      $else
-      B(:n_i,1) = w_i/real(this%S_i)
-      B(n_i+1:n_i+n*n_e,1) = 0._WP
-      B(n_i+n*n_e+1:,1) = w_o/real(this%S_o)
-      $endif
+      B(n_i+n*n_e+1:,1) = w_o/this%scl_o
 
       ! Solve for v
 

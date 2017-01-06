@@ -25,7 +25,6 @@ module gyre_rad_bound
 
   use gyre_atmos
   use gyre_bound
-  use gyre_ext
   use gyre_grid
   use gyre_model
   use gyre_mode_par
@@ -153,25 +152,25 @@ contains
 
   !****
 
-  subroutine build_i (this, omega, B_i, scl_i)
+  subroutine build_i (this, omega, B, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP), intent(out)          :: B_i(:,:)
-    type(r_ext_t), intent(out)     :: scl_i(:)
+    real(WP), intent(out)          :: B(:,:)
+    real(WP), intent(out)          :: scl(:)
 
-    $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
-    $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(scl),this%n_i)
     
     ! Evaluate the inner boundary conditions
 
     select case (this%type_i)
     case (REGULAR_TYPE)
-       call this%build_regular_i_(omega, B_i, scl_i)
+       call this%build_regular_i_(omega, B, scl)
     case (ZERO_TYPE)
-       call this%build_zero_i_(omega, B_i, scl_i)
+       call this%build_zero_i_(omega, B, scl)
     case default
        $ABORT(Invalid type_i)
     end select
@@ -184,21 +183,21 @@ contains
 
   !****
 
-  subroutine build_regular_i_ (this, omega, B_i, scl_i)
+  subroutine build_regular_i_ (this, omega, B, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP), intent(out)          :: B_i(:,:)
-    type(r_ext_t), intent(out)     :: scl_i(:)
+    real(WP), intent(out)          :: B(:,:)
+    real(WP), intent(out)          :: scl(:)
 
     real(WP) :: c_1
     real(WP) :: omega_c
     real(WP) :: alpha_om
 
-    $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
-    $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
     
-    $CHECK_BOUNDS(SIZE(scl_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(scl),this%n_i)
 
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
@@ -214,14 +213,14 @@ contains
 
       ! Set up the boundary conditions
 
-      B_i(1,1) = c_1*alpha_om*omega_c**2
-      B_i(1,2) = 0._WP
+      B(1,1) = c_1*alpha_om*omega_c**2
+      B(1,2) = 0._WP
 
-      scl_i = r_ext_t(1._WP)
+      scl = 1._WP
 
       ! Apply the variables transformation
 
-      B_i = MATMUL(B_i, this%vr%H(pt, omega))
+      B = MATMUL(B, this%vr%H(pt, omega))
 
     end associate
 
@@ -233,17 +232,17 @@ contains
 
   !****
 
-  subroutine build_zero_i_ (this, omega, B_i, scl_i)
+  subroutine build_zero_i_ (this, omega, B, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP), intent(out)          :: B_i(:,:)
-    type(r_ext_t), intent(out)     :: scl_i(:)
+    real(WP), intent(out)          :: B(:,:)
+    real(WP), intent(out)          :: scl(:)
 
-    $CHECK_BOUNDS(SIZE(B_i, 1),this%n_i)
-    $CHECK_BOUNDS(SIZE(B_i, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(scl),this%n_i)
 
     ! Evaluate the inner boundary conditions (zero displacement)
 
@@ -251,14 +250,14 @@ contains
 
       ! Set up the boundary conditions
 
-      B_i(1,1) = 1._WP
-      B_i(1,2) = 0._WP
+      B(1,1) = 1._WP
+      B(1,2) = 0._WP
 
-      scl_i = r_ext_t(1._WP)
+      scl = 1._WP
       
       ! Apply the variables transformation
 
-      B_i = MATMUL(B_i, this%vr%H(pt, omega))
+      B = MATMUL(B, this%vr%H(pt, omega))
 
     end associate
 
@@ -270,29 +269,29 @@ contains
 
   !****
 
-  subroutine build_o (this, omega, B_o, scl_o)
+  subroutine build_o (this, omega, B, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP), intent(out)          :: B_o(:,:)
-    type(r_ext_t), intent(out)     :: scl_o(:)
+    real(WP), intent(out)          :: B(:,:)
+    real(WP), intent(out)          :: scl(:)
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
     
-    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Evaluate the outer boundary conditions
 
     select case (this%type_o)
     case (ZERO_TYPE)
-       call this%build_zero_o_(omega, B_o, scl_o)
+       call this%build_zero_o_(omega, B, scl)
     case (DZIEM_TYPE)
-       call this%build_dziem_o_(omega, B_o, scl_o)
+       call this%build_dziem_o_(omega, B, scl)
     case (UNNO_TYPE)
-       call this%build_unno_o_(omega, B_o, scl_o)
+       call this%build_unno_o_(omega, B, scl)
     case (JCD_TYPE)
-       call this%build_jcd_o_(omega, B_o, scl_o)
+       call this%build_jcd_o_(omega, B, scl)
     case default
        $ABORT(Invalid type_o)
     end select
@@ -305,17 +304,17 @@ contains
   
   !****
 
-  subroutine build_zero_o_ (this, omega, B_o, scl_o)
+  subroutine build_zero_o_ (this, omega, B, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP), intent(out)          :: B_o(:,:)
-    type(r_ext_t), intent(out)     :: scl_o(:)
+    real(WP), intent(out)          :: B(:,:)
+    real(WP), intent(out)          :: scl(:)
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Evaluate the outer boundary conditions (zero-pressure)
 
@@ -323,14 +322,14 @@ contains
     
       ! Set up the boundary conditions
 
-      B_o(1,1) = 1._WP
-      B_o(1,2) = -1._WP
+      B(1,1) = 1._WP
+      B(1,2) = -1._WP
       
-      scl_o = r_ext_t(1._WP)
+      scl = 1._WP
     
       ! Apply the variables transformation
 
-      B_o = MATMUL(B_o, this%vr%H(pt, omega))
+      B = MATMUL(B, this%vr%H(pt, omega))
 
     end associate
 
@@ -342,22 +341,22 @@ contains
 
   !****
 
-  subroutine build_dziem_o_ (this, omega, B_o, scl_o)
+  subroutine build_dziem_o_ (this, omega, B, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP), intent(out)          :: B_o(:,:)
-    type(r_ext_t), intent(out)     :: scl_o(:)
+    real(WP), intent(out)          :: B(:,:)
+    real(WP), intent(out)          :: scl(:)
 
     real(WP) :: V
     real(WP) :: c_1
     real(WP) :: omega_c
     real(WP) :: alpha_om
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
@@ -368,7 +367,7 @@ contains
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
 
-         call this%build_zero_o_(omega, B_o, scl_o)
+         call this%build_zero_o_(omega, B, scl)
 
       else
 
@@ -383,14 +382,14 @@ contains
 
          ! Set up the boundary conditions
         
-         B_o(1,1) = 1 - (4._WP + c_1*alpha_om*omega_c**2)/V
-         B_o(1,2) = -1._WP
+         B(1,1) = 1 - (4._WP + c_1*alpha_om*omega_c**2)/V
+         B(1,2) = -1._WP
 
-         scl_o = r_ext_t(1._WP)
+         scl = 1._WP
 
          ! Apply the variables transformation
 
-         B_o = MATMUL(B_o, this%vr%H(pt, omega))
+         B = MATMUL(B, this%vr%H(pt, omega))
 
       endif
 
@@ -404,12 +403,12 @@ contains
 
   !****
   
-  subroutine build_unno_o_ (this, omega, B_o, scl_o)
+  subroutine build_unno_o_ (this, omega, B, scl)
 
     class(rad_bound_t), intent(in) :: this
     real(WP), intent(in)           :: omega
-    real(WP), intent(out)          :: B_o(:,:)
-    type(r_ext_t), intent(out)     :: scl_o(:)
+    real(WP), intent(out)          :: B(:,:)
+    real(WP), intent(out)          :: scl(:)
 
     real(WP) :: V_g
     real(WP) :: As
@@ -419,10 +418,10 @@ contains
     real(WP) :: b_11
     real(WP) :: b_12
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
@@ -433,7 +432,7 @@ contains
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
 
-         call this%build_zero_o_(omega, B_o, scl_o)
+         call this%build_zero_o_(omega, B, scl)
 
       else
 
@@ -450,14 +449,14 @@ contains
     
          ! Set up the boundary conditions
       
-         B_o(1,1) = beta - b_11
-         B_o(1,2) = -b_12
+         B(1,1) = beta - b_11
+         B(1,2) = -b_12
 
-         scl_o = r_ext_t(1._WP)
+         scl = 1._WP
 
          ! Apply the variables transformation
 
-         B_o = MATMUL(B_o, this%vr%H(pt, omega))
+         B = MATMUL(B, this%vr%H(pt, omega))
 
       endif
 
@@ -471,12 +470,12 @@ contains
 
   !****
 
-  subroutine build_jcd_o_ (this, omega, B_o, scl_o)
+  subroutine build_jcd_o_ (this, omega, B, scl)
 
     class(rad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
-    real(WP), intent(out)         :: B_o(:,:)
-    type(r_ext_t), intent(out)    :: scl_o(:)
+    real(WP), intent(in)           :: omega
+    real(WP), intent(out)          :: B(:,:)
+    real(WP), intent(out)          :: scl(:)
 
     real(WP) :: V_g
     real(WP) :: As
@@ -486,10 +485,10 @@ contains
     real(WP) :: b_11
     real(WP) :: b_12
 
-    $CHECK_BOUNDS(SIZE(B_o, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B_o, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
-    $CHECK_BOUNDS(SIZE(scl_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
@@ -502,7 +501,7 @@ contains
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
 
-         call this%build_zero_o_(omega, B_o, scl_o)
+         call this%build_zero_o_(omega, B, scl)
 
       else
 
@@ -517,14 +516,14 @@ contains
 
          ! Set up the boundary conditions
 
-         B_o(1,1) = beta - b_11
-         B_o(1,2) = -b_12
+         B(1,1) = beta - b_11
+         B(1,2) = -b_12
 
-         scl_o = r_ext_t(1._WP)
+         scl = 1._WP
 
          ! Apply the variables transformation
 
-         B_o = MATMUL(B_o, this%vr%H(pt, omega))
+         B = MATMUL(B, this%vr%H(pt, omega))
 
       endif
 

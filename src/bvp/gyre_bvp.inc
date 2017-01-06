@@ -131,8 +131,8 @@ contains
     $TYPE(WP)        :: B_o(this%n_o,this%n_e)
     $TYPE(WP)        :: E_l(this%n_e,this%n_e)
     $TYPE(WP)        :: E_r(this%n_e,this%n_e)
-    type(${T}_ext_t) :: scl_i(this%n_i)
-    type(${T}_ext_t) :: scl_o(this%n_o)
+    $TYPE(WP)        :: scl_i(this%n_i)
+    $TYPE(WP)        :: scl_o(this%n_o)
     type(${T}_ext_t) :: scl
     integer          :: k
     
