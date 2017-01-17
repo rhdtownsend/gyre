@@ -168,7 +168,7 @@ contains
     dx = this%pt_b%x - this%pt_a%x
 
     pt%s = this%pt_a%s
-    pt%x = this%pt_a%x + dx
+    pt%x = this%pt_a%x + 0.5_WP*dx
 
     A(:,:,1) = this%eq%A(pt, omega)
 
