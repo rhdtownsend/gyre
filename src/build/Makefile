@@ -23,6 +23,6 @@ endif
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../extern/astro:../common:../diff:../bep:../interp:../model:../matrix:../search:../ext:../frontend:../ad:../rad:../nad:../rot:../tar:../mode:../soln:../grid:../frontend:../output:../poly
+SUBDIRS=../extern/core:../extern/astro:../common:../diff:../bvp:../interp:../model:../matrix:../search:../ext:../frontend:../ad:../rad:../nad:../rot:../tar:../mode:../soln:../grid:../frontend:../output:../poly
 
 include Make.inc
