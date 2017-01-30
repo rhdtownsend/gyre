@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.txt
 
-LABEL="numerics (GRAVTY_DELTA frequency units)"
+LABEL="numerics (*_DELTA frequency units)"
 
 RELERR=3E-13
 FIELDS=1-6

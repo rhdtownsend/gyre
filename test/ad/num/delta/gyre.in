@@ -19,9 +19,9 @@
 
 &scan
 	grid_type = 'INVERSE'
-	freq_min = 0.02
+	freq_min = 0.0333
 	freq_max = 1.0
-	n_freq = 100
+	n_freq = 60
 	freq_min_units = 'GRAVITY_DELTA'
 	freq_max_units = 'GRAVITY_DELTA'
 /
@@ -29,8 +29,8 @@
 &scan
 	grid_type = 'LINEAR'
 	freq_min = 1.0
-	freq_max = 50.0
-	n_freq = 100
+	freq_max = 30.0
+	n_freq = 60
 	freq_min_units = 'ACOUSTIC_DELTA'
 	freq_max_units = 'ACOUSTIC_DELTA'
 /
