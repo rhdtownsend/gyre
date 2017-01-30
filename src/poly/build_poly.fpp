@@ -1,7 +1,7 @@
 ! Program  : build_poly
 ! Purpose  : build a polytrope, possibly with disctontinuities
 !
-! Copyright 2015-2016 Rich Townsend
+! Copyright 2015-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -54,8 +54,6 @@ program build_poly
   real(WP), allocatable     :: xi(:)
   real(WP), allocatable     :: Theta(:)
   real(WP), allocatable     :: dTheta(:)
-  real(WP), allocatable     :: B(:)
-  real(WP), allocatable     :: t(:)
   type(hgroup_t)            :: hg
 
   namelist /poly/ n_d, n_poly, Gamma_1, xi_d, Delta_d
