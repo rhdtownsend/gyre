@@ -24,6 +24,7 @@ module gyre_model_util
   use core_kinds
 
   use gyre_constants
+  use gyre_model
   use gyre_model_par
   use gyre_util
 
@@ -39,6 +40,7 @@ module gyre_model_util
 
   public :: uniform_Omega_rot
   public :: snap_points
+  public :: check_model
 
   ! Procedures
 
@@ -175,5 +177,79 @@ contains
     return
 
   end subroutine snap_points
+
+  !****
+
+  subroutine check_model (ml, i_req)
+
+    class(model_t), intent(in) :: ml
+    integer, intent(in)        :: i_req(:)
+
+    logical :: missing_coeffs
+    integer :: j
+
+    ! Check that the model has the required coefficients, listed in
+    ! i_req
+
+    missing_coeffs = .FALSE.
+
+    do j = 1, SIZE(i_req)
+
+       if (.NOT. ml%is_defined(i_req(j))) then
+
+          if (.NOT. missing_coeffs) then
+             write(OUTPUT_UNIT, 100) 'Model lacks the following structure coefficients:'
+100          format(A)
+             missing_coeffs = .FALSE.
+          end if
+
+110       format(3X, A)
+
+          select case (i_req(j))
+          case (I_V_2)
+             write(OUTPUT_UNIT, 110) 'V_2'
+          case (I_AS)
+             write(OUTPUT_UNIT, 110) 'A*'
+          case (I_U)
+             write(OUTPUT_UNIT, 110) 'U'
+          case (I_C_1)
+             write(OUTPUT_UNIT, 110) 'c_1'
+          case (I_GAMMA_1)
+             write(OUTPUT_UNIT, 110) 'Gamma_1'
+          case (I_NABLA)
+             write(OUTPUT_UNIT, 110) 'nabla'
+          case (I_NABLA_AD)
+             write(OUTPUT_UNIT, 110) 'nabla_ad'
+          case (I_BETA_RAD)
+             write(OUTPUT_UNIT, 110) 'beta_rad'
+          case (I_C_RAD)
+             write(OUTPUT_UNIT, 110) 'c_rad'
+          case (I_C_THM)
+             write(OUTPUT_UNIT, 110) 'c_thm'
+          case (I_C_DIF)
+             write(OUTPUT_UNIT, 110) 'c_dif'
+          case (I_C_EPS_AD)
+             write(OUTPUT_UNIT, 110) 'c_eps_ad'
+          case (I_C_EPS_S)
+             write(OUTPUT_UNIT, 110) 'c_eps_S'
+          case (I_KAP_AD)
+             write(OUTPUT_UNIT, 110) 'kap_ad'
+          case (I_KAP_S)
+             write(OUTPUT_UNIT, 110) 'kap_S'
+          end select
+
+       end if
+
+    end do
+             
+    if (missing_coeffs) then
+       $ABORT(Model check failed)
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine check_model
 
 end module gyre_model_util

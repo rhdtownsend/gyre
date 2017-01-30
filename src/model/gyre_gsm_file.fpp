@@ -1,7 +1,7 @@
 ! Module   : gyre_gsm_file
 ! Purpose  : read GSM (GYRE Stellar Model) files
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -147,28 +147,28 @@ contains
 
     ! Initialize the evol_model_t
 
-    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, .TRUE., ml_p))
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
 
-    call em%set_V_2(V_2)
-    call em%set_As(As)
-    call em%set_U(U)
-    call em%set_c_1(c_1)
+    call em%define(I_V_2, V_2)
+    call em%define(I_AS, As)
+    call em%define(I_U, U)
+    call em%define(I_C_1, c_1)
 
-    call em%set_Gamma_1(Gamma_1)
-    call em%set_delta(delta)
-    call em%set_nabla_ad(nabla_ad)
-    call em%set_nabla(nabla)
-    call em%set_beta_rad(beta_rad)
+    call em%define(I_GAMMA_1, Gamma_1)
+    call em%define(I_DELTA, delta)
+    call em%define(I_NABLA_AD, nabla_ad)
+    call em%define(I_NABLA, nabla)
+    call em%define(I_BETA_RAD, beta_rad)
 
-    call em%set_c_rad(c_rad)
-    call em%set_c_thm(c_thm)
-    call em%set_c_dif(c_dif)
-    call em%set_c_eps_ad(c_eps_ad)
-    call em%set_c_eps_S(c_eps_S)
-    call em%set_kap_ad(kap_ad)
-    call em%set_kap_S(kap_S)
+    call em%define(I_C_RAD, c_rad)
+    call em%define(I_C_THM, c_thm)
+    call em%define(I_C_DIF, c_dif)
+    call em%define(I_C_EPS_AD, c_eps_ad)
+    call em%define(I_C_EPS_S, c_eps_S)
+    call em%define(I_KAP_AD, kap_ad)
+    call em%define(I_KAP_S, kap_S)
 
-    call em%set_Omega_rot(Omega_rot)
+    call em%define(I_OMEGA_ROT, Omega_rot)
 
     ! Return a pointer
 
