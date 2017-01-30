@@ -173,7 +173,7 @@ contains
     if (PRESENT(normalize)) then
        normalize_ = normalize
     else
-       normalize_ = .FALSE.
+       normalize_ = .TRUE.
     endif
 
     ! Construct the mode_t
