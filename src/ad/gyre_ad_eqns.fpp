@@ -27,6 +27,7 @@ module gyre_ad_eqns
   use gyre_eqns
   use gyre_grid
   use gyre_model
+  use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
@@ -79,6 +80,8 @@ contains
     type(ad_eqns_t)                     :: eq
 
     ! Construct the ad_eqns_t
+
+    call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
 
     eq%ml => ml
 
@@ -137,8 +140,8 @@ contains
     real(WP)                     :: xA(this%n_e,this%n_e)
 
     real(WP) :: V_g
-    real(WP) :: U
     real(WP) :: As
+    real(WP) :: U
     real(WP) :: c_1
     real(WP) :: lambda
     real(WP) :: l_i
@@ -150,10 +153,10 @@ contains
 
     ! Calculate coefficients
     
-    V_g = this%ml%V_2(pt)*pt%x**2/this%ml%Gamma_1(pt)
-    U = this%ml%U(pt)
-    As = this%ml%As(pt)
-    c_1 = this%ml%c_1(pt)
+    V_g = this%ml%coeff(I_V_2, pt)*pt%x**2/this%ml%coeff(I_GAMMA_1, pt)
+    As = this%ml%coeff(I_AS, pt)
+    U = this%ml%coeff(I_U, pt)
+    c_1 = this%ml%coeff(I_C_1, pt)
 
     lambda = this%rt%lambda(pt, omega)
     l_i = this%rt%l_i(omega)

@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_bvp
 ! Purpose  : adiabatic bounary value problem solver
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -89,8 +89,6 @@ contains
     type(ad_bound_t)             :: bd
     integer                      :: k
     type(ad_diff_t), allocatable :: df(:)
-    real(WP)                     :: omega_min
-    real(WP)                     :: omega_max
 
     ! Construct the ad_bvp_t
 
@@ -126,23 +124,6 @@ contains
     return
 
   end function ad_bvp_t_
-
-  !****
-
-    ! if (REAL(omega, WP) >= this%omega_min .AND. REAL(omega, WP) <= this%omega_max) then
-
-    !    call this%build_(omega)
-
-    !    call this%sm%factorize()
-    !    discrim = this%sm%det()
-
-    !    status = STATUS_OK
-
-    ! else
-
-    !    status = STATUS_OMEGA_DOMAIN
-
-    ! endif
 
   !****
 
@@ -201,7 +182,7 @@ contains
 
        associate (pt => bp%gr%pt(k))
 
-         if (bp%ml%vacuum(pt)) then
+         if (bp%ml%is_vacuum(pt)) then
             xA = 0._WP
          else
             xA = bp%eq%xA(pt, omega)
@@ -229,7 +210,7 @@ contains
 
          y_c(:,k) = MATMUL(H, y(:,k))
 
-         if (bp%ml%vacuum(pt)) then
+         if (bp%ml%is_vacuum(pt)) then
             dH = 0._WP
          else
             dH = bp%vr%dH(pt, omega)
