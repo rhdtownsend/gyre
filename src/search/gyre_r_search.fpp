@@ -104,21 +104,16 @@ contains
        associate (freq_min => sc_p(i)%freq_min, &
                   freq_max => sc_p(i)%freq_max, &
                   n_freq => sc_p(i)%n_freq, &
-                  freq_units => sc_p(i)%freq_units, &
+                  freq_min_units => sc_p(i)%freq_min_units, &
+                  freq_max_units => sc_p(i)%freq_max_units, &
                   freq_frame => sc_p(i)%freq_frame, &
                   grid_frame => sc_p(i)%grid_frame, &
                   grid_type => sc_p(i)%grid_type)
          
          ! Calculate the dimensionless frequency range in the inertial frame
          
-         select case (freq_units)
-         case ('MIXED_DELTA')
-            omega_min = omega_from_freq(freq_min, ml, gr, 'GRAVITY_DELTA', freq_frame, md_p, os_p)
-            omega_max = omega_from_freq(freq_max, ml, gr, 'ACOUSTIC_DELTA', freq_frame, md_p, os_p)
-         case default
-            omega_min = omega_from_freq(freq_min, ml, gr, freq_units, freq_frame, md_p, os_p)
-            omega_max = omega_from_freq(freq_max, ml, gr, freq_units, freq_frame, md_p, os_p)
-         end select
+         omega_min = omega_from_freq(freq_min, ml, gr, freq_min_units, freq_frame, md_p, os_p)
+         omega_max = omega_from_freq(freq_max, ml, gr, freq_max_units, freq_frame, md_p, os_p)
 
          ! Check that the range is valid
 
