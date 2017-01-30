@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_util
 ! Purpose  : grid utilities
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -175,16 +175,16 @@ contains
     ! Calculate the propagation discriminant gamma (< 0 : propagation,
     ! > 0 : evanescence)
 
-    if (ml%vacuum(pt)) then
+    if (ml%is_vacuum(pt)) then
 
        gamma = HUGE(0._WP)
 
     else
 
-       V_g = ml%V_2(pt)*pt%x**2/ml%Gamma_1(pt)
-       As = ml%As(pt)
-       U = ml%U(pt)
-       c_1 = ml%c_1(pt)
+       V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+       As = ml%coeff(I_As, pt)
+       U = ml%coeff(I_U, pt)
+       c_1 = ml%coeff(I_C_1, pt)
 
        lambda = rt%lambda(pt, omega)
 

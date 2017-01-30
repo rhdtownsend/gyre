@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_factory
 ! Purpose  : factory procedures for grid_t type
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -266,10 +266,10 @@ contains
 
           pt = gr%pt(k)
 
-          V_g = ml%V_2(pt)*pt%x**2/ml%Gamma_1(pt)
-          As = ml%As(pt)
-          U = ml%U(pt)
-          c_1 = ml%c_1(pt)
+          V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+          As = ml%coeff(I_AS, pt)
+          U = ml%coeff(I_U, pt)
+          c_1 = ml%coeff(I_C_1, pt)
 
           beta_r_max(k) = 0._WP
           beta_i_max(k) = 0._WP
@@ -399,11 +399,11 @@ contains
 
           pt = gr%pt(k)
 
-          V = ml%V_2(pt)*pt%x**2
-          nabla = ml%nabla(pt)
+          V = ml%coeff(I_V_2, pt)*pt%x**2
+          nabla = ml%coeff(I_NABLA, pt)
 
-          c_rad = ml%c_rad(pt)
-          c_thm = ml%c_thm(pt)
+          c_rad = ml%coeff(I_C_RAD, pt)
+          c_thm = ml%coeff(I_C_THM, pt)
 
           beta_t_max(k) = 0._WP
 
@@ -491,11 +491,11 @@ contains
 
              dn(k) = 0
 
-             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%V_2(pt_a), ml%V_2(pt_b))))
-             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%As(pt_a), ml%As(pt_b))))
-             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%Gamma_1(pt_a), ml%Gamma_1(pt_b))))
-             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%c_1(pt_a), ml%c_1(pt_b))))
-             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%U(pt_a), ml%U(pt_b))))
+             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%coeff(I_V_2, pt_a), ml%coeff(I_V_2, pt_b))))
+             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%coeff(I_AS, pt_a), ml%coeff(I_AS, pt_b))))
+             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%coeff(I_U, pt_a), ml%coeff(I_U, pt_b))))
+             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%coeff(I_C_1, pt_a), ml%coeff(I_C_1, pt_b))))
+             dn(k) = MAX(dn(k), FLOOR(gr_p%alpha_str*dlog_(ml%coeff(I_GAMMA_1, pt_a), ml%coeff(I_GAMMA_1, pt_b))))
 
           else
 
