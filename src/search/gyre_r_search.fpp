@@ -1,7 +1,7 @@
 ! Module   : gyre_r_search
 ! Purpose  : mode searching (real)
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -204,20 +204,25 @@ contains
     real(WP)                    :: omega_c(gr%n_k)
     real(WP)                    :: omega_c_prev(gr%n_k)
     integer                     :: j
+    integer                     :: k
 
     ! Check the frequency scan to ensure no zero crossings in omega_c
     ! arise
 
     allocate(rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
 
-    omega_c = rt%omega_c(gr%pt, omega(1))
+    do k = 1, gr%n_k
+       omega_c(k) = rt%omega_c(gr%pt(k), omega(1))
+    end do
 
     $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
 
     do j = 2, SIZE(omega)
 
        omega_c_prev = omega_c
-       omega_c = rt%omega_c(gr%pt, omega(j))
+       do k = 1, gr%n_k
+          omega_c(k) = rt%omega_c(gr%pt(k), omega(j))
+       end do
 
        $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)
 
