@@ -1,7 +1,7 @@
 ! Module   : gyre_osc_par
 ! Purpose  : oscillation parameters
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -97,7 +97,6 @@ contains
     logical                              :: nonadiabatic
     logical                              :: cowling_approx
     logical                              :: narf_approx
-    logical                              :: unstab_branch
     logical                              :: reduce_order
 
     namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, &
