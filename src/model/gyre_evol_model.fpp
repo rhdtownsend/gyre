@@ -59,6 +59,8 @@ module gyre_evol_model
      procedure, public :: dcoeff
      procedure, public :: is_defined
      procedure, public :: is_vacuum
+     procedure, public :: Delta_p
+     procedure, public :: Delta_g
      procedure, public :: grid
   end type evol_model_t
  
@@ -365,6 +367,111 @@ contains
     return
 
   end function is_vacuum
+
+  !****
+
+  function Delta_p (this)
+
+    class(evol_model_t), intent(in) :: this
+    real(WP)                        :: Delta_p
+
+    real(WP)      :: I
+    integer       :: s
+    type(point_t) :: pt
+    integer       :: k_i
+    integer       :: k_o
+    integer       :: k
+    real(WP)      :: V_2
+    real(WP)      :: c_1
+    real(WP)      :: Gamma_1
+
+    ! Evaluate the dimensionless g-mode inverse period separation
+
+    ! Use a midpoint quadrature rule, since the integrand can diverge
+    ! at the surface
+
+    I = 0._WP
+
+    seg_loop : do s = this%s_i, this%s_o
+
+       pt%s = s
+
+       k_i = this%gr%k_i(s)
+       k_o = this%gr%k_o(s)
+
+       cell_loop : do k = k_i, k_o-1
+
+          pt%x = 0.5*(this%gr%pt(k)%x + this%gr%pt(k+1)%x)
+
+          V_2 = this%coeff(I_V_2, pt)
+          c_1 = this%coeff(I_C_1, pt)
+          Gamma_1 = this%coeff(I_GAMMA_1, pt)
+
+          I = I + SQRT(c_1*V_2/Gamma_1)*(this%gr%pt(k+1)%x - this%gr%pt(k)%x)
+
+       end do cell_loop
+
+    end do seg_loop
+          
+    Delta_p = 0.5_WP/I
+
+    ! Finish
+
+    return
+
+  end function Delta_p
+
+  !****
+
+  function Delta_g (this, lambda)
+
+    class(evol_model_t), intent(in) :: this
+    real(WP), intent(in)            :: lambda
+    real(WP)                        :: Delta_g
+
+    real(WP)      :: I
+    integer       :: s
+    type(point_t) :: pt
+    integer       :: k_i
+    integer       :: k_o
+    integer       :: k
+    real(WP)      :: As
+    real(WP)      :: c_1
+
+    ! Evaluate the dimensionless g-mode inverse period separation
+
+    ! Use a midpoint quadrature rule, since the integrand can diverge
+    ! at the boundaries
+
+    I = 0._WP
+
+    seg_loop : do s = this%s_i, this%s_o
+
+       pt%s = s
+
+       k_i = this%gr%k_i(s)
+       k_o = this%gr%k_o(s)
+
+       cell_loop : do k = k_i, k_o-1
+
+          pt%x = 0.5*(this%gr%pt(k)%x + this%gr%pt(k+1)%x)
+
+          As = this%coeff(I_AS, pt)
+          c_1 = this%coeff(I_C_1, pt)
+
+          I = I + (SQRT(MAX(As/c_1, 0._WP))/pt%x)*(this%gr%pt(k+1)%x - this%gr%pt(k)%x)
+
+       end do cell_loop
+
+    end do seg_loop
+          
+    Delta_g = SQRT(lambda)/(2._WP*PI**2)*I
+
+    ! Finish
+
+    return
+
+  end function Delta_g
 
   !****
 

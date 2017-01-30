@@ -59,6 +59,8 @@ module gyre_model
      procedure(coeff), deferred      :: dcoeff
      procedure(is_defined), deferred :: is_defined
      procedure(is_vacuum), deferred  :: is_vacuum
+     procedure(Delta_p), deferred    :: Delta_p
+     procedure(Delta_g), deferred    :: Delta_g
      procedure(grid), deferred       :: grid
   end type model_t
 
@@ -100,6 +102,21 @@ module gyre_model
        type(point_t), intent(in)  :: pt
        logical                    :: is_vacuum
      end function is_vacuum
+
+     function Delta_p (this)
+       use core_kinds
+       import model_t
+       class(model_t), intent(in) :: this
+       real(WP)                   :: Delta_p
+     end function Delta_p
+
+     function Delta_g (this, lambda)
+       use core_kinds
+       import model_t
+       class(model_t), intent(in) :: this
+       real(WP), intent(in)       :: lambda
+       real(WP)                   :: Delta_g
+     end function Delta_g
 
      function grid (this)
        use gyre_grid

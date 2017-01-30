@@ -23,6 +23,7 @@ module gyre_hom_model
 
   use core_kinds
 
+  use gyre_constants
   use gyre_grid
   use gyre_model
   use gyre_model_par
@@ -54,6 +55,8 @@ module gyre_hom_model
      procedure         :: dcoeff_As_
      procedure, public :: is_defined
      procedure, public :: is_vacuum
+     procedure, public :: Delta_p
+     procedure, public :: Delta_g
      procedure, public :: grid
   end type hom_model_t
 
@@ -315,6 +318,41 @@ contains
     return
 
   end function is_vacuum
+
+  !****
+
+  function Delta_p (this)
+
+    class(hom_model_t), intent(in) :: this
+    real(WP)                       :: Delta_p
+
+    ! Evaluate the dimensionless p-mode frequency separation
+
+    Delta_p = 1._WP/(PI*SQRT(2._WP/this%Gamma_1))
+
+    ! Finish
+
+    return
+
+  end function Delta_p
+
+  !****
+
+  function Delta_g (this, lambda)
+
+    class(hom_model_t), intent(in) :: this
+    real(WP), intent(in)           :: lambda
+    real(WP)                       :: Delta_g
+
+    ! Evaluate the dimensionless g-mode inverse period separation
+
+    Delta_g = 0._WP
+
+    ! Finish
+
+    return
+
+  end function Delta_g
 
   !****
 

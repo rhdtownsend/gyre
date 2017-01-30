@@ -62,8 +62,6 @@ module gyre_freq
   public :: omega_from_freq
   public :: freq_from_omega
   public :: eval_cutoff_freqs
-  public :: Delta_p
-  public :: Delta_g
 
   ! Procedures
 
@@ -118,9 +116,9 @@ contains
        case ('CYC_PER_DAY')
           omega_l = TWOPI*freq*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/86400._WP
        case ('ACOUSTIC_DELTA')
-          omega_l = TWOPI*freq*Delta_p(ml)
+          omega_l = TWOPI*freq*ml%Delta_p()
        case ('GRAVITY_DELTA')
-          omega_l = TWOPI*freq*Delta_g(ml, md_p%l)
+          omega_l = TWOPI*freq*ml%Delta_g(md_p%l*(md_p%l+1._WP))
        case ('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           omega_l = freq*omega_cutoff_hi
@@ -141,9 +139,9 @@ contains
        case ('NONE')
           omega_l = freq
        case ('ACOUSTIC_DELTA')
-          omega_l = TWOPI*freq*Delta_p(ml)
+          omega_l = TWOPI*freq*ml%Delta_p()
        case ('GRAVITY_DELTA')
-          omega_l = TWOPI*freq*Delta_g(ml, md_p%l)
+          omega_l = TWOPI*freq*ml%Delta_g(md_p%l*(md_p%l+1._WP))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -154,9 +152,9 @@ contains
        case ('NONE')
           omega_l = freq
        case ('ACOUSTIC_DELTA')
-          omega_l = TWOPI*freq*Delta_p(ml)
+          omega_l = TWOPI*freq*ml%Delta_p()
        case ('GRAVITY_DELTA')
-          omega_l = TWOPI*freq*Delta_g(ml, md_p%l)
+          omega_l = TWOPI*freq*ml%Delta_g(md_p%l*(md_p%l+1._WP))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -259,9 +257,9 @@ contains
        case ('CYC_PER_DAY')
           freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*86400._WP
        case ('ACOUSTIC_DELTA')
-          freq = omega_l/(TWOPI*Delta_p(ml))
+          freq = omega_l/(TWOPI*ml%Delta_p())
        case ('GRAVITY_DELTA')
-          freq = omega_l/(TWOPI*Delta_g(ml, md_p%l))
+          freq = omega_l/(TWOPI*ml%Delta_g(md_p%l*(md_p%l+1._WP)))
        case ('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           freq = omega_l/omega_cutoff_hi
@@ -282,9 +280,9 @@ contains
        case ('NONE')
           freq = omega_l
        case ('ACOUSTIC_DELTA')
-          freq = omega_l/(TWOPI*Delta_p(ml))
+          freq = omega_l/(TWOPI*ml%Delta_p())
        case ('GRAVITY_DELTA')
-          freq = omega_l/(TWOPI*Delta_g(ml, md_p%l))
+          freq = omega_l/(TWOPI*ml%Delta_g(md_p%l*(md_p%l+1._WP)))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -295,9 +293,9 @@ contains
        case ('NONE')
           freq = omega_l
        case ('ACOUSTIC_DELTA')
-          freq = omega_l/(TWOPI*Delta_p(ml))
+          freq = omega_l/(TWOPI*ml%Delta_p())
        case ('GRAVITY_DELTA')
-          freq = omega_l/(TWOPI*Delta_g(ml, md_p%l))
+          freq = omega_l/(TWOPI*ml%Delta_g(md_p%l*(md_p%l+1._WP)))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -375,100 +373,5 @@ contains
     return
 
   end subroutine eval_cutoff_freqs
-
-  !****
-
-  function Delta_p (ml)
-
-    class(model_t), intent(in) :: ml
-    real(WP)                   :: Delta_p
-
-    type(grid_t)          :: gr
-    real(WP), allocatable :: f(:)
-    integer               :: k
-    real(WP)              :: V_2
-    real(WP)              :: c_1
-    real(WP)              :: Gamma_1
-
-    ! Evaluate the dimensionless p-mode frequency separation
-
-    gr = ml%grid()
-
-    allocate(f(gr%n_k))
-
-    do k = 1, gr%n_k
-
-       if (ml%is_vacuum(gr%pt(k))) then
-
-          $ABORT(Cannot evaluate Delta_p for model containing vacuum points)
-
-       else
-
-          V_2 = ml%coeff(I_V_2, gr%pt(k))
-          c_1 = ml%coeff(I_C_1, gr%pt(k))
-          Gamma_1 = ml%coeff(I_GAMMA_1, gr%pt(k))
-          
-          f(k) = SQRT(c_1*V_2/Gamma_1)
-
-       endif
-
-    end do
-
-    Delta_p = 0.5_WP/integrate(gr%pt%x, f)
-
-    ! Finish
-   
-    return
-
-  end function Delta_p
-
-  !****
-
-  function Delta_g (ml, l)
-
-    class(model_t), intent(in) :: ml
-    integer, intent(in)        :: l
-    real(WP)                   :: Delta_g
-
-    type(grid_t)          :: gr
-    real(WP), allocatable :: f(:)
-    integer               :: k
-    real(WP)              :: As
-    real(WP)              :: c_1
-
-    ! Calculate the dimensionless g-mode inverse period separation
-
-    gr = ml%grid()
-
-    allocate(f(gr%n_k))
-
-    do k = 1, gr%n_k
-
-       if (ml%is_vacuum(gr%pt(k))) then
-
-          $ABORT(Cannot evaluate Delta_g for model containing vacuum points)
-
-       else
-
-          As = ml%coeff(I_AS, gr%pt(k))
-          c_1 = ml%coeff(I_C_1, gr%pt(k))
-
-          if (gr%pt(k)%x /= 0._WP) then
-             f(k) = SQRT(MAX(As/c_1, 0._WP))/gr%pt(k)%x
-          else
-             f(k) = 0._WP
-          endif
-
-       endif
-       
-    end do
-
-    Delta_g = SQRT(l*(l+1._WP))/(2._WP*PI**2)*integrate(gr%pt%x, f)
-
-    ! Finish
-
-    return
-
-  end function Delta_g
 
 end module gyre_freq
