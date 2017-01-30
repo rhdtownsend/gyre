@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_bvp
 ! Purpose  : nonadiabatic boundary value problem solver
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -89,8 +89,6 @@ contains
     type(nad_bound_t)             :: bd
     integer                       :: k
     type(nad_diff_t), allocatable :: df(:)
-    real(WP)                      :: omega_min
-    real(WP)                      :: omega_max
 
     ! Construct the nad_bvp_t
 
@@ -184,7 +182,7 @@ contains
 
        associate (pt => bp%gr%pt(k))
 
-         if (bp%ml%vacuum(pt)) then
+         if (bp%ml%is_vacuum(pt)) then
             xA = 0._WP
          else
             xA = bp%eq%xA(pt, omega)
@@ -212,7 +210,7 @@ contains
 
          y_c(:,k) = MATMUL(H, y(:,k))
 
-         if (bp%ml%vacuum(pt)) then
+         if (bp%ml%is_vacuum(pt)) then
             dH = 0._WP
          else
             dH = bp%vr%dH(pt, omega)

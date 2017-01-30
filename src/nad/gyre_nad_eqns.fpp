@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_eqns
 ! Purpose  : nonadiabatic differential equations
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -28,6 +28,7 @@ module gyre_nad_eqns
   use gyre_linalg
   use gyre_mode_par
   use gyre_model
+  use gyre_model_util
   use gyre_nad_vars
   use gyre_osc_par
   use gyre_point
@@ -82,6 +83,11 @@ contains
     type(nad_eqns_t)                    :: eq
 
     ! Construct the nad_eqns_t
+
+    call check_model(ml, [ &
+         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA,&
+         I_C_RAD,I_C_THM,I_C_DIF,I_C_EPS_AD,I_C_EPS_S, &
+         I_KAP_AD,I_KAP_S])
 
     eq%ml => ml
 
@@ -173,24 +179,24 @@ contains
 
     ! Calculate coefficients
 
-    V = this%ml%V_2(pt)*pt%x**2
-    V_g = V/this%ml%Gamma_1(pt)
-    U = this%ml%U(pt)
-    As = this%ml%As(pt)
-    c_1 = this%ml%c_1(pt)
+    V = this%ml%coeff(I_V_2, pt)*pt%x**2
+    V_g = V/this%ml%coeff(I_GAMMA_1, pt)
+    U = this%ml%coeff(I_U, pt)
+    As = this%ml%coeff(I_AS, pt)
+    c_1 = this%ml%coeff(I_C_1, pt)
 
-    nabla = this%ml%nabla(pt)
-    nabla_ad = this%ml%nabla_ad(pt)
-    dnabla_ad = this%ml%dnabla_ad(pt)
-    delta = this%ml%delta(pt)
-    c_rad = this%ml%c_rad(pt)
-    dc_rad = this%ml%dc_rad(pt)
-    c_thm = this%ml%c_thm(pt)
-    c_dif = this%ml%c_dif(pt)
-    c_eps_ad = this%ml%c_eps_ad(pt)
-    c_eps_S = this%ml%c_eps_S(pt)
-    kap_ad = this%ml%kap_ad(pt)
-    kap_S = this%ml%kap_S(pt)
+    nabla = this%ml%coeff(I_NABLA, pt)
+    nabla_ad = this%ml%coeff(I_NABLA_AD, pt)
+    dnabla_ad = this%ml%dcoeff(I_NABLA_AD, pt)
+    delta = this%ml%coeff(I_DELTA, pt)
+    c_rad = this%ml%coeff(I_C_RAD, pt)
+    dc_rad = this%ml%dcoeff(I_C_RAD, pt)
+    c_thm = this%ml%coeff(I_C_THM, pt)
+    c_dif = this%ml%coeff(I_C_DIF, pt)
+    c_eps_ad = this%ml%coeff(I_C_EPS_AD, pt)
+    c_eps_S = this%ml%coeff(I_C_EPS_S, pt)
+    kap_ad = this%ml%coeff(I_KAP_AD, pt)
+    kap_S = this%ml%coeff(I_KAP_S, pt)
 
     lambda = this%rt%lambda(pt, omega)
     l_i = this%rt%l_i(omega)

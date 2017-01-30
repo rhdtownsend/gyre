@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_match
 ! Purpose  : nonadiabatic match conditions
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -27,6 +27,7 @@ module gyre_nad_match
   use gyre_ext
   use gyre_grid
   use gyre_model
+  use gyre_model_util
   use gyre_mode_par
   use gyre_nad_vars
   use gyre_osc_par
@@ -81,6 +82,8 @@ contains
 
     ! Construct the nad_match_t
 
+    call check_model(ml, [I_V_2,I_U,I_NABLA_AD])
+
     mt%ml => ml
 
     mt%vr = nad_vars_t(ml, gr, md_p, os_p)
@@ -126,14 +129,14 @@ contains
     associate (pt_a => this%pt_a, &
                pt_b => this%pt_b)
 
-      V_l = this%ml%V_2(pt_a)*pt_a%x**2
-      V_r = this%ml%V_2(pt_b)*pt_b%x**2
+      V_l = this%ml%coeff(I_V_2, pt_a)*pt_a%x**2
+      V_r = this%ml%coeff(I_V_2, pt_b)*pt_b%x**2
 
-      U_l = this%ml%U(pt_a)
-      U_r = this%ml%U(pt_b)
+      U_l = this%ml%coeff(I_U, pt_a)
+      U_r = this%ml%coeff(I_U, pt_b)
 
-      nabla_ad_l = this%ml%nabla_ad(pt_a)
-      nabla_ad_r = this%ml%nabla_ad(pt_b)
+      nabla_ad_l = this%ml%coeff(I_NABLA_AD, pt_a)
+      nabla_ad_r = this%ml%coeff(I_NABLA_AD, pt_b)
 
     end associate
 
