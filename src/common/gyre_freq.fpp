@@ -128,9 +128,9 @@ contains
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           omega_l = freq*omega_cutoff_lo
        case ('ROSSBY_I')
-          omega_l = -freq*2._WP*md_p%m*ml%Omega_rot(pt_i)/(md_p%l*(md_p%l+1))
+          omega_l = -freq*2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_i)/(md_p%l*(md_p%l+1))
        case ('ROSSBY_O')
-          omega_l = -freq*2._WP*md_p%m*ml%Omega_rot(pt_o)/(md_p%l*(md_p%l+1))
+          omega_l = -freq*2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_o)/(md_p%l*(md_p%l+1))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -269,9 +269,9 @@ contains
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           freq = omega_l/omega_cutoff_lo
        case ('ROSSBY_I')
-          freq = -omega_l/(2._WP*md_p%m*ml%Omega_rot(pt_i)/(md_p%l*(md_p%l+1)))
+          freq = -omega_l/(2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_i)/(md_p%l*(md_p%l+1)))
        case ('ROSSBY_O')
-          omega_l = -omega_l/(2._WP*md_p%m*ml%Omega_rot(pt_o)/(md_p%l*(md_p%l+1)))
+          omega_l = -omega_l/(2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_o)/(md_p%l*(md_p%l+1)))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -384,33 +384,40 @@ contains
     real(WP)                   :: Delta_p
 
     type(grid_t)          :: gr
-    real(WP), allocatable :: V_2(:)
-    real(WP), allocatable :: c_1(:)
-    real(WP), allocatable :: Gamma_1(:)
     real(WP), allocatable :: f(:)
+    integer               :: k
+    real(WP)              :: V_2
+    real(WP)              :: c_1
+    real(WP)              :: Gamma_1
 
     ! Evaluate the dimensionless p-mode frequency separation
 
     gr = ml%grid()
 
-    associate (pt => gr%pt)
+    allocate(f(gr%n_k))
 
-      V_2 = ml%V_2(pt)
-      c_1 = ml%c_1(pt)
-      Gamma_1 = ml%Gamma_1(pt)
+    do k = 1, gr%n_k
 
-      f = Gamma_1/(c_1*V_2)
+       if (ml%is_vacuum(gr%pt(k))) then
 
-      $if ($GFORTRAN_PR_49636)
-      Delta_p = 0.5_WP/integrate(gr%pt%x, f)
-      $else
-      Delta_p = 0.5_WP/integrate(pt%x, f)
-      $endif
+          $ABORT(Cannot evaluate Delta_p for model containing vacuum points)
 
-    end associate
+       else
+
+          V_2 = ml%coeff(I_V_2, gr%pt(k))
+          c_1 = ml%coeff(I_C_1, gr%pt(k))
+          Gamma_1 = ml%coeff(I_GAMMA_1, gr%pt(k))
+          
+          f(k) = SQRT(c_1*V_2/Gamma_1)
+
+       endif
+
+    end do
+
+    Delta_p = 0.5_WP/integrate(gr%pt%x, f)
 
     ! Finish
-
+   
     return
 
   end function Delta_p
@@ -424,42 +431,39 @@ contains
     real(WP)                   :: Delta_g
 
     type(grid_t)          :: gr
-    real(WP), allocatable :: As(:)
-    real(WP), allocatable :: c_1(:)
     real(WP), allocatable :: f(:)
+    integer               :: k
+    real(WP)              :: As
+    real(WP)              :: c_1
 
     ! Calculate the dimensionless g-mode inverse period separation
 
     gr = ml%grid()
 
-    associate (pt => gr%pt)
+    allocate(f(gr%n_k))
 
-      As = ml%As(pt)
-      c_1 = ml%c_1(pt)
+    do k = 1, gr%n_k
 
-      $if ($GFORTRAN_PR_49636)
-      allocate(f(gr%n_k))
-      
-      where (gr%pt%x /= 0._WP)
-         f = SQRT(MAX(As/c_1, 0._WP))/gr%pt%x
-      elsewhere
-         f = 0._WP
-      end where
+       if (ml%is_vacuum(gr%pt(k))) then
 
-      Delta_g = SQRT(l*(l+1._WP))/(2._WP*PI**2)*integrate(gr%pt%x, f)
-      $else
-      allocate(f(gr%n_k))
-      
-      where (pt%x /= 0._WP)
-         f = SQRT(MAX(As/c_1, 0._WP))/pt%x
-      elsewhere
-         f = 0._WP
-      end where
+          $ABORT(Cannot evaluate Delta_g for model containing vacuum points)
 
-      Delta_g = SQRT(l*(l+1._WP))/(2._WP*PI**2)*integrate(pt%x, f)
-      $endif
+       else
 
-    end associate
+          As = ml%coeff(I_AS, gr%pt(k))
+          c_1 = ml%coeff(I_C_1, gr%pt(k))
+
+          if (gr%pt(k)%x /= 0._WP) then
+             f(k) = SQRT(MAX(As/c_1, 0._WP))/gr%pt(k)%x
+          else
+             f(k) = 0._WP
+          endif
+
+       endif
+       
+    end do
+
+    Delta_g = SQRT(l*(l+1._WP))/(2._WP*PI**2)*integrate(gr%pt%x, f)
 
     ! Finish
 
