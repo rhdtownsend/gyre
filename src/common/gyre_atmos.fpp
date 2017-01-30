@@ -1,7 +1,7 @@
 ! Module   : gyre_atmos
 ! Purpose  : atmosphere utility routines
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -212,9 +212,9 @@ contains
 
     ! Evaluate atmosphere coefficients ([Unn1989] formulation)
 
-    V_g = ml%V_2(pt)*pt%x**2/ml%Gamma_1(pt)
-    As = ml%As(pt)
-    c_1 = ml%c_1(pt)
+    V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+    As = ml%coeff(I_AS, pt)
+    c_1 = ml%coeff(I_C_1, pt)
 
     ! Finish
 
@@ -234,9 +234,9 @@ contains
 
     ! Evaluate atmosphere coefficients ([Chr2008] formulation)
 
-    V_g = ml%V_2(pt)*pt%x**2/ml%Gamma_1(pt)
-    As = ml%V_2(pt)*pt%x**2*(1._WP-1._WP/ml%Gamma_1(pt))
-    c_1 = ml%c_1(pt)
+    V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+    As = ml%coeff(I_V_2, pt)*pt%x**2*(1._WP-1._WP/ml%coeff(I_GAMMA_1, pt))
+    c_1 = ml%coeff(I_C_1, pt)
 
     ! Finish
 
