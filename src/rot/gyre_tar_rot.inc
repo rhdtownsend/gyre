@@ -1,7 +1,7 @@
 ! Incfile  : gyre_tar_rot
 ! Purpose  : rotational effects (traditional approximation of rotation, template)
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -53,13 +53,10 @@ module gyre_${T}_tar_rot
    contains
      private
      procedure, public :: omega
-     procedure         :: omega_c_1_
-     procedure         :: omega_c_v_
+     procedure, public :: omega_c
      procedure, public :: l_i
-     procedure         :: l_e_1_
-     procedure         :: l_e_v_
-     procedure         :: lambda_1_
-     procedure         :: lambda_v_
+     procedure, public :: l_e
+     procedure, public :: lambda
   end type ${T}_tar_rot_t
 
   ! Interfaces
@@ -114,7 +111,7 @@ contains
     ! Evaluate the inertial-frame frequency from the corotating-frame
     ! frequency
 
-    omega = omega_c + this%m*this%ml%Omega_rot(pt)
+    omega = omega_c + this%m*this%ml%coeff(I_OMEGA_ROT, pt)
 
     ! Finish
 
@@ -124,7 +121,7 @@ contains
 
   !****
 
-  function omega_c_1_ (this, pt,  omega) result (omega_c)
+  function omega_c (this, pt,  omega)
 
     class(${T}_tar_rot_t), intent(in) :: this
     type(point_t), intent(in)         :: pt
@@ -134,33 +131,13 @@ contains
     ! Evaluate the corotating-frame frequency from the inertial-frame
     ! frequency
 
-    omega_c = omega - this%m*this%ml%Omega_rot(pt)
+    omega_c = omega - this%m*this%ml%coeff(I_OMEGA_ROT, pt)
 
     ! Finish
 
     return
 
-  end function omega_c_1_
-
-  !****
-
-  function omega_c_v_ (this, pt, omega) result (omega_c)
-
-    class(${T}_tar_rot_t), intent(in) :: this
-    type(point_t), intent(in)         :: pt(:)
-    $TYPE(WP), intent(in)             :: omega
-    $TYPE(WP)                         :: omega_c(SIZE(pt))
-
-    ! Evaluate the corotating-frame frequency from the inertial-frame
-    ! frequency
-
-    omega_c = omega - this%m*this%ml%Omega_rot(pt)
-
-    ! Finish
-
-    return
-
-  end function omega_c_v_
+  end function omega_c
 
   !****
 
@@ -183,7 +160,7 @@ contains
 
   !****
 
-  function l_e_1_ (this, pt, omega) result (l_e)
+  function l_e (this, pt, omega)
 
     class(${T}_tar_rot_t), intent(in) :: this
     type(point_t), intent(in)         :: pt
@@ -198,30 +175,11 @@ contains
 
     return
 
-  end function l_e_1_
+  end function l_e
 
   !****
 
-  function l_e_v_ (this, pt, omega) result (l_e)
-
-    class(${T}_tar_rot_t), intent(in) :: this
-    type(point_t), intent(in)         :: pt(:)
-    $TYPE(WP), intent(in)             :: omega
-    $TYPE(WP)                         :: l_e(SIZE(pt))
-
-    ! Evaluate the effective harmonic degree
-
-    l_e = 0.5_WP*(-1._WP + SQRT(1._WP + 4._WP*this%lambda(pt, omega)))
-
-    ! Finish
-
-    return
-
-  end function l_e_v_
-
-  !****
-
-  function lambda_1_ (this, pt, omega) result (lambda)
+  function lambda (this, pt, omega)
 
     class(${T}_tar_rot_t), intent(in) :: this
     type(point_t), intent(in)         :: pt
@@ -232,7 +190,7 @@ contains
 
     ! Evaluate the angular eigenvalue
 
-    nu = 2._WP*this%ml%Omega_rot(pt)/this%omega_c(pt, omega)
+    nu = 2._WP*this%ml%coeff(I_OMEGA_ROT, pt)/this%omega_c(pt, omega)
 
     lambda = tar_lambda(nu, this%l, this%m, this%rossby)
 
@@ -240,30 +198,7 @@ contains
 
     return
 
-  end function lambda_1_
-
-  !****
-
-  function lambda_v_ (this, pt, omega) result (lambda)
-
-    class(${T}_tar_rot_t), intent(in) :: this
-    type(point_t), intent(in)         :: pt(:)
-    $TYPE(WP), intent(in)             :: omega
-    $TYPE(WP)                         :: lambda(SIZE(pt))
-
-    integer :: j
-    
-    ! Evaluate the angular eigenvalue
-
-    do j = 1, SIZE(pt)
-       lambda(j) = this%lambda(pt(j), omega)
-    end do
-
-    ! Finish
-
-    return
-
-  end function lambda_v_
+  end function lambda
 
 end module gyre_${T}_tar_rot
 

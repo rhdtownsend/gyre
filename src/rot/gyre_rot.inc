@@ -1,7 +1,7 @@
 ! Incfile  : gyre_rot
 ! Purpose  : rotational effects (template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -34,18 +34,11 @@ module gyre_${T}_rot
 
   type, abstract :: ${T}_rot_t
    contains
-     private
-     procedure(omega), deferred, public :: omega
-     procedure(omega_c_1_), deferred    :: omega_c_1_
-     procedure(omega_c_v_), deferred    :: omega_c_v_
-     generic, public                    :: omega_c => omega_c_1_, omega_c_v_
-     procedure(l_i), deferred, public   :: l_i
-     procedure(l_e_1_), deferred        :: l_e_1_
-     procedure(l_e_v_), deferred        :: l_e_v_
-     generic, public                    :: l_e => l_e_1_, l_e_v_
-     procedure(lambda_1_), deferred     :: lambda_1_
-     procedure(lambda_v_), deferred     :: lambda_v_
-     generic, public                    :: lambda => lambda_1_, lambda_v_
+     procedure(omega), deferred   :: omega
+     procedure(omega_c), deferred :: omega_c
+     procedure(l_i), deferred     :: l_i
+     procedure(l_e), deferred     :: l_e
+     procedure(lambda), deferred  :: lambda
   end type ${T}_rot_t
 
   ! Interfaces
@@ -62,7 +55,7 @@ module gyre_${T}_rot
        $TYPE(WP)                     :: omega
      end function omega
 
-     function omega_c_1_ (this, pt, omega) result (omega_c)
+     function omega_c (this, pt, omega)
        use core_kinds
        use gyre_point
        import ${T}_rot_t
@@ -70,17 +63,7 @@ module gyre_${T}_rot
        type(point_t), intent(in)     :: pt
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: omega_c
-     end function omega_c_1_
-
-     function omega_c_v_ (this, pt, omega) result (omega_c)
-       use core_kinds
-       use gyre_point
-       import ${T}_rot_t
-       class(${T}_rot_t), intent(in) :: this
-       type(point_t), intent(in)     :: pt(:)
-       $TYPE(WP), intent(in)         :: omega
-       $TYPE(WP)                     :: omega_c(SIZE(pt))
-     end function omega_c_v_
+     end function omega_c
 
      function l_i (this, omega)
        use core_kinds
@@ -90,7 +73,7 @@ module gyre_${T}_rot
        $TYPE(WP)                     :: l_i
      end function l_i
      
-     function l_e_1_ (this, pt, omega) result (l_e)
+     function l_e (this, pt, omega)
        use core_kinds
        use gyre_point
        import ${T}_rot_t
@@ -98,19 +81,9 @@ module gyre_${T}_rot
        type(point_t), intent(in)     :: pt
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: l_e
-     end function l_e_1_
+     end function l_e
      
-     function l_e_v_ (this, pt, omega) result (l_e)
-       use core_kinds
-       use gyre_point
-       import ${T}_rot_t
-       class(${T}_rot_t), intent(in) :: this
-       type(point_t), intent(in)     :: pt(:)
-       $TYPE(WP), intent(in)         :: omega
-       $TYPE(WP)                     :: l_e(SIZE(pt))
-     end function l_e_v_
-     
-     function lambda_1_ (this, pt, omega) result (lambda)
+     function lambda (this, pt, omega)
        use core_kinds
        use gyre_point
        import ${T}_rot_t
@@ -118,17 +91,7 @@ module gyre_${T}_rot
        type(point_t), intent(in)     :: pt
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: lambda
-     end function lambda_1_
-     
-     function lambda_v_ (this, pt, omega) result (lambda)
-       use core_kinds
-       use gyre_point
-       import ${T}_rot_t
-       class(${T}_rot_t), intent(in) :: this
-       type(point_t), intent(in)     :: pt(:)
-       $TYPE(WP), intent(in)         :: omega
-       $TYPE(WP)                     :: lambda(SIZE(pt))
-     end function lambda_v_
+     end function lambda
      
   end interface
 
