@@ -1,7 +1,7 @@
 ! Incfile  : gyre_rad_bound
 ! Purpose  : adiabatic radial boundary conditions
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -27,6 +27,7 @@ module gyre_rad_bound
   use gyre_bound
   use gyre_grid
   use gyre_model
+  use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
@@ -97,6 +98,8 @@ contains
     type(rad_bound_t)                   :: bd
 
     ! Construct the ad_bound_t
+
+    call check_model(ml, [I_V_2,I_AS,I_C_1,I_GAMMA_1])
 
     bd%ml => ml
     
@@ -205,7 +208,7 @@ contains
 
       ! Calculate coefficients
 
-      c_1 = this%ml%c_1(pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
 
       omega_c = this%rt%omega_c(pt, omega)
 
@@ -362,7 +365,7 @@ contains
 
     associate (pt => this%pt_o)
 
-      if (this%ml%vacuum(pt)) then
+      if (this%ml%is_vacuum(pt)) then
 
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
@@ -373,8 +376,8 @@ contains
 
          ! Calculate coefficients
 
-         V = this%ml%V_2(pt)*pt%x**2
-         c_1 = this%ml%c_1(pt)
+         V = this%ml%coeff(I_V_2, pt)*pt%x**2
+         c_1 = this%ml%coeff(I_C_1, pt)
 
          omega_c = this%rt%omega_c(pt, omega)
 
@@ -427,7 +430,7 @@ contains
 
     associate (pt => this%pt_o)
 
-      if (this%ml%vacuum(pt)) then
+      if (this%ml%is_vacuum(pt)) then
 
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition
@@ -496,7 +499,7 @@ contains
 
     associate (pt => this%pt_o)
 
-      if (this%ml%vacuum(pt)) then
+      if (this%ml%is_vacuum(pt)) then
 
          ! For a vacuum, the boundary condition reduces to the zero
          ! condition

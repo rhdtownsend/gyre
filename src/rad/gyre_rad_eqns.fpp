@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_eqns
 ! Purpose  : radial adiabatic differential equations
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ module gyre_rad_eqns
   use gyre_eqns
   use gyre_grid
   use gyre_model
+  use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
@@ -79,6 +80,8 @@ contains
 
     ! Construct the rad_eqns_t
 
+    call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
+
     eq%ml => ml
 
     allocate(eq%rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
@@ -130,8 +133,8 @@ contains
     real(WP)                      :: xA(this%n_e,this%n_e)
 
     real(WP) :: V_g
-    real(WP) :: U
     real(WP) :: As
+    real(WP) :: U
     real(WP) :: c_1
     real(WP) :: omega_c
     real(WP) :: alpha_om
@@ -140,10 +143,10 @@ contains
 
     ! Calculate coefficients
 
-    V_g = this%ml%V_2(pt)*pt%x**2/this%ml%Gamma_1(pt)
-    U = this%ml%U(pt)
-    As = this%ml%As(pt)
-    c_1 = this%ml%c_1(pt)
+    V_g = this%ml%coeff(I_V_2, pt)*pt%x**2/this%ml%coeff(I_GAMMA_1, pt)
+    As = this%ml%coeff(I_AS, pt)
+    U = this%ml%coeff(I_U, pt)
+    c_1 = this%ml%coeff(I_C_1, pt)
 
     omega_c = this%rt%omega_c(pt, omega)
 

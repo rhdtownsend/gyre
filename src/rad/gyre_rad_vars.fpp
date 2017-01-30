@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_vars
 ! Purpose  : adiabatic radial variables transformations
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ module gyre_rad_vars
   use gyre_linalg
   use gyre_grid
   use gyre_model
+  use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
@@ -91,6 +92,8 @@ contains
     type(rad_vars_t)                    :: vr
 
     ! Construct the rad_vars_t
+
+    call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
 
     vr%ml => ml
 
@@ -168,8 +171,8 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(pt)
-    c_1 = this%ml%c_1(pt)
+    U = this%ml%coeff(I_U, pt)
+    c_1 = this%ml%coeff(I_C_1, pt)
 
     omega_c = this%rt%omega_c(pt, omega)
 
@@ -198,14 +201,14 @@ contains
 
     real(WP) :: V_2
 
-    $ASSERT(.NOT. this%ml%vacuum(pt),Cannot use LAGP variables at vacuum points)
+    $ASSERT(.NOT. this%ml%is_vacuum(pt),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! from the canonical form
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(pt)
+    V_2 = this%ml%coeff(I_V_2, pt)
 
     ! Set up the matrix
 
@@ -271,7 +274,7 @@ contains
 
     ! Calculate coefficients
 
-    c_1 = this%ml%c_1(pt)
+    c_1 = this%ml%coeff(I_C_1, pt)
 
     omega_c = this%rt%omega_c(pt, omega)
 
@@ -300,14 +303,14 @@ contains
 
     real(WP) :: V_2
 
-    $ASSERT(.NOT. this%ml%vacuum(pt),Cannot use LAGP variables at vacuum points)
+    $ASSERT(.NOT. this%ml%is_vacuum(pt),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! to the canonical form
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(pt)
+    V_2 = this%ml%coeff(I_V_2, pt)
 
     ! Set up the matrix
 
@@ -373,8 +376,8 @@ contains
 
     ! Calculate coefficients
 
-    U = this%ml%U(pt)
-    c_1 = this%ml%c_1(pt)
+    U = this%ml%coeff(I_U, pt)
+    c_1 = this%ml%coeff(I_C_1, pt)
 
     omega_c = this%rt%omega_c(pt, omega)
 
@@ -408,18 +411,18 @@ contains
     real(WP) :: As
     real(WP) :: U
 
-    $ASSERT(.NOT. this%ml%vacuum(pt),Cannot use LAGP variables at vacuum points)
+    $ASSERT(.NOT. this%ml%is_vacuum(pt),Cannot use LAGP variables at vacuum points)
 
     ! Evaluate the derivative x dH/dx of the LAGP-variables
     ! transformation matrix H
 
     ! Calculate coefficients
 
-    V_2 = this%ml%V_2(pt)
+    V_2 = this%ml%coeff(I_V_2, pt)
     V = V_2*pt%x**2
-    V_g = V/this%ml%Gamma_1(pt)
-    As = this%ml%As(pt)
-    U = this%ml%U(pt)
+    V_g = V/this%ml%coeff(I_GAMMA_1, pt)
+    As = this%ml%coeff(I_AS, pt)
+    U = this%ml%coeff(I_U, pt)
 
     ! Set up the matrix
 

@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_bvp
 ! Purpose  : adiabatic radial bounary value problem solver
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -190,7 +190,7 @@ contains
 
        associate (pt => bp%gr%pt(k))
 
-         if (bp%ml%vacuum(pt)) then
+         if (bp%ml%is_vacuum(pt)) then
             xA = 0._WP
          else
             xA = bp%eq%xA(pt, omega)
@@ -218,7 +218,7 @@ contains
 
          y_c(:,k) = MATMUL(H, y(:,k))
 
-         if (bp%ml%vacuum(pt)) then
+         if (bp%ml%is_vacuum(pt)) then
             dH = 0._WP
          else
             dH = bp%vr%dH(pt, omega)
@@ -243,14 +243,14 @@ contains
 
        associate (pt => bp%gr%pt(k))
 
-         U = bp%ml%U(pt)
+         U = bp%ml%coeff(I_U, pt)
          
          y_g(k) = -U*y_c(1,k)
 
-         if (bp%ml%vacuum(pt)) then
+         if (bp%ml%is_vacuum(pt)) then
             dU = 0._WP
          else
-            dU = bp%ml%dU(pt)
+            dU = bp%ml%dcoeff(I_U, pt)
          endif
 
          if (pt%x /= 0._WP) then

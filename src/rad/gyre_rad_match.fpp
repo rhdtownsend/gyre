@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_match
 ! Purpose  : adiabatic radial match conditions
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -28,6 +28,7 @@ module gyre_rad_match
   use gyre_ext
   use gyre_grid
   use gyre_model
+  use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
@@ -81,6 +82,8 @@ contains
 
     ! Construct the rad_match_t
 
+    call check_model(ml, [I_U])
+
     mt%ml => ml
 
     mt%vr = rad_vars_t(ml, gr, md_p, os_p)
@@ -122,8 +125,8 @@ contains
     associate (pt_a => this%pt_a, &
                pt_b => this%pt_b)
 
-      U_l = this%ml%U(pt_a)
-      U_r = this%ml%U(pt_b)
+      U_l = this%ml%coeff(I_U, pt_a)
+      U_r = this%ml%coeff(I_U, pt_b)
 
     end associate
 
