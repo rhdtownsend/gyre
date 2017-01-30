@@ -1,7 +1,7 @@
 ! Program  : gyre
 ! Purpose  : oscillation code
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -81,7 +81,6 @@ program gyre
   integer                       :: k_o
   class(r_bvp_t), allocatable   :: bp_ad
   class(c_bvp_t), allocatable   :: bp_nad
-  integer                       :: j_md
   integer                       :: n_md_ad
   integer                       :: d_md_ad
   type(mode_t), allocatable     :: md_ad(:)
@@ -242,8 +241,6 @@ program gyre
      ! Find non-adiabatic modes
 
      if (os_p_sel%nonadiabatic) then
-
-        $ASSERT(ml%nonad_cap(),Model does not have capability for nonadibatic calculations)
 
         allocate(bp_nad, SOURCE=nad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
 

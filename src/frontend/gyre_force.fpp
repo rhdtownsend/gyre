@@ -1,7 +1,7 @@
 ! Program  : gyre_force
 ! Purpose  : forced oscillation code
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -69,7 +69,6 @@ program gyre_force
   type(osc_par_t), allocatable  :: os_p(:)
   type(num_par_t), allocatable  :: nm_p(:)
   type(grid_par_t), allocatable :: gr_p(:)
-  type(scan_par_t), allocatable :: sc_p(:)
   class(model_t), pointer       :: ml => null()
   real(WP)                      :: q
   real(WP)                      :: c_lmk
@@ -82,7 +81,6 @@ program gyre_force
   type(osc_par_t)               :: os_p_sel
   type(num_par_t)               :: nm_p_sel
   type(grid_par_t)              :: gr_p_sel
-  type(scan_par_t), allocatable :: sc_p_sel(:)
   type(grid_t)                  :: gr
   integer                       :: j
   real(WP), allocatable         :: omega(:)
@@ -220,8 +218,6 @@ program gyre_force
      ! Find modes
 
      if (os_p_sel%nonadiabatic) then
-
-        $ASSERT(ml%nonad_cap(),Model does not have capability for nonadibatic calculations)
 
         allocate(bp_nad, SOURCE=nad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
 
