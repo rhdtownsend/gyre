@@ -1,7 +1,7 @@
 ! Module   : gyre_mode
 ! Purpose  : mode data
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -155,18 +155,26 @@ module gyre_mode
 
 contains
 
-  function mode_t_ (ml, sl, j, md_p, os_p) result (md)
+  function mode_t_ (ml, sl, j, md_p, os_p, normalize) result (md)
 
     class(model_t), pointer, intent(in) :: ml
     type(soln_t), intent(in)            :: sl
     integer, intent(in)                 :: j
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
+    logical, intent(in), optional       :: normalize
     type(mode_t)                        :: md
 
+    logical      :: normalize_
     type(grid_t) :: gr
     complex(WP)  :: y_1_ref
     complex(WP)  :: f_phase
+
+    if (PRESENT(normalize)) then
+       normalize_ = normalize
+    else
+       normalize_ = .FALSE.
+    endif
 
     ! Construct the mode_t
 
@@ -205,13 +213,21 @@ contains
     ! Normalize so that y_1 at the reference point is purely real, and
     ! the total mode energy is unity
 
-    md%scl = 1._WP
+    if (normalize_) then
+
+       md%scl = 1._WP
     
-    y_1_ref = md%y_i(1, md%pt_ref)
+       y_1_ref = md%y_i(1, md%pt_ref)
 
-    f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
+       f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
 
-    md%scl = 1._WP/SQRT(md%E())*f_phase
+       md%scl = 1._WP/SQRT(md%E())*f_phase
+
+    else
+
+       md%scl = 1._WP
+
+    endif
 
     ! Classify the mode
 
@@ -421,8 +437,8 @@ contains
       xi_r = this%xi_r(pt)
       deul_phi = this%deul_phi(pt)
 
-      c_1 = this%ml%c_1(pt)
-      U = this%ml%c_1(pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
+      U = this%ml%coeff(I_U, pt)
 
       lag_g_eff = (c_1/pt%x)*deul_phi + (U - (2._WP + c_1*omega**2))*xi_r/pt%x
 
@@ -729,12 +745,12 @@ contains
          lag_rho = this%lag_rho(pt)
          lag_P = this%lag_P(pt)
 
-         V_2 = this%ml%V_2(pt)
-         As = this%ml%As(pt)
-         U = this%ml%U(pt)
-         c_1 = this%ml%c_1(pt)
+         V_2 = this%ml%coeff(I_V_2, pt)
+         As = this%ml%coeff(I_AS, pt)
+         U = this%ml%coeff(I_U, pt)
+         c_1 = this%ml%coeff(I_C_1, pt)
 
-         Gamma_1 = this%ml%Gamma_1(pt)
+         Gamma_1 = this%ml%coeff(I_GAMMA_1, pt)
 
          V_g = V_2*pt%x**2/Gamma_1
          x4_V = pt%x**2/V_2
@@ -795,7 +811,6 @@ contains
     real(WP)      :: x_i
     integer       :: n_c
     integer       :: n_a
-    type(point_t) :: pt_i
 
     ! Classify the mode based on its eigenfunctions
 
@@ -1059,7 +1074,7 @@ contains
          y_2 = this%y_i(2, pt)
          y_3 = this%y_i(3, pt)
 
-         c_1 = this%ml%c_1(pt)
+         c_1 = this%ml%coeff(I_C_1, pt)
 
          omega_c = this%rt%omega_c(pt, this%omega)
       
@@ -1109,7 +1124,7 @@ contains
 
       y_3 = this%y_i(3, pt)
 
-      c_1 = this%ml%c_1(pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
 
       if (l_i /= 0._WP) then
 
@@ -1151,7 +1166,7 @@ contains
 
       y_4 = this%y_i(4, pt)
 
-      c_1 = this%ml%c_1(pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
 
       if (l_i /= 1._WP) then
 
@@ -1254,7 +1269,7 @@ contains
     xi_r = this%xi_r(pt)
     lag_P = this%lag_P(pt)
 
-    V_2 = this%ml%V_2(pt)
+    V_2 = this%ml%coeff(I_V_2, pt)
 
     eul_P = lag_P + V_2*pt%x*xi_r
 
@@ -1283,7 +1298,7 @@ contains
       y_1 = this%y_i(1, pt)
       y_2 = this%y_i(2, pt)
 
-      V_2 = this%ml%V_2(pt)
+      V_2 = this%ml%coeff(I_V_2, pt)
 
       if (l_i /= 0._WP) then
 
@@ -1326,8 +1341,8 @@ contains
     xi_r = this%xi_r(pt)
     lag_rho = this%lag_rho(pt)
 
-    U = this%ml%U(pt)
-    dU = this%ml%dU(pt)
+    U = this%ml%coeff(I_U, pt)
+    dU = this%ml%dcoeff(I_U, pt)
 
     D = dU + U - 3._WP
 
@@ -1362,8 +1377,8 @@ contains
     lag_P = this%lag_P(pt)
     lag_S = this%lag_S(pt)
 
-    Gamma_1 = this%ml%Gamma_1(pt)
-    delta = this%ml%delta(pt)
+    Gamma_1 = this%ml%coeff(I_GAMMA_1, pt)
+    delta = this%ml%coeff(I_DELTA, pt)
 
     lag_rho = lag_P/Gamma_1 - delta*lag_S
 
@@ -1391,8 +1406,8 @@ contains
     xi_r = this%xi_r(pt)
     lag_T = this%lag_T(pt)
 
-    V_2 = this%ml%V_2(pt)
-    nabla = this%ml%nabla(pt)
+    V_2 = this%ml%coeff(I_V_2, pt)
+    nabla = this%ml%coeff(I_NABLA, pt)
       
     eul_T = lag_T + nabla*V_2*pt%x*xi_r
 
@@ -1420,7 +1435,7 @@ contains
     lag_P = this%lag_P(pt)
     lag_S = this%lag_S(pt)
 
-    nabla_ad = this%ml%nabla_ad(pt)
+    nabla_ad = this%ml%coeff(I_NABLA_AD, pt)
       
     lag_T = nabla_ad*lag_P + lag_S
 
@@ -1472,8 +1487,8 @@ contains
 
     lambda = this%lambda(pt)
 
-    U = this%ml%U(pt)
-    c_1 = this%ml%c_1(pt)
+    U = this%ml%coeff(I_U, pt)
+    c_1 = this%ml%coeff(I_C_1, pt)
 
     dE_dx = (ABS(xi_r)**2 + ABS(lambda)*ABS(xi_h)**2)*U*pt%x**2/(4._WP*PI*c_1)
 
@@ -1514,7 +1529,7 @@ contains
     lag_T = this%lag_T(pt)
     lag_S = this%lag_S(pt)
     
-    c_thm = this%ml%c_thm(pt)
+    c_thm = this%ml%coeff(I_C_THM, pt)
 
     dW_dx = PI*AIMAG(CONJG(lag_T)*lag_S)*c_thm*pt%x**2*t_dyn/t_kh
 
@@ -1560,8 +1575,8 @@ contains
     lag_P = this%lag_P(pt)
     lag_S = this%lag_S(pt)
     
-    c_eps_ad = this%ml%c_eps_ad(pt)
-    c_eps_S = this%ml%c_eps_S(pt)
+    c_eps_ad = this%ml%coeff(I_C_EPS_AD, pt)
+    c_eps_S = this%ml%coeff(I_C_EPS_S, pt)
 
     omega_R = REAL(this%omega)
 
@@ -1597,8 +1612,8 @@ contains
       xi_r = this%xi_r(pt)
       xi_h = this%xi_h(pt)
 
-      U = this%ml%U(pt)
-      c_1 = this%ml%c_1(pt)
+      U = this%ml%coeff(I_U, pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
 
       lambda = this%lambda(pt)
 
@@ -1640,8 +1655,8 @@ contains
       xi_r = this%xi_r(pt)
       xi_h = this%xi_h(pt)
 
-      c_1 = this%ml%c_1(pt)
-      U = this%ml%U(pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
+      U = this%ml%coeff(I_U, pt)
 
       omega_c = this%rt%omega_c(pt, this%omega)
 
@@ -1687,9 +1702,9 @@ contains
 
       eul_phi = this%eul_phi(pt)
 
-      V_2 = this%ml%V_2(pt)
-      c_1 = this%ml%c_1(pt)
-      U = this%ml%U(pt)
+      V_2 = this%ml%coeff(I_V_2, pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
+      U = this%ml%coeff(I_U, pt)
 
       omega_c = this%rt%omega_c(pt, this%omega)
 
@@ -1726,8 +1741,8 @@ contains
       eul_rho = this%eul_rho(pt)
       xi_h = this%xi_h(pt)
 
-      c_1 = this%ml%c_1(pt)
-      U = this%ml%U(pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
+      U = this%ml%coeff(I_U, pt)
 
       omega_c = this%rt%omega_c(pt, this%omega)
 
@@ -1751,8 +1766,8 @@ contains
 
     complex(WP) :: eul_rho
     complex(WP) :: eul_phi
-    real(WP)    :: c_1
     real(WP)    :: U
+    real(WP)    :: c_1
     complex(WP) :: omega_c
     
     ! Evaluate the torque density due to self-gravity, in units of G
@@ -1763,8 +1778,8 @@ contains
       eul_rho = this%eul_rho(pt)
       eul_phi = this%eul_phi(pt)
 
-      c_1 = this%ml%c_1(pt)
-      U = this%ml%U(pt)
+      U = this%ml%coeff(I_U, pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
 
       omega_c = this%rt%omega_c(pt, this%omega)
 
@@ -1798,7 +1813,7 @@ contains
     y_3 = this%y_i(3, pt)
     y_4 = this%y_i(4, pt)
 
-    J = 1._WP - this%ml%U(pt)/3._WP
+    J = 1._WP - this%ml%coeff(I_U, pt)/3._WP
 
     Yt_1 = J*y_1 + (y_3 - y_4)/3._WP
 
@@ -1854,8 +1869,8 @@ contains
       y_1 = this%y_i(1, pt)
       y_4 = this%y_i(4, pt)
 
-      U = this%ml%U(pt)
-      c_1 = this%ml%c_1(pt)
+      U = this%ml%coeff(I_U, pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
 
       if (pt%x /= 0._WP) then
          I_0 = pt%x**(l_i+1._WP)*(U*y_1 + y_4)/c_1
@@ -1897,8 +1912,8 @@ contains
       y_3 = this%y_i(3, pt)
       y_4 = this%y_i(4, pt)
 
-      U = this%ml%U(pt)
-      c_1 = this%ml%c_1(pt)
+      U = this%ml%coeff(I_U, pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
 
       omega_c = this%rt%omega_c(pt, this%omega)
 
@@ -1938,7 +1953,7 @@ contains
 
     ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
-    if (this%ml%vacuum(pt)) then
+    if (this%ml%is_vacuum(pt)) then
 
        prop_type = 0
 
@@ -1946,10 +1961,10 @@ contains
 
        ! Calculate the discriminant gamma
 
-       V_g = this%ml%V_2(pt)*pt%x**2/this%ml%Gamma_1(pt)
-       As = this%ml%As(pt)
-       U = this%ml%U(pt)
-       c_1 = this%ml%c_1(pt)
+       V_g = this%ml%coeff(I_V_2, pt)*pt%x**2/this%ml%coeff(I_GAMMA_1, pt)
+       As = this%ml%coeff(I_AS, pt)
+       U = this%ml%coeff(I_U, pt)
+       c_1 = this%ml%coeff(I_C_1, pt)
 
        lambda = REAL(this%lambda(pt))
 
