@@ -211,14 +211,14 @@ contains
 
        select type (bp)
        type is (nad_bvp_t)
-          md = mode_t(bp, md_in(i)%j, cmplx(omega_root))
+          md = mode_t(bp, cmplx(omega_root), md_in(i)%j)
        class default
           $ABORT(Invalid bp class)
        end select
 
        ! Process it
 
-       chi = abs(md%sl%discrim)/max(abs(discrim_a), abs(discrim_b))
+       chi = abs(md%discrim)/max(abs(discrim_a), abs(discrim_b))
        
        call process_mode(md, n_iter_def+n_iter, chi)
 

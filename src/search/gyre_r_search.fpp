@@ -305,16 +305,16 @@ contains
 
        select type (bp)
        type is (ad_bvp_t)
-          md = mode_t(bp, j_m, real(omega_root))
+          md = mode_t(bp, real(omega_root), j_m)
        type is (rad_bvp_t)
-          md = mode_t(bp, j_m, real(omega_root))
+          md = mode_t(bp, real(omega_root), j_m)
        class default
           $ABORT(Invalid bp class)
        end select
 
        ! Process it
 
-       chi = abs(md%sl%discrim)/max(abs(discrim_a(i)), abs(discrim_b(i)))
+       chi = abs(md%discrim)/max(abs(discrim_a(i)), abs(discrim_b(i)))
        
        call process_mode(md, n_iter, chi)
 
