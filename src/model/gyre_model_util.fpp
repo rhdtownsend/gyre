@@ -41,6 +41,10 @@ module gyre_model_util
   public :: uniform_Omega_rot
   public :: snap_points
   public :: check_model
+  public :: model_coeff_i
+  public :: model_dcoeff_i
+  public :: model_coeff_name
+  public :: model_dcoeff_name
 
   ! Procedures
 
@@ -203,41 +207,9 @@ contains
              missing_coeffs = .FALSE.
           end if
 
+          write(OUTPUT_UNIT, 110) model_coeff_name(i_req(j))
 110       format(3X, A)
-
-          select case (i_req(j))
-          case (I_V_2)
-             write(OUTPUT_UNIT, 110) 'V_2'
-          case (I_AS)
-             write(OUTPUT_UNIT, 110) 'A*'
-          case (I_U)
-             write(OUTPUT_UNIT, 110) 'U'
-          case (I_C_1)
-             write(OUTPUT_UNIT, 110) 'c_1'
-          case (I_GAMMA_1)
-             write(OUTPUT_UNIT, 110) 'Gamma_1'
-          case (I_NABLA)
-             write(OUTPUT_UNIT, 110) 'nabla'
-          case (I_NABLA_AD)
-             write(OUTPUT_UNIT, 110) 'nabla_ad'
-          case (I_BETA_RAD)
-             write(OUTPUT_UNIT, 110) 'beta_rad'
-          case (I_C_RAD)
-             write(OUTPUT_UNIT, 110) 'c_rad'
-          case (I_C_THM)
-             write(OUTPUT_UNIT, 110) 'c_thm'
-          case (I_C_DIF)
-             write(OUTPUT_UNIT, 110) 'c_dif'
-          case (I_C_EPS_AD)
-             write(OUTPUT_UNIT, 110) 'c_eps_ad'
-          case (I_C_EPS_S)
-             write(OUTPUT_UNIT, 110) 'c_eps_S'
-          case (I_KAP_AD)
-             write(OUTPUT_UNIT, 110) 'kap_ad'
-          case (I_KAP_S)
-             write(OUTPUT_UNIT, 110) 'kap_S'
-          end select
-
+          
        end if
 
     end do
@@ -251,5 +223,152 @@ contains
     return
 
   end subroutine check_model
+
+  !****
+
+  function model_coeff_i (name) result (i)
+
+    character(*), intent(in) :: name
+    integer                  :: i
+
+    ! Determine the coefficient index from its name
+
+    select case (name)
+    case ('V_2')
+       i = I_V_2
+    case ('A*')
+       i = I_AS
+    case ('U')
+       i = I_U
+    case ('c_1')
+       i = I_C_1
+    case ('Gamma_1')
+       i = I_GAMMA_1
+    case ('nabla')
+       i = I_NABLA
+    case ('nabla_ad')
+       i = I_NABLA_AD
+    case ('beta_rad')
+       i = I_BETA_RAD
+    case ('c_rad')
+       i = I_C_RAD
+    case ('c_thm')
+       i = I_C_THM
+    case ('c_dif')
+       i = I_C_DIF
+    case ('c_eps_ad')
+       i = I_C_EPS_AD
+    case ('c_eps_S')
+       i = I_C_EPS_S
+    case ('kap_ad')
+       i = I_KAP_AD
+    case ('kap_S')
+       i = I_KAP_S
+    case ('Omega_rot')
+       i = I_OMEGA_ROT
+    case default
+       i = 0
+    end select
+
+    ! Finish
+
+    return
+
+  end function model_coeff_i
+
+  !****
+
+  function model_dcoeff_i (name) result (i)
+
+    character(*), intent(in) :: name
+    integer                  :: i
+
+    character(:), allocatable :: name_
+
+    ! Determine the coefficient derivative index from its name
+
+    if (name(1:1) == 'd') then
+       name_ = name(2:)
+       i = model_coeff_i(name_)
+    else
+       i = 0
+    endif
+
+    ! Finish
+
+    return
+
+  end function model_dcoeff_i
+
+  !****
+
+  function model_coeff_name (i) result (name)
+
+    integer, intent(in)       :: i
+    character(:), allocatable :: name
+
+    ! Determine the coefficient name from its index
+
+    select case (i)
+    case (I_V_2)
+       name = 'V_2'
+    case (I_AS)
+       name = 'A*'
+    case (I_U)
+       name = 'U'
+    case (I_C_1)
+       name = 'c_1'
+    case (I_GAMMA_1)
+       name = 'Gamma_1'
+    case (I_NABLA)
+       name = 'nabla'
+    case (I_NABLA_AD)
+       name = 'nabla_ad'
+    case (I_BETA_RAD)
+       name = 'beta_rad'
+    case (I_C_RAD)
+       name = 'c_rad'
+    case (I_C_THM)
+       name = 'c_thm'
+    case (I_C_DIF)
+       name = 'c_dif'
+    case (I_C_EPS_AD)
+       name = 'c_eps_ad'
+    case (I_C_EPS_S)
+       name = 'c_eps_S'
+    case (I_KAP_AD)
+       name = 'kap_ad'
+    case (I_KAP_S)
+       name = 'kap_S'
+    case (I_OMEGA_ROT)
+       name = 'Omega_rot'
+    case default
+       name = ''
+    end select
+
+    ! Finish
+
+    return
+
+  end function model_coeff_name
+
+  !****
+
+  function model_dcoeff_name (i) result (name)
+
+    integer, intent(in)       :: i
+    character(:), allocatable :: name
+
+    ! Determine the coefficient derivative name from its index
+
+    name = model_coeff_name(i)
+
+    if (name /= '') name = 'd'//name
+
+    ! Finish
+
+    return
+
+  end function model_dcoeff_name
 
 end module gyre_model_util
