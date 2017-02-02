@@ -37,7 +37,6 @@ module gyre_nad_bvp
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
-  use gyre_soln
 
   use ISO_FORTRAN_ENV
 
@@ -127,81 +126,29 @@ contains
 
   !****
 
-  function mode_t_ (bp, j, omega) result (md)
+  function mode_t_ (bp, omega, j) result (md)
 
     class(nad_bvp_t), intent(inout) :: bp
+    complex(WP), intent(in)         :: omega
     integer, intent(in)             :: j
-    complex(WP), intent(in)         :: omega
     type(mode_t)                    :: md
-
-    type(soln_t) :: sl
-
-    ! Construct the mode_t
-
-    sl = soln_t_(bp, omega)
-
-    md = mode_t(bp%ml, sl, j, bp%md_p, bp%os_p)
-
-    ! Finish
-
-    return
-
-  end function mode_t_
-
-  !****
-
-  function soln_t_ (bp, omega) result (sl)
-
-    class(nad_bvp_t), intent(inout) :: bp
-    complex(WP), intent(in)         :: omega
-    type(soln_t)                    :: sl
 
     complex(WP)   :: y(6,bp%n_k)
     type(c_ext_t) :: discrim
     integer       :: k
-    complex(WP)   :: xA(6,6)
-    complex(WP)   :: dy_dx(6,bp%n_k)
     complex(WP)   :: H(6,6)
-    complex(WP)   :: dH(6,6)
     complex(WP)   :: y_c(6,bp%n_k)
-    complex(WP)   :: dy_c_dx(6,bp%n_k)
-    integer       :: i
 
-    ! Calculate the solution vector and discriminant
+    ! Calculate the solution vector
 
     call bp%build(omega)
 
     y = bp%soln_vec()
     discrim = bp%det()
 
-    ! Calculate its derivatives (nb: the vacuum check prevents errors, but
-    ! leads to incorrect values for dy_dx)
+    ! Convert to canonical form
 
-    !$OMP PARALLEL DO PRIVATE (xA)
-    do k = 1, bp%n_k
-
-       associate (pt => bp%gr%pt(k))
-
-         if (bp%ml%is_vacuum(pt)) then
-            xA = 0._WP
-         else
-            xA = bp%eq%xA(pt, omega)
-         endif
-
-         if (pt%x /= 0._WP) then
-            dy_dx(:,k) = MATMUL(xA, y(:,k))/pt%x
-         else
-            dy_dx(:,k) = 0._WP
-         endif
-
-       end associate
-         
-    end do
-
-    ! Convert to canonical form (nb: the vacuum check prevents errors, but
-    ! leads to incorrect values for dy_c_dx)
-
-    !$OMP PARALLEL DO PRIVATE (H, dH)
+    !$OMP PARALLEL DO PRIVATE (H)
     do k = 1, bp%n_k
 
        associate (pt => bp%gr%pt(k))
@@ -210,34 +157,18 @@ contains
 
          y_c(:,k) = MATMUL(H, y(:,k))
 
-         if (bp%ml%is_vacuum(pt)) then
-            dH = 0._WP
-         else
-            dH = bp%vr%dH(pt, omega)
-         endif
-
-         if (pt%x /= 0._WP) then
-            dy_c_dx(:,k) = MATMUL(dH/pt%x, y(:,k)) + MATMUL(H, dy_dx(:,k))
-         else
-            dy_c_dx(:,k) = 0._WP
-         endif
-
        end associate
 
     end do
 
-    ! Construct the soln_t
+    ! Construct the mode_t
 
-    sl = soln_t(bp%gr, omega, discrim)
-
-    do i = 1, 6
-       call sl%set_y(i, y_c(i,:), dy_c_dx(i,:))
-    end do
+    md = mode_t(omega, y_c, discrim, bp%ml, bp%gr, bp%md_p, bp%os_p, j)
 
     ! Finish
 
     return
 
-  end function soln_t_
-
+  end function mode_t_
+  
 end module gyre_nad_bvp

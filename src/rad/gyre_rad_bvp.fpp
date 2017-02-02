@@ -36,7 +36,6 @@ module gyre_rad_bvp
   use gyre_rad_diff
   use gyre_rad_eqns
   use gyre_rad_vars
-  use gyre_soln
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -131,155 +130,55 @@ contains
 
   !****
 
-  function mode_t_ (bp, j, omega) result (md)
+  function mode_t_ (bp, omega, j) result (md)
 
     class(rad_bvp_t), intent(inout) :: bp
+    real(WP), intent(in)            :: omega
     integer, intent(in)             :: j
-    real(WP), intent(in)            :: omega
     type(mode_t)                    :: md
-
-    type(soln_t) :: sl
-
-    ! Construct the mode_t
-
-    sl = soln_t_(bp, omega)
-
-    md = mode_t(bp%ml, sl, j, bp%md_p, bp%os_p)
-
-    ! Finish
-
-    return
-
-  end function mode_t_
-
-  !****
-
-  function soln_t_ (bp, omega) result (sl)
-
-    class(rad_bvp_t), intent(inout) :: bp
-    real(WP), intent(in)            :: omega
-    type(soln_t)                    :: sl
 
     real(WP)      :: y(2,bp%n_k)
     type(r_ext_t) :: discrim
     integer       :: k
-    real(WP)      :: xA(2,2)
-    real(WP)      :: dy_dx(2,bp%n_k)
     real(WP)      :: H(2,2)
-    real(WP)      :: dH(2,2)
-    complex(WP)   :: y_c(2,bp%n_k)
-    complex(WP)   :: dy_c_dx(2,bp%n_k)
-    complex(WP)   :: y_g(bp%n_k)
-    complex(WP)   :: dy_g_dx(bp%n_k)
+    complex(WP)   :: y_c(6,bp%n_k)
     real(WP)      :: U
-    real(WP)      :: dU
-    integer       :: i
 
-    ! Calculate the solution vector and discriminant
+    ! Calculate the solution vector
 
     call bp%build(omega)
 
     y = bp%soln_vec()
     discrim = bp%det()
 
-    ! Calculate its derivatives (nb: the vacuum check prevents errors, but
-    ! leads to incorrect values for dy_dx)
+    ! Convert to canonical form
 
-    !$OMP PARALLEL DO PRIVATE (xA)
-    do k = 1, bp%n_k
-
-       associate (pt => bp%gr%pt(k))
-
-         if (bp%ml%is_vacuum(pt)) then
-            xA = 0._WP
-         else
-            xA = bp%eq%xA(pt, omega)
-         endif
-
-         if (pt%x /= 0._WP) then
-            dy_dx(:,k) = MATMUL(xA, y(:,k))/pt%x
-         else
-            dy_dx(:,k) = 0._WP
-         endif
-
-       end associate
-
-    end do
-
-    ! Convert to canonical form (nb: the vacuum check prevents errors, but
-    ! leads to incorrect values for dy_c_dx)
-
-    !$OMP PARALLEL DO PRIVATE (H, dH)
+    !$OMP PARALLEL DO PRIVATE (H, U)
     do k = 1, bp%n_k
 
        associate (pt => bp%gr%pt(k))
 
          H = bp%vr%H(pt, omega)
 
-         y_c(:,k) = MATMUL(H, y(:,k))
-
-         if (bp%ml%is_vacuum(pt)) then
-            dH = 0._WP
-         else
-            dH = bp%vr%dH(pt, omega)
-         endif
-         
-         if (pt%x /= 0._WP) then
-            dy_c_dx(:,k) = MATMUL(dH/pt%x, y(:,k)) + MATMUL(H, dy_dx(:,k))
-         else
-            dy_c_dx(:,k) = 0._WP
-         endif
-
-       end associate
-         
-    end do
-
-    ! Calculate the gravity perturbation y_g and its derivative (nb:
-    ! the vacuum check prevents errors, but leads to incorrect values
-    ! for dy_g_dx)
-
-    !$OMP PARALLEL DO PRIVATE (U, dU)
-    do k = 1, bp%n_k
-
-       associate (pt => bp%gr%pt(k))
-
          U = bp%ml%coeff(I_U, pt)
-         
-         y_g(k) = -U*y_c(1,k)
 
-         if (bp%ml%is_vacuum(pt)) then
-            dU = 0._WP
-         else
-            dU = bp%ml%dcoeff(I_U, pt)
-         endif
-
-         if (pt%x /= 0._WP) then
-            dy_g_dx(k) = -U*dy_c_dx(1,k) - U*dU*y_c(1,k)/pt%x
-         else
-            dy_g_dx(k) = 0._WP
-         endif
+         y_c(1:2,k) = MATMUL(H, y(1:2,k))
+         y_c(3,k) = 0._WP
+         y_c(4,k) = -U*y_c(1,k)
+         y_c(5:6,k) = 0._WP
 
        end associate
-
+         
     end do
 
-    ! Construct the soln_t
+    ! Construct the mode_t
 
-    sl = soln_t(bp%gr, CMPLX(omega, KIND=WP), c_ext_t(discrim))
-
-    do i = 1, 2
-       call sl%set_y(i, y_c(i,:), dy_c_dx(i,:))
-    end do
-
-    call sl%set_y(4, y_g, dy_g_dx)
-
-    call sl%set_y(5, SPREAD(CMPLX(0._WP, KIND=WP), 1, bp%n_k), &
-                     SPREAD(CMPLX(0._WP, KIND=WP), 1, bp%n_k))
+    md = mode_t(CMPLX(omega, KIND=WP), y_c, c_ext_t(discrim), bp%ml, bp%gr, bp%md_p, bp%os_p, j)
 
     ! Finish
 
     return
 
-  end function soln_t_
+  end function mode_t_
 
 end module gyre_rad_bvp
