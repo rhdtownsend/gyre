@@ -139,7 +139,7 @@ contains
 
        else
 
-          domega = md_in(i)%omega*SQRT(EPSILON(0._WP))
+          domega = ABS(md_in(i)%omega)*SQRT(EPSILON(0._WP))
 
        endif
 
