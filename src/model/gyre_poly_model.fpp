@@ -274,6 +274,8 @@ contains
     real(WP) :: Theta
     real(WP) :: dTheta
 
+    $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),V_2 evaluation at vacuum point)
+
     ! Evaluate the V_2 coefficient
 
     if (pt%x /= 0._WP) then
@@ -304,6 +306,8 @@ contains
     class(poly_model_t), intent(in) :: this
     type(point_t), intent(in)       :: pt
     real(WP)                        :: coeff
+
+    $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),As evaluation at vacuum point)
 
     ! Evaluate the As coefficient
 

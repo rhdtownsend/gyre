@@ -169,6 +169,8 @@ contains
     type(point_t), intent(in)      :: pt
     real(WP)                       :: coeff
 
+    $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),V_2 evaluation at vacuum point)
+
     ! Evaluate the V_2 coefficient
 
     coeff = 2._WP/(1._WP - pt%x**2)
@@ -186,6 +188,8 @@ contains
     class(hom_model_t), intent(in) :: this
     type(point_t), intent(in)      :: pt
     real(WP)                       :: coeff
+
+    $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),As evaluation at vacuum point)
 
     ! Evaluate the As coefficient
 
