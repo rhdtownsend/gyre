@@ -41,13 +41,17 @@ module gyre_${T}_mirk_diff
 
   implicit none
 
+  ! Parameter definitions
+
+  real(WP), parameter :: C_I(3) = [0._WP,0.5_WP,1._WP]
+
   ! Derived-type definitions
 
   type, extends (${T}_diff_t) :: ${T}_mirk_diff_t
      private
      class(${T}_eqns_t), allocatable :: eq
-     type(point_t)                   :: pt_a
-     type(point_t)                   :: pt_b
+     real(WP)                        :: dx
+     logical                         :: origin
    contains
      private
      procedure, public :: build
@@ -74,21 +78,31 @@ contains
     type(point_t), intent(in)      :: pt_b
     type(${T}_mirk_diff_t)         :: df
 
+    type(point_t), allocatable :: pt(:)
+
     $ASSERT_DEBUG(pt_a%s == pt_b%s,Segment mismatch)
 
     ! Construct the mirk_diff_t
 
+    df%dx = pt_b%x - pt_a%x
+
+    allocate(pt(SIZE(C_I)))
+
+    pt%s = pt_a%s
+    pt%x = pt_a%x + C_I*df%dx
+
     allocate(df%eq, SOURCE=eq)
 
-    df%pt_a = pt_a
-    df%pt_b = pt_b
+    call df%eq%stencil(pt)
+
+    df%origin = pt_a%x == 0._WP
 
     df%n_e = eq%n_e
 
     ! Finish
 
     return
-    
+
   end function ${T}_mirk_diff_t_
 
   !****
@@ -101,9 +115,7 @@ contains
     $TYPE(WP), intent(out)              :: E_r(:,:)
     type(${T}_ext_t), intent(out)       :: scl
 
-    real(WP)      :: dx
-    type(point_t) :: pt
-    $TYPE(WP)     :: A(this%n_e,this%n_e,3)
+    $TYPE(WP) :: A(this%n_e,this%n_e,3)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -111,7 +123,9 @@ contains
     $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
 
-    if (this%pt_a%x == 0) then
+    ! Build the difference equations
+
+    if (this%origin) then
 
        ! If we're at the origin, fudge things to avoid evaluating A there
 
@@ -124,21 +138,16 @@ contains
        
        ! Evaluate the RHS matrices
 
-       dx = this%pt_b%x - this%pt_a%x
-
-       A(:,:,1) = this%eq%A(this%pt_a, omega)
-
-       pt%s = this%pt_a%s
-       pt%x = this%pt_a%x + 0.5_WP*dx
-       
-       A(:,:,2) = this%eq%A(pt, omega)
-    
-       A(:,:,3) = this%eq%A(this%pt_b, omega)
+       A(:,:,1) = this%eq%A(1, omega)
+       A(:,:,2) = this%eq%A(2, omega)
+       A(:,:,3) = this%eq%A(3, omega)
 
        ! Build the difference equations
 
-       E_l = -identity_matrix(this%n_e) - dx*A(:,:,1)/6._WP - dx*A(:,:,2)/3._WP - dx**2*MATMUL(A(:,:,2), A(:,:,1))/12._WP
-       E_r =  identity_matrix(this%n_e) - dx*A(:,:,3)/6._WP - dx*A(:,:,2)/3._WP + dx**2*MATMUL(A(:,:,2), A(:,:,3))/12._WP
+       E_l = -identity_matrix(this%n_e) - this%dx*A(:,:,1)/6._WP - &
+            this%dx*A(:,:,2)/3._WP - this%dx**2*MATMUL(A(:,:,2), A(:,:,1))/12._WP
+       E_r =  identity_matrix(this%n_e) - this%dx*A(:,:,3)/6._WP - &
+            this%dx*A(:,:,2)/3._WP + this%dx**2*MATMUL(A(:,:,2), A(:,:,3))/12._WP
        
        scl = ${T}_ext_t(1._WP)
 

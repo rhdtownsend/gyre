@@ -1,7 +1,7 @@
 ! Incfile  : gyre_trapz_diff
 ! Purpose  : difference equations (quasi-trapezoidal, template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -46,9 +46,9 @@ module gyre_${T}_trapz_diff
   type, extends (${T}_diff_t) :: ${T}_trapz_diff_t
      private
      class(${T}_eqns_t), allocatable :: eq
-     type(point_t)                   :: pt_a
-     type(point_t)                   :: pt_b
      real(WP), allocatable           :: w(:)
+     real(WP)                        :: dx
+     real(WP)                        :: x_m
    contains
      private
      procedure, public :: build
@@ -82,12 +82,14 @@ contains
 
     ! Construct the trapz_diff_t
 
+    df%w = w
+
+    df%dx = pt_b%x - pt_a%x
+    df%x_m = 0.5_WP*(pt_a%x + pt_b%x)
+
     allocate(df%eq, SOURCE=eq)
 
-    df%pt_a = pt_a
-    df%pt_b = pt_b
-
-    df%w = w
+    call df%eq%stencil([pt_a,pt_b])
 
     df%n_e = eq%n_e
 
@@ -107,9 +109,7 @@ contains
     $TYPE(WP), intent(out)               :: E_r(:,:)
     type(${T}_ext_t), intent(out)        :: scl
 
-    real(WP)  :: dx
     $TYPE(WP) :: xA(this%n_e,this%n_e,2)
-    real(WP)  :: x_m
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -119,17 +119,13 @@ contains
 
     ! Evaluate the RHS matrix
 
-    dx = this%pt_b%x - this%pt_a%x
-
-    xA(:,:,1) = this%eq%xA(this%pt_a, omega)
-    xA(:,:,2) = this%eq%xA(this%pt_b, omega)
+    xA(:,:,1) = this%eq%xA(1, omega)
+    xA(:,:,2) = this%eq%xA(2, omega)
 
     ! Build the difference equations
 
-    x_m = 0.5_WP*(this%pt_a%x + this%pt_b%x)
-
-    E_l = -x_m*identity_matrix(this%n_e) - dx*MATMUL(diagonal_matrix(1._WP-this%w), xA(:,:,1))
-    E_r =  x_m*identity_matrix(this%n_e) - dx*MATMUL(diagonal_matrix(      this%w), xA(:,:,2))
+    E_l = -this%x_m*identity_matrix(this%n_e) - this%dx*MATMUL(diagonal_matrix(1._WP-this%w), xA(:,:,1))
+    E_r =  this%x_m*identity_matrix(this%n_e) - this%dx*MATMUL(diagonal_matrix(      this%w), xA(:,:,2))
 
     scl = ${T}_ext_t(1._WP)
 
