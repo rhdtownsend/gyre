@@ -22,8 +22,9 @@
 	grid_type = 'INVERSE'
 	freq_min = 110
 	freq_max = 112
+	freq_min_units = 'UHZ'
+	freq_max_units = 'UHZ'
 	n_freq = 20
-	freq_units = 'UHZ'
 /
 
 &grid
