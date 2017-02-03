@@ -24,7 +24,6 @@ module gyre_ad_bvp
   use core_kinds
 
   use gyre_ad_bound
-  use gyre_ad_eqns
   use gyre_ad_diff
   use gyre_ad_vars
   use gyre_bvp
@@ -49,7 +48,6 @@ module gyre_ad_bvp
   type, extends (r_bvp_t) :: ad_bvp_t
      class(model_t), pointer :: ml => null()
      type(grid_t)            :: gr
-     type(ad_eqns_t)         :: eq
      type(ad_vars_t)         :: vr
      type(mode_par_t)        :: md_p
      type(osc_par_t)         :: os_p
@@ -99,6 +97,7 @@ contains
 
     allocate(df(gr%n_k-1))
 
+    !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
        df(k) = ad_diff_t(ml, gr, k, md_p, nm_p, os_p)
     end do
@@ -112,7 +111,6 @@ contains
     bp%ml => ml
     bp%gr = gr
 
-    bp%eq = ad_eqns_t(ml, gr, md_p, os_p)
     bp%vr = ad_vars_t(ml, gr, md_p, os_p)
 
     bp%md_p = md_p

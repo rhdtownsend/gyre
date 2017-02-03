@@ -34,7 +34,6 @@ module gyre_rad_bvp
   use gyre_point
   use gyre_rad_bound
   use gyre_rad_diff
-  use gyre_rad_eqns
   use gyre_rad_vars
   use gyre_util
 
@@ -49,7 +48,6 @@ module gyre_rad_bvp
   type, extends (r_bvp_t) :: rad_bvp_t
      class(model_t), pointer :: ml => null()
      type(grid_t)            :: gr
-     type(rad_eqns_t)        :: eq
      type(rad_vars_t)        :: vr
      type(mode_par_t)        :: md_p
      type(osc_par_t)         :: os_p
@@ -103,6 +101,7 @@ contains
 
     allocate(df(gr%n_k-1))
 
+    !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
        df(k) = rad_diff_t(ml, gr, k, md_p, nm_p, os_p)
     end do
@@ -116,7 +115,6 @@ contains
     bp%ml => ml
     bp%gr = gr
 
-    bp%eq = rad_eqns_t(ml, gr, md_p, os_p)
     bp%vr = rad_vars_t(ml, gr, md_p, os_p)
 
     bp%md_p = md_p

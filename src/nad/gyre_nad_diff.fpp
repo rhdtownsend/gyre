@@ -1,7 +1,7 @@
 ! Incfile  : gyre_nad_diff
 ! Purpose  : nonadiabatic difference equations
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -48,8 +48,7 @@ module gyre_nad_diff
      private
      class(c_diff_t), allocatable :: df
      type(nad_eqns_t)             :: eq
-     type(point_t)                :: pt_a
-     type(point_t)                :: pt_b
+     real(WP)                     :: dx
    contains
      private
      procedure, public :: build
@@ -82,6 +81,7 @@ contains
     type(nad_diff_t)                    :: df
 
     type(nad_eqns_t) :: eq
+    type(point_t)    :: pt
 
     $ASSERT_DEBUG(k >= 1,Invalid index)
     $ASSERT_DEBUG(k < gr%n_k,Invalid index)
@@ -98,11 +98,15 @@ contains
        case default
           allocate(df%df, SOURCE=c_diff_t(eq, gr%pt(k), gr%pt(k+1), nm_p))
        end select
+
+       df%dx = gr%pt(k+1)%x - gr%pt(k)%x
  
+       pt%s = gr%pt(k)%s
+       pt%x = gr%pt(k)%x + 0.5*df%dx
+
        df%eq = eq
 
-       df%pt_a = gr%pt(k)
-       df%pt_b = gr%pt(k+1)
+       call df%eq%stencil([pt])
 
    else
 
@@ -133,9 +137,8 @@ contains
 
     logical, parameter :: MAGNUS_EIGVAL_MASK(3) = [.FALSE.,.FALSE.,.TRUE.]
 
-    type(point_t) :: pt
-    complex(WP)   :: A(this%n_e,this%n_e)
-    complex(WP)   :: lambda(3)
+    complex(WP) :: A(this%n_e,this%n_e)
+    complex(WP) :: lambda(3)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -156,16 +159,13 @@ contains
        ! Rescale by the uncoupled eigenvalues, in order to help the root
        ! finder
 
-       pt%s = this%pt_a%s
-       pt%x = 0.5_WP*(this%pt_a%x + this%pt_b%x)
-
-       A = this%eq%A(pt, omega)
+       A = this%eq%A(1, omega)
 
        lambda(1) = SQRT(A(2,1)*A(1,2))
        lambda(2) = SQRT(A(4,3)*A(3,4))
        lambda(3) = SQRT(A(6,5)*A(5,6))
 
-       scl = scl*exp(c_ext_t(-SUM(lambda, MASK=MAGNUS_EIGVAL_MASK)*(this%pt_b%x - this%pt_a%x)))
+       scl = scl*exp(c_ext_t(-SUM(lambda, MASK=MAGNUS_EIGVAL_MASK)*this%dx))
 
     class is (c_colloc_diff_t)
 

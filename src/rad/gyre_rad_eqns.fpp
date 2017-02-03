@@ -40,6 +40,15 @@ module gyre_rad_eqns
 
   implicit none
 
+  ! Parameter definitions
+
+  integer, parameter :: J_V_G = 1
+  integer, parameter :: J_AS = 2
+  integer, parameter :: J_U = 3
+  integer, parameter :: J_C_1 = 4
+
+  integer, parameter :: J_LAST = J_C_1
+
   ! Derived-type definitions
 
   type, extends (r_eqns_t) :: rad_eqns_t
@@ -47,9 +56,12 @@ module gyre_rad_eqns
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
      type(rad_vars_t)            :: vr
+     type(point_t), allocatable  :: pt(:)
+     real(WP), allocatable       :: coeffs(:,:)
      real(WP)                    :: alpha_om
    contains
      private
+     procedure, public :: stencil
      procedure, public :: A
      procedure, public :: xA
   end type rad_eqns_t
@@ -106,16 +118,48 @@ contains
 
   !****
 
-  function A (this, pt, omega)
+  subroutine stencil (this, pt)
+
+    class(rad_eqns_t), intent(inout) :: this
+    type(point_t), intent(in)        :: pt(:)
+
+    integer :: n_s
+    integer :: i
+
+    ! Calculate coefficients at the stencil points
+
+    this%pt = pt
+
+    n_s = SIZE(pt)
+
+    if (ALLOCATED(this%coeffs)) deallocate(this%coeffs)
+    allocate(this%coeffs(n_s, J_LAST))
+
+    do i = 1, n_s
+       this%coeffs(i,J_V_G) = this%ml%coeff(I_V_2, pt(i))*pt(i)%x**2/this%ml%coeff(I_GAMMA_1, pt(i))
+       this%coeffs(i,J_AS) = this%ml%coeff(I_AS, pt(i))
+       this%coeffs(i,J_U) = this%ml%coeff(I_U, pt(i))
+       this%coeffs(i,J_C_1) = this%ml%coeff(I_C_1, pt(i))
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine stencil
+
+  !****
+
+  function A (this, i, omega)
 
     class(rad_eqns_t), intent(in) :: this
-    type(point_t), intent(in)     :: pt
+    integer, intent(in)           :: i
     real(WP), intent(in)          :: omega
     real(WP)                      :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(pt, omega)/pt%x
+    A = this%xA(i, omega)/this%pt(i)%x
 
     ! Finish
 
@@ -125,45 +169,41 @@ contains
 
   !****
 
-  function xA (this, pt, omega)
+  function xA (this, i, omega)
 
     class(rad_eqns_t), intent(in) :: this
-    type(point_t), intent(in)     :: pt
+    integer, intent(in)           :: i
     real(WP), intent(in)          :: omega
     real(WP)                      :: xA(this%n_e,this%n_e)
 
-    real(WP) :: V_g
-    real(WP) :: As
-    real(WP) :: U
-    real(WP) :: c_1
     real(WP) :: omega_c
-    real(WP) :: alpha_om
     
     ! Evaluate the log(x)-space RHS matrix
 
-    ! Calculate coefficients
+    associate ( &
+         V_g => this%coeffs(i,J_V_G), &
+         As => this%coeffs(i,J_AS), &
+         U => this%coeffs(i,J_U), &
+         c_1 => this%coeffs(i,J_C_1), &
+         alpha_om => this%alpha_om, &
+         pt => this%pt(i))
 
-    V_g = this%ml%coeff(I_V_2, pt)*pt%x**2/this%ml%coeff(I_GAMMA_1, pt)
-    As = this%ml%coeff(I_AS, pt)
-    U = this%ml%coeff(I_U, pt)
-    c_1 = this%ml%coeff(I_C_1, pt)
+      omega_c = this%rt%omega_c(pt, omega)
 
-    omega_c = this%rt%omega_c(pt, omega)
+      ! Set up the matrix
 
-    alpha_om = this%alpha_om
-
-    ! Set up the matrix
-
-    xA(1,1) = V_g - 1._WP
-    xA(1,2) = -V_g
+      xA(1,1) = V_g - 1._WP
+      xA(1,2) = -V_g
       
-    xA(2,1) = c_1*alpha_om*omega_c**2 + U - As
-    xA(2,2) = As - U + 3._WP
+      xA(2,1) = c_1*alpha_om*omega_c**2 + U - As
+      xA(2,2) = As - U + 3._WP
 
-    ! Apply the variables transformation
+      ! Apply the variables transformation
 
-    xA = MATMUL(this%vr%G(pt, omega), MATMUL(xA, this%vr%H(pt, omega)) - &
-                                                 this%vr%dH(pt, omega))
+      xA = MATMUL(this%vr%G(pt, omega), MATMUL(xA, this%vr%H(pt, omega)) - &
+                                                   this%vr%dH(pt, omega))
+
+    end associate
 
     ! Finish
 

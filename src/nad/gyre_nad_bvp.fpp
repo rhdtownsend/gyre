@@ -25,7 +25,6 @@ module gyre_nad_bvp
 
   use gyre_nad_bound
   use gyre_nad_diff
-  use gyre_nad_eqns
   use gyre_nad_vars
   use gyre_bvp
   use gyre_ext
@@ -49,7 +48,6 @@ module gyre_nad_bvp
   type, extends (c_bvp_t) :: nad_bvp_t
      class(model_t), pointer :: ml => null()
      type(grid_t)            :: gr
-     type(nad_eqns_t)        :: eq
      type(mode_par_t)        :: md_p
      type(osc_par_t)         :: os_p
      type(nad_vars_t)        :: vr
@@ -99,6 +97,7 @@ contains
 
     allocate(df(gr%n_k-1))
 
+    !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
        df(k) = nad_diff_t(ml, gr, k, md_p, nm_p, os_p)
     end do
@@ -112,7 +111,6 @@ contains
     bp%ml => ml
     bp%gr = gr
 
-    bp%eq = nad_eqns_t(ml, gr, md_p, os_p)
     bp%vr = nad_vars_t(ml, gr, md_p, os_p)
 
     bp%md_p = md_p
