@@ -23,7 +23,8 @@
 	grid_type = 'LINEAR'
 	freq_min = 3000
 	freq_max = 5000
-	freq_units = 'UHZ'
+	freq_min_units = 'UHZ'
+	freq_max_units = 'UHZ'
 	n_freq = 10
 /
 
