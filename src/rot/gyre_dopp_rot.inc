@@ -44,10 +44,12 @@ module gyre_${T}_dopp_rot
   type, extends (${T}_rot_t) :: ${T}_dopp_rot_t
      private
      class(model_t), pointer :: ml => null()
+     real(WP), allocatable   :: Omega_rot(:)
      integer                 :: l
      integer                 :: m
    contains
      private
+     procedure, public :: stencil
      procedure, public :: omega
      procedure, public :: omega_c
      procedure, public :: l_i
@@ -92,17 +94,44 @@ contains
 
   !****
 
-  function omega (this, pt, omega_c)
+  subroutine stencil (this, pt)
+
+    class(${T}_dopp_rot_t), intent(inout) :: this
+    type(point_t), intent(in)             :: pt(:)
+
+    integer :: n_s
+    integer :: i
+
+    ! Calculate coefficients at the stencil points
+
+    n_s = SIZE(pt)
+
+    if (ALLOCATED(this%Omega_rot)) deallocate(this%Omega_rot)
+    allocate(this%Omega_rot(n_s))
+
+    do i = 1, n_s
+       this%Omega_rot(i) = this%ml%coeff(I_OMEGA_ROT, pt(i))
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine stencil
+
+  !****
+
+  function omega (this, i, omega_c)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega_c
     $TYPE(WP)                          :: omega
 
     ! Evaluate the inertial-frame frequency from the corotating-frame
     ! frequency
 
-    omega = omega_c + this%m*this%ml%coeff(I_OMEGA_ROT, pt)
+    omega = omega_c + this%m*this%Omega_rot(i)
 
     ! Finish
 
@@ -112,17 +141,17 @@ contains
 
   !****
 
-  function omega_c (this, pt, omega)
+  function omega_c (this, i, omega)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: omega_c
 
     ! Evaluate the corotating-frame frequency from the inertial-frame
     ! frequency
 
-    omega_c = omega - this%m*this%ml%coeff(I_OMEGA_ROT, pt)
+    omega_c = omega - this%m*this%Omega_rot(i)
 
     ! Finish
 
@@ -151,10 +180,10 @@ contains
 
   !****
 
-  function l_e (this, pt, omega)
+  function l_e (this, i, omega)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: l_e
 
@@ -170,10 +199,10 @@ contains
 
   !****
 
-  function lambda (this, pt, omega)
+  function lambda (this, i, omega)
 
     class(${T}_dopp_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: lambda
 

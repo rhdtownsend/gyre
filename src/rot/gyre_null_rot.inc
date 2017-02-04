@@ -46,6 +46,7 @@ module gyre_${T}_null_rot
      integer :: m
    contains
      private
+     procedure, public :: stencil
      procedure, public :: omega
      procedure, public :: omega_c
      procedure, public :: l_i
@@ -87,10 +88,26 @@ contains
 
   !****
 
-  function omega (this, pt, omega_c)
+  subroutine stencil (this, pt)
+
+    class(${T}_null_rot_t), intent(inout) :: this
+    type(point_t), intent(in)             :: pt(:)
+
+    ! Calculate coefficients at the stencil points (since no
+    ! coefficients are required, this is a no-op)
+
+    ! Finish
+
+    return
+
+  end subroutine stencil
+
+  !****
+
+  function omega (this, i, omega_c)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega_c
     $TYPE(WP)                          :: omega
 
@@ -107,10 +124,10 @@ contains
 
 !****
 
-  function omega_c (this, pt, omega)
+  function omega_c (this, i, omega)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: omega_c
 
@@ -146,10 +163,10 @@ contains
 
   !****
 
-  function l_e (this, pt, omega)
+  function l_e (this, i, omega)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: l_e
 
@@ -165,10 +182,10 @@ contains
 
   !****
 
-  function lambda (this, pt, omega)
+  function lambda (this, i, omega)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: lambda
 
