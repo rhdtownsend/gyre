@@ -108,7 +108,7 @@ contains
 
        end associate
 
-       if (gamma > 0._WP) then
+       if (gamma <= 0._WP) then
           k_turn = k
           exit gamma_loop
        endif
