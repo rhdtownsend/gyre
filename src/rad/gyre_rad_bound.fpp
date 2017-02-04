@@ -199,7 +199,6 @@ contains
 
     select case (this%type_o)
     case (ZERO_TYPE)
-       this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
     case (DZIEM_TYPE)
        this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
        this%coeffs(2,J_C_1) = this%ml%coeff(I_C_1, pt_o)
