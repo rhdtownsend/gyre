@@ -39,16 +39,22 @@ module gyre_ad_match
 
   implicit none
 
+  ! Parameter definitions
+
+  integer, parameter :: J_U = 1
+  
+  integer, parameter :: J_LAST = J_U
+
   ! Derived-type definitions
 
   type, extends (r_diff_t) :: ad_match_t
      private
      class(model_t), pointer :: ml => null()
      type(ad_vars_t)         :: vr
-     type(point_t)           :: pt_a
-     type(point_t)           :: pt_b
+     real(WP), allocatable   :: coeffs(:,:)
    contains
      private
+     procedure         :: stencil_
      procedure, public :: build
   end type ad_match_t
 
@@ -65,31 +71,26 @@ module gyre_ad_match
 
 contains
 
-  function ad_match_t_ (ml, gr, k, md_p, os_p) result (mt)
+  function ad_match_t_ (ml, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    integer, intent(in)                 :: k
+    type(point_t), intent(in)           :: pt_i
+    type(point_t), intent(in)           :: pt_a
+    type(point_t), intent(in)           :: pt_b
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(ad_match_t)                    :: mt
 
-    $ASSERT_DEBUG(k >= 1,Invalid index)
-    $ASSERT_DEBUG(k < gr%n_k,Invalid index)
-
-    $ASSERT_DEBUG(gr%pt(k+1)%s == gr%pt(k)%s+1,Mismatched segments)
-    $ASSERT_DEBUG(gr%pt(k+1)%x == gr%pt(k)%x,Mismatched abscissae)
+    $ASSERT_DEBUG(pt_a%s+1 == pt_b%s,Mismatched segments)
+    $ASSERT_DEBUG(pt_a%x == pt_b%x,Mismatched abscissae)
 
     ! Construct the ad_match_t
 
-    call check_model(ml, [I_U])
-
     mt%ml => ml
 
-    mt%vr = ad_vars_t(ml, gr, md_p, os_p)
+    mt%vr = ad_vars_t(ml, pt_i, md_p, os_p)
 
-    mt%pt_a = gr%pt(k)
-    mt%pt_b = gr%pt(k+1)
+    call mt%stencil_(pt_a, pt_b)
 
     mt%n_e = 4
 
@@ -101,6 +102,33 @@ contains
     
   !****
 
+  subroutine stencil_ (this, pt_a, pt_b)
+
+    class(ad_match_t), intent(inout) :: this
+    type(point_t), intent(in)        :: pt_a
+    type(point_t), intent(in)        :: pt_b
+
+    ! Calculate coefficients at the stencil points
+
+    call check_model(this%ml, [I_U])
+
+    allocate(this%coeffs(2,J_LAST))
+
+    this%coeffs(1,J_U) = this%ml%coeff(I_U, pt_a)
+    this%coeffs(2,J_U) = this%ml%coeff(I_U, pt_b)
+
+    ! Set up stencil for the vr component
+
+    call this%vr%stencil([pt_a,pt_b])
+
+    ! Finish
+
+    return
+
+  end subroutine stencil_
+
+  !****
+
   subroutine build (this, omega, E_l, E_r, scl)
 
     class(ad_match_t), intent(in) :: this
@@ -108,9 +136,6 @@ contains
     real(WP), intent(out)         :: E_l(:,:)
     real(WP), intent(out)         :: E_r(:,:)
     type(r_ext_t), intent(out)    :: scl
-
-    real(WP) :: U_l
-    real(WP) :: U_r
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -122,65 +147,63 @@ contains
 
     ! Calculate coefficients
 
-    associate (pt_a => this%pt_a, &
-               pt_b => this%pt_b)
+    associate( &
+      U_l => this%coeffs(1,J_U), &
+      U_r => this%coeffs(2,J_U))
 
-      U_l = this%ml%coeff(I_U, pt_a)
-      U_r = this%ml%coeff(I_U, pt_b)
+      ! Evaluate the match conditions (y_1, y_3 continuous, y_2, y_4
+      ! not)
+
+      E_l(1,1) = -1._WP
+      E_l(1,2) = 0._WP
+      E_l(1,3) = 0._WP
+      E_l(1,4) = 0._WP
+    
+      E_l(2,1) = U_l
+      E_l(2,2) = -U_l
+      E_l(2,3) = 0._WP
+      E_l(2,4) = 0._WP
+
+      E_l(3,1) = 0._WP
+      E_l(3,2) = 0._WP
+      E_l(3,3) = -1._WP
+      E_l(3,4) = 0._WP
+
+      E_l(4,1) = -U_l
+      E_l(4,2) = 0._WP
+      E_l(4,3) = 0._WP
+      E_l(4,4) = -1._WP
+
+      !
+
+      E_r(1,1) = 1._WP
+      E_r(1,2) = 0._WP
+      E_r(1,3) = 0._WP
+      E_r(1,4) = 0._WP
+
+      E_r(2,1) = -U_r
+      E_r(2,2) = U_r
+      E_r(2,3) = 0._WP
+      E_r(2,4) = 0._WP
+      
+      E_r(3,1) = 0._WP
+      E_r(3,2) = 0._WP
+      E_r(3,3) = 1._WP
+      E_r(3,4) = 0._WP
+
+      E_r(4,1) = U_r
+      E_r(4,2) = 0._WP
+      E_r(4,3) = 0._WP
+      E_r(4,4) = 1._WP
+
+      scl = r_ext_t(1._WP)
 
     end associate
 
-    ! Evaluate the match conditions (y_1, y_3 continuous, y_2, y_4
-    ! not)
-
-    E_l(1,1) = -1._WP
-    E_l(1,2) = 0._WP
-    E_l(1,3) = 0._WP
-    E_l(1,4) = 0._WP
-    
-    E_l(2,1) = U_l
-    E_l(2,2) = -U_l
-    E_l(2,3) = 0._WP
-    E_l(2,4) = 0._WP
-
-    E_l(3,1) = 0._WP
-    E_l(3,2) = 0._WP
-    E_l(3,3) = -1._WP
-    E_l(3,4) = 0._WP
-
-    E_l(4,1) = -U_l
-    E_l(4,2) = 0._WP
-    E_l(4,3) = 0._WP
-    E_l(4,4) = -1._WP
-
-    !
-
-    E_r(1,1) = 1._WP
-    E_r(1,2) = 0._WP
-    E_r(1,3) = 0._WP
-    E_r(1,4) = 0._WP
-
-    E_r(2,1) = -U_r
-    E_r(2,2) = U_r
-    E_r(2,3) = 0._WP
-    E_r(2,4) = 0._WP
-
-    E_r(3,1) = 0._WP
-    E_r(3,2) = 0._WP
-    E_r(3,3) = 1._WP
-    E_r(3,4) = 0._WP
-
-    E_r(4,1) = U_r
-    E_r(4,2) = 0._WP
-    E_r(4,3) = 0._WP
-    E_r(4,4) = 1._WP
-
-    scl = r_ext_t(1._WP)
-
     ! Apply the variables transformation
 
-    E_l = MATMUL(E_l, this%vr%H(this%pt_a, omega))
-    E_r = MATMUL(E_r, this%vr%H(this%pt_b, omega))
+    E_l = MATMUL(E_l, this%vr%H(1, omega))
+    E_r = MATMUL(E_r, this%vr%H(2, omega))
 
     ! Finish
 

@@ -25,7 +25,6 @@ module gyre_nad_bound
 
   use gyre_atmos
   use gyre_bound
-  use gyre_grid
   use gyre_mode_par
   use gyre_model
   use gyre_model_util
@@ -49,6 +48,15 @@ module gyre_nad_bound
   integer, parameter :: UNNO_TYPE = 4
   integer, parameter :: JCD_TYPE = 5
 
+  integer, parameter :: J_V = 1
+  integer, parameter :: J_V_G = 2
+  integer, parameter :: J_AS = 3
+  integer, parameter :: J_U = 4
+  integer, parameter :: J_C_1 = 5
+  integer, parameter :: J_NABLA_AD = 6
+
+  integer, parameter :: J_LAST = J_NABLA_AD
+
   ! Derived-type definitions
 
   type, extends (c_bound_t) :: nad_bound_t
@@ -56,14 +64,14 @@ module gyre_nad_bound
      class(model_t), pointer     :: ml => null()
      class(c_rot_t), allocatable :: rt
      type(nad_vars_t)            :: vr
-     type(point_t)               :: pt_i
-     type(point_t)               :: pt_o
+     real(WP), allocatable       :: coeffs(:,:)
      real(WP)                    :: alpha_gr
      complex(WP)                 :: alpha_om
      integer                     :: type_i
      integer                     :: type_o
    contains 
      private
+     procedure         :: stencil_
      procedure, public :: build_i
      procedure         :: build_regular_i_
      procedure         :: build_zero_i_
@@ -90,32 +98,29 @@ module gyre_nad_bound
 
 contains
 
-  function nad_bound_t_ (ml, gr, md_p, os_p) result (bd)
+  function nad_bound_t_ (ml, pt_i, pt_o, md_p, os_p) result (bd)
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
+    type(point_t), intent(in)           :: pt_i
+    type(point_t), intent(in)           :: pt_o
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(nad_bound_t)                   :: bd
 
     ! Construct the nad_bound_t
 
-    call check_model(ml, [I_V_2,I_U,I_C_1,I_NABLA_AD])
-
     bd%ml => ml
-    
-    allocate(bd%rt, SOURCE=c_rot_t(ml, gr, md_p, os_p))
-    bd%vr = nad_vars_t(ml, gr, md_p, os_p)
 
-    bd%pt_i = gr%pt(1)
-    bd%pt_o = gr%pt(gr%n_k)
- 
+    allocate(bd%rt, SOURCE=c_rot_t(ml, pt_i, md_p, os_p))
+
+    bd%vr = nad_vars_t(ml, pt_i, md_p, os_p)
+
     select case (os_p%inner_bound)
     case ('REGULAR')
-       $ASSERT(bd%pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
+       $ASSERT(pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
        bd%type_i = REGULAR_TYPE
     case ('ZERO')
-       $ASSERT(bd%pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
+       $ASSERT(pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
        bd%type_i = ZERO_TYPE
     case default
        $ABORT(Invalid inner_bound)
@@ -125,11 +130,23 @@ contains
     case ('ZERO')
        bd%type_o = ZERO_TYPE
     case ('DZIEM')
-       bd%type_o = DZIEM_TYPE
+       if (ml%is_vacuum(pt_o)) then
+          bd%type_o = ZERO_TYPE
+       else
+          bd%type_o = DZIEM_TYPE
+       endif
     case ('UNNO')
-       bd%type_o = UNNO_TYPE
+       if (ml%is_vacuum(pt_o)) then
+          bd%type_o = ZERO_TYPE
+       else
+          bd%type_o = UNNO_TYPE
+       end if
     case ('JCD')
-       bd%type_o = JCD_TYPE
+       if (ml%is_vacuum(pt_o)) then
+          bd%type_o = ZERO_TYPE
+       else
+          bd%type_o = JCD_TYPE
+       end if
     case default
        $ABORT(Invalid outer_bound)
     end select
@@ -149,6 +166,8 @@ contains
        $ABORT(Invalid time_factor)
     end select
 
+    call bd%stencil_(pt_i, pt_o)
+
     bd%n_i = 3
     bd%n_o = 3
 
@@ -159,6 +178,62 @@ contains
     return
     
   end function nad_bound_t_
+
+  !****
+
+  subroutine stencil_ (this, pt_i, pt_o)
+
+    class(nad_bound_t), intent(inout) :: this
+    type(point_t), intent(in)         :: pt_i
+    type(point_t), intent(in)         :: pt_o
+
+    ! Calculate coefficients at the stencil points
+
+    call check_model(this%ml, [I_V_2,I_U,I_C_1,I_NABLA_AD])
+
+    allocate(this%coeffs(2,J_LAST))
+
+    ! Inner boundary
+
+    select case (this%type_i)
+    case (REGULAR_TYPE)
+       this%coeffs(1,J_C_1) = this%ml%coeff(I_C_1, pt_i)
+    case (ZERO_TYPE)
+    case default
+       $ABORT(Invalid type_i)
+    end select
+
+    ! Outer boundary
+
+    select case (this%type_o)
+    case (ZERO_TYPE)
+       this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
+    case (DZIEM_TYPE)
+       this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
+       this%coeffs(2,J_C_1) = this%ml%coeff(I_C_1, pt_o)
+    case (UNNO_TYPE)
+       call eval_atmos_coeffs_jcd(this%ml, pt_o, this%coeffs(2,J_V_G), &
+            this%coeffs(2,J_AS), this%coeffs(2,J_C_1))
+    case (JCD_TYPE)
+       call eval_atmos_coeffs_jcd(this%ml, pt_o, this%coeffs(2,J_V_G), &
+            this%coeffs(2,J_AS), this%coeffs(2,J_C_1))
+    case default
+       $ABORT(Invalid type_o)
+    end select
+
+    this%coeffs(2, J_U) = this%ml%coeff(I_U, pt_o)
+    this%coeffs(2,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt_o)
+
+    ! Set up stencils for the rt and vr components
+
+    call this%rt%stencil([pt_i,pt_o])
+    call this%vr%stencil([pt_i,pt_o])
+
+    ! Finish
+
+    return
+
+  end subroutine stencil_
 
   !****
 
@@ -195,11 +270,8 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    real(WP)    :: c_1
     complex(WP) :: l_i
     complex(WP) :: omega_c
-    real(WP)    :: alpha_gr
-    complex(WP) :: alpha_om
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
@@ -208,18 +280,14 @@ contains
 
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
-    associate (pt => this%pt_i)
-
-      ! Calculate coefficients
-
-      c_1 = this%ml%coeff(I_C_1, pt)
+    associate( &
+         c_1 => this%coeffs(1,J_C_1), &
+         alpha_gr => this%alpha_gr, &
+         alpha_om => this%alpha_om)
 
       l_i = this%rt%l_i(omega)
 
-      omega_c = this%rt%omega_c(pt, omega)
-
-      alpha_gr = this%alpha_gr
-      alpha_om = this%alpha_om
+      omega_c = this%rt%omega_c(1, omega)
 
       ! Set up the boundary conditions
 
@@ -246,11 +314,11 @@ contains
 
       scl = 1._WP
 
-      ! Apply the variables transformation
-
-      B = MATMUL(B, this%vr%H(pt, omega))
-
     end associate
+
+    ! Apply the variables transformation
+
+    B = MATMUL(B, this%vr%H(1, omega))
 
     ! Finish
 
@@ -267,8 +335,6 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    real(WP) :: alpha_gr
-
     $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
@@ -277,11 +343,8 @@ contains
     ! Evaluate the inner boundary conditions (zero
     ! displacement/gravity)
 
-    associate (pt => this%pt_i)
-
-      ! Calculate coefficients
-
-      alpha_gr = this%alpha_gr
+    associate( &
+         alpha_gr => this%alpha_gr)
 
       ! Set up the boundary conditions
 
@@ -307,12 +370,12 @@ contains
       B(3,6) = 0._WP
 
       scl = 1._WP
-      
-      ! Apply the variables transformation
-
-      B = MATMUL(B, this%vr%H(pt, omega))
 
     end associate
+      
+    ! Apply the variables transformation
+
+    B = MATMUL(B, this%vr%H(1, omega))
 
     ! Finish
 
@@ -359,11 +422,7 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    real(WP)    :: V
-    real(WP)    :: U
-    real(WP)    :: nabla_ad
     complex(WP) :: l_e
-    real(WP)    :: alpha_gr
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
@@ -372,17 +431,13 @@ contains
 
     ! Evaluate the outer boundary conditions (zero-pressure)
 
-    associate (pt => this%pt_o)
+    associate( &
+         V => this%coeffs(2,J_V), &
+         U => this%coeffs(2,J_U), &
+         nabla_ad => this%coeffs(2,J_NABLA_AD), &
+         alpha_gr => this%alpha_gr)
 
-      ! Calculate coefficients
-
-      V = this%ml%coeff(I_V_2, pt)*pt%x**2
-      U = this%ml%coeff(I_U, pt)
-      nabla_ad = this%ml%coeff(I_NABLA_AD, pt)
-
-      l_e = this%rt%l_e(pt, omega)
-
-      alpha_gr = this%alpha_gr
+      l_e = this%rt%l_e(2, omega)
 
       ! Set up the boundary conditions
 
@@ -409,11 +464,11 @@ contains
 
       scl = 1._WP
 
-      ! Apply the variables transformation
-
-      B = MATMUL(B, this%vr%H(pt, omega))
-
     end associate
+
+    ! Apply the variables transformation
+
+    B = MATMUL(B, this%vr%H(2, omega))
 
     ! Finish
 
@@ -430,14 +485,9 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    real(WP)    :: V
-    real(WP)    :: c_1
-    real(WP)    :: nabla_ad
     complex(WP) :: lambda
     complex(WP) :: l_e
     complex(WP) :: omega_c
-    real(WP)    :: alpha_gr
-    complex(WP) :: alpha_om
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
@@ -446,63 +496,48 @@ contains
 
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
-    associate (pt => this%pt_o)
+    associate( &
+         V => this%coeffs(2,J_V), &
+         c_1 => this%coeffs(2,J_C_1), &
+         nabla_ad => this%coeffs(2,I_NABLA_AD), &
+         alpha_gr => this%alpha_gr, &
+         alpha_om => this%alpha_om)
 
-      if (this%ml%is_vacuum(pt)) then
+      lambda = this%rt%lambda(2, omega)
+      l_e = this%rt%l_e(2, omega)
 
-         ! For a vacuum, the boundary condition reduces to the zero
-         ! condition
+      omega_c = this%rt%omega_c(2, omega)
 
-         call this%build_zero_o_(omega, B, scl)
+      ! Set up the boundary conditions
 
-      else
+      B(1,1) = 1._WP + (lambda/(c_1*alpha_om*omega_c**2) - 4._WP - c_1*alpha_om*omega_c**2)/V
+      B(1,2) = -1._WP
+      B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)/V)
+      B(1,4) = alpha_gr*(0._WP)
+      B(1,5) = 0._WP
+      B(1,6) = 0._WP
 
-         ! Calculate coefficients
+      B(2,1) = alpha_gr*(0._WP)
+      B(2,2) = alpha_gr*(0._WP)
+      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+      B(2,4) = alpha_gr*(1._WP)
+      B(2,5) = alpha_gr*(0._WP)
+      B(2,6) = alpha_gr*(0._WP)
 
-         V = this%ml%coeff(I_V_2, pt)*pt%x**2
-         c_1 = this%ml%coeff(I_C_1, pt)
-         nabla_ad = this%ml%coeff(I_NABLA_AD, pt)
+      B(3,1) = 2._WP - 4._WP*nabla_ad*V
+      B(3,2) = 4._WP*nabla_ad*V
+      B(3,3) = alpha_gr*(0._WP)
+      B(3,4) = alpha_gr*(0._WP)
+      B(3,5) = 4._WP
+      B(3,6) = -1._WP
 
-         lambda = this%rt%lambda(pt, omega)
-         l_e = this%rt%l_e(pt, omega)
-
-         omega_c = this%rt%omega_c(pt, omega)
-
-         alpha_gr = this%alpha_gr
-         alpha_om = this%alpha_om
-
-         ! Set up the boundary conditions
-
-         B(1,1) = 1._WP + (lambda/(c_1*alpha_om*omega_c**2) - 4._WP - c_1*alpha_om*omega_c**2)/V
-         B(1,2) = -1._WP
-         B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)/V)
-         B(1,4) = alpha_gr*(0._WP)
-         B(1,5) = 0._WP
-         B(1,6) = 0._WP
-
-         B(2,1) = alpha_gr*(0._WP)
-         B(2,2) = alpha_gr*(0._WP)
-         B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-         B(2,4) = alpha_gr*(1._WP)
-         B(2,5) = alpha_gr*(0._WP)
-         B(2,6) = alpha_gr*(0._WP)
-
-         B(3,1) = 2._WP - 4._WP*nabla_ad*V
-         B(3,2) = 4._WP*nabla_ad*V
-         B(3,3) = alpha_gr*(0._WP)
-         B(3,4) = alpha_gr*(0._WP)
-         B(3,5) = 4._WP
-         B(3,6) = -1._WP
-
-         scl = 1._WP
-
-         ! Apply the variables transformation
-
-         B = MATMUL(B, this%vr%H(pt, omega))
-
-      endif
+      scl = 1._WP
 
     end associate
+
+    ! Apply the variables transformation
+
+    B = MATMUL(B, this%vr%H(2, omega))
 
     ! Finish
 
@@ -519,17 +554,10 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    real(WP)    :: V_g
-    real(WP)    :: V
-    real(WP)    :: As
-    real(WP)    :: c_1
-    real(WP)    :: nabla_ad
     complex(WP) :: lambda
     complex(WP) :: l_e
     complex(WP) :: omega_c
     complex(WP) :: beta
-    real(WP)    :: alpha_gr
-    complex(WP) :: alpha_om
     complex(WP) :: b_11
     complex(WP) :: b_12
     complex(WP) :: b_13
@@ -546,77 +574,63 @@ contains
 
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
-    associate (pt => this%pt_o)
+    associate( &
+         V => this%coeffs(2,J_V), &
+         V_g => this%coeffs(2,J_V_G), &
+         As => this%coeffs(2,J_AS), &
+         c_1 => this%coeffs(2,J_C_1), &
+         nabla_ad => this%coeffs(2,J_NABLA_AD), &
+         alpha_gr => this%alpha_gr, &
+         alpha_om => this%alpha_om)
 
-      if (this%ml%is_vacuum(pt)) then
+      lambda = this%rt%lambda(2, omega)
+      l_e = this%rt%l_e(2, omega)
 
-         ! For a vacuum, the boundary condition reduces to the zero
-         ! condition
+      omega_c = this%rt%omega_c(2, omega)
 
-         call this%build_zero_o_(omega, B, scl)
+      beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
-      else
+      b_11 = V_g - 3._WP
+      b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
+      b_13 = alpha_gr*(V_g)
 
-         ! Calculate coefficients
-         
-         call eval_atmos_coeffs_unno(this%ml, pt, V_g, As, c_1)
+      b_21 = c_1*alpha_om*omega_c**2 - As
+      b_22 = 1._WP + As
+      b_23 = alpha_gr*(-As)
 
-         V = this%ml%coeff(I_V_2, pt)*pt%x**2
-         nabla_ad = this%ml%coeff(I_NABLA_AD, pt)
+      alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
+      alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
 
-         lambda = this%rt%lambda(pt, omega)
-         l_e = this%rt%l_e(pt, omega)
+      ! Set up the boundary conditions
 
-         omega_c = this%rt%omega_c(pt, omega)
+      B(1,1) = beta - b_11
+      B(1,2) = -b_12
+      B(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12)
+      B(1,4) = 0._WP
+      B(1,5) = 0._WP
+      B(1,6) = 0._WP
 
-         beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
+      B(2,1) = alpha_gr*(0._WP)
+      B(2,2) = alpha_gr*(0._WP)
+      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+      B(2,4) = alpha_gr*(1._WP)
+      B(2,5) = alpha_gr*(0._WP)
+      B(2,6) = alpha_gr*(0._WP)
 
-         alpha_gr = this%alpha_gr
-         alpha_om = this%alpha_om
+      B(3,1) = 2._WP - 4._WP*nabla_ad*V
+      B(3,2) = 4._WP*nabla_ad*V
+      B(3,3) = alpha_gr*(0._WP)
+      B(3,4) = alpha_gr*(0._WP)
+      B(3,5) = 4._WP
+      B(3,6) = -1._WP
 
-         b_11 = V_g - 3._WP
-         b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
-         b_13 = alpha_gr*(V_g)
-
-         b_21 = c_1*alpha_om*omega_c**2 - As
-         b_22 = 1._WP + As
-         b_23 = alpha_gr*(-As)
-
-         alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
-         alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
-
-         ! Set up the boundary conditions
-
-         B(1,1) = beta - b_11
-         B(1,2) = -b_12
-         B(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12)
-         B(1,4) = 0._WP
-         B(1,5) = 0._WP
-         B(1,6) = 0._WP
-
-         B(2,1) = alpha_gr*(0._WP)
-         B(2,2) = alpha_gr*(0._WP)
-         B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-         B(2,4) = alpha_gr*(1._WP)
-         B(2,5) = alpha_gr*(0._WP)
-         B(2,6) = alpha_gr*(0._WP)
-
-         B(3,1) = 2._WP - 4._WP*nabla_ad*V
-         B(3,2) = 4._WP*nabla_ad*V
-         B(3,3) = alpha_gr*(0._WP)
-         B(3,4) = alpha_gr*(0._WP)
-         B(3,5) = 4._WP
-         B(3,6) = -1._WP
-
-         scl = 1._WP
-
-         ! Apply the variables transformation
-
-         B = MATMUL(B, this%vr%H(pt, omega))
-
-      endif
+      scl = 1._WP
 
     end associate
+
+    ! Apply the variables transformation
+
+    B = MATMUL(B, this%vr%H(2, omega))
 
     ! Finish
 
@@ -633,17 +647,10 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    real(WP)    :: V_g
-    real(WP)    :: V
-    real(WP)    :: As
-    real(WP)    :: c_1
-    real(WP)    :: nabla_ad
     complex(WP) :: lambda
     complex(WP) :: l_e
     complex(WP) :: omega_c
     complex(WP) :: beta
-    real(WP)    :: alpha_gr
-    complex(WP) :: alpha_om
     complex(WP) :: b_11
     complex(WP) :: b_12
 
@@ -654,69 +661,55 @@ contains
 
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
-    associate (pt => this%pt_o)
+    associate( &
+         V => this%coeffs(2,J_V), &
+         V_g => this%coeffs(2,J_V_G), &
+         As => this%coeffs(2,J_AS), &
+         c_1 => this%coeffs(2,J_C_1), &
+         nabla_ad => this%coeffs(2,J_NABLA_AD), &
+         alpha_gr => this%alpha_gr, &
+         alpha_om => this%alpha_om)
 
-      if (this%ml%is_vacuum(pt)) then
+      lambda = this%rt%lambda(2, omega)
+      l_e = this%rt%l_e(2, omega)
 
-         ! For a vacuum, the boundary condition reduces to the zero
-         ! condition
+      omega_c = this%rt%omega_c(2, omega)
 
-         call this%build_zero_o_(omega, B, scl)
+      beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
-      else
+      b_11 = V_g - 3._WP
+      b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
 
-         ! Calculate coefficients
-         
-         call eval_atmos_coeffs_jcd(this%ml, pt, V_g, As, c_1)
+      ! Set up the boundary conditions
 
-         V = this%ml%coeff(I_V_2, pt)*pt%x**2
-         nabla_ad = this%ml%coeff(I_NABLA_AD, pt)
+      B(1,1) = beta - b_11
+      B(1,2) = -b_12
+      B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
+      B(1,4) = alpha_gr*(0._WP)
+      B(1,5) = 0._WP
+      B(1,6) = 0._WP
 
-         lambda = this%rt%lambda(pt, omega)
-         l_e = this%rt%l_e(pt, omega)
+      B(2,1) = alpha_gr*(0._WP)
+      B(2,2) = alpha_gr*(0._WP)
+      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+      B(2,4) = alpha_gr*(1._WP)
+      B(2,5) = alpha_gr*(0._WP)
+      B(2,6) = alpha_gr*(0._WP)
 
-         omega_c = this%rt%omega_c(pt, omega)
+      B(3,1) = 2._WP - 4._WP*nabla_ad*V
+      B(3,2) = 4._WP*nabla_ad*V
+      B(3,3) = alpha_gr*(0._WP)
+      B(3,4) = alpha_gr*(0._WP)
+      B(3,5) = 4._WP
+      B(3,6) = -1._WP
 
-         beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
-
-         alpha_gr = this%alpha_gr
-         alpha_om = this%alpha_om
-
-         b_11 = V_g - 3._WP
-         b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
-
-         ! Set up the boundary conditions
-
-         B(1,1) = beta - b_11
-         B(1,2) = -b_12
-         B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
-         B(1,4) = alpha_gr*(0._WP)
-         B(1,5) = 0._WP
-         B(1,6) = 0._WP
-
-         B(2,1) = alpha_gr*(0._WP)
-         B(2,2) = alpha_gr*(0._WP)
-         B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-         B(2,4) = alpha_gr*(1._WP)
-         B(2,5) = alpha_gr*(0._WP)
-         B(2,6) = alpha_gr*(0._WP)
-
-         B(3,1) = 2._WP - 4._WP*nabla_ad*V
-         B(3,2) = 4._WP*nabla_ad*V
-         B(3,3) = alpha_gr*(0._WP)
-         B(3,4) = alpha_gr*(0._WP)
-         B(3,5) = 4._WP
-         B(3,6) = -1._WP
-
-         scl = 1._WP
-
-         ! Apply the variables transformation
-
-         B = MATMUL(B, this%vr%H(pt, omega))
-
-      endif
+      scl = 1._WP
 
     end associate
+    
+    ! Apply the variables transformation
+
+    B = MATMUL(B, this%vr%H(2, omega))
 
     ! Finish
 

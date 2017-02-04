@@ -83,6 +83,8 @@ contains
     type(osc_par_t), intent(in)         :: os_p
     type(rad_bvp_t)                     :: bp
 
+    type(point_t)                 :: pt_i
+    type(point_t)                 :: pt_o
     type(rad_bound_t)             :: bd
     integer                       :: k
     type(rad_diff_t), allocatable :: df(:)
@@ -93,9 +95,12 @@ contains
        $WARN(cowling_approx is ignored in 2nd-order radial equations)
     endif
     
+    pt_i = gr%pt(1)
+    pt_o = gr%pt(gr%n_k)
+
     ! Initialize the boundary conditions
 
-    bd = rad_bound_t(ml, gr, md_p, os_p)
+    bd = rad_bound_t(ml, pt_i, pt_o, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -103,7 +108,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = rad_diff_t(ml, gr, k, md_p, nm_p, os_p)
+       df(k) = rad_diff_t(ml, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -115,7 +120,8 @@ contains
     bp%ml => ml
     bp%gr = gr
 
-    bp%vr = rad_vars_t(ml, gr, md_p, os_p)
+    bp%vr = rad_vars_t(ml, pt_i, md_p, os_p)
+    call bp%vr%stencil(gr%pt)
 
     bp%md_p = md_p
     bp%os_p = os_p
@@ -155,18 +161,16 @@ contains
     do k = 1, bp%n_k
 
        associate (pt => bp%gr%pt(k))
-
-         H = bp%vr%H(pt, omega)
-
          U = bp%ml%coeff(I_U, pt)
-
-         y_c(1:2,k) = MATMUL(H, y(1:2,k))
-         y_c(3,k) = 0._WP
-         y_c(4,k) = -U*y_c(1,k)
-         y_c(5:6,k) = 0._WP
-
        end associate
-         
+
+       H = bp%vr%H(k, omega)
+
+       y_c(1:2,k) = MATMUL(H, y(1:2,k))
+       y_c(3,k) = 0._WP
+       y_c(4,k) = -U*y_c(1,k)
+       y_c(5:6,k) = 0._WP
+       
     end do
 
     ! Construct the mode_t

@@ -24,7 +24,6 @@ module gyre_nad_eqns
   use core_kinds
 
   use gyre_eqns
-  use gyre_grid
   use gyre_linalg
   use gyre_mode_par
   use gyre_model
@@ -70,8 +69,8 @@ module gyre_nad_eqns
      class(model_t), pointer     :: ml => null()
      class(c_rot_t), allocatable :: rt
      type(nad_vars_t)            :: vr
-     type(point_t), allocatable  :: pt(:)
      real(WP), allocatable       :: coeffs(:,:)
+     real(WP), allocatable       :: x(:)
      real(WP)                    :: alpha_gr
      real(WP)                    :: alpha_hf
      real(WP)                    :: alpha_om
@@ -99,10 +98,10 @@ module gyre_nad_eqns
 
 contains
 
-  function nad_eqns_t_ (ml, gr, md_p, os_p) result (eq)
+  function nad_eqns_t_ (ml, pt_i, md_p, os_p) result (eq)
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
+    type(point_t), intent(in)           :: pt_i
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(nad_eqns_t)                    :: eq
@@ -116,8 +115,8 @@ contains
 
     eq%ml => ml
 
-    allocate(eq%rt, SOURCE=c_rot_t(ml, gr, md_p, os_p))
-    eq%vr = nad_vars_t(ml, gr, md_p, os_p)
+    allocate(eq%rt, SOURCE=c_rot_t(ml, pt_i, md_p, os_p))
+    eq%vr = nad_vars_t(ml, pt_i, md_p, os_p)
 
     if (os_p%cowling_approx) then
        eq%alpha_gr = 0._WP
@@ -160,8 +159,6 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    this%pt = pt
-
     n_s = SIZE(pt)
 
     if (ALLOCATED(this%coeffs)) deallocate(this%coeffs)
@@ -187,6 +184,13 @@ contains
        this%coeffs(i,J_KAP_S) = this%ml%coeff(I_KAP_S, pt(i))
     end do
 
+    this%x = pt%x
+
+    ! Set up stencils for the rt and vr components
+
+    call this%rt%stencil(pt)
+    call this%vr%stencil(pt)
+
     ! Finish
 
     return
@@ -204,7 +208,7 @@ contains
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(i, omega)/this%pt(i)%x
+    A = this%xA(i, omega)/this%x(i)
 
     ! Finish
 
@@ -245,15 +249,15 @@ contains
          c_eps_S => this%coeffs(i,J_C_EPS_S), &
          kap_ad => this%coeffs(i,J_KAP_AD), &
          kap_S => this%coeffs(i,J_KAP_S), &
+         x => this%x(i), &
          alpha_gr => this%alpha_gr, &
          alpha_hf => this%alpha_hf, &
-         alpha_om => this%alpha_om, &
-         pt => this%pt(i))
+         alpha_om => this%alpha_om)
          
-      lambda = this%rt%lambda(pt, omega)
+      lambda = this%rt%lambda(i, omega)
       l_i = this%rt%l_i(omega)
     
-      omega_c = this%rt%omega_c(pt, omega)
+      omega_c = this%rt%omega_c(i, omega)
 
       ! Set up the matrix
 
@@ -296,19 +300,19 @@ contains
       xA(6,2) = V*c_eps_ad - lambda*c_rad*(alpha_hf*nabla_ad/nabla - (3._WP + dc_rad)/(c_1*alpha_om*omega_c**2))
       xA(6,3) = alpha_gr*(lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_om*omega_c**2))
       xA(6,4) = alpha_gr*(0._WP)
-      if (pt%x > 0._WP) then
+      if (x > 0._WP) then
          xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c*c_thm
       else
          xA(6,5) = -alpha_hf*HUGE(0._WP)
       endif
       xA(6,6) = -1._WP - l_i
 
-      ! Apply the variables transformation
-
-      xA = MATMUL(this%vr%G(pt, omega), MATMUL(xA, this%vr%H(pt, omega)) - &
-                                                   this%vr%dH(pt, omega))
-
     end associate
+
+    ! Apply the variables transformation
+
+    xA = MATMUL(this%vr%G(i, omega), MATMUL(xA, this%vr%H(i, omega)) - &
+                                                this%vr%dH(i, omega))
 
     ! Finish
 

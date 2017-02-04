@@ -25,7 +25,6 @@ module gyre_ad_eqns
 
   use gyre_ad_vars
   use gyre_eqns
-  use gyre_grid
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
@@ -56,8 +55,8 @@ module gyre_ad_eqns
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
      type(ad_vars_t)             :: vr
-     type(point_t), allocatable  :: pt(:)
      real(WP), allocatable       :: coeffs(:,:)
+     real(WP), allocatable       :: x(:)
      real(WP)                    :: alpha_gr
      real(WP)                    :: alpha_om
    contains
@@ -83,22 +82,21 @@ module gyre_ad_eqns
 
 contains
 
-  function ad_eqns_t_ (ml, gr, md_p, os_p) result (eq)
+  function ad_eqns_t_ (ml, pt_i, md_p, os_p) result (eq)
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
+    type(point_t), intent(in)           :: pt_i
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(ad_eqns_t)                     :: eq
 
     ! Construct the ad_eqns_t
 
-    call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
-
     eq%ml => ml
 
-    allocate(eq%rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
-    eq%vr = ad_vars_t(ml, gr, md_p, os_p)
+    allocate(eq%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
+
+    eq%vr = ad_vars_t(ml, pt_i, md_p, os_p)
 
     if (os_p%cowling_approx) then
        eq%alpha_gr = 0._WP
@@ -135,7 +133,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    this%pt = pt
+    call check_model(this%ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
 
     n_s = SIZE(pt)
 
@@ -148,6 +146,13 @@ contains
        this%coeffs(i,J_U) = this%ml%coeff(I_U, pt(i))
        this%coeffs(i,J_C_1) = this%ml%coeff(I_C_1, pt(i))
     end do
+
+    this%x = pt%x
+
+    ! Set up stencils for the rt and vr components
+
+    call this%rt%stencil(pt)
+    call this%vr%stencil(pt)
 
     ! Finish
 
@@ -166,7 +171,7 @@ contains
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(i, omega)/this%pt(i)%x
+    A = this%xA(i, omega)/this%x(i)
 
     ! Finish
 
@@ -195,13 +200,12 @@ contains
          U => this%coeffs(i,J_U), &
          c_1 => this%coeffs(i,J_C_1), &
          alpha_gr => this%alpha_gr, &
-         alpha_om => this%alpha_om, &
-         pt => this%pt(i))
+         alpha_om => this%alpha_om)
 
-      lambda = this%rt%lambda(pt, omega)
+      lambda = this%rt%lambda(i, omega)
       l_i = this%rt%l_i(omega)
 
-      omega_c = this%rt%omega_c(pt, omega)
+      omega_c = this%rt%omega_c(i, omega)
 
       ! Set up the matrix
 
@@ -225,12 +229,12 @@ contains
       xA(4,3) = alpha_gr*(lambda)
       xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
 
+    end associate
+
     ! Apply the variables transformation
 
-      xA = MATMUL(this%vr%G(pt, omega), MATMUL(xA, this%vr%H(pt, omega)) - &
-                                                   this%vr%dH(pt, omega))
-
-    end associate
+    xA = MATMUL(this%vr%G(i, omega), MATMUL(xA, this%vr%H(i, omega)) - &
+                                                this%vr%dH(i, omega))
 
     ! Finish
 

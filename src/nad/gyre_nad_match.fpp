@@ -25,7 +25,6 @@ module gyre_nad_match
 
   use gyre_diff
   use gyre_ext
-  use gyre_grid
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
@@ -39,16 +38,24 @@ module gyre_nad_match
 
   implicit none
 
+  ! Parameter definitions
+
+  integer, parameter :: J_V = 1
+  integer, parameter :: J_U = 2
+  integer, parameter :: J_NABLA_AD = 3
+
+  integer, parameter :: J_LAST = J_NABLA_AD
+
   ! Derived-type definitions
 
   type, extends (c_diff_t) :: nad_match_t
      private
      class(model_t), pointer :: ml => null()
      type(nad_vars_t)        :: vr
-     type(point_t)           :: pt_a
-     type(point_t)           :: pt_b
+     real(WP), allocatable   :: coeffs(:,:)
    contains
      private
+     procedure         :: stencil_
      procedure, public :: build
   end type nad_match_t
 
@@ -65,31 +72,26 @@ module gyre_nad_match
 
 contains
 
-  function nad_match_t_ (ml, gr, k, md_p, os_p) result (mt)
+  function nad_match_t_ (ml, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    integer, intent(in)                 :: k
+    type(point_t), intent(in)           :: pt_i
+    type(point_t), intent(in)           :: pt_a
+    type(point_t), intent(in)           :: pt_b
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(nad_match_t)                   :: mt
 
-    $ASSERT_DEBUG(k >= 1,Invalid index)
-    $ASSERT_DEBUG(k < gr%n_k,Invalid index)
-
-    $ASSERT_DEBUG(gr%pt(k+1)%s == gr%pt(k)%s+1,Mismatched segments)
-    $ASSERT_DEBUG(gr%pt(k+1)%x == gr%pt(k)%x,Mismatched abscissae)
+    $ASSERT_DEBUG(pt_a%s+1 == pt_b%s,Mismatched segments)
+    $ASSERT_DEBUG(pt_a%x == pt_b%x,Mismatched abscissae)
 
     ! Construct the nad_match_t
 
-    call check_model(ml, [I_V_2,I_U,I_NABLA_AD])
-
     mt%ml => ml
 
-    mt%vr = nad_vars_t(ml, gr, md_p, os_p)
+    mt%vr = nad_vars_t(ml, pt_i, md_p, os_p)
 
-    mt%pt_a = gr%pt(k)
-    mt%pt_b = gr%pt(k+1)
+    call mt%stencil_(pt_a, pt_b)
 
     mt%n_e = 6
 
@@ -98,7 +100,40 @@ contains
     return
 
   end function nad_match_t_
-    
+
+  !****
+
+  subroutine stencil_ (this, pt_a, pt_b)
+
+    class(nad_match_t), intent(inout) :: this
+    type(point_t), intent(in)         :: pt_a
+    type(point_t), intent(in)         :: pt_b
+
+    ! Calculate coefficients at the stencil points
+
+    call check_model(this%ml, [I_V_2,I_U,I_NABLA_AD])
+
+    allocate(this%coeffs(2,J_LAST))
+
+    this%coeffs(1,J_V) = this%ml%coeff(I_V_2, pt_a)*pt_a%x**2
+    this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_b)*pt_b%x**2
+
+    this%coeffs(1,J_U) = this%ml%coeff(I_U, pt_a)
+    this%coeffs(2,J_U) = this%ml%coeff(I_U, pt_b)
+
+    this%coeffs(1,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt_a)
+    this%coeffs(2,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt_b)
+
+    ! Set up stencil for the vr component
+
+    call this%vr%stencil([pt_a,pt_b])
+
+    ! Finish
+
+    return
+
+  end subroutine stencil_
+
   !****
 
   subroutine build (this, omega, E_l, E_r, scl)
@@ -109,13 +144,6 @@ contains
     complex(WP), intent(out)       :: E_r(:,:)
     type(c_ext_t), intent(out)     :: scl
 
-    real(WP) :: V_l
-    real(WP) :: V_r
-    real(WP) :: U_l
-    real(WP) :: U_r
-    real(WP) :: nabla_ad_l
-    real(WP) :: nabla_ad_r
-
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
     
@@ -124,117 +152,111 @@ contains
 
     ! Build the difference equations
 
-    ! Calculate coefficients
+    associate( &
+         V_l => this%coeffs(1,J_V), &
+         V_r => this%coeffs(2,J_V), &
+         U_l => this%coeffs(1,J_U), &
+         U_r => this%coeffs(2,J_U), &
+         nabla_ad_l => this%coeffs(1,J_NABLA_AD), &
+         nabla_ad_r => this%coeffs(2,J_NABLA_AD))
+         
+      ! Evaluate the match conditions (y_1, y_3, y_6 continuous, y_2,
+      ! y_4, y_5 not)
 
-    associate (pt_a => this%pt_a, &
-               pt_b => this%pt_b)
+      E_l(1,1) = -1._WP
+      E_l(1,2) = 0._WP
+      E_l(1,3) = 0._WP
+      E_l(1,4) = 0._WP
+      E_l(1,5) = 0._WP
+      E_l(1,6) = 0._WP
+    
+      E_l(2,1) = U_l
+      E_l(2,2) = -U_l
+      E_l(2,3) = 0._WP
+      E_l(2,4) = 0._WP
+      E_l(2,5) = 0._WP
+      E_l(2,6) = 0._WP
 
-      V_l = this%ml%coeff(I_V_2, pt_a)*pt_a%x**2
-      V_r = this%ml%coeff(I_V_2, pt_b)*pt_b%x**2
+      E_l(3,1) = 0._WP
+      E_l(3,2) = 0._WP
+      E_l(3,3) = -1._WP
+      E_l(3,4) = 0._WP
+      E_l(3,5) = 0._WP
+      E_l(3,6) = 0._WP
 
-      U_l = this%ml%coeff(I_U, pt_a)
-      U_r = this%ml%coeff(I_U, pt_b)
+      E_l(4,1) = -U_l
+      E_l(4,2) = 0._WP
+      E_l(4,3) = 0._WP
+      E_l(4,4) = -1._WP
+      E_l(4,5) = 0._WP
+      E_l(4,6) = 0._WP
 
-      nabla_ad_l = this%ml%coeff(I_NABLA_AD, pt_a)
-      nabla_ad_r = this%ml%coeff(I_NABLA_AD, pt_b)
+      E_l(5,1) = V_l*nabla_ad_l
+      E_l(5,2) = -V_l*nabla_ad_l
+      E_l(5,3) = 0._WP
+      E_l(5,4) = 0._WP
+      E_l(5,5) = -1._WP
+      E_l(5,6) = 0._WP
+
+      E_l(6,1) = 0._WP
+      E_l(6,2) = 0._WP
+      E_l(6,3) = 0._WP
+      E_l(6,4) = 0._WP
+      E_l(6,5) = 0._WP
+      E_l(6,6) = -1._WP
+
+      !
+
+      E_r(1,1) = 1._WP
+      E_r(1,2) = 0._WP
+      E_r(1,3) = 0._WP
+      E_r(1,4) = 0._WP
+      E_r(1,5) = 0._WP
+      E_r(1,6) = 0._WP
+
+      E_r(2,1) = -U_r
+      E_r(2,2) = U_r
+      E_r(2,3) = 0._WP
+      E_r(2,4) = 0._WP
+      E_r(2,5) = 0._WP
+      E_r(2,6) = 0._WP
+
+      E_r(3,1) = 0._WP
+      E_r(3,2) = 0._WP
+      E_r(3,3) = 1._WP
+      E_r(3,4) = 0._WP
+      E_r(3,5) = 0._WP
+      E_r(3,6) = 0._WP
+
+      E_r(4,1) = U_r
+      E_r(4,2) = 0._WP
+      E_r(4,3) = 0._WP
+      E_r(4,4) = 1._WP
+      E_r(4,5) = 0._WP
+      E_r(4,6) = 0._WP
+
+      E_r(5,1) = -V_r*nabla_ad_r
+      E_r(5,2) = V_r*nabla_ad_r
+      E_r(5,3) = 0._WP
+      E_r(5,4) = 0._WP
+      E_r(5,5) = 1._WP
+      E_r(5,6) = 0._WP
+
+      E_r(6,1) = 0._WP
+      E_r(6,2) = 0._WP
+      E_r(6,3) = 0._WP
+      E_r(6,4) = 0._WP
+      E_r(6,5) = 0._WP
+      E_r(6,6) = 1._WP
+
+      scl = c_ext_t(1._WP)
 
     end associate
 
-    ! Evaluate the match conditions (y_1, y_3, y_6 continuous, y_2,
-    ! y_4, y_5 not)
-
-    E_l(1,1) = -1._WP
-    E_l(1,2) = 0._WP
-    E_l(1,3) = 0._WP
-    E_l(1,4) = 0._WP
-    E_l(1,5) = 0._WP
-    E_l(1,6) = 0._WP
-    
-    E_l(2,1) = U_l
-    E_l(2,2) = -U_l
-    E_l(2,3) = 0._WP
-    E_l(2,4) = 0._WP
-    E_l(2,5) = 0._WP
-    E_l(2,6) = 0._WP
-
-    E_l(3,1) = 0._WP
-    E_l(3,2) = 0._WP
-    E_l(3,3) = -1._WP
-    E_l(3,4) = 0._WP
-    E_l(3,5) = 0._WP
-    E_l(3,6) = 0._WP
-
-    E_l(4,1) = -U_l
-    E_l(4,2) = 0._WP
-    E_l(4,3) = 0._WP
-    E_l(4,4) = -1._WP
-    E_l(4,5) = 0._WP
-    E_l(4,6) = 0._WP
-
-    E_l(5,1) = V_l*nabla_ad_l
-    E_l(5,2) = -V_l*nabla_ad_l
-    E_l(5,3) = 0._WP
-    E_l(5,4) = 0._WP
-    E_l(5,5) = -1._WP
-    E_l(5,6) = 0._WP
-
-    E_l(6,1) = 0._WP
-    E_l(6,2) = 0._WP
-    E_l(6,3) = 0._WP
-    E_l(6,4) = 0._WP
-    E_l(6,5) = 0._WP
-    E_l(6,6) = -1._WP
-
-    !
-
-    E_r(1,1) = 1._WP
-    E_r(1,2) = 0._WP
-    E_r(1,3) = 0._WP
-    E_r(1,4) = 0._WP
-    E_r(1,5) = 0._WP
-    E_r(1,6) = 0._WP
-
-    E_r(2,1) = -U_r
-    E_r(2,2) = U_r
-    E_r(2,3) = 0._WP
-    E_r(2,4) = 0._WP
-    E_r(2,5) = 0._WP
-    E_r(2,6) = 0._WP
-
-    E_r(3,1) = 0._WP
-    E_r(3,2) = 0._WP
-    E_r(3,3) = 1._WP
-    E_r(3,4) = 0._WP
-    E_r(3,5) = 0._WP
-    E_r(3,6) = 0._WP
-
-    E_r(4,1) = U_r
-    E_r(4,2) = 0._WP
-    E_r(4,3) = 0._WP
-    E_r(4,4) = 1._WP
-    E_r(4,5) = 0._WP
-    E_r(4,6) = 0._WP
-
-    E_r(5,1) = -V_r*nabla_ad_r
-    E_r(5,2) = V_r*nabla_ad_r
-    E_r(5,3) = 0._WP
-    E_r(5,4) = 0._WP
-    E_r(5,5) = 1._WP
-    E_r(5,6) = 0._WP
-
-    E_r(6,1) = 0._WP
-    E_r(6,2) = 0._WP
-    E_r(6,3) = 0._WP
-    E_r(6,4) = 0._WP
-    E_r(6,5) = 0._WP
-    E_r(6,6) = 1._WP
-
-    scl = c_ext_t(1._WP)
-
     ! Apply the variables transformation
 
-    E_l = MATMUL(E_l, this%vr%H(this%pt_a, omega))
-    E_r = MATMUL(E_r, this%vr%H(this%pt_b, omega))
+    E_l = MATMUL(E_l, this%vr%H(1, omega))
+    E_r = MATMUL(E_r, this%vr%H(2, omega))
 
     ! Finish
 
