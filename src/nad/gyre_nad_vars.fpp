@@ -154,12 +154,13 @@ contains
           $ASSERT(this%set /= LAGP_SET,Cannot use LAGP variables at vacuum points)
           this%coeffs(i,J_V_2) = HUGE(0._WP)
           this%coeffs(i,J_DV_2) = HUGE(0._WP)
+          this%coeffs(i,J_DU) = -HUGE(0._WP)
        else
           this%coeffs(i,J_V_2) = this%ml%coeff(I_V_2, pt(i))
           this%coeffs(i,J_DV_2) = this%ml%dcoeff(I_V_2, pt(i))
+          this%coeffs(i,J_DU) = this%ml%dcoeff(I_U, pt(i))
        endif
        this%coeffs(i,J_U) = this%ml%coeff(I_U, pt(i))
-       this%coeffs(i,J_DU) = this%ml%dcoeff(I_U, pt(i))
        this%coeffs(i,J_C_1) = this%ml%coeff(I_C_1, pt(i))
        this%coeffs(i,J_DC_1) = this%ml%dcoeff(I_C_1, pt(i))
     end do
