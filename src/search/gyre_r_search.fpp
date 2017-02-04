@@ -38,6 +38,7 @@ module gyre_r_search
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_point
   use gyre_rad_bvp
   use gyre_root
   use gyre_rot
@@ -75,6 +76,8 @@ contains
     type(scan_par_t), intent(in)        :: sc_p(:)
     real(WP), allocatable, intent(out)  :: omega(:)
 
+    type(point_t)         :: pt_i
+    type(point_t)         :: pt_o
     integer               :: n_omega
     integer               :: i
     real(WP)              :: omega_min
@@ -92,6 +95,9 @@ contains
        write(OUTPUT_UNIT, 100) 'Building frequency scan'
 100    format(A)
     endif
+
+    pt_i = gr%pt(1)
+    pt_o = gr%pt(gr%n_k)
 
     ! Loop through scan_par_t
 
@@ -112,8 +118,8 @@ contains
          
          ! Calculate the dimensionless frequency range in the inertial frame
          
-         omega_min = omega_from_freq(freq_min, ml, gr, freq_min_units, freq_frame, md_p, os_p)
-         omega_max = omega_from_freq(freq_max, ml, gr, freq_max_units, freq_frame, md_p, os_p)
+         omega_min = omega_from_freq(freq_min, ml, pt_i, pt_o, freq_min_units, freq_frame, md_p, os_p)
+         omega_max = omega_from_freq(freq_max, ml, pt_i, pt_o, freq_max_units, freq_frame, md_p, os_p)
 
          ! Check that the range is valid
 
@@ -121,8 +127,8 @@ contains
 
             ! Calculate the frequency range in the grid frame
 
-            freq_g_min = freq_from_omega(omega_min, ml, gr, 'NONE', grid_frame, md_p, os_p)
-            freq_g_max = freq_from_omega(omega_max, ml, gr, 'NONE', grid_frame, md_p, os_p)
+            freq_g_min = freq_from_omega(omega_min, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
+            freq_g_max = freq_from_omega(omega_max, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
 
             ! Set up the frequencies
 
@@ -146,7 +152,7 @@ contains
             call reallocate(omega, [n_omega+n_freq])
 
             do j = 1, n_freq
-               omega(n_omega+j) = omega_from_freq(freq_g(j), ml, gr, 'NONE', grid_frame, md_p, os_p)
+               omega(n_omega+j) = omega_from_freq(freq_g(j), ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
             end do
           
             n_omega = n_omega + n_freq
@@ -204,10 +210,11 @@ contains
     ! Check the frequency scan to ensure no zero crossings in omega_c
     ! arise
 
-    allocate(rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
+    allocate(rt, SOURCE=r_rot_t(ml, gr%pt(1), md_p, os_p))
+    call rt%stencil(gr%pt)
 
     do k = 1, gr%n_k
-       omega_c(k) = rt%omega_c(gr%pt(k), omega(1))
+       omega_c(k) = rt%omega_c(k, omega(1))
     end do
 
     $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
@@ -216,7 +223,7 @@ contains
 
        omega_c_prev = omega_c
        do k = 1, gr%n_k
-          omega_c(k) = rt%omega_c(gr%pt(k), omega(j))
+          omega_c(k) = rt%omega_c(k, omega(j))
        end do
 
        $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)

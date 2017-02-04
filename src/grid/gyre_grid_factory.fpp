@@ -119,10 +119,8 @@ contains
     type(grid_t), intent(inout)          :: gr
 
     integer       :: k_turn
-    real(WP)      :: x_turn
     integer       :: j
     integer       :: k_turn_omega
-    real(WP)      :: x_turn_omega
     real(WP)      :: dx_max
     integer       :: k
     integer       :: dn(gr%n_k-1)
@@ -132,7 +130,6 @@ contains
     ! Add points at the center of grid gr, to ensure that no cell is
     ! larger than dx_max = x_turn/n_center
 
-    x_turn = HUGE(0._WP)
     k_turn = gr%n_k
 
     if (gr_p%n_center > 0) then
@@ -142,11 +139,10 @@ contains
 
        omega_loop : do j = 1, SIZE(omega)
 
-          call find_turn(ml, gr, omega(j), md_p, os_p, k_turn_omega, x_turn_omega)
+          call find_turn(ml, gr, omega(j), md_p, os_p, k_turn_omega)
 
-          if (x_turn_omega < x_turn) then
+          if (k_turn_omega < k_turn) then
              k_turn = k_turn_omega
-             x_turn = x_turn_omega
           endif
 
        end do omega_loop
@@ -156,7 +152,7 @@ contains
        ! Add points to the cell containing the turning point, and each
        ! cell inside it, so that none is larger than dx_max
 
-       dx_max = x_turn/gr_p%n_center
+       dx_max = gr%pt(k_turn)%x/gr_p%n_center
 
        !$OMP PARALLEL DO PRIVATE (pt_a, pt_b)
        cell_loop : do k = 1, k_turn
@@ -252,7 +248,9 @@ contains
 
     if (gr_p%alpha_osc > 0._WP .OR. gr_p%alpha_exp > 0._WP) then
 
-       allocate(rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
+       allocate(rt, SOURCE=r_rot_t(ml, gr%pt(1), md_p, os_p))
+
+       call rt%stencil(gr%pt)
 
        ! At each point, determine the maximum absolute value of the
        ! real and imaginary parts of the local radial wavenumber beta,
@@ -276,9 +274,9 @@ contains
 
           omega_loop : do j = 1, SIZE(omega)
 
-             omega_c = rt%omega_c(pt, omega(j))
+             omega_c = rt%omega_c(k, omega(j))
 
-             lambda = rt%lambda(pt, omega(j))
+             lambda = rt%lambda(k, omega(j))
              l_i = rt%l_i(omega(j))
             
              ! Calculate the propagation discriminant gamma
@@ -386,7 +384,9 @@ contains
 
     if (gr_p%alpha_thm > 0._WP) then
 
-       allocate(rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
+       allocate(rt, SOURCE=r_rot_t(ml, gr%pt(1), md_p, os_p))
+
+       call rt%stencil(gr%pt)
 
        ! At each point, determine the maximum absolute value of the
        ! local thermal wavenumber beta_t, for all possible omega
@@ -409,7 +409,7 @@ contains
 
           omega_loop : do j = 1, SIZE(omega)
 
-             omega_c = rt%omega_c(pt, omega(j))
+             omega_c = rt%omega_c(k, omega(j))
 
              beta_t_max(k) = MAX(beta_t_max(k), SQRT(ABS(V*nabla*omega_c*c_thm/c_rad))/pt%x)
 

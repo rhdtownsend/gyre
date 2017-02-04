@@ -180,7 +180,9 @@ contains
 
     allocate(md%gr, SOURCE=gr)
 
-    allocate(md%rt, SOURCE=c_rot_t(ml, gr, md_p, os_p))
+    allocate(md%rt, SOURCE=c_rot_t(ml, gr%pt(1), md_p, os_p))
+
+    call md%rt%stencil(gr%pt)
 
     md%md_p = md_p
     md%os_p = os_p
@@ -246,7 +248,6 @@ contains
     real(WP) :: y_2(this%n_k)
     integer  :: k_i
     integer  :: k_o
-    real(WP) :: x_i
     integer  :: n_c
     integer  :: n_a
 
@@ -301,7 +302,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the origin)
 
-       call find_turn(this%ml, this%gr, REAL(this%omega), this%md_p, this%os_p, k_i, x_i)
+       call find_turn(this%ml, this%gr, REAL(this%omega), this%md_p, this%os_p, k_i)
 
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface
@@ -490,7 +491,7 @@ contains
     call bcast(md%os_p, root_rank)
 
     if (MPI_RANK /= root_rank) then
-       allocate(md%rt, SOURCE=c_rot_t(ml, md%gr, md%md_p, md%os_p))
+       allocate(md%rt, SOURCE=c_rot_t(ml, md%gr(1), md%md_p, md%os_p))
     endif
 
     call bcast_alloc(md%y_c, root_rank)
@@ -553,11 +554,17 @@ contains
 
     ! Calculate the frequency
 
-    if (PRESENT(freq_frame)) then
-       freq = freq_from_omega(this%omega, this%ml, this%gr, freq_units, freq_frame, this%md_p, this%os_p)
-    else
-       freq = freq_from_omega(this%omega, this%ml, this%gr, freq_units, 'INERTIAL', this%md_p, this%os_p)
-    endif
+    associate( &
+      pt_i => this%gr%pt(1), &
+      pt_o => this%gr%pt(this%n_k))
+
+      if (PRESENT(freq_frame)) then
+         freq = freq_from_omega(this%omega, this%ml, pt_i, pt_o, freq_units, freq_frame, this%md_p, this%os_p)
+      else
+         freq = freq_from_omega(this%omega, this%ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
+      endif
+
+    end associate
 
     ! Finish
     
@@ -648,7 +655,7 @@ contains
 
          c_1 = this%ml%coeff(I_C_1, pt)
 
-         omega_c = this%rt%omega_c(pt, this%omega)
+         omega_c = this%rt%omega_c(k, this%omega)
       
          if (l_i /= 1._WP) then
 
@@ -1047,11 +1054,7 @@ contains
 
     ! Evaluate the angular eigenvalue
 
-    associate (pt => this%gr%pt(k))
-
-      lambda = this%rt%lambda(pt, this%omega)
-
-    end associate
+    lambda = this%rt%lambda(k, this%omega)
 
     ! Finish
 
@@ -1266,7 +1269,7 @@ contains
       c_1 = this%ml%coeff(I_C_1, pt)
       U = this%ml%coeff(I_U, pt)
 
-      omega_c = this%rt%omega_c(pt, this%omega)
+      omega_c = this%rt%omega_c(k, this%omega)
 
       F_j_wave = -m*ABS(omega_c**2)*pt%x*U*AIMAG(CONJG(xi_r)*xi_h)/(32._WP*PI**2*c_1)
 
@@ -1314,7 +1317,7 @@ contains
       c_1 = this%ml%coeff(I_C_1, pt)
       U = this%ml%coeff(I_U, pt)
 
-      omega_c = this%rt%omega_c(pt, this%omega)
+      omega_c = this%rt%omega_c(k, this%omega)
 
       dj_dt_wave = m*U*ABS(omega_c)**2*AIMAG((lag_rho*CONJG(eul_P)/(c_1*V_2) + &
                                               eul_rho*CONJG(eul_Phi) + &
@@ -1352,7 +1355,7 @@ contains
       c_1 = this%ml%coeff(I_C_1, pt)
       U = this%ml%coeff(I_U, pt)
 
-      omega_c = this%rt%omega_c(pt, this%omega)
+      omega_c = this%rt%omega_c(k, this%omega)
 
       dj_dt_grow = -m*pt%x*U*AIMAG(omega_c)*REAL(eul_rho*CONJG(omega_c*xi_h))/(16._WP*PI**2*c_1)
 
@@ -1389,7 +1392,7 @@ contains
       U = this%ml%coeff(I_U, pt)
       c_1 = this%ml%coeff(I_C_1, pt)
 
-      omega_c = this%rt%omega_c(pt, this%omega)
+      omega_c = this%rt%omega_c(k, this%omega)
 
       dj_dt_grav = -m*U*AIMAG(eul_rho*CONJG(eul_phi))/(32._WP*PI**2*c_1)
 
@@ -1527,7 +1530,7 @@ contains
       U = this%ml%coeff(I_U, pt)
       c_1 = this%ml%coeff(I_C_1, pt)
 
-      omega_c = this%rt%omega_c(pt, this%omega)
+      omega_c = this%rt%omega_c(k, this%omega)
 
       if (pt%x /= 0._WP) then
          I_1 = pt%x**(l_i+2._WP)*(c_1*omega_c**2*U*y_1 - U*y_2 + &
@@ -1582,7 +1585,7 @@ contains
 
          lambda = REAL(this%lambda(k))
 
-         omega_c = REAL(this%rt%omega_c(pt, this%omega))
+         omega_c = REAL(this%rt%omega_c(k, this%omega))
 
          g_4 = -4._WP*V_g*c_1
          g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda

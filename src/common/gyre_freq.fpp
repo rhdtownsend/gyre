@@ -26,7 +26,6 @@ module gyre_freq
   use gyre_atmos
   use gyre_constants
   use gyre_evol_model
-  use gyre_grid
   use gyre_hom_model
   use gyre_model
   use gyre_mode_par
@@ -72,19 +71,18 @@ contains
   $local $T $1
   $local $TYPE $2
 
-  function omega_from_freq_${T}_ (freq, ml, gr, freq_units, freq_frame, md_p, os_p) result (omega)
+  function omega_from_freq_${T}_ (freq, ml, pt_i, pt_o, freq_units, freq_frame, md_p, os_p) result (omega)
 
     $TYPE(WP), intent(in)               :: freq
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
+    type(point_t), intent(in)           :: pt_i
+    type(point_t), intent(in)           :: pt_o
     character(*), intent(in)            :: freq_units
     character(*), intent(in)            :: freq_frame
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     $TYPE(WP)                           :: omega
 
-    type(point_t)                  :: pt_i
-    type(point_t)                  :: pt_o
     class(${T}_rot_t), allocatable :: rt
     $TYPE(WP)                      :: omega_l
     real(WP)                       :: omega_cutoff_lo
@@ -92,11 +90,6 @@ contains
 
     ! Calculate the dimensionless inertial-frame frequency omega from
     ! the dimensioned local-frame frequency freq
-
-    ! Determine boundary points
-
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
 
     ! Calculate the dimensionless frequency in the local frame
 
@@ -167,15 +160,17 @@ contains
 
     ! Now convert to the inertial frame
 
-    allocate(rt, SOURCE=${T}_rot_t(ml, gr, md_p, os_p))
+    allocate(rt, SOURCE=${T}_rot_t(ml, pt_i, md_p, os_p))
+
+    call rt%stencil([pt_i,pt_o])
 
     select case (freq_frame)
     case ('INERTIAL')
        omega = omega_l
     case ('COROT_I')
-       omega = rt%omega(pt_i, omega_l)
+       omega = rt%omega(1, omega_l)
     case ('COROT_O')
-       omega = rt%omega(pt_o, omega_l)
+       omega = rt%omega(2, omega_l)
     case default
        $ABORT(Invalid freq_frame)
     end select
@@ -198,19 +193,18 @@ contains
   $local $T $1
   $local $TYPE $2
 
-  function freq_from_omega_${T}_ (omega, ml, gr, freq_units, freq_frame, md_p, os_p) result (freq)
+  function freq_from_omega_${T}_ (omega, ml, pt_i, pt_o, freq_units, freq_frame, md_p, os_p) result (freq)
 
     $TYPE(WP), intent(in)               :: omega
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
+    type(point_t), intent(in)           :: pt_i
+    type(point_t), intent(in)           :: pt_o
     character(*), intent(in)            :: freq_units
     character(*), intent(in)            :: freq_frame
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     $TYPE(WP)                           :: freq
 
-    type(point_t)                  :: pt_i
-    type(point_t)                  :: pt_o
     class(${T}_rot_t), allocatable :: rt
     $TYPE(WP)                      :: omega_l
     real(WP)                       :: omega_cutoff_lo
@@ -219,22 +213,19 @@ contains
     ! Calculate the dimensioned local-frame frequency freq from the
     ! dimensionless inertial-frame frequency omega
 
-    ! Determine boundary points
-
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
-
     ! Convert from the inertial frame
 
-    allocate(rt, SOURCE=${T}_rot_t(ml, gr, md_p, os_p))
+    allocate(rt, SOURCE=${T}_rot_t(ml, pt_i, md_p, os_p))
+
+    call rt%stencil([pt_i,pt_o])
 
     select case (freq_frame)
     case ('INERTIAL')
        omega_l = omega
     case ('COROT_I')
-       omega_l = rt%omega_c(pt_i, omega)
+       omega_l = rt%omega_c(1, omega)
     case ('COROT_O')
-       omega_l = rt%omega_c(pt_o, omega)
+       omega_l = rt%omega_c(2, omega)
     case default
        $ABORT(Invalid freq_frame)
     end select
