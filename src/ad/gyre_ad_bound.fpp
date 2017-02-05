@@ -206,7 +206,6 @@ contains
 
     select case (this%type_o)
     case (ZERO_TYPE)
-       this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
     case (DZIEM_TYPE)
        this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
        this%coeffs(2,J_C_1) = this%ml%coeff(I_C_1, pt_o)
@@ -220,7 +219,7 @@ contains
        $ABORT(Invalid type_o)
     end select
 
-    this%coeffs(2, J_U) = this%ml%coeff(I_U, pt_o)
+    this%coeffs(2,J_U) = this%ml%coeff(I_U, pt_o)
 
     ! Set up stencils for the rt and vr components
 
@@ -279,7 +278,7 @@ contains
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
     associate( &
-         c_1 => this%coeffs(1,I_C_1), &
+         c_1 => this%coeffs(1,J_C_1), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 

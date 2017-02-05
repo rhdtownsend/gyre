@@ -499,7 +499,7 @@ contains
     associate( &
          V => this%coeffs(2,J_V), &
          c_1 => this%coeffs(2,J_C_1), &
-         nabla_ad => this%coeffs(2,I_NABLA_AD), &
+         nabla_ad => this%coeffs(2,J_NABLA_AD), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
