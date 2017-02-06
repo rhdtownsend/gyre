@@ -28,7 +28,7 @@ module gyre_nad_eqns
   use gyre_mode_par
   use gyre_model
   use gyre_model_util
-  use gyre_nad_vars
+  use gyre_nad_trans
   use gyre_osc_par
   use gyre_point
   use gyre_rot
@@ -68,7 +68,7 @@ module gyre_nad_eqns
      private
      class(model_t), pointer     :: ml => null()
      class(c_rot_t), allocatable :: rt
-     type(nad_vars_t)            :: vr
+     type(nad_trans_t)           :: tr
      real(WP), allocatable       :: coeffs(:,:)
      real(WP), allocatable       :: x(:)
      real(WP)                    :: alpha_gr
@@ -116,7 +116,8 @@ contains
     eq%ml => ml
 
     allocate(eq%rt, SOURCE=c_rot_t(ml, pt_i, md_p, os_p))
-    eq%vr = nad_vars_t(ml, pt_i, md_p, os_p)
+
+    eq%tr = nad_trans_t(ml, pt_i, md_p, os_p)
 
     if (os_p%cowling_approx) then
        eq%alpha_gr = 0._WP
@@ -186,10 +187,10 @@ contains
 
     this%x = pt%x
 
-    ! Set up stencils for the rt and vr components
+    ! Set up stencils for the rt and tr components
 
     call this%rt%stencil(pt)
-    call this%vr%stencil(pt)
+    call this%tr%stencil(pt)
 
     ! Finish
 
@@ -311,8 +312,7 @@ contains
 
     ! Apply the variables transformation
 
-    xA = MATMUL(this%vr%G(i, omega), MATMUL(xA, this%vr%H(i, omega)) - &
-                                                this%vr%dH(i, omega))
+    call this%tr%trans_eqns(xA, i, omega)
 
     ! Finish
 

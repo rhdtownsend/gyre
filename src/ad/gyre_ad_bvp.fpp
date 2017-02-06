@@ -25,7 +25,7 @@ module gyre_ad_bvp
 
   use gyre_ad_bound
   use gyre_ad_diff
-  use gyre_ad_vars
+  use gyre_ad_trans
   use gyre_bvp
   use gyre_ext
   use gyre_grid
@@ -48,7 +48,7 @@ module gyre_ad_bvp
   type, extends (r_bvp_t) :: ad_bvp_t
      class(model_t), pointer :: ml => null()
      type(grid_t)            :: gr
-     type(ad_vars_t)         :: vr
+     type(ad_trans_t)        :: tr
      type(mode_par_t)        :: md_p
      type(osc_par_t)         :: os_p
   end type ad_bvp_t
@@ -116,8 +116,8 @@ contains
     bp%ml => ml
     bp%gr = gr
 
-    bp%vr = ad_vars_t(ml, pt_i, md_p, os_p)
-    call bp%vr%stencil(gr%pt)
+    bp%tr = ad_trans_t(ml, pt_i, md_p, os_p)
+    call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
     bp%os_p = os_p
@@ -140,7 +140,6 @@ contains
     real(WP)      :: y(4,bp%n_k)
     type(r_ext_t) :: discrim
     integer       :: k
-    real(WP)      :: H(4,4)
     complex(WP)   :: y_c(6,bp%n_k)
 
     ! Calculate the solution vector
@@ -152,12 +151,12 @@ contains
 
     ! Convert to canonical form
 
-    !$OMP PARALLEL DO PRIVATE (H)
+    !$OMP PARALLEL DO
     do k = 1, bp%n_k
 
-       H = bp%vr%H(k, omega)
+       call bp%tr%trans_vars(y(:,k), k, omega, from=.FALSE.)
 
-       y_c(1:4,k) = MATMUL(H, y(1:4,k))
+       y_c(1:4,k) = y(:,k)
        y_c(5:6,k) = 0._WP
 
     end do

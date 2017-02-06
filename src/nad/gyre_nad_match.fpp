@@ -28,7 +28,7 @@ module gyre_nad_match
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
-  use gyre_nad_vars
+  use gyre_nad_trans
   use gyre_osc_par
   use gyre_point
 
@@ -51,7 +51,7 @@ module gyre_nad_match
   type, extends (c_diff_t) :: nad_match_t
      private
      class(model_t), pointer :: ml => null()
-     type(nad_vars_t)        :: vr
+     type(nad_trans_t)       :: tr
      real(WP), allocatable   :: coeffs(:,:)
    contains
      private
@@ -89,7 +89,7 @@ contains
 
     mt%ml => ml
 
-    mt%vr = nad_vars_t(ml, pt_i, md_p, os_p)
+    mt%tr = nad_trans_t(ml, pt_i, md_p, os_p)
 
     call mt%stencil_(pt_a, pt_b)
 
@@ -124,9 +124,9 @@ contains
     this%coeffs(1,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt_a)
     this%coeffs(2,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt_b)
 
-    ! Set up stencil for the vr component
+    ! Set up stencil for the tr component
 
-    call this%vr%stencil([pt_a,pt_b])
+    call this%tr%stencil([pt_a,pt_b])
 
     ! Finish
 
@@ -255,8 +255,8 @@ contains
 
     ! Apply the variables transformation
 
-    E_l = MATMUL(E_l, this%vr%H(1, omega))
-    E_r = MATMUL(E_r, this%vr%H(2, omega))
+    call this%tr%trans_cond(E_l, 1, omega)
+    call this%tr%trans_cond(E_r, 2, omega)
 
     ! Finish
 

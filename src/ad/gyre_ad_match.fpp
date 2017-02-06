@@ -23,7 +23,7 @@ module gyre_ad_match
 
   use core_kinds
 
-  use gyre_ad_vars
+  use gyre_ad_trans
   use gyre_diff
   use gyre_ext
   use gyre_grid
@@ -50,7 +50,7 @@ module gyre_ad_match
   type, extends (r_diff_t) :: ad_match_t
      private
      class(model_t), pointer :: ml => null()
-     type(ad_vars_t)         :: vr
+     type(ad_trans_t)        :: tr
      real(WP), allocatable   :: coeffs(:,:)
    contains
      private
@@ -88,7 +88,7 @@ contains
 
     mt%ml => ml
 
-    mt%vr = ad_vars_t(ml, pt_i, md_p, os_p)
+    mt%tr = ad_trans_t(ml, pt_i, md_p, os_p)
 
     call mt%stencil_(pt_a, pt_b)
 
@@ -117,9 +117,9 @@ contains
     this%coeffs(1,J_U) = this%ml%coeff(I_U, pt_a)
     this%coeffs(2,J_U) = this%ml%coeff(I_U, pt_b)
 
-    ! Set up stencil for the vr component
+    ! Set up stencil for the tr component
 
-    call this%vr%stencil([pt_a,pt_b])
+    call this%tr%stencil([pt_a,pt_b])
 
     ! Finish
 
@@ -202,8 +202,8 @@ contains
 
     ! Apply the variables transformation
 
-    E_l = MATMUL(E_l, this%vr%H(1, omega))
-    E_r = MATMUL(E_r, this%vr%H(2, omega))
+    call this%tr%trans_cond(E_l, 1, omega)
+    call this%tr%trans_cond(E_r, 2, omega)
 
     ! Finish
 

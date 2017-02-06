@@ -34,7 +34,7 @@ module gyre_rad_bvp
   use gyre_point
   use gyre_rad_bound
   use gyre_rad_diff
-  use gyre_rad_vars
+  use gyre_rad_trans
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -48,7 +48,7 @@ module gyre_rad_bvp
   type, extends (r_bvp_t) :: rad_bvp_t
      class(model_t), pointer :: ml => null()
      type(grid_t)            :: gr
-     type(rad_vars_t)        :: vr
+     type(rad_trans_t)       :: tr
      type(mode_par_t)        :: md_p
      type(osc_par_t)         :: os_p
   end type rad_bvp_t
@@ -120,8 +120,8 @@ contains
     bp%ml => ml
     bp%gr = gr
 
-    bp%vr = rad_vars_t(ml, pt_i, md_p, os_p)
-    call bp%vr%stencil(gr%pt)
+    bp%tr = rad_trans_t(ml, pt_i, md_p, os_p)
+    call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
     bp%os_p = os_p
@@ -144,7 +144,6 @@ contains
     real(WP)      :: y(2,bp%n_k)
     type(r_ext_t) :: discrim
     integer       :: k
-    real(WP)      :: H(2,2)
     complex(WP)   :: y_c(6,bp%n_k)
     real(WP)      :: U
 
@@ -157,18 +156,18 @@ contains
 
     ! Convert to canonical form
 
-    !$OMP PARALLEL DO PRIVATE (H, U)
+    !$OMP PARALLEL DO PRIVATE (U)
     do k = 1, bp%n_k
 
        associate (pt => bp%gr%pt(k))
          U = bp%ml%coeff(I_U, pt)
        end associate
 
-       H = bp%vr%H(k, omega)
+       call bp%tr%trans_vars(y(:,k), k, omega, from=.FALSE.)
 
-       y_c(1:2,k) = MATMUL(H, y(1:2,k))
+       y_c(1:2,k) = y(:,k)
        y_c(3,k) = 0._WP
-       y_c(4,k) = -U*y_c(1,k)
+       y_c(4,k) = -U*y(1,k)
        y_c(5:6,k) = 0._WP
        
     end do

@@ -25,7 +25,7 @@ module gyre_nad_bvp
 
   use gyre_nad_bound
   use gyre_nad_diff
-  use gyre_nad_vars
+  use gyre_nad_trans
   use gyre_bvp
   use gyre_ext
   use gyre_grid
@@ -50,7 +50,7 @@ module gyre_nad_bvp
      type(grid_t)            :: gr
      type(mode_par_t)        :: md_p
      type(osc_par_t)         :: os_p
-     type(nad_vars_t)        :: vr
+     type(nad_trans_t)       :: tr
   end type nad_bvp_t
 
   ! Interfaces
@@ -116,8 +116,8 @@ contains
     bp%ml => ml
     bp%gr = gr
 
-    bp%vr = nad_vars_t(ml, pt_i, md_p, os_p)
-    call bp%vr%stencil(gr%pt)
+    bp%tr = nad_trans_t(ml, pt_i, md_p, os_p)
+    call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
     bp%os_p = os_p
@@ -140,7 +140,6 @@ contains
     complex(WP)   :: y(6,bp%n_k)
     type(c_ext_t) :: discrim
     integer       :: k
-    complex(WP)   :: H(6,6)
     complex(WP)   :: y_c(6,bp%n_k)
 
     ! Calculate the solution vector
@@ -152,12 +151,12 @@ contains
 
     ! Convert to canonical form
 
-    !$OMP PARALLEL DO PRIVATE (H)
+    !$OMP PARALLEL DO
     do k = 1, bp%n_k
 
-       H = bp%vr%H(k, omega)
+       call bp%tr%trans_vars(y(:,k), k, omega)
 
-       y_c(:,k) = MATMUL(H, y(:,k))
+       y_c(:,k) = y(:,k)
 
     end do
 

@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_rad_vars
+module gyre_rad_trans
 
   ! Uses
 
@@ -55,83 +55,89 @@ module gyre_rad_vars
 
   ! Derived-type definitions
 
-  type :: rad_vars_t
+  type :: rad_trans_t
      private
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
      real(WP), allocatable       :: coeffs(:,:)
      integer                     :: set
+     integer                     :: n_e
    contains
      private
      procedure, public :: stencil
-     procedure, public :: G
+     procedure, public :: trans_eqns
+     procedure, public :: trans_cond
+     procedure, public :: trans_vars
+     procedure         :: G_
      procedure         :: G_jcd_
      procedure         :: G_lagp_
-     procedure, public :: H
+     procedure         :: H_
      procedure         :: H_jcd_
      procedure         :: H_lagp_
-     procedure, public :: dH
+     procedure         :: dH_
      procedure         :: dH_jcd_
      procedure         :: dH_lagp_
-  end type rad_vars_t
+  end type rad_trans_t
 
   ! Interfaces
 
-  interface rad_vars_t
-     module procedure rad_vars_t_
-  end interface rad_vars_t
+  interface rad_trans_t
+     module procedure rad_trans_t_
+  end interface rad_trans_t
 
   ! Access specifiers
 
   private
 
-  public :: rad_vars_t
+  public :: rad_trans_t
 
   ! Procedures
 
 contains
 
-  function rad_vars_t_ (ml, pt_i, md_p, os_p) result (vr)
+  function rad_trans_t_ (ml, pt_i, md_p, os_p) result (tr)
 
     class(model_t), pointer, intent(in) :: ml
     type(point_t), intent(in)           :: pt_i
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
-    type(rad_vars_t)                    :: vr
+    type(rad_trans_t)                   :: tr
 
-    ! Construct the rad_vars_t
+    ! Construct the rad_trans_t
 
-    vr%ml => ml
+    tr%ml => ml
 
-    allocate(vr%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
+    allocate(tr%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
 
     select case (os_p%variables_set)
     case ('GYRE')
-       vr%set = GYRE_SET
+       tr%set = GYRE_SET
     case ('DZIEM')
-       vr%set = DZIEM_SET
+       tr%set = DZIEM_SET
     case ('JCD')
-       vr%set = JCD_SET
+       tr%set = JCD_SET
     case ('MIX')
-       vr%set = MIX_SET
+       tr%set = MIX_SET
     case ('LAGP')
-       vr%set = LAGP_SET
+       tr%set = LAGP_SET
     case default
        $ABORT(Invalid variables_set)
     end select
+
+    tr%n_e = 2
 
     ! Finish
 
     return
 
-  end function rad_vars_t_
+  end function rad_trans_t_
 
   !****
 
   subroutine stencil (this, pt)
 
-    class(rad_vars_t), intent(inout) :: this
-    type(point_t), intent(in)        :: pt(:)
+    class(rad_trans_t), intent(inout) :: this
+    type(point_t), intent(in)         :: pt(:)
 
     integer :: n_s
     integer :: i
@@ -170,25 +176,180 @@ contains
 
   !****
 
-  function G (this, i, omega)
+  subroutine trans_eqns (this, xA, i, omega, from)
 
-    class(rad_vars_t), intent(in) :: this
-    integer, intent(in)           :: i
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: G(2,2)
+    class(rad_trans_t), intent(in) :: this
+    real(WP), intent(inout)        :: xA(:,:)
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    logical, intent(in), optional  :: from
+
+    logical  :: from_
+    real(WP) :: G(this%n_e,this%n_e)
+    real(WP) :: H(this%n_e,this%n_e)
+    real(WP) :: dH(this%n_e,this%n_e)
+
+    $CHECK_BOUNDS(SIZE(xA, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(xA, 2),this%n_e)
+
+    if (PRESENT(from)) then
+       from_ = from
+    else
+       from_ = .TRUE.
+    endif
+
+    ! Transform equations to/from GYRE's canonical form
+
+    if (from_) then
+
+       ! Convert from
+
+       if (this%set /= GYRE_SET .AND. &
+           this%set /= DZIEM_SET .AND. &
+           this%set /= MIX_SET) then
+          G = this%G_(i, omega)
+          H = this%H_(i, omega)
+          dH = this%dH_(i, omega)
+          xA = MATMUL(G, MATMUL(xA, H) - dH)
+       endif
+
+    else
+
+       ! Convert to
+
+       $ABORT(Not currently supported)
+
+    end if
+
+    ! Finish
+
+    return
+
+  end subroutine trans_eqns
+  
+  !****
+
+  subroutine trans_cond (this, C, i, omega, from)
+
+    class(rad_trans_t), intent(in) :: this
+    real(WP), intent(inout)        :: C(:,:)
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    logical, intent(in), optional  :: from
+
+    logical  :: from_
+    real(WP) :: G(this%n_e,this%n_e)
+    real(WP) :: H(this%n_e,this%n_e)
+
+    $CHECK_BOUNDS(SIZE(C, 2),this%n_e)
+
+    if (PRESENT(from)) then
+       from_ = from
+    else
+       from_ = .TRUE.
+    endif
+
+    ! Transform boundary/match conditions to/from GYRE's canonical form
+
+    if (from_) then
+
+       ! Convert from
+
+       if (this%set /= GYRE_SET .AND. &
+           this%set /= DZIEM_SET .AND. &
+           this%set /= MIX_SET) then
+          H = this%H_(i, omega)
+          C = MATMUL(C, H)
+       endif
+
+    else
+
+       ! Convert to
+
+       if (this%set /= GYRE_SET .AND. &
+           this%set /= DZIEM_SET .AND. &
+           this%set /= MIX_SET) then
+          G = this%G_(i, omega)
+          C = MATMUL(C, G)
+       endif
+
+    end if
+
+    ! Finish
+
+    return
+
+  end subroutine trans_cond
+
+  !****
+
+  subroutine trans_vars (this, y, i, omega, from)
+
+    class(rad_trans_t), intent(in) :: this
+    real(WP), intent(inout)        :: y(:)
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    logical, intent(in), optional  :: from
+
+    logical  :: from_
+    real(WP) :: G(this%n_e,this%n_e)
+    real(WP) :: H(this%n_e,this%n_e)
+
+    $CHECK_BOUNDS(SIZE(y),this%n_e)
+
+    if (PRESENT(from)) then
+       from_ = from
+    else
+       from_ = .TRUE.
+    endif
+
+    ! Convert variables to/from GYRE's canonical form
+
+    if (from_) then
+
+       ! Convert from
+
+       if (this%set /= GYRE_SET .AND. &
+           this%set /= DZIEM_SET .AND. &
+           this%set /= MIX_SET) then
+          G = this%G_(i, omega)
+          y = MATMUL(G, y)
+       endif
+
+    else
+
+       ! Convert to
+
+       if (this%set /= GYRE_SET .AND. &
+           this%set /= DZIEM_SET .AND. &
+           this%set /= MIX_SET) then
+          H = this%H_(i, omega)
+          y = MATMUL(H, y)
+       endif
+
+    end if
+
+    ! Finish
+
+    return
+
+  end subroutine trans_vars
+
+  !****
+
+  function G_ (this, i, omega) result (G)
+
+    class(rad_trans_t), intent(in) :: this
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: G(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert variables from
-    ! the canonical form
+    ! GYRE's canonical form
 
     select case (this%set)
-    case (GYRE_SET)
-       G = identity_matrix(2)
-    case (DZIEM_SET)
-       G = identity_matrix(2)
     case (JCD_SET)
        G = this%G_jcd_(i, omega)
-    case (MIX_SET)
-       G = identity_matrix(2)
     case (LAGP_SET)
        G = this%G_lagp_(i, omega)
     case default
@@ -199,21 +360,21 @@ contains
 
     return
     
-  end function G
+  end function G_
   
   !****
 
   function G_jcd_ (this, i, omega) result (G)
 
-    class(rad_vars_t), intent(in) :: this
-    integer, intent(in)           :: i
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: G(2,2)
+    class(rad_trans_t), intent(in) :: this
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: G(this%n_e,this%n_e)
 
     real(WP) :: omega_c
 
     ! Evaluate the transformation matrix to convert JCD variables
-    ! from the canonical form
+    ! from GYRE's canonical form
 
     associate( &
          c_1 => this%coeffs(i,J_C_1))
@@ -240,13 +401,13 @@ contains
 
   function G_lagp_ (this, i, omega) result (G)
 
-    class(rad_vars_t), intent(in) :: this
-    integer, intent(in)           :: i
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: G(2,2)
+    class(rad_trans_t), intent(in) :: this
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: G(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert LAGP variables
-    ! from the canonical form
+    ! from GYRE's canonical form
 
     associate( &
          V_2 => this%coeffs(i,J_V_2))
@@ -269,25 +430,19 @@ contains
 
   !****
 
-  function H (this, i, omega)
+  function H_ (this, i, omega) result (H)
 
-    class(rad_vars_t), intent(in) :: this
-    integer, intent(in)           :: i
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: H(2,2)
+    class(rad_trans_t), intent(in) :: this
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: H(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert variables to
     ! canonical form
 
     select case (this%set)
-    case (GYRE_SET)
-       H = identity_matrix(2)
-    case (DZIEM_SET)
-       H = identity_matrix(2)
     case (JCD_SET)
        H = this%H_jcd_(i, omega)
-    case (MIX_SET)
-       H = identity_matrix(2)
     case (LAGP_SET)
        H = this%H_lagp_(i, omega)
     case default
@@ -298,21 +453,21 @@ contains
 
     return
 
-  end function H
+  end function H_
 
   !****
 
   function H_jcd_ (this, i, omega) result (H)
 
-    class(rad_vars_t), intent(in) :: this
-    integer, intent(in)           :: i
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: H(2,2)
+    class(rad_trans_t), intent(in) :: this
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: H(this%n_e,this%n_e)
 
     real(WP) :: omega_c
 
     ! Evaluate the transformation matrix to convert JCD variables
-    ! to the canonical form
+    ! to GYRE's canonical form
 
     associate( &
          c_1 => this%coeffs(i,J_C_1))
@@ -339,13 +494,13 @@ contains
 
   function H_lagp_ (this, i, omega) result (H)
 
-    class(rad_vars_t), intent(in) :: this
-    integer, intent(in)           :: i
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: H(2,2)
+    class(rad_trans_t), intent(in) :: this
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: H(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert LAGP variables
-    ! to the canonical form
+    ! to GYRE's canonical form
 
     associate( &
          V_2 => this%coeffs(i,J_V_2))
@@ -368,24 +523,18 @@ contains
 
   !****
 
-  function dH (this, i, omega)
+  function dH_ (this, i, omega) result (dH)
 
-    class(rad_vars_t), intent(in) :: this
-    integer, intent(in)           :: i
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: dH(2,2)
+    class(rad_trans_t), intent(in) :: this
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: dH(this%n_e,this%n_e)
 
     ! Evaluate the derivative x dH/dx of the transformation matrix H
 
     select case (this%set)
-    case (GYRE_SET)
-       dH = 0._WP
-    case (DZIEM_SET)
-       dH = 0._WP
     case (JCD_SET)
        dH = this%dH_jcd_(i, omega)
-    case (MIX_SET)
-       dH = 0._WP
     case (LAGP_SET)
        dH = this%dH_lagp_(i, omega)
     case default
@@ -396,16 +545,16 @@ contains
 
     return
 
-  end function dH
+  end function dH_
 
   !****
 
   function dH_jcd_ (this, i, omega) result (dH)
 
-    class(rad_vars_t), intent(in) :: this
-    integer, intent(in)           :: i
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: dH(2,2)
+    class(rad_trans_t), intent(in) :: this
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: dH(this%n_e,this%n_e)
 
     real(WP) :: omega_c
 
@@ -439,10 +588,10 @@ contains
 
   function dH_lagp_ (this, i, omega) result (dH)
 
-    class(rad_vars_t), intent(in) :: this
-    integer, intent(in)           :: i
-    real(WP), intent(in)          :: omega
-    real(WP)                      :: dH(2,2)
+    class(rad_trans_t), intent(in) :: this
+    integer, intent(in)            :: i
+    real(WP), intent(in)           :: omega
+    real(WP)                       :: dH(this%n_e,this%n_e)
 
     ! Evaluate the derivative x dH/dx of the LAGP-variables
     ! transformation matrix H
@@ -467,4 +616,4 @@ contains
 
   end function dH_lagp_
   
-end module gyre_rad_vars
+end module gyre_rad_trans

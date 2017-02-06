@@ -29,7 +29,7 @@ module gyre_rad_eqns
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
-  use gyre_rad_vars
+  use gyre_rad_trans
   use gyre_rot
   use gyre_rot_factory
 
@@ -54,7 +54,7 @@ module gyre_rad_eqns
      private
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
-     type(rad_vars_t)            :: vr
+     type(rad_trans_t)           :: tr
      real(WP), allocatable       :: coeffs(:,:)
      real(WP), allocatable       :: x(:)
      real(WP)                    :: alpha_om
@@ -95,7 +95,7 @@ contains
 
     allocate(eq%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
 
-    eq%vr = rad_vars_t(ml, pt_i, md_p, os_p)
+    eq%tr = rad_trans_t(ml, pt_i, md_p, os_p)
 
     select case (os_p%time_factor)
     case ('OSC')
@@ -142,10 +142,10 @@ contains
 
     this%x = pt%x
 
-    ! Set up stencils for the rt and vr components
+    ! Set up stencils for the rt and tr components
 
     call this%rt%stencil(pt)
-    call this%vr%stencil(pt)
+    call this%tr%stencil(pt)
 
     ! Finish
 
@@ -206,8 +206,7 @@ contains
 
     ! Apply the variables transformation
 
-    xA = MATMUL(this%vr%G(i, omega), MATMUL(xA, this%vr%H(i, omega)) - &
-                                                this%vr%dH(i, omega))
+    call this%tr%trans_eqns(xA, i, omega)
 
     ! Finish
 

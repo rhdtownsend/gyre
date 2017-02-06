@@ -30,7 +30,7 @@ module gyre_rad_bound
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
-  use gyre_rad_vars
+  use gyre_rad_trans
   use gyre_rot
   use gyre_rot_factory
 
@@ -62,7 +62,7 @@ module gyre_rad_bound
      private
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
-     type(rad_vars_t)            :: vr
+     type(rad_trans_t)           :: tr
      real(WP), allocatable       :: coeffs(:,:)
      real(WP)                    :: alpha_om
      integer                     :: type_i
@@ -111,7 +111,7 @@ contains
     
     allocate(bd%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
 
-    bd%vr = rad_vars_t(ml, pt_i, md_p, os_p)
+    bd%tr = rad_trans_t(ml, pt_i, md_p, os_p)
 
     select case (os_p%inner_bound)
     case ('REGULAR')
@@ -214,10 +214,10 @@ contains
 
     this%coeffs(2, J_U) = this%ml%coeff(I_U, pt_o)
 
-    ! Set up stencils for the rt and vr components
+    ! Set up stencils for the rt and tr components
 
     call this%rt%stencil([pt_i,pt_o])
-    call this%vr%stencil([pt_i,pt_o])
+    call this%tr%stencil([pt_i,pt_o])
 
     ! Finish
 
@@ -291,7 +291,7 @@ contains
 
     ! Apply the variables transformation
 
-    B = MATMUL(B, this%vr%H(1, omega))
+    call this%tr%trans_cond(B, 1, omega)
 
     ! Finish
 
@@ -324,7 +324,7 @@ contains
       
     ! Apply the variables transformation
 
-    B = MATMUL(B, this%vr%H(1, omega))
+    call this%tr%trans_cond(B, 1, omega)
 
     ! Finish
 
@@ -392,7 +392,7 @@ contains
     
     ! Apply the variables transformation
 
-    B = MATMUL(B, this%vr%H(2, omega))
+    call this%tr%trans_cond(B, 2, omega)
 
     ! Finish
 
@@ -436,7 +436,7 @@ contains
 
     ! Apply the variables transformation
 
-    B = MATMUL(B, this%vr%H(2, omega))
+    call this%tr%trans_cond(B, 2, omega)
 
     ! Finish
 
@@ -488,7 +488,7 @@ contains
 
     ! Apply the variables transformation
 
-    B = MATMUL(B, this%vr%H(2, omega))
+    call this%tr%trans_cond(B, 2, omega)
 
     ! Finish
 
@@ -542,7 +542,7 @@ contains
 
     ! Apply the variables transformation
 
-    B = MATMUL(B, this%vr%H(2, omega))
+    call this%tr%trans_cond(B, 2, omega)
 
     ! Finish
 
