@@ -119,8 +119,10 @@ contains
     type(grid_t), intent(inout)          :: gr
 
     integer       :: k_turn
+    real(WP)      :: x_turn
     integer       :: j
     integer       :: k_turn_omega
+    real(WP)      :: x_turn_omega
     real(WP)      :: dx_max
     integer       :: k
     integer       :: dn(gr%n_k-1)
@@ -131,6 +133,7 @@ contains
     ! larger than dx_max = x_turn/n_center
 
     k_turn = gr%n_k
+    x_turn = HUGE(0._WP)
 
     if (gr_p%n_center > 0) then
 
@@ -139,10 +142,11 @@ contains
 
        omega_loop : do j = 1, SIZE(omega)
 
-          call find_turn(ml, gr, omega(j), md_p, os_p, k_turn_omega)
+          call find_turn(ml, gr, omega(j), md_p, os_p, k_turn_omega, x_turn_omega)
 
           if (k_turn_omega < k_turn) then
              k_turn = k_turn_omega
+             x_turn = x_turn_omega
           endif
 
        end do omega_loop
