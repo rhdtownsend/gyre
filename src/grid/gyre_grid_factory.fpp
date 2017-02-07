@@ -156,7 +156,7 @@ contains
        ! Add points to the cell containing the turning point, and each
        ! cell inside it, so that none is larger than dx_max
 
-       dx_max = gr%pt(k_turn)%x/gr_p%n_center
+       dx_max = x_turn/gr_p%n_center
 
        !$OMP PARALLEL DO PRIVATE (pt_a, pt_b)
        cell_loop : do k = 1, k_turn
