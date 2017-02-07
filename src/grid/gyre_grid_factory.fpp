@@ -60,6 +60,8 @@ contains
 
   function grid_t_model_ (ml, omega, gr_p, md_p, os_p) result (gr)
 
+    use omp_lib
+
     class(model_t), pointer, intent(in) :: ml
     real(WP), intent(in)                :: omega(:)
     type(grid_par_t), intent(in)        :: gr_p
@@ -67,15 +69,26 @@ contains
     type(osc_par_t), intent(in)         :: os_p
     type(grid_t)                        :: gr
 
+    integer  :: j
+    integer  :: k_turn(SIZE(omega))
+    real(WP) :: x_turn(SIZE(omega))
+
     ! Construct the grid_t using the supplied model grid as the base
 
     ! Create the scaffold grid
 
     gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
 
+    ! Determine the turning point at each frequency
+
+    !$OMP PARALLEL DO
+    omega_loop : do j = 1, SIZE(omega)
+       call find_turn(ml, gr, omega(j), md_p, os_p, k_turn(j), x_turn(j))
+    end do omega_loop
+
     ! Add points at the center
 
-    call add_center_(ml, omega, gr_p, md_p, os_p, gr)
+    call add_center_(k_turn, x_turn, gr_p, gr)
 
     ! Add points globally
 
@@ -109,66 +122,43 @@ contains
 
   !****
 
-  subroutine add_center_ (ml, omega, gr_p, md_p, os_p, gr)
+  subroutine add_center_ (k_turn, x_turn, gr_p, gr)
 
-    class(model_t), pointer, intent(in)  :: ml
-    real(WP), intent(in)                 :: omega(:)
-    type(grid_par_t), intent(in)         :: gr_p
-    type(mode_par_t), intent(in)         :: md_p
-    type(osc_par_t), intent(in)          :: os_p
-    type(grid_t), intent(inout)          :: gr
+    integer, intent(in)          :: k_turn(:)
+    real(WP), intent(in)         :: x_turn(:)
+    type(grid_par_t), intent(in) :: gr_p
+    type(grid_t), intent(inout)  :: gr
 
-    integer       :: k_turn
-    real(WP)      :: x_turn
-    integer       :: j
-    integer       :: k_turn_omega
-    real(WP)      :: x_turn_omega
-    real(WP)      :: dx_max
-    integer       :: k
-    integer       :: dn(gr%n_k-1)
-    type(point_t) :: pt_a
-    type(point_t) :: pt_b
+    real(WP) :: dx
+    integer  :: k_max
+    integer  :: k
+    integer  :: dn(gr%n_k-1)
+
+    $CHECK_BOUNDS(SIZE(x_turn),SIZE(k_turn))
 
     ! Add points at the center of grid gr, to ensure that no cell is
-    ! larger than dx_max = x_turn/n_center
-
-    k_turn = gr%n_k
-    x_turn = HUGE(0._WP)
+    ! larger than dx = MIN(x_turn)/n_center
 
     if (gr_p%n_center > 0) then
 
-       ! First, determine the inner turning point (over all
-       ! frequencies) closest to the center
+       dx = MINVAL(x_turn)/gr_p%n_center
 
-       omega_loop : do j = 1, SIZE(omega)
+       k_max = MIN(MAXVAL(k_turn), gr%n_k-1)
 
-          call find_turn(ml, gr, omega(j), md_p, os_p, k_turn_omega, x_turn_omega)
+       !$OMP PARALLEL DO
+       cell_loop : do k = 1, k_max
 
-          if (k_turn_omega < k_turn) then
-             k_turn = k_turn_omega
-             x_turn = x_turn_omega
-          endif
+          associate( &
+               x_a => gr%pt(k)%x, &
+               x_b => gr%pt(k+1)%x)
 
-       end do omega_loop
+            dn(k) = FLOOR((x_b - x_a)/dx)
 
-       k_turn = MIN(k_turn, gr%n_k-1)
-
-       ! Add points to the cell containing the turning point, and each
-       ! cell inside it, so that none is larger than dx_max
-
-       dx_max = x_turn/gr_p%n_center
-
-       !$OMP PARALLEL DO PRIVATE (pt_a, pt_b)
-       cell_loop : do k = 1, k_turn
-
-          pt_a = gr%pt(k)
-          pt_b = gr%pt(k+1)
-          
-          dn(k) = FLOOR((pt_b%x - pt_a%x)/dx_max)
+          end associate
 
        end do cell_loop
 
-       dn(k_turn+1:) = 0
+       dn(k_max+1:) = 0
 
        gr = grid_t(gr, dn)
 
