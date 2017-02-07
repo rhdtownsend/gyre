@@ -37,8 +37,8 @@ module gyre_tar
 
   ! Module variables
 
-  type(tar_fit_t), save :: tf_m
-  logical, save         :: loaded_m = .FALSE.
+  type(tar_fit_t), save, volatile :: tf_m
+  logical, save, volatile         :: loaded_m = .FALSE.
 
   ! Interfaces
 
@@ -57,45 +57,6 @@ module gyre_tar
 
 contains
 
-  subroutine load_fit_ (l, m, rossby)
-
-    integer, intent(in) :: l
-    integer, intent(in) :: m
-    logical, intent(in) :: rossby
-
-    integer                 :: k
-    character(FILENAME_LEN) :: filename
-    type(hgroup_t)          :: hg
-
-    ! Load the appropriate tar_fit_t from the data directory
-
-    if (rossby) then
-       k = -(l - ABS(m) + 1)
-    else
-       k = l - ABS(m)
-    endif
-
-    if (loaded_m) then
-       if (tf_m%m == m .AND. tf_m%k == k) return
-    endif
-
-    write(filename, 100) m, k
-100 format(SP,'tar_fit.m',I0,'.k',I0,'.h5')
-
-    hg = hgroup_t(TRIM(GYRE_DIR)//'/data/tar/'//TRIM(filename), OPEN_FILE)
-    call read(hg, tf_m)
-    call hg%final()
-
-    loaded_m = .TRUE.
-
-    ! Finish
-
-    return
-
-  end subroutine load_fit_
-
-  !****
-
   $define $TAR_LAMBDA $sub
 
   $local $SUFFIX $1
@@ -109,15 +70,81 @@ contains
     logical, intent(in)  :: rossby
     $TYPE(WP)            :: lambda
 
+    integer                 :: k
+    character(FILENAME_LEN) :: filename
+    type(hgroup_t)          :: hg
+    
     ! Evaluate the eigenvalue of Laplace's tidal equation
 
-    call load_fit_(l, m, rossby)
+    ! Set up k
+
+    if (rossby) then
+       k = -(l - ABS(m) + 1)
+    else
+       k = l - ABS(m)
+    endif
+
+    ! If necessary, load the appropriate tf_m from the data directory.
+    ! Use a double-checked locking pattern (DCLP) to avoid the overhead
+    ! of the CRITICAL section (although see 'C++ and the Perils of
+    ! Double-Checked Locking', Meyers & Alexandrescu 2004; I think the
+    ! use of volatile in the declarations of tf_m and locked_m should
+    ! make things work)
+
+    if (must_load_(k, m)) then
+
+       !$OMP CRITICAL
+
+       if (must_load_(k, m)) then
+
+          write(filename, 100) m, k
+100       format(SP,'tar_fit.m',I0,'.k',I0,'.h5')
+
+          hg = hgroup_t(TRIM(GYRE_DIR)//'/data/tar/'//TRIM(filename), OPEN_FILE)
+          call read(hg, tf_m)
+          call hg%final()
+       
+          loaded_m = .TRUE.
+
+       endif
+
+       !$OMP END CRITICAL
+
+    endif
+
+    ! The following assertion will fail if this routine is called
+    ! inside a parallel section with each thread having a different l,
+    ! m, or rossby
+
+    $ASSERT_DEBUG(tf_m%k == k .AND. tf_m%m == m,tar_fit has wrong parameters)
 
     lambda = tf_m%lambda(nu)
 
     ! Finish
 
     return
+
+  contains
+
+    function must_load_ (k, m) result (must_load)
+
+      integer, intent(in) :: k
+      integer, intent(in) :: m
+      logical             :: must_load
+
+      ! Decide whether tf_m must be loaded
+
+      if (loaded_m) then
+         must_load = tf_m%k /= k .OR. tf_m%m /= m
+      else
+         must_load = .TRUE.
+      end if
+
+      ! Finish
+
+      return
+
+    end function must_load_
 
   end function tar_lambda_${SUFFIX}_
 
