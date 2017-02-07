@@ -248,6 +248,7 @@ contains
     real(WP) :: y_2(this%n_k)
     integer  :: k_i
     integer  :: k_o
+    real(WP) :: x_i
     integer  :: n_c
     integer  :: n_a
 
@@ -302,7 +303,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the origin)
 
-       call find_turn(this%ml, this%gr, REAL(this%omega), this%md_p, this%os_p, k_i)
+       call find_turn(this%ml, this%gr, REAL(this%omega), this%md_p, this%os_p, k_i, x_i)
 
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface
