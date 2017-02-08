@@ -128,8 +128,6 @@ contains
     ml%s_i = ml%gr%s_i()
     ml%s_o = ml%gr%s_o()
 
-    print *,'Set s_i,s_o:',ml%s_i,ml%s_o
-
     allocate(ml%in(I_LAST,ml%s_i:ml%s_o))
 
     allocate(ml%in_def(I_LAST))
