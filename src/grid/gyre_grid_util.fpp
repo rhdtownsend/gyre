@@ -166,6 +166,7 @@ contains
     real(WP) :: As
     real(WP) :: U
     real(WP) :: c_1
+    real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: g_4
     real(WP) :: g_2
@@ -186,13 +187,16 @@ contains
        c_1 = ml%coeff(I_C_1, pt)
 
        call rt%stencil([pt])
+
+       omega_c = rt%omega_c(1, omega)
+
        lambda = rt%lambda(1, omega)
 
        g_4 = -4._WP*V_g*c_1
        g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
        g_0 = -4._WP*lambda*As/c_1
 
-       gamma = (g_4*omega**4 + g_2*omega**2 + g_0)/omega**2
+       gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
 
     endif
 

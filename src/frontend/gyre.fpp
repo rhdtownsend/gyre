@@ -76,9 +76,6 @@ program gyre
   real(WP), allocatable         :: omega(:)
   real(WP)                      :: omega_min
   real(WP)                      :: omega_max
-  integer                       :: s
-  integer                       :: k_i
-  integer                       :: k_o
   class(r_bvp_t), allocatable   :: bp_ad
   class(c_bvp_t), allocatable   :: bp_nad
   integer                       :: n_md_ad
@@ -200,24 +197,7 @@ program gyre
 
      ! Create the full grid
 
-     if (check_log_level('INFO')) then
-        write(OUTPUT_UNIT, 100) 'Building x grid'
-     endif
-
      gr = grid_t(ml, omega, gr_p_sel, md_p(i), os_p_sel)
-
-     if (check_log_level('INFO')) then
-
-        seg_loop : do s = gr%s_i(), gr%s_o()
-           k_i = gr%k_i(s)
-           k_o = gr%k_o(s)
-           write(OUTPUT_UNIT, 140) 'segment', s, ':', k_o-k_i+1, 'points, x range', gr%pt(k_i)%x, '->', gr%pt(k_o)%x
-140        format(3X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
-        end do seg_loop
-
-        write(OUTPUT_UNIT, *)
-        
-     end if
 
      ! Find adiabatic modes
 

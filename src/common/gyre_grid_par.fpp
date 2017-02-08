@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_par
 ! Purpose  : grid parameters
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -36,7 +36,9 @@ module gyre_grid_par
      real(WP)        :: alpha_exp
      real(WP)        :: alpha_thm
      real(WP)        :: alpha_str
-     integer         :: n_center
+     real(WP)        :: dx_min
+     integer         :: n_inner
+     integer         :: n_iter_max
      character(2048) :: tag_list
   end type grid_par_t
 
@@ -56,19 +58,21 @@ contains
     integer, intent(in)                        :: unit
     type(grid_par_t), allocatable, intent(out) :: gr_p(:)
 
-    integer                        :: n_gr_p
-    integer                        :: i
-    real(WP)                       :: x_i
-    real(WP)                       :: x_o
-    real(WP)                       :: alpha_osc
-    real(WP)                       :: alpha_exp
-    real(WP)                       :: alpha_thm
-    real(WP)                       :: alpha_str
-    integer                        :: n_center
-    character(LEN(gr_p%tag_list))  :: tag_list
+    integer                       :: n_gr_p
+    integer                       :: i
+    real(WP)                      :: x_i
+    real(WP)                      :: x_o
+    real(WP)                      :: alpha_osc
+    real(WP)                      :: alpha_exp
+    real(WP)                      :: alpha_thm
+    real(WP)                      :: alpha_str
+    real(WP)                      :: dx_min
+    integer                       :: n_inner
+    integer                       :: n_iter_max
+    character(LEN(gr_p%tag_list)) :: tag_list
 
     namelist /grid/ x_i, x_o, alpha_osc, alpha_exp, alpha_thm, alpha_str, &
-                    n_center, tag_list
+                    dx_min, n_inner, n_iter_max, tag_list
 
     ! Count the number of grid namelists
 
@@ -99,7 +103,10 @@ contains
        alpha_thm = 0._WP
        alpha_str = 0._WP
 
-       n_center = 0
+       dx_min = SQRT(EPSILON(0._WP))
+
+       n_inner = 0
+       n_iter_max = 8
 
        tag_list = ''
 
@@ -113,7 +120,9 @@ contains
                             alpha_exp=alpha_exp, &
                             alpha_thm=alpha_thm, &
                             alpha_str=alpha_str, &
-                            n_center=n_center, &
+                            dx_min=dx_min, &
+                            n_inner=n_inner, &
+                            n_iter_max=n_iter_max, &
                             tag_list=tag_list)
 
     end do read_loop
