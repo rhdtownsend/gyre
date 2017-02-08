@@ -153,7 +153,6 @@ contains
 
     do i = 1, n_s
        if (this%ml%is_vacuum(pt(i))) then
-          $ASSERT(this%set /= LAGP_SET,Cannot use LAGP variables at vacuum points)
           this%coeffs(i,J_V_2) = HUGE(0._WP)
           this%coeffs(i,J_DV_2) = HUGE(0._WP)
        else
