@@ -1,7 +1,7 @@
 ! Incfile  : gyre_bound
 ! Purpose  : boundary conditions (template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -35,28 +35,26 @@ module gyre_${T}_bound
   ! Derived-type definitions
 
   type, abstract :: ${T}_bound_t
-     private
-     integer, public :: n_i
-     integer, public :: n_o
-     integer, public :: n_e
+     integer :: n_i
+     integer :: n_o
+     integer :: n_e
    contains
-     private
-     procedure(build_), deferred, public :: build_i
-     procedure(build_), deferred, public :: build_o
+     procedure(build), deferred :: build_i
+     procedure(build), deferred :: build_o
    end type ${T}_bound_t
 
   ! Interfaces
 
   abstract interface
 
-     subroutine build_ (this, omega, B, scl)
+     subroutine build (this, omega, B, scl)
        use core_kinds
        import ${T}_bound_t
        class(${T}_bound_t), intent(in) :: this
        $TYPE(WP), intent(in)           :: omega
        $TYPE(WP), intent(out)          :: B(:,:)
        $TYPE(WP), intent(out)          :: scl(:)
-     end subroutine build_
+     end subroutine build
 
   end interface
 
