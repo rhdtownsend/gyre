@@ -1,7 +1,7 @@
 ! Incfile  : gyre_bvp
 ! Purpose  : parametric boundary value problems (template)
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -57,9 +57,8 @@ module gyre_${T}_bvp
      private
      procedure, public :: build
      procedure, public :: det
-     procedure         :: soln_vec_hom_
-     procedure         :: soln_vec_inhom_
-     generic, public   :: soln_vec => soln_vec_hom_, soln_vec_inhom_
+     procedure, public :: soln_vec_hom
+     procedure, public :: soln_vec_inhom
   end type ${T}_bvp_t
 
   ! Interfaces
@@ -183,7 +182,7 @@ contains
 
   !****
 
-  function soln_vec_hom_ (this) result (y)
+  function soln_vec_hom (this) result (y)
 
     class(${T}_bvp_t), intent(inout) :: this
     $TYPE(WP)                        :: y(this%n_e,this%n_k)
@@ -192,7 +191,7 @@ contains
 
     ! Evaluate the solution vector y of the homogeneous system
 
-    v = this%sm%soln_vec()
+    v = this%sm%soln_vec_hom()
 
     y = RESHAPE(v, SHAPE(y))
 
@@ -200,11 +199,11 @@ contains
 
     return
 
-  end function soln_vec_hom_
+  end function soln_vec_hom
 
   !****
 
-  function soln_vec_inhom_ (this, w_i, w_o) result (y)
+  function soln_vec_inhom (this, w_i, w_o) result (y)
 
     class(${T}_bvp_t), intent(inout) :: this
     $TYPE(WP), intent(in)            :: w_i(:)
@@ -218,7 +217,7 @@ contains
 
     ! Evaluate the solution vector y of the inhomogeneous system
 
-    v = this%sm%soln_vec(w_i, w_o)
+    v = this%sm%soln_vec_inhom(w_i, w_o)
 
     y = RESHAPE(v, SHAPE(y))
     
@@ -226,7 +225,7 @@ contains
 
     return
 
-  end function soln_vec_inhom_
+  end function soln_vec_inhom
 
 end module gyre_${T}_bvp
 

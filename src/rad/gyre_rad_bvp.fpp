@@ -151,7 +151,7 @@ contains
 
     call bp%build(omega)
 
-    y = bp%soln_vec()
+    y = bp%soln_vec_hom()
     discrim = bp%det()
 
     ! Convert to canonical form
