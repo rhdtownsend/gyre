@@ -2,9 +2,8 @@
 /
 
 &model
-	model_type = 'EVOL'
-	file = 'poly-3.fgong'
-	file_format = 'FGONG'
+	model_type = 'POLY'
+	file = 'poly.h5'
 /
 
 &mode
@@ -33,12 +32,12 @@
 /
 
 &osc
-	variables_set = ''
+	variables_set = 'GYRE'
 	reduce_order = .FALSE.
 /
 
 &osc
-	variables_set = ''
+	variables_set = 'GYRE'
 	reduce_order = .TRUE.
 	tag_list = 'l=0r'
 /
@@ -62,9 +61,9 @@
 /
 
 &grid
-	n_center = 10
 	alpha_osc = 10.
 	alpha_exp = 2.
+	n_inner = 10
 /
 
 &ad_output
