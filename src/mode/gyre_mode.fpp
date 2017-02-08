@@ -69,8 +69,6 @@ module gyre_mode
    contains
      private
      procedure         :: classify_
-     procedure         :: op_assign_
-     generic, public   :: assignment(=) => op_assign_
      procedure, public :: prune
      procedure, public :: freq
      procedure, public :: y_i
@@ -421,50 +419,6 @@ contains
     end subroutine count_windings_
 
   end subroutine classify_
-
-  !****
-
-  subroutine op_assign_ (this, that)
-
-    class(mode_t), intent(out) :: this
-    type(mode_t), intent(in)   :: that
-
-    ! Assign the mode_t (this routine shouldn't be necessary, but
-    ! gfortran 4.9.x has memory issues using intrinsic assignment)
-
-    this%ml => that%ml
-
-    this%gr = that%gr
-
-    allocate(this%rt, SOURCE=that%rt)
-
-    this%y_c = that%y_c
-    this%scl = that%scl
-
-    this%omega = that%omega
-    this%l_i = that%l_i
-
-    this%n_k = that%n_k
-    this%k_ref = that%k_ref
-
-    this%j = that%j
-    this%l = that%l
-    this%m = that%m
-    
-    this%md_p = that%md_p
-    this%os_p = that%os_p
-
-    this%n_pg = that%n_pg
-    this%n_p = that%n_p
-    this%n_g = that%n_g
-
-    this%pruned = that%pruned
-
-    ! Finish
-
-    return
-
-  end subroutine op_assign_
 
   !****
 
