@@ -91,7 +91,7 @@ contains
     end do omega_loop
 
      if (check_log_level('INFO')) then
-        write(OUTPUT_UNIT, 110) 'Found inner turning points, x range', MINVAL(x_turn), '->', MAXVAL(x_turn)
+        write(OUTPUT_UNIT, 110) 'Found inner turning points, x range', MINVAL(x_turn), '->', MIN(MAXVAL(x_turn), gr%pt(gr%n_k)%x)
 110     format(3X,A,1X,F6.4,1X,A,1X,F6.4)
      endif
 
