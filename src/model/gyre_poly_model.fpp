@@ -432,6 +432,8 @@ contains
     real(WP) :: Theta
     real(WP) :: dTheta
 
+    $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),dV_2 evaluation at vacuum point)
+
     ! Evaluate the logarithmic derivative of the V_2 coefficient
 
     if (pt%x /= 0._WP) then
@@ -463,6 +465,8 @@ contains
     type(point_t), intent(in)       :: pt
     real(WP)                        :: dcoeff
 
+    $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),dAs evaluation at vacuum point)
+
     ! Evaluate the logarithmic derivative of the As coefficient
     
     dcoeff = this%dcoeff_V_2_(pt)*pt%x**2 * &
@@ -485,6 +489,8 @@ contains
     real(WP) :: xi
     real(WP) :: Theta
     real(WP) :: dTheta
+
+    $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),dU evaluation at vacuum point)
 
     ! Evaluate the logarithmic derivative of the U coefficient
     
