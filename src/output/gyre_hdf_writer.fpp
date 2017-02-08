@@ -34,18 +34,18 @@ module gyre_hdf_writer
 
   type, extends (writer_t) :: hdf_writer_t
      private
-     type(hgroup_t)            :: hg
+     type(hgroup_t) :: hg
    contains
      private
-     procedure, public :: final => final_
-     procedure         :: write_i_0_
-     procedure         :: write_i_1_
-     procedure         :: write_r_0_
-     procedure         :: write_r_1_
-     procedure         :: write_c_0_
-     procedure         :: write_c_1_
-     procedure         :: write_a_0_
-     procedure         :: write_a_1_
+     procedure, public :: final
+     procedure, public :: write_i_0
+     procedure, public :: write_i_1
+     procedure, public :: write_r_0
+     procedure, public :: write_r_1
+     procedure, public :: write_c_0
+     procedure, public :: write_c_1
+     procedure, public :: write_a_0
+     procedure, public :: write_a_1
   end type hdf_writer_t
 
   ! Interfaces
@@ -84,7 +84,7 @@ contains
 
 !****
 
-  subroutine final_ (this)
+  subroutine final (this)
 
     class(hdf_writer_t), intent(inout) :: this
 
@@ -96,7 +96,7 @@ contains
 
     return
 
-  end subroutine final_
+  end subroutine final
 
 !****
   
@@ -106,7 +106,7 @@ contains
   $local $DATA_TYPE $2
   $local $DATA_RANK $3
 
-  subroutine write_${INFIX}_${DATA_RANK}_ (this, name, data)
+  subroutine write_${INFIX}_${DATA_RANK} (this, name, data)
 
     class(hdf_writer_t), intent(inout) :: this
     character(*), intent(in)           :: name
@@ -124,7 +124,7 @@ contains
 
     return
 
-  end subroutine write_${INFIX}_${DATA_RANK}_
+  end subroutine write_${INFIX}_${DATA_RANK}
 
   $endsub
 
