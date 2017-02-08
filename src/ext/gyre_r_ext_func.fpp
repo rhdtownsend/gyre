@@ -1,7 +1,7 @@
 ! Module   : gyre_r_ext_func
 ! Purpose  : monovariate functions with extended-range arithmetic (real)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -35,22 +35,21 @@ module gyre_r_ext_func
 
   type, abstract :: r_ext_func_t
    contains
-     private
-     procedure(eval_), deferred, public :: eval
+     procedure(eval), deferred :: eval
   end type r_ext_func_t
 
   ! Interfaces
 
   abstract interface
-     subroutine eval_ (this, rx, f_rx, status)
+     subroutine eval (this, rx, f_rx, status)
       use gyre_r_ext
       import r_ext_func_t
       class(r_ext_func_t), intent(inout) :: this
       type(r_ext_t), intent(in)          :: rx
       type(r_ext_t), intent(out)         :: f_rx
       integer, intent(out)               :: status
-    end subroutine eval_
-  end interface
+    end subroutine eval
+ end interface
 
   ! Access specifiers
 

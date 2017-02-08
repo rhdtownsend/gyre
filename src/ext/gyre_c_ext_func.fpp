@@ -1,7 +1,7 @@
 ! Module   : gyre_c_ext_func
 ! Purpose  : monovariate functions with extended-range arithmetic (complex)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -35,21 +35,20 @@ module gyre_c_ext_func
 
   type, abstract :: c_ext_func_t
    contains
-     private
-     procedure(eval_), deferred, public :: eval
+     procedure(eval), deferred :: eval
   end type c_ext_func_t
 
   ! Interfaces
 
   abstract interface
-     subroutine eval_ (this, cx, f_cx, status)
+     subroutine eval (this, cx, f_cx, status)
       use gyre_c_ext
       import c_ext_func_t
       class(c_ext_func_t), intent(inout) :: this
       type(c_ext_t), intent(in)          :: cx
       type(c_ext_t), intent(out)         :: f_cx
       integer, intent(out)               :: status
-    end subroutine eval_
+    end subroutine eval
   end interface
 
   ! Access specifiers
