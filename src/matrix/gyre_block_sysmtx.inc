@@ -1,7 +1,7 @@
 ! Incfile  : gyre_block_sysmtx
 ! Purpose  : system matrix (block storage, template)
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -73,8 +73,8 @@ module gyre_${T}_block_sysmtx
      procedure, public :: factorize
      procedure         :: scale_rows_
      procedure, public :: det
-     procedure         :: soln_vec_hom_
-     procedure         :: soln_vec_inhom_
+     procedure, public :: soln_vec_hom
+     procedure, public :: soln_vec_inhom
      procedure         :: backsub_
   end type ${T}_block_sysmtx_t
 
@@ -409,7 +409,7 @@ contains
 
   !****
 
-  function soln_vec_hom_ (this) result (v)
+  function soln_vec_hom (this) result (v)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
     $TYPE(WP)                              :: v(this%n_e*(this%n+1))
@@ -497,11 +497,11 @@ contains
 
     return
 
-  end function soln_vec_hom_
+  end function soln_vec_hom
 
   !****
 
-  function soln_vec_inhom_ (this, w_i, w_o) result (v)
+  function soln_vec_inhom (this, w_i, w_o) result (v)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
     $TYPE(WP), intent(in)                  :: w_i(:)
@@ -561,7 +561,7 @@ contains
 
     return
 
-  end function soln_vec_inhom_
+  end function soln_vec_inhom
 
   !****
 

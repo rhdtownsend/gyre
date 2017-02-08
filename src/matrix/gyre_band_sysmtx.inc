@@ -77,8 +77,8 @@ module gyre_${T}_band_sysmtx
      procedure, public :: factorize
      procedure         :: scale_rows_
      procedure, public :: det
-     procedure         :: soln_vec_hom_
-     procedure         :: soln_vec_inhom_
+     procedure, public :: soln_vec_hom
+     procedure, public :: soln_vec_inhom
   end type ${T}_band_sysmtx_t
 
   ! Interfaces
@@ -396,7 +396,7 @@ contains
 
   !****
 
-  function soln_vec_hom_ (this) result (v)
+  function soln_vec_hom (this) result (v)
   
     class(${T}_band_sysmtx_t), intent(in) :: this
     $TYPE(WP)                             :: v(this%n_e*(this%n+1))
@@ -466,11 +466,11 @@ contains
 
     return
 
-  end function soln_vec_hom_
+  end function soln_vec_hom
 
   !****
 
-  function soln_vec_inhom_ (this, w_i, w_o) result (v)
+  function soln_vec_inhom (this, w_i, w_o) result (v)
   
     class(${T}_band_sysmtx_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: w_i(:)
@@ -512,7 +512,7 @@ contains
 
     return
 
-  end function soln_vec_inhom_
+  end function soln_vec_inhom
 
 end module gyre_${T}_band_sysmtx
 
