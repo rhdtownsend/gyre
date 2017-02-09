@@ -58,7 +58,7 @@ program gyre_force
 
   ! Parameters
 
-  integer, parameter :: D_P = 1024
+  integer, parameter :: D_0 = 1024
 
   ! Variables
 
@@ -72,6 +72,8 @@ program gyre_force
   class(model_t), pointer       :: ml => null()
   real(WP)                      :: q
   real(WP)                      :: c_lmk
+  integer                       :: n_omega
+  real(WP), allocatable         :: omega(:)
   integer                       :: n_P
   real(WP), allocatable         :: P(:)
   real(WP)                      :: M_pri
@@ -83,14 +85,10 @@ program gyre_force
   type(grid_par_t)              :: gr_p_sel
   type(grid_t)                  :: gr
   integer                       :: j
-  real(WP), allocatable         :: omega(:)
-  integer                       :: s
-  integer                       :: k_i
-  integer                       :: k_o
   class(r_bvp_t), allocatable   :: bp_ad
   class(c_bvp_t), allocatable   :: bp_nad
 
-  namelist /force/ q, c_lmk, n_P, P
+  namelist /force/ q, c_lmk, n_omega, omega, n_P, P
 
   ! Read command-line arguments
 
@@ -132,12 +130,19 @@ program gyre_force
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
 
-  allocate(P(D_P))
+  allocate(omega(D_0))
+  allocate(P(D_0))
+
+  n_omega = 0
+  n_P = 0
 
   rewind(unit)
   read(unit, NML=force)
 
-  $ASSERT(n_P <= D_P,Period array too short)
+  $ASSERT(n_omega > 0 .NEQV. n_P > 0,One or other of n_omega/n_P must be non-zero)
+
+  $ASSERT(n_omega <= D_0,Frequency array too short)
+  $ASSERT(n_P <= D_0,Period array too short)
 
   ! Initialize the model
 
@@ -186,34 +191,26 @@ program gyre_force
 
      gr = grid_t(ml%grid(), gr_p_sel%x_i, gr_p_sel%x_o)
 
-     ! Set up the frequency array
+     ! Set up the frequency/period arrays
 
-     allocate(omega(n_P))
+     if (n_omega == 0) then
+        do j = 1, n_P
+           omega(j) = omega_from_freq(1._WP/P(j), ml, gr%pt(1), gr%pt(gr%n_k), 'HZ', 'INERTIAL', md_p(i), os_p_sel)
+        end do
+        n_omega = n_P
+     elseif (n_P == 0) then
+        do j = 1, n_omega
+           P(j) = 1._WP/freq_from_omega(omega(j), ml, gr%pt(1), gr%pt(gr%n_k), 'HZ', 'INERTIAL', md_p(i), os_p_sel)
+        end do
+        n_P = n_omega
+     endif
 
-     do j = 1, n_P
-        omega(j) = omega_from_freq(1._WP/P(j), ml, gr, 'HZ', 'INERTIAL', md_p(i), os_p_sel)
-     end do
+     omega = omega(:n_omega)
+     P = P(:n_P)
 
      ! Create the full grid
 
-     if (check_log_level('INFO')) then
-        write(OUTPUT_UNIT, 100) 'Building x grid'
-     endif
-
      gr = grid_t(ml, omega, gr_p_sel, md_p(i), os_p_sel)
-
-     if (check_log_level('INFO')) then
-
-        seg_loop : do s = gr%s_i(), gr%s_o()
-           k_i = gr%k_i(s)
-           k_o = gr%k_o(s)
-           write(OUTPUT_UNIT, 140) 'segment', s, ':', k_o-k_i+1, 'points, x range', gr%pt(k_i)%x, '->', gr%pt(k_o)%x
-140        format(3X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
-        end do seg_loop
-
-        write(OUTPUT_UNIT, *)
-        
-     end if
 
      ! Find modes
 
@@ -221,7 +218,7 @@ program gyre_force
 
         allocate(bp_nad, SOURCE=nad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
 
-        call scan_force_c(bp_nad, omega)
+        call scan_force_c(bp_nad, omega, P)
 
         deallocate(bp_nad)
 
@@ -233,7 +230,7 @@ program gyre_force
            allocate(bp_ad, SOURCE=ad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
         endif
 
-        call scan_force_r(bp_ad, omega)
+        call scan_force_r(bp_ad, omega, P)
 
         deallocate(bp_ad)
 
@@ -258,29 +255,35 @@ contains
   $local $T $1
   $local $TYPE $2
 
-  subroutine scan_force_${T} (bp, omega)
+  subroutine scan_force_${T} (bp, omega, P)
 
     type(${T}_bvp_t), intent(inout) :: bp
     real(WP), intent(in)            :: omega(:)
+    real(WP), intent(in)            :: P(:)
 
+    integer   :: n_omega
+    integer   :: j
     real(WP)  :: a
     real(WP)  :: eps_T
     real(WP)  :: alpha_fc
     $TYPE(WP) :: w_i(bp%n_i)
     $TYPE(WP) :: w_o(bp%n_i)
-    integer   :: n_omega
-    integer   :: j
     $TYPE(WP) :: y(bp%n_e,bp%n_k)
 
     character(64) :: filename
-    integer       :: unit
+    integer       :: res_unit
+    integer       :: sol_unit
     integer       :: k
+
+    $CHECK_BOUNDS(SIZE(P),SIZE(omega))
 
     ! Scan over frequencies
 
+    open(NEWUNIT=res_unit, FILE='response.dat', STATUS='replace')
+
     n_omega = SIZE(omega)
 
-    P_loop : do j = 1, n_P
+    omega_loop : do j = 1, n_omega
 
        ! Set up binary parameters
 
@@ -289,8 +292,6 @@ contains
        eps_T = (R_pri/a)**3*(M_sec/M_pri)
 
        alpha_fc = eps_T*(2*md_p(i)%l+1)*c_lmk
-
-       print *,i,alpha_fc
 
        ! Set up the inhomogeneous boundary terms
 
@@ -307,11 +308,11 @@ contains
        call bp%build(omega(j))
        $endif
 
-       y = bp%soln_vec(w_i, w_o)
+       y = bp%soln_vec_inhom(w_i, w_o)
 
-       ! Print out the tidal response
+       ! Write out the tidal response
 
-       print 100, P(j), y(1,bp%n_k)
+       write(res_unit, 100) omega(j), P(j), y(1,bp%n_k)
 100    format(999E16.8)
 
        ! Write out the solution data
@@ -319,16 +320,18 @@ contains
        write(filename, 110) 'forced.', j, '.txt'
 110    format(A,I3.3,A)
 
-       open(NEWUNIT=unit, FILE=filename)
+       open(NEWUNIT=sol_unit, FILE=filename, STATUS='REPLACE')
 
        do k = 1,bp%n_k
-          write(unit, 120) gr%pt(k)%x, y(:,k)
+          write(sol_unit, 120) gr%pt(k)%x, y(:,k)
 120       format(999(1X,E16.8))
        enddo
 
-       close(unit)
+       close(sol_unit)
 
-    end do P_loop
+    end do omega_loop
+
+    close(res_unit)
 
     ! Finish
 
