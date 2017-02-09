@@ -161,7 +161,7 @@ program poly_to_fgong
 110 format(4I10)
 
   write(unit, 120) glob
-120  format(1P,5(X,E26.18E3))
+120  format(1P,5(1X,E26.18E3))
 
   do k = 1, n_k
      write(unit, 120) var(:,k)
