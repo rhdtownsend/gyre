@@ -51,7 +51,7 @@ else
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO -DGFORTRAN_PR_49636
 endif
 
-F9XFLAGS:=${F9XFLAGS} $(addprefix -I,${MODPATH}) ${FFLAGS} #-std=f2008
+F9XFLAGS:=${F9XFLAGS} $(addprefix -I,${MODPATH}) ${FFLAGS} -std=f2008
 F77FLAGS:=${F77FLAGS} ${FFLAGS} -ffixed-form
 
 ifeq (${OMP},yes)
