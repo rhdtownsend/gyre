@@ -112,6 +112,10 @@ contains
           omega_l = TWOPI*freq*ml%Delta_p()
        case ('GRAVITY_DELTA')
           omega_l = TWOPI*freq*ml%Delta_g(md_p%l*(md_p%l+1._WP))
+       case ('UPPER_DELTA')
+          omega_l = TWOPI*freq*MAX(ml%Delta_p(), ml%Delta_g(md_p%l*(md_p%l+1._WP)))
+       case ('LOWER_DELTA')
+          omega_l = TWOPI*freq*MIN(ml%Delta_p(), ml%Delta_g(md_p%l*(md_p%l+1._WP)))
        case ('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           omega_l = freq*omega_cutoff_hi
@@ -251,6 +255,10 @@ contains
           freq = omega_l/(TWOPI*ml%Delta_p())
        case ('GRAVITY_DELTA')
           freq = omega_l/(TWOPI*ml%Delta_g(md_p%l*(md_p%l+1._WP)))
+       case ('UPPER_DELTA')
+          freq = omega_l/(TWOPI*MAX(ml%Delta_p(), ml%Delta_g(md_p%l*(md_p%l+1._WP))))
+       case ('LOWER_DELTA')
+          freq = omega_l/(TWOPI*MIN(ml%Delta_p(), ml%Delta_g(md_p%l*(md_p%l+1._WP))))
        case ('ACOUSTIC_CUTOFF')
           call eval_cutoff_freqs(ml, pt_o, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
           freq = omega_l/omega_cutoff_hi
