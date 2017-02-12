@@ -101,7 +101,7 @@ contains
 
     ! Add points globally
 
-    call add_global_(ml, omega, x_turn, gr_p, md_p, os_p, gr)
+    call add_global_(ml, omega, gr_p, md_p, os_p, gr)
 
     ! Report 
 
@@ -213,11 +213,10 @@ contains
 
   !****
 
-  subroutine add_global_ (ml, omega, x_turn, gr_p, md_p, os_p, gr)
+  subroutine add_global_ (ml, omega, gr_p, md_p, os_p, gr)
 
     class(model_t), pointer, intent(in)  :: ml
     real(WP), intent(in)                 :: omega(:)
-    real(WP), intent(in)                 :: x_turn(:)
     type(grid_par_t), intent(in)         :: gr_p
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
@@ -229,8 +228,6 @@ contains
     integer                     :: k
     type(point_t)               :: pt
     real(WP)                    :: dx
-
-    $CHECK_BOUNDS(SIZE(x_turn),SIZE(omega))
 
     ! Add points globally 
     
@@ -256,7 +253,7 @@ contains
 
                call rt%stencil([pt])
 
-               dx = MAX(MIN(dx_dispersion_(pt, ml, rt, omega, x_turn, gr_p), &
+               dx = MAX(MIN(dx_dispersion_(pt, ml, rt, omega, gr_p, pt_a%x==0), &
                             dx_thermal_(pt, ml, rt, omega, gr_p), &
                             dx_struct_(ml, pt, gr_p)), gr_p%dx_min)
 
@@ -295,14 +292,14 @@ contains
 
   !****
 
-  function dx_dispersion_ (pt, ml, rt, omega, x_turn, gr_p) result (dx)
+  function dx_dispersion_ (pt, ml, rt, omega, gr_p, origin) result (dx)
 
     type(point_t), intent(in)           :: pt
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
     real(WP), intent(in)                :: omega(:)
-    real(WP), intent(in)                :: x_turn(:)
     type(grid_par_t), intent(in)        :: gr_p
+    logical, intent(in)                 :: origin
     real(WP)                            :: dx
 
     real(WP) :: V_g
@@ -366,8 +363,6 @@ contains
 
           if (gamma < 0._WP) then
 
-             $ASSERT_DEBUG(pt%x >= x_turn(j))
-
              ! Propagation zone
             
              k_r_real = MAX(k_r_real, ABS(0.5_WP*SQRT(-gamma))/pt%x)
@@ -375,10 +370,9 @@ contains
 
           else
 
-             ! Evanescent zone; if we're inside the inner turning
-             ! point, drop the divering root
+             ! Evanescent zone; if we're adjacent to the origin, drop the divering root
 
-             if (pt%x <= x_turn(j)) then
+             if (origin) then
                 k_r_imag = MAX(k_r_imag, ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i + SQRT(gamma)))/pt%x)
              else
                 k_r_imag = MAX(k_r_imag, ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i - SQRT(gamma)))/pt%x, & 
