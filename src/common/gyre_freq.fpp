@@ -1,4 +1,4 @@
-! Program  : gyre_freq
+! Module   : gyre_freq
 ! Purpose  : frequency transformation routines
 !
 ! Copyright 2015 Rich Townsend

@@ -1,7 +1,7 @@
-! Program  : gyre_util
+! Module   : gyre_util
 ! Purpose  : miscellaneous utility routines
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
