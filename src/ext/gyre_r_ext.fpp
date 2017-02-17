@@ -1,7 +1,7 @@
 ! Module   : gyre_r_ext
 ! Purpose  : extented-range arithmetic (real)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -222,7 +222,7 @@ contains
 
   end function r_ext_t_r_
 
-!****
+  !****
 
   elemental function r_ext_t_c_ (c) result (rx)
 
@@ -239,7 +239,7 @@ contains
 
   end function r_ext_t_c_
 
-!****
+  !****
 
   elemental function op_plus_rx_rx_ (this, that) result (rx)
 
@@ -283,7 +283,7 @@ contains
 
   end function op_plus_rx_rx_
 
-!****
+  !****
 
   elemental function op_minus_rx_ (this) result (rx)
 
@@ -301,7 +301,7 @@ contains
 
   end function op_minus_rx_
 
-!****
+  !****
 
   elemental function op_minus_rx_rx_ (this, that) result (rx)
 
@@ -345,7 +345,7 @@ contains
 
   end function op_minus_rx_rx_
 
-!****
+  !****
 
   elemental function op_times_rx_rx_ (this, that) result (rx)
 
@@ -378,7 +378,7 @@ contains
 
   end function op_times_rx_rx_
 
-!****
+  !****
 
   elemental function op_divide_rx_rx_ (this, that) result (rx)
 
@@ -411,7 +411,7 @@ contains
 
   end function op_divide_rx_rx_
 
-!****
+  !****
 
   elemental function op_eq_rx_rx_ (this, that) result (eq)
 
@@ -429,7 +429,7 @@ contains
 
   end function op_eq_rx_rx_
 
-!****
+  !****
 
   elemental function op_neq_rx_rx_ (this, that) result (neq)
 
@@ -447,7 +447,7 @@ contains
 
   end function op_neq_rx_rx_
 
-!****
+  !****
 
   elemental function op_lt_rx_rx_ (this, that) result (lt)
 
@@ -487,7 +487,7 @@ contains
 
   end function op_lt_rx_rx_
 
-!****
+  !****
 
   elemental function op_gt_rx_rx_ (this, that) result (gt)
 
@@ -505,7 +505,7 @@ contains
 
   end function op_gt_rx_rx_
 
-!****
+  !****
 
   elemental function op_le_rx_rx_ (this, that) result (le)
 
@@ -523,7 +523,7 @@ contains
 
   end function op_le_rx_rx_
   
-!****
+  !****
 
   elemental function op_ge_rx_rx_ (this, that) result (ge)
 
@@ -541,7 +541,7 @@ contains
 
   end function op_ge_rx_rx_
 
-!****
+  !****
 
   $define $MIXED_OP $sub
 
@@ -594,7 +594,7 @@ contains
   $MIXED_OP(eq,==,logical)
   $MIXED_OP(neq,/=,logical)
 
-!****
+  !****
 
   elemental function real_ (rx) result (r)
 
@@ -627,7 +627,7 @@ contains
 
   end function real_
 
-!****
+  !****
 
   elemental function valid_ (rx) result (valid)
 
@@ -644,7 +644,7 @@ contains
 
   end function valid_
 
-!****
+  !****
 
   function product_ (rx) result (prod_rx)
 
@@ -674,7 +674,7 @@ contains
 
   end function product_
 
-!****
+  !****
 
   elemental function abs_ (rx) result (abs_rx)
 
@@ -692,7 +692,7 @@ contains
 
   end function abs_
 
-!****
+  !****
 
   elemental function exp_ (rx) result (exp_rx)
 
@@ -716,7 +716,7 @@ contains
 
   end function exp_
 
-!****
+  !****
 
   elemental function sqrt_ (rx) result (sqrt_rx)
 
@@ -739,7 +739,7 @@ contains
 
   end function sqrt_
 
-!****
+  !****
 
   elemental function fraction_ (rx) result (fraction_rx)
 
@@ -756,7 +756,7 @@ contains
 
   end function fraction_
 
-!****
+  !****
 
   elemental function exponent_ (rx) result (exponent_rx)
 
@@ -773,7 +773,7 @@ contains
 
   end function exponent_
 
-!****
+  !****
 
   elemental function max_ (rx_a, rx_b) result (max_rx)
 
@@ -812,7 +812,7 @@ contains
 
   end function max_
 
-!****
+  !****
 
   elemental function min_ (rx_a, rx_b) result (min_rx)
 
@@ -830,7 +830,7 @@ contains
 
   end function min_
 
-!****
+  !****
 
   elemental function scale_ (rx, de) result (scale_rx)
 
@@ -854,7 +854,7 @@ contains
 
   end function scale_
 
-!****
+  !****
 
   elemental subroutine split_ (x, f, e)
 
@@ -873,31 +873,31 @@ contains
 
   end subroutine split_
 
-!****
+  !****
 
   $if ($MPI)
 
   $define $SEND $sub
 
-  $local $BUFFER_RANK $1
+  $local $RX_RANK $1
 
-  subroutine send_${BUFFER_RANK}_ (buffer, dest_rank, tag, sync)
+  subroutine send_${BUFFER_RANK}_ (rx, dest_rank, tag, sync)
 
-    type(r_ext_t), intent(in)     :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    type(r_ext_t), intent(in)     :: rx$ARRAY_SPEC($RX_RANK)
     integer, intent(in)           :: dest_rank
     integer, optional, intent(in) :: tag
     logical, optional, intent(in) :: sync
 
-    ! Send the buffer
+    ! Send the r_ext_t
 
-    call send(buffer%f, dest_rank, tag, sync)
-    call send(buffer%e, dest_rank, tag, sync)
+    call send(rx%f, dest_rank, tag, sync)
+    call send(rx%e, dest_rank, tag, sync)
 
     ! Finish
 
     return
 
-  end subroutine send_${BUFFER_RANK}_
+  end subroutine send_${RX_RANK}_
 
   $endsub
 
@@ -907,28 +907,28 @@ contains
   $SEND(3)
   $SEND(4)
 
-!****
+  !****
   
   $define $RECV $sub
 
-  $local $BUFFER_RANK $1
+  $local $RX_RANK $1
 
-  subroutine recv_${BUFFER_RANK}_ (buffer, src_rank, tag)
+  subroutine recv_${RX_RANK}_ (rx, src_rank, tag)
 
-    type(r_ext_t), intent(out)    :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    type(r_ext_t), intent(out)    :: rx$ARRAY_SPEC($RX_RANK)
     integer, intent(in)           :: src_rank
     integer, optional, intent(in) :: tag
 
-    ! Receive the buffer
-
-    call recv(buffer%f, src_rank, tag)
-    call recv(buffer%e, src_rank, tag)
+    ! Receive the ext_r_t
+    
+    call recv(rx%f, src_rank, tag)
+    call recv(rx%e, src_rank, tag)
 
     ! Finish
 
     return
 
-  end subroutine recv_${BUFFER_RANK}_
+  end subroutine recv_${RX_RANK}_
 
   $endsub
 
@@ -938,28 +938,28 @@ contains
   $RECV(3)
   $RECV(4)
 
-!****
+  !****
   
   $define $RECV_ANY $sub
 
-  $local $BUFFER_RANK $1
+  $local $RX_RANK $1
 
-  subroutine recv_any_${BUFFER_RANK}_ (buffer, src_rank, tag)
+  subroutine recv_any_${RX_RANK}_ (rx, src_rank, tag)
 
-    type(r_ext_t), intent(out)    :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    type(r_ext_t), intent(out)    :: rx$ARRAY_SPEC($RX_RANK)
     integer, intent(out)          :: src_rank
     integer, optional, intent(in) :: tag
 
-    ! Receive the buffer
+    ! Receive the r_ext_t
 
-    call recv(buffer%f, src_rank, tag)
-    call recv(buffer%e, src_rank, tag)
+    call recv(rx%f, src_rank, tag)
+    call recv(rx%e, src_rank, tag)
 
     ! Finish
 
     return
 
-  end subroutine recv_any_${BUFFER_RANK}_
+  end subroutine recv_any_${RX_RANK}_
 
   $endsub
 
@@ -969,27 +969,27 @@ contains
   $RECV_ANY(3)
   $RECV_ANY(4)
 
-!****
+  !****
 
   $define $BCAST $sub
 
-  $local $BUFFER_RANK $1
+  $local $RX_RANK $1
 
-  subroutine bcast_${BUFFER_RANK}_ (buffer, root_rank)
+  subroutine bcast_${RX_RANK}_ (rx, root_rank)
 
-    type(r_ext_t), intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    type(r_ext_t), intent(inout) :: rx$ARRAY_SPEC($RX_RANK)
     integer, intent(in)          :: root_rank
 
-    ! Broadcast the buffer
+    ! Broadcast the r_ext_t
 
-    call bcast(buffer%f, root_rank)
-    call bcast(buffer%e, root_rank)
+    call bcast(rx%f, root_rank)
+    call bcast(rx%e, root_rank)
 
     ! Finish
 
     return
 
-  end subroutine bcast_${BUFFER_RANK}_
+  end subroutine bcast_${RX_RANK}_
 
   $endsub
 
@@ -999,7 +999,7 @@ contains
   $BCAST(3)
   $BCAST(4)
 
-!****
+  !****
 
   $BCAST_ALLOC(type(r_ext_t),0)
   $BCAST_ALLOC(type(r_ext_t),1)
@@ -1007,31 +1007,31 @@ contains
   $BCAST_ALLOC(type(r_ext_t),3)
   $BCAST_ALLOC(type(r_ext_t),4)
 
-!****
+  !****
 
   $define $GATHERV $sub
 
-  $local $BUFFER_RANK $1
+  $local $RX_RANK $1
 
-  subroutine gatherv_${BUFFER_RANK}_ (send_buffer, sendcount, recv_buffer, recvcounts, displs, root_rank)
+  subroutine gatherv_${RX_RANK}_ (send_rx, sendcount, recv_rx, recvcounts, displs, root_rank)
 
-    type(r_ext_t), intent(in)    :: send_buffer$ARRAY_SPEC($BUFFER_RANK)
+    type(r_ext_t), intent(in)    :: send_rx$ARRAY_SPEC($RX_RANK)
     integer, intent(in)          :: sendcount
-    type(r_ext_t), intent(inout) :: recv_buffer$ARRAY_SPEC($BUFFER_RANK)
+    type(r_ext_t), intent(inout) :: recv_rx$ARRAY_SPEC($RX_RANK)
     integer, intent(in)          :: recvcounts(:)
     integer, intent(in)          :: displs(:)
     integer, intent(in)          :: root_rank
 
-    ! Gather the buffers
+    ! Gather the r_ext_t's
 
-    call gatherv(send_buffer%f, sendcount, recv_buffer%f, recvcounts, displs, root_rank)
-    call gatherv(send_buffer%e, sendcount, recv_buffer%e, recvcounts, displs, root_rank)
+    call gatherv(send_rx%f, sendcount, recv_rx%f, recvcounts, displs, root_rank)
+    call gatherv(send_rx%e, sendcount, recv_rx%e, recvcounts, displs, root_rank)
 
     ! Finish
 
     return
 
-  end subroutine gatherv_${BUFFER_RANK}_
+  end subroutine gatherv_${RX_RANK}_
 
   $endsub
 
@@ -1041,28 +1041,28 @@ contains
   $GATHERV(3)
   $GATHERV(4)
 
-!****
+  !****
 
   $define $ALLGATHERV $sub
 
-  $local $BUFFER_RANK $1
+  $local $RX_RANK $1
 
-  subroutine allgatherv_${BUFFER_RANK}_ (buffer, recvcounts, displs)
+  subroutine allgatherv_${RX_RANK}_ (rx, recvcounts, displs)
 
-    type(r_ext_t), intent(inout) :: buffer$ARRAY_SPEC($BUFFER_RANK)
+    type(r_ext_t), intent(inout) :: rx$ARRAY_SPEC($RX_RANK)
     integer, intent(in)          :: recvcounts(:)
     integer, intent(in)          :: displs(:)
 
-    ! Gather and share the buffers
+    ! Gather and share the r_ext_t's
 
-    call allgatherv(buffer%f, recvcounts, displs)
-    call allgatherv(buffer%e, recvcounts, displs)
+    call allgatherv(rx%f, recvcounts, displs)
+    call allgatherv(rx%e, recvcounts, displs)
 
     ! Finish
 
     return
 
-  end subroutine allgatherv_${BUFFER_RANK}_
+  end subroutine allgatherv_${RX_RANK}_
 
   $endsub
 
