@@ -250,6 +250,10 @@ contains
        $ABORT(Invalid type_i)
     end select
 
+    ! Apply the variables transformation
+
+    call this%tr%trans_cond(B, 1, omega)
+
     ! Finish
 
     return
@@ -289,10 +293,6 @@ contains
 
     end associate
 
-    ! Apply the variables transformation
-
-    call this%tr%trans_cond(B, 1, omega)
-
     ! Finish
 
     return
@@ -322,10 +322,6 @@ contains
 
     scl = 1._WP
       
-    ! Apply the variables transformation
-
-    call this%tr%trans_cond(B, 1, omega)
-
     ! Finish
 
     return
@@ -361,6 +357,10 @@ contains
        $ABORT(Invalid type_o)
     end select
 
+    ! Apply the variables transformation
+
+    call this%tr%trans_cond(B, 2, omega)
+
     ! Finish
 
     return
@@ -390,10 +390,6 @@ contains
       
     scl = 1._WP
     
-    ! Apply the variables transformation
-
-    call this%tr%trans_cond(B, 2, omega)
-
     ! Finish
 
     return
@@ -433,10 +429,6 @@ contains
       scl = 1._WP
          
     end associate
-
-    ! Apply the variables transformation
-
-    call this%tr%trans_cond(B, 2, omega)
 
     ! Finish
 
@@ -485,10 +477,6 @@ contains
       scl = 1._WP
 
     end associate
-
-    ! Apply the variables transformation
-
-    call this%tr%trans_cond(B, 2, omega)
 
     ! Finish
 
@@ -539,10 +527,6 @@ contains
       scl = 1._WP
 
     end associate
-
-    ! Apply the variables transformation
-
-    call this%tr%trans_cond(B, 2, omega)
 
     ! Finish
 
