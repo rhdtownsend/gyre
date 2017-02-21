@@ -461,6 +461,8 @@ contains
     subroutine write_mode_evol_ (ml)
 
       type(evol_model_t), intent(in) :: ml
+
+      integer :: k
       
       ! Write the item
 
@@ -473,14 +475,14 @@ contains
            call wr%write('R_star', ml%R_star)
         case ('L_star')
            call wr%write('L_star', ml%L_star)
-!        case ('M_r')
-!           call wr%write('M_r', ml%M_r(pt))
-!        case ('P')
-!           call wr%write('P', ml%P(pt))
-!        case ('rho')
-!           call wr%write('rho', ml%rho(pt))
-!        case ('T')
-!           call wr%write('T', ml%T(pt))
+        case ('M_r')
+           call wr%write('M_r', [(ml%M_r(pt(k)), k=1,SIZE(pt))])
+        case ('P')
+           call wr%write('P', [(ml%P(pt(k)), k=1,SIZE(pt))])
+        case ('rho')
+           call wr%write('rho', [(ml%rho(pt(k)), k=1,SIZE(pt))])
+        case ('T')
+           call wr%write('T', [(ml%T(pt(k)), k=1,SIZE(pt))])
         case default
            write(ERROR_UNIT, *) 'item:', TRIM(items(i))
            invalid_items = .TRUE.
