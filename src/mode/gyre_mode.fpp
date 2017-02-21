@@ -2029,6 +2029,7 @@ contains
 
     integer  :: k
     real(WP) :: dW_dx(this%n_k)
+    real(WP) :: D
 
     ! Calculate the normalized growth rate defined (as eta') by [Stel1978]
 
@@ -2037,7 +2038,13 @@ contains
        dW_dx(k) = this%dW_dx(k)
     end do
 
-    eta = integrate(this%gr%pt%x, dW_dx)/integrate(this%gr%pt%x, ABS(dW_dx))
+    D = integrate(this%gr%pt%x, ABS(dW_dx))
+
+    if (D /= 0._WP) then
+       eta = integrate(this%gr%pt%x, dW_dx)/D
+    else
+       eta = 0._WP
+    endif
 
     ! Finish
 
