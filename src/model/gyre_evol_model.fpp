@@ -57,6 +57,10 @@ module gyre_evol_model
      procedure, public :: define
      procedure, public :: coeff
      procedure, public :: dcoeff
+     procedure, public :: M_r
+     procedure, public :: P
+     procedure, public :: rho
+     procedure, public :: T
      procedure, public :: is_defined
      procedure, public :: is_vacuum
      procedure, public :: Delta_p
@@ -326,6 +330,79 @@ contains
 
   end function dcoeff
 
+  !****
+
+  function M_r (this, pt)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: M_r
+
+    ! Evaluate the fractional mass coordinate
+
+    M_r = this%M_star*(pt%x**3/this%coeff(I_C_1, pt))
+
+    ! Finish
+
+    return
+
+  end function M_r
+    
+  !****
+
+  function P (this, pt)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: P
+
+    ! Evaluate the total pressure
+
+    P = (G_GRAVITY*this%M_star**2/(4._WP*PI*this%R_star**4))* &
+        (this%coeff(I_U, pt)/(this%coeff(I_C_1, pt)**2*this%coeff(I_V_2, pt)))
+
+    ! Finish
+
+    return
+
+  end function P
+    
+  !****
+
+  function rho (this, pt)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: rho
+
+    ! Evaluate the density
+
+    rho = (this%M_star/(4._WP*PI*this%R_star**3))*(this%coeff(I_U, pt)/this%coeff(I_C_1, pt))
+
+    ! Finish
+
+    return
+
+  end function rho
+    
+  !****
+
+  function T (this, pt)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: T
+
+    ! Evaluate the temperature
+
+    T = (3._WP*this%coeff(I_BETA_RAD, pt)*this%P(pt)/A_RADIATION)**0.25_WP
+
+    ! Finish
+
+    return
+
+  end function T
+    
   !****
 
   function is_defined (this, i)
