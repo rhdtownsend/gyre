@@ -207,7 +207,7 @@ contains
     md%k_ref = MINLOC(ABS(gr%pt%x - x_ref), DIM=1)
 
     ! Normalize so that y_1 at the reference point is purely real, and
-    ! the total mode energy is unity
+    ! the total mode inertia E is unity
 
     if (normalize_) then
 
@@ -1032,9 +1032,7 @@ contains
     real(WP)    :: c_1
 
     ! Evaluate the differential mode inertia, in units of M_star
-    ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010],
-    ! with the initial factor of 4 pi cancelled by their definitions of
-    ! \tilde{\xi}_r and \tilde{\xi}_h (cf. eqns. 3.124 and 3.131, ibid)
+    ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010]
 
     associate (pt => this%gr%pt(k))
 
@@ -1046,7 +1044,7 @@ contains
       U = this%ml%coeff(I_U, pt)
       c_1 = this%ml%coeff(I_C_1, pt)
 
-      dE_dx = (ABS(xi_r)**2 + ABS(lambda)*ABS(xi_h)**2)*U*pt%x**2/(4._WP*PI*c_1)
+      dE_dx = (ABS(xi_r)**2 + ABS(lambda)*ABS(xi_h)**2)*U*pt%x**2/c_1
 
     end associate
 
