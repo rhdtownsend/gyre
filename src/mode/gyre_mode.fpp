@@ -88,7 +88,7 @@ module gyre_mode
      procedure, public :: dE_dx
      procedure, public :: dW_dx
      procedure, public :: dW_eps_dx
-     procedure, public :: dC_dx
+     procedure, public :: dbeta_dx
      procedure, public :: F_j_wave
      procedure, public :: dj_dt_wave
      procedure, public :: dj_dt_grow
@@ -110,7 +110,7 @@ module gyre_mode
      procedure, public :: E_norm
      procedure, public :: W
      procedure, public :: W_eps
-     procedure, public :: C
+     procedure, public :: beta
      procedure, public :: omega_int
      procedure, public :: eta
   end type mode_t
@@ -1154,11 +1154,11 @@ contains
 
   !****
 
-  function dC_dx (this, k)
+  function dbeta_dx (this, k)
 
     class(mode_t), intent(in) :: this
     integer, intent(in)       :: k
-    real(WP)                  :: dC_dx
+    real(WP)                  :: dbeta_dx
 
     complex(WP) :: xi_r
     complex(WP) :: xi_h
@@ -1168,8 +1168,8 @@ contains
     real(WP)    :: E
     
     ! Calculate the (unnormalized) rotation splitting kernel. This is
-    ! based on based on equations 3.356 & 3.357 of [Aer2010], with
-    ! dC_dx = beta*K
+    ! based on the derivative of equation 3.357 of [Aer2010] with
+    ! respect to x
 
     associate (pt => this%gr%pt(k))
 
@@ -1185,8 +1185,8 @@ contains
 
       E = this%E()
 
-      dC_dx = REAL((ABS(xi_r)**2 + (lambda-1._WP)*ABS(xi_h)**2 - &
-                   2._WP*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
+      dbeta_dx = 4._WP*PI*REAL((ABS(xi_r)**2 + (lambda-1._WP)*ABS(xi_h)**2 - &
+                                2._WP*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
 
     end associate
 
@@ -1194,7 +1194,7 @@ contains
 
     return
 
-  end function dC_dx
+  end function dbeta_dx
 
   !****
 
@@ -1920,28 +1920,30 @@ contains
 
   !****
 
-  function C (this)
+  function beta (this)
 
     class(mode_t), intent(in) :: this
-    real(WP)                  :: C
+    real(WP)                  :: beta
 
     integer  :: k
-    real(WP) :: dC_dx(this%n_k)
+    real(WP) :: dbeta_dx(this%n_k)
      
-    ! Calculate the Ledoux rotational splitting coefficient
+    ! Calculate the rotational splitting factor. This is based on
+    ! equation 3.357 of [Aer2010]; the Ledoux constant follows from
+    ! equation 3.361 [ibid] as C_nl = 1 - beta
 
     !$OMP PARALLEL DO
     do k = 1, this%n_k
-       dC_dx(k) = this%dC_dx(k)
+       dbeta_dx(k) = this%dbeta_dx(k)
     end do
 
-    C = integrate(this%gr%pt%x, dC_dx)
+    beta = integrate(this%gr%pt%x, dbeta_dx)
 
     ! Finish
 
     return
 
-  end function C
+  end function beta
 
   !****
 
