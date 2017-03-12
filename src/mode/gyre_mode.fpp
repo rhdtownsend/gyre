@@ -89,10 +89,8 @@ module gyre_mode
      procedure, public :: dW_dx
      procedure, public :: dW_eps_dx
      procedure, public :: dbeta_dx
-     procedure, public :: F_j_wave
-     procedure, public :: dj_dt_wave
-     procedure, public :: dj_dt_grow
-     procedure, public :: dj_dt_grav
+     procedure, public :: dtau_dx_ss
+     procedure, public :: dtau_dx_tr
      procedure, public :: Yt_1
      procedure, public :: Yt_2
      procedure, public :: I_0
@@ -1198,62 +1196,63 @@ contains
 
   !****
 
-  function F_j_wave (this, k)
+  function dtau_dx_ss (this, k)
 
     class(mode_t), intent(in) :: this
     integer, intent(in)       :: k
-    real(WP)                  :: F_j_wave
+    real(WP)                  :: dtau_dx_ss
 
-    complex(WP) :: xi_r
-    complex(WP) :: xi_h
+    complex(WP) :: lag_P
+    complex(WP) :: lag_rho
+    real(WP)    :: V_2
     real(WP)    :: c_1
     real(WP)    :: U
-    complex(WP) :: omega_c
     
-    ! Evaluate the angle-averaged angular momentum flux due to wave
-    ! transport by Reynolds stress, in units of G M_star**2/R_star**3.
-    ! This expression is based on eqn. 21 of [LeeSai1993]
+    ! Evaluate the steady-state differential torque, in units of G
+    ! M_star**2/R_star. This expression is based on eqn. 13 of
+    ! [Tow2017]
 
     associate (pt => this%gr%pt(k), m => this%m)
 
-      xi_r = this%xi_r(k)
-      xi_h = this%xi_h(k)
+      lag_P = this%lag_P(k)
 
+      lag_rho = this%lag_rho(k)
+
+      V_2 = this%ml%coeff(I_V_2, pt)
       c_1 = this%ml%coeff(I_C_1, pt)
       U = this%ml%coeff(I_U, pt)
 
-      omega_c = this%rt%omega_c(k, this%omega)
-
-      F_j_wave = -m*ABS(omega_c**2)*pt%x*U*AIMAG(CONJG(xi_r)*xi_h)/(32._WP*PI**2*c_1)
-
+      dtau_dx_ss = m*pt%x**2*AIMAG(lag_rho*CONJG(lag_P))*(U/(2._WP*c_1**2*V_2))
+      
     end associate
 
     ! Finish
 
     return
 
-  end function F_j_wave
+  end function dtau_dx_ss
 
   !****
 
-  function dj_dt_wave (this, k)
+  function dtau_dx_tr (this, k)
 
     class(mode_t), intent(in) :: this
     integer, intent(in)       :: k
-    real(WP)                  :: dj_dt_wave
+    real(WP)                  :: dtau_dx_tr
 
     complex(WP) :: xi_r
     complex(WP) :: eul_P
-    complex(WP) :: lag_rho
     complex(WP) :: eul_rho
-    complex(WP) :: eul_Phi
+    complex(WP) :: lag_rho
+    complex(WP) :: eul_phi
     real(WP)    :: V_2
-    real(WP)    :: c_1
     real(WP)    :: U
+    real(WP)    :: c_1
     complex(WP) :: omega_c
-    
-    ! Evaluate the torque density due to wave transport by Reynolds
-    ! stress, in units of G M_star**2/R_star**4.
+
+    ! Evaluate the steady-state differential torque, in units of G
+    ! M_star**2/R_star. This expression is based on eqn. 14 of
+    ! [Tow2017]
 
     associate (pt => this%gr%pt(k), m => this%m)
 
@@ -1272,90 +1271,18 @@ contains
 
       omega_c = this%rt%omega_c(k, this%omega)
 
-      dj_dt_wave = m*U*ABS(omega_c)**2*AIMAG((lag_rho*CONJG(eul_P)/(c_1*V_2) + &
-                                              eul_rho*CONJG(eul_Phi) + &
-                                              xi_r*CONJG(eul_rho)*pt%x/c_1)/CONJG(omega_c)**2)/(32._WP*PI**2*c_1)
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dj_dt_wave
-
-  !****
-
-  function dj_dt_grow (this, k)
-
-    class(mode_t), intent(in) :: this
-    integer, intent(in)       :: k
-    real(WP)                  :: dj_dt_grow
-
-    complex(WP) :: eul_rho
-    complex(WP) :: xi_h
-    real(WP)    :: c_1
-    real(WP)    :: U
-    complex(WP) :: omega_c
-    
-    ! Evaluate the torque density due to amplitude growth/decay, in
-    ! units of G M_star**2/R_star**4.
-
-    associate (pt => this%gr%pt(k), m => this%m)
-
-      eul_rho = this%eul_rho(k)
-      xi_h = this%xi_h(k)
-
-      c_1 = this%ml%coeff(I_C_1, pt)
-      U = this%ml%coeff(I_U, pt)
-
-      omega_c = this%rt%omega_c(k, this%omega)
-
-      dj_dt_grow = -m*pt%x*U*AIMAG(omega_c)*REAL(eul_rho*CONJG(omega_c*xi_h))/(16._WP*PI**2*c_1)
-
+      dtau_dx_tr = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._WP)* &
+           lag_rho*CONJG(eul_P)/(c_1*V_2) + &
+           eul_rho*CONJG(eul_phi) + &
+           eul_rho*CONJG(xi_r)*pt%x/c_1)*(U/(2._WP*c_1))
+           
     end associate
 
     ! Finish
 
     return
     
-  end function dj_dt_grow
-
-  !****
-
-  function dj_dt_grav (this, k)
-
-    class(mode_t), intent(in) :: this
-    integer, intent(in)       :: k
-    real(WP)                  :: dj_dt_grav
-
-    complex(WP) :: eul_rho
-    complex(WP) :: eul_phi
-    real(WP)    :: U
-    real(WP)    :: c_1
-    complex(WP) :: omega_c
-    
-    ! Evaluate the torque density due to self-gravity, in units of G
-    ! M_star**2/R_star**4.
-
-    associate (pt => this%gr%pt(k), m => this%m)
-
-      eul_rho = this%eul_rho(k)
-      eul_phi = this%eul_phi(k)
-
-      U = this%ml%coeff(I_U, pt)
-      c_1 = this%ml%coeff(I_C_1, pt)
-
-      omega_c = this%rt%omega_c(k, this%omega)
-
-      dj_dt_grav = -m*U*AIMAG(eul_rho*CONJG(eul_phi))/(32._WP*PI**2*c_1)
-
-    end associate
-
-    ! Finish
-
-    return
-    
-  end function dj_dt_grav
+  end function dtau_dx_tr
 
   !****
 
