@@ -70,8 +70,8 @@ contains
     real(WP), allocatable       :: kap_rho(:)
     real(WP), allocatable       :: kap_T(:)
     real(WP), allocatable       :: eps(:)
-    real(WP), allocatable       :: eps_rho(:)
-    real(WP), allocatable       :: eps_T(:)
+    real(WP), allocatable       :: eps_eps_rho(:)
+    real(WP), allocatable       :: eps_eps_T(:)
     real(WP), allocatable       :: Omega_rot(:)
     integer                     :: n
     real(WP), allocatable       :: x(:)
@@ -94,7 +94,7 @@ contains
 
     call read_mesa_data(ml_p%file, M_star, R_star, L_star, r, M_r, P, rho, T, &
                         N2, Gamma_1, nabla_ad, delta, nabla,  &
-                        kap, kap_rho, kap_T, eps, eps_rho, eps_T, &
+                        kap, kap_rho, kap_T, eps, eps_eps_rho, eps_eps_T, &
                         Omega_rot)
 
     ! Snap grid points
@@ -135,8 +135,8 @@ contains
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
     c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
 
-    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
+    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_eps_T + eps_eps_rho/Gamma_1)*R_star**3/L_star
+    c_eps_S = 4._WP*PI*rho*(eps_eps_T - delta*eps_eps_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
        Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
@@ -183,7 +183,7 @@ contains
 
   subroutine read_mesa_data (file, M_star, R_star, L_star, r, M_r, P, rho, T, &
                              N2, Gamma_1, nabla_ad, delta, nabla,  &
-                             kap, kap_rho, kap_T, eps, eps_rho, eps_T, &
+                             kap, kap_rho, kap_T, eps, eps_eps_rho, eps_eps_T, &
                              Omega_rot)
 
     character(*), intent(in)           :: file
@@ -204,8 +204,8 @@ contains
     real(WP), allocatable, intent(out) :: kap_rho(:)
     real(WP), allocatable, intent(out) :: kap_T(:)
     real(WP), allocatable, intent(out) :: eps(:)
-    real(WP), allocatable, intent(out) :: eps_rho(:)
-    real(WP), allocatable, intent(out) :: eps_T(:)
+    real(WP), allocatable, intent(out) :: eps_eps_rho(:)
+    real(WP), allocatable, intent(out) :: eps_eps_T(:)
     real(WP), allocatable, intent(out) :: Omega_rot(:)
 
     integer  :: unit
@@ -289,22 +289,22 @@ contains
       kap_T = point_data(14,:)
       kap_rho = point_data(15,:)
       eps = point_data(16,:)
-      eps_T = point_data(17,:)
-      eps_rho = point_data(18,:)
+      eps_eps_T = point_data(17,:)
+      eps_eps_rho = point_data(18,:)
 
       nabla_ad = p*delta/(rho*T*point_data(10,:))
 
       allocate(Omega_rot(n))
       Omega_rot = 0._WP
 
-      ! Decide whether eps_T and eps_rho need rescaling
+      ! Decide whether eps_eps_T and eps_eps_rho need rescaling
 
-      k = MAXLOC(ABS(eps_T), DIM=1)
+      k = MAXLOC(ABS(eps_eps_T), DIM=1)
 
-      if (ABS(eps_T(k)) < 1E-3*ABS(eps(k))) then
+      if (ABS(eps_eps_T(k)) < 1E-3*ABS(eps(k))) then
 
-         eps_T = eps_T*eps
-         eps_rho = eps_rho*eps
+         eps_eps_T = eps_eps_T*eps
+         eps_eps_rho = eps_eps_rho*eps
 
          if(check_log_level('INFO')) then
             write(OUTPUT_UNIT, 120) 'Rescaled epsilon derivatives'
@@ -349,8 +349,8 @@ contains
       kap_T = point_data(13,:)
       kap_rho = point_data(14,:)
       eps = point_data(15,:)
-      eps_T = point_data(16,:)
-      eps_rho = point_data(17,:)
+      eps_eps_T = point_data(16,:)
+      eps_eps_rho = point_data(17,:)
       Omega_rot = point_data(18,:)
 
       ! Finish
@@ -364,6 +364,9 @@ contains
       real(WP), allocatable :: point_data(:,:)
       integer               :: k
       integer               :: k_chk
+
+      real(WP), allocatable :: kap_kap_T(:)
+      real(WP), allocatable :: kap_kap_rho(:)
 
       ! Read data from the version-1.00 file
 
@@ -385,12 +388,15 @@ contains
       nabla_ad = point_data(10,:)
       delta = point_data(11,:)
       kap = point_data(12,:)
-      kap_T = point_data(13,:)/point_data(12,:)
-      kap_rho = point_data(14,:)/point_data(12,:)
+      kap_kap_T = point_data(13,:)
+      kap_kap_rho = point_data(14,:)
       eps = point_data(15,:)
-      eps_T = point_data(16,:)
-      eps_rho = point_data(17,:)
+      eps_eps_T = point_data(16,:)
+      eps_eps_rho = point_data(17,:)
       Omega_rot = point_data(18,:)
+
+      kap_T = kap_kap_T/kap
+      kap_rho = kap_kap_rho/kap
 
       ! Finish
 

@@ -79,8 +79,8 @@ contains
     real(WP), allocatable       :: kap_rho(:)
     real(WP), allocatable       :: kap_T(:)
     real(WP), allocatable       :: eps(:)
-    real(WP), allocatable       :: eps_rho(:)
-    real(WP), allocatable       :: eps_T(:)
+    real(WP), allocatable       :: eps_eps_rho(:)
+    real(WP), allocatable       :: eps_eps_T(:)
     real(WP), allocatable       :: Omega_rot(:)
     real(WP), allocatable       :: x(:)
     real(WP), allocatable       :: V_2(:)
@@ -173,8 +173,8 @@ contains
     kap_T = point_data(17,:)
     kap_rho = point_data(18,:)
     eps = point_data(9,:)
-    eps_T = point_data(19,:)
-    eps_rho = point_data(20,:)
+    eps_eps_T = point_data(19,:)
+    eps_eps_rho = point_data(20,:)
 
     Omega_rot = point_data(16,:)
 
@@ -211,8 +211,8 @@ contains
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
     c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
 
-    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
+    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_eps_T + eps_eps_rho/Gamma_1)*R_star**3/L_star
+    c_eps_S = 4._WP*PI*rho*(eps_eps_T - delta*eps_eps_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
        allocate(Omega_rot(n))

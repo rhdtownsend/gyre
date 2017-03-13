@@ -153,9 +153,6 @@ contains
     kap = kap*1.E1_WP
     eps = eps*1.E4_WP
     
-    eps_rho = eps_rho*eps
-    eps_T = eps_T*eps
-
     Gamma_1 = chi_rho*c_p/c_V
     delta = chi_T/chi_rho
     nabla_ad = p*delta/(rho*T*c_p)
@@ -194,8 +191,8 @@ contains
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
     c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
 
-    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
+    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*eps*R_star**3/L_star
+    c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*eps*R_star**3/L_star
 
     allocate(Omega_rot(n))
 
