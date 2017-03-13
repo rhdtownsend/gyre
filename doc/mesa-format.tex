@@ -84,8 +84,8 @@ Column & Name & Datatype & Definition \\ \hline
 15     & $\kappa_{T}$ & real & $(\partial \ln \kappa/\partial \ln T)_{\rho}$ \\
 16     & $\kappa_{\rho}$ & real & $(\partial \ln \kappa/\partial \ln \rho)_{T}$ \\
 17     & $\epsilon$ & real & Energy generation/loss rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
-18     & $\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
-19     & $\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\ \hline
+18     & $\epsilon\,\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+19     & $\epsilon\,\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\ \hline
 \end{tabular}
 \end{table}
 
@@ -127,8 +127,8 @@ Column & Name & Datatype & Definition \\ \hline
 14     & $\kappa_{T}$ & real & $(\partial \ln \kappa/\partial \ln T)_{\rho}$ \\
 15     & $\kappa_{\rho}$ & real & $(\partial \ln \kappa/\partial \ln \rho)_{T}$ \\
 16     & $\epsilon$ & real & Energy generation/loss rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
-17     & $\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
-18     & $\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+17     & $\epsilon\,\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+18     & $\epsilon\,\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
 19     & $\Omega_{\rm rot}$ & real & Rotation angular velocity (${\rm rad}\,\second^{-1}$) \\  \hline
 \end{tabular}
 \end{table}
@@ -168,16 +168,16 @@ Column & Name & Datatype & Definition \\ \hline
 11     & $\nabla_{\rm ad}$ & real & $(\diff \ln T/\diff \ln P)_{\rm ad}$ \\
 12     & $\delta$ & real & $-(\partial \ln \rho/\partial \ln T)_{P}$  \\
 13     & $\kappa$ & real & Opacity ($\cm^{2}\,\gram^{-1}$) \\
-14     & $\kappa_{T}$ & real & $(\partial \kappa/\partial \ln T)_{\rho}$ ($\cm^{2}\,\gram^{-1}$) \\
-15     & $\kappa_{\rho}$ & real & $(\partial \kappa/\partial \ln \rho)_{T}$ ($\cm^{2}\,\gram^{-1}$) \\
+14     & $\kappa\,\kappa_{T}$ & real & $(\partial \kappa/\partial \ln T)_{\rho}$ ($\cm^{2}\,\gram^{-1}$) \\
+15     & $\kappa\,\kappa_{\rho}$ & real & $(\partial \kappa/\partial \ln \rho)_{T}$ ($\cm^{2}\,\gram^{-1}$) \\
 16     & $\epsilon$ & real & Energy generation/loss rate ($\erg\,s^{-1}\,\gram^{-1}$) \\
-17     & $\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
-18     & $\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+17     & $\epsilon\,\epsilon_{T}$ & real & $(\partial \epsilon/\partial \ln T)_{\rho}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
+18     & $\epsilon\,\epsilon_{\rho}$ & real & $(\partial \epsilon/\partial \ln \rho)_{T}$ ($\erg\,s^{-1}\,\gram^{-1}$) \\
 19     & $\Omega_{\rm rot}$ & real & Rotation angular velocity (${\rm rad}\,\second^{-1}$) \\  \hline
 \end{tabular}
 \end{table}
 
-Note that the definition of $\kappa_{T}$ and $\kappa_{\rho}$ are
-slightly different than in previous versions.
+Note that the definitions of columns 14 and 15 are slightly different
+than in previous versions.
 
 \end{document}
