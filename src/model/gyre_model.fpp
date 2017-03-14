@@ -43,11 +43,12 @@ module gyre_model
   integer, parameter :: I_C_RAD = 10
   integer, parameter :: I_C_THM = 11
   integer, parameter :: I_C_DIF = 12
-  integer, parameter :: I_C_EPS_AD = 13
-  integer, parameter :: I_C_EPS_S = 14
-  integer, parameter :: I_KAP_AD = 15
-  integer, parameter :: I_KAP_S = 16
-  integer, parameter :: I_OMEGA_ROT = 17
+  integer, parameter :: I_C_EPS = 13
+  integer, parameter :: I_C_EPS_AD = 14
+  integer, parameter :: I_C_EPS_S = 15
+  integer, parameter :: I_KAP_AD = 16
+  integer, parameter :: I_KAP_S = 17
+  integer, parameter :: I_OMEGA_ROT = 18
 
   integer, parameter :: I_LAST = I_OMEGA_ROT
 
@@ -144,6 +145,7 @@ module gyre_model
   public :: I_C_RAD
   public :: I_C_THM
   public :: I_C_DIF
+  public :: I_C_EPS
   public :: I_C_EPS_AD
   public :: I_C_EPS_S
   public :: I_KAP_AD
