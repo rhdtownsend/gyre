@@ -1271,10 +1271,10 @@ contains
 
       omega_c = this%rt%omega_c(k, this%omega)
 
-      dtau_dx_tr = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._WP)* &
+      dtau_dx_tr = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._WP)*( &
            lag_rho*CONJG(eul_P)/(c_1*V_2) + &
            eul_rho*CONJG(eul_phi) + &
-           eul_rho*CONJG(xi_r)*pt%x/c_1)*(U/(2._WP*c_1))
+           xi_r*CONJG(eul_rho)*pt%x/c_1))*(U/(2._WP*c_1))
            
     end associate
 
