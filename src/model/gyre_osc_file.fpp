@@ -67,6 +67,7 @@ contains
     real(WP)                    :: L_star
     real(WP), allocatable       :: r(:)
     real(WP), allocatable       :: m(:)
+    real(WP), allocatable       :: L_r(:)
     real(WP), allocatable       :: p(:)
     real(WP), allocatable       :: rho(:) 
     real(WP), allocatable       :: T(:) 
@@ -88,6 +89,7 @@ contains
     real(WP), allocatable       :: c_1(:)
     real(WP), allocatable       :: beta_rad(:)
     real(WP), allocatable       :: c_P(:)
+    real(WP), allocatable       :: c_lum(:)
     real(WP), allocatable       :: c_rad(:)
     real(WP), allocatable       :: c_thm(:)
     real(WP), allocatable       :: c_dif(:)
@@ -158,6 +160,7 @@ contains
 
     r = point_data(1,:)
     m = EXP(point_data(2,:))
+    L_r = point_data(7,:)
 
     T = point_data(3,:)
     P = point_data(4,:)
@@ -190,15 +193,18 @@ contains
     allocate(V_2(n))
     allocate(U(n))
     allocate(c_1(n))
+    allocate(c_lum(n))
 
     where (x /= 0._WP)
        V_2 = G_GRAVITY*m*rho/(P*r*x**2)
        U = 4._WP*PI*rho*r**3/m
        c_1 = (r/R_star)**3/(m/M_star)
+       c_lum = (L_r/L_star)/x**3
     elsewhere
        V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+       c_lum = 4._WP*PI*rho(1)*eps(1)*R_star**3/L_star
     end where
 
     beta_rad = A_RADIATION*T**4/(3._WP*P)
@@ -238,6 +244,7 @@ contains
     call em%define(I_NABLA, nabla)
     call em%define(I_BETA_RAD, beta_rad)
 
+    call em%define(I_C_LUM, c_lum)
     call em%define(I_C_RAD, c_rad)
     call em%define(I_C_THM, c_thm)
     call em%define(I_C_DIF, c_dif)

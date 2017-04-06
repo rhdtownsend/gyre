@@ -60,6 +60,7 @@ contains
     real(WP), allocatable       :: r(:)
     real(WP), allocatable       :: w(:)
     real(WP), allocatable       :: M_r(:)
+    real(WP), allocatable       :: L_r(:)
     real(WP), allocatable       :: P(:)
     real(WP), allocatable       :: rho(:)
     real(WP), allocatable       :: T(:)
@@ -84,6 +85,7 @@ contains
     real(WP), allocatable       :: U(:)
     real(WP), allocatable       :: c_1(:)
     real(WP), allocatable       :: beta_rad(:)
+    real(WP), allocatable       :: c_lum(:)
     real(WP), allocatable       :: c_rad(:)
     real(WP), allocatable       :: c_thm(:)
     real(WP), allocatable       :: c_dif(:)
@@ -121,6 +123,7 @@ contains
 
     call read_dset_alloc(hg, 'r', r)
     call read_dset_alloc(hg, 'w', w)
+    call read_dset_alloc(hg, 'L_r', L_r)
     call read_dset_alloc(hg, 'p', P)
     call read_dset_alloc(hg, 'rho', rho)
     call read_dset_alloc(hg, 'T', T)
@@ -145,6 +148,7 @@ contains
 
     r = r*1.E2_WP
     M_r = w/(1._WP+w)*M_star
+    L_r = L_r*1.E7_WP
 
     P = p*1.E1_WP
     rho = rho*1.E-3_WP
@@ -170,17 +174,20 @@ contains
     allocate(As(n))
     allocate(U(n))
     allocate(c_1(n))
+    allocate(c_lum(n))
 
     where (x /= 0._WP)
        V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
        As = r**3*N2/(G_GRAVITY*M_r)
        U = 4._WP*PI*rho*r**3/M_r
        c_1 = (r/R_star)**3/(M_r/M_star)
+       c_lum = (L_r/L_star)/x**3
     elsewhere
        V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
        As = 0._WP
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+       c_lum = 4._WP*PI*rho(1)*eps(1)*R_star**3/L_star
     end where
 
     beta_rad = A_RADIATION*T**4/(3._WP*P)
@@ -219,6 +226,7 @@ contains
     call em%define(I_NABLA, nabla)
     call em%define(I_BETA_RAD, beta_rad)
 
+    call em%define(I_C_LUM, c_lum)
     call em%define(I_C_RAD, c_rad)
     call em%define(I_C_THM, c_thm)
     call em%define(I_C_DIF, c_dif)

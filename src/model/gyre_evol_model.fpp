@@ -259,11 +259,13 @@ contains
          if (s > s_i .AND. k_i + 2 <= k_o) then
             coeff(k_i) = coeff(k_i+1) + (gr%pt(k_i)%x - gr%pt(k_i+1)%x)*(coeff(k_i+2) - coeff(k_i+1))/&
                  (gr%pt(k_i+2)%x - gr%pt(k_i+1)%x)
+            print *,'Repair inner coeff at:',k_i
          endif
                
          if (s < s_o .AND. k_o - 2 >= k_i) then
             coeff(k_o) = coeff(k_o-1) + (gr%pt(k_o)%x - gr%pt(k_o-1)%x)*(coeff(k_o-1) - coeff(k_o-2))/ &
                  (gr%pt(k_o-1)%x - gr%pt(k_o-2)%x)
+            print *,'Repair outer coeff at:',k_o
          endif
 
     end do seg_loop
