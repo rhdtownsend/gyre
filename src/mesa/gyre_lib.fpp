@@ -1,7 +1,7 @@
 ! Module   : gyre_lib
 ! Purpose  : library interface for use in MESA
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -27,18 +27,18 @@ module gyre_lib
   use gyre_ad_bvp
   use gyre_bvp
   use gyre_constants
-  use gyre_evol_model
   use gyre_ext
-  use gyre_input
   use gyre_grid
+  use gyre_grid_factory
   use gyre_grid_par
   use gyre_mesa_file
   use gyre_mode
-  use gyre_model
   use gyre_mode_par
+  use gyre_model
+  use gyre_model_par
   use gyre_nad_bvp
-  use gyre_osc_par
   use gyre_num_par
+  use gyre_osc_par
   use gyre_rad_bvp
   use gyre_scan_par
   use gyre_search
@@ -52,8 +52,14 @@ module gyre_lib
 
   ! Module variables
 
+  type(model_par_t), save             :: ml_p_m
+  type(mode_par_t), allocatable, save :: md_p_m(:)
+  type(osc_par_t), allocatable, save  :: os_p_m(:)
+  type(num_par_t), allocatable, save  :: nm_p_m(:)
+  type(grid_par_t), allocatable, save :: gr_p_m(:)
+  type(scan_par_t), allocatable, save :: sc_p_m(:)
+
   class(model_t), pointer, save :: ml_m => null()
-  real(WP), allocatable, save   :: x_ml_m(:)
 
   ! Access specifiers
 
@@ -71,6 +77,7 @@ module gyre_lib
 
   public :: mode_t
   public :: gyre_init
+  public :: gyre_final
   public :: gyre_read_model
   public :: gyre_set_model
   public :: gyre_get_modes
@@ -79,7 +86,11 @@ module gyre_lib
 
 contains
 
-  subroutine gyre_init ()
+  subroutine gyre_init (file)
+
+    character(*), intent(in) :: file
+
+    integer :: unit
 
     ! Initialize
 
@@ -87,20 +98,36 @@ contains
 
     call set_log_level('WARN')
 
+    ! Read the namelist file
+
+    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+
+    call read_model_par(unit, ml_p_m)
+    call read_mode_par(unit, md_p_m)
+    call read_osc_par(unit, os_p_m)
+    call read_num_par(unit, nm_p_m)
+    call read_grid_par(unit, gr_p_m)
+    call read_scan_par(unit, sc_p_m)
+
     ! Finish
 
     return
 
   end subroutine gyre_init
 
-!****
+  !****
 
   subroutine gyre_final()
 
     ! Finalize
 
     if (ASSOCIATED(ml_m)) deallocate(ml_m)
-    if (ALLOCATED(x_ml_m)) deallocate(x_ml_m)
+
+    if (ALLOCATED(md_p_m)) deallocate(md_p_m)
+    if (ALLOCATED(os_p_m)) deallocate(os_p_m)
+    if (ALLOCATED(nm_p_m)) deallocate(nm_p_m)
+    if (ALLOCATED(gr_p_m)) deallocate(gr_p_m)
+    if (ALLOCATED(sc_p_m)) deallocate(sc_p_m)
 
     call final_parallel()
 
@@ -110,22 +137,19 @@ contains
 
   end subroutine gyre_final
 
-!****
+  !****
 
-  subroutine gyre_read_model (file, deriv_type)
+  subroutine gyre_read_model (file)
 
     character(LEN=*), intent(in) :: file
-    character(LEN=*), intent(in) :: deriv_type
-
-    type(evol_model_t) :: ec
 
     ! Read the model
 
     if (ASSOCIATED(ml_m)) deallocate(ml_m)
 
-    call read_mesa_model(file, deriv_type, .TRUE., ec, x_ml_m)
+    ml_p_m%file = file
 
-    allocate(ml_m, SOURCE=ec)
+    call read_mesa_model(ml_p_m, ml_m)
 
     ! Finish
 
@@ -133,72 +157,31 @@ contains
 
   end subroutine gyre_read_model
   
-!****
+  !****
 
-  subroutine gyre_set_model (global_data, point_data, deriv_type)
+  subroutine gyre_set_model (global_data, point_data, version)
 
-    real(WP), intent(in)         :: global_data(:)
-    real(WP), intent(in)         :: point_data(:,:)
-    character(LEN=*), intent(in) :: deriv_type
-
-    logical :: add_center
+    real(WP), intent(in) :: global_data(:)
+    real(WP), intent(in) :: point_data(:,:)
+    integer, intent(in)  :: version
 
     ! Initialize the model
 
-    if(ASSOCIATED(ml_m)) deallocate(ml_m)
+    if (ASSOCIATED(ml_m)) deallocate(ml_m)
 
-    associate ( &
-         M_star => global_data(1), &
-         R_star => global_data(2), &
-         L_star => global_data(3), &
-         r => point_data(1,:), &
-         m => point_data(2,:), &
-         L => point_data(3,:), &
-         P => point_data(4,:), &
-         T => point_data(5,:), &
-         rho => point_data(6,:), &
-         nabla => point_data(7,:), &
-         N2 => point_data(8,:), &
-         Gamma_1 => point_data(9,:), &
-         nabla_ad => point_data(10,:), &
-         delta => point_data(11,:), &
-         kap => point_data(12,:), &
-         kap_T => point_data(13,:), &
-         kap_rho => point_data(14,:), &
-         eps => point_data(15,:), &
-         eps_T => point_data(16,:), &
-         eps_rho => point_data(17,:), &
-         omega => point_data(18,:))
-      
-      add_center = r(1) /= 0._WP .OR. m(1) /= 0._WP
+    call init_mesa_model(ml_p_m, global_data, point_data, version, ml_m)
 
-      allocate(ml_m, SOURCE=evol_model_t(M_star, R_star, L_star, r, m, p, rho, T, N2, &
-                                         Gamma_1, nabla_ad, delta, omega, &
-                                         nabla, kap, kap_rho, kap_T, &
-                                         eps, eps_rho, eps_T, &
-                                         deriv_type, add_center=add_center))
-
-      if(add_center) then
-         x_ml_m = [0._WP,r/R_star]
-      else
-         x_ml_m = r/R_star
-      endif
-
-    end associate
-
-    ! Finish
+    ! Finsh
 
     return
 
   end subroutine gyre_set_model
 
-!****
+  !****
 
-  subroutine gyre_get_modes (l, filename, non_ad, user_sub, ipar, rpar)
+  subroutine gyre_get_modes (l, user_sub, ipar, rpar)
 
-    integer, intent(in)          :: l
-    character(LEN=*), intent(in) :: filename
-    logical, intent(in)          :: non_ad
+    integer, intent(in)     :: l
     interface
        subroutine user_sub (md, ipar, rpar, retcode)
          import mode_t
@@ -212,83 +195,54 @@ contains
     integer, intent(inout)  :: ipar(:)
     real(WP), intent(inout) :: rpar(:)
 
-    integer                       :: unit
-    type(mode_par_t), allocatable :: mp(:)
-    type(osc_par_t), allocatable  :: op(:)
-    type(num_par_t), allocatable  :: np(:)
-    type(scan_par_t), allocatable :: sp(:)
-    type(grid_par_t), allocatable :: shoot_gp(:)
-    type(grid_par_t), allocatable :: recon_gp(:)
-    integer                       :: n_md
-    integer                       :: d_md
-    type(mode_t), allocatable     :: md(:)
+    type(mode_t), allocatable     :: md_ad(:)
+    integer                       :: n_md_ad
+    integer                       :: d_md_ad
     integer                       :: i
-    type(osc_par_t), allocatable  :: op_sel(:)
-    type(num_par_t), allocatable  :: np_sel(:)
-    type(grid_par_t), allocatable :: shoot_gp_sel(:)
-    type(grid_par_t), allocatable :: recon_gp_sel(:)
-    type(scan_par_t), allocatable :: sp_sel(:)
-    real(WP)                      :: x_i
-    real(WP)                      :: x_o
+    type(osc_par_t)               :: os_p_sel
+    type(num_par_t)               :: nm_p_sel
+    type(grid_par_t)              :: gr_p_sel
+    type(scan_par_t), allocatable :: sc_p_sel(:)
+    type(grid_t)                  :: gr
     real(WP), allocatable         :: omega(:)
     real(WP)                      :: omega_min
     real(WP)                      :: omega_max
-    real(WP), allocatable         :: x_sh(:)
-    class(r_bvp_t), allocatable   :: ad_bp
-    class(c_bvp_t), allocatable   :: nad_bp
+    class(r_bvp_t), allocatable   :: bp_ad
+    class(c_bvp_t), allocatable   :: bp_nad
 
     $ASSERT(ASSOCIATED(ml_m),No model provided)
 
-    ! Read parameters
-
-    open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
-
-    call read_mode_par(unit, mp)
-    call read_osc_par(unit, op)
-    call read_num_par(unit, np)
-    call read_shoot_grid_par(unit, shoot_gp)
-    call read_recon_grid_par(unit, recon_gp)
-    call read_scan_par(unit, sp)
-
-    close(unit)
-
     ! Loop through modepars
 
-    d_md = 128
-    n_md = 0
+    d_md_ad = 128
+    n_md_ad = 0
 
-    allocate(md(d_md))
+    allocate(md_ad(d_md_ad))
 
-    mp_loop : do i = 1, SIZE(mp)
+    md_p_loop : do i = 1, SIZE(md_p_m)
 
-       if (mp(i)%l == l) then
+       if (md_p_m(i)%l == l) then
 
           ! Select parameters according to tags
 
-          call select_par(op, mp(i)%tag, op_sel, last=.TRUE.)
-          call select_par(np, mp(i)%tag, np_sel, last=.TRUE.)
-          call select_par(shoot_gp, mp(i)%tag, shoot_gp_sel)
-          call select_par(recon_gp, mp(i)%tag, recon_gp_sel)
-          call select_par(sp, mp(i)%tag, sp_sel)
+          call select_par(os_p_m, md_p_m(i)%tag, os_p_sel)
+          call select_par(nm_p_m, md_p_m(i)%tag, nm_p_sel)
+          call select_par(gr_p_m, md_p_m(i)%tag, gr_p_sel)
+          call select_par(sc_p_m, md_p_m(i)%tag, sc_p_sel)
 
-          $ASSERT(SIZE(op_sel) == 1,No matching osc parameters)
-          $ASSERT(SIZE(np_sel) == 1,No matching num parameters)
-          $ASSERT(SIZE(shoot_gp_sel) >= 1,No matching shoot_grid parameters)
-          $ASSERT(SIZE(recon_gp_sel) >= 1,No matching recon_grid parameters)
-          $ASSERT(SIZE(sp_sel) >= 1,No matching scan parameters)
+          ! Create the scaffold grid (used in setting up the frequency array)
+
+          gr = grid_t(ml_m%grid(), gr_p_sel%x_i, gr_p_sel%x_o)
 
           ! Set up the frequency array
 
-          x_i = x_ml_m(1)
-          x_o = x_ml_m(SIZE(x_ml_m))
+          call build_scan(ml_m, gr, md_p_m(i), os_p_sel, sc_p_sel, omega)
 
-          call build_scan(sp_sel, ml_m, mp(i), op_sel(1), x_i, x_o, omega)
+          call check_scan(ml_m, gr, omega, md_p_m(i), os_p_sel)
 
-          ! Set up the shooting grid
-          
-          call build_grid(shoot_gp_sel, ml_m, mp(i), op_sel(1), omega, x_ml_m, x_sh)
+          ! Set frequency bounds for solutions
 
-          if (np_sel(1)%restrict_roots) then
+          if (nm_p_sel%restrict_roots) then
              omega_min = MINVAL(omega)
              omega_max = MAXVAL(omega)
           else
@@ -296,38 +250,42 @@ contains
              omega_max = HUGE(0._WP)
           endif
 
+          ! Create the full grid
+
+          gr = grid_t(ml_m, omega, gr_p_sel, md_p_m(i), os_p_sel)
+
           ! Set up the bvp's
 
-          if(mp(i)%l == 0 .AND. op_sel(1)%reduce_order) then
-             allocate(ad_bp, SOURCE=rad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
+          if (md_p_m(i)%l == 0 .AND. os_p_sel%reduce_order) then
+             allocate(bp_ad, SOURCE=rad_bvp_t(ml_m, gr, md_p_m(i), nm_p_sel, os_p_sel))
           else
-             allocate(ad_bp, SOURCE=ad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
+             allocate(bp_ad, SOURCE=ad_bvp_t(ml_m, gr, md_p_m(i), nm_p_sel, os_p_sel))
           endif
 
-          if (non_ad) then
-             allocate(nad_bp, SOURCE=nad_bvp_t(x_sh, ml_m, mp(i), op_sel(1), np_sel(1), omega_min, omega_max))
+          if (os_p_sel%nonadiabatic) then
+             allocate(bp_nad, SOURCE=nad_bvp_t(ml_m, gr, md_p_m(i), nm_p_sel, os_p_sel))
           endif
 
           ! Find modes
 
-          if (non_ad) then
-             n_md = 0
-             call scan_search(ad_bp, np_sel(1), omega, process_root_ad)
-             call prox_search(nad_bp, mp(i), np_sel(1), op_sel(1), md(:n_md), process_root_nad)
+          if (os_p_sel%nonadiabatic) then
+             n_md_ad = 0
+             call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
+             call prox_search(bp_nad, md_ad(:n_md_ad), omega_min, omega_max, process_mode_nad, md_p_m(i), nm_p_sel, os_p_sel)
           else
-             call scan_search(ad_bp, np_sel(1), omega, process_root_ad)
+             call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
           endif
 
           ! Clean up
 
-          deallocate(ad_bp)
-          if (non_ad) deallocate(nad_bp)
-
+          deallocate(bp_ad)
+          if (ALLOCATED(bp_nad)) deallocate(bp_nad)
+          
        end if
 
        ! Loop around
 
-    end do mp_loop
+    end do md_p_loop
 
     ! Finish
 
@@ -335,65 +293,36 @@ contains
 
   contains
 
-    subroutine process_root_ad (omega, n_iter, discrim_ref)
+    subroutine process_mode_ad (md, n_iter, chi)
 
-      real(WP), intent(in)      :: omega
+      type(mode_t), intent(in)  :: md
       integer, intent(in)       :: n_iter
-      type(r_ext_t), intent(in) :: discrim_ref
+      type(r_ext_t), intent(in) :: chi
 
-      real(WP), allocatable :: x_rc(:)
-      integer               :: n
-      real(WP)              :: x_ref
-      real(WP), allocatable :: y(:,:)
-      real(WP)              :: y_ref(6)
-      type(r_ext_t)         :: discrim
-      type(mode_t)          :: md_new
-      integer               :: retcode
+      integer :: retcode
 
-      ! Build the reconstruction grid
+      if (md%n_pg < md_p_m(i)%n_pg_min .OR. md%n_pg > md_p_m(i)%n_pg_max) return
 
-      call build_grid(recon_gp_sel, ml_m, mp(i), op_sel(1), [omega], x_sh, x_rc, verbose=.FALSE.)
+      ! Store or process the adiabatic mode
 
-      ! Reconstruct the solution
+      if (os_p_sel%nonadiabatic) then
 
-      x_ref = MIN(MAX(op_sel(1)%x_ref, x_sh(1)), x_sh(SIZE(x_sh)))
+         n_md_ad = n_md_ad + 1
 
-      n = SIZE(x_rc)
-
-      allocate(y(6,n))
-
-      call ad_bp%recon(omega, x_rc, x_ref, y, y_ref, discrim)
-
-      ! Create the mode
-
-      md_new = mode_t(ml_m, mp(i), op_sel(1), CMPLX(omega, KIND=WP), c_ext_t(discrim), &
-                      x_rc, CMPLX(y, KIND=WP), x_ref, CMPLX(y_ref, KIND=WP))
-
-      if (md_new%n_pg < mp(i)%n_pg_min .OR. md_new%n_pg > mp(i)%n_pg_max) return
-
-      md_new%n_iter = n_iter
-      md_new%chi = ABS(discrim)/ABS(discrim_ref)
-
-      ! Store it or process it
-
-      if (non_ad) then
-
-         n_md = n_md + 1
-
-         if (n_md > d_md) then
-            d_md = 2*d_md
-            call reallocate(md, [d_md])
+         if (n_md_ad > d_md_ad) then
+            d_md_ad = 2*d_md_ad
+            call reallocate(md_ad, [d_md_ad])
          endif
-         
-         md(n_md) = md_new
+       
+         md_ad(n_md_ad) = md
 
-         call md(n_md)%prune()
+         call md_ad(n_md_ad)%prune()
 
       else
 
          retcode = 0
 
-         call user_sub(md_new, ipar, rpar, retcode)
+         call user_sub(md, ipar, rpar, retcode)
 
       endif
 
@@ -401,64 +330,29 @@ contains
 
       return
 
-    end subroutine process_root_ad
+    end subroutine process_mode_ad
 
-!****
+    !****
 
-    subroutine process_root_nad (omega, n_iter, discrim_ref)
+    subroutine process_mode_nad (md, n_iter, chi)
 
-      complex(WP), intent(in)   :: omega
+      type(mode_t), intent(in)  :: md
       integer, intent(in)       :: n_iter
-      type(r_ext_t), intent(in) :: discrim_ref
+      type(r_ext_t), intent(in) :: chi
 
-      real(WP), allocatable    :: x_rc(:)
-      integer                  :: n
-      real(WP)                 :: x_ref
-      complex(WP), allocatable :: y(:,:)
-      complex(WP)              :: y_ref(6)
-      type(c_ext_t)            :: discrim
-      type(mode_t)             :: md_new
-      integer                  :: retcode
+      integer :: retcode
 
-      ! Build the reconstruction grid
-
-      call build_grid(recon_gp_sel, ml_m, mp(i), op_sel(1), [REAL(omega)], x_sh, x_rc, verbose=.FALSE.)
-
-      ! Reconstruct the solution
-
-      x_ref = MIN(MAX(op_sel(1)%x_ref, x_sh(1)), x_sh(SIZE(x_sh)))
-
-      n = SIZE(x_rc)
-
-      allocate(y(6,n))
-
-      call nad_bp%recon(omega, x_rc, x_ref, y, y_ref, discrim)
-
-      ! Create the mode
-
-      md_new = mode_t(ml_m, mp(i), op_sel(1), CMPLX(omega, KIND=WP), discrim, &
-           x_rc, y, x_ref, y_ref)
-
-      md_new%n_iter = n_iter
-      md_new%chi = ABS(discrim)/ABS(discrim_ref)
-
-      if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 120) md_new%mp%l, md_new%n_pg, md_new%n_p, md_new%n_g, &
-              md_new%omega, real(md_new%chi), md_new%n_iter, md_new%n
-120      format(4(2X,I8),3(2X,E24.16),2X,I6,2X,I7)
-      endif
-
-      ! Process it
+      ! Process the non-adiabatic mode
 
       retcode = 0
 
-      call user_sub(md_new, ipar, rpar, retcode)
+      call user_sub(md, ipar, rpar, retcode)
 
       ! Finish
 
       return
 
-    end subroutine process_root_nad
+    end subroutine process_mode_nad
 
   end subroutine gyre_get_modes
 
