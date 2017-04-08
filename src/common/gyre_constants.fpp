@@ -77,6 +77,7 @@ module gyre_constants
   public :: GYRE_DIR
 
   public :: read_constants
+  public :: set_constant
 
   ! Procedures
 
@@ -123,5 +124,35 @@ contains
     return
 
   end subroutine read_constants
+
+  subroutine set_constant (name, value)
+
+    character(*), intent(in) :: name
+    real(WP), intent(in)     :: value
+
+    ! Set the constant
+
+    select case (name)
+    case ('G_GRAVITY')
+       G_GRAVITY = value
+    case ('C_LIGHT')
+       C_LIGHT = value
+    case ('A_RADIATION')
+       A_RADIATION = value
+    case ('M_SUN')
+       M_SUN = value
+    case ('R_SUN')
+       R_SUN = value
+    case ('L_SUN')
+       L_SUN = value
+    case default
+       $ABORT(Invalid name)
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine set_constant
 
 end module gyre_constants
