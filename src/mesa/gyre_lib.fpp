@@ -26,7 +26,7 @@ module gyre_lib
 
   use gyre_ad_bvp
   use gyre_bvp
-  use gyre_constants
+  use gyre_constants, gyre_set_constant => set_constant
   use gyre_ext
   use gyre_grid
   use gyre_grid_factory
@@ -78,6 +78,7 @@ module gyre_lib
   public :: mode_t
   public :: gyre_init
   public :: gyre_final
+  public :: gyre_set_constant
   public :: gyre_read_model
   public :: gyre_set_model
   public :: gyre_get_modes
