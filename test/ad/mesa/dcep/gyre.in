@@ -12,7 +12,7 @@
 /
 
 &osc
-	inner_bound = 'ZERO'
+	inner_bound = 'ZERO_R'
 /
 
 &num
