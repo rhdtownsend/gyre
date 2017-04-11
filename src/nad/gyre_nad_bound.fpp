@@ -43,10 +43,12 @@ module gyre_nad_bound
   ! Parameter definitions
 
   integer, parameter :: REGULAR_TYPE = 1
-  integer, parameter :: ZERO_TYPE = 2
-  integer, parameter :: DZIEM_TYPE = 3
-  integer, parameter :: UNNO_TYPE = 4
-  integer, parameter :: JCD_TYPE = 5
+  integer, parameter :: ZERO_R_TYPE = 2
+  integer, parameter :: ZERO_H_TYPE = 3
+  integer, parameter :: VACUUM_TYPE = 4
+  integer, parameter :: DZIEM_TYPE = 5
+  integer, parameter :: UNNO_TYPE = 6
+  integer, parameter :: JCD_TYPE = 7
 
   integer, parameter :: J_V = 1
   integer, parameter :: J_V_G = 2
@@ -74,9 +76,10 @@ module gyre_nad_bound
      procedure         :: stencil_
      procedure, public :: build_i
      procedure         :: build_regular_i_
-     procedure         :: build_zero_i_
+     procedure         :: build_zero_r_i_
+     procedure         :: build_zero_h_i_
      procedure, public :: build_o
-     procedure         :: build_zero_o_
+     procedure         :: build_vacuum_o_
      procedure         :: build_dziem_o_
      procedure         :: build_unno_o_
      procedure         :: build_jcd_o_
@@ -119,31 +122,34 @@ contains
     case ('REGULAR')
        $ASSERT(pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
        bd%type_i = REGULAR_TYPE
-    case ('ZERO')
+    case ('ZERO_R')
        $ASSERT(pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
-       bd%type_i = ZERO_TYPE
+       bd%type_i = ZERO_R_TYPE
+    case ('ZERO_H')
+       $ASSERT(pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
+       bd%type_i = ZERO_H_TYPE
     case default
        $ABORT(Invalid inner_bound)
     end select
 
     select case (os_p%outer_bound)
-    case ('ZERO')
-       bd%type_o = ZERO_TYPE
+    case ('VACUUM')
+       bd%type_o = VACUUM_TYPE
     case ('DZIEM')
        if (ml%is_vacuum(pt_o)) then
-          bd%type_o = ZERO_TYPE
+          bd%type_o = VACUUM_TYPE
        else
           bd%type_o = DZIEM_TYPE
        endif
     case ('UNNO')
        if (ml%is_vacuum(pt_o)) then
-          bd%type_o = ZERO_TYPE
+          bd%type_o = VACUUM_TYPE
        else
           bd%type_o = UNNO_TYPE
        end if
     case ('JCD')
        if (ml%is_vacuum(pt_o)) then
-          bd%type_o = ZERO_TYPE
+          bd%type_o = VACUUM_TYPE
        else
           bd%type_o = JCD_TYPE
        end if
@@ -198,7 +204,8 @@ contains
     select case (this%type_i)
     case (REGULAR_TYPE)
        this%coeffs(1,J_C_1) = this%ml%coeff(I_C_1, pt_i)
-    case (ZERO_TYPE)
+    case (ZERO_R_TYPE)
+    case (ZERO_H_TYPE)
     case default
        $ABORT(Invalid type_i)
     end select
@@ -206,7 +213,7 @@ contains
     ! Outer boundary
 
     select case (this%type_o)
-    case (ZERO_TYPE)
+    case (VACUUM_TYPE)
        this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
     case (DZIEM_TYPE)
        this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
@@ -249,8 +256,10 @@ contains
     select case (this%type_i)
     case (REGULAR_TYPE)
        call this%build_regular_i_(omega, B, scl)
-    case (ZERO_TYPE)
-       call this%build_zero_i_(omega, B, scl)
+    case (ZERO_R_TYPE)
+       call this%build_zero_r_i_(omega, B, scl)
+    case (ZERO_H_TYPE)
+       call this%build_zero_h_i_(omega, B, scl)
     case default
        $ABORT(Invalid type_i)
     end select
@@ -328,7 +337,7 @@ contains
 
   !****
 
-  subroutine build_zero_i_ (this, omega, B, scl)
+  subroutine build_zero_r_i_ (this, omega, B, scl)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
@@ -341,7 +350,7 @@ contains
     $CHECK_BOUNDS(SIZE(scl),this%n_i)
 
     ! Evaluate the inner boundary conditions (zero
-    ! displacement/gravity)
+    ! radial displacement/gravity)
 
     associate( &
          alpha_gr => this%alpha_gr)
@@ -377,7 +386,60 @@ contains
 
     return
 
-  end subroutine build_zero_i_
+  end subroutine build_zero_r_i_
+
+  !****
+
+  subroutine build_zero_h_i_ (this, omega, B, scl)
+
+    class(nad_bound_t), intent(in) :: this
+    complex(WP), intent(in)        :: omega
+    complex(WP), intent(out)       :: B(:,:)
+    complex(WP), intent(out)       :: scl(:)
+
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(scl),this%n_i)
+
+    ! Evaluate the inner boundary conditions (zero
+    ! horizontal displacement/gravity)
+
+    associate( &
+         alpha_gr => this%alpha_gr)
+
+      ! Set up the boundary conditions
+
+      B(1,1) = 0._WP
+      B(1,2) = 1._WP
+      B(1,3) = alpha_gr*(1._WP)
+      B(1,4) = alpha_gr*(0._WP)
+      B(1,5) = 0._WP
+      B(1,6) = 0._WP
+        
+      B(2,1) = alpha_gr*(0._WP)
+      B(2,2) = alpha_gr*(0._WP)
+      B(2,3) = alpha_gr*(0._WP)
+      B(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
+      B(2,5) = alpha_gr*(0._WP)
+      B(2,6) = alpha_gr*(0._WP)
+      
+      B(3,1) = 0._WP
+      B(3,2) = 0._WP
+      B(3,3) = alpha_gr*(0._WP)
+      B(3,4) = alpha_gr*(0._WP)
+      B(3,5) = 1._WP
+      B(3,6) = 0._WP
+
+      scl = 1._WP
+
+    end associate
+      
+    ! Finish
+
+    return
+
+  end subroutine build_zero_h_i_
 
   !****
 
@@ -391,8 +453,8 @@ contains
     ! Evaluate the outer boundary conditions
 
     select case (this%type_o)
-    case (ZERO_TYPE)
-       call this%build_zero_o_(omega, B, scl)
+    case (VACUUM_TYPE)
+       call this%build_vacuum_o_(omega, B, scl)
     case (DZIEM_TYPE)
        call this%build_dziem_o_(omega, B, scl)
     case (UNNO_TYPE)
@@ -415,7 +477,7 @@ contains
   
   !****
 
-  subroutine build_zero_o_ (this, omega, B, scl)
+  subroutine build_vacuum_o_ (this, omega, B, scl)
 
     class(nad_bound_t), intent(in) :: this
     complex(WP), intent(in)        :: omega
@@ -429,7 +491,7 @@ contains
 
     $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
-    ! Evaluate the outer boundary conditions (zero-pressure)
+    ! Evaluate the outer boundary conditions (vacuum)
 
     associate( &
          V => this%coeffs(2,J_V), &
@@ -470,7 +532,7 @@ contains
 
     return
 
-  end subroutine build_zero_o_
+  end subroutine build_vacuum_o_
 
   !****
 
