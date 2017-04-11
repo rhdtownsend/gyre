@@ -64,20 +64,21 @@ module gyre_${T}_band_sysmtx
      private
      $TYPE(WP), allocatable        :: A_b(:,:) ! Banded matrix
      integer, allocatable          :: ipiv(:)  ! Pivot indices
-     type(${T}_ext_t)              :: S_i      ! Inner boundary scale
-     type(${T}_ext_t)              :: S_o      ! Outer boundary scale
-     type(${T}_ext_t), allocatable :: S(:)     ! Block scales
+     $TYPE(WP), allocatable        :: scl_i(:) ! Inner boundary scales
+     $TYPE(WP), allocatable        :: scl_o(:) ! Outer boundary scales
+     type(${T}_ext_t), allocatable :: scl(:)   ! Block scales
      integer                       :: n_ul     ! Number of sub-/super-diagonals
    contains
      private
-     procedure, public :: set_B_i => set_B_i_
-     procedure, public :: set_B_o => set_B_o_
-     procedure, public :: set_E => set_E_
+     procedure, public :: set_B_i
+     procedure, public :: set_B_o
+     procedure, public :: set_E
      procedure         :: set_row_
-     procedure, public :: factorize => factorize_
-     procedure, public :: scale_rows_
-     procedure, public :: det => det_
-     procedure, public :: null_vec => null_vec_
+     procedure, public :: factorize
+     procedure         :: scale_rows_
+     procedure, public :: det
+     procedure, public :: soln_vec_hom
+     procedure, public :: soln_vec_inhom
   end type ${T}_band_sysmtx_t
 
   ! Interfaces
@@ -114,7 +115,10 @@ contains
     allocate(sm%A_b(3*sm%n_ul+1,n_e*(n+1)))
     allocate(sm%ipiv(n_e*(n+1)))
 
-    allocate(sm%S(n))
+    allocate(sm%scl_i(n_i))
+    allocate(sm%scl_o(n_o))
+
+    allocate(sm%scl(n))
 
     sm%n = n
     sm%n_e = n_e
@@ -127,13 +131,13 @@ contains
 
   end function ${T}_band_sysmtx_t_
 
-!****
+  !****
 
-  subroutine set_B_i_ (this, B, S)
+  subroutine set_B_i (this, B, scl)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                    :: B(:,:)
-    type(${T}_ext_t), intent(in)             :: S
+    $TYPE(WP), intent(in)                    :: scl(:)
 
     integer :: i_0
     integer :: j_0
@@ -141,6 +145,8 @@ contains
     
     $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(scl),this%n_i)
 
     ! Set the inner boundary conditions
 
@@ -151,21 +157,21 @@ contains
        call this%set_row_(i_0+i-1, j_0, B(i,:))
     end do
 
-    this%S_i = S
+    this%scl_i = scl
 
     ! Finish
 
     return
 
-  end subroutine set_B_i_
+  end subroutine set_B_i
 
-!****
+  !****
 
-  subroutine set_B_o_ (this, B, S)
+  subroutine set_B_o (this, B, scl)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                    :: B(:,:)
-    type(${T}_ext_t), intent(in)             :: S
+    $TYPE(WP), intent(in)                    :: scl(:)
 
     integer :: i_0
     integer :: j_0
@@ -173,6 +179,8 @@ contains
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
     ! Set the outer boundary conditions
 
@@ -183,23 +191,23 @@ contains
        call this%set_row_(i_0+i-1, j_0, B(i,:))
     end do
 
-    this%S_o = S
+    this%scl_o = scl
 
     ! Finish
 
     return
 
-  end subroutine set_B_o_
+  end subroutine set_B_o
 
-!****
+  !****
 
-  subroutine set_E_ (this, k, E_l, E_r, S)
+  subroutine set_E (this, k, E_l, E_r, scl)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
     integer, intent(in)                      :: k
     $TYPE(WP), intent(in)                    :: E_l(:,:)
     $TYPE(WP), intent(in)                    :: E_r(:,:)
-    type(${T}_ext_t), intent(in)             :: S
+    type(${T}_ext_t), intent(in)             :: scl
 
     integer   :: i_0
     integer   :: j_0
@@ -228,15 +236,15 @@ contains
 
     end do
 
-    this%S(k) = S
+    this%scl(k) = scl
 
     ! Finish
 
     return
 
-  end subroutine set_E_
+  end subroutine set_E
 
-!****
+  !****
 
   subroutine set_row_ (this, i_0, j_0, R)
 
@@ -279,9 +287,9 @@ contains
 
   end subroutine set_row_
 
-!****
+  !****
 
-  subroutine factorize_ (this)
+  subroutine factorize (this)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
 
@@ -305,9 +313,9 @@ contains
 
     return
 
-  end subroutine factorize_
+  end subroutine factorize
 
-!****
+  !****
 
   subroutine scale_rows_ (this)
 
@@ -315,37 +323,44 @@ contains
 
     integer  :: i
     integer  :: j
-    real(WP) :: scale
+    real(WP) :: scl
     integer  :: i_b
     integer  :: j_b
-    integer  :: k
 
     ! Scale the rows of the sysmtx to have maximum absolute value of unity
 
     do i = 1, this%n_e*(this%n+1)
 
-       scale = 0._WP
+       scl = 0._WP
 
        do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
           i_b = 2*this%n_ul + 1 + i - j
           j_b = j
-          scale = MAX(scale, ABS(this%A_b(i_b,j_b)))
+          scl = MAX(scl, ABS(this%A_b(i_b,j_b)))
        end do
 
        do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
           i_b = 2*this%n_ul + 1 + i - j
           j_b = j
-          this%A_b(i_b,j_b) = this%A_b(i_b,j_b)/scale
+          this%A_b(i_b,j_b) = this%A_b(i_b,j_b)/scl
        end do
 
-       k = (i-1+this%n_o)/this%n_e
+       if (i <= this%n_i) then
 
-       if (k == 0) then
-          this%S_i = this%S_i*scale
-       elseif (k == this%n+1) then
-          this%S_o = this%S_o*scale
+          this%scl_i(i) = this%scl_i(i)*scl
+
+       elseif (i > this%n_e*this%n + this%n_i) then
+
+          associate (i_ => i-this%n_e*this%n-this%n_i)
+            this%scl_o(i_) = this%scl_o(i_)*scl
+          end associate
+
        else
-          this%S(k) = this%S(k)*scale
+
+          associate (k => (i-1+this%n_o)/this%n_e)
+            this%scl(k) = this%scl(k)*scl
+          end associate
+
        endif
 
     end do
@@ -356,9 +371,9 @@ contains
 
   end subroutine scale_rows_
 
-!****
+  !****
 
-  function det_ (this) result (det)
+  function det (this)
 
     class(${T}_band_sysmtx_t), intent(in) :: this
     type(${T}_ext_t)                      :: det
@@ -367,7 +382,7 @@ contains
 
     ! Evaluate the determinant
 
-    det = product([${T}_ext_t(this%A_b(2*this%n_ul+1,:)),this%S_i,this%S,this%S_o])
+    det = product([${T}_ext_t(this%A_b(2*this%n_ul+1,:)),${T}_ext_t(this%scl_i),this%scl,${T}_ext_t(this%scl_o)])
  
     do j = 1, SIZE(this%ipiv)
        if(this%ipiv(j) /= j) det = -det
@@ -377,11 +392,11 @@ contains
 
     return
 
-  end function det_
+  end function det
 
-!****
+  !****
 
-  function null_vec_ (this) result (v)
+  function soln_vec_hom (this) result (v)
   
     class(${T}_band_sysmtx_t), intent(in) :: this
     $TYPE(WP)                             :: v(this%n_e*(this%n+1))
@@ -396,12 +411,13 @@ contains
     integer                :: j
     integer                :: info
 
-    ! Evaluate the null vector (working on the assumption that the
-    ! final diagonal element of the factorized matrix is zero)
+    ! Evaluate the solution vector v of the homogeneous linear system
+    ! S v = 0. It is assumed that the nullity nul(S) >= 1
 
     associate (n => this%n, n_e => this%n_e, n_ul => this%n_ul)
 
-      ! Locate the singular element on the diagonal of the outer block
+      ! Locate the smallest element on the diagonal of the outer
+      ! block (this will be taken to be the singular element)
 
       i_s = 0
       A_s = HUGE(0._WP)
@@ -450,7 +466,53 @@ contains
 
     return
 
-  end function null_vec_
+  end function soln_vec_hom
+
+  !****
+
+  function soln_vec_inhom (this, w_i, w_o) result (v)
+  
+    class(${T}_band_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                 :: w_i(:)
+    $TYPE(WP), intent(in)                 :: w_o(:)
+    $TYPE(WP)                             :: v(this%n_e*(this%n+1))
+
+    $TYPE(WP) :: B(this%n_e*(this%n+1),1)
+    integer   :: info
+
+    $CHECK_BOUNDS(SIZE(w_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(w_o),this%n_o)
+
+    ! Evaluate the solution vector v of the inhomogeneous linear
+    ! system S v = w. It is assumed that the right-hand side vector w
+    ! has non-zero components in only the n_i first and n_o last rows
+    ! (corresponding to the inner and outer boundary
+    ! conditions). These components are supplied in w_i and w_o,
+    ! respectively.
+    
+    associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_ul => this%n_ul)
+
+      ! Set up the banded system
+
+      B(:n_i,1) = w_i/this%scl_i
+      B(n_i+1:n_i+n*n_e,1) = 0._WP
+      B(n_i+n*n_e+1:,1) = w_o/this%scl_o
+
+      ! Solve for v
+
+      call ${X}GBTRS('N', n_e*(n+1), n_ul, n_ul, 1, &
+                     this%A_b, SIZE(this%A_b, 1), this%ipiv, B, n_e*(n+1), info)
+      $ASSERT(info == 0,Non-zero return from XGBTRS)
+
+      v = B(:,1)
+
+    end associate
+       
+    ! Finish
+
+    return
+
+  end function soln_vec_inhom
 
 end module gyre_${T}_band_sysmtx
 

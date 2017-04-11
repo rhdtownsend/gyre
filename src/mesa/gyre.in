@@ -1,0 +1,41 @@
+&constants
+/
+
+&model
+	model_type = 'EVOL'
+	file = 'bcep.mesa'
+	file_format = 'MESA'
+/
+
+&mode
+	l = 0
+/
+
+&mode
+	l = 1
+/
+
+&mode
+	l = 2
+/
+
+&osc
+	nonadiabatic = .TRUE.
+/
+
+&num
+	diff_scheme = 'MAGNUS_GL2'
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 1
+	freq_max = 20.0
+	n_freq = 200
+/
+
+&grid
+	alpha_osc = 10
+	alpha_exp = 2
+	n_inner = 5
+/

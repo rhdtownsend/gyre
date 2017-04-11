@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_eqns
 ! Purpose  : adiabatic differential equations
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,10 +23,10 @@ module gyre_ad_eqns
 
   use core_kinds
 
-  use gyre_ad_vars
+  use gyre_ad_trans
   use gyre_eqns
-  use gyre_grid
   use gyre_model
+  use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
@@ -39,16 +39,29 @@ module gyre_ad_eqns
 
   implicit none
 
+  ! Parameter definitions
+
+  integer, parameter :: J_V_G = 1
+  integer, parameter :: J_AS = 2
+  integer, parameter :: J_U = 3
+  integer, parameter :: J_C_1 = 4
+
+  integer, parameter :: J_LAST = J_C_1
+
   ! Derived-type definitions
 
   type, extends (r_eqns_t) :: ad_eqns_t
      private
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
-     type(ad_vars_t)             :: vr
-     logical                     :: cowling_approx
+     type(ad_trans_t)            :: tr
+     real(WP), allocatable       :: coeffs(:,:)
+     real(WP), allocatable       :: x(:)
+     real(WP)                    :: alpha_gr
+     real(WP)                    :: alpha_om
    contains
      private
+     procedure, public :: stencil
      procedure, public :: A
      procedure, public :: xA
   end type ad_eqns_t
@@ -69,10 +82,10 @@ module gyre_ad_eqns
 
 contains
 
-  function ad_eqns_t_ (ml, gr, md_p, os_p) result (eq)
+  function ad_eqns_t_ (ml, pt_i, md_p, os_p) result (eq)
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
+    type(point_t), intent(in)           :: pt_i
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(ad_eqns_t)                     :: eq
@@ -81,10 +94,24 @@ contains
 
     eq%ml => ml
 
-    allocate(eq%rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
-    eq%vr = ad_vars_t(ml, gr, md_p, os_p)
+    allocate(eq%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
 
-    eq%cowling_approx = os_p%cowling_approx
+    eq%tr = ad_trans_t(ml, pt_i, md_p, os_p)
+
+    if (os_p%cowling_approx) then
+       eq%alpha_gr = 0._WP
+    else
+       eq%alpha_gr = 1._WP
+    endif
+
+    select case (os_p%time_factor)
+    case ('OSC')
+       eq%alpha_om = 1._WP
+    case ('EXP')
+       eq%alpha_om = -1._WP
+    case default
+       $ABORT(Invalid time_factor)
+    end select
 
     eq%n_e = 4
 
@@ -96,16 +123,55 @@ contains
 
   !****
 
-  function A (this, pt, omega)
+  subroutine stencil (this, pt)
+
+    class(ad_eqns_t), intent(inout) :: this
+    type(point_t), intent(in)       :: pt(:)
+
+    integer :: n_s
+    integer :: i
+
+    ! Calculate coefficients at the stencil points
+
+    call check_model(this%ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
+
+    n_s = SIZE(pt)
+
+    if (ALLOCATED(this%coeffs)) deallocate(this%coeffs)
+    allocate(this%coeffs(n_s,J_LAST))
+
+    do i = 1, n_s
+       this%coeffs(i,J_V_G) = this%ml%coeff(I_V_2, pt(i))*pt(i)%x**2/this%ml%coeff(I_GAMMA_1, pt(i))
+       this%coeffs(i,J_AS) = this%ml%coeff(I_AS, pt(i))
+       this%coeffs(i,J_U) = this%ml%coeff(I_U, pt(i))
+       this%coeffs(i,J_C_1) = this%ml%coeff(I_C_1, pt(i))
+    end do
+
+    this%x = pt%x
+
+    ! Set up stencils for the rt and tr components
+
+    call this%rt%stencil(pt)
+    call this%tr%stencil(pt)
+
+    ! Finish
+
+    return
+
+  end subroutine stencil
+
+  !****
+
+  function A (this, i, omega)
 
     class(ad_eqns_t), intent(in) :: this
-    type(point_t), intent(in)    :: pt
+    integer, intent(in)          :: i
     real(WP), intent(in)         :: omega
     real(WP)                     :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(pt, omega)/pt%x
+    A = this%xA(i, omega)/this%x(i)
 
     ! Finish
 
@@ -115,68 +181,59 @@ contains
 
   !****
 
-  function xA (this, pt, omega)
+  function xA (this, i, omega)
 
     class(ad_eqns_t), intent(in) :: this
-    type(point_t), intent(in)    :: pt
+    integer, intent(in)          :: i
     real(WP), intent(in)         :: omega
     real(WP)                     :: xA(this%n_e,this%n_e)
 
-    real(WP) :: V_g
-    real(WP) :: U
-    real(WP) :: As
-    real(WP) :: c_1
     real(WP) :: lambda
     real(WP) :: l_i
     real(WP) :: omega_c
-    real(WP) :: alpha_gr
     
     ! Evaluate the log(x)-space RHS matrix
 
-    ! Calculate coefficients
-    
-    V_g = this%ml%V_2(pt)*pt%x**2/this%ml%Gamma_1(pt)
-    U = this%ml%U(pt)
-    As = this%ml%As(pt)
-    c_1 = this%ml%c_1(pt)
+    associate ( &
+         V_g => this%coeffs(i,J_V_G), &
+         As => this%coeffs(i,J_AS), &
+         U => this%coeffs(i,J_U), &
+         c_1 => this%coeffs(i,J_C_1), &
+         alpha_gr => this%alpha_gr, &
+         alpha_om => this%alpha_om)
 
-    lambda = this%rt%lambda(pt, omega)
-    l_i = this%rt%l_i(omega)
+      lambda = this%rt%lambda(i, omega)
+      l_i = this%rt%l_i(omega)
 
-    omega_c = this%rt%omega_c(pt, omega)
+      omega_c = this%rt%omega_c(i, omega)
 
-    if (this%cowling_approx) then
-       alpha_gr = 0._WP
-    else
-       alpha_gr = 1._WP
-    endif
+      ! Set up the matrix
 
-    ! Set up the matrix
+      xA(1,1) = V_g - 1._WP - l_i
+      xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V_g
+      xA(1,3) = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
+      xA(1,4) = alpha_gr*(0._WP)
 
-    xA(1,1) = V_g - 1._WP - l_i
-    xA(1,2) = lambda/(c_1*omega_c**2) - V_g
-    xA(1,3) = alpha_gr*(lambda/(c_1*omega_c**2))
-    xA(1,4) = alpha_gr*(0._WP)
+      xA(2,1) = c_1*alpha_om*omega_c**2 - As
+      xA(2,2) = As - U + 3._WP - l_i
+      xA(2,3) = alpha_gr*(0._WP)
+      xA(2,4) = alpha_gr*(-1._WP)
 
-    xA(2,1) = c_1*omega_c**2 - As
-    xA(2,2) = As - U + 3._WP - l_i
-    xA(2,3) = alpha_gr*(0._WP)
-    xA(2,4) = alpha_gr*(-1._WP)
+      xA(3,1) = alpha_gr*(0._WP)
+      xA(3,2) = alpha_gr*(0._WP)
+      xA(3,3) = alpha_gr*(3._WP - U - l_i)
+      xA(3,4) = alpha_gr*(1._WP)
 
-    xA(3,1) = alpha_gr*(0._WP)
-    xA(3,2) = alpha_gr*(0._WP)
-    xA(3,3) = alpha_gr*(3._WP - U - l_i)
-    xA(3,4) = alpha_gr*(1._WP)
+      xA(4,1) = alpha_gr*(U*As)
+      xA(4,2) = alpha_gr*(U*V_g)
+      xA(4,3) = alpha_gr*(lambda)
+      xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
 
-    xA(4,1) = alpha_gr*(U*As)
-    xA(4,2) = alpha_gr*(U*V_g)
-    xA(4,3) = alpha_gr*(lambda)
-    xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
+    end associate
 
     ! Apply the variables transformation
 
-    xA = MATMUL(this%vr%G(pt, omega), MATMUL(xA, this%vr%H(pt, omega)) - &
-                                                 this%vr%dH(pt, omega))
+    call this%tr%trans_eqns(xA, i, omega)
 
     ! Finish
 

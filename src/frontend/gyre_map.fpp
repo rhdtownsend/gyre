@@ -27,8 +27,9 @@ program gyre_map
   use core_parallel
   use core_system
 
-  use gyre_bep
+  use gyre_bvp
   use gyre_constants
+  use gyre_discrim_func
   use gyre_ext
   use gyre_grid
   use gyre_grid_factory
@@ -38,7 +39,7 @@ program gyre_map
   use gyre_model
   use gyre_model_factory
   use gyre_model_par
-  use gyre_nad_bep
+  use gyre_nad_bvp
   use gyre_num_par
   use gyre_osc_par
   use gyre_scan_par, only : scan_par_t
@@ -74,9 +75,12 @@ program gyre_map
   type(grid_t)                  :: gr
   real(WP), allocatable         :: omega_re(:)
   real(WP), allocatable         :: omega_im(:)
-  type(nad_bep_t)               :: bp
+  real(WP)                      :: omega_min
+  real(WP)                      :: omega_max
+  type(nad_bvp_t), target       :: bp
   integer                       :: n_omega_re
   integer                       :: n_omega_im
+  type(c_discrim_func_t)        :: df
   complex(WP), allocatable      :: discrim_map_f(:,:)
   integer, allocatable          :: discrim_map_e(:,:)
   integer, allocatable          :: k_part(:)
@@ -106,12 +110,14 @@ program gyre_map
 
   if (check_log_level('INFO')) then
 
-     write(OUTPUT_UNIT, 100) form_header('gyre_map ['//VERSION//']', '=')
+     write(OUTPUT_UNIT, 100) form_header('gyre_map ['//VERSION//']', '-')
 100  format(A)
 
-     write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
-     write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
-110  format(A,1X,A)
+     if (check_log_level('DEBUG')) then
+        write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
+        write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
+110     format(A,1X,A)
+     endif
 
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
      write(OUTPUT_UNIT, 120) 'MPI Processors   :', MPI_SIZE
@@ -120,7 +126,7 @@ program gyre_map
      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
      write(OUTPUT_UNIT, 110) 'GYRE_DIR         :', gyre_dir
 
-     write(OUTPUT_UNIT, 100) form_header('Initialization', '=')
+     write(OUTPUT_UNIT, 100) form_header('Initialization', '-')
 
   endif
 
@@ -162,13 +168,27 @@ program gyre_map
   call build_scan(ml, gr, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
   call build_scan(ml, gr, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
 
+  ! Set frequency bounds
+
+  if (nm_p_sel%restrict_roots) then
+     omega_min = MINVAL(omega_re)
+     omega_max = MAXVAL(omega_re)
+  else
+     omega_min = -HUGE(0._WP)
+     omega_max = HUGE(0._WP)
+  endif
+
   ! Create the full grid
 
   gr = grid_t(ml, omega_re, gr_p_sel, md_p(1), os_p_sel)
 
-  ! Set up the bep
+  ! Set up the bvp
 
-  bp = nad_bep_t(ml, gr, omega_re, md_p(1), nm_p_sel, os_p_sel)
+  bp = nad_bvp_t(ml, gr, md_p(1), nm_p_sel, os_p_sel)
+
+  ! Set up the discriminant function
+
+  df = c_discrim_func_t(bp, omega_min, omega_max)
 
   ! Map the discriminant
 
@@ -184,6 +204,7 @@ program gyre_map
 
   n_percent = 0
 
+
   do k = k_part(MPI_RANK+1), k_part(MPI_RANK+2)-1
 
      i = index_nd(k, [n_omega_re,n_omega_im])
@@ -197,8 +218,8 @@ program gyre_map
            n_percent = i_percent
         end if
      endif
-     
-     call bp%eval_discrim(omega, discrim, status)
+
+     call df%eval(c_ext_t(omega), discrim, status)
      $ASSERT(status == STATUS_OK,Invalid status)
 
      discrim_map_f(i(1),i(2)) = FRACTION(discrim)

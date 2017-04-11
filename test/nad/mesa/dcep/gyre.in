@@ -12,7 +12,7 @@
 /
 
 &osc
-	inner_bound = 'ZERO'
+	inner_bound = 'ZERO_R'
 	nonadiabatic = .TRUE.
 /
 
@@ -28,9 +28,9 @@
 /
 
 &grid
+	x_i = 0.0015
 	alpha_osc = 10
 	alpha_exp = 2
-	x_i = 0.0015
 /
 
 &ad_output

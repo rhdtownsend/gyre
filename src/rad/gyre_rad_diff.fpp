@@ -25,10 +25,8 @@ module gyre_rad_diff
 
   use gyre_rad_eqns
   use gyre_rad_match
-  use gyre_diff
   use gyre_diff_factory
   use gyre_ext
-  use gyre_grid
   use gyre_model
   use gyre_mode_par
   use gyre_num_par
@@ -67,11 +65,12 @@ module gyre_rad_diff
 
 contains
 
-  function rad_diff_t_ (ml, gr, k, md_p, nm_p, os_p) result (df)
+  function rad_diff_t_ (ml, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    integer, intent(in)                 :: k
+    type(point_t), intent(in)           :: pt_i
+    type(point_t), intent(in)           :: pt_a
+    type(point_t), intent(in)           :: pt_b
     type(mode_par_t), intent(in)        :: md_p
     type(num_par_t), intent(in)         :: nm_p
     type(osc_par_t), intent(in)         :: os_p
@@ -79,20 +78,21 @@ contains
 
     type(rad_eqns_t) :: eq
 
-    $ASSERT_DEBUG(k >= 1,Invalid index)
-    $ASSERT_DEBUG(k < gr%n_k,Invalid index)
-
     ! Construct the rad_diff_t
 
-    if (gr%pt(k+1)%s == gr%pt(k)%s) then
+    if (pt_a%s == pt_b%s) then
 
-       eq = rad_eqns_t(ml, gr, md_p, os_p)
+       ! Regular subinterval; use difference equations
+
+       eq = rad_eqns_t(ml, pt_i, md_p, os_p)
        
-       allocate(df%df, SOURCE=r_diff_t(eq, gr%pt(k), gr%pt(k+1), nm_p))
+       allocate(df%df, SOURCE=r_diff_t(eq, pt_a, pt_b, nm_p))
 
     else
 
-       allocate(df%df, SOURCE=rad_match_t(ml, gr, k, md_p, os_p))
+       ! Segment boundary; use match conditions
+
+       allocate(df%df, SOURCE=rad_match_t(ml, pt_i, pt_a, pt_b, md_p, os_p))
 
     endif
 

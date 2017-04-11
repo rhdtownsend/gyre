@@ -1,7 +1,7 @@
 ! Module   : gyre_model
 ! Purpose  : stellar model
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,92 +23,109 @@ module gyre_model
 
   use core_kinds
 
+  use gyre_grid
+
   ! No implicit typing
 
   implicit none
 
-  ! Derived-type definitions
+  ! Parameter definitions
 
-  $define $PROC_DECL $sub
-    $local $NAME $1
-    procedure(f_1_), deferred :: ${NAME}_1_
-    procedure(f_v_), deferred :: ${NAME}_v_
-    generic, public           :: ${NAME} => ${NAME}_1_, ${NAME}_v_
-  $endsub
+  integer, parameter :: I_V_2 = 1
+  integer, parameter :: I_As = 2
+  integer, parameter :: I_U = 3
+  integer, parameter :: I_C_1 = 4
+  integer, parameter :: I_GAMMA_1 = 5
+  integer, parameter :: I_DELTA = 6
+  integer, parameter :: I_NABLA_AD = 7
+  integer, parameter :: I_NABLA = 8
+  integer, parameter :: I_BETA_RAD = 9
+  integer, parameter :: I_C_LUM = 10
+  integer, parameter :: I_C_RAD = 11
+  integer, parameter :: I_C_THM = 12
+  integer, parameter :: I_C_DIF = 13
+  integer, parameter :: I_C_EPS = 14
+  integer, parameter :: I_C_EPS_AD = 15
+  integer, parameter :: I_C_EPS_S = 16
+  integer, parameter :: I_KAP_AD = 17
+  integer, parameter :: I_KAP_S = 18
+  integer, parameter :: I_OMEGA_ROT = 19
+
+  integer, parameter :: I_LAST = I_OMEGA_ROT
+
+  ! Derived-type definitions
 
   type, abstract :: model_t
    contains
-     private
-     $PROC_DECL(V_2)
-     $PROC_DECL(As)
-     $PROC_DECL(U)
-     $PROC_DECL(dU)
-     $PROC_DECL(c_1)
-     $PROC_DECL(Gamma_1)
-     $PROC_DECL(delta)
-     $PROC_DECL(nabla_ad)
-     $PROC_DECL(dnabla_ad)
-     $PROC_DECL(nabla)
-     $PROC_DECL(beta_rad)
-     $PROC_DECL(c_rad)
-     $PROC_DECL(dc_rad)
-     $PROC_DECL(c_thm)
-     $PROC_DECL(c_dif)
-     $PROC_DECL(c_eps_ad)
-     $PROC_DECL(c_eps_S)
-     $PROC_DECL(kap_ad)
-     $PROC_DECL(kap_S)
-     $PROC_DECL(Omega_rot)
-     $PROC_DECL(dOmega_rot)
-     procedure(grid), deferred, public      :: grid
-     procedure(vacuum), deferred, public    :: vacuum
-     procedure(nonad_cap), deferred, public :: nonad_cap
+     procedure(coeff), deferred      :: coeff
+     procedure(coeff), deferred      :: dcoeff
+     procedure(is_defined), deferred :: is_defined
+     procedure(is_vacuum), deferred  :: is_vacuum
+     procedure(Delta_p), deferred    :: Delta_p
+     procedure(Delta_g), deferred    :: Delta_g
+     procedure(grid), deferred       :: grid
   end type model_t
 
   ! Interfaces
 
   abstract interface
 
-     function f_1_ (this, pt) result (f)
+     function coeff (this, i, pt)
        use core_kinds
+       use gyre_point
+       import model_t
+       class(model_t), intent(in) :: this
+       integer, intent(in)        :: i
+       type(point_t), intent(in)  :: pt
+       real(WP)                   :: coeff
+     end function coeff
+
+     function dcoeff (this, i, pt)
+       use core_kinds
+       use gyre_point
+       import model_t
+       class(model_t), intent(in) :: this
+       integer, intent(in)        :: i
+       type(point_t), intent(in)  :: pt
+       real(WP)                   :: dcoeff
+     end function dcoeff
+
+     function is_defined (this, i)
+       import model_t
+       class(model_t), intent(in) :: this
+       integer, intent(in)        :: i
+       logical                    :: is_defined
+     end function is_defined
+
+     function is_vacuum (this, pt)
        use gyre_point
        import model_t
        class(model_t), intent(in) :: this
        type(point_t), intent(in)  :: pt
-       real(WP)                   :: f
-     end function f_1_
+       logical                    :: is_vacuum
+     end function is_vacuum
 
-     function f_v_ (this, pt) result (f)
+     function Delta_p (this)
        use core_kinds
-       use gyre_point
        import model_t
        class(model_t), intent(in) :: this
-       type(point_t), intent(in)  :: pt(:)
-       real(WP)                   :: f(SIZE(pt))
-     end function f_v_
+       real(WP)                   :: Delta_p
+     end function Delta_p
 
-     function grid (this) result (gr)
+     function Delta_g (this, lambda)
+       use core_kinds
+       import model_t
+       class(model_t), intent(in) :: this
+       real(WP), intent(in)       :: lambda
+       real(WP)                   :: Delta_g
+     end function Delta_g
+
+     function grid (this)
        use gyre_grid
        import model_t
        class(model_t), intent(in) :: this
-       type(grid_t)               :: gr
+       type(grid_t)               :: grid
      end function grid
-
-     function vacuum (this, pt)
-       use core_kinds
-       use gyre_point
-       import model_t
-       class(model_t), intent(in) :: this
-       type(point_t), intent(in)  :: pt
-       logical                    :: vacuum
-     end function vacuum
-
-     function nonad_cap (this)
-       use core_kinds
-       import model_t
-       class(model_t), intent(in) :: this
-       logical                    :: nonad_cap
-     end function nonad_cap
 
   end interface
 
@@ -117,5 +134,25 @@ module gyre_model
   private
 
   public :: model_t
+  public :: I_V_2
+  public :: I_As
+  public :: I_U
+  public :: I_C_1
+  public :: I_GAMMA_1
+  public :: I_DELTA
+  public :: I_NABLA_AD
+  public :: I_NABLA
+  public :: I_BETA_RAD
+  public :: I_C_LUM
+  public :: I_C_RAD
+  public :: I_C_THM
+  public :: I_C_DIF
+  public :: I_C_EPS
+  public :: I_C_EPS_AD
+  public :: I_C_EPS_S
+  public :: I_KAP_AD
+  public :: I_KAP_S
+  public :: I_OMEGA_ROT
+  public :: I_LAST
 
 end module gyre_model

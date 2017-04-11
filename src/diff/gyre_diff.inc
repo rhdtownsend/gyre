@@ -1,7 +1,7 @@
 ! Incfile  : gyre_diff
 ! Purpose  : difference equations (template)
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2015-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -35,11 +35,9 @@ module gyre_${T}_diff
   ! Derived-type definitions
 
   type, abstract :: ${T}_diff_t
-     private
-     integer, public :: n_e
+     integer :: n_e
    contains
-     private
-     procedure(build), deferred, public :: build
+     procedure(build), deferred :: build
   end type ${T}_diff_t
 
   ! Interfaces

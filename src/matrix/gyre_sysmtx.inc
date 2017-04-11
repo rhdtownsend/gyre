@@ -1,7 +1,7 @@
 ! Incfile  : gyre_sysmtx
 ! Purpose  : system matrix (template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -37,35 +37,34 @@ module gyre_${T}_sysmtx
   ! Derived-type definitions
 
   type, abstract :: ${T}_sysmtx_t
-     private
-     integer, public :: n   ! Number of equation blocks
-     integer, public :: n_e ! Number of equations per block
-     integer, public :: n_i ! Number of inner boundary conditions
-     integer, public :: n_o ! Number of outer boundary conditions
+     integer :: n   ! Number of equation blocks
+     integer :: n_e ! Number of equations per block
+     integer :: n_i ! Number of inner boundary conditions
+     integer :: n_o ! Number of outer boundary conditions
    contains
-     private
-     procedure(set_B_), deferred, public     :: set_B_i
-     procedure(set_B_), deferred, public     :: set_B_o
-     procedure(set_E_), deferred, public     :: set_E
-     procedure(factorize_), deferred, public :: factorize
-     procedure(det_), deferred, public       :: det
-     procedure(null_vec_), deferred, public  :: null_vec
+     procedure(set_B), deferred          :: set_B_i
+     procedure(set_B), deferred          :: set_B_o
+     procedure(set_E), deferred          :: set_E
+     procedure(factorize), deferred      :: factorize
+     procedure(det), deferred            :: det
+     procedure(soln_vec_hom), deferred   :: soln_vec_hom
+     procedure(soln_vec_inhom), deferred :: soln_vec_inhom
   end type ${T}_sysmtx_t
 
   ! Interfaces
 
   abstract interface
 
-     subroutine set_B_ (this, B, S)
+     subroutine set_B (this, B, scl)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(inout) :: this
        $TYPE(WP), intent(in)               :: B(:,:)
-       type(${T}_ext_t), intent(in)        :: S
-     end subroutine set_B_
+       $TYPE(WP), intent(in)               :: scl(:)
+     end subroutine set_B
        
-     subroutine set_E_ (this, k, E_l, E_r, S)
+     subroutine set_E (this, k, E_l, E_r, scl)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
@@ -73,28 +72,38 @@ module gyre_${T}_sysmtx
        integer, intent(in)                 :: k
        $TYPE(WP), intent(in)               :: E_l(:,:)
        $TYPE(WP), intent(in)               :: E_r(:,:)
-       type(${T}_ext_t), intent(in)        :: S
-     end subroutine set_E_
+       type(${T}_ext_t), intent(in)        :: scl
+     end subroutine set_E
 
-     subroutine factorize_ (this)
+     subroutine factorize (this)
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(inout) :: this
-     end subroutine factorize_
+     end subroutine factorize
 
-     function det_ (this) result (det)
+     function det (this)
        use gyre_ext
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(in) :: this
        type(${T}_ext_t)                 :: det
-     end function det_
+     end function det
 
-     function null_vec_ (this) result (v)
+     function soln_vec_hom (this) result (v)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(in) :: this
        $TYPE(WP)                        :: v(this%n_e*(this%n+1))
-     end function null_vec_
+     end function soln_vec_hom
+
+     function soln_vec_inhom (this, w_i, w_o) result (v)
+       use core_kinds
+       use gyre_ext
+       import ${T}_sysmtx_t
+       class(${T}_sysmtx_t), intent(in) :: this
+       $TYPE(WP), intent(in)            :: w_i(:)
+       $TYPE(WP), intent(in)            :: w_o(:)
+       $TYPE(WP)                        :: v(this%n_e*(this%n+1))
+     end function soln_vec_inhom
 
   end interface
 

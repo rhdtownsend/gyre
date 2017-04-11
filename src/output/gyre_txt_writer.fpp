@@ -55,15 +55,15 @@ module gyre_txt_writer
      integer                           :: n
    contains
      private
-     procedure, public :: final => final_
-     procedure         :: write_i_0_
-     procedure         :: write_i_1_
-     procedure         :: write_r_0_
-     procedure         :: write_r_1_
-     procedure         :: write_c_0_
-     procedure         :: write_c_1_
-     procedure         :: write_a_0_
-     procedure         :: write_a_1_
+     procedure, public :: final
+     procedure, public :: write_i_0
+     procedure, public :: write_i_1
+     procedure, public :: write_r_0
+     procedure, public :: write_r_1
+     procedure, public :: write_c_0
+     procedure, public :: write_c_1
+     procedure, public :: write_a_0
+     procedure, public :: write_a_1
   end type txt_writer_t
 
   ! Interfaces
@@ -108,7 +108,7 @@ contains
 
 !****
 
-  subroutine final_ (this)
+  subroutine final (this)
 
     class(txt_writer_t), intent(inout) :: this
 
@@ -145,7 +145,7 @@ contains
 
     return
 
-  end subroutine final_
+  end subroutine final
 
 !****
   
@@ -155,7 +155,7 @@ contains
   $local $DATA_TYPE $2
   $local $FORMAT $3
 
-  subroutine write_${INFIX}_0_ (this, name, data)
+  subroutine write_${INFIX}_0 (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
     character(*), intent(in)           :: name
@@ -189,11 +189,11 @@ contains
 
     return
 
-  end subroutine write_${INFIX}_0_
+  end subroutine write_${INFIX}_0
 
 !****
 
-  subroutine write_${INFIX}_1_ (this, name, data)
+  subroutine write_${INFIX}_1 (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
     character(*), intent(in)           :: name
@@ -233,7 +233,7 @@ contains
 
     return
 
-  end subroutine write_${INFIX}_1_
+  end subroutine write_${INFIX}_1
 
   $endsub
 
@@ -243,7 +243,7 @@ contains
 
 !****
   
-  subroutine write_c_0_ (this, name, data)
+  subroutine write_c_0 (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
     character(*), intent(in)           :: name
@@ -279,11 +279,11 @@ contains
 
     return
 
-  end subroutine write_c_0_
+  end subroutine write_c_0
 
 !****
 
-  subroutine write_c_1_ (this, name, data)
+  subroutine write_c_1 (this, name, data)
 
     class(txt_writer_t), intent(inout) :: this
     character(*), intent(in)           :: name
@@ -325,6 +325,6 @@ contains
 
     return
 
-  end subroutine write_c_1_
+  end subroutine write_c_1
 
 end module gyre_txt_writer

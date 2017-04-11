@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_util
 ! Purpose  : grid utilities
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,7 +25,6 @@ module gyre_grid_util
   use core_func
 
   use gyre_grid
-  use gyre_grid_par
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
@@ -85,7 +84,7 @@ contains
     k_turn = gr%n_k
     x_turn = HUGE(0._WP)
 
-    allocate(rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
+    allocate(rt, SOURCE=r_rot_t(ml, gr%pt(1), md_p, os_p))
 
     gamma_b = gamma_(ml, rt, gr%pt(1), omega)
 
@@ -158,7 +157,7 @@ contains
   function gamma_ (ml, rt, pt, omega) result (gamma)
 
     class(model_t), pointer, intent(in) :: ml
-    class(r_rot_t), intent(in)          :: rt
+    class(r_rot_t), intent(inout)       :: rt
     type(point_t), intent(in)           :: pt
     real(WP), intent(in)                :: omega
     real(WP)                            :: gamma
@@ -167,6 +166,7 @@ contains
     real(WP) :: As
     real(WP) :: U
     real(WP) :: c_1
+    real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: g_4
     real(WP) :: g_2
@@ -175,24 +175,28 @@ contains
     ! Calculate the propagation discriminant gamma (< 0 : propagation,
     ! > 0 : evanescence)
 
-    if (ml%vacuum(pt)) then
+    if (ml%is_vacuum(pt)) then
 
        gamma = HUGE(0._WP)
 
     else
 
-       V_g = ml%V_2(pt)*pt%x**2/ml%Gamma_1(pt)
-       As = ml%As(pt)
-       U = ml%U(pt)
-       c_1 = ml%c_1(pt)
+       V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+       As = ml%coeff(I_As, pt)
+       U = ml%coeff(I_U, pt)
+       c_1 = ml%coeff(I_C_1, pt)
 
-       lambda = rt%lambda(pt, omega)
+       call rt%stencil([pt])
+
+       omega_c = rt%omega_c(1, omega)
+
+       lambda = rt%lambda(1, omega)
 
        g_4 = -4._WP*V_g*c_1
        g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
        g_0 = -4._WP*lambda*As/c_1
 
-       gamma = (g_4*omega**4 + g_2*omega**2 + g_0)/omega**2
+       gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
 
     endif
 

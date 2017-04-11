@@ -1,7 +1,7 @@
 ! Module   : gyre_hom_model
 ! Purpose  : stellar homogeneous compressible model
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -22,11 +22,9 @@ module gyre_hom_model
   ! Uses
 
   use core_kinds
-  use core_parallel
 
+  use gyre_constants
   use gyre_grid
-  use gyre_grid_factory
-  use gyre_grid_weights
   use gyre_model
   use gyre_model_par
   use gyre_model_util
@@ -40,43 +38,26 @@ module gyre_hom_model
 
   ! Derived-type definitions
 
-  $define $PROC_DECL $sub
-    $local $NAME $1
-    procedure :: ${NAME}_1_
-    procedure :: ${NAME}_v_
-  $endsub
-
   type, extends (model_t) :: hom_model_t
      private
      type(grid_t) :: gr
-     real(WP)     :: Gamma_1_
-     real(WP)     :: Omega_rot_
+     real(WP)     :: Gamma_1
+     real(WP)     :: Omega_rot
+     integer      :: s_i
+     integer      :: s_o
    contains
      private
-     $PROC_DECL(V_2)
-     $PROC_DECL(As)
-     $PROC_DECL(U)
-     $PROC_DECL(dU)
-     $PROC_DECL(c_1)
-     $PROC_DECL(Gamma_1)
-     $PROC_DECL(delta)
-     $PROC_DECL(nabla_ad)
-     $PROC_DECL(dnabla_ad)
-     $PROC_DECL(nabla)
-     $PROC_DECL(beta_rad)
-     $PROC_DECL(c_rad)
-     $PROC_DECL(dc_rad)
-     $PROC_DECL(c_thm)
-     $PROC_DECL(c_dif)
-     $PROC_DECL(c_eps_ad)
-     $PROC_DECL(c_eps_S)
-     $PROC_DECL(kap_ad)
-     $PROC_DECL(kap_S)
-     $PROC_DECL(Omega_rot)
-     $PROC_DECL(dOmega_rot)
+     procedure, public :: coeff
+     procedure         :: coeff_V_2_
+     procedure         :: coeff_As_
+     procedure, public :: dcoeff
+     procedure         :: dcoeff_V_2_
+     procedure         :: dcoeff_As_
+     procedure, public :: is_defined
+     procedure, public :: is_vacuum
+     procedure, public :: Delta_p
+     procedure, public :: Delta_g
      procedure, public :: grid
-     procedure, public :: vacuum
-     procedure, public :: nonad_cap
   end type hom_model_t
 
   ! Interfaces
@@ -97,6 +78,9 @@ contains
 
   function hom_model_t_ (ml_p) result (ml)
 
+    use gyre_grid_factory
+    use gyre_grid_weights
+  
     type(model_par_t), intent(in) :: ml_p
     type(hom_model_t)             :: ml
 
@@ -117,13 +101,18 @@ contains
 
     ml%gr = grid_t(w, ml_p%x_i, ml_p%x_o)
 
-    ml%Gamma_1_ = ml_p%Gamma_1
+    ml%Gamma_1 = ml_p%Gamma_1
 
     if (ml_p%uniform_rot) then
-       ml%Omega_rot_ = uniform_Omega_rot(ml_p)
+       ml%Omega_rot = uniform_Omega_rot(ml_p)
     else
-       ml%Omega_rot_ = 0._WP
+       ml%Omega_rot = 0._WP
     endif
+
+    ml%s_i = ml%gr%s_i()
+    ml%s_o = ml%gr%s_o()
+
+    print *,'Hom s:',ml%s_i, ml%s_o
 
     ! Finish
 
@@ -133,311 +122,241 @@ contains
 
   !****
 
-  function V_2_1_ (this, pt) result (V_2)
+  function coeff (this, i, pt)
 
     class(hom_model_t), intent(in) :: this
+    integer, intent(in)            :: i
     type(point_t), intent(in)      :: pt
-    real(WP)                       :: V_2
+    real(WP)                       :: coeff
 
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
+    $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
+    $ASSERT_DEBUG(this%is_defined(i),Undefined coefficient)
 
-    ! Calculate V_2
+    $ASSERT_DEBUG(pt%s >= this%s_i .AND. pt%s <= this%s_o,Invalid segment)
 
-    V_2 = 2._WP/(1._WP - pt%x**2)
+    ! Evaluate the i'th coefficient
+
+    select case (i)
+    case (I_V_2)
+       coeff = this%coeff_V_2_(pt)
+    case (I_AS)
+       coeff = this%coeff_As_(pt)
+    case (I_U)
+       coeff = 3._WP
+    case (I_C_1)
+       coeff = 1._WP
+    case (I_GAMMA_1)
+       coeff = this%Gamma_1
+    case (I_DELTA)
+       coeff = 1._WP
+    case (I_NABLA_AD)
+       coeff = 0.4_WP
+    case (I_OMEGA_ROT)
+       coeff = this%Omega_rot
+    end select
 
     ! Finish
 
     return
 
-  end function V_2_1_
+  end function coeff
 
   !****
 
-  function As_1_ (this, pt) result (As)
+  function coeff_V_2_ (this, pt) result (coeff)
 
     class(hom_model_t), intent(in) :: this
     type(point_t), intent(in)      :: pt
-    real(WP)                       :: As
+    real(WP)                       :: coeff
 
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
+    $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),V_2 evaluation at vacuum point)
 
-    ! Calculate As
+    ! Evaluate the V_2 coefficient
 
-    As = -this%V_2(pt)*pt%x**2/this%Gamma_1_
+    coeff = 2._WP/(1._WP - pt%x**2)
 
     ! Finish
 
     return
 
-  end function As_1_
+  end function coeff_V_2_
 
   !****
 
-  function U_1_ (this, pt) result (U)
+  function coeff_As_ (this, pt) result (coeff)
 
     class(hom_model_t), intent(in) :: this
     type(point_t), intent(in)      :: pt
-    real(WP)                       :: U
+    real(WP)                       :: coeff
 
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
+    $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),As evaluation at vacuum point)
 
-    ! Calculate U
+    ! Evaluate the As coefficient
 
-    U = 3._WP
+    coeff = -this%coeff_V_2_(pt)*pt%x**2/this%Gamma_1
 
     ! Finish
 
     return
 
-  end function U_1_
+  end function coeff_As_
 
   !****
 
-  function dU_1_ (this, pt) result (dU)
+  function dcoeff (this, i, pt)
+
+    class(hom_model_t), intent(in) :: this
+    integer, intent(in)            :: i
+    type(point_t), intent(in)      :: pt
+    real(WP)                       :: dcoeff
+
+    $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
+    $ASSERT_DEBUG(this%is_defined(i),Undefined coefficient)
+
+    $ASSERT_DEBUG(pt%s >= this%s_i .AND. pt%s <= this%s_o,Invalid segment)
+
+    ! Evaluate the i'th coefficient
+
+    select case (i)
+    case (I_V_2)
+       dcoeff = this%dcoeff_V_2_(pt)
+    case (I_AS)
+       dcoeff = this%dcoeff_As_(pt)
+    case (I_U)
+       dcoeff = 0._WP
+    case (I_C_1)
+       dcoeff = 0._WP
+    case (I_GAMMA_1)
+       dcoeff = 0._WP
+    case (I_DELTA)
+       dcoeff = 0._WP
+    case (I_NABLA_AD)
+       dcoeff = 0._WP
+    case (I_OMEGA_ROT)
+       dcoeff = 0._WP
+    end select
+
+    ! Finish
+
+    return
+
+  end function dcoeff
+
+  !****
+
+  function dcoeff_V_2_ (this, pt) result (dcoeff)
 
     class(hom_model_t), intent(in) :: this
     type(point_t), intent(in)      :: pt
-    real(WP)                       :: dU
+    real(WP)                       :: dcoeff
 
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
+    ! Evaluate the logarithmic derivative of the V_2 coefficient
 
-    ! Calculate dlnU/dlnx
-
-    dU = 0._WP
+    dcoeff = 2.*WP*pt%x**2/(1._WP - pt%x**2)
 
     ! Finish
 
     return
 
-  end function dU_1_
+  end function dcoeff_V_2_
 
   !****
 
-  function c_1_1_ (this, pt) result (c_1)
+  function dcoeff_As_ (this, pt) result (dcoeff)
 
     class(hom_model_t), intent(in) :: this
     type(point_t), intent(in)      :: pt
-    real(WP)                       :: c_1
+    real(WP)                       :: dcoeff
 
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
-
-    ! Calculate c_1
-
-    c_1 = 1._WP
+    ! Evaluate the logarithmic derivative of the As coefficient
+    
+    dcoeff = -this%dcoeff_V_2_(pt)*pt%x**2/this%Gamma_1
 
     ! Finish
 
     return
 
-  end function c_1_1_
+  end function dcoeff_As_
 
   !****
 
-  function Gamma_1_1_ (this, pt) result (Gamma_1)
+  function is_defined (this, i)
+
+    class(hom_model_t), intent(in) :: this
+    integer, intent(in)            :: i
+    logical                        :: is_defined
+
+    $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
+
+    ! Return the definition status of the i'th coefficient
+
+    select case (i)
+    case (I_V_2, I_AS, I_U, I_C_1, I_GAMMA_1, I_DELTA, I_NABLA_AD, I_OMEGA_ROT)
+       is_defined = .TRUE.
+    case default
+       is_defined = .FALSE.
+    end select
+
+    ! Finish
+
+    return
+
+  end function is_defined
+
+  !****
+
+  function is_vacuum (this, pt)
 
     class(hom_model_t), intent(in) :: this
     type(point_t), intent(in)      :: pt
-    real(WP)                       :: Gamma_1
+    logical                        :: is_vacuum
 
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
+    $ASSERT_DEBUG(pt%s >= this%s_i .AND. pt%s <= this%s_o,Invalid segment)
 
-    ! Calculate Gamma_1
+    ! Return whether the point is a vacuum
 
-    Gamma_1 = this%Gamma_1_
+    is_vacuum = (1._WP - pt%x**2) == 0._WP
 
     ! Finish
 
     return
 
-  end function Gamma_1_1_
+  end function is_vacuum
 
   !****
 
-  function delta_1_ (this, pt) result (delta)
+  function Delta_p (this)
 
     class(hom_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: delta
+    real(WP)                       :: Delta_p
 
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
+    ! Evaluate the dimensionless p-mode frequency separation
 
-    ! Calculate delta (assume ideal gas)
-
-    delta = 1._WP
+    Delta_p = 1._WP/(PI*SQRT(2._WP/this%Gamma_1))
 
     ! Finish
 
     return
 
-  end function delta_1_
+  end function Delta_p
 
   !****
 
-  function nabla_ad_1_ (this, pt) result (nabla_ad)
+  function Delta_g (this, lambda)
 
     class(hom_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: nabla_ad
+    real(WP), intent(in)           :: lambda
+    real(WP)                       :: Delta_g
 
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
+    ! Evaluate the dimensionless g-mode inverse period separation
 
-    ! Calculate nabla_ad (assume ideal gas)
-
-    nabla_ad = 2._WP/5._WP
+    Delta_g = 0._WP
 
     ! Finish
 
     return
 
-  end function nabla_ad_1_
-
-  !****
-
-  function dnabla_ad_1_ (this, pt) result (dnabla_ad)
-
-    class(hom_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: dnabla_ad
-
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
-
-    ! Calculate dlnnabla_ad/dlnx
-
-    dnabla_ad = 0._WP
-
-    ! Finish
-
-    return
-
-  end function dnabla_ad_1_
-
-  !****
-
-  function Omega_rot_1_ (this, pt) result (Omega_rot)
-
-    class(hom_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: Omega_rot
-
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
-
-    ! Calculate Omega_rot
-
-    Omega_rot = this%Omega_rot_
-
-    ! Finish
-
-    return
-
-  end function Omega_rot_1_
-
-  !****
-
-  function dOmega_rot_1_ (this, pt) result (dOmega_rot)
-
-    class(hom_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: dOmega_rot
-
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
-
-    ! Calculate dlnOmega_rot/dlnx
-
-    dOmega_rot = 0._WP
-
-    ! Finish
-
-    return
-
-  end function dOmega_rot_1_
-
-  !****
-
-  $define $PROC_1_NULL $sub
-
-  $local $NAME $1
-
-  function ${NAME}_1_ (this, pt) result (${NAME})
-
-    class(hom_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: $NAME
-
-    $ABORT(Homogeneous model does not define $NAME)
-
-    ! (This line to prevent unset warnings)
-
-    $NAME = 0._WP
-
-    ! Finish
-
-    return
-
-  end function ${NAME}_1_
-
-  $endsub
-
-  $PROC_1_NULL(nabla)
-  $PROC_1_NULL(beta_rad)
-  $PROC_1_NULL(c_rad)
-  $PROC_1_NULL(dc_rad)
-  $PROC_1_NULL(c_thm)
-  $PROC_1_NULL(c_dif)
-  $PROC_1_NULL(c_eps_ad)
-  $PROC_1_NULL(c_eps_S)
-  $PROC_1_NULL(kap_ad)
-  $PROC_1_NULL(kap_S)
-
-  !****
-
-  $define $PROC_V $sub
-
-  $local $NAME $1
-
-  function ${NAME}_v_ (this, pt) result (${NAME})
-
-    class(hom_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt(:)
-    real(WP)                       :: ${NAME}(SIZE(pt))
-
-    integer :: j
-
-    ! Evaluate $NAME
-
-    !$OMP PARALLEL DO
-    do j = 1, SIZE(pt)
-       ${NAME}(j) = this%${NAME}(pt(j))
-    end do
-
-    ! Finish
-
-    return
-
-  end function ${NAME}_v_
-
-  $endsub
-
-  $PROC_V(V_2)
-  $PROC_V(As)
-  $PROC_V(U)
-  $PROC_V(dU)
-  $PROC_V(c_1)
-  $PROC_V(Gamma_1)
-  $PROC_V(delta)
-  $PROC_V(nabla_ad)
-  $PROC_V(dnabla_ad)
-  $PROC_V(nabla)
-  $PROC_V(beta_rad)
-  $PROC_V(c_rad)
-  $PROC_V(dc_rad)
-  $PROC_V(c_thm)
-  $PROC_V(c_dif)
-  $PROC_V(c_eps_ad)
-  $PROC_V(c_eps_S)
-  $PROC_V(kap_ad)
-  $PROC_V(kap_S)
-  $PROC_V(Omega_rot)
-  $PROC_V(dOmega_rot)
+  end function Delta_g
 
   !****
 
@@ -455,42 +374,5 @@ contains
     return
 
   end function grid
-
-  !****
-
-  function vacuum (this, pt)
-
-    class(hom_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    logical                        :: vacuum
-
-    $ASSERT_DEBUG(pt%s == 1,Invalid segment)
-
-    ! Evaluate the vacuum condition
-
-    vacuum = (1._WP - pt%x**2) == 0._WP
-
-    ! Finish
-
-    return
-
-  end function vacuum
-
-  !****
-
-  function nonad_cap (this)
-
-    class(hom_model_t), intent(in) :: this
-    logical                        :: nonad_cap
-
-    ! Return the non-adiabatic capability
-
-    nonad_cap = .TRUE.
-
-    ! Finish
-
-    return
-
-  end function nonad_cap
 
 end module gyre_hom_model

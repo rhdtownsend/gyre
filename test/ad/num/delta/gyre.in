@@ -1,0 +1,48 @@
+&constants
+/
+
+&model
+	model_type = 'POLY'
+        file = 'poly.h5'
+/
+
+&mode
+	l = 1
+/
+
+&osc
+/
+
+&num
+	diff_scheme = 'COLLOC_GL6'
+/
+
+&scan
+	grid_type = 'INVERSE'
+	freq_min = 0.0333
+	freq_max = 1.0
+	n_freq = 60
+	freq_min_units = 'GRAVITY_DELTA'
+	freq_max_units = 'GRAVITY_DELTA'
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 1.0
+	freq_max = 30.0
+	n_freq = 60
+	freq_min_units = 'ACOUSTIC_DELTA'
+	freq_max_units = 'ACOUSTIC_DELTA'
+/
+
+&grid
+/
+
+&ad_output
+	summary_file = 'summary.txt'
+	summary_file_format = 'TXT'
+	summary_item_list = 'l,m,n_pg,n_p,n_g,omega'
+/
+
+&nad_output
+/

@@ -1,7 +1,7 @@
 ! Incfile  : gyre_nad_diff
 ! Purpose  : nonadiabatic difference equations
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -27,7 +27,6 @@ module gyre_nad_diff
   use gyre_diff_factory
   use gyre_trapz_diff
   use gyre_ext
-  use gyre_grid
   use gyre_model
   use gyre_mode_par
   use gyre_nad_eqns
@@ -48,8 +47,7 @@ module gyre_nad_diff
      private
      class(c_diff_t), allocatable :: df
      type(nad_eqns_t)             :: eq
-     type(point_t)                :: pt_a
-     type(point_t)                :: pt_b
+     real(WP)                     :: dx
    contains
      private
      procedure, public :: build
@@ -71,42 +69,51 @@ module gyre_nad_diff
 
 contains
 
-  function nad_diff_t_ (ml, gr, k, md_p, nm_p, os_p) result (df)
+  function nad_diff_t_ (ml, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    integer, intent(in)                 :: k
+    type(point_t), intent(in)           :: pt_i
+    type(point_t), intent(in)           :: pt_a
+    type(point_t), intent(in)           :: pt_b
     type(mode_par_t), intent(in)        :: md_p
     type(num_par_t), intent(in)         :: nm_p
     type(osc_par_t), intent(in)         :: os_p
     type(nad_diff_t)                    :: df
 
     type(nad_eqns_t) :: eq
-
-    $ASSERT_DEBUG(k >= 1,Invalid index)
-    $ASSERT_DEBUG(k < gr%n_k,Invalid index)
+    type(point_t)    :: pt_m
 
     ! Construct the nad_diff_t
 
-    if (gr%pt(k+1)%s == gr%pt(k)%s) then
+    if (pt_a%s == pt_b%s) then
 
-       eq = nad_eqns_t(ml, gr, md_p, os_p)
+       ! Regular subinterval; use difference equations
+
+       eq = nad_eqns_t(ml, pt_i, md_p, os_p)
 
        select case (nm_p%diff_scheme)
        case ('TRAPZ')
-          allocate(df%df, SOURCE=c_trapz_diff_t(eq, gr%pt(k), gr%pt(k+1), [0.5_WP,0.5_WP,0.5_WP,0.5_WP,0._WP,1._WP]))
+          allocate(df%df, SOURCE=c_trapz_diff_t(eq, pt_a, pt_b, [0.5_WP,0.5_WP,0.5_WP,0.5_WP,0._WP,1._WP]))
        case default
-          allocate(df%df, SOURCE=c_diff_t(eq, gr%pt(k), gr%pt(k+1), nm_p))
+          allocate(df%df, SOURCE=c_diff_t(eq, pt_a, pt_b, nm_p))
        end select
+
+       ! Set up midpoint eqns_t (used for regularization)
+
+       df%dx = pt_b%x - pt_a%x
  
+       pt_m%s = pt_a%s
+       pt_m%x = pt_a%x + 0.5*df%dx
+
        df%eq = eq
 
-       df%pt_a = gr%pt(k)
-       df%pt_b = gr%pt(k+1)
+       call df%eq%stencil([pt_m])
 
    else
 
-       allocate(df%df, SOURCE=nad_match_t(ml, gr, k, md_p, os_p))
+      ! Segment boundary; use match conditions
+
+      allocate(df%df, SOURCE=nad_match_t(ml, pt_i, pt_a, pt_b, md_p, os_p))
 
     endif
 
@@ -131,11 +138,10 @@ contains
     complex(WP), intent(out)      :: E_r(:,:)
     type(c_ext_t), intent(out)    :: scl
 
-    type(point_t) :: pt
-    complex(WP)   :: A(this%n_e,this%n_e)
-    complex(WP)   :: lambda_1
-    complex(WP)   :: lambda_2
-    complex(WP)   :: lambda_3
+    logical, parameter :: MAGNUS_EIGVAL_MASK(3) = [.FALSE.,.FALSE.,.TRUE.]
+
+    complex(WP) :: A(this%n_e,this%n_e)
+    complex(WP) :: lambda(3)
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -156,29 +162,17 @@ contains
        ! Rescale by the uncoupled eigenvalues, in order to help the root
        ! finder
 
-       pt%s = this%pt_a%s
-       pt%x = 0.5_WP*(this%pt_a%x + this%pt_b%x)
+       A = this%eq%A(1, omega)
 
-       A = this%eq%A(pt, omega)
+       lambda(1) = SQRT(A(2,1)*A(1,2))
+       lambda(2) = SQRT(A(4,3)*A(3,4))
+       lambda(3) = SQRT(A(6,5)*A(5,6))
 
-       lambda_1 = SQRT(A(2,1)*A(1,2))
-       lambda_2 = SQRT(A(4,3)*A(3,4))
-       lambda_3 = SQRT(A(6,5)*A(5,6))
+       scl = scl*exp(c_ext_t(-SUM(lambda, MASK=MAGNUS_EIGVAL_MASK)*this%dx))
 
-       scl = scl*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(this%pt_b%x - this%pt_a%x)))
+    class is (c_colloc_diff_t)
 
-    ! class is (c_colloc_diff_t)
-
-    !    pt%s = this%pt_a%s
-    !    pt%x = 0.5_WP*(this%pt_a%x + this%pt_b%x)
-
-    !    A = this%eq%A(pt, omega)
-
-    !    lambda_1 = SQRT(A(2,1)*A(1,2))
-    !    lambda_2 = SQRT(A(4,3)*A(3,4))
-    !    lambda_3 = SQRT(A(6,5)*A(5,6))
-
-    !    scl = scl*exp(c_ext_t(-(lambda_1+lambda_2+lambda_3)*(this%pt_b%x - this%pt_a%x)))
+       scl = scl/SQRT(omega)
 
     end select
 

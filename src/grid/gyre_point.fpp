@@ -99,9 +99,9 @@ contains
 
   end subroutine bcast_1_
 
-  $endif
-
   $BCAST_ALLOC(type(point_t),0)
   $BCAST_ALLOC(type(point_t),1)
+
+  $endif
 
 end module gyre_point

@@ -1,7 +1,7 @@
 ! Program  : poly_to_fgong
 ! Purpose  : convert a polytrope to FGONG format
 !
-! Copyright 2015-2016 Rich Townsend
+! Copyright 2015-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -94,11 +94,13 @@ program poly_to_fgong
 
     ! Dimensionless structure variables
 
-    V_2 = ml%V_2(pt)
-    As = ml%As(pt)
-    U = ml%U(pt)
-    c_1 = ml%c_1(pt)
-    Gamma_1 = ml%Gamma_1(pt)
+    do k = 1, gr%n_k
+       V_2 = ml%coeff(I_V_2, pt(k))
+       As = ml%coeff(I_AS, pt(k))
+       U = ml%coeff(I_U, pt(k))
+       c_1 = ml%coeff(I_C_1, pt(k))
+       Gamma_1 = ml%coeff(I_GAMMA_1, pt(k))
+    end do
 
     ! Physical structure variables
 
@@ -159,7 +161,7 @@ program poly_to_fgong
 110 format(4I10)
 
   write(unit, 120) glob
-120  format(1P,5(X,E26.18E3))
+120  format(1P,5(1X,E26.18E3))
 
   do k = 1, n_k
      write(unit, 120) var(:,k)

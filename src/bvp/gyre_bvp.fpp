@@ -1,7 +1,7 @@
 ! Module   : gyre_bvp
-! Purpose  : boundary-value solver
+! Purpose  : parametric boundary value problems
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General

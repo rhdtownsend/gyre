@@ -31,14 +31,15 @@
 	grid_type = 'INVERSE'
 	freq_min = 41
 	freq_max = 42
-	freq_units = 'UHZ'
+	freq_min_units = 'UHZ'
+	freq_max_units = 'UHZ'
 	n_freq = 50
 /
 
 &grid
-	n_center = 5
 	alpha_osc = 10
 	alpha_exp = 2
+	n_inner = 5
 /
 
 &ad_output

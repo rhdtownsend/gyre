@@ -27,7 +27,7 @@ program gyre_contour
   use core_parallel
   use core_system
 
-  use gyre_bep
+  use gyre_bvp
   use gyre_constants
   use gyre_contour_map
   use gyre_contour_seg
@@ -41,7 +41,7 @@ program gyre_contour
   use gyre_model
   use gyre_model_factory
   use gyre_model_par
-  use gyre_nad_bep
+  use gyre_nad_bvp
   use gyre_num_par
   use gyre_osc_par
   use gyre_out_par
@@ -83,7 +83,7 @@ program gyre_contour
   type(grid_t)                     :: gr
   real(WP), allocatable            :: omega_re(:)
   real(WP), allocatable            :: omega_im(:)
-  type(nad_bep_t), allocatable     :: bp
+  type(nad_bvp_t), allocatable     :: bp
   type(c_ext_t), allocatable       :: discrim_map(:,:)
   type(contour_map_t)              :: cm_re
   type(contour_map_t)              :: cm_im
@@ -169,9 +169,9 @@ program gyre_contour
 
   gr = grid_t(ml, omega_re, gr_p_sel, md_p(1), os_p_sel)
 
-  ! Set up the bep
+  ! Set up the bvp
 
-  bp = nad_bep_t(ml, gr, omega_re, md_p(1), nm_p_sel, os_p_sel)
+  bp = nad_bvp_t(ml, gr, omega_re, md_p(1), nm_p_sel, os_p_sel)
 
   ! Evaluate the discriminant map
 
@@ -355,7 +355,7 @@ contains
 
   subroutine eval_map (bp, omega_re, omega_im, discrim_map)
 
-    class(c_bep_t), intent(inout)           :: bp
+    class(c_bvp_t), intent(inout)           :: bp
     real(WP), intent(in)                    :: omega_re(:)
     real(WP), intent(in)                    :: omega_im(:)
     type(c_ext_t), allocatable, intent(out) :: discrim_map(:,:)
@@ -522,17 +522,18 @@ contains
 
   subroutine find_roots (bp, md_p, nm_p, os_p, is_re, is_im, process_root)
 
-    type(nad_bep_t), target, intent(inout)       :: bp
+    type(nad_bvp_t), target, intent(inout)       :: bp
     type(mode_par_t), intent(in)                 :: md_p
     type(num_par_t), intent(in)                  :: nm_p
     type(osc_par_t), intent(in)                  :: os_p
     type(contour_seg_t), allocatable, intent(in) :: is_re(:)
     type(contour_seg_t), allocatable, intent(in) :: is_im(:)
     interface
-       subroutine process_root (omega, n_iter, discrim_ref)
+       subroutine process_root (omega, j, n_iter, discrim_ref)
          use core_kinds
          use gyre_ext
          complex(WP), intent(in)   :: omega
+         integer, intent(in)       :: j
          integer, intent(in)       :: n_iter
          type(r_ext_t), intent(in) :: discrim_ref
        end subroutine process_root
@@ -588,7 +589,7 @@ contains
 
        ! Process it
 
-       call process_root(cmplx(omega_root), n_iter, max(abs(discrim_a), abs(discrim_b)))
+       call process_root(cmplx(omega_root), j, n_iter, max(abs(discrim_a), abs(discrim_b)))
 
     end do intseg_loop
 
@@ -622,25 +623,21 @@ contains
 
   !****
 
-  subroutine process_root (omega, n_iter, discrim_ref)
+  subroutine process_root (omega, j, n_iter, discrim_ref)
 
     complex(WP), intent(in)   :: omega
+    integer, intent(in)       :: j
     integer, intent(in)       :: n_iter
     type(r_ext_t), intent(in) :: discrim_ref
 
-    type(soln_t)  :: sl
     type(mode_t)  :: md_new
     type(r_ext_t) :: chi
 
-    ! Create the soln_t
+    ! Construct the new mode_t
+    
+    md_new = mode_t(bp, j, omega)
 
-    sl = soln_t(bp, omega)
-
-    ! Construct the new mode
-
-    md_new = mode_t(ml, sl, md_p(1), os_p_sel)
-
-    chi = ABS(sl%discrim)/ABS(discrim_ref)
+    chi = abs(md_new%sl%discrim)/discrim_ref
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 120) md_new%l, md_new%m, md_new%n_pg, md_new%n_p, md_new%n_g, &
@@ -661,7 +658,7 @@ contains
 
     ! Write it
 
-    call write_mode(md(n_md), n_md, ot_p)
+    call write_mode(md(n_md), ot_p)
 
     ! If necessary, prune it
 

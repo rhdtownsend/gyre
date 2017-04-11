@@ -1,7 +1,7 @@
 ! Module   : gyre_mesa_file
 ! Purpose  : read MESA files
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -37,20 +37,103 @@ module gyre_mesa_file
 
   implicit none
 
+  ! Parameters
+
+  integer, parameter :: N_COLS_V0_01 = 18
+  integer, parameter :: N_COLS_V0_19 = 18
+  integer, parameter :: N_COLS_V1_00 = 18
+
   ! Access specifiers
 
   private
 
   public :: read_mesa_model
-  public :: read_mesa_data
+  public :: init_mesa_model
 
   ! Procedures
 
 contains
 
-  subroutine read_mesa_model (ml_p, ml)
+    subroutine read_mesa_model (ml_p, ml)
 
     type(model_par_t), intent(in)        :: ml_p
+    class(model_t), pointer, intent(out) :: ml
+
+    integer               :: unit
+    integer               :: n
+    real(WP)              :: global_data(3)
+    integer               :: version
+    integer               :: n_cols
+    real(WP), allocatable :: point_data(:,:)
+    integer               :: k
+    integer               :: k_chk
+
+    ! Read data from the MESA-format file
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from MESA file'
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(ml_p%file)
+110    format(3X,A,1X,A)
+    endif
+
+    open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
+
+    ! Read the header and determine the version
+
+    read(unit, *) n, global_data, version
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'File version', version/100._WP
+120    format(3X,A,1X,F4.2,1X,A)
+    endif
+
+    ! Read the data
+
+    select case (version)
+    case (1)
+       backspace(unit)
+       n_cols = N_COLS_V0_01
+    case (19)
+       n_cols = N_COLS_V0_19
+    case (100)
+       n_cols = N_COLS_V1_00
+    case default
+       $ABORT(Unrecognized MESA file version)
+    end select
+
+    allocate(point_data(n_cols,n))
+
+    read_loop : do k = 1,n
+       read(unit, *) k_chk, point_data(:,k)
+       $ASSERT(k == k_chk,Index mismatch)
+    end do read_loop
+
+    close(unit)
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 130) 'Read', n, 'points'
+130    format(3X,A,1X,I0,1X,A)
+    endif
+
+    ! Initialize the model
+
+    call init_mesa_model(ml_p, global_data, point_data, version, ml)
+    
+    ! Finish
+
+    return
+
+  end subroutine read_mesa_model
+
+  !****
+
+  subroutine init_mesa_model (ml_p, global_data, point_data, version, ml)
+
+    type(model_par_t), intent(in)        :: ml_p
+    real(WP), intent(in)                 :: global_data(:)
+    real(WP), intent(in)                 :: point_data(:,:)
+    integer, intent(in)                  :: version
     class(model_t), pointer, intent(out) :: ml
 
     real(WP)                    :: M_star
@@ -58,6 +141,7 @@ contains
     real(WP)                    :: L_star
     real(WP), allocatable       :: r(:)
     real(WP), allocatable       :: M_r(:)
+    real(WP), allocatable       :: L_r(:)
     real(WP), allocatable       :: P(:)
     real(WP), allocatable       :: rho(:)
     real(WP), allocatable       :: T(:)
@@ -70,8 +154,8 @@ contains
     real(WP), allocatable       :: kap_rho(:)
     real(WP), allocatable       :: kap_T(:)
     real(WP), allocatable       :: eps(:)
-    real(WP), allocatable       :: eps_rho(:)
-    real(WP), allocatable       :: eps_T(:)
+    real(WP), allocatable       :: eps_eps_rho(:)
+    real(WP), allocatable       :: eps_eps_T(:)
     real(WP), allocatable       :: Omega_rot(:)
     integer                     :: n
     real(WP), allocatable       :: x(:)
@@ -81,21 +165,33 @@ contains
     real(WP), allocatable       :: c_1(:)
     real(WP), allocatable       :: beta_rad(:)
     real(WP), allocatable       :: c_P(:)
+    real(WP), allocatable       :: c_lum(:)
     real(WP), allocatable       :: c_rad(:)
     real(WP), allocatable       :: c_thm(:)
     real(WP), allocatable       :: c_dif(:)
+    real(WP), allocatable       :: c_eps(:)
     real(WP), allocatable       :: c_eps_ad(:)
     real(WP), allocatable       :: c_eps_S(:)
     real(WP), allocatable       :: kap_ad(:)
     real(WP), allocatable       :: kap_S(:)
     type(evol_model_t), pointer :: em
 
-    ! Read data from the MESA-format file
+    ! Extract data from the global and point arrays
 
-    call read_mesa_data(ml_p%file, M_star, R_star, L_star, r, M_r, P, rho, T, &
-                        N2, Gamma_1, nabla_ad, delta, nabla,  &
-                        kap, kap_rho, kap_T, eps, eps_rho, eps_T, &
-                        Omega_rot)
+    M_star = global_data(1)
+    R_star = global_data(2)
+    L_star = global_data(3)
+
+    select case (version)
+    case (1)
+       call extract_data_v0_01_()
+    case (19)
+       call extract_data_v0_19_()
+    case (100)
+       call extract_data_v1_00_()
+    case default
+       $ABORT(Unrecognized MESA memory version)
+    end select
 
     ! Snap grid points
 
@@ -111,17 +207,20 @@ contains
     allocate(As(n))
     allocate(U(n))
     allocate(c_1(n))
+    allocate(c_lum(n))
 
     where (x /= 0._WP)
        V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
        As = r**3*N2/(G_GRAVITY*M_r)
        U = 4._WP*PI*rho*r**3/M_r
        c_1 = (r/R_star)**3/(M_r/M_star)
+       c_lum = (L_r/L_star)/x**3
     elsewhere
        V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
        As = 0._WP
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+       c_lum = 4._WP*PI*rho(1)*eps(1)*R_star**3/L_star
     end where
 
     beta_rad = A_RADIATION*T**4/(3._WP*P)
@@ -135,8 +234,9 @@ contains
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
     c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
 
-    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
+    c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
+    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_eps_T + eps_eps_rho/Gamma_1)*R_star**3/L_star
+    c_eps_S = 4._WP*PI*rho*(eps_eps_T - delta*eps_eps_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
        Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
@@ -146,28 +246,30 @@ contains
 
     ! Initialize the evol_model_t
 
-    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, .TRUE., ml_p))
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
 
-    call em%set_V_2(V_2)
-    call em%set_As(As)
-    call em%set_U(U)
-    call em%set_c_1(c_1)
+    call em%define(I_V_2, V_2)
+    call em%define(I_AS, As)
+    call em%define(I_U, U)
+    call em%define(I_C_1, c_1)
 
-    call em%set_Gamma_1(Gamma_1)
-    call em%set_delta(delta)
-    call em%set_nabla_ad(nabla_ad)
-    call em%set_nabla(nabla)
-    call em%set_beta_rad(beta_rad)
+    call em%define(I_GAMMA_1, Gamma_1)
+    call em%define(I_DELTA, delta)
+    call em%define(I_NABLA_AD, nabla_ad)
+    call em%define(I_NABLA, nabla)
+    call em%define(I_BETA_RAD, beta_rad)
 
-    call em%set_c_rad(c_rad)
-    call em%set_c_thm(c_thm)
-    call em%set_c_dif(c_dif)
-    call em%set_c_eps_ad(c_eps_ad)
-    call em%set_c_eps_S(c_eps_S)
-    call em%set_kap_ad(kap_ad)
-    call em%set_kap_S(kap_S)
+    call em%define(I_C_LUM, c_lum)
+    call em%define(I_C_RAD, c_rad)
+    call em%define(I_C_THM, c_thm)
+    call em%define(I_C_DIF, c_dif)
+    call em%define(I_C_EPS, c_eps)
+    call em%define(I_C_EPS_AD, c_eps_ad)
+    call em%define(I_C_EPS_S, c_eps_S)
+    call em%define(I_KAP_AD, kap_ad)
+    call em%define(I_KAP_S, kap_S)
 
-    call em%set_Omega_rot(Omega_rot)
+    call em%define(I_OMEGA_ROT, Omega_rot)
 
     ! Return a pointer
 
@@ -177,107 +279,19 @@ contains
 
     return
 
-  end subroutine read_mesa_model
-
-  !****
-
-  subroutine read_mesa_data (file, M_star, R_star, L_star, r, M_r, P, rho, T, &
-                             N2, Gamma_1, nabla_ad, delta, nabla,  &
-                             kap, kap_rho, kap_T, eps, eps_rho, eps_T, &
-                             Omega_rot)
-
-    character(*), intent(in)           :: file
-    real(WP), intent(out)              :: M_star
-    real(WP), intent(out)              :: R_star
-    real(WP), intent(out)              :: L_star
-    real(WP), allocatable, intent(out) :: r(:)
-    real(WP), allocatable, intent(out) :: M_r(:)
-    real(WP), allocatable, intent(out) :: P(:)
-    real(WP), allocatable, intent(out) :: rho(:)
-    real(WP), allocatable, intent(out) :: T(:)
-    real(WP), allocatable, intent(out) :: N2(:)
-    real(WP), allocatable, intent(out) :: Gamma_1(:)
-    real(WP), allocatable, intent(out) :: nabla_ad(:)
-    real(WP), allocatable, intent(out) :: delta(:)
-    real(WP), allocatable, intent(out) :: nabla(:)
-    real(WP), allocatable, intent(out) :: kap(:)
-    real(WP), allocatable, intent(out) :: kap_rho(:)
-    real(WP), allocatable, intent(out) :: kap_T(:)
-    real(WP), allocatable, intent(out) :: eps(:)
-    real(WP), allocatable, intent(out) :: eps_rho(:)
-    real(WP), allocatable, intent(out) :: eps_T(:)
-    real(WP), allocatable, intent(out) :: Omega_rot(:)
-
-    integer  :: unit
-    integer  :: n
-    integer  :: version
-    
-    ! Read data from the MESA-format file
-
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from MESA file'
-100    format(A)
-       write(OUTPUT_UNIT, 110) 'File name', TRIM(file)
-110    format(3X,A,1X,A)
-    endif
-
-    open(NEWUNIT=unit, FILE=file, STATUS='OLD')
-
-    ! Read the header and determine the version
-
-    read(unit, *) n, M_star, R_star, L_star, version
-
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'File version', version/100._WP
-120    format(3X,A,1X,F4.2,1X,A)
-    endif
-
-    ! Read the data
-
-    select case (version)
-    case (1)
-       backspace(unit)
-       call read_mesa_data_v0_01_()
-    case (19)
-       call read_mesa_data_v0_19_()
-    case (100)
-       call read_mesa_data_v1_00_()
-    case default
-       $ABORT(Unrecognized MESA file version)
-    end select
-
-    close(unit)
-
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 130) 'Read', n, 'points'
-130    format(3X,A,1X,I0,1X,A)
-    endif
-    
-    ! Finish
-
-    return
-
   contains
 
-    subroutine read_mesa_data_v0_01_ ()
+    subroutine extract_data_v0_01_ ()
 
-      real(WP), allocatable :: point_data(:,:)
-      integer               :: k
-      integer               :: k_chk
+      integer :: k
 
-      ! Read data from the version-0.01 file (this is the old variant
-      ! with no version number; the 1 comes from reading the first
-      ! field of the following record)
+      $CHECK_BOUNDS(SIZE(point_data, 1),N_COLS_V0_01)
 
-      allocate(point_data(18,n))
-
-      read_loop : do k = 1,n
-         read(unit, *) k_chk, point_data(:,k)
-         $ASSERT(k == k_chk,Index mismatch)
-      end do read_loop
+      ! Extract data from the version-0.01 point array
 
       r = point_data(1,:)
       M_r = point_data(2,:)/(1._WP+point_data(2,:))*M_star
+      L_r = point_data(3,:)
       P = point_data(4,:)
       T = point_data(5,:)
       rho = point_data(6,:)
@@ -289,22 +303,22 @@ contains
       kap_T = point_data(14,:)
       kap_rho = point_data(15,:)
       eps = point_data(16,:)
-      eps_T = point_data(17,:)
-      eps_rho = point_data(18,:)
+      eps_eps_T = point_data(17,:)
+      eps_eps_rho = point_data(18,:)
 
       nabla_ad = p*delta/(rho*T*point_data(10,:))
 
       allocate(Omega_rot(n))
       Omega_rot = 0._WP
 
-      ! Decide whether eps_T and eps_rho need rescaling
+      ! Decide whether eps_eps_T and eps_eps_rho need rescaling
 
-      k = MAXLOC(ABS(eps_T), DIM=1)
+      k = MAXLOC(ABS(eps_eps_T), DIM=1)
 
-      if (ABS(eps_T(k)) < 1E-3*ABS(eps(k))) then
+      if (ABS(eps_eps_T(k)) < 1E-3_WP*ABS(eps(k))) then
 
-         eps_T = eps_T*eps
-         eps_rho = eps_rho*eps
+         eps_eps_T = eps_eps_T*eps
+         eps_eps_rho = eps_eps_rho*eps
 
          if(check_log_level('INFO')) then
             write(OUTPUT_UNIT, 120) 'Rescaled epsilon derivatives'
@@ -317,26 +331,17 @@ contains
 
       return
 
-    end subroutine read_mesa_data_v0_01_
+    end subroutine extract_data_v0_01_
 
-    subroutine read_mesa_data_v0_19_ ()
+    subroutine extract_data_v0_19_ ()
 
-      real(WP), allocatable :: point_data(:,:)
-      integer               :: k
-      integer               :: k_chk
+      $CHECK_BOUNDS(SIZE(point_data, 1),N_COLS_V0_19)
 
-      ! Read data from the version-0.01 file (this is the old variant
-      ! with no version number; the 19 comes from reading the column count)
-
-      allocate(point_data(18,n))
-
-      read_loop : do k = 1,n
-         read(unit, *) k_chk, point_data(:,k)
-         $ASSERT(k == k_chk,Index mismatch)
-      end do read_loop
+      ! Extract data from the version-0.19 point array
 
       r = point_data(1,:)
       M_r = point_data(2,:)/(1._WP+point_data(2,:))*M_star
+      L_r = point_data(3,:)
       P = point_data(4,:)
       T = point_data(5,:)
       rho = point_data(6,:)
@@ -349,33 +354,28 @@ contains
       kap_T = point_data(13,:)
       kap_rho = point_data(14,:)
       eps = point_data(15,:)
-      eps_T = point_data(16,:)
-      eps_rho = point_data(17,:)
+      eps_eps_T = point_data(16,:)
+      eps_eps_rho = point_data(17,:)
       Omega_rot = point_data(18,:)
 
       ! Finish
 
       return
 
-    end subroutine read_mesa_data_v0_19_
+    end subroutine extract_data_v0_19_
 
-    subroutine read_mesa_data_v1_00_ ()
+    subroutine extract_data_v1_00_ ()
 
-      real(WP), allocatable :: point_data(:,:)
-      integer               :: k
-      integer               :: k_chk
+      real(WP), allocatable :: kap_kap_T(:)
+      real(WP), allocatable :: kap_kap_rho(:)
 
-      ! Read data from the version-1.00 file
+      $CHECK_BOUNDS(SIZE(point_data, 1),N_COLS_V1_00)
 
-      allocate(point_data(18,n))
-
-      read_loop : do k = 1,n
-         read(unit, *) k_chk, point_data(:,k)
-         $ASSERT(k == k_chk,Index mismatch)
-      end do read_loop
+      ! Extract data from the version-1.00 point array
 
       r = point_data(1,:)
       M_r = point_data(2,:)
+      L_r = point_data(3,:)
       P = point_data(4,:)
       T = point_data(5,:)
       rho = point_data(6,:)
@@ -385,19 +385,22 @@ contains
       nabla_ad = point_data(10,:)
       delta = point_data(11,:)
       kap = point_data(12,:)
-      kap_T = point_data(13,:)/point_data(12,:)
-      kap_rho = point_data(14,:)/point_data(12,:)
+      kap_kap_T = point_data(13,:)
+      kap_kap_rho = point_data(14,:)
       eps = point_data(15,:)
-      eps_T = point_data(16,:)
-      eps_rho = point_data(17,:)
+      eps_eps_T = point_data(16,:)
+      eps_eps_rho = point_data(17,:)
       Omega_rot = point_data(18,:)
+
+      kap_T = kap_kap_T/kap
+      kap_rho = kap_kap_rho/kap
 
       ! Finish
 
       return
 
-    end subroutine read_mesa_data_v1_00_
+    end subroutine extract_data_v1_00_
 
-  end subroutine read_mesa_data
+  end subroutine init_mesa_model
 
 end module gyre_mesa_file

@@ -1,7 +1,7 @@
 ! Module   : gyre_diff_factory
 ! Purpose  : factory procedures for r_diff_t and c_diff_t types
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -27,6 +27,7 @@ module gyre_diff_factory
   use gyre_diff
   use gyre_eqns
   use gyre_magnus_diff
+  use gyre_mirk_diff
   use gyre_num_par
   use gyre_point
   use gyre_trapz_diff
@@ -87,6 +88,8 @@ contains
        allocate(df, SOURCE=${T}_colloc_diff_t(eq, pt_a, pt_b, 'GL6'))
     case ('TRAPZ')
        allocate(df, SOURCE=${T}_trapz_diff_t(eq, pt_a, pt_b, SPREAD(0.5_WP, DIM=1, NCOPIES=eq%n_e)))
+    case ('MIRK')
+       allocate(df, SOURCE=${T}_mirk_diff_t(eq, pt_a, pt_b))
     case default
        $ABORT(Invalid diff_scheme)
     end select

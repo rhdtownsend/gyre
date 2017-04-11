@@ -4,19 +4,22 @@
 # The following flags can be edited (set to either yes or no)
 
 # Enable debugging (with a performance penalty)
-DEBUG=no
+DEBUG?=no
 
 # Enable OpenMP parallelization
-OMP=yes
+OMP?=yes
 
 # Enable MPI parallelization
-MPI=no
+MPI?=no
 
 # Use double precision arithmetic (best left to 'yes')
-DOUBLE_PRECISION=yes
+DOUBLE_PRECISION?=yes
 
 # Use IEEE fortran features
-IEEE=no
+IEEE?=no
+
+# Enable FPE checks
+FPE?=yes
 
 ############ DO NOT EDIT BELOW THIS LINE ############
 ### (unless you think you know what you're doing) ###
@@ -41,7 +44,11 @@ endif
 
 MODPATH=${MESASDK_ROOT}/include
 
-FFLAGS:=${FFLAGS} -finit-real=snan -ffpe-trap=invalid,overflow,zero -fbacktrace -fmax-errors=25
+FFLAGS:=${FFLAGS} -finit-real=snan -fbacktrace -fmax-errors=25
+
+ifeq (${FPE},yes)
+  FFLAGS:=${FFLAGS} -ffpe-trap=invalid,overflow,zero
+endif
 
 ifeq (${DEBUG},yes)
   FFLAGS:=${FFLAGS} -fcheck=all -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0 -g
@@ -51,27 +58,12 @@ else
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO -DGFORTRAN_PR_49636
 endif
 
-F9XFLAGS:=${F9XFLAGS} $(addprefix -I,${MODPATH}) ${FFLAGS} #-std=f2008
+F9XFLAGS:=${F9XFLAGS} $(addprefix -I,${MODPATH}) ${FFLAGS} -std=f2008
 F77FLAGS:=${F77FLAGS} ${FFLAGS} -ffixed-form
 
 ifeq (${OMP},yes)
   F9XFLAGS:=${F9XFLAGS} -fopenmp
   F77FLAGS:=${F77FLAGS} -fopenmp
-endif
-
-GFORTRAN_MAJOR:=$(shell gfortran -dumpversion | awk '{split($$0,verarray,".")} END{print verarray[1]}')
-GFORTRAN_MINOR:=$(shell gfortran -dumpversion | awk '{split($$0,verarray,".")} END{print verarray[2]}')
-
-ifneq (${GFORTRAN_MAJOR},4)
-  VERSION_WARN:='y'
-else
-  ifneq (${GFORTRAN_MINOR},10)
-    VERSION_WARN:='y'
-  endif
-endif
-
-ifeq (${VERSION_WARN},y)
-  $(warning You need gfortran 4.10.0 to compile this code)
 endif
 
 LDFLAGS:=${LDFLAGS} `mesasdk_lapack95_link`

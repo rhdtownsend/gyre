@@ -1,7 +1,7 @@
 ! Module   : gyre_losc_file
 ! Purpose  : read LOSC files
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -153,16 +153,16 @@ contains
 
     ! Initialize the evol_model_t
 
-    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, 0._WP, .FALSE., ml_p))
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, 0._WP, ml_p))
 
-    call em%set_V_2(V_2)
-    call em%set_As(As)
-    call em%set_U(U)
-    call em%set_c_1(c_1)
+    call em%define(I_V_2, V_2)
+    call em%define(I_AS, As)
+    call em%define(I_U, U)
+    call em%define(I_C_1, c_1)
 
-    call em%set_Gamma_1(Gamma_1)
+    call em%define(I_GAMMA_1, Gamma_1)
 
-    call em%set_Omega_rot(Omega_rot)
+    call em%define(I_OMEGA_ROT, Omega_rot)
 
     ! Return a pointer
 

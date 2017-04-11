@@ -1,7 +1,7 @@
 ! Module   : gyre_osc_par
 ! Purpose  : oscillation parameters
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -38,6 +38,8 @@ module gyre_osc_par
      character(64)   :: inner_bound
      character(64)   :: outer_bound
      character(64)   :: inertia_norm
+     character(64)   :: time_factor
+     character(64)   :: conv_scheme
      character(2048) :: tag_list
      logical         :: nonadiabatic
      logical         :: cowling_approx
@@ -91,6 +93,8 @@ contains
     character(LEN(os_p%inner_bound))     :: inner_bound
     character(LEN(os_p%outer_bound))     :: outer_bound
     character(LEN(os_p%inertia_norm))    :: inertia_norm
+    character(LEN(os_p%time_factor))     :: time_factor
+    character(LEN(os_p%conv_scheme))     :: conv_scheme
     character(LEN(os_p%tag_list))        :: tag_list
     logical                              :: nonadiabatic
     logical                              :: cowling_approx
@@ -98,8 +102,8 @@ contains
     logical                              :: reduce_order
 
     namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, &
-         variables_set, inertia_norm, tag_list, nonadiabatic, cowling_approx, &
-         narf_approx, reduce_order
+         variables_set, inertia_norm, time_factor, conv_scheme, &
+         tag_list, nonadiabatic, cowling_approx, narf_approx, reduce_order
 
     ! Count the number of osc namelists
 
@@ -127,8 +131,10 @@ contains
        rotation_method = 'NULL'
        variables_set = 'GYRE'
        inner_bound = 'REGULAR'
-       outer_bound = 'ZERO'
+       outer_bound = 'VACUUM'
        inertia_norm = 'BOTH'
+       time_factor = 'OSC'
+       conv_scheme = 'FROZEN_PESNELL_1'
        tag_list = ''
 
        nonadiabatic = .FALSE.
@@ -146,6 +152,8 @@ contains
                            inner_bound=inner_bound, &
                            outer_bound=outer_bound, &
                            inertia_norm=inertia_norm, &
+                           time_factor=time_factor, &
+                           conv_scheme=conv_scheme, &
                            tag_list=tag_list, &
                            nonadiabatic=nonadiabatic, &
                            cowling_approx=cowling_approx, &
@@ -178,6 +186,8 @@ contains
     call bcast(os_p%inner_bound, root_rank)
     call bcast(os_p%outer_bound, root_rank)
     call bcast(os_p%inertia_norm, root_rank)
+    call bcast(os_p%time_factor, root_rank)
+    call bcast(os_p%conv_scheme, root_rank)
     call bcast(os_p%tag_list, root_rank)
 
     call bcast(os_p%nonadiabatic, root_rank)

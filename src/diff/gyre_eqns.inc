@@ -1,7 +1,7 @@
 ! Incfile  : gyre_eqns
 ! Purpose  : differential equations evaluation (template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -33,27 +33,41 @@ module gyre_${T}_eqns
   ! Derived-type definitions
 
   type, abstract :: ${T}_eqns_t
-     private
-     integer, public :: n_e
+     integer :: n_e
    contains
-     private
-     procedure(A_), deferred, public :: A
-     procedure(A_), deferred, public :: xA
+     procedure(stencil), deferred :: stencil
+     procedure(A), deferred       :: A
+     procedure(xA), deferred      :: xA
   end type ${T}_eqns_t
 
   ! Interfaces
 
   abstract interface
 
-     function A_ (this, pt, omega) result (A)
-       use core_kinds
+     subroutine stencil (this, pt)
        use gyre_point
        import ${T}_eqns_t
+       class(${T}_eqns_t), intent(inout) :: this
+       type(point_t), intent(in)         :: pt(:)
+     end subroutine stencil
+     
+     function A (this, i, omega)
+       use core_kinds
+       import ${T}_eqns_t
        class(${T}_eqns_t), intent(in) :: this
-       type(point_t), intent(in)      :: pt
+       integer, intent(in)            :: i
        $TYPE(WP), intent(in)          :: omega
        $TYPE(WP)                      :: A(this%n_e,this%n_e)
-     end function A_
+     end function A
+
+     function xA (this, i, omega)
+       use core_kinds
+       import ${T}_eqns_t
+       class(${T}_eqns_t), intent(in) :: this
+       integer, intent(in)            :: i
+       $TYPE(WP), intent(in)          :: omega
+       $TYPE(WP)                      :: xA(this%n_e,this%n_e)
+     end function xA
 
   end interface
 

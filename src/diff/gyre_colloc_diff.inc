@@ -1,7 +1,7 @@
 ! Incfile  : gyre_colloc_diff
 ! Purpose  : difference equations (local collocation, template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -47,14 +47,50 @@ module gyre_${T}_colloc_diff
   integer, parameter :: GL4_SCHEME = 2
   integer, parameter :: GL6_SCHEME = 3
 
+  real(WP), parameter :: GL2_C_I(1) = [0.5_WP]
+
+  real(WP), parameter :: GL4_A_IJ(2,2) = RESHAPE([ &
+       0.25_WP,&
+       0.25_WP+SQRT(3._WP)/6._WP, &
+       0.25_WP-SQRT(3._WP)/6._WP, &
+       0.25_WP], &
+       [2,2])
+  real(WP), parameter :: GL4_B_I(2) = [ &
+       0.5_WP, &
+       0.5_WP]
+  real(WP), parameter :: GL4_C_I(2) = [ &
+       0.5_WP-SQRT(3._WP)/6._WP, &
+       0.5_WP+SQRT(3._WP)/6._WP]
+  
+  real(WP), parameter :: GL6_A_IJ(3,3) = RESHAPE([ &
+       5._WP/36._WP, &
+       5._WP/36._WP+SQRT(15._WP)/24._WP, &
+       5._WP/36._WP+SQRT(15._WP)/30._WP, &
+       2._WP/9._WP-SQRT(15._WP)/15._WP, &
+       2._WP/9._WP, &
+       2._WP/9._WP+SQRT(15._WP)/15._WP, &
+       5._WP/36._WP-SQRT(15._WP)/30._WP, &
+       5._WP/36._WP-SQRT(15._WP)/24._WP, &
+       5._WP/36._WP], &
+       [3,3])
+  real(WP), parameter :: GL6_B_I(3) = [ &
+       5._WP/18._WP, &
+       4._WP/9._WP, &
+       5._WP/18._WP]
+  real(WP), parameter :: GL6_C_I(3) = [ &
+       0.5_WP-SQRT(15._WP)/10._WP, &
+       0.5_WP, &
+       0.5_WP+SQRT(15._WP)/10._WP]
+       
   ! Derived-type definitions
 
   type, extends (${T}_diff_t) :: ${T}_colloc_diff_t
      private
      class(${T}_eqns_t), allocatable :: eq
-     type(point_t)                   :: pt_a
-     type(point_t)                   :: pt_b
+     real(WP)                        :: dx
+     integer                         :: n_s
      integer                         :: scheme
+     logical                         :: reverse
    contains
      private
      procedure, public :: build
@@ -86,25 +122,47 @@ contains
     character(*), intent(in)       :: scheme
     type(${T}_colloc_diff_t)       :: df
 
+    real(WP), allocatable      :: c_i(:)
+    type(point_t), allocatable :: pt(:)
+
     $ASSERT_DEBUG(pt_a%s == pt_b%s,Segment mismatch)
 
     ! Construct the colloc_diff_t
 
-    allocate(df%eq, SOURCE=eq)
-
-    df%pt_a = pt_a
-    df%pt_b = pt_b
-       
     select case (scheme)
     case ('GL2')
        df%scheme = GL2_SCHEME
+       df%n_s = 1
+       c_i = GL2_C_I
     case ('GL4')
        df%scheme = GL4_SCHEME
+       df%n_s = 2
+       c_i = GL4_C_I
     case ('GL6')
        df%scheme = GL6_SCHEME
+       df%n_s = 3
+       c_i = GL6_C_I
     case default
        $ABORT(Invalid scheme)
     end select
+
+    df%reverse = pt_a%x >= 0.5_WP
+
+    allocate(pt(df%n_s))
+
+    pt%s = pt_a%s
+
+    if (df%reverse) then
+       df%dx = pt_a%x - pt_b%x
+       pt%x = pt_b%x + c_i*df%dx
+    else
+       df%dx = pt_b%x - pt_a%x
+       pt%x = pt_a%x + c_i*df%dx
+    endif
+
+    allocate(df%eq, SOURCE=eq)
+
+    call df%eq%stencil(pt)
 
     df%n_e = eq%n_e
 
@@ -123,6 +181,12 @@ contains
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
+
+    $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
 
     ! Build the difference equations
 
@@ -153,29 +217,21 @@ contains
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
 
-    real(WP)      :: dx
-    type(point_t) :: pt
-    $TYPE(WP)     :: A(this%n_e,this%n_e,1)
-
-    $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
-
-    $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
+    $TYPE(WP) :: A(this%n_e,this%n_e)
 
     ! Evaluate the RHS matrix
 
-    dx = this%pt_b%x - this%pt_a%x
-
-    pt%s = this%pt_a%s
-    pt%x = this%pt_a%x + dx
-
-    A(:,:,1) = this%eq%A(pt, omega)
+    A = this%eq%A(1, omega)
 
     ! Build the GL2 difference equations
 
-    E_l = 0.5_WP*dx*A(:,:,1) + identity_matrix(this%n_e)
-    E_r = 0.5_WP*dx*A(:,:,1) - identity_matrix(this%n_e)
+    if (this%reverse) then
+       E_l = 0.5_WP*this%dx*A - identity_matrix(this%n_e)
+       E_r = 0.5_WP*this%dx*A + identity_matrix(this%n_e)
+    else
+       E_l = 0.5_WP*this%dx*A + identity_matrix(this%n_e)
+       E_r = 0.5_WP*this%dx*A - identity_matrix(this%n_e)
+    endif
 
     scl = ${T}_ext_t(1._WP)
 
@@ -193,46 +249,12 @@ contains
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
 
-    logical :: BALANCE = .FALSE.
-
-    real(WP), parameter :: A_IJ(2,2) = RESHAPE([0.25_WP,&
-                                                0.25_WP+SQRT(3._WP)/6._WP, &
-                                                0.25_WP-SQRT(3._WP)/6._WP, &
-                                                0.25_WP], [2,2])
-    real(WP), parameter :: B_I(2) = [0.5_WP, &
-                                     0.5_WP]
-    real(WP), parameter :: C_I(2) = [0.5_WP-SQRT(3._WP)/6._WP, &
-         0.5_WP+SQRT(3._WP)/6._WP]
-
-    $TYPE(WP) :: E_l_a(this%n_e,this%n_e)
-    $TYPE(WP) :: E_r_a(this%n_e,this%n_e)
-    $TYPE(WP) :: E_l_b(this%n_e,this%n_e)
-    $TYPE(WP) :: E_r_b(this%n_e,this%n_e)
-
-    $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
-
-    $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
- 
     ! Build the GL4 difference equations
 
-    if (BALANCE) then
-       
-       call this%build_irk_(omega, 2, this%pt_a, this%pt_b, A_IJ, B_I, C_I, E_l_a, E_r_a)
-       call this%build_irk_(omega, 2, this%pt_b, this%pt_a, A_IJ, B_I, C_I, E_l_b, E_r_b)
-
-       E_l =  E_l_a - E_r_b
-       E_r = -E_l_b + E_r_a
-
+    if (this%reverse) then
+       call this%build_irk_(omega, GL4_A_IJ, GL4_B_I, E_r, E_l)
     else
-
-       if (this%pt_a%x < 0.5_WP) then
-          call this%build_irk_(omega, 2, this%pt_a, this%pt_b, A_IJ, B_I, C_I, E_l, E_r)
-       else
-          call this%build_irk_(omega, 2, this%pt_b, this%pt_a, A_IJ, B_I, C_I, E_r, E_l)
-       endif
-
+       call this%build_irk_(omega, GL4_A_IJ, GL4_B_I, E_l, E_r)
     endif
 
     scl = ${T}_ext_t(1._WP)
@@ -251,34 +273,12 @@ contains
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
 
-    real(WP), parameter :: A_IJ(3,3) = RESHAPE([5._WP/36._WP, &
-                                                5._WP/36._WP+SQRT(15._WP)/24._WP, &
-                                                5._WP/36._WP+SQRT(15._WP)/30._WP, &
-                                                2._WP/9._WP-SQRT(15._WP)/15._WP, &
-                                                2._WP/9._WP, &
-                                                2._WP/9._WP+SQRT(15._WP)/15._WP, &
-                                                5._WP/36._WP-SQRT(15._WP)/30._WP, &
-                                                5._WP/36._WP-SQRT(15._WP)/24._WP, &
-                                                5._WP/36._WP], [3,3])
-    real(WP), parameter :: B_I(3) = [5._WP/18._WP, &
-                                     4._WP/9._WP, &
-                                     5._WP/18._WP]
-    real(WP), parameter :: C_I(3) = [0.5_WP-SQRT(15._WP)/10._WP, &
-                                     0.5_WP, &
-                                     0.5_WP+SQRT(15._WP)/10._WP]
-
-    $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
-
-    $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
-
     ! Build the GL6 difference equations
 
-    if (this%pt_a%x < 0.5_WP) then
-       call this%build_irk_(omega, 3, this%pt_a, this%pt_b, A_IJ, B_I, C_I, E_l, E_r)
+    if (this%reverse) then
+       call this%build_irk_(omega, GL6_A_IJ, GL6_B_I, E_r, E_l)
     else
-       call this%build_irk_(omega, 3, this%pt_b, this%pt_a, A_IJ, B_I, C_I, E_r, E_l)
+       call this%build_irk_(omega, GL6_A_IJ, GL6_B_I, E_l, E_r)
     endif
 
     scl = ${T}_ext_t(1._WP)
@@ -289,78 +289,57 @@ contains
 
   !****
 
-  subroutine build_irk_ (this, omega, n_s, pt_a, pt_b, a_ij, b_i, c_i, E_a, E_b)
+  subroutine build_irk_ (this, omega, a_ij, b_i, E_a, E_b)
 
     class(${T}_colloc_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
-    integer, intent(in)                   :: n_s
-    type(point_t), intent(in)             :: pt_a
-    type(point_t), intent(in)             :: pt_b
     real(WP), intent(in)                  :: a_ij(:,:)
     real(WP), intent(in)                  :: b_i(:)
-    real(WP), intent(in)                  :: c_i(:)
     $TYPE(WP), intent(out)                :: E_a(:,:)
     $TYPE(WP), intent(out)                :: E_b(:,:)
 
-    real(WP)      :: dx
-    type(point_t) :: pt
-    $TYPE(WP)     :: A(this%n_e,this%n_e,n_s)
-    $TYPE(WP)     :: M(n_s*this%n_e,n_s*this%n_e)
-    integer       :: i
-    integer       :: i_a
-    integer       :: i_b
-    integer       :: j
-    integer       :: j_a
-    integer       :: j_b
-    $TYPE(WP)     :: B(n_s*this%n_e,this%n_e)
-    $TYPE(WP)     :: X(n_s*this%n_e,this%n_e)
-    $TYPE(WP)     :: K(this%n_e,this%n_e,n_s)
+    $TYPE(WP) :: A(this%n_e,this%n_e,this%n_s)
+    $TYPE(WP) :: M(this%n_s*this%n_e,this%n_s*this%n_e)
+    integer   :: i
+    integer   :: i_a
+    integer   :: i_b
+    integer   :: j
+    integer   :: j_a
+    integer   :: j_b
+    $TYPE(WP) :: B(this%n_s*this%n_e,this%n_e)
+    $TYPE(WP) :: X(this%n_s*this%n_e,this%n_e)
+    $TYPE(WP) :: K(this%n_e,this%n_e,this%n_s)
     
-    $CHECK_BOUNDS(SIZE(a_ij, 1),n_s)
-    $CHECK_BOUNDS(SIZE(a_ij, 2),n_s)
+    $CHECK_BOUNDS(SIZE(a_ij, 1),this%n_s)
+    $CHECK_BOUNDS(SIZE(a_ij, 2),this%n_s)
 
-    $CHECK_BOUNDS(SIZE(b_i),n_s)
-
-    $CHECK_BOUNDS(SIZE(c_i),n_s)
-
-    $CHECK_BOUNDS(SIZE(E_a, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(E_a, 2),this%n_e)
-
-    $CHECK_BOUNDS(SIZE(E_b, 1),this%n_e)
-    $CHECK_BOUNDS(SIZE(E_b, 2),this%n_e)
+    $CHECK_BOUNDS(SIZE(b_i),this%n_s)
 
     ! Build the difference equations using an n_s-step implicit Runge
-    ! Kutta (IRK) scheme with Butcher tableaux coefficients a_ij, b_i,
-    ! and c_i
+    ! Kutta (IRK) scheme with Butcher tableaux coefficients a_ij and
+    ! b_i (c_i has already been used in the constructor)
 
     ! Evaluate the RHS matrices
 
-    dx = pt_b%x - pt_a%x
-
-    do i = 1, n_s
-
-       pt%s = pt_a%s
-       pt%x = pt_a%x + dx*c_i(i)
-
-       A(:,:,i) = this%eq%A(pt, omega)
-
+    do i = 1, this%n_s
+       A(:,:,i) = this%eq%A(i, omega)
     end do
 
     ! Calculate the intermediate-state matrices K
 
     ! First, set up the linear system
 
-    do i = 1, n_s
+    do i = 1, this%n_s
 
        i_a = (i-1)*this%n_e + 1
        i_b = (i-1)*this%n_e + this%n_e
 
-       do j = 1, n_s
+       do j = 1, this%n_s
 
           j_a = (j-1)*this%n_e + 1
           j_b = (j-1)*this%n_e + this%n_e
 
-          M(i_a:i_b,j_a:j_b) = -dx*a_ij(i,j)*A(:,:,i)
+          M(i_a:i_b,j_a:j_b) = -this%dx*a_ij(i,j)*A(:,:,i)
 
           if (i == j) then
              M(i_a:i_b,j_a:j_b) = M(i_a:i_b,j_a:j_b) + identity_matrix(this%n_e)
@@ -378,7 +357,7 @@ contains
 
     ! Extract the K matrices
 
-    do i = 1, n_s
+    do i = 1, this%n_s
 
        i_a = (i-1)*this%n_e + 1
        i_b = (i-1)*this%n_e + this%n_e
@@ -391,8 +370,8 @@ contains
 
     E_a = identity_matrix(this%n_e)
 
-    do i = 1, n_s
-       E_a = E_a + dx*b_i(i)*K(:,:,i)
+    do i = 1, this%n_s
+       E_a = E_a + this%dx*b_i(i)*K(:,:,i)
     enddo
 
     E_b = -identity_matrix(this%n_e)

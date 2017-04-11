@@ -1,7 +1,7 @@
 ! Incfile  : gyre_magnus_diff
 ! Purpose  : difference equations (Magnus method, template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -46,18 +46,27 @@ module gyre_${T}_magnus_diff
   integer, parameter :: GL4_SCHEME = 2
   integer, parameter :: GL6_SCHEME = 3
 
+  real(WP), parameter :: GL2_C_I(1) = [0.5_WP]
+
+  real(WP), parameter :: GL4_C_I(2) = [ &
+       0.5_WP-SQRT(3._WP)/6._WP, &
+       0.5_WP+SQRT(3._WP)/6._WP]
+  
+  real(WP), parameter :: GL6_C_I(3) = [ &
+       0.5_WP-SQRT(15._WP)/10._WP, &
+       0.5_WP, &
+       0.5_WP+SQRT(15._WP)/10._WP]
+
   ! Derived-type definitions
 
   type, extends (${T}_diff_t) :: ${T}_magnus_diff_t
      private
      class(${T}_eqns_t), allocatable :: eq
-     type(point_t)                   :: pt_a
-     type(point_t)                   :: pt_b
+     real(WP)                        :: dx
      integer                         :: scheme
    contains
      private
      procedure, public :: build => build
-     procedure         :: dOmega_
      procedure         :: dOmega_GL2_
      procedure         :: dOmega_GL4_
      procedure         :: dOmega_GL6_
@@ -87,25 +96,37 @@ contains
     character(*), intent(in)       :: scheme
     type(${T}_magnus_diff_t)       :: df
 
+    real(WP), allocatable      :: c_i(:)
+    type(point_t), allocatable :: pt(:)
+
     $ASSERT_DEBUG(pt_a%s == pt_b%s,Segment mismatch)
 
     ! Construct the magnus_diff_t
 
-    allocate(df%eq, SOURCE=eq)
-
-    df%pt_a = pt_a
-    df%pt_b = pt_b
-
     select case (scheme)
     case ('GL2')
        df%scheme = GL2_SCHEME
+       c_i = GL2_C_I
     case ('GL4')
        df%scheme = GL4_SCHEME
+       c_i = GL4_C_I
     case ('GL6')
        df%scheme = GL6_SCHEME
+       c_i = GL6_C_I
     case default
        $ABORT(Invalid scheme)
     end select
+
+    df%dx = pt_b%x - pt_a%x
+
+    allocate(pt(SIZE(c_i)))
+
+    pt%s = pt_a%s
+    pt%x = pt_a%x + c_i*df%dx
+
+    allocate(df%eq, SOURCE=eq)
+
+    call df%eq%stencil(pt)
 
     df%n_e = eq%n_e
 
@@ -131,24 +152,38 @@ contains
     complex(WP) :: lambda(this%n_e)
     complex(WP) :: V_l(this%n_e,this%n_e)
     complex(WP) :: V_r(this%n_e,this%n_e)
-    real(WP)    :: dx
     integer     :: i
     complex(WP) :: V_pos(this%n_e,this%n_e)
     complex(WP) :: V_neg(this%n_e,this%n_e)
     complex(WP) :: E_l_(this%n_e,this%n_e)
     complex(WP) :: E_r_(this%n_e,this%n_e)
 
+    $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(E_r, 1),this%n_e)
+    $CHECK_BOUNDS(SIZE(E_r, 2),this%n_e)
+
+    ! Build the difference equations
+
     ! Evaluate the Magnus slope matrix
 
-    dOmega = this%dOmega_(omega)
+    select case (this%scheme)
+    case (GL2_SCHEME)
+       dOmega = this%dOmega_GL2_(omega)
+    case (GL4_SCHEME)
+       dOmega = this%dOmega_GL4_(omega)
+    case (GL6_SCHEME)
+       dOmega = this%dOmega_GL6_(omega)
+    case default
+       $ABORT(Invalid scheme)
+    end select
 
     ! Decompose it
 
     call eigen_decompose(dOmega, lambda, V_l, V_r)
 
     ! Build the difference equations
-
-    dx = this%pt_b%x - this%pt_a%x
 
     $block
 
@@ -165,14 +200,14 @@ contains
        do i = 1, this%n_e
           call ${X}COPY(this%n_e, V_r(1,i), 1, V_pos(1,i), 1)
           if (REAL(lambda(i)) >= 0._WP) then
-             call ${X}SCAL(this%n_e, EXP(-lambda(i)*dx), V_pos(1,i), 1)
+             call ${X}SCAL(this%n_e, EXP(-lambda(i)*this%dx), V_pos(1,i), 1)
           endif
        end do
     
        do i = 1, this%n_e
           call ${X}COPY(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
           if (REAL(lambda(i)) < 0._WP) then
-             call ${X}SCAL(this%n_e, EXP(lambda(i)*dx), V_neg(1,i), 1)
+             call ${X}SCAL(this%n_e, EXP(lambda(i)*this%dx), V_neg(1,i), 1)
           endif
        end do
 
@@ -184,7 +219,7 @@ contains
                      V_pos, this%n_e, V_l, this%n_e, CMPLX(0._WP, KIND=WP), &
                      E_r_, this%n_e)
 
-       scl = exp(${T}_ext_t(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*dx))
+       scl = exp(${T}_ext_t(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*this%dx))
 
     else
 
@@ -192,7 +227,7 @@ contains
 
        do i = 1, this%n_e
           call ${X}COPY(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
-          call ${X}SCAL(this%n_e, EXP(lambda(i)*dx), V_neg(1,i), 1)
+          call ${X}SCAL(this%n_e, EXP(lambda(i)*this%dx), V_neg(1,i), 1)
        end do
     
        call ${X}GEMM('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._WP, KIND=WP), &
@@ -210,8 +245,13 @@ contains
 
     $endblock
 
+    $if ($T eq 'r')
+    E_l = REAL(E_l_)
+    E_r = REAL(E_r_)
+    $else
     E_l = E_l_
     E_r = E_r_
+    $endif
 
     ! Finish
 
@@ -221,53 +261,19 @@ contains
 
   !****
 
-  function dOmega_ (this, omega) result (dOmega)
-
-    class(${T}_magnus_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: omega
-    $TYPE(WP)                             :: dOmega(this%n_e,this%n_e)
-
-    ! Evaluate the Magnus slope matrix
-
-    select case (this%scheme)
-    case (GL2_SCHEME)
-       dOmega = this%dOmega_GL2_(omega)
-    case (GL4_SCHEME)
-       dOmega = this%dOmega_GL4_(omega)
-    case (GL6_SCHEME)
-       dOmega = this%dOmega_GL6_(omega)
-    case default
-       $ABORT(Invalid scheme)
-    end select
-
-    ! Finish
-
-    return
-
-  end function dOmega_
-
-  !****
-
   function dOmega_GL2_ (this, omega) result (dOmega)
 
     class(${T}_magnus_diff_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: omega
     $TYPE(WP)                             :: dOmega(this%n_e,this%n_e)
 
-    real(WP)      :: dx
-    type(point_t) :: pt(1)
-    $TYPE(WP)     :: A(this%n_e,this%n_e,1)
+    $TYPE(WP) :: A(this%n_e,this%n_e,1)
 
     ! Evaluate the GL2 Magnus slope matrix
 
     ! Calculate the RHS matrix
 
-    dx = this%pt_b%x - this%pt_a%x
-
-    pt%s = this%pt_a%s
-    pt%x = this%pt_a%x + [0.5_WP]*dx
-
-    A(:,:,1) = this%eq%A(pt(1), omega)
+    A(:,:,1) = this%eq%A(1, omega)
 
     ! Set up the slope matrix
 
@@ -279,7 +285,7 @@ contains
 
   end function dOmega_GL2_
 
-!****
+  !****
 
   function dOmega_GL4_ (this, omega) result (dOmega)
 
@@ -287,22 +293,15 @@ contains
     $TYPE(WP), intent(in)                 :: omega
     $TYPE(WP)                             :: dOmega(this%n_e,this%n_e)
 
-    real(WP)      :: dx
-    type(point_t) :: pt(2)
-    $TYPE(WP)     :: A(this%n_e,this%n_e,2)
-    $TYPE(WP)     :: dalpha(this%n_e,this%n_e,2)
+    $TYPE(WP) :: A(this%n_e,this%n_e,2)
+    $TYPE(WP) :: dalpha(this%n_e,this%n_e,2)
 
     ! Evaluate the GL4 Magnus slope matrix
 
     ! Calculate the RHS matrices
 
-    dx = this%pt_b%x - this%pt_a%x
-
-    pt%s = this%pt_a%s
-    pt%x = this%pt_a%x + (0.5_WP+[-1._WP,1._WP]*SQRT(3._WP)/6._WP)*dx
-
-    A(:,:,1) = this%eq%A(pt(1), omega)
-    A(:,:,2) = this%eq%A(pt(2), omega)
+    A(:,:,1) = this%eq%A(1, omega)
+    A(:,:,2) = this%eq%A(2, omega)
 
     ! Set up the Magnus slope matrix (Blanes et al. 2009, eqns. 243
     ! and 253; note that the 12 in the denominator of their expression
@@ -311,7 +310,7 @@ contains
     dalpha(:,:,1) = 0.5_WP*(A(:,:,1) + A(:,:,2))
     dalpha(:,:,2) = SQRT(3._WP)*(A(:,:,2) - A(:,:,1))
 
-    dOmega = dalpha(:,:,1) - dx*commutator(dalpha(:,:,1), dalpha(:,:,2))/12._WP
+    dOmega = dalpha(:,:,1) - this%dx*commutator(dalpha(:,:,1), dalpha(:,:,2))/12._WP
     
     ! Finish
 
@@ -327,24 +326,17 @@ contains
     $TYPE(WP), intent(in)                 :: omega
     $TYPE(WP)                             :: dOmega(this%n_e,this%n_e)
 
-    real(WP)      :: dx
-    type(point_t) :: pt(3)
-    $TYPE(WP)     :: A(this%n_e,this%n_e,3)
-    $TYPE(WP)     :: dalpha(this%n_e,this%n_e,3)
-    $TYPE(WP)     :: dC(this%n_e,this%n_e,2)
+    $TYPE(WP) :: A(this%n_e,this%n_e,3)
+    $TYPE(WP) :: dalpha(this%n_e,this%n_e,3)
+    $TYPE(WP) :: dC(this%n_e,this%n_e,2)
 
     ! Evaluate the GL6 Magnus slope matrix
 
     ! Calculate the RHS matrices
 
-    dx = this%pt_b%x - this%pt_a%x
-
-    pt%s = this%pt_a%s
-    pt%x = this%pt_a%x + (0.5_WP+[-1._WP,0._WP,1._WP]*SQRT(15._WP)/10._WP)*dx
-
-    A(:,:,1) = this%eq%A(pt(1), omega)
-    A(:,:,2) = this%eq%A(pt(2), omega)
-    A(:,:,3) = this%eq%A(pt(3), omega)
+    A(:,:,1) = this%eq%A(1, omega)
+    A(:,:,2) = this%eq%A(2, omega)
+    A(:,:,3) = this%eq%A(3, omega)
 
     ! Set up the Magnus slope matrix (Blanes et al. 2009, eqns. 251
     ! and 257)
@@ -353,11 +345,11 @@ contains
     dalpha(:,:,2) = SQRT(15._WP)*(A(:,:,3) - A(:,:,1))/3
     dalpha(:,:,3) = 10*(A(:,:,3) - 2*A(:,:,2) + A(:,:,1))/3
 
-    dC(:,:,1) = dx*commutator(dalpha(:,:,1), dalpha(:,:,2))
-    dC(:,:,2) = -dx*commutator(dalpha(:,:,1), 2*dalpha(:,:,3)+dC(:,:,1))/60
+    dC(:,:,1) = this%dx*commutator(dalpha(:,:,1), dalpha(:,:,2))
+    dC(:,:,2) = -this%dx*commutator(dalpha(:,:,1), 2*dalpha(:,:,3)+dC(:,:,1))/60
 
     dOmega = dalpha(:,:,1) + dalpha(:,:,3)/12 + &
-            dx*commutator(-20*dalpha(:,:,1)-dalpha(:,:,3)+dC(:,:,1), dalpha(:,:,2)+dC(:,:,2))/240
+            this%dx*commutator(-20*dalpha(:,:,1)-dalpha(:,:,3)+dC(:,:,1), dalpha(:,:,2)+dC(:,:,2))/240
 
     ! Finish
 

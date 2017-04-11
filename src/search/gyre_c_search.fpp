@@ -1,7 +1,7 @@
 ! Module   : gyre_c_search
 ! Purpose  : mode searching (complex)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,12 +26,12 @@ module gyre_c_search
   use core_order
   use core_parallel
 
-  use gyre_bep
+  use gyre_bvp
   use gyre_discrim_func
   use gyre_ext
   use gyre_mode
   use gyre_mode_par
-  use gyre_nad_bep
+  use gyre_nad_bvp
   use gyre_num_par
   use gyre_osc_par
   use gyre_root
@@ -52,10 +52,12 @@ module gyre_c_search
 
 contains
 
-  subroutine prox_search (bp, md_in, process_mode, md_p, nm_p, os_p)
+  subroutine prox_search (bp, md_in, omega_min, omega_max, process_mode, md_p, nm_p, os_p)
 
-    class(c_bep_t), target, intent(inout) :: bp
+    class(c_bvp_t), target, intent(inout) :: bp
     type(mode_t), intent(in)              :: md_in(:)
+    real(WP), intent(in)                  :: omega_min
+    real(WP), intent(in)                  :: omega_max
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -93,7 +95,7 @@ contains
 
     ! Set up the discriminant function
 
-    df = c_discrim_func_t(bp)
+    df = c_discrim_func_t(bp, omega_min, omega_max)
 
     ! Initialize the frequency deflation array
 
@@ -107,7 +109,7 @@ contains
 100    format(A)
 
        write(OUTPUT_UNIT, 110) 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110    format(5(2X,A8),3(2X,A24),2X,A6)
+110    format(1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
        
     endif
 
@@ -137,7 +139,7 @@ contains
 
        else
 
-          domega = md_in(i)%omega*SQRT(EPSILON(0._WP))
+          domega = ABS(md_in(i)%omega)*SQRT(EPSILON(0._WP))
 
        endif
 
@@ -208,15 +210,15 @@ contains
        ! Construct the mode_t
 
        select type (bp)
-       type is (nad_bep_t)
-          md = mode_t(bp, md_in(i)%j, cmplx(omega_root))
+       type is (nad_bvp_t)
+          md = mode_t(bp, cmplx(omega_root), md_in(i)%j)
        class default
           $ABORT(Invalid bp class)
        end select
 
        ! Process it
 
-       chi = abs(md%sl%discrim)/max(abs(discrim_a), abs(discrim_b))
+       chi = abs(md%discrim)/max(abs(discrim_a), abs(discrim_b))
        
        call process_mode(md, n_iter_def+n_iter, chi)
 
@@ -277,7 +279,7 @@ contains
 
   ! subroutine improve_omega (bp, mp, op, x, omega)
 
-  !   class(c_bep_t), target, intent(inout) :: bp
+  !   class(c_bvp_t), target, intent(inout) :: bp
   !   type(mode_par_t), intent(in)          :: mp
   !   type(osc_par_t), intent(in)           :: op
   !   real(WP), intent(in)                  :: x(:)

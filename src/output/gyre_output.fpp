@@ -26,6 +26,7 @@ module gyre_output
 
   use gyre_constants
   use gyre_evol_model
+  use gyre_freq
   use gyre_hdf_writer
   use gyre_mode
   use gyre_model
@@ -58,6 +59,7 @@ contains
 
     class(writer_t), allocatable                        :: wr
     character(LEN(ot_p%summary_item_list)), allocatable :: items(:)
+    logical                                             :: invalid_items
     integer                                             :: n_md
     integer                                             :: i
     integer                                             :: i_md
@@ -83,6 +85,8 @@ contains
 
     ! Write the items
 
+    invalid_items = .FALSE.
+
     n_md = SIZE(md)
 
     item_loop : do i = 1, SIZE(items)
@@ -90,7 +94,7 @@ contains
        select case (items(i))
 
        case ('j')
-            call wr%write('j', md%j)
+          call wr%write('j', md%j)
        case ('l')
           call wr%write('l', md%l)
        case ('l_i')
@@ -113,6 +117,10 @@ contains
           call wr%write('freq_units', ot_p%freq_units)
        case ('freq_frame')
           call wr%write('freq_frame', ot_p%freq_frame)
+       case ('Delta_p')
+          call wr%write('Delta_p', [(md(i_md)%ml%Delta_p(), i_md=1,n_md)])
+       case ('Delta_g')
+          call wr%write('Delta_g', [(md(i_md)%ml%Delta_g(md(i_md)%l*(md(i_md)%l+1._WP)), i_md=1,n_md)])
        case ('eta')
           call wr%write('eta', [(md(i_md)%eta(), i_md=1,n_md)])
        case ('f_T')
@@ -135,18 +143,18 @@ contains
           call wr%write('W', [(md(i_md)%W(), i_md=1,n_md)])
        case ('W_eps')
           call wr%write('W_eps', [(md(i_md)%W_eps(), i_md=1,n_md)])
-       case ('C')
-          call wr%write('C', [(md(i_md)%C(), i_md=1,n_md)])
+       case ('beta')
+          call wr%write('beta', [(md(i_md)%beta(), i_md=1,n_md)])
        case ('x_ref')
-          call wr%write('x_ref', [(md(i_md)%x_ref, i_md=1,n_md)])
+          call wr%write('x_ref', [(md(i_md)%gr%pt(md(i_md)%k_ref)%x, i_md=1,n_md)])
        case ('xi_r_ref')
-          call wr%write('xi_r_ref', [(md(i_md)%xi_r(md(i_md)%pt_ref), i_md=1,n_md)])
+          call wr%write('xi_r_ref', [(md(i_md)%xi_r(md(i_md)%k_ref), i_md=1,n_md)])
        case ('xi_h_ref')
-          call wr%write('xi_h_ref', [(md(i_md)%xi_h(md(i_md)%pt_ref), i_md=1,n_md)])
+          call wr%write('xi_h_ref', [(md(i_md)%xi_h(md(i_md)%k_ref), i_md=1,n_md)])
        case ('eul_phi_ref')
-          call wr%write('eul_phi_ref', [(md(i_md)%eul_phi(md(i_md)%pt_ref), i_md=1,n_md)])
+          call wr%write('eul_phi_ref', [(md(i_md)%eul_phi(md(i_md)%k_ref), i_md=1,n_md)])
        case ('deul_phi_ref')
-          call wr%write('deul_phi_ref', [(md(i_md)%deul_phi(md(i_md)%pt_ref), i_md=1,n_md)])
+          call wr%write('deul_phi_ref', [(md(i_md)%deul_phi(md(i_md)%k_ref), i_md=1,n_md)])
        case default
           if (n_md >= 1) then
              select type (ml => md(1)%ml)
@@ -154,7 +162,7 @@ contains
                 call write_summary_evol_(items(i), ml, wr)
              class default
                 write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-                $ABORT(Invalid item in summary_item_list)
+                invalid_items = .TRUE.
              end select
           endif
        end select
@@ -171,6 +179,12 @@ contains
     ! Close the file
 
     call wr%final()
+
+    ! Check whether any invalid items were found
+
+    if (invalid_items) then
+       $ABORT(Invalid item(s) in summary_item_list)
+    end if
 
     ! Finish
 
@@ -195,7 +209,7 @@ contains
          call wr%write('L_star', ml%L_star)
       case default
          write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-         $ABORT(Invalid item)
+         invalid_items = .TRUE.
       end select
 
       ! Finish
@@ -216,7 +230,9 @@ contains
     character(:), allocatable                        :: mode_file
     class(writer_t), allocatable                     :: wr
     character(LEN(ot_p%mode_item_list)), allocatable :: items(:)
+    logical                                          :: invalid_items
     integer                                          :: i
+    integer                                          :: k
 
     ! Write the mode file
 
@@ -248,12 +264,14 @@ contains
     case default
        $ABORT(Invalid mode_file_format)
     end select
-
+    
     ! Split the item list
 
     items = split_list(ot_p%mode_item_list, ',')
 
     ! Write the items
+
+    invalid_items = .FALSE.
 
     associate (pt => md%gr%pt)
 
@@ -271,7 +289,7 @@ contains
          case ('m')
             call wr%write('m', md%m)
          case ('lambda')
-            call wr%write('lambda', md%lambda())
+            call wr%write('lambda', [(md%lambda(k), k=1,md%n_k)])
          case ('n_p')
             call wr%write('n_p', md%n_p)
          case ('n_g')
@@ -288,6 +306,10 @@ contains
             call wr%write('freq_units', ot_p%freq_units)
          case ('freq_frame')
             call wr%write('freq_frame', ot_p%freq_frame)
+         case ('Delta_p')
+            call wr%write('Delta_p', md%ml%Delta_p())
+         case ('Delta_g')
+            call wr%write('Delta_g', md%ml%Delta_g(md%l*(md%l+1._WP)))
          case ('eta')
             call wr%write('eta', md%eta())
          case ('E')
@@ -302,8 +324,8 @@ contains
             call wr%write('W', md%W())
          case ('W_eps')
             call wr%write('W_eps', md%W_eps())
-         case ('C')
-            call wr%write('C', md%C())
+         case ('beta')
+            call wr%write('beta', md%beta())
          case ('x')
             $if ($GFORTRAN_PR_49636)
             call wr%write('x', md%gr%pt%x)
@@ -311,106 +333,104 @@ contains
             call wr%write('x', pt%x)
             $endif
          case ('x_ref')
-            call wr%write('x_ref', md%x_ref)
+            call wr%write('x_ref', pt(md%k_ref)%x)
          case ('V_2')
-            call wr%write('V_2', md%ml%V_2(pt))
+            call wr%write('V_2', [(md%ml%coeff(I_V_2, pt(k)), k=1,SIZE(pt))])
          case ('As')
-            call wr%write('As', md%ml%As(pt))
+            call wr%write('As', [(md%ml%coeff(I_AS, pt(k)), k=1,SIZE(pt))])
          case ('U')
-            call wr%write('U', md%ml%U(pt))
+            call wr%write('U', [(md%ml%coeff(I_U, pt(k)), k=1,SIZE(pt))])
          case ('c_1')
-            call wr%write('c_1', md%ml%c_1(pt))
+            call wr%write('c_1', [(md%ml%coeff(I_C_1, pt(k)), k=1,SIZE(pt))])
          case ('Gamma_1')
-            call wr%write('Gamma_1', md%ml%Gamma_1(pt))
+            call wr%write('Gamma_1', [(md%ml%coeff(I_GAMMA_1, pt(k)), k=1,SIZE(pt))])
          case ('nabla')
-            call wr%write('nabla', md%ml%nabla(pt))
+            call wr%write('nabla', [(md%ml%coeff(I_NABLA, pt(k)), k=1,SIZE(pt))])
          case ('nabla_ad')
-            call wr%write('nabla_ad', md%ml%nabla_ad(pt))
+            call wr%write('nabla_ad', [(md%ml%coeff(I_NABLA_AD, pt(k)), k=1,SIZE(pt))])
          case ('dnabla_ad')
-            call wr%write('dnabla_ad', md%ml%dnabla_ad(pt))
+            call wr%write('dnabla_ad', [(md%ml%dcoeff(I_NABLA_AD, pt(k)), k=1,SIZE(pt))])
          case ('delta')
-            call wr%write('delta', md%ml%delta(pt))
+            call wr%write('delta', [(md%ml%coeff(I_DELTA, pt(k)), k=1,SIZE(pt))])
          case ('Omega_rot')
-            call wr%write('Omega_rot', md%ml%Omega_rot(pt))
+            call wr%write('Omega_rot', [(md%ml%coeff(I_OMEGA_ROT, pt(k)), k=1,SIZE(pt))])
          case ('c_dif')
-            call wr%write('c_dif', md%ml%c_dif(pt))
+            call wr%write('c_dif', [(md%ml%coeff(I_C_DIF, pt(k)), k=1,SIZE(pt))])
+         case ('c_thm')
+            call wr%write('c_thm', [(md%ml%coeff(I_C_THM, pt(k)), k=1,SIZE(pt))])
          case ('y_1')
-            call wr%write('y_1', md%y_i(1))
+            call wr%write('y_1', [(md%y_i(1, k), k=1,md%n_k)])
          case ('y_2')
-            call wr%write('y_2', md%y_i(2))
+            call wr%write('y_2', [(md%y_i(2, k), k=1,md%n_k)])
          case ('y_3')
-            call wr%write('y_3', md%y_i(3))
+            call wr%write('y_3', [(md%y_i(3, k), k=1,md%n_k)])
          case ('y_4')
-            call wr%write('y_4', md%y_i(4))
+            call wr%write('y_4', [(md%y_i(4, k), k=1,md%n_k)])
          case ('y_5')
-            call wr%write('y_5', md%y_i(5))
+            call wr%write('y_5', [(md%y_i(5, k), k=1,md%n_k)])
          case ('y_6')
-            call wr%write('y_6', md%y_i(6))
+            call wr%write('y_6', [(md%y_i(6, k), k=1,md%n_k)])
          case ('xi_r')
-            call wr%write('xi_r', md%xi_r())
+            call wr%write('xi_r', [(md%xi_r(k), k=1,md%n_k)])
          case ('xi_r_ref')
-            call wr%write('xi_r_ref', md%xi_r(md%pt_ref))
+            call wr%write('xi_r_ref', md%xi_r(md%k_ref))
          case ('xi_h')
-            call wr%write('xi_h', md%xi_h())
+            call wr%write('xi_h', [(md%xi_h(k), k=1,md%n_k)])
          case ('xi_h_ref')
-            call wr%write('xi_r_ref', md%xi_h(md%pt_ref))
+            call wr%write('xi_r_ref', md%xi_h(md%k_ref))
          case ('eul_phi')
-            call wr%write('eul_phi', md%eul_phi())
+            call wr%write('eul_phi', [(md%eul_phi(k), k=1,md%n_k)])
          case ('eul_phi_ref')
-            call wr%write('eul_phi_ref', md%eul_phi(md%pt_ref))
+            call wr%write('eul_phi_ref', md%eul_phi(md%k_ref))
          case ('deul_phi')
-            call wr%write('deul_phi', md%deul_phi())
+            call wr%write('deul_phi', [(md%deul_phi(k), k=1,md%n_k)])
          case ('deul_phi_ref')
-            call wr%write('deul_phi_ref', md%deul_phi(md%pt_ref))
+            call wr%write('deul_phi_ref', md%deul_phi(md%k_ref))
          case ('eul_P')
-            call wr%write('eul_P', md%eul_P())
+            call wr%write('eul_P', [(md%eul_P(k), k=1,md%n_k)])
          case ('eul_rho')
-            call wr%write('eul_rho', md%eul_rho())
+            call wr%write('eul_rho', [(md%eul_rho(k), k=1,md%n_k)])
          case ('eul_T')
-            call wr%write('eul_T', md%eul_T())
+            call wr%write('eul_T', [(md%eul_T(k), k=1,md%n_k)])
          case ('lag_P')
-            call wr%write('lag_P', md%lag_P())
+            call wr%write('lag_P', [(md%lag_P(k), k=1,md%n_k)])
          case ('lag_rho')
-            call wr%write('lag_rho', md%lag_rho())
+            call wr%write('lag_rho', [(md%lag_rho(k), k=1,md%n_k)])
          case ('lag_T')
-            call wr%write('lag_T', md%lag_T())
+            call wr%write('lag_T', [(md%lag_T(k), k=1,md%n_k)])
          case ('lag_S')
-            call wr%write('lag_S', md%lag_S())
+            call wr%write('lag_S', [(md%lag_S(k), k=1,md%n_k)])
          case ('lag_L')
-            call wr%write('lag_L', md%lag_L())
+            call wr%write('lag_L', [(md%lag_L(k), k=1,md%n_k)])
          case ('dE_dx')
-            call wr%write('dE_dx', md%dE_dx())
+            call wr%write('dE_dx', [(md%dE_dx(k), k=1,md%n_k)])
          case ('dW_dx')
-            call wr%write('dW_dx', md%dW_dx())
+            call wr%write('dW_dx', [(md%dW_dx(k), k=1,md%n_k)])
          case ('dW_eps_dx')
-            call wr%write('dW_eps_dx', md%dW_eps_dx())
-         case ('dC_dx')
-            call wr%write('dC_dx', md%dC_dx())
-         case ('F_j_wave')
-            call wr%write('F_j_wave', md%F_j_wave())
-         case ('dj_dt_wave')
-            call wr%write('dj_dt_wave', md%dj_dt_wave())
-         case ('dj_dt_grow')
-            call wr%write('dj_dt_grow', md%dj_dt_grow())
-         case ('dj_dt_grav')
-            call wr%write('dj_dt_grav', md%dj_dt_grav())
+            call wr%write('dW_eps_dx', [(md%dW_eps_dx(k), k=1,md%n_k)])
+         case ('dbeta_dx')
+            call wr%write('dbeta_dx', [(md%dbeta_dx(k), k=1,md%n_k)])
+         case ('dtau_dx_ss')
+            call wr%write('dtau_dx_ss', [(md%dtau_dx_ss(k), k=1,md%n_k)])
+         case ('dtau_dx_tr')
+            call wr%write('dtau_dx_tr', [(md%dtau_dx_tr(k), k=1,md%n_k)])
          case ('Yt_1')
-            call wr%write('Yt_1', md%Yt_1())
+            call wr%write('Yt_1', [(md%Yt_1(k), k=1,md%n_k)])
          case ('Yt_2')
-            call wr%write('Yt_2', md%Yt_2())
+            call wr%write('Yt_2', [(md%Yt_2(k), k=1,md%n_k)])
          case ('I_0')
-            call wr%write('I_0', md%I_0())
+            call wr%write('I_0', [(md%I_0(k), k=1,md%n_k)])
          case ('I_1')
-            call wr%write('I_1', md%I_1())
+            call wr%write('I_1', [(md%I_1(k), k=1,md%n_k)])
          case ('prop_type')
-            call wr%write('prop_type', md%prop_type())
+            call wr%write('prop_type', [(md%prop_type(k), k=1,md%n_k)])
          case default
             select type (ml => md%ml)
             type is (evol_model_t)
                call write_mode_evol_(ml)
-               class default
+            class default
                write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-               $ABORT(Invalid item in mode_item_list)
+               invalid_items = .TRUE.
             end select
          end select
 
@@ -422,6 +442,12 @@ contains
 
     call wr%final()
 
+    ! Check whether any invalid items were found
+
+    if (invalid_items) then
+       $ABORT(Invalid item(s) in mode_item_list)
+    end if
+
     ! Finish
 
     return
@@ -431,6 +457,8 @@ contains
     subroutine write_mode_evol_ (ml)
 
       type(evol_model_t), intent(in) :: ml
+
+      integer :: k
       
       ! Write the item
 
@@ -444,16 +472,16 @@ contains
         case ('L_star')
            call wr%write('L_star', ml%L_star)
         case ('M_r')
-           call wr%write('M_r', ml%M_r(pt))
+           call wr%write('M_r', [(ml%M_r(pt(k)), k=1,SIZE(pt))])
         case ('P')
-           call wr%write('P', ml%P(pt))
+           call wr%write('P', [(ml%P(pt(k)), k=1,SIZE(pt))])
         case ('rho')
-           call wr%write('rho', ml%rho(pt))
+           call wr%write('rho', [(ml%rho(pt(k)), k=1,SIZE(pt))])
         case ('T')
-           call wr%write('T', ml%T(pt))
+           call wr%write('T', [(ml%T(pt(k)), k=1,SIZE(pt))])
         case default
            write(ERROR_UNIT, *) 'item:', TRIM(items(i))
-           $ABORT(Invalid item)
+           invalid_items = .TRUE.
         end select
 
       end associate

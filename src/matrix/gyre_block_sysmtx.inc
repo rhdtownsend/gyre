@@ -1,7 +1,7 @@
 ! Incfile  : gyre_block_sysmtx
 ! Purpose  : system matrix (block storage, template)
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -62,18 +62,20 @@ module gyre_${T}_block_sysmtx
      $TYPE(WP), allocatable        :: B_o(:,:)   ! Outer boundary conditions
      $TYPE(WP), allocatable        :: E_l(:,:,:) ! Left equation blocks
      $TYPE(WP), allocatable        :: E_r(:,:,:) ! Right equation blocks
-     type(${T}_ext_t)              :: S_i        ! Inner boundary scale
-     type(${T}_ext_t)              :: S_o        ! Outer boundary scale
-     type(${T}_ext_t), allocatable :: S(:)       ! Block scales
+     $TYPE(WP), allocatable        :: scl_i(:)   ! Inner boundary scales
+     $TYPE(WP), allocatable        :: scl_o(:)   ! Outer boundary scales
+     type(${T}_ext_t), allocatable :: scl(:)     ! Block scales
    contains
      private
-     procedure, public :: set_B_i => set_B_i_
-     procedure, public :: set_B_o => set_B_o_
-     procedure, public :: set_E => set_E_
-     procedure, public :: factorize => factorize_
-     procedure, public :: scale_rows_
-     procedure, public :: det => det_
-     procedure, public :: null_vec => null_vec_
+     procedure, public :: set_B_i
+     procedure, public :: set_B_o
+     procedure, public :: set_E
+     procedure, public :: factorize
+     procedure         :: scale_rows_
+     procedure, public :: det
+     procedure, public :: soln_vec_hom
+     procedure, public :: soln_vec_inhom
+     procedure         :: backsub_
   end type ${T}_block_sysmtx_t
 
   ! Interfaces
@@ -110,7 +112,10 @@ contains
     allocate(sm%B_i(n_i,n_e))
     allocate(sm%B_o(n_o,n_e))
 
-    allocate(sm%S(n))
+    allocate(sm%scl_i(n_i))
+    allocate(sm%scl_o(n_o))
+
+    allocate(sm%scl(n))
 
     sm%n = n
     sm%n_e = n_e
@@ -125,57 +130,61 @@ contains
 
   !****
 
-  subroutine set_B_i_ (this, B, S)
+  subroutine set_B_i (this, B, scl)
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                     :: B(:,:)
-    type(${T}_ext_t), intent(in)              :: S
+    $TYPE(WP), intent(in)                     :: scl(:)
     
     $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
+    $CHECK_BOUNDS(SIZE(scl),this%n_i)
+
     ! Set the inner boundary conditions
 
     this%B_i = B
-    this%S_i = S
+    this%scl_i = scl
 
     ! Finish
 
     return
 
-  end subroutine set_B_i_
+  end subroutine set_B_i
 
   !****
 
-  subroutine set_B_o_ (this, B, S)
+  subroutine set_B_o (this, B, scl)
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
     $TYPE(WP), intent(in)                     :: B(:,:)
-    type(${T}_ext_t), intent(in)              :: S
+    $TYPE(WP), intent(in)                     :: scl(:)
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
+
     ! Set the outer boundary conditions
 
     this%B_o = B
-    this%S_o = S
+    this%scl_o = scl
 
     ! Finish
 
     return
 
-  end subroutine set_B_o_
+  end subroutine set_B_o
 
   !****
 
-  subroutine set_E_ (this, k, E_l, E_r, S)
+  subroutine set_E (this, k, E_l, E_r, scl)
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
     integer, intent(in)                       :: k
     $TYPE(WP), intent(in)                     :: E_l(:,:)
     $TYPE(WP), intent(in)                     :: E_r(:,:)
-    type(${T}_ext_t), intent(in)              :: S
+    type(${T}_ext_t), intent(in)              :: scl
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -191,17 +200,17 @@ contains
     this%E_l(:,:,k) = E_l
     this%E_r(:,:,k) = E_r
 
-    this%S(k) = S
+    this%scl(k) = scl
 
     ! Finish
 
     return
 
-  end subroutine set_E_
+  end subroutine set_E
 
   !****
 
-  subroutine factorize_ (this)
+  subroutine factorize (this)
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
 
@@ -286,12 +295,12 @@ contains
             this%E_l(:,:,k+l) = M_G(:n_e,:)
             this%E_r(:,:,k+l) = M_E(:n_e,:)
 
-            ! Fold the factorization determinant into S
+            ! Fold the factorization determinant into the scale
 
-            this%S(k) = this%S(k)*product(${T}_ext_t(diagonal(M_U)))
+            this%scl(k) = this%scl(k)*PRODUCT(diagonal(M_U))
 
             do i = 1,n_e
-               if (ipiv(i) /= i) this%S(k) = -this%S(k)
+               if (ipiv(i) /= i) this%scl(k) = -this%scl(k)
             end do
 
          end do reduce_loop
@@ -308,7 +317,7 @@ contains
 
     return
 
-  end subroutine factorize_
+  end subroutine factorize
 
   !****
 
@@ -316,7 +325,7 @@ contains
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
 
-    real(WP) :: scale
+    real(WP) :: scl
     integer  :: i
     integer  :: k
 
@@ -324,25 +333,25 @@ contains
     ! unity
 
     do i = 1, this%n_i
-       scale = MAXVAL(ABS(this%B_i(i,:)))
-       this%B_i(i,:) = this%B_i(i,:)/scale
-       this%S_i = this%S_i*scale
+       scl = MAXVAL(ABS(this%B_i(i,:)))
+       this%B_i(i,:) = this%B_i(i,:)/scl
+       this%scl_i(i) = this%scl_i(i)*scl
     end do
 
-    !$OMP PARALLEL DO PRIVATE (i, scale)
+    !$OMP PARALLEL DO PRIVATE (i, scl)
     do k = 1, this%n
        do i = 1, this%n_e
-          scale = MAX(MAXVAL(ABS(this%E_l(i,:,k))), MAXVAL(ABS(this%E_r(i,:,k))))
-          this%E_l(i,:,k) = this%E_l(i,:,k)/scale
-          this%E_r(i,:,k) = this%E_r(i,:,k)/scale
-          this%S(k) = this%S(k)*scale
+          scl = MAX(MAXVAL(ABS(this%E_l(i,:,k))), MAXVAL(ABS(this%E_r(i,:,k))))
+          this%E_l(i,:,k) = this%E_l(i,:,k)/scl
+          this%E_r(i,:,k) = this%E_r(i,:,k)/scl
+          this%scl(k) = this%scl(k)*scl
        end do
     end do
 
     do i = 1, this%n_o
-       scale = MAXVAL(ABS(this%B_o(i,:)))
-       this%B_o(i,:) = this%B_o(i,:)/scale
-       this%S_o = this%S_o*scale
+       scl = MAXVAL(ABS(this%B_o(i,:)))
+       this%B_o(i,:) = this%B_o(i,:)/scl
+       this%scl_o(i) = this%scl_o(i)*scl
     end do
 
     ! Finish
@@ -353,7 +362,7 @@ contains
 
   !****
 
-  function det_ (this) result (det)
+  function det (this)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
     type(${T}_ext_t)                       :: det
@@ -384,7 +393,7 @@ contains
 
       ! Add together all the contributions to the determinant
 
-      det = product([${T}_ext_t(diagonal(M)),this%S_i,this%S,this%S_o])
+      det = product([${T}_ext_t(diagonal(M)),${T}_ext_t(this%scl_i),this%scl,${T}_ext_t(this%scl_o)])
 
       do i = 1,2*n_e
          if(ipiv(i) /= i) det = -det
@@ -396,11 +405,11 @@ contains
 
     return
 
-  end function det_
+  end function det
 
   !****
 
-  function null_vec_ (this) result (v)
+  function soln_vec_hom (this) result (v)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
     $TYPE(WP)                              :: v(this%n_e*(this%n+1))
@@ -419,14 +428,12 @@ contains
     real(WP)  :: M_s
     integer   :: i
     $TYPE(WP) :: v_bound(2*this%n_e)
-    integer   :: l
-    integer   :: k
-    integer   :: i_a
-    integer   :: i_b
-    integer   :: i_c
-
-    ! Evaluate the null vector (working on the assumption that the
-    ! final diagonal element of the factorized matrix is zero)
+ 
+    ! Evaluate the solution vector v of the homogeneous linear system
+    ! S v = 0. It is assumed that the nullity nul(S) >= 1; if nul(S) =
+    ! 0, then this routine will return the vector which minimizes the
+    ! norm of S v. When nul(S) > 1, the routine returns the null
+    ! vector associated with the smallest eigenvalue.
 
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
@@ -457,8 +464,8 @@ contains
          call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
          $ASSERT(info >= 0, Negative return from XGETRF)
 
-         ! Locate the singular element on the diagonal of the outer
-         ! block
+         ! Locate the smallest element on the diagonal of the outer
+         ! block (this will be taken to be the singular element)
 
          i_s = 0
          M_s = HUGE(0._WP)
@@ -480,7 +487,106 @@ contains
 
       endif
 
-      ! Backsubstitute to reconstruct the full solution vector
+    end associate
+
+    ! Backsubstitute to reconstruct the full solution vector
+
+    call this%backsub_(v_bound, v)
+
+    ! Finish
+
+    return
+
+  end function soln_vec_hom
+
+  !****
+
+  function soln_vec_inhom (this, w_i, w_o) result (v)
+
+    class(${T}_block_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                  :: w_i(:)
+    $TYPE(WP), intent(in)                  :: w_o(:)
+    $TYPE(WP)                              :: v(this%n_e*(this%n+1))
+
+    $TYPE(WP) :: M(2*this%n_e,2*this%n_e)
+    integer   :: ipiv(2*this%n_e)
+    integer   :: info
+    $TYPE(WP) :: B(2*this%n_e, 1)
+    $TYPE(WP) :: v_bound(2*this%n_e)
+
+    $CHECK_BOUNDS(SIZE(w_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(w_o),this%n_o)
+
+    ! Evaluate the solution vector v of the inhomogeneous linear
+    ! system S v = w. It is assumed that the right-hand side vector w
+    ! has non-zero components in only the n_i first and n_o last rows
+    ! (corresponding to the inner and outer boundary
+    ! conditions). These components are supplied in w_i and w_o,
+    ! respectively.
+    
+    associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+
+      ! Set up the reduced 2x2-block matrix and rhs matrix
+
+      M(:n_i,:n_e) = this%B_i
+      M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
+      M(n_i+n_e+1:,:n_e) = 0._WP
+
+      M(:n_i,n_e+1:) = 0._WP
+      M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
+      M(n_i+n_e+1:,n_e+1:) = this%B_o
+
+      B(:n_i,1) = w_i/this%scl_i
+      B(n_i+1:n_i+n_e,1) = 0._WP
+      B(n_i+n_e+1:,1) = w_o/this%scl_o
+
+      ! Solve for the solution at the two boundaries using LU
+      ! decomposition
+
+      call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
+      $ASSERT(info >= 0,Negative return from XGETRF)
+
+      call XGETRS('N', 2*n_e, 1, M, 2*n_e, ipiv, B, 2*n_e, info)
+      $ASSERT(info >= 0,Negative return from XGETRS)
+
+      v_bound = B(:,1)
+
+    end associate
+
+    ! Backsubstitute to reconstruct the full solution vector
+
+    call this%backsub_(v_bound, v)
+
+    ! Finish
+
+    return
+
+  end function soln_vec_inhom
+
+  !****
+
+  subroutine backsub_ (this, v_bound, v)
+
+    class(${T}_block_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                  :: v_bound(:)
+    $TYPE(WP), intent(out)                 :: v(:)
+
+    $TYPE(WP), parameter :: ZERO = 0._WP
+    $TYPE(WP), parameter :: ONE = 1._WP
+
+    integer   :: l
+    integer   :: k
+    integer   :: i_a
+    integer   :: i_b
+    integer   :: i_c
+
+    $CHECK_BOUNDS(SIZE(v_bound),2*this%n_e)
+    $CHECK_BOUNDS(SIZE(v),this%n_e*(this%n+1))
+
+    ! Given the solution vector v_bound at the boundaries,
+    ! backsubstitute to reconstruct the full solution vector v
+
+    associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
       v(:n_e) = v_bound(:n_e)
       v(n_e*n+1:) = v_bound(n_e+1:)
@@ -520,7 +626,7 @@ contains
 
     return
 
-  end function null_vec_
+  end subroutine backsub_
 
 end module gyre_${T}_block_sysmtx
 

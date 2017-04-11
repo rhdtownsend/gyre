@@ -1,7 +1,7 @@
 ! Program  : gyre
 ! Purpose  : oscillation code
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,8 +25,8 @@ program gyre
   use core_parallel
   use core_system
 
-  use gyre_ad_bep
-  use gyre_bep
+  use gyre_ad_bvp
+  use gyre_bvp
   use gyre_constants
   use gyre_ext
   use gyre_grid
@@ -37,12 +37,12 @@ program gyre
   use gyre_model
   use gyre_model_factory
   use gyre_model_par
-  use gyre_nad_bep
+  use gyre_nad_bvp
   use gyre_num_par
   use gyre_osc_par
   use gyre_out_par
   use gyre_output
-  use gyre_rad_bep
+  use gyre_rad_bvp
   use gyre_scan_par
   use gyre_search
   use gyre_util
@@ -74,12 +74,10 @@ program gyre
   type(scan_par_t), allocatable :: sc_p_sel(:)
   type(grid_t)                  :: gr
   real(WP), allocatable         :: omega(:)
-  integer                       :: s
-  integer                       :: k_i
-  integer                       :: k_o
-  class(r_bep_t), allocatable   :: bp_ad
-  class(c_bep_t), allocatable   :: bp_nad
-  integer                       :: j_md
+  real(WP)                      :: omega_min
+  real(WP)                      :: omega_max
+  class(r_bvp_t), allocatable   :: bp_ad
+  class(c_bvp_t), allocatable   :: bp_nad
   integer                       :: n_md_ad
   integer                       :: d_md_ad
   type(mode_t), allocatable     :: md_ad(:)
@@ -103,12 +101,14 @@ program gyre
 
   if (check_log_level('INFO')) then
 
-     write(OUTPUT_UNIT, 100) form_header('gyre ['//VERSION//']', '=')
+     write(OUTPUT_UNIT, 100) form_header('gyre ['//VERSION//']', '-')
 100  format(A)
 
-     write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
-     write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
-110  format(A,1X,A)
+     if (check_log_level('DEBUG')) then
+        write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
+        write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
+110     format(A,1X,A)
+     endif
 
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
 120  format(A,1X,I0)
@@ -135,7 +135,7 @@ program gyre
   ! Initialize the model
 
   if (check_log_level('INFO')) then
-     write(OUTPUT_UNIT, 100) form_header('Model Init', '=')
+     write(OUTPUT_UNIT, 100) form_header('Model Init', '-')
   endif
 
   ml => model_t(ml_p)
@@ -156,7 +156,7 @@ program gyre
 
      if (check_log_level('INFO')) then
 
-        write(OUTPUT_UNIT, 100) form_header('Mode Search', '=')
+        write(OUTPUT_UNIT, 100) form_header('Mode Search', '-')
 
         write(OUTPUT_UNIT, 100) 'Mode parameters'
 
@@ -185,33 +185,26 @@ program gyre
 
      call check_scan(ml, gr, omega, md_p(i), os_p_sel)
 
-     ! Create the full grid
+     ! Set frequency bounds for solutions
 
-     if (check_log_level('INFO')) then
-        write(OUTPUT_UNIT, 100) 'Building x grid'
+     if (nm_p_sel%restrict_roots) then
+        omega_min = MINVAL(omega)
+        omega_max = MAXVAL(omega)
+     else
+        omega_min = -HUGE(0._WP)
+        omega_max = HUGE(0._WP)
      endif
 
+     ! Create the full grid
+
      gr = grid_t(ml, omega, gr_p_sel, md_p(i), os_p_sel)
-
-     if (check_log_level('INFO')) then
-
-        seg_loop : do s = gr%s_i(), gr%s_o()
-           k_i = gr%k_i(s)
-           k_o = gr%k_o(s)
-           write(OUTPUT_UNIT, 140) 'segment', s, ':', k_o-k_i+1, 'points, x range', gr%pt(k_i)%x, '->', gr%pt(k_o)%x
-140        format(3X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
-        end do seg_loop
-
-        write(OUTPUT_UNIT, *)
-        
-     end if
 
      ! Find adiabatic modes
 
      if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-        allocate(bp_ad, SOURCE=rad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_ad, SOURCE=rad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
      else
-        allocate(bp_ad, SOURCE=ad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_ad, SOURCE=ad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
      endif
 
      i_ad_a = n_md_ad + 1
@@ -221,7 +214,7 @@ program gyre
         write(OUTPUT_UNIT, *)
      endif
 
-     call scan_search(bp_ad, omega, process_mode_ad, nm_p_sel)
+     call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
 
      deallocate(bp_ad)
 
@@ -229,9 +222,7 @@ program gyre
 
      if (os_p_sel%nonadiabatic) then
 
-        $ASSERT(ml%nonad_cap(),Model does not have capability for nonadibatic calculations)
-
-        allocate(bp_nad, SOURCE=nad_bep_t(ml, gr, omega, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_nad, SOURCE=nad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
 
         i_ad_b = n_md_ad
 
@@ -240,7 +231,7 @@ program gyre
            write(OUTPUT_UNIT, *)
         endif
 
-        call prox_search(bp_nad, md_ad(i_ad_a:i_ad_b), process_mode_nad, md_p(i), nm_p_sel, os_p_sel)
+        call prox_search(bp_nad, md_ad(i_ad_a:i_ad_b), omega_min, omega_max, process_mode_nad, md_p(i), nm_p_sel, os_p_sel)
 
         deallocate(bp_nad)
 
@@ -279,9 +270,9 @@ contains
     if (md%n_pg < md_p(i)%n_pg_min .OR. md%n_pg > md_p(i)%n_pg_max) return
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+       write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
             md%omega, real(chi), n_iter
-120    format(5(2X,I8),3(2X,E24.16),2X,I6)
+100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
     endif
 
     ! Store it
@@ -320,9 +311,9 @@ contains
     ! Process the non-adiabatic mode
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+       write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
             md%omega, real(chi), n_iter
-120    format(5(2X,I8),3(2X,E24.16),2X,I6)
+100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
     endif
 
     ! Store it

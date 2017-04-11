@@ -31,7 +31,8 @@
 	grid_frame = 'COROT_O'
 	freq_min = 0.85
 	freq_max = 0.99
-	freq_units = 'ROSSBY_O'
+	freq_min_units = 'ROSSBY_O'
+	freq_max_units = 'ROSSBY_O'
 	freq_frame = 'COROT_O'
 	n_freq = 200
 /
@@ -39,7 +40,7 @@
 &grid
 	alpha_osc = 10
 	alpha_exp = 2
-	n_center = 5
+	n_inner = 5
 /
 
 &ad_output

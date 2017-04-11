@@ -1,7 +1,7 @@
 ! Module   : gyre_osc_file
 ! Purpose  : read OSC files
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -67,6 +67,7 @@ contains
     real(WP)                    :: L_star
     real(WP), allocatable       :: r(:)
     real(WP), allocatable       :: m(:)
+    real(WP), allocatable       :: L_r(:)
     real(WP), allocatable       :: p(:)
     real(WP), allocatable       :: rho(:) 
     real(WP), allocatable       :: T(:) 
@@ -79,8 +80,8 @@ contains
     real(WP), allocatable       :: kap_rho(:)
     real(WP), allocatable       :: kap_T(:)
     real(WP), allocatable       :: eps(:)
-    real(WP), allocatable       :: eps_rho(:)
-    real(WP), allocatable       :: eps_T(:)
+    real(WP), allocatable       :: eps_eps_rho(:)
+    real(WP), allocatable       :: eps_eps_T(:)
     real(WP), allocatable       :: Omega_rot(:)
     real(WP), allocatable       :: x(:)
     real(WP), allocatable       :: V_2(:)
@@ -88,9 +89,11 @@ contains
     real(WP), allocatable       :: c_1(:)
     real(WP), allocatable       :: beta_rad(:)
     real(WP), allocatable       :: c_P(:)
+    real(WP), allocatable       :: c_lum(:)
     real(WP), allocatable       :: c_rad(:)
     real(WP), allocatable       :: c_thm(:)
     real(WP), allocatable       :: c_dif(:)
+    real(WP), allocatable       :: c_eps(:)
     real(WP), allocatable       :: c_eps_ad(:)
     real(WP), allocatable       :: c_eps_S(:)
     real(WP), allocatable       :: kap_ad(:)
@@ -157,6 +160,7 @@ contains
 
     r = point_data(1,:)
     m = EXP(point_data(2,:))
+    L_r = point_data(7,:)
 
     T = point_data(3,:)
     P = point_data(4,:)
@@ -173,8 +177,8 @@ contains
     kap_T = point_data(17,:)
     kap_rho = point_data(18,:)
     eps = point_data(9,:)
-    eps_T = point_data(19,:)
-    eps_rho = point_data(20,:)
+    eps_eps_T = point_data(19,:)
+    eps_eps_rho = point_data(20,:)
 
     Omega_rot = point_data(16,:)
 
@@ -189,15 +193,18 @@ contains
     allocate(V_2(n))
     allocate(U(n))
     allocate(c_1(n))
+    allocate(c_lum(n))
 
     where (x /= 0._WP)
        V_2 = G_GRAVITY*m*rho/(P*r*x**2)
        U = 4._WP*PI*rho*r**3/m
        c_1 = (r/R_star)**3/(m/M_star)
+       c_lum = (L_r/L_star)/x**3
     elsewhere
        V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
        U = 3._WP
        c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+       c_lum = 4._WP*PI*rho(1)*eps(1)*R_star**3/L_star
     end where
 
     beta_rad = A_RADIATION*T**4/(3._WP*P)
@@ -211,8 +218,9 @@ contains
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
     c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
 
-    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_T + eps_rho/Gamma_1)*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*(eps_T - delta*eps_rho)*R_star**3/L_star
+    c_eps_ad = 4._WP*PI*rho*eps*R_star**3/L_star
+    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_eps_T + eps_eps_rho/Gamma_1)*R_star**3/L_star
+    c_eps_S = 4._WP*PI*rho*(eps_eps_T - delta*eps_eps_rho)*R_star**3/L_star
 
     if (ml_p%uniform_rot) then
        allocate(Omega_rot(n))
@@ -223,28 +231,30 @@ contains
 
     ! Initialize the evol_model_t
 
-    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, .TRUE., ml_p))
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
 
-    call em%set_V_2(V_2)
-    call em%set_As(As)
-    call em%set_U(U)
-    call em%set_c_1(c_1)
+    call em%define(I_V_2, V_2)
+    call em%define(I_AS, As)
+    call em%define(I_U, U)
+    call em%define(I_C_1, c_1)
 
-    call em%set_Gamma_1(Gamma_1)
-    call em%set_delta(delta)
-    call em%set_nabla_ad(nabla_ad)
-    call em%set_nabla(nabla)
-    call em%set_beta_rad(beta_rad)
+    call em%define(I_GAMMA_1, Gamma_1)
+    call em%define(I_DELTA, delta)
+    call em%define(I_NABLA_AD, nabla_ad)
+    call em%define(I_NABLA, nabla)
+    call em%define(I_BETA_RAD, beta_rad)
 
-    call em%set_c_rad(c_rad)
-    call em%set_c_thm(c_thm)
-    call em%set_c_dif(c_dif)
-    call em%set_c_eps_ad(c_eps_ad)
-    call em%set_c_eps_S(c_eps_S)
-    call em%set_kap_ad(kap_ad)
-    call em%set_kap_S(kap_S)
+    call em%define(I_C_LUM, c_lum)
+    call em%define(I_C_RAD, c_rad)
+    call em%define(I_C_THM, c_thm)
+    call em%define(I_C_DIF, c_dif)
+    call em%define(I_C_EPS, c_eps)
+    call em%define(I_C_EPS_AD, c_eps_ad)
+    call em%define(I_C_EPS_S, c_eps_S)
+    call em%define(I_KAP_AD, kap_ad)
+    call em%define(I_KAP_S, kap_S)
 
-    call em%set_Omega_rot(Omega_rot)
+    call em%define(I_OMEGA_ROT, Omega_rot)
 
     ! Return a pointer
 

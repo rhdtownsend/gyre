@@ -1,7 +1,7 @@
 ! Incfile  : gyre_bvp
-! Purpose  : boundary-value solver (template)
+! Purpose  : parametric boundary value problems (template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -29,8 +29,8 @@ module gyre_${T}_bvp
   use core_kinds
 
   use gyre_bound
+  use gyre_diff
   use gyre_ext
-  use gyre_match
   use gyre_num_par
   use gyre_status
   use gyre_sysmtx
@@ -46,26 +46,25 @@ module gyre_${T}_bvp
 
   type :: ${T}_bvp_t
      private
-     class(${T}_bound_t), allocatable          :: bd_i
-     class(${T}_bound_t), allocatable          :: bd_o
-     type(${T}_bvp_seg_t), allocatable, public :: bs(:)
-     type(${T}_match_t), allocatable           :: mt(:)
-     class(${T}_sysmtx_t), allocatable         :: sm
-     real(WP)                                  :: omega_min
-     real(WP)                                  :: omega_max
-     integer, public                           :: n_e
-     integer, public                           :: n_s
+     class(${T}_diff_t), allocatable   :: df(:)
+     class(${T}_bound_t), allocatable  :: bd
+     class(${T}_sysmtx_t), allocatable :: sm
+     integer, public                   :: n_k
+     integer, public                   :: n_e
+     integer, public                   :: n_i
+     integer, public                   :: n_o
    contains 
      private
-     procedure, public :: eval_discrim => eval_discrim_
-     procedure         :: build_
-     procedure, public :: recon => recon_
+     procedure, public :: build
+     procedure, public :: det
+     procedure, public :: soln_vec_hom
+     procedure, public :: soln_vec_inhom
   end type ${T}_bvp_t
 
   ! Interfaces
 
   interface ${T}_bvp_t
-     module procedure ${T}_bvp_t_
+     module procedure ${T}_bvp_t
   end interface ${T}_bvp_t
 
   ! Access specifiers
@@ -73,57 +72,47 @@ module gyre_${T}_bvp
   private
 
   public :: ${T}_bvp_t
+  public :: ${T}_bvp_t_
 
 contains
 
-  function ${T}_bvp_t_ (bd_i, bd_o, bs, mt, nm_p, omega_min, omega_max) result (bp)
+  function ${T}_bvp_t_ (bd, df, nm_p) result (bp)
 
-    class(${T}_bound_t), intent(in)   :: bd_i
-    class(${T}_bound_t), intent(in)   :: bd_o
-    class(${T}_bvp_seg_t), intent(in) :: bs
-    class(${T}_match_t), intent(in)   :: mt
-    type(num_par_t), intent(in)       :: nm_p
-    real(WP), intent(in)              :: omega_min
-    real(WP), intent(in)              :: omega_max
-    type(${T}_bvp_t)                  :: bp
+    class(${T}_diff_t), intent(in)   :: df(:)
+    class(${T}_bound_t), intent(in)  :: bd
+    type(num_par_t), intent(in)      :: nm_p
+    type(${T}_bvp_t)                 :: bp
 
+    integer :: n_k
     integer :: n_e
-    integer :: n_s
     integer :: n_i
     integer :: n_o
 
     ! Perform basic validations
 
-    n_e = bd_i%n_e
-    n_s = SIZE(bs)
+    n_k = SIZE(df) + 1
+    n_e = bd%n_e
 
-    n_i = bd_i%n
-    n_o = bd_o%n
+    n_i = bd%n_i
+    n_o = bd%n_o
 
-    $CHECK_BOUNDS(bd_o%n_e,n_e)
-    $CHECK_BOUNDS(bd_i%n+bd_o%n,n_e)
+    $CHECK_BOUNDS(n_i+n_o,n_e)
 
-    $ASSERT_DEBUG(ALL(bs%n_e == n_e),Dimension mismatch)
-    $ASSERT_DEBUG(ALL(mt%n_e == n_e),Dimension mismatch)
-
-    $CHECK_BOUNDS(SIZE(mt),n_s-1)
+    $ASSERT_DEBUG(ALL(df%n_e == n_e),Dimension mismatch)
 
     ! Construct the bvp_t
 
-    allocate(bp%bd_i, SOURCE=bd_i)
-    allocate(bp%bd_o, SOURCE=bd_o)
+    allocate(bp%df(n_k-1), SOURCE=df)
 
-    allocate(bp%bs, SOURCE=bs)
-    allocate(bp%mt, SOURCE=mt)
+    allocate(bp%bd, SOURCE=bd)
 
-    allocate(bp%sm, SOURCE=${T}_sysmtx_t(SUM(bs%n)-1, n_e, n_i, n_o, nm_p)
+    allocate(bp%sm, SOURCE=${T}_sysmtx_t(n_k-1, n_e, n_i, n_o, nm_p))
 
+    bp%n_k = n_k
     bp%n_e = n_e
-    bp%n_s = n_s
+    bp%n_i = n_i
+    bp%n_o = n_o
 
-    bp%omega_min = omega_min
-    bp%omega_max = omega_max
-    
     ! Finish
     
     return
@@ -132,133 +121,111 @@ contains
 
   !****
 
-  subroutine eval_discrim_ (this, omega, discrim, status)
-
-    class(${T}_bvp_t), intent(inout) :: this
-    $TYPE(WP), intent(in)            :: omega
-    type(${T}_ext_t), intent(out)    :: discrim
-    integer, intent(out)             :: status
-
-    ! Evaluate the discriminant as the determinant of the sysmtx
-
-    if (REAL(omega, WP) >= this%omega_min .AND. REAL(omega, WP) <= this%omega_max) then
-
-       call this%build_(omega)
-
-       call this%sm%factorize()
-       discrim = this%sm%det()
-
-       status = STATUS_OK
-
-    else
-
-       status = STATUS_OMEGA_DOMAIN
-
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine eval_discrim_
-
-  !****
-
-  subroutine build_ (this, omega)
+  subroutine build (this, omega)
 
     class(${T}_bvp_t), target, intent(inout) :: this
     $TYPE(WP), intent(in)                    :: omega
 
-    $TYPE(WP)            :: E_l(this%n_e,this%n_e)
-    $TYPE(WP)            :: E_r(this%n_e,this%n_e)
-    type(${T}_ext_t)     :: S_
-    integer              :: k
-    integer              :: s
-    integer, allocatable :: i_seg(:)
-    integer              :: i_dbl(this%pt%n_dbl)
+    $TYPE(WP)        :: B_i(this%n_i,this%n_e)
+    $TYPE(WP)        :: B_o(this%n_o,this%n_e)
+    $TYPE(WP)        :: E_l(this%n_e,this%n_e)
+    $TYPE(WP)        :: E_r(this%n_e,this%n_e)
+    $TYPE(WP)        :: scl_i(this%n_i)
+    $TYPE(WP)        :: scl_o(this%n_o)
+    type(${T}_ext_t) :: scl
+    integer          :: k
     
-    ! Build the sysmtx
+    ! Build the bvp for the specified omega
 
-    ! Boundary conditions
+    ! Set up boundary conditions
 
-    call this%bd_i%build(omega, E_r, S_)
-    call this%sm%set_B_i(E_r, S_)
+    call this%bd%build_i(omega, B_i, scl_i)
+    call this%sm%set_B_i(B_i, scl_i)
 
-    call this%bd_o%build(omega, E_l, S_)
-    call this%sm%set_B_o(E_l, S_)
+    call this%bd%build_o(omega, B_o, scl_o)
+    call this%sm%set_B_o(B_o, scl_o)
 
-    ! Segments
+    ! Set up difference equations
 
-    ! WHERE IS THE PARTITIONER SET UP?
+    !$OMP PARALLEL DO PRIVATE (E_l, E_r, scl) SCHEDULE (DYNAMIC)
+    sub_loop : do k = 1, this%n_k-1
+       call this%df(k)%build(omega, E_l, E_r, scl)
+       call this%sm%set_E(k, E_l, E_r, scl)
+    end do sub_loop
 
-    seg_loop : do s = 1, this%n_s
+    ! Factorize the sysmtx for later use
 
-       i_seg = this%pt%i_seg(s)
-
-       associate (bs => this%bs(s))
-
-         !$OMP PARALLEL DO PRIVATE (E_l, E_r, S_) SCHEDULE (DYNAMIC)
-         sub_loop : do i = 1, bs%n-1
-            call bs%build(omega, i, E_l, E_r, S_)
-            call this%sm%set_E(i_seg(i), E_l, E_r, S_)
-         end do sub_loop
-
-       end associate
-
-    end do seg_loop
-
-    ! Match conditions
-
-    i_dbl = this%pt%i_dbl()
-
-    match_loop : do s = 1, this%n_s-1
-
-       associate (bs => this%bs(s))
-
-         call this%mt(s)%build(omega, E_l, E_r, S_)
-         call this%sm%set_E(i_dbl(s), E_l, E_r, S_)
-
-       end associate
-
-    end do match_loop
+    call this%sm%factorize()
 
     ! Finish
 
     return
 
-  end subroutine build_
+  end subroutine build
 
   !****
 
-  subroutine recon_ (this, omega, discrim)
+  function det (this)
 
     class(${T}_bvp_t), intent(inout) :: this
-    $TYPE(WP), intent(in)            :: omega
-    type(${T}_ext_t), intent(out)    :: discrim
+    type(${T}_ext_t)                 :: det
 
-    $TYPE(WP) :: v(this%n_e*this%n)
-    $TYPE(WP) :: y(this%n_e,this%n)
+    ! Evaluate the determinant of the sysmtx
 
-    ! Reconstruct the solution, by calculating the null vector of the
-    ! sysmtx
-
-    call this%build_(omega)
-
-    call this%sm%factorize()
-    discrim = this%sm%det()
-    v = this%sm%null_vec()
-
-    y = RESHAPE(v, SHAPE(y))
-
-    ! Copy y into the segments
-
-    DONT YET KNOW HOW TO COPY INTO SEGMENTS
+    det = this%sm%det()
 
     ! Finish
 
     return
 
-  end subroutine recon_
+  end function det
+
+  !****
+
+  function soln_vec_hom (this) result (y)
+
+    class(${T}_bvp_t), intent(inout) :: this
+    $TYPE(WP)                        :: y(this%n_e,this%n_k)
+
+    $TYPE(WP) :: v(this%n_e*this%n_k)
+
+    ! Evaluate the solution vector y of the homogeneous system
+
+    v = this%sm%soln_vec_hom()
+
+    y = RESHAPE(v, SHAPE(y))
+
+    ! Finish
+
+    return
+
+  end function soln_vec_hom
+
+  !****
+
+  function soln_vec_inhom (this, w_i, w_o) result (y)
+
+    class(${T}_bvp_t), intent(inout) :: this
+    $TYPE(WP), intent(in)            :: w_i(:)
+    $TYPE(WP), intent(in)            :: w_o(:)
+    $TYPE(WP)                        :: y(this%n_e,this%n_k)
+
+    $TYPE(WP) :: v(this%n_e*this%n_k)
+
+    $CHECK_BOUNDS(SIZE(w_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(w_o),this%n_o)
+
+    ! Evaluate the solution vector y of the inhomogeneous system
+
+    v = this%sm%soln_vec_inhom(w_i, w_o)
+
+    y = RESHAPE(v, SHAPE(y))
+    
+    ! Finish
+
+    return
+
+  end function soln_vec_inhom
 
 end module gyre_${T}_bvp
 

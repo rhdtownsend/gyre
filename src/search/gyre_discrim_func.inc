@@ -1,7 +1,7 @@
 ! Incfile  : gyre_discrim_func
 ! Purpose  : discriminant function (template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2016 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,7 +30,7 @@ module gyre_${T}_discrim_func
 
   use core_kinds
 
-  use gyre_bep
+  use gyre_bvp
   use gyre_ext
   use gyre_ext_func
   use gyre_status
@@ -45,7 +45,9 @@ module gyre_${T}_discrim_func
 
   type, extends (${T}_ext_func_t) :: ${T}_discrim_func_t
      private
-     class(${T}_bep_t), pointer     :: bp
+     class(${T}_bvp_t), pointer     :: bp
+     real(WP)                       :: omega_min
+     real(WP)                       :: omega_max
      $TYPE(WP), allocatable, public :: omega_def(:)
    contains 
      private
@@ -68,14 +70,19 @@ module gyre_${T}_discrim_func
 
 contains
 
-  function ${T}_discrim_func_t_ (bp) result (df)
+  function ${T}_discrim_func_t_ (bp, omega_min, omega_max) result (df)
 
-    class(${T}_bep_t), pointer, intent(in) :: bp
+    class(${T}_bvp_t), pointer, intent(in) :: bp
+    real(WP), intent(in)                   :: omega_min
+    real(WP), intent(in)                   :: omega_max
     type(${T}_discrim_func_t)              :: df
 
     ! Construct the discrim_func_t
 
     df%bp => bp
+
+    df%omega_min = omega_min
+    df%omega_max = omega_max
 
     ! Finish
 
@@ -104,15 +111,24 @@ contains
     $stop 'Invalid $T'
     $endif
 
-    call this%bp%eval_discrim(omega, f_$VAR, status)
-    if (status /= STATUS_OK) return
+    if (REAL(omega, WP) >= this%omega_min .AND. REAL(omega, WP) <= this%omega_max) then
 
-    if (ALLOCATED(this%omega_def)) then
-       f_$VAR = f_$VAR*PRODUCT(omega/(omega - this%omega_def))
+       call this%bp%build(omega)
+
+       f_$VAR = this%bp%det()
+
+       status = STATUS_OK
+
+       if (ALLOCATED(this%omega_def)) then
+          f_$VAR = f_$VAR*PRODUCT(omega/(omega - this%omega_def))
+       endif
+
+    else
+
+       status = STATUS_OMEGA_DOMAIN
+
     endif
     
-    status = STATUS_OK
-
     ! Finish
 
     return

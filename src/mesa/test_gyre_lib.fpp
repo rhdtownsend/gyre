@@ -40,19 +40,19 @@ program test_gyre_lib
   
   ! Initialize
 
-  call gyre_init()
+  call gyre_init('gyre.in')
 
   ! Read the model
 
-  call gyre_read_model('bcep.mesa', 'MONO')
+  call gyre_read_model('bcep.mesa')
 
   ! Repeatedy find modes
 
   do i = 1,100
      print *,'Iteration:',i
-     call gyre_get_modes(0, 'gyre_ad.in', .TRUE., user_sub, ipar, rpar)
-     call gyre_get_modes(1, 'gyre_ad.in', .TRUE., user_sub, ipar, rpar)
-     call gyre_get_modes(2, 'gyre_ad.in', .TRUE., user_sub, ipar, rpar)
+     call gyre_get_modes(0, user_sub, ipar, rpar)
+     call gyre_get_modes(1, user_sub, ipar, rpar)
+     call gyre_get_modes(2, user_sub, ipar, rpar)
   end do
 
   ! Finish

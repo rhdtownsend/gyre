@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_eqns
 ! Purpose  : radial adiabatic differential equations
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,12 +24,12 @@ module gyre_rad_eqns
   use core_kinds
 
   use gyre_eqns
-  use gyre_grid
   use gyre_model
+  use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
-  use gyre_rad_vars
+  use gyre_rad_trans
   use gyre_rot
   use gyre_rot_factory
 
@@ -39,15 +39,28 @@ module gyre_rad_eqns
 
   implicit none
 
+  ! Parameter definitions
+
+  integer, parameter :: J_V_G = 1
+  integer, parameter :: J_AS = 2
+  integer, parameter :: J_U = 3
+  integer, parameter :: J_C_1 = 4
+
+  integer, parameter :: J_LAST = J_C_1
+
   ! Derived-type definitions
 
   type, extends (r_eqns_t) :: rad_eqns_t
      private
      class(model_t), pointer     :: ml => null()
      class(r_rot_t), allocatable :: rt
-     type(rad_vars_t)            :: vr
+     type(rad_trans_t)           :: tr
+     real(WP), allocatable       :: coeffs(:,:)
+     real(WP), allocatable       :: x(:)
+     real(WP)                    :: alpha_om
    contains
      private
+     procedure, public :: stencil
      procedure, public :: A
      procedure, public :: xA
   end type rad_eqns_t
@@ -68,10 +81,10 @@ module gyre_rad_eqns
 
 contains
 
-  function rad_eqns_t_ (ml, gr, md_p, os_p) result (eq)
+  function rad_eqns_t_ (ml, pt_i, md_p, os_p) result (eq)
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
+    type(point_t), intent(in)           :: pt_i
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(rad_eqns_t)                    :: eq
@@ -80,8 +93,18 @@ contains
 
     eq%ml => ml
 
-    allocate(eq%rt, SOURCE=r_rot_t(ml, gr, md_p, os_p))
-    eq%vr = rad_vars_t(ml, gr, md_p, os_p)
+    allocate(eq%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
+
+    eq%tr = rad_trans_t(ml, pt_i, md_p, os_p)
+
+    select case (os_p%time_factor)
+    case ('OSC')
+       eq%alpha_om = 1._WP
+    case ('EXP')
+       eq%alpha_om = -1._WP
+    case default
+       $ABORT(Invalid time_factor)
+    end select
 
     eq%n_e = 2
 
@@ -93,16 +116,55 @@ contains
 
   !****
 
-  function A (this, pt, omega)
+  subroutine stencil (this, pt)
+
+    class(rad_eqns_t), intent(inout) :: this
+    type(point_t), intent(in)        :: pt(:)
+
+    integer :: n_s
+    integer :: i
+
+    ! Calculate coefficients at the stencil points
+
+    call check_model(this%ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
+
+    n_s = SIZE(pt)
+
+    if (ALLOCATED(this%coeffs)) deallocate(this%coeffs)
+    allocate(this%coeffs(n_s,J_LAST))
+
+    do i = 1, n_s
+       this%coeffs(i,J_V_G) = this%ml%coeff(I_V_2, pt(i))*pt(i)%x**2/this%ml%coeff(I_GAMMA_1, pt(i))
+       this%coeffs(i,J_AS) = this%ml%coeff(I_AS, pt(i))
+       this%coeffs(i,J_U) = this%ml%coeff(I_U, pt(i))
+       this%coeffs(i,J_C_1) = this%ml%coeff(I_C_1, pt(i))
+    end do
+
+    this%x = pt%x
+
+    ! Set up stencils for the rt and tr components
+
+    call this%rt%stencil(pt)
+    call this%tr%stencil(pt)
+
+    ! Finish
+
+    return
+
+  end subroutine stencil
+
+  !****
+
+  function A (this, i, omega)
 
     class(rad_eqns_t), intent(in) :: this
-    type(point_t), intent(in)     :: pt
+    integer, intent(in)           :: i
     real(WP), intent(in)          :: omega
     real(WP)                      :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(pt, omega)/pt%x
+    A = this%xA(i, omega)/this%x(i)
 
     ! Finish
 
@@ -112,42 +174,39 @@ contains
 
   !****
 
-  function xA (this, pt, omega)
+  function xA (this, i, omega)
 
     class(rad_eqns_t), intent(in) :: this
-    type(point_t), intent(in)     :: pt
+    integer, intent(in)           :: i
     real(WP), intent(in)          :: omega
     real(WP)                      :: xA(this%n_e,this%n_e)
 
-    real(WP) :: V_g
-    real(WP) :: U
-    real(WP) :: As
-    real(WP) :: c_1
     real(WP) :: omega_c
     
     ! Evaluate the log(x)-space RHS matrix
 
-    ! Calculate coefficients
+    associate ( &
+         V_g => this%coeffs(i,J_V_G), &
+         As => this%coeffs(i,J_AS), &
+         U => this%coeffs(i,J_U), &
+         c_1 => this%coeffs(i,J_C_1), &
+         alpha_om => this%alpha_om)
 
-    V_g = this%ml%V_2(pt)*pt%x**2/this%ml%Gamma_1(pt)
-    U = this%ml%U(pt)
-    As = this%ml%As(pt)
-    c_1 = this%ml%c_1(pt)
+      omega_c = this%rt%omega_c(i, omega)
 
-    omega_c = this%rt%omega_c(pt, omega)
+      ! Set up the matrix
 
-    ! Set up the matrix
-
-    xA(1,1) = V_g - 1._WP
-    xA(1,2) = -V_g
+      xA(1,1) = V_g - 1._WP
+      xA(1,2) = -V_g
       
-    xA(2,1) = c_1*omega_c**2 + U - As
-    xA(2,2) = As - U + 3._WP
+      xA(2,1) = c_1*alpha_om*omega_c**2 + U - As
+      xA(2,2) = As - U + 3._WP
+
+    end associate
 
     ! Apply the variables transformation
 
-    xA = MATMUL(this%vr%G(pt, omega), MATMUL(xA, this%vr%H(pt, omega)) - &
-                                                 this%vr%dH(pt, omega))
+    call this%tr%trans_eqns(xA, i, omega)
 
     ! Finish
 

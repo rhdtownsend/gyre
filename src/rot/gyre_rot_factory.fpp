@@ -23,10 +23,10 @@ module gyre_rot_factory
 
   use core_kinds
 
-  use gyre_grid
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
+  use gyre_point
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -60,7 +60,7 @@ contains
 
   $local $T $1
 
-  function ${T}_rot_t_ (ml, gr, md_p, os_p) result (rt)
+  function ${T}_rot_t_ (ml, pt_i, md_p, os_p) result (rt)
 
     use gyre_dopp_rot
     use gyre_null_rot
@@ -69,7 +69,7 @@ contains
     $endif
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
+    type(point_t), intent(in)           :: pt_i
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     class(${T}_rot_t), allocatable      :: rt
@@ -83,7 +83,7 @@ contains
        allocate(rt, SOURCE=${T}_null_rot_t(md_p))
     case ('TAR')
        $if ($HDF5)
-       allocate(rt, SOURCE=${T}_tar_rot_t(ml, gr, md_p))
+       allocate(rt, SOURCE=${T}_tar_rot_t(ml, pt_i, md_p))
        $else
        $ABORT(TAR rotation method requires HDF support be enabled)
        $endif

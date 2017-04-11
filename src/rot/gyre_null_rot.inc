@@ -1,7 +1,7 @@
 ! Incfile  : gyre_null_rot
 ! Purpose  : rotational effects (null, template)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -46,14 +46,12 @@ module gyre_${T}_null_rot
      integer :: m
    contains
      private
+     procedure, public :: stencil
      procedure, public :: omega
-     procedure         :: omega_c_1_
-     procedure         :: omega_c_v_
+     procedure, public :: omega_c
      procedure, public :: l_i
-     procedure         :: l_e_1_
-     procedure         :: l_e_v_
-     procedure         :: lambda_1_
-     procedure         :: lambda_v_
+     procedure, public :: l_e
+     procedure, public :: lambda
   end type ${T}_null_rot_t
 
   ! Interfaces
@@ -90,10 +88,26 @@ contains
 
   !****
 
-  function omega (this, pt, omega_c)
+  subroutine stencil (this, pt)
+
+    class(${T}_null_rot_t), intent(inout) :: this
+    type(point_t), intent(in)             :: pt(:)
+
+    ! Calculate coefficients at the stencil points (since no
+    ! coefficients are required, this is a no-op)
+
+    ! Finish
+
+    return
+
+  end subroutine stencil
+
+  !****
+
+  function omega (this, i, omega_c)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega_c
     $TYPE(WP)                          :: omega
 
@@ -110,10 +124,10 @@ contains
 
 !****
 
-  function omega_c_1_ (this, pt, omega) result (omega_c)
+  function omega_c (this, i, omega)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: omega_c
 
@@ -126,27 +140,7 @@ contains
 
     return
 
-  end function omega_c_1_
-
-  !****
-
-  function omega_c_v_ (this, pt, omega) result (omega_c)
-
-    class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt(:)
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: omega_c(SIZE(pt))
-
-    ! Evaluate the corotating-frame frequency from the inertial-frame
-    ! frequency
-
-    omega_c = omega
-
-    ! Finish
-
-    return
-
-  end function omega_c_v_
+  end function omega_c
 
   !****
 
@@ -169,10 +163,10 @@ contains
 
   !****
 
-  function l_e_1_ (this, pt, omega) result (l_e)
+  function l_e (this, i, omega)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: l_e
 
@@ -184,33 +178,14 @@ contains
 
     return
 
-  end function l_e_1_
+  end function l_e
 
   !****
 
-  function l_e_v_ (this, pt, omega) result (l_e)
+  function lambda (this, i, omega)
 
     class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt(:)
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: l_e(SIZE(pt))
-
-    ! Evaluate the effective harmonic degree
-
-    l_e = this%l
-
-    ! Finish
-
-    return
-
-  end function l_e_v_
-
-  !****
-
-  function lambda_1_ (this, pt, omega) result (lambda)
-
-    class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt
+    integer, intent(in)                :: i
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: lambda
 
@@ -222,26 +197,7 @@ contains
 
     return
 
-  end function lambda_1_
-
-  !****
-
-  function lambda_v_ (this, pt, omega) result (lambda)
-
-    class(${T}_null_rot_t), intent(in) :: this
-    type(point_t), intent(in)          :: pt(:)
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: lambda(SIZE(pt))
-
-    ! Evaluate the angular eigenvalue (vector)
-
-    lambda = this%l*(this%l+1)
-
-    ! Finish
-
-    return
-
-  end function lambda_v_
+  end function lambda
 
 end module gyre_${T}_null_rot
 
