@@ -131,7 +131,7 @@ contains
        rotation_method = 'NULL'
        variables_set = 'GYRE'
        inner_bound = 'REGULAR'
-       outer_bound = 'ZERO'
+       outer_bound = 'VACUUM'
        inertia_norm = 'BOTH'
        time_factor = 'OSC'
        conv_scheme = 'FROZEN_PESNELL_1'
