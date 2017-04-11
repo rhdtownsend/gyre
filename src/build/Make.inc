@@ -4,19 +4,22 @@
 # The following flags can be edited (set to either yes or no)
 
 # Enable debugging (with a performance penalty)
-DEBUG=no
+DEBUG?=no
 
 # Enable OpenMP parallelization
-OMP=yes
+OMP?=yes
 
 # Enable MPI parallelization
-MPI=no
+MPI?=no
 
 # Use double precision arithmetic (best left to 'yes')
-DOUBLE_PRECISION=yes
+DOUBLE_PRECISION?=yes
 
 # Use IEEE fortran features
-IEEE=no
+IEEE?=no
+
+# Enable FPE checks
+FPE?=yes
 
 ############ DO NOT EDIT BELOW THIS LINE ############
 ### (unless you think you know what you're doing) ###
@@ -41,7 +44,11 @@ endif
 
 MODPATH=${MESASDK_ROOT}/include
 
-FFLAGS:=${FFLAGS} -finit-real=snan -ffpe-trap=invalid,overflow,zero -fbacktrace -fmax-errors=25
+FFLAGS:=${FFLAGS} -finit-real=snan -fbacktrace -fmax-errors=25
+
+ifeq (${FPE},yes)
+  FFLAGS:=${FFLAGS} -ffpe-trap=invalid,overflow,zero
+endif
 
 ifeq (${DEBUG},yes)
   FFLAGS:=${FFLAGS} -fcheck=all -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0 -g
