@@ -6,9 +6,9 @@
 ODEPACK=$(shell which madsdk_odepack_link >& /dev/null && echo "yes" || echo "no")
 
 ifeq ($(ODEPACK),yes)
-  TARGETS=gyre poly_to_fgong build_poly
+  TARGETS=gyre poly_to_fgong build_poly gyre_force
 else
-  TARGETS=gyre poly_to_fgong
+  TARGETS=gyre poly_to_fgong gyre_force
 endif   
 
 # Flags
