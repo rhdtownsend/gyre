@@ -116,8 +116,9 @@ contains
                k_i => gr%k_i(s), &
                k_o => gr%k_o(s))
 
-            write(OUTPUT_UNIT, 130) 'Segment', s, ':', k_o-k_i+1, 'points, x range', gr%pt(k_i)%x, '->', gr%pt(k_o)%x
-130         format(6X,A,1X,I0,1X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4)
+            write(OUTPUT_UNIT, 130) 'Segment', s, ': x range', gr%pt(k_i)%x, '->', gr%pt(k_o)%x, &
+                 '(', k_i, '->', k_o, ')'
+130         format(6X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4,1X,A,I0,1X,A,1X,I0,A)
 
           end associate
 
