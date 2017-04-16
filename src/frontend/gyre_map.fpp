@@ -264,22 +264,23 @@ contains
     character(*), intent(in)                   :: axis
     type(scan_par_t), allocatable, intent(out) :: sc_p(:)
 
-    integer                         :: n_sc_p
-    integer                         :: i
-    real(WP)                        :: freq_min
-    real(WP)                        :: freq_max
-    integer                         :: n_freq
-    character(LEN(sc_p%freq_units)) :: freq_units
-    character(LEN(sc_p%freq_frame)) :: freq_frame
-    character(LEN(sc_p%grid_type))  :: grid_type
-    character(LEN(sc_p%grid_frame)) :: grid_frame
-    character(LEN(sc_p%tag_list))   :: tag_list
+    integer                             :: n_sc_p
+    integer                             :: i
+    real(WP)                            :: freq_min
+    real(WP)                            :: freq_max
+    integer                             :: n_freq
+    character(LEN(sc_p%freq_min_units)) :: freq_min_units
+    character(LEN(sc_p%freq_min_units)) :: freq_max_units
+    character(LEN(sc_p%freq_frame))     :: freq_frame
+    character(LEN(sc_p%grid_type))      :: grid_type
+    character(LEN(sc_p%grid_frame))     :: grid_frame
+    character(LEN(sc_p%tag_list))       :: tag_list
 
-    namelist /re_scan/ freq_min, freq_max, n_freq, freq_units, freq_frame, &
-         grid_type, grid_frame, tag_list
+    namelist /re_scan/ freq_min, freq_max, n_freq, freq_min_units, freq_max_units, &
+         freq_frame, grid_type, grid_frame, tag_list
 
-    namelist /im_scan/ freq_min, freq_max, n_freq, freq_units, freq_frame, &
-         grid_type, grid_frame, tag_list
+    namelist /im_scan/ freq_min, freq_max, n_freq, freq_min_units, freq_max_units, &
+         freq_frame, grid_type, grid_frame, tag_list
 
     ! Count the number of scan namelists
 
@@ -313,7 +314,8 @@ contains
        freq_max = 10._WP
        n_freq = 10
           
-       freq_units = 'NONE'
+       freq_min_units = 'NONE'
+       freq_max_units = 'NONE'
        freq_frame = 'INERTIAL'
 
        grid_type = 'LINEAR'
@@ -335,7 +337,8 @@ contains
        sc_p(i) = scan_par_t(freq_min=freq_min, &
                             freq_max=freq_max, &
                             n_freq=n_freq, &
-                            freq_units=freq_units, &
+                            freq_min_units=freq_min_units, &
+                            freq_max_units=freq_max_units, &
                             freq_frame=freq_frame, &
                             grid_type=grid_type, &
                             grid_frame=grid_frame, &
