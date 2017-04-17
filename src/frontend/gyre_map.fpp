@@ -120,13 +120,11 @@ program gyre_map
      endif
 
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
-     write(OUTPUT_UNIT, 120) 'MPI Processors   :', MPI_SIZE
 120  format(A,1X,I0)
      
      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
-     write(OUTPUT_UNIT, 110) 'GYRE_DIR         :', gyre_dir
 
-     write(OUTPUT_UNIT, 100) form_header('Initialization', '-')
+     write(OUTPUT_UNIT, *)
 
   endif
 
@@ -147,11 +145,29 @@ program gyre_map
 
   $ASSERT(SIZE(md_p) == 1,Must be exactly one mode parameter)
 
-  ! Construct the model
+  ! Initialize the model
+
+  if (check_log_level('INFO')) then
+     write(OUTPUT_UNIT, 100) form_header('Model Init', '-')
+  endif
 
   ml => model_t(ml_p)
 
   ! Select parameters according to tags
+
+  if (check_log_level('INFO')) then
+
+     write(OUTPUT_UNIT, 100) form_header('Mode Init', '-')
+
+     write(OUTPUT_UNIT, 100) 'Mode parameters'
+
+     write(OUTPUT_UNIT, 130) 'l :', md_p(1)%l
+     write(OUTPUT_UNIT, 130) 'm :', md_p(1)%m
+130  format(3X,A,1X,I0)
+
+     write(OUTPUT_UNIT, *)
+
+  endif
 
   call select_par(os_p, md_p(1)%tag, os_p_sel)
   call select_par(nm_p, md_p(1)%tag, nm_p_sel)
@@ -192,6 +208,10 @@ program gyre_map
 
   ! Map the discriminant
 
+  if (check_log_level('INFO')) then
+     write(OUTPUT_UNIT, 100) form_header('Discriminant Mapping', '-')
+  endif
+
   n_omega_re = SIZE(omega_re)
   n_omega_im = SIZE(omega_im)
 
@@ -203,7 +223,6 @@ program gyre_map
   call partition_tasks(n_omega_re*n_omega_im, 1, k_part)
 
   n_percent = 0
-
 
   do k = k_part(MPI_RANK+1), k_part(MPI_RANK+2)-1
 
@@ -264,21 +283,24 @@ contains
     character(*), intent(in)                   :: axis
     type(scan_par_t), allocatable, intent(out) :: sc_p(:)
 
-    integer                         :: n_sc_p
-    integer                         :: i
-    real(WP)                        :: freq_min
-    real(WP)                        :: freq_max
-    integer                         :: n_freq
-    character(LEN(sc_p%freq_units)) :: freq_units
-    character(LEN(sc_p%freq_frame)) :: freq_frame
-    character(LEN(sc_p%grid_type))  :: grid_type
-    character(LEN(sc_p%grid_frame)) :: grid_frame
-    character(LEN(sc_p%tag_list))   :: tag_list
+    integer                             :: n_sc_p
+    integer                             :: i
+    real(WP)                            :: freq_min
+    real(WP)                            :: freq_max
+    integer                             :: n_freq
+    character(LEN(sc_p%freq_min_units)) :: freq_min_units
+    character(LEN(sc_p%freq_max_units)) :: freq_max_units
+    character(LEN(sc_p%freq_frame))     :: freq_frame
+    character(LEN(sc_p%grid_type))      :: grid_type
+    character(LEN(sc_p%grid_frame))     :: grid_frame
+    character(LEN(sc_p%tag_list))       :: tag_list
 
-    namelist /re_scan/ freq_min, freq_max, n_freq, freq_units, freq_frame, &
+    namelist /re_scan/ freq_min, freq_max, n_freq, &
+         freq_min_units, freq_max_units, freq_frame, &
          grid_type, grid_frame, tag_list
 
-    namelist /im_scan/ freq_min, freq_max, n_freq, freq_units, freq_frame, &
+    namelist /im_scan/ freq_min, freq_max, n_freq, &
+         freq_min_units, freq_max_units, freq_frame, &
          grid_type, grid_frame, tag_list
 
     ! Count the number of scan namelists
@@ -313,7 +335,8 @@ contains
        freq_max = 10._WP
        n_freq = 10
           
-       freq_units = 'NONE'
+       freq_min_units = 'NONE'
+       freq_max_units = 'NONE'
        freq_frame = 'INERTIAL'
 
        grid_type = 'LINEAR'
@@ -335,7 +358,8 @@ contains
        sc_p(i) = scan_par_t(freq_min=freq_min, &
                             freq_max=freq_max, &
                             n_freq=n_freq, &
-                            freq_units=freq_units, &
+                            freq_min_units=freq_min_units, &
+                            freq_max_units=freq_max_units, &
                             freq_frame=freq_frame, &
                             grid_type=grid_type, &
                             grid_frame=grid_frame, &

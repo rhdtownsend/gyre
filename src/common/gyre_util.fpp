@@ -102,22 +102,19 @@ contains
 
        if(underchar == '') then
 
-          form_header = NEW_LINE('') // &
-                        TRIM(header) // NEW_LINE('') // &
+          form_header = TRIM(header) // NEW_LINE('') // &
                         REPEAT(' ', LEN(header)) // NEW_LINE('')
 
        else
 
-          form_header = NEW_LINE('') // &
-                        TRIM(header) // NEW_LINE('') // &
+          form_header = TRIM(header) // NEW_LINE('') // &
                         REPEAT(underchar, LEN(header)/LEN(underchar)) // NEW_LINE('')
 
        endif
 
     else
        
-       form_header = NEW_LINE('') // &
-                     TRIM(header) // NEW_LINE('')
+       form_header = TRIM(header) // NEW_LINE('')
        
     endif
 

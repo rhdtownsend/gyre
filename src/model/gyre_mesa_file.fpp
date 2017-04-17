@@ -120,6 +120,10 @@ contains
 
     call init_mesa_model(ml_p, global_data, point_data, version, ml)
     
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, *)
+    endif
+
     ! Finish
 
     return
