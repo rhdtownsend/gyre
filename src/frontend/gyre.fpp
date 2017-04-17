@@ -115,6 +115,8 @@ program gyre
      
      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
 
+     write(OUTPUT_UNIT, *)
+
   endif
 
   ! Read the namelist file
