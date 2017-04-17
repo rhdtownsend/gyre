@@ -1,0 +1,44 @@
+&constants
+/
+
+&model
+	model_type = 'EVOL'
+	file = 'spb.mesa'
+	file_format = 'MESA'
+/
+
+&mode
+	l = 1
+/
+
+&osc
+	nonadiabatic = .TRUE.
+/
+
+&num
+	diff_scheme = 'MAGNUS_GL2'
+/
+
+&re_scan
+	grid_type = 'LINEAR'
+	freq_min = 0.22
+	freq_max = 0.24
+	n_freq = 100
+/
+
+&im_scan
+	grid_type = 'LINEAR'
+	freq_min = -0.01
+	freq_max = 0.01
+	n_freq = 100
+/
+
+&grid
+	n_inner = 5
+	alpha_osc = 10
+	alpha_exp = 2
+/
+
+&output
+	map_filename = 'map.h5'
+/
