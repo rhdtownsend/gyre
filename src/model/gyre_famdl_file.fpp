@@ -163,6 +163,10 @@ contains
 
     ml => em
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, *)
+    endif
+
     ! Finish
 
     return
