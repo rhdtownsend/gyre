@@ -208,7 +208,9 @@ program gyre_map
 
   ! Map the discriminant
 
-  write(OUTPUT_UNIT, 100) form_header('Discriminant Mapping', '-')
+  if (check_log_level('INFO')) then
+     write(OUTPUT_UNIT, 100) form_header('Discriminant Mapping', '-')
+  endif
 
   n_omega_re = SIZE(omega_re)
   n_omega_im = SIZE(omega_im)
@@ -293,11 +295,13 @@ contains
     character(LEN(sc_p%grid_frame))     :: grid_frame
     character(LEN(sc_p%tag_list))       :: tag_list
 
-    namelist /re_scan/ freq_min, freq_max, n_freq, freq_min_units, freq_max_units, &
-         freq_frame, grid_type, grid_frame, tag_list
+    namelist /re_scan/ freq_min, freq_max, n_freq, &
+         freq_min_units, freq_max_units, freq_frame, &
+         grid_type, grid_frame, tag_list
 
-    namelist /im_scan/ freq_min, freq_max, n_freq, freq_min_units, freq_max_units, &
-         freq_frame, grid_type, grid_frame, tag_list
+    namelist /im_scan/ freq_min, freq_max, n_freq, &
+         freq_min_units, freq_max_units, freq_frame, &
+         grid_type, grid_frame, tag_list
 
     ! Count the number of scan namelists
 
