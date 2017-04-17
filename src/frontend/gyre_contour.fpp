@@ -21,7 +21,7 @@ program gyre_contour
 
   ! Uses
 
-  use core_kinds, SP_ => SP
+  use core_kinds
   use core_hgroup
   use core_order
   use core_parallel
@@ -83,16 +83,19 @@ program gyre_contour
   type(grid_t)                     :: gr
   real(WP), allocatable            :: omega_re(:)
   real(WP), allocatable            :: omega_im(:)
-  type(nad_bvp_t), allocatable     :: bp
+  real(WP)                         :: omega_min
+  real(WP)                         :: omega_max
+  type(nad_bvp_t), target          :: bp
+  type(c_discrim_func_t)           :: df
   type(c_ext_t), allocatable       :: discrim_map(:,:)
   type(contour_map_t)              :: cm_re
   type(contour_map_t)              :: cm_im
   type(contour_seg_t), allocatable :: is_re(:)
   type(contour_seg_t), allocatable :: is_im(:)
   type(hgroup_t)                   :: hg
-  integer                          :: n_md
-  integer                          :: d_md
-  type(mode_t), allocatable        :: md(:)
+  integer                          :: n_md_nad
+  integer                          :: d_md_nad
+  type(mode_t), allocatable        :: md_nad(:)
 
   ! Read command-line arguments
 
@@ -111,9 +114,11 @@ program gyre_contour
      write(OUTPUT_UNIT, 100) form_header('gyre_contour ['//VERSION//']', '=')
 100  format(A)
 
-     write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
-     write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
-110  format(A,1X,A)
+     if (check_log_level('DEBUG')) then
+        write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
+        write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
+110     format(A,1X,A)
+     endif
 
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
      write(OUTPUT_UNIT, 120) 'MPI Processors   :', MPI_SIZE
@@ -165,13 +170,27 @@ program gyre_contour
   call build_scan(ml, gr, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
   call build_scan(ml, gr, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
 
+  ! Set frequency bounds
+
+  if (nm_p_sel%restrict_roots) then
+     omega_min = MINVAL(omega_re)
+     omega_max = MAXVAL(omega_re)
+  else
+     omega_min = -HUGE(0._WP)
+     omega_max = HUGE(0._WP)
+  endif
+
   ! Create the full grid
 
   gr = grid_t(ml, omega_re, gr_p_sel, md_p(1), os_p_sel)
 
   ! Set up the bvp
 
-  bp = nad_bvp_t(ml, gr, omega_re, md_p(1), nm_p_sel, os_p_sel)
+  bp = nad_bvp_t(ml, gr, md_p(1), nm_p_sel, os_p_sel)
+
+  ! Set up the discriminant function
+
+  df = c_discrim_func_t(bp, omega_min, omega_max)
 
   ! Evaluate the discriminant map
 
@@ -218,16 +237,16 @@ program gyre_contour
 
      ! Find roots
 
-     d_md = 128
-     n_md = 0
+     d_md_nad = 128
+     n_md_nad = 0
 
-     allocate(md(d_md))
+     allocate(md_nad(d_md_nad))
 
-     call find_roots(bp, md_p(1), nm_p_sel, os_p_sel, is_re, is_im, process_root)
+     call find_roots(bp, md_p(1), nm_p_sel, os_p_sel, is_re, is_im, process_mode)
 
      ! Write the summary file
 
-     call write_summary(md(:n_md), ot_p)
+     call write_summary(md_nad(:n_md_nad), ot_p)
 
   end if
 
@@ -404,7 +423,7 @@ contains
           end if
        endif
      
-       call bp%eval_discrim(omega, discrim, status)
+       call df%eval(c_ext_t(omega), discrim, status)
        $ASSERT(status == STATUS_OK,Invalid status)
        
        discrim_map_f(i(1),i(2)) = FRACTION(discrim)
@@ -520,7 +539,7 @@ contains
 
   !****
 
-  subroutine find_roots (bp, md_p, nm_p, os_p, is_re, is_im, process_root)
+  subroutine find_roots (bp, md_p, nm_p, os_p, is_re, is_im, process_mode)
 
     type(nad_bvp_t), target, intent(inout)       :: bp
     type(mode_par_t), intent(in)                 :: md_p
@@ -529,31 +548,28 @@ contains
     type(contour_seg_t), allocatable, intent(in) :: is_re(:)
     type(contour_seg_t), allocatable, intent(in) :: is_im(:)
     interface
-       subroutine process_root (omega, j, n_iter, discrim_ref)
+       subroutine process_mode (md, n_iter, chi)
          use core_kinds
          use gyre_ext
-         complex(WP), intent(in)   :: omega
-         integer, intent(in)       :: j
+         use gyre_mode
+         type(mode_t), intent(in)  :: md
          integer, intent(in)       :: n_iter
-         type(r_ext_t), intent(in) :: discrim_ref
-       end subroutine process_root
+         type(r_ext_t), intent(in) :: chi
+       end subroutine process_mode
     end interface
 
-    type(c_discrim_func_t) :: df
-    integer                :: j
-    type(c_ext_t)          :: omega_a
-    type(c_ext_t)          :: omega_b
-    type(c_ext_t)          :: discrim_a
-    type(c_ext_t)          :: discrim_b
-    integer                :: status
-    type(c_ext_t)          :: omega_root
-    integer                :: n_iter
-
+    integer       :: j
+    type(c_ext_t) :: omega_a
+    type(c_ext_t) :: omega_b
+    type(c_ext_t) :: discrim_a
+    type(c_ext_t) :: discrim_b
+    integer       :: status
+    type(c_ext_t) :: omega_root
+    integer       :: n_iter
+    type(mode_t)  :: md
+    type(r_ext_t) :: chi
+    
     $CHECK_BOUNDS(SIZE(is_re),SIZE(is_im))
-
-    ! Set up the discriminant function
-
-    df = c_discrim_func_t(bp)
 
     ! Loop over pairs of intersecting segments
 
@@ -587,9 +603,15 @@ contains
           cycle intseg_loop
        endif
 
+       ! Construct the mode_t
+
+       md = mode_t(bp, cmplx(omega_root), j)
+
        ! Process it
 
-       call process_root(cmplx(omega_root), j, n_iter, max(abs(discrim_a), abs(discrim_b)))
+       chi = abs(md%discrim)/max(abs(discrim_a), abs(discrim_b))
+       
+       call process_mode(md, n_iter, chi)
 
     end do intseg_loop
 
@@ -623,52 +645,44 @@ contains
 
   !****
 
-  subroutine process_root (omega, j, n_iter, discrim_ref)
+  subroutine process_mode (md, n_iter, chi)
 
-    complex(WP), intent(in)   :: omega
-    integer, intent(in)       :: j
+    type(mode_t), intent(in)  :: md
     integer, intent(in)       :: n_iter
-    type(r_ext_t), intent(in) :: discrim_ref
+    type(r_ext_t), intent(in) :: chi
 
-    type(mode_t)  :: md_new
-    type(r_ext_t) :: chi
-
-    ! Construct the new mode_t
-    
-    md_new = mode_t(bp, j, omega)
-
-    chi = abs(md_new%sl%discrim)/discrim_ref
+    ! Process the non-adiabatic mode
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) md_new%l, md_new%m, md_new%n_pg, md_new%n_p, md_new%n_g, &
-            md_new%omega, real(chi), n_iter
-120    format(5(2X,I8),3(2X,E24.16),2X,I6)
+       write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+            md%omega, real(chi), n_iter
+100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
     endif
 
     ! Store it
 
-    n_md = n_md + 1
+    n_md_nad = n_md_nad + 1
 
-    if (n_md > d_md) then
-       d_md = 2*d_md
-       call reallocate(md, [d_md])
+    if (n_md_nad > d_md_nad) then
+       d_md_nad = 2*d_md_nad
+       call reallocate(md_nad, [d_md_nad])
     endif
 
-    md(n_md) = md_new
+    md_nad(n_md_nad) = md
 
     ! Write it
 
-    call write_mode(md(n_md), ot_p)
+    call write_mode(md_nad(n_md_nad), ot_p)
 
     ! If necessary, prune it
 
-    if (ot_p%prune_modes) call md(n_md)%prune()
+    if (ot_p%prune_modes) call md_nad(n_md_nad)%prune()
 
     ! Finish
 
     return
 
-  end subroutine process_root
+  end subroutine process_mode
 
   !****
 
@@ -690,10 +704,10 @@ contains
     omega_a = c_ext_t(cs%x(1), cs%y(1))
     omega_b = c_ext_t(cs%x(2), cs%y(2))
 
-    call bp%eval_discrim(cmplx(omega_a), discrim_a, status)
+    call df%eval(omega_a, discrim_a, status)
     $ASSERT(status == STATUS_OK,Invalid status)
 
-    call bp%eval_discrim(cmplx(omega_b), discrim_b, status)
+    call df%eval(omega_b, discrim_b, status)
     $ASSERT(status == STATUS_OK,Invalid status)
 
     ! Look for the point on the segment where the real/imaginary part of the discriminant changes sign
