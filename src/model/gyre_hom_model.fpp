@@ -334,7 +334,7 @@ contains
 
     ! Evaluate the dimensionless p-mode frequency separation
 
-    Delta_p = 1._WP/(PI*SQRT(2._WP/this%Gamma_1)*(x_o-x_i))
+    Delta_p = 0.5_WP/(SQRT(2._WP/this%Gamma_1)*(ASIN(x_o)-ASIN(x_i)))
 
     ! Finish
 
