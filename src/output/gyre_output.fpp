@@ -118,9 +118,12 @@ contains
        case ('freq_frame')
           call wr%write('freq_frame', ot_p%freq_frame)
        case ('Delta_p')
-          call wr%write('Delta_p', [(md(i_md)%ml%Delta_p(), i_md=1,n_md)])
+          call wr%write('Delta_p', &
+               [(md(i_md)%ml%Delta_p(md(i_md)%gr%x_i(), md(i_md)%gr%x_o()), i_md=1,n_md)])
        case ('Delta_g')
-          call wr%write('Delta_g', [(md(i_md)%ml%Delta_g(md(i_md)%l*(md(i_md)%l+1._WP)), i_md=1,n_md)])
+          call wr%write('Delta_g', &
+               [(md(i_md)%ml%Delta_g(md(i_md)%gr%x_i(), md(i_md)%gr%x_o(), &
+               md(i_md)%l*(md(i_md)%l+1._WP)), i_md=1,n_md)])
        case ('eta')
           call wr%write('eta', [(md(i_md)%eta(), i_md=1,n_md)])
        case ('f_T')
@@ -307,9 +310,9 @@ contains
          case ('freq_frame')
             call wr%write('freq_frame', ot_p%freq_frame)
          case ('Delta_p')
-            call wr%write('Delta_p', md%ml%Delta_p())
+            call wr%write('Delta_p', md%ml%Delta_p(md%gr%x_i(), md%gr%x_o()))
          case ('Delta_g')
-            call wr%write('Delta_g', md%ml%Delta_g(md%l*(md%l+1._WP)))
+            call wr%write('Delta_g', md%ml%Delta_g(md%gr%x_i(), md%gr%x_o(), md%l*(md%l+1._WP)))
          case ('eta')
             call wr%write('eta', md%eta())
          case ('E')
