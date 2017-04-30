@@ -143,6 +143,7 @@ contains
     real(WP)                    :: M_star
     real(WP)                    :: R_star
     real(WP)                    :: L_star
+    integer                     :: n
     real(WP), allocatable       :: r(:)
     real(WP), allocatable       :: M_r(:)
     real(WP), allocatable       :: L_r(:)
@@ -161,7 +162,6 @@ contains
     real(WP), allocatable       :: eps_eps_rho(:)
     real(WP), allocatable       :: eps_eps_T(:)
     real(WP), allocatable       :: Omega_rot(:)
-    integer                     :: n
     real(WP), allocatable       :: x(:)
     real(WP), allocatable       :: V_2(:)
     real(WP), allocatable       :: As(:)
@@ -186,6 +186,8 @@ contains
     R_star = global_data(2)
     L_star = global_data(3)
 
+    n = SIZE(point_data, 2)
+
     select case (version)
     case (1)
        call extract_data_v0_01_()
@@ -204,8 +206,6 @@ contains
     call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x, M_r)
 
     ! Calculate dimensionless structure data
-
-    n = SIZE(x)
 
     allocate(V_2(n))
     allocate(As(n))
