@@ -210,25 +210,29 @@ contains
     ! Check the frequency scan to ensure no zero crossings in omega_c
     ! arise
 
-    allocate(rt, SOURCE=r_rot_t(ml, gr%pt(1), md_p, os_p))
-    call rt%stencil(gr%pt)
+    if (SIZE(omega) >= 1) then
 
-    do k = 1, gr%n_k
-       omega_c(k) = rt%omega_c(k, omega(1))
-    end do
+       allocate(rt, SOURCE=r_rot_t(ml, gr%pt(1), md_p, os_p))
+       call rt%stencil(gr%pt)
 
-    $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
-
-    do j = 2, SIZE(omega)
-
-       omega_c_prev = omega_c
        do k = 1, gr%n_k
-          omega_c(k) = rt%omega_c(k, omega(j))
+          omega_c(k) = rt%omega_c(k, omega(1))
        end do
 
-       $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)
+       $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
 
-    end do
+       do j = 2, SIZE(omega)
+
+          omega_c_prev = omega_c
+          do k = 1, gr%n_k
+             omega_c(k) = rt%omega_c(k, omega(j))
+          end do
+
+          $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)
+
+       end do
+
+    endif
 
     ! Finish
 

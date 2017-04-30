@@ -45,6 +45,8 @@ module gyre_grid
      procedure, public :: s_i
      procedure, public :: s_o
      procedure, public :: s_x
+     procedure, public :: x_i
+     procedure, public :: x_o
   end type grid_t
 
   ! Interfaces
@@ -408,5 +410,39 @@ contains
     return
 
   end function s_x
+
+  !****
+
+  function x_i (this)
+
+    class(grid_t), intent(in) :: this
+    real(WP)                  :: x_i
+
+    ! Return the innermost abscissa
+
+    x_i = this%pt(1)%x
+
+    ! Finish
+
+    return
+
+  end function x_i
+
+  !****
+
+  function x_o (this)
+
+    class(grid_t), intent(in) :: this
+    real(WP)                  :: x_o
+
+    ! Return the outermost abscissa
+
+    x_o = this%pt(this%n_k)%x
+
+    ! Finish
+
+    return
+
+  end function x_o
 
 end module gyre_grid

@@ -325,14 +325,16 @@ contains
 
   !****
 
-  function Delta_p (this)
+  function Delta_p (this, x_i, x_o)
 
     class(hom_model_t), intent(in) :: this
+    real(WP), intent(in)           :: x_i
+    real(WP), intent(in)           :: x_o
     real(WP)                       :: Delta_p
 
     ! Evaluate the dimensionless p-mode frequency separation
 
-    Delta_p = 1._WP/(PI*SQRT(2._WP/this%Gamma_1))
+    Delta_p = 0.5_WP/(SQRT(2._WP/this%Gamma_1)*(ASIN(x_o)-ASIN(x_i)))
 
     ! Finish
 
@@ -342,9 +344,11 @@ contains
 
   !****
 
-  function Delta_g (this, lambda)
+  function Delta_g (this, x_i, x_o, lambda)
 
     class(hom_model_t), intent(in) :: this
+    real(WP), intent(in)           :: x_i
+    real(WP), intent(in)           :: x_o
     real(WP), intent(in)           :: lambda
     real(WP)                       :: Delta_g
 

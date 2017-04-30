@@ -105,17 +105,21 @@ module gyre_model
        logical                    :: is_vacuum
      end function is_vacuum
 
-     function Delta_p (this)
+     function Delta_p (this, x_i, x_o)
        use core_kinds
        import model_t
        class(model_t), intent(in) :: this
+       real(WP), intent(in)       :: x_i
+       real(WP), intent(in)       :: x_o
        real(WP)                   :: Delta_p
      end function Delta_p
 
-     function Delta_g (this, lambda)
+     function Delta_g (this, x_i, x_o, lambda)
        use core_kinds
        import model_t
        class(model_t), intent(in) :: this
+       real(WP), intent(in)       :: x_i
+       real(WP), intent(in)       :: x_o
        real(WP), intent(in)       :: lambda
        real(WP)                   :: Delta_g
      end function Delta_g

@@ -602,11 +602,14 @@ contains
 
   !****
 
-  function Delta_p (this)
+  function Delta_p (this, x_i, x_o)
 
     class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x_i
+    real(WP), intent(in)            :: x_o
     real(WP)                        :: Delta_p
 
+    type(grid_t)  :: gr
     real(WP)      :: I
     integer       :: s
     type(point_t) :: pt
@@ -617,29 +620,34 @@ contains
     real(WP)      :: c_1
     real(WP)      :: Gamma_1
 
-    ! Evaluate the dimensionless g-mode inverse period separation
-
-    ! Use a midpoint quadrature rule, since the integrand typically
+    ! Evaluate the dimensionless g-mode inverse period separation,
+    ! using a midpoint quadrature rule since the integrand typically
     ! diverges at the surface
+
+    ! First, create the nested grid
+
+    gr = grid_t(this%gr, x_i, x_o)
+
+    ! Now evaluate the integrand segment by segment
 
     I = 0._WP
 
-    seg_loop : do s = this%s_i, this%s_o
+    seg_loop : do s = gr%s_i(), gr%s_o()
 
        pt%s = s
 
-       k_i = this%gr%k_i(s)
-       k_o = this%gr%k_o(s)
+       k_i = gr%k_i(s)
+       k_o = gr%k_o(s)
 
        cell_loop : do k = k_i, k_o-1
 
-          pt%x = 0.5*(this%gr%pt(k)%x + this%gr%pt(k+1)%x)
+          pt%x = 0.5*(gr%pt(k)%x + gr%pt(k+1)%x)
 
           V_2 = this%coeff(I_V_2, pt)
           c_1 = this%coeff(I_C_1, pt)
           Gamma_1 = this%coeff(I_GAMMA_1, pt)
 
-          I = I + SQRT(c_1*V_2/Gamma_1)*(this%gr%pt(k+1)%x - this%gr%pt(k)%x)
+          I = I + SQRT(c_1*V_2/Gamma_1)*(gr%pt(k+1)%x - gr%pt(k)%x)
 
        end do cell_loop
 
@@ -655,12 +663,15 @@ contains
 
   !****
 
-  function Delta_g (this, lambda)
+  function Delta_g (this, x_i, x_o, lambda)
 
     class(poly_model_t), intent(in) :: this
+    real(WP), intent(in)            :: x_i
+    real(WP), intent(in)            :: x_o
     real(WP), intent(in)            :: lambda
     real(WP)                        :: Delta_g
 
+    type(grid_t)  :: gr
     real(WP)      :: I
     integer       :: s
     type(point_t) :: pt
@@ -670,28 +681,33 @@ contains
     real(WP)      :: As
     real(WP)      :: c_1
 
-    ! Evaluate the dimensionless g-mode inverse period separation
-
-    ! Use a midpoint quadrature rule, since the integrand typically
+    ! Evaluate the dimensionless g-mode inverse period separation,
+    ! using a midpoint quadrature rule since the integrand typically
     ! diverges at the boundaries
+
+    ! First, create the nested grid
+
+    gr = grid_t(this%gr, x_i, x_o)
+
+    ! Now evaluate the integrand segment by segment
 
     I = 0._WP
 
-    seg_loop : do s = this%s_i, this%s_o
+    seg_loop : do s = gr%s_i(), gr%s_o()
 
        pt%s = s
 
-       k_i = this%gr%k_i(s)
-       k_o = this%gr%k_o(s)
+       k_i = gr%k_i(s)
+       k_o = gr%k_o(s)
 
        cell_loop : do k = k_i, k_o-1
 
-          pt%x = 0.5*(this%gr%pt(k)%x + this%gr%pt(k+1)%x)
+          pt%x = 0.5*(gr%pt(k)%x + gr%pt(k+1)%x)
 
           As = this%coeff(I_AS, pt)
           c_1 = this%coeff(I_C_1, pt)
 
-          I = I + (SQRT(MAX(As/c_1, 0._WP))/pt%x)*(this%gr%pt(k+1)%x - this%gr%pt(k)%x)
+          I = I + (SQRT(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(k+1)%x - gr%pt(k)%x)
 
        end do cell_loop
 
