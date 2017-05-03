@@ -106,6 +106,7 @@ module gyre_mode
      procedure, public :: E_p
      procedure, public :: E_g
      procedure, public :: E_norm
+     procedure, public :: H
      procedure, public :: W
      procedure, public :: W_eps
      procedure, public :: beta
@@ -1793,6 +1794,23 @@ contains
     return
 
   end function E_norm
+
+  !****
+
+  function H (this)
+
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: H
+
+    ! Calculate the mode total energy, in units of G M_star**2 / R_star
+
+    H = 0.5_WP*REAL(this%omega)**2*this%E()
+
+    ! Finish
+
+    return
+
+  end function H
 
   !****
 
