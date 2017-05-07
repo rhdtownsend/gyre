@@ -445,7 +445,7 @@ contains
     call bcast(md%os_p, root_rank)
 
     if (MPI_RANK /= root_rank) then
-       allocate(md%rt, SOURCE=c_rot_t(ml, md%gr(1), md%md_p, md%os_p))
+       allocate(md%rt, SOURCE=c_rot_t(ml, md%gr%pt(1), md%md_p, md%os_p))
     endif
 
     call bcast_alloc(md%y_c, root_rank)
