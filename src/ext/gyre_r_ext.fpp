@@ -881,7 +881,7 @@ contains
 
   $local $RX_RANK $1
 
-  subroutine send_${BUFFER_RANK}_ (rx, dest_rank, tag, sync)
+  subroutine send_${RX_RANK}_ (rx, dest_rank, tag, sync)
 
     type(r_ext_t), intent(in)     :: rx$ARRAY_SPEC($RX_RANK)
     integer, intent(in)           :: dest_rank
