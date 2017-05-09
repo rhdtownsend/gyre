@@ -187,6 +187,16 @@ program gyre
 
      call check_scan(ml, gr, omega, md_p(i), os_p_sel)
 
+     if (SIZE(omega) < 2) then
+        
+        if (check_log_level('INFO')) then
+           write(OUTPUT_UNIT, 100) 'Scan is empty, skipping mode...'
+        endif
+
+        cycle md_p_loop
+
+     endif
+
      ! Set frequency bounds for solutions
 
      if (nm_p_sel%restrict_roots) then
