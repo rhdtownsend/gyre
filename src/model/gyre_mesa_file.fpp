@@ -41,7 +41,7 @@ module gyre_mesa_file
 
   integer, parameter :: N_COLS_V0_01 = 18
   integer, parameter :: N_COLS_V0_19 = 18
-  integer, parameter :: N_COLS_V1_00 = 18
+  integer, parameter :: N_COLS_V1_0X = 18
 
   ! Access specifiers
 
@@ -96,8 +96,8 @@ contains
        n_cols = N_COLS_V0_01
     case (19)
        n_cols = N_COLS_V0_19
-    case (100)
-       n_cols = N_COLS_V1_00
+    case (100,101)
+       n_cols = N_COLS_V1_0X
     case default
        $ABORT(Unrecognized MESA file version)
     end select
@@ -193,8 +193,8 @@ contains
        call extract_data_v0_01_()
     case (19)
        call extract_data_v0_19_()
-    case (100)
-       call extract_data_v1_00_()
+    case (100,101)
+       call extract_data_v1_0X_()
     case default
        $ABORT(Unrecognized MESA memory version)
     end select
@@ -238,7 +238,10 @@ contains
     c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
     c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
 
-    c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
+    select case (version)
+    case (101)
+       c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
+    end select
     c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_eps_T + eps_eps_rho/Gamma_1)*R_star**3/L_star
     c_eps_S = 4._WP*PI*rho*(eps_eps_T - delta*eps_eps_rho)*R_star**3/L_star
 
@@ -267,9 +270,14 @@ contains
     call em%define(I_C_RAD, c_rad)
     call em%define(I_C_THM, c_thm)
     call em%define(I_C_DIF, c_dif)
-    call em%define(I_C_EPS, c_eps)
+
+    select case (version)
+    case (101)
+       call em%define(I_C_EPS, c_eps)
+    end select
     call em%define(I_C_EPS_AD, c_eps_ad)
     call em%define(I_C_EPS_S, c_eps_S)
+
     call em%define(I_KAP_AD, kap_ad)
     call em%define(I_KAP_S, kap_S)
 
@@ -368,14 +376,14 @@ contains
 
     end subroutine extract_data_v0_19_
 
-    subroutine extract_data_v1_00_ ()
+    subroutine extract_data_v1_0X_ ()
 
       real(WP), allocatable :: kap_kap_T(:)
       real(WP), allocatable :: kap_kap_rho(:)
 
-      $CHECK_BOUNDS(SIZE(point_data, 1),N_COLS_V1_00)
+      $CHECK_BOUNDS(SIZE(point_data, 1),N_COLS_V1_0X)
 
-      ! Extract data from the version-1.00 point array
+      ! Extract data from the version-1.0X point array
 
       r = point_data(1,:)
       M_r = point_data(2,:)
@@ -403,7 +411,7 @@ contains
 
       return
 
-    end subroutine extract_data_v1_00_
+    end subroutine extract_data_v1_0X_
 
   end subroutine init_mesa_model
 
