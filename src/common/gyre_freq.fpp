@@ -139,6 +139,14 @@ contains
           omega_l = TWOPI*freq*ml%Delta_p(pt_i%x, pt_o%x)
        case ('GRAVITY_DELTA')
           omega_l = TWOPI*freq*ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))
+       case ('UPPER_DELTA')
+          omega_l = TWOPI*freq*MAX(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP)))
+       case ('LOWER_DELTA')
+          omega_l = TWOPI*freq*MIN(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP)))
+       case ('ROSSBY_I')
+          omega_l = -freq*2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_i)/(md_p%l*(md_p%l+1))
+       case ('ROSSBY_O')
+          omega_l = -freq*2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_o)/(md_p%l*(md_p%l+1))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -152,6 +160,14 @@ contains
           omega_l = TWOPI*freq*ml%Delta_p(pt_i%x, pt_o%x)
        case ('GRAVITY_DELTA')
           omega_l = TWOPI*freq*ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))
+       case ('UPPER_DELTA')
+          omega_l = TWOPI*freq*MAX(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP)))
+       case ('LOWER_DELTA')
+          omega_l = TWOPI*freq*MIN(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP)))
+       case ('ROSSBY_I')
+          omega_l = -freq*2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_i)/(md_p%l*(md_p%l+1))
+       case ('ROSSBY_O')
+          omega_l = -freq*2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_o)/(md_p%l*(md_p%l+1))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -282,6 +298,14 @@ contains
           freq = omega_l/(TWOPI*ml%Delta_p(pt_i%x, pt_o%x))
        case ('GRAVITY_DELTA')
           freq = omega_l/(TWOPI*ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP)))
+       case ('UPPER_DELTA')
+          freq = omega_l/(TWOPI*MAX(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))))
+       case ('LOWER_DELTA')
+          freq = omega_l/(TWOPI*MIN(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))))
+       case ('ROSSBY_I')
+          freq = -omega_l/(2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_i)/(md_p%l*(md_p%l+1)))
+       case ('ROSSBY_O')
+          omega_l = -omega_l/(2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_o)/(md_p%l*(md_p%l+1)))
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -295,6 +319,14 @@ contains
           freq = omega_l/(TWOPI*ml%Delta_p(pt_i%x, pt_o%x))
        case ('GRAVITY_DELTA')
           freq = omega_l/(TWOPI*ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP)))
+       case ('UPPER_DELTA')
+          freq = omega_l/(TWOPI*MAX(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))))
+       case ('LOWER_DELTA')
+          freq = omega_l/(TWOPI*MIN(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))))
+       case ('ROSSBY_I')
+          freq = -omega_l/(2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_i)/(md_p%l*(md_p%l+1)))
+       case ('ROSSBY_O')
+          omega_l = -omega_l/(2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_o)/(md_p%l*(md_p%l+1)))
        case default
           $ABORT(Invalid freq_units)
        end select
