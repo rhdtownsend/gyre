@@ -58,12 +58,14 @@ module gyre_nad_eqns
   integer, parameter :: J_DC_LUM = 11
   integer, parameter :: J_C_RAD = 12
   integer, parameter :: J_DC_RAD = 13
-  integer, parameter :: J_C_THM = 14
-  integer, parameter :: J_C_DIF = 15
-  integer, parameter :: J_C_EPS_AD = 16
-  integer, parameter :: J_C_EPS_S = 17
-  integer, parameter :: J_KAP_AD = 18
-  integer, parameter :: J_KAP_S = 19
+  integer, parameter :: J_C_DIF = 14
+  integer, parameter :: J_C_THN = 15
+  integer, parameter :: J_DC_THN = 16
+  integer, parameter :: J_C_THK = 17
+  integer, parameter :: J_C_EPS_AD = 18
+  integer, parameter :: J_C_EPS_S = 19
+  integer, parameter :: J_KAP_AD = 20
+  integer, parameter :: J_KAP_S = 21
 
   integer, parameter :: J_LAST = J_KAP_S
 
@@ -78,8 +80,8 @@ module gyre_nad_eqns
      real(WP), allocatable       :: x(:)
      real(WP)                    :: alpha_gr
      real(WP)                    :: alpha_hf
+     real(WP)                    :: alpha_rh
      real(WP)                    :: alpha_om
-     logical                     :: narf_approx
      integer                     :: conv_scheme
    contains
      private
@@ -115,9 +117,9 @@ contains
     ! Construct the nad_eqns_t
 
     call check_model(ml, [ &
-         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA,&
-         I_C_LUM,I_C_RAD,I_C_THM,I_C_DIF,I_C_EPS_AD,I_C_EPS_S, &
-         I_KAP_AD,I_KAP_S])
+         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
+         I_C_LUM,I_C_RAD,I_C_DIF,I_C_THN,I_C_THK, &
+         I_C_EPS_AD,I_C_EPS_S,I_KAP_AD,I_KAP_S])
 
     eq%ml => ml
 
@@ -135,6 +137,12 @@ contains
        eq%alpha_hf = 0._WP
     else
        eq%alpha_hf = 1._WP
+    endif
+
+    if (os_p%eddington_approx) then
+       eq%alpha_rh = 1._WP
+    else
+       eq%alpha_rh = 0._WP
     endif
 
     select case (os_p%time_factor)
@@ -194,8 +202,10 @@ contains
        this%coeffs(i,J_DC_LUM) = this%ml%dcoeff(I_C_LUM, pt(i))
        this%coeffs(i,J_C_RAD) = this%ml%coeff(I_C_RAD, pt(i))
        this%coeffs(i,J_DC_RAD) = this%ml%dcoeff(I_C_RAD, pt(i))
-       this%coeffs(i,J_C_THM) = this%ml%coeff(I_C_THM, pt(i))
        this%coeffs(i,J_C_DIF) = this%ml%coeff(I_C_DIF, pt(i))
+       this%coeffs(i,J_C_THN) = this%ml%coeff(I_C_THN, pt(i))
+       this%coeffs(i,J_DC_THN) = this%ml%dcoeff(I_C_THN, pt(i))
+       this%coeffs(i,J_C_THK) = this%ml%coeff(I_C_THK, pt(i))
        this%coeffs(i,J_C_EPS_AD) = this%ml%coeff(I_C_EPS_AD, pt(i))
        this%coeffs(i,J_C_EPS_S) = this%ml%coeff(I_C_EPS_S, pt(i))
        this%coeffs(i,J_KAP_AD) = this%ml%coeff(I_KAP_AD, pt(i))
@@ -246,6 +256,7 @@ contains
     complex(WP) :: lambda
     complex(WP) :: l_i
     complex(WP) :: omega_c
+    complex(WP) :: i_omega_c
     complex(WP) :: conv_term
          
     ! Evaluate the log(x)-space RHS matrix
@@ -264,8 +275,10 @@ contains
          dc_lum => this%coeffs(i,J_DC_LUM), &
          c_rad => this%coeffs(i,J_C_RAD), &
          dc_rad => this%coeffs(i,J_DC_RAD), &
-         c_thm => this%coeffs(i,J_C_THM), &
          c_dif => this%coeffs(i,J_C_DIF), &
+         c_thn => this%coeffs(i,J_C_THN), &
+         dc_thn => this%coeffs(i,J_DC_THN), &
+         c_thk => this%coeffs(i,J_C_THK), &
          c_eps_ad => this%coeffs(i,J_C_EPS_AD), &
          c_eps_S => this%coeffs(i,J_C_EPS_S), &
          kap_ad => this%coeffs(i,J_KAP_AD), &
@@ -273,12 +286,14 @@ contains
          x => this%x(i), &
          alpha_gr => this%alpha_gr, &
          alpha_hf => this%alpha_hf, &
+         alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
          
       lambda = this%rt%lambda(i, omega)
       l_i = this%rt%l_i(omega)
     
       omega_c = this%rt%omega_c(i, omega)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       ! Set up the matrix
 
@@ -314,7 +329,8 @@ contains
       xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))
       xA(5,3) = alpha_gr*(V*lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))
       xA(5,4) = alpha_gr*(V*nabla_ad)
-      xA(5,5) = V*nabla*(4._WP - kap_S) - (l_i - 2._WP)
+      xA(5,5) = V*nabla*(4._WP - alpha_rh*i_omega_c*c_thn - kap_S) + &
+                alpha_rh*0.25_WP*i_omega_c*dc_thn - (l_i - 2._WP)
       xA(5,6) = -V*nabla/c_rad
 
       select case (this%conv_scheme)
@@ -331,7 +347,7 @@ contains
       xA(6,3) = alpha_gr*conv_term
       xA(6,4) = alpha_gr*(0._WP)
       if (x > 0._WP) then
-         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c*c_thm
+         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + i_omega_c*c_thk
       else
          xA(6,5) = -alpha_hf*HUGE(0._WP)
       endif

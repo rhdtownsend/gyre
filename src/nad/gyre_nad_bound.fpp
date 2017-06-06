@@ -56,8 +56,9 @@ module gyre_nad_bound
   integer, parameter :: J_U = 4
   integer, parameter :: J_C_1 = 5
   integer, parameter :: J_NABLA_AD = 6
+  integer, parameter :: J_C_THN = 7
 
-  integer, parameter :: J_LAST = J_NABLA_AD
+  integer, parameter :: J_LAST = J_C_THN
 
   ! Derived-type definitions
 
@@ -68,6 +69,7 @@ module gyre_nad_bound
      type(nad_trans_t)           :: tr
      real(WP), allocatable       :: coeffs(:,:)
      real(WP)                    :: alpha_gr
+     real(WP)                    :: alpha_rh
      complex(WP)                 :: alpha_om
      integer                     :: type_i
      integer                     :: type_o
@@ -163,6 +165,12 @@ contains
        bd%alpha_gr = 1._WP
     endif
 
+    if (os_p%eddington_approx) then
+       bd%alpha_rh = 1._WP
+    else
+       bd%alpha_rh = 0._WP
+    endif
+
     select case (os_p%time_factor)
     case ('OSC')
        bd%alpha_om = 1._WP
@@ -195,7 +203,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%ml, [I_V_2,I_U,I_C_1,I_NABLA_AD])
+    call check_model(this%ml, [I_V_2,I_U,I_C_1,I_NABLA_AD,I_C_THN])
 
     allocate(this%coeffs(2,J_LAST))
 
@@ -230,6 +238,7 @@ contains
 
     this%coeffs(2, J_U) = this%ml%coeff(I_U, pt_o)
     this%coeffs(2,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt_o)
+    this%coeffs(2,J_C_THN) = this%ml%coeff(I_C_THN, pt_o)
 
     ! Set up stencils for the rt and tr components
 
@@ -485,6 +494,8 @@ contains
     complex(WP), intent(out)       :: scl(:)
 
     complex(WP) :: l_e
+    complex(WP) :: omega_c
+    complex(WP) :: i_omega_c
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
@@ -497,9 +508,15 @@ contains
          V => this%coeffs(2,J_V), &
          U => this%coeffs(2,J_U), &
          nabla_ad => this%coeffs(2,J_NABLA_AD), &
-         alpha_gr => this%alpha_gr)
+         c_thn => this%coeffs(2,J_C_THN), &
+         alpha_gr => this%alpha_gr, &
+         alpha_rh => this%alpha_rh, &
+         alpha_om => this%alpha_om)
 
       l_e = this%rt%l_e(2, omega)
+
+      omega_c = this%rt%omega_c(2, omega)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       ! Set up the boundary conditions
 
@@ -521,7 +538,7 @@ contains
       B(3,2) = 4._WP*nabla_ad*V
       B(3,3) = alpha_gr*(0._WP)
       B(3,4) = alpha_gr*(0._WP)
-      B(3,5) = 4._WP
+      B(3,5) = 4._WP - alpha_rh*i_omega_c*c_thn
       B(3,6) = -1._WP
 
       scl = 1._WP
@@ -546,6 +563,7 @@ contains
     complex(WP) :: lambda
     complex(WP) :: l_e
     complex(WP) :: omega_c
+    complex(WP) :: i_omega_c
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
@@ -558,13 +576,16 @@ contains
          V => this%coeffs(2,J_V), &
          c_1 => this%coeffs(2,J_C_1), &
          nabla_ad => this%coeffs(2,J_NABLA_AD), &
+         c_thn => this%coeffs(2,J_C_THN), &
          alpha_gr => this%alpha_gr, &
+         alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
       lambda = this%rt%lambda(2, omega)
       l_e = this%rt%l_e(2, omega)
 
       omega_c = this%rt%omega_c(2, omega)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       ! Set up the boundary conditions
 
@@ -586,7 +607,7 @@ contains
       B(3,2) = 4._WP*nabla_ad*V
       B(3,3) = alpha_gr*(0._WP)
       B(3,4) = alpha_gr*(0._WP)
-      B(3,5) = 4._WP
+      B(3,5) = 4._WP - alpha_rh*i_omega_c*c_thn
       B(3,6) = -1._WP
 
       scl = 1._WP
@@ -611,6 +632,7 @@ contains
     complex(WP) :: lambda
     complex(WP) :: l_e
     complex(WP) :: omega_c
+    complex(WP) :: i_omega_c
     complex(WP) :: beta
     complex(WP) :: b_11
     complex(WP) :: b_12
@@ -634,13 +656,16 @@ contains
          As => this%coeffs(2,J_AS), &
          c_1 => this%coeffs(2,J_C_1), &
          nabla_ad => this%coeffs(2,J_NABLA_AD), &
+         c_thn => this%coeffs(2,J_C_THN), &
          alpha_gr => this%alpha_gr, &
+         alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
       lambda = this%rt%lambda(2, omega)
       l_e = this%rt%l_e(2, omega)
 
       omega_c = this%rt%omega_c(2, omega)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
@@ -675,7 +700,7 @@ contains
       B(3,2) = 4._WP*nabla_ad*V
       B(3,3) = alpha_gr*(0._WP)
       B(3,4) = alpha_gr*(0._WP)
-      B(3,5) = 4._WP
+      B(3,5) = 4._WP - alpha_rh*i_omega_c*c_thn
       B(3,6) = -1._WP
 
       scl = 1._WP
@@ -700,6 +725,7 @@ contains
     complex(WP) :: lambda
     complex(WP) :: l_e
     complex(WP) :: omega_c
+    complex(WP) :: i_omega_c
     complex(WP) :: beta
     complex(WP) :: b_11
     complex(WP) :: b_12
@@ -717,13 +743,16 @@ contains
          As => this%coeffs(2,J_AS), &
          c_1 => this%coeffs(2,J_C_1), &
          nabla_ad => this%coeffs(2,J_NABLA_AD), &
+         c_thn => this%coeffs(2,J_C_THN), &
          alpha_gr => this%alpha_gr, &
+         alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
       lambda = this%rt%lambda(2, omega)
       l_e = this%rt%l_e(2, omega)
 
       omega_c = this%rt%omega_c(2, omega)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
@@ -750,7 +779,7 @@ contains
       B(3,2) = 4._WP*nabla_ad*V
       B(3,3) = alpha_gr*(0._WP)
       B(3,4) = alpha_gr*(0._WP)
-      B(3,5) = 4._WP
+      B(3,5) = 4._WP - alpha_rh*i_omega_c*c_thn
       B(3,6) = -1._WP
 
       scl = 1._WP
