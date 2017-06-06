@@ -1067,7 +1067,7 @@ contains
     real(WP)    :: t_kh
     complex(WP) :: lag_T
     complex(WP) :: lag_S
-    real(WP)    :: c_thm
+    real(WP)    :: c_thk
 
     ! Evaluate the differential work, in units of G M_star**2/R_star.
     ! This expression is based on eqn. 25.9 of [Unn1989]
@@ -1086,9 +1086,9 @@ contains
       lag_T = this%lag_T(k)
       lag_S = this%lag_S(k)
     
-      c_thm = this%ml%coeff(I_C_THM, pt)
+      c_thk = this%ml%coeff(I_C_THK, pt)
 
-      dW_dx = PI*AIMAG(CONJG(lag_T)*lag_S)*c_thm*pt%x**2*t_dyn/t_kh
+      dW_dx = PI*AIMAG(CONJG(lag_T)*lag_S)*c_thk*pt%x**2*t_dyn/t_kh
 
     end associate
 
