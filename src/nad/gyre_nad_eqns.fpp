@@ -257,6 +257,8 @@ contains
     complex(WP) :: l_i
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
+    complex(WP) :: f_rh
+    complex(WP) :: df_rh
     complex(WP) :: conv_term
          
     ! Evaluate the log(x)-space RHS matrix
@@ -295,6 +297,18 @@ contains
       omega_c = this%rt%omega_c(i, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
+      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
+      df_rh = -0.25_WP*alpha_rh*i_omega_c*dc_thn*c_thn/f_rh
+
+      select case (this%conv_scheme)
+      case (P1_CONV_SCHEME)
+         conv_term = lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_om*omega_c**2)
+      case (P4_CONV_SCHEME)
+         conv_term = lambda*(c_lum*(3._WP + dc_lum) - (c_lum - c_rad))/(c_1*alpha_om*omega_c**2)
+      case default
+         $ABORT(Invalid conv_scheme)
+      end select
+      
       ! Set up the matrix
 
       xA(1,1) = V_g - 1._WP - l_i
@@ -325,23 +339,13 @@ contains
       xA(4,5) = alpha_gr*(-U*delta)
       xA(4,6) = alpha_gr*(0._WP)
 
-      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif + nabla_ad*dnabla_ad)
-      xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))
-      xA(5,3) = alpha_gr*(V*lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))
-      xA(5,4) = alpha_gr*(V*nabla_ad)
-      xA(5,5) = V*nabla*(4._WP - alpha_rh*i_omega_c*c_thn - kap_S) + &
-                alpha_rh*0.25_WP*i_omega_c*dc_thn - (l_i - 2._WP)
-      xA(5,6) = -V*nabla/c_rad
+      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif + nabla_ad*dnabla_ad)/f_rh
+      xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))/f_rh
+      xA(5,3) = alpha_gr*(V*lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))/f_rh
+      xA(5,4) = alpha_gr*(V*nabla_ad)/f_rh
+      xA(5,5) = V*nabla*(4._WP*f_rh - kap_S)/f_rh - df_rh - (l_i - 2._WP)
+      xA(5,6) = -V*nabla/(c_rad*f_rh)
 
-      select case (this%conv_scheme)
-      case (P1_CONV_SCHEME)
-         conv_term = lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_om*omega_c**2)
-      case (P4_CONV_SCHEME)
-         conv_term = lambda*(c_lum*(3._WP + dc_lum) - (c_lum - c_rad))/(c_1*alpha_om*omega_c**2)
-      case default
-         $ABORT(Invalid conv_scheme)
-      end select
-      
       xA(6,1) = alpha_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
       xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hf*nabla_ad/nabla + conv_term
       xA(6,3) = alpha_gr*conv_term

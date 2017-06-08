@@ -496,6 +496,7 @@ contains
     complex(WP) :: l_e
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
+    complex(WP) :: f_rh
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
@@ -518,6 +519,8 @@ contains
       omega_c = this%rt%omega_c(2, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
+      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
+
       ! Set up the boundary conditions
 
       B(1,1) = 1._WP
@@ -538,7 +541,7 @@ contains
       B(3,2) = 4._WP*nabla_ad*V
       B(3,3) = alpha_gr*(0._WP)
       B(3,4) = alpha_gr*(0._WP)
-      B(3,5) = 4._WP - alpha_rh*i_omega_c*c_thn
+      B(3,5) = 4._WP*f_rh
       B(3,6) = -1._WP
 
       scl = 1._WP
@@ -564,7 +567,8 @@ contains
     complex(WP) :: l_e
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
-
+    complex(WP) :: f_rh
+    
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
@@ -587,6 +591,8 @@ contains
       omega_c = this%rt%omega_c(2, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
+      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
+
       ! Set up the boundary conditions
 
       B(1,1) = 1._WP + (lambda/(c_1*alpha_om*omega_c**2) - 4._WP - c_1*alpha_om*omega_c**2)/V
@@ -607,7 +613,7 @@ contains
       B(3,2) = 4._WP*nabla_ad*V
       B(3,3) = alpha_gr*(0._WP)
       B(3,4) = alpha_gr*(0._WP)
-      B(3,5) = 4._WP - alpha_rh*i_omega_c*c_thn
+      B(3,5) = 4._WP*f_rh
       B(3,6) = -1._WP
 
       scl = 1._WP
@@ -633,6 +639,7 @@ contains
     complex(WP) :: l_e
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
+    complex(WP) :: f_rh
     complex(WP) :: beta
     complex(WP) :: b_11
     complex(WP) :: b_12
@@ -667,6 +674,8 @@ contains
       omega_c = this%rt%omega_c(2, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
+      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
+
       beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
       b_11 = V_g - 3._WP
@@ -700,7 +709,7 @@ contains
       B(3,2) = 4._WP*nabla_ad*V
       B(3,3) = alpha_gr*(0._WP)
       B(3,4) = alpha_gr*(0._WP)
-      B(3,5) = 4._WP - alpha_rh*i_omega_c*c_thn
+      B(3,5) = 4._WP*f_rh
       B(3,6) = -1._WP
 
       scl = 1._WP
@@ -726,6 +735,7 @@ contains
     complex(WP) :: l_e
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
+    complex(WP) :: f_rh
     complex(WP) :: beta
     complex(WP) :: b_11
     complex(WP) :: b_12
@@ -754,6 +764,8 @@ contains
       omega_c = this%rt%omega_c(2, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
+      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
+
       beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
 
       b_11 = V_g - 3._WP
@@ -779,7 +791,7 @@ contains
       B(3,2) = 4._WP*nabla_ad*V
       B(3,3) = alpha_gr*(0._WP)
       B(3,4) = alpha_gr*(0._WP)
-      B(3,5) = 4._WP - alpha_rh*i_omega_c*c_thn
+      B(3,5) = 4._WP*f_rh
       B(3,6) = -1._WP
 
       scl = 1._WP
