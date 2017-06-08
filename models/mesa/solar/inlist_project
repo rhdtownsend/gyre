@@ -1,0 +1,66 @@
+! Inlist for solar model
+!
+! Used with MESA r9575
+
+&star_job
+
+   ! Start on the pre-main sequence
+
+   create_pre_main_sequence_model = .true.
+
+   ! Output
+
+   write_profile_when_terminate = .TRUE.
+   filename_for_profile_when_terminate = 'solar.profile'
+
+   save_pulse_data_when_terminate = .TRUE.
+   save_pulse_data_filename = 'solar.mesa'
+
+/
+
+&controls
+
+   initial_mass = 1.0
+
+   ! Composition
+
+   initial_Y = 0.279
+   initial_Z = 0.020
+
+   ! Convection
+
+   mixing_length_alpha = 1.91
+
+   overshoot_f_above_burn_h_core = 4E-3
+   overshoot_f0_above_burn_h_core = 1E-3
+
+   ! Brunt-Vaisala smoothing
+
+   num_cells_for_smooth_brunt_B = 0
+
+   ! Output to files and terminal
+
+   photo_interval = 0
+   profile_interval = 0
+   history_interval = 0
+   terminal_interval = 10
+   write_header_frequency = 10
+
+   pulse_data_format = 'GYRE'
+   add_center_point_to_pulse_data = .TRUE.
+   add_atmosphere_to_pulse_data = .TRUE.
+   add_double_points_to_pulse_data = .TRUE.
+   threshold_grad_mu_for_double_point = 10
+
+   ! When to stop
+
+   max_age = 4.61d9
+
+/
+
+&pgstar
+/
+
+
+/
+
