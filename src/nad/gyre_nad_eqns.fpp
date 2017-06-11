@@ -298,7 +298,7 @@ contains
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
-      df_rh = -0.25_WP*alpha_rh*i_omega_c*dc_thn*c_thn/f_rh
+      df_rh = -0.25_WP*alpha_rh*i_omega_c*c_thn*dc_thn/f_rh
 
       select case (this%conv_scheme)
       case (P1_CONV_SCHEME)
