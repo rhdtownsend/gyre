@@ -252,10 +252,12 @@ contains
        i = I_BETA_RAD
     case ('c_rad')
        i = I_C_RAD
-    case ('c_thm')
-       i = I_C_THM
     case ('c_dif')
        i = I_C_DIF
+    case ('c_thn')
+       i = I_C_THN
+    case ('c_thk')
+       i = I_C_THK
     case ('c_eps_ad')
        i = I_C_EPS_AD
     case ('c_eps_S')
@@ -328,10 +330,12 @@ contains
        name = 'beta_rad'
     case (I_C_RAD)
        name = 'c_rad'
-    case (I_C_THM)
-       name = 'c_thm'
     case (I_C_DIF)
        name = 'c_dif'
+    case (I_C_THN)
+       name = 'c_thn'
+    case (I_C_THK)
+       name = 'c_thk'
     case (I_C_EPS_AD)
        name = 'c_eps_ad'
     case (I_C_EPS_S)

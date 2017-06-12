@@ -426,7 +426,7 @@ contains
     real(WP) :: V
     real(WP) :: nabla
     real(WP) :: c_rad
-    real(WP) :: c_thm
+    real(WP) :: c_thk
     real(WP) :: tau
     integer  :: j
     real(WP) :: omega_c
@@ -448,7 +448,7 @@ contains
       nabla = ml%coeff(I_NABLA, pt)
 
       c_rad = ml%coeff(I_C_RAD, pt)
-      c_thm = ml%coeff(I_C_THM, pt)
+      c_thk = ml%coeff(I_C_THK, pt)
 
       ! Loop over omega, finding the maximum tau
 
@@ -461,7 +461,7 @@ contains
          
          ! Update the maximal tau
 
-         tau = MAX(tau, SQRT(ABS(V*nabla*omega_c*c_thm/c_rad))/pt%x)
+         tau = MAX(tau, SQRT(ABS(V*nabla*omega_c*c_thk/c_rad))/pt%x)
           
        end do omega_loop
 

@@ -99,11 +99,16 @@
 \newcommand{\dcrad}{\partial\crad}
 \newcommand{\cepsad}{c_{\epsilon,{\rm ad}}}
 \newcommand{\cepsS}{c_{\epsilon,S}}
-\newcommand{\cthm}{c_{\rm thm}}
 \newcommand{\cdif}{c_{\rm dif}}
+\newcommand{\cthn}{c_{\rm thn}}
+\newcommand{\dcthn}{\partial\cthn}
+\newcommand{\cthk}{c_{\rm thk}}
 
 \newcommand{\agr}{\alpha_{\rm gr}}
 \newcommand{\ahf}{\alpha_{\rm hf}}
+\newcommand{\arh}{\alpha_{\rm rh}}
+\newcommand{\frh}{f_{\rm rh}}
+\newcommand{\dfrh}{\partial f_{\rm rh}}
 
 \newcommand{\Rstar}{R_{\ast}}
 \newcommand{\Mstar}{M_{\ast}}
@@ -174,9 +179,11 @@ c_1 = \frac{r^{3}}{\Rstar^{3}} \frac{\Mstar}{M_{r}} \qquad
 \crad = x^{-3} \frac{\Lrad}{\Lstar} \qquad
 \partial\crad = \frac{\diff \ln \crad}{\diff \ln r} \\
 \cepsad = x^{-3} \frac{4\pi r^{3} \epsad \rho}{\Lstar} \qquad
-\cepsS = x^{-3} \frac{4\pi r^{3} \epsS \rho}{\Lstar} \qquad
-\cthm = x^{-3} \frac{4\pi r^{3} c_{p} T \rho}{\Lstar} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \\
+\cepsS = x^{-3} \frac{4\pi r^{3} \epsS \rho}{\Lstar} \qquad \\
 \cdif = \left( \kapad - 4 \nabad \right) V \nabla + \nabad V \\
+\cthn = \frac{c_{p}}{a c \kappa T^{3}} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \qquad
+\partial\cthn = \frac{\diff \ln \cthn}{\diff \ln r} \qquad
+\cthk = x^{-3} \frac{4\pi r^{3} c_{p} T \rho}{\Lstar} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \\
 \kapad = \left( \frac{\partial \ln \kappa}{\partial \ln P} \right)_{S} \qquad
 \kapS = c_{p} \left( \frac{\partial \ln \kappa}{\partial S} \right)_{P} \\
 \epsad = \left( \frac{\partial \epsilon}{\partial \ln P} \right)_{S} \qquad
@@ -235,26 +242,31 @@ x \frac{\diff y_{4}}{\diff x} &=
 \agr (U + \elli - 2) y_{4}
 - \agr \delta U y_{5}, \\
 x \frac{\diff y_{5}}{\diff x} &=
-V \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \cdif + \nabad \dnabad \right] y_{1} + \mbox{} \\
+\frac{V}{\frh} \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \cdif + \nabad \dnabad \right] y_{1} + \mbox{} \\
 &
-V \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) - \cdif - \nabad \dnabad \right] y_{2} +
-\agr V \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) \right] y_{3} + \agr V \nabad y_{4} + \mbox{} \\
+\frac{V}{\frh} \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) - \cdif - \nabad \dnabad \right] y_{2} +
+\agr \frac{V}{\frh} \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) \right] y_{3} + \agr \frac{V \nabad}{\frh} y_{4} + \mbox{} \\
 & 
-\left[ V \nabla (4 - \kapS) + 2 - \elli \right] y_{5} -
-\frac{V \nabla}{\crad} y_{6}, \\
+\left[ \frac{V \nabla}{\frh} (4 \frh - \kapS) + \dfrh + 2 - \elli \right] y_{5} -
+\frac{V \nabla}{\frh \crad} y_{6}, \\
 x \frac{\diff y_{6}}{\diff x} &=
 \left[ \ahf \lambda\left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} +
 \left[ V \cepsad - \lambda \crad \left( \ahf \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omega^{2}} \right) \right] y_{2} + \mbox{} \\
 &
 \agr \left[ \lambda \crad \frac{3 + \dcrad}{c_{1}\omega^{2}} \right] y_{3} +
-\agr \left[ \cepsS - \ahf \frac{\lambda\crad}{\nabla V} + \ii \omega \cthm\right] y_{5} -
+\left[ \cepsS - \ahf \frac{\lambda\crad}{\nabla V} + \ii \omega \cthk\right] y_{5} -
 \left[ 1 + \elli \right] y_{6}.
 \end{align*}
 The $\agr$ coefficient is set to zero in the \citet{Cowling:1941aa}
 approximation (\texttt{cowling\_approx=.TRUE.}), and to one
-otherwise. Likewise, the $\ahf$ is set to zero in the NARF
+otherwise. Likewise, the $\ahf$ coefficient is set to zero in the NARF
 approximation (\texttt{narf\_approx=.TRUE.}; see
-  \citealp{Townsend:2005ab}), and to one otherwise.
+\citealp{Townsend:2005ab}), and to one otherwise. Finally,
+\begin{equation}
+  \frh \equiv 1 - \arh \frac{\ii \omega \cthn}{4}, \qquad \dfrh \equiv \frac{\partial \ln \frh}{\partial \ln x} = - \arh \frac{\ii \omega \cthn \dcthn}{4 \frh},
+\end{equation}
+with the $\arh$ set to one in the Eddington approximation
+(\texttt{eddingon\_approx=.TRUE.}) and zero otherwise.
 
 For non-radial adiabatic calculations, the last two equations are set
 aside and the $y_{5}$ terms dropped from the first four equations. For
@@ -280,20 +292,26 @@ c_{1} \omega^{2} y_{1} - \ell y_{2} - \agr y_{3} &= 0, \\
 \agr \ell y_{3} - (2\agr - 1) y_{4} &= 0, \\
 y_{5} &= 0.
 \end{align*}
-When \texttt{inner\_bound='ZERO'}, the first and second conditions are replaced with zero radial displacement conditions,
+When \texttt{inner\_bound='ZERO\_R'}, the first and second conditions are replaced with zero radial displacement conditions,
 \begin{align*}
 y_{1} &= 0, \\
 y_{4} &= 0.
 \end{align*}
+Likewise, when \texttt{inner\_bound='ZERO\_H'}, the first and second conditions are replaced with zero horizontal displacement conditions,
+\begin{align*}
+y_{2} - y_{3} &= 0, \\
+y_{4} &= 0.
+\end{align*}
+
 
 \subsection*{Outer Boundary}
  
-When \texttt{outer\_bound='ZERO'}, \gyre\ applies zero surface
+When \texttt{outer\_bound='VACUUM'}, \gyre\ applies vacuum surface
 pressure conditions at the outer boundary:
 \begin{align*}
 y_{1} - y_{2} &= 0 \\
 \agr U y_{1} + (\agr \elle + 1) y_{3} + \agr y_{4} &= 0 \\
-(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} + 4 y_{5} - y_{6} &= 0
+(2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} + 4 \frh y_{5} - y_{6} &= 0
 \end{align*}
 When \texttt{outer\_bound='DZIEM'}, the first condition is replaced by
 the \citet{Dziembowski:1971aa} outer mechanical boundary condition,

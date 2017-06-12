@@ -171,8 +171,9 @@ contains
     real(WP), allocatable       :: c_P(:)
     real(WP), allocatable       :: c_lum(:)
     real(WP), allocatable       :: c_rad(:)
-    real(WP), allocatable       :: c_thm(:)
     real(WP), allocatable       :: c_dif(:)
+    real(WP), allocatable       :: c_thn(:)
+    real(WP), allocatable       :: c_thk(:)
     real(WP), allocatable       :: c_eps(:)
     real(WP), allocatable       :: c_eps_ad(:)
     real(WP), allocatable       :: c_eps_S(:)
@@ -235,8 +236,9 @@ contains
     kap_S = kap_T - delta*kap_rho
 
     c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
-    c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
     c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
+    c_thn = c_P*SQRT(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
+    c_thk = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
 
     select case (version)
     case (101)
@@ -268,8 +270,9 @@ contains
 
     call em%define(I_C_LUM, c_lum)
     call em%define(I_C_RAD, c_rad)
-    call em%define(I_C_THM, c_thm)
     call em%define(I_C_DIF, c_dif)
+    call em%define(I_C_THN, c_thn)
+    call em%define(I_C_THK, c_thk)
 
     select case (version)
     case (101)
