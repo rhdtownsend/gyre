@@ -51,7 +51,7 @@ ifeq (${FPE},yes)
 endif
 
 ifeq (${DEBUG},yes)
-  FFLAGS:=${FFLAGS} -fcheck=all -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0 -g
+  FFLAGS:=${FFLAGS} -fcheck=all -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0 -ggdb
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG -DGFORTRAN_PR_69185 -DGFORTRAN_PR_49636
 else
   FFLAGS:=${FFLAGS} -O2 -march=native -mno-avx -mno-bmi2
