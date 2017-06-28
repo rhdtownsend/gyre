@@ -88,7 +88,7 @@ contains
     ! Use a double-checked locking pattern (DCLP) to avoid the overhead
     ! of the CRITICAL section (although see 'C++ and the Perils of
     ! Double-Checked Locking', Meyers & Alexandrescu 2004; I think the
-    ! use of volatile in the declarations of tf_m and locked_m should
+    ! use of volatile in the declarations of tf_m and loaded_m should
     ! make things work)
 
     if (must_load_(k, m)) then
