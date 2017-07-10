@@ -1957,7 +1957,7 @@ contains
     W_gr = integrate(this%gr%pt%x, f_gr)
     W_xi = integrate(this%gr%pt%x, f_xi)
 
-    omega_int = SQRT(4._WP*PI*(W_th + W_re + W_gr + W_xi)/this%E())
+    omega_int = SQRT((W_th + W_re + W_gr + W_xi)/this%E())
 
     ! Finish
 
