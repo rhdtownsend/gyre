@@ -179,7 +179,12 @@ contains
     real(WP), allocatable       :: c_eps_S(:)
     real(WP), allocatable       :: kap_ad(:)
     real(WP), allocatable       :: kap_S(:)
+    real(WP), allocatable       :: int_rhoT(:)
+    real(WP), allocatable       :: f_luan_t(:)
+    real(WP), allocatable       :: f_luan_c(:)
     type(evol_model_t), pointer :: em
+
+    integer :: k
 
     ! Extract data from the global and point arrays
 
@@ -213,7 +218,8 @@ contains
     allocate(U(n))
     allocate(c_1(n))
     allocate(c_lum(n))
-
+    allocate(f_luan_t(n))
+    
     where (x /= 0._WP)
        V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
        As = r**3*N2/(G_GRAVITY*M_r)
@@ -246,6 +252,20 @@ contains
     end select
     c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_eps_T + eps_eps_rho/Gamma_1)*R_star**3/L_star
     c_eps_S = 4._WP*PI*rho*(eps_eps_T - delta*eps_eps_rho)*R_star**3/L_star
+
+    int_rhoT = integral(r, rho*K_BOLTZMANN*T/M_PROTON)
+    int_rhoT = int_rhoT(n) - int_rhoT
+    where (x /= 0._WP)
+       f_luan_t = 4._WP*PI*r**2*int_rhoT/L_r*SQRT(G_GRAVITY*M_star/R_star**3)
+    elsewhere
+       f_luan_t = 0._WP
+    end where
+
+    f_luan_c = c_P*M_PROTON/K_BOLTZMANN
+
+    do k = 1, n
+       write(10,*) x(k), f_luan_t(k), f_luan_c(k)
+    end do
 
     if (ml_p%uniform_rot) then
        Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
@@ -283,6 +303,9 @@ contains
 
     call em%define(I_KAP_AD, kap_ad)
     call em%define(I_KAP_S, kap_S)
+
+    call em%define(I_F_LUAN_T, f_luan_t)
+    call em%define(I_F_LUAN_C, f_luan_c)
 
     call em%define(I_OMEGA_ROT, Omega_rot)
 

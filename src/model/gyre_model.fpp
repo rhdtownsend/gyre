@@ -50,7 +50,9 @@ module gyre_model
   integer, parameter :: I_C_EPS_S = 17
   integer, parameter :: I_KAP_AD = 18
   integer, parameter :: I_KAP_S = 19
-  integer, parameter :: I_OMEGA_ROT = 20
+  integer, parameter :: I_F_LUAN_T = 20
+  integer, parameter :: I_F_LUAN_C = 21
+  integer, parameter :: I_OMEGA_ROT = 22
 
   integer, parameter :: I_LAST = I_OMEGA_ROT
 
@@ -158,6 +160,8 @@ module gyre_model
   public :: I_C_EPS_S
   public :: I_KAP_AD
   public :: I_KAP_S
+  public :: I_F_LUAN_T
+  public :: I_F_LUAN_C
   public :: I_OMEGA_ROT
   public :: I_LAST
 
