@@ -251,8 +251,8 @@ contains
     c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_eps_T + eps_eps_rho/Gamma_1)*R_star**3/L_star
     c_eps_S = 4._WP*PI*rho*(eps_eps_T - delta*eps_eps_rho)*R_star**3/L_star
 
-    int_rhoT = integral(r, rho*K_BOLTZMANN*T/M_PROTON)
-    int_rhoT = int_rhoT(n) - int_rhoT
+    int_rhoT = -integral(r(n:1:-1), rho(n:1:-1)*K_BOLTZMANN*T(n:1:-1)/M_PROTON)
+    int_rhoT = int_rhoT(n:1:-1)
     where (x /= 0._WP)
        f_luan_t = 4._WP*PI*r**2*int_rhoT/L_r*SQRT(G_GRAVITY*M_star/R_star**3)
     elsewhere
