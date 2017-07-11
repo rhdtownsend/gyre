@@ -68,6 +68,8 @@ module gyre_constants
   public :: G_GRAVITY
   public :: C_LIGHT
   public :: A_RADIATION
+  public :: M_PROTON
+  public :: K_BOLTZMANN
   
   public :: M_SUN
   public :: R_SUN
