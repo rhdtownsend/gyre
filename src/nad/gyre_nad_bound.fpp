@@ -901,7 +901,7 @@ contains
       B(3,2) = 0._WP
       B(3,3) = alpha_gr*(0._WP)
       B(3,4) = alpha_gr*(0._WP)
-      B(3,5) = f_luan_c*(f_luan_t*i_omega_c + 1._WP/D)
+      B(3,5) = f_luan_c*(-f_luan_t*i_omega_c + 1._WP/D)
       B(3,6) = -1._WP
 
       scl = 1._WP
