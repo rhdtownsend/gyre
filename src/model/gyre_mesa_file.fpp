@@ -184,8 +184,6 @@ contains
     real(WP), allocatable       :: f_luan_c(:)
     type(evol_model_t), pointer :: em
 
-    integer :: k
-
     ! Extract data from the global and point arrays
 
     M_star = global_data(1)
@@ -262,10 +260,6 @@ contains
     end where
 
     f_luan_c = c_P*M_PROTON/K_BOLTZMANN
-
-    do k = 1, n
-       write(10,*) x(k), f_luan_t(k), f_luan_c(k)
-    end do
 
     if (ml_p%uniform_rot) then
        Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
