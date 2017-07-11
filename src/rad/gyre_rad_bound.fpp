@@ -48,6 +48,7 @@ module gyre_rad_bound
   integer, parameter :: DZIEM_TYPE = 4
   integer, parameter :: UNNO_TYPE = 5
   integer, parameter :: JCD_TYPE = 6
+  integer, parameter :: LUAN_TYPE = 7
 
   integer, parameter :: J_V = 1
   integer, parameter :: J_V_G = 2
@@ -79,6 +80,7 @@ module gyre_rad_bound
      procedure         :: build_dziem_o_
      procedure         :: build_unno_o_
      procedure         :: build_jcd_o_
+     procedure         :: build_luan_o_
   end type rad_bound_t
 
   ! Interfaces
@@ -146,6 +148,12 @@ contains
        else
           bd%type_o = JCD_TYPE
        endif
+    case ('LUAN')
+       if (ml%is_vacuum(pt_o)) then
+          bd%type_o = VACUUM_TYPE
+       else
+          bd%type_o = LUAN_TYPE
+       endif
     case default
        $ABORT(Invalid outer_bound)
     end select
@@ -200,20 +208,22 @@ contains
 
     select case (this%type_o)
     case (VACUUM_TYPE)
+       this%coeffs(2, J_U) = this%ml%coeff(I_U, pt_o)
     case (DZIEM_TYPE)
        this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
        this%coeffs(2,J_C_1) = this%ml%coeff(I_C_1, pt_o)
     case (UNNO_TYPE)
        call eval_atmos_coeffs_jcd(this%ml, pt_o, this%coeffs(2,J_V_G), &
-            this%coeffs(2,J_AS), this%coeffs(2,J_C_1))
+            this%coeffs(2,J_AS), this%coeffs(2,J_U), this%coeffs(2,J_C_1))
     case (JCD_TYPE)
        call eval_atmos_coeffs_jcd(this%ml, pt_o, this%coeffs(2,J_V_G), &
-            this%coeffs(2,J_AS), this%coeffs(2,J_C_1))
+            this%coeffs(2,J_AS), this%coeffs(2,J_U), this%coeffs(2,J_C_1))
+    case (LUAN_TYPE)
+       call eval_atmos_coeffs_luan(this%ml, pt_o, this%coeffs(2,J_V_G), &
+            this%coeffs(2,J_AS), this%coeffs(2,J_U), this%coeffs(2,J_C_1))
     case default
        $ABORT(Invalid type_o)
     end select
-
-    this%coeffs(2, J_U) = this%ml%coeff(I_U, pt_o)
 
     ! Set up stencils for the rt and tr components
 
@@ -355,6 +365,8 @@ contains
        call this%build_unno_o_(omega, B, scl)
     case (JCD_TYPE)
        call this%build_jcd_o_(omega, B, scl)
+    case (LUAN_TYPE)
+       call this%build_luan_o_(omega, B, scl)
     case default
        $ABORT(Invalid type_o)
     end select
@@ -462,11 +474,12 @@ contains
     associate( &
          V_g => this%coeffs(2,J_V_G), &
          As => this%coeffs(2,J_AS), &
+         U => this%coeffs(2,J_U), &
          c_1 => this%coeffs(2,J_C_1))
 
       omega_c = this%rt%omega_c(2, omega)
 
-      beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
+      beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
       
       b_11 = V_g - 3._WP
       b_12 = -V_g
@@ -512,11 +525,12 @@ contains
     associate( &
          V_g => this%coeffs(2,J_V_G), &
          As => this%coeffs(2,J_AS), &
+         U => this%coeffs(2,J_U), &
          c_1 => this%coeffs(2,J_C_1))
 
       omega_c = this%rt%omega_c(2, omega)
 
-      beta = atmos_beta(V_g, As, c_1, omega_c, 0._WP)
+      beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
 
       b_11 = V_g - 3._WP
       b_12 = -V_g
@@ -535,5 +549,56 @@ contains
     return
 
   end subroutine build_jcd_o_
+
+  !****
+
+  subroutine build_luan_o_ (this, omega, B, scl)
+
+    class(rad_bound_t), intent(in) :: this
+    real(WP), intent(in)           :: omega
+    real(WP), intent(out)          :: B(:,:)
+    real(WP), intent(out)          :: scl(:)
+
+    real(WP) :: omega_c
+    real(WP) :: beta
+    real(WP) :: b_11
+    real(WP) :: b_12
+
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
+
+    ! Evaluate the outer boundary conditions (Luan formulation)
+
+    ! Calculate coefficients
+
+    associate( &
+         V_g => this%coeffs(2,J_V_G), &
+         As => this%coeffs(2,J_AS), &
+         U => this%coeffs(2,J_U), &
+         c_1 => this%coeffs(2,J_C_1))
+
+      omega_c = this%rt%omega_c(2, omega)
+
+      beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
+
+      b_11 = V_g - 3._WP
+      b_12 = -V_g
+
+      ! Set up the boundary conditions
+
+      B(1,1) = beta - b_11
+      B(1,2) = -b_12
+
+      scl = 1._WP
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end subroutine build_luan_o_
 
 end module gyre_rad_bound

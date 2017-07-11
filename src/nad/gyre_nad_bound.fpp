@@ -48,7 +48,8 @@ module gyre_nad_bound
   integer, parameter :: VACUUM_TYPE = 4
   integer, parameter :: DZIEM_TYPE = 5
   integer, parameter :: UNNO_TYPE = 6
-  integer, parameter :: JCD_TYPE = 7
+  integer, parameter :: LUAN_TYPE = 7
+  integer, parameter :: JCD_TYPE = 8
 
   integer, parameter :: J_V = 1
   integer, parameter :: J_V_G = 2
@@ -57,8 +58,11 @@ module gyre_nad_bound
   integer, parameter :: J_C_1 = 5
   integer, parameter :: J_NABLA_AD = 6
   integer, parameter :: J_C_THN = 7
+  integer, parameter :: J_DELTA = 8
+  integer, parameter :: J_F_LUAN_T = 9
+  integer, parameter :: J_F_LUAN_C = 10
 
-  integer, parameter :: J_LAST = J_C_THN
+  integer, parameter :: J_LAST = J_F_LUAN_C
 
   ! Derived-type definitions
 
@@ -85,6 +89,7 @@ module gyre_nad_bound
      procedure         :: build_dziem_o_
      procedure         :: build_unno_o_
      procedure         :: build_jcd_o_
+     procedure         :: build_luan_o_
   end type nad_bound_t
 
   ! Interfaces
@@ -155,6 +160,12 @@ contains
        else
           bd%type_o = JCD_TYPE
        end if
+    case ('LUAN')
+       if (ml%is_vacuum(pt_o)) then
+          bd%type_o = VACUUM_TYPE
+       else
+          bd%type_o = LUAN_TYPE
+       endif
     case default
        $ABORT(Invalid outer_bound)
     end select
@@ -223,20 +234,27 @@ contains
     select case (this%type_o)
     case (VACUUM_TYPE)
        this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
+       this%coeffs(2,J_U) = this%ml%coeff(I_U, pt_o)
     case (DZIEM_TYPE)
        this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
        this%coeffs(2,J_C_1) = this%ml%coeff(I_C_1, pt_o)
     case (UNNO_TYPE)
-       call eval_atmos_coeffs_jcd(this%ml, pt_o, this%coeffs(2,J_V_G), &
-            this%coeffs(2,J_AS), this%coeffs(2,J_C_1))
+       call eval_atmos_coeffs_unno(this%ml, pt_o, this%coeffs(2,J_V_G), &
+            this%coeffs(2,J_AS), this%coeffs(2,J_U), this%coeffs(2,J_C_1))
     case (JCD_TYPE)
        call eval_atmos_coeffs_jcd(this%ml, pt_o, this%coeffs(2,J_V_G), &
-            this%coeffs(2,J_AS), this%coeffs(2,J_C_1))
+            this%coeffs(2,J_AS), this%coeffs(2,J_U), this%coeffs(2,J_C_1))
+    case (LUAN_TYPE)
+       call check_model(this%ml, [I_DELTA,I_F_LUAN_T,I_F_LUAN_C])
+       call eval_atmos_coeffs_luan(this%ml, pt_o, this%coeffs(2,J_V_G), &
+            this%coeffs(2,J_AS), this%coeffs(2,J_U), this%coeffs(2,J_C_1))
+       this%coeffs(2,J_DELTA) = this%ml%coeff(I_DELTA, pt_o)
+       this%coeffs(2,J_F_LUAN_T) = this%ml%coeff(I_F_LUAN_T, pt_o)
+       this%coeffs(2,J_F_LUAN_C) = this%ml%coeff(I_F_LUAN_C, pt_o)
     case default
        $ABORT(Invalid type_o)
     end select
 
-    this%coeffs(2, J_U) = this%ml%coeff(I_U, pt_o)
     this%coeffs(2,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt_o)
     this%coeffs(2,J_C_THN) = this%ml%coeff(I_C_THN, pt_o)
 
@@ -470,6 +488,8 @@ contains
        call this%build_unno_o_(omega, B, scl)
     case (JCD_TYPE)
        call this%build_jcd_o_(omega, B, scl)
+    case (LUAN_TYPE)
+       call this%build_luan_o_(omega, B, scl)
     case default
        $ABORT(Invalid type_o)
     end select
@@ -661,6 +681,7 @@ contains
          V => this%coeffs(2,J_V), &
          V_g => this%coeffs(2,J_V_G), &
          As => this%coeffs(2,J_AS), &
+         U => this%coeffs(2,J_U), &
          c_1 => this%coeffs(2,J_C_1), &
          nabla_ad => this%coeffs(2,J_NABLA_AD), &
          c_thn => this%coeffs(2,J_C_THN), &
@@ -676,7 +697,7 @@ contains
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
-      beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
+      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 
       b_11 = V_g - 3._WP
       b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
@@ -693,8 +714,8 @@ contains
 
       B(1,1) = beta - b_11
       B(1,2) = -b_12
-      B(1,3) = -(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12)
-      B(1,4) = 0._WP
+      B(1,3) = alpha_gr*(-(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12))
+      B(1,4) = alpha_gr*(0._WP)
       B(1,5) = 0._WP
       B(1,6) = 0._WP
 
@@ -751,6 +772,7 @@ contains
          V => this%coeffs(2,J_V), &
          V_g => this%coeffs(2,J_V_G), &
          As => this%coeffs(2,J_AS), &
+         U => this%coeffs(2,J_U), &
          c_1 => this%coeffs(2,J_C_1), &
          nabla_ad => this%coeffs(2,J_NABLA_AD), &
          c_thn => this%coeffs(2,J_C_THN), &
@@ -766,7 +788,7 @@ contains
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
-      beta = atmos_beta(V_g, As, c_1, omega_c, lambda)
+      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 
       b_11 = V_g - 3._WP
       b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
@@ -803,5 +825,93 @@ contains
     return
 
   end subroutine build_jcd_o_
+
+  !****
+
+  subroutine build_luan_o_ (this, omega, B, scl)
+
+    class(nad_bound_t), intent(in) :: this
+    complex(WP), intent(in)        :: omega
+    complex(WP), intent(out)       :: B(:,:)
+    complex(WP), intent(out)       :: scl(:)
+
+    real(WP), parameter :: D = 20._WP
+
+    complex(WP) :: lambda
+    complex(WP) :: l_e
+    complex(WP) :: omega_c
+    complex(WP) :: i_omega_c
+    complex(WP) :: beta
+    complex(WP) :: b_11
+    complex(WP) :: b_22
+    complex(WP) :: b_12
+    complex(WP) :: b_15
+
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
+
+    ! Evaluate the outer boundary conditions (Jing Luan's
+    ! base-of-convection-zone formulation)
+
+    associate( &
+         V_g => this%coeffs(2,J_V_G), &
+         As => this%coeffs(2,J_As), &
+         U => this%coeffs(2,J_U), &
+         c_1 => this%coeffs(2,J_C_1), &
+         delta => this%coeffs(2,J_DELTA), &
+         f_luan_t => this%coeffs(2,J_F_LUAN_T), &
+         f_luan_c => this%coeffs(2,J_F_LUAN_C), &
+         alpha_gr => this%alpha_gr, &
+         alpha_rh => this%alpha_rh, &
+         alpha_om => this%alpha_om)
+
+      lambda = this%rt%lambda(2, omega)
+      l_e = this%rt%l_e(2, omega)
+
+      omega_c = this%rt%omega_c(2, omega)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+
+      beta = atmos_beta(V_g, As, U, c_1, omega, lambda)
+
+      b_11 = V_g - 3._WP
+      b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
+      b_15 = delta
+      b_22 = As - U + 1._WP
+
+      ! Set up the boundary conditions (the lambda_M term has been
+      ! dropped)
+
+      B(1,1) = beta - b_11
+      B(1,2) = -b_12
+      B(1,3) = 0._WP
+      B(1,4) = 0._WP
+      B(1,5) = b_15*(beta - b_11 - b_12)/(b_11+b_12-beta)
+      B(1,6) = 0._WP
+
+      B(2,1) = alpha_gr*(0._WP)
+      B(2,2) = alpha_gr*(0._WP)
+      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+      B(2,4) = alpha_gr*(1._WP)
+      B(2,5) = alpha_gr*(0._WP)
+      B(2,6) = alpha_gr*(0._WP)
+
+      B(3,1) = 0._WP
+      B(3,2) = 0._WP
+      B(3,3) = alpha_gr*(0._WP)
+      B(3,4) = alpha_gr*(0._WP)
+      B(3,5) = f_luan_c*(f_luan_t*i_omega_c + 1._WP/D)
+      B(3,6) = -1._WP
+
+      scl = 1._WP
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end subroutine build_luan_o_
 
 end module gyre_nad_bound
