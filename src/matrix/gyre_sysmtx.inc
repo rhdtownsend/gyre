@@ -49,6 +49,7 @@ module gyre_${T}_sysmtx
      procedure(det), deferred            :: det
      procedure(soln_vec_hom), deferred   :: soln_vec_hom
      procedure(soln_vec_inhom), deferred :: soln_vec_inhom
+     procedure(resd_vec), deferred       :: resd_vec
   end type ${T}_sysmtx_t
 
   ! Interfaces
@@ -105,6 +106,15 @@ module gyre_${T}_sysmtx
        $TYPE(WP)                        :: v(this%n_e*(this%n+1))
      end function soln_vec_inhom
 
+     function resd_vec (this, v) result (w)
+       use core_kinds
+       use gyre_ext
+       import ${T}_sysmtx_t
+       class(${T}_sysmtx_t), intent(in) :: this
+       $TYPE(WP), intent(in)            :: v(:)
+       $TYPE(WP)                        :: w(this%n_e*(this%n+1))
+     end function resd_vec
+     
   end interface
 
   ! Access specifiers

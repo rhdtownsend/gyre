@@ -79,6 +79,7 @@ module gyre_${T}_band_sysmtx
      procedure, public :: det
      procedure, public :: soln_vec_hom
      procedure, public :: soln_vec_inhom
+     procedure, public :: resd_vec
   end type ${T}_band_sysmtx_t
 
   ! Interfaces
@@ -514,6 +515,28 @@ contains
 
   end function soln_vec_inhom
 
+  !****
+
+  function resd_vec (this, v) result (w)
+
+    class(${T}_band_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                 :: v(:)
+    $TYPE(WP)                             :: w(this%n_e*(this%n+1))
+
+    integer :: k
+
+    $CHECK_BOUNDS(SIZE(v),this%n_e*(this%n+1))
+
+    ! Evaluate the residual vector w = S v
+
+    $ABORT(Not yet implemented)
+
+    ! Finish
+
+    return
+
+  end function resd_vec
+  
 end module gyre_${T}_band_sysmtx
 
 $endsub
