@@ -166,7 +166,9 @@ contains
        toler = (tol + 2._WP*SQRT(REAL(n, WP))*EPS)*MAXVAL(ABS(cb%c))
 
        do j = n+1, 1, -1
-          if (ABS(cb%c(j)) > toler) exit
+          if (ABS(cb%c(j)) > toler) then
+             exit
+          endif
        end do
 
        if (n+1-j >= M) exit
@@ -301,15 +303,19 @@ contains
     $TYPE(WP)                     :: f
 
     $TYPE(WP) :: u
-    $TYPE(WP) :: l
-    $TYPE(WP) :: s
+    $TYPE(WP) :: s_n
+    $TYPE(WP) :: s_d
     integer   :: j
     real(WP)  :: u_j
     real(WP)  :: w
 
-    ! Evaluate the cheb_fit_t at x, using Barycentric interpolation
-    ! following eqn. 5.9 of Trefethen (Approximation Theory &
-    ! Approximation Practice)
+    ! Evaluate the cheb_fit_t at x, using the second Barycentric
+    ! interpolation formula given in eqn. 5.11 of Trefethen
+    ! (Approximation Theory & Approximation Practice). This formula is
+    ! not stable for extrapolation, but does not suffer from the
+    ! overflow/accuracy problems of the first Barycentric
+    ! interpolation formula (see W. Mascarenhas, 2014, Num. Math.,
+    ! 128, 265-300).
 
     if (x == this%x_a) then
        u = 1._WP
@@ -319,8 +325,8 @@ contains
        u = (2._WP*x - (this%x_a + this%x_b))/(this%x_a - this%x_b)
     endif
 
-    l = 1._WP
-    s = 0._WP
+    s_n = 0._WP
+    s_d = 0._WP
 
     do j = 1, this%n+1
 
@@ -345,14 +351,14 @@ contains
           w = (-1._WP)**(j-1)
        endif
 
-       ! Update sum s and product l
+       ! Update the numerator and denominator sums
        
-       s = s + w*this%f(j)/(u - u_j)
-       l = l*(u - u_j)
+       s_n = s_n + w*this%f(j)/(u - u_j)
+       s_d = s_d + w/(u - u_j)
 
     end do
 
-    f = l*s*(2._WP)**(this%n-1)/this%n
+    f = s_n/s_d
 
     ! Finish
 
