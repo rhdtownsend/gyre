@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=build_tar_fit
+TARGETS=build_tar_fit map_tar_fit
 
 # Flags
 
