@@ -29,9 +29,8 @@ module gyre_rad_eqns
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
+  use gyre_rad_share
   use gyre_rad_trans
-  use gyre_rot
-  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -45,17 +44,17 @@ module gyre_rad_eqns
   integer, parameter :: J_AS = 2
   integer, parameter :: J_U = 3
   integer, parameter :: J_C_1 = 4
+  integer, parameter :: J_OMEGA_ROT = 5
 
-  integer, parameter :: J_LAST = J_C_1
+  integer, parameter :: J_LAST = J_OMEGA_ROT
 
   ! Derived-type definitions
 
   type, extends (r_eqns_t) :: rad_eqns_t
      private
-     class(model_t), pointer     :: ml => null()
-     class(r_rot_t), allocatable :: rt
+     type(rad_share_t), pointer  :: sh => null()
      type(rad_trans_t)           :: tr
-     real(WP), allocatable       :: coeffs(:,:)
+     real(WP), allocatable       :: coeff(:,:)
      real(WP), allocatable       :: x(:)
      real(WP)                    :: alpha_om
    contains
@@ -81,21 +80,19 @@ module gyre_rad_eqns
 
 contains
 
-  function rad_eqns_t_ (ml, pt_i, md_p, os_p) result (eq)
+  function rad_eqns_t_ (sh, pt_i, md_p, os_p) result (eq)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(rad_eqns_t)                    :: eq
+    class(rad_share_t), pointer, intent(in) :: sh
+    type(point_t), intent(in)               :: pt_i
+    type(mode_par_t), intent(in)            :: md_p
+    type(osc_par_t), intent(in)             :: os_p
+    type(rad_eqns_t)                        :: eq
 
     ! Construct the rad_eqns_t
 
-    eq%ml => ml
+    eq%sh => sh
 
-    allocate(eq%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
-
-    eq%tr = rad_trans_t(ml, pt_i, md_p, os_p)
+    eq%tr = rad_trans_t(sh, pt_i, md_p, os_p)
 
     select case (os_p%time_factor)
     case ('OSC')
@@ -126,25 +123,25 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
+    call check_model(this%sh%ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
 
     n_s = SIZE(pt)
 
-    if (ALLOCATED(this%coeffs)) deallocate(this%coeffs)
-    allocate(this%coeffs(n_s,J_LAST))
+    if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+    allocate(this%coeff(n_s,J_LAST))
 
     do i = 1, n_s
-       this%coeffs(i,J_V_G) = this%ml%coeff(I_V_2, pt(i))*pt(i)%x**2/this%ml%coeff(I_GAMMA_1, pt(i))
-       this%coeffs(i,J_AS) = this%ml%coeff(I_AS, pt(i))
-       this%coeffs(i,J_U) = this%ml%coeff(I_U, pt(i))
-       this%coeffs(i,J_C_1) = this%ml%coeff(I_C_1, pt(i))
+       this%coeff(i,J_V_G) = this%sh%ml%coeff(I_V_2, pt(i))*pt(i)%x**2/this%sh%ml%coeff(I_GAMMA_1, pt(i))
+       this%coeff(i,J_AS) = this%sh%ml%coeff(I_AS, pt(i))
+       this%coeff(i,J_U) = this%sh%ml%coeff(I_U, pt(i))
+       this%coeff(i,J_C_1) = this%sh%ml%coeff(I_C_1, pt(i))
+       this%coeff(i,J_OMEGA_ROT) = this%sh%ml%coeff(I_OMEGA_ROT, pt(i))
     end do
 
     this%x = pt%x
 
-    ! Set up stencils for the rt and tr components
+    ! Set up stencils for the tr component
 
-    call this%rt%stencil(pt)
     call this%tr%stencil(pt)
 
     ! Finish
@@ -186,13 +183,14 @@ contains
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
-         V_g => this%coeffs(i,J_V_G), &
-         As => this%coeffs(i,J_AS), &
-         U => this%coeffs(i,J_U), &
-         c_1 => this%coeffs(i,J_C_1), &
+         V_g => this%coeff(i,J_V_G), &
+         As => this%coeff(i,J_AS), &
+         U => this%coeff(i,J_U), &
+         c_1 => this%coeff(i,J_C_1), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%rt%omega_c(i, omega)
+      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
 

@@ -29,7 +29,6 @@ module gyre_${T}_null_rot
   use core_kinds
 
   use gyre_mode_par
-  use gyre_point
   use gyre_rot
 
   use ISO_FORTRAN_ENV
@@ -46,10 +45,8 @@ module gyre_${T}_null_rot
      integer :: m
    contains
      private
-     procedure, public :: stencil
      procedure, public :: omega
      procedure, public :: omega_c
-     procedure, public :: l_i
      procedure, public :: l_e
      procedure, public :: lambda
   end type ${T}_null_rot_t
@@ -88,26 +85,10 @@ contains
 
   !****
 
-  subroutine stencil (this, pt)
-
-    class(${T}_null_rot_t), intent(inout) :: this
-    type(point_t), intent(in)             :: pt(:)
-
-    ! Calculate coefficients at the stencil points (since no
-    ! coefficients are required, this is a no-op)
-
-    ! Finish
-
-    return
-
-  end subroutine stencil
-
-  !****
-
-  function omega (this, i, omega_c)
+  function omega (this, Omega_rot, omega_c)
 
     class(${T}_null_rot_t), intent(in) :: this
-    integer, intent(in)                :: i
+    real(WP), intent(in)               :: Omega_rot
     $TYPE(WP), intent(in)              :: omega_c
     $TYPE(WP)                          :: omega
 
@@ -124,10 +105,10 @@ contains
 
 !****
 
-  function omega_c (this, i, omega)
+  function omega_c (this, Omega_rot, omega)
 
     class(${T}_null_rot_t), intent(in) :: this
-    integer, intent(in)                :: i
+    real(WP), intent(in)               :: Omega_rot
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: omega_c
 
@@ -144,29 +125,10 @@ contains
 
   !****
 
-  function l_i (this, omega)
+  function l_e (this, Omega_rot, omega)
 
     class(${T}_null_rot_t), intent(in) :: this
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: l_i
-
-    ! Evaluate the effective harmonic degree at the model inner
-    ! boundary
-
-    l_i = this%l
-
-    ! Finish
-
-    return
-
-  end function l_i
-
-  !****
-
-  function l_e (this, i, omega)
-
-    class(${T}_null_rot_t), intent(in) :: this
-    integer, intent(in)                :: i
+    real(WP), intent(in)               :: Omega_rot
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: l_e
 
@@ -182,10 +144,10 @@ contains
 
   !****
 
-  function lambda (this, i, omega)
+  function lambda (this, Omega_rot, omega)
 
     class(${T}_null_rot_t), intent(in) :: this
-    integer, intent(in)                :: i
+    real(WP), intent(in)               :: Omega_rot
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: lambda
 

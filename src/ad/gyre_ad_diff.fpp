@@ -25,10 +25,10 @@ module gyre_ad_diff
 
   use gyre_ad_eqns
   use gyre_ad_match
+  use gyre_ad_share
   use gyre_diff
   use gyre_diff_factory
   use gyre_ext
-  use gyre_model
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
@@ -66,16 +66,16 @@ module gyre_ad_diff
 
 contains
 
-  function ad_diff_t_ (ml, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
+  function ad_diff_t_ (sh, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_a
-    type(point_t), intent(in)           :: pt_b
-    type(mode_par_t), intent(in)        :: md_p
-    type(num_par_t), intent(in)         :: nm_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(ad_diff_t)                     :: df
+    type(ad_share_t), pointer, intent(in) :: sh
+    type(point_t), intent(in)             :: pt_i
+    type(point_t), intent(in)             :: pt_a
+    type(point_t), intent(in)             :: pt_b
+    type(mode_par_t), intent(in)          :: md_p
+    type(num_par_t), intent(in)           :: nm_p
+    type(osc_par_t), intent(in)           :: os_p
+    type(ad_diff_t)                       :: df
 
     type(ad_eqns_t) :: eq
 
@@ -85,7 +85,7 @@ contains
 
        ! Regular subinterval; use difference equations
 
-       eq = ad_eqns_t(ml, pt_i, md_p, os_p)
+       eq = ad_eqns_t(sh, pt_i, md_p, os_p)
        
        allocate(df%df, SOURCE=r_diff_t(eq, pt_a, pt_b, nm_p))
 
@@ -93,7 +93,7 @@ contains
 
        ! Segment boundary; use match conditions
 
-       allocate(df%df, SOURCE=ad_match_t(ml, pt_i, pt_a, pt_b, md_p, os_p))
+       allocate(df%df, SOURCE=ad_match_t(sh, pt_i, pt_a, pt_b, md_p, os_p))
 
     endif
 

@@ -27,10 +27,10 @@ module gyre_nad_diff
   use gyre_diff_factory
   use gyre_trapz_diff
   use gyre_ext
-  use gyre_model
   use gyre_mode_par
   use gyre_nad_eqns
   use gyre_nad_match
+  use gyre_nad_share
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
@@ -69,16 +69,16 @@ module gyre_nad_diff
 
 contains
 
-  function nad_diff_t_ (ml, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
+  function nad_diff_t_ (sh, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_a
-    type(point_t), intent(in)           :: pt_b
-    type(mode_par_t), intent(in)        :: md_p
-    type(num_par_t), intent(in)         :: nm_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(nad_diff_t)                    :: df
+    type(nad_share_t), pointer, intent(in) :: sh
+    type(point_t), intent(in)              :: pt_i
+    type(point_t), intent(in)              :: pt_a
+    type(point_t), intent(in)              :: pt_b
+    type(mode_par_t), intent(in)           :: md_p
+    type(num_par_t), intent(in)            :: nm_p
+    type(osc_par_t), intent(in)            :: os_p
+    type(nad_diff_t)                       :: df
 
     type(nad_eqns_t) :: eq
     type(point_t)    :: pt_m
@@ -89,7 +89,7 @@ contains
 
        ! Regular subinterval; use difference equations
 
-       eq = nad_eqns_t(ml, pt_i, md_p, os_p)
+       eq = nad_eqns_t(sh, pt_i, md_p, os_p)
 
        select case (nm_p%diff_scheme)
        case ('TRAPZ')
@@ -113,7 +113,7 @@ contains
 
       ! Segment boundary; use match conditions
 
-      allocate(df%df, SOURCE=nad_match_t(ml, pt_i, pt_a, pt_b, md_p, os_p))
+      allocate(df%df, SOURCE=nad_match_t(sh, pt_i, pt_a, pt_b, md_p, os_p))
 
     endif
 

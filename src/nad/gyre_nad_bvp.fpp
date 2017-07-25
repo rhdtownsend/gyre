@@ -25,6 +25,7 @@ module gyre_nad_bvp
 
   use gyre_nad_bound
   use gyre_nad_diff
+  use gyre_nad_share
   use gyre_nad_trans
   use gyre_bvp
   use gyre_ext
@@ -46,11 +47,15 @@ module gyre_nad_bvp
   ! Derived-type definitions
 
   type, extends (c_bvp_t) :: nad_bvp_t
-     class(model_t), pointer :: ml => null()
-     type(grid_t)            :: gr
-     type(mode_par_t)        :: md_p
-     type(osc_par_t)         :: os_p
-     type(nad_trans_t)       :: tr
+     private
+     type(nad_share_t), pointer :: sh => null()
+     type(grid_t)               :: gr
+     type(nad_trans_t)          :: tr
+     type(mode_par_t)           :: md_p
+     type(osc_par_t)            :: os_p
+   contains
+     private
+     final :: finalize_
   end type nad_bvp_t
 
   ! Interfaces
@@ -85,6 +90,7 @@ contains
 
     type(point_t)                 :: pt_i
     type(point_t)                 :: pt_o
+    type(nad_share_t), pointer    :: sh
     type(nad_bound_t)             :: bd
     integer                       :: k
     type(nad_diff_t), allocatable :: df(:)
@@ -94,9 +100,15 @@ contains
     pt_i = gr%pt(1)
     pt_o = gr%pt(gr%n_k)
 
+    ! Initialize the shared data
+
+    allocate(sh)
+
+    sh = nad_share_t(ml, pt_i, md_p, os_p)
+
     ! Initialize the boundary conditions
 
-    bd = nad_bound_t(ml, pt_i, pt_o, md_p, os_p)
+    bd = nad_bound_t(sh, pt_i, pt_o, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -104,7 +116,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = nad_diff_t(ml, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = nad_diff_t(sh, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -113,10 +125,10 @@ contains
 
     ! Other initializations
 
-    bp%ml => ml
+    bp%sh => sh
     bp%gr = gr
 
-    bp%tr = nad_trans_t(ml, pt_i, md_p, os_p)
+    bp%tr = nad_trans_t(sh, pt_i, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
@@ -130,6 +142,22 @@ contains
 
   !****
 
+  subroutine finalize_ (this)
+
+    type(nad_bvp_t), intent(inout) :: this
+
+    ! Finalize the nad_bvp_t
+
+    deallocate(this%sh)
+
+    ! Finish
+
+    return
+
+  end subroutine finalize_
+
+  !****
+
   function mode_t_ (bp, omega, j) result (md)
 
     class(nad_bvp_t), intent(inout) :: bp
@@ -138,6 +166,8 @@ contains
     type(mode_t)                    :: md
 
     complex(WP)   :: y(6,bp%n_k)
+    complex(WP)   :: v(bp%n_e*bp%n_k)
+    complex(WP)   :: w(bp%n_e*bp%n_k)
     type(c_ext_t) :: discrim
     integer       :: k
     complex(WP)   :: y_c(6,bp%n_k)
@@ -148,6 +178,19 @@ contains
 
     y = bp%soln_vec_hom()
     discrim = bp%det()
+
+    ! Evaluate bc residuals
+
+    call bp%build(omega)
+    v = bp%sm%soln_vec_hom()
+    
+    call bp%build(omega)
+    w = bp%sm%resd_vec(v)
+
+    associate (n_k => bp%n_k, n_e => bp%n_e, n_i => bp%n_i)
+      print *, 'res_i:', w(:n_i)/SQRT(DOT_PRODUCT(y(:,1), y(:,1)))
+      print *, 'res_o:', w((n_k-1)*n_e+n_i+1:)/SQRT(DOT_PRODUCT(y(:,n_k),y(:,n_k)))
+    end associate
 
     ! Convert to canonical form
 
@@ -162,7 +205,7 @@ contains
 
     ! Construct the mode_t
 
-    md = mode_t(omega, y_c, discrim, bp%ml, bp%gr, bp%md_p, bp%os_p, j)
+    md = mode_t(omega, y_c, discrim, bp%sh%ml, bp%gr, bp%md_p, bp%os_p, j)
 
     ! Finish
 

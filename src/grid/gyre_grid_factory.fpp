@@ -233,8 +233,8 @@ contains
     ! Add points globally 
     
     ! Iterate until no more points need be added
-
-    allocate(rt, SOURCE=r_rot_t(ml, gr%pt(1), md_p, os_p))
+    
+    allocate(rt, SOURCE=r_rot_t(md_p, os_p))
 
     iter_loop : do i_iter = 1, gr_p%n_iter_max
 
@@ -252,9 +252,7 @@ contains
                pt%s = pt_a%s
                pt%x = 0.5_WP*(pt_a%x + pt_b%x)
 
-               call rt%stencil([pt])
-
-               dx = MAX(MIN(dx_dispersion_(pt, ml, rt, omega, gr_p, pt_a%x==0), &
+               dx = MAX(MIN(dx_dispersion_(pt, gr%pt(1), ml, rt, omega, gr_p, pt_a%x==0), &
                             dx_thermal_(pt, ml, rt, omega, gr_p), &
                             dx_struct_(ml, pt, gr_p)), gr_p%dx_min)
 
@@ -293,9 +291,10 @@ contains
 
   !****
 
-  function dx_dispersion_ (pt, ml, rt, omega, gr_p, origin) result (dx)
+  function dx_dispersion_ (pt, pt_i, ml, rt, omega, gr_p, origin) result (dx)
 
     type(point_t), intent(in)           :: pt
+    type(point_t), intent(in)           :: pt_i
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
     real(WP), intent(in)                :: omega(:)
@@ -307,6 +306,8 @@ contains
     real(WP) :: As
     real(WP) :: U
     real(WP) :: c_1
+    real(WP) :: Omega_rot
+    real(WP) :: Omega_rot_i
     real(WP) :: k_r_real
     real(WP) :: k_r_imag
     integer  :: j
@@ -339,6 +340,9 @@ contains
        U = ml%coeff(I_U, pt)
        c_1 = ml%coeff(I_C_1, pt)
 
+       Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+       Omega_rot_i = ml%coeff(I_OMEGA_ROT, pt_i)
+
        ! Loop over omega, finding the maximum k_r_real and k_r_imag
 
        k_r_real = 0._WP
@@ -347,10 +351,10 @@ contains
        !$OMP PARALLEL DO PRIVATE (omega_c, lambda, l_i, g_0, g_2, g_4, gamma) REDUCTION (MAX:k_r_real,k_r_imag)
        omega_loop : do j = 1, SIZE(omega)
 
-          omega_c = rt%omega_c(1, omega(j))
+          omega_c = rt%omega_c(Omega_rot, omega(j))
 
-          lambda = rt%lambda(1, omega(j))
-          l_i = rt%l_i(omega(j))
+          lambda = rt%lambda(Omega_rot, omega(j))
+          l_i = rt%l_e(Omega_rot_i, omega(j))
             
           ! Calculate the propagation discriminant gamma
 
@@ -427,6 +431,7 @@ contains
     real(WP) :: nabla
     real(WP) :: c_rad
     real(WP) :: c_thk
+    real(WP) :: Omega_rot
     real(WP) :: tau
     integer  :: j
     real(WP) :: omega_c
@@ -450,6 +455,8 @@ contains
       c_rad = ml%coeff(I_C_RAD, pt)
       c_thk = ml%coeff(I_C_THK, pt)
 
+      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+
       ! Loop over omega, finding the maximum tau
 
       tau = 0._WP
@@ -457,7 +464,7 @@ contains
       !$OMP PARALLEL DO PRIVATE (omega_c) REDUCTION (MAX:tau)
       omega_loop : do j = 1, SIZE(omega)
 
-         omega_c = rt%omega_c(1, omega(j))
+         omega_c = rt%omega_c(Omega_rot, omega(j))
          
          ! Update the maximal tau
 

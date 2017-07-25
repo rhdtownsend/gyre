@@ -30,9 +30,8 @@ module gyre_rad_bound
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
+  use gyre_rad_share
   use gyre_rad_trans
-  use gyre_rot
-  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -55,17 +54,17 @@ module gyre_rad_bound
   integer, parameter :: J_AS = 3
   integer, parameter :: J_U = 4
   integer, parameter :: J_C_1 = 5
+  integer, parameter :: J_OMEGA_ROT = 6
 
-  integer, parameter :: J_LAST = J_C_1
+  integer, parameter :: J_LAST = J_OMEGA_ROT
 
   ! Derived-type definitions
 
   type, extends (r_bound_t) :: rad_bound_t
      private
-     class(model_t), pointer     :: ml => null()
-     class(r_rot_t), allocatable :: rt
+     type(rad_share_t), pointer  :: sh => null()
      type(rad_trans_t)           :: tr
-     real(WP), allocatable       :: coeffs(:,:)
+     real(WP), allocatable       :: coeff(:,:)
      real(WP)                    :: alpha_om
      integer                     :: type_i
      integer                     :: type_o
@@ -99,22 +98,20 @@ module gyre_rad_bound
 
 contains
 
-  function rad_bound_t_ (ml, pt_i, pt_o, md_p, os_p) result (bd)
+  function rad_bound_t_ (sh, pt_i, pt_o, md_p, os_p) result (bd)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_o
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(rad_bound_t)                   :: bd
+    type(rad_share_t), pointer, intent(in) :: sh
+    type(point_t), intent(in)              :: pt_i
+    type(point_t), intent(in)              :: pt_o
+    type(mode_par_t), intent(in)           :: md_p
+    type(osc_par_t), intent(in)            :: os_p
+    type(rad_bound_t)                      :: bd
 
     ! Construct the ad_bound_t
 
-    bd%ml => ml
+    bd%sh => sh
     
-    allocate(bd%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
-
-    bd%tr = rad_trans_t(ml, pt_i, md_p, os_p)
+    bd%tr = rad_trans_t(sh, pt_i, md_p, os_p)
 
     select case (os_p%inner_bound)
     case ('REGULAR')
@@ -131,25 +128,25 @@ contains
     case ('VACUUM')
        bd%type_o = VACUUM_TYPE
     case ('DZIEM')
-       if (ml%is_vacuum(pt_o)) then
+       if (sh%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = DZIEM_TYPE
        endif
     case ('UNNO')
-       if (ml%is_vacuum(pt_o)) then
+       if (sh%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = UNNO_TYPE
        endif
     case ('JCD')
-       if (ml%is_vacuum(pt_o)) then
+       if (sh%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = JCD_TYPE
        endif
     case ('LUAN')
-       if (ml%is_vacuum(pt_o)) then
+       if (sh%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = LUAN_TYPE
@@ -190,44 +187,47 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%ml, [I_V_2,I_U,I_C_1])
+    call check_model(this%sh%ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
 
-    allocate(this%coeffs(2,J_LAST))
+    allocate(this%coeff(2,J_LAST))
 
     ! Inner boundary
 
     select case (this%type_i)
     case (REGULAR_TYPE)
-       this%coeffs(1,J_C_1) = this%ml%coeff(I_C_1, pt_i)
+       this%coeff(1,J_C_1) = this%sh%ml%coeff(I_C_1, pt_i)
     case (ZERO_R_TYPE)
     case default
        $ABORT(Invalid type_i)
     end select
 
+    this%coeff(1,J_OMEGA_ROT) = this%sh%ml%coeff(I_OMEGA_ROT, pt_i)
+
     ! Outer boundary
 
     select case (this%type_o)
     case (VACUUM_TYPE)
-       this%coeffs(2, J_U) = this%ml%coeff(I_U, pt_o)
+       this%coeff(2, J_U) = this%sh%ml%coeff(I_U, pt_o)
     case (DZIEM_TYPE)
-       this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_o)*pt_o%x**2
-       this%coeffs(2,J_C_1) = this%ml%coeff(I_C_1, pt_o)
+       this%coeff(2,J_V) = this%sh%ml%coeff(I_V_2, pt_o)*pt_o%x**2
+       this%coeff(2,J_C_1) = this%sh%ml%coeff(I_C_1, pt_o)
     case (UNNO_TYPE)
-       call eval_atmos_coeffs_jcd(this%ml, pt_o, this%coeffs(2,J_V_G), &
-            this%coeffs(2,J_AS), this%coeffs(2,J_U), this%coeffs(2,J_C_1))
+       call eval_atmos_coeffs_unno(this%sh%ml, pt_o, this%coeff(2,J_V_G), &
+            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
     case (JCD_TYPE)
-       call eval_atmos_coeffs_jcd(this%ml, pt_o, this%coeffs(2,J_V_G), &
-            this%coeffs(2,J_AS), this%coeffs(2,J_U), this%coeffs(2,J_C_1))
+       call eval_atmos_coeffs_jcd(this%sh%ml, pt_o, this%coeff(2,J_V_G), &
+            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
     case (LUAN_TYPE)
-       call eval_atmos_coeffs_luan(this%ml, pt_o, this%coeffs(2,J_V_G), &
-            this%coeffs(2,J_AS), this%coeffs(2,J_U), this%coeffs(2,J_C_1))
+       call eval_atmos_coeffs_luan(this%sh%ml, pt_o, this%coeff(2,J_V_G), &
+            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
     case default
        $ABORT(Invalid type_o)
     end select
 
-    ! Set up stencils for the rt and tr components
+    this%coeff(2,J_OMEGA_ROT) = this%sh%ml%coeff(I_OMEGA_ROT, pt_o)
 
-    call this%rt%stencil([pt_i,pt_o])
+    ! Set up stencils for the tr component
+
     call this%tr%stencil([pt_i,pt_o])
 
     ! Finish
@@ -290,10 +290,11 @@ contains
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
     associate( &
-         c_1 => this%coeffs(1,J_C_1), &
+         c_1 => this%coeff(1,J_C_1), &
+         Omega_rot => this%coeff(1,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%rt%omega_c(1, omega)
+      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
 
       ! Set up the boundary conditions
 
@@ -429,11 +430,12 @@ contains
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     associate( &
-         V => this%coeffs(2,J_V), &
-         c_1 => this%coeffs(2,J_C_1), &
+         V => this%coeff(2,J_V), &
+         c_1 => this%coeff(2,J_C_1), &
+         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%rt%omega_c(2, omega)
+      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
 
       ! Set up the boundary conditions
         
@@ -472,12 +474,13 @@ contains
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
     associate( &
-         V_g => this%coeffs(2,J_V_G), &
-         As => this%coeffs(2,J_AS), &
-         U => this%coeffs(2,J_U), &
-         c_1 => this%coeffs(2,J_C_1))
+         V_g => this%coeff(2,J_V_G), &
+         As => this%coeff(2,J_AS), &
+         U => this%coeff(2,J_U), &
+         c_1 => this%coeff(2,J_C_1), &
+         Omega_rot => this%coeff(2,J_OMEGA_ROT))
 
-      omega_c = this%rt%omega_c(2, omega)
+      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
       
@@ -523,12 +526,13 @@ contains
     ! Calculate coefficients
 
     associate( &
-         V_g => this%coeffs(2,J_V_G), &
-         As => this%coeffs(2,J_AS), &
-         U => this%coeffs(2,J_U), &
-         c_1 => this%coeffs(2,J_C_1))
+         V_g => this%coeff(2,J_V_G), &
+         As => this%coeff(2,J_AS), &
+         U => this%coeff(2,J_U), &
+         c_1 => this%coeff(2,J_C_1), &
+         Omega_rot => this%coeff(2,J_OMEGA_ROT))
 
-      omega_c = this%rt%omega_c(2, omega)
+      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
 
@@ -574,12 +578,13 @@ contains
     ! Calculate coefficients
 
     associate( &
-         V_g => this%coeffs(2,J_V_G), &
-         As => this%coeffs(2,J_AS), &
-         U => this%coeffs(2,J_U), &
-         c_1 => this%coeffs(2,J_C_1))
+         V_g => this%coeff(2,J_V_G), &
+         As => this%coeff(2,J_AS), &
+         U => this%coeff(2,J_U), &
+         c_1 => this%coeff(2,J_C_1), &
+         Omega_rot => this%coeff(2,J_OMEGA_ROT))
 
-      omega_c = this%rt%omega_c(2, omega)
+      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
 

@@ -177,9 +177,7 @@ contains
 
     allocate(md%gr, SOURCE=gr)
 
-    allocate(md%rt, SOURCE=c_rot_t(ml, gr%pt(1), md_p, os_p))
-
-    call md%rt%stencil(gr%pt)
+    allocate(md%rt, SOURCE=c_rot_t(md_p, os_p))
 
     md%md_p = md_p
     md%os_p = os_p
@@ -189,7 +187,7 @@ contains
     md%discrim = discrim
 
     md%omega = omega
-    md%l_i = md%rt%l_i(omega)
+    md%l_i = md%rt%l_e(ml%coeff(I_OMEGA_ROT, gr%pt(1)), omega)
 
     md%n_k = gr%n_k
 
@@ -595,6 +593,7 @@ contains
     complex(WP) :: y_2
     complex(WP) :: y_3
     real(WP)    :: c_1
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
 
     ! Evaluate the horizontal displacement perturbation, in units of
@@ -609,7 +608,9 @@ contains
 
          c_1 = this%ml%coeff(I_C_1, pt)
 
-         omega_c = this%rt%omega_c(k, this%omega)
+         Omega_rot = this%ml%coeff(I_OMEGA_ROT, pt)
+
+         omega_c = this%rt%omega_c(Omega_rot, this%omega)
       
          if (l_i /= 1._WP) then
 
@@ -1006,9 +1007,17 @@ contains
     integer, intent(in)       :: k
     complex(WP)               :: lambda
 
+    real(WP) :: Omega_rot
+
     ! Evaluate the angular eigenvalue
 
-    lambda = this%rt%lambda(k, this%omega)
+    associate (pt => this%gr%pt(k))
+      
+      Omega_rot = this%ml%coeff(I_OMEGA_ROT, pt)
+    
+      lambda = this%rt%lambda(Omega_rot, this%omega)
+
+    end associate
 
     ! Finish
 
@@ -1249,6 +1258,7 @@ contains
     real(WP)    :: V_2
     real(WP)    :: U
     real(WP)    :: c_1
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
 
     ! Evaluate the steady-state differential torque, in units of G
@@ -1270,7 +1280,9 @@ contains
       c_1 = this%ml%coeff(I_C_1, pt)
       U = this%ml%coeff(I_U, pt)
 
-      omega_c = this%rt%omega_c(k, this%omega)
+      Omega_rot = this%ml%coeff(I_OMEGA_ROT, pt)
+
+      omega_c = this%rt%omega_c(Omega_rot, this%omega)
 
       dtau_dx_tr = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._WP)*( &
            lag_rho*CONJG(eul_P)/(c_1*V_2) + &
@@ -1396,6 +1408,7 @@ contains
     complex(WP) :: y_4
     real(WP)    :: U
     real(WP)    :: c_1
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
 
     ! Evaluate the I_0 integral, which should be zero for dipole
@@ -1411,7 +1424,9 @@ contains
       U = this%ml%coeff(I_U, pt)
       c_1 = this%ml%coeff(I_C_1, pt)
 
-      omega_c = this%rt%omega_c(k, this%omega)
+      Omega_rot = this%ml%coeff(I_OMEGA_ROT, pt)
+
+      omega_c = this%rt%omega_c(Omega_rot, this%omega)
 
       if (pt%x /= 0._WP) then
          I_1 = pt%x**(l_i+2._WP)*(c_1*omega_c**2*U*y_1 - U*y_2 + &
@@ -1440,6 +1455,7 @@ contains
     real(WP) :: As
     real(WP) :: U
     real(WP) :: c_1
+    real(WP) :: Omega_rot
     real(WP) :: lambda
     real(WP) :: omega_c
     real(WP) :: g_4
@@ -1464,9 +1480,11 @@ contains
          U = this%ml%coeff(I_U, pt)
          c_1 = this%ml%coeff(I_C_1, pt)
 
+         Omega_rot = this%ml%coeff(I_OMEGA_ROT, pt)
+
          lambda = REAL(this%lambda(k))
 
-         omega_c = REAL(this%rt%omega_c(k, this%omega))
+         omega_c = REAL(this%rt%omega_c(Omega_rot, this%omega))
 
          g_4 = -4._WP*V_g*c_1
          g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda

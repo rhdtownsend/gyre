@@ -202,6 +202,7 @@ contains
     type(osc_par_t), intent(in)         :: os_p
 
     class(r_rot_t), allocatable :: rt
+    real(WP)                    :: Omega_rot
     real(WP)                    :: omega_c(gr%n_k)
     real(WP)                    :: omega_c_prev(gr%n_k)
     integer                     :: j
@@ -212,11 +213,12 @@ contains
 
     if (SIZE(omega) >= 1) then
 
-       allocate(rt, SOURCE=r_rot_t(ml, gr%pt(1), md_p, os_p))
-       call rt%stencil(gr%pt)
+       allocate(rt, SOURCE=r_rot_t(md_p, os_p))
 
+       !$OMP PARALLEL DO PRIVATE (Omega_rot)
        do k = 1, gr%n_k
-          omega_c(k) = rt%omega_c(k, omega(1))
+          Omega_rot = ml%coeff(I_OMEGA_ROT, gr%pt(k))
+          omega_c(k) = rt%omega_c(Omega_rot, omega(1))
        end do
 
        $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
@@ -224,8 +226,11 @@ contains
        do j = 2, SIZE(omega)
 
           omega_c_prev = omega_c
+
+          !$OMP PARALLEL DO PRIVATE (Omega_rot)
           do k = 1, gr%n_k
-             omega_c(k) = rt%omega_c(k, omega(j))
+             Omega_rot = ml%coeff(I_OMEGA_ROT, gr%pt(k))
+             omega_c(k) = rt%omega_c(Omega_rot, omega(j))
           end do
 
           $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)

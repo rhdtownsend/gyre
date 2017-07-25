@@ -25,6 +25,7 @@ module gyre_ad_bvp
 
   use gyre_ad_bound
   use gyre_ad_diff
+  use gyre_ad_share
   use gyre_ad_trans
   use gyre_bvp
   use gyre_ext
@@ -46,11 +47,15 @@ module gyre_ad_bvp
   ! Derived-type definitions
 
   type, extends (r_bvp_t) :: ad_bvp_t
-     class(model_t), pointer :: ml => null()
-     type(grid_t)            :: gr
-     type(ad_trans_t)        :: tr
-     type(mode_par_t)        :: md_p
-     type(osc_par_t)         :: os_p
+     private
+     type(ad_share_t), pointer :: sh => null()
+     type(grid_t)              :: gr
+     type(ad_trans_t)          :: tr
+     type(mode_par_t)          :: md_p
+     type(osc_par_t)           :: os_p
+   contains
+     private
+     final :: finalize_
   end type ad_bvp_t
 
   ! Interfaces
@@ -85,6 +90,7 @@ contains
 
     type(point_t)                :: pt_i
     type(point_t)                :: pt_o
+    type(ad_share_t), pointer    :: sh
     type(ad_bound_t)             :: bd
     integer                      :: k
     type(ad_diff_t), allocatable :: df(:)
@@ -94,9 +100,15 @@ contains
     pt_i = gr%pt(1)
     pt_o = gr%pt(gr%n_k)
 
+    ! Initialize the shared data
+
+    allocate(sh)
+
+    sh = ad_share_t(ml, pt_i, md_p, os_p)
+
     ! Initialize the boundary conditions
 
-    bd = ad_bound_t(ml, pt_i, pt_o, md_p, os_p)
+    bd = ad_bound_t(sh, pt_i, pt_o, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -104,7 +116,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = ad_diff_t(ml, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = ad_diff_t(sh, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -113,10 +125,10 @@ contains
 
     ! Other initializations
  
-    bp%ml => ml
+    bp%sh => sh
     bp%gr = gr
 
-    bp%tr = ad_trans_t(ml, pt_i, md_p, os_p)
+    bp%tr = ad_trans_t(sh, pt_i, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
@@ -127,6 +139,22 @@ contains
     return
 
   end function ad_bvp_t_
+
+  !****
+
+  subroutine finalize_ (this)
+
+    type(ad_bvp_t), intent(inout) :: this
+
+    ! Finalize the ad_bvp_t
+
+    deallocate(this%sh)
+
+    ! Finish
+
+    return
+
+  end subroutine finalize_
 
   !****
 
@@ -163,7 +191,7 @@ contains
 
     ! Construct the mode_t
 
-    md = mode_t(CMPLX(omega, KIND=WP), y_c, c_ext_t(discrim), bp%ml, bp%gr, bp%md_p, bp%os_p, j)
+    md = mode_t(CMPLX(omega, KIND=WP), y_c, c_ext_t(discrim), bp%sh%ml, bp%gr, bp%md_p, bp%os_p, j)
 
     ! Finish
 

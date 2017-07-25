@@ -23,6 +23,7 @@ module gyre_ad_match
 
   use core_kinds
 
+  use gyre_ad_share
   use gyre_ad_trans
   use gyre_diff
   use gyre_ext
@@ -49,9 +50,9 @@ module gyre_ad_match
 
   type, extends (r_diff_t) :: ad_match_t
      private
-     class(model_t), pointer :: ml => null()
-     type(ad_trans_t)        :: tr
-     real(WP), allocatable   :: coeffs(:,:)
+     type(ad_share_t), pointer :: sh => null()
+     type(ad_trans_t)          :: tr
+     real(WP), allocatable     :: coeff(:,:)
    contains
      private
      procedure         :: stencil_
@@ -71,24 +72,24 @@ module gyre_ad_match
 
 contains
 
-  function ad_match_t_ (ml, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
+  function ad_match_t_ (sh, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_a
-    type(point_t), intent(in)           :: pt_b
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(ad_match_t)                    :: mt
+    type(ad_share_t), pointer, intent(in) :: sh
+    type(point_t), intent(in)             :: pt_i
+    type(point_t), intent(in)             :: pt_a
+    type(point_t), intent(in)             :: pt_b
+    type(mode_par_t), intent(in)          :: md_p
+    type(osc_par_t), intent(in)           :: os_p
+    type(ad_match_t)                      :: mt
 
     $ASSERT_DEBUG(pt_a%s+1 == pt_b%s,Mismatched segments)
     $ASSERT_DEBUG(pt_a%x == pt_b%x,Mismatched abscissae)
 
     ! Construct the ad_match_t
 
-    mt%ml => ml
+    mt%sh => sh
 
-    mt%tr = ad_trans_t(ml, pt_i, md_p, os_p)
+    mt%tr = ad_trans_t(sh, pt_i, md_p, os_p)
 
     call mt%stencil_(pt_a, pt_b)
 
@@ -110,12 +111,12 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%ml, [I_U])
+    call check_model(this%sh%ml, [I_U])
 
-    allocate(this%coeffs(2,J_LAST))
+    allocate(this%coeff(2,J_LAST))
 
-    this%coeffs(1,J_U) = this%ml%coeff(I_U, pt_a)
-    this%coeffs(2,J_U) = this%ml%coeff(I_U, pt_b)
+    this%coeff(1,J_U) = this%sh%ml%coeff(I_U, pt_a)
+    this%coeff(2,J_U) = this%sh%ml%coeff(I_U, pt_b)
 
     ! Set up stencil for the tr component
 
@@ -148,8 +149,8 @@ contains
     ! Calculate coefficients
 
     associate( &
-      U_l => this%coeffs(1,J_U), &
-      U_r => this%coeffs(2,J_U))
+      U_l => this%coeff(1,J_U), &
+      U_r => this%coeff(2,J_U))
 
       ! Evaluate the match conditions (y_1, y_3 continuous, y_2, y_4
       ! not)

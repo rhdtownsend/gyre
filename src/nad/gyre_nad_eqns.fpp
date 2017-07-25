@@ -25,14 +25,13 @@ module gyre_nad_eqns
 
   use gyre_eqns
   use gyre_linalg
-  use gyre_mode_par
   use gyre_model
+  use gyre_mode_par
   use gyre_model_util
+  use gyre_nad_share
   use gyre_nad_trans
   use gyre_osc_par
   use gyre_point
-  use gyre_rot
-  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -66,17 +65,17 @@ module gyre_nad_eqns
   integer, parameter :: J_C_EPS_S = 19
   integer, parameter :: J_KAP_AD = 20
   integer, parameter :: J_KAP_S = 21
+  integer, parameter :: J_OMEGA_ROT = 22
 
-  integer, parameter :: J_LAST = J_KAP_S
+  integer, parameter :: J_LAST = J_OMEGA_ROT
 
   ! Derived-type definitions
 
   type, extends (c_eqns_t) :: nad_eqns_t
      private
-     class(model_t), pointer     :: ml => null()
-     class(c_rot_t), allocatable :: rt
+     type(nad_share_t), pointer  :: sh => null()
      type(nad_trans_t)           :: tr
-     real(WP), allocatable       :: coeffs(:,:)
+     real(WP), allocatable       :: coeff(:,:)
      real(WP), allocatable       :: x(:)
      real(WP)                    :: alpha_gr
      real(WP)                    :: alpha_hf
@@ -106,26 +105,19 @@ module gyre_nad_eqns
 
 contains
 
-  function nad_eqns_t_ (ml, pt_i, md_p, os_p) result (eq)
+  function nad_eqns_t_ (sh, pt_i, md_p, os_p) result (eq)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(nad_eqns_t)                    :: eq
+    type(nad_share_t), pointer, intent(in) :: sh
+    type(point_t), intent(in)              :: pt_i
+    type(mode_par_t), intent(in)           :: md_p
+    type(osc_par_t), intent(in)            :: os_p
+    type(nad_eqns_t)                       :: eq
 
     ! Construct the nad_eqns_t
 
-    call check_model(ml, [ &
-         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
-         I_C_LUM,I_C_RAD,I_C_DIF,I_C_THN,I_C_THK, &
-         I_C_EPS_AD,I_C_EPS_S,I_KAP_AD,I_KAP_S])
+    eq%sh => sh
 
-    eq%ml => ml
-
-    allocate(eq%rt, SOURCE=c_rot_t(ml, pt_i, md_p, os_p))
-
-    eq%tr = nad_trans_t(ml, pt_i, md_p, os_p)
+    eq%tr = nad_trans_t(sh, pt_i, md_p, os_p)
 
     if (os_p%cowling_approx) then
        eq%alpha_gr = 0._WP
@@ -183,40 +175,45 @@ contains
 
     ! Calculate coefficients at the stencil points
 
+    call check_model(this%sh%ml, [ &
+         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
+         I_C_LUM,I_C_RAD,I_C_DIF,I_C_THN,I_C_THK, &
+         I_C_EPS_AD,I_C_EPS_S,I_KAP_AD,I_KAP_S,I_OMEGA_ROT])
+
     n_s = SIZE(pt)
 
-    if (ALLOCATED(this%coeffs)) deallocate(this%coeffs)
-    allocate(this%coeffs(n_s, J_LAST))
+    if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+    allocate(this%coeff(n_s, J_LAST))
 
     do i = 1, n_s
-       this%coeffs(i,J_V) = this%ml%coeff(I_V_2, pt(i))*pt(i)%x**2
-       this%coeffs(i,J_V_G) = this%coeffs(i,J_V)/this%ml%coeff(I_GAMMA_1, pt(i))
-       this%coeffs(i,J_AS) = this%ml%coeff(I_AS, pt(i))
-       this%coeffs(i,J_U) = this%ml%coeff(I_U, pt(i))
-       this%coeffs(i,J_C_1) = this%ml%coeff(I_C_1, pt(i))
-       this%coeffs(i,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt(i))
-       this%coeffs(i,J_DNABLA_AD) = this%ml%dcoeff(I_NABLA_AD, pt(i))
-       this%coeffs(i,J_NABLA) = this%ml%coeff(I_NABLA, pt(i))
-       this%coeffs(i,J_DELTA) = this%ml%coeff(I_DELTA, pt(i))
-       this%coeffs(i,J_C_LUM) = this%ml%coeff(I_C_LUM, pt(i))
-       this%coeffs(i,J_DC_LUM) = this%ml%dcoeff(I_C_LUM, pt(i))
-       this%coeffs(i,J_C_RAD) = this%ml%coeff(I_C_RAD, pt(i))
-       this%coeffs(i,J_DC_RAD) = this%ml%dcoeff(I_C_RAD, pt(i))
-       this%coeffs(i,J_C_DIF) = this%ml%coeff(I_C_DIF, pt(i))
-       this%coeffs(i,J_C_THN) = this%ml%coeff(I_C_THN, pt(i))
-       this%coeffs(i,J_DC_THN) = this%ml%dcoeff(I_C_THN, pt(i))
-       this%coeffs(i,J_C_THK) = this%ml%coeff(I_C_THK, pt(i))
-       this%coeffs(i,J_C_EPS_AD) = this%ml%coeff(I_C_EPS_AD, pt(i))
-       this%coeffs(i,J_C_EPS_S) = this%ml%coeff(I_C_EPS_S, pt(i))
-       this%coeffs(i,J_KAP_AD) = this%ml%coeff(I_KAP_AD, pt(i))
-       this%coeffs(i,J_KAP_S) = this%ml%coeff(I_KAP_S, pt(i))
+       this%coeff(i,J_V) = this%sh%ml%coeff(I_V_2, pt(i))*pt(i)%x**2
+       this%coeff(i,J_V_G) = this%coeff(i,J_V)/this%sh%ml%coeff(I_GAMMA_1, pt(i))
+       this%coeff(i,J_AS) = this%sh%ml%coeff(I_AS, pt(i))
+       this%coeff(i,J_U) = this%sh%ml%coeff(I_U, pt(i))
+       this%coeff(i,J_C_1) = this%sh%ml%coeff(I_C_1, pt(i))
+       this%coeff(i,J_NABLA_AD) = this%sh%ml%coeff(I_NABLA_AD, pt(i))
+       this%coeff(i,J_DNABLA_AD) = this%sh%ml%dcoeff(I_NABLA_AD, pt(i))
+       this%coeff(i,J_NABLA) = this%sh%ml%coeff(I_NABLA, pt(i))
+       this%coeff(i,J_DELTA) = this%sh%ml%coeff(I_DELTA, pt(i))
+       this%coeff(i,J_C_LUM) = this%sh%ml%coeff(I_C_LUM, pt(i))
+       this%coeff(i,J_DC_LUM) = this%sh%ml%dcoeff(I_C_LUM, pt(i))
+       this%coeff(i,J_C_RAD) = this%sh%ml%coeff(I_C_RAD, pt(i))
+       this%coeff(i,J_DC_RAD) = this%sh%ml%dcoeff(I_C_RAD, pt(i))
+       this%coeff(i,J_C_DIF) = this%sh%ml%coeff(I_C_DIF, pt(i))
+       this%coeff(i,J_C_THN) = this%sh%ml%coeff(I_C_THN, pt(i))
+       this%coeff(i,J_DC_THN) = this%sh%ml%dcoeff(I_C_THN, pt(i))
+       this%coeff(i,J_C_THK) = this%sh%ml%coeff(I_C_THK, pt(i))
+       this%coeff(i,J_C_EPS_AD) = this%sh%ml%coeff(I_C_EPS_AD, pt(i))
+       this%coeff(i,J_C_EPS_S) = this%sh%ml%coeff(I_C_EPS_S, pt(i))
+       this%coeff(i,J_KAP_AD) = this%sh%ml%coeff(I_KAP_AD, pt(i))
+       this%coeff(i,J_KAP_S) = this%sh%ml%coeff(I_KAP_S, pt(i))
+       this%coeff(i,J_OMEGA_ROT) = this%sh%ml%coeff(I_OMEGA_ROT, pt(i))
     end do
 
     this%x = pt%x
 
-    ! Set up stencils for the rt and tr components
+    ! Set up stencils for the tr component
 
-    call this%rt%stencil(pt)
     call this%tr%stencil(pt)
 
     ! Finish
@@ -264,37 +261,38 @@ contains
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
-         V => this%coeffs(i,J_V), &
-         V_g => this%coeffs(i,J_V_G), &
-         As => this%coeffs(i,J_AS), &
-         U => this%coeffs(i,J_U), &
-         c_1 => this%coeffs(i,J_C_1), &
-         nabla_ad => this%coeffs(i,J_NABLA_AD), &
-         dnabla_ad => this%coeffs(i,J_DNABLA_AD), &
-         nabla => this%coeffs(i,J_NABLA), &
-         delta => this%coeffs(i,J_DELTA), &
-         c_lum => this%coeffs(i,J_C_LUM), &
-         dc_lum => this%coeffs(i,J_DC_LUM), &
-         c_rad => this%coeffs(i,J_C_RAD), &
-         dc_rad => this%coeffs(i,J_DC_RAD), &
-         c_dif => this%coeffs(i,J_C_DIF), &
-         c_thn => this%coeffs(i,J_C_THN), &
-         dc_thn => this%coeffs(i,J_DC_THN), &
-         c_thk => this%coeffs(i,J_C_THK), &
-         c_eps_ad => this%coeffs(i,J_C_EPS_AD), &
-         c_eps_S => this%coeffs(i,J_C_EPS_S), &
-         kap_ad => this%coeffs(i,J_KAP_AD), &
-         kap_S => this%coeffs(i,J_KAP_S), &
+         V => this%coeff(i,J_V), &
+         V_g => this%coeff(i,J_V_G), &
+         As => this%coeff(i,J_AS), &
+         U => this%coeff(i,J_U), &
+         c_1 => this%coeff(i,J_C_1), &
+         nabla_ad => this%coeff(i,J_NABLA_AD), &
+         dnabla_ad => this%coeff(i,J_DNABLA_AD), &
+         nabla => this%coeff(i,J_NABLA), &
+         delta => this%coeff(i,J_DELTA), &
+         c_lum => this%coeff(i,J_C_LUM), &
+         dc_lum => this%coeff(i,J_DC_LUM), &
+         c_rad => this%coeff(i,J_C_RAD), &
+         dc_rad => this%coeff(i,J_DC_RAD), &
+         c_dif => this%coeff(i,J_C_DIF), &
+         c_thn => this%coeff(i,J_C_THN), &
+         dc_thn => this%coeff(i,J_DC_THN), &
+         c_thk => this%coeff(i,J_C_THK), &
+         c_eps_ad => this%coeff(i,J_C_EPS_AD), &
+         c_eps_S => this%coeff(i,J_C_EPS_S), &
+         kap_ad => this%coeff(i,J_KAP_AD), &
+         kap_S => this%coeff(i,J_KAP_S), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          x => this%x(i), &
          alpha_gr => this%alpha_gr, &
          alpha_hf => this%alpha_hf, &
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
          
-      lambda = this%rt%lambda(i, omega)
-      l_i = this%rt%l_i(omega)
+      lambda = this%sh%rt%lambda(Omega_rot, omega)
+      l_i = this%sh%rt%l_e(this%sh%Omega_rot_i, omega)
     
-      omega_c = this%rt%omega_c(i, omega)
+      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn

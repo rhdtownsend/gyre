@@ -34,6 +34,7 @@ module gyre_rad_bvp
   use gyre_point
   use gyre_rad_bound
   use gyre_rad_diff
+  use gyre_rad_share
   use gyre_rad_trans
   use gyre_util
 
@@ -46,11 +47,15 @@ module gyre_rad_bvp
   ! Derived-type definitions
 
   type, extends (r_bvp_t) :: rad_bvp_t
-     class(model_t), pointer :: ml => null()
-     type(grid_t)            :: gr
-     type(rad_trans_t)       :: tr
-     type(mode_par_t)        :: md_p
-     type(osc_par_t)         :: os_p
+     private
+     type(rad_share_t), pointer :: sh => null()
+     type(grid_t)               :: gr
+     type(rad_trans_t)          :: tr
+     type(mode_par_t)           :: md_p
+     type(osc_par_t)            :: os_p
+   contains
+     private
+     final :: finalize_
   end type rad_bvp_t
 
   ! Interfaces
@@ -85,6 +90,7 @@ contains
 
     type(point_t)                 :: pt_i
     type(point_t)                 :: pt_o
+    type(rad_share_t), pointer    :: sh
     type(rad_bound_t)             :: bd
     integer                       :: k
     type(rad_diff_t), allocatable :: df(:)
@@ -98,9 +104,15 @@ contains
     pt_i = gr%pt(1)
     pt_o = gr%pt(gr%n_k)
 
+    ! Initialize the shared data
+
+    allocate(sh)
+
+    sh = rad_share_t(ml, pt_i, md_p, os_p)
+
     ! Initialize the boundary conditions
 
-    bd = rad_bound_t(ml, pt_i, pt_o, md_p, os_p)
+    bd = rad_bound_t(sh, pt_i, pt_o, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -108,7 +120,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = rad_diff_t(ml, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = rad_diff_t(sh, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -117,10 +129,10 @@ contains
 
     ! Other initializations
 
-    bp%ml => ml
+    bp%sh => sh
     bp%gr = gr
 
-    bp%tr = rad_trans_t(ml, pt_i, md_p, os_p)
+    bp%tr = rad_trans_t(sh, pt_i, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
@@ -131,6 +143,22 @@ contains
     return
 
   end function rad_bvp_t_
+
+  !****
+
+  subroutine finalize_ (this)
+
+    type(rad_bvp_t), intent(inout) :: this
+
+    ! Finalize the rad_bvp_t
+
+    deallocate(this%sh)
+
+    ! Finish
+
+    return
+
+  end subroutine finalize_
 
   !****
 
@@ -160,7 +188,7 @@ contains
     do k = 1, bp%n_k
 
        associate (pt => bp%gr%pt(k))
-         U = bp%ml%coeff(I_U, pt)
+         U = bp%sh%ml%coeff(I_U, pt)
        end associate
 
        call bp%tr%trans_vars(y(:,k), k, omega, from=.FALSE.)
@@ -174,7 +202,7 @@ contains
 
     ! Construct the mode_t
 
-    md = mode_t(CMPLX(omega, KIND=WP), y_c, c_ext_t(discrim), bp%ml, bp%gr, bp%md_p, bp%os_p, j)
+    md = mode_t(CMPLX(omega, KIND=WP), y_c, c_ext_t(discrim), bp%sh%ml, bp%gr, bp%md_p, bp%os_p, j)
 
     ! Finish
 

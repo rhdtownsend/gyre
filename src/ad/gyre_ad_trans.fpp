@@ -23,14 +23,13 @@ module gyre_ad_trans
 
   use core_kinds
 
+  use gyre_ad_share
   use gyre_linalg
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
-  use gyre_rot
-  use gyre_rot_factory
 
   use ISO_FORTRAN_ENV
 
@@ -52,16 +51,16 @@ module gyre_ad_trans
   integer, parameter :: J_DU = 4
   integer, parameter :: J_C_1 = 5
   integer, parameter :: J_DC_1 = 6
+  integer, parameter :: J_OMEGA_ROT = 7
 
-  integer, parameter :: J_LAST = J_DC_1
+  integer, parameter :: J_LAST = J_OMEGA_ROT
 
   ! Derived-type definitions
 
   type :: ad_trans_t
      private
-     class(model_t), pointer     :: ml => null()
-     class(r_rot_t), allocatable :: rt
-     real(WP), allocatable       :: coeffs(:,:)
+     type(ad_share_t), pointer   :: sh => null()
+     real(WP), allocatable       :: coeff(:,:)
      integer                     :: l
      integer                     :: set
      integer                     :: n_e
@@ -103,19 +102,17 @@ module gyre_ad_trans
 
 contains
 
-  function ad_trans_t_ (ml, pt_i, md_p, os_p) result (tr)
+  function ad_trans_t_ (sh, pt_i, md_p, os_p) result (tr)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(ad_trans_t)                    :: tr
+    type(ad_share_t), pointer, intent(in) :: sh
+    type(point_t), intent(in)             :: pt_i
+    type(mode_par_t), intent(in)          :: md_p
+    type(osc_par_t), intent(in)           :: os_p
+    type(ad_trans_t)                      :: tr
 
     ! Construct the ad_trans_t
 
-    tr%ml => ml
-
-    allocate(tr%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
+    tr%sh => sh
 
     select case (os_p%variables_set)
     case ('GYRE')
@@ -154,31 +151,28 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%ml, [I_V_2,I_U,I_C_1])
+    call check_model(this%sh%ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
 
     n_s = SIZE(pt)
 
-    if (ALLOCATED(this%coeffs)) deallocate(this%coeffs)
-    allocate(this%coeffs(n_s,J_LAST))
+    if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+    allocate(this%coeff(n_s,J_LAST))
 
     do i = 1, n_s
-       if (this%ml%is_vacuum(pt(i))) then
-          this%coeffs(i,J_V_2) = HUGE(0._WP)
-          this%coeffs(i,J_DV_2) = HUGE(0._WP)
-          this%coeffs(i,J_DU) = -HUGE(0._WP)
+       if (this%sh%ml%is_vacuum(pt(i))) then
+          this%coeff(i,J_V_2) = HUGE(0._WP)
+          this%coeff(i,J_DV_2) = HUGE(0._WP)
+          this%coeff(i,J_DU) = -HUGE(0._WP)
        else
-          this%coeffs(i,J_V_2) = this%ml%coeff(I_V_2, pt(i))
-          this%coeffs(i,J_DV_2) = this%ml%dcoeff(I_V_2, pt(i))
-          this%coeffs(i,J_DU) = this%ml%dcoeff(I_U, pt(i))
+          this%coeff(i,J_V_2) = this%sh%ml%coeff(I_V_2, pt(i))
+          this%coeff(i,J_DV_2) = this%sh%ml%dcoeff(I_V_2, pt(i))
+          this%coeff(i,J_DU) = this%sh%ml%dcoeff(I_U, pt(i))
        endif
-       this%coeffs(i,J_U) = this%ml%coeff(I_U, pt(i))
-       this%coeffs(i,J_C_1) = this%ml%coeff(I_C_1, pt(i))
-       this%coeffs(i,J_DC_1) = this%ml%dcoeff(I_C_1, pt(i))
-    end do
-
-    ! Set up stencil for the rt component
-
-    call this%rt%stencil(pt)
+       this%coeff(i,J_U) = this%sh%ml%coeff(I_U, pt(i))
+       this%coeff(i,J_C_1) = this%sh%ml%coeff(I_C_1, pt(i))
+       this%coeff(i,J_DC_1) = this%sh%ml%dcoeff(I_C_1, pt(i))
+       this%coeff(i,J_OMEGA_ROT) = this%sh%ml%coeff(I_OMEGA_ROT, pt(i))
+   end do
 
     ! Finish
 
@@ -424,12 +418,13 @@ contains
     ! from GYRE's canonical form
 
     associate( &
-         U => this%coeffs(i,J_U), &
-         c_1 => this%coeffs(i,J_C_1))
+         U => this%coeff(i,J_U), &
+         c_1 => this%coeff(i,J_C_1), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%rt%lambda(i, omega)
+      lambda = this%sh%rt%lambda(Omega_rot, omega)
 
-      omega_c = this%rt%omega_c(i, omega)
+      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
       
@@ -500,7 +495,7 @@ contains
     ! from GYRE's canonical form
 
     associate( &
-         U => this%coeffs(i,J_U))
+         U => this%coeff(i,J_U))
 
       ! Set up the matrix
 
@@ -545,7 +540,7 @@ contains
     ! from GYRE's canonical form
 
     associate( &
-         V_2 => this%coeffs(i,J_V_2))
+         V_2 => this%coeff(i,J_V_2))
 
       ! Set up the matrix
 
@@ -664,12 +659,13 @@ contains
     ! to GYRE's canonical form
 
     associate( &
-         U => this%coeffs(i,J_U), &
-         c_1 => this%coeffs(i,J_C_1))
+         U => this%coeff(i,J_U), &
+         c_1 => this%coeff(i,J_C_1), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%rt%lambda(i, omega)
+      lambda = this%sh%rt%lambda(Omega_rot, omega)
 
-      omega_c = this%rt%omega_c(i, omega)
+      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
       
@@ -740,7 +736,7 @@ contains
     ! to GYRE's canonical form
 
     associate( &
-         U => this%coeffs(i,J_U))
+         U => this%coeff(i,J_U))
 
       ! Set up the matrix
 
@@ -785,7 +781,7 @@ contains
     ! to GYRE's canonical form
 
     associate( &
-         V_2 => this%coeffs(i,J_V_2))
+         V_2 => this%coeff(i,J_V_2))
 
       ! Set up the matrix
 
@@ -865,14 +861,15 @@ contains
     ! transformation matrix H
 
     associate( &
-      U => this%coeffs(i,J_U), &
-      dU => this%coeffs(i,J_DU), &
-      c_1 => this%coeffs(i,J_C_1), &
-      dc_1 => this%coeffs(i,J_DC_1))
+      U => this%coeff(i,J_U), &
+      dU => this%coeff(i,J_DU), &
+      c_1 => this%coeff(i,J_C_1), &
+      dc_1 => this%coeff(i,J_DC_1), &
+      Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%rt%lambda(i, omega)
+      lambda = this%sh%rt%lambda(Omega_rot, omega)
 
-      omega_c = this%rt%omega_c(i, omega)
+      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
 
       ! Set up the matrix (nb: the derivatives of omega_c and lambda are
       ! neglected; this is incorrect when rotation is non-zero)
@@ -946,8 +943,8 @@ contains
     ! Calculate coefficients
 
     associate( &
-      U => this%coeffs(i,J_U), &
-      dU => this%coeffs(i,J_DU))
+      U => this%coeff(i,J_U), &
+      dU => this%coeff(i,J_DU))
 
       ! Set up the matrix
 
@@ -992,8 +989,8 @@ contains
     ! transformation matrix H
 
     associate( &
-         V_2 => this%coeffs(i,J_V_2), &
-         dV_2 => this%coeffs(i,J_DV_2))
+         V_2 => this%coeff(i,J_V_2), &
+         dV_2 => this%coeff(i,J_DV_2))
 
       ! Set up the matrix
 
