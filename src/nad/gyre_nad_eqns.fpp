@@ -175,44 +175,48 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%sh%ml, [ &
-         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
-         I_C_LUM,I_C_RAD,I_C_DIF,I_C_THN,I_C_THK, &
-         I_C_EPS_AD,I_C_EPS_S,I_KAP_AD,I_KAP_S,I_OMEGA_ROT])
+    associate (ml => this%sh%ml)
 
-    n_s = SIZE(pt)
+      call check_model(ml, [ &
+           I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
+           I_C_LUM,I_C_RAD,I_C_DIF,I_C_THN,I_C_THK, &
+           I_C_EPS_AD,I_C_EPS_S,I_KAP_AD,I_KAP_S,I_OMEGA_ROT])
 
-    if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-    allocate(this%coeff(n_s, J_LAST))
+      n_s = SIZE(pt)
 
-    do i = 1, n_s
-       this%coeff(i,J_V) = this%sh%ml%coeff(I_V_2, pt(i))*pt(i)%x**2
-       this%coeff(i,J_V_G) = this%coeff(i,J_V)/this%sh%ml%coeff(I_GAMMA_1, pt(i))
-       this%coeff(i,J_AS) = this%sh%ml%coeff(I_AS, pt(i))
-       this%coeff(i,J_U) = this%sh%ml%coeff(I_U, pt(i))
-       this%coeff(i,J_C_1) = this%sh%ml%coeff(I_C_1, pt(i))
-       this%coeff(i,J_NABLA_AD) = this%sh%ml%coeff(I_NABLA_AD, pt(i))
-       this%coeff(i,J_DNABLA_AD) = this%sh%ml%dcoeff(I_NABLA_AD, pt(i))
-       this%coeff(i,J_NABLA) = this%sh%ml%coeff(I_NABLA, pt(i))
-       this%coeff(i,J_DELTA) = this%sh%ml%coeff(I_DELTA, pt(i))
-       this%coeff(i,J_C_LUM) = this%sh%ml%coeff(I_C_LUM, pt(i))
-       this%coeff(i,J_DC_LUM) = this%sh%ml%dcoeff(I_C_LUM, pt(i))
-       this%coeff(i,J_C_RAD) = this%sh%ml%coeff(I_C_RAD, pt(i))
-       this%coeff(i,J_DC_RAD) = this%sh%ml%dcoeff(I_C_RAD, pt(i))
-       this%coeff(i,J_C_DIF) = this%sh%ml%coeff(I_C_DIF, pt(i))
-       this%coeff(i,J_C_THN) = this%sh%ml%coeff(I_C_THN, pt(i))
-       this%coeff(i,J_DC_THN) = this%sh%ml%dcoeff(I_C_THN, pt(i))
-       this%coeff(i,J_C_THK) = this%sh%ml%coeff(I_C_THK, pt(i))
-       this%coeff(i,J_C_EPS_AD) = this%sh%ml%coeff(I_C_EPS_AD, pt(i))
-       this%coeff(i,J_C_EPS_S) = this%sh%ml%coeff(I_C_EPS_S, pt(i))
-       this%coeff(i,J_KAP_AD) = this%sh%ml%coeff(I_KAP_AD, pt(i))
-       this%coeff(i,J_KAP_S) = this%sh%ml%coeff(I_KAP_S, pt(i))
-       this%coeff(i,J_OMEGA_ROT) = this%sh%ml%coeff(I_OMEGA_ROT, pt(i))
-    end do
+      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+      allocate(this%coeff(n_s, J_LAST))
 
-    this%x = pt%x
+      do i = 1, n_s
+         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
+         this%coeff(i,J_V_G) = this%coeff(i,J_V)/ml%coeff(I_GAMMA_1, pt(i))
+         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
+         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
+         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
+         this%coeff(i,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt(i))
+         this%coeff(i,J_DNABLA_AD) = ml%dcoeff(I_NABLA_AD, pt(i))
+         this%coeff(i,J_NABLA) = ml%coeff(I_NABLA, pt(i))
+         this%coeff(i,J_DELTA) = ml%coeff(I_DELTA, pt(i))
+         this%coeff(i,J_C_LUM) = ml%coeff(I_C_LUM, pt(i))
+         this%coeff(i,J_DC_LUM) = ml%dcoeff(I_C_LUM, pt(i))
+         this%coeff(i,J_C_RAD) = ml%coeff(I_C_RAD, pt(i))
+         this%coeff(i,J_DC_RAD) = ml%dcoeff(I_C_RAD, pt(i))
+         this%coeff(i,J_C_DIF) = ml%coeff(I_C_DIF, pt(i))
+         this%coeff(i,J_C_THN) = ml%coeff(I_C_THN, pt(i))
+         this%coeff(i,J_DC_THN) = ml%dcoeff(I_C_THN, pt(i))
+         this%coeff(i,J_C_THK) = ml%coeff(I_C_THK, pt(i))
+         this%coeff(i,J_C_EPS_AD) = ml%coeff(I_C_EPS_AD, pt(i))
+         this%coeff(i,J_C_EPS_S) = ml%coeff(I_C_EPS_S, pt(i))
+         this%coeff(i,J_KAP_AD) = ml%coeff(I_KAP_AD, pt(i))
+         this%coeff(i,J_KAP_S) = ml%coeff(I_KAP_S, pt(i))
+         this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
+      end do
 
-    ! Set up stencils for the tr component
+      this%x = pt%x
+
+    end associate
+
+    ! Set up stencil for the tr component
 
     call this%tr%stencil(pt)
 
@@ -290,7 +294,7 @@ contains
          alpha_om => this%alpha_om)
          
       lambda = this%sh%rt%lambda(Omega_rot, omega)
-      l_i = this%sh%rt%l_e(this%sh%Omega_rot_i, omega)
+      l_i = this%sh%l_i(omega)
     
       omega_c = this%sh%rt%omega_c(Omega_rot, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c

@@ -123,24 +123,28 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%sh%ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
+    associate (ml => this%sh%ml)
 
-    n_s = SIZE(pt)
+      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
 
-    if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-    allocate(this%coeff(n_s,J_LAST))
+      n_s = SIZE(pt)
+      
+      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+      allocate(this%coeff(n_s,J_LAST))
 
-    do i = 1, n_s
-       this%coeff(i,J_V_G) = this%sh%ml%coeff(I_V_2, pt(i))*pt(i)%x**2/this%sh%ml%coeff(I_GAMMA_1, pt(i))
-       this%coeff(i,J_AS) = this%sh%ml%coeff(I_AS, pt(i))
-       this%coeff(i,J_U) = this%sh%ml%coeff(I_U, pt(i))
-       this%coeff(i,J_C_1) = this%sh%ml%coeff(I_C_1, pt(i))
-       this%coeff(i,J_OMEGA_ROT) = this%sh%ml%coeff(I_OMEGA_ROT, pt(i))
-    end do
+      do i = 1, n_s
+         this%coeff(i,J_V_G) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2/ml%coeff(I_GAMMA_1, pt(i))
+         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
+         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
+         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
+         this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
+      end do
 
-    this%x = pt%x
+      this%x = pt%x
 
-    ! Set up stencils for the tr component
+    end associate
+
+    ! Set up stencil for the tr component
 
     call this%tr%stencil(pt)
 

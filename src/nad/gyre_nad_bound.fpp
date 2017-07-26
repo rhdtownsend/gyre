@@ -213,54 +213,58 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%sh%ml, [I_V_2,I_U,I_C_1,I_NABLA_AD,I_C_THN,I_OMEGA_ROT])
+    associate (ml => this%sh%ml)
 
-    allocate(this%coeff(2,J_LAST))
+      call check_model(ml, [I_V_2,I_U,I_C_1,I_NABLA_AD,I_C_THN,I_OMEGA_ROT])
 
-    ! Inner boundary
+      allocate(this%coeff(2,J_LAST))
 
-    select case (this%type_i)
-    case (REGULAR_TYPE)
-       this%coeff(1,J_C_1) = this%sh%ml%coeff(I_C_1, pt_i)
-    case (ZERO_R_TYPE)
-    case (ZERO_H_TYPE)
-    case default
-       $ABORT(Invalid type_i)
-    end select
+      ! Inner boundary
 
-    this%coeff(1,J_OMEGA_ROT) = this%sh%ml%coeff(I_OMEGA_ROT, pt_i)
+      select case (this%type_i)
+      case (REGULAR_TYPE)
+         this%coeff(1,J_C_1) = ml%coeff(I_C_1, pt_i)
+      case (ZERO_R_TYPE)
+      case (ZERO_H_TYPE)
+      case default
+         $ABORT(Invalid type_i)
+      end select
 
-    ! Outer boundary
+      this%coeff(1,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt_i)
 
-    select case (this%type_o)
-    case (VACUUM_TYPE)
-       this%coeff(2,J_V) = this%sh%ml%coeff(I_V_2, pt_o)*pt_o%x**2
-       this%coeff(2,J_U) = this%sh%ml%coeff(I_U, pt_o)
-    case (DZIEM_TYPE)
-       this%coeff(2,J_V) = this%sh%ml%coeff(I_V_2, pt_o)*pt_o%x**2
-       this%coeff(2,J_C_1) = this%sh%ml%coeff(I_C_1, pt_o)
-    case (UNNO_TYPE)
-       call eval_atmos_coeffs_unno(this%sh%ml, pt_o, this%coeff(2,J_V_G), &
-            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
-    case (JCD_TYPE)
-       call eval_atmos_coeffs_jcd(this%sh%ml, pt_o, this%coeff(2,J_V_G), &
-            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
-    case (LUAN_TYPE)
-       call check_model(this%sh%ml, [I_DELTA,I_F_LUAN_T,I_F_LUAN_C])
-       call eval_atmos_coeffs_luan(this%sh%ml, pt_o, this%coeff(2,J_V_G), &
-            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
-       this%coeff(2,J_DELTA) = this%sh%ml%coeff(I_DELTA, pt_o)
-       this%coeff(2,J_F_LUAN_T) = this%sh%ml%coeff(I_F_LUAN_T, pt_o)
-       this%coeff(2,J_F_LUAN_C) = this%sh%ml%coeff(I_F_LUAN_C, pt_o)
-    case default
-       $ABORT(Invalid type_o)
-    end select
+      ! Outer boundary
 
-    this%coeff(2,J_NABLA_AD) = this%sh%ml%coeff(I_NABLA_AD, pt_o)
-    this%coeff(2,J_C_THN) = this%sh%ml%coeff(I_C_THN, pt_o)
-    this%coeff(2,J_OMEGA_ROT) = this%sh%ml%coeff(I_OMEGA_ROT, pt_o)
+      select case (this%type_o)
+      case (VACUUM_TYPE)
+         this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
+         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
+      case (DZIEM_TYPE)
+         this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
+         this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
+      case (UNNO_TYPE)
+         call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V_G), &
+              this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
+      case (JCD_TYPE)
+         call eval_atmos_coeffs_jcd(ml, pt_o, this%coeff(2,J_V_G), &
+              this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
+      case (LUAN_TYPE)
+         call check_model(ml, [I_DELTA,I_F_LUAN_T,I_F_LUAN_C])
+         call eval_atmos_coeffs_luan(ml, pt_o, this%coeff(2,J_V_G), &
+              this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
+         this%coeff(2,J_DELTA) = ml%coeff(I_DELTA, pt_o)
+         this%coeff(2,J_F_LUAN_T) = ml%coeff(I_F_LUAN_T, pt_o)
+         this%coeff(2,J_F_LUAN_C) = ml%coeff(I_F_LUAN_C, pt_o)
+      case default
+         $ABORT(Invalid type_o)
+      end select
 
-    ! Set up stencils for the tr component
+      this%coeff(2,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt_o)
+      this%coeff(2,J_C_THN) = ml%coeff(I_C_THN, pt_o)
+      this%coeff(2,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt_o)
+
+    end associate
+      
+    ! Set up stencil for the tr component
 
     call this%tr%stencil([pt_i,pt_o])
 
@@ -327,7 +331,7 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      l_i = this%sh%rt%l_e(this%sh%Omega_rot_i, omega)
+      l_i = this%sh%l_i(omega)
 
       omega_c = this%sh%rt%omega_c(Omega_rot, omega)
 

@@ -112,18 +112,22 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%sh%ml, [I_V_2,I_U,I_NABLA_AD])
+    associate (ml => this%sh%ml)
 
-    allocate(this%coeff(2,J_LAST))
+      call check_model(ml, [I_V_2,I_U,I_NABLA_AD])
 
-    this%coeff(1,J_V) = this%sh%ml%coeff(I_V_2, pt_a)*pt_a%x**2
-    this%coeff(2,J_V) = this%sh%ml%coeff(I_V_2, pt_b)*pt_b%x**2
+      allocate(this%coeff(2,J_LAST))
 
-    this%coeff(1,J_U) = this%sh%ml%coeff(I_U, pt_a)
-    this%coeff(2,J_U) = this%sh%ml%coeff(I_U, pt_b)
+      this%coeff(1,J_V) = ml%coeff(I_V_2, pt_a)*pt_a%x**2
+      this%coeff(2,J_V) = ml%coeff(I_V_2, pt_b)*pt_b%x**2
+      
+      this%coeff(1,J_U) = ml%coeff(I_U, pt_a)
+      this%coeff(2,J_U) = ml%coeff(I_U, pt_b)
 
-    this%coeff(1,J_NABLA_AD) = this%sh%ml%coeff(I_NABLA_AD, pt_a)
-    this%coeff(2,J_NABLA_AD) = this%sh%ml%coeff(I_NABLA_AD, pt_b)
+      this%coeff(1,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt_a)
+      this%coeff(2,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt_b)
+
+    end associate
 
     ! Set up stencil for the tr component
 

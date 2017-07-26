@@ -159,7 +159,6 @@ contains
     $TYPE(WP)                         :: l_e
 
     ! Evaluate the effective harmonic degree
-    ! rate
 
     l_e = 0.5_WP*(-1._WP + SQRT(1._WP + 4._WP*this%lambda(Omega_rot, omega)))
 
