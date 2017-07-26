@@ -45,6 +45,7 @@ module gyre_osc_par
      logical         :: cowling_approx
      logical         :: narf_approx
      logical         :: eddington_approx
+     logical         :: complex_rot
      logical         :: reduce_order
   end type osc_par_t
 
@@ -101,12 +102,13 @@ contains
     logical                              :: cowling_approx
     logical                              :: narf_approx
     logical                              :: eddington_approx
+    logical                              :: complex_rot
     logical                              :: reduce_order
 
     namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, &
          variables_set, inertia_norm, time_factor, conv_scheme, &
          tag_list, nonadiabatic, cowling_approx, narf_approx, eddington_approx, &
-         reduce_order
+         complex_rot, reduce_order
 
     ! Count the number of osc namelists
 
@@ -144,6 +146,7 @@ contains
        cowling_approx = .FALSE.
        narf_approx = .FALSE.
        eddington_approx = .FALSE.
+       complex_rot = .FALSE.
        reduce_order = .TRUE.
 
        read(unit, NML=osc)
@@ -163,6 +166,7 @@ contains
                            cowling_approx=cowling_approx, &
                            narf_approx=narf_approx, &
                            eddington_approx=eddington_approx, &
+                           complex_rot=complex_rot, &
                            reduce_order=reduce_order)
 
     end do read_loop
@@ -199,6 +203,7 @@ contains
     call bcast(os_p%cowling_approx, root_rank)
     call bcast(os_p%narf_approx, root_rank)
     call bcast(os_p%eddington_approx, root_rank)
+    call bcast(os_p%complex_rot, root_rank)
     call bcast(os_p%reduce_order, root_rank)
 
     ! Finish
