@@ -122,6 +122,13 @@ contains
        n_iter = 0
        n_iter_def = 0
 
+       ! Pass the adiabaitc frequency to bp
+
+       select type (bp)
+       class is (nad_bvp_t)
+          call bp%set_omega_r(REAL(md_in(i)%omega))
+       end select
+
        ! Set up initial guesses
 
        if (n_md_in > 1) then
