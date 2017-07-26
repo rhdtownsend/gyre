@@ -440,9 +440,9 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%sh%rt%lambda(Omega_rot, omega)
+      lambda = this%sh%lambda(Omega_rot, omega)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
 
@@ -722,9 +722,9 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%sh%rt%lambda(Omega_rot, omega)
+      lambda = this%sh%lambda(Omega_rot, omega)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
       
@@ -943,9 +943,9 @@ contains
          dU => this%coeff(i,J_DU), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%sh%rt%lambda(Omega_rot, omega)
+      lambda = this%sh%lambda(Omega_rot, omega)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the matrix (nb: the derivatives of omega_c and lambda is
       ! neglected; this is incorrect when rotation is non-zero)

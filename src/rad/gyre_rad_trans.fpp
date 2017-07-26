@@ -377,7 +377,7 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
 
@@ -471,7 +471,7 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
       
@@ -565,7 +565,7 @@ contains
          dc_1 => this%coeff(i,J_DC_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the matrix (nb: the derivative of omega_c is neglected;
       ! this is incorrect when rotation is non-zero)

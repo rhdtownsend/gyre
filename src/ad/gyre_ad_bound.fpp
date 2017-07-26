@@ -312,7 +312,7 @@ contains
 
       l_i = this%sh%l_i(omega)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the boundary conditions
 
@@ -479,7 +479,7 @@ contains
          Omega_rot => this%coeff(2,J_OMEGA_ROT), &
          alpha_gr => this%alpha_gr)
 
-      l_e = this%sh%rt%l_e(Omega_rot, omega)
+      l_e = this%sh%l_e(Omega_rot, omega)
 
       ! Set up the boundary conditions
 
@@ -530,10 +530,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%rt%lambda(Omega_rot, omega)
-      l_e = this%sh%rt%l_e(Omega_rot, omega)
+      lambda = this%sh%lambda(Omega_rot, omega)
+      l_e = this%sh%l_e(Omega_rot, omega)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the boundary conditions
 
@@ -595,10 +595,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%rt%lambda(Omega_rot, omega)
-      l_e = this%sh%rt%l_e(Omega_rot, omega)
+      lambda = this%sh%lambda(Omega_rot, omega)
+      l_e = this%sh%l_e(Omega_rot, omega)
       
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 
@@ -667,10 +667,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%rt%lambda(Omega_rot, omega)
-      l_e = this%sh%rt%l_e(Omega_rot, omega)
+      lambda = this%sh%lambda(Omega_rot, omega)
+      l_e = this%sh%l_e(Omega_rot, omega)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 
@@ -731,10 +731,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%rt%lambda(Omega_rot, omega)
-      l_e = this%sh%rt%l_e(Omega_rot, omega)
+      lambda = this%sh%lambda(Omega_rot, omega)
+      l_e = this%sh%l_e(Omega_rot, omega)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 

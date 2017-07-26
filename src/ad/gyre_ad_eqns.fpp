@@ -204,10 +204,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%rt%lambda(Omega_rot, omega)
+      lambda = this%sh%lambda(Omega_rot, omega)
       l_i = this%sh%l_i(omega)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
 

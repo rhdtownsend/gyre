@@ -55,7 +55,8 @@ module gyre_nad_bvp
      type(osc_par_t)            :: os_p
    contains
      private
-     final :: finalize_
+     final             :: finalize_
+     procedure, public :: set_omega_r
   end type nad_bvp_t
 
   ! Interfaces
@@ -158,6 +159,23 @@ contains
 
   !****
 
+  subroutine set_omega_r (this, omega_r)
+
+    class(nad_bvp_t), intent(inout) :: this
+    real(WP), intent(in)            :: omega_r
+
+    ! Set the real frequency to be used in rotation evaluations
+
+    call this%sh%set_omega_r(omega_r)
+
+    ! Finish
+
+    return
+
+  end subroutine set_omega_r
+
+  !****
+
   function mode_t_ (bp, omega, j) result (md)
 
     class(nad_bvp_t), intent(inout) :: bp
@@ -166,8 +184,6 @@ contains
     type(mode_t)                    :: md
 
     complex(WP)   :: y(6,bp%n_k)
-    complex(WP)   :: v(bp%n_e*bp%n_k)
-    complex(WP)   :: w(bp%n_e*bp%n_k)
     type(c_ext_t) :: discrim
     integer       :: k
     complex(WP)   :: y_c(6,bp%n_k)
@@ -178,19 +194,6 @@ contains
 
     y = bp%soln_vec_hom()
     discrim = bp%det()
-
-    ! Evaluate bc residuals
-
-    call bp%build(omega)
-    v = bp%sm%soln_vec_hom()
-    
-    call bp%build(omega)
-    w = bp%sm%resd_vec(v)
-
-    associate (n_k => bp%n_k, n_e => bp%n_e, n_i => bp%n_i)
-      print *, 'res_i:', w(:n_i)/SQRT(DOT_PRODUCT(y(:,1), y(:,1)))
-      print *, 'res_o:', w((n_k-1)*n_e+n_i+1:)/SQRT(DOT_PRODUCT(y(:,n_k),y(:,n_k)))
-    end associate
 
     ! Convert to canonical form
 

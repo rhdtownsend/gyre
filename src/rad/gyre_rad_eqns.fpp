@@ -194,7 +194,7 @@ contains
          Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
 

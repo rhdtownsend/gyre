@@ -292,11 +292,11 @@ contains
          alpha_hf => this%alpha_hf, &
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
-         
-      lambda = this%sh%rt%lambda(Omega_rot, omega)
+
+      lambda = this%sh%lambda(Omega_rot, omega)
       l_i = this%sh%l_i(omega)
     
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn

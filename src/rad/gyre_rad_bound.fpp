@@ -298,7 +298,7 @@ contains
          Omega_rot => this%coeff(1,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the boundary conditions
 
@@ -439,7 +439,7 @@ contains
          Omega_rot => this%coeff(2,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       ! Set up the boundary conditions
         
@@ -484,7 +484,7 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Omega_rot => this%coeff(2,J_OMEGA_ROT))
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
       
@@ -536,7 +536,7 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Omega_rot => this%coeff(2,J_OMEGA_ROT))
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
 
@@ -588,7 +588,7 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Omega_rot => this%coeff(2,J_OMEGA_ROT))
 
-      omega_c = this%sh%rt%omega_c(Omega_rot, omega)
+      omega_c = this%sh%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
 
