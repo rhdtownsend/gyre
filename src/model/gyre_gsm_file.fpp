@@ -84,14 +84,11 @@ contains
     real(WP), allocatable       :: c_P(:)
     real(WP), allocatable       :: c_lum(:)
     real(WP), allocatable       :: c_rad(:)
-    real(WP), allocatable       :: c_dif(:)
     real(WP), allocatable       :: c_thn(:)
     real(WP), allocatable       :: c_thk(:)
     real(WP), allocatable       :: c_eps(:)
-    real(WP), allocatable       :: c_eps_ad(:)
-    real(WP), allocatable       :: c_eps_S(:)
-    real(WP), allocatable       :: kap_ad(:)
-    real(WP), allocatable       :: kap_S(:)
+    real(WP), allocatable       :: eps_rho(:)
+    real(WP), allocatable       :: eps_T(:)
     type(evol_model_t), pointer :: em
 
     ! Read data from the GSM-format file
@@ -135,17 +132,21 @@ contains
 
     c_P = P*delta/(rho*T*nabla_ad)
 
-    kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
-    kap_S = kap_T - delta*kap_rho
-
     c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
-    c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
     c_thn = c_P*SQRT(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
     c_thk = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
-
     c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
-    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_eps_T + eps_eps_rho/Gamma_1)*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*(eps_eps_T - delta*eps_eps_rho)*R_star**3/L_star
+
+    allocate(eps_rho(n))
+    allocate(eps_T(n))
+
+    where (eps /= 0._WP)
+       eps_rho = eps_eps_rho/eps
+       eps_T = eps_eps_T/eps
+    elsewhere
+       eps_rho = 0._WP
+       eps_T = 0._WP
+    end where
 
     if (ml_p%uniform_rot) then
        allocate(Omega_rot(n))
@@ -171,16 +172,15 @@ contains
 
     call em%define(I_C_LUM, c_lum)
     call em%define(I_C_RAD, c_rad)
-    call em%define(I_C_DIF, c_dif)
     call em%define(I_C_THN, c_thn)
     call em%define(I_C_THK, c_thk)
-
     call em%define(I_C_EPS, c_eps)
-    call em%define(I_C_EPS_AD, c_eps_ad)
-    call em%define(I_C_EPS_S, c_eps_S)
 
-    call em%define(I_KAP_AD, kap_ad)
-    call em%define(I_KAP_S, kap_S)
+    call em%define(I_EPS_RHO, eps_rho)
+    call em%define(I_EPS_T, eps_T)
+
+    call em%define(I_KAP_RHO, kap_rho)
+    call em%define(I_KAP_T, kap_T)
 
     call em%define(I_OMEGA_ROT, Omega_rot)
 

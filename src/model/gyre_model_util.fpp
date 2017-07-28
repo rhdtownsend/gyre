@@ -252,20 +252,20 @@ contains
        i = I_BETA_RAD
     case ('c_rad')
        i = I_C_RAD
-    case ('c_dif')
-       i = I_C_DIF
     case ('c_thn')
        i = I_C_THN
     case ('c_thk')
        i = I_C_THK
-    case ('c_eps_ad')
-       i = I_C_EPS_AD
-    case ('c_eps_S')
-       i = I_C_EPS_S
-    case ('kap_ad')
-       i = I_KAP_AD
-    case ('kap_S')
-       i = I_KAP_S
+    case ('c_eps')
+       i = I_C_EPS
+    case ('eps_rho')
+       i = I_EPS_RHO
+    case ('eps_T')
+       i = I_EPS_T
+    case ('kap_rho')
+       i = I_KAP_RHO
+    case ('kap_T')
+       i = I_KAP_T
     case ('Omega_rot')
        i = I_OMEGA_ROT
     case default
@@ -330,20 +330,20 @@ contains
        name = 'beta_rad'
     case (I_C_RAD)
        name = 'c_rad'
-    case (I_C_DIF)
-       name = 'c_dif'
     case (I_C_THN)
        name = 'c_thn'
     case (I_C_THK)
        name = 'c_thk'
-    case (I_C_EPS_AD)
-       name = 'c_eps_ad'
-    case (I_C_EPS_S)
-       name = 'c_eps_S'
-    case (I_KAP_AD)
-       name = 'kap_ad'
-    case (I_KAP_S)
-       name = 'kap_S'
+    case (I_C_EPS)
+       name = 'c_eps'
+    case (I_EPS_RHO)
+       name = 'eps_rho'
+    case (I_EPS_T)
+       name = 'eps_T'
+    case (I_KAP_RHO)
+       name = 'kap_rho'
+    case (I_KAP_T)
+       name = 'kap_T'
     case (I_OMEGA_ROT)
        name = 'Omega_rot'
     case default
