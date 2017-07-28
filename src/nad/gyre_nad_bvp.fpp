@@ -105,7 +105,7 @@ contains
 
     allocate(sh)
 
-    sh = nad_share_t(ml, pt_i, md_p, os_p)
+    sh = nad_share_t(ml, pt_i, pt_o, md_p, os_p)
 
     ! Initialize the boundary conditions
 
