@@ -40,11 +40,12 @@ module gyre_rad_eqns
 
   ! Parameter definitions
 
-  integer, parameter :: J_V_G = 1
+  integer, parameter :: J_V = 1
   integer, parameter :: J_AS = 2
   integer, parameter :: J_U = 3
   integer, parameter :: J_C_1 = 4
-  integer, parameter :: J_OMEGA_ROT = 5
+  integer, parameter :: J_GAMMA_1 = 5
+  integer, parameter :: J_OMEGA_ROT = 6
 
   integer, parameter :: J_LAST = J_OMEGA_ROT
 
@@ -133,10 +134,11 @@ contains
       allocate(this%coeff(n_s,J_LAST))
 
       do i = 1, n_s
-         this%coeff(i,J_V_G) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2/ml%coeff(I_GAMMA_1, pt(i))
+         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
          this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
          this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
          this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
+         this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
          this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
       end do
 
@@ -187,10 +189,11 @@ contains
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
-         V_g => this%coeff(i,J_V_G), &
+         V => this%coeff(i,J_V), &
          As => this%coeff(i,J_AS), &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
+         Gamma_1 => this%coeff(i,J_GAMMA_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
@@ -198,8 +201,8 @@ contains
 
       ! Set up the matrix
 
-      xA(1,1) = V_g - 1._WP
-      xA(1,2) = -V_g
+      xA(1,1) = V/Gamma_1 - 1._WP
+      xA(1,2) = -V/Gamma_1
       
       xA(2,1) = c_1*alpha_om*omega_c**2 + U - As
       xA(2,2) = As - U + 3._WP
