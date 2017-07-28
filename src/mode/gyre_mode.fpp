@@ -296,7 +296,7 @@ contains
        end do
 
        ! Find the inner turning point (this is to deal with noisy
-       ! near-zero solutions at the origin)
+       ! near-zero solutions at the inner boundary)
 
        call find_turn(this%ml, this%gr, REAL(this%omega), this%md_p, this%os_p, k_i, x_i)
 
@@ -332,9 +332,20 @@ contains
           y_2(k) = REAL(this%y_i(2, k) + this%y_i(3, k))
        end do
 
+       ! Handle special case where the inner boundary y_1 = 0 is
+       ! appled off-center -- don't count the node there
+
+       if (this%os_p%inner_bound == 'ZERO_R') then
+          k_i = 2
+       else
+          k_i = 1
+       endif
+
+       k_o = this%n_k
+
        ! Count winding numbers
 
-       call count_windings_(y_1, y_2, n_c, n_a)
+       call count_windings_(y_1(k_i:k_o), y_2(k_i:k_o), n_c, n_a)
 
        ! Classify
 
@@ -1119,17 +1130,17 @@ contains
 
     real(WP)    :: t_dyn
     real(WP)    :: t_kh
+    complex(WP) :: lag_rho
     complex(WP) :: lag_T
-    complex(WP) :: lag_P
-    complex(WP) :: lag_S
-    real(WP)    :: c_eps_ad
-    real(WP)    :: c_eps_S
+    real(WP)    :: c_eps
+    complex(WP) :: eps_rho
+    complex(WP) :: eps_T
     real(WP)    :: omega_R
 
     ! Evaluate the differential work associated with nuclear
     ! processes, in units of G M_star**2/R_star.  This expression is
     ! based on eqn. 25.9 of [Unn1989]
-
+    
     select type (ml => this%ml)
     class is (evol_model_t)
        t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
@@ -1141,16 +1152,22 @@ contains
 
     associate (pt => this%gr%pt(k))
 
+      lag_rho = this%lag_rho(k)
       lag_T = this%lag_T(k)
-      lag_P = this%lag_P(k)
-      lag_S = this%lag_S(k)
-    
-      c_eps_ad = this%ml%coeff(I_C_EPS_AD, pt)
-      c_eps_S = this%ml%coeff(I_C_EPS_S, pt)
 
+      c_eps = this%ml%coeff(I_C_EPS, pt)
+
+      select case (this%os_p%deps_scheme)
+      case ('MODEL')
+         eps_rho = this%ml%coeff(I_EPS_RHO, pt)
+         eps_T = this%ml%coeff(I_EPS_T, pt)
+      case default
+         $ABORT(Evaluating dW_dx_eps not supported for deps_scheme /= MODEL)
+      end select
+      
       omega_R = REAL(this%omega)
 
-      dW_eps_dx = PI/omega_R*REAL(CONJG(lag_T)*(c_eps_ad*lag_P + c_eps_S*lag_S))*pt%x**2*t_dyn/t_kh
+      dW_eps_dx = PI/omega_R*REAL(CONJG(lag_T)*c_eps*(eps_rho*lag_rho + eps_T*lag_T))*pt%x**2*t_dyn/t_kh
 
     end associate
 
