@@ -305,10 +305,10 @@ contains
     allocate(omega(n))
 
     allocate(A_norm(n))
-    allocate(A_norm(n))
+    allocate(B_norm(n))
 
     allocate(A_phase(n))
-    allocate(A_phase(n))
+    allocate(B_phase(n))
 
     read_loop : do i = 1, n
        read(unit, *) period, A_norm(i), B_norm(i), A_phase(i), B_phase(i)
