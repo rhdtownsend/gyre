@@ -283,8 +283,8 @@ contains
     call em%define(I_EPS_RHO, eps_rho)
     call em%define(I_EPS_T, eps_T)
        
-    call em%define(I_KAP_RHO, kap_T)
-    call em%define(I_KAP_T, kap_rho)
+    call em%define(I_KAP_RHO, kap_rho)
+    call em%define(I_KAP_T, kap_T)
 
     call em%define(I_F_LUAN_T, f_luan_t)
     call em%define(I_F_LUAN_C, f_luan_c)
