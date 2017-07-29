@@ -346,7 +346,7 @@ contains
       kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
       kap_S = kap_T - delta*kap_rho
       
-      c_dif = (kap_ad-4._WP*nabla_ad)*V*nabla + V*nabla_ad
+      c_dif = (kap_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad + V)
 
       ! Set up the matrix
 
@@ -378,8 +378,8 @@ contains
       xA(4,5) = alpha_gr*(-U*delta)
       xA(4,6) = alpha_gr*(0._WP)
 
-      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif + nabla_ad*dnabla_ad)/f_rh
-      xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))/f_rh
+      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)/f_rh
+      xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - c_dif))/f_rh
       xA(5,3) = alpha_gr*(V*lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))/f_rh
       xA(5,4) = alpha_gr*(V*nabla_ad)/f_rh
       xA(5,5) = V*nabla*(4._WP*f_rh - kap_S)/f_rh - df_rh - (l_i - 2._WP)
