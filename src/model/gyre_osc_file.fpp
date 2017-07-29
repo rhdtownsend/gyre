@@ -217,13 +217,13 @@ contains
     allocate(eps_rho(n))
     allocate(eps_T(n))
 
-      where (eps /= 0._WP)
-         eps_rho = eps_eps_rho/eps
-         eps_T = eps_eps_T/eps
-      elsewhere
-         eps_rho = 0._WP
-         eps_T = 0._WP
-      end where
+    where (eps /= 0._WP)
+       eps_rho = eps_eps_rho/eps
+       eps_T = eps_eps_T/eps
+    elsewhere
+       eps_rho = 0._WP
+       eps_T = 0._WP
+    end where
 
     if (ml_p%uniform_rot) then
        allocate(Omega_rot(n))
