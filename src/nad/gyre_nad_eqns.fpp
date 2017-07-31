@@ -46,6 +46,7 @@ module gyre_nad_eqns
 
   integer, parameter :: MODEL_DEPS_SCHEME = 1
   integer, parameter :: FILE_DEPS_SCHEME = 2
+  integer, parameter :: ZERO_DEPS_SCHEME = 3
 
   integer, parameter :: J_V = 1
   integer, parameter :: J_As = 2
@@ -164,6 +165,8 @@ contains
        eq%deps_scheme = MODEL_DEPS_SCHEME
     case ('FILE')
        eq%deps_scheme = FILE_DEPS_SCHEME
+    case ('ZERO')
+       eq%deps_scheme = ZERO_DEPS_SCHEME
     case default
        $ABORT(Invalid deps_scheme)
     end select
@@ -336,6 +339,9 @@ contains
       case (FILE_DEPS_SCHEME)
          eps_rho = this%sh%eps_rho()
          eps_T = this%sh%eps_T()
+      case (ZERO_DEPS_SCHEME)
+         eps_rho = 0._WP
+         eps_T = 0._WP
       case default
          $ABORT(Invalid deps_scheme)
       end select
@@ -379,7 +385,7 @@ contains
       xA(4,6) = alpha_gr*(0._WP)
 
       xA(5,1) = V*(nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)/f_rh
-      xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - c_dif))/f_rh
+      xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - c_dif)/f_rh
       xA(5,3) = alpha_gr*(V*lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))/f_rh
       xA(5,4) = alpha_gr*(V*nabla_ad)/f_rh
       xA(5,5) = V*nabla*(4._WP*f_rh - kap_S)/f_rh - df_rh - (l_i - 2._WP)

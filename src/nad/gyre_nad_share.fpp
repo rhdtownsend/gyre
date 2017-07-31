@@ -101,9 +101,6 @@ contains
     select case (os_p%deps_scheme)
     case ('FILE')
        call read_deps_(ml, md_p, os_p, pt_i, pt_o, sh%in_eps_rho, sh%in_eps_T)
-    case ('MODEL')
-    case default
-       $ABORT(Invalid deps_scheme)
     end select
 
     ! Finish
