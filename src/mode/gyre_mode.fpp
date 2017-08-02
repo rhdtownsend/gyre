@@ -72,22 +72,28 @@ module gyre_mode
      procedure, public :: prune
      procedure, public :: freq
      procedure, public :: y_i
+     procedure, public :: y_5_qad
+     procedure, public :: y_6_qad
      procedure, public :: xi_r
      procedure, public :: xi_h
      procedure, public :: eul_phi
      procedure, public :: deul_phi
      procedure, public :: lag_S
+     procedure, public :: lag_S_qad
      procedure, public :: lag_L
+     procedure, public :: lag_L_qad
      procedure, public :: eul_P
      procedure, public :: lag_P
      procedure, public :: eul_rho
      procedure, public :: lag_rho
      procedure, public :: eul_T
      procedure, public :: lag_T
+     procedure, public :: lag_T_qad
      procedure, public :: lambda
      procedure, public :: dE_dx
      procedure, public :: dW_dx
      procedure, public :: dW_eps_dx
+     procedure, public :: dW_qad_dx
      procedure, public :: dbeta_dx
      procedure, public :: dtau_dx_ss
      procedure, public :: dtau_dx_tr
@@ -556,6 +562,199 @@ contains
 
   !****
 
+  function y_5_qad (this, k)
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: k
+    complex(WP)               :: y_5_qad
+
+    real(WP)    :: V
+    real(WP)    :: c_1
+    real(WP)    :: Gamma_1
+    real(WP)    :: nabla_ad
+    real(WP)    :: dnabla_ad
+    real(WP)    :: nabla
+    real(WP)    :: delta
+    real(WP)    :: c_rad
+    real(WP)    :: dc_rad
+    real(WP)    :: c_thk
+    real(WP)    :: c_eps
+    real(WP)    :: eps_rho
+    real(WP)    :: eps_T
+    real(WP)    :: Omega_rot
+    real(WP)    :: alpha_om
+    real(WP)    :: alpha_hf
+    complex(WP) :: lambda
+    complex(WP) :: omega_c
+    complex(WP) :: i_omega_c
+    real(WP)    :: c_eps_ad
+    real(WP)    :: c_eps_S
+    complex(WP) :: conv_term
+    complex(WP) :: C(6)
+    complex(WP) :: dy_6_dlnx
+
+    ! Evaluate y_5 using quasi-adiabatic expressions
+
+    associate (pt => this%gr%pt(k), l_i => this%l_i)
+
+      if (pt%x /= 0._WP) then
+
+         V = this%ml%coeff(I_V_2, pt)*pt%x**2
+         c_1 = this%ml%coeff(I_C_1, pt)
+
+         Gamma_1 = this%ml%coeff(I_GAMMA_1, pt)
+         nabla_ad = this%ml%coeff(I_NABLA_AD, pt)
+         dnabla_ad = this%ml%dcoeff(I_NABLA_AD, pt)
+         nabla = this%ml%coeff(I_NABLA, pt)
+         delta = this%ml%coeff(I_DELTA, pt)
+
+         c_rad = this%ml%coeff(I_C_RAD, pt)
+         dc_rad = this%ml%dcoeff(I_C_RAD, pt)
+         c_thk = this%ml%coeff(I_C_THK, pt)
+         c_eps = this%ml%coeff(I_C_EPS, pt)
+
+         eps_rho = this%ml%coeff(I_EPS_RHO, pt)
+         eps_T = this%ml%coeff(I_EPS_T, pt)
+
+         alpha_om = 1._WP
+         alpha_hf = 1._WP
+
+         Omega_rot = this%ml%coeff(I_OMEGA_ROT, pt)
+
+         lambda = this%lambda(k)
+    
+         omega_c = this%rt%omega_c(Omega_rot, this%omega)
+         i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+
+         c_eps_ad = c_eps*(nabla_ad*eps_T + eps_rho/Gamma_1)
+         c_eps_S = c_eps*(eps_T - delta*eps_rho)
+
+         conv_term = lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_om*omega_c**2)
+         
+         C(1) = alpha_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+         C(2) = V*c_eps_ad - lambda*c_rad*alpha_hf*nabla_ad/nabla + conv_term
+         C(3) = conv_term
+         C(4) = 0._WP
+         C(5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + i_omega_c*c_thk
+         C(6) = -1._WP - l_i
+
+         if (k == 1) then
+            associate (pt_i => this%gr%pt(k), pt_o => this%gr%pt(k+1))
+              dy_6_dlnx = pt%x*(this%y_6_qad(k+1) - this%y_6_qad(k))/(pt_o%x - pt_i%x)
+            end associate
+         elseif (k == this%gr%n_k) then
+            associate (pt_i => this%gr%pt(k-1), pt_o => this%gr%pt(k))
+              dy_6_dlnx = pt%x*(this%y_6_qad(k) - this%y_6_qad(k-1))/(pt_o%x - pt_i%x)
+            end associate
+         else
+            associate (pt_i => this%gr%pt(k-1), pt_o => this%gr%pt(k+1))
+              dy_6_dlnx = pt%x*(this%y_6_qad(k+1) - this%y_6_qad(k-1))/(pt_o%x - pt_i%x)
+            end associate
+         endif
+
+         y_5_qad = (dy_6_dlnx - C(1)*this%y_i(1, k) - C(2)*this%y_i(2, k) - C(3)*this%y_i(3, k) - &
+                                C(4)*this%y_i(4, k) - C(6)*this%y_6_qad(k))/C(5)
+
+      else
+
+         y_5_qad = 0._WP
+
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function y_5_qad
+
+  !****
+
+  function y_6_qad (this, k)
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: k
+    complex(WP)               :: y_6_qad
+
+    real(WP)    :: V
+    real(WP)    :: U
+    real(WP)    :: c_1
+    real(WP)    :: Gamma_1
+    real(WP)    :: nabla_ad
+    real(WP)    :: dnabla_ad
+    real(WP)    :: nabla
+    real(WP)    :: delta
+    real(WP)    :: c_rad
+    real(WP)    :: c_thn
+    real(WP)    :: dc_thn
+    real(WP)    :: kap_rho
+    real(WP)    :: kap_T
+    real(WP)    :: Omega_rot
+    real(WP)    :: alpha_om
+    complex(WP) :: lambda
+    complex(WP) :: omega_c
+    complex(WP) :: i_omega_c
+    real(WP)    :: kap_ad
+    real(WP)    :: kap_S
+    real(WP)    :: c_dif
+    complex(WP) :: C(6)
+
+    ! Evaluate the Lagrangian radiative luminosity perturbation, in
+    ! units of L_star (quasi-adiabatic version)
+
+    associate (pt => this%gr%pt(k), l_i => this%l_i)
+
+      V = this%ml%coeff(I_V_2, pt)*pt%x**2
+      U = this%ml%coeff(I_U, pt)
+      c_1 = this%ml%coeff(I_C_1, pt)
+
+      Gamma_1 = this%ml%coeff(I_GAMMA_1, pt)
+      nabla_ad = this%ml%coeff(I_NABLA_AD, pt)
+      dnabla_ad = this%ml%dcoeff(I_NABLA_AD, pt)
+      nabla = this%ml%coeff(I_NABLA, pt)
+      delta = this%ml%coeff(I_DELTA, pt)
+
+      c_rad = this%ml%coeff(I_C_RAD, pt)
+      c_thn = this%ml%coeff(I_C_THN, pt)
+      dc_thn = this%ml%dcoeff(I_C_THN, pt)
+
+      kap_rho = this%ml%coeff(I_KAP_RHO, pt)
+      kap_T = this%ml%coeff(I_KAP_T, pt)
+
+      alpha_om = 1._WP
+
+      Omega_rot = this%ml%coeff(I_OMEGA_ROT, pt)
+
+      lambda = this%lambda(k)
+    
+      omega_c = this%rt%omega_c(Omega_rot, this%omega)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+
+      kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
+      kap_S = kap_T - delta*kap_rho
+      
+      c_dif = (kap_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad + V)
+
+      C(1) = (nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)
+      C(2) = (lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - c_dif)
+      C(3) = (lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))
+      C(4) = (nabla_ad)
+
+      C(6) = -nabla/c_rad
+
+      y_6_qad = -(C(1)*this%y_i(1, k) + C(2)*this%y_i(2, k) + C(3)*this%y_i(3, k) + C(4)*this%y_i(4, k))/C(6)
+      
+    end associate
+
+    ! Finish
+
+    return
+
+  end function y_6_qad
+
+  !****
+
   function xi_r (this, k)
 
     class(mode_t), intent(in) :: this
@@ -768,6 +967,37 @@ contains
 
   !****
 
+  function lag_S_qad (this, k)
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: k
+    complex(WP)               :: lag_S_qad
+
+    complex(WP) :: y_5
+
+    ! Evaluate the Lagrangian specific entropy perturbation within the
+    ! quasi-adiabatic approximation, in units of c_p
+
+    associate (pt => this%gr%pt(k), l_i => this%l_i)
+
+      y_5 = this%y_5_qad(k)
+
+      if (pt%x /= 0._WP) then
+         lag_S_qad = y_5*pt%x**(l_i-2._WP)
+      else
+         lag_S_qad = 0._WP
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function lag_S_qad
+
+  !****
+
   function lag_L (this, k)
 
     class(mode_t), intent(in) :: this
@@ -796,6 +1026,37 @@ contains
     return
 
   end function lag_L
+
+  !****
+
+  function lag_L_qad (this, k)
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: k
+    complex(WP)               :: lag_L_qad
+
+    complex(WP) :: y_6
+
+    ! Evaluate the Lagrangian radiative luminosity perturbation within
+    ! the quasi-adiabatic approximation, in units of L_star
+
+    associate (pt => this%gr%pt(k), l_i => this%l_i)
+
+      y_6 = this%y_6_qad(k)
+
+      if (pt%x /= 0._WP) then
+         lag_L_qad = y_6*pt%x**(l_i+1._WP)
+      else
+         lag_L_qad = 0._WP
+      endif
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function lag_L_qad
 
   !****
 
@@ -1012,6 +1273,39 @@ contains
 
   !****
 
+  function lag_T_qad (this, k)
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: k
+    complex(WP)               :: lag_T_qad
+
+    complex(WP) :: lag_P
+    complex(WP) :: lag_S
+    real(WP)    :: nabla_ad
+
+    ! Evaluate the Lagrangian temperature perturbation within the
+    ! quasi-adiabatic approximation, in units of T. This expression
+    ! implements eqn. 13.84 of [Unn1989]
+
+    associate (pt => this%gr%pt(k))
+
+      lag_P = this%lag_P(k)
+      lag_S = this%lag_S_qad(k)
+
+      nabla_ad = this%ml%coeff(I_NABLA_AD, pt)
+      
+      lag_T_qad = nabla_ad*lag_P + lag_S
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function lag_T_qad
+  
+  !****
+
   function lambda (this, k)
 
     class(mode_t), intent(in) :: this
@@ -1176,6 +1470,52 @@ contains
     return
 
   end function dW_eps_dx
+
+  !****
+
+  function dW_qad_dx (this, k)
+
+    use gyre_evol_model
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: k
+    real(WP)                  :: dW_qad_dx
+
+    real(WP)    :: t_dyn
+    real(WP)    :: t_kh
+    complex(WP) :: lag_T
+    complex(WP) :: lag_S
+    real(WP)    :: c_thk
+
+    ! Evaluate the differential work, in units of G M_star**2/R_star,
+    ! within the quasi-adiabatic approximation.  This expression is
+    ! based on eqn. 25.9 of [Unn1989]
+
+    select type (ml => this%ml)
+    class is (evol_model_t)
+       t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
+    class default
+       t_dyn = 1._WP
+       t_kh = 1._WP
+    end select
+
+    associate (pt => this%gr%pt(k))
+
+      lag_T = this%lag_T_qad(k)
+      lag_S = this%lag_S_qad(k)
+    
+      c_thk = this%ml%coeff(I_C_THK, pt)
+
+      dW_qad_dx = PI*AIMAG(CONJG(lag_T)*lag_S)*c_thk*pt%x**2*t_dyn/t_kh
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function dW_qad_dx
 
   !****
 
