@@ -523,8 +523,6 @@ contains
     $TYPE(WP), intent(in)                 :: v(:)
     $TYPE(WP)                             :: w(this%n_e*(this%n+1))
 
-    integer :: k
-
     $CHECK_BOUNDS(SIZE(v),this%n_e*(this%n+1))
 
     ! Evaluate the residual vector w = S v
