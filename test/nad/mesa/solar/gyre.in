@@ -30,7 +30,7 @@
 /
 
 &num
-	diff_scheme = 'MAGNUS_GL2'
+	diff_scheme = 'COLLOC_GL2'
 /
 
 &scan
