@@ -415,7 +415,7 @@ contains
     class(${T}_block_sysmtx_t), intent(in) :: this
     $TYPE(WP)                              :: v(this%n_e*(this%n+1))
 
-    logical, parameter   :: USE_SVD = .FALSE.
+    logical, parameter   :: USE_SVD = .TRUE.
     $TYPE(WP), parameter :: ZERO = 0._WP
     $TYPE(WP), parameter :: ONE = 1._WP
 
@@ -456,7 +456,11 @@ contains
 
          call sing_decompose(M, sigma, U, V_H)
 
+         $if ($T eq 'c')
+         v_bound = CONJG(V_H(2*n_e,:))
+         $else
          v_bound = V_H(2*n_e,:)
+         $endif
 
       else
 
