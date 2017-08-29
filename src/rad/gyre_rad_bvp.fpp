@@ -32,6 +32,7 @@ module gyre_rad_bvp
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
+  use gyre_qad_eval
   use gyre_rad_bound
   use gyre_rad_diff
   use gyre_rad_share
@@ -51,6 +52,7 @@ module gyre_rad_bvp
      type(rad_share_t), pointer :: sh => null()
      type(grid_t)               :: gr
      type(rad_trans_t)          :: tr
+     type(qad_eval_t)           :: qe
      type(mode_par_t)           :: md_p
      type(osc_par_t)            :: os_p
    contains
@@ -94,6 +96,7 @@ contains
     type(rad_bound_t)             :: bd
     integer                       :: k
     type(rad_diff_t), allocatable :: df(:)
+    type(osc_par_t)               :: qad_os_p
 
     ! Construct the rad_bvp_t
 
@@ -135,6 +138,12 @@ contains
     bp%tr = rad_trans_t(sh, pt_i, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
+    if (os_p%quasiad_eigfuncs) then
+       qad_os_p = os_p
+       qad_os_p%variables_set = ''
+       bp%qe = qad_eval_t(ml, gr, md_p, qad_os_p)
+    endif
+
     bp%md_p = md_p
     bp%os_p = os_p
 
@@ -152,7 +161,7 @@ contains
 
     ! Finalize the rad_bvp_t
 
-    deallocate(this%sh)
+    if (ASSOCIATED(this%sh)) deallocate(this%sh)
 
     ! Finish
 
@@ -172,8 +181,9 @@ contains
     real(WP)      :: y(2,bp%n_k)
     type(r_ext_t) :: discrim
     integer       :: k
-    complex(WP)   :: y_c(6,bp%n_k)
+    real(WP)      :: y_g(4,bp%n_k)
     real(WP)      :: U
+    complex(WP)   :: y_c(6,bp%n_k)
 
     ! Calculate the solution vector
 
@@ -184,6 +194,15 @@ contains
 
     ! Convert to canonical form
 
+    !$OMP PARALLEL DO
+    do k = 1, bp%n_k
+       call bp%tr%trans_vars(y(:,k), k, omega, from=.FALSE.)
+    end do
+
+    ! Set up gravitational eigenfunctions
+
+    y_g(1:2,:) = y
+
     !$OMP PARALLEL DO PRIVATE (U)
     do k = 1, bp%n_k
 
@@ -191,14 +210,24 @@ contains
          U = bp%sh%ml%coeff(I_U, pt)
        end associate
 
-       call bp%tr%trans_vars(y(:,k), k, omega, from=.FALSE.)
-
-       y_c(1:2,k) = y(:,k)
-       y_c(3,k) = 0._WP
-       y_c(4,k) = -U*y(1,k)
-       y_c(5:6,k) = 0._WP
+       y_g(4,k) = -U*y(1,k)
        
     end do
+
+    y_g(3,:) = 0._WP
+
+    ! Set up complex eigenfunctions
+
+    if (bp%os_p%quasiad_eigfuncs) then
+
+       y_c = bp%qe%y_qad(omega, y_g)
+
+    else
+
+       y_c(1:4,:) = y_g
+       y_c(5:6,:) = 0._WP
+
+    endif
 
     ! Construct the mode_t
 
