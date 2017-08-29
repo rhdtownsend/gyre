@@ -49,8 +49,8 @@ module gyre_nad_bound
   integer, parameter :: VACUUM_TYPE = 4
   integer, parameter :: DZIEM_TYPE = 5
   integer, parameter :: UNNO_TYPE = 6
-  integer, parameter :: LUAN_TYPE = 7
-  integer, parameter :: JCD_TYPE = 8
+  integer, parameter :: JCD_TYPE = 7
+  integer, parameter :: LUAN_TYPE = 8
 
   integer, parameter :: J_V = 1
   integer, parameter :: J_V_G = 2
@@ -898,7 +898,7 @@ contains
       B(1,2) = -b_12
       B(1,3) = 0._WP
       B(1,4) = 0._WP
-      B(1,5) = b_15*(beta - b_11 - b_12)/(b_11+b_12-beta)
+      B(1,5) = -b_15*(b_11 + b_12 - beta)/(b_11 + b_22 - beta)
       B(1,6) = 0._WP
 
       B(2,1) = alpha_gr*(0._WP)
