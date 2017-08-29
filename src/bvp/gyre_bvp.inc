@@ -48,7 +48,7 @@ module gyre_${T}_bvp
      private
      class(${T}_diff_t), allocatable   :: df(:)
      class(${T}_bound_t), allocatable  :: bd
-     class(${T}_sysmtx_t), allocatable, public :: sm
+     class(${T}_sysmtx_t), allocatable :: sm
      integer, public                   :: n_k
      integer, public                   :: n_e
      integer, public                   :: n_i
