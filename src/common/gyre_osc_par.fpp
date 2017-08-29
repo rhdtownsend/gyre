@@ -46,6 +46,7 @@ module gyre_osc_par
      character(256)          :: deps_file_format
      character(2048)         :: tag_list
      logical                 :: nonadiabatic
+     logical                 :: quasiad_eigfuncs
      logical                 :: cowling_approx
      logical                 :: narf_approx
      logical                 :: eddington_approx
@@ -105,6 +106,7 @@ contains
     character(LEN(os_p%deps_file))        :: deps_file
     character(LEN(os_p%deps_file_format)) :: deps_file_format
     character(LEN(os_p%tag_list))         :: tag_list
+    logical                               :: quasiad_eigfuncs
     logical                               :: nonadiabatic
     logical                               :: cowling_approx
     logical                               :: narf_approx
@@ -115,7 +117,8 @@ contains
     namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, &
          variables_set, inertia_norm, time_factor, &
          conv_scheme, deps_scheme, deps_file, deps_file_format, &
-         tag_list, nonadiabatic, cowling_approx, narf_approx, eddington_approx, &
+         tag_list, quasiad_eigfuncs, nonadiabatic, &
+         cowling_approx, narf_approx, eddington_approx, &
          complex_rot, reduce_order
 
     ! Count the number of osc namelists
@@ -153,6 +156,7 @@ contains
        deps_file_format = ''
        tag_list = ''
 
+       quasiad_eigfuncs = .FALSE.
        nonadiabatic = .FALSE.
        cowling_approx = .FALSE.
        narf_approx = .FALSE.
@@ -176,6 +180,7 @@ contains
                            deps_file=deps_file, &
                            deps_file_format=deps_file_format, &
                            tag_list=tag_list, &
+                           quasiad_eigfuncs=quasiad_eigfuncs, &
                            nonadiabatic=nonadiabatic, &
                            cowling_approx=cowling_approx, &
                            narf_approx=narf_approx, &
@@ -216,6 +221,7 @@ contains
     call bcast(os_p%deps_file_format, root_rank)
     call bcast(os_p%tag_list, root_rank)
 
+    call bcast(os_p%quasiad_eigfuncs, root_rank)
     call bcast(os_p%nonadiabatic, root_rank)
     call bcast(os_p%cowling_approx, root_rank)
     call bcast(os_p%narf_approx, root_rank)
