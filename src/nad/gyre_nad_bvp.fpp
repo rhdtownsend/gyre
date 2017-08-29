@@ -149,7 +149,7 @@ contains
 
     ! Finalize the nad_bvp_t
 
-    deallocate(this%sh)
+    if (ASSOCIATED(this%sh)) deallocate(this%sh)
 
     ! Finish
 
@@ -215,5 +215,5 @@ contains
     return
 
   end function mode_t_
-  
+
 end module gyre_nad_bvp
