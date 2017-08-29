@@ -243,7 +243,7 @@ contains
 
   end subroutine eigen_decompose_r_
 
-!****
+  !****
 
   subroutine eigen_decompose_c_ (A, lambda, V_l, V_r, sort)
 
@@ -325,7 +325,7 @@ contains
 
   end subroutine eigen_decompose_c_
 
-!****
+  !****
 
   $define $EIGEN_DECOMPOSE_2 $sub
 
@@ -421,33 +421,32 @@ contains
   $EIGEN_DECOMPOSE_2(r,real)
   $EIGEN_DECOMPOSE_2(c,complex)
 
-!****
+  !****
 
-  subroutine sing_decompose_r_ (A, sigma, U, V_T)
+  subroutine sing_decompose_r_ (A, sigma, U, V_H)
 
     real(WP), intent(inout) :: A(:,:)
     real(WP), intent(out)   :: sigma(:)
     real(WP), intent(out)   :: U(:,:)
-    real(WP), intent(out)   :: V_T(:,:)
+    real(WP), intent(out)   :: V_H(:,:)
 
     integer  :: n
     real(WP) :: work(5*SIZE(A, 1))
     integer  :: info
 
-    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
-    $CHECK_BOUNDS(SIZE(sigma),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(sigma),MIN(SIZE(A, 1), SIZE(A,2)))
 
     $CHECK_BOUNDS(SIZE(U, 1),SIZE(A, 1))
-    $CHECK_BOUNDS(SIZE(U, 2),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(U, 2),SIZE(A, 1))
     
-    $CHECK_BOUNDS(SIZE(V_T, 1),SIZE(A, 1))
-    $CHECK_BOUNDS(SIZE(V_T, 2),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(V_H, 1),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(V_H, 2),SIZE(A, 2))
 
     ! Perform the singular-value decomposition of A
 
     n = SIZE(A, 1)
 
-    call XGESVD('A', 'A', n, n, A, n, sigma, U, n, V_T, n, work, SIZE(work), info)
+    call XGESVD('A', 'A', n, n, A, n, sigma, U, n, V_H, n, work, SIZE(work), info)
     $ASSERT(info == 0,Non-zero return from XGESVD)
 
     ! Finish
@@ -456,7 +455,7 @@ contains
 
   end subroutine sing_decompose_r_
     
-!****
+  !****
 
   subroutine sing_decompose_c_ (A, sigma, U, V_H)
 
@@ -470,13 +469,12 @@ contains
     real(WP)    :: rwork(5*SIZE(A, 1))
     integer     :: info
 
-    $CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
-    $CHECK_BOUNDS(SIZE(sigma),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(sigma),MIN(SIZE(A, 1), SIZE(A, 2)))
 
     $CHECK_BOUNDS(SIZE(U, 1),SIZE(A, 1))
-    $CHECK_BOUNDS(SIZE(U, 2),SIZE(A, 2))
+    $CHECK_BOUNDS(SIZE(U, 2),SIZE(A, 1))
     
-    $CHECK_BOUNDS(SIZE(V_H, 1),SIZE(A, 1))
+    $CHECK_BOUNDS(SIZE(V_H, 1),SIZE(A, 2))
     $CHECK_BOUNDS(SIZE(V_H, 2),SIZE(A, 2))
 
     ! Perform the singular-value decomposition of A
@@ -492,7 +490,7 @@ contains
 
   end subroutine sing_decompose_c_
     
-!****
+  !****
 
   $define $LINEAR_SOLVE $sub
 
@@ -574,7 +572,7 @@ contains
   $LINEAR_SOLVE(r,real)
   $LINEAR_SOLVE(c,complex)
 
-!****
+  !****
 
   $define $COMMUTATOR $sub
 
@@ -607,7 +605,7 @@ contains
   $COMMUTATOR(r,real)
   $COMMUTATOR(c,complex)
 
-!****
+  !****
 
   $define $MEASURE_BANDWIDTH_FULL $sub
   
@@ -675,7 +673,7 @@ contains
   $MEASURE_BANDWIDTH_FULL(r,real,0._WP)
   $MEASURE_BANDWIDTH_FULL(c,complex,(0._WP,0._WP))
 
-!****
+  !****
 
   $define $DIAGONAL $sub
 
@@ -706,7 +704,7 @@ contains
   $DIAGONAL(r,real)
   $DIAGONAL(c,complex)
 
-!****
+  !****
 
   $define $DIAGONAL_MATRIX $sub
 
@@ -739,7 +737,7 @@ contains
   $DIAGONAL_MATRIX(r,real)
   $DIAGONAL_MATRIX(c,complex)
 
-!****
+  !****
 
   pure function identity_matrix (n) result (I)
 
@@ -762,7 +760,7 @@ contains
 
   end function identity_matrix
 
-!****
+  !****
 
   pure function permutation_matrix (ipiv) result (P)
 
@@ -790,7 +788,7 @@ contains
 
   end function permutation_matrix
 
-!****
+  !****
 
   $define $MATRIX_EXP $sub
 
@@ -835,7 +833,7 @@ contains
   $MATRIX_EXP(r,real)
   $MATRIX_EXP(c,complex)
 
-!****
+  !****
 
   function matrix_exp_eigen_ (lambda, V_l, V_r, t) result (exp_At)
 
@@ -868,7 +866,7 @@ contains
 
   end function matrix_exp_eigen_
 
-!****
+  !****
 
   $define $OUTER_PRODUCT $sub
 
@@ -896,7 +894,7 @@ contains
   $OUTER_PRODUCT(r,real)
   $OUTER_PRODUCT(c,complex)
 
-!****
+  !****
 
   function outer_product_l_ (v, w) result (A)
 
@@ -914,7 +912,7 @@ contains
 
   end function outer_product_l_
 
-!****
+  !****
 
   $define $PARTITION $sub
 
