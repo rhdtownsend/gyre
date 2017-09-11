@@ -44,8 +44,8 @@ module gyre_nad_share
   type :: nad_share_t
      private
      class(model_t), pointer, public :: ml
-     class(c_rot_t), allocatable     :: rt
-     real(WP), allocatable           :: omega_r
+     class(c_rot_t), allocatable, public     :: rt
+     real(WP)                        :: omega_r
      real(WP)                        :: Omega_rot_i
      logical                         :: complex_rot
      type(c_interp_t)                :: in_eps_rho
@@ -92,6 +92,7 @@ contains
  
     allocate(sh%rt, SOURCE=c_rot_t(md_p, os_p))
 
+    sh%omega_r = 0._WP
     sh%Omega_rot_i = ml%coeff(I_OMEGA_ROT, pt_i)
 
     sh%complex_rot = os_p%complex_rot
@@ -162,9 +163,18 @@ contains
 
     else
 
-       $ASSERT(ALLOCATED(this%omega_r),omega_r has not been set)
+       print *,'Go eval lambda',Omega_rot,this%omega_r
+       print *,'Set lambda to zero'
+       lambda = 0._WP
+       print *,'Lambda is',lambda
+       print *,'rt is', ALLOCATED(this%rt)
 
-       lambda = this%rt%lambda(Omega_rot, CMPLX(this%omega_r, KIND=WP))
+       $ASSERT(this%omega_r /= 0._WP,set_omega_r has not been called)
+
+       !lambda = this%rt%lambda(Omega_rot, CMPLX(this%omega_r, KIND=WP))
+       lambda = 2._WP
+
+       print *,'Done set lambda'
 
     endif
 
@@ -191,7 +201,7 @@ contains
 
     else
 
-       $ASSERT(ALLOCATED(this%omega_r),omega_r has not been set)
+       $ASSERT(this%omega_r /= 0._WP,set_omega_r has not been called)
 
        l_e = this%rt%l_e(Omega_rot, CMPLX(this%omega_r, KIND=WP))
 

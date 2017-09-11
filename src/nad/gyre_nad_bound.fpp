@@ -25,10 +25,10 @@ module gyre_nad_bound
 
   use gyre_atmos
   use gyre_bound
+  use gyre_context
   use gyre_mode_par
   use gyre_model
   use gyre_model_util
-  use gyre_nad_share
   use gyre_nad_trans
   use gyre_osc_par
   use gyre_point
@@ -70,14 +70,14 @@ module gyre_nad_bound
 
   type, extends (c_bound_t) :: nad_bound_t
      private
-     type(nad_share_t), pointer :: sh => null()
-     type(nad_trans_t)          :: tr
-     real(WP), allocatable      :: coeff(:,:)
-     real(WP)                   :: alpha_gr
-     real(WP)                   :: alpha_rh
-     complex(WP)                :: alpha_om
-     integer                    :: type_i
-     integer                    :: type_o
+     type(context_t), pointer :: cx => null()
+     type(nad_trans_t)        :: tr
+     real(WP), allocatable    :: coeff(:,:)
+     real(WP)                 :: alpha_gr
+     real(WP)                 :: alpha_rh
+     complex(WP)              :: alpha_om
+     integer                  :: type_i
+     integer                  :: type_o
    contains 
      private
      procedure         :: stencil_
@@ -109,20 +109,20 @@ module gyre_nad_bound
 
 contains
 
-  function nad_bound_t_ (sh, pt_i, pt_o, md_p, os_p) result (bd)
+  function nad_bound_t_ (cx, pt_i, pt_o, md_p, os_p) result (bd)
 
-    type(nad_share_t), pointer, intent(in) :: sh
-    type(point_t), intent(in)              :: pt_i
-    type(point_t), intent(in)              :: pt_o
-    type(mode_par_t), intent(in)           :: md_p
-    type(osc_par_t), intent(in)            :: os_p
-    type(nad_bound_t)                      :: bd
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(point_t), intent(in)            :: pt_o
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(nad_bound_t)                    :: bd
 
     ! Construct the nad_bound_t
 
-    bd%sh => sh
+    bd%cx => cx
 
-    bd%tr = nad_trans_t(sh, pt_i, md_p, os_p)
+    bd%tr = nad_trans_t(cx, pt_i, md_p, os_p)
 
     select case (os_p%inner_bound)
     case ('REGULAR')
@@ -142,25 +142,25 @@ contains
     case ('VACUUM')
        bd%type_o = VACUUM_TYPE
     case ('DZIEM')
-       if (sh%ml%is_vacuum(pt_o)) then
+       if (cx%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = DZIEM_TYPE
        endif
     case ('UNNO')
-       if (sh%ml%is_vacuum(pt_o)) then
+       if (cx%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = UNNO_TYPE
        end if
     case ('JCD')
-       if (sh%ml%is_vacuum(pt_o)) then
+       if (cx%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = JCD_TYPE
        end if
     case ('LUAN')
-       if (sh%ml%is_vacuum(pt_o)) then
+       if (cx%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = LUAN_TYPE
@@ -213,7 +213,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%sh%ml)
+    associate (ml => this%cx%ml)
 
       call check_model(ml, [I_V_2,I_U,I_C_1,I_NABLA_AD,I_C_THN,I_OMEGA_ROT])
 
@@ -331,9 +331,9 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      l_i = this%sh%l_i(omega)
+      l_i = this%cx%l_i(omega)
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       ! Set up the boundary conditions
 
@@ -541,9 +541,9 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
-      l_e = this%sh%l_e(Omega_rot, omega)
+      l_e = this%cx%l_e(Omega_rot, omega)
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
@@ -613,10 +613,10 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%lambda(Omega_rot, omega)
-      l_e = this%sh%l_e(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, omega)
+      l_e = this%cx%l_e(Omega_rot, omega)
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
@@ -698,10 +698,10 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%lambda(Omega_rot, omega)
-      l_e = this%sh%l_e(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, omega)
+      l_e = this%cx%l_e(Omega_rot, omega)
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
@@ -790,10 +790,10 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%lambda(Omega_rot, omega)
-      l_e = this%sh%l_e(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, omega)
+      l_e = this%cx%l_e(Omega_rot, omega)
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
@@ -878,10 +878,10 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%lambda(Omega_rot, omega)
-      l_e = this%sh%l_e(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, omega)
+      l_e = this%cx%l_e(Omega_rot, omega)
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       beta = atmos_beta(V_g, As, U, c_1, omega, lambda)

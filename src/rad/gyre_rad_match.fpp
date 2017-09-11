@@ -23,6 +23,7 @@ module gyre_rad_match
 
   use core_kinds
 
+  use gyre_context
   use gyre_diff
   use gyre_ext
   use gyre_model
@@ -30,7 +31,6 @@ module gyre_rad_match
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
-  use gyre_rad_share
   use gyre_rad_trans
   
   use ISO_FORTRAN_ENV
@@ -49,9 +49,9 @@ module gyre_rad_match
 
   type, extends (r_diff_t) :: rad_match_t
      private
-     type(rad_share_t), pointer :: sh => null()
-     type(rad_trans_t)          :: tr
-     real(WP), allocatable      :: coeff(:,:)
+     type(context_t), pointer :: cx => null()
+     type(rad_trans_t)        :: tr
+     real(WP), allocatable    :: coeff(:,:)
    contains
      private
      procedure         :: stencil_
@@ -71,24 +71,24 @@ module gyre_rad_match
 
 contains
 
-  function rad_match_t_ (sh, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
+  function rad_match_t_ (cx, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
 
-    type(rad_share_t), pointer, intent(in) :: sh
-    type(point_t), intent(in)              :: pt_i
-    type(point_t), intent(in)              :: pt_a
-    type(point_t), intent(in)              :: pt_b
-    type(mode_par_t), intent(in)           :: md_p
-    type(osc_par_t), intent(in)            :: os_p
-    type(rad_match_t)                      :: mt
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(point_t), intent(in)            :: pt_a
+    type(point_t), intent(in)            :: pt_b
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(rad_match_t)                    :: mt
 
     $ASSERT_DEBUG(pt_a%s+1 == pt_b%s,Mismatched segments)
     $ASSERT_DEBUG(pt_a%x == pt_b%x,Mismatched abscissae)
 
     ! Construct the rad_match_t
 
-    mt%sh => sh
+    mt%cx => cx
 
-    mt%tr = rad_trans_t(sh, pt_i, md_p, os_p)
+    mt%tr = rad_trans_t(cx, pt_i, md_p, os_p)
 
     call mt%stencil_(pt_a, pt_b)
 
@@ -110,7 +110,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%sh%ml)
+    associate (ml => this%cx%ml)
 
       call check_model(ml, [I_U])
 

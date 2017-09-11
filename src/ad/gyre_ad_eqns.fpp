@@ -23,8 +23,8 @@ module gyre_ad_eqns
 
   use core_kinds
 
-  use gyre_ad_share
   use gyre_ad_trans
+  use gyre_context
   use gyre_eqns
   use gyre_model
   use gyre_model_util
@@ -53,12 +53,12 @@ module gyre_ad_eqns
 
   type, extends (r_eqns_t) :: ad_eqns_t
      private
-     type(ad_share_t), pointer   :: sh => null()
-     type(ad_trans_t)            :: tr
-     real(WP), allocatable       :: coeff(:,:)
-     real(WP), allocatable       :: x(:)
-     real(WP)                    :: alpha_gr
-     real(WP)                    :: alpha_om
+     type(context_t), pointer :: cx => null()
+     type(ad_trans_t)         :: tr
+     real(WP), allocatable    :: coeff(:,:)
+     real(WP), allocatable    :: x(:)
+     real(WP)                 :: alpha_gr
+     real(WP)                 :: alpha_om
    contains
      private
      procedure, public :: stencil
@@ -82,19 +82,19 @@ module gyre_ad_eqns
 
 contains
 
-  function ad_eqns_t_ (sh, pt_i, md_p, os_p) result (eq)
+  function ad_eqns_t_ (cx, pt_i, md_p, os_p) result (eq)
 
-    type(ad_share_t), pointer, intent(in) :: sh
-    type(point_t), intent(in)             :: pt_i
-    type(mode_par_t), intent(in)          :: md_p
-    type(osc_par_t), intent(in)           :: os_p
-    type(ad_eqns_t)                       :: eq
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(ad_eqns_t)                      :: eq
 
     ! Construct the ad_eqns_t
 
-    eq%sh => sh
+    eq%cx => cx
 
-    eq%tr = ad_trans_t(sh, pt_i, md_p, os_p)
+    eq%tr = ad_trans_t(cx, pt_i, md_p, os_p)
 
     if (os_p%cowling_approx) then
        eq%alpha_gr = 0._WP
@@ -131,7 +131,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%sh%ml)
+    associate (ml => this%cx%ml)
 
       call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
 
@@ -207,10 +207,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%lambda(Omega_rot, omega)
-      l_i = this%sh%l_i(omega)
+      lambda = this%cx%lambda(Omega_rot, omega)
+      l_i = this%cx%l_i(omega)
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
 

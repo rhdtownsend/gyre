@@ -23,13 +23,13 @@ module gyre_rad_eqns
 
   use core_kinds
 
+  use gyre_context
   use gyre_eqns
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
-  use gyre_rad_share
   use gyre_rad_trans
 
   use ISO_FORTRAN_ENV
@@ -53,11 +53,11 @@ module gyre_rad_eqns
 
   type, extends (r_eqns_t) :: rad_eqns_t
      private
-     type(rad_share_t), pointer  :: sh => null()
-     type(rad_trans_t)           :: tr
-     real(WP), allocatable       :: coeff(:,:)
-     real(WP), allocatable       :: x(:)
-     real(WP)                    :: alpha_om
+     type(context_t), pointer :: cx => null()
+     type(rad_trans_t)        :: tr
+     real(WP), allocatable    :: coeff(:,:)
+     real(WP), allocatable    :: x(:)
+     real(WP)                 :: alpha_om
    contains
      private
      procedure, public :: stencil
@@ -81,19 +81,19 @@ module gyre_rad_eqns
 
 contains
 
-  function rad_eqns_t_ (sh, pt_i, md_p, os_p) result (eq)
+  function rad_eqns_t_ (cx, pt_i, md_p, os_p) result (eq)
 
-    class(rad_share_t), pointer, intent(in) :: sh
-    type(point_t), intent(in)               :: pt_i
-    type(mode_par_t), intent(in)            :: md_p
-    type(osc_par_t), intent(in)             :: os_p
-    type(rad_eqns_t)                        :: eq
+    class(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)             :: pt_i
+    type(mode_par_t), intent(in)          :: md_p
+    type(osc_par_t), intent(in)           :: os_p
+    type(rad_eqns_t)                      :: eq
 
     ! Construct the rad_eqns_t
 
-    eq%sh => sh
+    eq%cx => cx
 
-    eq%tr = rad_trans_t(sh, pt_i, md_p, os_p)
+    eq%tr = rad_trans_t(cx, pt_i, md_p, os_p)
 
     select case (os_p%time_factor)
     case ('OSC')
@@ -124,7 +124,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%sh%ml)
+    associate (ml => this%cx%ml)
 
       call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
 
@@ -197,7 +197,7 @@ contains
          Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
 

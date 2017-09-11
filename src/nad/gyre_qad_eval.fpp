@@ -24,12 +24,12 @@ module gyre_qad_eval
   use core_kinds
 
   use gyre_calc
+  use gyre_context
   use gyre_ext
   use gyre_grid
   use gyre_model
   use gyre_mode_par
   use gyre_nad_eqns
-  use gyre_nad_share
   use gyre_osc_par
   use gyre_point
 
@@ -43,15 +43,14 @@ module gyre_qad_eval
 
   type :: qad_eval_t
      private
-     type(nad_share_t), pointer :: sh => null()
-     type(nad_eqns_t)           :: eq
-     type(grid_t)               :: gr
-     type(mode_par_t)           :: md_p
-     type(osc_par_t)            :: os_p
-     integer, public            :: n_k
+     type(context_t), pointer :: cx => null()
+     type(nad_eqns_t)         :: eq
+     type(grid_t)             :: gr
+     type(mode_par_t)         :: md_p
+     type(osc_par_t)          :: os_p
+     integer, public          :: n_k
    contains
      private
-     final             :: finalize_
      procedure, public :: y_qad
   end type qad_eval_t
 
@@ -71,37 +70,30 @@ module gyre_qad_eval
 
 contains
 
-  function qad_eval_t_ (ml, gr, md_p, os_p) result (qe)
+  function qad_eval_t_ (cx, gr, md_p, os_p) result (qe)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(qad_eval_t)                    :: qe
+    type(context_t), pointer, intent(in) :: cx
+    type(grid_t), intent(in)             :: gr
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(qad_eval_t)                     :: qe
 
-    type(point_t)              :: pt_i
-    type(point_t)              :: pt_o
-    type(nad_share_t), pointer :: sh
+    type(point_t) :: pt_i
+    type(point_t) :: pt_o
 
     ! Construct the qad_eval_t
 
     pt_i = gr%pt(1)
     pt_o = gr%pt(gr%n_k)
 
-    ! Initialize the shared data
-
-    allocate(sh)
-
-    sh = nad_share_t(ml, pt_i, pt_o, md_p, os_p)
-
     ! Initialize the equations
 
-    qe%eq = nad_eqns_t(sh, pt_i, md_p, os_p)
+    qe%eq = nad_eqns_t(cx, pt_i, md_p, os_p)
     call qe%eq%stencil(gr%pt)
 
     ! Other initializations
 
-    qe%sh => sh
+    qe%cx => cx
     qe%gr = gr
 
     qe%md_p = md_p
@@ -117,22 +109,6 @@ contains
 
   !****
 
-  subroutine finalize_ (this)
-
-    type(qad_eval_t), intent(inout) :: this
-
-    ! Finalize the qad_eval_t
-
-    if (ASSOCIATED(this%sh)) deallocate(this%sh)
-
-    ! Finish
-
-    return
-
-  end subroutine finalize_
-
-  !****
-
   function y_qad (this, omega_ad, y_ad)
 
     class(qad_eval_t), intent(inout) :: this
@@ -140,12 +116,12 @@ contains
     real(WP), intent(in)             :: y_ad(:,:)
     complex(WP)                      :: y_qad(6,this%n_k)
 
-    integer          :: k
-    integer          :: s
-    complex(WP)      :: xA(6,6)
-    complex(WP)      :: xA_5(6,this%n_k)
-    complex(WP)      :: xA_6(6,this%n_k)
-    complex(WP)      :: dy_6(this%n_k)
+    integer     :: k
+    integer     :: s
+    complex(WP) :: xA(6,6)
+    complex(WP) :: xA_5(6,this%n_k)
+    complex(WP) :: xA_6(6,this%n_k)
+    complex(WP) :: dy_6(this%n_k)
 
     $CHECK_BOUNDS(SIZE(y_ad, 1),4)
     $CHECK_BOUNDS(SIZE(y_ad, 2),this%n_k)
@@ -160,7 +136,7 @@ contains
     ! Evaluate components of the non-adiabatic RHS matrix
     ! corresponding to the energy conservation and transport equations
 
-    call this%sh%set_omega_r(omega_ad)
+    call this%cx%set_omega_ad(omega_ad)
 
     !$OMP PARALLEL DO PRIVATE (xA)
     do k = 1, this%n_k

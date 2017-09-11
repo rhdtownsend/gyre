@@ -23,6 +23,7 @@ module gyre_rad_diff
 
   use core_kinds
 
+  use gyre_context
   use gyre_diff_factory
   use gyre_ext
   use gyre_mode_par
@@ -31,7 +32,6 @@ module gyre_rad_diff
   use gyre_point
   use gyre_rad_eqns
   use gyre_rad_match
-  use gyre_rad_share
 
   use ISO_FORTRAN_ENV
 
@@ -65,16 +65,16 @@ module gyre_rad_diff
 
 contains
 
-  function rad_diff_t_ (sh, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
+  function rad_diff_t_ (cx, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
-    type(rad_share_t), pointer, intent(in) :: sh
-    type(point_t), intent(in)              :: pt_i
-    type(point_t), intent(in)              :: pt_a
-    type(point_t), intent(in)              :: pt_b
-    type(mode_par_t), intent(in)           :: md_p
-    type(num_par_t), intent(in)            :: nm_p
-    type(osc_par_t), intent(in)            :: os_p
-    type(rad_diff_t)                       :: df
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(point_t), intent(in)            :: pt_a
+    type(point_t), intent(in)            :: pt_b
+    type(mode_par_t), intent(in)         :: md_p
+    type(num_par_t), intent(in)          :: nm_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(rad_diff_t)                     :: df
 
     type(rad_eqns_t) :: eq
 
@@ -84,7 +84,7 @@ contains
 
        ! Regular subinterval; use difference equations
 
-       eq = rad_eqns_t(sh, pt_i, md_p, os_p)
+       eq = rad_eqns_t(cx, pt_i, md_p, os_p)
        
        allocate(df%df, SOURCE=r_diff_t(eq, pt_a, pt_b, nm_p))
 
@@ -92,7 +92,7 @@ contains
 
        ! Segment boundary; use match conditions
 
-       allocate(df%df, SOURCE=rad_match_t(sh, pt_i, pt_a, pt_b, md_p, os_p))
+       allocate(df%df, SOURCE=rad_match_t(cx, pt_i, pt_a, pt_b, md_p, os_p))
 
     endif
 

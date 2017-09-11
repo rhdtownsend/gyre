@@ -24,6 +24,7 @@ module gyre_rad_bvp
   use core_kinds
 
   use gyre_bvp
+  use gyre_context
   use gyre_ext
   use gyre_grid
   use gyre_model
@@ -35,7 +36,6 @@ module gyre_rad_bvp
   use gyre_qad_eval
   use gyre_rad_bound
   use gyre_rad_diff
-  use gyre_rad_share
   use gyre_rad_trans
   use gyre_util
 
@@ -49,15 +49,12 @@ module gyre_rad_bvp
 
   type, extends (r_bvp_t) :: rad_bvp_t
      private
-     type(rad_share_t), pointer :: sh => null()
-     type(grid_t)               :: gr
-     type(rad_trans_t)          :: tr
-     type(qad_eval_t)           :: qe
-     type(mode_par_t)           :: md_p
-     type(osc_par_t)            :: os_p
-   contains
-     private
-     final :: finalize_
+     type(context_t), pointer :: cx => null()
+     type(grid_t)             :: gr
+     type(rad_trans_t)        :: tr
+     type(qad_eval_t)         :: qe
+     type(mode_par_t)         :: md_p
+     type(osc_par_t)          :: os_p
   end type rad_bvp_t
 
   ! Interfaces
@@ -81,18 +78,17 @@ module gyre_rad_bvp
 
 contains
 
-  function rad_bvp_t_ (ml, gr, md_p, nm_p, os_p) result (bp)
+  function rad_bvp_t_ (cx, gr, md_p, nm_p, os_p) result (bp)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    type(mode_par_t), intent(in)        :: md_p
-    type(num_par_t), intent(in)         :: nm_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(rad_bvp_t)                     :: bp
+    type(context_t), pointer, intent(in) :: cx
+    type(grid_t), intent(in)             :: gr
+    type(mode_par_t), intent(in)         :: md_p
+    type(num_par_t), intent(in)          :: nm_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(rad_bvp_t)                      :: bp
 
     type(point_t)                 :: pt_i
     type(point_t)                 :: pt_o
-    type(rad_share_t), pointer    :: sh
     type(rad_bound_t)             :: bd
     integer                       :: k
     type(rad_diff_t), allocatable :: df(:)
@@ -107,15 +103,9 @@ contains
     pt_i = gr%pt(1)
     pt_o = gr%pt(gr%n_k)
 
-    ! Initialize the shared data
-
-    allocate(sh)
-
-    sh = rad_share_t(ml, pt_i, md_p, os_p)
-
     ! Initialize the boundary conditions
 
-    bd = rad_bound_t(sh, pt_i, pt_o, md_p, os_p)
+    bd = rad_bound_t(cx, pt_i, pt_o, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -123,7 +113,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = rad_diff_t(sh, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = rad_diff_t(cx, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -132,16 +122,16 @@ contains
 
     ! Other initializations
 
-    bp%sh => sh
+    bp%cx => cx
     bp%gr = gr
 
-    bp%tr = rad_trans_t(sh, pt_i, md_p, os_p)
+    bp%tr = rad_trans_t(cx, pt_i, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
     if (os_p%quasiad_eigfuncs) then
        qad_os_p = os_p
-       qad_os_p%variables_set = ''
-       bp%qe = qad_eval_t(ml, gr, md_p, qad_os_p)
+       qad_os_p%variables_set = 'GYRE'
+       bp%qe = qad_eval_t(cx, gr, md_p, qad_os_p)
     endif
 
     bp%md_p = md_p
@@ -152,22 +142,6 @@ contains
     return
 
   end function rad_bvp_t_
-
-  !****
-
-  subroutine finalize_ (this)
-
-    type(rad_bvp_t), intent(inout) :: this
-
-    ! Finalize the rad_bvp_t
-
-    if (ASSOCIATED(this%sh)) deallocate(this%sh)
-
-    ! Finish
-
-    return
-
-  end subroutine finalize_
 
   !****
 
@@ -207,7 +181,7 @@ contains
     do k = 1, bp%n_k
 
        associate (pt => bp%gr%pt(k))
-         U = bp%sh%ml%coeff(I_U, pt)
+         U = bp%cx%ml%coeff(I_U, pt)
        end associate
 
        y_g(4,k) = -U*y(1,k)
@@ -227,11 +201,13 @@ contains
        y_c(1:4,:) = y_g
        y_c(5:6,:) = 0._WP
 
+       call bp%cx%set_omega_ad(omega)
+
     endif
 
     ! Construct the mode_t
 
-    md = mode_t(CMPLX(omega, KIND=WP), y_c, c_ext_t(discrim), bp%sh%ml, bp%gr, bp%md_p, bp%os_p, j)
+    md = mode_t(CMPLX(omega, KIND=WP), y_c, c_ext_t(discrim), bp%cx, bp%gr, bp%md_p, bp%os_p, j)
 
     ! Finish
 

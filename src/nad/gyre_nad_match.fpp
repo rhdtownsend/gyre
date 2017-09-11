@@ -23,12 +23,12 @@ module gyre_nad_match
 
   use core_kinds
 
+  use gyre_context
   use gyre_diff
   use gyre_ext
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
-  use gyre_nad_share
   use gyre_nad_trans
   use gyre_osc_par
   use gyre_point
@@ -51,9 +51,9 @@ module gyre_nad_match
 
   type, extends (c_diff_t) :: nad_match_t
      private
-     type(nad_share_t), pointer :: sh => null()
-     type(nad_trans_t)          :: tr
-     real(WP), allocatable      :: coeff(:,:)
+     type(context_t), pointer :: cx => null()
+     type(nad_trans_t)        :: tr
+     real(WP), allocatable    :: coeff(:,:)
    contains
      private
      procedure         :: stencil_
@@ -73,24 +73,24 @@ module gyre_nad_match
 
 contains
 
-  function nad_match_t_ (sh, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
+  function nad_match_t_ (cx, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
 
-    type(nad_share_t), pointer, intent(in) :: sh
-    type(point_t), intent(in)              :: pt_i
-    type(point_t), intent(in)              :: pt_a
-    type(point_t), intent(in)              :: pt_b
-    type(mode_par_t), intent(in)           :: md_p
-    type(osc_par_t), intent(in)            :: os_p
-    type(nad_match_t)                      :: mt
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(point_t), intent(in)            :: pt_a
+    type(point_t), intent(in)            :: pt_b
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(nad_match_t)                    :: mt
 
     $ASSERT_DEBUG(pt_a%s+1 == pt_b%s,Mismatched segments)
     $ASSERT_DEBUG(pt_a%x == pt_b%x,Mismatched abscissae)
 
     ! Construct the nad_match_t
 
-    mt%sh => sh
+    mt%cx => cx
 
-    mt%tr = nad_trans_t(sh, pt_i, md_p, os_p)
+    mt%tr = nad_trans_t(cx, pt_i, md_p, os_p)
 
     call mt%stencil_(pt_a, pt_b)
 
@@ -112,7 +112,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%sh%ml)
+    associate (ml => this%cx%ml)
 
       call check_model(ml, [I_V_2,I_U,I_NABLA_AD])
 

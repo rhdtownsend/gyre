@@ -23,12 +23,12 @@ module gyre_nad_eqns
 
   use core_kinds
 
+  use gyre_context
   use gyre_eqns
   use gyre_linalg
   use gyre_model
   use gyre_mode_par
   use gyre_model_util
-  use gyre_nad_share
   use gyre_nad_trans
   use gyre_osc_par
   use gyre_point
@@ -77,16 +77,16 @@ module gyre_nad_eqns
 
   type, extends (c_eqns_t) :: nad_eqns_t
      private
-     type(nad_share_t), pointer  :: sh => null()
-     type(nad_trans_t)           :: tr
-     real(WP), allocatable       :: coeff(:,:)
-     real(WP), allocatable       :: x(:)
-     real(WP)                    :: alpha_gr
-     real(WP)                    :: alpha_hf
-     real(WP)                    :: alpha_rh
-     real(WP)                    :: alpha_om
-     integer                     :: conv_scheme
-     integer                     :: deps_scheme
+     type(context_t), pointer :: cx => null()
+     type(nad_trans_t)        :: tr
+     real(WP), allocatable    :: coeff(:,:)
+     real(WP), allocatable    :: x(:)
+     real(WP)                 :: alpha_gr
+     real(WP)                 :: alpha_hf
+     real(WP)                 :: alpha_rh
+     real(WP)                 :: alpha_om
+     integer                  :: conv_scheme
+     integer                  :: deps_scheme
    contains
      private
      procedure, public :: stencil
@@ -110,19 +110,19 @@ module gyre_nad_eqns
 
 contains
 
-  function nad_eqns_t_ (sh, pt_i, md_p, os_p) result (eq)
+  function nad_eqns_t_ (cx, pt_i, md_p, os_p) result (eq)
 
-    type(nad_share_t), pointer, intent(in) :: sh
-    type(point_t), intent(in)              :: pt_i
-    type(mode_par_t), intent(in)           :: md_p
-    type(osc_par_t), intent(in)            :: os_p
-    type(nad_eqns_t)                       :: eq
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(nad_eqns_t)                     :: eq
 
     ! Construct the nad_eqns_t
 
-    eq%sh => sh
+    eq%cx => cx
 
-    eq%tr = nad_trans_t(sh, pt_i, md_p, os_p)
+    eq%tr = nad_trans_t(cx, pt_i, md_p, os_p)
 
     if (os_p%cowling_approx) then
        eq%alpha_gr = 0._WP
@@ -191,7 +191,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%sh%ml)
+    associate (ml => this%cx%ml)
 
       call check_model(ml, [ &
            I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
@@ -314,10 +314,10 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
-      lambda = this%sh%lambda(Omega_rot, omega)
-      l_i = this%sh%l_i(omega)
+      lambda = this%cx%lambda(Omega_rot, omega)
+      l_i = this%cx%l_i(omega)
     
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
@@ -337,8 +337,8 @@ contains
          eps_rho = this%coeff(i,J_EPS_RHO)
          eps_T = this%coeff(i,J_EPS_T)
       case (FILE_DEPS_SCHEME)
-         eps_rho = this%sh%eps_rho()
-         eps_T = this%sh%eps_T()
+         eps_rho = this%cx%eps_rho()
+         eps_T = this%cx%eps_T()
       case (ZERO_DEPS_SCHEME)
          eps_rho = 0._WP
          eps_T = 0._WP

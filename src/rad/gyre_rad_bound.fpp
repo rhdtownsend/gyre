@@ -25,12 +25,12 @@ module gyre_rad_bound
 
   use gyre_atmos
   use gyre_bound
+  use gyre_context
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
-  use gyre_rad_share
   use gyre_rad_trans
 
   use ISO_FORTRAN_ENV
@@ -62,12 +62,12 @@ module gyre_rad_bound
 
   type, extends (r_bound_t) :: rad_bound_t
      private
-     type(rad_share_t), pointer  :: sh => null()
-     type(rad_trans_t)           :: tr
-     real(WP), allocatable       :: coeff(:,:)
-     real(WP)                    :: alpha_om
-     integer                     :: type_i
-     integer                     :: type_o
+     type(context_t), pointer :: cx => null()
+     type(rad_trans_t)        :: tr
+     real(WP), allocatable    :: coeff(:,:)
+     real(WP)                 :: alpha_om
+     integer                  :: type_i
+     integer                  :: type_o
    contains 
      private
      procedure         :: stencil_
@@ -98,20 +98,20 @@ module gyre_rad_bound
 
 contains
 
-  function rad_bound_t_ (sh, pt_i, pt_o, md_p, os_p) result (bd)
+  function rad_bound_t_ (cx, pt_i, pt_o, md_p, os_p) result (bd)
 
-    type(rad_share_t), pointer, intent(in) :: sh
-    type(point_t), intent(in)              :: pt_i
-    type(point_t), intent(in)              :: pt_o
-    type(mode_par_t), intent(in)           :: md_p
-    type(osc_par_t), intent(in)            :: os_p
-    type(rad_bound_t)                      :: bd
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(point_t), intent(in)            :: pt_o
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(rad_bound_t)                    :: bd
 
     ! Construct the ad_bound_t
 
-    bd%sh => sh
+    bd%cx => cx
     
-    bd%tr = rad_trans_t(sh, pt_i, md_p, os_p)
+    bd%tr = rad_trans_t(cx, pt_i, md_p, os_p)
 
     select case (os_p%inner_bound)
     case ('REGULAR')
@@ -128,25 +128,25 @@ contains
     case ('VACUUM')
        bd%type_o = VACUUM_TYPE
     case ('DZIEM')
-       if (sh%ml%is_vacuum(pt_o)) then
+       if (cx%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = DZIEM_TYPE
        endif
     case ('UNNO')
-       if (sh%ml%is_vacuum(pt_o)) then
+       if (cx%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = UNNO_TYPE
        endif
     case ('JCD')
-       if (sh%ml%is_vacuum(pt_o)) then
+       if (cx%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = JCD_TYPE
        endif
     case ('LUAN')
-       if (sh%ml%is_vacuum(pt_o)) then
+       if (cx%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = LUAN_TYPE
@@ -187,7 +187,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%sh%ml)
+    associate (ml => this%cx%ml)
 
       call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
 
@@ -298,7 +298,7 @@ contains
          Omega_rot => this%coeff(1,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       ! Set up the boundary conditions
 
@@ -439,7 +439,7 @@ contains
          Omega_rot => this%coeff(2,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       ! Set up the boundary conditions
         
@@ -484,7 +484,7 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Omega_rot => this%coeff(2,J_OMEGA_ROT))
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
       
@@ -536,7 +536,7 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Omega_rot => this%coeff(2,J_OMEGA_ROT))
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
 
@@ -588,7 +588,7 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Omega_rot => this%coeff(2,J_OMEGA_ROT))
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
 

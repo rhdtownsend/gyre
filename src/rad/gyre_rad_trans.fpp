@@ -23,13 +23,12 @@ module gyre_rad_trans
 
   use core_kinds
 
-  use gyre_linalg
+  use gyre_context
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
-  use gyre_rad_share
 
   use ISO_FORTRAN_ENV
 
@@ -57,10 +56,10 @@ module gyre_rad_trans
 
   type :: rad_trans_t
      private
-     type(rad_share_t), pointer  :: sh => null()
-     real(WP), allocatable       :: coeff(:,:)
-     integer                     :: set
-     integer                     :: n_e
+     type(context_t), pointer :: cx => null()
+     real(WP), allocatable    :: coeff(:,:)
+     integer                  :: set
+     integer                  :: n_e
    contains
      private
      procedure, public :: stencil
@@ -94,17 +93,17 @@ module gyre_rad_trans
 
 contains
 
-  function rad_trans_t_ (sh, pt_i, md_p, os_p) result (tr)
+  function rad_trans_t_ (cx, pt_i, md_p, os_p) result (tr)
 
-    type(rad_share_t), pointer, intent(in) :: sh
-    type(point_t), intent(in)              :: pt_i
-    type(mode_par_t), intent(in)           :: md_p
-    type(osc_par_t), intent(in)            :: os_p
-    type(rad_trans_t)                      :: tr
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(rad_trans_t)                    :: tr
 
     ! Construct the rad_trans_t
 
-    tr%sh => sh
+    tr%cx => cx
 
     select case (os_p%variables_set)
     case ('GYRE')
@@ -141,7 +140,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%sh%ml)
+    associate (ml => this%cx%ml)
 
       call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
 
@@ -377,7 +376,7 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
 
@@ -471,7 +470,7 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       ! Set up the matrix
       
@@ -565,7 +564,7 @@ contains
          dc_1 => this%coeff(i,J_DC_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      omega_c = this%sh%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, omega)
 
       ! Set up the matrix (nb: the derivative of omega_c is neglected;
       ! this is incorrect when rotation is non-zero)
