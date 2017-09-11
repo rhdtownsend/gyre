@@ -28,6 +28,7 @@ program gyre
   use gyre_ad_bvp
   use gyre_bvp
   use gyre_constants
+  use gyre_context
   use gyre_ext
   use gyre_grid
   use gyre_grid_factory
@@ -76,6 +77,7 @@ program gyre
   real(WP), allocatable         :: omega(:)
   real(WP)                      :: omega_min
   real(WP)                      :: omega_max
+  type(context_t), pointer      :: cx
   class(r_bvp_t), allocatable   :: bp_ad
   class(c_bvp_t), allocatable   :: bp_nad
   integer                       :: n_md_ad
@@ -211,13 +213,19 @@ program gyre
 
      gr = grid_t(ml, omega, gr_p_sel, md_p(i), os_p_sel)
 
+     ! Set up the context
+
+     allocate(cx, SOURCE=context_t(ml, gr, md_p(i), os_p_sel))
+
      ! Find adiabatic modes
 
      if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-        allocate(bp_ad, SOURCE=rad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_ad, SOURCE=rad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
      else
-        allocate(bp_ad, SOURCE=ad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_ad, SOURCE=ad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
      endif
+
+     print *,'Done sourced allocation of bp'
 
      i_ad_a = n_md_ad + 1
 
@@ -234,7 +242,7 @@ program gyre
 
      if (os_p_sel%nonadiabatic) then
 
-        allocate(bp_nad, SOURCE=nad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
 
         i_ad_b = n_md_ad
 
@@ -248,6 +256,10 @@ program gyre
         deallocate(bp_nad)
 
      endif
+
+     ! Free up the context
+
+     deallocate(cx)
 
   end do md_p_loop
 
