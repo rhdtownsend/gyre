@@ -126,7 +126,7 @@ contains
 
        select type (bp)
        class is (nad_bvp_t)
-          call bp%set_omega_r(REAL(md_in(i)%omega))
+          call bp%set_omega_ad(REAL(md_in(i)%omega))
        end select
 
        ! Set up initial guesses
