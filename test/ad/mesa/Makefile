@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=bcep spb rgb dcep
+SUBDIRS=bcep spb spb-qad rgb dcep
 
 # Rules
 
