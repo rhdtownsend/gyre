@@ -261,10 +261,6 @@ program gyre
 
      endif
 
-     ! Free up the context
-
-     deallocate(cx)
-
   end do md_p_loop
 
   ! Write summary files
