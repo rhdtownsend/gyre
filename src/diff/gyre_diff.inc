@@ -44,15 +44,16 @@ module gyre_${T}_diff
 
   abstract interface
 
-     subroutine build (this, omega, E_l, E_r, scl)
+     subroutine build (this, st, E_l, E_r, scl)
        use core_kinds
        use gyre_ext
+       use gyre_state
        import ${T}_diff_t
-       class(${T}_diff_t), intent(in) :: this
-       $TYPE(WP), intent(in)          :: omega
-       $TYPE(WP), intent(out)         :: E_l(:,:)
-       $TYPE(WP), intent(out)         :: E_r(:,:)
-       type(${T}_ext_t), intent(out)  :: scl
+       class(${T}_diff_t), intent(in)  :: this
+       class(${T}_state_t), intent(in) :: st
+       $TYPE(WP), intent(out)          :: E_l(:,:)
+       $TYPE(WP), intent(out)          :: E_r(:,:)
+       type(${T}_ext_t), intent(out)   :: scl
      end subroutine build
 
   end interface

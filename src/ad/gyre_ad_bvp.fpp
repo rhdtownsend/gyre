@@ -40,6 +40,7 @@ module gyre_ad_bvp
   use gyre_osc_par
   use gyre_point
   use gyre_qad_eval
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -150,14 +151,18 @@ contains
     integer, intent(in)            :: j
     type(mode_t)                   :: md
 
-    real(WP)      :: y(4,bp%n_k)
-    type(r_ext_t) :: discrim
-    integer       :: k
-    complex(WP)   :: y_c(6,bp%n_k)
+    type(r_state_t) :: st
+    real(WP)        :: y(4,bp%n_k)
+    type(r_ext_t)   :: discrim
+    integer         :: k
+    type(c_state_t) :: st_c
+    complex(WP)     :: y_c(6,bp%n_k)
 
     ! Calculate the solution vector
 
-    call bp%build(omega)
+    st = r_state_t(omega)
+
+    call bp%build(st)
 
     y = bp%soln_vec_hom()
     discrim = bp%det()
@@ -166,27 +171,27 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, bp%n_k
-       call bp%tr%trans_vars(y(:,k), k, omega, from=.FALSE.)
+       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
     end do
 
     ! Set up complex eigenfunctions
 
+    st_c = c_state_t(CMPLX(omega, KIND=WP), omega)
+
     if (bp%os_p%quasiad_eigfuncs) then
 
-       y_c = bp%qe%y_qad(omega, y)
+       y_c = bp%qe%y_qad(st_c, y)
 
     else
 
        y_c(1:4,:) = y
        y_c(5:6,:) = 0._WP
 
-       call bp%cx%set_omega_ad(omega)
-
     endif
 
     ! Construct the mode_t
 
-    md = mode_t(CMPLX(omega, KIND=WP), y_c, c_ext_t(discrim), bp%cx, bp%gr, bp%md_p, bp%os_p, j)
+    md = mode_t(st_c, y_c, c_ext_t(discrim), bp%cx, bp%gr, bp%md_p, bp%os_p, j)
 
     ! Finish
 

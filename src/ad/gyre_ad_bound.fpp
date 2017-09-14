@@ -30,8 +30,9 @@ module gyre_ad_bound
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
-  use gyre_point
   use gyre_osc_par
+  use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -255,10 +256,10 @@ contains
 
   !****
 
-  subroutine build_i (this, omega, B, scl)
+  subroutine build_i (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
@@ -266,18 +267,18 @@ contains
 
     select case (this%type_i)
     case (REGULAR_TYPE)
-       call this%build_regular_i_(omega, B, scl)
+       call this%build_regular_i_(st, B, scl)
     case (ZERO_R_TYPE)
-       call this%build_zero_r_i_(omega, B, scl)
+       call this%build_zero_r_i_(st, B, scl)
     case (ZERO_H_TYPE)
-       call this%build_zero_h_i_(omega, B, scl)
+       call this%build_zero_h_i_(st, B, scl)
     case default
        $ABORT(Invalid type_i)
     end select
 
     ! Apply the variables transformation
 
-    call this%tr%trans_cond(B, 1, omega)
+    call this%tr%trans_cond(B, 1, st)
 
     ! Finish
 
@@ -287,10 +288,10 @@ contains
 
   !****
 
-  subroutine build_regular_i_ (this, omega, B, scl)
+  subroutine build_regular_i_ (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
  
@@ -310,9 +311,9 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      l_i = this%cx%l_i(omega)
+      l_i = this%cx%l_i(st)
 
-      omega_c = this%cx%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       ! Set up the boundary conditions
 
@@ -338,10 +339,10 @@ contains
 
   !****
 
-  subroutine build_zero_r_i_ (this, omega, B, scl)
+  subroutine build_zero_r_i_ (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
@@ -380,10 +381,10 @@ contains
 
   !****
 
-  subroutine build_zero_h_i_ (this, omega, B, scl)
+  subroutine build_zero_h_i_ (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
@@ -422,10 +423,10 @@ contains
 
   !****
 
-  subroutine build_o (this, omega, B, scl)
+  subroutine build_o (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
@@ -433,22 +434,22 @@ contains
 
     select case (this%type_o)
     case (VACUUM_TYPE)
-       call this%build_vacuum_o_(omega, B, scl)
+       call this%build_vacuum_o_(st, B, scl)
     case (DZIEM_TYPE)
-       call this%build_dziem_o_(omega, B, scl)
+       call this%build_dziem_o_(st, B, scl)
     case (UNNO_TYPE)
-       call this%build_unno_o_(omega, B, scl)
+       call this%build_unno_o_(st, B, scl)
     case (JCD_TYPE)
-       call this%build_jcd_o_(omega, B, scl)
+       call this%build_jcd_o_(st, B, scl)
     case (LUAN_TYPE)
-       call this%build_luan_o_(omega, B, scl)
+       call this%build_luan_o_(st, B, scl)
     case default
        $ABORT(Invalid type_o)
     end select
 
     ! Apply the variables transformation
 
-    call this%tr%trans_cond(B, 2, omega)
+    call this%tr%trans_cond(B, 2, st)
 
     ! Finish
 
@@ -458,10 +459,10 @@ contains
   
   !****
 
-  subroutine build_vacuum_o_ (this, omega, B, scl)
+  subroutine build_vacuum_o_ (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
@@ -479,7 +480,7 @@ contains
          Omega_rot => this%coeff(2,J_OMEGA_ROT), &
          alpha_gr => this%alpha_gr)
 
-      l_e = this%cx%l_e(Omega_rot, omega)
+      l_e = this%cx%l_e(Omega_rot, st)
 
       ! Set up the boundary conditions
 
@@ -505,10 +506,10 @@ contains
 
   !****
 
-  subroutine build_dziem_o_ (this, omega, B, scl)
+  subroutine build_dziem_o_ (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
@@ -530,10 +531,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%cx%lambda(Omega_rot, omega)
-      l_e = this%cx%l_e(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, st)
+      l_e = this%cx%l_e(Omega_rot, st)
 
-      omega_c = this%cx%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       ! Set up the boundary conditions
 
@@ -559,10 +560,10 @@ contains
 
   !****
 
-  subroutine build_unno_o_ (this, omega, B, scl)
+  subroutine build_unno_o_ (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
@@ -595,10 +596,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%cx%lambda(Omega_rot, omega)
-      l_e = this%cx%l_e(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, st)
+      l_e = this%cx%l_e(Omega_rot, st)
       
-      omega_c = this%cx%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 
@@ -637,10 +638,10 @@ contains
 
   !****
 
-  subroutine build_jcd_o_ (this, omega, B, scl)
+  subroutine build_jcd_o_ (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
@@ -667,10 +668,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%cx%lambda(Omega_rot, omega)
-      l_e = this%cx%l_e(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, st)
+      l_e = this%cx%l_e(Omega_rot, st)
 
-      omega_c = this%cx%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 
@@ -701,10 +702,10 @@ contains
 
   !****
 
-  subroutine build_luan_o_ (this, omega, B, scl)
+  subroutine build_luan_o_ (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
@@ -731,10 +732,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%cx%lambda(Omega_rot, omega)
-      l_e = this%cx%l_e(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, st)
+      l_e = this%cx%l_e(Omega_rot, st)
 
-      omega_c = this%cx%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 

@@ -32,6 +32,7 @@ module gyre_qad_eval
   use gyre_nad_eqns
   use gyre_osc_par
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -109,19 +110,19 @@ contains
 
   !****
 
-  function y_qad (this, omega_ad, y_ad)
+  function y_qad (this, st, y_ad)
 
     class(qad_eval_t), intent(inout) :: this
-    real(WP), intent(in)             :: omega_ad
+    class(c_state_t), intent(in)     :: st
     real(WP), intent(in)             :: y_ad(:,:)
     complex(WP)                      :: y_qad(6,this%n_k)
 
-    integer     :: k
-    integer     :: s
-    complex(WP) :: xA(6,6)
-    complex(WP) :: xA_5(6,this%n_k)
-    complex(WP) :: xA_6(6,this%n_k)
-    complex(WP) :: dy_6(this%n_k)
+    integer         :: k
+    integer         :: s
+    complex(WP)     :: xA(6,6)
+    complex(WP)     :: xA_5(6,this%n_k)
+    complex(WP)     :: xA_6(6,this%n_k)
+    complex(WP)     :: dy_6(this%n_k)
 
     $CHECK_BOUNDS(SIZE(y_ad, 1),4)
     $CHECK_BOUNDS(SIZE(y_ad, 2),this%n_k)
@@ -136,12 +137,10 @@ contains
     ! Evaluate components of the non-adiabatic RHS matrix
     ! corresponding to the energy conservation and transport equations
 
-    call this%cx%set_omega_ad(omega_ad)
-
     !$OMP PARALLEL DO PRIVATE (xA)
     do k = 1, this%n_k
 
-       xA = this%eq%xA(k, CMPLX(omega_ad, KIND=WP))
+       xA = this%eq%xA(k, st)
 
        xA_5(:,k) = xA(5,:)
        xA_6(:,k) = xA(6,:)

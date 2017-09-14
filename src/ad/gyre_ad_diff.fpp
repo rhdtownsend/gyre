@@ -33,6 +33,7 @@ module gyre_ad_diff
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -107,10 +108,10 @@ contains
 
   !****
 
-  subroutine build (this, omega, E_l, E_r, scl)
+  subroutine build (this, st, E_l, E_r, scl)
 
     class(ad_diff_t), intent(in) :: this
-    real(WP), intent(in)         :: omega
+    class(r_state_t), intent(in) :: st
     real(WP), intent(out)        :: E_l(:,:)
     real(WP), intent(out)        :: E_r(:,:)
     type(r_ext_t), intent(out)   :: scl
@@ -123,7 +124,7 @@ contains
 
     ! Build the difference equations
 
-    call this%df%build(omega, E_l, E_r, scl)
+    call this%df%build(st, E_l, E_r, scl)
 
     ! Finish
 

@@ -47,11 +47,12 @@ module gyre_${T}_bound
 
   abstract interface
 
-     subroutine build (this, omega, B, scl)
+     subroutine build (this, st, B, scl)
        use core_kinds
+       use gyre_state
        import ${T}_bound_t
        class(${T}_bound_t), intent(in) :: this
-       $TYPE(WP), intent(in)           :: omega
+       class(${T}_state_t), intent(in) :: st
        $TYPE(WP), intent(out)          :: B(:,:)
        $TYPE(WP), intent(out)          :: scl(:)
      end subroutine build

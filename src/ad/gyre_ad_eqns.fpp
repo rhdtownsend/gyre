@@ -31,6 +31,7 @@ module gyre_ad_eqns
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -165,16 +166,16 @@ contains
 
   !****
 
-  function A (this, i, omega)
+  function A (this, i, st)
 
     class(ad_eqns_t), intent(in) :: this
     integer, intent(in)          :: i
-    real(WP), intent(in)         :: omega
+    class(r_state_t), intent(in) :: st
     real(WP)                     :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(i, omega)/this%x(i)
+    A = this%xA(i, st)/this%x(i)
 
     ! Finish
 
@@ -184,11 +185,11 @@ contains
 
   !****
 
-  function xA (this, i, omega)
+  function xA (this, i, st)
 
     class(ad_eqns_t), intent(in) :: this
     integer, intent(in)          :: i
-    real(WP), intent(in)         :: omega
+    class(r_state_t), intent(in) :: st
     real(WP)                     :: xA(this%n_e,this%n_e)
 
     real(WP) :: lambda
@@ -207,10 +208,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%cx%lambda(Omega_rot, omega)
-      l_i = this%cx%l_i(omega)
+      lambda = this%cx%lambda(Omega_rot, st)
+      l_i = this%cx%l_i(st)
 
-      omega_c = this%cx%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       ! Set up the matrix
 
@@ -238,7 +239,7 @@ contains
 
     ! Apply the variables transformation
 
-    call this%tr%trans_eqns(xA, i, omega)
+    call this%tr%trans_eqns(xA, i, st)
 
     ! Finish
 

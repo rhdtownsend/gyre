@@ -1,7 +1,7 @@
-! Module   : gyre_discrim_func
-! Purpose  : discriminant function
+! Module   : gyre_state
+! Purpose  : mutable state data for solvers
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,11 +15,24 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_discrim_func
+$include 'core.inc'
+
+module gyre_state
 
   ! Uses
 
-  use gyre_r_discrim_func
-  use gyre_c_discrim_func
+  use gyre_r_state
+  use gyre_c_state
 
-end module gyre_discrim_func
+  ! No implicit typing
+
+  implicit none
+
+  ! Access specifiers
+
+  private
+
+  public :: r_state_t
+  public :: c_state_t
+
+end module gyre_state

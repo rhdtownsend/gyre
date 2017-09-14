@@ -32,6 +32,7 @@ module gyre_nad_match
   use gyre_nad_trans
   use gyre_osc_par
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -141,10 +142,10 @@ contains
 
   !****
 
-  subroutine build (this, omega, E_l, E_r, scl)
+  subroutine build (this, st, E_l, E_r, scl)
 
     class(nad_match_t), intent(in) :: this
-    complex(WP), intent(in)        :: omega
+    class(c_state_t), intent(in)   :: st
     complex(WP), intent(out)       :: E_l(:,:)
     complex(WP), intent(out)       :: E_r(:,:)
     type(c_ext_t), intent(out)     :: scl
@@ -260,8 +261,8 @@ contains
 
     ! Apply the variables transformation
 
-    call this%tr%trans_cond(E_l, 1, omega)
-    call this%tr%trans_cond(E_r, 2, omega)
+    call this%tr%trans_cond(E_l, 1, st)
+    call this%tr%trans_cond(E_r, 2, st)
 
     ! Finish
 

@@ -29,6 +29,7 @@ module gyre_nad_trans
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -179,12 +180,12 @@ contains
 
   !****
 
-  subroutine trans_eqns (this, xA, i, omega, from)
+  subroutine trans_eqns (this, xA, i, st, from)
 
     class(nad_trans_t), intent(in) :: this
     complex(WP), intent(inout)     :: xA(:,:)
     integer, intent(in)            :: i
-    complex(WP), intent(in)        :: omega
+    class(c_state_t), intent(in)   :: st
     logical, intent(in), optional  :: from
 
     logical     :: from_
@@ -208,9 +209,9 @@ contains
        ! Convert from
 
        if (this%set /= GYRE_SET) then
-          G = this%G_(i, omega)
-          H = this%H_(i, omega)
-          dH = this%dH_(i, omega)
+          G = this%G_(i, st)
+          H = this%H_(i, st)
+          dH = this%dH_(i, st)
           xA = MATMUL(G, MATMUL(xA, H) - dH)
        endif
 
@@ -230,12 +231,12 @@ contains
   
   !****
 
-  subroutine trans_cond (this, C, i, omega, from)
+  subroutine trans_cond (this, C, i, st, from)
 
     class(nad_trans_t), intent(in) :: this
     complex(WP), intent(inout)     :: C(:,:)
     integer, intent(in)            :: i
-    complex(WP), intent(in)        :: omega
+    class(c_state_t), intent(in)   :: st
     logical, intent(in), optional  :: from
 
     logical     :: from_
@@ -257,7 +258,7 @@ contains
        ! Convert from
 
        if (this%set /= GYRE_SET) then
-          H = this%H_(i, omega)
+          H = this%H_(i, st)
           C = MATMUL(C, H)
        endif
 
@@ -266,7 +267,7 @@ contains
        ! Convert to
 
        if (this%set /= GYRE_SET) then
-          G = this%G_(i, omega)
+          G = this%G_(i, st)
           C = MATMUL(C, G)
        endif
 
@@ -280,12 +281,12 @@ contains
 
   !****
 
-  subroutine trans_vars (this, y, i, omega, from)
+  subroutine trans_vars (this, y, i, st, from)
 
     class(nad_trans_t), intent(in) :: this
     complex(WP), intent(inout)     :: y(:)
     integer, intent(in)            :: i
-    complex(WP), intent(in)        :: omega
+    class(c_state_t), intent(in)   :: st
     logical, intent(in), optional  :: from
 
     logical     :: from_
@@ -307,7 +308,7 @@ contains
        ! Convert from
 
        if (this%set /= GYRE_SET) then
-          G = this%G_(i, omega)
+          G = this%G_(i, st)
           y = MATMUL(G, y)
        endif
 
@@ -316,7 +317,7 @@ contains
        ! Convert to
 
        if (this%set /= GYRE_SET) then
-          H = this%H_(i, omega)
+          H = this%H_(i, st)
           y = MATMUL(H, y)
        endif
 
@@ -330,23 +331,23 @@ contains
 
   !****
 
-  function G_ (this, i, omega) result (G)
+  function G_ (this, i, st) result (G)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: G(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: G(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert variables from
     ! the canonical form
 
     select case (this%set)
     case (DZIEM_SET)
-       G = this%G_dziem_(i, omega)
+       G = this%G_dziem_(i, st)
     case (JCD_SET)
-       G = this%G_jcd_(i, omega)
+       G = this%G_jcd_(i, st)
     case (LAGP_SET)
-       G = this%G_lagp_(i, omega)
+       G = this%G_lagp_(i, st)
     case default
        $ABORT(Invalid set)
     end select
@@ -359,12 +360,12 @@ contains
 
   !****
 
-  function G_dziem_ (this, i, omega) result (G)
+  function G_dziem_ (this, i, st) result (G)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: G(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: G(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert DZIEM variables
     ! from the canonical form
@@ -421,12 +422,12 @@ contains
 
   !****
 
-  function G_jcd_ (this, i, omega) result (G)
+  function G_jcd_ (this, i, st) result (G)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: G(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: G(this%n_e,this%n_e)
 
     complex(WP) :: lambda
     complex(WP) :: omega_c
@@ -439,9 +440,9 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%cx%lambda(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, st)
 
-      omega_c = this%cx%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       ! Set up the matrix
 
@@ -545,12 +546,12 @@ contains
 
   !****
 
-  function G_lagp_ (this, i, omega) result (G)
+  function G_lagp_ (this, i, st) result (G)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: G(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: G(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! from the canonical form
@@ -612,23 +613,23 @@ contains
 
   !****
 
-  function H_ (this, i, omega) result (H)
+  function H_ (this, i, st) result (H)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: H(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: H(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert variables to
     ! canonical form
 
     select case (this%set)
     case (DZIEM_SET)
-       H = this%H_dziem_(i, omega)
+       H = this%H_dziem_(i, st)
     case (JCD_SET)
-       H = this%H_jcd_(i, omega)
+       H = this%H_jcd_(i, st)
     case (LAGP_SET)
-       H = this%H_lagp_(i, omega)
+       H = this%H_lagp_(i, st)
     case default
        $ABORT(Invalid set)
     end select
@@ -641,12 +642,12 @@ contains
 
   !****
 
-  function H_dziem_ (this, i, omega) result (H)
+  function H_dziem_ (this, i, st) result (H)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: H(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: H(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert DZIEM variables
     ! to the canonical form
@@ -703,12 +704,12 @@ contains
 
   !****
 
-  function H_jcd_ (this, i, omega) result (H)
+  function H_jcd_ (this, i, st) result (H)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: H(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: H(this%n_e,this%n_e)
 
     complex(WP) :: lambda
     complex(WP) :: omega_c
@@ -721,9 +722,9 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%cx%lambda(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, st)
 
-      omega_c = this%cx%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       ! Set up the matrix
       
@@ -827,12 +828,12 @@ contains
 
   !****
 
-  function H_lagp_ (this, i, omega) result (H)
+  function H_lagp_ (this, i, st) result (H)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: H(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: H(this%n_e,this%n_e)
 
     ! Evaluate the transformation matrix to convert LAGP variables
     ! to the canonical form
@@ -894,12 +895,12 @@ contains
 
   !****
 
-  function dH_ (this, i, omega) result (dH)
+  function dH_ (this, i, st) result (dH)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: dH(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: dH(this%n_e,this%n_e)
 
     ! Evaluate the derivative x dH/dx of the transformation matrix H
 
@@ -907,9 +908,9 @@ contains
     case (DZIEM_SET)
        dH = 0._WP
     case (JCD_SET)
-       dH = this%dH_jcd_(i, omega)
+       dH = this%dH_jcd_(i, st)
     case (LAGP_SET)
-       dH = this%dH_lagp_(i, omega)
+       dH = this%dH_lagp_(i, st)
     case default
        $ABORT(Invalid set)
     end select
@@ -922,12 +923,12 @@ contains
 
   !****
 
-  function dH_jcd_ (this, i, omega) result (dH)
+  function dH_jcd_ (this, i, st) result (dH)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: dH(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: dH(this%n_e,this%n_e)
 
     complex(WP) :: lambda
     complex(WP) :: omega_c
@@ -942,9 +943,9 @@ contains
          dU => this%coeff(i,J_DU), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%cx%lambda(Omega_rot, omega)
+      lambda = this%cx%lambda(Omega_rot, st)
 
-      omega_c = this%cx%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       ! Set up the matrix (nb: the derivatives of omega_c and lambda is
       ! neglected; this is incorrect when rotation is non-zero)
@@ -1051,12 +1052,12 @@ contains
 
   !****
 
-  function dH_lagp_ (this, i, omega) result (dH)
+  function dH_lagp_ (this, i, st) result (dH)
 
     class(nad_trans_t), intent(in) :: this
-    integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
-    complex(WP)                   :: dH(this%n_e,this%n_e)
+    integer, intent(in)            :: i
+    class(c_state_t), intent(in)   :: st
+    complex(WP)                    :: dH(this%n_e,this%n_e)
 
     ! Evaluate the derivative x dH/dx of the LAGP-variables
     ! transformation matrix T

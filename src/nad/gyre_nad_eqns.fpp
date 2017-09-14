@@ -32,6 +32,7 @@ module gyre_nad_eqns
   use gyre_nad_trans
   use gyre_osc_par
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -244,16 +245,16 @@ contains
 
   !****
 
-  function A (this, i, omega)
+  function A (this, i, st)
 
     class(nad_eqns_t), intent(in) :: this
     integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
+    class(c_state_t), intent(in)  :: st
     complex(WP)                   :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(i, omega)/this%x(i)
+    A = this%xA(i, st)/this%x(i)
 
     ! Finish
 
@@ -263,11 +264,11 @@ contains
 
   !****
 
-  function xA (this, i, omega)
+  function xA (this, i, st)
 
     class(nad_eqns_t), intent(in) :: this
     integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
+    class(c_state_t), intent(in)  :: st
     complex(WP)                   :: xA(this%n_e,this%n_e)
 
     complex(WP) :: lambda
@@ -314,10 +315,10 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
-      lambda = this%cx%lambda(Omega_rot, omega)
-      l_i = this%cx%l_i(omega)
+      lambda = this%cx%lambda(Omega_rot, st)
+      l_i = this%cx%l_i(st)
     
-      omega_c = this%cx%omega_c(Omega_rot, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
@@ -337,8 +338,8 @@ contains
          eps_rho = this%coeff(i,J_EPS_RHO)
          eps_T = this%coeff(i,J_EPS_T)
       case (FILE_DEPS_SCHEME)
-         eps_rho = this%cx%eps_rho()
-         eps_T = this%cx%eps_T()
+         eps_rho = this%cx%eps_rho(st)
+         eps_T = this%cx%eps_T(st)
       case (ZERO_DEPS_SCHEME)
          eps_rho = 0._WP
          eps_T = 0._WP
@@ -406,7 +407,7 @@ contains
 
     ! Apply the variables transformation
 
-    call this%tr%trans_eqns(xA, i, omega)
+    call this%tr%trans_eqns(xA, i, st)
 
     ! Finish
 

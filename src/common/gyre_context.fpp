@@ -33,7 +33,8 @@ module gyre_context
   use gyre_point
   use gyre_rot
   use gyre_rot_factory
-
+  use gyre_state
+  
   use ISO_FORTRAN_ENV
 
   ! No implicit typing
@@ -45,14 +46,12 @@ module gyre_context
   type :: context_t
      class(model_t), pointer, public :: ml => null()
      class(c_rot_t), allocatable     :: rt
-     real(WP)                        :: omega_ad
      real(WP)                        :: Omega_rot_i
      logical                         :: complex_rot
      type(c_interp_t)                :: in_eps_rho
      type(c_interp_t)                :: in_eps_T
    contains
      private
-     procedure, public :: set_omega_ad
      procedure         :: omega_c_r_
      procedure         :: omega_c_c_
      generic, public   :: omega_c => omega_c_r_, omega_c_c_
@@ -65,8 +64,12 @@ module gyre_context
      procedure         :: l_i_r_
      procedure         :: l_i_c_
      generic, public   :: l_i => l_i_r_, l_i_c_
-     procedure, public :: eps_rho
-     procedure, public :: eps_T
+     procedure         :: eps_rho_r_
+     procedure         :: eps_rho_c_
+     generic, public   :: eps_rho => eps_rho_r_, eps_rho_c_
+     procedure         :: eps_T_r_
+     procedure         :: eps_T_c_
+     generic, public   :: eps_T => eps_T_r_, eps_T_c_
   end type context_t
 
   ! Interfaces
@@ -105,7 +108,6 @@ contains
  
     allocate(cx%rt, SOURCE=c_rot_t(md_p, os_p))
 
-    cx%omega_ad = 0._WP
     cx%Omega_rot_i = ml%coeff(I_OMEGA_ROT, pt_i)
 
     cx%complex_rot = os_p%complex_rot
@@ -125,34 +127,16 @@ contains
 
   !****
 
-  subroutine set_omega_ad (this, omega_ad)
-
-    class(context_t), intent(inout) :: this
-    real(WP), intent(in)            :: omega_ad
-
-    ! Set the adiabatic frequency to be used in complex rotation,
-    ! eps_*, etc evaluations
-
-    this%omega_ad = omega_ad
-
-    ! Finish
-
-    return
-
-  end subroutine set_omega_ad
-
-  !****
-
-  function omega_c_r_ (this, Omega_rot, omega) result (omega_c)
+  function omega_c_r_ (this, Omega_rot, st) result (omega_c)
 
     class(context_t), intent(in) :: this
+    class(r_state_t), intent(in) :: st
     real(WP), intent(in)         :: Omega_rot
-    real(WP), intent(in)         :: omega
     real(WP)                     :: omega_c
 
     ! Evaluate the corotating-frame frequency (real)
 
-    omega_c = REAL(this%rt%omega_c(Omega_rot, CMPLX(omega, KIND=WP)))
+    omega_c = REAL(this%rt%omega_c(Omega_rot, CMPLX(st%omega, KIND=WP)))
 
     ! Finish
 
@@ -162,16 +146,16 @@ contains
 
   !****
 
-  function omega_c_c_ (this, Omega_rot, omega) result (omega_c)
+  function omega_c_c_ (this, Omega_rot, st) result (omega_c)
 
     class(context_t), intent(in) :: this
     real(WP), intent(in)         :: Omega_rot
-    complex(WP), intent(in)      :: omega
+    class(c_state_t), intent(in) :: st
     complex(WP)                  :: omega_c
 
     ! Evaluate the corotating-frame frequency (complex)
 
-    omega_c = this%rt%omega_c(Omega_rot, omega)
+    omega_c = this%rt%omega_c(Omega_rot, st%omega)
 
     ! Finish
 
@@ -181,16 +165,16 @@ contains
 
   !****
 
-  function lambda_r_ (this, Omega_rot, omega) result (lambda)
+  function lambda_r_ (this, Omega_rot, st) result (lambda)
 
     class(context_t), intent(in) :: this
     real(WP), intent(in)         :: Omega_rot
-    real(WP), intent(in)         :: omega
+    class(r_state_t), intent(in) :: st
     real(WP)                     :: lambda
 
     ! Evaluate the angular eigenvalue (real)
 
-    lambda = REAL(this%rt%lambda(Omega_rot, CMPLX(omega, KIND=WP)))
+    lambda = REAL(this%rt%lambda(Omega_rot, CMPLX(st%omega, KIND=WP)))
 
     ! Finish
 
@@ -200,24 +184,22 @@ contains
 
   !****
 
-  function lambda_c_ (this, Omega_rot, omega) result (lambda)
+  function lambda_c_ (this, Omega_rot, st) result (lambda)
 
     class(context_t), intent(in) :: this
     real(WP), intent(in)         :: Omega_rot
-    complex(WP), intent(in)      :: omega
+    class(c_state_t), intent(in) :: st
     complex(WP)                  :: lambda
 
     ! Evaluate the angular eigenvalue (complex)
 
     if (this%complex_rot) then
 
-       lambda = this%rt%lambda(Omega_rot, omega)
+       lambda = this%rt%lambda(Omega_rot, st%omega)
 
     else
 
-       $ASSERT(this%omega_ad /= 0._WP,set_omega_ad has not been called)
-
-       lambda = this%rt%lambda(Omega_rot, CMPLX(this%omega_ad, KIND=WP))
+       lambda = this%rt%lambda(Omega_rot, CMPLX(st%omega_r, KIND=WP))
 
     endif
 
@@ -229,16 +211,16 @@ contains
 
   !****
 
-  function l_e_r_ (this, Omega_rot, omega) result (l_e)
+  function l_e_r_ (this, Omega_rot, st) result (l_e)
 
     class(context_t), intent(in) :: this
     real(WP), intent(in)         :: Omega_rot
-    real(WP), intent(in)         :: omega
+    class(r_state_t), intent(in) :: st
     real(WP)                     :: l_e
 
     ! Evaluate the effective harmonic degree (real)
 
-    l_e = REAL(this%rt%l_e(Omega_rot, CMPLX(omega, KIND=WP)))
+    l_e = REAL(this%rt%l_e(Omega_rot, CMPLX(st%omega, KIND=WP)))
 
     ! Finish
 
@@ -248,24 +230,22 @@ contains
 
   !****
 
-  function l_e_c_ (this, Omega_rot, omega) result (l_e)
+  function l_e_c_ (this, Omega_rot, st) result (l_e)
 
     class(context_t), intent(in) :: this
     real(WP), intent(in)         :: Omega_rot
-    complex(WP), intent(in)      :: omega
+    class(c_state_t), intent(in) :: st
     complex(WP)                  :: l_e
 
     ! Evaluate the effective harmonic degree (complex)
 
     if (this%complex_rot) then
 
-       l_e = this%rt%l_e(Omega_rot, omega)
+       l_e = this%rt%l_e(Omega_rot, st%omega)
 
     else
 
-       $ASSERT(this%omega_ad /= 0._WP,set_omega_ad has not been called)
-
-       l_e = this%rt%l_e(Omega_rot, CMPLX(this%omega_ad, KIND=WP))
+       l_e = this%rt%l_e(Omega_rot, CMPLX(st%omega_r, KIND=WP))
 
     endif
 
@@ -277,16 +257,16 @@ contains
   
   !****
 
-  function l_i_r_ (this, omega) result (l_i)
+  function l_i_r_ (this, st) result (l_i)
 
     class(context_t), intent(in) :: this
-    real(WP), intent(in)         :: omega
+    class(r_state_t), intent(in) :: st
     real(WP)                     :: l_i
 
     ! Evaluate the effective harmonic degree at the inner boundary
     ! (real)
 
-    l_i = this%l_e(this%Omega_rot_i, omega)
+    l_i = this%l_e(this%Omega_rot_i, st)
 
     ! Finish
 
@@ -296,16 +276,16 @@ contains
 
   !****
 
-  function l_i_c_ (this, omega) result (l_i)
+  function l_i_c_ (this, st) result (l_i)
 
     class(context_t), intent(in) :: this
-    complex(WP), intent(in)      :: omega
+    class(c_state_t), intent(in) :: st
     complex(WP)                  :: l_i
 
     ! Evaluate the effective harmonic degree at the inner boundary
     ! (complex)
 
-    l_i = this%l_e(this%Omega_rot_i, omega)
+    l_i = this%l_e(this%Omega_rot_i, st)
 
     ! Finish
 
@@ -438,21 +418,22 @@ contains
 
   !****
 
-  function eps_rho (this)
+  function eps_rho_r_ (this, st) result (eps_rho)
 
     class(context_t), intent(in) :: this
+    class(r_state_t), intent(in) :: st
     complex(WP)                  :: eps_rho
 
     real(WP) :: omega_min
     real(WP) :: omega_max
     real(WP) :: omega
 
-    ! Evaluate the eps_rho derivative
+    ! Evaluate the eps_rho derivative (real)
 
     omega_min = this%in_eps_rho%x_min()
     omega_max = this%in_eps_rho%x_min()
 
-    omega = MIN(MAX(this%omega_ad, omega_min), omega_max)
+    omega = MIN(MAX(st%omega, omega_min), omega_max)
 
     eps_rho = this%in_eps_rho%f(omega)
 
@@ -460,25 +441,53 @@ contains
 
     return
 
-  end function eps_rho
+  end function eps_rho_r_
 
   !****
 
-  function eps_T (this)
+  function eps_rho_c_ (this, st) result (eps_rho)
 
     class(context_t), intent(in) :: this
+    class(c_state_t), intent(in) :: st
+    complex(WP)                  :: eps_rho
+
+    real(WP) :: omega_min
+    real(WP) :: omega_max
+    real(WP) :: omega
+
+    ! Evaluate the eps_rho derivative (complex)
+
+    omega_min = this%in_eps_rho%x_min()
+    omega_max = this%in_eps_rho%x_min()
+
+    omega = MIN(MAX(st%omega_r, omega_min), omega_max)
+
+    eps_rho = this%in_eps_rho%f(omega)
+
+    ! Finish
+
+    return
+
+  end function eps_rho_c_
+
+  !****
+
+  function eps_T_r_ (this, st) result (eps_T)
+
+    class(context_t), intent(in) :: this
+    class(r_state_t), intent(in) :: st
     complex(WP)                  :: eps_T
 
     real(WP) :: omega_min
     real(WP) :: omega_max
     real(WP) :: omega
 
-    ! Evaluate the eps_T derivative
+    ! Evaluate the eps_T derivative (real)
 
     omega_min = this%in_eps_rho%x_min()
     omega_max = this%in_eps_rho%x_min()
 
-    omega = MIN(MAX(this%omega_ad, omega_min), omega_max)
+    omega = MIN(MAX(st%omega, omega_min), omega_max)
 
     eps_T = this%in_eps_T%f(omega)
 
@@ -486,6 +495,33 @@ contains
 
     return
 
-  end function eps_T
+  end function eps_T_r_
+
+  !****
+
+  function eps_T_c_ (this, st) result (eps_T)
+
+    class(context_t), intent(in) :: this
+    class(c_state_t), intent(in) :: st
+    complex(WP)                  :: eps_T
+
+    real(WP) :: omega_min
+    real(WP) :: omega_max
+    real(WP) :: omega
+
+    ! Evaluate the eps_T derivative (real)
+
+    omega_min = this%in_eps_rho%x_min()
+    omega_max = this%in_eps_rho%x_min()
+
+    omega = MIN(MAX(st%omega_r, omega_min), omega_max)
+
+    eps_T = this%in_eps_T%f(omega)
+
+    ! Finish
+
+    return
+
+  end function eps_T_c_
 
 end module gyre_context

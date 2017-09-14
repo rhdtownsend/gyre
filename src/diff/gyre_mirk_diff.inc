@@ -34,6 +34,7 @@ module gyre_${T}_mirk_diff
   use gyre_ext
   use gyre_linalg
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -107,10 +108,10 @@ contains
 
   !****
 
-  subroutine build (this, omega, E_l, E_r, scl)
+  subroutine build (this, st, E_l, E_r, scl)
 
     class(${T}_mirk_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)               :: omega
+    class(${T}_state_t), intent(in)     :: st
     $TYPE(WP), intent(out)              :: E_l(:,:)
     $TYPE(WP), intent(out)              :: E_r(:,:)
     type(${T}_ext_t), intent(out)       :: scl
@@ -138,9 +139,9 @@ contains
        
        ! Evaluate the RHS matrices
 
-       A(:,:,1) = this%eq%A(1, omega)
-       A(:,:,2) = this%eq%A(2, omega)
-       A(:,:,3) = this%eq%A(3, omega)
+       A(:,:,1) = this%eq%A(1, st)
+       A(:,:,2) = this%eq%A(2, st)
+       A(:,:,3) = this%eq%A(3, st)
 
        ! Build the difference equations
 

@@ -36,6 +36,7 @@ module gyre_mode
   use gyre_osc_par
   use gyre_point
   use gyre_rot
+  use gyre_state
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -47,7 +48,8 @@ module gyre_mode
   ! Derived-type definitions
 
   type :: mode_t
-     type(context_t)           :: cx
+     type(c_state_t)           :: st
+     type(context_t), pointer  :: cx => null()
      type(grid_t), allocatable :: gr
      type(mode_par_t)          :: md_p
      type(osc_par_t)           :: os_p
@@ -143,18 +145,18 @@ module gyre_mode
 
 contains
 
-  function mode_t_ (omega, y_c, discrim, cx, gr, md_p, os_p, j, normalize) result (md)
+  function mode_t_ (st, y_c, discrim, cx, gr, md_p, os_p, j, normalize) result (md)
 
-    complex(WP), intent(in)       :: omega
-    complex(WP), intent(in)       :: y_c(:,:)
-    type(c_ext_t), intent(in)     :: discrim
-    type(context_t), intent(in)   :: cx
-    type(grid_t), intent(in)      :: gr
-    type(mode_par_t), intent(in)  :: md_p
-    type(osc_par_t), intent(in)   :: os_p
-    integer, intent(in)           :: j
-    logical, intent(in), optional :: normalize
-    type(mode_t)                  :: md
+    type(c_state_t), intent(in)          :: st
+    complex(WP), intent(in)              :: y_c(:,:)
+    type(c_ext_t), intent(in)            :: discrim
+    type(context_t), pointer, intent(in) :: cx
+    type(grid_t), intent(in)             :: gr
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    integer, intent(in)                  :: j
+    logical, intent(in), optional        :: normalize
+    type(mode_t)                         :: md
 
     logical     :: normalize_
     real(WP)    :: x_ref
@@ -172,8 +174,8 @@ contains
 
     ! Construct the mode_t
 
-    md%cx = cx
-
+    md%st = st
+    md%cx => cx
     allocate(md%gr, SOURCE=gr)
 
     md%md_p = md_p
@@ -181,10 +183,10 @@ contains
 
     md%y_c = y_c
 
+    md%omega = st%omega
     md%discrim = discrim
 
-    md%omega = omega
-    md%l_i = cx%l_i(omega)
+    md%l_i = cx%l_i(st)
 
     md%n_k = gr%n_k
 
@@ -295,7 +297,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the inner boundary)
 
-       call find_turn(this%cx%ml, this%gr, REAL(this%omega), this%md_p, this%os_p, k_i, x_i)
+       call find_turn(this%cx%ml, this%gr, REAL(this%st%omega), this%md_p, this%os_p, k_i, x_i)
 
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface
@@ -517,9 +519,9 @@ contains
          pt_o => this%gr%pt(this%n_k) )
 
       if (PRESENT(freq_frame)) then
-         freq = freq_from_omega(this%omega, ml, pt_i, pt_o, freq_units, freq_frame, this%md_p, this%os_p)
+         freq = freq_from_omega(this%st%omega, ml, pt_i, pt_o, freq_units, freq_frame, this%md_p, this%os_p)
       else
-         freq = freq_from_omega(this%omega, ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
+         freq = freq_from_omega(this%st%omega, ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
       endif
 
     end associate
@@ -621,7 +623,7 @@ contains
 
          Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
 
-         omega_c = this%cx%omega_c(Omega_rot, this%omega)
+         omega_c = this%cx%omega_c(Omega_rot, this%st)
       
          if (l_i /= 1._WP) then
 
@@ -1051,7 +1053,7 @@ contains
       
       Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
     
-      lambda = this%cx%lambda(Omega_rot, this%omega)
+      lambda = this%cx%lambda(Omega_rot, this%st)
 
     end associate
 
@@ -1196,7 +1198,7 @@ contains
          $ABORT(Evaluating dW_dx_eps not supported for deps_scheme /= MODEL)
       end select
       
-      omega_r = REAL(this%omega)
+      omega_r = REAL(this%st%omega)
 
       dW_eps_dx = PI/omega_r*REAL(CONJG(lag_T)*c_eps*(eps_rho*lag_rho + eps_T*lag_T))*pt%x**2*t_dyn/t_kh
 
@@ -1338,7 +1340,7 @@ contains
 
       Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
 
-      omega_c = this%cx%omega_c(Omega_rot, this%omega)
+      omega_c = this%cx%omega_c(Omega_rot, this%st)
 
       dtau_dx_tr = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._WP)*( &
            lag_rho*CONJG(eul_P)/(c_1*V_2) + &
@@ -1490,7 +1492,7 @@ contains
 
       Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
 
-      omega_c = this%cx%omega_c(Omega_rot, this%omega)
+      omega_c = this%cx%omega_c(Omega_rot, this%st)
 
       if (pt%x /= 0._WP) then
          I_1 = pt%x**(l_i+2._WP)*(c_1*omega_c**2*U*y_1 - U*y_2 + &
@@ -1550,7 +1552,7 @@ contains
 
          lambda = REAL(this%lambda(k))
 
-         omega_c = REAL(this%cx%omega_c(Omega_rot, this%omega))
+         omega_c = REAL(this%cx%omega_c(Omega_rot, this%st))
 
          g_4 = -4._WP*V_g*c_1
          g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
@@ -1634,7 +1636,7 @@ contains
          k => this%k_ref, &
          ml => this%cx%ml, &
          pt => this%gr%pt(this%k_ref), &
-         omega => this%omega )
+         omega => this%st%omega )
 
       xi_r = this%xi_r(k)
       deul_phi = this%deul_phi(k)
@@ -1892,7 +1894,7 @@ contains
 
     ! Calculate the mode total energy, in units of G M_star**2 / R_star
 
-    H = 0.5_WP*REAL(this%omega)**2*this%E()
+    H = 0.5_WP*REAL(this%st%omega)**2*this%E()
 
     ! Finish
 

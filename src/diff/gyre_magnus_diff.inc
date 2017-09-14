@@ -33,6 +33,7 @@ module gyre_${T}_magnus_diff
   use gyre_ext
   use gyre_linalg
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -138,10 +139,10 @@ contains
 
   !****
 
-  subroutine build (this, omega, E_l, E_r, scl)
+  subroutine build (this, st, E_l, E_r, scl)
 
     class(${T}_magnus_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: omega
+    class(${T}_state_t), intent(in)       :: st
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
@@ -170,11 +171,11 @@ contains
 
     select case (this%scheme)
     case (GL2_SCHEME)
-       dOmega = this%dOmega_GL2_(omega)
+       dOmega = this%dOmega_GL2_(st)
     case (GL4_SCHEME)
-       dOmega = this%dOmega_GL4_(omega)
+       dOmega = this%dOmega_GL4_(st)
     case (GL6_SCHEME)
-       dOmega = this%dOmega_GL6_(omega)
+       dOmega = this%dOmega_GL6_(st)
     case default
        $ABORT(Invalid scheme)
     end select
@@ -261,10 +262,10 @@ contains
 
   !****
 
-  function dOmega_GL2_ (this, omega) result (dOmega)
+  function dOmega_GL2_ (this, st) result (dOmega)
 
     class(${T}_magnus_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: omega
+    class(${T}_state_t), intent(in)       :: st
     $TYPE(WP)                             :: dOmega(this%n_e,this%n_e)
 
     $TYPE(WP) :: A(this%n_e,this%n_e,1)
@@ -273,7 +274,7 @@ contains
 
     ! Calculate the RHS matrix
 
-    A(:,:,1) = this%eq%A(1, omega)
+    A(:,:,1) = this%eq%A(1, st)
 
     ! Set up the slope matrix
 
@@ -287,10 +288,10 @@ contains
 
   !****
 
-  function dOmega_GL4_ (this, omega) result (dOmega)
+  function dOmega_GL4_ (this, st) result (dOmega)
 
     class(${T}_magnus_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: omega
+    class(${T}_state_t), intent(in)       :: st
     $TYPE(WP)                             :: dOmega(this%n_e,this%n_e)
 
     $TYPE(WP) :: A(this%n_e,this%n_e,2)
@@ -300,8 +301,8 @@ contains
 
     ! Calculate the RHS matrices
 
-    A(:,:,1) = this%eq%A(1, omega)
-    A(:,:,2) = this%eq%A(2, omega)
+    A(:,:,1) = this%eq%A(1, st)
+    A(:,:,2) = this%eq%A(2, st)
 
     ! Set up the Magnus slope matrix (Blanes et al. 2009, eqns. 243
     ! and 253; note that the 12 in the denominator of their expression
@@ -320,10 +321,10 @@ contains
 
   !****
 
-  function dOmega_GL6_ (this, omega) result (dOmega)
+  function dOmega_GL6_ (this, st) result (dOmega)
 
     class(${T}_magnus_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: omega
+    class(${T}_state_t), intent(in)       :: st
     $TYPE(WP)                             :: dOmega(this%n_e,this%n_e)
 
     $TYPE(WP) :: A(this%n_e,this%n_e,3)
@@ -334,9 +335,9 @@ contains
 
     ! Calculate the RHS matrices
 
-    A(:,:,1) = this%eq%A(1, omega)
-    A(:,:,2) = this%eq%A(2, omega)
-    A(:,:,3) = this%eq%A(3, omega)
+    A(:,:,1) = this%eq%A(1, st)
+    A(:,:,2) = this%eq%A(2, st)
+    A(:,:,3) = this%eq%A(3, st)
 
     ! Set up the Magnus slope matrix (Blanes et al. 2009, eqns. 251
     ! and 257)

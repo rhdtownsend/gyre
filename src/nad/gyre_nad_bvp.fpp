@@ -37,6 +37,7 @@ module gyre_nad_bvp
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -53,9 +54,6 @@ module gyre_nad_bvp
      type(nad_trans_t)        :: tr
      type(mode_par_t)         :: md_p
      type(osc_par_t)          :: os_p
-   contains
-     private
-     procedure, public :: set_omega_ad
   end type nad_bvp_t
 
   ! Interfaces
@@ -135,38 +133,24 @@ contains
 
   !****
 
-  subroutine set_omega_ad (this, omega_ad)
-
-    class(nad_bvp_t), intent(inout) :: this
-    real(WP), intent(in)            :: omega_ad
-
-    ! Set the adiabatic frequency to be used in rotation evaluations
-
-    call this%cx%set_omega_ad(omega_ad)
-
-    ! Finish
-
-    return
-
-  end subroutine set_omega_ad
-
-  !****
-
-  function mode_t_ (bp, omega, j) result (md)
+  function mode_t_ (bp, omega, omega_ad, j) result (md)
 
     class(nad_bvp_t), intent(inout) :: bp
     complex(WP), intent(in)         :: omega
+    real(WP), intent(in)            :: omega_ad
     integer, intent(in)             :: j
     type(mode_t)                    :: md
 
-    complex(WP)   :: y(6,bp%n_k)
-    type(c_ext_t) :: discrim
-    integer       :: k
-    complex(WP)   :: y_c(6,bp%n_k)
+    type(c_state_t) :: st
+    complex(WP)     :: y(6,bp%n_k)
+    type(c_ext_t)   :: discrim
+    integer         :: k
 
     ! Calculate the solution vector
 
-    call bp%build(omega)
+    st = c_state_t(omega, omega_ad)
+
+    call bp%build(st)
 
     y = bp%soln_vec_hom()
     discrim = bp%det()
@@ -175,16 +159,12 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, bp%n_k
-
-       call bp%tr%trans_vars(y(:,k), k, omega)
-
-       y_c(:,k) = y(:,k)
-
+       call bp%tr%trans_vars(y(:,k), k, st)
     end do
 
     ! Construct the mode_t
 
-    md = mode_t(omega, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p, j)
+    md = mode_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p, j)
 
     ! Finish
 
