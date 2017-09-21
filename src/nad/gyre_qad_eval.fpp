@@ -160,7 +160,7 @@ contains
     
     seg_loop : do s = this%gr%s_i(), this%gr%s_o()
        associate (k_i => this%gr%k_i(s), k_o => this%gr%k_o(s))
-         dy_6(k_i:k_o) = this%gr%pt(k_i:k_o)%x*deriv(this%gr%pt(k_i:k_o)%x, y_qad(6,k_i:k_o), 'SPLINE')
+         dy_6(k_i:k_o) = this%gr%pt(k_i:k_o)%x*deriv(this%gr%pt(k_i:k_o)%x, REAL(y_qad(6,k_i:k_o), WP), 'MONO')
        end associate
     end do seg_loop
 
