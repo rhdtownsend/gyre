@@ -50,7 +50,9 @@ module gyre_nad_bound
   integer, parameter :: DZIEM_TYPE = 5
   integer, parameter :: UNNO_TYPE = 6
   integer, parameter :: JCD_TYPE = 7
+  $if ($EXPERIMENTAL)
   integer, parameter :: LUAN_TYPE = 8
+  $endif
 
   integer, parameter :: J_V = 1
   integer, parameter :: J_V_G = 2
@@ -60,8 +62,10 @@ module gyre_nad_bound
   integer, parameter :: J_NABLA_AD = 6
   integer, parameter :: J_C_THN = 7
   integer, parameter :: J_DELTA = 8
+  $if ($EXPERIMENTAL)
   integer, parameter :: J_F_LUAN_T = 9
   integer, parameter :: J_F_LUAN_C = 10
+  $endif
   integer, parameter :: J_OMEGA_ROT = 11
 
   integer, parameter :: J_LAST = J_OMEGA_ROT
@@ -90,7 +94,9 @@ module gyre_nad_bound
      procedure         :: build_dziem_o_
      procedure         :: build_unno_o_
      procedure         :: build_jcd_o_
+     $if ($EXPERIMENTAL)
      procedure         :: build_luan_o_
+     $endif
   end type nad_bound_t
 
   ! Interfaces
@@ -159,12 +165,14 @@ contains
        else
           bd%type_o = JCD_TYPE
        end if
+    $if ($EXPERIMENTAL)   
     case ('LUAN')
        if (cx%ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
        else
           bd%type_o = LUAN_TYPE
        endif
+    $endif
     case default
        $ABORT(Invalid outer_bound)
     end select
@@ -247,6 +255,7 @@ contains
       case (JCD_TYPE)
          call eval_atmos_coeffs_jcd(ml, pt_o, this%coeff(2,J_V_G), &
               this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
+      $if ($EXPERIMENTAL)
       case (LUAN_TYPE)
          call check_model(ml, [I_DELTA,I_F_LUAN_T,I_F_LUAN_C])
          call eval_atmos_coeffs_luan(ml, pt_o, this%coeff(2,J_V_G), &
@@ -254,6 +263,7 @@ contains
          this%coeff(2,J_DELTA) = ml%coeff(I_DELTA, pt_o)
          this%coeff(2,J_F_LUAN_T) = ml%coeff(I_F_LUAN_T, pt_o)
          this%coeff(2,J_F_LUAN_C) = ml%coeff(I_F_LUAN_C, pt_o)
+      $endif
       case default
          $ABORT(Invalid type_o)
       end select
@@ -494,8 +504,10 @@ contains
        call this%build_unno_o_(st, B, scl)
     case (JCD_TYPE)
        call this%build_jcd_o_(st, B, scl)
+    $if ($EXPERIMENTAL)
     case (LUAN_TYPE)
        call this%build_luan_o_(st, B, scl)
+    $endif
     case default
        $ABORT(Invalid type_o)
     end select
@@ -838,6 +850,8 @@ contains
 
   !****
 
+  $if ($EXPERIMENTAL)
+
   subroutine build_luan_o_ (this, st, B, scl)
 
     class(nad_bound_t), intent(in) :: this
@@ -924,5 +938,7 @@ contains
     return
 
   end subroutine build_luan_o_
+
+  $endif
 
 end module gyre_nad_bound
