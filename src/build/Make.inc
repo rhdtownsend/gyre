@@ -21,6 +21,9 @@ IEEE?=no
 # Enable FPE checks
 FPE?=yes
 
+# Enable experimental features
+EXPERIMENTAL?=no
+
 ############ DO NOT EDIT BELOW THIS LINE ############
 ### (unless you think you know what you're doing) ###
 #####################################################
@@ -44,7 +47,7 @@ endif
 
 MODPATH=${MESASDK_ROOT}/include
 
-FFLAGS:=${FFLAGS} -finit-real=snan -fbacktrace -fmax-errors=25
+FFLAGS:=${FFLAGS} -Wall -finit-real=snan -fbacktrace -fmax-errors=25
 
 ifeq (${FPE},yes)
   FFLAGS:=${FFLAGS} -ffpe-trap=invalid,overflow,zero
