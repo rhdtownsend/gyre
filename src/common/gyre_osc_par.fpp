@@ -23,6 +23,7 @@ module gyre_osc_par
   ! Uses
 
   use core_kinds
+  use core_constants, only : FILENAME_LEN
   use core_parallel
 
   ! No implicit typing
@@ -32,19 +33,25 @@ module gyre_osc_par
   ! Derived-type definitions
 
   type :: osc_par_t
-     real(WP)        :: x_ref
-     character(64)   :: rotation_method
-     character(64)   :: variables_set
-     character(64)   :: inner_bound
-     character(64)   :: outer_bound
-     character(64)   :: inertia_norm
-     character(64)   :: time_factor
-     character(64)   :: conv_scheme
-     character(2048) :: tag_list
-     logical         :: nonadiabatic
-     logical         :: cowling_approx
-     logical         :: narf_approx
-     logical         :: reduce_order
+     real(WP)                :: x_ref
+     character(64)           :: rotation_method
+     character(64)           :: variables_set
+     character(64)           :: inner_bound
+     character(64)           :: outer_bound
+     character(64)           :: inertia_norm
+     character(64)           :: time_factor
+     character(64)           :: conv_scheme
+     character(64)           :: deps_scheme
+     character(FILENAME_LEN) :: deps_file
+     character(256)          :: deps_file_format
+     character(2048)         :: tag_list
+     logical                 :: nonadiabatic
+     logical                 :: quasiad_eigfuncs
+     logical                 :: cowling_approx
+     logical                 :: narf_approx
+     logical                 :: eddington_approx
+     logical                 :: complex_rot
+     logical                 :: reduce_order
   end type osc_par_t
 
   ! Interfaces
@@ -85,25 +92,34 @@ contains
     integer, intent(in)                       :: unit
     type(osc_par_t), allocatable, intent(out) :: os_p(:)
 
-    integer                              :: n_os_p
-    integer                              :: i
-    real(WP)                             :: x_ref
-    character(LEN(os_p%rotation_method)) :: rotation_method
-    character(LEN(os_p%variables_set))   :: variables_set
-    character(LEN(os_p%inner_bound))     :: inner_bound
-    character(LEN(os_p%outer_bound))     :: outer_bound
-    character(LEN(os_p%inertia_norm))    :: inertia_norm
-    character(LEN(os_p%time_factor))     :: time_factor
-    character(LEN(os_p%conv_scheme))     :: conv_scheme
-    character(LEN(os_p%tag_list))        :: tag_list
-    logical                              :: nonadiabatic
-    logical                              :: cowling_approx
-    logical                              :: narf_approx
-    logical                              :: reduce_order
+    integer                               :: n_os_p
+    integer                               :: i
+    real(WP)                              :: x_ref
+    character(LEN(os_p%rotation_method))  :: rotation_method
+    character(LEN(os_p%variables_set))    :: variables_set
+    character(LEN(os_p%inner_bound))      :: inner_bound
+    character(LEN(os_p%outer_bound))      :: outer_bound
+    character(LEN(os_p%inertia_norm))     :: inertia_norm
+    character(LEN(os_p%time_factor))      :: time_factor
+    character(LEN(os_p%conv_scheme))      :: conv_scheme
+    character(LEN(os_p%deps_scheme))      :: deps_scheme
+    character(LEN(os_p%deps_file))        :: deps_file
+    character(LEN(os_p%deps_file_format)) :: deps_file_format
+    character(LEN(os_p%tag_list))         :: tag_list
+    logical                               :: quasiad_eigfuncs
+    logical                               :: nonadiabatic
+    logical                               :: cowling_approx
+    logical                               :: narf_approx
+    logical                               :: eddington_approx
+    logical                               :: complex_rot
+    logical                               :: reduce_order
 
     namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, &
-         variables_set, inertia_norm, time_factor, conv_scheme, &
-         tag_list, nonadiabatic, cowling_approx, narf_approx, reduce_order
+         variables_set, inertia_norm, time_factor, &
+         conv_scheme, deps_scheme, deps_file, deps_file_format, &
+         tag_list, quasiad_eigfuncs, nonadiabatic, &
+         cowling_approx, narf_approx, eddington_approx, &
+         complex_rot, reduce_order
 
     ! Count the number of osc namelists
 
@@ -135,11 +151,17 @@ contains
        inertia_norm = 'BOTH'
        time_factor = 'OSC'
        conv_scheme = 'FROZEN_PESNELL_1'
+       deps_scheme = 'MODEL'
+       deps_file = ''
+       deps_file_format = ''
        tag_list = ''
 
+       quasiad_eigfuncs = .FALSE.
        nonadiabatic = .FALSE.
        cowling_approx = .FALSE.
        narf_approx = .FALSE.
+       eddington_approx = .FALSE.
+       complex_rot = .FALSE.
        reduce_order = .TRUE.
 
        read(unit, NML=osc)
@@ -154,10 +176,16 @@ contains
                            inertia_norm=inertia_norm, &
                            time_factor=time_factor, &
                            conv_scheme=conv_scheme, &
+                           deps_scheme=deps_scheme, &
+                           deps_file=deps_file, &
+                           deps_file_format=deps_file_format, &
                            tag_list=tag_list, &
+                           quasiad_eigfuncs=quasiad_eigfuncs, &
                            nonadiabatic=nonadiabatic, &
                            cowling_approx=cowling_approx, &
                            narf_approx=narf_approx, &
+                           eddington_approx=eddington_approx, &
+                           complex_rot=complex_rot, &
                            reduce_order=reduce_order)
 
     end do read_loop
@@ -188,11 +216,17 @@ contains
     call bcast(os_p%inertia_norm, root_rank)
     call bcast(os_p%time_factor, root_rank)
     call bcast(os_p%conv_scheme, root_rank)
+    call bcast(os_p%deps_scheme, root_rank)
+    call bcast(os_p%deps_file, root_rank)
+    call bcast(os_p%deps_file_format, root_rank)
     call bcast(os_p%tag_list, root_rank)
 
+    call bcast(os_p%quasiad_eigfuncs, root_rank)
     call bcast(os_p%nonadiabatic, root_rank)
     call bcast(os_p%cowling_approx, root_rank)
     call bcast(os_p%narf_approx, root_rank)
+    call bcast(os_p%eddington_approx, root_rank)
+    call bcast(os_p%complex_rot, root_rank)
     call bcast(os_p%reduce_order, root_rank)
 
     ! Finish

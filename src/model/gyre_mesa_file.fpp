@@ -155,12 +155,12 @@ contains
     real(WP), allocatable       :: nabla_ad(:)
     real(WP), allocatable       :: delta(:)
     real(WP), allocatable       :: nabla(:)
+    real(WP), allocatable       :: eps(:)
+    real(WP), allocatable       :: eps_rho(:)
+    real(WP), allocatable       :: eps_T(:)
     real(WP), allocatable       :: kap(:)
     real(WP), allocatable       :: kap_rho(:)
     real(WP), allocatable       :: kap_T(:)
-    real(WP), allocatable       :: eps(:)
-    real(WP), allocatable       :: eps_eps_rho(:)
-    real(WP), allocatable       :: eps_eps_T(:)
     real(WP), allocatable       :: Omega_rot(:)
     real(WP), allocatable       :: x(:)
     real(WP), allocatable       :: V_2(:)
@@ -171,13 +171,12 @@ contains
     real(WP), allocatable       :: c_P(:)
     real(WP), allocatable       :: c_lum(:)
     real(WP), allocatable       :: c_rad(:)
-    real(WP), allocatable       :: c_thm(:)
-    real(WP), allocatable       :: c_dif(:)
+    real(WP), allocatable       :: c_thn(:)
+    real(WP), allocatable       :: c_thk(:)
     real(WP), allocatable       :: c_eps(:)
-    real(WP), allocatable       :: c_eps_ad(:)
-    real(WP), allocatable       :: c_eps_S(:)
-    real(WP), allocatable       :: kap_ad(:)
-    real(WP), allocatable       :: kap_S(:)
+    real(WP), allocatable       :: int_rhoT(:)
+    real(WP), allocatable       :: f_luan_t(:)
+    real(WP), allocatable       :: f_luan_c(:)
     type(evol_model_t), pointer :: em
 
     ! Extract data from the global and point arrays
@@ -212,7 +211,8 @@ contains
     allocate(U(n))
     allocate(c_1(n))
     allocate(c_lum(n))
-
+    allocate(f_luan_t(n))
+    
     where (x /= 0._WP)
        V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
        As = r**3*N2/(G_GRAVITY*M_r)
@@ -231,19 +231,27 @@ contains
 
     c_P = P*delta/(rho*T*nabla_ad)
 
-    kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
-    kap_S = kap_T - delta*kap_rho
-
     c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
-    c_thm = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
-    c_dif = (kap_ad-4._WP*nabla_ad)*V_2*x**2*nabla + V_2*x**2*nabla_ad
+    c_thn = c_P*SQRT(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
+    c_thk = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
 
     select case (version)
     case (101)
        c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
+    case default
+       ! Note: technically incorrect because eps in versions < 1.01 includes eps_grav
+       c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
     end select
-    c_eps_ad = 4._WP*PI*rho*(nabla_ad*eps_eps_T + eps_eps_rho/Gamma_1)*R_star**3/L_star
-    c_eps_S = 4._WP*PI*rho*(eps_eps_T - delta*eps_eps_rho)*R_star**3/L_star
+
+    int_rhoT = -integral(r(n:1:-1), rho(n:1:-1)*K_BOLTZMANN*T(n:1:-1)/M_PROTON)
+    int_rhoT = int_rhoT(n:1:-1)
+    where (x /= 0._WP)
+       f_luan_t = 4._WP*PI*r**2*int_rhoT/L_r*SQRT(G_GRAVITY*M_star/R_star**3)
+    elsewhere
+       f_luan_t = 0._WP
+    end where
+
+    f_luan_c = c_P*M_PROTON/K_BOLTZMANN
 
     if (ml_p%uniform_rot) then
        Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
@@ -268,18 +276,18 @@ contains
 
     call em%define(I_C_LUM, c_lum)
     call em%define(I_C_RAD, c_rad)
-    call em%define(I_C_THM, c_thm)
-    call em%define(I_C_DIF, c_dif)
+    call em%define(I_C_THN, c_thn)
+    call em%define(I_C_THK, c_thk)
+    call em%define(I_C_EPS, c_eps)
 
-    select case (version)
-    case (101)
-       call em%define(I_C_EPS, c_eps)
-    end select
-    call em%define(I_C_EPS_AD, c_eps_ad)
-    call em%define(I_C_EPS_S, c_eps_S)
+    call em%define(I_EPS_RHO, eps_rho)
+    call em%define(I_EPS_T, eps_T)
+       
+    call em%define(I_KAP_RHO, kap_rho)
+    call em%define(I_KAP_T, kap_T)
 
-    call em%define(I_KAP_AD, kap_ad)
-    call em%define(I_KAP_S, kap_S)
+    call em%define(I_F_LUAN_T, f_luan_t)
+    call em%define(I_F_LUAN_C, f_luan_c)
 
     call em%define(I_OMEGA_ROT, Omega_rot)
 
@@ -295,7 +303,9 @@ contains
 
     subroutine extract_data_v0_01_ ()
 
-      integer :: k
+      real(WP), allocatable :: eps_eps_rho(:)
+      real(WP), allocatable :: eps_eps_T(:)
+      integer               :: k
 
       $CHECK_BOUNDS(SIZE(point_data, 1),N_COLS_V0_01)
 
@@ -323,19 +333,26 @@ contains
       allocate(Omega_rot(n))
       Omega_rot = 0._WP
 
-      ! Decide whether eps_eps_T and eps_eps_rho need rescaling
+      ! Evaluate eps_rho and eps_T from eps_eps_*
 
       k = MAXLOC(ABS(eps_eps_T), DIM=1)
 
-      if (ABS(eps_eps_T(k)) < 1E-3_WP*ABS(eps(k))) then
+      if (ABS(eps_eps_T(k)) >= 1E-3_WP*ABS(eps(k))) then
 
-         eps_eps_T = eps_eps_T*eps
-         eps_eps_rho = eps_eps_rho*eps
+         ! Note: technically incorrect because eps in versions < 1.01 includes eps_grav
+
+         eps_rho = eps_eps_rho/eps
+         eps_T = eps_eps_T/eps
 
          if(check_log_level('INFO')) then
             write(OUTPUT_UNIT, 120) 'Rescaled epsilon derivatives'
 120         format(3X,A)
          endif
+
+      else
+
+         eps_rho = eps_eps_rho
+         eps_T = eps_eps_T
 
       endif
 
@@ -346,6 +363,9 @@ contains
     end subroutine extract_data_v0_01_
 
     subroutine extract_data_v0_19_ ()
+
+      real(WP), allocatable :: eps_eps_rho(:)
+      real(WP), allocatable :: eps_eps_T(:)
 
       $CHECK_BOUNDS(SIZE(point_data, 1),N_COLS_V0_19)
 
@@ -370,6 +390,19 @@ contains
       eps_eps_rho = point_data(17,:)
       Omega_rot = point_data(18,:)
 
+      ! Note: technically incorrect because eps in versions < 1.01 includes eps_grav
+
+      allocate(eps_rho(n))
+      allocate(eps_T(n))
+
+      where (eps /= 0._WP)
+         eps_rho = eps_eps_rho/eps
+         eps_T = eps_eps_T/eps
+      elsewhere
+         eps_rho = 0._WP
+         eps_T = 0._WP
+      end where
+
       ! Finish
 
       return
@@ -378,6 +411,8 @@ contains
 
     subroutine extract_data_v1_0X_ ()
 
+      real(WP), allocatable :: eps_eps_rho(:)
+      real(WP), allocatable :: eps_eps_T(:)
       real(WP), allocatable :: kap_kap_T(:)
       real(WP), allocatable :: kap_kap_rho(:)
 
@@ -403,6 +438,19 @@ contains
       eps_eps_T = point_data(16,:)
       eps_eps_rho = point_data(17,:)
       Omega_rot = point_data(18,:)
+
+      ! Note: technically incorrect in version 1.00, because eps in versions < 1.01 includes eps_grav
+
+      allocate(eps_rho(n))
+      allocate(eps_T(n))
+
+      where (eps /= 0._WP)
+         eps_rho = eps_eps_rho/eps
+         eps_T = eps_eps_T/eps
+      elsewhere
+         eps_rho = 0._WP
+         eps_T = 0._WP
+      end where
 
       kap_T = kap_kap_T/kap
       kap_rho = kap_kap_rho/kap

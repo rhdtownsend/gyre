@@ -23,6 +23,7 @@ module gyre_rad_match
 
   use core_kinds
 
+  use gyre_context
   use gyre_diff
   use gyre_ext
   use gyre_model
@@ -31,6 +32,7 @@ module gyre_rad_match
   use gyre_osc_par
   use gyre_point
   use gyre_rad_trans
+  use gyre_state
   
   use ISO_FORTRAN_ENV
 
@@ -48,9 +50,9 @@ module gyre_rad_match
 
   type, extends (r_diff_t) :: rad_match_t
      private
-     class(model_t), pointer :: ml => null()
-     type(rad_trans_t)       :: tr
-     real(WP), allocatable   :: coeffs(:,:)
+     type(context_t), pointer :: cx => null()
+     type(rad_trans_t)        :: tr
+     real(WP), allocatable    :: coeff(:,:)
    contains
      private
      procedure         :: stencil_
@@ -70,24 +72,24 @@ module gyre_rad_match
 
 contains
 
-  function rad_match_t_ (ml, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
+  function rad_match_t_ (cx, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_a
-    type(point_t), intent(in)           :: pt_b
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(rad_match_t)                   :: mt
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(point_t), intent(in)            :: pt_a
+    type(point_t), intent(in)            :: pt_b
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(rad_match_t)                    :: mt
 
     $ASSERT_DEBUG(pt_a%s+1 == pt_b%s,Mismatched segments)
     $ASSERT_DEBUG(pt_a%x == pt_b%x,Mismatched abscissae)
 
     ! Construct the rad_match_t
 
-    mt%ml => ml
+    mt%cx => cx
 
-    mt%tr = rad_trans_t(ml, pt_i, md_p, os_p)
+    mt%tr = rad_trans_t(cx, pt_i, md_p, os_p)
 
     call mt%stencil_(pt_a, pt_b)
 
@@ -109,12 +111,16 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%ml, [I_U])
+    associate (ml => this%cx%ml)
 
-    allocate(this%coeffs(2,J_LAST))
+      call check_model(ml, [I_U])
 
-    this%coeffs(1,J_U) = this%ml%coeff(I_U, pt_a)
-    this%coeffs(2,J_U) = this%ml%coeff(I_U, pt_b)
+      allocate(this%coeff(2,J_LAST))
+
+      this%coeff(1,J_U) = ml%coeff(I_U, pt_a)
+      this%coeff(2,J_U) = ml%coeff(I_U, pt_b)
+
+    end associate
 
     ! Set up stencil for the tr component
 
@@ -128,10 +134,10 @@ contains
 
   !****
 
-  subroutine build (this, omega, E_l, E_r, scl)
+  subroutine build (this, st, E_l, E_r, scl)
 
     class(rad_match_t), intent(in) :: this
-    real(WP), intent(in)           :: omega
+    class(r_state_t), intent(in)   :: st
     real(WP), intent(out)          :: E_l(:,:)
     real(WP), intent(out)          :: E_r(:,:)
     type(r_ext_t), intent(out)     :: scl
@@ -147,8 +153,8 @@ contains
     ! Calculate coefficients
 
     associate( &
-      U_l => this%coeffs(1,J_U), &
-      U_r => this%coeffs(2,J_U))
+      U_l => this%coeff(1,J_U), &
+      U_r => this%coeff(2,J_U))
 
       ! Evaluate the match conditions (y_1 continuous, y_2 not)
 
@@ -172,8 +178,8 @@ contains
 
     ! Apply the variables transformation
 
-    call this%tr%trans_cond(E_l, 1, omega)
-    call this%tr%trans_cond(E_r, 2, omega)
+    call this%tr%trans_cond(E_l, 1, st)
+    call this%tr%trans_cond(E_r, 2, st)
 
     ! Finish
 

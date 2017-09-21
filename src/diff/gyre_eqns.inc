@@ -51,22 +51,24 @@ module gyre_${T}_eqns
        type(point_t), intent(in)         :: pt(:)
      end subroutine stencil
      
-     function A (this, i, omega)
+     function A (this, i, st)
        use core_kinds
+       use gyre_state
        import ${T}_eqns_t
-       class(${T}_eqns_t), intent(in) :: this
-       integer, intent(in)            :: i
-       $TYPE(WP), intent(in)          :: omega
-       $TYPE(WP)                      :: A(this%n_e,this%n_e)
+       class(${T}_eqns_t), intent(in)  :: this
+       integer, intent(in)             :: i
+       class(${T}_state_t), intent(in) :: st
+       $TYPE(WP)                       :: A(this%n_e,this%n_e)
      end function A
 
-     function xA (this, i, omega)
+     function xA (this, i, st)
        use core_kinds
+       use gyre_state
        import ${T}_eqns_t
-       class(${T}_eqns_t), intent(in) :: this
-       integer, intent(in)            :: i
-       $TYPE(WP), intent(in)          :: omega
-       $TYPE(WP)                      :: xA(this%n_e,this%n_e)
+       class(${T}_eqns_t), intent(in)  :: this
+       integer, intent(in)             :: i
+       class(${T}_state_t), intent(in) :: st
+       $TYPE(WP)                       :: xA(this%n_e,this%n_e)
      end function xA
 
   end interface

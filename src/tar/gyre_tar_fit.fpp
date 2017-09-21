@@ -1,7 +1,7 @@
 ! Program  : gyre_tar_fit
 ! Purpose  : fits to traditional approximation of rotation (TAR) eigenvalues
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ module gyre_tar_fit
   use core_hgroup
   $endif
   use core_parallel
+  use core_constants
 
   use gyre_tar_eigen
   use gyre_cheb_fit
@@ -40,13 +41,8 @@ module gyre_tar_fit
 
   type :: tar_fit_t
      private
-     type(cheb_fit_t) :: cf_neg
-     type(cheb_fit_t) :: cf_ctr
-     type(cheb_fit_t) :: cf_pos
-     logical          :: df_neg
-     logical          :: df_ctr
-     logical          :: df_pos
-     real(WP)         :: nu_t
+     type(cheb_fit_t) :: cf
+     real(WP)         :: nu_0
      integer, public  :: m
      integer, public  :: k
    contains
@@ -103,15 +99,9 @@ contains
 
        ! Gravito-inertial waves
 
-       tf%nu_t = 1._WP
+       tf%nu_0 = 0._WP
 
-       tf%cf_neg = cheb_fit_t(-1._WP, 0._WP, cheb_tol, f_grav_outer_)
-       tf%cf_ctr = cheb_fit_t(-1._WP, 1._WP, cheb_tol, f_grav_inner_)
-       tf%cf_pos = cheb_fit_t( 0._WP, 1._WP, cheb_tol, f_grav_outer_)
-
-       tf%df_neg = .TRUE.
-       tf%df_ctr = .TRUE.
-       tf%df_pos = .TRUE.
+       tf%cf = cheb_fit_t(-1._WP, 1._WP, cheb_tol, f_grav_)
 
     else
 
@@ -119,32 +109,21 @@ contains
 
        l = ABS(m) + ABS(k) - 1
 
+       tf%nu_0 = -REAL(l*(l+1), WP)/REAL(m, WP)
+
        if (m > 0) then
 
-          tf%nu_t = REAL(l*(l+1), WP)/REAL(m, WP)
-
-          tf%cf_neg = cheb_fit_t(-1._WP, 0._WP, cheb_tol, f_ross_)
-
-          tf%df_neg = .TRUE.
-          tf%df_pos = .FALSE.
+          tf%cf = cheb_fit_t(-1._WP, 0._WP, cheb_tol, f_ross_)
 
        elseif (m < 0) then
 
-          tf%nu_t = REAL(l*(l+1), WP)/REAL(-m, WP)
-
-          tf%cf_pos = cheb_fit_t(0._WP, 1._WP, cheb_tol, f_ross_)
-
-          tf%df_neg = .FALSE.
-          tf%df_pos = .TRUE.
+          tf%cf = cheb_fit_t(0._WP, 1._WP, cheb_tol, f_ross_)
 
        else
 
-          tf%df_neg = .FALSE.
-          tf%df_pos = .FALSE.
+          $ABORT(Invalid m for Rossby waves)
 
        endif
-
-       tf%df_ctr = .FALSE.
 
     endif
        
@@ -154,56 +133,47 @@ contains
 
   contains
 
-    function f_grav_inner_ (x) result (f)
+    function f_grav_ (x) result (f)
 
       real(WP), intent(in) :: x
       real(WP)             :: f
 
-      ! Calculate the gravity-wave eigenvalue function in the inner
-      ! region (|nu| < nu_t)
+      ! Calculate the gravity-wave eigenvalue function
 
-      if (m == 0._WP .AND. k == 0._WP) then
-         
-         f = 1._WP
-
-      else
-
-         l = ABS(m) + ABS(k) - 1
-
-         associate (nu => tf%nu_t*x)
-           f = lambda(nu, m, k)/lambda_norm_grav_inner_(nu, m, k)
-         end associate
-
-      endif
-
-      ! Finish
-
-      return
-
-    end function f_grav_inner_
-
-    function f_grav_outer_ (x) result (f)
-
-      real(WP), intent(in) :: x
-      real(WP)             :: f
-
-      ! Calculate the gravity-wave eigenvalue function in the outer
-      ! region (|nu| > nu_t)
-
-      if (m == 0._WP .AND. k == 0._WP) then
+      if (m == 0 .AND. k == 0) then
 
          f = 1._WP
 
       else
 
-         if (x == 0._WP) then
+         if (x == -1._WP) then
 
-            f = 1._WP
+            if (m <= 0) then
+               if (k == 0) then
+                  f = 0._WP
+               else
+                  f = (2._WP*(k-1) + 1._WP)**2
+               endif
+            elseif (m > 0) then
+               f = (2._WP*(k+1) + 1._WP)**2
+            endif
+
+         elseif (x == 1._WP) then
+
+            if (m < 0) then
+               f = (2._WP*(k+1) + 1._WP)**2
+            else
+               if (k == 0) then
+                  f = 0._WP
+               else
+                  f = (2._WP*(k-1) + 1._WP)**2
+               endif
+            endif
 
          else
 
-            associate (nu => tf%nu_t/x)
-              f = lambda(nu, m, k)/lambda_norm_grav_outer_(nu, m, k)
+            associate (nu => TAN(HALFPI*x))
+              f = lambda(nu, m, k)/lambda_norm_grav_(nu, m, k)
             end associate
 
          endif
@@ -214,7 +184,7 @@ contains
 
       return
 
-    end function f_grav_outer_
+    end function f_grav_
 
     function f_ross_ (x) result (f)
 
@@ -225,26 +195,20 @@ contains
 
       if (x == 0._WP) then
 
-         f = 1._WP
+         f = 0._WP
 
       elseif (m > 0 .AND. x == -1._WP) then
 
-         f = 0._WP
+         f = 1._WP
 
       elseif (m < 0 .AND. x == 1._WP) then
 
-         f = 0._WP
+         f = 1._WP
 
       else
 
-         associate (nu => tf%nu_t/x)
-
-           if (k == -1) then
-              f = lambda(nu, m, k)/lambda_norm_grav_outer_(nu, m, k)
-           else
+         associate (nu => TAN(HALFPI*x) + tf%nu_0)
               f = lambda(nu, m, k)/lambda_norm_ross_(nu, m, k)
-           endif
-
          end associate
 
       endif
@@ -269,29 +233,11 @@ contains
     call read_attr(hg, 'm', tf%m)
     call read_attr(hg, 'k', tf%k)
 
-    call read_attr(hg, 'nu_t', tf%nu_t)
+    call read_attr(hg, 'nu_0', tf%nu_0)
 
-    call read_attr(hg, 'df_neg', tf%df_neg)
-    call read_attr(hg, 'df_ctr', tf%df_ctr)
-    call read_attr(hg, 'df_pos', tf%df_pos)
-
-    if (tf%df_neg) then
-       hg_comp = hgroup_t(hg, 'cf_neg')
-       call read(hg_comp, tf%cf_neg)
-       call hg_comp%final()
-    endif
-
-    if (tf%df_ctr) then
-       hg_comp = hgroup_t(hg, 'cf_ctr')
-       call read(hg_comp, tf%cf_ctr)
-       call hg_comp%final()
-    endif
-
-    if (tf%df_pos) then
-       hg_comp = hgroup_t(hg, 'cf_pos')
-       call read(hg_comp, tf%cf_pos)
-       call hg_comp%final()
-    endif
+    hg_comp = hgroup_t(hg, 'cf')
+    call read(hg_comp, tf%cf)
+    call hg_comp%final()
 
     ! Finish
 
@@ -313,29 +259,11 @@ contains
     call write_attr(hg, 'm', tf%m)
     call write_attr(hg, 'k', tf%k)
 
-    call write_attr(hg, 'nu_t', tf%nu_t)
+    call write_attr(hg, 'nu_0', tf%nu_0)
 
-    call write_attr(hg, 'df_neg', tf%df_neg)
-    call write_attr(hg, 'df_ctr', tf%df_ctr)
-    call write_attr(hg, 'df_pos', tf%df_pos)
-
-    if (tf%df_neg) then
-       hg_comp = hgroup_t(hg, 'cf_neg')
-       call write(hg_comp, tf%cf_neg)
-       call hg_comp%final()
-    endif
-
-    if (tf%df_ctr) then
-       hg_comp = hgroup_t(hg, 'cf_ctr')
-       call write(hg_comp, tf%cf_ctr)
-       call hg_comp%final()
-    endif
-
-    if (tf%df_pos) then
-       hg_comp = hgroup_t(hg, 'cf_pos')
-       call write(hg_comp, tf%cf_pos)
-       call hg_comp%final()
-    endif
+    hg_comp = hgroup_t(hg, 'cf')
+    call write(hg_comp, tf%cf)
+    call hg_comp%final()
 
     ! Finish
 
@@ -359,43 +287,27 @@ contains
 
        ! Gravity waves
 
-       if (nu <= -this%nu_t) then
-          lambda = this%cf_neg%eval(this%nu_t/nu)*lambda_norm_grav_outer_(nu, this%m, this%k)
-       elseif (nu >= this%nu_t) then
-          lambda = this%cf_pos%eval(this%nu_t/nu)*lambda_norm_grav_outer_(nu, this%m, this%k)
-       else
-          lambda = this%cf_ctr%eval(nu/this%nu_t)*lambda_norm_grav_inner_(nu, this%m, this%k)
-       endif
+       associate (x => ATAN(nu)/HALFPI)
+         lambda = this%cf%eval(x)*lambda_norm_grav_(nu, this%m, this%k)
+       end associate
 
     else
 
        ! Rossby waves
 
-       if (this%m > 0) then
+       associate (x => ATAN(nu - this%nu_0)/HALFPI)
 
-          $ASSERT(nu <= -this%nu_t,Invalid nu for Rossby waves)
+         if (this%m > 0) then
+            $ASSERT(nu <= this%nu_0,Invalid nu for Rossby waves)
+         elseif (this%m < 0) then
+            $ASSERT(nu >= this%nu_0,Invalid nu for Rossby waves)
+         else
+            $ABORT(Invalid m for Rossby waves)
+         endif
 
-          if (this%k == -1) then
-             lambda = this%cf_neg%eval(this%nu_t/nu)*lambda_norm_grav_outer_(nu, this%m, this%k)
-          else
-             lambda = this%cf_neg%eval(this%nu_t/nu)*lambda_norm_ross_(nu, this%m, this%k)
-          endif
+         lambda = this%cf%eval(x)*lambda_norm_ross_(nu, this%m, this%k)
 
-       elseif (this%m < 0) then
-
-          $ASSERT(nu >= this%nu_t,Invalid nu for Rossby waves)
-
-          if (this%k == -1) then
-             lambda = this%cf_pos%eval(this%nu_t/nu)*lambda_norm_grav_outer_(nu, this%m, this%k)
-          else
-             lambda = this%cf_pos%eval(this%nu_t/nu)*lambda_norm_ross_(nu, this%m, this%k)
-          endif
-
-       else
-
-          $ABORT(Invalid m for Rossby waves)
-
-       endif
+       end associate
 
     end if
 
@@ -419,39 +331,27 @@ contains
 
        ! Gravity waves
 
-       if (REAL(nu) < -this%nu_t) then
-          lambda = this%cf_neg%eval(this%nu_t/nu)*lambda_norm_grav_outer_(REAL(nu), this%m, this%k)
-       elseif (REAL(nu) > this%nu_t) then
-          lambda = this%cf_pos%eval(this%nu_t/nu)*lambda_norm_grav_outer_(REAL(nu), this%m, this%k)
-       else
-          lambda = this%cf_ctr%eval(nu/this%nu_t)*lambda_norm_grav_inner_(REAL(nu), this%m, this%k)
-       endif
+       associate (x => ATAN(nu)/HALFPI)
+         lambda = this%cf%eval(x)*lambda_norm_grav_(REAL(nu), this%m, this%k)
+       end associate
 
     else
 
        ! Rossby waves
 
-       if (this%m > 0) then
+       associate (x => ATAN(nu-this%nu_0)/HALFPI)
 
-          $ASSERT(REAL(nu) <= -this%nu_t,Invalid nu for Rossby waves)
+         if (this%m > 0) then
+            $ASSERT(REAL(nu) <= this%nu_0,Invalid nu for Rossby waves)
+         elseif (this%m < 0) then
+            $ASSERT(REAL(nu) >= this%nu_0,Invalid nu for Rossby waves)
+         else
+            $ABORT(Invalid m for Rossby waves)
+         endif
 
-          if (this%k == -1) then
-             lambda = this%cf_neg%eval(this%nu_t/nu)*lambda_norm_grav_outer_(REAL(nu), this%m, this%k)
-          else
-             lambda = this%cf_neg%eval(this%nu_t/nu)*lambda_norm_ross_(REAL(nu), this%m, this%k)
-          endif
+         lambda = this%cf%eval(x)*lambda_norm_ross_(REAL(nu), this%m, this%k)
 
-       else
-
-          $ASSERT(REAL(nu) >= this%nu_t,Invalid nu for Rossby waves)
-
-          if (this%k == -1) then
-             lambda = this%cf_pos%eval(this%nu_t/nu)*lambda_norm_grav_outer_(REAL(nu), this%m, this%k)
-          else
-             lambda = this%cf_pos%eval(this%nu_t/nu)*lambda_norm_ross_(REAL(nu), this%m, this%k)
-          endif
-
-       end if
+       end associate
 
     end if
 
@@ -463,7 +363,7 @@ contains
 
   !****
 
-  function lambda_norm_grav_inner_ (nu, m, k) result (lambda_norm)
+  function lambda_norm_grav_ (nu, m, k) result (lambda_norm)
 
     real(WP), intent(in) :: nu
     integer, intent(in)  :: m
@@ -472,46 +372,17 @@ contains
 
     integer :: l
 
-    ! Evaluate the gravity-wave eigenvalue normalization function in
-    ! the inner region (|nu| < nu_t)
+    ! Evaluate the gravity-wave eigenvalue normalization function
 
-    l = ABS(m) + k
+    if (k >= 0) then
 
-    lambda_norm = l*(l+1)
+       l = ABS(m) + k
 
-    ! Finish
-
-    return
-    
-  end function lambda_norm_grav_inner_
-  
-  !****
-
-  function lambda_norm_grav_outer_ (nu, m, k) result (lambda_norm)
-
-    real(WP), intent(in) :: nu
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: lambda_norm
-
-    integer :: s
-
-    ! Evaluate the gravity-wave eigenvalue normalization function in
-    ! the outer region (|nu| > nu_t)
-
-    if (m*nu >= 0._WP) then
-
-       if (k > 0) then
-          s = k - 1
-          lambda_norm = nu**2*(2*s + 1)**2
-       else
-          lambda_norm = m**2
-       endif
+       lambda_norm = nu**2 + l*(l+1)
 
     else
 
-       s = k + 1
-       lambda_norm = nu**2*(2*s + 1)**2
+       $ABORT(Invalid k for gravity waves)
 
     endif
 
@@ -519,7 +390,7 @@ contains
 
     return
     
-  end function lambda_norm_grav_outer_
+  end function lambda_norm_grav_
   
   !****
 
@@ -534,9 +405,22 @@ contains
 
     ! Evaluate the Rossby-wave eigenvalue normalization function
 
-    s = -k -1
+    if (m*nu < 0._WP) then
 
-    lambda_norm = REAL(m, WP)**2/(2*s+1)**2
+       if (k < -1) then
+          s = -k -1
+          lambda_norm = REAL(m, WP)**2/(2*s+1)**2
+       elseif (k == -1) then
+          lambda_norm = nu**2
+       else
+          $ABORT(Invalid k for Rossby waves)
+       endif
+
+    else
+
+       $ABORT(Invalid m*nu for Rossby waves)
+
+    endif
 
     ! Finish
 

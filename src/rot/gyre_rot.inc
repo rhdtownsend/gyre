@@ -34,10 +34,8 @@ module gyre_${T}_rot
 
   type, abstract :: ${T}_rot_t
    contains
-     procedure(stencil), deferred :: stencil
      procedure(omega), deferred   :: omega
      procedure(omega_c), deferred :: omega_c
-     procedure(l_i), deferred     :: l_i
      procedure(l_e), deferred     :: l_e
      procedure(lambda), deferred  :: lambda
   end type ${T}_rot_t
@@ -46,53 +44,38 @@ module gyre_${T}_rot
 
   abstract interface
 
-     subroutine stencil (this, pt)
-       use gyre_point
-       import ${T}_rot_t
-       class(${T}_rot_t), intent(inout) :: this
-       type(point_t), intent(in)        :: pt(:)
-     end subroutine stencil
-
-     function omega (this, i, omega_c)
+     function omega (this, Omega_rot, omega_c)
        use core_kinds
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: i
+       real(WP), intent(in)          :: Omega_rot
        $TYPE(WP), intent(in)         :: omega_c
        $TYPE(WP)                     :: omega
      end function omega
 
-     function omega_c (this, i, omega)
+     function omega_c (this, Omega_rot, omega)
        use core_kinds
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: i
+       real(WP), intent(in)          :: Omega_rot
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: omega_c
      end function omega_c
 
-     function l_i (this, omega)
+     function l_e (this, Omega_rot, omega)
        use core_kinds
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       $TYPE(WP), intent(in)         :: omega
-       $TYPE(WP)                     :: l_i
-     end function l_i
-     
-     function l_e (this, i, omega)
-       use core_kinds
-       import ${T}_rot_t
-       class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: i
+       real(WP), intent(in)          :: Omega_rot
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: l_e
      end function l_e
      
-     function lambda (this, i, omega)
+     function lambda (this, Omega_rot, omega)
        use core_kinds
        import ${T}_rot_t
        class(${T}_rot_t), intent(in) :: this
-       integer, intent(in)           :: i
+       real(WP), intent(in)          :: Omega_rot
        $TYPE(WP), intent(in)         :: omega
        $TYPE(WP)                     :: lambda
      end function lambda

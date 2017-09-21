@@ -23,17 +23,18 @@ module gyre_nad_diff
 
   use core_kinds
 
+  use gyre_context
   use gyre_diff
   use gyre_diff_factory
   use gyre_trapz_diff
   use gyre_ext
-  use gyre_model
   use gyre_mode_par
   use gyre_nad_eqns
   use gyre_nad_match
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -69,16 +70,16 @@ module gyre_nad_diff
 
 contains
 
-  function nad_diff_t_ (ml, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
+  function nad_diff_t_ (cx, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_a
-    type(point_t), intent(in)           :: pt_b
-    type(mode_par_t), intent(in)        :: md_p
-    type(num_par_t), intent(in)         :: nm_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(nad_diff_t)                    :: df
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(point_t), intent(in)            :: pt_a
+    type(point_t), intent(in)            :: pt_b
+    type(mode_par_t), intent(in)         :: md_p
+    type(num_par_t), intent(in)          :: nm_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(nad_diff_t)                     :: df
 
     type(nad_eqns_t) :: eq
     type(point_t)    :: pt_m
@@ -89,7 +90,7 @@ contains
 
        ! Regular subinterval; use difference equations
 
-       eq = nad_eqns_t(ml, pt_i, md_p, os_p)
+       eq = nad_eqns_t(cx, pt_i, md_p, os_p)
 
        select case (nm_p%diff_scheme)
        case ('TRAPZ')
@@ -113,7 +114,7 @@ contains
 
       ! Segment boundary; use match conditions
 
-      allocate(df%df, SOURCE=nad_match_t(ml, pt_i, pt_a, pt_b, md_p, os_p))
+      allocate(df%df, SOURCE=nad_match_t(cx, pt_i, pt_a, pt_b, md_p, os_p))
 
     endif
 
@@ -127,13 +128,13 @@ contains
 
   !****
 
-  subroutine build (this, omega, E_l, E_r, scl)
+  subroutine build (this, st, E_l, E_r, scl)
 
     use gyre_magnus_diff
     use gyre_colloc_diff
 
     class(nad_diff_t), intent(in) :: this
-    complex(WP), intent(in)       :: omega
+    class(c_state_t), intent(in)  :: st
     complex(WP), intent(out)      :: E_l(:,:)
     complex(WP), intent(out)      :: E_r(:,:)
     type(c_ext_t), intent(out)    :: scl
@@ -151,7 +152,7 @@ contains
 
     ! Build the difference equations
 
-    call this%df%build(omega, E_l, E_r, scl)
+    call this%df%build(st, E_l, E_r, scl)
 
     ! Apply regularization corrections
 
@@ -162,7 +163,7 @@ contains
        ! Rescale by the uncoupled eigenvalues, in order to help the root
        ! finder
 
-       A = this%eq%A(1, omega)
+       A = this%eq%A(1, st)
 
        lambda(1) = SQRT(A(2,1)*A(1,2))
        lambda(2) = SQRT(A(4,3)*A(3,4))
@@ -172,7 +173,7 @@ contains
 
     class is (c_colloc_diff_t)
 
-       scl = scl/SQRT(omega)
+       scl = scl/SQRT(st%omega)
 
     end select
 

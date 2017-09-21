@@ -32,6 +32,7 @@ module gyre_${T}_bvp
   use gyre_diff
   use gyre_ext
   use gyre_num_par
+  use gyre_state
   use gyre_status
   use gyre_sysmtx
   use gyre_sysmtx_factory
@@ -121,10 +122,10 @@ contains
 
   !****
 
-  subroutine build (this, omega)
+  subroutine build (this, st)
 
     class(${T}_bvp_t), target, intent(inout) :: this
-    $TYPE(WP), intent(in)                    :: omega
+    class(${T}_state_t), intent(in)          :: st
 
     $TYPE(WP)        :: B_i(this%n_i,this%n_e)
     $TYPE(WP)        :: B_o(this%n_o,this%n_e)
@@ -135,21 +136,21 @@ contains
     type(${T}_ext_t) :: scl
     integer          :: k
     
-    ! Build the bvp for the specified omega
+    ! Build the bvp for the specified state
 
     ! Set up boundary conditions
 
-    call this%bd%build_i(omega, B_i, scl_i)
+    call this%bd%build_i(st, B_i, scl_i)
     call this%sm%set_B_i(B_i, scl_i)
 
-    call this%bd%build_o(omega, B_o, scl_o)
+    call this%bd%build_o(st, B_o, scl_o)
     call this%sm%set_B_o(B_o, scl_o)
 
     ! Set up difference equations
 
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scl) SCHEDULE (DYNAMIC)
     sub_loop : do k = 1, this%n_k-1
-       call this%df(k)%build(omega, E_l, E_r, scl)
+       call this%df(k)%build(st, E_l, E_r, scl)
        call this%sm%set_E(k, E_l, E_r, scl)
     end do sub_loop
 

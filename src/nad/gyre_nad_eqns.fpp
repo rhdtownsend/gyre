@@ -23,16 +23,16 @@ module gyre_nad_eqns
 
   use core_kinds
 
+  use gyre_context
   use gyre_eqns
   use gyre_linalg
-  use gyre_mode_par
   use gyre_model
+  use gyre_mode_par
   use gyre_model_util
   use gyre_nad_trans
   use gyre_osc_par
   use gyre_point
-  use gyre_rot
-  use gyre_rot_factory
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -45,11 +45,15 @@ module gyre_nad_eqns
   integer, parameter :: P1_CONV_SCHEME = 1
   integer, parameter :: P4_CONV_SCHEME = 4
 
+  integer, parameter :: MODEL_DEPS_SCHEME = 1
+  integer, parameter :: FILE_DEPS_SCHEME = 2
+  integer, parameter :: ZERO_DEPS_SCHEME = 3
+
   integer, parameter :: J_V = 1
-  integer, parameter :: J_V_G = 2
-  integer, parameter :: J_As = 3
-  integer, parameter :: J_U = 4
-  integer, parameter :: J_C_1 = 5
+  integer, parameter :: J_As = 2
+  integer, parameter :: J_U = 3
+  integer, parameter :: J_C_1 = 4
+  integer, parameter :: J_GAMMA_1 = 5
   integer, parameter :: J_DELTA = 6
   integer, parameter :: J_NABLA_AD = 7
   integer, parameter :: J_DNABLA_AD = 8
@@ -58,29 +62,32 @@ module gyre_nad_eqns
   integer, parameter :: J_DC_LUM = 11
   integer, parameter :: J_C_RAD = 12
   integer, parameter :: J_DC_RAD = 13
-  integer, parameter :: J_C_THM = 14
-  integer, parameter :: J_C_DIF = 15
-  integer, parameter :: J_C_EPS_AD = 16
-  integer, parameter :: J_C_EPS_S = 17
-  integer, parameter :: J_KAP_AD = 18
-  integer, parameter :: J_KAP_S = 19
+  integer, parameter :: J_C_THN = 14
+  integer, parameter :: J_DC_THN = 15
+  integer, parameter :: J_C_THK = 16
+  integer, parameter :: J_C_EPS = 17
+  integer, parameter :: J_EPS_RHO = 18
+  integer, parameter :: J_EPS_T = 19
+  integer, parameter :: J_KAP_RHO = 20
+  integer, parameter :: J_KAP_T = 21
+  integer, parameter :: J_OMEGA_ROT = 22
 
-  integer, parameter :: J_LAST = J_KAP_S
+  integer, parameter :: J_LAST = J_OMEGA_ROT
 
   ! Derived-type definitions
 
   type, extends (c_eqns_t) :: nad_eqns_t
      private
-     class(model_t), pointer     :: ml => null()
-     class(c_rot_t), allocatable :: rt
-     type(nad_trans_t)           :: tr
-     real(WP), allocatable       :: coeffs(:,:)
-     real(WP), allocatable       :: x(:)
-     real(WP)                    :: alpha_gr
-     real(WP)                    :: alpha_hf
-     real(WP)                    :: alpha_om
-     logical                     :: narf_approx
-     integer                     :: conv_scheme
+     type(context_t), pointer :: cx => null()
+     type(nad_trans_t)        :: tr
+     real(WP), allocatable    :: coeff(:,:)
+     real(WP), allocatable    :: x(:)
+     real(WP)                 :: alpha_gr
+     real(WP)                 :: alpha_hf
+     real(WP)                 :: alpha_rh
+     real(WP)                 :: alpha_om
+     integer                  :: conv_scheme
+     integer                  :: deps_scheme
    contains
      private
      procedure, public :: stencil
@@ -104,26 +111,19 @@ module gyre_nad_eqns
 
 contains
 
-  function nad_eqns_t_ (ml, pt_i, md_p, os_p) result (eq)
+  function nad_eqns_t_ (cx, pt_i, md_p, os_p) result (eq)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(nad_eqns_t)                    :: eq
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(nad_eqns_t)                     :: eq
 
     ! Construct the nad_eqns_t
 
-    call check_model(ml, [ &
-         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA,&
-         I_C_LUM,I_C_RAD,I_C_THM,I_C_DIF,I_C_EPS_AD,I_C_EPS_S, &
-         I_KAP_AD,I_KAP_S])
+    eq%cx => cx
 
-    eq%ml => ml
-
-    allocate(eq%rt, SOURCE=c_rot_t(ml, pt_i, md_p, os_p))
-
-    eq%tr = nad_trans_t(ml, pt_i, md_p, os_p)
+    eq%tr = nad_trans_t(cx, pt_i, md_p, os_p)
 
     if (os_p%cowling_approx) then
        eq%alpha_gr = 0._WP
@@ -135,6 +135,12 @@ contains
        eq%alpha_hf = 0._WP
     else
        eq%alpha_hf = 1._WP
+    endif
+
+    if (os_p%eddington_approx) then
+       eq%alpha_rh = 1._WP
+    else
+       eq%alpha_rh = 0._WP
     endif
 
     select case (os_p%time_factor)
@@ -153,6 +159,17 @@ contains
        eq%conv_scheme = P4_CONV_SCHEME
     case default
        $ABORT(Invalid conv_scheme)
+    end select
+
+    select case (os_p%deps_scheme)
+    case ('MODEL')
+       eq%deps_scheme = MODEL_DEPS_SCHEME
+    case ('FILE')
+       eq%deps_scheme = FILE_DEPS_SCHEME
+    case ('ZERO')
+       eq%deps_scheme = ZERO_DEPS_SCHEME
+    case default
+       $ABORT(Invalid deps_scheme)
     end select
 
     eq%n_e = 6
@@ -175,38 +192,49 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    n_s = SIZE(pt)
+    associate (ml => this%cx%ml)
 
-    if (ALLOCATED(this%coeffs)) deallocate(this%coeffs)
-    allocate(this%coeffs(n_s, J_LAST))
+      call check_model(ml, [ &
+           I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
+           I_C_LUM,I_C_RAD,I_C_THN,I_C_THK,I_C_EPS, &
+           I_EPS_RHO,I_EPS_T,I_KAP_RHO,I_KAP_T,I_OMEGA_ROT])
 
-    do i = 1, n_s
-       this%coeffs(i,J_V) = this%ml%coeff(I_V_2, pt(i))*pt(i)%x**2
-       this%coeffs(i,J_V_G) = this%coeffs(i,J_V)/this%ml%coeff(I_GAMMA_1, pt(i))
-       this%coeffs(i,J_AS) = this%ml%coeff(I_AS, pt(i))
-       this%coeffs(i,J_U) = this%ml%coeff(I_U, pt(i))
-       this%coeffs(i,J_C_1) = this%ml%coeff(I_C_1, pt(i))
-       this%coeffs(i,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt(i))
-       this%coeffs(i,J_DNABLA_AD) = this%ml%dcoeff(I_NABLA_AD, pt(i))
-       this%coeffs(i,J_NABLA) = this%ml%coeff(I_NABLA, pt(i))
-       this%coeffs(i,J_DELTA) = this%ml%coeff(I_DELTA, pt(i))
-       this%coeffs(i,J_C_LUM) = this%ml%coeff(I_C_LUM, pt(i))
-       this%coeffs(i,J_DC_LUM) = this%ml%dcoeff(I_C_LUM, pt(i))
-       this%coeffs(i,J_C_RAD) = this%ml%coeff(I_C_RAD, pt(i))
-       this%coeffs(i,J_DC_RAD) = this%ml%dcoeff(I_C_RAD, pt(i))
-       this%coeffs(i,J_C_THM) = this%ml%coeff(I_C_THM, pt(i))
-       this%coeffs(i,J_C_DIF) = this%ml%coeff(I_C_DIF, pt(i))
-       this%coeffs(i,J_C_EPS_AD) = this%ml%coeff(I_C_EPS_AD, pt(i))
-       this%coeffs(i,J_C_EPS_S) = this%ml%coeff(I_C_EPS_S, pt(i))
-       this%coeffs(i,J_KAP_AD) = this%ml%coeff(I_KAP_AD, pt(i))
-       this%coeffs(i,J_KAP_S) = this%ml%coeff(I_KAP_S, pt(i))
-    end do
+      n_s = SIZE(pt)
 
-    this%x = pt%x
+      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+      allocate(this%coeff(n_s, J_LAST))
 
-    ! Set up stencils for the rt and tr components
+      do i = 1, n_s
+         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
+         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
+         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
+         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
+         this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
+         this%coeff(i,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt(i))
+         this%coeff(i,J_DNABLA_AD) = ml%dcoeff(I_NABLA_AD, pt(i))
+         this%coeff(i,J_NABLA) = ml%coeff(I_NABLA, pt(i))
+         this%coeff(i,J_DELTA) = ml%coeff(I_DELTA, pt(i))
+         this%coeff(i,J_C_LUM) = ml%coeff(I_C_LUM, pt(i))
+         this%coeff(i,J_DC_LUM) = ml%dcoeff(I_C_LUM, pt(i))
+         this%coeff(i,J_C_RAD) = ml%coeff(I_C_RAD, pt(i))
+         this%coeff(i,J_DC_RAD) = ml%dcoeff(I_C_RAD, pt(i))
+         this%coeff(i,J_C_THN) = ml%coeff(I_C_THN, pt(i))
+         this%coeff(i,J_DC_THN) = ml%dcoeff(I_C_THN, pt(i))
+         this%coeff(i,J_C_THK) = ml%coeff(I_C_THK, pt(i))
+         this%coeff(i,J_C_EPS) = ml%coeff(I_C_EPS, pt(i))
+         this%coeff(i,J_EPS_RHO) = ml%coeff(I_EPS_RHO, pt(i))
+         this%coeff(i,J_EPS_T) = ml%coeff(I_EPS_T, pt(i))
+         this%coeff(i,J_KAP_RHO) = ml%coeff(I_KAP_RHO, pt(i))
+         this%coeff(i,J_KAP_T) = ml%coeff(I_KAP_T, pt(i))
+         this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
+      end do
 
-    call this%rt%stencil(pt)
+      this%x = pt%x
+
+    end associate
+
+    ! Set up stencil for the tr component
+
     call this%tr%stencil(pt)
 
     ! Finish
@@ -217,16 +245,16 @@ contains
 
   !****
 
-  function A (this, i, omega)
+  function A (this, i, st)
 
     class(nad_eqns_t), intent(in) :: this
     integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
+    class(c_state_t), intent(in)  :: st
     complex(WP)                   :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(i, omega)/this%x(i)
+    A = this%xA(i, st)/this%x(i)
 
     ! Finish
 
@@ -236,54 +264,101 @@ contains
 
   !****
 
-  function xA (this, i, omega)
+  function xA (this, i, st)
 
     class(nad_eqns_t), intent(in) :: this
     integer, intent(in)           :: i
-    complex(WP), intent(in)       :: omega
+    class(c_state_t), intent(in)  :: st
     complex(WP)                   :: xA(this%n_e,this%n_e)
 
     complex(WP) :: lambda
     complex(WP) :: l_i
     complex(WP) :: omega_c
+    complex(WP) :: i_omega_c
+    complex(WP) :: f_rh
+    complex(WP) :: df_rh
     complex(WP) :: conv_term
+    complex(WP) :: eps_rho
+    complex(WP) :: eps_T
+    complex(WP) :: c_eps_ad
+    complex(WP) :: c_eps_S
+    real(WP)    :: kap_ad
+    real(WP)    :: kap_S
+    real(WP)    :: c_dif
          
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
-         V => this%coeffs(i,J_V), &
-         V_g => this%coeffs(i,J_V_G), &
-         As => this%coeffs(i,J_AS), &
-         U => this%coeffs(i,J_U), &
-         c_1 => this%coeffs(i,J_C_1), &
-         nabla_ad => this%coeffs(i,J_NABLA_AD), &
-         dnabla_ad => this%coeffs(i,J_DNABLA_AD), &
-         nabla => this%coeffs(i,J_NABLA), &
-         delta => this%coeffs(i,J_DELTA), &
-         c_lum => this%coeffs(i,J_C_LUM), &
-         dc_lum => this%coeffs(i,J_DC_LUM), &
-         c_rad => this%coeffs(i,J_C_RAD), &
-         dc_rad => this%coeffs(i,J_DC_RAD), &
-         c_thm => this%coeffs(i,J_C_THM), &
-         c_dif => this%coeffs(i,J_C_DIF), &
-         c_eps_ad => this%coeffs(i,J_C_EPS_AD), &
-         c_eps_S => this%coeffs(i,J_C_EPS_S), &
-         kap_ad => this%coeffs(i,J_KAP_AD), &
-         kap_S => this%coeffs(i,J_KAP_S), &
+         V => this%coeff(i,J_V), &
+         As => this%coeff(i,J_AS), &
+         U => this%coeff(i,J_U), &
+         c_1 => this%coeff(i,J_C_1), &
+         Gamma_1 => this%coeff(i,J_GAMMA_1), &
+         nabla_ad => this%coeff(i,J_NABLA_AD), &
+         dnabla_ad => this%coeff(i,J_DNABLA_AD), &
+         nabla => this%coeff(i,J_NABLA), &
+         delta => this%coeff(i,J_DELTA), &
+         c_lum => this%coeff(i,J_C_LUM), &
+         dc_lum => this%coeff(i,J_DC_LUM), &
+         c_rad => this%coeff(i,J_C_RAD), &
+         dc_rad => this%coeff(i,J_DC_RAD), &
+         c_thn => this%coeff(i,J_C_THN), &
+         dc_thn => this%coeff(i,J_DC_THN), &
+         c_thk => this%coeff(i,J_C_THK), &
+         c_eps => this%coeff(i,J_C_EPS), &
+         kap_rho => this%coeff(i,J_KAP_RHO), &
+         kap_T => this%coeff(i,J_KAP_T), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          x => this%x(i), &
          alpha_gr => this%alpha_gr, &
          alpha_hf => this%alpha_hf, &
+         alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
-         
-      lambda = this%rt%lambda(i, omega)
-      l_i = this%rt%l_i(omega)
+
+      lambda = this%cx%lambda(Omega_rot, st)
+      l_i = this%cx%l_i(st)
     
-      omega_c = this%rt%omega_c(i, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+
+      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
+      df_rh = -0.25_WP*alpha_rh*i_omega_c*c_thn*dc_thn/f_rh
+
+      select case (this%conv_scheme)
+      case (P1_CONV_SCHEME)
+         conv_term = lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_om*omega_c**2)
+      case (P4_CONV_SCHEME)
+         conv_term = lambda*(c_lum*(3._WP + dc_lum) - (c_lum - c_rad))/(c_1*alpha_om*omega_c**2)
+      case default
+         $ABORT(Invalid conv_scheme)
+      end select
+
+      select case (this%deps_scheme)
+      case (MODEL_DEPS_SCHEME)
+         eps_rho = this%coeff(i,J_EPS_RHO)
+         eps_T = this%coeff(i,J_EPS_T)
+      case (FILE_DEPS_SCHEME)
+         eps_rho = this%cx%eps_rho(st)
+         eps_T = this%cx%eps_T(st)
+      case (ZERO_DEPS_SCHEME)
+         eps_rho = 0._WP
+         eps_T = 0._WP
+      case default
+         $ABORT(Invalid deps_scheme)
+      end select
+
+      c_eps_ad = c_eps*(nabla_ad*eps_T + eps_rho/Gamma_1)
+      c_eps_S = c_eps*(eps_T - delta*eps_rho)
+
+      kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
+      kap_S = kap_T - delta*kap_rho
+      
+      c_dif = (kap_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad + V)
 
       ! Set up the matrix
 
-      xA(1,1) = V_g - 1._WP - l_i
-      xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V_g
+      xA(1,1) = V/Gamma_1 - 1._WP - l_i
+      xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
       xA(1,3) = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
       xA(1,4) = alpha_gr*(0._WP)
       xA(1,5) = delta
@@ -304,34 +379,25 @@ contains
       xA(3,6) = alpha_gr*(0._WP)
 
       xA(4,1) = alpha_gr*(U*As)
-      xA(4,2) = alpha_gr*(U*V_g)
+      xA(4,2) = alpha_gr*(U*V/Gamma_1)
       xA(4,3) = alpha_gr*(lambda)
       xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
       xA(4,5) = alpha_gr*(-U*delta)
       xA(4,6) = alpha_gr*(0._WP)
 
-      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif + nabla_ad*dnabla_ad)
-      xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - (c_dif + nabla_ad*dnabla_ad))
-      xA(5,3) = alpha_gr*(V*lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))
-      xA(5,4) = alpha_gr*(V*nabla_ad)
-      xA(5,5) = V*nabla*(4._WP - kap_S) - (l_i - 2._WP)
-      xA(5,6) = -V*nabla/c_rad
+      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)/f_rh
+      xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - c_dif)/f_rh
+      xA(5,3) = alpha_gr*(V*lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))/f_rh
+      xA(5,4) = alpha_gr*(V*nabla_ad)/f_rh
+      xA(5,5) = V*nabla*(4._WP*f_rh - kap_S)/f_rh - df_rh - (l_i - 2._WP)
+      xA(5,6) = -V*nabla/(c_rad*f_rh)
 
-      select case (this%conv_scheme)
-      case (P1_CONV_SCHEME)
-         conv_term = lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_om*omega_c**2)
-      case (P4_CONV_SCHEME)
-         conv_term = lambda*(c_lum*(3._WP + dc_lum) - (c_lum - c_rad))/(c_1*alpha_om*omega_c**2)
-      case default
-         $ABORT(Invalid conv_scheme)
-      end select
-      
       xA(6,1) = alpha_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
       xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hf*nabla_ad/nabla + conv_term
       xA(6,3) = alpha_gr*conv_term
       xA(6,4) = alpha_gr*(0._WP)
       if (x > 0._WP) then
-         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c*c_thm
+         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + i_omega_c*c_thk
       else
          xA(6,5) = -alpha_hf*HUGE(0._WP)
       endif
@@ -341,7 +407,7 @@ contains
 
     ! Apply the variables transformation
 
-    call this%tr%trans_eqns(xA, i, omega)
+    call this%tr%trans_eqns(xA, i, st)
 
     ! Finish
 

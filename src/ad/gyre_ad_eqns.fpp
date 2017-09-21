@@ -24,14 +24,14 @@ module gyre_ad_eqns
   use core_kinds
 
   use gyre_ad_trans
+  use gyre_context
   use gyre_eqns
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
-  use gyre_rot
-  use gyre_rot_factory
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -41,24 +41,25 @@ module gyre_ad_eqns
 
   ! Parameter definitions
 
-  integer, parameter :: J_V_G = 1
+  integer, parameter :: J_V = 1
   integer, parameter :: J_AS = 2
   integer, parameter :: J_U = 3
   integer, parameter :: J_C_1 = 4
+  integer, parameter :: J_GAMMA_1 = 5
+  integer, parameter :: J_OMEGA_ROT = 6
 
-  integer, parameter :: J_LAST = J_C_1
+  integer, parameter :: J_LAST = J_OMEGA_ROT
 
   ! Derived-type definitions
 
   type, extends (r_eqns_t) :: ad_eqns_t
      private
-     class(model_t), pointer     :: ml => null()
-     class(r_rot_t), allocatable :: rt
-     type(ad_trans_t)            :: tr
-     real(WP), allocatable       :: coeffs(:,:)
-     real(WP), allocatable       :: x(:)
-     real(WP)                    :: alpha_gr
-     real(WP)                    :: alpha_om
+     type(context_t), pointer :: cx => null()
+     type(ad_trans_t)         :: tr
+     real(WP), allocatable    :: coeff(:,:)
+     real(WP), allocatable    :: x(:)
+     real(WP)                 :: alpha_gr
+     real(WP)                 :: alpha_om
    contains
      private
      procedure, public :: stencil
@@ -82,21 +83,19 @@ module gyre_ad_eqns
 
 contains
 
-  function ad_eqns_t_ (ml, pt_i, md_p, os_p) result (eq)
+  function ad_eqns_t_ (cx, pt_i, md_p, os_p) result (eq)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(ad_eqns_t)                     :: eq
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(ad_eqns_t)                      :: eq
 
     ! Construct the ad_eqns_t
 
-    eq%ml => ml
+    eq%cx => cx
 
-    allocate(eq%rt, SOURCE=r_rot_t(ml, pt_i, md_p, os_p))
-
-    eq%tr = ad_trans_t(ml, pt_i, md_p, os_p)
+    eq%tr = ad_trans_t(cx, pt_i, md_p, os_p)
 
     if (os_p%cowling_approx) then
        eq%alpha_gr = 0._WP
@@ -133,25 +132,30 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
+    associate (ml => this%cx%ml)
 
-    n_s = SIZE(pt)
+      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
 
-    if (ALLOCATED(this%coeffs)) deallocate(this%coeffs)
-    allocate(this%coeffs(n_s,J_LAST))
+      n_s = SIZE(pt)
 
-    do i = 1, n_s
-       this%coeffs(i,J_V_G) = this%ml%coeff(I_V_2, pt(i))*pt(i)%x**2/this%ml%coeff(I_GAMMA_1, pt(i))
-       this%coeffs(i,J_AS) = this%ml%coeff(I_AS, pt(i))
-       this%coeffs(i,J_U) = this%ml%coeff(I_U, pt(i))
-       this%coeffs(i,J_C_1) = this%ml%coeff(I_C_1, pt(i))
-    end do
+      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+      allocate(this%coeff(n_s,J_LAST))
 
-    this%x = pt%x
+      do i = 1, n_s
+         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
+         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
+         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
+         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
+         this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
+         this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
+      end do
 
-    ! Set up stencils for the rt and tr components
+      this%x = pt%x
 
-    call this%rt%stencil(pt)
+    end associate
+
+    ! Set up stencil for the tr component
+
     call this%tr%stencil(pt)
 
     ! Finish
@@ -162,16 +166,16 @@ contains
 
   !****
 
-  function A (this, i, omega)
+  function A (this, i, st)
 
     class(ad_eqns_t), intent(in) :: this
     integer, intent(in)          :: i
-    real(WP), intent(in)         :: omega
+    class(r_state_t), intent(in) :: st
     real(WP)                     :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(i, omega)/this%x(i)
+    A = this%xA(i, st)/this%x(i)
 
     ! Finish
 
@@ -181,11 +185,11 @@ contains
 
   !****
 
-  function xA (this, i, omega)
+  function xA (this, i, st)
 
     class(ad_eqns_t), intent(in) :: this
     integer, intent(in)          :: i
-    real(WP), intent(in)         :: omega
+    class(r_state_t), intent(in) :: st
     real(WP)                     :: xA(this%n_e,this%n_e)
 
     real(WP) :: lambda
@@ -195,22 +199,24 @@ contains
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
-         V_g => this%coeffs(i,J_V_G), &
-         As => this%coeffs(i,J_AS), &
-         U => this%coeffs(i,J_U), &
-         c_1 => this%coeffs(i,J_C_1), &
+         V => this%coeff(i,J_V), &
+         As => this%coeff(i,J_AS), &
+         U => this%coeff(i,J_U), &
+         c_1 => this%coeff(i,J_C_1), &
+         Gamma_1 => this%coeff(i,J_GAMMA_1), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      lambda = this%rt%lambda(i, omega)
-      l_i = this%rt%l_i(omega)
+      lambda = this%cx%lambda(Omega_rot, st)
+      l_i = this%cx%l_i(st)
 
-      omega_c = this%rt%omega_c(i, omega)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       ! Set up the matrix
 
-      xA(1,1) = V_g - 1._WP - l_i
-      xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V_g
+      xA(1,1) = V/Gamma_1 - 1._WP - l_i
+      xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
       xA(1,3) = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
       xA(1,4) = alpha_gr*(0._WP)
 
@@ -225,7 +231,7 @@ contains
       xA(3,4) = alpha_gr*(1._WP)
 
       xA(4,1) = alpha_gr*(U*As)
-      xA(4,2) = alpha_gr*(U*V_g)
+      xA(4,2) = alpha_gr*(U*V/Gamma_1)
       xA(4,3) = alpha_gr*(lambda)
       xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
 
@@ -233,7 +239,7 @@ contains
 
     ! Apply the variables transformation
 
-    call this%tr%trans_eqns(xA, i, omega)
+    call this%tr%trans_eqns(xA, i, st)
 
     ! Finish
 

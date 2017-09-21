@@ -34,6 +34,7 @@ module gyre_${T}_trapz_diff
   use gyre_ext
   use gyre_linalg
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -101,10 +102,10 @@ contains
 
   !****
 
-  subroutine build (this, omega, E_l, E_r, scl)
+  subroutine build (this, st, E_l, E_r, scl)
 
     class(${T}_trapz_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                :: omega
+    class(${T}_state_t), intent(in)      :: st
     $TYPE(WP), intent(out)               :: E_l(:,:)
     $TYPE(WP), intent(out)               :: E_r(:,:)
     type(${T}_ext_t), intent(out)        :: scl
@@ -119,8 +120,8 @@ contains
 
     ! Evaluate the RHS matrix
 
-    xA(:,:,1) = this%eq%xA(1, omega)
-    xA(:,:,2) = this%eq%xA(2, omega)
+    xA(:,:,1) = this%eq%xA(1, st)
+    xA(:,:,2) = this%eq%xA(2, st)
 
     ! Build the difference equations
 

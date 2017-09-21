@@ -1,0 +1,70 @@
+&constants
+/
+
+&model
+	model_type = 'EVOL'
+	file = 'spb.mesa'
+	file_format = 'MESA'
+/
+
+&mode
+	l = 1
+	tag = 'l=1'
+/
+
+&mode
+	l = 2
+	tag = 'l=2'
+/
+
+&mode
+	l = 3
+	tag = 'l=3'
+/
+
+&osc
+	quasiad_eigfuncs = .TRUE.
+/
+
+&num
+	diff_scheme = 'COLLOC_GL4'
+/
+
+&scan
+	grid_type = 'INVERSE'
+	freq_min = 0.15
+	freq_max = 0.45
+	n_freq = 100
+	tag_list = 'l=1'
+/
+
+&scan
+	grid_type = 'INVERSE'
+	freq_min = 0.2
+	freq_max = 0.75
+	n_freq = 100
+	tag_list = 'l=2'
+/
+
+&scan
+	grid_type = 'INVERSE'
+	freq_min = 0.25
+	freq_max = 1
+	n_freq = 100
+	tag_list = 'l=3'
+/
+
+&grid
+	alpha_osc = 10
+	alpha_exp = 2
+	n_inner = 5
+/
+
+&ad_output
+	summary_file = 'summary.txt'
+	summary_file_format = 'TXT'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+/
+
+&nad_output
+/

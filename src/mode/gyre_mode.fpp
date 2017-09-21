@@ -26,6 +26,7 @@ module gyre_mode
   use core_parallel
 
   use gyre_constants
+  use gyre_context
   use gyre_ext
   use gyre_freq
   use gyre_grid
@@ -35,7 +36,7 @@ module gyre_mode
   use gyre_osc_par
   use gyre_point
   use gyre_rot
-  use gyre_rot_factory
+  use gyre_state
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -47,25 +48,25 @@ module gyre_mode
   ! Derived-type definitions
 
   type :: mode_t
-     class(model_t), pointer     :: ml => null()
-     type(grid_t), allocatable   :: gr
-     class(c_rot_t), allocatable :: rt
-     type(mode_par_t)            :: md_p
-     type(osc_par_t)             :: os_p
-     complex(WP), allocatable    :: y_c(:,:)
-     type(c_ext_t)               :: discrim
-     complex(WP)                 :: scl
-     complex(WP)                 :: omega
-     complex(WP)                 :: l_i
-     integer                     :: n_k
-     integer                     :: k_ref
-     integer                     :: j
-     integer                     :: l
-     integer                     :: m
-     integer                     :: n_pg
-     integer                     :: n_p
-     integer                     :: n_g
-     logical                     :: pruned
+     type(c_state_t)           :: st
+     type(context_t), pointer  :: cx => null()
+     type(grid_t), allocatable :: gr
+     type(mode_par_t)          :: md_p
+     type(osc_par_t)           :: os_p
+     complex(WP), allocatable  :: y_c(:,:)
+     type(c_ext_t)             :: discrim
+     complex(WP)               :: scl
+     complex(WP)               :: omega
+     complex(WP)               :: l_i
+     integer                   :: n_k
+     integer                   :: k_ref
+     integer                   :: j
+     integer                   :: l
+     integer                   :: m
+     integer                   :: n_pg
+     integer                   :: n_p
+     integer                   :: n_g
+     logical                   :: pruned
    contains
      private
      procedure         :: classify_
@@ -144,18 +145,18 @@ module gyre_mode
 
 contains
 
-  function mode_t_ (omega, y_c, discrim, ml, gr, md_p, os_p, j, normalize) result (md)
+  function mode_t_ (st, y_c, discrim, cx, gr, md_p, os_p, j, normalize) result (md)
 
-    complex(WP), intent(in)             :: omega
-    complex(WP), intent(in)             :: y_c(:,:)
-    type(c_ext_t), intent(in)           :: discrim
-    class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    integer, intent(in)                 :: j
-    logical, intent(in), optional       :: normalize
-    type(mode_t)                        :: md
+    type(c_state_t), intent(in)          :: st
+    complex(WP), intent(in)              :: y_c(:,:)
+    type(c_ext_t), intent(in)            :: discrim
+    type(context_t), pointer, intent(in) :: cx
+    type(grid_t), intent(in)             :: gr
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    integer, intent(in)                  :: j
+    logical, intent(in), optional        :: normalize
+    type(mode_t)                         :: md
 
     logical     :: normalize_
     real(WP)    :: x_ref
@@ -173,23 +174,19 @@ contains
 
     ! Construct the mode_t
 
-    md%ml => ml
-
+    md%st = st
+    md%cx => cx
     allocate(md%gr, SOURCE=gr)
-
-    allocate(md%rt, SOURCE=c_rot_t(ml, gr%pt(1), md_p, os_p))
-
-    call md%rt%stencil(gr%pt)
 
     md%md_p = md_p
     md%os_p = os_p
 
     md%y_c = y_c
 
+    md%omega = st%omega
     md%discrim = discrim
 
-    md%omega = omega
-    md%l_i = md%rt%l_i(omega)
+    md%l_i = cx%l_i(st)
 
     md%n_k = gr%n_k
 
@@ -298,9 +295,9 @@ contains
        end do
 
        ! Find the inner turning point (this is to deal with noisy
-       ! near-zero solutions at the origin)
+       ! near-zero solutions at the inner boundary)
 
-       call find_turn(this%ml, this%gr, REAL(this%omega), this%md_p, this%os_p, k_i, x_i)
+       call find_turn(this%cx%ml, this%gr, REAL(this%st%omega), this%md_p, this%os_p, k_i, x_i)
 
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface
@@ -334,9 +331,20 @@ contains
           y_2(k) = REAL(this%y_i(2, k) + this%y_i(3, k))
        end do
 
+       ! Handle special case where the inner boundary y_1 = 0 is
+       ! appled off-center -- don't count the node there
+
+       if (this%os_p%inner_bound == 'ZERO_R') then
+          k_i = 2
+       else
+          k_i = 1
+       endif
+
+       k_o = this%n_k
+
        ! Count winding numbers
 
-       call count_windings_(y_1, y_2, n_c, n_a)
+       call count_windings_(y_1(k_i:k_o), y_2(k_i:k_o), n_c, n_a)
 
        ! Classify
 
@@ -435,20 +443,16 @@ contains
 
     ! Broadcast the mode_t
 
-    if (MPI_RANK /= root_rank) then
-       md%ml => ml
-    endif
+    call bcast(md%cx, root_rank, ml)
 
     call bcast_alloc(md%gr, root_rank)
 
     call bcast(md%md_p, root_rank)
     call bcast(md%os_p, root_rank)
 
-    if (MPI_RANK /= root_rank) then
-       allocate(md%rt, SOURCE=c_rot_t(ml, md%gr%pt(1), md%md_p, md%os_p))
-    endif
-
     call bcast_alloc(md%y_c, root_rank)
+
+    call bcast(md%discrim, root_rank)
     call bcast(md%scl, root_rank)
 
     call bcast(md%omega, root_rank)
@@ -457,6 +461,7 @@ contains
     call bcast(md%n_k, root_rank)
     call bcast(md%k_ref, root_rank)
 
+    call bcast(md%j, root_rank)
     call bcast(md%l, root_rank)
     call bcast(md%m, root_rank)
 
@@ -509,13 +514,14 @@ contains
     ! Calculate the frequency
 
     associate( &
-      pt_i => this%gr%pt(1), &
-      pt_o => this%gr%pt(this%n_k))
+         ml => this%cx%ml, &
+         pt_i => this%gr%pt(1), &
+         pt_o => this%gr%pt(this%n_k) )
 
       if (PRESENT(freq_frame)) then
-         freq = freq_from_omega(this%omega, this%ml, pt_i, pt_o, freq_units, freq_frame, this%md_p, this%os_p)
+         freq = freq_from_omega(this%st%omega, ml, pt_i, pt_o, freq_units, freq_frame, this%md_p, this%os_p)
       else
-         freq = freq_from_omega(this%omega, this%ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
+         freq = freq_from_omega(this%st%omega, ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
       endif
 
     end associate
@@ -558,7 +564,9 @@ contains
     ! Evaluate the radial displacement perturbation, in units of
     ! R_star
 
-    associate (pt => this%gr%pt(k), l_i => this%l_i)
+    associate ( &
+         pt => this%gr%pt(k), &
+         l_i => this%l_i )
 
       y_1 = this%y_i(1, k)
 
@@ -595,6 +603,7 @@ contains
     complex(WP) :: y_2
     complex(WP) :: y_3
     real(WP)    :: c_1
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
 
     ! Evaluate the horizontal displacement perturbation, in units of
@@ -602,14 +611,19 @@ contains
 
     if (this%l /= 0) then
 
-       associate (pt => this%gr%pt(k), l_i => this%l_i)
+       associate ( &
+            ml => this%cx%ml, &
+            pt => this%gr%pt(k), &
+            l_i => this%l_i )
 
          y_2 = this%y_i(2, k)
          y_3 = this%y_i(3, k)
 
-         c_1 = this%ml%coeff(I_C_1, pt)
+         c_1 = ml%coeff(I_C_1, pt)
 
-         omega_c = this%rt%omega_c(k, this%omega)
+         Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+
+         omega_c = this%cx%omega_c(Omega_rot, this%st)
       
          if (l_i /= 1._WP) then
 
@@ -653,11 +667,14 @@ contains
     ! Evaluate the Eulerian gravitational potential perturbation, in
     ! units of G M_star / R_star
 
-    associate (pt => this%gr%pt(k), l_i => this%l_i)
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k), &
+         l_i => this%l_i )
 
       y_3 = this%y_i(3, k)
 
-      c_1 = this%ml%coeff(I_C_1, pt)
+      c_1 = ml%coeff(I_C_1, pt)
 
       if (l_i /= 0._WP) then
 
@@ -695,11 +712,14 @@ contains
     ! Evaluate the Eulerian potential gradient (gravity) perturbation,
     ! in units of G M_star / R_star**2
 
-    associate (pt => this%gr%pt(k), l_i => this%l_i)
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k), &
+         l_i => this%l_i )
 
       y_4 = this%y_i(4, k)
 
-      c_1 = this%ml%coeff(I_C_1, pt)
+      c_1 = ml%coeff(I_C_1, pt)
 
       if (l_i /= 1._WP) then
 
@@ -736,7 +756,9 @@ contains
     ! Evaluate the Lagrangian specific entropy perturbation, in units
     ! of c_p
 
-    associate (pt => this%gr%pt(k), l_i => this%l_i)
+    associate ( &
+         pt => this%gr%pt(k), &
+         l_i => this%l_i )
 
       y_5 = this%y_i(5, k)
 
@@ -767,7 +789,9 @@ contains
     ! Evaluate the Lagrangian radiative luminosity perturbation, in
     ! units of L_star
 
-    associate (pt => this%gr%pt(k), l_i => this%l_i)
+    associate ( &
+         pt => this%gr%pt(k), &
+         l_i => this%l_i )
 
       y_6 = this%y_i(6, k)
 
@@ -799,12 +823,14 @@ contains
 
     ! Evaluate the Eulerian pressure perturbation, in units of P
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
       xi_r = this%xi_r(k)
       lag_P = this%lag_P(k)
 
-      V_2 = this%ml%coeff(I_V_2, pt)
+      V_2 = ml%coeff(I_V_2, pt)
 
       eul_P = lag_P + V_2*pt%x*xi_r
 
@@ -830,12 +856,15 @@ contains
 
     ! Evaluate the Lagrangian pressure perturbation, in units of P
 
-    associate (pt => this%gr%pt(k), l_i => this%l_i)
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k), &
+         l_i => this%l_i )
 
       y_1 = this%y_i(1, k)
       y_2 = this%y_i(2, k)
 
-      V_2 = this%ml%coeff(I_V_2, pt)
+      V_2 = ml%coeff(I_V_2, pt)
 
       if (l_i /= 0._WP) then
 
@@ -875,13 +904,15 @@ contains
 
     ! Evaluate the Eulerian density perturbation, in units of rho
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
       xi_r = this%xi_r(k)
       lag_rho = this%lag_rho(k)
 
-      U = this%ml%coeff(I_U, pt)
-      dU = this%ml%dcoeff(I_U, pt)
+      U = ml%coeff(I_U, pt)
+      dU =ml%dcoeff(I_U, pt)
 
       D = dU + U - 3._WP
 
@@ -915,13 +946,15 @@ contains
     ! Evaluate the Lagrangian density perturbation, in units of
     ! rho. This expression implements eqn. 13.83 of [Unn1989]
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
       lag_P = this%lag_P(k)
       lag_S = this%lag_S(k)
 
-      Gamma_1 = this%ml%coeff(I_GAMMA_1, pt)
-      delta = this%ml%coeff(I_DELTA, pt)
+      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+      delta = ml%coeff(I_DELTA, pt)
 
       lag_rho = lag_P/Gamma_1 - delta*lag_S
 
@@ -948,13 +981,15 @@ contains
 
     ! Evaluate the Lagrangian temperature perturbation, in units of T
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
       xi_r = this%xi_r(k)
       lag_T = this%lag_T(k)
 
-      V_2 = this%ml%coeff(I_V_2, pt)
-      nabla = this%ml%coeff(I_NABLA, pt)
+      V_2 = ml%coeff(I_V_2, pt)
+      nabla = ml%coeff(I_NABLA, pt)
       
       eul_T = lag_T + nabla*V_2*pt%x*xi_r
 
@@ -981,12 +1016,14 @@ contains
     ! Evaluate the Lagrangian temperature perturbation, in units of
     ! T. This expression implements eqn. 13.84 of [Unn1989]
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
       lag_P = this%lag_P(k)
       lag_S = this%lag_S(k)
 
-      nabla_ad = this%ml%coeff(I_NABLA_AD, pt)
+      nabla_ad = ml%coeff(I_NABLA_AD, pt)
       
       lag_T = nabla_ad*lag_P + lag_S
 
@@ -1006,9 +1043,19 @@ contains
     integer, intent(in)       :: k
     complex(WP)               :: lambda
 
+    real(WP) :: Omega_rot
+
     ! Evaluate the angular eigenvalue
 
-    lambda = this%rt%lambda(k, this%omega)
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
+      
+      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+    
+      lambda = this%cx%lambda(Omega_rot, this%st)
+
+    end associate
 
     ! Finish
 
@@ -1033,15 +1080,17 @@ contains
     ! Evaluate the differential mode inertia, in units of M_star
     ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010]
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
       xi_r = this%xi_r(k)
       xi_h = this%xi_h(k)
 
       lambda = this%lambda(k)
 
-      U = this%ml%coeff(I_U, pt)
-      c_1 = this%ml%coeff(I_C_1, pt)
+      U = ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
 
       dE_dx = (ABS(xi_r)**2 + ABS(lambda)*ABS(xi_h)**2)*U*pt%x**2/c_1
 
@@ -1067,12 +1116,12 @@ contains
     real(WP)    :: t_kh
     complex(WP) :: lag_T
     complex(WP) :: lag_S
-    real(WP)    :: c_thm
+    real(WP)    :: c_thk
 
     ! Evaluate the differential work, in units of G M_star**2/R_star.
     ! This expression is based on eqn. 25.9 of [Unn1989]
 
-    select type (ml => this%ml)
+    select type (ml => this%cx%ml)
     class is (evol_model_t)
        t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
@@ -1081,14 +1130,16 @@ contains
        t_kh = 1._WP
     end select
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
       lag_T = this%lag_T(k)
       lag_S = this%lag_S(k)
     
-      c_thm = this%ml%coeff(I_C_THM, pt)
+      c_thk = ml%coeff(I_C_THK, pt)
 
-      dW_dx = PI*AIMAG(CONJG(lag_T)*lag_S)*c_thm*pt%x**2*t_dyn/t_kh
+      dW_dx = PI*AIMAG(CONJG(lag_T)*lag_S)*c_thk*pt%x**2*t_dyn/t_kh
 
     end associate
 
@@ -1110,18 +1161,18 @@ contains
 
     real(WP)    :: t_dyn
     real(WP)    :: t_kh
+    complex(WP) :: lag_rho
     complex(WP) :: lag_T
-    complex(WP) :: lag_P
-    complex(WP) :: lag_S
-    real(WP)    :: c_eps_ad
-    real(WP)    :: c_eps_S
-    real(WP)    :: omega_R
+    real(WP)    :: c_eps
+    complex(WP) :: eps_rho
+    complex(WP) :: eps_T
+    real(WP)    :: omega_r
 
     ! Evaluate the differential work associated with nuclear
     ! processes, in units of G M_star**2/R_star.  This expression is
     ! based on eqn. 25.9 of [Unn1989]
-
-    select type (ml => this%ml)
+    
+    select type (ml => this%cx%ml)
     class is (evol_model_t)
        t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
@@ -1130,18 +1181,26 @@ contains
        t_kh = 1._WP
     end select
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
+      lag_rho = this%lag_rho(k)
       lag_T = this%lag_T(k)
-      lag_P = this%lag_P(k)
-      lag_S = this%lag_S(k)
-    
-      c_eps_ad = this%ml%coeff(I_C_EPS_AD, pt)
-      c_eps_S = this%ml%coeff(I_C_EPS_S, pt)
 
-      omega_R = REAL(this%omega)
+      c_eps = ml%coeff(I_C_EPS, pt)
 
-      dW_eps_dx = PI/omega_R*REAL(CONJG(lag_T)*(c_eps_ad*lag_P + c_eps_S*lag_S))*pt%x**2*t_dyn/t_kh
+      select case (this%os_p%deps_scheme)
+      case ('MODEL')
+         eps_rho = ml%coeff(I_EPS_RHO, pt)
+         eps_T = ml%coeff(I_EPS_T, pt)
+      case default
+         $ABORT(Evaluating dW_dx_eps not supported for deps_scheme /= MODEL)
+      end select
+      
+      omega_r = REAL(this%st%omega)
+
+      dW_eps_dx = PI/omega_r*REAL(CONJG(lag_T)*c_eps*(eps_rho*lag_rho + eps_T*lag_T))*pt%x**2*t_dyn/t_kh
 
     end associate
 
@@ -1170,13 +1229,15 @@ contains
     ! based on the derivative of equation 3.357 of [Aer2010] with
     ! respect to x
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
       xi_r = this%xi_r(k)
       xi_h = this%xi_h(k)
 
-      U = this%ml%coeff(I_U, pt)
-      c_1 = this%ml%coeff(I_C_1, pt)
+      U = ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
 
       ! Question: should the following be lambda or l(l+1)?
 
@@ -1213,15 +1274,18 @@ contains
     ! M_star**2/R_star. This expression is based on eqn. 13 of
     ! [Tow2017]
 
-    associate (pt => this%gr%pt(k), m => this%m)
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k), &
+         m => this%m )
 
       lag_P = this%lag_P(k)
 
       lag_rho = this%lag_rho(k)
 
-      V_2 = this%ml%coeff(I_V_2, pt)
-      c_1 = this%ml%coeff(I_C_1, pt)
-      U = this%ml%coeff(I_U, pt)
+      V_2 = ml%coeff(I_V_2, pt)
+      c_1 = ml%coeff(I_C_1, pt)
+      U = ml%coeff(I_U, pt)
 
       dtau_dx_ss = m*pt%x**2*AIMAG(lag_rho*CONJG(lag_P))*(U/(2._WP*c_1**2*V_2))
       
@@ -1249,13 +1313,17 @@ contains
     real(WP)    :: V_2
     real(WP)    :: U
     real(WP)    :: c_1
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
 
     ! Evaluate the steady-state differential torque, in units of G
     ! M_star**2/R_star. This expression is based on eqn. 14 of
     ! [Tow2017]
 
-    associate (pt => this%gr%pt(k), m => this%m)
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k), &
+         m => this%m )
 
       xi_r = this%xi_r(k)
 
@@ -1266,11 +1334,13 @@ contains
 
       eul_phi = this%eul_phi(k)
 
-      V_2 = this%ml%coeff(I_V_2, pt)
-      c_1 = this%ml%coeff(I_C_1, pt)
-      U = this%ml%coeff(I_U, pt)
+      V_2 = ml%coeff(I_V_2, pt)
+      c_1 = ml%coeff(I_C_1, pt)
+      U = ml%coeff(I_U, pt)
 
-      omega_c = this%rt%omega_c(k, this%omega)
+      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+
+      omega_c = this%cx%omega_c(Omega_rot, this%st)
 
       dtau_dx_tr = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._WP)*( &
            lag_rho*CONJG(eul_P)/(c_1*V_2) + &
@@ -1301,13 +1371,15 @@ contains
     ! Evaluate the Takata Y_1 function. This expression is equivalent to
     ! eqn. 69 of [Tak2006b], divided by x**(2-l)
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
       y_1 = this%y_i(1, k)
       y_3 = this%y_i(3, k)
       y_4 = this%y_i(4, k)
 
-      J = 1._WP - this%ml%coeff(I_U, pt)/3._WP
+      J = 1._WP - ml%coeff(I_U, pt)/3._WP
 
       Yt_1 = J*y_1 + (y_3 - y_4)/3._WP
 
@@ -1360,13 +1432,16 @@ contains
     ! Evaluate the I_0 integral, which should be zero for radial
     ! modes. This expression is based on eqn. 42 of [Tak2006a]
 
-    associate (pt => this%gr%pt(k), l_i => this%l_i)
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k), &
+         l_i => this%l_i )
 
       y_1 = this%y_i(1, k)
       y_4 = this%y_i(4, k)
 
-      U = this%ml%coeff(I_U, pt)
-      c_1 = this%ml%coeff(I_C_1, pt)
+      U = ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
 
       if (pt%x /= 0._WP) then
          I_0 = pt%x**(l_i+1._WP)*(U*y_1 + y_4)/c_1
@@ -1396,22 +1471,28 @@ contains
     complex(WP) :: y_4
     real(WP)    :: U
     real(WP)    :: c_1
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
 
     ! Evaluate the I_0 integral, which should be zero for dipole
     ! modes. This expression is based on eqn. 43 of [Tak2006a]
 
-    associate (pt => this%gr%pt(k), l_i => this%l_i)
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k), &
+         l_i => this%l_i )
 
       y_1 = this%y_i(1, k)
       y_2 = this%y_i(2, k)
       y_3 = this%y_i(3, k)
       y_4 = this%y_i(4, k)
 
-      U = this%ml%coeff(I_U, pt)
-      c_1 = this%ml%coeff(I_C_1, pt)
+      U = ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
 
-      omega_c = this%rt%omega_c(k, this%omega)
+      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+
+      omega_c = this%cx%omega_c(Omega_rot, this%st)
 
       if (pt%x /= 0._WP) then
          I_1 = pt%x**(l_i+2._WP)*(c_1*omega_c**2*U*y_1 - U*y_2 + &
@@ -1440,6 +1521,7 @@ contains
     real(WP) :: As
     real(WP) :: U
     real(WP) :: c_1
+    real(WP) :: Omega_rot
     real(WP) :: lambda
     real(WP) :: omega_c
     real(WP) :: g_4
@@ -1449,9 +1531,11 @@ contains
 
     ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
-    associate (pt => this%gr%pt(k))
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k) )
 
-      if (this%ml%is_vacuum(pt)) then
+      if (ml%is_vacuum(pt)) then
 
          prop_type = 0
 
@@ -1459,14 +1543,16 @@ contains
 
          ! Calculate the discriminant gamma
 
-         V_g = this%ml%coeff(I_V_2, pt)*pt%x**2/this%ml%coeff(I_GAMMA_1, pt)
-         As = this%ml%coeff(I_AS, pt)
-         U = this%ml%coeff(I_U, pt)
-         c_1 = this%ml%coeff(I_C_1, pt)
+         V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+         As = ml%coeff(I_AS, pt)
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+
+         Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
 
          lambda = REAL(this%lambda(k))
 
-         omega_c = REAL(this%rt%omega_c(k, this%omega))
+         omega_c = REAL(this%cx%omega_c(Omega_rot, this%st))
 
          g_4 = -4._WP*V_g*c_1
          g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
@@ -1546,13 +1632,17 @@ contains
     ! to correspond to the photosphere), in units of the gravity. This
     ! expression is based on eqn. 24 of [Dup2002]
 
-    associate (k => this%k_ref, pt => this%gr%pt(this%k_ref), omega => this%omega)
+    associate ( &
+         k => this%k_ref, &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(this%k_ref), &
+         omega => this%st%omega )
 
       xi_r = this%xi_r(k)
       deul_phi = this%deul_phi(k)
 
-      c_1 = this%ml%coeff(I_C_1, pt)
-      U = this%ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
+      U = ml%coeff(I_U, pt)
 
       lag_g_eff = (c_1/pt%x)*deul_phi + (U - (2._WP + c_1*omega**2))*xi_r/pt%x
 
@@ -1804,7 +1894,7 @@ contains
 
     ! Calculate the mode total energy, in units of G M_star**2 / R_star
 
-    H = 0.5_WP*REAL(this%omega)**2*this%E()
+    H = 0.5_WP*REAL(this%st%omega)**2*this%E()
 
     ! Finish
 
@@ -1925,7 +2015,9 @@ contains
     !$OMP PARALLEL DO PRIVATE (xi_r, eul_phi, eul_rho, lag_rho, lag_P, V_2, As, U, c_1, Gamma_1, V_g, x4_V)
     do k = 1, this%n_k
 
-       associate (pt => this%gr%pt(k))
+       associate ( &
+            ml => this%cx%ml, &
+            pt => this%gr%pt(k) )
 
          xi_r = this%xi_r(k)
          eul_phi = this%eul_phi(k)
@@ -1933,12 +2025,12 @@ contains
          lag_rho = this%lag_rho(k)
          lag_P = this%lag_P(k)
 
-         V_2 = this%ml%coeff(I_V_2, pt)
-         As = this%ml%coeff(I_AS, pt)
-         U = this%ml%coeff(I_U, pt)
-         c_1 = this%ml%coeff(I_C_1, pt)
+         V_2 = ml%coeff(I_V_2, pt)
+         As = ml%coeff(I_AS, pt)
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
 
-         Gamma_1 = this%ml%coeff(I_GAMMA_1, pt)
+         Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
          V_g = V_2*pt%x**2/Gamma_1
          x4_V = pt%x**2/V_2
@@ -1957,7 +2049,7 @@ contains
     W_gr = integrate(this%gr%pt%x, f_gr)
     W_xi = integrate(this%gr%pt%x, f_xi)
 
-    omega_int = SQRT(4._WP*PI*(W_th + W_re + W_gr + W_xi)/this%E())
+    omega_int = SQRT((W_th + W_re + W_gr + W_xi)/this%E())
 
     ! Finish
 

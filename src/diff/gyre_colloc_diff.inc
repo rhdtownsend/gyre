@@ -34,6 +34,7 @@ module gyre_${T}_colloc_diff
   use gyre_ext
   use gyre_linalg
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -174,10 +175,10 @@ contains
 
   !****
 
-  subroutine build (this, omega, E_l, E_r, scl)
+  subroutine build (this, st, E_l, E_r, scl)
 
     class(${T}_colloc_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: omega
+    class(${T}_state_t), intent(in)       :: st
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
@@ -192,11 +193,11 @@ contains
 
     select case (this%scheme)
     case (GL2_SCHEME)
-       call this%build_GL2_(omega, E_l, E_r, scl)
+       call this%build_GL2_(st, E_l, E_r, scl)
     case (GL4_SCHEME)
-       call this%build_GL4_(omega, E_l, E_r, scl)
+       call this%build_GL4_(st, E_l, E_r, scl)
     case (GL6_SCHEME)
-       call this%build_GL6_(omega, E_l, E_r, scl)
+       call this%build_GL6_(st, E_l, E_r, scl)
     case default
        $ABORT(Invalid scheme)
     end select
@@ -209,10 +210,10 @@ contains
   
   !****
 
-  subroutine build_GL2_ (this, omega, E_l, E_r, scl)
+  subroutine build_GL2_ (this, st, E_l, E_r, scl)
 
     class(${T}_colloc_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: omega
+    class(${T}_state_t), intent(in)       :: st
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
@@ -221,7 +222,7 @@ contains
 
     ! Evaluate the RHS matrix
 
-    A = this%eq%A(1, omega)
+    A = this%eq%A(1, st)
 
     ! Build the GL2 difference equations
 
@@ -241,10 +242,10 @@ contains
 
   !****
 
-  subroutine build_GL4_ (this, omega, E_l, E_r, scl)
+  subroutine build_GL4_ (this, st, E_l, E_r, scl)
 
     class(${T}_colloc_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: omega
+    class(${T}_state_t), intent(in)       :: st
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
@@ -252,9 +253,9 @@ contains
     ! Build the GL4 difference equations
 
     if (this%reverse) then
-       call this%build_irk_(omega, GL4_A_IJ, GL4_B_I, E_r, E_l)
+       call this%build_irk_(st, GL4_A_IJ, GL4_B_I, E_r, E_l)
     else
-       call this%build_irk_(omega, GL4_A_IJ, GL4_B_I, E_l, E_r)
+       call this%build_irk_(st, GL4_A_IJ, GL4_B_I, E_l, E_r)
     endif
 
     scl = ${T}_ext_t(1._WP)
@@ -265,10 +266,10 @@ contains
 
   !****
 
-  subroutine build_GL6_ (this, omega, E_l, E_r, scl)
+  subroutine build_GL6_ (this, st, E_l, E_r, scl)
 
     class(${T}_colloc_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: omega
+    class(${T}_state_t), intent(in)       :: st
     $TYPE(WP), intent(out)                :: E_l(:,:)
     $TYPE(WP), intent(out)                :: E_r(:,:)
     type(${T}_ext_t), intent(out)         :: scl
@@ -276,9 +277,9 @@ contains
     ! Build the GL6 difference equations
 
     if (this%reverse) then
-       call this%build_irk_(omega, GL6_A_IJ, GL6_B_I, E_r, E_l)
+       call this%build_irk_(st, GL6_A_IJ, GL6_B_I, E_r, E_l)
     else
-       call this%build_irk_(omega, GL6_A_IJ, GL6_B_I, E_l, E_r)
+       call this%build_irk_(st, GL6_A_IJ, GL6_B_I, E_l, E_r)
     endif
 
     scl = ${T}_ext_t(1._WP)
@@ -289,10 +290,10 @@ contains
 
   !****
 
-  subroutine build_irk_ (this, omega, a_ij, b_i, E_a, E_b)
+  subroutine build_irk_ (this, st, a_ij, b_i, E_a, E_b)
 
     class(${T}_colloc_diff_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: omega
+    class(${T}_state_t), intent(in)       :: st
     real(WP), intent(in)                  :: a_ij(:,:)
     real(WP), intent(in)                  :: b_i(:)
     $TYPE(WP), intent(out)                :: E_a(:,:)
@@ -322,7 +323,7 @@ contains
     ! Evaluate the RHS matrices
 
     do i = 1, this%n_s
-       A(:,:,i) = this%eq%A(i, omega)
+       A(:,:,i) = this%eq%A(i, st)
     end do
 
     ! Calculate the intermediate-state matrices K

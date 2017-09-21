@@ -24,6 +24,7 @@ module gyre_rad_bvp
   use core_kinds
 
   use gyre_bvp
+  use gyre_context
   use gyre_ext
   use gyre_grid
   use gyre_model
@@ -32,9 +33,11 @@ module gyre_rad_bvp
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
+  use gyre_qad_eval
   use gyre_rad_bound
   use gyre_rad_diff
   use gyre_rad_trans
+  use gyre_state
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -46,11 +49,13 @@ module gyre_rad_bvp
   ! Derived-type definitions
 
   type, extends (r_bvp_t) :: rad_bvp_t
-     class(model_t), pointer :: ml => null()
-     type(grid_t)            :: gr
-     type(rad_trans_t)       :: tr
-     type(mode_par_t)        :: md_p
-     type(osc_par_t)         :: os_p
+     private
+     type(context_t), pointer :: cx => null()
+     type(grid_t)             :: gr
+     type(rad_trans_t)        :: tr
+     type(qad_eval_t)         :: qe
+     type(mode_par_t)         :: md_p
+     type(osc_par_t)          :: os_p
   end type rad_bvp_t
 
   ! Interfaces
@@ -74,20 +79,21 @@ module gyre_rad_bvp
 
 contains
 
-  function rad_bvp_t_ (ml, gr, md_p, nm_p, os_p) result (bp)
+  function rad_bvp_t_ (cx, gr, md_p, nm_p, os_p) result (bp)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    type(mode_par_t), intent(in)        :: md_p
-    type(num_par_t), intent(in)         :: nm_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(rad_bvp_t)                     :: bp
+    type(context_t), pointer, intent(in) :: cx
+    type(grid_t), intent(in)             :: gr
+    type(mode_par_t), intent(in)         :: md_p
+    type(num_par_t), intent(in)          :: nm_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(rad_bvp_t)                      :: bp
 
     type(point_t)                 :: pt_i
     type(point_t)                 :: pt_o
     type(rad_bound_t)             :: bd
     integer                       :: k
     type(rad_diff_t), allocatable :: df(:)
+    type(osc_par_t)               :: qad_os_p
 
     ! Construct the rad_bvp_t
 
@@ -100,7 +106,7 @@ contains
 
     ! Initialize the boundary conditions
 
-    bd = rad_bound_t(ml, pt_i, pt_o, md_p, os_p)
+    bd = rad_bound_t(cx, pt_i, pt_o, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -108,7 +114,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = rad_diff_t(ml, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = rad_diff_t(cx, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -117,11 +123,17 @@ contains
 
     ! Other initializations
 
-    bp%ml => ml
+    bp%cx => cx
     bp%gr = gr
 
-    bp%tr = rad_trans_t(ml, pt_i, md_p, os_p)
+    bp%tr = rad_trans_t(cx, pt_i, md_p, os_p)
     call bp%tr%stencil(gr%pt)
+
+    if (os_p%quasiad_eigfuncs) then
+       qad_os_p = os_p
+       qad_os_p%variables_set = 'GYRE'
+       bp%qe = qad_eval_t(cx, gr, md_p, qad_os_p)
+    endif
 
     bp%md_p = md_p
     bp%os_p = os_p
@@ -141,40 +153,66 @@ contains
     integer, intent(in)             :: j
     type(mode_t)                    :: md
 
-    real(WP)      :: y(2,bp%n_k)
-    type(r_ext_t) :: discrim
-    integer       :: k
-    complex(WP)   :: y_c(6,bp%n_k)
-    real(WP)      :: U
+    type(r_state_t) :: st
+    real(WP)        :: y(2,bp%n_k)
+    type(r_ext_t)   :: discrim
+    integer         :: k
+    real(WP)        :: y_g(4,bp%n_k)
+    real(WP)        :: U
+    complex(WP)     :: y_c(6,bp%n_k)
+    type(c_state_t) :: st_c
 
     ! Calculate the solution vector
 
-    call bp%build(omega)
+    st = r_state_t(omega)
+
+    call bp%build(st)
 
     y = bp%soln_vec_hom()
     discrim = bp%det()
 
     ! Convert to canonical form
 
+    !$OMP PARALLEL DO
+    do k = 1, bp%n_k
+       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
+    end do
+
+    ! Set up gravitational eigenfunctions
+
+    y_g(1:2,:) = y
+
     !$OMP PARALLEL DO PRIVATE (U)
     do k = 1, bp%n_k
 
        associate (pt => bp%gr%pt(k))
-         U = bp%ml%coeff(I_U, pt)
+         U = bp%cx%ml%coeff(I_U, pt)
        end associate
 
-       call bp%tr%trans_vars(y(:,k), k, omega, from=.FALSE.)
-
-       y_c(1:2,k) = y(:,k)
-       y_c(3,k) = 0._WP
-       y_c(4,k) = -U*y(1,k)
-       y_c(5:6,k) = 0._WP
+       y_g(4,k) = -U*y(1,k)
        
     end do
 
+    y_g(3,:) = 0._WP
+
+    ! Set up complex eigenfunctions
+
+    st_c = c_state_t(CMPLX(omega, KIND=WP), omega)
+
+    if (bp%os_p%quasiad_eigfuncs) then
+
+       y_c = bp%qe%y_qad(st_c, y_g)
+
+    else
+
+       y_c(1:4,:) = y_g
+       y_c(5:6,:) = 0._WP
+
+    endif
+ 
     ! Construct the mode_t
 
-    md = mode_t(CMPLX(omega, KIND=WP), y_c, c_ext_t(discrim), bp%ml, bp%gr, bp%md_p, bp%os_p, j)
+    md = mode_t(st_c, y_c, c_ext_t(discrim), bp%cx, bp%gr, bp%md_p, bp%os_p, j)
 
     ! Finish
 

@@ -84,7 +84,7 @@ contains
     k_turn = gr%n_k
     x_turn = HUGE(0._WP)
 
-    allocate(rt, SOURCE=r_rot_t(ml, gr%pt(1), md_p, os_p))
+    allocate(rt, SOURCE=r_rot_t(md_p, os_p))
 
     gamma_b = gamma_(ml, rt, gr%pt(1), omega)
 
@@ -166,6 +166,7 @@ contains
     real(WP) :: As
     real(WP) :: U
     real(WP) :: c_1
+    real(WP) :: Omega_rot
     real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: g_4
@@ -186,11 +187,11 @@ contains
        U = ml%coeff(I_U, pt)
        c_1 = ml%coeff(I_C_1, pt)
 
-       call rt%stencil([pt])
+       Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
 
-       omega_c = rt%omega_c(1, omega)
+       omega_c = rt%omega_c(Omega_rot, omega)
 
-       lambda = rt%lambda(1, omega)
+       lambda = rt%lambda(Omega_rot, omega)
 
        g_4 = -4._WP*V_g*c_1
        g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda

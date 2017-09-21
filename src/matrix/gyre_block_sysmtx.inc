@@ -76,6 +76,7 @@ module gyre_${T}_block_sysmtx
      procedure, public :: soln_vec_hom
      procedure, public :: soln_vec_inhom
      procedure         :: backsub_
+     procedure, public :: resd_vec
   end type ${T}_block_sysmtx_t
 
   ! Interfaces
@@ -414,7 +415,7 @@ contains
     class(${T}_block_sysmtx_t), intent(in) :: this
     $TYPE(WP)                              :: v(this%n_e*(this%n+1))
 
-    logical, parameter   :: USE_SVD = .FALSE.
+    logical, parameter   :: USE_SVD = .TRUE.
     $TYPE(WP), parameter :: ZERO = 0._WP
     $TYPE(WP), parameter :: ONE = 1._WP
 
@@ -455,7 +456,11 @@ contains
 
          call sing_decompose(M, sigma, U, V_H)
 
+         $if ($T eq 'c')
+         v_bound = CONJG(V_H(2*n_e,:))
+         $else
          v_bound = V_H(2*n_e,:)
+         $endif
 
       else
 
@@ -628,6 +633,46 @@ contains
 
   end subroutine backsub_
 
+  !****
+
+  function resd_vec (this, v) result (w)
+
+    class(${T}_block_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                  :: v(:)
+    $TYPE(WP)                              :: w(this%n_e*(this%n+1))
+
+    integer :: k
+    integer :: i_a
+    integer :: i_b
+
+    $CHECK_BOUNDS(SIZE(v),this%n_e*(this%n+1))
+
+    ! Evaluate the residual vector w = S v
+
+    associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+
+      w(:n_i) = MATMUL(this%B_i, v(:n_e))*this%scl_i
+
+      !$OMP PARALLEL DO PRIVATE (i_a, i_b)
+      multiply_loop : do k = 1, n
+
+         i_a = (k-1)*n_e + 1
+         i_b = i_a + n_i
+
+         w(i_b:i_b+n_e-1) = MATMUL(this%E_l(:,:,k), v(i_a:i_a+n_e-1)) + MATMUL(this%E_r(:,:,k), v(i_a+n_e:i_a+2*n_e-1))
+
+      end do multiply_loop
+
+      w(n_e*n+n_i+1:) = MATMUL(this%B_o, v(n_e*n+1:))*this%scl_o
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function resd_vec
+  
 end module gyre_${T}_block_sysmtx
 
 $endsub

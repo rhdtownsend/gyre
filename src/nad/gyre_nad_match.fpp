@@ -23,6 +23,7 @@ module gyre_nad_match
 
   use core_kinds
 
+  use gyre_context
   use gyre_diff
   use gyre_ext
   use gyre_model
@@ -31,6 +32,7 @@ module gyre_nad_match
   use gyre_nad_trans
   use gyre_osc_par
   use gyre_point
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -50,9 +52,9 @@ module gyre_nad_match
 
   type, extends (c_diff_t) :: nad_match_t
      private
-     class(model_t), pointer :: ml => null()
-     type(nad_trans_t)       :: tr
-     real(WP), allocatable   :: coeffs(:,:)
+     type(context_t), pointer :: cx => null()
+     type(nad_trans_t)        :: tr
+     real(WP), allocatable    :: coeff(:,:)
    contains
      private
      procedure         :: stencil_
@@ -72,24 +74,24 @@ module gyre_nad_match
 
 contains
 
-  function nad_match_t_ (ml, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
+  function nad_match_t_ (cx, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_a
-    type(point_t), intent(in)           :: pt_b
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(nad_match_t)                   :: mt
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(point_t), intent(in)            :: pt_a
+    type(point_t), intent(in)            :: pt_b
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(nad_match_t)                    :: mt
 
     $ASSERT_DEBUG(pt_a%s+1 == pt_b%s,Mismatched segments)
     $ASSERT_DEBUG(pt_a%x == pt_b%x,Mismatched abscissae)
 
     ! Construct the nad_match_t
 
-    mt%ml => ml
+    mt%cx => cx
 
-    mt%tr = nad_trans_t(ml, pt_i, md_p, os_p)
+    mt%tr = nad_trans_t(cx, pt_i, md_p, os_p)
 
     call mt%stencil_(pt_a, pt_b)
 
@@ -111,18 +113,22 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    call check_model(this%ml, [I_V_2,I_U,I_NABLA_AD])
+    associate (ml => this%cx%ml)
 
-    allocate(this%coeffs(2,J_LAST))
+      call check_model(ml, [I_V_2,I_U,I_NABLA_AD])
 
-    this%coeffs(1,J_V) = this%ml%coeff(I_V_2, pt_a)*pt_a%x**2
-    this%coeffs(2,J_V) = this%ml%coeff(I_V_2, pt_b)*pt_b%x**2
+      allocate(this%coeff(2,J_LAST))
 
-    this%coeffs(1,J_U) = this%ml%coeff(I_U, pt_a)
-    this%coeffs(2,J_U) = this%ml%coeff(I_U, pt_b)
+      this%coeff(1,J_V) = ml%coeff(I_V_2, pt_a)*pt_a%x**2
+      this%coeff(2,J_V) = ml%coeff(I_V_2, pt_b)*pt_b%x**2
+      
+      this%coeff(1,J_U) = ml%coeff(I_U, pt_a)
+      this%coeff(2,J_U) = ml%coeff(I_U, pt_b)
 
-    this%coeffs(1,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt_a)
-    this%coeffs(2,J_NABLA_AD) = this%ml%coeff(I_NABLA_AD, pt_b)
+      this%coeff(1,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt_a)
+      this%coeff(2,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt_b)
+
+    end associate
 
     ! Set up stencil for the tr component
 
@@ -136,10 +142,10 @@ contains
 
   !****
 
-  subroutine build (this, omega, E_l, E_r, scl)
+  subroutine build (this, st, E_l, E_r, scl)
 
     class(nad_match_t), intent(in) :: this
-    complex(WP), intent(in)        :: omega
+    class(c_state_t), intent(in)   :: st
     complex(WP), intent(out)       :: E_l(:,:)
     complex(WP), intent(out)       :: E_r(:,:)
     type(c_ext_t), intent(out)     :: scl
@@ -153,12 +159,12 @@ contains
     ! Build the difference equations
 
     associate( &
-         V_l => this%coeffs(1,J_V), &
-         V_r => this%coeffs(2,J_V), &
-         U_l => this%coeffs(1,J_U), &
-         U_r => this%coeffs(2,J_U), &
-         nabla_ad_l => this%coeffs(1,J_NABLA_AD), &
-         nabla_ad_r => this%coeffs(2,J_NABLA_AD))
+         V_l => this%coeff(1,J_V), &
+         V_r => this%coeff(2,J_V), &
+         U_l => this%coeff(1,J_U), &
+         U_r => this%coeff(2,J_U), &
+         nabla_ad_l => this%coeff(1,J_NABLA_AD), &
+         nabla_ad_r => this%coeff(2,J_NABLA_AD))
          
       ! Evaluate the match conditions (y_1, y_3, y_6 continuous, y_2,
       ! y_4, y_5 not)
@@ -255,8 +261,8 @@ contains
 
     ! Apply the variables transformation
 
-    call this%tr%trans_cond(E_l, 1, omega)
-    call this%tr%trans_cond(E_r, 2, omega)
+    call this%tr%trans_cond(E_l, 1, st)
+    call this%tr%trans_cond(E_r, 2, st)
 
     ! Finish
 

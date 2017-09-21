@@ -33,8 +33,8 @@ class ChebFit:
         else:
             u = (2.*x - (self.x_a + self.x_b))/(self.x_a - self.x_b)
 
-        l = 1.
-        s = 0.
+        s_n = 0.
+        s_d = 0.
 
         n = len(self.f) - 1
 
@@ -49,12 +49,11 @@ class ChebFit:
                 w = 0.5*(-1.)**j
             else:
                 w = (-1.)**j
-       
-            s = s + w*self.f[j]/(u - u_j)
-            l = l*(u - u_j)
 
-        return l*s*(2.)**(n-1)/n
+            s_n += w*self.f[j]/(u - u_j)
+            s_d += w/(u - u_j)
 
+        return s_n/s_d
 
     def coeffs (self):
 

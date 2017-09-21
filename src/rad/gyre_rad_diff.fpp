@@ -1,7 +1,7 @@
 ! Incfile  : gyre_rad_diff
 ! Purpose  : adiabatic radial difference equations
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,15 +23,16 @@ module gyre_rad_diff
 
   use core_kinds
 
-  use gyre_rad_eqns
-  use gyre_rad_match
+  use gyre_context
   use gyre_diff_factory
   use gyre_ext
-  use gyre_model
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
+  use gyre_rad_eqns
+  use gyre_rad_match
+  use gyre_state
 
   use ISO_FORTRAN_ENV
 
@@ -65,16 +66,16 @@ module gyre_rad_diff
 
 contains
 
-  function rad_diff_t_ (ml, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
+  function rad_diff_t_ (cx, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_a
-    type(point_t), intent(in)           :: pt_b
-    type(mode_par_t), intent(in)        :: md_p
-    type(num_par_t), intent(in)         :: nm_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(rad_diff_t)                    :: df
+    type(context_t), pointer, intent(in) :: cx
+    type(point_t), intent(in)            :: pt_i
+    type(point_t), intent(in)            :: pt_a
+    type(point_t), intent(in)            :: pt_b
+    type(mode_par_t), intent(in)         :: md_p
+    type(num_par_t), intent(in)          :: nm_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(rad_diff_t)                     :: df
 
     type(rad_eqns_t) :: eq
 
@@ -84,7 +85,7 @@ contains
 
        ! Regular subinterval; use difference equations
 
-       eq = rad_eqns_t(ml, pt_i, md_p, os_p)
+       eq = rad_eqns_t(cx, pt_i, md_p, os_p)
        
        allocate(df%df, SOURCE=r_diff_t(eq, pt_a, pt_b, nm_p))
 
@@ -92,7 +93,7 @@ contains
 
        ! Segment boundary; use match conditions
 
-       allocate(df%df, SOURCE=rad_match_t(ml, pt_i, pt_a, pt_b, md_p, os_p))
+       allocate(df%df, SOURCE=rad_match_t(cx, pt_i, pt_a, pt_b, md_p, os_p))
 
     endif
 
@@ -106,10 +107,10 @@ contains
 
   !****
 
-  subroutine build (this, omega, E_l, E_r, scl)
+  subroutine build (this, st, E_l, E_r, scl)
 
     class(rad_diff_t), intent(in) :: this
-    real(WP), intent(in)          :: omega
+    class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: E_l(:,:)
     real(WP), intent(out)         :: E_r(:,:)
     type(r_ext_t), intent(out)    :: scl
@@ -122,7 +123,7 @@ contains
 
     ! Build the difference equations
 
-    call this%df%build(omega, E_l, E_r, scl)
+    call this%df%build(st, E_l, E_r, scl)
 
     ! Finish
 

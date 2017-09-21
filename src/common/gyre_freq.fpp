@@ -84,6 +84,7 @@ contains
     $TYPE(WP)                           :: omega
 
     class(${T}_rot_t), allocatable :: rt
+    real(WP)                       :: Omega_rot
     $TYPE(WP)                      :: omega_l
     real(WP)                       :: omega_cutoff_lo
     real(WP)                       :: omega_cutoff_hi
@@ -180,17 +181,17 @@ contains
 
     ! Now convert to the inertial frame
 
-    allocate(rt, SOURCE=${T}_rot_t(ml, pt_i, md_p, os_p))
-
-    call rt%stencil([pt_i,pt_o])
+    allocate(rt, SOURCE=${T}_rot_t(md_p, os_p))
 
     select case (freq_frame)
     case ('INERTIAL')
        omega = omega_l
     case ('COROT_I')
-       omega = rt%omega(1, omega_l)
+       Omega_rot = ml%coeff(I_OMEGA_ROT, pt_i)
+       omega = rt%omega(Omega_rot, omega_l)
     case ('COROT_O')
-       omega = rt%omega(2, omega_l)
+       Omega_rot = ml%coeff(I_OMEGA_ROT, pt_o)
+       omega = rt%omega(Omega_rot, omega_l)
     case default
        $ABORT(Invalid freq_frame)
     end select
@@ -226,6 +227,7 @@ contains
     $TYPE(WP)                           :: freq
 
     class(${T}_rot_t), allocatable :: rt
+    real(WP)                       :: Omega_rot
     $TYPE(WP)                      :: omega_l
     real(WP)                       :: omega_cutoff_lo
     real(WP)                       :: omega_cutoff_hi
@@ -235,17 +237,17 @@ contains
 
     ! Convert from the inertial frame
 
-    allocate(rt, SOURCE=${T}_rot_t(ml, pt_i, md_p, os_p))
-
-    call rt%stencil([pt_i,pt_o])
+    allocate(rt, SOURCE=${T}_rot_t(md_p, os_p))
 
     select case (freq_frame)
     case ('INERTIAL')
        omega_l = omega
     case ('COROT_I')
-       omega_l = rt%omega_c(1, omega)
+       Omega_rot = ml%coeff(I_OMEGA_ROT, pt_i)
+       omega_l = rt%omega_c(Omega_rot, omega)
     case ('COROT_O')
-       omega_l = rt%omega_c(2, omega)
+       Omega_rot = ml%coeff(I_OMEGA_ROT, pt_o)
+       omega_l = rt%omega_c(Omega_rot, omega)
     case default
        $ABORT(Invalid freq_frame)
     end select
@@ -361,6 +363,7 @@ contains
 
     real(WP)      :: V_g
     real(WP)      :: As
+    real(WP)      :: U
     real(WP)      :: c_1
     logical, save :: warned = .FALSE.
 
@@ -380,13 +383,18 @@ contains
 
     case ('UNNO')
 
-       call eval_atmos_coeffs_unno(ml, pt, V_g, As, c_1)
-       call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+       call eval_atmos_coeffs_unno(ml, pt, V_g, As, U, c_1)
+       call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
     case('JCD')
 
-       call eval_atmos_coeffs_jcd(ml, pt, V_g, As, c_1)
-       call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+       call eval_atmos_coeffs_jcd(ml, pt, V_g, As, U, c_1)
+       call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+
+    case('LUAN')
+
+       call eval_atmos_coeffs_luan(ml, pt, V_g, As, U, c_1)
+       call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
     case default
 

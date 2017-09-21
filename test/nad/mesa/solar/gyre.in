@@ -1,0 +1,56 @@
+&constants
+/
+
+&model
+	model_type = 'EVOL'
+	file = 'solar.mesa'
+	file_format = 'MESA'
+/
+
+&mode
+	l = 200
+	tag = 'diffusion'
+/
+
+&mode
+	l = 200
+	tag = 'eddington'
+/
+
+&osc
+	nonadiabatic = .TRUE.
+	eddington_approx = .TRUE.
+	tag_list = 'eddington'
+/
+
+&osc
+	nonadiabatic = .TRUE.
+	eddington_approx = .FALSE.
+	tag_list = 'diffusion'
+/
+
+&num
+	diff_scheme = 'COLLOC_GL2'
+/
+
+&scan
+	grid_type = 'LINEAR'
+	freq_min = 10
+	freq_max = 40
+	n_freq = 50
+/
+
+&grid
+	alpha_osc = 10
+	alpha_exp = 2
+	n_inner = 5
+/
+
+&ad_output
+/
+
+&nad_output
+	summary_file = 'summary.txt'
+	summary_file_format = 'TXT'
+	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+/

@@ -72,7 +72,6 @@ contains
     type(num_par_t), intent(in)           :: nm_p
     type(osc_par_t), intent(in)           :: os_p
     
-    type(c_discrim_func_t)   :: df
     complex(WP), allocatable :: omega_def(:)
     integer                  :: c_beg
     integer                  :: c_end
@@ -82,8 +81,10 @@ contains
     real(WP)                 :: domega
     type(c_ext_t)            :: omega_a
     type(c_ext_t)            :: omega_b
+    real(WP)                 :: omega_ad
     integer                  :: n_iter
     integer                  :: n_iter_def
+    type(c_discrim_func_t)   :: df
     integer                  :: status
     type(c_ext_t)            :: discrim_a
     type(c_ext_t)            :: discrim_b
@@ -92,10 +93,6 @@ contains
     type(c_ext_t)            :: omega_root
     type(mode_t)             :: md
     type(r_ext_t)            :: chi
-
-    ! Set up the discriminant function
-
-    df = c_discrim_func_t(bp, omega_min, omega_max)
 
     ! Initialize the frequency deflation array
 
@@ -146,8 +143,12 @@ contains
        omega_a = c_ext_t(md_in(i)%omega + CMPLX(0._WP, domega, KIND=WP))
        omega_b = c_ext_t(md_in(i)%omega - CMPLX(0._WP, domega, KIND=WP))
 
-!       call improve_omega(bp, md_p, os_p, md_in(i)%x, omega_a)
-!       call improve_omega(bp, md_p, os_p, md_in(i)%x, omega_b)
+       omega_ad = real(md_in(i)%omega)
+
+       ! call improve_omega(bp, md_p, os_p, md_in(i)%x, omega_a)
+       ! call improve_omega(bp, md_p, os_p, md_in(i)%x, omega_b)
+
+       df = c_discrim_func_t(bp, omega_ad, omega_min, omega_max)
 
        call df%eval(omega_a, discrim_a, status)
        if (status /= STATUS_OK) then
@@ -166,7 +167,7 @@ contains
 
        if (nm_p%deflate_roots) then
 
-          df%omega_def = omega_def
+          df = c_discrim_func_t(bp, omega_ad, omega_min, omega_max, omega_def)
 
           call narrow(df, nm_p, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
           if (status /= STATUS_OK) then
@@ -174,14 +175,14 @@ contains
              cycle mode_loop
           endif
 
-          deallocate(df%omega_def)
-
           ! If necessary, reset omega_a and omega_b so they are not
-          ! coincident
+          ! coincident; and then save the revised discriminant values
 
           if(omega_b == omega_a) then
              omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
           endif
+
+          df = c_discrim_func_t(bp, omega_ad, omega_min, omega_max)
 
           call expand(df, omega_a, omega_b, r_ext_t(0._WP), status, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 
           if (status /= STATUS_OK) then
@@ -211,7 +212,7 @@ contains
 
        select type (bp)
        type is (nad_bvp_t)
-          md = mode_t(bp, cmplx(omega_root), md_in(i)%j)
+          md = mode_t(bp, cmplx(omega_root), omega_ad, md_in(i)%j)
        class default
           $ABORT(Invalid bp class)
        end select
