@@ -8,7 +8,7 @@ TARGETS=build_tar_fit map_tar_fit
 # Flags
 
 HDF5=yes
-FPE=no
+IEEE=yes
 
 LDFLAGS=`mesasdk_hdf5_link`
 
