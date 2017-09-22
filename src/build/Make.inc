@@ -47,7 +47,7 @@ endif
 
 MODPATH=${MESASDK_ROOT}/include
 
-FFLAGS:=${FFLAGS} -Wall -finit-real=snan -fbacktrace -fmax-errors=25
+FFLAGS:=${FFLAGS} -finit-real=snan -fbacktrace -fmax-errors=25
 
 ifeq (${FPE},yes)
   FFLAGS:=${FFLAGS} -ffpe-trap=invalid,overflow,zero
@@ -57,7 +57,7 @@ ifeq (${DEBUG},yes)
   FFLAGS:=${FFLAGS} -fcheck=all -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0 -ggdb
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG -DGFORTRAN_PR_69185 -DGFORTRAN_PR_49636
 else
-  FFLAGS:=${FFLAGS} -O2 -march=native -mno-avx -mno-bmi2
+  FFLAGS:=${FFLAGS} -O2 -march=native
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO -DGFORTRAN_PR_49636
 endif
 
