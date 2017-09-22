@@ -88,7 +88,6 @@
 \newcommand{\As}{A^{\ast}}
 
 \newcommand{\nabad}{\nabla_{\rm ad}}
-\newcommand{\dnabad}{\partial\nabad}
 
 \newcommand{\kapad}{\kappa_{\rm ad}}
 \newcommand{\kapS}{\kappa_{S}}
@@ -174,13 +173,12 @@ c_1 = \frac{r^{3}}{\Rstar^{3}} \frac{\Mstar}{M_{r}} \qquad
 \begin{gather*}
 \nabla = \frac{\diff \ln T}{\diff \ln P} \qquad
 \nabad = \left( \frac{\partial \ln T}{\partial \ln P} \right)_{S} \qquad
-\partial\nabad = \frac{\diff \ln \nabad}{\diff \ln r} \qquad
 \delta = - \left( \frac{\partial \ln \rho}{\partial \ln T} \right)_{P} \qquad \\
 \crad = x^{-3} \frac{\Lrad}{\Lstar} \qquad
 \partial\crad = \frac{\diff \ln \crad}{\diff \ln r} \\
 \cepsad = x^{-3} \frac{4\pi r^{3} \epsad \rho}{\Lstar} \qquad
 \cepsS = x^{-3} \frac{4\pi r^{3} \epsS \rho}{\Lstar} \qquad \\
-\cdif = \left( \kapad - 4 \nabad \right) V \nabla + \nabad V \\
+\cdif = \left( \kapad - 4 \nabad \right) V \nabla + \nabad \left(V + \frac{\diff \ln \nabad}{\diff \ln r} \right) \\
 \cthn = \frac{c_{p}}{a c \kappa T^{3}} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \qquad
 \partial\cthn = \frac{\diff \ln \cthn}{\diff \ln r} \qquad
 \cthk = x^{-3} \frac{4\pi r^{3} c_{p} T \rho}{\Lstar} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \\
@@ -242,9 +240,9 @@ x \frac{\diff y_{4}}{\diff x} &=
 \agr (U + \elli - 2) y_{4}
 - \agr \delta U y_{5}, \\
 x \frac{\diff y_{5}}{\diff x} &=
-\frac{V}{\frh} \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \cdif + \nabad \dnabad \right] y_{1} + \mbox{} \\
+\frac{V}{\frh} \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \cdif \right] y_{1} + \mbox{} \\
 &
-\frac{V}{\frh} \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) - \cdif - \nabad \dnabad \right] y_{2} +
+\frac{V}{\frh} \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) - \cdif \right] y_{2} +
 \agr \frac{V}{\frh} \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) \right] y_{3} + \agr \frac{V \nabad}{\frh} y_{4} + \mbox{} \\
 & 
 \left[ \frac{V \nabla}{\frh} (4 \frh - \kapS) + \dfrh + 2 - \elli \right] y_{5} -
