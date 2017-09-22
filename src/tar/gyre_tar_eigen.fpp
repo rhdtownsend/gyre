@@ -27,6 +27,10 @@ module gyre_tar_eigen
 
   use ISO_FORTRAN_ENV
 
+  $if ($IEEE)
+  use IEEE_ARITHMETIC
+  $endif
+
   ! No implicit typing
 
   implicit none
