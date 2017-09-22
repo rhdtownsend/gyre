@@ -27,6 +27,7 @@ module gyre_lib
   use gyre_ad_bvp
   use gyre_bvp
   use gyre_constants, gyre_set_constant => set_constant
+  use gyre_context
   use gyre_ext
   use gyre_grid
   use gyre_grid_factory
@@ -196,6 +197,7 @@ contains
     integer, intent(inout)  :: ipar(:)
     real(WP), intent(inout) :: rpar(:)
 
+    type(context_t), pointer      :: cx(:) => null()
     type(mode_t), allocatable     :: md_ad(:)
     integer                       :: n_md_ad
     integer                       :: d_md_ad
@@ -212,6 +214,10 @@ contains
     class(c_bvp_t), allocatable   :: bp_nad
 
     $ASSERT(ASSOCIATED(ml_m),No model provided)
+
+    ! Allocate the contexts array (will be initialized later on)
+
+    allocate(cx(SIZE(md_p_m)))
 
     ! Loop through modepars
 
@@ -255,16 +261,20 @@ contains
 
           gr = grid_t(ml_m, omega, gr_p_sel, md_p_m(i), os_p_sel)
 
+          ! Set up the context
+
+          cx(i) = context_t(ml_m, gr, md_p_m(i), os_p_sel)
+
           ! Set up the bvp's
 
           if (md_p_m(i)%l == 0 .AND. os_p_sel%reduce_order) then
-             allocate(bp_ad, SOURCE=rad_bvp_t(ml_m, gr, md_p_m(i), nm_p_sel, os_p_sel))
+             allocate(bp_ad, SOURCE=rad_bvp_t(cx(i), gr, md_p_m(i), nm_p_sel, os_p_sel))
           else
-             allocate(bp_ad, SOURCE=ad_bvp_t(ml_m, gr, md_p_m(i), nm_p_sel, os_p_sel))
+             allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p_m(i), nm_p_sel, os_p_sel))
           endif
 
           if (os_p_sel%nonadiabatic) then
-             allocate(bp_nad, SOURCE=nad_bvp_t(ml_m, gr, md_p_m(i), nm_p_sel, os_p_sel))
+             allocate(bp_nad, SOURCE=nad_bvp_t(cx(i), gr, md_p_m(i), nm_p_sel, os_p_sel))
           endif
 
           ! Find modes
@@ -289,6 +299,8 @@ contains
     end do md_p_loop
 
     ! Finish
+
+    deallocate(cx)
 
     return
 
