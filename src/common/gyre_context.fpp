@@ -47,7 +47,7 @@ module gyre_context
      class(model_t), pointer, public :: ml => null()
      class(c_rot_t), allocatable     :: rt
      real(WP)                        :: Omega_rot_i
-     logical                         :: complex_rot
+     logical                         :: complex_lambda
      type(c_interp_t)                :: in_eps_rho
      type(c_interp_t)                :: in_eps_T
    contains
@@ -110,7 +110,7 @@ contains
 
     cx%Omega_rot_i = ml%coeff(I_OMEGA_ROT, pt_i)
 
-    cx%complex_rot = os_p%complex_rot
+    cx%complex_lambda = os_p%complex_lambda
 
     ! If necessary, initialize the nuclear burning partials
 
@@ -193,7 +193,7 @@ contains
 
     ! Evaluate the angular eigenvalue (complex)
 
-    if (this%complex_rot) then
+    if (this%complex_lambda) then
 
        lambda = this%rt%lambda(Omega_rot, st%omega)
 
@@ -239,7 +239,7 @@ contains
 
     ! Evaluate the effective harmonic degree (complex)
 
-    if (this%complex_rot) then
+    if (this%complex_lambda) then
 
        l_e = this%rt%l_e(Omega_rot, st%omega)
 
