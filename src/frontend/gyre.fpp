@@ -229,8 +229,6 @@ program gyre
         allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
      endif
 
-     print *,'Done sourced allocation of bp'
-
      i_ad_a = n_md_ad + 1
 
      if (check_log_level('INFO')) then

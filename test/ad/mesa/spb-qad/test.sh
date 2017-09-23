@@ -14,7 +14,7 @@ OUT_FILE=summary.txt
 
 LABEL="MESA model for slowly pulsating B-type star (adiabatic, quasi-adiabatic eigfuncs)"
 
-RELERR=2E-15
+RELERR=1E-13
 FIELDS=1-7
 
 # Do the tests

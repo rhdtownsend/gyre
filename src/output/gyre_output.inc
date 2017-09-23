@@ -47,3 +47,14 @@ case ($str($NAME))
 
 $endsub
 
+$define $OUTPUT_REF $sub
+
+$local $NAME $1
+$local $FUNC $2
+ 
+case ($str($NAME))
+
+   call wr%write($str($NAME), md%$FUNC(md%k_ref))
+
+$endsub
+

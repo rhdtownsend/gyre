@@ -185,6 +185,8 @@ contains
        $OUTPUT_MODES(c,xi_h_ref,xi_h(md(i_md)%k_ref))
        $OUTPUT_MODES(c,eul_phi_ref,eul_phi(md(i_md)%k_ref))
        $OUTPUT_MODES(c,deul_phi_ref,deul_phi(md(i_md)%k_ref))
+       $OUTPUT_MODES(c,lag_S_ref,lag_S(md(i_md)%k_ref))
+       $OUTPUT_MODES(c,lag_L_ref,lag_L(md(i_md)%k_ref))
 
        case default
 
@@ -444,12 +446,13 @@ contains
 
          $OUTPUT_POINTS(r,V_2,cx%ml%coeff(I_V_2, pt(k)))
          $OUTPUT_POINTS(r,As,cx%ml%coeff(I_AS, pt(k)))
+         $OUTPUT_POINTS(r,U,cx%ml%coeff(I_U, pt(k)))
+         $OUTPUT_POINTS(r,c_1,cx%ml%coeff(I_C_1, pt(k)))
          $OUTPUT_POINTS(r,Gamma_1,cx%ml%coeff(I_GAMMA_1, pt(k)))
          $OUTPUT_POINTS(r,nabla,cx%ml%coeff(I_NABLA, pt(k)))
          $OUTPUT_POINTS(r,nabla_ad,cx%ml%coeff(I_NABLA_AD, pt(k)))
          $OUTPUT_POINTS(r,dnabla_ad,cx%ml%dcoeff(I_NABLA_AD, pt(k)))
          $OUTPUT_POINTS(r,delta,cx%ml%coeff(I_DELTA, pt(k)))
-         $OUTPUT_POINTS(r,Omega_rot,cx%ml%coeff(I_OMEGA_ROT, pt(k)))
          $OUTPUT_POINTS(r,c_lum,cx%ml%coeff(I_C_LUM, pt(k)))
          $OUTPUT_POINTS(r,c_thn,cx%ml%coeff(I_C_THN, pt(k)))
          $OUTPUT_POINTS(r,c_thk,cx%ml%coeff(I_C_THK, pt(k)))
@@ -458,6 +461,7 @@ contains
          $OUTPUT_POINTS(r,eps_T,cx%ml%coeff(I_EPS_T, pt(k)))
          $OUTPUT_POINTS(r,kap_rho,cx%ml%coeff(I_KAP_RHO, pt(k)))
          $OUTPUT_POINTS(r,kap_T,cx%ml%coeff(I_KAP_T, pt(k)))
+         $OUTPUT_POINTS(r,Omega_rot,cx%ml%coeff(I_OMEGA_ROT, pt(k)))
          $OUTPUT_POINTS(c,y_1,y_i(1, k))
          $OUTPUT_POINTS(c,y_2,y_i(2, k))
          $OUTPUT_POINTS(c,y_3,y_i(3, k))
@@ -486,15 +490,14 @@ contains
          $OUTPUT_POINTS(c,Yt_2,Yt_2(k))
          $OUTPUT_POINTS(c,I_0,I_0(k))
          $OUTPUT_POINTS(c,I_1,I_1(k))
+         $OUTPUT_POINTS(c,prop_type,prop_type(k))
 
-         case ('xi_r_ref')
-            call wr%write('xi_r_ref', md%xi_r(md%k_ref))
-         case ('xi_h_ref')
-            call wr%write('xi_r_ref', md%xi_h(md%k_ref))
-         case ('eul_phi_ref')
-            call wr%write('eul_phi_ref', md%eul_phi(md%k_ref))
-         case ('deul_phi_ref')
-            call wr%write('deul_phi_ref', md%deul_phi(md%k_ref))
+         $OUTPUT_REF(xi_r_ref,xi_r)
+         $OUTPUT_REF(xi_h_ref,xi_h)
+         $OUTPUT_REF(eul_phi_ref,eul_phi)
+         $OUTPUT_REF(deul_phi_ref,deul_phi)
+         $OUTPUT_REF(lag_S_ref,lag_S)
+         $OUTPUT_REF(lag_L_ref,lag_L)
 
          case default
 
