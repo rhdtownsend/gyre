@@ -454,6 +454,7 @@ contains
          $OUTPUT_POINTS(r,dnabla_ad,cx%ml%dcoeff(I_NABLA_AD, pt(k)))
          $OUTPUT_POINTS(r,delta,cx%ml%coeff(I_DELTA, pt(k)))
          $OUTPUT_POINTS(r,c_lum,cx%ml%coeff(I_C_LUM, pt(k)))
+         $OUTPUT_POINTS(r,c_rad,cx%ml%coeff(I_C_RAD, pt(k)))
          $OUTPUT_POINTS(r,c_thn,cx%ml%coeff(I_C_THN, pt(k)))
          $OUTPUT_POINTS(r,c_thk,cx%ml%coeff(I_C_THK, pt(k)))
          $OUTPUT_POINTS(r,c_eps,cx%ml%coeff(I_C_EPS, pt(k)))
@@ -490,6 +491,8 @@ contains
          $OUTPUT_POINTS(c,Yt_2,Yt_2(k))
          $OUTPUT_POINTS(c,I_0,I_0(k))
          $OUTPUT_POINTS(c,I_1,I_1(k))
+         $OUTPUT_POINTS(r,alpha_0,alpha_0(k))
+         $OUTPUT_POINTS(r,alpha_1,alpha_1(k))
          $OUTPUT_POINTS(c,prop_type,prop_type(k))
 
          $OUTPUT_REF(xi_r_ref,xi_r)
