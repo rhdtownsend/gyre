@@ -96,6 +96,8 @@ module gyre_mode
      procedure, public :: Yt_2
      procedure, public :: I_0
      procedure, public :: I_1
+     procedure, public :: alpha_0
+     procedure, public :: alpha_1
      procedure, public :: prop_type
      procedure, public :: lag_T_eff
      procedure, public :: lag_g_eff
@@ -1508,6 +1510,104 @@ contains
     return
 
   end function I_1
+
+  !****
+
+  function alpha_0 (this, k)
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: k
+    real(WP)                  :: alpha_0
+
+    real(WP)    :: U
+    real(WP)    :: c_1
+    real(WP)    :: Omega_rot
+    complex(WP) :: omega_c
+    complex(WP) :: lambda
+
+    ! Evaluate the alpha_0 excitation parameter defined in equation
+    ! 26.10 of Unno et al. (2017)
+
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k))
+
+      U = ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
+
+      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+
+      omega_c = this%cx%omega_c(Omega_rot, this%st)
+      lambda = this%cx%lambda(Omega_rot, this%st)
+
+      alpha_0 = 4._WP - U - ABS(lambda)/(c_1*ABS(omega_c)**2) + c_1*ABS(omega_c)**2
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function alpha_0
+
+  !****
+
+  function alpha_1 (this, k)
+
+    class(mode_t), intent(in) :: this
+    integer, intent(in)       :: k
+    real(WP)                  :: alpha_1
+
+    real(WP)    :: alpha_0
+    real(WP)    :: V
+    real(WP)    :: U
+    real(WP)    :: c_1
+    real(WP)    :: Gamma_1
+    real(WP)    :: nabla_ad
+    real(WP)    :: kap_T
+    real(WP)    :: kap_rho
+    real(WP)    :: Omega_rot
+    complex(WP) :: omega_c
+    complex(WP) :: lambda
+
+    ! Evaluate the alpha_1 excitation parameter defined in equation
+    ! 26.12 of Unno et al. (2017)
+
+    associate ( &
+         ml => this%cx%ml, &
+         pt => this%gr%pt(k))
+
+      alpha_0 = this%alpha_0(k)
+
+      V = ml%coeff(I_V_2, pt)*pt%x**2
+      U = ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
+
+      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+      nabla_ad = ml%coeff(I_NABLA_AD, pt)
+
+      kap_T = ml%coeff(I_KAP_T, pt)
+      kap_rho = ml%coeff(I_KAP_RHO, pt)
+
+      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+
+      omega_c = this%cx%omega_c(Omega_rot, this%st)
+      lambda = this%cx%lambda(Omega_rot, this%st)
+
+      if (V /= 0._WP) then
+         alpha_1 = 4._WP - 1._WP/nabla_ad - kap_T - kap_rho/(nabla_ad*Gamma_1) + &
+                   (1._WP - ABS(lambda)/(c_1*ABS(omega_c)**2*V))*(c_1*ABS(omega_c)**2 - U)/(nabla_ad*alpha_0)
+      else
+         alpha_1 = SIGN(HUGE(0._WP), (c_1*ABS(omega_c)**2 - U)/(nabla_ad*alpha_0))
+      endif
+         
+    end associate
+
+    ! Finish
+
+    return
+
+  end function alpha_1
 
   !****
 
