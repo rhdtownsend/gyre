@@ -138,44 +138,27 @@ contains
 
     real(WP)                   :: x_i_
     real(WP)                   :: x_o_
-    logical                    :: mask(gr_base%n_k)
-    integer                    :: n_mask
-    type(point_t), allocatable :: pt_int(:)
     type(point_t)              :: pt_i
     type(point_t)              :: pt_o
+    type(point_t), allocatable :: pt_int(:)
 
     ! Construct a grid_t as a nesting of gr_base, with limits
     ! (x_i,x_o)
 
     ! First, restrict the limits to the range of gr_base
 
-    x_i_ = MAX(x_i, gr_base%pt(1)%x)
-    x_o_ = MIN(x_o, gr_base%pt(gr_base%n_k)%x)
+    x_i_ = MAX(x_i, gr_base%x_i())
+    x_o_ = MIN(x_o, gr_base%x_o())
 
-    ! Set up a mask for the points from gr_base to include (excluding
+    ! Set up inner and outer points
+
+    pt_i = gr_base%pt_x(x_i_)
+    pt_o = gr_base%pt_x(x_o_, back=.TRUE.)
+
+    ! Select internal points from gr_base to include (excluding
     ! boundary points)
 
-    mask = gr_base%pt%x > x_i_ .AND. gr_base%pt%x < x_o_
-
-    n_mask = COUNT(mask)
-
-    ! Set up the internal and boundary points
-
-    if (n_mask > 0) then
-
-       pt_int = PACK(gr_base%pt, mask)
-       
-       pt_i = point_t(pt_int(1)%s, x_i_)
-       pt_o = point_t(pt_int(n_mask)%s, x_o_)
-
-    else
-
-       allocate(pt_int(0))
-
-       pt_i = point_t(gr_base%s_x(x_i_, back=.TRUE.), x_i_)
-       pt_o = point_t(gr_base%s_x(x_o_, back=.FALSE.), x_o_)
-
-    end if
+    pt_int = PACK(gr_base%pt, MASK=(gr_base%pt%x > x_i_ .AND. gr_base%pt%x < x_o_))
 
     ! Create the grid_t
 
@@ -321,10 +304,10 @@ contains
 
   function pt_x (this, x, back) result (pt)
 
-    class(grid_t), intent(in) :: this
-    real(WP), intent(in)      :: x
-    logical, intent(in)       :: back
-    type(point_t)             :: pt
+    class(grid_t), intent(in)     :: this
+    real(WP), intent(in)          :: x
+    logical, intent(in), optional :: back
+    type(point_t)                 :: pt
 
     ! Return a point containing the abcissa x. If back is present and
     ! .TRUE., the segment search is done outside-in; otherwise, it is
