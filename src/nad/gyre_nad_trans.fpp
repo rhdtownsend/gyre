@@ -98,10 +98,9 @@ module gyre_nad_trans
 
 contains
 
-  function nad_trans_t_ (cx, pt_i, md_p, os_p) result (tr)
+  function nad_trans_t_ (cx, md_p, os_p) result (tr)
 
     type(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)            :: pt_i
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
     type(nad_trans_t)                    :: tr
@@ -138,7 +137,7 @@ contains
   subroutine stencil (this, pt)
 
     class(nad_trans_t), intent(inout) :: this
-    type(point_t), intent(in)        :: pt(:)
+    type(point_t), intent(in)         :: pt(:)
 
     integer :: n_s
     integer :: i

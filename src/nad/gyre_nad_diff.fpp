@@ -70,10 +70,9 @@ module gyre_nad_diff
 
 contains
 
-  function nad_diff_t_ (cx, pt_i, pt_a, pt_b, md_p, nm_p, os_p) result (df)
+  function nad_diff_t_ (cx, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
     type(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)            :: pt_i
     type(point_t), intent(in)            :: pt_a
     type(point_t), intent(in)            :: pt_b
     type(mode_par_t), intent(in)         :: md_p
@@ -90,7 +89,7 @@ contains
 
        ! Regular subinterval; use difference equations
 
-       eq = nad_eqns_t(cx, pt_i, md_p, os_p)
+       eq = nad_eqns_t(cx, md_p, os_p)
 
        select case (nm_p%diff_scheme)
        case ('TRAPZ')
@@ -114,7 +113,7 @@ contains
 
       ! Segment boundary; use match conditions
 
-      allocate(df%df, SOURCE=nad_match_t(cx, pt_i, pt_a, pt_b, md_p, os_p))
+      allocate(df%df, SOURCE=nad_match_t(cx, pt_a, pt_b, md_p, os_p))
 
     endif
 

@@ -90,8 +90,6 @@ contains
     type(osc_par_t), intent(in)          :: os_p
     type(ad_bvp_t)                       :: bp
 
-    type(point_t)                :: pt_i
-    type(point_t)                :: pt_o
     type(ad_bound_t)             :: bd
     integer                      :: k
     type(ad_diff_t), allocatable :: df(:)
@@ -99,12 +97,9 @@ contains
 
     ! Construct the ad_bvp_t
 
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
-
     ! Initialize the boundary conditions
 
-    bd = ad_bound_t(cx, pt_i, pt_o, md_p, os_p)
+    bd = ad_bound_t(cx, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -112,7 +107,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = ad_diff_t(cx, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = ad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -124,7 +119,7 @@ contains
     bp%cx => cx
     bp%gr = gr
 
-    bp%tr = ad_trans_t(cx, pt_i, md_p, os_p)
+    bp%tr = ad_trans_t(cx, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
     if (os_p%quasiad_eigfuncs) then

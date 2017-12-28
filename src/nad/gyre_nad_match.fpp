@@ -74,10 +74,9 @@ module gyre_nad_match
 
 contains
 
-  function nad_match_t_ (cx, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
+  function nad_match_t_ (cx, pt_a, pt_b, md_p, os_p) result (mt)
 
     type(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)            :: pt_i
     type(point_t), intent(in)            :: pt_a
     type(point_t), intent(in)            :: pt_b
     type(mode_par_t), intent(in)         :: md_p
@@ -91,7 +90,7 @@ contains
 
     mt%cx => cx
 
-    mt%tr = nad_trans_t(cx, pt_i, md_p, os_p)
+    mt%tr = nad_trans_t(cx, md_p, os_p)
 
     call mt%stencil_(pt_a, pt_b)
 

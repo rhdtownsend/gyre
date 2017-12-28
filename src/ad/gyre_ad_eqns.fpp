@@ -47,8 +47,9 @@ module gyre_ad_eqns
   integer, parameter :: J_C_1 = 4
   integer, parameter :: J_GAMMA_1 = 5
   integer, parameter :: J_OMEGA_ROT = 6
+  integer, parameter :: J_OMEGA_ROT_I = 7
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT
+  integer, parameter :: J_LAST = J_OMEGA_ROT_I
 
   ! Derived-type definitions
 
@@ -83,10 +84,9 @@ module gyre_ad_eqns
 
 contains
 
-  function ad_eqns_t_ (cx, pt_i, md_p, os_p) result (eq)
+  function ad_eqns_t_ (cx, md_p, os_p) result (eq)
 
     type(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)            :: pt_i
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
     type(ad_eqns_t)                      :: eq
@@ -95,7 +95,7 @@ contains
 
     eq%cx => cx
 
-    eq%tr = ad_trans_t(cx, pt_i, md_p, os_p)
+    eq%tr = ad_trans_t(cx, md_p, os_p)
 
     if (os_p%cowling_approx) then
        eq%alpha_gr = 0._WP
@@ -149,6 +149,8 @@ contains
          this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
          this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
       end do
+
+      this%coeff(:,J_OMEGA_ROT_I) = ml%coeff(I_OMEGA_ROT, this%cx%pt_i)
 
       this%x = pt%x
 
@@ -205,11 +207,12 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Gamma_1 => this%coeff(i,J_GAMMA_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT), &
+         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
       lambda = this%cx%lambda(Omega_rot, st)
-      l_i = this%cx%l_i(st)
+      l_i = this%cx%l_e(Omega_rot_i, st)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 

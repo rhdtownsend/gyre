@@ -86,20 +86,15 @@ contains
     type(osc_par_t), intent(in)           :: os_p
     type(nad_bvp_t)                       :: bp
 
-    type(point_t)                 :: pt_i
-    type(point_t)                 :: pt_o
     type(nad_bound_t)             :: bd
     integer                       :: k
     type(nad_diff_t), allocatable :: df(:)
 
     ! Construct the nad_bvp_t
 
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
-
     ! Initialize the boundary conditions
 
-    bd = nad_bound_t(cx, pt_i, pt_o, md_p, os_p)
+    bd = nad_bound_t(cx, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -107,7 +102,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = nad_diff_t(cx, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = nad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -119,7 +114,7 @@ contains
     bp%cx => cx
     bp%gr = gr
 
-    bp%tr = nad_trans_t(cx, pt_i, md_p, os_p)
+    bp%tr = nad_trans_t(cx, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p

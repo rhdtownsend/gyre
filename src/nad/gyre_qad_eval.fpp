@@ -79,17 +79,11 @@ contains
     type(osc_par_t), intent(in)          :: os_p
     type(qad_eval_t)                     :: qe
 
-    type(point_t) :: pt_i
-    type(point_t) :: pt_o
-
     ! Construct the qad_eval_t
-
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
 
     ! Initialize the equations
 
-    qe%eq = nad_eqns_t(cx, pt_i, md_p, os_p)
+    qe%eq = nad_eqns_t(cx, md_p, os_p)
     call qe%eq%stencil(gr%pt)
 
     ! Other initializations

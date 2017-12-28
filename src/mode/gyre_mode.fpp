@@ -188,7 +188,7 @@ contains
     md%omega = st%omega
     md%discrim = discrim
 
-    md%l_i = cx%l_i(st)
+    md%l_i = cx%l_e(cx%ml%coeff(I_OMEGA_ROT, cx%pt_i), st)
 
     md%n_k = gr%n_k
 
