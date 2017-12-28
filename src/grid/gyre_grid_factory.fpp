@@ -113,8 +113,8 @@ contains
        seg_loop : do s = gr%s_i(), gr%s_o()
 
           associate( &
-               k_i => gr%k_i(s), &
-               k_o => gr%k_o(s))
+               k_i => gr%k_s_i(s), &
+               k_o => gr%k_s_o(s))
 
             write(OUTPUT_UNIT, 130) 'Segment', s, ': x range', gr%pt(k_i)%x, '->', gr%pt(k_o)%x, &
                  '(', k_i, '->', k_o, ')'

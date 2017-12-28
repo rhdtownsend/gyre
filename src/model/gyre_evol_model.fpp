@@ -214,7 +214,7 @@ contains
           
     seg_loop : do s = this%s_i, this%s_o
 
-       associate (k_i => this%gr%k_i(s), k_o => this%gr%k_o(s))
+       associate (k_i => this%gr%k_s_i(s), k_o => this%gr%k_s_o(s))
          if (this%gr%pt(k_i)%x == 0._WP) then
             this%in(i, s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type, df_dx_a=0._WP)
          else
@@ -253,8 +253,8 @@ contains
 
     seg_loop : do s = s_i, s_o
 
-       k_i = gr%k_i(s)
-       k_o = gr%k_o(s)
+       k_i = gr%k_s_i(s)
+       k_o = gr%k_s_o(s)
          
          if (s > s_i .AND. k_i + 2 <= k_o) then
             coeff(k_i) = coeff(k_i+1) + (gr%pt(k_i)%x - gr%pt(k_i+1)%x)*(coeff(k_i+2) - coeff(k_i+1))/&
@@ -479,8 +479,8 @@ contains
 
        pt%s = s
 
-       k_i = gr%k_i(s)
-       k_o = gr%k_o(s)
+       k_i = gr%k_s_i(s)
+       k_o = gr%k_s_o(s)
 
        cell_loop : do k = k_i, k_o-1
 
@@ -540,8 +540,8 @@ contains
 
        pt%s = s
 
-       k_i = gr%k_i(s)
-       k_o = gr%k_o(s)
+       k_i = gr%k_s_i(s)
+       k_o = gr%k_s_o(s)
 
        cell_loop : do k = k_i, k_o-1
 

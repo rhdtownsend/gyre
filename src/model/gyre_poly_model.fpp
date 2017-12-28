@@ -155,16 +155,16 @@ contains
     ml%t(ml%s_i) = 1._WP
     ml%B(ml%s_i) = 1._WP
 
-    k_i = ml%gr%k_i(ml%s_i)
-    k_o = ml%gr%k_o(ml%s_i)
+    k_i = ml%gr%k_s_i(ml%s_i)
+    k_o = ml%gr%k_s_o(ml%s_i)
 
     seg_data_loop : do s = ml%s_i+1, ml%s_o
 
        k_i_prev = k_i
        k_o_prev = k_o
 
-       k_i = ml%gr%k_i(s)
-       k_o = ml%gr%k_o(s)
+       k_i = ml%gr%k_s_i(s)
+       k_o = ml%gr%k_s_o(s)
 
        i = s - ml%s_i + 1
 
@@ -188,8 +188,8 @@ contains
 
     seg_spline_loop : do s = ml%s_i, ml%s_o
 
-       k_i = ml%gr%k_i(s)
-       k_o = ml%gr%k_o(s)
+       k_i = ml%gr%k_s_i(s)
+       k_o = ml%gr%k_s_o(s)
 
        if (ml%n_poly(s) /= 0._WP) then
 
@@ -636,8 +636,8 @@ contains
 
        pt%s = s
 
-       k_i = gr%k_i(s)
-       k_o = gr%k_o(s)
+       k_i = gr%k_s_i(s)
+       k_o = gr%k_s_o(s)
 
        cell_loop : do k = k_i, k_o-1
 
@@ -697,8 +697,8 @@ contains
 
        pt%s = s
 
-       k_i = gr%k_i(s)
-       k_o = gr%k_o(s)
+       k_i = gr%k_s_i(s)
+       k_o = gr%k_s_o(s)
 
        cell_loop : do k = k_i, k_o-1
 
