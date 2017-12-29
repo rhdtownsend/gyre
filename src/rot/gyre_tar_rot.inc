@@ -88,13 +88,15 @@ contains
        k = md_p%l - ABS(md_p%m)
     endif
 
+    !$OMP CRITICAL
+
     write(filename, 100) md_p%m, k
 100 format(SP,'tar_fit.m',I0,'.k',I0,'.h5')
 
-    !$OMP CRITICAL
     hg = hgroup_t(TRIM(GYRE_DIR)//'/data/tar/'//TRIM(filename), OPEN_FILE)
     call read(hg, rt%tf)
     call hg%final()
+
     !$OMP END CRITICAL
 
     rt%l = md_p%l
