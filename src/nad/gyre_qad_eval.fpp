@@ -47,8 +47,6 @@ module gyre_qad_eval
      type(context_t), pointer :: cx => null()
      type(nad_eqns_t)         :: eq
      type(grid_t)             :: gr
-     type(mode_par_t)         :: md_p
-     type(osc_par_t)          :: os_p
      integer, public          :: n_k
    contains
      private
@@ -90,9 +88,6 @@ contains
 
     qe%cx => cx
     qe%gr = gr
-
-    qe%md_p = md_p
-    qe%os_p = os_p
 
     qe%n_k = gr%n_k
 
