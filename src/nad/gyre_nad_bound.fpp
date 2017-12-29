@@ -26,6 +26,7 @@ module gyre_nad_bound
   use gyre_atmos
   use gyre_bound
   use gyre_context
+  use gyre_freq
   use gyre_mode_par
   use gyre_model
   use gyre_model_util
@@ -82,6 +83,7 @@ module gyre_nad_bound
      complex(WP)              :: alpha_om
      integer                  :: type_i
      integer                  :: type_o
+     integer                  :: m
    contains 
      private
      procedure         :: stencil_
@@ -174,6 +176,8 @@ contains
     case default
        $ABORT(Invalid outer_bound)
     end select
+
+    bd%m = md_p%m
 
     if (os_p%cowling_approx) then
        bd%alpha_gr = 0._WP
@@ -323,8 +327,8 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    complex(WP) :: l_i
     complex(WP) :: omega_c
+    complex(WP) :: l_i
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
@@ -334,14 +338,15 @@ contains
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
     associate( &
+         omega => st%omega, &
          c_1 => this%coeff(1,J_C_1), &
          Omega_rot => this%coeff(1,J_OMEGA_ROT), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      l_i = this%cx%l_e(Omega_rot, st)
+      omega_c = omega_corot(omega, Omega_rot, this%m)
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      l_i = this%cx%l_e(Omega_rot, st)
 
       ! Set up the boundary conditions
 
@@ -529,9 +534,9 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    complex(WP) :: l_e
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
+    complex(WP) :: l_e
     complex(WP) :: f_rh
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
@@ -542,6 +547,7 @@ contains
     ! Evaluate the outer boundary conditions (vacuum)
 
     associate( &
+         omega => st%omega, &
          V => this%coeff(2,J_V), &
          U => this%coeff(2,J_U), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
@@ -551,10 +557,10 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
-      l_e = this%cx%l_e(Omega_rot, st)
-
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      omega_c = omega_corot(omega, Omega_rot, this%m)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+
+      l_e = this%cx%l_e(Omega_rot, st)
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
@@ -600,10 +606,10 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    complex(WP) :: lambda
-    complex(WP) :: l_e
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
+    complex(WP) :: lambda
+    complex(WP) :: l_e
     complex(WP) :: f_rh
     
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
@@ -614,6 +620,7 @@ contains
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     associate( &
+         omega => st%omega, &
          V => this%coeff(2,J_V), &
          c_1 => this%coeff(2,J_C_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
@@ -623,11 +630,11 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
+      omega_c = omega_corot(omega, Omega_rot, this%m)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
-
-      omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
@@ -673,10 +680,10 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    complex(WP) :: lambda
-    complex(WP) :: l_e
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
+    complex(WP) :: lambda
+    complex(WP) :: l_e
     complex(WP) :: f_rh
     complex(WP) :: beta
     complex(WP) :: b_11
@@ -696,6 +703,7 @@ contains
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
     associate( &
+         omega => st%omega, &
          V => this%coeff(2,J_V), &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
@@ -708,11 +716,11 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
+      omega_c = omega_corot(omega, Omega_rot, this%m)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
-
-      omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
@@ -771,10 +779,10 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
-    complex(WP) :: lambda
-    complex(WP) :: l_e
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
+    complex(WP) :: lambda
+    complex(WP) :: l_e
     complex(WP) :: f_rh
     complex(WP) :: beta
     complex(WP) :: b_11
@@ -788,6 +796,7 @@ contains
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
     associate( &
+         omega => st%omega, &
          V => this%coeff(2,J_V), &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
@@ -800,11 +809,11 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
+      omega_c = omega_corot(omega, Omega_rot, this%m)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
-
-      omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
@@ -878,6 +887,7 @@ contains
     ! base-of-convection-zone formulation)
 
     associate( &
+         omega => st%omega, &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_As), &
          U => this%coeff(2,J_U), &
@@ -890,11 +900,11 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
+      omega_c = omega_corot(omega, Omega_rot, this%m)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
-
-      omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 

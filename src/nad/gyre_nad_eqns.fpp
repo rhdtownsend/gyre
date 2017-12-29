@@ -25,6 +25,7 @@ module gyre_nad_eqns
 
   use gyre_context
   use gyre_eqns
+  use gyre_freq
   use gyre_linalg
   use gyre_model
   use gyre_mode_par
@@ -89,6 +90,7 @@ module gyre_nad_eqns
      real(WP)                 :: alpha_om
      integer                  :: conv_scheme
      integer                  :: deps_scheme
+     integer                  :: m
    contains
      private
      procedure, public :: stencil
@@ -171,6 +173,8 @@ contains
     case default
        $ABORT(Invalid deps_scheme)
     end select
+
+    eq%m = md_p%m
 
     eq%n_e = 6
 
@@ -273,10 +277,10 @@ contains
     class(c_state_t), intent(in)  :: st
     complex(WP)                   :: xA(this%n_e,this%n_e)
 
-    complex(WP) :: lambda
-    complex(WP) :: l_i
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
+    complex(WP) :: lambda
+    complex(WP) :: l_i
     complex(WP) :: f_rh
     complex(WP) :: df_rh
     complex(WP) :: conv_term
@@ -291,6 +295,7 @@ contains
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
+         omega => st%omega, &
          V => this%coeff(i,J_V), &
          As => this%coeff(i,J_AS), &
          U => this%coeff(i,J_U), &
@@ -318,12 +323,12 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
+      omega_c = omega_corot(omega, Omega_rot, this%m)
+      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+
       lambda = this%cx%lambda(Omega_rot, st)
       l_i = this%cx%l_e(Omega_rot_i, st)
     
-      omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
-
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
       df_rh = -0.25_WP*alpha_rh*i_omega_c*c_thn*dc_thn/f_rh
 

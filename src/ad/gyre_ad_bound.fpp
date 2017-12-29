@@ -27,6 +27,7 @@ module gyre_ad_bound
   use gyre_atmos
   use gyre_bound
   use gyre_context
+  use gyre_freq
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
@@ -71,6 +72,7 @@ module gyre_ad_bound
      real(WP)                 :: alpha_om
      integer                  :: type_i
      integer                  :: type_o
+     integer                  :: m
    contains 
      private
      procedure         :: stencil_
@@ -159,6 +161,8 @@ contains
     case default
        $ABORT(Invalid outer_bound)
     end select
+
+    bd%m = md_p%m
 
     if (os_p%cowling_approx) then
        bd%alpha_gr = 0._WP
@@ -293,8 +297,8 @@ contains
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
  
-    real(WP) :: l_i
     real(WP) :: omega_c
+    real(WP) :: l_i
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_i)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
@@ -304,14 +308,15 @@ contains
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
     associate( &
+         omega => st%omega, &
          c_1 => this%coeff(1,J_C_1), &
          Omega_rot => this%coeff(1,J_OMEGA_ROT), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      l_i = this%cx%l_e(Omega_rot, st)
+      omega_c = omega_corot(omega, Omega_rot, this%m)
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      l_i = this%cx%l_e(Omega_rot, st)
 
       ! Set up the boundary conditions
 
@@ -511,9 +516,9 @@ contains
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
+    real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: l_e
-    real(WP) :: omega_c
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
@@ -523,16 +528,17 @@ contains
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     associate( &
+         omega => st%omega, &
          V => this%coeff(2,J_V), &
          c_1 => this%coeff(2,J_C_1), &
          Omega_rot => this%coeff(2,J_OMEGA_ROT), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
+      omega_c = omega_corot(omega, Omega_rot, this%m)
+
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
-
-      omega_c = this%cx%omega_c(Omega_rot, st)
 
       ! Set up the boundary conditions
 
@@ -565,9 +571,9 @@ contains
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
+    real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: l_e
-    real(WP) :: omega_c
     real(WP) :: beta
     real(WP) :: b_11
     real(WP) :: b_12
@@ -586,6 +592,7 @@ contains
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
     associate( &
+         omega => st%omega, &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
          U => this%coeff(2,J_U), &
@@ -594,11 +601,11 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
+      omega_c = omega_corot(omega, Omega_rot, this%m)
+
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
       
-      omega_c = this%cx%omega_c(Omega_rot, st)
-
       beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 
       b_11 = V_g - 3._WP
@@ -643,9 +650,9 @@ contains
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
+    real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: l_e
-    real(WP) :: omega_c
     real(WP) :: beta
     real(WP) :: b_11
     real(WP) :: b_12
@@ -658,6 +665,7 @@ contains
     ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
     associate( &
+         omega => st%omega, &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
          U => this%coeff(2,J_U), &
@@ -666,10 +674,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
+      omega_c = omega_corot(omega, Omega_rot, this%m)
+
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
-
-      omega_c = this%cx%omega_c(Omega_rot, st)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 
@@ -707,9 +715,9 @@ contains
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
+    real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: l_e
-    real(WP) :: omega_c
     real(WP) :: beta
     real(WP) :: b_11
     real(WP) :: b_12
@@ -722,6 +730,7 @@ contains
     ! Evaluate the outer boundary conditions (Luan formulation)
 
     associate( &
+         omega => st%omega, &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
          U => this%coeff(2,J_U), &
@@ -730,10 +739,10 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
+      omega_c = omega_corot(omega, Omega_rot, this%m)
+
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
-
-      omega_c = this%cx%omega_c(Omega_rot, st)
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
 

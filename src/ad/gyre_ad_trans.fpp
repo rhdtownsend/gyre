@@ -24,6 +24,7 @@ module gyre_ad_trans
   use core_kinds
 
   use gyre_context
+  use gyre_freq
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
@@ -61,8 +62,9 @@ module gyre_ad_trans
      private
      type(context_t), pointer :: cx => null()
      real(WP), allocatable    :: coeff(:,:)
-     integer                  :: l
      integer                  :: set
+     integer                  :: l
+     integer                  :: m
      integer                  :: n_e
    contains
      private
@@ -129,6 +131,7 @@ contains
     end select
 
     tr%l = md_p%l
+    tr%m = md_p%m
 
     tr%n_e = 4
 
@@ -414,20 +417,21 @@ contains
     class(r_state_t), intent(in)  :: st
     real(WP)                      :: G(this%n_e,this%n_e)
 
-    real(WP) :: lambda
     real(WP) :: omega_c
+    real(WP) :: lambda
 
     ! Evaluate the transformation matrix to convert JCD variables
     ! from GYRE's canonical form
 
     associate( &
+         omega => st%omega, &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%cx%lambda(Omega_rot, st)
+      omega_c = omega_corot(omega, Omega_rot, this%m)
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      lambda = this%cx%lambda(Omega_rot, st)
 
       ! Set up the matrix
       
@@ -662,13 +666,14 @@ contains
     ! to GYRE's canonical form
 
     associate( &
+         omega => st%omega, &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%cx%lambda(Omega_rot, st)
+      omega_c = omega_corot(omega, Omega_rot, this%m)
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      lambda = this%cx%lambda(Omega_rot, st)
 
       ! Set up the matrix
       
@@ -857,22 +862,23 @@ contains
     class(r_state_t), intent(in)  :: st
     real(WP)                      :: dH(this%n_e,this%n_e)
 
-    real(WP) :: lambda
     real(WP) :: omega_c
+    real(WP) :: lambda
 
     ! Evaluate the derivative x dH/dx of the JCD-variables
     ! transformation matrix H
 
     associate( &
-      U => this%coeff(i,J_U), &
-      dU => this%coeff(i,J_DU), &
-      c_1 => this%coeff(i,J_C_1), &
-      dc_1 => this%coeff(i,J_DC_1), &
-      Omega_rot => this%coeff(i,J_OMEGA_ROT))
+        omega => st%omega, & 
+        U => this%coeff(i,J_U), &
+        dU => this%coeff(i,J_DU), &
+        c_1 => this%coeff(i,J_C_1), &
+        dc_1 => this%coeff(i,J_DC_1), &
+        Omega_rot => this%coeff(i,J_OMEGA_ROT))
+
+      omega_c = omega_corot(omega, Omega_rot, this%m)
 
       lambda = this%cx%lambda(Omega_rot, st)
-
-      omega_c = this%cx%omega_c(Omega_rot, st)
 
       ! Set up the matrix (nb: the derivatives of omega_c and lambda are
       ! neglected; this is incorrect when rotation is non-zero)
