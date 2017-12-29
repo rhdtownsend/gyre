@@ -30,6 +30,7 @@ module gyre_${T}_tar_rot
   use core_hgroup
 
   use gyre_constants
+  use gyre_freq
   use gyre_mode_par
   use gyre_tar_fit
   use gyre_rot
@@ -50,8 +51,6 @@ module gyre_${T}_tar_rot
      logical         :: rossby
    contains
      private
-     procedure, public :: omega
-     procedure, public :: omega_c
      procedure, public :: l_e
      procedure, public :: lambda
   end type ${T}_tar_rot_t
@@ -111,46 +110,6 @@ contains
 
   !****
 
-  function omega (this, Omega_rot, omega_c)
-
-    class(${T}_tar_rot_t), intent(in) :: this
-    real(WP), intent(in)              :: Omega_rot
-    $TYPE(WP), intent(in)             :: omega_c
-    $TYPE(WP)                         :: omega
-
-    ! Evaluate the inertial-frame frequency from the corotating-frame
-    ! frequency
-
-    omega = omega_c + this%m*Omega_rot
-
-    ! Finish
-
-    return
-
-  end function omega
-
-  !****
-
-  function omega_c (this, Omega_rot,  omega)
-
-    class(${T}_tar_rot_t), intent(in) :: this
-    real(WP), intent(in)              :: Omega_rot
-    $TYPE(WP), intent(in)             :: omega
-    $TYPE(WP)                         :: omega_c
-
-    ! Evaluate the corotating-frame frequency from the inertial-frame
-    ! frequency
-
-    omega_c = omega - this%m*Omega_rot
-
-    ! Finish
-
-    return
-
-  end function omega_c
-
-  !****
-
   function l_e (this, Omega_rot, omega)
 
     class(${T}_tar_rot_t), intent(in) :: this
@@ -181,7 +140,7 @@ contains
 
     ! Evaluate the angular eigenvalue
 
-    nu = 2._WP*Omega_rot/this%omega_c(Omega_rot, omega)
+    nu = 2._WP*Omega_rot/omega_corot(omega, Omega_rot, this%m)
 
     lambda = this%tf%lambda(nu)
 

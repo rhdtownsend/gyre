@@ -42,11 +42,8 @@ module gyre_${T}_null_rot
   type, extends (${T}_rot_t) :: ${T}_null_rot_t
      private
      integer :: l
-     integer :: m
    contains
      private
-     procedure, public :: omega
-     procedure, public :: omega_c
      procedure, public :: l_e
      procedure, public :: lambda
   end type ${T}_null_rot_t
@@ -75,53 +72,12 @@ contains
     ! Construct the null_rot_t
 
     rt%l = md_p%l
-    rt%m = md_p%m
 
     ! Finish
 
     return
 
   end function ${T}_null_rot_t_
-
-  !****
-
-  function omega (this, Omega_rot, omega_c)
-
-    class(${T}_null_rot_t), intent(in) :: this
-    real(WP), intent(in)               :: Omega_rot
-    $TYPE(WP), intent(in)              :: omega_c
-    $TYPE(WP)                          :: omega
-
-    ! Evaluate the inertial-frame frequency from the corotating-frame
-    ! frequency
-
-    omega = omega_c
-
-    ! Finish
-
-    return
-
-  end function omega
-
-!****
-
-  function omega_c (this, Omega_rot, omega)
-
-    class(${T}_null_rot_t), intent(in) :: this
-    real(WP), intent(in)               :: Omega_rot
-    $TYPE(WP), intent(in)              :: omega
-    $TYPE(WP)                          :: omega_c
-
-    ! Evaluate the corotating-frame frequency from the inertial-frame
-    ! frequency
-
-    omega_c = omega
-
-    ! Finish
-
-    return
-
-  end function omega_c
 
   !****
 

@@ -34,33 +34,13 @@ module gyre_${T}_rot
 
   type, abstract :: ${T}_rot_t
    contains
-     procedure(omega), deferred   :: omega
-     procedure(omega_c), deferred :: omega_c
-     procedure(l_e), deferred     :: l_e
-     procedure(lambda), deferred  :: lambda
+     procedure(l_e), deferred    :: l_e
+     procedure(lambda), deferred :: lambda
   end type ${T}_rot_t
 
   ! Interfaces
 
   abstract interface
-
-     function omega (this, Omega_rot, omega_c)
-       use core_kinds
-       import ${T}_rot_t
-       class(${T}_rot_t), intent(in) :: this
-       real(WP), intent(in)          :: Omega_rot
-       $TYPE(WP), intent(in)         :: omega_c
-       $TYPE(WP)                     :: omega
-     end function omega
-
-     function omega_c (this, Omega_rot, omega)
-       use core_kinds
-       import ${T}_rot_t
-       class(${T}_rot_t), intent(in) :: this
-       real(WP), intent(in)          :: Omega_rot
-       $TYPE(WP), intent(in)         :: omega
-       $TYPE(WP)                     :: omega_c
-     end function omega_c
 
      function l_e (this, Omega_rot, omega)
        use core_kinds
