@@ -49,9 +49,8 @@ module gyre_rad_trans
   integer, parameter :: J_DV_2 = 2
   integer, parameter :: J_C_1 = 3
   integer, parameter :: J_DC_1 = 4
-  integer, parameter :: J_OMEGA_ROT = 5
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT
+  integer, parameter :: J_LAST = J_DC_1
 
   ! Derived-type definitions
 
@@ -143,7 +142,7 @@ contains
 
     associate (ml => this%cx%ml)
 
-      call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
+      call check_model(ml, [I_V_2,I_U,I_C_1])
 
       n_s = SIZE(pt)
 
@@ -160,7 +159,6 @@ contains
          endif
          this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
          this%coeff(i,J_DC_1) = ml%dcoeff(I_C_1, pt(i))
-         this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
       end do
 
     end associate
@@ -374,10 +372,10 @@ contains
     ! from GYRE's canonical form
 
     associate( &
-         c_1 => this%coeff(i,J_C_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT))
+         omega => st%omega, &
+         c_1 => this%coeff(i,J_C_1))
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      omega_c = omega
 
       ! Set up the matrix
 
@@ -468,10 +466,10 @@ contains
     ! to GYRE's canonical form
 
     associate( &
-         c_1 => this%coeff(i,J_C_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT))
+         omega => st%omega, &
+         c_1 => this%coeff(i,J_C_1))
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      omega_c = omega
 
       ! Set up the matrix
       
@@ -561,14 +559,13 @@ contains
     ! transformation matrix H
 
     associate( &
+         omega => st%omega, &
          c_1 => this%coeff(i,J_C_1), &
-         dc_1 => this%coeff(i,J_DC_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT))
+         dc_1 => this%coeff(i,J_DC_1))
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      omega_c = omega
 
-      ! Set up the matrix (nb: the derivative of omega_c is neglected;
-      ! this is incorrect when rotation is non-zero)
+      ! Set up the matrix
       
       dH(1,1) = 0._WP
       dH(1,2) = 0._WP
