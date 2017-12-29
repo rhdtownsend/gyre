@@ -53,21 +53,18 @@ module gyre_context
      type(c_interp_t)                :: in_eps_T
    contains
      private
-     procedure         :: omega_c_r_
-     procedure         :: omega_c_c_
-     generic, public   :: omega_c => omega_c_r_, omega_c_c_
-     procedure         :: lambda_r_
-     procedure         :: lambda_c_
-     generic, public   :: lambda => lambda_r_, lambda_c_
-     procedure         :: l_e_r_
-     procedure         :: l_e_c_
-     generic, public   :: l_e => l_e_r_, l_e_c_
-     procedure         :: eps_rho_r_
-     procedure         :: eps_rho_c_
-     generic, public   :: eps_rho => eps_rho_r_, eps_rho_c_
-     procedure         :: eps_T_r_
-     procedure         :: eps_T_c_
-     generic, public   :: eps_T => eps_T_r_, eps_T_c_
+     procedure       :: lambda_r_
+     procedure       :: lambda_c_
+     generic, public :: lambda => lambda_r_, lambda_c_
+     procedure       :: l_e_r_
+     procedure       :: l_e_c_
+     generic, public :: l_e => l_e_r_, l_e_c_
+     procedure       :: eps_rho_r_
+     procedure       :: eps_rho_c_
+     generic, public :: eps_rho => eps_rho_r_, eps_rho_c_
+     procedure       :: eps_T_r_
+     procedure       :: eps_T_c_
+     generic, public :: eps_T => eps_T_r_, eps_T_c_
   end type context_t
 
   ! Interfaces
@@ -118,44 +115,6 @@ contains
     return
 
   end function context_t_
-
-  !****
-
-  function omega_c_r_ (this, Omega_rot, st) result (omega_c)
-
-    class(context_t), intent(in) :: this
-    class(r_state_t), intent(in) :: st
-    real(WP), intent(in)         :: Omega_rot
-    real(WP)                     :: omega_c
-
-    ! Evaluate the corotating-frame frequency (real)
-
-    omega_c = REAL(this%rt%omega_c(Omega_rot, CMPLX(st%omega, KIND=WP)))
-
-    ! Finish
-
-    return
-
-  end function omega_c_r_
-
-  !****
-
-  function omega_c_c_ (this, Omega_rot, st) result (omega_c)
-
-    class(context_t), intent(in) :: this
-    real(WP), intent(in)         :: Omega_rot
-    class(c_state_t), intent(in) :: st
-    complex(WP)                  :: omega_c
-
-    ! Evaluate the corotating-frame frequency (complex)
-
-    omega_c = this%rt%omega_c(Omega_rot, st%omega)
-
-    ! Finish
-
-    return
-
-  end function omega_c_c_
 
   !****
 
