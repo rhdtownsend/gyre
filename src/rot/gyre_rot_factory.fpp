@@ -61,7 +61,6 @@ contains
   function ${T}_rot_t_ (md_p, os_p) result (rt)
 
     use gyre_dopp_rot
-    use gyre_null_rot
     $if ($HDF5)
     use gyre_tar_rot
     $endif
@@ -75,8 +74,6 @@ contains
     select case (os_p%rotation_method)
     case ('DOPPLER')
        allocate(rt, SOURCE=${T}_dopp_rot_t(md_p))
-    case ('NULL')
-       allocate(rt, SOURCE=${T}_null_rot_t(md_p))
     case ('TAR')
        $if ($HDF5)
        allocate(rt, SOURCE=${T}_tar_rot_t(md_p))
