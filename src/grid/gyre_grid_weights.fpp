@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_weights
-! Purpose  : grid weighting schemes
+! Purpose  : grid weighting schemes and factory procedure
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2017 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,6 +24,8 @@ module gyre_grid_weights
   use core_kinds
   use core_func
 
+  use gyre_grid
+
   ! No implicit typing
 
   implicit none
@@ -37,11 +39,17 @@ module gyre_grid_weights
      procedure :: eval_c_ => eval_geom_func_
   end type geom_func_t
 
+  ! Interfaces
+
+  interface grid_t
+     module procedure grid_t_weights_
+  end interface grid_t
 
   ! Access specifiers
 
   private
 
+  public :: grid_t
   public :: uni_weights
   public :: geo_weights
   public :: log_weights
@@ -49,6 +57,26 @@ module gyre_grid_weights
   ! Procedures
 
 contains
+
+  function grid_t_weights_ (w, x_i, x_o) result (gr)
+
+    real(WP), intent(in) :: w(:)
+    real(WP), intent(in) :: x_i
+    real(WP), intent(in) :: x_o
+    type(grid_t)         :: gr
+
+    ! Construct the grid_t using the supplied weights array and range
+    ! (x_i,x_o)
+
+    gr = grid_t((1._WP-w)*x_i + w*x_o)
+
+    ! Finish
+
+    return
+
+  end function grid_t_weights_
+
+  !****
 
   function uni_weights (n) result (w)
 

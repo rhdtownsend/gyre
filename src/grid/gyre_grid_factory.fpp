@@ -24,6 +24,7 @@ module gyre_grid_factory
   use core_kinds
 
   use gyre_constants
+  use gyre_freq
   use gyre_grid
   use gyre_grid_par
   use gyre_grid_util
@@ -45,7 +46,6 @@ module gyre_grid_factory
 
   interface grid_t
      module procedure grid_t_model_
-     module procedure grid_t_weights_
   end interface grid_t
 
   ! Access specifiers
@@ -74,7 +74,7 @@ contains
 
     ! Construct the grid_t using the supplied model grid as the base
 
-     if (check_log_level('INFO')) then
+    if (check_log_level('INFO')) then
         write(OUTPUT_UNIT, 100) 'Building x grid'
 100     format(A)
      endif
@@ -133,26 +133,6 @@ contains
     return
 
   end function grid_t_model_
-
-  !****
-
-  function grid_t_weights_ (w, x_i, x_o) result (gr)
-
-    real(WP), intent(in) :: w(:)
-    real(WP), intent(in) :: x_i
-    real(WP), intent(in) :: x_o
-    type(grid_t)         :: gr
-
-    ! Construct the grid_t using the supplied weights array and range
-    ! (x_i,x_o)
-
-    gr = grid_t((1._WP-w)*x_i + w*x_o)
-
-    ! Finish
-
-    return
-
-  end function grid_t_weights_
 
   !****
 
@@ -252,8 +232,8 @@ contains
                pt%s = pt_a%s
                pt%x = 0.5_WP*(pt_a%x + pt_b%x)
 
-               dx = MAX(MIN(dx_dispersion_(pt, gr%pt(1), ml, rt, omega, gr_p, pt_a%x==0), &
-                            dx_thermal_(pt, ml, rt, omega, gr_p), &
+               dx = MAX(MIN(dx_dispersion_(pt, gr%pt(1), ml, rt, md_p%m, omega, gr_p, pt_a%x==0), &
+                            dx_thermal_(pt, ml, rt, md_p%m, omega, gr_p), &
                             dx_struct_(ml, pt, gr_p)), gr_p%dx_min)
 
                dn(k) = CEILING((pt_b%x - pt_a%x)/dx) - 1
@@ -291,12 +271,13 @@ contains
 
   !****
 
-  function dx_dispersion_ (pt, pt_i, ml, rt, omega, gr_p, origin) result (dx)
+  function dx_dispersion_ (pt, pt_i, ml, rt, m, omega, gr_p, origin) result (dx)
 
     type(point_t), intent(in)           :: pt
     type(point_t), intent(in)           :: pt_i
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(in)          :: rt
+    integer, intent(in)                 :: m
     real(WP), intent(in)                :: omega(:)
     type(grid_par_t), intent(in)        :: gr_p
     logical, intent(in)                 :: origin
@@ -351,7 +332,7 @@ contains
        !$OMP PARALLEL DO PRIVATE (omega_c, lambda, l_i, g_0, g_2, g_4, gamma) REDUCTION (MAX:k_r_real,k_r_imag)
        omega_loop : do j = 1, SIZE(omega)
 
-          omega_c = rt%omega_c(Omega_rot, omega(j))
+          omega_c = omega_corot(omega(j), Omega_rot, m)
 
           lambda = rt%lambda(Omega_rot, omega(j))
           l_i = rt%l_e(Omega_rot_i, omega(j))
@@ -418,11 +399,12 @@ contains
 
   !****
 
-  function dx_thermal_ (pt, ml, rt, omega, gr_p) result (dx)
+  function dx_thermal_ (pt, ml, rt, m, omega, gr_p) result (dx)
 
     type(point_t), intent(in)            :: pt
     class(model_t), pointer, intent(in)  :: ml
     class(r_rot_t), intent(in)           :: rt
+    integer, intent(in)                  :: m
     real(WP), intent(in)                 :: omega(:)
     type(grid_par_t), intent(in)         :: gr_p
     real(WP)                             :: dx
@@ -464,7 +446,7 @@ contains
       !$OMP PARALLEL DO PRIVATE (omega_c) REDUCTION (MAX:tau)
       omega_loop : do j = 1, SIZE(omega)
 
-         omega_c = rt%omega_c(Omega_rot, omega(j))
+         omega_c = omega_corot(omega(j), Omega_rot, m)
          
          ! Update the maximal tau
 
