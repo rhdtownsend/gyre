@@ -48,11 +48,15 @@ module gyre_context
      class(c_rot_t), allocatable     :: rt
      type(point_t), public           :: pt_i
      type(point_t), public           :: pt_o
+     integer                         :: m
      logical                         :: complex_lambda
      type(c_interp_t)                :: in_eps_rho
      type(c_interp_t)                :: in_eps_T
    contains
      private
+     procedure       :: omega_c_r_
+     procedure       :: omega_c_c_
+     generic, public :: omega_c => omega_c_r_, omega_c_c_
      procedure       :: lambda_r_
      procedure       :: lambda_c_
      generic, public :: lambda => lambda_r_, lambda_c_
@@ -101,6 +105,8 @@ contains
     cx%pt_i = pt_i
     cx%pt_o = pt_o
 
+    cx%m = md_p%m
+
     cx%complex_lambda = os_p%complex_lambda
 
     ! If necessary, initialize the nuclear burning partials
@@ -115,6 +121,44 @@ contains
     return
 
   end function context_t_
+
+  !****
+
+  function omega_c_r_ (this, Omega_rot, st) result (omega_c)
+
+    class(context_t), intent(in) :: this
+    real(WP), intent(in)         :: Omega_rot
+    class(r_state_t), intent(in) :: st
+    real(WP)                     :: omega_c
+
+    ! Evaluate the co-rotating frequency (real)
+
+    omega_c = omega_corot(st%omega, Omega_rot, this%m)
+
+    ! Finish
+
+    return
+
+  end function omega_c_r_
+
+  !****
+
+  function omega_c_c_ (this, Omega_rot, st) result (omega_c)
+
+    class(context_t), intent(in) :: this
+    real(WP), intent(in)         :: Omega_rot
+    class(c_state_t), intent(in) :: st
+    complex(WP)                  :: omega_c
+
+    ! Evaluate the co-rotating frequency (complex)
+
+    omega_c = omega_corot(st%omega, Omega_rot, this%m)
+
+    ! Finish
+
+    return
+
+  end function omega_c_c_
 
   !****
 
