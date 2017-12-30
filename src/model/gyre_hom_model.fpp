@@ -78,7 +78,6 @@ contains
 
   function hom_model_t_ (ml_p) result (ml)
 
-    use gyre_grid_factory
     use gyre_grid_weights
   
     type(model_par_t), intent(in) :: ml_p
@@ -111,8 +110,6 @@ contains
 
     ml%s_i = ml%gr%s_i()
     ml%s_o = ml%gr%s_o()
-
-    print *,'Hom s:',ml%s_i, ml%s_o
 
     ! Finish
 
