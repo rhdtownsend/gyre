@@ -144,7 +144,7 @@ contains
 
        x_ref = HUGE(0._WP)
 
-       rotation_method = 'NULL'
+       rotation_method = 'DOPPLER'
        variables_set = 'GYRE'
        inner_bound = 'REGULAR'
        outer_bound = 'VACUUM'
