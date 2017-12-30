@@ -24,6 +24,7 @@ module gyre_grid_util
   use core_kinds
   use core_func
 
+  use gyre_freq
   use gyre_grid
   use gyre_model
   use gyre_mode_par
@@ -45,6 +46,7 @@ module gyre_grid_util
      class(r_rot_t), allocatable :: rt
      real(WP)                    :: omega
      integer                     :: s
+     integer                     :: m
    contains
      procedure :: eval_c_
   end type gamma_func_t
@@ -86,7 +88,7 @@ contains
 
     allocate(rt, SOURCE=r_rot_t(md_p, os_p))
 
-    gamma_b = gamma_(ml, rt, gr%pt(1), omega)
+    gamma_b = gamma_(ml, rt, gr%pt(1), omega, md_p%m)
 
     if (gamma_b <= 0._WP) then
 
@@ -102,7 +104,7 @@ contains
           ! Check for a sign change in gamma
 
           gamma_a = gamma_b
-          gamma_b = gamma_(ml, rt, gr%pt(k+1), omega)
+          gamma_b = gamma_(ml, rt, gr%pt(k+1), omega, md_p%m)
 
           if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
 
@@ -127,6 +129,7 @@ contains
                    allocate(gf%rt, SOURCE=rt)
                    gf%s = pt_a%s
                    gf%omega = omega
+                   gf%m = md_p%m
                    
                    x_turn = gf%root(pt_a%x, pt_b%x, 0._WP)
 
@@ -154,12 +157,13 @@ contains
 
   !****
 
-  function gamma_ (ml, rt, pt, omega) result (gamma)
+  function gamma_ (ml, rt, pt, omega, m) result (gamma)
 
     class(model_t), pointer, intent(in) :: ml
     class(r_rot_t), intent(inout)       :: rt
     type(point_t), intent(in)           :: pt
     real(WP), intent(in)                :: omega
+    integer, intent(in)                 :: m
     real(WP)                            :: gamma
 
     real(WP) :: V_g
@@ -188,8 +192,7 @@ contains
        c_1 = ml%coeff(I_C_1, pt)
 
        Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
-
-       omega_c = rt%omega_c(Omega_rot, omega)
+       omega_c = omega_corot(omega, Omega_rot, m)
 
        lambda = rt%lambda(Omega_rot, omega)
 
@@ -221,7 +224,7 @@ contains
 
     pt = point_t(this%s, REAL(z))
 
-    gamma = gamma_(this%ml, this%rt, pt, this%omega)
+    gamma = gamma_(this%ml, this%rt, pt, this%omega, this%m)
 
     ! Finish
 
