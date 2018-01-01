@@ -24,7 +24,6 @@ module gyre_nad_trans
   use core_kinds
 
   use gyre_context
-  use gyre_freq
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
@@ -438,12 +437,11 @@ contains
     ! from the canonical form
 
     associate ( &
-         omega => st%omega, &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      omega_c = omega_corot(omega, Omega_rot, this%m)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       lambda = this%cx%lambda(Omega_rot, st)
 
@@ -721,12 +719,11 @@ contains
     ! to the canonical form
 
     associate ( &
-         omega => st%omega, &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      omega_c = omega_corot(omega, Omega_rot, this%m)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       lambda = this%cx%lambda(Omega_rot, st)
 
@@ -941,14 +938,13 @@ contains
     ! transformation matrix H
 
     associate ( &
-         omega => st%omega, &
          c_1 => this%coeff(i,J_C_1), &
          dc_1 => this%coeff(i,J_DC_1), &
          U => this%coeff(i,J_U), &
          dU => this%coeff(i,J_DU), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      omega_c = omega_corot(omega, Omega_rot, this%m)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       lambda = this%cx%lambda(Omega_rot, st)
 

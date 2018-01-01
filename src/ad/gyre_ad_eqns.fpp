@@ -26,7 +26,6 @@ module gyre_ad_eqns
   use gyre_ad_trans
   use gyre_context
   use gyre_eqns
-  use gyre_freq
   use gyre_model
   use gyre_model_util
   use gyre_mode_par
@@ -62,7 +61,6 @@ module gyre_ad_eqns
      real(WP), allocatable    :: x(:)
      real(WP)                 :: alpha_gr
      real(WP)                 :: alpha_om
-     integer                  :: m
    contains
      private
      procedure, public :: stencil
@@ -113,8 +111,6 @@ contains
     case default
        $ABORT(Invalid time_factor)
     end select
-
-    eq%m = md_p%m
 
     eq%n_e = 4
 
@@ -205,7 +201,6 @@ contains
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
-         omega => st%omega, &
          V => this%coeff(i,J_V), &
          As => this%coeff(i,J_AS), &
          U => this%coeff(i,J_U), &
@@ -216,7 +211,7 @@ contains
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
 
-      omega_c = omega_corot(omega, Omega_rot, this%m)
+      omega_c = this%cx%omega_c(Omega_rot, st)
 
       lambda = this%cx%lambda(Omega_rot, st)
       l_i = this%cx%l_e(Omega_rot_i, st)

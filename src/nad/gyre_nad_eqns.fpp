@@ -25,7 +25,6 @@ module gyre_nad_eqns
 
   use gyre_context
   use gyre_eqns
-  use gyre_freq
   use gyre_linalg
   use gyre_model
   use gyre_mode_par
@@ -90,7 +89,6 @@ module gyre_nad_eqns
      real(WP)                 :: alpha_om
      integer                  :: conv_scheme
      integer                  :: deps_scheme
-     integer                  :: m
    contains
      private
      procedure, public :: stencil
@@ -173,8 +171,6 @@ contains
     case default
        $ABORT(Invalid deps_scheme)
     end select
-
-    eq%m = md_p%m
 
     eq%n_e = 6
 
@@ -295,7 +291,6 @@ contains
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
-         omega => st%omega, &
          V => this%coeff(i,J_V), &
          As => this%coeff(i,J_AS), &
          U => this%coeff(i,J_U), &
@@ -323,7 +318,7 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
-      omega_c = omega_corot(omega, Omega_rot, this%m)
+      omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
