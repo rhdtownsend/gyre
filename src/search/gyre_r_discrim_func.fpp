@@ -39,9 +39,10 @@ module gyre_r_discrim_func
 
   type, extends (r_ext_func_t) :: r_discrim_func_t
      private
-     class(r_bvp_t), pointer :: bp
-     real(WP)                :: omega_min
-     real(WP)                :: omega_max
+     class(r_bvp_t), pointer       :: bp
+     class(r_state_t), allocatable :: st
+     real(WP)                      :: omega_min
+     real(WP)                      :: omega_max
    contains 
      private
      procedure, public :: eval => eval_
@@ -63,9 +64,10 @@ module gyre_r_discrim_func
 
 contains
 
-  function r_discrim_func_t_ (bp, omega_min, omega_max) result (df)
+  function r_discrim_func_t_ (bp, st, omega_min, omega_max) result (df)
 
     class(r_bvp_t), pointer, intent(in) :: bp
+    class(r_state_t), intent(in)        :: st
     real(WP), intent(in)                :: omega_min
     real(WP), intent(in)                :: omega_max
     type(r_discrim_func_t)              :: df
@@ -73,6 +75,8 @@ contains
     ! Construct the r_discrim_func_t
 
     df%bp => bp
+
+    allocate(df%st, SOURCE=st)
 
     df%omega_min = omega_min
     df%omega_max = omega_max
@@ -92,8 +96,7 @@ contains
     type(r_ext_t), intent(out)             :: f_rx
     integer, intent(out)                   :: status
 
-    real(WP)        :: omega
-    type(r_state_t) :: st
+    real(WP) :: omega
 
     ! Evaluate the discriminant function
 
@@ -101,9 +104,9 @@ contains
 
     if (omega >= this%omega_min .AND. omega <= this%omega_max) then
 
-       st = r_state_t(omega)
+       this%st%omega = omega
 
-       call this%bp%build(st)
+       call this%bp%build(this%st)
 
        f_rx = this%bp%det()
 
