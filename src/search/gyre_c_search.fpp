@@ -35,6 +35,7 @@ module gyre_c_search
   use gyre_num_par
   use gyre_osc_par
   use gyre_root
+  use gyre_state
   use gyre_status
   use gyre_util
 
@@ -84,7 +85,10 @@ contains
     real(WP)                 :: omega_ad
     integer                  :: n_iter
     integer                  :: n_iter_def
+    type(c_state_t)          :: st
     type(c_discrim_func_t)   :: df
+    type(c_state_t)          :: st_def
+    type(c_discrim_func_t)   :: df_def
     integer                  :: status
     type(c_ext_t)            :: discrim_a
     type(c_ext_t)            :: discrim_b
@@ -132,7 +136,7 @@ contains
                           ABS(md_in(i+1)%omega - md_in(i)%omega))
           endif
 
-          domega = domega*1E-3
+          domega = domega*1E-3 ! This seems rather random
 
        else
 
@@ -148,7 +152,8 @@ contains
        ! call improve_omega(bp, md_p, os_p, md_in(i)%x, omega_a)
        ! call improve_omega(bp, md_p, os_p, md_in(i)%x, omega_b)
 
-       df = c_discrim_func_t(bp, omega_ad, omega_min, omega_max)
+       st = c_state_t(omega=0._WP, omega_r=omega_ad)
+       df = c_discrim_func_t(bp, st, omega_min, omega_max)
 
        call df%eval(omega_a, discrim_a, status)
        if (status /= STATUS_OK) then
@@ -167,9 +172,10 @@ contains
 
        if (nm_p%deflate_roots) then
 
-          df = c_discrim_func_t(bp, omega_ad, omega_min, omega_max, omega_def)
+          st_def = c_state_t(omega=0._WP, omega_r=omega_ad)
+          df_def = c_discrim_func_t(bp, st, omega_min, omega_max, omega_def)
 
-          call narrow(df, nm_p, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
+          call narrow(df_def, nm_p, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
           if (status /= STATUS_OK) then
              call report_status_(status, 'deflate narrow')
              cycle mode_loop
@@ -181,8 +187,6 @@ contains
           if(omega_b == omega_a) then
              omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
           endif
-
-          df = c_discrim_func_t(bp, omega_ad, omega_min, omega_max)
 
           call expand(df, omega_a, omega_b, r_ext_t(0._WP), status, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 
           if (status /= STATUS_OK) then

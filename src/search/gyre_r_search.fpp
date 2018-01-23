@@ -44,6 +44,7 @@ module gyre_r_search
   use gyre_rot
   use gyre_rot_factory
   use gyre_scan_par
+  use gyre_state
   use gyre_status
   use gyre_util
 
@@ -266,6 +267,7 @@ contains
     real(WP), allocatable      :: omega_b(:)
     type(r_ext_t), allocatable :: discrim_a(:)
     type(r_ext_t), allocatable :: discrim_b(:)
+    type(r_state_t)            :: st
     type(r_discrim_func_t)     :: df
     integer                    :: c_beg
     integer                    :: c_end
@@ -283,7 +285,8 @@ contains
 
     ! Set up the discriminant function
 
-    df = r_discrim_func_t(bp, omega_min, omega_max)
+    st = r_state_t(omega=0._WP)
+    df = r_discrim_func_t(bp, st, omega_min, omega_max)
 
     ! Process each bracket to find modes
 
@@ -392,6 +395,7 @@ contains
     type(r_ext_t), allocatable, intent(out) :: discrim_a(:)
     type(r_ext_t), allocatable, intent(out) :: discrim_b(:)
 
+    type(r_state_t)        :: st
     type(r_discrim_func_t) :: df
     integer                :: n_omega
     integer                :: c_beg
@@ -404,8 +408,9 @@ contains
     integer                :: i_brack(SIZE(omega))
 
     ! Set up the discriminant function
-    
-    df = r_discrim_func_t(bp, omega_min, omega_max)
+
+    st = r_state_t(omega=0._WP)
+    df = r_discrim_func_t(bp, st, omega_min, omega_max)
 
     ! Calculate the discriminant on the omega abscissa
 
