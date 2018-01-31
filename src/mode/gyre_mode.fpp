@@ -109,6 +109,7 @@ module gyre_mode
      procedure, public :: E_p
      procedure, public :: E_g
      procedure, public :: E_norm
+     procedure, public :: E_ratio
      procedure, public :: H
      procedure, public :: W
      procedure, public :: W_eps
@@ -1984,6 +1985,50 @@ contains
     return
 
   end function E_norm
+
+  !****
+
+  function E_ratio (this)
+ 
+    class(mode_t), intent(in) :: this
+    real(WP)                  :: E_ratio
+
+    integer  :: k
+    real(WP) :: dE_dx(this%n_k)
+    real(WP) :: E_above
+    real(WP) :: E_below
+
+    ! Calculate the ratio of the mode inertias above and below the
+    ! reference point
+
+    !$OMP PARALLEL DO
+    do k = 1, this%n_k
+       dE_dx(k) = this%dE_dx(k)
+    end do
+
+    if (this%k_ref < this%n_k) then
+       associate (k_a => this%k_ref, k_b => this%n_k)
+         E_above = integrate(this%gr%pt(k_a:k_b)%x, dE_dx(k_a:k_b))
+       end associate
+    else
+       E_above = 0._WP
+    endif
+
+    if (this%k_ref > 1) then
+       associate (k_a => 1, k_b => this%k_ref)
+         E_below = integrate(this%gr%pt(k_a:k_b)%x, dE_dx(k_a:k_b))
+       end associate
+    else
+       E_below = 0._WP
+    endif
+
+    E_ratio = E_above/(E_below + E_above)
+
+    ! Finish
+
+    return
+
+  end function E_ratio
 
   !****
 

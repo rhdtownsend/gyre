@@ -176,6 +176,7 @@ contains
        $OUTPUT_MODES(r,E_p,E_p())
        $OUTPUT_MODES(r,E_g,E_g())
        $OUTPUT_MODES(r,E_norm,E_norm())
+       $OUTPUT_MODES(r,E_ratio,E_ratio())
        $OUTPUT_MODES(r,H,H())
        $OUTPUT_MODES(r,W,W())
        $OUTPUT_MODES(r,W_eps,W_eps())
@@ -415,6 +416,10 @@ contains
          case ('E_norm')
 
             call wr%write('E_norm', md%E_norm())
+
+         case ('E_ratio')
+
+            call wr%write('E_ratio', md%E_ratio())
 
          case ('H')
 
