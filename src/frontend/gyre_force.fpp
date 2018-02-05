@@ -1,7 +1,7 @@
 ! Program  : gyre_force
 ! Purpose  : forced oscillation code
 !
-! Copyright 2016-2017 Rich Townsend
+! Copyright 2016-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,6 +30,7 @@ program gyre_force
   use gyre_constants
   use gyre_ext
   use gyre_evol_model
+  use gyre_context
   use gyre_freq
   use gyre_grid
   use gyre_grid_factory
@@ -47,6 +48,7 @@ program gyre_force
   use gyre_rad_bvp
   use gyre_scan_par
   use gyre_search
+  use gyre_state
   use gyre_util
   use gyre_version
 
@@ -70,8 +72,10 @@ program gyre_force
   type(num_par_t), allocatable  :: nm_p(:)
   type(grid_par_t), allocatable :: gr_p(:)
   class(model_t), pointer       :: ml => null()
+  type(context_t), pointer      :: cx(:) => null()
   real(WP)                      :: q
-  real(WP)                      :: c_lmk
+  real(WP)                      :: ec
+  integer                       :: k
   integer                       :: n_omega
   real(WP), allocatable         :: omega(:)
   integer                       :: n_P
@@ -88,7 +92,7 @@ program gyre_force
   class(r_bvp_t), allocatable   :: bp_ad
   class(c_bvp_t), allocatable   :: bp_nad
 
-  namelist /force/ q, c_lmk, n_omega, omega, n_P, P
+  namelist /force/ q, ec, k, n_omega, omega, n_P, P
 
   ! Read command-line arguments
 
@@ -152,6 +156,10 @@ program gyre_force
 
   ml => model_t(ml_p)
 
+  ! Allocate the contexts array (will be initialized later on)
+
+  allocate(cx(SIZE(md_p)))
+
   ! Initialize binary masses
 
   select type (ml)
@@ -212,11 +220,15 @@ program gyre_force
 
      gr = grid_t(ml, omega, gr_p_sel, md_p(i), os_p_sel)
 
+     ! Set up the context
+
+     cx(i) = context_t(ml, gr%pt(1), gr%pt(gr%n_k), md_p(i), os_p_sel)
+
      ! Find modes
 
      if (os_p_sel%nonadiabatic) then
 
-        allocate(bp_nad, SOURCE=nad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_nad, SOURCE=nad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
 
         call scan_force_c(bp_nad, omega, P)
 
@@ -225,9 +237,9 @@ program gyre_force
      else
 
         if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-           allocate(bp_ad, SOURCE=rad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
+           allocate(bp_ad, SOURCE=rad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
         else
-           allocate(bp_ad, SOURCE=ad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
+           allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
         endif
 
         call scan_force_r(bp_ad, omega, P)
@@ -261,14 +273,16 @@ contains
     real(WP), intent(in)            :: omega(:)
     real(WP), intent(in)            :: P(:)
 
-    integer   :: n_omega
-    integer   :: j
-    real(WP)  :: a
-    real(WP)  :: eps_T
-    real(WP)  :: alpha_fc
-    $TYPE(WP) :: w_i(bp%n_i)
-    $TYPE(WP) :: w_o(bp%n_i)
-    $TYPE(WP) :: y(bp%n_e,bp%n_k)
+    integer            :: n_omega
+    integer            :: j
+    real(WP)           :: a
+    real(WP)           :: c
+    real(WP)           :: eps_T
+    real(WP)           :: alpha_fc
+    $TYPE(WP)          :: w_i(bp%n_i)
+    $TYPE(WP)          :: w_o(bp%n_i)
+    type(${T}_state_t) :: st
+    $TYPE(WP)          :: y(bp%n_e,bp%n_k)
 
     character(64) :: filename
     integer       :: res_unit
@@ -277,6 +291,14 @@ contains
 
     $CHECK_BOUNDS(SIZE(P),SIZE(omega))
 
+    ! Set up binary parameters
+
+    a = (G_GRAVITY*(M_pri + M_sec)*P(j)**2/(4.*PI**2))**(1._WP/3._WP)
+
+    eps_T = (R_pri/a)**3*(M_sec/M_pri)
+
+    alpha_fc = eps_T*(2*md_p(i)%l+1)*c_lmk(R_pri/a, ec, md_p(i)%l, md_p(i)%m, k)
+
     ! Scan over frequencies
 
     open(NEWUNIT=res_unit, FILE='response.dat', STATUS='replace')
@@ -284,14 +306,6 @@ contains
     n_omega = SIZE(omega)
 
     omega_loop : do j = 1, n_omega
-
-       ! Set up binary parameters
-
-       a = (G_GRAVITY*(M_pri + M_sec)*P(j)**2/(4.*PI**2))**(1._WP/3._WP)
-
-       eps_T = (R_pri/a)**3*(M_sec/M_pri)
-
-       alpha_fc = eps_T*(2*md_p(i)%l+1)*c_lmk
 
        ! Set up the inhomogeneous boundary terms
 
@@ -303,10 +317,12 @@ contains
        ! Build and solve the linear system
 
        $if($T eq 'c')
-       call bp%build(CMPLX(omega(j), KIND=WP))
+       st = c_state_t(CMPLX(omega(j), KIND=WP), 0._WP)
        $else
-       call bp%build(omega(j))
+       st = r_state_t(omega(j))
        $endif
+
+       call bp%build(st)
 
        y = bp%soln_vec_inhom(w_i, w_o)
 
