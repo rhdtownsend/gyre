@@ -29,7 +29,6 @@ module gyre_nad_bvp
   use gyre_grid
   use gyre_grid_factory
   use gyre_model
-  use gyre_mode
   use gyre_mode_par
   use gyre_nad_bound
   use gyre_nad_diff
@@ -38,6 +37,7 @@ module gyre_nad_bvp
   use gyre_osc_par
   use gyre_point
   use gyre_state
+  use gyre_wave
 
   use ISO_FORTRAN_ENV
 
@@ -62,16 +62,16 @@ module gyre_nad_bvp
      module procedure nad_bvp_t_
   end interface nad_bvp_t
 
-  interface mode_t
-     module procedure mode_t_
-  end interface mode_t
+  interface wave_t
+     module procedure wave_t_
+  end interface wave_t
 
   ! Access specifiers
 
   private
 
   public :: nad_bvp_t
-  public :: mode_t
+  public :: wave_t
 
   ! Procedures
 
@@ -128,22 +128,31 @@ contains
 
   !****
 
-  function mode_t_ (bp, st, j) result (md)
+  function wave_t_ (bp, st, w) result (wv)
 
-    class(nad_bvp_t), intent(inout) :: bp
-    type(c_state_t), intent(in)     :: st
-    integer, intent(in)             :: j
-    type(mode_t)                    :: md
+    class(nad_bvp_t), intent(inout)   :: bp
+    type(c_state_t), intent(in)       :: st
+    complex(WP), intent(in), optional :: w(:)
+    type(wave_t)                      :: wv
 
     complex(WP)   :: y(6,bp%n_k)
     type(c_ext_t) :: discrim
     integer       :: k
 
+    if (PRESENT(w)) then
+       $CHECK_BOUNDS(SIZE(w),bp%n_e)
+    endif
+
     ! Calculate the solution vector
 
     call bp%build(st)
 
-    y = bp%soln_vec_hom()
+    if (PRESENT(w)) then
+       y = bp%soln_vec_inhom(w(:bp%n_e),w(bp%n_e+1:))
+    else
+       y = bp%soln_vec_hom()
+    endif
+
     discrim = bp%det()
 
     ! Convert to canonical form
@@ -153,14 +162,14 @@ contains
        call bp%tr%trans_vars(y(:,k), k, st)
     end do
 
-    ! Construct the mode_t
+    ! Construct the wave_t
 
-    md = mode_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p, j)
+    wv = wave_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p)
 
     ! Finish
 
     return
 
-  end function mode_t_
+  end function wave_t_
 
 end module gyre_nad_bvp
