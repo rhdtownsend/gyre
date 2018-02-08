@@ -47,6 +47,7 @@ module gyre_r_search
   use gyre_state
   use gyre_status
   use gyre_util
+  use gyre_wave
 
   use ISO_FORTRAN_ENV
 
@@ -276,6 +277,7 @@ contains
     type(r_ext_t)              :: omega_root
     integer                    :: status
     integer                    :: i
+    type(wave_t)               :: wv
     type(mode_t)               :: md
     type(r_ext_t)              :: chi
 
@@ -323,12 +325,14 @@ contains
 
        select type (bp)
        type is (ad_bvp_t)
-          md = mode_t(bp, st, j_m)
+          wv = wave_t(bp, st)
        type is (rad_bvp_t)
-          md = mode_t(bp, st, j_m)
+          wv = wave_t(bp, st)
        class default
           $ABORT(Invalid bp class)
        end select
+
+       md = mode_t(wv, j_m)
 
        ! Process it
 
