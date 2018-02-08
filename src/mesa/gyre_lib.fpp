@@ -263,7 +263,7 @@ contains
 
           ! Set up the context
 
-          cx(i) = context_t(ml_m, gr, md_p_m(i), os_p_sel)
+          cx(i) = context_t(ml_m, gr%pt_i(), gr%pt_o(), md_p_m(i), os_p_sel)
 
           ! Set up the bvp's
 
