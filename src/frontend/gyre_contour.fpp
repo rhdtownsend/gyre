@@ -1,7 +1,7 @@
 ! Program  : gyre_contour
 ! Purpose  : discriminant contouring code
 !
-! Copyright 2014-2016 Rich Townsend
+! Copyright 2014-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -29,6 +29,7 @@ program gyre_contour
 
   use gyre_bvp
   use gyre_constants
+  use gyre_context
   use gyre_contour_map
   use gyre_contour_seg
   use gyre_discrim_func
@@ -49,6 +50,7 @@ program gyre_contour
   use gyre_root
   use gyre_scan_par, only : scan_par_t
   use gyre_search
+  use gyre_state
   use gyre_status
   use gyre_util
   use gyre_version
@@ -81,12 +83,14 @@ program gyre_contour
   type(scan_par_t), allocatable    :: sc_p_re_sel(:)
   type(scan_par_t), allocatable    :: sc_p_im_sel(:)
   type(grid_t)                     :: gr
+  type(context_t), pointer         :: cx => null()
   real(WP), allocatable            :: omega_re(:)
   real(WP), allocatable            :: omega_im(:)
   real(WP)                         :: omega_min
   real(WP)                         :: omega_max
   type(nad_bvp_t), target          :: bp
   type(c_discrim_func_t)           :: df
+  type(c_state_t)                  :: st
   type(c_ext_t), allocatable       :: discrim_map(:,:)
   type(contour_map_t)              :: cm_re
   type(contour_map_t)              :: cm_im
@@ -149,9 +153,13 @@ program gyre_contour
 
   $ASSERT(SIZE(md_p) == 1,Must be exactly one mode parameter)
 
-  ! Construct the model
+  ! Initialize the model
 
   ml => model_t(ml_p)
+
+  ! Allocate the context (will be initialized later on)
+
+  allocate(cx)
 
   ! Select parameters according to tags
 
@@ -184,13 +192,18 @@ program gyre_contour
 
   gr = grid_t(ml, omega_re, gr_p_sel, md_p(1), os_p_sel)
 
+  ! Set up the context
+
+  cx = context_t(ml, gr%pt_i(), gr%pt_o(), md_p(1), os_p_sel)
+
   ! Set up the bvp
 
-  bp = nad_bvp_t(ml, gr, md_p(1), nm_p_sel, os_p_sel)
+  bp = nad_bvp_t(cx, gr, md_p(1), nm_p_sel, os_p_sel)
 
   ! Set up the discriminant function
 
-  df = c_discrim_func_t(bp, omega_min, omega_max)
+  st = c_state_t(omega=0._WP, omega_r=0._WP)
+  df = c_discrim_func_t(bp, st, omega_min, omega_max)
 
   ! Evaluate the discriminant map
 
@@ -608,7 +621,7 @@ contains
 
        ! Construct the mode_t
 
-       md = mode_t(bp, cmplx(omega_root), j)
+       md = mode_t(bp, cmplx(omega_root), 0._wp, j)
 
        ! Process it
 
