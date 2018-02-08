@@ -128,21 +128,12 @@ module gyre_mode
      module procedure reallocate_1_
   end interface reallocate
 
-  $if ($MPI)
-  interface bcast
-     module procedure bcast_
-  end interface bcast
-  $endif
-
   ! Access specifiers
 
   private
 
   public :: mode_t
   public :: reallocate
-  $if($MPI)
-  public :: bcast
-  $endif
 
   ! Procedures
 
@@ -433,54 +424,6 @@ contains
   !****
 
   $REALLOCATE(type(mode_t),1)
-
-  !****
-
-  $if($MPI)
-
-  subroutine bcast_ (md, root_rank, ml)
-
-    class(mode_t), intent(inout)       :: md
-    integer, intent(in)                :: root_rank
-    class(model_t), intent(in), target :: ml
-
-    ! Broadcast the mode_t
-
-    call bcast(md%cx, root_rank, ml)
-
-    call bcast_alloc(md%gr, root_rank)
-
-    call bcast(md%md_p, root_rank)
-    call bcast(md%os_p, root_rank)
-
-    call bcast_alloc(md%y_c, root_rank)
-
-    call bcast(md%discrim, root_rank)
-    call bcast(md%scl, root_rank)
-
-    call bcast(md%omega, root_rank)
-    call bcast(md%l_i, root_rank)
-
-    call bcast(md%n_k, root_rank)
-    call bcast(md%k_ref, root_rank)
-
-    call bcast(md%j, root_rank)
-    call bcast(md%l, root_rank)
-    call bcast(md%m, root_rank)
-
-    call bcast(md%n_p, root_rank)
-    call bcast(md%n_g, root_rank)
-    call bcast(md%n_pg, root_rank)
-
-    call bcast(md%pruned, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_
-
-  $endif
 
   !****
 
