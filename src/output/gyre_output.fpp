@@ -172,6 +172,8 @@ contains
        $OUTPUT_MODES(r,eta,eta())
        $OUTPUT_MODES(r,f_T,f_T())
        $OUTPUT_MODES(r,f_g,f_g())
+       $OUTPUT_MODES(r,psi_T,psi_T())
+       $OUTPUT_MODES(r,psi_g,psi_g())
        $OUTPUT_MODES(r,E,E())
        $OUTPUT_MODES(r,E_p,E_p())
        $OUTPUT_MODES(r,E_g,E_g())
