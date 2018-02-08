@@ -35,7 +35,6 @@ program gyre_force
   use gyre_grid
   use gyre_grid_factory
   use gyre_grid_par
-  use gyre_mode
   use gyre_mode_par
   use gyre_model
   use gyre_model_factory
@@ -49,8 +48,10 @@ program gyre_force
   use gyre_scan_par
   use gyre_search
   use gyre_state
+  use gyre_tide_util
   use gyre_util
   use gyre_version
+  use gyre_wave
 
   use ISO_FORTRAN_ENV
 
@@ -269,9 +270,9 @@ contains
 
   subroutine scan_force_${T} (bp, omega, P)
 
-    type(${T}_bvp_t), intent(inout) :: bp
-    real(WP), intent(in)            :: omega(:)
-    real(WP), intent(in)            :: P(:)
+    class(${T}_bvp_t), intent(inout) :: bp
+    real(WP), intent(in)             :: omega(:)
+    real(WP), intent(in)             :: P(:)
 
     integer            :: n_omega
     integer            :: j
@@ -279,25 +280,17 @@ contains
     real(WP)           :: c
     real(WP)           :: eps_T
     real(WP)           :: alpha_fc
-    $TYPE(WP)          :: w_i(bp%n_i)
-    $TYPE(WP)          :: w_o(bp%n_i)
+    $TYPE(WP)          :: w(bp%n_e)
     type(${T}_state_t) :: st
-    $TYPE(WP)          :: y(bp%n_e,bp%n_k)
 
     character(64) :: filename
+    type(wave_t)  :: wv
     integer       :: res_unit
     integer       :: sol_unit
-    integer       :: k
+    integer       :: i_
+    integer       :: k_
 
     $CHECK_BOUNDS(SIZE(P),SIZE(omega))
-
-    ! Set up binary parameters
-
-    a = (G_GRAVITY*(M_pri + M_sec)*P(j)**2/(4.*PI**2))**(1._WP/3._WP)
-
-    eps_T = (R_pri/a)**3*(M_sec/M_pri)
-
-    alpha_fc = eps_T*(2*md_p(i)%l+1)*c_lmk(R_pri/a, ec, md_p(i)%l, md_p(i)%m, k)
 
     ! Scan over frequencies
 
@@ -307,28 +300,58 @@ contains
 
     omega_loop : do j = 1, n_omega
 
+       ! Set up binary parameters
+
+       a = (G_GRAVITY*(M_pri + M_sec)*P(j)**2/(4.*PI**2))**(1._WP/3._WP)
+
+       print *,'go eval c:',R_pri/a, ec, md_p(i)%l, md_p(i)%m, k
+
+       c = c_lmk(R_pri/a, ec, md_p(i)%l, md_p(i)%m, k)
+
+       eps_T = (R_pri/a)**3*(M_sec/M_pri)
+
+       alpha_fc = eps_T*(2*md_p(i)%l+1)*c
+
+       $ASSERT(alpha_fc /= 0._WP,alpha_fc is zero for chosen params)
+
+       print *,'alpha_fc:',alpha_fc,c
+
        ! Set up the inhomogeneous boundary terms
 
-       w_i = 0._WP
+       associate (w_i => w(:bp%n_e), w_o => w(bp%n_e+1:))
 
-       w_o = 0._WP
-       w_o(2) = -alpha_fc
+         w_i = 0._WP
+         
+         w_o = 0._WP
+         w_o(2) = -alpha_fc
+         
+       end associate
 
-       ! Build and solve the linear system
+       ! Solve for the wave function
 
        $if($T eq 'c')
        st = c_state_t(CMPLX(omega(j), KIND=WP), 0._WP)
+       select type (bp)
+       type is (nad_bvp_t)
+          wv = wave_t(bp, st)
+       class default
+          $ABORT(Invalid bp class)
+       end select
        $else
        st = r_state_t(omega(j))
+       select type (bp)
+       type is (ad_bvp_t)
+          wv = wave_t(bp, st)
+       type is (rad_bvp_t)
+          wv = wave_t(bp, st)
+       class default
+          $ABORT(Invalid bp class)
+       end select
        $endif
-
-       call bp%build(st)
-
-       y = bp%soln_vec_inhom(w_i, w_o)
 
        ! Write out the tidal response
 
-       write(res_unit, 100) omega(j), P(j), y(1,bp%n_k)
+       write(res_unit, 100) omega(j), P(j), wv%y_i(1,bp%n_k)
 100    format(999E16.8)
 
        ! Write out the solution data
@@ -338,12 +361,14 @@ contains
 
        open(NEWUNIT=sol_unit, FILE=filename, STATUS='REPLACE')
 
-       do k = 1,bp%n_k
-          write(sol_unit, 120) gr%pt(k)%x, y(:,k)
+       do k_ = 1,bp%n_k
+          write(sol_unit, 120) wv%gr%pt(k_)%x, (wv%y_i(i_,k_),i_=1,6)
 120       format(999(1X,E16.8))
        enddo
 
        close(sol_unit)
+
+       print *,'Done',j
 
     end do omega_loop
 
