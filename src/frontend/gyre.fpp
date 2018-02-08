@@ -219,7 +219,7 @@ program gyre
 
      ! Set up the context
 
-     cx(i) = context_t(ml, gr%pt(1), gr%pt(gr%n_k), md_p(i), os_p_sel)
+     cx(i) = context_t(ml, gr%pt_i(), gr%pt_o(), md_p(i), os_p_sel)
 
      ! Find adiabatic modes
 
