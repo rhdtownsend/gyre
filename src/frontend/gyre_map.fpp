@@ -1,7 +1,7 @@
 ! Program  : gyre_map
 ! Purpose  : discriminant mapping code
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -29,6 +29,7 @@ program gyre_map
 
   use gyre_bvp
   use gyre_constants
+  use gyre_context
   use gyre_discrim_func
   use gyre_ext
   use gyre_grid
@@ -44,6 +45,7 @@ program gyre_map
   use gyre_osc_par
   use gyre_scan_par, only : scan_par_t
   use gyre_search
+  use gyre_state
   use gyre_status
   use gyre_util
   use gyre_version
@@ -73,6 +75,7 @@ program gyre_map
   type(scan_par_t), allocatable :: sc_p_re_sel(:)
   type(scan_par_t), allocatable :: sc_p_im_sel(:)
   type(grid_t)                  :: gr
+  type(context_t), pointer      :: cx => null()
   real(WP), allocatable         :: omega_re(:)
   real(WP), allocatable         :: omega_im(:)
   real(WP)                      :: omega_min
@@ -81,6 +84,7 @@ program gyre_map
   integer                       :: n_omega_re
   integer                       :: n_omega_im
   type(c_discrim_func_t)        :: df
+  type(c_state_t)               :: st
   complex(WP), allocatable      :: discrim_map_f(:,:)
   integer, allocatable          :: discrim_map_e(:,:)
   integer, allocatable          :: k_part(:)
@@ -153,6 +157,10 @@ program gyre_map
 
   ml => model_t(ml_p)
 
+  ! Allocate the context (will be initialized later on)
+
+  allocate(cx)
+
   ! Select parameters according to tags
 
   if (check_log_level('INFO')) then
@@ -198,13 +206,18 @@ program gyre_map
 
   gr = grid_t(ml, omega_re, gr_p_sel, md_p(1), os_p_sel)
 
+  ! Set up the context
+
+  cx = context_t(ml, gr%pt_i(), gr%pt_o(), md_p(1), os_p_sel)
+
   ! Set up the bvp
 
-  bp = nad_bvp_t(ml, gr, md_p(1), nm_p_sel, os_p_sel)
+  bp = nad_bvp_t(cx, gr, md_p(1), nm_p_sel, os_p_sel)
 
   ! Set up the discriminant function
 
-  df = c_discrim_func_t(bp, omega_min, omega_max)
+  st = c_state_t(omega=0._WP, omega_r=0._WP)
+  df = c_discrim_func_t(bp, st, omega_min, omega_max)
 
   ! Map the discriminant
 
@@ -270,6 +283,12 @@ program gyre_map
      call hg%final()
 
   end if
+
+  ! Clean up
+
+  deallocate(cx)
+
+  deallocate(ml)
 
   ! Finish
 
