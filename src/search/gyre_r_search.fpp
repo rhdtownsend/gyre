@@ -319,11 +319,13 @@ contains
 
        j_m = j_m + 1
 
+       st = r_state_t(omega=real(omega_root))
+
        select type (bp)
        type is (ad_bvp_t)
-          md = mode_t(bp, real(omega_root), j_m)
+          md = mode_t(bp, st, j_m)
        type is (rad_bvp_t)
-          md = mode_t(bp, real(omega_root), j_m)
+          md = mode_t(bp, st, j_m)
        class default
           $ABORT(Invalid bp class)
        end select

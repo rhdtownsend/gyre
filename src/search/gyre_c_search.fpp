@@ -214,9 +214,11 @@ contains
 
        ! Construct the mode_t
 
+       st = c_state_t(omega=cmplx(omega_root), omega_r=omega_ad)
+
        select type (bp)
        type is (nad_bvp_t)
-          md = mode_t(bp, cmplx(omega_root), omega_ad, md_in(i)%j)
+          md = mode_t(bp, st, md_in(i)%j)
        class default
           $ABORT(Invalid bp class)
        end select

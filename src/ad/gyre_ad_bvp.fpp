@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_bvp
 ! Purpose  : adiabatic bounary value problem solver
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -139,14 +139,13 @@ contains
 
   !****
 
-  function mode_t_ (bp, omega, j) result (md)
+  function mode_t_ (bp, st, j) result (md)
 
     class(ad_bvp_t), intent(inout) :: bp
-    real(WP), intent(in)           :: omega
+    type(r_state_t), intent(in)    :: st
     integer, intent(in)            :: j
     type(mode_t)                   :: md
 
-    type(r_state_t) :: st
     real(WP)        :: y(4,bp%n_k)
     type(r_ext_t)   :: discrim
     integer         :: k
@@ -154,8 +153,6 @@ contains
     complex(WP)     :: y_c(6,bp%n_k)
 
     ! Calculate the solution vector
-
-    st = r_state_t(omega)
 
     call bp%build(st)
 
@@ -171,7 +168,7 @@ contains
 
     ! Set up complex eigenfunctions
 
-    st_c = c_state_t(CMPLX(omega, KIND=WP), omega)
+    st_c = c_state_t(CMPLX(st%omega, KIND=WP), st%omega)
 
     if (bp%os_p%quasiad_eigfuncs) then
 

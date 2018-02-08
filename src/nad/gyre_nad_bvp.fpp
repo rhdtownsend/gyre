@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_bvp
 ! Purpose  : nonadiabatic boundary value problem solver
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -128,22 +128,18 @@ contains
 
   !****
 
-  function mode_t_ (bp, omega, omega_ad, j) result (md)
+  function mode_t_ (bp, st, j) result (md)
 
     class(nad_bvp_t), intent(inout) :: bp
-    complex(WP), intent(in)         :: omega
-    real(WP), intent(in)            :: omega_ad
+    type(c_state_t), intent(in)     :: st
     integer, intent(in)             :: j
     type(mode_t)                    :: md
 
-    type(c_state_t) :: st
-    complex(WP)     :: y(6,bp%n_k)
-    type(c_ext_t)   :: discrim
-    integer         :: k
+    complex(WP)   :: y(6,bp%n_k)
+    type(c_ext_t) :: discrim
+    integer       :: k
 
     ! Calculate the solution vector
-
-    st = c_state_t(omega, omega_ad)
 
     call bp%build(st)
 
