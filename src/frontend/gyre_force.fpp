@@ -304,8 +304,6 @@ contains
 
        a = (G_GRAVITY*(M_pri + M_sec)*P(j)**2/(4.*PI**2))**(1._WP/3._WP)
 
-       print *,'go eval c:',R_pri/a, ec, md_p(i)%l, md_p(i)%m, k
-
        c = c_lmk(R_pri/a, ec, md_p(i)%l, md_p(i)%m, k)
 
        eps_T = (R_pri/a)**3*(M_sec/M_pri)
@@ -314,11 +312,9 @@ contains
 
        $ASSERT(alpha_fc /= 0._WP,alpha_fc is zero for chosen params)
 
-       print *,'alpha_fc:',alpha_fc,c
-
        ! Set up the inhomogeneous boundary terms
 
-       associate (w_i => w(:bp%n_e), w_o => w(bp%n_e+1:))
+       associate (w_i => w(:bp%n_i), w_o => w(bp%n_i+1:))
 
          w_i = 0._WP
          
@@ -367,8 +363,6 @@ contains
        enddo
 
        close(sol_unit)
-
-       print *,'Done',j
 
     end do omega_loop
 

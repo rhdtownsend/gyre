@@ -148,7 +148,7 @@ contains
     call bp%build(st)
 
     if (PRESENT(w)) then
-       y = bp%soln_vec_inhom(w(:bp%n_e),w(bp%n_e+1:))
+       y = bp%soln_vec_inhom(w(:bp%n_i),w(bp%n_i+1:))
     else
        y = bp%soln_vec_hom()
     endif
