@@ -54,12 +54,15 @@ module gyre_${T}_bvp
      integer, public                   :: n_e
      integer, public                   :: n_i
      integer, public                   :: n_o
+     logical                           :: factored
    contains 
      private
      procedure, public :: build
+     procedure, public :: factor
      procedure, public :: det
      procedure, public :: soln_vec_hom
      procedure, public :: soln_vec_inhom
+     procedure, public :: resd_vec
   end type ${T}_bvp_t
 
   ! Interfaces
@@ -114,6 +117,8 @@ contains
     bp%n_i = n_i
     bp%n_o = n_o
 
+    bp%factored = .FALSE.
+
     ! Finish
     
     return
@@ -154,9 +159,9 @@ contains
        call this%sm%set_E(k, E_l, E_r, scl)
     end do sub_loop
 
-    ! Factorize the sysmtx for later use
+    ! Reset the factored flag
 
-    call this%sm%factorize()
+    this%factored = .FALSE.
 
     ! Finish
 
@@ -166,10 +171,30 @@ contains
 
   !****
 
+  subroutine factor (this)
+
+    class(${T}_bvp_t), intent(inout) :: this
+
+    ! Factorize the sysmtx
+
+    call this%sm%factor()
+
+    this%factored = .TRUE.
+
+    ! Finish
+
+    return
+
+  end subroutine factor
+
+  !****
+
   function det (this)
 
     class(${T}_bvp_t), intent(inout) :: this
     type(${T}_ext_t)                 :: det
+
+    $ASSERT(this%factored,Matrix has not been factorized)
 
     ! Evaluate the determinant of the sysmtx
 
@@ -189,6 +214,8 @@ contains
     $TYPE(WP)                        :: y(this%n_e,this%n_k)
 
     $TYPE(WP) :: v(this%n_e*this%n_k)
+
+    $ASSERT_DEBUG(this%factored,Matrix has not been factorized)
 
     ! Evaluate the solution vector y of the homogeneous system
 
@@ -216,6 +243,8 @@ contains
     $CHECK_BOUNDS(SIZE(w_i),this%n_i)
     $CHECK_BOUNDS(SIZE(w_o),this%n_o)
 
+    $ASSERT_DEBUG(this%factored,Matrix has not been factorized)
+
     ! Evaluate the solution vector y of the inhomogeneous system
 
     v = this%sm%soln_vec_inhom(w_i, w_o)
@@ -227,6 +256,33 @@ contains
     return
 
   end function soln_vec_inhom
+
+  !****
+
+  function resd_vec (this, y) result (w)
+
+    class(${T}_bvp_t), intent(inout) :: this
+    $TYPE(WP), intent(in)            :: y(:,:)
+    $TYPE(WP)                        :: w(this%n_e*this%n_k)
+
+    $TYPE(WP) :: v(this%n_e*this%n_k)
+
+    $CHECK_BOUNDS(SIZE(y,1),this%n_e)
+    $CHECK_BOUNDS(SIZE(y,2),this%n_k)
+
+    $ASSERT_DEBUG(.NOT. this%factored,Matrix has already been factorized)
+
+    ! Evaluate the residuals vector
+
+    v = RESHAPE(y, SHAPE(v))
+
+    w = this%sm%resd_vec(v)
+
+    ! Finish
+
+    return
+
+  end function resd_vec
 
 end module gyre_${T}_bvp
 
