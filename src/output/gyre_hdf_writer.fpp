@@ -1,4 +1,4 @@
-! Program  : gyre_hdf_writer
+! Module   : gyre_hdf_writer
 ! Purpose  : write HDF data
 !
 ! Copyright 2013 Rich Townsend

@@ -1,4 +1,4 @@
-! Program  : gyre_txt_writer
+! Module   : gyre_txt_writer
 ! Purpose  : write txt (ASCII) data
 !
 ! Copyright 2013 Rich Townsend

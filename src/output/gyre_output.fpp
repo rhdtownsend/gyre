@@ -1,4 +1,4 @@
-! Program  : gyre_output
+! Module   : gyre_output
 ! Purpose  : output routines
 !
 ! Copyright 2013-2016 Rich Townsend
