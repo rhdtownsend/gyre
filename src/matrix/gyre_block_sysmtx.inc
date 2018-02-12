@@ -70,7 +70,7 @@ module gyre_${T}_block_sysmtx
      procedure, public :: set_B_i
      procedure, public :: set_B_o
      procedure, public :: set_E
-     procedure, public :: factorize
+     procedure, public :: factor
      procedure         :: scale_rows_
      procedure, public :: det
      procedure, public :: soln_vec_hom
@@ -211,7 +211,7 @@ contains
 
   !****
 
-  subroutine factorize (this)
+  subroutine factor (this)
 
     class(${T}_block_sysmtx_t), intent(inout) :: this
 
@@ -318,7 +318,7 @@ contains
 
     return
 
-  end subroutine factorize
+  end subroutine factor
 
   !****
 
@@ -676,4 +676,3 @@ contains
 end module gyre_${T}_block_sysmtx
 
 $endsub
-
