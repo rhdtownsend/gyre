@@ -80,11 +80,23 @@ contains
     integer, intent(in)               :: j
     type(mode_t)                      :: md
 
+    complex(WP) :: y_1_ref
+    complex(WP) :: f_phase
+
     ! Construct the mode_t
 
     md%wave_t = wv
 
     md%j = j
+
+    ! Normalize so that y_1 at the reference point is purely real, and
+    ! the total inertia E is unity
+
+    y_1_ref = md%y_c(1, md%k_ref)
+
+    f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
+
+    md%scl = 1._WP/SQRT(md%E())*f_phase
 
     ! Classify the mode
 

@@ -134,7 +134,7 @@ module gyre_wave
 
 contains
 
-  function wave_t_ (st, y_c, discrim, cx, gr, md_p, os_p, normalize) result (wv)
+  function wave_t_ (st, y_c, discrim, cx, gr, md_p, os_p) result (wv)
 
     type(c_state_t), intent(in)          :: st
     complex(WP), intent(in)              :: y_c(:,:)
@@ -143,22 +143,12 @@ contains
     type(grid_t), intent(in)             :: gr
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
-    logical, intent(in), optional        :: normalize
     type(wave_t)                         :: wv
 
-    logical     :: normalize_
     real(WP)    :: x_ref
-    complex(WP) :: y_1_ref
-    complex(WP) :: f_phase
 
     $CHECK_BOUNDS(SIZE(y_c, 1),6)
     $CHECK_BOUNDS(SIZE(y_c, 2),gr%n_k)
-
-    if (PRESENT(normalize)) then
-       normalize_ = normalize
-    else
-       normalize_ = .TRUE.
-    endif
 
     ! Construct the wave_t
 
@@ -174,6 +164,8 @@ contains
     wv%omega = st%omega
     wv%discrim = discrim
 
+    wv%scl = 1._WP
+
     wv%l_i = cx%l_e(cx%ml%coeff(I_OMEGA_ROT, cx%pt_i), st)
 
     wv%n_k = gr%n_k
@@ -188,25 +180,6 @@ contains
     x_ref = MIN(MAX(os_p%x_ref, gr%pt(1)%x), gr%pt(gr%n_k)%x)
 
     wv%k_ref = MINLOC(ABS(gr%pt%x - x_ref), DIM=1)
-
-    ! Normalize so that y_1 at the reference point is purely real, and
-    ! the total inertia E is unity
-
-    if (normalize_) then
-
-       wv%scl = 1._WP
-    
-       y_1_ref = y_c(1, wv%k_ref)
-
-       f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
-
-       wv%scl = 1._WP/SQRT(wv%E())*f_phase
-
-    else
-
-       wv%scl = 1._WP
-
-    endif
 
     ! Finish
 
