@@ -74,7 +74,8 @@ module gyre_${T}_band_sysmtx
      procedure, public :: set_B_o
      procedure, public :: set_E
      procedure         :: set_row_
-     procedure, public :: factorize
+     procedure         :: get_row_
+     procedure, public :: factor
      procedure         :: scale_rows_
      procedure, public :: det
      procedure, public :: soln_vec_hom
@@ -290,7 +291,37 @@ contains
 
   !****
 
-  subroutine factorize (this)
+  subroutine get_row_ (this, i_0, j_0, R)
+
+    class(${T}_band_sysmtx_t), intent(in) :: this
+    integer, intent(in)                   :: i_0
+    integer, intent(in)                   :: j_0
+    $TYPE(WP), intent(out)                :: R(:)
+
+    integer :: j
+    integer :: i_b
+    integer :: j_b
+
+    $ASSERT_DEBUG(ABS(i_0-j_0) <= this%n_ul,Invalid indices)
+    $ASSERT_DEBUG(ABS(i_0-(j_0+SIZE(R)-1)) <= this%n_ul,Invalid indices)
+
+    ! Get data from row i_0, starting at column j_0
+
+    do j = j_0, j_0+SIZE(R)-1
+       i_b = 2*this%n_ul + 1 + i_0 - j
+       j_b = j
+       R(j-j_0+1) = this%A_b(i_b, j_b)
+    end do
+
+    ! Finish
+
+    return
+
+  end subroutine get_row_
+
+  !****
+
+  subroutine factor (this)
 
     class(${T}_band_sysmtx_t), intent(inout) :: this
 
@@ -314,7 +345,7 @@ contains
 
     return
 
-  end subroutine factorize
+  end subroutine factor
 
   !****
 
@@ -458,7 +489,7 @@ contains
 
     end associate
        
-    ! Fill in the remainign components of the null vector
+    ! Fill in the remaining components of the null vector
     
     v(i_s) = 1._WP
     v(i_s+1:) = 0._WP
@@ -523,11 +554,30 @@ contains
     $TYPE(WP), intent(in)                 :: v(:)
     $TYPE(WP)                             :: w(this%n_e*(this%n+1))
 
+    integer   :: i
+    integer   :: j_a
+    integer   :: j_b
+    $TYPE(WP) :: R(this%n_e*(this%n+1))
+
     $CHECK_BOUNDS(SIZE(v),this%n_e*(this%n+1))
 
     ! Evaluate the residual vector w = S v
 
-    $ABORT(Not yet implemented)
+    associate (n => this%n, n_e => this%n_e)
+
+      !$OMP PARALLEL DO PRIVATE (j_a, j_b, R)
+      multiply_loop : do i = 1, n_e*(n+1)
+
+         j_a = MAX(i-this%n_ul, 1)
+         j_b = MIN(i+this%n_ul, n_e*(n+1))
+
+         call this%get_row_(i, j_a, R(j_a:j_b))
+
+         w(i) = SUM(R(j_a:j_b)*v(j_a:j_b))
+
+      end do multiply_loop
+
+    end associate
 
     ! Finish
 
