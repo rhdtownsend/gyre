@@ -159,6 +159,7 @@ contains
     ! Calculate the solution vector
 
     call bp%build(st)
+    call bp%factor()
 
     if (PRESENT(w)) then
        y = bp%soln_vec_inhom(w(:bp%n_i),w(bp%n_i+1:))

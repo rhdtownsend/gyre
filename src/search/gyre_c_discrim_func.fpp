@@ -116,6 +116,7 @@ contains
        this%st%omega = omega
 
        call this%bp%build(this%st)
+       call this%bp%factor()
 
        f_cx = this%bp%det()
 
