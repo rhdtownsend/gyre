@@ -259,7 +259,8 @@ contains
 
     integer            :: n_omega
     integer            :: j
-    $TYPE(WP)          :: w(bp%n_e)
+    $TYPE(WP)          :: w_i(bp%n_i)
+    $TYPE(WP)          :: w_o(bp%n_o)
     type(${T}_state_t) :: st
 
     character(64) :: filename
@@ -282,22 +283,18 @@ contains
 
        ! Set up the inhomogeneous boundary terms
 
-       associate (w_i => w(:bp%n_i), w_o => w(bp%n_i+1:))
-
-         w_i = 0._WP
+       w_i = 0._WP
          
-         w_o = 0._WP
-         w_o(2) = F
+       w_o = 0._WP
+       w_o(2) = F
          
-       end associate
-
        ! Solve for the wave function
 
        $if($T eq 'c')
        st = c_state_t(CMPLX(omega(j), KIND=WP), 0._WP)
        select type (bp)
        type is (nad_bvp_t)
-          wv = wave_t(bp, st, w)
+          wv = wave_t(bp, st, w_i, w_o)
        class default
           $ABORT(Invalid bp class)
        end select
@@ -305,9 +302,9 @@ contains
        st = r_state_t(omega(j))
        select type (bp)
        type is (ad_bvp_t)
-          wv = wave_t(bp, st, w)
+          wv = wave_t(bp, st, w_i, w_o)
        type is (rad_bvp_t)
-          wv = wave_t(bp, st)
+          wv = wave_t(bp, st, w_i, w_o)
        class default
           $ABORT(Invalid bp class)
        end select
