@@ -78,9 +78,6 @@ program gyre_force
   real(WP), allocatable         :: omega(:)
   integer                       :: n_P
   real(WP), allocatable         :: P(:)
-  real(WP)                      :: M_pri
-  real(WP)                      :: M_sec
-  real(WP)                      :: R_pri
   integer                       :: i
   type(osc_par_t)               :: os_p_sel
   type(num_par_t)               :: nm_p_sel
