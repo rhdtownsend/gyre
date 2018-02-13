@@ -54,6 +54,7 @@ program gyre_contour
   use gyre_status
   use gyre_util
   use gyre_version
+  use gyre_wave
 
   use ISO_FORTRAN_ENV
 
@@ -582,6 +583,7 @@ contains
     integer       :: status
     type(c_ext_t) :: omega_root
     integer       :: n_iter
+    type(wave_t)  :: wv
     type(mode_t)  :: md
     type(r_ext_t) :: chi
     
@@ -621,7 +623,10 @@ contains
 
        ! Construct the mode_t
 
-       md = mode_t(bp, cmplx(omega_root), 0._wp, j)
+       st = c_state_t(omega=cmplx(omega_root), omega_r=0._WP)
+
+       wv = wave_t(bp, st)
+       md = mode_t(wv, j)
 
        ! Process it
 
