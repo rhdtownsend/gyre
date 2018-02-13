@@ -182,6 +182,8 @@ contains
        $OUTPUT_MODES(r,H,H())
        $OUTPUT_MODES(r,W,W())
        $OUTPUT_MODES(r,W_eps,W_eps())
+       $OUTPUT_MODES(r,tau_ss,tau_ss())
+       $OUTPUT_MODES(r,tau_tr,tau_tr())
        $OUTPUT_MODES(r,beta,beta())
        $OUTPUT_MODES(r,x_ref,gr%pt(md(i_md)%k_ref)%x)
        $OUTPUT_MODES(c,xi_r_ref,xi_r(md(i_md)%k_ref))
@@ -434,6 +436,14 @@ contains
          case ('W_eps')
 
             call wr%write('W_eps', md%W_eps())
+
+         case ('tau_ss')
+
+            call wr%write('tau_ss', md%tau_ss())
+
+         case ('tau_tr')
+
+            call wr%write('tau_tr', md%tau_tr())
 
          case ('beta')
 
