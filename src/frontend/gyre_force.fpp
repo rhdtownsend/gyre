@@ -271,6 +271,7 @@ contains
     integer       :: sol_unit
     integer       :: i_
     integer       :: k_
+    real(WP)      :: tau
 
     $CHECK_BOUNDS(SIZE(P),SIZE(omega))
 
@@ -289,7 +290,7 @@ contains
          w_i = 0._WP
          
          w_o = 0._WP
-         w_o(2) = -F
+         w_o(2) = F
          
        end associate
 
@@ -315,9 +316,13 @@ contains
        end select
        $endif
 
+       ! Calculate the torque expected
+
+       tau = -0.5_WP*md_p(i)%m*AIMAG(F*CONJG(wv%y_i(3,bp%n_k)))
+
        ! Write out the response
 
-       write(res_unit, 100) omega(j), P(j), wv%y_i(1,bp%n_k)
+       write(res_unit, 100) omega(j), P(j), wv%y_i(1,bp%n_k), wv%tau_ss(), tau
 100    format(999E16.8)
 
        ! Write out the solution data
