@@ -67,7 +67,8 @@ module gyre_ad_bvp
   end interface ad_bvp_t
 
   interface wave_t
-     module procedure wave_t_
+     module procedure wave_t_hom_
+     module procedure wave_t_inhom_
   end interface wave_t
 
   ! Access specifiers
@@ -139,35 +140,21 @@ contains
 
   !****
 
-  function wave_t_ (bp, st, w) result (wv)
+  function wave_t_hom_ (bp, st) result (wv)
 
     class(ad_bvp_t), intent(inout) :: bp
     type(r_state_t), intent(in)    :: st
-    real(WP), intent(in), optional :: w(:)
     type(wave_t)                   :: wv
 
     real(WP)        :: y(4,bp%n_k)
-    type(r_ext_t)   :: discrim
     integer         :: k
-    type(c_state_t) :: st_c
-    complex(WP)     :: y_c(6,bp%n_k)
 
-    if (PRESENT(w)) then
-       $CHECK_BOUNDS(SIZE(w),bp%n_e)
-    endif
-
-    ! Calculate the solution vector
+    ! Calculate the homogeneous solution vector
 
     call bp%build(st)
     call bp%factor()
 
-    if (PRESENT(w)) then
-       y = bp%soln_vec_inhom(w(:bp%n_i),w(bp%n_i+1:))
-    else
-       y = bp%soln_vec_hom()
-    endif
-
-    discrim = bp%det()
+    y = bp%soln_vec_hom()
 
     ! Convert to canonical form
 
@@ -175,6 +162,72 @@ contains
     do k = 1, bp%n_k
        call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
     end do
+
+    ! Construct the wave_t
+
+    wv = wave_t_y_(bp, st, y)
+
+    ! Finish
+
+    return
+
+  end function wave_t_hom_
+
+  !****
+
+  function wave_t_inhom_ (bp, st, w_i, w_o) result (wv)
+
+    class(ad_bvp_t), intent(inout) :: bp
+    type(r_state_t), intent(in)    :: st
+    real(WP), intent(in)           :: w_i(:)
+    real(WP), intent(in)           :: w_o(:)
+    type(wave_t)                   :: wv
+
+    real(WP) :: y(4,bp%n_k)
+    integer  :: k
+
+    $CHECK_BOUNDS(SIZE(w_i),bp%n_i)
+    $CHECK_BOUNDS(SIZE(w_o),bp%n_o)
+
+    ! Calculate the inhomogeneous solution vector
+
+    call bp%build(st)
+    call bp%factor()
+
+    y = bp%soln_vec_inhom(w_i, w_o)
+
+    ! Convert to canonical form
+
+    !$OMP PARALLEL DO
+    do k = 1, bp%n_k
+       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
+    end do
+
+    ! Construct the wave_t
+
+    wv = wave_t_y_(bp, st, y)
+
+    ! Finish
+
+    return
+
+  end function wave_t_inhom_
+
+  !****
+
+  function wave_t_y_ (bp, st, y) result (wv)
+
+    class(ad_bvp_t), intent(inout) :: bp
+    type(r_state_t), intent(in)    :: st
+    real(WP), intent(in)           :: y(:,:)
+    type(wave_t)                   :: wv
+
+    type(c_state_t) :: st_c
+    complex(WP)     :: y_c(6,bp%n_k)
+    type(c_ext_t)   :: discrim
+
+    $CHECK_BOUNDS(SIZE(y, 1),bp%n_e)
+    $CHECK_BOUNDS(SIZE(y, 2),bp%n_k)
 
     ! Set up complex eigenfunctions
 
@@ -193,12 +246,14 @@ contains
 
     ! Construct the wave_t
 
-    wv = wave_t(st_c, y_c, c_ext_t(discrim), bp%cx, bp%gr, bp%md_p, bp%os_p)
+    discrim = c_ext_t(bp%det())
+
+    wv = wave_t(st_c, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p)
 
     ! Finish
 
     return
 
-  end function wave_t_
+  end function wave_t_y_
 
 end module gyre_ad_bvp
