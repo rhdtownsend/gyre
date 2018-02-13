@@ -108,6 +108,8 @@ module gyre_wave
      procedure, public :: H
      procedure, public :: W
      procedure, public :: W_eps
+     procedure, public :: tau_ss
+     procedure, public :: tau_tr
      procedure, public :: beta
      procedure, public :: omega_int
      procedure, public :: eta
@@ -1028,7 +1030,7 @@ contains
     real(WP)    :: Omega_rot
     complex(WP) :: omega_c
 
-    ! Evaluate the steady-state differential torque, in units of G
+    ! Evaluate the transient differential torque, in units of G
     ! M_star**2/R_star. This expression is based on eqn. 14 of
     ! [Tow2017]
 
@@ -1806,6 +1808,60 @@ contains
     return
 
   end function W_eps
+
+  !****
+
+  function tau_ss (this)
+
+    class(wave_t), intent(in) :: this
+    real(WP)                  :: tau_ss
+
+    integer  :: k
+    real(WP) :: dtau_dx(this%n_k)
+    
+    ! Evaluate the steady-state total torque, in units of G
+    ! M_star**2/R_star. This expression is based on eqn. 18 of
+    ! [Tow2017]
+
+    !$OMP PARALLEL DO
+    do k = 1, this%n_k
+       dtau_dx(k) = this%dtau_dx_ss(k)
+    end do
+
+    tau_ss = integrate(this%gr%pt%x, dtau_dx)
+
+    ! Finish
+
+    return
+
+  end function tau_ss
+
+  !****
+
+  function tau_tr (this)
+
+    class(wave_t), intent(in) :: this
+    real(WP)                  :: tau_tr
+
+    integer  :: k
+    real(WP) :: dtau_dx(this%n_k)
+    
+    ! Evaluate the transient total torque, in units of G
+    ! M_star**2/R_star. This expression is based on eqn. 18 of
+    ! [Tow2017]
+
+    !$OMP PARALLEL DO
+    do k = 1, this%n_k
+       dtau_dx(k) = this%dtau_dx_tr(k)
+    end do
+
+    tau_tr = integrate(this%gr%pt%x, dtau_dx)
+
+    ! Finish
+
+    return
+
+  end function tau_tr
 
   !****
 
