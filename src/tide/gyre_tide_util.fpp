@@ -36,20 +36,20 @@ module gyre_tide_util
 
   private
 
-  public :: c_lmk
+  public :: X_lmk
+  public :: beta_lm
 
   ! Procedures
 
 contains
 
-  function c_lmk (r_a, ec, l, m, k)
+  function X_lmk (ec, l, m, k)
 
-    real(WP), intent(in) :: r_a
     real(WP), intent(in) :: ec
     integer, intent(in)  :: l
     integer, intent(in)  :: m
     integer, intent(in)  :: k
-    real(WP)             :: c_lmk
+    real(WP)             :: X_lmk
 
     integer, parameter :: N = 1024
 
@@ -58,68 +58,88 @@ contains
     real(WP) :: Ea
     real(WP) :: Ma
     real(WP) :: y(N)
-    real(WP) :: X
-    real(WP) :: P
-    real(WP) :: F
+
+    $ASSERT_DEBUG(ABS(m) <= l,Invalid m)
+
+    ! Evaluate the Hansen coefficient X_lmk, using the transformed
+    ! integral expression given in eqn. (22) of Smeyers, Willems & Van
+    ! Hoolst (1998, A&A, 335, 622) (this expression avoids having to
+    ! solve Kepler's equation)
+
+    ! Set up the integrand
+
+    do i = 1, N
+
+       ua(i) = (i-1)*PI/(N-1)
+
+       Ea = 2._WP*ATAN(SQRT((1._WP-ec)/(1._WP+ec))*TAN(ua(i)/2._WP))
+
+       Ma = Ea - ec*SIN(Ea)
+
+       y(i) = COS(k*Ma - m*ua(i))/(1._WP + ec*COS(ua(i)))**(l+2)
+
+    end do
+
+    ! Do the integral
+
+    X_lmk = integrate(ua, y)*(1._WP - ec**2)**(l+1.5_WP)/PI
+
+    ! Finish
+
+    return
+
+  end function X_lmk
+
+  !****
+
+  function beta_lm (l, m)
+
+    integer, intent(in)  :: l
+    integer, intent(in)  :: m
+    real(WP)             :: beta_lm
+
+    integer  :: am
     integer  :: j
+    real(WP) :: sj
 
-    ! Evaluate the tidal Fourier coefficient c_lmk (e.g., Smeyers,
-    ! Willems & Van Hoolst 1998, A&A, 335, 622)
+    $ASSERT_DEBUG(ABS(m) <= l,Invalid m)
 
-    if (ABS(m) > l) then
+    ! Evaluate beta_lm = N_lm P_lm(0), where
+    ! N_lm = SQRT((2l+1)/4pi*(l-m)!/(l+m)!) is the spherical harmonic
+    ! normalization function, and P_lm(x) is the associated Legendre
+    ! function including the Condon-Shortley phase term
 
-       c_lmk = 0._WP
+    am = ABS(m)
+
+    if (MOD(l+am, 2) == 0) then
+
+       ! Evaluate N_l|m| P_l|m|(0)
+
+       beta_lm = (-1)**((l+am)/2)*SQRT((2*l+1)/(4*PI))
+
+       do j = 1, l+am
+
+          sj = SQRT(REAL(j, WP))
+
+          if (j <= l-am) beta_lm = beta_lm*sj
+          if (j <= l+am) beta_lm = beta_lm/sj
+
+          if (MOD(j, 2) == 0) then
+             if (j <= l-am) beta_lm = beta_lm/j
+          else
+             if (j <= l+am-1) beta_lm = beta_lm*j
+          endif
+
+       end do
+
+       ! Adjust the sign for negative m (we do things this way to
+       ! ensure that opposite-m betas have identical magnitude)
+
+       if (m < 0) beta_lm = (-1)**am*beta_lm
 
     else
 
-       if (MOD(l-ABS(m), 2) == 0) then
-
-          ! Calculate the Hansen coefficient via eqn. (22)
-
-          do i = 1, N
-
-             ua(i) = (i-1)*PI/(N-1)
-
-             Ea = 2._WP*ATAN(SQRT((1._WP-ec)/(1._WP+ec))*TAN(ua(i)/2._WP))
-
-             Ma = Ea - ec*SIN(Ea)
-
-             y(i) = (1._WP + ec*COS(ua(i)))**(l-1) * COS(k*Ma + m*ua(i))
-
-          end do
-
-          X = integrate(ua, y)/(1._WP - ec**2)**(l-0.5_WP)/PI
-
-          ! Calculate the associated Legendre function P|m|l(0) and
-          ! the factorial term F = (l-|m|)!/(l+|m|)!
-
-          P = 1._WP
-          F = 1._WP
-
-          do j = 1, l+ABS(m)
-
-             if (MOD(j, 2) == 0) then
-                if (j <= l-ABS(m)) P = P/j
-             else
-                if (j <= l+ABS(m)-1) P = P*j
-             endif
-
-             if (j <= l+ABS(m)) F = F/j
-             if (j <= l-ABS(m)) F = F*j
-
-          end do
-
-          P = (-1)**((l+ABS(m))/2)*P
-
-          ! Calculate the Fourier coefficient via eqn. (18)
-
-          c_lmk = F*P*R_a**(l-2)*X
-
-       else
-
-          c_lmk = 0._WP
-
-       endif
+       beta_lm = 0._WP
 
     end if
 
@@ -127,6 +147,6 @@ contains
 
     return
 
-  end function c_lmk
+  end function beta_lm
 
 end module gyre_tide_util
