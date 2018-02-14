@@ -1,7 +1,7 @@
 ! Module   : gyre_mesa_file
 ! Purpose  : read MESA files
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -59,14 +59,15 @@ contains
     type(model_par_t), intent(in)        :: ml_p
     class(model_t), pointer, intent(out) :: ml
 
-    integer               :: unit
-    integer               :: n
-    real(WP)              :: global_data(3)
-    integer               :: version
-    integer               :: n_cols
-    real(WP), allocatable :: point_data(:,:)
-    integer               :: k
-    integer               :: k_chk
+    integer                     :: unit
+    integer                     :: n
+    real(WP)                    :: global_data(3)
+    integer                     :: version
+    integer                     :: n_cols
+    real(WP), allocatable       :: point_data(:,:)
+    integer                     :: k
+    integer                     :: k_chk
+    type(evol_model_t), pointer :: em
 
     ! Read data from the MESA-format file
 
@@ -118,11 +119,15 @@ contains
 
     ! Initialize the model
 
-    call init_mesa_model(ml_p, global_data, point_data, version, ml)
-    
+    call init_mesa_model(ml_p, global_data, point_data, version, em)
+
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, *)
     endif
+
+    ! Return the pointer to the model
+
+    ml => em
 
     ! Finish
 
@@ -132,13 +137,13 @@ contains
 
   !****
 
-  subroutine init_mesa_model (ml_p, global_data, point_data, version, ml)
+  subroutine init_mesa_model (ml_p, global_data, point_data, version, em)
 
-    type(model_par_t), intent(in)        :: ml_p
-    real(WP), intent(in)                 :: global_data(:)
-    real(WP), intent(in)                 :: point_data(:,:)
-    integer, intent(in)                  :: version
-    class(model_t), pointer, intent(out) :: ml
+    type(model_par_t), intent(in)            :: ml_p
+    real(WP), intent(in)                     :: global_data(:)
+    real(WP), intent(in)                     :: point_data(:,:)
+    integer, intent(in)                      :: version
+    type(evol_model_t), pointer, intent(out) :: em
 
     real(WP)                    :: M_star
     real(WP)                    :: R_star
@@ -177,7 +182,6 @@ contains
     real(WP), allocatable       :: int_rhoT(:)
     real(WP), allocatable       :: f_luan_t(:)
     real(WP), allocatable       :: f_luan_c(:)
-    type(evol_model_t), pointer :: em
 
     ! Extract data from the global and point arrays
 
@@ -290,10 +294,6 @@ contains
     call em%define(I_F_LUAN_C, f_luan_c)
 
     call em%define(I_OMEGA_ROT, Omega_rot)
-
-    ! Return a pointer
-
-    ml => em
 
     ! Finish
 
