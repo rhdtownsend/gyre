@@ -1,5 +1,5 @@
 ! Program  : gyre_tide
-! Purpose  : tide-related functions
+! Purpose  : dynamical tide modeling
 !
 ! Copyright 2018 Rich Townsend
 !
@@ -24,7 +24,19 @@ module gyre_tide
   use core_kinds
 
   use gyre_constants
-  use gyre_util
+  use gyre_context
+  use gyre_grid
+  use gyre_grid_factory
+  use gyre_grid_par
+  use gyre_mode_par
+  use gyre_model
+  use gyre_nad_bvp
+  use gyre_num_par
+  use gyre_osc_par
+  use gyre_state
+  use gyre_tide_par
+  use gyre_tide_util
+  use gyre_wave
 
   use ISO_FORTRAN_ENV
 
@@ -36,97 +48,107 @@ module gyre_tide
 
   private
 
-  public :: c_lmk
+  public :: eval_tide
 
   ! Procedures
 
 contains
 
-  function c_lmk (r_a, ec, l, m, k)
+  subroutine eval_tide (ml, process_wave, td_p, os_p, nm_p, gr_p)
 
-    real(WP), intent(in) :: r_a
-    real(WP), intent(in) :: ec
-    integer, intent(in)  :: l
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: c_lmk
+    class(model_t), pointer, intent(in) :: ml
+    interface
+       subroutine process_wave (wv)
+         use gyre_wave
+         type(wave_t), intent(in) :: wv
+       end subroutine process_wave
+    end interface
+    type(tide_par_t), intent(in)        :: td_p
+    type(osc_par_t), intent(in)         :: os_p
+    type(num_par_t), intent(in)         :: nm_p
+    type(grid_par_t), intent(in)        :: gr_p
 
-    integer, parameter :: N = 1024
+    real(WP), allocatable     :: omega(:)
+    type(context_t), pointer  :: cx => null()
+    type(wave_t)              :: wv
+    integer                   :: l
+    integer                   :: m
+    integer                   :: k
+    type(mode_par_t)          :: md_p
+    type(grid_t)              :: gr
+    type(nad_bvp_t)           :: bp
+    real(WP)                  :: Upsilon_lmk
+    complex(WP)               :: w_i(3)
+    complex(WP)               :: w_o(3)
+    type(c_state_t)           :: st
 
-    integer  :: i
-    real(WP) :: ua(N)
-    real(WP) :: Ea
-    real(WP) :: Ma
-    real(WP) :: y(N)
-    real(WP) :: X
-    real(WP) :: P
-    real(WP) :: F
-    integer  :: j
+    ! Set up the inertial-frame forcing frequencies array
 
-    ! Evaluate the tidal Fourier coefficient c_lmk (e.g., Smeyers,
-    ! Willems & Van Hoolst 1998, A&A, 335, 622)
+    omega = [(k*td_p%Omega_orb, k=-td_p%k_max,td_p%k_max)]
 
-    if (ABS(m) > l) then
+    ! Allocate other stuff
 
-       c_lmk = 0._WP
+    allocate(cx)
 
-    else
+    ! Loop over l and m
 
-       if (MOD(l-ABS(m), 2) == 0) then
+    l_loop : do l = 2, td_p%l_max
 
-          ! Calculate the Hansen coefficient via eqn. (22)
+       m_loop : do m = -l, l
 
-          do i = 1, N
+          ! Set up the mode parameters
 
-             ua(i) = (i-1)*PI/(N-1)
+          md_p = mode_par_t(0, l=l, m=m, &
+                            n_pg_min=-HUGE(0), n_pg_max=HUGE(0), &
+                            rossby=.FALSE., tag='')
+          
+          ! Create the full grid
 
-             Ea = 2._WP*ATAN(SQRT((1._WP-ec)/(1._WP+ec))*TAN(ua(i)/2._WP))
+          gr = grid_t(ml, omega, gr_p, md_p, os_p)
+            
+          ! Set up the context
 
-             Ma = Ea - ec*SIN(Ea)
+          cx = context_t(ml, gr%pt_i(), gr%pt_o(), md_p, os_p)
 
-             y(i) = (1._WP + ec*COS(ua(i)))**(l-1) * COS(k*Ma + m*ua(i))
+          ! Create the bvp_t 
 
-          end do
+          bp = nad_bvp_t(cx, gr, md_p, nm_p, os_p)
 
-          X = integrate(ua, y)/(1._WP - ec**2)**(l-0.5_WP)/PI
+          ! Loop over k
 
-          ! Calculate the associated Legendre function P|m|l(0) and
-          ! the factorial term F = (l-|m|)!/(l+|m|)!
+          k_loop : do k = -td_p%k_max, td_p%k_max
 
-          P = 1._WP
-          F = 1._WP
+             ! Calculate the tidal potential coefficient
 
-          do j = 1, l+ABS(m)
+             Upsilon_lmk = -td_p%eps_T*td_p%R_a**(l-2)*beta_lm(l, m)*X_lmk(td_p%ec, -(l+1),-m,-k)/(4._WP*PI)
 
-             if (MOD(j, 2) == 0) then
-                if (j <= l-ABS(m)) P = P/j
-             else
-                if (j <= l+ABS(m)-1) P = P*j
-             endif
+             ! Set up the inhomogeneous boundary conditions
 
-             if (j <= l+ABS(m)) F = F/j
-             if (j <= l-ABS(m)) F = F*j
+             w_i = 0._WP
+         
+             w_o = 0._WP
+             w_o(2) = (2*l+1)*Upsilon_lmk
+         
+             ! Solve for the wave function
 
-          end do
+             st = c_state_t(CMPLX(omega(k), KIND=WP), omega(k))
 
-          P = (-1)**((l+ABS(m))/2)*P
+             wv = wave_t(bp, st, w_i, w_o)
 
-          ! Calculate the Fourier coefficient via eqn. (18)
+             ! Process it
 
-          c_lmk = F*P*R_a**(l-2)*X
+             call process_wave(wv)
 
-       else
+          end do k_loop
 
-          c_lmk = 0._WP
+       end do m_loop
 
-       endif
-
-    end if
+    end do l_loop
 
     ! Finish
 
     return
 
-  end function c_lmk
+  end subroutine eval_tide
 
 end module gyre_tide
