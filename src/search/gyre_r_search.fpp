@@ -29,6 +29,7 @@ module gyre_r_search
   use gyre_ad_bvp
   use gyre_bvp
   use gyre_constants
+  use gyre_context
   use gyre_discrim_func
   use gyre_ext
   use gyre_freq
@@ -69,17 +70,14 @@ module gyre_r_search
 
 contains
 
-  subroutine build_scan (ml, gr, md_p, os_p, sc_p, omega)
+  subroutine build_scan (cx, md_p, os_p, sc_p, omega)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(scan_par_t), intent(in)        :: sc_p(:)
-    real(WP), allocatable, intent(out)  :: omega(:)
+    type(context_t), intent(in)        :: cx
+    type(mode_par_t), intent(in)       :: md_p
+    type(osc_par_t), intent(in)        :: os_p
+    type(scan_par_t), intent(in)       :: sc_p(:)
+    real(WP), allocatable, intent(out) :: omega(:)
 
-    type(point_t)         :: pt_i
-    type(point_t)         :: pt_o
     integer               :: n_omega
     integer               :: i
     real(WP)              :: omega_min
@@ -97,9 +95,6 @@ contains
        write(OUTPUT_UNIT, 100) 'Building frequency scan'
 100    format(A)
     endif
-
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
 
     ! Loop through scan_par_t
 
@@ -120,8 +115,8 @@ contains
          
          ! Calculate the dimensionless frequency range in the inertial frame
          
-         omega_min = omega_from_freq(freq_min, ml, pt_i, pt_o, freq_min_units, freq_frame, md_p, os_p)
-         omega_max = omega_from_freq(freq_max, ml, pt_i, pt_o, freq_max_units, freq_frame, md_p, os_p)
+         omega_min = omega_from_freq(freq_min, cx%ml, cx%pt_i, cx%pt_o, freq_min_units, freq_frame, md_p, os_p)
+         omega_max = omega_from_freq(freq_max, cx%ml, cx%pt_i, cx%pt_o, freq_max_units, freq_frame, md_p, os_p)
 
          ! Check that the range is valid
 
@@ -129,8 +124,8 @@ contains
 
             ! Calculate the frequency range in the grid frame
 
-            freq_g_min = freq_from_omega(omega_min, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
-            freq_g_max = freq_from_omega(omega_max, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
+            freq_g_min = freq_from_omega(omega_min, cx%ml, cx%pt_i, cx%pt_o, 'NONE', grid_frame, md_p, os_p)
+            freq_g_max = freq_from_omega(omega_max, cx%ml, cx%pt_i, cx%pt_o, 'NONE', grid_frame, md_p, os_p)
 
             ! Set up the frequencies
 
@@ -154,7 +149,7 @@ contains
             call reallocate(omega, [n_omega+n_freq])
 
             do j = 1, n_freq
-               omega(n_omega+j) = omega_from_freq(freq_g(j), ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
+               omega(n_omega+j) = omega_from_freq(freq_g(j), cx%ml, cx%pt_i, cx%pt_o, 'NONE', grid_frame, md_p, os_p)
             end do
           
             n_omega = n_omega + n_freq
