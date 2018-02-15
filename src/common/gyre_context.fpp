@@ -26,6 +26,7 @@ module gyre_context
 
   use gyre_freq
   use gyre_grid
+  use gyre_grid_par
   use gyre_interp
   use gyre_model
   use gyre_mode_par
@@ -87,24 +88,26 @@ module gyre_context
 
 contains
 
-  function context_t_ (ml, pt_i, pt_o, md_p, os_p) result (cx)
+  function context_t_ (ml, gr_p, md_p, os_p) result (cx)
 
     class(model_t), pointer, intent(in) :: ml
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_o
+    type(grid_par_t), intent(in)        :: gr_p
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(context_t)                     :: cx
 
+    type(grid_t) :: gr
+
     ! Construct the context_t
 
     cx%ml => ml
- 
+
     allocate(cx%rt, SOURCE=c_rot_t(md_p, os_p))
 
-    cx%pt_i = pt_i
-    cx%pt_o = pt_o
-
+    gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
+    cx%pt_i = gr%pt_i()
+    cx%pt_o = gr%pt_o()
+ 
     cx%m = md_p%m
 
     cx%complex_lambda = os_p%complex_lambda
@@ -113,7 +116,7 @@ contains
 
     select case (os_p%deps_scheme)
     case ('FILE')
-       call read_deps_(ml, md_p, os_p, pt_i, pt_o, cx%in_eps_rho, cx%in_eps_T)
+       call read_deps_(ml, md_p, os_p, cx%pt_i, cx%pt_o, cx%in_eps_rho, cx%in_eps_T)
     end select
 
     ! Finish
