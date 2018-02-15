@@ -34,6 +34,10 @@ module gyre_point
   type :: point_t
      integer  :: s
      real(WP) :: x
+   contains
+     private
+     procedure       :: op_eq_
+     generic, public :: operator(==) => op_eq_
   end type point_t
 
   ! Interfaces
@@ -62,6 +66,24 @@ module gyre_point
   ! Procedures
 
 contains
+
+  elemental function op_eq_ (this, that) result (eq)
+
+    class(point_t), intent(in) :: this
+    class(point_t), intent(in) :: that
+    logical                    :: eq
+
+    ! Evaluate the equality operator
+
+    eq = this%s == that%s .AND. this%x == that%x
+
+    ! Finish
+
+    return
+
+  end function op_eq_
+
+  !****
 
   $if ($MPI)
 
