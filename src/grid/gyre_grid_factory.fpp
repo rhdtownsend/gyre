@@ -24,6 +24,7 @@ module gyre_grid_factory
   use core_kinds
 
   use gyre_constants
+  use gyre_context
   use gyre_freq
   use gyre_grid
   use gyre_grid_par
@@ -32,8 +33,7 @@ module gyre_grid_factory
   use gyre_mode_par
   use gyre_osc_par
   use gyre_point
-  use gyre_rot
-  use gyre_rot_factory
+  use gyre_state
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -58,14 +58,14 @@ module gyre_grid_factory
 
 contains
 
-  function grid_t_model_ (ml, omega, gr_p, md_p, os_p) result (gr)
+  function grid_t_model_ (cx, omega, gr_p, md_p, os_p) result (gr)
 
-    class(model_t), pointer, intent(in) :: ml
-    real(WP), intent(in)                :: omega(:)
-    type(grid_par_t), intent(in)        :: gr_p
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(grid_t)                        :: gr
+    type(context_t), intent(in)  :: cx
+    real(WP), intent(in)         :: omega(:)
+    type(grid_par_t), intent(in) :: gr_p
+    type(mode_par_t), intent(in) :: md_p
+    type(osc_par_t), intent(in)  :: os_p
+    type(grid_t)                 :: gr
 
     integer  :: j
     integer  :: k_turn(SIZE(omega))
@@ -81,13 +81,13 @@ contains
 
     ! Create the scaffold grid
 
-    gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
+    gr = grid_t(cx%ml%grid(), cx%pt_i%x, cx%pt_o%x)
 
     ! Determine the inner turning point at each frequency
 
     !$OMP PARALLEL DO
     omega_loop : do j = 1, SIZE(omega)
-       call find_turn(ml, gr, omega(j), md_p, os_p, k_turn(j), x_turn(j))
+       call find_turn(cx%ml, gr, omega(j), md_p, os_p, k_turn(j), x_turn(j))
     end do omega_loop
 
      if (check_log_level('INFO')) then
@@ -101,7 +101,7 @@ contains
 
     ! Add points globally
 
-    call add_global_(ml, omega, gr_p, md_p, os_p, gr)
+    call add_global_(cx, omega, gr_p, md_p, os_p, gr)
 
     ! Report 
 
@@ -194,28 +194,25 @@ contains
 
   !****
 
-  subroutine add_global_ (ml, omega, gr_p, md_p, os_p, gr)
+  subroutine add_global_ (cx, omega, gr_p, md_p, os_p, gr)
 
-    class(model_t), pointer, intent(in)  :: ml
-    real(WP), intent(in)                 :: omega(:)
-    type(grid_par_t), intent(in)         :: gr_p
-    type(mode_par_t), intent(in)         :: md_p
-    type(osc_par_t), intent(in)          :: os_p
-    type(grid_t), intent(inout)          :: gr
+    type(context_t), intent(in)  :: cx
+    real(WP), intent(in)         :: omega(:)
+    type(grid_par_t), intent(in) :: gr_p
+    type(mode_par_t), intent(in) :: md_p
+    type(osc_par_t), intent(in)  :: os_p
+    type(grid_t), intent(inout)  :: gr
 
-    class(r_rot_t), allocatable :: rt
-    integer                     :: i_iter
-    integer, allocatable        :: dn(:)
-    integer                     :: k
-    type(point_t)               :: pt
-    real(WP)                    :: dx
+    integer              :: i_iter
+    integer, allocatable :: dn(:)
+    integer              :: k
+    type(point_t)        :: pt
+    real(WP)             :: dx
 
     ! Add points globally 
     
     ! Iterate until no more points need be added
     
-    allocate(rt, SOURCE=r_rot_t(md_p, os_p))
-
     iter_loop : do i_iter = 1, gr_p%n_iter_max
 
        if (ALLOCATED(dn)) deallocate(dn)
@@ -232,9 +229,9 @@ contains
                pt%s = pt_a%s
                pt%x = 0.5_WP*(pt_a%x + pt_b%x)
 
-               dx = MAX(MIN(dx_dispersion_(pt, gr%pt(1), ml, rt, md_p%m, omega, gr_p, pt_a%x==0), &
-                            dx_thermal_(pt, ml, rt, md_p%m, omega, gr_p), &
-                            dx_struct_(ml, pt, gr_p)), gr_p%dx_min)
+               dx = MAX(MIN(dx_dispersion_(cx, pt, omega, gr_p, pt_a%x==0), &
+                            dx_thermal_(cx, pt, omega, gr_p), &
+                            dx_struct_(cx, pt, gr_p)), gr_p%dx_min)
 
                dn(k) = CEILING((pt_b%x - pt_a%x)/dx) - 1
 
@@ -271,36 +268,34 @@ contains
 
   !****
 
-  function dx_dispersion_ (pt, pt_i, ml, rt, m, omega, gr_p, origin) result (dx)
+  function dx_dispersion_ (cx, pt, omega, gr_p, origin) result (dx)
 
-    type(point_t), intent(in)           :: pt
-    type(point_t), intent(in)           :: pt_i
-    class(model_t), pointer, intent(in) :: ml
-    class(r_rot_t), intent(in)          :: rt
-    integer, intent(in)                 :: m
-    real(WP), intent(in)                :: omega(:)
-    type(grid_par_t), intent(in)        :: gr_p
-    logical, intent(in)                 :: origin
-    real(WP)                            :: dx
+    type(context_t), intent(in)  :: cx
+    type(point_t), intent(in)    :: pt
+    real(WP), intent(in)         :: omega(:)
+    type(grid_par_t), intent(in) :: gr_p
+    logical, intent(in)          :: origin
+    real(WP)                     :: dx
 
-    real(WP) :: V_g
-    real(WP) :: As
-    real(WP) :: U
-    real(WP) :: c_1
-    real(WP) :: Omega_rot
-    real(WP) :: Omega_rot_i
-    real(WP) :: k_r_real
-    real(WP) :: k_r_imag
-    integer  :: j
-    real(WP) :: omega_c
-    real(WP) :: lambda
-    real(WP) :: l_i
-    real(WP) :: g_0
-    real(WP) :: g_2
-    real(WP) :: g_4
-    real(WP) :: gamma
-    real(WP) :: dx_real
-    real(WP) :: dx_imag
+    real(WP)        :: V_g
+    real(WP)        :: As
+    real(WP)        :: U
+    real(WP)        :: c_1
+    real(WP)        :: Omega_rot
+    real(WP)        :: Omega_rot_i
+    real(WP)        :: k_r_real
+    real(WP)        :: k_r_imag
+    integer         :: j
+    type(r_state_t) :: st
+    real(WP)        :: omega_c
+    real(WP)        :: lambda
+    real(WP)        :: l_i
+    real(WP)        :: g_0
+    real(WP)        :: g_2
+    real(WP)        :: g_4
+    real(WP)        :: gamma
+    real(WP)        :: dx_real
+    real(WP)        :: dx_imag
 
     ! Evaluate the target grid spacing dx at point pt from a local
     ! wave dispersion analysis. If k_r is the local radial wavenumber,
@@ -315,28 +310,34 @@ contains
     if (gr_p%alpha_osc > 0._WP .OR. gr_p%alpha_exp > 0._WP) then
 
        ! Evaluate coefficients
+       
+       associate (ml => cx%ml)
 
-       V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
-       As = ml%coeff(I_AS, pt)
-       U = ml%coeff(I_U, pt)
-       c_1 = ml%coeff(I_C_1, pt)
+         V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+         As = ml%coeff(I_AS, pt)
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
 
-       Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
-       Omega_rot_i = ml%coeff(I_OMEGA_ROT, pt_i)
+         Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+         Omega_rot_i = ml%coeff(I_OMEGA_ROT, cx%pt_i)
+
+       end associate
 
        ! Loop over omega, finding the maximum k_r_real and k_r_imag
 
        k_r_real = 0._WP
        k_r_imag = 0._WP
 
-       !$OMP PARALLEL DO PRIVATE (omega_c, lambda, l_i, g_0, g_2, g_4, gamma) REDUCTION (MAX:k_r_real,k_r_imag)
+       !$OMP PARALLEL DO PRIVATE (st, omega_c, lambda, l_i, g_0, g_2, g_4, gamma) REDUCTION (MAX:k_r_real,k_r_imag)
        omega_loop : do j = 1, SIZE(omega)
 
-          omega_c = omega_corot(omega(j), Omega_rot, m)
+          st = r_state_t(omega(j))
 
-          lambda = rt%lambda(Omega_rot, omega(j))
-          l_i = rt%l_e(Omega_rot_i, omega(j))
-            
+          omega_c = cx%omega_c(Omega_rot, st)
+
+          lambda = cx%lambda(Omega_rot, st)
+          l_i = cx%l_e(Omega_rot_i, st)
+
           ! Calculate the propagation discriminant gamma
 
           g_4 = -4._WP*V_g*c_1
@@ -350,7 +351,7 @@ contains
           if (gamma < 0._WP) then
 
              ! Propagation zone
-            
+
              k_r_real = MAX(k_r_real, ABS(0.5_WP*SQRT(-gamma))/pt%x)
              k_r_imag = MAX(k_r_imag, ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i))/pt%x)
 
@@ -363,8 +364,8 @@ contains
              else
                 k_r_imag = MAX(k_r_imag, ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i - SQRT(gamma)))/pt%x, & 
                                          ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i + SQRT(gamma)))/pt%x)
-             endif  
-             
+             endif
+
           end if
 
        end do omega_loop
@@ -399,24 +400,23 @@ contains
 
   !****
 
-  function dx_thermal_ (pt, ml, rt, m, omega, gr_p) result (dx)
+  function dx_thermal_ (cx, pt, omega, gr_p) result (dx)
 
-    type(point_t), intent(in)            :: pt
-    class(model_t), pointer, intent(in)  :: ml
-    class(r_rot_t), intent(in)           :: rt
-    integer, intent(in)                  :: m
-    real(WP), intent(in)                 :: omega(:)
-    type(grid_par_t), intent(in)         :: gr_p
-    real(WP)                             :: dx
+    type(context_t), intent(in)  :: cx
+    type(point_t), intent(in)    :: pt
+    real(WP), intent(in)         :: omega(:)
+    type(grid_par_t), intent(in) :: gr_p
+    real(WP)                     :: dx
 
-    real(WP) :: V
-    real(WP) :: nabla
-    real(WP) :: c_rad
-    real(WP) :: c_thk
-    real(WP) :: Omega_rot
-    real(WP) :: tau
-    integer  :: j
-    real(WP) :: omega_c
+    real(WP)        :: V
+    real(WP)        :: nabla
+    real(WP)        :: c_rad
+    real(WP)        :: c_thk
+    real(WP)        :: Omega_rot
+    real(WP)        :: tau
+    integer         :: j
+    type(r_state_t) :: st
+    real(WP)        :: omega_c
 
     ! Evaluate the target grid spacing dx at point pt from a local
     ! thermal dispersion analysis. If tau is the (absolute) value of
@@ -429,29 +429,35 @@ contains
 
     if (gr_p%alpha_thm > 0._WP) then
 
-      ! Evaluate coefficients
+       ! Evaluate coefficients
 
-      V = ml%coeff(I_V_2, pt)*pt%x**2
-      nabla = ml%coeff(I_NABLA, pt)
+       associate (ml => cx%ml)
 
-      c_rad = ml%coeff(I_C_RAD, pt)
-      c_thk = ml%coeff(I_C_THK, pt)
+         V = ml%coeff(I_V_2, pt)*pt%x**2
+         nabla = ml%coeff(I_NABLA, pt)
 
-      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+         c_rad = ml%coeff(I_C_RAD, pt)
+         c_thk = ml%coeff(I_C_THK, pt)
 
-      ! Loop over omega, finding the maximum tau
+         Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
 
-      tau = 0._WP
+       end associate
 
-      !$OMP PARALLEL DO PRIVATE (omega_c) REDUCTION (MAX:tau)
-      omega_loop : do j = 1, SIZE(omega)
+       ! Loop over omega, finding the maximum tau
 
-         omega_c = omega_corot(omega(j), Omega_rot, m)
+       tau = 0._WP
+
+       !$OMP PARALLEL DO PRIVATE (st, omega_c) REDUCTION (MAX:tau)
+       omega_loop : do j = 1, SIZE(omega)
+
+          st = r_state_t(omega(j))
+
+          omega_c = cx%omega_c(Omega_rot, st)
          
-         ! Update the maximal tau
-
-         tau = MAX(tau, SQRT(ABS(V*nabla*omega_c*c_thk/c_rad))/pt%x)
+          ! Update the maximal tau
           
+          tau = MAX(tau, SQRT(ABS(V*nabla*omega_c*c_thk/c_rad))/pt%x)
+
        end do omega_loop
 
        ! Now calculate dx
@@ -472,12 +478,12 @@ contains
 
   !****
 
-  function dx_struct_ (ml, pt, gr_p) result (dx)
+  function dx_struct_ (cx, pt, gr_p) result (dx)
 
-    class(model_t), pointer, intent(in)  :: ml
-    type(point_t), intent(in)            :: pt
-    type(grid_par_t), intent(in)         :: gr_p
-    real(WP)                             :: dx
+    type(context_t), intent(in)  :: cx
+    type(point_t), intent(in)    :: pt
+    type(grid_par_t), intent(in) :: gr_p
+    real(WP)                     :: dx
 
     real(WP) :: dV_2
     real(WP) :: dAs
@@ -496,11 +502,15 @@ contains
 
        ! Evaluate coefficients
 
-       dV_2 = ml%dcoeff(I_V_2, pt)
-       dAs = ml%dcoeff(I_AS, pt)
-       dU = ml%dcoeff(I_U, pt)
-       dc_1 = ml%dcoeff(I_C_1, pt)
-       dGamma_1 = ml%dcoeff(I_GAMMA_1, pt)
+       associate (ml => cx%ml)
+
+         dV_2 = ml%dcoeff(I_V_2, pt)
+         dAs = ml%dcoeff(I_AS, pt)
+         dU = ml%dcoeff(I_U, pt)
+         dc_1 = ml%dcoeff(I_C_1, pt)
+         dGamma_1 = ml%dcoeff(I_GAMMA_1, pt)
+
+       end associate
 
        if (dV_2 /= 0._WP) dx = MIN(dx, ABS(pt%x/(gr_p%alpha_str*dV_2)))
        if (dAs /= 0._WP) dx = MIN(dx, ABS(pt%x/(gr_p%alpha_str*dAs)))
