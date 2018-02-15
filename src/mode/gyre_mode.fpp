@@ -174,7 +174,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the inner boundary)
 
-       call find_turn(this%cx%ml, this%gr, REAL(this%st%omega), this%md_p, this%os_p, k_i, x_i)
+       call find_turn(this%cx, this%gr, r_state_t(REAL(this%st%omega)), k_i, x_i)
 
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface

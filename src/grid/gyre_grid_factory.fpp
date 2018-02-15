@@ -87,7 +87,7 @@ contains
 
     !$OMP PARALLEL DO
     omega_loop : do j = 1, SIZE(omega)
-       call find_turn(cx%ml, gr, omega(j), md_p, os_p, k_turn(j), x_turn(j))
+       call find_turn(cx, gr, r_state_t(omega(j)), k_turn(j), x_turn(j))
     end do omega_loop
 
      if (check_log_level('INFO')) then
