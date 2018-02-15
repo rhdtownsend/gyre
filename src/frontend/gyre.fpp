@@ -73,11 +73,11 @@ program gyre
   type(num_par_t)                      :: nm_p_sel
   type(grid_par_t)                     :: gr_p_sel
   type(scan_par_t), allocatable        :: sc_p_sel(:)
-  type(grid_t)                         :: gr
+  type(context_t), pointer             :: cx(:) => null()
   real(WP), allocatable                :: omega(:)
   real(WP)                             :: omega_min
   real(WP)                             :: omega_max
-  type(context_t), pointer             :: cx(:) => null()
+  type(grid_t)                         :: gr
   class(r_bvp_t), allocatable          :: bp_ad
   class(c_bvp_t), allocatable          :: bp_nad
   integer                              :: n_md_ad
@@ -88,7 +88,7 @@ program gyre
   integer                              :: i_ad_a
   integer                              :: i_ad_b
   type(mode_t), allocatable            :: md_nad(:)
-
+  
   ! Read command-line arguments
 
   $ASSERT(n_arg() == 1,Syntax: gyre <filename>)
@@ -183,15 +183,13 @@ program gyre
      call select_par(gr_p, md_p(i)%tag, gr_p_sel)
      call select_par(sc_p, md_p(i)%tag, sc_p_sel)
 
-     ! Create the scaffold grid (used in setting up the frequency array)
+     ! Set up the context
 
-     gr = grid_t(ml%grid(), gr_p_sel%x_i, gr_p_sel%x_o)
+     cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel)
 
      ! Set up the frequency array
 
-     call build_scan(ml, gr, md_p(i), os_p_sel, sc_p_sel, omega)
-
-     call check_scan(ml, gr, omega, md_p(i), os_p_sel)
+     call build_scan(cx(i), md_p(i), os_p_sel, sc_p_sel, omega)
 
      if (SIZE(omega) < 2) then
         
@@ -203,7 +201,11 @@ program gyre
 
      endif
 
-     ! Set frequency bounds for solutions
+     ! Create the full grid
+
+     gr = grid_t(cx(i), omega, gr_p_sel, md_p(i), os_p_sel)
+
+     ! Set frequency bounds and perform checks
 
      if (nm_p_sel%restrict_roots) then
         omega_min = MINVAL(omega)
@@ -213,13 +215,7 @@ program gyre
         omega_max = HUGE(0._WP)
      endif
 
-     ! Create the full grid
-
-     gr = grid_t(ml, omega, gr_p_sel, md_p(i), os_p_sel)
-
-     ! Set up the context
-
-     cx(i) = context_t(ml, gr%pt_i(), gr%pt_o(), md_p(i), os_p_sel)
+     call check_scan(ml, gr, omega, md_p(i), os_p_sel)
 
      ! Find adiabatic modes
 

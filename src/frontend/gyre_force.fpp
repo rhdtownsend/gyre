@@ -179,9 +179,9 @@ program gyre_force
      call select_par(nm_p, md_p(i)%tag, nm_p_sel)
      call select_par(gr_p, md_p(i)%tag, gr_p_sel)
 
-     ! Create the scaffold grid (used in setting up the frequency array)
+     ! Set up the context
 
-     gr = grid_t(ml%grid(), gr_p_sel%x_i, gr_p_sel%x_o)
+     cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel)
 
      ! Set up the frequency/period arrays
 
@@ -202,11 +202,7 @@ program gyre_force
 
      ! Create the full grid
 
-     gr = grid_t(ml, omega, gr_p_sel, md_p(i), os_p_sel)
-
-     ! Set up the context
-
-     cx(i) = context_t(ml, gr%pt(1), gr%pt(gr%n_k), md_p(i), os_p_sel)
+     gr = grid_t(cx(i), omega, gr_p_sel, md_p(i), os_p_sel)
 
      ! Find modes
 

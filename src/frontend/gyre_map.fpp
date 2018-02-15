@@ -74,12 +74,12 @@ program gyre_map
   type(grid_par_t)              :: gr_p_sel
   type(scan_par_t), allocatable :: sc_p_re_sel(:)
   type(scan_par_t), allocatable :: sc_p_im_sel(:)
-  type(grid_t)                  :: gr
   type(context_t), pointer      :: cx => null()
   real(WP), allocatable         :: omega_re(:)
   real(WP), allocatable         :: omega_im(:)
   real(WP)                      :: omega_min
   real(WP)                      :: omega_max
+  type(grid_t)                  :: gr
   type(nad_bvp_t), target       :: bp
   integer                       :: n_omega_re
   integer                       :: n_omega_im
@@ -157,10 +157,6 @@ program gyre_map
 
   ml => model_t(ml_p)
 
-  ! Allocate the context (will be initialized later on)
-
-  allocate(cx)
-
   ! Select parameters according to tags
 
   if (check_log_level('INFO')) then
@@ -183,14 +179,14 @@ program gyre_map
   call select_par(sc_p_re, md_p(1)%tag, sc_p_re_sel)
   call select_par(sc_p_im, md_p(1)%tag, sc_p_im_sel)
   
-  ! Create the scaffold grid (used in setting up the frequency arrays)
+  ! Create the context
 
-  gr = grid_t(ml%grid(), gr_p_sel%x_i, gr_p_sel%x_o)
+  allocate(cx, SOURCE=context_t(ml, gr_p_sel, md_p(1), os_p_sel))
 
   ! Set up the frequency arrays
 
-  call build_scan(ml, gr, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
-  call build_scan(ml, gr, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
+  call build_scan(cx, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
+  call build_scan(cx, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
 
   ! Set frequency bounds
 
@@ -204,11 +200,7 @@ program gyre_map
 
   ! Create the full grid
 
-  gr = grid_t(ml, omega_re, gr_p_sel, md_p(1), os_p_sel)
-
-  ! Set up the context
-
-  cx = context_t(ml, gr%pt_i(), gr%pt_o(), md_p(1), os_p_sel)
+  gr = grid_t(cx, omega_re, gr_p_sel, md_p(1), os_p_sel)
 
   ! Set up the bvp
 
