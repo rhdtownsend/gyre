@@ -54,7 +54,7 @@ module gyre_tide
 
 contains
 
-  subroutine eval_tide (ml, process_wave, td_p, os_p, nm_p, gr_p)
+  subroutine eval_tide (ml, process_wave, os_p, nm_p, gr_p, td_p)
 
     class(model_t), pointer, intent(in) :: ml
     interface
@@ -63,13 +63,17 @@ contains
          type(wave_t), intent(in) :: wv
        end subroutine process_wave
     end interface
-    type(tide_par_t), intent(in)        :: td_p
     type(osc_par_t), intent(in)         :: os_p
     type(num_par_t), intent(in)         :: nm_p
     type(grid_par_t), intent(in)        :: gr_p
+    type(tide_par_t), intent(in)        :: td_p
 
+    real(WP)                  :: Omega_orb
+    real(WP)                  :: eps_tide
+    integer                   :: n_cx
+    integer                   :: i
+    type(context_t), pointer  :: cx(:) => null()
     real(WP), allocatable     :: omega(:)
-    type(context_t), pointer  :: cx => null()
     type(wave_t)              :: wv
     integer                   :: l
     integer                   :: m
@@ -82,37 +86,55 @@ contains
     complex(WP)               :: w_o(3)
     type(c_state_t)           :: st
 
-    ! Set up the inertial-frame forcing frequencies array
+    ! Calculate the orbital frequency and tidal strength
 
-    omega = [(k*td_p%Omega_orb, k=-td_p%k_max,td_p%k_max)]
+    Omega_orb = SQRT((1._WP + td_p%q)*td_p%R_a**3)
 
-    ! Allocate other stuff
+    eps_tide = (td_p%R_a)**3*td_p%q
 
-    allocate(cx)
+    ! Set up contexts
 
-    ! Loop over l and m
+    n_cx = td_p%l_max*(td_p%l_max+2) - 3
 
-    l_loop : do l = 2, td_p%l_max
+    allocate(cx(n_cx))
 
-       m_loop : do m = -l, l
+    i = 0
 
-          ! Set up the mode parameters
+    cx_l_loop : do l = 2, td_p%l_max
+       cx_m_loop : do m = -l, l
 
-          md_p = mode_par_t(0, l=l, m=m, &
+          i = i + 1
+          $ASSERT_DEBUG(i <= n_cx,Context array overflow)
+          
+          md_p = mode_par_t(i, l=l, m=m, &
                             n_pg_min=-HUGE(0), n_pg_max=HUGE(0), &
                             rossby=.FALSE., tag='')
-          
-          ! Create the full grid
 
-          gr = grid_t(ml, omega, gr_p, md_p, os_p)
-            
-          ! Set up the context
+          cx(i) = context_t(ml, gr_p, md_p, os_p)
 
-          cx = context_t(ml, gr%pt_i(), gr%pt_o(), md_p, os_p)
+       end do cx_m_loop
+    end do cx_l_loop
+
+    ! Set up the inertial-frame forcing frequencies array
+
+    omega = [(k*Omega_orb, k=-td_p%k_max,td_p%k_max)]
+
+    ! Create the grid
+
+    gr = grid_t(cx, omega, gr_p)
+
+    ! Loop over l and m, calculating the tidal contribution
+
+    i = 0
+
+    l_loop : do l = 2, td_p%l_max
+       m_loop : do m = -l, l
+
+          i = i + 1
 
           ! Create the bvp_t 
 
-          bp = nad_bvp_t(cx, gr, md_p, nm_p, os_p)
+          bp = nad_bvp_t(cx(i), gr, md_p, nm_p, os_p)
 
           ! Loop over k
 
@@ -120,30 +142,38 @@ contains
 
              ! Calculate the tidal potential coefficient
 
-             Upsilon_lmk = -td_p%eps_T*td_p%R_a**(l-2)*beta_lm(l, m)*X_lmk(td_p%ec, -(l+1),-m,-k)/(4._WP*PI)
+             Upsilon_lmk = -eps_tide*td_p%R_a**(l-2)*beta_lm(l, m)*X_lmk(td_p%e, -(l+1),-m,-k)/(4._WP*PI)
 
-             ! Set up the inhomogeneous boundary conditions
+             if (Upsilon_lmk /= 0._WP) then
 
-             w_i = 0._WP
+                ! Set up the inhomogeneous boundary conditions
+
+                w_i = 0._WP
          
-             w_o = 0._WP
-             w_o(2) = (2*l+1)*Upsilon_lmk
+                w_o = 0._WP
+                w_o(2) = (2*l+1)*Upsilon_lmk
          
-             ! Solve for the wave function
+                ! Solve for the wave function
 
-             st = c_state_t(CMPLX(omega(k), KIND=WP), omega(k))
+                st = c_state_t(CMPLX(omega(k), KIND=WP), omega(k))
 
-             wv = wave_t(bp, st, w_i, w_o)
+                wv = wave_t(bp, st, w_i, w_o)
 
-             ! Process it
+                ! Process it
 
-             call process_wave(wv)
+                call process_wave(wv)
+
+             endif
 
           end do k_loop
 
        end do m_loop
 
     end do l_loop
+
+    ! Clean up
+
+    deallocate(cx)
 
     ! Finish
 
