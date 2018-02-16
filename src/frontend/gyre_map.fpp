@@ -198,9 +198,9 @@ program gyre_map
      omega_max = HUGE(0._WP)
   endif
 
-  ! Create the full grid
+  ! Create the grid
 
-  gr = grid_t(cx, omega_re, gr_p_sel, md_p(1), os_p_sel)
+  gr = grid_t(cx, omega_re, gr_p_sel)
 
   ! Set up the bvp
 

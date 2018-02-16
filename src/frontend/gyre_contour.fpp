@@ -175,9 +175,9 @@ program gyre_contour
   call build_scan(cx, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
   call build_scan(cx, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
 
-  ! Create the full grid
+  ! Create the grid
 
-  gr = grid_t(cx, omega_re, gr_p_sel, md_p(1), os_p_sel)
+  gr = grid_t(cx, omega_re, gr_p_sel)
 
   ! Set frequency bounds
 

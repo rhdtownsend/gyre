@@ -200,9 +200,9 @@ program gyre_force
      omega = omega(:n_omega)
      P = P(:n_P)
 
-     ! Create the full grid
+     ! Create the grid
 
-     gr = grid_t(cx(i), omega, gr_p_sel, md_p(i), os_p_sel)
+     gr = grid_t(cx(i), omega, gr_p_sel)
 
      ! Find modes
 
