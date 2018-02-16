@@ -45,7 +45,8 @@ module gyre_grid_factory
   ! Interfaces
 
   interface grid_t
-     module procedure grid_t_model_
+     module procedure grid_t_context_0_
+     module procedure grid_t_context_1_
   end interface grid_t
 
   ! Access specifiers
@@ -58,50 +59,65 @@ module gyre_grid_factory
 
 contains
 
-  function grid_t_model_ (cx, omega, gr_p, md_p, os_p) result (gr)
+  function grid_t_context_0_ (cx, omega, gr_p) result (gr)
 
     type(context_t), intent(in)  :: cx
     real(WP), intent(in)         :: omega(:)
     type(grid_par_t), intent(in) :: gr_p
-    type(mode_par_t), intent(in) :: md_p
-    type(osc_par_t), intent(in)  :: os_p
     type(grid_t)                 :: gr
 
-    integer  :: j
-    integer  :: k_turn(SIZE(omega))
-    real(WP) :: x_turn(SIZE(omega))
-    integer  :: s
+    ! Construct the grid_t using the supplied context
 
-    ! Construct the grid_t using the supplied model grid as the base
+    gr = grid_t([cx], omega, gr_p)
+
+    ! Finish
+
+    return
+
+  end function grid_t_context_0_
+
+  !****
+
+  function grid_t_context_1_ (cx, omega, gr_p) result (gr)
+
+    type(context_t), intent(in)  :: cx(:)
+    real(WP), intent(in)         :: omega(:)
+    type(grid_par_t), intent(in) :: gr_p
+    type(grid_t)                 :: gr
+
+    class(model_t), pointer :: ml => null()
+    integer                 :: i
+    integer                 :: s
+
+    $ASSERT_DEBUG(SIZE(cx) >= 1,Too few contexts)
+
+    ! Construct the grid_t using the supplied array contexts
+    ! (this is to allow multiple contexts to use the same grid)
 
     if (check_log_level('INFO')) then
-        write(OUTPUT_UNIT, 100) 'Building x grid'
-100     format(A)
-     endif
+       write(OUTPUT_UNIT, 100) 'Building x grid'
+100    format(A)
+    endif
+
+    ! Check that the contexts are all associated with the same model
+
+    ml => cx(1)%ml
+
+    check_loop : do i = 1, SIZE(cx)
+       $ASSERT_DEBUG(ASSOCIATED(cx(i)%ml, ml),Contexts are associated with different models)
+    end do check_loop
 
     ! Create the scaffold grid
 
-    gr = grid_t(cx%ml%grid(), cx%pt_i%x, cx%pt_o%x)
-
-    ! Determine the inner turning point at each frequency
-
-    !$OMP PARALLEL DO
-    omega_loop : do j = 1, SIZE(omega)
-       call find_turn(cx, gr, r_state_t(omega(j)), k_turn(j), x_turn(j))
-    end do omega_loop
-
-     if (check_log_level('INFO')) then
-        write(OUTPUT_UNIT, 110) 'Found inner turning points, x range', MINVAL(x_turn), '->', MIN(MAXVAL(x_turn), gr%pt(gr%n_k)%x)
-110     format(3X,A,1X,F6.4,1X,A,1X,F6.4)
-     endif
+    gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
 
     ! Add points to the inner region
 
-    call add_inner_(k_turn, x_turn, gr_p, gr)
+    call add_inner_(cx, omega, gr_p, gr)
 
     ! Add points globally
 
-    call add_global_(cx, omega, gr_p, md_p, os_p, gr)
+    call add_global_(cx, omega, gr_p, gr)
 
     ! Report 
 
@@ -130,19 +146,25 @@ contains
 
     ! Finish
 
-    return
-
-  end function grid_t_model_
+  end function grid_t_context_1_
 
   !****
 
-  subroutine add_inner_ (k_turn, x_turn, gr_p, gr)
+  subroutine add_inner_ (cx, omega, gr_p, gr)
 
-    integer, intent(in)          :: k_turn(:)
-    real(WP), intent(in)         :: x_turn(:)
+    type(context_t), intent(in)  :: cx(:)
+    real(WP), intent(in)         :: omega(:)
     type(grid_par_t), intent(in) :: gr_p
     type(grid_t), intent(inout)  :: gr
 
+    integer  :: k_turn_min
+    integer  :: k_turn_max
+    real(WP) :: x_turn_min
+    real(WP) :: x_turn_max
+    integer  :: i
+    integer  :: j
+    integer  :: k_turn(SIZE(omega))
+    real(WP) :: x_turn(SIZE(omega))
     real(WP) :: dx
     integer  :: k_max
     integer  :: k
@@ -150,15 +172,46 @@ contains
 
     $CHECK_BOUNDS(SIZE(x_turn),SIZE(k_turn))
 
-    ! Add points in the inner region (extending from the boundary to
-    ! the inner turning point), to ensure that no cell is larger than
-    ! dx = MIN(x_turn)/n_inner
+    ! Add points in the inner region
+
+    ! First, determine the range (in x and cell number) of inner turning
+    ! points, across all contexts and frequencies
+
+    k_turn_min = gr%n_k-1
+    k_turn_max = 1
+
+    x_turn_min = gr%pt(gr%n_k)%x
+    x_turn_max = gr%pt(1)%x
+
+    context_loop : do i = 1, SIZE(cx)
+
+       !$OMP PARALLEL DO
+       omega_loop : do j = 1, SIZE(omega)
+          call find_turn(cx(i), gr, r_state_t(omega(j)), k_turn(j), x_turn(j))
+       end do omega_loop
+
+       x_turn_min = MIN(x_turn_min, MINVAL(x_turn))
+       x_turn_max = MAX(x_turn_max, MAXVAL(x_turn))
+
+       k_turn_min = MIN(k_turn_min, MINVAL(k_turn))
+       k_turn_max = MAX(k_turn_max, MAXVAL(k_turn))
+
+    end do context_loop
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Found inner turning points, x range', x_turn_min, '->', x_turn_max
+110    format(3X,A,1X,F6.4,1X,A,1X,F6.4)
+    endif
+
+    ! Now add points (extending from the boundary to the inner turning
+    ! point), to ensure that no cell is larger than dx =
+    ! x_turn_min/n_inner
 
     if (gr_p%n_inner > 0) then
 
-       dx = MINVAL(x_turn)/gr_p%n_inner
+       dx = x_turn_min/gr_p%n_inner
 
-       k_max = MIN(MAXVAL(k_turn), gr%n_k-1)
+       k_max = MIN(k_turn_max, gr%n_k-1)
 
        !$OMP PARALLEL DO
        cell_loop : do k = 1, k_max
@@ -194,17 +247,16 @@ contains
 
   !****
 
-  subroutine add_global_ (cx, omega, gr_p, md_p, os_p, gr)
+  subroutine add_global_ (cx, omega, gr_p, gr)
 
-    type(context_t), intent(in)  :: cx
+    type(context_t), intent(in)  :: cx(:)
     real(WP), intent(in)         :: omega(:)
     type(grid_par_t), intent(in) :: gr_p
-    type(mode_par_t), intent(in) :: md_p
-    type(osc_par_t), intent(in)  :: os_p
     type(grid_t), intent(inout)  :: gr
 
     integer              :: i_iter
     integer, allocatable :: dn(:)
+    integer              :: i
     integer              :: k
     type(point_t)        :: pt
     real(WP)             :: dx
@@ -218,6 +270,8 @@ contains
        if (ALLOCATED(dn)) deallocate(dn)
        allocate(dn(gr%n_k-1))
 
+       ! Loop through grid cells
+
        cell_loop : do k = 1, gr%n_k-1
 
           associate ( &
@@ -229,9 +283,26 @@ contains
                pt%s = pt_a%s
                pt%x = 0.5_WP*(pt_a%x + pt_b%x)
 
-               dx = MAX(MIN(dx_dispersion_(cx, pt, omega, gr_p, pt_a%x==0), &
-                            dx_thermal_(cx, pt, omega, gr_p), &
-                            dx_struct_(cx, pt, gr_p)), gr_p%dx_min)
+               ! Loop over contexts
+
+               dx = HUGE(0._WP)
+
+               context_loop : do i = 1, SIZE(cx)
+
+                  ! Calculate the minimal desired spacing
+
+                  dx = MIN(dx_dispersion_(cx(i), pt, omega, gr_p, pt_a%x==0), &
+                           dx_thermal_(cx(i), pt, omega, gr_p), &
+                           dx_struct_(cx(i), pt, gr_p), &
+                           dx)
+
+               end do context_loop
+
+               ! Place a floor on dx
+
+               dx = MAX(dx, gr_p%dx_min)
+
+               ! Set dn
 
                dn(k) = CEILING((pt_b%x - pt_a%x)/dx) - 1
 
