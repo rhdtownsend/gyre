@@ -1748,7 +1748,8 @@ contains
     class(wave_t), intent(in) :: this
     real(WP)                  :: H
 
-    ! Calculate the total energy, in units of G M_star**2 / R_star
+    ! Calculate the total energy (i.e., twice the volume-integrated
+    ! kinetic energy), in units of G M_star**2 / R_star
 
     H = 0.5_WP*REAL(this%st%omega)**2*this%E()
 
