@@ -35,6 +35,7 @@ module gyre_tide_par
      real(WP) :: R_a
      real(WP) :: q
      real(WP) :: e
+     real(WP) :: omega_static
      integer  :: l_max
      integer  :: k_max
   end type tide_par_t
@@ -80,10 +81,11 @@ contains
     real(WP) :: R_a
     real(WP) :: q
     real(WP) :: e
+    real(WP) :: omega_static
     integer  :: l_max
     integer  :: k_max
 
-    namelist /tide/ R_a, q, e, l_max, k_max
+    namelist /tide/ R_a, q, e, omega_static, l_max, k_max
 
     ! Count the number of tide namelists
 
@@ -109,6 +111,7 @@ contains
        R_a = 0.2_WP
        q = 1._WP
        e = 0.5_WP
+       omega_static = 0._WP
 
        l_max = 4
        k_max = 20
@@ -120,6 +123,7 @@ contains
        td_p(i) = tide_par_t(R_a=R_a, &
                             q=q, &
                             e=e, &
+                            omega_static=omega_static, &
                             l_max=l_max, &
                             k_max=k_max)
 
@@ -145,6 +149,7 @@ contains
     call bcast(td_p%R_a, root_rank)
     call bcast(td_p%q, root_rank)
     call bcast(td_p%e, root_rank)
+    call bcast(td_p%Omega_static, root_rank)
 
     call bcast(td_p%l_max, root_rank)
     call bcast(td_p%k_max, root_rank)
