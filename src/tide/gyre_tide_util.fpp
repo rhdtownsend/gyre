@@ -24,6 +24,7 @@ module gyre_tide_util
   use core_kinds
 
   use gyre_constants
+  use gyre_tide_par
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -36,20 +37,42 @@ module gyre_tide_util
 
   private
 
+  public :: Upsilon_lmk
   public :: X_lmk
   public :: beta_lm
+  public :: kappa_lmk
 
   ! Procedures
 
 contains
 
-  function X_lmk (ec, l, m, k)
+  function Upsilon_lmk (td_p, l, m, k)
 
-    real(WP), intent(in) :: ec
-    integer, intent(in)  :: l
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: X_lmk
+    type(tide_par_t), intent(in) :: td_p
+    integer, intent(in)          :: l
+    integer, intent(in)          :: m
+    integer, intent(in)          :: k
+    real(WP)                     :: Upsilon_lmk
+
+    ! Evaluate the tidal potential coefficient for eps_tide of unity
+
+    Upsilon_lmk = -td_p%R_a**(l-2)*beta_lm(l, m)*X_lmk(td_p, -(l+1), -m, -k)/(4._WP*PI)
+
+    ! Finish
+
+    return
+
+  end function Upsilon_lmk
+
+  !****
+
+  function X_lmk (td_p, l, m, k)
+
+    type(tide_par_t), intent(in) :: td_p
+    integer, intent(in)          :: l
+    integer, intent(in)          :: m
+    integer, intent(in)          :: k
+    real(WP)                     :: X_lmk
 
     integer, parameter :: N = 1024
 
@@ -58,8 +81,6 @@ contains
     real(WP) :: Ea
     real(WP) :: Ma
     real(WP) :: y(N)
-
-    $ASSERT_DEBUG(ABS(m) <= l,Invalid m)
 
     ! Evaluate the Hansen coefficient X_lmk, using the transformed
     ! integral expression given in eqn. (22) of Smeyers, Willems & Van
@@ -72,17 +93,17 @@ contains
 
        ua(i) = (i-1)*PI/(N-1)
 
-       Ea = 2._WP*ATAN(SQRT((1._WP-ec)/(1._WP+ec))*TAN(ua(i)/2._WP))
+       Ea = 2._WP*ATAN(SQRT((1._WP-td_p%e)/(1._WP+td_p%e))*TAN(ua(i)/2._WP))
 
-       Ma = Ea - ec*SIN(Ea)
+       Ma = Ea - td_p%e*SIN(Ea)
 
-       y(i) = COS(k*Ma - m*ua(i))/(1._WP + ec*COS(ua(i)))**(l+2)
+       y(i) = COS(k*Ma - m*ua(i))/(1._WP + td_p%e*COS(ua(i)))**(l+2)
 
     end do
 
     ! Do the integral
 
-    X_lmk = integrate(ua, y)*(1._WP - ec**2)**(l+1.5_WP)/PI
+    X_lmk = integrate(ua, y)*(1._WP - td_p%e**2)**(l+1.5_WP)/PI
 
     ! Finish
 
@@ -148,5 +169,39 @@ contains
     return
 
   end function beta_lm
+
+  !****
+
+  function kappa_lmk (l, m, k)
+
+    integer, intent(in) :: l
+    integer, intent(in) :: m
+    integer, intent(in) :: k
+    real(WP)            :: kappa_lmk
+
+    ! Evaluate the kappa_lmk function, using the expression given in
+    ! equation (53) of Willems et al. (2010)
+
+    if (k == 0) then
+
+       if (m == 0) then
+          kappa_lmk = 0.5_WP
+       elseif (m >= 1) then
+          kappa_lmk = 1._WP
+       else
+          kappa_lmk = 0._WP
+       endif
+
+    else
+
+       kappa_lmk = 1._WP
+
+    endif
+
+    ! Finish
+
+    return
+
+  end function kappa_lmk
 
 end module gyre_tide_util

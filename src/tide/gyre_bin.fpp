@@ -54,6 +54,7 @@ program gyre_bin
   type(grid_par_t), allocatable  :: gr_p(:)
   type(tide_par_t), allocatable  :: td_p(:)
   class(model_t), pointer        :: ml => null()
+  integer                        :: i
   real(WP)                       :: tau_tot
 
   ! Read command-line arguments
@@ -100,10 +101,12 @@ program gyre_bin
   call read_grid_par(unit, gr_p)
   call read_tide_par(unit, td_p)
 
+  close(unit)
+
   $ASSERT(SIZE(os_p) == 1,Must be exactly one mode parameter)
   $ASSERT(SIZE(nm_p) == 1,Must be exactly one num parameter)
   $ASSERT(SIZE(gr_p) == 1,Must be exactly one grid parameter)
-  $ASSERT(SIZE(td_p) == 1,Must be exactly one tide parameter)
+  $ASSERT(SIZE(td_p) >= 1,Must be at least one tide parameter)
 
   ! Initialize the model
 
@@ -113,23 +116,25 @@ program gyre_bin
 
   ml => model_t(ml_p)
 
-  ! Evaluate the tide
+  ! Loop over tide parameters
 
-  tau_tot = 0._WP
+  tide_par_loop : do i = 1, SIZE(td_p)
 
-  call eval_tide(ml, process_wave, os_p(1), nm_p(1), gr_p(1), td_p(1))
+     ! Evaluate the tide
 
-  ! Write out results
+     tau_tot = 0._WP
 
-  print *,'Total torque:', tau_tot
+     call eval_tide(ml, process_wave, os_p(1), nm_p(1), gr_p(1), td_p(i))
+
+     print *,tau_tot
+
+  end do tide_par_loop
 
   ! Clean up
 
   deallocate(ml)
 
   ! Finish
-
-  close(unit)
 
   call final_parallel()
 
@@ -141,7 +146,9 @@ contains
 
     ! Accumulate the torque
 
-    tau_tot = tau_tot + wv%tau_ss()
+    print *,'Total torque:', wv%l, wv%m, wv%omega, wv%tau_ss()
+
+!    tau_tot = tau_tot + wv%tau_ss()
 
     ! Finish
 
