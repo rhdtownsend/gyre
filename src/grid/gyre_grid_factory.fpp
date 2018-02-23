@@ -28,6 +28,7 @@ module gyre_grid_factory
   use gyre_freq
   use gyre_grid
   use gyre_grid_par
+  use gyre_grid_spec
   use gyre_grid_util
   use gyre_model
   use gyre_mode_par
@@ -45,8 +46,8 @@ module gyre_grid_factory
   ! Interfaces
 
   interface grid_t
-     module procedure grid_t_context_0_
-     module procedure grid_t_context_1_
+     module procedure grid_t_context_
+     module procedure grid_t_grid_spec_
   end interface grid_t
 
   ! Access specifiers
@@ -59,52 +60,60 @@ module gyre_grid_factory
 
 contains
 
-  function grid_t_context_0_ (cx, omega, gr_p) result (gr)
+  function grid_t_context_ (cx, omega, gr_p) result (gr)
 
-    type(context_t), intent(in)  :: cx
-    real(WP), intent(in)         :: omega(:)
-    type(grid_par_t), intent(in) :: gr_p
-    type(grid_t)                 :: gr
+    type(context_t), pointer, intent(in) :: cx
+    real(WP), intent(in)                 :: omega(:)
+    type(grid_par_t), intent(in)         :: gr_p
+    type(grid_t)                         :: gr
+
+    type(grid_spec_t) :: gs
 
     ! Construct the grid_t using the supplied context
 
-    gr = grid_t([cx], omega, gr_p)
+    gs = grid_spec_t(cx, omega)
+
+    gr = grid_t([gs], gr_p)
 
     ! Finish
 
     return
 
-  end function grid_t_context_0_
+  end function grid_t_context_
 
   !****
 
-  function grid_t_context_1_ (cx, omega, gr_p) result (gr)
+  function grid_t_grid_spec_ (gs, gr_p) result (gr)
 
-    type(context_t), intent(in)  :: cx(:)
-    real(WP), intent(in)         :: omega(:)
-    type(grid_par_t), intent(in) :: gr_p
-    type(grid_t)                 :: gr
+    type(grid_spec_t), intent(in) :: gs(:)
+    type(grid_par_t), intent(in)  :: gr_p
+    type(grid_t)                  :: gr
 
     class(model_t), pointer :: ml => null()
     integer                 :: i
     integer                 :: s
 
-    $ASSERT_DEBUG(SIZE(cx) >= 1,Too few contexts)
+    $ASSERT_DEBUG(SIZE(gs) >= 1,Too few grid_specs)
 
-    ! Construct the grid_t using the supplied array contexts
-    ! (this is to allow multiple contexts to use the same grid)
+    ! Construct the grid_t using the supplied array of
+    ! grid_specs. Each grid spec supplies a context and the set of
+    ! frequencies to adopt for that context
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 100) 'Building x grid'
 100    format(A)
     endif
 
-    ! Check that the contexts are all associated with the same model
+    ! Check that the grid_specs are all associated with the same model
 
-    ml => cx(1)%ml
+    $ASSERT_DEBUG(ASSOCIATED(gs(1)%cx),Null pointer)
 
-    check_loop : do i = 1, SIZE(cx)
-       $ASSERT_DEBUG(ASSOCIATED(cx(i)%ml, ml),Contexts are associated with different models)
+    ml => gs(1)%cx%ml
+
+    check_loop : do i = 1, SIZE(gs)
+       print *,'i:',i
+       $ASSERT_DEBUG(ASSOCIATED(gs(i)%cx),Null pointer)
+       $ASSERT_DEBUG(ASSOCIATED(gs(i)%cx%ml, ml),Contexts are associated with different models)
     end do check_loop
 
     ! Create the scaffold grid
@@ -113,11 +122,11 @@ contains
 
     ! Add points to the inner region
 
-    call add_inner_(cx, omega, gr_p, gr)
+    call add_inner_(gs, gr_p, gr)
 
     ! Add points globally
 
-    call add_global_(cx, omega, gr_p, gr)
+    call add_global_(gs, gr_p, gr)
 
     ! Report 
 
@@ -146,16 +155,15 @@ contains
 
     ! Finish
 
-  end function grid_t_context_1_
+  end function grid_t_grid_spec_
 
   !****
 
-  subroutine add_inner_ (cx, omega, gr_p, gr)
+  subroutine add_inner_ (gs, gr_p, gr)
 
-    type(context_t), intent(in)  :: cx(:)
-    real(WP), intent(in)         :: omega(:)
-    type(grid_par_t), intent(in) :: gr_p
-    type(grid_t), intent(inout)  :: gr
+    type(grid_spec_t), intent(in) :: gs(:)
+    type(grid_par_t), intent(in)  :: gr_p
+    type(grid_t), intent(inout)   :: gr
 
     integer  :: k_turn_min
     integer  :: k_turn_max
@@ -163,14 +171,12 @@ contains
     real(WP) :: x_turn_max
     integer  :: i
     integer  :: j
-    integer  :: k_turn(SIZE(omega))
-    real(WP) :: x_turn(SIZE(omega))
+    integer  :: k_turn
+    real(WP) :: x_turn
     real(WP) :: dx
     integer  :: k_max
     integer  :: k
     integer  :: dn(gr%n_k-1)
-
-    $CHECK_BOUNDS(SIZE(x_turn),SIZE(k_turn))
 
     ! Add points in the inner region
 
@@ -183,20 +189,27 @@ contains
     x_turn_min = gr%pt(gr%n_k)%x
     x_turn_max = gr%pt(1)%x
 
-    context_loop : do i = 1, SIZE(cx)
+    spec_loop : do i = 1, SIZE(gs)
 
-       !$OMP PARALLEL DO
-       omega_loop : do j = 1, SIZE(omega)
-          call find_turn(cx(i), gr, r_state_t(omega(j)), k_turn(j), x_turn(j))
-       end do omega_loop
+       associate (cx => gs(i)%cx, &
+                  omega => gs(i)%omega)
 
-       x_turn_min = MIN(x_turn_min, MINVAL(x_turn))
-       x_turn_max = MAX(x_turn_max, MAXVAL(x_turn))
+         !$OMP PARALLEL DO PRIVATE (k_turn, x_turn) REDUCTION (MIN:k_turn_min,x_turn_min) REDUCTION (MAX:k_turn_max,x_turn_max)
+         omega_loop : do j = 1, SIZE(omega)
 
-       k_turn_min = MIN(k_turn_min, MINVAL(k_turn))
-       k_turn_max = MAX(k_turn_max, MAXVAL(k_turn))
+            call find_turn(cx, gr, r_state_t(omega(j)), k_turn, x_turn)
 
-    end do context_loop
+            k_turn_min = MIN(k_turn_min, k_turn)
+            k_turn_max = MAX(k_turn_max, k_turn)
+
+            x_turn_min = MIN(x_turn_min, x_turn)
+            x_turn_max = MAX(x_turn_max, x_turn)
+
+         end do omega_loop
+
+       end associate
+
+    end do spec_loop
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 110) 'Found inner turning points, x range', x_turn_min, '->', x_turn_max
@@ -247,12 +260,11 @@ contains
 
   !****
 
-  subroutine add_global_ (cx, omega, gr_p, gr)
+  subroutine add_global_ (gs, gr_p, gr)
 
-    type(context_t), intent(in)  :: cx(:)
-    real(WP), intent(in)         :: omega(:)
-    type(grid_par_t), intent(in) :: gr_p
-    type(grid_t), intent(inout)  :: gr
+    type(grid_spec_t), intent(in) :: gs(:)
+    type(grid_par_t), intent(in)  :: gr_p
+    type(grid_t), intent(inout)   :: gr
 
     integer              :: i_iter
     integer, allocatable :: dn(:)
@@ -272,6 +284,7 @@ contains
 
        ! Loop through grid cells
 
+       !$OMP PARALLEL DO PRIVATE (pt, dx, i)
        cell_loop : do k = 1, gr%n_k-1
 
           associate ( &
@@ -283,20 +296,25 @@ contains
                pt%s = pt_a%s
                pt%x = 0.5_WP*(pt_a%x + pt_b%x)
 
-               ! Loop over contexts
+               ! Loop over grid_specs
 
                dx = HUGE(0._WP)
 
-               context_loop : do i = 1, SIZE(cx)
+               spec_loop : do i = 1, SIZE(gs)
 
-                  ! Calculate the minimal desired spacing
+                  associate (cx => gs(i)%cx, &
+                             omega => gs(i)%omega)
 
-                  dx = MIN(dx_dispersion_(cx(i), pt, omega, gr_p, pt_a%x==0), &
-                           dx_thermal_(cx(i), pt, omega, gr_p), &
-                           dx_struct_(cx(i), pt, gr_p), &
-                           dx)
+                    ! Calculate the minimal desired spacing
 
-               end do context_loop
+                    dx = MIN(dx_dispersion_(cx, pt, omega, gr_p, pt_a%x==0), &
+                             dx_thermal_(cx, pt, omega, gr_p), &
+                             dx_struct_(cx, pt, gr_p), &
+                             dx)
+
+                  end associate
+
+               end do spec_loop
 
                ! Place a floor on dx
 
@@ -399,7 +417,7 @@ contains
        k_r_real = 0._WP
        k_r_imag = 0._WP
 
-       !$OMP PARALLEL DO PRIVATE (st, omega_c, lambda, l_i, g_0, g_2, g_4, gamma) REDUCTION (MAX:k_r_real,k_r_imag)
+!       !$OMP PARALLEL DO PRIVATE (st, omega_c, lambda, l_i, g_0, g_2, g_4, gamma) REDUCTION (MAX:k_r_real,k_r_imag)
        omega_loop : do j = 1, SIZE(omega)
 
           st = r_state_t(omega(j))
@@ -518,7 +536,7 @@ contains
 
        tau = 0._WP
 
-       !$OMP PARALLEL DO PRIVATE (st, omega_c) REDUCTION (MAX:tau)
+!       !$OMP PARALLEL DO PRIVATE (st, omega_c) REDUCTION (MAX:tau)
        omega_loop : do j = 1, SIZE(omega)
 
           st = r_state_t(omega(j))
