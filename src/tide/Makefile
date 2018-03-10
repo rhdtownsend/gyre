@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=gyre_bin test_util
+TARGETS=gyre_bin
 
 # Flags
 
