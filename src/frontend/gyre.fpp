@@ -88,7 +88,7 @@ program gyre
   integer                              :: i_ad_a
   integer                              :: i_ad_b
   type(mode_t), allocatable            :: md_nad(:)
-  
+
   ! Read command-line arguments
 
   $ASSERT(n_arg() == 1,Syntax: gyre <filename>)
@@ -114,7 +114,7 @@ program gyre
 
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
 120  format(A,1X,I0)
-     
+
      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
 
      write(OUTPUT_UNIT, *)
@@ -192,7 +192,7 @@ program gyre
      call build_scan(cx(i), md_p(i), os_p_sel, sc_p_sel, omega)
 
      if (SIZE(omega) < 2) then
-        
+
         if (check_log_level('INFO')) then
            write(OUTPUT_UNIT, 100) 'Scan is empty, skipping mode...'
         endif
