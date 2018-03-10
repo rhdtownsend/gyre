@@ -111,7 +111,6 @@ contains
     ml => gs(1)%cx%ml
 
     check_loop : do i = 1, SIZE(gs)
-       print *,'i:',i
        $ASSERT_DEBUG(ASSOCIATED(gs(i)%cx),Null pointer)
        $ASSERT_DEBUG(ASSOCIATED(gs(i)%cx%ml, ml),Contexts are associated with different models)
     end do check_loop
