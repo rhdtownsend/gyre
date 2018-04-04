@@ -84,6 +84,7 @@ module gyre_nad_eqns
      real(WP), allocatable    :: coeff(:,:)
      real(WP), allocatable    :: x(:)
      real(WP)                 :: alpha_gr
+     real(WP)                 :: alpha_th
      real(WP)                 :: alpha_hf
      real(WP)                 :: alpha_rh
      real(WP)                 :: alpha_om
@@ -129,6 +130,12 @@ contains
        eq%alpha_gr = 0._WP
     else
        eq%alpha_gr = 1._WP
+    endif
+
+    if (os_p%nar_approx) then
+       eq%alpha_th = 0._WP
+    else
+       eq%alpha_th = 1._WP
     endif
 
     if (os_p%narf_approx) then
@@ -314,6 +321,7 @@ contains
          Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
          x => this%x(i), &
          alpha_gr => this%alpha_gr, &
+         alpha_th => this%alpha_th, &
          alpha_hf => this%alpha_hf, &
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
@@ -400,7 +408,7 @@ contains
       xA(6,3) = alpha_gr*conv_term
       xA(6,4) = alpha_gr*(0._WP)
       if (x > 0._WP) then
-         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + i_omega_c*c_thk
+         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + alpha_th*i_omega_c*c_thk
       else
          xA(6,5) = -alpha_hf*HUGE(0._WP)
       endif
