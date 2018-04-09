@@ -1209,8 +1209,8 @@ contains
       omega_c = this%cx%omega_c(Omega_rot, this%st)
 
       if (pt%x /= 0._WP) then
-         I_1 = pt%x**(l_i+2._WP)*(c_1*omega_c**2*U*y_1 - U*y_2 + &
-               (c_1*omega_c**2 - 2._WP)*y_3 + (c_1*omega_c**2 - 1._WP)*y_4)/c_1**2
+         I_1 = pt%x**(l_i+2._WP)*(c_1*omega_c**2*U*y_1 - U*y_2 - &
+               (c_1*omega_c**2 + 2._WP)*y_3 + (c_1*omega_c**2 - 1._WP)*y_4)/c_1**2
       else
          I_1 = 0._WP
       endif
