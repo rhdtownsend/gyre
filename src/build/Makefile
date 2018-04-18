@@ -3,7 +3,7 @@
 
 # Variables
 
-ODEPACK=$(shell which madsdk_odepack_link >& /dev/null && echo "yes" || echo "no")
+ODEPACK=$(shell which madsdk_odepack_link > /dev/null 2>& 1 && echo "yes" || echo "no")
 
 ifeq ($(ODEPACK),yes)
   TARGETS=gyre poly_to_fgong build_poly
