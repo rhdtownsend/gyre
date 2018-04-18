@@ -91,11 +91,18 @@
 
 \newcommand{\kapad}{\kappa_{\rm ad}}
 \newcommand{\kapS}{\kappa_{S}}
+\newcommand{\kaprho}{\kappa_{\rho}}
+\newcommand{\kapT}{\kappa_{T}}
+
 \newcommand{\epsad}{\epsilon_{\rm ad}}
 \newcommand{\epsS}{\epsilon_{S}}
+\newcommand{\epsrho}{\epsilon_{\rho}}
+\newcommand{\epsT}{\epsilon_{T}}
 
+\newcommand{\clum}{c_{\rm lum}}
 \newcommand{\crad}{c_{\rm rad}}
 \newcommand{\dcrad}{\partial\crad}
+\newcommand{\ceps}{c_{\epsilon}}
 \newcommand{\cepsad}{c_{\epsilon,{\rm ad}}}
 \newcommand{\cepsS}{c_{\epsilon,S}}
 \newcommand{\cdif}{c_{\rm dif}}
@@ -164,28 +171,48 @@ definitions in \citet{Unno:1989aa}.
 V = -\frac{\diff \ln P}{\diff \ln r} \qquad
 \As = \frac{1}{\Gamma_{1}} \frac{\diff \ln P}{\diff \ln r} - \frac{\diff \ln \rho}{\diff \ln r} \qquad
 U = \frac{\diff \ln M_{r}}{\diff \ln r} \qquad
-c_1 = \frac{r^{3}}{\Rstar^{3}} \frac{\Mstar}{M_{r}} \qquad
-\Gamma_{1} = \left( \frac{\partial \ln P}{\partial \ln \rho} \right)_{S}
+c_1 = \frac{r^{3}}{\Rstar^{3}} \frac{\Mstar}{M_{r}} 
+\end{gather*}
+
+\subsection*{Equation of State}
+
+\begin{gather*}
+\Gamma_{1} = \left( \frac{\partial \ln P}{\partial \ln \rho} \right)_{S} \qquad
+\nabad = \left( \frac{\partial \ln T}{\partial \ln P} \right)_{S} \qquad
+\delta = - \left( \frac{\partial \ln \rho}{\partial \ln T} \right)_{P} \qquad
 \end{gather*}
 
 \subsection*{Thermal}
 
 \begin{gather*}
 \nabla = \frac{\diff \ln T}{\diff \ln P} \qquad
-\nabad = \left( \frac{\partial \ln T}{\partial \ln P} \right)_{S} \qquad
-\delta = - \left( \frac{\partial \ln \rho}{\partial \ln T} \right)_{P} \qquad \\
+\clum = x^{-3} \frac{L_{r}}{\Lstar} \qquad
 \crad = x^{-3} \frac{\Lrad}{\Lstar} \qquad
 \partial\crad = \frac{\diff \ln \crad}{\diff \ln r} \\
-\cepsad = x^{-3} \frac{4\pi r^{3} \epsad \rho}{\Lstar} \qquad
-\cepsS = x^{-3} \frac{4\pi r^{3} \epsS \rho}{\Lstar} \qquad \\
+\ceps = x^{-3} \frac{4\pi r^{3} \rho \epsilon_{\rm N}}{\Lstar} \qquad
+\cepsad = \ceps \epsad \qquad \cepsS = \ceps \epsS \qquad \\
 \cdif = \left( \kapad - 4 \nabad \right) V \nabla + \nabad \left(V + \frac{\diff \ln \nabad}{\diff \ln r} \right) \\
 \cthn = \frac{c_{p}}{a c \kappa T^{3}} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \qquad
 \partial\cthn = \frac{\diff \ln \cthn}{\diff \ln r} \qquad
 \cthk = x^{-3} \frac{4\pi r^{3} c_{p} T \rho}{\Lstar} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \\
-\kapad = \left( \frac{\partial \ln \kappa}{\partial \ln P} \right)_{S} \qquad
-\kapS = c_{p} \left( \frac{\partial \ln \kappa}{\partial S} \right)_{P} \\
-\epsad = \left( \frac{\partial \epsilon}{\partial \ln P} \right)_{S} \qquad
-\epsS = c_{p} \left( \frac{\partial \epsilon}{\partial S} \right)_{P}
+\end{gather*}
+
+\subsection*{Opacity}
+
+\begin{gather*}
+\kapad = \left( \frac{\partial \ln \kappa}{\partial \ln P} \right)_{S} = \nabad\, \kapT + \frac{\kaprho}{\Gamma_{1}} \qquad
+\kapS = c_{p} \left( \frac{\partial \ln \kappa}{\partial S} \right)_{P} = \kapT - \delta\, \kaprho \\
+\kaprho = \left( \frac{\partial \ln \kappa}{\partial \ln \rho} \right)_{T} \qquad
+\kapT = \left( \frac{\partial \ln \kappa}{\partial \ln T} \right)_{\rho}
+\end{gather*}
+
+\subsection*{Nuclear}
+
+\begin{gather*}
+\epsad = \left( \frac{\partial \ln \epsilon_{\rm N}}{\partial \ln P} \right)_{S} = \nabad\, \epsT + \frac{\epsrho}{\Gamma_{1}} \qquad
+\epsS = c_{p} \left( \frac{\partial \ln \epsilon_{\rm N}}{\partial S} \right)_{P} = \epsT - \delta\, \epsrho \\
+\epsrho = \left( \frac{\partial \ln \epsilon_{\rm N}}{\partial \ln \rho} \right)_{T} \qquad
+\epsT = \left( \frac{\partial \ln \epsilon_{\rm N}}{\partial \ln T} \right)_{\rho}
 \end{gather*}
 
 %%
