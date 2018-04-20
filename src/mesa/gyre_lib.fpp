@@ -44,8 +44,6 @@ module gyre_lib
   use gyre_rad_bvp
   use gyre_scan_par
   use gyre_search
-  use gyre_tide
-  use gyre_tide_par
   use gyre_util
   use gyre_wave
 
@@ -250,17 +248,19 @@ contains
           call select_par(gr_p_m, md_p_m(i)%tag, gr_p_sel)
           call select_par(sc_p_m, md_p_m(i)%tag, sc_p_sel)
 
-          ! Create the scaffold grid (used in setting up the frequency array)
+          ! Set up the context
 
-          gr = grid_t(ml_m%grid(), gr_p_sel%x_i, gr_p_sel%x_o)
+          cx(i) = context_t(ml_m, gr_p_sel, md_p_m(i), os_p_sel)
 
           ! Set up the frequency array
 
-          call build_scan(ml_m, gr, md_p_m(i), os_p_sel, sc_p_sel, omega)
+          call build_scan(cx(i), md_p_m(i), os_p_sel, sc_p_sel, omega)
 
-          call check_scan(ml_m, gr, omega, md_p_m(i), os_p_sel)
+          ! Create the grid
 
-          ! Set frequency bounds for solutions
+          gr = grid_t(cx(i), omega, gr_p_sel)
+
+          ! Set frequency bounds and perform checks
 
           if (nm_p_sel%restrict_roots) then
              omega_min = MINVAL(omega)
@@ -270,13 +270,7 @@ contains
              omega_max = HUGE(0._WP)
           endif
 
-          ! Create the full grid
-
-          gr = grid_t(ml_m, omega, gr_p_sel, md_p_m(i), os_p_sel)
-
-          ! Set up the context
-
-          cx(i) = context_t(ml_m, gr%pt_i(), gr%pt_o(), md_p_m(i), os_p_sel)
+          call check_scan(ml_m, gr, omega, md_p_m(i), os_p_sel)
 
           ! Set up the bvp's
 
