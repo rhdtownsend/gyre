@@ -1,4 +1,4 @@
-! Program  : gyre_output
+! Module   : gyre_output
 ! Purpose  : output routines
 !
 ! Copyright 2013-2016 Rich Townsend
@@ -172,13 +172,18 @@ contains
        $OUTPUT_MODES(r,eta,eta())
        $OUTPUT_MODES(r,f_T,f_T())
        $OUTPUT_MODES(r,f_g,f_g())
+       $OUTPUT_MODES(r,psi_T,psi_T())
+       $OUTPUT_MODES(r,psi_g,psi_g())
        $OUTPUT_MODES(r,E,E())
        $OUTPUT_MODES(r,E_p,E_p())
        $OUTPUT_MODES(r,E_g,E_g())
        $OUTPUT_MODES(r,E_norm,E_norm())
+       $OUTPUT_MODES(r,E_ratio,E_ratio())
        $OUTPUT_MODES(r,H,H())
        $OUTPUT_MODES(r,W,W())
        $OUTPUT_MODES(r,W_eps,W_eps())
+       $OUTPUT_MODES(r,tau_ss,tau_ss())
+       $OUTPUT_MODES(r,tau_tr,tau_tr())
        $OUTPUT_MODES(r,beta,beta())
        $OUTPUT_MODES(r,x_ref,gr%pt(md(i_md)%k_ref)%x)
        $OUTPUT_MODES(c,xi_r_ref,xi_r(md(i_md)%k_ref))
@@ -416,6 +421,10 @@ contains
 
             call wr%write('E_norm', md%E_norm())
 
+         case ('E_ratio')
+
+            call wr%write('E_ratio', md%E_ratio())
+
          case ('H')
 
             call wr%write('H', md%H())
@@ -427,6 +436,14 @@ contains
          case ('W_eps')
 
             call wr%write('W_eps', md%W_eps())
+
+         case ('tau_ss')
+
+            call wr%write('tau_ss', md%tau_ss())
+
+         case ('tau_tr')
+
+            call wr%write('tau_tr', md%tau_tr())
 
          case ('beta')
 
@@ -454,6 +471,7 @@ contains
          $OUTPUT_POINTS(r,dnabla_ad,cx%ml%dcoeff(I_NABLA_AD, pt(k)))
          $OUTPUT_POINTS(r,delta,cx%ml%coeff(I_DELTA, pt(k)))
          $OUTPUT_POINTS(r,c_lum,cx%ml%coeff(I_C_LUM, pt(k)))
+         $OUTPUT_POINTS(r,c_rad,cx%ml%coeff(I_C_RAD, pt(k)))
          $OUTPUT_POINTS(r,c_thn,cx%ml%coeff(I_C_THN, pt(k)))
          $OUTPUT_POINTS(r,c_thk,cx%ml%coeff(I_C_THK, pt(k)))
          $OUTPUT_POINTS(r,c_eps,cx%ml%coeff(I_C_EPS, pt(k)))
@@ -490,6 +508,8 @@ contains
          $OUTPUT_POINTS(c,Yt_2,Yt_2(k))
          $OUTPUT_POINTS(c,I_0,I_0(k))
          $OUTPUT_POINTS(c,I_1,I_1(k))
+         $OUTPUT_POINTS(r,alpha_0,alpha_0(k))
+         $OUTPUT_POINTS(r,alpha_1,alpha_1(k))
          $OUTPUT_POINTS(c,prop_type,prop_type(k))
 
          $OUTPUT_REF(xi_r_ref,xi_r)

@@ -28,6 +28,7 @@ module gyre_lib
   use gyre_bvp
   use gyre_constants, gyre_set_constant => set_constant
   use gyre_context
+  use gyre_evol_model
   use gyre_ext
   use gyre_grid
   use gyre_grid_factory
@@ -43,7 +44,10 @@ module gyre_lib
   use gyre_rad_bvp
   use gyre_scan_par
   use gyre_search
+  use gyre_tide
+  use gyre_tide_par
   use gyre_util
+  use gyre_wave
 
   use ISO_FORTRAN_ENV
 
@@ -60,7 +64,7 @@ module gyre_lib
   type(grid_par_t), allocatable, save :: gr_p_m(:)
   type(scan_par_t), allocatable, save :: sc_p_m(:)
 
-  class(model_t), pointer, save :: ml_m => null()
+  class(evol_model_t), pointer, save :: ml_m => null()
 
   ! Access specifiers
 
@@ -145,13 +149,22 @@ contains
 
     character(LEN=*), intent(in) :: file
 
+    class(model_t), pointer :: ml
+
     ! Read the model
 
     if (ASSOCIATED(ml_m)) deallocate(ml_m)
 
     ml_p_m%file = file
 
-    call read_mesa_model(ml_p_m, ml_m)
+    call read_mesa_model(ml_p_m, ml)
+
+    select type (ml)
+    class is (evol_model_t)
+       ml_m => ml
+    class default
+       $ABORT(Invalid class)
+    end select
 
     ! Finish
 
@@ -263,7 +276,7 @@ contains
 
           ! Set up the context
 
-          cx(i) = context_t(ml_m, gr, md_p_m(i), os_p_sel)
+          cx(i) = context_t(ml_m, gr%pt_i(), gr%pt_o(), md_p_m(i), os_p_sel)
 
           ! Set up the bvp's
 
@@ -368,5 +381,71 @@ contains
     end subroutine process_mode_nad
 
   end subroutine gyre_get_modes
+
+  ! !****
+
+  ! subroutine gyre_get_tide (R_a, eps_T, Omega_orb, l_max, k_max, tau, work)
+
+  !   real(WP), intent(in)               :: R_a
+  !   real(WP), intent(in)               :: eps_T
+  !   real(WP), intent(in)               :: Omega_orb
+  !   integer, intent(in)                :: l_max
+  !   integer, intent(in)                :: k_max
+  !   real(WP), allocatable, intent(out) :: tau(:)
+  !   real(WP), allocatable, intent(out) :: work(:)
+
+  !   ! Create the tide_par_t
+
+  !   td_p = tide_par_t(R_a=R_a, &
+  !                     eps_T=eps_T, &
+  !                     Omega_orb, &
+  !                     l_max=l_max, &
+  !                     k_max=k_max)
+
+  !   ! Initialize the net differential torque and work arrays
+
+  !   dwrk_dx_net = 0._WP
+  !   dtau_dx_net = 0._WP
+
+  !   ! Evaluate the tide
+
+  !   call eval_tide(XXXXXXXXXXXXXXXX)
+
+  !   ! Finish
+
+  !   return
+
+  ! contains
+
+  !   subroutine process_wave_tide (wv)
+
+  !     type(wave_t), intent(in) : wv
+
+  !     real(WP) :: dwrk_dx(wv%n_k)
+  !     real(WP) :: dtau_dx(wv%n_k)
+
+  !     ! Evaluate the torque and rate-of-work functions
+
+  !     !$OMP DO
+  !     k_loop : do k = 1, wv%n_k
+
+  !        dwrk_dx(k) = G_GRAVITY*XXXX * wv%dW_dx(k)/(XXXXXX)
+
+  !        dtau_dx(k)= G_GRAVITY*M_star_m**2/R_star_m * wv%dtau_dx_ss(k)
+
+  !     end do k_loop
+
+  !     ! Interpolate these functions onto the original star grid, and
+  !     ! add the contributions to the net differential work and torque
+
+  !     XXXXX
+
+  !     !  Finish
+
+  !     return
+
+  !   end subroutine process_wave_tide
+
+  ! end subroutine gyre_get_tide
 
 end module gyre_lib

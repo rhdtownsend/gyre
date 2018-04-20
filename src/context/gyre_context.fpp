@@ -26,6 +26,7 @@ module gyre_context
 
   use gyre_freq
   use gyre_grid
+  use gyre_grid_par
   use gyre_interp
   use gyre_model
   use gyre_mode_par
@@ -46,30 +47,29 @@ module gyre_context
   type :: context_t
      class(model_t), pointer, public :: ml => null()
      class(c_rot_t), allocatable     :: rt
-     real(WP)                        :: Omega_rot_i
+     type(point_t), public           :: pt_i
+     type(point_t), public           :: pt_o
+     integer                         :: m
      logical                         :: complex_lambda
      type(c_interp_t)                :: in_eps_rho
      type(c_interp_t)                :: in_eps_T
    contains
      private
-     procedure         :: omega_c_r_
-     procedure         :: omega_c_c_
-     generic, public   :: omega_c => omega_c_r_, omega_c_c_
-     procedure         :: lambda_r_
-     procedure         :: lambda_c_
-     generic, public   :: lambda => lambda_r_, lambda_c_
-     procedure         :: l_e_r_
-     procedure         :: l_e_c_
-     generic, public   :: l_e => l_e_r_, l_e_c_
-     procedure         :: l_i_r_
-     procedure         :: l_i_c_
-     generic, public   :: l_i => l_i_r_, l_i_c_
-     procedure         :: eps_rho_r_
-     procedure         :: eps_rho_c_
-     generic, public   :: eps_rho => eps_rho_r_, eps_rho_c_
-     procedure         :: eps_T_r_
-     procedure         :: eps_T_c_
-     generic, public   :: eps_T => eps_T_r_, eps_T_c_
+     procedure       :: omega_c_r_
+     procedure       :: omega_c_c_
+     generic, public :: omega_c => omega_c_r_, omega_c_c_
+     procedure       :: lambda_r_
+     procedure       :: lambda_c_
+     generic, public :: lambda => lambda_r_, lambda_c_
+     procedure       :: l_e_r_
+     procedure       :: l_e_c_
+     generic, public :: l_e => l_e_r_, l_e_c_
+     procedure       :: eps_rho_r_
+     procedure       :: eps_rho_c_
+     generic, public :: eps_rho => eps_rho_r_, eps_rho_c_
+     procedure       :: eps_T_r_
+     procedure       :: eps_T_c_
+     generic, public :: eps_T => eps_T_r_, eps_T_c_
   end type context_t
 
   ! Interfaces
@@ -88,27 +88,27 @@ module gyre_context
 
 contains
 
-  function context_t_ (ml, gr, md_p, os_p) result (cx)
+  function context_t_ (ml, gr_p, md_p, os_p) result (cx)
 
     class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
+    type(grid_par_t), intent(in)        :: gr_p
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
     type(context_t)                     :: cx
 
-    type(point_t) :: pt_i
-    type(point_t) :: pt_o
+    type(grid_t) :: gr
 
     ! Construct the context_t
 
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
-
     cx%ml => ml
- 
+
     allocate(cx%rt, SOURCE=c_rot_t(md_p, os_p))
 
-    cx%Omega_rot_i = ml%coeff(I_OMEGA_ROT, pt_i)
+    gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
+    cx%pt_i = gr%pt_i()
+    cx%pt_o = gr%pt_o()
+ 
+    cx%m = md_p%m
 
     cx%complex_lambda = os_p%complex_lambda
 
@@ -116,7 +116,7 @@ contains
 
     select case (os_p%deps_scheme)
     case ('FILE')
-       call read_deps_(ml, md_p, os_p, pt_i, pt_o, cx%in_eps_rho, cx%in_eps_T)
+       call read_deps_(ml, md_p, os_p, cx%pt_i, cx%pt_o, cx%in_eps_rho, cx%in_eps_T)
     end select
 
     ! Finish
@@ -130,13 +130,13 @@ contains
   function omega_c_r_ (this, Omega_rot, st) result (omega_c)
 
     class(context_t), intent(in) :: this
-    class(r_state_t), intent(in) :: st
     real(WP), intent(in)         :: Omega_rot
+    class(r_state_t), intent(in) :: st
     real(WP)                     :: omega_c
 
-    ! Evaluate the corotating-frame frequency (real)
+    ! Evaluate the co-rotating frequency (real)
 
-    omega_c = REAL(this%rt%omega_c(Omega_rot, CMPLX(st%omega, KIND=WP)))
+    omega_c = omega_corot(st%omega, Omega_rot, this%m)
 
     ! Finish
 
@@ -153,9 +153,9 @@ contains
     class(c_state_t), intent(in) :: st
     complex(WP)                  :: omega_c
 
-    ! Evaluate the corotating-frame frequency (complex)
+    ! Evaluate the co-rotating frequency (complex)
 
-    omega_c = this%rt%omega_c(Omega_rot, st%omega)
+    omega_c = omega_corot(st%omega, Omega_rot, this%m)
 
     ! Finish
 
@@ -255,44 +255,6 @@ contains
 
   end function l_e_c_
   
-  !****
-
-  function l_i_r_ (this, st) result (l_i)
-
-    class(context_t), intent(in) :: this
-    class(r_state_t), intent(in) :: st
-    real(WP)                     :: l_i
-
-    ! Evaluate the effective harmonic degree at the inner boundary
-    ! (real)
-
-    l_i = this%l_e(this%Omega_rot_i, st)
-
-    ! Finish
-
-    return
-
-  end function l_i_r_
-
-  !****
-
-  function l_i_c_ (this, st) result (l_i)
-
-    class(context_t), intent(in) :: this
-    class(c_state_t), intent(in) :: st
-    complex(WP)                  :: l_i
-
-    ! Evaluate the effective harmonic degree at the inner boundary
-    ! (complex)
-
-    l_i = this%l_e(this%Omega_rot_i, st)
-
-    ! Finish
-
-    return
-
-  end function l_i_c_
-
   !****
 
   subroutine read_deps_ (ml, md_p, os_p, pt_i, pt_o, in_eps_rho, in_eps_T)

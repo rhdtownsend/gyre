@@ -46,9 +46,8 @@ module gyre_rad_eqns
   integer, parameter :: J_U = 3
   integer, parameter :: J_C_1 = 4
   integer, parameter :: J_GAMMA_1 = 5
-  integer, parameter :: J_OMEGA_ROT = 6
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT
+  integer, parameter :: J_LAST = J_GAMMA_1
 
   ! Derived-type definitions
 
@@ -127,7 +126,7 @@ contains
 
     associate (ml => this%cx%ml)
 
-      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
+      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
 
       n_s = SIZE(pt)
       
@@ -140,7 +139,6 @@ contains
          this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
          this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
          this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
-         this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
       end do
 
       this%x = pt%x
@@ -190,15 +188,15 @@ contains
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
+         omega => st%omega, &
          V => this%coeff(i,J_V), &
          As => this%coeff(i,J_AS), &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
          Gamma_1 => this%coeff(i,J_GAMMA_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      omega_c = omega
 
       ! Set up the matrix
 

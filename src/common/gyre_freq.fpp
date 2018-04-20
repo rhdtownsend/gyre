@@ -32,8 +32,6 @@ module gyre_freq
   use gyre_osc_par
   use gyre_point
   use gyre_poly_model
-  use gyre_rot
-  use gyre_rot_factory
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -43,6 +41,16 @@ module gyre_freq
   implicit none
 
   ! Interfaces
+
+  interface omega_inert
+     module procedure omega_inert_r_
+     module procedure omega_inert_c_
+  end interface omega_inert
+
+  interface omega_corot
+     module procedure omega_corot_r_
+     module procedure omega_corot_c_
+  end interface omega_corot
 
   interface omega_from_freq
      module procedure omega_from_freq_r_
@@ -58,6 +66,8 @@ module gyre_freq
 
   private
 
+  public :: omega_inert
+  public :: omega_corot
   public :: omega_from_freq
   public :: freq_from_omega
   public :: eval_cutoff_freqs
@@ -65,6 +75,66 @@ module gyre_freq
   ! Procedures
 
 contains
+
+  $define $OMEGA_INERT $sub
+
+  $local $T $1
+  $local $TYPE $2
+
+  function omega_inert_${T}_ (omega_c, Omega_rot, m) result (omega)
+
+    $TYPE(WP), intent(in) :: omega_c
+    real(WP), intent(in)  :: Omega_rot
+    integer, intent(in)   :: m
+    $TYPE(WP)             :: omega
+
+    ! Evaluate the inertial-frame frequency from the corotating-frame
+    ! frequency
+
+    omega = omega_c + m*Omega_rot
+
+    ! Finish
+
+    return
+
+  end function omega_inert_${T}_
+
+  $endsub
+
+  $OMEGA_INERT(r,real)
+  $OMEGA_INERT(c,complex)
+
+  !****
+
+  $define $OMEGA_COROT $sub
+
+  $local $T $1
+  $local $TYPE $2
+
+  function omega_corot_${T}_ (omega, Omega_rot, m) result (omega_c)
+
+    $TYPE(WP), intent(in) :: omega
+    real(WP), intent(in)  :: Omega_rot
+    integer, intent(in)   :: m
+    $TYPE(WP)             :: omega_c
+
+    ! Evaluate the corotating-frame frequency from the inertial-frame
+    ! frequency
+
+    omega_c = omega - m*Omega_rot
+
+    ! Finish
+
+    return
+
+  end function omega_corot_${T}_
+
+  $endsub
+
+  $OMEGA_COROT(r,real)
+  $OMEGA_COROT(c,complex)
+
+  !****
 
   $define $OMEGA_FROM_FREQ $sub
 
@@ -83,11 +153,10 @@ contains
     type(osc_par_t), intent(in)         :: os_p
     $TYPE(WP)                           :: omega
 
-    class(${T}_rot_t), allocatable :: rt
-    real(WP)                       :: Omega_rot
-    $TYPE(WP)                      :: omega_l
-    real(WP)                       :: omega_cutoff_lo
-    real(WP)                       :: omega_cutoff_hi
+    real(WP)  :: Omega_rot
+    $TYPE(WP) :: omega_l
+    real(WP)  :: omega_cutoff_lo
+    real(WP)  :: omega_cutoff_hi
 
     ! Calculate the dimensionless inertial-frame frequency omega from
     ! the dimensioned local-frame frequency freq
@@ -181,17 +250,15 @@ contains
 
     ! Now convert to the inertial frame
 
-    allocate(rt, SOURCE=${T}_rot_t(md_p, os_p))
-
     select case (freq_frame)
     case ('INERTIAL')
        omega = omega_l
     case ('COROT_I')
        Omega_rot = ml%coeff(I_OMEGA_ROT, pt_i)
-       omega = rt%omega(Omega_rot, omega_l)
+       omega = omega_inert(omega_l, Omega_rot, md_p%m)
     case ('COROT_O')
        Omega_rot = ml%coeff(I_OMEGA_ROT, pt_o)
-       omega = rt%omega(Omega_rot, omega_l)
+       omega = omega_inert(omega_l, Omega_rot, md_p%m)
     case default
        $ABORT(Invalid freq_frame)
     end select
@@ -207,7 +274,7 @@ contains
   $OMEGA_FROM_FREQ(r,real)
   $OMEGA_FROM_FREQ(c,complex)
 
-!****
+  !****
 
   $define $FREQ_FROM_OMEGA $sub
 
@@ -226,28 +293,25 @@ contains
     type(osc_par_t), intent(in)         :: os_p
     $TYPE(WP)                           :: freq
 
-    class(${T}_rot_t), allocatable :: rt
-    real(WP)                       :: Omega_rot
-    $TYPE(WP)                      :: omega_l
-    real(WP)                       :: omega_cutoff_lo
-    real(WP)                       :: omega_cutoff_hi
+    real(WP)  :: Omega_rot
+    $TYPE(WP) :: omega_l
+    real(WP)  :: omega_cutoff_lo
+    real(WP)  :: omega_cutoff_hi
 
     ! Calculate the dimensioned local-frame frequency freq from the
     ! dimensionless inertial-frame frequency omega
 
     ! Convert from the inertial frame
 
-    allocate(rt, SOURCE=${T}_rot_t(md_p, os_p))
-
     select case (freq_frame)
     case ('INERTIAL')
        omega_l = omega
     case ('COROT_I')
        Omega_rot = ml%coeff(I_OMEGA_ROT, pt_i)
-       omega_l = rt%omega_c(Omega_rot, omega)
+       omega_l = omega_corot(omega, Omega_rot, md_p%m)
     case ('COROT_O')
        Omega_rot = ml%coeff(I_OMEGA_ROT, pt_o)
-       omega_l = rt%omega_c(Omega_rot, omega)
+       omega_l = omega_corot(omega, Omega_rot, md_p%m)
     case default
        $ABORT(Invalid freq_frame)
     end select
@@ -350,7 +414,7 @@ contains
   $FREQ_FROM_OMEGA(r,real)
   $FREQ_FROM_OMEGA(c,complex)
 
-!****
+  !****
 
   subroutine eval_cutoff_freqs (ml, pt, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
 

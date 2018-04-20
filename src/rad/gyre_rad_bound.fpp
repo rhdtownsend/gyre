@@ -55,9 +55,8 @@ module gyre_rad_bound
   integer, parameter :: J_AS = 3
   integer, parameter :: J_U = 4
   integer, parameter :: J_C_1 = 5
-  integer, parameter :: J_OMEGA_ROT = 6
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT
+  integer, parameter :: J_LAST = J_C_1
 
   ! Derived-type definitions
 
@@ -190,7 +189,7 @@ contains
 
     associate (ml => this%cx%ml)
 
-      call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
+      call check_model(ml, [I_V_2,I_U,I_C_1])
 
       allocate(this%coeff(2,J_LAST))
 
@@ -203,8 +202,6 @@ contains
       case default
          $ABORT(Invalid type_i)
       end select
-
-      this%coeff(1,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt_i)
 
       ! Outer boundary
 
@@ -226,8 +223,6 @@ contains
       case default
          $ABORT(Invalid type_o)
       end select
-
-      this%coeff(2,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt_o)
 
     end associate
 
@@ -295,11 +290,11 @@ contains
     ! Evaluate the inner boundary conditions (regular-enforcing)
 
     associate( &
+         omega => st%omega, &
          c_1 => this%coeff(1,J_C_1), &
-         Omega_rot => this%coeff(1,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      omega_c = omega
 
       ! Set up the boundary conditions
 
@@ -435,12 +430,12 @@ contains
     ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
     associate( &
+         omega => st%omega, &
          V => this%coeff(2,J_V), &
          c_1 => this%coeff(2,J_C_1), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
          alpha_om => this%alpha_om)
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      omega_c = omega
 
       ! Set up the boundary conditions
         
@@ -479,13 +474,13 @@ contains
     ! Evaluate the outer boundary conditions ([Unn1989] formulation)
 
     associate( &
+         omega => st%omega, &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
          U => this%coeff(2,J_U), &
-         c_1 => this%coeff(2,J_C_1), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT))
+         c_1 => this%coeff(2,J_C_1))
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      omega_c = omega
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
       
@@ -531,13 +526,13 @@ contains
     ! Calculate coefficients
 
     associate( &
+         omega => st%omega, &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
          U => this%coeff(2,J_U), &
-         c_1 => this%coeff(2,J_C_1), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT))
+         c_1 => this%coeff(2,J_C_1))
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      omega_c = omega
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
 
@@ -583,13 +578,13 @@ contains
     ! Calculate coefficients
 
     associate( &
+         omega => st%omega, &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
          U => this%coeff(2,J_U), &
-         c_1 => this%coeff(2,J_C_1), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT))
+         c_1 => this%coeff(2,J_C_1))
 
-      omega_c = this%cx%omega_c(Omega_rot, st)
+      omega_c = omega
 
       beta = atmos_beta(V_g, As, U, c_1, omega_c, 0._WP)
 

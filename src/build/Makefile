@@ -3,7 +3,7 @@
 
 # Variables
 
-ODEPACK=$(shell which madsdk_odepack_link >& /dev/null && echo "yes" || echo "no")
+ODEPACK=$(shell which madsdk_odepack_link > /dev/null 2>& 1 && echo "yes" || echo "no")
 
 ifeq ($(ODEPACK),yes)
   TARGETS=gyre poly_to_fgong build_poly
@@ -23,6 +23,6 @@ endif
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../extern/astro:../common:../diff:../bvp:../interp:../model:../matrix:../search:../ext:../frontend:../ad:../rad:../nad:../rot:../tar:../mode:../grid:../frontend:../output:../poly
+SUBDIRS=../extern/core:../extern/astro:../common:../diff:../bvp:../interp:../model:../matrix:../search:../context:../ext:../frontend:../ad:../rad:../nad:../rot:../tar:../tide:../mode:../grid:../frontend:../output:../poly
 
 include Make.inc

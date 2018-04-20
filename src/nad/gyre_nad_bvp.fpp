@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_bvp
 ! Purpose  : nonadiabatic boundary value problem solver
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -29,7 +29,6 @@ module gyre_nad_bvp
   use gyre_grid
   use gyre_grid_factory
   use gyre_model
-  use gyre_mode
   use gyre_mode_par
   use gyre_nad_bound
   use gyre_nad_diff
@@ -38,6 +37,7 @@ module gyre_nad_bvp
   use gyre_osc_par
   use gyre_point
   use gyre_state
+  use gyre_wave
 
   use ISO_FORTRAN_ENV
 
@@ -62,16 +62,17 @@ module gyre_nad_bvp
      module procedure nad_bvp_t_
   end interface nad_bvp_t
 
-  interface mode_t
-     module procedure mode_t_
-  end interface mode_t
+  interface wave_t
+     module procedure wave_t_hom_
+     module procedure wave_t_inhom_
+  end interface wave_t
 
   ! Access specifiers
 
   private
 
   public :: nad_bvp_t
-  public :: mode_t
+  public :: wave_t
 
   ! Procedures
 
@@ -86,20 +87,15 @@ contains
     type(osc_par_t), intent(in)           :: os_p
     type(nad_bvp_t)                       :: bp
 
-    type(point_t)                 :: pt_i
-    type(point_t)                 :: pt_o
     type(nad_bound_t)             :: bd
     integer                       :: k
     type(nad_diff_t), allocatable :: df(:)
 
     ! Construct the nad_bvp_t
 
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
-
     ! Initialize the boundary conditions
 
-    bd = nad_bound_t(cx, pt_i, pt_o, md_p, os_p)
+    bd = nad_bound_t(cx, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -107,7 +103,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = nad_diff_t(cx, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = nad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -119,7 +115,7 @@ contains
     bp%cx => cx
     bp%gr = gr
 
-    bp%tr = nad_trans_t(cx, pt_i, md_p, os_p)
+    bp%tr = nad_trans_t(cx, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
@@ -133,43 +129,99 @@ contains
 
   !****
 
-  function mode_t_ (bp, omega, omega_ad, j) result (md)
+  function wave_t_hom_ (bp, st) result (wv)
 
-    class(nad_bvp_t), intent(inout) :: bp
-    complex(WP), intent(in)         :: omega
-    real(WP), intent(in)            :: omega_ad
-    integer, intent(in)             :: j
-    type(mode_t)                    :: md
+    class(nad_bvp_t), intent(inout)   :: bp
+    type(c_state_t), intent(in)       :: st
+    type(wave_t)                      :: wv
 
-    type(c_state_t) :: st
-    complex(WP)     :: y(6,bp%n_k)
-    type(c_ext_t)   :: discrim
-    integer         :: k
+    complex(WP) :: y(6,bp%n_k)
+    integer     :: k
 
-    ! Calculate the solution vector
-
-    st = c_state_t(omega, omega_ad)
+    ! Calculate the homogeneous solution vector
 
     call bp%build(st)
+    call bp%factor()
 
     y = bp%soln_vec_hom()
-    discrim = bp%det()
-
-    ! Convert to canonical form
 
     !$OMP PARALLEL DO
     do k = 1, bp%n_k
        call bp%tr%trans_vars(y(:,k), k, st)
     end do
 
-    ! Construct the mode_t
+    ! Construct the wave_t
 
-    md = mode_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p, j)
+    wv = wave_t_y_(bp, st, y)
 
     ! Finish
 
     return
 
-  end function mode_t_
+  end function wave_t_hom_
+  
+  !****
+
+  function wave_t_inhom_ (bp, st, w_i, w_o) result (wv)
+
+    class(nad_bvp_t), intent(inout) :: bp
+    type(c_state_t), intent(in)     :: st
+    complex(WP), intent(in)         :: w_i(:)
+    complex(WP), intent(in)         :: w_o(:)
+    type(wave_t)                    :: wv
+
+    complex(WP) :: y(6,bp%n_k)
+    integer     :: k
+
+    $CHECK_BOUNDS(SIZE(w_i),bp%n_i)
+    $CHECK_BOUNDS(SIZE(w_o),bp%n_o)
+
+    ! Calculate the inhomogeneous solution vector
+
+    call bp%build(st)
+    call bp%factor()
+
+    y = bp%soln_vec_inhom(w_i, w_o)
+
+    !$OMP PARALLEL DO
+    do k = 1, bp%n_k
+       call bp%tr%trans_vars(y(:,k), k, st)
+    end do
+
+    ! Construct the wave_t
+
+    wv = wave_t_y_(bp, st, y)
+
+    ! Finish
+
+    return
+
+  end function wave_t_inhom_
+
+  !****
+
+  function wave_t_y_ (bp, st, y) result (wv)
+
+    class(nad_bvp_t), intent(inout) :: bp
+    type(c_state_t), intent(in)     :: st
+    complex(WP), intent(in)         :: y(:,:)
+    type(wave_t)                    :: wv
+
+    type(c_ext_t) :: discrim
+
+    $CHECK_BOUNDS(SIZE(y, 1),bp%n_e)
+    $CHECK_BOUNDS(SIZE(y, 2),bp%n_k)
+
+    ! Construct the wave_t
+
+    discrim = bp%det()
+
+    wv = wave_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p)
+
+    ! Finish
+
+    return
+
+  end function wave_t_y_
 
 end module gyre_nad_bvp

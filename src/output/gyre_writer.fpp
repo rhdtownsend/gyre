@@ -1,4 +1,4 @@
-! Program  : gyre_writer
+! Module   : gyre_writer
 ! Purpose  : write data (interface)
 !
 ! Copyright 2013 Rich Townsend

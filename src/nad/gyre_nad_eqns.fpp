@@ -71,8 +71,9 @@ module gyre_nad_eqns
   integer, parameter :: J_KAP_RHO = 20
   integer, parameter :: J_KAP_T = 21
   integer, parameter :: J_OMEGA_ROT = 22
+  integer, parameter :: J_OMEGA_ROT_I = 23
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT
+  integer, parameter :: J_LAST = J_OMEGA_ROT_I
 
   ! Derived-type definitions
 
@@ -83,6 +84,7 @@ module gyre_nad_eqns
      real(WP), allocatable    :: coeff(:,:)
      real(WP), allocatable    :: x(:)
      real(WP)                 :: alpha_gr
+     real(WP)                 :: alpha_th
      real(WP)                 :: alpha_hf
      real(WP)                 :: alpha_rh
      real(WP)                 :: alpha_om
@@ -111,10 +113,9 @@ module gyre_nad_eqns
 
 contains
 
-  function nad_eqns_t_ (cx, pt_i, md_p, os_p) result (eq)
+  function nad_eqns_t_ (cx, md_p, os_p) result (eq)
 
     type(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)            :: pt_i
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
     type(nad_eqns_t)                     :: eq
@@ -123,12 +124,18 @@ contains
 
     eq%cx => cx
 
-    eq%tr = nad_trans_t(cx, pt_i, md_p, os_p)
+    eq%tr = nad_trans_t(cx, md_p, os_p)
 
     if (os_p%cowling_approx) then
        eq%alpha_gr = 0._WP
     else
        eq%alpha_gr = 1._WP
+    endif
+
+    if (os_p%nar_approx) then
+       eq%alpha_th = 0._WP
+    else
+       eq%alpha_th = 1._WP
     endif
 
     if (os_p%narf_approx) then
@@ -229,6 +236,8 @@ contains
          this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
       end do
 
+      this%coeff(:,J_OMEGA_ROT_I) = ml%coeff(I_OMEGA_ROT, this%cx%pt_i)
+
       this%x = pt%x
 
     end associate
@@ -271,10 +280,10 @@ contains
     class(c_state_t), intent(in)  :: st
     complex(WP)                   :: xA(this%n_e,this%n_e)
 
-    complex(WP) :: lambda
-    complex(WP) :: l_i
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
+    complex(WP) :: lambda
+    complex(WP) :: l_i
     complex(WP) :: f_rh
     complex(WP) :: df_rh
     complex(WP) :: conv_term
@@ -309,18 +318,20 @@ contains
          kap_rho => this%coeff(i,J_KAP_RHO), &
          kap_T => this%coeff(i,J_KAP_T), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT), &
+         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
          x => this%x(i), &
          alpha_gr => this%alpha_gr, &
+         alpha_th => this%alpha_th, &
          alpha_hf => this%alpha_hf, &
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
-      lambda = this%cx%lambda(Omega_rot, st)
-      l_i = this%cx%l_i(st)
-    
       omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 
+      lambda = this%cx%lambda(Omega_rot, st)
+      l_i = this%cx%l_e(Omega_rot_i, st)
+    
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
       df_rh = -0.25_WP*alpha_rh*i_omega_c*c_thn*dc_thn/f_rh
 
@@ -397,7 +408,7 @@ contains
       xA(6,3) = alpha_gr*conv_term
       xA(6,4) = alpha_gr*(0._WP)
       if (x > 0._WP) then
-         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + i_omega_c*c_thk
+         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + alpha_th*i_omega_c*c_thk
       else
          xA(6,5) = -alpha_hf*HUGE(0._WP)
       endif

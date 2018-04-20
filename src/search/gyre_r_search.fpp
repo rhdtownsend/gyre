@@ -29,6 +29,7 @@ module gyre_r_search
   use gyre_ad_bvp
   use gyre_bvp
   use gyre_constants
+  use gyre_context
   use gyre_discrim_func
   use gyre_ext
   use gyre_freq
@@ -44,8 +45,10 @@ module gyre_r_search
   use gyre_rot
   use gyre_rot_factory
   use gyre_scan_par
+  use gyre_state
   use gyre_status
   use gyre_util
+  use gyre_wave
 
   use ISO_FORTRAN_ENV
 
@@ -67,17 +70,14 @@ module gyre_r_search
 
 contains
 
-  subroutine build_scan (ml, gr, md_p, os_p, sc_p, omega)
+  subroutine build_scan (cx, md_p, os_p, sc_p, omega)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    type(scan_par_t), intent(in)        :: sc_p(:)
-    real(WP), allocatable, intent(out)  :: omega(:)
+    type(context_t), intent(in)        :: cx
+    type(mode_par_t), intent(in)       :: md_p
+    type(osc_par_t), intent(in)        :: os_p
+    type(scan_par_t), intent(in)       :: sc_p(:)
+    real(WP), allocatable, intent(out) :: omega(:)
 
-    type(point_t)         :: pt_i
-    type(point_t)         :: pt_o
     integer               :: n_omega
     integer               :: i
     real(WP)              :: omega_min
@@ -95,9 +95,6 @@ contains
        write(OUTPUT_UNIT, 100) 'Building frequency scan'
 100    format(A)
     endif
-
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
 
     ! Loop through scan_par_t
 
@@ -118,8 +115,8 @@ contains
          
          ! Calculate the dimensionless frequency range in the inertial frame
          
-         omega_min = omega_from_freq(freq_min, ml, pt_i, pt_o, freq_min_units, freq_frame, md_p, os_p)
-         omega_max = omega_from_freq(freq_max, ml, pt_i, pt_o, freq_max_units, freq_frame, md_p, os_p)
+         omega_min = omega_from_freq(freq_min, cx%ml, cx%pt_i, cx%pt_o, freq_min_units, freq_frame, md_p, os_p)
+         omega_max = omega_from_freq(freq_max, cx%ml, cx%pt_i, cx%pt_o, freq_max_units, freq_frame, md_p, os_p)
 
          ! Check that the range is valid
 
@@ -127,8 +124,8 @@ contains
 
             ! Calculate the frequency range in the grid frame
 
-            freq_g_min = freq_from_omega(omega_min, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
-            freq_g_max = freq_from_omega(omega_max, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
+            freq_g_min = freq_from_omega(omega_min, cx%ml, cx%pt_i, cx%pt_o, 'NONE', grid_frame, md_p, os_p)
+            freq_g_max = freq_from_omega(omega_max, cx%ml, cx%pt_i, cx%pt_o, 'NONE', grid_frame, md_p, os_p)
 
             ! Set up the frequencies
 
@@ -152,7 +149,7 @@ contains
             call reallocate(omega, [n_omega+n_freq])
 
             do j = 1, n_freq
-               omega(n_omega+j) = omega_from_freq(freq_g(j), ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
+               omega(n_omega+j) = omega_from_freq(freq_g(j), cx%ml, cx%pt_i, cx%pt_o, 'NONE', grid_frame, md_p, os_p)
             end do
           
             n_omega = n_omega + n_freq
@@ -201,24 +198,21 @@ contains
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
 
-    class(r_rot_t), allocatable :: rt
-    real(WP)                    :: Omega_rot
-    real(WP)                    :: omega_c(gr%n_k)
-    real(WP)                    :: omega_c_prev(gr%n_k)
-    integer                     :: j
-    integer                     :: k
+    real(WP) :: Omega_rot
+    real(WP) :: omega_c(gr%n_k)
+    real(WP) :: omega_c_prev(gr%n_k)
+    integer  :: j
+    integer  :: k
 
     ! Check the frequency scan to ensure no zero crossings in omega_c
     ! arise
 
     if (SIZE(omega) >= 1) then
 
-       allocate(rt, SOURCE=r_rot_t(md_p, os_p))
-
        !$OMP PARALLEL DO PRIVATE (Omega_rot)
        do k = 1, gr%n_k
           Omega_rot = ml%coeff(I_OMEGA_ROT, gr%pt(k))
-          omega_c(k) = rt%omega_c(Omega_rot, omega(1))
+          omega_c(k) = omega_corot(omega(1), Omega_rot, md_p%m)
        end do
 
        $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
@@ -230,7 +224,7 @@ contains
           !$OMP PARALLEL DO PRIVATE (Omega_rot)
           do k = 1, gr%n_k
              Omega_rot = ml%coeff(I_OMEGA_ROT, gr%pt(k))
-             omega_c(k) = rt%omega_c(Omega_rot, omega(j))
+             omega_c(k) = omega_corot(omega(j), Omega_rot, md_p%m)
           end do
 
           $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)
@@ -269,6 +263,7 @@ contains
     real(WP), allocatable      :: omega_b(:)
     type(r_ext_t), allocatable :: discrim_a(:)
     type(r_ext_t), allocatable :: discrim_b(:)
+    type(r_state_t)            :: st
     type(r_discrim_func_t)     :: df
     integer                    :: c_beg
     integer                    :: c_end
@@ -277,6 +272,7 @@ contains
     type(r_ext_t)              :: omega_root
     integer                    :: status
     integer                    :: i
+    type(wave_t)               :: wv
     type(mode_t)               :: md
     type(r_ext_t)              :: chi
 
@@ -286,7 +282,8 @@ contains
 
     ! Set up the discriminant function
 
-    df = r_discrim_func_t(bp, omega_min, omega_max)
+    st = r_state_t(omega=0._WP)
+    df = r_discrim_func_t(bp, st, omega_min, omega_max)
 
     ! Process each bracket to find modes
 
@@ -319,14 +316,18 @@ contains
 
        j_m = j_m + 1
 
+       st = r_state_t(omega=real(omega_root))
+
        select type (bp)
        type is (ad_bvp_t)
-          md = mode_t(bp, real(omega_root), j_m)
+          wv = wave_t(bp, st)
        type is (rad_bvp_t)
-          md = mode_t(bp, real(omega_root), j_m)
+          wv = wave_t(bp, st)
        class default
           $ABORT(Invalid bp class)
        end select
+
+       md = mode_t(wv, j_m)
 
        ! Process it
 
@@ -395,6 +396,7 @@ contains
     type(r_ext_t), allocatable, intent(out) :: discrim_a(:)
     type(r_ext_t), allocatable, intent(out) :: discrim_b(:)
 
+    type(r_state_t)        :: st
     type(r_discrim_func_t) :: df
     integer                :: n_omega
     integer                :: c_beg
@@ -407,8 +409,9 @@ contains
     integer                :: i_brack(SIZE(omega))
 
     ! Set up the discriminant function
-    
-    df = r_discrim_func_t(bp, omega_min, omega_max)
+
+    st = r_state_t(omega=0._WP)
+    df = r_discrim_func_t(bp, st, omega_min, omega_max)
 
     ! Calculate the discriminant on the omega abscissa
 

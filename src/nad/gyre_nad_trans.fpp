@@ -60,8 +60,9 @@ module gyre_nad_trans
      private
      type(context_t), pointer :: cx => null()
      real(WP), allocatable    :: coeff(:,:)
-     integer                  :: l
      integer                  :: set
+     integer                  :: l
+     integer                  :: m
      integer                  :: n_e
    contains
      private
@@ -98,10 +99,9 @@ module gyre_nad_trans
 
 contains
 
-  function nad_trans_t_ (cx, pt_i, md_p, os_p) result (tr)
+  function nad_trans_t_ (cx, md_p, os_p) result (tr)
 
     type(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)            :: pt_i
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
     type(nad_trans_t)                    :: tr
@@ -124,6 +124,7 @@ contains
     end select
 
     tr%l = md_p%l
+    tr%m = md_p%m
 
     tr%n_e = 6
 
@@ -138,7 +139,7 @@ contains
   subroutine stencil (this, pt)
 
     class(nad_trans_t), intent(inout) :: this
-    type(point_t), intent(in)        :: pt(:)
+    type(point_t), intent(in)         :: pt(:)
 
     integer :: n_s
     integer :: i
@@ -429,8 +430,8 @@ contains
     class(c_state_t), intent(in)   :: st
     complex(WP)                    :: G(this%n_e,this%n_e)
 
-    complex(WP) :: lambda
     complex(WP) :: omega_c
+    complex(WP) :: lambda
 
     ! Evaluate the transformation matrix to convert JCD variables
     ! from the canonical form
@@ -440,9 +441,9 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%cx%lambda(Omega_rot, st)
-
       omega_c = this%cx%omega_c(Omega_rot, st)
+
+      lambda = this%cx%lambda(Omega_rot, st)
 
       ! Set up the matrix
 
@@ -711,8 +712,8 @@ contains
     class(c_state_t), intent(in)   :: st
     complex(WP)                    :: H(this%n_e,this%n_e)
 
-    complex(WP) :: lambda
     complex(WP) :: omega_c
+    complex(WP) :: lambda
 
     ! Evaluate the transformation matrix to convert JCD variables
     ! to the canonical form
@@ -722,9 +723,9 @@ contains
          c_1 => this%coeff(i,J_C_1), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%cx%lambda(Omega_rot, st)
-
       omega_c = this%cx%omega_c(Omega_rot, st)
+
+      lambda = this%cx%lambda(Omega_rot, st)
 
       ! Set up the matrix
       
@@ -930,8 +931,8 @@ contains
     class(c_state_t), intent(in)   :: st
     complex(WP)                    :: dH(this%n_e,this%n_e)
 
-    complex(WP) :: lambda
     complex(WP) :: omega_c
+    complex(WP) :: lambda
 
     ! Evaluate the derivative x dH/dx of the JCD-variables
     ! transformation matrix H
@@ -943,9 +944,9 @@ contains
          dU => this%coeff(i,J_DU), &
          Omega_rot => this%coeff(i,J_OMEGA_ROT))
 
-      lambda = this%cx%lambda(Omega_rot, st)
-
       omega_c = this%cx%omega_c(Omega_rot, st)
+
+      lambda = this%cx%lambda(Omega_rot, st)
 
       ! Set up the matrix (nb: the derivatives of omega_c and lambda is
       ! neglected; this is incorrect when rotation is non-zero)

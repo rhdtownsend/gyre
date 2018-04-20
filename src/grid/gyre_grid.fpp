@@ -40,13 +40,16 @@ module gyre_grid
      integer                    :: n_k
    contains
      private
-     procedure, public :: k_i
-     procedure, public :: k_o
+     procedure, public :: pt_i
+     procedure, public :: pt_o
+     procedure, public :: pt_x
      procedure, public :: s_i
      procedure, public :: s_o
      procedure, public :: s_x
      procedure, public :: x_i
      procedure, public :: x_o
+     procedure, public :: k_s_i
+     procedure, public :: k_s_o
   end type grid_t
 
   ! Interfaces
@@ -135,44 +138,27 @@ contains
 
     real(WP)                   :: x_i_
     real(WP)                   :: x_o_
-    logical                    :: mask(gr_base%n_k)
-    integer                    :: n_mask
-    type(point_t), allocatable :: pt_int(:)
     type(point_t)              :: pt_i
     type(point_t)              :: pt_o
+    type(point_t), allocatable :: pt_int(:)
 
     ! Construct a grid_t as a nesting of gr_base, with limits
     ! (x_i,x_o)
 
     ! First, restrict the limits to the range of gr_base
 
-    x_i_ = MAX(x_i, gr_base%pt(1)%x)
-    x_o_ = MIN(x_o, gr_base%pt(gr_base%n_k)%x)
+    x_i_ = MAX(x_i, gr_base%x_i())
+    x_o_ = MIN(x_o, gr_base%x_o())
 
-    ! Set up a mask for the points from gr_base to include (excluding
+    ! Set up inner and outer points
+
+    pt_i = gr_base%pt_x(x_i_)
+    pt_o = gr_base%pt_x(x_o_, back=.TRUE.)
+
+    ! Select internal points from gr_base to include (excluding
     ! boundary points)
 
-    mask = gr_base%pt%x > x_i_ .AND. gr_base%pt%x < x_o_
-
-    n_mask = COUNT(mask)
-
-    ! Set up the internal and boundary points
-
-    if (n_mask > 0) then
-
-       pt_int = PACK(gr_base%pt, mask)
-       
-       pt_i = point_t(pt_int(1)%s, x_i_)
-       pt_o = point_t(pt_int(n_mask)%s, x_o_)
-
-    else
-
-       allocate(pt_int(0))
-
-       pt_i = point_t(gr_base%s_x(x_i_, back=.TRUE.), x_i_)
-       pt_o = point_t(gr_base%s_x(x_o_, back=.FALSE.), x_o_)
-
-    end if
+    pt_int = PACK(gr_base%pt, MASK=(gr_base%pt%x > x_i_ .AND. gr_base%pt%x < x_o_))
 
     ! Create the grid_t
 
@@ -282,49 +268,59 @@ contains
 
   !****
 
-  function k_i (this, s)
+  function pt_i (this)
 
     class(grid_t), intent(in) :: this
-    integer, intent(in)       :: s
-    integer                   :: k_i
+    type(point_t)             :: pt_i
 
-    $ASSERT_DEBUG(s >= this%s_i(),Invalid segment)
-    $ASSERT_DEBUG(s <= this%s_o(),Invalid segment)
+    ! Return the innermost point of the grid
 
-    ! Return the index of the innermost point in segment s
-
-    do k_i = 1, this%n_k
-       if (this%pt(k_i)%s == s) exit
-    end do
+    pt_i = this%pt(1)
 
     ! Finish
 
     return
 
-  end function k_i
+  end function pt_i
 
   !****
 
-  function k_o (this, s)
+  function pt_o (this)
 
     class(grid_t), intent(in) :: this
-    integer, intent(in)       :: s
-    integer                   :: k_o
+    type(point_t)             :: pt_o
 
-    $ASSERT_DEBUG(s >= this%s_i(),Invalid segment)
-    $ASSERT_DEBUG(s <= this%s_o(),Invalid segment)
+    ! Return the outermost point of the grid
 
-    ! Return the index of the outermost point in segment s
-
-    do k_o = this%n_k, 1, -1
-       if (this%pt(k_o)%s == s) exit
-    end do
+    pt_o = this%pt(this%n_k)
 
     ! Finish
 
     return
 
-  end function k_o
+  end function pt_o
+
+  !****
+
+  function pt_x (this, x, back) result (pt)
+
+    class(grid_t), intent(in)     :: this
+    real(WP), intent(in)          :: x
+    logical, intent(in), optional :: back
+    type(point_t)                 :: pt
+
+    ! Return a point containing the abcissa x. If back is present and
+    ! .TRUE., the segment search is done outside-in; otherwise, it is
+    ! inside-out (see s_x)
+
+    pt%s = this%s_x(x, back)
+    pt%x = x
+
+    ! Finish
+
+    return
+
+  end function pt_x
 
   !****
 
@@ -333,9 +329,13 @@ contains
     class(grid_t), intent(in) :: this
     integer                   :: s_i
 
+    type(point_t) :: pt_i
+
     ! Return the innermost segment of the grid
 
-    s_i = this%pt(1)%s
+    pt_i = this%pt_i()
+
+    s_i = pt_i%s
 
     ! Finish
 
@@ -350,9 +350,13 @@ contains
     class(grid_t), intent(in) :: this
     integer                   :: s_o
 
+    type(point_t) :: pt_o
+
     ! Return the outermost segment of the grid
 
-    s_o = this%pt(this%n_k)%s
+    pt_o = this%pt_o()
+
+    s_o = pt_o%s
 
     ! Finish
 
@@ -384,7 +388,9 @@ contains
 
     ! Locate the segment which brackets the abcissa x. If back is
     ! present and .TRUE., the search is done outside-in; otherwise, it
-    ! is inside-out
+    ! is inside-out. If x is not inside the grid, then return a
+    ! segment index just above/below the maximum/minimum segment of
+    ! the grid
 
     if (back_) then
        s_a = this%pt(this%n_k)%s
@@ -398,8 +404,8 @@ contains
 
     seg_loop : do s = s_a, s_b, ds
 
-       k_i = this%k_i(s)
-       k_o = this%k_o(s)
+       k_i = this%k_s_i(s)
+       k_o = this%k_s_o(s)
          
        if (x >= this%pt(k_i)%x .AND. x <= this%pt(k_o)%x) exit seg_loop
        
@@ -418,9 +424,13 @@ contains
     class(grid_t), intent(in) :: this
     real(WP)                  :: x_i
 
-    ! Return the innermost abscissa
+    type(point_t) :: pt_i
 
-    x_i = this%pt(1)%x
+    ! Return the innermost abscissa of the grid
+
+    pt_i = this%pt_i()
+
+    x_i = pt_i%x
 
     ! Finish
 
@@ -435,14 +445,64 @@ contains
     class(grid_t), intent(in) :: this
     real(WP)                  :: x_o
 
-    ! Return the outermost abscissa
+    type(point_t) :: pt_o
 
-    x_o = this%pt(this%n_k)%x
+    ! Return the outermost abscissa of the grid
+
+    pt_o = this%pt_o()
+
+    x_o = pt_o%x
 
     ! Finish
 
     return
 
   end function x_o
+
+  !****
+
+  function k_s_i (this, s) result (k_i)
+
+    class(grid_t), intent(in) :: this
+    integer, intent(in)       :: s
+    integer                   :: k_i
+
+    $ASSERT_DEBUG(s >= this%s_i(),Invalid segment)
+    $ASSERT_DEBUG(s <= this%s_o(),Invalid segment)
+
+    ! Return the index of the innermost point in segment s
+
+    do k_i = 1, this%n_k
+       if (this%pt(k_i)%s == s) exit
+    end do
+
+    ! Finish
+
+    return
+
+  end function k_s_i
+
+  !****
+
+  function k_s_o (this, s) result (k_o)
+
+    class(grid_t), intent(in) :: this
+    integer, intent(in)       :: s
+    integer                   :: k_o
+
+    $ASSERT_DEBUG(s >= this%s_i(),Invalid segment)
+    $ASSERT_DEBUG(s <= this%s_o(),Invalid segment)
+
+    ! Return the index of the outermost point in segment s
+
+    do k_o = this%n_k, 1, -1
+       if (this%pt(k_o)%s == s) exit
+    end do
+
+    ! Finish
+
+    return
+
+  end function k_s_o
 
 end module gyre_grid

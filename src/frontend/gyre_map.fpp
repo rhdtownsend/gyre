@@ -1,7 +1,7 @@
 ! Program  : gyre_map
 ! Purpose  : discriminant mapping code
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -29,6 +29,7 @@ program gyre_map
 
   use gyre_bvp
   use gyre_constants
+  use gyre_context
   use gyre_discrim_func
   use gyre_ext
   use gyre_grid
@@ -44,6 +45,7 @@ program gyre_map
   use gyre_osc_par
   use gyre_scan_par, only : scan_par_t
   use gyre_search
+  use gyre_state
   use gyre_status
   use gyre_util
   use gyre_version
@@ -72,15 +74,17 @@ program gyre_map
   type(grid_par_t)              :: gr_p_sel
   type(scan_par_t), allocatable :: sc_p_re_sel(:)
   type(scan_par_t), allocatable :: sc_p_im_sel(:)
-  type(grid_t)                  :: gr
+  type(context_t), pointer      :: cx => null()
   real(WP), allocatable         :: omega_re(:)
   real(WP), allocatable         :: omega_im(:)
   real(WP)                      :: omega_min
   real(WP)                      :: omega_max
+  type(grid_t)                  :: gr
   type(nad_bvp_t), target       :: bp
   integer                       :: n_omega_re
   integer                       :: n_omega_im
   type(c_discrim_func_t)        :: df
+  type(c_state_t)               :: st
   complex(WP), allocatable      :: discrim_map_f(:,:)
   integer, allocatable          :: discrim_map_e(:,:)
   integer, allocatable          :: k_part(:)
@@ -175,14 +179,14 @@ program gyre_map
   call select_par(sc_p_re, md_p(1)%tag, sc_p_re_sel)
   call select_par(sc_p_im, md_p(1)%tag, sc_p_im_sel)
   
-  ! Create the scaffold grid (used in setting up the frequency arrays)
+  ! Create the context
 
-  gr = grid_t(ml%grid(), gr_p_sel%x_i, gr_p_sel%x_o)
+  allocate(cx, SOURCE=context_t(ml, gr_p_sel, md_p(1), os_p_sel))
 
   ! Set up the frequency arrays
 
-  call build_scan(ml, gr, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
-  call build_scan(ml, gr, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
+  call build_scan(cx, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
+  call build_scan(cx, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
 
   ! Set frequency bounds
 
@@ -194,17 +198,18 @@ program gyre_map
      omega_max = HUGE(0._WP)
   endif
 
-  ! Create the full grid
+  ! Create the grid
 
-  gr = grid_t(ml, omega_re, gr_p_sel, md_p(1), os_p_sel)
+  gr = grid_t(cx, omega_re, gr_p_sel)
 
   ! Set up the bvp
 
-  bp = nad_bvp_t(ml, gr, md_p(1), nm_p_sel, os_p_sel)
+  bp = nad_bvp_t(cx, gr, md_p(1), nm_p_sel, os_p_sel)
 
   ! Set up the discriminant function
 
-  df = c_discrim_func_t(bp, omega_min, omega_max)
+  st = c_state_t(omega=0._WP, omega_r=0._WP)
+  df = c_discrim_func_t(bp, st, omega_min, omega_max)
 
   ! Map the discriminant
 
@@ -270,6 +275,12 @@ program gyre_map
      call hg%final()
 
   end if
+
+  ! Clean up
+
+  deallocate(cx)
+
+  deallocate(ml)
 
   ! Finish
 

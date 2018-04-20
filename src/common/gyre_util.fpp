@@ -316,7 +316,7 @@ contains
 
        if(j <= 0) then
           n = n + 1
-          elems(n) = list_
+          elems(n) = ADJUSTL(list_)
           exit split_loop
        endif
 
@@ -324,7 +324,7 @@ contains
 
        ! Chop out the element
 
-       elems(n) = list_(:j-1)
+       elems(n) = ADJUSTL(list_(:j-1))
        list_ = list_(j+1:)
 
        ! If necessary, expand the array

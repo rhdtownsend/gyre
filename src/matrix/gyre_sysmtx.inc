@@ -45,7 +45,7 @@ module gyre_${T}_sysmtx
      procedure(set_B), deferred          :: set_B_i
      procedure(set_B), deferred          :: set_B_o
      procedure(set_E), deferred          :: set_E
-     procedure(factorize), deferred      :: factorize
+     procedure(factor), deferred         :: factor
      procedure(det), deferred            :: det
      procedure(soln_vec_hom), deferred   :: soln_vec_hom
      procedure(soln_vec_inhom), deferred :: soln_vec_inhom
@@ -76,10 +76,10 @@ module gyre_${T}_sysmtx
        type(${T}_ext_t), intent(in)        :: scl
      end subroutine set_E
 
-     subroutine factorize (this)
+     subroutine factor (this)
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(inout) :: this
-     end subroutine factorize
+     end subroutine factor
 
      function det (this)
        use gyre_ext

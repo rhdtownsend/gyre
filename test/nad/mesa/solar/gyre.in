@@ -8,12 +8,12 @@
 /
 
 &mode
-	l = 200
+	l = 1
 	tag = 'diffusion'
 /
 
 &mode
-	l = 200
+	l = 1
 	tag = 'eddington'
 /
 

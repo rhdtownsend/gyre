@@ -1,7 +1,7 @@
 ! Program  : gyre_force
 ! Purpose  : forced oscillation code
 !
-! Copyright 2016-2017 Rich Townsend
+! Copyright 2016-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,11 +30,11 @@ program gyre_force
   use gyre_constants
   use gyre_ext
   use gyre_evol_model
+  use gyre_context
   use gyre_freq
   use gyre_grid
   use gyre_grid_factory
   use gyre_grid_par
-  use gyre_mode
   use gyre_mode_par
   use gyre_model
   use gyre_model_factory
@@ -47,8 +47,10 @@ program gyre_force
   use gyre_rad_bvp
   use gyre_scan_par
   use gyre_search
+  use gyre_state
   use gyre_util
   use gyre_version
+  use gyre_wave
 
   use ISO_FORTRAN_ENV
 
@@ -70,15 +72,12 @@ program gyre_force
   type(num_par_t), allocatable  :: nm_p(:)
   type(grid_par_t), allocatable :: gr_p(:)
   class(model_t), pointer       :: ml => null()
-  real(WP)                      :: q
-  real(WP)                      :: c_lmk
+  type(context_t), pointer      :: cx(:) => null()
+  real(WP)                      :: F
   integer                       :: n_omega
   real(WP), allocatable         :: omega(:)
   integer                       :: n_P
   real(WP), allocatable         :: P(:)
-  real(WP)                      :: M_pri
-  real(WP)                      :: M_sec
-  real(WP)                      :: R_pri
   integer                       :: i
   type(osc_par_t)               :: os_p_sel
   type(num_par_t)               :: nm_p_sel
@@ -88,7 +87,7 @@ program gyre_force
   class(r_bvp_t), allocatable   :: bp_ad
   class(c_bvp_t), allocatable   :: bp_nad
 
-  namelist /force/ q, c_lmk, n_omega, omega, n_P, P
+  namelist /force/ F, n_omega, omega, n_P, P
 
   ! Read command-line arguments
 
@@ -152,16 +151,9 @@ program gyre_force
 
   ml => model_t(ml_p)
 
-  ! Initialize binary masses
+  ! Allocate the contexts array (will be initialized later on)
 
-  select type (ml)
-  class is (evol_model_t)
-     M_pri = ml%M_star
-     M_sec = q*M_pri
-     R_pri = ml%R_star
-  class default
-     $ABORT(Invalid class)
-  end select
+  allocate(cx(SIZE(md_p)))
 
   ! Loop through md_p
 
@@ -187,9 +179,9 @@ program gyre_force
      call select_par(nm_p, md_p(i)%tag, nm_p_sel)
      call select_par(gr_p, md_p(i)%tag, gr_p_sel)
 
-     ! Create the scaffold grid (used in setting up the frequency array)
+     ! Set up the context
 
-     gr = grid_t(ml%grid(), gr_p_sel%x_i, gr_p_sel%x_o)
+     cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel)
 
      ! Set up the frequency/period arrays
 
@@ -208,15 +200,15 @@ program gyre_force
      omega = omega(:n_omega)
      P = P(:n_P)
 
-     ! Create the full grid
+     ! Create the grid
 
-     gr = grid_t(ml, omega, gr_p_sel, md_p(i), os_p_sel)
+     gr = grid_t(cx(i), omega, gr_p_sel)
 
      ! Find modes
 
      if (os_p_sel%nonadiabatic) then
 
-        allocate(bp_nad, SOURCE=nad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_nad, SOURCE=nad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
 
         call scan_force_c(bp_nad, omega, P)
 
@@ -225,9 +217,9 @@ program gyre_force
      else
 
         if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-           allocate(bp_ad, SOURCE=rad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
+           allocate(bp_ad, SOURCE=rad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
         else
-           allocate(bp_ad, SOURCE=ad_bvp_t(ml, gr, md_p(i), nm_p_sel, os_p_sel))
+           allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
         endif
 
         call scan_force_r(bp_ad, omega, P)
@@ -257,23 +249,23 @@ contains
 
   subroutine scan_force_${T} (bp, omega, P)
 
-    type(${T}_bvp_t), intent(inout) :: bp
-    real(WP), intent(in)            :: omega(:)
-    real(WP), intent(in)            :: P(:)
+    class(${T}_bvp_t), intent(inout) :: bp
+    real(WP), intent(in)             :: omega(:)
+    real(WP), intent(in)             :: P(:)
 
-    integer   :: n_omega
-    integer   :: j
-    real(WP)  :: a
-    real(WP)  :: eps_T
-    real(WP)  :: alpha_fc
-    $TYPE(WP) :: w_i(bp%n_i)
-    $TYPE(WP) :: w_o(bp%n_i)
-    $TYPE(WP) :: y(bp%n_e,bp%n_k)
+    integer            :: n_omega
+    integer            :: j
+    $TYPE(WP)          :: w_i(bp%n_i)
+    $TYPE(WP)          :: w_o(bp%n_o)
+    type(${T}_state_t) :: st
 
     character(64) :: filename
+    type(wave_t)  :: wv
     integer       :: res_unit
     integer       :: sol_unit
-    integer       :: k
+    integer       :: i_
+    integer       :: k_
+    real(WP)      :: tau
 
     $CHECK_BOUNDS(SIZE(P),SIZE(omega))
 
@@ -285,34 +277,42 @@ contains
 
     omega_loop : do j = 1, n_omega
 
-       ! Set up binary parameters
-
-       a = (G_GRAVITY*(M_pri + M_sec)*P(j)**2/(4.*PI**2))**(1._WP/3._WP)
-
-       eps_T = (R_pri/a)**3*(M_sec/M_pri)
-
-       alpha_fc = eps_T*(2*md_p(i)%l+1)*c_lmk
-
        ! Set up the inhomogeneous boundary terms
 
        w_i = 0._WP
-
+         
        w_o = 0._WP
-       w_o(2) = -alpha_fc
-
-       ! Build and solve the linear system
+       w_o(2) = F
+         
+       ! Solve for the wave function
 
        $if($T eq 'c')
-       call bp%build(CMPLX(omega(j), KIND=WP))
+       st = c_state_t(CMPLX(omega(j), KIND=WP), 0._WP)
+       select type (bp)
+       type is (nad_bvp_t)
+          wv = wave_t(bp, st, w_i, w_o)
+       class default
+          $ABORT(Invalid bp class)
+       end select
        $else
-       call bp%build(omega(j))
+       st = r_state_t(omega(j))
+       select type (bp)
+       type is (ad_bvp_t)
+          wv = wave_t(bp, st, w_i, w_o)
+       type is (rad_bvp_t)
+          wv = wave_t(bp, st, w_i, w_o)
+       class default
+          $ABORT(Invalid bp class)
+       end select
        $endif
 
-       y = bp%soln_vec_inhom(w_i, w_o)
+       ! Calculate the torque expected
 
-       ! Write out the tidal response
+       tau = -0.5_WP*md_p(i)%m*AIMAG(F*CONJG(wv%y_i(3,bp%n_k)))
 
-       write(res_unit, 100) omega(j), P(j), y(1,bp%n_k)
+       ! Write out the response
+
+       write(res_unit, 100) omega(j), P(j), wv%y_i(1,bp%n_k), wv%tau_ss(), tau
 100    format(999E16.8)
 
        ! Write out the solution data
@@ -322,8 +322,8 @@ contains
 
        open(NEWUNIT=sol_unit, FILE=filename, STATUS='REPLACE')
 
-       do k = 1,bp%n_k
-          write(sol_unit, 120) gr%pt(k)%x, y(:,k)
+       do k_ = 1,bp%n_k
+          write(sol_unit, 120) wv%gr%pt(k_)%x, (wv%y_i(i_,k_),i_=1,6), wv%dtau_dx_ss(k_)
 120       format(999(1X,E16.8))
        enddo
 

@@ -24,13 +24,14 @@ module gyre_grid_util
   use core_kinds
   use core_func
 
+  use gyre_context
+  use gyre_freq
   use gyre_grid
   use gyre_model
-  use gyre_mode_par
-  use gyre_osc_par
   use gyre_point
   use gyre_rot
   use gyre_rot_factory
+  use gyre_state
   
   use ISO_FORTRAN_ENV
 
@@ -41,10 +42,9 @@ module gyre_grid_util
   ! Derived-type definitions (used internally for root-finding)
 
   type, extends (func_t) :: gamma_func_t
-     class(model_t), pointer     :: ml => null()
-     class(r_rot_t), allocatable :: rt
-     real(WP)                    :: omega
-     integer                     :: s
+     type(context_t), pointer  :: cx
+     class(r_state_t), pointer :: st
+     integer                   :: s
    contains
      procedure :: eval_c_
   end type gamma_func_t
@@ -59,41 +59,39 @@ module gyre_grid_util
 
 contains
 
-  subroutine find_turn (ml, gr, omega, md_p, os_p, k_turn, x_turn)
+  subroutine find_turn (cx, gr, st, k_turn, x_turn)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    real(WP), intent(in)                :: omega
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
-    integer, intent(out)                :: k_turn
-    real(WP), intent(out)               :: x_turn
+    type(context_t), target, intent(in)  :: cx
+    type(grid_t), intent(in)             :: gr
+    class(r_state_t), target, intent(in) :: st
+    integer, intent(out)                 :: k_turn
+    real(WP), intent(out)                :: x_turn
 
-    class(r_rot_t), allocatable :: rt
-    real(WP)                    :: gamma_a
-    real(WP)                    :: gamma_b
-    integer                     :: k
-    type(gamma_func_t)          :: gf
-    type(point_t)               :: pt_a
-    type(point_t)               :: pt_b
+    real(WP)           :: gamma_a
+    real(WP)           :: gamma_b
+    integer            :: k
+    type(gamma_func_t) :: gf
+    type(point_t)      :: pt_a
+    type(point_t)      :: pt_b
 
-    ! Find the cell index and abscissa of the inner turning point,
-    ! where the local solution at frequency omega first becomes
-    ! propagative
+    $ASSERT_DEBUG(cx%pt_i == gr%pt_i(),Context and grid are not conformable)
+    $ASSERT_DEBUG(cx%pt_o == gr%pt_o(),Context and grid are not conformable)
+
+    ! Find the cell index and abscissa (in grid gr) of the inner
+    ! turning point, where the local solution for state st first
+    ! becomes propagative
 
     k_turn = gr%n_k
     x_turn = HUGE(0._WP)
 
-    allocate(rt, SOURCE=r_rot_t(md_p, os_p))
-
-    gamma_b = gamma_(ml, rt, gr%pt(1), omega)
+    gamma_b = gamma_(cx, cx%pt_i, st)
 
     if (gamma_b <= 0._WP) then
 
        ! Inner point is already propagative
 
        k_turn = 1
-       x_turn = gr%pt(1)%x
+       x_turn = cx%pt_i%x
 
     else
 
@@ -102,7 +100,7 @@ contains
           ! Check for a sign change in gamma
 
           gamma_a = gamma_b
-          gamma_b = gamma_(ml, rt, gr%pt(k+1), omega)
+          gamma_b = gamma_(cx, gr%pt(k+1), st)
 
           if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
 
@@ -123,10 +121,9 @@ contains
 
                 else
                    
-                   gf%ml => ml
-                   allocate(gf%rt, SOURCE=rt)
+                   gf%cx => cx
                    gf%s = pt_a%s
-                   gf%omega = omega
+                   gf%st => st
                    
                    x_turn = gf%root(pt_a%x, pt_b%x, 0._WP)
 
@@ -154,13 +151,12 @@ contains
 
   !****
 
-  function gamma_ (ml, rt, pt, omega) result (gamma)
+  function gamma_ (cx, pt, st) result (gamma)
 
-    class(model_t), pointer, intent(in) :: ml
-    class(r_rot_t), intent(inout)       :: rt
-    type(point_t), intent(in)           :: pt
-    real(WP), intent(in)                :: omega
-    real(WP)                            :: gamma
+    type(context_t), intent(in)  :: cx
+    type(point_t), intent(in)    :: pt
+    class(r_state_t), intent(in) :: st
+    real(WP)                     :: gamma
 
     real(WP) :: V_g
     real(WP) :: As
@@ -176,22 +172,26 @@ contains
     ! Calculate the propagation discriminant gamma (< 0 : propagation,
     ! > 0 : evanescence)
 
-    if (ml%is_vacuum(pt)) then
+    if (cx%ml%is_vacuum(pt)) then
 
        gamma = HUGE(0._WP)
 
     else
 
-       V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
-       As = ml%coeff(I_As, pt)
-       U = ml%coeff(I_U, pt)
-       c_1 = ml%coeff(I_C_1, pt)
+       associate (ml => cx%ml)
 
-       Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+         V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+         As = ml%coeff(I_As, pt)
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
 
-       omega_c = rt%omega_c(Omega_rot, omega)
+         Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
 
-       lambda = rt%lambda(Omega_rot, omega)
+       end associate
+
+       omega_c = cx%omega_c(Omega_rot, st)
+
+       lambda = cx%lambda(Omega_rot, st)
 
        g_4 = -4._WP*V_g*c_1
        g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
@@ -221,7 +221,7 @@ contains
 
     pt = point_t(this%s, REAL(z))
 
-    gamma = gamma_(this%ml, this%rt, pt, this%omega)
+    gamma = gamma_(this%cx, pt, this%st)
 
     ! Finish
 

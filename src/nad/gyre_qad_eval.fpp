@@ -47,8 +47,6 @@ module gyre_qad_eval
      type(context_t), pointer :: cx => null()
      type(nad_eqns_t)         :: eq
      type(grid_t)             :: gr
-     type(mode_par_t)         :: md_p
-     type(osc_par_t)          :: os_p
      integer, public          :: n_k
    contains
      private
@@ -79,26 +77,17 @@ contains
     type(osc_par_t), intent(in)          :: os_p
     type(qad_eval_t)                     :: qe
 
-    type(point_t) :: pt_i
-    type(point_t) :: pt_o
-
     ! Construct the qad_eval_t
-
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
 
     ! Initialize the equations
 
-    qe%eq = nad_eqns_t(cx, pt_i, md_p, os_p)
+    qe%eq = nad_eqns_t(cx, md_p, os_p)
     call qe%eq%stencil(gr%pt)
 
     ! Other initializations
 
     qe%cx => cx
     qe%gr = gr
-
-    qe%md_p = md_p
-    qe%os_p = os_p
 
     qe%n_k = gr%n_k
 
@@ -159,7 +148,7 @@ contains
     ! eigenfunction, segment-by-segment
     
     seg_loop : do s = this%gr%s_i(), this%gr%s_o()
-       associate (k_i => this%gr%k_i(s), k_o => this%gr%k_o(s))
+       associate (k_i => this%gr%k_s_i(s), k_o => this%gr%k_s_o(s))
          dy_6(k_i:k_o) = this%gr%pt(k_i:k_o)%x*deriv(this%gr%pt(k_i:k_o)%x, REAL(y_qad(6,k_i:k_o), WP), 'MONO')
        end associate
     end do seg_loop

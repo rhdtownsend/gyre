@@ -14,7 +14,7 @@ OUT_FILE=summary.txt
 
 LABEL="MESA model for Sun (non-adiabatic, diffusion vs. Eddington approxiation)"
 
-RELERR=2E-12
+RELERR=2E-14
 FIELDS=1-5
 
 # Do the tests

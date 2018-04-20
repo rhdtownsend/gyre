@@ -48,6 +48,7 @@ module gyre_osc_par
      logical                 :: nonadiabatic
      logical                 :: quasiad_eigfuncs
      logical                 :: cowling_approx
+     logical                 :: nar_approx
      logical                 :: narf_approx
      logical                 :: eddington_approx
      logical                 :: complex_lambda
@@ -109,6 +110,7 @@ contains
     logical                               :: quasiad_eigfuncs
     logical                               :: nonadiabatic
     logical                               :: cowling_approx
+    logical                               :: nar_approx
     logical                               :: narf_approx
     logical                               :: eddington_approx
     logical                               :: complex_lambda
@@ -118,7 +120,7 @@ contains
          variables_set, inertia_norm, time_factor, &
          conv_scheme, deps_scheme, deps_file, deps_file_format, &
          tag_list, quasiad_eigfuncs, nonadiabatic, &
-         cowling_approx, narf_approx, eddington_approx, &
+         cowling_approx, nar_approx, narf_approx, eddington_approx, &
          complex_lambda, reduce_order
 
     ! Count the number of osc namelists
@@ -144,7 +146,7 @@ contains
 
        x_ref = HUGE(0._WP)
 
-       rotation_method = 'NULL'
+       rotation_method = 'DOPPLER'
        variables_set = 'GYRE'
        inner_bound = 'REGULAR'
        outer_bound = 'VACUUM'
@@ -159,6 +161,7 @@ contains
        quasiad_eigfuncs = .FALSE.
        nonadiabatic = .FALSE.
        cowling_approx = .FALSE.
+       nar_approx = .FALSE.
        narf_approx = .FALSE.
        eddington_approx = .FALSE.
        complex_lambda = .FALSE.
@@ -183,6 +186,7 @@ contains
                            quasiad_eigfuncs=quasiad_eigfuncs, &
                            nonadiabatic=nonadiabatic, &
                            cowling_approx=cowling_approx, &
+                           nar_approx=nar_approx, &
                            narf_approx=narf_approx, &
                            eddington_approx=eddington_approx, &
                            complex_lambda=complex_lambda, &
@@ -224,6 +228,7 @@ contains
     call bcast(os_p%quasiad_eigfuncs, root_rank)
     call bcast(os_p%nonadiabatic, root_rank)
     call bcast(os_p%cowling_approx, root_rank)
+    call bcast(os_p%nar_approx, root_rank)
     call bcast(os_p%narf_approx, root_rank)
     call bcast(os_p%eddington_approx, root_rank)
     call bcast(os_p%complex_lambda, root_rank)

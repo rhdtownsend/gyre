@@ -39,11 +39,11 @@ module gyre_c_discrim_func
 
   type, extends (c_ext_func_t) :: c_discrim_func_t
      private
-     class(c_bvp_t), pointer  :: bp
-     real(WP)                 :: omega_r
-     real(WP)                 :: omega_min
-     real(WP)                 :: omega_max
-     complex(WP), allocatable :: omega_def(:)
+     class(c_bvp_t), pointer       :: bp
+     class(c_state_t), allocatable :: st
+     real(WP)                      :: omega_min
+     real(WP)                      :: omega_max
+     complex(WP), allocatable      :: omega_def(:)
    contains 
      private
      procedure, public :: eval => eval_
@@ -65,10 +65,10 @@ module gyre_c_discrim_func
 
 contains
 
-  function c_discrim_func_t_ (bp, omega_r, omega_min, omega_max, omega_def) result (df)
+  function c_discrim_func_t_ (bp, st, omega_min, omega_max, omega_def) result (df)
 
     class(c_bvp_t), pointer, intent(in) :: bp
-    real(WP), intent(in)                :: omega_r
+    class(c_state_t), intent(in)        :: st
     real(WP), intent(in)                :: omega_min
     real(WP), intent(in)                :: omega_max
     complex(WP), intent(in), optional   :: omega_def(:)
@@ -78,7 +78,7 @@ contains
 
     df%bp => bp
 
-    df%omega_r = omega_r
+    allocate(df%st, SOURCE=st)
 
     df%omega_min = omega_min
     df%omega_max = omega_max
@@ -113,9 +113,10 @@ contains
 
     if (REAL(omega) >= this%omega_min .AND. REAL(omega) <= this%omega_max) then
 
-       st = c_state_t(omega, this%omega_r)
+       this%st%omega = omega
 
-       call this%bp%build(st)
+       call this%bp%build(this%st)
+       call this%bp%factor()
 
        f_cx = this%bp%det()
 
