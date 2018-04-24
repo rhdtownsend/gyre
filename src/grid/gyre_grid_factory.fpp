@@ -211,7 +211,8 @@ contains
     end do spec_loop
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Found inner turning points, x range', x_turn_min, '->', x_turn_max
+       write(OUTPUT_UNIT, 110) 'Found inner turning points, x range', &
+                               x_turn_min, '->', MIN(x_turn_max, gr%pt(gr%n_k)%x)
 110    format(3X,A,1X,F6.4,1X,A,1X,F6.4)
     endif
 
