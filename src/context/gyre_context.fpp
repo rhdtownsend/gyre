@@ -308,7 +308,7 @@ contains
     integer, allocatable     :: j(:)
     
     ! Read epsilon partials data from a file in the format used in the
-    ! preparation of Wolf, Townsend & Bildsten (2017)
+    ! preparation of Wolf, Townsend & Bildsten (2018)
 
     ! Open the file and skip the header line
 
