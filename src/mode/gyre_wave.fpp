@@ -112,6 +112,7 @@ module gyre_wave
      procedure, public :: tau_tr
      procedure, public :: beta
      procedure, public :: omega_int
+     procedure, public :: domega_rot
      procedure, public :: eta
   end type wave_t
 
@@ -1967,6 +1968,43 @@ contains
     return
 
   end function omega_int
+
+  !****
+
+  function domega_rot (this)
+
+    class(wave_t), intent(in) :: this
+    complex(WP)               :: domega_rot
+
+    integer  :: k
+    real(WP) :: dbeta_dx(this%n_k)
+    real(WP) :: Omega_rot(this%n_k)
+
+    ! Calculate the rotational splitting between modes of adjacent
+    ! m. This is based on eqn. 3.355 of [Aer2010].
+
+    !$OMP PARALLEL DO
+    do k = 1, this%n_k
+
+       dbeta_dx(k) = this%dbeta_dx(k)
+
+       associate ( &
+            ml => this%cx%ml, &
+            pt => this%gr%pt(k))
+
+         Omega_rot(k) = ml%coeff(I_OMEGA_ROT, pt)
+
+       end associate
+       
+    end do
+
+    domega_rot = integrate(this%gr%pt%x, dbeta_dx*Omega_rot)
+
+    ! Finish
+
+    return
+
+  end function domega_rot
 
   !****
 

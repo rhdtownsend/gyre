@@ -128,14 +128,6 @@ contains
 
           call wr%write('omega', md%omega)
 
-       case ('omega_int')
-
-          do i_md = 1, n_md
-             data_c(i_md) = md(i_md)%omega_int()
-          end do
-
-          call wr%write('omega_int', data_c)
-
        case ('freq')
 
           do i_md = 1, n_md
@@ -169,6 +161,8 @@ contains
           
           call wr%write('Delta_g', data_r)
 
+       $OUTPUT_MODES(c,omega_int,omega_int())
+       $OUTPUT_MODES(r,domega_rot,domega_rot())
        $OUTPUT_MODES(r,eta,eta())
        $OUTPUT_MODES(r,f_T,f_T())
        $OUTPUT_MODES(r,f_g,f_g())
@@ -364,6 +358,10 @@ contains
          case ('omega_int')
 
             call wr%write('omega_int', md%omega_int())
+
+         case ('domega_rot')
+
+            call wr%write('domega_rot', md%domega_rot())
 
          case ('freq')
 
