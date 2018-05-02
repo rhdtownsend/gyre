@@ -144,6 +144,14 @@ contains
 
           call wr%write('freq_frame', ot_p%freq_frame)
 
+       case ('dfreq_rot')
+
+          do i_md = 1, n_md
+             data_r(i_md) = md(i_md)%dfreq_rot(ot_p%freq_units)
+          end do
+
+          call wr%write('dfreq_rot', data_r)
+
        case ('Delta_p')
 
           do i_md = 1, n_md
@@ -374,6 +382,10 @@ contains
          case ('freq_frame')
 
             call wr%write('freq_frame', ot_p%freq_frame)
+
+         case ('dfreq_rot')
+
+            call wr%write('dfreq_rot', md%dfreq_rot(ot_p%freq_units))
 
          case ('Delta_p')
 
