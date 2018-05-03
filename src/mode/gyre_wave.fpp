@@ -67,6 +67,7 @@ module gyre_wave
      private
      procedure, public :: prune
      procedure, public :: freq
+     procedure, public :: dfreq_rot
      procedure, public :: y_i
      procedure, public :: xi_r
      procedure, public :: xi_h
@@ -113,7 +114,6 @@ module gyre_wave
      procedure, public :: beta
      procedure, public :: omega_int
      procedure, public :: domega_rot
-     procedure, public :: dfreq_rot
      procedure, public :: eta
   end type wave_t
 
@@ -247,6 +247,25 @@ contains
     return
 
   end function freq
+
+  !****
+
+  function dfreq_rot (this, freq_units)
+
+    class(wave_t), intent(in) :: this
+    character(*), intent(in)  :: freq_units
+    real(WP)                  :: dfreq_rot
+
+    associate( &
+         ml => this%cx%ml, &
+         pt_i => this%gr%pt(1), &
+         pt_o => this%gr%pt(this%n_k) )
+
+      dfreq_rot = freq_from_omega(this%domega_rot(), ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
+    
+    end associate
+
+  end function dfreq_rot
 
   !****
 
@@ -2006,25 +2025,6 @@ contains
     return
 
   end function domega_rot
-
-  !****
-
-  function dfreq_rot (this, freq_units)
-
-    class(wave_t), intent(in) :: this
-    character(*), intent(in)  :: freq_units
-    real(WP)                  :: dfreq_rot
-
-    associate( &
-         ml => this%cx%ml, &
-         pt_i => this%gr%pt(1), &
-         pt_o => this%gr%pt(this%n_k) )
-
-      dfreq_rot = freq_from_omega(this%domega_rot(), ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
-    
-    end associate
-
-  end function dfreq_rot
 
   !****
 
