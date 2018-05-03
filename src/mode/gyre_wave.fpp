@@ -231,8 +231,8 @@ contains
 
     associate( &
          ml => this%cx%ml, &
-         pt_i => this%gr%pt(1), &
-         pt_o => this%gr%pt(this%n_k) )
+         pt_i => this%gr%pt_i(), &
+         pt_o => this%gr%pt_o() )
 
       if (PRESENT(freq_frame)) then
          freq = freq_from_omega(this%st%omega, ml, pt_i, pt_o, freq_units, freq_frame, this%md_p, this%os_p)
@@ -258,8 +258,8 @@ contains
 
     associate( &
          ml => this%cx%ml, &
-         pt_i => this%gr%pt(1), &
-         pt_o => this%gr%pt(this%n_k) )
+         pt_i => this%gr%pt_i(), &
+         pt_o => this%gr%pt_o() )
 
       dfreq_rot = freq_from_omega(this%domega_rot(), ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
     
