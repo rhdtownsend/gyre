@@ -961,8 +961,8 @@ contains
 
       E = this%E()
 
-      dbeta_dx = 4._WP*PI*REAL((ABS(xi_r)**2 + (lambda-1._WP)*ABS(xi_h)**2 - &
-                                2._WP*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
+      dbeta_dx = REAL((ABS(xi_r)**2 + (lambda-1._WP)*ABS(xi_h)**2 - &
+                       2._WP*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
 
     end associate
 
@@ -1999,7 +1999,7 @@ contains
        
     end do
 
-    domega_rot = integrate(this%gr%pt%x, dbeta_dx*Omega_rot)/4._WP/PI
+    domega_rot = integrate(this%gr%pt%x, dbeta_dx*Omega_rot)
 
     ! Finish
 
