@@ -67,6 +67,7 @@ module gyre_wave
      private
      procedure, public :: prune
      procedure, public :: freq
+     procedure, public :: dfreq_rot
      procedure, public :: y_i
      procedure, public :: xi_r
      procedure, public :: xi_h
@@ -230,8 +231,8 @@ contains
 
     associate( &
          ml => this%cx%ml, &
-         pt_i => this%gr%pt(1), &
-         pt_o => this%gr%pt(this%n_k) )
+         pt_i => this%gr%pt_i(), &
+         pt_o => this%gr%pt_o() )
 
       if (PRESENT(freq_frame)) then
          freq = freq_from_omega(this%st%omega, ml, pt_i, pt_o, freq_units, freq_frame, this%md_p, this%os_p)
@@ -246,6 +247,25 @@ contains
     return
 
   end function freq
+
+  !****
+
+  function dfreq_rot (this, freq_units)
+
+    class(wave_t), intent(in) :: this
+    character(*), intent(in)  :: freq_units
+    real(WP)                  :: dfreq_rot
+
+    associate( &
+         ml => this%cx%ml, &
+         pt_i => this%gr%pt_i(), &
+         pt_o => this%gr%pt_o() )
+
+      dfreq_rot = freq_from_omega(this%domega_rot(), ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
+    
+    end associate
+
+  end function dfreq_rot
 
   !****
 
@@ -960,8 +980,8 @@ contains
 
       E = this%E()
 
-      dbeta_dx = 4._WP*PI*REAL((ABS(xi_r)**2 + (lambda-1._WP)*ABS(xi_h)**2 - &
-                                2._WP*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
+      dbeta_dx = REAL((ABS(xi_r)**2 + (lambda-1._WP)*ABS(xi_h)**2 - &
+                       2._WP*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
 
     end associate
 
