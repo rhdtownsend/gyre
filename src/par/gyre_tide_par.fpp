@@ -32,12 +32,12 @@ module gyre_tide_par
   ! Derived-type definitions
 
   type :: tide_par_t
-     real(WP) :: R_a
-     real(WP) :: q
-     real(WP) :: e
-     real(WP) :: omega_static
-     integer  :: l_max
-     integer  :: k_max
+     real(WP) :: R_a = 0.1_WP
+     real(WP) :: q = 1._WP
+     real(WP) :: e = 0.5_WP
+     real(WP) :: omega_static = 0._WP
+     integer  :: l_max = 4
+     integer  :: k_max = 20
   end type tide_par_t
 
   ! Interfaces
@@ -108,24 +108,29 @@ contains
 
     read_loop : do i = 1,n_td_p
 
-       R_a = 0.2_WP
-       q = 1._WP
-       e = 0.5_WP
-       omega_static = 0._WP
+       ! Set default values
 
-       l_max = 4
-       k_max = 20
+       td_p(i) = tide_par_t()
+
+       R_a = td_p(i)%R_a
+       q = td_p(i)%q
+       e = td_p(i)%e
+       omega_static = td_p(i)%omega_static
+       l_max = td_p(i)%l_max
+       k_max = td_p(i)%k_max
+
+       ! Read the namelist
 
        read(unit, NML=tide)
 
-       ! Initialize the tide_par
+       ! Store read values
 
-       td_p(i) = tide_par_t(R_a=R_a, &
-                            q=q, &
-                            e=e, &
-                            omega_static=omega_static, &
-                            l_max=l_max, &
-                            k_max=k_max)
+       td_p(i)%R_a = R_a
+       td_p(i)%q = q
+       td_p(i)%e = e
+       td_p(i)%omega_static = omega_static
+       td_p(i)%l_max = l_max
+       td_p(i)%k_max = k_max
 
     end do read_loop
 

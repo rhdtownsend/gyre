@@ -1,7 +1,7 @@
 ! Module   : gyre_num_par
 ! Purpose  : numerics parameters
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,14 +30,14 @@ module gyre_num_par
   ! Derived-type definitions
 
   type :: num_par_t
-     integer         :: n_iter_max
-     logical         :: deflate_roots
-     logical         :: restrict_roots
-     character(64)   :: diff_scheme
-     character(64)   :: r_root_solver
-     character(64)   :: c_root_solver
-     character(64)   :: matrix_type
-     character(2048) :: tag_list
+     integer         :: n_iter_max = 50
+     logical         :: deflate_roots = .TRUE.
+     logical         :: restrict_roots = .TRUE.
+     character(64)   :: diff_scheme = 'COLLOC_GL2'
+     character(64)   :: r_root_solver = 'BRENT'
+     character(64)   :: c_root_solver = 'RIDDERS'
+     character(64)   :: matrix_type = 'BLOCK'
+     character(2048) :: tag_list = ''
   end type num_par_t
 
   ! Access specifiers
@@ -91,31 +91,33 @@ contains
 
     read_loop : do i = 1,n_nm_p
 
-       n_iter_max = 50
+       ! Set default values
 
-       deflate_roots = .TRUE.
-       restrict_roots = .TRUE.
+       nm_p(i) = num_par_t()
 
-       diff_scheme = 'COLLOC_GL2'
+       n_iter_max = nm_p(i)%n_iter_max
+       deflate_roots = nm_p(i)%deflate_roots
+       restrict_roots = nm_p(i)%restrict_roots
+       diff_scheme = nm_p(i)%diff_scheme
+       r_root_solver = nm_p(i)%r_root_solver
+       c_root_solver = nm_p(i)%c_root_solver
+       matrix_type = nm_p(i)%matrix_type
+       tag_list = nm_p(i)%tag_list
 
-       r_root_solver = 'BRENT'
-       c_root_solver = 'RIDDERS'
-
-       matrix_type = 'BLOCK'
-       tag_list = ''
+       ! Read the namelist
 
        read(unit, NML=num)
 
-       ! Initialize the num_par
+       ! Store read values
 
-       nm_p(i) = num_par_t(n_iter_max=n_iter_max, &
-                           deflate_roots=deflate_roots, &
-                           restrict_roots=restrict_roots, &
-                           diff_scheme=diff_scheme, &
-                           r_root_solver=r_root_solver, &
-                           c_root_solver=c_root_solver, &
-                           matrix_type=matrix_type, &
-                           tag_list=tag_list)
+       nm_p(i)%n_iter_max = n_iter_max
+       nm_p(i)%deflate_roots = deflate_roots
+       nm_p(i)%restrict_roots = restrict_roots
+       nm_p(i)%diff_scheme = diff_scheme
+       nm_p(i)%r_root_solver = r_root_solver
+       nm_p(i)%c_root_solver = c_root_solver
+       nm_p(i)%matrix_type = matrix_type
+       nm_p(i)%tag_list = tag_list
 
     end do read_loop
 

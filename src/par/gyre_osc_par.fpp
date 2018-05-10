@@ -33,26 +33,26 @@ module gyre_osc_par
   ! Derived-type definitions
 
   type :: osc_par_t
-     real(WP)                :: x_ref
-     character(64)           :: rotation_method
-     character(64)           :: variables_set
-     character(64)           :: inner_bound
-     character(64)           :: outer_bound
-     character(64)           :: inertia_norm
-     character(64)           :: time_factor
-     character(64)           :: conv_scheme
-     character(64)           :: deps_scheme
-     character(FILENAME_LEN) :: deps_file
-     character(256)          :: deps_file_format
-     character(2048)         :: tag_list
-     logical                 :: nonadiabatic
-     logical                 :: quasiad_eigfuncs
-     logical                 :: cowling_approx
-     logical                 :: nar_approx
-     logical                 :: narf_approx
-     logical                 :: eddington_approx
-     logical                 :: complex_lambda
-     logical                 :: reduce_order
+     real(WP)                :: x_ref = HUGE(0._WP)
+     character(64)           :: rotation_method = 'DOPPLER'
+     character(64)           :: variables_set = 'GYRE'
+     character(64)           :: inner_bound = 'REGULAR'
+     character(64)           :: outer_bound = 'VACUUM'
+     character(64)           :: inertia_norm = 'BOTH'
+     character(64)           :: time_factor = 'OSC'
+     character(64)           :: conv_scheme = 'FROZEN_PESNELL_1'
+     character(64)           :: deps_scheme = 'MODEL'
+     character(FILENAME_LEN) :: deps_file = ''
+     character(256)          :: deps_file_format = ''
+     character(2048)         :: tag_list = ''
+     logical                 :: nonadiabatic = .FALSE.
+     logical                 :: quasiad_eigfuncs = .FALSE.
+     logical                 :: cowling_approx = .FALSE.
+     logical                 :: nar_approx = .FALSE.
+     logical                 :: narf_approx = .FALSE.
+     logical                 :: eddington_approx = .FALSE.
+     logical                 :: complex_lambda = .FALSE.
+     logical                 :: reduce_order = .TRUE.
   end type osc_par_t
 
   ! Interfaces
@@ -144,53 +144,57 @@ contains
 
     read_loop : do i = 1,n_os_p
 
-       x_ref = HUGE(0._WP)
+       ! Set default values
 
-       rotation_method = 'DOPPLER'
-       variables_set = 'GYRE'
-       inner_bound = 'REGULAR'
-       outer_bound = 'VACUUM'
-       inertia_norm = 'BOTH'
-       time_factor = 'OSC'
-       conv_scheme = 'FROZEN_PESNELL_1'
-       deps_scheme = 'MODEL'
-       deps_file = ''
-       deps_file_format = ''
-       tag_list = ''
+       os_p(i) = osc_par_t()
 
-       quasiad_eigfuncs = .FALSE.
-       nonadiabatic = .FALSE.
-       cowling_approx = .FALSE.
-       nar_approx = .FALSE.
-       narf_approx = .FALSE.
-       eddington_approx = .FALSE.
-       complex_lambda = .FALSE.
-       reduce_order = .TRUE.
+       x_ref = os_p(i)%x_ref
+       rotation_method = os_p(i)%rotation_method
+       variables_set = os_p(i)%variables_set
+       inner_bound = os_p(i)%inner_bound
+       outer_bound = os_p(i)%outer_bound
+       inertia_norm = os_p(i)%inertia_norm
+       time_factor = os_p(i)%time_factor
+       conv_scheme = os_p(i)%conv_scheme
+       deps_scheme = os_p(i)%deps_scheme
+       deps_file = os_p(i)%deps_file
+       deps_file_format = os_p(i)%deps_file_format
+       tag_list = os_p(i)%tag_list
+       quasiad_eigfuncs = os_p(i)%quasiad_eigfuncs
+       nonadiabatic = os_p(i)%nonadiabatic
+       cowling_approx = os_p(i)%cowling_approx
+       nar_approx = os_p(i)%nar_approx
+       narf_approx = os_p(i)%narf_approx
+       eddington_approx = os_p(i)%eddington_approx
+       complex_lambda = os_p(i)%complex_lambda
+       reduce_order = os_p(i)%reduce_order
+
+       ! Read the namelist
 
        read(unit, NML=osc)
 
-       ! Initialize the osc_par
+       ! Store read values
 
-       os_p(i) = osc_par_t(x_ref=x_ref, &
-                           rotation_method=rotation_method, &
-                           variables_set=variables_set, &
-                           inner_bound=inner_bound, &
-                           outer_bound=outer_bound, &
-                           inertia_norm=inertia_norm, &
-                           time_factor=time_factor, &
-                           conv_scheme=conv_scheme, &
-                           deps_scheme=deps_scheme, &
-                           deps_file=deps_file, &
-                           deps_file_format=deps_file_format, &
-                           tag_list=tag_list, &
-                           quasiad_eigfuncs=quasiad_eigfuncs, &
-                           nonadiabatic=nonadiabatic, &
-                           cowling_approx=cowling_approx, &
-                           nar_approx=nar_approx, &
-                           narf_approx=narf_approx, &
-                           eddington_approx=eddington_approx, &
-                           complex_lambda=complex_lambda, &
-                           reduce_order=reduce_order)
+       os_p(i)%x_ref = x_ref
+       os_p(i)%rotation_method = rotation_method
+       os_p(i)%variables_set = variables_set
+       os_p(i)%inner_bound = inner_bound
+       os_p(i)%outer_bound = outer_bound
+       os_p(i)%inertia_norm = inertia_norm
+       os_p(i)%time_factor = time_factor
+       os_p(i)%conv_scheme = conv_scheme
+       os_p(i)%deps_scheme = deps_scheme
+       os_p(i)%deps_file = deps_file
+       os_p(i)%deps_file_format = deps_file_format
+       os_p(i)%tag_list = tag_list
+       os_p(i)%quasiad_eigfuncs = quasiad_eigfuncs
+       os_p(i)%nonadiabatic = nonadiabatic
+       os_p(i)%cowling_approx = cowling_approx
+       os_p(i)%nar_approx = nar_approx
+       os_p(i)%narf_approx = narf_approx
+       os_p(i)%eddington_approx = eddington_approx
+       os_p(i)%complex_lambda = complex_lambda
+       os_p(i)%reduce_order = reduce_order
 
     end do read_loop
 

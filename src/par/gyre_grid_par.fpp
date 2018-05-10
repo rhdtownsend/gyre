@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_par
 ! Purpose  : grid parameters
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,16 +30,16 @@ module gyre_grid_par
   ! Derived-type definitions
 
   type :: grid_par_t
-     real(WP)        :: x_i
-     real(WP)        :: x_o
-     real(WP)        :: alpha_osc
-     real(WP)        :: alpha_exp
-     real(WP)        :: alpha_thm
-     real(WP)        :: alpha_str
-     real(WP)        :: dx_min
-     integer         :: n_inner
-     integer         :: n_iter_max
-     character(2048) :: tag_list
+     real(WP)        :: x_i = -HUGE(0._WP)
+     real(WP)        :: x_o = HUGE(0._WP)
+     real(WP)        :: alpha_osc = 0._WP
+     real(WP)        :: alpha_exp = 0._WP
+     real(WP)        :: alpha_thm = 0._WP
+     real(WP)        :: alpha_str = 0._WP
+     real(WP)        :: dx_min = SQRT(EPSILON(0._WP))
+     integer         :: n_inner = 0
+     integer         :: n_iter_max = 8
+     character(2048) :: tag_list = ''
   end type grid_par_t
 
   ! Access specifiers
@@ -95,35 +95,37 @@ contains
 
     read_loop : do i = 1, n_gr_p
 
-       x_i = -HUGE(0._WP)
-       x_o = HUGE(0._WP)
+       ! Set default values
 
-       alpha_osc = 0._WP
-       alpha_exp = 0._WP
-       alpha_thm = 0._WP
-       alpha_str = 0._WP
+       gr_p(i) = grid_par_t()
 
-       dx_min = SQRT(EPSILON(0._WP))
+       x_i = gr_p(i)%x_i
+       x_o = gr_p(i)%x_o
+       alpha_osc = gr_p(i)%alpha_osc
+       alpha_exp = gr_p(i)%alpha_exp
+       alpha_thm = gr_p(i)%alpha_thm
+       alpha_str = gr_p(i)%alpha_str
+       dx_min = gr_p(i)%dx_min
+       n_inner = gr_p(i)%n_inner
+       n_iter_max = gr_p(i)%n_iter_max
+       tag_list = gr_p(i)%tag_list
 
-       n_inner = 0
-       n_iter_max = 8
-
-       tag_list = ''
+       ! Read the namelist
 
        read(unit, NML=grid)
 
-       ! Initialize the grid_par
+       ! Store read values
 
-       gr_p(i) = grid_par_t(x_i=x_i, &
-                            x_o=x_o, &
-                            alpha_osc=alpha_osc, &
-                            alpha_exp=alpha_exp, &
-                            alpha_thm=alpha_thm, &
-                            alpha_str=alpha_str, &
-                            dx_min=dx_min, &
-                            n_inner=n_inner, &
-                            n_iter_max=n_iter_max, &
-                            tag_list=tag_list)
+       gr_p(i)%x_i = x_i
+       gr_p(i)%x_o = x_o
+       gr_p(i)%alpha_osc = alpha_osc
+       gr_p(i)%alpha_exp = alpha_exp
+       gr_p(i)%alpha_thm = alpha_thm
+       gr_p(i)%alpha_str = alpha_str
+       gr_p(i)%dx_min = dx_min
+       gr_p(i)%n_inner = n_inner
+       gr_p(i)%n_iter_max = n_iter_max
+       gr_p(i)%tag_list = tag_list
 
     end do read_loop
 

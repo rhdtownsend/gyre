@@ -1,7 +1,7 @@
 ! Module   : gyre_model_par
 ! Purpose  : model parameters
 !
-! Copyright 2015-2016 Rich Townsend
+! Copyright 2015-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -33,23 +33,23 @@ module gyre_model_par
   ! Derived-type definitions
 
   type :: model_par_t
-     real(WP)                :: Gamma_1
-     real(WP)                :: Omega_rot
-     real(WP)                :: dx_snap
-     real(WP)                :: x_i
-     real(WP)                :: x_o
-     real(WP)                :: s
-     character(256)          :: model_type
-     character(256)          :: grid_type
-     character(256)          :: file_format
-     character(256)          :: data_format
-     character(256)          :: deriv_type
-     character(256)          :: Omega_units
-     character(FILENAME_LEN) :: file
-     integer                 :: n
-     logical                 :: add_center
-     logical                 :: repair_As
-     logical                 :: uniform_rot
+     real(WP)                :: Gamma_1 = 5._WP/3._WP
+     real(WP)                :: Omega_rot = 0._WP
+     real(WP)                :: dx_snap = 0._WP
+     real(WP)                :: x_i = 0._WP
+     real(WP)                :: x_o = 1._WP
+     real(WP)                :: s = 1._WP
+     character(256)          :: model_type = 'HOM'
+     character(256)          :: grid_type = 'UNI'
+     character(256)          :: file_format = ''
+     character(256)          :: data_format = ''
+     character(256)          :: deriv_type = 'MONO'
+     character(256)          :: Omega_units = 'NONE'
+     character(FILENAME_LEN) :: file = ''
+     integer                 :: n = 10
+     logical                 :: add_center = .TRUE.
+     logical                 :: repair_As = .FALSE.
+     logical                 :: uniform_rot = .FALSE.
   end type model_par_t
    
  ! Access specifiers
@@ -108,50 +108,53 @@ contains
 
     ! Read model parameters
 
-    Gamma_1 = 5._WP/3._WP
-    Omega_rot = 0._WP
-    dx_snap = 0._WP
-
-    x_i = 0._WP
-    x_o = 1._WP
-    s = 1._WP
-
-    model_type = ''
-    grid_type = 'UNIFORM'
-    file_format = ''
-    data_format = ''
-    deriv_type = 'MONO'
-    Omega_units = 'NONE'
-    file = ''
-
-    n = 10
-
-    add_center = .TRUE.
-    repair_As = .FALSE.
-    uniform_rot = .FALSE.
-
     rewind(unit)
+
+    ! Set default values
+
+    ml_p = model_par_t()
+
+    Gamma_1 = ml_p%Gamma_1
+    Omega_rot = ml_p%Omega_rot
+    dx_snap = ml_p%dx_snap
+    x_i = ml_p%x_i
+    x_o = ml_p%x_o
+    s = ml_p%s
+    model_type = ml_p%model_type
+    grid_type = ml_p%grid_type
+    file_format = ml_p%file_format
+    data_format = ml_p%data_format
+    deriv_type = ml_p%deriv_type
+    Omega_units = ml_p%Omega_units
+    file = ml_p%file
+    n = ml_p%n
+    add_center = ml_p%add_center
+    repair_As = ml_p%repair_As
+    uniform_rot = ml_p%uniform_rot
+
+    ! Read the namelist
+    
     read(unit, NML=model)
 
-    ! Initialize the model_par
+    ! Store read values
 
-    ml_p = model_par_t(Gamma_1=Gamma_1, &
-                       Omega_rot=Omega_rot, &
-                       dx_snap=dx_snap, &
-                       x_i=x_i, &
-                       x_o=x_o, &
-                       s=s, &
-                       model_type=model_type, &
-                       grid_type=grid_type, &
-                       file_format=file_format, &
-                       data_format=data_format, &
-                       deriv_type=deriv_type, &
-                       Omega_units=Omega_units, &
-                       file=file, &
-                       n=n, &
-                       add_center=add_center, &
-                       repair_As=repair_As, &
-                       uniform_rot=uniform_rot)
+    ml_p%Gamma_1 = Gamma_1
+    ml_p%Omega_rot = Omega_rot
+    ml_p%dx_snap = dx_snap
+    ml_p%x_i = x_i
+    ml_p%x_o = x_o
+    ml_p%s = s
+    ml_p%model_type = model_type
+    ml_p%grid_type = grid_type
+    ml_p%file_format = file_format
+    ml_p%data_format = data_format
+    ml_p%deriv_type = deriv_type
+    ml_p%Omega_units = Omega_units
+    ml_p%file = file
+    ml_p%n = n
+    ml_p%add_center = add_center
+    ml_p%repair_As = repair_As
+    ml_p%uniform_rot = uniform_rot
 
     ! Finish
 

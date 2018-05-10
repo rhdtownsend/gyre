@@ -1,7 +1,7 @@
 ! Module   : gyre_scan_par
 ! Purpose  : frequency scan parameters
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,15 +30,15 @@ module gyre_scan_par
   ! Derived-type definitions
 
   type :: scan_par_t
-     real(WP)        :: freq_min
-     real(WP)        :: freq_max
-     integer         :: n_freq
-     character(64)   :: freq_min_units
-     character(64)   :: freq_max_units
-     character(64)   :: freq_frame
-     character(64)   :: grid_type
-     character(64)   :: grid_frame
-     character(2048) :: tag_list
+     real(WP)        :: freq_min = 1._WP
+     real(WP)        :: freq_max = 10._WP
+     integer         :: n_freq = 10
+     character(64)   :: freq_min_units = 'NONE'
+     character(64)   :: freq_max_units = 'NONE'
+     character(64)   :: freq_frame = 'INERTIAL'
+     character(64)   :: grid_type = 'LINEAR'
+     character(64)   :: grid_frame = 'INERTIAL'
+     character(2048) :: tag_list = ''
   end type scan_par_t
 
   ! Access specifiers
@@ -93,32 +93,35 @@ contains
 
     read_loop : do i = 1, n_sc_p
 
-       freq_min = 1._WP
-       freq_max = 10._WP
-       n_freq = 10
-          
-       freq_min_units = 'NONE'
-       freq_max_units = 'NONE'
-       freq_frame = 'INERTIAL'
+       ! Set default values
 
-       grid_type = 'LINEAR'
-       grid_frame = 'INERTIAL'
+       sc_p(i) = scan_par_t()
 
-       tag_list = ''
+       freq_min = sc_p(i)%freq_min
+       freq_max = sc_p(i)%freq_max
+       n_freq = sc_p(i)%n_freq
+       freq_min_units = sc_p(i)%freq_min_units
+       freq_max_units = sc_p(i)%freq_max_units
+       freq_frame = sc_p(i)%freq_frame
+       grid_type = sc_p(i)%grid_type
+       grid_frame = sc_p(i)%grid_frame
+       tag_list = sc_p(i)%tag_list
+
+       ! Read the namelist
 
        read(unit, NML=scan)
 
-       ! Initialize the scan_par
+       ! Store read values
 
-       sc_p(i) = scan_par_t(freq_min=freq_min, &
-                            freq_max=freq_max, &
-                            n_freq=n_freq, &
-                            freq_min_units=freq_min_units, &
-                            freq_max_units=freq_max_units, &
-                            freq_frame=freq_frame, &
-                            grid_type=grid_type, &
-                            grid_frame=grid_frame, &
-                            tag_list=tag_list)
+       sc_p(i)%freq_min = freq_min
+       sc_p(i)%freq_max = freq_max
+       sc_p(i)%n_freq = n_freq
+       sc_p(i)%freq_min_units = freq_min_units
+       sc_p(i)%freq_max_units = freq_max_units
+       sc_p(i)%freq_frame = freq_frame
+       sc_p(i)%grid_type = grid_type
+       sc_p(i)%grid_frame = grid_frame
+       sc_p(i)%tag_list = tag_list
 
     end do read_loop
 
