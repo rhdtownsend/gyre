@@ -171,9 +171,11 @@ contains
     As = point_data(15,:)
 
     nabla = point_data(6,:)
+
     kap = point_data(8,:)
     kap_rho = point_data(18,:)
     kap_T = point_data(17,:)
+
     eps = point_data(9,:)
     eps_eps_rho = point_data(20,:)
     eps_eps_T = point_data(19,:)
