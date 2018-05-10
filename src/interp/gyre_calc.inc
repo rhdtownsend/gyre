@@ -61,8 +61,6 @@ contains
     $TYPE(WP), optional, intent(in) :: df_dx_b
     $TYPE(WP)                       :: df_dx(SIZE(x))
 
-    $CHECK_BOUNDS(SIZE(f),SIZE(x))
-
     ! Evaluate the derivative df/dx
 
     select case (deriv_type)
@@ -102,6 +100,7 @@ contains
     $TYPE(WP) :: B(SIZE(x),1)
     integer   :: info
 
+    $ASSERT_DEBUG(SIZE(x) > 1)
     $CHECK_BOUNDS(SIZE(f),SIZE(x))
     
     ! Calcualte the first derivatives for a cubic spline interp
@@ -170,7 +169,8 @@ contains
     integer   :: n
     real(WP)  :: h(SIZE(x)-1)
     $TYPE(WP) :: s(SIZE(x)-1)
-
+ 
+    $ASSERT_DEBUG(SIZE(x) > 1)
     $CHECK_BOUNDS(SIZE(f),SIZE(x))
 
     ! Calculate the first derivatives via centered finite differences
@@ -219,6 +219,7 @@ contains
     $TYPE(WP) :: p(SIZE(x))
     integer   :: i
 
+    $ASSERT_DEBUG(SIZE(x) > 1)
     $CHECK_BOUNDS(SIZE(f),SIZE(x))
 
     ! Calculate the first derivatives using the Steffen (1990, A&A,
