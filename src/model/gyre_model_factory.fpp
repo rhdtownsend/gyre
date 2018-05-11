@@ -35,6 +35,7 @@ module gyre_model_factory
   use gyre_losc_file
   use gyre_mesa_file
   use gyre_osc_file
+  use gyre_wdec_file
   $if ($HDF5)
   use gyre_b3_file
   use gyre_gsm_file
@@ -99,6 +100,8 @@ contains
           call read_mesa_model(ml_p, ml)
        case ('OSC')
           call read_osc_model(ml_p, ml)
+       case ('WDEC')
+          call read_wdec_model(ml_p, ml)
        case default
           $ABORT(Invalid file_format)
        end select
@@ -126,9 +129,5 @@ contains
     return
 
   end function model_t_
-
-  !****
-
-  
 
 end module gyre_model_factory
