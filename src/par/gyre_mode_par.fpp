@@ -32,13 +32,13 @@ module gyre_mode_par
   ! Derived-type definitions
 
   type :: mode_par_t
-     integer       :: i
-     integer       :: l
-     integer       :: m
-     integer       :: n_pg_min
-     integer       :: n_pg_max
-     logical       :: rossby
-     character(64) :: tag
+     integer       :: i = 0
+     integer       :: l = 0
+     integer       :: m = 0
+     integer       :: n_pg_min = -HUGE(0)
+     integer       :: n_pg_max = HUGE(0)
+     logical       :: rossby = .FALSE.
+     character(64) :: tag = ''
   end type mode_par_t
 
   ! Interfaces
@@ -109,23 +109,29 @@ contains
 
     read_loop : do i = 1, n_md_p
 
-       l = 0
-       m = 0
+       ! Set default values
 
-       n_pg_min = -HUGE(0)
-       n_pg_max = HUGE(0)
+       md_p(i) = mode_par_t()
 
-       rossby = .FALSE.
+       l = md_p(i)%l
+       m = md_p(i)%m
+       n_pg_min = md_p(i)%n_pg_min
+       n_pg_max = md_p(i)%n_pg_max
+       rossby = md_p(i)%rossby
+       tag = md_p(i)%tag
 
-       tag = ''
+       ! Read the namelist
 
        read(unit, NML=mode)
 
-       ! Initialize the mode_par
+       ! Store read values
 
-       md_p(i) = mode_par_t(i=i, l=l, m=m, &
-                            n_pg_min=n_pg_min, n_pg_max=n_pg_max, &
-                            rossby=rossby, tag=tag)
+       md_p(i)%l = l
+       md_p(i)%m = m
+       md_p(i)%n_pg_min = n_pg_min
+       md_p(i)%n_pg_max = n_pg_max
+       md_p(i)%rossby = rossby
+       md_p(i)%tag = tag
 
     end do read_loop
 
