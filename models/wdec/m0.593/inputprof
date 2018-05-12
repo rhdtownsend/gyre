@@ -1,0 +1,17 @@
+For a visual of how profiles can be parameterized, see intro to chemprofiles_subroutines.f90.
+How many points define the oxygen profile?
+7
+Define points as x y coordinates, x being in Mr/Mstar
+0.		0.7
+0.5		0.7
+0.6		0.5
+0.7		0.5
+0.8		0.1
+0.82	0.02
+0.90	0.0
+Tell how much you want to smooth the profile (10. - very smooth to 500. - not smooth)
+50.d0
+The two values below define buffer zones around locations of transition zones in the chemical profiles. The first one is buffer_inner (in Mr units) and the second is buffer_outer (in -log(1-Mr/M*) units). If there is a weird spike in the carbon abundance profile, try increasing buffer_inner. If there is a discontinuity at the He/H interface, try increasing buffer_outer. If Helium suddenly jumps up to 1 at C/He interface, try decreasing buffer_outer.
+8.0d-1
+1.0d0
+

@@ -1,0 +1,25 @@
+Do you want to use MESA equations of state? (Y/N)
+Y
+Do you want to use MESA opacities? (Y/N)
+Y
+How do you want to treat convection? (1/2/3 - see below for legend)
+1
+Do you want screen output from the evolution code? (Y/N)
+Y
+Do you want tape file output from the evolution code? (Y/N)
+Y
+Do you want file output from the prep code to make plots? (Y/N)
+Y
+Do you want to calculate pulsation periods? (Y/N)
+Y
+Do you want file output (e.g. results.dat) from the pulsation code? (Y/N)
+N
+Do you want kernels output from the pulsation code? (N) - can't do that yet
+N
+
+If you choose kernels output (should they become available), don't forget to create a directory called "kernels" in your working directory (where you are running this code from)
+
+Convection otpions all have to do with how alpha is parameterized:
+1 - alpha is a free parameter, set in gridparameters. This is your only correct option if making a helium core white dwarf. Do not choose 2 or 3. The code may run, but alpha will have little significance.
+2 - For DAs, alpha is taken from Tremblay et al. 2015. For DBs (set Mhe in gridparameters >= 2000), alpha is taken from non-linear light curve fitting
+3 - alpha is taken from non-linear light curve fitting both for DBs and for DAs.
