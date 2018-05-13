@@ -48,21 +48,23 @@ module gyre_wave
   ! Derived-type definitions
 
   type :: wave_t
-     type(c_state_t)           :: st
-     type(context_t), pointer  :: cx => null()
-     type(grid_t), allocatable :: gr
-     type(mode_par_t)          :: md_p
-     type(osc_par_t)           :: os_p
-     complex(WP), allocatable  :: y_c(:,:)
-     type(c_ext_t)             :: discrim
-     complex(WP)               :: scl
-     complex(WP)               :: omega
-     complex(WP)               :: l_i
-     integer                   :: n_k
-     integer                   :: k_ref
-     integer                   :: l
-     integer                   :: m
-     logical                   :: pruned
+     private
+     type(c_state_t), public           :: st
+     type(context_t), pointer, public  :: cx => null()
+     type(grid_t), allocatable, public :: gr
+     type(mode_par_t), public          :: md_p
+     type(osc_par_t), public           :: os_p
+     complex(WP), allocatable          :: y_c(:,:)
+     real(WP)                          :: E_scl2
+     type(c_ext_t), public             :: discrim
+     complex(WP), public               :: scl
+     complex(WP), public               :: omega
+     complex(WP), public               :: l_i
+     integer, public                   :: n_k
+     integer, public                   :: k_ref
+     integer, public                   :: l
+     integer, public                   :: m
+     logical                           :: pruned
    contains
      private
      procedure, public :: prune
@@ -184,6 +186,11 @@ contains
     x_ref = MIN(MAX(os_p%x_ref, gr%pt(1)%x), gr%pt(gr%n_k)%x)
 
     wv%k_ref = MINLOC(ABS(gr%pt%x - x_ref), DIM=1)
+
+    ! Cache the ratio E/|scl|**2, to avoid having to perform (expensive)
+    ! E integrations in the future
+
+    wv%E_scl2 = wv%E(use_cache=.FALSE.)/ABS(wv%scl)**2
 
     ! Finish
 
@@ -1584,22 +1591,38 @@ contains
 
   !****
 
-  function E (this)
+  function E (this, use_cache)
 
-    class(wave_t), intent(in) :: this
-    real(WP)                  :: E
+    class(wave_t), intent(in)     :: this
+    logical, intent(in), optional :: use_cache
+    real(WP)                      :: E
 
+    logical  :: use_cache_
     integer  :: k
     real(WP) :: dE_dx(this%n_k)
 
     ! Calculate the inertia, in units of M_star R_star**2
 
-    !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       dE_dx(k) = this%dE_dx(k)
-    end do
+    if (PRESENT(use_cache)) then
+       use_cache_ = use_cache
+    else
+       use_cache_ = .FALSE.
+    endif
 
-    E = integrate(this%gr%pt%x, dE_dx)
+    if (use_cache_) then
+
+       E = this%E_scl2*ABS(this%scl)**2
+
+    else
+
+       !$OMP PARALLEL DO
+       do k = 1, this%n_k
+          dE_dx(k) = this%dE_dx(k)
+       end do
+
+       E = integrate(this%gr%pt%x, dE_dx)
+
+    end if
 
     ! Finish
 
