@@ -92,11 +92,11 @@ contains
     ! Normalize so that y_1 at the reference point is purely real, and
     ! the total inertia E is unity
 
-    y_1_ref = md%y_c(1, md%k_ref)
+    y_1_ref = md%y_i(1, md%k_ref)
 
     f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
 
-    md%scl = 1._WP/SQRT(md%E())*f_phase
+    md%scl = md%scl/SQRT(md%E())*f_phase
 
     ! Classify the mode
 
