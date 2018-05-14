@@ -128,75 +128,81 @@ contains
 
     bd%tr = nad_trans_t(cx, md_p, os_p)
 
-    select case (os_p%inner_bound)
-    case ('REGULAR')
-       $ASSERT(cx%pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
-       bd%type_i = REGULAR_TYPE
-    case ('ZERO_R')
-       $ASSERT(cx%pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
-       bd%type_i = ZERO_R_TYPE
-    case ('ZERO_H')
-       $ASSERT(cx%pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
-       bd%type_i = ZERO_H_TYPE
-    case default
-       $ABORT(Invalid inner_bound)
-    end select
+    associate (ml => cx%model(), &
+               pt_i => cx%point_i(), &
+               pt_o => cx%point_o())
 
-    select case (os_p%outer_bound)
-    case ('VACUUM')
-       bd%type_o = VACUUM_TYPE
-    case ('DZIEM')
-       if (cx%ml%is_vacuum(cx%pt_o)) then
-          bd%type_o = VACUUM_TYPE
-       else
-          bd%type_o = DZIEM_TYPE
-       endif
-    case ('UNNO')
-       if (cx%ml%is_vacuum(cx%pt_o)) then
-          bd%type_o = VACUUM_TYPE
-       else
-          bd%type_o = UNNO_TYPE
-       end if
-    case ('JCD')
-       if (cx%ml%is_vacuum(cx%pt_o)) then
-          bd%type_o = VACUUM_TYPE
-       else
-          bd%type_o = JCD_TYPE
-       end if
-    $if ($EXPERIMENTAL)   
-    case ('LUAN')
-       if (cx%ml%is_vacuum(cx%pt_o)) then
-          bd%type_o = VACUUM_TYPE
-       else
-          bd%type_o = LUAN_TYPE
-       endif
-    $endif
-    case default
-       $ABORT(Invalid outer_bound)
-    end select
+      select case (os_p%inner_bound)
+      case ('REGULAR')
+         $ASSERT(pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
+         bd%type_i = REGULAR_TYPE
+      case ('ZERO_R')
+         $ASSERT(pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
+         bd%type_i = ZERO_R_TYPE
+      case ('ZERO_H')
+         $ASSERT(pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
+         bd%type_i = ZERO_H_TYPE
+      case default
+         $ABORT(Invalid inner_bound)
+      end select
 
-    if (os_p%cowling_approx) then
-       bd%alpha_gr = 0._WP
-    else
-       bd%alpha_gr = 1._WP
-    endif
+      select case (os_p%outer_bound)
+      case ('VACUUM')
+         bd%type_o = VACUUM_TYPE
+      case ('DZIEM')
+         if (ml%is_vacuum(pt_o)) then
+            bd%type_o = VACUUM_TYPE
+         else
+            bd%type_o = DZIEM_TYPE
+         endif
+      case ('UNNO')
+         if (ml%is_vacuum(pt_o)) then
+            bd%type_o = VACUUM_TYPE
+         else
+            bd%type_o = UNNO_TYPE
+         end if
+      case ('JCD')
+         if (ml%is_vacuum(pt_o)) then
+            bd%type_o = VACUUM_TYPE
+         else
+            bd%type_o = JCD_TYPE
+         end if
+         $if ($EXPERIMENTAL)   
+      case ('LUAN')
+         if (ml%is_vacuum(pt_o)) then
+            bd%type_o = VACUUM_TYPE
+         else
+            bd%type_o = LUAN_TYPE
+         endif
+         $endif
+      case default
+         $ABORT(Invalid outer_bound)
+      end select
 
-    if (os_p%eddington_approx) then
-       bd%alpha_rh = 1._WP
-    else
-       bd%alpha_rh = 0._WP
-    endif
+      if (os_p%cowling_approx) then
+         bd%alpha_gr = 0._WP
+      else
+         bd%alpha_gr = 1._WP
+      endif
+      
+      if (os_p%eddington_approx) then
+         bd%alpha_rh = 1._WP
+      else
+         bd%alpha_rh = 0._WP
+      endif
+      
+      select case (os_p%time_factor)
+      case ('OSC')
+         bd%alpha_om = 1._WP
+      case ('EXP')
+         bd%alpha_om = (0._WP, 1._WP)
+      case default
+         $ABORT(Invalid time_factor)
+      end select
 
-    select case (os_p%time_factor)
-    case ('OSC')
-       bd%alpha_om = 1._WP
-    case ('EXP')
-       bd%alpha_om = (0._WP, 1._WP)
-    case default
-       $ABORT(Invalid time_factor)
-    end select
+      call bd%stencil_(pt_i, pt_o)
 
-    call bd%stencil_(cx%pt_i, cx%pt_o)
+    end associate
 
     bd%n_i = 3
     bd%n_o = 3
@@ -219,7 +225,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%ml)
+    associate (ml => this%cx%model())
 
       call check_model(ml, [I_V_2,I_U,I_C_1,I_NABLA_AD,I_C_THN,I_OMEGA_ROT])
 

@@ -111,7 +111,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%ml)
+    associate (ml => this%cx%model())
 
       call check_model(ml, [I_U])
 

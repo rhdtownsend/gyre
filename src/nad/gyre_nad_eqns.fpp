@@ -199,7 +199,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%ml)
+    associate (ml => this%cx%model())
 
       call check_model(ml, [ &
            I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
@@ -236,7 +236,7 @@ contains
          this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
       end do
 
-      this%coeff(:,J_OMEGA_ROT_I) = ml%coeff(I_OMEGA_ROT, this%cx%pt_i)
+      this%coeff(:,J_OMEGA_ROT_I) = ml%coeff(I_OMEGA_ROT, this%cx%point_i())
 
       this%x = pt%x
 

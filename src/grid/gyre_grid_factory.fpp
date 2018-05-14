@@ -108,11 +108,11 @@ contains
 
     $ASSERT_DEBUG(ASSOCIATED(gs(1)%cx),Null pointer)
 
-    ml => gs(1)%cx%ml
+    ml => gs(1)%cx%model()
 
     check_loop : do i = 1, SIZE(gs)
        $ASSERT_DEBUG(ASSOCIATED(gs(i)%cx),Null pointer)
-       $ASSERT_DEBUG(ASSOCIATED(gs(i)%cx%ml, ml),Contexts are associated with different models)
+       $ASSERT_DEBUG(ASSOCIATED(gs(i)%cx%model(), ml),Contexts are associated with different models)
     end do check_loop
 
     ! Create the scaffold grid
@@ -400,7 +400,7 @@ contains
 
        ! Evaluate coefficients
        
-       associate (ml => cx%ml)
+       associate (ml => cx%model())
 
          V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
          As = ml%coeff(I_AS, pt)
@@ -408,7 +408,7 @@ contains
          c_1 = ml%coeff(I_C_1, pt)
 
          Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
-         Omega_rot_i = ml%coeff(I_OMEGA_ROT, cx%pt_i)
+         Omega_rot_i = ml%coeff(I_OMEGA_ROT, cx%point_i())
 
        end associate
 
@@ -520,7 +520,7 @@ contains
 
        ! Evaluate coefficients
 
-       associate (ml => cx%ml)
+       associate (ml => cx%model())
 
          V = ml%coeff(I_V_2, pt)*pt%x**2
          nabla = ml%coeff(I_NABLA, pt)
@@ -591,7 +591,7 @@ contains
 
        ! Evaluate coefficients
 
-       associate (ml => cx%ml)
+       associate (ml => cx%model())
 
          dV_2 = ml%dcoeff(I_V_2, pt)
          dAs = ml%dcoeff(I_AS, pt)

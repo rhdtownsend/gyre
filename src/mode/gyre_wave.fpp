@@ -172,7 +172,10 @@ contains
 
     wv%scl = 1._WP
 
-    wv%l_i = cx%l_e(cx%ml%coeff(I_OMEGA_ROT, cx%pt_i), st)
+    associate (ml => cx%model(), &
+               pt_i => cx%point_i())
+      wv%l_i = cx%l_e(ml%coeff(I_OMEGA_ROT, pt_i), st)
+    end associate
 
     wv%n_k = gr%n_k
 
@@ -183,7 +186,10 @@ contains
 
     ! Locate the reference point
 
-    x_ref = MIN(MAX(os_p%x_ref, gr%pt(1)%x), gr%pt(gr%n_k)%x)
+    associate (pt_i => gr%pt_i(), &
+               pt_o => gr%pt_o())
+      x_ref = MIN(MAX(os_p%x_ref, pt_i%x), pt_o%x)
+    end associate
 
     wv%k_ref = MINLOC(ABS(gr%pt%x - x_ref), DIM=1)
 
@@ -237,7 +243,7 @@ contains
     ! Calculate the frequency
 
     associate( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt_i => this%gr%pt_i(), &
          pt_o => this%gr%pt_o() )
 
@@ -264,7 +270,7 @@ contains
     real(WP)                  :: dfreq_rot
 
     associate( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt_i => this%gr%pt_i(), &
          pt_o => this%gr%pt_o() )
 
@@ -354,7 +360,7 @@ contains
     if (this%l /= 0) then
 
        associate ( &
-            ml => this%cx%ml, &
+            ml => this%cx%model(), &
             pt => this%gr%pt(k), &
             l_i => this%l_i )
 
@@ -410,7 +416,7 @@ contains
     ! units of G M_star / R_star
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k), &
          l_i => this%l_i )
 
@@ -455,7 +461,7 @@ contains
     ! in units of G M_star / R_star**2
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k), &
          l_i => this%l_i )
 
@@ -566,7 +572,7 @@ contains
     ! Evaluate the Eulerian pressure perturbation, in units of P
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       xi_r = this%xi_r(k)
@@ -599,7 +605,7 @@ contains
     ! Evaluate the Lagrangian pressure perturbation, in units of P
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k), &
          l_i => this%l_i )
 
@@ -647,7 +653,7 @@ contains
     ! Evaluate the Eulerian density perturbation, in units of rho
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       xi_r = this%xi_r(k)
@@ -689,7 +695,7 @@ contains
     ! rho. This expression implements eqn. 13.83 of [Unn1989]
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       lag_P = this%lag_P(k)
@@ -724,7 +730,7 @@ contains
     ! Evaluate the Lagrangian temperature perturbation, in units of T
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       xi_r = this%xi_r(k)
@@ -759,7 +765,7 @@ contains
     ! T. This expression implements eqn. 13.84 of [Unn1989]
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       lag_P = this%lag_P(k)
@@ -790,7 +796,7 @@ contains
     ! Evaluate the angular eigenvalue
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
       
       Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
@@ -823,7 +829,7 @@ contains
     ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010]
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       xi_r = this%xi_r(k)
@@ -863,7 +869,7 @@ contains
     ! Evaluate the differential work, in units of G M_star**2/R_star.
     ! This expression is based on eqn. 25.9 of [Unn1989]
 
-    select type (ml => this%cx%ml)
+    select type (ml => this%cx%model())
     class is (evol_model_t)
        t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
@@ -873,7 +879,7 @@ contains
     end select
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       lag_T = this%lag_T(k)
@@ -914,7 +920,7 @@ contains
     ! processes, in units of G M_star**2/R_star.  This expression is
     ! based on eqn. 25.9 of [Unn1989]
     
-    select type (ml => this%cx%ml)
+    select type (ml => this%cx%model())
     class is (evol_model_t)
        t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
        t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
@@ -924,7 +930,7 @@ contains
     end select
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       lag_rho = this%lag_rho(k)
@@ -972,7 +978,7 @@ contains
     ! respect to x
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       xi_r = this%xi_r(k)
@@ -1017,7 +1023,7 @@ contains
     ! [Tow2017]
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k), &
          m => this%m )
 
@@ -1063,7 +1069,7 @@ contains
     ! [Tow2017]
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k), &
          m => this%m )
 
@@ -1114,7 +1120,7 @@ contains
     ! eqn. 69 of [Tak2006b], divided by x**(2-l)
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       y_1 = this%y_i(1, k)
@@ -1175,7 +1181,7 @@ contains
     ! cases. This expression is based on eqn. 42 of [Tak2006a]
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k), &
          l_i => this%l_i )
 
@@ -1220,7 +1226,7 @@ contains
     ! cases. This expression is based on eqn. 43 of [Tak2006a]
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k), &
          l_i => this%l_i )
 
@@ -1269,7 +1275,7 @@ contains
     ! 26.10 of Unno et al. (2017)
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k))
 
       U = ml%coeff(I_U, pt)
@@ -1314,7 +1320,7 @@ contains
     ! 26.12 of Unno et al. (2017)
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k))
 
       alpha_0 = this%alpha_0(k)
@@ -1372,7 +1378,7 @@ contains
     ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
     associate ( &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
 
       if (ml%is_vacuum(pt)) then
@@ -1474,7 +1480,7 @@ contains
 
     associate ( &
          k => this%k_ref, &
-         ml => this%cx%ml, &
+         ml => this%cx%model(), &
          pt => this%gr%pt(this%k_ref), &
          omega => this%st%omega )
 
@@ -1971,7 +1977,7 @@ contains
     do k = 1, this%n_k
 
        associate ( &
-            ml => this%cx%ml, &
+            ml => this%cx%model(), &
             pt => this%gr%pt(k) )
 
          xi_r = this%xi_r(k)
@@ -2032,7 +2038,7 @@ contains
        dbeta_dx(k) = this%dbeta_dx(k)
 
        associate ( &
-            ml => this%cx%ml, &
+            ml => this%cx%model(), &
             pt => this%gr%pt(k))
 
          Omega_rot(k) = ml%coeff(I_OMEGA_ROT, pt)

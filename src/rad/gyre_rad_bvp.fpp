@@ -102,12 +102,12 @@ contains
        $WARN(cowling_approx is ignored in 2nd-order radial equations)
     endif
     
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
+    pt_i = gr%pt_i()
+    pt_o = gr%pt_o()
 
     ! Initialize the boundary conditions
 
-    bd = rad_bound_t(cx, pt_i, pt_o, md_p, os_p)
+    bd = rad_bound_t(cx, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -115,7 +115,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = rad_diff_t(cx, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = rad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -127,7 +127,7 @@ contains
     bp%cx => cx
     bp%gr = gr
 
-    bp%tr = rad_trans_t(cx, pt_i, md_p, os_p)
+    bp%tr = rad_trans_t(cx, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
     if (os_p%quasiad_eigfuncs) then
@@ -243,8 +243,9 @@ contains
     !$OMP PARALLEL DO PRIVATE (U)
     do k = 1, bp%n_k
 
-       associate (pt => bp%gr%pt(k))
-         U = bp%cx%ml%coeff(I_U, pt)
+       associate (ml => bp%cx%model(), &
+                  pt => bp%gr%pt(k))
+         U = ml%coeff(I_U, pt)
        end associate
 
        y_g(4,k) = -U*y(1,k)

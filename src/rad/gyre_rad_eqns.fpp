@@ -81,10 +81,9 @@ module gyre_rad_eqns
 
 contains
 
-  function rad_eqns_t_ (cx, pt_i, md_p, os_p) result (eq)
+  function rad_eqns_t_ (cx, md_p, os_p) result (eq)
 
     class(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)             :: pt_i
     type(mode_par_t), intent(in)          :: md_p
     type(osc_par_t), intent(in)           :: os_p
     type(rad_eqns_t)                      :: eq
@@ -93,7 +92,7 @@ contains
 
     eq%cx => cx
 
-    eq%tr = rad_trans_t(cx, pt_i, md_p, os_p)
+    eq%tr = rad_trans_t(cx, md_p, os_p)
 
     select case (os_p%time_factor)
     case ('OSC')
@@ -124,7 +123,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%ml)
+    associate (ml => this%cx%model())
 
       call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
 

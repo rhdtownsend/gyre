@@ -74,8 +74,8 @@ contains
     type(point_t)      :: pt_a
     type(point_t)      :: pt_b
 
-    $ASSERT_DEBUG(cx%pt_i == gr%pt_i(),Context and grid are not conformable)
-    $ASSERT_DEBUG(cx%pt_o == gr%pt_o(),Context and grid are not conformable)
+    $ASSERT_DEBUG(cx%point_i() == gr%pt_i(),Context and grid are not conformable)
+    $ASSERT_DEBUG(cx%point_o() == gr%pt_o(),Context and grid are not conformable)
 
     ! Find the cell index and abscissa (in grid gr) of the inner
     ! turning point, where the local solution for state st first
@@ -84,14 +84,16 @@ contains
     k_turn = gr%n_k
     x_turn = HUGE(0._WP)
 
-    gamma_b = gamma_(cx, cx%pt_i, st)
+    gamma_b = gamma_(cx, cx%point_i(), st)
 
     if (gamma_b <= 0._WP) then
 
        ! Inner point is already propagative
 
-       k_turn = 1
-       x_turn = cx%pt_i%x
+       associate (pt_i => cx%point_i())
+         k_turn = 1
+         x_turn = pt_i%x
+       end associate
 
     else
 
@@ -172,13 +174,13 @@ contains
     ! Calculate the propagation discriminant gamma (< 0 : propagation,
     ! > 0 : evanescence)
 
-    if (cx%ml%is_vacuum(pt)) then
+    associate (ml => cx%model())
 
-       gamma = HUGE(0._WP)
+      if (ml%is_vacuum(pt)) then
 
-    else
+         gamma = HUGE(0._WP)
 
-       associate (ml => cx%ml)
+      else
 
          V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
          As = ml%coeff(I_As, pt)
@@ -187,19 +189,19 @@ contains
 
          Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
 
-       end associate
+         omega_c = cx%omega_c(Omega_rot, st)
 
-       omega_c = cx%omega_c(Omega_rot, st)
+         lambda = cx%lambda(Omega_rot, st)
 
-       lambda = cx%lambda(Omega_rot, st)
+         g_4 = -4._WP*V_g*c_1
+         g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
+         g_0 = -4._WP*lambda*As/c_1
 
-       g_4 = -4._WP*V_g*c_1
-       g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
-       g_0 = -4._WP*lambda*As/c_1
+         gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
 
-       gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
+      endif
 
-    endif
+    end associate
 
     ! Finish
 

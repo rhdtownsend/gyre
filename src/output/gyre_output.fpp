@@ -1,7 +1,7 @@
 ! Module   : gyre_output
 ! Purpose  : output routines
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -155,7 +155,9 @@ contains
        case ('Delta_p')
 
           do i_md = 1, n_md
-             data_r(i_md) = md(i_md)%cx%ml%Delta_p(md(i_md)%gr%x_i(), md(i_md)%gr%x_o())
+             associate (ml => md(i_md)%cx%model())
+               data_r(i_md) = ml%Delta_p(md(i_md)%gr%x_i(), md(i_md)%gr%x_o())
+             end associate
           end do
 
           call wr%write('Delta_p', data_r)
@@ -163,8 +165,10 @@ contains
        case ('Delta_g')
 
           do i_md = 1, n_md
-             data_r(i_md) = md(i_md)%cx%ml%Delta_g(md(i_md)%gr%x_i(), md(i_md)%gr%x_o(), &
-                                                   md(i_md)%l*(md(i_md)%l+1._WP))
+             associate (ml => md(i_md)%cx%model())
+               data_r(i_md) = ml%Delta_g(md(i_md)%gr%x_i(), md(i_md)%gr%x_o(), &
+                              md(i_md)%l*(md(i_md)%l+1._WP))
+             end associate
           end do
           
           call wr%write('Delta_g', data_r)
@@ -198,7 +202,7 @@ contains
        case default
 
           if (n_md >= 1) then
-             select type (ml => md(1)%cx%ml)
+             select type (ml => md(1)%cx%model())
              type is (evol_model_t)
                 call write_summary_evol_(items(i), ml, wr)
              class default
@@ -317,7 +321,8 @@ contains
 
     invalid_items = .FALSE.
 
-    associate (pt => md%gr%pt)
+    associate (ml => md%cx%model(), &
+               pt => md%gr%pt)
 
       item_loop : do i = 1, SIZE(items)
 
@@ -389,11 +394,11 @@ contains
 
          case ('Delta_p')
 
-            call wr%write('Delta_p', md%cx%ml%Delta_p(md%gr%x_i(), md%gr%x_o()))
+            call wr%write('Delta_p', ml%Delta_p(md%gr%x_i(), md%gr%x_o()))
 
          case ('Delta_g')
 
-            call wr%write('Delta_g', md%cx%ml%Delta_g(md%gr%x_i(), md%gr%x_o(), md%l*(md%l+1._WP)))
+            call wr%write('Delta_g', ml%Delta_g(md%gr%x_i(), md%gr%x_o(), md%l*(md%l+1._WP)))
 
          case ('eta')
 
@@ -471,56 +476,57 @@ contains
 
             call wr%write('x_ref', pt(md%k_ref)%x)
 
-         $OUTPUT_POINTS(r,V_2,cx%ml%coeff(I_V_2, pt(k)))
-         $OUTPUT_POINTS(r,As,cx%ml%coeff(I_AS, pt(k)))
-         $OUTPUT_POINTS(r,U,cx%ml%coeff(I_U, pt(k)))
-         $OUTPUT_POINTS(r,c_1,cx%ml%coeff(I_C_1, pt(k)))
-         $OUTPUT_POINTS(r,Gamma_1,cx%ml%coeff(I_GAMMA_1, pt(k)))
-         $OUTPUT_POINTS(r,nabla,cx%ml%coeff(I_NABLA, pt(k)))
-         $OUTPUT_POINTS(r,nabla_ad,cx%ml%coeff(I_NABLA_AD, pt(k)))
-         $OUTPUT_POINTS(r,dnabla_ad,cx%ml%dcoeff(I_NABLA_AD, pt(k)))
-         $OUTPUT_POINTS(r,delta,cx%ml%coeff(I_DELTA, pt(k)))
-         $OUTPUT_POINTS(r,c_lum,cx%ml%coeff(I_C_LUM, pt(k)))
-         $OUTPUT_POINTS(r,c_rad,cx%ml%coeff(I_C_RAD, pt(k)))
-         $OUTPUT_POINTS(r,c_thn,cx%ml%coeff(I_C_THN, pt(k)))
-         $OUTPUT_POINTS(r,c_thk,cx%ml%coeff(I_C_THK, pt(k)))
-         $OUTPUT_POINTS(r,c_eps,cx%ml%coeff(I_C_EPS, pt(k)))
-         $OUTPUT_POINTS(r,eps_rho,cx%ml%coeff(I_EPS_RHO, pt(k)))
-         $OUTPUT_POINTS(r,eps_T,cx%ml%coeff(I_EPS_T, pt(k)))
-         $OUTPUT_POINTS(r,kap_rho,cx%ml%coeff(I_KAP_RHO, pt(k)))
-         $OUTPUT_POINTS(r,kap_T,cx%ml%coeff(I_KAP_T, pt(k)))
-         $OUTPUT_POINTS(r,Omega_rot,cx%ml%coeff(I_OMEGA_ROT, pt(k)))
-         $OUTPUT_POINTS(c,y_1,y_i(1, k))
-         $OUTPUT_POINTS(c,y_2,y_i(2, k))
-         $OUTPUT_POINTS(c,y_3,y_i(3, k))
-         $OUTPUT_POINTS(c,y_4,y_i(4, k))
-         $OUTPUT_POINTS(c,y_5,y_i(5, k))
-         $OUTPUT_POINTS(c,y_6,y_i(6, k))
-         $OUTPUT_POINTS(c,xi_r,xi_r(k))
-         $OUTPUT_POINTS(c,xi_h,xi_h(k))
-         $OUTPUT_POINTS(c,eul_phi,eul_phi(k))
-         $OUTPUT_POINTS(c,deul_phi,deul_phi(k))
-         $OUTPUT_POINTS(c,eul_P,eul_P(k))
-         $OUTPUT_POINTS(c,eul_rho,eul_rho(k))
-         $OUTPUT_POINTS(c,eul_T,eul_T(k))
-         $OUTPUT_POINTS(c,lag_P,lag_P(k))
-         $OUTPUT_POINTS(c,lag_rho,lag_rho(k))
-         $OUTPUT_POINTS(c,lag_T,lag_T(k))
-         $OUTPUT_POINTS(c,lag_S,lag_S(k))
-         $OUTPUT_POINTS(c,lag_L,lag_L(k))
-         $OUTPUT_POINTS(r,dE_dx,dE_dx(k))
-         $OUTPUT_POINTS(r,dW_dx,dW_dx(k))
-         $OUTPUT_POINTS(r,dW_eps_dx,dW_eps_dx(k))
-         $OUTPUT_POINTS(r,dbeta_dx,dbeta_dx(k))
-         $OUTPUT_POINTS(r,dtau_dx_ss,dtau_dx_ss(k))
-         $OUTPUT_POINTS(r,dtau_dx_tr,dtau_dx_tr(k))
-         $OUTPUT_POINTS(c,Yt_1,Yt_1(k))
-         $OUTPUT_POINTS(c,Yt_2,Yt_2(k))
-         $OUTPUT_POINTS(c,I_0,I_0(k))
-         $OUTPUT_POINTS(c,I_1,I_1(k))
-         $OUTPUT_POINTS(r,alpha_0,alpha_0(k))
-         $OUTPUT_POINTS(r,alpha_1,alpha_1(k))
-         $OUTPUT_POINTS(c,prop_type,prop_type(k))
+         $OUTPUT_POINTS(r,V_2,ml,coeff(I_V_2, pt(k)))
+         $OUTPUT_POINTS(r,As,ml,coeff(I_AS, pt(k)))
+         $OUTPUT_POINTS(r,U,ml,coeff(I_U, pt(k)))
+         $OUTPUT_POINTS(r,c_1,ml,coeff(I_C_1, pt(k)))
+         $OUTPUT_POINTS(r,Gamma_1,ml,coeff(I_GAMMA_1, pt(k)))
+         $OUTPUT_POINTS(r,nabla,ml,coeff(I_NABLA, pt(k)))
+         $OUTPUT_POINTS(r,nabla_ad,ml,coeff(I_NABLA_AD, pt(k)))
+         $OUTPUT_POINTS(r,dnabla_ad,ml,dcoeff(I_NABLA_AD, pt(k)))
+         $OUTPUT_POINTS(r,delta,ml,coeff(I_DELTA, pt(k)))
+         $OUTPUT_POINTS(r,c_lum,ml,coeff(I_C_LUM, pt(k)))
+         $OUTPUT_POINTS(r,c_rad,ml,coeff(I_C_RAD, pt(k)))
+         $OUTPUT_POINTS(r,c_thn,ml,coeff(I_C_THN, pt(k)))
+         $OUTPUT_POINTS(r,c_thk,ml,coeff(I_C_THK, pt(k)))
+         $OUTPUT_POINTS(r,c_eps,ml,coeff(I_C_EPS, pt(k)))
+         $OUTPUT_POINTS(r,eps_rho,ml,coeff(I_EPS_RHO, pt(k)))
+         $OUTPUT_POINTS(r,eps_T,ml,coeff(I_EPS_T, pt(k)))
+         $OUTPUT_POINTS(r,kap_rho,ml,coeff(I_KAP_RHO, pt(k)))
+         $OUTPUT_POINTS(r,kap_T,ml,coeff(I_KAP_T, pt(k)))
+         $OUTPUT_POINTS(r,Omega_rot,ml,coeff(I_OMEGA_ROT, pt(k)))
+         
+         $OUTPUT_POINTS(c,y_1,md,y_i(1, k))
+         $OUTPUT_POINTS(c,y_2,md,y_i(2, k))
+         $OUTPUT_POINTS(c,y_3,md,y_i(3, k))
+         $OUTPUT_POINTS(c,y_4,md,y_i(4, k))
+         $OUTPUT_POINTS(c,y_5,md,y_i(5, k))
+         $OUTPUT_POINTS(c,y_6,md,y_i(6, k))
+         $OUTPUT_POINTS(c,xi_r,md,xi_r(k))
+         $OUTPUT_POINTS(c,xi_h,md,xi_h(k))
+         $OUTPUT_POINTS(c,eul_phi,md,eul_phi(k))
+         $OUTPUT_POINTS(c,deul_phi,md,deul_phi(k))
+         $OUTPUT_POINTS(c,eul_P,md,eul_P(k))
+         $OUTPUT_POINTS(c,eul_rho,md,eul_rho(k))
+         $OUTPUT_POINTS(c,eul_T,md,eul_T(k))
+         $OUTPUT_POINTS(c,lag_P,md,lag_P(k))
+         $OUTPUT_POINTS(c,lag_rho,md,lag_rho(k))
+         $OUTPUT_POINTS(c,lag_T,md,lag_T(k))
+         $OUTPUT_POINTS(c,lag_S,md,lag_S(k))
+         $OUTPUT_POINTS(c,lag_L,md,lag_L(k))
+         $OUTPUT_POINTS(r,dE_dx,md,dE_dx(k))
+         $OUTPUT_POINTS(r,dW_dx,md,dW_dx(k))
+         $OUTPUT_POINTS(r,dW_eps_dx,md,dW_eps_dx(k))
+         $OUTPUT_POINTS(r,dbeta_dx,md,dbeta_dx(k))
+         $OUTPUT_POINTS(r,dtau_dx_ss,md,dtau_dx_ss(k))
+         $OUTPUT_POINTS(r,dtau_dx_tr,md,dtau_dx_tr(k))
+         $OUTPUT_POINTS(c,Yt_1,md,Yt_1(k))
+         $OUTPUT_POINTS(c,Yt_2,md,Yt_2(k))
+         $OUTPUT_POINTS(c,I_0,md,I_0(k))
+         $OUTPUT_POINTS(c,I_1,md,I_1(k))
+         $OUTPUT_POINTS(r,alpha_0,md,alpha_0(k))
+         $OUTPUT_POINTS(r,alpha_1,md,alpha_1(k))
+         $OUTPUT_POINTS(c,prop_type,md,prop_type(k))
 
          $OUTPUT_REF(xi_r_ref,xi_r)
          $OUTPUT_REF(xi_h_ref,xi_h)
@@ -531,7 +537,7 @@ contains
 
          case default
 
-            select type (ml => md%cx%ml)
+            select type (ml)
             type is (evol_model_t)
                call write_mode_evol_(ml)
             class default

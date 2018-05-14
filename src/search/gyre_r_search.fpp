@@ -111,12 +111,15 @@ contains
                   freq_max_units => sc_p(i)%freq_max_units, &
                   freq_frame => sc_p(i)%freq_frame, &
                   grid_frame => sc_p(i)%grid_frame, &
-                  grid_type => sc_p(i)%grid_type)
+                  grid_type => sc_p(i)%grid_type, &
+                  ml => cx%model(), &
+                  pt_i => cx%point_i(), &
+                  pt_o => cx%point_o())
          
          ! Calculate the dimensionless frequency range in the inertial frame
-         
-         omega_min = omega_from_freq(freq_min, cx%ml, cx%pt_i, cx%pt_o, freq_min_units, freq_frame, md_p, os_p)
-         omega_max = omega_from_freq(freq_max, cx%ml, cx%pt_i, cx%pt_o, freq_max_units, freq_frame, md_p, os_p)
+
+         omega_min = omega_from_freq(freq_min, ml, pt_i, pt_o, freq_min_units, freq_frame, md_p, os_p)
+         omega_max = omega_from_freq(freq_max, ml ,pt_i, pt_o, freq_max_units, freq_frame, md_p, os_p)
 
          ! Check that the range is valid
 
@@ -124,15 +127,15 @@ contains
 
             ! Calculate the frequency range in the grid frame
 
-            freq_g_min = freq_from_omega(omega_min, cx%ml, cx%pt_i, cx%pt_o, 'NONE', grid_frame, md_p, os_p)
-            freq_g_max = freq_from_omega(omega_max, cx%ml, cx%pt_i, cx%pt_o, 'NONE', grid_frame, md_p, os_p)
+            freq_g_min = freq_from_omega(omega_min, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
+            freq_g_max = freq_from_omega(omega_max, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
 
             ! Set up the frequencies
 
             allocate(freq_g(n_freq))
 
             do j = 1, n_freq
-             
+
                select case(grid_type)
                case('LINEAR')
                   freq_g(j) = ((n_freq-j)*freq_g_min + (j-1)*freq_g_max)/(n_freq-1)
@@ -141,7 +144,7 @@ contains
                case default
                   $ABORT(Invalid grid_type)
                end select
-               
+
             end do
 
             ! Store them
@@ -149,9 +152,9 @@ contains
             call reallocate(omega, [n_omega+n_freq])
 
             do j = 1, n_freq
-               omega(n_omega+j) = omega_from_freq(freq_g(j), cx%ml, cx%pt_i, cx%pt_o, 'NONE', grid_frame, md_p, os_p)
+               omega(n_omega+j) = omega_from_freq(freq_g(j), ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
             end do
-          
+
             n_omega = n_omega + n_freq
 
             deallocate(freq_g)

@@ -98,74 +98,78 @@ module gyre_rad_bound
 
 contains
 
-  function rad_bound_t_ (cx, pt_i, pt_o, md_p, os_p) result (bd)
+  function rad_bound_t_ (cx, md_p, os_p) result (bd)
 
     type(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)            :: pt_i
-    type(point_t), intent(in)            :: pt_o
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
     type(rad_bound_t)                    :: bd
 
-    ! Construct the ad_bound_t
+    ! Construct the rad_bound_t
 
     bd%cx => cx
     
-    bd%tr = rad_trans_t(cx, pt_i, md_p, os_p)
+    bd%tr = rad_trans_t(cx, md_p, os_p)
 
-    select case (os_p%inner_bound)
-    case ('REGULAR')
-       $ASSERT(pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
-       bd%type_i = REGULAR_TYPE
-    case ('ZERO_R')
-       $ASSERT(pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
-       bd%type_i = ZERO_R_TYPE
-    case default
-       $ABORT(Invalid inner_bound)
-    end select
+    associate (ml => cx%model(), &
+               pt_i => cx%point_i(), &
+               pt_o => cx%point_o())
 
-    select case (os_p%outer_bound)
-    case ('VACUUM')
-       bd%type_o = VACUUM_TYPE
-    case ('DZIEM')
-       if (cx%ml%is_vacuum(pt_o)) then
-          bd%type_o = VACUUM_TYPE
-       else
-          bd%type_o = DZIEM_TYPE
-       endif
-    case ('UNNO')
-       if (cx%ml%is_vacuum(pt_o)) then
-          bd%type_o = VACUUM_TYPE
-       else
-          bd%type_o = UNNO_TYPE
-       endif
-    case ('JCD')
-       if (cx%ml%is_vacuum(pt_o)) then
-          bd%type_o = VACUUM_TYPE
-       else
-          bd%type_o = JCD_TYPE
-       endif
-    case ('LUAN')
-       if (cx%ml%is_vacuum(pt_o)) then
-          bd%type_o = VACUUM_TYPE
-       else
-          bd%type_o = LUAN_TYPE
-       endif
-    case default
-       $ABORT(Invalid outer_bound)
-    end select
+      select case (os_p%inner_bound)
+      case ('REGULAR')
+         $ASSERT(pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
+         bd%type_i = REGULAR_TYPE
+      case ('ZERO_R')
+         $ASSERT(pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
+         bd%type_i = ZERO_R_TYPE
+      case default
+         $ABORT(Invalid inner_bound)
+      end select
 
-    select case (os_p%time_factor)
-    case ('OSC')
-       bd%alpha_om = 1._WP
-    case ('EXP')
-       bd%alpha_om = -1._WP
-    case default
-       $ABORT(Invalid time_factor)
-    end select
+      select case (os_p%outer_bound)
+      case ('VACUUM')
+         bd%type_o = VACUUM_TYPE
+      case ('DZIEM')
+         if (ml%is_vacuum(pt_o)) then
+            bd%type_o = VACUUM_TYPE
+         else
+            bd%type_o = DZIEM_TYPE
+         endif
+      case ('UNNO')
+         if (ml%is_vacuum(pt_o)) then
+            bd%type_o = VACUUM_TYPE
+         else
+            bd%type_o = UNNO_TYPE
+         endif
+      case ('JCD')
+         if (ml%is_vacuum(pt_o)) then
+            bd%type_o = VACUUM_TYPE
+         else
+            bd%type_o = JCD_TYPE
+         endif
+      case ('LUAN')
+         if (ml%is_vacuum(pt_o)) then
+            bd%type_o = VACUUM_TYPE
+         else
+            bd%type_o = LUAN_TYPE
+         endif
+      case default
+         $ABORT(Invalid outer_bound)
+      end select
 
-    call bd%stencil_(pt_i, pt_o)
+      select case (os_p%time_factor)
+      case ('OSC')
+         bd%alpha_om = 1._WP
+      case ('EXP')
+         bd%alpha_om = -1._WP
+      case default
+         $ABORT(Invalid time_factor)
+      end select
 
+      call bd%stencil_(pt_i, pt_o)
+
+    end associate
+      
     bd%n_i = 1
     bd%n_o = 1
 
@@ -187,7 +191,7 @@ contains
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%ml)
+    associate (ml => this%cx%model())
 
       call check_model(ml, [I_V_2,I_U,I_C_1])
 
