@@ -49,24 +49,27 @@ module gyre_wave
 
   type :: wave_t
      private
-     type(c_state_t), public           :: st
-     type(context_t), pointer, public  :: cx => null()
-     type(grid_t), allocatable, public :: gr
-     type(mode_par_t), public          :: md_p
-     type(osc_par_t), public           :: os_p
-     complex(WP), allocatable          :: y_c(:,:)
-     real(WP)                          :: E_scl2
-     type(c_ext_t), public             :: discrim
-     complex(WP), public               :: scl
-     complex(WP), public               :: omega
-     complex(WP), public               :: l_i
-     integer, public                   :: n_k
-     integer, public                   :: k_ref
-     integer, public                   :: l
-     integer, public                   :: m
-     logical                           :: pruned
+     type(c_state_t)           :: st
+     type(context_t), pointer  :: cx => null()
+     type(grid_t), allocatable :: gr
+     type(mode_par_t), public  :: md_p
+     type(osc_par_t), public   :: os_p
+     complex(WP), allocatable  :: y_c(:,:)
+     real(WP)                  :: E_scl2
+     type(c_ext_t), public     :: discrim
+     complex(WP), public       :: scl
+     complex(WP), public       :: omega
+     complex(WP), public       :: l_i
+     integer, public           :: n_k
+     integer, public           :: k_ref
+     integer, public           :: l
+     integer, public           :: m
+     logical                   :: pruned
    contains
      private
+     procedure, public :: state
+     procedure, public :: context
+     procedure, public :: grid
      procedure, public :: prune
      procedure, public :: freq
      procedure, public :: dfreq_rot
@@ -207,6 +210,57 @@ contains
   !****
 
   $REALLOCATE(type(wave_t),1)
+
+  !****
+
+  function state (this) result (st)
+
+    class(wave_t), intent(in) :: this
+    type(c_state_t)           :: st
+
+    ! Return the wave's state
+
+    st = this%st
+
+    ! Finish
+
+    return
+
+  end function state
+
+  !****
+
+  function context (this) result (cx)
+
+    class(wave_t), intent(in) :: this
+    type(context_t), pointer  :: cx
+
+    ! Return the wave's context
+
+    cx => this%cx
+
+    ! Finish
+
+    return
+
+  end function context
+
+  !****
+
+  function grid (this) result (gr)
+
+    class(wave_t), intent(in) :: this
+    type(grid_t)              :: gr
+
+    ! Return the wave's grid
+
+    gr = this%gr
+
+    ! Finish
+
+    return
+
+  end function grid
 
   !****
 
