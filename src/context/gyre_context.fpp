@@ -136,7 +136,7 @@ contains
     class(context_t), intent(in) :: this
     class(model_t), pointer      :: ml
 
-    ! Return the context model
+    ! Return the context's model
 
     ml => this%ml
 
@@ -153,7 +153,7 @@ contains
     class(context_t), intent(in) :: this
     type(point_t)                :: pt_i
 
-    ! Return the context inner point
+    ! Return the context's inner point
 
     pt_i = this%pt_i
 
@@ -170,7 +170,7 @@ contains
     class(context_t), intent(in) :: this
     type(point_t)                :: pt_o
 
-    ! Return the context outer point
+    ! Return the context's outer point
 
     pt_o = this%pt_o
 
