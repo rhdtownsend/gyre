@@ -1,5 +1,5 @@
 ! Module   : gyre_rad_bvp
-! Purpose  : adiabatic radial bounary value problem solver
+! Purpose  : radial adiabatic bounary value problem solver
 !
 ! Copyright 2013-2018 Rich Townsend
 !
@@ -229,22 +229,24 @@ contains
     real(WP), intent(in)            :: y(:,:)
     type(wave_t)                    :: wv
 
-    real(WP)        :: y_g(4,bp%n_k)
-    integer         :: k
-    real(WP)        :: U
-    complex(WP)     :: y_c(6,bp%n_k)
-    type(c_state_t) :: st_c
-    type(c_ext_t)   :: discrim
+    class(model_t), pointer :: ml
+    real(WP)                :: y_g(4,bp%n_k)
+    integer                 :: k
+    real(WP)                :: U
+    complex(WP)             :: y_c(6,bp%n_k)
+    type(c_state_t)         :: st_c
+    type(c_ext_t)           :: discrim
 
     ! Set up gravitational eigenfunctions
+
+    ml => bp%cx%model()
 
     y_g(1:2,:) = y
 
     !$OMP PARALLEL DO PRIVATE (U)
     do k = 1, bp%n_k
 
-       associate (ml => bp%cx%model(), &
-                  pt => bp%gr%pt(k))
+       associate (pt => bp%gr%pt(k))
          U = ml%coeff(I_U, pt)
        end associate
 

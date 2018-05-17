@@ -1,7 +1,7 @@
 ! Incfile  : gyre_rad_bound
 ! Purpose  : adiabatic radial boundary conditions
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -105,71 +105,73 @@ contains
     type(osc_par_t), intent(in)          :: os_p
     type(rad_bound_t)                    :: bd
 
+    class(model_t), pointer :: ml
+    type(point_t)           :: pt_i
+    type(point_t)           :: pt_o
+
     ! Construct the rad_bound_t
 
     bd%cx => cx
     
     bd%tr = rad_trans_t(cx, md_p, os_p)
 
-    associate (ml => cx%model(), &
-               pt_i => cx%point_i(), &
-               pt_o => cx%point_o())
+    ml => cx%model()
+    pt_i = cx%point_i()
+    pt_o = cx%point_o()
 
-      select case (os_p%inner_bound)
-      case ('REGULAR')
-         $ASSERT(pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
-         bd%type_i = REGULAR_TYPE
-      case ('ZERO_R')
-         $ASSERT(pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
-         bd%type_i = ZERO_R_TYPE
-      case default
-         $ABORT(Invalid inner_bound)
-      end select
+    select case (os_p%inner_bound)
+    case ('REGULAR')
+       $ASSERT(pt_i%x == 0._WP,Boundary condition invalid for x /= 0)
+       bd%type_i = REGULAR_TYPE
+    case ('ZERO_R')
+       $ASSERT(pt_i%x /= 0._WP,Boundary condition invalid for x == 0)
+       bd%type_i = ZERO_R_TYPE
+    case default
+       $ABORT(Invalid inner_bound)
+    end select
 
-      select case (os_p%outer_bound)
-      case ('VACUUM')
-         bd%type_o = VACUUM_TYPE
-      case ('DZIEM')
-         if (ml%is_vacuum(pt_o)) then
-            bd%type_o = VACUUM_TYPE
-         else
-            bd%type_o = DZIEM_TYPE
-         endif
-      case ('UNNO')
-         if (ml%is_vacuum(pt_o)) then
-            bd%type_o = VACUUM_TYPE
-         else
-            bd%type_o = UNNO_TYPE
-         endif
-      case ('JCD')
-         if (ml%is_vacuum(pt_o)) then
-            bd%type_o = VACUUM_TYPE
-         else
-            bd%type_o = JCD_TYPE
-         endif
-      case ('LUAN')
-         if (ml%is_vacuum(pt_o)) then
-            bd%type_o = VACUUM_TYPE
-         else
-            bd%type_o = LUAN_TYPE
-         endif
-      case default
-         $ABORT(Invalid outer_bound)
-      end select
+    select case (os_p%outer_bound)
+    case ('VACUUM')
+       bd%type_o = VACUUM_TYPE
+    case ('DZIEM')
+       if (ml%is_vacuum(pt_o)) then
+          bd%type_o = VACUUM_TYPE
+       else
+          bd%type_o = DZIEM_TYPE
+       endif
+    case ('UNNO')
+       if (ml%is_vacuum(pt_o)) then
+          bd%type_o = VACUUM_TYPE
+       else
+          bd%type_o = UNNO_TYPE
+       endif
+    case ('JCD')
+       if (ml%is_vacuum(pt_o)) then
+          bd%type_o = VACUUM_TYPE
+       else
+          bd%type_o = JCD_TYPE
+       endif
+    case ('LUAN')
+       if (ml%is_vacuum(pt_o)) then
+          bd%type_o = VACUUM_TYPE
+       else
+          bd%type_o = LUAN_TYPE
+       endif
+    case default
+       $ABORT(Invalid outer_bound)
+    end select
 
-      select case (os_p%time_factor)
-      case ('OSC')
-         bd%alpha_om = 1._WP
-      case ('EXP')
-         bd%alpha_om = -1._WP
-      case default
-         $ABORT(Invalid time_factor)
-      end select
+    select case (os_p%time_factor)
+    case ('OSC')
+       bd%alpha_om = 1._WP
+    case ('EXP')
+       bd%alpha_om = -1._WP
+    case default
+       $ABORT(Invalid time_factor)
+    end select
 
-      call bd%stencil_(pt_i, pt_o)
+    call bd%stencil_(pt_i, pt_o)
 
-    end associate
-      
     bd%n_i = 1
     bd%n_o = 1
 
@@ -189,46 +191,46 @@ contains
     type(point_t), intent(in)         :: pt_i
     type(point_t), intent(in)         :: pt_o
 
+    class(model_t), pointer :: ml
+
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%model())
+    ml => this%cx%model()
 
-      call check_model(ml, [I_V_2,I_U,I_C_1])
+    call check_model(ml, [I_V_2,I_U,I_C_1])
 
-      allocate(this%coeff(2,J_LAST))
+    allocate(this%coeff(2,J_LAST))
 
-      ! Inner boundary
+    ! Inner boundary
+    
+    select case (this%type_i)
+    case (REGULAR_TYPE)
+       this%coeff(1,J_C_1) = ml%coeff(I_C_1, pt_i)
+    case (ZERO_R_TYPE)
+    case default
+       $ABORT(Invalid type_i)
+    end select
 
-      select case (this%type_i)
-      case (REGULAR_TYPE)
-         this%coeff(1,J_C_1) = ml%coeff(I_C_1, pt_i)
-      case (ZERO_R_TYPE)
-      case default
-         $ABORT(Invalid type_i)
-      end select
+    ! Outer boundary
 
-      ! Outer boundary
-
-      select case (this%type_o)
-      case (VACUUM_TYPE)
-         this%coeff(2, J_U) = ml%coeff(I_U, pt_o)
-      case (DZIEM_TYPE)
-         this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
-         this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
-      case (UNNO_TYPE)
-         call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V_G), &
-              this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
-      case (JCD_TYPE)
-         call eval_atmos_coeffs_jcd(ml, pt_o, this%coeff(2,J_V_G), &
-              this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
-      case (LUAN_TYPE)
-         call eval_atmos_coeffs_luan(ml, pt_o, this%coeff(2,J_V_G), &
-              this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
-      case default
-         $ABORT(Invalid type_o)
-      end select
-
-    end associate
+    select case (this%type_o)
+    case (VACUUM_TYPE)
+       this%coeff(2, J_U) = ml%coeff(I_U, pt_o)
+    case (DZIEM_TYPE)
+       this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
+       this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
+    case (UNNO_TYPE)
+       call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V_G), &
+            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
+    case (JCD_TYPE)
+       call eval_atmos_coeffs_jcd(ml, pt_o, this%coeff(2,J_V_G), &
+            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
+    case (LUAN_TYPE)
+       call eval_atmos_coeffs_luan(ml, pt_o, this%coeff(2,J_V_G), &
+            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
+    case default
+       $ABORT(Invalid type_o)
+    end select
 
     ! Set up stencil for the tr component
 

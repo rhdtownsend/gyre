@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_vars
 ! Purpose  : adiabatic radial variables transformations
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -134,33 +134,32 @@ contains
     class(rad_trans_t), intent(inout) :: this
     type(point_t), intent(in)         :: pt(:)
 
-    integer :: n_s
-    integer :: i
+    class(model_t), pointer :: ml
+    integer                 :: n_s
+    integer                 :: i
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%model())
+    ml => this%cx%model()
 
-      call check_model(ml, [I_V_2,I_U,I_C_1])
+    call check_model(ml, [I_V_2,I_U,I_C_1])
 
-      n_s = SIZE(pt)
+    n_s = SIZE(pt)
 
-      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-      allocate(this%coeff(n_s,J_LAST))
+    if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+    allocate(this%coeff(n_s,J_LAST))
 
-      do i = 1, n_s
-         if (ml%is_vacuum(pt(i))) then
-            this%coeff(i,J_V_2) = HUGE(0._WP)
-            this%coeff(i,J_DV_2) = HUGE(0._WP)
-         else
-            this%coeff(i,J_V_2) = ml%coeff(I_V_2, pt(i))
-            this%coeff(i,J_DV_2) = ml%dcoeff(I_V_2, pt(i))
-         endif
-         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
-         this%coeff(i,J_DC_1) = ml%dcoeff(I_C_1, pt(i))
-      end do
-
-    end associate
+    do i = 1, n_s
+       if (ml%is_vacuum(pt(i))) then
+          this%coeff(i,J_V_2) = HUGE(0._WP)
+          this%coeff(i,J_DV_2) = HUGE(0._WP)
+       else
+          this%coeff(i,J_V_2) = ml%coeff(I_V_2, pt(i))
+          this%coeff(i,J_DV_2) = ml%dcoeff(I_V_2, pt(i))
+       endif
+       this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
+       this%coeff(i,J_DC_1) = ml%dcoeff(I_C_1, pt(i))
+    end do
 
     ! Finish
 

@@ -1,7 +1,7 @@
 ! Incfile  : gyre_rad_diff
 ! Purpose  : adiabatic radial difference equations
 !
-! Copyright 2016-2017 Rich Townsend
+! Copyright 2016-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
