@@ -40,7 +40,7 @@ $local $FUNC $4
  
 case ($str($NAME))
 
-   do k = 1, SIZE(pt)
+   do k = 1, gr%n_k
       data_$T(k) = $VAR%$FUNC
    end do
    
