@@ -134,11 +134,15 @@ contains
     allocate(this%coeff(n_s,J_LAST))
 
     do i = 1, n_s
+
+       $ASSERT(.NOT. ml%is_vacuum(pt(i)),Attempt to stencil at vacuum point)
+       
        this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
        this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
        this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
        this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
        this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
+
     end do
 
     this%x = pt%x

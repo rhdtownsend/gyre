@@ -213,6 +213,9 @@ contains
     allocate(this%coeff(n_s, J_LAST))
 
     do i = 1, n_s
+
+       $ASSERT(.NOT. ml%is_vacuum(pt(i)),Attempt to stencil at vacuum point)
+
        this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
        this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
        this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
@@ -235,6 +238,7 @@ contains
        this%coeff(i,J_KAP_RHO) = ml%coeff(I_KAP_RHO, pt(i))
        this%coeff(i,J_KAP_T) = ml%coeff(I_KAP_T, pt(i))
        this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
+
     end do
 
     this%coeff(:,J_OMEGA_ROT_I) = ml%coeff(I_OMEGA_ROT, this%cx%point_i())
