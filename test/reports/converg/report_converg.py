@@ -23,7 +23,9 @@ IVP_SOLVER = ['MAGNUS_GL2',
               'MAGNUS_GL6',
               'COLLOC_GL2',
               'COLLOC_GL4',
-              'COLLOC_GL6']
+              'COLLOC_GL6',
+              'MIRK',
+              'TRAPZ']
 
 VARS_SET = ['DZIEM',
             'JCD',
@@ -45,12 +47,15 @@ def run_gyre (n_grid, l, ivp_solver, vars_set, summ_file) :
 
     # Create the input file
 
-    with open('gyre_ad.in', 'w') as fout :
+    with open('gyre.in', 'w') as fout :
         fout.write('''
 &constants
 /
 &model
 	model_type = 'HOM'
+        grid_type = 'GEO'
+        n = {n_grid:d}
+        s = 1000
 /
 &mode
 	l = {l:d}
@@ -59,7 +64,7 @@ def run_gyre (n_grid, l, ivp_solver, vars_set, summ_file) :
         variables_set = '{vars_set:s}'
 /
 &num
-	ivp_solver = '{ivp_solver:s}'
+	diff_scheme = '{ivp_solver:s}'
 /
 &scan
         grid_type = 'LINEAR'
@@ -67,23 +72,21 @@ def run_gyre (n_grid, l, ivp_solver, vars_set, summ_file) :
         freq_max = 20
         n_freq = 100
 /
-&shoot_grid
-	op_type = 'CREATE_GEOM'
-        n = {n_grid:d}
-        s = 1000
+
+&grid
 /
-&recon_grid
-/
-&output
+&ad_output
 	summary_file = '{summ_file:s}'
 	summary_item_list = 'l,n_pg,n_p,n_g,omega'
+/
+&nad_output
 /
 '''.format(l=l, vars_set=vars_set, ivp_solver=ivp_solver, n_grid=n_grid, summ_file=summ_file))
 
     # Run gyre
          
-    os.system('./gyre_ad gyre_ad.in > /dev/null')
-#    os.remove('gyre_ad.in')
+    os.system('./gyre gyre.in > /dev/null')
+#    os.remove('gyre.in')
 
 #
 
