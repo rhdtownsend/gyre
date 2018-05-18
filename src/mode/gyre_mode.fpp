@@ -94,7 +94,11 @@ contains
 
     y_1_ref = md%y_i(1, md%k_ref)
 
-    f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
+    if (ABS(y_1_ref) > TINY(0._WP)) then
+       f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
+    else
+       f_phase = 1._WP
+    endif
 
     md%scl = md%scl/SQRT(md%E())*f_phase
 
