@@ -1,0 +1,31 @@
+&constants
+/
+
+&model
+	model_type = 'EVOL'
+	file = 'spb.mesa'
+	file_format = 'MESA'
+/
+
+&tide
+	R_a = 0.1
+	q = 0.5
+	e = 0.3
+	omega_static = 0.
+	k_max = 5
+	l_max = 4
+/
+
+&osc
+	nonadiabatic = .TRUE.
+/
+
+&num
+	diff_scheme = 'COLLOC_GL2'
+/
+
+&grid
+	n_inner = 5
+	alpha_osc = 10
+	alpha_exp = 2
+/
