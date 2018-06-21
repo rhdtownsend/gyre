@@ -320,7 +320,7 @@ contains
       if (x == 0._WP) then
          dcoeff = 0._WP
       else
-         dcoeff = x*this%in(i,s)%df_dx(x)/this%in(i,s)%f(x)
+         dcoeff = x*this%in(i,s)%df(1, x)/this%in(i,s)%f(x)
       end if
     end associate
 
