@@ -107,6 +107,7 @@ module gyre_${T}_interp
   private
 
   public :: ${T}_interp_t
+  public :: ${T}_interp_t_eval_derivs_
   $if ($HDF5)
   public :: read
   public :: write
@@ -387,7 +388,7 @@ contains
     ! Do the interpolation
 
     df = (-1._WP)**n *     this%f_(i  )*dphi_(n, 1._WP-w)/h**n +     &
-                           this%f_(i+1)*dphi_(n, w      )/n**n -     &
+                           this%f_(i+1)*dphi_(n, w      )/h**n -     &
          (-1._WP)**n * this%df_dx_(i  )*dpsi_(n, 1._WP-w)/h**(n-1) + &
                        this%df_dx_(i+1)*dpsi_(n, w      )/h**(n-1)
 
