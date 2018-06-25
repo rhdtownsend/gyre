@@ -1532,7 +1532,7 @@ contains
 
     ! Calculate the effective gravity perturbation at x_ref (assumed
     ! to correspond to the photosphere), in units of the gravity. This
-    ! expression is based on eqn. 24 of [Dupret:2002]
+    ! expression is based on eqn. 24 of [Dupret:2002b]
 
     associate ( &
          k => this%k_ref, &
@@ -2128,7 +2128,7 @@ contains
     complex(WP) :: f_xi(this%n_k)
 
     ! Calculate the dimensionless frequency from the integral
-    ! expression in eqn. (1.71) of [Dupret:2002]. Note that this
+    ! expression in eqn. (1.71) of [Dupret:2002a]. Note that this
     ! routine (and, thus, the original expression) appears to give
     ! inconsistent results when compared against actual
     ! eigenfrequencies; it is kept for historical & development
