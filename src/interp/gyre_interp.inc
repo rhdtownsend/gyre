@@ -61,10 +61,10 @@ module gyre_${T}_interp
      procedure         :: f_v_
      procedure         :: f_n_
      generic, public   :: f => f_1_, f_v_, f_n_
-     procedure         :: df_1_
-     procedure         :: df_v_
-     procedure         :: df_n_
-     generic, public   :: df => df_1_, df_v_, df_n_
+     procedure         :: df_dx_1_
+     procedure         :: df_dx_v_
+     procedure         :: df_dx_n_
+     generic, public   :: df_dx => df_dx_1_, df_dx_v_, df_dx_n_
      procedure         :: int_f_n_
      generic, public   :: int_f => int_f_n_
   end type ${T}_interp_t
@@ -317,7 +317,7 @@ contains
 
     ! Interpolate f at a single point
 
-    f = this%df(0, x)
+    f = this%df_dx(x, 0)
 
     ! Finish
 
@@ -335,7 +335,7 @@ contains
 
     ! Interpolate f at a vector of points
 
-    f = this%df(0, x)
+    f = this%df_dx(x, 0)
 
     ! Finish
 
@@ -352,7 +352,7 @@ contains
 
     ! Interpolate f at abscissa points
 
-    f = this%df(0)
+    f = this%df_dx(0)
 
     ! Finish
 
@@ -360,18 +360,26 @@ contains
 
   !****
 
-  function df_1_ (this, n, x) result (df)
+  function df_dx_1_ (this, x, n) result (df)
 
     class(${T}_interp_t), intent(in) :: this
-    integer, intent(in)              :: n
     real(WP), intent(in)             :: x
+    integer, optional, intent(in)    :: n
     $TYPE(WP)                        :: df
 
+    integer  :: n_
     integer  :: i
     real(WP) :: h
     real(WP) :: w
 
-    ! Interpolate the n'th derivative of f at a single point
+    if (PRESENT(n)) then
+       n_ = n
+    else
+       n_ = 1
+    endif
+
+    ! Interpolate the first derivative of f, or the n'th derivative if
+    ! n is present, at a single point
 
     ! Set up the bracketing index
 
@@ -387,32 +395,40 @@ contains
 
     ! Do the interpolation
 
-    df = (-1._WP)**n *     this%f_(i  )*dphi_(n, 1._WP-w)/h**n +     &
-                           this%f_(i+1)*dphi_(n, w      )/h**n -     &
-         (-1._WP)**n * this%df_dx_(i  )*dpsi_(n, 1._WP-w)/h**(n-1) + &
-                       this%df_dx_(i+1)*dpsi_(n, w      )/h**(n-1)
+    df = (-1._WP)**n_ *     this%f_(i  )*dphi_dt_(1._WP-w, n_)/h**n_ +     &
+                            this%f_(i+1)*dphi_dt_(      w, n_)/h**n_ -     &
+         (-1._WP)**n_ * this%df_dx_(i  )*dpsi_dt_(1._WP-w, n_)/h**(n_-1) + &
+                        this%df_dx_(i+1)*dpsi_dt_(      w, n_)/h**(n_-1)
 
     ! Finish
 
     return
 
-  end function df_1_
+  end function df_dx_1_
 
   !****
 
-  function df_v_ (this, n, x) result (df)
+  function df_dx_v_ (this, x, n) result (df)
 
     class(${T}_interp_t), intent(in) :: this
-    integer, intent(in)              :: n
     real(WP), intent(in)             :: x(:)
+    integer, optional, intent(in)    :: n
     $TYPE(WP)                        :: df(SIZE(x))
 
+    integer  :: n_
     integer  :: i
     integer  :: j
     real(WP) :: h
     real(WP) :: w
 
-    ! Interpolate the n'th derivative of f at a vector of points
+    if (PRESENT(n)) then
+       n_ = n
+    else
+       n_ = 1
+    endif
+
+    ! Interpolate the first derivative of f, or the n'th derivative if
+    ! n is present, at a vector of points
 
     i = 1
 
@@ -430,10 +446,10 @@ contains
 
        ! Do the interpolation
 
-       df(j) = (-1._WP)**n *     this%f_(i  )*dphi_(n, 1._WP-w)/h**n +     &
-                                 this%f_(i+1)*dphi_(n, w      )/h**n -     &
-               (-1._WP)**n * this%df_dx_(i  )*dpsi_(n, 1._WP-w)/h**(n-1) + &
-                             this%df_dx_(i+1)*dpsi_(n, w      )/h**(n-1)
+       df(j) = (-1._WP)**n_ *     this%f_(i  )*dphi_dt_(1._WP-w, n_)/h**n_ +     &
+                                  this%f_(i+1)*dphi_dt_(w      , n_)/h**n_ -     &
+               (-1._WP)**n_ * this%df_dx_(i  )*dpsi_dt_(1._WP-w, n_)/h**(n_-1) + &
+                              this%df_dx_(i+1)*dpsi_dt_(w      , n_)/h**(n_-1)
 
     end do x_loop
 
@@ -441,39 +457,48 @@ contains
 
     return
 
-  end function df_v_
+  end function df_dx_v_
 
   !****
 
-  function df_n_ (this, n) result (df)
+  function df_dx_n_ (this, n) result (df)
 
     class(${T}_interp_t), intent(in) :: this
-    integer, intent(in)              :: n
+    integer, optional, intent(in)    :: n
     $TYPE(WP)                        :: df(this%n)
 
-    ! Interpolate the n'th derivative of f at abscissa points
+    integer :: n_
 
-    select case (n)
+    if (PRESENT(n)) then
+       n_ = n
+    else
+       n_ = 1
+    endif
+
+    ! Interpolate the first derivative of f, or the n'th derivative if
+    ! n is present, at abscissa points
+
+    select case (n_)
     case (0)
        df = this%f_
     case (1)
        df = this%df_dx_
     case default
-       df = this%df(n, this%x_)
+       df = this%df_dx(this%x_, n_)
     end select
        
     ! Finish
 
     return
 
-  end function df_n_
+  end function df_dx_n_
 
   !****
 
-  function dphi_ (n, t) result (dphi)
+  function dphi_dt_ (t, n) result (dphi)
 
-    integer, intent(in)  :: n
     real(WP), intent(in) :: t
+    integer, intent(in)  :: n
     real(WP)             :: dphi
 
     ! Evaluate the n'th derivative of the phi basis function
@@ -497,14 +522,14 @@ contains
 
     return
 
-  end function dphi_
+  end function dphi_dt_
 
   !****
 
-  function dpsi_ (n, t) result (dpsi)
+  function dpsi_dt_ (t, n) result (dpsi)
 
-    integer, intent(in)  :: n
     real(WP), intent(in) :: t
+    integer, intent(in)  :: n
     real(WP)             :: dpsi
 
     ! Evaluate the n'th derivative of the psi basis function
@@ -528,7 +553,7 @@ contains
 
     return
 
-  end function dpsi_
+  end function dpsi_dt_
 
   !****
 
