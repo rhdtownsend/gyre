@@ -117,6 +117,8 @@ module gyre_wave
      procedure, public :: tau_ss
      procedure, public :: tau_tr
      procedure, public :: beta
+     procedure         :: omega_int_pesnell_
+     procedure         :: omega_int_dupret_
      procedure, public :: omega_int
      procedure, public :: domega_rot
      procedure, public :: eta
@@ -746,7 +748,7 @@ contains
     real(WP)    :: delta
 
     ! Evaluate the Lagrangian density perturbation, in units of
-    ! rho. This expression implements eqn. 13.83 of [Unn1989]
+    ! rho. This expression implements eqn. 13.83 of [Unno:1989]
 
     associate ( &
          ml => this%cx%model(), &
@@ -816,7 +818,7 @@ contains
     real(WP)    :: nabla_ad
 
     ! Evaluate the Lagrangian temperature perturbation, in units of
-    ! T. This expression implements eqn. 13.84 of [Unn1989]
+    ! T. This expression implements eqn. 13.84 of [Unno:1989]
 
     associate ( &
          ml => this%cx%model(), &
@@ -880,7 +882,7 @@ contains
     real(WP)    :: c_1
 
     ! Evaluate the differential inertia, in units of M_star
-    ! R_star**2. This expression is based on eqn. 3.139 of [Aer2010]
+    ! R_star**2. This expression is based on eqn. 3.139 of [Aerts:2010]
 
     associate ( &
          ml => this%cx%model(), &
@@ -921,7 +923,7 @@ contains
     real(WP)    :: c_thk
 
     ! Evaluate the differential work, in units of G M_star**2/R_star.
-    ! This expression is based on eqn. 25.9 of [Unn1989]
+    ! This expression is based on eqn. 25.9 of [Unno:1989]
 
     select type (ml => this%cx%model())
     class is (evol_model_t)
@@ -972,7 +974,7 @@ contains
 
     ! Evaluate the differential work associated with nuclear
     ! processes, in units of G M_star**2/R_star.  This expression is
-    ! based on eqn. 25.9 of [Unn1989]
+    ! based on eqn. 25.9 of [Unno:1989]
     
     select type (ml => this%cx%model())
     class is (evol_model_t)
@@ -1028,7 +1030,7 @@ contains
     real(WP)    :: E
     
     ! Calculate the (unnormalized) rotation splitting kernel. This is
-    ! based on the derivative of equation 3.357 of [Aer2010] with
+    ! based on the derivative of equation 3.357 of [Aerts:2010] with
     ! respect to x
 
     associate ( &
@@ -1074,7 +1076,7 @@ contains
     
     ! Evaluate the steady-state differential torque, in units of G
     ! M_star**2/R_star. This expression is based on eqn. 13 of
-    ! [Tow2017]
+    ! [Townsend:2018]
 
     associate ( &
          ml => this%cx%model(), &
@@ -1120,7 +1122,7 @@ contains
 
     ! Evaluate the transient differential torque, in units of G
     ! M_star**2/R_star. This expression is based on eqn. 14 of
-    ! [Tow2017]
+    ! [Towsend:2018]
 
     associate ( &
          ml => this%cx%model(), &
@@ -1171,7 +1173,7 @@ contains
     real(WP)    :: J
 
     ! Evaluate the Takata Y_1 function. This expression is equivalent to
-    ! eqn. 69 of [Tak2006b], divided by x**(2-l)
+    ! eqn. 69 of [Takata:2006b], divided by x**(2-l)
 
     associate ( &
          ml => this%cx%model(), &
@@ -1205,7 +1207,7 @@ contains
     complex(WP) :: y_2
 
     ! Evaluate the Takata Y_2 function. This expression is equivalent to 
-    ! eqn. 70 of [Tak2006b], divided by V
+    ! eqn. 70 of [Takata:2006b], divided by V
 
     y_1 = this%y_i(1, k)
     y_2 = this%y_i(2, k)
@@ -1232,7 +1234,7 @@ contains
     real(WP)    :: c_1
     
     ! Evaluate the I_0 integral, which should be zero for radial
-    ! cases. This expression is based on eqn. 42 of [Tak2006a]
+    ! cases. This expression is based on eqn. 42 of [Takata:2006a]
 
     associate ( &
          ml => this%cx%model(), &
@@ -1277,7 +1279,7 @@ contains
     complex(WP) :: omega_c
 
     ! Evaluate the I_0 integral, which should be zero for dipole
-    ! cases. This expression is based on eqn. 43 of [Tak2006a]
+    ! cases. This expression is based on eqn. 43 of [Takata:2006a]
 
     associate ( &
          ml => this%cx%model(), &
@@ -1530,7 +1532,7 @@ contains
 
     ! Calculate the effective gravity perturbation at x_ref (assumed
     ! to correspond to the photosphere), in units of the gravity. This
-    ! expression is based on eqn. 24 of [Dup2002]
+    ! expression is based on eqn. 24 of [Dupret:2002]
 
     associate ( &
          k => this%k_ref, &
@@ -1564,7 +1566,7 @@ contains
     complex(WP) :: C_T
 
     ! Evaluate the non-adiabatic f_T parameter. This is expression is
-    ! based on eqn. 5 of [Dup2003]
+    ! based on eqn. 5 of [Dupret:2003]
 
     associate (k => this%k_ref)
 
@@ -1590,7 +1592,7 @@ contains
     complex(WP) :: C_g
 
     ! Evaluate the non-adiabatic f_g parameter. This is expression is
-    ! based on eqn. 6 of [Dup2003]
+    ! based on eqn. 6 of [Dupret:2003]
 
     associate (k => this%k_ref)
 
@@ -2002,32 +2004,56 @@ contains
     class(wave_t), intent(in) :: this
     complex(WP)               :: omega_int
 
-    integer       :: k
-    complex(WP)   :: xi_r
-    complex(WP)   :: eul_phi
-    complex(WP)   :: eul_rho
-    complex(WP)   :: lag_rho
-    complex(WP)   :: lag_P
-    real(WP)      :: V_2
-    real(WP)      :: As
-    real(WP)      :: U
-    real(WP)      :: c_1
-    real(WP)      :: Gamma_1
-    real(WP)      :: V_g
-    real(WP)      :: x4_V
-    complex(WP)   :: W_th
-    complex(WP)   :: W_re
-    complex(WP)   :: W_gr
-    complex(WP)   :: W_xi
-    complex(WP)   :: f_th(this%n_k)
-    complex(WP)   :: f_re(this%n_k)
-    complex(WP)   :: f_gr(this%n_k)
-    complex(WP)   :: f_xi(this%n_k)
+    ! Calculate the dimensionless frequency from an integral expression
+
+    select case (this%os_p%int_scheme)
+    case ('PESNELL')
+       omega_int = this%omega_int_pesnell_()
+    case ('DUPRET')
+       omega_int = this%omega_int_dupret_()
+    case default
+       $ABORT(Invalid int_scheme)
+    end select
+
+    ! Finish
+
+    return
+
+  end function omega_int
+
+  !****
+
+  function omega_int_pesnell_ (this) result (omega_int)
+
+    class(wave_t), intent(in) :: this
+    complex(WP)               :: omega_int
+
+    integer     :: k
+    complex(WP) :: xi_r
+    complex(WP) :: xi_h
+    complex(WP) :: eul_phi
+    complex(WP) :: eul_rho
+    complex(WP) :: lag_rho
+    complex(WP) :: lag_P
+    complex(WP) :: lambda
+    real(WP)    :: V_2
+    real(WP)    :: U
+    real(WP)    :: As
+    real(WP)    :: c_1
+    real(WP)    :: x4_V
+    complex(WP) :: W_th
+    complex(WP) :: W_re
+    complex(WP) :: W_gr
+    complex(WP) :: W_xi
+    complex(WP) :: f_th(this%n_k)
+    complex(WP) :: f_re(this%n_k)
+    complex(WP) :: f_gr(this%n_k)
+    complex(WP) :: f_xi(this%n_k)
 
     ! Calculate the dimensionless frequency from the integral
-    ! expression in eqn. (1.71) of [Dup2002]
+    ! expression in eqn. (A5) of [Pes1987]
 
-    !$OMP PARALLEL DO PRIVATE (xi_r, eul_phi, eul_rho, lag_rho, lag_P, V_2, As, U, c_1, Gamma_1, V_g, x4_V)
+    !$OMP PARALLEL DO PRIVATE (xi_r, xi_h, eul_phi, eul_rho, lag_rho, lag_P, lambda, V_2, U, c_1, x4_V)
     do k = 1, this%n_k
 
        associate ( &
@@ -2035,25 +2061,25 @@ contains
             pt => this%gr%pt(k) )
 
          xi_r = this%xi_r(k)
+         xi_h = this%xi_h(k)
          eul_phi = this%eul_phi(k)
          eul_rho = this%eul_rho(k)
          lag_rho = this%lag_rho(k)
          lag_P = this%lag_P(k)
+
+         lambda = this%lambda(k)
 
          V_2 = ml%coeff(I_V_2, pt)
          As = ml%coeff(I_AS, pt)
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
 
-         Gamma_1 = ml%coeff(I_GAMMA_1, pt)
-
-         V_g = V_2*pt%x**2/Gamma_1
          x4_V = pt%x**2/V_2
 
          f_th(k) = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2))
-         f_re(k) = 2._WP*REAL(lag_rho*CONJG(xi_r)*(pt%x/c_1)*(pt%x**2*U/c_1))
+         f_re(k) = 2._WP*REAL(lambda*CONJG(xi_r)*xi_h/c_1*(pt%x**2*U/c_1))
          f_gr(k) = CONJG(eul_rho)*eul_phi*(pt%x**2*U/c_1)
-         f_xi(k) = -ABS(xi_r)**2*(pt%x/c_1)*(pt%x*U*(-V_g-As)/c_1)
+         f_xi(k) = ABS(xi_r)**2*(U-4._WP)/c_1*(pt%x**2*U/c_1)
 
        end associate
 
@@ -2070,8 +2096,89 @@ contains
 
     return
 
-  end function omega_int
+  end function omega_int_pesnell_
 
+  !****
+
+  function omega_int_dupret_ (this) result (omega_int)
+
+    class(wave_t), intent(in) :: this
+    complex(WP)               :: omega_int
+
+    integer     :: k
+    complex(WP) :: xi_r
+    complex(WP) :: eul_phi
+    complex(WP) :: eul_rho
+    complex(WP) :: lag_rho
+    complex(WP) :: lag_P
+    real(WP)    :: V_2
+    real(WP)    :: U
+    real(WP)    :: As
+    real(WP)    :: c_1
+    real(WP)    :: Gamma_1
+    real(WP)    :: x4_V
+    real(WP)    :: V_g
+    complex(WP) :: W_th
+    complex(WP) :: W_re
+    complex(WP) :: W_gr
+    complex(WP) :: W_xi
+    complex(WP) :: f_th(this%n_k)
+    complex(WP) :: f_re(this%n_k)
+    complex(WP) :: f_gr(this%n_k)
+    complex(WP) :: f_xi(this%n_k)
+
+    ! Calculate the dimensionless frequency from the integral
+    ! expression in eqn. (1.71) of [Dupret:2002]. Note that this
+    ! routine (and, thus, the original expression) appears to give
+    ! inconsistent results when compared against actual
+    ! eigenfrequencies; it is kept for historical & development
+    ! purposes
+
+    !$OMP PARALLEL DO PRIVATE (xi_r, eul_phi, eul_rho, lag_rho, lag_P, V_2, As, U, c_1, Gamma_1, x4_V, V_g)
+    do k = 1, this%n_k
+
+       associate ( &
+            ml => this%cx%model(), &
+            pt => this%gr%pt(k) )
+
+         xi_r = this%xi_r(k)
+         eul_phi = this%eul_phi(k)
+         eul_rho = this%eul_rho(k)
+         lag_rho = this%lag_rho(k)
+         lag_P = this%lag_P(k)
+
+         V_2 = ml%coeff(I_V_2, pt)
+         As = ml%coeff(I_AS, pt)
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+         Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+
+         x4_V = pt%x**2/V_2
+
+         V_g = V_2*pt%x**2/Gamma_1
+
+         f_th(k) = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2))
+         f_re(k) = 2._WP*REAL(lag_rho*CONJG(xi_r)*(pt%x/c_1)*(pt%x**2*U/c_1))
+         f_gr(k) = CONJG(eul_rho)*eul_phi*(pt%x**2*U/c_1)
+         f_xi(k) = -ABS(xi_r)**2*(-V_g-As)/c_1*(pt%x**2*U/c_1)
+
+       end associate
+
+    end do
+
+    W_th = integrate(this%gr%pt%x, f_th)
+    W_re = integrate(this%gr%pt%x, f_re)
+    W_gr = integrate(this%gr%pt%x, f_gr)
+    W_xi = integrate(this%gr%pt%x, f_xi)
+
+    omega_int = SQRT((W_th + W_re + W_gr + W_xi)/this%E())
+
+    ! Finish
+
+    return
+
+  end function omega_int_dupret_
+  
   !****
 
   function domega_rot (this)
