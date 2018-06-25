@@ -27,6 +27,7 @@ module gyre_rad_bvp
   use gyre_context
   use gyre_ext
   use gyre_grid
+  use gyre_interp
   use gyre_model
   use gyre_mode_par
   use gyre_num_par
@@ -230,9 +231,15 @@ contains
     type(wave_t)                    :: wv
 
     class(model_t), pointer :: ml
-    real(WP)                :: y_g(4,bp%n_k)
     integer                 :: k
     real(WP)                :: U
+    real(WP)                :: c_1(bp%n_k)
+    real(WP)                :: y_4(bp%n_k)
+    real(WP)                :: deul_phi(bp%n_k)
+    type(r_interp_t)        :: in
+    real(WP)                :: eul_phi(bp%n_k)
+    real(WP)                :: y_3(bp%n_k)
+    real(WP)                :: y_g(4,bp%n_k)
     complex(WP)             :: y_c(6,bp%n_k)
     type(c_state_t)         :: st_c
     type(c_ext_t)           :: discrim
@@ -241,20 +248,47 @@ contains
 
     ml => bp%cx%model()
 
-    y_g(1:2,:) = y
-
     !$OMP PARALLEL DO PRIVATE (U)
     do k = 1, bp%n_k
 
-       associate (pt => bp%gr%pt(k))
+       associate ( pt => bp%gr%pt(k) )
+
          U = ml%coeff(I_U, pt)
+         c_1(k) = ml%coeff(I_C_1, pt)
+
+         ! Evaluate y_4
+         
+         y_4(k) = -U*y(1,k)
+
+         ! Evaluate the Eulerian potential gradient (gravity) perturbation
+
+         if (pt%x /= 0._WP) then
+            deul_phi(k) = y_4(k)/(c_1(k)*pt%x)
+         else
+            deul_phi(k) = 0._WP
+         end if
+
        end associate
 
-       y_g(4,k) = -U*y(1,k)
-       
     end do
 
-    y_g(3,:) = 0._WP
+    ! Use an interpolant to integrate the Eulerian potential
+    ! perturbation, and use it to set up y_3. Note the application to
+    ! eul_phi of the surface boundary condition!
+
+    in = r_interp_t(bp%gr%pt%x, deul_phi, 'MONO')
+
+    eul_phi = in%int_f()
+    eul_phi = eul_phi - eul_phi(bp%n_k) - y_4(bp%n_k)
+
+    y_3 = c_1*eul_phi
+
+    ! Store eigenfunctions into y_g
+
+    y_g(1:2,:) = y
+
+    y_g(3,:) = y_3
+    y_g(4,:) = y_4
 
     ! Set up complex eigenfunctions
 
