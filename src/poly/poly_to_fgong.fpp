@@ -90,32 +90,36 @@ program poly_to_fgong
 
   ! Extract data from the model
 
-  associate (pt => gr%pt)
+  ! Dimensionless structure variables
 
-    ! Dimensionless structure variables
+  allocate(V_2(gr%n_k))
+  allocate(As(gr%n_k))
+  allocate(U(gr%n_k))
+  allocate(c_1(gr%n_k))
+  allocate(Gamma_1(gr%n_k))
 
-    do k = 1, gr%n_k
-       V_2 = ml%coeff(I_V_2, pt(k))
-       As = ml%coeff(I_AS, pt(k))
-       U = ml%coeff(I_U, pt(k))
-       c_1 = ml%coeff(I_C_1, pt(k))
-       Gamma_1 = ml%coeff(I_GAMMA_1, pt(k))
-    end do
+  do k = 1, gr%n_k
+     associate (pt => gr%pt(k))
+       V_2(k) = ml%coeff(I_V_2, pt)
+       As(k) = ml%coeff(I_AS, pt)
+       U(k) = ml%coeff(I_U, pt)
+       c_1(k) = ml%coeff(I_C_1, pt)
+       Gamma_1(k) = ml%coeff(I_GAMMA_1, pt)
+     end associate
+  end do
 
-    ! Physical structure variables
+  ! Physical structure variables
 
-    $if ($GFORTRAN_PR_49636)
-    M_r = M_SUN*(gr%pt%x**3/c_1)
-    $else
-    M_r = M_SUN*(pt%x**3/c_1)
-    $endif
+  $if ($GFORTRAN_PR_49636)
+  M_r = M_SUN*(gr%pt%x**3/c_1)
+  $else
+  M_r = M_SUN*(pt%x**3/c_1)
+  $endif
+  
+  P = (G_GRAVITY*M_SUN**2/(4._WP*PI*R_SUN**4))* &
+      (U/(c_1**2*V_2))
 
-    P = (G_GRAVITY*M_SUN**2/(4._WP*PI*R_SUN**4))*&
-        (U/(c_1**2*V_2))
-
-    rho = (M_SUN/(4._WP*PI*R_SUN**3))*(U/c_1)
-
-  end associate
+  rho = (M_SUN/(4._WP*PI*R_SUN**3))*(U/c_1)
 
   ! Store into var array
 
