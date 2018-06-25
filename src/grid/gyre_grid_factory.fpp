@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_factory
 ! Purpose  : factory procedures for grid_t type
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
