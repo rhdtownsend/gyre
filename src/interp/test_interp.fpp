@@ -36,7 +36,7 @@ program test_interp
 
   do i = 1, m
      xx = ((m-i)*x_a + (i-1)*x_b)/(m-1)
-     print *, xx, in%f(xx), in%df_dx(xx, 0), in%df_dx(xx), in%df_dx(xx, 2), in%df_dx(xx, 3)
+     print *, xx, in%f(xx), in%df_dx(xx, 0), in%df_dx(xx), in%df_dx(xx, 2), in%df_dx(xx, 3), in%int_f(xx)
   end do
 
   ! Finish

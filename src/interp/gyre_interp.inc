@@ -50,6 +50,7 @@ module gyre_${T}_interp
      real(WP), allocatable  :: x_(:)     ! Abscissa
      $TYPE(WP), allocatable :: f_(:)     ! Ordinate
      $TYPE(WP), allocatable :: df_dx_(:) ! First derivatives
+     $TYPE(WP), allocatable :: int_f_(:) ! First integrals
      integer                :: n         ! Number of points
    contains
      private
@@ -65,8 +66,10 @@ module gyre_${T}_interp
      procedure         :: df_dx_v_
      procedure         :: df_dx_n_
      generic, public   :: df_dx => df_dx_1_, df_dx_v_, df_dx_n_
+     procedure         :: int_f_1_
+     procedure         :: int_f_v_
      procedure         :: int_f_n_
-     generic, public   :: int_f => int_f_n_
+     generic, public   :: int_f => int_f_1_, int_f_v_, int_f_n_
   end type ${T}_interp_t
 
   ! Interfaces
@@ -127,6 +130,10 @@ contains
     $TYPE(WP), intent(in) :: f(:)
     $TYPE(WP), intent(in) :: df_dx(:)
     type(${T}_interp_t)   :: in
+
+    integer  :: n
+    integer  :: i
+    real(WP) :: h
     
     $CHECK_BOUNDS(SIZE(f),SIZE(x))
     $CHECK_BOUNDS(SIZE(df_dx),SIZE(x))
@@ -135,12 +142,31 @@ contains
 
     ! Construct the interp_t
 
+    ! Store values
+
     in%x_ = x
     in%f_ = f
 
     in%df_dx_ = df_dx
 
     in%n = SIZE(x)
+
+    ! Evaluate the integral
+
+    allocate(in%int_f_(in%n))
+
+    in%int_f_(1) = 0._WP
+
+    x_loop : do i = 1, in%n-1
+
+       h = x(i+1) - x(i)
+
+       in%int_f_(i+1) = in%int_f_(i) - f(i  )*(dphi_dt_(0._WP, -1) - dphi_dt_(1._WP, -1))*h +    &
+                                       f(i+1)*(dphi_dt_(1._WP, -1) - dphi_dt_(0._WP, -1))*h +    &
+                                   df_dx(i  )*(dpsi_dt_(0._WP, -1) - dpsi_dt_(1._WP, -1))*h**2 + &
+                                   df_dx(i+1)*(dpsi_dt_(1._WP, -1) - dpsi_dt_(0._WP, -1))*h**2
+
+    end do x_loop
 
     ! Finish
 
@@ -360,12 +386,12 @@ contains
 
   !****
 
-  function df_dx_1_ (this, x, n) result (df)
+  function df_dx_1_ (this, x, n) result (df_dx)
 
     class(${T}_interp_t), intent(in) :: this
     real(WP), intent(in)             :: x
     integer, optional, intent(in)    :: n
-    $TYPE(WP)                        :: df
+    $TYPE(WP)                        :: df_dx
 
     integer  :: n_
     integer  :: i
@@ -395,10 +421,10 @@ contains
 
     ! Do the interpolation
 
-    df = (-1._WP)**n_ *     this%f_(i  )*dphi_dt_(1._WP-w, n_)/h**n_ +     &
-                            this%f_(i+1)*dphi_dt_(      w, n_)/h**n_ -     &
-         (-1._WP)**n_ * this%df_dx_(i  )*dpsi_dt_(1._WP-w, n_)/h**(n_-1) + &
-                        this%df_dx_(i+1)*dpsi_dt_(      w, n_)/h**(n_-1)
+    df_dx = (-1._WP)**n_ *     this%f_(i  )*dphi_dt_(1._WP-w, n_)/h**n_ +     &
+                               this%f_(i+1)*dphi_dt_(      w, n_)/h**n_ -     &
+            (-1._WP)**n_ * this%df_dx_(i  )*dpsi_dt_(1._WP-w, n_)/h**(n_-1) + &
+                           this%df_dx_(i+1)*dpsi_dt_(      w, n_)/h**(n_-1)
 
     ! Finish
 
@@ -408,12 +434,12 @@ contains
 
   !****
 
-  function df_dx_v_ (this, x, n) result (df)
+  function df_dx_v_ (this, x, n) result (df_dx)
 
     class(${T}_interp_t), intent(in) :: this
     real(WP), intent(in)             :: x(:)
     integer, optional, intent(in)    :: n
-    $TYPE(WP)                        :: df(SIZE(x))
+    $TYPE(WP)                        :: df_dx(SIZE(x))
 
     integer  :: n_
     integer  :: i
@@ -446,10 +472,10 @@ contains
 
        ! Do the interpolation
 
-       df(j) = (-1._WP)**n_ *     this%f_(i  )*dphi_dt_(1._WP-w, n_)/h**n_ +     &
-                                  this%f_(i+1)*dphi_dt_(w      , n_)/h**n_ -     &
-               (-1._WP)**n_ * this%df_dx_(i  )*dpsi_dt_(1._WP-w, n_)/h**(n_-1) + &
-                              this%df_dx_(i+1)*dpsi_dt_(w      , n_)/h**(n_-1)
+       df_dx(j) = (-1._WP)**n_ *     this%f_(i  )*dphi_dt_(1._WP-w, n_)/h**n_ +     &
+                                     this%f_(i+1)*dphi_dt_(w      , n_)/h**n_ -     &
+                  (-1._WP)**n_ * this%df_dx_(i  )*dpsi_dt_(1._WP-w, n_)/h**(n_-1) + &
+                                 this%df_dx_(i+1)*dpsi_dt_(w      , n_)/h**(n_-1)
 
     end do x_loop
 
@@ -461,11 +487,11 @@ contains
 
   !****
 
-  function df_dx_n_ (this, n) result (df)
+  function df_dx_n_ (this, n) result (df_dx)
 
     class(${T}_interp_t), intent(in) :: this
     integer, optional, intent(in)    :: n
-    $TYPE(WP)                        :: df(this%n)
+    $TYPE(WP)                        :: df_dx(this%n)
 
     integer :: n_
 
@@ -480,11 +506,11 @@ contains
 
     select case (n_)
     case (0)
-       df = this%f_
+       df_dx = this%f_
     case (1)
-       df = this%df_dx_
+       df_dx = this%df_dx_
     case default
-       df = this%df_dx(this%x_, n_)
+       df_dx = this%df_dx(this%x_, n_)
     end select
        
     ! Finish
@@ -495,25 +521,127 @@ contains
 
   !****
 
-  function dphi_dt_ (t, n) result (dphi)
+  function int_f_1_ (this, x) result (int_f)
+
+    class(${T}_interp_t), intent(in) :: this
+    real(WP), intent(in)             :: x
+    $TYPE(WP)                        :: int_f
+
+    integer  :: i
+    real(WP) :: h
+    real(WP) :: w
+    
+    ! Interpolate the integral of f at a single point
+
+    ! Set up the bracketing index
+
+    i = 1
+
+    call locate(this%x_, x, i)
+    $ASSERT(i > 0 .AND. i < this%n,Out-of-bounds interpolation)
+
+    ! Set up the interpolation weights
+
+    h = this%x_(i+1) - this%x_(i)
+    w = (x - this%x_(i))/h
+
+    ! Do the interpolation
+
+    int_f = this%int_f_(i) - this%f_(i  )*(dphi_dt_(1._WP-w, -1) - dphi_dt_(1._WP, -1))*h +    &
+                             this%f_(i+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._WP, -1))*h +    &
+                         this%df_dx_(i  )*(dpsi_dt_(1._WP-w, -1) - dpsi_dt_(1._WP, -1))*h**2 + &
+                         this%df_dx_(i+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._WP, -1))*h**2
+
+    ! Finish
+
+    return
+
+  end function int_f_1_
+    
+  !****
+
+  function int_f_v_ (this, x) result (int_f)
+
+    class(${T}_interp_t), intent(in) :: this
+    real(WP), intent(in)             :: x(:)
+    $TYPE(WP)                        :: int_f(SIZE(x))
+
+    integer  :: i
+    integer  :: j
+    real(WP) :: h
+    real(WP) :: w
+    
+    ! Interpolate the integral of f at a vector of points
+
+    i = 1
+
+    x_loop : do j = 1,SIZE(x)
+
+       ! Update the bracketing index
+
+       call locate(this%x_, x(j), i)
+       $ASSERT(i > 0 .AND. i < this%n,Out-of-bounds interpolation)
+
+       ! Set up the interpolation weights
+
+       h = this%x_(i+1) - this%x_(i)
+       w = (x(j) - this%x_(i))/h
+
+       ! Do the interpolation
+
+       int_f(j) = this%int_f_(i) - this%f_(i  )*(dphi_dt_(1._WP-w, -1) - dphi_dt_(1._WP, -1))*h +    &
+                                   this%f_(i+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._WP, -1))*h +    &
+                               this%df_dx_(i  )*(dpsi_dt_(1._WP-w, -1) - dpsi_dt_(1._WP, -1))*h**2 + &
+                               this%df_dx_(i+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._WP, -1))*h**2
+
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  end function int_f_v_
+
+  !****
+
+  function int_f_n_ (this) result (int_f)
+
+    class(${T}_interp_t), intent(in) :: this
+    $TYPE(WP)                        :: int_f(this%n)
+
+    ! Interpolate the integral of f at abscissa points
+
+    int_f = this%df_dx_
+       
+    ! Finish
+
+    return
+
+  end function int_f_n_
+
+  !****
+
+  function dphi_dt_ (t, n) result (dphi_dt)
 
     real(WP), intent(in) :: t
     integer, intent(in)  :: n
-    real(WP)             :: dphi
+    real(WP)             :: dphi_dt
 
     ! Evaluate the n'th derivative of the phi basis function
 
     select case (n)
+    case (-1)
+       dphi_dt = t**3 - t**4/2._WP
     case (0)
-       dphi = 3._WP*t**2 - 2._WP*t**3
+       dphi_dt = 3._WP*t**2 - 2._WP*t**3
     case (1)
-       dphi = 6._WP*t - 6._WP*t**2
+       dphi_dt = 6._WP*t - 6._WP*t**2
     case (2)
-       dphi = 6._WP - 12._WP*t
+       dphi_dt = 6._WP - 12._WP*t
     case (3)
-       dphi = -12._WP
+       dphi_dt = -12._WP
     case (4:)
-       dphi = 0._WP
+       dphi_dt = 0._WP
     case default
        $ABORT(Invalid n)
     end select
@@ -526,25 +654,27 @@ contains
 
   !****
 
-  function dpsi_dt_ (t, n) result (dpsi)
+  function dpsi_dt_ (t, n) result (dpsi_dt)
 
     real(WP), intent(in) :: t
     integer, intent(in)  :: n
-    real(WP)             :: dpsi
+    real(WP)             :: dpsi_dt
 
     ! Evaluate the n'th derivative of the psi basis function
 
     select case (n)
+    case (-1)
+       dpsi_dt = t**4/4._WP - t**3/3._WP
     case (0)
-       dpsi = t**3 - t**2
+       dpsi_dt = t**3 - t**2
     case (1)
-       dpsi = 3._WP*t**2 - 2._WP*t
+       dpsi_dt = 3._WP*t**2 - 2._WP*t
     case (2)
-       dpsi = 6._WP*t - 2._WP
+       dpsi_dt = 6._WP*t - 2._WP
     case (3)
-       dpsi = 6._WP
+       dpsi_dt = 6._WP
     case (4:)
-       dpsi = 0._WP
+       dpsi_dt = 0._WP
     case default
        $ABORT(Invalid n)
     end select
@@ -554,35 +684,6 @@ contains
     return
 
   end function dpsi_dt_
-
-  !****
-
-  function int_f_n_ (this) result (int_f)
-
-    class(${T}_interp_t), intent(in) :: this
-    $TYPE(WP)                        :: int_f(this%n)
-
-    integer  :: i
-    real(WP) :: h
-
-    ! Integrate f across the full domain
-
-    int_f(1) = 0._WP
-
-    x_loop : do i = 1,this%n-1
-       
-       h = this%x_(i+1) - this%x_(i)
-
-       int_f(i+1) = int_f(i) + (this%f_(i) + this%f_(i+1))*h/2._WP - &
-                               (this%df_dx_(i+1) - this%df_dx_(i))*h**2/12._WP
-
-    end do x_loop
-
-    ! Finish
-
-    return
-
-  end function int_f_n_
 
 end module gyre_${T}_interp
 
