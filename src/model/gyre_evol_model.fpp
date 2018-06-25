@@ -319,7 +319,7 @@ contains
     real(WP)                        :: U
 
     real(WP) :: c_1
-    real(WP) :: dc_1
+    real(WP) :: dc_1_dx
 
     ! Evaluate the U coefficient using the self-consistency
     ! relation given in eqn. 20 of [Tak2006]
@@ -329,9 +329,9 @@ contains
        associate (s => pt%s, x => pt%x)
 
          c_1 = this%in(I_C_1,s)%f(x)
-         dc_1 = this%in(I_C_1,s)%df(1, x)
+         dc_1_dx = this%in(I_C_1,s)%df_dx(x)
          
-         U = 3._WP - x*dc_1/c_1
+         U = 3._WP - x*dc_1_dx/c_1
 
        end associate
       
@@ -357,8 +357,8 @@ contains
 
     real(WP) :: V_g
     real(WP) :: c_1
-    real(WP) :: dc_1
-    real(WP) :: d2c_1
+    real(WP) :: dc_1_dx
+    real(WP) :: d2c_1_dx2
     real(WP) :: U
 
     ! Evaluate the As coefficient using the self-consistency relation
@@ -371,12 +371,12 @@ contains
          V_g = this%in(I_V_2,s)%f(x)*x**2/this%in(I_GAMMA_1,s)%f(x)
 
          c_1 = this%in(I_C_1,s)%f(x)
-         dc_1 = this%in(I_C_1,s)%df(1, x)
-         d2c_1 = this%in(I_C_1,s)%df(2, x)
+         dc_1_dx = this%in(I_C_1,s)%df_dx(x)
+         d2c_1_dx2 = this%in(I_C_1,s)%df_dx(x, 2)
 
-         U = 3._WP - x*dc_1/c_1
+         U = 3._WP - x*dc_1_dx/c_1
 
-         As = 3._WP - V_g - U + x*(dc_1/c_1 - x*dc_1**2/c_1**2 + x*d2c_1/c_1)/U
+         As = 3._WP - V_g - U + x*(dc_1_dx/c_1 - x*dc_1_dx**2/c_1**2 + x*d2c_1_dx2/c_1)/U
 
        end associate
 
@@ -433,7 +433,7 @@ contains
       if (x == 0._WP) then
          dcoeff = 0._WP
       else
-         dcoeff = x*this%in(i,s)%df(1, x)/this%in(i,s)%f(x)
+         dcoeff = x*this%in(i,s)%df_dx(x)/this%in(i,s)%f(x)
       end if
     end associate
 
