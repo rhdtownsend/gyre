@@ -1,7 +1,7 @@
-! Module   : gyre_calc
-! Purpose  : calculus-related functions (template)
+! Module   : gyre_deriv
+! Purpose  : derivative evaluation functions (template)
 !
-! Copyright 2017 Rich Townsend
+! Copyright 2017-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,7 +23,7 @@ $define $MOD_DECL $sub
 $local $T $1
 $local $TYPE $2
 
-module gyre_${T}_calc
+module gyre_${T}_deriv
 
   ! Uses
 
@@ -266,7 +266,7 @@ contains
 
   $endif
 
-end module gyre_${T}_calc
+end module gyre_${T}_deriv
 
 $endsub
 

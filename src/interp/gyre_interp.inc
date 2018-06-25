@@ -35,7 +35,7 @@ module gyre_${T}_interp
   use core_parallel
   use core_order
 
-  use gyre_calc
+  use gyre_deriv
 
   use ISO_FORTRAN_ENV
 

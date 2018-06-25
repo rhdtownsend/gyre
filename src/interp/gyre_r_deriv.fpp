@@ -1,7 +1,7 @@
 ! Module   : gyre_r_deriv
-! Purpose  : calculus-related functions (real)
+! Purpose  : derivative evaluation functions (real)
 !
-! Copyright 2017 Rich Townsend
+! Copyright 2017-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,6 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'gyre_calc.inc'
+$include 'gyre_deriv.inc'
 
 $MOD_DECL(r,real)

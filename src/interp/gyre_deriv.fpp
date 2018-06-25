@@ -1,7 +1,7 @@
-! Module   : gyre_c_deriv
-! Purpose  : calculus-related functions (complex)
+! Module   : gyre_deriv
+! Purpose  : derivative evaluation functions
 !
-! Copyright 2017 Rich Townsend
+! Copyright 2017-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,6 +15,11 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'gyre_calc.inc'
+module gyre_deriv
 
-$MOD_DECL(c,complex)
+  ! Uses
+
+  use gyre_r_deriv
+  use gyre_c_deriv
+
+end module gyre_deriv

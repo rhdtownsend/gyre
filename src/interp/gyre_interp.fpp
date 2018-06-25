@@ -1,7 +1,7 @@
-! Module   : gyre_spline
+! Module   : gyre_interp
 ! Purpose  : piecewise cubic interpolators
 !
-! Copyright 2015-2016 Rich Townsend
+! Copyright 2015-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
