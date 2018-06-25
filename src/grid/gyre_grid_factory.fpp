@@ -324,6 +324,12 @@ contains
 
                dn(k) = CEILING((pt_b%x - pt_a%x)/dx) - 1
 
+               ! If this is the first iteration, apply the floor on dn
+
+               if (i_iter == 1) then
+                  dn(k) = MAX(dn(k), gr_p%n_floor)
+               end if
+
             else
 
                dn(k) = 0

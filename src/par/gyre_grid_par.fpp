@@ -38,6 +38,7 @@ module gyre_grid_par
      real(WP)        :: alpha_str = 0._WP
      real(WP)        :: dx_min = SQRT(EPSILON(0._WP))
      integer         :: n_inner = 0
+     integer         :: n_floor = 0
      integer         :: n_iter_max = 8
      character(2048) :: tag_list = ''
   end type grid_par_t
@@ -68,11 +69,12 @@ contains
     real(WP)                      :: alpha_str
     real(WP)                      :: dx_min
     integer                       :: n_inner
+    integer                       :: n_floor
     integer                       :: n_iter_max
     character(LEN(gr_p%tag_list)) :: tag_list
 
     namelist /grid/ x_i, x_o, alpha_osc, alpha_exp, alpha_thm, alpha_str, &
-                    dx_min, n_inner, n_iter_max, tag_list
+                    dx_min, n_inner, n_floor, n_iter_max, tag_list
 
     ! Count the number of grid namelists
 
@@ -107,6 +109,7 @@ contains
        alpha_str = gr_p(i)%alpha_str
        dx_min = gr_p(i)%dx_min
        n_inner = gr_p(i)%n_inner
+       n_floor = gr_p(i)%n_floor
        n_iter_max = gr_p(i)%n_iter_max
        tag_list = gr_p(i)%tag_list
 
@@ -124,6 +127,7 @@ contains
        gr_p(i)%alpha_str = alpha_str
        gr_p(i)%dx_min = dx_min
        gr_p(i)%n_inner = n_inner
+       gr_p(i)%n_floor = n_floor
        gr_p(i)%n_iter_max = n_iter_max
        gr_p(i)%tag_list = tag_list
 
