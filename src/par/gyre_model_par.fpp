@@ -49,6 +49,7 @@ module gyre_model_par
      integer                 :: n = 10
      logical                 :: add_center = .TRUE.
      logical                 :: repair_As = .FALSE.
+     logical                 :: force_cons = .FALSE.
      logical                 :: uniform_rot = .FALSE.
   end type model_par_t
    
@@ -85,11 +86,13 @@ contains
     integer                          :: n
     logical                          :: add_center
     logical                          :: repair_As
+    logical                          :: force_cons
     logical                          :: uniform_rot
 
     namelist /model/ Gamma_1, Omega_rot, dx_snap, x_i, x_o, s, &
                      model_type, grid_type, file_format, data_format, deriv_type, &
-                     Omega_units, file, n, add_center, repair_As, uniform_rot
+                     Omega_units, file, n, add_center, repair_As, force_cons, &
+                     uniform_rot
     
     ! Count the number of model namelists
 
@@ -130,6 +133,7 @@ contains
     n = ml_p%n
     add_center = ml_p%add_center
     repair_As = ml_p%repair_As
+    force_cons = ml_p%force_cons
     uniform_rot = ml_p%uniform_rot
 
     ! Read the namelist
@@ -154,6 +158,7 @@ contains
     ml_p%n = n
     ml_p%add_center = add_center
     ml_p%repair_As = repair_As
+    ml_p%force_cons = force_cons
     ml_p%uniform_rot = uniform_rot
 
     ! Finish

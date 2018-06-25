@@ -49,12 +49,16 @@ module gyre_evol_model
      real(WP), public              :: L_star
      logical                       :: add_center
      logical                       :: repair_As
+     logical                       :: force_cons
      integer                       :: s_i
      integer                       :: s_o
      character(:), allocatable     :: deriv_type
    contains
      private
      procedure, public :: define
+     procedure         :: coeff_U_
+     procedure         :: coeff_As_
+     procedure         :: coeff_in_
      procedure, public :: coeff
      procedure, public :: dcoeff
      procedure, public :: M_r
@@ -145,6 +149,7 @@ contains
     ml%L_star = L_star
 
     ml%repair_As = ml_p%repair_As
+    ml%force_cons = ml_p%force_cons
     ml%deriv_type = ml_p%deriv_type
 
     ! Finish
@@ -290,6 +295,114 @@ contains
 
     ! Evaluate the i'th coefficient
 
+    select case (i)
+    case (I_U)
+       coeff = this%coeff_U_(pt)
+    case (I_AS)
+       coeff = this%coeff_As_(pt)
+    case default
+       coeff = this%coeff_in_(i, pt)
+    end select
+
+    ! Finish
+
+    return
+
+  end function coeff
+
+  !****
+
+  function coeff_U_ (this, pt) result (U)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: U
+
+    real(WP) :: c_1
+    real(WP) :: dc_1
+
+    ! Evaluate the U coefficient using the self-consistency
+    ! relation given in eqn. 20 of [Tak2006]
+
+    if (this%force_cons) then
+
+       associate (s => pt%s, x => pt%x)
+
+         c_1 = this%in(I_C_1,s)%f(x)
+         dc_1 = this%in(I_C_1,s)%df(1, x)
+         
+         U = 3._WP - x*dc_1/c_1
+
+       end associate
+      
+    else
+
+       U = this%coeff_in_(I_U, pt)
+
+    end if
+
+    ! Finish
+
+    return
+
+  end function coeff_U_
+
+  !****
+
+  function coeff_As_ (this, pt) result (As)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: As
+
+    real(WP) :: V_g
+    real(WP) :: c_1
+    real(WP) :: dc_1
+    real(WP) :: d2c_1
+    real(WP) :: U
+
+    ! Evaluate the As coefficient using the self-consistency relation
+    ! given in eqns. 20 & 21 of [Tak2006]
+
+    if (this%force_cons) then
+
+       associate (s => pt%s, x => pt%x)
+
+         V_g = this%in(I_V_2,s)%f(x)*x**2/this%in(I_GAMMA_1,s)%f(x)
+
+         c_1 = this%in(I_C_1,s)%f(x)
+         dc_1 = this%in(I_C_1,s)%df(1, x)
+         d2c_1 = this%in(I_C_1,s)%df(2, x)
+
+         U = 3._WP - x*dc_1/c_1
+
+         As = 3._WP - V_g - U + x*(dc_1/c_1 - x*dc_1**2/c_1**2 + x*d2c_1/c_1)/U
+
+       end associate
+
+    else
+
+       As = this%coeff_in_(I_AS, pt)
+
+    end if
+
+    ! Finish
+
+    return
+
+  end function coeff_As_
+
+  !****
+
+  function coeff_in_ (this, i, pt) result (coeff)
+
+    class(evol_model_t), intent(in) :: this
+    integer, intent(in)             :: i
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: coeff
+
+    ! Evaluate the i'th coefficient via interpolation
+
     associate (s => pt%s, x => pt%x)
       coeff = this%in(i,s)%f(x)
     end associate
@@ -298,7 +411,7 @@ contains
 
     return
 
-  end function coeff
+  end function coeff_in_
 
   !****
 
