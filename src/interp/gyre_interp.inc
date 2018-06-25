@@ -131,7 +131,6 @@ contains
     $TYPE(WP), intent(in) :: df_dx(:)
     type(${T}_interp_t)   :: in
 
-    integer  :: n
     integer  :: i
     real(WP) :: h
     
@@ -611,7 +610,7 @@ contains
 
     ! Interpolate the integral of f at abscissa points
 
-    int_f = this%df_dx_
+    int_f = this%int_f_
        
     ! Finish
 
