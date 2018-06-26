@@ -127,6 +127,10 @@ contains
 
     call add_global_(gs, gr_p, gr)
 
+    ! Add points to bring up to the floor
+
+    call add_floor_(gs, gr_p, gr)
+
     ! Report 
 
     if (check_log_level('INFO')) then
@@ -324,12 +328,6 @@ contains
 
                dn(k) = CEILING((pt_b%x - pt_a%x)/dx) - 1
 
-               ! If this is the first iteration, apply the floor on dn
-
-               if (i_iter == 1) then
-                  dn(k) = MAX(dn(k), gr_p%n_floor)
-               end if
-
             else
 
                dn(k) = 0
@@ -360,6 +358,55 @@ contains
     return
 
   end subroutine add_global_
+
+  !****
+
+  subroutine add_floor_ (gs, gr_p, gr)
+
+    type(grid_spec_t), intent(in) :: gs(:)
+    type(grid_par_t), intent(in)  :: gr_p
+    type(grid_t), intent(inout)   :: gr
+
+    integer       :: n_add
+    real(WP)      :: c
+    real(WP)      :: dc_dk
+    integer       :: dn(gr%n_k-1)
+    integer       :: k
+
+    ! Add points quasi-uniformly to bring the total up to the floor
+    ! specified by n_floor
+
+    if (gr%n_k < gr_p%n_floor) then
+
+       n_add = gr_p%n_floor - gr%n_k
+
+       c = 0._WP
+       dc_dk = REAL(n_add)/(gr%n_k - 1)
+
+       cell_loop : do k = 1, gr%n_k-1
+
+          c = c + dc_dk
+
+          dn(k) = FLOOR(c)
+          c = c - dn(k)
+
+       end do cell_loop
+
+       if (SUM(dn) < n_add) then
+          dn(gr%n_k-1) = dn(gr%n_k-1) + n_add - SUM(dn)
+       endif
+
+       ! Add the points
+
+       gr = grid_t(gr, dn)
+
+    end if
+
+    ! Finish
+
+    return
+
+  end subroutine add_floor_
 
   !****
 
