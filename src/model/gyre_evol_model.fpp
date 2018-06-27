@@ -169,6 +169,8 @@ contains
     real(WP), allocatable :: coeff_(:)
     real(WP)              :: coeff_0
     integer               :: s
+    integer               :: k_i
+    integer               :: k_o
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
 
@@ -215,17 +217,18 @@ contains
        if (this%repair_As) call repair_coeff_(this%gr, coeff_)
     end select
 
-    ! Set up per-segment interpolating splines
+    ! Set up per-segment interpolants
           
     seg_loop : do s = this%s_i, this%s_o
 
-       associate (k_i => this%gr%k_s_i(s), k_o => this%gr%k_s_o(s))
-         if (this%gr%pt(k_i)%x == 0._WP) then
-            this%in(i, s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type, df_dx_a=0._WP)
-         else
-            this%in(i, s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type)
-         endif
-       end associate
+       k_i = this%gr%k_s_i(s)
+       k_o = this%gr%k_s_o(s)
+
+       if (this%gr%pt(k_i)%x == 0._WP) then
+          this%in(i,s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type, df_dx_a=0._WP)
+       else
+          this%in(i,s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type)
+       endif
 
     end do seg_loop
 
