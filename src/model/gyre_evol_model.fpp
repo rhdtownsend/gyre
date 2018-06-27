@@ -104,7 +104,7 @@ contains
     if (ml_p%add_center) then
 
        if (x(1) /= 0._WP) then
-
+          
           ml%gr = grid_t([0._WP,x])
           ml%add_center = .TRUE.
 
@@ -220,6 +220,8 @@ contains
     ! Set up per-segment interpolants
           
     seg_loop : do s = this%s_i, this%s_o
+
+       ! Set up the interpolant
 
        k_i = this%gr%k_s_i(s)
        k_o = this%gr%k_s_o(s)
