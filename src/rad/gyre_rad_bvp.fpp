@@ -236,6 +236,9 @@ contains
     real(WP)                :: c_1(bp%n_k)
     real(WP)                :: y_4(bp%n_k)
     real(WP)                :: deul_phi(bp%n_k)
+    integer                 :: s
+    integer                 :: k_i
+    integer                 :: k_o
     type(r_interp_t)        :: in
     real(WP)                :: eul_phi(bp%n_k)
     real(WP)                :: y_3(bp%n_k)
@@ -272,14 +275,27 @@ contains
 
     end do
 
-    ! Use an interpolant to integrate the Eulerian potential
-    ! perturbation, and use it to set up y_3. Note the application to
-    ! eul_phi of the surface boundary condition!
+    ! Evaluate the Eulerian potential perturbation,
+    ! segment-by-segment, by integrating an interpolant fit to the
+    ! gravity perturbation
 
-    in = r_interp_t(bp%gr%pt%x, deul_phi, 'MONO')
+    seg_loop : do s = bp%gr%s_i(), bp%gr%s_o()
 
-    eul_phi = in%int_f()
+       k_i = bp%gr%k_s_i(s)
+       k_o = bp%gr%k_s_o(s)
+
+       in = r_interp_t(bp%gr%pt(k_i:k_o)%x, deul_phi(k_i:k_o), 'MONO')
+       
+       eul_phi(k_i:k_o) = in%int_f()
+
+    end do seg_loop
+
+    ! Adjust the potential perturbation so that it satisfies the
+    ! surface boundary condition
+    
     eul_phi = eul_phi - eul_phi(bp%n_k) - y_4(bp%n_k)
+
+    ! Set up y_3 based on it
 
     y_3 = c_1*eul_phi
 
