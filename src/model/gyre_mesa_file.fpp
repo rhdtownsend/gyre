@@ -295,6 +295,8 @@ contains
 
     call em%define(I_OMEGA_ROT, Omega_rot)
 
+    call em%commit()
+
     ! Finish
 
     return

@@ -53,9 +53,11 @@ module gyre_evol_model
      integer                       :: s_i
      integer                       :: s_o
      character(:), allocatable     :: deriv_type
+     logical                       :: committed
    contains
      private
      procedure, public :: define
+     procedure, public :: commit
      procedure         :: coeff_U_
      procedure         :: coeff_As_
      procedure         :: coeff_in_
@@ -152,6 +154,8 @@ contains
     ml%force_cons = ml_p%force_cons
     ml%deriv_type = ml_p%deriv_type
 
+    ml%committed = .FALSE.
+
     ! Finish
 
     return
@@ -171,6 +175,8 @@ contains
     integer               :: s
     integer               :: k_i
     integer               :: k_o
+
+    $ASSERT_DEBUG(.NOT. this%committed,Cannot define coefficient after committing model)
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
 
@@ -286,12 +292,70 @@ contains
 
   !****
 
+  subroutine commit (this)
+
+    class(evol_model_t), intent(inout) :: this
+
+    integer  :: s
+    integer  :: k_i
+    integer  :: k_o
+    real(WP) :: x(this%gr%n_k)
+    real(WP) :: c_1(this%gr%n_k)
+    real(WP) :: U(this%gr%n_k)
+    real(WP) :: dc_1_dx(this%gr%n_k)
+
+    ! Commit the model
+
+    ! If necessary (and possible), re-create the c_1 interpolant with derivatives set by U
+
+    if (this%force_cons) then
+
+       if (this%is_defined(I_C_1) .AND. this%is_defined(I_U)) then
+
+          seg_loop : do s = this%s_i, this%s_o
+
+             k_i = this%gr%k_s_i(s)
+             k_o = this%gr%k_s_o(s)
+
+             x(k_i:k_o) = this%gr%pt(k_i:k_o)%x
+
+             c_1(k_i:k_o) = this%in(I_C_1,s)%f()
+             U(k_i:k_o) = this%in(I_U,s)%f()
+
+             where (x(k_i:k_o) /= 0._WP)
+                dc_1_dx(k_i:k_o) = c_1(k_i:k_o)*(3._WP - U(k_i:k_o))/x(k_i:k_o)
+             elsewhere
+                dc_1_dx(k_i:k_o) = 0._WP
+             end where
+
+             this%in(I_C_1,s) = r_interp_t(x(k_i:k_o), c_1(k_i:k_o), dc_1_dx(k_i:k_o))
+
+          end do seg_loop
+
+       end if
+
+    end if
+
+    ! Update the committed flag
+
+    this%committed = .TRUE.
+
+    ! Finish
+
+    return
+
+  end subroutine commit
+
+  !****
+
   function coeff (this, i, pt)
 
     class(evol_model_t), intent(in) :: this
     integer, intent(in)             :: i
     type(point_t), intent(in)       :: pt
     real(WP)                        :: coeff
+
+    $ASSERT_DEBUG(this%committed,Cannot evaluate coefficient before committing model)
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
     $ASSERT_DEBUG(this%is_defined(i),Undefined coefficient)
@@ -426,6 +490,8 @@ contains
     integer, intent(in)             :: i
     type(point_t), intent(in)       :: pt
     real(WP)                        :: dcoeff
+
+    $ASSERT_DEBUG(this%committed,Cannot evaluate coefficient before committing model)
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
     $ASSERT_DEBUG(this%is_defined(i),Undefined coefficient)
