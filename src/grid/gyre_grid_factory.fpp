@@ -633,10 +633,10 @@ contains
     real(WP) :: dc_1
     real(WP) :: dGamma_1
 
-    ! Evaluate the target grid spacing dx at sample points pt to
-    ! ensure adequate model structure resolution. For a single
-    ! structure coefficient C, dx = x/(alpha_str*dlnC/dlnx); we take
-    ! the minimum dx over a number of C
+    ! Evaluate the target grid spacing dx at point pt to ensure
+    ! adequate model structure resolution. For a single structure
+    ! coefficient C, dx = x/(alpha_str*dlnC/dlnx); we take the minimum
+    ! dx over a number of C
 
     dx = HUGE(0._WP)
 
