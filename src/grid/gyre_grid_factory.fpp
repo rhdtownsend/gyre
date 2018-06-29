@@ -378,17 +378,25 @@ contains
 
     if (gr%n_k < gr_p%n_floor) then
 
-       n_add = gr_p%n_floor - gr%n_k
+       n_add = gr_p%n_floor - gr%n_k - (gr%s_i() - gr%s_i())
 
        c = 0._WP
        dc_dk = REAL(n_add)/(gr%n_k - 1)
 
        cell_loop : do k = 1, gr%n_k-1
 
-          c = c + dc_dk
+         if (gr%pt(k)%s == gr%pt(k+1)%s) then
 
-          dn(k) = FLOOR(c)
-          c = c - dn(k)
+            c = c + dc_dk
+
+            dn(k) = FLOOR(c)
+            c = c - dn(k)
+
+         else
+
+            dn(k) = 0
+
+         end if
 
        end do cell_loop
 
