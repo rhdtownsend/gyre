@@ -25,6 +25,7 @@ module gyre_tide
 
   use gyre_constants
   use gyre_context
+  use gyre_freq
   use gyre_grid
   use gyre_grid_factory
   use gyre_grid_par
@@ -34,6 +35,7 @@ module gyre_tide
   use gyre_nad_bvp
   use gyre_num_par
   use gyre_osc_par
+  use gyre_point
   use gyre_state
   use gyre_tide_par
   use gyre_tide_util
@@ -77,11 +79,15 @@ contains
     type(grid_par_t), intent(in)        :: gr_p
     type(tide_par_t), intent(in)        :: td_p
 
+    type(grid_t)                   :: ml_gr
+    type(point_t)                  :: pt_i
+    type(point_t)                  :: pt_o
+    type(mode_par_t)               :: md_p_rad
     real(WP)                       :: Omega_orb
+    real(WP)                       :: R_a
     real(WP)                       :: eps_tide
     integer                        :: k_max
     real(WP), allocatable          :: omega(:)
-    type(grid_t)                   :: ml_gr
     integer                        :: l_max
     type(mode_par_t), allocatable  :: md_p(:,:)
     type(context_t), pointer       :: cx(:,:) => null()
@@ -107,11 +113,25 @@ contains
     c_solve = 0
     c_proc = 0
 
-    ! Calculate the orbital frequency and tidal strength
+    ! Extract the model grid (used for frequency conversions and
+    ! checking co-rotating frequencies)
 
-    Omega_orb = SQRT((1._WP + td_p%q)*td_p%R_a**3)
+    ml_gr = ml%grid()
 
-    eps_tide = (td_p%R_a)**3*td_p%q
+    pt_i = ml_gr%pt_i()
+    pt_o = ml_gr%pt_o()
+
+    ! Calculate the orbital frequency
+
+    md_p_rad = mode_par_t()
+
+    Omega_orb = omega_from_freq(td_p%freq_orb, ml, pt_i, pt_o, td_p%freq_orb_units, 'INERTIAL', md_p_rad, os_p)
+
+    ! Calculate the orbital separation and tidal strength
+
+    R_a = (Omega_orb**2/(1._WP + td_p%q))**(1._WP/3._WP)
+
+    eps_tide = (R_a)**3*td_p%q
 
     ! Set up the inertial-frame forcing frequencies array
 
@@ -122,10 +142,6 @@ contains
     do k = 0, k_max
        omega(k) = k*Omega_orb
     end do
-
-    ! Extract the model grid (used for checking co-rotating frequencies)
-
-    ml_gr = ml%grid()
 
     ! Set up contexts and tide types
 
@@ -201,7 +217,7 @@ contains
 
                 call system_clock(c_beg)
 
-                Upsilon = Upsilon_lmk(td_p, l, m, k)
+                Upsilon = Upsilon_lmk(R_a, td_p%e, l, m, k)
 
                 call system_clock(c_end)
 

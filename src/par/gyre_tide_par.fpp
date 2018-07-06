@@ -32,12 +32,13 @@ module gyre_tide_par
   ! Derived-type definitions
 
   type :: tide_par_t
-     real(WP) :: R_a = 0.1_WP
-     real(WP) :: q = 1._WP
-     real(WP) :: e = 0.5_WP
-     real(WP) :: omega_static = 0._WP
-     integer  :: l_max = 4
-     integer  :: k_max = 20
+     real(WP)      :: freq_orb = 2._WP
+     character(64) :: freq_orb_units = 'NONE'
+     real(WP)      :: q = 1._WP
+     real(WP)      :: e = 0.5_WP
+     real(WP)      :: omega_static = 0._WP
+     integer       :: l_max = 4
+     integer       :: k_max = 20
   end type tide_par_t
 
   ! Interfaces
@@ -76,16 +77,17 @@ contains
     integer, intent(in)                        :: unit
     type(tide_par_t), allocatable, intent(out) :: td_p(:)
 
-    integer  :: n_td_p
-    integer  :: i
-    real(WP) :: R_a
-    real(WP) :: q
-    real(WP) :: e
-    real(WP) :: omega_static
-    integer  :: l_max
-    integer  :: k_max
+    integer       :: n_td_p
+    integer       :: i
+    real(WP)      :: freq_orb
+    character(64) :: freq_orb_units
+    real(WP)      :: q
+    real(WP)      :: e
+    real(WP)      :: omega_static
+    integer       :: l_max
+    integer       :: k_max
 
-    namelist /tide/ R_a, q, e, omega_static, l_max, k_max
+    namelist /tide/ freq_orb, freq_orb_units, q, e, omega_static, l_max, k_max
 
     ! Count the number of tide namelists
 
@@ -112,7 +114,8 @@ contains
 
        td_p(i) = tide_par_t()
 
-       R_a = td_p(i)%R_a
+       freq_orb = td_p(i)%freq_orb
+       freq_orb_units = td_p(i)%freq_orb_units
        q = td_p(i)%q
        e = td_p(i)%e
        omega_static = td_p(i)%omega_static
@@ -125,7 +128,8 @@ contains
 
        ! Store read values
 
-       td_p(i)%R_a = R_a
+       td_p(i)%freq_orb = freq_orb
+       td_p(i)%freq_orb_units = freq_orb_units
        td_p(i)%q = q
        td_p(i)%e = e
        td_p(i)%omega_static = omega_static
