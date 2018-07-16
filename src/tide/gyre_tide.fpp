@@ -171,7 +171,9 @@ contains
 
           classify_loop : do k = 0, k_max
              tide_type(l,m,k) = classify_tide_(ml, ml_gr, cx(l,m), omega(k), td_p%omega_static)
-             print *,'tide type:',l,m,k,tide_type(l,m,k)
+             if (check_log_level('DEBUG')) then
+                write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k)
+             endif
           end do classify_loop
 
           ! Create the grid_spec_t
@@ -260,8 +262,8 @@ contains
 
                 ! Ignore static tides
 
-                if (check_log_level('INFO')) then
-                   write(output_unit, 110) 'Info: ignoring static tide for l,m,k=', l, m, k
+                if (check_log_level('DEBUG')) then
+                   write(output_unit, 110) 'Ignoring static tide for l,m,k=', l, m, k
 110                format(A,1X,I0,1X,I0,1X,I0)
                 end if
 
@@ -270,7 +272,7 @@ contains
                 ! Ignore mixed (dynamic/static) tides
 
                 if (check_log_level('WARN')) then
-                   write(OUTPUT_UNIT, 110) 'Warning: ignoring mixed tide for l,m,k=', l, m, k
+                   write(OUTPUT_UNIT, 110) 'Ignoring mixed tide for l,m,k=', l, m, k
                 endif
 
              case default
@@ -285,11 +287,15 @@ contains
 
     end do l_loop
 
-    print *,'Time for ups:', REAL(c_ups)/c_rate
-    print *,'Time for grids:', REAL(c_grid)/c_rate
-    print *,'Time for bpv:', REAL(c_bvp)/c_rate
-    print *,'Time for solve:', REAL(c_solve)/c_rate
-    print *,'Time for proc:', REAL(c_proc)/c_rate
+    ! Report timing
+
+    if (check_log_level('DEBUG')) then
+       write(OUTPUT_UNIT, *) 'Time for ups:', REAL(c_ups)/c_rate
+       write(OUTPUT_UNIT, *) 'Time for grids:', REAL(c_grid)/c_rate
+       write(OUTPUT_UNIT, *) 'Time for bpv:', REAL(c_bvp)/c_rate
+       write(OUTPUT_UNIT, *) 'Time for solve:', REAL(c_solve)/c_rate
+       write(OUTPUT_UNIT, *) 'Time for proc:', REAL(c_proc)/c_rate
+    end if
 
     ! Clean up
 
