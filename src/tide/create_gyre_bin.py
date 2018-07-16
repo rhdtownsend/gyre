@@ -5,7 +5,7 @@ import numpy as np
 
 # Set up orbital periods
 
-P_orbs = np.linspace(2, 5, 100)
+P_orbs = np.linspace(27.5, 32.5, 2500)
 
 with open('gyre_bin.in', 'w') as f:
 
@@ -17,8 +17,10 @@ with open('gyre_bin.in', 'w') as f:
 
 &model
 	model_type = 'EVOL'
-	file = 'spb.mesa'
+	file = 'iori.mesa'
 	file_format = 'MESA'
+        uniform_rot = .TRUE.
+        Omega_rot = 0.
 /
 
 &osc
@@ -46,11 +48,11 @@ with open('gyre_bin.in', 'w') as f:
 &tide
 	freq_orb = {:12.5e}
         freq_orb_units = 'CYC_PER_DAY'
-	q = 0.5
-	e = 0.3
+	q = 0.580
+	e = 0.745
 	omega_static = 0.
-	k_max = 5
-	l_max = 4
+	k_max = 50
+	l_max = 2
 /
 
 '''.format(1./P_orb))
