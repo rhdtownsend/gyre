@@ -218,7 +218,7 @@ contains
 
          else
 
-            $ASSERT(dn(j) == 0,Attempt to add points at cell boundary)
+            $ASSERT(dn(j) == 0,Attempt to add points at segment boundary)
 
             gr%pt(k)%s = pt_a%s
             gr%pt(k)%x = pt_a%x
