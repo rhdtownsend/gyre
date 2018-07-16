@@ -39,7 +39,6 @@ module gyre_tide_util
   public :: Upsilon_lmk
   public :: X_lmk
   public :: beta_lm
-  public :: kappa_lmk
 
   ! Procedures
 

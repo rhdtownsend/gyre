@@ -137,9 +137,9 @@ contains
 
     k_max = td_p%k_max
 
-    allocate(omega(0:k_max))
+    allocate(omega(-k_max:k_max))
 
-    do k = 0, k_max
+    do k = -k_max, k_max
        omega(k) = k*Omega_orb
     end do
 
@@ -149,7 +149,7 @@ contains
 
     allocate(md_p(2:l_max,-l_max:l_max))
     allocate(cx(2:l_max,-l_max:l_max))
-    allocate(tide_type(2:l_max,-l_max:l_max,0:k_max))
+    allocate(tide_type(2:l_max,-l_max:l_max,-k_max:k_max))
     allocate(gs(2:l_max,-l_max:l_max))
 
     tide_type = NO_TIDE
@@ -159,9 +159,7 @@ contains
 
           ! Create the mode_par_t
 
-          md_p(l,m) = mode_par_t(0, l=l, m=m, &
-                                 n_pg_min=-HUGE(0), n_pg_max=HUGE(0), &
-                                 rossby=.FALSE., tag='')
+          md_p(l,m) = mode_par_t(l=l, m=m)
 
           ! Set up the context_t
 
@@ -169,7 +167,7 @@ contains
 
           ! Classify the tide for eack k
 
-          classify_loop : do k = 0, k_max
+          classify_loop : do k = -k_max, k_max
              tide_type(l,m,k) = classify_tide_(ml, ml_gr, cx(l,m), omega(k), td_p%omega_static)
              if (check_log_level('DEBUG')) then
                 write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k)
@@ -209,7 +207,7 @@ contains
           
           c_bvp = c_bvp + (c_end - c_beg)
 
-          k_loop : do k = 0, td_p%k_max
+          k_loop : do k = -k_max, k_max
 
              select case (tide_type(l,m,k))
 

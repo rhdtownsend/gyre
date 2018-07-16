@@ -160,8 +160,6 @@ contains
 
     ! Accumulate the torque
 
-    print *,'Total torque:', wv%l, wv%m, wv%omega, wv%tau_ss()
-
     tau_tot(i) = tau_tot(i) + wv%tau_ss()
 
     ! Finish
