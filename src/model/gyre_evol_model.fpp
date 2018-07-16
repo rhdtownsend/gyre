@@ -60,6 +60,7 @@ module gyre_evol_model
      procedure, public :: commit
      procedure         :: coeff_U_
      procedure         :: coeff_As_
+     procedure         :: coeff_V_2_
      procedure         :: coeff_in_
      procedure, public :: coeff
      procedure, public :: dcoeff
@@ -367,8 +368,10 @@ contains
     select case (i)
     case (I_U)
        coeff = this%coeff_U_(pt)
-    case (I_AS)
-       coeff = this%coeff_As_(pt)
+!    case (I_AS)
+!       coeff = this%coeff_As_(pt)
+    case (I_V_2)
+       coeff = this%coeff_V_2_(pt)
     case default
        coeff = this%coeff_in_(i, pt)
     end select
@@ -460,6 +463,62 @@ contains
     return
 
   end function coeff_As_
+
+  !****
+
+  function coeff_V_2_ (this, pt) result (V_2)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: V_2
+
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: dc_1_dx
+    real(WP) :: d2c_1_dx2
+    real(WP) :: U
+    real(WP) :: V_g
+
+    ! Evaluate the V_2 coefficient using the self-consistency relation
+    ! given in eqns. 20 & 21 of [Tak2006]
+
+    if (this%force_cons) then
+
+       associate (s => pt%s, x => pt%x)
+
+         if (x == 0) then
+
+            V_2 = this%in(I_V_2,s)%f(x)
+
+         else
+
+            As = this%in(I_AS,s)%f(x)
+
+            c_1 = this%in(I_C_1,s)%f(x)
+            dc_1_dx = this%in(I_C_1,s)%df_dx(x)
+            d2c_1_dx2 = this%in(I_C_1,s)%df_dx(x, 2)
+
+            U = 3._WP - x*dc_1_dx/c_1
+
+            V_g = 3._WP - As - U + x*(dc_1_dx/c_1 - x*dc_1_dx**2/c_1**2 + x*d2c_1_dx2/c_1)/U
+
+            V_2 = V_g*this%in(I_GAMMA_1,s)%f(x)/x**2
+
+         end if
+
+       end associate
+
+    else
+
+       V_2 = this%coeff_in_(I_V_2, pt)
+
+    end if
+
+    ! Finish
+
+    return
+
+  end function coeff_V_2_
 
   !****
 
