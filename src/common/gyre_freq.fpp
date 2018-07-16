@@ -435,15 +435,13 @@ contains
 
     select case (os_p%outer_bound)
 
-    case ('ZERO')
+    case ('VACUUM')
 
-       omega_cutoff_lo = 0._WP
-       omega_cutoff_hi = HUGE(0._WP)
+       $ABORT(Cutoff frequencies cannot be evaluated for VACUUM outer boundary condition)
 
     case ('DZIEM')
 
-       omega_cutoff_lo = 0._WP
-       omega_cutoff_hi = HUGE(0._WP)
+       $ABORT(Cutoff frequencies cannot be evaluated for DZIEM outer boundary condition)
 
     case ('UNNO')
 
