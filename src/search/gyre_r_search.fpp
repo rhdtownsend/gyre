@@ -78,14 +78,17 @@ contains
     type(scan_par_t), intent(in)       :: sc_p(:)
     real(WP), allocatable, intent(out) :: omega(:)
 
-    integer               :: n_omega
-    integer               :: i
-    real(WP)              :: omega_min
-    real(WP)              :: omega_max
-    real(WP)              :: freq_g_min
-    real(WP)              :: freq_g_max
-    real(WP), allocatable :: freq_g(:)
-    integer               :: j
+    class(model_t), pointer :: ml
+    type(point_t)           :: pt_i
+    type(point_t)           :: pt_o
+    integer                 :: n_omega
+    integer                 :: i
+    real(WP)                :: omega_min
+    real(WP)                :: omega_max
+    real(WP)                :: freq_g_min
+    real(WP)                :: freq_g_max
+    real(WP), allocatable   :: freq_g(:)
+    integer                 :: j
 
     $ASSERT(SIZE(sc_p) >=1,Empty scan_par_t)
 
@@ -98,6 +101,10 @@ contains
 
     ! Loop through scan_par_t
 
+    ml => cx%model()
+    pt_i = cx%point_i()
+    pt_o = cx%point_o()
+         
     n_omega = 0
 
     allocate(omega(0))
@@ -111,11 +118,8 @@ contains
                   freq_max_units => sc_p(i)%freq_max_units, &
                   freq_frame => sc_p(i)%freq_frame, &
                   grid_frame => sc_p(i)%grid_frame, &
-                  grid_type => sc_p(i)%grid_type, &
-                  ml => cx%model(), &
-                  pt_i => cx%point_i(), &
-                  pt_o => cx%point_o())
-         
+                  grid_type => sc_p(i)%grid_type)
+
          ! Calculate the dimensionless frequency range in the inertial frame
 
          omega_min = omega_from_freq(freq_min, ml, pt_i, pt_o, freq_min_units, freq_frame, md_p, os_p)
