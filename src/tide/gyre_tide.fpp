@@ -69,9 +69,10 @@ contains
 
     class(model_t), pointer, intent(in) :: ml
     interface
-       subroutine process_wave (wv)
+       subroutine process_wave (wv, k)
          use gyre_wave
          type(wave_t), intent(in) :: wv
+         integer, intent(in)      :: k
        end subroutine process_wave
     end interface
     type(osc_par_t), intent(in)         :: os_p
@@ -248,7 +249,7 @@ contains
 
                    call system_clock(c_beg)
 
-                   call process_wave(wv)
+                   call process_wave(wv, k)
 
                    call system_clock(c_end)
 

@@ -154,9 +154,10 @@ program gyre_bin
 
 contains
 
-  subroutine process_wave (wv)
+  subroutine process_wave (wv, k)
 
     type(wave_t), intent(in) :: wv
+    integer, intent(in)      :: k
 
     ! Accumulate the torque
 
