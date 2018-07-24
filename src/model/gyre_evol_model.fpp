@@ -368,10 +368,10 @@ contains
     select case (i)
     case (I_U)
        coeff = this%coeff_U_(pt)
-!    case (I_AS)
-!       coeff = this%coeff_As_(pt)
-    case (I_V_2)
-       coeff = this%coeff_V_2_(pt)
+    case (I_AS)
+       coeff = this%coeff_As_(pt)
+!    case (I_V_2)
+!       coeff = this%coeff_V_2_(pt)
     case default
        coeff = this%coeff_in_(i, pt)
     end select
