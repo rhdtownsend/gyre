@@ -23,11 +23,9 @@ module gyre_model_factory
 
   use core_kinds
 
-  use gyre_evol_model
   use gyre_hom_model
   use gyre_model
   use gyre_model_par
-  use gyre_poly_model
 
   use gyre_amdl_file
   use gyre_famdl_file
@@ -35,6 +33,7 @@ module gyre_model_factory
   use gyre_losc_file
   use gyre_mesa_file
   use gyre_osc_file
+  use gyre_twopt_file
   use gyre_wdec_file
   $if ($HDF5)
   use gyre_b3_file
@@ -113,6 +112,10 @@ contains
        $else
        $ABORT(No HDF5 support, therefore cannot read POLY files)
        $endif
+
+    case ('TWOPT')
+
+       call read_twopt_model(ml_p, ml)
 
     case ('HOM')
 

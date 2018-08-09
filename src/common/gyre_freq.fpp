@@ -32,6 +32,7 @@ module gyre_freq
   use gyre_osc_par
   use gyre_point
   use gyre_poly_model
+  use gyre_twopt_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -222,7 +223,7 @@ contains
        end select
 
     class is (hom_model_t)
-
+       
        select case (freq_units)
        case ('NONE')
           omega_l = freq
@@ -238,6 +239,15 @@ contains
           omega_l = -freq*2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_i)/(md_p%l*(md_p%l+1))
        case ('ROSSBY_O')
           omega_l = -freq*2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_o)/(md_p%l*(md_p%l+1))
+       case default
+          $ABORT(Invalid freq_units)
+       end select
+
+    class is (twopt_model_t)
+       
+       select case (freq_units)
+       case ('NONE')
+          omega_l = freq
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -393,6 +403,15 @@ contains
           freq = -omega_l/(2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_i)/(md_p%l*(md_p%l+1)))
        case ('ROSSBY_O')
           omega_l = -omega_l/(2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_o)/(md_p%l*(md_p%l+1)))
+       case default
+          $ABORT(Invalid freq_units)
+       end select
+
+    class is (twopt_model_t)
+
+       select case (freq_units)
+       case ('NONE')
+          freq = omega_l
        case default
           $ABORT(Invalid freq_units)
        end select
