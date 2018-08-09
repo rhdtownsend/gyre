@@ -30,7 +30,6 @@ module gyre_util
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
-  use gyre_out_par
   use gyre_scan_par
 
   use ISO_FORTRAN_ENV
