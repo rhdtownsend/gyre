@@ -81,13 +81,13 @@ contains
     class(model_t), pointer :: ml
     type(point_t)           :: pt_i
     type(point_t)           :: pt_o
-    integer                 :: n_omega
     integer                 :: i
-    real(WP)                :: omega_min
-    real(WP)                :: omega_max
-    real(WP)                :: freq_g_min
-    real(WP)                :: freq_g_max
-    real(WP), allocatable   :: freq_g(:)
+    real(WP)                :: omega_i_min
+    real(WP)                :: omega_i_max
+    real(WP)                :: omega_g_min
+    real(WP)                :: omega_g_max
+    real(WP)                :: omega_g
+    real(WP), allocatable   :: omega_i(:)
     integer                 :: j
 
     $ASSERT(SIZE(sc_p) >=1,Empty scan_par_t)
@@ -105,8 +105,6 @@ contains
     pt_i = cx%point_i()
     pt_o = cx%point_o()
          
-    n_omega = 0
-
     allocate(omega(0))
 
     sc_p_loop : do i = 1,SIZE(sc_p)
@@ -122,56 +120,56 @@ contains
 
          ! Calculate the dimensionless frequency range in the inertial frame
 
-         omega_min = omega_from_freq(freq_min, ml, pt_i, pt_o, freq_min_units, freq_frame, md_p, os_p)
-         omega_max = omega_from_freq(freq_max, ml ,pt_i, pt_o, freq_max_units, freq_frame, md_p, os_p)
+         omega_i_min = omega_from_freq(freq_min, ml, pt_i, pt_o, freq_min_units, freq_frame, md_p, os_p)
+         omega_i_max = omega_from_freq(freq_max, ml ,pt_i, pt_o, freq_max_units, freq_frame, md_p, os_p)
 
          ! Check that the range is valid
 
-         if (omega_max > omega_min) then
+         if (omega_i_max > omega_i_min) then
 
-            ! Calculate the frequency range in the grid frame
+            ! Calculate the dimensionless frequency range in the grid frame
 
-            freq_g_min = freq_from_omega(omega_min, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
-            freq_g_max = freq_from_omega(omega_max, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
+            omega_g_min = freq_from_omega(omega_i_min, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
+            omega_g_max = freq_from_omega(omega_i_max, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
 
             ! Set up the frequencies
 
-            allocate(freq_g(n_freq))
+            allocate(omega_i(n_freq))
 
             do j = 1, n_freq
 
+               ! Grid frame
+
                select case(grid_type)
                case('LINEAR')
-                  freq_g(j) = ((n_freq-j)*freq_g_min + (j-1)*freq_g_max)/(n_freq-1)
+                  omega_g = ((n_freq-j)*omega_g_min + (j-1)*omega_g_max)/(n_freq-1)
                case('INVERSE')
-                  freq_g(j) = (n_freq-1)/((n_freq-j)/freq_g_min + (j-1)/freq_g_max)
+                  omega_g = (n_freq-1)/((n_freq-j)/omega_g_min + (j-1)/omega_g_max)
                case default
                   $ABORT(Invalid grid_type)
                end select
+
+               ! Inertial frame
+
+               omega_i(j) = omega_from_freq(omega_g, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
 
             end do
 
             ! Store them
 
-            call reallocate(omega, [n_omega+n_freq])
-
-            do j = 1, n_freq
-               omega(n_omega+j) = omega_from_freq(freq_g(j), ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
-            end do
-
-            n_omega = n_omega + n_freq
-
-            deallocate(freq_g)
+            omega = [omega,omega_i]
 
             if (check_log_level('INFO')) then
-               write(OUTPUT_UNIT, 110) 'added scan interval : ', omega_min, ' -> ', omega_max, ' (', n_freq, ' points, ', TRIM(grid_type), ')'
+               write(OUTPUT_UNIT, 110) 'added scan interval : ', omega_i_min, ' -> ', omega_i_max, ' (', n_freq, ' points, ', TRIM(grid_type), ')'
 110            format(3X,A,E11.4,A,E11.4,A,I0,A,A,A)
             endif
+
+            deallocate(omega_i)
 
          else
 
             if (check_log_level('INFO')) then
-               write(OUTPUT_UNIT, 120) 'ignoring scan interval :', omega_min, ' -> ', omega_max
+               write(OUTPUT_UNIT, 120) 'ignoring scan interval :', omega_i_min, ' -> ', omega_i_max
 120            format(3X,A,E24.16,A,E24.16)
             endif
 
