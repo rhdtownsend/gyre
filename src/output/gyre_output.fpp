@@ -537,6 +537,7 @@ contains
        $OUTPUT_POINTS(r,dE_dx,md,dE_dx(k))
        $OUTPUT_POINTS(r,dW_dx,md,dW_dx(k))
        $OUTPUT_POINTS(r,dW_eps_dx,md,dW_eps_dx(k))
+       $OUTPUT_POINTS(c,dzeta_dx,md,dzeta_dx(k))
        $OUTPUT_POINTS(r,dbeta_dx,md,dbeta_dx(k))
        $OUTPUT_POINTS(r,dtau_dx_ss,md,dtau_dx_ss(k))
        $OUTPUT_POINTS(r,dtau_dx_tr,md,dtau_dx_tr(k))
