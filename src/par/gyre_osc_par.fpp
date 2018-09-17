@@ -33,7 +33,7 @@ module gyre_osc_par
   ! Derived-type definitions
 
   type :: osc_par_t
-     real(WP)                :: x_ref = HUGE(0._WP)
+     real(WP)                :: x_ref = 1._WP
      character(64)           :: rotation_method = 'DOPPLER'
      character(64)           :: variables_set = 'GYRE'
      character(64)           :: inner_bound = 'REGULAR'
