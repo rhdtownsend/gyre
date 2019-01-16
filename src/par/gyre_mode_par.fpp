@@ -38,6 +38,8 @@ module gyre_mode_par
      integer       :: n_pg_min = -HUGE(0)
      integer       :: n_pg_max = HUGE(0)
      logical       :: rossby = .FALSE.
+     character(64) :: ad_search = 'SCAN'
+     character(64) :: nad_search = 'AD'
      character(64) :: tag = ''
   end type mode_par_t
 
@@ -77,16 +79,18 @@ contains
     integer, intent(in)                        :: unit
     type(mode_par_t), allocatable, intent(out) :: md_p(:)
 
-    integer                  :: n_md_p
-    integer                  :: i
-    integer                  :: l
-    integer                  :: m
-    integer                  :: n_pg_min
-    integer                  :: n_pg_max
-    logical                  :: rossby
-    character(LEN(md_p%tag)) :: tag
-
-    namelist /mode/ l, m, n_pg_min, n_pg_max, rossby, tag
+    integer                         :: n_md_p
+    integer                         :: i
+    integer                         :: l
+    integer                         :: m
+    integer                         :: n_pg_min
+    integer                         :: n_pg_max
+    logical                         :: rossby
+    character(LEN(md_p%ad_search))  :: ad_search
+    character(LEN(md_p%nad_search)) :: nad_search
+    character(LEN(md_p%tag))        :: tag
+ 
+    namelist /mode/ l, m, n_pg_min, n_pg_max, rossby, ad_search, nad_search, tag
 
     ! Count the number of mode namelists
 
@@ -118,6 +122,8 @@ contains
        n_pg_min = md_p(i)%n_pg_min
        n_pg_max = md_p(i)%n_pg_max
        rossby = md_p(i)%rossby
+       ad_search = md_p(i)%ad_search
+       nad_search = md_p(i)%nad_search
        tag = md_p(i)%tag
 
        ! Read the namelist
@@ -131,6 +137,8 @@ contains
        md_p(i)%n_pg_min = n_pg_min
        md_p(i)%n_pg_max = n_pg_max
        md_p(i)%rossby = rossby
+       md_p(i)%ad_search = ad_search
+       md_p(i)%nad_search = nad_search
        md_p(i)%tag = tag
 
     end do read_loop
@@ -161,7 +169,10 @@ contains
     call bcast(md_p%n_pg_max, root_rank)
 
     call bcast(md_p%rossby, root_rank)
+    call bcast(md_p%rossby, root_rank)
 
+    call bcast(md_p%ad_search, root_rank)
+    call bcast(md_p%nad_search, root_rank)
     call bcast(md_p%tag, root_rank)
 
     ! Finish
