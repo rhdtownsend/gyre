@@ -1,7 +1,7 @@
 ! Module   : gyre_c_root
 ! Purpose  : root finding algorithms for discriminant functions (complex)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -109,7 +109,7 @@ contains
 
   end subroutine solve_
 
-!****
+  !****
 
   subroutine narrow_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
@@ -144,7 +144,7 @@ contains
 
   end subroutine narrow_
 
-!****
+  !****
 
   subroutine narrow_secant_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
  
@@ -212,7 +212,7 @@ contains
 
     endif
 
-    ! Iterate until the correction drops below the threshold, or the
+    ! Iterate until convergence to the desired tolerance, or the
     ! maximum number of iterations is exceeded
 
     i_iter = 0
@@ -279,7 +279,7 @@ contains
 
   end subroutine narrow_secant_
 
-!****
+  !****
 
   subroutine narrow_ridders_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
@@ -353,7 +353,7 @@ contains
 
     endif
 
-    ! Iterate until the correction drops below the threshold, or the
+    ! Iterate until convergence to the desired tolerance, or the
     ! maximum number of iterations is exceeded
 
     i_iter = 0
@@ -440,7 +440,7 @@ contains
 
   end subroutine narrow_ridders_
 
-!****
+  !****
 
   subroutine narrow_simplex_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
 
@@ -513,7 +513,7 @@ contains
 
   end subroutine narrow_simplex_
 
-!****
+  !****
 
   subroutine expand_ (cf, cx_a, cx_b, f_cx_tol, status, clamp_a, clamp_b, relative_tol, f_cx_a, f_cx_b)
 
