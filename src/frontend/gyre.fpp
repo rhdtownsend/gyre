@@ -44,6 +44,7 @@ program gyre
   use gyre_out_par
   use gyre_output
   use gyre_rad_bvp
+  use gyre_scan
   use gyre_scan_par
   use gyre_search
   use gyre_util
@@ -219,22 +220,31 @@ program gyre
 
      ! Find adiabatic modes
 
-     if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-        allocate(bp_ad, SOURCE=rad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
-     else
-        allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+     if (os_p_sel%adiabatic) then
+        
+        if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
+           allocate(bp_ad, SOURCE=rad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+        else
+           allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+        endif
+
+        i_ad_a = n_md_ad + 1
+
+        if (check_log_level('INFO')) then
+           write(OUTPUT_UNIT, 100) 'Starting search (adiabatic)'
+           write(OUTPUT_UNIT, *)
+        endif
+
+        select case (md_p(i)%ad_search)
+        case ('SCAN')
+           call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
+        case default
+           $ABORT(Invalid ad_search)
+        end select
+
+        deallocate(bp_ad)
+
      endif
-
-     i_ad_a = n_md_ad + 1
-
-     if (check_log_level('INFO')) then
-        write(OUTPUT_UNIT, 100) 'Starting search (adiabatic)'
-        write(OUTPUT_UNIT, *)
-     endif
-
-     call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
-
-     deallocate(bp_ad)
 
      ! Find non-adiabatic modes
 
@@ -249,7 +259,15 @@ program gyre
            write(OUTPUT_UNIT, *)
         endif
 
-        call prox_search(bp_nad, md_ad(i_ad_a:i_ad_b), omega_min, omega_max, process_mode_nad, md_p(i), nm_p_sel, os_p_sel)
+        select case (md_p(i)%nad_search)
+        case ('AD')
+           $ASSERT(os_p_sel%adiabatic,No adiabatic modes to start from)
+           call mode_search(bp_nad, md_ad(i_ad_a:i_ad_b), omega_min, omega_max, process_mode_nad, nm_p_sel)
+        case ('SCAN')
+           call scan_search(bp_nad, omega, omega_min, omega_max, process_mode_nad, nm_p_sel)
+        case default
+           $ABORT(Invalid nad_start)
+        end select
 
         deallocate(bp_nad)
 
