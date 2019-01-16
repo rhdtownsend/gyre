@@ -1,7 +1,7 @@
 ! Module   : gyre_r_state
 ! Purpose  : mutable state data for solvers (real)
 !
-! Copyright 2017 Rich Townsend
+! Copyright 2017-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,7 +30,7 @@ module gyre_r_state
   ! Derived-type definitions
 
   type :: r_state_t
-     real(WP) :: omega
+     real(WP) :: omega = 0._WP
   end type r_state_t
 
   ! Access specifiers

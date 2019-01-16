@@ -1,7 +1,7 @@
 ! Module   : gyre_c_state
 ! Purpose  : mutable state data for solvers (complex)
 !
-! Copyright 2017 Rich Townsend
+! Copyright 2017-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,8 +30,8 @@ module gyre_c_state
   ! Derived-type definitions
 
   type :: c_state_t
-     complex(WP) :: omega
-     real(WP)    :: omega_r
+     complex(WP) :: omega = 0._WP
+     real(WP)    :: omega_r = 0._WP
   end type c_state_t
 
   ! Access specifiers
