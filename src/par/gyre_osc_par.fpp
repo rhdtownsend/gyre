@@ -46,6 +46,7 @@ module gyre_osc_par
      character(FILENAME_LEN) :: deps_file = ''
      character(256)          :: deps_file_format = ''
      character(2048)         :: tag_list = ''
+     logical                 :: adiabatic = .TRUE.
      logical                 :: nonadiabatic = .FALSE.
      logical                 :: quasiad_eigfuncs = .FALSE.
      logical                 :: cowling_approx = .FALSE.
@@ -109,8 +110,9 @@ contains
     character(LEN(os_p%deps_file))        :: deps_file
     character(LEN(os_p%deps_file_format)) :: deps_file_format
     character(LEN(os_p%tag_list))         :: tag_list
-    logical                               :: quasiad_eigfuncs
+    logical                               :: adiabatic
     logical                               :: nonadiabatic
+    logical                               :: quasiad_eigfuncs
     logical                               :: cowling_approx
     logical                               :: nar_approx
     logical                               :: narf_approx
@@ -121,7 +123,7 @@ contains
     namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, &
          variables_set, inertia_norm, time_factor, &
          conv_scheme, int_scheme, deps_scheme, deps_file, deps_file_format, &
-         tag_list, quasiad_eigfuncs, nonadiabatic, &
+         tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
          cowling_approx, nar_approx, narf_approx, eddington_approx, &
          complex_lambda, reduce_order
 
@@ -163,8 +165,9 @@ contains
        deps_file = os_p(i)%deps_file
        deps_file_format = os_p(i)%deps_file_format
        tag_list = os_p(i)%tag_list
-       quasiad_eigfuncs = os_p(i)%quasiad_eigfuncs
+       adiabatic = os_p(i)%adiabatic
        nonadiabatic = os_p(i)%nonadiabatic
+       quasiad_eigfuncs = os_p(i)%quasiad_eigfuncs
        cowling_approx = os_p(i)%cowling_approx
        nar_approx = os_p(i)%nar_approx
        narf_approx = os_p(i)%narf_approx
@@ -191,8 +194,9 @@ contains
        os_p(i)%deps_file = deps_file
        os_p(i)%deps_file_format = deps_file_format
        os_p(i)%tag_list = tag_list
-       os_p(i)%quasiad_eigfuncs = quasiad_eigfuncs
+       os_p(i)%adiabatic = adiabatic
        os_p(i)%nonadiabatic = nonadiabatic
+       os_p(i)%quasiad_eigfuncs = quasiad_eigfuncs
        os_p(i)%cowling_approx = cowling_approx
        os_p(i)%nar_approx = nar_approx
        os_p(i)%narf_approx = narf_approx
@@ -233,8 +237,9 @@ contains
     call bcast(os_p%deps_file_format, root_rank)
     call bcast(os_p%tag_list, root_rank)
 
-    call bcast(os_p%quasiad_eigfuncs, root_rank)
+    call bcast(os_p%adiabatic, root_rank)
     call bcast(os_p%nonadiabatic, root_rank)
+    call bcast(os_p%quasiad_eigfuncs, root_rank)
     call bcast(os_p%cowling_approx, root_rank)
     call bcast(os_p%nar_approx, root_rank)
     call bcast(os_p%narf_approx, root_rank)
