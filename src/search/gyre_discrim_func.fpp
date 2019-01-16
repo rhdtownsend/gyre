@@ -21,5 +21,6 @@ module gyre_discrim_func
 
   use gyre_r_discrim_func
   use gyre_c_discrim_func
+  use gyre_m_discrim_func
 
 end module gyre_discrim_func
