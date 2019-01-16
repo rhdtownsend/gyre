@@ -1,7 +1,7 @@
 ! Module   : gyre_r_root
 ! Purpose  : root finding algorithms for discriminant functions (real)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -108,7 +108,7 @@ contains
 
   end subroutine solve_
 
-!****
+  !****
 
   subroutine narrow_ (rf, rx_a, rx_b, rx_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
 
@@ -139,7 +139,7 @@ contains
 
   end subroutine narrow_
 
-!****
+  !****
 
   subroutine narrow_brent_ (rf, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
 
@@ -207,7 +207,7 @@ contains
 
     $ASSERT((f_a >= 0._WP .AND. f_b <= 0._WP) .OR. (f_a <= 0._WP .AND. f_b >= 0._WP),Root is not bracketed)
 
-    ! Iterate until the correction drops below the threshold, or the
+    ! Iterate until convergence to the desired tolerance, or the
     ! maximum number of iterations is exceeded
 
     i_iter = 0
@@ -348,7 +348,7 @@ contains
 
   end subroutine narrow_brent_
 
-!****
+  !****
 
   subroutine expand_ (rf, rx_a, rx_b, status, clamp_a, clamp_b, f_rx_a, f_rx_b, expand_factor)
 
