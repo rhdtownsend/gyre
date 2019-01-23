@@ -48,8 +48,8 @@ program gyre_contour
   use gyre_out_par
   use gyre_output
   use gyre_root
+  use gyre_scan
   use gyre_scan_par, only : scan_par_t
-  use gyre_search
   use gyre_state
   use gyre_status
   use gyre_util
