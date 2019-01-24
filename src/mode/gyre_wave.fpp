@@ -93,7 +93,10 @@ module gyre_wave
      procedure, public :: dzeta_dx
      procedure         :: dzeta_dx_pesnell_
      procedure         :: dzeta_dx_kawaler_
+     procedure         :: dzeta_dx_kawaler_grav_
      procedure         :: dzeta_dx_dupret_
+     procedure, public :: dzeta_dm
+     procedure         :: dzeta_dm_kawaler_
      procedure, public :: dbeta_dx
      procedure, public :: dtau_dx_ss
      procedure, public :: dtau_dx_tr
@@ -1029,6 +1032,8 @@ contains
     select case (this%os_p%int_scheme)
     case ('PESNELL')
        dzeta_dx = this%dzeta_dx_pesnell_(k)
+    case ('KAWALER_GRAV')
+       dzeta_dx = this%dzeta_dx_kawaler_grav_(k)
     case ('KAWALER')
        dzeta_dx = this%dzeta_dx_kawaler_(k)
     case ('DUPRET')
@@ -1159,6 +1164,62 @@ contains
 
   !****
 
+  function dzeta_dx_kawaler_grav_ (this, k) result (dzeta_dx)
+
+    class(wave_t), intent(in) :: this
+    integer, intent(in)       :: k
+    complex(WP)               :: dzeta_dx
+
+    complex(WP) :: xi_r
+    complex(WP) :: eul_P
+    complex(WP) :: eul_phi
+    complex(WP) :: deul_phi
+    complex(WP) :: lambda
+    real(WP)    :: V_2
+    real(WP)    :: U
+    real(WP)    :: As
+    real(WP)    :: c_1
+    real(WP)    :: Gamma_1
+    real(WP)    :: x4_V
+
+    ! Calculate the gravitational part of the dimensionless frequency
+    ! weight function.  This is based on the derivative of the N term
+    ! in equation (7) of [Kawaler:1985] with respect to x; note that
+    ! that equation was derived for adiabatic pulsation, and the
+    ! simple extension to non-adiabatic pulsation implemented here may
+    ! not be quite correct
+
+    associate ( &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(k) )
+
+      xi_r = this%xi_r(k)
+      eul_P = this%eul_P(k)
+      eul_phi = this%eul_phi(k)
+      deul_phi = this%deul_phi(k)
+
+      V_2 = ml%coeff(I_V_2, pt)
+      As = ml%coeff(I_AS, pt)
+      U = ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
+      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+      
+      lambda = this%lambda(k)
+
+      x4_V = pt%x**2/V_2
+
+      dzeta_dx = CONJG(xi_r)*xi_r*(pt%x**2*U*As/c_1**2)
+           
+    end associate
+
+    ! Finish
+
+    return
+
+  end function dzeta_dx_kawaler_grav_
+
+  !****
+
   function dzeta_dx_dupret_ (this, k) result (dzeta_dx)
 
     class(wave_t), intent(in) :: this
@@ -1215,6 +1276,87 @@ contains
 
   end function dzeta_dx_dupret_
   
+  !****
+
+  function dzeta_dm (this, k)
+
+    class(wave_t), intent(in) :: this
+    integer, intent(in)       :: k
+    complex(WP)               :: dzeta_dm
+
+    ! Calculate the dimensionless frequency weight function.
+    
+    select case (this%os_p%int_scheme)
+    case ('KAWALER')
+       dzeta_dm = this%dzeta_dm_kawaler_(k)
+    case default
+       $ABORT(Invalid int_scheme)
+    end select
+
+    ! Finish
+
+    return
+
+  end function dzeta_dm
+    
+  !****
+
+  function dzeta_dm_kawaler_ (this, k) result (dzeta_dm)
+
+    class(wave_t), intent(in) :: this
+    integer, intent(in)       :: k
+    complex(WP)               :: dzeta_dm
+
+    complex(WP) :: xi_r
+    complex(WP) :: eul_P
+    complex(WP) :: eul_phi
+    complex(WP) :: deul_phi
+    complex(WP) :: lambda
+    real(WP)    :: V_2
+    real(WP)    :: U
+    real(WP)    :: As
+    real(WP)    :: c_1
+    real(WP)    :: Gamma_1
+
+    ! Calculate the dimensionless frequency weight function.  This is
+    ! based on the derivative of equation (7) of [Kawaler:1985] with
+    ! respect to m; note that that equation was derived for adiabatic
+    ! pulsation, and the simple extension to non-adiabatic pulsation
+    ! implemented here may not be quite correct
+
+    associate ( &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(k) )
+
+      xi_r = this%xi_r(k)
+      eul_P = this%eul_P(k)
+      eul_phi = this%eul_phi(k)
+      deul_phi = this%deul_phi(k)
+
+      V_2 = ml%coeff(I_V_2, pt)
+      As = ml%coeff(I_AS, pt)
+      U = ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
+      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+      
+      lambda = this%lambda(k)
+
+      if (pt%x /= 0) then
+         dzeta_dm = CONJG(eul_P)*eul_P/(V_2*Gamma_1*c_1) + &
+                    CONJG(xi_r)*xi_r*(As/c_1) - &
+                    CONJG(pt%x*deul_phi + lambda*eul_phi)*(pt%x*deul_phi + lambda*eul_phi)*(c_1/(U*pt%x**2))
+      else
+         dzeta_dm = 0._WP
+      endif
+           
+    end associate
+
+    ! Finish
+
+    return
+
+  end function dzeta_dm_kawaler_
+
   !****
 
   function dbeta_dx (this, k)
