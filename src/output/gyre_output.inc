@@ -1,7 +1,7 @@
 ! Incfile  : gyre_output
 ! Purpose  : macros for output module
 !
-! Copyright 2017 Rich Townsend
+! Copyright 2017-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,7 +15,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$define $OUTPUT_MODES $sub
+$define $OUTPUT_WAVES $sub
 
 $local $T $1
 $local $NAME $2
@@ -23,8 +23,8 @@ $local $FUNC $3
  
 case ($str($NAME))
 
-   do i_md = 1, n_md
-      data_$T(i_md) = md(i_md)%$FUNC
+   do i_wv = 1, n_wv
+      data_$T(i_wv) = wv(i_wv)%$FUNC
    end do
    
    call wr%write($str($NAME), data_$T)
@@ -55,7 +55,7 @@ $local $FUNC $2
  
 case ($str($NAME))
 
-   call wr%write($str($NAME), md%$FUNC(md%k_ref))
+   call wr%write($str($NAME), wv%$FUNC(wv%k_ref))
 
 $endsub
 
