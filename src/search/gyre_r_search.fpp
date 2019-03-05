@@ -139,14 +139,14 @@ contains
 
        select type (bp)
        type is (ad_bvp_t)
-          wv = wave_t(bp, st)
+          wv = wave_t(bp, st, j_m)
        type is (rad_bvp_t)
-          wv = wave_t(bp, st)
+          wv = wave_t(bp, st, j_m)
        class default
           $ABORT(Invalid bp class)
        end select
 
-       md = mode_t(wv, j_m)
+       md = mode_t(wv)
 
        ! Process it
 

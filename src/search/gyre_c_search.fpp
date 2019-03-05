@@ -368,12 +368,12 @@ contains
 
     select type (bp)
     type is (nad_bvp_t)
-       wv = wave_t(bp, st)
+       wv = wave_t(bp, st, j)
     class default
        $ABORT(Invalid bp class)
     end select
 
-    md = mode_t(wv, j)
+    md = mode_t(wv)
 
     ! Process it
 
