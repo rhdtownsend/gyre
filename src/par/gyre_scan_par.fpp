@@ -22,6 +22,7 @@ module gyre_scan_par
   ! Uses
 
   use core_kinds
+  use core_constants, only : FILENAME_LEN
 
   ! No implicit typing
 
@@ -30,15 +31,18 @@ module gyre_scan_par
   ! Derived-type definitions
 
   type :: scan_par_t
-     real(WP)        :: freq_min = 1._WP
-     real(WP)        :: freq_max = 10._WP
-     integer         :: n_freq = 10
-     character(64)   :: freq_min_units = 'NONE'
-     character(64)   :: freq_max_units = 'NONE'
-     character(64)   :: freq_frame = 'INERTIAL'
-     character(64)   :: grid_type = 'LINEAR'
-     character(64)   :: grid_frame = 'INERTIAL'
-     character(2048) :: tag_list = ''
+     real(WP)                :: freq_min = 1._WP
+     real(WP)                :: freq_max = 10._WP
+     integer                 :: n_freq = 10
+     character(64)           :: freq_units = 'NONE'
+     character(64)           :: freq_min_units = ''
+     character(64)           :: freq_max_units = ''
+     character(64)           :: freq_frame = 'INERTIAL'
+     character(64)           :: scan_type = 'GRID'
+     character(64)           :: grid_type = 'LINEAR'
+     character(64)           :: grid_frame = 'INERTIAL'
+     character(FILENAME_LEN) :: file = ''
+     character(2048)         :: tag_list = ''
   end type scan_par_t
 
   ! Access specifiers
@@ -62,15 +66,18 @@ contains
     real(WP)                            :: freq_min
     real(WP)                            :: freq_max
     integer                             :: n_freq
+    character(LEN(sc_p%freq_units))     :: freq_units
     character(LEN(sc_p%freq_min_units)) :: freq_min_units
     character(LEN(sc_p%freq_max_units)) :: freq_max_units
     character(LEN(sc_p%freq_frame))     :: freq_frame
+    character(LEN(sc_p%scan_type))      :: scan_type
     character(LEN(sc_p%grid_type))      :: grid_type
     character(LEN(sc_p%grid_frame))     :: grid_frame
+    character(FILENAME_LEN)             :: file
     character(LEN(sc_p%tag_list))       :: tag_list
 
-    namelist /scan/ freq_min, freq_max, n_freq, freq_min_units, freq_max_units, &
-         freq_frame, grid_type, grid_frame, tag_list
+    namelist /scan/ freq_min, freq_max, n_freq, freq_units, freq_min_units, freq_max_units, &
+         freq_frame, scan_type, grid_type, grid_frame, file, tag_list
 
     ! Count the number of scan namelists
 
@@ -100,27 +107,36 @@ contains
        freq_min = sc_p(i)%freq_min
        freq_max = sc_p(i)%freq_max
        n_freq = sc_p(i)%n_freq
+       freq_units = sc_p(i)%freq_units
        freq_min_units = sc_p(i)%freq_min_units
        freq_max_units = sc_p(i)%freq_max_units
        freq_frame = sc_p(i)%freq_frame
+       scan_type = sc_p(i)%scan_type
        grid_type = sc_p(i)%grid_type
        grid_frame = sc_p(i)%grid_frame
+       file = sc_p(i)%file
        tag_list = sc_p(i)%tag_list
 
        ! Read the namelist
 
        read(unit, NML=scan)
 
+       if (freq_min_units == '') freq_min_units = freq_units
+       if (freq_max_units == '') freq_max_units = freq_units
+
        ! Store read values
 
        sc_p(i)%freq_min = freq_min
        sc_p(i)%freq_max = freq_max
        sc_p(i)%n_freq = n_freq
+       sc_p(i)%freq_units = freq_units
        sc_p(i)%freq_min_units = freq_min_units
        sc_p(i)%freq_max_units = freq_max_units
        sc_p(i)%freq_frame = freq_frame
+       sc_p(i)%scan_type = scan_type
        sc_p(i)%grid_type = grid_type
        sc_p(i)%grid_frame = grid_frame
+       sc_p(i)%file = file
        sc_p(i)%tag_list = tag_list
 
     end do read_loop
