@@ -39,12 +39,12 @@ module gyre_out_par
      character(FILENAME_LEN) :: summary_file = ''
      character(256)          :: summary_file_format = 'HDF'
      character(2048)         :: summary_item_list = 'l,n_pg,omega,freq'
-     character(FILENAME_LEN) :: mode_template = ''
-     character(256)          :: mode_file_format = 'HDF'
-     character(2048)         :: mode_item_list = 'l,n_pg,omega,freq,x,xi_r,xi_h'
-     character(2048)         :: mode_filter_list = ''
+     character(FILENAME_LEN) :: details_template = ''
+     character(256)          :: details_file_format = 'HDF'
+     character(2048)         :: details_item_list = 'l,n_pg,omega,freq,x,xi_r,xi_h'
+     character(2048)         :: details_filter_list = ''
      character(256)          :: label = ''
-     logical                 :: prune_modes = .FALSE.
+     logical                 :: prune_details = .FALSE.
   end type out_par_t
 
  ! Access specifiers
@@ -70,22 +70,22 @@ contains
     character(LEN(ot_p%summary_file))        :: summary_file
     character(LEN(ot_p%summary_file_format)) :: summary_file_format
     character(LEN(ot_p%summary_item_list))   :: summary_item_list
-    character(LEN(ot_p%mode_template))       :: mode_template
-    character(LEN(ot_p%mode_file_format))    :: mode_file_format
-    character(LEN(ot_p%mode_item_list))      :: mode_item_list
-    character(LEN(ot_p%mode_filter_list))    :: mode_filter_list
+    character(LEN(ot_p%details_template))    :: details_template
+    character(LEN(ot_p%details_file_format)) :: details_file_format
+    character(LEN(ot_p%details_item_list))   :: details_item_list
+    character(LEN(ot_p%details_filter_list)) :: details_filter_list
     character(LEN(ot_p%label))               :: label
-    logical                                  :: prune_modes
+    logical                                  :: prune_details
 
     namelist /ad_output/ freq_units, freq_frame, &
                          summary_file, summary_file_format, summary_item_list, &
-                         mode_template, mode_file_format, mode_item_list, &
-                         label, prune_modes
+                         details_template, details_file_format, details_item_list, &
+                         label, prune_details
 
     namelist /nad_output/ freq_units, freq_frame, &
                           summary_file, summary_file_format, summary_item_list, &
-                          mode_template, mode_file_format, mode_item_list, mode_filter_list, &
-                          label, prune_modes
+                          details_template, details_file_format, details_item_list, details_filter_list, &
+                          label, prune_details
 
     ! Count the number of output namelists
 
@@ -122,12 +122,12 @@ contains
     summary_file = ot_p%summary_file
     summary_file_format = ot_p%summary_file_format
     summary_item_list = ot_p%summary_item_list
-    mode_template = ot_p%mode_template
-    mode_file_format = ot_p%mode_file_format
-    mode_item_list = ot_p%mode_item_list
-    mode_filter_list = ot_p%mode_filter_list
+    details_template = ot_p%details_template
+    details_file_format = ot_p%details_file_format
+    details_item_list = ot_p%details_item_list
+    details_filter_list = ot_p%details_filter_list
     label = ot_p%label
-    prune_modes = ot_p%prune_modes
+    prune_details = ot_p%prune_details
 
     ! Read the namelist
 
@@ -147,12 +147,12 @@ contains
     ot_p%summary_file = summary_file
     ot_p%summary_file_format = summary_file_format
     ot_p%summary_item_list = summary_item_list
-    ot_p%mode_template = mode_template
-    ot_p%mode_file_format = mode_file_format
-    ot_p%mode_item_list = mode_item_list
-    ot_p%mode_filter_list = mode_filter_list
+    ot_p%details_template = details_template
+    ot_p%details_file_format = details_file_format
+    ot_p%details_item_list = details_item_list
+    ot_p%details_filter_list = details_filter_list
     ot_p%label = label
-    ot_p%prune_modes = prune_modes
+    ot_p%prune_details = prune_details
 
     ! Finish
 
