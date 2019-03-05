@@ -44,7 +44,6 @@ module gyre_mode
   ! Derived-type definitions
 
   type, extends (wave_t) :: mode_t
-     integer :: j
      integer :: n_pg
      integer :: n_p
      integer :: n_g
@@ -74,11 +73,10 @@ module gyre_mode
 
 contains
 
-  function mode_t_ (wv, j) result (md)
+  function mode_t_ (wv) result (md)
 
-    type(wave_t), intent(in)          :: wv
-    integer, intent(in)               :: j
-    type(mode_t)                      :: md
+    type(wave_t), intent(in) :: wv
+    type(mode_t)             :: md
 
     complex(WP) :: y_1_ref
     complex(WP) :: f_phase
@@ -86,8 +84,6 @@ contains
     ! Construct the mode_t
 
     md%wave_t = wv
-
-    md%j = j
 
     ! Normalize so that y_1 at the reference point is purely real, and
     ! the total inertia E is unity

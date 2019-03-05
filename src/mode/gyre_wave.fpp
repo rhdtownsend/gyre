@@ -64,6 +64,7 @@ module gyre_wave
      integer, public           :: k_ref
      integer, public           :: l
      integer, public           :: m
+     integer, public           :: j
      logical                   :: pruned
    contains
      private
@@ -150,7 +151,7 @@ module gyre_wave
 
 contains
 
-  function wave_t_ (st, y_c, discrim, cx, gr, md_p, os_p) result (wv)
+  function wave_t_ (st, y_c, discrim, cx, gr, md_p, os_p, j) result (wv)
 
     type(c_state_t), intent(in)          :: st
     complex(WP), intent(in)              :: y_c(:,:)
@@ -159,6 +160,7 @@ contains
     type(grid_t), intent(in)             :: gr
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
+    integer, intent(in)                  :: j
     type(wave_t)                         :: wv
 
     real(WP)    :: x_ref
@@ -191,7 +193,8 @@ contains
 
     wv%l = md_p%l
     wv%m = md_p%m
-    
+    wv%j = j
+
     wv%pruned = .FALSE.
 
     ! Locate the reference point
