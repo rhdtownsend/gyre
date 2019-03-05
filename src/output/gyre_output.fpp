@@ -342,7 +342,7 @@ contains
     integer                                             :: i
     integer                                             :: c
 
-    ! Write the detail file
+    ! Write the details file
 
     if (ot_p%details_template == '') return
 
