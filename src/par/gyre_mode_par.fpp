@@ -32,7 +32,6 @@ module gyre_mode_par
   ! Derived-type definitions
 
   type :: mode_par_t
-     integer       :: i = 0
      integer       :: l = 0
      integer       :: m = 0
      integer       :: n_pg_min = -HUGE(0)
@@ -163,8 +162,6 @@ contains
     integer, intent(in)             :: root_rank
 
     ! Broadcast the mode_par_t
-
-    call bcast(md_p%i, root_rank)
 
     call bcast(md_p%l, root_rank)
     call bcast(md_p%m, root_rank)
