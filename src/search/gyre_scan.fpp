@@ -58,17 +58,7 @@ contains
     type(scan_par_t), intent(in)       :: sc_p(:)
     real(WP), allocatable, intent(out) :: omega(:)
 
-    class(model_t), pointer :: ml
-    type(point_t)           :: pt_i
-    type(point_t)           :: pt_o
-    integer                 :: i
-    real(WP)                :: omega_i_min
-    real(WP)                :: omega_i_max
-    real(WP)                :: omega_g_min
-    real(WP)                :: omega_g_max
-    real(WP)                :: omega_g
-    real(WP), allocatable   :: omega_i(:)
-    integer                 :: j
+    integer :: i
 
     $ASSERT(SIZE(sc_p) >=1,Empty scan_par_t)
 
@@ -81,81 +71,18 @@ contains
 
     ! Loop through scan_par_t
 
-    ml => cx%model()
-    pt_i = cx%point_i()
-    pt_o = cx%point_o()
-         
     allocate(omega(0))
 
     sc_p_loop : do i = 1,SIZE(sc_p)
 
-       associate (freq_min => sc_p(i)%freq_min, &
-                  freq_max => sc_p(i)%freq_max, &
-                  n_freq => sc_p(i)%n_freq, &
-                  freq_min_units => sc_p(i)%freq_min_units, &
-                  freq_max_units => sc_p(i)%freq_max_units, &
-                  freq_frame => sc_p(i)%freq_frame, &
-                  grid_frame => sc_p(i)%grid_frame, &
-                  grid_type => sc_p(i)%grid_type)
-
-         ! Calculate the dimensionless frequency range in the inertial frame
-
-         omega_i_min = omega_from_freq(freq_min, ml, pt_i, pt_o, freq_min_units, freq_frame, md_p, os_p)
-         omega_i_max = omega_from_freq(freq_max, ml ,pt_i, pt_o, freq_max_units, freq_frame, md_p, os_p)
-
-         ! Check that the range is valid
-
-         if (omega_i_max > omega_i_min) then
-
-            ! Calculate the dimensionless frequency range in the grid frame
-
-            omega_g_min = freq_from_omega(omega_i_min, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
-            omega_g_max = freq_from_omega(omega_i_max, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
-
-            ! Set up the frequencies
-
-            allocate(omega_i(n_freq))
-
-            do j = 1, n_freq
-
-               ! Grid frame
-
-               select case(grid_type)
-               case('LINEAR')
-                  omega_g = ((n_freq-j)*omega_g_min + (j-1)*omega_g_max)/(n_freq-1)
-               case('INVERSE')
-                  omega_g = (n_freq-1)/((n_freq-j)/omega_g_min + (j-1)/omega_g_max)
-               case default
-                  $ABORT(Invalid grid_type)
-               end select
-
-               ! Inertial frame
-
-               omega_i(j) = omega_from_freq(omega_g, ml, pt_i, pt_o, 'NONE', grid_frame, md_p, os_p)
-
-            end do
-
-            ! Store them
-
-            omega = [omega,omega_i]
-
-            if (check_log_level('INFO')) then
-               write(OUTPUT_UNIT, 110) 'added scan interval : ', omega_i_min, ' -> ', omega_i_max, ' (', n_freq, ' points, ', TRIM(grid_type), ')'
-110            format(3X,A,E11.4,A,E11.4,A,I0,A,A,A)
-            endif
-
-            deallocate(omega_i)
-
-         else
-
-            if (check_log_level('INFO')) then
-               write(OUTPUT_UNIT, 120) 'ignoring scan interval :', omega_i_min, ' -> ', omega_i_max
-120            format(3X,A,E24.16,A,E24.16)
-            endif
-
-         endif
-
-       end associate
+       select case (sc_p(i)%scan_type)
+       case ('GRID')
+          call build_scan_grid_(cx, md_p, os_p, sc_p(i), omega)
+       case ('FILE')
+          call build_scan_file_(cx, md_p, os_p, sc_p(i), omega)
+       case default
+          $ABORT(Invalid scan_type)
+       end select
 
     end do sc_p_loop
 
@@ -172,6 +99,173 @@ contains
     return
 
   end subroutine build_scan
+
+  !****
+
+  subroutine build_scan_grid_ (cx, md_p, os_p, sc_p, omega)
+  
+    type(context_t), intent(in)          :: cx
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(scan_par_t), intent(in)         :: sc_p
+    real(WP), allocatable, intent(inout) :: omega(:)
+
+    class(model_t), pointer :: ml
+    type(point_t)           :: pt_i
+    type(point_t)           :: pt_o
+    real(WP)                :: omega_i_min
+    real(WP)                :: omega_i_max
+    real(WP)                :: omega_g_min
+    real(WP)                :: omega_g_max
+    real(WP)                :: omega_g
+    real(WP), allocatable   :: omega_i(:)
+    integer                 :: j
+    
+    ! Build the frequency scan as a grid
+
+    ml => cx%model()
+
+    pt_i = cx%point_i()
+    pt_o = cx%point_o()
+    
+    ! Calculate the dimensionless frequency range in the inertial frame
+      
+    omega_i_min = omega_from_freq(sc_p%freq_min, ml, pt_i, pt_o, sc_p%freq_min_units, sc_p%freq_frame, md_p, os_p)
+    omega_i_max = omega_from_freq(sc_p%freq_max, ml ,pt_i, pt_o, sc_p%freq_max_units, sc_p%freq_frame, md_p, os_p)
+
+    ! Check that the range is valid
+
+    if (omega_i_max > omega_i_min) then
+
+       ! Calculate the dimensionless frequency range in the grid frame
+
+       omega_g_min = freq_from_omega(omega_i_min, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)
+       omega_g_max = freq_from_omega(omega_i_max, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)
+
+       ! Set up the frequencies
+
+       allocate(omega_i(sc_p%n_freq))
+
+       do j = 1, sc_p%n_freq
+
+          ! Grid frame
+
+          select case(sc_p%grid_type)
+          case('LINEAR')
+             omega_g = ((sc_p%n_freq-j)*omega_g_min + (j-1)*omega_g_max)/(sc_p%n_freq-1)
+          case('INVERSE')
+             omega_g = (sc_p%n_freq-1)/((sc_p%n_freq-j)/omega_g_min + (j-1)/omega_g_max)
+          case default
+             $ABORT(Invalid grid_type)
+          end select
+
+          ! Inertial frame
+
+          omega_i(j) = omega_from_freq(omega_g, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)
+
+       end do
+
+       ! Store them
+
+       omega = [omega,omega_i]
+
+       if (check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 110) 'added scan interval : ', omega_i_min, ' -> ', omega_i_max, &
+                                  ' (', sc_p%n_freq, ' points, ', TRIM(sc_p%grid_type), ')'
+110       format(3X,A,E11.4,A,E11.4,A,I0,A,A,A)
+       endif
+
+    else
+
+       if (check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 120) 'ignoring scan interval :', omega_i_min, ' -> ', omega_i_max
+120       format(3X,A,E24.16,A,E24.16)
+       endif
+
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine build_scan_grid_
+
+  !****
+
+  subroutine build_scan_file_ (cx, md_p, os_p, sc_p, omega)
+  
+    type(context_t), intent(in)          :: cx
+    type(mode_par_t), intent(in)         :: md_p
+    type(osc_par_t), intent(in)          :: os_p
+    type(scan_par_t), intent(in)         :: sc_p
+    real(WP), allocatable, intent(inout) :: omega(:)
+
+    class(model_t), pointer :: ml
+    type(point_t)           :: pt_i
+    type(point_t)           :: pt_o
+    integer                 :: unit
+    integer                 :: n_freq
+    real(WP), allocatable   :: freq(:)
+    integer                 :: j
+    real(WP), allocatable   :: omega_i(:)
+    
+    ! Build the frequency scan from file
+
+    ml => cx%model()
+
+    pt_i = cx%point_i()
+    pt_o = cx%point_o()
+
+    ! Open the frequency file
+
+    open(NEWUNIT=unit, FILE=sc_p%file, STATUS='OLD')
+
+    ! Count lines
+
+    n_freq = 0
+
+    count_loop : do
+       read(unit, *, END=100)
+       n_freq = n_freq + 1
+    end do count_loop
+
+100 continue
+
+    ! Now read the data
+
+    allocate(freq(n_freq))
+
+    rewind(unit)
+
+    read_loop : do j = 1, n_freq
+       read(unit, *) freq(j)
+    end do read_loop
+
+    close(unit)
+
+    ! Set up the frequencies
+
+    allocate(omega_i(n_freq))
+
+    do j = 1, n_freq
+       omega_i(j) = omega_from_freq(freq(j), ml, pt_i, pt_o, sc_p%freq_units, sc_p%freq_frame, md_p, os_p)
+    end do
+
+    ! Store them
+
+    omega = [omega,omega_i]
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'added scan from file : ', TRIM(sc_p%file), &
+            ' (', n_freq, ')'
+110    format(3X,A,A,A,I0,A)
+    endif
+
+    ! Finish
+
+    return
+
+  end subroutine build_scan_file_
 
   !****
 
