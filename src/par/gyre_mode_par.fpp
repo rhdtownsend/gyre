@@ -1,4 +1,4 @@
-! Module   : gyre_mode_par
+  ! Module   : gyre_mode_par
 ! Purpose  : mode parameters
 !
 ! Copyright 2013-2016 Rich Townsend
@@ -38,6 +38,7 @@ module gyre_mode_par
      integer       :: n_pg_min = -HUGE(0)
      integer       :: n_pg_max = HUGE(0)
      logical       :: rossby = .FALSE.
+     logical       :: static = .FALSE.
      character(64) :: ad_search = 'SCAN'
      character(64) :: nad_search = 'AD'
      character(64) :: tag = ''
@@ -86,11 +87,12 @@ contains
     integer                         :: n_pg_min
     integer                         :: n_pg_max
     logical                         :: rossby
+    logical                         :: static
     character(LEN(md_p%ad_search))  :: ad_search
     character(LEN(md_p%nad_search)) :: nad_search
     character(LEN(md_p%tag))        :: tag
  
-    namelist /mode/ l, m, n_pg_min, n_pg_max, rossby, ad_search, nad_search, tag
+    namelist /mode/ l, m, n_pg_min, n_pg_max, rossby, static, ad_search, nad_search, tag
 
     ! Count the number of mode namelists
 
@@ -121,6 +123,7 @@ contains
        m = md_p(i)%m
        n_pg_min = md_p(i)%n_pg_min
        n_pg_max = md_p(i)%n_pg_max
+       static = md_p(i)%static
        rossby = md_p(i)%rossby
        ad_search = md_p(i)%ad_search
        nad_search = md_p(i)%nad_search
@@ -136,6 +139,7 @@ contains
        md_p(i)%m = m
        md_p(i)%n_pg_min = n_pg_min
        md_p(i)%n_pg_max = n_pg_max
+       md_p(i)%static = static
        md_p(i)%rossby = rossby
        md_p(i)%ad_search = ad_search
        md_p(i)%nad_search = nad_search
@@ -168,7 +172,7 @@ contains
     call bcast(md_p%n_pg_min, root_rank)
     call bcast(md_p%n_pg_max, root_rank)
 
-    call bcast(md_p%rossby, root_rank)
+    call bcast(md_p%static, root_rank)
     call bcast(md_p%rossby, root_rank)
 
     call bcast(md_p%ad_search, root_rank)
