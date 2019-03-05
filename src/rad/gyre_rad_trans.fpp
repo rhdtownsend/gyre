@@ -1,4 +1,4 @@
-! Module   : gyre_rad_vars
+! Module   : gyre_rad_trans
 ! Purpose  : adiabatic radial variables transformations
 !
 ! Copyright 2013-2018 Rich Townsend
