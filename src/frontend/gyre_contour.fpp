@@ -617,8 +617,8 @@ contains
 
        st = c_state_t(omega=cmplx(omega_root), omega_r=0._WP)
 
-       wv = wave_t(bp, st)
-       md = mode_t(wv, j)
+       wv = wave_t(bp, st, j)
+       md = mode_t(wv)
 
        ! Process it
 
@@ -685,11 +685,11 @@ contains
 
     ! Write it
 
-    call write_mode(md_nad(n_md_nad), ot_p)
+    call write_details(md_nad(n_md_nad), ot_p)
 
     ! If necessary, prune it
 
-    if (ot_p%prune_modes) call md_nad(n_md_nad)%prune()
+    if (ot_p%prune_details) call md_nad(n_md_nad)%prune()
 
     ! Finish
 

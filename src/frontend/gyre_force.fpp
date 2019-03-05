@@ -1,7 +1,7 @@
 ! Program  : gyre_force
 ! Purpose  : forced oscillation code
 !
-! Copyright 2016-2018 Rich Townsend
+! Copyright 2016-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -45,8 +45,9 @@ program gyre_force
   use gyre_out_par
   use gyre_output
   use gyre_rad_bvp
+  use gyre_sad_bvp
+  use gyre_scan
   use gyre_scan_par
-  use gyre_search
   use gyre_state
   use gyre_util
   use gyre_version
@@ -58,10 +59,6 @@ program gyre_force
 
   implicit none
 
-  ! Parameters
-
-  integer, parameter :: D_0 = 1024
-
   ! Variables
 
   character(:), allocatable     :: filename
@@ -71,23 +68,27 @@ program gyre_force
   type(osc_par_t), allocatable  :: os_p(:)
   type(num_par_t), allocatable  :: nm_p(:)
   type(grid_par_t), allocatable :: gr_p(:)
+  type(scan_par_t), allocatable :: sc_p(:)
+  type(out_par_t)               :: ot_p_ad
+  type(out_par_t)               :: ot_p_nad
   class(model_t), pointer       :: ml => null()
-  type(context_t), pointer      :: cx(:) => null()
-  real(WP)                      :: F
-  integer                       :: n_omega
-  real(WP), allocatable         :: omega(:)
-  integer                       :: n_P
-  real(WP), allocatable         :: P(:)
   integer                       :: i
   type(osc_par_t)               :: os_p_sel
   type(num_par_t)               :: nm_p_sel
   type(grid_par_t)              :: gr_p_sel
+  type(scan_par_t), allocatable :: sc_p_sel(:)
+  type(context_t), pointer      :: cx(:) => null()
+  real(WP), allocatable         :: omega(:)
   type(grid_t)                  :: gr
-  integer                       :: j
+  class(r_bvp_t), allocatable   :: bp_sad
   class(r_bvp_t), allocatable   :: bp_ad
   class(c_bvp_t), allocatable   :: bp_nad
-
-  namelist /force/ F, n_omega, omega, n_P, P
+  integer                       :: n_wv_ad
+  integer                       :: d_wv_ad
+  type(wave_t), allocatable     :: wv_ad(:)
+  integer                       :: n_wv_nad
+  integer                       :: d_wv_nad
+  type(wave_t), allocatable     :: wv_nad(:)
 
   ! Read command-line arguments
 
@@ -128,20 +129,9 @@ program gyre_force
   call read_osc_par(unit, os_p)
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
-
-  allocate(omega(D_0))
-  allocate(P(D_0))
-
-  n_omega = 0
-  n_P = 0
-
-  rewind(unit)
-  read(unit, NML=force)
-
-  $ASSERT(n_omega > 0 .NEQV. n_P > 0,One or other of n_omega/n_P must be non-zero)
-
-  $ASSERT(n_omega <= D_0,Frequency array too short)
-  $ASSERT(n_P <= D_0,Period array too short)
+  call read_scan_par(unit, sc_p)
+  call read_out_par(unit, 'ad', ot_p_ad)
+  call read_out_par(unit, 'nad', ot_p_nad)
 
   ! Initialize the model
 
@@ -156,6 +146,16 @@ program gyre_force
   allocate(cx(SIZE(md_p)))
 
   ! Loop through md_p
+
+  d_wv_ad = 128
+  n_wv_ad = 0
+
+  allocate(wv_ad(d_wv_ad))
+
+  d_wv_nad = 128
+  n_wv_nad = 0
+
+  allocate(wv_nad(d_wv_nad))
 
   md_p_loop : do i = 1, SIZE(md_p)
 
@@ -178,57 +178,94 @@ program gyre_force
      call select_par(os_p, md_p(i)%tag, os_p_sel)
      call select_par(nm_p, md_p(i)%tag, nm_p_sel)
      call select_par(gr_p, md_p(i)%tag, gr_p_sel)
+     call select_par(sc_p, md_p(i)%tag, sc_p_sel)
 
      ! Set up the context
 
      cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel)
 
-     ! Set up the frequency/period arrays
+     if (md_p(i)%static) then
 
-     if (n_omega == 0) then
-        do j = 1, n_P
-           omega(j) = omega_from_freq(1._WP/P(j), ml, gr%pt(1), gr%pt(gr%n_k), 'HZ', 'INERTIAL', md_p(i), os_p_sel)
-        end do
-        n_omega = n_P
-     elseif (n_P == 0) then
-        do j = 1, n_omega
-           P(j) = 1._WP/freq_from_omega(omega(j), ml, gr%pt(1), gr%pt(gr%n_k), 'HZ', 'INERTIAL', md_p(i), os_p_sel)
-        end do
-        n_P = n_omega
-     endif
+        ! Static modes
 
-     omega = omega(:n_omega)
-     P = P(:n_P)
+        ! Set up the grid
 
-     ! Create the grid
+        gr = ml%grid()
 
-     gr = grid_t(cx(i), omega, gr_p_sel)
+        ! Calculate wavefunctions
 
-     ! Find modes
+        if (os_p_sel%adiabatic) then
 
-     if (os_p_sel%nonadiabatic) then
+           allocate(bp_sad, SOURCE=sad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
 
-        allocate(bp_nad, SOURCE=nad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+           call eval_wave_sad()
 
-        call scan_force_c(bp_nad, omega, P)
+           deallocate(bp_sad)
 
-        deallocate(bp_nad)
+        endif
+
+        if (os_p_sel%nonadiabatic) then
+
+           $ABORT(Static nonadiabatic modes not currently implemented)
+
+        endif
 
      else
 
-        if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-           allocate(bp_ad, SOURCE=rad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
-        else
-           allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+        ! Non-static modes
+     
+        ! Set up the frequency array
+
+        call build_scan(cx(i), md_p(i), os_p_sel, sc_p_sel, omega)
+
+        if (SIZE(omega) < 2) then
+
+           if (check_log_level('INFO')) then
+              write(OUTPUT_UNIT, 100) 'Scan is empty, skipping mode...'
+           endif
+           
+           cycle md_p_loop
+
         endif
 
-        call scan_force_r(bp_ad, omega, P)
+        ! Create the grid
 
-        deallocate(bp_ad)
+        gr = grid_t(cx(i), omega, gr_p_sel)
+
+        ! Calculate wavefunctions
+
+        if (os_p_sel%adiabatic) then
+
+           if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
+              allocate(bp_ad, SOURCE=rad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+           else
+              allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+           endif
+           
+           call eval_wave_ad(omega)
+
+           deallocate(bp_ad)
+
+        end if
+
+        if (os_p_sel%nonadiabatic) then
+
+           allocate(bp_nad, SOURCE=nad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+           
+           call eval_wave_nad(omega)
+
+           deallocate(bp_nad)
+
+        endif
 
      end if
 
   end do md_p_loop
+
+  ! Write summary files
+
+  call write_summary(wv_ad(:n_wv_ad), ot_p_ad)
+  call write_summary(wv_nad(:n_wv_nad), ot_p_nad)
 
   ! Clean up
 
@@ -242,106 +279,174 @@ program gyre_force
 
 contains
 
-  $define $SCAN_FORCE $sub
+  subroutine eval_wave_sad ()
 
-  $local $T $1
-  $local $TYPE $2
+    real(WP)        :: w_i(bp_sad%n_i)
+    real(WP)        :: w_o(bp_sad%n_o)
+    type(r_state_t) :: st
 
-  subroutine scan_force_${T} (bp, omega, P)
+    ! Set up the inhomogeneous boundary terms
 
-    class(${T}_bvp_t), intent(inout) :: bp
-    real(WP), intent(in)             :: omega(:)
-    real(WP), intent(in)             :: P(:)
-
-    integer            :: n_omega
-    integer            :: j
-    $TYPE(WP)          :: w_i(bp%n_i)
-    $TYPE(WP)          :: w_o(bp%n_o)
-    type(${T}_state_t) :: st
-
-    character(64) :: filename
-    type(wave_t)  :: wv
-    integer       :: res_unit
-    integer       :: sol_unit
-    integer       :: i_
-    integer       :: k_
-    real(WP)      :: tau
-
-    $CHECK_BOUNDS(SIZE(P),SIZE(omega))
-
-    ! Scan over frequencies
-
-    open(NEWUNIT=res_unit, FILE='response.dat', STATUS='replace')
-
-    n_omega = SIZE(omega)
-
-    omega_loop : do j = 1, n_omega
-
-       ! Set up the inhomogeneous boundary terms
-
-       w_i = 0._WP
+    w_i = 0._WP
          
-       w_o = 0._WP
-       w_o(2) = F
+    w_o(1) = -1._WP
          
-       ! Solve for the wave function
+    n_wv_ad = n_wv_ad + 1
 
-       $if($T eq 'c')
-       st = c_state_t(CMPLX(omega(j), KIND=WP), 0._WP)
-       select type (bp)
-       type is (nad_bvp_t)
-          wv = wave_t(bp, st, w_i, w_o)
-       class default
-          $ABORT(Invalid bp class)
-       end select
-       $else
-       st = r_state_t(omega(j))
-       select type (bp)
-       type is (ad_bvp_t)
-          wv = wave_t(bp, st, w_i, w_o)
-       type is (rad_bvp_t)
-          wv = wave_t(bp, st, w_i, w_o)
-       class default
-          $ABORT(Invalid bp class)
-       end select
-       $endif
+    if (n_wv_ad > d_wv_ad) then
+       d_wv_ad = 2*d_wv_ad
+       call reallocate(wv_ad, [d_wv_ad])
+    endif
 
-       ! Calculate the torque expected
+    associate (wv => wv_ad(n_wv_ad))
 
-       tau = -0.5_WP*md_p(i)%m*AIMAG(F*CONJG(wv%y_i(3,bp%n_k)))
+      ! Solve for the wave function
 
-       ! Write out the response
+      st = r_state_t(0._WP)
+       
+      select type (bp_sad)
+      type is (sad_bvp_t)
+         wv = wave_t(bp_sad, st, w_i, w_o, n_wv_nad)
+      class default
+         $ABORT(Invalid bp_sad class)
+      end select
 
-       write(res_unit, 100) omega(j), P(j), wv%y_i(1,bp%n_k), wv%tau_ss(), tau
-100    format(999E16.8)
+      ! Write it
 
-       ! Write out the solution data
+      call write_details(wv, ot_p_ad)
 
-       write(filename, 110) 'forced.', j, '.txt'
-110    format(A,I3.3,A)
+      ! If necessary, prune it
 
-       open(NEWUNIT=sol_unit, FILE=filename, STATUS='REPLACE')
+      if (ot_p_ad%prune_details) call wv%prune()
 
-       do k_ = 1,bp%n_k
-          write(sol_unit, 120) wv%gr%pt(k_)%x, (wv%y_i(i_,k_),i_=1,6), wv%dtau_dx_ss(k_)
-120       format(999(1X,E16.8))
-       enddo
-
-       close(sol_unit)
-
-    end do omega_loop
-
-    close(res_unit)
+    end associate
 
     ! Finish
 
     return
 
-  end subroutine scan_force_${T}
+  end subroutine eval_wave_sad
 
-  $endsub
+  !****
 
-  $SCAN_FORCE(r,real)
-  $SCAN_FORCE(c,complex)
+  subroutine eval_wave_ad (omega)
 
-end
+    real(WP), intent(in) :: omega(:)
+
+    real(WP)        :: w_i(bp_ad%n_i)
+    real(WP)        :: w_o(bp_ad%n_o)
+    integer         :: j
+    type(r_state_t) :: st
+
+    ! Set up the inhomogeneous boundary terms
+
+    w_i = 0._WP
+         
+    w_o = 0._WP
+    w_o(2) = 1._WP
+         
+    ! Scan over frequencies
+
+    omega_loop : do j = 1, SIZE(omega)
+
+       n_wv_ad = n_wv_ad + 1
+
+       if (n_wv_ad > d_wv_ad) then
+          d_wv_ad = 2*d_wv_ad
+          call reallocate(wv_ad, [d_wv_ad])
+       endif
+
+       associate (wv => wv_ad(n_wv_ad))
+
+         ! Solve for the wave function
+
+         st = r_state_t(omega(j))
+       
+         select type (bp_ad)
+         type is (ad_bvp_t)
+            wv = wave_t(bp_ad, st, w_i, w_o, n_wv_ad)
+         type is (rad_bvp_t)
+            wv = wave_t(bp_ad, st, w_i, w_o, n_wv_ad)
+         class default
+            $ABORT(Invalid bp_ad class)
+         end select
+
+         ! Write it 
+
+         call write_details(wv, ot_p_ad)
+
+         ! If necessary, prune it
+
+         if (ot_p_ad%prune_details) call wv%prune()
+
+       end associate
+
+    end do omega_loop
+
+    ! Finish
+
+    return
+
+  end subroutine eval_wave_ad
+
+  !****
+
+  subroutine eval_wave_nad (omega)
+
+    real(WP), intent(in) :: omega(:)
+
+    complex(WP)     :: w_i(bp_nad%n_i)
+    complex(WP)     :: w_o(bp_nad%n_o)
+    integer         :: j
+    type(c_state_t) :: st
+
+    ! Set up the inhomogeneous boundary terms
+
+    w_i = 0._WP
+         
+    w_o = 0._WP
+    w_o(2) = 1._WP
+         
+    ! Scan over frequencies
+
+    omega_loop : do j = 1, SIZE(omega)
+
+       n_wv_nad = n_wv_nad + 1
+
+       if (n_wv_nad > d_wv_nad) then
+          d_wv_nad = 2*d_wv_nad
+          call reallocate(wv_nad, [d_wv_nad])
+       endif
+
+       associate (wv => wv_nad(n_wv_nad))
+
+         ! Solve for the wave function
+
+         st = c_state_t(CMPLX(omega(j), KIND=WP))
+       
+         select type (bp_nad)
+         type is (nad_bvp_t)
+            wv = wave_t(bp_nad, st, w_i, w_o, n_wv_nad)
+         class default
+            $ABORT(Invalid bp_nad class)
+         end select
+
+         ! Write it
+
+         call write_details(wv, ot_p_nad)
+
+         ! If necessary, prune it
+
+         if (ot_p_nad%prune_details) call wv%prune()
+
+       end associate
+
+    end do omega_loop
+
+    ! Finish
+
+    return
+
+  end subroutine eval_wave_nad
+
+end program gyre_force

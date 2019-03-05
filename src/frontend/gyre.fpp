@@ -1,7 +1,7 @@
 ! Program  : gyre
 ! Purpose  : oscillation code
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -326,11 +326,11 @@ contains
 
     ! Write it
 
-    call write_mode(md_ad(n_md_ad), ot_p_ad)
+    call write_details(md_ad(n_md_ad), ot_p_ad)
 
     ! If necessary, prune it
 
-    if (ot_p_ad%prune_modes) call md_ad(n_md_ad)%prune()
+    if (ot_p_ad%prune_details) call md_ad(n_md_ad)%prune()
 
     ! Finish
 
@@ -367,11 +367,11 @@ contains
 
     ! Write it
 
-    call write_mode(md_nad(n_md_nad), ot_p_nad)
+    call write_details(md_nad(n_md_nad), ot_p_nad)
 
     ! If necessary, prune it
 
-    if (ot_p_nad%prune_modes) call md_nad(n_md_nad)%prune()
+    if (ot_p_nad%prune_details) call md_nad(n_md_nad)%prune()
 
     ! Finish
 
