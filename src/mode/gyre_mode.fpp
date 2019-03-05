@@ -1,7 +1,7 @@
 ! Module   : gyre_mode
 ! Purpose  : mode data
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -49,7 +49,7 @@ module gyre_mode
      integer :: n_g
    contains
      private
-     procedure         :: classify_
+     procedure :: classify_
   end type mode_t
 
   ! Interfaces
