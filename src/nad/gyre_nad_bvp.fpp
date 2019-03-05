@@ -129,10 +129,11 @@ contains
 
   !****
 
-  function wave_t_hom_ (bp, st) result (wv)
+  function wave_t_hom_ (bp, st, j) result (wv)
 
     class(nad_bvp_t), intent(inout)   :: bp
     type(c_state_t), intent(in)       :: st
+    integer, intent(in)               :: j
     type(wave_t)                      :: wv
 
     complex(WP) :: y(6,bp%n_k)
@@ -152,7 +153,7 @@ contains
 
     ! Construct the wave_t
 
-    wv = wave_t_y_(bp, st, y)
+    wv = wave_t_y_(bp, st, y, j)
 
     ! Finish
 
@@ -162,12 +163,13 @@ contains
   
   !****
 
-  function wave_t_inhom_ (bp, st, w_i, w_o) result (wv)
+  function wave_t_inhom_ (bp, st, w_i, w_o, j) result (wv)
 
     class(nad_bvp_t), intent(inout) :: bp
     type(c_state_t), intent(in)     :: st
     complex(WP), intent(in)         :: w_i(:)
     complex(WP), intent(in)         :: w_o(:)
+    integer, intent(in)             :: j
     type(wave_t)                    :: wv
 
     complex(WP) :: y(6,bp%n_k)
@@ -190,7 +192,7 @@ contains
 
     ! Construct the wave_t
 
-    wv = wave_t_y_(bp, st, y)
+    wv = wave_t_y_(bp, st, y, j)
 
     ! Finish
 
@@ -200,11 +202,12 @@ contains
 
   !****
 
-  function wave_t_y_ (bp, st, y) result (wv)
+  function wave_t_y_ (bp, st, y, j) result (wv)
 
     class(nad_bvp_t), intent(inout) :: bp
     type(c_state_t), intent(in)     :: st
     complex(WP), intent(in)         :: y(:,:)
+    integer, intent(in)             :: j
     type(wave_t)                    :: wv
 
     type(c_ext_t) :: discrim
@@ -216,7 +219,7 @@ contains
 
     discrim = bp%det()
 
-    wv = wave_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p)
+    wv = wave_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p, j)
 
     ! Finish
 
