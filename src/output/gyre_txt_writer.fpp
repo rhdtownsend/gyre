@@ -1,7 +1,7 @@
 ! Module   : gyre_txt_writer
 ! Purpose  : write txt (ASCII) data
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -53,9 +53,11 @@ module gyre_txt_writer
      integer                           :: n_s
      integer                           :: n_v
      integer                           :: n
+     integer                           :: c
    contains
      private
      procedure, public :: final
+     procedure, public :: count
      procedure, public :: write_i_0
      procedure, public :: write_i_1
      procedure, public :: write_r_0
@@ -100,13 +102,15 @@ contains
 
     wr%n = 0
 
+    wr%c = 0
+
     ! Finish
 
     return
 
   end function txt_writer_t_
 
-!****
+  !****
 
   subroutine final (this)
 
@@ -147,7 +151,24 @@ contains
 
   end subroutine final
 
-!****
+  !****
+
+  function count (this)
+
+    class(txt_writer_t), intent(in) :: this
+    integer                         :: count
+
+    ! Return the write counter
+
+    count = this%c
+
+    ! Finish
+
+    return
+
+  end function count
+
+  !****
   
   $define $WRITE $sub
 
@@ -184,6 +205,8 @@ contains
     this%s_names(this%n_s) = rjust(name, FIELD_LEN)
 
     write(this%s_data(this%n_s), $FORMAT) data
+
+    this%c = this%c + 1
 
     ! Finish
 
@@ -229,6 +252,8 @@ contains
        write(this%v_data(k,this%n_v), $FORMAT) data(k)
     end do
 
+    this%c = this%c + 1
+
     ! Finish
 
     return
@@ -241,7 +266,7 @@ contains
   $WRITE(r,real(WP),R_FORMAT)
   $WRITE(a,character(*),A_FORMAT)
 
-!****
+  !****
   
   subroutine write_c_0 (this, name, data)
 
@@ -275,13 +300,15 @@ contains
     write(this%s_data(this%n_s-1), R_FORMAT) REAL(data)
     write(this%s_data(this%n_s  ), R_FORMAT) AIMAG(data)
 
+    this%c = this%c + 1
+
     ! Finish
 
     return
 
   end subroutine write_c_0
 
-!****
+  !****
 
   subroutine write_c_1 (this, name, data)
 
@@ -320,6 +347,8 @@ contains
        write(this%v_data(k,this%n_v-1), R_FORMAT) REAL(data(k))
        write(this%v_data(k,this%n_v  ), R_FORMAT) AIMAG(data(k))
     end do
+
+    this%c = this%c + 1
 
     ! Finish
 

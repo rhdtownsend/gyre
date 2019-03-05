@@ -1,7 +1,7 @@
 ! Module   : gyre_hdf_writer
 ! Purpose  : write HDF data
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -35,9 +35,11 @@ module gyre_hdf_writer
   type, extends (writer_t) :: hdf_writer_t
      private
      type(hgroup_t) :: hg
+     integer        :: c
    contains
      private
      procedure, public :: final
+     procedure, public :: count
      procedure, public :: write_i_0
      procedure, public :: write_i_1
      procedure, public :: write_r_0
@@ -76,13 +78,15 @@ contains
 
     call write_attr(wr%hg, 'label', label)
 
+    wr%c = 0
+
     ! Finish
 
     return
 
   end function hdf_writer_t_
 
-!****
+  !****
 
   subroutine final (this)
 
@@ -98,7 +102,24 @@ contains
 
   end subroutine final
 
-!****
+  !****
+
+  function count (this)
+
+    class(hdf_writer_t), intent(in) :: this
+    integer                         :: count
+
+    ! Return the write counter
+
+    count = this%c
+
+    ! Finish
+
+    return
+
+  end function count
+
+  !****
   
   $define $WRITE $sub
 
@@ -119,6 +140,8 @@ contains
     $else
     call write_attr(this%hg, name, data)
     $endif
+
+    this%c = this%c + 1
 
     ! Finish
 

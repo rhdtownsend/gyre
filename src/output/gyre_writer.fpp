@@ -32,6 +32,7 @@ module gyre_writer
   type, abstract :: writer_t
    contains
      procedure(final), deferred     :: final
+     procedure(count), deferred     :: count
      procedure(write_i_0), deferred :: write_i_0
      procedure(write_i_1), deferred :: write_i_1
      procedure(write_r_0), deferred :: write_r_0
@@ -52,6 +53,12 @@ module gyre_writer
        import writer_t
        class(writer_t), intent(inout) :: this
      end subroutine final
+
+     function count (this)
+       import writer_t
+       class(writer_t), intent(in) :: this
+       integer                     :: count
+     end function count
 
      $define $WRITE_ $sub
 
