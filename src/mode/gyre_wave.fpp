@@ -445,6 +445,12 @@ contains
                xi_h = 0._WP
             end if
 
+         elseif (omega_c == 0._WP) then
+
+            ! Note: this code is a hack, to deal with the current inability to calculate xi_h for static modes
+
+            xi_h = 0._WP
+
          else
             
             xi_h = (y_2+y_3)/(c_1*omega_c**2)
