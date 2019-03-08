@@ -26,6 +26,7 @@ module gyre_util
   use core_memory
 
   use gyre_constants
+  use gyre_force_par
   use gyre_grid_par
   use gyre_mode_par
   use gyre_num_par
@@ -49,10 +50,12 @@ module gyre_util
      module procedure select_par_nm_1_
      module procedure select_par_os_1_
      module procedure select_par_sc_1_
+     module procedure select_par_fr_1_
      module procedure select_par_gr_v_
      module procedure select_par_nm_v_
      module procedure select_par_os_v_
      module procedure select_par_sc_v_
+     module procedure select_par_fr_v_
   end interface select_par
 
   interface sprint
@@ -226,6 +229,7 @@ contains
   $SELECT_PAR_1(nm,num_par_t)
   $SELECT_PAR_1(os,osc_par_t)
   $SELECT_PAR_1(sc,scan_par_t)
+  $SELECT_PAR_1(fr,force_par_t)
 
   !****
    
@@ -281,6 +285,7 @@ contains
   $SELECT_PAR_V(nm,tag,num_par_t,&num)
   $SELECT_PAR_V(os,tag,osc_par_t,&osc)
   $SELECT_PAR_V(sc,tag,scan_par_t,&scan)
+  $SELECT_PAR_V(fr,tag,force_par_t,&force)
 
   !****
 
