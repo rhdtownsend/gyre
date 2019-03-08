@@ -415,6 +415,10 @@ contains
 
     end do item_loop
 
+    ! Close the file
+
+    call wr%final()
+
     ! Finish
 
     return
