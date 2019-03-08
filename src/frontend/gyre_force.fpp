@@ -28,9 +28,9 @@ program gyre_force
   use gyre_ad_bvp
   use gyre_bvp
   use gyre_constants
-  use gyre_ext
   use gyre_evol_model
   use gyre_context
+  use gyre_force_par
   use gyre_freq
   use gyre_grid
   use gyre_grid_factory
@@ -49,6 +49,7 @@ program gyre_force
   use gyre_scan
   use gyre_scan_par
   use gyre_state
+  use gyre_tide_util
   use gyre_util
   use gyre_version
   use gyre_wave
@@ -61,34 +62,36 @@ program gyre_force
 
   ! Variables
 
-  character(:), allocatable     :: filename
-  integer                       :: unit
-  type(model_par_t)             :: ml_p
-  type(mode_par_t), allocatable :: md_p(:)
-  type(osc_par_t), allocatable  :: os_p(:)
-  type(num_par_t), allocatable  :: nm_p(:)
-  type(grid_par_t), allocatable :: gr_p(:)
-  type(scan_par_t), allocatable :: sc_p(:)
-  type(out_par_t)               :: ot_p_ad
-  type(out_par_t)               :: ot_p_nad
-  class(model_t), pointer       :: ml => null()
-  integer                       :: i
-  type(osc_par_t)               :: os_p_sel
-  type(num_par_t)               :: nm_p_sel
-  type(grid_par_t)              :: gr_p_sel
-  type(scan_par_t), allocatable :: sc_p_sel(:)
-  type(context_t), pointer      :: cx(:) => null()
-  real(WP), allocatable         :: omega(:)
-  type(grid_t)                  :: gr
-  class(r_bvp_t), allocatable   :: bp_sad
-  class(r_bvp_t), allocatable   :: bp_ad
-  class(c_bvp_t), allocatable   :: bp_nad
-  integer                       :: n_wv_ad
-  integer                       :: d_wv_ad
-  type(wave_t), allocatable     :: wv_ad(:)
-  integer                       :: n_wv_nad
-  integer                       :: d_wv_nad
-  type(wave_t), allocatable     :: wv_nad(:)
+  character(:), allocatable      :: filename
+  integer                        :: unit
+  type(model_par_t)              :: ml_p
+  type(mode_par_t), allocatable  :: md_p(:)
+  type(osc_par_t), allocatable   :: os_p(:)
+  type(num_par_t), allocatable   :: nm_p(:)
+  type(grid_par_t), allocatable  :: gr_p(:)
+  type(scan_par_t), allocatable  :: sc_p(:)
+  type(force_par_t), allocatable :: fr_p(:)
+  type(out_par_t)                :: ot_p_ad
+  type(out_par_t)                :: ot_p_nad
+  class(model_t), pointer        :: ml => null()
+  integer                        :: i
+  type(osc_par_t)                :: os_p_sel
+  type(num_par_t)                :: nm_p_sel
+  type(grid_par_t)               :: gr_p_sel
+  type(scan_par_t), allocatable  :: sc_p_sel(:)
+  type(force_par_t)              :: fr_p_sel
+  type(context_t), pointer       :: cx(:) => null()
+  real(WP), allocatable          :: omega(:)
+  type(grid_t)                   :: gr
+  class(r_bvp_t), allocatable    :: bp_sad
+  class(r_bvp_t), allocatable    :: bp_ad
+  class(c_bvp_t), allocatable    :: bp_nad
+  integer                        :: n_wv_ad
+  integer                        :: d_wv_ad
+  type(wave_t), allocatable      :: wv_ad(:)
+  integer                        :: n_wv_nad
+  integer                        :: d_wv_nad
+  type(wave_t), allocatable      :: wv_nad(:)
 
   ! Read command-line arguments
 
@@ -130,6 +133,7 @@ program gyre_force
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
   call read_scan_par(unit, sc_p)
+  call read_force_par(unit, fr_p)
   call read_out_par(unit, 'ad', ot_p_ad)
   call read_out_par(unit, 'nad', ot_p_nad)
 
@@ -179,6 +183,7 @@ program gyre_force
      call select_par(nm_p, md_p(i)%tag, nm_p_sel)
      call select_par(gr_p, md_p(i)%tag, gr_p_sel)
      call select_par(sc_p, md_p(i)%tag, sc_p_sel)
+     call select_par(fr_p, md_p(i)%tag, fr_p_sel)
 
      ! Set up the context
 
@@ -285,12 +290,8 @@ contains
     real(WP)        :: w_o(bp_sad%n_o)
     type(r_state_t) :: st
 
-    ! Set up the inhomogeneous boundary terms
+    ! If necessary, expand arrays
 
-    w_i = 0._WP
-         
-    w_o(1) = -1._WP
-         
     n_wv_ad = n_wv_ad + 1
 
     if (n_wv_ad > d_wv_ad) then
@@ -298,6 +299,13 @@ contains
        call reallocate(wv_ad, [d_wv_ad])
     endif
 
+    ! Set up the inhomogeneous boundary terms
+
+    w_i = 0._WP
+
+    w_o = 0._WP
+    w_o(1) = Phi_force(0._WP)
+         
     associate (wv => wv_ad(n_wv_ad))
 
       ! Solve for the wave function
@@ -338,16 +346,11 @@ contains
     integer         :: j
     type(r_state_t) :: st
 
-    ! Set up the inhomogeneous boundary terms
-
-    w_i = 0._WP
-         
-    w_o = 0._WP
-    w_o(2) = 1._WP
-         
     ! Scan over frequencies
 
     omega_loop : do j = 1, SIZE(omega)
+
+       ! If necessary, expand arrays
 
        n_wv_ad = n_wv_ad + 1
 
@@ -356,6 +359,13 @@ contains
           call reallocate(wv_ad, [d_wv_ad])
        endif
 
+       ! Set up the inhomogeneous boundary terms
+
+       w_i = 0._WP
+         
+       w_o = 0._WP
+       w_o(2) = Phi_force(omega(j))
+         
        associate (wv => wv_ad(n_wv_ad))
 
          ! Solve for the wave function
@@ -400,16 +410,11 @@ contains
     integer         :: j
     type(c_state_t) :: st
 
-    ! Set up the inhomogeneous boundary terms
-
-    w_i = 0._WP
-         
-    w_o = 0._WP
-    w_o(2) = 1._WP
-         
     ! Scan over frequencies
 
     omega_loop : do j = 1, SIZE(omega)
+
+       ! If necessary, expand arrays
 
        n_wv_nad = n_wv_nad + 1
 
@@ -418,6 +423,13 @@ contains
           call reallocate(wv_nad, [d_wv_nad])
        endif
 
+       ! Set up the inhomogeneous boundary terms
+
+       w_i = 0._WP
+         
+       w_o = 0._WP
+       w_o(2) = Phi_force(omega(j))
+         
        associate (wv => wv_nad(n_wv_nad))
 
          ! Solve for the wave function
@@ -448,5 +460,61 @@ contains
     return
 
   end subroutine eval_wave_nad
+
+  !****
+
+  function Phi_force (omega)
+
+    real(WP), intent(in) :: omega
+    real(WP)             :: Phi_force
+
+    real(WP) :: M_pri
+    real(WP) :: M_sec
+    real(WP) :: R_pri
+    real(WP) :: P
+    real(WP) :: a
+    real(WP) :: Upsilon
+    real(WP) :: eps_tide
+
+    ! Evaluate the forcing potential at frequency omega
+
+    select case (fr_p_sel%force_type)
+
+    case ('FIXED')
+
+       Phi_force = fr_p_sel%Phi
+
+    case ('BINARY')
+
+       select type (ml)
+       class is (evol_model_t)
+          M_pri = ml%M_star
+          M_sec = fr_p_sel%q*M_pri
+          R_pri = ml%R_star
+       class default
+          $ABORT(Invalid model class)
+       end select
+
+       P = 1._WP/freq_from_omega(omega, ml, gr%pt_i(), gr%pt_o(), 'HZ', 'INERTIAL', md_p(i), os_p_sel)
+
+       a = (G_GRAVITY*(M_pri + M_sec)*P**2/(4.*PI**2))**(1._WP/3._WP)
+
+       Upsilon = Upsilon_lmk(R_pri/a, fr_p_sel%e, md_p(i)%l, md_p(i)%m, fr_p_sel%k) 
+      
+       eps_tide = (R_pri/a)**3*(M_sec/M_pri)
+
+       Phi_force = (2*md_p(i)%l+1)*eps_tide*Upsilon
+
+    case default
+
+       $ABORT(Invalid force_type)
+
+    end select
+
+    ! Finish
+
+    return
+
+  end function Phi_force
 
 end program gyre_force
