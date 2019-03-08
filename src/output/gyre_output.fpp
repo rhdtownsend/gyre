@@ -434,7 +434,7 @@ contains
 
       ! Write the item from wave_t data
 
-      gr = ml%grid()
+      gr = wv%grid()
 
       select case (item)
 
