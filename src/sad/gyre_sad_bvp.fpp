@@ -232,10 +232,10 @@ contains
 
     st_c = c_state_t(CMPLX(st%omega, KIND=WP), st%omega)
 
-    y_c(1,:) = y(1,:)
-    y_c(2,:) = y(1,:)
-    y_c(3,:) = -y(1,:)
-    y_c(4,:) = -y(2,:)
+    y_c(1,:) = -y(1,:)
+    y_c(2,:) = -y(1,:)
+    y_c(3,:) = y(1,:)
+    y_c(4,:) = y(2,:)
     y_c(5,:) = 0._WP
     y_c(6,:) = 0._WP
 
