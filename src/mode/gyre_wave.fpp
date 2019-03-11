@@ -414,9 +414,12 @@ contains
 
     complex(WP) :: y_2
     complex(WP) :: y_3
-    real(WP)    :: c_1
+    complex(WP) :: y_4
+    real(WP)    :: U
+    real(WP)    :: c_1 
     real(WP)    :: Omega_rot
     complex(WP) :: omega_c
+    complex(WP) :: lambda
 
     ! Evaluate the horizontal displacement perturbation, in units of
     ! R_star
@@ -426,34 +429,64 @@ contains
        associate ( &
             ml => this%cx%model(), &
             pt => this%gr%pt(k), &
-            l_i => this%l_i )
+            l_i => this%l_i)
 
-         y_2 = this%y_i(2, k)
          y_3 = this%y_i(3, k)
-
-         c_1 = ml%coeff(I_C_1, pt)
 
          Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
 
-         omega_c = this%cx%omega_c(Omega_rot, this%st)
-      
-         if (l_i /= 1._WP) then
+         if (this%md_p%static) then
 
-            if (pt%x /= 0._WP) then
-               xi_h = (y_2+y_3)*pt%x**(l_i-1._WP)/(c_1*omega_c**2)
+            ! Static modes require a slightly different approach to
+            ! evaluate xi_h, since (y_2+y_3)/(c_1*omega_c**2) = 0/0 is
+            ! undefined. Instead, use the continuity equation under
+            ! the assumption of incompressibility
+
+            y_4 = this%y_i(4, k)
+
+            U = ml%coeff(I_U, pt)
+
+            lambda = this%cx%lambda(Omega_rot, this%st)
+
+            if (l_i /= 1._WP) then
+
+               if (pt%x /= 0._WP) then
+                  xi_h = -((4._WP-U)*y_3+y_4)*pt%x**(l_i-1._WP)/lambda
+               else
+                  xi_h = 0._WP
+               end if
+
             else
-               xi_h = 0._WP
-            end if
+               
+               xi_h = -((4._WP-U)*y_3+y_4)/lambda
 
-         elseif (omega_c == 0._WP) then
-
-            ! Note: this code is a hack, to deal with the current inability to calculate xi_h for static modes
-
-            xi_h = 0._WP
+            endif
 
          else
+
+            ! Non-static modes
+
+            y_2 = this%y_i(2, k)
+
+            c_1 = ml%coeff(I_C_1, pt)
+
+            Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+         
+            omega_c = this%cx%omega_c(Omega_rot, this%st)
+
+            if (l_i /= 1._WP) then
+
+               if (pt%x /= 0._WP) then
+                  xi_h = (y_2+y_3)*pt%x**(l_i-1._WP)/(c_1*omega_c**2)
+               else
+                  xi_h = 0._WP
+               end if
+               
+            else
             
-            xi_h = (y_2+y_3)/(c_1*omega_c**2)
+               xi_h = (y_2+y_3)/(c_1*omega_c**2)
+
+            endif
 
          endif
 
