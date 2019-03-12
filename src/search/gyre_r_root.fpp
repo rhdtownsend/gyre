@@ -350,7 +350,7 @@ contains
 
 !****
 
-  subroutine expand_ (rf, rx_a, rx_b, status, clamp_a, clamp_b, f_rx_a, f_rx_b)
+  subroutine expand_ (rf, rx_a, rx_b, status, clamp_a, clamp_b, f_rx_a, f_rx_b, expand_factor)
 
     class(r_ext_func_t), intent(inout)   :: rf
     type(r_ext_t), intent(inout)         :: rx_a
@@ -360,11 +360,11 @@ contains
     logical, optional, intent(in)        :: clamp_b
     type(r_ext_t), optional, intent(out) :: f_rx_a
     type(r_ext_t), optional, intent(out) :: f_rx_b
-
-    real(WP), parameter :: EXPAND_FACTOR = 1.6_WP
+    real(WP), optional, intent(in)       :: expand_factor
 
     logical       :: clamp_a_
     logical       :: clamp_b_
+    real(WP)      :: expand_factor_
     type(r_ext_t) :: f_a
     type(r_ext_t) :: f_b
     logical       :: move_a
@@ -381,7 +381,15 @@ contains
        clamp_b_ = .FALSE.
     endif
 
+    if (PRESENT(expand_factor)) then
+       expand_factor_ = expand_factor
+    else
+       expand_factor_ = 1.6_WP
+    endif
+
     $ASSERT(.NOT. (clamp_a_ .AND. clamp_b_),Cannot clamp both points)
+
+    $ASSERT(expand_factor_ > 1._WP,Invalid expand_factor)
 
     $ASSERT(rx_a /= rx_b,Invalid initial bracket)
 
@@ -411,14 +419,14 @@ contains
 
        if (move_a) then
 
-          rx_a = rx_a + EXPAND_FACTOR*(rx_a - rx_b)
+          rx_a = rx_a + expand_factor_*(rx_a - rx_b)
 
           call rf%eval(rx_a, f_a, status)
           if (status /= STATUS_OK) exit expand_loop
 
        else
 
-          rx_b = rx_b + EXPAND_FACTOR*(rx_b - rx_a)
+          rx_b = rx_b + expand_factor_*(rx_b - rx_a)
 
           call rf%eval(rx_b, f_b, status)
           if (status /= STATUS_OK) exit expand_loop

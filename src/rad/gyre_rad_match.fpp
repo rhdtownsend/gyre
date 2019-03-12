@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_match
 ! Purpose  : adiabatic radial match conditions
 !
-! Copyright 2016-2017 Rich Townsend
+! Copyright 2016-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -72,10 +72,9 @@ module gyre_rad_match
 
 contains
 
-  function rad_match_t_ (cx, pt_i, pt_a, pt_b, md_p, os_p) result (mt)
+  function rad_match_t_ (cx, pt_a, pt_b, md_p, os_p) result (mt)
 
     type(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)            :: pt_i
     type(point_t), intent(in)            :: pt_a
     type(point_t), intent(in)            :: pt_b
     type(mode_par_t), intent(in)         :: md_p
@@ -89,7 +88,7 @@ contains
 
     mt%cx => cx
 
-    mt%tr = rad_trans_t(cx, pt_i, md_p, os_p)
+    mt%tr = rad_trans_t(cx, md_p, os_p)
 
     call mt%stencil_(pt_a, pt_b)
 
@@ -109,18 +108,18 @@ contains
     type(point_t), intent(in)         :: pt_a
     type(point_t), intent(in)         :: pt_b
 
+    class(model_t), pointer :: ml
+
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%ml)
+    ml => this%cx%model()
 
-      call check_model(ml, [I_U])
+    call check_model(ml, [I_U])
 
-      allocate(this%coeff(2,J_LAST))
+    allocate(this%coeff(2,J_LAST))
 
-      this%coeff(1,J_U) = ml%coeff(I_U, pt_a)
-      this%coeff(2,J_U) = ml%coeff(I_U, pt_b)
-
-    end associate
+    this%coeff(1,J_U) = ml%coeff(I_U, pt_a)
+    this%coeff(2,J_U) = ml%coeff(I_U, pt_b)
 
     ! Set up stencil for the tr component
 

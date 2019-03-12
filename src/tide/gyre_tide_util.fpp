@@ -24,7 +24,6 @@ module gyre_tide_util
   use core_kinds
 
   use gyre_constants
-  use gyre_tide_par
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -40,15 +39,15 @@ module gyre_tide_util
   public :: Upsilon_lmk
   public :: X_lmk
   public :: beta_lm
-  public :: kappa_lmk
 
   ! Procedures
 
 contains
 
-  function Upsilon_lmk (td_p, l, m, k)
+  function Upsilon_lmk (R_a, e, l, m, k)
 
-    type(tide_par_t), intent(in) :: td_p
+    real(WP), intent(in)         :: R_a
+    real(WP), intent(in)         :: e
     integer, intent(in)          :: l
     integer, intent(in)          :: m
     integer, intent(in)          :: k
@@ -56,7 +55,7 @@ contains
 
     ! Evaluate the tidal potential coefficient for eps_tide of unity
 
-    Upsilon_lmk = -td_p%R_a**(l-2)*beta_lm(l, m)*X_lmk(td_p, -(l+1), -m, -k)/(4._WP*PI)
+    Upsilon_lmk = -R_a**(l-2)*beta_lm(l, m)*X_lmk(e, -(l+1), -m, -k)/(4._WP*PI)
 
     ! Finish
 
@@ -66,13 +65,13 @@ contains
 
   !****
 
-  function X_lmk (td_p, l, m, k)
+  function X_lmk (e, l, m, k)
 
-    type(tide_par_t), intent(in) :: td_p
-    integer, intent(in)          :: l
-    integer, intent(in)          :: m
-    integer, intent(in)          :: k
-    real(WP)                     :: X_lmk
+    real(WP), intent(in) :: e
+    integer, intent(in)  :: l
+    integer, intent(in)  :: m
+    integer, intent(in)  :: k
+    real(WP)             :: X_lmk
 
     integer, parameter :: N = 1024
 
@@ -93,17 +92,17 @@ contains
 
        ua(i) = (i-1)*PI/(N-1)
 
-       Ea = 2._WP*ATAN(SQRT((1._WP-td_p%e)/(1._WP+td_p%e))*TAN(ua(i)/2._WP))
+       Ea = 2._WP*ATAN(SQRT((1._WP-e)/(1._WP+e))*TAN(ua(i)/2._WP))
 
-       Ma = Ea - td_p%e*SIN(Ea)
+       Ma = Ea - e*SIN(Ea)
 
-       y(i) = COS(k*Ma - m*ua(i))/(1._WP + td_p%e*COS(ua(i)))**(l+2)
+       y(i) = COS(k*Ma - m*ua(i))/(1._WP + e*COS(ua(i)))**(l+2)
 
     end do
 
     ! Do the integral
 
-    X_lmk = integrate(ua, y)*(1._WP - td_p%e**2)**(l+1.5_WP)/PI
+    X_lmk = integrate(ua, y)*(1._WP - e**2)**(l+1.5_WP)/PI
 
     ! Finish
 

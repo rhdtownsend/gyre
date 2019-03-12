@@ -1,5 +1,5 @@
 ! Module   : gyre_rad_bvp
-! Purpose  : adiabatic radial bounary value problem solver
+! Purpose  : radial adiabatic bounary value problem solver
 !
 ! Copyright 2013-2018 Rich Townsend
 !
@@ -27,6 +27,7 @@ module gyre_rad_bvp
   use gyre_context
   use gyre_ext
   use gyre_grid
+  use gyre_interp
   use gyre_model
   use gyre_mode_par
   use gyre_num_par
@@ -102,12 +103,12 @@ contains
        $WARN(cowling_approx is ignored in 2nd-order radial equations)
     endif
     
-    pt_i = gr%pt(1)
-    pt_o = gr%pt(gr%n_k)
+    pt_i = gr%pt_i()
+    pt_o = gr%pt_o()
 
     ! Initialize the boundary conditions
 
-    bd = rad_bound_t(cx, pt_i, pt_o, md_p, os_p)
+    bd = rad_bound_t(cx, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -115,7 +116,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = rad_diff_t(cx, pt_i, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = rad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -127,7 +128,7 @@ contains
     bp%cx => cx
     bp%gr = gr
 
-    bp%tr = rad_trans_t(cx, pt_i, md_p, os_p)
+    bp%tr = rad_trans_t(cx, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
     if (os_p%quasiad_eigfuncs) then
@@ -229,29 +230,81 @@ contains
     real(WP), intent(in)            :: y(:,:)
     type(wave_t)                    :: wv
 
-    real(WP)        :: y_g(4,bp%n_k)
-    integer         :: k
-    real(WP)        :: U
-    complex(WP)     :: y_c(6,bp%n_k)
-    type(c_state_t) :: st_c
-    type(c_ext_t)   :: discrim
+    class(model_t), pointer :: ml
+    integer                 :: k
+    real(WP)                :: U
+    real(WP)                :: c_1(bp%n_k)
+    real(WP)                :: y_4(bp%n_k)
+    real(WP)                :: deul_phi(bp%n_k)
+    integer                 :: s
+    integer                 :: k_i
+    integer                 :: k_o
+    type(r_interp_t)        :: in
+    real(WP)                :: eul_phi(bp%n_k)
+    real(WP)                :: y_3(bp%n_k)
+    real(WP)                :: y_g(4,bp%n_k)
+    complex(WP)             :: y_c(6,bp%n_k)
+    type(c_state_t)         :: st_c
+    type(c_ext_t)           :: discrim
 
     ! Set up gravitational eigenfunctions
 
-    y_g(1:2,:) = y
+    ml => bp%cx%model()
 
     !$OMP PARALLEL DO PRIVATE (U)
     do k = 1, bp%n_k
 
-       associate (pt => bp%gr%pt(k))
-         U = bp%cx%ml%coeff(I_U, pt)
+       associate ( pt => bp%gr%pt(k) )
+
+         U = ml%coeff(I_U, pt)
+         c_1(k) = ml%coeff(I_C_1, pt)
+
+         ! Evaluate y_4
+         
+         y_4(k) = -U*y(1,k)
+
+         ! Evaluate the Eulerian potential gradient (gravity) perturbation
+
+         if (pt%x /= 0._WP) then
+            deul_phi(k) = y_4(k)/(c_1(k)*pt%x)
+         else
+            deul_phi(k) = 0._WP
+         end if
+
        end associate
 
-       y_g(4,k) = -U*y(1,k)
-       
     end do
 
-    y_g(3,:) = 0._WP
+    ! Evaluate the Eulerian potential perturbation,
+    ! segment-by-segment, by integrating an interpolant fit to the
+    ! gravity perturbation
+
+    seg_loop : do s = bp%gr%s_i(), bp%gr%s_o()
+
+       k_i = bp%gr%k_s_i(s)
+       k_o = bp%gr%k_s_o(s)
+
+       in = r_interp_t(bp%gr%pt(k_i:k_o)%x, deul_phi(k_i:k_o), 'MONO')
+       
+       eul_phi(k_i:k_o) = in%int_f()
+
+    end do seg_loop
+
+    ! Adjust the potential perturbation so that it satisfies the
+    ! surface boundary condition
+    
+    eul_phi = eul_phi - eul_phi(bp%n_k) - y_4(bp%n_k)
+
+    ! Set up y_3 based on it
+
+    y_3 = c_1*eul_phi
+
+    ! Store eigenfunctions into y_g
+
+    y_g(1:2,:) = y
+
+    y_g(3,:) = y_3
+    y_g(4,:) = y_4
 
     ! Set up complex eigenfunctions
 

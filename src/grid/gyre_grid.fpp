@@ -1,7 +1,7 @@
 ! Module   : gyre_grid
 ! Purpose  : segmented grids
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -218,7 +218,7 @@ contains
 
          else
 
-            $ASSERT(dn(j) == 0,Attempt to add points at cell boundary)
+            $ASSERT(dn(j) == 0,Attempt to add points at segment boundary)
 
             gr%pt(k)%s = pt_a%s
             gr%pt(k)%x = pt_a%x

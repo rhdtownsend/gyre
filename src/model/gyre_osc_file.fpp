@@ -1,7 +1,7 @@
 ! Module   : gyre_osc_file
 ! Purpose  : read OSC files
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -171,9 +171,11 @@ contains
     As = point_data(15,:)
 
     nabla = point_data(6,:)
+
     kap = point_data(8,:)
     kap_rho = point_data(18,:)
     kap_T = point_data(17,:)
+
     eps = point_data(9,:)
     eps_eps_rho = point_data(20,:)
     eps_eps_T = point_data(19,:)
@@ -260,6 +262,8 @@ contains
     call em%define(I_KAP_T, kap_T)
 
     call em%define(I_OMEGA_ROT, Omega_rot)
+
+    call em%commit()
 
     ! Return a pointer
 

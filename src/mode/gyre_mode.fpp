@@ -1,7 +1,7 @@
 ! Module   : gyre_mode
 ! Purpose  : mode data
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -92,11 +92,15 @@ contains
     ! Normalize so that y_1 at the reference point is purely real, and
     ! the total inertia E is unity
 
-    y_1_ref = md%y_c(1, md%k_ref)
+    y_1_ref = md%y_i(1, md%k_ref)
 
-    f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
+    if (ABS(y_1_ref) > TINY(0._WP)) then
+       f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
+    else
+       f_phase = 1._WP
+    endif
 
-    md%scl = 1._WP/SQRT(md%E())*f_phase
+    md%scl = md%scl/SQRT(md%E())*f_phase
 
     ! Classify the mode
 
@@ -174,7 +178,7 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the inner boundary)
 
-       call find_turn(this%cx, this%gr, r_state_t(REAL(this%st%omega)), k_i, x_i)
+       call find_turn(this%context(), this%grid(), r_state_t(REAL(this%omega)), k_i, x_i)
 
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface

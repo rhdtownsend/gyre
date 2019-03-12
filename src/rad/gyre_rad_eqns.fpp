@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_eqns
 ! Purpose  : radial adiabatic differential equations
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -81,10 +81,9 @@ module gyre_rad_eqns
 
 contains
 
-  function rad_eqns_t_ (cx, pt_i, md_p, os_p) result (eq)
+  function rad_eqns_t_ (cx, md_p, os_p) result (eq)
 
     class(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)             :: pt_i
     type(mode_par_t), intent(in)          :: md_p
     type(osc_par_t), intent(in)           :: os_p
     type(rad_eqns_t)                      :: eq
@@ -93,7 +92,7 @@ contains
 
     eq%cx => cx
 
-    eq%tr = rad_trans_t(cx, pt_i, md_p, os_p)
+    eq%tr = rad_trans_t(cx, md_p, os_p)
 
     select case (os_p%time_factor)
     case ('OSC')
@@ -119,31 +118,34 @@ contains
     class(rad_eqns_t), intent(inout) :: this
     type(point_t), intent(in)        :: pt(:)
 
+    class(model_t), pointer :: ml
     integer :: n_s
     integer :: i
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%ml)
+    ml => this%cx%model()
 
-      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
+    call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
 
-      n_s = SIZE(pt)
+    n_s = SIZE(pt)
       
-      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-      allocate(this%coeff(n_s,J_LAST))
+    if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+    allocate(this%coeff(n_s,J_LAST))
 
-      do i = 1, n_s
-         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
-         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
-         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
-         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
-         this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
-      end do
+    do i = 1, n_s
 
-      this%x = pt%x
+       $ASSERT(.NOT. ml%is_vacuum(pt(i)),Attempt to stencil at vacuum point)
+       
+       this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
+       this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
+       this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
+       this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
+       this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
 
-    end associate
+    end do
+
+    this%x = pt%x
 
     ! Set up stencil for the tr component
 

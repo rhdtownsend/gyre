@@ -789,11 +789,20 @@ contains
     rx_a_s = SIGN(1._WP, rx_a%f)
     rx_b_s = SIGN(1._WP, rx_b%f)
 
-    if (rx_a_s == rx_b_s) then
-       if (rx_a%e > rx_b%e .EQV. rx_a_s > 0._WP) then
+    if (rx_a_s > 0._WP .AND. rx_b_s > 0._WP) then
+       if (rx_a%e > rx_b%e) then
           max_rx = rx_a
-       elseif (rx_b%e > rx_a%e .EQV. rx_a_s > 0._WP) then
+       elseif (rx_b%e > rx_a%e) then
           max_rx = rx_b
+       else
+          max_rx%f = MAX(rx_a%f, rx_b%f)
+          max_rx%e = rx_a%e
+       endif
+    elseif (rx_a_s < 0._WP .AND. rx_b_s < 0._WP) then
+       if (rx_a%e > rx_b%e) then
+          max_rx = rx_b
+       elseif (rx_b%e > rx_a%e) then
+          max_rx = rx_a
        else
           max_rx%f = MAX(rx_a%f, rx_b%f)
           max_rx%e = rx_a%e

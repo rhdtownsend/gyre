@@ -23,11 +23,10 @@ module gyre_model_factory
 
   use core_kinds
 
-  use gyre_evol_model
   use gyre_hom_model
+  use gyre_twopt_quintic_model
   use gyre_model
   use gyre_model_par
-  use gyre_poly_model
 
   use gyre_amdl_file
   use gyre_famdl_file
@@ -35,6 +34,8 @@ module gyre_model_factory
   use gyre_losc_file
   use gyre_mesa_file
   use gyre_osc_file
+  use gyre_twopt_file
+  use gyre_wdec_file
   $if ($HDF5)
   use gyre_b3_file
   use gyre_gsm_file
@@ -99,6 +100,8 @@ contains
           call read_mesa_model(ml_p, ml)
        case ('OSC')
           call read_osc_model(ml_p, ml)
+       case ('WDEC')
+          call read_wdec_model(ml_p, ml)
        case default
           $ABORT(Invalid file_format)
        end select
@@ -110,6 +113,14 @@ contains
        $else
        $ABORT(No HDF5 support, therefore cannot read POLY files)
        $endif
+
+    case ('TWOPT')
+
+       call read_twopt_model(ml_p, ml)
+
+    case ('TWOPT_QUINTIC')
+
+       allocate(ml, SOURCE=twopt_quintic_model_t(ml_p))
 
     case ('HOM')
 
@@ -126,9 +137,5 @@ contains
     return
 
   end function model_t_
-
-  !****
-
-  
 
 end module gyre_model_factory

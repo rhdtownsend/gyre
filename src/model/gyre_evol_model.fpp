@@ -1,7 +1,7 @@
 ! Module   : gyre_evol_model
 ! Purpose  : stellar evolutionary model
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -49,12 +49,19 @@ module gyre_evol_model
      real(WP), public              :: L_star
      logical                       :: add_center
      logical                       :: repair_As
+     logical                       :: force_cons
      integer                       :: s_i
      integer                       :: s_o
      character(:), allocatable     :: deriv_type
+     logical                       :: committed
    contains
      private
      procedure, public :: define
+     procedure, public :: commit
+     procedure         :: coeff_U_
+     procedure         :: coeff_As_
+     procedure         :: coeff_V_2_
+     procedure         :: coeff_in_
      procedure, public :: coeff
      procedure, public :: dcoeff
      procedure, public :: M_r
@@ -100,7 +107,7 @@ contains
     if (ml_p%add_center) then
 
        if (x(1) /= 0._WP) then
-
+          
           ml%gr = grid_t([0._WP,x])
           ml%add_center = .TRUE.
 
@@ -145,7 +152,10 @@ contains
     ml%L_star = L_star
 
     ml%repair_As = ml_p%repair_As
+    ml%force_cons = ml_p%force_cons
     ml%deriv_type = ml_p%deriv_type
+
+    ml%committed = .FALSE.
 
     ! Finish
 
@@ -164,6 +174,10 @@ contains
     real(WP), allocatable :: coeff_(:)
     real(WP)              :: coeff_0
     integer               :: s
+    integer               :: k_i
+    integer               :: k_o
+
+    $ASSERT_DEBUG(.NOT. this%committed,Cannot define coefficient after committing model)
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
 
@@ -210,17 +224,20 @@ contains
        if (this%repair_As) call repair_coeff_(this%gr, coeff_)
     end select
 
-    ! Set up per-segment interpolating splines
+    ! Set up per-segment interpolants
           
     seg_loop : do s = this%s_i, this%s_o
 
-       associate (k_i => this%gr%k_s_i(s), k_o => this%gr%k_s_o(s))
-         if (this%gr%pt(k_i)%x == 0._WP) then
-            this%in(i, s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type, df_dx_a=0._WP)
-         else
-            this%in(i, s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type)
-         endif
-       end associate
+       ! Set up the interpolant
+
+       k_i = this%gr%k_s_i(s)
+       k_o = this%gr%k_s_o(s)
+
+       if (this%gr%pt(k_i)%x == 0._WP) then
+          this%in(i,s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type, df_dx_a=0._WP)
+       else
+          this%in(i,s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type)
+       endif
 
     end do seg_loop
 
@@ -276,12 +293,70 @@ contains
 
   !****
 
+  subroutine commit (this)
+
+    class(evol_model_t), intent(inout) :: this
+
+    integer  :: s
+    integer  :: k_i
+    integer  :: k_o
+    real(WP) :: x(this%gr%n_k)
+    real(WP) :: c_1(this%gr%n_k)
+    real(WP) :: U(this%gr%n_k)
+    real(WP) :: dc_1_dx(this%gr%n_k)
+
+    ! Commit the model
+
+    ! If necessary (and possible), re-create the c_1 interpolant with derivatives set by U
+
+    if (this%force_cons) then
+
+       if (this%is_defined(I_C_1) .AND. this%is_defined(I_U)) then
+
+          seg_loop : do s = this%s_i, this%s_o
+
+             k_i = this%gr%k_s_i(s)
+             k_o = this%gr%k_s_o(s)
+
+             x(k_i:k_o) = this%gr%pt(k_i:k_o)%x
+
+             c_1(k_i:k_o) = this%in(I_C_1,s)%f()
+             U(k_i:k_o) = this%in(I_U,s)%f()
+
+             where (x(k_i:k_o) /= 0._WP)
+                dc_1_dx(k_i:k_o) = c_1(k_i:k_o)*(3._WP - U(k_i:k_o))/x(k_i:k_o)
+             elsewhere
+                dc_1_dx(k_i:k_o) = 0._WP
+             end where
+
+             this%in(I_C_1,s) = r_interp_t(x(k_i:k_o), c_1(k_i:k_o), dc_1_dx(k_i:k_o))
+
+          end do seg_loop
+
+       end if
+
+    end if
+
+    ! Update the committed flag
+
+    this%committed = .TRUE.
+
+    ! Finish
+
+    return
+
+  end subroutine commit
+
+  !****
+
   function coeff (this, i, pt)
 
     class(evol_model_t), intent(in) :: this
     integer, intent(in)             :: i
     type(point_t), intent(in)       :: pt
     real(WP)                        :: coeff
+
+    $ASSERT_DEBUG(this%committed,Cannot evaluate coefficient before committing model)
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
     $ASSERT_DEBUG(this%is_defined(i),Undefined coefficient)
@@ -290,9 +365,16 @@ contains
 
     ! Evaluate the i'th coefficient
 
-    associate (s => pt%s, x => pt%x)
-      coeff = this%in(i,s)%f(x)
-    end associate
+    select case (i)
+    case (I_U)
+       coeff = this%coeff_U_(pt)
+    case (I_AS)
+       coeff = this%coeff_As_(pt)
+!    case (I_V_2)
+!       coeff = this%coeff_V_2_(pt)
+    case default
+       coeff = this%coeff_in_(i, pt)
+    end select
 
     ! Finish
 
@@ -302,12 +384,173 @@ contains
 
   !****
 
+  function coeff_U_ (this, pt) result (U)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: U
+
+    real(WP) :: c_1
+    real(WP) :: dc_1_dx
+
+    ! Evaluate the U coefficient using the self-consistency
+    ! relation given in eqn. 20 of [Tak2006]
+
+    if (this%force_cons) then
+
+       associate (s => pt%s, x => pt%x)
+
+         c_1 = this%in(I_C_1,s)%f(x)
+         dc_1_dx = this%in(I_C_1,s)%df_dx(x)
+         
+         U = 3._WP - x*dc_1_dx/c_1
+
+       end associate
+      
+    else
+
+       U = this%coeff_in_(I_U, pt)
+
+    end if
+
+    ! Finish
+
+    return
+
+  end function coeff_U_
+
+  !****
+
+  function coeff_As_ (this, pt) result (As)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: As
+
+    real(WP) :: V_g
+    real(WP) :: c_1
+    real(WP) :: dc_1_dx
+    real(WP) :: d2c_1_dx2
+    real(WP) :: U
+
+    ! Evaluate the As coefficient using the self-consistency relation
+    ! given in eqns. 20 & 21 of [Tak2006]
+
+    if (this%force_cons) then
+
+       associate (s => pt%s, x => pt%x)
+
+         V_g = this%in(I_V_2,s)%f(x)*x**2/this%in(I_GAMMA_1,s)%f(x)
+
+         c_1 = this%in(I_C_1,s)%f(x)
+         dc_1_dx = this%in(I_C_1,s)%df_dx(x)
+         d2c_1_dx2 = this%in(I_C_1,s)%df_dx(x, 2)
+
+         U = 3._WP - x*dc_1_dx/c_1
+
+         As = 3._WP - V_g - U + x*(dc_1_dx/c_1 - x*dc_1_dx**2/c_1**2 + x*d2c_1_dx2/c_1)/U
+
+       end associate
+
+    else
+
+       As = this%coeff_in_(I_AS, pt)
+
+    end if
+
+    ! Finish
+
+    return
+
+  end function coeff_As_
+
+  !****
+
+  function coeff_V_2_ (this, pt) result (V_2)
+
+    class(evol_model_t), intent(in) :: this
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: V_2
+
+    real(WP) :: As
+    real(WP) :: c_1
+    real(WP) :: dc_1_dx
+    real(WP) :: d2c_1_dx2
+    real(WP) :: U
+    real(WP) :: V_g
+
+    ! Evaluate the V_2 coefficient using the self-consistency relation
+    ! given in eqns. 20 & 21 of [Tak2006]
+
+    if (this%force_cons) then
+
+       associate (s => pt%s, x => pt%x)
+
+         if (x == 0) then
+
+            V_2 = this%in(I_V_2,s)%f(x)
+
+         else
+
+            As = this%in(I_AS,s)%f(x)
+
+            c_1 = this%in(I_C_1,s)%f(x)
+            dc_1_dx = this%in(I_C_1,s)%df_dx(x)
+            d2c_1_dx2 = this%in(I_C_1,s)%df_dx(x, 2)
+
+            U = 3._WP - x*dc_1_dx/c_1
+
+            V_g = 3._WP - As - U + x*(dc_1_dx/c_1 - x*dc_1_dx**2/c_1**2 + x*d2c_1_dx2/c_1)/U
+
+            V_2 = V_g*this%in(I_GAMMA_1,s)%f(x)/x**2
+
+         end if
+
+       end associate
+
+    else
+
+       V_2 = this%coeff_in_(I_V_2, pt)
+
+    end if
+
+    ! Finish
+
+    return
+
+  end function coeff_V_2_
+
+  !****
+
+  function coeff_in_ (this, i, pt) result (coeff)
+
+    class(evol_model_t), intent(in) :: this
+    integer, intent(in)             :: i
+    type(point_t), intent(in)       :: pt
+    real(WP)                        :: coeff
+
+    ! Evaluate the i'th coefficient via interpolation
+
+    associate (s => pt%s, x => pt%x)
+      coeff = this%in(i,s)%f(x)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function coeff_in_
+
+  !****
+
   function dcoeff (this, i, pt)
 
     class(evol_model_t), intent(in) :: this
     integer, intent(in)             :: i
     type(point_t), intent(in)       :: pt
     real(WP)                        :: dcoeff
+
+    $ASSERT_DEBUG(this%committed,Cannot evaluate coefficient before committing model)
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
     $ASSERT_DEBUG(this%is_defined(i),Undefined coefficient)

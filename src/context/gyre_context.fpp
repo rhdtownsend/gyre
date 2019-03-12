@@ -45,31 +45,35 @@ module gyre_context
   ! Derived-type definitions
 
   type :: context_t
-     class(model_t), pointer, public :: ml => null()
-     class(c_rot_t), allocatable     :: rt
-     type(point_t), public           :: pt_i
-     type(point_t), public           :: pt_o
-     integer                         :: m
-     logical                         :: complex_lambda
-     type(c_interp_t)                :: in_eps_rho
-     type(c_interp_t)                :: in_eps_T
+     private
+     class(model_t), pointer     :: ml => null()
+     class(c_rot_t), allocatable :: rt
+     type(point_t)               :: pt_i
+     type(point_t)               :: pt_o
+     integer                     :: m
+     logical                     :: complex_lambda
+     type(c_interp_t)            :: in_eps_rho
+     type(c_interp_t)            :: in_eps_T
    contains
      private
-     procedure       :: omega_c_r_
-     procedure       :: omega_c_c_
-     generic, public :: omega_c => omega_c_r_, omega_c_c_
-     procedure       :: lambda_r_
-     procedure       :: lambda_c_
-     generic, public :: lambda => lambda_r_, lambda_c_
-     procedure       :: l_e_r_
-     procedure       :: l_e_c_
-     generic, public :: l_e => l_e_r_, l_e_c_
-     procedure       :: eps_rho_r_
-     procedure       :: eps_rho_c_
-     generic, public :: eps_rho => eps_rho_r_, eps_rho_c_
-     procedure       :: eps_T_r_
-     procedure       :: eps_T_c_
-     generic, public :: eps_T => eps_T_r_, eps_T_c_
+     procedure, public :: model
+     procedure, public :: point_i
+     procedure, public :: point_o
+     procedure         :: omega_c_r_
+     procedure         :: omega_c_c_
+     generic, public   :: omega_c => omega_c_r_, omega_c_c_
+     procedure         :: lambda_r_
+     procedure         :: lambda_c_
+     generic, public   :: lambda => lambda_r_, lambda_c_
+     procedure         :: l_e_r_
+     procedure         :: l_e_c_
+     generic, public   :: l_e => l_e_r_, l_e_c_
+     procedure         :: eps_rho_r_
+     procedure         :: eps_rho_c_
+     generic, public   :: eps_rho => eps_rho_r_, eps_rho_c_
+     procedure         :: eps_T_r_
+     procedure         :: eps_T_c_
+     generic, public   :: eps_T => eps_T_r_, eps_T_c_
   end type context_t
 
   ! Interfaces
@@ -124,6 +128,57 @@ contains
     return
 
   end function context_t_
+
+  !****
+
+  function model (this) result (ml)
+
+    class(context_t), intent(in) :: this
+    class(model_t), pointer      :: ml
+
+    ! Return the context's model
+
+    ml => this%ml
+
+    ! Finish
+
+    return
+
+  end function model
+
+  !****
+
+  function point_i (this) result (pt_i)
+
+    class(context_t), intent(in) :: this
+    type(point_t)                :: pt_i
+
+    ! Return the context's inner point
+
+    pt_i = this%pt_i
+
+    ! Finish
+
+    return
+
+  end function point_i
+
+  !****
+
+  function point_o (this) result (pt_o)
+
+    class(context_t), intent(in) :: this
+    type(point_t)                :: pt_o
+
+    ! Return the context's outer point
+
+    pt_o = this%pt_o
+
+    ! Finish
+
+    return
+
+  end function point_o
 
   !****
 
@@ -308,7 +363,7 @@ contains
     integer, allocatable     :: j(:)
     
     ! Read epsilon partials data from a file in the format used in the
-    ! preparation of Wolf, Townsend & Bildsten (2017)
+    ! preparation of Wolf, Townsend & Bildsten (2018)
 
     ! Open the file and skip the header line
 

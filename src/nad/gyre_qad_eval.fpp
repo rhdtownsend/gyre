@@ -1,7 +1,7 @@
 ! Module   : gyre_qad_eval
 ! Purpose  : quasiadiabatic eigenfunction evaluation
 !
-! Copyright 2017 Rich Townsend
+! Copyright 2017-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,8 +23,8 @@ module gyre_qad_eval
 
   use core_kinds
 
-  use gyre_calc
   use gyre_context
+  use gyre_deriv
   use gyre_ext
   use gyre_grid
   use gyre_model

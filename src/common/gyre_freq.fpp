@@ -32,6 +32,8 @@ module gyre_freq
   use gyre_osc_par
   use gyre_point
   use gyre_poly_model
+  use gyre_twopt_model
+  use gyre_twopt_quintic_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -222,7 +224,7 @@ contains
        end select
 
     class is (hom_model_t)
-
+       
        select case (freq_units)
        case ('NONE')
           omega_l = freq
@@ -238,6 +240,24 @@ contains
           omega_l = -freq*2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_i)/(md_p%l*(md_p%l+1))
        case ('ROSSBY_O')
           omega_l = -freq*2._WP*md_p%m*ml%coeff(I_OMEGA_ROT, pt_o)/(md_p%l*(md_p%l+1))
+       case default
+          $ABORT(Invalid freq_units)
+       end select
+
+    class is (twopt_quintic_model_t)
+       
+       select case (freq_units)
+       case('NONE')
+           omega_l = freq
+       case default
+           $ABORT(Invalid freq_units)
+       end select
+
+    class is (twopt_model_t)
+       
+       select case (freq_units)
+       case ('NONE')
+          omega_l = freq
        case default
           $ABORT(Invalid freq_units)
        end select
@@ -397,6 +417,25 @@ contains
           $ABORT(Invalid freq_units)
        end select
 
+    class is (twopt_quintic_model_t)
+       
+       select case (freq_units)
+       case('NONE')
+           freq = omega_l
+       case default
+           $ABORT(Invalid freq_units)
+       end select
+
+
+    class is (twopt_model_t)
+
+       select case (freq_units)
+       case ('NONE')
+          freq = omega_l
+       case default
+          $ABORT(Invalid freq_units)
+       end select
+
     class default
 
        $ABORT(Invalid ml type)
@@ -435,15 +474,13 @@ contains
 
     select case (os_p%outer_bound)
 
-    case ('ZERO')
+    case ('VACUUM')
 
-       omega_cutoff_lo = 0._WP
-       omega_cutoff_hi = HUGE(0._WP)
+       $ABORT(Cutoff frequencies cannot be evaluated for VACUUM outer boundary condition)
 
     case ('DZIEM')
 
-       omega_cutoff_lo = 0._WP
-       omega_cutoff_hi = HUGE(0._WP)
+       $ABORT(Cutoff frequencies cannot be evaluated for DZIEM outer boundary condition)
 
     case ('UNNO')
 

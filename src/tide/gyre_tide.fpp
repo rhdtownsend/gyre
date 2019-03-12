@@ -25,6 +25,7 @@ module gyre_tide
 
   use gyre_constants
   use gyre_context
+  use gyre_freq
   use gyre_grid
   use gyre_grid_factory
   use gyre_grid_par
@@ -34,6 +35,7 @@ module gyre_tide
   use gyre_nad_bvp
   use gyre_num_par
   use gyre_osc_par
+  use gyre_point
   use gyre_state
   use gyre_tide_par
   use gyre_tide_util
@@ -67,9 +69,10 @@ contains
 
     class(model_t), pointer, intent(in) :: ml
     interface
-       subroutine process_wave (wv)
+       subroutine process_wave (wv, k)
          use gyre_wave
          type(wave_t), intent(in) :: wv
+         integer, intent(in)      :: k
        end subroutine process_wave
     end interface
     type(osc_par_t), intent(in)         :: os_p
@@ -77,11 +80,15 @@ contains
     type(grid_par_t), intent(in)        :: gr_p
     type(tide_par_t), intent(in)        :: td_p
 
+    type(grid_t)                   :: ml_gr
+    type(point_t)                  :: pt_i
+    type(point_t)                  :: pt_o
+    type(mode_par_t)               :: md_p_rad
     real(WP)                       :: Omega_orb
+    real(WP)                       :: R_a
     real(WP)                       :: eps_tide
     integer                        :: k_max
     real(WP), allocatable          :: omega(:)
-    type(grid_t)                   :: ml_gr
     integer                        :: l_max
     type(mode_par_t), allocatable  :: md_p(:,:)
     type(context_t), pointer       :: cx(:,:) => null()
@@ -107,25 +114,35 @@ contains
     c_solve = 0
     c_proc = 0
 
-    ! Calculate the orbital frequency and tidal strength
+    ! Extract the model grid (used for frequency conversions and
+    ! checking co-rotating frequencies)
 
-    Omega_orb = SQRT((1._WP + td_p%q)*td_p%R_a**3)
+    ml_gr = ml%grid()
 
-    eps_tide = (td_p%R_a)**3*td_p%q
+    pt_i = ml_gr%pt_i()
+    pt_o = ml_gr%pt_o()
+
+    ! Calculate the orbital frequency
+
+    md_p_rad = mode_par_t()
+
+    Omega_orb = omega_from_freq(td_p%freq_orb, ml, pt_i, pt_o, td_p%freq_orb_units, 'INERTIAL', md_p_rad, os_p)
+
+    ! Calculate the orbital separation and tidal strength
+
+    R_a = (Omega_orb**2/(1._WP + td_p%q))**(1._WP/3._WP)
+
+    eps_tide = (R_a)**3*td_p%q
 
     ! Set up the inertial-frame forcing frequencies array
 
     k_max = td_p%k_max
 
-    allocate(omega(0:k_max))
+    allocate(omega(-k_max:k_max))
 
-    do k = 0, k_max
+    do k = -k_max, k_max
        omega(k) = k*Omega_orb
     end do
-
-    ! Extract the model grid (used for checking co-rotating frequencies)
-
-    ml_gr = ml%grid()
 
     ! Set up contexts and tide types
 
@@ -133,7 +150,7 @@ contains
 
     allocate(md_p(2:l_max,-l_max:l_max))
     allocate(cx(2:l_max,-l_max:l_max))
-    allocate(tide_type(2:l_max,-l_max:l_max,0:k_max))
+    allocate(tide_type(2:l_max,-l_max:l_max,-k_max:k_max))
     allocate(gs(2:l_max,-l_max:l_max))
 
     tide_type = NO_TIDE
@@ -143,9 +160,7 @@ contains
 
           ! Create the mode_par_t
 
-          md_p(l,m) = mode_par_t(0, l=l, m=m, &
-                                 n_pg_min=-HUGE(0), n_pg_max=HUGE(0), &
-                                 rossby=.FALSE., tag='')
+          md_p(l,m) = mode_par_t(l=l, m=m)
 
           ! Set up the context_t
 
@@ -153,9 +168,11 @@ contains
 
           ! Classify the tide for eack k
 
-          classify_loop : do k = 0, k_max
+          classify_loop : do k = -k_max, k_max
              tide_type(l,m,k) = classify_tide_(ml, ml_gr, cx(l,m), omega(k), td_p%omega_static)
-             print *,'tide type:',l,m,k,tide_type(l,m,k)
+             if (check_log_level('DEBUG')) then
+                write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k)
+             endif
           end do classify_loop
 
           ! Create the grid_spec_t
@@ -191,7 +208,7 @@ contains
           
           c_bvp = c_bvp + (c_end - c_beg)
 
-          k_loop : do k = 0, td_p%k_max
+          k_loop : do k = -k_max, k_max
 
              select case (tide_type(l,m,k))
 
@@ -201,7 +218,7 @@ contains
 
                 call system_clock(c_beg)
 
-                Upsilon = Upsilon_lmk(td_p, l, m, k)
+                Upsilon = Upsilon_lmk(R_a, td_p%e, l, m, k)
 
                 call system_clock(c_end)
 
@@ -232,7 +249,7 @@ contains
 
                    call system_clock(c_beg)
 
-                   call process_wave(wv)
+                   call process_wave(wv, k)
 
                    call system_clock(c_end)
 
@@ -244,8 +261,8 @@ contains
 
                 ! Ignore static tides
 
-                if (check_log_level('INFO')) then
-                   write(output_unit, 110) 'Info: ignoring static tide for l,m,k=', l, m, k
+                if (check_log_level('DEBUG')) then
+                   write(output_unit, 110) 'Ignoring static tide for l,m,k=', l, m, k
 110                format(A,1X,I0,1X,I0,1X,I0)
                 end if
 
@@ -254,7 +271,7 @@ contains
                 ! Ignore mixed (dynamic/static) tides
 
                 if (check_log_level('WARN')) then
-                   write(OUTPUT_UNIT, 110) 'Warning: ignoring mixed tide for l,m,k=', l, m, k
+                   write(OUTPUT_UNIT, 110) 'Ignoring mixed tide for l,m,k=', l, m, k
                 endif
 
              case default
@@ -269,11 +286,15 @@ contains
 
     end do l_loop
 
-    print *,'Time for ups:', REAL(c_ups)/c_rate
-    print *,'Time for grids:', REAL(c_grid)/c_rate
-    print *,'Time for bpv:', REAL(c_bvp)/c_rate
-    print *,'Time for solve:', REAL(c_solve)/c_rate
-    print *,'Time for proc:', REAL(c_proc)/c_rate
+    ! Report timing
+
+    if (check_log_level('DEBUG')) then
+       write(OUTPUT_UNIT, *) 'Time for ups:', REAL(c_ups)/c_rate
+       write(OUTPUT_UNIT, *) 'Time for grids:', REAL(c_grid)/c_rate
+       write(OUTPUT_UNIT, *) 'Time for bpv:', REAL(c_bvp)/c_rate
+       write(OUTPUT_UNIT, *) 'Time for solve:', REAL(c_solve)/c_rate
+       write(OUTPUT_UNIT, *) 'Time for proc:', REAL(c_proc)/c_rate
+    end if
 
     ! Clean up
 

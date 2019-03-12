@@ -35,12 +35,13 @@ $define $OUTPUT_POINTS $sub
 
 $local $T $1
 $local $NAME $2
-$local $FUNC $3
+$local $VAR $3
+$local $FUNC $4
  
 case ($str($NAME))
 
-   do k = 1, SIZE(pt)
-      data_$T(k) = md%$FUNC
+   do k = 1, gr%n_k
+      data_$T(k) = $VAR%$FUNC
    end do
    
    call wr%write($str($NAME), data_$T)

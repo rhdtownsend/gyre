@@ -1,7 +1,7 @@
 ! Module   : gyre_fgong_file
 ! Purpose  : read FGONG files
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -198,6 +198,8 @@ contains
     call em%define(I_NABLA_AD, nabla_ad)
 
     call em%define(I_OMEGA_ROT, Omega_rot)
+
+    call em%commit()
 
     ! Return a pointer
 

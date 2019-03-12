@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_eqns
 ! Purpose  : nonadiabatic differential equations
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -194,53 +194,56 @@ contains
     class(nad_eqns_t), intent(inout) :: this
     type(point_t), intent(in)        :: pt(:)
 
-    integer :: n_s
-    integer :: i
+    class(model_t), pointer :: ml
+    integer                 :: n_s
+    integer                 :: i
 
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%ml)
+    ml => this%cx%model()
 
-      call check_model(ml, [ &
-           I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
-           I_C_LUM,I_C_RAD,I_C_THN,I_C_THK,I_C_EPS, &
-           I_EPS_RHO,I_EPS_T,I_KAP_RHO,I_KAP_T,I_OMEGA_ROT])
+    call check_model(ml, [ &
+         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
+         I_C_LUM,I_C_RAD,I_C_THN,I_C_THK,I_C_EPS, &
+         I_EPS_RHO,I_EPS_T,I_KAP_RHO,I_KAP_T,I_OMEGA_ROT])
 
-      n_s = SIZE(pt)
+    n_s = SIZE(pt)
 
-      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-      allocate(this%coeff(n_s, J_LAST))
+    if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+    allocate(this%coeff(n_s, J_LAST))
 
-      do i = 1, n_s
-         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
-         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
-         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
-         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
-         this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
-         this%coeff(i,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt(i))
-         this%coeff(i,J_DNABLA_AD) = ml%dcoeff(I_NABLA_AD, pt(i))
-         this%coeff(i,J_NABLA) = ml%coeff(I_NABLA, pt(i))
-         this%coeff(i,J_DELTA) = ml%coeff(I_DELTA, pt(i))
-         this%coeff(i,J_C_LUM) = ml%coeff(I_C_LUM, pt(i))
-         this%coeff(i,J_DC_LUM) = ml%dcoeff(I_C_LUM, pt(i))
-         this%coeff(i,J_C_RAD) = ml%coeff(I_C_RAD, pt(i))
-         this%coeff(i,J_DC_RAD) = ml%dcoeff(I_C_RAD, pt(i))
-         this%coeff(i,J_C_THN) = ml%coeff(I_C_THN, pt(i))
-         this%coeff(i,J_DC_THN) = ml%dcoeff(I_C_THN, pt(i))
-         this%coeff(i,J_C_THK) = ml%coeff(I_C_THK, pt(i))
-         this%coeff(i,J_C_EPS) = ml%coeff(I_C_EPS, pt(i))
-         this%coeff(i,J_EPS_RHO) = ml%coeff(I_EPS_RHO, pt(i))
-         this%coeff(i,J_EPS_T) = ml%coeff(I_EPS_T, pt(i))
-         this%coeff(i,J_KAP_RHO) = ml%coeff(I_KAP_RHO, pt(i))
-         this%coeff(i,J_KAP_T) = ml%coeff(I_KAP_T, pt(i))
-         this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
-      end do
+    do i = 1, n_s
 
-      this%coeff(:,J_OMEGA_ROT_I) = ml%coeff(I_OMEGA_ROT, this%cx%pt_i)
+       $ASSERT(.NOT. ml%is_vacuum(pt(i)),Attempt to stencil at vacuum point)
 
-      this%x = pt%x
+       this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
+       this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
+       this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
+       this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
+       this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
+       this%coeff(i,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt(i))
+       this%coeff(i,J_DNABLA_AD) = ml%dcoeff(I_NABLA_AD, pt(i))
+       this%coeff(i,J_NABLA) = ml%coeff(I_NABLA, pt(i))
+       this%coeff(i,J_DELTA) = ml%coeff(I_DELTA, pt(i))
+       this%coeff(i,J_C_LUM) = ml%coeff(I_C_LUM, pt(i))
+       this%coeff(i,J_DC_LUM) = ml%dcoeff(I_C_LUM, pt(i))
+       this%coeff(i,J_C_RAD) = ml%coeff(I_C_RAD, pt(i))
+       this%coeff(i,J_DC_RAD) = ml%dcoeff(I_C_RAD, pt(i))
+       this%coeff(i,J_C_THN) = ml%coeff(I_C_THN, pt(i))
+       this%coeff(i,J_DC_THN) = ml%dcoeff(I_C_THN, pt(i))
+       this%coeff(i,J_C_THK) = ml%coeff(I_C_THK, pt(i))
+       this%coeff(i,J_C_EPS) = ml%coeff(I_C_EPS, pt(i))
+       this%coeff(i,J_EPS_RHO) = ml%coeff(I_EPS_RHO, pt(i))
+       this%coeff(i,J_EPS_T) = ml%coeff(I_EPS_T, pt(i))
+       this%coeff(i,J_KAP_RHO) = ml%coeff(I_KAP_RHO, pt(i))
+       this%coeff(i,J_KAP_T) = ml%coeff(I_KAP_T, pt(i))
+       this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
 
-    end associate
+    end do
+
+    this%coeff(:,J_OMEGA_ROT_I) = ml%coeff(I_OMEGA_ROT, this%cx%point_i())
+
+    this%x = pt%x
 
     ! Set up stencil for the tr component
 

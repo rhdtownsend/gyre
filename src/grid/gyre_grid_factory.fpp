@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_factory
 ! Purpose  : factory procedures for grid_t type
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -108,11 +108,11 @@ contains
 
     $ASSERT_DEBUG(ASSOCIATED(gs(1)%cx),Null pointer)
 
-    ml => gs(1)%cx%ml
+    ml => gs(1)%cx%model()
 
     check_loop : do i = 1, SIZE(gs)
        $ASSERT_DEBUG(ASSOCIATED(gs(i)%cx),Null pointer)
-       $ASSERT_DEBUG(ASSOCIATED(gs(i)%cx%ml, ml),Contexts are associated with different models)
+       $ASSERT_DEBUG(ASSOCIATED(gs(i)%cx%model(), ml),Contexts are associated with different models)
     end do check_loop
 
     ! Create the scaffold grid
@@ -126,6 +126,10 @@ contains
     ! Add points globally
 
     call add_global_(gs, gr_p, gr)
+
+    ! Add points to bring up to the floor
+
+    call add_floor_(gs, gr_p, gr)
 
     ! Report 
 
@@ -211,7 +215,8 @@ contains
     end do spec_loop
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Found inner turning points, x range', x_turn_min, '->', x_turn_max
+       write(OUTPUT_UNIT, 110) 'Found inner turning points, x range', &
+                               x_turn_min, '->', MIN(x_turn_max, gr%pt(gr%n_k)%x)
 110    format(3X,A,1X,F6.4,1X,A,1X,F6.4)
     endif
 
@@ -356,6 +361,63 @@ contains
 
   !****
 
+  subroutine add_floor_ (gs, gr_p, gr)
+
+    type(grid_spec_t), intent(in) :: gs(:)
+    type(grid_par_t), intent(in)  :: gr_p
+    type(grid_t), intent(inout)   :: gr
+
+    integer       :: n_add
+    real(WP)      :: c
+    real(WP)      :: dc_dk
+    integer       :: dn(gr%n_k-1)
+    integer       :: k
+
+    ! Add points quasi-uniformly to bring the total up to the floor
+    ! specified by n_floor
+
+    if (gr%n_k < gr_p%n_floor) then
+
+       n_add = gr_p%n_floor - gr%n_k - (gr%s_i() - gr%s_i())
+
+       c = 0._WP
+       dc_dk = REAL(n_add)/(gr%n_k - 1)
+
+       cell_loop : do k = 1, gr%n_k-1
+
+         if (gr%pt(k)%s == gr%pt(k+1)%s) then
+
+            c = c + dc_dk
+
+            dn(k) = FLOOR(c)
+            c = c - dn(k)
+
+         else
+
+            dn(k) = 0
+
+         end if
+
+       end do cell_loop
+
+       if (SUM(dn) < n_add) then
+          dn(gr%n_k-1) = dn(gr%n_k-1) + n_add - SUM(dn)
+       endif
+
+       ! Add the points
+
+       gr = grid_t(gr, dn)
+
+    end if
+
+    ! Finish
+
+    return
+
+  end subroutine add_floor_
+
+  !****
+
   function dx_dispersion_ (cx, pt, omega, gr_p, origin) result (dx)
 
     type(context_t), intent(in)  :: cx
@@ -399,7 +461,7 @@ contains
 
        ! Evaluate coefficients
        
-       associate (ml => cx%ml)
+       associate (ml => cx%model())
 
          V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
          As = ml%coeff(I_AS, pt)
@@ -407,7 +469,7 @@ contains
          c_1 = ml%coeff(I_C_1, pt)
 
          Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
-         Omega_rot_i = ml%coeff(I_OMEGA_ROT, cx%pt_i)
+         Omega_rot_i = ml%coeff(I_OMEGA_ROT, cx%point_i())
 
        end associate
 
@@ -519,7 +581,7 @@ contains
 
        ! Evaluate coefficients
 
-       associate (ml => cx%ml)
+       associate (ml => cx%model())
 
          V = ml%coeff(I_V_2, pt)*pt%x**2
          nabla = ml%coeff(I_NABLA, pt)
@@ -579,10 +641,10 @@ contains
     real(WP) :: dc_1
     real(WP) :: dGamma_1
 
-    ! Evaluate the target grid spacing dx at sample points pt to
-    ! ensure adequate model structure resolution. For a single
-    ! structure coefficient C, dx = x/(alpha_str*dlnC/dlnx); we take
-    ! the minimum dx over a number of C
+    ! Evaluate the target grid spacing dx at point pt to ensure
+    ! adequate model structure resolution. For a single structure
+    ! coefficient C, dx = x/(alpha_str*dlnC/dlnx); we take the minimum
+    ! dx over a number of C
 
     dx = HUGE(0._WP)
 
@@ -590,7 +652,7 @@ contains
 
        ! Evaluate coefficients
 
-       associate (ml => cx%ml)
+       associate (ml => cx%model())
 
          dV_2 = ml%dcoeff(I_V_2, pt)
          dAs = ml%dcoeff(I_AS, pt)

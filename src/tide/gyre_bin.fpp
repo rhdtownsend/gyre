@@ -22,6 +22,7 @@ program gyre_bin
   ! Uses
 
   use core_kinds, only : WP
+  use core_hgroup
   use core_parallel
   use core_system
 
@@ -54,8 +55,10 @@ program gyre_bin
   type(grid_par_t), allocatable  :: gr_p(:)
   type(tide_par_t), allocatable  :: td_p(:)
   class(model_t), pointer        :: ml => null()
+  integer                        :: n_td
+  real(WP), allocatable          :: tau_tot(:)
   integer                        :: i
-  real(WP)                       :: tau_tot
+  type(hgroup_t)                 :: hg
 
   ! Read command-line arguments
 
@@ -118,17 +121,28 @@ program gyre_bin
 
   ! Loop over tide parameters
 
+  n_td = SIZE(td_p)
+
+  allocate(tau_tot(n_td))
+
   tide_par_loop : do i = 1, SIZE(td_p)
 
      ! Evaluate the tide
 
-     tau_tot = 0._WP
+     tau_tot(i) = 0._WP
 
      call eval_tide(ml, process_wave, os_p(1), nm_p(1), gr_p(1), td_p(i))
 
-     print *,tau_tot
-
   end do tide_par_loop
+
+  ! Write out results
+
+  hg = hgroup_t('tide.h5', CREATE_FILE)
+
+  call write_dset(hg, 'freq_orb', td_p%freq_orb)
+  call write_dset(hg, 'tau_tot', tau_tot)
+
+  call hg%final()
 
   ! Clean up
 
@@ -140,15 +154,14 @@ program gyre_bin
 
 contains
 
-  subroutine process_wave (wv)
+  subroutine process_wave (wv, k)
 
     type(wave_t), intent(in) :: wv
+    integer, intent(in)      :: k
 
     ! Accumulate the torque
 
-    print *,'Total torque:', wv%l, wv%m, wv%omega, wv%tau_ss()
-
-!    tau_tot = tau_tot + wv%tau_ss()
+    tau_tot(i) = tau_tot(i) + wv%tau_ss()
 
     ! Finish
 
