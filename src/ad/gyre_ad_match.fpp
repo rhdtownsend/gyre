@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_match
 ! Purpose  : adiabatic match conditions
 !
-! Copyright 2015-2017 Rich Townsend
+! Copyright 2015-2018 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -109,18 +109,18 @@ contains
     type(point_t), intent(in)        :: pt_a
     type(point_t), intent(in)        :: pt_b
 
+    class(model_t), pointer :: ml
+
     ! Calculate coefficients at the stencil points
 
-    associate (ml => this%cx%ml)
+    ml => this%cx%model()
 
-      call check_model(ml, [I_U])
+    call check_model(ml, [I_U])
 
-      allocate(this%coeff(2,J_LAST))
+    allocate(this%coeff(2,J_LAST))
 
-      this%coeff(1,J_U) = ml%coeff(I_U, pt_a)
-      this%coeff(2,J_U) = ml%coeff(I_U, pt_b)
-
-    end associate
+    this%coeff(1,J_U) = ml%coeff(I_U, pt_a)
+    this%coeff(2,J_U) = ml%coeff(I_U, pt_b)
 
     ! Set up stencil for the tr component
 
