@@ -482,7 +482,7 @@ contains
 
     case ('FIXED')
 
-       Phi_force = fr_p_sel%Phi
+       Phi_force = (2*md_p(i)%l+1)*fr_p_sel%Phi
 
     case ('BINARY')
 
