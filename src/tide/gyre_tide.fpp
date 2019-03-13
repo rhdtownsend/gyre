@@ -65,7 +65,7 @@ module gyre_tide
 
 contains
 
-  subroutine eval_tide (ml, process_wave, os_p, nm_p, gr_p, td_p)
+  subroutine eval_tide (ml, process_wave, Omega_orb, os_p, nm_p, gr_p, td_p)
 
     class(model_t), pointer, intent(in) :: ml
     interface
@@ -75,16 +75,13 @@ contains
          integer, intent(in)      :: k
        end subroutine process_wave
     end interface
+    real(WP), intent(in)                :: Omega_orb
     type(osc_par_t), intent(in)         :: os_p
     type(num_par_t), intent(in)         :: nm_p
     type(grid_par_t), intent(in)        :: gr_p
     type(tide_par_t), intent(in)        :: td_p
 
     type(grid_t)                   :: ml_gr
-    type(point_t)                  :: pt_i
-    type(point_t)                  :: pt_o
-    type(mode_par_t)               :: md_p_rad
-    real(WP)                       :: Omega_orb
     real(WP)                       :: R_a
     real(WP)                       :: eps_tide
     integer                        :: k_max
@@ -114,19 +111,9 @@ contains
     c_solve = 0
     c_proc = 0
 
-    ! Extract the model grid (used for frequency conversions and
-    ! checking co-rotating frequencies)
+    ! Extract the model grid (used for tide classification)
 
     ml_gr = ml%grid()
-
-    pt_i = ml_gr%pt_i()
-    pt_o = ml_gr%pt_o()
-
-    ! Calculate the orbital frequency
-
-    md_p_rad = mode_par_t()
-
-    Omega_orb = omega_from_freq(td_p%freq_orb, ml, pt_i, pt_o, td_p%freq_orb_units, 'INERTIAL', md_p_rad, os_p)
 
     ! Calculate the orbital separation and tidal strength
 
@@ -239,7 +226,7 @@ contains
 
                    st = c_state_t(CMPLX(omega(k), KIND=WP), omega(k))
 
-                   wv = wave_t(bp, st, w_i, w_o)
+                   wv = wave_t(bp, st, w_i, w_o, 0)
 
                    call system_clock(c_end)
 
