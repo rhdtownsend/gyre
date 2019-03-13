@@ -14,7 +14,7 @@ OUT_FILE=summary.txt
 
 LABEL="LOSC RGB model"
 
-RELERR=1E-14
+RELERR=1E-13
 FIELDS=1-5
 
 # Do the tests
