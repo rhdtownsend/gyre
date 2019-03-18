@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_bvp
 ! Purpose  : adiabatic bounary value problem solver
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -176,27 +176,27 @@ contains
 
   !****
 
-  function wave_t_inhom_ (bp, st, w_i, w_o, j) result (wv)
+  function wave_t_inhom_ (bp, st, z_i, z_o, j) result (wv)
 
     class(ad_bvp_t), intent(inout) :: bp
     type(r_state_t), intent(in)    :: st
-    real(WP), intent(in)           :: w_i(:)
-    real(WP), intent(in)           :: w_o(:)
+    real(WP), intent(in)           :: z_i(:)
+    real(WP), intent(in)           :: z_o(:)
     integer, intent(in)            :: j
     type(wave_t)                   :: wv
 
     real(WP) :: y(4,bp%n_k)
     integer  :: k
 
-    $CHECK_BOUNDS(SIZE(w_i),bp%n_i)
-    $CHECK_BOUNDS(SIZE(w_o),bp%n_o)
+    $CHECK_BOUNDS(SIZE(z_i),bp%n_i)
+    $CHECK_BOUNDS(SIZE(z_o),bp%n_o)
 
     ! Calculate the inhomogeneous solution vector
 
     call bp%build(st)
     call bp%factor()
 
-    y = bp%soln_vec_inhom(w_i, w_o)
+    y = bp%soln_vec_inhom(z_i, z_o)
 
     ! Convert to canonical form
 
