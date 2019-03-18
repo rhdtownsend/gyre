@@ -107,16 +107,16 @@ module gyre_${T}_sysmtx
        $TYPE(WP)                        :: u(this%n_e*(this%n+1))
      end function soln_vec_inhom
 
-     function resd_vec_hom (this, u) result (dw)
+     function resd_vec_hom (this, u) result (dv)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(in) :: this
        $TYPE(WP), intent(in)            :: u(:)
-       $TYPE(WP)                        :: dw(this%n_e*(this%n+1))
+       $TYPE(WP)                        :: dv(this%n_e*(this%n+1))
      end function resd_vec_hom
      
-     function resd_vec_inhom (this, u, v_i, v_o) result (dw)
+     function resd_vec_inhom (this, u, v_i, v_o) result (dv)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
@@ -124,7 +124,7 @@ module gyre_${T}_sysmtx
        $TYPE(WP), intent(in)            :: u(:)
        $TYPE(WP), intent(in)            :: v_i(:)
        $TYPE(WP), intent(in)            :: v_o(:)
-       $TYPE(WP)                        :: dw(this%n_e*(this%n+1))
+       $TYPE(WP)                        :: dv(this%n_e*(this%n+1))
      end function resd_vec_inhom
      
   end interface
