@@ -286,8 +286,8 @@ contains
 
   subroutine eval_wave_sad ()
 
-    real(WP)        :: w_i(bp_sad%n_i)
-    real(WP)        :: w_o(bp_sad%n_o)
+    real(WP)        :: v_i(bp_sad%n_i)
+    real(WP)        :: v_o(bp_sad%n_o)
     type(r_state_t) :: st
 
     ! If necessary, expand arrays
@@ -301,10 +301,10 @@ contains
 
     ! Set up the inhomogeneous boundary terms
 
-    w_i = 0._WP
+    v_i = 0._WP
 
-    w_o = 0._WP
-    w_o(1) = Phi_force(0._WP)
+    v_o = 0._WP
+    v_o(1) = Phi_force(0._WP)
          
     associate (wv => wv_ad(n_wv_ad))
 
@@ -314,7 +314,7 @@ contains
        
       select type (bp_sad)
       type is (sad_bvp_t)
-         wv = wave_t(bp_sad, st, w_i, w_o, n_wv_nad)
+         wv = wave_t(bp_sad, st, v_i, v_o, n_wv_nad)
       class default
          $ABORT(Invalid bp_sad class)
       end select
@@ -341,8 +341,8 @@ contains
 
     real(WP), intent(in) :: omega(:)
 
-    real(WP)        :: w_i(bp_ad%n_i)
-    real(WP)        :: w_o(bp_ad%n_o)
+    real(WP)        :: v_i(bp_ad%n_i)
+    real(WP)        :: v_o(bp_ad%n_o)
     integer         :: j
     type(r_state_t) :: st
 
@@ -361,10 +361,10 @@ contains
 
        ! Set up the inhomogeneous boundary terms
 
-       w_i = 0._WP
+       v_i = 0._WP
          
-       w_o = 0._WP
-       w_o(2) = Phi_force(omega(j))
+       v_o = 0._WP
+       v_o(2) = Phi_force(omega(j))
          
        associate (wv => wv_ad(n_wv_ad))
 
@@ -374,9 +374,9 @@ contains
        
          select type (bp_ad)
          type is (ad_bvp_t)
-            wv = wave_t(bp_ad, st, w_i, w_o, n_wv_ad)
+            wv = wave_t(bp_ad, st, v_i, v_o, n_wv_ad)
          type is (rad_bvp_t)
-            wv = wave_t(bp_ad, st, w_i, w_o, n_wv_ad)
+            wv = wave_t(bp_ad, st, v_i, v_o, n_wv_ad)
          class default
             $ABORT(Invalid bp_ad class)
          end select
@@ -405,8 +405,8 @@ contains
 
     real(WP), intent(in) :: omega(:)
 
-    complex(WP)     :: w_i(bp_nad%n_i)
-    complex(WP)     :: w_o(bp_nad%n_o)
+    complex(WP)     :: v_i(bp_nad%n_i)
+    complex(WP)     :: v_o(bp_nad%n_o)
     integer         :: j
     type(c_state_t) :: st
 
@@ -425,10 +425,10 @@ contains
 
        ! Set up the inhomogeneous boundary terms
 
-       w_i = 0._WP
+       v_i = 0._WP
          
-       w_o = 0._WP
-       w_o(2) = Phi_force(omega(j))
+       v_o = 0._WP
+       v_o(2) = Phi_force(omega(j))
          
        associate (wv => wv_nad(n_wv_nad))
 
@@ -438,7 +438,7 @@ contains
        
          select type (bp_nad)
          type is (nad_bvp_t)
-            wv = wave_t(bp_nad, st, w_i, w_o, n_wv_nad)
+            wv = wave_t(bp_nad, st, v_i, v_o, n_wv_nad)
          class default
             $ABORT(Invalid bp_nad class)
          end select
