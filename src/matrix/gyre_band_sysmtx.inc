@@ -1,7 +1,7 @@
 ! Incfile  : gyre_band_sysmtx
 ! Purpose  : system matrix (banded storage, template)
 !
-! Copyright 2013-2014 Rich Townsend
+! Copyright 2013-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -54,10 +54,6 @@ module gyre_${T}_band_sysmtx
 
   implicit none
 
-  ! Parameter definitions
-
-  integer, parameter :: ALGO_LEN = 16
-
   ! Derived-type definitions
 
   type, extends (${T}_sysmtx_t) :: ${T}_band_sysmtx_t
@@ -80,7 +76,8 @@ module gyre_${T}_band_sysmtx
      procedure, public :: det
      procedure, public :: soln_vec_hom
      procedure, public :: soln_vec_inhom
-     procedure, public :: resd_vec
+     procedure, public :: resd_vec_hom
+     procedure, public :: resd_vec_inhom
   end type ${T}_band_sysmtx_t
 
   ! Interfaces
@@ -428,10 +425,10 @@ contains
 
   !****
 
-  function soln_vec_hom (this) result (v)
+  function soln_vec_hom (this) result (u)
   
     class(${T}_band_sysmtx_t), intent(in) :: this
-    $TYPE(WP)                             :: v(this%n_e*(this%n+1))
+    $TYPE(WP)                             :: u(this%n_e*(this%n+1))
 
     integer                :: i_s
     real(WP)               :: A_s
@@ -443,8 +440,8 @@ contains
     integer                :: j
     integer                :: info
 
-    ! Evaluate the solution vector v of the homogeneous linear system
-    ! S v = 0. It is assumed that the nullity nul(S) >= 1
+    ! Evaluate the solution vector u of the homogeneous linear system
+    ! S u = 0. It is assumed that the nullity nul(S) >= 1
 
     associate (n => this%n, n_e => this%n_e, n_ul => this%n_ul)
 
@@ -480,19 +477,19 @@ contains
          ipiv(j) = j
       enddo
 
-      ! Solve for the 1:i_s-1 components of the null vector
+      ! Solve for the 1:i_s-1 components of the solution vector
 
       call ${X}GBTRS('N', SIZE(A_b, 2), n_ul, n_ul, 1, A_b, SIZE(A_b, 1), ipiv, B, SIZE(B, 1), info)
       $ASSERT(info == 0,Non-zero return from XGBTRS)
 
-      v(:i_s-1) = B(:,1)
+      u(:i_s-1) = B(:,1)
 
     end associate
        
-    ! Fill in the remaining components of the null vector
+    ! Fill in the remaining components of the solution vector
     
-    v(i_s) = 1._WP
-    v(i_s+1:) = 0._WP
+    u(i_s) = 1._WP
+    u(i_s+1:) = 0._WP
 
     ! Finish
 
@@ -502,41 +499,41 @@ contains
 
   !****
 
-  function soln_vec_inhom (this, w_i, w_o) result (v)
+  function soln_vec_inhom (this, v_i, v_o) result (u)
   
     class(${T}_band_sysmtx_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: w_i(:)
-    $TYPE(WP), intent(in)                 :: w_o(:)
-    $TYPE(WP)                             :: v(this%n_e*(this%n+1))
+    $TYPE(WP), intent(in)                 :: v_i(:)
+    $TYPE(WP), intent(in)                 :: v_o(:)
+    $TYPE(WP)                             :: u(this%n_e*(this%n+1))
 
     $TYPE(WP) :: B(this%n_e*(this%n+1),1)
     integer   :: info
 
-    $CHECK_BOUNDS(SIZE(w_i),this%n_i)
-    $CHECK_BOUNDS(SIZE(w_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(v_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(v_o),this%n_o)
 
-    ! Evaluate the solution vector v of the inhomogeneous linear
-    ! system S v = w. It is assumed that the right-hand side vector w
+    ! Evaluate the solution vector u of the inhomogeneous linear
+    ! system S u = v. It is assumed that the right-hand side vector v
     ! has non-zero components in only the n_i first and n_o last rows
     ! (corresponding to the inner and outer boundary
-    ! conditions). These components are supplied in w_i and w_o,
+    ! conditions). These components are supplied in v_i and v_o,
     ! respectively.
     
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_ul => this%n_ul)
 
       ! Set up the banded system
 
-      B(:n_i,1) = w_i/this%scl_i
+      B(:n_i,1) = v_i/this%scl_i
       B(n_i+1:n_i+n*n_e,1) = 0._WP
-      B(n_i+n*n_e+1:,1) = w_o/this%scl_o
+      B(n_i+n*n_e+1:,1) = v_o/this%scl_o
 
-      ! Solve for v
+      ! Solve for u
 
       call ${X}GBTRS('N', n_e*(n+1), n_ul, n_ul, 1, &
                      this%A_b, SIZE(this%A_b, 1), this%ipiv, B, n_e*(n+1), info)
       $ASSERT(info == 0,Non-zero return from XGBTRS)
 
-      v = B(:,1)
+      u = B(:,1)
 
     end associate
        
@@ -548,20 +545,21 @@ contains
 
   !****
 
-  function resd_vec (this, v) result (w)
+  function resd_vec_hom (this, u) result (dw)
 
     class(${T}_band_sysmtx_t), intent(in) :: this
-    $TYPE(WP), intent(in)                 :: v(:)
-    $TYPE(WP)                             :: w(this%n_e*(this%n+1))
+    $TYPE(WP), intent(in)                 :: u(:)
+    $TYPE(WP)                             :: dw(this%n_e*(this%n+1))
 
     integer   :: i
     integer   :: j_a
     integer   :: j_b
     $TYPE(WP) :: R(this%n_e*(this%n+1))
 
-    $CHECK_BOUNDS(SIZE(v),this%n_e*(this%n+1))
+    $CHECK_BOUNDS(SIZE(u),this%n_e*(this%n+1))
 
-    ! Evaluate the residual vector w = S v
+    ! Evaluate the residual vector dw = S u of the homogeneous linear
+    ! system S u = 0.
 
     associate (n => this%n, n_e => this%n_e)
 
@@ -573,7 +571,7 @@ contains
 
          call this%get_row_(i, j_a, R(j_a:j_b))
 
-         w(i) = SUM(R(j_a:j_b)*v(j_a:j_b))
+         dw(i) = SUM(R(j_a:j_b)*u(j_a:j_b))
 
       end do multiply_loop
 
@@ -583,7 +581,48 @@ contains
 
     return
 
-  end function resd_vec
+  end function resd_vec_hom
+  
+  !****
+
+  function resd_vec_inhom (this, u, v_i, v_o) result (dw)
+
+    class(${T}_band_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                 :: u(:)
+    $TYPE(WP), intent(in)                 :: v_i(:)
+    $TYPE(WP), intent(in)                 :: v_o(:)
+    $TYPE(WP)                             :: dw(this%n_e*(this%n+1))
+
+    $CHECK_BOUNDS(SIZE(u),this%n_e*(this%n+1))
+
+    $CHECK_BOUNDS(SIZE(v_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(v_o),this%n_o)
+
+    ! Evaluate the residual vector dw = S u - v of the inhomogeneous
+    ! linear system S u = v. It is assumed that the right-hand side
+    ! vector v has non-zero components in only the n_i first and n_o
+    ! last rows (corresponding to the inner and outer boundary
+    ! conditions). These components are supplied in v_i and v_o,
+    ! respectively.
+
+    ! First evaluate dw for the homogeneous case
+
+    dw = this%resd_vec_hom(u)
+
+    ! Subtract v
+
+    associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+
+      dw(:n_i) = dw(:n_i) - v_i
+      dw(n_e*n+1:) = dw(n_e*n+1:) - v_o
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function resd_vec_inhom
   
 end module gyre_${T}_band_sysmtx
 

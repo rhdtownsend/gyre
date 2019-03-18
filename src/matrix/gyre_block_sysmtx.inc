@@ -1,7 +1,7 @@
 ! Incfile  : gyre_block_sysmtx
 ! Purpose  : system matrix (block storage, template)
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -76,7 +76,8 @@ module gyre_${T}_block_sysmtx
      procedure, public :: soln_vec_hom
      procedure, public :: soln_vec_inhom
      procedure         :: backsub_
-     procedure, public :: resd_vec
+     procedure, public :: resd_vec_hom
+     procedure, public :: resd_vec_inhom
   end type ${T}_block_sysmtx_t
 
   ! Interfaces
@@ -410,10 +411,10 @@ contains
 
   !****
 
-  function soln_vec_hom (this) result (v)
+  function soln_vec_hom (this) result (u)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
-    $TYPE(WP)                              :: v(this%n_e*(this%n+1))
+    $TYPE(WP)                              :: u(this%n_e*(this%n+1))
 
     logical, parameter   :: USE_SVD = .TRUE.
     $TYPE(WP), parameter :: ZERO = 0._WP
@@ -421,19 +422,19 @@ contains
 
     $TYPE(WP) :: M(2*this%n_e,2*this%n_e)
     real(WP)  :: sigma(2*this%n_e)
-    $TYPE(WP) :: U(2*this%n_e,2*this%n_e)
-    $TYPE(WP) :: V_H(2*this%n_e,2*this%n_e)
+    $TYPE(WP) :: sU(2*this%n_e,2*this%n_e)
+    $TYPE(WP) :: sV_H(2*this%n_e,2*this%n_e)
     integer   :: ipiv(2*this%n_e)
     integer   :: info
     integer   :: i_s
     real(WP)  :: M_s
     integer   :: i
-    $TYPE(WP) :: v_bound(2*this%n_e)
+    $TYPE(WP) :: u_bound(2*this%n_e)
  
-    ! Evaluate the solution vector v of the homogeneous linear system
-    ! S v = 0. It is assumed that the nullity nul(S) >= 1; if nul(S) =
+    ! Evaluate the solution vector u of the homogeneous linear system
+    ! S u = 0. It is assumed that the nullity nul(S) >= 1; if nul(S) =
     ! 0, then this routine will return the vector which minimizes the
-    ! norm of S v. When nul(S) > 1, the routine returns the null
+    ! norm of S u. When nul(S) > 1, the routine returns the null
     ! vector associated with the smallest eigenvalue.
 
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
@@ -454,12 +455,12 @@ contains
 
          ! Use singular value decomposition
 
-         call sing_decompose(M, sigma, U, V_H)
+         call sing_decompose(M, sigma, sU, sV_H)
 
          $if ($T eq 'c')
-         v_bound = CONJG(V_H(2*n_e,:))
+         u_bound = CONJG(sV_H(2*n_e,:))
          $else
-         v_bound = V_H(2*n_e,:)
+         u_bound = sV_H(2*n_e,:)
          $endif
 
       else
@@ -482,13 +483,13 @@ contains
             end if
          end do sing_loop
 
-         v_bound(:i_s-1) = -M(:i_s-1,i_s)
+         u_bound(:i_s-1) = -M(:i_s-1,i_s)
 
          call ${X}TRSM('L', 'U', 'N', 'N', i_s-1, 1, &
-                       ONE, M, 2*n_e, v_bound, 2*n_e)
+                       ONE, M, 2*n_e, u_bound, 2*n_e)
 
-         v_bound(i_s) = 1._WP
-         v_bound(i_s+1:) = 0._WP
+         u_bound(i_s) = 1._WP
+         u_bound(i_s+1:) = 0._WP
 
       endif
 
@@ -496,7 +497,7 @@ contains
 
     ! Backsubstitute to reconstruct the full solution vector
 
-    call this%backsub_(v_bound, v)
+    call this%backsub_(u_bound, u)
 
     ! Finish
 
@@ -506,27 +507,27 @@ contains
 
   !****
 
-  function soln_vec_inhom (this, w_i, w_o) result (v)
+  function soln_vec_inhom (this, v_i, v_o) result (u)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
-    $TYPE(WP), intent(in)                  :: w_i(:)
-    $TYPE(WP), intent(in)                  :: w_o(:)
-    $TYPE(WP)                              :: v(this%n_e*(this%n+1))
+    $TYPE(WP), intent(in)                  :: v_i(:)
+    $TYPE(WP), intent(in)                  :: v_o(:)
+    $TYPE(WP)                              :: u(this%n_e*(this%n+1))
 
     $TYPE(WP) :: M(2*this%n_e,2*this%n_e)
     integer   :: ipiv(2*this%n_e)
     integer   :: info
     $TYPE(WP) :: B(2*this%n_e, 1)
-    $TYPE(WP) :: v_bound(2*this%n_e)
+    $TYPE(WP) :: u_bound(2*this%n_e)
 
-    $CHECK_BOUNDS(SIZE(w_i),this%n_i)
-    $CHECK_BOUNDS(SIZE(w_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(v_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(v_o),this%n_o)
 
     ! Evaluate the solution vector v of the inhomogeneous linear
-    ! system S v = w. It is assumed that the right-hand side vector w
+    ! system S u = v. It is assumed that the right-hand side vector v
     ! has non-zero components in only the n_i first and n_o last rows
     ! (corresponding to the inner and outer boundary
-    ! conditions). These components are supplied in w_i and w_o,
+    ! conditions). These components are supplied in v_i and v_o,
     ! respectively.
     
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
@@ -541,9 +542,9 @@ contains
       M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
       M(n_i+n_e+1:,n_e+1:) = this%B_o
 
-      B(:n_i,1) = w_i/this%scl_i
+      B(:n_i,1) = v_i/this%scl_i
       B(n_i+1:n_i+n_e,1) = 0._WP
-      B(n_i+n_e+1:,1) = w_o/this%scl_o
+      B(n_i+n_e+1:,1) = v_o/this%scl_o
 
       ! Solve for the solution at the two boundaries using LU
       ! decomposition
@@ -554,13 +555,13 @@ contains
       call XGETRS('N', 2*n_e, 1, M, 2*n_e, ipiv, B, 2*n_e, info)
       $ASSERT(info >= 0,Negative return from XGETRS)
 
-      v_bound = B(:,1)
+      u_bound = B(:,1)
 
     end associate
 
     ! Backsubstitute to reconstruct the full solution vector
 
-    call this%backsub_(v_bound, v)
+    call this%backsub_(u_bound, u)
 
     ! Finish
 
@@ -570,11 +571,11 @@ contains
 
   !****
 
-  subroutine backsub_ (this, v_bound, v)
+  subroutine backsub_ (this, u_bound, u)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
-    $TYPE(WP), intent(in)                  :: v_bound(:)
-    $TYPE(WP), intent(out)                 :: v(:)
+    $TYPE(WP), intent(in)                  :: u_bound(:)
+    $TYPE(WP), intent(out)                 :: u(:)
 
     $TYPE(WP), parameter :: ZERO = 0._WP
     $TYPE(WP), parameter :: ONE = 1._WP
@@ -585,16 +586,16 @@ contains
     integer   :: i_b
     integer   :: i_c
 
-    $CHECK_BOUNDS(SIZE(v_bound),2*this%n_e)
-    $CHECK_BOUNDS(SIZE(v),this%n_e*(this%n+1))
+    $CHECK_BOUNDS(SIZE(u_bound),2*this%n_e)
+    $CHECK_BOUNDS(SIZE(u),this%n_e*(this%n+1))
 
-    ! Given the solution vector v_bound at the boundaries,
-    ! backsubstitute to reconstruct the full solution vector v
+    ! Given the solution vector u_bound at the boundaries,
+    ! backsubstitute to reconstruct the full solution vector u
 
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
-      v(:n_e) = v_bound(:n_e)
-      v(n_e*n+1:) = v_bound(n_e+1:)
+      u(:n_e) = u_bound(:n_e)
+      u(n_e*n+1:) = u_bound(n_e+1:)
 
       l = 1
 
@@ -616,10 +617,10 @@ contains
             i_b = i_a + l*n_e
             i_c = MIN(i_b + l*n_e, n_e*n+1)
             
-            v(i_b:i_b+n_e-1) = ZERO
+            u(i_b:i_b+n_e-1) = ZERO
 
-            call ${X}GEMV('N', n_e, n_e, -ONE, this%E_l(:,:,k+l), n_e, v(i_a:i_a+n_e-1), 1, ZERO, v(i_b:i_b+n_e-1), 1)
-            call ${X}GEMV('N', n_e, n_e, -ONE, this%E_r(:,:,k+l), n_e, v(i_c:i_c+n_e-1), 1, ONE, v(i_b:i_b+n_e-1), 1)
+            call ${X}GEMV('N', n_e, n_e, -ONE, this%E_l(:,:,k+l), n_e, u(i_a:i_a+n_e-1), 1, ZERO, u(i_b:i_b+n_e-1), 1)
+            call ${X}GEMV('N', n_e, n_e, -ONE, this%E_r(:,:,k+l), n_e, u(i_c:i_c+n_e-1), 1, ONE, u(i_b:i_b+n_e-1), 1)
 
          end do backsub_loop
 
@@ -635,23 +636,24 @@ contains
 
   !****
 
-  function resd_vec (this, v) result (w)
+  function resd_vec_hom (this, u) result (dw)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
-    $TYPE(WP), intent(in)                  :: v(:)
-    $TYPE(WP)                              :: w(this%n_e*(this%n+1))
+    $TYPE(WP), intent(in)                  :: u(:)
+    $TYPE(WP)                              :: dw(this%n_e*(this%n+1))
 
     integer :: k
     integer :: i_a
     integer :: i_b
 
-    $CHECK_BOUNDS(SIZE(v),this%n_e*(this%n+1))
+    $CHECK_BOUNDS(SIZE(u),this%n_e*(this%n+1))
 
-    ! Evaluate the residual vector w = S v
+    ! Evaluate the residual vector dw = S u of the homogeneous linear
+    ! system S u = 0.
 
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
-      w(:n_i) = MATMUL(this%B_i, v(:n_e))*this%scl_i
+      dw(:n_i) = MATMUL(this%B_i, u(:n_e))*this%scl_i
 
       !$OMP PARALLEL DO PRIVATE (i_a, i_b)
       multiply_loop : do k = 1, n
@@ -659,11 +661,11 @@ contains
          i_a = (k-1)*n_e + 1
          i_b = i_a + n_i
 
-         w(i_b:i_b+n_e-1) = MATMUL(this%E_l(:,:,k), v(i_a:i_a+n_e-1)) + MATMUL(this%E_r(:,:,k), v(i_a+n_e:i_a+2*n_e-1))
+         dw(i_b:i_b+n_e-1) = MATMUL(this%E_l(:,:,k), u(i_a:i_a+n_e-1)) + MATMUL(this%E_r(:,:,k), u(i_a+n_e:i_a+2*n_e-1))
 
       end do multiply_loop
 
-      w(n_e*n+n_i+1:) = MATMUL(this%B_o, v(n_e*n+1:))*this%scl_o
+      dw(n_e*n+n_i+1:) = MATMUL(this%B_o, u(n_e*n+1:))*this%scl_o
 
     end associate
 
@@ -671,7 +673,48 @@ contains
 
     return
 
-  end function resd_vec
+  end function resd_vec_hom
+  
+  !****
+
+  function resd_vec_inhom (this, u, v_i, v_o) result (dw)
+
+    class(${T}_block_sysmtx_t), intent(in) :: this
+    $TYPE(WP), intent(in)                  :: u(:)
+    $TYPE(WP), intent(in)                  :: v_i(:)
+    $TYPE(WP), intent(in)                  :: v_o(:)
+    $TYPE(WP)                              :: dw(this%n_e*(this%n+1))
+
+    $CHECK_BOUNDS(SIZE(u),this%n_e*(this%n+1))
+
+    $CHECK_BOUNDS(SIZE(v_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(v_o),this%n_o)
+
+    ! Evaluate the residual vector dw = S u - v of the inhomogeneous
+    ! linear system S u = v. It is assumed that the right-hand side
+    ! vector w has non-zero components in only the n_i first and n_o
+    ! last rows (corresponding to the inner and outer boundary
+    ! conditions). These components are supplied in v_i and v_o,
+    ! respectively.
+
+    ! First evaluate dw for the homogeneous case
+
+    dw = this%resd_vec_hom(u)
+
+    ! Subtract v
+
+    associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+
+      dw(:n_i) = dw(:n_i) - v_i
+      dw(n_e*n+1:) = dw(n_e*n+1:) - v_o
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function resd_vec_inhom
   
 end module gyre_${T}_block_sysmtx
 
