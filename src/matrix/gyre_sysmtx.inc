@@ -1,7 +1,7 @@
 ! Incfile  : gyre_sysmtx
 ! Purpose  : system matrix (template)
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -49,7 +49,8 @@ module gyre_${T}_sysmtx
      procedure(det), deferred            :: det
      procedure(soln_vec_hom), deferred   :: soln_vec_hom
      procedure(soln_vec_inhom), deferred :: soln_vec_inhom
-     procedure(resd_vec), deferred       :: resd_vec
+     procedure(resd_vec_hom), deferred   :: resd_vec_hom
+     procedure(resd_vec_inhom), deferred :: resd_vec_inhom
   end type ${T}_sysmtx_t
 
   ! Interfaces
@@ -88,32 +89,43 @@ module gyre_${T}_sysmtx
        type(${T}_ext_t)                 :: det
      end function det
 
-     function soln_vec_hom (this) result (v)
+     function soln_vec_hom (this) result (u)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(in) :: this
-       $TYPE(WP)                        :: v(this%n_e*(this%n+1))
+       $TYPE(WP)                        :: u(this%n_e*(this%n+1))
      end function soln_vec_hom
 
-     function soln_vec_inhom (this, w_i, w_o) result (v)
+     function soln_vec_inhom (this, v_i, v_o) result (u)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(in) :: this
-       $TYPE(WP), intent(in)            :: w_i(:)
-       $TYPE(WP), intent(in)            :: w_o(:)
-       $TYPE(WP)                        :: v(this%n_e*(this%n+1))
+       $TYPE(WP), intent(in)            :: v_i(:)
+       $TYPE(WP), intent(in)            :: v_o(:)
+       $TYPE(WP)                        :: u(this%n_e*(this%n+1))
      end function soln_vec_inhom
 
-     function resd_vec (this, v) result (w)
+     function resd_vec_hom (this, u) result (dw)
        use core_kinds
        use gyre_ext
        import ${T}_sysmtx_t
        class(${T}_sysmtx_t), intent(in) :: this
-       $TYPE(WP), intent(in)            :: v(:)
-       $TYPE(WP)                        :: w(this%n_e*(this%n+1))
-     end function resd_vec
+       $TYPE(WP), intent(in)            :: u(:)
+       $TYPE(WP)                        :: dw(this%n_e*(this%n+1))
+     end function resd_vec_hom
+     
+     function resd_vec_inhom (this, u, v_i, v_o) result (dw)
+       use core_kinds
+       use gyre_ext
+       import ${T}_sysmtx_t
+       class(${T}_sysmtx_t), intent(in) :: this
+       $TYPE(WP), intent(in)            :: u(:)
+       $TYPE(WP), intent(in)            :: v_i(:)
+       $TYPE(WP), intent(in)            :: v_o(:)
+       $TYPE(WP)                        :: dw(this%n_e*(this%n+1))
+     end function resd_vec_inhom
      
   end interface
 
