@@ -1,7 +1,7 @@
 ! Incfile  : gyre_bvp
 ! Purpose  : parametric boundary value problems (template)
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -62,7 +62,8 @@ module gyre_${T}_bvp
      procedure, public :: det
      procedure, public :: soln_vec_hom
      procedure, public :: soln_vec_inhom
-     procedure, public :: resd_vec
+     procedure, public :: resd_vec_hom
+     procedure, public :: resd_vec_inhom
   end type ${T}_bvp_t
 
   ! Interfaces
@@ -213,15 +214,15 @@ contains
     class(${T}_bvp_t), intent(inout) :: this
     $TYPE(WP)                        :: y(this%n_e,this%n_k)
 
-    $TYPE(WP) :: v(this%n_e*this%n_k)
+    $TYPE(WP) :: u(this%n_e*this%n_k)
 
     $ASSERT_DEBUG(this%factored,Matrix has not been factorized)
 
     ! Evaluate the solution vector y of the homogeneous system
 
-    v = this%sm%soln_vec_hom()
+    u = this%sm%soln_vec_hom()
 
-    y = RESHAPE(v, SHAPE(y))
+    y = RESHAPE(u, SHAPE(y))
 
     ! Finish
 
@@ -231,25 +232,25 @@ contains
 
   !****
 
-  function soln_vec_inhom (this, w_i, w_o) result (y)
+  function soln_vec_inhom (this, z_i, z_o) result (y)
 
     class(${T}_bvp_t), intent(inout) :: this
-    $TYPE(WP), intent(in)            :: w_i(:)
-    $TYPE(WP), intent(in)            :: w_o(:)
+    $TYPE(WP), intent(in)            :: z_i(:)
+    $TYPE(WP), intent(in)            :: z_o(:)
     $TYPE(WP)                        :: y(this%n_e,this%n_k)
 
-    $TYPE(WP) :: v(this%n_e*this%n_k)
+    $TYPE(WP) :: u(this%n_e*this%n_k)
 
-    $CHECK_BOUNDS(SIZE(w_i),this%n_i)
-    $CHECK_BOUNDS(SIZE(w_o),this%n_o)
+    $CHECK_BOUNDS(SIZE(z_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(z_o),this%n_o)
 
     $ASSERT_DEBUG(this%factored,Matrix has not been factorized)
 
     ! Evaluate the solution vector y of the inhomogeneous system
 
-    v = this%sm%soln_vec_inhom(w_i, w_o)
+    u = this%sm%soln_vec_inhom(z_i, z_o)
 
-    y = RESHAPE(v, SHAPE(y))
+    y = RESHAPE(u, SHAPE(y))
     
     ! Finish
 
@@ -259,30 +260,68 @@ contains
 
   !****
 
-  function resd_vec (this, y) result (w)
+  function resd_vec_hom (this, y) result (dz)
 
     class(${T}_bvp_t), intent(inout) :: this
     $TYPE(WP), intent(in)            :: y(:,:)
-    $TYPE(WP)                        :: w(this%n_e*this%n_k)
+    $TYPE(WP)                        :: dz(this%n_e,this%n_k)
 
-    $TYPE(WP) :: v(this%n_e*this%n_k)
+    $TYPE(WP) :: u(this%n_e*this%n_k)
+    $TYPE(WP) :: dv(this%n_e*this%n_k)
 
     $CHECK_BOUNDS(SIZE(y,1),this%n_e)
     $CHECK_BOUNDS(SIZE(y,2),this%n_k)
 
     $ASSERT_DEBUG(.NOT. this%factored,Matrix has already been factorized)
 
-    ! Evaluate the residuals vector
+    ! Evaluate the residuals vector dy of the homogeneous system
 
-    v = RESHAPE(y, SHAPE(v))
+    u = RESHAPE(y, SHAPE(u))
 
-    w = this%sm%resd_vec(v)
+    dv = this%sm%resd_vec_hom(u)
+
+    dz = RESHAPE(dv, SHAPE(dz))
 
     ! Finish
 
     return
 
-  end function resd_vec
+  end function resd_vec_hom
+
+  !****
+
+  function resd_vec_inhom (this, y, z_i, z_o) result (dz)
+
+    class(${T}_bvp_t), intent(inout) :: this
+    $TYPE(WP), intent(in)            :: y(:,:)
+    $TYPE(WP), intent(in)            :: z_i(:)
+    $TYPE(WP), intent(in)            :: z_o(:)
+    $TYPE(WP)                        :: dz(this%n_e,this%n_k)
+
+    $TYPE(WP) :: u(this%n_e*this%n_k)
+    $TYPE(WP) :: dv(this%n_e*this%n_k)
+
+    $CHECK_BOUNDS(SIZE(y,1),this%n_e)
+    $CHECK_BOUNDS(SIZE(y,2),this%n_k)
+
+    $CHECK_BOUNDS(SIZE(z_i),this%n_i)
+    $CHECK_BOUNDS(SIZE(z_o),this%n_o)
+
+    $ASSERT_DEBUG(.NOT. this%factored,Matrix has already been factorized)
+
+    ! Evaluate the residuals vector dy of the inhomogeneous system
+
+    u = RESHAPE(y, SHAPE(u))
+
+    dv = this%sm%resd_vec_inhom(u, z_i, z_o)
+
+    dz = RESHAPE(dv, SHAPE(dz))
+
+    ! Finish
+
+    return
+
+  end function resd_vec_inhom
 
 end module gyre_${T}_bvp
 
