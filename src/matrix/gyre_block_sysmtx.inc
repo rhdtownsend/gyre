@@ -636,11 +636,11 @@ contains
 
   !****
 
-  function resd_vec_hom (this, u) result (dw)
+  function resd_vec_hom (this, u) result (dv)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
     $TYPE(WP), intent(in)                  :: u(:)
-    $TYPE(WP)                              :: dw(this%n_e*(this%n+1))
+    $TYPE(WP)                              :: dv(this%n_e*(this%n+1))
 
     integer :: k
     integer :: i_a
@@ -648,12 +648,12 @@ contains
 
     $CHECK_BOUNDS(SIZE(u),this%n_e*(this%n+1))
 
-    ! Evaluate the residual vector dw = S u of the homogeneous linear
+    ! Evaluate the residual vector dv = S u of the homogeneous linear
     ! system S u = 0.
 
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
-      dw(:n_i) = MATMUL(this%B_i, u(:n_e))*this%scl_i
+      dv(:n_i) = MATMUL(this%B_i, u(:n_e))*this%scl_i
 
       !$OMP PARALLEL DO PRIVATE (i_a, i_b)
       multiply_loop : do k = 1, n
@@ -661,11 +661,11 @@ contains
          i_a = (k-1)*n_e + 1
          i_b = i_a + n_i
 
-         dw(i_b:i_b+n_e-1) = MATMUL(this%E_l(:,:,k), u(i_a:i_a+n_e-1)) + MATMUL(this%E_r(:,:,k), u(i_a+n_e:i_a+2*n_e-1))
+         dv(i_b:i_b+n_e-1) = MATMUL(this%E_l(:,:,k), u(i_a:i_a+n_e-1)) + MATMUL(this%E_r(:,:,k), u(i_a+n_e:i_a+2*n_e-1))
 
       end do multiply_loop
 
-      dw(n_e*n+n_i+1:) = MATMUL(this%B_o, u(n_e*n+1:))*this%scl_o
+      dv(n_e*n+n_i+1:) = MATMUL(this%B_o, u(n_e*n+1:))*this%scl_o
 
     end associate
 
@@ -677,36 +677,36 @@ contains
   
   !****
 
-  function resd_vec_inhom (this, u, v_i, v_o) result (dw)
+  function resd_vec_inhom (this, u, v_i, v_o) result (dv)
 
     class(${T}_block_sysmtx_t), intent(in) :: this
     $TYPE(WP), intent(in)                  :: u(:)
     $TYPE(WP), intent(in)                  :: v_i(:)
     $TYPE(WP), intent(in)                  :: v_o(:)
-    $TYPE(WP)                              :: dw(this%n_e*(this%n+1))
+    $TYPE(WP)                              :: dv(this%n_e*(this%n+1))
 
     $CHECK_BOUNDS(SIZE(u),this%n_e*(this%n+1))
 
     $CHECK_BOUNDS(SIZE(v_i),this%n_i)
     $CHECK_BOUNDS(SIZE(v_o),this%n_o)
 
-    ! Evaluate the residual vector dw = S u - v of the inhomogeneous
+    ! Evaluate the residual vector dv = S u - v of the inhomogeneous
     ! linear system S u = v. It is assumed that the right-hand side
     ! vector w has non-zero components in only the n_i first and n_o
     ! last rows (corresponding to the inner and outer boundary
     ! conditions). These components are supplied in v_i and v_o,
     ! respectively.
 
-    ! First evaluate dw for the homogeneous case
+    ! First evaluate dv for the homogeneous case
 
-    dw = this%resd_vec_hom(u)
+    dv = this%resd_vec_hom(u)
 
     ! Subtract v
 
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
-      dw(:n_i) = dw(:n_i) - v_i
-      dw(n_e*n+1:) = dw(n_e*n+1:) - v_o
+      dv(:n_i) = dv(:n_i) - v_i
+      dv(n_e*n+1:) = dv(n_e*n+1:) - v_o
 
     end associate
 

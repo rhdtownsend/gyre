@@ -545,11 +545,11 @@ contains
 
   !****
 
-  function resd_vec_hom (this, u) result (dw)
+  function resd_vec_hom (this, u) result (dv)
 
     class(${T}_band_sysmtx_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: u(:)
-    $TYPE(WP)                             :: dw(this%n_e*(this%n+1))
+    $TYPE(WP)                             :: dv(this%n_e*(this%n+1))
 
     integer   :: i
     integer   :: j_a
@@ -558,7 +558,7 @@ contains
 
     $CHECK_BOUNDS(SIZE(u),this%n_e*(this%n+1))
 
-    ! Evaluate the residual vector dw = S u of the homogeneous linear
+    ! Evaluate the residual vector dv = S u of the homogeneous linear
     ! system S u = 0.
 
     associate (n => this%n, n_e => this%n_e)
@@ -571,7 +571,7 @@ contains
 
          call this%get_row_(i, j_a, R(j_a:j_b))
 
-         dw(i) = SUM(R(j_a:j_b)*u(j_a:j_b))
+         dv(i) = SUM(R(j_a:j_b)*u(j_a:j_b))
 
       end do multiply_loop
 
@@ -585,36 +585,36 @@ contains
   
   !****
 
-  function resd_vec_inhom (this, u, v_i, v_o) result (dw)
+  function resd_vec_inhom (this, u, v_i, v_o) result (dv)
 
     class(${T}_band_sysmtx_t), intent(in) :: this
     $TYPE(WP), intent(in)                 :: u(:)
     $TYPE(WP), intent(in)                 :: v_i(:)
     $TYPE(WP), intent(in)                 :: v_o(:)
-    $TYPE(WP)                             :: dw(this%n_e*(this%n+1))
+    $TYPE(WP)                             :: dv(this%n_e*(this%n+1))
 
     $CHECK_BOUNDS(SIZE(u),this%n_e*(this%n+1))
 
     $CHECK_BOUNDS(SIZE(v_i),this%n_i)
     $CHECK_BOUNDS(SIZE(v_o),this%n_o)
 
-    ! Evaluate the residual vector dw = S u - v of the inhomogeneous
+    ! Evaluate the residual vector dv = S u - v of the inhomogeneous
     ! linear system S u = v. It is assumed that the right-hand side
     ! vector v has non-zero components in only the n_i first and n_o
     ! last rows (corresponding to the inner and outer boundary
     ! conditions). These components are supplied in v_i and v_o,
     ! respectively.
 
-    ! First evaluate dw for the homogeneous case
+    ! First evaluate dv for the homogeneous case
 
-    dw = this%resd_vec_hom(u)
+    dv = this%resd_vec_hom(u)
 
     ! Subtract v
 
     associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
-      dw(:n_i) = dw(:n_i) - v_i
-      dw(n_e*n+1:) = dw(n_e*n+1:) - v_o
+      dv(:n_i) = dv(:n_i) - v_i
+      dv(n_e*n+1:) = dv(n_e*n+1:) - v_o
 
     end associate
 
