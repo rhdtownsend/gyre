@@ -8,7 +8,6 @@
 /
 
 &tide
-	R_a = 0.1
 	q = 0.5
 	e = 0.3
 	omega_static = 0.
@@ -28,4 +27,12 @@
 	n_inner = 5
 	alpha_osc = 10
 	alpha_exp = 2
+/
+
+&scan
+        freq_min = 0.38
+        freq_max = 0.44
+        freq_min_units = 'NONE'
+        freq_max_units = 'NONE'
+        n_freq = 100
 /
