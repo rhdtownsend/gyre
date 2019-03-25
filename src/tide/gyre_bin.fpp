@@ -26,13 +26,17 @@ program gyre_bin
   use core_parallel
   use core_system
 
+  use gyre_context
   use gyre_constants
   use gyre_grid_par
+  use gyre_mode_par
   use gyre_model
   use gyre_model_factory
   use gyre_model_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_scan_par
+  use gyre_search
   use gyre_tide
   use gyre_tide_par
   use gyre_util
@@ -53,9 +57,13 @@ program gyre_bin
   type(osc_par_t), allocatable   :: os_p(:)
   type(num_par_t), allocatable   :: nm_p(:)
   type(grid_par_t), allocatable  :: gr_p(:)
+  type(scan_par_t), allocatable  :: sc_p(:)
   type(tide_par_t), allocatable  :: td_p(:)
   class(model_t), pointer        :: ml => null()
-  integer                        :: n_td
+  type(mode_par_t)               :: md_p
+  type(context_t)                :: cx
+  real(WP), allocatable          :: Omega_orb(:)
+  integer                        :: n_Omega_orb
   real(WP), allocatable          :: tau_tot(:)
   integer                        :: i
   type(hgroup_t)                 :: hg
@@ -102,6 +110,7 @@ program gyre_bin
   call read_osc_par(unit, os_p)
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
+  call read_scan_par(unit, sc_p)
   call read_tide_par(unit, td_p)
 
   close(unit)
@@ -109,7 +118,8 @@ program gyre_bin
   $ASSERT(SIZE(os_p) == 1,Must be exactly one mode parameter)
   $ASSERT(SIZE(nm_p) == 1,Must be exactly one num parameter)
   $ASSERT(SIZE(gr_p) == 1,Must be exactly one grid parameter)
-  $ASSERT(SIZE(td_p) >= 1,Must be at least one tide parameter)
+  $ASSERT(SIZE(sc_p) >= 1,Must be at least one scan parameter)
+  $ASSERT(SIZE(td_p) == 1,Must be exactly one tide parameter)
 
   ! Initialize the model
 
@@ -119,27 +129,41 @@ program gyre_bin
 
   ml => model_t(ml_p)
 
-  ! Loop over tide parameters
+  ! Create a dummmy mode_par_t for setting up contexts, frequency
+  ! searches; mode parameters are for the prograde sectoral quadrupole
+  ! mode, which (I think) should track the principal tidal component
 
-  n_td = SIZE(td_p)
+  md_p = mode_par_t(l=2, m=2)
 
-  allocate(tau_tot(n_td))
+  ! Set up the context
 
-  tide_par_loop : do i = 1, SIZE(td_p)
+  cx = context_t(ml, gr_p(1), md_p, os_p(1))
+
+  ! Set up the frequency array
+
+  call build_scan(cx, md_p, os_p(1), sc_p, Omega_orb)
+
+  ! Loop over orbital frequencies
+
+  n_Omega_orb = SIZE(Omega_orb)
+
+  allocate(tau_tot(n_Omega_orb))
+
+  Omega_orb_loop : do i = 1, n_Omega_orb
 
      ! Evaluate the tide
 
      tau_tot(i) = 0._WP
 
-     call eval_tide(ml, process_wave, os_p(1), nm_p(1), gr_p(1), td_p(i))
+     call eval_tide(ml, process_wave, Omega_orb(i), os_p(1), nm_p(1), gr_p(1), td_p(1))
 
-  end do tide_par_loop
+  end do Omega_orb_loop
 
   ! Write out results
 
   hg = hgroup_t('tide.h5', CREATE_FILE)
 
-  call write_dset(hg, 'freq_orb', td_p%freq_orb)
+  call write_dset(hg, 'Omega_orb', Omega_orb)
   call write_dset(hg, 'tau_tot', tau_tot)
 
   call hg%final()
