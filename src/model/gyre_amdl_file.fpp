@@ -137,7 +137,7 @@ contains
     allocate(V_2(n))
 
     where (x /= 0._WP)
-       V_2 = V_g*Gamma_1
+       V_2 = V_g*Gamma_1/x**2
     elsewhere
        V_2 = 4._WP*PI*G_GRAVITY*rho_c**2*R_star**2/(3._WP*P_c)
     end where
