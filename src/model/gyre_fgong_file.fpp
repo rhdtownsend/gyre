@@ -1,7 +1,7 @@
 ! Module   : gyre_fgong_file
 ! Purpose  : read FGONG files
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -71,6 +71,7 @@ contains
     real(WP), allocatable       :: Gamma_1(:)
     real(WP), allocatable       :: nabla_ad(:)
     real(WP), allocatable       :: delta(:)
+    real(WP), allocatable       :: beta_rad(:)
     real(WP), allocatable       :: V_2(:)
     real(WP), allocatable       :: As(:)
     real(WP), allocatable       :: U(:)
@@ -184,6 +185,8 @@ contains
        Omega_rot = 0._WP
     endif
 
+    beta_rad = A_RADIATION*T**4/(3._WP*P)
+
     ! Initialize the evol_model_t
 
     allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
@@ -196,6 +199,8 @@ contains
     call em%define(I_GAMMA_1, Gamma_1)
     call em%define(I_DELTA, delta)
     call em%define(I_NABLA_AD, nabla_ad)
+
+    call em%define(I_BETA_RAD, beta_rad)
 
     call em%define(I_OMEGA_ROT, Omega_rot)
 
