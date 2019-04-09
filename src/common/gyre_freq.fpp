@@ -1,7 +1,7 @@
 ! Module   : gyre_freq
 ! Purpose  : frequency transformation routines
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2015-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -33,6 +33,7 @@ module gyre_freq
   use gyre_point
   use gyre_poly_model
   use gyre_twopt_model
+  use gyre_twopt_quintic_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -252,6 +253,15 @@ contains
           $ABORT(Invalid freq_units)
        end select
 
+    class is (twopt_quintic_model_t)
+       
+       select case (freq_units)
+       case('NONE')
+           omega_l = freq
+       case default
+           $ABORT(Invalid freq_units)
+       end select
+
     class default
 
        $ABORT(Invalid ml type)
@@ -414,6 +424,15 @@ contains
           freq = omega_l
        case default
           $ABORT(Invalid freq_units)
+       end select
+
+    class is (twopt_quintic_model_t)
+       
+       select case (freq_units)
+       case('NONE')
+           freq = omega_l
+       case default
+           $ABORT(Invalid freq_units)
        end select
 
     class default

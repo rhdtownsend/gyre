@@ -1,7 +1,7 @@
 ! Module   : gyre_model_factory
 ! Purpose  : factory procedures for model_t
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2019 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,6 +24,7 @@ module gyre_model_factory
   use core_kinds
 
   use gyre_hom_model
+  use gyre_twopt_quintic_model
   use gyre_model
   use gyre_model_par
 
@@ -116,6 +117,10 @@ contains
     case ('TWOPT')
 
        call read_twopt_model(ml_p, ml)
+
+    case ('TWOPT_QUINTIC')
+
+       allocate(ml, SOURCE=twopt_quintic_model_t(ml_p))
 
     case ('HOM')
 
