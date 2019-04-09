@@ -492,6 +492,8 @@ contains
 
     P = DOT_PRODUCT(this%alpha, H5)
 
+    $ASSERT(P >= 0._WP,Negative pressure)
+
     ! Finish
 
     return
@@ -519,6 +521,8 @@ contains
       rho = 3._WP*SQRT(w)/(4._WP*PI)*(1._WP + x*dw_dx/(6._WP*w))
 
     end associate
+
+    $ASSERT(rho >= 0._WP,Negative density)
 
     ! Finish
 
@@ -598,10 +602,7 @@ contains
 
     w = DOT_PRODUCT(this%beta, H3)
 
-    if (w < 0._WP) then
-       write(*,*) 'x, w:', pt%x, w
-       $ABORT(Negative w)
-    endif
+    $ASSERT(w >= 0,Negative w)
 
     ! Finish
 
