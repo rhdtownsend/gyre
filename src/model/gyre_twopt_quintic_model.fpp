@@ -1,7 +1,7 @@
 ! Module   : gyre_twopt_quintic_model
 ! Purpose  : stellar two-point model
 !
-! Copyright 2018 Rich Townsend
+! Copyright 2018-2019 The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -41,16 +41,14 @@ module gyre_twopt_quintic_model
   type, extends (model_t) :: twopt_quintic_model_t
      private
      type(grid_t) :: gr
-     real(WP)     :: P_cent_2pt
-     real(WP)     :: P_surf_2pt
-     real(WP)     :: rho_cent_2pt
-     real(WP)     :: rho_surf_2pt
+     real(WP)     :: alpha(6)
+     real(WP)     :: beta(4)
      real(WP)     :: Gamma_1
      real(WP)     :: Omega_rot
      integer      :: s_i
      integer      :: s_o
    contains
-     private
+     private 
      procedure, public :: coeff
      procedure         :: coeff_V_2_
      procedure         :: coeff_As_
@@ -58,19 +56,19 @@ module gyre_twopt_quintic_model
      procedure         :: coeff_c_1_
      procedure, public :: dcoeff
      procedure         :: dcoeff_V_2_
-     procedure         :: rho_
-     procedure         :: drho_
-     procedure         :: m_r_
-     procedure         :: P_
      procedure         :: dcoeff_U_
      procedure         :: dcoeff_c_1_
-     procedure         :: alpha_
-     procedure         :: beta_
-     procedure         :: hermite_five
-     procedure         :: hermite_three
+     procedure         :: P_ 
+     procedure         :: rho_
+     procedure         :: drho_dx_
+     procedure         :: M_r_
      procedure         :: w_
-     procedure         :: dw_
-     procedure         :: ddw_
+     procedure         :: dw_dx_
+     procedure         :: d2w_dx2_
+     procedure         :: H3_
+     procedure         :: dH3_dx_
+     procedure         :: d2H3_dx2_
+     procedure         :: H5_
      procedure, public :: is_defined
      procedure, public :: is_vacuum
      procedure, public :: Delta_p
@@ -102,17 +100,13 @@ contains
     type(model_par_t), intent(in) :: ml_p
     type(twopt_quintic_model_t)   :: ml
 
+    real(WP) :: M(4,6)
 
     ! Construct the twopt_quintic_model_t
 
     ml%gr = grid_t([0._WP, 1._WP])
 
     ml%Gamma_1 = ml_p%Gamma_1
-
-    ml%P_cent_2pt = ml_p%P_cent_2pt
-    ml%P_surf_2pt = ml_p%P_surf_2pt
-    ml%rho_cent_2pt = ml_p%rho_cent_2pt
-    ml%rho_surf_2pt = ml_p%rho_surf_2pt
 
     if (ml_p%uniform_rot) then
        ml%Omega_rot = uniform_Omega_rot(ml_p)
@@ -122,6 +116,64 @@ contains
 
     ml%s_i = ml%gr%s_i()
     ml%s_o = ml%gr%s_o()
+
+    ! Set up spline coefficients
+
+    associate (P_c => ml_p%P_c, &
+               P_s => ml_p%P_s, &
+               rho_c => ml_p%rho_c, &
+               rho_s => ml_p%rho_s)
+
+      ! P-function
+
+      ml%alpha(1) = P_c
+      ml%alpha(2) = 0._WP
+      ml%alpha(3) = -4._WP*PI*rho_c**2/3._WP
+      ml%alpha(4) = 63._WP/(4._WP*PI) + 15._WP*(P_s - P_c - rho_c) + 2._WP*PI*rho_c**2/3._WP
+      ml%alpha(5) = -rho_s
+      ml%alpha(6) = P_s
+
+      ! w-function
+
+      M(1,1) = 0._WP
+      M(1,2) = 0._WP
+      M(1,3) = -84._WP
+      M(1,4) = 0._WP
+      M(1,5) = 0._WP
+      M(1,6) = 0._WP
+
+      M(2,1) = 2160._WP
+      M(2,2) = 0._WP
+      M(2,3) = 324._WP
+      M(2,4) = -108._WP
+      M(2,5) = 864._WP
+      M(2,6) = -2160._WP
+
+      M(3,1) = -360._WP
+      M(3,2) = 0._WP
+      M(3,3) = -12._WP
+      M(3,4) = -24._WP
+      M(3,5) = -144._WP
+      M(3,6) = 360._WP
+
+      M(4,1) = 60._WP
+      M(4,2) = 0._WP
+      M(4,3) = 2._WP
+      M(4,4) = 4._WP
+      M(4,5) = -60._WP
+      M(4,6) = -60._WP
+
+      ml%beta = PI/63._WP*MATMUL(M, ml%alpha)
+
+    end associate
+
+    ! Perform some sanity checks
+
+    $ASSERT(ml%alpha(1) >= 0._WP,Negative central pressure)
+    $ASSERT(ml%alpha(6) >= 0._WP,Negative surface pressure)
+
+    $ASSERT(ml%beta(1) >= 0._WP,Negative central w)
+    $ASSERT(ml%beta(4) >= 0._WP,Negative surface w)
 
     ! Finish
 
@@ -134,9 +186,9 @@ contains
   function coeff (this, i, pt)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    integer, intent(in)              :: i
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: coeff
+    integer, intent(in)                      :: i
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: coeff
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
     $ASSERT_DEBUG(this%is_defined(i),Undefined coefficient)
@@ -175,22 +227,32 @@ contains
   function coeff_V_2_ (this, pt) result (coeff)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: coeff
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: coeff
+
+    real(WP) :: P
+    real(WP) :: rho
+    real(WP) :: w
 
     ! Evaluate the V_2 coefficient
 
-    associate ( &
-         x => pt%x, &
-         w => this%w_(pt))
+    if (this%is_vacuum(pt)) then
 
-    IF (is_vacuum(this,pt) .eqv. .FALSE.) THEN
-        coeff = (SQRT(w) * this%rho_(pt)) / (this%P_(pt))
-    ELSE IF (is_vacuum(this,pt) .eqv. .TRUE.) THEN
-        coeff = HUGE(0._WP)
-    END IF
+       coeff = HUGE(0._WP)
 
-    end associate
+    else
+
+       associate (x => pt%x)
+
+         P = this%P_(pt)
+         rho = this%rho_(pt)
+         w = this%w_(pt)
+         
+         coeff = SQRT(w)*rho/P
+
+       end associate
+
+    end if
 
     ! Finish
 
@@ -203,12 +265,35 @@ contains
   function coeff_As_ (this, pt) result (coeff)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: coeff
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: coeff
+
+    real(WP) :: P
+    real(WP) :: rho
+    real(WP) :: drho_dx
+    real(WP) :: w
 
     ! Evaluate the As coefficient
 
-    coeff = 3._WP - this%coeff_U_(pt) - this%coeff_V_2_(pt)*pt%x**2/this%Gamma_1 - this%dcoeff_U_(pt)
+    if (this%is_vacuum(pt)) then
+
+       coeff = HUGE(0._WP)
+
+    else
+
+       associate (x => pt%x, &
+                  Gamma_1 => this%Gamma_1)
+
+         P = this%P_(pt)
+         rho = this%rho_(pt)
+         drho_dx = this%drho_dx_(pt)
+         w = this%w_(pt)
+         
+         coeff = -x**2*SQRT(w)*rho/(Gamma_1*P) - x*drho_dx/rho
+
+       end associate
+
+    end if
 
     ! Finish
 
@@ -221,16 +306,20 @@ contains
   function coeff_U_ (this, pt) result (coeff)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: coeff
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: coeff
+
+    real(WP) :: rho
+    real(WP) :: w
 
     ! Evaluate the U coefficient
 
-    associate ( &
-         x => pt%x, &
-         w => this%w_(pt))
+    associate (x => pt%x)
 
-      coeff = (4*PI *  this%rho_(pt))/SQRT(w)
+      rho = this%rho_(pt)
+      w = this%w_(pt)
+
+      coeff = 4._WP*PI*rho/SQRT(w)
 
     end associate
 
@@ -245,16 +334,18 @@ contains
   function coeff_c_1_ (this, pt) result (coeff)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: coeff
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: coeff
+
+    real(WP) :: w
 
     ! Evaluate the c_1 coefficient
 
-    associate ( &
-         x => pt%x, &
-         w => this%w_(pt))
+    associate (x => pt%x)
 
-      coeff = 1._WP/SQRT(w)
+      w = this%w_(pt)
+
+      coeff = 1._WP/w
 
     end associate
 
@@ -269,9 +360,9 @@ contains
   function dcoeff (this, i, pt)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    integer, intent(in)              :: i
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: dcoeff
+    integer, intent(in)                      :: i
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: dcoeff
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
     $ASSERT_DEBUG(this%is_defined(i),Undefined coefficient)
@@ -313,14 +404,17 @@ contains
     type(point_t), intent(in)        :: pt
     real(WP)                         :: dcoeff
 
+    real(WP) :: rho
+    real(WP) :: drho_dx
+
     ! Evaluate the logarithmic derivative of the V_2 coefficient
 
-    associate ( &
-         x => pt%x)
+    associate (x => pt%x)
 
+      rho = this%rho_(pt)
+      drho_dx = this%drho_dx_(pt)
       
-      dcoeff = this%coeff_U_(pt) + (x/this%rho_(pt))*this%drho_(pt) + &
-        this%coeff_V_2_(pt)*x**2 - 3._WP
+      dcoeff = this%coeff_U_(pt) + x*drho_dx/rho + this%coeff_V_2_(pt)*x**2 - 3._WP
 
     end associate
 
@@ -332,109 +426,28 @@ contains
 
   !****
 
-  function rho_ (this, pt) result (rho)
-
-    class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: rho
-
-    ! Evaluate the polynomial for density function
-
-    associate ( &
-         x => pt%x, &
-         w => this%w_(pt), &
-         dw => this%dw_(pt))
-
-      rho = ((3._WP*SQRT(w))/(4*PI)) * (1._WP + (x*dw)/(6._WP*w))
-
-    end associate
-
-  end function rho_
-
-  !****
-
-  function drho_ (this, pt) result (drho)
-
-    class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: drho
-
-    ! Evaluate the polynomial for density function
-
-    associate ( &
-         x => pt%x, &
-         w => this%w_(pt), &
-         dw => this%dw_(pt), &
-         ddw => this%ddw_(pt))
-
-      drho = (6._WP*w + dw*(2*w + x - 2._WP*x*dw) + 2._WP*x*w*ddw)/(16._WP*w**(3._WP/2._WP)*PI)
-
-    end associate
-
-  end function drho_
-
-  !****
-
-  function m_r_ (this, pt) result (m_r)
-
-    class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: m_r
-
-    ! Evaluate the polynomial for m_n profile
-
-    associate ( &
-         x => pt%x, &
-         w => this%w_(pt))
-         
-      m_r = x**3 * SQRT(w)
-
-    end associate
-
-  end function m_r_
-
-  !****
-
-  function P_ (this, pt) result (Pressure)
-
-    class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: Pressure
-
-    ! Evaluate the polynomial for Pressure profile  
-
-    associate ( &
-         x => pt%x)
-
-      Pressure = (this%alpha_(1, pt)*this%hermite_five(1,pt)&
-            + this%alpha_(2, pt)*this%hermite_five(2,pt)&
-            + this%alpha_(3, pt)*this%hermite_five(3,pt)&
-            + this%alpha_(4, pt)*this%hermite_five(4,pt)&
-            + this%alpha_(5, pt)*this%hermite_five(5,pt)&
-            + this%alpha_(6, pt)*this%hermite_five(6,pt))
-
-    end associate
-
-  end function P_
-
-  !****
-
   function dcoeff_U_ (this, pt) result (dcoeff)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: dcoeff
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: dcoeff
+
+    real(WP) :: rho
+    real(WP) :: drho_dx
+    real(WP) :: w
+    real(WP) :: dw_dx
 
     ! Evaluate the logarithmic derivative of the U coefficient
 
-    associate ( &
-         x => pt%x, &
-         rho => this%rho_(pt), &
-         drho => this%drho_(pt), &
-         w => this%w_(pt), &
-         dw => this%dw_(pt))
+    associate (x => pt%x)
 
-      dcoeff = -(x*dw)/(2._WP*w) + (x*drho)/rho
+      rho = this%rho_(pt)
+      drho_dx = this%drho_dx_(pt)
+
+      w = this%w_(pt)
+      dw_dx = this%dw_dx_(pt)
+
+      dcoeff = x*drho_dx/rho - x*dw_dx/(2._WP*w)
 
     end associate
 
@@ -450,8 +463,8 @@ contains
   function dcoeff_c_1_ (this, pt) result (dcoeff)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: dcoeff
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: dcoeff
 
     ! Evaluate the logarithmic derivative of the c_1 coefficient
 
@@ -465,95 +478,132 @@ contains
 
   !****
 
-  function alpha_ (this, n, pt) result (alpha)
+  function P_ (this, pt) result (P)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    integer, intent(in)              :: n
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: alpha
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: P
 
-    ! Evaluate alpha coefficients
+    real(WP) :: H5(6)
 
-    associate (x => pt%x)
+    ! Evaluate the dimensionless pressure
 
-    select case(n)
-    case(1)
-        alpha = this%P_cent_2pt
-    case(2)
-        alpha = 0._WP
-    case(3)
-        alpha = -(4._WP * PI / 3._WP) * (this%rho_cent_2pt)**2
-    case(4)
-        alpha = (63._WP/(4._WP * PI)) + (2._WP * pi/3._WP)*(this%rho_cent_2pt)**2 + &
-            15._WP*(this%P_surf_2pt - this%P_cent_2pt - this%rho_surf_2pt)
-    case(5)
-        alpha = -this%rho_surf_2pt
-    case(6)
-        alpha = this%P_surf_2pt
-    end select
+    H5 = this%H5_(pt)
 
-    end associate
-    
+    P = DOT_PRODUCT(this%alpha, H5)
+
     ! Finish
 
     return
 
-  end function alpha_
+  end function P_
 
   !****
 
-  function beta_ (this, n, pt) result (beta)
+  function rho_ (this, pt) result (rho)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    integer, intent(in)              :: n
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: beta
-    real(WP)                         :: beta_sub
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: rho
 
-    ! Evaluate beta coefficients
+    real(WP) :: w
+    real(WP) :: dw_dx
+
+    ! Evaluate the dimensionless density
 
     associate (x => pt%x)
 
-    select case(n)
-    case(1)
-        beta_sub = -84._WP * this%alpha_(3, pt)
-    case(2)
-        beta_sub = 2160._WP*this%alpha_(1, pt) + 324._WP*this%alpha_(3, pt) - &
-            108._WP*this%alpha_(4, pt) + 864._WP*this%alpha_(5, pt) - 2160._WP*this%alpha_(6, pt)
-    case(3)
-        beta_sub = -360._WP*this%alpha_(1, pt) - 12._WP*this%alpha_(3, pt) - &
-            12._WP*this%alpha_(4, pt) - 144._WP*this%alpha_(5, pt) + 360._WP*this%alpha_(6, pt)
-    case(4)
-        beta_sub = 60._WP*this%alpha_(1, pt) + 2._WP*this%alpha_(3, pt) + &
-            4._WP*this%alpha_(4, pt) - 60._WP*this%alpha_(5, pt) - 60._WP*this%alpha_(6, pt)
-    end select
+      w = this%w_(pt)
+      dw_dx = this%dw_dx_(pt)
 
-    beta = (PI/63._WP) * beta_sub
+      rho = 3._WP*SQRT(w)/(4._WP*PI)*(1._WP + x*dw_dx/(6._WP*w))
 
     end associate
-    
+
     ! Finish
 
     return
 
-  end function beta_
+  end function rho_
 
   !****
 
-  function w_(this, pt) result (w)
+  function drho_dx_ (this, pt) result (drho_dx)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: w
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: drho_dx
+
+    real(WP) :: w
+    real(WP) :: dw_dx
+    real(WP) :: d2w_dx2
+
+    ! Evaluate the derivative of the dimensionless density
 
     associate (x => pt%x)
 
-    w = this%beta_(1,pt)*this%hermite_three(1,pt) + &
-      this%beta_(2,pt)*this%hermite_three(2,pt) + &
-      this%beta_(3,pt)*this%hermite_three(3,pt) + &
-      this%beta_(4,pt)*this%hermite_three(4,pt)
+      w = this%w_(pt)
+      dw_dx = this%dw_dx_(pt)
+      d2w_dx2 = this%d2w_dx2_(pt)
+
+      drho_dx = (2._WP*w*(4._WP*dw_dx + x*d2w_dx2) - x*dw_dx**2)/(16._WP*PI*w*SQRT(w))
 
     end associate
+
+    ! Finish
+
+    return
+
+  end function drho_dx_
+
+  !****
+
+  function M_r_ (this, pt) result (M_r)
+
+    class(twopt_quintic_model_t), intent(in) :: this
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: M_r
+
+    real(WP) :: w
+
+    ! Evaluate the dimensionless mass coordinate
+
+    associate (x => pt%x)
+
+      w = this%w_(pt)
+         
+      M_r = x**3*SQRT(w)
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function M_r_
+
+  !****
+
+  function w_ (this, pt) result (w)
+
+    class(twopt_quintic_model_t), intent(in) :: this
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: w
+
+    real(WP) :: H3(4)
+
+    ! Evaluate the w = x**6 M_r**2 function
+
+    H3 = this%H3_(pt)
+
+    w = DOT_PRODUCT(this%beta, H3)
+
+    if (w < 0._WP) then
+       write(*,*) 'x, w:', pt%x, w
+       $ABORT(Negative w)
+    endif
+
+    ! Finish
 
     return
 
@@ -561,127 +611,149 @@ contains
 
   !****
 
-  function dw_(this, pt) result (dw)
+  function dw_dx_ (this, pt) result (dw_dx)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: dw
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: dw_dx
 
-    associate ( &
-         x => pt%x, &
-         a1 => this%alpha_(1,pt), &
-         a2 => this%alpha_(2,pt), &
-         a3 => this%alpha_(3,pt), &
-         a4 => this%alpha_(4,pt), &
-         a5 => this%alpha_(5,pt), &
-         a6 => this%alpha_(6,pt))
+    real(WP) :: dH3_dx(4)
 
-    dw = (4._WP * PI / 21._WP) * (9._WP*(20._WP*a1 + 3._WP*a3 - a4 + 8._WP*a5 - 20._WP*a6) + &
-        35._WP* x**2 *(12._WP*a1 + a3 - a4 + 6._WP*a5 - 12._WP*a6) - 21._WP*x*(30._WP*a1 + &
-        3._WP*a3 - 2._WP*a4 + 14._WP*a5 - 30._WP*a6))
+    ! Evaluate the derivative of the w function
 
-    end associate
+    dH3_dx = this%dH3_dx_(pt)
 
-    return
+    dw_dx = DOT_PRODUCT(this%beta, dH3_dx)
 
-  end function dw_
-
-  !****
-
-  function ddw_(this, pt) result (ddw)
-
-    class(twopt_quintic_model_t), intent(in) :: this
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: ddw
-
-    associate ( &
-         x => pt%x, &
-         a1 => this%alpha_(1,pt), &
-         a2 => this%alpha_(2,pt), &
-         a3 => this%alpha_(3,pt), &
-         a4 => this%alpha_(4,pt), &
-         a5 => this%alpha_(5,pt), &
-         a6 => this%alpha_(6,pt))
-
-    ddw = (40._WP * PI * x/3._WP)*(12._WP*a1 + a3 - a4 + 6._WP*a5 - 12._WP*a6) - &
-        4._WP*PI*(30._WP*a1 + 3._WP*a3 - 2._WP*(a4 - 7._WP*a5 + 15._WP*a6))
-
-    end associate
-
-    return
-
-  end function ddw_
-
-
-  !****
-
-  function hermite_five (this, n, pt) result (basis)
-
-    class(twopt_quintic_model_t), intent(in) :: this
-    integer, intent(in)              :: n
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: basis
-
-
-    ! Evaluate the n'th Quintic Hermite Basis Function
-
-    associate (x => pt%x)
-    
-    select case (n)
-    case (1)
-       basis = 1._WP - 10._WP*x**3 + 15._WP*x**4 - 6._WP*x**5
-    case (2)
-       basis = x - 6._WP*x**3 + 8._WP*x**4 - 3._WP*x**5
-    case (3)
-       basis = (x**2)/2._WP - 3._WP*(x**3)/2._WP + 3._WP*(x**4)/2._WP - (x**5)/2._WP
-    case (4)
-       basis = (x**3)/2._WP - x**4 + (x**5)/2
-    case (5)
-       basis = -4._WP*x**3 + 7._WP*(x**4) - 3._WP*x**5
-    case (6)
-       basis = 10._WP*x**3 - 15._WP*x**4 + 6._WP*x**5
-    
-    end select
-
-    end associate
     ! Finish
 
     return
 
-  end function hermite_five
+  end function dw_dx_
 
   !****
 
-  function hermite_three (this, n, pt) result (basis)
+  function d2w_dx2_ (this, pt) result (d2w_dx2)
 
     class(twopt_quintic_model_t), intent(in) :: this
-    integer, intent(in)              :: n
-    type(point_t), intent(in)        :: pt
-    real(WP)                         :: basis
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: d2w_dx2
 
+    real(WP) :: d2H3_dx2(4)
 
-    ! Evaluate the n'th Cubic Hermite Basis Function
+    ! Evaluate the second derivative of the w function
+
+    d2H3_dx2 = this%d2H3_dx2_(pt)
+
+    d2w_dx2 = DOT_PRODUCT(this%beta, d2H3_dx2)
+
+    ! Finish
+
+    return
+ 
+  end function d2w_dx2_
+
+  !****
+
+  function H3_ (this, pt) result (H3)
+
+    class(twopt_quintic_model_t), intent(in) :: this
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: H3(4)
+
+    ! Evaluate the cubic Hermite basis functions
 
     associate (x => pt%x)
     
-    select case (n)
-    case (1)
-       basis = 1._WP - 3._WP*x**2 + 2._WP*x**3
-    case (2)
-       basis = x - 2._WP*x**2 + x**3
-    case (3)
-       basis = -x**2 + x**3
-    case (4)
-       basis = 3._WP*x**2 - 2._WP*x**3
-    
-    end select
+      H3(1) = 1._WP - 3._WP*x**2 + 2._WP*x**3
+      H3(2) = x - 2._WP*x**2 + x**3
+      H3(3) = -x**2 + x**3
+      H3(4) = 3._WP*x**2 - 2._WP*x**3
 
     end associate
+
     ! Finish
 
     return
 
-  end function hermite_three
+  end function H3_
+
+  !****
+
+  function dH3_dx_ (this, pt) result (dH3_dx)
+
+    class(twopt_quintic_model_t), intent(in) :: this
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: dH3_dx(4)
+
+    ! Evaluate the derivative of the cubic Hermite basis functions
+
+    associate (x => pt%x)
+    
+      dH3_dx(1) = -6._WP*x + 6._WP*x**2
+      dH3_dx(2) = 1._WP - 4._WP*x + 3._WP*x**2
+      dH3_dx(3) = -2._WP*x + 3._WP*x**2
+      dH3_dx(4) = 6._WP*x - 6._WP*x**2
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function dH3_dx_
+
+  !****
+
+  function d2H3_dx2_ (this, pt) result (d2H3_dx2)
+
+    class(twopt_quintic_model_t), intent(in) :: this
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: d2H3_dx2(4)
+
+    ! Evaluate the second derivative of the cubic Hermite basis functions
+
+    associate (x => pt%x)
+    
+      d2H3_dx2(1) = -6._WP + 12._WP*x
+      d2H3_dx2(2) = -4._WP + 6._WP*x
+      d2H3_dx2(3) = -2._WP + 6._WP*x
+      d2H3_dx2(4) = 6._WP - 12._WP*x
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function d2H3_dx2_
+
+  !****
+
+  function H5_ (this, pt) result (H5)
+
+    class(twopt_quintic_model_t), intent(in) :: this
+    type(point_t), intent(in)                :: pt
+    real(WP)                                 :: H5(6)
+
+    ! Evaluate the quintic Hermite basis functions
+
+    associate (x => pt%x)
+    
+      H5(1) = 1._WP - 10._WP*x**3 + 15._WP*x**4 - 6._WP*x**5
+      H5(2) = x - 6._WP*x**3 + 8._WP*x**4 - 3._WP*x**5
+      H5(3) = x**2/2._WP - 3._WP*x**3/2._WP + 3._WP*x**4/2._WP - x**5/2._WP
+      H5(4) = x**3/2._WP - x**4 + x**5/2._WP
+      H5(5) = -4._WP*x**3 + 7._WP*x**4 - 3._WP*x**5
+      H5(6) = 10._WP*x**3 - 15._WP*x**4 + 6._WP*x**5
+    
+    end associate
+
+    ! Finish
+
+    return
+
+  end function H5_
 
   !****
 
@@ -720,7 +792,7 @@ contains
 
     ! Return whether the point is a vacuum
 
-    is_vacuum = (1._WP - pt%x**2) == 0._WP
+    is_vacuum = this%P_(pt) == 0._WP
 
     ! Finish
 
