@@ -129,7 +129,7 @@ contains
       ml%alpha(1) = P_c
       ml%alpha(2) = 0._WP
       ml%alpha(3) = -4._WP*PI*rho_c**2/3._WP
-      ml%alpha(4) = 63._WP/(4._WP*PI) + 15._WP*(P_s - P_c - rho_c) + 2._WP*PI*rho_c**2/3._WP
+      ml%alpha(4) = 63._WP/(4._WP*PI) + 15._WP*(P_s - P_c - rho_s) + 2._WP*PI*rho_c**2/3._WP
       ml%alpha(5) = -rho_s
       ml%alpha(6) = P_s
 
