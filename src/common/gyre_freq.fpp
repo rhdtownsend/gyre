@@ -471,7 +471,7 @@ contains
 
     ! Evaluate the cutoff frequencies
 
-    select case (os_p%outer_bound)
+    select case (os_p%outer_bound_for_cutoff)
 
     case ('VACUUM')
 

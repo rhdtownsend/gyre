@@ -38,6 +38,7 @@ module gyre_osc_par
      character(64)           :: variables_set = 'GYRE'
      character(64)           :: inner_bound = 'REGULAR'
      character(64)           :: outer_bound = 'VACUUM'
+     character(64)           :: outer_bound_for_cutoff = 'UNNO'
      character(64)           :: inertia_norm = 'BOTH'
      character(64)           :: time_factor = 'OSC'
      character(64)           :: conv_scheme = 'FROZEN_PESNELL_1'
@@ -102,6 +103,7 @@ contains
     character(LEN(os_p%variables_set))    :: variables_set
     character(LEN(os_p%inner_bound))      :: inner_bound
     character(LEN(os_p%outer_bound))      :: outer_bound
+    character(LEN(os_p%outer_bound))      :: outer_bound_for_cutoff
     character(LEN(os_p%inertia_norm))     :: inertia_norm
     character(LEN(os_p%time_factor))      :: time_factor
     character(LEN(os_p%conv_scheme))      :: conv_scheme
@@ -121,7 +123,7 @@ contains
     logical                               :: reduce_order
 
     namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, &
-         variables_set, inertia_norm, time_factor, &
+         outer_bound_for_cutoff, variables_set, inertia_norm, time_factor, &
          conv_scheme, int_scheme, deps_scheme, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
          cowling_approx, nar_approx, narf_approx, eddington_approx, &
@@ -157,6 +159,7 @@ contains
        variables_set = os_p(i)%variables_set
        inner_bound = os_p(i)%inner_bound
        outer_bound = os_p(i)%outer_bound
+       outer_bound = os_p(i)%outer_bound_for_cutoff
        inertia_norm = os_p(i)%inertia_norm
        time_factor = os_p(i)%time_factor
        conv_scheme = os_p(i)%conv_scheme
@@ -186,6 +189,7 @@ contains
        os_p(i)%variables_set = variables_set
        os_p(i)%inner_bound = inner_bound
        os_p(i)%outer_bound = outer_bound
+       os_p(i)%outer_bound = outer_bound_for_cutoff
        os_p(i)%inertia_norm = inertia_norm
        os_p(i)%time_factor = time_factor
        os_p(i)%conv_scheme = conv_scheme
@@ -229,6 +233,7 @@ contains
     call bcast(os_p%variables_set, root_rank)
     call bcast(os_p%inner_bound, root_rank)
     call bcast(os_p%outer_bound, root_rank)
+    call bcast(os_p%outer_bound_for_cutoff, root_rank)
     call bcast(os_p%inertia_norm, root_rank)
     call bcast(os_p%time_factor, root_rank)
     call bcast(os_p%conv_scheme, root_rank)
