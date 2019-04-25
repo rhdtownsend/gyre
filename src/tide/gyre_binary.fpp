@@ -1,7 +1,7 @@
-! Program  : gyre_bin
-! Purpose  : binary orbital evolution code
+! Program  : gyre_binary
+! Purpose  : binary secular evolution code
 !
-! Copyright 2018 Rich Townsend
+! Copyright 2018-2019 The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-program gyre_bin
+program gyre_binary
 
   ! Uses
 
@@ -35,6 +35,7 @@ program gyre_bin
   use gyre_model_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_scan
   use gyre_scan_par
   use gyre_search
   use gyre_tide
@@ -193,4 +194,4 @@ contains
 
   end subroutine process_wave
 
-end program gyre_bin
+end program gyre_binary
