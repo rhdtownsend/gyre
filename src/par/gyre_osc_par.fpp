@@ -159,7 +159,7 @@ contains
        variables_set = os_p(i)%variables_set
        inner_bound = os_p(i)%inner_bound
        outer_bound = os_p(i)%outer_bound
-       outer_bound = os_p(i)%outer_bound_for_cutoff
+       outer_bound_for_cutoff = os_p(i)%outer_bound_for_cutoff
        inertia_norm = os_p(i)%inertia_norm
        time_factor = os_p(i)%time_factor
        conv_scheme = os_p(i)%conv_scheme
@@ -189,7 +189,7 @@ contains
        os_p(i)%variables_set = variables_set
        os_p(i)%inner_bound = inner_bound
        os_p(i)%outer_bound = outer_bound
-       os_p(i)%outer_bound = outer_bound_for_cutoff
+       os_p(i)%outer_bound_for_cutoff = outer_bound_for_cutoff
        os_p(i)%inertia_norm = inertia_norm
        os_p(i)%time_factor = time_factor
        os_p(i)%conv_scheme = conv_scheme
