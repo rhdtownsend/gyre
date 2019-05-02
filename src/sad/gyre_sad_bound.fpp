@@ -117,7 +117,7 @@ contains
     case ('VACUUM')
        bd%type_o = VACUUM_TYPE
     case default
-       $ABORT(Invalid time_factor)
+       $ABORT(Invalid outer_bound)
     end select
 
     bd%l = md_p%l
