@@ -120,71 +120,95 @@ contains
     real(WP)                :: omega_g
     real(WP), allocatable   :: omega_i(:)
     integer                 :: j
-    
+
     ! Build the frequency scan as a grid
 
     ml => cx%model()
 
     pt_i = cx%point_i()
     pt_o = cx%point_o()
-    
+
     ! Calculate the dimensionless frequency range in the inertial frame
       
     omega_i_min = omega_from_freq(sc_p%freq_min, ml, pt_i, pt_o, sc_p%freq_min_units, sc_p%freq_frame, md_p, os_p)
     omega_i_max = omega_from_freq(sc_p%freq_max, ml ,pt_i, pt_o, sc_p%freq_max_units, sc_p%freq_frame, md_p, os_p)
 
-    ! Check that the range is valid
+    ! Build the scan
 
-    if (omega_i_max > omega_i_min) then
-
-       ! Calculate the dimensionless frequency range in the grid frame
-
-       omega_g_min = freq_from_omega(omega_i_min, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)
-       omega_g_max = freq_from_omega(omega_i_max, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)
-
-       ! Set up the frequencies
-
-       allocate(omega_i(sc_p%n_freq))
-
-       do j = 1, sc_p%n_freq
-
-          ! Grid frame
-
-          select case(sc_p%grid_type)
-          case('LINEAR')
-             omega_g = ((sc_p%n_freq-j)*omega_g_min + (j-1)*omega_g_max)/(sc_p%n_freq-1)
-          case('INVERSE')
-             omega_g = (sc_p%n_freq-1)/((sc_p%n_freq-j)/omega_g_min + (j-1)/omega_g_max)
-          case default
-             $ABORT(Invalid grid_type)
-          end select
-
-          ! Inertial frame
-
-          omega_i(j) = omega_from_freq(omega_g, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)
-
-       end do
-
-       ! Store them
-
-       omega = [omega,omega_i]
+    if (sc_p%n_freq < 1) then
 
        if (check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 110) 'added scan interval : ', omega_i_min, ' -> ', omega_i_max, &
-                                  ' (', sc_p%n_freq, ' points, ', TRIM(sc_p%grid_type), ')'
-110       format(3X,A,E11.4,A,E11.4,A,I0,A,A,A)
+          write(OUTPUT_UNIT, 100) 'ignoring scan interval :', omega_i_min, ' -> ', omega_i_max, ' (n_freq < 1)'
+100       format(3X,A,E11.4,A,E11.4,A)
+       endif
+
+    elseif (sc_p%n_freq == 1) then
+
+       if (omega_i_max == omega_i_min) then
+
+          omega = [omega,omega_i_min]
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 110) 'added scan point : ', omega_i_min
+110          format(3X,A,E11.4)
+          endif
+
+       else
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 100) 'ignoring scan interval :', omega_i_min, ' -> ', omega_i_max, ' (n_freq == 1)'
+          endif
+          
        endif
 
     else
 
-       if (check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 120) 'ignoring scan interval :', omega_i_min, ' -> ', omega_i_max
-120       format(3X,A,E24.16,A,E24.16)
+       if (omega_i_max > omega_i_min) then
+
+          ! Set up the frequencies
+
+          allocate(omega_i(sc_p%n_freq))
+
+          do j = 1, sc_p%n_freq
+
+             ! Grid frame
+
+             select case(sc_p%grid_type)
+             case('LINEAR')
+                omega_g = ((sc_p%n_freq-j)*omega_g_min + (j-1)*omega_g_max)/(sc_p%n_freq-1)
+             case('INVERSE')
+                omega_g = (sc_p%n_freq-1)/((sc_p%n_freq-j)/omega_g_min + (j-1)/omega_g_max)
+             case default
+                $ABORT(Invalid grid_type)
+             end select
+
+             ! Inertial frame
+
+             omega_i(j) = omega_from_freq(omega_g, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)
+
+          end do
+
+          ! Store them
+
+          omega = [omega,omega_i]
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 120) 'added scan interval : ', omega_i_min, ' -> ', omega_i_max, &
+                                     ' (', sc_p%n_freq, ' points, ', TRIM(sc_p%grid_type), ')'
+120          format(3X,A,E11.4,A,E11.4,A,I0,A,A,A)
+          endif
+
+       else
+
+          if (check_log_level('INFO')) then
+             write(OUTPUT_UNIT, 120) 'ignoring scan interval :', omega_i_min, ' -> ', omega_i_max, ' (inverted)'
+          endif
+
        endif
 
     endif
 
-    ! Finish
+     ! Finish
 
     return
 
