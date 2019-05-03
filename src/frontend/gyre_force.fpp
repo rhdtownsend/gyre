@@ -44,7 +44,6 @@ program gyre_force
   use gyre_osc_par
   use gyre_out_par
   use gyre_output
-  use gyre_rad_bvp
   use gyre_sad_bvp
   use gyre_scan
   use gyre_scan_par
@@ -83,7 +82,6 @@ program gyre_force
   type(context_t), pointer       :: cx(:) => null()
   real(WP), allocatable          :: omega(:)
   type(grid_t)                   :: gr
-  class(r_bvp_t), allocatable    :: bp_sad
   class(r_bvp_t), allocatable    :: bp_ad
   class(c_bvp_t), allocatable    :: bp_nad
   integer                        :: n_wv_ad
@@ -189,79 +187,59 @@ program gyre_force
 
      cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel)
 
+     ! Set up the frequency array
+     
+     call build_scan(cx(i), md_p(i), os_p_sel, sc_p_sel, omega)
+
+     if (SIZE(omega) == 0) then
+
+        if (check_log_level('INFO')) then
+           write(OUTPUT_UNIT, 100) 'Scan is empty, skipping mode...'
+        endif
+           
+        cycle md_p_loop
+
+     endif
+
+     ! Set up the grid
+
      if (md_p(i)%static) then
-
-        ! Static modes
-
-        ! Set up the grid
 
         gr = ml%grid()
 
-        ! Calculate wavefunctions
-
-        if (os_p_sel%adiabatic) then
-
-           allocate(bp_sad, SOURCE=sad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
-
-           call eval_wave_sad()
-
-           deallocate(bp_sad)
-
-        endif
-
-        if (os_p_sel%nonadiabatic) then
-
-           $ABORT(Static nonadiabatic modes not currently implemented)
-
-        endif
-
      else
-
-        ! Non-static modes
-     
-        ! Set up the frequency array
-
-        call build_scan(cx(i), md_p(i), os_p_sel, sc_p_sel, omega)
-
-        if (SIZE(omega) < 2) then
-
-           if (check_log_level('INFO')) then
-              write(OUTPUT_UNIT, 100) 'Scan is empty, skipping mode...'
-           endif
-           
-           cycle md_p_loop
-
-        endif
-
-        ! Create the grid
 
         gr = grid_t(cx(i), omega, gr_p_sel)
 
-        ! Calculate wavefunctions
+     end if
 
-        if (os_p_sel%adiabatic) then
+     ! Calculate wavefunctions
 
-           if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-              allocate(bp_ad, SOURCE=rad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
-           else
-              allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
-           endif
-           
-           call eval_wave_ad(omega)
+     if (os_p_sel%adiabatic) then
 
-           deallocate(bp_ad)
-
-        end if
-
-        if (os_p_sel%nonadiabatic) then
-
-           allocate(bp_nad, SOURCE=nad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
-           
-           call eval_wave_nad(omega)
-
-           deallocate(bp_nad)
-
+        if (md_p(i)%static) then
+           allocate(bp_ad, SOURCE=sad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+        else
+           allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
         endif
+           
+        call eval_wave_ad(omega)
+
+        deallocate(bp_ad)
+
+     endif
+
+     if (os_p_sel%nonadiabatic) then
+
+        if (md_p(i)%static) then
+           $ABORT(Static nonadiabatic modes not currently implemented)
+        else
+           allocate(bp_nad, SOURCE=nad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+        endif
+           
+        call eval_wave_nad(omega)
+
+        deallocate(bp_nad)
 
      end if
 
@@ -283,59 +261,6 @@ program gyre_force
   call final_parallel()
 
 contains
-
-  subroutine eval_wave_sad ()
-
-    real(WP)        :: v_i(bp_sad%n_i)
-    real(WP)        :: v_o(bp_sad%n_o)
-    type(r_state_t) :: st
-
-    ! If necessary, expand arrays
-
-    n_wv_ad = n_wv_ad + 1
-
-    if (n_wv_ad > d_wv_ad) then
-       d_wv_ad = 2*d_wv_ad
-       call reallocate(wv_ad, [d_wv_ad])
-    endif
-
-    ! Set up the inhomogeneous boundary terms
-
-    v_i = 0._WP
-
-    v_o = 0._WP
-    v_o(1) = Phi_force(0._WP)
-         
-    associate (wv => wv_ad(n_wv_ad))
-
-      ! Solve for the wave function
-
-      st = r_state_t(0._WP)
-       
-      select type (bp_sad)
-      type is (sad_bvp_t)
-         wv = wave_t(bp_sad, st, v_i, v_o, n_wv_nad)
-      class default
-         $ABORT(Invalid bp_sad class)
-      end select
-
-      ! Write it
-
-      call write_details(wv, ot_p_ad)
-
-      ! If necessary, prune it
-
-      if (ot_p_ad%prune_details) call wv%prune()
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end subroutine eval_wave_sad
-
-  !****
 
   subroutine eval_wave_ad (omega)
 
@@ -362,9 +287,16 @@ contains
        ! Set up the inhomogeneous boundary terms
 
        v_i = 0._WP
-         
        v_o = 0._WP
-       v_o(2) = Phi_force(omega(j))
+       
+       select type (bp_ad)
+       type is (sad_bvp_t)
+          v_o(1) = Phi_force(omega(j))
+       type is (ad_bvp_t)
+          v_o(2) = Phi_force(omega(j))
+       class default
+          $ABORT(Invalid bp_ad class)
+       end select
          
        associate (wv => wv_ad(n_wv_ad))
 
@@ -373,9 +305,9 @@ contains
          st = r_state_t(omega(j))
        
          select type (bp_ad)
-         type is (ad_bvp_t)
+         type is (sad_bvp_t)
             wv = wave_t(bp_ad, st, v_i, v_o, n_wv_ad)
-         type is (rad_bvp_t)
+         type is (ad_bvp_t)
             wv = wave_t(bp_ad, st, v_i, v_o, n_wv_ad)
          class default
             $ABORT(Invalid bp_ad class)
