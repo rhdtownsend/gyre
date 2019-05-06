@@ -1,7 +1,7 @@
 ! Module   : gyre_scan
 ! Purpose  : frequency scanning routines
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2019 The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -164,6 +164,11 @@ contains
     else
 
        if (omega_i_max > omega_i_min) then
+
+          ! Calculate the dimensionless frequency range in the grid frame
+
+          omega_g_min = freq_from_omega(omega_i_min, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)
+          omega_g_max = freq_from_omega(omega_i_max, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)          
 
           ! Set up the frequencies
 
