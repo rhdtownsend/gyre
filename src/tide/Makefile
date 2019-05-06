@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=gyre_binary
+TARGETS=gyre_orbit
 
 # Flags
 

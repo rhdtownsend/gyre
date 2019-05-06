@@ -1,5 +1,5 @@
-! Program  : gyre_binary
-! Purpose  : binary secular evolution code
+! Program  : gyre_orbit
+! Purpose  : secular orbital evolution code
 !
 ! Copyright 2018-2019 The GYRE Team
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-program gyre_binary
+program gyre_orbit
 
   ! Uses
 
@@ -71,7 +71,7 @@ program gyre_binary
 
   ! Read command-line arguments
 
-  $ASSERT(n_arg() == 1,Syntax: gyre_bin <filename>)
+  $ASSERT(n_arg() == 1,Syntax: gyre_orbit <filename>)
 
   call get_arg(1, filename)
 
@@ -194,4 +194,4 @@ contains
 
   end subroutine process_wave
 
-end program gyre_binary
+end program gyre_orbit
