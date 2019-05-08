@@ -1,7 +1,7 @@
 ! Program  : gyre_tide
-! Purpose  : dynamical tide modeling
+! Purpose  : tidal response evaluation
 !
-! Copyright 2018 Rich Townsend
+! Copyright 2018-2019 The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -128,7 +128,7 @@ contains
     allocate(omega(-k_max:k_max))
 
     do k = -k_max, k_max
-       omega(k) = k*Omega_orb
+       omega(k) = -k*Omega_orb
     end do
 
     ! Set up contexts and tide types
