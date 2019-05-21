@@ -404,7 +404,7 @@ contains
 
        select type (ml)
        class is (evol_model_t)
-          call write_details_evol_model_(items(i), ml, wr)
+          call write_details_evol_model_(items(i), ml, wv%grid(), wr)
        end select
 
        ! Check whether an item was written
@@ -677,18 +677,16 @@ contains
 
     !****
 
-    subroutine write_details_evol_model_ (item, ml, wr)
+    subroutine write_details_evol_model_ (item, ml, gr, wr)
 
       character(*), intent(in)        :: item
       class(evol_model_t), intent(in) :: ml
+      type(grid_t), intent(in)        :: gr
       class(writer_t), intent(inout)  :: wr
 
-      type(grid_t) :: gr
       integer      :: k
       
       ! Write the item from evol_model_t data
-
-      gr = ml%grid()
 
       select case (item)
 
