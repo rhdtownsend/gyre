@@ -34,6 +34,7 @@ module gyre_osc_par
 
   type :: osc_par_t
      real(WP)                :: x_ref = 1._WP
+     real(WP)                :: alpha_th = 1._WP
      character(64)           :: rotation_method = 'DOPPLER'
      character(64)           :: variables_set = 'GYRE'
      character(64)           :: inner_bound = 'REGULAR'
@@ -99,6 +100,7 @@ contains
     integer                               :: n_os_p
     integer                               :: i
     real(WP)                              :: x_ref
+    real(WP)                              :: alpha_th
     character(LEN(os_p%rotation_method))  :: rotation_method
     character(LEN(os_p%variables_set))    :: variables_set
     character(LEN(os_p%inner_bound))      :: inner_bound
@@ -122,7 +124,7 @@ contains
     logical                               :: complex_lambda
     logical                               :: reduce_order
 
-    namelist /osc/ x_ref, rotation_method, inner_bound, outer_bound, &
+    namelist /osc/ x_ref, alpha_th, rotation_method, inner_bound, outer_bound, &
          outer_bound_for_cutoff, variables_set, inertia_norm, time_factor, &
          conv_scheme, int_scheme, deps_scheme, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
@@ -155,6 +157,7 @@ contains
        os_p(i) = osc_par_t()
 
        x_ref = os_p(i)%x_ref
+       alpha_th = os_p(i)%alpha_th
        rotation_method = os_p(i)%rotation_method
        variables_set = os_p(i)%variables_set
        inner_bound = os_p(i)%inner_bound
@@ -185,6 +188,7 @@ contains
        ! Store read values
 
        os_p(i)%x_ref = x_ref
+       os_p(i)%alpha_th = alpha_th
        os_p(i)%rotation_method = rotation_method
        os_p(i)%variables_set = variables_set
        os_p(i)%inner_bound = inner_bound
@@ -228,6 +232,7 @@ contains
     ! Broadcast the osc_par_t
 
     call bcast(os_p%x_ref, root_rank)
+    call bcast(os_p%alpha_th, root_rank)
 
     call bcast(os_p%rotation_method, root_rank)
     call bcast(os_p%variables_set, root_rank)
