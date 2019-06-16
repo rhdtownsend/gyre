@@ -1,0 +1,38 @@
+&constants
+/
+
+&model
+	model_type = 'EVOL'
+	file = 'spb.mesa'
+	file_format = 'MESA'
+/
+
+&tide
+	q = 0.5
+	e = 0.75
+	omega_static = 0.
+	k_max = 40
+	l_max = 4
+/
+
+&osc
+	nonadiabatic = .TRUE.
+/
+
+&num
+	diff_scheme = 'COLLOC_GL2'
+/
+
+&grid
+	n_inner = 5
+	alpha_osc = 10
+	alpha_exp = 2
+/
+
+&scan
+        freq_min = 0.05
+        freq_max = 0.05
+        freq_min_units = 'CYC_PER_DAY'
+        freq_max_units = 'CYC_PER_DAY'
+        n_freq = 1
+/
