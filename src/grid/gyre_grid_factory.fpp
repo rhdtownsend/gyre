@@ -497,7 +497,7 @@ contains
           if (g_0 /= 0._WP) then
              gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
           else
-             gamma = g_4*omega_c**2 + g_2*omega_c
+             gamma = g_4*omega_c**2 + g_2
           endif
 
           ! Update the maximal k_r
