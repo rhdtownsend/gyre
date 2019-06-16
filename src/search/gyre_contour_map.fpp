@@ -262,6 +262,9 @@ contains
       x = x_a*(1._WP-w) + w*x_b
       y = y_a*(1._WP-w) + w*y_b
 
+      x = MIN(MAX(x, MIN(x_a, x_b)), MAX(x_a,x_b))
+      y = MIN(MAX(y, MIN(y_a, y_b)), MAX(y_a,y_b))
+
       ! Finish
 
       return
