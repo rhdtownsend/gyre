@@ -29,6 +29,7 @@ module gyre_nad_diff
   use gyre_trapz_diff
   use gyre_ext
   use gyre_mode_par
+  use gyre_model
   use gyre_nad_eqns
   use gyre_nad_match
   use gyre_num_par
@@ -46,8 +47,10 @@ module gyre_nad_diff
 
   type, extends (c_diff_t) :: nad_diff_t
      private
+     type(context_t), pointer     :: cx => null()
      class(c_diff_t), allocatable :: df
      type(nad_eqns_t)             :: eq
+     real(WP)                     :: Omega_rot
      real(WP)                     :: dx
    contains
      private
@@ -80,10 +83,13 @@ contains
     type(osc_par_t), intent(in)          :: os_p
     type(nad_diff_t)                     :: df
 
-    type(nad_eqns_t) :: eq
-    type(point_t)    :: pt_m
+    type(nad_eqns_t)        :: eq
+    type(point_t)           :: pt_m
+    class(model_t), pointer :: ml
 
     ! Construct the nad_diff_t
+
+    df%cx => cx
 
     if (pt_a%s == pt_b%s) then
 
@@ -98,7 +104,8 @@ contains
           allocate(df%df, SOURCE=c_diff_t(eq, pt_a, pt_b, nm_p))
        end select
 
-       ! Set up midpoint eqns_t (used for regularization)
+       ! Set up midpoint eqns_t (used for regularization of Magnus
+       ! schemes)
 
        df%dx = pt_b%x - pt_a%x
  
@@ -108,6 +115,13 @@ contains
        df%eq = eq
 
        call df%eq%stencil([pt_m])
+
+       ! Set up midpoint Omega_rot (used for regularization of colloc
+       ! schemes)
+
+       ml => cx%model()
+
+       df%Omega_rot = ml%coeff(I_OMEGA_ROT, pt_m)
 
    else
 
@@ -142,6 +156,7 @@ contains
 
     complex(WP) :: A(this%n_e,this%n_e)
     complex(WP) :: lambda(3)
+    complex(WP) :: omega_c
 
     $CHECK_BOUNDS(SIZE(E_l, 1),this%n_e)
     $CHECK_BOUNDS(SIZE(E_l, 2),this%n_e)
@@ -172,7 +187,9 @@ contains
 
     class is (c_colloc_diff_t)
 
-       scl = scl/SQRT(st%omega)
+       omega_c = this%cx%omega_c(this%Omega_rot, st)
+
+       scl = scl/SQRT(omega_c)
 
     end select
 
