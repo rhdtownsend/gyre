@@ -197,7 +197,11 @@ contains
          g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
          g_0 = -4._WP*lambda*As/c_1
 
-         gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
+         if (g_0 /= 0._WP) then
+            gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
+         else
+            gamma = g_4*omega_c**2 + g_2*omega_c
+         endif
 
       endif
 
