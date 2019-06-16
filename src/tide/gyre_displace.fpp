@@ -191,6 +191,7 @@ program gyre_displace
      hg = hgroup_t(displace_file, CREATE_FILE)
 
      call write_attr(hg, 'Omega_orb', Omega_orb(i))
+     call write_attr(hg, 'Omega_rot', ml_p%Omega_rot)
 
      call write_attr(hg, 'l_max', td_p(1)%l_max)
      call write_attr(hg, 'k_max', td_p(1)%k_max)
