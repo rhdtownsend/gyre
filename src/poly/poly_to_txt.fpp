@@ -1,7 +1,7 @@
 ! Program  : poly_to_txt
 ! Purpose  : convert a polytrope to a simple txt format
 !
-! Copyright 2019 The GYRE Team
+! Copyright 2019 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
