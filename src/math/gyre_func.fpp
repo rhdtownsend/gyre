@@ -140,7 +140,7 @@ contains
           do k = am+2, l
              P_2 = P_1
              P_1 = P
-             P = ((2*k-1)*x*P_1 - (k+m-1)*P_2)/(k-m)
+             P = ((2*k-1)*x*P_1 - (k+am-1)*P_2)/(k-am)
           end do
 
        endif
