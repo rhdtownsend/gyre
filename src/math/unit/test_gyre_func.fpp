@@ -101,7 +101,7 @@ contains
 
     logical, intent(inout) :: status
 
-    real(WP), parameter :: TOL = 4._WP*EPSILON(0._WP)
+    real(WP), parameter :: TOL = 3._WP*EPSILON(0._WP)
 
     integer, parameter :: N_X = 101
     real(WP), parameter :: X_MIN = -1._WP
@@ -114,17 +114,41 @@ contains
 
        x = (X_MIN*(N_X - i) + X_MAX*(i - 1._WP))/(N_X - 1._WP)
 
-       call check_result_r('legendre_P (0,0)', legendre_P(0, 0, x), 1._WP, TOL, status)
+       call check_result_r('legendre_P (0,0)', legendre_P(0, 0, x), &
+            1._WP, TOL, status)
 
-       call check_result_r('legendre_P (1,-1)', legendre_P(1, -1, x), SQRT(1._WP - x**2)/2._WP, TOL, status)
-       call check_result_r('legendre_P (1,0)', legendre_P(1, 0, x), x, TOL, status)
-       call check_result_r('legendre_P (1,1)', legendre_P(1, 1, x), -SQRT(1._WP - x**2), TOL, status)
+       call check_result_r('legendre_P (1,-1)', legendre_P(1, -1, x), &
+            SQRT(1._WP - x**2)/2._WP, TOL/2._WP, status)
+       call check_result_r('legendre_P (1,0)', legendre_P(1, 0, x), &
+            x, TOL, status)
+       call check_result_r('legendre_P (1,1)', legendre_P(1, 1, x), &
+            -SQRT(1._WP - x**2), TOL, status)
        
-       call check_result_r('legendre_P (2,-2)', legendre_P(2, -2, x), (1._WP - x**2)/8._WP, TOL, status)
-       call check_result_r('legendre_P (2,-1)', legendre_P(2, -1, x), x*SQRT(1._WP - x**2)/2._WP, TOL, status)
-       call check_result_r('legendre_P (2,0)', legendre_P(2, 0, x), (3._WP*x**2 - 1._WP)/2._WP, TOL, status)
-       call check_result_r('legendre_P (2,1)', legendre_P(2 ,1, x), -3._WP*x*SQRT(1._WP - x**2), TOL, status)
-       call check_result_r('legendre_P (2,2)', legendre_P(2 ,2 ,x), 3._WP*(1._WP - x**2), TOL, status)
+       call check_result_r('legendre_P (2,-2)', legendre_P(2, -2, x), &
+            (1._WP - x**2)/8._WP, TOL/8._WP, status)
+       call check_result_r('legendre_P (2,-1)', legendre_P(2, -1, x), &
+            x*SQRT(1._WP - x**2)/2._WP, TOL/4._WP, status)
+       call check_result_r('legendre_P (2,0)', legendre_P(2, 0, x), &
+            (3._WP*x**2 - 1._WP)/2._WP, TOL/2._WP, status)
+       call check_result_r('legendre_P (2,1)', legendre_P(2 ,1, x), &
+            -3._WP*x*SQRT(1._WP - x**2), 3._WP*TOL/2._WP, status)
+       call check_result_r('legendre_P (2,2)', legendre_P(2 ,2 ,x), &
+            3._WP*(1._WP - x**2), 3._WP*TOL, status)
+       
+       call check_result_r('legendre_P (3,-3)', legendre_P(3, -3, x), &
+            (1._WP - x**2)**1.5_WP/48._WP, TOL/48._WP, status)
+       call check_result_r('legendre_P (3,-2)', legendre_P(3, -2, x), &
+            x*(1._WP - x**2)/8._WP, TOL/(12._WP*SQRT(3._WP)), status)
+       call check_result_r('legendre_P (3,-1)', legendre_P(3, -1, x), &
+            (5._WP*x**2 - 1._WP)*SQRT(1._WP - x**2)/8._WP, TOL/8._WP, status)
+       call check_result_r('legendre_P (3,0)', legendre_P(3, 0, x), &
+            x*(5._WP*x**2 - 3._WP)/2._WP, TOL/SQRT(5._WP), status)
+       call check_result_r('legendre_P (3,1)', legendre_P(3 ,1, x), &
+            -3._WP*(5._WP*x**2 - 1._WP)*SQRT(1._WP - x**2)/2._WP, 3._WP*TOL/2._WP, status)
+       call check_result_r('legendre_P (3,2)', legendre_P(3 ,2 ,x), &
+            15._WP*x*(1._WP - x**2), 10._WP*TOL/SQRT(3._WP), status)
+       call check_result_r('legendre_P (3,3)', legendre_P(3 ,3 ,x), &
+            -15._WP*((1._WP - x)*(1._WP + x))**1.5_WP, 15._WP*TOL, status)
        
     end do
 
@@ -136,11 +160,11 @@ contains
 
     logical, intent(inout) :: status
 
-    real(WP), parameter    :: TOL = EPSILON(0._WP)
+    real(WP), parameter    :: TOL = 4._WP*EPSILON(0._WP)
     real(WP), parameter    :: PHI = 0.0_WP
     complex(WP), parameter :: II = CMPLX(0._WP, 1._WP, KIND=WP)
 
-    integer, parameter :: N_X = 1001
+    integer, parameter :: N_X = 101
     real(WP), parameter :: X_MIN = -1._WP
     real(WP), parameter :: X_MAX = 1._WP
 
@@ -175,6 +199,21 @@ contains
        call check_result_c('spherical_Y (2,2)', spherical_Y(2, 2, theta, PHI), &
             0.25_WP*SQRT(15._WP/(2._WP*PI))*SIN(theta)**2*EXP(2*II*PHI), TOL, status)
        
+       call check_result_c('spherical_Y (3,-3)', spherical_Y(3, -3, theta, PHI), &
+            0.125_WP*SQRT(35._WP/PI)*SIN(theta)**3*EXP(-3*II*PHI), TOL, status)
+       call check_result_c('spherical_Y (3,-2)', spherical_Y(3, -2, theta, PHI), &
+            0.25_WP*SQRT(105._WP/(2._WP*PI))*SIN(theta)**2*COS(theta)*EXP(-2*II*PHI), TOL, status)
+       call check_result_c('spherical_Y (3,-1)', spherical_Y(3, -1, theta, PHI), &
+            0.125_WP*SQRT(21._WP/PI)*SIN(theta)*(5._WP*COS(theta)**2 - 1._WP)*EXP(-1*II*PHI), TOL, status)
+       call check_result_c('spherical_Y (3,0)', spherical_Y(3, 0, theta, PHI), &
+            0.25_WP*SQRT(7._WP/PI)*(5._WP*COS(theta)**3 - 3._WP*COS(theta))*EXP(0*II*PHI), TOL, status)
+       call check_result_c('spherical_Y (3,1)', spherical_Y(3, 1, theta, PHI), &
+            -0.125_WP*SQRT(21._WP/PI)*SIN(theta)*(5._WP*COS(theta)**2 - 1._WP)*EXP(1*II*PHI), TOL, status)
+       call check_result_c('spherical_Y (3,2)', spherical_Y(3, 2, theta, PHI), &
+            0.25_WP*SQRT(105._WP/(2._WP*PI))*SIN(theta)**2*COS(theta)*EXP(2*II*PHI), TOL, status)
+       call check_result_c('spherical_Y (3,3)', spherical_Y(3, 3, theta, PHI), &
+            -0.125_WP*SQRT(35._WP/PI)*SIN(theta)**3*EXP(3*II*PHI), TOL, status)
+
     end do
 
   end subroutine test_spherical_Y
@@ -190,7 +229,7 @@ contains
     logical, intent(inout)   :: status
 
     if (ABS(a - b) > tol) then
-       write(*, 100) 'Failed in ', label, ', difference = ', a, b, ulp_diff(a, b)
+       write(*, 100) 'Failed in ', label, ', difference = ', a, b!, ulp_diff(a, b)
 100    format(A, A, A, E24.17, 1X, E24.17, 1X, I0)
        status = .FALSE.
     end if
