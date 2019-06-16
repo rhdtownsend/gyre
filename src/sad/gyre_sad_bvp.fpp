@@ -129,6 +129,8 @@ contains
     call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
+    bp%md_p%static = .TRUE.
+    
     bp%os_p = os_p
 
     ! Finish
