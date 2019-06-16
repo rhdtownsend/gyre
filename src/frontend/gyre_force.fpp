@@ -1,7 +1,7 @@
 ! Program  : gyre_force
 ! Purpose  : forced oscillation code
 !
-! Copyright 2016-2019 Rich Townsend
+! Copyright 2016-2019 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -405,10 +405,10 @@ contains
     real(WP) :: R_pri
     real(WP) :: P
     real(WP) :: a
-    real(WP) :: Upsilon
     real(WP) :: eps_tide
 
-    ! Evaluate the forcing potential at frequency omega
+    ! Evaluate the surface forcing potential at frequency omega (in
+    ! units of GM/R)
 
     select case (fr_p_sel%force_type)
 
@@ -431,11 +431,9 @@ contains
 
        a = (G_GRAVITY*(M_pri + M_sec)*P**2/(4.*PI**2))**(1._WP/3._WP)
 
-       Upsilon = Upsilon_lmk(R_pri/a, fr_p_sel%e, md_p(i)%l, md_p(i)%m, fr_p_sel%k) 
-      
        eps_tide = (R_pri/a)**3*(M_sec/M_pri)
 
-       Phi_force = (2*md_p(i)%l+1)*eps_tide*Upsilon
+       Phi_force = eps_tide*tidal_c(R_pri/a, fr_p_sel%e, md_p(i)%l, md_p(i)%m, fr_p_sel%k)
 
     case default
 

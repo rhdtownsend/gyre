@@ -1,7 +1,7 @@
 ! Program  : gyre_tide
 ! Purpose  : tidal response evaluation
 !
-! Copyright 2018-2019 The GYRE Team
+! Copyright 2018-2019 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -36,6 +36,7 @@ module gyre_tide
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
+  use gyre_sad_bvp
   use gyre_state
   use gyre_tide_par
   use gyre_tide_util
@@ -95,17 +96,21 @@ contains
     integer                        :: m
     integer                        :: k
     type(grid_t)                   :: gr
-    type(nad_bvp_t)                :: bp
-    real(WP)                       :: Upsilon
-    complex(WP)                    :: w_i(3)
-    complex(WP)                    :: w_o(3)
-    type(c_state_t)                :: st
+    type(nad_bvp_t)                :: bp_nad
+    type(sad_bvp_t)                :: bp_sad
+    real(WP)                       :: c
+    complex(WP)                    :: w_i_nad(3)
+    complex(WP)                    :: w_o_nad(3)
+    real(WP)                       :: w_i_sad(1)
+    real(WP)                       :: w_o_sad(1)
+    type(c_state_t)                :: st_nad
+    type(r_state_t)                :: st_sad
     type(wave_t)                   :: wv
 
     integer :: c_beg, c_end, c_rate
-    integer :: c_ups, c_grid, c_bvp, c_solve, c_proc
+    integer :: c_c, c_grid, c_bvp, c_solve, c_proc
 
-    c_ups = 0
+    c_c = 0
     c_grid = 0
     c_bvp = 0
     c_solve = 0
@@ -169,7 +174,8 @@ contains
        end do cx_m_loop
     end do cx_l_loop
 
-    ! Use the grid_specs to create the grid
+    ! Use the grid_specs to create the grid. Filter out static and
+    ! mixed tides
 
     call system_clock(c_beg, COUNT_RATE=c_rate)
 
@@ -185,11 +191,12 @@ contains
 
        m_loop : do m = -l, l
 
-          ! Create the bvp_t
+          ! Create the bvp_t's
 
           call system_clock(c_beg)
 
-          bp = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
+          bp_nad = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
+          bp_sad = sad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
 
           call system_clock(c_end)
           
@@ -197,36 +204,36 @@ contains
 
           k_loop : do k = -k_max, k_max
 
-             select case (tide_type(l,m,k))
+             ! Calculate the tidal potential coefficient
 
-             case (DYNAMIC_TIDE)
+             call system_clock(c_beg)
+                
+             c = tidal_c(R_a, td_p%e, l, m, k)
 
-                ! Dynamic tide: calculate the tidal potential coefficient
+             call system_clock(c_end)
 
-                call system_clock(c_beg)
+             c_c = c_c + (c_end - c_beg)
 
-                Upsilon = Upsilon_lmk(R_a, td_p%e, l, m, k)
+             if (c /= 0._WP) then
 
-                call system_clock(c_end)
+                select case (tide_type(l,m,k))
 
-                c_ups = c_ups + (c_end - c_beg)
-
-                if (Upsilon /= 0._WP) then
+                case (DYNAMIC_TIDE)
 
                    ! Set up the inhomogeneous boundary conditions
 
-                   w_i = 0._WP
+                   w_i_nad = 0._WP
          
-                   w_o = 0._WP
-                   w_o(2) = (2*l+1)*eps_tide*Upsilon
+                   w_o_nad = 0._WP
+                   w_o_nad(2) = eps_tide*c
          
                    ! Solve for the wave function
 
                    call system_clock(c_beg)
 
-                   st = c_state_t(CMPLX(omega(k), KIND=WP), omega(k))
+                   st_nad = c_state_t(CMPLX(omega(k), KIND=WP), omega(k))
 
-                   wv = wave_t(bp, st, w_i, w_o, 0)
+                   wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, 0)
 
                    call system_clock(c_end)
 
@@ -242,30 +249,53 @@ contains
 
                    c_proc = c_proc + (c_end - c_beg)
 
-                endif
+                case (STATIC_TIDE)
 
-             case (STATIC_TIDE)
+                   ! Set up the inhomogeneous boundary conditions
 
-                ! Ignore static tides
+                   w_i_sad = 0._WP
+         
+                   w_o_sad = 0._WP
+                   w_o_sad(1) = eps_tide*c
+         
+                   ! Solve for the wave function
 
-                if (check_log_level('DEBUG')) then
-                   write(output_unit, 110) 'Ignoring static tide for l,m,k=', l, m, k
-110                format(A,1X,I0,1X,I0,1X,I0)
-                end if
+                   call system_clock(c_beg)
 
-             case (MIXED_TIDE)
+                   st_sad = r_state_t(omega(k))
 
-                ! Ignore mixed (dynamic/static) tides
+                   wv = wave_t(bp_sad, st_sad, w_i_sad, w_o_sad, 0)
 
-                if (check_log_level('WARN')) then
-                   write(OUTPUT_UNIT, 110) 'Ignoring mixed tide for l,m,k=', l, m, k
-                endif
+                   call system_clock(c_end)
 
-             case default
+                   c_solve = c_solve + (c_end - c_beg)
 
-                $ABORT(Invalid tide_type)
+                   ! Process it
 
-             end select
+                   call system_clock(c_beg)
+
+                   call process_wave(wv, k)
+
+                   call system_clock(c_end)
+
+                   c_proc = c_proc + (c_end - c_beg)
+
+                case (MIXED_TIDE)
+
+                   ! Ignore mixed (dynamic/static) tides
+
+                   if (check_log_level('WARN')) then
+                      write(OUTPUT_UNIT, 110) 'Ignoring mixed tide for l,m,k=', l, m, k
+110                   format(A,1X,I0,1X,I0,1X,I0)
+                   endif
+
+                case default
+
+                   $ABORT(Invalid tide_type)
+
+                end select
+
+             end if
 
           end do k_loop
 
@@ -276,7 +306,7 @@ contains
     ! Report timing
 
     if (check_log_level('DEBUG')) then
-       write(OUTPUT_UNIT, *) 'Time for ups:', REAL(c_ups)/c_rate
+       write(OUTPUT_UNIT, *) 'Time for c:', REAL(c_c)/c_rate
        write(OUTPUT_UNIT, *) 'Time for grids:', REAL(c_grid)/c_rate
        write(OUTPUT_UNIT, *) 'Time for bpv:', REAL(c_bvp)/c_rate
        write(OUTPUT_UNIT, *) 'Time for solve:', REAL(c_solve)/c_rate

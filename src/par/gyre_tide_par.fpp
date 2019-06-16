@@ -1,7 +1,7 @@
 ! Module   : gyre_tide_par
 ! Purpose  : tidal parameters
 !
-! Copyright 2018 Rich Townsend
+! Copyright 2018-2019 The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -32,11 +32,14 @@ module gyre_tide_par
   ! Derived-type definitions
 
   type :: tide_par_t
-     real(WP)      :: q = 1._WP
-     real(WP)      :: e = 0.5_WP
-     real(WP)      :: omega_static = 0._WP
-     integer       :: l_max = 4
-     integer       :: k_max = 20
+     real(WP) :: q = 1._WP
+     real(WP) :: e = 0.5_WP
+     real(WP) :: t_0 = 0._WP
+     real(WP) :: omega_static = 0._WP
+     integer  :: l_ref = 0
+     integer  :: m_ref = 0
+     integer  :: l_max = 4
+     integer  :: k_max = 20
   end type tide_par_t
 
   ! Interfaces
@@ -75,15 +78,18 @@ contains
     integer, intent(in)                        :: unit
     type(tide_par_t), allocatable, intent(out) :: td_p(:)
 
-    integer       :: n_td_p
-    integer       :: i
-    real(WP)      :: q
-    real(WP)      :: e
-    real(WP)      :: omega_static
-    integer       :: l_max
-    integer       :: k_max
+    integer  :: n_td_p
+    integer  :: i
+    real(WP) :: q
+    real(WP) :: e
+    real(WP) :: t_0
+    real(WP) :: omega_static
+    integer  :: l_ref
+    integer  :: m_ref
+    integer  :: l_max
+    integer  :: k_max
 
-    namelist /tide/ q, e, omega_static, l_max, k_max
+    namelist /tide/ q, e, t_0, omega_static, l_ref, m_ref, l_max, k_max
 
     ! Count the number of tide namelists
 
@@ -112,7 +118,11 @@ contains
 
        q = td_p(i)%q
        e = td_p(i)%e
+       t_0 = td_p(i)%t_0
        omega_static = td_p(i)%omega_static
+
+       l_ref = td_p(i)%l_ref
+       m_ref = td_p(i)%m_ref
        l_max = td_p(i)%l_max
        k_max = td_p(i)%k_max
 
@@ -124,7 +134,11 @@ contains
 
        td_p(i)%q = q
        td_p(i)%e = e
+       td_p(i)%t_0 = t_0
        td_p(i)%omega_static = omega_static
+
+       td_p(i)%l_ref = l_ref
+       td_p(i)%m_ref = m_ref
        td_p(i)%l_max = l_max
        td_p(i)%k_max = k_max
 
@@ -147,11 +161,13 @@ contains
 
     ! Broadcast the tide_par_t
 
-    call bcast(td_p%R_a, root_rank)
     call bcast(td_p%q, root_rank)
     call bcast(td_p%e, root_rank)
+    call bcast(td_p%t_0, root_rank)
     call bcast(td_p%Omega_static, root_rank)
 
+    call bcast(td_p%l_ref, root_rank)
+    call bcast(td_p%m_ref, root_rank)
     call bcast(td_p%l_max, root_rank)
     call bcast(td_p%k_max, root_rank)
 

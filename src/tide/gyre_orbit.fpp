@@ -1,7 +1,7 @@
 ! Program  : gyre_orbit
 ! Purpose  : secular orbital evolution code
 !
-! Copyright 2018-2019 The GYRE Team
+! Copyright 2018-2019 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -65,7 +65,8 @@ program gyre_orbit
   type(context_t)                :: cx
   real(WP), allocatable          :: Omega_orb(:)
   integer                        :: n_Omega_orb
-  real(WP), allocatable          :: tau_tot(:)
+  real(WP), allocatable          :: J_dot(:)
+  real(WP), allocatable          :: a_dot(:)
   integer                        :: i
   type(hgroup_t)                 :: hg
 
@@ -83,7 +84,7 @@ program gyre_orbit
 
   if (check_log_level('INFO')) then
 
-     write(OUTPUT_UNIT, 100) form_header('gyre_bin ['//VERSION//']', '-')
+     write(OUTPUT_UNIT, 100) form_header('gyre_orbit ['//VERSION//']', '-')
 100  format(A)
 
      if (check_log_level('DEBUG')) then
@@ -116,7 +117,7 @@ program gyre_orbit
 
   close(unit)
 
-  $ASSERT(SIZE(os_p) == 1,Must be exactly one mode parameter)
+  $ASSERT(SIZE(os_p) == 1,Must be exactly one osc parameter)
   $ASSERT(SIZE(nm_p) == 1,Must be exactly one num parameter)
   $ASSERT(SIZE(gr_p) == 1,Must be exactly one grid parameter)
   $ASSERT(SIZE(sc_p) >= 1,Must be at least one scan parameter)
@@ -130,11 +131,10 @@ program gyre_orbit
 
   ml => model_t(ml_p)
 
-  ! Create a dummmy mode_par_t for setting up contexts, frequency
-  ! searches; mode parameters are for the prograde sectoral quadrupole
-  ! mode, which (I think) should track the principal tidal component
+  ! Create the reference mode_par_t for setting up contexts, frequency
+  ! searches
 
-  md_p = mode_par_t(l=2, m=2)
+  md_p = mode_par_t(l=td_p(1)%l_ref, m=td_p(1)%m_ref)
 
   ! Set up the context
 
@@ -144,17 +144,23 @@ program gyre_orbit
 
   call build_scan(cx, md_p, os_p(1), sc_p, Omega_orb)
 
-  ! Loop over orbital frequencies
+  ! Allocate secular rate-of-change arrays
 
   n_Omega_orb = SIZE(Omega_orb)
 
-  allocate(tau_tot(n_Omega_orb))
+  allocate(a_dot(n_Omega_orb))
+  allocate(J_dot(n_Omega_orb))
+
+  ! Loop over orbital frequencies
 
   Omega_orb_loop : do i = 1, n_Omega_orb
 
-     ! Evaluate the tide
+     ! Initialize the secular arrays
 
-     tau_tot(i) = 0._WP
+     a_dot(i) = 0._WP
+     J_dot(i) = 0._WP
+
+     ! Add in contributions from each tidal component
 
      call eval_tide(ml, process_wave, Omega_orb(i), os_p(1), nm_p(1), gr_p(1), td_p(1))
 
@@ -165,7 +171,9 @@ program gyre_orbit
   hg = hgroup_t('tide.h5', CREATE_FILE)
 
   call write_dset(hg, 'Omega_orb', Omega_orb)
-  call write_dset(hg, 'tau_tot', tau_tot)
+
+  call write_dset(hg, 'a_dot', a_dot)
+  call write_dset(hg, 'J_dot', a_dot)
 
   call hg%final()
 
@@ -184,9 +192,13 @@ contains
     type(wave_t), intent(in) :: wv
     integer, intent(in)      :: k
 
+    ! Accumulate the rate-of-change of the semi-major axis
+
+    !a_dot(i) = 
+
     ! Accumulate the torque
 
-    tau_tot(i) = tau_tot(i) + wv%tau_ss()
+    J_dot(i) = J_dot(i) + wv%tau_ss()
 
     ! Finish
 

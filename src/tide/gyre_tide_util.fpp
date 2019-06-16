@@ -1,7 +1,7 @@
 ! Program  : gyre_tide_util
 ! Purpose  : tide-related utility functions
 !
-! Copyright 2018 Rich Townsend
+! Copyright 2018-2019 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,6 +24,7 @@ module gyre_tide_util
   use core_kinds
 
   use gyre_constants
+  use gyre_func
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -36,42 +37,41 @@ module gyre_tide_util
 
   private
 
-  public :: Upsilon_lmk
-  public :: X_lmk
-  public :: beta_lm
+  public :: tidal_c
+  public :: hansen_X
 
   ! Procedures
 
 contains
 
-  function Upsilon_lmk (R_a, e, l, m, k)
+  function tidal_c (R_a, e, l, m, k) result (c)
 
     real(WP), intent(in)         :: R_a
     real(WP), intent(in)         :: e
     integer, intent(in)          :: l
     integer, intent(in)          :: m
     integer, intent(in)          :: k
-    real(WP)                     :: Upsilon_lmk
+    real(WP)                     :: c
 
-    ! Evaluate the tidal potential coefficient for eps_tide of unity
+    ! Evaluate the tidal potential coefficient
 
-    Upsilon_lmk = -R_a**(l-2)*beta_lm(l, m)*X_lmk(e, -(l+1), -m, -k)/(4._WP*PI)
+    c = (4._WP*PI/(2*l+1))*R_a**(l-2)*CONJG(spherical_Y(l, m, HALFPI, 0._WP))*hansen_X(e, -(l+1), -m, k)
 
     ! Finish
 
     return
 
-  end function Upsilon_lmk
+  end function tidal_c
 
   !****
 
-  function X_lmk (e, l, m, k)
+  function hansen_X (e, l, m, k) result (X)
 
     real(WP), intent(in) :: e
     integer, intent(in)  :: l
     integer, intent(in)  :: m
     integer, intent(in)  :: k
-    real(WP)             :: X_lmk
+    real(WP)             :: X
 
     integer, parameter :: N = 1024
 
@@ -102,74 +102,16 @@ contains
 
     ! Do the integral
 
-    X_lmk = integrate(ua, y)*(1._WP - e**2)**(l+1.5_WP)/PI
+    X = integrate(ua, y)*(1._WP - e**2)**(l+1.5_WP)/PI
 
     ! Finish
 
     return
 
-  end function X_lmk
+  end function hansen_X
 
   !****
 
-  function beta_lm (l, m)
-
-    integer, intent(in)  :: l
-    integer, intent(in)  :: m
-    real(WP)             :: beta_lm
-
-    integer  :: am
-    integer  :: j
-    real(WP) :: sj
-
-    $ASSERT_DEBUG(ABS(m) <= l,Invalid m)
-
-    ! Evaluate beta_lm = N_lm P_lm(0), where
-    ! N_lm = SQRT((2l+1)/4pi*(l-m)!/(l+m)!) is the spherical harmonic
-    ! normalization function, and P_lm(x) is the associated Legendre
-    ! function including the Condon-Shortley phase term
-
-    am = ABS(m)
-
-    if (MOD(l+am, 2) == 0) then
-
-       ! Evaluate N_l|m| P_l|m|(0)
-
-       beta_lm = (-1)**((l+am)/2)*SQRT((2*l+1)/(4*PI))
-
-       do j = 1, l+am
-
-          sj = SQRT(REAL(j, WP))
-
-          if (j <= l-am) beta_lm = beta_lm*sj
-          if (j <= l+am) beta_lm = beta_lm/sj
-
-          if (MOD(j, 2) == 0) then
-             if (j <= l-am) beta_lm = beta_lm/j
-          else
-             if (j <= l+am-1) beta_lm = beta_lm*j
-          endif
-
-       end do
-
-       ! Adjust the sign for negative m (we do things this way to
-       ! ensure that opposite-m betas have identical magnitude)
-
-       if (m < 0) beta_lm = (-1)**am*beta_lm
-
-    else
-
-       beta_lm = 0._WP
-
-    end if
-
-    ! Finish
-
-    return
-
-  end function beta_lm
-
-  !****
 
   function kappa_lmk (l, m, k)
 
