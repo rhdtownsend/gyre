@@ -3,15 +3,18 @@
 
 &model
 	model_type = 'EVOL'
-	file = 'spb.mesa'
+	file = 'iori.mesa'
 	file_format = 'MESA'
+	Omega_rot = 0.5
+	Omega_units = 'CYC_PER_DAY'
+	uniform_rot = .TRUE.
 /
 
 &tide
-	q = 0.5
-	e = 0.75
+	q = 0.5798
+	e = 0.7452
 	omega_static = 0.
-	k_max = 40
+	k_max = 45
 	l_max = 4
 /
 
@@ -30,8 +33,8 @@
 /
 
 &scan
-        freq_min = 0.05
-        freq_max = 0.05
+        freq_min = 0.034324440099733095
+        freq_max = 0.034324440099733095
         freq_min_units = 'CYC_PER_DAY'
         freq_max_units = 'CYC_PER_DAY'
         n_freq = 1

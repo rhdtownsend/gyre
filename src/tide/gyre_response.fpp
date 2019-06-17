@@ -1,5 +1,5 @@
-! Program  : gyre_displace
-! Purpose  : tidal displacement code
+! Program  : gyre_response
+! Purpose  : tidal response code
 !
 ! Copyright 2019 Rich Townsend & The GYRE Team
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-program gyre_displace
+program gyre_response
 
   ! Uses
 
@@ -67,11 +67,12 @@ program gyre_displace
   real(WP), allocatable          :: Omega_orb(:)
   integer                        :: n_Omega_orb
   complex(WP), allocatable       :: xi_r(:,:,:)
+  complex(WP), allocatable       :: lag_L(:,:,:)
   integer                        :: i
   integer                        :: l
   integer                        :: m
   integer                        :: k
-  character(LEN=FILENAME_LEN)    :: displace_file
+  character(LEN=FILENAME_LEN)    :: response_file
   type(hgroup_t)                 :: hg
 
   ! Read command-line arguments
@@ -148,9 +149,10 @@ program gyre_displace
 
   call build_scan(cx, md_p, os_p(1), sc_p, Omega_orb)
 
-  ! Allocate displacement array
+  ! Allocate displacement and luminosity perturbations arrays
 
   allocate(xi_r(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,-td_p(1)%k_max:td_p(1)%k_max))
+  allocate(lag_L(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,-td_p(1)%k_max:td_p(1)%k_max))
 
   ! Loop over orbital frequencies
 
@@ -158,9 +160,10 @@ program gyre_displace
 
   Omega_orb_loop : do i = 1, n_Omega_orb
 
-     ! Initialize the displacement arrays
+     ! Initialize the perturbation arrays
 
      xi_r = 0._WP
+     lag_L = 0._WP
 
      ! Add in contributions from each tidal component
 
@@ -185,10 +188,10 @@ program gyre_displace
         
      ! Write out results
 
-     write(displace_file, 130) 'displace.', i, '.h5'
+     write(response_file, 130) 'response.', i, '.h5'
 130  format(A,I3.3,A)
 
-     hg = hgroup_t(displace_file, CREATE_FILE)
+     hg = hgroup_t(response_file, CREATE_FILE)
 
      call write_attr(hg, 'Omega_orb', Omega_orb(i))
      call write_attr(hg, 'Omega_rot', ml_p%Omega_rot)
@@ -197,6 +200,7 @@ program gyre_displace
      call write_attr(hg, 'k_max', td_p(1)%k_max)
 
      call write_dset(hg, 'xi_r', xi_r)
+     call write_dset(hg, 'lag_L', lag_L)
 
      call hg%final()
 
@@ -220,12 +224,16 @@ contains
     integer :: l
     integer :: m
 
-    ! Store the displacement
-
     l = wv%md_p%l
     m = wv%md_p%m
 
-    xi_r(l,m,k) = wv%xi_r(wv%n_k)
+    ! Store the displacement
+
+    xi_r(l,m,k) = wv%xi_r(wv%k_ref)
+
+    ! Store the luminosity perturbation
+
+    lag_L(l,m,k) = wv%lag_L(wv%k_ref)
 
     ! Finish
 
@@ -233,4 +241,4 @@ contains
 
   end subroutine process_wave
 
-end program gyre_displace
+end program gyre_response
