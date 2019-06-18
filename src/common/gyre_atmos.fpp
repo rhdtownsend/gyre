@@ -159,13 +159,13 @@ contains
 
        ! Outward energy flux
 
-       if (-AIMAG((psi - b_11)*CONJG(omega)) < 0._WP) psi = -psi
+       if (AIMAG((psi - b_11)*CONJG(omega)) < 0._WP) psi = -psi
 
     case ('F_NEG')
 
        ! Inward energy flux
 
-       if (-AIMAG((psi - b_11)*CONJG(omega)) < 0._WP) psi = -psi
+       if (AIMAG((psi - b_11)*CONJG(omega)) > 0._WP) psi = -psi
 
     case ('V_POS')
 
