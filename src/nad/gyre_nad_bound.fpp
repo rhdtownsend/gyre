@@ -698,6 +698,7 @@ contains
     complex(WP) :: b_23
     complex(WP) :: alpha_1
     complex(WP) :: alpha_2
+    complex(WP) :: alpha_d
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
@@ -738,15 +739,16 @@ contains
       b_22 = 1._WP + As
       b_23 = alpha_gr*(-As)
 
-      alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
-      alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
+      alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))
+      alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))
+      alpha_d = ((b_11+l_e)*(b_22+l_e) - b_12*b_21)
 
       ! Set up the boundary conditions
 
-      B(1,1) = beta - b_11
-      B(1,2) = -b_12
-      B(1,3) = alpha_gr*(-(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12))
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,1) = (beta - b_11)*alpha_d
+      B(1,2) = -b_12*alpha_d
+      B(1,3) = alpha_gr*(-(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12*alpha_d))
+      B(1,4) = alpha_gr*(0._WP*alpha_d)
       B(1,5) = 0._WP
       B(1,6) = 0._WP
 
