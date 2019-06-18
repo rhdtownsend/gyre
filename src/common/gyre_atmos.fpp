@@ -103,22 +103,30 @@ contains
 
   !****
 
-  function atmos_beta_c_ (V_g, As, U, c_1, omega, lambda) result (beta)
+  function atmos_beta_c_ (V_g, As, U, c_1, omega, lambda, branch) result (beta)
 
-    real(WP)                :: V_g
-    real(WP), intent(in)    :: As
-    real(WP), intent(in)    :: U
-    real(WP), intent(in)    :: c_1
-    complex(WP), intent(in) :: omega
-    complex(WP), intent(in) :: lambda
-    complex(WP)             :: beta
+    real(WP)                           :: V_g
+    real(WP), intent(in)               :: As
+    real(WP), intent(in)               :: U
+    real(WP), intent(in)               :: c_1
+    complex(WP), intent(in)            :: omega
+    complex(WP), intent(in)            :: lambda
+    complex(WP)                        :: beta
+    character(*), intent(in), optional :: branch
 
-    complex(WP) :: b_11
-    complex(WP) :: b_12
-    complex(WP) :: b_21
-    complex(WP) :: b_22
-    complex(WP) :: psi2
-    complex(WP) :: psi
+    character(:), allocatable :: branch_
+    complex(WP)               :: b_11
+    complex(WP)               :: b_12
+    complex(WP)               :: b_21
+    complex(WP)               :: b_22
+    complex(WP)               :: psi2
+    complex(WP)               :: psi
+
+    if (PRESENT(branch)) then
+       branch_ = branch
+    else
+       branch_ = 'F_POS'
+    endif
 
     ! Calculate the atmospheric radial wavenumber, as defined by
     ! [Tow2000b] (complex frequencies)
@@ -131,55 +139,53 @@ contains
     psi2 = (b_22 - b_11)**2 + 4._WP*b_12*b_21
     psi = SQRT(psi2)
 
-    ! Adjust the sign of psi to choose the correct solution
+    ! Adjust the sign of psi to choose the correct solution branch
 
-    if (AIMAG(omega) < 0._WP) then
+    select case (branch_)
 
-       ! Decaying mode; choose the solution with diverging energy density
+    case ('E_POS')
+
+       ! Outwardly-growing energy density
 
        if (REAL(psi) < 0._WP) psi = -psi
 
-    elseif (AIMAG(omega) > 0._WP) then
+    case ('E_NEG')
 
-       ! Growing mode; choose the solution with non-diverging energy
-       ! density
+       ! Outwardly-decaying energy density
 
        if (REAL(psi) > 0._WP) psi = -psi
 
-    else
+    case ('F_POS')
 
-       ! Steady-state mode;
+       ! Outward energy flux
 
-       $ASSERT(AIMAG(psi2) == 0._WP,Steady-state mode with complex propagation discriminant)
+       if (-AIMAG((psi - b_11)*CONJG(omega)) < 0._WP) psi = -psi
 
-       if (REAL(psi2) > 0._WP) then
+    case ('F_NEG')
 
-          ! Evanescent wave; choose the solution with non-diverging
-          ! energy density
+       ! Inward energy flux
 
-          psi = -psi
+       if (-AIMAG((psi - b_11)*CONJG(omega)) < 0._WP) psi = -psi
 
-       else
+    case ('V_POS')
 
-          if (REAL(b_21) < 0._WP) then
-          
-             ! Gravity wave (c_1*omega**2 < As); choose the solution
-             ! with downward phase velocity
+       ! Outward phase velocity
 
-             if (AIMAG(psi) < 0._WP) psi = -psi
+       if (AIMAG(psi)/REAL(omega) < 0._WP) psi = -psi
 
-          else
+    case ('V_NEG')
 
-             ! Acoustic wave; choose the solution with upward phase
-             ! velocity
+       ! Inward phase velocity
 
-             if (AIMAG(psi) > 0._WP) psi = -psi
+       if (AIMAG(psi)/REAL(omega) > 0._WP) psi = -psi
 
-          end if
+    case default
 
-       end if
+       $ABORT(Invalid branch)
 
-    end if
+    end select
+
+    ! Set up beta
 
     beta = 0.5_WP*(b_11 + b_22 + psi)
              

@@ -40,6 +40,7 @@ module gyre_osc_par
      character(64)           :: inner_bound = 'REGULAR'
      character(64)           :: outer_bound = 'VACUUM'
      character(64)           :: outer_bound_for_cutoff = 'UNNO'
+     character(64)           :: outer_branch = 'F_POS'
      character(64)           :: inertia_norm = 'BOTH'
      character(64)           :: time_factor = 'OSC'
      character(64)           :: conv_scheme = 'FROZEN_PESNELL_1'
@@ -105,7 +106,8 @@ contains
     character(LEN(os_p%variables_set))    :: variables_set
     character(LEN(os_p%inner_bound))      :: inner_bound
     character(LEN(os_p%outer_bound))      :: outer_bound
-    character(LEN(os_p%outer_bound))      :: outer_bound_for_cutoff
+    character(LEN(os_p%outer_bound))      :: outer_bound_for_cutoff 
+    character(LEN(os_p%outer_branch))     :: outer_branch
     character(LEN(os_p%inertia_norm))     :: inertia_norm
     character(LEN(os_p%time_factor))      :: time_factor
     character(LEN(os_p%conv_scheme))      :: conv_scheme
@@ -125,7 +127,7 @@ contains
     logical                               :: reduce_order
 
     namelist /osc/ x_ref, alpha_th, rotation_method, inner_bound, outer_bound, &
-         outer_bound_for_cutoff, variables_set, inertia_norm, time_factor, &
+         outer_bound_for_cutoff, outer_branch, variables_set, inertia_norm, time_factor, &
          conv_scheme, int_scheme, deps_scheme, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
          cowling_approx, nar_approx, narf_approx, eddington_approx, &
@@ -163,6 +165,7 @@ contains
        inner_bound = os_p(i)%inner_bound
        outer_bound = os_p(i)%outer_bound
        outer_bound_for_cutoff = os_p(i)%outer_bound_for_cutoff
+       outer_branch = os_p(i)%outer_branch
        inertia_norm = os_p(i)%inertia_norm
        time_factor = os_p(i)%time_factor
        conv_scheme = os_p(i)%conv_scheme

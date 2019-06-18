@@ -74,14 +74,15 @@ module gyre_nad_bound
 
   type, extends (c_bound_t) :: nad_bound_t
      private
-     type(context_t), pointer :: cx => null()
-     type(nad_trans_t)        :: tr
-     real(WP), allocatable    :: coeff(:,:)
-     real(WP)                 :: alpha_gr
-     real(WP)                 :: alpha_rh
-     complex(WP)              :: alpha_om
-     integer                  :: type_i
-     integer                  :: type_o
+     type(context_t), pointer  :: cx => null()
+     type(nad_trans_t)         :: tr
+     real(WP), allocatable     :: coeff(:,:)
+     real(WP)                  :: alpha_gr
+     real(WP)                  :: alpha_rh
+     complex(WP)               :: alpha_om
+     integer                   :: type_i
+     integer                   :: type_o
+     character(:), allocatable :: branch_o
    contains 
      private
      procedure         :: stencil_
@@ -203,6 +204,8 @@ contains
     case default
        $ABORT(Invalid time_factor)
     end select
+
+    bd%branch_o = os_p%outer_branch
 
     call bd%stencil_(pt_i, pt_o)
 
@@ -714,7 +717,8 @@ contains
          Omega_rot => this%coeff(2,J_OMEGA_ROT), &
          alpha_gr => this%alpha_gr, &
          alpha_rh => this%alpha_rh, &
-         alpha_om => this%alpha_om)
+         alpha_om => this%alpha_om, &
+         branch => this%branch_o)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
@@ -724,7 +728,7 @@ contains
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
-      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
+      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda, branch)
 
       b_11 = V_g - 3._WP
       b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
@@ -806,7 +810,8 @@ contains
          Omega_rot => this%coeff(2,J_OMEGA_ROT), &
          alpha_gr => this%alpha_gr, &
          alpha_rh => this%alpha_rh, &
-         alpha_om => this%alpha_om)
+         alpha_om => this%alpha_om, &
+         branch => this%branch_o)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
@@ -816,7 +821,7 @@ contains
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
-      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
+      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda, branch)
 
       b_11 = V_g - 3._WP
       b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
@@ -896,7 +901,8 @@ contains
          Omega_rot => this%coeff(2,J_OMEGA_ROT), &
          alpha_gr => this%alpha_gr, &
          alpha_rh => this%alpha_rh, &
-         alpha_om => this%alpha_om)
+         alpha_om => this%alpha_om, &
+         branch => this%branch)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
@@ -904,7 +910,7 @@ contains
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
 
-      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
+      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda, branch)
 
       b_11 = V_g - 3._WP
       b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
