@@ -151,8 +151,8 @@ program gyre_response
 
   ! Allocate displacement and luminosity perturbations arrays
 
-  allocate(xi_r(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,-td_p(1)%k_max:td_p(1)%k_max))
-  allocate(lag_L(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,-td_p(1)%k_max:td_p(1)%k_max))
+  allocate(xi_r(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,0:td_p(1)%k_max))
+  allocate(lag_L(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,0:td_p(1)%k_max))
 
   ! Loop over orbital frequencies
 
@@ -198,6 +198,8 @@ program gyre_response
 
      call write_attr(hg, 'l_max', td_p(1)%l_max)
      call write_attr(hg, 'k_max', td_p(1)%k_max)
+
+     call write_attr(hg, 'e', td_p(1)%e)
 
      call write_dset(hg, 'xi_r', xi_r)
      call write_dset(hg, 'lag_L', lag_L)
