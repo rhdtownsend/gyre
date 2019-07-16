@@ -208,17 +208,8 @@ contains
     integer     :: m
     real(WP)    :: c
     real(WP)    :: kappa
-    real(WP)    :: Y
     complex(WP) :: F
     real(WP)    :: gamma
-    real(WP)    :: A
-    real(WP)    :: X_1
-    real(WP)    :: X_1m1
-    real(WP)    :: X_1p1
-    real(WP)    :: X_2
-    real(WP)    :: X_2m1
-    real(WP)    :: X_2p1
-    real(WP)    :: X_3
 
     ! Set up orbital parameters
 
@@ -229,47 +220,52 @@ contains
     
     eps_tide = (R_a)**3*q
 
-    ! Evaluate coefficients
+    ! Evaluate the summation coefficient
 
     l = wv%l
     m = wv%m
 
-    c = tidal_c(R_a, td_p(1)%e, l, m, k)
-    kappa = tidal_kappa(l, m, k)
-    Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
+    if (k == 0) then
 
-    ! Check if the coupling is non-zero
+       if (m == 0) then
+          kappa = 0.5_WP
+       elseif (m >= 1) then
+          kappa = 1._WP
+       else
+          kappa = 0._WP
+       endif
 
-    if (c /= 0._WP) then
+    else
+
+       kappa = 1._WP
+
+    endif
+
+    ! Evaluate the tidal potential coefficient
+
+    c = tidal_c(R_a, e, l, m, k)
+
+    if (kappa /= 0._WP .AND. c /= 0._WP) then
 
        ! Evaluate the response function
  
        F = -0.5_WP*(SQRT(4._WP*PI)*wv%eul_phi(wv%n_k)/(eps_tide*c) + 1._WP)
 
-       ! Accumulate the (dimensionless) rate-of-change of osculating
+       ! Evaluate the summation weight
+
+       ! Accumulate the (dimensionless) secular rates-of-change
        ! elements
 
-       A = (R_a)**(l+3)*kappa*c*ABS(F)*Y
        gamma = ATAN2(AIMAG(F), REAL(F))
 
-       X_1 = hansen_X(e, -(l+1), -m, k)
-       X_1m1 = hansen_X(e, -(l+1), -m-1, k)
-       X_1p1 = hansen_X(e, -(l+1), -m+1, k)
+       a_dot(i) = a_dot(i) + 4._WP*Omega_orb(i)*(q/R_a)*(R_a)**(l+3)* &
+            kappa*ABS(F)*SIN(gamma)*secular_G_2(R_a, e, l, m, k)
 
-       X_2 = hansen_X(e, -(l+2), -m, k)
-       X_2m1 = hansen_X(e, -(l+2), -m-1, k)
-       X_2p1 = hansen_X(e, -(l+2), -m+1, k)
+       e_dot(i) = e_dot(i) + 4._WP*Omega_orb(i)*q*(R_a)**(l+3)* &
+            kappa*ABS(F)*SIN(gamma)*secular_G_3(R_a, e, l, m, k)
 
-       X_3 = hansen_X(e, -(l+3), -m, k)
-
-       a_dot(i) = a_dot(i) - 8._WP*Omega_orb(i)*(q/R_a)*A/SQRT(1._WP - e**2)* &
-            (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3)*SIN(gamma)
-
-       e_dot(i) = e_dot(i) + 4._WP*Omega_orb(i)*q*A*SQRT(1._WP - e**2)/e* &
-            (-0.5_WP*(l+1)*e*(X_2m1 - X_2p1) - m*(1._WP - e**2)*X_3 + m*X_1)*SIN(gamma)
-
-       o_dot(i) = o_dot(i) + 4._WP*Omega_orb(i)*q*A*(1._WP - e**2)/e* &
-            (0.5_WP*(l+1)*(X_2m1 + X_2p1) + 0.5_WP*m*(X_2m1 - X_2p1) + 0.5_WP*m/(1._WP - e**2)*(X_1m1 - X_1p1))*COS(gamma)
+       o_dot(i) = o_dot(i) + 4._WP*Omega_orb(i)*q*(R_a)**(l+3)* &
+            kappa*ABS(F)*COS(gamma)*secular_G_1(R_a, e, l, m, k)
 
        ! Accumulate the torque
 

@@ -42,7 +42,9 @@ module gyre_tide_util
   private
 
   public :: tidal_c
-  public :: tidal_kappa
+  public :: secular_G_1
+  public :: secular_G_2
+  public :: secular_G_3
   public :: hansen_X
   public :: hansen_X_tilde
   public :: hansen_X_hat
@@ -53,14 +55,16 @@ contains
 
   function tidal_c (R_a, e, l, m, k) result (c)
 
-    real(WP), intent(in)         :: R_a
-    real(WP), intent(in)         :: e
-    integer, intent(in)          :: l
-    integer, intent(in)          :: m
-    integer, intent(in)          :: k
-    real(WP)                     :: c
+    real(WP), intent(in) :: R_a
+    real(WP), intent(in) :: e
+    integer, intent(in)  :: l
+    integer, intent(in)  :: m
+    integer, intent(in)  :: k
+    real(WP)             :: c
 
-    ! Evaluate the tidal potential coefficient
+    ! Evaluate the tidal potential coefficient. This differs from the
+    ! definition e.g. in eq. (5) of [Willems:2010aa], due to the
+    ! different spherical harmonic definition
 
     c = (4._WP*PI/(2*l+1))*R_a**(l-2)*REAL(CONJG(spherical_Y(l, m, HALFPI, 0._WP)))*hansen_X(e, -(l+1), -m, k)
 
@@ -72,39 +76,117 @@ contains
 
   !****
 
-  function tidal_kappa (l, m, k) result (kappa)
+  function secular_G_1 (R_a, e, l, m, k) result (G_1)
 
-    integer, intent(in) :: l
-    integer, intent(in) :: m
-    integer, intent(in) :: k
-    real(WP)            :: kappa
+    real(WP), intent(in) :: R_a
+    real(WP), intent(in) :: e
+    integer, intent(in)  :: l
+    integer, intent(in)  :: m
+    integer, intent(in)  :: k
+    real(WP)             :: G_1
 
-    $ASSERT(k >= 0,Invalid k)
+    real(WP) :: c
+    real(WP) :: Y
+    real(WP) :: X_1m1
+    real(WP) :: X_1p1
+    real(WP) :: X_2m1
+    real(WP) :: X_2p1
 
-    ! Evaluate the kappa_lmk function, using the expression given in
-    ! equation (53) of Willems et al. (2010)
+    ! Evaluate the secular evolution coefficient
 
-    if (k == 0) then
+    c = tidal_c(R_a, e, l, m, k)
+    Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
-       if (m == 0) then
-          kappa = 0.5_WP
-       elseif (m >= 1) then
-          kappa = 1._WP
-       else
-          kappa = 0._WP
-       endif
+    X_1m1 = hansen_X(e, -(l+1), -m-1, k)
+    X_1p1 = hansen_X(e, -(l+1), -m+1, k)
 
-    else
+    X_2m1 = hansen_X(e, -(l+2), -m-1, k)
+    X_2p1 = hansen_X(e, -(l+2), -m+1, k)
 
-       kappa = 1._WP
-
-    endif
+    G_1 = c*Y* &
+         (0.5_WP*(l+1)*(X_2m1 + X_2p1) + 0.5_WP*m*(X_2m1 - X_2p1) + &
+          0.5_WP*m/(1._WP - e**2)*(X_1m1 - X_1p1))*(1._WP - e**2)/e
 
     ! Finish
 
     return
 
-  end function tidal_kappa
+  end function secular_G_1
+  
+  !****
+
+  function secular_G_2 (R_a, e, l, m, k) result (G_2)
+
+    real(WP), intent(in) :: R_a
+    real(WP), intent(in) :: e
+    integer, intent(in)  :: l
+    integer, intent(in)  :: m
+    integer, intent(in)  :: k
+    real(WP)             :: G_2
+
+    real(WP) :: c
+    real(WP) :: Y
+    real(WP) :: X_2m1
+    real(WP) :: X_2p1
+    real(WP) :: X_3
+
+    ! Evaluate the secular evolution coefficient
+
+    c = tidal_c(R_a, e, l, m, k)
+    Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
+
+    X_2m1 = hansen_X(e, -(l+2), -m-1, k)
+    X_2p1 = hansen_X(e, -(l+2), -m+1, k)
+
+    X_3 = hansen_X(e, -(l+3), -m, k)
+
+    G_2 = c*Y* &
+         2._WP*(-0.5_WP*(l+1)*e*(X_2m1 - X_2p1) - m*(1._WP - e**2)*X_3)/SQRT(1._WP - e**2)
+
+    ! Finish
+
+    return
+
+  end function secular_G_2
+
+  !****
+
+  function secular_G_3 (R_a, e, l, m, k) result (G_3)
+
+    real(WP), intent(in) :: R_a
+    real(WP), intent(in) :: e
+    integer, intent(in)  :: l
+    integer, intent(in)  :: m
+    integer, intent(in)  :: k
+    real(WP)             :: G_3
+
+    real(WP) :: c
+    real(WP) :: Y
+    real(WP) :: X_1
+    real(WP) :: X_2m1
+    real(WP) :: X_2p1
+    real(WP) :: X_3
+
+    ! Evaluate the secular evolution coefficient
+
+    c = tidal_c(R_a, e, l, m, k)
+    Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
+
+    X_1 = hansen_X(e, -(l+1), -m, k)
+
+    X_2m1 = hansen_X(e, -(l+2), -m-1, k)
+    X_2p1 = hansen_X(e, -(l+2), -m+1, k)
+
+    X_3 = hansen_X(e, -(l+3), -m, k)
+
+    G_3 = c*Y* &
+         (-0.5_WP*(l+1)*e*(X_2m1 - X_2p1) - m*(1._WP - e**2)*X_3 + m*X_1)*SQRT(1._WP - e**2)/e
+
+    ! Finish
+
+    return
+
+  end function secular_G_3
 
   !****
 
