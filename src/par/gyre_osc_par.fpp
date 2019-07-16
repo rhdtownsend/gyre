@@ -40,7 +40,7 @@ module gyre_osc_par
      character(64)           :: inner_bound = 'REGULAR'
      character(64)           :: outer_bound = 'VACUUM'
      character(64)           :: outer_bound_for_cutoff = 'UNNO'
-     character(64)           :: outer_branch = 'F_POS'
+     character(64)           :: outer_branch = 'E_NEG'
      character(64)           :: inertia_norm = 'BOTH'
      character(64)           :: time_factor = 'OSC'
      character(64)           :: conv_scheme = 'FROZEN_PESNELL_1'

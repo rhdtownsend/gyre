@@ -125,7 +125,7 @@ contains
     if (PRESENT(branch)) then
        branch_ = branch
     else
-       branch_ = 'F_POS'
+       branch_ = 'E_NEG'
     endif
 
     ! Calculate the atmospheric radial wavenumber, as defined by
