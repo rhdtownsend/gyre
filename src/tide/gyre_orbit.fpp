@@ -28,6 +28,7 @@ program gyre_orbit
 
   use gyre_context
   use gyre_constants
+  use gyre_func
   use gyre_grid_par
   use gyre_mode_par
   use gyre_model
@@ -40,6 +41,7 @@ program gyre_orbit
   use gyre_search
   use gyre_tide
   use gyre_tide_par
+  use gyre_tide_util
   use gyre_util
   use gyre_version
   use gyre_wave
@@ -65,8 +67,10 @@ program gyre_orbit
   type(context_t)                :: cx
   real(WP), allocatable          :: Omega_orb(:)
   integer                        :: n_Omega_orb
-  real(WP), allocatable          :: J_dot(:)
   real(WP), allocatable          :: a_dot(:)
+  real(WP), allocatable          :: e_dot(:)
+  real(WP), allocatable          :: o_dot(:)
+  real(WP), allocatable          :: J_dot(:)
   integer                        :: i
   type(hgroup_t)                 :: hg
 
@@ -149,6 +153,8 @@ program gyre_orbit
   n_Omega_orb = SIZE(Omega_orb)
 
   allocate(a_dot(n_Omega_orb))
+  allocate(e_dot(n_Omega_orb))
+  allocate(o_dot(n_Omega_orb))
   allocate(J_dot(n_Omega_orb))
 
   ! Loop over orbital frequencies
@@ -158,6 +164,8 @@ program gyre_orbit
      ! Initialize the secular arrays
 
      a_dot(i) = 0._WP
+     e_dot(i) = 0._WP
+     o_dot(i) = 0._WP
      J_dot(i) = 0._WP
 
      ! Add in contributions from each tidal component
@@ -192,13 +200,82 @@ contains
     type(wave_t), intent(in) :: wv
     integer, intent(in)      :: k
 
-    ! Accumulate the rate-of-change of the semi-major axis
+    real(WP)    :: e
+    real(WP)    :: q
+    real(WP)    :: R_a
+    real(WP)    :: eps_tide
+    integer     :: l
+    integer     :: m
+    real(WP)    :: c
+    real(WP)    :: kappa
+    real(WP)    :: Y
+    complex(WP) :: F
+    real(WP)    :: gamma
+    real(WP)    :: A
+    real(WP)    :: X_1
+    real(WP)    :: X_1m1
+    real(WP)    :: X_1p1
+    real(WP)    :: X_2
+    real(WP)    :: X_2m1
+    real(WP)    :: X_2p1
+    real(WP)    :: X_3
 
-    !a_dot(i) = 
+    ! Set up orbital parameters
 
-    ! Accumulate the torque
+    e = td_p(1)%e
+    q = td_p(1)%q
 
-    J_dot(i) = J_dot(i) + wv%tau_ss()
+    R_a = (Omega_orb(i)**2/(1._WP + td_p(1)%q))**(1._WP/3._WP)
+    
+    eps_tide = (R_a)**3*q
+
+    ! Evaluate coefficients
+
+    l = wv%l
+    m = wv%m
+
+    c = tidal_c(R_a, td_p(1)%e, l, m, k)
+    kappa = tidal_kappa(l, m, k)
+    Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
+
+    ! Check if the coupling is non-zero
+
+    if (c /= 0._WP) then
+
+       ! Evaluate the response function
+ 
+       F = -0.5_WP*(SQRT(4._WP*PI)*wv%eul_phi(wv%n_k)/(eps_tide*c) + 1._WP)
+
+       ! Accumulate the (dimensionless) rate-of-change of osculating
+       ! elements
+
+       A = (R_a)**(l+3)*kappa*c*ABS(F)*Y
+       gamma = ATAN2(AIMAG(F), REAL(F))
+
+       X_1 = hansen_X(e, -(l+1), -m, k)
+       X_1m1 = hansen_X(e, -(l+1), -m-1, k)
+       X_1p1 = hansen_X(e, -(l+1), -m+1, k)
+
+       X_2 = hansen_X(e, -(l+2), -m, k)
+       X_2m1 = hansen_X(e, -(l+2), -m-1, k)
+       X_2p1 = hansen_X(e, -(l+2), -m+1, k)
+
+       X_3 = hansen_X(e, -(l+3), -m, k)
+
+       a_dot(i) = a_dot(i) - 8._WP*Omega_orb(i)*(q/R_a)*A/SQRT(1._WP - e**2)* &
+            (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3)*SIN(gamma)
+
+       e_dot(i) = e_dot(i) + 4._WP*Omega_orb(i)*q*A*SQRT(1._WP - e**2)/e* &
+            (-0.5_WP*(l+1)*e*(X_2m1 - X_2p1) - m*(1._WP - e**2)*X_3 + m*X_1)*SIN(gamma)
+
+       o_dot(i) = o_dot(i) + 4._WP*Omega_orb(i)*q*A*(1._WP - e**2)/e* &
+            (0.5_WP*(l+1)*(X_2m1 + X_2p1) + 0.5_WP*m*(X_2m1 - X_2p1) + 0.5_WP*m/(1._WP - e**2)*(X_1m1 - X_1p1))*COS(gamma)
+
+       ! Accumulate the torque
+
+       J_dot(i) = J_dot(i) + wv%tau_ss()
+
+    endif
 
     ! Finish
 
