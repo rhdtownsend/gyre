@@ -160,10 +160,11 @@ contains
 
           ! Classify the tide for eack k
 
-          classify_loop : do k = -k_max, k_max
+          classify_loop : do k = 0, k_max
              tide_type(l,m,k) = classify_tide_(ml, ml_gr, cx(l,m), omega(k), td_p%omega_static)
              if (check_log_level('DEBUG')) then
-                write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k)
+                write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k),tidal_c(R_a, td_p%e, l, m, k)
+
              endif
           end do classify_loop
 
@@ -202,7 +203,7 @@ contains
           
           c_bvp = c_bvp + (c_end - c_beg)
 
-          k_loop : do k = -k_max, k_max
+          k_loop : do k = 0, k_max
 
              ! Calculate the tidal potential coefficient
 
