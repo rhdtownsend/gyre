@@ -43,22 +43,22 @@ def eval_fourier (data, theta_0, phi_0):
 
     # Initialize the fourier amplitudes array
 
-    A = np.zeros(2*d['k_max']+1, dtype=np.complex)
+    A = np.zeros(data['k_max']+1, dtype=np.complex)
 
     # Loop over l, m and k
 
-    for l in range(2, d['l_max']+1):
+    for l in range(2, data['l_max']+1):
         for m in range(-l, l+1):
-            for k in range(-d['k_max'], d['k_max']+1):
+            for k in range(0, data['k_max']+1):
 
                 i_l = l
                 i_m = m + d['l_max']
-                i_k = k + d['k_max']
+                i_k = k
 
                 # Townsend (2003), eqns. 17 & 18
 
-                Del_R = np.sqrt(4.*np.pi) * d['xi_r'][i_k,i_m,i_l]
-                Del_L = np.sqrt(4.*np.pi) * d['lag_L'][i_k,i_m,i_l]
+                Del_R = np.sqrt(4.*np.pi) * data['xi_r'][i_k,i_m,i_l]
+                Del_L = np.sqrt(4.*np.pi) * data['lag_L'][i_k,i_m,i_l]
                 Del_T = 0.25*(Del_L - 2*Del_R)
 
                 # Townsend (2003), eqns. (15) & (16) assuming I_x
@@ -91,9 +91,24 @@ def eval_fourier (data, theta_0, phi_0):
                 Rml = (2 + l)*(1 - l)*I_l/I_0 * Yml
                 Tml = 4*I_l/I_0 * Yml
 
+                # Willems+(2013), eqn. (53)
+
+                if k == 0:
+
+                    if m == 0:
+                        kappa = 0.5
+                    elif m >= 1:
+                        kappa = 1.
+                    else:
+                        kappa = 0.
+
+                else:
+
+                    kappa = 1.
+
                 # Add the Fourier contribution
 
-                A[i_k] += Del_R*Rml + Del_T*Tml
+                A[i_k] += 2*kappa*(Del_R*Rml + Del_T*Tml)
 
     # Return data
 
@@ -122,7 +137,7 @@ if __name__ == "__main__":
 
     # Calculate fourier amplitudes (frequencies in units of Omega_orb)
 
-    freq = np.linspace(-d['k_max'], d['k_max'], 2*d['k_max']+1)
+    freq = np.linspace(0, d['k_max'], d['k_max']+1)
 
     A = eval_fourier(d, theta_0, phi_0)
 
@@ -134,9 +149,9 @@ if __name__ == "__main__":
 
     dF_F = np.zeros(n)
 
-    for k in range(-d['k_max'], d['k_max']+1):
+    for k in range(0, d['k_max']+1):
 
-        i_k = k + d['k_max']
+        i_k = k
 
         # Add the flux contribution from harmonic k
 
@@ -153,6 +168,8 @@ if __name__ == "__main__":
 
     ax.set_ylim(0.9, 1.1)
 
+    ax.grid()
+
     fig.tight_layout()
     fig.savefig(light_fig)
 
@@ -162,6 +179,8 @@ if __name__ == "__main__":
 
     amp_min = 1E-5
     amp_max = 1E-2
+#    amp_min = 0
+#    amp_max = 1.2*np.max(amp)
 
     fig, ax = plt.subplots()
 
