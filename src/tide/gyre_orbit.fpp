@@ -181,7 +181,9 @@ program gyre_orbit
   call write_dset(hg, 'Omega_orb', Omega_orb)
 
   call write_dset(hg, 'a_dot', a_dot)
-  call write_dset(hg, 'J_dot', a_dot)
+  call write_dset(hg, 'e_dot', e_dot)
+  call write_dset(hg, 'o_dot', o_dot)
+  call write_dset(hg, 'J_dot', J_dot)
 
   call hg%final()
 
