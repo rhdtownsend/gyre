@@ -403,12 +403,13 @@ contains
     real(WP) :: M_pri
     real(WP) :: M_sec
     real(WP) :: R_pri
+    real(WP) :: Omega_orb
     real(WP) :: P
     real(WP) :: a
     real(WP) :: eps_tide
 
-    ! Evaluate the surface forcing potential at frequency omega (in
-    ! units of GM/R)
+    ! Evaluate the surface forcing potential at forcing frequency
+    ! omega (in units of GM/R)
 
     select case (fr_p_sel%force_type)
 
@@ -427,7 +428,9 @@ contains
           $ABORT(Invalid model class)
        end select
 
-       P = 1._WP/freq_from_omega(omega, ml, gr%pt_i(), gr%pt_o(), 'HZ', 'INERTIAL', md_p(i), os_p_sel)
+       Omega_orb = omega/fr_p_sel%k
+
+       P = 1._WP/freq_from_omega(Omega_orb, ml, gr%pt_i(), gr%pt_o(), 'HZ', 'INERTIAL', md_p(i), os_p_sel)
 
        a = (G_GRAVITY*(M_pri + M_sec)*P**2/(4.*PI**2))**(1._WP/3._WP)
 
