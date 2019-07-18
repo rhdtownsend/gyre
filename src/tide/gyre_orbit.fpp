@@ -260,8 +260,6 @@ contains
 
     c = tidal_c(R_a, e, l, m, k)
 
-    print *,'R_a, l, m, k:',R_a, e, l, m, k
-
     if (kappa /= 0._WP .AND. c /= 0._WP) then
 
        ! Evaluate the response function
