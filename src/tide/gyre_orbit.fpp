@@ -181,9 +181,9 @@ program gyre_orbit
 
   select type (ml)
   class is (evol_model_t)
-     call write_dset(hg, 'M_star', ml%M_star)
-     call write_dset(hg, 'R_star', ml%R_star)
-     call write_dset(hg, 'L_star', ml%L_star)
+     call write_attr(hg, 'M_star', ml%M_star)
+     call write_attr(hg, 'R_star', ml%R_star)
+     call write_attr(hg, 'L_star', ml%L_star)
   end select
 
   call write_attr(hg, 'q', td_p(1)%q)
