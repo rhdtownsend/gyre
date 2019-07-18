@@ -28,6 +28,7 @@ program gyre_orbit
 
   use gyre_context
   use gyre_constants
+  use gyre_evol_model
   use gyre_func
   use gyre_grid_par
   use gyre_mode_par
@@ -176,7 +177,19 @@ program gyre_orbit
 
   ! Write out results
 
-  hg = hgroup_t('tide.h5', CREATE_FILE)
+  hg = hgroup_t('orbit.h5', CREATE_FILE)
+
+  select type (ml)
+  class is (evol_model_t)
+     call write_dset(hg, 'M_star', ml%M_star)
+     call write_dset(hg, 'R_star', ml%R_star)
+     call write_dset(hg, 'L_star', ml%L_star)
+  end select
+
+  call write_attr(hg, 'q', td_p(1)%q)
+  call write_attr(hg, 'e', td_p(1)%e)
+  call write_attr(hg, 'l_max', td_p(1)%l_max)
+  call write_attr(hg, 'k_max', td_p(1)%k_max)
 
   call write_dset(hg, 'Omega_orb', Omega_orb)
 
@@ -246,6 +259,8 @@ contains
     ! Evaluate the tidal potential coefficient
 
     c = tidal_c(R_a, e, l, m, k)
+
+    print *,'R_a, l, m, k:',R_a, e, l, m, k
 
     if (kappa /= 0._WP .AND. c /= 0._WP) then
 
