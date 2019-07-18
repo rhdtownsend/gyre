@@ -130,9 +130,9 @@ contains
 
     k_max = td_p%k_max
 
-    allocate(omega(-k_max:k_max))
+    allocate(omega(0:k_max))
 
-    do k = -k_max, k_max
+    do k = 0, k_max
        omega(k) = -k*Omega_orb
     end do
 
@@ -142,7 +142,7 @@ contains
 
     allocate(md_p(2:l_max,-l_max:l_max))
     allocate(cx(2:l_max,-l_max:l_max))
-    allocate(tide_type(2:l_max,-l_max:l_max,-k_max:k_max))
+    allocate(tide_type(2:l_max,-l_max:l_max,0:k_max))
     allocate(gs(2:l_max,-l_max:l_max))
 
     tide_type = NO_TIDE
