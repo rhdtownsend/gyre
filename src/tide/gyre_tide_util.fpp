@@ -402,7 +402,7 @@ contains
 
     I = PI*(f(0._WP, 0._WP, e) + f(PI, PI, e))
 
-    dI_max = 0._WP
+    dI_max = I
 
     ! Refine the quadrature by repeatedly doubling N
 
