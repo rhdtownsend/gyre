@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=gyre_orbit gyre_response
+TARGETS=eval_hansen
 
 # Flags
 
@@ -16,4 +16,3 @@ LDFLAGS=`mesasdk_hdf5_link`
 SUBDIRS=../extern/core:../extern/astro:../common:../math:../par:../diff:../bvp:../interp:../model:../matrix:../search:../context:../ext:../frontend:../ad:../rad:../nad:../sad:../rot:../tar:../tide:../mode:../grid:../frontend:../output:../poly
 
 include ../build/Make.inc
-
