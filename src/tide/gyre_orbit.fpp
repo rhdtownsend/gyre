@@ -240,19 +240,31 @@ contains
     l = wv%l
     m = wv%m
 
-    if (k == 0) then
+    if (td_p(1)%combine_k) then
 
-       if (m == 0) then
-          kappa = 0.5_WP
-       elseif (m >= 1) then
+       if (k == 0) then
+
+          if (m == 0) then
+             kappa = 0.5_WP
+          elseif (m >= 1) then
+             kappa = 1._WP
+          else
+             kappa = 0._WP
+          endif
+          
+       elseif (k > 0) then
+
           kappa = 1._WP
+
        else
+
           kappa = 0._WP
+
        endif
 
     else
 
-       kappa = 1._WP
+       kappa = 0.5_WP
 
     endif
 

@@ -85,6 +85,7 @@ contains
     type(grid_t)                   :: ml_gr
     real(WP)                       :: R_a
     real(WP)                       :: eps_tide
+    integer                        :: k_min
     integer                        :: k_max
     real(WP), allocatable          :: omega(:)
     integer                        :: l_max
@@ -130,9 +131,15 @@ contains
 
     k_max = td_p%k_max
 
-    allocate(omega(0:k_max))
+    if (td_p%combine_k) then
+       k_min = 0
+    else
+       k_min = -k_max
+    endif
+    
+    allocate(omega(k_min:k_max))
 
-    do k = 0, k_max
+    do k = k_min, k_max
        omega(k) = -k*Omega_orb
     end do
 
@@ -142,7 +149,7 @@ contains
 
     allocate(md_p(2:l_max,-l_max:l_max))
     allocate(cx(2:l_max,-l_max:l_max))
-    allocate(tide_type(2:l_max,-l_max:l_max,0:k_max))
+    allocate(tide_type(2:l_max,-l_max:l_max,k_min:k_max))
     allocate(gs(2:l_max,-l_max:l_max))
 
     tide_type = NO_TIDE
@@ -160,7 +167,7 @@ contains
 
           ! Classify the tide for eack k
 
-          classify_loop : do k = 0, k_max
+          classify_loop : do k = k_min, k_max
              tide_type(l,m,k) = classify_tide_(ml, ml_gr, cx(l,m), omega(k), td_p%omega_static)
              if (check_log_level('DEBUG')) then
                 write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k),tidal_c(R_a, td_p%e, l, m, k)
@@ -203,7 +210,7 @@ contains
           
           c_bvp = c_bvp + (c_end - c_beg)
 
-          k_loop : do k = 0, k_max
+          k_loop : do k = k_min, k_max
 
              ! Calculate the tidal potential coefficient
 
