@@ -5,7 +5,7 @@
 
 TARGETS=gyre poly_to_fgong poly_to_txt
 
-ifeq ($(TIDES),yes)
+ifeq ($(TIDE),yes)
   TARGETS:=${TARGETS} gyre_force gyre_orbit gyre_response
 endif
 
