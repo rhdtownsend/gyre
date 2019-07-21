@@ -8,7 +8,6 @@ TARGETS=gyre_orbit gyre_response
 # Flags
 
 HDF5=yes
-DEBUG=yes
 
 LDFLAGS=`mesasdk_hdf5_link`
 
