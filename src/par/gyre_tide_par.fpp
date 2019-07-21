@@ -40,6 +40,7 @@ module gyre_tide_par
      integer  :: m_ref = 0
      integer  :: l_max = 4
      integer  :: k_max = 20
+     logical  :: combine_k = .FALSE.
   end type tide_par_t
 
   ! Interfaces
@@ -88,8 +89,11 @@ contains
     integer  :: m_ref
     integer  :: l_max
     integer  :: k_max
+    logical  :: combine_k
 
-    namelist /tide/ q, e, t_0, omega_static, l_ref, m_ref, l_max, k_max
+    namelist /tide/ q, e, t_0, omega_static, &
+         l_ref, m_ref, l_max, k_max, &
+         combine_k
 
     ! Count the number of tide namelists
 
@@ -126,6 +130,8 @@ contains
        l_max = td_p(i)%l_max
        k_max = td_p(i)%k_max
 
+       combine_k = td_p(i)%combine_k
+
        ! Read the namelist
 
        read(unit, NML=tide)
@@ -141,6 +147,8 @@ contains
        td_p(i)%m_ref = m_ref
        td_p(i)%l_max = l_max
        td_p(i)%k_max = k_max
+
+       td_p(i)%combine_k = combine_k
 
     end do read_loop
 
@@ -170,6 +178,8 @@ contains
     call bcast(td_p%m_ref, root_rank)
     call bcast(td_p%l_max, root_rank)
     call bcast(td_p%k_max, root_rank)
+
+    call bcast(td_p%combine_k, root_rank)
 
     ! Finish
 
