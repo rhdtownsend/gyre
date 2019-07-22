@@ -40,7 +40,7 @@ module gyre_tide_par
      integer  :: m_ref = 0
      integer  :: l_max = 4
      integer  :: k_max = 20
-     logical  :: combine_k = .FALSE.
+     logical  :: combine_k = .TRUE.
   end type tide_par_t
 
   ! Interfaces
