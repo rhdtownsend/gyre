@@ -1,0 +1,18 @@
+# .gitignore file for GYRE
+
+*~
+
+bin/*
+src/build/*
+
+doc/*.log
+doc/*.aux
+doc/*.bbl
+doc/*.blg
+
+work/*
+
+.DS_Store
+
+regress
+
