@@ -5,6 +5,10 @@
 
 SUBDIRS=ad nad
 
+ifeq ($(TIDE),yes)
+  SUBDIRS:=${SUBDIRS} tide
+endif
+
 # Rules
 
 test :
