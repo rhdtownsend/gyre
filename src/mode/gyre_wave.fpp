@@ -54,6 +54,8 @@ module gyre_wave
      type(grid_t), allocatable :: gr
      type(mode_par_t), public  :: md_p
      type(osc_par_t), public   :: os_p
+     type(point_t)             :: pt_i
+     type(point_t)             :: pt_o
      complex(WP), allocatable  :: y_c(:,:)
      real(WP)                  :: E_scl2
      type(c_ext_t), public     :: discrim
@@ -199,10 +201,10 @@ contains
 
     ! Locate the reference point
 
-    associate (pt_i => gr%pt_i(), &
-               pt_o => gr%pt_o())
-      x_ref = MIN(MAX(os_p%x_ref, pt_i%x), pt_o%x)
-    end associate
+    wv%pt_i = gr%pt_i()
+    wv%pt_o = gr%pt_o()
+
+    x_ref = MIN(MAX(os_p%x_ref, wv%pt_i%x), wv%pt_o%x)
 
     wv%k_ref = MINLOC(ABS(gr%pt%x - x_ref), DIM=1)
 
@@ -307,14 +309,12 @@ contains
     ! Calculate the frequency
 
     associate( &
-         ml => this%cx%model(), &
-         pt_i => this%gr%pt_i(), &
-         pt_o => this%gr%pt_o() )
+         ml => this%cx%model() )
 
       if (PRESENT(freq_frame)) then
-         freq = freq_from_omega(this%st%omega, ml, pt_i, pt_o, freq_units, freq_frame, this%md_p, this%os_p)
+         freq = freq_from_omega(this%st%omega, ml, this%pt_i, this%pt_o, freq_units, freq_frame, this%md_p, this%os_p)
       else
-         freq = freq_from_omega(this%st%omega, ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
+         freq = freq_from_omega(this%st%omega, ml, this%pt_i, this%pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
       endif
 
     end associate
@@ -334,11 +334,9 @@ contains
     real(WP)                  :: dfreq_rot
 
     associate( &
-         ml => this%cx%model(), &
-         pt_i => this%gr%pt_i(), &
-         pt_o => this%gr%pt_o() )
+         ml => this%cx%model() )
 
-      dfreq_rot = freq_from_omega(this%domega_rot(), ml, pt_i, pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
+      dfreq_rot = freq_from_omega(this%domega_rot(), ml, this%pt_i, this%pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
     
     end associate
 
