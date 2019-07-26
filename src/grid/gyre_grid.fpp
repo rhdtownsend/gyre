@@ -108,7 +108,7 @@ contains
        gr%pt(1)%x = x(1)
        gr%pt(1)%s = s
 
-       do k = 1, n_k
+       do k = 2, n_k
 
           if (x(k) == x(k-1)) then
              s = s + 1
