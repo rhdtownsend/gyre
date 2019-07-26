@@ -89,6 +89,7 @@ contains
     type(grid_t)         :: gr
 
     integer :: n_k
+    integer :: s
     integer :: k
 
     ! Construct a grid_t from the input abscissae x (with segment
@@ -102,24 +103,31 @@ contains
        
        allocate(gr%pt(n_k))
 
+       s = 1
+
        gr%pt(1)%x = x(1)
-       gr%pt(1)%s = 1
+       gr%pt(1)%s = s
 
-       do k = 2, n_k
-
-          gr%pt(k)%x = x(k)
+       do k = 1, n_k
 
           if (x(k) == x(k-1)) then
-             gr%pt(k)%s = gr%pt(k-1)%s + 1
-          else
-             gr%pt(k)%s = gr%pt(k-1)%s
+             s = s + 1
           endif
+          
+          gr%pt(k)%x = x(k)
+          gr%pt(k)%s = s
 
        end do
 
     end if
 
     gr%n_k = n_k
+
+    ! Check for degenerate segments
+
+    check_loop : do s = 1, gr%pt(n_k)%s
+       $ASSERT(COUNT(gr%pt%s == s) >= 2,Degenerate segment)
+    end do check_loop
 
     ! Finish
 
