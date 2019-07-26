@@ -1,7 +1,7 @@
 ! Module   : gyre_grid
 ! Purpose  : segmented grids
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2019 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
