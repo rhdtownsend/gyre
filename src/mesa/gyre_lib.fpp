@@ -113,6 +113,8 @@ contains
     call read_grid_par(unit, gr_p_m)
     call read_scan_par(unit, sc_p_m)
 
+    close(unit)
+
     ! Finish
 
     return
