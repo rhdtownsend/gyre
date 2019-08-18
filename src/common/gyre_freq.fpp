@@ -463,15 +463,22 @@ contains
     real(WP), intent(out)        :: omega_cutoff_lo
     real(WP), intent(out)        :: omega_cutoff_hi
 
-    real(WP)      :: V_g
-    real(WP)      :: As
-    real(WP)      :: U
-    real(WP)      :: c_1
-    logical, save :: warned = .FALSE.
+    character(LEN(os_p%outer_bound)) :: outer_bound
+    real(WP)                         :: V_g
+    real(WP)                         :: As
+    real(WP)                         :: U
+    real(WP)                         :: c_1
+    logical, save                    :: warned = .FALSE.
 
     ! Evaluate the cutoff frequencies
 
-    select case (os_p%outer_bound_for_cutoff)
+    if (os_p%outer_bound_for_cutoff /= '') then
+       outer_bound = os_p%outer_bound_for_cutoff
+    else
+       outer_bound = os_p%outer_bound
+    endif
+
+    select case (os_p%outer_bound)
 
     case ('VACUUM')
 
