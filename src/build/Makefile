@@ -5,10 +5,6 @@
 
 TARGETS=gyre poly_to_fgong poly_to_txt
 
-ifeq ($(CONTOUR),yes)
-  TARGETS:=${TARGETS} gyre_contour gyre_map
-endif
-
 ODEPACK=$(shell which odepack_link > /dev/null 2>& 1 && echo "yes" || echo "no")
 
 ifeq ($(ODEPACK),yes)
