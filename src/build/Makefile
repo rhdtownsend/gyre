@@ -5,10 +5,6 @@
 
 TARGETS=gyre poly_to_fgong poly_to_txt
 
-ifeq ($(TIDE),yes)
-  TARGETS:=${TARGETS} gyre_force gyre_orbit gyre_response
-endif
-
 ifeq ($(CONTOUR),yes)
   TARGETS:=${TARGETS} gyre_contour gyre_map
 endif
