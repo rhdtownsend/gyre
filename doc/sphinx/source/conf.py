@@ -68,15 +68,17 @@ html_theme_options = {
     'titles_only': False
 }
 
+# Set master doc
+master_doc = 'index'
 
-# Extlinks
+# Set up Extlinks
 extlinks = {
     'ads': ('https://ui.adsabs.harvard.edu/abs/%s/abstract', ''),
     'repo': ('https://github.com/rhdtownsend/gyre/blob/release-5.2/%s', '%s')
 }
 
 
-# Additional roles
+# Set up additional roles
 from docutils.parsers.rst import roles, nodes
 
 roles.register_generic_role('nml_g', nodes.literal)
