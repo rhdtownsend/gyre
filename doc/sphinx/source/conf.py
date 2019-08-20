@@ -65,11 +65,15 @@ html_theme_options = {
     'sticky_navigation': True,
     'navigation_depth': 4,
     'includehidden': True,
-    'titles_only': False
+    'titles_only': False,
+    'logo_only': True
 }
 
 # Set master doc
 master_doc = 'index'
+
+# Set logo
+html_logo = 'gyre-logo-200.png'
 
 # Set up Extlinks
 extlinks = {
