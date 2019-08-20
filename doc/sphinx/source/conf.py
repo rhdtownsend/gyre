@@ -10,9 +10,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('exts'))
 
 import sphinx_rtd_theme
 
@@ -31,7 +31,8 @@ author = 'Rich Townsend & The GYRE Team'
 # ones.
 extensions = [
     'sphinx_rtd_theme',
-    'sphinx.ext.extlinks'
+    'sphinx.ext.extlinks',
+    'nml_roles'
 ]
 
 
@@ -85,6 +86,5 @@ extlinks = {
 # Set up additional roles
 from docutils.parsers.rst import roles, nodes
 
-roles.register_generic_role('nml_g', nodes.literal)
 roles.register_generic_role('nml_o', nodes.literal)
 roles.register_generic_role('nml_l', nodes.literal)
