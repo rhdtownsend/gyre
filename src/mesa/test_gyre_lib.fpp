@@ -37,6 +37,7 @@ program test_gyre_lib
   real(WP) :: rpar(1)
   integer  :: ipar(1)
   integer  :: i
+  integer  :: rss
   
   ! Initialize
 
@@ -48,11 +49,12 @@ program test_gyre_lib
 
   ! Repeatedy find modes
 
-  do i = 1,100
-     print *,'Iteration:',i
+  do i = 1,5000
      call gyre_get_modes(0, user_sub, ipar, rpar)
      call gyre_get_modes(1, user_sub, ipar, rpar)
      call gyre_get_modes(2, user_sub, ipar, rpar)
+     print *,'Iteration:',i
+     call EXECUTE_COMMAND_LINE('ps -o comm,rss | grep test_gyre_lib')
   end do
 
   ! Finish
@@ -81,8 +83,3 @@ contains
   end subroutine user_sub
 
 end program test_gyre_lib
-
-
-  
-
-  
