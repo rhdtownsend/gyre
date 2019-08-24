@@ -42,6 +42,7 @@ module gyre_lib
   use gyre_num_par
   use gyre_osc_par
   use gyre_rad_bvp
+  use gyre_scan
   use gyre_scan_par
   use gyre_search
   use gyre_util
@@ -291,7 +292,7 @@ contains
           if (os_p_sel%nonadiabatic) then
              n_md_ad = 0
              call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
-             call prox_search(bp_nad, md_ad(:n_md_ad), omega_min, omega_max, process_mode_nad, md_p_m(i), nm_p_sel, os_p_sel)
+             call mode_search(bp_nad, md_ad(:n_md_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
           else
              call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
           endif
