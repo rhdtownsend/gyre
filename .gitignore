@@ -1,6 +1,8 @@
 # .gitignore file for GYRE
 
 *~
+*.o
+*.mod
 
 bin/*
 src/build/*
