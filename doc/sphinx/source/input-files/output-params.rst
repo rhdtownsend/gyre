@@ -23,12 +23,11 @@ should contain exactly one of each. Allowable fields are:
   Name template of mode files. Names are generated using the following pattern
   substitutions:
 
-  - :nml_l:`'%J'` : Unique run index of mode, formatted in fixed-width field; counts
-    from 1 upwards for each mode found during the GYRE run
+  - :nml_l:`'%J'` : Unique mode index :math:`j`, formatted in fixed-width field
   - :nml_l:`%j` : Same as ``%J``, but formatted in variable-width field
-  - :nml_l:`%L` : Harmonic degree :math:`\ell` of mode, formatted in fixed-width field
+  - :nml_l:`%L` : Harmonic degree :math:`\ell`, formatted in fixed-width field
   - :nml_l:`%l` : Same as ``%L``, but formatted in variable-width field
-  - :nml_l:`%N` : Radial order :math:`n_{\rm pg}` of mode, formatted in fixed-width field
+  - :nml_l:`%N` : Radial order :math:`n_{\rm pg}`, formatted in fixed-width field
   - :nml_l:`%n` : Same as ``%N``, but formatted in variable-width field
 
 :nml_o:`mode_file_format` (default :nml_l:`'HDF'`)
@@ -49,8 +48,8 @@ should contain exactly one of each. Allowable fields are:
   - :nml_l:`'UHZ'` : linear frequency in μHz [#only_evol]_
   - :nml_l:`'RAD_PER_SEC'` : angular frequency in radians per second [#only_evol]_
   - :nml_l:`'CYC_PER_DAY'` : linear frequency in cycles per day [#only_evol]_
-  - :nml_l:`'ACOUSTIC_DELTA'` : Fraction of the acoustic large frequency separation :math:`\Delta \nu`
-  - :nml_l:`'GRAVITY_DELTA'` : Fraction of the inverse gravity period separation :math:`(\Delta P)^{-1}`
+  - :nml_l:`'ACOUSTIC_DELTA'` : Fraction of the asymptotic acoustic large frequency separation :math:`\Delta \nu`
+  - :nml_l:`'GRAVITY_DELTA'` : Fraction of the asymptotic inverse gravity period separation :math:`(\Delta P)^{-1}`
   - :nml_l:`'UPPER_DELTA'` : Greater of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
   - :nml_l:`'LOWER_DELTA'` : Lesser of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
   - :nml_l:`'ACOUSTIC_CUTOFF'` : fraction of the acoustic cutoff frequency [#only_evol]_

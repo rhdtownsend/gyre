@@ -36,8 +36,8 @@ are:
   - :nml_l:`'UHZ'` : linear frequency in μHz [#only_evol]_
   - :nml_l:`'RAD_PER_SEC'` : angular frequency in radians per second [#only_evol]_
   - :nml_l:`'CYC_PER_DAY'` : linear frequency in cycles per day [#only_evol]_
-  - :nml_l:`'ACOUSTIC_DELTA'` : Fraction of the acoustic large frequency separation :math:`\Delta \nu`
-  - :nml_l:`'GRAVITY_DELTA'` : Fraction of the inverse gravity period separation :math:`(\Delta P)^{-1}`
+  - :nml_l:`'ACOUSTIC_DELTA'` : Fraction of the asymptotic acoustic large frequency separation :math:`\Delta \nu`
+  - :nml_l:`'GRAVITY_DELTA'` : Fraction of the asymptotic inverse gravity period separation :math:`(\Delta P)^{-1}`
   - :nml_l:`'UPPER_DELTA'` : Greater of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
   - :nml_l:`'LOWER_DELTA'` : Lesser of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
   - :nml_l:`'ACOUSTIC_CUTOFF'` : fraction of the acoustic cutoff frequency [#only_evol]_
