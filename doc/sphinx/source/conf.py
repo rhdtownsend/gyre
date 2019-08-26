@@ -32,6 +32,7 @@ author = 'Rich Townsend & The GYRE Team'
 extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.extlinks',
+    'sphinxcontrib.bibtex',
     'nml_roles'
 ]
 
