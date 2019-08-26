@@ -11,6 +11,8 @@ Welcome to GYRE's documentation!
    :caption: Contents:
 
    input-files/input-files
+   output-files/output-files
+   zreferences
 
 Indices and tables
 ==================
