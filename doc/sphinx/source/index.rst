@@ -10,6 +10,9 @@ Welcome to GYRE's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   quick-start/quick-start
+   understanding-gyre/understanding-gyre
+   installation/installation
    input-files/input-files
    output-files/output-files
    zreferences

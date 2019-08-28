@@ -83,7 +83,6 @@ extlinks = {
     'repo': ('https://github.com/rhdtownsend/gyre/blob/release-5.2/%s', '%s')
 }
 
-
 # Set up additional roles
 from docutils.parsers.rst import roles, nodes
 
