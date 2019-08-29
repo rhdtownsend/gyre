@@ -2,6 +2,8 @@
 .depend
 *.o
 *.mod
-*.f90
 *.dSYM
+
+bin
+
 
