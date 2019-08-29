@@ -1,0 +1,77 @@
+gyre [5.2]
+----------
+
+OpenMP Threads   : 8
+Input filename   : gyre.in
+
+Model Init
+----------
+
+Reading from MESA file
+   File name solar.mesa
+   File version 1.00
+   Read 836 points
+   No need to add central point
+
+Mode Search
+-----------
+
+Mode parameters
+   l : 0
+   m : 0
+
+Building frequency scan
+   added scan interval :  0.2080E+01 ->  0.9360E+01 (25 points, LINEAR)
+
+Building x grid
+   Found inner turning points, x range 0.0953 -> 0.6608
+   Adding 0 inner point(s)
+   Adding 0 global point(s) in iteration 1
+   Final grid has 1 segment(s) and 836 point(s):
+      Segment 1 : x range 0.0000 -> 1.0009 (1 -> 836)
+
+Starting search (adiabatic)
+
+Root bracketing
+  Time elapsed :     0.019 s
+
+Root Solving
+   l    m    n_pg    n_p    n_g       Re(omega)       Im(omega)        chi n_iter
+   0    0       1      1      0  0.26199123E+01  0.00000000E+00 0.1360E-14      7
+   0    0       2      2      0  0.40792906E+01  0.00000000E+00 0.7769E-15      7
+   0    0       3      3      0  0.53875169E+01  0.00000000E+00 0.1439E-14      6
+   0    0       4      4      0  0.68150734E+01  0.00000000E+00 0.8331E-14      6
+   0    0       5      5      0  0.82557196E+01  0.00000000E+00 0.4114E-14      6
+  Time elapsed :      0.024 s
+
+Mode Search
+-----------
+
+Mode parameters
+   l : 1
+   m : 0
+
+Building frequency scan
+   added scan interval :  0.2080E+01 ->  0.9360E+01 (25 points, LINEAR)
+
+Building x grid
+   Found inner turning points, x range 0.0224 -> 0.3600
+   Adding 10 inner point(s)
+   Adding 9 global point(s) in iteration 1
+   Adding 0 global point(s) in iteration 2
+   Final grid has 1 segment(s) and 855 point(s):
+      Segment 1 : x range 0.0000 -> 1.0009 (1 -> 855)
+
+Starting search (adiabatic)
+
+Root bracketing
+  Time elapsed :     0.020 s
+
+Root Solving
+   l    m    n_pg    n_p    n_g       Re(omega)       Im(omega)        chi n_iter
+   1    0       2      1      0  0.45007433E+01  0.00000000E+00 0.2141E-14      6
+   1    0       3      2      0  0.59794828E+01  0.00000000E+00 0.1782E-14      6
+   1    0       4      3      0  0.74752437E+01  0.00000000E+00 0.1548E-14      6
+   1    0       5      4      0  0.89334481E+01  0.00000000E+00 0.4859E-14      7
+  Time elapsed :      0.027 s
+
