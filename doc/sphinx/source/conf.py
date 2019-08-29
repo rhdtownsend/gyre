@@ -20,8 +20,10 @@ import sphinx_rtd_theme
 # -- Project information -----------------------------------------------------
 
 project = 'GYRE'
-copyright = '2019, Rich Townsend & The GYRE Team'
 author = 'Rich Townsend & The GYRE Team'
+version = "5.2"
+release = "5.2"
+copyright = '2019, Rich Townsend & The GYRE Team'
 
 
 # -- General configuration ---------------------------------------------------
@@ -33,6 +35,7 @@ extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.extlinks',
     'sphinxcontrib.bibtex',
+    'sphinx-prompt', 'sphinx_substitution_extensions',
     'nml_roles'
 ]
 
@@ -88,3 +91,17 @@ from docutils.parsers.rst import roles, nodes
 
 roles.register_generic_role('nml_o', nodes.literal)
 roles.register_generic_role('nml_l', nodes.literal)
+
+# Set substitutions for sphinx_substitution_extensions 
+substitutions = [
+    ('|release|', release)
+]
+
+# Set site-wide targets
+targets = {
+    'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/{0:s}.tar.gz'.format(release),
+    'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk'
+}
+
+rst_prolog = '\n'.join(['.. _{:s}: {:s}'.format(x, targets[x]) for x in targets])
+
