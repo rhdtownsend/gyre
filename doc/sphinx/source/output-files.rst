@@ -13,6 +13,6 @@ HDF-based.
 .. toctree::
    :maxdepth: 2
 
-   summary-files
-   mode-files
-   file-formats
+   output-files/summary-files
+   output-files/mode-files
+   output-files/file-formats
