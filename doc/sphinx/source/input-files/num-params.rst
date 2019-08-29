@@ -15,7 +15,7 @@ used. Allowable fields are:
   - :nml_l:`'MAGNUS_GL4'` : Sourth-order Gauss-Legendre Magnus
   - :nml_l:`'MAGNUS_GL6'` : Sixth-order Gauss-Legendre Magnus
   - :nml_l:`'MIRK'` : Fourth-order mono-implicit Runge-Kutta (experimental)
-  - :nml_l:`'TRAPZ'` : Trapezoidal, with the :ads:`Sugimoto (1970) <1970ApJ...159..619S>` prescription for non-adiabatic cases
+  - :nml_l:`'TRAPZ'` : Trapezoidal, with the prescription by :cite:`Sugimoto:1970a` for non-adiabatic cases
 
 :nml_o:`r_root_solver` (default :nml_l:`'BRENT'`)
   Root solver for real arithmetic; one of:

@@ -16,17 +16,17 @@ is used.  Allowable fields are:
   Outer boundary conditions; one of:
 
   - :nml_l:`'VACUUM'` : Zero surface pressure
-  - :nml_l:`'DZIEM'` : :ads:`Dziembowski (1971) <1971AcA....21..289D>` formulation
-  - :nml_l:`'UNNO'` : :ads:`Unno et al. (1989) <1989nos..book.....U>` formulation
-  - :nml_l:`'JCD'` : Christensen-Dalsgaard (ADIPLS) formulation
+  - :nml_l:`'DZIEM'` : Formulation following :cite:`Dziembowski:1971a`
+  - :nml_l:`'UNNO'` : Formulation following :cite:`Unno:1989a`
+  - :nml_l:`'JCD'` : Formulation following Jörgen Christensen-Dalsgaard (ADIPLS)
 
 :nml_o:`variables_set` (default :nml_l:`'GYRE'`)
   Dependent variables in oscillation equations; one of:
 
   - :nml_l:`'GYRE'` : GYRE formulation, as desciribed in the :repo:`equations.pdf <doc/equations.pdf>` document
-  - :nml_l:`'DZIEM'` : :ads:`Dziembowski (1971) <1971AcA....21..289D>` formulation
-  - :nml_l:`'JCD'` : Christensen-Dalsgaard (ADIPLS) formulation
-  - :nml_l:`'MIX'` : mixed formulation (:nml_l:`'JCD'` for gravitational components, :nml_l:`'DZIEM'` for mechanical components)
+  - :nml_l:`'DZIEM'` : Formulation following :cite:`Dziembowski:1971a`
+  - :nml_l:`'JCD'` : Formulation following Jörgen Christensen-Dalsgaard (ADIPLS)
+  - :nml_l:`'MIX'` : Mixed formulation (:nml_l:`'JCD'` for gravitational components, :nml_l:`'DZIEM'` for mechanical components)
   - :nml_l:`'LAGP'` : Lagrangian pressure perturbation formulation
 
 :nml_o:`inertia_norm` (default :nml_l:`'BOTH'`)
@@ -52,9 +52,9 @@ is used.  Allowable fields are:
   convection treatment scheme; one of:
 
   - :nml_l:`'FROZEN_PESNELL_1'` : Freeze convective heating altogether;
-    case 1 of :ads:`Pesnell (1990) <1990ApJ...363..227P>`
+    case 1 described by :cite:`Pesnell:1990a`
   - :nml_l:`'FROZEN_PESNELL_4'` : Freeze Lagrangian perturbation of convective luminosity;
-    case 4 of :ads:`Pesnell (1990) <1990ApJ...363..227P>`
+    case 4 described by :cite:`Pesnell:1990a`
 
 :nml_o:`deps_scheme` (default :nml_l:`'MODEL'`)
   scheme for calculating burning partial derivatives
@@ -71,7 +71,7 @@ is used.  Allowable fields are:
   Format of epsilon partial derivative file, when :nml_o:`deps_scheme`
   is :nml_l:`'FILE'`; one of:
 
-  - :nml_l:`'WOLF'` : Format used in preparation of :ads:`Wolf, Townsend & Bildsten (2017) <2018ApJ...855..127W>`
+  - :nml_l:`'WOLF'` : Format used in preparation of :cite:`Wolf:2018a`
 
 :nml_o:`x_ref` (default :nml_l:`1` or outer grid point, whichever is smaller)
   Reference fractional radius for photosphere, normalizations etc.
