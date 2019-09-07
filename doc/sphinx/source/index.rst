@@ -7,19 +7,15 @@ Welcome to GYRE's documentation!
 ================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 3
+   :caption: Contents
 
-   quick-start
-   understanding-gyre
-   installation
-   input-files
-   output-files
+   user-guide
+   ref-guide
    zreferences
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
