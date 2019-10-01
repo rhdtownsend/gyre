@@ -10,8 +10,8 @@ Welcome to GYRE's documentation!
    :maxdepth: 3
    :caption: Contents
 
-   user-guide
-   ref-guide
+   user-guide/user-guide
+   ref-guide/ref-guide
    zreferences
 
 Indices and tables
