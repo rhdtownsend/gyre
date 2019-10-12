@@ -1,7 +1,7 @@
 ! Module   : gyre_context 
 ! Purpose  : context (model, data, functions) for solving pulsation equations
 !
-! Copyright 2017 Rich Townsend
+! Copyright 2017-2019 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -119,8 +119,12 @@ contains
     ! If necessary, initialize the nuclear burning partials
 
     select case (os_p%deps_scheme)
+    case ('MODEL')
     case ('FILE')
        call read_deps_(ml, md_p, os_p, cx%pt_i, cx%pt_o, cx%in_eps_rho, cx%in_eps_T)
+    case ('ZERO')
+    case default
+       $ABORT(Invalid deps_scheme)
     end select
 
     ! Finish
