@@ -493,8 +493,8 @@ contains
 
     ! Evaluate the eps_T derivative (real)
 
-    omega_min = this%in_eps_rho%x_min()
-    omega_max = this%in_eps_rho%x_min()
+    omega_min = this%in_eps_T%x_min()
+    omega_max = this%in_eps_T%x_min()
 
     omega = MIN(MAX($OMEGA, omega_min), omega_max)
 
