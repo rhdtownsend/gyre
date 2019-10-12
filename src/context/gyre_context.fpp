@@ -42,6 +42,12 @@ module gyre_context
 
   implicit none
 
+  ! Parameter definitions
+
+  integer, parameter :: MODEL_DEPS_SCHEME = 1
+  integer, parameter :: FILE_DEPS_SCHEME = 2
+  integer, parameter :: ZERO_DEPS_SCHEME = 3
+
   ! Derived-type definitions
 
   type :: context_t
@@ -51,6 +57,7 @@ module gyre_context
      type(point_t)               :: pt_i
      type(point_t)               :: pt_o
      integer                     :: m
+     integer                     :: deps_scheme
      logical                     :: complex_lambda
      type(c_interp_t)            :: in_eps_rho
      type(c_interp_t)            :: in_eps_T
@@ -116,13 +123,14 @@ contains
 
     cx%complex_lambda = os_p%complex_lambda
 
-    ! If necessary, initialize the nuclear burning partials
-
     select case (os_p%deps_scheme)
     case ('MODEL')
+       cx%deps_scheme = MODEL_DEPS_SCHEME
     case ('FILE')
        call read_deps_(ml, md_p, os_p, cx%pt_i, cx%pt_o, cx%in_eps_rho, cx%in_eps_T)
+       cx%deps_scheme = FILE_DEPS_SCHEME
     case ('ZERO')
+       cx%deps_scheme = ZERO_DEPS_SCHEME
     case default
        $ABORT(Invalid deps_scheme)
     end select
@@ -316,6 +324,118 @@ contains
   
   !****
 
+  $define $EPS_RHO $sub
+
+  $local $INFIX $1
+  $local $OMEGA $2
+
+  function eps_rho_${INFIX}_ (this, st, pt) result (eps_rho)
+
+    class(context_t), intent(in)        :: this
+    class(${INFIX}_state_t), intent(in) :: st
+    type(point_t), intent(in)           :: pt
+    complex(WP)                         :: eps_rho
+
+    real(WP) :: omega_min
+    real(WP) :: omega_max
+    real(WP) :: omega
+
+    ! Evaluate the eps_rho derivative
+
+    select case (this%deps_scheme)
+
+    case (MODEL_DEPS_SCHEME)
+
+       eps_rho = this%ml%coeff(I_EPS_RHO, pt)
+
+    case (FILE_DEPS_SCHEME)
+
+       omega_min = this%in_eps_rho%x_min()
+       omega_max = this%in_eps_rho%x_min()
+
+       omega = MIN(MAX($OMEGA, omega_min), omega_max)
+
+       eps_rho = this%in_eps_rho%f(omega)
+
+    case (ZERO_DEPS_SCHEME)
+
+       eps_rho = 0._WP
+
+    case default
+
+       $ABORT(Invalid deps_scheme)
+
+    end select
+
+    ! Finish
+
+    return
+
+  end function eps_rho_${INFIX}_
+
+  $endsub
+
+  $EPS_RHO(r,st%omega)
+  $EPS_RHO(c,st%omega_r)
+
+  !****
+
+  $define $EPS_T $sub
+
+  $local $INFIX $1
+  $local $OMEGA $2
+
+  function eps_T_${INFIX}_ (this, st, pt) result (eps_T)
+
+    class(context_t), intent(in)        :: this
+    class(${INFIX}_state_t), intent(in) :: st
+    type(point_t), intent(in)           :: pt
+    complex(WP)                         :: eps_T
+
+    real(WP) :: omega_min
+    real(WP) :: omega_max
+    real(WP) :: omega
+
+    ! Evaluate the eps_T derivative
+
+    select case (this%deps_scheme)
+
+    case (MODEL_DEPS_SCHEME)
+
+       eps_T = this%ml%coeff(I_EPS_T, pt)
+
+    case (FILE_DEPS_SCHEME)
+
+       omega_min = this%in_eps_T%x_min()
+       omega_max = this%in_eps_T%x_min()
+
+       omega = MIN(MAX($OMEGA, omega_min), omega_max)
+
+       eps_T = this%in_eps_T%f(omega)
+
+    case (ZERO_DEPS_SCHEME)
+
+       eps_T = 0._WP
+
+    case default
+
+       $ABORT(Invalid deps_scheme)
+
+    end select
+
+    ! Finish
+
+    return
+
+  end function eps_T_${INFIX}_
+
+  $endsub
+
+  $EPS_T(r,st%omega)
+  $EPS_T(c,st%omega_r)
+
+  !****
+
   subroutine read_deps_ (ml, md_p, os_p, pt_i, pt_o, in_eps_rho, in_eps_T)
     
     class(model_t), pointer, intent(in) :: ml
@@ -436,79 +556,5 @@ contains
     return
 
   end subroutine read_deps_wolf_
-
-  !****
-
-  $define $EPS_RHO $sub
-
-  $local $INFIX $1
-  $local $OMEGA $2
-
-  function eps_rho_${INFIX}_ (this, st) result (eps_rho)
-
-    class(context_t), intent(in)        :: this
-    class(${INFIX}_state_t), intent(in) :: st
-    complex(WP)                         :: eps_rho
-
-    real(WP) :: omega_min
-    real(WP) :: omega_max
-    real(WP) :: omega
-
-    ! Evaluate the eps_rho derivative
-
-    omega_min = this%in_eps_rho%x_min()
-    omega_max = this%in_eps_rho%x_min()
-
-    omega = MIN(MAX($OMEGA, omega_min), omega_max)
-
-    eps_rho = this%in_eps_rho%f(omega)
-
-    ! Finish
-
-    return
-
-  end function eps_rho_${INFIX}_
-
-  $endsub
-
-  $EPS_RHO(r,st%omega)
-  $EPS_RHO(c,st%omega_r)
-
-  !****
-
-  $define $EPS_T $sub
-
-  $local $INFIX $1
-  $local $OMEGA $2
-
-  function eps_T_${INFIX}_ (this, st) result (eps_T)
-
-    class(context_t), intent(in)        :: this
-    class(${INFIX}_state_t), intent(in) :: st
-    complex(WP)                         :: eps_T
-
-    real(WP) :: omega_min
-    real(WP) :: omega_max
-    real(WP) :: omega
-
-    ! Evaluate the eps_T derivative (real)
-
-    omega_min = this%in_eps_T%x_min()
-    omega_max = this%in_eps_T%x_min()
-
-    omega = MIN(MAX($OMEGA, omega_min), omega_max)
-
-    eps_T = this%in_eps_T%f(omega)
-
-    ! Finish
-
-    return
-
-  end function eps_T_${INFIX}_
-
-  $endsub
-
-  $EPS_T(r,st%omega)
-  $EPS_T(c,st%omega_r)
 
 end module gyre_context
