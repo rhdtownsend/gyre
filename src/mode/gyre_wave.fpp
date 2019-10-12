@@ -1039,13 +1039,8 @@ contains
 
       c_eps = ml%coeff(I_C_EPS, pt)
 
-      select case (this%os_p%deps_source)
-      case ('MODEL')
-         eps_rho = ml%coeff(I_EPS_RHO, pt)
-         eps_T = ml%coeff(I_EPS_T, pt)
-      case default
-         $ABORT(Evaluating dW_dx_eps not supported for deps_source /= MODEL)
-      end select
+      eps_rho = this%cx%eps_rho(this%st, pt)
+      eps_T = this%cx%eps_T(this%st, pt)
       
       omega_r = REAL(this%st%omega)
 

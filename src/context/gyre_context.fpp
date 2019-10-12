@@ -46,7 +46,7 @@ module gyre_context
 
   integer, parameter :: MODEL_DEPS_SOURCE = 1
   integer, parameter :: FILE_DEPS_SOURCE = 2
-  integer, parameter :: ZERO_DEPS_SOURCE = 3
+  integer, parameter :: UNIFORM_DEPS_SOURCE = 3
 
   ! Derived-type definitions
 
@@ -58,6 +58,8 @@ module gyre_context
      type(point_t)               :: pt_o
      integer                     :: m
      integer                     :: deps_source
+     real(WP)                    :: eps_rho_
+     real(WP)                    :: eps_T_
      logical                     :: complex_lambda
      type(c_interp_t)            :: in_eps_rho
      type(c_interp_t)            :: in_eps_T
@@ -129,8 +131,10 @@ contains
     case ('FILE')
        call read_deps_(ml, md_p, os_p, cx%pt_i, cx%pt_o, cx%in_eps_rho, cx%in_eps_T)
        cx%deps_source = FILE_DEPS_SOURCE
-    case ('ZERO')
-       cx%deps_source = ZERO_DEPS_SOURCE
+    case ('UNIFORM')
+       cx%eps_T_ = os_p%eps_T
+       cx%eps_rho_ = os_p%eps_rho
+       cx%deps_source = UNIFORM_DEPS_SOURCE
     case default
        $ABORT(Invalid deps_source)
     end select
@@ -357,9 +361,9 @@ contains
 
        eps_rho = this%in_eps_rho%f(omega)
 
-    case (ZERO_DEPS_SOURCE)
+    case (UNIFORM_DEPS_SOURCE)
 
-       eps_rho = 0._WP
+       eps_rho = this%eps_rho_
 
     case default
 
@@ -413,9 +417,9 @@ contains
 
        eps_T = this%in_eps_T%f(omega)
 
-    case (ZERO_DEPS_SOURCE)
+    case (UNIFORM_DEPS_SOURCE)
 
-       eps_T = 0._WP
+       eps_T = this%eps_T_
 
     case default
 

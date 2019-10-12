@@ -17,7 +17,7 @@
 
 &osc
         nonadiabatic = .TRUE.
-        deps_scheme = 'FILE'
+        deps_source = 'FILE'
         deps_file = 'sss.eps_sens_data'
         deps_file_format = 'WOLF'
 /

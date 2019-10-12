@@ -35,6 +35,8 @@ module gyre_osc_par
   type :: osc_par_t
      real(WP)                :: x_ref = 1._WP
      real(WP)                :: alpha_th = 1._WP
+     real(WP)                :: eps_rho = 0._WP
+     real(WP)                :: eps_T = 0._WP
      character(64)           :: rotation_method = 'DOPPLER'
      character(64)           :: variables_set = 'GYRE'
      character(64)           :: inner_bound = 'REGULAR'
@@ -102,6 +104,8 @@ contains
     integer                               :: i
     real(WP)                              :: x_ref
     real(WP)                              :: alpha_th
+    real(WP)                              :: eps_rho
+    real(WP)                              :: eps_T
     character(LEN(os_p%rotation_method))  :: rotation_method
     character(LEN(os_p%variables_set))    :: variables_set
     character(LEN(os_p%inner_bound))      :: inner_bound
@@ -126,7 +130,7 @@ contains
     logical                               :: complex_lambda
     logical                               :: reduce_order
 
-    namelist /osc/ x_ref, alpha_th, rotation_method, inner_bound, outer_bound, &
+    namelist /osc/ x_ref, alpha_th, eps_rho, eps_T, rotation_method, inner_bound, outer_bound, &
          outer_bound_for_cutoff, outer_branch, variables_set, inertia_norm, time_factor, &
          conv_scheme, int_scheme, deps_source, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
@@ -160,6 +164,8 @@ contains
 
        x_ref = os_p(i)%x_ref
        alpha_th = os_p(i)%alpha_th
+       eps_rho = os_p(i)%eps_rho
+       eps_T = os_p(i)%eps_T
        rotation_method = os_p(i)%rotation_method
        variables_set = os_p(i)%variables_set
        inner_bound = os_p(i)%inner_bound
@@ -192,6 +198,8 @@ contains
 
        os_p(i)%x_ref = x_ref
        os_p(i)%alpha_th = alpha_th
+       os_p(i)%eps_rho = eps_rho
+       os_p(i)%eps_T = eps_T
        os_p(i)%rotation_method = rotation_method
        os_p(i)%variables_set = variables_set
        os_p(i)%inner_bound = inner_bound
@@ -237,6 +245,8 @@ contains
 
     call bcast(os_p%x_ref, root_rank)
     call bcast(os_p%alpha_th, root_rank)
+    call bcast(os_p%eps_rho, root_rank)
+    call bcast(os_p%eps_T, root_rank)
 
     call bcast(os_p%rotation_method, root_rank)
     call bcast(os_p%variables_set, root_rank)
