@@ -44,9 +44,9 @@ module gyre_context
 
   ! Parameter definitions
 
-  integer, parameter :: MODEL_DEPS_SCHEME = 1
-  integer, parameter :: FILE_DEPS_SCHEME = 2
-  integer, parameter :: ZERO_DEPS_SCHEME = 3
+  integer, parameter :: MODEL_DEPS_SOURCE = 1
+  integer, parameter :: FILE_DEPS_SOURCE = 2
+  integer, parameter :: ZERO_DEPS_SOURCE = 3
 
   ! Derived-type definitions
 
@@ -57,7 +57,7 @@ module gyre_context
      type(point_t)               :: pt_i
      type(point_t)               :: pt_o
      integer                     :: m
-     integer                     :: deps_scheme
+     integer                     :: deps_source
      logical                     :: complex_lambda
      type(c_interp_t)            :: in_eps_rho
      type(c_interp_t)            :: in_eps_T
@@ -123,18 +123,18 @@ contains
 
     cx%complex_lambda = os_p%complex_lambda
 
-    select case (os_p%deps_scheme)
+    select case (os_p%deps_source)
     case ('MODEL')
-       cx%deps_scheme = MODEL_DEPS_SCHEME
+       cx%deps_source = MODEL_DEPS_SOURCE
     case ('FILE')
        call read_deps_(ml, md_p, os_p, cx%pt_i, cx%pt_o, cx%in_eps_rho, cx%in_eps_T)
-       cx%deps_scheme = FILE_DEPS_SCHEME
+       cx%deps_source = FILE_DEPS_SOURCE
     case ('ZERO')
-       cx%deps_scheme = ZERO_DEPS_SCHEME
+       cx%deps_source = ZERO_DEPS_SOURCE
     case default
-       $ABORT(Invalid deps_scheme)
+       $ABORT(Invalid deps_source)
     end select
-
+    
     ! Finish
 
     return
@@ -342,13 +342,13 @@ contains
 
     ! Evaluate the eps_rho derivative
 
-    select case (this%deps_scheme)
+    select case (this%deps_source)
 
-    case (MODEL_DEPS_SCHEME)
+    case (MODEL_DEPS_SOURCE)
 
        eps_rho = this%ml%coeff(I_EPS_RHO, pt)
 
-    case (FILE_DEPS_SCHEME)
+    case (FILE_DEPS_SOURCE)
 
        omega_min = this%in_eps_rho%x_min()
        omega_max = this%in_eps_rho%x_min()
@@ -357,13 +357,13 @@ contains
 
        eps_rho = this%in_eps_rho%f(omega)
 
-    case (ZERO_DEPS_SCHEME)
+    case (ZERO_DEPS_SOURCE)
 
        eps_rho = 0._WP
 
     case default
 
-       $ABORT(Invalid deps_scheme)
+       $ABORT(Invalid deps_source)
 
     end select
 
@@ -398,13 +398,13 @@ contains
 
     ! Evaluate the eps_T derivative
 
-    select case (this%deps_scheme)
+    select case (this%deps_source)
 
-    case (MODEL_DEPS_SCHEME)
+    case (MODEL_DEPS_SOURCE)
 
        eps_T = this%ml%coeff(I_EPS_T, pt)
 
-    case (FILE_DEPS_SCHEME)
+    case (FILE_DEPS_SOURCE)
 
        omega_min = this%in_eps_T%x_min()
        omega_max = this%in_eps_T%x_min()
@@ -413,13 +413,13 @@ contains
 
        eps_T = this%in_eps_T%f(omega)
 
-    case (ZERO_DEPS_SCHEME)
+    case (ZERO_DEPS_SOURCE)
 
        eps_T = 0._WP
 
     case default
 
-       $ABORT(Invalid deps_scheme)
+       $ABORT(Invalid deps_source)
 
     end select
 
