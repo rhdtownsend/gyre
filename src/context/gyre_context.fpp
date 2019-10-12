@@ -439,22 +439,27 @@ contains
 
   !****
 
-  function eps_rho_r_ (this, st) result (eps_rho)
+  $define $EPS_RHO $sub
 
-    class(context_t), intent(in) :: this
-    class(r_state_t), intent(in) :: st
-    complex(WP)                  :: eps_rho
+  $local $INFIX $1
+  $local $OMEGA $2
+
+  function eps_rho_${INFIX}_ (this, st) result (eps_rho)
+
+    class(context_t), intent(in)        :: this
+    class(${INFIX}_state_t), intent(in) :: st
+    complex(WP)                         :: eps_rho
 
     real(WP) :: omega_min
     real(WP) :: omega_max
     real(WP) :: omega
 
-    ! Evaluate the eps_rho derivative (real)
+    ! Evaluate the eps_rho derivative
 
     omega_min = this%in_eps_rho%x_min()
     omega_max = this%in_eps_rho%x_min()
 
-    omega = MIN(MAX(st%omega, omega_min), omega_max)
+    omega = MIN(MAX($OMEGA, omega_min), omega_max)
 
     eps_rho = this%in_eps_rho%f(omega)
 
@@ -462,42 +467,25 @@ contains
 
     return
 
-  end function eps_rho_r_
+  end function eps_rho_${INFIX}_
+
+  $endsub
+
+  $EPS_RHO(r,st%omega)
+  $EPS_RHO(c,st%omega_r)
 
   !****
 
-  function eps_rho_c_ (this, st) result (eps_rho)
+  $define $EPS_T $sub
 
-    class(context_t), intent(in) :: this
-    class(c_state_t), intent(in) :: st
-    complex(WP)                  :: eps_rho
+  $local $INFIX $1
+  $local $OMEGA $2
 
-    real(WP) :: omega_min
-    real(WP) :: omega_max
-    real(WP) :: omega
+  function eps_T_${INFIX}_ (this, st) result (eps_T)
 
-    ! Evaluate the eps_rho derivative (complex)
-
-    omega_min = this%in_eps_rho%x_min()
-    omega_max = this%in_eps_rho%x_min()
-
-    omega = MIN(MAX(st%omega_r, omega_min), omega_max)
-
-    eps_rho = this%in_eps_rho%f(omega)
-
-    ! Finish
-
-    return
-
-  end function eps_rho_c_
-
-  !****
-
-  function eps_T_r_ (this, st) result (eps_T)
-
-    class(context_t), intent(in) :: this
-    class(r_state_t), intent(in) :: st
-    complex(WP)                  :: eps_T
+    class(context_t), intent(in)        :: this
+    class(${INFIX}_state_t), intent(in) :: st
+    complex(WP)                         :: eps_T
 
     real(WP) :: omega_min
     real(WP) :: omega_max
@@ -508,7 +496,7 @@ contains
     omega_min = this%in_eps_rho%x_min()
     omega_max = this%in_eps_rho%x_min()
 
-    omega = MIN(MAX(st%omega, omega_min), omega_max)
+    omega = MIN(MAX($OMEGA, omega_min), omega_max)
 
     eps_T = this%in_eps_T%f(omega)
 
@@ -516,33 +504,11 @@ contains
 
     return
 
-  end function eps_T_r_
+  end function eps_T_${INFIX}_
 
-  !****
+  $endsub
 
-  function eps_T_c_ (this, st) result (eps_T)
-
-    class(context_t), intent(in) :: this
-    class(c_state_t), intent(in) :: st
-    complex(WP)                  :: eps_T
-
-    real(WP) :: omega_min
-    real(WP) :: omega_max
-    real(WP) :: omega
-
-    ! Evaluate the eps_T derivative (real)
-
-    omega_min = this%in_eps_rho%x_min()
-    omega_max = this%in_eps_rho%x_min()
-
-    omega = MIN(MAX(st%omega_r, omega_min), omega_max)
-
-    eps_T = this%in_eps_T%f(omega)
-
-    ! Finish
-
-    return
-
-  end function eps_T_c_
+  $EPS_T(r,st%omega)
+  $EPS_T(c,st%omega_r)
 
 end module gyre_context
