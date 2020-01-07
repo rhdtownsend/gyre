@@ -52,11 +52,11 @@ module gyre_sad_eqns
 
   type, extends (r_eqns_t) :: sad_eqns_t
      private
-     type(context_t), pointer :: cx => null()
-     type(sad_trans_t)        :: tr
-     real(WP), allocatable    :: coeff(:,:)
-     real(WP), allocatable    :: x(:)
-     integer                  :: l
+     type(context_t), pointer   :: cx => null()
+     type(point_t), allocatable :: pt(:)
+     type(sad_trans_t)          :: tr
+     real(WP), allocatable      :: coeff(:,:)
+     integer                    :: l
    contains
      private
      procedure, public :: stencil
@@ -136,8 +136,6 @@ contains
 
     end do
 
-    this%x = pt%x
-
     ! Set up stencil for the tr component
 
     call this%tr%stencil(pt)
@@ -159,7 +157,7 @@ contains
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(i, st)/this%x(i)
+    A = this%xA(i, st)/this%pt(i)%x
 
     ! Finish
 

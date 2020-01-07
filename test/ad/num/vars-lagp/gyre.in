@@ -42,6 +42,9 @@
 	tag_list = 'l=0r'
 /
 
+&rot
+/
+
 &num
 	diff_scheme = 'COLLOC_GL6'
 /

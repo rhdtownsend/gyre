@@ -26,6 +26,9 @@
 &osc
 /
 
+&rot
+/
+
 &num
 	diff_scheme = 'COLLOC_GL4'
 /

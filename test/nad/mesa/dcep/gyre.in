@@ -16,6 +16,9 @@
 	nonadiabatic = .TRUE.
 /
 
+&rot
+/
+
 &num
 	diff_scheme = 'MAGNUS_GL2'
 	restrict_roots = .FALSE.

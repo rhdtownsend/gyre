@@ -1,7 +1,7 @@
 ! Incfile  : gyre_rot_factory
 ! Purpose  : factory procedures for r_rot_t and c_rot_t types
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,8 +24,8 @@ module gyre_rot_factory
   use core_kinds
 
   use gyre_mode_par
-  use gyre_osc_par
   use gyre_rot
+  use gyre_rot_par
 
   use ISO_FORTRAN_ENV
 
@@ -58,22 +58,22 @@ contains
 
   $local $T $1
 
-  function ${T}_rot_t_ (md_p, os_p) result (rt)
+  function ${T}_rot_t_ (md_p, rt_p) result (rt)
 
-    use gyre_dopp_rot
+    use gyre_null_rot
     $if ($HDF5)
     use gyre_tar_rot
     $endif
 
     type(mode_par_t), intent(in)   :: md_p
-    type(osc_par_t), intent(in)    :: os_p
+    type(rot_par_t), intent(in)    :: rt_p
     class(${T}_rot_t), allocatable :: rt
     
     ! Create a ${T}_rot_t
 
-    select case (os_p%rotation_method)
-    case ('DOPPLER')
-       allocate(rt, SOURCE=${T}_dopp_rot_t(md_p))
+    select case (rt_p%coriolis_method)
+    case ('NULL')
+       allocate(rt, SOURCE=${T}_null_rot_t(md_p))
     case ('TAR')
        $if ($HDF5)
        allocate(rt, SOURCE=${T}_tar_rot_t(md_p))
@@ -81,7 +81,7 @@ contains
        $ABORT(TAR rotation method requires HDF support be enabled)
        $endif
     case default
-       $ABORT(Invalid rotation_method)
+       $ABORT(Invalid coriolis_method)
     end select
 
     ! Finish

@@ -1,7 +1,7 @@
 ! Module   : gyre_model_par
 ! Purpose  : model parameters
 !
-! Copyright 2015-2018 Rich Townsend
+! Copyright 2015-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -34,7 +34,6 @@ module gyre_model_par
 
   type :: model_par_t
      real(WP)                :: Gamma_1 = 5._WP/3._WP
-     real(WP)                :: Omega_rot = 0._WP
      real(WP)                :: dx_snap = 0._WP
      real(WP)                :: x_i = 0._WP
      real(WP)                :: x_o = 1._WP
@@ -48,13 +47,11 @@ module gyre_model_par
      character(256)          :: file_format = ''
      character(256)          :: data_format = ''
      character(256)          :: deriv_type = 'MONO'
-     character(256)          :: Omega_units = 'NONE'
      character(FILENAME_LEN) :: file = ''
      integer                 :: n = 10
      logical                 :: add_center = .TRUE.
      logical                 :: repair_As = .FALSE.
      logical                 :: force_cons = .FALSE.
-     logical                 :: uniform_rot = .FALSE.
   end type model_par_t
    
  ! Access specifiers
@@ -75,7 +72,6 @@ contains
 
     integer                          :: n_ml_p
     real(WP)                         :: Gamma_1
-    real(WP)                         :: Omega_rot
     real(WP)                         :: dx_snap
     real(WP)                         :: x_i
     real(WP)                         :: x_o
@@ -89,18 +85,15 @@ contains
     character(LEN(ml_p%file_format)) :: file_format
     character(LEN(ml_p%data_format)) :: data_format
     character(LEN(ml_p%deriv_type))  :: deriv_type
-    character(LEN(ml_p%Omega_units)) :: Omega_units
     character(LEN(ml_p%file))        :: file
     integer                          :: n
     logical                          :: add_center
     logical                          :: repair_As
     logical                          :: force_cons
-    logical                          :: uniform_rot
 
-    namelist /model/ Gamma_1, Omega_rot, dx_snap, x_i, x_o, s, P_c, P_s, rho_c, rho_s, &
+    namelist /model/ Gamma_1, dx_snap, x_i, x_o, s, P_c, P_s, rho_c, rho_s, &
                      model_type, grid_type, file_format, data_format, deriv_type, &
-                     Omega_units, file, n, add_center, repair_As, force_cons, &
-                     uniform_rot
+                     file, n, add_center, repair_As, force_cons
     
     ! Count the number of model namelists
 
@@ -126,7 +119,6 @@ contains
     ml_p = model_par_t()
 
     Gamma_1 = ml_p%Gamma_1
-    Omega_rot = ml_p%Omega_rot
     dx_snap = ml_p%dx_snap
     x_i = ml_p%x_i
     x_o = ml_p%x_o
@@ -140,13 +132,11 @@ contains
     file_format = ml_p%file_format
     data_format = ml_p%data_format
     deriv_type = ml_p%deriv_type
-    Omega_units = ml_p%Omega_units
     file = ml_p%file
     n = ml_p%n
     add_center = ml_p%add_center
     repair_As = ml_p%repair_As
     force_cons = ml_p%force_cons
-    uniform_rot = ml_p%uniform_rot
 
     ! Read the namelist
     
@@ -155,7 +145,6 @@ contains
     ! Store read values
 
     ml_p%Gamma_1 = Gamma_1
-    ml_p%Omega_rot = Omega_rot
     ml_p%dx_snap = dx_snap
     ml_p%x_i = x_i
     ml_p%x_o = x_o
@@ -169,13 +158,11 @@ contains
     ml_p%file_format = file_format
     ml_p%data_format = data_format
     ml_p%deriv_type = deriv_type
-    ml_p%Omega_units = Omega_units
     ml_p%file = file
     ml_p%n = n
     ml_p%add_center = add_center
     ml_p%repair_As = repair_As
     ml_p%force_cons = force_cons
-    ml_p%uniform_rot = uniform_rot
 
     ! Finish
 

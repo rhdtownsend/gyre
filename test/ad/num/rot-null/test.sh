@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.txt
 
-LABEL="numerics (rotation, Doppler shift)"
+LABEL="numerics (rotation, null Coriolis)"
 
 RELERR=3E-14
 FIELDS=1-5

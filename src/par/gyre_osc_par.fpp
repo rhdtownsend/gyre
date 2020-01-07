@@ -1,7 +1,7 @@
 ! Module   : gyre_osc_par
 ! Purpose  : oscillation parameters
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -37,7 +37,6 @@ module gyre_osc_par
      real(WP)                :: alpha_th = 1._WP
      real(WP)                :: eps_rho = 0._WP
      real(WP)                :: eps_T = 0._WP
-     character(64)           :: rotation_method = 'DOPPLER'
      character(64)           :: variables_set = 'GYRE'
      character(64)           :: inner_bound = 'REGULAR'
      character(64)           :: outer_bound = 'VACUUM'
@@ -58,7 +57,6 @@ module gyre_osc_par
      logical                 :: nar_approx = .FALSE.
      logical                 :: narf_approx = .FALSE.
      logical                 :: eddington_approx = .FALSE.
-     logical                 :: complex_lambda = .FALSE.
      logical                 :: reduce_order = .TRUE.
   end type osc_par_t
 
@@ -106,7 +104,6 @@ contains
     real(WP)                              :: alpha_th
     real(WP)                              :: eps_rho
     real(WP)                              :: eps_T
-    character(LEN(os_p%rotation_method))  :: rotation_method
     character(LEN(os_p%variables_set))    :: variables_set
     character(LEN(os_p%inner_bound))      :: inner_bound
     character(LEN(os_p%outer_bound))      :: outer_bound
@@ -127,15 +124,14 @@ contains
     logical                               :: nar_approx
     logical                               :: narf_approx
     logical                               :: eddington_approx
-    logical                               :: complex_lambda
     logical                               :: reduce_order
 
-    namelist /osc/ x_ref, alpha_th, eps_rho, eps_T, rotation_method, inner_bound, outer_bound, &
+    namelist /osc/ x_ref, alpha_th, eps_rho, eps_T, inner_bound, outer_bound, &
          outer_bound_for_cutoff, outer_branch, variables_set, inertia_norm, time_factor, &
          conv_scheme, int_scheme, deps_source, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
          cowling_approx, nar_approx, narf_approx, eddington_approx, &
-         complex_lambda, reduce_order
+         reduce_order
 
     ! Count the number of osc namelists
 
@@ -166,7 +162,6 @@ contains
        alpha_th = os_p(i)%alpha_th
        eps_rho = os_p(i)%eps_rho
        eps_T = os_p(i)%eps_T
-       rotation_method = os_p(i)%rotation_method
        variables_set = os_p(i)%variables_set
        inner_bound = os_p(i)%inner_bound
        outer_bound = os_p(i)%outer_bound
@@ -187,7 +182,6 @@ contains
        nar_approx = os_p(i)%nar_approx
        narf_approx = os_p(i)%narf_approx
        eddington_approx = os_p(i)%eddington_approx
-       complex_lambda = os_p(i)%complex_lambda
        reduce_order = os_p(i)%reduce_order
 
        ! Read the namelist
@@ -200,7 +194,6 @@ contains
        os_p(i)%alpha_th = alpha_th
        os_p(i)%eps_rho = eps_rho
        os_p(i)%eps_T = eps_T
-       os_p(i)%rotation_method = rotation_method
        os_p(i)%variables_set = variables_set
        os_p(i)%inner_bound = inner_bound
        os_p(i)%outer_bound = outer_bound
@@ -221,7 +214,6 @@ contains
        os_p(i)%nar_approx = nar_approx
        os_p(i)%narf_approx = narf_approx
        os_p(i)%eddington_approx = eddington_approx
-       os_p(i)%complex_lambda = complex_lambda
        os_p(i)%reduce_order = reduce_order
 
     end do read_loop
@@ -248,7 +240,6 @@ contains
     call bcast(os_p%eps_rho, root_rank)
     call bcast(os_p%eps_T, root_rank)
 
-    call bcast(os_p%rotation_method, root_rank)
     call bcast(os_p%variables_set, root_rank)
     call bcast(os_p%inner_bound, root_rank)
     call bcast(os_p%outer_bound, root_rank)
@@ -268,7 +259,6 @@ contains
     call bcast(os_p%nar_approx, root_rank)
     call bcast(os_p%narf_approx, root_rank)
     call bcast(os_p%eddington_approx, root_rank)
-    call bcast(os_p%complex_lambda, root_rank)
     call bcast(os_p%reduce_order, root_rank)
 
     ! Finish

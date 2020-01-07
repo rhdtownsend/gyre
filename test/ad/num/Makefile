@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=omp band delta doppler tar cowling vars-dziem vars-jcd vars-mix vars-lagp hdf diff-colloc diff-magnus diff-mirk diff-trapz
+SUBDIRS=omp band delta rot-null rot-tar cowling vars-dziem vars-jcd vars-mix vars-lagp hdf diff-colloc diff-magnus diff-mirk diff-trapz
 
 # Rules
 

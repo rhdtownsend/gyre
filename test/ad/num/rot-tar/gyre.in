@@ -4,9 +4,6 @@
 &model
 	model_type = 'POLY'
         file = 'poly.h5'
-	uniform_rot = .TRUE.
-	Omega_rot = 0.2
-	Omega_units = 'CRITICAL'
 /
 
 &mode
@@ -25,7 +22,13 @@
 /
 
 &osc
-	rotation_method = 'DOPPLER'
+/
+
+&rot
+	coriolis_method = 'TAR'
+	Omega_rot_source = 'UNIFORM'
+	Omega_rot = 0.2
+	Omega_rot_units = 'CRITICAL'
 /
 
 &num

@@ -1,7 +1,7 @@
 ! Module   : gyre_wave
 ! Purpose  : wave function data
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -188,7 +188,7 @@ contains
 
     associate (ml => cx%model(), &
                pt_i => cx%point_i())
-      wv%l_i = cx%l_e(ml%coeff(I_OMEGA_ROT, pt_i), st)
+      wv%l_i = cx%l_e(cx%Omega_rot(pt_i), st)
     end associate
 
     wv%n_k = gr%n_k
@@ -312,9 +312,9 @@ contains
          ml => this%cx%model() )
 
       if (PRESENT(freq_frame)) then
-         freq = freq_from_omega(this%st%omega, ml, this%pt_i, this%pt_o, freq_units, freq_frame, this%md_p, this%os_p)
+         freq = freq_from_omega(this%st%omega, this%cx, freq_units, freq_frame, this%md_p, this%os_p)
       else
-         freq = freq_from_omega(this%st%omega, ml, this%pt_i, this%pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
+         freq = freq_from_omega(this%st%omega, this%cx, freq_units, 'INERTIAL', this%md_p, this%os_p)
       endif
 
     end associate
@@ -336,7 +336,7 @@ contains
     associate( &
          ml => this%cx%model() )
 
-      dfreq_rot = freq_from_omega(this%domega_rot(), ml, this%pt_i, this%pt_o, freq_units, 'INERTIAL', this%md_p, this%os_p)
+      dfreq_rot = freq_from_omega(this%domega_rot(), this%cx, freq_units, 'INERTIAL', this%md_p, this%os_p)
     
     end associate
 
@@ -431,7 +431,7 @@ contains
 
          y_3 = this%y_i(3, k)
 
-         Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+         Omega_rot = this%cx%Omega_rot(pt)
 
          if (this%md_p%static) then
 
@@ -468,8 +468,6 @@ contains
 
             c_1 = ml%coeff(I_C_1, pt)
 
-            Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
-         
             omega_c = this%cx%omega_c(Omega_rot, this%st)
 
             if (l_i /= 1._WP) then
@@ -897,10 +895,9 @@ contains
     ! Evaluate the angular eigenvalue
 
     associate ( &
-         ml => this%cx%model(), &
          pt => this%gr%pt(k) )
       
-      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+      Omega_rot = this%cx%Omega_rot(pt)
     
       lambda = this%cx%lambda(Omega_rot, this%st)
 
@@ -1520,7 +1517,7 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
       U = ml%coeff(I_U, pt)
 
-      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, this%st)
 
@@ -1672,7 +1669,7 @@ contains
       U = ml%coeff(I_U, pt)
       c_1 = ml%coeff(I_C_1, pt)
 
-      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, this%st)
 
@@ -1715,7 +1712,7 @@ contains
       U = ml%coeff(I_U, pt)
       c_1 = ml%coeff(I_C_1, pt)
 
-      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, this%st)
       lambda = this%cx%lambda(Omega_rot, this%st)
@@ -1769,7 +1766,7 @@ contains
       kap_T = ml%coeff(I_KAP_T, pt)
       kap_rho = ml%coeff(I_KAP_RHO, pt)
 
-      Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, this%st)
       lambda = this%cx%lambda(Omega_rot, this%st)
@@ -1828,7 +1825,7 @@ contains
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
 
-         Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+         Omega_rot = this%cx%Omega_rot(pt)
 
          lambda = REAL(this%lambda(k))
 
@@ -2423,7 +2420,7 @@ contains
             ml => this%cx%model(), &
             pt => this%gr%pt(k))
 
-         Omega_rot(k) = ml%coeff(I_OMEGA_ROT, pt)
+         Omega_rot(k) = this%cx%Omega_rot(pt)
 
        end associate
        

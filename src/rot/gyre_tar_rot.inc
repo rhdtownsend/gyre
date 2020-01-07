@@ -1,7 +1,7 @@
 ! Incfile  : gyre_tar_rot
 ! Purpose  : rotational effects (traditional approximation of rotation, template)
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,7 +30,7 @@ module gyre_${T}_tar_rot
   use core_hgroup
 
   use gyre_constants
-  use gyre_freq
+  use gyre_freq_frame
   use gyre_mode_par
   use gyre_tar_fit
   use gyre_rot

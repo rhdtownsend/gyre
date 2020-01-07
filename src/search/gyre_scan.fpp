@@ -1,7 +1,7 @@
 ! Module   : gyre_scan
 ! Purpose  : frequency scanning routines
 !
-! Copyright 2013-2019 The GYRE Team
+! Copyright 2013-2020 The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ module gyre_scan
 
   use gyre_context
   use gyre_freq
+  use gyre_freq_frame
   use gyre_grid
   use gyre_mode
   use gyre_model
@@ -110,9 +111,6 @@ contains
     type(scan_par_t), intent(in)         :: sc_p
     real(WP), allocatable, intent(inout) :: omega(:)
 
-    class(model_t), pointer :: ml
-    type(point_t)           :: pt_i
-    type(point_t)           :: pt_o
     real(WP)                :: omega_i_min
     real(WP)                :: omega_i_max
     real(WP)                :: omega_g_min
@@ -123,15 +121,10 @@ contains
 
     ! Build the frequency scan as a grid
 
-    ml => cx%model()
-
-    pt_i = cx%point_i()
-    pt_o = cx%point_o()
-
     ! Calculate the dimensionless frequency range in the inertial frame
       
-    omega_i_min = omega_from_freq(sc_p%freq_min, ml, pt_i, pt_o, sc_p%freq_min_units, sc_p%freq_frame, md_p, os_p)
-    omega_i_max = omega_from_freq(sc_p%freq_max, ml ,pt_i, pt_o, sc_p%freq_max_units, sc_p%freq_frame, md_p, os_p)
+    omega_i_min = omega_from_freq(sc_p%freq_min, cx, sc_p%freq_min_units, sc_p%freq_frame, md_p, os_p)
+    omega_i_max = omega_from_freq(sc_p%freq_max, cx, sc_p%freq_max_units, sc_p%freq_frame, md_p, os_p)
 
     ! Build the scan
 
@@ -167,8 +160,8 @@ contains
 
           ! Calculate the dimensionless frequency range in the grid frame
 
-          omega_g_min = freq_from_omega(omega_i_min, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)
-          omega_g_max = freq_from_omega(omega_i_max, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)          
+          omega_g_min = freq_from_omega(omega_i_min, cx, 'NONE', sc_p%grid_frame, md_p, os_p)
+          omega_g_max = freq_from_omega(omega_i_max, cx, 'NONE', sc_p%grid_frame, md_p, os_p)          
 
           ! Set up the frequencies
 
@@ -189,7 +182,7 @@ contains
 
              ! Inertial frame
 
-             omega_i(j) = omega_from_freq(omega_g, ml, pt_i, pt_o, 'NONE', sc_p%grid_frame, md_p, os_p)
+             omega_i(j) = omega_from_freq(omega_g, cx, 'NONE', sc_p%grid_frame, md_p, os_p)
 
           end do
 
@@ -229,9 +222,6 @@ contains
     type(scan_par_t), intent(in)         :: sc_p
     real(WP), allocatable, intent(inout) :: omega(:)
 
-    class(model_t), pointer :: ml
-    type(point_t)           :: pt_i
-    type(point_t)           :: pt_o
     integer                 :: unit
     integer                 :: n_freq
     real(WP), allocatable   :: freq(:)
@@ -239,11 +229,6 @@ contains
     real(WP), allocatable   :: omega_i(:)
     
     ! Build the frequency scan from file
-
-    ml => cx%model()
-
-    pt_i = cx%point_i()
-    pt_o = cx%point_o()
 
     ! Open the frequency file
 
@@ -277,7 +262,7 @@ contains
     allocate(omega_i(n_freq))
 
     do j = 1, n_freq
-       omega_i(j) = omega_from_freq(freq(j), ml, pt_i, pt_o, sc_p%freq_units, sc_p%freq_frame, md_p, os_p)
+       omega_i(j) = omega_from_freq(freq(j), cx, sc_p%freq_units, sc_p%freq_frame, md_p, os_p)
     end do
 
     ! Store them
@@ -298,13 +283,13 @@ contains
 
   !****
 
-  subroutine check_scan (ml, gr, omega, md_p, os_p)
+  subroutine check_scan (cx, gr, omega, md_p, os_p)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(grid_t), intent(in)            :: gr
-    real(WP), intent(inout)             :: omega(:)
-    type(mode_par_t), intent(in)        :: md_p
-    type(osc_par_t), intent(in)         :: os_p
+    class(context_t), intent(in) :: cx
+    type(grid_t), intent(in)     :: gr
+    real(WP), intent(inout)      :: omega(:)
+    type(mode_par_t), intent(in) :: md_p
+    type(osc_par_t), intent(in)  :: os_p
 
     real(WP) :: Omega_rot
     real(WP) :: omega_c(gr%n_k)
@@ -324,7 +309,7 @@ contains
 
        !$OMP PARALLEL DO PRIVATE (Omega_rot)
        do k = 1, gr%n_k
-          Omega_rot = ml%coeff(I_OMEGA_ROT, gr%pt(k))
+          Omega_rot = cx%Omega_rot(gr%pt(k))
           omega_c(k) = omega_corot(omega(1), Omega_rot, md_p%m)
        end do
 
@@ -336,7 +321,7 @@ contains
 
           !$OMP PARALLEL DO PRIVATE (Omega_rot)
           do k = 1, gr%n_k
-             Omega_rot = ml%coeff(I_OMEGA_ROT, gr%pt(k))
+             Omega_rot = cx%Omega_rot(gr%pt(k))
              omega_c(k) = omega_corot(omega(j), Omega_rot, md_p%m)
           end do
 

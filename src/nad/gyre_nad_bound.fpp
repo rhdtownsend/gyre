@@ -1,7 +1,7 @@
 ! Incfile  : gyre_nad_bound
 ! Purpose  : nonadiabatic boundary conditions
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -66,15 +66,19 @@ module gyre_nad_bound
   integer, parameter :: J_F_LUAN_T = 9
   integer, parameter :: J_F_LUAN_C = 10
   $endif
-  integer, parameter :: J_OMEGA_ROT = 11
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT
+  $if ($EXPERIMENTAL)
+  integer, parameter :: J_LAST = J_F_LUAN_C
+  $else
+  integer, parameter :: J_LAST = J_DELTA
+  $endif
 
   ! Derived-type definitions
 
   type, extends (c_bound_t) :: nad_bound_t
      private
      type(context_t), pointer  :: cx => null()
+     type(point_t)             :: pt(2)
      type(nad_trans_t)         :: tr
      real(WP), allocatable     :: coeff(:,:)
      real(WP)                  :: alpha_gr
@@ -234,7 +238,7 @@ contains
 
     ml => this%cx%model()
 
-    call check_model(ml, [I_V_2,I_U,I_C_1,I_NABLA_AD,I_C_THN,I_OMEGA_ROT])
+    call check_model(ml, [I_V_2,I_U,I_C_1,I_NABLA_AD,I_C_THN])
 
     allocate(this%coeff(2,J_LAST))
 
@@ -248,8 +252,6 @@ contains
     case default
        $ABORT(Invalid type_i)
     end select
-
-    this%coeff(1,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt_i)
 
     ! Outer boundary
 
@@ -281,11 +283,14 @@ contains
 
     this%coeff(2,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt_o)
     this%coeff(2,J_C_THN) = ml%coeff(I_C_THN, pt_o)
-    this%coeff(2,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt_o)
     
     ! Set up stencil for the tr component
 
     call this%tr%stencil([pt_i,pt_o])
+
+    ! Store the stencil points for on-the-fly evaluations
+
+    this%pt = [pt_i,pt_o]
 
     ! Finish
 
@@ -334,6 +339,7 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
     complex(WP) :: l_i
 
@@ -346,9 +352,11 @@ contains
 
     associate( &
          c_1 => this%coeff(1,J_C_1), &
-         Omega_rot => this%coeff(1,J_OMEGA_ROT), &
+         pt => this%pt(1), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -540,6 +548,7 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
     complex(WP) :: l_e
@@ -557,10 +566,12 @@ contains
          U => this%coeff(2,J_U), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
+         pt => this%pt(2), &
          alpha_gr => this%alpha_gr, &
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
@@ -611,6 +622,7 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
     complex(WP) :: lambda
@@ -629,10 +641,12 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
+         pt => this%pt(2), &
          alpha_gr => this%alpha_gr, &
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
@@ -684,6 +698,7 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
     complex(WP) :: lambda
@@ -715,11 +730,13 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
+         pt => this%pt(2), &
          alpha_gr => this%alpha_gr, &
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om, &
          branch => this%branch_o)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
@@ -785,6 +802,7 @@ contains
     complex(WP), intent(out)       :: B(:,:)
     complex(WP), intent(out)       :: scl(:)
 
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
     complex(WP) :: lambda
@@ -809,11 +827,13 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
+         pt => this%pt(2), &
          alpha_gr => this%alpha_gr, &
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om, &
          branch => this%branch_o)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
@@ -874,6 +894,7 @@ contains
 
     real(WP), parameter :: D = 20._WP
 
+    real(WP)    :: Omega_rot
     complex(WP) :: lambda
     complex(WP) :: l_e
     complex(WP) :: omega_c
@@ -900,11 +921,13 @@ contains
          delta => this%coeff(2,J_DELTA), &
          f_luan_t => this%coeff(2,J_F_LUAN_T), &
          f_luan_c => this%coeff(2,J_F_LUAN_C), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
+         pt => this%pt(2), &
          alpha_gr => this%alpha_gr, &
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om, &
          branch => this%branch)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c

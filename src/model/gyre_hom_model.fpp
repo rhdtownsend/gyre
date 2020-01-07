@@ -1,7 +1,7 @@
 ! Module   : gyre_hom_model
 ! Purpose  : stellar homogeneous compressible model
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -27,7 +27,6 @@ module gyre_hom_model
   use gyre_grid
   use gyre_model
   use gyre_model_par
-  use gyre_model_util
   use gyre_point
 
   use ISO_FORTRAN_ENV
@@ -102,11 +101,7 @@ contains
 
     ml%Gamma_1 = ml_p%Gamma_1
 
-    if (ml_p%uniform_rot) then
-       ml%Omega_rot = uniform_Omega_rot(ml_p)
-    else
-       ml%Omega_rot = 0._WP
-    endif
+    ml%Omega_rot = 0._WP
 
     ml%s_i = ml%gr%s_i()
     ml%s_o = ml%gr%s_o()

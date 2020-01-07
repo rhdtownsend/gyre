@@ -1,7 +1,7 @@
-! Incfile  : gyre_dopp_rot
-! Purpose  : rotational effects (Doppler shift, template)
+! Incfile  : gyre_null_rot
+! Purpose  : rotational effects (null coriolis, template)
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -22,7 +22,7 @@ $define $MOD_DECL $sub
 $local $T $1
 $local $TYPE $2
 
-module gyre_${T}_dopp_rot
+module gyre_${T}_null_rot
 
   ! Uses
 
@@ -39,37 +39,37 @@ module gyre_${T}_dopp_rot
 
   ! Derived-type definitions
 
-  type, extends (${T}_rot_t) :: ${T}_dopp_rot_t
+  type, extends (${T}_rot_t) :: ${T}_null_rot_t
      private
      integer :: l
    contains
      private
      procedure, public :: l_e
      procedure, public :: lambda
-  end type ${T}_dopp_rot_t
+  end type ${T}_null_rot_t
 
   ! Interfaces
 
-  interface ${T}_dopp_rot_t
-     module procedure ${T}_dopp_rot_t_
-  end interface ${T}_dopp_rot_t
+  interface ${T}_null_rot_t
+     module procedure ${T}_null_rot_t_
+  end interface ${T}_null_rot_t
 
   ! Access specifiers
 
   private
 
-  public :: ${T}_dopp_rot_t
+  public :: ${T}_null_rot_t
 
   ! Procedures
 
 contains
 
-  function ${T}_dopp_rot_t_ (md_p) result (rt)
+  function ${T}_null_rot_t_ (md_p) result (rt)
 
     type(mode_par_t), intent(in) :: md_p
-    type(${T}_dopp_rot_t)        :: rt
+    type(${T}_null_rot_t)        :: rt
 
-    ! Construct the dopp_rot_t
+    ! Construct the null_rot_t
 
     rt%l = md_p%l
 
@@ -77,13 +77,13 @@ contains
 
     return
 
-  end function ${T}_dopp_rot_t_
+  end function ${T}_null_rot_t_
 
   !****
 
   function l_e (this, Omega_rot, omega)
 
-    class(${T}_dopp_rot_t), intent(in) :: this
+    class(${T}_null_rot_t), intent(in) :: this
     real(WP), intent(in)               :: Omega_rot
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: l_e
@@ -102,7 +102,7 @@ contains
 
   function lambda (this, Omega_rot, omega)
 
-    class(${T}_dopp_rot_t), intent(in) :: this
+    class(${T}_null_rot_t), intent(in) :: this
     real(WP), intent(in)               :: Omega_rot
     $TYPE(WP), intent(in)              :: omega
     $TYPE(WP)                          :: lambda
@@ -117,6 +117,6 @@ contains
 
   end function lambda
 
-end module gyre_${T}_dopp_rot
+end module gyre_${T}_null_rot
 
 $endsub

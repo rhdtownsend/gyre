@@ -1,7 +1,7 @@
 ! Module   : gyre_mesa_file
 ! Purpose  : read MESA files
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -257,11 +257,7 @@ contains
 
     f_luan_c = c_P*M_PROTON/K_BOLTZMANN
 
-    if (ml_p%uniform_rot) then
-       Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
-    else
-       Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
-    endif
+    Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
 
     ! Initialize the evol_model_t
 

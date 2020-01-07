@@ -25,7 +25,6 @@ module gyre_grid_factory
 
   use gyre_constants
   use gyre_context
-  use gyre_freq
   use gyre_grid
   use gyre_grid_par
   use gyre_grid_spec
@@ -468,10 +467,10 @@ contains
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
 
-         Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
-         Omega_rot_i = ml%coeff(I_OMEGA_ROT, cx%point_i())
-
        end associate
+
+       Omega_rot = cx%Omega_rot(pt)
+       Omega_rot_i = cx%Omega_rot(cx%point_i())
 
        ! Loop over omega, finding the maximum k_r_real and k_r_imag
 
@@ -593,9 +592,9 @@ contains
          c_rad = ml%coeff(I_C_RAD, pt)
          c_thk = ml%coeff(I_C_THK, pt)
 
-         Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
-
        end associate
+
+       Omega_rot = cx%Omega_rot(pt)
 
        ! Loop over omega, finding the maximum tau
 

@@ -22,6 +22,9 @@
         deps_file_format = 'WOLF'
 /
 
+&rot
+/
+
 &num
 	diff_scheme = 'MAGNUS_GL2'
 /

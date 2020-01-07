@@ -64,19 +64,17 @@ module gyre_nad_eqns
   integer, parameter :: J_C_EPS = 17
   integer, parameter :: J_KAP_RHO = 18
   integer, parameter :: J_KAP_T = 19
-  integer, parameter :: J_OMEGA_ROT = 20
-  integer, parameter :: J_OMEGA_ROT_I = 21
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT_I
+  integer, parameter :: J_LAST = J_KAP_T
 
   ! Derived-type definitions
 
   type, extends (c_eqns_t) :: nad_eqns_t
      private
      type(context_t), pointer   :: cx => null()
+     type(point_t), allocatable :: pt(:)
      type(nad_trans_t)          :: tr
      real(WP), allocatable      :: coeff(:,:)
-     type(point_t), allocatable :: pt(:)
      real(WP)                   :: alpha_gr
      real(WP)                   :: alpha_th
      real(WP)                   :: alpha_hf
@@ -187,7 +185,7 @@ contains
     call check_model(ml, [ &
          I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
          I_C_LUM,I_C_RAD,I_C_THN,I_C_THK,I_C_EPS, &
-         I_KAP_RHO,I_KAP_T,I_OMEGA_ROT])
+         I_KAP_RHO,I_KAP_T])
 
     n_s = SIZE(pt)
 
@@ -217,17 +215,16 @@ contains
        this%coeff(i,J_C_EPS) = ml%coeff(I_C_EPS, pt(i))
        this%coeff(i,J_KAP_RHO) = ml%coeff(I_KAP_RHO, pt(i))
        this%coeff(i,J_KAP_T) = ml%coeff(I_KAP_T, pt(i))
-       this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
 
     end do
-
-    this%coeff(:,J_OMEGA_ROT_I) = ml%coeff(I_OMEGA_ROT, this%cx%point_i())
-
-    this%pt = pt
 
     ! Set up stencil for the tr component
 
     call this%tr%stencil(pt)
+
+    ! Store the stencil points for on-the-fly evaluations
+
+    this%pt = pt
 
     ! Finish
 
@@ -263,6 +260,8 @@ contains
     class(c_state_t), intent(in)  :: st
     complex(WP)                   :: xA(this%n_e,this%n_e)
 
+    real(WP)    :: Omega_rot
+    real(WP)    :: Omega_rot_i
     complex(WP) :: omega_c
     complex(WP) :: i_omega_c
     complex(WP) :: lambda
@@ -300,9 +299,8 @@ contains
          c_eps => this%coeff(i,J_C_EPS), &
          kap_rho => this%coeff(i,J_KAP_RHO), &
          kap_T => this%coeff(i,J_KAP_T), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
-         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
          pt => this%pt(i), &
+         pt_i => this%cx%point_i(), &
          x => this%pt(i)%x, &
          alpha_gr => this%alpha_gr, &
          alpha_th => this%alpha_th, &
@@ -310,6 +308,10 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om)
 
+      Omega_rot = this%cx%Omega_rot(pt)
+      Omega_rot_i = this%cx%Omega_rot(pt_i)
+
+      omega_c = this%cx%omega_c(Omega_rot, st)
       omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
 

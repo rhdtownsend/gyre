@@ -168,7 +168,7 @@ contains
           ! Classify the tide for eack k
 
           classify_loop : do k = k_min, k_max
-             tide_type(l,m,k) = classify_tide_(ml, ml_gr, cx(l,m), omega(k), td_p%omega_static)
+             tide_type(l,m,k) = classify_tide_(cx(l,m), ml_gr, omega(k), td_p%omega_static)
              if (check_log_level('DEBUG')) then
                 write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k),tidal_c(R_a, td_p%e, l, m, k)
 
@@ -331,11 +331,10 @@ contains
 
   contains
 
-    function classify_tide_ (ml, gr, cx, omega, omega_static) result (tide_type)
+    function classify_tide_ (cx, gr, omega, omega_static) result (tide_type)
 
-      class(model_t), intent(in)  :: ml
-      type(grid_t), intent(in)    :: gr
       type(context_t), intent(in) :: cx
+      type(grid_t), intent(in)    :: gr
       real(WP), intent(in)        :: omega
       real(WP), intent(in)        :: omega_static
       integer                     :: tide_type
@@ -351,7 +350,7 @@ contains
 
       !$OMP PARALLEL DO PRIVATE (Omega_rot)
       do k = 1, gr%n_k
-         Omega_rot = ml%coeff(I_OMEGA_ROT, gr%pt(k))
+         Omega_rot = cx%Omega_rot(gr%pt(k))
          omega_c(k) = cx%omega_c(Omega_rot, st)
       end do
 

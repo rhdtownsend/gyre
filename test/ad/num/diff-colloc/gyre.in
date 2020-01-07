@@ -24,6 +24,9 @@
 &osc
 /
 
+&rot
+/
+
 &num
 	diff_scheme = 'COLLOC_GL2'
 	tag_list = 'GL2'

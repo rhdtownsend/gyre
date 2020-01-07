@@ -41,6 +41,7 @@ module gyre_tide_par
      integer  :: l_max = 4
      integer  :: k_max = 20
      logical  :: combine_k = .TRUE.
+     logical  :: synchron_rot = .FALSE.
   end type tide_par_t
 
   ! Interfaces
@@ -149,6 +150,7 @@ contains
        td_p(i)%k_max = k_max
 
        td_p(i)%combine_k = combine_k
+       td_p(i)%syncrhon_rot = synchron_rot
 
     end do read_loop
 

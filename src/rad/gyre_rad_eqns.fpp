@@ -53,11 +53,11 @@ module gyre_rad_eqns
 
   type, extends (r_eqns_t) :: rad_eqns_t
      private
-     type(context_t), pointer :: cx => null()
-     type(rad_trans_t)        :: tr
-     real(WP), allocatable    :: coeff(:,:)
-     real(WP), allocatable    :: x(:)
-     real(WP)                 :: alpha_om
+     type(context_t), pointer   :: cx => null()
+     type(point_t), allocatable :: pt(:)
+     type(rad_trans_t)          :: tr
+     real(WP), allocatable      :: coeff(:,:)
+     real(WP)                   :: alpha_om
    contains
      private
      procedure, public :: stencil
@@ -145,11 +145,13 @@ contains
 
     end do
 
-    this%x = pt%x
-
     ! Set up stencil for the tr component
 
     call this%tr%stencil(pt)
+
+    ! Store the stencil points for on-the-fly evaluations
+
+    this%pt = pt
 
     ! Finish
 
@@ -168,7 +170,7 @@ contains
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(i, st)/this%x(i)
+    A = this%xA(i, st)/this%pt(i)%x
 
     ! Finish
 

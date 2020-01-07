@@ -15,6 +15,9 @@
 	inner_bound = 'ZERO_R'
 /
 
+&rot
+/
+
 &num
 	diff_scheme = 'MAGNUS_GL2'
 /

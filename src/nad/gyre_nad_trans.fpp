@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_vars
 ! Purpose  : nonadiabatic variables transformations
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -50,20 +50,20 @@ module gyre_nad_trans
   integer, parameter :: J_DU = 4
   integer, parameter :: J_C_1 = 5
   integer, parameter :: J_DC_1 = 6
-  integer, parameter :: J_OMEGA_ROT = 7
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT
+  integer, parameter :: J_LAST = J_DC_1
 
   ! Derived-type definitions
 
   type :: nad_trans_t
      private
-     type(context_t), pointer :: cx => null()
-     real(WP), allocatable    :: coeff(:,:)
-     integer                  :: set
-     integer                  :: l
-     integer                  :: m
-     integer                  :: n_e
+     type(context_t), pointer   :: cx => null()
+     type(point_t), allocatable :: pt(:)
+     real(WP), allocatable      :: coeff(:,:)
+     integer                    :: set
+     integer                    :: l
+     integer                    :: m
+     integer                    :: n_e
    contains
      private
      procedure, public :: stencil
@@ -149,7 +149,7 @@ contains
 
     ml => this%cx%model()
 
-    call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
+    call check_model(ml, [I_V_2,I_U,I_C_1])
 
     n_s = SIZE(pt)
 
@@ -169,8 +169,11 @@ contains
        this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
        this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
        this%coeff(i,J_DC_1) = ml%dcoeff(I_C_1, pt(i))
-       this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
     end do
+
+    ! Store the stencil points for on-the-fly evaluations
+
+    this%pt = pt
 
     ! Finish
 
@@ -429,6 +432,7 @@ contains
     class(c_state_t), intent(in)   :: st
     complex(WP)                    :: G(this%n_e,this%n_e)
 
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
     complex(WP) :: lambda
 
@@ -438,7 +442,9 @@ contains
     associate ( &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT))
+         pt => this%pt(i))
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -711,6 +717,7 @@ contains
     class(c_state_t), intent(in)   :: st
     complex(WP)                    :: H(this%n_e,this%n_e)
 
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
     complex(WP) :: lambda
 
@@ -720,7 +727,9 @@ contains
     associate ( &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT))
+         pt => this%pt(i))
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -930,6 +939,7 @@ contains
     class(c_state_t), intent(in)   :: st
     complex(WP)                    :: dH(this%n_e,this%n_e)
 
+    real(WP)    :: Omega_rot
     complex(WP) :: omega_c
     complex(WP) :: lambda
 
@@ -941,7 +951,9 @@ contains
          dc_1 => this%coeff(i,J_DC_1), &
          U => this%coeff(i,J_U), &
          dU => this%coeff(i,J_DU), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT))
+         pt => this%pt(i))
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 

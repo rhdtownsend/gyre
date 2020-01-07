@@ -42,6 +42,7 @@ module gyre_lib
   use gyre_num_par
   use gyre_osc_par
   use gyre_rad_bvp
+  use gyre_rot_par
   use gyre_scan
   use gyre_scan_par
   use gyre_search
@@ -59,6 +60,7 @@ module gyre_lib
   type(model_par_t), save             :: ml_p_m
   type(mode_par_t), allocatable, save :: md_p_m(:)
   type(osc_par_t), allocatable, save  :: os_p_m(:)
+  type(rot_par_t), allocatable, save  :: rt_p_m(:)
   type(num_par_t), allocatable, save  :: nm_p_m(:)
   type(grid_par_t), allocatable, save :: gr_p_m(:)
   type(scan_par_t), allocatable, save :: sc_p_m(:)
@@ -110,6 +112,7 @@ contains
     call read_model_par(unit, ml_p_m)
     call read_mode_par(unit, md_p_m)
     call read_osc_par(unit, os_p_m)
+    call read_rot_par(unit, rt_p_m)
     call read_num_par(unit, nm_p_m)
     call read_grid_par(unit, gr_p_m)
     call read_scan_par(unit, sc_p_m)
@@ -132,6 +135,7 @@ contains
 
     if (ALLOCATED(md_p_m)) deallocate(md_p_m)
     if (ALLOCATED(os_p_m)) deallocate(os_p_m)
+    if (ALLOCATED(rt_p_m)) deallocate(rt_p_m)
     if (ALLOCATED(nm_p_m)) deallocate(nm_p_m)
     if (ALLOCATED(gr_p_m)) deallocate(gr_p_m)
     if (ALLOCATED(sc_p_m)) deallocate(sc_p_m)
@@ -217,6 +221,7 @@ contains
     integer                       :: d_md_ad
     integer                       :: i
     type(osc_par_t)               :: os_p_sel
+    type(rot_par_t)               :: rt_p_sel
     type(num_par_t)               :: nm_p_sel
     type(grid_par_t)              :: gr_p_sel
     type(scan_par_t), allocatable :: sc_p_sel(:)
@@ -247,13 +252,14 @@ contains
           ! Select parameters according to tags
 
           call select_par(os_p_m, md_p_m(i)%tag, os_p_sel)
+          call select_par(rt_p_m, md_p_m(i)%tag, rt_p_sel)
           call select_par(nm_p_m, md_p_m(i)%tag, nm_p_sel)
           call select_par(gr_p_m, md_p_m(i)%tag, gr_p_sel)
           call select_par(sc_p_m, md_p_m(i)%tag, sc_p_sel)
 
           ! Set up the context
 
-          cx(i) = context_t(ml_m, gr_p_sel, md_p_m(i), os_p_sel)
+          cx(i) = context_t(ml_m, gr_p_sel, md_p_m(i), os_p_sel, rt_p_sel)
 
           ! Set up the frequency array
 
@@ -273,7 +279,7 @@ contains
              omega_max = HUGE(0._WP)
           endif
 
-          call check_scan(ml_m, gr, omega, md_p_m(i), os_p_sel)
+          call check_scan(cx(i), gr, omega, md_p_m(i), os_p_sel)
 
           ! Set up the bvp's
 

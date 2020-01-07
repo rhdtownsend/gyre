@@ -1,7 +1,7 @@
 ! Module   : gyre_amdl_file
 ! Purpose  : read AMDL files
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -144,11 +144,7 @@ contains
 
     allocate(Omega_rot(n))
 
-    if (ml_p%uniform_rot) then
-       Omega_rot = uniform_Omega_rot(ml_p, M_star, R_star)
-    else
-       Omega_rot = 0._WP
-    endif
+    Omega_rot = 0._WP
 
     ! Initialize the evol_model_t
 

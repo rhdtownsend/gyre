@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.txt
 
-LABEL="numerics (rotation, traditional approximation)"
+LABEL="numerics (rotation, TAR Coriolis)"
 
 RELERR=3E-13
 FIELDS=1-6

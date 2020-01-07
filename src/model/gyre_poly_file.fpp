@@ -1,7 +1,7 @@
 ! Module   : gyre_poly_file
 ! Purpose  : read POLY files
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The MESA Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,7 +26,6 @@ module gyre_poly_file
 
   use gyre_model
   use gyre_model_par
-  use gyre_model_util
   use gyre_poly_model
   use gyre_util
 
@@ -94,11 +93,7 @@ contains
 
     ! Set up Omega_rot
 
-    if (ml_p%uniform_rot) then
-       Omega_rot = uniform_Omega_rot(ml_p)
-    else
-       Omega_rot = 0._WP
-    endif
+    Omega_rot = 0._WP
 
     ! Initialize the poly_model_t
 
