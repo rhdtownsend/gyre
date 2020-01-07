@@ -1,7 +1,7 @@
 ! Program  : gyre_tide
 ! Purpose  : tidal response evaluation
 !
-! Copyright 2018-2019 Rich Townsend & The GYRE Team
+! Copyright 2018-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -36,6 +36,7 @@ module gyre_tide
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
+  use gyre_rot_par
   use gyre_sad_bvp
   use gyre_state
   use gyre_tide_par
@@ -66,7 +67,7 @@ module gyre_tide
 
 contains
 
-  subroutine eval_tide (ml, process_wave, Omega_orb, os_p, nm_p, gr_p, td_p)
+  subroutine eval_tide (ml, process_wave, Omega_orb, os_p, rt_p, nm_p, gr_p, td_p)
 
     class(model_t), pointer, intent(in) :: ml
     interface
@@ -78,6 +79,7 @@ contains
     end interface
     real(WP), intent(in)                :: Omega_orb
     type(osc_par_t), intent(in)         :: os_p
+    type(rot_par_t), intent(in)         :: rt_p
     type(num_par_t), intent(in)         :: nm_p
     type(grid_par_t), intent(in)        :: gr_p
     type(tide_par_t), intent(in)        :: td_p
@@ -163,12 +165,12 @@ contains
 
           ! Set up the context_t
 
-          cx(l,m) = context_t(ml, gr_p, md_p(l,m), os_p)
+          cx(l,m) = context_t(ml, gr_p, md_p(l,m), os_p, rt_p)
 
           ! Classify the tide for eack k
 
           classify_loop : do k = k_min, k_max
-             tide_type(l,m,k) = classify_tide_(ml, ml_gr, cx(l,m), omega(k), td_p%omega_static)
+             tide_type(l,m,k) = classify_tide_(cx(l,m), ml_gr, omega(k), td_p%omega_static)
              if (check_log_level('DEBUG')) then
                 write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k),tidal_c(R_a, td_p%e, l, m, k)
 
@@ -331,11 +333,10 @@ contains
 
   contains
 
-    function classify_tide_ (ml, gr, cx, omega, omega_static) result (tide_type)
+    function classify_tide_ (cx, gr, omega, omega_static) result (tide_type)
 
-      class(model_t), intent(in)  :: ml
-      type(grid_t), intent(in)    :: gr
       type(context_t), intent(in) :: cx
+      type(grid_t), intent(in)    :: gr
       real(WP), intent(in)        :: omega
       real(WP), intent(in)        :: omega_static
       integer                     :: tide_type
@@ -351,7 +352,7 @@ contains
 
       !$OMP PARALLEL DO PRIVATE (Omega_rot)
       do k = 1, gr%n_k
-         Omega_rot = ml%coeff(I_OMEGA_ROT, gr%pt(k))
+         Omega_rot = cx%Omega_rot(gr%pt(k))
          omega_c(k) = cx%omega_c(Omega_rot, st)
       end do
 

@@ -1,7 +1,7 @@
-! Incfile  : gyre_r_dppp_rot
-! Purpose  : rotational effects (Dopper shift, real)
+! Incfile  : gyre_c_null_rot
+! Purpose  : rotational effects (null, complex)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,6 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'gyre_dopp_rot.inc'
+$include 'gyre_null_rot.inc'
 
-$MOD_DECL(r,real)
+$MOD_DECL(c,complex)

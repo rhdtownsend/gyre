@@ -119,9 +119,7 @@ contains
        ! Set up midpoint Omega_rot (used for regularization of colloc
        ! schemes)
 
-       ml => cx%model()
-
-       df%Omega_rot = ml%coeff(I_OMEGA_ROT, pt_m)
+       df%Omega_rot = cx%Omega_rot(pt_m)
 
    else
 

@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_eqns
 ! Purpose  : adiabatic differential equations
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -46,21 +46,19 @@ module gyre_ad_eqns
   integer, parameter :: J_U = 3
   integer, parameter :: J_C_1 = 4
   integer, parameter :: J_GAMMA_1 = 5
-  integer, parameter :: J_OMEGA_ROT = 6
-  integer, parameter :: J_OMEGA_ROT_I = 7
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT_I
+  integer, parameter :: J_LAST = J_GAMMA_1
 
   ! Derived-type definitions
 
   type, extends (r_eqns_t) :: ad_eqns_t
      private
-     type(context_t), pointer :: cx => null()
-     type(ad_trans_t)         :: tr
-     real(WP), allocatable    :: coeff(:,:)
-     real(WP), allocatable    :: x(:)
-     real(WP)                 :: alpha_gr
-     real(WP)                 :: alpha_om
+     type(context_t), pointer   :: cx => null()
+     type(point_t), allocatable :: pt(:)
+     type(ad_trans_t)           :: tr
+     real(WP), allocatable      :: coeff(:,:)
+     real(WP)                   :: alpha_gr
+     real(WP)                   :: alpha_om
    contains
      private
      procedure, public :: stencil
@@ -135,7 +133,7 @@ contains
 
     ml => this%cx%model()
 
-    call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
+    call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
 
     n_s = SIZE(pt)
 
@@ -151,17 +149,16 @@ contains
        this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
        this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
        this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
-       this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
 
     end do
-
-    this%coeff(:,J_OMEGA_ROT_I) = ml%coeff(I_OMEGA_ROT, this%cx%point_i())
-
-    this%x = pt%x
 
     ! Set up stencil for the tr component
 
     call this%tr%stencil(pt)
+
+    ! Store the stencil points for on-the-fly evaluations
+
+    this%pt = pt
 
     ! Finish
 
@@ -180,7 +177,7 @@ contains
     
     ! Evaluate the RHS matrix
 
-    A = this%xA(i, st)/this%x(i)
+    A = this%xA(i, st)/this%pt(i)%x
 
     ! Finish
 
@@ -197,6 +194,8 @@ contains
     class(r_state_t), intent(in) :: st
     real(WP)                     :: xA(this%n_e,this%n_e)
 
+    real(WP) :: Omega_rot
+    real(WP) :: Omega_rot_i
     real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: l_i
@@ -209,10 +208,13 @@ contains
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
          Gamma_1 => this%coeff(i,J_GAMMA_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
-         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
+         pt => this%pt(i), &
+         pt_i => this%cx%point_i(), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
+      Omega_rot_i = this%cx%Omega_rot(pt_i)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 

@@ -31,6 +31,7 @@ module gyre_util
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_rot_par
   use gyre_scan_par
 
   use ISO_FORTRAN_ENV
@@ -46,16 +47,18 @@ module gyre_util
   ! Interfaces
 
   interface select_par
+     module procedure select_par_fr_1_
      module procedure select_par_gr_1_
      module procedure select_par_nm_1_
      module procedure select_par_os_1_
+     module procedure select_par_rt_1_
      module procedure select_par_sc_1_
-     module procedure select_par_fr_1_
+     module procedure select_par_fr_v_
      module procedure select_par_gr_v_
      module procedure select_par_nm_v_
      module procedure select_par_os_v_
+     module procedure select_par_rt_v_
      module procedure select_par_sc_v_
-     module procedure select_par_fr_v_
   end interface select_par
 
   interface sprint
@@ -225,11 +228,12 @@ contains
 
   $endsub
 
+  $SELECT_PAR_1(fr,force_par_t)
   $SELECT_PAR_1(gr,grid_par_t)
   $SELECT_PAR_1(nm,num_par_t)
   $SELECT_PAR_1(os,osc_par_t)
+  $SELECT_PAR_1(rt,rot_par_t)
   $SELECT_PAR_1(sc,scan_par_t)
-  $SELECT_PAR_1(fr,force_par_t)
 
   !****
    
@@ -281,11 +285,12 @@ contains
 
   $endsub
 
+  $SELECT_PAR_V(fr,tag,force_par_t,&force)
   $SELECT_PAR_V(gr,tag,grid_par_t,&grid)
   $SELECT_PAR_V(nm,tag,num_par_t,&num)
   $SELECT_PAR_V(os,tag,osc_par_t,&osc)
+  $SELECT_PAR_V(rt,tag,rot_par_t,&rot)
   $SELECT_PAR_V(sc,tag,scan_par_t,&scan)
-  $SELECT_PAR_V(fr,tag,force_par_t,&force)
 
   !****
 

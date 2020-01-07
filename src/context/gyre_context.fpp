@@ -1,7 +1,7 @@
 ! Module   : gyre_context 
 ! Purpose  : context (model, data, functions) for solving pulsation equations
 !
-! Copyright 2017 Rich Townsend
+! Copyright 2017-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,7 +24,8 @@ module gyre_context
   use core_kinds
   use core_order
 
-  use gyre_freq
+  use gyre_constants
+  use gyre_freq_frame
   use gyre_grid
   use gyre_grid_par
   use gyre_interp
@@ -34,6 +35,7 @@ module gyre_context
   use gyre_point
   use gyre_rot
   use gyre_rot_factory
+  use gyre_rot_par
   use gyre_state
   
   use ISO_FORTRAN_ENV
@@ -41,6 +43,15 @@ module gyre_context
   ! No implicit typing
 
   implicit none
+
+  ! Parameter definitions
+
+  integer, parameter :: MODEL_DEPS_SOURCE = 1
+  integer, parameter :: FILE_DEPS_SOURCE = 2
+  integer, parameter :: UNIFORM_DEPS_SOURCE = 3
+
+  integer, parameter :: MODEL_OMEGA_ROT_SOURCE = 1
+  integer, parameter :: UNIFORM_OMEGA_ROT_SOURCE = 2
 
   ! Derived-type definitions
 
@@ -51,6 +62,11 @@ module gyre_context
      type(point_t)               :: pt_i
      type(point_t)               :: pt_o
      integer                     :: m
+     integer                     :: Omega_rot_source
+     real(WP)                    :: Omega_rot_
+     integer                     :: deps_source
+     real(WP)                    :: eps_rho_
+     real(WP)                    :: eps_T_
      logical                     :: complex_lambda
      type(c_interp_t)            :: in_eps_rho
      type(c_interp_t)            :: in_eps_T
@@ -68,6 +84,7 @@ module gyre_context
      procedure         :: l_e_r_
      procedure         :: l_e_c_
      generic, public   :: l_e => l_e_r_, l_e_c_
+     procedure, public :: Omega_rot
      procedure         :: eps_rho_r_
      procedure         :: eps_rho_c_
      generic, public   :: eps_rho => eps_rho_r_, eps_rho_c_
@@ -92,12 +109,13 @@ module gyre_context
 
 contains
 
-  function context_t_ (ml, gr_p, md_p, os_p) result (cx)
+  function context_t_ (ml, gr_p, md_p, os_p, rt_p) result (cx)
 
     class(model_t), pointer, intent(in) :: ml
     type(grid_par_t), intent(in)        :: gr_p
     type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
+    type(rot_par_t), intent(in)         :: rt_p
     type(context_t)                     :: cx
 
     type(grid_t) :: gr
@@ -106,7 +124,7 @@ contains
 
     cx%ml => ml
 
-    allocate(cx%rt, SOURCE=c_rot_t(md_p, os_p))
+    allocate(cx%rt, SOURCE=c_rot_t(md_p, rt_p))
 
     gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
     cx%pt_i = gr%pt_i()
@@ -114,13 +132,30 @@ contains
  
     cx%m = md_p%m
 
-    cx%complex_lambda = os_p%complex_lambda
+    cx%complex_lambda = rt_p%complex_lambda
 
-    ! If necessary, initialize the nuclear burning partials
+    select case (rt_p%Omega_rot_source)
+    case ('MODEL')
+       cx%Omega_rot_source = MODEL_OMEGA_ROT_SOURCE
+    case ('UNIFORM')
+       call eval_Omega_rot_(ml, rt_p, cx%Omega_rot_)
+       cx%Omega_rot_source = UNIFORM_OMEGA_ROT_SOURCE
+    case default
+       $ABORT(Invalid Omega_rot_source)
+    end select
 
-    select case (os_p%deps_scheme)
+    select case (os_p%deps_source)
+    case ('MODEL')
+       cx%deps_source = MODEL_DEPS_SOURCE
     case ('FILE')
-       call read_deps_(ml, md_p, os_p, cx%pt_i, cx%pt_o, cx%in_eps_rho, cx%in_eps_T)
+       call read_deps_(ml, os_p, cx%in_eps_rho, cx%in_eps_T)
+       cx%deps_source = FILE_DEPS_SOURCE
+    case ('UNIFORM')
+       cx%eps_T_ = os_p%eps_T
+       cx%eps_rho_ = os_p%eps_rho
+       cx%deps_source = UNIFORM_DEPS_SOURCE
+    case default
+       $ABORT(Invalid deps_source)
     end select
 
     ! Finish
@@ -312,13 +347,223 @@ contains
   
   !****
 
-  subroutine read_deps_ (ml, md_p, os_p, pt_i, pt_o, in_eps_rho, in_eps_T)
+  function Omega_rot (this, pt)
+
+    class(context_t), intent(in) :: this
+    type(point_t), intent(in)    :: pt
+    real(WP)                     :: Omega_rot
+
+    ! Evaluate Omega_rot
+
+    select case (this%Omega_rot_source)
+
+    case (MODEL_OMEGA_ROT_SOURCE)
+
+       Omega_rot = this%ml%coeff(I_OMEGA_ROT, pt)
+
+    case (UNIFORM_OMEGA_ROT_SOURCE)
+
+       Omega_rot = this%Omega_rot_
+
+    case default
+
+       $ABORT(Invalid Omega_rot_source)
+
+    end select
+
+    ! Finish
+
+    return
+
+  end function Omega_rot
+
+  !****
+
+  subroutine eval_Omega_rot_ (ml, rt_p, Omega_rot)
+
+    use gyre_evol_model
+    use gyre_poly_model
+    use gyre_hom_model
+ 
+    class(model_t), pointer, intent(in) :: ml
+    type(rot_par_t), intent(in)         :: rt_p
+    real(WP), intent(out)               :: Omega_rot
+
+    ! Evaluate the uniform dimensionless rotation rate
+
+    select type (ml)
+
+    class is (evol_model_t)
+
+       select case (rt_p%Omega_rot_units)
+       case ('NONE')
+          Omega_rot = rt_p%Omega_rot
+       case ('HZ')
+          Omega_rot = TWOPI*rt_p%Omega_rot*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       case ('UHZ')
+          Omega_rot = TWOPI*rt_p%Omega_rot*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/1E6
+       case ('RAD_PER_SEC')
+          Omega_rot = rt_p%Omega_rot*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       case ('CYC_PER_DAY')
+          Omega_rot = TWOPI*rt_p%Omega_rot*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/86400._WP
+       case ('CRITICAL')
+          Omega_rot = rt_p%Omega_rot*SQRT(8._WP/27._WP)
+       case default
+          $ABORT(Invalid Omega_units)
+       end select
+
+    class is (poly_model_t)
+
+       select case (rt_p%Omega_rot_units)
+       case ('NONE')
+          Omega_rot = rt_p%Omega_rot
+       case ('CRITICAL')
+          Omega_rot = rt_p%Omega_rot*SQRT(8._WP/27._WP)
+       case default
+          $ABORT(Invalid Omega_units)
+       end select
+
+    class is (hom_model_t)
+
+       select case (rt_p%Omega_rot_units)
+       case ('NONE')
+          Omega_rot = rt_p%Omega_rot
+       case ('CRITICAL')
+          Omega_rot = rt_p%Omega_rot*SQRT(8._WP/27._WP)
+       case default
+          $ABORT(Invalid Omega_units)
+       end select
+
+    class default
+
+       $ABORT(Invalid model class)
+
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine eval_Omega_rot_
+    
+  !****
+
+  $define $EPS_RHO $sub
+
+  $local $INFIX $1
+  $local $OMEGA $2
+
+  function eps_rho_${INFIX}_ (this, st, pt) result (eps_rho)
+
+    class(context_t), intent(in)        :: this
+    class(${INFIX}_state_t), intent(in) :: st
+    type(point_t), intent(in)           :: pt
+    complex(WP)                         :: eps_rho
+
+    real(WP) :: omega_min
+    real(WP) :: omega_max
+    real(WP) :: omega
+
+    ! Evaluate the eps_rho derivative
+
+    select case (this%deps_source)
+
+    case (MODEL_DEPS_SOURCE)
+
+       eps_rho = this%ml%coeff(I_EPS_RHO, pt)
+
+    case (FILE_DEPS_SOURCE)
+
+       omega_min = this%in_eps_rho%x_min()
+       omega_max = this%in_eps_rho%x_min()
+
+       omega = MIN(MAX($OMEGA, omega_min), omega_max)
+
+       eps_rho = this%in_eps_rho%f(omega)
+
+    case (UNIFORM_DEPS_SOURCE)
+
+       eps_rho = this%eps_rho_
+
+    case default
+
+       $ABORT(Invalid deps_source)
+
+    end select
+
+    ! Finish
+
+    return
+
+  end function eps_rho_${INFIX}_
+
+  $endsub
+
+  $EPS_RHO(r,st%omega)
+  $EPS_RHO(c,st%omega_r)
+
+  !****
+
+  $define $EPS_T $sub
+
+  $local $INFIX $1
+  $local $OMEGA $2
+
+  function eps_T_${INFIX}_ (this, st, pt) result (eps_T)
+
+    class(context_t), intent(in)        :: this
+    class(${INFIX}_state_t), intent(in) :: st
+    type(point_t), intent(in)           :: pt
+    complex(WP)                         :: eps_T
+
+    real(WP) :: omega_min
+    real(WP) :: omega_max
+    real(WP) :: omega
+
+    ! Evaluate the eps_T derivative
+
+    select case (this%deps_source)
+
+    case (MODEL_DEPS_SOURCE)
+
+       eps_T = this%ml%coeff(I_EPS_T, pt)
+
+    case (FILE_DEPS_SOURCE)
+
+       omega_min = this%in_eps_T%x_min()
+       omega_max = this%in_eps_T%x_min()
+
+       omega = MIN(MAX($OMEGA, omega_min), omega_max)
+
+       eps_T = this%in_eps_T%f(omega)
+
+    case (UNIFORM_DEPS_SOURCE)
+
+       eps_T = this%eps_T_
+
+    case default
+
+       $ABORT(Invalid deps_source)
+
+    end select
+
+    ! Finish
+
+    return
+
+  end function eps_T_${INFIX}_
+
+  $endsub
+
+  $EPS_T(r,st%omega)
+  $EPS_T(c,st%omega_r)
+
+  !****
+
+  subroutine read_deps_ (ml, os_p, in_eps_rho, in_eps_T)
     
     class(model_t), pointer, intent(in) :: ml
-    type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_o
     type(c_interp_t), intent(out)       :: in_eps_rho
     type(c_interp_t), intent(out)       :: in_eps_T
 
@@ -326,7 +571,7 @@ contains
 
     select case (os_p%deps_file_format)
     case ('WOLF')
-       call read_deps_wolf_(ml, md_p, os_p, pt_i, pt_o, in_eps_rho, in_eps_T)
+       call read_deps_wolf_(ml, os_p, in_eps_rho, in_eps_T)
     case default
        $ABORT(Invalid deps_file_format)
     end select
@@ -339,25 +584,24 @@ contains
 
   !****
 
-  subroutine read_deps_wolf_ (ml, md_p, os_p, pt_i, pt_o, in_eps_rho, in_eps_T)
+  subroutine read_deps_wolf_ (ml, os_p, in_eps_rho, in_eps_T)
+
+    use gyre_evol_model
 
     class(model_t), pointer, intent(in) :: ml
-    type(mode_par_t), intent(in)        :: md_p
     type(osc_par_t), intent(in)         :: os_p
-    type(point_t), intent(in)           :: pt_i
-    type(point_t), intent(in)           :: pt_o
     type(c_interp_t), intent(out)       :: in_eps_rho
     type(c_interp_t), intent(out)       :: in_eps_T
 
     integer                  :: unit
     integer                  :: n
-    real(WP), allocatable    :: omega(:)
+    real(WP), allocatable    :: period(:)
     real(WP), allocatable    :: A_norm(:)
     real(WP), allocatable    :: B_norm(:)
     real(WP), allocatable    :: A_phase(:)
     real(WP), allocatable    :: B_phase(:)
     integer                  :: i
-    real(WP)                 :: period
+    real(WP), allocatable    :: omega(:)
     complex(WP), allocatable :: eps_rho(:)
     complex(WP), allocatable :: eps_T(:)
     integer, allocatable     :: j(:)
@@ -388,7 +632,7 @@ contains
 
     ! Read data
 
-    allocate(omega(n))
+    allocate(period(n))
 
     allocate(A_norm(n))
     allocate(B_norm(n))
@@ -397,11 +641,19 @@ contains
     allocate(B_phase(n))
 
     read_loop : do i = 1, n
-       read(unit, *) period, A_norm(i), B_norm(i), A_phase(i), B_phase(i)
-       omega(i) = omega_from_freq(1._WP/period, ml, pt_i, pt_o, 'HZ', 'INERTIAL', md_p, os_p)
+       read(unit, *) period(i), A_norm(i), B_norm(i), A_phase(i), B_phase(i)
     end do read_loop
 
     close(unit)
+
+    ! Convert periods to dimensionless frequencies
+
+    select type (ml)
+    class is (evol_model_t)
+       omega = TWOPI/period*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+    class default
+       $ABORT(Invalid model type)
+    end select
 
     ! Reverse the phase sign because Wolf et al assume a time
     ! depenence of exp(i omega t), rather than GYRE's exp(-i omega t)
@@ -432,113 +684,5 @@ contains
     return
 
   end subroutine read_deps_wolf_
-
-  !****
-
-  function eps_rho_r_ (this, st) result (eps_rho)
-
-    class(context_t), intent(in) :: this
-    class(r_state_t), intent(in) :: st
-    complex(WP)                  :: eps_rho
-
-    real(WP) :: omega_min
-    real(WP) :: omega_max
-    real(WP) :: omega
-
-    ! Evaluate the eps_rho derivative (real)
-
-    omega_min = this%in_eps_rho%x_min()
-    omega_max = this%in_eps_rho%x_min()
-
-    omega = MIN(MAX(st%omega, omega_min), omega_max)
-
-    eps_rho = this%in_eps_rho%f(omega)
-
-    ! Finish
-
-    return
-
-  end function eps_rho_r_
-
-  !****
-
-  function eps_rho_c_ (this, st) result (eps_rho)
-
-    class(context_t), intent(in) :: this
-    class(c_state_t), intent(in) :: st
-    complex(WP)                  :: eps_rho
-
-    real(WP) :: omega_min
-    real(WP) :: omega_max
-    real(WP) :: omega
-
-    ! Evaluate the eps_rho derivative (complex)
-
-    omega_min = this%in_eps_rho%x_min()
-    omega_max = this%in_eps_rho%x_min()
-
-    omega = MIN(MAX(st%omega_r, omega_min), omega_max)
-
-    eps_rho = this%in_eps_rho%f(omega)
-
-    ! Finish
-
-    return
-
-  end function eps_rho_c_
-
-  !****
-
-  function eps_T_r_ (this, st) result (eps_T)
-
-    class(context_t), intent(in) :: this
-    class(r_state_t), intent(in) :: st
-    complex(WP)                  :: eps_T
-
-    real(WP) :: omega_min
-    real(WP) :: omega_max
-    real(WP) :: omega
-
-    ! Evaluate the eps_T derivative (real)
-
-    omega_min = this%in_eps_rho%x_min()
-    omega_max = this%in_eps_rho%x_min()
-
-    omega = MIN(MAX(st%omega, omega_min), omega_max)
-
-    eps_T = this%in_eps_T%f(omega)
-
-    ! Finish
-
-    return
-
-  end function eps_T_r_
-
-  !****
-
-  function eps_T_c_ (this, st) result (eps_T)
-
-    class(context_t), intent(in) :: this
-    class(c_state_t), intent(in) :: st
-    complex(WP)                  :: eps_T
-
-    real(WP) :: omega_min
-    real(WP) :: omega_max
-    real(WP) :: omega
-
-    ! Evaluate the eps_T derivative (real)
-
-    omega_min = this%in_eps_rho%x_min()
-    omega_max = this%in_eps_rho%x_min()
-
-    omega = MIN(MAX(st%omega_r, omega_min), omega_max)
-
-    eps_T = this%in_eps_T%f(omega)
-
-    ! Finish
-
-    return
-
-  end function eps_T_c_
 
 end module gyre_context

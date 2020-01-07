@@ -1,7 +1,7 @@
 ! Module   : gyre_tide_par
 ! Purpose  : tidal parameters
 !
-! Copyright 2018-2019 The GYRE Team
+! Copyright 2018-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -41,6 +41,7 @@ module gyre_tide_par
      integer  :: l_max = 4
      integer  :: k_max = 20
      logical  :: combine_k = .TRUE.
+     logical  :: sync_rot = .FALSE.
   end type tide_par_t
 
   ! Interfaces
@@ -90,10 +91,11 @@ contains
     integer  :: l_max
     integer  :: k_max
     logical  :: combine_k
+    logical  :: sync_rot
 
     namelist /tide/ q, e, t_0, omega_static, &
          l_ref, m_ref, l_max, k_max, &
-         combine_k
+         combine_k, sync_rot
 
     ! Count the number of tide namelists
 
@@ -131,6 +133,7 @@ contains
        k_max = td_p(i)%k_max
 
        combine_k = td_p(i)%combine_k
+       sync_rot = td_p(i)%sync_rot
 
        ! Read the namelist
 
@@ -149,6 +152,7 @@ contains
        td_p(i)%k_max = k_max
 
        td_p(i)%combine_k = combine_k
+       td_p(i)%sync_rot = sync_rot
 
     end do read_loop
 
@@ -180,6 +184,7 @@ contains
     call bcast(td_p%k_max, root_rank)
 
     call bcast(td_p%combine_k, root_rank)
+    call bcast(td_p%sync_rot, root_rank)
 
     ! Finish
 

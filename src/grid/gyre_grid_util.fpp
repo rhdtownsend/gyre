@@ -25,7 +25,6 @@ module gyre_grid_util
   use core_func
 
   use gyre_context
-  use gyre_freq
   use gyre_grid
   use gyre_model
   use gyre_point
@@ -187,7 +186,7 @@ contains
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
 
-         Omega_rot = ml%coeff(I_OMEGA_ROT, pt)
+         Omega_rot = cx%Omega_rot(pt)
 
          omega_c = cx%omega_c(Omega_rot, st)
 

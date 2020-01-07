@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=bcep spb spb-rossby rgb dcep solar
+SUBDIRS=bcep spb spb-rossby rgb dcep solar sss
 
 # Rules
 

@@ -1,7 +1,7 @@
 ! Program  : gyre_response
 ! Purpose  : tidal response code
 !
-! Copyright 2019 Rich Townsend & The GYRE Team
+! Copyright 2019-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -36,6 +36,7 @@ program gyre_response
   use gyre_model_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_rot_par
   use gyre_scan
   use gyre_scan_par
   use gyre_search
@@ -57,6 +58,7 @@ program gyre_response
   integer                        :: unit
   type(model_par_t)              :: ml_p
   type(osc_par_t), allocatable   :: os_p(:)
+  type(rot_par_t), allocatable   :: rt_p(:)
   type(num_par_t), allocatable   :: nm_p(:)
   type(grid_par_t), allocatable  :: gr_p(:)
   type(scan_par_t), allocatable  :: sc_p(:)
@@ -115,6 +117,7 @@ program gyre_response
 
   call read_model_par(unit, ml_p)
   call read_osc_par(unit, os_p)
+  call read_rot_par(unit, rt_p)
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
   call read_scan_par(unit, sc_p)
@@ -123,6 +126,7 @@ program gyre_response
   close(unit)
 
   $ASSERT(SIZE(os_p) == 1,Must be exactly one osc parameter)
+  $ASSERT(SIZE(rt_p) == 1,Must be exactly one rot parameter)
   $ASSERT(SIZE(nm_p) == 1,Must be exactly one num parameter)
   $ASSERT(SIZE(gr_p) == 1,Must be exactly one grid parameter)
   $ASSERT(SIZE(sc_p) >= 1,Must be at least one scan parameter)
@@ -143,7 +147,7 @@ program gyre_response
 
   ! Set up the context
 
-  cx = context_t(ml, gr_p(1), md_p, os_p(1))
+  cx = context_t(ml, gr_p(1), md_p, os_p(1), rt_p(1))
 
   ! Set up the frequency array
 
@@ -167,7 +171,7 @@ program gyre_response
 
      ! Add in contributions from each tidal component
 
-     call eval_tide(ml, process_wave, Omega_orb(i), os_p(1), nm_p(1), gr_p(1), td_p(1))
+     call eval_tide(ml, process_wave, Omega_orb(i), os_p(1), rt_p(1), nm_p(1), gr_p(1), td_p(1))
 
      ! Perform sanity checks
 
@@ -194,7 +198,6 @@ program gyre_response
      hg = hgroup_t(response_file, CREATE_FILE)
 
      call write_attr(hg, 'Omega_orb', Omega_orb(i))
-     call write_attr(hg, 'Omega_rot', ml_p%Omega_rot)
 
      call write_attr(hg, 'l_max', td_p(1)%l_max)
      call write_attr(hg, 'k_max', td_p(1)%k_max)

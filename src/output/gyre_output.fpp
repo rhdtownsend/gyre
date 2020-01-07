@@ -592,7 +592,7 @@ contains
       $OUTPUT_POINTS(r,eps_T,ml,coeff(I_EPS_T, gr%pt(k)))
       $OUTPUT_POINTS(r,kap_rho,ml,coeff(I_KAP_RHO, gr%pt(k)))
       $OUTPUT_POINTS(r,kap_T,ml,coeff(I_KAP_T, gr%pt(k)))
-      $OUTPUT_POINTS(r,Omega_rot,ml,coeff(I_OMEGA_ROT, gr%pt(k)))
+      $OUTPUT_POINTS(r,Omega_rot,cx,Omega_rot(gr%pt(k)))
 
       $OUTPUT_POINTS(c,y_1,wv,y_i(1, k))
       $OUTPUT_POINTS(c,y_2,wv,y_i(2, k))

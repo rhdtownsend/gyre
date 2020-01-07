@@ -1,7 +1,7 @@
 ! Program  : gyre
 ! Purpose  : oscillation code
 !
-! Copyright 2013-2019 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -44,6 +44,7 @@ program gyre
   use gyre_out_par
   use gyre_output
   use gyre_rad_bvp
+  use gyre_rot_par
   use gyre_scan
   use gyre_scan_par
   use gyre_search
@@ -63,6 +64,7 @@ program gyre
   type(model_par_t)                    :: ml_p
   type(mode_par_t), allocatable        :: md_p(:)
   type(osc_par_t), allocatable         :: os_p(:)
+  type(rot_par_t), allocatable         :: rt_p(:)
   type(num_par_t), allocatable         :: nm_p(:)
   type(grid_par_t), allocatable        :: gr_p(:)
   type(scan_par_t), allocatable        :: sc_p(:)
@@ -71,6 +73,7 @@ program gyre
   class(model_t), pointer              :: ml => null()
   integer                              :: i
   type(osc_par_t)                      :: os_p_sel
+  type(rot_par_t)                      :: rt_p_sel
   type(num_par_t)                      :: nm_p_sel
   type(grid_par_t)                     :: gr_p_sel
   type(scan_par_t), allocatable        :: sc_p_sel(:)
@@ -131,6 +134,7 @@ program gyre
   call read_model_par(unit, ml_p)
   call read_mode_par(unit, md_p)
   call read_osc_par(unit, os_p)
+  call read_rot_par(unit, rt_p)
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
   call read_scan_par(unit, sc_p)
@@ -180,13 +184,14 @@ program gyre
      ! Select parameters according to tags
 
      call select_par(os_p, md_p(i)%tag, os_p_sel)
+     call select_par(rt_p, md_p(i)%tag, rt_p_sel)
      call select_par(nm_p, md_p(i)%tag, nm_p_sel)
      call select_par(gr_p, md_p(i)%tag, gr_p_sel)
      call select_par(sc_p, md_p(i)%tag, sc_p_sel)
 
      ! Set up the context
 
-     cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel)
+     cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
 
      ! Set up the frequency array
 
@@ -216,7 +221,7 @@ program gyre
         omega_max = HUGE(0._WP)
      endif
 
-     call check_scan(ml, gr, omega, md_p(i), os_p_sel)
+     call check_scan(cx(i), gr, omega, md_p(i), os_p_sel)
 
      ! Find adiabatic modes
 

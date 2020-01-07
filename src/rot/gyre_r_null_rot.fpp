@@ -1,7 +1,7 @@
-! Module   : gyre_dopp_rot
-! Purpose  : rotational effects (Doppler shift)
+! Incfile  : gyre_r_null_rot
+! Purpose  : rotational effects (null coriolis, real)
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,11 +15,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_dopp_rot
+$include 'gyre_null_rot.inc'
 
-  ! Uses
-
-  use gyre_r_dopp_rot
-  use gyre_c_dopp_rot
-
-end module gyre_dopp_rot
+$MOD_DECL(r,real)

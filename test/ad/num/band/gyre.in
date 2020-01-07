@@ -27,6 +27,9 @@
 &osc
 /
 
+&rot
+/
+
 &num
 	diff_scheme = 'COLLOC_GL6'
 	matrix_type = 'BAND'

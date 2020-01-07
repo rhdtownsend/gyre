@@ -1,7 +1,7 @@
 ! Module   : gyre_ad_trans
 ! Purpose  : adiabatic variables/equations transformations
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -51,19 +51,19 @@ module gyre_ad_trans
   integer, parameter :: J_DU = 4
   integer, parameter :: J_C_1 = 5
   integer, parameter :: J_DC_1 = 6
-  integer, parameter :: J_OMEGA_ROT = 7
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT
+  integer, parameter :: J_LAST = J_DC_1
 
   ! Derived-type definitions
 
   type :: ad_trans_t
      private
-     type(context_t), pointer :: cx => null()
-     real(WP), allocatable    :: coeff(:,:)
-     integer                  :: set
-     integer                  :: l
-     integer                  :: n_e
+     type(context_t), pointer   :: cx => null()
+     type(point_t), allocatable :: pt(:)
+     real(WP), allocatable      :: coeff(:,:)
+     integer                    :: set
+     integer                    :: l
+     integer                    :: n_e
    contains
      private
      procedure, public :: stencil
@@ -153,7 +153,7 @@ contains
 
     ml => this%cx%model()
 
-    call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
+    call check_model(ml, [I_V_2,I_U,I_C_1])
 
     n_s = SIZE(pt)
 
@@ -173,8 +173,11 @@ contains
        this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
        this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
        this%coeff(i,J_DC_1) = ml%dcoeff(I_C_1, pt(i))
-       this%coeff(i,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt(i))
     end do
+
+    ! Store the stencil points for on-the-fly evaluations
+
+    this%pt = pt
 
     ! Finish
 
@@ -413,6 +416,7 @@ contains
     class(r_state_t), intent(in)  :: st
     real(WP)                      :: G(this%n_e,this%n_e)
 
+    real(WP) :: Omega_rot
     real(WP) :: omega_c
     real(WP) :: lambda
 
@@ -422,7 +426,9 @@ contains
     associate( &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT))
+         pt => this%pt(i))
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -654,8 +660,9 @@ contains
     class(r_state_t), intent(in)  :: st
     real(WP)                      :: H(this%n_e,this%n_e)
 
-    real(WP) :: lambda
+    real(WP) :: Omega_rot
     real(WP) :: omega_c
+    real(WP) :: lambda
 
     ! Evaluate the transformation matrix to convert JCD variables
     ! to GYRE's canonical form
@@ -663,7 +670,9 @@ contains
     associate( &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT))
+         pt => this%pt(i))
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -856,6 +865,7 @@ contains
     class(r_state_t), intent(in)  :: st
     real(WP)                      :: dH(this%n_e,this%n_e)
 
+    real(WP) :: Omega_rot
     real(WP) :: omega_c
     real(WP) :: lambda
 
@@ -867,7 +877,9 @@ contains
         dU => this%coeff(i,J_DU), &
         c_1 => this%coeff(i,J_C_1), &
         dc_1 => this%coeff(i,J_DC_1), &
-        Omega_rot => this%coeff(i,J_OMEGA_ROT))
+        pt => this%pt(i))
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 

@@ -1,7 +1,7 @@
 ! Incfile  : gyre_ad_bound
 ! Purpose  : adiabatic boundary conditions
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -56,15 +56,15 @@ module gyre_ad_bound
   integer, parameter :: J_AS = 3
   integer, parameter :: J_U = 4
   integer, parameter :: J_C_1 = 5
-  integer, parameter :: J_OMEGA_ROT = 6
 
-  integer, parameter :: J_LAST = J_OMEGA_ROT
+  integer, parameter :: J_LAST = J_C_1
 
   ! Derived-type definitions
 
   type, extends (r_bound_t) :: ad_bound_t
      private
      type(context_t), pointer :: cx => null()
+     type(point_t)            :: pt(2)
      type(ad_trans_t)         :: tr
      real(WP), allocatable    :: coeff(:,:)
      real(WP)                 :: alpha_gr
@@ -210,7 +210,7 @@ contains
 
     ml => this%cx%model()
 
-    call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
+    call check_model(ml, [I_V_2,I_U,I_C_1])
 
     allocate(this%coeff(2,J_LAST))
 
@@ -224,8 +224,6 @@ contains
     case default
        $ABORT(Invalid type_i)
     end select
-
-    this%coeff(1,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt_i)
 
     ! Outer boundary
 
@@ -248,11 +246,13 @@ contains
        $ABORT(Invalid type_o)
     end select
 
-    this%coeff(2,J_OMEGA_ROT) = ml%coeff(I_OMEGA_ROT, pt_o)
-
     ! Set up stencil for the tr component
 
     call this%tr%stencil([pt_i,pt_o])
+
+    ! Store the stencil points for on-the-fly evaluations
+
+    this%pt = [pt_i,pt_o]
 
     ! Finish
 
@@ -300,7 +300,8 @@ contains
     class(r_state_t), intent(in)  :: st
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
- 
+
+    real(WP) :: Omega_rot
     real(WP) :: omega_c
     real(WP) :: l_i
 
@@ -313,9 +314,11 @@ contains
 
     associate( &
          c_1 => this%coeff(1,J_C_1), &
-         Omega_rot => this%coeff(1,J_OMEGA_ROT), &
+         pt => this%pt(1), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -472,6 +475,7 @@ contains
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
+    real(WP) :: Omega_rot
     real(WP) :: l_e
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
@@ -483,8 +487,10 @@ contains
 
     associate( &
          U => this%coeff(2,J_U), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
+         pt => this%pt(2), &
          alpha_gr => this%alpha_gr)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       l_e = this%cx%l_e(Omega_rot, st)
 
@@ -519,6 +525,7 @@ contains
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
+    real(WP) :: Omega_rot
     real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: l_e
@@ -533,9 +540,11 @@ contains
     associate( &
          V => this%coeff(2,J_V), &
          c_1 => this%coeff(2,J_C_1), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
+         pt => this%pt(2), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -573,6 +582,7 @@ contains
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
+    real(WP) :: Omega_rot
     real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: l_e
@@ -598,9 +608,11 @@ contains
          As => this%coeff(2,J_AS), &
          U => this%coeff(2,J_U), &
          c_1 => this%coeff(2,J_C_1), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
+         pt => this%pt(2), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -651,6 +663,7 @@ contains
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
+    real(WP) :: Omega_rot
     real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: l_e
@@ -670,9 +683,11 @@ contains
          As => this%coeff(2,J_AS), &
          U => this%coeff(2,J_U), &
          c_1 => this%coeff(2,J_C_1), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
+         pt => this%pt(2), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -715,6 +730,7 @@ contains
     real(WP), intent(out)         :: B(:,:)
     real(WP), intent(out)         :: scl(:)
 
+    real(WP) :: Omega_rot
     real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: l_e
@@ -734,9 +750,11 @@ contains
          As => this%coeff(2,J_AS), &
          U => this%coeff(2,J_U), &
          c_1 => this%coeff(2,J_C_1), &
-         Omega_rot => this%coeff(2,J_OMEGA_ROT), &
+         pt => this%pt(2), &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
 

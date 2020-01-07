@@ -1,6 +1,8 @@
 # .gitignore file for GYRE
 
 *~
+*.o
+*.mod
 
 bin/*
 src/build/*
@@ -15,4 +17,3 @@ work/*
 .DS_Store
 
 regress
-

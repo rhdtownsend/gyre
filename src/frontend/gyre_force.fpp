@@ -1,7 +1,7 @@
 ! Program  : gyre_force
 ! Purpose  : forced oscillation code
 !
-! Copyright 2016-2019 Rich Townsend & The GYRE Team
+! Copyright 2016-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -44,6 +44,7 @@ program gyre_force
   use gyre_osc_par
   use gyre_out_par
   use gyre_output
+  use gyre_rot_par
   use gyre_sad_bvp
   use gyre_scan
   use gyre_scan_par
@@ -66,6 +67,7 @@ program gyre_force
   type(model_par_t)              :: ml_p
   type(mode_par_t), allocatable  :: md_p(:)
   type(osc_par_t), allocatable   :: os_p(:)
+  type(rot_par_t), allocatable   :: rt_p(:)
   type(num_par_t), allocatable   :: nm_p(:)
   type(grid_par_t), allocatable  :: gr_p(:)
   type(scan_par_t), allocatable  :: sc_p(:)
@@ -75,6 +77,7 @@ program gyre_force
   class(model_t), pointer        :: ml => null()
   integer                        :: i
   type(osc_par_t)                :: os_p_sel
+  type(rot_par_t)                :: rt_p_sel
   type(num_par_t)                :: nm_p_sel
   type(grid_par_t)               :: gr_p_sel
   type(scan_par_t), allocatable  :: sc_p_sel(:)
@@ -128,6 +131,7 @@ program gyre_force
   call read_model_par(unit, ml_p)
   call read_mode_par(unit, md_p)
   call read_osc_par(unit, os_p)
+  call read_rot_par(unit, rt_p)
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
   call read_scan_par(unit, sc_p)
@@ -178,6 +182,7 @@ program gyre_force
      ! Select parameters according to tags
 
      call select_par(os_p, md_p(i)%tag, os_p_sel)
+     call select_par(rt_p, md_p(i)%tag, rt_p_sel)
      call select_par(nm_p, md_p(i)%tag, nm_p_sel)
      call select_par(gr_p, md_p(i)%tag, gr_p_sel)
      call select_par(sc_p, md_p(i)%tag, sc_p_sel)
@@ -185,7 +190,7 @@ program gyre_force
 
      ! Set up the context
 
-     cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel)
+     cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
 
      ! Set up the frequency array
      
@@ -430,7 +435,7 @@ contains
 
        Omega_orb = omega/fr_p_sel%k
 
-       P = 1._WP/freq_from_omega(Omega_orb, ml, gr%pt_i(), gr%pt_o(), 'HZ', 'INERTIAL', md_p(i), os_p_sel)
+       P = 1._WP/freq_from_omega(Omega_orb, cx(i), 'HZ', 'INERTIAL', md_p(i), os_p_sel)
 
        a = (G_GRAVITY*(M_pri + M_sec)*P**2/(4.*PI**2))**(1._WP/3._WP)
 

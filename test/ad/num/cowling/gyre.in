@@ -16,6 +16,9 @@
 	cowling_approx = .TRUE.
 /
 
+&rot
+/
+
 &num
 	diff_scheme = 'COLLOC_GL6'
 /

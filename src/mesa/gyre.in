@@ -23,6 +23,9 @@
 	nonadiabatic = .TRUE.
 /
 
+&rot
+/
+
 &num
 	diff_scheme = 'MAGNUS_GL2'
 /

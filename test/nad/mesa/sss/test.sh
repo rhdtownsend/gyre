@@ -12,10 +12,10 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.txt
 
-LABEL="numerics (rotation, traditional approximation)"
+LABEL="MESA model for super-soft source (non-adiabatic)"
 
-RELERR=3E-13
-FIELDS=1-6
+RELERR=1E-13
+FIELDS=1-5
 
 # Do the tests
 
@@ -24,7 +24,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output $RELERR $FIELDS $OUT_FILE
+check_output $RELERR $FIELDS $OUT_FILE 
 if [ $? -ne 0 ]; then
     exit 1;
 fi
