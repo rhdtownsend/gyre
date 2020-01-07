@@ -36,6 +36,7 @@ module gyre_tide_par
      real(WP) :: e = 0.5_WP
      real(WP) :: t_0 = 0._WP
      real(WP) :: omega_static = 0._WP
+     real(WP) :: sync_fraction = 0._WP
      integer  :: l_ref = 0
      integer  :: m_ref = 0
      integer  :: l_max = 4
@@ -86,6 +87,7 @@ contains
     real(WP) :: e
     real(WP) :: t_0
     real(WP) :: omega_static
+    real(WP) :: sync_fraction
     integer  :: l_ref
     integer  :: m_ref
     integer  :: l_max
@@ -93,7 +95,7 @@ contains
     logical  :: combine_k
     logical  :: sync_rot
 
-    namelist /tide/ q, e, t_0, omega_static, &
+    namelist /tide/ q, e, t_0, omega_static, sync_fraction, &
          l_ref, m_ref, l_max, k_max, &
          combine_k, sync_rot
 
@@ -126,6 +128,7 @@ contains
        e = td_p(i)%e
        t_0 = td_p(i)%t_0
        omega_static = td_p(i)%omega_static
+       sync_fraction = td_p(i)%sync_fraction
 
        l_ref = td_p(i)%l_ref
        m_ref = td_p(i)%m_ref
@@ -145,6 +148,7 @@ contains
        td_p(i)%e = e
        td_p(i)%t_0 = t_0
        td_p(i)%omega_static = omega_static
+       td_p(i)%sync_fraction = sync_fraction
 
        td_p(i)%l_ref = l_ref
        td_p(i)%m_ref = m_ref
@@ -177,6 +181,7 @@ contains
     call bcast(td_p%e, root_rank)
     call bcast(td_p%t_0, root_rank)
     call bcast(td_p%Omega_static, root_rank)
+    call bcast(td_p%sync_fraction, root_rank)
 
     call bcast(td_p%l_ref, root_rank)
     call bcast(td_p%m_ref, root_rank)

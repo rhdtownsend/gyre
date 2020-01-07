@@ -87,6 +87,8 @@ contains
     type(grid_t)                   :: ml_gr
     real(WP)                       :: R_a
     real(WP)                       :: eps_tide
+    type(rot_par_t)                :: rt_p_
+    real(WP)                       :: Omega_sync
     integer                        :: k_min
     integer                        :: k_max
     real(WP), allocatable          :: omega(:)
@@ -129,6 +131,20 @@ contains
 
     eps_tide = (R_a)**3*td_p%q
 
+    ! If necessary, set up the synchronous rotation rate
+
+    rt_p_ = rt_p
+
+    if (td_p%sync_rot) then
+
+       Omega_sync = Omega_orb*SQRT((1 + td_p%e)/(1 - td_p%e)**3)
+
+       rt_p_%Omega_rot_source = 'UNIFORM'
+       rt_p_%Omega_rot = td_p%sync_fraction*Omega_sync
+       rt_p_%Omega_rot_units = 'NONE'
+
+    endif
+
     ! Set up the inertial-frame forcing frequencies array
 
     k_max = td_p%k_max
@@ -165,7 +181,7 @@ contains
 
           ! Set up the context_t
 
-          cx(l,m) = context_t(ml, gr_p, md_p(l,m), os_p, rt_p)
+          cx(l,m) = context_t(ml, gr_p, md_p(l,m), os_p, rt_p_)
 
           ! Classify the tide for eack k
 

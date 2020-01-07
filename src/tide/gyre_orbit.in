@@ -13,10 +13,15 @@
 	omega_static = 0.
 	k_max = 5
 	l_max = 4
+	sync_rot = .true.
+	sync_fraction = 0.5
 /
 
 &osc
 	nonadiabatic = .TRUE.
+/
+
+&rot
 /
 
 &num
