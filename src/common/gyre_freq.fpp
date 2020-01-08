@@ -34,8 +34,6 @@ module gyre_freq
   use gyre_osc_par
   use gyre_point
   use gyre_poly_model
-  use gyre_twopt_model
-  use gyre_twopt_quintic_model
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -178,24 +176,6 @@ contains
           omega_l = -freq*2._WP*md_p%m*cx%Omega_rot(pt_o)/(md_p%l*(md_p%l+1))
        case default
           $ABORT(Invalid freq_units)
-       end select
-
-    class is (twopt_model_t)
-       
-       select case (freq_units)
-       case ('NONE')
-          omega_l = freq
-       case default
-          $ABORT(Invalid freq_units)
-       end select
-
-    class is (twopt_quintic_model_t)
-       
-       select case (freq_units)
-       case('NONE')
-           omega_l = freq
-       case default
-           $ABORT(Invalid freq_units)
        end select
 
     class default
@@ -357,24 +337,6 @@ contains
           omega_l = -omega_l/(2._WP*md_p%m*cx%Omega_rot(pt_o)/(md_p%l*(md_p%l+1)))
        case default
           $ABORT(Invalid freq_units)
-       end select
-
-    class is (twopt_model_t)
-
-       select case (freq_units)
-       case ('NONE')
-          freq = omega_l
-       case default
-          $ABORT(Invalid freq_units)
-       end select
-
-    class is (twopt_quintic_model_t)
-       
-       select case (freq_units)
-       case('NONE')
-           freq = omega_l
-       case default
-           $ABORT(Invalid freq_units)
        end select
 
     class default
