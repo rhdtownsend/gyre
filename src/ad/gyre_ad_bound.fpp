@@ -49,7 +49,6 @@ module gyre_ad_bound
   integer, parameter :: DZIEM_TYPE = 5
   integer, parameter :: UNNO_TYPE = 6
   integer, parameter :: JCD_TYPE = 7
-  integer, parameter :: LUAN_TYPE = 8
 
   integer, parameter :: J_V = 1
   integer, parameter :: J_V_G = 2
@@ -83,7 +82,6 @@ module gyre_ad_bound
      procedure         :: build_dziem_o_
      procedure         :: build_unno_o_
      procedure         :: build_jcd_o_
-     procedure         :: build_luan_o_
   end type ad_bound_t
 
   ! Interfaces
@@ -158,12 +156,6 @@ contains
        else
           bd%type_o = JCD_TYPE
        end if
-    case ('LUAN')
-       if (ml%is_vacuum(pt_o)) then
-          bd%type_o = VACUUM_TYPE
-       else
-          bd%type_o = LUAN_TYPE
-       endif
     case default
        $ABORT(Invalid outer_bound)
     end select
@@ -238,9 +230,6 @@ contains
             this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
     case (JCD_TYPE)
        call eval_atmos_coeffs_jcd(ml, pt_o, this%coeff(2,J_V_G), &
-            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
-    case (LUAN_TYPE)
-       call eval_atmos_coeffs_luan(ml, pt_o, this%coeff(2,J_V_G), &
             this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
     case default
        $ABORT(Invalid type_o)
@@ -450,8 +439,6 @@ contains
        call this%build_unno_o_(st, B, scl)
     case (JCD_TYPE)
        call this%build_jcd_o_(st, B, scl)
-    case (LUAN_TYPE)
-       call this%build_luan_o_(st, B, scl)
     case default
        $ABORT(Invalid type_o)
     end select
@@ -720,72 +707,5 @@ contains
     return
 
   end subroutine build_jcd_o_
-
-  !****
-
-  subroutine build_luan_o_ (this, st, B, scl)
-
-    class(ad_bound_t), intent(in) :: this
-    class(r_state_t), intent(in)  :: st
-    real(WP), intent(out)         :: B(:,:)
-    real(WP), intent(out)         :: scl(:)
-
-    real(WP) :: Omega_rot
-    real(WP) :: omega_c
-    real(WP) :: lambda
-    real(WP) :: l_e
-    real(WP) :: beta
-    real(WP) :: b_11
-    real(WP) :: b_12
-
-    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
-    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
-
-    $CHECK_BOUNDS(SIZE(scl),this%n_o)
-
-    ! Evaluate the outer boundary conditions (Luan formulation)
-
-    associate( &
-         V_g => this%coeff(2,J_V_G), &
-         As => this%coeff(2,J_AS), &
-         U => this%coeff(2,J_U), &
-         c_1 => this%coeff(2,J_C_1), &
-         pt => this%pt(2), &
-         alpha_gr => this%alpha_gr, &
-         alpha_om => this%alpha_om)
-
-      Omega_rot = this%cx%Omega_rot(pt)
-
-      omega_c = this%cx%omega_c(Omega_rot, st)
-
-      lambda = this%cx%lambda(Omega_rot, st)
-      l_e = this%cx%l_e(Omega_rot, st)
-
-      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda)
-
-      b_11 = V_g - 3._WP
-      b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
-
-      ! Set up the boundary conditions
-
-      B(1,1) = beta - b_11
-      B(1,2) = -b_12
-      B(1,3) = 0._WP
-      B(1,4) = 0._WP
-
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B(2,4) = alpha_gr*(1._WP)
-
-      scl = 1._WP
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end subroutine build_luan_o_
 
 end module gyre_ad_bound

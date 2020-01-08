@@ -405,11 +405,6 @@ contains
        call eval_atmos_coeffs_jcd(ml, pt, V_g, As, U, c_1)
        call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
-    case('LUAN')
-
-       call eval_atmos_coeffs_luan(ml, pt, V_g, As, U, c_1)
-       call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
-
     case default
 
        $ABORT(Invalid outer_bound)

@@ -1,7 +1,7 @@
 ! Module   : gyre_atmos
 ! Purpose  : atmosphere utility routines
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -47,7 +47,6 @@ module gyre_atmos
   public :: eval_atmos_cutoff_freqs
   public :: eval_atmos_coeffs_unno
   public :: eval_atmos_coeffs_jcd
-  public :: eval_atmos_coeffs_luan
 
   ! Procedures
 
@@ -276,28 +275,4 @@ contains
 
   end subroutine eval_atmos_coeffs_jcd
 
-  !****
-  
-  subroutine eval_atmos_coeffs_luan (ml, pt, V_g, As, U, c_1)
-
-    class(model_t), intent(in) :: ml
-    type(point_t), intent(in)  :: pt
-    real(WP), intent(out)      :: V_g
-    real(WP), intent(out)      :: As
-    real(WP), intent(out)      :: U
-    real(WP), intent(out)      :: c_1
-
-    ! Evaluate atmosphere coefficients (Luan formulation)
-
-    V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
-    As = 0._WP
-    U = ml%coeff(I_U, pt)
-    c_1 = ml%coeff(I_C_1, pt)
-
-    ! Finish
-
-    return
-
-  end subroutine eval_atmos_coeffs_luan
-
-end module gyre_atmos
+ end module gyre_atmos
