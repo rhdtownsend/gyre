@@ -140,6 +140,10 @@ contains
 
     call this%tr%stencil(pt)
 
+    ! Store the stencil points for on-the-fly evaluations
+
+    this%pt = pt
+
     ! Finish
 
     return
