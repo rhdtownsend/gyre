@@ -29,6 +29,7 @@ program gyre
   use gyre_bvp
   use gyre_constants
   use gyre_context
+  use gyre_details
   use gyre_ext
   use gyre_grid
   use gyre_grid_factory
@@ -42,12 +43,12 @@ program gyre
   use gyre_num_par
   use gyre_osc_par
   use gyre_out_par
-  use gyre_output
   use gyre_rad_bvp
   use gyre_rot_par
   use gyre_scan
   use gyre_scan_par
   use gyre_search
+  use gyre_summary
   use gyre_util
   use gyre_version
 
@@ -77,7 +78,11 @@ program gyre
   type(num_par_t)                      :: nm_p_sel
   type(grid_par_t)                     :: gr_p_sel
   type(scan_par_t), allocatable        :: sc_p_sel(:)
-  type(context_t), pointer             :: cx(:) => null()
+  type(context_t), pointer             :: cx => null()
+  type(summary_t)                      :: sm_ad
+  type(summary_t)                      :: sm_nad
+  type(details_t)                      :: dt_ad
+  type(details_t)                      :: dt_nad
   real(WP), allocatable                :: omega(:)
   real(WP)                             :: omega_min
   real(WP)                             :: omega_max
@@ -87,11 +92,8 @@ program gyre
   integer                              :: n_md_ad
   integer                              :: d_md_ad
   type(mode_t), allocatable            :: md_ad(:)
-  integer                              :: n_md_nad
-  integer                              :: d_md_nad
   integer                              :: i_ad_a
   integer                              :: i_ad_b
-  type(mode_t), allocatable            :: md_nad(:)
 
   ! Read command-line arguments
 
@@ -149,21 +151,19 @@ program gyre
 
   ml => model_t(ml_p)
 
-  ! Allocate the contexts array (will be initialized later on)
+  ! Allocate the context (will be initialized later on)
 
-  allocate(cx(SIZE(md_p)))
+  allocate(cx)
+
+  ! Initialize the summary and details outputters
+
+  sm_ad = summary_t(ot_p_ad)
+  sm_nad = summary_t(ot_p_nad)
+
+  dt_ad = details_t(ot_p_ad)
+  dt_nad = details_t(ot_p_nad)
 
   ! Loop through md_p
-
-  d_md_ad = 128
-  n_md_ad = 0
-
-  allocate(md_ad(d_md_ad))
-
-  d_md_nad = 128
-  n_md_nad = 0
-
-  allocate(md_nad(d_md_nad))
 
   md_p_loop : do i = 1, SIZE(md_p)
 
@@ -191,11 +191,11 @@ program gyre
 
      ! Set up the context
 
-     cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
+     cx = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
 
      ! Set up the frequency array
 
-     call build_scan(cx(i), md_p(i), os_p_sel, sc_p_sel, omega)
+     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega)
 
      if (SIZE(omega) < 2) then
 
@@ -209,7 +209,7 @@ program gyre
 
      ! Create the grid
 
-     gr = grid_t(cx(i), omega, gr_p_sel)
+     gr = grid_t(cx, omega, gr_p_sel)
 
      ! Set frequency bounds and perform checks
 
@@ -221,24 +221,29 @@ program gyre
         omega_max = HUGE(0._WP)
      endif
 
-     call check_scan(cx(i), gr, omega, md_p(i), os_p_sel)
+     call check_scan(cx, gr, omega, md_p(i), os_p_sel)
 
      ! Find adiabatic modes
 
      if (os_p_sel%adiabatic) then
         
-        if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-           allocate(bp_ad, SOURCE=rad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
-        else
-           allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
-        endif
+        d_md_ad = 128
+        n_md_ad = 0
 
-        i_ad_a = n_md_ad + 1
+        allocate(md_ad(d_md_ad))
+
+        if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
+           allocate(bp_ad, SOURCE=rad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+        else
+           allocate(bp_ad, SOURCE=ad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+        endif
 
         if (check_log_level('INFO')) then
            write(OUTPUT_UNIT, 100) 'Starting search (adiabatic)'
            write(OUTPUT_UNIT, *)
         endif
+
+        i_ad_a = 1
 
         select case (md_p(i)%ad_search)
         case ('SCAN')
@@ -255,7 +260,7 @@ program gyre
 
      if (os_p_sel%nonadiabatic) then
 
-        allocate(bp_nad, SOURCE=nad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+        allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
 
         i_ad_b = n_md_ad
 
@@ -278,17 +283,18 @@ program gyre
 
      endif
 
+     ! Deallocate adiabatic modes
+
+     if (ALLOCATED(md_ad)) deallocate(md_ad)
+
   end do md_p_loop
 
-  ! Write summary files
+  ! Write and close the summaries
 
-  call write_summary(md_ad(:n_md_ad), ot_p_ad)
-  call write_summary(md_nad(:n_md_nad), ot_p_nad)
+  call sm_ad%write()
+  call sm_nad%write()
 
   ! Clean up
-
-  deallocate(md_ad)
-  deallocate(md_nad)
 
   deallocate(cx)
 
@@ -329,15 +335,12 @@ contains
 
     md_ad(n_md_ad) = md
 
-    ! Write it
+    ! Output it
 
-    call write_details(md_ad(n_md_ad), ot_p_ad)
+    call sm_ad%cache(md)
+    call dt_ad%write(md)
 
-    ! If necessary, prune it
-
-    if (ot_p_ad%prune_details) call md_ad(n_md_ad)%prune()
-
-    ! Finish
+   ! Finish
 
     return
 
@@ -359,24 +362,10 @@ contains
 100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
     endif
 
-    ! Store it
+    ! Output it
 
-    n_md_nad = n_md_nad + 1
-
-    if (n_md_nad > d_md_nad) then
-       d_md_nad = 2*d_md_nad
-       call reallocate(md_nad, [d_md_nad])
-    endif
-
-    md_nad(n_md_nad) = md
-
-    ! Write it
-
-    call write_details(md_nad(n_md_nad), ot_p_nad)
-
-    ! If necessary, prune it
-
-    if (ot_p_nad%prune_details) call md_nad(n_md_nad)%prune()
+    call sm_nad%cache(md)
+    call dt_nad%write(md)
 
     ! Finish
 

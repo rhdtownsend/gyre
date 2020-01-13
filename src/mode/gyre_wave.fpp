@@ -67,13 +67,11 @@ module gyre_wave
      integer, public           :: l
      integer, public           :: m
      integer, public           :: j
-     logical                   :: pruned
    contains
      private
      procedure, public :: state
      procedure, public :: context
      procedure, public :: grid
-     procedure, public :: prune
      procedure, public :: freq
      procedure, public :: dfreq_rot
      procedure, public :: y_i
@@ -197,8 +195,6 @@ contains
     wv%m = md_p%m
     wv%j = j
 
-    wv%pruned = .FALSE.
-
     ! Locate the reference point
 
     wv%pt_i = gr%pt_i()
@@ -273,29 +269,6 @@ contains
     return
 
   end function grid
-
-  !****
-
-  subroutine prune (this)
-
-    class(wave_t), intent(inout) :: this
-
-    ! Prune the wave_t
-
-    if (.NOT. this%pruned) then
-
-       deallocate(this%y_c)
-       deallocate(this%gr)
-
-       this%pruned = .TRUE.
-
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine prune
 
   !****
 
