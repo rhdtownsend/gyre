@@ -264,7 +264,92 @@ contains
 
   $WRITE(i,integer,I_FORMAT)
   $WRITE(r,real(WP),R_FORMAT)
-  $WRITE(a,character(*),A_FORMAT)
+
+  !****
+
+  subroutine write_a_0 (this, name, data)
+
+    class(txt_writer_t), intent(inout) :: this
+    character(*), intent(in)           :: name
+    character(*), intent(in)           :: data
+
+    integer :: d
+
+    ! If necessary, allocate/reallocate arrays
+
+    if(this%n_s == 0) then
+       allocate(this%s_data(16))
+       allocate(this%s_names(16))
+    endif
+
+    this%n_s = this%n_s + 1
+
+    d = SIZE(this%s_names)
+
+    if(this%n_s > d) then
+       call reallocate(this%s_names, [2*d])
+       call reallocate(this%s_data, [2*d])
+    endif
+
+    ! Store the data
+
+    this%s_names(this%n_s) = rjust(name, FIELD_LEN)
+
+    write(this%s_data(this%n_s), A_FORMAT) rjust(data, FIELD_LEN)
+
+    this%c = this%c + 1
+
+    ! Finish
+
+    return
+
+  end subroutine write_a_0
+
+  !****
+
+  subroutine write_a_1 (this, name, data)
+
+    class(txt_writer_t), intent(inout) :: this
+    character(*), intent(in)           :: name
+    character(*), intent(in)           :: data(:)
+
+    integer :: d
+    integer :: k
+
+    ! If necessary, allocate/reallocate arrays
+
+    if(this%n_v == 0) then
+       this%n = SIZE(data)
+       allocate(this%v_data(this%n,16))
+       allocate(this%v_names(16))
+    else
+
+    endif
+
+    this%n_v = this%n_v + 1
+
+    d = SIZE(this%v_names)
+
+    if(this%n_v > d) then
+       call reallocate(this%v_names, [2*d])
+       call reallocate(this%v_data, [this%n,2*d])
+    endif
+
+    ! Store the data
+
+    this%v_names(this%n_v) = rjust(name, FIELD_LEN)
+
+    do k = 1, this%n
+       write(this%v_data(k,this%n_v), A_FORMAT) rjust(data(k), FIELD_LEN)
+    end do
+
+    this%c = this%c + 1
+
+    ! Finish
+
+    return
+
+  end subroutine write_a_1
 
   !****
   
