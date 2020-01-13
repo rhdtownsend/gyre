@@ -22,6 +22,7 @@ program gyre
   ! Uses
 
   use core_kinds, only : WP
+  use core_memory
   use core_parallel
   use core_system
 
@@ -89,11 +90,10 @@ program gyre
   type(grid_t)                         :: gr
   class(r_bvp_t), allocatable          :: bp_ad
   class(c_bvp_t), allocatable          :: bp_nad
-  integer                              :: n_md_ad
-  integer                              :: d_md_ad
-  type(mode_t), allocatable            :: md_ad(:)
-  integer                              :: i_ad_a
-  integer                              :: i_ad_b
+  integer                              :: n_ad
+  integer                              :: d_ad
+  complex(WP), allocatable             :: omega_ad(:)
+  integer, allocatable                 :: j_ad(:)
 
   ! Read command-line arguments
 
@@ -227,10 +227,11 @@ program gyre
 
      if (os_p_sel%adiabatic) then
         
-        d_md_ad = 128
-        n_md_ad = 0
+        d_ad = 128
+        n_ad = 0
 
-        allocate(md_ad(d_md_ad))
+        allocate(omega_ad(d_ad))
+        allocate(j_ad(d_ad))
 
         if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
            allocate(bp_ad, SOURCE=rad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
@@ -242,8 +243,6 @@ program gyre
            write(OUTPUT_UNIT, 100) 'Starting search (adiabatic)'
            write(OUTPUT_UNIT, *)
         endif
-
-        i_ad_a = 1
 
         select case (md_p(i)%ad_search)
         case ('SCAN')
@@ -262,8 +261,6 @@ program gyre
 
         allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
 
-        i_ad_b = n_md_ad
-
         if (check_log_level('INFO')) then
            write(OUTPUT_UNIT, 100) 'Starting search (non-adiabatic)'
            write(OUTPUT_UNIT, *)
@@ -272,7 +269,7 @@ program gyre
         select case (md_p(i)%nad_search)
         case ('AD')
            $ASSERT(os_p_sel%adiabatic,No adiabatic modes to start from)
-           call mode_search(bp_nad, md_ad(i_ad_a:i_ad_b), omega_min, omega_max, process_mode_nad, nm_p_sel)
+           call mode_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
         case ('SCAN')
            call scan_search(bp_nad, omega, omega_min, omega_max, process_mode_nad, nm_p_sel)
         case default
@@ -283,13 +280,16 @@ program gyre
 
      endif
 
-     ! Deallocate adiabatic modes
+     ! Deallocate adiabatic data
 
-     if (ALLOCATED(md_ad)) deallocate(md_ad)
+     if (os_p_sel%adiabatic) then
+        deallocate(omega_ad)
+        deallocate(j_ad)
+     endif
 
   end do md_p_loop
 
-  ! Write and close the summaries
+  ! Write the summaries
 
   call sm_ad%write()
   call sm_nad%write()
@@ -324,23 +324,25 @@ contains
 100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
     endif
 
-    ! Store it
+    ! Store omega and j
 
-    n_md_ad = n_md_ad + 1
+    n_ad = n_ad + 1
 
-    if (n_md_ad > d_md_ad) then
-       d_md_ad = 2*d_md_ad
-       call reallocate(md_ad, [d_md_ad])
+    if (n_ad > d_ad) then
+       d_ad = 2*d_ad
+       call reallocate(omega_ad, [d_ad])
+       call reallocate(j_ad, [d_ad])
     endif
 
-    md_ad(n_md_ad) = md
+    omega_ad(n_ad) = md%omega
+    j_ad(n_ad) = md%j
 
-    ! Output it
+    ! Cache/write the mode
 
     call sm_ad%cache(md)
     call dt_ad%write(md)
 
-   ! Finish
+    ! Finish
 
     return
 
@@ -362,7 +364,7 @@ contains
 100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
     endif
 
-    ! Output it
+    ! Cache/write the mode
 
     call sm_nad%cache(md)
     call dt_nad%write(md)
