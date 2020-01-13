@@ -28,6 +28,7 @@ program gyre_force
   use gyre_ad_bvp
   use gyre_bvp
   use gyre_constants
+  use gyre_details
   use gyre_evol_model
   use gyre_context
   use gyre_force_par
@@ -43,12 +44,12 @@ program gyre_force
   use gyre_num_par
   use gyre_osc_par
   use gyre_out_par
-  use gyre_output
   use gyre_rot_par
   use gyre_sad_bvp
   use gyre_scan
   use gyre_scan_par
   use gyre_state
+  use gyre_summary
   use gyre_tide_util
   use gyre_util
   use gyre_version
@@ -82,17 +83,17 @@ program gyre_force
   type(grid_par_t)               :: gr_p_sel
   type(scan_par_t), allocatable  :: sc_p_sel(:)
   type(force_par_t)              :: fr_p_sel
-  type(context_t), pointer       :: cx(:) => null()
+  type(context_t), pointer       :: cx => null()
+  type(summary_t)                :: sm_ad
+  type(summary_t)                :: sm_nad
+  type(details_t)                :: dt_ad
+  type(details_t)                :: dt_nad
   real(WP), allocatable          :: omega(:)
   type(grid_t)                   :: gr
   class(r_bvp_t), allocatable    :: bp_ad
   class(c_bvp_t), allocatable    :: bp_nad
-  integer                        :: n_wv_ad
-  integer                        :: d_wv_ad
-  type(wave_t), allocatable      :: wv_ad(:)
-  integer                        :: n_wv_nad
-  integer                        :: d_wv_nad
-  type(wave_t), allocatable      :: wv_nad(:)
+  integer                        :: j_ad
+  integer                        :: j_nad
 
   ! Read command-line arguments
 
@@ -147,21 +148,22 @@ program gyre_force
 
   ml => model_t(ml_p)
 
-  ! Allocate the contexts array (will be initialized later on)
+  ! Allocate the context (will be initialized later on)
 
-  allocate(cx(SIZE(md_p)))
+  allocate(cx)
+
+  ! Initialize the summary and details outputters
+
+  sm_ad = summary_t(ot_p_ad)
+  sm_nad = summary_t(ot_p_nad)
+
+  dt_ad = details_t(ot_p_ad)
+  dt_nad = details_t(ot_p_nad)
 
   ! Loop through md_p
 
-  d_wv_ad = 128
-  n_wv_ad = 0
-
-  allocate(wv_ad(d_wv_ad))
-
-  d_wv_nad = 128
-  n_wv_nad = 0
-
-  allocate(wv_nad(d_wv_nad))
+  j_ad = 0
+  j_nad = 0
 
   md_p_loop : do i = 1, SIZE(md_p)
 
@@ -190,11 +192,11 @@ program gyre_force
 
      ! Set up the context
 
-     cx(i) = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
+     cx = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
 
      ! Set up the frequency array
      
-     call build_scan(cx(i), md_p(i), os_p_sel, sc_p_sel, omega)
+     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega)
 
      if (SIZE(omega) == 0) then
 
@@ -214,7 +216,7 @@ program gyre_force
 
      else
 
-        gr = grid_t(cx(i), omega, gr_p_sel)
+        gr = grid_t(cx, omega, gr_p_sel)
 
      end if
 
@@ -223,9 +225,9 @@ program gyre_force
      if (os_p_sel%adiabatic) then
 
         if (md_p(i)%static) then
-           allocate(bp_ad, SOURCE=sad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+           allocate(bp_ad, SOURCE=sad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         else
-           allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+           allocate(bp_ad, SOURCE=ad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         endif
            
         call eval_wave_ad(omega)
@@ -239,7 +241,7 @@ program gyre_force
         if (md_p(i)%static) then
            $ABORT(Static nonadiabatic modes not currently implemented)
         else
-           allocate(bp_nad, SOURCE=nad_bvp_t(cx(i), gr, md_p(i), nm_p_sel, os_p_sel))
+           allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         endif
            
         call eval_wave_nad(omega)
@@ -250,10 +252,10 @@ program gyre_force
 
   end do md_p_loop
 
-  ! Write summary files
+  ! Write the summaries
 
-  call write_summary(wv_ad(:n_wv_ad), ot_p_ad)
-  call write_summary(wv_nad(:n_wv_nad), ot_p_nad)
+  call sm_ad%write()
+  call sm_nad%write()
 
   ! Clean up
 
@@ -271,23 +273,17 @@ contains
 
     real(WP), intent(in) :: omega(:)
 
+    integer         :: j
     real(WP)        :: v_i(bp_ad%n_i)
     real(WP)        :: v_o(bp_ad%n_o)
-    integer         :: j
     type(r_state_t) :: st
+    type(wave_t)    :: wv
 
     ! Scan over frequencies
 
     omega_loop : do j = 1, SIZE(omega)
 
-       ! If necessary, expand arrays
-
-       n_wv_ad = n_wv_ad + 1
-
-       if (n_wv_ad > d_wv_ad) then
-          d_wv_ad = 2*d_wv_ad
-          call reallocate(wv_ad, [d_wv_ad])
-       endif
+       j_ad = j_ad + 1
 
        ! Set up the inhomogeneous boundary terms
 
@@ -303,30 +299,23 @@ contains
           $ABORT(Invalid bp_ad class)
        end select
          
-       associate (wv => wv_ad(n_wv_ad))
+       ! Solve for the wave function
 
-         ! Solve for the wave function
-
-         st = r_state_t(omega(j))
+       st = r_state_t(omega(j))
        
-         select type (bp_ad)
-         type is (sad_bvp_t)
-            wv = wave_t(bp_ad, st, v_i, v_o, n_wv_ad)
-         type is (ad_bvp_t)
-            wv = wave_t(bp_ad, st, v_i, v_o, n_wv_ad)
-         class default
-            $ABORT(Invalid bp_ad class)
-         end select
+       select type (bp_ad)
+       type is (sad_bvp_t)
+          wv = wave_t(bp_ad, st, v_i, v_o, j_ad)
+       type is (ad_bvp_t)
+          wv = wave_t(bp_ad, st, v_i, v_o, j_ad)
+       class default
+          $ABORT(Invalid bp_ad class)
+       end select
 
-         ! Write it 
-
-         call write_details(wv, ot_p_ad)
-
-         ! If necessary, prune it
-
-         if (ot_p_ad%prune_details) call wv%prune()
-
-       end associate
+       ! Cache/write the mode
+    
+       call sm_ad%cache(wv)
+       call dt_ad%write(wv)
 
     end do omega_loop
 
@@ -342,23 +331,17 @@ contains
 
     real(WP), intent(in) :: omega(:)
 
+    integer         :: j
     complex(WP)     :: v_i(bp_nad%n_i)
     complex(WP)     :: v_o(bp_nad%n_o)
-    integer         :: j
     type(c_state_t) :: st
+    type(wave_t)    :: wv
 
     ! Scan over frequencies
 
     omega_loop : do j = 1, SIZE(omega)
 
-       ! If necessary, expand arrays
-
-       n_wv_nad = n_wv_nad + 1
-
-       if (n_wv_nad > d_wv_nad) then
-          d_wv_nad = 2*d_wv_nad
-          call reallocate(wv_nad, [d_wv_nad])
-       endif
+       j_nad = j_nad + 1
 
        ! Set up the inhomogeneous boundary terms
 
@@ -367,28 +350,21 @@ contains
        v_o = 0._WP
        v_o(2) = Phi_force(omega(j))
          
-       associate (wv => wv_nad(n_wv_nad))
+       ! Solve for the wave function
 
-         ! Solve for the wave function
-
-         st = c_state_t(CMPLX(omega(j), KIND=WP))
+       st = c_state_t(CMPLX(omega(j), KIND=WP))
        
-         select type (bp_nad)
-         type is (nad_bvp_t)
-            wv = wave_t(bp_nad, st, v_i, v_o, n_wv_nad)
-         class default
-            $ABORT(Invalid bp_nad class)
-         end select
+       select type (bp_nad)
+       type is (nad_bvp_t)
+          wv = wave_t(bp_nad, st, v_i, v_o, j_nad)
+       class default
+          $ABORT(Invalid bp_nad class)
+       end select
 
-         ! Write it
-
-         call write_details(wv, ot_p_nad)
-
-         ! If necessary, prune it
-
-         if (ot_p_nad%prune_details) call wv%prune()
-
-       end associate
+       ! Cache/write the mode
+    
+       call sm_nad%cache(wv)
+       call dt_nad%write(wv)
 
     end do omega_loop
 
@@ -435,7 +411,7 @@ contains
 
        Omega_orb = omega/fr_p_sel%k
 
-       P = 1._WP/freq_from_omega(Omega_orb, cx(i), 'HZ', 'INERTIAL', md_p(i), os_p_sel)
+       P = 1._WP/freq_from_omega(Omega_orb, cx, 'HZ', 'INERTIAL', md_p(i), os_p_sel)
 
        a = (G_GRAVITY*(M_pri + M_sec)*P**2/(4.*PI**2))**(1._WP/3._WP)
 

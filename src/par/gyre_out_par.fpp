@@ -1,7 +1,7 @@
 ! Module   : gyre_out_par
 ! Purpose  : output parameters
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -39,12 +39,12 @@ module gyre_out_par
      character(FILENAME_LEN) :: summary_file = ''
      character(256)          :: summary_file_format = 'HDF'
      character(2048)         :: summary_item_list = 'l,n_pg,omega,freq'
+     character(2048)         :: summary_filter_list = ''
      character(FILENAME_LEN) :: details_template = ''
      character(256)          :: details_file_format = 'HDF'
      character(2048)         :: details_item_list = 'l,n_pg,omega,freq,x,xi_r,xi_h'
      character(2048)         :: details_filter_list = ''
      character(256)          :: label = ''
-     logical                 :: prune_details = .FALSE.
   end type out_par_t
 
  ! Access specifiers
@@ -70,22 +70,22 @@ contains
     character(LEN(ot_p%summary_file))        :: summary_file
     character(LEN(ot_p%summary_file_format)) :: summary_file_format
     character(LEN(ot_p%summary_item_list))   :: summary_item_list
+    character(LEN(ot_p%summary_filter_list)) :: summary_filter_list
     character(LEN(ot_p%details_template))    :: details_template
     character(LEN(ot_p%details_file_format)) :: details_file_format
     character(LEN(ot_p%details_item_list))   :: details_item_list
     character(LEN(ot_p%details_filter_list)) :: details_filter_list
     character(LEN(ot_p%label))               :: label
-    logical                                  :: prune_details
 
     namelist /ad_output/ freq_units, freq_frame, &
-                         summary_file, summary_file_format, summary_item_list, &
-                         details_template, details_file_format, details_item_list, &
-                         label, prune_details
+                         summary_file, summary_file_format, summary_item_list, summary_filter_list, &
+                         details_template, details_file_format, details_item_list, details_filter_list, &
+                         label
 
     namelist /nad_output/ freq_units, freq_frame, &
-                          summary_file, summary_file_format, summary_item_list, &
+                          summary_file, summary_file_format, summary_item_list, summary_filter_list, &
                           details_template, details_file_format, details_item_list, details_filter_list, &
-                          label, prune_details
+                          label
 
     ! Count the number of output namelists
 
@@ -122,12 +122,12 @@ contains
     summary_file = ot_p%summary_file
     summary_file_format = ot_p%summary_file_format
     summary_item_list = ot_p%summary_item_list
+    summary_filter_list = ot_p%summary_filter_list
     details_template = ot_p%details_template
     details_file_format = ot_p%details_file_format
     details_item_list = ot_p%details_item_list
     details_filter_list = ot_p%details_filter_list
     label = ot_p%label
-    prune_details = ot_p%prune_details
 
     ! Read the namelist
 
@@ -147,12 +147,12 @@ contains
     ot_p%summary_file = summary_file
     ot_p%summary_file_format = summary_file_format
     ot_p%summary_item_list = summary_item_list
+    ot_p%summary_filter_list = summary_filter_list
     ot_p%details_template = details_template
     ot_p%details_file_format = details_file_format
     ot_p%details_item_list = details_item_list
     ot_p%details_filter_list = details_filter_list
     ot_p%label = label
-    ot_p%prune_details = prune_details
 
     ! Finish
 

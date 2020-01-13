@@ -51,6 +51,10 @@ module gyre_constants
   real(WP), save, protected :: R_SUN = R_SUN_ ! Solar radius
   real(WP), save, protected :: L_SUN = L_SUN_ ! Solar luminosity
 
+  ! Lengths
+
+  integer, parameter :: ITEM_LEN = 32
+
   ! Paths
 
   character(FILENAME_LEN), save, protected :: GYRE_DIR = ''
@@ -75,6 +79,7 @@ module gyre_constants
   public :: R_SUN
   public :: L_SUN
 
+  public :: ITEM_LEN
   public :: FILENAME_LEN
   public :: GYRE_DIR
 

@@ -1,7 +1,7 @@
 ! Module   : gyre_c_search
 ! Purpose  : mode searching (complex)
 !
-! Copyright 2013-2016 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -60,10 +60,11 @@ module gyre_c_search
 
 contains
 
-  subroutine mode_search (bp, md_in, omega_min, omega_max, process_mode, nm_p)
+  subroutine mode_search (bp, omega_in, j_in, omega_min, omega_max, process_mode, nm_p)
 
     class(c_bvp_t), target, intent(inout) :: bp
-    type(mode_t), intent(in)              :: md_in(:)
+    complex(WP), intent(in)               :: omega_in(:)
+    integer, intent(in)                   :: j_in(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
     interface
@@ -84,6 +85,8 @@ contains
     integer                  :: c_rate
     integer                  :: i
 
+    $CHECK_BOUNDS(SIZE(j_in),SIZE(omega_in))
+
     ! Initialize the frequency deflation array
 
     allocate(omega_def(0))
@@ -102,11 +105,11 @@ contains
 
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    mode_loop : do i = 1, SIZE(md_in)
+    mode_loop : do i = 1, SIZE(omega_in)
 
        ! Search for the mode
 
-       call prox_search_(bp, md_in(i)%omega, md_in(i)%j, omega_min, omega_max, process_mode, nm_p, omega_def)
+       call prox_search_(bp, omega_in(i), j_in(i), omega_min, omega_max, process_mode, nm_p, omega_def)
 
     end do mode_loop
     
