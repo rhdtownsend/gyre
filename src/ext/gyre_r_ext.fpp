@@ -1,7 +1,7 @@
 ! Module   : gyre_r_ext
 ! Purpose  : extented-range arithmetic (real)
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,6 +24,8 @@ module gyre_r_ext
 
   use core_kinds
   use core_parallel
+
+  use gyre_math
 
   use ISO_FORTRAN_ENV
 
@@ -707,7 +709,7 @@ contains
     g = real(rx)/LOG(RADIX_WP)
     e = FLOOR(g)
 
-    call split_(RADIX_WP**(g-e), exp_rx%f, exp_rx%e)
+    call split_(pow(RADIX_WP, g-e), exp_rx%f, exp_rx%e)
     exp_rx = scale(exp_rx, e)
 
     ! Finish
