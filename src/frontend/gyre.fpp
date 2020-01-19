@@ -35,6 +35,7 @@ program gyre
   use gyre_grid
   use gyre_grid_factory
   use gyre_grid_par
+  use gyre_math
   use gyre_mode
   use gyre_mode_par
   use gyre_model
@@ -104,6 +105,7 @@ program gyre
   ! Initialize
 
   call init_parallel()
+  call init_math()
 
   call set_log_level($str($LOG_LEVEL))
 

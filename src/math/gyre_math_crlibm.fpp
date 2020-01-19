@@ -265,7 +265,7 @@ module gyre_math
   public :: TWOPI
   public :: DEG_TO_RAD
   public :: RAD_TO_DEG
-  public :: math_init
+  public :: init_math
   public :: log
   public :: log10
   public :: exp
@@ -294,7 +294,7 @@ module gyre_math
 
 contains
 
-  subroutine math_init ()
+  subroutine init_math ()
 
     call crlibm_init()
 
@@ -305,7 +305,7 @@ contains
     DEG_TO_RAD = PI/180._DP
     RAD_TO_DEG = 1._DP/DEG_TO_RAD
 
-  end subroutine math_init
+  end subroutine init_math
 
   !****
 
