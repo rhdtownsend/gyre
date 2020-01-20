@@ -706,7 +706,7 @@ contains
 
     ! Calculate the exponential of rx
 
-    g = real(rx)/LOG(RADIX_WP)
+    g = real(rx)/log(RADIX_WP)
     e = FLOOR(g)
 
     call split_(pow(RADIX_WP, g-e), exp_rx%f, exp_rx%e)

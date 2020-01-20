@@ -29,6 +29,7 @@ module gyre_context
   use gyre_grid
   use gyre_grid_par
   use gyre_interp
+  use gyre_math
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
@@ -663,8 +664,8 @@ contains
 
     ! Calculate complex eps_* terms
 
-    eps_rho = A_norm*EXP((0._WP,1._WP)*A_phase)
-    eps_T = B_norm*EXP((0._WP,1._WP)*A_phase)
+    eps_rho = A_norm*exp((0._WP,1._WP)*A_phase)
+    eps_T = B_norm*exp((0._WP,1._WP)*A_phase)
 
     ! Sort in order of increasing omega
 

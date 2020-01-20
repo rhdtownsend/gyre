@@ -1,7 +1,7 @@
 ! Module   : gyre_lane_emden
 ! Purpose  : Lane-Emden equation solver with discontinuities
 !
-! Copyright 2015-2016 Rich Townsend
+! Copyright 2015-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,6 +23,8 @@ module gyre_lane_emden
 
   use core_kinds
   use core_memory
+
+  use gyre_math
 
   use odepack
 
@@ -183,7 +185,7 @@ contains
 
        x(n) = x(n-1)
 
-       t_t = EXP(n_poly(i)*LOG(y(1,n-1)) + Delta_d(i))
+       t_t = exp(n_poly(i)*log(y(1,n-1)) + Delta_d(i))
 
        y(1,n) = 1._WP
 

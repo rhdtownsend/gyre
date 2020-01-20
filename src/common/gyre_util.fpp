@@ -1,7 +1,7 @@
 ! Module   : gyre_util
 ! Purpose  : miscellaneous utility routines
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -28,6 +28,7 @@ module gyre_util
   use gyre_constants
   use gyre_force_par
   use gyre_grid_par
+  use gyre_math
   use gyre_mode_par
   use gyre_num_par
   use gyre_osc_par
@@ -355,7 +356,7 @@ contains
 
   end function split_list
 
-!****
+  !****
 
   function join_fmts (fmts, n) result (fmt)
     
@@ -397,7 +398,7 @@ contains
 
   end function join_fmts
 
-!****
+  !****
 
   function sprint_ (i) result (a)
 
@@ -411,9 +412,9 @@ contains
     ! First, determine the length
 
     if(i > 0) then
-       n = FLOOR(LOG10(REAL(i))) + 1
+       n = FLOOR(log10(REAL(i))) + 1
     elseif(i < 0) then
-       n = FLOOR(LOG10(REAL(ABS(i)))) + 2
+       n = FLOOR(log10(REAL(ABS(i)))) + 2
     else
        n = 1
     endif
@@ -431,7 +432,7 @@ contains
 
   end function sprint_
 
-!****
+  !****
 
   function rjust (a, n) result (a_just)
 
@@ -449,7 +450,7 @@ contains
 
   end function rjust
 
-!****
+  !****
 
   function phase (z)
 
@@ -466,7 +467,7 @@ contains
 
   end function phase
 
-!****
+  !****
 
   $define $INTEGRATE $sub
 
@@ -510,7 +511,7 @@ contains
   $INTEGRATE(r,real)
   $INTEGRATE(c,complex)
 
-!****
+  !****
 
   $define $INTEGRAL $sub
 

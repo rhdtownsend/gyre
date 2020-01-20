@@ -1,7 +1,7 @@
 ! Module   : gyre_func
-! Purpose  : standard mathematical functions
+! Purpose  : mathematical functions
 !
-! Copyright 2019 The GYRE Team
+! Copyright 2019-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,6 +23,8 @@ module gyre_func
 
   use core_kinds
   use core_constants
+
+  use gyre_math
 
   use ISO_FORTRAN_ENV
 
@@ -170,7 +172,7 @@ contains
     ! Evaluate the spherical harmonic with degree l and order m
 
     Y = SQRT((2*l+1)/(4*PI)*factorial(l-m)/factorial(l+m))* &
-         legendre_P(l, m, COS(theta))*EXP(CMPLX(0._WP, m*phi, WP))
+         legendre_P(l, m, cos(theta))*exp(CMPLX(0._WP, m*phi, WP))
 
     ! Finish
 

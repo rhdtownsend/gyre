@@ -1,7 +1,7 @@
 ! Program  : build_tar_fit
 ! Purpose  : build tar_fit_t types
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ program build_tar_fit
   use core_hgroup
   use core_system
 
+  use gyre_math
   use gyre_tar_fit
 
   use ISO_FORTRAN_ENV
@@ -52,6 +53,10 @@ program build_tar_fit
   call get_arg(2, k)
   call get_arg(3, cheb_tol)
   call get_arg(4, filename)
+
+  ! Initialize
+
+  call init_math()
 
   ! Construct the tar_fit_t
 

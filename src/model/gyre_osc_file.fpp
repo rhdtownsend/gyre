@@ -26,6 +26,7 @@ module gyre_osc_file
 
   use gyre_constants
   use gyre_evol_model
+  use gyre_math
   use gyre_model
   use gyre_model_par
   use gyre_model_util
@@ -157,7 +158,7 @@ contains
     L_star = global_data(3)
 
     r = point_data(1,:)
-    m = EXP(point_data(2,:))
+    m = exp(point_data(2,:))
     L_r = point_data(7,:)
 
     T = point_data(3,:)

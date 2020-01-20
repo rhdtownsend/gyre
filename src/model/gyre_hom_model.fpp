@@ -25,6 +25,7 @@ module gyre_hom_model
 
   use gyre_constants
   use gyre_grid
+  use gyre_math
   use gyre_model
   use gyre_model_par
   use gyre_point
@@ -326,7 +327,7 @@ contains
 
     ! Evaluate the dimensionless p-mode frequency separation
 
-    Delta_p = 0.5_WP/(SQRT(2._WP/this%Gamma_1)*(ASIN(x_o)-ASIN(x_i)))
+    Delta_p = 0.5_WP/(SQRT(2._WP/this%Gamma_1)*(asin(x_o)-asin(x_i)))
 
     ! Finish
 

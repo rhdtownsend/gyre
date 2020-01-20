@@ -1,7 +1,7 @@
 ! Program  : poly_to_fgong
 ! Purpose  : convert a polytrope to FGONG format
 !
-! Copyright 2015-2017 Rich Townsend
+! Copyright 2015-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ program poly_to_fgong
 
   use gyre_constants
   use gyre_grid
+  use gyre_math
   use gyre_model
   use gyre_model_par
   use gyre_poly_file
@@ -73,6 +74,10 @@ program poly_to_fgong
   call get_arg(1, in_filename)
   call get_arg(2, out_filename)
   call get_arg(3, drop_outer)
+
+  ! Initialize
+
+  call init_math()
 
   ! Read the polytrope data
 
@@ -135,9 +140,9 @@ program poly_to_fgong
   var(1,:) = gr%pt%x*R_SUN
 
   where (M_r /= 0._WP)
-     var(2,:) = LOG(M_r/M_SUN)
+     var(2,:) = log(M_r/M_SUN)
   elsewhere
-     var(2,:) = LOG(1E-38_WP)
+     var(2,:) = log(1E-38_WP)
   endwhere
 
   var(3,:) = 0._WP

@@ -1,7 +1,7 @@
 ! Incfile  : gyre_magnus_diff
 ! Purpose  : difference equations (Magnus method, template)
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -32,6 +32,7 @@ module gyre_${T}_magnus_diff
   use gyre_eqns
   use gyre_ext
   use gyre_linalg
+  use gyre_math
   use gyre_point
   use gyre_state
 
@@ -201,14 +202,14 @@ contains
        do i = 1, this%n_e
           call ${X}COPY(this%n_e, V_r(1,i), 1, V_pos(1,i), 1)
           if (REAL(lambda(i)) >= 0._WP) then
-             call ${X}SCAL(this%n_e, EXP(-lambda(i)*this%dx), V_pos(1,i), 1)
+             call ${X}SCAL(this%n_e, exp(-lambda(i)*this%dx), V_pos(1,i), 1)
           endif
        end do
     
        do i = 1, this%n_e
           call ${X}COPY(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
           if (REAL(lambda(i)) < 0._WP) then
-             call ${X}SCAL(this%n_e, EXP(lambda(i)*this%dx), V_neg(1,i), 1)
+             call ${X}SCAL(this%n_e, exp(lambda(i)*this%dx), V_neg(1,i), 1)
           endif
        end do
 
@@ -228,7 +229,7 @@ contains
 
        do i = 1, this%n_e
           call ${X}COPY(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
-          call ${X}SCAL(this%n_e, EXP(lambda(i)*this%dx), V_neg(1,i), 1)
+          call ${X}SCAL(this%n_e, exp(lambda(i)*this%dx), V_neg(1,i), 1)
        end do
     
        call ${X}GEMM('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._WP, KIND=WP), &

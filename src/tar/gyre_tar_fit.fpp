@@ -1,7 +1,7 @@
-! Program  : gyre_tar_fit
+! Module   : gyre_tar_fit
 ! Purpose  : fits to traditional approximation of rotation (TAR) eigenvalues
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,10 +26,10 @@ module gyre_tar_fit
   use core_hgroup
   $endif
   use core_parallel
-  use core_constants
 
-  use gyre_tar_eigen
   use gyre_cheb_fit
+  use gyre_math
+  use gyre_tar_eigen
 
   use ISO_FORTRAN_ENV
   

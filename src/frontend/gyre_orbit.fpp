@@ -31,6 +31,7 @@ program gyre_orbit
   use gyre_evol_model
   use gyre_func
   use gyre_grid_par
+  use gyre_math
   use gyre_mode_par
   use gyre_model
   use gyre_model_factory
@@ -290,13 +291,13 @@ contains
        gamma = ATAN2(AIMAG(F), REAL(F))
 
        a_dot(i) = a_dot(i) + 4._WP*Omega_orb(i)*(q/R_a)*(R_a)**(l+3)* &
-            kappa*ABS(F)*SIN(gamma)*secular_G_2(R_a, e, l, m, k)
+            kappa*ABS(F)*sin(gamma)*secular_G_2(R_a, e, l, m, k)
 
        e_dot(i) = e_dot(i) + 4._WP*Omega_orb(i)*q*(R_a)**(l+3)* &
-            kappa*ABS(F)*SIN(gamma)*secular_G_3(R_a, e, l, m, k)
+            kappa*ABS(F)*sin(gamma)*secular_G_3(R_a, e, l, m, k)
 
        o_dot(i) = o_dot(i) + 4._WP*Omega_orb(i)*q*(R_a)**(l+3)* &
-            kappa*ABS(F)*COS(gamma)*secular_G_1(R_a, e, l, m, k)
+            kappa*ABS(F)*cos(gamma)*secular_G_1(R_a, e, l, m, k)
 
        ! Accumulate the torque
 

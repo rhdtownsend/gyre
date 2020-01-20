@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_weights
 ! Purpose  : grid weighting schemes and factory procedure
 !
-! Copyright 2016-2017 Rich Townsend
+! Copyright 2016-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,6 +25,7 @@ module gyre_grid_weights
   use core_func
 
   use gyre_grid
+  use gyre_math
 
   ! No implicit typing
 
@@ -265,9 +266,9 @@ contains
        even_weight_loop : do k = 2, n/2
 
           v = (k-1.5_WP)/(n/2-1.5_WP)
-          t = (1._WP-v)*LOG(0.5_WP) + v*LOG(dw_1)
+          t = (1._WP-v)*log(0.5_WP) + v*log(dw_1)
 
-          w(n/2-k+2) = EXP(t)
+          w(n/2-k+2) = exp(t)
 
        enddo even_weight_loop
        
@@ -286,9 +287,9 @@ contains
        odd_weight_loop : do k = 2, (n-1)/2
 
           v = (k-1._WP)/((n-1)/2-1._WP)
-          t = (1._WP-v)*LOG(0.5_WP) + v*LOG(dw_1)
+          t = (1._WP-v)*log(0.5_WP) + v*log(dw_1)
 
-          w((n-1)/2-k+2) = EXP(t)
+          w((n-1)/2-k+2) = exp(t)
 
        end do odd_weight_loop
 

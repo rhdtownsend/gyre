@@ -1,7 +1,7 @@
 ! Program  : gyre_tide_util
 ! Purpose  : tide-related utility functions
 !
-! Copyright 2018-2019 Rich Townsend & The GYRE Team
+! Copyright 2018-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,6 +25,7 @@ module gyre_tide_util
 
   use gyre_constants
   use gyre_func
+  use gyre_math
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -236,7 +237,7 @@ contains
 
       ! Set up the integrand
 
-      f = A*COS(m*ua - k*Ma)/(1._WP + e*COS(ua))**(n+2)
+      f = A*cos(m*ua - k*Ma)/(1._WP + e*cos(ua))**(n+2)
 
       ! Finish
 
@@ -294,7 +295,7 @@ contains
 
       ! Set up the integrand
 
-      f = A*SIN(m*ua - k*Ma)*SIN(ua)/(1._WP + e*COS(ua))**(n+2)
+      f = A*sin(m*ua - k*Ma)*sin(ua)/(1._WP + e*cos(ua))**(n+2)
 
       ! Finish
 
@@ -352,7 +353,7 @@ contains
 
       ! Set up the integrand
 
-      f = A*COS(m*ua - k*Ma)*COS(ua)/(1._WP + e*COS(ua))**(n+2)
+      f = A*cos(m*ua - k*Ma)*cos(ua)/(1._WP + e*cos(ua))**(n+2)
 
       ! Finish
 
@@ -422,11 +423,11 @@ contains
 
           ! Evaluate the eccentric anomaly
 
-          Ea = ATAN2(e_fac*SIN(ua), e + COS(ua))
+          Ea = atan2(e_fac*sin(ua), e + cos(ua))
 
           ! Evaluate the mean anomaly
 
-          Ma = Ea - e*SIN(Ea)
+          Ma = Ea - e*sin(Ea)
 
           ! Add the contribution
 

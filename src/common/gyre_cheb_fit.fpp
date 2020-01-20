@@ -1,7 +1,7 @@
 ! Incfile  : gyre_cheb_fit
 ! Purpose  : Chebyshev function fitting
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -22,11 +22,12 @@ module gyre_cheb_fit
   ! Uses
 
   use core_kinds
-  use core_constants
   $if ($HDF5)
   use core_hgroup
   $endif
   use core_memory
+
+  use gyre_math
 
   use ISO_FORTRAN_ENV
 
@@ -109,7 +110,7 @@ contains
        elseif (j == n+1) then
           x = x_b
        else
-          u = COS((j-1)*PI/n)
+          u = cos((j-1)*PI/n)
           x = 0.5_WP*((1._WP+u)*x_a + (1._WP-u)*x_b)
        endif
 
@@ -335,7 +336,7 @@ contains
        elseif (j == this%n+1) then
           u_j = -1._WP
        else
-          u_j = COS((j-1)*PI/this%n)
+          u_j = cos((j-1)*PI/this%n)
        endif
 
        if (u == u_j) then
@@ -403,7 +404,7 @@ contains
              v = (-1._WP)**(k-1)
              w = 0.5_WP
           else
-             v = COS((j-1)*(k-1)*PI/n)
+             v = cos((j-1)*(k-1)*PI/n)
              w = 1._WP
           endif
           
@@ -453,7 +454,7 @@ contains
           elseif (k == n+1) then
              v = (-1._WP)**(j-1)
           else
-             v = COS((j-1)*(k-1)*PI/n)
+             v = cos((j-1)*(k-1)*PI/n)
           endif
 
           f(j) = f(j) + v*c(k)

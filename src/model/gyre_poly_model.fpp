@@ -1,7 +1,7 @@
 ! Module   : gyre_poly_model
 ! Purpose  : stellar polytropic model
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ module gyre_poly_model
   use gyre_constants
   use gyre_grid
   use gyre_interp
+  use gyre_math
   use gyre_model
   use gyre_point
 
@@ -172,7 +173,7 @@ contains
 
        ml%mu_i(s) = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
-       ml%t(s) = ml%t(s-1)*EXP(ml%n_poly(s-1)*LOG(Theta(k_o_prev)) + Delta_d(i-1))
+       ml%t(s) = ml%t(s-1)*exp(ml%n_poly(s-1)*log(Theta(k_o_prev)) + Delta_d(i-1))
 
        ml%v_i(s) = xi(k_i)**2*dTheta(k_i)
 

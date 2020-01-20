@@ -25,6 +25,7 @@ module gyre_fgong_file
 
   use gyre_constants
   use gyre_evol_model
+  use gyre_math
   use gyre_model
   use gyre_model_par
   use gyre_model_util
@@ -146,7 +147,7 @@ contains
     allocate(m(n))
     $endif
 
-    m = EXP(var(2,:))
+    m = exp(var(2,:))
     T = var(3,:)
     P = var(4,:)
     rho = var(5,:)

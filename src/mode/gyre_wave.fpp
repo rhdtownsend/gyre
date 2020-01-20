@@ -31,6 +31,7 @@ module gyre_wave
   use gyre_freq
   use gyre_grid
   use gyre_grid_util
+  use gyre_math
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par
@@ -356,7 +357,7 @@ contains
       if (l_i /= 1._WP) then
 
          if (pt%x /= 0._WP) then
-            xi_r = y_1*pt%x**(l_i-1._WP)
+            xi_r = y_1*pow(pt%x, l_i-1._WP)
          else
             xi_r = 0._WP
          endif
@@ -422,7 +423,7 @@ contains
             if (l_i /= 1._WP) then
 
                if (pt%x /= 0._WP) then
-                  xi_h = -((4._WP-U)*y_3+y_4)*pt%x**(l_i-1._WP)/lambda
+                  xi_h = -((4._WP-U)*y_3+y_4)*pow(pt%x, l_i-1._WP)/lambda
                else
                   xi_h = 0._WP
                end if
@@ -446,7 +447,7 @@ contains
             if (l_i /= 1._WP) then
 
                if (pt%x /= 0._WP) then
-                  xi_h = (y_2+y_3)*pt%x**(l_i-1._WP)/(c_1*omega_c**2)
+                  xi_h = (y_2+y_3)*pow(pt%x, l_i-1._WP)/(c_1*omega_c**2)
                else
                   xi_h = 0._WP
                end if
@@ -499,7 +500,7 @@ contains
       if (l_i /= 0._WP) then
 
          if (pt%x /= 0._WP) then
-            eul_phi = y_3*pt%x**l_i/c_1
+            eul_phi = y_3*pow(pt%x, l_i)/c_1
          else
             eul_phi = 0._WP
          endif
@@ -544,7 +545,7 @@ contains
       if (l_i /= 1._WP) then
 
          if (pt%x /= 0._WP) then
-            deul_phi = y_4*pt%x**(l_i-1._WP)/c_1
+            deul_phi = y_4*pow(pt%x, l_i-1._WP)/c_1
          else
             deul_phi = 0._WP
          end if
@@ -583,7 +584,7 @@ contains
       y_5 = this%y_i(5, k)
 
       if (pt%x /= 0._WP) then
-         lag_S = y_5*pt%x**(l_i-2._WP)
+         lag_S = y_5*pow(pt%x, l_i-2._WP)
       else
          lag_S = 0._WP
       endif
@@ -616,7 +617,7 @@ contains
       y_6 = this%y_i(6, k)
 
       if (pt%x /= 0._WP) then
-         lag_L = y_6*pt%x**(l_i+1._WP)
+         lag_L = y_6*pow(pt%x, l_i+1._WP)
       else
          lag_L = 0._WP
       endif
@@ -689,7 +690,7 @@ contains
       if (l_i /= 0._WP) then
 
          if (pt%x /= 0._WP) then
-            lag_P = V_2*(y_2 - y_1)*pt%x**l_i
+            lag_P = V_2*(y_2 - y_1)*pow(pt%x, l_i)
          else
             lag_P = 0._WP
          end if
@@ -1596,7 +1597,7 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
 
       if (pt%x /= 0._WP) then
-         I_0 = pt%x**(l_i+1._WP)*(U*y_1 + y_4)/c_1
+         I_0 = pow(pt%x, l_i+1._WP)*(U*y_1 + y_4)/c_1
       else
          I_0 = 0._WP
       endif
@@ -1647,7 +1648,7 @@ contains
       omega_c = this%cx%omega_c(Omega_rot, this%st)
 
       if (pt%x /= 0._WP) then
-         I_1 = pt%x**(l_i+2._WP)*(c_1*omega_c**2*U*y_1 - U*y_2 - &
+         I_1 = pow(pt%x, l_i+2._WP)*(c_1*omega_c**2*U*y_1 - U*y_2 - &
                (c_1*omega_c**2 + 2._WP)*y_3 + (c_1*omega_c**2 - 1._WP)*y_4)/c_1**2
       else
          I_1 = 0._WP

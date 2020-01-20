@@ -1,7 +1,7 @@
 ! Module   : gyre_c_ext
 ! Purpose  : extented-range arithmetic (complex)
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ module gyre_c_ext
   use core_parallel
 
   use gyre_r_ext
+  use gyre_math
 
   use ISO_FORTRAN_ENV
 
@@ -835,7 +836,7 @@ contains
 
     exp_ex = exp(r_ext_t(cx))
 
-    exp_cx%f = FRACTION(exp_ex)*EXP((0._WP,1._WP)*AIMAG(cmplx(cx)))
+    exp_cx%f = FRACTION(exp_ex)*exp((0._WP,1._WP)*AIMAG(cmplx(cx)))
     exp_cx%e = EXPONENT(exp_ex)
 
     ! Finish

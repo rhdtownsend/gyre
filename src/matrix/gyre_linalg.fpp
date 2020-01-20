@@ -1,7 +1,7 @@
 ! Module   : gyre_linalg
 ! Purpose  : linear algebra
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -24,6 +24,8 @@ module gyre_linalg
   use core_kinds
   use core_linalg
   use core_order
+
+  use gyre_math
 
   use ISO_FORTRAN_ENV
 
@@ -855,7 +857,7 @@ contains
     ! eigendecomposition of A
 
     do i = 1,SIZE(lambda)
-       exp_At(i,:) = EXP(lambda(i)*t)*V_l(i,:)
+       exp_At(i,:) = exp(lambda(i)*t)*V_l(i,:)
     end do
 
     exp_At = MATMUL(V_r, exp_At)
