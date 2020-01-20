@@ -19,7 +19,7 @@ endif
 
 HDF5=yes
 #DEBUG=yes
-CRLIBM=yes
+#CRLIBM=yes
 
 LDFLAGS=`hdf5_link`
 
@@ -31,16 +31,22 @@ ifeq ($(CRLIBM),yes)
   LDFLAGS:=${LDFLAGS} `crlibm_link`
 endif
 
+# Targets
+
+all : 
+
+# Additional sources
+
+ifeq ($(CRLIBM),yes)
+gyre_math.fpp: gyre_math_crlibm.fpp
+	ln -sf $< $@
+else
+gyre_math.fpp: gyre_math_intrinsic.fpp
+	ln -sf $< $@
+endif
+
 # Include other makefiles
 
 SUBDIRS=../extern/core:../extern/astro:../common:../math:../par:../diff:../bvp:../interp:../model:../matrix:../search:../context:../ext:../frontend:../ad:../rad:../nad:../sad:../rot:../tar:../tide:../mode:../grid:../frontend:../output:../poly
 
 include Make.inc
-
-ifeq ($(CRLIBM),yes)
-gyre_math.fpp: gyre_math_crlibm.fpp
-	ln -s $< $@
-else
-gyre_math.fpp: gyre_math_intrinsic.fpp
-	ln -s $< $@
-endif
