@@ -1,7 +1,7 @@
-! Program  : gyre_tar_eigen
+! Module   : gyre_tar_eigen
 ! Purpose  : traditional approximation of rotation (TAR) eigenvalue calculation
 !
-! Copyright 2016 Rich Townsend
+! Copyright 2016-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
