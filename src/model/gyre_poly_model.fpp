@@ -195,7 +195,7 @@ contains
        if (ml%n_poly(s) /= 0._WP) then
 
           where (xi(k_i:k_o) /= 0._WP)
-             d2Theta(k_i:k_o) = -2._WP*dTheta(k_i:k_o)/xi(k_i:k_o) - ml%B(s)*Theta(k_i:k_o)**ml%n_poly(s)
+             d2Theta(k_i:k_o) = -2._WP*dTheta(k_i:k_o)/xi(k_i:k_o) - ml%B(s)*pow(Theta(k_i:k_o), ml%n_poly(s))
           elsewhere
              d2Theta(k_i:k_o) = -1._WP/3._WP
           end where
@@ -340,7 +340,7 @@ contains
 
        Theta = this%in_Theta(pt%s)%f(pt%x)
 
-       coeff = xi**3*this%t(pt%s)*Theta**this%n_poly(pt%s)/this%mu_(pt)
+       coeff = xi**3*this%t(pt%s)*pow(Theta, this%n_poly(pt%s))/this%mu_(pt)
 
     else
 
@@ -444,7 +444,7 @@ contains
        Theta = this%in_Theta(pt%s)%f(pt%x)
        dTheta = this%in_dTheta(pt%s)%f(pt%x)
 
-       dcoeff = -3._WP - xi*dTheta/Theta - this%B(pt%s)*xi*Theta**this%n_poly(pt%s)/dTheta
+       dcoeff = -3._WP - xi*dTheta/Theta - this%B(pt%s)*xi*pow(Theta, this%n_poly(pt%s))/dTheta
 
     else
 

@@ -211,7 +211,7 @@ contains
 
         m = this%n/2-1
 
-        if (1._WP+g > HUGE(0._WP)**(1._WP/m)) then
+        if (1._WP+g > pow(HUGE(0._WP), 1._WP/m)) then
            f_z = - (2._WP + g)
         else
            f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - (2._WP + g)
@@ -221,7 +221,7 @@ contains
 
         m = (this%n-1)/2
 
-        if(1._WP+g > HUGE(0._WP)**(1._WP/m)) then
+        if(1._WP+g > pow(HUGE(0._WP), 1._WP/m)) then
            f_z = -2._WP
         else
            f_z = (2._WP + this%s*(this%n-1)*g)/(1._WP + g)**m - 2._WP
