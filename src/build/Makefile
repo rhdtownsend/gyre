@@ -19,11 +19,16 @@ endif
 
 HDF5=yes
 #DEBUG=yes
+CRLIBM=yes
+
+LDFLAGS=`hdf5_link`
 
 ifeq ($(ODEPACK),yes)
-  LDFLAGS=`hdf5_link` `odepack_link`
-else
-  LDFLAGS=`hdf5_link`
+  LDFLAGS:=${LDFLAGS} `odepack_link`
+endif
+
+ifeq ($(CRLIBM),yes)
+  LDFLAGS:=${LDFLAGS} `crlibm_link`
 endif
 
 # Include other makefiles
@@ -31,3 +36,11 @@ endif
 SUBDIRS=../extern/core:../extern/astro:../common:../math:../par:../diff:../bvp:../interp:../model:../matrix:../search:../context:../ext:../frontend:../ad:../rad:../nad:../sad:../rot:../tar:../tide:../mode:../grid:../frontend:../output:../poly
 
 include Make.inc
+
+ifeq ($(CRLIBM),yes)
+gyre_math.fpp: gyre_math_crlibm.fpp
+	ln -s $< $@
+else
+gyre_math.fpp: gyre_math_intrinsic.fpp
+	ln -s $< $@
+endif

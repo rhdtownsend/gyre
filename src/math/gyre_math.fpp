@@ -1,1 +1,0 @@
-gyre_math_intrinsic.fpp

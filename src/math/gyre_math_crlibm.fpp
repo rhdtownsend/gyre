@@ -19,6 +19,8 @@ module gyre_math
 
   ! Uses
 
+  use core_kinds
+
   use ISO_C_BINDING
   use IEEE_ARITHMETIC
 
@@ -33,7 +35,7 @@ module gyre_math
   ! Module variables
 
   real(DP), save, protected :: PI
-  real(DP), save, protected :: TWO
+  real(DP), save, protected :: TWOPI
   real(DP), save, protected :: HALFPI
 
   real(DP), save, protected :: DEG_TO_RAD
@@ -256,6 +258,21 @@ module gyre_math
      module procedure tanh_c_
   end interface tanh
 
+  interface acosh
+     module procedure acosh_r_
+     module procedure acosh_c_
+  end interface acosh
+
+  interface asinh
+     module procedure asinh_r_
+     module procedure asinh_c_
+  end interface asinh
+
+  interface atanh
+     module procedure atanh_r_
+     module procedure atanh_c_
+  end interface atanh
+
   ! Access specifiers
 
   private
@@ -323,7 +340,7 @@ contains
   elemental function log_c_ (x) result (log_x)
 
     complex(DP), intent(in) :: x
-    complex(DP), intent(in) :: log_x
+    complex(DP)             :: log_x
 
     log_x = CMPLX(log(ABS(x)), atan2(x%im, x%re), DP)
 
@@ -366,7 +383,7 @@ contains
 
   elemental function exp_c_ (x) result (exp_x)
 
-    complex(DP), intent(in) :: z
+    complex(DP), intent(in) :: x
     complex(DP)             :: exp_x
 
     exp_x = exp(x%re)*CMPLX(COS(x%im), SIN(x%im), KIND=DP)
@@ -510,17 +527,6 @@ contains
 
   !****
 
-  elemental function tan_r_ (x) result (tan_x)
-
-    real(DP), intent(in) :: x
-    real(DP)             :: tan_x
-
-    tan_x = tan_rz(x)
-
-  end function tan_r_
-
-  !****
-
   elemental function tan_c_ (x) result (tan_x)
 
     complex(DP), intent(in) :: x
@@ -573,8 +579,8 @@ contains
 
   elemental function sinpi_c_ (x) result (sinpi_x)
 
-    real(DP), intent(in) :: x
-    real(DP)             :: sinpi_x
+    complex(DP), intent(in) :: x
+    complex(DP)             :: sinpi_x
 
     sinpi_x = CMPLX(sinpi(x%re)*cosh(PI*x%im), cospi(x%re)*sinh(PI*x%im), DP)
 
@@ -673,6 +679,26 @@ contains
     atan_x = II*log((II + x)*(II - x)/2._DP)
 
   end function atan_c_
+
+  !****
+
+  elemental function atan2_r_ (x, y) result (atan2_xy)
+
+    real(DP), intent(in) :: x
+    real(DP), intent(in) :: y
+    real(DP)             :: atan2_xy
+
+    if (x > 0._DP) then
+       atan2_xy = atan(y/x)
+    elseif (y > 0._WP) then
+       atan2_xy = HALFPI - atan(x/y)
+    elseif (y < 0._WP) then
+       atan2_xy = -HALFPI - atan(x/y)
+    elseif (x < 0._WP) then
+       atan2_xy = atan(y/x) + PI
+    endif
+
+  end function atan2_r_
 
   !****
 
@@ -836,7 +862,7 @@ contains
 
   !****
 
-  elemental function asinh_r_ (x) result (sinh_x)
+  elemental function asinh_r_ (x) result (asinh_x)
 
     real(DP), intent(in) :: x
     real(DP)             :: asinh_x
@@ -847,7 +873,7 @@ contains
 
   !****
 
-  elemental function asinh_c_ (x) result (sinh_x)
+  elemental function asinh_c_ (x) result (asinh_x)
 
     complex(DP), intent(in) :: x
     complex(DP)             :: asinh_x
@@ -858,10 +884,10 @@ contains
 
   !****
 
-  elemental function atanh_r_ (x) result (tanh_x)
+  elemental function atanh_r_ (x) result (atanh_x)
 
     real(DP), intent(in) :: x
-    real(DP)             :: tanh_x
+    real(DP)             :: atanh_x
 
     atanh_x = log((1._DP + x)/(1._DP - x))/2._DP
 
@@ -869,10 +895,10 @@ contains
 
   !****
 
-  elemental function atanh_c_ (x) result (tanh_x)
+  elemental function atanh_c_ (x) result (atanh_x)
 
     complex(DP), intent(in) :: x
-    complex(DP)             :: tanh_x
+    complex(DP)             :: atanh_x
 
     real(DP) :: rt
     real(DP) :: it
