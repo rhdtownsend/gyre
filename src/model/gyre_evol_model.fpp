@@ -1,7 +1,7 @@
 ! Module   : gyre_evol_model
 ! Purpose  : stellar evolutionary model
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ module gyre_evol_model
   use gyre_constants
   use gyre_grid
   use gyre_interp
+  use gyre_math
   use gyre_model
   use gyre_model_par
   use gyre_point

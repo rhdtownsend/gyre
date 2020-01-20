@@ -29,6 +29,7 @@ module gyre_freq
   use gyre_evol_model
   use gyre_freq_frame
   use gyre_hom_model
+  use gyre_math
   use gyre_model
   use gyre_mode_par
   use gyre_osc_par

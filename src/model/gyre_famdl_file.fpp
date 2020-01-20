@@ -26,6 +26,7 @@ module gyre_famdl_file
 
   use gyre_constants
   use gyre_evol_model
+  use gyre_math
   use gyre_model
   use gyre_model_par
   use gyre_model_util

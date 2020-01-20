@@ -63,12 +63,6 @@ module gyre_constants
 
   private
 
-  public :: PI
-  public :: TWOPI
-  public :: HALFPI
-  public :: DEG_TO_RAD
-  public :: RAD_TO_DEG
-
   public :: G_GRAVITY
   public :: C_LIGHT
   public :: A_RADIATION
