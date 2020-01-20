@@ -30,7 +30,7 @@ module gyre_math
 
   ! Parameters
 
-  complex(DP), parameter :: II = CMPLX(0._DP, 1._DP, DP)
+  complex(DP), parameter :: I = CMPLX(0._DP, 1._DP, DP)
 
   ! Module variables
 
@@ -164,7 +164,6 @@ module gyre_math
 
   interface log10
      module procedure log10_r_
-     module procedure log10_c_
   end interface log10
 
   interface exp
@@ -359,17 +358,6 @@ contains
 
   !****
 
-  elemental function log10_c_ (x) result (log10_x)
-
-    complex(DP), intent(in) :: x
-    complex(DP)             :: log10_x
-
-    log10_x = log(x)/log(10._dp)
-
-  end function log10_c_
-
-  !****
-
   elemental function exp_r_ (x) result (exp_x)
 
     real(DP), intent(in) :: x
@@ -386,7 +374,7 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: exp_x
 
-    exp_x = exp(x%re)*CMPLX(COS(x%im), SIN(x%im), KIND=DP)
+    exp_x = exp(x%re)*CMPLX(COS(x%im), SIN(x%im), DP)
 
   end function exp_c_
 
@@ -632,7 +620,7 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: acos_x
 
-    acos_x = -II*log(x + II*SQRT(1._dp - x**2))
+    acos_x = -I*log(x + I*SQRT(1._dp - x**2))
     
   end function acos_c_
 
@@ -654,7 +642,7 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: asin_x
 
-    asin_x = -II*log(II*x + SQRT(1._DP - x**2))
+    asin_x = -I*log(I*x + SQRT(1._DP - x**2))
 
   end function asin_c_
 
@@ -676,26 +664,26 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: atan_x
 
-    atan_x = II*log((II + x)*(II - x)/2._DP)
+    atan_x = I*log((I + x)/(I - x))/2._DP
 
   end function atan_c_
 
   !****
 
-  elemental function atan2_r_ (x, y) result (atan2_xy)
+  elemental function atan2_r_ (y, x) result (atan2_yx)
 
-    real(DP), intent(in) :: x
     real(DP), intent(in) :: y
-    real(DP)             :: atan2_xy
+    real(DP), intent(in) :: x
+    real(DP)             :: atan2_yx
 
     if (x > 0._DP) then
-       atan2_xy = atan(y/x)
+       atan2_yx = atan(y/x)
     elseif (y > 0._WP) then
-       atan2_xy = HALFPI - atan(x/y)
+       atan2_yx = HALFPI - atan(x/y)
     elseif (y < 0._WP) then
-       atan2_xy = -HALFPI - atan(x/y)
+       atan2_yx = -HALFPI - atan(x/y)
     elseif (x < 0._WP) then
-       atan2_xy = atan(y/x) + PI
+       atan2_yx = atan(y/x) + PI
     endif
 
   end function atan2_r_
@@ -784,7 +772,7 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: cosh_x
 
-    cosh_x = CMPLX(cosh(x%re)*cos(x%re), sinh(x%im)*sin(x%im), DP)
+    cosh_x = CMPLX(cosh(x%re)*cos(x%im), sinh(x%re)*sin(x%im), DP)
 
   end function cosh_c_
 
@@ -806,7 +794,7 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: sinh_x
 
-    sinh_x = CMPLX(sinh(x%re)*cos(x%im), cosh(x%re)*sin(x%im))
+    sinh_x = CMPLX(sinh(x%re)*cos(x%im), cosh(x%re)*sin(x%im), DP)
 
   end function sinh_c_
 
@@ -845,7 +833,7 @@ contains
     real(DP), intent(in) :: x
     real(DP)             :: acosh_x
 
-    acosh_x = log(x + SQRT((x - 1._DP)**(x + 1._DP)))
+    acosh_x = log(x + SQRT((x - 1._DP)*(x + 1._DP)))
 
   end function acosh_r_
 
@@ -856,7 +844,7 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: acosh_x
 
-    acosh_x = log(x + SQRT((x - 1._DP)**(x + 1._DP)))
+    acosh_x = log(x + SQRT((x - 1._DP)*(x + 1._DP)))
 
   end function acosh_c_
 
