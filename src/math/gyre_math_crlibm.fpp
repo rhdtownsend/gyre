@@ -171,12 +171,24 @@ module gyre_math
      module procedure exp_c_
   end interface exp
 
+  interface sqrt
+     module procedure sqrt_c_
+  end interface sqrt
+
   interface pow
      module procedure pow_r_r_
      module procedure pow_r_c_
      module procedure pow_c_r_
      module procedure pow_c_c_
   end interface pow
+
+  interface abs
+     module procedure abs_c_
+  end interface abs
+
+  interface hypot
+     module procedure hypot_r_
+  end interface hypot
 
   interface cos
      module procedure cos_r_
@@ -285,7 +297,10 @@ module gyre_math
   public :: log
   public :: log10
   public :: exp
+  public :: sqrt
   public :: pow
+  public :: abs
+  public :: hypot
   public :: cos
   public :: sin
   public :: tan
@@ -341,7 +356,7 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: log_x
 
-    log_x = CMPLX(log(ABS(x)), atan2(x%im, x%re), DP)
+    log_x = CMPLX(log(abs(x)), atan2(x%im, x%re), DP)
 
   end function log_c_
 
@@ -374,9 +389,48 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: exp_x
 
-    exp_x = exp(x%re)*CMPLX(COS(x%im), SIN(x%im), DP)
+    exp_x = exp(x%re)*CMPLX(cos(x%im), sin(x%im), DP)
 
   end function exp_c_
+
+  !****
+
+  elemental function sqrt_c_ (x) result (sqrt_x)
+
+    complex(DP), intent(in) :: x
+    complex(DP)             :: sqrt_x
+
+    real(DP) :: d
+    real(DP) :: r
+    real(DP) :: s
+
+    if (x%im == 0._DP) then
+
+       sqrt_x = CMPLX(SQRT(ABS(x%re)), 0._DP, DP)
+
+    elseif (x%re == 0._DP) then
+
+       r = SQRT(0.5_WP*ABS(x%im))
+
+       sqrt_x = CMPLX(r, SIGN(r, x%im), DP)
+
+    else
+
+       d = hypot(x%re, x%im)
+
+       if (x%re > 0._DP) then
+          r = SQRT(0.5_DP*d + 0.5_DP*x%re)
+          s = 0.5_DP*x%im/r
+       else
+          s = SQRT(0.5_DP*d - 0.5_DP*x%re)
+          r = ABS(0.5_DP*x%im/s)
+       endif
+
+       sqrt_x = CMPLX(r, SIGN(s, x%im), DP)
+
+    endif
+
+  end function sqrt_c_
 
   !****
 
@@ -468,6 +522,33 @@ contains
     cos_x = cos_rz(x)
 
   end function cos_r_
+
+  !****
+
+  elemental function abs_c_ (x) result (abs_x)
+
+    complex(DP), intent(in) :: x
+    real(DP)                :: abs_x
+
+    abs_x = hypot(x%re, x%im)
+
+  end function abs_c_
+
+  !****
+
+  elemental function hypot_r_ (x, y) result (hypot_xy)
+
+    real(DP), intent(in) :: x
+    real(DP), intent(in) :: y
+    real(DP)             :: hypot_xy
+
+    if (ABS(x) > ABS(y)) then
+       hypot_xy = ABS(x)*SQRT(1._DP + (y/x)**2)
+    else
+       hypot_xy = ABS(y)*SQRT(1._DP + (x/y)**2)
+    endif
+
+  end function hypot_r_
 
   !****
 
