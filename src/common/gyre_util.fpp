@@ -88,7 +88,6 @@ module gyre_util
   public :: join_fmts
   public :: sprint
   public :: rjust
-  public :: phase
   public :: integrate
   public :: integral
 
@@ -449,23 +448,6 @@ contains
     return
 
   end function rjust
-
-  !****
-
-  function phase (z)
-
-    complex(WP), intent(in) :: z
-    real(WP)                :: phase
-
-    ! Calculate the phase (in radians) of the complex number z
-
-    phase = ATAN2(AIMAG(z), REAL(z))
-
-    ! Finish
-
-    return
-
-  end function phase
 
   !****
 
