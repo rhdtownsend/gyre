@@ -172,7 +172,7 @@ contains
 
          else
 
-            associate (nu => TAN(HALFPI*x))
+            associate (nu => tan(HALFPI*x))
               f = lambda(nu, m, k)/lambda_norm_grav_(nu, m, k)
             end associate
 
@@ -207,7 +207,7 @@ contains
 
       else
 
-         associate (nu => TAN(HALFPI*x) + tf%nu_0)
+         associate (nu => tan(HALFPI*x) + tf%nu_0)
               f = lambda(nu, m, k)/lambda_norm_ross_(nu, m, k)
          end associate
 
@@ -287,7 +287,7 @@ contains
 
        ! Gravity waves
 
-       associate (x => ATAN(nu)/HALFPI)
+       associate (x => atan(nu)/HALFPI)
          lambda = this%cf%eval(x)*lambda_norm_grav_(nu, this%m, this%k)
        end associate
 
@@ -295,7 +295,7 @@ contains
 
        ! Rossby waves
 
-       associate (x => ATAN(nu - this%nu_0)/HALFPI)
+       associate (x => atan(nu - this%nu_0)/HALFPI)
 
          if (this%m > 0) then
             $ASSERT(nu <= this%nu_0,Invalid nu for Rossby waves)
@@ -331,7 +331,7 @@ contains
 
        ! Gravity waves
 
-       associate (x => ATAN(nu)/HALFPI)
+       associate (x => atan(nu)/HALFPI)
          lambda = this%cf%eval(x)*lambda_norm_grav_(REAL(nu), this%m, this%k)
        end associate
 
@@ -339,7 +339,7 @@ contains
 
        ! Rossby waves
 
-       associate (x => ATAN(nu-this%nu_0)/HALFPI)
+       associate (x => atan(nu-this%nu_0)/HALFPI)
 
          if (this%m > 0) then
             $ASSERT(REAL(nu) <= this%nu_0,Invalid nu for Rossby waves)

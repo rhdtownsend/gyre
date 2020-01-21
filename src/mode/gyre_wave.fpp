@@ -1973,7 +1973,7 @@ contains
 
       C_T = this%lag_T_eff()/this%xi_r(k)
 
-      psi_T = ATAN2(AIMAG(C_T), REAL(C_T))
+      psi_T = atan2(AIMAG(C_T), REAL(C_T))
 
     end associate
 
