@@ -486,6 +486,8 @@ contains
 
     ! Write the item from model_t data
 
+    written = .TRUE.
+
     select case (item)
 
     case ('Delta_p')
