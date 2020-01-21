@@ -918,7 +918,7 @@ contains
     real(DP), intent(in) :: x
     real(DP)             :: acosh_x
 
-    acosh_x = log(x + SQRT((x - 1._DP)*(x + 1._DP)))
+    acosh_x = log(x + SQRT(x - 1._DP)*SQRT(x + 1._DP))
 
   end function acosh_r_
 
@@ -929,7 +929,7 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: acosh_x
 
-    acosh_x = log(x + SQRT((x - 1._DP)*(x + 1._DP)))
+    acosh_x = log(x + sqrt(x - 1._DP)*sqrt(x + 1._DP))
 
   end function acosh_c_
 
@@ -951,7 +951,7 @@ contains
     complex(DP), intent(in) :: x
     complex(DP)             :: asinh_x
 
-    asinh_x = log(x + SQRT(1._DP + x**2))
+    asinh_x = log(x + sqrt(1._DP + x**2))
 
   end function asinh_c_
 
