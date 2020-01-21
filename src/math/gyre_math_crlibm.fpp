@@ -545,7 +545,11 @@ contains
     if (ABS(x) > ABS(y)) then
        hypot_xy = ABS(x)*SQRT(1._DP + (y/x)**2)
     else
-       hypot_xy = ABS(y)*SQRT(1._DP + (x/y)**2)
+       if (ABS(y) == 0._DP) then
+          hypot_xy = 0._DP
+       else
+          hypot_xy = ABS(y)*SQRT(1._DP + (x/y)**2)
+       endif
     endif
 
   end function hypot_r_
