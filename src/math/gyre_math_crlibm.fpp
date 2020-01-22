@@ -406,7 +406,15 @@ contains
 
     if (x%im == 0._DP) then
 
-       sqrt_x = CMPLX(SQRT(ABS(x%re)), 0._DP, DP)
+       if (x%re < 0._DP) then
+
+          sqrt_x = CMPLX(0._DP, SIGN(SQRT(-x%re), x%im), DP)
+
+       else
+
+          sqrt_x = CMPLX(SQRT(x%re), SIGN(0._DP, x%im), DP)
+
+       endif
 
     elseif (x%re == 0._DP) then
 
