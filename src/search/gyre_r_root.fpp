@@ -1,7 +1,7 @@
 ! Module   : gyre_r_root
 ! Purpose  : root finding algorithms for discriminant functions (real)
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,6 +25,7 @@ module gyre_r_root
 
   use gyre_ext_func
   use gyre_ext
+  use gyre_math
   use gyre_num_par
   use gyre_status
 
@@ -237,7 +238,7 @@ contains
        ! Make sure that the function is smallest in magnitude
        ! at b
           
-       if (ABS(f_c) < ABS(f_b)) then
+       if (abs(f_c) < abs(f_b)) then
           a = b
           b = c
           c = a
@@ -247,22 +248,22 @@ contains
        endif
 
        if (relative_tol_) then
-          tol = (2._WP*EPSILON(0._WP) + rx_tol)*ABS(b)
+          tol = (2._WP*EPSILON(0._WP) + rx_tol)*abs(b)
        else
-          tol = 2._WP*EPSILON(0._WP)*ABS(b) + rx_tol
+          tol = 2._WP*EPSILON(0._WP)*abs(b) + rx_tol
        endif
 
        m = 0.5_WP*(c - b)
 
        ! Check for convergence
 
-       if (ABS(m) <= tol .OR. f_b == 0._WP) then
+       if (abs(m) <= tol .OR. f_b == 0._WP) then
           exit iterate_loop
        endif
 
        ! See if bisection is forced
 
-       if (ABS(e) <  tol .OR. ABS(f_a) < ABS(f_b)) then
+       if (abs(e) <  tol .OR. abs(f_a) < abs(f_b)) then
 
           d = m
           e = d
@@ -299,7 +300,7 @@ contains
           s = e
           e = d
 
-          if (2._WP*p < 3._WP*m*q - ABS(tol*q) .AND. p < ABS(0.5_WP*s*q)) then
+          if (2._WP*p < 3._WP*m*q - abs(tol*q) .AND. p < abs(0.5_WP*s*q)) then
              d = p/q
           else
              d = m
@@ -315,7 +316,7 @@ contains
 
        ! Update b
 
-       if (ABS(d) > tol) then
+       if (abs(d) > tol) then
           b = b + d
        else
           if(m > 0._WP) then
@@ -414,7 +415,7 @@ contains
        elseif (clamp_b_) then
           move_a = .TRUE.
        else
-          move_a = ABS(f_b) > ABS(f_a)
+          move_a = abs(f_b) > abs(f_a)
        endif
 
        if (move_a) then

@@ -505,18 +505,18 @@ contains
 
              ! Propagation zone
 
-             k_r_real = MAX(k_r_real, ABS(0.5_WP*SQRT(-gamma))/pt%x)
-             k_r_imag = MAX(k_r_imag, ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i))/pt%x)
+             k_r_real = MAX(k_r_real, abs(0.5_WP*sqrt(-gamma))/pt%x)
+             k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i))/pt%x)
 
           else
 
              ! Evanescent zone; if we're adjacent to the origin, drop the divering root
 
              if (origin) then
-                k_r_imag = MAX(k_r_imag, ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i + SQRT(gamma)))/pt%x)
+                k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i + sqrt(gamma)))/pt%x)
              else
-                k_r_imag = MAX(k_r_imag, ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i - SQRT(gamma)))/pt%x, & 
-                                         ABS(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i + SQRT(gamma)))/pt%x)
+                k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i - sqrt(gamma)))/pt%x, & 
+                                         abs(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i + sqrt(gamma)))/pt%x)
              endif
 
           end if
@@ -609,7 +609,7 @@ contains
          
           ! Update the maximal tau
           
-          tau = MAX(tau, SQRT(ABS(V*nabla*omega_c*c_thk/c_rad))/pt%x)
+          tau = MAX(tau, sqrt(abs(V*nabla*omega_c*c_thk/c_rad))/pt%x)
 
        end do omega_loop
 
@@ -665,11 +665,11 @@ contains
 
        end associate
 
-       if (dV_2 /= 0._WP) dx = MIN(dx, ABS(pt%x/(gr_p%alpha_str*dV_2)))
-       if (dAs /= 0._WP) dx = MIN(dx, ABS(pt%x/(gr_p%alpha_str*dAs)))
-       if (dU /= 0._WP) dx = MIN(dx, ABS(pt%x/(gr_p%alpha_str*dU)))
-       if (dc_1 /= 0._WP) dx = MIN(dx, ABS(pt%x/(gr_p%alpha_str*dc_1)))
-       if (dGamma_1 /= 0._WP) dx = MIN(dx, ABS(pt%x/(gr_p%alpha_str*dGamma_1)))
+       if (dV_2 /= 0._WP) dx = MIN(dx, abs(pt%x/(gr_p%alpha_str*dV_2)))
+       if (dAs /= 0._WP) dx = MIN(dx, abs(pt%x/(gr_p%alpha_str*dAs)))
+       if (dU /= 0._WP) dx = MIN(dx, abs(pt%x/(gr_p%alpha_str*dU)))
+       if (dc_1 /= 0._WP) dx = MIN(dx, abs(pt%x/(gr_p%alpha_str*dc_1)))
+       if (dGamma_1 /= 0._WP) dx = MIN(dx, abs(pt%x/(gr_p%alpha_str*dGamma_1)))
 
     else
 

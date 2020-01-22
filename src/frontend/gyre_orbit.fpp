@@ -281,7 +281,7 @@ contains
 
        ! Evaluate the response function
  
-       F = -0.5_WP*(SQRT(4._WP*PI)*wv%eul_phi(wv%n_k)/(eps_tide*c) + 1._WP)
+       F = -0.5_WP*(sqrt(4._WP*PI)*wv%eul_phi(wv%n_k)/(eps_tide*c) + 1._WP)
 
        ! Evaluate the summation weight
 
@@ -291,13 +291,13 @@ contains
        gamma = ATAN2(AIMAG(F), REAL(F))
 
        a_dot(i) = a_dot(i) + 4._WP*Omega_orb(i)*(q/R_a)*(R_a)**(l+3)* &
-            kappa*ABS(F)*sin(gamma)*secular_G_2(R_a, e, l, m, k)
+            kappa*abs(F)*sin(gamma)*secular_G_2(R_a, e, l, m, k)
 
        e_dot(i) = e_dot(i) + 4._WP*Omega_orb(i)*q*(R_a)**(l+3)* &
-            kappa*ABS(F)*sin(gamma)*secular_G_3(R_a, e, l, m, k)
+            kappa*abs(F)*sin(gamma)*secular_G_3(R_a, e, l, m, k)
 
        o_dot(i) = o_dot(i) + 4._WP*Omega_orb(i)*q*(R_a)**(l+3)* &
-            kappa*ABS(F)*cos(gamma)*secular_G_1(R_a, e, l, m, k)
+            kappa*abs(F)*cos(gamma)*secular_G_1(R_a, e, l, m, k)
 
        ! Accumulate the torque
 

@@ -107,7 +107,7 @@ contains
 
        ! Rossby waves
 
-       l = ABS(m) + ABS(k) - 1
+       l = abs(m) + abs(k) - 1
 
        tf%nu_0 = -REAL(l*(l+1), WP)/REAL(m, WP)
 
@@ -376,7 +376,7 @@ contains
 
     if (k >= 0) then
 
-       l = ABS(m) + k
+       l = abs(m) + k
 
        lambda_norm = nu**2 + l*(l+1)
 

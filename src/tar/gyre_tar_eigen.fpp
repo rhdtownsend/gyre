@@ -108,9 +108,9 @@ contains
     else
 
        if (parity) then
-          n = ABS(k)/2
+          n = abs(k)/2
        else
-          n = ABS(k-1)/2
+          n = abs(k-1)/2
        endif
 
     endif
@@ -236,9 +236,9 @@ contains
        endif
     else
        if (parity) then
-          i = ABS(k)/2
+          i = abs(k)/2
        else
-          i = ABS(k-1)/2
+          i = abs(k-1)/2
        endif
     endif
 
@@ -391,7 +391,7 @@ contains
     ! routine for |nu| < NU_TRANS, and the asymptotic value plus an
     ! extrapolated error correction otherwise
 
-    if (ABS(nu) < NU_TRANS) then
+    if (abs(nu) < NU_TRANS) then
        lambda_est = lambda_A_lapack_(nu, m, k, n)
     else
        lambda_est = 1._WP/(lambda_asymp_(nu, m, k) + &
@@ -465,11 +465,11 @@ contains
       ! Set up a bracket around the estimated eigenvalue lambda_est
 
       if (lambda_est > 0._WP) then
-         lambda_a = lambda_est*(1._WP - SQRT(EPSILON(0._WP)))
-         lambda_b = lambda_est*(1._WP + SQRT(EPSILON(0._WP)))
+         lambda_a = lambda_est*(1._WP - sqrt(EPSILON(0._WP)))
+         lambda_b = lambda_est*(1._WP + sqrt(EPSILON(0._WP)))
       else
-         lambda_a = lambda_est*(1._WP + SQRT(EPSILON(0._WP)))
-         lambda_b = lambda_est*(1._WP - SQRT(EPSILON(0._WP)))
+         lambda_a = lambda_est*(1._WP + sqrt(EPSILON(0._WP)))
+         lambda_b = lambda_est*(1._WP - sqrt(EPSILON(0._WP)))
       endif
 
       expand_loop : do
@@ -568,7 +568,7 @@ contains
          if (q(i-1) /= 0._QP) then
             q(i) = (A_D(i) - lambda) - A_E(i-1)**2/q(i-1)
          else
-            q(i) = (A_D(i) - lambda) - ABS(A_E(i-1))/RELFEH
+            q(i) = (A_D(i) - lambda) - abs(A_E(i-1))/RELFEH
          endif
       end do
 
@@ -692,7 +692,7 @@ contains
       ! Calculate the (m) Kelvin-wave Hough eigenvalue lambda, using
       ! the first-order perturbation expansion by Townsend (in prep)
 
-      alpha_0 = ABS(m)
+      alpha_0 = abs(m)
       alpha_1 = -0.25_QP
 
       alpha = alpha_0 + alpha_1*w
@@ -791,14 +791,14 @@ contains
     nu_ = REAL(nu, ${KP})
 
     if (parity) then
-       l_j = ABS(m)
+       l_j = abs(m)
     else
-       l_j = ABS(m) + 1
+       l_j = abs(m) + 1
     endif
         
     do j = 1, n
 
-       if (l_j == ABS(m)) then
+       if (l_j == abs(m)) then
           A_1(j) = 1._${KP} + SIGN(1, m)*nu_/REAL(l_j+1, ${KP})
           A_2n(j) = 0._${KP}
        else
@@ -891,13 +891,13 @@ contains
     ! Calculate the J_lm function, being the integral of Y_lm Y_{l+1}m
     ! cos(theta) over all solid angles
 
-    if (ABS(m) >= l) then
+    if (abs(m) >= l) then
 
        J_lm_ = 0._${KP}
 
     else
 
-       J_lm_ = SQRT(REAL(l-m, ${KP})*REAL(l+m, ${KP})/(REAL(2*l+1, ${KP})*REAL(2*l-1, ${KP})))
+       J_lm_ = sqrt(REAL(l-m, ${KP})*REAL(l+m, ${KP})/(REAL(2*l+1, ${KP})*REAL(2*l-1, ${KP})))
 
     endif
 
@@ -932,9 +932,9 @@ contains
     if (-m*nu > 0._WP) then
 
        if (parity) then
-          l_j = ABS(m)
+          l_j = abs(m)
        else
-          l_j = ABS(m) + 1
+          l_j = abs(m) + 1
        endif
        
        j_loop : do j = 1,n
@@ -942,7 +942,7 @@ contains
           l_j = l_j + 2
        enddo j_loop
        
-       if (.NOT. parity .AND. -m*nu > REAL(ABS(m), WP)*REAL(ABS(m)+1, WP)) Xi_ = Xi_ + 1
+       if (.NOT. parity .AND. -m*nu > REAL(abs(m), WP)*REAL(abs(m)+1, WP)) Xi_ = Xi_ + 1
        
     endif
 

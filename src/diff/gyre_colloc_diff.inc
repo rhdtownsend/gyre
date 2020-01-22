@@ -1,7 +1,7 @@
 ! Incfile  : gyre_colloc_diff
 ! Purpose  : difference equations (local collocation, template)
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -33,6 +33,7 @@ module gyre_${T}_colloc_diff
   use gyre_eqns
   use gyre_ext
   use gyre_linalg
+  use gyre_math
   use gyre_point
   use gyre_state
 
@@ -52,26 +53,26 @@ module gyre_${T}_colloc_diff
 
   real(WP), parameter :: GL4_A_IJ(2,2) = RESHAPE([ &
        0.25_WP,&
-       0.25_WP+SQRT(3._WP)/6._WP, &
-       0.25_WP-SQRT(3._WP)/6._WP, &
+       0.25_WP+sqrt(3._WP)/6._WP, &
+       0.25_WP-sqrt(3._WP)/6._WP, &
        0.25_WP], &
        [2,2])
   real(WP), parameter :: GL4_B_I(2) = [ &
        0.5_WP, &
        0.5_WP]
   real(WP), parameter :: GL4_C_I(2) = [ &
-       0.5_WP-SQRT(3._WP)/6._WP, &
-       0.5_WP+SQRT(3._WP)/6._WP]
+       0.5_WP-sqrt(3._WP)/6._WP, &
+       0.5_WP+sqrt(3._WP)/6._WP]
   
   real(WP), parameter :: GL6_A_IJ(3,3) = RESHAPE([ &
        5._WP/36._WP, &
-       5._WP/36._WP+SQRT(15._WP)/24._WP, &
-       5._WP/36._WP+SQRT(15._WP)/30._WP, &
-       2._WP/9._WP-SQRT(15._WP)/15._WP, &
+       5._WP/36._WP+sqrt(15._WP)/24._WP, &
+       5._WP/36._WP+sqrt(15._WP)/30._WP, &
+       2._WP/9._WP-sqrt(15._WP)/15._WP, &
        2._WP/9._WP, &
-       2._WP/9._WP+SQRT(15._WP)/15._WP, &
-       5._WP/36._WP-SQRT(15._WP)/30._WP, &
-       5._WP/36._WP-SQRT(15._WP)/24._WP, &
+       2._WP/9._WP+sqrt(15._WP)/15._WP, &
+       5._WP/36._WP-sqrt(15._WP)/30._WP, &
+       5._WP/36._WP-sqrt(15._WP)/24._WP, &
        5._WP/36._WP], &
        [3,3])
   real(WP), parameter :: GL6_B_I(3) = [ &
@@ -79,9 +80,9 @@ module gyre_${T}_colloc_diff
        4._WP/9._WP, &
        5._WP/18._WP]
   real(WP), parameter :: GL6_C_I(3) = [ &
-       0.5_WP-SQRT(15._WP)/10._WP, &
+       0.5_WP-sqrt(15._WP)/10._WP, &
        0.5_WP, &
-       0.5_WP+SQRT(15._WP)/10._WP]
+       0.5_WP+sqrt(15._WP)/10._WP]
        
   ! Derived-type definitions
 

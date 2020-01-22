@@ -30,6 +30,7 @@ program gyre_response
   use gyre_constants
   use gyre_func
   use gyre_grid_par
+  use gyre_math
   use gyre_mode_par
   use gyre_model
   use gyre_model_factory
@@ -180,8 +181,8 @@ program gyre_response
         do l = 2, td_p(1)%l_max
            do m = -l, l
               do k = -td_p(1)%k_max, td_p(1)%k_max
-                 if (ABS(xi_r(l,m,k)) /= 0._WP) then
-                    print 125, l, m, k, ABS(xi_r(l,m,k) - (-1)**m*CONJG(xi_r(l,-m,-k)))/ABS(xi_r(l,m,k))
+                 if (abs(xi_r(l,m,k)) /= 0._WP) then
+                    print 125, l, m, k, abs(xi_r(l,m,k) - (-1)**m*CONJG(xi_r(l,-m,-k)))/abs(xi_r(l,m,k))
 125                 format(I3,1X,I3,1X,I3,F14.10)
                  endif
               end do

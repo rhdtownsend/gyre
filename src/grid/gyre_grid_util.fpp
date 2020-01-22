@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_util
 ! Purpose  : grid utilities
 !
-! Copyright 2016-2017 Rich Townsend
+! Copyright 2016-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -112,11 +112,11 @@ contains
              
              if (pt_a%s == pt_b%s) then
 
-                if (ABS(gamma_a) < EPSILON(0._WP)*ABS(gamma_b)) then
+                if (abs(gamma_a) < EPSILON(0._WP)*abs(gamma_b)) then
 
                    x_turn = pt_a%x
 
-                elseif (ABS(gamma_b) < EPSILON(0._WP)*ABS(gamma_a)) then
+                elseif (abs(gamma_b) < EPSILON(0._WP)*abs(gamma_a)) then
 
                    x_turn = pt_b%x
 

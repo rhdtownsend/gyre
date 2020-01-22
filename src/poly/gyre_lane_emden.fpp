@@ -63,7 +63,7 @@ contains
     real(WP), allocatable, intent(out) :: Theta(:)
     real(WP), allocatable, intent(out) :: dTheta(:)
 
-    real(WP), parameter :: X_BEG = SQRT(EPSILON(0._WP))
+    real(WP), parameter :: X_BEG = sqrt(EPSILON(0._WP))
     integer, parameter  :: D_0 = 512
     integer, parameter  :: NEQ = 2
     integer, parameter  :: NG = 1
@@ -272,7 +272,7 @@ contains
 
     dy_dx(1) = y(2)
     if (n_poly_m /= 0._WP) then
-       dy_dx(2) = -B_m*ABS(y(1))**n_poly_m - 2._WP*y(2)/x
+       dy_dx(2) = -B_m*abs(y(1))**n_poly_m - 2._WP*y(2)/x
     else
        dy_dx(2) = -B_m - 2._WP*y(2)/x
     endif
@@ -300,7 +300,7 @@ contains
     pd(1,1) = 0._WP
     pd(1,2) = 1._WP
 
-    pd(2,1) = -n_poly_m*B_m*ABS(y(1))**(n_poly_m-1._WP)*SIGN(1._WP, y(1))
+    pd(2,1) = -n_poly_m*B_m*abs(y(1))**(n_poly_m-1._WP)*SIGN(1._WP, y(1))
     pd(2,2) = -2._WP/x
 
     ! Finish

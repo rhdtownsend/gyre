@@ -1,7 +1,7 @@
 ! Program  : build_poly_hom
 ! Purpose  : build homogeneous polytrope
 !
-! Copyright 2013-214 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -27,6 +27,7 @@ program build_poly_hom
   use core_system
 
   use gyre_grid
+  use gyre_math
 
   use ISO_FORTRAN_ENV
 
@@ -77,7 +78,7 @@ program build_poly_hom
   allocate(Theta(n))
   allocate(dTheta(n))
 
-  xi = SQRT(6._WP)*x
+  xi = sqrt(6._WP)*x
 
   Theta = 1._WP - xi**2/6._WP
   dTheta = -xi/3._WP

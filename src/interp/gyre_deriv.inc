@@ -1,7 +1,7 @@
 ! Module   : gyre_deriv
 ! Purpose  : derivative evaluation functions (template)
 !
-! Copyright 2017-2018 Rich Townsend
+! Copyright 2017-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -29,6 +29,8 @@ module gyre_${T}_deriv
 
   use core_kinds
   use core_linalg
+
+  use gyre_math
 
   use ISO_FORTRAN_ENV
 
@@ -253,7 +255,7 @@ contains
 
     do i = 2,n-1
        df_dx(i) = (SIGN(1._WP, s(i-1)) + SIGN(1._WP, s(i)))* &
-                  MIN(ABS(s(i-1)), ABS(s(i)), 0.5*ABS(p(i)))
+                  MIN(abs(s(i-1)), abs(s(i)), 0.5*abs(p(i)))
     end do
 
     df_dx(n) = p(n)

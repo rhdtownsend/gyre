@@ -1,7 +1,7 @@
 ! Incfile  : gyre_nad_diff
 ! Purpose  : nonadiabatic difference equations
 !
-! Copyright 2016-2017 Rich Townsend
+! Copyright 2016-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -28,6 +28,7 @@ module gyre_nad_diff
   use gyre_diff_factory
   use gyre_trapz_diff
   use gyre_ext
+  use gyre_math
   use gyre_mode_par
   use gyre_model
   use gyre_nad_eqns
@@ -177,9 +178,9 @@ contains
 
        A = this%eq%A(1, st)
 
-       lambda(1) = SQRT(A(2,1)*A(1,2))
-       lambda(2) = SQRT(A(4,3)*A(3,4))
-       lambda(3) = SQRT(A(6,5)*A(5,6))
+       lambda(1) = sqrt(A(2,1)*A(1,2))
+       lambda(2) = sqrt(A(4,3)*A(3,4))
+       lambda(3) = sqrt(A(6,5)*A(5,6))
 
        scl = scl*exp(c_ext_t(-SUM(lambda, MASK=MAGNUS_EIGVAL_MASK)*this%dx))
 
@@ -187,7 +188,7 @@ contains
 
        omega_c = this%cx%omega_c(this%Omega_rot, st)
 
-       scl = scl/SQRT(omega_c)
+       scl = scl/sqrt(omega_c)
 
     end select
 

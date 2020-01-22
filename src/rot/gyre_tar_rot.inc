@@ -31,6 +31,7 @@ module gyre_${T}_tar_rot
 
   use gyre_constants
   use gyre_freq_frame
+  use gyre_math
   use gyre_mode_par
   use gyre_tar_fit
   use gyre_rot
@@ -83,9 +84,9 @@ contains
     ! Construct the tar_rot_t
 
     if (md_p%rossby) then
-       k = -(md_p%l - ABS(md_p%m) + 1)
+       k = -(md_p%l - abs(md_p%m) + 1)
     else
-       k = md_p%l - ABS(md_p%m)
+       k = md_p%l - abs(md_p%m)
     endif
 
     !$OMP CRITICAL
@@ -121,7 +122,7 @@ contains
 
     ! Evaluate the effective harmonic degree
 
-    l_e = 0.5_WP*(-1._WP + SQRT(1._WP + 4._WP*this%lambda(Omega_rot, omega)))
+    l_e = 0.5_WP*(-1._WP + sqrt(1._WP + 4._WP*this%lambda(Omega_rot, omega)))
 
     ! Finish
 

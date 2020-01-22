@@ -23,6 +23,8 @@ module gyre_grid_par
 
   use core_kinds
 
+  use gyre_math
+
   ! No implicit typing
 
   implicit none
@@ -36,7 +38,7 @@ module gyre_grid_par
      real(WP)        :: alpha_exp = 0._WP
      real(WP)        :: alpha_thm = 0._WP
      real(WP)        :: alpha_str = 0._WP
-     real(WP)        :: dx_min = SQRT(EPSILON(0._WP))
+     real(WP)        :: dx_min = sqrt(EPSILON(0._WP))
      integer         :: n_inner = 0
      integer         :: n_floor = 0
      integer         :: n_iter_max = 8

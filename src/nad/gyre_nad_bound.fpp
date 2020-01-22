@@ -26,6 +26,7 @@ module gyre_nad_bound
   use gyre_atmos
   use gyre_bound
   use gyre_context
+  use gyre_math
   use gyre_mode_par
   use gyre_model
   use gyre_model_util
@@ -539,7 +540,7 @@ contains
       Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
 
       l_e = this%cx%l_e(Omega_rot, st)
 
@@ -614,7 +615,7 @@ contains
       Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
@@ -704,7 +705,7 @@ contains
       Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
@@ -801,7 +802,7 @@ contains
       Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)

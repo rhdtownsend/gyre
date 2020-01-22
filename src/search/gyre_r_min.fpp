@@ -1,7 +1,7 @@
 ! Module   : gyre_r_min
 ! Purpose  : minimum finding algorithms (real)
 !
-! Copyright 2018 Rich Townsend
+! Copyright 2018-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,6 +25,7 @@ module gyre_r_min
 
   use gyre_ext_func
   use gyre_ext
+  use gyre_math
   use gyre_num_par
   use gyre_status
 
@@ -239,12 +240,12 @@ contains
        ! Check for convegence
 
        if (relative_tol_) then
-          tol = (SQRT(EPSILON(0._WP)) + 0.5_WP*rx_tol)*(ABS(a) + ABS(c))
+          tol = (sqrt(EPSILON(0._WP)) + 0.5_WP*rx_tol)*(abs(a) + abs(c))
        else
-          tol = SQRT(EPSILON(0._WP))*(ABS(a) + ABS(c)) + rx_tol
+          tol = sqrt(EPSILON(0._WP))*(abs(a) + abs(c)) + rx_tol
        endif
 
-       if (ABS(c-a) <= tol) exit iterate_loop
+       if (abs(c-a) <= tol) exit iterate_loop
 
        ! Create a new point, and update the bracket accordingly
 

@@ -413,7 +413,7 @@ contains
     if(i > 0) then
        n = FLOOR(log10(REAL(i))) + 1
     elseif(i < 0) then
-       n = FLOOR(log10(REAL(ABS(i)))) + 2
+       n = FLOOR(log10(REAL(abs(i)))) + 2
     else
        n = 1
     endif

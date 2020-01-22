@@ -142,7 +142,7 @@ contains
     X_3 = hansen_X(e, -(l+3), -m, k)
 
     G_2 = c*Y* &
-         2._WP*(-0.5_WP*(l+1)*e*(X_2m1 - X_2p1) - m*(1._WP - e**2)*X_3)/SQRT(1._WP - e**2)
+         2._WP*(-0.5_WP*(l+1)*e*(X_2m1 - X_2p1) - m*(1._WP - e**2)*X_3)/sqrt(1._WP - e**2)
 
     ! Finish
 
@@ -181,7 +181,7 @@ contains
     X_3 = hansen_X(e, -(l+3), -m, k)
 
     G_3 = c*Y* &
-         (-0.5_WP*(l+1)*e*(X_2m1 - X_2p1) - m*(1._WP - e**2)*X_3 + m*X_1)*SQRT(1._WP - e**2)/e
+         (-0.5_WP*(l+1)*e*(X_2m1 - X_2p1) - m*(1._WP - e**2)*X_3 + m*X_1)*sqrt(1._WP - e**2)/e
 
     ! Finish
 
@@ -272,7 +272,7 @@ contains
 
     else
 
-       if (ABS(m - k) == 1) then
+       if (abs(m - k) == 1) then
           X_tilde = 0.5_WP*SIGN(1, m-k)
        else
           X_tilde = 0._WP
@@ -330,7 +330,7 @@ contains
 
     else
 
-       if (ABS(m - k) == 1) then
+       if (abs(m - k) == 1) then
           X_hat = 0.5_WP
        else
           X_hat = 0._WP
@@ -407,7 +407,7 @@ contains
 
     ! Refine the quadrature by repeatedly doubling N
 
-    e_fac = SQRT((1._WP - e)*(1._WP + e))
+    e_fac = sqrt((1._WP - e)*(1._WP + e))
 
     refine_loop : do
 
@@ -445,9 +445,9 @@ contains
 
        $ASSERT(N <= N_MAX,Too many iterations)
 
-       dI_max = MAX(dI_max, ABS(dI))
+       dI_max = MAX(dI_max, abs(dI))
 
-       if (ABS(dI) < tol*dI_max) exit refine_loop
+       if (abs(dI) < tol*dI_max) exit refine_loop
 
     end do refine_loop
 

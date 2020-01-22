@@ -748,7 +748,7 @@ contains
 
     ! Determine if cx is valid
 
-    valid = ABS(REAL(cx%f)) >= RADIX_WP**(-1) .AND. ABS(REAL(cx%f)) < 1._WP
+    valid = abs(REAL(cx%f)) >= RADIX_WP**(-1) .AND. abs(REAL(cx%f)) < 1._WP
 
     ! Finish
 
@@ -814,7 +814,7 @@ contains
 
     ! Calculate the absolute value of cx
 
-    abs_cx = r_ext_t(ABS(cx%f))
+    abs_cx = r_ext_t(abs(cx%f))
     abs_cx = scale(abs_cx, cx%e)
 
     ! Finish
@@ -854,12 +854,12 @@ contains
 
     ! Calculate the square root of cx
 
-    sqrt_cx = c_ext_t(SQRT(cx%f))
+    sqrt_cx = c_ext_t(sqrt(cx%f))
 
     if (MOD(cx%e, 2) == 0) then
        sqrt_cx = scale(sqrt_cx, cx%e/2)
     else
-       sqrt_cx = scale(sqrt_cx, (cx%e-1)/2)*SQRT(2._WP)
+       sqrt_cx = scale(sqrt_cx, (cx%e-1)/2)*sqrt(2._WP)
     endif
 
     ! Finish

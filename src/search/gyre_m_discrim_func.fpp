@@ -1,7 +1,7 @@
 ! Module   : gyre_m_discrim_func
 ! Purpose  : modulus of complex discriminant function
 !
-! Copyright 2018 Rich Townsend
+! Copyright 2018-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ module gyre_m_discrim_func
   use gyre_bvp
   use gyre_ext
   use gyre_ext_func
+  use gyre_math
   use gyre_status
   use gyre_state
 
@@ -111,7 +112,7 @@ contains
        call this%bp%build(this%st)
        call this%bp%factor()
 
-       f_rx = ABS(this%bp%det())
+       f_rx = abs(this%bp%det())
 
        status = STATUS_OK
 

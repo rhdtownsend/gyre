@@ -112,14 +112,14 @@ contains
     real(WP) :: P_2
     integer  :: k
 
-    $ASSERT(ABS(x) <= 1,Invalid x)
+    $ASSERT(abs(x) <= 1,Invalid x)
 
     ! Evaluate the associated Legendre function P^m_l with degree l
     ! and order m. The definitions given by [Abramowicz:1970] are
     ! adopted --- in particular, their eqn. 8.6.6, which uses the
     ! Condon-Shortley phase term
 
-    am = ABS(m)
+    am = abs(m)
 
     if (am > l) then
 
@@ -131,7 +131,7 @@ contains
 
     else
 
-       y = SQRT((1._WP - x)*(1._WP + x))
+       y = sqrt((1._WP - x)*(1._WP + x))
        P = (-1)**am * double_factorial(2*am-1) * y**am
 
        if (l > am) then
@@ -171,7 +171,7 @@ contains
 
     ! Evaluate the spherical harmonic with degree l and order m
 
-    Y = SQRT((2*l+1)/(4*PI)*factorial(l-m)/factorial(l+m))* &
+    Y = sqrt((2*l+1)/(4*PI)*factorial(l-m)/factorial(l+m))* &
          legendre_P(l, m, cos(theta))*exp(CMPLX(0._WP, m*phi, WP))
 
     ! Finish

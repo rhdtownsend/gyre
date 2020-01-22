@@ -1,7 +1,7 @@
 ! Module   : gyre_cimplex
 ! Purpose  : complex discriminant function root finding using downhill simplex minimization
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,6 +25,7 @@ module gyre_cimplex
 
   use gyre_ext
   use gyre_ext_func
+  use gyre_math
   use gyre_status
 
   use ISO_FORTRAN_ENV
@@ -125,7 +126,7 @@ contains
 
     i = [1,2,3]
 
-    a = ABS(this%f_cx)
+    a = abs(this%f_cx)
 
     if (a(i(1)) > a(i(2))) call swap_(1, 2)
     if (a(i(2)) > a(i(3))) call swap_(2, 3)
@@ -245,8 +246,8 @@ contains
 
        ! Check for convergence (equal minima)
 
-       !if (ABS(cm%f_cx(cm%i(3)))-ABS(cm%f_cx(cm%i(1))) < &
-       !     tol*ABS(cm%f_cx(cm%i(3)))) exit iterate_loop
+       !if (abs(cm%f_cx(cm%i(3)))-abs(cm%f_cx(cm%i(1))) < &
+       !     tol*abs(cm%f_cx(cm%i(3)))) exit iterate_loop
           
        ! Update the cimplex
 
@@ -289,12 +290,12 @@ contains
        ! Check for convergence (change in coordinates)
 
        if (relative_tol_) then
-          tol = (4._WP*EPSILON(0._WP) + cx_tol)*MAX(ABS(cm%cx(cm%i(3))), ABS(cm%cx(cm%i(1))))
+          tol = (4._WP*EPSILON(0._WP) + cx_tol)*MAX(abs(cm%cx(cm%i(3))), abs(cm%cx(cm%i(1))))
        else
-          tol = 4._WP*EPSILON(0._WP)*MAX(ABS(cm%cx(cm%i(3))), ABS(cm%cx(cm%i(1)))) + cx_tol
+          tol = 4._WP*EPSILON(0._WP)*MAX(abs(cm%cx(cm%i(3))), abs(cm%cx(cm%i(1)))) + cx_tol
        endif
 
-       if (ABS(cm%cx(cm%i(3)) - cm%cx(cm%i(1))) <= tol) exit iterate_loop
+       if (abs(cm%cx(cm%i(3)) - cm%cx(cm%i(1))) <= tol) exit iterate_loop
 
        cm = cm_new
 
@@ -359,7 +360,7 @@ contains
 
     ! Accept or reject the new position
 
-    if (ABS(f_cx_new) < ABS(cm%f_cx(i))) then
+    if (abs(f_cx_new) < abs(cm%f_cx(i))) then
 
        cm%cx(i) = cx_new
        cm%f_cx(i) = f_cx_new

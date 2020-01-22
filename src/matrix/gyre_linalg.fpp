@@ -173,7 +173,7 @@ contains
 
        do i = 1, n
           norm = SUM(V_l(i,:)*V_r(:,i))
-!          $ASSERT(ABS(norm) > n*EPSILON(0._WP),Near-defective matrix)
+!          $ASSERT(abs(norm) > n*EPSILON(0._WP),Near-defective matrix)
           V_l(i,:) = V_l(i,:)/norm
        enddo
 
@@ -302,7 +302,7 @@ contains
 
        do i = 1,n
           norm = SUM(V_l(i,:)*V_r(:,i))
-!          $ASSERT(ABS(norm) > n*EPSILON(0._WP),Near-defective matrix)
+!          $ASSERT(abs(norm) > n*EPSILON(0._WP),Near-defective matrix)
           V_l(i,:) = V_l(i,:)/norm
        enddo
 
@@ -372,10 +372,10 @@ contains
     c = A(1,1)*A(2,2) - A(1,2)*A(2,1)
 
     $if($TYPE eq 'real')
-    s = SQRT(CMPLX(b**2 - 4._WP*c, KIND=KIND(0._WP)))
+    s = sqrt(CMPLX(b**2 - 4._WP*c, WP))
     q = -0.5_WP*(b + SIGN(1._WP, b)*s)
     $else
-    s = SQRT(b**2 - 4._WP*c)
+    s = sqrt(b**2 - 4._WP*c)
     q = -0.5_WP*(b + SIGN(1._WP, REAL(CONJG(b)*s))*s)
     $endif
 

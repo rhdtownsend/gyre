@@ -1,7 +1,7 @@
 ! Module   : gyre_mode
 ! Purpose  : mode data
 !
-! Copyright 2013-2019 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -29,6 +29,7 @@ module gyre_mode
   use gyre_ext
   use gyre_grid
   use gyre_grid_util
+  use gyre_math
   use gyre_mode_par
   use gyre_osc_par
   use gyre_state
@@ -90,13 +91,13 @@ contains
 
     y_1_ref = md%y_i(1, md%k_ref)
 
-    if (ABS(y_1_ref) > TINY(0._WP)) then
-       f_phase = CONJG(y_1_ref)/ABS(y_1_ref)
+    if (abs(y_1_ref) > TINY(0._WP)) then
+       f_phase = CONJG(y_1_ref)/abs(y_1_ref)
     else
        f_phase = 1._WP
     endif
 
-    md%scl = md%scl/SQRT(md%E())*f_phase
+    md%scl = md%scl/sqrt(md%E())*f_phase
 
     ! Classify the mode
 

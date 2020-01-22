@@ -24,6 +24,7 @@ module gyre_atmos
   use core_kinds
 
   use gyre_point
+  use gyre_math
   use gyre_model
 
   use ISO_FORTRAN_ENV
@@ -90,7 +91,7 @@ contains
 
     else
 
-       beta = 0.5_WP*(b_11 + b_22 - SQRT(psi2))
+       beta = 0.5_WP*(b_11 + b_22 - sqrt(psi2))
 
     endif
 
@@ -136,7 +137,7 @@ contains
     b_22 = As - U + 1
 
     psi2 = (b_22 - b_11)**2 + 4._WP*b_12*b_21
-    psi = SQRT(psi2)
+    psi = sqrt(psi2)
 
     ! Adjust the sign of psi to choose the correct solution branch
 
@@ -216,8 +217,8 @@ contains
     b = ((As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda)*c_1
     c = -4._WP*lambda*As
 
-    omega_cutoff_lo = SQRT((-b + SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
-    omega_cutoff_hi = SQRT((-b - SQRT(b**2 - 4._WP*a*c))/(2._WP*a))
+    omega_cutoff_lo = sqrt((-b + sqrt(b**2 - 4._WP*a*c))/(2._WP*a))
+    omega_cutoff_hi = sqrt((-b - sqrt(b**2 - 4._WP*a*c))/(2._WP*a))
     
     $ASSERT(omega_cutoff_hi >= omega_cutoff_lo,Incorrect cutoff frequency ordering)
 

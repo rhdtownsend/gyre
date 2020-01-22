@@ -648,7 +648,7 @@ contains
           c_1 = this%coeff(I_C_1, pt)
           Gamma_1 = this%coeff(I_GAMMA_1, pt)
 
-          I = I + SQRT(c_1*V_2/Gamma_1)*(gr%pt(k+1)%x - gr%pt(k)%x)
+          I = I + sqrt(c_1*V_2/Gamma_1)*(gr%pt(k+1)%x - gr%pt(k)%x)
 
        end do cell_loop
 
@@ -708,13 +708,13 @@ contains
           As = this%coeff(I_AS, pt)
           c_1 = this%coeff(I_C_1, pt)
 
-          I = I + (SQRT(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(k+1)%x - gr%pt(k)%x)
+          I = I + (sqrt(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(k+1)%x - gr%pt(k)%x)
 
        end do cell_loop
 
     end do seg_loop
           
-    Delta_g = SQRT(lambda)/(2._WP*PI**2)*I
+    Delta_g = sqrt(lambda)/(2._WP*PI**2)*I
 
     ! Finish
 

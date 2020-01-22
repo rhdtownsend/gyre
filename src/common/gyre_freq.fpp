@@ -108,13 +108,13 @@ contains
        case ('NONE')
           omega_l = freq
        case ('HZ')
-          omega_l = TWOPI*freq*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+          omega_l = TWOPI*freq*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case ('UHZ')
-          omega_l = TWOPI*freq*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/1E6_WP
+          omega_l = TWOPI*freq*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))/1E6_WP
        case ('RAD_PER_SEC')
-          omega_l = freq*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+          omega_l = freq*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case ('CYC_PER_DAY')
-          omega_l = TWOPI*freq*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/86400._WP
+          omega_l = TWOPI*freq*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))/86400._WP
        case ('ACOUSTIC_DELTA')
           omega_l = TWOPI*freq*ml%Delta_p(pt_i%x, pt_o%x)
        case ('GRAVITY_DELTA')
@@ -269,13 +269,13 @@ contains
        case ('NONE')
           freq = omega_l
        case ('HZ')
-          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))
+          freq = omega_l/(TWOPI*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star)))
        case ('UHZ')
-          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*1E6_WP
+          freq = omega_l/(TWOPI*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star)))*1E6_WP
        case ('RAD_PER_SEC')
-          freq = omega_l/SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+          freq = omega_l/sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case ('CYC_PER_DAY')
-          freq = omega_l/(TWOPI*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star)))*86400._WP
+          freq = omega_l/(TWOPI*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star)))*86400._WP
        case ('ACOUSTIC_DELTA')
           freq = omega_l/(TWOPI*ml%Delta_p(pt_i%x, pt_o%x))
        case ('GRAVITY_DELTA')

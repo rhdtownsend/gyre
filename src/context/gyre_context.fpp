@@ -400,15 +400,15 @@ contains
        case ('NONE')
           Omega_rot = rt_p%Omega_rot
        case ('HZ')
-          Omega_rot = TWOPI*rt_p%Omega_rot*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+          Omega_rot = TWOPI*rt_p%Omega_rot*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case ('UHZ')
-          Omega_rot = TWOPI*rt_p%Omega_rot*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/1E6
+          Omega_rot = TWOPI*rt_p%Omega_rot*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))/1E6
        case ('RAD_PER_SEC')
-          Omega_rot = rt_p%Omega_rot*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+          Omega_rot = rt_p%Omega_rot*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
        case ('CYC_PER_DAY')
-          Omega_rot = TWOPI*rt_p%Omega_rot*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))/86400._WP
+          Omega_rot = TWOPI*rt_p%Omega_rot*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))/86400._WP
        case ('CRITICAL')
-          Omega_rot = rt_p%Omega_rot*SQRT(8._WP/27._WP)
+          Omega_rot = rt_p%Omega_rot*sqrt(8._WP/27._WP)
        case default
           $ABORT(Invalid Omega_units)
        end select
@@ -419,7 +419,7 @@ contains
        case ('NONE')
           Omega_rot = rt_p%Omega_rot
        case ('CRITICAL')
-          Omega_rot = rt_p%Omega_rot*SQRT(8._WP/27._WP)
+          Omega_rot = rt_p%Omega_rot*sqrt(8._WP/27._WP)
        case default
           $ABORT(Invalid Omega_units)
        end select
@@ -430,7 +430,7 @@ contains
        case ('NONE')
           Omega_rot = rt_p%Omega_rot
        case ('CRITICAL')
-          Omega_rot = rt_p%Omega_rot*SQRT(8._WP/27._WP)
+          Omega_rot = rt_p%Omega_rot*sqrt(8._WP/27._WP)
        case default
           $ABORT(Invalid Omega_units)
        end select
@@ -651,7 +651,7 @@ contains
 
     select type (ml)
     class is (evol_model_t)
-       omega = TWOPI/period*SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       omega = TWOPI/period*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
     class default
        $ABORT(Invalid model type)
     end select

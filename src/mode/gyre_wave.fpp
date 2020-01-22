@@ -203,12 +203,12 @@ contains
 
     x_ref = MIN(MAX(os_p%x_ref, wv%pt_i%x), wv%pt_o%x)
 
-    wv%k_ref = MINLOC(ABS(gr%pt%x - x_ref), DIM=1)
+    wv%k_ref = MINLOC(abs(gr%pt%x - x_ref), DIM=1)
 
     ! Cache the ratio E/|scl|**2, to avoid having to perform (expensive)
     ! E integrations in the future
 
-    wv%E_scl2 = wv%E(use_cache=.FALSE.)/ABS(wv%scl)**2
+    wv%E_scl2 = wv%E(use_cache=.FALSE.)/abs(wv%scl)**2
 
     ! Finish
 
@@ -912,7 +912,7 @@ contains
       U = ml%coeff(I_U, pt)
       c_1 = ml%coeff(I_C_1, pt)
 
-      dE_dx = (ABS(xi_r)**2 + ABS(lambda)*ABS(xi_h)**2)*U*pt%x**2/c_1
+      dE_dx = (abs(xi_r)**2 + abs(lambda)*abs(xi_h)**2)*U*pt%x**2/c_1
 
     end associate
 
@@ -943,7 +943,7 @@ contains
 
     select type (ml => this%cx%model())
     class is (evol_model_t)
-       t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       t_dyn = sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
        t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
     class default
        t_dyn = 1._WP
@@ -994,7 +994,7 @@ contains
     
     select type (ml => this%cx%model())
     class is (evol_model_t)
-       t_dyn = SQRT(ml%R_star**3/(G_GRAVITY*ml%M_star))
+       t_dyn = sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
        t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
     class default
        t_dyn = 1._WP
@@ -1101,7 +1101,7 @@ contains
       dzeta_dx = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)) + &
                  2._WP*REAL(lambda*CONJG(xi_r)*xi_h/c_1*(pt%x**2*U/c_1)) + &
                  CONJG(eul_rho)*eul_phi*(pt%x**2*U/c_1) + &
-                 ABS(xi_r)**2*(U-4._WP)/c_1*(pt%x**2*U/c_1)
+                 abs(xi_r)**2*(U-4._WP)/c_1*(pt%x**2*U/c_1)
 
     end associate
 
@@ -1272,7 +1272,7 @@ contains
       dzeta_dx = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)) + &
                  2._WP*REAL(lag_rho*CONJG(xi_r)*(pt%x/c_1)*(pt%x**2*U/c_1)) + &
                  CONJG(eul_rho)*eul_phi*(pt%x**2*U/c_1) - &
-                 ABS(xi_r)**2*(-V_g-As)/c_1*(pt%x**2*U/c_1)
+                 abs(xi_r)**2*(-V_g-As)/c_1*(pt%x**2*U/c_1)
 
     end associate
 
@@ -1398,7 +1398,7 @@ contains
 
       E = this%E()
 
-      dbeta_dx = REAL((ABS(xi_r)**2 + (lambda-1._WP)*ABS(xi_h)**2 - &
+      dbeta_dx = REAL((abs(xi_r)**2 + (lambda-1._WP)*abs(xi_h)**2 - &
                        2._WP*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
 
     end associate
@@ -1691,7 +1691,7 @@ contains
       omega_c = this%cx%omega_c(Omega_rot, this%st)
       lambda = this%cx%lambda(Omega_rot, this%st)
 
-      alpha_0 = 4._WP - U - ABS(lambda)/(c_1*ABS(omega_c)**2) + c_1*ABS(omega_c)**2
+      alpha_0 = 4._WP - U - abs(lambda)/(c_1*abs(omega_c)**2) + c_1*abs(omega_c)**2
 
     end associate
 
@@ -1747,9 +1747,9 @@ contains
 
       if (V /= 0._WP) then
          alpha_1 = 4._WP - 1._WP/nabla_ad - kap_T - kap_rho/(nabla_ad*Gamma_1) + &
-                   (1._WP - ABS(lambda)/(c_1*ABS(omega_c)**2*V))*(c_1*ABS(omega_c)**2 - U)/(nabla_ad*alpha_0)
+                   (1._WP - abs(lambda)/(c_1*abs(omega_c)**2*V))*(c_1*abs(omega_c)**2 - U)/(nabla_ad*alpha_0)
       else
-         alpha_1 = SIGN(HUGE(0._WP), (c_1*ABS(omega_c)**2 - U)/(nabla_ad*alpha_0))
+         alpha_1 = SIGN(HUGE(0._WP), (c_1*abs(omega_c)**2 - U)/(nabla_ad*alpha_0))
       endif
          
     end associate
@@ -1921,7 +1921,7 @@ contains
 
       C_T = this%lag_T_eff()/this%xi_r(k)
 
-      f_T = ABS(C_T)
+      f_T = abs(C_T)
 
     end associate
 
@@ -1947,7 +1947,7 @@ contains
 
       C_g = this%lag_g_eff()/this%xi_r(k)
 
-      f_g = -ABS(C_g)
+      f_g = -abs(C_g)
 
     end associate
 
@@ -2022,7 +2022,7 @@ contains
 
     if (use_cache_) then
 
-       E = this%E_scl2*ABS(this%scl)**2
+       E = this%E_scl2*abs(this%scl)**2
 
     else
 
@@ -2128,11 +2128,11 @@ contains
 
       select case (this%os_p%inertia_norm)
       case ('RADIAL')
-         A2 = ABS(xi_r)**2
+         A2 = abs(xi_r)**2
       case ('HORIZ')
-         A2 = ABS(lambda)*ABS(xi_h)**2
+         A2 = abs(lambda)*abs(xi_h)**2
       case ('BOTH')
-         A2 = ABS(xi_r)**2 + ABS(lambda)*ABS(xi_h)**2
+         A2 = abs(xi_r)**2 + abs(lambda)*abs(xi_h)**2
       case default
          $ABORT(Invalid inertia_norm)
       end select
@@ -2336,7 +2336,7 @@ contains
        dzeta_dx(k) = this%dzeta_dx(k)
     end do
 
-    omega_int = SQRT(integrate(this%gr%pt%x, dzeta_dx))
+    omega_int = sqrt(integrate(this%gr%pt%x, dzeta_dx))
 
     ! Finish
 
@@ -2426,7 +2426,7 @@ contains
        dW_dx(k) = this%dW_dx(k)
     end do
 
-    D = integrate(this%gr%pt%x, ABS(dW_dx))
+    D = integrate(this%gr%pt%x, abs(dW_dx))
 
     if (D /= 0._WP) then
        eta = integrate(this%gr%pt%x, dW_dx)/D

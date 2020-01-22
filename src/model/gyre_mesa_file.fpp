@@ -237,8 +237,8 @@ contains
     c_P = P*delta/(rho*T*nabla_ad)
 
     c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
-    c_thn = c_P*SQRT(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
-    c_thk = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
+    c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
+    c_thk = 4._WP*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
 
     select case (version)
     case (101)
@@ -251,14 +251,14 @@ contains
     int_rhoT = -integral(r(n:1:-1), rho(n:1:-1)*K_BOLTZMANN*T(n:1:-1)/M_PROTON)
     int_rhoT = int_rhoT(n:1:-1)
     where (x /= 0._WP)
-       f_luan_t = 4._WP*PI*r**2*int_rhoT/L_r*SQRT(G_GRAVITY*M_star/R_star**3)
+       f_luan_t = 4._WP*PI*r**2*int_rhoT/L_r*sqrt(G_GRAVITY*M_star/R_star**3)
     elsewhere
        f_luan_t = 0._WP
     end where
 
     f_luan_c = c_P*M_PROTON/K_BOLTZMANN
 
-    Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+    Omega_rot = Omega_rot*sqrt(R_star**3/(G_GRAVITY*M_star))
 
     ! Initialize the evol_model_t
 
@@ -334,9 +334,9 @@ contains
 
       ! Evaluate eps_rho and eps_T from eps_eps_*
 
-      k = MAXLOC(ABS(eps_eps_T), DIM=1)
+      k = MAXLOC(abs(eps_eps_T), DIM=1)
 
-      if (ABS(eps_eps_T(k)) >= 1E-3_WP*ABS(eps(k))) then
+      if (abs(eps_eps_T(k)) >= 1E-3_WP*abs(eps(k))) then
 
          ! Note: technically incorrect because eps in versions < 1.01 includes eps_grav
 

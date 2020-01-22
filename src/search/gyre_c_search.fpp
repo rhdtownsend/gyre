@@ -29,6 +29,7 @@ module gyre_c_search
   use gyre_bvp
   use gyre_discrim_func
   use gyre_ext
+  use gyre_math
   use gyre_min
   use gyre_mode
   use gyre_nad_bvp
@@ -300,7 +301,7 @@ contains
 
     ! Set up the initial guess
 
-    domega = SQRT(EPSILON(0._WP))*ABS(omega)
+    domega = sqrt(EPSILON(0._WP))*abs(omega)
 
     omega_a = c_ext_t(omega + CMPLX(0._WP, domega, KIND=WP))
     omega_b = c_ext_t(omega - CMPLX(0._WP, domega, KIND=WP))
@@ -338,7 +339,7 @@ contains
        ! coincident; and then save the revised discriminant values
 
        if(omega_b == omega_a) then
-          omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/ABS(omega_a)))
+          omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/abs(omega_a)))
        endif
 
        call expand(df, omega_a, omega_b, r_ext_t(0._WP), status, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 

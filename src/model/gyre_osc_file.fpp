@@ -213,8 +213,8 @@ contains
     c_P = P*delta/(rho*T*nabla_ad)
 
     c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
-    c_thn = c_P*SQRT(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
-    c_thk = 4._WP*PI*rho*T*c_P*SQRT(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
+    c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
+    c_thk = 4._WP*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
     c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
 
     allocate(eps_rho(n))
@@ -228,7 +228,7 @@ contains
        eps_T = 0._WP
     end where
 
-    Omega_rot = Omega_rot*SQRT(R_star**3/(G_GRAVITY*M_star))
+    Omega_rot = Omega_rot*sqrt(R_star**3/(G_GRAVITY*M_star))
 
     ! Initialize the evol_model_t
 

@@ -51,13 +51,13 @@ module gyre_${T}_magnus_diff
   real(WP), parameter :: GL2_C_I(1) = [0.5_WP]
 
   real(WP), parameter :: GL4_C_I(2) = [ &
-       0.5_WP-SQRT(3._WP)/6._WP, &
-       0.5_WP+SQRT(3._WP)/6._WP]
+       0.5_WP-sqrt(3._WP)/6._WP, &
+       0.5_WP+sqrt(3._WP)/6._WP]
   
   real(WP), parameter :: GL6_C_I(3) = [ &
-       0.5_WP-SQRT(15._WP)/10._WP, &
+       0.5_WP-sqrt(15._WP)/10._WP, &
        0.5_WP, &
-       0.5_WP+SQRT(15._WP)/10._WP]
+       0.5_WP+sqrt(15._WP)/10._WP]
 
   ! Derived-type definitions
 
@@ -310,7 +310,7 @@ contains
     ! for alpha_2 is erroneous)
 
     dalpha(:,:,1) = 0.5_WP*(A(:,:,1) + A(:,:,2))
-    dalpha(:,:,2) = SQRT(3._WP)*(A(:,:,2) - A(:,:,1))
+    dalpha(:,:,2) = sqrt(3._WP)*(A(:,:,2) - A(:,:,1))
 
     dOmega = dalpha(:,:,1) - this%dx*commutator(dalpha(:,:,1), dalpha(:,:,2))/12._WP
     
@@ -344,7 +344,7 @@ contains
     ! and 257)
 
     dalpha(:,:,1) = A(:,:,2)
-    dalpha(:,:,2) = SQRT(15._WP)*(A(:,:,3) - A(:,:,1))/3
+    dalpha(:,:,2) = sqrt(15._WP)*(A(:,:,3) - A(:,:,1))/3
     dalpha(:,:,3) = 10*(A(:,:,3) - 2*A(:,:,2) + A(:,:,1))/3
 
     dC(:,:,1) = this%dx*commutator(dalpha(:,:,1), dalpha(:,:,2))

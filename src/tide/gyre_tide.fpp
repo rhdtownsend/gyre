@@ -30,6 +30,7 @@ module gyre_tide
   use gyre_grid_factory
   use gyre_grid_par
   use gyre_grid_spec
+  use gyre_math
   use gyre_mode_par
   use gyre_model
   use gyre_nad_bvp
@@ -137,7 +138,7 @@ contains
 
     if (td_p%sync_rot) then
 
-       Omega_sync = Omega_orb*SQRT((1 + td_p%e)/(1 - td_p%e)**3)
+       Omega_sync = Omega_orb*sqrt((1 + td_p%e)/(1 - td_p%e)**3)
 
        rt_p_%Omega_rot_source = 'UNIFORM'
        rt_p_%Omega_rot = td_p%sync_fraction*Omega_sync
@@ -251,7 +252,7 @@ contains
                    w_i_nad = 0._WP
          
                    w_o_nad = 0._WP
-                   w_o_nad(2) = -(2*l+1)*eps_tide/SQRT(4._WP*PI)*c
+                   w_o_nad(2) = -(2*l+1)*eps_tide/sqrt(4._WP*PI)*c
          
                    ! Solve for the wave function
 
@@ -282,7 +283,7 @@ contains
                    w_i_sad = 0._WP
          
                    w_o_sad = 0._WP
-                   w_o_sad(1) = -(2*l+1)*eps_tide/SQRT(4._WP*PI)*c
+                   w_o_sad(1) = -(2*l+1)*eps_tide/sqrt(4._WP*PI)*c
          
                    ! Solve for the wave function
 
@@ -372,9 +373,9 @@ contains
          omega_c(k) = cx%omega_c(Omega_rot, st)
       end do
 
-      if (ALL(ABS(omega_c) > omega_static)) then
+      if (ALL(abs(omega_c) > omega_static)) then
          tide_type = DYNAMIC_TIDE
-      elseif (ALL(ABS(omega_c) <= omega_static)) then
+      elseif (ALL(abs(omega_c) <= omega_static)) then
          tide_type = STATIC_TIDE
       else
          tide_type = MIXED_TIDE

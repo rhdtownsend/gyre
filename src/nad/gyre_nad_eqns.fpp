@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_eqns
 ! Purpose  : nonadiabatic differential equations
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ module gyre_nad_eqns
   use gyre_context
   use gyre_eqns
   use gyre_linalg
+  use gyre_math
   use gyre_model
   use gyre_mode_par
   use gyre_model_util
@@ -313,7 +314,7 @@ contains
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*SQRT(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
       l_i = this%cx%l_e(Omega_rot_i, st)

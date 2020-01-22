@@ -1,7 +1,7 @@
 ! Incfile  : gyre_band_sysmtx
 ! Purpose  : system matrix (banded storage, template)
 !
-! Copyright 2013-2019 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -46,6 +46,7 @@ module gyre_${T}_band_sysmtx
 
   use gyre_ext
   use gyre_linalg
+  use gyre_math
   use gyre_sysmtx
 
   use ISO_FORTRAN_ENV
@@ -256,8 +257,8 @@ contains
     integer :: i_b
     integer :: j_b
 
-    $ASSERT_DEBUG(ABS(i_0-j_0) <= this%n_ul,Invalid indices)
-    $ASSERT_DEBUG(ABS(i_0-(j_0+SIZE(R)-1)) <= this%n_ul,Invalid indices)
+    $ASSERT_DEBUG(abs(i_0-j_0) <= this%n_ul,Invalid indices)
+    $ASSERT_DEBUG(abs(i_0-(j_0+SIZE(R)-1)) <= this%n_ul,Invalid indices)
 
     ! Set data in row i_0, starting at column j_0. The rest of the row
     ! is zeroed out
@@ -299,8 +300,8 @@ contains
     integer :: i_b
     integer :: j_b
 
-    $ASSERT_DEBUG(ABS(i_0-j_0) <= this%n_ul,Invalid indices)
-    $ASSERT_DEBUG(ABS(i_0-(j_0+SIZE(R)-1)) <= this%n_ul,Invalid indices)
+    $ASSERT_DEBUG(abs(i_0-j_0) <= this%n_ul,Invalid indices)
+    $ASSERT_DEBUG(abs(i_0-(j_0+SIZE(R)-1)) <= this%n_ul,Invalid indices)
 
     ! Get data from row i_0, starting at column j_0
 
@@ -365,7 +366,7 @@ contains
        do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
           i_b = 2*this%n_ul + 1 + i - j
           j_b = j
-          scl = MAX(scl, ABS(this%A_b(i_b,j_b)))
+          scl = MAX(scl, abs(this%A_b(i_b,j_b)))
        end do
 
        do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
@@ -452,8 +453,8 @@ contains
       A_s = HUGE(0._WP)
 
       sing_loop : do i = n_e*n+1, n_e*(n+1)
-         if (ABS(this%A_b(2*n_ul+1,i)) < A_s) then
-            A_s = ABS(this%A_b(2*n_ul+1,i))
+         if (abs(this%A_b(2*n_ul+1,i)) < A_s) then
+            A_s = abs(this%A_b(2*n_ul+1,i))
             i_s = i
          end if
       end do sing_loop

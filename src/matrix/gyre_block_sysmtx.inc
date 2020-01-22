@@ -1,7 +1,7 @@
 ! Incfile  : gyre_block_sysmtx
 ! Purpose  : system matrix (block storage, template)
 !
-! Copyright 2013-2019 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -46,6 +46,7 @@ module gyre_${T}_block_sysmtx
 
   use gyre_ext
   use gyre_linalg
+  use gyre_math
   use gyre_sysmtx
 
   use ISO_FORTRAN_ENV
@@ -335,7 +336,7 @@ contains
     ! unity
 
     do i = 1, this%n_i
-       scl = MAXVAL(ABS(this%B_i(i,:)))
+       scl = MAXVAL(abs(this%B_i(i,:)))
        this%B_i(i,:) = this%B_i(i,:)/scl
        this%scl_i(i) = this%scl_i(i)*scl
     end do
@@ -343,7 +344,7 @@ contains
     !$OMP PARALLEL DO PRIVATE (i, scl)
     do k = 1, this%n
        do i = 1, this%n_e
-          scl = MAX(MAXVAL(ABS(this%E_l(i,:,k))), MAXVAL(ABS(this%E_r(i,:,k))))
+          scl = MAX(MAXVAL(abs(this%E_l(i,:,k))), MAXVAL(abs(this%E_r(i,:,k))))
           this%E_l(i,:,k) = this%E_l(i,:,k)/scl
           this%E_r(i,:,k) = this%E_r(i,:,k)/scl
           this%scl(k) = this%scl(k)*scl
@@ -351,7 +352,7 @@ contains
     end do
 
     do i = 1, this%n_o
-       scl = MAXVAL(ABS(this%B_o(i,:)))
+       scl = MAXVAL(abs(this%B_o(i,:)))
        this%B_o(i,:) = this%B_o(i,:)/scl
        this%scl_o(i) = this%scl_o(i)*scl
     end do
@@ -477,8 +478,8 @@ contains
          M_s = HUGE(0._WP)
 
          sing_loop : do i = n_e+1, 2*n_e
-            if (ABS(M(i,i)) < M_s) then
-               M_s = ABS(M(i,i))
+            if (abs(M(i,i)) < M_s) then
+               M_s = abs(M(i,i))
                i_s = i
             end if
          end do sing_loop

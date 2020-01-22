@@ -1,7 +1,7 @@
 ! Module   : gyre_c_root
 ! Purpose  : root finding algorithms for discriminant functions (complex)
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,6 +26,7 @@ module gyre_c_root
   use gyre_cimplex
   use gyre_ext_func
   use gyre_ext
+  use gyre_math
   use gyre_num_par
   use gyre_status
 
@@ -200,7 +201,7 @@ contains
        if (status /= STATUS_OK) return
     endif
 
-    if (ABS(f_a) < ABS(f_b)) then
+    if (abs(f_a) < abs(f_b)) then
 
        c = a
        a = b
@@ -240,7 +241,7 @@ contains
 
        ! Check for a singular correction
 
-       if (ABS(b*rho) < 8._WP*EPSILON(0._WP)*ABS(f_dz)) then
+       if (abs(b*rho) < 8._WP*EPSILON(0._WP)*abs(f_dz)) then
           $ABORT(Singular correction in secant)
        endif
 
@@ -256,12 +257,12 @@ contains
        ! Check for convergence
 
        if (relative_tol_) then
-          tol = (4._WP*EPSILON(0._WP) + cx_tol)*ABS(b)
+          tol = (4._WP*EPSILON(0._WP) + cx_tol)*abs(b)
        else
-          tol = 4._WP*EPSILON(0._WP)*ABS(b) + cx_tol
+          tol = 4._WP*EPSILON(0._WP)*abs(b) + cx_tol
        endif
 
-       if (ABS(b - a) <= tol) exit iterate_loop
+       if (abs(b - a) <= tol) exit iterate_loop
 
     end do iterate_loop
 
@@ -341,7 +342,7 @@ contains
        if (status /= STATUS_OK) return
     endif
 
-    if (ABS(f_a) < ABS(f_b)) then
+    if (abs(f_a) < abs(f_b)) then
 
        c = a
        a = b
@@ -382,10 +383,10 @@ contains
 
        ! Solve for the re-scaling exponential
 
-       exp_Q_p = (f_c + SQRT(f_c*f_c - f_a*f_b))/f_b
-       exp_Q_m = (f_c - SQRT(f_c*f_c - f_a*f_b))/f_b
+       exp_Q_p = (f_c + sqrt(f_c*f_c - f_a*f_b))/f_b
+       exp_Q_m = (f_c - sqrt(f_c*f_c - f_a*f_b))/f_b
 
-       if (ABS(exp_Q_p-1._WP) < ABS(exp_Q_m-1._WP)) then
+       if (abs(exp_Q_p-1._WP) < abs(exp_Q_m-1._WP)) then
           exp_Q = exp_Q_p
        else
           exp_Q = exp_Q_m
@@ -399,7 +400,7 @@ contains
 
        ! Check for a singular correction
 
-       if (ABS(b*rho) < 8._WP*EPSILON(0._WP)*ABS(f_dz)) then
+       if (abs(b*rho) < 8._WP*EPSILON(0._WP)*abs(f_dz)) then
           $ABORT(Singular correction in secant)
        endif
 
@@ -415,12 +416,12 @@ contains
        ! Check for convergence
 
        if (relative_tol_) then
-          tol = (4._WP*EPSILON(0._WP) + cx_tol)*ABS(b)
+          tol = (4._WP*EPSILON(0._WP) + cx_tol)*abs(b)
        else
-          tol = 4._WP*EPSILON(0._WP)*ABS(b) + cx_tol
+          tol = 4._WP*EPSILON(0._WP)*abs(b) + cx_tol
        endif
 
-       if (ABS(b - a) <= tol) exit iterate_loop
+       if (abs(b - a) <= tol) exit iterate_loop
 
     end do iterate_loop
 
@@ -574,19 +575,19 @@ contains
     expand_loop : do
 
        if (relative_tol_) then
-          tol = (4._WP*EPSILON(0._WP) + f_cx_tol)*MAX(ABS(f_a), ABS(f_b))
+          tol = (4._WP*EPSILON(0._WP) + f_cx_tol)*MAX(abs(f_a), abs(f_b))
        else
-          tol = 4._WP*EPSILON(0._WP)*MAX(ABS(f_a), ABS(f_b)) + f_cx_tol
+          tol = 4._WP*EPSILON(0._WP)*MAX(abs(f_a), abs(f_b)) + f_cx_tol
        endif
 
-       if (ABS(f_a - f_b) > tol) exit expand_loop
+       if (abs(f_a - f_b) > tol) exit expand_loop
 
        if (clamp_a_) then
           move_a = .FALSE.
        elseif (clamp_b_) then
           move_a = .TRUE.
        else
-          move_a = ABS(f_b) > ABS(f_a)
+          move_a = abs(f_b) > abs(f_a)
        endif
 
        if (move_a) then

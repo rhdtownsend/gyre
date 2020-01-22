@@ -638,7 +638,7 @@ contains
 
     ! Determine if rx is valid
 
-    valid = ABS(rx%f) >= RADIX_WP**(-1) .AND. ABS(rx%f) < 1._WP
+    valid = abs(rx%f) >= RADIX_WP**(-1) .AND. abs(rx%f) < 1._WP
 
     ! Finish
 
@@ -685,7 +685,7 @@ contains
 
     ! Calculate the absolute value of rx
 
-    abs_rx%f = ABS(rx%f)
+    abs_rx%f = abs(rx%f)
     abs_rx%e = rx%e
 
     ! Finish
@@ -727,12 +727,12 @@ contains
 
     ! Calculate the square root of rx
 
-    sqrt_rx = r_ext_t(SQRT(rx%f))
+    sqrt_rx = r_ext_t(sqrt(rx%f))
 
     if (MOD(rx%e, 2) == 0) then
        sqrt_rx = scale(sqrt_rx, rx%e/2)
     else
-       sqrt_rx = scale(sqrt_rx, (rx%e-1)/2)*SQRT(2._WP)
+       sqrt_rx = scale(sqrt_rx, (rx%e-1)/2)*sqrt(2._WP)
     endif
 
     ! Finish
