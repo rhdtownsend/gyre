@@ -372,7 +372,7 @@ contains
     c = A(1,1)*A(2,2) - A(1,2)*A(2,1)
 
     $if($TYPE eq 'real')
-    s = sqrt(CMPLX(b**2 - 4._WP*c, WP))
+    s = sqrt(CMPLX(b**2 - 4._WP*c, KIND=WP))
     q = -0.5_WP*(b + SIGN(1._WP, b)*s)
     $else
     s = sqrt(b**2 - 4._WP*c)
