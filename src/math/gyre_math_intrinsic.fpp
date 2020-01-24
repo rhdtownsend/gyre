@@ -21,8 +21,6 @@ module gyre_math
 
   use core_kinds
 
-  use IEEE_ARITHMETIC
-
   ! No implicit typing
 
   implicit none
