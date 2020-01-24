@@ -13,6 +13,15 @@ module core_constants
 
   ! Parameter definitions
 
+  ! Mathematical constants
+
+  real(WP), parameter :: PI = 3.1415926535897932385_WP
+  real(WP), parameter :: TWOPI = 2._WP*PI
+  real(WP), parameter :: HALFPI = 0.5_WP*PI
+
+  real(WP), parameter :: DEG_TO_RAD = PI/180._WP
+  real(WP), parameter :: RAD_TO_DEG = 1._WP/DEG_TO_RAD
+
   ! Physical constants (cgs)
 
   real(WP), parameter :: G_GRAVITY = 6.67428E-8_WP                ! Gravitational constant
@@ -45,6 +54,12 @@ module core_constants
   ! Acess specifiers
 
   private
+
+  public :: PI
+  public :: TWOPI
+  public :: HALFPI
+  public :: DEG_TO_RAD
+  public :: RAD_TO_DEG
 
   public :: G_GRAVITY
   public :: H_PLANCK
