@@ -1,9 +1,19 @@
+# .gitignore file for GYRE
+
 *~
-.depend
 *.o
 *.mod
-*.dSYM
 
-bin
+bin/*
+src/build/*
 
+doc/*.log
+doc/*.aux
+doc/*.bbl
+doc/*.blg
 
+work/*
+
+.DS_Store
+
+regress
