@@ -28,7 +28,12 @@ EXPERIMENTAL?=no
 ### (unless you think you know what you're doing) ###
 #####################################################
 
-# Preprocesser flags
+# Utility definitions (used internally)
+
+EMPTY :=
+SPACE := ${EMPTY} ${EMPTY}
+
+# Preprocessor flags
 
 OPTS=DEBUG OMP MPI HDF5 DOUBLE_PRECISION IEEE
 
@@ -45,7 +50,8 @@ else
   F9XC=gfortran
 endif
 
-MODPATH=${MESASDK_ROOT}/include
+MODPATH=${MESASDK_ROOT}/include $(shell lapack95_modpath)
+MODDIRS=$(subst ${SPACE},:,${MODPATH})
 
 FFLAGS:=${FFLAGS} -finit-real=snan -fbacktrace -fmax-errors=25
 
@@ -71,9 +77,16 @@ endif
 
 LDFLAGS:=${LDFLAGS} `mesasdk_lapack95_link`
 
+ifeq ($(CRMATH),yes)
+  export MESASDK_MATH_SLOT=crmath
+  LDFLAGS:=${LDFLAGS} `crmath_link` `crlibm_link`
+else
+  export MESASDK_MATH_SLOT=default
+endif
+
 # Rules
 
-vpath %.mod ${MODPATH}
+vpath %.mod ${MODDIRS}
 vpath %.fpp ${SUBDIRS}
 vpath %.inc ${SUBDIRS}
 vpath %.f ${SUBDIRS}

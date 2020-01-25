@@ -19,16 +19,12 @@ endif
 
 HDF5=yes
 #DEBUG=yes
-CRLIBM=yes
+CRMATH=yes
 
 LDFLAGS=`hdf5_link`
 
 ifeq ($(ODEPACK),yes)
   LDFLAGS:=${LDFLAGS} `odepack_link`
-endif
-
-ifeq ($(CRLIBM),yes)
-  LDFLAGS:=${LDFLAGS} `crlibm_link`
 endif
 
 # Targets
@@ -43,8 +39,8 @@ include Make.inc
 
 # Additional rules
 
-ifeq ($(CRLIBM),yes)
-gyre_math.fpp: gyre_math_crlibm.fpp
+ifeq ($(CRMATH),yes)
+gyre_math.fpp: gyre_math_crmath.fpp
 	@ln -sf $< $@
 else
 gyre_math.fpp: gyre_math_intrinsic.fpp
@@ -54,4 +50,3 @@ endif
 .INTERMEDIATE: gyre_math.fpp
 
 .depend: gyre_math.fpp
-
