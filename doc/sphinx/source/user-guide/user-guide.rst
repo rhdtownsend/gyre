@@ -6,6 +6,5 @@ User Guide
    :maxdepth: 3
    :caption: Contents
 
-   quick-start
-   understanding-gyre
-   installation
+   quick-start/quick-start.rst
+   understanding-gyre/understanding-gyre.rst
