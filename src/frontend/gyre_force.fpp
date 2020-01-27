@@ -36,6 +36,7 @@ program gyre_force
   use gyre_grid
   use gyre_grid_factory
   use gyre_grid_par
+  use gyre_math
   use gyre_mode_par
   use gyre_model
   use gyre_model_factory
