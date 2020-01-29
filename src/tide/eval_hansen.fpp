@@ -49,7 +49,8 @@ program eval_hansen
   X_hat_ck = 0.5_WP*(hansen_X(e, n, m-1, k) + hansen_X(e, n, m+1, k))
   X_tilde_ck = 0.5_WP*(hansen_X(e, n, m-1, k) - hansen_X(e, n, m+1, k))
 
-  print *, X, X_hat, X_hat_ck, X_tilde, X_tilde_ck
+!  print *, X, X_hat, X_hat_ck, X_tilde, X_tilde_ck
+  print *, X
 
 end program eval_hansen
   
