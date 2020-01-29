@@ -5,6 +5,7 @@ program eval_hansen
   use core_kinds
   use core_system
 
+  use gyre_math
   use gyre_tide_util
 
   use ISO_FORTRAN_ENV
@@ -33,6 +34,10 @@ program eval_hansen
   call get_arg(2, n)
   call get_arg(3, m)
   call get_arg(4, k)
+
+  ! Initialize
+
+  call init_math()
 
   ! Print out the hansen coefficient
 
