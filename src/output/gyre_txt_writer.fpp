@@ -41,6 +41,10 @@ module gyre_txt_writer
   character(*), parameter :: R_FORMAT = '(E25.16E3)'
   character(*), parameter :: A_FORMAT = '(A25)'
 
+  character(*), parameter :: IX_FORMAT = '(I25,1X)'
+  character(*), parameter :: RX_FORMAT = '(E25.16E3,1X)'
+  character(*), parameter :: AX_FORMAT = '(A25,1X)'
+
   ! Derived-type definitions
 
   type, extends (writer_t) :: txt_writer_t
@@ -122,25 +126,25 @@ contains
 
     ! Finalize the txt_writer
 
-    fmt = join_fmts([I_FORMAT],[this%n_s])
+    fmt = join_fmts([IX_FORMAT],[this%n_s])
 
     write(this%unit, fmt) [(i,i=1,this%n_s)]
 
-    fmt = join_fmts([A_FORMAT],[this%n_s])
+    fmt = join_fmts([AX_FORMAT],[this%n_s])
 
     write(this%unit, fmt) [(this%s_names(i),i=1,this%n_s)]
-    write(this%unit, fmt) [(this%s_data(i)//'|',i=1,this%n_s)]
+    write(this%unit, fmt) [(this%s_data(i),i=1,this%n_s)]
                                                    
-    fmt = join_fmts([I_FORMAT],[this%n_v])
+    fmt = join_fmts([IX_FORMAT],[this%n_v])
 
     write(this%unit, fmt) [(i,i=1,this%n_v)]
 
-    fmt = join_fmts([A_FORMAT],[this%n_v])
+    fmt = join_fmts([AX_FORMAT],[this%n_v])
 
     write(this%unit, fmt) [(this%v_names(i),i=1,this%n_v)]
 
     do k = 1, this%n
-       write(this%unit, fmt) [(this%v_data(k,i)//'|',i=1,this%n_v)]
+       write(this%unit, fmt) [(this%v_data(k,i),i=1,this%n_v)]
     end do
 
     close(this%unit)
