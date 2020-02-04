@@ -180,9 +180,6 @@ contains
     real(WP), allocatable       :: c_thn(:)
     real(WP), allocatable       :: c_thk(:)
     real(WP), allocatable       :: c_eps(:)
-    real(WP), allocatable       :: int_rhoT(:)
-    real(WP), allocatable       :: f_luan_t(:)
-    real(WP), allocatable       :: f_luan_c(:)
 
     ! Extract data from the global and point arrays
 
@@ -216,7 +213,6 @@ contains
     allocate(U(n))
     allocate(c_1(n))
     allocate(c_lum(n))
-    allocate(f_luan_t(n))
     
     where (x /= 0._WP)
        V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
@@ -248,16 +244,6 @@ contains
        c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
     end select
 
-    int_rhoT = -integral(r(n:1:-1), rho(n:1:-1)*K_BOLTZMANN*T(n:1:-1)/M_PROTON)
-    int_rhoT = int_rhoT(n:1:-1)
-    where (x /= 0._WP)
-       f_luan_t = 4._WP*PI*r**2*int_rhoT/L_r*sqrt(G_GRAVITY*M_star/R_star**3)
-    elsewhere
-       f_luan_t = 0._WP
-    end where
-
-    f_luan_c = c_P*M_PROTON/K_BOLTZMANN
-
     Omega_rot = Omega_rot*sqrt(R_star**3/(G_GRAVITY*M_star))
 
     ! Initialize the evol_model_t
@@ -286,9 +272,6 @@ contains
        
     call em%define(I_KAP_RHO, kap_rho)
     call em%define(I_KAP_T, kap_T)
-
-    call em%define(I_F_LUAN_T, f_luan_t)
-    call em%define(I_F_LUAN_C, f_luan_c)
 
     call em%define(I_OMEGA_ROT, Omega_rot)
 

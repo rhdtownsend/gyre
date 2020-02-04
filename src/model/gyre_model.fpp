@@ -1,7 +1,7 @@
 ! Module   : gyre_model
 ! Purpose  : stellar model
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -49,9 +49,7 @@ module gyre_model
   integer, parameter :: I_EPS_T = 17
   integer, parameter :: I_KAP_RHO = 18
   integer, parameter :: I_KAP_T = 19
-  integer, parameter :: I_F_LUAN_T = 20
-  integer, parameter :: I_F_LUAN_C = 21
-  integer, parameter :: I_OMEGA_ROT = 22
+  integer, parameter :: I_OMEGA_ROT = 20
 
   integer, parameter :: I_LAST = I_OMEGA_ROT
 
@@ -158,8 +156,6 @@ module gyre_model
   public :: I_EPS_T
   public :: I_KAP_RHO
   public :: I_KAP_T
-  public :: I_F_LUAN_T
-  public :: I_F_LUAN_C
   public :: I_OMEGA_ROT
   public :: I_LAST
 
