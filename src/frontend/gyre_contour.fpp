@@ -1,7 +1,7 @@
 ! Program  : gyre_contour
 ! Purpose  : discriminant contouring code
 !
-! Copyright 2014-2018 Rich Townsend
+! Copyright 2014-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -32,11 +32,13 @@ program gyre_contour
   use gyre_context
   use gyre_contour_map
   use gyre_contour_seg
+  use gyre_details
   use gyre_discrim_func
   use gyre_ext
   use gyre_grid
   use gyre_grid_factory
   use gyre_grid_par
+  use gyre_math
   use gyre_mode
   use gyre_mode_par
   use gyre_model
@@ -46,12 +48,13 @@ program gyre_contour
   use gyre_num_par
   use gyre_osc_par
   use gyre_out_par
-  use gyre_output
   use gyre_root
+  use gyre_rot_par
   use gyre_scan
   use gyre_scan_par, only : scan_par_t
   use gyre_state
   use gyre_status
+  use gyre_summary
   use gyre_util
   use gyre_version
   use gyre_wave
@@ -69,6 +72,7 @@ program gyre_contour
   type(model_par_t)                :: ml_p
   type(mode_par_t), allocatable    :: md_p(:)
   type(osc_par_t), allocatable     :: os_p(:)
+  type(rot_par_t), allocatable     :: rt_p(:)
   type(num_par_t), allocatable     :: nm_p(:)
   type(grid_par_t), allocatable    :: gr_p(:)
   type(scan_par_t), allocatable    :: sc_p_re(:)
@@ -79,11 +83,14 @@ program gyre_contour
   character(FILENAME_LEN)          :: im_seg_filename
   class(model_t), pointer          :: ml => null()
   type(osc_par_t)                  :: os_p_sel
+  type(rot_par_t)                  :: rt_p_sel
   type(num_par_t)                  :: nm_p_sel
   type(grid_par_t)                 :: gr_p_sel
   type(scan_par_t), allocatable    :: sc_p_re_sel(:)
   type(scan_par_t), allocatable    :: sc_p_im_sel(:)
   type(context_t), pointer         :: cx => null()
+  type(summary_t)                  :: sm
+  type(details_t)                  :: dt
   real(WP), allocatable            :: omega_re(:)
   real(WP), allocatable            :: omega_im(:)
   real(WP)                         :: omega_min
@@ -111,6 +118,7 @@ program gyre_contour
   ! Initialize
 
   call init_parallel()
+  call init_math()
 
   call set_log_level($str($LOG_LEVEL))
 
@@ -145,6 +153,7 @@ program gyre_contour
   call read_model_par(unit, ml_p)
   call read_mode_par(unit, md_p)
   call read_osc_par(unit, os_p)
+  call read_rot_par(unit, rt_p)
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
   call read_scan_par(unit, 're', sc_p_re)
@@ -161,6 +170,7 @@ program gyre_contour
   ! Select parameters according to tags
 
   call select_par(os_p, md_p(1)%tag, os_p_sel)
+  call select_par(rt_p, md_p(1)%tag, rt_p_sel)
   call select_par(nm_p, md_p(1)%tag, nm_p_sel)
   call select_par(gr_p, md_p(1)%tag, gr_p_sel)
   call select_par(sc_p_re, md_p(1)%tag, sc_p_re_sel)
@@ -168,7 +178,12 @@ program gyre_contour
   
   ! Create the context
 
-  allocate(cx, SOURCE=context_t(ml, gr_p_sel, md_p(1), os_p_sel))
+  allocate(cx, SOURCE=context_t(ml, gr_p_sel, md_p(1), os_p_sel, rt_p_sel))
+
+  ! Initialize the summary and details outputters
+
+  sm = summary_t(ot_p)
+  dt = details_t(ot_p)
 
   ! Set up the frequency arrays
 
@@ -250,9 +265,9 @@ program gyre_contour
 
      call find_roots(bp, md_p(1), nm_p_sel, os_p_sel, is_re, is_im, process_mode)
 
-     ! Write the summary file
+     ! Write the summary
 
-     call write_summary(md_nad(:n_md_nad), ot_p)
+     call sm%write()
 
   end if
 
@@ -672,24 +687,10 @@ contains
 100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
     endif
 
-    ! Store it
+    ! Cache/write the mode
 
-    n_md_nad = n_md_nad + 1
-
-    if (n_md_nad > d_md_nad) then
-       d_md_nad = 2*d_md_nad
-       call reallocate(md_nad, [d_md_nad])
-    endif
-
-    md_nad(n_md_nad) = md
-
-    ! Write it
-
-    call write_details(md_nad(n_md_nad), ot_p)
-
-    ! If necessary, prune it
-
-    if (ot_p%prune_details) call md_nad(n_md_nad)%prune()
+    call sm%cache(md)
+    call dt%write(md)
 
     ! Finish
 
