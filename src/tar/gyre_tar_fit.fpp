@@ -374,7 +374,11 @@ contains
 
     ! Evaluate the gravity-wave eigenvalue normalization function
 
-    if (k >= 0) then
+    if (m == 0 .AND. k == 0) then
+
+       lambda_norm = 0._WP
+
+    elseif (k >= 0) then
 
        l = abs(m) + k
 
