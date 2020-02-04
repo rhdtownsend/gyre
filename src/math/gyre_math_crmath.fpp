@@ -36,6 +36,15 @@ module gyre_math
   real(DP), save, protected :: DEG_TO_RAD
   real(DP), save, protected :: RAD_TO_DEG
 
+  ! Interfaces
+
+  interface pow
+     module procedure pow_r_r_
+     module procedure pow_r_c_
+     module procedure pow_c_r_
+     module procedure pow_c_c_
+  end interface pow
+
   ! Access specifiers
 
   private
@@ -89,5 +98,85 @@ contains
     RAD_TO_DEG = 1._DP/DEG_TO_RAD
 
   end subroutine init_math
+
+  !****
+
+  elemental function pow_r_r_ (x, y) result (pow_xy)
+
+    real(WP), intent(in) :: x
+    real(WP), intent(in) :: y
+    real(WP)             :: pow_xy
+
+    if (x == 0._WP) then
+
+       pow_xy = 0._WP
+
+    else
+
+       pow_xy = exp(log(x)*y)
+
+    end if
+
+  end function pow_r_r_
+
+  !****
+  
+  elemental function pow_r_c_ (x, y) result (pow_xy)
+
+    real(WP), intent(in)    :: x
+    complex(WP), intent(in) :: y
+    complex(WP)             :: pow_xy
+
+    if (x == 0._WP) then
+
+       pow_xy = 0._WP
+
+    else
+
+       pow_xy = exp(log(x)*y)
+
+    end if
+
+  end function pow_r_c_
+
+  !****
+
+  elemental function pow_c_r_ (x, y) result (pow_xy)
+
+    complex(WP), intent(in) :: x
+    real(WP), intent(in)    :: y
+    complex(WP)             :: pow_xy
+
+    if (x == 0._WP) then
+
+       pow_xy = 0._WP
+
+    else
+
+       pow_xy = exp(log(x)*y)
+
+    end if
+
+  end function pow_c_r_
+
+  !****
+
+  elemental function pow_c_c_ (x, y) result (pow_xy)
+
+    complex(WP), intent(in) :: x
+    complex(WP), intent(in) :: y
+    complex(WP)             :: pow_xy
+
+    if (x == 0._WP) then
+
+       pow_xy = 0._WP
+
+    else
+
+       pow_xy = exp(log(x)*y)
+
+    end if
+
+  end function pow_c_c_
 
 end module gyre_math
