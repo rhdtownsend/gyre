@@ -23,6 +23,7 @@ module gyre_lib
 
   use core_kinds
   use core_parallel
+  use core_memory
 
   use gyre_ad_bvp
   use gyre_bvp
@@ -33,6 +34,7 @@ module gyre_lib
   use gyre_grid
   use gyre_grid_factory
   use gyre_grid_par
+  use gyre_math
   use gyre_mesa_file
   use gyre_mode
   use gyre_mode_par
@@ -102,6 +104,8 @@ contains
     ! Initialize
 
     call init_parallel()
+
+    call init_math()
 
     call set_log_level('WARN')
 
@@ -216,9 +220,10 @@ contains
     real(WP), intent(inout) :: rpar(:)
 
     type(context_t), pointer      :: cx(:) => null()
-    type(mode_t), allocatable     :: md_ad(:)
-    integer                       :: n_md_ad
-    integer                       :: d_md_ad
+    integer                       :: n_ad
+    integer                       :: d_ad
+    complex(WP), allocatable      :: omega_ad(:)
+    integer, allocatable          :: j_ad(:)
     integer                       :: i
     type(osc_par_t)               :: os_p_sel
     type(rot_par_t)               :: rt_p_sel
@@ -240,10 +245,11 @@ contains
 
     ! Loop through modepars
 
-    d_md_ad = 128
-    n_md_ad = 0
+    d_ad = 128
+    n_ad = 0
 
-    allocate(md_ad(d_md_ad))
+    allocate(omega_ad(d_ad))
+    allocate(j_ad(d_ad))
 
     md_p_loop : do i = 1, SIZE(md_p_m)
 
@@ -296,9 +302,9 @@ contains
           ! Find modes
 
           if (os_p_sel%nonadiabatic) then
-             n_md_ad = 0
+             n_ad = 0
              call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
-             call mode_search(bp_nad, md_ad(:n_md_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
+             call mode_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
           else
              call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
           endif
@@ -336,16 +342,13 @@ contains
 
       if (os_p_sel%nonadiabatic) then
 
-         n_md_ad = n_md_ad + 1
+         n_ad = n_ad + 1
 
-         if (n_md_ad > d_md_ad) then
-            d_md_ad = 2*d_md_ad
-            call reallocate(md_ad, [d_md_ad])
+         if (n_ad > d_ad) then
+            d_ad = 2*d_ad
+            call reallocate(omega_ad, [d_ad])
+            call reallocate(j_ad, [d_ad])
          endif
-       
-         md_ad(n_md_ad) = md
-
-         call md_ad(n_md_ad)%prune()
 
       else
 
@@ -384,71 +387,5 @@ contains
     end subroutine process_mode_nad
 
   end subroutine gyre_get_modes
-
-  ! !****
-
-  ! subroutine gyre_get_tide (R_a, eps_T, Omega_orb, l_max, k_max, tau, work)
-
-  !   real(WP), intent(in)               :: R_a
-  !   real(WP), intent(in)               :: eps_T
-  !   real(WP), intent(in)               :: Omega_orb
-  !   integer, intent(in)                :: l_max
-  !   integer, intent(in)                :: k_max
-  !   real(WP), allocatable, intent(out) :: tau(:)
-  !   real(WP), allocatable, intent(out) :: work(:)
-
-  !   ! Create the tide_par_t
-
-  !   td_p = tide_par_t(R_a=R_a, &
-  !                     eps_T=eps_T, &
-  !                     Omega_orb, &
-  !                     l_max=l_max, &
-  !                     k_max=k_max)
-
-  !   ! Initialize the net differential torque and work arrays
-
-  !   dwrk_dx_net = 0._WP
-  !   dtau_dx_net = 0._WP
-
-  !   ! Evaluate the tide
-
-  !   call eval_tide(XXXXXXXXXXXXXXXX)
-
-  !   ! Finish
-
-  !   return
-
-  ! contains
-
-  !   subroutine process_wave_tide (wv)
-
-  !     type(wave_t), intent(in) : wv
-
-  !     real(WP) :: dwrk_dx(wv%n_k)
-  !     real(WP) :: dtau_dx(wv%n_k)
-
-  !     ! Evaluate the torque and rate-of-work functions
-
-  !     !$OMP DO
-  !     k_loop : do k = 1, wv%n_k
-
-  !        dwrk_dx(k) = G_GRAVITY*XXXX * wv%dW_dx(k)/(XXXXXX)
-
-  !        dtau_dx(k)= G_GRAVITY*M_star_m**2/R_star_m * wv%dtau_dx_ss(k)
-
-  !     end do k_loop
-
-  !     ! Interpolate these functions onto the original star grid, and
-  !     ! add the contributions to the net differential work and torque
-
-  !     XXXXX
-
-  !     !  Finish
-
-  !     return
-
-  !   end subroutine process_wave_tide
-
-  ! end subroutine gyre_get_tide
 
 end module gyre_lib
