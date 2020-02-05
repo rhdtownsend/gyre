@@ -350,6 +350,9 @@ contains
             call reallocate(j_ad, [d_ad])
          endif
 
+         omega_ad(n_ad) = md%omega
+         j_ad(n_ad) = md%j
+
       else
 
          retcode = 0
