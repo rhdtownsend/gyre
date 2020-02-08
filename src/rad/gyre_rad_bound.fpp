@@ -215,7 +215,7 @@ contains
        call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V_G), &
             this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
     case (JCD_TYPE)
-       call eval_atmos_coeffs_jcd(ml, pt_o, this%coeff(2,J_V_G), &
+       call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V_G), &
             this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
     case default
        $ABORT(Invalid type_o)
