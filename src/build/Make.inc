@@ -127,10 +127,10 @@ install : ${TARGETS}
         done
 
 clean :
-	rm -f ${TARGETS} $(addsuffix .f90,${TARGETS}) *.o *.mod .depend *.f90
+	rm -f ${TARGETS} $(addsuffix .f90,${TARGETS}) *.o *.mod *.smod .depend *.f90
 
 almostclean :
-	rm -f ${TARGETS} $(addsuffix .f90,${TARGETS}) *.o *.mod *.f90
+	rm -f ${TARGETS} $(addsuffix .f90,${TARGETS}) *.o *.mod *.smod *.f90
 
 # Dependencies
 
