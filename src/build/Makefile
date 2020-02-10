@@ -41,7 +41,7 @@ SUBDIRS=../extern/core:../extern/astro:../common:../math:../par:../diff:../bvp:.
 
 include Make.inc
 
-# Additional rules
+# Rules
 
 ifeq ($(CRMATH),yes)
 gyre_math.fpp: gyre_math_crmath.fpp
