@@ -401,7 +401,12 @@ contains
        call eval_atmos_coeffs_unno(ml, pt, V_g, As, U, c_1)
        call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
-    case('JCD')
+    case ('JCD')
+
+       call eval_atmos_coeffs_isothrm(ml, pt, V_g, As, U, c_1)
+       call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+
+    case ('ISOTHERMAL')
 
        call eval_atmos_coeffs_isothrm(ml, pt, V_g, As, U, c_1)
        call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
