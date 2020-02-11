@@ -87,6 +87,7 @@ program gyre_orbit
   ! Initialize
 
   call init_parallel()
+  call init_math()
 
   call set_log_level($str($LOG_LEVEL))
 
