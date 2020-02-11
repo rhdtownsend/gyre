@@ -47,7 +47,7 @@ module gyre_atmos
   public :: atmos_beta
   public :: eval_atmos_cutoff_freqs
   public :: eval_atmos_coeffs_unno
-  public :: eval_atmos_coeffs_jcd
+  public :: eval_atmos_coeffs_isothrm
 
   ! Procedures
 
@@ -254,7 +254,7 @@ contains
 
   !****
   
-  subroutine eval_atmos_coeffs_jcd (ml, pt, V_g, As, U, c_1)
+  subroutine eval_atmos_coeffs_isothrm (ml, pt, V_g, As, U, c_1)
 
     class(model_t), intent(in) :: ml
     type(point_t), intent(in)  :: pt
@@ -263,7 +263,8 @@ contains
     real(WP), intent(out)      :: U
     real(WP), intent(out)      :: c_1
 
-    ! Evaluate atmosphere coefficients ([Chr2008] formulation)
+    ! Evaluate atmosphere coefficients for an isothermal, massless
+    ! atmosphere
 
     V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
     As = ml%coeff(I_V_2, pt)*pt%x**2*(1._WP-1._WP/ml%coeff(I_GAMMA_1, pt))
@@ -274,6 +275,6 @@ contains
 
     return
 
-  end subroutine eval_atmos_coeffs_jcd
+  end subroutine eval_atmos_coeffs_isothrm
 
  end module gyre_atmos
