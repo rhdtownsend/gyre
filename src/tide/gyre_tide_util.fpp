@@ -106,7 +106,7 @@ contains
 
     G_1 = c*Y* &
          (0.5_WP*(l+1)*(X_2m1 + X_2p1) + 0.5_WP*m*(X_2m1 - X_2p1) + &
-          0.5_WP*m/(1._WP - e**2)*(X_1m1 - X_1p1))*(1._WP - e**2)/e
+          0.5_WP*m/(1._WP - e**2)*(X_1m1 - X_1p1))*sqrt(1._WP - e**2)/e
 
     ! Finish
 
