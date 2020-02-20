@@ -76,7 +76,7 @@ module gyre_rad_bound
      procedure, public :: build_o
      procedure         :: build_vacuum_o_
      procedure         :: build_dziem_o_
-     procedure         :: build_unno_o_
+     procedure         :: build_decomp_o_
      procedure         :: build_jcd_o_
   end type rad_bound_t
 
@@ -358,7 +358,7 @@ contains
     case (DZIEM_TYPE)
        call this%build_dziem_o_(st, B, scl)
     case (UNNO_TYPE)
-       call this%build_unno_o_(st, B, scl)
+       call this%build_decomp_o_(st, B, scl)
     case (JCD_TYPE)
        call this%build_jcd_o_(st, B, scl)
     case default
@@ -446,8 +446,8 @@ contains
   end subroutine build_dziem_o_
 
   !****
-  
-  subroutine build_unno_o_ (this, st, B, scl)
+
+  subroutine build_decomp_o_ (this, st, B, scl)
 
     class(rad_bound_t), intent(in) :: this
     class(r_state_t), intent(in)   :: st
@@ -455,34 +455,41 @@ contains
     real(WP), intent(out)          :: scl(:)
 
     real(WP) :: omega_c
+    real(WP) :: a_11
+    real(WP) :: a_12
+    real(WP) :: a_21
+    real(WP) :: a_22
     real(WP) :: chi
-    real(WP) :: b_11
-    real(WP) :: b_12
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
     $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
-    ! Evaluate the outer boundary conditions ([Unn1989] formulation)
+    ! Evaluate the outer boundary conditions, based on a local
+    ! eigendecomposition
 
     associate( &
-         omega => st%omega, &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
-         c_1 => this%coeff(2,J_C_1))
+         c_1 => this%coeff(2,J_C_1), &
+         alpha_om => this%alpha_om)
 
-      omega_c = omega
+      omega_c = st%omega
+
+      ! Evaluate selected elements of the Jacobian matrix
+
+      a_11 = V_g - 3._WP
+      a_12 = -V_g
+
+      ! Evaluate the eigenvalue for the wave we want to keep
 
       chi = atmos_chi(V_g, As, c_1, omega_c, 0._WP)
-      
-      b_11 = V_g - 3._WP
-      b_12 = -V_g
-    
+
       ! Set up the boundary conditions
-      
-      B(1,1) = chi - b_11
-      B(1,2) = -b_12
+
+      B(1,1) = -(chi - a_11)
+      B(1,2) = a_12
 
       scl = 1._WP
 
@@ -492,7 +499,7 @@ contains
 
     return
 
-  end subroutine build_unno_o_
+  end subroutine build_decomp_o_
 
   !****
 

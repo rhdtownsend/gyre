@@ -80,7 +80,7 @@ module gyre_ad_bound
      procedure, public :: build_o
      procedure         :: build_vacuum_o_
      procedure         :: build_dziem_o_
-     procedure         :: build_unno_o_
+     procedure         :: build_decomp_o_
      procedure         :: build_jcd_o_
   end type ad_bound_t
 
@@ -436,7 +436,7 @@ contains
     case (DZIEM_TYPE)
        call this%build_dziem_o_(st, B, scl)
     case (UNNO_TYPE)
-       call this%build_unno_o_(st, B, scl)
+       call this%build_decomp_o_(st, B, scl)
     case (JCD_TYPE)
        call this%build_jcd_o_(st, B, scl)
     case default
@@ -562,7 +562,7 @@ contains
 
   !****
 
-  subroutine build_unno_o_ (this, st, B, scl)
+  subroutine build_decomp_o_ (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this
     class(r_state_t), intent(in)  :: st
@@ -573,22 +573,25 @@ contains
     real(WP) :: omega_c
     real(WP) :: lambda
     real(WP) :: l_e
+    real(WP) :: a_11
+    real(WP) :: a_12
+    real(WP) :: a_13
+    real(WP) :: a_14
+    real(WP) :: a_21
+    real(WP) :: a_22
+    real(WP) :: a_23
+    real(WP) :: a_24
     real(WP) :: chi
-    real(WP) :: b_11
-    real(WP) :: b_12
-    real(WP) :: b_13
-    real(WP) :: b_21
-    real(WP) :: b_22
-    real(WP) :: b_23
-    real(WP) :: alpha_1
-    real(WP) :: alpha_2
+    real(WP) :: G_1
+    real(WP) :: G_2
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
     $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
 
     $CHECK_BOUNDS(SIZE(scl),this%n_o)
 
-    ! Evaluate the outer boundary conditions ([Unn1989] formulation)
+    ! Evaluate the outer boundary conditions, based on a local
+    ! eigendecomposition
 
     associate( &
          V_g => this%coeff(2,J_V_G), &
@@ -605,26 +608,34 @@ contains
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
       
+      ! Evaluate selected elements of the Jacobian matrix
+
+      a_11 = V_g - 3._WP
+      a_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
+      a_13 = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
+      a_14 = alpha_gr*(0._WP)
+
+      a_21 = c_1*alpha_om*omega_c**2 - As
+      a_22 = As + 1._WP
+      a_23 = alpha_gr*(0._WP)
+      a_24 = alpha_gr*(-1._WP)
+
+      ! Evaluate the eigenvalue for the wave we want to keep
+
       chi = atmos_chi(V_g, As, c_1, omega_c, lambda)
 
-      b_11 = V_g - 3._WP
-      b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
-      b_13 = alpha_gr*(V_g)
-      
-      b_21 = c_1*alpha_om*omega_c**2 - As
-      b_22 = 1._WP + As
-      b_23 = alpha_gr*(-As)
-      
-      alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
-      alpha_2 = (b_21*b_13 - b_23*(b_11+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
+      ! Evaluate selected elements of the left eigenvectors
+
+      G_1 = (l_e*H_(-l_e, chi) + (l_e+1._WP)*H_(l_e+1._WP, chi))/(2._WP*l_e + 1._WP)
+      G_2 = (H_(-l_e, chi) - H_(l_e+1._WP, chi))/(2._WP*l_e + 1._WP)
 
       ! Set up the boundary conditions
 
-      B(1,1) = chi - b_11
-      B(1,2) = -b_12
-      B(1,3) = alpha_gr*(-(alpha_1*(chi - b_11) - alpha_2*b_12 + b_12))
-      B(1,4) = alpha_gr*(0._WP)
-      
+      B(1,1) = -(chi - a_11)
+      B(1,2) = a_12
+      B(1,3) = -alpha_gr*G_1
+      B(1,4) = alpha_gr*G_2
+
       B(2,1) = alpha_gr*(0._WP)
       B(2,2) = alpha_gr*(0._WP)
       B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
@@ -638,7 +649,27 @@ contains
 
     return
 
-  end subroutine build_unno_o_
+  contains
+
+    function H_ (l, chi) result (H)
+
+      real(WP), intent(in) :: l
+      real(WP), intent(in) :: chi
+      real(WP)             :: H
+
+      ! Evaluate the H function defined in leaky boundary condition
+      ! notes
+
+      H = ((a_11 - chi)*(a_13 - a_14*(1._WP-l)) + a_12*(a_23 - a_24*(1._WP-l))) / &
+          (chi + l - a_11 - a_12)
+
+      ! Finish
+
+      return
+
+    end function H_
+
+  end subroutine build_decomp_o_
 
   !****
 

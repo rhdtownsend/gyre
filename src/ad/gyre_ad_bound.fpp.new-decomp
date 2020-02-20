@@ -1,0 +1,118 @@
+  !****
+
+  subroutine build_decomp_improve_o_ (this, st, B, scl)
+
+    class(ad_bound_t), intent(in) :: this
+    class(r_state_t), intent(in)  :: st
+    real(WP), intent(out)         :: B(:,:)
+    real(WP), intent(out)         :: scl(:)
+
+    real(WP) :: Omega_rot
+    real(WP) :: omega_c
+    real(WP) :: lambda
+    real(WP) :: l_e
+    real(WP) :: a_11
+    real(WP) :: a_12
+    real(WP) :: a_13
+    real(WP) :: a_14
+    real(WP) :: a_21
+    real(WP) :: a_22
+    real(WP) :: a_23
+    real(WP) :: a_24
+    real(WP) :: beta
+    real(WP) :: G_1
+    real(WP) :: G_2
+
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
+
+    ! Evaluate the outer boundary conditions, based on a local
+    ! eigendecomposition (assuming U=0)
+
+    associate( &
+         V_g => this%coeff(2,J_V_G), &
+         As => this%coeff(2,J_AS), &
+         c_1 => this%coeff(2,J_C_1), &
+         pt => this%pt(2), &
+         alpha_gr => this%alpha_gr, &
+         alpha_om => this%alpha_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
+
+      omega_c = this%cx%omega_c(Omega_rot, st)
+
+      lambda = this%cx%lambda(Omega_rot, st)
+      l_e = this%cx%l_e(Omega_rot, st)
+      
+      ! Evaluate selected elements of the Jacobian matrix
+
+      a_11 = V_g - 3._WP
+      a_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
+      a_13 = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
+      a_14 = alpha_gr*(0._WP)
+
+      a_21 = c_1*alpha_om*omega_c**2 - As
+      a_22 = As + 1._WP
+      a_23 = alpha_gr*(0._WP)
+      a_24 = alpha_gr*(-1._WP)
+
+      ! Evaluate the eigenvalue for the wave we want to keep
+
+      beta = atmos_beta(V_g, As, 0._WP, c_1, omega_c, lambda)
+
+      ! Evaluate selected elements of the left eigenvectors
+
+      G_1 = (l_e*H(-l_e, beta) + (l_e+1._WP)*H(l_e+1._WP, beta))/(2._WP*l_e + 1._WP)
+      G_2 = (H(-l_e, beta) - H(l_e+1._WP, beta))/(2._WP*l_e + 1._WP)
+
+      ! Set up the boundary conditions
+
+      B(1,1) = -(beta - a_11)
+      B(1,2) = a_12
+      B(1,3) = -alpha_gr*G_1
+      B(1,4) = alpha_gr*G_2
+
+      B(2,1) = alpha_gr*(0._WP)
+      B(2,2) = alpha_gr*(0._WP)
+      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
+      B(2,4) = alpha_gr*(1._WP)
+
+      ! print *,'a_12,a_21', a_12, a_21, beta
+      ! print *,'u_31, u_32, u_3n', u_31, u_32, u_3n
+      ! print *,'u_41, u_42, u_4n', u_41, u_42, u_4n
+      ! print *,'u_11, u_21', a_12, beta-a_11
+      ! print *,'cross:',(beta-a_11)*u_41*(l_e+1._WP),a_12*u_42*(l_e+1._WP)
+      ! print *,'Set B1:',B(1,:)
+      ! print *,'Set B2:',B(2,:)
+
+      scl = 1._WP
+
+    end associate
+
+    ! Finish
+
+    return
+
+  contains
+
+    function H (l, chi)
+
+      real(WP), intent(in) :: l
+      real(WP), intent(in) :: chi
+      real(WP)             :: H
+
+      ! Evaluate the H function defined in leaky boundary condition notes
+
+      H = ((a_11 - chi)*(a_13 - a_14*(1._WP-l)) + a_12*(a_23 - a_24*(1._WP-l))) / &
+           (chi + l - a_11 - a_12)
+
+      ! Finish
+
+      return
+
+    end function H
+
+  end subroutine build_decomp_improve_o_
+
