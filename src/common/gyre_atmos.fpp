@@ -35,16 +35,16 @@ module gyre_atmos
 
   ! Interfaces
 
-  interface atmos_beta
-     module procedure atmos_beta_r_
-     module procedure atmos_beta_c_
-  end interface atmos_beta
+  interface atmos_chi
+     module procedure atmos_chi_r_
+     module procedure atmos_chi_c_
+  end interface atmos_chi
 
   ! Access specifiers
 
   private
 
-  public :: atmos_beta
+  public :: atmos_chi
   public :: eval_atmos_cutoff_freqs
   public :: eval_atmos_coeffs_unno
   public :: eval_atmos_coeffs_isothrm
@@ -53,32 +53,35 @@ module gyre_atmos
 
 contains
 
-  function atmos_beta_r_ (V_g, As, U, c_1, omega, lambda) result (beta)
+  function atmos_chi_r_ (V_g, As, c_1, omega, lambda) result (chi)
 
     real(WP)             :: V_g
     real(WP), intent(in) :: As
-    real(WP), intent(in) :: U
     real(WP), intent(in) :: c_1
     real(WP), intent(in) :: omega
     real(WP), intent(in) :: lambda
-    real(WP)             :: beta
+    real(WP)             :: chi
 
-    real(WP)      :: b_11
-    real(WP)      :: b_12
-    real(WP)      :: b_21
-    real(WP)      :: b_22
+    real(WP)      :: a_11
+    real(WP)      :: a_12
+    real(WP)      :: a_21
+    real(WP)      :: a_22
+    real(WP)      :: b
+    real(WP)      :: c
     real(WP)      :: psi2
     logical, save :: warned = .FALSE.
 
-    ! Calculate the atmospheric radial wavenumber, as defined by
-    ! [Tow2000b] (real frequencies)
+    ! Calculate the atmospheric radial wavenumber (real frequencies)
 
-    b_11 = V_g - 3._WP
-    b_12 = lambda/(c_1*omega**2) - V_g
-    b_21 = c_1*omega**2 - As
-    b_22 = As - U + 1._WP
+    a_11 = V_g - 3._WP
+    a_12 = lambda/(c_1*omega**2) - V_g
+    a_21 = c_1*omega**2 - As
+    a_22 = As + 1._WP
 
-    psi2 = (b_22 - b_11)**2 + 4._WP*b_12*b_21
+    b = -(a_11 + a_22)
+    c = a_11*a_22 - a_12*a_21
+
+    psi2 = b**2 - 4._WP*c
 
     if (psi2 < 0._WP) then
 
@@ -86,39 +89,44 @@ contains
           $WARN(WARNING: Discarding imaginary part of atmospheric radial wavenumber)
           warned = .TRUE.
        endif
-       
-       beta = 0.5_WP*(b_11 + b_22)
+
+       chi = -b/2._WP
 
     else
 
-       beta = 0.5_WP*(b_11 + b_22 - sqrt(psi2))
-
+       if (b >= 0._WP) then
+          chi = (- b - sqrt(psi2))/2._WP
+       else
+          chi = 2._WP*c/(- b + sqrt(psi2))
+       endif
+       
     endif
 
     ! Finish
 
     return
 
-  end function atmos_beta_r_
+  end function atmos_chi_r_
 
   !****
 
-  function atmos_beta_c_ (V_g, As, U, c_1, omega, lambda, branch) result (beta)
+  function atmos_chi_c_ (V_g, As, c_1, omega, lambda, branch) result (chi)
 
     real(WP)                           :: V_g
     real(WP), intent(in)               :: As
-    real(WP), intent(in)               :: U
     real(WP), intent(in)               :: c_1
     complex(WP), intent(in)            :: omega
     complex(WP), intent(in)            :: lambda
-    complex(WP)                        :: beta
     character(*), intent(in), optional :: branch
+    complex(WP)                        :: chi
 
     character(:), allocatable :: branch_
-    complex(WP)               :: b_11
-    complex(WP)               :: b_12
-    complex(WP)               :: b_21
-    complex(WP)               :: b_22
+    complex(WP)               :: a_11
+    complex(WP)               :: a_12
+    complex(WP)               :: a_21
+    complex(WP)               :: a_22
+    complex(WP)               :: b
+    complex(WP)               :: c
     complex(WP)               :: psi2
     complex(WP)               :: psi
 
@@ -128,15 +136,17 @@ contains
        branch_ = 'E_NEG'
     endif
 
-    ! Calculate the atmospheric radial wavenumber, as defined by
-    ! [Tow2000b] (complex frequencies)
+    ! Calculate the atmospheric radial wavenumber (complex frequencies)
 
-    b_11 = V_g - 3._WP
-    b_12 = lambda/(c_1*omega**2) - V_g
-    b_21 = c_1*omega**2 - As
-    b_22 = As - U + 1
+    a_11 = V_g - 3._WP
+    a_12 = lambda/(c_1*omega**2) - V_g
+    a_21 = c_1*omega**2 - As
+    a_22 = As + 1._WP
 
-    psi2 = (b_22 - b_11)**2 + 4._WP*b_12*b_21
+    b = -(a_11 + a_22)
+    c = a_11*a_22 - a_12*a_21
+
+    psi2 = b**2 - 4._WP*c
     psi = sqrt(psi2)
 
     ! Adjust the sign of psi to choose the correct solution branch
@@ -159,13 +169,13 @@ contains
 
        ! Outward energy flux
 
-       if (AIMAG((psi - b_11)*CONJG(omega)) < 0._WP) psi = -psi
+       if (AIMAG((psi - a_11)*CONJG(omega)) < 0._WP) psi = -psi
 
     case ('F_NEG')
 
        ! Inward energy flux
 
-       if (AIMAG((psi - b_11)*CONJG(omega)) > 0._WP) psi = -psi
+       if (AIMAG((psi - a_11)*CONJG(omega)) > 0._WP) psi = -psi
 
     case ('V_POS')
 
@@ -185,23 +195,30 @@ contains
 
     end select
 
-    ! Set up beta
+    ! Set up chi
 
-    beta = 0.5_WP*(b_11 + b_22 + psi)
-             
+    if (SIGN(1._WP, REAL(psi)) == SIGN(1._WP, REAL(b))) then
+
+       chi = -2._WP*c/(b + psi)
+
+    else
+
+       chi = (- b + psi)/2._WP
+
+    endif
+
     ! Finish
 
     return
 
-  end function atmos_beta_c_
+  end function atmos_chi_c_
 
   !****
 
-  subroutine eval_atmos_cutoff_freqs (V_g, As, U, c_1, lambda, omega_cutoff_lo, omega_cutoff_hi)
+  subroutine eval_atmos_cutoff_freqs (V_g, As, c_1, lambda, omega_cutoff_lo, omega_cutoff_hi)
 
     real(WP), intent(in)  :: V_g
     real(WP), intent(in)  :: As
-    real(WP), intent(in)  :: U
     real(WP), intent(in)  :: c_1
     real(WP), intent(in)  :: lambda
     real(WP), intent(out) :: omega_cutoff_lo
@@ -214,7 +231,7 @@ contains
     ! Evaluate the atmospheric cutoff frequencies from the supplied coefficients
 
     a = -4._WP*V_g*c_1**2
-    b = ((As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda)*c_1
+    b = ((As - V_g - 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda)*c_1
     c = -4._WP*lambda*As
 
     omega_cutoff_lo = sqrt((-b + sqrt(b**2 - 4._WP*a*c))/(2._WP*a))
@@ -230,20 +247,18 @@ contains
 
   !****
   
-  subroutine eval_atmos_coeffs_unno (ml, pt, V_g, As, U, c_1)
+  subroutine eval_atmos_coeffs_unno (ml, pt, V_g, As, c_1)
 
     class(model_t), intent(in) :: ml
     type(point_t), intent(in)  :: pt
     real(WP), intent(out)      :: V_g
     real(WP), intent(out)      :: As
-    real(WP), intent(out)      :: U
     real(WP), intent(out)      :: c_1
 
     ! Evaluate atmosphere coefficients ([Unn1989] formulation)
 
     V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
     As = ml%coeff(I_AS, pt)
-    U = 0._WP
     c_1 = ml%coeff(I_C_1, pt)
 
     ! Finish
@@ -254,13 +269,12 @@ contains
 
   !****
   
-  subroutine eval_atmos_coeffs_isothrm (ml, pt, V_g, As, U, c_1)
+  subroutine eval_atmos_coeffs_isothrm (ml, pt, V_g, As, c_1)
 
     class(model_t), intent(in) :: ml
     type(point_t), intent(in)  :: pt
     real(WP), intent(out)      :: V_g
     real(WP), intent(out)      :: As
-    real(WP), intent(out)      :: U
     real(WP), intent(out)      :: c_1
 
     ! Evaluate atmosphere coefficients for an isothermal, massless
@@ -268,7 +282,6 @@ contains
 
     V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
     As = ml%coeff(I_V_2, pt)*pt%x**2*(1._WP-1._WP/ml%coeff(I_GAMMA_1, pt))
-    U = 0._WP
     c_1 = ml%coeff(I_C_1, pt)
 
     ! Finish

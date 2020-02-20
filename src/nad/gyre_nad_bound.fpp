@@ -243,10 +243,10 @@ contains
        this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
     case (UNNO_TYPE)
        call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V_G), &
-            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
+            this%coeff(2,J_AS), this%coeff(2,J_C_1))
     case (JCD_TYPE)
        call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V_G), &
-            this%coeff(2,J_AS), this%coeff(2,J_U), this%coeff(2,J_C_1))
+            this%coeff(2,J_AS), this%coeff(2,J_C_1))
     case default
        $ABORT(Invalid type_o)
     end select
@@ -670,7 +670,7 @@ contains
     complex(WP) :: lambda
     complex(WP) :: l_e
     complex(WP) :: f_rh
-    complex(WP) :: beta
+    complex(WP) :: chi
     complex(WP) :: b_11
     complex(WP) :: b_12
     complex(WP) :: b_13
@@ -692,7 +692,6 @@ contains
          V => this%coeff(2,J_V), &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
-         U => this%coeff(2,J_U), &
          c_1 => this%coeff(2,J_C_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
@@ -712,7 +711,7 @@ contains
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
-      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda, branch)
+      chi = atmos_chi(V_g, As, c_1, omega_c, lambda, branch)
 
       b_11 = V_g - 3._WP
       b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
@@ -728,9 +727,9 @@ contains
 
       ! Set up the boundary conditions
 
-      B(1,1) = (beta - b_11)*alpha_d
+      B(1,1) = (chi - b_11)*alpha_d
       B(1,2) = -b_12*alpha_d
-      B(1,3) = alpha_gr*(-(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12*alpha_d))
+      B(1,3) = alpha_gr*(-(alpha_1*(chi - b_11) - alpha_2*b_12 + b_12*alpha_d))
       B(1,4) = alpha_gr*(0._WP*alpha_d)
       B(1,5) = 0._WP
       B(1,6) = 0._WP
@@ -774,7 +773,7 @@ contains
     complex(WP) :: lambda
     complex(WP) :: l_e
     complex(WP) :: f_rh
-    complex(WP) :: beta
+    complex(WP) :: chi
     complex(WP) :: b_11
     complex(WP) :: b_12
 
@@ -789,7 +788,6 @@ contains
          V => this%coeff(2,J_V), &
          V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
-         U => this%coeff(2,J_U), &
          c_1 => this%coeff(2,J_C_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
@@ -809,14 +807,14 @@ contains
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
-      beta = atmos_beta(V_g, As, U, c_1, omega_c, lambda, branch)
+      chi = atmos_chi(V_g, As, c_1, omega_c, lambda, branch)
 
       b_11 = V_g - 3._WP
       b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
 
       ! Set up the boundary conditions
 
-      B(1,1) = beta - b_11
+      B(1,1) = chi - b_11
       B(1,2) = -b_12
       B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
       B(1,4) = alpha_gr*(0._WP)

@@ -372,7 +372,6 @@ contains
     class(model_t), pointer          :: ml => null()
     real(WP)                         :: V_g
     real(WP)                         :: As
-    real(WP)                         :: U
     real(WP)                         :: c_1
     logical, save                    :: warned = .FALSE.
 
@@ -398,18 +397,18 @@ contains
 
     case ('UNNO')
 
-       call eval_atmos_coeffs_unno(ml, pt, V_g, As, U, c_1)
-       call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+       call eval_atmos_coeffs_unno(ml, pt, V_g, As, c_1)
+       call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
     case ('JCD')
 
-       call eval_atmos_coeffs_isothrm(ml, pt, V_g, As, U, c_1)
-       call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+       call eval_atmos_coeffs_isothrm(ml, pt, V_g, As, c_1)
+       call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
     case ('ISOTHERMAL')
 
-       call eval_atmos_coeffs_isothrm(ml, pt, V_g, As, U, c_1)
-       call eval_atmos_cutoff_freqs(V_g, As, U, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+       call eval_atmos_coeffs_isothrm(ml, pt, V_g, As, c_1)
+       call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
 
     case default
 
