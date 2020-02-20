@@ -128,7 +128,7 @@ contains
 
     close(unit)
 
-    if (ALL(var(1,2:) <= var(1,:SIZE(var, dim=2)))) var = var(:,n:1:-1)
+    if (ALL(var(1,2:) <= var(1,:SIZE(var, dim=2)-1))) var = var(:,n:1:-1)
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 130) 'Read', n, 'points'
