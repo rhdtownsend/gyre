@@ -457,8 +457,6 @@ contains
     real(WP) :: omega_c
     real(WP) :: a_11
     real(WP) :: a_12
-    real(WP) :: a_21
-    real(WP) :: a_22
     real(WP) :: chi
 
     $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
