@@ -47,8 +47,9 @@ module gyre_ad_bound
   integer, parameter :: ZERO_H_TYPE = 3
   integer, parameter :: VACUUM_TYPE = 4
   integer, parameter :: DZIEM_TYPE = 5
-  integer, parameter :: UNNO_TYPE = 6
-  integer, parameter :: JCD_TYPE = 7
+  integer, parameter :: ISOTHRM_TYPE = 6
+  integer, parameter :: UNNO_TYPE = 7
+  integer, parameter :: JCD_TYPE = 8
 
   integer, parameter :: J_V = 1
   integer, parameter :: J_V_G = 2
@@ -144,6 +145,12 @@ contains
        else
           bd%type_o = DZIEM_TYPE
        end if
+    case ('ISOTHERMAL')
+       if (ml%is_vacuum(pt_o)) then
+          bd%type_o = VACUUM_TYPE
+       else
+          bd%type_o = ISOTHRM_TYPE
+       end if
     case ('UNNO')
        if (ml%is_vacuum(pt_o)) then
           bd%type_o = VACUUM_TYPE
@@ -225,6 +232,9 @@ contains
     case (DZIEM_TYPE)
        this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
        this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
+    case (ISOTHRM_TYPE)
+       call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V_G), &
+            this%coeff(2,J_AS), this%coeff(2,J_C_1))
     case (UNNO_TYPE)
        call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V_G), &
             this%coeff(2,J_AS), this%coeff(2,J_C_1))
@@ -435,6 +445,8 @@ contains
        call this%build_vacuum_o_(st, B, scl)
     case (DZIEM_TYPE)
        call this%build_dziem_o_(st, B, scl)
+    case (ISOTHRM_TYPE)
+       call this%build_decomp_o_(st, B, scl)
     case (UNNO_TYPE)
        call this%build_decomp_o_(st, B, scl)
     case (JCD_TYPE)
