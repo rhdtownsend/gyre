@@ -10,7 +10,7 @@
 EXEC=./gyre
 
 IN_FILE=gyre.in
-OUT_FILE=summary.txt
+OUT_FILE=summary.h5
 
 LABEL="LOSC RGB model"
 
@@ -24,7 +24,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output $RELERR $FIELDS $OUT_FILE
+check_output $OUT_FILE
 if [ $? -ne 0 ]; then
     exit 1;
 fi

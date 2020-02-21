@@ -8,10 +8,6 @@ test :
 
 build_ref :
 	./gyre gyre.in; \
-        for file in *.txt; do mv $$file ref/$$file; done
+        for file in summary*.h5; do mv $$file ref/$$file; done
 
-build_ref_arch :
-	./gyre gyre.in; \
-        for file in *.txt; do mv $$file ref/$$file.`uname -m`-`uname -s`; done
-
-.PHONY: test build_ref build_ref_arch
+.PHONY: test build_ref

@@ -44,24 +44,15 @@ run_gyre ()
 check_output ()
 {
 
-    local errval=$1
-    local fields=$2
-    local file_a=$3
-    local file_b=$4
-    local errtype=$5
+    local file_a=$1
+    local file_b=$2
+    local errval=$3
+    local errtype=$4
 
-    # If file_b isn't set, use an arch-dependent default
+    # If file_b isn't set, use ref file
 
     if [ ! -e "$file_b" ]; then
-
-        local arch=$(get_arch)
-
-    	file_b="ref/${file_a}.${arch}"
-
-	if [ ! -e "$file_b" ]; then
 	    file_b="ref/${file_a}"
-	fi
-
     fi
 
     # Check for the existence of the files
@@ -76,28 +67,18 @@ check_output ()
 	return 1
     fi
 
-    # Check that the files have the same length
+    # Set up h5diff flags
 
-    len_a=`cat $file_a | wc -l`
-    len_b=`cat $file_b | wc -l`
-
-    if [ $len_a -ne $len_b ]; then
-	echo " ...failed: $file_a and $file_b differ in length"
-	return 1
-    fi
-
-    # Set up ndiff flags
-
-    local ndiff_flags="-quiet -fields $fields"
+    local h5diff_flags=""
 
     if [ -n "$errval" ]; then
 
 	case $errtype in 
 	    rel|'')
-		ndiff_flags="$ndiff_flags -relerr $errval"
+		h5diff_flags="$h5diff_flags --relative=$errval"
 		;;
 	    abs)
-		ndiff_flags="$ndiff_flags -abserr $errval"
+		h5diff_flags="$h5diff_flags --delta=$errval"
 		;;
 	    *)
 		echo "Invalid errtype"
@@ -106,27 +87,14 @@ check_output ()
 
     fi
 
-    # Strip off file headers
- 
-    file_a_tmp=$file_a.tmp
-    file_b_tmp=$file_b.tmp
-
-    tail -n +7 $file_a > $file_a_tmp
-    tail -n +7 $file_b > $file_b_tmp
-
     # Do the test
 
-    ndiff $ndiff_flags $file_a_tmp $file_b_tmp
+    h5diff $h5diff_flags $file_a $file_b
     retval=$?
 
     if [ $retval -ne 0 ]; then
-	echo " ...failed: $file_a and $file_b differ in fields $fields"
+	echo " ...failed: $file_a and $file_b differ"
     fi
-
-    # Clean up
-
-    rm -f $file_a_tmp
-    rm -f $file_b_tmp
 
     # Return
 

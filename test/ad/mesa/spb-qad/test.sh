@@ -10,12 +10,9 @@
 EXEC=./gyre
 
 IN_FILE=gyre.in
-OUT_FILE=summary.txt
+OUT_FILE=summary.h5
 
 LABEL="MESA model for slowly pulsating B-type star (adiabatic, quasi-adiabatic eigfuncs)"
-
-RELERR=1E-12
-FIELDS=1-7
 
 # Do the tests
 
@@ -24,7 +21,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output $RELERR $FIELDS $OUT_FILE 
+check_output $OUT_FILE 
 if [ $? -ne 0 ]; then
     exit 1;
 fi

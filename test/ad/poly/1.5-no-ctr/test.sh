@@ -10,12 +10,9 @@
 EXEC=./gyre
 
 IN_FILE=gyre.in
-OUT_FILE=summary.txt
+OUT_FILE=summary.h5
 
 LABEL="polytrope model (n_poly=1.5, no center)"
-
-ABSERR=1E-6
-FIELDS=1-2,5
 
 # Do the tests
 
@@ -24,7 +21,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output $ABSERR $FIELDS $OUT_FILE '' abs
+check_output $OUT_FILE
 if [ $? -ne 0 ]; then
     exit 1;
 fi

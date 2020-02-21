@@ -45,8 +45,7 @@
 /
 
 &ad_output
-	summary_file = 'summary.n.txt'
-	summary_file_format = 'TXT'
+	summary_file = 'summary.n.h5'
 	summary_item_list = 'l,n_pg,n_p,n_g,omega'
 /
 

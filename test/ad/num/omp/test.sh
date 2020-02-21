@@ -12,10 +12,8 @@ EXEC=./gyre
 IN_FILE_N=gyre.n.in
 IN_FILE_1=gyre.1.in
 
-OUT_FILE_N=summary.n.txt
-OUT_FILE_1=summary.1.txt
-
-FIELDS=1-5
+OUT_FILE_N=summary.n.h5
+OUT_FILE_1=summary.1.h5
 
 # Do the tests
 
@@ -31,7 +29,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output "" $FIELDS $OUT_FILE_N $OUT_FILE_1
+check_output $OUT_FILE_N $OUT_FILE_1
 if [ $? -ne 0 ]; then
     exit 1;
 fi
