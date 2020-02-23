@@ -379,6 +379,7 @@ contains
     $CACHE_VALUE(W_eps,wv%W_eps())
     $CACHE_VALUE(tau_ss,wv%tau_ss())
     $CACHE_VALUE(tau_tr,wv%tau_tr())
+    $CACHE_VALUE(Q,wv%Q())
     $CACHE_VALUE(beta,wv%beta())
     $CACHE_VALUE(xi_r_ref,wv%xi_r(wv%k_ref))
     $CACHE_VALUE(xi_h_ref,wv%xi_h(wv%k_ref))
