@@ -2071,7 +2071,7 @@ contains
     if (PRESENT(use_cache)) then
        use_cache_ = use_cache
     else
-       use_cache_ = .FALSE.
+       use_cache_ = .TRUE.
     endif
 
     if (use_cache_) then
