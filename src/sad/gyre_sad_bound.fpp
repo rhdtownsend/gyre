@@ -116,6 +116,14 @@ contains
     select case (os_p%outer_bound)
     case ('VACUUM')
        bd%type_o = VACUUM_TYPE
+    case ('DZIEM')
+       bd%type_o = VACUUM_TYPE
+    case ('ISOTHERMAL')
+       bd%type_o = VACUUM_TYPE
+    case ('UNNO')
+       bd%type_o = VACUUM_TYPE
+    case ('JCD')
+       bd%type_o = VACUUM_TYPE
     case default
        $ABORT(Invalid outer_bound)
     end select
