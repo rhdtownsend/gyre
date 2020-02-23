@@ -54,6 +54,7 @@ module gyre_summary
   integer, parameter :: TYPE_R = 2
   integer, parameter :: TYPE_C = 3
   integer, parameter :: TYPE_A = 4
+  integer, parameter :: TYPE_M = 5
 
   integer, parameter :: DATA_LEN = 25
 
@@ -220,6 +221,8 @@ contains
        associate (sc => this%sc(i))
 
          select case (sc%type)
+         case (TYPE_M)
+            ! Missing item; do nothing
          case (TYPE_I)
             call wr%write(sc%item, sc%data_i(:sc%n))
          case (TYPE_R)
@@ -284,6 +287,8 @@ contains
        if (cached) cycle item_loop
 
        ! Indicate a problem with the caching
+
+       this%sc(i)%type = TYPE_M
 
        if (first) then
           write(ERROR_UNIT, *) 'Ignoring missing/invalid summary item:', TRIM(this%sc(i)%item)
