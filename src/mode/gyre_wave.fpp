@@ -1526,7 +1526,7 @@ contains
     real(WP)    :: E
 
     ! Evaluate the differential potential overlap, in units of
-    ! ???. This expression is based on eqn. (34) of [Willems:2003]
+    ! R**(2-l). This expression is based on eqn. (50) of [Smeyers:1998]
 
     associate ( &
          ml => this%cx%model(), &
@@ -1546,11 +1546,11 @@ contains
 
       if (l /= 1) then
 
-         dQ_dx = l*pt%x**(l-1)*(abs(xi_r)**2 + abs(lambda)*abs(xi_h)**2)*U*pt%x**2/c_1/(REAL(omega)**2*E)
+         dQ_dx = l*pt%x**(l-1)*(xi_r + (l+1)*xi_h)*U*pt%x**2/c_1/(REAL(omega)**2*E)
 
       else
 
-         dQ_dx = (abs(xi_r)**2 + abs(lambda)*abs(xi_h)**2)*U*pt%x**2/c_1/(REAL(omega)**2*E)
+         dQ_dx = l*(xi_r + (l+1)*xi_h)*U*pt%x**2/c_1/(REAL(omega)**2*E)
 
       endif
 
