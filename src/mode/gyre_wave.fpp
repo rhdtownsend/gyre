@@ -102,7 +102,6 @@ module gyre_wave
      procedure, public :: dbeta_dx
      procedure, public :: dtau_dx_ss
      procedure, public :: dtau_dx_tr
-     procedure, public :: dQ_dx
      procedure, public :: Yt_1
      procedure, public :: Yt_2
      procedure, public :: I_0
@@ -126,7 +125,6 @@ module gyre_wave
      procedure, public :: W_eps
      procedure, public :: tau_ss
      procedure, public :: tau_tr
-     procedure, public :: Q
      procedure, public :: omega_int
      procedure, public :: beta
      procedure, public :: domega_rot
@@ -1512,58 +1510,6 @@ contains
 
   !****
 
-  function dQ_dx (this, k)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
-    real(WP)                  :: dQ_dx
-
-    complex(WP) :: xi_r
-    complex(WP) :: xi_h
-    complex(WP) :: lambda
-    real(WP)    :: U
-    real(WP)    :: c_1
-    real(WP)    :: E
-
-    ! Evaluate the differential potential overlap, in units of
-    ! R**(2-l). This expression is based on eqn. (50) of [Smeyers:1998]
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(k), &
-         omega => this%omega, &
-         l => this%l )
-
-      xi_r = this%xi_r(k)
-      xi_h = this%xi_h(k)
-
-      lambda = this%lambda(k)
-
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-
-      E = this%E()
-
-      if (l /= 1) then
-
-         dQ_dx = l*pt%x**(l-1)*(xi_r + (l+1)*xi_h)*U*pt%x**2/c_1/(REAL(omega)**2*E)
-
-      else
-
-         dQ_dx = l*(xi_r + (l+1)*xi_h)*U*pt%x**2/c_1/(REAL(omega)**2*E)
-
-      endif
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dQ_dx
-
-  !****
-
   function Yt_1 (this, k)
 
     class(wave_t), intent(in) :: this
@@ -2372,32 +2318,6 @@ contains
     return
 
   end function tau_tr
-
-  !****
-
-  function Q (this)
-
-    class(wave_t), intent(in) :: this
-    real(WP)                  :: Q
-
-    integer  :: k
-    real(WP) :: dQ_dx(this%n_k)
-     
-    ! Evaluate the potential overlap, in units of ???. This expression
-    ! is based on eqn. (34) of [Willems:2003]
-
-    !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       dQ_dx(k) = this%dQ_dx(k)
-    end do
-
-    Q = integrate(this%gr%pt%x, dQ_dx)
-
-    ! Finish
-
-    return
-
-  end function Q
 
   !****
 
