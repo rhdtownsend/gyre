@@ -28,11 +28,6 @@ EXPERIMENTAL?=no
 ### (unless you think you know what you're doing) ###
 #####################################################
 
-# Utility definitions (used internally)
-
-EMPTY :=
-SPACE := ${EMPTY} ${EMPTY}
-
 # Preprocessor flags
 
 OPTS=DEBUG OMP MPI HDF5 DOUBLE_PRECISION IEEE
@@ -49,9 +44,6 @@ ifeq (${MPI},yes)
 else
   F9XC=gfortran
 endif
-
-MODPATH=${MESASDK_ROOT}/include $(shell lapack95_modpath)
-MODDIRS=$(subst ${SPACE},:,${MODPATH})
 
 FFLAGS:=${FFLAGS} -finit-real=snan -fbacktrace -fmax-errors=25
 
@@ -84,9 +76,12 @@ else
   export MESASDK_MATH_SLOT=default
 endif
 
+# System module files (should ignore dependencies for these)
+
+SYS_MODFILES=hdf5.mod f95_lapack.mod crmath.mod
+
 # Rules
 
-vpath %.mod ${MODDIRS}
 vpath %.fpp ${SUBDIRS}
 vpath %.inc ${SUBDIRS}
 vpath %.f ${SUBDIRS}
@@ -140,6 +135,7 @@ endif
 
 ifneq ($(MAKECMDGOALS),clean)
 -include .depend
+${SYS_MODFILES}:
 endif
 
 .depend :
