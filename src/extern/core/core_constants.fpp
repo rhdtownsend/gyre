@@ -36,8 +36,7 @@ module core_constants
   real(WP), parameter :: M_ELECTRON = 9.10938215E-28_WP           ! Electron mass
   real(WP), parameter :: SIGMA_THOMSON = 6.6524586E-25_WP         ! Thomson cross section
   real(WP), parameter :: N_AVOGADRO = 6.0221415E23_WP             ! Avogadro's number
-  real(WP), parameter :: SEC_YEAR = 24._WP*365.25_WP*3600._WP     ! Seconds in a year
-  
+
   ! Astronomical constants (cgs)
 
   real(WP), parameter :: M_SUN = 1.9891E33_WP             ! Solar mass
@@ -72,7 +71,6 @@ module core_constants
   public :: M_ELECTRON
   public :: SIGMA_THOMSON
   public :: N_AVOGADRO
-  public :: SEC_YEAR
   
   public :: M_SUN
   public :: R_SUN

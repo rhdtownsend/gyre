@@ -142,99 +142,13 @@ module core_linalg
        complex(DP), intent(out) :: VL(LDVL,*), VR(LDVR,*), W(*), WORK(*)
      end subroutine ZGEEV
   end interface XGEEV
-
-  interface XGEEVX
-     subroutine SGEEVX (BALANC, JOBVL, JOBVR, SENSE, N, A, LDA, WR, WI, VL, LDVL, VR, LDVR, ILO, IHI, SCALE, &
-                        ABNRM, RCONDE, RCONDV, WORK, LWORK, IWORK, INFO)
-       use core_kinds
-       character(1), intent(in) :: BALANC, JOBVL, JOBVR, SENSE
-       integer, intent(in) :: N, LDA, LDVL, LDVR, LWORK
-       integer, intent(out) :: INFO, ILO, IHI, IWORK(*)
-       real(SP), intent(out) :: ABNRM
-       real(SP), intent(out) :: SCALE(*), RCONDE(*), RCONDV(*)
-       real(SP), intent(inout) :: A(LDA,*)
-       real(SP), intent(out) :: VL(LDVL,*), VR(LDVR,*), WR(*), WI(*), WORK(*)
-     end subroutine SGEEVX
-     subroutine DGEEVX (BALANC, JOBVL, JOBVR, SENSE, N, A, LDA, WR, WI, VL, LDVL, VR, LDVR, ILO, IHI, SCALE, &
-                        ABNRM, RCONDE, RCONDV, WORK, LWORK, IWORK, INFO)
-       use core_kinds
-       character(1), intent(in) :: BALANC, JOBVL, JOBVR, SENSE
-       integer, intent(in) :: N, LDA, LDVL, LDVR, LWORK
-       integer, intent(out) :: INFO, ILO, IHI, IWORK(*)
-       real(DP), intent(out) :: ABNRM
-       real(DP), intent(out) :: SCALE(*), RCONDE(*), RCONDV(*)
-       real(DP), intent(inout) :: A(LDA,*)
-       real(DP), intent(out) :: VL(LDVL,*), VR(LDVR,*), WR(*), WI(*), WORK(*)
-     end subroutine DGEEVX
-     subroutine CGEEVX (BALANC, JOBVL, JOBVR, SENSE, N, A, LDA, W, VL, LDVL, VR, LDVR, ILO, IHI, SCALE, ABNRM, &
-                        RCONDE, RCONDV, WORK, LWORK, RWORK, INFO )
-       use core_kinds
-       character(1), intent(in) :: BALANC, JOBVL, JOBVR, SENSE
-       integer, intent(in) :: N, LDA, LDVL, LDVR, LWORK
-       integer, intent(out) :: INFO, ILO, IHI
-       real(SP), intent(out) :: ABNRM
-       real(SP), intent(out) :: SCALE(*), RCONDE(*), RCONDV(*), RWORK(*)
-       complex(WP), intent(inout) :: A(LDA,*)
-       complex(WP), intent(out) :: VL(LDVL,*), VR(LDVR,*), W(*), WORK(*)
-     end subroutine CGEEVX
-     subroutine ZGEEVX (BALANC, JOBVL, JOBVR, SENSE, N, A, LDA, W, VL, LDVL, VR, LDVR, ILO, IHI, SCALE, ABNRM, &
-                        RCONDE, RCONDV, WORK, LWORK, RWORK, INFO)
-       use core_kinds
-       character(1), intent(in) :: BALANC, JOBVL, JOBVR, SENSE
-       integer, intent(in) :: N, LDA, LDVL, LDVR, LWORK
-       integer, intent(out) :: INFO, ILO, IHI
-       real(DP), intent(out) :: ABNRM
-       real(DP), intent(out) :: SCALE(*), RCONDE(*), RCONDV(*), RWORK(*)
-       complex(DP), intent(inout) :: A(LDA,*)
-       complex(DP), intent(out) :: VL(LDVL,*), VR(LDVR,*), W(*), WORK(*)
-     end subroutine ZGEEVX
-  end interface XGEEVX
-
-  interface XGESVD
-     subroutine SGESVD (JOBU, JOBVT, M, N, A, LDA, S, U, LDU, VT, LDVT, WORK, LWORK, INFO)
-       use core_kinds
-       character(1), intent(in) :: JOBU, JOBVT
-       integer, intent(in) :: M, N, LDA, LDU, LDVT, LWORK
-       integer, intent(out) :: INFO
-       real(SP), intent(out) :: S(*)
-       real(SP), intent(inout) :: A(LDA,*)
-       real(SP), intent(out) :: U(LDU,*), VT(LDVT,*), WORK(*)
-     end subroutine SGESVD
-     subroutine DGESVD (JOBU, JOBVT, M, N, A, LDA, S, U, LDU, VT, LDVT, WORK, LWORK, INFO)
-       use core_kinds
-       character(1), intent(in) :: JOBU, JOBVT
-       integer, intent(in) :: M, N, LDA, LDU, LDVT, LWORK
-       integer, intent(out) :: INFO
-       real(DP), intent(out) :: S(*)
-       real(DP), intent(inout) :: A(LDA,*)
-       real(DP), intent(out) :: U(LDU,*), VT(LDVT,*), WORK(*)
-     end subroutine DGESVD
-     subroutine CGESVD (JOBU, JOBVT, M, N, A, LDA, S, U, LDU, VT, LDVT, WORK, LWORK, RWORK, INFO)
-       use core_kinds
-       character(1), intent(in) :: JOBU, JOBVT
-       integer, intent(in) :: M, N, LDA, LDU, LDVT, LWORK
-       integer, intent(out) :: INFO
-       real(SP), intent(out) :: S(*), RWORK(*)
-       complex(SP), intent(inout) :: A(LDA,*)
-       complex(SP), intent(out) :: U(LDU,*), VT(LDVT,*), WORK(*)
-     end subroutine CGESVD
-     subroutine ZGESVD (JOBU, JOBVT, M, N, A, LDA, S, U, LDU, VT, LDVT, WORK, LWORK, RWORK, INFO)
-       use core_kinds
-       character(1), intent(in) :: JOBU, JOBVT
-       integer, intent(in) :: M, N, LDA, LDU, LDVT, LWORK
-       integer, intent(out) :: INFO
-       real(DP), intent(out) :: S(*), RWORK(*)
-       complex(DP), intent(inout) :: A(LDA,*)
-       complex(DP), intent(out) :: U(LDU,*), VT(LDVT,*), WORK(*)
-     end subroutine ZGESVD
-  end interface XGESVD
   
   interface XSTEVR
      subroutine SSTEVR (JOBZ, RANGE, N, D, E, VL, VU, IL, IU, ABSTOL, &
                         M, W, Z, LDZ, ISUPPZ, WORK, LWORK, IWORK,     &
                         LIWORK, INFO)
        use core_kinds
-       CHARACTER(1), intent(in) :: JOBZ, RANGE
+       CHARACTER(1), INTENT(IN) :: JOBZ, RANGE
        integer, intent(in) :: N, IL, IU, LDZ,  LWORK, LIWORK
        integer, intent(out) :: M
        integer, intent(out), target :: ISUPPZ(*)
@@ -249,7 +163,7 @@ module core_linalg
                         M, W, Z, LDZ, ISUPPZ, WORK, LWORK, IWORK,     &
                         LIWORK, INFO)
        use core_kinds
-       character(1), intent(in) :: JOBZ, RANGE
+       character(1), INTENT(IN) :: JOBZ, RANGE
        integer, intent(in) :: N, IL, IU, LDZ,  LWORK, LIWORK
        integer, intent(out) :: M
        integer, intent(out), target :: ISUPPZ(*)
@@ -275,8 +189,6 @@ module core_linalg
   public :: XGETRF
   public :: XGESV
   public :: XGEEV
-  public :: XGEEVX
-  public :: XGESVD
   public :: XSTEVR
   public :: XLAMCH
 
