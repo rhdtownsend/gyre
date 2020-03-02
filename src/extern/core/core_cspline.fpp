@@ -1,0 +1,931 @@
+! Module   : core_cspline
+! Purpose  : cubic spline interpolation
+
+$include 'core.inc'
+$include 'core_parallel.inc'
+
+module core_cspline
+
+  ! Uses
+
+  use core_kinds
+  $if ($HDF5)
+  use core_hgroup
+  $endif
+  use core_parallel
+  use core_order
+  use core_linalg
+  use core_interp
+
+  use ISO_FORTRAN_ENV
+
+  ! No implicit typing
+
+  implicit none
+
+  ! Derived-type definitions
+
+  type, extends (interp_t) :: cspline_t
+     private
+     real(WP), allocatable :: knot_x(:)  ! Knot abscissae
+     real(WP), allocatable :: knot_y(:)  ! Knot ordinates
+     real(WP), allocatable :: knot_dy(:) ! Knot derivatives
+   contains
+     private
+     procedure :: x_n_
+     procedure :: y_1_
+     procedure :: y_v_
+     procedure :: y_n_
+     procedure :: dy_1_
+     procedure :: dy_v_
+     procedure :: dy_n_
+     procedure :: iy_1_1_
+     procedure :: iy_1_v_
+     procedure :: iy_v_1_
+     procedure :: iy_v_v_
+     procedure :: attribs_
+  end type cspline_t
+
+  ! Interfaces
+
+  interface cspline_t
+     module procedure cspline_t_
+     module procedure cspline_t_eval_derivs_
+     module procedure cspline_t_y_func_
+  end interface cspline_t
+
+  $if ($HDF5)
+  interface read
+     module procedure read_
+  end interface read
+  interface write
+     module procedure write_
+  end interface write
+  $endif
+
+  $if ($MPI)
+ interface bcast
+     module procedure bcast_0_
+     module procedure bcast_1_
+     module procedure bcast_2_
+     module procedure bcast_3_
+     module procedure bcast_4_
+  end interface bcast
+  interface bcast_alloc
+     module procedure bcast_alloc_0_
+     module procedure bcast_alloc_1_
+     module procedure bcast_alloc_2_
+     module procedure bcast_alloc_3_
+     module procedure bcast_alloc_4_
+  end interface bcast_alloc
+  $endif
+
+  ! Access specifiers
+
+  private
+
+  public :: cspline_t
+  $if ($HDF5)
+  public :: read
+  public :: write
+  $endif
+  $if ($MPI)
+  public :: bcast
+  public :: bcast_alloc
+  $endif
+
+  ! Procedures
+
+contains
+
+  function cspline_t_ (knot_x, knot_y, knot_dy) result (cs)
+
+    real(WP), intent(in) :: knot_x(:)
+    real(WP), intent(in) :: knot_y(:)
+    real(WP), intent(in) :: knot_dy(:)
+    type(cspline_t)      :: cs
+
+    $CHECK_BOUNDS(SIZE(knot_y),SIZE(knot_x))
+    $CHECK_BOUNDS(SIZE(knot_dy),SIZE(knot_x))
+
+    ! Construct the cspline_t
+
+    cs%knot_x = knot_x
+    cs%knot_y = knot_y
+    cs%knot_dy = knot_dy
+
+    cs%n = SIZE(knot_x)
+
+    ! Finish
+
+    return
+
+  end function cspline_t_
+  
+!****
+
+  function cspline_t_eval_derivs_ (knot_x, knot_y, deriv_type, knot_dy_a, knot_dy_b) result (cs)
+
+    real(WP), intent(in)           :: knot_x(:)
+    real(WP), intent(in)           :: knot_y(:)
+    character(*), intent(in)       :: deriv_type
+    real(WP), optional, intent(in) :: knot_dy_a
+    real(WP), optional, intent(in) :: knot_dy_b
+    type(cspline_t)                :: cs
+
+    real(WP) :: knot_dy(SIZE(knot_x))
+
+    $CHECK_BOUNDS(SIZE(knot_y),SIZE(knot_x))
+
+    ! Construct the cspline_t, with knot derivatives calculated
+    ! according to deriv_type
+
+    select case (deriv_type)
+    case('NATURAL')
+       knot_dy = natural_dy_(knot_x, knot_y, knot_dy_a, knot_dy_b)
+    case('FINDIFF')
+       knot_dy = findiff_dy_(knot_x, knot_y, knot_dy_a, knot_dy_b)
+    case('MONO')
+       knot_dy = mono_dy_(knot_x, knot_y, knot_dy_a, knot_dy_b)
+    case default
+       $ABORT(Invalid deriv_type)
+    end select
+
+    cs = cspline_t(knot_x, knot_y, knot_dy)
+
+    ! Finish
+
+    return
+
+  end function cspline_t_eval_derivs_
+
+!****
+
+  function cspline_t_y_func_ (knot_x_a, knot_x_b, y_func, y_tol, deriv_type, relative_tol, knot_dy_a, knot_dy_b) result (cs)
+
+    real(WP), intent(in)           :: knot_x_a
+    real(WP), intent(in)           :: knot_x_b
+    interface
+       function y_func (x) result (y)
+         use core_kinds
+         implicit none
+         real(WP), intent(in) :: x
+         real(WP)             :: y
+       end function y_func
+    end interface
+    real(WP), optional, intent(in) :: y_tol
+    character(*), intent(in)       :: deriv_type
+    logical, optional, intent(in)  :: relative_tol
+    real(WP), optional, intent(in) :: knot_dy_a
+    real(WP), optional, intent(in) :: knot_dy_b
+    type(cspline_t)                :: cs
+
+    real(WP), parameter :: EPS = 4._WP*EPSILON(0._WP)
+
+    logical               :: relative_tol_
+    integer               :: n
+    real(WP), allocatable :: knot_x(:)
+    real(WP), allocatable :: knot_y(:)
+    real(WP), allocatable :: knot_x_dbl(:)
+    real(WP), allocatable :: knot_y_dbl(:)
+    integer               :: j
+    real(WP), allocatable :: err(:)
+    real(WP), allocatable :: err_thresh(:)
+
+    if (PRESENT(relative_tol)) then
+       relative_tol_ = relative_tol
+    else
+       relative_tol_ = .FALSE.
+    endif
+
+    ! Construct the cspline_t by sampling the function y(x) until the
+    ! errors at knots drop below y_tol
+
+    ! Initialize n to the smallest possible value
+
+    n = 2
+
+    knot_x = [knot_x_a,knot_x_b]
+    knot_y = [y_func(knot_x_a),y_func(knot_x_b)]
+
+    ! Now increase n until the desired tolerance is reached
+
+    n_loop : do
+
+       ! Construct the cspline
+
+       cs = cspline_t(knot_x, knot_y, deriv_type, knot_dy_a=knot_dy_a, knot_dy_b=knot_dy_b)
+
+       ! Calculate x and y at double the resolution
+
+       allocate(knot_x_dbl(2*n-1))
+       allocate(knot_y_dbl(2*n-1))
+
+       knot_x_dbl(1::2) = knot_x
+       knot_x_dbl(2::2) = 0.5_WP*(knot_x(:n-1) + knot_x(2:))
+
+       knot_y_dbl(1::2) = knot_y
+
+       do j = 1, n-1
+          knot_y_dbl(2*j) = y_func(knot_x_dbl(2*j))
+       end do
+
+       ! Examine how well the cspline fits the double-res data
+
+       err = ABS(cs%y(knot_x_dbl(2::2)) - knot_y_dbl(2::2))
+
+       if (relative_tol_) then
+          err_thresh = (EPS + y_tol)*ABS(knot_y_dbl(2::2))
+       else
+          err_thresh = EPS*ABS(knot_y_dbl(2::2)) + y_tol
+       endif
+
+       if (ALL(err <= err_thresh)) exit n_loop
+
+       ! Loop around
+
+       call MOVE_ALLOC(knot_x_dbl, knot_x)
+       call MOVE_ALLOC(knot_y_dbl, knot_y)
+
+       n = 2*n-1
+
+    end do n_loop
+       
+    ! Finish
+
+    return
+
+  end function cspline_t_y_func_
+
+!****
+
+  $if ($HDF5)
+
+  subroutine read_ (hg, cs)
+
+    type(hgroup_t), intent(inout) :: hg
+    type(cspline_t), intent(out)  :: cs
+
+    real(WP), allocatable :: knot_x(:)
+    real(WP), allocatable :: knot_y(:)
+    real(WP), allocatable :: knot_dy(:)
+
+    ! Read the cspline_t
+
+    call read_dset_alloc(hg, 'knot_x', knot_x)
+    call read_dset_alloc(hg, 'knot_y', knot_y)
+    call read_dset_alloc(hg, 'knot_dy', knot_dy)
+
+    cs = cspline_t(knot_x, knot_y, knot_dy)
+
+    ! Finish
+
+    return
+
+  end subroutine read_
+
+!****
+
+  subroutine write_ (hg, cs)
+
+    type(hgroup_t), intent(inout) :: hg
+    type(cspline_t), intent(in)   :: cs
+
+    ! Write the cspline_t
+
+    call write_attr(hg, 'n', cs%n)
+
+    call write_dset(hg, 'knot_x', cs%knot_x)
+    call write_dset(hg, 'knot_y', cs%knot_y)
+    call write_dset(hg, 'knot_dy', cs%knot_dy)
+
+    ! Finish
+
+    return
+
+  end subroutine write_
+
+  $endif
+
+!****
+
+  $if ($MPI)
+
+  subroutine bcast_0_ (cs, root_rank)
+
+    class(cspline_t), intent(inout) :: cs
+    integer, intent(in)             :: root_rank
+
+    ! Broadcast the cspline
+
+    call bcast(cs%n, root_rank)
+
+    call bcast_alloc(cs%knot_x, root_rank)
+    call bcast_alloc(cs%knot_y, root_rank)
+    call bcast_alloc(cs%knot_dy, root_rank)
+
+    ! Finish
+
+    return
+
+  end subroutine bcast_0_
+
+  $BCAST(type(cspline_t),1)
+  $BCAST(type(cspline_t),2)
+  $BCAST(type(cspline_t),3)
+  $BCAST(type(cspline_t),4)
+
+  $BCAST_ALLOC(type(cspline_t),0)
+  $BCAST_ALLOC(type(cspline_t),1)
+  $BCAST_ALLOC(type(cspline_t),2)
+  $BCAST_ALLOC(type(cspline_t),3)
+  $BCAST_ALLOC(type(cspline_t),4)
+
+  $endif
+
+!****
+
+  function x_n_ (this) result (x)
+
+    class(cspline_t), intent(in) :: this
+    real(WP)                     :: x(this%n)
+
+    ! Return x at knot points
+
+    x = this%knot_x
+
+    ! Finish
+
+    return
+
+  end function x_n_
+
+!****
+
+  function y_1_ (this, x) result (y)
+
+    class(cspline_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP)                     :: y
+
+    real(WP) :: y_v(1)
+
+    ! Interpolate y at a point
+
+    y_v = this%y([x])
+
+    y = y_v(1)
+
+    ! Finish
+
+    return
+
+  end function y_1_
+
+!****
+
+  function y_v_ (this, x) result (y)
+
+    class(cspline_t), intent(in) :: this
+    real(WP), intent(in)         :: x(:)
+    real(WP)                     :: y(SIZE(x))
+
+    integer  :: i
+    integer  :: j
+    real(WP) :: h
+    real(WP) :: t
+
+    ! Interpolate y at a vector of points
+
+    i = 1
+
+    x_loop : do j = 1,SIZE(x)
+
+       ! Update the bracketing index
+
+       call locate(this%knot_x, x(j), i)
+       $ASSERT(i > 0 .AND. i < this%n,Out-of-bounds interpolation)
+
+       ! Set up the interpolation variables
+
+       h = this%knot_x(i+1) - this%knot_x(i)
+       t = (x(j) - this%knot_x(i))/h
+
+       ! Calculate the interpolant
+
+       y(j) = this%knot_y(i  )*phi_(1._WP-t) + &
+              this%knot_y(i+1)*phi_(      t) - &
+             this%knot_dy(i  )*psi_(1._WP-t)*h + &
+             this%knot_dy(i+1)*psi_(      t)*h
+
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  contains
+
+    function phi_ (t)
+
+      real(WP), intent(in) :: t
+      real(WP)             :: phi_
+
+      phi_ = 3._WP*t**2 - 2._WP*t**3
+
+      return
+
+    end function phi_
+
+    function psi_ (t)
+
+      real(WP), intent(in) :: t
+      real(WP)             :: psi_
+
+      psi_ = t**3 - t**2
+
+      return
+
+    end function psi_
+
+  end function y_v_
+
+!****
+
+  function y_n_ (this) result (y)
+
+    class(cspline_t), intent(in) :: this
+    real(WP)                     :: y(this%n)
+
+    ! Interpolate y at knot points
+
+    y = this%knot_y
+
+    ! Finish
+
+  end function y_n_
+
+!****
+
+  function dy_1_ (this, x) result (dy)
+
+    class(cspline_t), intent(in) :: this
+    real(WP), intent(in)         :: x
+    real(WP)                     :: dy
+
+    real(WP) :: dy_v(1)
+
+    ! Differentiate y at a point
+
+    dy_v = this%dy([x])
+
+    dy = dy_v(1)
+
+    ! Finish
+
+    return
+
+  end function dy_1_
+
+!****
+
+  function dy_v_ (this, x) result (dy)
+
+    class(cspline_t), intent(in) :: this
+    real(WP), intent(in)         :: x(:)
+    real(WP)                     :: dy(SIZE(x))
+
+    integer  :: i
+    integer  :: j
+    real(WP) :: h
+    real(WP) :: t
+
+    ! Differentiate y at a vector of points
+
+    i = 1
+
+    x_loop : do j = 1,SIZE(x)
+
+       ! Update the bracketing index
+
+       call locate(this%knot_x, x(j), i)
+       $ASSERT(i > 0 .AND. i < this%n,Out-of-bounds interpolation)
+
+       ! Set up the interpolation variables
+
+       h = this%knot_x(i+1) - this%knot_x(i)
+       t = (x(j) - this%knot_x(i))/h
+
+       ! Calculate the derivative
+
+       dy(j) = -this%knot_y(i  )*dphi_(1._WP-t)/h + &
+                this%knot_y(i+1)*dphi_(      t)/h + &
+               this%knot_dy(i  )*dpsi_(1._WP-t) + &
+               this%knot_dy(i+1)*dpsi_(      t)
+
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  contains
+
+    function dphi_ (t)
+
+      real(WP), intent(in) :: t
+      real(WP)             :: dphi_
+
+      dphi_ = 6._WP*t - 6._WP*t**2
+
+      return
+
+    end function dphi_
+
+    function dpsi_ (t)
+
+      real(WP), intent(in) :: t
+      real(WP)             :: dpsi_
+
+      dpsi_ = 3._WP*t**2 - 2._WP*t
+
+      return
+
+    end function dpsi_
+
+  end function dy_v_
+
+!****
+
+  function dy_n_ (this) result (dy)
+
+    class(cspline_t), intent(in) :: this
+    real(WP)                     :: dy(this%n)
+
+    ! Differentiate y at knot points
+
+    dy = this%knot_dy
+
+    ! Finish
+
+    return
+
+  end function dy_n_
+
+!****
+
+  function iy_1_1_ (this, x_a, x_b) result (iy)
+
+    class(cspline_t), intent(in) :: this
+    real(WP), intent(in)         :: x_a
+    real(WP), intent(in)         :: x_b
+    real(WP)                     :: iy
+
+    real(WP) :: iy_v(1)
+
+    ! Intergrate y between one point and another
+
+    iy_v = this%iy([x_a], [x_b])
+
+    iy = iy_v(1)
+
+    ! Finish
+
+    return
+
+  end function iy_1_1_
+
+!****
+
+  function iy_1_v_ (this, x_a, x_b) result (iy)
+
+    class(cspline_t), intent(in) :: this
+    real(WP), intent(in)         :: x_a
+    real(WP), intent(in)         :: x_b(:)
+    real(WP)                     :: iy(SIZE(x_b))
+
+    ! Intergrate y between one point and a vector of points
+
+    iy = this%iy(SPREAD(x_a, DIM=1, NCOPIES=SIZE(x_b)), x_b)
+
+    ! Finish
+
+    return
+
+  end function iy_1_v_
+
+!****
+
+  function iy_v_1_ (this, x_a, x_b) result (iy)
+
+    class(cspline_t), intent(in) :: this
+    real(WP), intent(in)         :: x_a(:)
+    real(WP), intent(in)         :: x_b
+    real(WP)                     :: iy(SIZE(x_a))
+
+    ! Intergrate y between a vector of points and a point
+
+    iy = this%iy(x_a, SPREAD(x_b, DIM=1, NCOPIES=SIZE(x_a)))
+
+    ! Finish
+
+    return
+
+  end function iy_v_1_
+
+!****
+
+  function iy_v_v_ (this, x_a, x_b) result (iy)
+
+    class(cspline_t), intent(in) :: this
+    real(WP), intent(in)         :: x_a(:)
+    real(WP), intent(in)         :: x_b(:)
+    real(WP)                     :: iy(SIZE(x_a))
+
+    integer  :: i_a
+    integer  :: i_b
+    integer  :: j
+    integer  :: i
+    real(WP) :: h
+    real(WP) :: t_1
+    real(WP) :: t_2
+
+    $CHECK_BOUNDS(SIZE(x_b),SIZE(x_a))
+
+    ! Integrate y between two vectors of points
+
+    i_a = 1
+    i_b = 1
+
+    x_loop : do j = 1,SIZE(x_a)
+
+       ! Update the bracketing indices
+
+       call locate(this%knot_x, x_a(j), i_a)
+       $ASSERT(i_a > 0 .AND. i_a < this%n,Out-of-bounds interpolation)
+
+       call locate(this%knot_x, x_b(j), i_b)
+       $ASSERT(i_b > 0 .AND. i_b < this%n,Out-of-bounds interpolation)
+
+       ! Calculate the integral
+
+       iy(j) = 0._WP
+
+       do i = i_a, i_b
+
+          ! Set up the interpolation variables
+
+          h = this%knot_x(i+1) - this%knot_x(i)
+
+          if (i == i_a) then
+             t_1 = (x_a(j) - this%knot_x(i))/h
+          else
+             t_1 = 0._WP
+          endif
+
+          if (i == i_b) then
+             t_2 = (x_b(j) - this%knot_x(i))/h
+          else
+             t_2 = 1._WP
+          endif
+
+          ! Update the sum
+
+          iy(j) = iy(j) - this%knot_y(i  )*(iphi_(1._WP-t_2) - iphi_(1._WP-t_1))*h + &
+                          this%knot_y(i+1)*(iphi_(      t_2) - iphi_(      t_1))*h + &
+                         this%knot_dy(i  )*(ipsi_(1._WP-t_2) - ipsi_(1._WP-t_1))*h**2 + &
+                         this%knot_dy(i+1)*(ipsi_(      t_2) - ipsi_(      t_1))*h**2
+
+       end do
+
+    end do x_loop
+
+    ! Finish
+
+    return
+
+  contains
+
+    function iphi_ (t)
+
+      real(WP), intent(in) :: t
+      real(WP)             :: iphi_
+
+      iphi_ = t**3 - t**4/2._WP
+
+      return
+
+    end function iphi_
+
+    function ipsi_ (t)
+
+      real(WP), intent(in) :: t
+      real(WP)             :: ipsi_
+
+      ipsi_ = t**4/4._WP - t**3/3._WP
+
+      return
+
+    end function ipsi_
+
+  end function iy_v_v_
+
+!****
+
+  subroutine attribs_ (this, x_min, x_max, n)
+
+    class(cspline_t), intent(in)    :: this
+    real(WP), optional, intent(out) :: x_min
+    real(WP), optional, intent(out) :: x_max
+    integer, optional, intent(out)  :: n
+
+    ! Return attributes of the cspline
+
+    if (PRESENT(x_min)) x_min = this%knot_x(1)
+    if (PRESENT(x_max)) x_max = this%knot_x(this%n)
+    if (PRESENT(n)) n = this%n
+
+    ! Finish
+
+    return
+
+  end subroutine attribs_
+
+!****
+
+  function natural_dy_ (x, y, dy_a, dy_b) result (dy)
+
+    real(WP), intent(in)           :: x(:)
+    real(WP), intent(in)           :: y(:)
+    real(WP), intent(in), optional :: dy_a
+    real(WP), intent(in), optional :: dy_b
+    real(WP)                       :: dy(SIZE(x))
+
+    integer  :: n
+    real(WP) :: h(SIZE(x)-1)
+    real(WP) :: L(SIZE(x)-1)
+    real(WP) :: D(SIZE(x))
+    real(WP) :: U(SIZE(x)-1)
+    real(WP) :: B(SIZE(x),1)
+    integer  :: info
+
+    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+    
+    ! Calcualte first derivatives for a natural cspline (ensuring
+    ! second derivatives are continuous)
+
+    n = SIZE(x)
+
+    h = x(2:) - x(:n-1)
+
+    ! Set up the tridiagonal matrix and RHS
+
+    ! Inner boundary
+
+    D(1) = 1._WP
+    U(1) = 0._WP
+
+    if (PRESENT(dy_a)) then
+       B(1,1) = dy_a
+    else
+       B(1,1) = (y(2) - y(1))/h(1)
+    endif
+
+    ! Internal points
+
+    L(1:n-2) = 2._WP/h(1:n-2)
+    D(2:n-1) = 4._WP/h(1:n-2) + 4._WP/h(2:n-1)
+    U(2:n-1) = 2._WP/h(2:n-1)
+
+    B(2:n-1,1) = -6._WP*y(1:n-2)/h(1:n-2)**2 + 6._WP*y(2:n-1)/h(1:n-2)**2 + &
+                  6._WP*y(3:n  )/h(2:n-1)**2 - 6._WP*y(2:n-1)/h(2:n-1)**2
+
+    ! Outer boundary
+
+    L(n-1) = 0._WP
+    D(n) = 1._WP
+
+    if(PRESENT(dy_b)) then
+       B(n,1) = dy_b
+    else
+       B(n,1) = (y(n) - y(n-1))/h(n-1)
+    endif
+
+    ! Solve the tridiagonal system
+
+    call XGTSV(n, 1, L, D, U, B, SIZE(B, 1), info)
+    $ASSERT(info == 0,Non-zero return from XTGSV)
+
+    dy = B(:,1)
+
+    ! Finish
+
+    return
+
+  end function natural_dy_
+
+!****
+
+  function findiff_dy_ (x, y, dy_a, dy_b) result (dy)
+
+    real(WP), intent(in)           :: x(:)
+    real(WP), intent(in)           :: y(:)
+    real(WP), intent(in), optional :: dy_a
+    real(WP), intent(in), optional :: dy_b
+    real(WP)                       :: dy(SIZE(x))
+
+    integer  :: n
+    real(WP) :: h(SIZE(x)-1)
+    real(WP) :: s(SIZE(x)-1)
+
+    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+    ! Calculate first derivatives via centered finite differences
+
+    n = SIZE(x)
+
+    h = x(2:) - x(:n-1)
+
+    s = (y(2:) - y(:n-1))/h
+
+    if(PRESENT(dy_a)) then
+       dy(1) = dy_a
+    else
+       dy(1) = s(1)
+    endif
+
+    dy(2:n-1) = 0.5_WP*(s(1:n-2) + s(2:n-1))
+
+    if (PRESENT(dy_b)) then
+       dy(n) = dy_b
+    else
+       dy(n) = s(n-1)
+    endif
+
+    ! Finish
+
+    return
+
+  end function findiff_dy_
+
+!****
+
+  function mono_dy_ (x, y, dy_a, dy_b) result (dy)
+
+    real(WP), intent(in)           :: x(:)
+    real(WP), intent(in)           :: y(:)
+    real(WP), intent(in), optional :: dy_a
+    real(WP), intent(in), optional :: dy_b
+    real(WP)                       :: dy(SIZE(x))
+
+    integer  :: n
+    real(WP) :: h(SIZE(x)-1)
+    real(WP) :: s(SIZE(x)-1)
+    real(WP) :: p(SIZE(x))
+    integer  :: i
+
+    $CHECK_BOUNDS(SIZE(y),SIZE(x))
+
+    ! Calculate first derivatives using the Steffen (1990, A&A, 239,
+    ! 443) monontonicity preserving algorithm
+
+    n = SIZE(x)
+
+    h = x(2:) - x(:n-1)
+
+    s = (y(2:) - y(:n-1))/h
+
+    ! Calculate parabolic gradients
+
+    if (PRESENT(dy_a)) then
+       p(1) = dy_a
+    else
+       p(1) = s(1)
+    endif
+
+    p(2:n-1) = (s(1:n-2)*h(2:n-1) + s(2:n-1)*h(1:n-2))/(h(1:n-2) + h(2:n-1))
+
+    if (PRESENT(dy_b)) then
+       p(n) = dy_b
+    else
+       p(n) = s(n-1)
+    endif
+
+    ! Calculate monotonic gradients
+
+    dy(1) = p(1)
+
+    do i = 2,n-1
+       dy(i) = (SIGN(1._WP, s(i-1)) + SIGN(1._WP, s(i)))* &
+               MIN(ABS(s(i-1)), ABS(s(i)), 0.5*ABS(p(i)))
+    end do
+
+    dy(n) = p(n)
+
+    ! Finish
+
+    return
+
+  end function mono_dy_
+
+end module core_cspline
