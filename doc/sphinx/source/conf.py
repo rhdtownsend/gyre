@@ -23,7 +23,7 @@ project = 'GYRE'
 author = 'Rich Townsend & The GYRE Team'
 version = "5.2"
 release = "5.2"
-copyright = '2019, Rich Townsend & The GYRE Team'
+copyright = '2020, Rich Townsend & The GYRE Team'
 
 
 # -- General configuration ---------------------------------------------------
@@ -33,9 +33,11 @@ copyright = '2019, Rich Townsend & The GYRE Team'
 # ones.
 extensions = [
     'sphinx_rtd_theme',
+    'sphinx.ext.mathjax',
     'sphinx.ext.extlinks',
     'sphinxcontrib.bibtex',
-    'sphinx-prompt', 'sphinx_substitution_extensions',
+    'sphinx-prompt',
+    'sphinx_substitution_extensions',
     'nml_roles'
 ]
 
@@ -83,14 +85,14 @@ html_logo = 'gyre-logo-200.png'
 # Set up Extlinks
 extlinks = {
     'ads': ('https://ui.adsabs.harvard.edu/abs/%s/abstract', ''),
-    'repo': ('https://github.com/rhdtownsend/gyre/blob/release-5.2/%s', '%s')
+    'repo': ('https://github.com/rhdtownsend/gyre/blob/release-{:s}/%s'.format(release), '%s')
 }
 
 # Set up additional roles
 from docutils.parsers.rst import roles, nodes
 
-roles.register_generic_role('nml_o', nodes.literal)
-roles.register_generic_role('nml_l', nodes.literal)
+roles.register_generic_role('nml_n', nodes.literal)
+roles.register_generic_role('nml_v', nodes.literal)
 
 # Set substitutions for sphinx_substitution_extensions 
 substitutions = [
@@ -99,9 +101,24 @@ substitutions = [
 
 # Set site-wide targets
 targets = {
-    'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/{0:s}.tar.gz'.format(release),
-    'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk'
+    'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/v{0:s}.tar.gz'.format(release),
+    'gyre-forums': 'http://www.astro.wisc.edu/~townsend/gyre-forums/',
+    'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
+    'mesa': 'http://mesa.sourceforge.net/',
 }
 
 rst_prolog = '\n'.join(['.. _{:s}: {:s}'.format(x, targets[x]) for x in targets])
 
+# Latex macros
+
+mathjax_config = {                  
+    'TeX': {                        
+        'Macros': {                 
+            'Msun': r'{\rm M}_{\odot}',
+            'deriv': [r'\frac{{\rm d}^{#3}#1}{{\rm d}#2^{#3}}', 3],
+            'pderiv': [r'\frac{\partial^{#3}#1}{\partial#2^{#3}}', 3],
+            'ii': r'{\rm i}',
+            'disc': r'\mathcal{D}'
+        }
+    }
+}

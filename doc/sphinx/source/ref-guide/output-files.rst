@@ -1,3 +1,5 @@
+.. _output-files:
+
 ************
 Output Files
 ************
@@ -13,6 +15,6 @@ HDF-based.
 .. toctree::
    :maxdepth: 2
 
+   output-files/file-formats
    output-files/summary-files
    output-files/mode-files
-   output-files/file-formats

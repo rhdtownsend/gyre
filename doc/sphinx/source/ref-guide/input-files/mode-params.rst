@@ -1,23 +1,25 @@
+.. _mode-params:
+
 Mode Parameters
 ===============
 
 The :nml_g:`mode` namelist group defines mode parameters; the input
 file can contain one or more. Allowable fields are:
 
-:nml_o:`l` (default :nml_l:`0`)
+:nml_n:`l` (default :nml_v:`0`)
   Harmonic degree :math:`\ell`
   
-:nml_o:`m` (default :nml_l:`0`)
+:nml_n:`m` (default :nml_v:`0`)
   Azimuthal order :math:`m`
 
-:nml_o:`tag`
+:nml_n:`tag`
   Tag for controlling selection of other parameters
 
-:nml_o:`n_pg_min` (default :nml_l:`-HUGE`)
+:nml_n:`n_pg_min` (default :nml_v:`-HUGE`)
   Filter for minimum radial order
 
-:nml_o:`n_pg_max` (default :nml_l:`+HUGE`)
+:nml_n:`n_pg_max` (default :nml_v:`+HUGE`)
   filter for maximum radial order
 
-:nml_o:`rossby` (default :nml_l:`.FALSE.`)
+:nml_n:`rossby` (default :nml_v:`.FALSE.`)
   Flag to use Rossby-mode angular eigenvalues/eigenfunctions

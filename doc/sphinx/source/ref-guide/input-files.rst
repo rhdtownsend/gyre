@@ -1,3 +1,5 @@
+.. _namelist-input-files:
+
 ********************
 Namelist Input Files
 ********************

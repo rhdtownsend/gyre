@@ -1,3 +1,5 @@
+.. _num-params:
+
 Numerical Parameters
 ====================
 
@@ -5,45 +7,45 @@ The :nml_g:`num` namelist group defines numerical method parameters; the
 input file can contain one or more, but only the last (matching) one is
 used. Allowable fields are:
 
-:nml_o:`diff_scheme` (default :nml_l:`'COLLOC_GL2'`)
+:nml_n:`diff_scheme` (default :nml_v:`'COLLOC_GL2'`)
   Difference equation scheme; one of:
 
-  - :nml_l:`'COLLOC_GL2'` : Second-order Gauss-Legendre collocation
-  - :nml_l:`'COLLOC_GL4'` : Fourth-order Gauss-Legendre collocation
-  - :nml_l:`'COLLOC_GL6'` : Sixth-order Gauss-Legendre collocation
-  - :nml_l:`'MAGNUS_GL2'` : Second-order Gauss-Legendre Magnus
-  - :nml_l:`'MAGNUS_GL4'` : Sourth-order Gauss-Legendre Magnus
-  - :nml_l:`'MAGNUS_GL6'` : Sixth-order Gauss-Legendre Magnus
-  - :nml_l:`'MIRK'` : Fourth-order mono-implicit Runge-Kutta (experimental)
-  - :nml_l:`'TRAPZ'` : Trapezoidal, with the prescription by :cite:`Sugimoto:1970a` for non-adiabatic cases
+  - :nml_v:`'COLLOC_GL2'` : Second-order Gauss-Legendre collocation
+  - :nml_v:`'COLLOC_GL4'` : Fourth-order Gauss-Legendre collocation
+  - :nml_v:`'COLLOC_GL6'` : Sixth-order Gauss-Legendre collocation
+  - :nml_v:`'MAGNUS_GL2'` : Second-order Gauss-Legendre Magnus
+  - :nml_v:`'MAGNUS_GL4'` : Sourth-order Gauss-Legendre Magnus
+  - :nml_v:`'MAGNUS_GL6'` : Sixth-order Gauss-Legendre Magnus
+  - :nml_v:`'MIRK'` : Fourth-order mono-implicit Runge-Kutta (experimental)
+  - :nml_v:`'TRAPZ'` : Trapezoidal, with the prescription by :cite:`Sugimoto:1970a` for non-adiabatic cases
 
-:nml_o:`r_root_solver` (default :nml_l:`'BRENT'`)
+:nml_n:`r_root_solver` (default :nml_v:`'BRENT'`)
   Root solver for real arithmetic; one of:
 
-  - :nml_l:`'BRENT'` : Brent's method
+  - :nml_v:`'BRENT'` : Brent's method
 
-:nml_o:`c_root_solver` (default :nml_l:`'RIDDERS'`)
+:nml_n:`c_root_solver` (default :nml_v:`'RIDDERS'`)
   Root solver for complex arithmetic; one of
 
-  - :nml_l:`'RIDDERS'` : Complex Ridders' method
-  - :nml_l:`'SECANT'` : Secant method
-  - :nml_l:`'SIMPLEX'` : Simplex method
+  - :nml_v:`'RIDDERS'` : Complex Ridders' method
+  - :nml_v:`'SECANT'` : Secant method
+  - :nml_v:`'SIMPLEX'` : Simplex method
 
-:nml_o:`n_iter_max` (default :nml_l:`50`)
+:nml_n:`n_iter_max` (default :nml_v:`50`)
   Maximum number of iterations in root-finding algorithm
   
-:nml_o:`matrix_type` (default :nml_l:`'BLOCK`')
+:nml_n:`matrix_type` (default :nml_v:`'BLOCK`')
   Storage type of system matrix; one of
 
-  - :nml_l:`'BAND'` : Band-structured
-  - :nml_l:`'BLOCK'` : Block-structued
+  - :nml_v:`'BAND'` : Band-structured
+  - :nml_v:`'BLOCK'` : Block-structued
 
-:nml_o:`deflate_roots` (default :nml_l:`.TRUE.`)
+:nml_n:`deflate_roots` (default :nml_v:`.TRUE.`)
   Flag to use root deflation, which can avoid the same eigenfrequency
   being found multiple times
 
-:nml_o:`restrict_roots` (default :nml_l:`.TRUE.`)
+:nml_n:`restrict_roots` (default :nml_v:`.TRUE.`)
   Flag to check each roots found lies within the bounds of the frequency scan
 
-:nml_o:`tag_list` (default :nml_l:`''`, which matches all)
+:nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match
