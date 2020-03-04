@@ -1033,7 +1033,7 @@ contains
 
          dH(4,1) = 0._WP
          dH(4,2) = 0._WP
-         dH(4,3) = U*dU
+         dH(4,3) = -U*dU
          dH(4,4) = 0._WP
          dH(4,5) = 0._WP
          dH(4,6) = 0._WP
