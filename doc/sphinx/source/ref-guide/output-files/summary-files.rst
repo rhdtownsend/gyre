@@ -5,7 +5,7 @@ Summary Files
 
 A summary file gathers together information about all modes found during
 a GYRE run. The data written to summary files is controlled by the
-:nml_o:`summary_item_list` parameter of the :nml_g:`ad_output`
+:nml_n:`summary_item_list` parameter of the :nml_g:`ad_output`
 namelist group (for adiabatic calculations) and the
 :nml_g:`nad_output` namelist group (for nonadiabatic
 calculations). This parameter is a comma-separated list of items to
@@ -19,7 +19,7 @@ appear in the summary file. The items come in two flavors:
   which modes were found during the GYRE run.
 
 The following subsections describe the items that may appear in a
-:nml_o:`summary_item_list` parameter, grouped together by functional
+:nml_n:`summary_item_list` parameter, grouped together by functional
 area.
 
 Solution Data
@@ -33,7 +33,7 @@ Observables
 
 :nml_v:`freq` (complex array)
   Dimensioned eigenfrequency. The units and reference frame are
-  controlled by :nml_o:`freq_units` and :nml_o:`freq_frame` parameters
+  controlled by :nml_n:`freq_units` and :nml_n:`freq_frame` parameters
   of the :nml_g:`ad_output` and :nml_g:`nad_output` namelist groups
        
 :nml_v:`freq_units` (character scalar)
@@ -141,7 +141,7 @@ Energetics & Transport
 
 :nml_v:`E_norm` (real array)
   Normalized inertia :math:`E_{\rm norm}`. The normalization is
-  controlled by the :nml_o:`inertia_norm` parameter of the
+  controlled by the :nml_n:`inertia_norm` parameter of the
   :nml_g:`osc` namelist group
 
 :nml_v:`E_ratio` (real array)
@@ -199,5 +199,5 @@ Stellar Structure
 
 .. rubric:: Footnotes
 
-.. [#only_evol] This option is only available when :nml_o:`model_type`
+.. [#only_evol] This option is only available when :nml_n:`model_type`
                 is :nml_v:`'EVOL'`

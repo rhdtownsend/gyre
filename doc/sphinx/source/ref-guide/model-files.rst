@@ -38,5 +38,5 @@ POLY
   HDF5 file describing a polytrope in POLY format 
 
 Cubic spline interpolation is used to evaluate data between model grid
-points. The :nml_o:`deriv_type` parameter in the :nml_g:`model`
+points. The :nml_n:`deriv_type` parameter in the :nml_g:`model`
 namelist group controls how the spline derivatives are set up.

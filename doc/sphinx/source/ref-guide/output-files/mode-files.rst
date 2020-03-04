@@ -5,7 +5,7 @@ Mode Files
 
 A mode file gathers together information about a single mode found
 during a GYRE run. The data written to a mode file is controlled by
-the :nml_o:`mode_item_list` parameter of the :nml_g:`ad_output`
+the :nml_n:`mode_item_list` parameter of the :nml_g:`ad_output`
 namelist group (for adiabatic calculations) and the
 :nml_g:`nad_output` namelist group (for nonadiabatic
 calculations). This parameter is a comma-separated list of items to
@@ -21,7 +21,7 @@ appear in the mode files. The items come in two flavors:
   the outer boundary
 
 The following subsections describe the items that may appear in a
-:nml_o:`mode_item_list` parameter, grouped together by functional
+:nml_n:`mode_item_list` parameter, grouped together by functional
 area.
 
 Solution Data
@@ -65,7 +65,7 @@ Observables
 
 :nml_v:`freq` (complex scalar)
   Dimensioned eigenfrequency. The units and reference frame are
-  controlled by :nml_o:`freq_units` and :nml_o:`freq_frame` parameters
+  controlled by :nml_n:`freq_units` and :nml_n:`freq_frame` parameters
   of the :nml_g:`ad_output` and :nml_g:`nad_output` namelist groups
        
 :nml_v:`freq_units` (character scalar)
@@ -244,7 +244,7 @@ Energetics & Transport
 
 :nml_v:`E_norm` (real scalar)
   Normalized inertia :math:`E_{\rm norm}`. The normalization is
-  controlled by the :nml_o:`inertia_norm` parameter of the
+  controlled by the :nml_n:`inertia_norm` parameter of the
   :nml_g:`osc` namelist group
 
 :nml_v:`E_ratio` (real scalar)
@@ -425,5 +425,5 @@ Stellar Structure
 
 .. rubric:: Footnotes
 
-.. [#only_evol] This option is only available when :nml_o:`model_type`
+.. [#only_evol] This option is only available when :nml_n:`model_type`
                 is :nml_v:`'EVOL'`
