@@ -54,10 +54,10 @@ module gyre_nad_bound
   integer, parameter :: JCD_TYPE = 8
 
   integer, parameter :: J_V = 1
-  integer, parameter :: J_V_G = 2
-  integer, parameter :: J_AS = 3
-  integer, parameter :: J_U = 4
-  integer, parameter :: J_C_1 = 5
+  integer, parameter :: J_AS = 2
+  integer, parameter :: J_U = 3
+  integer, parameter :: J_C_1 = 4
+  integer, parameter :: J_GAMMA_1 = 5
   integer, parameter :: J_NABLA_AD = 6
   integer, parameter :: J_C_THN = 7
   integer, parameter :: J_DELTA = 8
@@ -224,7 +224,7 @@ contains
 
     ml => this%cx%model()
 
-    call check_model(ml, [I_V_2,I_U,I_C_1,I_NABLA_AD,I_C_THN])
+    call check_model(ml, [I_V_2,I_U,I_C_1,I_GAMMA_1,I_NABLA_AD,I_C_THN])
 
     allocate(this%coeff(2,J_LAST))
 
@@ -249,14 +249,14 @@ contains
        this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
        this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
     case (ISOTHRM_TYPE)
-       call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V_G), &
-            this%coeff(2,J_AS), this%coeff(2,J_C_1))
+       call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V), &
+            this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
     case (UNNO_TYPE)
-       call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V_G), &
-            this%coeff(2,J_AS), this%coeff(2,J_C_1))
+       call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V), &
+            this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
     case (JCD_TYPE)
-       call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V_G), &
-            this%coeff(2,J_AS), this%coeff(2,J_C_1))
+       call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V), &
+            this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
     case default
        $ABORT(Invalid type_o)
     end select
@@ -704,9 +704,9 @@ contains
 
     associate( &
          V => this%coeff(2,J_V), &
-         V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
          c_1 => this%coeff(2,J_C_1), &
+         Gamma_1 => this%coeff(2,J_GAMMA_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
          pt => this%pt(2), &
@@ -727,8 +727,8 @@ contains
       
       ! Evaluate selected elements of the Jacobian matrix
 
-      a_11 = V_g - 3._WP
-      a_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
+      a_11 = V/Gamma_1 - 3._WP
+      a_12 = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
       a_13 = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
       a_14 = alpha_gr*(0._WP)
 
@@ -739,7 +739,7 @@ contains
 
       ! Evaluate the eigenvalue for the wave we want to keep
 
-      chi = atmos_chi(V_g, As, c_1, omega_c, lambda, branch)
+      chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, lambda, branch)
 
       ! Evaluate selected elements of the left eigenvectors
 
@@ -827,9 +827,9 @@ contains
 
     associate( &
          V => this%coeff(2,J_V), &
-         V_g => this%coeff(2,J_V_G), &
          As => this%coeff(2,J_AS), &
          c_1 => this%coeff(2,J_C_1), &
+         Gamma_1 => this%coeff(2,J_GAMMA_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
          pt => this%pt(2), &
@@ -848,16 +848,16 @@ contains
 
       f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
 
-      chi = atmos_chi(V_g, As, c_1, omega_c, lambda, branch)
+      chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, lambda, branch)
 
-      b_11 = V_g - 3._WP
-      b_12 = lambda/(c_1*alpha_om*omega_c**2) - V_g
+      b_11 = V/Gamma_1 - 3._WP
+      b_12 = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
 
       ! Set up the boundary conditions
 
       B(1,1) = chi - b_11
       B(1,2) = -b_12
-      B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)*b_12/(V_g + As))
+      B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)*b_12/(V/Gamma_1 + As))
       B(1,4) = alpha_gr*(0._WP)
       B(1,5) = 0._WP
       B(1,6) = 0._WP
