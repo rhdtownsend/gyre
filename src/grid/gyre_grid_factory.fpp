@@ -426,10 +426,11 @@ contains
     logical, intent(in)          :: origin
     real(WP)                     :: dx
 
-    real(WP)        :: V_g
+    real(WP)        :: V
     real(WP)        :: As
     real(WP)        :: U
     real(WP)        :: c_1
+    real(WP)        :: Gamma_1
     real(WP)        :: Omega_rot
     real(WP)        :: Omega_rot_i
     real(WP)        :: k_r_real
@@ -462,10 +463,11 @@ contains
        
        associate (ml => cx%model())
 
-         V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+         V = ml%coeff(I_V_2, pt)*pt%x**2
          As = ml%coeff(I_AS, pt)
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
+         Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
        end associate
 
@@ -489,8 +491,8 @@ contains
 
           ! Calculate the propagation discriminant gamma
 
-          g_4 = -4._WP*V_g*c_1
-          g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
+          g_4 = -4._WP*V/Gamma_1*c_1
+          g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda
           g_0 = -4._WP*lambda*As/c_1
 
           if (g_0 /= 0._WP) then
@@ -506,17 +508,17 @@ contains
              ! Propagation zone
 
              k_r_real = MAX(k_r_real, abs(0.5_WP*sqrt(-gamma))/pt%x)
-             k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i))/pt%x)
+             k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i))/pt%x)
 
           else
 
              ! Evanescent zone; if we're adjacent to the origin, drop the divering root
 
              if (origin) then
-                k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i + sqrt(gamma)))/pt%x)
+                k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(gamma)))/pt%x)
              else
-                k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i - sqrt(gamma)))/pt%x, & 
-                                         abs(0.5_WP*(As + V_g - U + 2._WP - 2._WP*l_i + sqrt(gamma)))/pt%x)
+                k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i - sqrt(gamma)))/pt%x, & 
+                                         abs(0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(gamma)))/pt%x)
              endif
 
           end if

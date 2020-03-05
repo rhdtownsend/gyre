@@ -159,10 +159,11 @@ contains
     class(r_state_t), intent(in) :: st
     real(WP)                     :: gamma
 
-    real(WP) :: V_g
+    real(WP) :: V
     real(WP) :: As
     real(WP) :: U
     real(WP) :: c_1
+    real(WP) :: Gamma_1
     real(WP) :: Omega_rot
     real(WP) :: omega_c
     real(WP) :: lambda
@@ -181,10 +182,11 @@ contains
 
       else
 
-         V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+         V = ml%coeff(I_V_2, pt)*pt%x**2
          As = ml%coeff(I_As, pt)
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
+         Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
          Omega_rot = cx%Omega_rot(pt)
 
@@ -192,8 +194,8 @@ contains
 
          lambda = cx%lambda(Omega_rot, st)
 
-         g_4 = -4._WP*V_g*c_1
-         g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
+         g_4 = -4._WP*V/Gamma_1*c_1
+         g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda
          g_0 = -4._WP*lambda*As/c_1
 
          if (g_0 /= 0._WP) then

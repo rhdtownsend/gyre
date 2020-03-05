@@ -53,11 +53,12 @@ module gyre_atmos
 
 contains
 
-  function atmos_chi_r_ (V_g, As, c_1, omega, lambda) result (chi)
+  function atmos_chi_r_ (V, As, c_1, Gamma_1, omega, lambda) result (chi)
 
-    real(WP)             :: V_g
+    real(WP), intent(in) :: V
     real(WP), intent(in) :: As
     real(WP), intent(in) :: c_1
+    real(WP), intent(in) :: Gamma_1
     real(WP), intent(in) :: omega
     real(WP), intent(in) :: lambda
     real(WP)             :: chi
@@ -73,8 +74,8 @@ contains
 
     ! Calculate the atmospheric radial wavenumber (real frequencies)
 
-    a_11 = V_g - 3._WP
-    a_12 = lambda/(c_1*omega**2) - V_g
+    a_11 = V/Gamma_1 - 3._WP
+    a_12 = lambda/(c_1*omega**2) - V/Gamma_1
     a_21 = c_1*omega**2 - As
     a_22 = As + 1._WP
 
@@ -110,11 +111,12 @@ contains
 
   !****
 
-  function atmos_chi_c_ (V_g, As, c_1, omega, lambda, branch) result (chi)
+  function atmos_chi_c_ (V, As, c_1, Gamma_1, omega, lambda, branch) result (chi)
 
-    real(WP)                           :: V_g
+    real(WP), intent(in)               :: V
     real(WP), intent(in)               :: As
     real(WP), intent(in)               :: c_1
+    real(WP), intent(in)               :: Gamma_1
     complex(WP), intent(in)            :: omega
     complex(WP), intent(in)            :: lambda
     character(*), intent(in), optional :: branch
@@ -138,8 +140,8 @@ contains
 
     ! Calculate the atmospheric radial wavenumber (complex frequencies)
 
-    a_11 = V_g - 3._WP
-    a_12 = lambda/(c_1*omega**2) - V_g
+    a_11 = V/Gamma_1 - 3._WP
+    a_12 = lambda/(c_1*omega**2) - V/Gamma_1
     a_21 = c_1*omega**2 - As
     a_22 = As + 1._WP
 
@@ -215,11 +217,12 @@ contains
 
   !****
 
-  subroutine eval_atmos_cutoff_freqs (V_g, As, c_1, lambda, omega_cutoff_lo, omega_cutoff_hi)
+  subroutine eval_atmos_cutoff_freqs (V, As, c_1, Gamma_1, lambda, omega_cutoff_lo, omega_cutoff_hi)
 
-    real(WP), intent(in)  :: V_g
+    real(WP), intent(in)  :: V
     real(WP), intent(in)  :: As
     real(WP), intent(in)  :: c_1
+    real(WP), intent(in)  :: Gamma_1
     real(WP), intent(in)  :: lambda
     real(WP), intent(out) :: omega_cutoff_lo
     real(WP), intent(out) :: omega_cutoff_hi
@@ -230,8 +233,8 @@ contains
 
     ! Evaluate the atmospheric cutoff frequencies from the supplied coefficients
 
-    a = -4._WP*V_g*c_1**2
-    b = ((As - V_g - 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda)*c_1
+    a = -4._WP*V/Gamma_1*c_1**2
+    b = ((As - V/Gamma_1 - 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda)*c_1
     c = -4._WP*lambda*As
 
     omega_cutoff_lo = sqrt((-b + sqrt(b**2 - 4._WP*a*c))/(2._WP*a))
@@ -247,19 +250,21 @@ contains
 
   !****
   
-  subroutine eval_atmos_coeffs_unno (ml, pt, V_g, As, c_1)
+  subroutine eval_atmos_coeffs_unno (ml, pt, V, As, c_1, Gamma_1)
 
     class(model_t), intent(in) :: ml
     type(point_t), intent(in)  :: pt
-    real(WP), intent(out)      :: V_g
+    real(WP), intent(out)      :: V
     real(WP), intent(out)      :: As
     real(WP), intent(out)      :: c_1
+    real(WP), intent(out)      :: Gamma_1
 
     ! Evaluate atmosphere coefficients ([Unn1989] formulation)
 
-    V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+    V = ml%coeff(I_V_2, pt)*pt%x**2
     As = ml%coeff(I_AS, pt)
     c_1 = ml%coeff(I_C_1, pt)
+    Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
     ! Finish
 
@@ -269,20 +274,22 @@ contains
 
   !****
   
-  subroutine eval_atmos_coeffs_isothrm (ml, pt, V_g, As, c_1)
+  subroutine eval_atmos_coeffs_isothrm (ml, pt, V, As, c_1, Gamma_1)
 
     class(model_t), intent(in) :: ml
     type(point_t), intent(in)  :: pt
-    real(WP), intent(out)      :: V_g
+    real(WP), intent(out)      :: V
     real(WP), intent(out)      :: As
     real(WP), intent(out)      :: c_1
+    real(WP), intent(out)      :: Gamma_1
 
     ! Evaluate atmosphere coefficients for an isothermal, massless
     ! atmosphere
 
-    V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+    V = ml%coeff(I_V_2, pt)*pt%x**2
     As = ml%coeff(I_V_2, pt)*pt%x**2*(1._WP-1._WP/ml%coeff(I_GAMMA_1, pt))
     c_1 = ml%coeff(I_C_1, pt)
+    Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
     ! Finish
 

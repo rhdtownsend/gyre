@@ -1238,12 +1238,12 @@ contains
     complex(WP) :: lag_rho
     complex(WP) :: lag_P
     real(WP)    :: V_2
+    real(WP)    :: V
     real(WP)    :: U
     real(WP)    :: As
     real(WP)    :: c_1
     real(WP)    :: Gamma_1
     real(WP)    :: x4_V
-    real(WP)    :: V_g
 
     ! Calculate the dimensionless frequency weight function.  This is
     ! based on the derivative of equation (1.71) of [Dupret:2002a]
@@ -1260,6 +1260,7 @@ contains
       lag_P = this%lag_P(k)
 
       V_2 = ml%coeff(I_V_2, pt)
+      V = V_2*pt%x**2
       As = ml%coeff(I_AS, pt)
       U = ml%coeff(I_U, pt)
       c_1 = ml%coeff(I_C_1, pt)
@@ -1267,12 +1268,10 @@ contains
 
       x4_V = pt%x**2/V_2
 
-      V_g = V_2*pt%x**2/Gamma_1
-
       dzeta_dx = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)) + &
                  2._WP*REAL(lag_rho*CONJG(xi_r)*(pt%x/c_1)*(pt%x**2*U/c_1)) + &
                  CONJG(eul_rho)*eul_phi*(pt%x**2*U/c_1) - &
-                 abs(xi_r)**2*(-V_g-As)/c_1*(pt%x**2*U/c_1)
+                 abs(xi_r)**2*(-V/Gamma_1-As)/c_1*(pt%x**2*U/c_1)
 
     end associate
 
@@ -1768,10 +1767,11 @@ contains
     integer, intent(in)       :: k
     integer                   :: prop_type
 
-    real(WP) :: V_g
+    real(WP) :: V
     real(WP) :: As
     real(WP) :: U
     real(WP) :: c_1
+    real(WP) :: Gamma_1
     real(WP) :: Omega_rot
     real(WP) :: lambda
     real(WP) :: omega_c
@@ -1794,10 +1794,11 @@ contains
 
          ! Calculate the discriminant gamma
 
-         V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+         V = ml%coeff(I_V_2, pt)*pt%x**2
          As = ml%coeff(I_AS, pt)
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
+         Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
          Omega_rot = this%cx%Omega_rot(pt)
 
@@ -1805,8 +1806,8 @@ contains
 
          omega_c = REAL(this%cx%omega_c(Omega_rot, this%st))
 
-         g_4 = -4._WP*V_g*c_1
-         g_2 = (As - V_g - U + 4._WP)**2 + 4._WP*V_g*As + 4._WP*lambda
+         g_4 = -4._WP*V/Gamma_1*c_1
+         g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda
          g_0 = -4._WP*lambda*As/c_1
        
          gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
