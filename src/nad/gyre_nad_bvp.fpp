@@ -148,7 +148,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, bp%n_k
-       call bp%tr%trans_vars(y(:,k), k, st)
+       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
@@ -187,7 +187,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, bp%n_k
-       call bp%tr%trans_vars(y(:,k), k, st)
+       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
