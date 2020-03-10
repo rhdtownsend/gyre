@@ -28,6 +28,9 @@ copyright = '2020, Rich Townsend & The GYRE Team'
 
 # -- General configuration ---------------------------------------------------
 
+# Numbered figures
+numfig = True
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
@@ -84,6 +87,7 @@ html_logo = 'gyre-logo-200.png'
 
 # Set up Extlinks
 extlinks = {
+    'wiki': ('https://en.wikipedia.org/wiki/%s', ''),
     'ads': ('https://ui.adsabs.harvard.edu/abs/%s/abstract', ''),
     'repo': ('https://github.com/rhdtownsend/gyre/blob/release-{:s}/%s'.format(release), '%s')
 }

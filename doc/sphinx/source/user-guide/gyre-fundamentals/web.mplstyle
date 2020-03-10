@@ -1,0 +1,17 @@
+figure.figsize: 6, 4
+font.size: 16
+axes.titlesize: medium
+axes.labelsize: medium
+legend.fontsize: 14
+legend.frameon : True
+text.usetex: True
+lines.markersize: 4
+lines.linewidth: 2.0
+lines.antialiased: False
+path.simplify: False 
+xtick.minor.visible: True
+xtick.top: True
+xtick.direction: in
+ytick.minor.visible: True
+ytick.right: True
+ytick.direction: in
