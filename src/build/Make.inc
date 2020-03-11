@@ -15,11 +15,17 @@ MPI?=no
 # Use double precision arithmetic (best left to 'yes')
 DOUBLE_PRECISION?=yes
 
+# Enable correctly-rounded math
+CRMATH?=yes
+
 # Use IEEE fortran features
 IEEE?=no
 
 # Enable FPE checks
 FPE?=yes
+
+# Enable HDF support
+HDF5?=yes
 
 # Enable experimental features
 EXPERIMENTAL?=no
@@ -61,13 +67,12 @@ endif
 
 F9XFLAGS:=${F9XFLAGS} $(addprefix -I,${MODPATH}) ${FFLAGS} -std=f2008
 F77FLAGS:=${F77FLAGS} ${FFLAGS} -ffixed-form
+LDFLAGS:=${LDFLAGS} `lapack95_link`
 
 ifeq (${OMP},yes)
   F9XFLAGS:=${F9XFLAGS} -fopenmp
   F77FLAGS:=${F77FLAGS} -fopenmp
 endif
-
-LDFLAGS:=${LDFLAGS} `mesasdk_lapack95_link`
 
 ifeq ($(CRMATH),yes)
   export MESASDK_MATH_SLOT=crmath
@@ -75,6 +80,10 @@ ifeq ($(CRMATH),yes)
 else
   export MESASDK_MATH_SLOT=default
 endif
+
+ifeq ($(HDF5),yes)
+  LDFLAGS:=${LDFLAGS} `hdf5_link`
+endif	
 
 # System module files (should ignore dependencies for these)
 

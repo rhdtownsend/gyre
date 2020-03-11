@@ -21,12 +21,6 @@ endif
 
 # Flags
 
-HDF5=yes
-#DEBUG=yes
-CRMATH=yes
-
-LDFLAGS=`hdf5_link`
-
 ifeq ($(ODEPACK),yes)
   LDFLAGS:=${LDFLAGS} `odepack_link`
 endif
@@ -41,7 +35,7 @@ SUBDIRS=../extern/core:../extern/astro:../common:../math:../par:../diff:../bvp:.
 
 include Make.inc
 
-# Rules
+# Additional rules
 
 ifeq ($(CRMATH),yes)
 gyre_math.fpp: gyre_math_crmath.fpp
