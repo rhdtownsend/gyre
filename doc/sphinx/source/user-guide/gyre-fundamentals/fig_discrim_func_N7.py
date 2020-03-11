@@ -17,7 +17,7 @@ plt.style.use('web.mplstyle')
 
 # Calculation & plot parameters
 
-N = 50
+N = 7
 M = 1000
 
 sigma_min = 0
@@ -84,11 +84,11 @@ ax.yaxis.set_minor_locator(tkr.MultipleLocator(0.1))
 
 tau = np.pi/(N-1)
 
-for n in range(1, N):
+for n in range(1, N-1):
     sigma_ana = np.sqrt(2-2*np.cos(n*tau))/tau
     ax.scatter([sigma_ana,-sigma_ana], [0.,0.], 25, color=ORANGE, zorder=1)
 
 # Write out the figure
 
 fig.tight_layout()
-fig.savefig('fig_discrim_func.svg')
+fig.savefig('fig_discrim_func_N7.svg')

@@ -89,6 +89,8 @@ html_logo = 'gyre-logo-200.png'
 extlinks = {
     'wiki': ('https://en.wikipedia.org/wiki/%s', ''),
     'ads': ('https://ui.adsabs.harvard.edu/abs/%s/abstract', ''),
+    'netlib': ('https://www.netlib.org/%s', ''),
+    'git': ('https://github.com/%s', ''),
     'repo': ('https://github.com/rhdtownsend/gyre/blob/release-{:s}/%s'.format(release), '%s')
 }
 
@@ -107,6 +109,7 @@ substitutions = [
 targets = {
     'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/v{0:s}.tar.gz'.format(release),
     'gyre-forums': 'http://www.astro.wisc.edu/~townsend/gyre-forums/',
+    'gyre-forums': 'http://www.astro.wisc.edu/~townsend/gyre-forums/',
     'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
     'mesa': 'http://mesa.sourceforge.net/',
 }
@@ -122,7 +125,9 @@ mathjax_config = {
             'deriv': [r'\frac{{\rm d}^{#3}#1}{{\rm d}#2^{#3}}', 3],
             'pderiv': [r'\frac{\partial^{#3}#1}{\partial#2^{#3}}', 3],
             'ii': r'{\rm i}',
-            'disc': r'\mathcal{D}'
+            'Dfunc': r'\mathcal{D}',
+            'uvec': r'\mathbf{u}',
+            'Smat': r'\boldsymbol{\mathsf{S}}'
         }
     }
 }

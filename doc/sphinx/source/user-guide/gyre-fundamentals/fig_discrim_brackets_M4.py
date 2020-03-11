@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Discriminant function plot
+# Discriminant brackets plot
 
 # Imports
 
@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tkr
 import numpy as np
 import numpy.linalg as la
+import scipy.optimize as op
 
 from colors import *
 
@@ -18,7 +19,7 @@ plt.style.use('web.mplstyle')
 # Calculation & plot parameters
 
 N = 50
-M = 1000
+M = 4
 
 sigma_min = 0
 sigma_max = 5.5
@@ -60,11 +61,18 @@ D = np.empty(n_sigma)
 for i in range(n_sigma):
     D[i] = discrim(sigma[i])
 
+# Bracket roots
+
+i_bracket = np.where(D[1:]*D[:-1] <= 0.)[0]
+
 # Do the plot
 
 fig, ax = plt.subplots()
 
-ax.plot(sigma, D, color=SKY_BLUE, zorder=0)
+ax.plot(sigma, D, 'o', color=SKY_BLUE, zorder=0)
+
+ax.plot(sigma[i_bracket], D[i_bracket], 'o', mfc='None', mec=ORANGE, mew=2, ms=7, zorder=1)
+ax.plot(sigma[i_bracket+1], D[i_bracket+1], 'o', mfc='None', mec=ORANGE, mew=2, ms=7, zorder=1)
 
 ax.set_xlabel(r'$\sigma\ [\pi c/L]$')
 ax.set_ylabel(r'$\mathcal{D}(\sigma)$')
@@ -80,15 +88,7 @@ ax.xaxis.set_minor_locator(tkr.MultipleLocator(0.25))
 ax.yaxis.set_major_locator(tkr.MultipleLocator(0.2))
 ax.yaxis.set_minor_locator(tkr.MultipleLocator(0.1))
 
-# Add analytic roots
-
-tau = np.pi/(N-1)
-
-for n in range(1, N):
-    sigma_ana = np.sqrt(2-2*np.cos(n*tau))/tau
-    ax.scatter([sigma_ana,-sigma_ana], [0.,0.], 25, color=ORANGE, zorder=1)
-
 # Write out the figure
 
 fig.tight_layout()
-fig.savefig('fig_discrim_func.svg')
+fig.savefig('fig_discrim_brackets_M4.svg')

@@ -16,7 +16,7 @@ Making a Place to Work
 When starting a new project, it's a good idea to create a dedicated
 working directory to contain the various input and output files that
 GYRE operates on. These commands will make a new directory beneath
-your home directory with the name ``work``, and then change into it:
+your home directory with the name file:`work`, and then change into it:
 
 .. substitution-prompt:: bash
 
@@ -27,7 +27,7 @@ Grabbing a Stellar Model
 ========================
 
 The next step is to grab a stellar model for GYRE to work with. There
-are a number of models provided beneath the ``$GYRE_DIR/models``
+are a number of models provided beneath the :file:`{$GYRE_DIR}/models`
 directory; the following commands will copy a MESA model for a
 :math:`5\,\Msun` SPB star into your working directory:
 
@@ -40,12 +40,12 @@ Creating a Namelist File
 
 Now comes the fun part: creating an input file containing the various
 parameters which control a GYRE run. Using a text editor, create the
-file ``gyre.in`` in your working directory with the following
+file :file:`gyre.in` in your working directory with the following
 contents cut-and-pasted in:
 
 .. literalinclude:: example-walkthrough/gyre.in
 
-This file is an example of a Fortran ''namelist'' file, containing
+This file is an example of a Fortran 'namelist' file, containing
 multiple namelist groups. Each group begins with the line
 :nml_g:`name` (where ``name`` is the name of the group); a list of
 name-value pairs follows, and the group ends with a slash
@@ -59,7 +59,7 @@ file above:
   default values should be used
 * The :nml_g:`model` namelist group instructs GYRE to read an
   evolutionary model, in :repo:`MESA format <doc/mesa-format.pdf>`,
-  from the file ``spb.mesa``
+  from the file :file:`spb.mesa`
 * The :nml_g:`mode` namelist group instructs GYRE to consider
   quadrupole (:math:`\ell=2`) modes
 * The :nml_g:`osc` namelist group instructs GYRE to apply a
@@ -69,8 +69,8 @@ file above:
   dimensionless angular frequency space typically occupied by gravity
   modes
 * The :nml_g:`grid` namelist group instructs GYRE to perform
-  calculations on a refinement of the model grid (see [[Understanding
-  Grids]] for details on how this works)
+  calculations on a refinement of the model grid (see the
+  :ref:`working-with-grids` chapter for details on how this works)
 * The :nml_g:`ad_output` namelist group instructs GYRE to write out
   summary data to the file ``summary.txt``, and individual mode data
   to files having the prefix ``mode.``
@@ -93,13 +93,13 @@ to the screen. Let's break down this output, chunk by chunk.
 
 First, GYRE prints out its version number, tells us (in OpenMP
 threads) how many cores it is running on, and indicates which file it
-is reading parameters from (here, ``gyre.in``):
+is reading parameters from (here, file:`gyre.in`):
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
    :end-before: Model Init
 
-Next, GYRE loads the stellar model from the file ``spb.mesa``. This
+Next, GYRE loads the stellar model from the file :file:`spb.mesa`. This
 model comprises 1814 points and extends from the surface all the way
 to the center (which is why GYRE decides not to add a central point).
 
@@ -110,17 +110,17 @@ to the center (which is why GYRE decides not to add a central point).
 
 GYRE then prepares to searching for modes with harmonic degree
 :math:`\ell=2` and azimuthal order :math:`m=0` (not specified in
-``gyre.in``, but assumed by default), by building a frequency scan and
-a spatial (:math:`x`) grid:
+:file:`gyre.in`, but assumed by default), by building a frequency grid
+and a spatial (:math:`x`) grid:
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
    :start-after: No need
    :end-before: Starting search
 
-(The concepts of frequency scans and spatial grids are explored in
-greater detail in the :ref:`gyre-fundamentals` chapter). Next, GYRE
-attempts to bracket roots of the discriminant function (again, see
+(The concepts of spatial and frequency grids are explored in greater
+detail in the :ref:`gyre-fundamentals` chapter). Next, GYRE attempts
+to bracket roots of the discriminant function (again, see
 :ref:`gyre-fundamentals`) by searching for changes in its sign:
 
 .. literalinclude:: example-walkthrough/gyre.out
@@ -200,11 +200,11 @@ Interpreting Output Files
 =========================
 
 Overall properties of all modes found (eigenfrequencies, inertias,
-etc.) are collected together in the file ``summary.txt``. For each
-mode GYRE also writes a file with the name ``mode.NNNNN.txt``,
+etc.) are collected together in the file :file:`summary.txt`. For each
+mode GYRE also writes a file with the name :file:`mode.{NNNNN}.txt`,
 containing data (eigenfrequency, eigenfunctions, etc.) specific to the
-mode. Here, ``NNNNN`` denotes a 5-digit index which increments
-(starting at ``00001``) for each mode found. Note that this index
+mode. Here, :file:`{NNNNN}` denotes a 5-digit index which increments
+(starting at :file:`00001`) for each mode found. Note that this index
 bears no relation to the radial order ``n_pg``; it merely serves as a
 unique label for the modes.
 
@@ -239,4 +239,3 @@ rather determined by the :nml_n:`summary_item_list` and
 :nml_g:`nad_output` namelist groups. Changing these parameters allows
 you to tailor the files to contain exactly the data you need. For a
 full list of possible items, consult the :ref:`output-files` chapter.
-

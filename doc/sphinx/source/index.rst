@@ -21,16 +21,19 @@ detail. Supplementary material can be found in the :ref:`appendices`.
 .. toctree::
    :caption: User Guide
    :name: user-guide
+   :maxdepth: 2
 
    user-guide/preliminaries.rst
-   user-guide/getting-started.rst
+   user-guide/quick-start.rst
    user-guide/example-walkthrough.rst
    user-guide/gyre-fundamentals.rst
-   user-guide/getting-help.rst
+   user-guide/working-with-grids.rst
+   user-guide/interpreting-output.rst
    
 .. toctree::
    :caption: Reference Guide
    :name: ref-guide
+   :maxdepth: 2
 
    ref-guide/installation.rst
    ref-guide/input-files.rst

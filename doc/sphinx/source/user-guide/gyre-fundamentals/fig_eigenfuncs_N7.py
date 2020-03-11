@@ -19,7 +19,7 @@ plt.style.use('web.mplstyle')
 
 # Calculation & plot parameters
 
-N = 50
+N = 7
 M = 32
 
 sigma_min = 0
@@ -112,4 +112,4 @@ ax.yaxis.set_minor_locator(tkr.MultipleLocator(0.25))
 # Write out the figure
 
 fig.tight_layout()
-fig.savefig('fig_eigenfuncs.svg')
+fig.savefig('fig_eigenfuncs_N7.svg')

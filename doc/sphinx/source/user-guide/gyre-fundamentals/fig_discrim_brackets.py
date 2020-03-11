@@ -19,43 +19,43 @@ plt.style.use('web.mplstyle')
 # Calculation & plot parameters
 
 N = 50
+M = 32
 
 sigma_min = 0
 sigma_max = 5.5
-delta_sigma = 0.17
+n_sigma = M
 
 D_min = -0.3
 D_max = 1.1
 
 # System matrix
 
-def M (sigma):
+def S (sigma):
 
     tau = np.pi/(N-1)
 
-    M = np.zeros([N, N])
+    S = np.zeros([N, N])
 
-    M[0,0] = 1.
+    S[0,0] = 1.
 
     for i in range(1, N-1):
-        M[i,i] = tau**2*sigma**2 - 2.
-        M[i,i-1] = 1.
-        M[i,i+1] = 1.
+        S[i,i] = tau**2*sigma**2 - 2.
+        S[i,i-1] = 1.
+        S[i,i+1] = 1.
 
-    M[N-1,N-1] = 1.
+    S[N-1,N-1] = 1.
 
-    return M
+    return S
 
 # Discriminant function
 
 def discrim (sigma):
 
-    return la.det(M(sigma))/((-1)**(N-2)*(N-1))
+    return la.det(S(sigma))/((-1)**(N-2)*(N-1))
 
 # Evaluate data
 
-sigma = np.concatenate([np.arange(0, sigma_min, -delta_sigma)[1:], np.arange(0, sigma_max, delta_sigma)])
-n_sigma = len(sigma)
+sigma = np.linspace(sigma_min, sigma_max, n_sigma)
 D = np.empty(n_sigma)
 
 for i in range(n_sigma):

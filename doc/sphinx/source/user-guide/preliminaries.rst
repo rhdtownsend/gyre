@@ -19,14 +19,11 @@ we recommend the following online resources:
 Obtaining GYRE
 ==============
 
-GYRE is free software: you can redistribute
-it and/or modify it under the terms of the `GNU General Public License
-<http://www.gnu.org/licenses/gpl.html>`__ as published by the `Free
-Software Foundation <http://www.fsf.org/>`__, version 3.
-
-The source code for GYRE is hosted in the `rhdtownsend/gyre
-<https://github.com/rhdtownsend/gyre>`__ git repository on `GitHub
-<https://github.com>`__.
+The source code for GYRE is hosted in the :git:`rhdtownsend/gyre` git
+repository on :git:`GitHub <>`. GYRE is free software: you can
+redistribute it and/or modify it under the terms of the `GNU General
+Public License <http://www.gnu.org/licenses/gpl.html>`__ as published
+by the `Free Software Foundation <http://www.fsf.org/>`__, version 3.
 
 Citing GYRE
 ===========

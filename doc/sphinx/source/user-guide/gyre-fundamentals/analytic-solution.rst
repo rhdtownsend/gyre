@@ -46,16 +46,17 @@ it leads to the trivial solution :math:`y(x,t)=0`). . Combining this with
 the dispersion relation, we find the normal-mode eigenfrequencies of
 the stretched-string BVP are
 
-.. _analytic-eigenfreqs:
-
 .. math::
+   :label: analytic-eigenfeqs
 
    \sigma = n \frac{\pi c}{L},
 
 and the corresponding eigenfunctions are
 
-.. _analytic-eigenfuncs:
-
 .. math::
+   :label: analytic-eigenfuncs
 
    y(x,t) = B \sin \left( \frac{n \pi x}{L} \right) \exp ( - \ii \sigma t).
+
+The index :math:`n` uniquely labels the modes, and :math:`y(x,t)`
+exhibits :math:`n-1` nodes in the open interval :math:`x=(0,L)`.

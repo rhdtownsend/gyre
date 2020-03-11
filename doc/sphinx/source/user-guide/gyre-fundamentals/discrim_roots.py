@@ -20,28 +20,28 @@ delta_sigma = 0.17
 
 # System matrix
 
-def M (sigma):
+def S (sigma):
 
     tau = np.pi/(N-1)
 
-    M = np.zeros([N, N])
+    S = np.zeros([N, N])
 
-    M[0,0] = 1.
+    S[0,0] = 1.
 
     for i in range(1, N-1):
-        M[i,i] = tau**2*sigma**2 - 2.
-        M[i,i-1] = 1.
-        M[i,i+1] = 1.
+        S[i,i] = tau**2*sigma**2 - 2.
+        S[i,i-1] = 1.
+        S[i,i+1] = 1.
 
-    M[N-1,N-1] = 1.
+    S[N-1,N-1] = 1.
 
-    return M
+    return S
 
 # Discriminant function
 
 def discrim (sigma):
 
-    return la.det(M(sigma))/((-1)**(N-2)*(N-1))
+    return la.det(S(sigma))/((-1)**(N-2)*(N-1))
 
 # Evaluate discriminant data
 
@@ -64,10 +64,9 @@ for j in range(n_bracket):
 
 # Write out roots in CSV format
 
-with open('discrim_func_roots.csv', 'w') as f:
+with open('eigenfreqs.csv', 'w') as f:
 
-    f.write('"n", "analytic", "numerical"\n')
+    f.write('"n", "numerical", "analytic"\n')
 
     for j in range(n_bracket):
-        f.write("{:d}, {:8.6f}, {:8.6f}\n".format(j+1, float(j+1), sigma_root[j]))
-
+        f.write("{:d}, {:8.6f}, {:8.6f}\n".format(j+1, sigma_root[j], float(j+1)))

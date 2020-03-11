@@ -16,6 +16,6 @@ caclulate mode eigenfrequencies and eigenfunctions.
    gyre-fundamentals/stretched-string.rst
    gyre-fundamentals/analytic-solution.rst
    gyre-fundamentals/numerical-solution.rst
-   gyre-fundamentals/numerical-limitations.rst
+   gyre-fundamentals/numerical-limits.rst
    gyre-fundamentals/from-string-to-gyre.rst
 
