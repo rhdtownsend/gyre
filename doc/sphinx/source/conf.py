@@ -12,6 +12,7 @@
 #
 import os
 import sys
+import re
 sys.path.insert(0, os.path.abspath('exts'))
 
 import sphinx_rtd_theme
@@ -118,16 +119,26 @@ rst_prolog = '\n'.join(['.. _{:s}: {:s}'.format(x, targets[x]) for x in targets]
 
 # Latex macros
 
+macros = {}
+
+with open('macros.def') as f:
+    line = f.readline()
+    while line:
+        key, value = line.rstrip().split('\t')
+        macros[key] = value
+        line = f.readline()
+
+mathjax_macros = {}
+
+for key, value in macros.items():
+    argnums = re.findall('#(\d)', value)
+    if argnums:
+        mathjax_macros[key] = [value, int(max(argnums))]
+    else:
+        mathjax_macros[key] = value
+
 mathjax_config = {                  
-    'TeX': {                        
-        'Macros': {                 
-            'Msun': r'{\rm M}_{\odot}',
-            'deriv': [r'\frac{{\rm d}^{#3}#1}{{\rm d}#2^{#3}}', 3],
-            'pderiv': [r'\frac{\partial^{#3}#1}{\partial#2^{#3}}', 3],
-            'ii': r'{\rm i}',
-            'Dfunc': r'\mathcal{D}',
-            'uvec': r'\mathbf{u}',
-            'Smat': r'\boldsymbol{\mathsf{S}}'
-        }
+    'TeX': { 
+        'Macros': mathjax_macros
     }
 }
