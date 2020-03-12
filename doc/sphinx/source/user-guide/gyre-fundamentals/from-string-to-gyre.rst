@@ -3,12 +3,18 @@
 From Stretched String to GYRE
 =============================
 
-The stretched-string BVP explored in this chapter provides a very nice
-analog of the numerical technique that GYRE uses to solve the
-oscillation equations. In this section, let's review where this
+The numerical technique used in this chapter to solve the
+stretched-string BVP provides a strong analog to how GYRE solves the
+oscillation equations. The full, nasty details of GYRE's approach are
+laid out in XXXX
 
-Similarities in GYRE
---------------------
+In this section, let's review the similarities
+and differences between the two.
+
+Similarities
+------------
+
+GYRE shares the following similarities to 
 
 * Separation of variables
 * Discretization

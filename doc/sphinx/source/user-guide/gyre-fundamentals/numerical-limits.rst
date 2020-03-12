@@ -13,7 +13,7 @@ Insufficient Spatial Resolution
 -------------------------------
 
 The cost of evaluating the determinant of the system matrix
-:math:`\Smat` scales proportionally to the number of grid points
+:math:`\mS` scales proportionally to the number of grid points
 :math:`N` used for the :ref:`discretization
 <discretization>`. Therefore, in the interests of computational
 efficiency, we want to make :math:`N` as small as possible.
@@ -45,7 +45,7 @@ expansion`) as the sum of `N` terms; and each term itself involves the
 product of :math:`N` matrix elements, picked so that each row/column
 is used only once in the construction of the term. With these points
 in mind, we can see from the definition :eq:`linear-sys` of
-:math:`\Smat` that its determinant (i.e., the discriminant
+:math:`\mS` that its determinant (i.e., the discriminant
 function) must be a polynomial in :math:`\sigma^{2}` of order
 :math:`N-2`; and as such, it can have at most :math:`N-2` (in this
 case, 5) roots. This leads us to important lesson #1:

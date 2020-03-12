@@ -13,7 +13,7 @@ time :math:`t` is
 
 .. math::
 
-   \pderiv{y}{x}{2} = - \frac{1}{c^{2}} \pderiv{y}{t}{2},
+   \npderiv{y}{x}{2} = - \frac{1}{c^{2}} \npderiv{y}{t}{2},
 
 with :math:`c \equiv (T/\rho)^{1/2}`. If the string is clamped at
 :math:`x=0` and :math:`x=L`, then the wave equation together with the boundary conditions
@@ -23,4 +23,3 @@ with :math:`c \equiv (T/\rho)^{1/2}`. If the string is clamped at
    y(L,t) = 0
 
 comprise a two-point boundary value problem (BVP).
-

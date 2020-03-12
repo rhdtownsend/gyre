@@ -39,6 +39,7 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    ref-guide/input-files.rst
    ref-guide/model-files.rst
    ref-guide/output-files.rst
+   ref-guide/math-formalism.rst
 
 .. toctree::
    :caption: Appendices

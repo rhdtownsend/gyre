@@ -76,13 +76,13 @@ To find solutions to the linear system, we first write it in matrix form as
 .. math:: 
    :label: linear-sys
 
-   \Smat \uvec = \mathbf{0},
+   \mS \vu = \mathbf{0},
 
-where :math:`\uvec` is the vector with components
+where :math:`\vu` is the vector with components
 
 .. math::
 
-   \uvec = 
+   \vu = 
    \begin{pmatrix}
    \tilde{y}_{1} \\
    \tilde{y}_{2} \\
@@ -91,12 +91,12 @@ where :math:`\uvec` is the vector with components
    \tilde{y}_{N}
   \end{pmatrix}
 
-and the 'system matrix' :math:`\Smat` is an :math:`N \times N` tridiagonal matrix
+and the 'system matrix' :math:`\mS` is an :math:`N \times N` tridiagonal matrix
 with components
 
 .. math::
 
-   \Smat = 
+   \mS = 
    \begin{pmatrix}
    1 & 0 & 0 & \cdots & 0 & 0 & 0 \\
    1 & \sigma^{2} \tau^{2} - 2 & 1 & \cdots & 0 & 0 & 0 \\
@@ -115,15 +115,15 @@ representing the sound crossing time of a single cell.
 
 Equation :eq:`linear-sys` is a :wiki:`homogeneous linear system
 <System_of_linear_equations#Homogeneous_systems>`, meaning that it
-only has non-trivial solutions :math:`\uvec` when the determinant of
-:math:`\Smat` vanishes. With this in mind, we formulate the
+only has non-trivial solutions :math:`\vu` when the determinant of
+:math:`\mS` vanishes. With this in mind, we formulate the
 characteristic equation for the BVP,
 
 .. math::
 
    \Dfunc(\sigma) = 0
 
-where :math:`\Dfunc(\sigma) \equiv \det(\Smat)` is a
+where :math:`\Dfunc(\sigma) \equiv \det(\mS)` is a
 discriminant function whose roots are the characteristic frequencies
 (*eigenfrequencies*) of the stretched-string BVP.
 
@@ -204,16 +204,16 @@ Eigenfunction Reconstruction
 
 For each of the eigenfrequencies found, we find the corresponding
 eigenfunction by solving the linear system :eq:`linear-sys`. Because
-:math:`\det(\Smat)` is now zero, this system is guaranteed to
-have a non-trivial solution. The solution vector :math:`\uvec`
-resides in the :wiki:`null space` of :math:`\Smat`, and we can
+:math:`\det(\mS)` is now zero, this system is guaranteed to
+have a non-trivial solution. The solution vector :math:`\vu`
+resides in the :wiki:`null space` of :math:`\mS`, and we can
 use standard numerical techniques to evaluate it. Then, the
-:math:`k`'th element of :math:`\uvec` corresponds to the
+:math:`k`'th element of :math:`\vu` corresponds to the
 eigenfunction sampled at the :math:`k`'th spatial grid point:
 
 .. math::
 
-   (\uvec)_{k} = \tilde{y}_{k} \equiv \tilde{y}(x_{k})
+   (\vu)_{k} = \tilde{y}_{k} \equiv \tilde{y}(x_{k})
 
 .. _fig-eigenfuncs:
 
