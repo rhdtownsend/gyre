@@ -40,6 +40,8 @@ module gyre_tide_par
      integer  :: l_ref = 0
      integer  :: m_ref = 0
      integer  :: l_max = 4
+     integer  :: m_min = -HUGE(0)
+     integer  :: m_max = HUGE(0)
      integer  :: k_max = 20
      logical  :: combine_k = .TRUE.
      logical  :: sync_rot = .FALSE.
@@ -91,12 +93,14 @@ contains
     integer  :: l_ref
     integer  :: m_ref
     integer  :: l_max
+    integer  :: m_min
+    integer  :: m_max
     integer  :: k_max
     logical  :: combine_k
     logical  :: sync_rot
 
     namelist /tide/ q, e, t_0, omega_static, sync_fraction, &
-         l_ref, m_ref, l_max, k_max, &
+         l_ref, m_ref, l_max, m_min, m_max, k_max, &
          combine_k, sync_rot
 
     ! Count the number of tide namelists
@@ -133,6 +137,8 @@ contains
        l_ref = td_p(i)%l_ref
        m_ref = td_p(i)%m_ref
        l_max = td_p(i)%l_max
+       m_min = td_p(i)%m_min
+       m_max = td_p(i)%m_max
        k_max = td_p(i)%k_max
 
        combine_k = td_p(i)%combine_k
@@ -153,6 +159,8 @@ contains
        td_p(i)%l_ref = l_ref
        td_p(i)%m_ref = m_ref
        td_p(i)%l_max = l_max
+       td_p(i)%m_min = m_min
+       td_p(i)%m_max = m_max
        td_p(i)%k_max = k_max
 
        td_p(i)%combine_k = combine_k
@@ -186,6 +194,8 @@ contains
     call bcast(td_p%l_ref, root_rank)
     call bcast(td_p%m_ref, root_rank)
     call bcast(td_p%l_max, root_rank)
+    call bcast(td_p%m_min, root_rank)
+    call bcast(td_p%m_max, root_rank)
     call bcast(td_p%k_max, root_rank)
 
     call bcast(td_p%combine_k, root_rank)
