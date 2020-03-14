@@ -174,7 +174,7 @@ contains
     tide_type = NO_TIDE
 
     cx_l_loop : do l = 2, l_max
-       cx_m_loop : do m = -l, l
+       cx_m_loop : do m = MAX(-l, td_p%m_min), MIN(l, td_p%m_max)
 
           ! Create the mode_par_t
 
@@ -216,7 +216,7 @@ contains
 
     l_loop : do l = 2, td_p%l_max
 
-       m_loop : do m = -l, l
+       m_loop : do m = MAX(-l, td_p%m_min), MIN(l, td_p%m_max)
 
           ! Create the bvp_t's
 
