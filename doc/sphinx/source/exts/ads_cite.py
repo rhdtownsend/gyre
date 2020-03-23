@@ -63,8 +63,6 @@ def ads_citeyear(role, rawtext, text, lineno, inliner,
 
 def setup(app):
 
-    print(ads_data)
-
     app.add_role('ads_citet', ads_citet)
     app.add_role('ads_citep', ads_citep)
     app.add_role('ads_citealt', ads_citealt)

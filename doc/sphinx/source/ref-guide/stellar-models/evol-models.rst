@@ -29,7 +29,7 @@ evolution code. The format of this file is specified by the
 
 :nml_v:`MESA`
   Text file describing an evolutionary model in MESA format (as
-  specified in the :ref:`<mesa-model-files>` section).
+  specified in the :ref:`mesa-model-files` section).
   
 :nml_v:`B3`
   HDF5 file describing an evolutionary model in B3 format. This format

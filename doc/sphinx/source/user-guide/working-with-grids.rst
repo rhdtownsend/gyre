@@ -7,7 +7,7 @@ Working with Grids
 Spatial Grids
 =============
 
-As discussed in the :ref`gyre-fundamentals` chapeter, GYRE discretizes
+As discussed in the :ref:`gyre-fundamentals` chapeter, GYRE discretizes
 the oscillation equations on a spatial grid. This grid spans a range
 :math:`[x_{\rm i},x_{\rm o}]` in the dimensionless radial coordinate
 :math:`x \equiv r/R`. The grid resolution 

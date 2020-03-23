@@ -6,7 +6,7 @@ Output Parameters
 The :nml_g:`ad_output` and :nml_g:`nad_output` namelist groups
 determine the output produced at the end of a run, from the adiabatic
 and non-adiabatic calculation stages, respectively; the input file
-should contain exactly one of each. Allowable fields are:
+should contain exactly one of each. Allowable parameters are:
 
 :nml_n:`summary_file` (default :nml_v:`''`)
   Name of summary file
@@ -19,7 +19,7 @@ should contain exactly one of each. Allowable fields are:
 
 :nml_n:`summary_item_list` (default :nml_v:`'l,n_pg,omega,freq'`)
   Comma-separated list of output items to write to summary file; see the
-  :ref:`summary-files_` section for possible choices
+  :ref:`summary-files` section for possible choices
 
 :nml_n:`mode_template` (default :nml_v:`''`)
   Name template of mode files. Names are generated using the following pattern

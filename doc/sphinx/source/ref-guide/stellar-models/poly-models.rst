@@ -1,5 +1,6 @@
-.. _hom-models:
+.. _poly-models:
 
 Polytropic Models
 =================
+
 

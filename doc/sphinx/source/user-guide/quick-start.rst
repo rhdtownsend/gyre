@@ -1,4 +1,4 @@
-.. _quick_start:
+.. _quick-start:
 
 ***********
 Quick Start
