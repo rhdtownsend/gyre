@@ -44,15 +44,15 @@ Observables
 
 :nml_v:`f_T` (real array)
   Effective temperature perturbation amplitude :math:`f_{\rm
-  T}`. Evaluated using eqn. 5 of :cite:`Dupret:2003a`
+  T}`. Evaluated using eqn. 5 of :ads_citet:`dupret:2003`
 
 :nml_v:`f_g` (real array)
   Effective gravity perturbation amplitude :math:`f_{\rm
-  g}`. Evaluated using eqn.  6 of :cite:`Dupret:2003a`
+  g}`. Evaluated using eqn.  6 of :ads_citet:`dupret:2003`
 
 :nml_v:`psi_T` (real array)
   Effective temperature perturbation phase :math:`\psi_{\rm
-  T}`. Evaluated using eqn. 5 of :cite:`Dupret:2003a`
+  T}`. Evaluated using eqn. 5 of :ads_citet:`dupret:2003`
 
 :nml_v:`psi_g` (real array)
   Effective gravity perturbation phase :math:`\psi_{\rm g}`
@@ -82,11 +82,11 @@ Classification & Validation
 
 :nml_v:`n_pg` (integer array)
   Radial order :math:`n_{\rm pg}` within the Eckart-Scuflaire-Osaki-Takata
-  scheme (see :cite:`Takata:2006b`)
+  scheme (see :ads_citealp:`takata:2006b`)
    
 :nml_v:`omega_int` (complex array)
   Dimensionless eigenfrequency :math:`\omega` from integral
-  expression. Evaluated using eqn. 1.71 of :cite:`Dupret:2002a`
+  expression. Evaluated using eqn. 1.71 of Marc-Antoine Dupret's PhD thesis
 
 Perturbations
 -------------
@@ -123,7 +123,7 @@ Energetics & Transport
 
 :nml_v:`eta` (real array)
   Normalized growth rate :math:`\eta`. Evaluated using expression in
-  text of page 1186 of :cite:`Stellingwerf:1978a`
+  text of page 1186 of :ads_citet:`stellingwerf:1978`
 
 :nml_v:`E` : (real array)
   Mode inertia :math:`E`, in units of :math:`M R^{2}`. Evaluated

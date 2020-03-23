@@ -4,7 +4,7 @@ Stellar Model Parameters
 ========================
 
 The :nml_g:`model` namelist group defines stellar model parameters;
-the input file should contain exactly one. Allowable fields are:
+the input file should contain exactly one. Allowable parameters are:
 
 :nml_n:`model_type`
   Type of model to use; one of:

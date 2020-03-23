@@ -37,8 +37,8 @@ detail. Supplementary material can be found in the :ref:`appendices`.
 
    ref-guide/installation.rst
    ref-guide/input-files.rst
-   ref-guide/model-files.rst
    ref-guide/output-files.rst
+   ref-guide/stellar-models.rst
    ref-guide/math-formalism.rst
 
 .. toctree::
@@ -46,6 +46,5 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    :name: appendices
 
    appendices/troubleshooting.rst
-   appendices/zreferences.rst
    
 

@@ -13,6 +13,7 @@
 import os
 import sys
 import re
+
 sys.path.insert(0, os.path.abspath('exts'))
 
 import sphinx_rtd_theme
@@ -39,10 +40,10 @@ extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.mathjax',
     'sphinx.ext.extlinks',
-    'sphinxcontrib.bibtex',
     'sphinx-prompt',
     'sphinx_substitution_extensions',
-    'nml_roles'
+    'ads_cite',
+    'nml_roles',
 ]
 
 
@@ -95,12 +96,6 @@ extlinks = {
     'repo': ('https://github.com/rhdtownsend/gyre/blob/release-{:s}/%s'.format(release), '%s')
 }
 
-# Set up additional roles
-from docutils.parsers.rst import roles, nodes
-
-roles.register_generic_role('nml_n', nodes.literal)
-roles.register_generic_role('nml_v', nodes.literal)
-
 # Set substitutions for sphinx_substitution_extensions 
 substitutions = [
     ('|release|', release)
@@ -109,7 +104,6 @@ substitutions = [
 # Set site-wide targets
 targets = {
     'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/v{0:s}.tar.gz'.format(release),
-    'gyre-forums': 'http://www.astro.wisc.edu/~townsend/gyre-forums/',
     'gyre-forums': 'http://www.astro.wisc.edu/~townsend/gyre-forums/',
     'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
     'mesa': 'http://mesa.sourceforge.net/',

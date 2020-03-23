@@ -1,4 +1,4 @@
-.. _oscillation-equations:
+.. _math-formalism:
 
 *****************************
 Mathmatical Formalism of GYRE
@@ -7,7 +7,7 @@ Mathmatical Formalism of GYRE
 This chapter details the mathematical formalism oscillation on which
 GYRE is built.
 
-.. toc::
+.. toctree::
    :maxdepth: 2
 
 Fluid Equations

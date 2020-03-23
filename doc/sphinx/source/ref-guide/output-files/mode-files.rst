@@ -76,15 +76,15 @@ Observables
 
 :nml_v:`f_T` (real scalar)
   Effective temperature perturbation amplitude :math:`f_{\rm
-  T}`. Evaluated using eqn. 5 of :cite:`Dupret:2003a`
+  T}`. Evaluated using eqn. 5 of :ads_citet:`dupret:2003`
 
 :nml_v:`f_g` (real scalar)
   Effective gravity perturbation amplitude :math:`f_{\rm
-  g}`. Evaluated using eqn.  6 of :cite:`Dupret:2003a`
+  g}`. Evaluated using eqn.  6 of :ads_citet:`dupret:2003`
 
 :nml_v:`psi_T` (real scalar)
   Effective temperature perturbation phase :math:`\psi_{\rm
-  T}`. Evaluated using eqn. 5 of :cite:`Dupret:2003a`
+  T}`. Evaluated using eqn. 5 of :ads_citet:`dupret:2003`
 
 :nml_v:`psi_g` (real scalar)
   Effective gravity perturbation phase :math:`\psi_{\rm g}`
@@ -114,29 +114,29 @@ Classification & Validation
 
 :nml_v:`n_pg` (integer scalar)
   Radial order :math:`n_{\rm pg}` within the Eckart-Scuflaire-Osaki-Takata
-  scheme (see :cite:`Takata:2006b`)
+  scheme (see :ads_citealp:`takata:2006b`)
    
 :nml_v:`omega_int` (complex scalar)
   Dimensionless eigenfrequency :math:`\omega` from integral
-  expression. Evaluated using eqn. 1.71 of :cite:`Dupret:2002a`
+  expression. Evaluated using eqn. 1.71 of Marc-Antoine's Dupret's PhD thesis
 
 :nml_v:`Yt_1` (complex array)
   Primary eigenfunction for Takata classification
   :math:`\mathcal{Y}_{1}`. Evaluated using a rescaled eqn. 69 of
-  :cite:`Takata:2006b`
+  :ads_citet:`takata:2006b`
 
 :nml_v:`Yt_2` (complex array)
   Secondary eigenfunction for Takata
   classification :math:`\mathcal{Y}_{2}`. Evaluated using a rescaled eqn. 70
-  of :cite:`Takata:2006b`
+  of :ads_citet:`takata:2006b`
 
 :nml_v:`I_0` (complex array)
   First integral for radial modes :math:`I_{0}`. Evaluated using
-  eqn. 42 of :cite:`Takata:2006a`
+  eqn. 42 of :ads_citet:`takata:2006a`
   
 :nml_v:`I_1` (complex array)
   First integral for dipole modes :math:`I_{1}`. Evaluated using
-  eqn. 43 of :cite:`Takata:2006a`
+  eqn. 43 of :ads_citet:`takata:2006a`
   
 :nml_v:`prop_type` (complex array)
   Propagation type :math:`\varpi` based on local dispersion
@@ -226,7 +226,7 @@ Energetics & Transport
 
 :nml_v:`eta` (real scalar)
   Normalized growth rate :math:`\eta`. Evaluated using expression in
-  text of page 1186 of :cite:`Stellingwerf:1978a`
+  text of page 1186 of :ads_citet:`stellingwerf:1978`
 
 :nml_v:`E` : (real scalar)
   Mode inertia :math:`E`, in units of :math:`M R^{2}`. Evaluated
@@ -279,12 +279,12 @@ Energetics & Transport
 
 :nml_v:`dW_dx` (real array)
   Differential work :math:`{\rm d}W/{\rm d}x`, in units of :math:`G
-  M^{2}/R`. Evaluated using eqn. 25.9 of :cite:`Unno:1989a`
+  M^{2}/R`. Evaluated using eqn. 25.9 of :ads_citet:`unno:1989`
 
 :nml_v:`dW_eps_dx` (real array)
   Differential nuclear work :math:`{\rm d}W_{epsilon}/{\rm d}x`,
   in units of :math:`G M^{2}/R`. Evaluated using eqn. 25.9 of
-  :cite:`Unno:1989a`
+  :ads_citet:`unno:1989`
 
 :nml_v:`dtau_dx_ss` (real array)
   Steady-state differential torque :math:`{\rm d}\tau_{\rm ss}/{\rm
@@ -296,11 +296,11 @@ Energetics & Transport
 
 :nml_v:`alpha_0` (real array)
   Excitation coefficient :math:`\alpha_{0}`. Evaluated using eqn. 26.10
-  of :cite:`Unno:1989a`
+  of :ads_citet:`unno:1989`
 
 :nml_v:`alpha_1` (real array)
   Excitation coefficient :math:`\alpha_{1}`. Evaluated using eqn. 26.12
-  of :cite:`Unno:1989a`
+  of :ads_citet:`unno:1989`
 
 Rotation
 --------
@@ -311,7 +311,7 @@ Rotation
 
 :nml_v:`dbeta_dx` (real array)
   Unnormalized rotation splitting kernel :math:`{\rm d}\beta/{\rm
-  d}x`. Evaluated using eqn. 3.357 of :cite:`Aerts:2010a`
+  d}x`. Evaluated using eqn. 3.357 of :ads_citet:`aerts:2010`
 	 
 :nml_v:`lambda` (complex array)
   Angular eigenvalue :math:`\lambda`

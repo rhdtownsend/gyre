@@ -1,0 +1,82 @@
+import pickle
+import ads
+from docutils.parsers.rst import nodes
+
+## Role functions for citing ADS articles
+
+def build_cite(rawtext, ref, lineno, inliner, options, template):
+
+    if not ref in ads_data:
+        msg = inliner.reporter.error(
+            'Reference {:s} not found'.format(ref), line=lineno)
+        prb = inliner.problematic(rawtext, rawtext, msg)
+        return [prb], [msg]
+
+    if len(ads_data[ref].author) > 1:
+        author = '{:s} et al.'.format(ads_data[ref].author[0].split(',')[0])
+    else:
+        author = ads_data[ref].author[0].split(',')[0]
+
+    citation = template.format(author, ads_data[ref].year)
+    url = 'https://ui.adsabs.harvard.edu/abs/{:s}/abstract'.format(ads_data[ref].bibcode)
+
+    node = nodes.reference(rawtext, citation, refuri=url, **options)
+
+    return [node], []
+
+
+def ads_citet(role, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+
+    return build_cite(rawtext, text, lineno, inliner, options, '{0:s} ({1:s})')
+
+
+def ads_citep(role, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+
+    return build_cite(rawtext, text, lineno, inliner, options, '({0:s}, {1:s})')
+
+
+def ads_citealt(role, rawtext, text, lineno, inliner,
+                options={}, content=[]):
+
+    return build_cite(rawtext, text, lineno, inliner, options, '{0:s} {1:s}')
+
+
+def ads_citealp(role, rawtext, text, lineno, inliner,
+                options={}, content=[]):
+
+    return build_cite(rawtext, text, lineno, inliner, options, '{0:s}, {1:s}')
+
+
+def ads_citeauthor(role, rawtext, text, lineno, inliner,
+                   options={}, content=[]):
+
+    return build_cite(rawtext, text, lineno, inliner, options, '{0:s}')
+
+
+def ads_citeyear(role, rawtext, text, lineno, inliner,
+                options={}, content=[]):
+
+    return build_cite(rawtext, text, lineno, inliner, options, '{1:s}')
+
+
+def setup(app):
+
+    print(ads_data)
+
+    app.add_role('ads_citet', ads_citet)
+    app.add_role('ads_citep', ads_citep)
+    app.add_role('ads_citealt', ads_citealt)
+    app.add_role('ads_citealp', ads_citealp)
+    app.add_role('ads_citeauthor', ads_citeauthor)
+    app.add_role('ads_citeyear', ads_citeyear)
+    
+    return {
+        'version': '0.1',
+    }
+
+# Read the data
+
+with open('source/ads_refs.dat', 'rb') as f:
+    ads_data = pickle.load(f)

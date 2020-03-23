@@ -18,15 +18,15 @@ is used.  Allowable parameters are:
   Outer boundary conditions; one of:
 
   - :nml_v:`'VACUUM'` : Zero surface pressure
-  - :nml_v:`'DZIEM'` : Formulation following :cite:`Dziembowski:1971a`
-  - :nml_v:`'UNNO'` : Formulation following :cite:`Unno:1989a`
+  - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
+  - :nml_v:`'UNNO'` : Formulation following :ads_citet:`unno:1989`
   - :nml_v:`'JCD'` : Formulation following Jörgen Christensen-Dalsgaard (ADIPLS)
 
 :nml_n:`variables_set` (default :nml_v:`'GYRE'`)
   Dependent variables in oscillation equations; one of:
 
   - :nml_v:`'GYRE'` : GYRE formulation, as desciribed in the :repo:`equations.pdf <doc/equations.pdf>` document
-  - :nml_v:`'DZIEM'` : Formulation following :cite:`Dziembowski:1971a`
+  - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
   - :nml_v:`'JCD'` : Formulation following Jörgen Christensen-Dalsgaard (ADIPLS)
   - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for gravitational components, :nml_v:`'DZIEM'` for mechanical components)
   - :nml_v:`'LAGP'` : Lagrangian pressure perturbation formulation
@@ -54,9 +54,9 @@ is used.  Allowable parameters are:
   convection treatment scheme; one of:
 
   - :nml_v:`'FROZEN_PESNELL_1'` : Freeze convective heating altogether;
-    case 1 described by :cite:`Pesnell:1990a`
+    case 1 described by :ads_citet:`pesnell:1990`
   - :nml_v:`'FROZEN_PESNELL_4'` : Freeze Lagrangian perturbation of convective luminosity;
-    case 4 described by :cite:`Pesnell:1990a`
+    case 4 described by :ads_citet:`pesnell:1990`
 
 :nml_n:`deps_scheme` (default :nml_v:`'MODEL'`)
   scheme for calculating burning partial derivatives
@@ -73,7 +73,7 @@ is used.  Allowable parameters are:
   Format of epsilon partial derivative file, when :nml_n:`deps_scheme`
   is :nml_v:`'FILE'`; one of:
 
-  - :nml_v:`'WOLF'` : Format used in preparation of :cite:`Wolf:2018a`
+  - :nml_v:`'WOLF'` : Format used in preparation of :ads_citet:`wolf:2018`
 
 :nml_n:`x_ref` (default :nml_v:`1` or outer grid point, whichever is smaller)
   Reference fractional radius for photosphere, normalizations etc.

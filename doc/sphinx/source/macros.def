@@ -1,7 +1,9 @@
 Msun	{\rm M}_{\odot}
 deriv	\frac{{\rm d}#1}{{\rm d}#2}
+sderiv	{\rm d}#1/{\rm d}#2
 nderiv	\frac{{\rm d}^{#3}#1}{{\rm d}#2^{#3}}
 pderiv	\frac{\partial#1}{\partial#2}
+spderiv	\partial#1/\partial#2
 npderiv	\frac{\partial^{#3}#1}{\partial#2^{#3}}
 ii	{\rm i}
 Dfunc	\mathcal{D}
@@ -12,3 +14,15 @@ vF	\mathbf{F}
 vFrad	\vF_{\rm R}
 vFcon	\vF_{\rm C}
 epsnuc	\epsilon_{\rm n}
+epsT	\epsilon_{{\rm n},T}
+epsrho	\epsilon_{{\rm n},\rho}
+kapT	\kappa_{T}
+kaprho	\kappa_{\rho}
+npoly	n_{\rm poly}
+cm	{\rm cm}
+gram	{\rm g}
+erg	{\rm erg}
+dyne	{\rm dyn}
+second	{\rm s}
+kelvin	{\rm K}
+radian	{\rm rad}
