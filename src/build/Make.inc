@@ -85,10 +85,6 @@ ifeq ($(HDF5),yes)
   LDFLAGS:=${LDFLAGS} `hdf5_link`
 endif	
 
-# System module files (should ignore dependencies for these)
-
-SYS_MODFILES=hdf5.mod f95_lapack.mod crmath.mod
-
 # Rules
 
 vpath %.fpp ${SUBDIRS}
@@ -144,7 +140,6 @@ endif
 
 ifneq ($(MAKECMDGOALS),clean)
 -include .depend
-${SYS_MODFILES}:
 endif
 
 .depend :
