@@ -71,7 +71,7 @@ def setup(app):
 
     print('cwd:',os.getcwd())
 
-    with open('source/ads_refs.dat', 'rb') as f:
+    with open('ads_refs.dat', 'rb') as f:
         ads_data = pickle.load(f).copy()
 
     # Set up roles
