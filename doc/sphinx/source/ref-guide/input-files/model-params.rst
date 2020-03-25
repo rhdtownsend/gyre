@@ -27,6 +27,7 @@ the input file should contain exactly one. Allowable parameters are:
   - :nml_v:`'LOSC'` : LOSC-format text file
   - :nml_v:`'MESA'` : MESA GYRE-format text file
   - :nml_v:`'OSC'` : OSC-format text file
+  - :nml_v:`'WDEC'` : WDEC-format text file
 
 :nml_n:`data_format` (default :nml_v:`''`, indicates auto-select)
   Fortran format specifier for data read from OSC-, FGONG- and FAMDL-format files

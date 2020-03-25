@@ -4,8 +4,8 @@ Constants
 =========
 
 The :nml_g:`constants` namelist group defines various physical
-constants; the input file should contain exactly one. Allowable fields
-are:
+constants; the input file should contain exactly one. Allowable
+parameters are:
 
 :nml_n:`G_GRAVITY`
     Gravitational constant :math:`G`
