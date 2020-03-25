@@ -23,13 +23,6 @@ module gyre_constants
 
   use core_kinds
   use core_system
-  use core_constants, &
-       G_GRAVITY_ => G_GRAVITY, &
-       C_LIGHT_ => C_LIGHT, &
-       A_RADIATION_ => A_RADIATION, &
-       M_SUN_ => M_SUN, &
-       R_SUN_ => R_SUN, &
-       L_SUN_ => L_SUN
 
   use ISO_FORTRAN_ENV
 
@@ -41,18 +34,29 @@ module gyre_constants
 
   ! Physical constants (cgs)
 
-  real(WP), save, protected :: G_GRAVITY = G_GRAVITY_     ! Gravitational constant
-  real(WP), save, protected :: C_LIGHT = C_LIGHT_         ! Speed of light in vacuuo
-  real(WP), save, protected :: A_RADIATION = A_RADIATION_ ! Radiation constant
+  real(WP), parameter :: DEFAULT_G_GRAVITY = 6.67430e-8_WP                                ! Gravitational constant (CODATA 2018)
+  real(WP), parameter :: DEFAULT_C_LIGHT = 2.99792458E10_WP                               ! Speed of light in vacuuo (CODATA 2018)
+  real(WP), parameter :: DEFAULT_SIGMA_STEFAN = 5.670374419E-5_WP                         ! Stefan's constant (CODATA 2018)
+  real(WP), parameter :: DEFAULT_A_RADIATION = 4._WP*DEFAULT_SIGMA_STEFAN/DEFAULT_C_LIGHT ! Radiation constant
+
+  real(WP), save, protected :: G_GRAVITY = DEFAULT_G_GRAVITY
+  real(WP), save, protected :: C_LIGHT = DEFAULT_C_LIGHT
+  real(WP), save, protected :: A_RADIATION = DEFAULT_A_RADIATION
 
   ! Astronomical constants (cgs)
 
-  real(WP), save, protected :: M_SUN = M_SUN_ ! Solar mass
-  real(WP), save, protected :: R_SUN = R_SUN_ ! Solar radius
-  real(WP), save, protected :: L_SUN = L_SUN_ ! Solar luminosity
+  real(WP), parameter :: DEFAULT_GM_SUN = 1.3271244E26_WP                 ! Gravitational constant * nominal solar mass (IAU 215 resolution B3)
+  real(WP), parameter :: DEFAULT_M_SUN = DEFAULT_GM_SUN/DEFAULT_G_GRAVITY ! Nominal Solar mass
+  real(WP), parameter :: DEFAULT_R_SUN = 6.957E10_WP                      ! Nominal solar radius (IAU 2015 resolution B3)
+  real(WP), parameter :: DEFAULT_L_SUN = 3.828E33_WP                      ! Nominal solar luminosity (IAU 2015 resolution B3)
+  
+  real(WP), save, protected :: M_SUN = DEFAULT_M_SUN
+  real(WP), save, protected :: R_SUN = DEFAULT_R_SUN
+  real(WP), save, protected :: L_SUN = DEFAULT_L_SUN
 
   ! Lengths
 
+  integer, parameter :: FILENAME_LEN = 256
   integer, parameter :: ITEM_LEN = 32
 
   ! Paths
@@ -66,8 +70,6 @@ module gyre_constants
   public :: G_GRAVITY
   public :: C_LIGHT
   public :: A_RADIATION
-  public :: M_PROTON
-  public :: K_BOLTZMANN
   
   public :: M_SUN
   public :: R_SUN
@@ -125,6 +127,8 @@ contains
     return
 
   end subroutine read_constants
+
+  !****
 
   subroutine set_constant (name, value)
 
