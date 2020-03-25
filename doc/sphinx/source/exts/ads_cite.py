@@ -65,7 +65,11 @@ def setup(app):
 
     # Read the data
 
+    import os
+
     global ads_data
+
+    print('cwd:',os.getcwd())
 
     with open('source/ads_refs.dat', 'rb') as f:
         ads_data = pickle.load(f).copy()
