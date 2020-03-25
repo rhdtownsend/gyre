@@ -1,15 +1,15 @@
-.. _mode-files:
+.. _detail-files:
 
-Mode Files
-==========
+Detail Files
+============
 
-A mode file gathers together information about a single mode found
-during a GYRE run. The data written to a mode file is controlled by
-the :nml_n:`mode_item_list` parameter of the :nml_g:`ad_output`
+A detail file gathers together information about a single mode found
+during a GYRE run. The data written to a detail file is controlled by
+the :nml_n:`detail_item_list` parameter of the :nml_g:`ad_output`
 namelist group (for adiabatic calculations) and the
 :nml_g:`nad_output` namelist group (for nonadiabatic
 calculations). This parameter is a comma-separated list of items to
-appear in the mode files. The items come in two flavors:
+appear in the detail files. The items come in two flavors:
 
 * *scalar* items comprise a single value, typically pertaining either
   to the star as a whole (i.e., a global quantity) or to a specific
@@ -21,7 +21,7 @@ appear in the mode files. The items come in two flavors:
   the outer boundary
 
 The following subsections describe the items that may appear in a
-:nml_n:`mode_item_list` parameter, grouped together by functional
+:nml_n:`detail_item_list` parameter, grouped together by functional
 area.
 
 Solution Data

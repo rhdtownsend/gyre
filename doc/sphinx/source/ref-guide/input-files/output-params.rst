@@ -21,8 +21,12 @@ should contain exactly one of each. Allowable parameters are:
   Comma-separated list of output items to write to summary file; see the
   :ref:`summary-files` section for possible choices
 
-:nml_n:`mode_template` (default :nml_v:`''`)
-  Name template of mode files. Names are generated using the following pattern
+:nml_n:`summary_filter_list` (default :nml_v:`''`)
+  Comma-separated list of filtering criteria for summary files; see the
+  :ref:`output-filtering` section for possible choices
+
+:nml_n:`detail_template` (default :nml_v:`''`)
+  Name template of detail files. Names are generated using the following pattern
   substitutions:
 
   - :nml_v:`'%J'` : Unique mode index :math:`j`, formatted in fixed-width field
@@ -32,15 +36,19 @@ should contain exactly one of each. Allowable parameters are:
   - :nml_v:`%N` : Radial order :math:`n_{\rm pg}`, formatted in fixed-width field
   - :nml_v:`%n` : Same as ``%N``, but formatted in variable-width field
 
-:nml_n:`mode_file_format` (default :nml_v:`'HDF'`)
-  Format of mode files; one of
+:nml_n:`detail_file_format` (default :nml_v:`'HDF'`)
+  Format of detail files; one of
 
   - :nml_n:`'HDF'` : HDF5 file
   -  :nml_v:`'TXT'` : text file
 
-:nml_n:`mode_item_list` (default :nml_v:`'l,n_pg,omega,freq,x,xi_r,xi_h'`)
-  Comma-separated list of output items to write to mode files; see the
-  :ref:`mode-files` section for possible choices
+:nml_n:`detail_item_list` (default :nml_v:`'l,n_pg,omega,freq,x,xi_r,xi_h'`)
+  Comma-separated list of output items to write to detail files; see the
+  :ref:`detail-files` section for possible choices
+
+:nml_n:`detail_filter_list` (default :nml_v:`''`)
+  Comma-separated list of filtering criteria for detail files; see the
+  :ref:`output-filtering` section for possible choices
 
 :nml_n:`freq_units` (default :nml_v:`NONE`)
   Units of :nml_v:`freq` output item; one of:
@@ -59,7 +67,7 @@ should contain exactly one of each. Allowable parameters are:
   - :nml_v:`'ROSSBY_I'` : fraction of Rossby frequency at inner boundary
   - :nml_v:`'ROSSBY_O'` : fraction of Rossby frequency at outer boundary
 
-:nml_n:`freq_frame`` (default :nml_v:`INERTIAL`)
+:nml_n:`freq_frame` (default :nml_v:`INERTIAL`)
   Frame of :nml_v:`freq` output item; one of:
 
    - :nml_v:`'INERTIAL'` : Inertial frame
@@ -68,10 +76,6 @@ should contain exactly one of each. Allowable parameters are:
 
 :nml_n:`label` (default :nml_v:`''`)
   Textual label to add to all output files
-
-:nml_n:`prune_modes` (default :nml_v:`.FALSE.`)
-  Flag to discard eigenfunction data after (possibly) writing it to
-  disk; used to conserve memory
 
 .. rubric:: Footnotes
 
