@@ -65,13 +65,9 @@ def setup(app):
 
     # Read the data
 
-    import os
-
     global ads_data
 
-    print('cwd:',os.getcwd())
-
-    with open('ads_refs.dat', 'rb') as f:
+    with open('{:s}/ads_refs.dat'.format(app.srcdir), 'rb') as f:
         ads_data = pickle.load(f).copy()
 
     # Set up roles
