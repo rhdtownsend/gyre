@@ -12,6 +12,8 @@
 #
 import os
 import sys
+import re
+
 sys.path.insert(0, os.path.abspath('exts'))
 
 import sphinx_rtd_theme
@@ -23,20 +25,25 @@ project = 'GYRE'
 author = 'Rich Townsend & The GYRE Team'
 version = "5.2"
 release = "5.2"
-copyright = '2019, Rich Townsend & The GYRE Team'
+copyright = '2020, Rich Townsend & The GYRE Team'
 
 
 # -- General configuration ---------------------------------------------------
+
+# Numbered figures
+numfig = True
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
     'sphinx_rtd_theme',
+    'sphinx.ext.mathjax',
     'sphinx.ext.extlinks',
-    'sphinxcontrib.bibtex',
-    'sphinx-prompt', 'sphinx_substitution_extensions',
-    'nml_roles'
+    'sphinx-prompt',
+    'sphinx_substitution_extensions',
+    'ads_cite',
+    'nml_roles',
 ]
 
 
@@ -82,15 +89,12 @@ html_logo = 'gyre-logo-200.png'
 
 # Set up Extlinks
 extlinks = {
+    'wiki': ('https://en.wikipedia.org/wiki/%s', ''),
     'ads': ('https://ui.adsabs.harvard.edu/abs/%s/abstract', ''),
-    'repo': ('https://github.com/rhdtownsend/gyre/blob/release-5.2/%s', '%s')
+    'netlib': ('https://www.netlib.org/%s', ''),
+    'git': ('https://github.com/%s', ''),
+    'repo': ('https://github.com/rhdtownsend/gyre/blob/release-{:s}/%s'.format(release), '%s')
 }
-
-# Set up additional roles
-from docutils.parsers.rst import roles, nodes
-
-roles.register_generic_role('nml_o', nodes.literal)
-roles.register_generic_role('nml_l', nodes.literal)
 
 # Set substitutions for sphinx_substitution_extensions 
 substitutions = [
@@ -99,9 +103,36 @@ substitutions = [
 
 # Set site-wide targets
 targets = {
-    'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/{0:s}.tar.gz'.format(release),
-    'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk'
+    'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/v{0:s}.tar.gz'.format(release),
+    'gyre-forums': 'http://www.astro.wisc.edu/~townsend/gyre-forums/',
+    'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
+    'mesa': 'http://mesa.sourceforge.net/',
 }
 
 rst_prolog = '\n'.join(['.. _{:s}: {:s}'.format(x, targets[x]) for x in targets])
 
+# Latex macros
+
+macros = {}
+
+with open('macros.def') as f:
+    line = f.readline()
+    while line:
+        key, value = line.rstrip().split('\t')
+        macros[key] = value
+        line = f.readline()
+
+mathjax_macros = {}
+
+for key, value in macros.items():
+    argnums = re.findall('#(\d)', value)
+    if argnums:
+        mathjax_macros[key] = [value, int(max(argnums))]
+    else:
+        mathjax_macros[key] = value
+
+mathjax_config = {                  
+    'TeX': { 
+        'Macros': mathjax_macros
+    }
+}

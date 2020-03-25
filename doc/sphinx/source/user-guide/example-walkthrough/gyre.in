@@ -1,0 +1,47 @@
+&constants
+/
+
+&model
+	model_type = 'EVOL'  ! Obtain stellar structure from an evolutionary model
+	file = 'spb.mesa'    ! File name of the evolutionary model
+	file_format = 'MESA' ! File format of the evolutionary model
+/
+
+&mode
+	l = 2                ! Harmonic degree
+/
+
+&osc
+        outer_bound = 'VACUUM' ! Use a zero-pressure outer mechanical boundary condition
+/
+
+&num
+	diff_scheme = 'COLLOC_GL4' ! 4th-order collocation scheme for difference equations
+/
+
+&scan
+        grid_type = 'INVERSE' ! Scan for modes using a uniform-in-period grid; best for g modes
+        freq_min = 0.5        ! Minimum frequency to scan from
+	freq_max = 1.0        ! Maximum frequency to scan to
+	n_freq = 250          ! Number of frequency points in scan
+/
+
+&grid
+	alpha_osc = 10  ! Ensure at least 10 points per wavelength in propagation regions
+	alpha_exp = 2   ! Ensure at least 2 points per scale length in evanescent regions
+	n_inner = 5     ! Ensure at least 5 points between center and inner turning point
+/
+
+
+&ad_output
+        summary_file = 'summary.txt'                            ! File name for summary file
+	summary_file_format = 'TXT'                             ! Format of summary file
+        summary_item_list = 'M_star,R_star,l,n_pg,omega,E_norm' ! Items to appear in summary file
+        mode_template = 'mode.%J.txt'                		! File-name template for mode files
+	mode_file_format = 'TXT'                   		! Format of mode files
+        mode_item_list = 'l,n_pg,omega,x,xi_r,xi_h'   		! Items to appear in mode files
+/
+
+&nad_output
+
+/

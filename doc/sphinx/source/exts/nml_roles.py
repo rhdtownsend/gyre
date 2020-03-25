@@ -1,4 +1,4 @@
-from docutils.parsers.rst import nodes
+from docutils.parsers.rst import roles, nodes
 
 def nml_group_role (name, rawtext, text, lineno, inliner, options={}, content=[]):
 
@@ -28,5 +28,8 @@ def setup (app):
     """
 
     app.add_role('nml_g', nml_group_role)
+
+    roles.register_generic_role('nml_n', nodes.literal)
+    roles.register_generic_role('nml_v', nodes.literal)
 
     return
