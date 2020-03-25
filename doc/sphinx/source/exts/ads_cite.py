@@ -63,6 +63,15 @@ def ads_citeyear(role, rawtext, text, lineno, inliner,
 
 def setup(app):
 
+    # Read the data
+
+    global ads_data
+
+    with open('source/ads_refs.dat', 'rb') as f:
+        ads_data = pickle.load(f).copy()
+
+    # Set up roles
+
     app.add_role('ads_citet', ads_citet)
     app.add_role('ads_citep', ads_citep)
     app.add_role('ads_citealt', ads_citealt)
@@ -74,7 +83,3 @@ def setup(app):
         'version': '0.1',
     }
 
-# Read the data
-
-with open('source/ads_refs.dat', 'rb') as f:
-    ads_data = pickle.load(f)
