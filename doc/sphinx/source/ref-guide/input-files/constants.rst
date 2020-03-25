@@ -4,8 +4,8 @@ Constants
 =========
 
 The :nml_g:`constants` namelist group defines various physical
-constants; the input file should contain exactly one. Allowable fields
-are:
+constants; the input file should contain exactly one. Allowable
+parameters are:
 
 :nml_n:`G_GRAVITY`
     Gravitational constant :math:`G`
@@ -30,5 +30,4 @@ are:
     environment variable
 
 All of these constants are in cgs units (where applicable), and the
-default values are defined in :repo:`gyre_constants.fpp
-<src/common/gyre_constants.fpp>`.
+default values are defined in :repo:`src/common/gyre_constants.fpp`.

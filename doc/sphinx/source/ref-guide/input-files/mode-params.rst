@@ -4,7 +4,7 @@ Mode Parameters
 ===============
 
 The :nml_g:`mode` namelist group defines mode parameters; the input
-file can contain one or more. Allowable fields are:
+file can contain one or more. Allowable parameters are:
 
 :nml_n:`l` (default :nml_v:`0`)
   Harmonic degree :math:`\ell`
@@ -23,3 +23,6 @@ file can contain one or more. Allowable fields are:
 
 :nml_n:`rossby` (default :nml_v:`.FALSE.`)
   Flag to use Rossby-mode angular eigenvalues/eigenfunctions
+
+:nml_n:`static` (default :nml_v:`.FALSE.`)
+  Flag to solve for the static (:math:`\omega \rightarrow 0`) limit

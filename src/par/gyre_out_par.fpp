@@ -40,10 +40,10 @@ module gyre_out_par
      character(256)          :: summary_file_format = 'HDF'
      character(2048)         :: summary_item_list = 'l,n_pg,omega,freq'
      character(2048)         :: summary_filter_list = ''
-     character(FILENAME_LEN) :: details_template = ''
-     character(256)          :: details_file_format = 'HDF'
-     character(2048)         :: details_item_list = 'l,n_pg,omega,freq,x,xi_r,xi_h'
-     character(2048)         :: details_filter_list = ''
+     character(FILENAME_LEN) :: detail_template = ''
+     character(256)          :: detail_file_format = 'HDF'
+     character(2048)         :: detail_item_list = 'l,n_pg,omega,freq,x,xi_r,xi_h'
+     character(2048)         :: detail_filter_list = ''
      character(256)          :: label = ''
   end type out_par_t
 
@@ -71,20 +71,20 @@ contains
     character(LEN(ot_p%summary_file_format)) :: summary_file_format
     character(LEN(ot_p%summary_item_list))   :: summary_item_list
     character(LEN(ot_p%summary_filter_list)) :: summary_filter_list
-    character(LEN(ot_p%details_template))    :: details_template
-    character(LEN(ot_p%details_file_format)) :: details_file_format
-    character(LEN(ot_p%details_item_list))   :: details_item_list
-    character(LEN(ot_p%details_filter_list)) :: details_filter_list
+    character(LEN(ot_p%detail_template))     :: detail_template
+    character(LEN(ot_p%detail_file_format))  :: detail_file_format
+    character(LEN(ot_p%detail_item_list))    :: detail_item_list
+    character(LEN(ot_p%detail_filter_list))  :: detail_filter_list
     character(LEN(ot_p%label))               :: label
 
     namelist /ad_output/ freq_units, freq_frame, &
                          summary_file, summary_file_format, summary_item_list, summary_filter_list, &
-                         details_template, details_file_format, details_item_list, details_filter_list, &
+                         detail_template, detail_file_format, detail_item_list, detail_filter_list, &
                          label
 
     namelist /nad_output/ freq_units, freq_frame, &
                           summary_file, summary_file_format, summary_item_list, summary_filter_list, &
-                          details_template, details_file_format, details_item_list, details_filter_list, &
+                          detail_template, detail_file_format, detail_item_list, detail_filter_list, &
                           label
 
     ! Count the number of output namelists
@@ -123,10 +123,10 @@ contains
     summary_file_format = ot_p%summary_file_format
     summary_item_list = ot_p%summary_item_list
     summary_filter_list = ot_p%summary_filter_list
-    details_template = ot_p%details_template
-    details_file_format = ot_p%details_file_format
-    details_item_list = ot_p%details_item_list
-    details_filter_list = ot_p%details_filter_list
+    detail_template = ot_p%detail_template
+    detail_file_format = ot_p%detail_file_format
+    detail_item_list = ot_p%detail_item_list
+    detail_filter_list = ot_p%detail_filter_list
     label = ot_p%label
 
     ! Read the namelist
@@ -148,10 +148,10 @@ contains
     ot_p%summary_file_format = summary_file_format
     ot_p%summary_item_list = summary_item_list
     ot_p%summary_filter_list = summary_filter_list
-    ot_p%details_template = details_template
-    ot_p%details_file_format = details_file_format
-    ot_p%details_item_list = details_item_list
-    ot_p%details_filter_list = details_filter_list
+    ot_p%detail_template = detail_template
+    ot_p%detail_file_format = detail_file_format
+    ot_p%detail_item_list = detail_item_list
+    ot_p%detail_filter_list = detail_filter_list
     ot_p%label = label
 
     ! Finish

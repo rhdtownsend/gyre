@@ -5,16 +5,13 @@ Grid Parameters
 
 The :nml_g:`grid` namelist group defines the parameters used to set up
 the calculation grid; the input file can contain one or more, but only
-the last (matching) one is used. Allowable fields are:
+the last (matching) one is used. Allowable parameters are:
 
 :nml_n:`x_i` (default based on model grid)
   Inner boundary coordinate of calculation grid
 
 :nml_n:`x_o` (default based on model grid)
   Outer boundary coordinate of calculation grid
-
-:nml_n:`n_inner` (default :nml_v:`0`)
-  Number of extra point to insert at center
 
 :nml_n:`alpha_osc` (default :nml_v:`0`)
   Oscillatory resampling parameter :math:`\alpha_{\rm osc}`
@@ -31,8 +28,14 @@ the last (matching) one is used. Allowable fields are:
 :nml_n:`dx_min` (default :nml_v:`SQRT(EPSILON(1._WP))`)
   Minimum spacing of grid points
   
+:nml_n:`n_inner` (default :nml_v:`0`)
+  Number of extra point to insert at center
+
+:nml_n:`n_floor` (default :nml_v:`0`)
+  Minimum total number of grid points
+
 :nml_n:`n_iter_max` (default :nml_v:`8`)
-  Maximum number of times to iteratively resample
+  Maximum number of refinement iterations
 
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match

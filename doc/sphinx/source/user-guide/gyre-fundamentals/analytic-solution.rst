@@ -47,7 +47,7 @@ the dispersion relation, we find the normal-mode eigenfrequencies of
 the stretched-string BVP are
 
 .. math::
-   :label: analytic-eigenfeqs
+   :label: analytic-eigenfreqs
 
    \sigma = n \frac{\pi c}{L},
 

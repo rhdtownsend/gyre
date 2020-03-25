@@ -1,5 +1,5 @@
-! Module   : gyre_details
-! Purpose  : details output
+! Module   : gyre_detail
+! Purpose  : detailed output
 !
 ! Copyright 2020 Rich Townsend & The GYRE Team
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
   
-module gyre_details
+module gyre_detail
 
   ! Uses
 
@@ -48,48 +48,48 @@ module gyre_details
 
   ! Derived-type definitions
 
-  type :: details_t
+  type :: detail_t
      private
      type(out_par_t) :: ot_p
    contains
      procedure, public :: write
-  end type details_t
+  end type detail_t
 
   ! Interfaces
 
-  interface details_t
-     module procedure details_t_
-  end interface details_t
+  interface detail_t
+     module procedure detail_t_
+  end interface detail_t
 
   ! Access specifiers
 
   private
 
-  public :: details_t
+  public :: detail_t
 
 contains
 
-  function details_t_ (ot_p) result (dt)
+  function detail_t_ (ot_p) result (dt)
 
     type(out_par_t), intent(in) :: ot_p
-    type(details_t)             :: dt
+    type(detail_t)              :: dt
 
-    ! Construct the details_t
+    ! Construct the detail_t
 
     dt%ot_p = ot_p
 
     ! Finish
 
-  end function details_t_
+  end function detail_t_
 
   !****
 
   subroutine write (this, wv)
 
-    class(details_t), intent(inout) :: this
-    class(wave_t), intent(in)       :: wv
+    class(detail_t), intent(inout) :: this
+    class(wave_t), intent(in)      :: wv
 
-    character(:), allocatable        :: details_file
+    character(:), allocatable        :: detail_file
     class(writer_t), allocatable     :: wr
     character(ITEM_LEN), allocatable :: items(:)
     type(context_t), pointer         :: cx
@@ -99,43 +99,43 @@ contains
     integer                          :: i
     logical                          :: written
 
-    ! Write a details file
+    ! Write a detail file
 
-    if (this%ot_p%details_template == '' .OR. &
-        this%ot_p%details_item_list == '' .OR. &
-        filter_wave(wv, this%ot_p%details_filter_list)) return
+    if (this%ot_p%detail_template == '' .OR. &
+        this%ot_p%detail_item_list == '' .OR. &
+        filter_wave(wv, this%ot_p%detail_filter_list)) return
 
     ! Set up the filename
 
-    details_file = this%ot_p%details_template
+    detail_file = this%ot_p%detail_template
 
-    details_file = subst_(details_file, '%J', wv%j, '(I5.5)')
-    details_file = subst_(details_file, '%L', wv%l, '(I3.3)')
-    details_file = subst_(details_file, '%M', wv%m, '(SP,I3.2)')
-    details_file = subst_(details_file, '%j', wv%j, '(I0)')
-    details_file = subst_(details_file, '%l', wv%l, '(I0)')
-    details_file = subst_(details_file, '%m', wv%m, '(SP,I0)')
+    detail_file = subst_(detail_file, '%J', wv%j, '(I5.5)')
+    detail_file = subst_(detail_file, '%L', wv%l, '(I3.3)')
+    detail_file = subst_(detail_file, '%M', wv%m, '(SP,I3.2)')
+    detail_file = subst_(detail_file, '%j', wv%j, '(I0)')
+    detail_file = subst_(detail_file, '%l', wv%l, '(I0)')
+    detail_file = subst_(detail_file, '%m', wv%m, '(SP,I0)')
 
     select type (wv)
     class is (mode_t)
-       details_file = subst_(details_file, '%N', wv%n_pg, '(SP,I6.5)')
-       details_file = subst_(details_file, '%n', wv%n_pg, '(SP,I0)')
+       detail_file = subst_(detail_file, '%N', wv%n_pg, '(SP,I6.5)')
+       detail_file = subst_(detail_file, '%n', wv%n_pg, '(SP,I0)')
     end select
 
     ! Open the file
 
-    select case (this%ot_p%details_file_format)
+    select case (this%ot_p%detail_file_format)
     case ('HDF')
-       allocate(wr, SOURCE=hdf_writer_t(details_file, this%ot_p%label))
+       allocate(wr, SOURCE=hdf_writer_t(detail_file, this%ot_p%label))
     case ('TXT')
-       allocate(wr, SOURCE=txt_writer_t(details_file, this%ot_p%label))
+       allocate(wr, SOURCE=txt_writer_t(detail_file, this%ot_p%label))
     case default
-       $ABORT(Invalid details_file_format)
+       $ABORT(Invalid detail_file_format)
     end select
     
     ! Split the item list
 
-    items = split_list(this%ot_p%details_item_list, ',')
+    items = split_list(this%ot_p%detail_item_list, ',')
 
     ! Write the items
 
@@ -158,7 +158,7 @@ contains
 
        ! Indicate a problem with the writing
 
-       write(ERROR_UNIT, *) 'Ignoring missing/invalid details item:', TRIM(items(i))
+       write(ERROR_UNIT, *) 'Ignoring missing/invalid detail item:', TRIM(items(i))
 
     end do item_loop
 
@@ -612,4 +612,4 @@ contains
 
   end function subst_
 
-end module gyre_details
+end module gyre_detail

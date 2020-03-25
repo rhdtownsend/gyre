@@ -32,7 +32,7 @@ program gyre_contour
   use gyre_context
   use gyre_contour_map
   use gyre_contour_seg
-  use gyre_details
+  use gyre_detail
   use gyre_discrim_func
   use gyre_ext
   use gyre_grid
@@ -90,7 +90,7 @@ program gyre_contour
   type(scan_par_t), allocatable    :: sc_p_im_sel(:)
   type(context_t), pointer         :: cx => null()
   type(summary_t)                  :: sm
-  type(details_t)                  :: dt
+  type(detail_t)                   :: dt
   real(WP), allocatable            :: omega_re(:)
   real(WP), allocatable            :: omega_im(:)
   real(WP)                         :: omega_min
@@ -180,10 +180,10 @@ program gyre_contour
 
   allocate(cx, SOURCE=context_t(ml, gr_p_sel, md_p(1), os_p_sel, rt_p_sel))
 
-  ! Initialize the summary and details outputters
+  ! Initialize the summary and detail outputters
 
   sm = summary_t(ot_p)
-  dt = details_t(ot_p)
+  dt = detail_t(ot_p)
 
   ! Set up the frequency arrays
 

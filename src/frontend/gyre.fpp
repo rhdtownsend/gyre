@@ -30,7 +30,7 @@ program gyre
   use gyre_bvp
   use gyre_constants
   use gyre_context
-  use gyre_details
+  use gyre_detail
   use gyre_ext
   use gyre_grid
   use gyre_grid_factory
@@ -83,8 +83,8 @@ program gyre
   type(context_t), pointer             :: cx => null()
   type(summary_t)                      :: sm_ad
   type(summary_t)                      :: sm_nad
-  type(details_t)                      :: dt_ad
-  type(details_t)                      :: dt_nad
+  type(detail_t)                       :: dt_ad
+  type(detail_t)                       :: dt_nad
   real(WP), allocatable                :: omega(:)
   real(WP)                             :: omega_min
   real(WP)                             :: omega_max
@@ -157,13 +157,13 @@ program gyre
 
   allocate(cx)
 
-  ! Initialize the summary and details outputters
+  ! Initialize the summary and detail outputters
 
   sm_ad = summary_t(ot_p_ad)
   sm_nad = summary_t(ot_p_nad)
 
-  dt_ad = details_t(ot_p_ad)
-  dt_nad = details_t(ot_p_nad)
+  dt_ad = detail_t(ot_p_ad)
+  dt_nad = detail_t(ot_p_nad)
 
   ! Loop through md_p
 

@@ -204,11 +204,11 @@ Eigenfunction Reconstruction
 
 For each of the eigenfrequencies found, we find the corresponding
 eigenfunction by solving the linear system :eq:`linear-sys`. Because
-:math:`\det(\mS)` is now zero, this system is guaranteed to
-have a non-trivial solution. The solution vector :math:`\vu`
-resides in the :wiki:`null space` of :math:`\mS`, and we can
-use standard numerical techniques to evaluate it. Then, the
-:math:`k`'th element of :math:`\vu` corresponds to the
+:math:`\det(\mS)` is now zero, this system is guaranteed to have a
+non-trivial solution. The solution vector :math:`\vu` resides in the
+:wiki:`null space` of :math:`\mS`, and we can use standard numerical
+techniques (e.g., :wiki:`singular value decomposition`) to evaluate
+it. Then, the :math:`k`'th element of :math:`\vu` corresponds to the
 eigenfunction sampled at the :math:`k`'th spatial grid point:
 
 .. math::

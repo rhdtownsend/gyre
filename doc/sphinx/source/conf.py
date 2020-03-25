@@ -23,8 +23,9 @@ import sphinx_rtd_theme
 
 project = 'GYRE'
 author = 'Rich Townsend & The GYRE Team'
-version = "5.2"
-release = "5.2"
+version = "master"
+release = "master"
+branch = "master"
 copyright = '2020, Rich Townsend & The GYRE Team'
 
 
@@ -93,7 +94,7 @@ extlinks = {
     'ads': ('https://ui.adsabs.harvard.edu/abs/%s/abstract', ''),
     'netlib': ('https://www.netlib.org/%s', ''),
     'git': ('https://github.com/%s', ''),
-    'repo': ('https://github.com/rhdtownsend/gyre/blob/release-{:s}/%s'.format(release), '%s')
+    'repo': ('https://github.com/rhdtownsend/gyre/blob/{:s}/%s'.format(branch), '')
 }
 
 # Set substitutions for sphinx_substitution_extensions 
