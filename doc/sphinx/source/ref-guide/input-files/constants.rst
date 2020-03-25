@@ -30,5 +30,4 @@ are:
     environment variable
 
 All of these constants are in cgs units (where applicable), and the
-default values are defined in :repo:`gyre_constants.fpp
-<src/common/gyre_constants.fpp>`.
+default values are defined in :repo:`src/common/gyre_constants.fpp`.

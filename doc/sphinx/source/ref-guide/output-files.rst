@@ -15,6 +15,8 @@ HDF-based.
 .. toctree::
    :maxdepth: 2
 
-   output-files/file-formats
    output-files/summary-files
    output-files/detail-files
+   output-files/file-formats
+   output-files/output-filters
+   
