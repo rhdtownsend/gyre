@@ -22,7 +22,8 @@ module gyre_model_par
   ! Uses
 
   use core_kinds
-  use core_constants, only : FILENAME_LEN
+
+  use gyre_constants
 
   use ISO_FORTRAN_ENV
 
@@ -38,10 +39,6 @@ module gyre_model_par
      real(WP)                :: x_i = 0._WP
      real(WP)                :: x_o = 1._WP
      real(WP)                :: s = 1._WP
-     real(WP)                :: P_c = 1._WP
-     real(WP)                :: P_s = 0._WP
-     real(WP)                :: rho_c = 1._WP
-     real(WP)                :: rho_s = 0._WP
      character(256)          :: model_type = 'HOM'
      character(256)          :: grid_type = 'UNI'
      character(256)          :: file_format = ''
@@ -76,10 +73,6 @@ contains
     real(WP)                         :: x_i
     real(WP)                         :: x_o
     real(WP)                         :: s
-    real(WP)                         :: P_c
-    real(WP)                         :: P_s
-    real(WP)                         :: rho_c
-    real(WP)                         :: rho_s
     character(LEN(ml_p%model_type))  :: model_type
     character(LEN(ml_p%grid_type))   :: grid_type
     character(LEN(ml_p%file_format)) :: file_format
@@ -91,7 +84,7 @@ contains
     logical                          :: repair_As
     logical                          :: force_cons
 
-    namelist /model/ Gamma_1, dx_snap, x_i, x_o, s, P_c, P_s, rho_c, rho_s, &
+    namelist /model/ Gamma_1, dx_snap, x_i, x_o, s, &
                      model_type, grid_type, file_format, data_format, deriv_type, &
                      file, n, add_center, repair_As, force_cons
     
@@ -123,10 +116,6 @@ contains
     x_i = ml_p%x_i
     x_o = ml_p%x_o
     s = ml_p%s
-    P_c = ml_p%P_c
-    P_s = ml_p%P_s
-    rho_c = ml_p%rho_c
-    rho_s = ml_p%rho_s
     model_type = ml_p%model_type
     grid_type = ml_p%grid_type
     file_format = ml_p%file_format
@@ -149,10 +138,6 @@ contains
     ml_p%x_i = x_i
     ml_p%x_o = x_o
     ml_p%s = s
-    ml_p%P_c = P_c
-    ml_p%P_s = P_s
-    ml_p%rho_c = rho_c
-    ml_p%rho_s = rho_s
     ml_p%model_type = model_type
     ml_p%grid_type = grid_type
     ml_p%file_format = file_format

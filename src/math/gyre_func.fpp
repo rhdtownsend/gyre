@@ -22,7 +22,6 @@ module gyre_func
   ! Uses
 
   use core_kinds
-  use core_constants
 
   use gyre_math
 
