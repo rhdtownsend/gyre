@@ -5,7 +5,7 @@ Frequency Scan Parameters
 
 The :nml_g:`scan` namelist group(s) defines frequency scan parameters;
 the input file can contain one or more, and points defined by each
-:nml_g:`scan` namelist group are merged together. Allowable fields
+:nml_g:`scan` namelist group are merged together. Allowable parameters
 are:
 
 :nml_n:`grid_type` (default :nml_v:`'LINEAR'`)

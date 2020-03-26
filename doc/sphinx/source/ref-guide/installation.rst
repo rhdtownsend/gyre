@@ -58,7 +58,7 @@ Compile GYRE using the :command:`make` utility:
 
    make -j -C $GYRE_DIR
 
-(the ``-j`` flags tells :command:`make` to use multiple cores, speeding up the build).
+(the :option:`-j` flags tells :command:`make` to use multiple cores, speeding up the build).
 
 Test
 ----
@@ -99,17 +99,20 @@ MPI
 DOUBLE_PRECISION
   Use double precision floating point arithmetic (default ``yes``)
 
+CRMATH
+  Use correctly rounded math functions (default ``yes``)
+
 IEEE
   Use Fortran IEEE floating point features (default ``no``)
 
 FPE
   Enable floating point exception checks (default ``yes``)
 
+HDF5
+  Include HDF5 support (default ``yes``)
+
 EXPERIMENTAL
   Enable experimental features (default ``no``)
-
-HDF5
-  Include HDF5 support (default ``no``)
 
 If a variable is not set, then its default value is assumed.
 
@@ -119,7 +122,7 @@ Git Access
 Sometimes, you'll want to try out new features in GYRE that haven't
 yet made it into a formal release. In such cases, you can check out
 GYRE directly from the :git:`rhdtownsend/gyre` git repository on
-git:`GitHub <>`:
+:git:`GitHub <>`:
 
 .. substitution-prompt:: bash
 

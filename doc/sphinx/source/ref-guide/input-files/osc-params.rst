@@ -85,12 +85,14 @@ is used.  Allowable parameters are:
   Flag to calculate quasi-adiabatic entropy/luminosity eigenfunctions
   during adiabatic calculations
 
+:nml_n:`alpha_th` (defaualt :nml_v:`1.`)
+  Scaling factor for thermal timescale in energy equation. Set to
+  :nml_v:`0.` to recover the non-adiabatic reversible (NAR) limit, and
+  to large values to approach the adiabatic limit
+
 :nml_n:`cowling_approx` (default :nml_v:`.FALSE.`)
   Flag to use the Cowling approximation
 
-:nml_n:`nar_approx` (default :nml_v:`.FALSE.`)
-  Flag to use the non-adiabatic reversible (NAR) approximation
-  
 :nml_n:`narf_approx` (default :nml_v:`.FALSE.`)
   Flag to use the non-adiabatic, radial flux (NARF) approximation
   
