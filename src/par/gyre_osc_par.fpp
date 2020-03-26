@@ -55,7 +55,6 @@ module gyre_osc_par
      logical                 :: nonadiabatic = .FALSE.
      logical                 :: quasiad_eigfuncs = .FALSE.
      logical                 :: cowling_approx = .FALSE.
-     logical                 :: nar_approx = .FALSE.
      logical                 :: narf_approx = .FALSE.
      logical                 :: eddington_approx = .FALSE.
      logical                 :: reduce_order = .TRUE.
@@ -122,7 +121,6 @@ contains
     logical                               :: nonadiabatic
     logical                               :: quasiad_eigfuncs
     logical                               :: cowling_approx
-    logical                               :: nar_approx
     logical                               :: narf_approx
     logical                               :: eddington_approx
     logical                               :: reduce_order
@@ -131,7 +129,7 @@ contains
          outer_bound_for_cutoff, outer_branch, variables_set, inertia_norm, time_factor, &
          conv_scheme, int_scheme, deps_source, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
-         cowling_approx, nar_approx, narf_approx, eddington_approx, &
+         cowling_approx, narf_approx, eddington_approx, &
          reduce_order
 
     ! Count the number of osc namelists
@@ -180,7 +178,6 @@ contains
        nonadiabatic = os_p(i)%nonadiabatic
        quasiad_eigfuncs = os_p(i)%quasiad_eigfuncs
        cowling_approx = os_p(i)%cowling_approx
-       nar_approx = os_p(i)%nar_approx
        narf_approx = os_p(i)%narf_approx
        eddington_approx = os_p(i)%eddington_approx
        reduce_order = os_p(i)%reduce_order
@@ -212,7 +209,6 @@ contains
        os_p(i)%nonadiabatic = nonadiabatic
        os_p(i)%quasiad_eigfuncs = quasiad_eigfuncs
        os_p(i)%cowling_approx = cowling_approx
-       os_p(i)%nar_approx = nar_approx
        os_p(i)%narf_approx = narf_approx
        os_p(i)%eddington_approx = eddington_approx
        os_p(i)%reduce_order = reduce_order
@@ -257,7 +253,6 @@ contains
     call bcast(os_p%nonadiabatic, root_rank)
     call bcast(os_p%quasiad_eigfuncs, root_rank)
     call bcast(os_p%cowling_approx, root_rank)
-    call bcast(os_p%nar_approx, root_rank)
     call bcast(os_p%narf_approx, root_rank)
     call bcast(os_p%eddington_approx, root_rank)
     call bcast(os_p%reduce_order, root_rank)

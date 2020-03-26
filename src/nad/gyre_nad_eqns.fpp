@@ -124,11 +124,7 @@ contains
        eq%alpha_gr = 1._WP
     endif
 
-    if (os_p%nar_approx) then
-       eq%alpha_th = 0._WP
-    else
-       eq%alpha_th = os_p%alpha_th
-    endif
+    eq%alpha_th = 0._WP
 
     if (os_p%narf_approx) then
        eq%alpha_hf = 0._WP
