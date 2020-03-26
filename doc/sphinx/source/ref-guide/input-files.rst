@@ -14,6 +14,7 @@ Fortran namelist groups, as described below.
    input-files/model-params
    input-files/mode-params
    input-files/osc-params
+   input-files/rot-params
    input-files/num-params
    input-files/scan-params
    input-files/grid-params
