@@ -48,7 +48,6 @@ module gyre_model_par
      integer                 :: n = 10
      logical                 :: add_center = .TRUE.
      logical                 :: repair_As = .FALSE.
-     logical                 :: force_cons = .FALSE.
   end type model_par_t
    
  ! Access specifiers
@@ -82,11 +81,10 @@ contains
     integer                          :: n
     logical                          :: add_center
     logical                          :: repair_As
-    logical                          :: force_cons
 
     namelist /model/ Gamma_1, dx_snap, x_i, x_o, s, &
                      model_type, grid_type, file_format, data_format, deriv_type, &
-                     file, n, add_center, repair_As, force_cons
+                     file, n, add_center, repair_As
     
     ! Count the number of model namelists
 
@@ -125,7 +123,6 @@ contains
     n = ml_p%n
     add_center = ml_p%add_center
     repair_As = ml_p%repair_As
-    force_cons = ml_p%force_cons
 
     ! Read the namelist
     
@@ -147,7 +144,6 @@ contains
     ml_p%n = n
     ml_p%add_center = add_center
     ml_p%repair_As = repair_As
-    ml_p%force_cons = force_cons
 
     ! Finish
 
