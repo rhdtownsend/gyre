@@ -1,7 +1,7 @@
 ! Module   : gyre_rot_par
 ! Purpose  : rotation parameters
 !
-! Copyright 2020 Rich Townsend
+! Copyright 2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,8 +23,9 @@ module gyre_rot_par
   ! Uses
 
   use core_kinds
-  use core_constants, only : FILENAME_LEN
   use core_parallel
+
+  use gyre_constants
 
   ! No implicit typing
 
