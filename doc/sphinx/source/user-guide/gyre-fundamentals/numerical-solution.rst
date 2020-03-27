@@ -48,7 +48,7 @@ Then, the second derivative of :math:`\tilde{y}` can be approximated (to second 
 
 .. math::
 
-   \left. \deriv{\tilde{y}}{x}{2} \right|_{x=x_{k}} \approx \frac{\tilde{y}_{k+1} - 2 \tilde{y}_{k} + \tilde{y}_{k-1}}{\Delta x^{2}}
+   \left. \nderiv{\tilde{y}}{x}{2} \right|_{x=x_{k}} \approx \frac{\tilde{y}_{k+1} - 2 \tilde{y}_{k} + \tilde{y}_{k-1}}{\Delta x^{2}}
    \qquad (2 \leq k \leq N-1).
    
 This allows us to replace the ODE with :math:`N-2` difference
