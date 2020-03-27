@@ -1009,7 +1009,7 @@ contains
       lag_T = this%lag_T(k)
 
       c_eps = ml%coeff(I_C_EPS, pt)
-
+      
       eps_rho = this%cx%eps_rho(this%st, pt)
       eps_T = this%cx%eps_T(this%st, pt)
       
@@ -1035,7 +1035,7 @@ contains
 
     ! Calculate the dimensionless frequency weight function.
     
-    select case (this%os_p%int_scheme)
+    select case (this%os_p%zeta_scheme)
     case ('PESNELL')
        dzeta_dx = this%dzeta_dx_pesnell_(k)
     case ('KAWALER_GRAV')
@@ -1045,7 +1045,7 @@ contains
     case ('DUPRET')
        dzeta_dx = this%dzeta_dx_dupret_(k)
     case default
-       $ABORT(Invalid int_scheme)
+       $ABORT(Invalid zeta_scheme)
     end select
 
     ! Finish
@@ -1291,11 +1291,11 @@ contains
 
     ! Calculate the dimensionless frequency weight function.
     
-    select case (this%os_p%int_scheme)
+    select case (this%os_p%zeta_scheme)
     case ('KAWALER')
        dzeta_dm = this%dzeta_dm_kawaler_(k)
     case default
-       $ABORT(Invalid int_scheme)
+       $ABORT(Invalid zeta_scheme)
     end select
 
     ! Finish
