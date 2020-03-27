@@ -23,7 +23,7 @@ for :math:`\tilde{y}`,
 
 .. math::
 
-   \deriv{\tilde{y}}{x}{2} = \frac{\sigma^{2}}{c^{2}} \tilde{y}.
+   \nderiv{\tilde{y}}{x}{2} = \frac{\sigma^{2}}{c^{2}} \tilde{y}.
 
 .. _discretization:
 
