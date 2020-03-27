@@ -12,8 +12,11 @@ def build_cite(rawtext, ref, lineno, inliner, options, template):
         prb = inliner.problematic(rawtext, rawtext, msg)
         return [prb], [msg]
 
-    if len(ads_data[ref].author) > 1:
-        author = '{:s} et al.'.format(ads_data[ref].author[0].split(',')[0])
+    if len(ads_data[ref].author) == 1:
+        author = format(ads_data[ref].author[0].split(',')[0])
+    elif len(ads_data[ref].author) == 2:
+        author = '{:s} & {:s}'.format(ads_data[ref].author[0].split(',')[0],
+                                      ads_data[ref].author[1].split(',')[0])
     else:
         author = ads_data[ref].author[0].split(',')[0]
 

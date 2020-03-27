@@ -31,8 +31,8 @@ Citing GYRE
 If you use GYRE in your research, please cite the relevant
 'instrument' papers:
 
-* :ads:`Townsend & Teitler (2013) <2013MNRAS.435.3406T>` describes the basic operation of the code;
-* :ads:`Townsend et al. (2018) <2018MNRAS.475..879T>` outlines improvements to allow non-adiabatic calculations.
+* :ads_citet:`townsend:2013` describes the basic operation of the code;
+* :ads_citet:`townsend:2018` outlines improvements to allow non-adiabatic calculations.
 
 If you find yourself using GYRE on a regular basis, you might consider
 contributing to the project to ensure its long-term success. Options include
