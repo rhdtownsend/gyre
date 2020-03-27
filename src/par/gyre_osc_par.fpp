@@ -48,7 +48,7 @@ module gyre_osc_par
      character(64)           :: inertia_norm = 'BOTH'
      character(64)           :: time_factor = 'OSC'
      character(64)           :: conv_scheme = 'FROZEN_PESNELL_1'
-     character(64)           :: int_scheme = 'PESNELL'
+     character(64)           :: zeta_scheme = 'PESNELL'
      character(64)           :: deps_source = 'MODEL'
      character(FILENAME_LEN) :: deps_file = ''
      character(256)          :: deps_file_format = ''
@@ -114,7 +114,7 @@ contains
     character(LEN(os_p%inertia_norm))     :: inertia_norm
     character(LEN(os_p%time_factor))      :: time_factor
     character(LEN(os_p%conv_scheme))      :: conv_scheme
-    character(LEN(os_p%int_scheme))       :: int_scheme
+    character(LEN(os_p%zeta_scheme))      :: zeta_scheme
     character(LEN(os_p%deps_source))      :: deps_source
     character(LEN(os_p%deps_file))        :: deps_file
     character(LEN(os_p%deps_file_format)) :: deps_file_format
@@ -128,7 +128,7 @@ contains
     namelist /osc/ x_ref, alpha_gr, alpha_th, alpha_hf, &
          eps_rho, eps_T, inner_bound, outer_bound, &
          outer_bound_for_cutoff, outer_branch, variables_set, inertia_norm, time_factor, &
-         conv_scheme, int_scheme, deps_source, deps_file, deps_file_format, &
+         conv_scheme, zeta_scheme, deps_source, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
          eddington_approx, reduce_order
 
@@ -171,7 +171,7 @@ contains
        inertia_norm = os_p(i)%inertia_norm
        time_factor = os_p(i)%time_factor
        conv_scheme = os_p(i)%conv_scheme
-       int_scheme = os_p(i)%int_scheme
+       zeta_scheme = os_p(i)%zeta_scheme
        deps_source = os_p(i)%deps_source
        deps_file = os_p(i)%deps_file
        deps_file_format = os_p(i)%deps_file_format
@@ -202,7 +202,7 @@ contains
        os_p(i)%inertia_norm = inertia_norm
        os_p(i)%time_factor = time_factor
        os_p(i)%conv_scheme = conv_scheme
-       os_p(i)%int_scheme = int_scheme
+       os_p(i)%zeta_scheme = zeta_scheme
        os_p(i)%deps_source = deps_source
        os_p(i)%deps_file = deps_file
        os_p(i)%deps_file_format = deps_file_format
