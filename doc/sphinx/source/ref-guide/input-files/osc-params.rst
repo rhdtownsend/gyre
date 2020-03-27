@@ -31,6 +31,22 @@ is used.  Allowable parameters are:
   - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for gravitational components, :nml_v:`'DZIEM'` for mechanical components)
   - :nml_v:`'LAGP'` : Lagrangian pressure perturbation formulation
 
+:nml_n:`alpha_gr` (default :nml_v:`1.`)
+  Scaling factor for gravitational potential perturbations (see
+  :math:`\alpha_{\rm gr}` term in the :ref:`osc-equation`
+  section). Set to :nml_v:`0.` to implement the Cowling approximation
+
+:nml_n:`alpha_th` (defaualt :nml_v:`1.`)
+  Scaling factor for the thermal timescale (see :math:`\alpha_{\rm th}`
+  term in the :ref:`osc-equations` section). Set to :nml_v:`0.` to
+  implement the non-adiabatic reversible (NAR) approximation, and to large
+  values to approach the adiabatic limit
+
+:nml_n:`alpha_hf` (defaualt :nml_v:`1.`)
+  Scaling factor for horizontal flux perturbations (see :math:`\alpha_{\rm hf}`
+  term in the :ref:`osc-equations` section). Set to :nml_v:`0.` to
+  implement the non-adiabatic radial flux (NARF) approximation
+
 :nml_n:`inertia_norm` (default :nml_v:`'BOTH'`)
   Inertia normalization factor; one of
 
@@ -38,28 +54,32 @@ is used.  Allowable parameters are:
   - :nml_v:`'HORIZ'` : Horizontal amplitude squared, :math:`|\lambda| |\xi_{\rm h}|^{2}`, evaluated at :nml_v:`x_ref`
   - :nml_v:`'BOTH'` : Overall amplitude squared, :math:`|\xi_{\rm r}|^{2} + |\lambda| |\xi_{\rm h}|^{2}`, evaluated at :nml_v:`x_ref`
 
-:nml_n:`rotation_method` (default :nml_v:`'DOPPLER'`)
-  rotation method; one of:
-
-  - :nml_v:`'DOPPLER'` : Doppler shift
-  - :nml_v:`'TAR'` : Traditional approximation of rotation
-
 :nml_n:`time_factor` (default :nml_v:`'OSC'`)
-  time-dependence factor in pulsation equations; one of:
+  Time-dependence factor in pulsation equations; one of:
 
   - :nml_v:`OSC` : Oscillatory, :math:`\propto \exp(-{\rm i} \omega t)`
   - :nml_v:`EXP` : Exponential, :math:`\propto \exp(-\omega t)`
 
 :nml_n:`conv_scheme` (default :nml_v:`'FROZEN_PESNELL_1'``)
-  convection treatment scheme; one of:
+  Scheme for treating convection; one of:
 
   - :nml_v:`'FROZEN_PESNELL_1'` : Freeze convective heating altogether;
     case 1 described by :ads_citet:`pesnell:1990`
   - :nml_v:`'FROZEN_PESNELL_4'` : Freeze Lagrangian perturbation of convective luminosity;
     case 4 described by :ads_citet:`pesnell:1990`
 
+:nml_n:`zeta_scheme` (default :nml_v:`PESNELL`)
+  Scheme for evaluating frequency weight function
+  :math:`\sderiv{\zeta}{x}` and integral dimensionless eigenfrequency
+  :math:`\omega_{\rm int}`; one of:
+
+  - :nml_v:`'PESNELL'` : Evaluate using eqn. (A5) of :ads_citet:`pesnell:1987`
+  - :nml_v:`'DUPRET'` : Evaluate using eqn. (1.71) of Dupret (2002, PhD thesis)
+  - :nml_v:`'KAWALER'` : Evaluate using eqn. (7) of :ads_citet:`kawaler:1985`
+  - :nml_v:`'KAWALER_GRAV'`: Evaluate using the g-mode part in eqn. (7) of :ads_citet:`kawaler:1985`
+
 :nml_n:`deps_scheme` (default :nml_v:`'MODEL'`)
-  scheme for calculating burning partial derivatives
+  Scheme for calculating burning partial derivatives
   :math:`(\partial\ln\epsilon/\partial\ln T)_{\rho}` and
   :math:`(\partial\ln\epsilon/\partial\ln\rho)_{T}`; one of
 
@@ -85,23 +105,8 @@ is used.  Allowable parameters are:
   Flag to calculate quasi-adiabatic entropy/luminosity eigenfunctions
   during adiabatic calculations
 
-:nml_n:`alpha_th` (defaualt :nml_v:`1.`)
-  Scaling factor for thermal timescale in energy equation. Set to
-  :nml_v:`0.` to recover the non-adiabatic reversible (NAR) limit, and
-  to large values to approach the adiabatic limit
-
-:nml_n:`cowling_approx` (default :nml_v:`.FALSE.`)
-  Flag to use the Cowling approximation
-
-:nml_n:`narf_approx` (default :nml_v:`.FALSE.`)
-  Flag to use the non-adiabatic, radial flux (NARF) approximation
-  
 :nml_n:`eddington_approx` (default :nml_v:`.FALSE.`)
   Flag to use the Eddington approximation
-
-:nml_n:`complex_lambda` (default :nml_v:`.FALSE.`)
-  Flag to use complex arithmetic when evaluating angular eigenvalues
-  lambda
 
 :nml_n:`reduce_order` (default :nml_v:`.TRUE.`)
    Flag to reduce the order of the *adiabatic* radial-pulsation
