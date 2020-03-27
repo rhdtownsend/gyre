@@ -174,11 +174,7 @@ contains
        $ABORT(Invalid outer_bound)
     end select
 
-    if (os_p%cowling_approx) then
-       bd%alpha_gr = 0._WP
-    else
-       bd%alpha_gr = 1._WP
-    endif
+    bd%alpha_gr = os_p%alpha_gr
     
     if (os_p%eddington_approx) then
        bd%alpha_rh = 1._WP

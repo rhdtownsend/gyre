@@ -13,7 +13,7 @@
 /
 
 &osc
-	cowling_approx = .TRUE.
+	alpha_gr = 0.
 /
 
 &rot

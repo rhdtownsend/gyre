@@ -35,7 +35,9 @@ module gyre_osc_par
 
   type :: osc_par_t
      real(WP)                :: x_ref = 1._WP
+     real(WP)                :: alpha_gr = 1._WP
      real(WP)                :: alpha_th = 1._WP
+     real(WP)                :: alpha_hf = 1._WP
      real(WP)                :: eps_rho = 0._WP
      real(WP)                :: eps_T = 0._WP
      character(64)           :: variables_set = 'GYRE'
@@ -54,9 +56,6 @@ module gyre_osc_par
      logical                 :: adiabatic = .TRUE.
      logical                 :: nonadiabatic = .FALSE.
      logical                 :: quasiad_eigfuncs = .FALSE.
-     logical                 :: cowling_approx = .FALSE.
-     logical                 :: nar_approx = .FALSE.
-     logical                 :: narf_approx = .FALSE.
      logical                 :: eddington_approx = .FALSE.
      logical                 :: reduce_order = .TRUE.
   end type osc_par_t
@@ -102,7 +101,9 @@ contains
     integer                               :: n_os_p
     integer                               :: i
     real(WP)                              :: x_ref
+    real(WP)                              :: alpha_gr
     real(WP)                              :: alpha_th
+    real(WP)                              :: alpha_hf
     real(WP)                              :: eps_rho
     real(WP)                              :: eps_T
     character(LEN(os_p%variables_set))    :: variables_set
@@ -121,18 +122,15 @@ contains
     logical                               :: adiabatic
     logical                               :: nonadiabatic
     logical                               :: quasiad_eigfuncs
-    logical                               :: cowling_approx
-    logical                               :: nar_approx
-    logical                               :: narf_approx
     logical                               :: eddington_approx
     logical                               :: reduce_order
 
-    namelist /osc/ x_ref, alpha_th, eps_rho, eps_T, inner_bound, outer_bound, &
+    namelist /osc/ x_ref, alpha_gr, alpha_th, alpha_hf, &
+         eps_rho, eps_T, inner_bound, outer_bound, &
          outer_bound_for_cutoff, outer_branch, variables_set, inertia_norm, time_factor, &
          conv_scheme, int_scheme, deps_source, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
-         cowling_approx, nar_approx, narf_approx, eddington_approx, &
-         reduce_order
+         eddington_approx, reduce_order
 
     ! Count the number of osc namelists
 
@@ -160,7 +158,9 @@ contains
        os_p(i) = osc_par_t()
 
        x_ref = os_p(i)%x_ref
+       alpha_gr = os_p(i)%alpha_gr
        alpha_th = os_p(i)%alpha_th
+       alpha_hf = os_p(i)%alpha_hf
        eps_rho = os_p(i)%eps_rho
        eps_T = os_p(i)%eps_T
        variables_set = os_p(i)%variables_set
@@ -179,9 +179,6 @@ contains
        adiabatic = os_p(i)%adiabatic
        nonadiabatic = os_p(i)%nonadiabatic
        quasiad_eigfuncs = os_p(i)%quasiad_eigfuncs
-       cowling_approx = os_p(i)%cowling_approx
-       nar_approx = os_p(i)%nar_approx
-       narf_approx = os_p(i)%narf_approx
        eddington_approx = os_p(i)%eddington_approx
        reduce_order = os_p(i)%reduce_order
 
@@ -192,7 +189,9 @@ contains
        ! Store read values
 
        os_p(i)%x_ref = x_ref
+       os_p(i)%alpha_gr = alpha_gr
        os_p(i)%alpha_th = alpha_th
+       os_p(i)%alpha_hf = alpha_hf
        os_p(i)%eps_rho = eps_rho
        os_p(i)%eps_T = eps_T
        os_p(i)%variables_set = variables_set
@@ -211,9 +210,6 @@ contains
        os_p(i)%adiabatic = adiabatic
        os_p(i)%nonadiabatic = nonadiabatic
        os_p(i)%quasiad_eigfuncs = quasiad_eigfuncs
-       os_p(i)%cowling_approx = cowling_approx
-       os_p(i)%nar_approx = nar_approx
-       os_p(i)%narf_approx = narf_approx
        os_p(i)%eddington_approx = eddington_approx
        os_p(i)%reduce_order = reduce_order
 
@@ -237,7 +233,9 @@ contains
     ! Broadcast the osc_par_t
 
     call bcast(os_p%x_ref, root_rank)
+    call bcast(os_p%alpha_gr, root_rank)
     call bcast(os_p%alpha_th, root_rank)
+    call bcast(os_p%alpha_hf, root_rank)
     call bcast(os_p%eps_rho, root_rank)
     call bcast(os_p%eps_T, root_rank)
 
@@ -256,9 +254,6 @@ contains
     call bcast(os_p%adiabatic, root_rank)
     call bcast(os_p%nonadiabatic, root_rank)
     call bcast(os_p%quasiad_eigfuncs, root_rank)
-    call bcast(os_p%cowling_approx, root_rank)
-    call bcast(os_p%nar_approx, root_rank)
-    call bcast(os_p%narf_approx, root_rank)
     call bcast(os_p%eddington_approx, root_rank)
     call bcast(os_p%reduce_order, root_rank)
 

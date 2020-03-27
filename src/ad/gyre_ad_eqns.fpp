@@ -95,11 +95,7 @@ contains
 
     eq%tr = ad_trans_t(cx, md_p, os_p)
 
-    if (os_p%cowling_approx) then
-       eq%alpha_gr = 0._WP
-    else
-       eq%alpha_gr = 1._WP
-    endif
+    eq%alpha_gr = os_p%alpha_gr
 
     select case (os_p%time_factor)
     case ('OSC')

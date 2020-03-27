@@ -99,8 +99,8 @@ contains
 
     ! Construct the rad_bvp_t
 
-    if (os_p%cowling_approx) then
-       $WARN(cowling_approx is ignored in 2nd-order radial equations)
+    if (os_p%alpha_gr /= 1._WP) then
+       $WARN(alpha_gr is ignored in 2nd-order radial equations)
     endif
     
     pt_i = gr%pt_i()

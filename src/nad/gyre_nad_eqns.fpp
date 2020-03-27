@@ -118,24 +118,10 @@ contains
 
     eq%tr = nad_trans_t(cx, md_p, os_p)
 
-    if (os_p%cowling_approx) then
-       eq%alpha_gr = 0._WP
-    else
-       eq%alpha_gr = 1._WP
-    endif
-
-    if (os_p%nar_approx) then
-       eq%alpha_th = 0._WP
-    else
-       eq%alpha_th = os_p%alpha_th
-    endif
-
-    if (os_p%narf_approx) then
-       eq%alpha_hf = 0._WP
-    else
-       eq%alpha_hf = 1._WP
-    endif
-
+    eq%alpha_gr = os_p%alpha_gr
+    eq%alpha_th = os_p%alpha_th
+    eq%alpha_hf = os_p%alpha_hf
+       
     if (os_p%eddington_approx) then
        eq%alpha_rh = 1._WP
     else
