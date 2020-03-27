@@ -1,4 +1,5 @@
 &constants
+  G_GRAVITY = 6.674280000000001E-008
 /
 
 &model
