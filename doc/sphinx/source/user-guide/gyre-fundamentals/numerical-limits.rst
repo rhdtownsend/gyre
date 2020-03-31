@@ -1,3 +1,5 @@
+.. _numerical-limits:
+
 Limitations of the Numerical Method
 ===================================
 

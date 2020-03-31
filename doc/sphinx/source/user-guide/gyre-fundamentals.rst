@@ -4,11 +4,11 @@
 GYRE Fundamentals
 *****************
 
-In this Chapter, we'll take a look at the fundamentals of
-GYRE. Although it aims to be user-friendly, GYRE is nevertheless a
-complex piece of software; thus, getting it to produce the 'best'
-results requires some degree of insight into the algorithms it uses to
-caclulate mode eigenfrequencies and eigenfunctions.
+This chapter explains the fundamentals of how GYRE works. Although it
+aims to be user-friendly, GYRE is nevertheless a complex piece of
+software; thus, getting it to produce the 'best' results requires some
+degree of insight into the algorithms it uses to caclulate mode
+eigenfrequencies and eigenfunctions.
 
 .. toctree::
    :maxdepth: 2

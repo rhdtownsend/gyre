@@ -6,6 +6,7 @@ pderiv	\frac{\partial#1}{\partial#2}
 spderiv	\partial#1/\partial#2
 npderiv	\frac{\partial^{#3}#1}{\partial#2^{#3}}
 ii	{\rm i}
+nablah	\nabla_{\rm h}
 Dfunc	\mathcal{D}
 vu	\mathbf{u}
 mS	\boldsymbol{\mathsf{S}}
@@ -26,3 +27,16 @@ dyne	{\rm dyn}
 second	{\rm s}
 kelvin	{\rm K}
 radian	{\rm rad}
+vxi	\boldsymbol{\xi}
+xir	\xi_{r}
+vxih	\vxi_{\rm h}
+txir	\tilde{\xi}_{r}
+txih	\tilde{\xi}_{\rm h}
+tf	\tilde{f}
+xin	x_{\rm i}
+xout	x_{\rm o}
+xturn	\hat{x}
+kturn	\hat{k}
+nin	n_{\rm inner}
+Dx	\Delta x
+Dxtarg	\Dx^{\dagger}
