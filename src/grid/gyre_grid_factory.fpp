@@ -118,17 +118,9 @@ contains
 
     gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
 
-    ! Add points to the inner region
+    ! Add points
 
-    call add_inner_(gs, gr_p, gr)
-
-    ! Add points globally
-
-    call add_global_(gs, gr_p, gr)
-
-    ! Add points to bring up to the floor
-
-    call add_floor_(gs, gr_p, gr)
+    call add_points_(gs, gr_p, gr)
 
     ! Report 
 
@@ -161,194 +153,108 @@ contains
 
   !****
 
-  subroutine add_inner_ (gs, gr_p, gr)
+  subroutine add_points_ (gs, gr_p, gr)
 
     type(grid_spec_t), intent(in) :: gs(:)
     type(grid_par_t), intent(in)  :: gr_p
     type(grid_t), intent(inout)   :: gr
 
-    integer  :: k_turn_min
-    integer  :: k_turn_max
-    real(WP) :: x_turn_min
-    real(WP) :: x_turn_max
-    integer  :: i
-    integer  :: j
-    integer  :: k_turn
-    real(WP) :: x_turn
-    real(WP) :: dx
-    integer  :: k_max
-    integer  :: k
-    integer  :: dn(gr%n_k-1)
-
-    ! Add points in the inner region
-
-    ! First, determine the range (in x and cell number) of inner turning
-    ! points, across all contexts and frequencies
-
-    k_turn_min = gr%n_k-1
-    k_turn_max = 1
-
-    x_turn_min = gr%pt(gr%n_k)%x
-    x_turn_max = gr%pt(1)%x
-
-    spec_loop : do i = 1, SIZE(gs)
-
-       associate (cx => gs(i)%cx, &
-                  omega => gs(i)%omega)
-
-         !$OMP PARALLEL DO PRIVATE (k_turn, x_turn) REDUCTION (MIN:k_turn_min,x_turn_min) REDUCTION (MAX:k_turn_max,x_turn_max)
-         omega_loop : do j = 1, SIZE(omega)
-
-            call find_turn(cx, gr, r_state_t(omega(j)), k_turn, x_turn)
-
-            k_turn_min = MIN(k_turn_min, k_turn)
-            k_turn_max = MAX(k_turn_max, k_turn)
-
-            x_turn_min = MIN(x_turn_min, x_turn)
-            x_turn_max = MAX(x_turn_max, x_turn)
-
-         end do omega_loop
-
-       end associate
-
-    end do spec_loop
-
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Found inner turning points, x range', &
-                               x_turn_min, '->', MIN(x_turn_max, gr%pt(gr%n_k)%x)
-110    format(3X,A,1X,F6.4,1X,A,1X,F6.4)
-    endif
-
-    ! Now add points (extending from the boundary to the inner turning
-    ! point), to ensure that no cell is larger than dx =
-    ! x_turn_min/n_inner
-
-    if (gr_p%n_inner > 0) then
-
-       dx = x_turn_min/gr_p%n_inner
-
-       k_max = MIN(k_turn_max, gr%n_k-1)
-
-       !$OMP PARALLEL DO
-       cell_loop : do k = 1, k_max
-
-          associate( &
-               x_a => gr%pt(k)%x, &
-               x_b => gr%pt(k+1)%x)
-
-            dn(k) = FLOOR((x_b - x_a)/dx)
-
-          end associate
-
-       end do cell_loop
-
-       dn(k_max+1:) = 0
-
-       if (check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 100) 'Adding', SUM(dn), 'inner point(s)'
-100       format(3X,A,1X,I0,1X,A)
-       endif
-
-       ! Add the points
-
-       gr = grid_t(gr, dn)
-
-    endif
-
-    ! Finish
-
-    return
-
-  end subroutine add_inner_
-
-  !****
-
-  subroutine add_global_ (gs, gr_p, gr)
-
-    type(grid_spec_t), intent(in) :: gs(:)
-    type(grid_par_t), intent(in)  :: gr_p
-    type(grid_t), intent(inout)   :: gr
-
+    integer              :: n_k
     integer              :: i_iter
-    integer, allocatable :: dn(:)
-    integer              :: i
+    logical, allocatable :: refine(:)
     integer              :: k
-    type(point_t)        :: pt
+    integer              :: i
     real(WP)             :: dx
+    logical, allocatable :: refine_new(:)
+    integer              :: k_new
 
-    ! Add points globally 
-    
+    ! Add points globally
+
+    ! Initialize the refine array
+
+    n_k = gr%n_k
+
+    refine = gr%pt(2:)%s == gr%pt(:n_k-1)%s
+
     ! Iterate until no more points need be added
     
     iter_loop : do i_iter = 1, gr_p%n_iter_max
 
-       if (ALLOCATED(dn)) deallocate(dn)
-       allocate(dn(gr%n_k-1))
-
        ! Loop through grid cells
 
-       !$OMP PARALLEL DO PRIVATE (pt, dx, i)
-       cell_loop : do k = 1, gr%n_k-1
+       !$OMP PARALLEL DO PRIVATE (dx, i) SCHEDULE (DYNAMIC)
+       cell_loop : do k = 1, n_k-1
 
-          associate ( &
-               pt_a => gr%pt(k), &
-               pt_b => gr%pt(k+1))
-                     
-            if (pt_a%s == pt_b%s) then
+          ! Check/update if the cell should be considered for refinement
 
-               pt%s = pt_a%s
-               pt%x = 0.5_WP*(pt_a%x + pt_b%x)
+          if (refine(k)) then
 
-               ! Loop over grid_specs
+             dx = gr%pt(k+1)%x - gr%pt(k)%x
 
-               dx = HUGE(0._WP)
+             if (dx > gr_p%dx_min) then
 
-               spec_loop : do i = 1, SIZE(gs)
+                spec_loop : do i = 1, SIZE(gs)
 
-                  associate (cx => gs(i)%cx, &
-                             omega => gs(i)%omega)
+                   associate (cx => gs(i)%cx, &
+                              omega => gs(i)%omega)
 
-                    ! Calculate the minimal desired spacing
+                     refine(k) = refine_dispersion_(cx, gr%pt(k), gr%pt(k+1), omega, gr_p) .OR. &
+                                 refine_thermal_(cx, gr%pt(k), gr%pt(k+1), omega, gr_p) .OR. &
+                                 refine_struct_(cx, gr%pt(k), gr%pt(k+1), gr_p) .OR. &
+                                 dx > gr_p%dx_max
 
-                    dx = MIN(dx_dispersion_(cx, pt, omega, gr_p, pt_a%x==0), &
-                             dx_thermal_(cx, pt, omega, gr_p), &
-                             dx_struct_(cx, pt, gr_p), &
-                             dx)
+                     if (refine(k)) exit spec_loop
 
-                  end associate
+                   end associate
 
-               end do spec_loop
+                end do spec_loop
 
-               ! Place a floor on dx
+             else
 
-               dx = MAX(dx, gr_p%dx_min)
+                refine(k) = .FALSE.
 
-               ! Set dn
+             endif
 
-               dn(k) = CEILING((pt_b%x - pt_a%x)/dx) - 1
-
-            else
-
-               dn(k) = 0
-
-            endif
-
-          end associate
+          end if
 
        end do cell_loop
 
        if (check_log_level('INFO')) then
-          write(OUTPUT_UNIT, 100) 'Adding', SUM(dn), 'global point(s) in iteration', i_iter
+          write(OUTPUT_UNIT, 100) 'Refined', COUNT(refine), 'subinterval(s) in iteration', i_iter
 100       format(3X,A,1X,I0,1X,A,1X,I0)
        endif
 
        ! Check for completion
 
-       if (ALL(dn == 0)) exit iter_loop
+       if (COUNT(refine) == 0) exit iter_loop
 
-       ! Add points
+       ! Perform refinement
 
-       gr = grid_t(gr, dn)
+       gr = grid_t(gr, refine)
+
+       ! Update the refine array
+
+       allocate(refine_new(n_k + COUNT(refine) - 1))
+
+       k_new = 1
+
+       do k = 1, n_k-1
+
+          refine_new(k_new) = refine(k)
+          k_new = k_new + 1
+
+          if (refine(k)) then
+
+             refine_new(k_new) = refine(k)
+             k_new = k_new + 1
+
+          endif
+
+       end do
+
+       n_k = n_k + COUNT(refine)
+
+       call MOVE_ALLOC(refine_new, refine)
 
     end do iter_loop
 
@@ -356,76 +262,21 @@ contains
 
     return
 
-  end subroutine add_global_
-
+  end subroutine add_points_
+  
   !****
 
-  subroutine add_floor_ (gs, gr_p, gr)
-
-    type(grid_spec_t), intent(in) :: gs(:)
-    type(grid_par_t), intent(in)  :: gr_p
-    type(grid_t), intent(inout)   :: gr
-
-    integer       :: n_add
-    real(WP)      :: c
-    real(WP)      :: dc_dk
-    integer       :: dn(gr%n_k-1)
-    integer       :: k
-
-    ! Add points quasi-uniformly to bring the total up to the floor
-    ! specified by n_floor
-
-    if (gr%n_k < gr_p%n_floor) then
-
-       n_add = gr_p%n_floor - gr%n_k - (gr%s_i() - gr%s_i())
-
-       c = 0._WP
-       dc_dk = REAL(n_add)/(gr%n_k - 1)
-
-       cell_loop : do k = 1, gr%n_k-1
-
-         if (gr%pt(k)%s == gr%pt(k+1)%s) then
-
-            c = c + dc_dk
-
-            dn(k) = FLOOR(c)
-            c = c - dn(k)
-
-         else
-
-            dn(k) = 0
-
-         end if
-
-       end do cell_loop
-
-       if (SUM(dn) < n_add) then
-          dn(gr%n_k-1) = dn(gr%n_k-1) + n_add - SUM(dn)
-       endif
-
-       ! Add the points
-
-       gr = grid_t(gr, dn)
-
-    end if
-
-    ! Finish
-
-    return
-
-  end subroutine add_floor_
-
-  !****
-
-  function dx_dispersion_ (cx, pt, omega, gr_p, origin) result (dx)
+  function refine_dispersion_ (cx, pt_a, pt_b, omega, gr_p) result (refine)
 
     type(context_t), intent(in)  :: cx
-    type(point_t), intent(in)    :: pt
+    type(point_t), intent(in)    :: pt_a
+    type(point_t), intent(in)    :: pt_b
     real(WP), intent(in)         :: omega(:)
     type(grid_par_t), intent(in) :: gr_p
-    logical, intent(in)          :: origin
-    real(WP)                     :: dx
+    logical                      :: refine
 
+    type(point_t)   :: pt
+    real(WP)        :: dlnx
     real(WP)        :: V
     real(WP)        :: As
     real(WP)        :: U
@@ -433,34 +284,61 @@ contains
     real(WP)        :: Gamma_1
     real(WP)        :: Omega_rot
     real(WP)        :: Omega_rot_i
-    real(WP)        :: k_r_real
-    real(WP)        :: k_r_imag
     integer         :: j
     type(r_state_t) :: st
     real(WP)        :: omega_c
     real(WP)        :: lambda
     real(WP)        :: l_i
-    real(WP)        :: g_0
-    real(WP)        :: g_2
-    real(WP)        :: g_4
-    real(WP)        :: gamma
-    real(WP)        :: dx_real
-    real(WP)        :: dx_imag
+    real(WP)        :: c_0
+    real(WP)        :: c_2
+    real(WP)        :: c_4
+    real(WP)        :: psi2
+    real(WP)        :: chi_r
+    real(WP)        :: chi_r_p
+    real(WP)        :: chi_r_m
+    real(WP)        :: chi_i
 
-    ! Evaluate the target grid spacing dx at point pt from a local
-    ! wave dispersion analysis. If k_r is the local radial wavenumber,
-    ! then dx = 2pi MIN( 1./(alpha_osc*REAL(k_r)),  1./(alpha_exp*IMAG(k_r)) ].
-    ! This corresponds (approximately) to dx being 1/alpha_[osc|exp] times
-    ! the [oscillatory|exponential] wavelength
+    ! Determine whether the cell [pt_a,pt_b] warrants refinement, via
+    ! a local wave dispersion analysis. This analysis involves calculating
+    ! the local radial wavenumber chi
     !
-    ! Since k_r depends on the oscillation frequency, it is evaluated
-    ! over the supplied range of frequencies omega, and the maximum
-    ! real and imaginary parts taken
+    !   y ~ x^{chi} ~ exp[chi ln(x)],
+    !
+    ! If the cell is adjacent to the center (x==0), refinement occurs
+    ! if resolve_ctr is true and
+    !
+    !   chi_i /= 0  or  alpha_ctr*|chi_r| > 1
+    !
+    ! Here, chi_i are the real and imaginary parts of chi,
+    ! respectively
+    !
+    ! If the cell is not adjacent to the center,
+    ! refinement occurs if
+    !
+    !   dlnx * MIN[alpha_osc*|chi_r|, alpha_exp*|chi_i|] > 2pi
+    !
+    ! where dlnx is the logarithmic width of the cell, and chi_r and
+    ! chi_i are the real and imaginary parts of chi, respectively. The
+    !
+    ! Since chi depends on oscillation frequency, it is evaluated over
+    ! the supplied frequency grid omega, and the decision to refine
+    ! made accordingly
 
-    if (gr_p%alpha_osc > 0._WP .OR. gr_p%alpha_exp > 0._WP) then
+    if (gr_p%alpha_osc == 0._WP .AND. gr_p%alpha_exp == 0._WP .AND. gr_p%alpha_ctr == 0._WP) then
 
-       ! Evaluate coefficients
+       ! No refinement necessary
+
+       refine = .FALSE.
+
+    else
+
+       ! Evaluate coefficients at the cell midpoint
        
+       pt%s = pt_a%s
+       pt%x = 0.5_WP*(pt_a%x + pt_b%x)
+
+       if (pt_a%x /= 0._WP) dlnx = LOG(pt_b%x) - LOG(pt_a%x)
+
        associate (ml => cx%model())
 
          V = ml%coeff(I_V_2, pt)*pt%x**2
@@ -474,12 +352,10 @@ contains
        Omega_rot = cx%Omega_rot(pt)
        Omega_rot_i = cx%Omega_rot(cx%point_i())
 
-       ! Loop over omega, finding the maximum k_r_real and k_r_imag
+       ! Loop over omega, updating refine
 
-       k_r_real = 0._WP
-       k_r_imag = 0._WP
+       refine = .FALSE.
 
-!       !$OMP PARALLEL DO PRIVATE (st, omega_c, lambda, l_i, g_0, g_2, g_4, gamma) REDUCTION (MAX:k_r_real,k_r_imag)
        omega_loop : do j = 1, SIZE(omega)
 
           st = r_state_t(omega(j))
@@ -489,61 +365,76 @@ contains
           lambda = cx%lambda(Omega_rot, st)
           l_i = cx%l_e(Omega_rot_i, st)
 
-          ! Calculate the propagation discriminant gamma
+          ! Calculate the propagation discriminant psi2
 
-          g_4 = -4._WP*V/Gamma_1*c_1
-          g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda
-          g_0 = -4._WP*lambda*As/c_1
+          c_4 = -4._WP*V/Gamma_1*c_1
+          c_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda
+          c_0 = -4._WP*lambda*As/c_1
 
-          if (g_0 /= 0._WP) then
-             gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
+          if (c_0 /= 0._WP) then
+             psi2 = (c_4*omega_c**4 + c_2*omega_c**2 + c_0)/omega_c**2
           else
-             gamma = g_4*omega_c**2 + g_2
+             psi2 = c_4*omega_c**2 + c_2
           endif
 
-          ! Update the maximal k_r
+          ! Evaluate real and imaginary parts of the local radial
+          ! wavenumber
 
-          if (gamma < 0._WP) then
+          if (psi2 < 0._WP) then
 
              ! Propagation zone
 
-             k_r_real = MAX(k_r_real, abs(0.5_WP*sqrt(-gamma))/pt%x)
-             k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i))/pt%x)
+             chi_r = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i)
+
+             chi_i = 0.5_WP*sqrt(-psi2)
+             
+          else
+
+             ! Evanescent zone
+
+             chi_r_p = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i - sqrt(psi2))
+             chi_r_m = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(psi2))
+
+             chi_i = 0._WP
+
+             if (pt_a%x == 0) then
+
+                ! At the center; pick the non-diverging solution
+
+                chi_r = chi_r_p
+
+             else
+
+                ! Not at the center; pick the steeper solution
+
+                chi_r = MERGE(chi_r_p, chi_r_m, abs(chi_r_p) > abs(chi_r_m))
+
+             endif
+
+
+          endif
+
+          ! Update refine
+
+          if (pt_a%x == 0._WP) then
+
+             if (gr_p%resolve_ctr) then
+
+                refine = refine .OR. &
+                         chi_i /= 0._WP .OR. &
+                         gr_p%alpha_ctr*abs(chi_r) > 1._WP
+
+             endif
 
           else
 
-             ! Evanescent zone; if we're adjacent to the origin, drop the divering root
+             refine = refine .OR. &
+                      dlnx*gr_p%alpha_exp*abs(chi_r) > TWOPI .OR. &
+                      dlnx*gr_p%alpha_osc*abs(chi_i) > TWOPI
 
-             if (origin) then
-                k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(gamma)))/pt%x)
-             else
-                k_r_imag = MAX(k_r_imag, abs(0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i - sqrt(gamma)))/pt%x, & 
-                                         abs(0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(gamma)))/pt%x)
-             endif
-
-          end if
+          endif
 
        end do omega_loop
-
-       ! Now calculate dx
-
-       if (k_r_real > 0._WP) then
-          dx_real = TWOPI/(gr_p%alpha_osc*k_r_real)
-       else
-          dx_real = HUGE(0._WP)
-       endif
-
-       if (k_r_imag > 0._WP) then
-          dx_imag = TWOPI/(gr_p%alpha_osc*k_r_imag)
-       else
-          dx_imag = HUGE(0._WP)
-       endif
-
-       dx = MIN(dx_real, dx_imag)
-
-    else
-
-       dx = HUGE(0._WP)
 
     end if
 
@@ -551,18 +442,20 @@ contains
 
     return
 
-  end function dx_dispersion_
+  end function refine_dispersion_
 
   !****
 
-  function dx_thermal_ (cx, pt, omega, gr_p) result (dx)
+  function refine_thermal_ (cx, pt_a, pt_b, omega, gr_p) result (refine)
 
     type(context_t), intent(in)  :: cx
-    type(point_t), intent(in)    :: pt
+    type(point_t), intent(in)    :: pt_a
+    type(point_t), intent(in)    :: pt_b
     real(WP), intent(in)         :: omega(:)
     type(grid_par_t), intent(in) :: gr_p
-    real(WP)                     :: dx
+    logical                      :: refine
 
+    type(point_t)   :: pt
     real(WP)        :: V
     real(WP)        :: nabla
     real(WP)        :: c_rad
@@ -572,19 +465,33 @@ contains
     integer         :: j
     type(r_state_t) :: st
     real(WP)        :: omega_c
+    real(WP)        :: dlnx
 
-    ! Evaluate the target grid spacing dx at point pt from a local
-    ! thermal dispersion analysis. If tau is the (absolute) value of
-    ! the eigenvalue associated with thermal parts of the
-    ! non-adiabatic equations, wavenumber, then dx = 2pi/(alpha_thm*tau)
+    ! Determine whether the cell [pt_a,pt_b] warrants refinement, via
+    ! a local wave dispersion analysis. This analysis involves
+    ! calculating the local eigenvalue tau associated with the thermal
+    ! parts of the non-adiabatic equations
     !
-    ! Since tau depends on the oscillation frequency, it is evaluated
-    ! over the supplied range of frequencies omega, and the maximum
-    ! absolute value taken
+    ! If the cell is adjacent to the center (x==0), no refinement occurs
+    !
+    ! If the cell is not adjacent to the center, refinement occurs if
+    !
+    !   dlnx * alpha_thm * |tau| > 1
+    !
+    ! where dlnx is the logarithmic width of the cell
+    !
+    ! Since tau depends on oscillation frequency, it is evaluated over
+    ! the supplied frequency grid omega, and the decision to refine
+    ! made accordingly
 
     if (gr_p%alpha_thm > 0._WP) then
 
-       ! Evaluate coefficients
+       ! Evaluate coefficients at the cell midpoint
+       
+       pt%s = pt_a%s
+       pt%x = 0.5_WP*(pt_a%x + pt_b%x)
+
+       if (pt_a%x /= 0._WP) dlnx = LOG(pt_b%x) - LOG(pt_a%x)
 
        associate (ml => cx%model())
 
@@ -598,30 +505,34 @@ contains
 
        Omega_rot = cx%Omega_rot(pt)
 
-       ! Loop over omega, finding the maximum tau
+       ! Loop over omega, updating refine
 
-       tau = 0._WP
+       refine = .FALSE.
 
-!       !$OMP PARALLEL DO PRIVATE (st, omega_c) REDUCTION (MAX:tau)
        omega_loop : do j = 1, SIZE(omega)
 
           st = r_state_t(omega(j))
 
           omega_c = cx%omega_c(Omega_rot, st)
+
+          ! Evaluate the thermal eigenvalue
          
-          ! Update the maximal tau
+          tau = sqrt(abs(V*nabla*omega_c*c_thk/c_rad))
+ 
+          ! Update refine
           
-          tau = MAX(tau, sqrt(abs(V*nabla*omega_c*c_thk/c_rad))/pt%x)
+          if (pt_a%x /= 0._WP) then
+          
+             refine = refine .OR. &
+                      dlnx*gr_p%alpha_thm*abs(tau) > TWOPI
+
+          endif
 
        end do omega_loop
 
-       ! Now calculate dx
-
-       dx = TWOPI/(gr_p%alpha_thm*tau)
-
     else
 
-       dx = HUGE(0._WP)
+       refine = .FALSE.
 
     end if
 
@@ -629,33 +540,45 @@ contains
 
     return
 
-  end function dx_thermal_
+  end function refine_thermal_
 
   !****
 
-  function dx_struct_ (cx, pt, gr_p) result (dx)
+  function refine_struct_ (cx, pt_a, pt_b, gr_p) result (refine)
 
     type(context_t), intent(in)  :: cx
-    type(point_t), intent(in)    :: pt
+    type(point_t), intent(in)    :: pt_a
+    type(point_t), intent(in)    :: pt_b
     type(grid_par_t), intent(in) :: gr_p
-    real(WP)                     :: dx
+    logical                      :: refine
 
-    real(WP) :: dV_2
-    real(WP) :: dAs
-    real(WP) :: dU
-    real(WP) :: dc_1
-    real(WP) :: dGamma_1
+    type(point_t) :: pt
+    real(WP)      :: dV_2
+    real(WP)      :: dAs
+    real(WP)      :: dU
+    real(WP)      :: dc_1
+    real(WP)      :: dGamma_1
+    real(WP)      :: dlnx
 
-    ! Evaluate the target grid spacing dx at point pt to ensure
-    ! adequate model structure resolution. For a single structure
-    ! coefficient C, dx = x/(alpha_str*dlnC/dlnx); we take the minimum
-    ! dx over a number of C
-
-    dx = HUGE(0._WP)
-
+    ! Determine whether the cell [pt_a,pt_b] warrants refinement, via
+    ! a local structure gradient analysis. This analysis involves
+    ! calculating the logarithmic gradient dlnC/dlnx of various structure
+    ! coefficients C
+    !
+    ! If the cell is adjacent to the center (x==0), no refinement occurs
+    !
+    ! If the cell is not adjacent to the center, refinement occurs if
+    !
+    !   dlnx * alpha_str * |dlnC/dlnx| > 1
+ 
     if (gr_p%alpha_str > 0._WP) then
 
-       ! Evaluate coefficients
+       ! Evaluate coefficients at the cell midpoint
+       
+       pt%s = pt_a%s
+       pt%x = 0.5_WP*(pt_a%x + pt_b%x)
+
+       if (pt_a%x /= 0._WP) dlnx = LOG(pt_b%x) - LOG(pt_a%x)
 
        associate (ml => cx%model())
 
@@ -667,15 +590,21 @@ contains
 
        end associate
 
-       if (dV_2 /= 0._WP) dx = MIN(dx, abs(pt%x/(gr_p%alpha_str*dV_2)))
-       if (dAs /= 0._WP) dx = MIN(dx, abs(pt%x/(gr_p%alpha_str*dAs)))
-       if (dU /= 0._WP) dx = MIN(dx, abs(pt%x/(gr_p%alpha_str*dU)))
-       if (dc_1 /= 0._WP) dx = MIN(dx, abs(pt%x/(gr_p%alpha_str*dc_1)))
-       if (dGamma_1 /= 0._WP) dx = MIN(dx, abs(pt%x/(gr_p%alpha_str*dGamma_1)))
+       ! Decide on refinement
+
+       if (pt_a%x /= 0._WP) then
+
+          refine = dlnx*gr_p%alpha_str*abs(dV_2) > 1._WP .OR. &
+                   dlnx*gr_p%alpha_str*abs(dAs) > 1._WP .OR. &
+                   dlnx*gr_p%alpha_str*abs(dU) > 1._WP .OR. &
+                   dlnx*gr_p%alpha_str*abs(dc_1) > 1._WP .OR. &
+                   dlnx*gr_p%alpha_str*abs(dGamma_1) > 1._WP
+
+       endif
 
     else
 
-       dx = HUGE(0._WP)
+       refine = .FALSE.
 
     end if
 
@@ -683,6 +612,6 @@ contains
 
     return
 
-  end function dx_struct_
+  end function refine_struct_
 
 end module gyre_grid_factory

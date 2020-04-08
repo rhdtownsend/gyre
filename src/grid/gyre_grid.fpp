@@ -57,7 +57,7 @@ module gyre_grid
   interface grid_t
      module procedure grid_t_x_
      module procedure grid_t_nest_
-     module procedure grid_t_resamp_
+     module procedure grid_t_refine_
   end interface grid_t
 
   $if ($MPI)
@@ -181,26 +181,24 @@ contains
 
   !****
 
-  function grid_t_resamp_ (gr_base, dn) result (gr)
+  function grid_t_refine_ (gr_base, refine) result (gr)
 
     type(grid_t), intent(in) :: gr_base
-    integer, intent(in)      :: dn(:)
+    logical, intent(in)      :: refine(:)
     type(grid_t)             :: gr
 
     integer  :: n_k_base
     integer  :: n_k
     integer  :: k
     integer  :: j
-    integer  :: i
-    real(WP) :: w
 
-    $CHECK_BOUNDS(SIZE(dn),gr_base%n_k-1)
+    $CHECK_BOUNDS(SIZE(refine),gr_base%n_k-1)
 
-    ! Construct a grid_t by resampling gr_base, with dn additional
-    ! points placed uniformly in each cell
+    ! Construct a grid_t by refining gr_base, with additional points
+    ! added to the middle of cells where refine == .TRUE.
 
     n_k_base = gr_base%n_k
-    n_k = n_k_base + SUM(dn)
+    n_k = n_k_base + COUNT(refine)
 
     allocate(gr%pt(n_k))
 
@@ -211,25 +209,16 @@ contains
        associate (pt_a => gr_base%pt(j), &
                   pt_b => gr_base%pt(j+1))
 
-         if (pt_a%s == pt_b%s) then
+         gr%pt(k) = pt_a
 
-            do i = 1, dn(j)+1
+         k = k + 1
 
-               w = REAL(i-1, WP)/REAL(dn(j)+1, WP)
+         if (refine(j)) then
 
-               gr%pt(k)%s = pt_a%s
-               gr%pt(k)%x = (1._WP-w)*pt_a%x + w*pt_b%x
-
-               k = k + 1
-
-            end do
-
-         else
-
-            $ASSERT(dn(j) == 0,Attempt to add points at segment boundary)
+            $ASSERT(pt_a%s == pt_b%s,Attempt to add points at segment boundary)
 
             gr%pt(k)%s = pt_a%s
-            gr%pt(k)%x = pt_a%x
+            gr%pt(k)%x = 0.5_WP*(pt_a%x + pt_b%x)
 
             k = k + 1
 
@@ -247,7 +236,7 @@ contains
 
     return
 
-  end function grid_t_resamp_
+  end function grid_t_refine_
 
   !****
 

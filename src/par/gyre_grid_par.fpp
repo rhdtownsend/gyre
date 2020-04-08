@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_par
 ! Purpose  : grid parameters
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -36,12 +36,13 @@ module gyre_grid_par
      real(WP)        :: x_o = HUGE(0._WP)
      real(WP)        :: alpha_osc = 0._WP
      real(WP)        :: alpha_exp = 0._WP
+     real(WP)        :: alpha_ctr = 0._WP
      real(WP)        :: alpha_thm = 0._WP
      real(WP)        :: alpha_str = 0._WP
      real(WP)        :: dx_min = sqrt(EPSILON(0._WP))
-     integer         :: n_inner = 0
-     integer         :: n_floor = 0
-     integer         :: n_iter_max = 8
+     real(WP)        :: dx_max = HUGE(0._WP)
+     integer         :: n_iter_max = 32
+     logical         :: resolve_ctr = .TRUE.
      character(2048) :: tag_list = ''
   end type grid_par_t
 
@@ -67,16 +68,18 @@ contains
     real(WP)                      :: x_o
     real(WP)                      :: alpha_osc
     real(WP)                      :: alpha_exp
+    real(WP)                      :: alpha_ctr
     real(WP)                      :: alpha_thm
     real(WP)                      :: alpha_str
     real(WP)                      :: dx_min
-    integer                       :: n_inner
-    integer                       :: n_floor
+    real(WP)                      :: dx_max
     integer                       :: n_iter_max
+    logical                       :: resolve_ctr
     character(LEN(gr_p%tag_list)) :: tag_list
 
-    namelist /grid/ x_i, x_o, alpha_osc, alpha_exp, alpha_thm, alpha_str, &
-                    dx_min, n_inner, n_floor, n_iter_max, tag_list
+    namelist /grid/ x_i, x_o, alpha_osc, alpha_exp, alpha_ctr, &
+         alpha_thm, alpha_str, dx_min, dx_max, n_iter_max, &
+         resolve_ctr, tag_list
 
     ! Count the number of grid namelists
 
@@ -107,12 +110,13 @@ contains
        x_o = gr_p(i)%x_o
        alpha_osc = gr_p(i)%alpha_osc
        alpha_exp = gr_p(i)%alpha_exp
+       alpha_ctr = gr_p(i)%alpha_ctr
        alpha_thm = gr_p(i)%alpha_thm
        alpha_str = gr_p(i)%alpha_str
        dx_min = gr_p(i)%dx_min
-       n_inner = gr_p(i)%n_inner
-       n_floor = gr_p(i)%n_floor
+       dx_max = gr_p(i)%dx_max
        n_iter_max = gr_p(i)%n_iter_max
+       resolve_ctr = gr_p(i)%resolve_ctr
        tag_list = gr_p(i)%tag_list
 
        ! Read the namelist
@@ -125,12 +129,13 @@ contains
        gr_p(i)%x_o = x_o
        gr_p(i)%alpha_osc = alpha_osc
        gr_p(i)%alpha_exp = alpha_exp
+       gr_p(i)%alpha_ctr = alpha_ctr
        gr_p(i)%alpha_thm = alpha_thm
        gr_p(i)%alpha_str = alpha_str
        gr_p(i)%dx_min = dx_min
-       gr_p(i)%n_inner = n_inner
-       gr_p(i)%n_floor = n_floor
+       gr_p(i)%dx_max = dx_max
        gr_p(i)%n_iter_max = n_iter_max
+       gr_p(i)%resolve_ctr = resolve_ctr
        gr_p(i)%tag_list = tag_list
 
     end do read_loop
