@@ -69,6 +69,8 @@
 /
 
 &grid
+	alpha_osc = 500
+	alpha_exp = 100
 /
 
 &ad_output

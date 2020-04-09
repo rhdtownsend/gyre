@@ -60,7 +60,7 @@
 &grid
 	alpha_osc = 10
 	alpha_exp = 2
-	n_inner = 5
+	alpha_ctr = 10
 /
 
 &ad_output
