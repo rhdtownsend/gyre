@@ -392,8 +392,8 @@ contains
 
              ! Evanescent zone
 
-             chi_r_p = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i - sqrt(psi2))
-             chi_r_m = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(psi2))
+             chi_r_p = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(psi2))
+             chi_r_m = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i - sqrt(psi2))
 
              chi_i = 0._WP
 
