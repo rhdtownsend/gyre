@@ -180,44 +180,58 @@ contains
     
     iter_loop : do i_iter = 1, gr_p%n_iter_max
 
-       ! Loop through grid cells
+       ! Loop through grid subintervals
 
        !$OMP PARALLEL DO PRIVATE (dx, i) SCHEDULE (DYNAMIC)
-       cell_loop : do k = 1, n_k-1
+       sub_loop : do k = 1, n_k-1
 
-          ! Check/update if the cell should be considered for refinement
+          ! Check/update if the subinterval should be considered for refinement
 
           if (refine(k)) then
 
-             dx = gr%pt(k+1)%x - gr%pt(k)%x
+             associate (pt_a => gr%pt(k), &
+                        pt_b => gr%pt(k+1))
 
-             if (dx > gr_p%dx_min) then
+               dx = pt_b%x - pt_a%x
 
-                spec_loop : do i = 1, SIZE(gs)
+               if (dx > gr_p%dx_min) then
 
-                   associate (cx => gs(i)%cx, &
-                              omega => gs(i)%omega)
+                  spec_loop : do i = 1, SIZE(gs)
 
-                     refine(k) = refine_dispersion_(cx, gr%pt(k), gr%pt(k+1), omega, gr_p) .OR. &
-                                 refine_thermal_(cx, gr%pt(k), gr%pt(k+1), omega, gr_p) .OR. &
-                                 refine_struct_(cx, gr%pt(k), gr%pt(k+1), gr_p) .OR. &
-                                 dx > gr_p%dx_max
+                     associate (cx => gs(i)%cx, &
+                                omega => gs(i)%omega)
+
+                       if (pt_a%x /= 0._WP) then
+
+                          refine(k) = refine_mech_(cx, pt_a, pt_b, omega, gr_p) .OR. &
+                                      refine_therm_(cx, pt_a, pt_b, omega, gr_p) .OR. &
+                                      refine_struct_(cx, pt_a, pt_b, gr_p) .OR. &
+                                      dx > gr_p%dx_max
+
+                       else
+
+                          refine(k) = refine_center_(cx, pt_a, pt_b, omega, gr_p) .OR. &
+                                      dx > gr_p%dx_max
+
+                       end if
+
+                     end associate
 
                      if (refine(k)) exit spec_loop
 
-                   end associate
+                  end do spec_loop
 
-                end do spec_loop
+               else
 
-             else
+                  refine(k) = .FALSE.
 
-                refine(k) = .FALSE.
+               endif
 
-             endif
+             end associate
 
           end if
 
-       end do cell_loop
+       end do sub_loop
 
        if (check_log_level('INFO')) then
           write(OUTPUT_UNIT, 100) 'Refined', COUNT(refine), 'subinterval(s) in iteration', i_iter
@@ -266,7 +280,7 @@ contains
   
   !****
 
-  function refine_dispersion_ (cx, pt_a, pt_b, omega, gr_p) result (refine)
+  function refine_mech_ (cx, pt_a, pt_b, omega, gr_p) result (refine)
 
     type(context_t), intent(in)  :: cx
     type(point_t), intent(in)    :: pt_a
@@ -298,33 +312,11 @@ contains
     real(WP)        :: chi_r_m
     real(WP)        :: chi_i
 
-    ! Determine whether the cell [pt_a,pt_b] warrants refinement, via
-    ! a local wave dispersion analysis. This analysis involves calculating
-    ! the local radial wavenumber chi
-    !
-    !   y ~ x^{chi} ~ exp[chi ln(x)],
-    !
-    ! If the cell is adjacent to the center (x==0), refinement occurs
-    ! if resolve_ctr is true and
-    !
-    !   chi_i /= 0  or  alpha_ctr*|chi_r| > 1
-    !
-    ! Here, chi_i are the real and imaginary parts of chi,
-    ! respectively
-    !
-    ! If the cell is not adjacent to the center,
-    ! refinement occurs if
-    !
-    !   dlnx * MIN[alpha_osc*|chi_r|, alpha_exp*|chi_i|] > 2pi
-    !
-    ! where dlnx is the logarithmic width of the cell, and chi_r and
-    ! chi_i are the real and imaginary parts of chi, respectively. The
-    !
-    ! Since chi depends on oscillation frequency, it is evaluated over
-    ! the supplied frequency grid omega, and the decision to refine
-    ! made accordingly
-
-    if (gr_p%alpha_osc == 0._WP .AND. gr_p%alpha_exp == 0._WP .AND. gr_p%alpha_ctr == 0._WP) then
+    ! Determine whether the subinterval [pt_a,pt_b] warrants
+    ! refinement, via a local analysis of the mechanical parts of the
+    ! oscillation equations
+    
+    if (gr_p%alpha_osc == 0._WP .AND. gr_p%alpha_exp == 0._WP) then
 
        ! No refinement necessary
 
@@ -332,12 +324,12 @@ contains
 
     else
 
-       ! Evaluate coefficients at the cell midpoint
+       ! Evaluate coefficients at the midpoint
        
        pt%s = pt_a%s
        pt%x = 0.5_WP*(pt_a%x + pt_b%x)
 
-       if (pt_a%x /= 0._WP) dlnx = LOG(pt_b%x) - LOG(pt_a%x)
+       dlnx = LOG(pt_b%x) - LOG(pt_a%x)
 
        associate (ml => cx%model())
 
@@ -377,8 +369,8 @@ contains
              psi2 = c_4*omega_c**2 + c_2
           endif
 
-          ! Evaluate real and imaginary parts of the local radial
-          ! wavenumber
+          ! Evaluate real and imaginary parts of the mechanical
+          ! eigenvalue
 
           if (psi2 < 0._WP) then
 
@@ -390,50 +382,25 @@ contains
              
           else
 
-             ! Evanescent zone
+             ! Evanescent zone; pick the steeper solution
 
              chi_r_p = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(psi2))
              chi_r_m = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i - sqrt(psi2))
 
+             chi_r = MERGE(chi_r_p, chi_r_m, abs(chi_r_p) > abs(chi_r_m))
+
              chi_i = 0._WP
-
-             if (pt_a%x == 0) then
-
-                ! At the center; pick the non-diverging solution
-
-                chi_r = chi_r_p
-
-             else
-
-                ! Not at the center; pick the steeper solution
-
-                chi_r = MERGE(chi_r_p, chi_r_m, abs(chi_r_p) > abs(chi_r_m))
-
-             endif
-
 
           endif
 
           ! Update refine
 
-          if (pt_a%x == 0._WP) then
+          refine = refine .OR. &
+                   dlnx*gr_p%alpha_exp*abs(chi_r) > TWOPI .OR. &
+                   dlnx*gr_p%alpha_osc*abs(chi_i) > TWOPI
 
-             if (gr_p%resolve_ctr) then
-
-                refine = refine .OR. &
-                         chi_i /= 0._WP .OR. &
-                         gr_p%alpha_ctr*abs(chi_r) > 1._WP
-
-             endif
-
-          else
-
-             refine = refine .OR. &
-                      dlnx*gr_p%alpha_exp*abs(chi_r) > TWOPI .OR. &
-                      dlnx*gr_p%alpha_osc*abs(chi_i) > TWOPI
-
-          endif
-
+          if (refine) exit omega_loop
+          
        end do omega_loop
 
     end if
@@ -442,11 +409,11 @@ contains
 
     return
 
-  end function refine_dispersion_
+  end function refine_mech_
 
   !****
 
-  function refine_thermal_ (cx, pt_a, pt_b, omega, gr_p) result (refine)
+  function refine_therm_ (cx, pt_a, pt_b, omega, gr_p) result (refine)
 
     type(context_t), intent(in)  :: cx
     type(point_t), intent(in)    :: pt_a
@@ -467,31 +434,24 @@ contains
     real(WP)        :: omega_c
     real(WP)        :: dlnx
 
-    ! Determine whether the cell [pt_a,pt_b] warrants refinement, via
-    ! a local wave dispersion analysis. This analysis involves
-    ! calculating the local eigenvalue tau associated with the thermal
-    ! parts of the non-adiabatic equations
-    !
-    ! If the cell is adjacent to the center (x==0), no refinement occurs
-    !
-    ! If the cell is not adjacent to the center, refinement occurs if
-    !
-    !   dlnx * alpha_thm * |tau| > 1
-    !
-    ! where dlnx is the logarithmic width of the cell
-    !
-    ! Since tau depends on oscillation frequency, it is evaluated over
-    ! the supplied frequency grid omega, and the decision to refine
-    ! made accordingly
+    ! Determine whether the subinterval [pt_a,pt_b] warrants
+    ! refinement, via a local analysis of the thermal parts of the
+    ! oscillation equations
 
-    if (gr_p%alpha_thm > 0._WP) then
+    if (gr_p%alpha_thm == 0._WP) then
 
-       ! Evaluate coefficients at the cell midpoint
+       ! No refinement necessary
+
+       refine = .FALSE.
+
+    else
+
+       ! Evaluate coefficients at the midpoint
        
        pt%s = pt_a%s
        pt%x = 0.5_WP*(pt_a%x + pt_b%x)
 
-       if (pt_a%x /= 0._WP) dlnx = LOG(pt_b%x) - LOG(pt_a%x)
+       dlnx = LOG(pt_b%x) - LOG(pt_a%x)
 
        associate (ml => cx%model())
 
@@ -521,18 +481,12 @@ contains
  
           ! Update refine
           
-          if (pt_a%x /= 0._WP) then
+          refine = refine .OR. &
+                   dlnx*gr_p%alpha_thm*abs(tau) > TWOPI
+
+          if (refine) exit omega_loop
           
-             refine = refine .OR. &
-                      dlnx*gr_p%alpha_thm*abs(tau) > TWOPI
-
-          endif
-
        end do omega_loop
-
-    else
-
-       refine = .FALSE.
 
     end if
 
@@ -540,7 +494,7 @@ contains
 
     return
 
-  end function refine_thermal_
+  end function refine_therm_
 
   !****
 
@@ -559,26 +513,24 @@ contains
     real(WP)      :: dc_1
     real(WP)      :: dGamma_1
     real(WP)      :: dlnx
-
-    ! Determine whether the cell [pt_a,pt_b] warrants refinement, via
-    ! a local structure gradient analysis. This analysis involves
-    ! calculating the logarithmic gradient dlnC/dlnx of various structure
-    ! coefficients C
-    !
-    ! If the cell is adjacent to the center (x==0), no refinement occurs
-    !
-    ! If the cell is not adjacent to the center, refinement occurs if
-    !
-    !   dlnx * alpha_str * |dlnC/dlnx| > 1
  
-    if (gr_p%alpha_str > 0._WP) then
+    ! Determine whether the subinterval [pt_a,pt_b] warrants
+    ! refinement, via a local structure gradient analysis
+ 
+    if (gr_p%alpha_str == 0._WP) then
 
-       ! Evaluate coefficients at the cell midpoint
+       ! No refinement necessary
+
+       refine = .FALSE.
+
+    else
+
+       ! Evaluate coefficients at the midpoint
        
        pt%s = pt_a%s
        pt%x = 0.5_WP*(pt_a%x + pt_b%x)
 
-       if (pt_a%x /= 0._WP) dlnx = LOG(pt_b%x) - LOG(pt_a%x)
+       dlnx = LOG(pt_b%x) - LOG(pt_a%x)
 
        associate (ml => cx%model())
 
@@ -602,10 +554,6 @@ contains
 
        endif
 
-    else
-
-       refine = .FALSE.
-
     end if
 
     ! Finish
@@ -613,5 +561,130 @@ contains
     return
 
   end function refine_struct_
+
+  !****
+
+  function refine_center_ (cx, pt_a, pt_b, omega, gr_p) result (refine)
+
+    type(context_t), intent(in)  :: cx
+    type(point_t), intent(in)    :: pt_a
+    type(point_t), intent(in)    :: pt_b
+    real(WP), intent(in)         :: omega(:)
+    type(grid_par_t), intent(in) :: gr_p
+    logical                      :: refine
+
+    type(point_t)   :: pt
+    real(WP)        :: V
+    real(WP)        :: As
+    real(WP)        :: U
+    real(WP)        :: c_1
+    real(WP)        :: Gamma_1
+    real(WP)        :: Omega_rot
+    real(WP)        :: Omega_rot_i
+    integer         :: j
+    type(r_state_t) :: st
+    real(WP)        :: omega_c
+    real(WP)        :: lambda
+    real(WP)        :: l_i
+    real(WP)        :: c_0
+    real(WP)        :: c_2
+    real(WP)        :: c_4
+    real(WP)        :: psi2
+    real(WP)        :: chi_r
+    real(WP)        :: chi_i
+
+    ! Determine whether the (center) subinterval [pt_a,pt_b] warrants
+    ! refinement, via a local analysis of the mechanical parts of the
+    ! oscillation equations
+    
+    if (.NOT. gr_p%resolve_ctr .OR. gr_p%alpha_ctr == 0._WP) then
+
+       ! No refinement necessary
+
+       refine = .FALSE.
+
+    else
+
+       ! Evaluate coefficients at the cell midpoint
+       
+       pt%s = pt_a%s
+       pt%x = 0.5_WP*(pt_a%x + pt_b%x)
+
+       associate (ml => cx%model())
+
+         V = ml%coeff(I_V_2, pt)*pt%x**2
+         As = ml%coeff(I_AS, pt)
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+         Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+
+       end associate
+
+       Omega_rot = cx%Omega_rot(pt)
+       Omega_rot_i = cx%Omega_rot(cx%point_i())
+
+       ! Loop over omega, updating refine
+
+       refine = .FALSE.
+
+       omega_loop : do j = 1, SIZE(omega)
+
+          st = r_state_t(omega(j))
+
+          omega_c = cx%omega_c(Omega_rot, st)
+
+          lambda = cx%lambda(Omega_rot, st)
+          l_i = cx%l_e(Omega_rot_i, st)
+
+          ! Calculate the propagation discriminant psi2
+
+          c_4 = -4._WP*V/Gamma_1*c_1
+          c_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda
+          c_0 = -4._WP*lambda*As/c_1
+
+          if (c_0 /= 0._WP) then
+             psi2 = (c_4*omega_c**4 + c_2*omega_c**2 + c_0)/omega_c**2
+          else
+             psi2 = c_4*omega_c**2 + c_2
+          endif
+
+          ! Evaluate real and imaginary parts of the mechanical
+          ! eigenvalue
+
+          if (psi2 < 0._WP) then
+
+             ! Propagation zone
+
+             chi_r = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i)
+
+             chi_i = 0.5_WP*sqrt(-psi2)
+             
+          else
+
+             ! Evanescent zone; pick the non-diverging solution
+
+             chi_r = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(psi2))
+
+             chi_i = 0._WP
+
+          endif
+
+          ! Update refine
+
+          refine = refine .OR. &
+                   chi_i /= 0._WP .OR. &
+                   gr_p%alpha_ctr*abs(chi_r) > 1._WP
+
+          if (refine) exit omega_loop
+          
+       end do omega_loop
+
+    end if
+
+    ! Finish
+
+    return
+
+  end function refine_center_
 
 end module gyre_grid_factory

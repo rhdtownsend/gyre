@@ -195,7 +195,7 @@ contains
     $CHECK_BOUNDS(SIZE(refine),gr_base%n_k-1)
 
     ! Construct a grid_t by refining gr_base, with additional points
-    ! added to the middle of cells where refine == .TRUE.
+    ! added to the middle of subintervals where refine == .TRUE.
 
     n_k_base = gr_base%n_k
     n_k = n_k_base + COUNT(refine)
@@ -204,7 +204,7 @@ contains
 
     k = 1
 
-    cell_loop : do j = 1, n_k_base-1
+    sub_loop : do j = 1, n_k_base-1
 
        associate (pt_a => gr_base%pt(j), &
                   pt_b => gr_base%pt(j+1))
@@ -226,7 +226,7 @@ contains
 
        end associate
 
-    end do cell_loop
+    end do sub_loop
 
     gr%pt(k) = gr_base%pt(n_k_base)
 
