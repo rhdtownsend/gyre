@@ -9,7 +9,9 @@ ii	{\rm i}
 nablah	\nabla_{\rm h}
 Dfunc	\mathcal{D}
 vu	\mathbf{u}
+vy	\mathbf{y}
 mS	\boldsymbol{\mathsf{S}}
+mA	\boldsymbol{\mathsf{A}}
 vv	\mathbf{v}
 vF	\mathbf{F}
 vFrad	\vF_{\rm R}
@@ -32,6 +34,7 @@ xir	\xi_{r}
 vxih	\vxi_{\rm h}
 txir	\tilde{\xi}_{r}
 txih	\tilde{\xi}_{\rm h}
+tS	\tilde{S}
 tf	\tilde{f}
 xin	x_{\rm i}
 xout	x_{\rm o}

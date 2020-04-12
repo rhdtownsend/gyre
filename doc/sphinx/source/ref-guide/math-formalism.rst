@@ -19,36 +19,38 @@ Fluid Equations
 ---------------
 
 The basis for most subsequent equations are the fluid equations,
-comprising the conservation laws for mass,
+comprising the conservation laws for mass
 
 .. math::
 
-   \pderiv{\rho}{t} + \cdot \nabla \left( \rho \vv \right) = 0;
+   \pderiv{\rho}{t} + \cdot \nabla \left( \rho \vv \right) = 0
 
-momentum
-
-.. math::
-
-   \pderiv{\rho \vv}{t} + \nabla \cdot \left( \rho \vv \ocross \vv + P \boldsymbol{\mathsf{I}} \right) = - \rho \nabla \Phi,m
-
-and heat
+and momentum
 
 .. math::
 
-   T \pderiv{\rho S}{t} + \vv \cdot \nabla \right) S = \epsnuc - \frac{1}{\rho} \nabla \cdot \vF.
+   \rho \left( \pderiv{}{t} + \vv \cdot \nabla \right) \vv = -\nabla P - \rho \nabla \Phi,
 
-Here, :math:`\rho`, :math:`p`, :math:`T`, :math:`S` and :math:`\vv`
-are the fluid density, pressure, temperature, specific entropy and
-velocity; while :math:`\Phi` is the gravitational potential,
-:math:`\epsnuc` is the specific nuclear energy generation rate and
-:math:`\vF` the energy flux. The gravitational potential itself obeys
-Poisson's equation
+the heat equation
+
+.. math::
+
+   \rho T \left( \pderiv{}{t} + \vv \cdot \nabla \right) S = \rho \epsnuc - \nabla \cdot \vF,
+
+and Poisson's equation
 
 .. math::
 
    \nabla^{2} \Phi = 4 \pi G \rho.
 
-The energy flux is the sum of the radiative (:math:`\vFrad`) and convective (:math:`\vFcon`) fluxes,
+Here, :math:`\rho`, :math:`p`, :math:`T`, :math:`S` and :math:`\vv`
+are the fluid density, pressure, temperature, specific entropy and
+velocity; while :math:`\Phi` is the gravitational potential,
+:math:`\epsnuc` is the specific nuclear energy generation rate and
+:math:`\vF` the energy flux.
+      
+The energy flux is the sum of the radiative (:math:`\vFrad`) and
+convective (:math:`\vFcon`) fluxes,
 
 .. math::
 
@@ -58,7 +60,10 @@ the radiative flux is given by the radiative diffusion equation,
 
 .. math::
 
-   \vFrad = \frac{c}{3\kappa\rho} \nabla (a T^{4})
+   \vFrad = \frac{c}{3\kappa\rho} \nabla (a T^{4}),
+
+where :math:`\kappa` is the opacity and :math:`a` the radiation
+constant.
 
 Equilibrium State
 -----------------
@@ -68,7 +73,7 @@ momentum equation then becomes the hydrostatic equilibrium equation
 
 .. math::
 
-  \frac{1}{\rho} \nabla P + \nabla \Phi = 0.
+  \nabla P + \rho \nabla \Phi = 0.
 
    
 .. _math-linearize:
@@ -85,11 +90,11 @@ they become
 
 .. math::
 
-   \rho \pderiv{\vv'}{t} = - \nabla P' - \rho' \nabla \Phi - \rho \nabla \Phi'
+   \rho \pderiv{\vv'}{t} = - \nabla P' + \frac{\rho'}{\rho} \nabla P - \rho \nabla \Phi'
 
 .. math::
 
-   \rho T \pderiv{S'}{t} = \rho' \epsnuc + \rho \epsnuc' - \left( \nabla \cdot \vF \right)'.
+   \rho T \pderiv{\delta S}{t} = \rho' \epsnuc + \rho \epsnuc' - \left( \nabla \cdot \vF \right)'.
 
 .. math::
 
@@ -102,7 +107,7 @@ they become
 Here, a prime (:math:`'`) indicates an Eulerian (fixed position)
 perturbation, and a :math:`\delta` indicates a Lagrangian (fixed mass
 element) perturbation; the absence of either denotes an equilibrium
-quantity. No :math:`\vv` terms appear because the equilibrium state is
+quantity. No :math:`\vv'` terms appear because the equilibrium state is
 static.
 
 .. _math-osc:
@@ -142,3 +147,22 @@ vector is related to the velocity perturbation via
 
 Oscillation Equations
 =====================
+
+Dimensioned Form
+~~~~~~~~~~~~~~~~
+
+The oscillation equations follow from substituting the above solution
+forms into the linearized equations:
+
+.. math::
+
+   \trho' + \frac{1}{r^{2}} \deriv{}{r} \left( r^{2} \txir \right) - \frac{\ell(\ell+1)}{r} \rho \txih = 0,
+
+.. math::
+
+   -\sigma^{2] \rho \txir = - \deriv{\tP'}{r} + \frac{\trho'}{\rho} \deriv{P}{r} - \rho \deriv{\tPhi'}{r},
+
+.. math::
+
+   -\sigma^{2} \rho r \thxi = - \tP' - \rho \tPhi',
+

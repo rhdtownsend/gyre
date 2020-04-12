@@ -31,5 +31,6 @@ def setup (app):
 
     roles.register_generic_role('nml_n', nodes.literal)
     roles.register_generic_role('nml_v', nodes.literal)
+    roles.register_generic_role('nml_nv', nodes.literal)
 
     return
