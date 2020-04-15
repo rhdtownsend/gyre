@@ -38,6 +38,7 @@ program gyre_orbit
   use gyre_model_par
   use gyre_num_par
   use gyre_osc_par
+  use gyre_out_par
   use gyre_rot_par
   use gyre_scan
   use gyre_scan_par
@@ -57,26 +58,27 @@ program gyre_orbit
 
   ! Variables
 
-  character(:), allocatable      :: filename
-  integer                        :: unit
-  type(model_par_t)              :: ml_p
-  type(osc_par_t), allocatable   :: os_p(:)
-  type(rot_par_t), allocatable   :: rt_p(:)
-  type(num_par_t), allocatable   :: nm_p(:)
-  type(grid_par_t), allocatable  :: gr_p(:)
-  type(scan_par_t), allocatable  :: sc_p(:)
-  type(tide_par_t), allocatable  :: td_p(:)
-  class(model_t), pointer        :: ml => null()
-  type(mode_par_t)               :: md_p
-  type(context_t)                :: cx
-  real(WP), allocatable          :: Omega_orb(:)
-  integer                        :: n_Omega_orb
-  real(WP), allocatable          :: a_dot(:)
-  real(WP), allocatable          :: e_dot(:)
-  real(WP), allocatable          :: o_dot(:)
-  real(WP), allocatable          :: J_dot(:)
-  integer                        :: i
-  type(hgroup_t)                 :: hg
+  character(:), allocatable     :: filename
+  integer                       :: unit
+  type(model_par_t)             :: ml_p
+  type(osc_par_t), allocatable  :: os_p(:)
+  type(rot_par_t), allocatable  :: rt_p(:)
+  type(num_par_t), allocatable  :: nm_p(:)
+  type(grid_par_t), allocatable :: gr_p(:)
+  type(scan_par_t), allocatable :: sc_p(:)
+  type(tide_par_t), allocatable :: td_p(:)
+  type(out_par_t)               :: ot_p
+  class(model_t), pointer       :: ml => null()
+  type(mode_par_t)              :: md_p
+  type(context_t)               :: cx
+  real(WP), allocatable         :: Omega_orb(:)
+  integer                       :: n_Omega_orb
+  real(WP), allocatable         :: a_dot(:)
+  real(WP), allocatable         :: e_dot(:)
+  real(WP), allocatable         :: o_dot(:)
+  real(WP), allocatable         :: J_dot(:)
+  integer                       :: i
+  type(hgroup_t)                :: hg
 
   ! Read command-line arguments
 
@@ -124,6 +126,7 @@ program gyre_orbit
   call read_grid_par(unit, gr_p)
   call read_scan_par(unit, sc_p)
   call read_tide_par(unit, td_p)
+  call read_out_par(unit, 'tide', ot_p)
 
   close(unit)
 
@@ -183,7 +186,7 @@ program gyre_orbit
 
   ! Write out results
 
-  hg = hgroup_t('orbit.h5', CREATE_FILE)
+  hg = hgroup_t(ot_p%summary_file, CREATE_FILE)
 
   select type (ml)
   class is (evol_model_t)
@@ -300,9 +303,12 @@ contains
        o_dot(i) = o_dot(i) + 4._WP*Omega_orb(i)*q*(R_a)**(l+3)* &
             kappa*abs(F)*cos(gamma)*secular_G_1(R_a, e, l, m, k)
 
+       J_dot(i) = j_dot(i) + 4._WP*Omega_orb(i)*q**2/SQRT(R_a*(1+q))*(R_a)**(l+3)* &
+            kappa*abs(F)*sin(gamma)*secular_G_4(R_a, e, l, m, k)
+
        ! Accumulate the torque
 
-       J_dot(i) = J_dot(i) + wv%tau_ss()
+       !J_dot(i) = J_dot(i) + wv%tau_ss()
 
     endif
 
