@@ -46,6 +46,7 @@ module gyre_tide_util
   public :: secular_G_1
   public :: secular_G_2
   public :: secular_G_3
+  public :: secular_G_4
   public :: hansen_X
   public :: hansen_X_tilde
   public :: hansen_X_hat
@@ -188,6 +189,31 @@ contains
     return
 
   end function secular_G_3
+
+  !****
+
+  function secular_G_4 (R_a, e, l, m, k) result (G_4)
+
+    real(WP), intent(in) :: R_a
+    real(WP), intent(in) :: e
+    integer, intent(in)  :: l
+    integer, intent(in)  :: m
+    integer, intent(in)  :: k
+    real(WP)             :: G_4
+
+    real(WP) :: c
+
+    ! Evaluate the secular evolution coefficient
+
+    c = tidal_c(R_a, e, l, m, k)
+
+    G_4 = -m*(2*l+1)/(4*PI)*(R_a)**(-l+2)*c**2
+
+    ! Finish
+
+    return
+
+  end function secular_G_4
 
   !****
 
