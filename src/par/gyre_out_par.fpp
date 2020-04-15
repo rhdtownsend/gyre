@@ -87,6 +87,8 @@ contains
                           detail_template, detail_file_format, detail_item_list, detail_filter_list, &
                           label
 
+    namelist /tide_output/ summary_file
+
     ! Count the number of output namelists
 
     rewind(unit)
@@ -99,6 +101,8 @@ contains
           read(unit, NML=ad_output, END=100)
        case ('nad')
           read(unit, NML=nad_output, END=100)
+       case ('tide')
+          read(unit, NML=tide_output, END=100)
        case default
           $ABORT(Invalid stage)
        end select
@@ -136,6 +140,8 @@ contains
        read(unit, NML=ad_output)
     case ('nad')
        read(unit, NML=nad_output)
+    case ('tide')
+       read(unit, NML=tide_output)
     case default
        $ABORT(Invalid stage)
     end select
