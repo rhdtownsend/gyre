@@ -184,7 +184,7 @@ or
 
 .. math::
 
-   \alpha_{\rm ctr} | \chi_{rm r} | > 1
+   \alpha_{\rm ctr} | \chi_{\rm r} | > 1
 
 where :math:`\chi` is the eigenvalue from the local analysis (see the
 :ref:`wave-criterion` section) corresponding to the solution that
@@ -192,7 +192,7 @@ remains well-behaved at the origin. The first criterion causes
 refinement if the subinterval is in a propagation zone, and the second
 if the solution slope :math:`|\sderiv{\ln y}{\ln x}| \sim |\chi_{\rm
 r}|` exceeds :math:`\alpha_{\rm ctr}^{-1}`. The control
-:math:`\alpha_{\rm ctr}` is set via the :nml_n:`alpha_ctr` parameters
+:math:`\alpha_{\rm ctr}` is set via the :nml_n:`alpha_ctr` parameter
 of the :nml_g:`grid` namelist group.
 
 .. tip::
@@ -205,3 +205,24 @@ of the :nml_g:`grid` namelist group.
 Because :math:`\chi` depends implicitly on the oscillation frequency,
 these criteria are applied for each frequency in the grid
 :math:`\{\omega_{1},\omega_{2},\ldots,\omega_{M}\}`.
+
+Limiting Controls
+-----------------
+
+A couple of additional controls affect the iterative refinement
+described above. Refinement of the :math:`[x_{k},x_{k+1}]` subinterval
+*always* occurs if
+
+.. math::
+
+   x_{k+1} - x_{k} > \Delta x_{\rm max},
+
+and *never* occurs if
+
+.. math::
+
+   x_{k+1} - x_{k} < \Delta x_{\rm min}.
+
+The :math:`\Delta x_{\rm max}` and :math:`\Delta x_{\rm max}` controls
+are set by the :nml_n:`dx_max` and :nml_n:`dx_min` parameters,
+respectively, of the :nml_g:`grid` namelist group.
