@@ -26,20 +26,17 @@ program gyre_response
   use core_parallel
   use core_system
 
-  use gyre_context
   use gyre_constants
   use gyre_func
   use gyre_grid_par
   use gyre_math
-  use gyre_mode_par
   use gyre_model
   use gyre_model_factory
   use gyre_model_par
   use gyre_num_par
+  use gyre_orbit_par
   use gyre_osc_par
   use gyre_rot_par
-  use gyre_scan
-  use gyre_scan_par
   use gyre_search
   use gyre_tide
   use gyre_tide_par
@@ -62,13 +59,10 @@ program gyre_response
   type(rot_par_t), allocatable   :: rt_p(:)
   type(num_par_t), allocatable   :: nm_p(:)
   type(grid_par_t), allocatable  :: gr_p(:)
-  type(scan_par_t), allocatable  :: sc_p(:)
+  type(orbit_par_t), allocatable :: or_p(:)
   type(tide_par_t), allocatable  :: td_p(:)
   class(model_t), pointer        :: ml => null()
-  type(mode_par_t)               :: md_p
-  type(context_t)                :: cx
-  real(WP), allocatable          :: Omega_orb(:)
-  integer                        :: n_Omega_orb
+  integer                        :: n_or_p
   complex(WP), allocatable       :: xi_r(:,:,:)
   complex(WP), allocatable       :: lag_L(:,:,:)
   integer                        :: i
@@ -122,7 +116,7 @@ program gyre_response
   call read_rot_par(unit, rt_p)
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
-  call read_scan_par(unit, sc_p)
+  call read_orbit_par(unit, or_p)
   call read_tide_par(unit, td_p)
 
   close(unit)
@@ -131,7 +125,7 @@ program gyre_response
   $ASSERT(SIZE(rt_p) == 1,Must be exactly one rot parameter)
   $ASSERT(SIZE(nm_p) == 1,Must be exactly one num parameter)
   $ASSERT(SIZE(gr_p) == 1,Must be exactly one grid parameter)
-  $ASSERT(SIZE(sc_p) >= 1,Must be at least one scan parameter)
+  $ASSERT(SIZE(or_p) == 1,Must be exactly one orbit parameter)
   $ASSERT(SIZE(td_p) == 1,Must be exactly one tide parameter)
 
   ! Initialize the model
@@ -142,29 +136,16 @@ program gyre_response
 
   ml => model_t(ml_p)
 
-  ! Create the reference mode_par_t for setting up contexts, frequency
-  ! searches
-
-  md_p = mode_par_t(l=td_p(1)%l_ref, m=td_p(1)%m_ref)
-
-  ! Set up the context
-
-  cx = context_t(ml, gr_p(1), md_p, os_p(1), rt_p(1))
-
-  ! Set up the frequency array
-
-  call build_scan(cx, md_p, os_p(1), sc_p, Omega_orb)
-
   ! Allocate displacement and luminosity perturbations arrays
 
   allocate(xi_r(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,0:td_p(1)%k_max))
   allocate(lag_L(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,0:td_p(1)%k_max))
 
-  ! Loop over orbital frequencies
+  ! Loop over orbital parameters
 
-  n_Omega_orb = SIZE(Omega_orb)
+  n_or_p = SIZE(or_p)
 
-  Omega_orb_loop : do i = 1, n_Omega_orb
+  or_p_loop: do i = 1, n_or_p
 
      ! Initialize the perturbation arrays
 
@@ -173,7 +154,7 @@ program gyre_response
 
      ! Add in contributions from each tidal component
 
-     call eval_tide(ml, process_wave, Omega_orb(i), os_p(1), rt_p(1), nm_p(1), gr_p(1), td_p(1))
+     call eval_tide(ml, process_wave, os_p(1), rt_p(1), nm_p(1), gr_p(1), or_p(i), td_p(1))
 
      ! Perform sanity checks
 
@@ -199,19 +180,21 @@ program gyre_response
 
      hg = hgroup_t(response_file, CREATE_FILE)
 
-     call write_attr(hg, 'Omega_orb', Omega_orb(i))
+     call write_attr(hg, 'Omega_orb', or_p(i)%Omega_orb)
+     call write_attr(hg, 'q', or_p(i)%q)
+     call write_attr(hg, 'e', or_p(i)%e)
+     call write_attr(hg, 't_0', or_p(i)%t_0)
+     call write_attr(hg, 'sync_fraction', or_p(i)%sync_fraction)
 
      call write_attr(hg, 'l_max', td_p(1)%l_max)
      call write_attr(hg, 'k_max', td_p(1)%k_max)
-
-     call write_attr(hg, 'e', td_p(1)%e)
 
      call write_dset(hg, 'xi_r', xi_r)
      call write_dset(hg, 'lag_L', lag_L)
 
      call hg%final()
 
-  end do Omega_orb_loop
+  end do or_p_loop
 
   ! Clean up
 

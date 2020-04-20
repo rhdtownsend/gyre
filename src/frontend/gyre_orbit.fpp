@@ -26,22 +26,19 @@ program gyre_orbit
   use core_parallel
   use core_system
 
-  use gyre_context
   use gyre_constants
   use gyre_evol_model
   use gyre_func
   use gyre_grid_par
   use gyre_math
-  use gyre_mode_par
   use gyre_model
   use gyre_model_factory
   use gyre_model_par
   use gyre_num_par
+  use gyre_orbit_par
   use gyre_osc_par
   use gyre_out_par
   use gyre_rot_par
-  use gyre_scan
-  use gyre_scan_par
   use gyre_search
   use gyre_tide
   use gyre_tide_par
@@ -58,27 +55,24 @@ program gyre_orbit
 
   ! Variables
 
-  character(:), allocatable     :: filename
-  integer                       :: unit
-  type(model_par_t)             :: ml_p
-  type(osc_par_t), allocatable  :: os_p(:)
-  type(rot_par_t), allocatable  :: rt_p(:)
-  type(num_par_t), allocatable  :: nm_p(:)
-  type(grid_par_t), allocatable :: gr_p(:)
-  type(scan_par_t), allocatable :: sc_p(:)
-  type(tide_par_t), allocatable :: td_p(:)
-  type(out_par_t)               :: ot_p
-  class(model_t), pointer       :: ml => null()
-  type(mode_par_t)              :: md_p
-  type(context_t)               :: cx
-  real(WP), allocatable         :: Omega_orb(:)
-  integer                       :: n_Omega_orb
-  real(WP), allocatable         :: a_dot(:)
-  real(WP), allocatable         :: e_dot(:)
-  real(WP), allocatable         :: o_dot(:)
-  real(WP), allocatable         :: J_dot(:)
-  integer                       :: i
-  type(hgroup_t)                :: hg
+  character(:), allocatable      :: filename
+  integer                        :: unit
+  type(model_par_t)              :: ml_p
+  type(osc_par_t), allocatable   :: os_p(:)
+  type(rot_par_t), allocatable   :: rt_p(:)
+  type(num_par_t), allocatable   :: nm_p(:)
+  type(grid_par_t), allocatable  :: gr_p(:)
+  type(orbit_par_t), allocatable :: or_p(:)
+  type(tide_par_t), allocatable  :: td_p(:)
+  type(out_par_t)                :: ot_p
+  class(model_t), pointer        :: ml => null()
+  integer                        :: n_or_p
+  real(WP), allocatable          :: a_dot(:)
+  real(WP), allocatable          :: e_dot(:)
+  real(WP), allocatable          :: o_dot(:)
+  real(WP), allocatable          :: J_dot(:)
+  integer                        :: i
+  type(hgroup_t)                 :: hg
 
   ! Read command-line arguments
 
@@ -124,7 +118,7 @@ program gyre_orbit
   call read_rot_par(unit, rt_p)
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
-  call read_scan_par(unit, sc_p)
+  call read_orbit_par(unit, or_p)
   call read_tide_par(unit, td_p)
   call read_out_par(unit, 'tide', ot_p)
 
@@ -134,7 +128,7 @@ program gyre_orbit
   $ASSERT(SIZE(rt_p) == 1,Must be exactly one rot parameter)
   $ASSERT(SIZE(nm_p) == 1,Must be exactly one num parameter)
   $ASSERT(SIZE(gr_p) == 1,Must be exactly one grid parameter)
-  $ASSERT(SIZE(sc_p) >= 1,Must be at least one scan parameter)
+  $ASSERT(SIZE(or_p) >= 1,Must be at least one orbit parameter)
   $ASSERT(SIZE(td_p) == 1,Must be exactly one tide parameter)
 
   ! Initialize the model
@@ -145,31 +139,18 @@ program gyre_orbit
 
   ml => model_t(ml_p)
 
-  ! Create the reference mode_par_t for setting up contexts, frequency
-  ! searches
-
-  md_p = mode_par_t(l=td_p(1)%l_ref, m=td_p(1)%m_ref)
-
-  ! Set up the context
-
-  cx = context_t(ml, gr_p(1), md_p, os_p(1), rt_p(1))
-
-  ! Set up the frequency array
-
-  call build_scan(cx, md_p, os_p(1), sc_p, Omega_orb)
-
   ! Allocate secular rate-of-change arrays
 
-  n_Omega_orb = SIZE(Omega_orb)
+  n_or_p = SIZE(or_p)
 
-  allocate(a_dot(n_Omega_orb))
-  allocate(e_dot(n_Omega_orb))
-  allocate(o_dot(n_Omega_orb))
-  allocate(J_dot(n_Omega_orb))
+  allocate(a_dot(n_or_p))
+  allocate(e_dot(n_or_p))
+  allocate(o_dot(n_or_p))
+  allocate(J_dot(n_or_p))
 
-  ! Loop over orbital frequencies
+  ! Loop over orbital parameters
 
-  Omega_orb_loop : do i = 1, n_Omega_orb
+  or_p_loop : do i = 1, n_or_p
 
      ! Initialize the secular arrays
 
@@ -180,9 +161,9 @@ program gyre_orbit
 
      ! Add in contributions from each tidal component
 
-     call eval_tide(ml, process_wave, Omega_orb(i), os_p(1), rt_p(1), nm_p(1), gr_p(1), td_p(1))
+     call eval_tide(ml, process_wave, os_p(1), rt_p(1), nm_p(1), gr_p(1), or_p(i), td_p(1))
 
-  end do Omega_orb_loop
+  end do or_p_loop
 
   ! Write out results
 
@@ -195,12 +176,16 @@ program gyre_orbit
      call write_attr(hg, 'L_star', ml%L_star)
   end select
 
-  call write_attr(hg, 'q', td_p(1)%q)
-  call write_attr(hg, 'e', td_p(1)%e)
   call write_attr(hg, 'l_max', td_p(1)%l_max)
   call write_attr(hg, 'k_max', td_p(1)%k_max)
+  call write_attr(hg, 'm_min', td_p(1)%m_min)
+  call write_attr(hg, 'm_max', td_p(1)%m_max)
 
-  call write_dset(hg, 'Omega_orb', Omega_orb)
+  call write_dset(hg, 'Omega_orb', or_p%Omega_orb)
+  call write_dset(hg, 'q', or_p%q)
+  call write_dset(hg, 'e', or_p%e)
+  call write_dset(hg, 't_0', or_p%t_0)
+  call write_dset(hg, 'sync_fraction', or_p%sync_fraction)
 
   call write_dset(hg, 'a_dot', a_dot)
   call write_dset(hg, 'e_dot', e_dot)
@@ -224,8 +209,9 @@ contains
     type(wave_t), intent(in) :: wv
     integer, intent(in)      :: k
 
-    real(WP)    :: e
+    real(WP)    :: Omega_orb
     real(WP)    :: q
+    real(WP)    :: e
     real(WP)    :: R_a
     real(WP)    :: eps_tide
     integer     :: l
@@ -237,10 +223,11 @@ contains
 
     ! Set up orbital parameters
 
-    e = td_p(1)%e
-    q = td_p(1)%q
+    Omega_orb = or_p(i)%Omega_orb
+    q = or_p(i)%q
+    e = or_p(i)%e
 
-    R_a = (Omega_orb(i)**2/(1._WP + td_p(1)%q))**(1._WP/3._WP)
+    R_a = (Omega_orb**2/(1._WP + or_p(i)%q))**(1._WP/3._WP)
     
     eps_tide = (R_a)**3*q
 
@@ -294,16 +281,16 @@ contains
 
        gamma = ATAN2(AIMAG(F), REAL(F))
 
-       a_dot(i) = a_dot(i) + 4._WP*Omega_orb(i)*(q/R_a)*(R_a)**(l+3)* &
+       a_dot(i) = a_dot(i) + 4._WP*Omega_orb*(q/R_a)*(R_a)**(l+3)* &
             kappa*abs(F)*sin(gamma)*secular_G_2(R_a, e, l, m, k)
 
-       e_dot(i) = e_dot(i) + 4._WP*Omega_orb(i)*q*(R_a)**(l+3)* &
+       e_dot(i) = e_dot(i) + 4._WP*Omega_orb*q*(R_a)**(l+3)* &
             kappa*abs(F)*sin(gamma)*secular_G_3(R_a, e, l, m, k)
 
-       o_dot(i) = o_dot(i) + 4._WP*Omega_orb(i)*q*(R_a)**(l+3)* &
+       o_dot(i) = o_dot(i) + 4._WP*Omega_orb*q*(R_a)**(l+3)* &
             kappa*abs(F)*cos(gamma)*secular_G_1(R_a, e, l, m, k)
 
-       J_dot(i) = j_dot(i) + 4._WP*Omega_orb(i)*q**2/SQRT(R_a*(1+q))*(R_a)**(l+3)* &
+       J_dot(i) = j_dot(i) + 4._WP*Omega_orb*q**2/SQRT(R_a*(1+q))*(R_a)**(l+3)* &
             kappa*abs(F)*sin(gamma)*secular_G_4(R_a, e, l, m, k)
 
        ! Accumulate the torque

@@ -35,6 +35,7 @@ module gyre_tide
   use gyre_model
   use gyre_nad_bvp
   use gyre_num_par
+  use gyre_orbit_par
   use gyre_osc_par
   use gyre_point
   use gyre_rot_par
@@ -68,7 +69,7 @@ module gyre_tide
 
 contains
 
-  subroutine eval_tide (ml, process_wave, Omega_orb, os_p, rt_p, nm_p, gr_p, td_p)
+  subroutine eval_tide (ml, process_wave, os_p, rt_p, nm_p, gr_p, or_p, td_p)
 
     class(model_t), pointer, intent(in) :: ml
     interface
@@ -78,11 +79,11 @@ contains
          integer, intent(in)      :: k
        end subroutine process_wave
     end interface
-    real(WP), intent(in)                :: Omega_orb
     type(osc_par_t), intent(in)         :: os_p
     type(rot_par_t), intent(in)         :: rt_p
     type(num_par_t), intent(in)         :: nm_p
     type(grid_par_t), intent(in)        :: gr_p
+    type(orbit_par_t), intent(in)       :: or_p
     type(tide_par_t), intent(in)        :: td_p
 
     type(grid_t)                   :: ml_gr
@@ -128,20 +129,20 @@ contains
 
     ! Calculate the orbital separation and tidal strength
 
-    R_a = (Omega_orb**2/(1._WP + td_p%q))**(1._WP/3._WP)
+    R_a = (or_p%Omega_orb**2/(1._WP + or_p%q))**(1._WP/3._WP)
 
-    eps_tide = (R_a)**3*td_p%q
+    eps_tide = (R_a)**3*or_p%q
 
     ! If necessary, set up the synchronous rotation rate
 
     rt_p_ = rt_p
 
-    if (td_p%sync_rot) then
+    if (or_p%sync_rot) then
 
-       Omega_sync = Omega_orb*sqrt((1 + td_p%e)/(1 - td_p%e)**3)
+       Omega_sync = or_p%Omega_orb*sqrt((1 + or_p%e)/(1 - or_p%e)**3)
 
        rt_p_%Omega_rot_source = 'UNIFORM'
-       rt_p_%Omega_rot = td_p%sync_fraction*Omega_sync
+       rt_p_%Omega_rot = or_p%sync_fraction*Omega_sync
        rt_p_%Omega_rot_units = 'NONE'
 
     endif
@@ -159,7 +160,7 @@ contains
     allocate(omega(k_min:k_max))
 
     do k = k_min, k_max
-       omega(k) = -k*Omega_orb
+       omega(k) = -k*or_p%Omega_orb
     end do
 
     ! Set up contexts and tide types
@@ -189,7 +190,7 @@ contains
           classify_loop : do k = k_min, k_max
              tide_type(l,m,k) = classify_tide_(cx(l,m), ml_gr, omega(k), td_p%omega_static)
              if (check_log_level('DEBUG')) then
-                write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k),tidal_c(R_a, td_p%e, l, m, k)
+                write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k),tidal_c(R_a, or_p%e, l, m, k)
 
              endif
           end do classify_loop
@@ -235,7 +236,7 @@ contains
 
              call system_clock(c_beg)
                 
-             c = tidal_c(R_a, td_p%e, l, m, k)
+             c = tidal_c(R_a, or_p%e, l, m, k)
 
              call system_clock(c_end)
 

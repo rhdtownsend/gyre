@@ -32,11 +32,7 @@ module gyre_tide_par
   ! Derived-type definitions
 
   type :: tide_par_t
-     real(WP) :: q = 1._WP
-     real(WP) :: e = 0.5_WP
-     real(WP) :: t_0 = 0._WP
      real(WP) :: omega_static = 0._WP
-     real(WP) :: sync_fraction = 0._WP
      integer  :: l_ref = 0
      integer  :: m_ref = 0
      integer  :: l_max = 4
@@ -44,7 +40,6 @@ module gyre_tide_par
      integer  :: m_max = HUGE(0)
      integer  :: k_max = 20
      logical  :: combine_k = .TRUE.
-     logical  :: sync_rot = .FALSE.
   end type tide_par_t
 
   ! Interfaces
@@ -85,11 +80,7 @@ contains
 
     integer  :: n_td_p
     integer  :: i
-    real(WP) :: q
-    real(WP) :: e
-    real(WP) :: t_0
     real(WP) :: omega_static
-    real(WP) :: sync_fraction
     integer  :: l_ref
     integer  :: m_ref
     integer  :: l_max
@@ -97,11 +88,9 @@ contains
     integer  :: m_max
     integer  :: k_max
     logical  :: combine_k
-    logical  :: sync_rot
 
-    namelist /tide/ q, e, t_0, omega_static, sync_fraction, &
-         l_ref, m_ref, l_max, m_min, m_max, k_max, &
-         combine_k, sync_rot
+    namelist /tide/ omega_static, l_ref, m_ref, l_max, m_min, m_max, k_max, &
+         combine_k
 
     ! Count the number of tide namelists
 
@@ -128,11 +117,7 @@ contains
 
        td_p(i) = tide_par_t()
 
-       q = td_p(i)%q
-       e = td_p(i)%e
-       t_0 = td_p(i)%t_0
        omega_static = td_p(i)%omega_static
-       sync_fraction = td_p(i)%sync_fraction
 
        l_ref = td_p(i)%l_ref
        m_ref = td_p(i)%m_ref
@@ -142,7 +127,6 @@ contains
        k_max = td_p(i)%k_max
 
        combine_k = td_p(i)%combine_k
-       sync_rot = td_p(i)%sync_rot
 
        ! Read the namelist
 
@@ -150,11 +134,7 @@ contains
 
        ! Store read values
 
-       td_p(i)%q = q
-       td_p(i)%e = e
-       td_p(i)%t_0 = t_0
        td_p(i)%omega_static = omega_static
-       td_p(i)%sync_fraction = sync_fraction
 
        td_p(i)%l_ref = l_ref
        td_p(i)%m_ref = m_ref
@@ -164,7 +144,6 @@ contains
        td_p(i)%k_max = k_max
 
        td_p(i)%combine_k = combine_k
-       td_p(i)%sync_rot = sync_rot
 
     end do read_loop
 
@@ -185,11 +164,7 @@ contains
 
     ! Broadcast the tide_par_t
 
-    call bcast(td_p%q, root_rank)
-    call bcast(td_p%e, root_rank)
-    call bcast(td_p%t_0, root_rank)
-    call bcast(td_p%Omega_static, root_rank)
-    call bcast(td_p%sync_fraction, root_rank)
+    call bcast(td_p%omega_static, root_rank)
 
     call bcast(td_p%l_ref, root_rank)
     call bcast(td_p%m_ref, root_rank)
@@ -199,7 +174,6 @@ contains
     call bcast(td_p%k_max, root_rank)
 
     call bcast(td_p%combine_k, root_rank)
-    call bcast(td_p%sync_rot, root_rank)
 
     ! Finish
 
