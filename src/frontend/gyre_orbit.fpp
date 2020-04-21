@@ -186,6 +186,7 @@ program gyre_orbit
   call write_dset(hg, 'e', or_p%e)
   call write_dset(hg, 't_0', or_p%t_0)
   call write_dset(hg, 'sync_fraction', or_p%sync_fraction)
+  call write_dset(hg, 'Omega_orb_units', or_p%Omega_orb_units)
 
   call write_dset(hg, 'a_dot', a_dot)
   call write_dset(hg, 'e_dot', e_dot)

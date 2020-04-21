@@ -32,12 +32,13 @@ module gyre_orbit_par
   ! Derived-type definitions
 
   type :: orbit_par_t
-     real(WP) :: Omega_orb = 1._WP
-     real(WP) :: q = 1._WP
-     real(WP) :: e = 0.5_WP
-     real(WP) :: t_0 = 0._WP
-     real(WP) :: sync_fraction = 0._WP
-     logical  :: sync_rot = .FALSE.
+     real(WP)      :: Omega_orb = 1._WP
+     real(WP)      :: q = 1._WP
+     real(WP)      :: e = 0.5_WP
+     real(WP)      :: t_0 = 0._WP
+     real(WP)      :: sync_fraction = 0._WP
+     logical       :: sync_rot = .FALSE.
+     character(64) :: Omega_orb_units = 'NONE'
   end type orbit_par_t
 
   ! Interfaces
@@ -76,16 +77,18 @@ contains
     integer, intent(in)                         :: unit
     type(orbit_par_t), allocatable, intent(out) :: or_p(:)
 
-    integer  :: n_or_p
-    integer  :: i
-    real(WP) :: Omega_orb
-    real(WP) :: q
-    real(WP) :: e
-    real(WP) :: t_0
-    real(WP) :: sync_fraction
-    logical  :: sync_rot
+    integer                              :: n_or_p
+    integer                              :: i
+    real(WP)                             :: Omega_orb
+    real(WP)                             :: q
+    real(WP)                             :: e
+    real(WP)                             :: t_0
+    real(WP)                             :: sync_fraction
+    logical                              :: sync_rot
+    character(LEN(or_p%Omega_orb_units)) :: Omega_orb_units
 
-    namelist /orbit/ Omega_orb, q, e, t_0, sync_fraction, sync_rot
+    namelist /orbit/ Omega_orb, q, e, t_0, sync_fraction, sync_rot, &
+         Omega_orb_units
 
     ! Count the number of orbit namelists
 
@@ -120,6 +123,8 @@ contains
 
        sync_rot = or_p(i)%sync_rot
 
+       Omega_orb_units = or_p(i)%Omega_orb_units
+
        ! Read the namelist
 
        read(unit, NML=orbit)
@@ -130,9 +135,11 @@ contains
        or_p(i)%q = q
        or_p(i)%e = e
        or_p(i)%t_0 = t_0
-       or_p(i)%sync_fraction = or_p(i)%sync_fraction
+       or_p(i)%sync_fraction = sync_fraction
 
-       or_p(i)%sync_rot = or_p(i)%sync_rot
+       or_p(i)%sync_rot = sync_rot
+
+       or_p(i)%Omega_orb_units = Omega_orb_units
 
     end do read_loop
 
@@ -161,7 +168,8 @@ contains
 
     call bcast(or_p%sync_rot, root_rank)
    
-
+    call bcast(or_p%Omega_orb_units, root_rank)
+   
     ! Finish
 
     return

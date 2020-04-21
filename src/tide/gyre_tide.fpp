@@ -87,6 +87,7 @@ contains
     type(tide_par_t), intent(in)        :: td_p
 
     type(grid_t)                   :: ml_gr
+    real(WP)                       :: Omega_orb
     real(WP)                       :: R_a
     real(WP)                       :: eps_tide
     type(rot_par_t)                :: rt_p_
@@ -127,9 +128,13 @@ contains
 
     ml_gr = ml%grid()
 
+    ! Calculate the dimensionless orbital frequency
+
+    Omega_orb = or_p%Omega_orb/freq_scale(or_p%Omega_orb_units, ml)
+
     ! Calculate the orbital separation and tidal strength
 
-    R_a = (or_p%Omega_orb**2/(1._WP + or_p%q))**(1._WP/3._WP)
+    R_a = (Omega_orb**2/(1._WP + or_p%q))**(1._WP/3._WP)
 
     eps_tide = (R_a)**3*or_p%q
 
@@ -139,7 +144,7 @@ contains
 
     if (or_p%sync_rot) then
 
-       Omega_sync = or_p%Omega_orb*sqrt((1 + or_p%e)/(1 - or_p%e)**3)
+       Omega_sync = Omega_orb*sqrt((1 + or_p%e)/(1 - or_p%e)**3)
 
        rt_p_%Omega_rot_source = 'UNIFORM'
        rt_p_%Omega_rot = or_p%sync_fraction*Omega_sync
@@ -160,7 +165,7 @@ contains
     allocate(omega(k_min:k_max))
 
     do k = k_min, k_max
-       omega(k) = -k*or_p%Omega_orb
+       omega(k) = -k*Omega_orb
     end do
 
     ! Set up contexts and tide types
