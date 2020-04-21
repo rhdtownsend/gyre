@@ -24,11 +24,9 @@ module gyre_freq
   use core_kinds
 
   use gyre_constants
-  use gyre_context
-  use gyre_freq_model
-  use gyre_freq_context
-  use gyre_mode_par
-  use gyre_osc_par
+  use gyre_evol_model
+  use gyre_math
+  use gyre_model
 
   use ISO_FORTRAN_ENV
 
@@ -38,86 +36,95 @@ module gyre_freq
 
   ! Interfaces
 
-  interface omega_from_freq
-     module procedure omega_from_freq_r_
-     module procedure omega_from_freq_c_
-  end interface omega_from_freq
-
-  interface freq_from_omega
-     module procedure freq_from_omega_r_
-     module procedure freq_from_omega_c_
-  end interface freq_from_omega
+  interface freq_scale
+     module procedure freq_scale_
+     module procedure freq_scale_model_
+  end interface freq_scale
 
   ! Access specifiers
 
   private
 
-  public :: omega_from_freq
-  public :: freq_from_omega
+  public :: freq_scale
 
   ! Procedures
 
 contains
 
-  $define $OMEGA_FROM_FREQ $sub
+  function freq_scale_ (units) result (scale)
 
-  $local $T $1
-  $local $TYPE $2
+    character(*), intent(in) :: units
+    real(WP)                 :: scale
 
-  function omega_from_freq_${T}_ (freq, cx, freq_units, freq_frame, md_p, os_p) result (omega)
+    ! Evaluate the multiplicative scale for converting dimensionless
+    ! angular frequencies to dimensioned frequencies (as specified by
+    ! units)
 
-    $TYPE(WP), intent(in)        :: freq
-    class(context_t), intent(in) :: cx
-    character(*), intent(in)     :: freq_units
-    character(*), intent(in)     :: freq_frame
-    type(mode_par_t), intent(in) :: md_p
-    type(osc_par_t), intent(in)  :: os_p
-    $TYPE(WP)                    :: omega
-
-    omega = freq_scale(freq_units, cx, md_p, os_p)*freq + freq_shift(freq_frame, cx, md_p)
-
+    select case (units)
+    case ('NONE')
+       scale = 1._WP
+    case ('CRITICAL')
+       scale = sqrt(27._WP/8._WP)
+    case default
+       $ABORT(Invalid frequency units)
+    end select
+       
     ! Finish
 
     return
 
-  end function omega_from_freq_${T}_
-
-  $endsub
-
-  $OMEGA_FROM_FREQ(r,real)
-  $OMEGA_FROM_FREQ(c,complex)
+  end function freq_scale_
 
   !****
 
-  $define $FREQ_FROM_OMEGA $sub
+  function freq_scale_model_ (units, ml) result (scale)
 
-  $local $T $1
-  $local $TYPE $2
+    character(*), intent(in)   :: units
+    class(model_t), intent(in) :: ml
+    real(WP)                   :: scale
 
-  function freq_from_omega_${T}_ (omega, cx, freq_units, freq_frame, md_p, os_p) result (freq)
+    ! Evaluate the multiplicative scale for converting dimensionless
+    ! angular frequencies to dimensioned frequencies (as specified by
+    ! units)
 
-    $TYPE(WP), intent(in)        :: omega
-    class(context_t), intent(in) :: cx
-    character(*), intent(in)     :: freq_units
-    character(*), intent(in)     :: freq_frame
-    type(mode_par_t), intent(in) :: md_p
-    type(osc_par_t), intent(in)  :: os_p
-    $TYPE(WP)                    :: freq
-
-    ! Calculate the dimensioned local-frame frequency freq from the
-    ! dimensionless inertial-frame frequency omega
-
-    freq = (omega - freq_shift(freq_frame, cx, md_p))/freq_scale(freq_units, cx, md_p, os_p)
+    select type (ml)
+    class is (evol_model_t)
+       scale = freq_scale_evol_model_(units, ml)
+    class default
+       scale = freq_scale(units)
+    end select
 
     ! Finish
 
     return
 
-  end function freq_from_omega_${T}_
+  end function freq_scale_model_
+  
+  !****
 
-  $endsub
+  function freq_scale_evol_model_ (units, ml) result (scale)
 
-  $FREQ_FROM_OMEGA(r,real)
-  $FREQ_FROM_OMEGA(c,complex)
+    character(*), intent(in)       :: units
+    type(evol_model_t), intent(in) :: ml
+    real(WP)                       :: scale
 
+    select case (units)
+    case ('HZ')
+       scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)/TWOPI
+    case ('UHZ')
+       scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*1E6_WP/TWOPI
+    case ('RAD_PER_SEC')
+       scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)
+    case ('CYC_PER_DAY')
+       scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*86400._WP/TWOPI
+    case default
+       scale = freq_scale(units)
+    end select
+
+    ! Finish
+
+    return
+
+  end function freq_scale_evol_model_
+  
 end module gyre_freq

@@ -25,8 +25,7 @@ module gyre_scan
   use core_order
 
   use gyre_context
-  use gyre_freq
-  use gyre_freq_frame
+  use gyre_freq_context
   use gyre_grid
   use gyre_mode
   use gyre_model
@@ -123,8 +122,10 @@ contains
 
     ! Calculate the dimensionless frequency range in the inertial frame
       
-    omega_i_min = omega_from_freq(sc_p%freq_min, cx, sc_p%freq_min_units, sc_p%freq_frame, md_p, os_p)
-    omega_i_max = omega_from_freq(sc_p%freq_max, cx, sc_p%freq_max_units, sc_p%freq_frame, md_p, os_p)
+    omega_i_min = sc_p%freq_min/freq_scale(sc_p%freq_min_units, cx, md_p, os_p) - &
+                  freq_shift(sc_p%freq_frame, cx, md_p)
+    omega_i_max = sc_p%freq_max/freq_scale(sc_p%freq_max_units, cx, md_p, os_p) - &
+                  freq_shift(sc_p%freq_frame, cx, md_p)
 
     ! Build the scan
 
@@ -160,8 +161,8 @@ contains
 
           ! Calculate the dimensionless frequency range in the grid frame
 
-          omega_g_min = freq_from_omega(omega_i_min, cx, 'NONE', sc_p%grid_frame, md_p, os_p)
-          omega_g_max = freq_from_omega(omega_i_max, cx, 'NONE', sc_p%grid_frame, md_p, os_p)          
+          omega_g_min = omega_i_min + freq_shift(sc_p%grid_frame, cx, md_p)
+          omega_g_max = omega_i_max + freq_shift(sc_p%grid_frame, cx, md_p)
 
           ! Set up the frequencies
 
@@ -182,7 +183,7 @@ contains
 
              ! Inertial frame
 
-             omega_i(j) = omega_from_freq(omega_g, cx, 'NONE', sc_p%grid_frame, md_p, os_p)
+             omega_i(j) = omega_g - freq_shift(sc_p%grid_frame, cx, md_p)
 
           end do
 
@@ -259,11 +260,7 @@ contains
 
     ! Set up the frequencies
 
-    allocate(omega_i(n_freq))
-
-    do j = 1, n_freq
-       omega_i(j) = omega_from_freq(freq(j), cx, sc_p%freq_units, sc_p%freq_frame, md_p, os_p)
-    end do
+    omega_i = freq/freq_scale(sc_p%freq_units, cx, md_p, os_p) - freq_shift(sc_p%freq_frame, cx, md_p)
 
     ! Store them
 
@@ -291,7 +288,6 @@ contains
     type(mode_par_t), intent(in) :: md_p
     type(osc_par_t), intent(in)  :: os_p
 
-    real(WP) :: Omega_rot
     real(WP) :: omega_c(gr%n_k)
     real(WP) :: omega_c_prev(gr%n_k)
     integer  :: j
@@ -307,10 +303,9 @@ contains
 
     if (SIZE(omega) >= 1) then
 
-       !$OMP PARALLEL DO PRIVATE (Omega_rot)
+       !$OMP PARALLEL DO
        do k = 1, gr%n_k
-          Omega_rot = cx%Omega_rot(gr%pt(k))
-          omega_c(k) = omega_corot(omega(1), Omega_rot, md_p%m)
+          omega_c(k) = omega(1) - md_p%m*cx%Omega_rot(gr%pt(k))
        end do
 
        $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
@@ -319,10 +314,9 @@ contains
 
           omega_c_prev = omega_c
 
-          !$OMP PARALLEL DO PRIVATE (Omega_rot)
+          !$OMP PARALLEL DO
           do k = 1, gr%n_k
-             Omega_rot = cx%Omega_rot(gr%pt(k))
-             omega_c(k) = omega_corot(omega(j), Omega_rot, md_p%m)
+             omega_c(k) = omega(j) - md_p%m*cx%Omega_rot(gr%pt(k))
           end do
 
           $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)

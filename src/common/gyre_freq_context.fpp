@@ -27,7 +27,7 @@ module gyre_freq_context
   use gyre_constants
   use gyre_context
   use gyre_evol_model
-  use gyre_freq_model
+  use gyre_freq
   use gyre_math
   use gyre_model
   use gyre_mode_par
@@ -43,11 +43,11 @@ module gyre_freq_context
   ! Interfaces
 
   interface freq_scale
-     module procedure freq_scale_cx_
+     module procedure freq_scale_context_
   end interface freq_scale
 
   interface freq_shift
-     module procedure freq_shift_cx_
+     module procedure freq_shift_context_
   end interface freq_shift
 
   ! Access specifiers
@@ -61,7 +61,7 @@ module gyre_freq_context
 
 contains
 
-  function freq_scale_cx_ (units, cx, md_p, os_p) result (scale)
+  function freq_scale_context_ (units, cx, md_p, os_p) result (scale)
 
     character(*), intent(in)     :: units
     class(context_t), intent(in) :: cx
@@ -73,9 +73,9 @@ contains
     type(point_t)           :: pt_i
     type(point_t)           :: pt_o
 
-    ! Evaluate the multiplicative scale for converting dimensioned
-    ! frequencies (as specified by units) to dimensionless angular
-    ! frequencies
+    ! Evaluate the multiplicative scale for converting dimensionless
+    ! angular frequencies to dimensioned frequencies (as specified by
+    ! units)
 
     ml => cx%model()
     
@@ -84,21 +84,21 @@ contains
 
     select case (units)
     case ('ACOUSTIC_DELTA')
-       scale = TWOPI*ml%Delta_p(pt_i%x, pt_o%x)
+       scale = 1._WP/(TWOPI*ml%Delta_p(pt_i%x, pt_o%x))
     case ('GRAVITY_DELTA')
-       scale = TWOPI*ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))
+       scale = 1._WP/(TWOPI*ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP)))
     case ('UPPER_DELTA')
-       scale = TWOPI*MAX(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP)))
+       scale = 1._WP/(TWOPI*MAX(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))))
     case ('LOWER_DELTA')
-       scale = TWOPI*MIN(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP)))
+       scale = 1._WP/(TWOPI*MIN(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))))
     case ('ROSSBY_I')
-       scale = -2._WP*md_p%m*cx%Omega_rot(pt_i)/(md_p%l*(md_p%l+1))
+       scale = -md_p%l*(md_p%l+1)/(2._WP*md_p%m*cx%Omega_rot(pt_i))
     case ('ROSSBY_O')
-       scale = -2._WP*md_p%m*cx%Omega_rot(pt_o)/(md_p%l*(md_p%l+1))
+       scale = -md_p%l*(md_p%l+1)/(2._WP*md_p%m*cx%Omega_rot(pt_o))
     case default
        select type (ml)
        class is (evol_model_t)
-          scale = freq_scale_cx_evol_(units, ml, pt_o, md_p, os_p)
+          scale = freq_scale_evol_context_(units, ml, pt_o, md_p, os_p)
        class default
           scale = freq_scale(units, ml)
        end select
@@ -108,11 +108,11 @@ contains
 
     return
 
-  end function freq_scale_cx_
+  end function freq_scale_context_
 
   !****
 
-  function freq_scale_cx_evol_ (units, ml, pt, md_p, os_p) result (scale)
+  function freq_scale_evol_context_ (units, ml, pt, md_p, os_p) result (scale)
 
     character(*), intent(in)       :: units
     type(evol_model_t), intent(in) :: ml
@@ -127,10 +127,10 @@ contains
     select case (units)
     case ('ACOUSTIC_CUTOFF')
        call eval_cutoff_freqs(ml, pt, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
-       scale = omega_cutoff_hi
+       scale = 1._WP/omega_cutoff_hi
     case ('GRAVITY_CUTOFF')
        call eval_cutoff_freqs(ml, pt, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
-       scale = omega_cutoff_lo
+       scale = 1._WP/omega_cutoff_lo
     case default
        scale = freq_scale(units, ml)
     end select
@@ -139,39 +139,34 @@ contains
 
     return
 
-  end function freq_scale_cx_evol_
+  end function freq_scale_evol_context_
 
   !****
 
-  function freq_shift_cx_ (frame, cx, md_p) result (shift)
+  function freq_shift_context_ (frame, cx, md_p) result (shift)
 
     character(*), intent(in)     :: frame
     class(context_t), intent(in) :: cx
     type(mode_par_t), intent(in) :: md_p
     real(WP)                     :: shift
     
-    class(model_t), pointer :: ml => null()
-    type(point_t)           :: pt_i
-    type(point_t)           :: pt_o
+    type(point_t) :: pt_i
+    type(point_t) :: pt_o
 
     ! Evaluate the additive shift for converting dimensionless angular
-    ! frequencies from a co-rotating frame (as specified by frame) to
-    ! the inertial frame
-    
-    ml => cx%model()
+    ! frequencies from the inertial frame to a co-rotating frame (as
+    ! specified by frame)
     
     pt_i = cx%point_i()
     pt_o = cx%point_o()
-
-    ! Now convert to the inertial frame
 
     select case (frame)
     case ('INERTIAL')
        shift = 0._WP
     case ('COROT_I')
-       shift = md_p%m*cx%Omega_rot(pt_i)
+       shift = -md_p%m*cx%Omega_rot(pt_i)
     case ('COROT_O')
-       shift = md_p%m*cx%Omega_rot(pt_o)
+       shift = -md_p%m*cx%Omega_rot(pt_i)
     case default
        $ABORT(Invalid frequency frame)
     end select
@@ -180,7 +175,7 @@ contains
 
     return
 
-  end function freq_shift_cx_
+  end function freq_shift_context_
     
   !****
 

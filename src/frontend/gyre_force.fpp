@@ -32,7 +32,7 @@ program gyre_force
   use gyre_evol_model
   use gyre_context
   use gyre_force_par
-  use gyre_freq
+  use gyre_freq_context
   use gyre_grid
   use gyre_grid_factory
   use gyre_grid_par
@@ -413,7 +413,7 @@ contains
 
        Omega_orb = omega/fr_p_sel%k
 
-       P = 1._WP/freq_from_omega(Omega_orb, cx, 'HZ', 'INERTIAL', md_p(i), os_p_sel)
+       P = 1._WP/(Omega_orb*freq_scale('HZ', cx, md_p(i), os_p_sel))
 
        a = (G_GRAVITY*(M_pri + M_sec)*P**2/(4.*PI**2))**(1._WP/3._WP)
 

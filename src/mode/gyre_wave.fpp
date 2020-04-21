@@ -28,7 +28,7 @@ module gyre_wave
   use gyre_constants
   use gyre_context
   use gyre_ext
-  use gyre_freq
+  use gyre_freq_context
   use gyre_grid
   use gyre_grid_util
   use gyre_math
@@ -286,9 +286,9 @@ contains
          ml => this%cx%model() )
 
       if (PRESENT(freq_frame)) then
-         freq = freq_from_omega(this%st%omega, this%cx, freq_units, freq_frame, this%md_p, this%os_p)
+         freq = (this%st%omega + freq_shift(freq_frame, this%cx, this%md_p))*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
       else
-         freq = freq_from_omega(this%st%omega, this%cx, freq_units, 'INERTIAL', this%md_p, this%os_p)
+         freq = this%st%omega*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
       endif
 
     end associate
@@ -310,7 +310,7 @@ contains
     associate( &
          ml => this%cx%model() )
 
-      dfreq_rot = freq_from_omega(this%domega_rot(), this%cx, freq_units, 'INERTIAL', this%md_p, this%os_p)
+      dfreq_rot = this%domega_rot()*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
     
     end associate
 

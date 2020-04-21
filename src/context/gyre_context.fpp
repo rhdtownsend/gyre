@@ -25,7 +25,7 @@ module gyre_context
   use core_order
 
   use gyre_constants
-  use gyre_freq_frame
+  use gyre_freq
   use gyre_grid
   use gyre_grid_par
   use gyre_interp
@@ -139,7 +139,7 @@ contains
     case ('MODEL')
        cx%Omega_rot_source = MODEL_OMEGA_ROT_SOURCE
     case ('UNIFORM')
-       call eval_Omega_rot_(ml, rt_p, cx%Omega_rot_)
+       cx%Omega_rot_ = rt_p%Omega_rot/freq_scale(rt_p%Omega_rot_units, ml)
        cx%Omega_rot_source = UNIFORM_OMEGA_ROT_SOURCE
     case default
        $ABORT(Invalid Omega_rot_source)
@@ -227,7 +227,7 @@ contains
 
     ! Evaluate the co-rotating frequency (real)
 
-    omega_c = omega_corot(st%omega, Omega_rot, this%m)
+    omega_c = st%omega - this%m*Omega_rot
 
     ! Finish
 
@@ -246,7 +246,7 @@ contains
 
     ! Evaluate the co-rotating frequency (complex)
 
-    omega_c = omega_corot(st%omega, Omega_rot, this%m)
+    omega_c = st%omega - this%m*Omega_rot
 
     ! Finish
 
@@ -378,75 +378,6 @@ contains
 
   end function Omega_rot
 
-  !****
-
-  subroutine eval_Omega_rot_ (ml, rt_p, Omega_rot)
-
-    use gyre_evol_model
-    use gyre_poly_model
-    use gyre_hom_model
- 
-    class(model_t), pointer, intent(in) :: ml
-    type(rot_par_t), intent(in)         :: rt_p
-    real(WP), intent(out)               :: Omega_rot
-
-    ! Evaluate the uniform dimensionless rotation rate
-
-    select type (ml)
-
-    class is (evol_model_t)
-
-       select case (rt_p%Omega_rot_units)
-       case ('NONE')
-          Omega_rot = rt_p%Omega_rot
-       case ('HZ')
-          Omega_rot = TWOPI*rt_p%Omega_rot*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
-       case ('UHZ')
-          Omega_rot = TWOPI*rt_p%Omega_rot*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))/1E6
-       case ('RAD_PER_SEC')
-          Omega_rot = rt_p%Omega_rot*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
-       case ('CYC_PER_DAY')
-          Omega_rot = TWOPI*rt_p%Omega_rot*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))/86400._WP
-       case ('CRITICAL')
-          Omega_rot = rt_p%Omega_rot*sqrt(8._WP/27._WP)
-       case default
-          $ABORT(Invalid Omega_units)
-       end select
-
-    class is (poly_model_t)
-
-       select case (rt_p%Omega_rot_units)
-       case ('NONE')
-          Omega_rot = rt_p%Omega_rot
-       case ('CRITICAL')
-          Omega_rot = rt_p%Omega_rot*sqrt(8._WP/27._WP)
-       case default
-          $ABORT(Invalid Omega_units)
-       end select
-
-    class is (hom_model_t)
-
-       select case (rt_p%Omega_rot_units)
-       case ('NONE')
-          Omega_rot = rt_p%Omega_rot
-       case ('CRITICAL')
-          Omega_rot = rt_p%Omega_rot*sqrt(8._WP/27._WP)
-       case default
-          $ABORT(Invalid Omega_units)
-       end select
-
-    class default
-
-       $ABORT(Invalid model class)
-
-    end select
-
-    ! Finish
-
-    return
-
-  end subroutine eval_Omega_rot_
-    
   !****
 
   $define $EPS_RHO $sub
@@ -649,12 +580,7 @@ contains
 
     ! Convert periods to dimensionless frequencies
 
-    select type (ml)
-    class is (evol_model_t)
-       omega = TWOPI/period*sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
-    class default
-       $ABORT(Invalid model type)
-    end select
+    omega = 1._WP/(period*freq_scale('HZ', ml))
 
     ! Reverse the phase sign because Wolf et al assume a time
     ! depenence of exp(i omega t), rather than GYRE's exp(-i omega t)

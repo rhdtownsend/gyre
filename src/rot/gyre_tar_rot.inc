@@ -30,7 +30,6 @@ module gyre_${T}_tar_rot
   use core_hgroup
 
   use gyre_constants
-  use gyre_freq_frame
   use gyre_math
   use gyre_mode_par
   use gyre_tar_fit
@@ -143,7 +142,7 @@ contains
 
     ! Evaluate the angular eigenvalue
 
-    nu = 2._WP*Omega_rot/omega_corot(omega, Omega_rot, this%m)
+    nu = 2._WP*Omega_rot/(omega - this%m*Omega_rot)
 
     lambda = this%tf%lambda(nu)
 
