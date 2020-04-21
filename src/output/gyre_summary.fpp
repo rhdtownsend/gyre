@@ -29,7 +29,6 @@ module gyre_summary
   use gyre_context
   use gyre_constants
   use gyre_evol_model
-  use gyre_freq
   use gyre_grid
   use gyre_hdf_writer
   use gyre_mode
