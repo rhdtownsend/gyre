@@ -37,7 +37,7 @@ module gyre_freq_model
   ! Interfaces
 
   interface freq_scale
-     module procedure freq_scale_model_
+     module procedure freq_scale_ml_
   end interface freq_scale
 
   ! Access specifiers
@@ -50,7 +50,7 @@ module gyre_freq_model
 
 contains
 
-  function freq_scale_model_ (units, ml) result (scale)
+  function freq_scale_ml_ (units, ml) result (scale)
 
     character(*), intent(in)   :: units
     class(model_t), intent(in) :: ml
@@ -66,7 +66,7 @@ contains
     case default
        select type (ml)
        class is (evol_model_t)
-          scale = freq_scale_evol_model_(units, ml)
+          scale = freq_scale_ml_evol_(units, ml)
        class default
           $ABORT(Invalid frequency units)
        end select
@@ -76,11 +76,11 @@ contains
 
     return
 
-  end function freq_scale_model_
+  end function freq_scale_ml_
 
   !****
 
-  function freq_scale_evol_model_ (units, ml) result (scale)
+  function freq_scale_ml_evol_ (units, ml) result (scale)
 
     character(*), intent(in)       :: units
     type(evol_model_t), intent(in) :: ml
@@ -103,6 +103,6 @@ contains
 
     return
 
-  end function freq_scale_evol_model_
+  end function freq_scale_ml_evol_
   
 end module gyre_freq_model

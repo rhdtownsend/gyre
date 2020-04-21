@@ -43,11 +43,11 @@ module gyre_freq_context
   ! Interfaces
 
   interface freq_scale
-     module procedure freq_scale_context_
+     module procedure freq_scale_cx_
   end interface freq_scale
 
   interface freq_shift
-     module procedure freq_shift_context_
+     module procedure freq_shift_cx_
   end interface freq_shift
 
   ! Access specifiers
@@ -61,7 +61,7 @@ module gyre_freq_context
 
 contains
 
-  function freq_scale_context_ (units, cx, md_p, os_p) result (scale)
+  function freq_scale_cx_ (units, cx, md_p, os_p) result (scale)
 
     character(*), intent(in)     :: units
     class(context_t), intent(in) :: cx
@@ -98,7 +98,7 @@ contains
     case default
        select type (ml)
        class is (evol_model_t)
-          scale = freq_scale_evol_model_(units, ml, pt_o, md_p, os_p)
+          scale = freq_scale_cx_evol_(units, ml, pt_o, md_p, os_p)
        class default
           scale = freq_scale(units, ml)
        end select
@@ -108,11 +108,11 @@ contains
 
     return
 
-  end function freq_scale_context_
+  end function freq_scale_cx_
 
   !****
 
-  function freq_scale_evol_model_ (units, ml, pt, md_p, os_p) result (scale)
+  function freq_scale_cx_evol_ (units, ml, pt, md_p, os_p) result (scale)
 
     character(*), intent(in)       :: units
     type(evol_model_t), intent(in) :: ml
@@ -139,11 +139,11 @@ contains
 
     return
 
-  end function freq_scale_evol_model_
+  end function freq_scale_cx_evol_
 
   !****
 
-  function freq_shift_context_ (frame, cx, md_p) result (shift)
+  function freq_shift_cx_ (frame, cx, md_p) result (shift)
 
     character(*), intent(in)     :: frame
     class(context_t), intent(in) :: cx
@@ -180,7 +180,7 @@ contains
 
     return
 
-  end function freq_shift_context_
+  end function freq_shift_cx_
     
   !****
 
