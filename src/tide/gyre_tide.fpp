@@ -138,13 +138,17 @@ contains
 
     eps_tide = (R_a)**3*or_p%q
 
-    ! If necessary, set up the synchronous rotation rate
+    ! If necessary, set up the synchronous rotation rate (based on
+    ! eqn. 42 of Hut 1981)
 
     rt_p_ = rt_p
 
     if (or_p%sync_rot) then
 
-       Omega_sync = Omega_orb*sqrt((1 + or_p%e)/(1 - or_p%e)**3)
+       associate (e => or_p%e)
+         Omega_sync = Omega_orb*(1 + 15*e**2/2 + 45*e**4/8 + 5*e**6/16)/ &
+                                ((1 + 3*e**2 + 3*e**4/8)*sqrt(1 - e**2)**3)
+       end associate
 
        rt_p_%Omega_rot_source = 'UNIFORM'
        rt_p_%Omega_rot = or_p%sync_fraction*Omega_sync
