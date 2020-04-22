@@ -216,8 +216,7 @@ contains
          !$OMP PARALLEL DO PRIVATE (k_turn, x_turn) REDUCTION (MIN:k_turn_min,x_turn_min) REDUCTION (MAX:k_turn_max,x_turn_max)
          omega_loop : do j = 1, SIZE(omega)
 
-            call find_turn(cx, gr, r_state_t(omega(j)), k_turn, x_turn)!, alpha_gamma, alpha_pi)
-            ! for some reason this is giving a root bracketing assertion error
+            call find_turn(cx, gr, r_state_t(omega(j)), k_turn, x_turn, alpha_gamma, alpha_pi)
 
             k_turn_min = MIN(k_turn_min, k_turn)
             k_turn_max = MAX(k_turn_max, k_turn)
@@ -498,8 +497,8 @@ contains
        
        associate (ml => cx%model())
 
-         V = ml%coeff(I_V_2, pt)*pt%x**2 * alpha_gamma
-         As = ml%coeff(I_AS, pt) * alpha_pi
+         V = ml%coeff(I_V_2, pt)*pt%x**2 
+         As = ml%coeff(I_AS, pt) 
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
          Gamma_1 = ml%coeff(I_GAMMA_1, pt)
@@ -526,9 +525,9 @@ contains
 
           ! Calculate the propagation discriminant gamma
 
-          g_4 = -4._WP*V/Gamma_1*c_1
-          g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda
-          g_0 = -4._WP*lambda*As/c_1
+          g_4 = -4._WP*V/Gamma_1*c_1 * alpha_gamma
+          g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As * alpha_gamma * alpha_pi + 4._WP*lambda
+          g_0 = -4._WP*lambda*As/c_1 * alpha_pi
 
           if (g_0 /= 0._WP) then
              gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
