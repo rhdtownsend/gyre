@@ -42,6 +42,7 @@ module gyre_grid_par
      integer         :: n_inner = 0
      integer         :: n_floor = 0
      integer         :: n_iter_max = 8
+     character (64)  :: isolation = 'NONE'
      character(2048) :: tag_list = ''
   end type grid_par_t
 
@@ -73,10 +74,11 @@ contains
     integer                       :: n_inner
     integer                       :: n_floor
     integer                       :: n_iter_max
+    character(LEN(gr_p%isolation)):: isolation
     character(LEN(gr_p%tag_list)) :: tag_list
 
     namelist /grid/ x_i, x_o, alpha_osc, alpha_exp, alpha_thm, alpha_str, &
-                    dx_min, n_inner, n_floor, n_iter_max, tag_list
+                    dx_min, n_inner, n_floor, n_iter_max, isolation, tag_list
 
     ! Count the number of grid namelists
 
@@ -113,6 +115,7 @@ contains
        n_inner = gr_p(i)%n_inner
        n_floor = gr_p(i)%n_floor
        n_iter_max = gr_p(i)%n_iter_max
+       isolation = gr_p(i)%isolation
        tag_list = gr_p(i)%tag_list
 
        ! Read the namelist
@@ -131,6 +134,7 @@ contains
        gr_p(i)%n_inner = n_inner
        gr_p(i)%n_floor = n_floor
        gr_p(i)%n_iter_max = n_iter_max
+       gr_p(i)%isolation = isolation
        gr_p(i)%tag_list = tag_list
 
     end do read_loop

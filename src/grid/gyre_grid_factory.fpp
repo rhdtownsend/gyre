@@ -180,6 +180,23 @@ contains
     integer  :: k
     integer  :: dn(gr%n_k-1)
 
+    real(WP)        :: alpha_gamma
+    real(WP)        :: alpha_pi
+
+    select case (gr_p% isolation)
+    case ('GAMMA')
+            alpha_gamma = 0._WP
+            alpha_pi = 1._WP
+    case ('PI')
+            alpha_gamma = 1._WP
+            alpha_pi = 0._WP
+    case ('NONE')
+            alpha_gamma = 1._WP
+            alpha_pi = 1._WP
+    case default
+            $ABORT(Invalid isolation condition)
+    end select
+
     ! Add points in the inner region
 
     ! First, determine the range (in x and cell number) of inner turning
@@ -199,7 +216,8 @@ contains
          !$OMP PARALLEL DO PRIVATE (k_turn, x_turn) REDUCTION (MIN:k_turn_min,x_turn_min) REDUCTION (MAX:k_turn_max,x_turn_max)
          omega_loop : do j = 1, SIZE(omega)
 
-            call find_turn(cx, gr, r_state_t(omega(j)), k_turn, x_turn)
+            call find_turn(cx, gr, r_state_t(omega(j)), k_turn, x_turn)!, alpha_gamma, alpha_pi)
+            ! for some reason this is giving a root bracketing assertion error
 
             k_turn_min = MIN(k_turn_min, k_turn)
             k_turn_max = MAX(k_turn_max, k_turn)
@@ -447,6 +465,23 @@ contains
     real(WP)        :: dx_real
     real(WP)        :: dx_imag
 
+    real(WP)        :: alpha_gamma
+    real(WP)        :: alpha_pi
+
+    select case (gr_p% isolation)
+    case ('GAMMA')
+            alpha_gamma = 0._WP
+            alpha_pi = 1._WP
+    case ('PI')
+            alpha_gamma = 1._WP
+            alpha_pi = 0._WP
+    case ('NONE')
+            alpha_gamma = 1._WP
+            alpha_pi = 1._WP
+    case default
+            $ABORT(Invalid isolation condition)
+    end select
+
     ! Evaluate the target grid spacing dx at point pt from a local
     ! wave dispersion analysis. If k_r is the local radial wavenumber,
     ! then dx = 2pi MIN( 1./(alpha_osc*REAL(k_r)),  1./(alpha_exp*IMAG(k_r)) ].
@@ -463,8 +498,8 @@ contains
        
        associate (ml => cx%model())
 
-         V = ml%coeff(I_V_2, pt)*pt%x**2
-         As = ml%coeff(I_AS, pt)
+         V = ml%coeff(I_V_2, pt)*pt%x**2 * alpha_gamma
+         As = ml%coeff(I_AS, pt) * alpha_pi
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
          Gamma_1 = ml%coeff(I_GAMMA_1, pt)

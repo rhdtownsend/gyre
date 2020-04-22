@@ -58,11 +58,13 @@ module gyre_grid_util
 
 contains
 
-  subroutine find_turn (cx, gr, st, k_turn, x_turn)
+  subroutine find_turn (cx, gr, st, k_turn, x_turn, alpha_gamma, alpha_pi)
 
     type(context_t), target, intent(in)  :: cx
     type(grid_t), intent(in)             :: gr
     class(r_state_t), target, intent(in) :: st
+    real(WP), intent(in), optional       :: alpha_gamma, alpha_pi
+
     integer, intent(out)                 :: k_turn
     real(WP), intent(out)                :: x_turn
 
@@ -83,7 +85,7 @@ contains
     k_turn = gr%n_k
     x_turn = HUGE(0._WP)
 
-    gamma_b = gamma_(cx, cx%point_i(), st)
+    gamma_b = gamma_(cx, cx%point_i(), st, alpha_gamma, alpha_pi)
 
     if (gamma_b <= 0._WP) then
 
@@ -101,7 +103,7 @@ contains
           ! Check for a sign change in gamma
 
           gamma_a = gamma_b
-          gamma_b = gamma_(cx, gr%pt(k+1), st)
+          gamma_b = gamma_(cx, gr%pt(k+1), st, alpha_gamma, alpha_pi)
 
           if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
 
@@ -152,11 +154,12 @@ contains
 
   !****
 
-  function gamma_ (cx, pt, st) result (gamma)
+  function gamma_ (cx, pt, st, a_g, a_p) result (gamma)
 
     type(context_t), intent(in)  :: cx
     type(point_t), intent(in)    :: pt
     class(r_state_t), intent(in) :: st
+    real(WP), intent(in),optional:: a_g, a_p
     real(WP)                     :: gamma
 
     real(WP) :: V
@@ -171,6 +174,19 @@ contains
     real(WP) :: g_2
     real(WP) :: g_0
 
+    real(WP) :: alpha_gamma, alpha_pi
+
+    if (present(a_g)) then
+            alpha_gamma = a_g
+    else
+            alpha_gamma = 1._WP
+    end if
+    if (present(a_p)) then
+            alpha_pi = a_p
+    else
+            alpha_pi = 1._WP
+    end if
+
     ! Calculate the propagation discriminant gamma (< 0 : propagation,
     ! > 0 : evanescence)
 
@@ -182,8 +198,8 @@ contains
 
       else
 
-         V = ml%coeff(I_V_2, pt)*pt%x**2
-         As = ml%coeff(I_As, pt)
+         V = ml%coeff(I_V_2, pt)*pt%x**2 * alpha_gamma
+         As = ml%coeff(I_As, pt) * alpha_pi
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
          Gamma_1 = ml%coeff(I_GAMMA_1, pt)
