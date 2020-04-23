@@ -44,6 +44,8 @@ module gyre_grid_util
      type(context_t), pointer  :: cx
      class(r_state_t), pointer :: st
      integer                   :: s
+     real (WP)                 :: a_g
+     real (WP)                 :: a_p
    contains
      procedure :: eval_c_
   end type gamma_func_t
@@ -58,22 +60,34 @@ module gyre_grid_util
 
 contains
 
-  subroutine find_turn (cx, gr, st, k_turn, x_turn, alpha_gamma, alpha_pi)
+  subroutine find_turn (cx, gr, st, k_turn, x_turn, a_g, a_p)
 
     type(context_t), target, intent(in)  :: cx
     type(grid_t), intent(in)             :: gr
     class(r_state_t), target, intent(in) :: st
-    real(WP), intent(in), optional       :: alpha_gamma, alpha_pi
+    real(WP), intent(in), optional       :: a_g, a_p
 
     integer, intent(out)                 :: k_turn
     real(WP), intent(out)                :: x_turn
 
     real(WP)           :: gamma_a
     real(WP)           :: gamma_b
+    real(WP)           :: alpha_gamma, alpha_pi
     integer            :: k
     type(gamma_func_t) :: gf
     type(point_t)      :: pt_a
     type(point_t)      :: pt_b
+
+    if (present(a_g)) then
+            alpha_gamma = a_g
+    else
+            alpha_gamma = 1._WP
+    endif
+    if (present(a_p)) then
+            alpha_pi = a_p
+    else
+            alpha_pi = 1._WP
+    endif
 
     $ASSERT_DEBUG(cx%point_i() == gr%pt_i(),Context and grid are not conformable)
     $ASSERT_DEBUG(cx%point_o() == gr%pt_o(),Context and grid are not conformable)
@@ -127,7 +141,9 @@ contains
                    gf%cx => cx
                    gf%s = pt_a%s
                    gf%st => st
-                   
+                   gf%a_g = alpha_gamma
+                   gf%a_p = alpha_pi
+
                    x_turn = gf%root(pt_a%x, pt_b%x, 0._WP)
 
                 endif
@@ -244,7 +260,7 @@ contains
 
     pt = point_t(this%s, REAL(z))
 
-    gamma = gamma_(this%cx, pt, this%st)
+    gamma = gamma_(this%cx, pt, this%st, this%a_g, this%a_p)
 
     ! Finish
 
