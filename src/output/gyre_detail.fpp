@@ -120,6 +120,10 @@ contains
     class is (mode_t)
        detail_file = subst_(detail_file, '%N', wv%n_pg, '(SP,I6.5)')
        detail_file = subst_(detail_file, '%n', wv%n_pg, '(SP,I0)')
+       detail_file = subst_(detail_file, '%P', wv%n_p, '(SP,I6.5)')
+       detail_file = subst_(detail_file, '%p', wv%n_p, '(SP,I0)')
+       detail_file = subst_(detail_file, '%G', wv%n_g, '(SP,I6.5)')
+       detail_file = subst_(detail_file, '%g', wv%n_g, '(SP,I0)')
     end select
 
     ! Open the file
