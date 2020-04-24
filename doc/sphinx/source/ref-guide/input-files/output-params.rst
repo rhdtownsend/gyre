@@ -30,17 +30,21 @@ should contain exactly one of each. Allowable parameters are:
   substitutions:
 
   - :nml_v:`'%J'` : Unique mode index :math:`j`, formatted in fixed-width field
-  - :nml_v:`%j` : Same as ``%J``, but formatted in variable-width field
-  - :nml_v:`%L` : Harmonic degree :math:`\ell`, formatted in fixed-width field
-  - :nml_v:`%l` : Same as ``%L``, but formatted in variable-width field
-  - :nml_v:`%N` : Radial order :math:`n_{\rm pg}`, formatted in fixed-width field
-  - :nml_v:`%n` : Same as ``%N``, but formatted in variable-width field
+  - :nml_v:`'%j'` : Same as :nml_v:`'%J'`, but formatted in variable-width field
+  - :nml_v:`'%L'` : Harmonic degree :math:`\ell`, formatted in fixed-width field
+  - :nml_v:`'%l'` : Same as :nml_v:`'%L'`, but formatted in variable-width field
+  - :nml_v:`'%N'` : Radial order :math:`n_{\rm pg}`, formatted in fixed-width field
+  - :nml_v:`'%n'` : Same as :nml_v:`'%N'`, but formatted in variable-width field
+  - :nml_v:`'%P'` : Acoustic wave winding number :math:`n_{\rm p}`, formatted in fixed-width field
+  - :nml_v:`'%p'` : Same as :nml_v:`'%P'`, but formatted in variable-width field
+  - :nml_v:`'%G'` : Gravity wave winding number :math:`n_{\rm g}`, formatted in fixed-width field
+  - :nml_v:`'%g'` : Same as :nml_v:`'%G'`, but formatted in variable-width field
 
 :nml_n:`detail_file_format` (default :nml_v:`'HDF'`)
   Format of detail files; one of
 
   - :nml_n:`'HDF'` : HDF5 file
-  -  :nml_v:`'TXT'` : text file
+  - :nml_v:`'TXT'` : text file
 
 :nml_n:`detail_item_list` (default :nml_v:`'l,n_pg,omega,freq,x,xi_r,xi_h'`)
   Comma-separated list of output items to write to detail files; see the

@@ -6,7 +6,7 @@ File Formats
 The format of sumamry and mode files depends on the value of the
 :nml_n:`summary_file_format` and :nml_n:`mode_file_format` parameters
 in the :nml_g:`ad_output` and :nml_g:`nad_output` namelist groups (see
-the `_output-params`__ page). Possible choices are:
+the :ref:`output-params` section). Possible choices are:
 
 * :nml_v:`'HDF'` : A binary format based on the `HDF5
   <https://support.hdfgroup.org/HDF5/whatishdf5.html>`__ format
