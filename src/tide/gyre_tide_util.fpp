@@ -36,7 +36,7 @@ module gyre_tide_util
 
   ! Parameters
 
-  real(WP), parameter :: TOL = 1E-12_WP
+  real(WP), parameter :: TOL = 1E-15_WP
 
   ! Access specifiers
 
@@ -409,6 +409,7 @@ contains
     integer, parameter :: N_MAX = 2**20
 
     integer  :: N
+    real(WP) :: I_scale
     real(WP) :: e_fac
     real(WP) :: S
     integer  :: j
@@ -416,20 +417,23 @@ contains
     real(WP) :: Ea
     real(WP) :: Ma
     real(WP) :: dI
-    real(WP) :: dI_max
+    real(WP) :: dI_conv
 
     ! Perform "orbital quadrature" on the function f(ua, Ma, e, l, m,
     ! k). This involves calculating the integral I = int(f(ua),
     ! ua->0,2pi), where ua is the true anomaly.  Along with ua, the
     ! corresponding mean anomaly Ma(ua) is passed into f
+    !
+    ! This implementation assumes that f(ua) is an even function, allowing
+    ! the quadrature to be performed on (0,pi)
 
     ! Set up initial values
 
-    N = 2
+    N = 1
 
-    I = PI*(f(0._WP, 0._WP, e) + f(PI, PI, e))
+    I = PI*(f(0._WP, 0._WP, e) + f(PI, PI, e))/2
 
-    dI_max = I
+    I_scale = abs(I)
 
     ! Refine the quadrature by repeatedly doubling N
 
@@ -441,41 +445,48 @@ contains
 
        S = 0._WP
 
+       !$OMP PARALLEL DO PRIVATE(ua,Ea,Ma) REDUCTION(+:S) SCHEDULE(static, 4)
        update_loop : do j = 1, N
 
-          ! Evaluate the true anomaly
+          ! Add contributions to the sum
 
-          ua = TWOPI*(j-0.5_WP)/N
-
-          ! Evaluate the eccentric anomaly
-
+          ua = PI*(2*j-1.5_WP)/(2*N)
           Ea = atan2(e_fac*sin(ua), e + cos(ua))
-
-          ! Evaluate the mean anomaly
-
-          Ma = Ea - e*sin(Ea)
-
-          ! Add the contribution
-
+          Ma = Ea - e*sin(Ea)  
           S = S + f(ua, Ma, e)
-
+        
+          ua = PI*(2*j-1.0_WP)/(2*N)
+          Ea = atan2(e_fac*sin(ua), e + cos(ua))
+          Ma = Ea - e*sin(Ea)  
+          S = S + f(ua, Ma, e)
+        
+          ua = PI*(2*j-0.5_WP)/(2*N)
+          Ea = atan2(e_fac*sin(ua), e + cos(ua))
+          Ma = Ea - e*sin(Ea)  
+          S = S + f(ua, Ma, e)
+        
        end do update_loop
 
-       dI = PI*S/N - 0.5_WP*I
+       dI = PI*S/(4*N) - 0.75_WP*I
        I = I + dI
 
-       N = 2*N
+       N = 4*N
 
-       ! Check for convergence; the current correction is smaller than
-       ! tol times the largest
+       ! Check for convergence
 
        $ASSERT(N <= N_MAX,Too many iterations)
 
-       dI_max = MAX(dI_max, abs(dI))
+       I_scale = MAX(I_scale, abs(dI))
 
-       if (abs(dI) < tol*dI_max) exit refine_loop
+       dI_conv = MAX(tol, 2._WP*EPSILON(0._WP))*I_scale
+
+       if (abs(dI) < dI_conv) exit refine_loop
 
     end do refine_loop
+
+    ! Double I (since we only integrate from 0 to pi)
+
+    I = 2*I
 
     ! Finish
 
