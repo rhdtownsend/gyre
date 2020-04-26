@@ -294,10 +294,6 @@ contains
        J_dot(i) = j_dot(i) + 4._WP*Omega_orb*q**2/SQRT(R_a*(1+q))*(R_a)**(l+3)* &
             kappa*abs(F)*sin(gamma)*secular_G_4(R_a, e, l, m, k)
 
-       ! Accumulate the torque
-
-       !J_dot(i) = J_dot(i) + wv%tau_ss()
-
     endif
 
     ! Finish
