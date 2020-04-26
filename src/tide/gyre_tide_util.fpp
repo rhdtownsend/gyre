@@ -442,16 +442,13 @@ contains
 
     e_fac = sqrt((1._WP - e)*(1._WP + e))
 
-    !$OMP PARALLEL FIRSTPRIVATE(N,I) PRIVATE(dI)
     refine_loop : do
 
        ! Update the value of the quadrature
 
-       !$OMP SINGlE
        S = 0._WP
-       !$OMP END SINGLE
 
-       !$OMP DO REDUCTION(+:S) PRIVATE(ua,Ea,Ma)
+       !$OMP PARALLEL DO REDUCTION(+:S) PRIVATE(ua,Ea,Ma) SCHEDULE(static, 4)
        update_loop : do j = 1, N
 
           ! Add contributions to the sum
@@ -472,7 +469,6 @@ contains
           S = S + f(ua, Ma, e)
         
        end do update_loop
-       !$OMP END DO
 
        dI = PI*S/(4*N) - 0.75_WP*I
        I = I + dI
@@ -487,13 +483,7 @@ contains
 
        if (abs(dI) < dI_conv) exit refine_loop
 
-       ! Place barrier to ensure the next loop iteration doesn't begin
-       ! until all threads are ready
-
-       !$OMP BARRIER
-
     end do refine_loop
-    !$OMP END PARALLEL
 
     ! Double I (since we only integrate from 0 to pi)
 
