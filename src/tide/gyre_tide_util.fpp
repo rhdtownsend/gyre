@@ -36,7 +36,7 @@ module gyre_tide_util
 
   ! Parameters
 
-  real(WP), parameter :: TOL = 1E-15_WP
+  real(WP), parameter :: TOL = 1E-12_WP
 
   ! Access specifiers
 
@@ -226,6 +226,7 @@ contains
     real(WP)             :: X
 
     real(WP) :: A
+    real(WP) :: S
 
     $ASSERT(e >= 0,Invalid e)
     $ASSERT(e < 1,Invalid e)
@@ -235,8 +236,9 @@ contains
     if (e**2 > EPSILON(0._WP)) then
 
        A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
+       S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
 
-       X = orbit_quad(hansen_X_f_, e, TOL)
+       X = A*S*orbit_quad(hansen_X_f_, e, TOL)
 
     else
 
@@ -263,7 +265,7 @@ contains
 
       ! Set up the integrand
 
-      f = A*cos(m*ua - k*Ma)/(1._WP + e*cos(ua))**(n+2)
+      f = cos(m*ua - k*Ma)/(S*(1._WP + e*cos(ua))**(n+2))
 
       ! Finish
 
@@ -284,6 +286,7 @@ contains
     real(WP)             :: X_tilde
 
     real(WP) :: A
+    real(WP) :: S
 
     $ASSERT(e >= 0,Invalid e)
     $ASSERT(e < 1,Invalid e)
@@ -293,8 +296,9 @@ contains
     if (e**2 > EPSILON(0._WP)) then
 
        A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
+       S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
 
-       X_tilde = orbit_quad(hansen_X_tilde_f_, e, TOL)
+       X_tilde = A*S*orbit_quad(hansen_X_tilde_f_, e, TOL)
 
     else
 
@@ -321,7 +325,7 @@ contains
 
       ! Set up the integrand
 
-      f = A*sin(m*ua - k*Ma)*sin(ua)/(1._WP + e*cos(ua))**(n+2)
+      f = sin(m*ua - k*Ma)*sin(ua)/(S*(1._WP + e*cos(ua))**(n+2))
 
       ! Finish
 
@@ -342,6 +346,7 @@ contains
     real(WP)             :: X_hat
 
     real(WP) :: A
+    real(WP) :: S
 
     $ASSERT(e >= 0,Invalid e)
     $ASSERT(e < 1,Invalid e)
@@ -351,8 +356,9 @@ contains
     if (e**2 > EPSILON(0._WP)) then
 
        A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
+       S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
 
-       X_hat = orbit_quad(hansen_X_hat_f_, e, TOL)
+       X_hat = A*S*orbit_quad(hansen_X_hat_f_, e, TOL)
 
     else
 
@@ -379,7 +385,7 @@ contains
 
       ! Set up the integrand
 
-      f = A*cos(m*ua - k*Ma)*cos(ua)/(1._WP + e*cos(ua))**(n+2)
+      f = cos(m*ua - k*Ma)*cos(ua)/(S*(1._WP + e*cos(ua))**(n+2))
 
       ! Finish
 
@@ -406,10 +412,9 @@ contains
     real(WP), intent(in) :: tol
     real(WP)             :: I
 
-    integer, parameter :: N_MAX = 2**20
+    integer, parameter :: N_MAX = 2**24
 
     integer  :: N
-    real(WP) :: I_scale
     real(WP) :: e_fac
     real(WP) :: S
     integer  :: j
@@ -424,8 +429,8 @@ contains
     ! ua->0,2pi), where ua is the true anomaly.  Along with ua, the
     ! corresponding mean anomaly Ma(ua) is passed into f
     !
-    ! This implementation assumes that f(ua) is an even function, allowing
-    ! the quadrature to be performed on (0,pi)
+    ! This implementation assumes that f(ua) is an even function,
+    ! scaled to order-unity
 
     ! Set up initial values
 
@@ -433,19 +438,20 @@ contains
 
     I = PI*(f(0._WP, 0._WP, e) + f(PI, PI, e))/2
 
-    I_scale = abs(I)
-
     ! Refine the quadrature by repeatedly doubling N
 
     e_fac = sqrt((1._WP - e)*(1._WP + e))
 
+    !$OMP PARALLEL FIRSTPRIVATE(N,I) PRIVATE(dI)
     refine_loop : do
 
        ! Update the value of the quadrature
 
+       !$OMP SINGlE
        S = 0._WP
+       !$OMP END SINGLE
 
-       !$OMP PARALLEL DO PRIVATE(ua,Ea,Ma) REDUCTION(+:S) SCHEDULE(static, 4)
+       !$OMP DO REDUCTION(+:S) PRIVATE(ua,Ea,Ma)
        update_loop : do j = 1, N
 
           ! Add contributions to the sum
@@ -466,6 +472,7 @@ contains
           S = S + f(ua, Ma, e)
         
        end do update_loop
+       !$OMP END DO
 
        dI = PI*S/(4*N) - 0.75_WP*I
        I = I + dI
@@ -476,13 +483,17 @@ contains
 
        $ASSERT(N <= N_MAX,Too many iterations)
 
-       I_scale = MAX(I_scale, abs(dI))
-
-       dI_conv = MAX(tol, 2._WP*EPSILON(0._WP))*I_scale
+       dI_conv = MAX(tol, 2._WP*EPSILON(0._WP))
 
        if (abs(dI) < dI_conv) exit refine_loop
 
+       ! Place barrier to ensure the next loop iteration doesn't begin
+       ! until all threads are ready
+
+       !$OMP BARRIER
+
     end do refine_loop
+    !$OMP END PARALLEL
 
     ! Double I (since we only integrate from 0 to pi)
 
