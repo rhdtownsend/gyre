@@ -122,7 +122,7 @@ contains
 
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 120) 'File version', ivers
-120    format(3X,A,1X,F4.2,1X,A)
+120    format(3X,A,1X,I0)
     endif
 
     ! Read the data
@@ -158,7 +158,7 @@ contains
     L_star = global_data(3)
 
     r = point_data(1,:)
-    m = exp(point_data(2,:))
+    m = exp(point_data(2,:))*M_star
     L_r = point_data(7,:)
 
     T = point_data(3,:)
