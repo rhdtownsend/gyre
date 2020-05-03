@@ -23,6 +23,8 @@ module gyre_tar_eigen
 
   use core_kinds
 
+  use gyre_math
+
   use f95_lapack
 
   use ISO_FORTRAN_ENV
