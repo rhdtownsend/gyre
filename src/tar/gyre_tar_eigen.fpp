@@ -660,7 +660,7 @@ contains
       ! prep)
 
       w = 1._QP/REAL(nu, QP)
-    
+
       I2 = 0.5_QP*(2*s+1)
       I4 = 0.75_QP*(2*s*(s+1) + 1)
 
@@ -693,6 +693,8 @@ contains
 
       ! Calculate the (m) Kelvin-wave Hough eigenvalue lambda, using
       ! the first-order perturbation expansion by Townsend (in prep)
+
+      w = 1._QP/REAL(nu, QP)
 
       alpha_0 = abs(m)
       alpha_1 = -0.25_QP
