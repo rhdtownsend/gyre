@@ -50,13 +50,14 @@ module gyre_scan
 
 contains
 
-  subroutine build_scan (cx, md_p, os_p, sc_p, omega)
+  subroutine build_scan (cx, md_p, os_p, sc_p, omega, axis)
 
     type(context_t), intent(in)        :: cx
     type(mode_par_t), intent(in)       :: md_p
     type(osc_par_t), intent(in)        :: os_p
     type(scan_par_t), intent(in)       :: sc_p(:)
     real(WP), allocatable, intent(out) :: omega(:)
+    character(*), intent(in), optional :: axis
 
     integer :: i
 
@@ -74,6 +75,10 @@ contains
     allocate(omega(0))
 
     sc_p_loop : do i = 1,SIZE(sc_p)
+
+       if (PRESENT(axis)) then
+          if (axis /= sc_p(i)%axis) cycle sc_p_loop
+       endif
 
        select case (sc_p(i)%scan_type)
        case ('GRID')

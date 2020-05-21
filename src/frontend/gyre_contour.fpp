@@ -51,7 +51,7 @@ program gyre_contour
   use gyre_root
   use gyre_rot_par
   use gyre_scan
-  use gyre_scan_par, only : scan_par_t
+  use gyre_scan_par
   use gyre_state
   use gyre_status
   use gyre_summary
@@ -75,8 +75,7 @@ program gyre_contour
   type(rot_par_t), allocatable     :: rt_p(:)
   type(num_par_t), allocatable     :: nm_p(:)
   type(grid_par_t), allocatable    :: gr_p(:)
-  type(scan_par_t), allocatable    :: sc_p_re(:)
-  type(scan_par_t), allocatable    :: sc_p_im(:)
+  type(scan_par_t), allocatable    :: sc_p(:)
   type(out_par_t)                  :: ot_p
   character(FILENAME_LEN)          :: map_filename
   character(FILENAME_LEN)          :: re_seg_filename
@@ -86,8 +85,7 @@ program gyre_contour
   type(rot_par_t)                  :: rt_p_sel
   type(num_par_t)                  :: nm_p_sel
   type(grid_par_t)                 :: gr_p_sel
-  type(scan_par_t), allocatable    :: sc_p_re_sel(:)
-  type(scan_par_t), allocatable    :: sc_p_im_sel(:)
+  type(scan_par_t), allocatable    :: sc_p_sel(:)
   type(context_t), pointer         :: cx => null()
   type(summary_t)                  :: sm
   type(detail_t)                   :: dt
@@ -156,8 +154,7 @@ program gyre_contour
   call read_rot_par(unit, rt_p)
   call read_num_par(unit, nm_p)
   call read_grid_par(unit, gr_p)
-  call read_scan_par(unit, 're', sc_p_re)
-  call read_scan_par(unit, 'im', sc_p_im)
+  call read_scan_par(unit, sc_p)
   call read_out_par(unit, 'nad', ot_p)
   call read_map_par(unit, map_filename, re_seg_filename, im_seg_filename)
 
@@ -173,8 +170,7 @@ program gyre_contour
   call select_par(rt_p, md_p(1)%tag, rt_p_sel)
   call select_par(nm_p, md_p(1)%tag, nm_p_sel)
   call select_par(gr_p, md_p(1)%tag, gr_p_sel)
-  call select_par(sc_p_re, md_p(1)%tag, sc_p_re_sel)
-  call select_par(sc_p_im, md_p(1)%tag, sc_p_im_sel)
+  call select_par(sc_p, md_p(1)%tag, sc_p_sel)
   
   ! Create the context
 
@@ -187,8 +183,8 @@ program gyre_contour
 
   ! Set up the frequency arrays
 
-  call build_scan(cx, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
-  call build_scan(cx, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
+  call build_scan(cx, md_p(1), os_p_sel, sc_p_sel, omega_re, 'REAL')
+  call build_scan(cx, md_p(1), os_p_sel, sc_p_sel, omega_im, 'IMAG')
 
   ! Create the grid
 
@@ -276,102 +272,6 @@ program gyre_contour
   call final_parallel()
 
 contains
-
-  subroutine read_scan_par (unit, axis, sc_p)
-
-    integer, intent(in)                        :: unit
-    character(*), intent(in)                   :: axis
-    type(scan_par_t), allocatable, intent(out) :: sc_p(:)
-
-    integer                             :: n_sc_p
-    integer                             :: i
-    real(WP)                            :: freq_min
-    real(WP)                            :: freq_max
-    integer                             :: n_freq
-    character(LEN(sc_p%freq_min_units)) :: freq_min_units
-    character(LEN(sc_p%freq_max_units)) :: freq_max_units
-    character(LEN(sc_p%freq_frame))     :: freq_frame
-    character(LEN(sc_p%grid_type))      :: grid_type
-    character(LEN(sc_p%grid_frame))     :: grid_frame
-    character(LEN(sc_p%tag_list))       :: tag_list
-
-    namelist /re_scan/ freq_min, freq_max, n_freq, freq_min_units, freq_max_units, &
-         freq_frame, grid_type, grid_frame, tag_list
-
-    namelist /im_scan/ freq_min, freq_max, n_freq, freq_min_units, freq_max_units, &
-         freq_frame, grid_type, grid_frame, tag_list
-
-    ! Count the number of scan namelists
-
-    rewind(unit)
-
-    n_sc_p = 0
-
-    count_loop : do
-       select case (axis)
-       case ('re')
-          read(unit, NML=re_scan, END=100)
-       case ('im')
-          read(unit, NML=im_scan, END=100)
-       case default
-          $ABORT(Invalid axis)
-       end select
-       n_sc_p = n_sc_p + 1
-    end do count_loop
-
-100 continue
-
-    ! Read scan parameters
-
-    rewind(unit)
-
-    allocate(sc_p(n_sc_p))
-
-    read_loop : do i = 1, n_sc_p
-
-       freq_min = 1._WP
-       freq_max = 10._WP
-       n_freq = 10
-          
-       freq_max_units = 'NONE'
-       freq_min_units = 'NONE'
-       freq_frame = 'INERTIAL'
-
-       grid_type = 'LINEAR'
-       grid_frame = 'INERTIAL'
-
-       tag_list = ''
-
-       select case (axis)
-       case ('re')
-          read(unit, NML=re_scan)
-       case ('im')
-          read(unit, NML=im_scan)
-       case default
-          $ABORT(Invalid axis)
-       end select
-
-       ! Initialize the scan_par
-
-       sc_p(i) = scan_par_t(freq_min=freq_min, &
-                            freq_max=freq_max, &
-                            n_freq=n_freq, &
-                            freq_min_units=freq_min_units, &
-                            freq_max_units=freq_max_units, &
-                            freq_frame=freq_frame, &
-                            grid_type=grid_type, &
-                            grid_frame=grid_frame, &
-                            tag_list=tag_list)
-
-    end do read_loop
-
-    ! Finish
-
-    return
-
-  end subroutine read_scan_par
-
-  !****
 
   subroutine read_map_par (unit, map_filename, re_seg_filename, im_seg_filename)
 

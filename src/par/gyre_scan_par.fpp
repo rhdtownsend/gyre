@@ -42,6 +42,7 @@ module gyre_scan_par
      character(64)           :: scan_type = 'GRID'
      character(64)           :: grid_type = 'LINEAR'
      character(64)           :: grid_frame = 'INERTIAL'
+     character(64)           :: axis = ''
      character(FILENAME_LEN) :: file = ''
      character(2048)         :: tag_list = ''
   end type scan_par_t
@@ -74,11 +75,12 @@ contains
     character(LEN(sc_p%scan_type))      :: scan_type
     character(LEN(sc_p%grid_type))      :: grid_type
     character(LEN(sc_p%grid_frame))     :: grid_frame
+    character(LEN(sc_p%axis))           :: axis
     character(FILENAME_LEN)             :: file
     character(LEN(sc_p%tag_list))       :: tag_list
 
     namelist /scan/ freq_min, freq_max, n_freq, freq_units, freq_min_units, freq_max_units, &
-         freq_frame, scan_type, grid_type, grid_frame, file, tag_list
+         freq_frame, scan_type, grid_type, grid_frame, axis, file, tag_list
 
     ! Count the number of scan namelists
 
@@ -115,6 +117,7 @@ contains
        scan_type = sc_p(i)%scan_type
        grid_type = sc_p(i)%grid_type
        grid_frame = sc_p(i)%grid_frame
+       axis = sc_p(i)%axis
        file = sc_p(i)%file
        tag_list = sc_p(i)%tag_list
 
@@ -137,6 +140,7 @@ contains
        sc_p(i)%scan_type = scan_type
        sc_p(i)%grid_type = grid_type
        sc_p(i)%grid_frame = grid_frame
+       sc_p(i)%axis = axis
        sc_p(i)%file = file
        sc_p(i)%tag_list = tag_list
 
