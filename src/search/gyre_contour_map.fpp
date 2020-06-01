@@ -267,7 +267,7 @@ contains
       case (10)
 
          call add_segment_(4, 1, cp, n_cp, z_a_1, z_b_1, part)
-         call add_segment_(2, 3, cp, n_cp, z_a_2, z_b_1, part)
+         call add_segment_(2, 3, cp, n_cp, z_a_2, z_b_2, part)
 
          z_a = [z_a_1,z_a_2]
          z_b = [z_b_1,z_b_2]
@@ -669,19 +669,10 @@ contains
           M(1,2) = REAL(z_a_im(i_im)) - REAL(z_b_im(i_im))
           
           M(2,1) = AIMAG(z_b_re(i_re)) - AIMAG(z_a_re(i_re))
-          M(2,2) = AIMAG(z_a_im(i_re)) - AIMAG(z_b_im(i_im))
+          M(2,2) = AIMAG(z_a_im(i_im)) - AIMAG(z_b_im(i_im))
 
           R(1) = -REAL(z_a_re(i_re)) + REAL(z_a_im(i_im))
           R(2) = -AIMAG(z_a_re(i_re)) + AIMAG(z_a_im(i_im))
-
-          ! M(1,1) = cs_re(j_re)%x(2) - cs_re(j_re)%x(1)
-          ! M(1,2) = cs_im(j_im)%x(1) - cs_im(j_im)%x(2)
-                
-          ! M(2,1) = cs_re(j_re)%y(2) - cs_re(j_re)%y(1)
-          ! M(2,2) = cs_im(j_im)%y(1) - cs_im(j_im)%y(2)
-
-          ! R(1) = -cs_re(j_re)%x(1) + cs_im(j_im)%x(1)
-          ! R(2) = -cs_re(j_re)%y(1) + cs_im(j_im)%y(1)
 
           D = M(1,1)*M(2,2) - M(1,2)*M(2,1)
 
