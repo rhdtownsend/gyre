@@ -16,6 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_memory.inc'
 $include 'core_parallel.inc'
 
 module gyre_c_ext
@@ -136,6 +137,10 @@ module gyre_c_ext
      module procedure scale_
   end interface scale
 
+  interface reallocate
+     module procedure reallocate_1_
+  end interface reallocate
+
   $if ($MPI)
 
   interface send
@@ -215,6 +220,7 @@ module gyre_c_ext
   public :: fraction
   public :: exponent
   public :: scale
+  public :: reallocate
   $if ($MPI)
   public :: send
   public :: recv
@@ -988,6 +994,10 @@ contains
     return
 
   end subroutine split_
+
+  !****
+
+  $REALLOCATE(type(c_ext_t),1)
 
   !****
 

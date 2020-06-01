@@ -31,7 +31,7 @@ program gyre_contour
   use gyre_constants
   use gyre_context
   use gyre_contour_map
-  use gyre_contour_seg
+  use gyre_contour_path
   use gyre_detail
   use gyre_discrim_func
   use gyre_ext
@@ -67,45 +67,38 @@ program gyre_contour
 
   ! Variables
 
-  character(:), allocatable        :: filename
-  integer                          :: unit
-  type(model_par_t)                :: ml_p
-  type(mode_par_t), allocatable    :: md_p(:)
-  type(osc_par_t), allocatable     :: os_p(:)
-  type(rot_par_t), allocatable     :: rt_p(:)
-  type(num_par_t), allocatable     :: nm_p(:)
-  type(grid_par_t), allocatable    :: gr_p(:)
-  type(scan_par_t), allocatable    :: sc_p(:)
-  type(out_par_t)                  :: ot_p
-  character(FILENAME_LEN)          :: map_filename
-  character(FILENAME_LEN)          :: re_seg_filename
-  character(FILENAME_LEN)          :: im_seg_filename
-  class(model_t), pointer          :: ml => null()
-  type(osc_par_t)                  :: os_p_sel
-  type(rot_par_t)                  :: rt_p_sel
-  type(num_par_t)                  :: nm_p_sel
-  type(grid_par_t)                 :: gr_p_sel
-  type(scan_par_t), allocatable    :: sc_p_sel(:)
-  type(context_t), pointer         :: cx => null()
-  type(summary_t)                  :: sm
-  type(detail_t)                   :: dt
-  real(WP), allocatable            :: omega_re(:)
-  real(WP), allocatable            :: omega_im(:)
-  real(WP)                         :: omega_min
-  real(WP)                         :: omega_max
-  type(grid_t)                     :: gr
-  type(nad_bvp_t), target          :: bp
-  type(c_discrim_func_t)           :: df
-  type(c_state_t)                  :: st
-  type(c_ext_t), allocatable       :: discrim_map(:,:)
-  type(contour_map_t)              :: cm_re
-  type(contour_map_t)              :: cm_im
-  type(contour_seg_t), allocatable :: is_re(:)
-  type(contour_seg_t), allocatable :: is_im(:)
-  type(hgroup_t)                   :: hg
-  integer                          :: n_md_nad
-  integer                          :: d_md_nad
-  type(mode_t), allocatable        :: md_nad(:)
+  character(:), allocatable         :: filename
+  integer                           :: unit
+  type(model_par_t)                 :: ml_p
+  type(mode_par_t), allocatable     :: md_p(:)
+  type(osc_par_t), allocatable      :: os_p(:)
+  type(rot_par_t), allocatable      :: rt_p(:)
+  type(num_par_t), allocatable      :: nm_p(:)
+  type(grid_par_t), allocatable     :: gr_p(:)
+  type(scan_par_t), allocatable     :: sc_p(:)
+  type(out_par_t)                   :: ot_p
+  character(FILENAME_LEN)           :: map_file
+  logical                           :: include_paths
+  class(model_t), pointer           :: ml => null()
+  type(osc_par_t)                   :: os_p_sel
+  type(rot_par_t)                   :: rt_p_sel
+  type(num_par_t)                   :: nm_p_sel
+  type(grid_par_t)                  :: gr_p_sel
+  type(scan_par_t), allocatable     :: sc_p_sel(:)
+  type(context_t), pointer          :: cx => null()
+  type(summary_t)                   :: sm
+  type(detail_t)                    :: dt
+  real(WP), allocatable             :: omega_re(:)
+  real(WP), allocatable             :: omega_im(:)
+  real(WP)                          :: omega_min
+  real(WP)                          :: omega_max
+  type(grid_t)                      :: gr
+  type(nad_bvp_t), target           :: bp
+  type(c_state_t)                   :: st
+  type(c_discrim_func_t)            :: df
+  type(contour_map_t)               :: cm
+  type(contour_path_t), allocatable :: cp_re(:)
+  type(contour_path_t), allocatable :: cp_im(:)
 
   ! Read command-line arguments
 
@@ -156,7 +149,7 @@ program gyre_contour
   call read_grid_par(unit, gr_p)
   call read_scan_par(unit, sc_p)
   call read_out_par(unit, 'nad', ot_p)
-  call read_map_par(unit, map_filename, re_seg_filename, im_seg_filename)
+  call read_map_par(unit, map_file, include_paths)
 
   $ASSERT(SIZE(md_p) == 1,Must be exactly one mode parameter)
 
@@ -209,57 +202,25 @@ program gyre_contour
   st = c_state_t(omega=0._WP, omega_r=0._WP)
   df = c_discrim_func_t(bp, st, omega_min, omega_max)
 
-  ! Evaluate the discriminant map
+  ! Evaluate the contour map
 
-  call eval_map(bp, omega_re, omega_im, discrim_map)
+  call eval_map(omega_re, omega_im, cm)
 
   ! (Next steps are root rank only)
 
   if (MPI_RANK == 0) then
 
-     ! Write out the discriminant map
+     ! Trace the paths
 
-     if (map_filename /= '') then
+     call cm%trace_paths(cp_re, cp_im, process_isect)
 
-        hg = hgroup_t(map_filename, CREATE_FILE)
+     ! Write the map
 
-        call write_dset(hg, 'omega_re', omega_re)
-        call write_dset(hg, 'omega_im', omega_im)
-
-        call write_dset(hg, 'discrim_map_f', FRACTION(discrim_map))
-        call write_dset(hg, 'discrim_map_e', EXPONENT(discrim_map))
-
-        call hg%final()
-
+     if (include_paths) then
+        call write_map(map_file, cm, cp_re, cp_im)
+     else
+        call write_map(map_file, cm)
      endif
-
-     ! Create the contour maps
-
-     cm_re = contour_map_t(r_ext_t(omega_re), r_ext_t(omega_im), real_part(discrim_map))
-     cm_im = contour_map_t(r_ext_t(omega_re), r_ext_t(omega_im), imag_part(discrim_map))
-     
-     ! Write out the segments
-
-     if (re_seg_filename /= '') then
-        call write_segs(cm_re, re_seg_filename)
-     endif
-
-     if (im_seg_filename /= '') then
-        call write_segs(cm_im, im_seg_filename)
-     endif
-
-     ! Search for contour intersections
-
-     call find_isects(cm_re, cm_im, is_re, is_im)
-
-     ! Find roots
-
-     d_md_nad = 128
-     n_md_nad = 0
-
-     allocate(md_nad(d_md_nad))
-
-     call find_roots(bp, md_p(1), nm_p_sel, os_p_sel, is_re, is_im, process_mode)
 
      ! Write the summary
 
@@ -273,14 +234,13 @@ program gyre_contour
 
 contains
 
-  subroutine read_map_par (unit, map_filename, re_seg_filename, im_seg_filename)
+  subroutine read_map_par (unit, map_file, include_paths)
 
     integer, intent(in)       :: unit
-    character(*), intent(out) :: map_filename
-    character(*), intent(out) :: re_seg_filename
-    character(*), intent(out) :: im_seg_filename
+    character(*), intent(out) :: map_file
+    logical, intent(out)      :: include_paths
 
-    namelist /map_output/ map_filename, re_seg_filename, im_seg_filename
+    namelist /map_output/ map_file, include_paths
 
     ! Read output parameters
 
@@ -296,28 +256,28 @@ contains
           
   !****
 
-  subroutine eval_map (bp, omega_re, omega_im, discrim_map)
+  subroutine eval_map (omega_re, omega_im, cm)
 
-    class(c_bvp_t), intent(inout)           :: bp
-    real(WP), intent(in)                    :: omega_re(:)
-    real(WP), intent(in)                    :: omega_im(:)
-    type(c_ext_t), allocatable, intent(out) :: discrim_map(:,:)
+    real(WP), intent(in)             :: omega_re(:)
+    real(WP), intent(in)             :: omega_im(:)
+    type(contour_map_t), intent(out) :: cm
 
-    integer                  :: n_omega_re
-    integer                  :: n_omega_im
-    integer, allocatable     :: k_part(:)
-    integer                  :: n_percent
-    integer                  :: k
-    integer                  :: i(2)
-    complex(WP)              :: omega
-    type(c_ext_t)            :: discrim
-    integer                  :: i_percent
-    integer                  :: status
-    complex(WP), allocatable :: discrim_map_f(:,:)
-    integer, allocatable     :: discrim_map_e(:,:)
+    integer                    :: n_omega_re
+    integer                    :: n_omega_im
+    integer, allocatable       :: k_part(:)
+    integer                    :: n_percent
+    integer                    :: k
+    integer                    :: i(2)
+    complex(WP)                :: omega
+    type(c_ext_t)              :: discrim
+    integer                    :: i_percent
+    integer                    :: status
+    complex(WP), allocatable   :: discrim_map_f(:,:)
+    integer, allocatable       :: discrim_map_e(:,:)
     $if ($MPI)
-    integer                  :: p
+    integer                    :: p
     $endif
+    type(c_ext_t), allocatable :: discrim_map(:,:)
 
     ! Map the discriminant
 
@@ -346,10 +306,10 @@ contains
              n_percent = i_percent
           end if
        endif
-     
+
        call df%eval(c_ext_t(omega), discrim, status)
        $ASSERT(status == STATUS_OK,Invalid status)
-       
+
        discrim_map_f(i(1),i(2)) = FRACTION(discrim)
        discrim_map_e(i(1),i(2)) = EXPONENT(discrim)
 
@@ -361,10 +321,14 @@ contains
        call bcast_seq(discrim_map_f, k_part(p), k_part(p+1)-1, p-1)
        call bcast_seq(discrim_map_e, k_part(p), k_part(p+1)-1, p-1)
     end do
-    
+
     $endif
 
     discrim_map = scale(c_ext_t(discrim_map_f), discrim_map_e)
+
+    ! Create the contour map
+
+    cm = contour_map_t(omega_re, omega_im, discrim_map)
 
     ! Finish
 
@@ -374,180 +338,175 @@ contains
 
   !****
 
-  subroutine find_isects (cm_re, cm_im, is_re, is_im)
+  subroutine process_isect (omega_a_re, omega_b_re, omega_a_im, omega_b_im)
 
-    type(contour_map_t), intent(in)               :: cm_re
-    type(contour_map_t), intent(in)               :: cm_im
-    type(contour_seg_t), allocatable, intent(out) :: is_re(:)
-    type(contour_seg_t), allocatable, intent(out) :: is_im(:)
+    complex(WP), intent(in) :: omega_a_re
+    complex(WP), intent(in) :: omega_b_re
+    complex(WP), intent(in) :: omega_a_im
+    complex(WP), intent(in) :: omega_b_im
 
-    integer                          :: i_x
-    integer                          :: i_y
-    type(contour_seg_t), allocatable :: cs_re(:)
-    type(contour_seg_t), allocatable :: cs_im(:)
-    integer                          :: j_re
-    integer                          :: j_im
-    type(r_ext_t)                    :: M(2,2)
-    type(r_ext_t)                    :: R(2)
-    type(r_ext_t)                    :: D
-    type(r_ext_t)                    :: w_im
-    type(r_ext_t)                    :: w_re
-
-    $CHECK_BOUNDS(cm_im%n_x,cm_re%n_x)
-    $CHECK_BOUNDS(cm_im%n_y,cm_re%n_y)
-
-    ! Loop through the cells of the real/imaginary contour maps,
-    ! looking for intersections between the respective contour
-    ! segments
-
-    allocate(is_re(0))
-    allocate(is_im(0))
-
-    do i_x = 1, cm_re%n_x-1
-       do i_y = 1, cm_im%n_y-1
-
-          ! Get the contour segments for the current cell
-
-          call cm_re%get_segs(i_x, i_y, cs_re)
-          call cm_im%get_segs(i_x, i_y, cs_im)
-
-          ! Look for pairwise intersections
-
-          do j_re = 1, SIZE(cs_re)
-             do j_im = 1, SIZE(cs_im)
-
-                ! Solve for the intersection between the two line segments
-
-                M(1,1) = cs_re(j_re)%x(2) - cs_re(j_re)%x(1)
-                M(1,2) = cs_im(j_im)%x(1) - cs_im(j_im)%x(2)
-                
-                M(2,1) = cs_re(j_re)%y(2) - cs_re(j_re)%y(1)
-                M(2,2) = cs_im(j_im)%y(1) - cs_im(j_im)%y(2)
-
-                R(1) = -cs_re(j_re)%x(1) + cs_im(j_im)%x(1)
-                R(2) = -cs_re(j_re)%y(1) + cs_im(j_im)%y(1)
-
-                D = M(1,1)*M(2,2) - M(1,2)*M(2,1)
-
-                if (D /= 0._WP) then
-
-                   ! Lines intersect
-
-                   w_re = (M(2,2)*R(1) - M(1,2)*R(2))/D
-                   w_im = (M(1,1)*R(2) - M(2,1)*R(1))/D
-
-                   if (w_re >= 0._WP .AND. w_re <= 1._WP .AND. &
-                       w_im >= 0._WP .AND. w_im <= 1._WP) then
-
-                      ! Lines intersect within the cell; save the
-                      ! intersecting segments
-
-                      is_re = [is_re,cs_re(j_re)]
-                      is_im = [is_im,cs_im(j_im)]
-
-                   end if
-
-                endif
-                         
-             end do
-          end do
-
-       end do
-    end do
-
-    ! Finish
-    
-    return
-
-  end subroutine find_isects
-
-  !****
-
-  subroutine find_roots (bp, md_p, nm_p, os_p, is_re, is_im, process_mode)
-
-    type(nad_bvp_t), target, intent(inout)       :: bp
-    type(mode_par_t), intent(in)                 :: md_p
-    type(num_par_t), intent(in)                  :: nm_p
-    type(osc_par_t), intent(in)                  :: os_p
-    type(contour_seg_t), allocatable, intent(in) :: is_re(:)
-    type(contour_seg_t), allocatable, intent(in) :: is_im(:)
-    interface
-       subroutine process_mode (md, n_iter, chi)
-         use core_kinds
-         use gyre_ext
-         use gyre_mode
-         type(mode_t), intent(in)  :: md
-         integer, intent(in)       :: n_iter
-         type(r_ext_t), intent(in) :: chi
-       end subroutine process_mode
-    end interface
-
-    integer       :: j
-    type(c_ext_t) :: omega_a
-    type(c_ext_t) :: omega_b
-    type(c_ext_t) :: discrim_a
-    type(c_ext_t) :: discrim_b
-    integer       :: status
+    type(c_ext_t) :: omega_re
+    type(c_ext_t) :: omega_im
+    type(c_ext_t) :: discrim_re
+    type(c_ext_t) :: discrim_im
     type(c_ext_t) :: omega_root
+    integer       :: status
     integer       :: n_iter
+    integer, save :: j = 0
     type(wave_t)  :: wv
     type(mode_t)  :: md
     type(r_ext_t) :: chi
+
+    ! Set up the initial trial frequencies from the real and imag zero
+    ! contours
+
+    omega_re = omega_init(c_ext_t(omega_a_re), c_ext_t(omega_b_re), 'im')
+    omega_im = omega_init(c_ext_t(omega_a_im), c_ext_t(omega_b_im), 're')
+
+    call df%eval(omega_re, discrim_re, status)
+    if (status /= STATUS_OK) then
+       call report_status(status, 'initial guess (re)')
+       return
+    endif
+
+    call df%eval(omega_im, discrim_im, status)
+    if (status /= STATUS_OK) then
+       call report_status(status, 'initial guess (im)')
+       return
+    endif
+
+    ! Find the discriminant root
+
+    call solve(df, nm_p_sel, omega_re, omega_im, r_ext_t(0._WP), omega_root, status, &
+               n_iter=n_iter, n_iter_max=nm_p_sel%n_iter_max, f_cx_a=discrim_re, f_cx_b=discrim_im)
+    if (status /= STATUS_OK) then
+       call report_status(status, 'solve')
+       return
+    end if
+
+    ! Construct the mode_t
+
+    j = j + 1
+
+    st = c_state_t(omega=cmplx(omega_root), omega_r=0._WP)
+
+    wv = wave_t(bp, st, j)
+    md = mode_t(wv)
+
+    ! Cache/write it
+
+    chi = abs(md%discrim)/max(abs(discrim_re), abs(discrim_im))
     
-    $CHECK_BOUNDS(SIZE(is_re),SIZE(is_im))
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+            md%omega, real(chi), n_iter
+100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
+    endif
 
-    ! Loop over pairs of intersecting segments
 
-    intseg_loop : do j = 1, SIZE(is_re)
-
-       n_iter = 0
-
-       ! Set up initial guesses
-
-       omega_a = omega_initial(is_re(j), .TRUE.)
-       omega_b = omega_initial(is_im(j), .FALSE.)
-
-       call df%eval(omega_a, discrim_a, status)
-       if (status /= STATUS_OK) then
-          call report_status(status, 'initial guess (a)')
-          cycle intseg_loop
-       endif
-
-       call df%eval(omega_b, discrim_b, status)
-       if (status /= STATUS_OK) then
-          call report_status(status, 'initial guess (b)')
-          cycle intseg_loop
-       endif
-
-       ! Find the discriminant root
-
-       call solve(df, nm_p, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
-                  n_iter=n_iter, n_iter_max=nm_p%n_iter_max, f_cx_a=discrim_a, f_cx_b=discrim_b)
-       if (status /= STATUS_OK) then
-          call report_status(status, 'solve')
-          cycle intseg_loop
-       endif
-
-       ! Construct the mode_t
-
-       st = c_state_t(omega=cmplx(omega_root), omega_r=0._WP)
-
-       wv = wave_t(bp, st, j)
-       md = mode_t(wv)
-
-       ! Process it
-
-       chi = abs(md%discrim)/max(abs(discrim_a), abs(discrim_b))
-       
-       call process_mode(md, n_iter, chi)
-
-    end do intseg_loop
+    call sm%cache(md)
+    call dt%write(md)
 
     ! Finish
 
     return
 
-  end subroutine find_roots
+  end subroutine process_isect
+
+  !***
+
+  function omega_init (omega_a, omega_b, part)
+
+    type(c_ext_t), intent(in) :: omega_a
+    type(c_ext_t), intent(in) :: omega_b
+    character(*), intent(in)  :: part
+    type(c_ext_t)             :: omega_init
+
+    type(c_ext_t) :: discrim_a
+    type(c_ext_t) :: discrim_b
+    integer       :: status
+    type(r_ext_t) :: w
+
+    call df%eval(omega_a, discrim_a, status)
+    $ASSERT(status == STATUS_OK,Invalid status)
+
+    call df%eval(omega_b, discrim_b, status)
+    $ASSERT(status == STATUS_OK,Invalid status)
+
+    ! Look for the point on the segment where the real/imaginary
+    ! part of the discriminant changes sign
+
+    select case (part)
+    case ('re')
+       w = -real_part(discrim_a)/(real_part(discrim_b) - real_part(discrim_a))
+    case ('im')
+       w = -imag_part(discrim_a)/(imag_part(discrim_b) - imag_part(discrim_a))
+    case default
+       $ABORT(Invalid part)
+    end select
+    
+    omega_init = (1._WP-w)*omega_a + w*omega_b
+
+    ! Finish
+
+    return
+
+  end function omega_init
+
+  !****
+
+  subroutine write_map (map_file, cm, cp_re, cp_im)
+
+    character(*), intent(in)                   :: map_file
+    type(contour_map_t), intent(in)            :: cm
+    type(contour_path_t), intent(in), optional :: cp_re(:)
+    type(contour_path_t), intent(in), optional :: cp_im(:)
+
+    type(hgroup_t) :: hg
+    type(hgroup_t) :: hg_cp
+    integer        :: i_cp
+
+    ! Write the contour map
+
+    if (map_file /= '') then
+
+       hg = hgroup_t(map_file, CREATE_FILE)
+
+       call write(hg, cm)
+
+       if (PRESENT(cp_re)) then
+
+          call write_attr(hg, 'n_cp_re', SIZE(cp_re))
+
+          do i_cp = 1, SIZE(cp_re)
+             hg_cp = hgroup_t(hg, elem_group_name('path-re', [i_cp]))
+             call write(hg_cp, cp_re(i_cp))
+             call hg_cp%final()
+          end do
+
+       endif
+
+       if (PRESENT(cp_im)) then
+
+          call write_attr(hg, 'n_cp_im', SIZE(cp_im))
+
+          do i_cp = 1, SIZE(cp_im)
+             hg_cp = hgroup_t(hg, elem_group_name('path-im', [i_cp]))
+             call write(hg_cp, cp_im(i_cp))
+             call hg_cp%final()
+          end do
+          
+       endif
+
+       call hg%final()
+
+    end if
+
+    ! Finish
+
+    return
+
+  end subroutine write_map
 
   !****
 
@@ -570,111 +529,5 @@ contains
     return
 
   end subroutine report_status
-
-  !****
-
-  subroutine process_mode (md, n_iter, chi)
-
-    type(mode_t), intent(in)  :: md
-    integer, intent(in)       :: n_iter
-    type(r_ext_t), intent(in) :: chi
-
-    ! Process the non-adiabatic mode
-
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
-            md%omega, real(chi), n_iter
-100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
-    endif
-
-    ! Cache/write the mode
-
-    call sm%cache(md)
-    call dt%write(md)
-
-    ! Finish
-
-    return
-
-  end subroutine process_mode
-
-  !****
-
-  function omega_initial (cs, real_seg) result (omega)
-
-    type(contour_seg_t), intent(in) :: cs
-    logical, intent(in)             :: real_seg
-    type(c_ext_t)                   :: omega
-
-    type(c_ext_t) :: omega_a
-    type(c_ext_t) :: omega_b
-    type(c_ext_t) :: discrim_a
-    type(c_ext_t) :: discrim_b
-    integer       :: status
-    type(r_ext_t) :: w
-
-    ! Evaluate the discriminant at the segment endpoints
-
-    omega_a = c_ext_t(cs%x(1), cs%y(1))
-    omega_b = c_ext_t(cs%x(2), cs%y(2))
-
-    call df%eval(omega_a, discrim_a, status)
-    $ASSERT(status == STATUS_OK,Invalid status)
-
-    call df%eval(omega_b, discrim_b, status)
-    $ASSERT(status == STATUS_OK,Invalid status)
-
-    ! Look for the point on the segment where the real/imaginary part of the discriminant changes sign
-
-    if (real_seg) then
-       w = -imag_part(discrim_a)/(imag_part(discrim_b) - imag_part(discrim_a))
-    else
-       w = -real_part(discrim_a)/(real_part(discrim_b) - real_part(discrim_a))
-    endif
-    
-    omega = c_ext_t((1._WP-w)*cs%x(1) + w*cs%x(2), (1._WP-w)*cs%y(1) + w*cs%y(2))
-
-    ! Finish
-      
-    return
-
-  end function omega_initial
-
-  !****
-
-  subroutine write_segs (cm, filename)
-
-    type(contour_map_t), intent(in) :: cm
-    character(*), intent(in)        :: filename
-
-    integer                          :: unit
-    integer                          :: i_x
-    integer                          :: i_y
-    type(contour_seg_t), allocatable :: cs(:)
-    integer                          :: j
-
-    ! Open the file
-
-    open(NEWUNIT=unit, FILE=filename, STATUS='REPLACE')
-
-    ! Loop through the map, writing out segment info
-
-    do i_x = 1, cm%n_x-1
-       do i_y = 1, cm%n_y-1
-          call cm%get_segs(i_x, i_y, cs)
-          do j = 1, SIZE(cs)
-             write(unit, 100) real(cs(j)%x), real(cs(j)%y)
-100          format(4(1X,E16.8))
-          end do
-       end do
-    end do
-
-    close(unit)
-
-    ! Finish
-    
-    return
-
-  end subroutine write_segs
 
 end program gyre_contour
