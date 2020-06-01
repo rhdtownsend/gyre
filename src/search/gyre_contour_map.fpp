@@ -230,8 +230,7 @@ contains
 
       case (5)
 
-         call add_segment_(1, 2, cp, n_cp, z_a_1, z_b_1, part)
-         call add_segment_(3, 4, cp, n_cp, z_a_2, z_b_2, part)
+         call add_dbl_segment_(1, 2, 3, 4, cp, n_cp, z_a_1, z_b_1, z_a_2, z_b_2, part)
 
          z_a = [z_a_1,z_a_2]
          z_b = [z_b_1,z_b_2]
@@ -266,8 +265,7 @@ contains
 
       case (10)
 
-         call add_segment_(4, 1, cp, n_cp, z_a_1, z_b_1, part)
-         call add_segment_(2, 3, cp, n_cp, z_a_2, z_b_2, part)
+         call add_dbl_segment_(4, 1, 2, 3, cp, n_cp, z_a_1, z_b_1, z_a_2, z_b_2, part)
 
          z_a = [z_a_1,z_a_2]
          z_b = [z_b_1,z_b_2]
@@ -423,6 +421,71 @@ contains
       return
 
     end subroutine add_segment_
+
+    !****
+
+    subroutine add_dbl_segment_ (e_a_1, e_b_1, e_a_2, e_b_2, cp, n_cp, z_a_1, z_b_1, z_a_2, z_b_2, part)
+
+      integer, intent(in)                              :: e_a_1
+      integer, intent(in)                              :: e_b_1
+      integer, intent(in)                              :: e_a_2
+      integer, intent(in)                              :: e_b_2
+      type(contour_path_t), allocatable, intent(inout) :: cp(:)
+      integer, intent(inout)                           :: n_cp
+      complex(WP), intent(out)                         :: z_a_1
+      complex(WP), intent(out)                         :: z_b_1
+      complex(WP), intent(out)                         :: z_a_2
+      complex(WP), intent(out)                         :: z_b_2
+      character(*), intent(in)                         :: part
+
+      type(contour_path_t), allocatable :: cp_alt(:)
+      integer                           :: n_cp_alt
+      complex(WP)                       :: z_a_1_alt
+      complex(WP)                       :: z_b_1_alt
+      complex(WP)                       :: z_a_2_alt
+      complex(WP)                       :: z_b_2_alt
+      real(WP)                          :: l
+      real(WP)                          :: l_alt
+
+      ! Handle the case where there are two segments and two possible
+      ! configurations
+
+      cp_alt = cp
+      n_cp_alt = n_cp
+
+      ! First do the canonical configuration
+
+      call add_segment_(e_a_1, e_b_1, cp, n_cp, z_a_1, z_b_1, part)
+      call add_segment_(e_a_2, e_b_2, cp, n_cp, z_a_2, z_b_2, part)
+
+      ! Now do the alternative configuration
+
+      call add_segment_(e_a_1, e_b_2, cp_alt, n_cp_alt, z_a_1_alt, z_b_1_alt, part)
+      call add_segment_(e_a_2, e_b_1, cp_alt, n_cp_alt, z_a_2_alt, z_b_2_alt, part)
+
+      ! Decide which configuration has the smaller total segment length
+
+      l = ABS(z_b_1 - z_a_1) + ABS(z_b_2 - z_a_2)
+      l_alt = ABS(z_b_1_alt - z_a_1_alt) + ABS(z_b_2_alt - z_a_2_alt)
+
+      if (l_alt < l) then
+
+         call MOVE_ALLOC(cp_alt, cp)
+         n_cp = n_cp_alt
+
+         z_a_1 = z_a_1_alt
+         z_b_1 = z_b_1_alt
+
+         z_a_2 = z_a_2_alt
+         z_b_2 = z_b_2_alt
+
+      endif
+
+      ! Finish
+
+      return
+
+    end subroutine add_dbl_segment_
 
     !****
 
