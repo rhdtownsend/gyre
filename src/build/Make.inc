@@ -56,7 +56,6 @@ export F9XC
 
 ifeq (${MPI},yes)
   F9XC=mpif90
-  LDFLAGS:=${LDFLAGS} -lpciaccess -lnuma
 else
   F9XC=gfortran
 endif
