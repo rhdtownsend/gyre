@@ -161,9 +161,9 @@ contains
     k_max = td_p%k_max
 
     if (td_p%combine_k) then
-       k_min = 0
+       k_min = MAX(0, td_p%k_min)
     else
-       k_min = -k_max
+       k_min = td_p%k_min
     endif
     
     allocate(omega(k_min:k_max))
