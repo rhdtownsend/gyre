@@ -16,6 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
+$include 'core_parallel.inc'
 
 module gyre_force_par
 
@@ -160,7 +161,7 @@ contains
 
     call bcast(fr_p%force_type, root_rank)
 
-    call bcast(os_p%tag_list, root_rank)
+    call bcast(fr_p%tag_list, root_rank)
 
     ! Finish
 
