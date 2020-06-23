@@ -1,5 +1,5 @@
 ! Program  : build_tar_fit
-! Purpose  : build tar_fit_t types
+! Purpose  : build tar_fit_t types and write to file
 !
 ! Copyright 2016-2020 Rich Townsend & The GYRE Team
 !
