@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=eval_hansen
+TARGETS=eval_tidal_coeff time_eval_hansen
 
 # Flags
 
