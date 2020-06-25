@@ -72,7 +72,6 @@ contains
     character(LEN(sc_p%freq_min_units)) :: freq_min_units
     character(LEN(sc_p%freq_max_units)) :: freq_max_units
     character(LEN(sc_p%freq_frame))     :: freq_frame
-    character(LEN(sc_p%scan_type))      :: scan_type
     character(LEN(sc_p%grid_type))      :: grid_type
     character(LEN(sc_p%grid_frame))     :: grid_frame
     character(LEN(sc_p%axis))           :: axis
@@ -80,7 +79,7 @@ contains
     character(LEN(sc_p%tag_list))       :: tag_list
 
     namelist /scan/ freq_min, freq_max, n_freq, freq_units, freq_min_units, freq_max_units, &
-         freq_frame, scan_type, grid_type, grid_frame, axis, file, tag_list
+         freq_frame, grid_type, grid_frame, axis, file, tag_list
 
     ! Count the number of scan namelists
 
@@ -114,7 +113,6 @@ contains
        freq_min_units = sc_p(i)%freq_min_units
        freq_max_units = sc_p(i)%freq_max_units
        freq_frame = sc_p(i)%freq_frame
-       scan_type = sc_p(i)%scan_type
        grid_type = sc_p(i)%grid_type
        grid_frame = sc_p(i)%grid_frame
        axis = sc_p(i)%axis
@@ -137,7 +135,6 @@ contains
        sc_p(i)%freq_min_units = freq_min_units
        sc_p(i)%freq_max_units = freq_max_units
        sc_p(i)%freq_frame = freq_frame
-       sc_p(i)%scan_type = scan_type
        sc_p(i)%grid_type = grid_type
        sc_p(i)%grid_frame = grid_frame
        sc_p(i)%axis = axis

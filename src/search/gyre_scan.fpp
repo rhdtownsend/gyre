@@ -80,13 +80,11 @@ contains
           if (axis /= sc_p(i)%axis) cycle sc_p_loop
        endif
 
-       select case (sc_p(i)%scan_type)
-       case ('GRID')
-          call build_scan_grid_(cx, md_p, os_p, sc_p(i), omega)
+       select case (sc_p(i)%grid_type)
        case ('FILE')
           call build_scan_file_(cx, md_p, os_p, sc_p(i), omega)
        case default
-          $ABORT(Invalid scan_type)
+          call build_scan_grid_(cx, md_p, os_p, sc_p(i), omega)
        end select
 
     end do sc_p_loop
