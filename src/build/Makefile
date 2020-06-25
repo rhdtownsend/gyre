@@ -3,14 +3,10 @@
 
 # Variables
 
-TARGETS=gyre poly_to_fgong poly_to_txt
+TARGETS=gyre gyre_contour poly_to_fgong poly_to_txt
 
 ifeq ($(TIDES),yes)
   TARGETS:=${TARGETS} gyre_force gyre_response gyre_orbit
-endif
-
-ifeq ($(CONTOUR),yes)
-  TARGETS:=${TARGETS} gyre_contour
 endif
 
 ODEPACK=$(shell which odepack_link > /dev/null 2>& 1 && echo "yes" || echo "no")
