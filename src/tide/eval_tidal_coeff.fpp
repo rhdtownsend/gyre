@@ -79,7 +79,7 @@ program eval_tidal_coeff
   case ('X_tilde')
      f = hansen_X_tilde(e, l, m, k)
   case default
-     $ABORT(Invalid coeff; should be one of c, G_1, G_2, G_3, G_4, X, X_hat, X_tilde)
+     $ABORT(Invalid coeff; should be one of [c|G_1|G_2|G_3|G_4|X|X_hat|X_tilde])
   end select
 
   print *, f
