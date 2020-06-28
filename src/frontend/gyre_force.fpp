@@ -90,6 +90,7 @@ program gyre_force
   type(detail_t)                 :: dt_ad
   type(detail_t)                 :: dt_nad
   real(WP), allocatable          :: omega(:)
+  real(WP), allocatable          :: Omega_orb(:)
   type(grid_t)                   :: gr
   class(r_bvp_t), allocatable    :: bp_ad
   class(c_bvp_t), allocatable    :: bp_nad
@@ -196,9 +197,17 @@ program gyre_force
 
      cx = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
 
-     ! Set up the frequency array
-     
-     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega)
+     ! Set up the frequency arrays
+
+     select case (fr_p_sel%force_type)
+     case ('FIXED')
+        call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega)
+     case ('BINARY')
+        call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, Omega_orb)
+        omega = Omega_orb*fr_p_sel%k
+     case default
+        $ABORT(Invalid force_type)
+     end select
 
      if (SIZE(omega) == 0) then
 
@@ -232,7 +241,7 @@ program gyre_force
            allocate(bp_ad, SOURCE=ad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         endif
            
-        call eval_wave_ad(omega)
+        call eval_wave_ad(omega, Omega_orb)
 
         deallocate(bp_ad)
 
@@ -246,7 +255,7 @@ program gyre_force
            allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         endif
            
-        call eval_wave_nad(omega)
+        call eval_wave_nad(omega, Omega_orb)
 
         deallocate(bp_nad)
 
@@ -271,9 +280,10 @@ program gyre_force
 
 contains
 
-  subroutine eval_wave_ad (omega)
+  subroutine eval_wave_ad (omega, Omega_orb)
 
     real(WP), intent(in) :: omega(:)
+    real(WP), intent(in) :: Omega_orb(:)
 
     integer         :: j
     real(WP)        :: v_i(bp_ad%n_i)
@@ -294,9 +304,9 @@ contains
        
        select type (bp_ad)
        type is (sad_bvp_t)
-          v_o(1) = Phi_force(omega(j))
+          v_o(1) = Phi_force(omega(j), Omega_orb(j))
        type is (ad_bvp_t)
-          v_o(2) = Phi_force(omega(j))
+          v_o(2) = Phi_force(omega(j), Omega_orb(j))
        class default
           $ABORT(Invalid bp_ad class)
        end select
@@ -329,9 +339,10 @@ contains
 
   !****
 
-  subroutine eval_wave_nad (omega)
+  subroutine eval_wave_nad (omega, Omega_orb)
 
     real(WP), intent(in) :: omega(:)
+    real(WP), intent(in) :: Omega_orb(:)
 
     integer         :: j
     complex(WP)     :: v_i(bp_nad%n_i)
@@ -350,7 +361,7 @@ contains
        v_i = 0._WP
          
        v_o = 0._WP
-       v_o(2) = Phi_force(omega(j))
+       v_o(2) = Phi_force(omega(j), Omega_orb(j))
          
        ! Solve for the wave function
 
@@ -378,15 +389,15 @@ contains
 
   !****
 
-  function Phi_force (omega)
+  function Phi_force (omega, Omega_orb)
 
     real(WP), intent(in) :: omega
+    real(WP), intent(in) :: Omega_orb
     real(WP)             :: Phi_force
 
     real(WP) :: M_pri
     real(WP) :: M_sec
     real(WP) :: R_pri
-    real(WP) :: Omega_orb
     real(WP) :: P
     real(WP) :: a
     real(WP) :: eps_tide
@@ -410,8 +421,6 @@ contains
        class default
           $ABORT(Invalid model class)
        end select
-
-       Omega_orb = omega/fr_p_sel%k
 
        P = 1._WP/(Omega_orb*freq_scale('HZ', cx, md_p(i), os_p_sel))
 
