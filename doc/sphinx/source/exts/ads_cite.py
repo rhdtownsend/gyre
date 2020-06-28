@@ -18,7 +18,7 @@ def build_cite(rawtext, ref, lineno, inliner, options, template):
         author = '{:s} & {:s}'.format(ads_data[ref].author[0].split(',')[0],
                                       ads_data[ref].author[1].split(',')[0])
     else:
-        author = ads_data[ref].author[0].split(',')[0]
+        author = '{:s} et al.'.format(ads_data[ref].author[0].split(',')[0])
 
     citation = template.format(author, ads_data[ref].year)
     url = 'https://ui.adsabs.harvard.edu/abs/{:s}/abstract'.format(ads_data[ref].bibcode)
