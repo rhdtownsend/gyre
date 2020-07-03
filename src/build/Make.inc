@@ -27,6 +27,9 @@ FPE?=yes
 # Enable HDF support
 HDF5?=yes
 
+# Enable static build
+STATIC?=no
+
 # Enable experimental features
 EXPERIMENTAL?=no
 
@@ -83,6 +86,11 @@ ifeq (${OMP},yes)
   F77FLAGS:=${F77FLAGS} -fopenmp
 endif
 
+ifeq (${STATIC},yes)
+  F9XFLAGS:=${F9XFLAGS} -static
+  F77FLAGS:=${F77FLAGS} -static
+endif
+
 ifeq ($(CRMATH),yes)
   export MESASDK_MATH_SLOT=crmath
   LDFLAGS:=${LDFLAGS} `crmath_link` `crlibm_link`
@@ -92,7 +100,7 @@ endif
 
 ifeq ($(HDF5),yes)
   LDFLAGS:=${LDFLAGS} `hdf5_link`
-endif	
+endif
 
 # Rules
 
