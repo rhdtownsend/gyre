@@ -68,7 +68,7 @@ contains
     ! definition e.g. in eq. (5) of [Willems:2010aa], due to the
     ! different spherical harmonic definition
 
-    c = (4._WP*PI/(2*l+1))*R_a**(l-2)*REAL(CONJG(spherical_Y(l, m, HALFPI, 0._WP)))*hansen_X(e, -(l+1), -m, k)
+    c = (4._WP*PI/(2*l+1))*R_a**(l-2)*REAL(CONJG(spherical_Y(l, m, HALFPI, 0._WP)))*hansen_X(e, -(l+1), -m, -k)
 
     ! Finish
 

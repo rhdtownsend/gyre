@@ -169,7 +169,7 @@ contains
     allocate(omega(k_min:k_max))
 
     do k = k_min, k_max
-       omega(k) = -k*Omega_orb
+       omega(k) = k*Omega_orb
     end do
 
     ! Set up contexts and tide types
