@@ -5,6 +5,7 @@ nderiv	\frac{{\rm d}^{#3}#1}{{\rm d}#2^{#3}}
 pderiv	\frac{\partial#1}{\partial#2}
 spderiv	\partial#1/\partial#2
 npderiv	\frac{\partial^{#3}#1}{\partial#2^{#3}}
+diff	{\rm d}#1
 ii	{\rm i}
 nablah	\nabla_{\rm h}
 Dfunc	\mathcal{D}

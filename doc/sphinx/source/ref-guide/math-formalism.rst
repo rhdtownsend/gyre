@@ -29,13 +29,13 @@ and momentum
 
 .. math::
 
-   \rho \left( \pderiv{}{t} + \vv \cdot \nabla \right) \vv = -\nabla P - \rho \nabla \Phi,
+   \rho \left( \pderiv{}{t} + \vv \cdot \nabla \right) \vv = -\nabla P - \rho \nabla \Phi;
 
 the heat equation
 
 .. math::
 
-   \rho T \left( \pderiv{}{t} + \vv \cdot \nabla \right) S = \rho \epsnuc - \nabla \cdot \vF,
+   \rho T \left( \pderiv{}{t} + \vv \cdot \nabla \right) S = \rho \epsnuc - \nabla \cdot \vF;
 
 and Poisson's equation
 
@@ -48,7 +48,7 @@ are the fluid density, pressure, temperature, specific entropy and
 velocity; while :math:`\Phi` is the gravitational potential,
 :math:`\epsnuc` is the specific nuclear energy generation rate and
 :math:`\vF` the energy flux.
-      
+
 The energy flux is the sum of the radiative (:math:`\vFrad`) and
 convective (:math:`\vFcon`) fluxes,
 
@@ -65,6 +65,22 @@ the radiative flux is given by the radiative diffusion equation,
 where :math:`\kappa` is the opacity and :math:`a` the radiation
 constant.
 
+Thermodynamic Relations
+-----------------------
+
+The fluid equations are augmented by the thermodynamic relationships
+between the four state variables (:math:`p`, :math:`T`, :math:`\rho`
+and :math:`S`). Only two of these are required to uniquely specify the
+state (we assume that the composition remains fixed over an
+oscillation cycle). In GYRE, :math:`p` and :math:`S` are adopted as
+these primary variables, and the other two are presumed to be
+derivable from them:
+
+.. math::
+
+   \rho = \rho(p, S), \qquad
+   T = T(p, s).
+
 Equilibrium State
 -----------------
 
@@ -73,16 +89,44 @@ momentum equation then becomes the hydrostatic equilibrium equation
 
 .. math::
 
-  \nabla P + \rho \nabla \Phi = 0.
+  \nabla P = - \rho \nabla \Phi.
 
-   
+Assume the equilibrium state is spherically symmetric, this simplifies to
+
+.. math::
+
+  \deriv{p}{r} = - \rho \deriv{\Phi}{r}.
+
+Poisson's equation can be integrated once to yield
+
+.. math::
+
+   \deriv{\Phi}{r} = \frac{G}{r^{2}} \int 4 \pi \rho r^{2} \, \diff{r} = \frac{G M_{r}}{r^{2}},
+
+and so the hydrostatic equilibrium equation becomes
+
+.. math::
+
+  \deriv{p}{r} = - \rho \frac{G M_{r}}{r^{2}}.
+
+The heat equation in the equilibrium state is
+
+.. math::
+
+   \rho T \pderiv{S}{t} = \rho \epsnuc - \nabla \cdot \vF.
+
+If the star is in thermal equilibrium then the left-hand side
+vanishes, and the nuclear heating rate balances the flux divergence
+term.
+
 .. _math-linearize:
 
 Linearized Equations
 --------------------
 
-Linearizing the fluid equations about the static equlibrium state,
-they become
+Applying an Eulerian (fixed position, denoted by a prime) perturbation
+to the mass and momentum conservation equations, they linearize about
+the static equilibrium state as
 
 .. math::
 
@@ -90,25 +134,41 @@ they become
 
 .. math::
 
-   \rho \pderiv{\vv'}{t} = - \nabla P' + \frac{\rho'}{\rho} \nabla P - \rho \nabla \Phi'
-
-.. math::
-
-   \rho T \pderiv{\delta S}{t} = \rho' \epsnuc + \rho \epsnuc' - \left( \nabla \cdot \vF \right)'.
+   \rho \pderiv{\vv'}{t} = - \nabla P' + \frac{\rho'}{\rho} \nabla P - \rho \nabla \Phi',
 
 .. math::
 
    \nabla^{2} \Phi' = 4 \pi G \rho'
 
+Likewise applying a Lagrangian (fixed mass element, denoted by a
+:math:`\delta`) perturbation to the heat equation and the
+thermodynamic relations, they linearizes about the equilibrium
+state as
+
 .. math::
 
-   \vFrad' = \left( \frac{c}{3\kappa\rho} \right)' \nabla (a T^{4}) + XXXXX
+   T \pderiv{\delta S}{t} = \delta \epsnuc - \delta \left( \frac{1}{\rho} \nabla \cdot \vF \right).
 
-Here, a prime (:math:`'`) indicates an Eulerian (fixed position)
-perturbation, and a :math:`\delta` indicates a Lagrangian (fixed mass
-element) perturbation; the absence of either denotes an equilibrium
-quantity. No :math:`\vv'` terms appear because the equilibrium state is
-static.
+.. math::
+
+   \frac{\delta \rho}{\rho} = \frac[1}{\Gamma_{1}} \frac{\delta p}{p} - \upsilon_{T} \frac{\delta S}{c_{p}}
+
+.. math::
+
+   \frac{\delta T}{T} = \nabla_{\rm ad} \frac{\delta p}{p} + \frac{\delta S}{c_{p}}
+
+The absence of either a prime or a :math:`\delta` denotes an
+equilibrium quantity. No :math:`\vv'` terms appear because the
+equilibrium state is static. The thermodynamic partial derivatives are
+defined as
+
+.. math::
+
+   \Gamma_{1} = \left( \pderiv{\ln p}{\ln \rho} \right)_{S} \qquad
+   \upsilon_{T} = \left( \pderiv{\ln \rho}{\ln T} \right)_{p} \qquad
+   c_{p} = \left( \pderiv{S}{\ln T} \right_{p} \qquad
+   \nabla_{\rm ad} = \left( \pderiv{T}{p} \right)_{S}
+
 
 .. _math-osc:
 

@@ -18,9 +18,9 @@ Scaffold Grid
 
 GYRE constructs a fresh spatial grid for each combination of harmonic
 degree :math:`\ell` and azimuthal order :math:`m` specified in the
-:nml_g:`mode` namelist groups (see the :ref:`input-files` chapter for
-more details). The starting point for each of these grids is the
-*scaffold grid*, which comprises the following:
+:nml_g:`mode` namelist groups (see the :ref:`namelist-input-files`
+chapter for more details). The starting point for each of these grids
+is the *scaffold grid*, which comprises the following:
 
 * an inner point :math:`x=\xin`;
 * an outer point :math:`x=\xout`;
@@ -66,7 +66,7 @@ varying. Within the subinterval :math:`[x_{k},x_{k+1}]`, the
 
 .. math::
 
-   y_{1,2}(x) \sim \exp [ \chi \, (\ln x - \ln x_{k+1/2}) ],
+   y_{1,2}(x) \sim \exp [ \chi \, \ln x ],
 
 where :math:`\chi` is one of the eigenvalues of the mechanical
 (upper-left) :math:`2 \times 2` submatrix of the full Jacobian matrix
