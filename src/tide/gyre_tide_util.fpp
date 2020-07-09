@@ -99,11 +99,11 @@ contains
     c = tidal_c(R_a, e, l, m, k)
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
-    X_1m1 = hansen_X(e, -(l+1), -m-1, k)
-    X_1p1 = hansen_X(e, -(l+1), -m+1, k)
+    X_1m1 = hansen_X(e, -(l+1), -m-1, -k)
+    X_1p1 = hansen_X(e, -(l+1), -m+1, -k)
 
-    X_2m1 = hansen_X(e, -(l+2), -m-1, k)
-    X_2p1 = hansen_X(e, -(l+2), -m+1, k)
+    X_2m1 = hansen_X(e, -(l+2), -m-1, -k)
+    X_2p1 = hansen_X(e, -(l+2), -m+1, -k)
 
     G_1 = c*Y* &
          (0.5_WP*(l+1)*(X_2m1 + X_2p1) + 0.5_WP*m*(X_2m1 - X_2p1) + &
@@ -137,13 +137,13 @@ contains
     c = tidal_c(R_a, e, l, m, k)
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
-    X_2m1 = hansen_X(e, -(l+2), -m-1, k)
-    X_2p1 = hansen_X(e, -(l+2), -m+1, k)
+    X_2m1 = hansen_X(e, -(l+2), -m-1, -k)
+    X_2p1 = hansen_X(e, -(l+2), -m+1, -k)
 
-    X_3 = hansen_X(e, -(l+3), -m, k)
+    X_3 = hansen_X(e, -(l+3), -m, -k)
 
-    G_2 = c*Y* &
-         2._WP*(-0.5_WP*(l+1)*e*(X_2m1 - X_2p1) - m*(1._WP - e**2)*X_3)/sqrt(1._WP - e**2)
+    G_2 = -2._WP*c*Y* &
+         (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3)/sqrt(1._WP - e**2)
 
     ! Finish
 
@@ -174,15 +174,15 @@ contains
     c = tidal_c(R_a, e, l, m, k)
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
-    X_1 = hansen_X(e, -(l+1), -m, k)
+    X_1 = hansen_X(e, -(l+1), -m, -k)
 
-    X_2m1 = hansen_X(e, -(l+2), -m-1, k)
-    X_2p1 = hansen_X(e, -(l+2), -m+1, k)
+    X_2m1 = hansen_X(e, -(l+2), -m-1, -k)
+    X_2p1 = hansen_X(e, -(l+2), -m+1, -k)
 
-    X_3 = hansen_X(e, -(l+3), -m, k)
+    X_3 = hansen_X(e, -(l+3), -m, -k)
 
-    G_3 = c*Y* &
-         (-0.5_WP*(l+1)*e*(X_2m1 - X_2p1) - m*(1._WP - e**2)*X_3 + m*X_1)*sqrt(1._WP - e**2)/e
+    G_3 = -c*Y* &
+         (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3 - m*X_1)*sqrt(1._WP - e**2)/e
 
     ! Finish
 
@@ -207,7 +207,7 @@ contains
 
     c = tidal_c(R_a, e, l, m, k)
 
-    G_4 = -m*(2*l+1)/(4*PI)*(R_a)**(-l+2)*c**2
+    G_4 = m*(2*l+1)/(4*PI)*(R_a)**(-l+2)*c**2
 
     ! Finish
 
