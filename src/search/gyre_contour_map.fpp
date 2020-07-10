@@ -495,8 +495,6 @@ contains
       character(*), intent(in) :: part
       complex(WP)              :: z
 
-      complex(WP)   :: z_a
-      complex(WP)   :: z_b
       type(c_ext_t) :: f_a
       type(c_ext_t) :: f_b
       real(WP)      :: w
@@ -507,32 +505,20 @@ contains
 
       case (1)
 
-         z_a = CMPLX(this%z_re(i_re  ), this%z_im(i_im  ), WP)
-         z_b = CMPLX(this%z_re(i_re+1), this%z_im(i_im  ), WP)
-
          f_a = this%f(i_re  ,i_im  )
          f_b = this%f(i_re+1,i_im  )
 
       case (2)
-
-         z_a = CMPLX(this%z_re(i_re+1), this%z_im(i_im  ), WP)
-         z_b = CMPLX(this%z_re(i_re+1), this%z_im(i_im+1), WP)
 
          f_a = this%f(i_re+1,i_im  )
          f_b = this%f(i_re+1,i_im+1)
 
       case (3)
 
-         z_a = CMPLX(this%z_re(i_re+1), this%z_im(i_im+1), WP)
-         z_b = CMPLX(this%z_re(i_re  ), this%z_im(i_im+1), WP)
-
          f_a = this%f(i_re+1,i_im+1)
          f_b = this%f(i_re  ,i_im+1)
 
       case (4)
-
-         z_a = CMPLX(this%z_re(i_re  ), this%z_im(i_im+1), WP)
-         z_b = CMPLX(this%z_re(i_re  ), this%z_im(i_im  ), WP)
 
          f_a = this%f(i_re  ,i_im+1)
          f_b = this%f(i_re  ,i_im  )
@@ -555,7 +541,33 @@ contains
       $ASSERT_DEBUG(w >= 0._WP)
       $ASSERT_DEBUG(w <= 1._WP)
 
-      z = (1._WP-w)*z_a + w*z_b
+      select case (e)
+
+      case (1)
+
+         z = CMPLX((1._WP-w)*this%z_re(i_re) + w*this%z_re(i_re+1), &
+                   this%z_im(i_im), WP)
+
+      case (2)
+         
+         z = CMPLX(this%z_re(i_re+1), &
+                  (1._WP-w)*this%z_im(i_im) + w*this%z_im(i_im+1), WP)
+
+      case (3)
+
+         z = CMPLX((1._WP-w)*this%z_re(i_re+1) + w*this%z_re(i_re), &
+                   this%z_im(i_im+1), WP)
+
+      case (4)
+         
+         z = CMPLX(this%z_re(i_re), &
+                  (1._WP-w)*this%z_im(i_im+1) + w*this%z_im(i_im), WP)
+
+      case default
+
+         $ABORT(Invalid edge)
+         
+      end select
 
       ! Finish
 
