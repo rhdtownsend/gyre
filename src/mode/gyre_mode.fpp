@@ -155,8 +155,8 @@ contains
 
        ! Classify (the additional 1 is for the node at the center)
 
-       this%n_p = n_a + 1
-       this%n_g = n_c
+       this%n_p = n_a + n_c + 1
+       this%n_g = 0
 
        this%n_pg = this%n_p - this%n_g
 
