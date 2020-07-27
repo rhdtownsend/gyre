@@ -43,6 +43,9 @@ module gyre_${T}_block_sysmtx
   use core_kinds
   use core_parallel
   use core_linalg
+  $if ($HDF5)
+  use core_hgroup
+  $endif
 
   use gyre_ext
   use gyre_linalg
@@ -79,6 +82,9 @@ module gyre_${T}_block_sysmtx
      procedure         :: backsub_
      procedure, public :: resd_vec_hom
      procedure, public :: resd_vec_inhom
+     $if ($HDF5)
+     procedure, public :: dump
+     $endif
   end type ${T}_block_sysmtx_t
 
   ! Interfaces
@@ -716,6 +722,42 @@ contains
     return
 
   end function resd_vec_inhom
+
+  !****
+
+  $if ($HDF5)
+
+  subroutine dump (this, hg)
+
+    class(${T}_block_sysmtx_t), intent(in) :: this
+    type(hgroup_t), intent(inout)          :: hg
+
+    ! Dump the block_sysmtx_t to the hgroup
+
+    call write_attr(hg, 'n', this%n)
+    call write_attr(hg, 'n_e', this%n_e)
+    call write_attr(hg, 'n_i', this%n_i)
+    call write_attr(hg, 'n_o', this%n_o)
+
+    call write_dset(hg, 'B_i', this%B_i)
+    call write_dset(hg, 'scl_i', this%scl_i)
+
+    call write_dset(hg, 'B_o', this%B_o)
+    call write_dset(hg, 'scl_o', this%scl_o)
+
+    call write_dset(hg, 'E_l', this%E_l)
+    call write_dset(hg, 'E_r', this%E_r)
+
+    call write_dset(hg, 'scl_f', FRACTION(this%scl))
+    call write_dset(hg, 'scl_e', EXPONENT(this%scl))
+
+    ! Finish
+
+    return
+
+  end subroutine dump
+
+  $endif
   
 end module gyre_${T}_block_sysmtx
 

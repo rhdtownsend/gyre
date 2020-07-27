@@ -43,6 +43,9 @@ module gyre_${T}_band_sysmtx
   use core_kinds
   use core_parallel
   use core_linalg
+  $if ($HDF5)
+  use core_hgroup
+  $endif
 
   use gyre_ext
   use gyre_linalg
@@ -79,6 +82,9 @@ module gyre_${T}_band_sysmtx
      procedure, public :: soln_vec_inhom
      procedure, public :: resd_vec_hom
      procedure, public :: resd_vec_inhom
+     $if ($HDF5)
+     procedure, public :: dump
+     $endif
   end type ${T}_band_sysmtx_t
 
   ! Interfaces
@@ -624,6 +630,77 @@ contains
     return
 
   end function resd_vec_inhom
+
+  !****
+
+  $if ($HDF5)
+
+  subroutine dump (this, hg)
+
+    class(${T}_band_sysmtx_t), intent(in) :: this
+    type(hgroup_t), intent(inout)         :: hg
+
+    $TYPE(WP), allocatable :: E_l(:,:,:)
+    $TYPE(WP), allocatable :: E_r(:,:,:)
+    $TYPE(WP), allocatable :: B_i(:,:)
+    $TYPE(WP), allocatable :: B_o(:,:)
+    integer                :: i
+    integer                :: k
+
+    ! Dump the band_sysmtx_t to the hgroup
+
+    call write_attr(hg, 'n', this%n)
+    call write_attr(hg, 'n_e', this%n_e)
+    call write_attr(hg, 'n_i', this%n_i)
+    call write_attr(hg, 'n_o', this%n_o)
+
+    associate (n => this%n, &
+               n_e => this%n_e, &
+               n_i => this%n_i, &
+               n_o => this%n_o)
+
+      allocate(E_l(n_e,n_e,n))
+      allocate(E_r(n_e,n_e,n))
+
+      allocate(B_i(n_i,n_e))
+      allocate(B_o(n_o,n_e))
+
+      do i = 1, n_i
+         call this%get_row_(i, 1, B_i(i,:))
+      end do
+
+      block_loop: do k = 1, n
+         do i = 1, n_e
+            call this%get_row_((k-1)*n_e+i+n_i, (k-1)*n_e+1, E_l(i,:,k))
+            call this%get_row_((k-1)*n_e+i+n_i,  k   *n_e+1, E_r(i,:,k))
+         end do
+      end do block_loop
+
+      do i = 1, n_o
+         call this%get_row_(n*n_e+i+n_i, n*n_e+1, B_o(i,:))
+      end do
+
+    end associate
+
+    call write_dset(hg, 'B_i', B_i)
+    call write_dset(hg, 'scl_i', this%scl_i)
+
+    call write_dset(hg, 'B_o', B_o)
+    call write_dset(hg, 'scl_o', this%scl_o)
+
+    call write_dset(hg, 'E_l', E_l)
+    call write_dset(hg, 'E_r', E_r)
+
+    call write_dset(hg, 'scl_f', FRACTION(this%scl))
+    call write_dset(hg, 'scl_e', EXPONENT(this%scl))
+
+    ! Finish
+
+    return
+
+  end subroutine dump
+
+  $endif
   
 end module gyre_${T}_band_sysmtx
 

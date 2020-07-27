@@ -51,6 +51,9 @@ module gyre_${T}_sysmtx
      procedure(soln_vec_inhom), deferred :: soln_vec_inhom
      procedure(resd_vec_hom), deferred   :: resd_vec_hom
      procedure(resd_vec_inhom), deferred :: resd_vec_inhom
+     $if ($HDF5)
+     procedure(dump), deferred           :: dump
+     $endif
   end type ${T}_sysmtx_t
 
   ! Interfaces
@@ -126,7 +129,18 @@ module gyre_${T}_sysmtx
        $TYPE(WP), intent(in)            :: v_o(:)
        $TYPE(WP)                        :: dv(this%n_e*(this%n+1))
      end function resd_vec_inhom
-     
+
+     $if ($HDF5)
+
+     subroutine dump (this, hg)
+       use core_hgroup
+       import ${T}_sysmtx_t
+       class(${T}_sysmtx_t), intent(in) :: this
+       type(hgroup_t), intent(inout)    :: hg
+     end subroutine dump
+
+     $endif
+
   end interface
 
   ! Access specifiers
