@@ -18,6 +18,10 @@ DOUBLE_PRECISION?=yes
 # Enable correctly-rounded math
 CRMATH?=yes
 
+# Enable portable math (for bit-for-bit reproducibility; setting to
+# no may give a performance boost)
+PORTABLE?=yes
+
 # Use IEEE fortran features
 IEEE?=no
 
@@ -97,6 +101,11 @@ ifeq ($(CRMATH),yes)
 else
   export MESASDK_MATH_SLOT=default
 endif
+
+ifeq ($(PORTABLE),yes)
+  F9XFLAGS:=${F9XFLAGS} -ffp-contract=off
+  F77FLAGS:=${F9XFLAGS} -ffp-contract=off
+endif			
 
 ifeq ($(HDF5),yes)
   LDFLAGS:=${LDFLAGS} `hdf5_link`
