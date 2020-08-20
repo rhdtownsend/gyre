@@ -39,7 +39,6 @@ module gyre_scan_par
      character(64)           :: freq_min_units = ''
      character(64)           :: freq_max_units = ''
      character(64)           :: freq_frame = 'INERTIAL'
-     character(64)           :: scan_type = 'GRID'
      character(64)           :: grid_type = 'LINEAR'
      character(64)           :: grid_frame = 'INERTIAL'
      character(64)           :: axis = ''
