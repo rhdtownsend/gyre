@@ -20,8 +20,12 @@ vFcon	\vF_{\rm C}
 epsnuc	\epsilon_{\rm n}
 epsT	\epsilon_{{\rm n},T}
 epsrho	\epsilon_{{\rm n},\rho}
+epsS	\epsilon_{S}
+epsad	\epsilon_{\rm ad}
 kapT	\kappa_{T}
 kaprho	\kappa_{\rho}
+kapS	\kappa_{S}
+kapad	\kappa_{\rm ad}
 npoly	n_{\rm poly}
 cm	{\rm cm}
 gram	{\rm g}
@@ -36,6 +40,9 @@ vxih	\vxi_{\rm h}
 txir	\tilde{\xi}_{r}
 txih	\tilde{\xi}_{\rm h}
 tS	\tilde{S}
+tP	\tilde{P}
+trho	\tilde{\rho}
+tPhi	\tilde{\Phi}
 tf	\tilde{f}
 xin	x_{\rm i}
 xout	x_{\rm o}

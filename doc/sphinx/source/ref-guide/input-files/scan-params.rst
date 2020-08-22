@@ -12,26 +12,29 @@ are:
   Distribution of frequency points; one of:
 
   - :nml_v:`'LINEAR'` : Uniform in frequency
-  - :nml_v:`'INVERSE'` : Uniform in inverse frequency (i.e., period)
+  - :nml_v:`'INVERSE'` : Uniform in inverse frequency
+  - :nml_v:`'FILE'` : Read from file
 
 :nml_n:`grid_frame` (default :nml_v:`'INERTIAL'`)
-  Frame in which :nml_n:`grid_type` applies; one of:
+  Reference frame in which :nml_n:`grid_type` applies; one of:
 
   - :nml_v:`'INERTIAL'` : Inertial frame
   - :nml_v:`'COROT_I'` : Co-rotating frame at inner boundary
   - :nml_v:`'COROT_O'` : Co-rotating frame at outer boundary
 
 :nml_n:`freq_min` (default :nml_v:`1`)
-  Minimum frequency
+  Minimum frequency, when :nml_n:`grid_type` is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`
 
 :nml_n:`freq_max` (default :nml_v:`10`)
-  Maximum frequency
+  Maximum frequency, when :nml_n:`grid_type` is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`
   
 :nml_n:`n_freq` (default :nml_v:`10`)
-  Number of frequency points
-  
-:nml_n:`freq_min_units` (default :nml_v:`'NONE'`)
-  Units of :nml_n:`freq_min`; one of:
+  Number of frequency points, when :nml_n:`grid_type` is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`
+
+:nml_n:`freq_units` (default :nml_v:`NONE`)
+  Units of :nml_n:`freq_min` and :nml_n:`freq_max`, when
+  nml_n:`grid_type` is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`; units
+  of read frequencies when :nml_n:`grid_type` is :nml_v:`'FILE'`
 
   - :nml_v:`'NONE'` : Dimensionless angular frequency
   - :nml_v:`'HZ'` : linear frequency in Hz [#only_evol]_
@@ -47,11 +50,15 @@ are:
   - :nml_v:`'ROSSBY_I'` : fraction of Rossby frequency at inner boundary
   - :nml_v:`'ROSSBY_O'` : fraction of Rossby frequency at outer boundary
 
-:nml_n:`freq_max_units` (default :nml_v:`'NONE'`)
-  Units of :nml_n:`freq_max`; same options as :nml_n:`freq_min_units`
-  
+:nml_n:`freq_min_units` (default :nml_v:`''`)
+  Units of :nml_n:`freq_min`; has same options as :nml_n:`freq_units` and overrides it if set
+
+:nml_n:`freq_max_units` (default :nml_v:`''`)
+  Units of :nml_n:`freq_max`; has same options as :nml_n:`freq_units` and overrides it if set
+
 :nml_n:`freq_min_frame` (default :nml_v:`'INERTIAL'`)
-  Frame of :nml_n:`freq_min`; one of:
+  Reference frame in which :nml_n:`freq_min`, when :nml_n:`grid_type`
+  is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`; one of:
 
    - :nml_v:`'INERTIAL'` : Inertial frame
    - :nml_v:`'COROT_I'` : Co-rotating frame at inner boundary
@@ -59,7 +66,7 @@ are:
 
 :nml_n:`freq_max_frame` (default :nml_v:`'INERTIAL'`)
   Frame of :nml_n:`freq_max`; same options as :nml_n:`freq_min_frame`
-  
+
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match
 

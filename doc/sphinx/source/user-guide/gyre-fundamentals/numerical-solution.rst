@@ -146,31 +146,35 @@ discretized on a spatial grid of :math:`N=50` points. The roots
 fall very close to the values :math:`\sigma = \pi c/L, 2 \pi c/L,
 \ldots` predicted by the :ref:`analytic-solution`.
 
-Finding Eigenfrequencies
-------------------------
+.. _frequency-scan:
+
+Scanning for Eigenfrequencies
+-----------------------------
 
 While :numref:`fig-discrim-func` is useful for visalizing
 :math:`\Dfunc`, it's not the best way to find
 eigenfrequencies. Instead, we can rely on well-established techniques
 for isolating and refining roots of monovariate functions.
 
-First, we evaluate a finite set of :math:`M` values
+First, we evaluate a set of :math:`M` values
 :math:`\{\Dfunc_{1},\Dfunc_{2},\ldots,\Dfunc_{M}\}`, representing the
 discriminant function sampled on the discrete frequency grid
-:math:`\{\sigma_{1},\sigma_{2},\ldots,\sigma_{M}\}`. Then, we inspect
-the signs of adjacent values :math:`(\Dfunc_{j},\Dfunc_{j+1})`. If
-these differ, then we know that a root of the discriminant function
-must lie in the interval :math:`(\sigma_{j},\sigma_{j+1})` --- we have
-*bracketed* a root. :numref:`fig-discrim-brackets` demonstrates the
-process of root bracketing for a frequency grid covering the plotted
-frequency interval with :math:`M=32` uniformly spaced points; it
-highlights five brackets containing the five roots shown previously in
+:math:`\{\sigma_{1},\sigma_{2},\ldots,\sigma_{M}\}`. Then, we scan
+through these data looking for sign changes between adjacent
+discriminant values. If :math:`\Dfunc_{j} \Dfunc_{j+1} < 0`, we know
+that a root of the discriminant function must lie in the interval
+:math:`(\sigma_{j},\sigma_{j+1})` --- we have *bracketed* a
+root. :numref:`fig-discrim-brackets` illustrates the process of bracket
+scanning for a frequency grid covering the plotted frequency interval
+with :math:`M=32` uniformly spaced points; it highlights five brackets
+containing the five roots shown previously in
 :numref:`fig-discrim-func`.
 
 .. _fig-discrim-brackets:
 
 .. figure:: fig_discrim_brackets.svg
-   :alt: Plot showing the discriminant function versus frequency, with root brackets indicated
+   :alt: Plot showing the discriminant function versus frequency, with
+         root brackets indicated
    :align: center
 
    Plot of the discriminant values :math:`\{\Dfunc\}` on the discrete

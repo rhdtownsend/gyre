@@ -28,6 +28,7 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    user-guide/example-walkthrough.rst
    user-guide/gyre-fundamentals.rst
    user-guide/working-with-grids.rst
+   user-guide/using-tags.rst
    user-guide/interpreting-output.rst
    
 .. toctree::
