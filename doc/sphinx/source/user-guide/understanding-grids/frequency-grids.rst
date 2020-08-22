@@ -1,4 +1,4 @@
-.. _frequency-grids:
+.. _freq-grids:
 
 Frequency Grids
 ===============
@@ -188,11 +188,11 @@ you want. Chosing good values for these parameters requires some
 degree of judgement, but here are some suggestions:
 
 * The number of points in the frequency grid should be a factor of
-  2--3 larger than the expected number of modes that will be
-  found. This is to ensure that the frequency spacing of the grid is
-  everywhere smaller than the anticipated eigenfrequency spacing
-  between adjacent modes (see the :ref:`numerical-limits` section for
-  further discussion).
+  2--3 larger than the number of modes you expect GYRE will find. This
+  is to ensure that the frequency spacing of the grid is everywhere
+  smaller than the anticipated eigenfrequency spacing between adjacent
+  modes (see the :ref:`numerical-limits` section for further
+  discussion).
 
 * The distribution of points in the frequency grid should follow
   anticipated distribution of mode frequencies; this again is to

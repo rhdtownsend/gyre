@@ -13,7 +13,7 @@ basic familiarity with the subject of stellar oscillations. If you
 need the former, then the Internet is your oyster; and for the latter,
 we recommend the following online resources:
 
-* Jørgen Christensen-Dalsgaard's `Lecture Notes on Stellar Oscillations <https://users-phys.au.dk/~jcd/oscilnotes/Lecture_Notes_on_Stellar_Oscillations.pdf>`__;
+* Jørgen Christensen-Dalsgaard's `Lecture Notes on Stellar Oscillations <https://users-phys.au.dk/jcd/oscilnotes/Lecture_Notes_on_Stellar_Oscillations.pdf>`__;
 * Gerald Handler's `Asteroseismology <https://arxiv.org/pdf/1205.6407.pdf>`__ article.
 
 Obtaining GYRE
@@ -24,6 +24,8 @@ repository on :git:`GitHub <>`. GYRE is free software: you can
 redistribute it and/or modify it under the terms of the `GNU General
 Public License <http://www.gnu.org/licenses/gpl.html>`__ as published
 by the `Free Software Foundation <http://www.fsf.org/>`__, version 3.
+
+.. _citing-gyre:
 
 Citing GYRE
 ===========
@@ -38,11 +40,11 @@ If you use GYRE in your research, please cite the relevant
 If you find yourself using GYRE on a regular basis, you might consider
 contributing to the project to ensure its long-term success. Options include
 
-* Contribute code to the project (e.g., via GitHub pull requests), to
-  extend GYRE's capabilities
-* Contribute documentation and tutorials to the project, to make GYRE more user-friendly
-* Invite the GYRE team to be co-authors on relevant papers
-* Invite the GYRE team to be co-investigators on relevant grant applications
+* contributing code to the project (e.g., via GitHub pull requests), to
+  extend GYRE's capabilities;
+* contributing documentation and tutorials to the project, to make GYRE more user-friendly;
+* inviting the GYRE team to be co-authors on relevant papers;
+* inviting the GYRE team to be co-investigators on relevant grant applications.
 
 Related Links
 =============

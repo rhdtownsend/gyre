@@ -7,8 +7,7 @@ Example Walkthrough
 This chapter provides a walkthrough of a example GYRE project, to
 illustrate the typical steps involved. For this example, we'll be
 focusing on finding eigenfrequencies and eigenfunctions of quadrupole
-(:math:`\ell=2`) gravity modes for a slowly pulsating B (SPB) stellar
-model.
+(:math:`\ell=2`) gravity modes for a MESA model of slowly pulsating B (SPB) star.
 
 Making a Place to Work
 ======================
@@ -16,7 +15,8 @@ Making a Place to Work
 When starting a new project, it's a good idea to create a dedicated
 working directory to contain the various input and output files that
 GYRE operates on. These commands will make a new directory beneath
-your home directory with the name file:`work`, and then change into it:
+your home directory with the name :file:`work`, and then set this
+directory as the current working directory:
 
 .. substitution-prompt:: bash
 
@@ -26,10 +26,10 @@ your home directory with the name file:`work`, and then change into it:
 Grabbing a Stellar Model
 ========================
 
-The next step is to grab a stellar model for GYRE to work with. There
-are a number of models provided beneath the :file:`{$GYRE_DIR}/models`
-directory; the following commands will copy a MESA model for a
-:math:`5\,\Msun` SPB star into your working directory:
+The next step is to grab the stellar model. There are a number of
+example models provided in the :file:`{$GYRE_DIR}/models` directory;
+the following commands will copy a MESA model for a :math:`5\,\Msun`
+SPB star into your working directory:
 
 .. substitution-prompt:: bash
 
@@ -48,35 +48,33 @@ contents cut-and-pasted in:
 This file is an example of a Fortran 'namelist' file, containing
 multiple namelist groups. Each group begins with the line
 :nml_g:`name` (where ``name`` is the name of the group); a list of
-name-value pairs follows, and the group ends with a slash
+parameter-value pairs then follows, and the group ends with a slash
 ``/``. Detailed information on the namelist groups expected in GYRE's
 input files can be found in the :ref:`namelist-input-files` chapter;
 for now, let's just focus on some of the more-important aspects of the
 file above:
 
-* The :nml_g:`constants` namelist group is used to override constants
-  such as the gravitational constant; here it's empty, indicating that
-  default values should be used
-* The :nml_g:`model` namelist group instructs GYRE to read an
-  evolutionary model, in :repo:`MESA format <doc/mesa-format.pdf>`,
-  from the file :file:`spb.mesa`
-* The :nml_g:`mode` namelist group instructs GYRE to consider
-  quadrupole (:math:`\ell=2`) modes
-* The :nml_g:`osc` namelist group instructs GYRE to apply a
+* the :nml_g:`constants` namelist group is empty, telling GYRE to use default
+  values for fundamental constants;
+* the :nml_g:`model` namelist group tells GYRE to read an evolutionary
+  model, in :ref:`MESA format <mesa-model-files>`, from the file
+  :file:`spb.mesa`;
+* the :nml_g:`mode` namelist group tells GYRE to search for
+  quadrupole (:math:`\ell=2`) modes;
+* the :nml_g:`osc` namelist group tells GYRE to apply a
   zero-pressure outer mechanical boundary condition in the oscillation
-  equations
-* The :nml_g:`scan` namelist group instructs GYRE to scan a region of
+  equations;
+* the :nml_g:`scan` namelist group tells GYRE to scan a region of
   dimensionless angular frequency space typically occupied by gravity
-  modes
-* The :nml_g:`grid` namelist group instructs GYRE to perform
-  calculations on a refinement of the model grid (see the
-  :ref:`working-with-grids` chapter for details on how this works)
-* The :nml_g:`ad_output` namelist group instructs GYRE to write out
+  modes;
+* the :nml_g:`grid` namelist group tells GYRE how to refine the model
+  spatial grid;
+* the :nml_g:`ad_output` namelist group tells GYRE to write out
   summary data to the file ``summary.txt``, and individual mode data
-  to files having the prefix ``mode.``
-* The :nml_g:`nad_output` namelist group is empty, telling GYRE not to
+  to files having the prefix ``mode.``;
+* the :nml_g:`nad_output` namelist group is empty, telling GYRE not to
   write out any non-adiabatic data (see
-  :ref:`non-adiabatic-calculations` for more info)
+  :ref:`non-adiabatic-calculations` for more info).
 
 Running GYRE
 ============

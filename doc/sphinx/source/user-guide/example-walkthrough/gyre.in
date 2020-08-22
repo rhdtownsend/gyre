@@ -8,11 +8,14 @@
 /
 
 &mode
-	l = 2                ! Harmonic degree
+	l = 2 ! Harmonic degree
 /
 
 &osc
         outer_bound = 'VACUUM' ! Use a zero-pressure outer mechanical boundary condition
+/
+
+&rot
 /
 
 &num
@@ -20,28 +23,27 @@
 /
 
 &scan
-        grid_type = 'INVERSE' ! Scan for modes using a uniform-in-period grid; best for g modes
+        grid_type = 'INVERSE' ! Scan grid uniform in inverse frequency
         freq_min = 0.5        ! Minimum frequency to scan from
 	freq_max = 1.0        ! Maximum frequency to scan to
 	n_freq = 250          ! Number of frequency points in scan
 /
 
 &grid
-	alpha_osc = 10  ! Ensure at least 10 points per wavelength in propagation regions
-	alpha_exp = 2   ! Ensure at least 2 points per scale length in evanescent regions
-	n_inner = 5     ! Ensure at least 5 points between center and inner turning point
+	alpha_osc = 10 ! Ensure adequate spatial resolution in propagation regions
+	alpha_exp = 2  ! Ensure adequate spatial resolution in evanescant regions
+	alpha_ctr = 10 ! Ensure adequate spatial resolution at center
 /
 
 
 &ad_output
-        summary_file = 'summary.txt'                            ! File name for summary file
-	summary_file_format = 'TXT'                             ! Format of summary file
-        summary_item_list = 'M_star,R_star,l,n_pg,omega,E_norm' ! Items to appear in summary file
-        mode_template = 'mode.%J.txt'                		! File-name template for mode files
-	mode_file_format = 'TXT'                   		! Format of mode files
-        mode_item_list = 'l,n_pg,omega,x,xi_r,xi_h'   		! Items to appear in mode files
+        summary_file = 'summary.txt'                ! File name for summary file
+	summary_file_format = 'TXT'                 ! Format of summary file
+        summary_item_list = 'M_star,l,n_pg,omega'   ! Items to appear in summary file
+        detail_template = 'mode.%J.txt'             ! File-name template for detail files
+	detail_file_format = 'TXT'                  ! Format of detail files
+        detail_item_list = 'n_pg,omega,x,xi_r,xi_h' ! Items to appear in detail files
 /
 
 &nad_output
-
 /

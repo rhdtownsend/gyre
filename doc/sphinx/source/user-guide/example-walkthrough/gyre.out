@@ -1,4 +1,4 @@
-gyre [5.2]
+gyre [6.0]
 ----------
 
 OpenMP Threads   : 4
@@ -24,28 +24,26 @@ Building frequency scan
    added scan interval :  0.5000E+00 ->  0.1000E+01 (250 points, INVERSE)
 
 Building x grid
-   Found inner turning points, x range 0.1041 -> 0.1048
-   Adding 0 inner point(s)
-   Adding 21 global point(s) in iteration 1
-   Adding 0 global point(s) in iteration 2
-   Final grid has 1 segment(s) and 1835 point(s):
-      Segment 1 : x range 0.0000 -> 1.0000 (1 -> 1835)
+   Refined 6 subinterval(s) in iteration 1
+   Refined 0 subinterval(s) in iteration 2
+   Final grid has 1 segment(s) and 1820 point(s):
+      Segment 1 : x range 0.0000 -> 1.0000 (1 -> 1820)
 
 Starting search (adiabatic)
 
 Root bracketing
-  Time elapsed :     2.122 s
+  Time elapsed :     2.001 s
 
 Root Solving
    l    m    n_pg    n_p    n_g       Re(omega)       Im(omega)        chi n_iter
-   2    0     -16      0     16  0.51863442E+00  0.00000000E+00 0.3517E-13      6
-   2    0     -15      0     15  0.55636128E+00  0.00000000E+00 0.1928E-12      7
-   2    0     -14      0     14  0.59457157E+00  0.00000000E+00 0.4534E-13      6
-   2    0     -13      0     13  0.62301181E+00  0.00000000E+00 0.9584E-13      7
-   2    0     -12      0     12  0.67563541E+00  0.00000000E+00 0.2665E-12      6
-   2    0     -11      0     11  0.74334524E+00  0.00000000E+00 0.3755E-13      8
-   2    0     -10      0     10  0.79690725E+00  0.00000000E+00 0.3113E-12      6
-   2    0      -9      0      9  0.87153108E+00  0.00000000E+00 0.1487E-12      6
-   2    0      -8      0      8  0.99747127E+00  0.00000000E+00 0.1265E-12      6
-  Time elapsed :      0.597 s
+   2    0     -16      0     16  0.51863360E+00  0.00000000E+00 0.2146E-13      6
+   2    0     -15      0     15  0.55636039E+00  0.00000000E+00 0.6402E-13      5
+   2    0     -14      0     14  0.59457063E+00  0.00000000E+00 0.7281E-13      7
+   2    0     -13      0     13  0.62301082E+00  0.00000000E+00 0.3057E-13      6
+   2    0     -12      0     12  0.67563432E+00  0.00000000E+00 0.1162E-12      6
+   2    0     -11      0     11  0.74334407E+00  0.00000000E+00 0.3407E-14      5
+   2    0     -10      0     10  0.79690602E+00  0.00000000E+00 0.6071E-13      6
+   2    0      -9      0      9  0.87152970E+00  0.00000000E+00 0.7861E-13      8
+   2    0      -8      0      8  0.99746970E+00  0.00000000E+00 0.1223E-12      6
+  Time elapsed :      0.595 s
 

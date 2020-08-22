@@ -27,9 +27,10 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    user-guide/quick-start.rst
    user-guide/example-walkthrough.rst
    user-guide/gyre-fundamentals.rst
-   user-guide/working-with-grids.rst
-   user-guide/using-tags.rst
+   user-guide/understanding-grids.rst
+   user-guide/working-with-tags.rst
    user-guide/interpreting-output.rst
+   user-guide/faq.rst
    
 .. toctree::
    :caption: Reference Guide
@@ -48,6 +49,3 @@ detail. Supplementary material can be found in the :ref:`appendices`.
 
    appendices/troubleshooting.rst
    appendices/build-poly.rst
-   
-   
-

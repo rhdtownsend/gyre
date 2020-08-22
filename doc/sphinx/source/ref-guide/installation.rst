@@ -1,4 +1,4 @@
-.. _installation:
+.. _install:
 
 ************
 Installation
@@ -31,6 +31,8 @@ recommended.
 Building GYRE
 =============
 
+.. _install-download:
+
 Download
 --------
 
@@ -48,6 +50,8 @@ newly created source directory; this can be achieved e.g. using the
 .. substitution-prompt:: bash
 
    export GYRE_DIR=$(dirname gyre-|release|)
+
+.. _install-compile:
 
 Compile
 -------
