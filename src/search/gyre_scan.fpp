@@ -61,7 +61,7 @@ contains
 
     integer :: i
 
-    $ASSERT(SIZE(sc_p) >=1,Empty scan_par_t)
+    $ASSERT(SIZE(sc_p)>=1,Empty scan_par_t)
 
     ! Build the frequency scan
 
