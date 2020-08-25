@@ -72,9 +72,9 @@ module gyre_nad_bound
      type(point_t)             :: pt(2)
      type(nad_trans_t)         :: tr
      real(WP), allocatable     :: coeff(:,:)
-     real(WP)                  :: alpha_gr
-     real(WP)                  :: alpha_rh
-     complex(WP)               :: alpha_om
+     real(WP)                  :: gamma_gr
+     real(WP)                  :: gamma_rh
+     complex(WP)               :: gamma_om
      integer                   :: type_i
      integer                   :: type_o
      character(:), allocatable :: branch_o
@@ -174,19 +174,19 @@ contains
        $ABORT(Invalid outer_bound)
     end select
 
-    bd%alpha_gr = os_p%alpha_gr
+    bd%gamma_gr = os_p%gamma_gr
     
     if (os_p%eddington_approx) then
-       bd%alpha_rh = 1._WP
+       bd%gamma_rh = 1._WP
     else
-       bd%alpha_rh = 0._WP
+       bd%gamma_rh = 0._WP
     endif
     
     select case (os_p%time_factor)
     case ('OSC')
-       bd%alpha_om = 1._WP
+       bd%gamma_om = 1._WP
     case ('EXP')
-       bd%alpha_om = (0._WP, 1._WP)
+       bd%gamma_om = (0._WP, 1._WP)
     case default
        $ABORT(Invalid time_factor)
     end select
@@ -329,8 +329,8 @@ contains
     associate( &
          c_1 => this%coeff(1,J_C_1), &
          pt => this%pt(1), &
-         alpha_gr => this%alpha_gr, &
-         alpha_om => this%alpha_om)
+         gamma_gr => this%gamma_gr, &
+         gamma_om => this%gamma_om)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
@@ -340,24 +340,24 @@ contains
 
       ! Set up the boundary conditions
 
-      B(1,1) = c_1*alpha_om*omega_c**2
+      B(1,1) = c_1*gamma_om*omega_c**2
       B(1,2) = -l_i
-      B(1,3) = alpha_gr*(-l_i)
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = gamma_gr*(-l_i)
+      B(1,4) = gamma_gr*(0._WP)
       B(1,5) = 0._WP
       B(1,6) = 0._WP
 
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_i)
-      B(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
-      B(2,5) = alpha_gr*(0._WP)
-      B(2,6) = alpha_gr*(0._WP)
+      B(2,1) = gamma_gr*(0._WP)
+      B(2,2) = gamma_gr*(0._WP)
+      B(2,3) = gamma_gr*(l_i)
+      B(2,4) = gamma_gr*(-1._WP) + (1._WP - gamma_gr)
+      B(2,5) = gamma_gr*(0._WP)
+      B(2,6) = gamma_gr*(0._WP)
 
       B(3,1) = 0._WP
       B(3,2) = 0._WP
-      B(3,3) = alpha_gr*(0._WP)
-      B(3,4) = alpha_gr*(0._WP)
+      B(3,3) = gamma_gr*(0._WP)
+      B(3,4) = gamma_gr*(0._WP)
       B(3,5) = 1._WP
       B(3,6) = 0._WP
 
@@ -389,28 +389,28 @@ contains
     ! radial displacement/gravity)
 
     associate( &
-         alpha_gr => this%alpha_gr)
+         gamma_gr => this%gamma_gr)
 
       ! Set up the boundary conditions
 
       B(1,1) = 1._WP
       B(1,2) = 0._WP
-      B(1,3) = alpha_gr*(0._WP)
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = gamma_gr*(0._WP)
+      B(1,4) = gamma_gr*(0._WP)
       B(1,5) = 0._WP
       B(1,6) = 0._WP
         
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(0._WP)
-      B(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
-      B(2,5) = alpha_gr*(0._WP)
-      B(2,6) = alpha_gr*(0._WP)
+      B(2,1) = gamma_gr*(0._WP)
+      B(2,2) = gamma_gr*(0._WP)
+      B(2,3) = gamma_gr*(0._WP)
+      B(2,4) = gamma_gr*(1._WP) + (1._WP - gamma_gr)
+      B(2,5) = gamma_gr*(0._WP)
+      B(2,6) = gamma_gr*(0._WP)
       
       B(3,1) = 0._WP
       B(3,2) = 0._WP
-      B(3,3) = alpha_gr*(0._WP)
-      B(3,4) = alpha_gr*(0._WP)
+      B(3,3) = gamma_gr*(0._WP)
+      B(3,4) = gamma_gr*(0._WP)
       B(3,5) = 1._WP
       B(3,6) = 0._WP
 
@@ -442,28 +442,28 @@ contains
     ! horizontal displacement/gravity)
 
     associate( &
-         alpha_gr => this%alpha_gr)
+         gamma_gr => this%gamma_gr)
 
       ! Set up the boundary conditions
 
       B(1,1) = 0._WP
       B(1,2) = 1._WP
-      B(1,3) = alpha_gr*(1._WP)
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = gamma_gr*(1._WP)
+      B(1,4) = gamma_gr*(0._WP)
       B(1,5) = 0._WP
       B(1,6) = 0._WP
         
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(0._WP)
-      B(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
-      B(2,5) = alpha_gr*(0._WP)
-      B(2,6) = alpha_gr*(0._WP)
+      B(2,1) = gamma_gr*(0._WP)
+      B(2,2) = gamma_gr*(0._WP)
+      B(2,3) = gamma_gr*(0._WP)
+      B(2,4) = gamma_gr*(1._WP) + (1._WP - gamma_gr)
+      B(2,5) = gamma_gr*(0._WP)
+      B(2,6) = gamma_gr*(0._WP)
       
       B(3,1) = 0._WP
       B(3,2) = 0._WP
-      B(3,3) = alpha_gr*(0._WP)
-      B(3,4) = alpha_gr*(0._WP)
+      B(3,3) = gamma_gr*(0._WP)
+      B(3,4) = gamma_gr*(0._WP)
       B(3,5) = 1._WP
       B(3,6) = 0._WP
 
@@ -541,39 +541,39 @@ contains
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
          pt => this%pt(2), &
-         alpha_gr => this%alpha_gr, &
-         alpha_rh => this%alpha_rh, &
-         alpha_om => this%alpha_om)
+         gamma_gr => this%gamma_gr, &
+         gamma_rh => this%gamma_rh, &
+         gamma_om => this%gamma_om)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(gamma_om, KIND=WP))*omega_c
 
       l_e = this%cx%l_e(Omega_rot, st)
 
-      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
+      f_rh = 1._WP - 0.25_WP*gamma_rh*i_omega_c*c_thn
 
       ! Set up the boundary conditions
 
       B(1,1) = 1._WP
       B(1,2) = -1._WP
-      B(1,3) = alpha_gr*(0._WP)
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = gamma_gr*(0._WP)
+      B(1,4) = gamma_gr*(0._WP)
       B(1,5) = 0._WP
       B(1,6) = 0._WP
       
-      B(2,1) = alpha_gr*(U)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B(2,4) = alpha_gr*(1._WP)
-      B(2,5) = alpha_gr*(0._WP)
-      B(2,6) = alpha_gr*(0._WP)
+      B(2,1) = gamma_gr*(U)
+      B(2,2) = gamma_gr*(0._WP)
+      B(2,3) = gamma_gr*(l_e + 1._WP) + (1._WP - gamma_gr)
+      B(2,4) = gamma_gr*(1._WP)
+      B(2,5) = gamma_gr*(0._WP)
+      B(2,6) = gamma_gr*(0._WP)
 
       B(3,1) = 2._WP - 4._WP*nabla_ad*V
       B(3,2) = 4._WP*nabla_ad*V
-      B(3,3) = alpha_gr*(0._WP)
-      B(3,4) = alpha_gr*(0._WP)
+      B(3,3) = gamma_gr*(0._WP)
+      B(3,4) = gamma_gr*(0._WP)
       B(3,5) = 4._WP*f_rh
       B(3,6) = -1._WP
 
@@ -616,40 +616,40 @@ contains
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
          pt => this%pt(2), &
-         alpha_gr => this%alpha_gr, &
-         alpha_rh => this%alpha_rh, &
-         alpha_om => this%alpha_om)
+         gamma_gr => this%gamma_gr, &
+         gamma_rh => this%gamma_rh, &
+         gamma_om => this%gamma_om)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(gamma_om, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
 
-      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
+      f_rh = 1._WP - 0.25_WP*gamma_rh*i_omega_c*c_thn
 
       ! Set up the boundary conditions
 
-      B(1,1) = 1._WP + (lambda/(c_1*alpha_om*omega_c**2) - 4._WP - c_1*alpha_om*omega_c**2)/V
+      B(1,1) = 1._WP + (lambda/(c_1*gamma_om*omega_c**2) - 4._WP - c_1*gamma_om*omega_c**2)/V
       B(1,2) = -1._WP
-      B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)/V)
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = gamma_gr*((lambda/(c_1*gamma_om*omega_c**2) - l_e - 1._WP)/V)
+      B(1,4) = gamma_gr*(0._WP)
       B(1,5) = 0._WP
       B(1,6) = 0._WP
 
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B(2,4) = alpha_gr*(1._WP)
-      B(2,5) = alpha_gr*(0._WP)
-      B(2,6) = alpha_gr*(0._WP)
+      B(2,1) = gamma_gr*(0._WP)
+      B(2,2) = gamma_gr*(0._WP)
+      B(2,3) = gamma_gr*(l_e + 1._WP) + (1._WP - gamma_gr)
+      B(2,4) = gamma_gr*(1._WP)
+      B(2,5) = gamma_gr*(0._WP)
+      B(2,6) = gamma_gr*(0._WP)
 
       B(3,1) = 2._WP - 4._WP*nabla_ad*V
       B(3,2) = 4._WP*nabla_ad*V
-      B(3,3) = alpha_gr*(0._WP)
-      B(3,4) = alpha_gr*(0._WP)
+      B(3,3) = gamma_gr*(0._WP)
+      B(3,4) = gamma_gr*(0._WP)
       B(3,5) = 4._WP*f_rh
       B(3,6) = -1._WP
 
@@ -706,32 +706,32 @@ contains
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
          pt => this%pt(2), &
-         alpha_gr => this%alpha_gr, &
-         alpha_rh => this%alpha_rh, &
-         alpha_om => this%alpha_om, &
+         gamma_gr => this%gamma_gr, &
+         gamma_rh => this%gamma_rh, &
+         gamma_om => this%gamma_om, &
          branch => this%branch_o)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(gamma_om, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
 
-      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
+      f_rh = 1._WP - 0.25_WP*gamma_rh*i_omega_c*c_thn
       
       ! Evaluate selected elements of the Jacobian matrix
 
       a_11 = V/Gamma_1 - 3._WP
-      a_12 = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
-      a_13 = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
-      a_14 = alpha_gr*(0._WP)
+      a_12 = lambda/(c_1*gamma_om*omega_c**2) - V/Gamma_1
+      a_13 = gamma_gr*(lambda/(c_1*gamma_om*omega_c**2))
+      a_14 = gamma_gr*(0._WP)
 
-      a_21 = c_1*alpha_om*omega_c**2 - As
+      a_21 = c_1*gamma_om*omega_c**2 - As
       a_22 = As + 1._WP
-      a_23 = alpha_gr*(0._WP)
-      a_24 = alpha_gr*(-1._WP)
+      a_23 = gamma_gr*(0._WP)
+      a_24 = gamma_gr*(-1._WP)
 
       ! Evaluate the eigenvalue for the wave we want to keep
 
@@ -746,22 +746,22 @@ contains
 
       B(1,1) = -(chi - a_11)
       B(1,2) = a_12
-      B(1,3) = -alpha_gr*G_1
-      B(1,4) = alpha_gr*G_2
+      B(1,3) = -gamma_gr*G_1
+      B(1,4) = gamma_gr*G_2
       B(1,5) = 0._WP
       B(1,6) = 0._WP
 
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B(2,4) = alpha_gr*(1._WP)
-      B(2,5) = alpha_gr*(0._WP)
-      B(2,6) = alpha_gr*(0._WP)
+      B(2,1) = gamma_gr*(0._WP)
+      B(2,2) = gamma_gr*(0._WP)
+      B(2,3) = gamma_gr*(l_e + 1._WP) + (1._WP - gamma_gr)
+      B(2,4) = gamma_gr*(1._WP)
+      B(2,5) = gamma_gr*(0._WP)
+      B(2,6) = gamma_gr*(0._WP)
 
       B(3,1) = 2._WP - 4._WP*nabla_ad*V
       B(3,2) = 4._WP*nabla_ad*V
-      B(3,3) = alpha_gr*(0._WP)
-      B(3,4) = alpha_gr*(0._WP)
+      B(3,3) = gamma_gr*(0._WP)
+      B(3,4) = gamma_gr*(0._WP)
       B(3,5) = 4._WP*f_rh
       B(3,6) = -1._WP
 
@@ -829,46 +829,46 @@ contains
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
          pt => this%pt(2), &
-         alpha_gr => this%alpha_gr, &
-         alpha_rh => this%alpha_rh, &
-         alpha_om => this%alpha_om, &
+         gamma_gr => this%gamma_gr, &
+         gamma_rh => this%gamma_rh, &
+         gamma_om => this%gamma_om, &
          branch => this%branch_o)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(gamma_om, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
       l_e = this%cx%l_e(Omega_rot, st)
 
-      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
+      f_rh = 1._WP - 0.25_WP*gamma_rh*i_omega_c*c_thn
 
       chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, lambda, branch)
 
       b_11 = V/Gamma_1 - 3._WP
-      b_12 = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
+      b_12 = lambda/(c_1*gamma_om*omega_c**2) - V/Gamma_1
 
       ! Set up the boundary conditions
 
       B(1,1) = chi - b_11
       B(1,2) = -b_12
-      B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)*b_12/(V/Gamma_1 + As))
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = gamma_gr*((lambda/(c_1*gamma_om*omega_c**2) - l_e - 1._WP)*b_12/(V/Gamma_1 + As))
+      B(1,4) = gamma_gr*(0._WP)
       B(1,5) = 0._WP
       B(1,6) = 0._WP
 
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B(2,4) = alpha_gr*(1._WP)
-      B(2,5) = alpha_gr*(0._WP)
-      B(2,6) = alpha_gr*(0._WP)
+      B(2,1) = gamma_gr*(0._WP)
+      B(2,2) = gamma_gr*(0._WP)
+      B(2,3) = gamma_gr*(l_e + 1._WP) + (1._WP - gamma_gr)
+      B(2,4) = gamma_gr*(1._WP)
+      B(2,5) = gamma_gr*(0._WP)
+      B(2,6) = gamma_gr*(0._WP)
 
       B(3,1) = 2._WP - 4._WP*nabla_ad*V
       B(3,2) = 4._WP*nabla_ad*V
-      B(3,3) = alpha_gr*(0._WP)
-      B(3,4) = alpha_gr*(0._WP)
+      B(3,3) = gamma_gr*(0._WP)
+      B(3,4) = gamma_gr*(0._WP)
       B(3,5) = 4._WP*f_rh
       B(3,6) = -1._WP
 

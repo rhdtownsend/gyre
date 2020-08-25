@@ -96,8 +96,8 @@ contains
 
     ! Construct the sad_bvp_t
 
-    if (os_p%alpha_gr /= 1._WP) then
-       $WARN(alpha_gr is ignored in static equations)
+    if (os_p%gamma_gr /= 1._WP) then
+       $WARN(gamma_gr is ignored in static equations)
     endif
     
     pt_i = gr%pt_i()
