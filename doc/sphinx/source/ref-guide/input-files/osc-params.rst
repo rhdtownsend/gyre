@@ -31,20 +31,20 @@ is used.  Allowable parameters are:
   - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for gravitational components, :nml_v:`'DZIEM'` for mechanical components)
   - :nml_v:`'LAGP'` : Lagrangian pressure perturbation formulation
 
-:nml_n:`alpha_gr` (default :nml_v:`1.`)
+:nml_n:`gamma_gr` (default :nml_v:`1.`)
   Scaling factor for gravitational potential perturbations (see
-  :math:`\alpha_{\rm gr}` term in the :ref:`osc-equation`
+  :math:`\gammagr` term in the :ref:`osc-eqs-dimless`
   section). Set to :nml_v:`0.` to implement the Cowling approximation
 
-:nml_n:`alpha_th` (defaualt :nml_v:`1.`)
-  Scaling factor for the thermal timescale (see :math:`\alpha_{\rm th}`
-  term in the :ref:`osc-equations` section). Set to :nml_v:`0.` to
-  implement the non-adiabatic reversible (NAR) approximation, and to large
+:nml_n:`gamma_th` (defaualt :nml_v:`1.`)
+  Scaling factor for the thermal timescale (see :math:`\gammath`
+  term in the :ref:`osc-eqs-dimless` section). Set to :nml_v:`0.` to
+  implement the non-adiabatic reversible (NAR) approximation (see :ads_citealp:`glatzel:1990`), and to large
   values to approach the adiabatic limit
 
-:nml_n:`alpha_hf` (defaualt :nml_v:`1.`)
-  Scaling factor for horizontal flux perturbations (see :math:`\alpha_{\rm hf}`
-  term in the :ref:`osc-equations` section). Set to :nml_v:`0.` to
+:nml_n:`gamma_hf` (defaualt :nml_v:`1.`)
+  Scaling factor for horizontal flux perturbations (see :math:`\gammahf`
+  term in the :ref:`osc-eqs-dimless` section). Set to :nml_v:`0.` to
   implement the non-adiabatic radial flux (NARF) approximation
 
 :nml_n:`inertia_norm` (default :nml_v:`'BOTH'`)

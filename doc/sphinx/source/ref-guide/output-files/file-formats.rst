@@ -42,8 +42,8 @@ GYRE's HDF-format output files adhere to the following conventions:
 
 To simplify the process of reading HDF5 output produced by GYRE, the
 `gyre.py` Python module provides the `read_output` routine which can
-read both summary files and mode files (see the
-:ref:`python_support` chapter for more details).
+read both summary files and mode files (see the :ref:`python-support`
+section for more details).
 
 TXT Format
 ----------

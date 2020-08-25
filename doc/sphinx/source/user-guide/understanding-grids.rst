@@ -1,4 +1,4 @@
-.. _working-with-grids:
+.. _understanding-grids:
 
 *******************
 Understanding Grids

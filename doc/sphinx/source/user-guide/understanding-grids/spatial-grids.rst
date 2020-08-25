@@ -67,15 +67,15 @@ of the oscillation equations, with the goal of improving resolution
 where the displacement perturbation :math:`\vxi` is rapidly
 varying. Within the subinterval :math:`[x_{k},x_{k+1}]`, the
 :math:`y_{1}` and :math:`y_{2}` solutions (see the
-:ref:`math-formalism` chapter) take the approximate form
+:ref:`osc-eqs-dimless` section) take the approximate form
 
 .. math::
 
-   y_{1,2}(x) \sim \exp [ \chi \, \ln x ],
+   y_{1,2}(x) \sim \exp [ \chi \, (\ln x - \ln x_{k+1/2}) ],
 
 where :math:`\chi` is one of the two eigenvalues of the mechanical
 (upper-left) :math:`2 \times 2` submatrix of the full Jacobian matrix
-:math:`\mA` , evaluated at the midpoint :math:`x_{k+1/2}`.
+:math:`\mA`, evaluated at the midpoint :math:`x_{k+1/2}`.
 
 In propagation zones the imaginary part :math:`\chi_{\rm i}` of the
 eigenvalue gives the local wavenumber in :math:`\ln x` space, and
@@ -155,7 +155,7 @@ coefficient :math:`C`, the criterion for refinement of the subinterval
 where :math:`\alpha_{\rm str}` is user-definable. This
 criterion is applied separately to the :math:`V_2 \equiv V/x^{2}`,
 :math:`U`, :math:`A^{*}`, :math:`c_{1}` and :math:`\Gamma_{1}`
-coefficients (see the :ref:`structure-coeffs` section).
+coefficients (see the :ref:`osc-eqs-dimless` section).
 
 .. _central-criteria:
 

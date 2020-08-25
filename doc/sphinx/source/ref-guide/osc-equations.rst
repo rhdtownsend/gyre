@@ -1,25 +1,21 @@
-.. _math-formalism:
+.. _osc-eqs:
 
 *********************
-Mathmatical Formalism
+Oscillation Equations
 *********************
 
-This chapter details the mathematical formalism on which
-GYRE is built.
+This chapter dervies the oscillation equations that GYRE solves.
 
 .. toctree::
    :maxdepth: 2
 
-.. _math-fluid:
-
-Physical Formulation
-====================
+.. _osc-eqs-fluid:
 
 Fluid Equations
----------------
+===============
 
-The basis for most subsequent equations are the fluid equations,
-comprising the conservation laws for mass
+The starting point is the fluid equations, comprising the conservation
+laws for mass
 
 .. math::
 
@@ -59,7 +55,7 @@ where :math:`\kappa` is the opacity and :math:`a` the radiation
 constant.
 
 Thermodynamic Relations
------------------------
+=======================
 
 The fluid equations are augmented by the thermodynamic relationships
 between the four state variables (:math:`P`, :math:`T`, :math:`\rho`
@@ -75,7 +71,7 @@ derivable from them:
    T = T(P, S).
 
 Equilibrium State
------------------
+=================
 
 In a static equilibrium state the fluid velocity vanishes. The
 momentum equation then becomes the hydrostatic equilibrium equation
@@ -112,14 +108,14 @@ If the star is in thermal equilibrium then the left-hand side
 vanishes, and the nuclear heating rate balances the flux divergence
 term.
 
-.. _math-linearize:
+.. _osc-eqs-linearize:
 
 Linearized Equations
---------------------
+====================
 
 Applying an Eulerian (fixed position, denoted by a prime) perturbation
-to the mass and momentum conservation equations,
-they linearize about the static equilibrium state as
+to the mass and momentum conservation equations, they linearize about
+the static equilibrium state as
 
 .. math::
 
@@ -183,10 +179,10 @@ and the nuclear and opacity partials are
    \kapad = \left( \pderiv{\ln \kappa}{\ln P} \right)_{\rm ad} \qquad
    \kapS = \left( \pderiv{\ln \kappa}{S} \right)_{P} \qquad
    
-.. _math-sep:
+.. _osc-eqs-sep:
 
 Separation
-----------
+==========
 
 With a separation of variables in spherical-polar coordinates
 :math:`(r,\theta,\phi)`, and assuming an oscillatory time (:math:`t`)
@@ -218,15 +214,9 @@ vector is related to the velocity perturbation via
 
    \vv' = \pderiv{\vxi}{t}
 
-Oscillation Equations
-=====================
-
-Dimensioned Form
-----------------
-
-The oscillation equations follow from substituting the above solution
-forms into the linearized equations. The mechanical (mass and momentum
-conservation) equations become
+Substituting the above solution forms into the linearized
+equations, the mechanical (mass and momentum conservation) equations
+become
 
 .. math::
 
@@ -240,7 +230,7 @@ conservation) equations become
 
    -\sigma^{2} \rho r \txih = - \tP' - \rho \tPhi'.
 
-Likewise, Poissons equation becomes
+Likewise, Poisson's equation becomes
 
 .. math::
 
@@ -262,7 +252,12 @@ and the thermal (heat and thermodynamic) equations become
 
    \frac{\delta T}{T} = \nabla_{\rm ad} \frac{\delta P}{P} + \frac{\delta S}{c_{P}}.
 
+.. _osc-eqs-dimless:
 
+Dimensionless Form
+==================
+
+TBD
 
 .. rubric:: Footnotes
 

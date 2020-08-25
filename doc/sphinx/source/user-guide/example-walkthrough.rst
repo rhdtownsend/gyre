@@ -27,7 +27,7 @@ Grabbing a Stellar Model
 ========================
 
 The next step is to grab the stellar model. There are a number of
-example models provided in the :file:`{$GYRE_DIR}/models` directory;
+example models provided in the :file:`${GYRE_DIR}/models` directory;
 the following commands will copy a MESA model for a :math:`5\,\Msun`
 SPB star into your working directory:
 
@@ -73,8 +73,8 @@ file above:
   summary data to the file ``summary.txt``, and individual mode data
   to files having the prefix ``mode.``;
 * the :nml_g:`nad_output` namelist group is empty, telling GYRE not to
-  write out any non-adiabatic data (see
-  :ref:`non-adiabatic-calculations` for more info).
+  write out any non-adiabatic data (see the
+  :ref:`non-ad-calcs` chapter for more info).
 
 Running GYRE
 ============
@@ -86,7 +86,7 @@ With the hard work done, it's now trivial to run GYRE:
    $GYRE_DIR/bin/gyre gyre.in
 
 As the code runs (on multiple cores, if you have a multi-core machine;
-see :ref:`faq-multicore` for more details), it will print lots of data
+see the :ref:`FAQ <faq-multicore>` for more details), it will print lots of data
 to the screen. Let's break down this output, chunk by chunk.
 
 First, GYRE prints out its version number, tells us (in OpenMP
@@ -109,7 +109,7 @@ to the center (which is why GYRE decides not to add a central point).
 GYRE then prepares to searching for modes with harmonic degree
 :math:`\ell=2` and azimuthal order :math:`m=0` (not specified in
 :file:`gyre.in`, but assumed by default), by building a frequency grid
-and a spatial (:math:`x`) grid:
+and a spatial grid:
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
@@ -117,16 +117,17 @@ and a spatial (:math:`x`) grid:
    :end-before: Starting search
 
 (The concepts of spatial and frequency grids are explored in greater
-detail in the :ref:`gyre-fundamentals` chapter). Next, GYRE attempts
-to bracket roots of the discriminant function (again, see
-:ref:`gyre-fundamentals`) by searching for changes in its sign:
+detail in the :ref:`gyre-fundamentals` and :ref:`understanding-grids`
+chapters). Next, GYRE attempts to bracket roots of the discriminant
+function (again, see the :ref:`gyre-fundamentals` chapter) by
+searching for changes in its sign:
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
    :start-after: Segment 1
    :end-before: Root Solving
 
-Finally, for each sign change found GYRE uses a root solver to
+Finally, for each bracket found GYRE uses a root solver to
 converge to the eigenfrequency. Each row of output here corresponds to
 a mode that GYRE has successfully found:
 
@@ -143,7 +144,7 @@ The columns appearing are as follows:
   azimuthal order :math:`m`
   
 ``n_pg``
-  radial order :math:`n` (in the Eckart-Osaki-Scuflaire-Takata scheme)
+  radial order :math:`n` (in the Eckart-Osaki-:ads_citeauthor:`scuflaire:1974`-:ads_citeauthor:`takata:2006b` scheme)
 
 ``n_p``
   acoustic-wave winding number :math:`n_{\rm p}`
@@ -182,7 +183,7 @@ the output files discussed below. Some things to watch out for:
   from this behavior can happen for a number of reasons:
 
   * Missing values can indicate that GYRE has skipped a mode in
-    frequency space; the fix is to use a finer frequency scan.
+    frequency space; the fix is to use a finer frequency grid.
 
   * Missing values together with duplicate and/or non-monotonic values
     can indicate that GYRE isn't resolving the spatial structure of
@@ -197,16 +198,18 @@ the output files discussed below. Some things to watch out for:
 Interpreting Output Files
 =========================
 
-Overall properties of all modes found (eigenfrequencies, inertias,
-etc.) are collected together in the file :file:`summary.txt`. For each
-mode GYRE also writes a file with the name :file:`mode.{NNNNN}.txt`,
-containing data (eigenfrequency, eigenfunctions, etc.) specific to the
-mode. Here, :file:`{NNNNN}` denotes a 5-digit index which increments
-(starting at :file:`00001`) for each mode found. Note that this index
-bears no relation to the radial order ``n_pg``; it merely serves as a
-unique label for the modes.
+Overall properties of all modes found (radial orders,
+eigenfrequencies, etc.) are collected together in the summary file,
+which in this case has the name :file:`summary.txt`. For each mode
+GYRE also writes a detail file containing data (eigenfrequency,
+eigenfunctions, etc.) specific to the mode. In this case, the detail
+files have names of the form :file:`detail.{NNNNN}.txt`, where
+:file:`{NNNNN}` denotes a 5-digit index which increments (starting at
+:file:`00001`) for each mode found. Note that this index bears no
+relation to the radial order ``n_pg``; it merely serves as a unique
+label for the modes.
 
-Both the sumamry file and the mode files are text-based (it's possible
+Both the sumamry file and the detail files are text-based (it's possible
 to write HDF5-format files instead; see the :ref:`output-files`
 chapter for details). The command
 
@@ -222,14 +225,13 @@ look something like this:
    :lines: 1-10
 
 The first three lines give column numbers, labels, and values for the
-scalar data — here, the stellar mass ``M_star`` and radius ``R_star``,
-expressed in cgs units. The next two lines give column numbers and
-labels for the per-mode data (``E_norm`` is the normalized mode
-inertia, and the other columns are the same as described above for the
-screen output); the subsequent lines then give the corresponding
-values (one line per mode). The mode files have a similar layout, with
-scalar data followed by array data representing the eigenfunctions
-(one line per radial grid point).
+scalar data --- here, the units ``freq_units`` of the frequency data
+in the file. The next two lines give column numbers and labels for the
+per-mode data; the ``Re(freq)`` and ``Im(freq)`` columnss contains the
+real and imaginary parts of the eigenfrequencies, units of cycles per
+day. The detail files have a similar layout, with scalar data followed
+by array data representing the eigenfunctions (one line per spatial
+grid point).
 
 The choice of which data appear in output files isn't hardwired, but
 rather determined by the :nml_n:`summary_item_list` and

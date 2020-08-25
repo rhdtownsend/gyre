@@ -10,9 +10,13 @@ ii	{\rm i}
 nablah	\nabla_{\rm h}
 Dfunc	\mathcal{D}
 vu	\mathbf{u}
-vy	\mathbf{y}
+vty	\tilde{\mathbf{y}}
 mS	\boldsymbol{\mathsf{S}}
 mA	\boldsymbol{\mathsf{A}}
+mY	\boldsymbol{\mathsf{Y}}
+mB	\boldsymbol{\mathsf{B}}
+mI	\boldsymbol{\mathsf{I}}
+mz	\boldsymbol{0}
 vv	\mathbf{v}
 vF	\mathbf{F}
 vFrad	\vF_{\rm R}
@@ -44,10 +48,13 @@ tP	\tilde{P}
 trho	\tilde{\rho}
 tPhi	\tilde{\Phi}
 tf	\tilde{f}
-xin	x_{\rm i}
-xout	x_{\rm o}
-xturn	\hat{x}
-kturn	\hat{k}
-nin	n_{\rm inner}
-Dx	\Delta x
-Dxtarg	\Dx^{\dagger}
+subin	#1_{\rm i}
+subout	#1_{\rm o}
+nin	\subin{n}
+nout	\subout{n}
+neq	n_{\rm e}
+xin	\subin{x}
+xout	\subout{x}
+gammath	\gamma_{\rm th}
+gammagr	\gamma_{\rm gr}
+gammahf	\gamma_{\rm hf}

@@ -22,8 +22,8 @@ should contain exactly one of each. Allowable parameters are:
   :ref:`summary-files` section for possible choices
 
 :nml_n:`summary_filter_list` (default :nml_v:`''`)
-  Comma-separated list of filtering criteria for summary files; see the
-  :ref:`output-filtering` section for possible choices
+  Comma-separated list of filter criteria for summary files; see the
+  :ref:`output-filters` section for possible choices
 
 :nml_n:`detail_template` (default :nml_v:`''`)
   Name template of detail files. Names are generated using the following pattern
@@ -51,8 +51,8 @@ should contain exactly one of each. Allowable parameters are:
   :ref:`detail-files` section for possible choices
 
 :nml_n:`detail_filter_list` (default :nml_v:`''`)
-  Comma-separated list of filtering criteria for detail files; see the
-  :ref:`output-filtering` section for possible choices
+  Comma-separated list of filter criteria for detail files; see the
+  :ref:`output-filters` section for possible choices
 
 :nml_n:`freq_units` (default :nml_v:`NONE`)
   Units of :nml_v:`freq` output item; one of:

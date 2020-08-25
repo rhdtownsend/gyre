@@ -4,26 +4,9 @@
 Building Polytropic Structure Files
 ***********************************
 
-This appendix describes the :program:`build_poly` executable, which creates polytropic structure
-files for use with GYRE.
-
-Pre-Requisites
-==============
-
-In addition to GYRE's general pre-requisites (see the
-:ref:`installation` chapter), :program:`build_poly` needs a
-thread-safe version of the :netlib:`ODEPACK <odepack>` ordinary
-differential integrator library. This library is shipped with version
-20.3.2 (and more recent) of the MESA SDK.
-
-
-On Linux and MacOS platforms, this library is bundled together with all of the other pre-requisites in the Madison Software Development Kit (SDK), which can be downloaded from
-the `MESA SDK <mesa-sdk_>`__ homepage. Using this SDK is strongly
-recommended.
-
-
-It does this by solving the Lane-Emden
-equation
+This appendix describes the :program:`build_poly` executable, which
+creates polytropic structure files for use with GYRE by solving the
+Lane-Emden equation
 
 .. math::
 
@@ -34,10 +17,10 @@ variable :math:`\Theta` represents the local density :math:`\rho` via
 
 .. math::
 
-   \Theta = \left( \frac{\rho}{\rho_{\rm c} \right)^{1/\npoly},
+   \Theta = \left( \frac{\rho}{\rho_{\rm c}} \right)^{1/\npoly},
 
 where :math:`\rho_{\rm c}` is the central density; and the independent
-variable :math:\`Theta` is related to the radial coordinate :math:`r`
+variable :math:`\xi` is related to the radial coordinate :math:`r`
 via
 
 .. math::
@@ -52,6 +35,23 @@ subject to the boundary conditions
 
    \theta(0) = 1, \qquad \theta(\xi_{1}) = 0
 
+Pre-Requisites
+==============
+
+In addition to GYRE's general pre-requisites (see the
+:ref:`installation` chapter), :program:`build_poly` needs a
+thread-safe version of the :netlib:`ODEPACK <odepack>` ordinary
+differential integrator library. This library is shipped with version
+20.3.2 (and more recent) of the MESA SDK.
+
 Compile
--------
+=======
+
+If the build system detects that the :program:`odepack_link` link
+script is installed (as part of the MESA SDK), then
+:program:`build_poly` will automatically be compiled when GYRE is
+built.
+
+
+
 

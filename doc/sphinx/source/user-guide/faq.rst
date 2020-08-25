@@ -15,6 +15,8 @@ How Do I...
 ...compile GYRE?
   See the :ref:`install-compile` section.
 
+.. _faq-multicore:
+
 ...run GYRE on multiple cores?
   GYRE takes advantage of multiple
   processors in a shared-memory (multicore) computer through its use

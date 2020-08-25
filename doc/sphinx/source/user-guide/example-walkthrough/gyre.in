@@ -2,47 +2,48 @@
 /
 
 &model
-	model_type = 'EVOL'  ! Obtain stellar structure from an evolutionary model
-	file = 'spb.mesa'    ! File name of the evolutionary model
-	file_format = 'MESA' ! File format of the evolutionary model
+  model_type = 'EVOL'  ! Obtain stellar structure from an evolutionary model
+  file = 'spb.mesa'    ! File name of the evolutionary model
+  file_format = 'MESA' ! File format of the evolutionary model
 /
 
 &mode
-	l = 2 ! Harmonic degree
+  l = 2 ! Harmonic degree
 /
 
 &osc
-        outer_bound = 'VACUUM' ! Use a zero-pressure outer mechanical boundary condition
+  outer_bound = 'VACUUM' ! Use a zero-pressure outer mechanical boundary condition
 /
 
 &rot
 /
 
 &num
-	diff_scheme = 'COLLOC_GL4' ! 4th-order collocation scheme for difference equations
+  diff_scheme = 'COLLOC_GL4' ! 4th-order collocation scheme for difference equations
 /
 
 &scan
-        grid_type = 'INVERSE' ! Scan grid uniform in inverse frequency
-        freq_min = 0.5        ! Minimum frequency to scan from
-	freq_max = 1.0        ! Maximum frequency to scan to
-	n_freq = 250          ! Number of frequency points in scan
+  grid_type = 'INVERSE' ! Scan grid uniform in inverse frequency
+  freq_min = 0.5        ! Minimum frequency to scan from
+  freq_max = 1.0        ! Maximum frequency to scan to
+  n_freq = 250          ! Number of frequency points in scan
 /
 
 &grid
-	alpha_osc = 10 ! Ensure adequate spatial resolution in propagation regions
-	alpha_exp = 2  ! Ensure adequate spatial resolution in evanescant regions
-	alpha_ctr = 10 ! Ensure adequate spatial resolution at center
+  alpha_osc = 10 ! Ensure adequate spatial resolution in propagation regions
+  alpha_exp = 2  ! Ensure adequate spatial resolution in evanescant regions
+  alpha_ctr = 10 ! Ensure adequate spatial resolution at center
 /
 
 
 &ad_output
-        summary_file = 'summary.txt'                ! File name for summary file
-	summary_file_format = 'TXT'                 ! Format of summary file
-        summary_item_list = 'M_star,l,n_pg,omega'   ! Items to appear in summary file
-        detail_template = 'mode.%J.txt'             ! File-name template for detail files
-	detail_file_format = 'TXT'                  ! Format of detail files
-        detail_item_list = 'n_pg,omega,x,xi_r,xi_h' ! Items to appear in detail files
+  summary_file = 'summary.txt'                 ! File name for summary file
+  summary_file_format = 'TXT'                  ! Format of summary file
+  summary_item_list = 'l,n_pg,freq,freq_units' ! Items to appear in summary file
+  detail_template = 'detail.%J.txt'            ! File name template for detail files
+  detail_file_format = 'TXT'                   ! Format of detail files
+  detail_item_list = 'n_pg,x,xi_r,xi_h'        ! Items to appear in detail files
+  freq_units = 'CYC_PER_DAY'                   ! Units of freq output items
 /
 
 &nad_output

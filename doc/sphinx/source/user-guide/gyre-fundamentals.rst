@@ -14,8 +14,6 @@ eigenfrequencies and eigenfunctions.
    :maxdepth: 2
 
    gyre-fundamentals/stretched-string.rst
-   gyre-fundamentals/analytic-solution.rst
-   gyre-fundamentals/numerical-solution.rst
-   gyre-fundamentals/numerical-limits.rst
    gyre-fundamentals/from-string-to-gyre.rst
+   gyre-fundamentals/numerical-limits.rst
 

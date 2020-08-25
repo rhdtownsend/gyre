@@ -20,10 +20,10 @@ Mode parameters
    l : 2
    m : 0
 
-Building frequency scan
+Building frequency grid
    added scan interval :  0.5000E+00 ->  0.1000E+01 (250 points, INVERSE)
 
-Building x grid
+Building spatial grid
    Refined 6 subinterval(s) in iteration 1
    Refined 0 subinterval(s) in iteration 2
    Final grid has 1 segment(s) and 1820 point(s):
@@ -32,7 +32,7 @@ Building x grid
 Starting search (adiabatic)
 
 Root bracketing
-  Time elapsed :     2.001 s
+  Time elapsed :     1.926 s
 
 Root Solving
    l    m    n_pg    n_p    n_g       Re(omega)       Im(omega)        chi n_iter
@@ -45,5 +45,5 @@ Root Solving
    2    0     -10      0     10  0.79690602E+00  0.00000000E+00 0.6071E-13      6
    2    0      -9      0      9  0.87152970E+00  0.00000000E+00 0.7861E-13      8
    2    0      -8      0      8  0.99746970E+00  0.00000000E+00 0.1223E-12      6
-  Time elapsed :      0.595 s
+  Time elapsed :      0.557 s
 
