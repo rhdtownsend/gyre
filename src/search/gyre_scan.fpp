@@ -66,7 +66,7 @@ contains
     ! Build the frequency scan
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Building frequency scan'
+       write(OUTPUT_UNIT, 100) 'Building frequency grid'
 100    format(A)
     endif
 
