@@ -34,7 +34,15 @@ How Do I...
 
 ...get support for a problem I'm having?
   Post a message to one of the `GYRE discussion forums <gyre-forums_>`__.
-   
+
+What Does...
+============
+...'Failed during deflate narrow : out-of-domain frequency' mean?
+  This is an indication that GYRE's root solver wandered out of bounds
+  when trying to find a complex root of the discriminant function. Try running
+  with a different choice of :nml_n:`diff_scheme` parameter
+  (:nml_v:`MAGNUS_GL2` seems to be the most robust), and/or using
+  :program:`gyre_contour` instead.
 
 Why Does...
 ===========
@@ -43,3 +51,4 @@ Why Does...
   This behavior is typically caused by overflow of the OpenMP stack
   (for more info see `here <http://stackoverflow.com/questions/13870564/gfortran-openmp-segmentation-fault-occurs-on-basic-do-loop>`__).
   Try setting the :envvar:`OMP_STACKSIZE` environment variable to 500K or 1M.
+
