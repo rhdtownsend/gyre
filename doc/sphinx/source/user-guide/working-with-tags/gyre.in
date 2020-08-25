@@ -1,0 +1,68 @@
+&constants
+/
+
+&model
+  model_type = 'EVOL'  ! Obtain stellar structure from an evolutionary model
+  file = 'rgb.mesa'    ! File name of the evolutionary model
+  file_format = 'MESA' ! File format of the evolutionary model
+/
+
+&mode
+  l = 0          ! Harmonic degree
+  tag = 'radial' ! Matching tag
+/
+
+&mode
+  l = 1              ! Harmonic degree
+  tag = 'non-radial' ! Matching tag
+/
+
+&mode
+  l = 2              ! Harmonic degree
+  tag = 'non-radial' ! Matching tag
+/
+
+&osc
+  outer_bound = 'VACUUM' ! Use a zero-pressure outer mechanical boundary condition
+/
+
+&rot
+/
+
+&num
+  diff_scheme = 'COLLOC_GL4' ! 4th-order collocation scheme for difference equations
+/
+
+&scan
+  grid_type = 'LINEAR' ! Scan grid uniform in frequency
+  freq_min = 41        ! Minimum frequency to scan from
+  freq_max = 43        ! Maximum frequency to scan to
+  freq_units = 'UHZ'   ! Frequency units
+  n_freq = 10          ! Number of frequency points in scan
+  tag_list = 'radial'  ! Pair only with 'radial' &mode groups
+/
+
+&scan
+  grid_type = 'LINEAR' 	  ! Scan grid uniform in frequency
+  freq_min = 41        	  ! Minimum frequency to scan from
+  freq_max = 43           ! Maximum frequency to scan to
+  freq_units = 'UHZ'      ! Frequency units
+  n_freq = 100            ! Number of frequency points in scan
+  tag_list = 'non-radial' ! Pair only with 'non-radial' &mode groups
+/
+
+&grid
+  alpha_osc = 10  ! Ensure adequate spatial resolution in propagation regions
+  alpha_exp = 2   ! Ensure adequate spatial resolution in evanescant regions
+  alpha_ctr = 100 ! Ensure adequate spatial resolution at center
+/
+
+&ad_output
+  summary_file = 'summary.txt'                 ! File name for summary file
+  summary_file_format = 'TXT'                  ! Format of summary file
+  summary_item_list = 'l,n_pg,freq,freq_units' ! Items to appear in summary file
+  freq_units = 'UHZ'                           ! Units of freq output items
+/
+
+&nad_output
+/

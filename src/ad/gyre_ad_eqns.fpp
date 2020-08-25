@@ -57,8 +57,8 @@ module gyre_ad_eqns
      type(point_t), allocatable :: pt(:)
      type(ad_trans_t)           :: tr
      real(WP), allocatable      :: coeff(:,:)
-     real(WP)                   :: alpha_gr
-     real(WP)                   :: alpha_om
+     real(WP)                   :: gamma_gr
+     real(WP)                   :: gamma_om
    contains
      private
      procedure, public :: stencil
@@ -95,13 +95,13 @@ contains
 
     eq%tr = ad_trans_t(cx, md_p, os_p)
 
-    eq%alpha_gr = os_p%alpha_gr
+    eq%gamma_gr = os_p%gamma_gr
 
     select case (os_p%time_factor)
     case ('OSC')
-       eq%alpha_om = 1._WP
+       eq%gamma_om = 1._WP
     case ('EXP')
-       eq%alpha_om = -1._WP
+       eq%gamma_om = -1._WP
     case default
        $ABORT(Invalid time_factor)
     end select
@@ -206,8 +206,8 @@ contains
          Gamma_1 => this%coeff(i,J_GAMMA_1), &
          pt => this%pt(i), &
          pt_i => this%cx%point_i(), &
-         alpha_gr => this%alpha_gr, &
-         alpha_om => this%alpha_om)
+         gamma_gr => this%gamma_gr, &
+         gamma_om => this%gamma_om)
 
       Omega_rot = this%cx%Omega_rot(pt)
       Omega_rot_i = this%cx%Omega_rot(pt_i)
@@ -220,24 +220,24 @@ contains
       ! Set up the matrix
 
       xA(1,1) = V/Gamma_1 - 1._WP - l_i
-      xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
-      xA(1,3) = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
-      xA(1,4) = alpha_gr*(0._WP)
+      xA(1,2) = lambda/(c_1*gamma_om*omega_c**2) - V/Gamma_1
+      xA(1,3) = gamma_gr*(lambda/(c_1*gamma_om*omega_c**2))
+      xA(1,4) = gamma_gr*(0._WP)
 
-      xA(2,1) = c_1*alpha_om*omega_c**2 - As
+      xA(2,1) = c_1*gamma_om*omega_c**2 - As
       xA(2,2) = As - U + 3._WP - l_i
-      xA(2,3) = alpha_gr*(0._WP)
-      xA(2,4) = alpha_gr*(-1._WP)
+      xA(2,3) = gamma_gr*(0._WP)
+      xA(2,4) = gamma_gr*(-1._WP)
 
-      xA(3,1) = alpha_gr*(0._WP)
-      xA(3,2) = alpha_gr*(0._WP)
-      xA(3,3) = alpha_gr*(3._WP - U - l_i)
-      xA(3,4) = alpha_gr*(1._WP)
+      xA(3,1) = gamma_gr*(0._WP)
+      xA(3,2) = gamma_gr*(0._WP)
+      xA(3,3) = gamma_gr*(3._WP - U - l_i)
+      xA(3,4) = gamma_gr*(1._WP)
 
-      xA(4,1) = alpha_gr*(U*As)
-      xA(4,2) = alpha_gr*(U*V/Gamma_1)
-      xA(4,3) = alpha_gr*(lambda)
-      xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
+      xA(4,1) = gamma_gr*(U*As)
+      xA(4,2) = gamma_gr*(U*V/Gamma_1)
+      xA(4,3) = gamma_gr*(lambda)
+      xA(4,4) = gamma_gr*(-U - l_i + 2._WP)
 
     end associate
 

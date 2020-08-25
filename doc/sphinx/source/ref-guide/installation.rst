@@ -1,4 +1,4 @@
-.. _install:
+.. _installation:
 
 ************
 Installation
@@ -67,7 +67,7 @@ Compile GYRE using the :command:`make` utility:
 Test
 ----
 
-o check that GYRE has compiled correctly and gives reasonable
+To check that GYRE has compiled correctly and gives reasonable
 results, you can run the calculation test suite via the command
 
 .. substitution-prompt:: bash

@@ -5,20 +5,13 @@ Frequency Grids
 
 GYRE evaluates its discriminant function :math:`\Dfunc(\omega)` on a
 grid :math:`\{\omega_{1},\omega_{2},\ldots,\omega_{M}\}` in the
-dimensionless frequency
-
-.. math::
-
-   \omega \equiv \sqrt{\frac{R^{3}}{GM}} \sigma,
-   
-scanning for changes in the sign of :math:`\Dfunc(\omega)` that are
-indicative of a bracketed root (see the :ref:`frequency-scan` section
-for a discussion of bracket scanning in the context of the stretched
-string BVP). The computational cost of a calculation scales with the
-total number of points :math:`M` in this grid, while the grid's
-resolution --- i.e., the spacing between adjacent points --- impacts
-the completeness of the modes found by GYRE (see the
-:ref:`numerical-limits` section for a discussion of these behaviors).
+dimensionless frequency, and scans for changes in the sign of
+:math:`\Dfunc(\omega)` that are indicative of a bracketed root. The
+computational cost of a calculation scales with the total number of
+points :math:`M` in this grid, while the grid's resolution --- i.e.,
+the spacing between adjacent points --- impacts the completeness of
+the modes found by GYRE (see the :ref:`numerical-limits` section for a
+discussion of these behaviors).
 
 GYRE constructs a fresh frequency grid for each combination of
 harmonic degree :math:`\ell` and azimuthal order :math:`m` specified

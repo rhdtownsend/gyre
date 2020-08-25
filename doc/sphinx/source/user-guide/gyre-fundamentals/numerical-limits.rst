@@ -3,29 +3,28 @@
 Limitations of the Numerical Method
 ===================================
 
-The :ref:`numerical method <numerical-solution>` described here
-generally performs very well; however, it has a couple of failure
-scenarios that are important to understand (and provide the basis for
-understanding GYRE's failure modes). These scenarios arise through
-poor choices of the spatial grid used to discretize the wave equation,
-and/or the frequency grid used to search for roots of the discriminant
-function.
+The numerical method used both in the stretched string problem and in
+GYRE generally performs very well; however, it has a couple of failure
+scenarios that are important to understand. These scenarios arise
+through poor choices of the spatial grid used to discretize the
+governing differential equation(s), and/or the frequency grid used to
+search for roots of the discriminant function.
 
 Insufficient Spatial Resolution
 -------------------------------
 
 The cost of evaluating the determinant of the system matrix
 :math:`\mS` scales proportionally to the number of grid points
-:math:`N` used for the :ref:`discretization
-<discretization>`. Therefore, in the interests of computational
-efficiency, we want to make :math:`N` as small as possible.
+:math:`N` used for the discretization. Therefore, in the interests of
+computational efficiency, we want to make :math:`N` as small as
+possible.
 
 However, things go wrong when :math:`N` becomes too
 small. :numref:`fig-discrim-func-N7` demonstrates this by plotting the
 discriminant function for the stretched-string BVP with
 :math:`N=7`. Compared against :numref:`fig-discrim-func`, we see that
 toward larger :math:`\sigma` the roots of the discriminant function
-become progessively shifted toward lower frequencies; and, above
+become progressively shifted toward lower frequencies; and, above
 :math:`\sigma \approx 3.5 \pi c/L`, they disappear altogether.
 
 .. _fig-discrim-func-N7:
@@ -41,7 +40,7 @@ become progessively shifted toward lower frequencies; and, above
    :math:`\Dfunc(0) = 1`. (:download:`Source
    <fig_discrim_func_N7.py>`)
 
-To understand this behavior, recall that the detemrinant of an
+To understand this behavior, recall that the determinant of an
 :math:`N \times N` matrix can be expressed (via :wiki:`Laplace
 expansion`) as the sum of `N` terms; and each term itself involves the
 product of :math:`N` matrix elements, picked so that each row/column
@@ -55,7 +54,7 @@ case, 5) roots. This leads us to important lesson #1:
 .. attention::
 
    The number of points adopted in the discretization limits the
-   number of modes that can be found. With a spatial grid of*
+   number of modes that can be found. With a spatial grid of
    :math:`N` points, there are only (of order) :math:`N` distinct
    numerical solutions.
 
@@ -85,14 +84,14 @@ lesson #2 (closely related to #1):
 
    The spatial resolution adopted in the discretization determines the
    accuracy of the modes found. A given eigenfrequency will be
-   accurate only when the spatial grid spacing is appreciably smaller than
-   the spatial variation scale of the corresponding eigenfunction.
+   accurate only when the grid spacing is appreciably smaller than
+   the spatial variation scale of its corresponding eigenfunction.
 
 Insufficient Frequency Resolution
 ---------------------------------
 
 When searching for root brackets, we have to evaluate the discriminant
-function a total of :math:`M` times. Therefore, as with :math:`N`,
+function a total of :math:`M` times. Therefore, as with the spatial grid,
 computational efficiency dictates that we want to make :math:`M` as
 small as possible. Again, however, things go wrong if :math:`M` is too
 small. :numref:`fig-discrim-brackets-M4` reprises
@@ -111,14 +110,14 @@ grid with only :math:`M=4` points.
    adjacent points that bracket a root
    :math:`\Dfunc=0`. (:download:`Source <fig_discrim_brackets_M4.py>`)
 
-Clearly, all but the lowest-frequency (:math:`n=1`) mode are missed in
-the bracketing process. This is admittely an extreme example, but
-nicely demonstrates the consequences of too coarse a frequency grid,
-and gives us important lesson #3:
+Clearly, only the lowest-frequency (:math:`n=1`) mode is found in the
+bracketing process; the rest are missed. This is admittedly an extreme
+example, but nicely demonstrates the consequences of too coarse a
+frequency grid, and gives us important lesson #3:
 
 .. attention::
 
    The frequency resolution adopted in the root bracketing influences
    the completeness of the modes found. All modes will be found only
-   when the frequency grid spacing is smaller than the eigenfrequency
-   separation of adjacent modes.
+   when the grid spacing is smaller than the eigenfrequency separation
+   of adjacent modes.

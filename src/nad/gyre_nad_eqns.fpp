@@ -76,11 +76,11 @@ module gyre_nad_eqns
      type(point_t), allocatable :: pt(:)
      type(nad_trans_t)          :: tr
      real(WP), allocatable      :: coeff(:,:)
-     real(WP)                   :: alpha_gr
-     real(WP)                   :: alpha_th
-     real(WP)                   :: alpha_hf
-     real(WP)                   :: alpha_rh
-     real(WP)                   :: alpha_om
+     real(WP)                   :: gamma_gr
+     real(WP)                   :: gamma_th
+     real(WP)                   :: gamma_hf
+     real(WP)                   :: gamma_rh
+     real(WP)                   :: gamma_om
      integer                    :: conv_scheme
    contains
      private
@@ -118,21 +118,21 @@ contains
 
     eq%tr = nad_trans_t(cx, md_p, os_p)
 
-    eq%alpha_gr = os_p%alpha_gr
-    eq%alpha_th = os_p%alpha_th
-    eq%alpha_hf = os_p%alpha_hf
+    eq%gamma_gr = os_p%gamma_gr
+    eq%gamma_th = os_p%gamma_th
+    eq%gamma_hf = os_p%gamma_hf
        
     if (os_p%eddington_approx) then
-       eq%alpha_rh = 1._WP
+       eq%gamma_rh = 1._WP
     else
-       eq%alpha_rh = 0._WP
+       eq%gamma_rh = 0._WP
     endif
 
     select case (os_p%time_factor)
     case ('OSC')
-       eq%alpha_om = 1._WP
+       eq%gamma_om = 1._WP
     case ('EXP')
-       eq%alpha_om = -1._WP
+       eq%gamma_om = -1._WP
     case default
        $ABORT(Invalid time_factor)
     end select
@@ -289,30 +289,30 @@ contains
          pt => this%pt(i), &
          pt_i => this%cx%point_i(), &
          x => this%pt(i)%x, &
-         alpha_gr => this%alpha_gr, &
-         alpha_th => this%alpha_th, &
-         alpha_hf => this%alpha_hf, &
-         alpha_rh => this%alpha_rh, &
-         alpha_om => this%alpha_om)
+         gamma_gr => this%gamma_gr, &
+         gamma_th => this%gamma_th, &
+         gamma_hf => this%gamma_hf, &
+         gamma_rh => this%gamma_rh, &
+         gamma_om => this%gamma_om)
 
       Omega_rot = this%cx%Omega_rot(pt)
       Omega_rot_i = this%cx%Omega_rot(pt_i)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(gamma_om, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
       l_i = this%cx%l_e(Omega_rot_i, st)
     
-      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
-      df_rh = -0.25_WP*alpha_rh*i_omega_c*c_thn*dc_thn/f_rh
+      f_rh = 1._WP - 0.25_WP*gamma_rh*i_omega_c*c_thn
+      df_rh = -0.25_WP*gamma_rh*i_omega_c*c_thn*dc_thn/f_rh
 
       select case (this%conv_scheme)
       case (P1_CONV_SCHEME)
-         conv_term = lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_om*omega_c**2)
+         conv_term = lambda*c_rad*(3._WP + dc_rad)/(c_1*gamma_om*omega_c**2)
       case (P4_CONV_SCHEME)
-         conv_term = lambda*(c_lum*(3._WP + dc_lum) - (c_lum - c_rad))/(c_1*alpha_om*omega_c**2)
+         conv_term = lambda*(c_lum*(3._WP + dc_lum) - (c_lum - c_rad))/(c_1*gamma_om*omega_c**2)
       case default
          $ABORT(Invalid conv_scheme)
       end select
@@ -331,48 +331,48 @@ contains
       ! Set up the matrix
 
       xA(1,1) = V/Gamma_1 - 1._WP - l_i
-      xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
-      xA(1,3) = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
-      xA(1,4) = alpha_gr*(0._WP)
+      xA(1,2) = lambda/(c_1*gamma_om*omega_c**2) - V/Gamma_1
+      xA(1,3) = gamma_gr*(lambda/(c_1*gamma_om*omega_c**2))
+      xA(1,4) = gamma_gr*(0._WP)
       xA(1,5) = delta
       xA(1,6) = 0._WP
 
-      xA(2,1) = c_1*alpha_om*omega_c**2 - As
+      xA(2,1) = c_1*gamma_om*omega_c**2 - As
       xA(2,2) = As - U + 3._WP - l_i
-      xA(2,3) = alpha_gr*(0._WP)
-      xA(2,4) = alpha_gr*(-1._WP)
+      xA(2,3) = gamma_gr*(0._WP)
+      xA(2,4) = gamma_gr*(-1._WP)
       xA(2,5) = delta
       xA(2,6) = 0._WP
 
-      xA(3,1) = alpha_gr*(0._WP)
-      xA(3,2) = alpha_gr*(0._WP)
-      xA(3,3) = alpha_gr*(3._WP - U - l_i)
-      xA(3,4) = alpha_gr*(1._WP)
-      xA(3,5) = alpha_gr*(0._WP)
-      xA(3,6) = alpha_gr*(0._WP)
+      xA(3,1) = gamma_gr*(0._WP)
+      xA(3,2) = gamma_gr*(0._WP)
+      xA(3,3) = gamma_gr*(3._WP - U - l_i)
+      xA(3,4) = gamma_gr*(1._WP)
+      xA(3,5) = gamma_gr*(0._WP)
+      xA(3,6) = gamma_gr*(0._WP)
 
-      xA(4,1) = alpha_gr*(U*As)
-      xA(4,2) = alpha_gr*(U*V/Gamma_1)
-      xA(4,3) = alpha_gr*(lambda)
-      xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
-      xA(4,5) = alpha_gr*(-U*delta)
-      xA(4,6) = alpha_gr*(0._WP)
+      xA(4,1) = gamma_gr*(U*As)
+      xA(4,2) = gamma_gr*(U*V/Gamma_1)
+      xA(4,3) = gamma_gr*(lambda)
+      xA(4,4) = gamma_gr*(-U - l_i + 2._WP)
+      xA(4,5) = gamma_gr*(-U*delta)
+      xA(4,6) = gamma_gr*(0._WP)
 
-      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)/f_rh
-      xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - c_dif)/f_rh
-      xA(5,3) = alpha_gr*(V*lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))/f_rh
-      xA(5,4) = alpha_gr*(V*nabla_ad)/f_rh
+      xA(5,1) = V*(nabla_ad*(U - c_1*gamma_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)/f_rh
+      xA(5,2) = V*(lambda/(c_1*gamma_om*omega_c**2)*(nabla_ad - nabla) - c_dif)/f_rh
+      xA(5,3) = gamma_gr*(V*lambda/(c_1*gamma_om*omega_c**2)*(nabla_ad - nabla))/f_rh
+      xA(5,4) = gamma_gr*(V*nabla_ad)/f_rh
       xA(5,5) = V*nabla*(4._WP*f_rh - kap_S)/f_rh - df_rh - (l_i - 2._WP)
       xA(5,6) = -V*nabla/(c_rad*f_rh)
 
-      xA(6,1) = alpha_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-      xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hf*nabla_ad/nabla + conv_term
-      xA(6,3) = alpha_gr*conv_term
-      xA(6,4) = alpha_gr*(0._WP)
+      xA(6,1) = gamma_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+      xA(6,2) = V*c_eps_ad - lambda*c_rad*gamma_hf*nabla_ad/nabla + conv_term
+      xA(6,3) = gamma_gr*conv_term
+      xA(6,4) = gamma_gr*(0._WP)
       if (x > 0._WP) then
-         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + alpha_th*i_omega_c*c_thk
+         xA(6,5) = c_eps_S - gamma_hf*lambda*c_rad/(nabla*V) + gamma_th*i_omega_c*c_thk
       else
-         xA(6,5) = -alpha_hf*HUGE(0._WP)
+         xA(6,5) = -gamma_hf*HUGE(0._WP)
       endif
       xA(6,6) = -1._WP - l_i
 

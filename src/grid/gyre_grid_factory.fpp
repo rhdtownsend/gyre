@@ -99,7 +99,7 @@ contains
     ! frequencies to adopt for that context
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Building x grid'
+       write(OUTPUT_UNIT, 100) 'Building spatial grid'
 100    format(A)
     endif
 
