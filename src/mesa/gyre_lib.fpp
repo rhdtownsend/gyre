@@ -84,6 +84,7 @@ module gyre_lib
   public :: L_SUN
 
   public :: mode_t
+  public :: grid_t
   public :: gyre_init
   public :: gyre_final
   public :: gyre_set_constant
