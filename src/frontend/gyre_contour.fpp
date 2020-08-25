@@ -177,7 +177,9 @@ program gyre_contour
   ! Set up the frequency arrays
 
   call build_scan(cx, md_p(1), os_p_sel, sc_p_sel, omega_re, 'REAL')
+  $ASSERT(SIZE(omega_re) >= 1,Real axis too short)
   call build_scan(cx, md_p(1), os_p_sel, sc_p_sel, omega_im, 'IMAG')
+  $ASSERT(SIZE(omega_re) >= 1,Imaginary axis too short)
 
   ! Create the grid
 
