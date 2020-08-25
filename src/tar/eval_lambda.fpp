@@ -76,18 +76,34 @@ program eval_lambda
 
   ! Evaluate them
 
-  !$OMP PARALLEL DO SCHEDULE (GUIDED)
-  do i = 1, n_q
+  if (n_q > 1) then
 
-     if (log_q) then
-        q(i) = 10**((LOG10(q_min)*(n_q-i) + LOG10(q_max)*(i-1))/(n_q-1))
-     else
-        q(i) = (q_min*(n_q-i) + q_max*(i-1))/(n_q-1)
-     endif
+     !$OMP PARALLEL DO SCHEDULE (GUIDED)
+     do i = 1, n_q
 
-     lam(i) = lambda(q(i), m, k)
+        if (log_q) then
+           q(i) = 10**((LOG10(q_min)*(n_q-i) + LOG10(q_max)*(i-1))/(n_q-1))
+        else
+           q(i) = (q_min*(n_q-i) + q_max*(i-1))/(n_q-1)
+        endif
 
-  end do
+        lam(i) = lambda(q(i), m, k)
+
+     end do
+
+  elseif (n_q == 1) then
+
+     $ASSERT(q_min == q_max,Min/max values must match when n_q == 1)
+
+     q(1) = q_min
+
+     lam(1) = lambda(q(1), m, k)
+
+  else
+
+     $ABORT(n_q must be 1 or greater)
+
+  endif
 
   ! Write out results
 
