@@ -246,7 +246,7 @@ contains
       xA(1,3) = gamma_gr*(lambda/(c_1*gamma_om*omega_c**2))
       xA(1,4) = gamma_gr*(0._WP)
 
-      xA(2,1) = c_1*gamma_om*omega_c**2 - As * MERGE(alpha_pi, 1._WP, As > 0 .and. x<x_atm)
+      xA(2,1) = c_1*gamma_om*omega_c**2 - As * MERGE(MERGE(alpha_pi, alpha_gamma, x<x_atm), 1._WP, As > 0)
       xA(2,2) = As - U + 3._WP - l_i
       xA(2,3) = gamma_gr*(0._WP)
       xA(2,4) = gamma_gr*(-1._WP)
