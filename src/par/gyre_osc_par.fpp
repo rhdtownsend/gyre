@@ -35,7 +35,7 @@ module gyre_osc_par
 
   type :: osc_par_t
      real(WP)                :: x_ref = 1._WP
-     real(WP)                :: x_atm = 0.99_WP
+     real(WP)                :: x_atm = -1._WP
      real(WP)                :: gamma_gr = 1._WP
      real(WP)                :: gamma_th = 1._WP
      real(WP)                :: gamma_hf = 1._WP

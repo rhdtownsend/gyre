@@ -91,6 +91,7 @@ contains
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
     type(ad_eqns_t)                      :: eq
+    type(point_t)                        :: pt_o
 
     ! Construct the ad_eqns_t
 
@@ -100,7 +101,12 @@ contains
 
     eq%gamma_gr = os_p%gamma_gr
 
-    eq%x_atm = os_p%x_atm
+    eq% x_atm = os_p%x_atm
+    if (eq% x_atm < 0._WP) then
+       pt_o = cx% point_o()
+       eq% x_atm = pt_o% x
+    end if
+
     select case (os_p%isolation)
     case ('GAMMA')
        eq%alpha_gamma = 0._WP
