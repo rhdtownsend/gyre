@@ -35,6 +35,7 @@ module gyre_osc_par
 
   type :: osc_par_t
      real(WP)                :: x_ref = 1._WP
+     real(WP)                :: x_atm = 0.99_WP
      real(WP)                :: gamma_gr = 1._WP
      real(WP)                :: gamma_th = 1._WP
      real(WP)                :: gamma_hf = 1._WP
@@ -49,6 +50,7 @@ module gyre_osc_par
      character(64)           :: time_factor = 'OSC'
      character(64)           :: conv_scheme = 'FROZEN_PESNELL_1'
      character(64)           :: zeta_scheme = 'PESNELL'
+     character(64)           :: isolation = 'NONE'
      character(64)           :: deps_source = 'MODEL'
      character(FILENAME_LEN) :: deps_file = ''
      character(256)          :: deps_file_format = ''
@@ -101,6 +103,7 @@ contains
     integer                               :: n_os_p
     integer                               :: i
     real(WP)                              :: x_ref
+    real(WP)                              :: x_atm
     real(WP)                              :: gamma_gr
     real(WP)                              :: gamma_th
     real(WP)                              :: gamma_hf
@@ -115,6 +118,7 @@ contains
     character(LEN(os_p%time_factor))      :: time_factor
     character(LEN(os_p%conv_scheme))      :: conv_scheme
     character(LEN(os_p%zeta_scheme))      :: zeta_scheme
+    character(LEN(os_p%isolation))        :: isolation
     character(LEN(os_p%deps_source))      :: deps_source
     character(LEN(os_p%deps_file))        :: deps_file
     character(LEN(os_p%deps_file_format)) :: deps_file_format
@@ -125,10 +129,10 @@ contains
     logical                               :: eddington_approx
     logical                               :: reduce_order
 
-    namelist /osc/ x_ref, gamma_gr, gamma_th, gamma_hf, &
+    namelist /osc/ x_ref, x_atm, gamma_gr, gamma_th, gamma_hf, &
          eps_rho, eps_T, inner_bound, outer_bound, &
          outer_bound_for_cutoff, outer_branch, variables_set, inertia_norm, time_factor, &
-         conv_scheme, zeta_scheme, deps_source, deps_file, deps_file_format, &
+         conv_scheme, zeta_scheme, isolation, deps_source, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
          eddington_approx, reduce_order
 
@@ -158,6 +162,7 @@ contains
        os_p(i) = osc_par_t()
 
        x_ref = os_p(i)%x_ref
+       x_atm = os_p(i)%x_atm
        gamma_gr = os_p(i)%gamma_gr
        gamma_th = os_p(i)%gamma_th
        gamma_hf = os_p(i)%gamma_hf
@@ -172,6 +177,7 @@ contains
        time_factor = os_p(i)%time_factor
        conv_scheme = os_p(i)%conv_scheme
        zeta_scheme = os_p(i)%zeta_scheme
+       isolation = os_p(i)%isolation
        deps_source = os_p(i)%deps_source
        deps_file = os_p(i)%deps_file
        deps_file_format = os_p(i)%deps_file_format
@@ -189,6 +195,7 @@ contains
        ! Store read values
 
        os_p(i)%x_ref = x_ref
+       os_p(i)%x_atm = x_atm
        os_p(i)%gamma_gr = gamma_gr
        os_p(i)%gamma_th = gamma_th
        os_p(i)%gamma_hf = gamma_hf
@@ -203,6 +210,7 @@ contains
        os_p(i)%time_factor = time_factor
        os_p(i)%conv_scheme = conv_scheme
        os_p(i)%zeta_scheme = zeta_scheme
+       os_p(i)%isolation = isolation
        os_p(i)%deps_source = deps_source
        os_p(i)%deps_file = deps_file
        os_p(i)%deps_file_format = deps_file_format
@@ -233,6 +241,7 @@ contains
     ! Broadcast the osc_par_t
 
     call bcast(os_p%x_ref, root_rank)
+    call bcast(os_p%x_atm, root_rank)
     call bcast(os_p%gamma_gr, root_rank)
     call bcast(os_p%gamma_th, root_rank)
     call bcast(os_p%gamma_hf, root_rank)
@@ -246,6 +255,7 @@ contains
     call bcast(os_p%inertia_norm, root_rank)
     call bcast(os_p%time_factor, root_rank)
     call bcast(os_p%conv_scheme, root_rank)
+    call bcast(os_p%isolation, root_rank)
     call bcast(os_p%deps_source, root_rank)
     call bcast(os_p%deps_file, root_rank)
     call bcast(os_p%deps_file_format, root_rank)

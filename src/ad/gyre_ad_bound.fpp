@@ -50,6 +50,7 @@ module gyre_ad_bound
   integer, parameter :: ISOTHRM_TYPE = 6
   integer, parameter :: UNNO_TYPE = 7
   integer, parameter :: JCD_TYPE = 8
+  integer, parameter :: GAMMA_TYPE = 9
 
   integer, parameter :: J_V = 1
   integer, parameter :: J_AS = 2
@@ -83,6 +84,7 @@ module gyre_ad_bound
      procedure         :: build_dziem_o_
      procedure         :: build_decomp_o_
      procedure         :: build_jcd_o_
+     procedure         :: build_gamma_o_
   end type ad_bound_t
 
   ! Interfaces
@@ -163,6 +165,8 @@ contains
        else
           bd%type_o = JCD_TYPE
        end if
+    case ('GAMMA')
+        bd%type_o = GAMMA_TYPE
     case default
        $ABORT(Invalid outer_bound)
     end select
@@ -237,6 +241,10 @@ contains
     case (JCD_TYPE)
        call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V), &
             this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
+    case (GAMMA_TYPE)
+        this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
+        this%coeff(2,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt_o)
+        this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)
     case default
        $ABORT(Invalid type_o)
     end select
@@ -447,6 +455,8 @@ contains
        call this%build_decomp_o_(st, B, scl)
     case (JCD_TYPE)
        call this%build_jcd_o_(st, B, scl)
+    case (GAMMA_TYPE)
+       call this%build_gamma_o_(st, B, scl)
     case default
        $ABORT(Invalid type_o)
     end select
@@ -746,5 +756,61 @@ contains
     return
 
   end subroutine build_jcd_o_
+
+  subroutine build_gamma_o_ (this, st, B, scl)
+
+    class(ad_bound_t), intent(in) :: this
+    class(r_state_t), intent(in)  :: st
+    real(WP), intent(out)         :: B(:,:)
+    real(WP), intent(out)         :: scl(:)
+
+    real(WP) :: Omega_rot
+    real(WP) :: omega_c
+    real(WP) :: l_e
+    real(WP) :: lambda
+
+    $CHECK_BOUNDS(SIZE(B, 1),this%n_o)
+    $CHECK_BOUNDS(SIZE(B, 2),this%n_e)
+    
+    $CHECK_BOUNDS(SIZE(scl),this%n_o)
+
+    ! Evaluate the inner boundary conditions (regular-enforcing)
+
+    associate( &
+         V => this%coeff(2,J_V), &
+         c_1 => this%coeff(2,J_C_1), &
+         Gamma_1 => this%coeff(2,J_GAMMA_1), &
+         pt => this%pt(2), &
+         gamma_gr => this%gamma_gr, &
+         gamma_om => this%gamma_om)
+
+      Omega_rot = this%cx%Omega_rot(pt)
+
+      omega_c = this%cx%omega_c(Omega_rot, st)
+
+      l_e = this%cx%l_e(Omega_rot, st)
+      lambda = this%cx%lambda(Omega_rot, st)
+
+      ! Set up the boundary conditions
+
+      B(1,1) = 1._WP
+      B(1,2) = 0._WP
+      B(1,3) = 0._WP
+      B(1,4) = 0._WP
+
+      B(2,1) = 0._WP
+      B(2,2) = 1._WP !lambda/(c_1*alpha_om*omega_c**2) !- V/Gamma_1 * alpha_gamma
+      B(2,3) = gamma_gr * 1._WP !alpha_gr*lambda/(c_1*alpha_om*omega_c**2)
+      B(2,4) = 0._WP
+
+      scl = 1._WP
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end subroutine build_gamma_o_
 
 end module gyre_ad_bound
