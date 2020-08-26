@@ -59,7 +59,6 @@
 	alpha_osc = 10
 	alpha_exp = 2
 	alpha_ctr = 100
-	isolation = 'PI'
 	tag_list = 'l1,l2'
 /
 

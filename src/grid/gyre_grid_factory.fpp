@@ -314,7 +314,7 @@ contains
 
     real(WP)        :: alpha_gamma
     real(WP)        :: alpha_pi
-    select case (gr_p% isolation)
+    select case (cx% isolation())
     case ('GAMMA')
             alpha_gamma = 0._WP
             alpha_pi = 1._WP
