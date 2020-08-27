@@ -36,9 +36,9 @@ module gyre_osc_par
   type :: osc_par_t
      real(WP)                :: x_ref = 1._WP
      real(WP)                :: x_atm = -1._WP
-     real(WP)                :: gamma_gr = 1._WP
-     real(WP)                :: gamma_th = 1._WP
-     real(WP)                :: gamma_hf = 1._WP
+     real(WP)                :: alpha_gr = 1._WP
+     real(WP)                :: alpha_th = 1._WP
+     real(WP)                :: alpha_hf = 1._WP
      real(WP)                :: eps_rho = 0._WP
      real(WP)                :: eps_T = 0._WP
      character(64)           :: variables_set = 'GYRE'
@@ -104,9 +104,9 @@ contains
     integer                               :: i
     real(WP)                              :: x_ref
     real(WP)                              :: x_atm
-    real(WP)                              :: gamma_gr
-    real(WP)                              :: gamma_th
-    real(WP)                              :: gamma_hf
+    real(WP)                              :: alpha_gr
+    real(WP)                              :: alpha_th
+    real(WP)                              :: alpha_hf
     real(WP)                              :: eps_rho
     real(WP)                              :: eps_T
     character(LEN(os_p%variables_set))    :: variables_set
@@ -129,7 +129,7 @@ contains
     logical                               :: eddington_approx
     logical                               :: reduce_order
 
-    namelist /osc/ x_ref, x_atm, gamma_gr, gamma_th, gamma_hf, &
+    namelist /osc/ x_ref, x_atm, alpha_gr, alpha_th, alpha_hf, &
          eps_rho, eps_T, inner_bound, outer_bound, &
          outer_bound_for_cutoff, outer_branch, variables_set, inertia_norm, time_factor, &
          conv_scheme, zeta_scheme, isolation, deps_source, deps_file, deps_file_format, &
@@ -163,9 +163,9 @@ contains
 
        x_ref = os_p(i)%x_ref
        x_atm = os_p(i)%x_atm
-       gamma_gr = os_p(i)%gamma_gr
-       gamma_th = os_p(i)%gamma_th
-       gamma_hf = os_p(i)%gamma_hf
+       alpha_gr = os_p(i)%alpha_gr
+       alpha_th = os_p(i)%alpha_th
+       alpha_hf = os_p(i)%alpha_hf
        eps_rho = os_p(i)%eps_rho
        eps_T = os_p(i)%eps_T
        variables_set = os_p(i)%variables_set
@@ -196,9 +196,9 @@ contains
 
        os_p(i)%x_ref = x_ref
        os_p(i)%x_atm = x_atm
-       os_p(i)%gamma_gr = gamma_gr
-       os_p(i)%gamma_th = gamma_th
-       os_p(i)%gamma_hf = gamma_hf
+       os_p(i)%alpha_gr = alpha_gr
+       os_p(i)%alpha_th = alpha_th
+       os_p(i)%alpha_hf = alpha_hf
        os_p(i)%eps_rho = eps_rho
        os_p(i)%eps_T = eps_T
        os_p(i)%variables_set = variables_set
@@ -242,9 +242,9 @@ contains
 
     call bcast(os_p%x_ref, root_rank)
     call bcast(os_p%x_atm, root_rank)
-    call bcast(os_p%gamma_gr, root_rank)
-    call bcast(os_p%gamma_th, root_rank)
-    call bcast(os_p%gamma_hf, root_rank)
+    call bcast(os_p%alpha_gr, root_rank)
+    call bcast(os_p%alpha_th, root_rank)
+    call bcast(os_p%alpha_hf, root_rank)
     call bcast(os_p%eps_rho, root_rank)
     call bcast(os_p%eps_T, root_rank)
 

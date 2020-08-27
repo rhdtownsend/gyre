@@ -32,19 +32,19 @@ is used.  Allowable parameters are:
   - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for gravitational components, :nml_v:`'DZIEM'` for mechanical components)
   - :nml_v:`'LAGP'` : Lagrangian pressure perturbation formulation
 
-:nml_n:`gamma_gr` (default :nml_v:`1.`)
+:nml_n:`alpha_gr` (default :nml_v:`1.`)
   Scaling factor for gravitational potential perturbations (see
-  :math:`\gammagr` term in the :ref:`osc-eqs-dimless`
+  :math:`\alphagr` term in the :ref:`osc-eqs-dimless`
   section). Set to :nml_v:`0.` to implement the Cowling approximation
 
-:nml_n:`gamma_th` (defaualt :nml_v:`1.`)
-  Scaling factor for the thermal timescale (see :math:`\gammath`
+:nml_n:`alpha_th` (defaualt :nml_v:`1.`)
+  Scaling factor for the thermal timescale (see :math:`\alphath`
   term in the :ref:`osc-eqs-dimless` section). Set to :nml_v:`0.` to
   implement the non-adiabatic reversible (NAR) approximation (see :ads_citealp:`glatzel:1990`), and to large
   values to approach the adiabatic limit
 
-:nml_n:`gamma_hf` (defaualt :nml_v:`1.`)
-  Scaling factor for horizontal flux perturbations (see :math:`\gammahf`
+:nml_n:`alpha_hf` (defaualt :nml_v:`1.`)
+  Scaling factor for horizontal flux perturbations (see :math:`\alphahf`
   term in the :ref:`osc-eqs-dimless` section). Set to :nml_v:`0.` to
   implement the non-adiabatic radial flux (NARF) approximation
 
