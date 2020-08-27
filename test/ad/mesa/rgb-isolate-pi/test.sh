@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.h5
 
-LABEL="MESA model for RGB star (adiabatic)"
+LABEL="MESA model for RGB star (adiabatic, pi isolation)"
 
 # Do the tests
 

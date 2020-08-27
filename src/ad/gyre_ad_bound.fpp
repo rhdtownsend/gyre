@@ -781,8 +781,8 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Gamma_1 => this%coeff(2,J_GAMMA_1), &
          pt => this%pt(2), &
-         gamma_gr => this%gamma_gr, &
-         gamma_om => this%gamma_om)
+         alpha_gr => this%alpha_gr, &
+         alpha_om => this%alpha_om)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
@@ -800,7 +800,7 @@ contains
 
       B(2,1) = 0._WP
       B(2,2) = 1._WP !lambda/(c_1*alpha_om*omega_c**2) !- V/Gamma_1 * alpha_gamma
-      B(2,3) = gamma_gr * 1._WP !alpha_gr*lambda/(c_1*alpha_om*omega_c**2)
+      B(2,3) = alpha_gr * 1._WP !alpha_gr*lambda/(c_1*alpha_om*omega_c**2)
       B(2,4) = 0._WP
 
       scl = 1._WP

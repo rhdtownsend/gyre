@@ -58,10 +58,10 @@ module gyre_ad_eqns
      type(ad_trans_t)           :: tr
      real(WP), allocatable      :: coeff(:,:)
      real(WP)                   :: x_atm
-     real(WP)                   :: alpha_gm
-     real(WP)                   :: gamma_om
-     real(WP)                   :: alpha_pi
      real(WP)                   :: alpha_gr
+     real(WP)                   :: alpha_om
+     real(WP)                   :: alpha_pi
+     real(WP)                   :: alpha_gm
   contains
      private
      procedure, public :: stencil
@@ -91,6 +91,7 @@ contains
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
     type(ad_eqns_t)                      :: eq
+
     type(point_t)                        :: pt_o
 
     ! Construct the ad_eqns_t
@@ -101,22 +102,22 @@ contains
 
     eq%alpha_gr = os_p%alpha_gr
 
-    eq% x_atm = os_p%x_atm
-    if (eq% x_atm < 0._WP) then
-       pt_o = cx% point_o()
-       eq% x_atm = pt_o% x
+    eq%x_atm = os_p%x_atm
+    if (eq%x_atm < 0._WP) then
+       pt_o = cx%point_o()
+       eq%x_atm = pt_o%x
     end if
 
     select case (os_p%isolation)
     case ('GAMMA')
-       eq%alpha_gamma = 0._WP
        eq%alpha_pi = 1._WP
+       eq%alpha_gm = 0._WP
     case ('PI')
-       eq%alpha_gamma = 1._WP
        eq%alpha_pi = 0._WP
+       eq%alpha_gm = 1._WP
     case ('NONE')
-       eq%alpha_gamma = 1._WP
        eq%alpha_pi = 1._WP
+       eq%alpha_gm = 1._WP
     case default
        $ABORT(Invalid isolation condition)
     end select

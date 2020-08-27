@@ -289,6 +289,8 @@ contains
     type(grid_par_t), intent(in) :: gr_p
     logical                      :: refine
 
+    real(WP)        :: alpha_gm
+    real(WP)        :: alpha_pi
     type(point_t)   :: pt
     real(WP)        :: dlnx
     real(WP)        :: V
@@ -312,22 +314,6 @@ contains
     real(WP)        :: chi_r_m
     real(WP)        :: chi_i
 
-    real(WP)        :: alpha_gamma
-    real(WP)        :: alpha_pi
-    select case (cx% isolation())
-    case ('GAMMA')
-            alpha_gamma = 0._WP
-            alpha_pi = 1._WP
-    case ('PI')
-            alpha_gamma = 1._WP
-            alpha_pi = 0._WP
-    case ('NONE')
-            alpha_gamma = 1._WP
-            alpha_pi = 1._WP
-    case default
-            $ABORT(Invalid isolation condition)
-    end select
-
     ! Determine whether the subinterval [pt_a,pt_b] warrants
     ! refinement, via a local analysis of the mechanical parts of the
     ! oscillation equations
@@ -339,6 +325,22 @@ contains
        refine = .FALSE.
 
     else
+
+       ! Set up isolation switches
+    
+       select case (cx%isolation())
+       case ('GAMMA')
+          alpha_pi = 1._WP
+          alpha_gm = 0._WP
+       case ('PI')
+          alpha_pi = 0._WP
+          alpha_gm = 1._WP
+       case ('NONE')
+          alpha_pi = 1._WP
+          alpha_gm = 1._WP
+       case default
+          $ABORT(Invalid isolation condition)
+       end select
 
        ! Evaluate coefficients at the midpoint
        
@@ -375,9 +377,9 @@ contains
 
           ! Calculate the propagation discriminant psi2
 
-          c_4 = -4._WP*V/Gamma_1*c_1 * alpha_gamma
-          c_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As * alpha_gamma * alpha_pi + 4._WP*lambda
-          c_0 = -4._WP*lambda*As/c_1 * alpha_pi
+          c_4 = -4._WP*V/Gamma_1*c_1*alpha_gm
+          c_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As*alpha_gm*alpha_pi + 4._WP*lambda
+          c_0 = -4._WP*lambda*As/c_1*alpha_pi
 
           if (c_0 /= 0._WP) then
              psi2 = (c_4*omega_c**4 + c_2*omega_c**2 + c_0)/omega_c**2

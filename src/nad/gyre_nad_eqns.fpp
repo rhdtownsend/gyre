@@ -114,6 +114,7 @@ contains
     type(mode_par_t), intent(in)         :: md_p
     type(osc_par_t), intent(in)          :: os_p
     type(nad_eqns_t)                     :: eq
+    
     type(point_t)                        :: pt_o
 
     ! Construct the nad_eqns_t
@@ -150,22 +151,22 @@ contains
        $ABORT(Invalid conv_scheme)
     end select
 
-    eq% x_atm = os_p%x_atm
-    if (eq% x_atm < 0._WP) then
-       pt_o = cx% point_o()
-       eq% x_atm = pt_o% x
+    eq%x_atm = os_p%x_atm
+    if (eq%x_atm < 0._WP) then
+       pt_o = cx%point_o()
+       eq%x_atm = pt_o%x
     end if
 
     select case (os_p%isolation)
     case ('GAMMA')
-       eq%alpha_gamma = 0._WP
        eq%alpha_pi = 1._WP
+       eq%alpha_gm = 0._WP
     case ('PI')
-       eq%alpha_gamma = 1._WP
        eq%alpha_pi = 0._WP
+       eq%alpha_gm = 1._WP
     case ('NONE')
-       eq%alpha_gamma = 1._WP
        eq%alpha_pi = 1._WP
+       eq%alpha_gm = 1._WP
     case default
        $ABORT(Invalid isolation condition)
     end select

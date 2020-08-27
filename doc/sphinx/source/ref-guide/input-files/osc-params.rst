@@ -82,7 +82,7 @@ is used.  Allowable parameters are:
 :nml_n:`deps_scheme` (default :nml_v:`'MODEL'`)
   Scheme for calculating burning partial derivatives
   :math:`(\partial\ln\epsilon/\partial\ln T)_{\rho}` and
-  :math:`(\partial\ln\epsilon/\partial\ln\rho)_{T}`; one of
+  :math:`(\partial\ln\epsilon/\partial\ln\rho)_{T}`; one of:
 
   - :nml_v:`'MODEL'` : Use values from model
   - :nml_v:`'FILE'` : Use complex (phase-lagged) values from separate file
@@ -100,7 +100,8 @@ is used.  Allowable parameters are:
   Reference fractional radius for photosphere, normalizations etc.
 
 :nml_n:`isolation` (default :nml_v:`NONE`)
-  Isolation scheme for separating p/g mixed modes into :math:`\pi` or :math:`\gamma` modes, in the sense of :ads_citet:`aizenman:1977`. One of:
+  Isolation scheme for separating p/g mixed modes into :math:`\pi` or
+  :math:`\gamma` modes, in the sense of :ads_citet:`aizenman:1977`; one of:
 
   - :nml_v:`'NONE'` : No isolation
   - :nml_v:`'PI'` : :math:`\pi` modes
