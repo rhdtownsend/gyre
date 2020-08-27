@@ -46,6 +46,18 @@ contributing to the project to ensure its long-term success. Options include
 * inviting the GYRE team to be co-authors on relevant papers;
 * inviting the GYRE team to be co-investigators on relevant grant applications.
 
+Development Team
+================
+
+GYRE remains under active development by the following team:
+
+* `Rich Townsend <https://www.astro.wisc.edu/~townsend>`__ (University of Wisconsin-Madison); project leader
+* Warrick Ball (University of Birmingham)
+* Jacqueline Goldstein (University of Wisconsin-Madison)
+* Aaron Lopez (University of Wisconsin-Madison)  
+* Joel Ong (Yale University)
+* Meng Sun (University of Wisconsin-Madison)
+
 Related Links
 =============
 
@@ -66,4 +78,5 @@ GYRE has been developed with financial support from the following grants:
 * NASA awards NNX14AB55G, NNX16AB97G, and 80NSSC20K0515.
 
 GYRE has also benefitted greatly from contributions (code, bug
-reports, feature requests) from the academic community. 
+reports, feature requests) from the academic community. Thanks, folks!
+

@@ -46,7 +46,17 @@ is used.  Allowable parameters are:
 :nml_n:`alpha_hf` (defaualt :nml_v:`1.`)
   Scaling factor for horizontal flux perturbations (see :math:`\alphahf`
   term in the :ref:`osc-eqs-dimless` section). Set to :nml_v:`0.` to
-  implement the non-adiabatic radial flux (NARF) approximation
+  implement the non-adiabatic radial flux (NARF) approximation (see :ads_citealp:`townsend:2003b`)
+
+:nml_n:`alpha_gm` (default :nml_v:`1.`)
+  Scaling factor for g-mode isolation (see :math:`\alphagm` term in
+  the :ref:`osc-eqs-dimless` section; also, Appendix A of
+  :ads_citealp:`ong:2020`).  Set to :nml_v:`0.` to isolate g modes
+
+:nml_n:`alpha_pi` (default :nml_v:`1.`)
+  Scaling factor for p-mode isolation (see :math:`\alphapi` term in
+  the :ref:`osc-eqs-dimless` section; also, Appendix A of
+  :ads_citealp:`ong:2020`).  Set to :nml_v:`0.` to isolate p modes
 
 :nml_n:`inertia_norm` (default :nml_v:`'BOTH'`)
   Inertia normalization factor; one of
@@ -98,14 +108,6 @@ is used.  Allowable parameters are:
 
 :nml_n:`x_ref` (default :nml_v:`1` or outer grid point, whichever is smaller)
   Reference fractional radius for photosphere, normalizations etc.
-
-:nml_n:`isolation` (default :nml_v:`NONE`)
-  Isolation scheme for separating p/g mixed modes into :math:`\pi` or
-  :math:`\gamma` modes, in the sense of :ads_citet:`aizenman:1977`; one of:
-
-  - :nml_v:`'NONE'` : No isolation
-  - :nml_v:`'PI'` : :math:`\pi` modes
-  - :nml_v:`'GAMMA'` : :math:`\gamma` modes
 
 :nml_n:`x_atm` (default :nml_v:`-1`, implying outer grid point)
   Fractional radius for :math:`\pi/\gamma` crossover point in the convection zone — cf. :ads_citet:`ong:2020`
