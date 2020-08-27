@@ -69,7 +69,7 @@ module gyre_tide
 
 contains
 
-  subroutine eval_tide (ml, process_wave, os_p, rt_p, nm_p, gr_p, or_p, td_p)
+  subroutine eval_tide (ml, gr, process_wave, os_p, rt_p, nm_p, or_p, td_p)
 
     class(model_t), pointer, intent(in) :: ml
     interface
@@ -82,8 +82,7 @@ contains
     type(osc_par_t), intent(in)         :: os_p
     type(rot_par_t), intent(in)         :: rt_p
     type(num_par_t), intent(in)         :: nm_p
-    type(grid_par_t), intent(in)        :: gr_p
-    type(orbit_par_t), intent(in)       :: or_p
+    type(orbit_par_t), intent(in)       :: or_p(:)
     type(tide_par_t), intent(in)        :: td_p
 
     type(grid_t)                   :: ml_gr
@@ -124,6 +123,70 @@ contains
     c_solve = 0
     c_proc = 0
 
+    ! Set up index ranges
+
+    l_max = td_p%l_max
+
+    m_min = MAX(-l_max, td_p%m_min)
+    m_max = MIN( l_max, td_p%m_max)
+
+    if (td_p%reduce_order) then
+       k_min = 0
+    else
+       k_min = -td_p%k_max
+    endif
+
+    k_max = td_p%k_max
+
+    ! Allocate arrays for index-dependent quantities
+
+    allocate(c(2:l_max,m_min:m_max,k_min:k_max))
+
+    allocate(cx(2:l_max,-l_max:l_max))
+
+    allocate(bp_sad(2:l_max,l_max:l_max))
+    allocate(bp_nad(2:l_max,l_max:l_max))
+
+    ! Initialize contexts and bvp's
+
+    init_l_loop : do l = 2, l_max
+       init_m_loop : do m = MAX(-l, m_min), MIN(l, m_max)
+
+          ! Create the mode_par_t
+
+          md_p = mode_par_t(l=l, m=m)
+
+          ! Set up the context_t
+
+          cx(l,m) = context_t(ml, gr_p, md_p, os_p, rt_p_)
+
+          ! Create the bvp_t
+
+          bp_nad(l,m) = nad_bvp_t(cx(l,m), gr, md_p, nm_p, os_p)
+          bp_sad(l,m) = sad_bvp_t(cx(l,m), gr, md_p, nm_p, os_p)
+
+       end do init_m_loop
+    end do init_l_loop
+
+          ! Classify the tide for eack k
+
+          classify_loop : do k = k_min, k_max
+             tide_type(l,m,k) = classify_tide_(cx(l,m), ml_gr, omega(k), td_p%omega_static)
+             if (check_log_level('DEBUG')) then
+                write(OUTPUT_UNIT, *) 'tide type:',l,m,k,tide_type(l,m,k),tidal_c(R_a, or_p%e, l, m, k)
+
+             endif
+          end do classify_loop
+
+          ! Create the grid_spec_t
+
+          gs(l,m) = grid_spec_t(cx(l,m), PACK(omega, MASK=(tide_type(l,m,:) == DYNAMIC_TIDE)))
+             
+          
+    
+
+    ! Loop over 
+
     ! Extract the model grid (used for tide classification)
 
     ml_gr = ml%grid()
@@ -161,15 +224,15 @@ contains
     k_max = td_p%k_max
 
     if (td_p%combine_k) then
-       k_min = MAX(0, td_p%k_min)
+       k_min = 0
     else
-       k_min = td_p%k_min
+       k_min = -k_max
     endif
     
     allocate(omega(k_min:k_max))
 
     do k = k_min, k_max
-       omega(k) = k*Omega_orb
+       omega(k) = -k*Omega_orb
     end do
 
     ! Set up contexts and tide types
@@ -216,7 +279,7 @@ contains
 
     call system_clock(c_beg, COUNT_RATE=c_rate)
 
-    gr = grid_t(PACK(gs, MASK=ANY(tide_type == DYNAMIC_TIDE, DIM=3)), gr_p, os_p)
+    gr = grid_t(PACK(gs, MASK=ANY(tide_type == DYNAMIC_TIDE, DIM=3)), gr_p)
 
     call system_clock(c_end)
 

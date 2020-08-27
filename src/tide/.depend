@@ -1,0 +1,40 @@
+core_kinds.o core_kinds.mod : 
+core_kinds.f90 : 
+core_memory.o core_memory.mod : core_kinds.mod
+core_memory.f90 : ../extern/core/core_memory.inc ../extern/core/core.inc
+core_order.o core_order.mod : core_kinds.mod
+core_order.f90 : ../extern/core/core.inc
+core_parallel.o core_parallel.mod : core_kinds.mod core_order.mod
+core_parallel.f90 : ../extern/core/core.inc
+core_system.o core_system.mod : core_kinds.mod
+core_system.f90 : ../extern/core/core.inc
+eval_tidal_coeff.o eval_tidal_coeff.mod : gyre_tide_util.mod gyre_math.mod core_system.mod core_kinds.mod
+eval_tidal_coeff.f90 : ../extern/core/core.inc
+eval_tidal_coeff : eval_tidal_coeff.o core_memory.o gyre_rot_par.o core_system.o gyre_math.o gyre_scan_par.o gyre_tide_util.o gyre_func.o gyre_force_par.o gyre_util.o gyre_grid_par.o gyre_num_par.o gyre_osc_par.o core_parallel.o core_kinds.o gyre_mode_par.o core_order.o gyre_constants.o
+gyre_constants.o gyre_constants.mod : core_kinds.mod core_system.mod
+gyre_constants.f90 : ../extern/core/core.inc
+gyre_force_par.o gyre_force_par.mod : core_kinds.mod core_parallel.mod
+gyre_force_par.f90 : ../extern/core/core_parallel.inc ../extern/core/core.inc
+gyre_func.o gyre_func.mod : gyre_math.mod core_kinds.mod
+gyre_func.f90 : ../extern/core/core.inc
+gyre_grid_par.o gyre_grid_par.mod : core_kinds.mod gyre_math.mod
+gyre_grid_par.f90 : ../extern/core/core.inc
+gyre_math.o gyre_math.mod : core_kinds.mod
+gyre_math.f90 : 
+gyre_mode_par.o gyre_mode_par.mod : core_parallel.mod core_kinds.mod
+gyre_mode_par.f90 : ../extern/core/core.inc ../extern/core/core_parallel.inc
+gyre_num_par.o gyre_num_par.mod : core_kinds.mod
+gyre_num_par.f90 : ../extern/core/core.inc
+gyre_osc_par.o gyre_osc_par.mod : gyre_constants.mod core_parallel.mod core_kinds.mod
+gyre_osc_par.f90 : ../extern/core/core_parallel.inc ../extern/core/core.inc
+gyre_rot_par.o gyre_rot_par.mod : core_kinds.mod gyre_constants.mod core_parallel.mod
+gyre_rot_par.f90 : ../extern/core/core.inc ../extern/core/core_parallel.inc
+gyre_scan_par.o gyre_scan_par.mod : core_kinds.mod gyre_constants.mod
+gyre_scan_par.f90 : ../extern/core/core.inc
+gyre_tide_util.o gyre_tide_util.mod : gyre_math.mod core_kinds.mod gyre_util.mod gyre_func.mod gyre_constants.mod
+gyre_tide_util.f90 : ../extern/core/core.inc
+gyre_util.o gyre_util.mod : gyre_num_par.mod gyre_mode_par.mod gyre_constants.mod gyre_grid_par.mod gyre_rot_par.mod gyre_force_par.mod core_kinds.mod gyre_math.mod gyre_osc_par.mod core_parallel.mod core_memory.mod gyre_scan_par.mod
+gyre_util.f90 : ../extern/core/core.inc
+time_eval_hansen.o time_eval_hansen.mod : core_system.mod gyre_math.mod gyre_tide_util.mod core_kinds.mod
+time_eval_hansen.f90 : 
+time_eval_hansen : gyre_tide_util.o gyre_func.o gyre_force_par.o core_memory.o gyre_rot_par.o time_eval_hansen.o core_system.o gyre_math.o gyre_scan_par.o gyre_constants.o core_order.o gyre_util.o gyre_grid_par.o gyre_num_par.o gyre_osc_par.o core_parallel.o core_kinds.o gyre_mode_par.o

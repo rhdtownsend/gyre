@@ -28,7 +28,7 @@
 
 &osc
 	tag_list = 'l1,l2'
-	isolation = 'PI'
+	alpha_pi = 0.
 	x_atm = 0.9
 /
 

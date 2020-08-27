@@ -183,7 +183,7 @@ program gyre_contour
 
   ! Create the grid
 
-  gr = grid_t(cx, omega_re, gr_p_sel)
+  gr = grid_t(cx, omega_re, gr_p_sel, os_p_sel)
 
   ! Set frequency bounds
 

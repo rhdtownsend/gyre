@@ -124,22 +124,6 @@ contains
     integer  :: n_c
     integer  :: n_a
 
-    real(WP)        :: alpha_gamma
-    real(WP)        :: alpha_pi
-    select case (this% os_p% isolation)
-    case ('GAMMA')
-            alpha_gamma = 0._WP
-            alpha_pi = 1._WP
-    case ('PI')
-            alpha_gamma = 1._WP
-            alpha_pi = 0._WP
-    case ('NONE')
-            alpha_gamma = 1._WP
-            alpha_pi = 1._WP
-    case default
-            $ABORT(Invalid isolation condition)
-    end select
-
     ! Classify the mode based on its eigenfunctions
 
     if (this%l == 0) then
@@ -191,7 +175,8 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the inner boundary)
 
-       call find_turn(this%context(), this%grid(), r_state_t(REAL(this%omega)), k_i, x_i, alpha_gamma, alpha_pi)
+       call find_turn(this%context(), this%grid(), r_state_t(REAL(this%omega)), this%os_p, &
+                      k_i, x_i)
 
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface

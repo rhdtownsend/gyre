@@ -59,11 +59,12 @@ module gyre_grid_factory
 
 contains
 
-  function grid_t_context_ (cx, omega, gr_p) result (gr)
+  function grid_t_context_ (cx, omega, gr_p, os_p) result (gr)
 
     type(context_t), pointer, intent(in) :: cx
     real(WP), intent(in)                 :: omega(:)
     type(grid_par_t), intent(in)         :: gr_p
+    type(osc_par_t), intent(in)          :: os_p
     type(grid_t)                         :: gr
 
     type(grid_spec_t) :: gs
@@ -72,7 +73,7 @@ contains
 
     gs = grid_spec_t(cx, omega)
 
-    gr = grid_t([gs], gr_p)
+    gr = grid_t([gs], gr_p, os_p)
 
     ! Finish
 
@@ -82,10 +83,11 @@ contains
 
   !****
 
-  function grid_t_grid_spec_ (gs, gr_p) result (gr)
+  function grid_t_grid_spec_ (gs, gr_p, os_p) result (gr)
 
     type(grid_spec_t), intent(in) :: gs(:)
     type(grid_par_t), intent(in)  :: gr_p
+    type(osc_par_t), intent(in)   :: os_p
     type(grid_t)                  :: gr
 
     class(model_t), pointer :: ml => null()
@@ -120,7 +122,7 @@ contains
 
     ! Add points
 
-    call add_points_(gs, gr_p, gr)
+    call add_points_(gs, gr_p, os_p, gr)
 
     ! Report 
 
@@ -153,10 +155,11 @@ contains
 
   !****
 
-  subroutine add_points_ (gs, gr_p, gr)
+  subroutine add_points_ (gs, gr_p, os_p, gr)
 
     type(grid_spec_t), intent(in) :: gs(:)
     type(grid_par_t), intent(in)  :: gr_p
+    type(osc_par_t), intent(in)   :: os_p
     type(grid_t), intent(inout)   :: gr
 
     integer              :: n_k
@@ -203,7 +206,7 @@ contains
 
                        if (pt_a%x /= 0._WP) then
 
-                          refine(k) = refine_mech_(cx, pt_a, pt_b, omega, gr_p) .OR. &
+                          refine(k) = refine_mech_(cx, pt_a, pt_b, omega, gr_p, os_p) .OR. &
                                       refine_therm_(cx, pt_a, pt_b, omega, gr_p) .OR. &
                                       refine_struct_(cx, pt_a, pt_b, gr_p) .OR. &
                                       dx > gr_p%dx_max
@@ -280,17 +283,16 @@ contains
   
   !****
 
-  function refine_mech_ (cx, pt_a, pt_b, omega, gr_p) result (refine)
+  function refine_mech_ (cx, pt_a, pt_b, omega, gr_p, os_p) result (refine)
 
     type(context_t), intent(in)  :: cx
     type(point_t), intent(in)    :: pt_a
     type(point_t), intent(in)    :: pt_b
     real(WP), intent(in)         :: omega(:)
     type(grid_par_t), intent(in) :: gr_p
+    type(osc_par_t), intent(in)  :: os_p
     logical                      :: refine
 
-    real(WP)        :: alpha_gm
-    real(WP)        :: alpha_pi
     type(point_t)   :: pt
     real(WP)        :: dlnx
     real(WP)        :: V
@@ -325,22 +327,6 @@ contains
        refine = .FALSE.
 
     else
-
-       ! Set up isolation switches
-    
-       select case (cx%isolation())
-       case ('GAMMA')
-          alpha_pi = 1._WP
-          alpha_gm = 0._WP
-       case ('PI')
-          alpha_pi = 0._WP
-          alpha_gm = 1._WP
-       case ('NONE')
-          alpha_pi = 1._WP
-          alpha_gm = 1._WP
-       case default
-          $ABORT(Invalid isolation condition)
-       end select
 
        ! Evaluate coefficients at the midpoint
        
@@ -377,9 +363,9 @@ contains
 
           ! Calculate the propagation discriminant psi2
 
-          c_4 = -4._WP*V/Gamma_1*c_1*alpha_gm
-          c_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As*alpha_gm*alpha_pi + 4._WP*lambda
-          c_0 = -4._WP*lambda*As/c_1*alpha_pi
+          c_4 = -4._WP*V/Gamma_1*c_1*os_p%alpha_gm
+          c_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As*os_p%alpha_gm*os_p%alpha_pi + 4._WP*lambda
+          c_0 = -4._WP*lambda*As/c_1*os_p%alpha_pi
 
           if (c_0 /= 0._WP) then
              psi2 = (c_4*omega_c**4 + c_2*omega_c**2 + c_0)/omega_c**2

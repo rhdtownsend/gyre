@@ -27,6 +27,7 @@ module gyre_grid_util
   use gyre_context
   use gyre_grid
   use gyre_model
+  use gyre_osc_par
   use gyre_point
   use gyre_rot
   use gyre_rot_factory
@@ -44,8 +45,8 @@ module gyre_grid_util
      type(context_t), pointer  :: cx
      class(r_state_t), pointer :: st
      integer                   :: s
-     real (WP)                 :: a_g
-     real (WP)                 :: a_p
+     real (WP)                 :: alpha_gm
+     real (WP)                 :: alpha_pi
    contains
      procedure :: eval_c_
   end type gamma_func_t
@@ -60,34 +61,21 @@ module gyre_grid_util
 
 contains
 
-  subroutine find_turn (cx, gr, st, k_turn, x_turn, a_g, a_p)
+  subroutine find_turn (cx, gr, st, os_p, k_turn, x_turn)
 
     type(context_t), target, intent(in)  :: cx
     type(grid_t), intent(in)             :: gr
     class(r_state_t), target, intent(in) :: st
-    real(WP), intent(in), optional       :: a_g, a_p
-
+    type(osc_par_t), intent(in)          :: os_p
     integer, intent(out)                 :: k_turn
     real(WP), intent(out)                :: x_turn
 
     real(WP)           :: gamma_a
     real(WP)           :: gamma_b
-    real(WP)           :: alpha_gamma, alpha_pi
     integer            :: k
     type(gamma_func_t) :: gf
     type(point_t)      :: pt_a
     type(point_t)      :: pt_b
-
-    if (present(a_g)) then
-            alpha_gamma = a_g
-    else
-            alpha_gamma = 1._WP
-    endif
-    if (present(a_p)) then
-            alpha_pi = a_p
-    else
-            alpha_pi = 1._WP
-    endif
 
     $ASSERT_DEBUG(cx%point_i() == gr%pt_i(),Context and grid are not conformable)
     $ASSERT_DEBUG(cx%point_o() == gr%pt_o(),Context and grid are not conformable)
@@ -99,7 +87,7 @@ contains
     k_turn = gr%n_k
     x_turn = HUGE(0._WP)
 
-    gamma_b = gamma_(cx, cx%point_i(), st, alpha_gamma, alpha_pi)
+    gamma_b = gamma_(cx, cx%point_i(), st, os_p%alpha_gm, os_p%alpha_pi)
 
     if (gamma_b <= 0._WP) then
 
@@ -117,7 +105,7 @@ contains
           ! Check for a sign change in gamma
 
           gamma_a = gamma_b
-          gamma_b = gamma_(cx, gr%pt(k+1), st, alpha_gamma, alpha_pi)
+          gamma_b = gamma_(cx, gr%pt(k+1), st, os_p%alpha_gm, os_p%alpha_pi)
 
           if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
 
@@ -141,8 +129,8 @@ contains
                    gf%cx => cx
                    gf%s = pt_a%s
                    gf%st => st
-                   gf%a_g = alpha_gamma
-                   gf%a_p = alpha_pi
+                   gf%alpha_gm = os_p%alpha_gm
+                   gf%alpha_pi = os_p%alpha_pi
 
                    x_turn = gf%root(pt_a%x, pt_b%x, 0._WP)
 
@@ -170,12 +158,13 @@ contains
 
   !****
 
-  function gamma_ (cx, pt, st, a_g, a_p) result (gamma)
+  function gamma_ (cx, pt, st, alpha_gm, alpha_pi) result (gamma)
 
     type(context_t), intent(in)  :: cx
     type(point_t), intent(in)    :: pt
     class(r_state_t), intent(in) :: st
-    real(WP), intent(in),optional:: a_g, a_p
+    real(WP), intent(in)         :: alpha_gm
+    real(WP), intent(in)         :: alpha_pi
     real(WP)                     :: gamma
 
     real(WP) :: V
@@ -189,19 +178,6 @@ contains
     real(WP) :: g_4
     real(WP) :: g_2
     real(WP) :: g_0
-
-    real(WP) :: alpha_gamma, alpha_pi
-
-    if (present(a_g)) then
-            alpha_gamma = a_g
-    else
-            alpha_gamma = 1._WP
-    end if
-    if (present(a_p)) then
-            alpha_pi = a_p
-    else
-            alpha_pi = 1._WP
-    end if
 
     ! Calculate the propagation discriminant gamma (< 0 : propagation,
     ! > 0 : evanescence)
@@ -226,9 +202,9 @@ contains
 
          lambda = cx%lambda(Omega_rot, st)
 
-         g_4 = -4._WP*V/Gamma_1*c_1 * alpha_gamma
-         g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As * alpha_gamma * alpha_pi + 4._WP*lambda
-         g_0 = -4._WP*lambda*As/c_1 * alpha_pi
+         g_4 = -4._WP*V/Gamma_1*c_1*alpha_gm
+         g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As*alpha_gm*alpha_pi + 4._WP*lambda
+         g_0 = -4._WP*lambda*As/c_1*alpha_pi
 
          if (g_0 /= 0._WP) then
             gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
@@ -260,7 +236,7 @@ contains
 
     pt = point_t(this%s, REAL(z))
 
-    gamma = gamma_(this%cx, pt, this%st, this%a_g, this%a_p)
+    gamma = gamma_(this%cx, pt, this%st, this%alpha_gm, this%alpha_pi)
 
     ! Finish
 

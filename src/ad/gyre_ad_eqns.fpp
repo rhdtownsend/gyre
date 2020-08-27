@@ -60,8 +60,8 @@ module gyre_ad_eqns
      real(WP)                   :: x_atm
      real(WP)                   :: alpha_gr
      real(WP)                   :: alpha_om
-     real(WP)                   :: alpha_pi
      real(WP)                   :: alpha_gm
+     real(WP)                   :: alpha_pi
   contains
      private
      procedure, public :: stencil
@@ -101,26 +101,14 @@ contains
     eq%tr = ad_trans_t(cx, md_p, os_p)
 
     eq%alpha_gr = os_p%alpha_gr
+    eq%alpha_gm = os_p%alpha_gm
+    eq%alpha_pi = os_p%alpha_pi
 
     eq%x_atm = os_p%x_atm
     if (eq%x_atm < 0._WP) then
        pt_o = cx%point_o()
        eq%x_atm = pt_o%x
     end if
-
-    select case (os_p%isolation)
-    case ('GAMMA')
-       eq%alpha_pi = 1._WP
-       eq%alpha_gm = 0._WP
-    case ('PI')
-       eq%alpha_pi = 0._WP
-       eq%alpha_gm = 1._WP
-    case ('NONE')
-       eq%alpha_pi = 1._WP
-       eq%alpha_gm = 1._WP
-    case default
-       $ABORT(Invalid isolation condition)
-    end select
 
     select case (os_p%time_factor)
     case ('OSC')
@@ -235,8 +223,8 @@ contains
          x_atm => this%x_atm, &
          alpha_gr => this%alpha_gr, &
          alpha_om => this%alpha_om, &
-         alpha_pi => this%alpha_pi, &
-         alpha_gm => this%alpha_gm)
+         alpha_gm => this%alpha_gm, &
+         alpha_pi => this%alpha_pi)
 
       Omega_rot = this%cx%Omega_rot(pt)
       Omega_rot_i = this%cx%Omega_rot(pt_i)

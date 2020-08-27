@@ -757,6 +757,8 @@ contains
 
   end subroutine build_jcd_o_
 
+  !****
+
   subroutine build_gamma_o_ (this, st, B, scl)
 
     class(ad_bound_t), intent(in) :: this

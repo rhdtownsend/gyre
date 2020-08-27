@@ -211,7 +211,7 @@ program gyre
 
      ! Create the grid
 
-     gr = grid_t(cx, omega, gr_p_sel)
+     gr = grid_t(cx, omega, gr_p_sel, os_p_sel)
 
      ! Set frequency bounds and perform checks
 

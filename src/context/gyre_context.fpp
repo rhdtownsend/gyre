@@ -71,13 +71,11 @@ module gyre_context
      logical                     :: complex_lambda
      type(c_interp_t)            :: in_eps_rho
      type(c_interp_t)            :: in_eps_T
-     character(64)               :: isol
    contains
      private
      procedure, public :: model
      procedure, public :: point_i
      procedure, public :: point_o
-     procedure, public :: isolation
      procedure         :: omega_c_r_
      procedure         :: omega_c_c_
      generic, public   :: omega_c => omega_c_r_, omega_c_c_
@@ -161,8 +159,6 @@ contains
        $ABORT(Invalid deps_source)
     end select
 
-    cx% isol = os_p% isolation
-
     ! Finish
 
     return
@@ -219,22 +215,6 @@ contains
     return
 
   end function point_o
-
-  !****
-
-  function isolation (this) result (isol)
-
-    class(context_t), intent(in) :: this
-    character(64)                :: isol
-
-    ! Return the context's isolation condition
-
-    isol = this%isol
-
-    ! Finish
-
-    return
-  end function isolation
 
   !****
 

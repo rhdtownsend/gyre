@@ -227,7 +227,7 @@ program gyre_force
 
      else
 
-        gr = grid_t(cx, omega, gr_p_sel)
+        gr = grid_t(cx, omega, gr_p_sel, os_p_sel)
 
      end if
 

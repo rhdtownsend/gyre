@@ -82,8 +82,8 @@ module gyre_nad_eqns
      real(WP)                   :: alpha_hf
      real(WP)                   :: alpha_rh
      real(WP)                   :: alpha_om 
-     real(WP)                   :: alpha_pi
      real(WP)                   :: alpha_gm
+     real(WP)                   :: alpha_pi
      integer                    :: conv_scheme
    contains
      private
@@ -126,6 +126,8 @@ contains
     eq%alpha_gr = os_p%alpha_gr
     eq%alpha_th = os_p%alpha_th
     eq%alpha_hf = os_p%alpha_hf
+    eq%alpha_gm = os_p%alpha_gm
+    eq%alpha_pi = os_p%alpha_pi
        
     if (os_p%eddington_approx) then
        eq%alpha_rh = 1._WP
@@ -156,20 +158,6 @@ contains
        pt_o = cx%point_o()
        eq%x_atm = pt_o%x
     end if
-
-    select case (os_p%isolation)
-    case ('GAMMA')
-       eq%alpha_pi = 1._WP
-       eq%alpha_gm = 0._WP
-    case ('PI')
-       eq%alpha_pi = 0._WP
-       eq%alpha_gm = 1._WP
-    case ('NONE')
-       eq%alpha_pi = 1._WP
-       eq%alpha_gm = 1._WP
-    case default
-       $ABORT(Invalid isolation condition)
-    end select
 
     eq%n_e = 6
 
@@ -320,8 +308,8 @@ contains
          alpha_hf => this%alpha_hf, &
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om, &
-         alpha_pi => this%alpha_pi, &
-         alpha_gm => this%alpha_gm)
+         alpha_gm => this%alpha_gm, &
+         alpha_pi => this%alpha_pi)
 
       Omega_rot = this%cx%Omega_rot(pt)
       Omega_rot_i = this%cx%Omega_rot(pt_i)
