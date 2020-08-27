@@ -18,6 +18,7 @@ is used.  Allowable parameters are:
   Outer boundary conditions; one of:
 
   - :nml_v:`'VACUUM'` : Zero surface pressure
+  - :nml_v:`'GAMMA'` : Vanishing displacement and derivative at outer boundary, intended for use with :math:`\gamma` modes.
   - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
   - :nml_v:`'UNNO'` : Formulation following :ads_citet:`unno:1989`
   - :nml_v:`'JCD'` : Formulation following Jörgen Christensen-Dalsgaard (ADIPLS)
@@ -97,6 +98,16 @@ is used.  Allowable parameters are:
 
 :nml_n:`x_ref` (default :nml_v:`1` or outer grid point, whichever is smaller)
   Reference fractional radius for photosphere, normalizations etc.
+
+:nml_n:`isolation` (default :nml_v:`NONE`)
+  Isolation scheme for separating p/g mixed modes into :math:`\pi` or :math:`\gamma` modes, in the sense of :ads_citet:`aizenman:1977`. One of:
+
+  - :nml_v:`'NONE'` : No isolation
+  - :nml_v:`'PI'` : :math:`\pi` modes
+  - :nml_v:`'GAMMA'` : :math:`\gamma` modes
+
+:nml_n:`x_atm` (default :nml_v:`-1`, implying outer grid point)
+  Fractional radius for :math:`\pi/\gamma` crossover point in the convection zone — cf. :ads_citet:`ong:2020`
    
 :nml_n:`nonadiabatic` (default :nml_v:`.FALSE.`)
   Flag to include non-adiabatic effects
