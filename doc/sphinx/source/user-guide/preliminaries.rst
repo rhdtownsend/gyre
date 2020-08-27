@@ -51,8 +51,8 @@ Development Team
 
 GYRE remains under active development by the following team:
 
-* `Rich Townsend <https://www.astro.wisc.edu/~townsend>`__ (University of Wisconsin-Madison); project leader
-* Warrick Ball (University of Birmingham)
+* `Rich Townsend <http://www.astro.wisc.edu/~townsend>`__ (University of Wisconsin-Madison); project leader
+* `Warrick Ball <https://www.birmingham.ac.uk/staff/profiles/physics/ball-warrick.aspx>`__ (University of Birmingham)
 * Jacqueline Goldstein (University of Wisconsin-Madison)
 * Aaron Lopez (University of Wisconsin-Madison)  
 * Joel Ong (Yale University)
