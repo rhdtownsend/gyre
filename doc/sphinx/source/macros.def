@@ -55,6 +55,6 @@ nout	\subout{n}
 neq	n_{\rm e}
 xin	\subin{x}
 xout	\subout{x}
-gammath	\gamma_{\rm th}
-gammagr	\gamma_{\rm gr}
-gammahf	\gamma_{\rm hf}
+alphath	\alpha_{\rm th}
+alphagr	\alpha_{\rm gr}
+alphahf	\alpha_{\rm hf}

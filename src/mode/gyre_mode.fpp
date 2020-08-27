@@ -160,7 +160,7 @@ contains
 
        this%n_pg = this%n_p - this%n_g
 
-    elseif (this%l == 1 .AND. .NOT. this%os_p%gamma_gr == 0._WP) then
+    elseif (this%l == 1 .AND. .NOT. this%os_p%alpha_gr == 0._WP) then
 
        ! Dipole modes (non-Cowling)
 
