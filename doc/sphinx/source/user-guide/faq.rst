@@ -35,6 +35,12 @@ How Do I...
 ...get support for a problem I'm having?
   Post a message to one of the `GYRE discussion forums <gyre-forums_>`__.
 
+...access the documentation for older releases?
+  Click on the 'v:...'  dropdown menu at the bottom of the left-hand
+  panel. Note that the legacy documentation is a work-in-progress,
+  and remains incomplete.
+
+
 What Does...
 ============
 ...'Failed during deflate narrow : out-of-domain frequency' mean?
