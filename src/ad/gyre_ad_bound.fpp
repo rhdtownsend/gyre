@@ -801,9 +801,9 @@ contains
       B(1,4) = 0._WP
 
       B(2,1) = 0._WP
-      B(2,2) = 1._WP !lambda/(c_1*alpha_om*omega_c**2) !- V/Gamma_1 * alpha_gamma
-      B(2,3) = alpha_gr * 1._WP !alpha_gr*lambda/(c_1*alpha_om*omega_c**2)
-      B(2,4) = 0._WP
+      B(2,2) = 0._WP
+      B(2,3) = 0._WP
+      B(2,4) = 1._WP
 
       scl = 1._WP
 
