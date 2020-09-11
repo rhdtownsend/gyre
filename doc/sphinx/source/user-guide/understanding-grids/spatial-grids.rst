@@ -89,13 +89,13 @@ subinterval is
 
 .. math::
 
-   ( \ln x_{k+1} - \ln x_{k} ) \, \max (\alpha_{\rm osc} |\chi_{\rm i}|, \alpha_{\rm exp} |\chi_{\rm r}|) > 2 \pi,
+   ( \ln x_{k+1} - \ln x_{k} ) \, \max (w_{\rm osc} |\chi_{\rm i}|, w_{\rm exp} |\chi_{\rm r}|) > 2 \pi,
 
 where :math:`\alpha_{\rm osc}` and :math:`\alpha_{\rm exp}` are
-user-definable. This causes refinement if the subinterval width (in
-:math:`\ln x` space) exceeds :math:`\alpha_{\rm osc}^{-1}` times the
-local wavelength, or :math:`2\pi \alpha_{\rm exp}^{-1}` times the
-local e-folding length.
+user-definable weighting parameters. This causes refinement if the
+subinterval width (in :math:`\ln x` space) exceeds :math:`w_{\rm
+osc}^{-1}` times the local wavelength, or :math:`2\pi w_{\rm
+exp}^{-1}` times the local e-folding length.
 
 Because there are two possible values for :math:`\chi`, the above
 refinement criterion is applied twice (once for each). Moreover,
@@ -130,9 +130,9 @@ subinterval is
 
 .. math::
 
-   ( \ln x_{k+1} - \ln x_{k} ) \, \alpha_{\rm thm} |\tau| > 1,
+   ( \ln x_{k+1} - \ln x_{k} ) \, w_{\rm thm} |\tau| > 1,
 
-where :math:`\alpha_{\rm thm}` is user-definable.
+where :math:`w_{\rm thm}` is a user-definable weighting parameter.
 
 Because :math:`\tau` depends implicitly on the oscillation frequency,
 this criterion is applied for each frequency in the grid
@@ -150,9 +150,9 @@ coefficient :math:`C`, the criterion for refinement of the subinterval
 
 .. math::
 
-   ( \ln x_{k+1} - \ln x_{k} ) \, \alpha_{\rm str} \left| \pderiv{\ln C}{\ln x} \right| > 1,
+   ( \ln x_{k+1} - \ln x_{k} ) \, w_{\rm str} \left| \pderiv{\ln C}{\ln x} \right| > 1,
 
-where :math:`\alpha_{\rm str}` is user-definable. This
+where :math:`w_{\rm str}` is a user-definable weighting parameter. This
 criterion is applied separately to the :math:`V_2 \equiv V/x^{2}`,
 :math:`U`, :math:`A^{*}`, :math:`c_{1}` and :math:`\Gamma_{1}`
 coefficients (see the :ref:`osc-eqs-dimless` section).
@@ -178,15 +178,15 @@ or
 
 .. math::
 
-   \alpha_{\rm ctr} | \chi_{\rm r} | > 1
+   w_{\rm ctr} | \chi_{\rm r} | > 1
 
 where :math:`\chi` is the eigenvalue from the local analysis (see the
 :ref:`wave-criterion` section) corresponding to the solution that
-remains well-behaved at the origin, and :math:`\alpha_{\rm ctr}` is
-user-definable. The first criterion causes refinement if the
-subinterval is in a propagation zone, and the second if the solution
-slope :math:`|\sderiv{\ln y}{\ln x}| \sim |\chi_{\rm r}|` exceeds
-:math:`\alpha_{\rm ctr}^{-1}`.
+remains well-behaved at the origin, and :math:`w_{\rm ctr}` is a
+user-definable weighting parameter. The first criterion causes
+refinement if the subinterval is in a propagation zone, and the second
+if the solution slope :math:`|\sderiv{\ln y}{\ln x}| \sim |\chi_{\rm
+r}|` exceeds :math:`w_{\rm ctr}^{-1}`.
 
 Because :math:`\chi` depends implicitly on the oscillation frequency,
 these criteria are applied for each frequency in the grid
@@ -227,16 +227,16 @@ parameters:
 
    * - Symbol
      - Parameter
-   * - :math:`\alpha_{\rm osc}`
-     - :nml_n:`alpha_osc`
-   * - :math:`\alpha_{\rm exp}`
-     - :nml_n:`alpha_exp`
-   * - :math:`\alpha_{\rm thm}`
-     - :nml_n:`alpha_thm`
-   * - :math:`\alpha_{\rm str}`
-     - :nml_n:`alpha_str`
-   * - :math:`\alpha_{\rm ctr}`
-     - :nml_n:`alpha_ctr`
+   * - :math:`w_{\rm osc}`
+     - :nml_n:`w_osc`
+   * - :math:`w_{\rm exp}`
+     - :nml_n:`w_exp`
+   * - :math:`w_{\rm thm}`
+     - :nml_n:`w_thm`
+   * - :math:`w_{\rm str}`
+     - :nml_n:`w_str`
+   * - :math:`w_{\rm ctr}`
+     - :nml_n:`w_ctr`
    * - :math:`\Delta x_{\rm max}`
      - :nml_n:`dx_max`
    * - :math:`\Delta x_{\rm min}`
@@ -245,8 +245,8 @@ parameters:
 Recommended Values
 ------------------
 
-While :nml_n:`alpha_exp`, :nml_n:`alpha_osc` and :nml_n:`alpha_ctr`
+While :nml_n:`w_exp`, :nml_n:`w_osc` and :nml_n:`w_ctr`
 all default to zero, it is highly recommended to use non-zero values
 for these parameters, to ensure adequate resolution of solutions
-throughout the star. Reasonable starting choices are :nml_n:`alpha_osc
-= 10`, :nml_nv:`alpha_exp = 2` and :nml_n:`alpha_ctr = 10`.
+throughout the star. Reasonable starting choices are :nml_n:`w_osc
+= 10`, :nml_nv:`w_exp = 2` and :nml_n:`w_ctr = 10`.

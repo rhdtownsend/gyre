@@ -320,7 +320,7 @@ contains
     ! refinement, via a local analysis of the mechanical parts of the
     ! oscillation equations
     
-    if (gr_p%alpha_osc == 0._WP .AND. gr_p%alpha_exp == 0._WP) then
+    if (gr_p%w_osc == 0._WP .AND. gr_p%w_exp == 0._WP) then
 
        ! No refinement necessary
 
@@ -400,8 +400,8 @@ contains
           ! Update refine
 
           refine = refine .OR. &
-                   dlnx*gr_p%alpha_exp*abs(chi_r) > TWOPI .OR. &
-                   dlnx*gr_p%alpha_osc*abs(chi_i) > TWOPI
+                   dlnx*gr_p%w_exp*abs(chi_r) > TWOPI .OR. &
+                   dlnx*gr_p%w_osc*abs(chi_i) > TWOPI
 
           if (refine) exit omega_loop
           
@@ -442,7 +442,7 @@ contains
     ! refinement, via a local analysis of the thermal parts of the
     ! oscillation equations
 
-    if (gr_p%alpha_thm == 0._WP) then
+    if (gr_p%w_thm == 0._WP) then
 
        ! No refinement necessary
 
@@ -486,7 +486,7 @@ contains
           ! Update refine
           
           refine = refine .OR. &
-                   dlnx*gr_p%alpha_thm*abs(tau) > TWOPI
+                   dlnx*gr_p%w_thm*abs(tau) > TWOPI
 
           if (refine) exit omega_loop
           
@@ -521,7 +521,7 @@ contains
     ! Determine whether the subinterval [pt_a,pt_b] warrants
     ! refinement, via a local structure gradient analysis
  
-    if (gr_p%alpha_str == 0._WP) then
+    if (gr_p%w_str == 0._WP) then
 
        ! No refinement necessary
 
@@ -550,11 +550,11 @@ contains
 
        if (pt_a%x /= 0._WP) then
 
-          refine = dlnx*gr_p%alpha_str*abs(dV_2) > 1._WP .OR. &
-                   dlnx*gr_p%alpha_str*abs(dAs) > 1._WP .OR. &
-                   dlnx*gr_p%alpha_str*abs(dU) > 1._WP .OR. &
-                   dlnx*gr_p%alpha_str*abs(dc_1) > 1._WP .OR. &
-                   dlnx*gr_p%alpha_str*abs(dGamma_1) > 1._WP
+          refine = dlnx*gr_p%w_str*abs(dV_2) > 1._WP .OR. &
+                   dlnx*gr_p%w_str*abs(dAs) > 1._WP .OR. &
+                   dlnx*gr_p%w_str*abs(dU) > 1._WP .OR. &
+                   dlnx*gr_p%w_str*abs(dc_1) > 1._WP .OR. &
+                   dlnx*gr_p%w_str*abs(dGamma_1) > 1._WP
 
        endif
 
@@ -601,7 +601,7 @@ contains
     ! refinement, via a local analysis of the mechanical parts of the
     ! oscillation equations
     
-    if (.NOT. gr_p%resolve_ctr .OR. gr_p%alpha_ctr == 0._WP) then
+    if (.NOT. gr_p%resolve_ctr .OR. gr_p%w_ctr == 0._WP) then
 
        ! No refinement necessary
 
@@ -677,7 +677,7 @@ contains
 
           refine = refine .OR. &
                    chi_i /= 0._WP .OR. &
-                   gr_p%alpha_ctr*abs(chi_r) > 1._WP
+                   gr_p%w_ctr*abs(chi_r) > 1._WP
 
           if (refine) exit omega_loop
           

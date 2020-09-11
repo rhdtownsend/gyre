@@ -34,11 +34,11 @@ module gyre_grid_par
   type :: grid_par_t
      real(WP)        :: x_i = -HUGE(0._WP)
      real(WP)        :: x_o = HUGE(0._WP)
-     real(WP)        :: alpha_osc = 0._WP
-     real(WP)        :: alpha_exp = 0._WP
-     real(WP)        :: alpha_ctr = 0._WP
-     real(WP)        :: alpha_thm = 0._WP
-     real(WP)        :: alpha_str = 0._WP
+     real(WP)        :: w_osc = 0._WP
+     real(WP)        :: w_exp = 0._WP
+     real(WP)        :: w_ctr = 0._WP
+     real(WP)        :: w_thm = 0._WP
+     real(WP)        :: w_str = 0._WP
      real(WP)        :: dx_min = sqrt(EPSILON(0._WP))
      real(WP)        :: dx_max = HUGE(0._WP)
      integer         :: n_iter_max = 32
@@ -66,19 +66,19 @@ contains
     integer                       :: i
     real(WP)                      :: x_i
     real(WP)                      :: x_o
-    real(WP)                      :: alpha_osc
-    real(WP)                      :: alpha_exp
-    real(WP)                      :: alpha_ctr
-    real(WP)                      :: alpha_thm
-    real(WP)                      :: alpha_str
+    real(WP)                      :: w_osc
+    real(WP)                      :: w_exp
+    real(WP)                      :: w_ctr
+    real(WP)                      :: w_thm
+    real(WP)                      :: w_str
     real(WP)                      :: dx_min
     real(WP)                      :: dx_max
     integer                       :: n_iter_max
     logical                       :: resolve_ctr
     character(LEN(gr_p%tag_list)) :: tag_list
 
-    namelist /grid/ x_i, x_o, alpha_osc, alpha_exp, alpha_ctr, &
-         alpha_thm, alpha_str, dx_min, dx_max, n_iter_max, &
+    namelist /grid/ x_i, x_o, w_osc, w_exp, w_ctr, &
+         w_thm, w_str, dx_min, dx_max, n_iter_max, &
          resolve_ctr, tag_list
 
     ! Count the number of grid namelists
@@ -108,11 +108,11 @@ contains
 
        x_i = gr_p(i)%x_i
        x_o = gr_p(i)%x_o
-       alpha_osc = gr_p(i)%alpha_osc
-       alpha_exp = gr_p(i)%alpha_exp
-       alpha_ctr = gr_p(i)%alpha_ctr
-       alpha_thm = gr_p(i)%alpha_thm
-       alpha_str = gr_p(i)%alpha_str
+       w_osc = gr_p(i)%w_osc
+       w_exp = gr_p(i)%w_exp
+       w_ctr = gr_p(i)%w_ctr
+       w_thm = gr_p(i)%w_thm
+       w_str = gr_p(i)%w_str
        dx_min = gr_p(i)%dx_min
        dx_max = gr_p(i)%dx_max
        n_iter_max = gr_p(i)%n_iter_max
@@ -127,11 +127,11 @@ contains
 
        gr_p(i)%x_i = x_i
        gr_p(i)%x_o = x_o
-       gr_p(i)%alpha_osc = alpha_osc
-       gr_p(i)%alpha_exp = alpha_exp
-       gr_p(i)%alpha_ctr = alpha_ctr
-       gr_p(i)%alpha_thm = alpha_thm
-       gr_p(i)%alpha_str = alpha_str
+       gr_p(i)%w_osc = w_osc
+       gr_p(i)%w_exp = w_exp
+       gr_p(i)%w_ctr = w_ctr
+       gr_p(i)%w_thm = w_thm
+       gr_p(i)%w_str = w_str
        gr_p(i)%dx_min = dx_min
        gr_p(i)%dx_max = dx_max
        gr_p(i)%n_iter_max = n_iter_max

@@ -32,8 +32,8 @@
 /
 
 &grid
-	alpha_osc = 5.
-	alpha_exp = 1.
+	w_osc = 5.
+	w_exp = 1.
 /
 
 &ad_output

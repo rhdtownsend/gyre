@@ -49,16 +49,16 @@
 /
 
 &grid
-	alpha_osc = 10
-	alpha_exp = 2
-	alpha_ctr = 100
+	w_osc = 10
+	w_exp = 2
+	w_ctr = 100
 	tag_list = 'radial'
 /
 
 &grid
-	alpha_osc = 10
-	alpha_exp = 2
-	alpha_ctr = 100
+	w_osc = 10
+	w_exp = 2
+	w_ctr = 100
 	tag_list = 'l1,l2'
 /
 
