@@ -91,7 +91,7 @@ subinterval is
 
    ( \ln x_{k+1} - \ln x_{k} ) \, \max (w_{\rm osc} |\chi_{\rm i}|, w_{\rm exp} |\chi_{\rm r}|) > 2 \pi,
 
-where :math:`\alpha_{\rm osc}` and :math:`\alpha_{\rm exp}` are
+where :math:`w_{\rm osc}` and :math:`w_{\rm exp}` are
 user-definable weighting parameters. This causes refinement if the
 subinterval width (in :math:`\ln x` space) exceeds :math:`w_{\rm
 osc}^{-1}` times the local wavelength, or :math:`2\pi w_{\rm
