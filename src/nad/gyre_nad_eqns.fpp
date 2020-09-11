@@ -84,6 +84,7 @@ module gyre_nad_eqns
      real(WP)                   :: alpha_om 
      real(WP)                   :: alpha_gm
      real(WP)                   :: alpha_pi
+     real(WP)                   :: alpha_kp
      integer                    :: conv_scheme
    contains
      private
@@ -128,6 +129,7 @@ contains
     eq%alpha_hf = os_p%alpha_hf
     eq%alpha_gm = os_p%alpha_gm
     eq%alpha_pi = os_p%alpha_pi
+    eq%alpha_kp = os_p%alpha_kp
        
     if (os_p%eddington_approx) then
        eq%alpha_rh = 1._WP
@@ -309,7 +311,8 @@ contains
          alpha_rh => this%alpha_rh, &
          alpha_om => this%alpha_om, &
          alpha_gm => this%alpha_gm, &
-         alpha_pi => this%alpha_pi)
+         alpha_pi => this%alpha_pi, &
+         alpha_kp => this%alpha_kp)
 
       Omega_rot = this%cx%Omega_rot(pt)
       Omega_rot_i = this%cx%Omega_rot(pt_i)
@@ -339,8 +342,8 @@ contains
       c_eps_ad = c_eps*(nabla_ad*eps_T + eps_rho/Gamma_1)
       c_eps_S = c_eps*(eps_T - delta*eps_rho)
 
-      kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
-      kap_S = kap_T - delta*kap_rho
+      kap_ad = alpha_kp*(nabla_ad*kap_T + kap_rho/Gamma_1)
+      kap_S = alpha_kp*(kap_T - delta*kap_rho)
       
       c_dif = (kap_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad + V)
 

@@ -58,6 +58,10 @@ is used.  Allowable parameters are:
   the :ref:`osc-eqs-dimless` section; also, Appendix A of
   :ads_citealp:`ong:2020`).  Set to :nml_v:`0.` to isolate p modes
 
+:nml_n:`alpha_kp` (default :nml_v:`1.`)
+  Scaling factor for opacity partial derivatives. Set to :nml_v:`0` to turn
+  off the :math:`\kappa` mechanism
+
 :nml_n:`inertia_norm` (default :nml_v:`'BOTH'`)
   Inertia normalization factor; one of
 

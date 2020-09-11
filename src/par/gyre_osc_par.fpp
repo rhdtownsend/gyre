@@ -41,6 +41,7 @@ module gyre_osc_par
      real(WP)                :: alpha_hf = 1._WP
      real(WP)                :: alpha_gm = 1._WP
      real(WP)                :: alpha_pi = 1._WP
+     real(WP)                :: alpha_kp = 1._WP
      real(WP)                :: eps_rho = 0._WP
      real(WP)                :: eps_T = 0._WP
      character(64)           :: variables_set = 'GYRE'
@@ -110,6 +111,7 @@ contains
     real(WP)                              :: alpha_hf
     real(WP)                              :: alpha_gm
     real(WP)                              :: alpha_pi
+    real(WP)                              :: alpha_kp
     real(WP)                              :: eps_rho
     real(WP)                              :: eps_T
     character(LEN(os_p%variables_set))    :: variables_set
@@ -131,7 +133,7 @@ contains
     logical                               :: eddington_approx
     logical                               :: reduce_order
 
-    namelist /osc/ x_ref, x_atm, alpha_gr, alpha_th, alpha_hf, alpha_gm, alpha_pi, &
+    namelist /osc/ x_ref, x_atm, alpha_gr, alpha_th, alpha_hf, alpha_gm, alpha_pi, alpha_kp, &
          eps_rho, eps_T, inner_bound, outer_bound, &
          outer_bound_for_cutoff, outer_branch, variables_set, inertia_norm, time_factor, &
          conv_scheme, zeta_scheme, deps_source, deps_file, deps_file_format, &
@@ -170,6 +172,7 @@ contains
        alpha_hf = os_p(i)%alpha_hf
        alpha_gm = os_p(i)%alpha_gm
        alpha_pi = os_p(i)%alpha_pi
+       alpha_kp = os_p(i)%alpha_kp
        eps_rho = os_p(i)%eps_rho
        eps_T = os_p(i)%eps_T
        variables_set = os_p(i)%variables_set
@@ -204,6 +207,7 @@ contains
        os_p(i)%alpha_hf = alpha_hf
        os_p(i)%alpha_gm = alpha_gm
        os_p(i)%alpha_pi = alpha_pi
+       os_p(i)%alpha_kp = alpha_kp
        os_p(i)%eps_rho = eps_rho
        os_p(i)%eps_T = eps_T
        os_p(i)%variables_set = variables_set
@@ -251,6 +255,7 @@ contains
     call bcast(os_p%alpha_hf, root_rank)
     call bcast(os_p%alpha_gm, root_rank)
     call bcast(os_p%alpha_pi, root_rank)
+    call bcast(os_p%alpha_kp, root_rank)
     call bcast(os_p%eps_rho, root_rank)
     call bcast(os_p%eps_T, root_rank)
 
