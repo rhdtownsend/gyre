@@ -65,7 +65,7 @@ module gyre_rad_bound
      type(context_t), pointer :: cx => null()
      type(rad_trans_t)        :: tr
      real(WP), allocatable    :: coeff(:,:)
-     real(WP)                 :: alpha_om
+     real(WP)                 :: alpha_omg
      integer                  :: type_i
      integer                  :: type_o
    contains 
@@ -162,9 +162,9 @@ contains
 
     select case (os_p%time_factor)
     case ('OSC')
-       bd%alpha_om = 1._WP
+       bd%alpha_omg = 1._WP
     case ('EXP')
-       bd%alpha_om = -1._WP
+       bd%alpha_omg = -1._WP
     case default
        $ABORT(Invalid time_factor)
     end select
@@ -297,13 +297,13 @@ contains
     associate( &
          omega => st%omega, &
          c_1 => this%coeff(1,J_C_1), &
-         alpha_om => this%alpha_om)
+         alpha_omg => this%alpha_omg)
 
       omega_c = omega
 
       ! Set up the boundary conditions
 
-      B(1,1) = c_1*alpha_om*omega_c**2
+      B(1,1) = c_1*alpha_omg*omega_c**2
       B(1,2) = 0._WP
 
       scl = 1._WP
@@ -438,13 +438,13 @@ contains
          omega => st%omega, &
          V => this%coeff(2,J_V), &
          c_1 => this%coeff(2,J_C_1), &
-         alpha_om => this%alpha_om)
+         alpha_omg => this%alpha_omg)
 
       omega_c = omega
 
       ! Set up the boundary conditions
         
-      B(1,1) = 1 - (4._WP + c_1*alpha_om*omega_c**2)/V
+      B(1,1) = 1 - (4._WP + c_1*alpha_omg*omega_c**2)/V
       B(1,2) = -1._WP
       
       scl = 1._WP
@@ -480,13 +480,12 @@ contains
     ! eigendecomposition
 
     associate( &
+         omega => st%omega, &
          V => this%coeff(2,J_V), &
          As => this%coeff(2,J_AS), &
          c_1 => this%coeff(2,J_C_1), &
          Gamma_1 => this%coeff(2,J_GAMMA_1), &
-         alpha_om => this%alpha_om)
-
-      omega_c = st%omega
+         alpha_omg => this%alpha_omg)
 
       ! Evaluate selected elements of the Jacobian matrix
 

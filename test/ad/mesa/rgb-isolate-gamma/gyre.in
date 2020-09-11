@@ -28,7 +28,7 @@
 
 &osc
 	tag_list = 'l1,l2'
-	alpha_gm = 0.
+	alpha_gam = 0.
 	outer_bound = 'GAMMA'
 	x_atm = 0.5
 /

@@ -363,8 +363,8 @@ contains
 
           ! Calculate the propagation discriminant psi2
 
-          c_4 = -4._WP*V/Gamma_1*c_1*os_p%alpha_gm
-          c_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As*os_p%alpha_gm*os_p%alpha_pi + 4._WP*lambda
+          c_4 = -4._WP*V/Gamma_1*c_1*os_p%alpha_gam
+          c_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As*os_p%alpha_gam*os_p%alpha_pi + 4._WP*lambda
           c_0 = -4._WP*lambda*As/c_1*os_p%alpha_pi
 
           if (c_0 /= 0._WP) then

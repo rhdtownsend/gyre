@@ -77,14 +77,14 @@ module gyre_nad_eqns
      type(nad_trans_t)          :: tr
      real(WP), allocatable      :: coeff(:,:)
      real(WP)                   :: x_atm
-     real(WP)                   :: alpha_gr
-     real(WP)                   :: alpha_th
-     real(WP)                   :: alpha_hf
-     real(WP)                   :: alpha_rh
-     real(WP)                   :: alpha_om 
-     real(WP)                   :: alpha_gm
+     real(WP)                   :: alpha_grv
+     real(WP)                   :: alpha_thm
+     real(WP)                   :: alpha_hfl
+     real(WP)                   :: alpha_rht
+     real(WP)                   :: alpha_omg 
+     real(WP)                   :: alpha_gam
      real(WP)                   :: alpha_pi
-     real(WP)                   :: alpha_kp
+     real(WP)                   :: alpha_kap
      integer                    :: conv_scheme
    contains
      private
@@ -124,24 +124,24 @@ contains
 
     eq%tr = nad_trans_t(cx, md_p, os_p)
 
-    eq%alpha_gr = os_p%alpha_gr
-    eq%alpha_th = os_p%alpha_th
-    eq%alpha_hf = os_p%alpha_hf
-    eq%alpha_gm = os_p%alpha_gm
+    eq%alpha_grv = os_p%alpha_grv
+    eq%alpha_thm = os_p%alpha_thm
+    eq%alpha_hfl = os_p%alpha_hfl
+    eq%alpha_gam = os_p%alpha_gam
     eq%alpha_pi = os_p%alpha_pi
-    eq%alpha_kp = os_p%alpha_kp
+    eq%alpha_kap = os_p%alpha_kap
        
     if (os_p%eddington_approx) then
-       eq%alpha_rh = 1._WP
+       eq%alpha_rht = 1._WP
     else
-       eq%alpha_rh = 0._WP
+       eq%alpha_rht = 0._WP
     endif
 
     select case (os_p%time_factor)
     case ('OSC')
-       eq%alpha_om = 1._WP
+       eq%alpha_omg = 1._WP
     case ('EXP')
-       eq%alpha_om = -1._WP
+       eq%alpha_omg = -1._WP
     case default
        $ABORT(Invalid time_factor)
     end select
@@ -305,33 +305,33 @@ contains
          pt_i => this%cx%point_i(), &
          x => this%pt(i)%x, &
          x_atm => this%x_atm, &
-         alpha_gr => this%alpha_gr, &
-         alpha_th => this%alpha_th, &
-         alpha_hf => this%alpha_hf, &
-         alpha_rh => this%alpha_rh, &
-         alpha_om => this%alpha_om, &
-         alpha_gm => this%alpha_gm, &
+         alpha_grv => this%alpha_grv, &
+         alpha_thm => this%alpha_thm, &
+         alpha_hfl => this%alpha_hfl, &
+         alpha_rht => this%alpha_rht, &
+         alpha_omg => this%alpha_omg, &
+         alpha_gam => this%alpha_gam, &
          alpha_pi => this%alpha_pi, &
-         alpha_kp => this%alpha_kp)
+         alpha_kap => this%alpha_kap)
 
       Omega_rot = this%cx%Omega_rot(pt)
       Omega_rot_i = this%cx%Omega_rot(pt_i)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
       omega_c = this%cx%omega_c(Omega_rot, st)
-      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_om, KIND=WP))*omega_c
+      i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_omg, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
       l_i = this%cx%l_e(Omega_rot_i, st)
     
-      f_rh = 1._WP - 0.25_WP*alpha_rh*i_omega_c*c_thn
-      df_rh = -0.25_WP*alpha_rh*i_omega_c*c_thn*dc_thn/f_rh
+      f_rh = 1._WP - 0.25_WP*alpha_rht*i_omega_c*c_thn
+      df_rh = -0.25_WP*alpha_rht*i_omega_c*c_thn*dc_thn/f_rh
 
       select case (this%conv_scheme)
       case (P1_CONV_SCHEME)
-         conv_term = lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_om*omega_c**2)
+         conv_term = lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_omg*omega_c**2)
       case (P4_CONV_SCHEME)
-         conv_term = lambda*(c_lum*(3._WP + dc_lum) - (c_lum - c_rad))/(c_1*alpha_om*omega_c**2)
+         conv_term = lambda*(c_lum*(3._WP + dc_lum) - (c_lum - c_rad))/(c_1*alpha_omg*omega_c**2)
       case default
          $ABORT(Invalid conv_scheme)
       end select
@@ -342,56 +342,56 @@ contains
       c_eps_ad = c_eps*(nabla_ad*eps_T + eps_rho/Gamma_1)
       c_eps_S = c_eps*(eps_T - delta*eps_rho)
 
-      kap_ad = alpha_kp*(nabla_ad*kap_T + kap_rho/Gamma_1)
-      kap_S = alpha_kp*(kap_T - delta*kap_rho)
+      kap_ad = alpha_kap*(nabla_ad*kap_T + kap_rho/Gamma_1)
+      kap_S = alpha_kap*(kap_T - delta*kap_rho)
       
       c_dif = (kap_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad + V)
 
       ! Set up the matrix
 
       xA(1,1) = V/Gamma_1 - 1._WP - l_i
-      xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1*alpha_gm
-      xA(1,3) = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
-      xA(1,4) = alpha_gr*(0._WP)
+      xA(1,2) = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1*alpha_gam
+      xA(1,3) = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
+      xA(1,4) = alpha_grv*(0._WP)
       xA(1,5) = delta
       xA(1,6) = 0._WP
 
-      xA(2,1) = c_1*alpha_om*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gm, x<x_atm), 1._WP, As > 0._WP)
+      xA(2,1) = c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._WP, As > 0._WP)
       xA(2,2) = As - U + 3._WP - l_i
-      xA(2,3) = alpha_gr*(0._WP)
-      xA(2,4) = alpha_gr*(-1._WP)
+      xA(2,3) = alpha_grv*(0._WP)
+      xA(2,4) = alpha_grv*(-1._WP)
       xA(2,5) = delta
       xA(2,6) = 0._WP
 
-      xA(3,1) = alpha_gr*(0._WP)
-      xA(3,2) = alpha_gr*(0._WP)
-      xA(3,3) = alpha_gr*(3._WP - U - l_i)
-      xA(3,4) = alpha_gr*(1._WP)
-      xA(3,5) = alpha_gr*(0._WP)
-      xA(3,6) = alpha_gr*(0._WP)
+      xA(3,1) = alpha_grv*(0._WP)
+      xA(3,2) = alpha_grv*(0._WP)
+      xA(3,3) = alpha_grv*(3._WP - U - l_i)
+      xA(3,4) = alpha_grv*(1._WP)
+      xA(3,5) = alpha_grv*(0._WP)
+      xA(3,6) = alpha_grv*(0._WP)
 
-      xA(4,1) = alpha_gr*(U*As)
-      xA(4,2) = alpha_gr*(U*V/Gamma_1)
-      xA(4,3) = alpha_gr*(lambda)
-      xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
-      xA(4,5) = alpha_gr*(-U*delta)
-      xA(4,6) = alpha_gr*(0._WP)
+      xA(4,1) = alpha_grv*(U*As)
+      xA(4,2) = alpha_grv*(U*V/Gamma_1)
+      xA(4,3) = alpha_grv*(lambda)
+      xA(4,4) = alpha_grv*(-U - l_i + 2._WP)
+      xA(4,5) = alpha_grv*(-U*delta)
+      xA(4,6) = alpha_grv*(0._WP)
 
-      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_om*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)/f_rh
-      xA(5,2) = V*(lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla) - c_dif)/f_rh
-      xA(5,3) = alpha_gr*(V*lambda/(c_1*alpha_om*omega_c**2)*(nabla_ad - nabla))/f_rh
-      xA(5,4) = alpha_gr*(V*nabla_ad)/f_rh
+      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)/f_rh
+      xA(5,2) = V*(lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla) - c_dif)/f_rh
+      xA(5,3) = alpha_grv*(V*lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla))/f_rh
+      xA(5,4) = alpha_grv*(V*nabla_ad)/f_rh
       xA(5,5) = V*nabla*(4._WP*f_rh - kap_S)/f_rh - df_rh - (l_i - 2._WP)
       xA(5,6) = -V*nabla/(c_rad*f_rh)
 
-      xA(6,1) = alpha_hf*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
-      xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hf*nabla_ad/nabla + conv_term
-      xA(6,3) = alpha_gr*conv_term
-      xA(6,4) = alpha_gr*(0._WP)
+      xA(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
+      xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term
+      xA(6,3) = alpha_grv*conv_term
+      xA(6,4) = alpha_grv*(0._WP)
       if (x > 0._WP) then
-         xA(6,5) = c_eps_S - alpha_hf*lambda*c_rad/(nabla*V) + alpha_th*i_omega_c*c_thk
+         xA(6,5) = c_eps_S - alpha_hfl*lambda*c_rad/(nabla*V) + alpha_thm*i_omega_c*c_thk
       else
-         xA(6,5) = -alpha_hf*HUGE(0._WP)
+         xA(6,5) = -alpha_hfl*HUGE(0._WP)
       endif
       xA(6,6) = -1._WP - l_i
 

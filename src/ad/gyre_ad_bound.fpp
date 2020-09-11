@@ -68,8 +68,8 @@ module gyre_ad_bound
      type(point_t)            :: pt(2)
      type(ad_trans_t)         :: tr
      real(WP), allocatable    :: coeff(:,:)
-     real(WP)                 :: alpha_gr
-     real(WP)                 :: alpha_om
+     real(WP)                 :: alpha_grv
+     real(WP)                 :: alpha_omg
      integer                  :: type_i
      integer                  :: type_o
    contains 
@@ -171,13 +171,13 @@ contains
        $ABORT(Invalid outer_bound)
     end select
 
-    bd%alpha_gr = os_p%alpha_gr
+    bd%alpha_grv = os_p%alpha_grv
 
     select case (os_p%time_factor)
     case ('OSC')
-       bd%alpha_om = 1._WP
+       bd%alpha_omg = 1._WP
     case ('EXP')
-       bd%alpha_om = -1._WP
+       bd%alpha_omg = -1._WP
     case default
        $ABORT(Invalid time_factor)
     end select
@@ -318,8 +318,8 @@ contains
     associate( &
          c_1 => this%coeff(1,J_C_1), &
          pt => this%pt(1), &
-         alpha_gr => this%alpha_gr, &
-         alpha_om => this%alpha_om)
+         alpha_grv => this%alpha_grv, &
+         alpha_omg => this%alpha_omg)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
@@ -329,15 +329,15 @@ contains
 
       ! Set up the boundary conditions
 
-      B(1,1) = c_1*alpha_om*omega_c**2
+      B(1,1) = c_1*alpha_omg*omega_c**2
       B(1,2) = -l_i
-      B(1,3) = alpha_gr*(-l_i)
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = alpha_grv*(-l_i)
+      B(1,4) = alpha_grv*(0._WP)
         
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_i)
-      B(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
+      B(2,1) = alpha_grv*(0._WP)
+      B(2,2) = alpha_grv*(0._WP)
+      B(2,3) = alpha_grv*(l_i)
+      B(2,4) = alpha_grv*(-1._WP) + (1._WP - alpha_grv)
 
       scl = 1._WP
 
@@ -367,19 +367,19 @@ contains
     ! radial displacement/gravity)
 
     associate( &
-      alpha_gr => this%alpha_gr) 
+      alpha_grv => this%alpha_grv) 
 
       ! Set up the boundary conditions
 
       B(1,1) = 1._WP
       B(1,2) = 0._WP
-      B(1,3) = alpha_gr*(0._WP)
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = alpha_grv*(0._WP)
+      B(1,4) = alpha_grv*(0._WP)
         
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(0._WP)
-      B(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
+      B(2,1) = alpha_grv*(0._WP)
+      B(2,2) = alpha_grv*(0._WP)
+      B(2,3) = alpha_grv*(0._WP)
+      B(2,4) = alpha_grv*(1._WP) + (1._WP - alpha_grv)
 
       scl = 1._WP
 
@@ -409,19 +409,19 @@ contains
     ! horizontal displacement/gravity)
 
     associate( &
-      alpha_gr => this%alpha_gr) 
+      alpha_grv => this%alpha_grv) 
 
       ! Set up the boundary conditions
 
       B(1,1) = 0._WP
       B(1,2) = 1._WP
-      B(1,3) = alpha_gr*(1._WP)
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = alpha_grv*(1._WP)
+      B(1,4) = alpha_grv*(0._WP)
         
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(0._WP)
-      B(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
+      B(2,1) = alpha_grv*(0._WP)
+      B(2,2) = alpha_grv*(0._WP)
+      B(2,3) = alpha_grv*(0._WP)
+      B(2,4) = alpha_grv*(1._WP) + (1._WP - alpha_grv)
 
       scl = 1._WP
 
@@ -493,7 +493,7 @@ contains
     associate( &
          U => this%coeff(2,J_U), &
          pt => this%pt(2), &
-         alpha_gr => this%alpha_gr)
+         alpha_grv => this%alpha_grv)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
@@ -503,13 +503,13 @@ contains
 
       B(1,1) = 1._WP
       B(1,2) = -1._WP
-      B(1,3) = alpha_gr*(0._WP)
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = alpha_grv*(0._WP)
+      B(1,4) = alpha_grv*(0._WP)
       
-      B(2,1) = alpha_gr*(U)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B(2,4) = alpha_gr*(1._WP)
+      B(2,1) = alpha_grv*(U)
+      B(2,2) = alpha_grv*(0._WP)
+      B(2,3) = alpha_grv*(l_e + 1._WP) + (1._WP - alpha_grv)
+      B(2,4) = alpha_grv*(1._WP)
 
       scl = 1._WP
 
@@ -546,8 +546,8 @@ contains
          V => this%coeff(2,J_V), &
          c_1 => this%coeff(2,J_C_1), &
          pt => this%pt(2), &
-         alpha_gr => this%alpha_gr, &
-         alpha_om => this%alpha_om)
+         alpha_grv => this%alpha_grv, &
+         alpha_omg => this%alpha_omg)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
@@ -558,15 +558,15 @@ contains
 
       ! Set up the boundary conditions
 
-      B(1,1) = 1._WP + (lambda/(c_1*alpha_om*omega_c**2) - 4._WP - c_1*alpha_om*omega_c**2)/V
+      B(1,1) = 1._WP + (lambda/(c_1*alpha_omg*omega_c**2) - 4._WP - c_1*alpha_omg*omega_c**2)/V
       B(1,2) = -1._WP
-      B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)/V)
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = alpha_grv*((lambda/(c_1*alpha_omg*omega_c**2) - l_e - 1._WP)/V)
+      B(1,4) = alpha_grv*(0._WP)
       
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B(2,4) = alpha_gr*(1._WP)
+      B(2,1) = alpha_grv*(0._WP)
+      B(2,2) = alpha_grv*(0._WP)
+      B(2,3) = alpha_grv*(l_e + 1._WP) + (1._WP - alpha_grv)
+      B(2,4) = alpha_grv*(1._WP)
 
       scl = 1._WP
 
@@ -617,8 +617,8 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Gamma_1 => this%coeff(2,J_GAMMA_1), &
          pt => this%pt(2), &
-         alpha_gr => this%alpha_gr, &
-         alpha_om => this%alpha_om)
+         alpha_grv => this%alpha_grv, &
+         alpha_omg => this%alpha_omg)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
@@ -630,14 +630,14 @@ contains
       ! Evaluate selected elements of the Jacobian matrix
 
       a_11 = V/Gamma_1 - 3._WP
-      a_12 = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
-      a_13 = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
-      a_14 = alpha_gr*(0._WP)
+      a_12 = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1
+      a_13 = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
+      a_14 = alpha_grv*(0._WP)
 
-      a_21 = c_1*alpha_om*omega_c**2 - As
+      a_21 = c_1*alpha_omg*omega_c**2 - As
       a_22 = As + 1._WP
-      a_23 = alpha_gr*(0._WP)
-      a_24 = alpha_gr*(-1._WP)
+      a_23 = alpha_grv*(0._WP)
+      a_24 = alpha_grv*(-1._WP)
 
       ! Evaluate the eigenvalue for the wave we want to keep
 
@@ -652,13 +652,13 @@ contains
 
       B(1,1) = -(chi - a_11)
       B(1,2) = a_12
-      B(1,3) = -alpha_gr*G_1
-      B(1,4) = alpha_gr*G_2
+      B(1,3) = -alpha_grv*G_1
+      B(1,4) = alpha_grv*G_2
 
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B(2,4) = alpha_gr*(1._WP)
+      B(2,1) = alpha_grv*(0._WP)
+      B(2,2) = alpha_grv*(0._WP)
+      B(2,3) = alpha_grv*(l_e + 1._WP) + (1._WP - alpha_grv)
+      B(2,4) = alpha_grv*(1._WP)
 
       scl = 1._WP
 
@@ -720,8 +720,8 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Gamma_1 => this%coeff(2,J_GAMMA_1), &
          pt => this%pt(2), &
-         alpha_gr => this%alpha_gr, &
-         alpha_om => this%alpha_om)
+         alpha_grv => this%alpha_grv, &
+         alpha_omg => this%alpha_omg)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
@@ -733,19 +733,19 @@ contains
       chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, lambda)
 
       b_11 = V/Gamma_1 - 3._WP
-      b_12 = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
+      b_12 = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1
 
       ! Set up the boundary conditions
 
       B(1,1) = chi - b_11
       B(1,2) = -b_12
-      B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)*b_12/(V/Gamma_1 + As))
-      B(1,4) = alpha_gr*(0._WP)
+      B(1,3) = alpha_grv*((lambda/(c_1*alpha_omg*omega_c**2) - l_e - 1._WP)*b_12/(V/Gamma_1 + As))
+      B(1,4) = alpha_grv*(0._WP)
 
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B(2,4) = alpha_gr*(1._WP)
+      B(2,1) = alpha_grv*(0._WP)
+      B(2,2) = alpha_grv*(0._WP)
+      B(2,3) = alpha_grv*(l_e + 1._WP) + (1._WP - alpha_grv)
+      B(2,4) = alpha_grv*(1._WP)
 
       scl = 1._WP
 
@@ -783,8 +783,8 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Gamma_1 => this%coeff(2,J_GAMMA_1), &
          pt => this%pt(2), &
-         alpha_gr => this%alpha_gr, &
-         alpha_om => this%alpha_om)
+         alpha_grv => this%alpha_grv, &
+         alpha_omg => this%alpha_omg)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
@@ -801,8 +801,8 @@ contains
       B(1,4) = 0._WP
 
       B(2,1) = 0._WP
-      B(2,2) = 1._WP !lambda/(c_1*alpha_om*omega_c**2) !- V/Gamma_1 * alpha_gamma
-      B(2,3) = alpha_gr * 1._WP !alpha_gr*lambda/(c_1*alpha_om*omega_c**2)
+      B(2,2) = 1._WP !lambda/(c_1*alpha_omg*omega_c**2) !- V/Gamma_1 * alpha_gamma
+      B(2,3) = alpha_grv * 1._WP !alpha_grv*lambda/(c_1*alpha_omg*omega_c**2)
       B(2,4) = 0._WP
 
       scl = 1._WP

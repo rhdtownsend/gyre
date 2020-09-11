@@ -57,7 +57,7 @@ module gyre_rad_eqns
      type(point_t), allocatable :: pt(:)
      type(rad_trans_t)          :: tr
      real(WP), allocatable      :: coeff(:,:)
-     real(WP)                   :: alpha_om
+     real(WP)                   :: alpha_omg
    contains
      private
      procedure, public :: stencil
@@ -96,9 +96,9 @@ contains
 
     select case (os_p%time_factor)
     case ('OSC')
-       eq%alpha_om = 1._WP
+       eq%alpha_omg = 1._WP
     case ('EXP')
-       eq%alpha_om = -1._WP
+       eq%alpha_omg = -1._WP
     case default
        $ABORT(Invalid time_factor)
     end select
@@ -198,7 +198,7 @@ contains
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
          Gamma_1 => this%coeff(i,J_GAMMA_1), &
-         alpha_om => this%alpha_om)
+         alpha_omg => this%alpha_omg)
 
       omega_c = omega
 
@@ -207,7 +207,7 @@ contains
       xA(1,1) = V/Gamma_1 - 1._WP
       xA(1,2) = -V/Gamma_1
       
-      xA(2,1) = c_1*alpha_om*omega_c**2 + U - As
+      xA(2,1) = c_1*alpha_omg*omega_c**2 + U - As
       xA(2,2) = As - U + 3._WP
 
     end associate
