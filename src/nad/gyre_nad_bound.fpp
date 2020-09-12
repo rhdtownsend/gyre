@@ -191,7 +191,7 @@ contains
        $ABORT(Invalid time_factor)
     end select
 
-    bd%branch_o = os_p%outer_branch
+    bd%branch_o = os_p%outer_bound_branch
 
     call bd%stencil_(pt_i, pt_o)
 

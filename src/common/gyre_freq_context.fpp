@@ -197,8 +197,8 @@ contains
 
     ! Evaluate the cutoff frequencies
 
-    if (os_p%outer_bound_for_cutoff /= '') then
-       outer_bound = os_p%outer_bound_for_cutoff
+    if (os_p%outer_bound_cutoff /= '') then
+       outer_bound = os_p%outer_bound_cutoff
     else
        outer_bound = os_p%outer_bound
     endif
