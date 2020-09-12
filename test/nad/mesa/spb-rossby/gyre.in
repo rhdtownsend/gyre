@@ -2,54 +2,54 @@
 /
 
 &model
-	model_type = 'EVOL'
-	file = 'spb.mesa'
-	file_format = 'MESA'
+  model_type = 'EVOL'
+  file = 'spb.mesa'
+  file_format = 'MESA'
 /
 
 &mode
-	l = 2
-	m = -2
-	rossby = .true.
-	tag = 'l=1'
+  l = 2
+  m = -2
+  rossby = .true.
+  tag = 'l=1'
 /
 
 &osc
-	nonadiabatic = .TRUE.
+  nonadiabatic = .TRUE.
 /
 
 &rot
-	coriolis_method = 'TAR'
- 	Omega_rot_source = 'UNIFORM'
-	Omega_rot = 0.5
-	Omega_rot_units = 'CRITICAL'
+  coriolis_method = 'TAR'
+  Omega_rot_source = 'UNIFORM'
+  Omega_rot = 0.5
+  Omega_rot_units = 'CRITICAL'
 /
 
 &num
-	diff_scheme = 'COLLOC_GL4'
+  diff_scheme = 'COLLOC_GL4'
 /
 
 &scan
-	grid_type = 'INVERSE'
-	grid_frame = 'COROT_O'
-	freq_min = 0.85
-	freq_max = 0.99
-	freq_min_units = 'ROSSBY_O'
-	freq_max_units = 'ROSSBY_O'
-	freq_frame = 'COROT_O'
-	n_freq = 200
+  grid_type = 'INVERSE'
+  grid_frame = 'COROT_O'
+  freq_min = 0.85
+  freq_max = 0.99
+  freq_min_units = 'ROSSBY_O'
+  freq_max_units = 'ROSSBY_O'
+  freq_frame = 'COROT_O'
+  n_freq = 200
 /
 
 &grid
-	w_osc = 10.
-	w_exp = 2.
-	w_ctr = 10.
+  w_osc = 10.
+  w_exp = 2.
+  w_ctr = 10.
 /
 
 &ad_output
 /
 
 &nad_output
-	summary_file = 'summary.h5'
-	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
 /

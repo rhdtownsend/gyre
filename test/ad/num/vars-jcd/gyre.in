@@ -2,51 +2,51 @@
 /
 
 &model
-	model_type = 'POLY'
-	file = 'poly.h5'
+  model_type = 'POLY'
+  file = 'poly.h5'
 /
 
 &mode
-	l = 0
-	tag = 'l=0r'
+  l = 0
+  tag = 'l=0r'
 /
 
 &mode
-	l = 0
-	tag = 'l=0'
+  l = 0
+  tag = 'l=0'
 /
 
 &mode
-	l = 1
-	tag = 'l=1'
+  l = 1
+  tag = 'l=1'
 /
 
 &mode
-	l = 2
-	tag = 'l=2'
+  l = 2
+  tag = 'l=2'
 /
 
 &mode
-	l = 3
-	tag = 'l=3'
+  l = 3
+  tag = 'l=3'
 /
 
 &osc
-	variables_set = 'JCD'
-	reduce_order = .FALSE.
+  variables_set = 'JCD'
+  reduce_order = .FALSE.
 /
 
 &osc
-	variables_set = 'JCD'
-	reduce_order = .TRUE.
-	tag_list = 'l=0r'
+  variables_set = 'JCD'
+  reduce_order = .TRUE.
+  tag_list = 'l=0r'
 /
 
 &rot
 /
 
 &num
-	diff_scheme = 'COLLOC_GL6'
+  diff_scheme = 'COLLOC_GL6'
 /
 
 &scan
@@ -64,14 +64,14 @@
 /
 
 &grid
-	w_osc = 10.
-	w_exp = 2.
-	w_ctr = 10.
+  w_osc = 10.
+  w_exp = 2.
+  w_ctr = 10.
 /
 
 &ad_output
-	summary_file = 'summary.h5'
-	summary_item_list = 'l,n_pg,n_p,n_g,omega,E_norm'
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,n_pg,n_p,n_g,omega,E_norm'
 /
 
 &nad_output

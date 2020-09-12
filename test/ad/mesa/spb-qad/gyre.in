@@ -2,70 +2,70 @@
 /
 
 &model
-	model_type = 'EVOL'
-	file = 'spb.mesa'
-	file_format = 'MESA'
+  model_type = 'EVOL'
+  file = 'spb.mesa'
+  file_format = 'MESA'
 /
 
 &mode
-	l = 1
-	tag = 'l=1'
+  l = 1
+  tag = 'l=1'
 /
 
 &mode
-	l = 2
-	tag = 'l=2'
+  l = 2
+  tag = 'l=2'
 /
 
 &mode
-	l = 3
-	tag = 'l=3'
+  l = 3
+  tag = 'l=3'
 /
 
 &osc
-	quasiad_eigfuncs = .TRUE.
+  quasiad_eigfuncs = .TRUE.
 /
 
 &rot
 /
 
 &num
-	diff_scheme = 'COLLOC_GL4'
+  diff_scheme = 'COLLOC_GL4'
 /
 
 &scan
-	grid_type = 'INVERSE'
-	freq_min = 0.15
-	freq_max = 0.45
-	n_freq = 100
-	tag_list = 'l=1'
+  grid_type = 'INVERSE'
+  freq_min = 0.15
+  freq_max = 0.45
+  n_freq = 100
+  tag_list = 'l=1'
 /
 
 &scan
-	grid_type = 'INVERSE'
-	freq_min = 0.2
-	freq_max = 0.75
-	n_freq = 100
-	tag_list = 'l=2'
+  grid_type = 'INVERSE'
+  freq_min = 0.2
+  freq_max = 0.75
+  n_freq = 100
+  tag_list = 'l=2'
 /
 
 &scan
-	grid_type = 'INVERSE'
-	freq_min = 0.25
-	freq_max = 1
-	n_freq = 100
-	tag_list = 'l=3'
+  grid_type = 'INVERSE'
+  freq_min = 0.25
+  freq_max = 1
+  n_freq = 100
+  tag_list = 'l=3'
 /
 
 &grid
-	w_osc = 10
-	w_exp = 2
-	w_ctr = 10
+  w_osc = 10
+  w_exp = 2
+  w_ctr = 10
 /
 
 &ad_output
-	summary_file = 'summary.h5'
-	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
 /
 
 &nad_output

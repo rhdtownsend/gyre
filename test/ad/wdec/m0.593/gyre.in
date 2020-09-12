@@ -1,19 +1,19 @@
 &constants
-	G_GRAVITY = 6.67259d-8
+  G_GRAVITY = 6.67259d-8
 /
 
 &model
-	model_type = 'EVOL'
-	file = 'evolved'
-	file_format = 'WDEC'
+  model_type = 'EVOL'
+  file = 'evolved'
+  file_format = 'WDEC'
 /
 
 &mode
-	l = 1
+  l = 1
 /
 
 &mode
-	l = 2
+  l = 2
 /
 
 &osc
@@ -23,28 +23,28 @@
 /
 
 &num
-	diff_scheme = 'COLLOC_GL4'
+  diff_scheme = 'COLLOC_GL4'
 /
 
 &scan
-	grid_type = 'INVERSE'
-	freq_min = 0.00067
-	freq_max = 0.01
-	freq_min_units = 'HZ'
-	freq_max_units = 'HZ'
-	n_freq = 100
+  grid_type = 'INVERSE'
+  freq_min = 0.00067
+  freq_max = 0.01
+  freq_min_units = 'HZ'
+  freq_max_units = 'HZ'
+  n_freq = 100
 /
 
 &grid
-	w_osc = 10
-	w_exp = 2
-	w_ctr = 10
+  w_osc = 10
+  w_exp = 2
+  w_ctr = 10
 /
 
 &ad_output
-	summary_file = 'summary.h5'
-	summary_item_list = 'l,n_pg,n_p,n_g,omega,freq'
-	freq_units = 'HZ'
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,n_pg,n_p,n_g,omega,freq'
+  freq_units = 'HZ'
 /
 
 &nad_output

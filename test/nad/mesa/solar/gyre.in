@@ -2,57 +2,57 @@
 /
 
 &model
-	model_type = 'EVOL'
-	file = 'solar.mesa'
-	file_format = 'MESA'
+  model_type = 'EVOL'
+  file = 'solar.mesa'
+  file_format = 'MESA'
 /
 
 &mode
-	l = 1
-	tag = 'diffusion'
+  l = 1
+  tag = 'diffusion'
 /
 
 &mode
-	l = 1
-	tag = 'eddington'
+  l = 1
+  tag = 'eddington'
 /
 
 &osc
-	nonadiabatic = .TRUE.
-	eddington_approx = .TRUE.
-	tag_list = 'eddington'
+  nonadiabatic = .TRUE.
+  eddington_approx = .TRUE.
+  tag_list = 'eddington'
 /
 
 &osc
-	nonadiabatic = .TRUE.
-	eddington_approx = .FALSE.
-	tag_list = 'diffusion'
+  nonadiabatic = .TRUE.
+  eddington_approx = .FALSE.
+  tag_list = 'diffusion'
 /
 
 &rot
 /
 
 &num
-	diff_scheme = 'COLLOC_GL2'
+  diff_scheme = 'COLLOC_GL2'
 /
 
 &scan
-	grid_type = 'LINEAR'
-	freq_min = 10
-	freq_max = 40
-	n_freq = 50
+  grid_type = 'LINEAR'
+  freq_min = 10
+  freq_max = 40
+  n_freq = 50
 /
 
 &grid
-	w_osc = 10.
-	w_exp = 2.
-	w_ctr = 10.
+  w_osc = 10.
+  w_exp = 2.
+  w_ctr = 10.
 /
 
 &ad_output
 /
 
 &nad_output
-	summary_file = 'summary.h5'
-	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
 /

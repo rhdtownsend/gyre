@@ -2,51 +2,51 @@
 /
 
 &model
-	model_type = 'EVOL'
-	file = 'sss.mesa'
-	file_format = 'MESA'
+  model_type = 'EVOL'
+  file = 'sss.mesa'
+  file_format = 'MESA'
 /
 
 &mode
-	l = 1
+  l = 1
 /
 
 &mode
-	l = 2
+  l = 2
 /
 
 &osc
-        nonadiabatic = .TRUE.
-        deps_source = 'FILE'
-        deps_file = 'sss.eps_sens_data'
-        deps_file_format = 'WOLF'
+  nonadiabatic = .TRUE.
+  deps_source = 'FILE'
+  deps_file = 'sss.eps_sens_data'
+  deps_file_format = 'WOLF'
 /
 
 &rot
 /
 
 &num
-	diff_scheme = 'MAGNUS_GL2'
+  diff_scheme = 'MAGNUS_GL2'
 /
 
 &scan
-	grid_type = 'INVERSE'
-	freq_min = 0.1
-	freq_max = 1.0
-	n_freq = 100
-        freq_min_units = 'GRAVITY_DELTA'
-        freq_max_units = 'GRAVITY_DELTA'
+  grid_type = 'INVERSE'
+  freq_min = 0.1
+  freq_max = 1.0
+  n_freq = 100
+  freq_min_units = 'GRAVITY_DELTA'
+  freq_max_units = 'GRAVITY_DELTA'
 /
 
 &grid
-	w_osc = 10
-	w_exp = 2
+  w_osc = 10
+  w_exp = 2
 /
 
 &ad_output
 /
 
 &nad_output
-	summary_file = 'summary.h5'
-	summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
 /

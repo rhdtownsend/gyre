@@ -2,45 +2,46 @@
 /
 
 &model
-	model_type = 'EVOL'
-	file = 'fgong.l5bi.d.15c'
-	file_format = 'FGONG'
+  model_type = 'EVOL'
+  file = 'fgong.l5bi.d.15c'
+  file_format = 'FGONG'
 /
 
 &mode
-	l = 1000
+  l = 1000
 /
 
 &osc
-	outer_bound = 'JCD'
+  outer_bound = 'JCD'
 /
 
 &rot
 /
 
 &num
-	diff_scheme = 'COLLOC_GL6'
+  diff_scheme = 'COLLOC_GL6'
 /
 
 &scan
-	grid_type = 'LINEAR'
-	freq_min = 3000
-	freq_max = 5000
-	freq_min_units = 'UHZ'
-	freq_max_units = 'UHZ'
-	n_freq = 10
+  grid_type = 'LINEAR'
+  freq_min = 3000
+  freq_max = 5000
+  freq_min_units = 'UHZ'
+  freq_max_units = 'UHZ'
+  n_freq = 10
 /
 
 &grid
-	w_osc = 5.
-	w_exp = 1.
+  w_osc = 5.
+  w_exp = 1.
 /
 
 &ad_output
-	summary_file = 'summary.h5'
-	summary_item_list = 'l,n_pg,n_p,n_g,freq'
-	freq_units = 'UHZ'
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,n_pg,n_p,n_g,freq'
+  freq_units = 'UHZ'
 /
 
 &nad_output
 /
+
