@@ -342,10 +342,10 @@ contains
       c_eps_ad = c_eps*(nabla_ad*eps_T + eps_rho/Gamma_1)
       c_eps_S = c_eps*(eps_T - delta*eps_rho)
 
-      kap_ad = alpha_kap*(nabla_ad*kap_T + kap_rho/Gamma_1)
-      kap_S = alpha_kap*(kap_T - delta*kap_rho)
+      kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
+      kap_S = kap_T - delta*kap_rho
       
-      c_dif = (kap_ad-4._WP*nabla_ad)*V*nabla + nabla_ad*(dnabla_ad + V)
+      c_dif = -4._WP*nabla_ad*V*nabla + nabla_ad*(dnabla_ad + V)
 
       ! Set up the matrix
 
@@ -377,11 +377,11 @@ contains
       xA(4,5) = alpha_grv*(-U*delta)
       xA(4,6) = alpha_grv*(0._WP)
 
-      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_dif)/f_rh
-      xA(5,2) = V*(lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla) - c_dif)/f_rh
+      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._WP*(nabla_ad - nabla) + alpha_kap*kap_ad*V*nabla + c_dif)/f_rh
+      xA(5,2) = V*(lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla) - alpha_kap*kap_ad*V*nabla - c_dif)/f_rh
       xA(5,3) = alpha_grv*(V*lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla))/f_rh
       xA(5,4) = alpha_grv*(V*nabla_ad)/f_rh
-      xA(5,5) = V*nabla*(4._WP*f_rh - kap_S)/f_rh - df_rh - (l_i - 2._WP)
+      xA(5,5) = V*nabla*(4._WP*f_rh - alpha_kap*kap_S)/f_rh - df_rh - (l_i - 2._WP)
       xA(5,6) = -V*nabla/(c_rad*f_rh)
 
       xA(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
