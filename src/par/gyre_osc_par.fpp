@@ -42,8 +42,6 @@ module gyre_osc_par
      real(WP)                :: alpha_gam = 1._WP
      real(WP)                :: alpha_pi = 1._WP
      real(WP)                :: alpha_kap = 1._WP
-     real(WP)                :: eps_rho = 0._WP
-     real(WP)                :: eps_T = 0._WP
      character(64)           :: variables_set = 'GYRE'
      character(64)           :: inner_bound = 'REGULAR'
      character(64)           :: outer_bound = 'VACUUM'
@@ -112,8 +110,6 @@ contains
     real(WP)                              :: alpha_gam
     real(WP)                              :: alpha_pi
     real(WP)                              :: alpha_kap
-    real(WP)                              :: eps_rho
-    real(WP)                              :: eps_T
     character(LEN(os_p%variables_set))    :: variables_set
     character(LEN(os_p%inner_bound))      :: inner_bound
     character(LEN(os_p%outer_bound))      :: outer_bound
@@ -135,7 +131,7 @@ contains
 
     namelist /osc/ x_ref, x_atm, alpha_grv, alpha_thm, alpha_hfl, &
          alpha_gam, alpha_pi, alpha_kap, &
-         eps_rho, eps_T, inner_bound, outer_bound, outer_bound_cutoff, outer_bound_branch, &
+         inner_bound, outer_bound, outer_bound_cutoff, outer_bound_branch, &
          variables_set, inertia_norm, time_factor, &
          conv_scheme, zeta_scheme, deps_source, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
@@ -174,8 +170,6 @@ contains
        alpha_gam = os_p(i)%alpha_gam
        alpha_pi = os_p(i)%alpha_pi
        alpha_kap = os_p(i)%alpha_kap
-       eps_rho = os_p(i)%eps_rho
-       eps_T = os_p(i)%eps_T
        variables_set = os_p(i)%variables_set
        inner_bound = os_p(i)%inner_bound
        outer_bound = os_p(i)%outer_bound
@@ -209,8 +203,6 @@ contains
        os_p(i)%alpha_gam = alpha_gam
        os_p(i)%alpha_pi = alpha_pi
        os_p(i)%alpha_kap = alpha_kap
-       os_p(i)%eps_rho = eps_rho
-       os_p(i)%eps_T = eps_T
        os_p(i)%variables_set = variables_set
        os_p(i)%inner_bound = inner_bound
        os_p(i)%outer_bound = outer_bound
@@ -257,8 +249,6 @@ contains
     call bcast(os_p%alpha_gam, root_rank)
     call bcast(os_p%alpha_pi, root_rank)
     call bcast(os_p%alpha_kap, root_rank)
-    call bcast(os_p%eps_rho, root_rank)
-    call bcast(os_p%eps_T, root_rank)
 
     call bcast(os_p%variables_set, root_rank)
     call bcast(os_p%inner_bound, root_rank)
