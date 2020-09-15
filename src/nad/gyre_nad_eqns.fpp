@@ -80,11 +80,11 @@ module gyre_nad_eqns
      real(WP)                   :: alpha_grv
      real(WP)                   :: alpha_thm
      real(WP)                   :: alpha_hfl
-     real(WP)                   :: alpha_rht
      real(WP)                   :: alpha_omg 
      real(WP)                   :: alpha_gam
      real(WP)                   :: alpha_pi
      real(WP)                   :: alpha_kap
+     real(WP)                   :: alpha_rht
      integer                    :: conv_scheme
    contains
      private
@@ -130,13 +130,8 @@ contains
     eq%alpha_gam = os_p%alpha_gam
     eq%alpha_pi = os_p%alpha_pi
     eq%alpha_kap = os_p%alpha_kap
+    eq%alpha_rht = os_p%alpha_rht
        
-    if (os_p%eddington_approx) then
-       eq%alpha_rht = 1._WP
-    else
-       eq%alpha_rht = 0._WP
-    endif
-
     select case (os_p%time_factor)
     case ('OSC')
        eq%alpha_omg = 1._WP

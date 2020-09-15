@@ -175,12 +175,7 @@ contains
     end select
 
     bd%alpha_grv = os_p%alpha_grv
-    
-    if (os_p%eddington_approx) then
-       bd%alpha_rht = 1._WP
-    else
-       bd%alpha_rht = 0._WP
-    endif
+    bd%alpha_rht = os_p%alpha_rht
     
     select case (os_p%time_factor)
     case ('OSC')

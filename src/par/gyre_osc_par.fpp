@@ -42,6 +42,7 @@ module gyre_osc_par
      real(WP)                :: alpha_gam = 1._WP
      real(WP)                :: alpha_pi = 1._WP
      real(WP)                :: alpha_kap = 1._WP
+     real(WP)                :: alpha_rht = 0._WP
      character(64)           :: variables_set = 'GYRE'
      character(64)           :: inner_bound = 'REGULAR'
      character(64)           :: outer_bound = 'VACUUM'
@@ -58,7 +59,6 @@ module gyre_osc_par
      logical                 :: adiabatic = .TRUE.
      logical                 :: nonadiabatic = .FALSE.
      logical                 :: quasiad_eigfuncs = .FALSE.
-     logical                 :: eddington_approx = .FALSE.
      logical                 :: reduce_order = .TRUE.
   end type osc_par_t
 
@@ -110,6 +110,7 @@ contains
     real(WP)                              :: alpha_gam
     real(WP)                              :: alpha_pi
     real(WP)                              :: alpha_kap
+    real(WP)                              :: alpha_rht
     character(LEN(os_p%variables_set))    :: variables_set
     character(LEN(os_p%inner_bound))      :: inner_bound
     character(LEN(os_p%outer_bound))      :: outer_bound
@@ -126,16 +127,15 @@ contains
     logical                               :: adiabatic
     logical                               :: nonadiabatic
     logical                               :: quasiad_eigfuncs
-    logical                               :: eddington_approx
     logical                               :: reduce_order
 
     namelist /osc/ x_ref, x_atm, alpha_grv, alpha_thm, alpha_hfl, &
-         alpha_gam, alpha_pi, alpha_kap, &
+         alpha_gam, alpha_pi, alpha_kap, alpha_rht, &
          inner_bound, outer_bound, outer_bound_cutoff, outer_bound_branch, &
          variables_set, inertia_norm, time_factor, &
          conv_scheme, zeta_scheme, deps_source, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
-         eddington_approx, reduce_order
+         reduce_order
 
     ! Count the number of osc namelists
 
@@ -170,6 +170,7 @@ contains
        alpha_gam = os_p(i)%alpha_gam
        alpha_pi = os_p(i)%alpha_pi
        alpha_kap = os_p(i)%alpha_kap
+       alpha_rht = os_p(i)%alpha_rht
        variables_set = os_p(i)%variables_set
        inner_bound = os_p(i)%inner_bound
        outer_bound = os_p(i)%outer_bound
@@ -186,7 +187,6 @@ contains
        adiabatic = os_p(i)%adiabatic
        nonadiabatic = os_p(i)%nonadiabatic
        quasiad_eigfuncs = os_p(i)%quasiad_eigfuncs
-       eddington_approx = os_p(i)%eddington_approx
        reduce_order = os_p(i)%reduce_order
 
        ! Read the namelist
@@ -203,6 +203,7 @@ contains
        os_p(i)%alpha_gam = alpha_gam
        os_p(i)%alpha_pi = alpha_pi
        os_p(i)%alpha_kap = alpha_kap
+       os_p(i)%alpha_rht = alpha_rht
        os_p(i)%variables_set = variables_set
        os_p(i)%inner_bound = inner_bound
        os_p(i)%outer_bound = outer_bound
@@ -219,7 +220,6 @@ contains
        os_p(i)%adiabatic = adiabatic
        os_p(i)%nonadiabatic = nonadiabatic
        os_p(i)%quasiad_eigfuncs = quasiad_eigfuncs
-       os_p(i)%eddington_approx = eddington_approx
        os_p(i)%reduce_order = reduce_order
 
     end do read_loop
@@ -249,6 +249,7 @@ contains
     call bcast(os_p%alpha_gam, root_rank)
     call bcast(os_p%alpha_pi, root_rank)
     call bcast(os_p%alpha_kap, root_rank)
+    call bcast(os_p%alpha_rht, root_rank)
 
     call bcast(os_p%variables_set, root_rank)
     call bcast(os_p%inner_bound, root_rank)
@@ -266,7 +267,6 @@ contains
     call bcast(os_p%adiabatic, root_rank)
     call bcast(os_p%nonadiabatic, root_rank)
     call bcast(os_p%quasiad_eigfuncs, root_rank)
-    call bcast(os_p%eddington_approx, root_rank)
     call bcast(os_p%reduce_order, root_rank)
 
     ! Finish

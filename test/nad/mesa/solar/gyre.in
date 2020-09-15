@@ -19,13 +19,13 @@
 
 &osc
   nonadiabatic = .TRUE.
-  eddington_approx = .TRUE.
+  alpha_rht = 1.
   tag_list = 'eddington'
 /
 
 &osc
   nonadiabatic = .TRUE.
-  eddington_approx = .FALSE.
+  alpha_rht = 0.
   tag_list = 'diffusion'
 /
 
