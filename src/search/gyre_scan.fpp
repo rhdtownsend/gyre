@@ -66,8 +66,15 @@ contains
     ! Build the frequency scan
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Building frequency grid'
-100    format(A)
+
+       if (PRESENT(axis)) then
+          write(OUTPUT_UNIT, 100) 'Building frequency grid (', TRIM(axis), ' axis)'
+100       format(A,A,A)
+       else
+          write(OUTPUT_UNIT, 110) 'Building frequency grid'
+110       format(A)
+       endif
+
     endif
 
     ! Loop through scan_par_t
