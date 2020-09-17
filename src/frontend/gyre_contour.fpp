@@ -506,7 +506,11 @@ contains
     contour_file = ot_p%contour_template
 
     contour_file = subst(contour_file, '%I', i, '(I5.5)')
+    contour_file = subst(contour_file, '%L', md_p(i)%l, '(I3.3)')
+    contour_file = subst(contour_file, '%M', md_p(i)%m, '(SP,I3.2)')
     contour_file = subst(contour_file, '%i', i, '(I0)')
+    contour_file = subst(contour_file, '%l', md_p(i)%l, '(I0)')
+    contour_file = subst(contour_file, '%m', md_p(i)%m, '(SP,I0)')
 
     ! Open the file
 
