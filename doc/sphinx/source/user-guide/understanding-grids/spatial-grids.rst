@@ -27,8 +27,8 @@ group, then the final one is used.
 
 Each grid begins as a *scaffold grid*, comprising the following:
 
-* an inner point :math:`x=\xin`;
-* an outer point :math:`x=\xout`;
+* an inner point :math:`\xin`;
+* an outer point :math:`\xout`;
 * the subset of points of the input model grid satisfying :math:`\xin <
   x < \xout`
 
@@ -42,11 +42,10 @@ Iterative Refinement
 --------------------
 
 GYRE refines a scaffold grid through a sequence of iterations. During
-a given iteration, each subinterval :math:`[x_{k},x_{k+1}]`
-(:math:`k=1,2,\ldots,N-1`) is assessed against various criteria
-(discusssed in greater detail below). If any criteria match, then the
-subinterval is refined by bisection, inserting an additional point at
-the midpoint
+a given iteration, each subinterval :math:`[x_{k},x_{k+1}]` is
+assessed against various criteria (discussed in greater detail
+below). If any criteria match, then the subinterval is refined by
+bisection, inserting an additional point at the midpoint
 
 .. math::
 
@@ -67,7 +66,7 @@ of the oscillation equations, with the goal of improving resolution
 where the displacement perturbation :math:`\vxi` is rapidly
 varying. Within the subinterval :math:`[x_{k},x_{k+1}]`, the
 :math:`y_{1}` and :math:`y_{2}` solutions (see the
-:ref:`osc-eqs-dimless` section) take the approximate form
+:ref:`dimless-equations` section) take the approximate form
 
 .. math::
 
@@ -89,13 +88,13 @@ subinterval is
 
 .. math::
 
-   ( \ln x_{k+1} - \ln x_{k} ) \, \max (w_{\rm osc} |\chi_{\rm i}|, w_{\rm exp} |\chi_{\rm r}|) > 2 \pi,
+   ( \ln x_{k+1} - \ln x_{k} ) \, \max (\wosc |\chi_{\rm i}|, \wexp |\chi_{\rm r}|) > 2 \pi,
 
-where :math:`w_{\rm osc}` and :math:`w_{\rm exp}` are
-user-definable weighting parameters. This causes refinement if the
-subinterval width (in :math:`\ln x` space) exceeds :math:`w_{\rm
-osc}^{-1}` times the local wavelength, or :math:`2\pi w_{\rm
-exp}^{-1}` times the local e-folding length.
+where :math:`\wosc` and :math:`\wexp` are user-definable weighting
+parameters. This causes refinement if the subinterval width (in
+:math:`\ln x` space) exceeds :math:`\wosc^{-1}` times the local
+wavelength, or :math:`2\pi \wexp^{-1}` times the local e-folding
+length.
 
 Because there are two possible values for :math:`\chi`, the above
 refinement criterion is applied twice (once for each). Moreover,
@@ -121,7 +120,7 @@ the subinterval :math:`[x_{k},x_{k+1}]`, the :math:`y_{5}` and
    y_{5,6}(x) \sim \exp [ \pm \tau \, (\ln x - \ln x_{k+1/2}) ],
 
 where :math:`\pm\tau` are the eigenvalues of the matrix formed from
-the energetic (bottom-rright) :math:`2 \times 2` submatrix of the full
+the energetic (bottom-right) :math:`2 \times 2` submatrix of the full
 Jacobian matrix :math:`\mA`, evaluated at the midpoint
 :math:`x_{k+1/2}`.
 
@@ -130,9 +129,9 @@ subinterval is
 
 .. math::
 
-   ( \ln x_{k+1} - \ln x_{k} ) \, w_{\rm thm} |\tau| > 1,
+   ( \ln x_{k+1} - \ln x_{k} ) \, \wthm |\tau| > 1,
 
-where :math:`w_{\rm thm}` is a user-definable weighting parameter.
+where :math:`\wthm` is a user-definable weighting parameter.
 
 Because :math:`\tau` depends implicitly on the oscillation frequency,
 this criterion is applied for each frequency in the grid
@@ -150,12 +149,12 @@ coefficient :math:`C`, the criterion for refinement of the subinterval
 
 .. math::
 
-   ( \ln x_{k+1} - \ln x_{k} ) \, w_{\rm str} \left| \pderiv{\ln C}{\ln x} \right| > 1,
+   ( \ln x_{k+1} - \ln x_{k} ) \, \wstr \left| \pderiv{\ln C}{\ln x} \right| > 1,
 
-where :math:`w_{\rm str}` is a user-definable weighting parameter. This
+where :math:`\wstr` is a user-definable weighting parameter. This
 criterion is applied separately to the :math:`V_2 \equiv V/x^{2}`,
 :math:`U`, :math:`A^{*}`, :math:`c_{1}` and :math:`\Gamma_{1}`
-coefficients (see the :ref:`osc-eqs-dimless` section).
+coefficients (see the :ref:`dimless-equations` section).
 
 .. _central-criteria:
 
@@ -185,7 +184,7 @@ where :math:`\chi` is the eigenvalue from the local analysis (see the
 remains well-behaved at the origin, and :math:`w_{\rm ctr}` is a
 user-definable weighting parameter. The first criterion causes
 refinement if the subinterval is in a propagation zone, and the second
-if the solution slope :math:`|\sderiv{\ln y}{\ln x}| \sim |\chi_{\rm
+if the solution slope :math:`|\sderiv{y}{\ln x}| \sim |\chi_{\rm
 r}|` exceeds :math:`w_{\rm ctr}^{-1}`.
 
 Because :math:`\chi` depends implicitly on the oscillation frequency,
@@ -227,15 +226,15 @@ parameters:
 
    * - Symbol
      - Parameter
-   * - :math:`w_{\rm osc}`
+   * - :math:`\wosc`
      - :nml_n:`w_osc`
-   * - :math:`w_{\rm exp}`
+   * - :math:`\wexp`
      - :nml_n:`w_exp`
-   * - :math:`w_{\rm thm}`
+   * - :math:`\wthm`
      - :nml_n:`w_thm`
-   * - :math:`w_{\rm str}`
+   * - :math:`\wstr`
      - :nml_n:`w_str`
-   * - :math:`w_{\rm ctr}`
+   * - :math:`\wctr`
      - :nml_n:`w_ctr`
    * - :math:`\Delta x_{\rm max}`
      - :nml_n:`dx_max`

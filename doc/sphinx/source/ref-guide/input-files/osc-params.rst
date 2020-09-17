@@ -11,56 +11,72 @@ is used.  Allowable parameters are:
   Inner boundary conditions; one of:
 
   - :nml_v:`'REGULAR'` : Regularity-enforcing (only valid when inner grid point is at :math:`x = 0`)
-  - :nml_v:`'ZERO_R'` : Zero radial displacement (only valid when inner grid point is at :math:`x \neq 0`)
-  - :nml_v:`'ZERO_H'` : Zero horizontal displacement (only valid when inner grid point is at :math:`x \neq 0`)
+  - :nml_v:`'ZERO_R'` : Zero radial displacement (only valid when inner grid point is at :math:`x \ne 0`)
+  - :nml_v:`'ZERO_H'` : Zero horizontal displacement (only valid when inner grid point is at :math:`x \ne 0`)
 
 :nml_n:`outer_bound` (default :nml_v:`'VACUUM'`)
   Outer boundary conditions; one of:
 
   - :nml_v:`'VACUUM'` : Zero surface pressure
-  - :nml_v:`'GAMMA'` : Vanishing displacement and derivative at outer boundary, intended for use with :math:`\gamma` modes.
   - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
   - :nml_v:`'UNNO'` : Formulation following :ads_citet:`unno:1989`
   - :nml_v:`'JCD'` : Formulation following Jörgen Christensen-Dalsgaard (ADIPLS)
+  - :nml_v:`'ISOTHERMAL'` : Formulation based on local dispersion analysis for isothermal atmosphere
+  - :nml_v:`'GAMMA'` : Vanishing displacement and derivative at outer boundary, intended for use with :math:`\gamma` modes.
+
+:nml_n:`outer_bound_cutoff` (default :nml_v:`''`)
+  Outer boundary conditions to use when evaluating cutoff frequencies (cf. :nml_n:`freq_units`); same options
+  as :nml_n:`outer_bound`, and if left blank then takes its value from :nml_n:`outer_bound`
+
+:nml_n:`outer_bound_branch` (default :nml_v:`'E_NEG'`)
+  Dispersion relation solution branch to use for outer boundary
+  conditionss (:nml_n:`outer_bound`\ ==\ :nml_v:`'UNNO'`\ \|\ :nml_v:`'JCD'`\ \|\ :nml_v:`'ISOTHERMAL'`);
+  one of
+
+  - :nml_v:`'E_NEG'` : Outward-decaying energy density
+  - :nml_v:`'E_POS'` : Outward-growing energy density
+  - :nml_v:`'F_NEG'` : Outward energy flux
+  - :nml_v:`'F_POS'` : Inward energy flux
+  - :nml_v:`'V_NEG'` : Outward phase velocity
+  - :nml_v:`'V_POS'` : Inward phase velocity
 
 :nml_n:`variables_set` (default :nml_v:`'GYRE'`)
   Dependent variables in oscillation equations; one of:
 
-  - :nml_v:`'GYRE'` : GYRE formulation, as desciribed in the :repo:`equations.pdf <doc/equations.pdf>` document
+  - :nml_v:`'GYRE'` : GYRE formulation, as desciribed in the :ref:`dimless-equations` section
   - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
   - :nml_v:`'JCD'` : Formulation following Jörgen Christensen-Dalsgaard (ADIPLS)
   - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for gravitational components, :nml_v:`'DZIEM'` for mechanical components)
   - :nml_v:`'LAGP'` : Lagrangian pressure perturbation formulation
 
-:nml_n:`alpha_gr` (default :nml_v:`1.`)
-  Scaling factor for gravitational potential perturbations (see
-  :math:`\alphagr` term in the :ref:`osc-eqs-dimless`
-  section). Set to :nml_v:`0.` to implement the Cowling approximation
+:nml_n:`alpha_grv` (default :nml_v:`1.`)
+  Scaling factor for gravitational potential perturbations (see the
+  :math:`\alphagrv` physics switch in the :ref:`dimless-equations`
+  section)
 
-:nml_n:`alpha_th` (defaualt :nml_v:`1.`)
-  Scaling factor for the thermal timescale (see :math:`\alphath`
-  term in the :ref:`osc-eqs-dimless` section). Set to :nml_v:`0.` to
-  implement the non-adiabatic reversible (NAR) approximation (see :ads_citealp:`glatzel:1990`), and to large
-  values to approach the adiabatic limit
+:nml_n:`alpha_thm` (defaualt :nml_v:`1.`)
+  Scaling factor for the thermal timescale (see the :math:`\alphathm`
+  physics switch in the :ref:`dimless-equations` section)
 
-:nml_n:`alpha_hf` (defaualt :nml_v:`1.`)
-  Scaling factor for horizontal flux perturbations (see :math:`\alphahf`
-  term in the :ref:`osc-eqs-dimless` section). Set to :nml_v:`0.` to
-  implement the non-adiabatic radial flux (NARF) approximation (see :ads_citealp:`townsend:2003b`)
+:nml_n:`alpha_hfl` (defaualt :nml_v:`1.`)
+  Scaling factor for horizontal flux perturbations (see the :math:`\alphahfl`
+  term in the :ref:`dimless-equations` section)
 
-:nml_n:`alpha_gm` (default :nml_v:`1.`)
-  Scaling factor for g-mode isolation (see :math:`\alphagm` term in
-  the :ref:`osc-eqs-dimless` section; also, Appendix A of
-  :ads_citealp:`ong:2020`).  Set to :nml_v:`0.` to isolate g modes
+:nml_n:`alpha_gam` (default :nml_v:`1.`)
+  Scaling factor for g-mode isolation (see the :math:`\alphagam` term in
+  the :ref:`dimless-equations` section)
 
 :nml_n:`alpha_pi` (default :nml_v:`1.`)
-  Scaling factor for p-mode isolation (see :math:`\alphapi` term in
-  the :ref:`osc-eqs-dimless` section; also, Appendix A of
-  :ads_citealp:`ong:2020`).  Set to :nml_v:`0.` to isolate p modes
+  Scaling factor for p-mode isolation (see the :math:`\alphapi` term in
+  the :ref:`dimless-equations` section)
 
-:nml_n:`alpha_kp` (default :nml_v:`1.`)
-  Scaling factor for opacity partial derivatives. Set to :nml_v:`0` to turn
-  off the :math:`\kappa` mechanism
+:nml_n:`alpha_kap` (default :nml_v:`1.`)
+  Scaling factor for opacity partial derivatives (see the
+  :math:`\alphakap` term in the :ref:`dimless-equations` section)
+
+:nml_n:`alpha_rht` (default :nml_v:`0.`)
+  Scaling factor for time-dependent term in radiative heat equation (see the
+  :math:`\alpharht` term in the :ref:`dimless-equations` section)
 
 :nml_n:`inertia_norm` (default :nml_v:`'BOTH'`)
   Inertia normalization factor; one of
@@ -72,8 +88,8 @@ is used.  Allowable parameters are:
 :nml_n:`time_factor` (default :nml_v:`'OSC'`)
   Time-dependence factor in pulsation equations; one of:
 
-  - :nml_v:`OSC` : Oscillatory, :math:`\propto \exp(-{\rm i} \omega t)`
-  - :nml_v:`EXP` : Exponential, :math:`\propto \exp(-\omega t)`
+  - :nml_v:`'OSC'` : Oscillatory, :math:`\propto \exp(-{\rm i} \omega t)`
+  - :nml_v:`'EXP'` : Exponential, :math:`\propto \exp(-\omega t)`
 
 :nml_n:`conv_scheme` (default :nml_v:`'FROZEN_PESNELL_1'``)
   Scheme for treating convection; one of:
@@ -102,11 +118,10 @@ is used.  Allowable parameters are:
   - :nml_v:`'FILE'` : Use complex (phase-lagged) values from separate file
 
 :nml_n:`deps_file` (default :nml_v:`''`)
-  Name of epsilon partial derivatives file, when :nml_n:`deps_scheme` is :nml_v:`'FILE'`
+  Name of epsilon partial derivatives file (:nml_n:`deps_scheme`\ ==\ :nml_v:`'FILE'`)
 
 :nml_n:`deps_file_format` (default :nml_v:`'WOLF'`)
-  Format of epsilon partial derivative file, when :nml_n:`deps_scheme`
-  is :nml_v:`'FILE'`; one of:
+  Format of epsilon partial derivative file (:nml_n:`deps_scheme`\ ==\ :nml_v:`'FILE'`); one of:
 
   - :nml_v:`'WOLF'` : Format used in preparation of :ads_citet:`wolf:2018`
 
@@ -116,15 +131,15 @@ is used.  Allowable parameters are:
 :nml_n:`x_atm` (default :nml_v:`-1`, implying outer grid point)
   Fractional radius for :math:`\pi/\gamma` crossover point in the convection zone — cf. :ads_citet:`ong:2020`
    
+:nml_n:`adiabatic` (default :nml_v:`.TRUE.`)
+  Flag to perform adiabatic calculations
+  
 :nml_n:`nonadiabatic` (default :nml_v:`.FALSE.`)
-  Flag to include non-adiabatic effects
+  Flag to perform non-adiabatic calculations
   
 :nml_n:`quasiad_eigfuncs` (default :nml_v:`.FALSE.`)
   Flag to calculate quasi-adiabatic entropy/luminosity eigenfunctions
   during adiabatic calculations
-
-:nml_n:`eddington_approx` (default :nml_v:`.FALSE.`)
-  Flag to use the Eddington approximation
 
 :nml_n:`reduce_order` (default :nml_v:`.TRUE.`)
    Flag to reduce the order of the *adiabatic* radial-pulsation

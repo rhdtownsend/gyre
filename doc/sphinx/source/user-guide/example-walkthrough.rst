@@ -41,7 +41,7 @@ Creating a Namelist File
 Now comes the fun part: creating an input file containing the various
 parameters which control a GYRE run. Using a text editor, create the
 file :file:`gyre.in` in your working directory with the following
-contents cut-and-pasted in:
+content cut-and-pasted in:
 
 .. literalinclude:: example-walkthrough/gyre.in
 
@@ -91,7 +91,7 @@ to the screen. Let's break down this output, chunk by chunk.
 
 First, GYRE prints out its version number, tells us (in OpenMP
 threads) how many cores it is running on, and indicates which file it
-is reading parameters from (here, file:`gyre.in`):
+is reading parameters from (here, :file:`gyre.in`):
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console

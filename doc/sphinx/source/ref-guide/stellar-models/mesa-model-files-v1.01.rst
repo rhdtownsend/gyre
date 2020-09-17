@@ -61,7 +61,7 @@ following columns:
      - real
      - luminosity (:math:`\erg\,\second^{-1}`)
    * - 5
-     - :math:`p`
+     - :math:`P`
      - real
      - total pressure (:math:`\dyne\,\cm^{-2}`)
    * - 6
@@ -75,7 +75,7 @@ following columns:
    * - 8
      - :math:`\nabla`
      - real
-     - dimensionless temperature gradient :math:`\sderiv{\ln T}{\ln p}`
+     - dimensionless temperature gradient :math:`\sderiv{\ln T}{\ln P}`
    * - 9
      - :math:`N^{2}`
      - real
@@ -83,29 +83,29 @@ following columns:
    * - 10
      - :math:`\Gamma_{1}`
      - real
-     - first adiabatic exponent :math:`(\spderiv{\ln p}{\ln \rho})_{\rm ad}`
+     - first adiabatic exponent :math:`(\spderiv{\ln P}{\ln \rho})_{\rm ad}`
    * - 11
      - :math:`\nabla_{\rm ad}`
      - real
-     - adiabatic temperature gradient :math:`(\spderiv{\ln p}{\ln T})_{\rm ad}`
+     - adiabatic temperature gradient :math:`(\spderiv{\ln T}{\ln P})_{\rm ad}`
    * - 12
      - :math:`\delta`
      - real
-     - dimensionless thermal expansion coefficient :math:`-(\spderiv{\ln \rho}{\ln T})_{p}`
+     - dimensionless thermal expansion coefficient :math:`-(\spderiv{\ln \rho}{\ln T})_{P}`
    * - 13
      - :math:`\kappa`
      - real
      - opacity (:math:`\cm^{2}\,\gram^{-1}`)
    * - 14
-     - :math:`\kappa\kapT`
+     - :math:`\kappa\,\kapT`
      - real
      - opacity partial :math:`\kappa (\spderiv{\ln \kappa}{\ln T})_{\rho}` (:math:`\cm^{2}\,\gram^{-1}`)
    * - 15
-     - :math:`\kappa\kaprho`
+     - :math:`\kappa\,\kaprho`
      - real
      - opacity partial :math:`\kappa (\spderiv{\ln \kappa}{\ln \rho})_{T}` (:math:`\cm^{2}\,\gram^{-1}`)
    * - 16
-     - :math:`\epnuc`
+     - :math:`\epsnuc`
      - real
      - nuclear energy generation rate (:math:`\erg\,s^{-1}\,\gram^{-1}`)
    * - 17

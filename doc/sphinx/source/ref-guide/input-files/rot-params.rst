@@ -20,17 +20,17 @@ is used.  Allowable parameters are:
   - :nml_v:`'UNIFORM'` : Uniform rotation, with angular velocity set by :nml_n:`Omega_rot` parameter
 
 :nml_n:`Omega_rot` (default :nml_v:`0`)
-  Rotation angular frequency (when :nml_n:`Omega_rot_source` is :nml_v:`'UNIFORM'`)
+  Rotation angular frequency (:nml_n:`Omega_rot_source`\ ==\ :nml_v:`'UNIFORM'`)
 
 :nml_n:`Omega_rot_units` (default :nml_v:`'NULL'`)
-  Units of :nml_n:`Omega_rot` (when :nml_n:`Omega_rot_source` is :nml_v:`'UNIFORM'`); one of:
+  Units of :nml_n:`Omega_rot` (:nml_n:`Omega_rot_source`\ ==\ :nml_v:`'UNIFORM'`); one of:
 
   - :nml_v:`'NONE'` : Dimensionless angular frequency
-  - :nml_v:`'HZ'` : Linear frequency in Hz [#only_evol]_
-  - :nml_v:`'UHZ'` : Linear frequency in μHz [#only_evol]_
-  - :nml_v:`'RAD_PER_SEC'` : Angular frequency in radians per second [#only_evol]_
-  - :nml_v:`'CYC_PER_DAY'` : Linear frequency in cycles per day [#only_evol]_
-  - :nml_v:`'CRITICAL'` : Fraction of the Roche critical rate [#only_evol]_
+  - :nml_v:`'HZ'` : Linear frequency in Hz\ [#only_evol]_
+  - :nml_v:`'UHZ'` : Linear frequency in μHz\ [#only_evol]_
+  - :nml_v:`'RAD_PER_SEC'` : Angular frequency in radians per second\ [#only_evol]_
+  - :nml_v:`'CYC_PER_DAY'` : Linear frequency in cycles per day\ [#only_evol]_
+  - :nml_v:`'CRITICAL'` : Fraction of the Roche critical rate\ [#only_evol]_
 
 :nml_n:`complex_lambda` (default :nml_v:`.FALSE.`)
   Flag to use complex arithmetic when evaluating the TAR angular eigenvalue :math:`\lambda`
@@ -40,5 +40,5 @@ is used.  Allowable parameters are:
 
 .. rubric:: Footnotes
 
-.. [#only_evol] This option is only available when :nml_n:`model_type` is :nml_v:`'EVOL'`
+.. [#only_evol] This option is only available when :nml_n:`model_type`\ ==\ :nml_v:`'EVOL'`
   

@@ -14,10 +14,10 @@ the input file should contain exactly one. Allowable parameters are:
   - :nml_v:`'EVOL'` : Evolutionary model read from external file
 
 :nml_n:`file`
-  Name of file, when :nml_n:`model_type` is :nml_v:`'POLY'` or :nml_v:`'EVOL'`
+  Name of file (:nml_n:`model_type`\ == \ :nml_v:`'POLY'`\ \|\ :nml_v:`'EVOL'`)
 
 :nml_n:`file_format`
-  Format of file, when :nml_n:`model_type` is :nml_v:`'EVOL'`; one of
+  Format of file (:nml_n:`model_type`\ == \ :nml_v:`'EVOL'`); one of
 
   - :nml_v:`'AMDL'` : AMDL-format binary file
   - :nml_v:`'B3'` : B3-format HDF5 file
@@ -33,51 +33,51 @@ the input file should contain exactly one. Allowable parameters are:
   Fortran format specifier for data read from OSC-, FGONG- and FAMDL-format files
   
 :nml_n:`deriv_type` (default :nml_v:`'MONO'`)
-  Cubic interpolation derivatives type, when :nml_n:`model_type` is :nml_v:`'POLY'` or :nml_v:`'EVOL'`; one of
+  Cubic interpolation derivatives type (:nml_n:`model_type`\ ==\ :nml_v:`'POLY'`\ \|\ :nml_v:`'EVOL'`); one of
 
   - :nml_v:`'NATURAL'` : Natural (spline) derivatives
   - :nml_v:`'FINDIFF'` : Finite-difference derivatives
   - :nml_v:`'MONO'` : Monotonized derivatives (default)
 
 :nml_n:`Gamma_1` (default :nml_v:`5/3`)
-  First adiabatic exponent, when :nml_n:`model_type` is :nml_v:`'HOM'`
+  First adiabatic exponent (:nml_n:`model_type`\ ==\ :nml_v:`'HOM'`)
    
 :nml_n:`grid_type` (default :nml_v:`'UNI'`)
-  Model grid type, when :nml_n:`model_type` is :nml_v:`'HOM'`; one of
+  Model grid type (:nml_n:`model_type`\ ==\ :nml_v:`'HOM'`); one of
 
   - :nml_v:`'UNI'` : Uniform spacing
   - :nml_v:`'GEO'` : Geometric spacing
   - :nml_v:`'LOG'` : Logarithmic spacing
 
 :nml_n:`n` (default :nml_v:`10`)
-  Number of points in model grid, when :nml_n:`model_type` is :nml_v:`'HOM'`
+  Number of points in model grid (:nml_n:`model_type`\ ==\ :nml_v:`'HOM'`)
        
 :nml_n:`s` (default :nml_v:`1`)
-  Skewness parameter for model grid, when
-  :nml_n:`model_type` is :nml_v:`'HOM'` and :nml_n:`grid_type` is
-  :nml_v:`'GEO'` or :nml_v:`'LOG'`
+  Skewness parameter for model grid (:nml_n:`model_type`\ ==\
+  :nml_v:`'HOM'` and :nml_n:`grid_type`\ ==\ :nml_v:`'GEO'`\ \|\
+  :nml_v:`'LOG'`)
 
 :nml_n:`x_i` (default :nml_v:`0`)
-  Inner boundary coordinate of model grid, when :nml_n:`model_type` is :nml_v:`'HOM'`
+  Inner boundary coordinate of model grid (:nml_n:`model_type`\ ==\ :nml_v:`'HOM'`)
     
 :nml_n:`x_o` (default :nml_v:`1`)
-  Outer boundary coordinate of model grid, when :nml_n:`model_type` is :nml_v:`'HOM'`
+  Outer boundary coordinate of model grid (:nml_n:`model_type`\ ==\ :nml_v:`'HOM'`)
 
 :nml_n:`uniform_rot` (default :nml_v:`.FALSE.`)
   Flag to force uniform rotation
 
 :nml_n:`Omega_rot` (default :nml_v:`.FALSE.`)
-  Rotation angular velocity, when :nml_n:`uniform_rot` is :nml_v:`.TRUE.`
+  Rotation angular velocity (:nml_n:`uniform_rot`\ ==\ :nml_v:`.TRUE.`)
 
 :nml_n:`Omega_units` (default :nml_v:`'NONE'`)
   Units of :nml_n:`Omega_rot`; one of
 
   - :nml_v:`'NONE'` : Dimensionless angular frequency
-  - :nml_v:`'HZ'` : Linear frequency in Hz [#only_evol]_
-  - :nml_v:`'UHZ'` : Linear frequency in μHz [#only_evol]_
-  - :nml_v:`'RAD_PER_SEC'` : Angular frequency in radians per second [#only_evol]_
-  - :nml_v:`'CYC_PER_DAY'` : Linear frequency in cycles per day [#only_evol]_
-  - :nml_v:`'CRITICAL'` : Fraction of the Roche critical rate [#only_evol]_
+  - :nml_v:`'HZ'` : Linear frequency in Hz\ [#only_evol]_
+  - :nml_v:`'UHZ'` : Linear frequency in μHz\ [#only_evol]_
+  - :nml_v:`'RAD_PER_SEC'` : Angular frequency in radians per second\ [#only_evol]_
+  - :nml_v:`'CYC_PER_DAY'` : Linear frequency in cycles per day\ [#only_evol]_
+  - :nml_v:`'CRITICAL'` : Fraction of the Roche critical rate\ [#only_evol]_
 
 :nml_n:`dx_snap` (default :nml_v:`0`)
   Threshold for snapping model points together, when
@@ -85,8 +85,8 @@ the input file should contain exactly one. Allowable parameters are:
   separated by less than :nml_v:`dx_snap`, they are snapped together.
 
 :nml_n:`add_center` (default :nml_v:`.TRUE.`)
-  Flag to add a center point to the model, when :nml_n:`model_type` is
-  :nml_v:`'EVOL'` or :nml_v:`'POLY'`. If a point does not already
+  Flag to add a center point to the model (:nml_n:`model_type`\ ==\
+  :nml_v:`'EVOL'`\ \|\ :nml_v:`'POLY'`). If a point does not already
   exist at the origin, then one is added
 
 :nml_n:`repair_As` (default :nml_v:`.FALSE.`)
@@ -95,4 +95,4 @@ the input file should contain exactly one. Allowable parameters are:
 
 .. rubric:: Footnotes
 
-.. [#only_evol] This option is only available when :nml_n:`model_type` is :nml_v:`'EVOL'`
+.. [#only_evol] This option is only available when :nml_n:`model_type`\ ==\ :nml_v:`'EVOL'`

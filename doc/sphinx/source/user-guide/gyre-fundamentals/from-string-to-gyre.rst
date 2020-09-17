@@ -59,7 +59,7 @@ group. The discretization leads to difference equations of the form
 
 .. math::
 
-   \vty_{k+1} = \mY_{k+1,k} \, \vty_{k},
+   \vty_{k+1} = \mY_{k+1;k} \, \vty_{k},
 
 relating the dependent variable vector at adjacent grid points. The
 :math:`\neq \times \neq` fundamental solution matrix :math:`\mY_{k+1,k}`
@@ -71,17 +71,17 @@ augmented with the boundary conditions
 
 .. math::
 
-   \mB\subin \, \vty_{1} = 0,
+   \subin{\mB} \, \vty_{1} = 0,
    \qquad\qquad
-   \mB\subout \, \vty_{N} = 0,
+   \subout{\mB} \, \vty_{N} = 0,
 
-where :math:`\mB\subin` is a :math:`\nin \times \neq` matrix
+where :math:`\subin{\mB}` is a :math:`\nin \times \neq` matrix
 representing the :math:`\nin` inner boundary conditions, and
-:math:`\mB\subout` is a :math:`\nout \times \neq` matrix representing
+:math:`\subout{\mB}` is a :math:`\nout \times \neq` matrix representing
 the outer boundary conditions (note that :math:`\nin + \nout =
 \neq`). Together, the difference equations and boundary conditions
 comprise a linear system of :math:`\neq\,N` algebraic equations
-and :math:`\ne N` unknowns.
+and :math:`\neq N` unknowns.
 
 Linear System
 -------------
@@ -108,11 +108,11 @@ block-staircase matrix with components
 
    \mS = 
    \begin{pmatrix}
-   \mB & \mz & \cdots & \mz & \mz \\
-   -\mY_{2,2} & \mI & \cdots & \mz & \mz \\
+   \subin{\mB} & \mz & \cdots & \mz & \mz \\
+   -\mY_{2;1} & \mI & \cdots & \mz & \mz \\
    \vdots & \vdots & \ddots & \vdots & \vdots \\
-   \mz & \mz & \cdots & -\mY_{N,N-1} & \mI \\
-   \mz & \mz & \cdots & \mz & \mB_{\rm o}
+   \mz & \mz & \cdots & -\mY_{N;N-1} & \mI \\
+   \mz & \mz & \cdots & \mz & \subout{\mB}
    \end{pmatrix}.
 
 As before, the linear system :eq:`linear-sys` has non-trivial
@@ -133,7 +133,7 @@ where the dimensionless frequency
 is the product of the star's dynamical timescale and the oscillation
 frequency :math:`\sigma`. (Internally, GYRE works extensively with
 such dimensionless quantities, as it improves the stability of the
-numerical algorithms).
+numerical algorithms). 
 
 Scanning for Eigenfrequencies
 -----------------------------
@@ -146,11 +146,6 @@ In the non-adiabatic case, a complication is that the discriminant
 function and the dimensionless frequency are both complex
 quantities. Solving the characteristic equation in the complex plane
 is computationally challenging because there is no equivalent to
-bracketing and refinement.
-
-TBD
-
-Eigenfunction Reconstruction
-----------------------------
-
-TBD
+bracketing and refinement. GYRE implements a couple of different
+approaches to the problem, as discussed in the :ref:`non-ad-calcs`
+chapter.

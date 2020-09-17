@@ -45,6 +45,10 @@ evolution code. The format of this file is specified by the
   specified in the :download:`CoRoT/ESTA File Formats
   <corot-esta-file-formats.pdf>` document).
 
+:nml_v:`WDEC`
+  Text file describing an evolutionary model in WDEC format (see
+  :ads_citealp:`bischoff-kim:2018`)
+  
 For all of these model formats, cubic spline interpolation is used to
 evaluate data between model grid points. The :nml_n:`deriv_type`
 parameter in the :nml_g:`model` namelist group controls how the spline

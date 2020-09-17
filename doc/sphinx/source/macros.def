@@ -9,18 +9,28 @@ diff	{\rm d}#1
 ii	{\rm i}
 nablah	\nabla_{\rm h}
 Dfunc	\mathcal{D}
+Dfuncr	\Dfunc_{\rm R}
+Dfunci	\Dfunc_{\rm I}
 vu	\mathbf{u}
 vty	\tilde{\mathbf{y}}
 mS	\boldsymbol{\mathsf{S}}
 mA	\boldsymbol{\mathsf{A}}
 mY	\boldsymbol{\mathsf{Y}}
 mB	\boldsymbol{\mathsf{B}}
+mBin	\boldsymbol{\mathsf{B}}_{\rm in}
+mBout	\boldsymbol{\mathsf{B}}_{\rm out}
 mI	\boldsymbol{\mathsf{I}}
 mz	\boldsymbol{0}
+ver	\mathbf{e}_{r}
 vv	\mathbf{v}
 vF	\mathbf{F}
 vFrad	\vF_{\rm R}
+Fradr	F_{{\rm R},r}
+vFradh	\vF_{\rm R,h}
 vFcon	\vF_{\rm C}
+Fconr	F_{{\rm C},r}
+Lrad	L_{\rm R}
+Lcon	L_{\rm C}
 epsnuc	\epsilon_{\rm n}
 epsT	\epsilon_{{\rm n},T}
 epsrho	\epsilon_{{\rm n},\rho}
@@ -45,8 +55,13 @@ txir	\tilde{\xi}_{r}
 txih	\tilde{\xi}_{\rm h}
 tS	\tilde{S}
 tP	\tilde{P}
+tT	\tilde{T}
 trho	\tilde{\rho}
 tPhi	\tilde{\Phi}
+tLrad	\tilde{L}_{\rm R}
+tFradr	\tilde{F}_{{\rm R},r}
+tepsnuc	\tilde{\epsilon}_{\rm n}
+tkappa	\tilde{\kappa}
 tf	\tilde{f}
 subin	#1_{\rm i}
 subout	#1_{\rm o}
@@ -55,8 +70,36 @@ nout	\subout{n}
 neq	n_{\rm e}
 xin	\subin{x}
 xout	\subout{x}
-alphath	\alpha_{\rm th}
-alphagr	\alpha_{\rm gr}
-alphahf	\alpha_{\rm hf}
-alphagm	\alpha_{\gamma}
+alphathm	\alpha_{\rm thm}
+alphagrv	\alpha_{\rm grv}
+alphahfl	\alpha_{\rm hfl}
+alpharht	\alpha_{\rm rht}
+alphagam	\alpha_{\gamma}
 alphapi	\alpha_{\pi}
+alphakap	\alpha_{\kappa}
+wosc	w_{\rm osc}
+wexp	w_{\rm exp}
+wthm	w_{\rm thm}
+wstr	w_{\rm str}
+wctr	w_{\rm ctr}
+As	A^{*}
+upsT	\upsilon_{T}
+nabad	\nabla_{\rm ad}
+cP	c_{P}
+Gammi	\Gamma_{1}
+cdif	c_{\rm dif}
+clum	c_{\rm lum}
+crad	c_{\rm rad}
+dcrad	\partial\crad
+cthn	c_{\rm thn}
+dcthn	\partial\cthn
+cthk	c_{\rm thk}
+ceps	c_{\epsilon}
+cepsad	c_{\epsilon,{\rm ad}}
+cepsS	c_{\epsilon,S}
+frht	f_{\rm rht}
+dfrht	\partial\frht
+elli	\ell_{\rm i}
+fpigam	f_{\pi\gamma}
+sigmar	\sigma_{\rm R}
+sigmai	\sigma_{\rm I}

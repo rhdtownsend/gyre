@@ -57,7 +57,7 @@ following columns:
      - real
      - luminosity (:math:`\erg\,\second^{-1}`)
    * - 5
-     - :math:`p`
+     - :math:`P`
      - real
      - total pressure (:math:`\dyne\,\cm^{-2}`)
    * - 6
@@ -71,7 +71,7 @@ following columns:
    * - 8
      - :math:`\nabla`
      - real
-     - dimensionless temperature gradient :math:`\sderiv{\ln T}{\ln p}`
+     - dimensionless temperature gradient :math:`\sderiv{\ln T}{\ln P}`
    * - 9
      - :math:`N^{2}`
      - real
@@ -87,11 +87,11 @@ following columns:
    * - 12
      - :math:`\chi_{T}`
      - real
-     - equation-of-state partial :math:`(\spderiv{\ln p}{\ln T})_{\rho}`
+     - equation-of-state partial :math:`(\spderiv{\ln P}{\ln T})_{\rho}`
    * - 13
      - :math:`\chi_{\rho}`
      - real
-     - equation-of-state partial :math:`(\spderiv{\ln p}{\ln \rho})_{T}`
+     - equation-of-state partial :math:`(\spderiv{\ln P}{\ln \rho})_{T}`
    * - 14
      - :math:`\kappa`
      - real

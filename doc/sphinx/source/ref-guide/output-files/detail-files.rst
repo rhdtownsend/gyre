@@ -320,13 +320,13 @@ Stellar Structure
 -----------------
 
 :nml_v:`M_star` (real scalar)
-  stellar mass, in units of :math:`{\rm g}` [#only_evol]_
+  stellar mass, in units of :math:`{\rm g}`\ [#only_evol]_
 
 :nml_v:`R_star` (real scalar)
-  stellar radius, in units of :math:`{\rm cm}` [#only_evol]_
+  stellar radius, in units of :math:`{\rm cm}`\ [#only_evol]_
 
 :nml_v:`L_star` (real scalar)
-  stellar luminosity, in units of :math:`{\rm erg\,s^{-1}}` [#only_evol]_
+  stellar luminosity, in units of :math:`{\rm erg\,s^{-1}}`\ [#only_evol]_
 
 :nml_v:`Delta_p` (real scalar)
   Asymptotic p-mode large frequency separation :math:`\Delta \nu`,
@@ -412,16 +412,16 @@ Stellar Structure
   Rotation angular frequency, in units of :math:`\sqrt{GM/R^{3}}`
 
 :nml_v:`M_r` (real array)
-  Mass coordinate, in units of :math:`{\rm g}` [#only_evol]_
+  Mass coordinate, in units of :math:`{\rm g}`\ [#only_evol]_
 
 :nml_v:`P` (real array)
-  Total pressure, in units of :math:`{\rm dyn\,cm^{-2}}` [#only_evol]_
+  Total pressure, in units of :math:`{\rm dyn\,cm^{-2}}`\ [#only_evol]_
 
 :nml_v:`\rho` (real array)
-  Density, in units of :math:`{\rm g\,cm^{-3}}` [#only_evol]_
+  Density, in units of :math:`{\rm g\,cm^{-3}}`\ [#only_evol]_
 
 :nml_v:`T` (real array)
-  Temperature, in units of :math:`{\rm K}` [#only_evol]_
+  Temperature, in units of :math:`{\rm K}`\ [#only_evol]_
 
 .. rubric:: Footnotes
 

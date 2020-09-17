@@ -26,7 +26,7 @@ function is evaluated on the merged grid.
 Grid Types
 ----------
 
-The :nml_n:`grid_type` parameter of the :nml_g:`scan` namelist grop
+The :nml_n:`grid_type` parameter of the :nml_g:`scan` namelist group
 controls the overall distribution of points in a frequency grid. There
 are currently three options:
 
@@ -82,7 +82,7 @@ evaluated via
    \omega^{\rm g}_{\rm max} = \frac{f_{\rm max}}{\widehat{f}_{\rm max}} - \delta \omega,
 
 where :math:`f_{\rm min,max}` are user-definable, :math:`\widehat{f}_{\rm
-min,max}` will be discusssed below in the :ref:`freq-units` section, and :math:`\delta\omega` is the
+min,max}` will be discussed below in the :ref:`freq-units` section, and :math:`\delta\omega` is the
 frequency shift that transforms from the frame in which :math:`f_{\rm
 min,max}` are defined to inertial frame. The actual value of this
 shift depends on the :nml_n:`freq_min_frame` and
@@ -119,7 +119,7 @@ transforms these frequencies via
 
    \omega_{j} = \frac{f_{j}}{\widehat{f}} - \delta \omega,
 
-where :math:`\widehat{f}` will be discusssed below in the
+where :math:`\widehat{f}` will be discussed below in the
 :ref:`freq-units` section, and :math:`\delta\omega` is the frequency
 shift that transforms from the frame in which :math:`f` is defined to
 inertial frame. The actual value of this shift depends on the
@@ -177,8 +177,8 @@ Recommended Values
 The default values :nml_nv:`freq_min=1`, :nml_nv:`freq_max=10`,
 :nml_nv:`n_freq=10`, together with :nml_nv:`grid_type='LINEAR'` are
 sufficient to find *some* modes --- although unlikely the modes that
-you want. Chosing good values for these parameters requires some
-degree of judgement, but here are some suggestions:
+you want. Choosing good values for these parameters requires some
+degree of judgment, but here are some suggestions:
 
 * The number of points in the frequency grid should be a factor of
   2--3 larger than the number of modes you expect GYRE will find. This
@@ -189,13 +189,13 @@ degree of judgement, but here are some suggestions:
 
 * The distribution of points in the frequency grid should follow
   anticipated distribution of mode frequencies; this again is to
-  ensure adqeuate frequency resolution. For p modes, which tend toward
-  a uniform frequency spacing in the aymptotic limit of large radial
+  ensure adequate frequency resolution. For p modes, which tend toward
+  a uniform frequency spacing in the asymptotic limit of large radial
   order, you should chose :nml_nv:`grid_type = 'LINEAR'`;
   likewise, for g modes, which tend toward a uniform period spacing in
   the asymptotic limit, you should choose :nml_nv:`grid_type = 'INVERSE'`.
 
-* When modeling rotating stars, you should choise :nml_nv:`grid_frame
+* When modeling rotating stars, you should choose :nml_nv:`grid_frame
   = 'COROT_I'` or :nml_nv:`grid_frame = 'COROT_O'`, because the
   asymptotic behaviors mentioned above apply in the co-rotating
   reference frame rather than the inertial one.

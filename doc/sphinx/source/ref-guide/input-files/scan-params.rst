@@ -33,28 +33,28 @@ are:
 
 :nml_n:`freq_units` (default :nml_v:`NONE`)
   Units of :nml_n:`freq_min` and :nml_n:`freq_max`, when
-  nml_n:`grid_type` is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`; units
+  :nml_n:`grid_type` is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`; units
   of read frequencies when :nml_n:`grid_type` is :nml_v:`'FILE'`
 
   - :nml_v:`'NONE'` : Dimensionless angular frequency
-  - :nml_v:`'HZ'` : linear frequency in Hz [#only_evol]_
-  - :nml_v:`'UHZ'` : linear frequency in μHz [#only_evol]_
-  - :nml_v:`'RAD_PER_SEC'` : angular frequency in radians per second [#only_evol]_
-  - :nml_v:`'CYC_PER_DAY'` : linear frequency in cycles per day [#only_evol]_
+  - :nml_v:`'HZ'` : linear frequency in Hz\ [#only_evol]_
+  - :nml_v:`'UHZ'` : linear frequency in μHz\ [#only_evol]_
+  - :nml_v:`'RAD_PER_SEC'` : angular frequency in radians per second\ [#only_evol]_
+  - :nml_v:`'CYC_PER_DAY'` : linear frequency in cycles per day\ [#only_evol]_
   - :nml_v:`'ACOUSTIC_DELTA'` : Fraction of the asymptotic acoustic large frequency separation :math:`\Delta \nu`
   - :nml_v:`'GRAVITY_DELTA'` : Fraction of the asymptotic inverse gravity period separation :math:`(\Delta P)^{-1}`
   - :nml_v:`'UPPER_DELTA'` : Greater of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
   - :nml_v:`'LOWER_DELTA'` : Lesser of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
-  - :nml_v:`'ACOUSTIC_CUTOFF'` : fraction of the acoustic cutoff frequency [#only_evol]_
-  - :nml_v:`'GRAVITY_CUTOFF'` : fraction of the gravity cutoff frequency [#only_evol]_
+  - :nml_v:`'ACOUSTIC_CUTOFF'` : fraction of the acoustic cutoff frequency\ [#only_evol]_
+  - :nml_v:`'GRAVITY_CUTOFF'` : fraction of the gravity cutoff frequency\ [#only_evol]_
   - :nml_v:`'ROSSBY_I'` : fraction of Rossby frequency at inner boundary
   - :nml_v:`'ROSSBY_O'` : fraction of Rossby frequency at outer boundary
 
 :nml_n:`freq_min_units` (default :nml_v:`''`)
-  Units of :nml_n:`freq_min`; has same options as :nml_n:`freq_units` and overrides it if set
+  Units of :nml_n:`freq_min`; same options as :nml_n:`freq_units` and overrides it if set
 
 :nml_n:`freq_max_units` (default :nml_v:`''`)
-  Units of :nml_n:`freq_max`; has same options as :nml_n:`freq_units` and overrides it if set
+  Units of :nml_n:`freq_max`; same options as :nml_n:`freq_units` and overrides it if set
 
 :nml_n:`freq_min_frame` (default :nml_v:`'INERTIAL'`)
   Reference frame in which :nml_n:`freq_min`, when :nml_n:`grid_type`
@@ -67,9 +67,19 @@ are:
 :nml_n:`freq_max_frame` (default :nml_v:`'INERTIAL'`)
   Frame of :nml_n:`freq_max`; same options as :nml_n:`freq_min_frame`
 
+:nml_n:`file`
+  File to read frequencies from, when :nml_n:`grid_type` is :nml_v:`'FILE'`
+
+:nml_n:`axis` (default :nml_v:`'REAL`')
+  Axis to scan along\ [#only_contour]_; one of
+
+  - :nml_v:`'REAL'` : Real axis
+  - :nml_v:`'IMAG'` : Imaginary axis
+
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match
 
 .. rubric:: Footnotes
 
 .. [#only_evol] This option is only available when :nml_n:`model_type` is :nml_v:`'EVOL'`
+.. [#only_contour] This option is only used with :program:`gyre_contour`

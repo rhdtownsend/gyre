@@ -22,7 +22,7 @@ with :math:`c \equiv (T/\rho)^{1/2}`. If the string is clamped at
    y(0,t) = 0 \qquad
    y(L,t) = 0
 
-comprise a two-point boundary value problem (BVP).
+comprises a two-point boundary value problem (BVP).
 
 .. _string-analytic:
 
@@ -85,7 +85,7 @@ and the corresponding eigenfunctions are
    y(x,t) = B \sin \left( \frac{n \pi x}{L} \right) \exp ( - \ii \sigma t).
 
 The index :math:`n` uniquely labels the modes, and :math:`y(x,t)`
-exhibits :math:`n-1` nodes in the open interval :math:`x=(0,L)`.
+exhibits :math:`n-1` nodes in the open interval :math:`x \in (0,L)`.
 
 Separation
 ----------

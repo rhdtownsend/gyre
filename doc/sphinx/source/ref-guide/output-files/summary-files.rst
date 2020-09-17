@@ -181,13 +181,13 @@ Stellar Structure
 -----------------
 
 :nml_v:`M_star` (real scalar)
-  stellar mass, in units of :math:`{\rm g}` [#only_evol]_
+  stellar mass, in units of :math:`{\rm g}`\ [#only_evol]_
 
 :nml_v:`R_star` (real scalar)
-  stellar radius, in units of :math:`{\rm cm}` [#only_evol]_
+  stellar radius, in units of :math:`{\rm cm}`\ [#only_evol]_
 
 :nml_v:`L_star` (real scalar)
-  stellar luminosity, in units of :math:`{\rm erg\,s^{-1}}` [#only_evol]_
+  stellar luminosity, in units of :math:`{\rm erg\,s^{-1}}`\ [#only_evol]_
 
 :nml_v:`Delta_p` (real array)
   Asymptotic p-mode large frequency separation :math:`\Delta \nu`,

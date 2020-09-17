@@ -52,9 +52,9 @@
 /
 
 &grid
-  alpha_osc = 10  ! Ensure adequate spatial resolution in propagation regions
-  alpha_exp = 2   ! Ensure adequate spatial resolution in evanescant regions
-  alpha_ctr = 100 ! Ensure adequate spatial resolution at center
+  w_osc = 10  ! Oscillatory region weight parameter
+  w_exp = 2   ! Exponential region weight parameter
+  w_ctr = 100 ! Central region weight parameter
 /
 
 &ad_output
