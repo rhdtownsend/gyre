@@ -52,6 +52,7 @@ program gyre_contour
   use gyre_rot_par
   use gyre_scan
   use gyre_scan_par
+  use gyre_search
   use gyre_state
   use gyre_status
   use gyre_summary
@@ -77,9 +78,8 @@ program gyre_contour
   type(grid_par_t), allocatable     :: gr_p(:)
   type(scan_par_t), allocatable     :: sc_p(:)
   type(out_par_t)                   :: ot_p
-  character(FILENAME_LEN)           :: map_file
-  logical                           :: include_paths
   class(model_t), pointer           :: ml => null()
+  integer                           :: i
   type(osc_par_t)                   :: os_p_sel
   type(rot_par_t)                   :: rt_p_sel
   type(num_par_t)                   :: nm_p_sel
@@ -99,6 +99,11 @@ program gyre_contour
   type(contour_map_t)               :: cm
   type(contour_path_t), allocatable :: cp_re(:)
   type(contour_path_t), allocatable :: cp_im(:)
+  integer                           :: n_in
+  integer                           :: d_in
+  complex(WP), allocatable          :: omega_in_a(:)
+  complex(WP), allocatable          :: omega_in_b(:)
+  integer, allocatable              :: j_in(:)
 
   ! Read command-line arguments
 
@@ -149,9 +154,6 @@ program gyre_contour
   call read_grid_par(unit, gr_p)
   call read_scan_par(unit, sc_p)
   call read_out_par(unit, 'nad', ot_p)
-  call read_map_par(unit, map_file, include_paths)
-
-  $ASSERT(SIZE(md_p) == 1,Must be exactly one mode parameter)
 
   ! Initialize the model
 
@@ -164,99 +166,139 @@ program gyre_contour
   call select_par(nm_p, md_p(1)%tag, nm_p_sel)
   call select_par(gr_p, md_p(1)%tag, gr_p_sel)
   call select_par(sc_p, md_p(1)%tag, sc_p_sel)
-  
-  ! Create the context
 
-  allocate(cx, SOURCE=context_t(ml, gr_p_sel, md_p(1), os_p_sel, rt_p_sel))
+  ! Allocate the context (will be initialized later on)
+
+  allocate(cx)
 
   ! Initialize the summary and detail outputters
 
   sm = summary_t(ot_p)
+
   dt = detail_t(ot_p)
 
-  ! Set up the frequency arrays
+  ! Loop through md_p
 
-  call build_scan(cx, md_p(1), os_p_sel, sc_p_sel, omega_re, 'REAL')
-  $ASSERT(SIZE(omega_re) >= 1,Real axis too short)
-  call build_scan(cx, md_p(1), os_p_sel, sc_p_sel, omega_im, 'IMAG')
-  $ASSERT(SIZE(omega_re) >= 1,Imaginary axis too short)
+  md_p_loop : do i = 1, SIZE(md_p)
 
-  ! Create the grid
+     if (check_log_level('INFO')) then
 
-  gr = grid_t(cx, omega_re, gr_p_sel, os_p_sel)
+        write(OUTPUT_UNIT, 100) form_header('Mode Search', '-')
 
-  ! Set frequency bounds
+        write(OUTPUT_UNIT, 100) 'Mode parameters'
 
-  if (nm_p_sel%restrict_roots) then
-     omega_min = MINVAL(omega_re)
-     omega_max = MAXVAL(omega_re)
-  else
-     omega_min = -HUGE(0._WP)
-     omega_max = HUGE(0._WP)
-  endif
+        write(OUTPUT_UNIT, 130) 'l :', md_p(i)%l
+        write(OUTPUT_UNIT, 130) 'm :', md_p(i)%m
+130     format(3X,A,1X,I0)
 
-  ! Set up the bvp
+        write(OUTPUT_UNIT, *)
 
-  bp = nad_bvp_t(cx, gr, md_p(1), nm_p_sel, os_p_sel)
-
-  ! Set up the discriminant function
-
-  st = c_state_t(omega=0._WP, omega_r=0._WP)
-  df = c_discrim_func_t(bp, st, omega_min, omega_max)
-
-  ! Evaluate the contour map
-
-  call eval_map(omega_re, omega_im, cm)
-
-  ! (Next steps are root rank only)
-
-  if (MPI_RANK == 0) then
-
-     ! Trace the paths
-
-     call cm%trace_paths(cp_re, cp_im, process_isect)
-
-     ! Write the map
-
-     if (include_paths) then
-        call write_map(map_file, cm, cp_re, cp_im)
-     else
-        call write_map(map_file, cm)
      endif
 
-     ! Write the summary
+     ! Select parameters according to tags
 
-     call sm%write()
+     call select_par(os_p, md_p(i)%tag, os_p_sel)
+     call select_par(rt_p, md_p(i)%tag, rt_p_sel)
+     call select_par(nm_p, md_p(i)%tag, nm_p_sel)
+     call select_par(gr_p, md_p(i)%tag, gr_p_sel)
+     call select_par(sc_p, md_p(i)%tag, sc_p_sel)
 
-  end if
+     $ASSERT(os_p_sel%nonadiabatic,nonadiabatic flag must be set in contour calculations)
+
+     ! Set up the context
+
+     cx = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
+
+     ! Set up the frequency arrays
+
+     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega_re, 'REAL')
+     $ASSERT(SIZE(omega_re) >= 1,Real axis too short)
+     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega_im, 'IMAG')
+     $ASSERT(SIZE(omega_re) >= 1,Imaginary axis too short)
+
+     ! Create the grid
+
+     gr = grid_t(cx, omega_re, gr_p_sel, os_p_sel)
+
+     ! Set frequency bounds
+
+     if (nm_p_sel%restrict_roots) then
+        omega_min = MINVAL(omega_re)
+        omega_max = MAXVAL(omega_re)
+     else
+        omega_min = -HUGE(0._WP)
+        omega_max = HUGE(0._WP)
+     endif
+
+     ! Set up the bvp
+
+     bp = nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel)
+
+     ! Set up the discriminant function
+
+     st = c_state_t(omega=0._WP, omega_r=0._WP)
+     df = c_discrim_func_t(bp, st, omega_min, omega_max)
+
+     ! Evaluate the contour map
+
+     if (check_log_level('INFO')) then
+        write(OUTPUT_UNIT, 100) 'Evaluating discriminant map'
+        write(OUTPUT_UNIT, *)
+     endif
+
+     call eval_map(omega_re, omega_im, cm)
+
+     ! (Next steps are root rank only)
+
+     if (MPI_RANK == 0) then
+
+        ! Trace the zero contours
+
+        if (check_log_level('INFO')) then
+           write(OUTPUT_UNIT, 100) 'Tracing zero-contours'
+           write(OUTPUT_UNIT, *)
+        endif
+
+        d_in = 128
+        n_in = 0
+
+        allocate(omega_in_a(d_in))
+        allocate(omega_in_b(d_in))
+        allocate(j_in(d_in))
+
+        call cm%trace_paths(cp_re, cp_im, process_isect)
+
+        ! Find modes
+
+        call freq_search(bp, omega_in_a(:n_in), omega_in_b(:n_in), j_in(:n_in), omega_min, omega_max, process_mode, nm_p_sel)
+        
+        ! Write the contour data
+
+        call write_contour(ot_p, i, cm, cp_re, cp_im)
+
+        deallocate(omega_in_a)
+        deallocate(omega_in_b)
+        deallocate(j_in)
+
+     endif
+
+  end do md_p_loop
+
+  ! Write the summary
+
+  call sm%write()
+
+  ! Clean up
+
+  deallocate(cx)
+
+  deallocate(ml)
 
   ! Finish
 
   call final_parallel()
 
 contains
-
-  subroutine read_map_par (unit, map_file, include_paths)
-
-    integer, intent(in)       :: unit
-    character(*), intent(out) :: map_file
-    logical, intent(out)      :: include_paths
-
-    namelist /map_output/ map_file, include_paths
-
-    ! Read output parameters
-
-    rewind(unit)
-
-    read(unit, NML=map_output)
-
-    ! Finish
-    
-    return
-
-  end subroutine read_map_par
-          
-  !****
 
   subroutine eval_map (omega_re, omega_im, cm)
 
@@ -301,10 +343,11 @@ contains
 
        omega = CMPLX(omega_re(i(1)), omega_im(i(2)), KIND=WP)
 
-       if (MPI_RANK == 0) then
+       if (check_log_level('DEBUG')) then
           i_percent = FLOOR(100._WP*REAL(k-k_part(MPI_RANK+1))/REAL(k_part(MPI_RANK+2)-k_part(MPI_RANK+1)-1))
           if (i_percent > n_percent) then
-             print *,'Percent complete: ', i_percent
+             write(OUTPUT_UNIT, 100) 'Percent complete: ', i_percent
+100          format(A,1X,I0)
              n_percent = i_percent
           end if
        endif
@@ -347,92 +390,49 @@ contains
     complex(WP), intent(in) :: omega_a_im
     complex(WP), intent(in) :: omega_b_im
 
-    type(c_ext_t) :: omega_re
-    type(c_ext_t) :: omega_im
-    type(c_ext_t) :: discrim_re
-    type(c_ext_t) :: discrim_im
-    type(c_ext_t) :: omega_root
-    integer       :: status
-    integer       :: n_iter
     integer, save :: j = 0
-    type(wave_t)  :: wv
-    type(mode_t)  :: md
-    type(r_ext_t) :: chi
 
-    ! Set up the initial trial frequencies from the real and imag zero
-    ! contours
+    ! Process the intersection
 
-    omega_re = omega_init(c_ext_t(omega_a_re), c_ext_t(omega_b_re), 'im')
-    omega_im = omega_init(c_ext_t(omega_a_im), c_ext_t(omega_b_im), 're')
-
-    call df%eval(omega_re, discrim_re, status)
-    if (status /= STATUS_OK) then
-       call report_status(status, 'initial guess (re)')
-       return
-    endif
-
-    call df%eval(omega_im, discrim_im, status)
-    if (status /= STATUS_OK) then
-       call report_status(status, 'initial guess (im)')
-       return
-    endif
-
-    ! Find the discriminant root
-
-    call solve(df, nm_p_sel, omega_re, omega_im, r_ext_t(0._WP), omega_root, status, &
-               n_iter=n_iter, n_iter_max=nm_p_sel%n_iter_max, f_cx_a=discrim_re, f_cx_b=discrim_im)
-    if (status /= STATUS_OK) then
-       call report_status(status, 'solve')
-       return
-    end if
-
-    ! Construct the mode_t
-
+    n_in = n_in + 1
     j = j + 1
 
-    st = c_state_t(omega=cmplx(omega_root), omega_r=0._WP)
-
-    wv = wave_t(bp, st, j)
-    md = mode_t(wv)
-
-    ! Cache/write it
-
-    chi = abs(md%discrim)/max(abs(discrim_re), abs(discrim_im))
-    
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
-            md%omega, real(chi), n_iter
-100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
+    if (n_in > d_in) then
+       d_in = 2*d_in
+       call reallocate(omega_in_a, [d_in])
+       call reallocate(omega_in_b, [d_in])
+       call reallocate(j_in, [d_in])
     endif
 
+    omega_in_a(n_in) = omega_init(omega_a_re, omega_b_re, 'im')
+    omega_in_b(n_in) = omega_init(omega_a_im, omega_b_im, 're')
 
-    call sm%cache(md)
-    call dt%write(md)
-
+    j_in(n_in) = j
+    
     ! Finish
 
     return
 
   end subroutine process_isect
 
-  !***
+  !****
 
   function omega_init (omega_a, omega_b, part)
 
-    type(c_ext_t), intent(in) :: omega_a
-    type(c_ext_t), intent(in) :: omega_b
-    character(*), intent(in)  :: part
-    type(c_ext_t)             :: omega_init
+    complex(WP), intent(in)  :: omega_a
+    complex(WP), intent(in)  :: omega_b
+    character(*), intent(in) :: part
+    complex(WP)              :: omega_init
 
     type(c_ext_t) :: discrim_a
     type(c_ext_t) :: discrim_b
     integer       :: status
-    type(r_ext_t) :: w
+    real(WP)      :: w
 
-    call df%eval(omega_a, discrim_a, status)
+    call df%eval(c_ext_t(omega_a), discrim_a, status)
     $ASSERT(status == STATUS_OK,Invalid status)
 
-    call df%eval(omega_b, discrim_b, status)
+    call df%eval(c_ext_t(omega_b), discrim_b, status)
     $ASSERT(status == STATUS_OK,Invalid status)
 
     ! Look for the point on the segment where the real/imaginary
@@ -440,13 +440,13 @@ contains
 
     select case (part)
     case ('re')
-       w = -real_part(discrim_a)/(real_part(discrim_b) - real_part(discrim_a))
+       w = real(-real_part(discrim_a)/(real_part(discrim_b) - real_part(discrim_a)))
     case ('im')
-       w = -imag_part(discrim_a)/(imag_part(discrim_b) - imag_part(discrim_a))
+       w = real(-imag_part(discrim_a)/(imag_part(discrim_b) - imag_part(discrim_a)))
     case default
        $ABORT(Invalid part)
     end select
-    
+
     omega_init = (1._WP-w)*omega_a + w*omega_b
 
     ! Finish
@@ -457,58 +457,92 @@ contains
 
   !****
 
-  subroutine write_map (map_file, cm, cp_re, cp_im)
+  subroutine process_mode (md, n_iter, chi)
 
-    character(*), intent(in)                   :: map_file
-    type(contour_map_t), intent(in)            :: cm
-    type(contour_path_t), intent(in), optional :: cp_re(:)
-    type(contour_path_t), intent(in), optional :: cp_im(:)
+    type(mode_t), intent(in)  :: md
+    integer, intent(in)       :: n_iter
+    type(r_ext_t), intent(in) :: chi
 
-    type(hgroup_t) :: hg
-    type(hgroup_t) :: hg_cp
-    integer        :: i_cp
+    ! Process the mode
 
-    ! Write the contour map
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+            md%omega, real(chi), n_iter
+100    format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
+    endif
 
-    if (map_file /= '') then
+    ! Cache/write the mode
 
-       hg = hgroup_t(map_file, CREATE_FILE)
-
-       call write(hg, cm)
-
-       if (PRESENT(cp_re)) then
-
-          call write_attr(hg, 'n_cp_re', SIZE(cp_re))
-
-          do i_cp = 1, SIZE(cp_re)
-             hg_cp = hgroup_t(hg, elem_group_name('path-re', [i_cp]))
-             call write(hg_cp, cp_re(i_cp))
-             call hg_cp%final()
-          end do
-
-       endif
-
-       if (PRESENT(cp_im)) then
-
-          call write_attr(hg, 'n_cp_im', SIZE(cp_im))
-
-          do i_cp = 1, SIZE(cp_im)
-             hg_cp = hgroup_t(hg, elem_group_name('path-im', [i_cp]))
-             call write(hg_cp, cp_im(i_cp))
-             call hg_cp%final()
-          end do
-          
-       endif
-
-       call hg%final()
-
-    end if
+    call sm%cache(md)
+    call dt%write(md)
 
     ! Finish
 
     return
 
-  end subroutine write_map
+  end subroutine process_mode
+
+  !****
+
+  subroutine write_contour (ot_p, i, cm, cp_re, cp_im)
+
+    type(out_par_t), intent(in)      :: ot_p
+    integer, intent(in)              :: i
+    type(contour_map_t), intent(in)  :: cm
+    type(contour_path_t), intent(in) :: cp_re(:)
+    type(contour_path_t), intent(in) :: cp_im(:)
+
+    character(:), allocatable :: contour_file
+    type(hgroup_t)            :: hg
+    type(hgroup_t)            :: hg_cp
+    integer                   :: i_cp
+
+    ! Write a contour file
+
+    if (ot_p%contour_template == '') return
+
+    ! Set up the filename
+
+    contour_file = ot_p%contour_template
+
+    contour_file = subst(contour_file, '%I', i, '(I5.5)')
+    contour_file = subst(contour_file, '%i', i, '(I0)')
+
+    ! Open the file
+
+    hg = hgroup_t(contour_file, CREATE_FILE)
+
+    ! Write the data
+
+    call write(hg, cm)
+
+    if (ot_p%contour_paths) then
+          
+       call write_attr(hg, 'n_cp_re', SIZE(cp_re))
+
+       do i_cp = 1, SIZE(cp_re)
+          hg_cp = hgroup_t(hg, elem_group_name('path-re', [i_cp]))
+          call write(hg_cp, cp_re(i_cp))
+          call hg_cp%final()
+       end do
+
+       call write_attr(hg, 'n_cp_im', SIZE(cp_im))
+       
+       do i_cp = 1, SIZE(cp_im)
+          hg_cp = hgroup_t(hg, elem_group_name('path-im', [i_cp]))
+          call write(hg_cp, cp_im(i_cp))
+          call hg_cp%final()
+       end do
+          
+    endif
+
+    call hg%final()
+
+    ! Finish
+
+    return
+
+  end subroutine write_contour
 
   !****
 
