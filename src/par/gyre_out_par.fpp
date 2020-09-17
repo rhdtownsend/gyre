@@ -44,6 +44,8 @@ module gyre_out_par
      character(256)          :: detail_file_format = 'HDF'
      character(2048)         :: detail_item_list = 'l,n_pg,omega,freq,x,xi_r,xi_h'
      character(2048)         :: detail_filter_list = ''
+     character(FILENAME_LEN) :: contour_template = ''
+     logical                 :: contour_paths = .TRUE.
      character(256)          :: label = ''
   end type out_par_t
 
@@ -75,17 +77,19 @@ contains
     character(LEN(ot_p%detail_file_format))  :: detail_file_format
     character(LEN(ot_p%detail_item_list))    :: detail_item_list
     character(LEN(ot_p%detail_filter_list))  :: detail_filter_list
+    character(LEN(ot_p%contour_template))    :: contour_template
+    logical                                  :: contour_paths
     character(LEN(ot_p%label))               :: label
 
     namelist /ad_output/ freq_units, freq_frame, &
                          summary_file, summary_file_format, summary_item_list, summary_filter_list, &
                          detail_template, detail_file_format, detail_item_list, detail_filter_list, &
-                         label
+                         contour_template, contour_paths, label
 
     namelist /nad_output/ freq_units, freq_frame, &
                           summary_file, summary_file_format, summary_item_list, summary_filter_list, &
                           detail_template, detail_file_format, detail_item_list, detail_filter_list, &
-                          label
+                          contour_template, contour_paths, label
 
     namelist /tide_output/ summary_file
 
@@ -131,6 +135,8 @@ contains
     detail_file_format = ot_p%detail_file_format
     detail_item_list = ot_p%detail_item_list
     detail_filter_list = ot_p%detail_filter_list
+    contour_template = ot_p%contour_template
+    contour_paths = ot_p%contour_paths
     label = ot_p%label
 
     ! Read the namelist
@@ -158,6 +164,8 @@ contains
     ot_p%detail_file_format = detail_file_format
     ot_p%detail_item_list = detail_item_list
     ot_p%detail_filter_list = detail_filter_list
+    ot_p%contour_template = contour_template
+    ot_p%contour_paths = contour_paths
     ot_p%label = label
 
     ! Finish
