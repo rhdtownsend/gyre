@@ -48,6 +48,11 @@ module gyre_c_search
 
   ! Interfaces
 
+  interface freq_search
+     module procedure freq_search_1_
+     module procedure freq_search_2_
+  end interface freq_search
+
   interface scan_search
      module procedure scan_search_
   end interface scan_search
@@ -56,15 +61,71 @@ module gyre_c_search
 
   private
 
-  public :: mode_search
+  public :: freq_search
   public :: scan_search
 
 contains
 
-  subroutine mode_search (bp, omega_in, j_in, omega_min, omega_max, process_mode, nm_p)
+  subroutine freq_search_1_ (bp, omega_in, j_in, omega_min, omega_max, process_mode, nm_p)
 
     class(c_bvp_t), target, intent(inout) :: bp
     complex(WP), intent(in)               :: omega_in(:)
+    integer, intent(in)                   :: j_in(:)
+    real(WP), intent(in)                  :: omega_min
+    real(WP), intent(in)                  :: omega_max
+    interface
+       subroutine process_mode (md, n_iter, chi)
+         use core_kinds
+         use gyre_ext
+         use gyre_mode
+         type(mode_t), intent(in)  :: md
+         integer, intent(in)       :: n_iter
+         type(r_ext_t), intent(in) :: chi
+       end subroutine process_mode
+    end interface
+    type(num_par_t), intent(in)           :: nm_p
+
+    integer                  :: n_in
+    complex(WP), allocatable :: omega_in_a(:)
+    complex(WP), allocatable :: omega_in_b(:)
+    complex(WP)              :: domega
+    integer                  :: i
+
+    $CHECK_BOUNDS(SIZE(j_in),SIZE(omega_in))
+
+    ! Convert initial frequencies into pairs
+
+    n_in = SIZE(omega_in)
+
+    allocate(omega_in_a(n_in))
+    allocate(omega_in_b(n_in))
+
+    in_loop : do i = 1, n_in
+
+       domega = sqrt(EPSILON(0._WP))*abs(omega_in(i))*CMPLX(0._WP, 1._WP, KIND=WP)
+
+       omega_in_a(i) = omega_in(i) + domega
+       omega_in_b(i) = omega_in(i) - domega
+
+    end do in_loop
+
+    ! Do the search
+    
+    call freq_search_2_(bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, process_mode, nm_p)
+
+    ! Finish
+
+    return
+
+  end subroutine freq_search_1_
+
+  !****
+
+  subroutine freq_search_2_ (bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, process_mode, nm_p)
+
+    class(c_bvp_t), target, intent(inout) :: bp
+    complex(WP), intent(in)               :: omega_in_a(:)
+    complex(WP), intent(in)               :: omega_in_b(:)
     integer, intent(in)                   :: j_in(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
@@ -86,13 +147,14 @@ contains
     integer                  :: c_rate
     integer                  :: i
 
-    $CHECK_BOUNDS(SIZE(j_in),SIZE(omega_in))
+    $CHECK_BOUNDS(SIZE(j_in),SIZE(omega_in_a))
+    $CHECK_BOUNDS(SIZE(omega_in_b),SIZE(omega_in_a))
 
     ! Initialize the frequency deflation array
 
     allocate(omega_def(0))
 
-    ! Process each input mode (md_in) to find modes
+    ! Process each input frequency pair to find modes
 
     if (check_log_level('INFO')) then
 
@@ -106,13 +168,13 @@ contains
 
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    mode_loop : do i = 1, SIZE(omega_in)
+    in_loop : do i = 1, SIZE(omega_in_a)
 
-       ! Search for the mode
+       ! Search for the root
+       
+       call root_search_(bp, c_ext_t(omega_in_a(i)), c_ext_t(omega_in_b(i)), j_in(i), omega_min, omega_max, process_mode, nm_p, omega_def)
 
-       call prox_search_(bp, omega_in(i), j_in(i), omega_min, omega_max, process_mode, nm_p, omega_def)
-
-    end do mode_loop
+    end do in_loop
     
     call SYSTEM_CLOCK(c_end)
 
@@ -125,7 +187,7 @@ contains
 
     return
 
-  end subroutine mode_search
+  end subroutine freq_search_2_
 
   !****
 
@@ -155,10 +217,9 @@ contains
     type(r_ext_t), allocatable :: discrim_c(:)
     type(c_state_t)            :: st
     type(m_discrim_func_t)     :: df
-    complex(WP), allocatable   :: omega_def(:)
-    integer                    :: c_beg
-    integer                    :: c_end
-    integer                    :: c_rate
+    integer                    :: n_in
+    complex(WP), allocatable   :: omega_in(:)
+    integer, allocatable       :: j_in(:)
     integer                    :: i
     integer                    :: n_iter
     type(r_ext_t)              :: omega_m
@@ -173,25 +234,14 @@ contains
     st = c_state_t()
     df = m_discrim_func_t(bp, st, omega_min, omega_max)
 
-    ! Initialize the frequency deflation array
+    ! Convert brackets into initial frequencies
 
-    allocate(omega_def(0))
+    n_in = SIZE(omega_a)
 
-    ! Process each bracket to find modes
+    allocate(omega_in(n_in))
+    allocate(j_in(n_in))
 
-    if (check_log_level('INFO')) then
-
-       write(OUTPUT_UNIT, 100) 'Root Solving'
-100    format(A)
-
-       write(OUTPUT_UNIT, 110) 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110    format(1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
-       
-    endif
-
-    call SYSTEM_CLOCK(c_beg, c_rate)
-
-    mode_loop : do i = 1, SIZE(omega_a)
+    in_loop : do i = 1, n_in
 
        n_iter = 0
 
@@ -202,21 +252,17 @@ contains
                   f_rx_a=discrim_a(i), f_rx_b=discrim_b(i), f_rx_c=discrim_c(i))
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
-          cycle mode_loop
+          cycle in_loop
        endif
 
-       ! Search for the mode
+       omega_in(i) = real(omega_m)
+       j_in(i) = i
 
-       call prox_search_(bp, CMPLX(real(omega_m), KIND=WP), 0, omega_min, omega_max, process_mode, nm_p, omega_def)
+    end do in_loop
 
-    end do mode_loop
+    ! Do the search
 
-    call SYSTEM_CLOCK(c_end)
-
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
-120    format(2X,A,F10.3,1X,A/)
-    endif
+    call freq_search_1_(bp, omega_in, j_in, omega_min, omega_max, process_mode, nm_p)
 
     ! Finish
 
@@ -257,13 +303,14 @@ contains
     end subroutine report_status_
       
   end subroutine scan_search_
-    
+
   !****
 
-  subroutine prox_search_ (bp, omega, j, omega_min, omega_max, process_mode, nm_p, omega_def)
+  subroutine root_search_ (bp, omega_in_a, omega_in_b, j, omega_min, omega_max, process_mode, nm_p, omega_def)
 
     class(c_bvp_t), target, intent(inout)   :: bp
-    complex(WP), intent(in)                 :: omega
+    type(c_ext_t), intent(in)               :: omega_in_a
+    type(c_ext_t), intent(in)               :: omega_in_b
     integer, intent(in)                     :: j
     real(WP), intent(in)                    :: omega_min
     real(WP), intent(in)                    :: omega_max
@@ -279,45 +326,44 @@ contains
     end interface 
     type(num_par_t), intent(in)             :: nm_p
     complex(WP), allocatable, intent(inout) :: omega_def(:)
-    
-    real(WP)                 :: domega
-    type(c_ext_t)            :: omega_a
-    type(c_ext_t)            :: omega_b
-    integer                  :: n_iter
-    integer                  :: n_iter_def
-    type(c_state_t)          :: st
-    type(c_discrim_func_t)   :: df
-    type(c_state_t)          :: st_def
-    type(c_discrim_func_t)   :: df_def
-    integer                  :: status
-    type(c_ext_t)            :: discrim_a
-    type(c_ext_t)            :: discrim_b
-    type(c_ext_t)            :: discrim_a_rev
-    type(c_ext_t)            :: discrim_b_rev
-    type(c_ext_t)            :: omega_root
-    type(wave_t)             :: wv
-    type(mode_t)             :: md
-    type(r_ext_t)            :: chi
 
-    ! Set up the initial guess
+    type(c_ext_t)          :: omega_a
+    type(c_ext_t)          :: omega_b
+    real(WP)               :: omega_r
+    integer                :: n_iter
+    integer                :: n_iter_def
+    type(c_state_t)        :: st
+    type(c_discrim_func_t) :: df
+    type(c_state_t)        :: st_def
+    type(c_discrim_func_t) :: df_def
+    integer                :: status
+    type(c_ext_t)          :: discrim_a
+    type(c_ext_t)          :: discrim_b
+    type(c_ext_t)          :: discrim_a_rev
+    type(c_ext_t)          :: discrim_b_rev
+    type(c_ext_t)          :: omega_root
+    type(wave_t)           :: wv
+    type(mode_t)           :: md
+    type(r_ext_t)          :: chi
 
-    domega = sqrt(EPSILON(0._WP))*abs(omega)
+    ! Set up the initial points
 
-    omega_a = c_ext_t(omega + CMPLX(0._WP, domega, KIND=WP))
-    omega_b = c_ext_t(omega - CMPLX(0._WP, domega, KIND=WP))
+    omega_a = omega_in_a
+    omega_b = omega_in_b
+    omega_r = real(0.5_WP*(omega_a + omega_b))
 
-    st = c_state_t(omega_r=omega)
+    st = c_state_t(omega_r=omega_r)
     df = c_discrim_func_t(bp, st, omega_min, omega_max)
 
     call df%eval(omega_a, discrim_a, status)
     if (status /= STATUS_OK) then
-       call report_status_(status, 'initial guess (a)')
+       call report_status_(status, 'initial trial (a)')
        return
     endif
           
     call df%eval(omega_b, discrim_b, status)
     if (status /= STATUS_OK) then
-       call report_status_(status, 'initial guess (b)')
+       call report_status_(status, 'initial trial (b)')
        return
     endif
           
@@ -326,7 +372,7 @@ contains
 
     if (nm_p%deflate_roots) then
 
-       st_def = c_state_t(omega_r=omega)
+       st_def = c_state_t(omega_r=omega_r)
        df_def = c_discrim_func_t(bp, st, omega_min, omega_max, omega_def)
 
        call narrow(df_def, nm_p, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
@@ -368,7 +414,7 @@ contains
 
     ! Construct the mode_t
 
-    st = c_state_t(omega=cmplx(omega_root), omega_r=omega)
+    st = c_state_t(omega=cmplx(omega_root), omega_r=omega_r)
 
     select type (bp)
     type is (nad_bvp_t)
@@ -415,6 +461,8 @@ contains
          write(OUTPUT_UNIT, 110) 'n_iter     :', n_iter
 110      format(3X,A,1X,I0)
 
+         write(OUTPUT_UNIT, 120) 'omega_in_a :', cmplx(omega_in_a)
+         write(OUTPUT_UNIT, 120) 'omega_in_b :', cmplx(omega_in_b)
          write(OUTPUT_UNIT, 120) 'omega_a    :', cmplx(omega_a)
          write(OUTPUT_UNIT, 120) 'omega_b    :', cmplx(omega_b)
 120      format(3X,A,1X,2E24.16)
@@ -427,7 +475,7 @@ contains
 
     end subroutine report_status_
 
-  end subroutine prox_search_
+  end subroutine root_search_
 
   !****
 

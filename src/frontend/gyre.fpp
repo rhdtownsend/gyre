@@ -271,7 +271,7 @@ program gyre
         select case (md_p(i)%nad_search)
         case ('AD')
            $ASSERT(os_p_sel%adiabatic,No adiabatic modes to start from)
-           call mode_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
+           call freq_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
         case ('SCAN')
            call scan_search(bp_nad, omega, omega_min, omega_max, process_mode_nad, nm_p_sel)
         case default
