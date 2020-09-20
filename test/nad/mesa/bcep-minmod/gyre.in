@@ -24,6 +24,7 @@
 /
 
 &osc
+  adiabatic = .FALSE.
   nonadiabatic = .TRUE.
 /
 
@@ -32,23 +33,15 @@
 
 &num
   diff_scheme = 'MAGNUS_GL2'
+  nad_search = 'MINMOD'
   restrict_roots = .FALSE.
 /
 
 &scan
-  axis = 'REAL'
   grid_type = 'LINEAR'
   freq_min = 3.0
   freq_max = 10.0
   n_freq = 50
-/
-
-&scan
-  axis = 'IMAG'
-  grid_type = 'LINEAR'
-  freq_min = -0.28
-  freq_max = 0.28
-  n_freq = 5
 /
 
 &grid

@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.h5
 
-LABEL="MESA model for beta Cephei star (non-adiabatic, contour method)"
+LABEL="MESA model for beta Cephei star (non-adiabatic, minmod method)"
 
 # Do the tests
 

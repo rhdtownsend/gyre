@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=gyre gyre_contour poly_to_fgong poly_to_txt
+TARGETS=gyre poly_to_fgong poly_to_txt
 
 ifeq ($(TIDES),yes)
   TARGETS:=${TARGETS} gyre_force gyre_response gyre_orbit

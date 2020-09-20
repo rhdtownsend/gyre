@@ -1,0 +1,68 @@
+&constants
+/
+
+&model
+  model_type = 'EVOL'
+  file = 'bcep.mesa'
+  file_format = 'MESA'
+/
+
+&mode
+  l = 0
+/
+
+&mode
+  l = 1
+/
+
+&mode
+  l = 2
+/
+
+&mode
+  l = 3
+/
+
+&osc
+  adiabatic = .FALSE.
+  nonadiabatic = .TRUE.
+/
+
+&rot
+/
+
+&num
+  diff_scheme = 'MAGNUS_GL2'
+  restrict_roots = .FALSE.
+  nad_search = 'CONTOUR'
+/
+
+&scan
+  axis = 'REAL'
+  grid_type = 'LINEAR'
+  freq_min = 3.0
+  freq_max = 10.0
+  n_freq = 50
+/
+
+&scan
+  axis = 'IMAG'
+  grid_type = 'LINEAR'
+  freq_min = -0.28
+  freq_max = 0.28
+  n_freq = 5
+/
+
+&grid
+  w_osc = 10.
+  w_exp = 2.
+  w_ctr = 10.
+/
+
+&ad_output
+/
+
+&nad_output
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+/

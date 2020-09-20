@@ -71,7 +71,7 @@ are:
   File to read frequencies from, when :nml_n:`grid_type` is :nml_v:`'FILE'`
 
 :nml_n:`axis` (default :nml_v:`'REAL`')
-  Axis to scan along\ [#only_contour]_; one of
+  Axis that scan applies to; one of
 
   - :nml_v:`'REAL'` : Real axis
   - :nml_v:`'IMAG'` : Imaginary axis

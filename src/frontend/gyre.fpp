@@ -85,7 +85,8 @@ program gyre
   type(summary_t)                      :: sm_nad
   type(detail_t)                       :: dt_ad
   type(detail_t)                       :: dt_nad
-  real(WP), allocatable                :: omega(:)
+  real(WP), allocatable                :: omega_re(:)
+  real(WP), allocatable                :: omega_im(:)
   real(WP)                             :: omega_min
   real(WP)                             :: omega_max
   type(grid_t)                         :: gr
@@ -195,35 +196,26 @@ program gyre
 
      cx = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
 
-     ! Set up the frequency array
+     ! Set up the frequency arrays
 
-     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega)
-
-     if (SIZE(omega) < 2) then
-
-        if (check_log_level('INFO')) then
-           write(OUTPUT_UNIT, 100) 'Scan is empty, skipping mode...'
-        endif
-
-        cycle md_p_loop
-
-     endif
+     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega_re, 'REAL')
+     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega_im, 'IMAG')
 
      ! Create the grid
 
-     gr = grid_t(cx, omega, gr_p_sel, os_p_sel)
+     gr = grid_t(cx, omega_re, gr_p_sel, os_p_sel)
 
      ! Set frequency bounds and perform checks
 
      if (nm_p_sel%restrict_roots) then
-        omega_min = MINVAL(omega)
-        omega_max = MAXVAL(omega)
+        omega_min = MINVAL(omega_re)
+        omega_max = MAXVAL(omega_re)
      else
         omega_min = -HUGE(0._WP)
         omega_max = HUGE(0._WP)
      endif
 
-     call check_scan(cx, gr, omega, md_p(i), os_p_sel)
+     call check_scan(cx, gr, omega_re, md_p(i), os_p_sel)
 
      ! Find adiabatic modes
 
@@ -246,11 +238,22 @@ program gyre
            write(OUTPUT_UNIT, *)
         endif
 
-        select case (md_p(i)%ad_search)
-        case ('SCAN')
-           call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
+        select case (nm_p_sel%ad_search)
+
+        case ('BRACKET')
+
+           if (SIZE(omega_re) > 2) then
+              call bracket_search(bp_ad, omega_re, omega_min, omega_max, process_mode_ad, nm_p_sel)
+           else
+              if (check_log_level('INFO')) then
+                 write(OUTPUT_UNIT, 100) 'Too few scan points for bracket search, skipping...'
+              endif
+           endif
+
         case default
+
            $ABORT(Invalid ad_search)
+
         end select
 
         deallocate(bp_ad)
@@ -268,14 +271,37 @@ program gyre
            write(OUTPUT_UNIT, *)
         endif
 
-        select case (md_p(i)%nad_search)
+        select case (nm_p_sel%nad_search)
+
         case ('AD')
+
            $ASSERT(os_p_sel%adiabatic,No adiabatic modes to start from)
-           call freq_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
-        case ('SCAN')
-           call scan_search(bp_nad, omega, omega_min, omega_max, process_mode_nad, nm_p_sel)
+           call prox_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
+
+        case ('MINMOD')
+
+           if (SIZE(omega_re) > 2) then
+              call minmod_search(bp_nad, omega_re, omega_min, omega_max, process_mode_nad, nm_p_sel)
+           else
+              if (check_log_level('INFO')) then
+                 write(OUTPUT_UNIT, 100) 'Too few scan points for minmod search, skipping...'
+              endif
+           endif
+
+        case ('CONTOUR')
+
+           if (SIZE(omega_re) > 2 .AND. SIZE(omega_im) > 2) then
+              call contour_search(bp_nad, omega_re, omega_im, omega_min, omega_max, process_mode_nad, nm_p_sel)
+           else
+              if (check_log_level('INFO')) then
+                 write(OUTPUT_UNIT, 100) 'Too few scan points for contour search, skipping...'
+              endif
+           endif
+
         case default
+
            $ABORT(Invalid nad_start)
+
         end select
 
         deallocate(bp_nad)

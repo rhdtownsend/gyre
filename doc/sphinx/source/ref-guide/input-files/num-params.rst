@@ -48,5 +48,17 @@ used. Allowable fields are:
 :nml_n:`restrict_roots` (default :nml_v:`.TRUE.`)
   Flag to check each roots found lies within the bounds of the frequency scan
 
+:nml_n:`ad_search` (default :nml_v:`'SCAN'`)
+  Initial search method for adiabatic calculations; one of
+
+  - :nml_v:`'BRACKET'` : Bracket sign changes in the discriminant function 
+
+:nml_n:`nad_search` (default :nml_v:`'AD'`)
+  Initial search method for non-adiabatic calculations; one of
+
+  - :nml_v:`'AD'` : Use adiabatic eigenfrequencies
+  - :nml_v:`'MINMOD'` : Find minima in the modulus of the discriminant function, along the real-:math:`\omega` axis
+  - :nml_v:`'CONTOUR'` : Find intersections between real and imaginary zero-contours of the discriminant function
+    
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match

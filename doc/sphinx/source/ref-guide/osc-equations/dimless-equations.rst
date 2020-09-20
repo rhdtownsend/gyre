@@ -38,12 +38,12 @@ The dimensionless oscillation equations are
    \begin{align}
    x \deriv{y_{1}}{x} &=
    \left( \frac{V}{\Gammi} - 1 - \elli \right) y_{1} +
-   \left( \frac{\lambda}{c_{1} \omega^{2}} - \alphagam \frac{V}{\Gammi} \right) y_{2} +
-   \alphagrv \frac{\lambda}{c_{1} \omega^{2}} y_{3} +
+   \left( \frac{\lambda}{c_{1} \omegac^{2}} - \alphagam \frac{V}{\Gammi} \right) y_{2} +
+   \alphagrv \frac{\lambda}{c_{1} \omegac^{2}} y_{3} +
    \delta y_{5}, \\
    %
    x \deriv{y_{2}}{x} &=
-   \left( c_{1} \omega^{2} - \fpigam \As \right) y_{1} +
+   \left( c_{1} \omegac^{2} - \fpigam \As \right) y_{1} +
    \left( 3 - U + \As - \elli \right) y_{2} -
    \alphagrv y_{4} +
    \delta y_{5}, \\
@@ -60,11 +60,11 @@ The dimensionless oscillation equations are
    - \alphagrv \delta \, U y_{5}, \\
    %
    x \deriv{y_{5}}{x} &= 
-   \frac{V}{\frht} \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \alphakap \kapad V \nabla + \cdif \right] y_{1} + \mbox{} \\
+   \frac{V}{\frht} \left[ \nabad (U - c_{1}\omegac^{2}) - 4 (\nabad - \nabla) + \alphakap \kapad V \nabla + \cdif \right] y_{1} + \mbox{} \\
    &
-   \frac{V}{\frht} \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) - \alphakap \kapad V \nabla - \cdif \right] y_{2} + \mbox{} \\
+   \frac{V}{\frht} \left[ \frac{\lambda}{c_{1} \omegac^{2}} (\nabad - \nabla) - \alphakap \kapad V \nabla - \cdif \right] y_{2} + \mbox{} \\
    &
-   \alphagrv \frac{V}{\frht} \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) \right] y_{3} +
+   \alphagrv \frac{V}{\frht} \left[ \frac{\lambda}{c_{1} \omegac^{2}} (\nabad - \nabla) \right] y_{3} +
    \alphagrv \frac{V \nabad}{\frht} y_{4} + \mbox{} \\
    &
    \left[ \frac{V \nabla}{\frht} (4 \frht - \alphakap \kapS) + \dfrht + 2 - \elli \right] y_{5} -
@@ -72,27 +72,31 @@ The dimensionless oscillation equations are
    %
    x \deriv{y_{6}}{x} &=
    \left[ \alphahfl \lambda \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} +
-   \left[ V \cepsad - \lambda \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omega^{2}} \right) \right] y_{2} + \mbox{} \\
+   \left[ V \cepsad - \lambda \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right) \right] y_{2} + \mbox{} \\
    &
-   \alphagrv \left[ \lambda \crad \frac{3 + \dcrad}{c_{1}\omega^{2}} \right] y_{3} +
-   \left[ \cepsS - \alphahfl \frac{\lambda\crad}{\nabla V} + \ii \alphathm \omega \cthk \right] y_{5} -
+   \alphagrv \left[ \lambda \crad \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right] y_{3} +
+   \left[ \cepsS - \alphahfl \frac{\lambda\crad}{\nabla V} + \ii \alphathm \omegac \cthk \right] y_{5} -
    \left[ 1 + \elli \right] y_{6}.
    \end{align}
 
-These equations are derived from the separated equations, but with the
-additional inclusion of 'switch' terms (denoted :math:`\alpha`) that
-allow certain pieces of physics to be altered; see the
-:ref:`physics-switches` section for more details. The dimensionless frequency
+These equations are derived from the separated equations, but with a
+few important modifications:
 
-.. math::
+* the insertion of 'switch' terms (denoted :math:`\alpha`) that allow
+  certain pieces of physics to be altered. See the
+  :ref:`physics-switches` section for more details
 
-   \omega \equiv \sqrt{\frac{R^{3}}{GM}} \sigma
+* the replacement of the dimensionless inertial frequency
+  :math:`\omega \equiv (R^{3}/GM)^{1/2}\, \sigma` with the local
+  co-rotating equivalent :math:`\omegac`, to account for the Doppler
+  shift arising from frame transformation.  See the :ref:`rotation`
+  section for more details.
 
-serves as the eigenvalue parameter in the equations, while
-:math:`\lambda` is the separation constant that comes from the angular
-parts of the oscillation equatons. When Coriolis effects are
-neglected, :math:`\lambda = \ell(\ell+1)`.
-   
+* the replacement of :math:`\ell(\ell+1)` terms (the spherical polar
+  separation constant) with :math:`\lambda`, to account in part for
+  the effects of the Coriolis force. Again, see the :ref:`rotation`
+  section for more details.
+
 For non-radial adiabatic calculations, the last two equations above
 are set aside and the :math:`y_{5}` terms dropped from the first four
 equations. For radial adiabatic calculations with
