@@ -22,6 +22,7 @@ module gyre_bracket_search
   ! Uses
 
   use core_kinds
+  use core_parallel
 
   use gyre_ad_bvp
   use gyre_bvp
@@ -207,15 +208,19 @@ contains
     type(r_ext_t), allocatable, intent(out) :: discrim_a(:)
     type(r_ext_t), allocatable, intent(out) :: discrim_b(:)
 
-    integer       :: n_omega
-    integer       :: c_beg
-    integer       :: c_end
-    integer       :: c_rate
-    integer       :: i
-    type(r_ext_t) :: discrim(SIZE(omega))
-    integer       :: status
-    integer       :: n_brack
-    integer       :: i_brack(SIZE(omega))
+    integer              :: n_omega
+    integer, allocatable :: i_part(:)
+    integer              :: c_beg
+    integer              :: c_end
+    integer              :: c_rate
+    integer              :: i
+    type(r_ext_t)        :: discrim(SIZE(omega))
+    integer              :: status
+    $if ($MPI)
+    integer              :: p
+    $endif
+    integer              :: n_brack
+    integer              :: i_brack(SIZE(omega))
 
     ! Calculate the discriminant on the omega abscissa
 
@@ -226,9 +231,13 @@ contains
 
     n_omega = SIZE(omega)
 
+    allocate(i_part(MPI_SIZE+1))
+
+    call partition_tasks(n_omega, 1, i_part)
+
     call SYSTEM_CLOCK(c_beg, c_rate)
 
-    discrim_loop : do i = 1, n_omega
+    discrim_loop: do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
        call df%eval(r_ext_t(omega(i)), discrim(i), status)
 
@@ -238,6 +247,14 @@ contains
        endif
 
     end do discrim_loop
+
+    $if ($MPI)
+
+    do p = 1,MPI_SIZE
+       call bcast_seq(discrim, i_part(p), i_part(p+1)-1, p-1)
+    end do
+
+    $endif
 
     call SYSTEM_CLOCK(c_end)
 
