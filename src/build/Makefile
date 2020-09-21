@@ -33,6 +33,11 @@ include Make.inc
 
 # Additional rules
 
+ifeq ($(MPI),yes)
+core_parallel.o : F9XFLAGS:=${F9XFLAGS} -std=legacy
+endif
+
+
 ifeq ($(CRMATH),yes)
 gyre_math.fpp: gyre_math_crmath.fpp
 	@ln -sf $< $@
