@@ -1,7 +1,7 @@
 ! Module   : gyre_lib
 ! Purpose  : library interface for use in MESA
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -220,11 +220,7 @@ contains
     integer, intent(inout)  :: ipar(:)
     real(WP), intent(inout) :: rpar(:)
 
-    type(context_t), pointer      :: cx(:) => null()
-    integer                       :: n_ad
-    integer                       :: d_ad
-    complex(WP), allocatable      :: omega_ad(:)
-    integer, allocatable          :: j_ad(:)
+    type(context_t), pointer      :: cx => null()
     integer                       :: i
     type(osc_par_t)               :: os_p_sel
     type(rot_par_t)               :: rt_p_sel
@@ -232,90 +228,137 @@ contains
     type(grid_par_t)              :: gr_p_sel
     type(scan_par_t), allocatable :: sc_p_sel(:)
     type(grid_t)                  :: gr
-    real(WP), allocatable         :: omega(:)
+    real(WP), allocatable         :: omega_re(:)
+    real(WP), allocatable         :: omega_im(:)
     real(WP)                      :: omega_min
     real(WP)                      :: omega_max
     class(r_bvp_t), allocatable   :: bp_ad
     class(c_bvp_t), allocatable   :: bp_nad
+    integer                       :: n_ad
+    integer                       :: d_ad
+    complex(WP), allocatable      :: omega_ad(:)
+    integer, allocatable          :: j_ad(:)
 
     $ASSERT(ASSOCIATED(ml_m),No model provided)
 
-    ! Allocate the contexts array (will be initialized later on)
+    ! Allocate the context (will be initialized later on)
 
-    allocate(cx(SIZE(md_p_m)))
+    allocate(cx)
 
     ! Loop through modepars
 
-    d_ad = 128
-    n_ad = 0
-
-    allocate(omega_ad(d_ad))
-    allocate(j_ad(d_ad))
-
     md_p_loop : do i = 1, SIZE(md_p_m)
 
-       if (md_p_m(i)%l == l) then
+       if (md_p_m(i)%l /= l) cycle md_p_loop
 
-          ! Select parameters according to tags
+       ! Select parameters according to tags
 
-          call select_par(os_p_m, md_p_m(i)%tag, os_p_sel)
-          call select_par(rt_p_m, md_p_m(i)%tag, rt_p_sel)
-          call select_par(nm_p_m, md_p_m(i)%tag, nm_p_sel)
-          call select_par(gr_p_m, md_p_m(i)%tag, gr_p_sel)
-          call select_par(sc_p_m, md_p_m(i)%tag, sc_p_sel)
+       call select_par(os_p_m, md_p_m(i)%tag, os_p_sel)
+       call select_par(rt_p_m, md_p_m(i)%tag, rt_p_sel)
+       call select_par(nm_p_m, md_p_m(i)%tag, nm_p_sel)
+       call select_par(gr_p_m, md_p_m(i)%tag, gr_p_sel)
+       call select_par(sc_p_m, md_p_m(i)%tag, sc_p_sel)
 
-          ! Set up the context
+       ! Set up the context
 
-          cx(i) = context_t(ml_m, gr_p_sel, md_p_m(i), os_p_sel, rt_p_sel)
+       cx = context_t(ml_m, gr_p_sel, md_p_m(i), os_p_sel, rt_p_sel)
 
-          ! Set up the frequency array
+       ! Set up the frequency array
+          
+       call build_scan(cx, md_p_m(i), os_p_sel, sc_p_sel, 'REAL', omega_re)
+       call build_scan(cx, md_p_m(i), os_p_sel, sc_p_sel, 'IMAG', omega_im)
 
-          call build_scan(cx(i), md_p_m(i), os_p_sel, sc_p_sel, omega)
+       ! Create the grid
 
-          ! Create the grid
+       gr = grid_t(cx, omega_re, gr_p_sel, os_p_sel)
 
-          gr = grid_t(cx(i), omega, gr_p_sel)
+       ! Set frequency bounds and perform checks
+       
+       if (nm_p_sel%restrict_roots) then
+          omega_min = MINVAL(omega_re)
+          omega_max = MAXVAL(omega_re)
+       else
+          omega_min = -HUGE(0._WP)
+          omega_max = HUGE(0._WP)
+       endif
 
-          ! Set frequency bounds and perform checks
+       call check_scan(cx, gr, omega_re, md_p_m(i), os_p_sel)
 
-          if (nm_p_sel%restrict_roots) then
-             omega_min = MINVAL(omega)
-             omega_max = MAXVAL(omega)
-          else
-             omega_min = -HUGE(0._WP)
-             omega_max = HUGE(0._WP)
-          endif
+       ! Find adiabatic modes
 
-          call check_scan(cx(i), gr, omega, md_p_m(i), os_p_sel)
+       if (os_p_sel%adiabatic) then
+        
+          d_ad = 128
+          n_ad = 0
 
-          ! Set up the bvp's
+          allocate(omega_ad(d_ad))
+          allocate(j_ad(d_ad))
 
           if (md_p_m(i)%l == 0 .AND. os_p_sel%reduce_order) then
-             allocate(bp_ad, SOURCE=rad_bvp_t(cx(i), gr, md_p_m(i), nm_p_sel, os_p_sel))
+             allocate(bp_ad, SOURCE=rad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
           else
-             allocate(bp_ad, SOURCE=ad_bvp_t(cx(i), gr, md_p_m(i), nm_p_sel, os_p_sel))
+             allocate(bp_ad, SOURCE=ad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
           endif
 
-          if (os_p_sel%nonadiabatic) then
-             allocate(bp_nad, SOURCE=nad_bvp_t(cx(i), gr, md_p_m(i), nm_p_sel, os_p_sel))
-          endif
+          select case (nm_p_sel%ad_search)
 
-          ! Find modes
+          case ('BRACKET')
 
-          if (os_p_sel%nonadiabatic) then
-             n_ad = 0
-             call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
-             call mode_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
-          else
-             call scan_search(bp_ad, omega, omega_min, omega_max, process_mode_ad, nm_p_sel)
-          endif
+             if (SIZE(omega_re) > 2) then
+                call bracket_search(bp_ad, omega_re, omega_min, omega_max, process_mode_ad, nm_p_sel)
+             endif
+                
+          case default
 
-          ! Clean up
+             $ABORT(Invalid ad_search)
+
+          end select
 
           deallocate(bp_ad)
-          if (ALLOCATED(bp_nad)) deallocate(bp_nad)
-          
-       end if
+
+       endif
+
+       ! Find non-adiabatic modes
+
+       if (os_p_sel%nonadiabatic) then
+
+          allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
+
+          select case (nm_p_sel%nad_search)
+
+          case ('AD')
+
+             $ASSERT(os_p_sel%adiabatic,No adiabatic modes to start from)
+             call prox_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
+
+          case ('MINMOD')
+
+             if (SIZE(omega_re) > 2) then
+                call minmod_search(bp_nad, omega_re, omega_min, omega_max, process_mode_nad, nm_p_sel)
+             endif
+
+          case ('CONTOUR')
+
+             if (SIZE(omega_re) > 2 .AND. SIZE(omega_im) > 2) then
+                call contour_search(bp_nad, omega_re, omega_im, omega_min, omega_max, process_mode_nad, nm_p_sel)
+             endif
+
+          case default
+
+             $ABORT(Invalid nad_start)
+
+          end select
+
+          deallocate(bp_nad)
+
+       endif
+
+       ! Deallocate adiabatic data
+
+       if (os_p_sel%adiabatic) then
+          deallocate(omega_ad)
+          deallocate(j_ad)
+       endif
 
        ! Loop around
 
