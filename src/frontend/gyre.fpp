@@ -198,8 +198,8 @@ program gyre
 
      ! Set up the frequency arrays
 
-     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega_re, 'REAL')
-     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega_im, 'IMAG')
+     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', omega_re)
+     call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'IMAG', omega_im)
 
      ! Create the grid
 
