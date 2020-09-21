@@ -214,11 +214,14 @@ contains
     integer              :: c_end
     integer              :: c_rate
     integer              :: i
-    type(r_ext_t)        :: discrim(SIZE(omega))
+    type(r_ext_t)        :: discrim_i
     integer              :: status
+    real(WP)             :: discrim_f(SIZE(omega))
+    integer              :: discrim_e(SIZE(omega))
     $if ($MPI)
     integer              :: p
     $endif
+    type(r_ext_t)        :: discrim(SIZE(omega))
     integer              :: n_brack
     integer              :: i_brack(SIZE(omega))
 
@@ -239,7 +242,10 @@ contains
 
     discrim_loop: do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
-       call df%eval(r_ext_t(omega(i)), discrim(i), status)
+       call df%eval(r_ext_t(omega(i)), discrim_i, status)
+
+       discrim_f(i) = FRACTION(discrim_i)
+       discrim_e(i) = EXPONENT(discrim_i)
 
        if (check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
@@ -251,10 +257,13 @@ contains
     $if ($MPI)
 
     do p = 1,MPI_SIZE
-       call bcast_seq(discrim, i_part(p), i_part(p+1)-1, p-1)
+       call bcast_seq(discrim_f, i_part(p), i_part(p+1)-1, p-1)
+       call bcast_seq(discrim_e, i_part(p), i_part(p+1)-1, p-1)
     end do
 
     $endif
+
+    discrim = scale(r_ext_t(discrim_f), discrim_e)
 
     call SYSTEM_CLOCK(c_end)
 
