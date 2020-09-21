@@ -124,6 +124,9 @@ contains
     integer                           :: status
     complex(WP), allocatable          :: discrim_map_f(:,:)
     integer, allocatable              :: discrim_map_e(:,:)
+    $if ($MPI)
+    integer                           :: p
+    $endif
     type(c_ext_t), allocatable        :: discrim_map(:,:)
     type(contour_map_t)               :: cm
     integer                           :: n_in
