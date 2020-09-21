@@ -23,6 +23,7 @@ module gyre_txt_writer
 
   use core_kinds
   use core_memory
+  use core_parallel
 
   use gyre_writer
   use gyre_util
@@ -96,15 +97,19 @@ contains
 
     ! Construct the txt_writer_t
 
-    open(NEWUNIT=wr%unit, FILE=file_name, STATUS='REPLACE', FORM='FORMATTED', ACCESS='STREAM')
+    if (MPI_RANK == 0) then
+
+       open(NEWUNIT=wr%unit, FILE=file_name, STATUS='REPLACE', FORM='FORMATTED', ACCESS='STREAM')
     
-    write(wr%unit, 100) label
-100 format(A)
+       write(wr%unit, 100) label
+100    format(A)
 
-    wr%n_s = 0
-    wr%n_v = 0
+       wr%n_s = 0
+       wr%n_v = 0
 
-    wr%n = 0
+       wr%n = 0
+
+    endif
 
     wr%c = 0
 
@@ -126,28 +131,32 @@ contains
 
     ! Finalize the txt_writer
 
-    fmt = join_fmts([IX_FORMAT],[this%n_s])
+    if (MPI_RANK == 0) then
 
-    write(this%unit, fmt) [(i,i=1,this%n_s)]
+       fmt = join_fmts([IX_FORMAT],[this%n_s])
 
-    fmt = join_fmts([AX_FORMAT],[this%n_s])
+       write(this%unit, fmt) [(i,i=1,this%n_s)]
 
-    write(this%unit, fmt) [(this%s_names(i),i=1,this%n_s)]
-    write(this%unit, fmt) [(this%s_data(i),i=1,this%n_s)]
+       fmt = join_fmts([AX_FORMAT],[this%n_s])
+
+       write(this%unit, fmt) [(this%s_names(i),i=1,this%n_s)]
+       write(this%unit, fmt) [(this%s_data(i),i=1,this%n_s)]
                                                    
-    fmt = join_fmts([IX_FORMAT],[this%n_v])
+       fmt = join_fmts([IX_FORMAT],[this%n_v])
 
-    write(this%unit, fmt) [(i,i=1,this%n_v)]
+       write(this%unit, fmt) [(i,i=1,this%n_v)]
 
-    fmt = join_fmts([AX_FORMAT],[this%n_v])
+       fmt = join_fmts([AX_FORMAT],[this%n_v])
 
-    write(this%unit, fmt) [(this%v_names(i),i=1,this%n_v)]
+       write(this%unit, fmt) [(this%v_names(i),i=1,this%n_v)]
+       
+       do k = 1, this%n
+          write(this%unit, fmt) [(this%v_data(k,i),i=1,this%n_v)]
+       end do
 
-    do k = 1, this%n
-       write(this%unit, fmt) [(this%v_data(k,i),i=1,this%n_v)]
-    end do
+       close(this%unit)
 
-    close(this%unit)
+    endif
 
     ! Finish
 

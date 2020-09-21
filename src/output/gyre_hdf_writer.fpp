@@ -23,6 +23,7 @@ module gyre_hdf_writer
 
   use core_kinds
   use core_hgroup
+  use core_parallel
 
   use gyre_writer
 
@@ -74,9 +75,13 @@ contains
 
     ! Construct the hdf_writer_t
 
-    wr%hg = hgroup_t(file_name, CREATE_FILE)
+    if (MPI_RANK == 0) then
 
-    call write_attr(wr%hg, 'label', label)
+       wr%hg = hgroup_t(file_name, CREATE_FILE)
+
+       call write_attr(wr%hg, 'label', label)
+
+    endif
 
     wr%c = 0
 
@@ -94,7 +99,11 @@ contains
 
     ! Finalize the hdf_writer
 
-    call this%hg%final()
+    if (MPI_RANK == 0) then
+
+       call this%hg%final()
+
+    endif
 
     ! Finish
 
@@ -135,11 +144,15 @@ contains
 
     ! Write the data
 
-    $if($DATA_RANK == 1)
-    call write_dset(this%hg, name, data)
-    $else
-    call write_attr(this%hg, name, data)
-    $endif
+    if (MPI_RANK == 0) then
+
+       $if($DATA_RANK == 1)
+       call write_dset(this%hg, name, data)
+       $else
+       call write_attr(this%hg, name, data)
+       $endif
+
+    endif
 
     this%c = this%c + 1
 
