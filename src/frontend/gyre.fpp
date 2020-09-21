@@ -124,6 +124,10 @@ program gyre
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
 120  format(A,1X,I0)
 
+     $if ($MPI)
+     write(OUTPUT_UNIT, 120) 'MPI Processes    :', MPI_SIZE
+     $endif
+
      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
 
      write(OUTPUT_UNIT, *)
