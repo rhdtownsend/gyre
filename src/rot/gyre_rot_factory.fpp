@@ -76,7 +76,7 @@ contains
        allocate(rt, SOURCE=${T}_null_rot_t(md_p))
     case ('TAR')
        $if ($HDF5)
-       allocate(rt, SOURCE=${T}_tar_rot_t(md_p))
+       allocate(rt, SOURCE=${T}_tar_rot_t(md_p, rt_p))
        $else
        $ABORT(TAR rotation method requires HDF support be enabled)
        $endif

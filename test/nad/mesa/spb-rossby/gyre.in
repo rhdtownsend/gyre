@@ -10,7 +10,6 @@
 &mode
   l = 2
   m = -2
-  rossby = .true.
   tag = 'l=1'
 /
 
@@ -20,6 +19,7 @@
 
 &rot
   coriolis_method = 'TAR'
+  rossby = .true.
   Omega_rot_source = 'UNIFORM'
   Omega_rot = 0.5
   Omega_rot_units = 'CRITICAL'

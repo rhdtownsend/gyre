@@ -34,6 +34,7 @@ module gyre_${T}_tar_rot
   use gyre_mode_par
   use gyre_tar_fit
   use gyre_rot
+  use gyre_rot_par
 
   use ISO_FORTRAN_ENV
 
@@ -71,9 +72,10 @@ module gyre_${T}_tar_rot
 
 contains
 
-  function ${T}_tar_rot_t_ (md_p) result (rt)
+  function ${T}_tar_rot_t_ (md_p, rt_p) result (rt)
 
     type(mode_par_t), intent(in) :: md_p
+    type(rot_par_t), intent(in)  :: rt_p
     type(${T}_tar_rot_t)         :: rt
 
     integer                 :: k
@@ -82,7 +84,7 @@ contains
 
     ! Construct the tar_rot_t
 
-    if (md_p%rossby) then
+    if (rt_p%rossby) then
        k = -(md_p%l - abs(md_p%m) + 1)
     else
        k = md_p%l - abs(md_p%m)
@@ -102,7 +104,7 @@ contains
     rt%l = md_p%l
     rt%m = md_p%m
 
-    rt%rossby = md_p%rossby
+    rt%rossby = rt_p%rossby
 
     ! Finish
 

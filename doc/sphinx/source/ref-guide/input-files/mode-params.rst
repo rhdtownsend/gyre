@@ -21,8 +21,5 @@ file can contain one or more. Allowable parameters are:
 :nml_n:`n_pg_max` (default :nml_v:`+HUGE`)
   Filter for maximum radial order
 
-:nml_n:`rossby` (default :nml_v:`.FALSE.`)
-  Flag to use Rossby-mode angular eigenvalues/eigenfunctions
-
 :nml_n:`static` (default :nml_v:`.FALSE.`)
   Flag to solve for the static (:math:`\omega \rightarrow 0`) limit

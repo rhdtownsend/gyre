@@ -32,6 +32,9 @@ is used.  Allowable parameters are:
   - :nml_v:`'CYC_PER_DAY'` : Linear frequency in cycles per day\ [#only_evol]_
   - :nml_v:`'CRITICAL'` : Fraction of the Roche critical rate\ [#only_evol]_
 
+:nml_n:`rossby` (default :nml_v:`.FALSE.`)
+  Flag to use Rossby solution family in TAR
+
 :nml_n:`complex_lambda` (default :nml_v:`.FALSE.`)
   Flag to use complex arithmetic when evaluating the TAR angular eigenvalue :math:`\lambda`
 
