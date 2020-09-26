@@ -46,10 +46,17 @@ How Do I...
 ...get support for a problem I'm having?
   Post a message to one of the `GYRE discussion forums <gyre-forums_>`__.
 
+...contact the GYRE team?
+  Send an email to `Rich Townsend <mailto:townsend@astro.wisc.edu>`__.
+
 ...access the documentation for older releases?
   Click on the 'v:...'  dropdown menu at the bottom of the left-hand
-  panel. Note that the legacy documentation is a work-in-progress,
-  and remains incomplete.
+  panel. Note that this menu is only available when viewing the
+  `documentation <https://gyre.readthedocs.io/en/latest/_>`__ on `Read
+  the Docs <https://readthedocs.org/_>`__; it isn't available in a
+  local build within the :file:`{$GYRE_DIR}/doc/sphinx` directory.
+  Also, the legacy documentation is a work-in-progress, and remains
+  incomplete.
 
 
 What Does...

@@ -16,17 +16,13 @@ and the dependent variables :math:`\{y_{1},y_{2},\ldots,y_{6}\}` are
 .. math::
 
    \begin{align}
-   y_{1} &= x^{2 - \elli}\, \frac{\txir}{r}, \\
-   y_{2} &= x^{2-\elli}\, \frac{\tP'}{\rho g r}, \\
-   y_{3} &= x^{2-\elli}\, \frac{\tPhi'}{gr}, \\
-   y_{4} &= x^{2-\elli}\, \frac{1}{g} \deriv{\tPhi'}{r}, \\
-   y_{5} &= x^{2-\elli}\, \frac{\delta \tS}{c_{p}}, \\
-   y_{6} &= x^{-1-\elli}\, \frac{\delta \tLrad}{L}.
+   y_{1} &= x^{2 - \ell}\, \frac{\txir}{r}, \\
+   y_{2} &= x^{2-\ell}\, \frac{\tP'}{\rho g r}, \\
+   y_{3} &= x^{2-\ell}\, \frac{\tPhi'}{gr}, \\
+   y_{4} &= x^{2-\ell}\, \frac{1}{g} \deriv{\tPhi'}{r}, \\
+   y_{5} &= x^{2-\ell}\, \frac{\delta \tS}{c_{p}}, \\
+   y_{6} &= x^{-1-\ell}\, \frac{\delta \tLrad}{L}.
    \end{align}
-
-Here, :math:`\elli` is the effective harmonic degree at the inner
-boundary; when Coriolis effects are neglected, this equals the
-spherical harmonic degree :math:`\ell`.
 
 Oscillation Equations
 ---------------------
@@ -37,65 +33,52 @@ The dimensionless oscillation equations are
 
    \begin{align}
    x \deriv{y_{1}}{x} &=
-   \left( \frac{V}{\Gammi} - 1 - \elli \right) y_{1} +
-   \left( \frac{\lambda}{c_{1} \omegac^{2}} - \alphagam \frac{V}{\Gammi} \right) y_{2} +
-   \alphagrv \frac{\lambda}{c_{1} \omegac^{2}} y_{3} +
+   \left( \frac{V}{\Gammi} - 1 - \ell \right) y_{1} +
+   \left( \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} - \alphagam \frac{V}{\Gammi} \right) y_{2} +
+   \alphagrv \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} y_{3} +
    \delta y_{5}, \\
    %
    x \deriv{y_{2}}{x} &=
    \left( c_{1} \omegac^{2} - \fpigam \As \right) y_{1} +
-   \left( 3 - U + \As - \elli \right) y_{2} -
+   \left( 3 - U + \As - \ell \right) y_{2} -
    \alphagrv y_{4} +
    \delta y_{5}, \\
    %
    x \deriv{y_{3}}{x} &= 
-   \alphagrv \left( 3 - U - \elli \right) y_{3} +
+   \alphagrv \left( 3 - U - \ell \right) y_{3} +
    \alphagrv y_{4} \\
    %
    x \deriv{y_{4}}{x} &=
    \alphagrv \As U y_{1} +
    \alphagrv \frac{V}{\Gammi} U y_{2} +
-   \alphagrv \lambda y_{3} -
-   \alphagrv (U + \elli - 2) y_{4}
+   \alphagrv \ell(\ell+1) y_{3} -
+   \alphagrv (U + \ell - 2) y_{4}
    - \alphagrv \delta \, U y_{5}, \\
    %
    x \deriv{y_{5}}{x} &= 
    \frac{V}{\frht} \left[ \nabad (U - c_{1}\omegac^{2}) - 4 (\nabad - \nabla) + \alphakap \kapad V \nabla + \cdif \right] y_{1} + \mbox{} \\
    &
-   \frac{V}{\frht} \left[ \frac{\lambda}{c_{1} \omegac^{2}} (\nabad - \nabla) - \alphakap \kapad V \nabla - \cdif \right] y_{2} + \mbox{} \\
+   \frac{V}{\frht} \left[ \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} (\nabad - \nabla) - \alphakap \kapad V \nabla - \cdif \right] y_{2} + \mbox{} \\
    &
-   \alphagrv \frac{V}{\frht} \left[ \frac{\lambda}{c_{1} \omegac^{2}} (\nabad - \nabla) \right] y_{3} +
+   \alphagrv \frac{V}{\frht} \left[ \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} (\nabad - \nabla) \right] y_{3} +
    \alphagrv \frac{V \nabad}{\frht} y_{4} + \mbox{} \\
    &
-   \left[ \frac{V \nabla}{\frht} (4 \frht - \alphakap \kapS) + \dfrht + 2 - \elli \right] y_{5} -
+   \left[ \frac{V \nabla}{\frht} (4 \frht - \alphakap \kapS) + \dfrht + 2 - \ell \right] y_{5} -
    \frac{V \nabla}{\frht \crad} y_{6} \\
    %
    x \deriv{y_{6}}{x} &=
-   \left[ \alphahfl \lambda \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} +
-   \left[ V \cepsad - \lambda \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right) \right] y_{2} + \mbox{} \\
+   \left[ \alphahfl \ell(\ell+1) \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} +
+   \left[ V \cepsad - \ell(\ell+1) \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right) \right] y_{2} + \mbox{} \\
    &
-   \alphagrv \left[ \lambda \crad \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right] y_{3} +
-   \left[ \cepsS - \alphahfl \frac{\lambda\crad}{\nabla V} + \ii \alphathm \omegac \cthk \right] y_{5} -
-   \left[ 1 + \elli \right] y_{6}.
+   \alphagrv \left[ \ell(\ell+1) \crad \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right] y_{3} +
+   \left[ \cepsS - \alphahfl \frac{\ell(\ell+1)\crad}{\nabla V} + \ii \alphathm \omegac \cthk \right] y_{5} -
+   \left[ 1 + \ell \right] y_{6}.
    \end{align}
 
-These equations are derived from the separated equations, but with a
-few important modifications:
-
-* the insertion of 'switch' terms (denoted :math:`\alpha`) that allow
+These equations are derived from the separated equations, but with the
+  insertion of 'switch' terms (denoted :math:`\alpha`) that allow
   certain pieces of physics to be altered. See the
   :ref:`physics-switches` section for more details
-
-* the replacement of the dimensionless inertial frequency
-  :math:`\omega \equiv (R^{3}/GM)^{1/2}\, \sigma` with the local
-  co-rotating equivalent :math:`\omegac`, to account for the Doppler
-  shift arising from frame transformation.  See the :ref:`rotation`
-  section for more details.
-
-* the replacement of :math:`\ell(\ell+1)` terms (the spherical polar
-  separation constant) with :math:`\lambda`, to account in part for
-  the effects of the Coriolis force. Again, see the :ref:`rotation`
-  section for more details.
 
 For non-radial adiabatic calculations, the last two equations above
 are set aside and the :math:`y_{5}` terms dropped from the first four
@@ -126,8 +109,8 @@ regularity-enforcing conditions at the inner boundary:
 .. math::
 
    \begin{align}
-   c_{1} \omega^{2} y_{1} - \elli y_{2} - \alphagrv \elli y_{3} &= 0, \\
-   \alphagrv \elli y_{3} - (2\alphagrv - 1) y_{4} &= 0, \\
+   c_{1} \omega^{2} y_{1} - \ell y_{2} - \alphagrv \ell y_{3} &= 0, \\
+   \alphagrv \ell y_{3} - (2\alphagrv - 1) y_{4} &= 0, \\
    y_{5} &= 0.
    \end{align}
 
@@ -162,7 +145,7 @@ pressure conditions at the outer boundary:
 
    \begin{align}
    y_{1} - y_{2} &= 0 \\
-   \alphagrv U y_{1} + (\alphagrv \elli + 1) y_{3} + \alphagrv y_{4} &= 0 \\
+   \alphagrv U y_{1} + (\alphagrv \ell + 1) y_{3} + \alphagrv y_{4} &= 0 \\
    (2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} + 4 \frht y_{5} - y_{6} &= 0
    \end{align}
    
@@ -172,10 +155,10 @@ boundary condition,
 
 .. math::
 
-   \left\{ 1 + V^{-1} \left[ \frac{\lambda}{c_{1} \omega^{2}} - 4 - c_{1} \omega^{2} \right] \right\} y_{1} -
+   \left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} - 4 - c_{1} \omega^{2} \right] \right\} y_{1} -
    y_{2} = 0.
    
-When :nml_n:`outer_bound`\ ==\ :nml_v:`'UNNO'` or :nml_v:`'JCD'`, the
+When :nml_n:`outer_bound`\ ==\ :nml_v:`'UNNO'`\ \|\ :nml_v:`'JCD'`, the
 first condition is replaced by the (possibly-leaky) outer mechanical
 boundary conditions described by :ads_citet:`unno:1989` and
 :ads_citet:`christensen-dalsgaard:2008`, respectively. When

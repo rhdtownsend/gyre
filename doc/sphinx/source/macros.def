@@ -50,6 +50,8 @@ kelvin	{\rm K}
 radian	{\rm rad}
 vxi	\boldsymbol{\xi}
 xir	\xi_{r}
+xit	\xi_{\theta}
+xip	\xi_{\phi}
 vxih	\vxi_{\rm h}
 txir	\tilde{\xi}_{r}
 txih	\tilde{\xi}_{\rm h}
@@ -103,4 +105,8 @@ elli	\ell_{\rm i}
 fpigam	f_{\pi\gamma}
 sigmar	\sigma_{\rm R}
 sigmai	\sigma_{\rm I}
-dOmega	\overbar{\Omega}
+omegac	\omega_{\rm c}
+sigmac	\sigma_{\rm c}
+houghr	\Theta
+hought	\widehat{\Theta}
+houghp	\widetilde{\Theta}

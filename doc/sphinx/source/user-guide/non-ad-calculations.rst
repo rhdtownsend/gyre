@@ -38,16 +38,16 @@ Adiabatic Method
 
 The adiabatic method involves adopting the (real) roots found from
 adiabatic calculations as the initial trial roots for the
-non-adiabatic problem. This works well as long as the two sets of
-roots lie close together in the complex plane --- typically, when the
-oscillation modes are only weakly non-adiabatic, with
-:math:`|\sigmai/\sigmar| \ll 1`.
+non-adiabatic problem. This works well as long as the adiabatic and
+non-adiabatic roots lie close together in the complex plane ---
+typically, when the oscillation modes are only weakly non-adiabatic,
+with :math:`|\sigmai/\sigmar| \ll 1`.
 
 To perform non-adiabatic calculations with the adiabatic method, set
 the following parameters in the :nml_g:`osc` namelist group:
 
-* :nml_n:`adiabatic`\ =\ :nml_v:`.TRUE.`\ [#default]_
 * :nml_n:`nonadiabatic`\ =\ :nml_v:`.TRUE.`
+* :nml_n:`adiabatic`\ =\ :nml_v:`.TRUE.`\ [#default]_
 
 and the following parameters in the :nml_g:`num` namelist group:
 
@@ -77,8 +77,8 @@ GYRE for the sake of completeness.
 To perform non-adiabatic calculations with the adiabatic method, set
 the following parameters in the :nml_g:`osc` namelist group:
 
-* :nml_n:`adiabatic`\ =\ :nml_v:`.FALSE.`\ [#optional]_
 * :nml_n:`nonadiabatic`\ =\ :nml_v:`.TRUE.`
+* :nml_n:`adiabatic`\ =\ :nml_v:`.FALSE.`\ [#optional]_
 
 and the following parameters in the :nml_g:`num` namelist group:
 
@@ -105,8 +105,8 @@ for one strategy for mitigating this cost).
 To perform non-adiabatic calculations with the contour method, set
 the following parameters in the :nml_g:`osc` namelist group:
 
-* :nml_n:`adiabatic`\ =\ :nml_v:`.FALSE.`\ [#optional]_
 * :nml_n:`nonadiabatic`\ =\ :nml_v:`.TRUE.`
+* :nml_n:`adiabatic`\ =\ :nml_v:`.FALSE.`\ [#optional]_
 
 and the following parameters in the :nml_g:`num` namelist group:
 
@@ -120,7 +120,7 @@ the complex-:math:`\omega` plane. As a rule of thumb, the resolution
 along the imaginary axis should be comparable to that along the real
 axis; this ensures that the contour-tracing algorithm behaves well.
 
-Finally, as with the adiabbatic method, you may also wish to use the
+Finally, as with the adiabatic method, you may also wish to use the
 following setting in the :nml_g:`num` namelist group:
 
 * :nml_n:`diff_scheme`\ =\ :nml_v:`'MAGNUS_GL2'`

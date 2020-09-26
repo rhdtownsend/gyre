@@ -5,8 +5,12 @@ import csv
 import ads
 import pickle
 
-infile = sys.argv[1]
-outfile = sys.argv[2]
+if len(sys.argv) > 1:
+    infile = sys.argv[1]
+    outfile = sys.argv[2]
+else:
+    infile = 'ads_refs.tsv'
+    outfile = 'ads_refs.dat'
 
 # Read the infile
 

@@ -14,4 +14,4 @@ are obtained from the basic equations of stellar structure.
    osc-equations/linear-equations.rst
    osc-equations/sep-equations.rst
    osc-equations/dimless-equations.rst
-   osc-equations/rotation.rst
+   osc-equations/rot-effects.rst

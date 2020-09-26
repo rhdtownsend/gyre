@@ -19,6 +19,7 @@ with :math:`c \equiv (T/\rho)^{1/2}`. If the string is clamped at
 :math:`x=0` and :math:`x=L`, then the wave equation together with the boundary conditions
 
 .. math::
+
    y(0,t) = 0 \qquad
    y(L,t) = 0
 

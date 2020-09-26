@@ -43,6 +43,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx-prompt',
     'sphinx_substitution_extensions',
+    'sphinxcontrib.email',
     'ads_cite',
     'nml_roles',
 ]
@@ -137,3 +138,6 @@ mathjax_config = {
         'Macros': mathjax_macros
     }
 }
+
+# Enable email obfuscation
+email_automode = True

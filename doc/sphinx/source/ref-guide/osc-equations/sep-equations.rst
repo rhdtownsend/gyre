@@ -6,28 +6,24 @@ Separated Equations
 With a separation of variables in spherical-polar coordinates
 :math:`(r,\theta,\phi)`, and assuming an oscillatory time (:math:`t`)
 dependence with angular frequency :math:`\sigma`, solutions to the
-linearized fluid equation can be expressed as
+linearized fluid equations can be expressed as
 
 .. math::
+   :label: sol-forms
 
-   \xir(r,\theta,\phi;t) = \operatorname{Re} \left[ \sqrt{4\pi} \, \txir(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right],
+   \begin{aligned}
+   \xir(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \txir(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right], \\
+   \xit(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \txih(r) \, \pderiv{}{\theta} Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right], \\
+   \xip(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \txih(r) \, \frac{\ii m}{\sin\theta} Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right], \\
+   f'(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \tf'(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right].
+   \end{aligned}
 
-.. math::
-
-   \vxih(r,\theta,\phi;t) = \operatorname{Re} \left[ \sqrt{4\pi} \, \txih(r) \, r \nablah Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right],
-
-.. math::
-
-   f'(r,\theta,\phi;t) = \operatorname{Re} \left[ \sqrt{4\pi} \, \tf'(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right]
-
-Here, :math:`\xir` is the radial component of the displacement
-perturbation vector :math:`\vxi`, and :math:`\vxih` is the
-corresponding horizontal (polar and azimuthal) part of this vector;
-:math:`\nablah` is the horizontal part of the spherical-polar gradient
-operator; :math:`Y^{m}_{\ell}` is the spherical harmonic with harmonic
-degree :math:`\ell` and azimuthal order :math:`m`; and again :math:`f`
-stands for any perturbable scalar. The displacement perturbation
-vector is related to the velocity perturbation via
+Here, :math:`\xir`, :math:`\xit` and :math:`\xip` are the radial,
+polar and azimithal components of the displacement perturbation vector
+:math:`\vxi`; :math:`Y^{m}_{\ell}` is the spherical harmonic with
+harmonic degree :math:`\ell` and azimuthal order :math:`m`; and again
+:math:`f` stands for any perturbable scalar. The displacement
+perturbation vector is related to the velocity perturbation via
 
 .. math::
 
@@ -90,7 +86,4 @@ Finally, the thermodynamic, nuclear and opacity relations become
    \frac{\delta \tepsnuc}{\epsnuc} = \epsad \frac{\delta \tP}{P} + \epsS \frac{\delta \tS}{\cP},
    \qquad
    \frac{\delta \tkappa}{\kappa} = \kapad \frac{\delta \tP}{P} + \kapS \frac{\delta \tS}{\cP}.
-
-
-.. _osc-eqs-dimless:
 
