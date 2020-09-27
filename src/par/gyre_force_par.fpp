@@ -1,7 +1,7 @@
 ! Module   : gyre_force_par
 ! Purpose  : forcing parameters
 !
-! Copyright 2019 Rich Townsend
+! Copyright 2019-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -16,14 +16,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_force_par
 
   ! Uses
 
   use core_kinds
-  use core_parallel
 
   ! No implicit typing
 
@@ -40,32 +38,12 @@ module gyre_force_par
      character(2048) :: tag_list = ''
   end type force_par_t
 
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
-
  ! Access specifiers
 
   private
 
   public :: force_par_t
   public :: read_force_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -141,39 +119,5 @@ contains
     return
 
   end subroutine read_force_par
-
-  !****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (fr_p, root_rank)
-
-    type(force_par_t), intent(inout) :: fr_p
-    integer, intent(in)              :: root_rank
-
-    ! Broadcast the force_par_t
-
-    call bcast(fr_p%Phi, root_rank)
-
-    call bcast(fr_p%q, root_rank)
-    call bcast(fr_p%e, root_rank)
-    call bcast(fr_p%k, root_rank)
-
-    call bcast(fr_p%force_type, root_rank)
-
-    call bcast(fr_p%tag_list, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(force_par_t),1)
-
-  $BCAST_ALLOC(type(force_par_t),0)
-  $BCAST_ALLOC(type(force_par_t),1)
-
-  $endif
 
 end module gyre_force_par

@@ -16,14 +16,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_mode_par
 
   ! Uses
 
   use core_kinds
-  use core_parallel
 
   ! No implicit typing
 
@@ -40,32 +38,12 @@ module gyre_mode_par
      character(64) :: tag = ''
   end type mode_par_t
 
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
-
  ! Access specifiers
 
   private
 
   public :: mode_par_t
   public :: read_mode_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -139,39 +117,5 @@ contains
     return
 
   end subroutine read_mode_par
-
-  !****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (md_p, root_rank)
-
-    type(mode_par_t), intent(inout) :: md_p
-    integer, intent(in)             :: root_rank
-
-    ! Broadcast the mode_par_t
-
-    call bcast(md_p%l, root_rank)
-    call bcast(md_p%m, root_rank)
-
-    call bcast(md_p%n_pg_min, root_rank)
-    call bcast(md_p%n_pg_max, root_rank)
-
-    call bcast(md_p%static, root_rank)
-
-    call bcast(md_p%tag, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(mode_par_t),1)
-
-  $BCAST_ALLOC(type(mode_par_t),0)
-  $BCAST_ALLOC(type(mode_par_t),1)
-
-  $endif
 
 end module gyre_mode_par

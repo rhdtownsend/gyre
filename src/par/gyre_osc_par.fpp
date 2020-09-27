@@ -16,14 +16,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_osc_par
 
   ! Uses
 
   use core_kinds
-  use core_parallel
 
   use gyre_constants
 
@@ -62,32 +60,12 @@ module gyre_osc_par
      logical                 :: reduce_order = .TRUE.
   end type osc_par_t
 
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
-
  ! Access specifiers
 
   private
 
   public :: osc_par_t
   public :: read_osc_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -229,57 +207,5 @@ contains
     return
 
   end subroutine read_osc_par
-
-  !****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (os_p, root_rank)
-
-    type(osc_par_t), intent(inout) :: os_p
-    integer, intent(in)            :: root_rank
-
-    ! Broadcast the osc_par_t
-
-    call bcast(os_p%x_ref, root_rank)
-    call bcast(os_p%x_atm, root_rank)
-    call bcast(os_p%alpha_grv, root_rank)
-    call bcast(os_p%alpha_thm, root_rank)
-    call bcast(os_p%alpha_hfl, root_rank)
-    call bcast(os_p%alpha_gam, root_rank)
-    call bcast(os_p%alpha_pi, root_rank)
-    call bcast(os_p%alpha_kap, root_rank)
-    call bcast(os_p%alpha_rht, root_rank)
-
-    call bcast(os_p%variables_set, root_rank)
-    call bcast(os_p%inner_bound, root_rank)
-    call bcast(os_p%outer_bound, root_rank)
-    call bcast(os_p%outer_bound_cutoff, root_rank)
-    call bcast(os_p%outer_bound_branch, root_rank)
-    call bcast(os_p%inertia_norm, root_rank)
-    call bcast(os_p%time_factor, root_rank)
-    call bcast(os_p%conv_scheme, root_rank)
-    call bcast(os_p%deps_source, root_rank)
-    call bcast(os_p%deps_file, root_rank)
-    call bcast(os_p%deps_file_format, root_rank)
-    call bcast(os_p%tag_list, root_rank)
-
-    call bcast(os_p%adiabatic, root_rank)
-    call bcast(os_p%nonadiabatic, root_rank)
-    call bcast(os_p%quasiad_eigfuncs, root_rank)
-    call bcast(os_p%reduce_order, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(osc_par_t),1)
-
-  $BCAST_ALLOC(type(osc_par_t),0)
-  $BCAST_ALLOC(type(osc_par_t),1)
-
-  $endif
 
 end module gyre_osc_par
