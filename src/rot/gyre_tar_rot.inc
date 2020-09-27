@@ -85,9 +85,9 @@ contains
     ! Construct the tar_rot_t
 
     if (rt_p%rossby) then
-       k = -(md_p%l - abs(md_p%m) + 1)
+       k = -(md_p%l - ABS(md_p%m) + 1)
     else
-       k = md_p%l - abs(md_p%m)
+       k = md_p%l - ABS(md_p%m)
     endif
 
     !$OMP CRITICAL
