@@ -23,7 +23,7 @@ CRMATH?=yes
 PORTABLE?=yes
 
 # Use IEEE fortran features
-IEEE?=no
+IEEE?=yes
 
 # Enable FPE checks
 FPE?=yes

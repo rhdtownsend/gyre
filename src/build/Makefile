@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=gyre poly_to_fgong poly_to_txt
+TARGETS=gyre poly_to_fgong poly_to_txt eval_lambda
 
 ifeq ($(TIDES),yes)
   TARGETS:=${TARGETS} gyre_force gyre_response gyre_orbit
@@ -36,7 +36,6 @@ include Make.inc
 ifeq ($(MPI),yes)
 core_parallel.o : F9XFLAGS:=${F9XFLAGS} -std=legacy
 endif
-
 
 ifeq ($(CRMATH),yes)
 gyre_math.fpp: gyre_math_crmath.fpp

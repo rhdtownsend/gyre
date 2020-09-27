@@ -3,11 +3,7 @@
 
 # Variables
 
-TARGETS=build_tar_fit map_tar_fit eval_lambda
-
-# Flags
-
-IEEE=yes
+TARGETS=build_tar_fit map_tar_fit
 
 # Include other makefiles
 
