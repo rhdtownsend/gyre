@@ -1,7 +1,7 @@
 ! Program  : map_tar_fit
 ! Purpose  : maps of tar_fits in the complex plane
 !
-! Copyright 2017 Rich Townsend
+! Copyright 2017-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -36,12 +36,12 @@ program map_tar_fit
 
   ! Variables
 
-  real(WP)                  :: nu_re_min
-  real(WP)                  :: nu_re_max
-  integer                   :: n_nu_re
-  real(WP)                  :: nu_im_min
-  real(WP)                  :: nu_im_max
-  integer                   :: n_nu_im
+  real(WP)                  :: q_re_min
+  real(WP)                  :: q_re_max
+  integer                   :: n_q_re
+  real(WP)                  :: q_im_min
+  real(WP)                  :: q_im_max
+  integer                   :: n_q_im
   character(:), allocatable :: in_file
   character(:), allocatable :: out_file
 
@@ -49,21 +49,21 @@ program map_tar_fit
   type(tar_fit_t)          :: tf
   integer                  :: i
   integer                  :: j
-  real(WP), allocatable    :: nu_re(:)
-  real(WP), allocatable    :: nu_im(:)
-  complex(WP)              :: nu
+  real(WP), allocatable    :: q_re(:)
+  real(WP), allocatable    :: q_im(:)
+  complex(WP)              :: q
   complex(WP), allocatable :: lambda(:,:)
 
   ! Read parameters
 
-  $ASSERT(n_arg() == 8,Syntax: map_tar_fit nu_re_min nu_re_max n_nu_re nu_im_min nu_im_max n_nu_im in_file out_file)
+  $ASSERT(n_arg() == 8,Syntax: map_tar_fit q_re_min q_re_max n_q_re q_im_min q_im_max n_q_im in_file out_file)
 
-  call get_arg(1, nu_re_min)
-  call get_arg(2, nu_re_max)
-  call get_arg(3, n_nu_re)
-  call get_arg(4, nu_im_min)
-  call get_arg(5, nu_im_max)
-  call get_arg(6, n_nu_im)
+  call get_arg(1, q_re_min)
+  call get_arg(2, q_re_max)
+  call get_arg(3, n_q_re)
+  call get_arg(4, q_im_min)
+  call get_arg(5, q_im_max)
+  call get_arg(6, n_q_im)
   call get_arg(7, in_file)
   call get_arg(8, out_file)
 
@@ -75,25 +75,25 @@ program map_tar_fit
 
   ! Set up axes
 
-  nu_re = [((nu_re_min*(n_nu_re-i) + nu_re_max*(i-1))/(n_nu_re-1),i=1,n_nu_re)]
-  nu_im = [((nu_im_min*(n_nu_im-j) + nu_im_max*(j-1))/(n_nu_im-1),j=1,n_nu_im)]
+  q_re = [((q_re_min*(n_q_re-i) + q_re_max*(i-1))/(n_q_re-1),i=1,n_q_re)]
+  q_im = [((q_im_min*(n_q_im-j) + q_im_max*(j-1))/(n_q_im-1),j=1,n_q_im)]
 
   ! Loop over the complex plane, calculating lambda
 
-  allocate(lambda(n_nu_re,n_nu_im))
+  allocate(lambda(n_q_re,n_q_im))
 
-  re_loop : do i = 1, n_nu_re
-     im_loop : do j = 1, n_nu_im
-        nu = CMPLX(nu_re(i), nu_im(j), WP)
-        lambda(i,j) = tf%lambda(nu)
+  re_loop : do i = 1, n_q_re
+     im_loop : do j = 1, n_q_im
+        q = CMPLX(q_re(i), q_im(j), WP)
+        lambda(i,j) = tf%lambda(q)
      end do im_loop
   end do re_loop
 
   ! Write out data
 
   hg = hgroup_t(out_file, CREATE_FILE)
-  call write_dset(hg, 'nu_re', nu_re)
-  call write_dset(hg, 'nu_im', nu_im)
+  call write_dset(hg, 'q_re', q_re)
+  call write_dset(hg, 'q_im', q_im)
   call write_dset(hg, 'lambda', lambda)
   call hg%final()
 

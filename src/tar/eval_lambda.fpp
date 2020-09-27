@@ -1,4 +1,4 @@
-! Program  : build_tar_fit
+! Program  : eval_lambda
 ! Purpose  : evaluate TAR eigenvalue
 !
 ! Copyright 2020 Rich Townsend & The GYRE Team

@@ -47,16 +47,16 @@ module gyre_tar_eigen
 
 contains
 
-  function lambda (nu, m, k)
+  function lambda (q, m, k)
 
-    real(WP), intent(in)     :: nu
+    real(WP), intent(in)     :: q
     integer, intent(in)      :: m
     integer, intent(in)      :: k
     real(WP)                 :: lambda
 
     ! Calculate the (m, k) Hough eigenvalue lambda
 
-    lambda = lambda_matrix_(nu, m, k, 'BISECT')
+    lambda = lambda_matrix_(q, m, k, 'BISECT')
 
     ! Finish
 
@@ -66,9 +66,9 @@ contains
 
   !****
 
-  function lambda_matrix_ (nu, m, k, algo) result (lambda)
+  function lambda_matrix_ (q, m, k, algo) result (lambda)
 
-    real(WP), intent(in)     :: nu
+    real(WP), intent(in)     :: q
     integer, intent(in)      :: m
     integer, intent(in)      :: k
     character(*), intent(in) :: algo
@@ -103,8 +103,8 @@ contains
           n = (k+1)/2+1
        endif
 
-       if (m*nu < 0._WP) then
-          n = n + Xi_(nu, m, n, parity)
+       if (m*q < 0._WP) then
+          n = n + Xi_(q, m, n, parity)
        endif
 
     else
@@ -122,7 +122,7 @@ contains
 
     dble_loop : do
 
-       lambda_A = lambda_A_(nu, m, k, n, algo)
+       lambda_A = lambda_A_(q, m, k, n, algo)
 
        if (lambda_A /= 0._WP) exit dble_loop
 
@@ -134,7 +134,7 @@ contains
 
     conv_loop : do
 
-       lambda_A_cmp = lambda_A_(nu, m, k, 2*n, algo)
+       lambda_A_cmp = lambda_A_(q, m, k, 2*n, algo)
 
        if (lambda_A_cmp /= 0._WP) then
 
@@ -160,9 +160,9 @@ contains
 
   !****
 
-  function lambda_A_ (nu, m, k, n, algo) result (lambda)
+  function lambda_A_ (q, m, k, n, algo) result (lambda)
 
-    real(WP), intent(in)     :: nu
+    real(WP), intent(in)     :: q
     integer, intent(in)      :: m
     integer, intent(in)      :: k
     integer, intent(in)      :: n
@@ -174,9 +174,9 @@ contains
 
     select case (algo)
     case('LAPACK')
-       lambda = lambda_A_lapack_(nu, m, k, n)
+       lambda = lambda_A_lapack_(q, m, k, n)
     case ('BISECT')
-       lambda = lambda_A_bisect_(nu, m, k, n)
+       lambda = lambda_A_bisect_(q, m, k, n)
     case default
        $ABORT(Unrecognized algo)
     end select
@@ -189,9 +189,9 @@ contains
 
   !****
 
-  function lambda_A_lapack_ (nu, m, k, n) result (lambda)
+  function lambda_A_lapack_ (q, m, k, n) result (lambda)
 
-    real(WP), intent(in) :: nu
+    real(WP), intent(in) :: q
     integer, intent(in)  :: m
     integer, intent(in)  :: k
     integer, intent(in)  :: n
@@ -244,11 +244,11 @@ contains
        endif
     endif
 
-    i = MODULO(i-Xi_(nu, m, n, parity)-1, n) + 1
+    i = MODULO(i-Xi_(q, m, n, parity)-1, n) + 1
 
     ! Assemble the A-matrix
 
-    call assemble_A_WP_(nu, m, n, parity, A_1, A_2n, A_2d, A_3n, A_3d, A_4n, A_4d, A_5, &
+    call assemble_A_WP_(q, m, n, parity, A_1, A_2n, A_2d, A_3n, A_3d, A_4n, A_4d, A_5, &
                         A_D, A_E)
     
     A_E(n) = 0._WP
@@ -329,7 +329,7 @@ contains
 
        if (j_inf /= 0) then
 
-          print *,nu,m,k,j_inf
+          print *,q,m,k,j_inf
 
           $ABORT(Pure Rossby mode encountered)
 
@@ -354,15 +354,15 @@ contains
 
   !****
 
-  function lambda_A_bisect_ (nu, m, k, n) result (lambda)
+  function lambda_A_bisect_ (q, m, k, n) result (lambda)
 
-    real(WP), intent(in)  :: nu
+    real(WP), intent(in)  :: q
     integer, intent(in)   :: m
     integer, intent(in)   :: k
     integer, intent(in)   :: n
     real(WP)              :: lambda
 
-    real(WP), parameter :: NU_TRANS = 1E4_WP
+    real(WP), parameter :: Q_TRANS = 1E4_WP
 
     $if ($IEEE)
     logical  :: h_over
@@ -390,14 +390,14 @@ contains
     $endif
  
     ! Get an initial estimate for the eigenvalue; use the LAPACK
-    ! routine for |nu| < NU_TRANS, and the asymptotic value plus an
+    ! routine for |q| < Q_TRANS, and the asymptotic value plus an
     ! extrapolated error correction otherwise
 
-    if (abs(nu) < NU_TRANS) then
-       lambda_est = lambda_A_lapack_(nu, m, k, n)
+    if (abs(q) < Q_TRANS) then
+       lambda_est = lambda_A_lapack_(q, m, k, n)
     else
-       lambda_est = 1._WP/(lambda_asymp_(nu, m, k) + &
-                           (1._WP/lambda_A_lapack_(SIGN(NU_TRANS, nu), m, k, n) - lambda_asymp_(SIGN(NU_TRANS, nu), m, k))/nu**2)
+       lambda_est = 1._WP/(lambda_asymp_(q, m, k) + &
+                           (1._WP/lambda_A_lapack_(SIGN(Q_TRANS, q), m, k, n) - lambda_asymp_(SIGN(Q_TRANS, q), m, k))/q**2)
     endif
     
     ! Check to see if lambda_est is +/- HUGE, indicating a Rossby mode
@@ -411,7 +411,7 @@ contains
 
     parity = MOD(k, 2) == 0
 
-    call assemble_A_QP_(nu, m, n, parity, A_1, A_2n, A_2d, A_3n, A_3d, A_4n, A_4d, A_5, &
+    call assemble_A_QP_(q, m, n, parity, A_1, A_2n, A_2d, A_3n, A_3d, A_4n, A_4d, A_5, &
                         A_D, A_E)
 
     ! Calculate the eigenvalue, taking special care to handle cases
@@ -586,9 +586,9 @@ contains
 
   !****
 
-  function lambda_asymp_ (nu, m, k) result (lambda)
+  function lambda_asymp_ (q, m, k) result (lambda)
 
-    real(WP), intent(in) :: nu
+    real(WP), intent(in) :: q
     integer, intent(in)  :: m
     integer, intent(in)  :: k
     real(WP)             :: lambda
@@ -597,7 +597,7 @@ contains
 
     ! Calculate the (m, k) Hough eigenvalue lambda, using asymptotic expansions
 
-    if (m*nu >= 0._WP) then
+    if (m*q >= 0._WP) then
 
        ! Prograde modes
 
@@ -606,9 +606,9 @@ contains
           s = k - 1
 
           if (s >= 0) then
-             lambda = lambda_asymp_grav_(nu, m, s)
+             lambda = lambda_asymp_grav_(q, m, s)
           else
-             lambda = lambda_asymp_kelv_(nu, m)
+             lambda = lambda_asymp_kelv_(q, m)
           endif
 
        else
@@ -625,13 +625,13 @@ contains
 
           s = k + 1
 
-          lambda = lambda_asymp_grav_(nu, m, s)
+          lambda = lambda_asymp_grav_(q, m, s)
 
        else
 
           s = - k - 1
 
-          lambda = lambda_asymp_ross_(nu, m, s)
+          lambda = lambda_asymp_ross_(q, m, s)
 
        endif
 
@@ -639,9 +639,9 @@ contains
 
   contains
 
-    function lambda_asymp_grav_ (nu, m, s) result (lambda)
+    function lambda_asymp_grav_ (q, m, s) result (lambda)
 
-      real(WP), intent(in) :: nu
+      real(WP), intent(in) :: q
       integer, intent(in)  :: m
       integer, intent(in)  :: s
       real(WP)             :: lambda
@@ -659,7 +659,7 @@ contains
       ! using the third-order perturbation expansion by Townsend (in
       ! prep)
 
-      w = 1._QP/REAL(nu, QP)
+      w = 1._QP/REAL(q, QP)
 
       I2 = 0.5_QP*(2*s+1)
       I4 = 0.75_QP*(2*s*(s+1) + 1)
@@ -680,9 +680,9 @@ contains
 
     end function lambda_asymp_grav_
 
-    function lambda_asymp_kelv_ (nu, m) result (lambda)
+    function lambda_asymp_kelv_ (q, m) result (lambda)
 
-      real(WP), intent(in) :: nu
+      real(WP), intent(in) :: q
       integer, intent(in)  :: m
       real(WP)             :: lambda
 
@@ -694,7 +694,7 @@ contains
       ! Calculate the (m) Kelvin-wave Hough eigenvalue lambda, using
       ! the first-order perturbation expansion by Townsend (in prep)
 
-      w = 1._QP/REAL(nu, QP)
+      w = 1._QP/REAL(q, QP)
 
       alpha_0 = abs(m)
       alpha_1 = -0.25_QP
@@ -709,9 +709,9 @@ contains
 
     end function lambda_asymp_kelv_
 
-    function lambda_asymp_ross_ (nu, m, s) result (lambda)
+    function lambda_asymp_ross_ (q, m, s) result (lambda)
 
-      real(WP), intent(in) :: nu
+      real(WP), intent(in) :: q
       integer, intent(in)  :: m
       integer, intent(in)  :: s
       real(WP)             :: lambda
@@ -725,7 +725,7 @@ contains
       ! using the first-order perturbation expansion by Townsend (in
       ! prep)
 
-      w = 1._QP/REAL(nu, QP)
+      w = 1._QP/REAL(q, QP)
 
       alpha_0 = REAL(m, QP)/(2*s+1)
       alpha_1 = REAL(-1 - 4*(1+m**2)*s*(s+1), QP)/(2*s+1)**3
@@ -748,9 +748,9 @@ contains
 
   $local $KP $1
 
-  subroutine assemble_A_${KP}_ (nu, m, n, parity, A_1, A_2n, A_2d, A_3n, A_3d, A_4n, A_4d, A_5, A_D, A_E)
+  subroutine assemble_A_${KP}_ (q, m, n, parity, A_1, A_2n, A_2d, A_3n, A_3d, A_4n, A_4d, A_5, A_D, A_E)
 
-    real(WP), intent(in)   :: nu
+    real(WP), intent(in)   :: q
     integer, intent(in)    :: m
     integer, intent(in)    :: n
     logical, intent(in)    :: parity
@@ -765,7 +765,7 @@ contains
     real($KP), intent(out) :: A_D(:)
     real($KP), intent(out) :: A_E(:)
 
-    real($KP) :: nu_
+    real($KP) :: q_
     integer   :: j
     integer   :: l_j
     real($KP) :: A_2
@@ -792,7 +792,7 @@ contains
     !
     ! A_E(n) is unused
 
-    nu_ = REAL(nu, ${KP})
+    q_ = REAL(q, ${KP})
 
     if (parity) then
        l_j = abs(m)
@@ -803,19 +803,19 @@ contains
     do j = 1, n
 
        if (l_j == abs(m)) then
-          A_1(j) = 1._${KP} + SIGN(1, m)*nu_/REAL(l_j+1, ${KP})
+          A_1(j) = 1._${KP} + SIGN(1, m)*q_/REAL(l_j+1, ${KP})
           A_2n(j) = 0._${KP}
        else
-          A_1(j) = 1._${KP} + m*nu_/(REAL(l_j, ${KP})*REAL(l_j+1, ${KP}))
-          A_2n(j) = -nu_**2*REAL(l_j-1, ${KP})**2*REAL(l_j+1, ${KP})*J_lm_${KP}_(l_j, m)**2/REAL(l_j, ${KP})
+          A_1(j) = 1._${KP} + m*q_/(REAL(l_j, ${KP})*REAL(l_j+1, ${KP}))
+          A_2n(j) = -q_**2*REAL(l_j-1, ${KP})**2*REAL(l_j+1, ${KP})*J_lm_${KP}_(l_j, m)**2/REAL(l_j, ${KP})
        endif
 
-       A_2d(j) = REAL(l_j-1, ${KP})*REAL(l_j, ${KP}) + m*nu_
+       A_2d(j) = REAL(l_j-1, ${KP})*REAL(l_j, ${KP}) + m*q_
        
-       A_3n(j) = -nu_**2*REAL(l_j, ${KP})*REAL(l_j+2, ${KP})**2*J_lm_${KP}_(l_j+1, m)**2/REAL(l_j+1, ${KP})
-       A_3d(j) = REAL(l_j+1, ${KP})*REAL(l_j+2, ${KP}) + m*nu_
+       A_3n(j) = -q_**2*REAL(l_j, ${KP})*REAL(l_j+2, ${KP})**2*J_lm_${KP}_(l_j+1, m)**2/REAL(l_j+1, ${KP})
+       A_3d(j) = REAL(l_j+1, ${KP})*REAL(l_j+2, ${KP}) + m*q_
 
-       A_4n(j) = -nu_**2*J_lm_${KP}_(l_j+1, m)*J_lm_${KP}_(l_j+2, m)
+       A_4n(j) = -q_**2*J_lm_${KP}_(l_j+1, m)*J_lm_${KP}_(l_j+2, m)
        A_4d(j) = A_3d(j)
 
        A_5(j) = REAL(l_j, ${KP})*REAL(l_j+1, ${KP})
@@ -918,9 +918,9 @@ contains
 
   !****
 
-  function Xi_ (nu, m, n, parity)
+  function Xi_ (q, m, n, parity)
 
-    real(WP), intent(in) :: nu
+    real(WP), intent(in) :: q
     integer, intent(in)  :: m
     integer, intent(in)  :: n
     logical, intent(in)  :: parity
@@ -933,7 +933,7 @@ contains
 
     Xi_ = 0
 
-    if (-m*nu > 0._WP) then
+    if (-m*q > 0._WP) then
 
        if (parity) then
           l_j = abs(m)
@@ -942,11 +942,11 @@ contains
        endif
        
        j_loop : do j = 1,n
-          if (-m*nu > REAL(l_j+1, WP)*REAL(l_j+2, WP)) Xi_ = Xi_ + 1
+          if (-m*q > REAL(l_j+1, WP)*REAL(l_j+2, WP)) Xi_ = Xi_ + 1
           l_j = l_j + 2
        enddo j_loop
        
-       if (.NOT. parity .AND. -m*nu > REAL(abs(m), WP)*REAL(abs(m)+1, WP)) Xi_ = Xi_ + 1
+       if (.NOT. parity .AND. -m*q > REAL(abs(m), WP)*REAL(abs(m)+1, WP)) Xi_ = Xi_ + 1
        
     endif
 

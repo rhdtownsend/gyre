@@ -30,7 +30,7 @@ is used.  Allowable parameters are:
 
 :nml_n:`outer_bound_branch` (default :nml_v:`'E_NEG'`)
   Dispersion relation solution branch to use for outer boundary
-  conditionss (:nml_n:`outer_bound`\ ==\ :nml_v:`'UNNO'`\ \|\ :nml_v:`'JCD'`\ \|\ :nml_v:`'ISOTHERMAL'`);
+  conditionss (:nml_n:`outer_bound`\ =\ :nml_v:`'UNNO'`\ \|\ :nml_v:`'JCD'`\ \|\ :nml_v:`'ISOTHERMAL'`);
   one of
 
   - :nml_v:`'E_NEG'` : Outward-decaying energy density
@@ -118,10 +118,10 @@ is used.  Allowable parameters are:
   - :nml_v:`'FILE'` : Use complex (phase-lagged) values from separate file
 
 :nml_n:`deps_file` (default :nml_v:`''`)
-  Name of epsilon partial derivatives file (:nml_n:`deps_scheme`\ ==\ :nml_v:`'FILE'`)
+  Name of epsilon partial derivatives file (:nml_n:`deps_scheme`\ =\ :nml_v:`'FILE'`)
 
 :nml_n:`deps_file_format` (default :nml_v:`'WOLF'`)
-  Format of epsilon partial derivative file (:nml_n:`deps_scheme`\ ==\ :nml_v:`'FILE'`); one of:
+  Format of epsilon partial derivative file (:nml_n:`deps_scheme`\ =\ :nml_v:`'FILE'`); one of:
 
   - :nml_v:`'WOLF'` : Format used in preparation of :ads_citet:`wolf:2018`
 

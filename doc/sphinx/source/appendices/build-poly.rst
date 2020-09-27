@@ -42,16 +42,16 @@ In addition to GYRE's general pre-requisites (see the
 :ref:`installation` chapter), :program:`build_poly` needs a
 thread-safe version of the :netlib:`ODEPACK <odepack>` ordinary
 differential integrator library. This library is shipped with version
-20.3.2 (and more recent) of the MESA SDK.
+20.3.2 (and more recent) of the `MESA SDK <mesa-sdk_>`__.
 
-Compile
+Compiling
+=========
+
+The :program:`build_poly` executable is automatically compiled when
+GYRE is built, and installed in the :file:`{$GYRE_DIR}/bin` directory
+(see the :ref:`installation` chapter).
+
+Running
 =======
-
-If the build system detects that the :program:`odepack_link` link
-script is installed (as part of the MESA SDK), then
-:program:`build_poly` will automatically be compiled when GYRE is
-built.
-
-
 
 

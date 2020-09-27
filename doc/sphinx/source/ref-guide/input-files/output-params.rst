@@ -83,4 +83,4 @@ should contain exactly one of each. Allowable parameters are:
 
 .. rubric:: Footnotes
 
-.. [#only_evol] This option is only available when :nml_n:`model_type`\ ==\ :nml_v:`'EVOL'`
+.. [#only_evol] This option is only available when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`

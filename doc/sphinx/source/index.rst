@@ -51,3 +51,5 @@ detail. Supplementary material can be found in the :ref:`appendices`.
 
    appendices/troubleshooting.rst
    appendices/build-poly.rst
+   appendices/eval-lambda.rst
+   
