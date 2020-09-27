@@ -224,8 +224,6 @@ contains
       complex(WP), intent(in) :: omega_a_im
       complex(WP), intent(in) :: omega_b_im
 
-      integer, save :: j = 0
-
       ! Process the intersection
 
       n_in = n_in + 1
