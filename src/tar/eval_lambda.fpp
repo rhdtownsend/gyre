@@ -39,13 +39,15 @@ program eval_lambda
   ! Variables
 
   integer                   :: m
-  integer                   :: k
+  integer                   :: l
   real(WP)                  :: q_min
   real(WP)                  :: q_max
   integer                   :: n_q
   logical                   :: log_q
+  logical                   :: rossby
   character(:), allocatable :: filename
 
+  integer               :: k
   real(WP), allocatable :: q(:)
   real(WP), allocatable :: lam(:)
   integer               :: i
@@ -53,21 +55,32 @@ program eval_lambda
 
   ! Read parameters
 
-  $ASSERT(n_arg() == 7,Syntax: eval_lambda m k q_min q_max n_q log_q filename)
+  $ASSERT(n_arg() == 8,Syntax: eval_lambda l m q_min q_max n_q log_q rossby filename)
 
-  call get_arg(1, m)
-  call get_arg(2, k)
+  call get_arg(1, l)
+  call get_arg(2, m)
   call get_arg(3, q_min)
   call get_arg(4, q_max)
   call get_arg(5, n_q)
   call get_arg(6, log_q)
-  call get_arg(7, filename)
+  call get_arg(7, rossby)
+  call get_arg(8, filename)
 
   ! Initialize
 
   call init_parallel()
 
   call init_math()
+
+  ! Check arguments & set up k
+
+  $ASSERT(ABS(m) <= l,Invalid m)
+
+  if (rossby) then
+     k = -(l - ABS(m) + 1)
+  else
+     k = l - ABS(m)
+  endif
 
   ! Allocate arrays
 
@@ -108,8 +121,10 @@ program eval_lambda
   ! Write out results
 
   hg = hgroup_t(filename, CREATE_FILE)
+  call write_attr(hg, 'l', l)
   call write_attr(hg, 'm', m)
   call write_attr(hg, 'k', k)
+  call write_dset(hg, 'rossby', rossby)
   call write_dset(hg, 'q', q)
   call write_dset(hg, 'lambda', lam)
   call hg%final()
