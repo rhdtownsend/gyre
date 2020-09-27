@@ -41,7 +41,7 @@
   grid_type = 'LINEAR'
   freq_min = 3.0
   freq_max = 10.0
-  n_freq = 50
+  n_freq = 250
 /
 
 &grid
