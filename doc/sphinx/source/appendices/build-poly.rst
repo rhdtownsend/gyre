@@ -5,14 +5,21 @@ Building Polytropic Structure Files
 ***********************************
 
 This appendix describes the :program:`build_poly` executable, which
-creates polytropic structure files for use with GYRE by solving the
+builds a composite polytropic stellar model and writes it to a file in
+the :nml_v:`POLY` format (see the :ref:`poly-format` section).
+
+Formalism
+---------
+
+A composite polytropic model consists of 
+by solving the
 Lane-Emden equation
 
 .. math::
 
    \frac{1}{\xi^{2}} \deriv{}{\xi} \left( \xi^{2} \deriv{\Theta}{\xi} \right) = - \Theta^{\npoly}
 
-for constant polytropic index :math:`\npoly`. Here, the dependent
+for piecewise-constant polytropic index :math:`\npoly`. Here, the dependent
 variable :math:`\Theta` represents the local density :math:`\rho` via
 
 .. math::

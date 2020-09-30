@@ -25,11 +25,11 @@ evolution code. The format of this file is specified by the
 
 :nml_v:`GSM`
   HDF5 file describing an evolutionary model in GYRE
-  Stellar Model (GSM) format.
+  Stellar Model (GSM) format (as specified in the :ref:`gsm-file-format` section).
 
 :nml_v:`MESA`
   Text file describing an evolutionary model in MESA format (as
-  specified in the :ref:`mesa-model-files` section).
+  specified in the :ref:`mesa-file-format` section).
   
 :nml_v:`B3`
   HDF5 file describing an evolutionary model in B3 format. This format
