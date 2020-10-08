@@ -1,7 +1,7 @@
-Version 1.01
+Version 0.19
 ------------
 
-The first line of version-1.01 MESA files is a header with the following columns:
+The first line of version-0.19 MESA-format files is a header with the following columns:
 
 .. list-table::
    :widths: 15 15 15 55
@@ -28,7 +28,7 @@ The first line of version-1.01 MESA files is a header with the following columns
      - real
      - photospheric luminosity (:math:`\erg\,\second^{-1}`)
    * - 5
-     - 101
+     - 19
      - integer
      - version number :math:`\times 100`
 
@@ -97,17 +97,17 @@ following columns:
      - real
      - opacity (:math:`\cm^{2}\,\gram^{-1}`)
    * - 14
-     - :math:`\kappa\,\kapT`
+     - :math:`\kapT`
      - real
-     - opacity partial :math:`\kappa (\spderiv{\ln \kappa}{\ln T})_{\rho}` (:math:`\cm^{2}\,\gram^{-1}`)
+     - opacity partial :math:`(\spderiv{\ln \kappa}{\ln T})_{\rho}`
    * - 15
-     - :math:`\kappa\,\kaprho`
+     - :math:`\kaprho`
      - real
-     - opacity partial :math:`\kappa (\spderiv{\ln \kappa}{\ln \rho})_{T}` (:math:`\cm^{2}\,\gram^{-1}`)
+     - opacity partial :math:`(\spderiv{\ln \kappa}{\ln \rho})_{T}`
    * - 16
-     - :math:`\epsnuc`
+     - :math:`\epsilon`
      - real
-     - nuclear energy generation rate (:math:`\erg\,s^{-1}\,\gram^{-1}`)
+     - total energy generation rate (:math:`\erg\,s^{-1}\,\gram^{-1}`)
    * - 17
      - :math:`\epsnuc\,\epsT`
      - real

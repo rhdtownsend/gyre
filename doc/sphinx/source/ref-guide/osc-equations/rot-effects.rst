@@ -24,22 +24,10 @@ oscillation equations, all instances of the inertial-frame frequency
    \sigmac \equiv \sigma - m \Omega,
 
 where :math:`m` is the azimuthal order of the mode and :math:`\Omega`
-is the rotation angular frequency.
-
-GYRE assumes so-called shellular rotation (see, e.g.,
-:ads_citealp:`meynet:1997`), and so both :math:`\Omega` and
-:math:`\sigmac` are functions of radial coordinate :math:`r`.
-
-There are a number of different ways to define :math:`\Omega`, via
-parameters in the :nml_g:`rot` namelist group.
-
-* If :nml_n:`Omega_rot_source` == :nml_v:`MODEL`, then :math:`\Omega`
-  is obtained from the stellar model (for those :ref:`model formats
-  <evol-models>` that include these data)
-
-* If :nml_n:`Omega_rot_source` == :nml_v:`UNIFORM`, then uniform
-  rotation is assumed, with the spatially constant :math:`\Omega` set
-  by the :nml_n:`Omega_rot` and :nml_n:`Omega_rot_units` parameters
+is the rotation angular frequency. Because GYRE assumes so-called
+shellular rotation (see, e.g., :ads_citealp:`meynet:1997`), both
+:math:`\Omega` and :math:`\sigmac` are functions of radial coordinate
+:math:`r`.
 
 Coriolis Force
 --------------
@@ -58,7 +46,8 @@ community (see, e.g., :ads_citealp:`bildsten:1996`;
 :ads_citealp:`lee:1997`; :ads_citealp:`townsend:2003a`;
 :ads_citealp:`bouabid:2013`; :ads_citealp:`townsend:2020`).
 
-Within the TAR, the solution forms given in equation :eq:`sol-forms` are replaced by
+Within the TAR, the solution forms given in equation :eq:`sol-forms`
+are replaced by
 
 .. math::
    :label: sol-forms-hough
@@ -72,7 +61,7 @@ Within the TAR, the solution forms given in equation :eq:`sol-forms` are replace
 
 (cf. equations 1-3 of :ads_citealp:`townsend:2020`). Here, the Hough
 functions :math:`\houghr`, :math:`\hought` and :math:`\houghp` are the
-eigenfunctions obtained by solving Laplace's tidal equations (TE's), a
+eigenfunctions obtained by solving Laplace's tidal equations (TEs), a
 second-order system of differential equations and boundary conditions
 in the polar (:math:`\theta`) coordinate. Together with the associated
 eigenvalue :math:`\lambda`, depend on the harmonic degree
@@ -86,9 +75,9 @@ spin parameter
 Solution Families
 ~~~~~~~~~~~~~~~~~
 
-The Hough functions can be grouped into two families based on their
-behavior in the limit :math:`\Omega \rightarrow 0`. For the
-gravito-acoustic family,
+Solutions to the TEs can be grouped into two families based on the
+behavior of the eigenfunctions and eigenvalue in the limit :math:`\Omega
+\rightarrow 0`. For the gravito-acoustic family,
 
 .. math::
    :label: hough-lim-ga
@@ -122,9 +111,11 @@ Conversely, for the Rossby family
    \quad
    \text{as } \Omega \rightarrow 0.
 
-and :math:`\lambda \rightarrow 0`. Moreover, Rossby-mode eigenfrequencies show the limiting behavior
+and :math:`\lambda \rightarrow 0`. Moreover, Rossby-mode
+eigenfrequencies also show the limiting behavior
 
 .. math::
+   :label: ross-freq
 
    \sigmac = \frac{2 m \Omega}{\ell(\ell+1)}
    \quad

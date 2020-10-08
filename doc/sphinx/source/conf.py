@@ -43,7 +43,6 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx-prompt',
     'sphinx_substitution_extensions',
-    'sphinxcontrib.email',
     'ads_cite',
     'nml_roles',
 ]

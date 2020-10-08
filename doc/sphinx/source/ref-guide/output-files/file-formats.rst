@@ -24,6 +24,8 @@ and the possible loss of precision in floating-point data.
 For both formats, the data stored in the files come in two flavors --
 scalars (a single value) and arrays (a sequence of values)
 
+.. _hdf-format:
+
 HDF Format
 ----------
 
@@ -44,6 +46,8 @@ To simplify the process of reading HDF5 output produced by GYRE, the
 `gyre.py` Python module provides the `read_output` routine which can
 read both summary files and mode files (see the :ref:`python-support`
 section for more details).
+
+.. _txt-format:
 
 TXT Format
 ----------

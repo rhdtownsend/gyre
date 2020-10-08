@@ -4,14 +4,14 @@
 Interpreting Output Files
 *************************
 
-.. _txt-output:
+.. _interpret-txt:
 
 TXT-Format Files
 ================
 
 TBD
 
-.. _hdf-format:
+.. _interpret-hdf:
 
 HDF-Format Files
 ================

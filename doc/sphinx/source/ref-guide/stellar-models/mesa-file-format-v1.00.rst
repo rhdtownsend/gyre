@@ -1,7 +1,7 @@
-Version 0.01
+Version 1.00
 ------------
 
-The first line of version-0.01 MESA files is a header with the following columns:
+The first line of version-1.00 MESA-format files is a header with the following columns:
 
 .. list-table::
    :widths: 15 15 15 55
@@ -27,6 +27,10 @@ The first line of version-0.01 MESA files is a header with the following columns
      - :math:`L`
      - real
      - photospheric luminosity (:math:`\erg\,\second^{-1}`)
+   * - 5
+     - 100
+     - integer
+     - version number :math:`\times 100`
 
 The subsequent :math:`n` lines contain the model data, one line per
 grid point extending from the center to the surface, with the
@@ -77,42 +81,42 @@ following columns:
      - real
      - Brunt-Väisälä frequency squared (:math:`\second^{-2}`)
    * - 10
-     - :math:`c_{v}`
+     - :math:`\Gamma_{1}`
      - real
-     - specific heat at constant volume (:math:`\erg\,\gram^{-1}\,\kelvin^{-1}`)
+     - first adiabatic exponent :math:`(\spderiv{\ln P}{\ln \rho})_{\rm ad}`
    * - 11
-     - :math:`c_{p}`
+     - :math:`\nabla_{\rm ad}`
      - real
-     - specific heat at constant pressure (:math:`\erg\,\gram^{-1}\,\kelvin^{-1}`)
+     - adiabatic temperature gradient :math:`(\spderiv{\ln T}{\ln P})_{\rm ad}`
    * - 12
-     - :math:`\chi_{T}`
+     - :math:`\delta`
      - real
-     - equation-of-state partial :math:`(\spderiv{\ln P}{\ln T})_{\rho}`
+     - dimensionless thermal expansion coefficient :math:`-(\spderiv{\ln \rho}{\ln T})_{P}`
    * - 13
-     - :math:`\chi_{\rho}`
-     - real
-     - equation-of-state partial :math:`(\spderiv{\ln P}{\ln \rho})_{T}`
-   * - 14
      - :math:`\kappa`
      - real
      - opacity (:math:`\cm^{2}\,\gram^{-1}`)
+   * - 14
+     - :math:`\kappa\,\kapT`
+     - real
+     - opacity partial :math:`\kappa (\spderiv{\ln \kappa}{\ln T})_{\rho}` (:math:`\cm^{2}\,\gram^{-1}`)
    * - 15
-     - :math:`\kapT`
+     - :math:`\kappa\,\kaprho`
      - real
-     - opacity partial :math:`(\spderiv{\ln \kappa}{\ln T})_{\rho}`
+     - opacity partial :math:`\kappa (\spderiv{\ln \kappa}{\ln \rho})_{T}` (:math:`\cm^{2}\,\gram^{-1}`)
    * - 16
-     - :math:`\kaprho`
-     - real
-     - opacity partial :math:`(\spderiv{\ln \kappa}{\ln \rho})_{T}`
-   * - 17
      - :math:`\epsilon`
      - real
      - total energy generation rate (:math:`\erg\,s^{-1}\,\gram^{-1}`)
-   * - 18
+   * - 17
      - :math:`\epsnuc\,\epsT`
      - real
      - nuclear energy generation rate partial :math:`\epsnuc (\spderiv{\ln \epsnuc}{\ln T})_{\rho}` (:math:`\erg\,s^{-1}\,\gram^{-1}`)
-   * - 19
+   * - 18
      - :math:`\epsnuc\,\epsrho`
      - real
      - nuclear energy generation rate partial :math:`\epsnuc (\spderiv{\ln \epsnuc}{\ln \rho})_{T}` (:math:`\erg\,s^{-1}\,\gram^{-1}`)
+   * - 19
+     - :math:`\Omega_{\rm rot}`
+     - real
+     - rotation angular velocity (:math:`\radian\,\second^{-1}`)

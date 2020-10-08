@@ -1,122 +1,101 @@
-Version 0.19
+Version 0.00
 ------------
 
-The first line of version-0.19 MESA files is a header with the following columns:
+Data items in the root HDF5 group of version-0.00 GSM-format files are as follows:
 
 .. list-table::
-   :widths: 15 15 15 55
+   :widths: 8 8 8 66
    :header-rows: 1
 
-   * - Column
+   * - Data Item
      - Variable
      - Datatype
      - Definition
-   * - 1
+   * - :code:`n`
      - :math:`n`
-     - integer
+     - integer scalar
      - number of grid points
-   * - 2
+   * - :code:`M_star`
      - :math:`M`
-     - real
+     - real scalar
      - stellar mass (:math:`\gram`)
-   * - 3
+   * - :code:`R_star`
      - :math:`R`
-     - real
+     - real scalar
      - photospheric radius (:math:`\cm`)
-   * - 4
+   * - :code:`L_star`
      - :math:`L`
-     - real
+     - real scalar
      - photospheric luminosity (:math:`\erg\,\second^{-1}`)
-   * - 5
-     - 19
-     - integer
-     - version number :math:`\times 100`
-
-The subsequent :math:`n` lines contain the model data, one line per
-grid point extending from the center to the surface, with the
-following columns:
-
-.. list-table::
-   :widths: 10 10 10 70
-   :header-rows: 1
-
-   * - Column
-     - Variable
-     - Datatype
-     - Definition
-   * - 1
-     - :math:`k`
-     - integer
-     - grid point index (:math:`k=1,\ldots,n`)
-   * - 2
+   * - :code:`r`
      - :math:`r`
-     - real
+     - real array
      - radial coordinate (:math:`\cm`)
-   * - 3
+   * - :code:`w`
      - :math:`w`
-     - real
+     - real array
      - transformed mass coordinate :math:`M_{r}/(M-M_{r})`
-   * - 4
+   * - :code:`L_r`
      - :math:`L_{r}`
-     - real
-     - luminosity (:math:`\erg\,\second^{-1}`)
-   * - 5
+     - real array
+     - interior luminosity (:math:`\erg\,\second^{-1}`)
+   * - :code:`p`
      - :math:`P`
-     - real
-     - total pressure (:math:`\dyne\,\cm^{-2}`)
-   * - 6
-     - :math:`T`
-     - real
-     - temperature (:math:`\kelvin`)
-   * - 7
+     - real array
+     - total pressure (:math:`\barye`)
+   * - :code:`rho`
      - :math:`\rho`
-     - real
+     - real array
      - density (:math:`\gram\,\cm^{-3}`)
-   * - 8
-     - :math:`\nabla`
-     - real
-     - dimensionless temperature gradient :math:`\sderiv{\ln T}{\ln P}`
-   * - 9
+   * - :code:`T`
+     - :math:`T`
+     - real array
+     - temperature (:math:`\kelvin`)
+   * - :code:`N2`
      - :math:`N^{2}`
-     - real
+     - real array
      - Brunt-Väisälä frequency squared (:math:`\second^{-2}`)
-   * - 10
+   * - :code:`Gamma_1`
      - :math:`\Gamma_{1}`
-     - real
+     - real array
      - first adiabatic exponent :math:`(\spderiv{\ln P}{\ln \rho})_{\rm ad}`
-   * - 11
+   * - :code:`nabla_ad`
      - :math:`\nabla_{\rm ad}`
-     - real
+     - real array
      - adiabatic temperature gradient :math:`(\spderiv{\ln T}{\ln P})_{\rm ad}`
-   * - 12
+   * - :code:`delta`
      - :math:`\delta`
-     - real
+     - real array
      - dimensionless thermal expansion coefficient :math:`-(\spderiv{\ln \rho}{\ln T})_{P}`
-   * - 13
+   * - :code:`nabla`
+     - :math:`\nabla`
+     - real array
+     - dimensionless temperature gradient :math:`\sderiv{\ln T}{\ln P}`
+   * - :code:`kappa`
      - :math:`\kappa`
-     - real
+     - real array
      - opacity (:math:`\cm^{2}\,\gram^{-1}`)
-   * - 14
+   * - :code:`kappa_T`
      - :math:`\kapT`
-     - real
+     - real array
      - opacity partial :math:`(\spderiv{\ln \kappa}{\ln T})_{\rho}`
-   * - 15
+   * - :code:`kappa_rho`
      - :math:`\kaprho`
-     - real
+     - real array
      - opacity partial :math:`(\spderiv{\ln \kappa}{\ln \rho})_{T}`
-   * - 16
+   * - :code:`epsilon`
      - :math:`\epsilon`
-     - real
+     - real array
      - total energy generation rate (:math:`\erg\,s^{-1}\,\gram^{-1}`)
-   * - 17
+   * - :code:`epsilon_T`
      - :math:`\epsnuc\,\epsT`
-     - real
+     - real array
      - nuclear energy generation rate partial :math:`\epsnuc (\spderiv{\ln \epsnuc}{\ln T})_{\rho}` (:math:`\erg\,s^{-1}\,\gram^{-1}`)
-   * - 18
+   * - :code:`epsilon_rho`
      - :math:`\epsnuc\,\epsrho`
-     - real
+     - real array
      - nuclear energy generation rate partial :math:`\epsnuc (\spderiv{\ln \epsnuc}{\ln \rho})_{T}` (:math:`\erg\,s^{-1}\,\gram^{-1}`)
-   * - 19
+   * - :code:`Omega_rot`
      - :math:`\Omega_{\rm rot}`
-     - real
+     - real array
      - rotation angular velocity (:math:`\radian\,\second^{-1}`)

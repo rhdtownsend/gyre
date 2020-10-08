@@ -35,7 +35,7 @@ If you use GYRE in your research, please cite the relevant
 
 * :ads_citet:`townsend:2013` describes the basic operation of the code;
 * :ads_citet:`townsend:2018` outlines improvements to allow non-adiabatic calculations.
-  * :ads_citet:`goldstein:2020` describes the contour method for
+* :ads_citet:`goldstein:2020` describes the contour method for
   non-adiabatic calculations.
 
 If you find yourself using GYRE on a regular basis, you might consider

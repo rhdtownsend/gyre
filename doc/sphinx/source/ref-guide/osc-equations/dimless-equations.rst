@@ -67,7 +67,8 @@ The dimensionless oscillation equations are
    \frac{V \nabla}{\frht \crad} y_{6} \\
    %
    x \deriv{y_{6}}{x} &=
-   \left[ \alphahfl \ell(\ell+1) \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} +
+   \left[ \alphahfl \ell(\ell+1) \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} + \mbox{} \\
+   &
    \left[ V \cepsad - \ell(\ell+1) \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right) \right] y_{2} + \mbox{} \\
    &
    \alphagrv \left[ \ell(\ell+1) \crad \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right] y_{3} +
@@ -76,14 +77,14 @@ The dimensionless oscillation equations are
    \end{align}
 
 These equations are derived from the separated equations, but with the
-  insertion of 'switch' terms (denoted :math:`\alpha`) that allow
-  certain pieces of physics to be altered. See the
-  :ref:`physics-switches` section for more details
+insertion of 'switch' terms (denoted :math:`\alpha`) that allow
+certain pieces of physics to be altered. See the
+:ref:`physics-switches` section for more details
 
 For non-radial adiabatic calculations, the last two equations above
 are set aside and the :math:`y_{5}` terms dropped from the first four
 equations. For radial adiabatic calculations with
-:nml_n:`reduce_order`\ ==\ :nml_v:`.TRUE.` (see the :ref:`osc-params`
+:nml_n:`reduce_order`\ =\ :nml_v:`.TRUE.` (see the :ref:`osc-params`
 section), the last four equations are set aside and the first two
 replaced by
 
@@ -103,7 +104,7 @@ Boundary Conditions
 Inner Boundary
 ^^^^^^^^^^^^^^
 
-When :nml_n:`inner_bound`\ ==\ :nml_v:`'REGULAR'`, GYRE applies
+When :nml_n:`inner_bound`\ =\ :nml_v:`'REGULAR'`, GYRE applies
 regularity-enforcing conditions at the inner boundary:
 
 .. math::
@@ -114,7 +115,7 @@ regularity-enforcing conditions at the inner boundary:
    y_{5} &= 0.
    \end{align}
 
-When :nml_n:`inner_bound`\ ==\ :nml_v:`'ZERO_R'`, the first and second
+When :nml_n:`inner_bound`\ =\ :nml_v:`'ZERO_R'`, the first and second
 conditions are replaced with zero radial displacement conditions,
 
 .. math::
@@ -124,7 +125,7 @@ conditions are replaced with zero radial displacement conditions,
    y_{4} &= 0.
    \end{align}
 
-Likewise, when :nml_n:`inner_bound`\ ==\ :nml_v:`'ZERO_H'`, the first and
+Likewise, when :nml_n:`inner_bound`\ =\ :nml_v:`'ZERO_H'`, the first and
 second conditions are replaced with zero horizontal displacement
 conditions,
 
@@ -138,7 +139,7 @@ conditions,
 Outer Boundary
 ^^^^^^^^^^^^^^
 
-When :nml_n:`outer_bound`\ ==\ :nml_v:`'VACUUM'`, GYRE applies vacuum surface
+When :nml_n:`outer_bound`\ =\ :nml_v:`'VACUUM'`, GYRE applies vacuum surface
 pressure conditions at the outer boundary:
 
 .. math::
@@ -149,7 +150,7 @@ pressure conditions at the outer boundary:
    (2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} + 4 \frht y_{5} - y_{6} &= 0
    \end{align}
    
-When :nml_n:`outer_bound`\ ==\ :nml_v:`'DZIEM'`, the first condition is
+When :nml_n:`outer_bound`\ =\ :nml_v:`'DZIEM'`, the first condition is
 replaced by the :ads_citet:`dziembowski:1971` outer mechanical
 boundary condition,
 
@@ -158,15 +159,15 @@ boundary condition,
    \left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} - 4 - c_{1} \omega^{2} \right] \right\} y_{1} -
    y_{2} = 0.
    
-When :nml_n:`outer_bound`\ ==\ :nml_v:`'UNNO'`\ \|\ :nml_v:`'JCD'`, the
+When :nml_n:`outer_bound`\ =\ :nml_v:`'UNNO'`\ \|\ :nml_v:`'JCD'`, the
 first condition is replaced by the (possibly-leaky) outer mechanical
 boundary conditions described by :ads_citet:`unno:1989` and
 :ads_citet:`christensen-dalsgaard:2008`, respectively. When
-:nml_n:`outer_bound`\ ==\ :nml_v:`'ISOTHERMAL'`, the first condition is
+:nml_n:`outer_bound`\ =\ :nml_v:`'ISOTHERMAL'`, the first condition is
 replaced by a (possibly-leaky) outer mechanical boundary condition
 derived from a local dispersion analysis of an isothermal atmosphere.
 
-Finally, when :nml_n:`outer_bound`\ ==\ :nml_v:`'GAMMA'`, the first
+Finally, when :nml_n:`outer_bound`\ =\ :nml_v:`'GAMMA'`, the first
 condition is replaced by the outer mechanical boundary condition
 described by :ads_citet:`ong:2020`.
 
