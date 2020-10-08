@@ -58,13 +58,14 @@ module gyre_prox_search
 
 contains
 
-  subroutine prox_search_1_ (bp, omega_in, j_in, omega_min, omega_max, process_mode, nm_p)
+  subroutine prox_search_1_ (bp, omega_in, j_in, omega_min, omega_max, nm_p, process_mode)
 
     class(c_bvp_t), target, intent(inout) :: bp
     complex(WP), intent(in)               :: omega_in(:)
     integer, intent(in)                   :: j_in(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
+    type(num_par_t), intent(in)           :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -75,7 +76,6 @@ contains
          type(r_ext_t), intent(in) :: chi
        end subroutine process_mode
     end interface
-    type(num_par_t), intent(in)           :: nm_p
 
     integer                  :: n_in
     complex(WP), allocatable :: omega_in_a(:)
@@ -103,7 +103,7 @@ contains
 
     ! Search for modes
     
-    call prox_search_2_(bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, process_mode, nm_p)
+    call prox_search_2_(bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, nm_p, process_mode)
 
     ! Finish
 
@@ -113,7 +113,7 @@ contains
 
   !****
 
-  subroutine prox_search_2_ (bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, process_mode, nm_p)
+  subroutine prox_search_2_ (bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, nm_p, process_mode)
 
     class(c_bvp_t), target, intent(inout) :: bp
     complex(WP), intent(in)               :: omega_in_a(:)
@@ -121,6 +121,7 @@ contains
     integer, intent(in)                   :: j_in(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
+    type(num_par_t), intent(in)           :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -131,7 +132,6 @@ contains
          type(r_ext_t), intent(in) :: chi
        end subroutine process_mode
     end interface
-    type(num_par_t), intent(in)           :: nm_p
 
     complex(WP), allocatable :: omega_def(:)
     integer                  :: c_beg

@@ -52,12 +52,13 @@ module gyre_minmod_search
 
 contains
 
-  subroutine minmod_search (bp, omega, omega_min, omega_max, process_mode, nm_p)
+  subroutine minmod_search (bp, omega, omega_min, omega_max, nm_p, process_mode)
 
     class(c_bvp_t), target, intent(inout) :: bp
     real(WP), intent(in)                  :: omega(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
+    type(num_par_t), intent(in)           :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -68,7 +69,6 @@ contains
          type(r_ext_t), intent(in) :: chi
        end subroutine process_mode
     end interface
-    type(num_par_t), intent(in)           :: nm_p
 
     type(c_state_t)            :: st
     type(m_discrim_func_t)     :: df
@@ -125,7 +125,7 @@ contains
 
     ! Search for modes
 
-    call prox_search(bp, omega_in, j_in, omega_min, omega_max, process_mode, nm_p)
+    call prox_search(bp, omega_in, j_in, omega_min, omega_max, nm_p, process_mode)
 
     ! Finish
 

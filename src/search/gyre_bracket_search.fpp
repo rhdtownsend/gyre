@@ -55,12 +55,13 @@ module gyre_bracket_search
 
 contains
 
-  subroutine bracket_search (bp, omega, omega_min, omega_max, process_mode, nm_p)
+  subroutine bracket_search (bp, omega, omega_min, omega_max, nm_p, process_mode)
 
     class(r_bvp_t), target, intent(inout) :: bp
     real(WP), intent(in)                  :: omega(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
+    type(num_par_t), intent(in)           :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -71,7 +72,6 @@ contains
          type(r_ext_t), intent(in) :: chi
        end subroutine process_mode
     end interface
-    type(num_par_t), intent(in)           :: nm_p
 
     type(r_state_t)            :: st
     type(r_discrim_func_t)     :: df

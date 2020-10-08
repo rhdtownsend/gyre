@@ -66,13 +66,14 @@ module gyre_c_search
 
 contains
 
-  subroutine freq_search_1_ (bp, omega_in, j_in, omega_min, omega_max, process_mode, nm_p)
+  subroutine freq_search_1_ (bp, omega_in, j_in, omega_min, omega_max, nm_p, process_mode)
 
     class(c_bvp_t), target, intent(inout) :: bp
     complex(WP), intent(in)               :: omega_in(:)
     integer, intent(in)                   :: j_in(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
+    type(num_par_t), intent(in)           :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -83,7 +84,6 @@ contains
          type(r_ext_t), intent(in) :: chi
        end subroutine process_mode
     end interface
-    type(num_par_t), intent(in)           :: nm_p
 
     integer                  :: n_in
     complex(WP), allocatable :: omega_in_a(:)
@@ -111,7 +111,7 @@ contains
 
     ! Do the search
     
-    call freq_search_2_(bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, process_mode, nm_p)
+    call freq_search_2_(bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, nm_p, process_mode)
 
     ! Finish
 
@@ -121,7 +121,7 @@ contains
 
   !****
 
-  subroutine freq_search_2_ (bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, process_mode, nm_p)
+  subroutine freq_search_2_ (bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, nm_p, process_mode)
 
     class(c_bvp_t), target, intent(inout) :: bp
     complex(WP), intent(in)               :: omega_in_a(:)
@@ -129,6 +129,7 @@ contains
     integer, intent(in)                   :: j_in(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
+    type(num_par_t), intent(in)           :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -139,7 +140,6 @@ contains
          type(r_ext_t), intent(in) :: chi
        end subroutine process_mode
     end interface
-    type(num_par_t), intent(in)           :: nm_p
 
     complex(WP), allocatable :: omega_def(:)
     integer                  :: c_beg
@@ -172,7 +172,7 @@ contains
 
        ! Search for the root
        
-       call root_search_(bp, c_ext_t(omega_in_a(i)), c_ext_t(omega_in_b(i)), j_in(i), omega_min, omega_max, process_mode, nm_p, omega_def)
+       call root_search_(bp, c_ext_t(omega_in_a(i)), c_ext_t(omega_in_b(i)), j_in(i), omega_min, omega_max, , nm_p, omega_def, process_mode)
 
     end do in_loop
     
@@ -191,12 +191,13 @@ contains
 
   !****
 
-  subroutine scan_search_ (bp, omega, omega_min, omega_max, process_mode, nm_p)
+  subroutine scan_search_ (bp, omega, omega_min, omega_max, nm_p, process_mode)
 
     class(c_bvp_t), target, intent(inout) :: bp
     real(WP), intent(in)                  :: omega(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
+    type(num_par_t), intent(in)           :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -207,7 +208,6 @@ contains
          type(r_ext_t), intent(in) :: chi
        end subroutine process_mode
     end interface
-    type(num_par_t), intent(in)           :: nm_p
 
     real(WP), allocatable      :: omega_a(:)
     real(WP), allocatable      :: omega_b(:)
@@ -262,7 +262,7 @@ contains
 
     ! Do the search
 
-    call freq_search_1_(bp, omega_in, j_in, omega_min, omega_max, process_mode, nm_p)
+    call freq_search_1_(bp, omega_in, j_in, omega_min, omega_max, nm_p, process_mode)
 
     ! Finish
 
@@ -306,7 +306,7 @@ contains
 
   !****
 
-  subroutine root_search_ (bp, omega_in_a, omega_in_b, j, omega_min, omega_max, process_mode, nm_p, omega_def)
+  subroutine root_search_ (bp, omega_in_a, omega_in_b, j, omega_min, omega_max, nm_p, omega_def, process_mode)
 
     class(c_bvp_t), target, intent(inout)   :: bp
     type(c_ext_t), intent(in)               :: omega_in_a
@@ -314,6 +314,8 @@ contains
     integer, intent(in)                     :: j
     real(WP), intent(in)                    :: omega_min
     real(WP), intent(in)                    :: omega_max
+    type(num_par_t), intent(in)             :: nm_p
+    complex(WP), allocatable, intent(inout) :: omega_def(:)
     interface
        subroutine process_mode (md, n_iter, chi)
         use core_kinds
@@ -324,8 +326,6 @@ contains
          type(r_ext_t), intent(in) :: chi
        end subroutine process_mode
     end interface 
-    type(num_par_t), intent(in)             :: nm_p
-    complex(WP), allocatable, intent(inout) :: omega_def(:)
 
     type(c_ext_t)          :: omega_a
     type(c_ext_t)          :: omega_b

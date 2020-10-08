@@ -54,13 +54,15 @@ module gyre_contour_search
 
 contains
 
-  subroutine contour_search (bp, omega_re, omega_im, omega_min, omega_max, process_mode, nm_p)
+  subroutine contour_search (bp, omega_re, omega_im, omega_min, omega_max, i, nm_p, process_mode)
 
     class(c_bvp_t), target, intent(inout) :: bp
     real(WP), intent(in)                  :: omega_re(:)
     real(WP), intent(in)                  :: omega_im(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
+    integer, intent(in)                   :: i
+    type(num_par_t), intent(in)           :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -71,7 +73,6 @@ contains
          type(r_ext_t), intent(in) :: chi
        end subroutine process_mode
     end interface
-    type(num_par_t), intent(in)           :: nm_p
 
     type(c_state_t)          :: st
     type(c_discrim_func_t)   :: df
@@ -86,11 +87,11 @@ contains
 
     ! Find contour intersections
 
-    call find_isects_(df, omega_re, omega_im, omega_in_a, omega_in_b, j_in)
+    call find_isects_(df, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, j_in)
 
     ! Search for modes
 
-    call prox_search(bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, process_mode, nm_p)
+    call prox_search(bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, nm_p, process_mode)
 
     ! Finish
 
@@ -100,11 +101,13 @@ contains
 
   !****
 
-  subroutine find_isects_ (df, omega_re, omega_im, omega_in_a, omega_in_b, j_in)
+  subroutine find_isects_ (df, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, j_in)
 
     type(c_discrim_func_t), intent(inout) :: df
     real(WP), intent(in)                  :: omega_re(:)
     real(WP), intent(in)                  :: omega_im(:)
+    integer, intent(in)                   :: i
+    type(num_par_t), intent(in)           :: nm_p
     complex(WP), allocatable, intent(out) :: omega_in_a(:)
     complex(WP), allocatable, intent(out) :: omega_in_b(:)
     integer, allocatable, intent(out)     :: j_in(:)
@@ -117,7 +120,7 @@ contains
     integer                           :: c_end
     integer                           :: c_rate
     integer                           :: k
-    integer                           :: i(2)
+    integer                           :: j_ri(2)
     complex(WP)                       :: omega
     type(c_ext_t)                     :: discrim
     integer                           :: i_percent
@@ -155,15 +158,15 @@ contains
 
     discrim_loop: do k = k_part(MPI_RANK+1), k_part(MPI_RANK+2)-1
 
-       i = index_nd(k, [n_omega_re,n_omega_im])
+       j_ri = index_nd(k, [n_omega_re,n_omega_im])
 
-       omega = CMPLX(omega_re(i(1)), omega_im(i(2)), KIND=WP)
+       omega = CMPLX(omega_re(j_ri(1)), omega_im(j_ri(2)), KIND=WP)
 
        call df%eval(c_ext_t(omega), discrim, status)
        $ASSERT(status == STATUS_OK,Invalid status)
 
-       discrim_map_f(i(1),i(2)) = FRACTION(discrim)
-       discrim_map_e(i(1),i(2)) = EXPONENT(discrim)
+       discrim_map_f(j_ri(1),j_ri(2)) = FRACTION(discrim)
+       discrim_map_e(j_ri(1),j_ri(2)) = EXPONENT(discrim)
 
        if (check_log_level('DEBUG')) then
           i_percent = FLOOR(100._WP*REAL(k-k_part(MPI_RANK+1))/REAL(k_part(MPI_RANK+2)-k_part(MPI_RANK+1)-1))
@@ -209,7 +212,11 @@ contains
     omega_in_b = omega_in_b(:n_in)
     j_in = j_in(:n_in)
 
-    ! Find intersections
+    ! Dump the map
+
+    $if ($HDF5)
+    call cm%dump(nm_p, i)
+    $endif
 
     ! Finish
 

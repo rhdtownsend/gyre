@@ -247,7 +247,7 @@ program gyre
         case ('BRACKET')
 
            if (SIZE(omega_re) > 2) then
-              call bracket_search(bp_ad, omega_re, omega_min, omega_max, process_mode_ad, nm_p_sel)
+              call bracket_search(bp_ad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_ad)
            else
               if (check_log_level('INFO')) then
                  write(OUTPUT_UNIT, 100) 'Too few scan points for bracket search, skipping...'
@@ -280,12 +280,12 @@ program gyre
         case ('AD')
 
            $ASSERT(os_p_sel%adiabatic,No adiabatic modes to start from)
-           call prox_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, process_mode_nad, nm_p_sel)
+           call prox_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, nm_p_sel, process_mode_nad)
 
         case ('MINMOD')
 
            if (SIZE(omega_re) > 2) then
-              call minmod_search(bp_nad, omega_re, omega_min, omega_max, process_mode_nad, nm_p_sel)
+              call minmod_search(bp_nad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_nad)
            else
               if (check_log_level('INFO')) then
                  write(OUTPUT_UNIT, 100) 'Too few scan points for minmod search, skipping...'
@@ -295,7 +295,7 @@ program gyre
         case ('CONTOUR')
 
            if (SIZE(omega_re) > 2 .AND. SIZE(omega_im) > 2) then
-              call contour_search(bp_nad, omega_re, omega_im, omega_min, omega_max, process_mode_nad, nm_p_sel)
+              call contour_search(bp_nad, omega_re, omega_im, omega_min, omega_max, i, nm_p_sel, process_mode_nad)
            else
               if (check_log_level('INFO')) then
                  write(OUTPUT_UNIT, 100) 'Too few scan points for contour search, skipping...'
