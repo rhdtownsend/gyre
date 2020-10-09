@@ -134,7 +134,7 @@ Energetics & Transport
   R^{2}`. Evaluated by integrating :math:`{\rm d}E/{\rm d}x` in
   acoustic-wave propagation regions
 
-:nml_v:`E_p` (real array)
+:nml_v:`E_g` (real array)
   Gravity inertia :math:`E_{\rm g}`, in units of :math:`M
   R^{2}`. Evaluated by integrating :math:`{\rm d}E/{\rm d}x` in
   gravity-wave propagation regions
