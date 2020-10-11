@@ -34,7 +34,7 @@ def build_poly (n_poly, Delta_d, xi_d, Gamma_1, dxi, toler, filename):
 /
 
 &out
-	filename = '{7:s}'
+	file = '{7:s}'
 /
 '''.format(len(n_poly)-1, n_poly_str, Delta_d_str, xi_d_str,
            Gamma_1, dxi, toler, filename))
