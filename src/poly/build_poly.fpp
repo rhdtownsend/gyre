@@ -1,7 +1,7 @@
 ! Program  : build_poly
 ! Purpose  : build a polytrope, possibly with disctontinuities
 !
-! Copyright 2015-2017 Rich Townsend
+! Copyright 2015-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -41,7 +41,7 @@ program build_poly
 
   ! Variables
 
-  character(:), allocatable :: in_filename
+  character(:), allocatable :: filename
   integer                   :: unit
   integer                   :: n_d
   real(WP), allocatable     :: n_poly(:)
@@ -50,7 +50,7 @@ program build_poly
   real(WP), allocatable     :: Delta_d(:)
   real(WP)                  :: dxi
   real(WP)                  :: toler
-  character(FILENAME_LEN)   :: filename
+  character(FILENAME_LEN)   :: file
   real(WP), allocatable     :: xi(:)
   real(WP), allocatable     :: Theta(:)
   real(WP), allocatable     :: dTheta(:)
@@ -58,15 +58,15 @@ program build_poly
 
   namelist /poly/ n_d, n_poly, Gamma_1, xi_d, Delta_d
   namelist /num/ dxi, toler
-  namelist /out/ filename
+  namelist /out/ file
 
-  ! Read parameters
+  ! Read command-line arguments
 
-  $ASSERT(n_arg() == 1,Syntax: build_poly_disc in_filename)
+  $ASSERT(n_arg() == 1,Syntax: build_poly <filename>)
 
-  call get_arg(1, in_filename)
+  call get_arg(1, filename)
 
-  open(NEWUNIT=unit, FILE=in_filename, STATUS='OLD')
+  ! Set defaults
 
   allocate(n_poly(D))
   allocate(xi_d(D))
@@ -74,6 +74,15 @@ program build_poly
 
   n_d = 0
   Gamma_1 = 5._WP/3._WP
+
+  n_poly(1) = 0._WP
+
+  dxi = 0.01
+  toler = 1E-10
+
+  ! Read parameters
+
+  open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
   rewind(unit)
   read(unit, NML=poly)
@@ -96,7 +105,7 @@ program build_poly
 
   ! Write the model
 
-  hg = hgroup_t(filename, CREATE_FILE)
+  hg = hgroup_t(file, CREATE_FILE)
 
   call write_attr(hg, 'n', SIZE(xi))
   call write_attr(hg, 'n_d', n_d)
