@@ -180,6 +180,9 @@ contains
 
     in_loop : do i = 1, SIZE(omega_in_a)
 
+       n_iter = 0
+       n_iter_def = 0
+
        ! Set up the initial points
 
        omega_a = c_ext_t(omega_in_a(i))
@@ -194,13 +197,13 @@ contains
        call df%eval(omega_a, discrim_a, status)
        if (status /= STATUS_OK) then
           call report_status_(status, 'initial trial (a)')
-          return
+          cycle in_loop
        endif
           
        call df%eval(omega_b, discrim_b, status)
        if (status /= STATUS_OK) then
           call report_status_(status, 'initial trial (b)')
-          return
+          cycle in_loop
        endif
           
        ! If necessary, do a preliminary root find using the deflated
@@ -214,7 +217,7 @@ contains
           call narrow(df_def, nm_p, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
           if (status /= STATUS_OK) then
              call report_status_(status, 'deflate narrow')
-             return
+             cycle in_loop
           endif
 
           ! If necessary, reset omega_a and omega_b so they are not
@@ -227,7 +230,7 @@ contains
           call expand(df, omega_a, omega_b, r_ext_t(0._WP), status, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 
           if (status /= STATUS_OK) then
              call report_status_(status, 'deflate re-expand')
-             return
+             cycle in_loop
           endif
 
        else
@@ -241,13 +244,11 @@ contains
 
        ! Find the discriminant root
 
-       n_iter = 0
-
        call solve(df, nm_p, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
                   n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
-          return
+          cycle in_loop
        endif
 
        ! Construct the mode_t
