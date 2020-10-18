@@ -50,6 +50,7 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    :name: appendices
 
    appendices/troubleshooting.rst
+   appendices/comp-ptrope.rst
    appendices/build-poly.rst
    appendices/eval-lambda.rst
    
