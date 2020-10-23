@@ -248,7 +248,7 @@ contains
        discrim_e(i) = EXPONENT(discrim_i)
 
        if (check_log_level('DEBUG')) then
-          write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
+          write(OUTPUT_UNIT, 110) omega(i), discrim_f(i), discrim_e(i)
 110       format(2X,E24.16,2X,F19.16,2X,I7)
        endif
 
