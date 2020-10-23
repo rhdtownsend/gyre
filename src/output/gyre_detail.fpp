@@ -508,7 +508,7 @@ contains
     $WRITE_POINTS(Gamma_1,ml%coeff(I_GAMMA_1, gr%pt(k)))
     $WRITE_POINTS(nabla,ml%coeff(I_NABLA, gr%pt(k)))
     $WRITE_POINTS(nabla_ad,ml%coeff(I_NABLA_AD, gr%pt(k)))
-    $WRITE_POINTS(dnabla_ad,ml,dcoeff(I_NABLA_AD, gr%pt(k)))
+    $WRITE_POINTS(dnabla_ad,ml%dcoeff(I_NABLA_AD, gr%pt(k)))
     $WRITE_POINTS(delta,ml%coeff(I_DELTA, gr%pt(k)))
     $WRITE_POINTS(c_lum,ml%coeff(I_C_LUM, gr%pt(k)))
     $WRITE_POINTS(c_rad,ml%coeff(I_C_RAD, gr%pt(k)))
