@@ -115,7 +115,7 @@ contains
 
 100 continue
 
-    $ASSERT(n_ot_p == 1,Input file should contain exactly one &ad_output and one &nad_output namelist)
+    $ASSERT(n_ot_p == 1,Input file should contain exactly one &<stage>_output namelist)
 
     ! Read output parameters
 
