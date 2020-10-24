@@ -4,14 +4,14 @@ def read_poly (file) :
 
     file = h5py.File(file, 'r')
 
-    xi = file['xi'][...]
+    z = file['z'][...]
 
-    Theta = file['Theta'][...]
-    dTheta = file['dTheta'][...]
+    theta = file['theta'][...]
+    dtheta = file['dtheta'][...]
 
     n_poly = file.attrs['n_poly']
     Gamma_1 = file.attrs['Gamma_1']
 
-    return {'xi': xi, 'Theta': Theta, 'dTheta': dTheta, 
+    return {'z': z, 'theta': theta, 'dtheta': dtheta, 
             'n_poly': n_poly, 'Gamma_1': Gamma_1, 
-            'xi_1': xi[-1], 'n': len(xi)}
+            'z_s': xi[-1], 'n': len(xi)}

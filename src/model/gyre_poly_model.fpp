@@ -41,15 +41,15 @@ module gyre_poly_model
   type, extends (model_t) :: poly_model_t
      private
      type(grid_t)                  :: gr
-     type(r_interp_t), allocatable :: in_Theta(:)
-     type(r_interp_t), allocatable :: in_dTheta(:)
+     type(r_interp_t), allocatable :: in_theta(:)
+     type(r_interp_t), allocatable :: in_dtheta(:)
      real(WP), allocatable         :: n_poly(:)
      real(WP), allocatable         :: mu_i(:)
      real(WP), allocatable         :: v_i(:)
      real(WP), allocatable         :: t(:)
      real(WP), allocatable         :: B(:)
      real(WP)                      :: mu_s
-     real(WP)                      :: xi_s
+     real(WP)                      :: z_s
      real(WP)                      :: Gamma_1
      real(WP)                      :: Omega_rot
      integer                       :: s_i
@@ -90,11 +90,11 @@ module gyre_poly_model
 
 contains
 
-  function poly_model_t_ (xi, Theta, dTheta, n_poly, Delta_d, Gamma_1, Omega_rot) result (ml)
+  function poly_model_t_ (z, theta, dtheta, n_poly, Delta_d, Gamma_1, Omega_rot) result (ml)
 
-    real(WP), intent(in) :: xi(:)
-    real(WP), intent(in) :: Theta(:)
-    real(WP), intent(in) :: dTheta(:)
+    real(WP), intent(in) :: z(:)
+    real(WP), intent(in) :: theta(:)
+    real(WP), intent(in) :: dtheta(:)
     real(WP), intent(in) :: n_poly(:)
     real(WP), intent(in) :: Delta_d(:)
     real(WP), intent(in) :: Gamma_1
@@ -102,7 +102,7 @@ contains
     type(poly_model_t)   :: ml
 
     integer  :: n_k
-    real(WP) :: x(SIZE(xi))
+    real(WP) :: x(SIZE(z))
     integer  :: k_i
     integer  :: k_o
     integer  :: k_i_prev
@@ -110,24 +110,24 @@ contains
     integer  :: s
     integer  :: i
     real(WP) :: v_o_prev
-    real(WP) :: d2Theta(SIZE(xi))
+    real(WP) :: d2theta(SIZE(z))
 
-    $CHECK_BOUNDS(SIZE(Theta),SIZE(xi))
-    $CHECK_BOUNDS(SIZE(dTheta),SIZE(xi))
+    $CHECK_BOUNDS(SIZE(theta),SIZE(z))
+    $CHECK_BOUNDS(SIZE(dtheta),SIZE(z))
 
     $CHECK_BOUNDS(SIZE(Delta_d),SIZE(n_poly)-1)
 
-    ! Construct the poly_model_t from the Lane-Emden solutions Theta,
-    ! dTheta/dxi. Per-segment polytropic indices and density jumps are
+    ! Construct the poly_model_t from the Lane-Emden solutions theta,
+    ! dtheta/dz. Per-segment polytropic indices and density jumps are
     ! supplied in n_poly and Delta_d, respectively
 
     ! Create the grid
 
-    n_k = SIZE(xi)
+    n_k = SIZE(z)
 
-    ml%xi_s = xi(n_k)
+    ml%z_s = z(n_k)
 
-    x = xi/ml%xi_s
+    x = z/ml%z_s
 
     ml%gr = grid_t(x)
 
@@ -138,8 +138,8 @@ contains
 
     ! Allocate arrays
 
-    allocate(ml%in_Theta(ml%s_i:ml%s_o))
-    allocate(ml%in_dTheta(ml%s_i:ml%s_o))
+    allocate(ml%in_theta(ml%s_i:ml%s_o))
+    allocate(ml%in_dtheta(ml%s_i:ml%s_o))
 
     allocate(ml%n_poly(ml%s_i:ml%s_o))
     allocate(ml%mu_i(ml%s_i:ml%s_o))
@@ -169,19 +169,19 @@ contains
 
        i = s - ml%s_i + 1
 
-       v_o_prev = xi(k_o_prev)**2*dTheta(k_o_prev)
+       v_o_prev = z(k_o_prev)**2*dtheta(k_o_prev)
 
        ml%mu_i(s) = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
-       ml%t(s) = ml%t(s-1)*exp(ml%n_poly(s-1)*log(Theta(k_o_prev)) + Delta_d(i-1))
+       ml%t(s) = ml%t(s-1)*exp(ml%n_poly(s-1)*log(theta(k_o_prev)) + Delta_d(i-1))
 
-       ml%v_i(s) = xi(k_i)**2*dTheta(k_i)
+       ml%v_i(s) = z(k_i)**2*dtheta(k_i)
 
-       ml%B(s) = (dTheta(k_i)/dTheta(k_o_prev))*(ml%t(s)/ml%t(s-1))*ml%B(s-1)
+       ml%B(s) = (dtheta(k_i)/dtheta(k_o_prev))*(ml%t(s)/ml%t(s-1))*ml%B(s-1)
 
     end do seg_data_loop
 
-    v_o_prev = xi(k_o)**2*dTheta(k_o)
+    v_o_prev = z(k_o)**2*dtheta(k_o)
 
     ml%mu_s = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
@@ -194,20 +194,20 @@ contains
 
        if (ml%n_poly(s) /= 0._WP) then
 
-          where (xi(k_i:k_o) /= 0._WP)
-             d2Theta(k_i:k_o) = -2._WP*dTheta(k_i:k_o)/xi(k_i:k_o) - ml%B(s)*pow(Theta(k_i:k_o), ml%n_poly(s))
+          where (z(k_i:k_o) /= 0._WP)
+             d2theta(k_i:k_o) = -2._WP*dtheta(k_i:k_o)/z(k_i:k_o) - ml%B(s)*pow(theta(k_i:k_o), ml%n_poly(s))
           elsewhere
-             d2Theta(k_i:k_o) = -1._WP/3._WP
+             d2theta(k_i:k_o) = -1._WP/3._WP
           end where
 
        else
 
-          d2Theta(k_i:k_o) = -1._WP/3._WP
+          d2theta(k_i:k_o) = -1._WP/3._WP
 
        endif
 
-       ml%in_Theta(s) = r_interp_t(x(k_i:k_o), Theta(k_i:k_o), dTheta(k_i:k_o)*ml%xi_s)
-       ml%in_dTheta(s) = r_interp_t(x(k_i:k_o), dTheta(k_i:k_o), d2Theta(k_i:k_o)*ml%xi_s)
+       ml%in_theta(s) = r_interp_t(x(k_i:k_o), theta(k_i:k_o), dtheta(k_i:k_o)*ml%z_s)
+       ml%in_dtheta(s) = r_interp_t(x(k_i:k_o), dtheta(k_i:k_o), d2theta(k_i:k_o)*ml%z_s)
 
     end do seg_spline_loop
 
@@ -271,9 +271,9 @@ contains
     type(point_t), intent(in)       :: pt
     real(WP)                        :: coeff
 
-    real(WP) :: xi
-    real(WP) :: Theta
-    real(WP) :: dTheta
+    real(WP) :: z
+    real(WP) :: theta
+    real(WP) :: dtheta
 
     $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),V_2 evaluation at vacuum point)
 
@@ -281,16 +281,16 @@ contains
 
     if (pt%x /= 0._WP) then
 
-       xi = pt%x*this%xi_s
+       z = pt%x*this%z_s
 
-       Theta = this%in_Theta(pt%s)%f(pt%x)
-       dTheta = this%in_dTheta(pt%s)%f(pt%x)
+       theta = this%in_theta(pt%s)%f(pt%x)
+       dtheta = this%in_dtheta(pt%s)%f(pt%x)
 
-       coeff = -(this%n_poly(pt%s) + 1._WP)*this%xi_s**2*dTheta/(Theta*xi)
+       coeff = -(this%n_poly(pt%s) + 1._WP)*this%z_s**2*dtheta/(theta*z)
 
     else
 
-       coeff = (this%n_poly(pt%s) + 1._WP)*this%xi_s**2/3._WP
+       coeff = (this%n_poly(pt%s) + 1._WP)*this%z_s**2/3._WP
 
     endif
 
@@ -329,18 +329,18 @@ contains
     type(point_t), intent(in)       :: pt
     real(WP)                        :: coeff
 
-    real(WP) :: xi
-    real(WP) :: Theta
+    real(WP) :: z
+    real(WP) :: theta
 
     ! Evaluate the U coefficient
 
     if (pt%x /= 0._WP) then
 
-       xi = pt%x*this%xi_s
+       z = pt%x*this%z_s
 
-       Theta = this%in_Theta(pt%s)%f(pt%x)
+       theta = this%in_theta(pt%s)%f(pt%x)
 
-       coeff = xi**3*this%t(pt%s)*pow(Theta, this%n_poly(pt%s))/this%mu_(pt)
+       coeff = z**3*this%t(pt%s)*pow(theta, this%n_poly(pt%s))/this%mu_(pt)
 
     else
 
@@ -370,7 +370,7 @@ contains
 
     else
 
-       coeff = 3._WP*this%mu_s/this%xi_s**3
+       coeff = 3._WP*this%mu_s/this%z_s**3
 
     endif
 
@@ -429,9 +429,9 @@ contains
     type(point_t), intent(in)       :: pt
     real(WP)                        :: dcoeff
 
-    real(WP) :: xi
-    real(WP) :: Theta
-    real(WP) :: dTheta
+    real(WP) :: z
+    real(WP) :: theta
+    real(WP) :: dtheta
 
     $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),dV_2 evaluation at vacuum point)
 
@@ -439,12 +439,12 @@ contains
 
     if (pt%x /= 0._WP) then
 
-       xi = pt%x*this%xi_s
+       z = pt%x*this%z_s
 
-       Theta = this%in_Theta(pt%s)%f(pt%x)
-       dTheta = this%in_dTheta(pt%s)%f(pt%x)
+       theta = this%in_theta(pt%s)%f(pt%x)
+       dtheta = this%in_dtheta(pt%s)%f(pt%x)
 
-       dcoeff = -3._WP - xi*dTheta/Theta - this%B(pt%s)*xi*pow(Theta, this%n_poly(pt%s))/dTheta
+       dcoeff = -3._WP - z*dtheta/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/dtheta
 
     else
 
@@ -487,9 +487,9 @@ contains
     type(point_t), intent(in)       :: pt
     real(WP)                        :: dcoeff
 
-    real(WP) :: xi
-    real(WP) :: Theta
-    real(WP) :: dTheta
+    real(WP) :: z
+    real(WP) :: theta
+    real(WP) :: dtheta
 
     $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),dU evaluation at vacuum point)
 
@@ -497,12 +497,12 @@ contains
     
     if (pt%x /= 0._WP) then
 
-       xi = pt%x*this%xi_s
+       z = pt%x*this%z_s
 
-       Theta = this%in_Theta(pt%s)%f(pt%x)
-       dTheta = this%in_dTheta(pt%s)%f(pt%x)
+       theta = this%in_theta(pt%s)%f(pt%x)
+       dtheta = this%in_dtheta(pt%s)%f(pt%x)
        
-       dcoeff = 3._WP + this%n_poly(pt%s)*xi*dTheta/Theta - this%coeff_U_(pt)
+       dcoeff = 3._WP + this%n_poly(pt%s)*z*dtheta/theta - this%coeff_U_(pt)
 
     else
 
@@ -546,7 +546,7 @@ contains
 
     ! Evaluate the mass coordinate mu
 
-    v = (this%xi_s*pt%x)**2*this%in_dTheta(pt%s)%f(pt%x)
+    v = (this%z_s*pt%x)**2*this%in_dtheta(pt%s)%f(pt%x)
 
     mu = this%mu_i(pt%s) - (v - this%v_i(pt%s))*this%t(pt%s)/this%B(pt%s)
 
@@ -593,7 +593,7 @@ contains
 
     ! Return whether the point is a vacuum
 
-    is_vacuum = this%in_Theta(pt%s)%f(pt%x) == 0._WP
+    is_vacuum = this%in_theta(pt%s)%f(pt%x) == 0._WP
 
     ! Finish
 

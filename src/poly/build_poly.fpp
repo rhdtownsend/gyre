@@ -46,18 +46,18 @@ program build_poly
   integer                   :: n_d
   real(WP), allocatable     :: n_poly(:)
   real(WP)                  :: Gamma_1
-  real(WP), allocatable     :: xi_d(:)
+  real(WP), allocatable     :: z_d(:)
   real(WP), allocatable     :: Delta_d(:)
-  real(WP)                  :: dxi
+  real(WP)                  :: dz
   real(WP)                  :: toler
   character(FILENAME_LEN)   :: file
-  real(WP), allocatable     :: xi(:)
-  real(WP), allocatable     :: Theta(:)
-  real(WP), allocatable     :: dTheta(:)
+  real(WP), allocatable     :: z(:)
+  real(WP), allocatable     :: theta(:)
+  real(WP), allocatable     :: dtheta(:)
   type(hgroup_t)            :: hg
 
-  namelist /poly/ n_d, n_poly, Gamma_1, xi_d, Delta_d
-  namelist /num/ dxi, toler
+  namelist /poly/ n_d, n_poly, Gamma_1, z_d, Delta_d
+  namelist /num/ dz, toler
   namelist /out/ file
 
   ! Read command-line arguments
@@ -69,7 +69,7 @@ program build_poly
   ! Set defaults
 
   allocate(n_poly(D))
-  allocate(xi_d(D))
+  allocate(z_d(D))
   allocate(Delta_d(D))
 
   n_d = 0
@@ -77,7 +77,7 @@ program build_poly
 
   n_poly(1) = 0._WP
 
-  dxi = 0.01
+  dz = 0.01
   toler = 1E-10
 
   ! Read parameters
@@ -88,7 +88,7 @@ program build_poly
   read(unit, NML=poly)
 
   call reallocate(n_poly, [n_d+1])
-  call reallocate(xi_d, [n_d])
+  call reallocate(z_d, [n_d])
   call reallocate(Delta_d, [n_d])
 
   rewind(unit)
@@ -101,13 +101,13 @@ program build_poly
 
   ! Solve the discontinuous Lane-Emden equation
 
-  call solve_lane_emden(n_poly, xi_d, Delta_d, dxi, toler, xi, Theta, dTheta)
+  call solve_lane_emden(n_poly, z_d, Delta_d, dz, toler, z, theta, dtheta)
 
   ! Write the model
 
   hg = hgroup_t(file, CREATE_FILE)
 
-  call write_attr(hg, 'n', SIZE(xi))
+  call write_attr(hg, 'n', SIZE(z))
   call write_attr(hg, 'n_d', n_d)
   call write_attr(hg, 'n_poly', n_poly)
   if (n_d > 0) then
@@ -115,9 +115,9 @@ program build_poly
   endif
   call write_attr(hg, 'Gamma_1', Gamma_1)
 
-  call write_dset(hg, 'xi', xi)
-  call write_dset(hg, 'Theta', Theta)
-  call write_dset(hg, 'dTheta', dTheta)
+  call write_dset(hg, 'z', z)
+  call write_dset(hg, 'theta', theta)
+  call write_dset(hg, 'dtheta', dtheta)
 
   call hg%final()
 

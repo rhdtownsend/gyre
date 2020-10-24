@@ -52,16 +52,16 @@ module gyre_lane_emden
 
 contains
 
-  subroutine solve_lane_emden (n_poly, xi_d, Delta_d, dxi, tol, xi, Theta, dTheta)
+  subroutine solve_lane_emden (n_poly, z_d, Delta_d, dz, tol, z, theta, dtheta)
 
     real(WP), intent(in)               :: n_poly(:)
-    real(WP), intent(in)               :: xi_d(:)
+    real(WP), intent(in)               :: z_d(:)
     real(WP), intent(in)               :: Delta_d(:)
-    real(WP), intent(in)               :: dxi
+    real(WP), intent(in)               :: dz
     real(WP), intent(in)               :: tol
-    real(WP), allocatable, intent(out) :: xi(:)
-    real(WP), allocatable, intent(out) :: Theta(:)
-    real(WP), allocatable, intent(out) :: dTheta(:)
+    real(WP), allocatable, intent(out) :: z(:)
+    real(WP), allocatable, intent(out) :: theta(:)
+    real(WP), allocatable, intent(out) :: dtheta(:)
 
     real(WP), parameter :: X_BEG = sqrt(EPSILON(0._WP))
     integer, parameter  :: D_0 = 512
@@ -82,7 +82,7 @@ contains
     real(WP)              :: t_t
     real(WP)              :: f
 
-    $CHECK_BOUNDS(SIZE(xi_d),SIZE(n_poly)-1)
+    $CHECK_BOUNDS(SIZE(z_d),SIZE(n_poly)-1)
     $CHECK_BOUNDS(SIZE(Delta_d),SIZE(n_poly)-1)
 
     ! Initialize arrays
@@ -96,7 +96,7 @@ contains
 
     ! Perform a series expansion out to x_beg
 
-    dx = dxi
+    dx = dz
 
     n_poly_m = n_poly(1)
     B_m = 1._WP
@@ -126,12 +126,12 @@ contains
 
     ! Now continue by intergrating to each discontinuity point
 
-    n_d = SIZE(xi_d)
+    n_d = SIZE(z_d)
 
     do i = 1, n_d
 
        n_poly_m = n_poly(i)
-       x_m = xi_d(i)
+       x_m = z_d(i)
 
        istate = 1
 
@@ -248,10 +248,10 @@ contains
 
     ! Set up return values
 
-    xi = x(:n)
+    z = x(:n)
     
-    Theta = y(1,:n)
-    dTheta = y(2,:n)
+    theta = y(1,:n)
+    dtheta = y(2,:n)
 
     ! Finish
 
