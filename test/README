@@ -1,0 +1,11 @@
+This is the top-level test directory for GYRE. The tests in the
+following subdirectories are designed both to test that GYRE is
+working correctly, and to demonstrate how to perform different types
+of calculation using GYRE.
+
+ad    -- adiabatic pulsations
+nad   -- nonadiabatic pulsations
+num   -- numerics
+
+The other subdirectories are used internally for testing and
+development purposes.
