@@ -55,9 +55,9 @@ contains
     integer                     :: n_d
     real(WP), allocatable       :: Delta_d(:)
     real(WP)                    :: Gamma_1
-    real(WP), allocatable       :: xi(:)
-    real(WP), allocatable       :: Theta(:)
-    real(WP), allocatable       :: dTheta(:)
+    real(WP), allocatable       :: z(:)
+    real(WP), allocatable       :: theta(:)
+    real(WP), allocatable       :: dtheta(:)
     real(WP)                    :: Omega_rot
     type(poly_model_t), pointer :: pm
 
@@ -80,14 +80,14 @@ contains
     endif
     call read_attr(hg, 'Gamma_1', Gamma_1)
 
-    call read_dset_alloc(hg, 'xi', xi)
-    call read_dset_alloc(hg, 'Theta', Theta)
-    call read_dset_alloc(hg, 'dTheta', dTheta)
+    call read_dset_alloc(hg, 'z', z)
+    call read_dset_alloc(hg, 'theta', theta)
+    call read_dset_alloc(hg, 'dtheta', dtheta)
 
     call hg%final()
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Read', SIZE(xi), 'points'
+       write(OUTPUT_UNIT, 110) 'Read', SIZE(z), 'points'
 110    format(3X,A,1X,I0,1X,A)
     endif
 
@@ -97,7 +97,7 @@ contains
 
     ! Initialize the poly_model_t
 
-    allocate(pm, SOURCE=poly_model_t(xi, Theta, dTheta, n_poly, Delta_d, Gamma_1, Omega_rot))
+    allocate(pm, SOURCE=poly_model_t(z, theta, dtheta, n_poly, Delta_d, Gamma_1, Omega_rot))
 
     ! Return a pointer
 
