@@ -35,10 +35,10 @@ SPB star into your working directory:
 
    cp $GYRE_DIR/models/mesa/spb/spb.mesa .
 
-Creating a Namelist File
-========================
+Assembling a Namelist File
+==========================
 
-Now comes the fun part: creating an input file containing the various
+Now comes the fun part: assembling an input file containing the various
 parameters which control a GYRE run. Using a text editor, create the
 file :file:`gyre.in` in your working directory with the following
 content cut-and-pasted in:

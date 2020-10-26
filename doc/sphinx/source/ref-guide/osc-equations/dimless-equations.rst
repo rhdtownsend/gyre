@@ -191,6 +191,8 @@ Here, + (-) superscripts indicate quantities evaluated on the inner
 :math:`y_{6}` remain continuous across discontinuites, and therefore
 don't need these superscripts.
 
+.. _struct-coeffs:
+
 Structure Coefficients
 ----------------------
 

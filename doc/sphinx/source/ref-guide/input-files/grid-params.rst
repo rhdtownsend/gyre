@@ -44,4 +44,4 @@ the last (matching) one is used. Allowable parameters are:
    Comma-separated list of :nml_g:`mode` tags to match
 
 See :ref:`spatial-grids` for further details, in particular a
-discussion of how the weighting (:nml_n:`w`) parameters work.
+discussion of how the weighting (:nml_n:`w_*`) parameters work.

@@ -4,7 +4,7 @@
 Namelist Input Files
 ********************
 
-GYRE reads parameters from an input file which defines a number of
+GYRE reads parameters from an input file that defines a number of
 Fortran namelist groups, as described below.
 
 .. toctree::
