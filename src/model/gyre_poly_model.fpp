@@ -90,13 +90,13 @@ module gyre_poly_model
 
 contains
 
-  function poly_model_t_ (z, theta, dtheta, n_poly, Delta_d, Gamma_1, Omega_rot) result (ml)
+  function poly_model_t_ (z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot) result (ml)
 
     real(WP), intent(in) :: z(:)
     real(WP), intent(in) :: theta(:)
     real(WP), intent(in) :: dtheta(:)
     real(WP), intent(in) :: n_poly(:)
-    real(WP), intent(in) :: Delta_d(:)
+    real(WP), intent(in) :: Delta_b(:)
     real(WP), intent(in) :: Gamma_1
     real(WP), intent(in) :: Omega_rot
     type(poly_model_t)   :: ml
@@ -115,11 +115,11 @@ contains
     $CHECK_BOUNDS(SIZE(theta),SIZE(z))
     $CHECK_BOUNDS(SIZE(dtheta),SIZE(z))
 
-    $CHECK_BOUNDS(SIZE(Delta_d),SIZE(n_poly)-1)
+    $CHECK_BOUNDS(SIZE(Delta_b),SIZE(n_poly)-1)
 
     ! Construct the poly_model_t from the Lane-Emden solutions theta,
-    ! dtheta/dz. Per-segment polytropic indices and density jumps are
-    ! supplied in n_poly and Delta_d, respectively
+    ! dtheta/dz. Per-segment polytropic indices are supplied in n_poly,
+    ! and segment-boundary density jumps in Delta_b
 
     ! Create the grid
 
@@ -173,7 +173,7 @@ contains
 
        ml%mu_i(s) = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
-       ml%t(s) = ml%t(s-1)*exp(ml%n_poly(s-1)*log(theta(k_o_prev)) + Delta_d(i-1))
+       ml%t(s) = ml%t(s-1)*exp(ml%n_poly(s-1)*log(theta(k_o_prev)) + Delta_b(i-1))
 
        ml%v_i(s) = z(k_i)**2*dtheta(k_i)
 

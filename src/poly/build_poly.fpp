@@ -1,5 +1,5 @@
 ! Program  : build_poly
-! Purpose  : build a polytrope, possibly with disctontinuities
+! Purpose  : build a composite polytrope
 !
 ! Copyright 2015-2020 Rich Townsend & The GYRE Team
 !
@@ -43,11 +43,11 @@ program build_poly
 
   character(:), allocatable :: filename
   integer                   :: unit
-  integer                   :: n_d
+  integer                   :: n_r
   real(WP), allocatable     :: n_poly(:)
   real(WP)                  :: Gamma_1
-  real(WP), allocatable     :: z_d(:)
-  real(WP), allocatable     :: Delta_d(:)
+  real(WP), allocatable     :: z_b(:)
+  real(WP), allocatable     :: Delta_b(:)
   real(WP)                  :: dz
   real(WP)                  :: toler
   character(FILENAME_LEN)   :: file
@@ -56,7 +56,7 @@ program build_poly
   real(WP), allocatable     :: dtheta(:)
   type(hgroup_t)            :: hg
 
-  namelist /poly/ n_d, n_poly, Gamma_1, z_d, Delta_d
+  namelist /poly/ n_r, n_poly, Gamma_1, z_b, Delta_b
   namelist /num/ dz, toler
   namelist /out/ file
 
@@ -69,10 +69,10 @@ program build_poly
   ! Set defaults
 
   allocate(n_poly(D))
-  allocate(z_d(D))
-  allocate(Delta_d(D))
+  allocate(z_b(D))
+  allocate(Delta_b(D))
 
-  n_d = 0
+  n_r = 1
   Gamma_1 = 5._WP/3._WP
 
   n_poly(1) = 0._WP
@@ -87,9 +87,9 @@ program build_poly
   rewind(unit)
   read(unit, NML=poly)
 
-  call reallocate(n_poly, [n_d+1])
-  call reallocate(z_d, [n_d])
-  call reallocate(Delta_d, [n_d])
+  call reallocate(n_poly, [n_r])
+  call reallocate(z_b, [n_r-1])
+  call reallocate(Delta_b, [n_r-1])
 
   rewind(unit)
   read(unit, NML=num)
@@ -99,19 +99,19 @@ program build_poly
 
   close(unit)
 
-  ! Solve the discontinuous Lane-Emden equation
+  ! Solve the Lane-Emden equation
 
-  call solve_lane_emden(n_poly, z_d, Delta_d, dz, toler, z, theta, dtheta)
+  call solve_lane_emden(n_poly, z_b, Delta_b, dz, toler, z, theta, dtheta)
 
   ! Write the model
 
   hg = hgroup_t(file, CREATE_FILE)
 
   call write_attr(hg, 'n', SIZE(z))
-  call write_attr(hg, 'n_d', n_d)
+  call write_attr(hg, 'n_r', n_r)
   call write_attr(hg, 'n_poly', n_poly)
-  if (n_d > 0) then
-     call write_attr(hg, 'Delta_d', Delta_d)
+  if (n_r > 1) then
+     call write_attr(hg, 'Delta_b', Delta_b)
   endif
   call write_attr(hg, 'Gamma_1', Gamma_1)
 

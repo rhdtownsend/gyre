@@ -1,5 +1,5 @@
 ! Module   : gyre_lane_emden
-! Purpose  : Lane-Emden equation solver with discontinuities
+! Purpose  : Lane-Emden equation solver for composite polytropes
 !
 ! Copyright 2015-2020 Rich Townsend & The GYRE Team
 !
@@ -52,11 +52,11 @@ module gyre_lane_emden
 
 contains
 
-  subroutine solve_lane_emden (n_poly, z_d, Delta_d, dz, tol, z, theta, dtheta)
+  subroutine solve_lane_emden (n_poly, z_b, Delta_b, dz, tol, z, theta, dtheta)
 
     real(WP), intent(in)               :: n_poly(:)
-    real(WP), intent(in)               :: z_d(:)
-    real(WP), intent(in)               :: Delta_d(:)
+    real(WP), intent(in)               :: z_b(:)
+    real(WP), intent(in)               :: Delta_b(:)
     real(WP), intent(in)               :: dz
     real(WP), intent(in)               :: tol
     real(WP), allocatable, intent(out) :: z(:)
@@ -73,7 +73,7 @@ contains
     real(WP), allocatable :: x(:)
     real(WP), allocatable :: y(:,:)
     real(WP)              :: dx
-    integer               :: n_d
+    integer               :: n_r
     integer               :: i
     integer               :: istate
     real(WP)              :: rwork(22+NEQ*MAX(16,NEQ+9)+3*NG)
@@ -82,8 +82,8 @@ contains
     real(WP)              :: t_t
     real(WP)              :: f
 
-    $CHECK_BOUNDS(SIZE(z_d),SIZE(n_poly)-1)
-    $CHECK_BOUNDS(SIZE(Delta_d),SIZE(n_poly)-1)
+    $CHECK_BOUNDS(SIZE(z_b),SIZE(n_poly)-1)
+    $CHECK_BOUNDS(SIZE(Delta_b),SIZE(n_poly)-1)
 
     ! Initialize arrays
 
@@ -124,14 +124,14 @@ contains
 
     end do expand_loop
 
-    ! Now continue by intergrating to each discontinuity point
+    ! Now continue by intergrating to each boundary point
 
-    n_d = SIZE(z_d)
+    n_r = SIZE(z_b) + 1
 
-    do i = 1, n_d
+    do i = 1, n_r-1
 
        n_poly_m = n_poly(i)
-       x_m = z_d(i)
+       x_m = z_b(i)
 
        istate = 1
 
@@ -173,7 +173,7 @@ contains
        
        end do integrate_d_loop
 
-       ! Create the discontinuity double point
+       ! Create the boundary double point
 
        n = n + 1
 
@@ -185,7 +185,7 @@ contains
 
        x(n) = x(n-1)
 
-       t_t = exp(n_poly(i)*log(y(1,n-1)) + Delta_d(i))
+       t_t = exp(n_poly(i)*log(y(1,n-1)) + Delta_b(i))
 
        y(1,n) = 1._WP
 
@@ -202,7 +202,7 @@ contains
 
     ! Finish by integrating to the surface
 
-    n_poly_m = n_poly(n_d+1)
+    n_poly_m = n_poly(n_r)
 
     istate = 1
 
@@ -319,7 +319,7 @@ contains
     integer, intent(in)   :: ng
     real(WP), intent(out) :: gout(ng)
 
-    ! Calculate the constraint function (discontinuity)
+    ! Calculate the constraint function (boundary)
 
     gout(1) = x - x_m
 

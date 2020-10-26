@@ -7,11 +7,11 @@ import tempfile as tf
 
 # Build a polytrope file
 
-def build_poly (n_poly, Delta_d, z_d, Gamma_1, dz, toler, filename):
+def build_poly (n_poly, Delta_b, z_b, Gamma_1, dz, toler, filename):
 
     n_poly_str = ','.join('{0:24.16e}'.format(n) for n in n_poly)
-    Delta_d_str = ','.join('{0:24.16e}'.format(d) for d in Delta_d)
-    z_d_str = ','.join('{0:24.16e}'.format(x) for x in z_d)
+    Delta_b_str = ','.join('{0:24.16e}'.format(d) for d in Delta_b)
+    z_b_str = ','.join('{0:24.16e}'.format(x) for x in z_b)
 
     # Create an input file
 
@@ -21,10 +21,10 @@ def build_poly (n_poly, Delta_d, z_d, Gamma_1, dz, toler, filename):
 
     f.write('''
 &poly
-	n_d = {0:d}
+	n_r = {0:d}
 	n_poly = {1:s}
-        Delta_d = {2:s}
-        z_d = {3:s}
+        Delta_b = {2:s}
+        z_b = {3:s}
         Gamma_1 = {4:24.16e}
 /
 
@@ -36,7 +36,7 @@ def build_poly (n_poly, Delta_d, z_d, Gamma_1, dz, toler, filename):
 &out
 	file = '{7:s}'
 /
-'''.format(len(n_poly)-1, n_poly_str, Delta_d_str, z_d_str,
+'''.format(len(n_poly), n_poly_str, Delta_b_str, z_b_str,
            Gamma_1, dz, toler, filename))
 
     f.close()
@@ -58,7 +58,6 @@ if __name__ == "__main__":
     Gamma_1 = 1.66666666666666667
 
     build_poly([0.0], [], [], Gamma_1, 0.00244949, 1E-10, '0.0/poly.h5')
-    build_poly([0.0,0.0], [0.0], [1.], Gamma_1, 0.00244949, 1E-10, '0.0+0.0/poly.h5')
     build_poly([0.0,0.0], [0.0], [1.], Gamma_1, 0.00244949, 1E-10, '0.0+0.0/poly.h5')
     build_poly([1.5], [], [], Gamma_1, 0.00365375, 1E-10, '1.5/poly.h5')
     build_poly([3.0], [], [], Gamma_1, 0.00689685, 1E-10, '3.0/poly.h5')

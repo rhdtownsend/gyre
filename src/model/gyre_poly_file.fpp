@@ -52,8 +52,8 @@ contains
 
     type(hgroup_t)              :: hg
     real(WP), allocatable       :: n_poly(:)
-    integer                     :: n_d
-    real(WP), allocatable       :: Delta_d(:)
+    integer                     :: n_r
+    real(WP), allocatable       :: Delta_b(:)
     real(WP)                    :: Gamma_1
     real(WP), allocatable       :: z(:)
     real(WP), allocatable       :: theta(:)
@@ -70,13 +70,13 @@ contains
 
     hg = hgroup_t(ml_p%file, OPEN_FILE)
 
-    call read_attr(hg, 'n_d', n_d)
+    call read_attr(hg, 'n_r', n_r)
 
     call read_attr_alloc(hg, 'n_poly', n_poly)
-    if (n_d > 0) then
-       call read_attr_alloc(hg, 'Delta_d', Delta_d)
+    if (n_r > 1) then
+       call read_attr_alloc(hg, 'Delta_b', Delta_b)
     else
-       allocate(Delta_d(0))
+       allocate(Delta_b(0))
     endif
     call read_attr(hg, 'Gamma_1', Gamma_1)
 
@@ -97,7 +97,7 @@ contains
 
     ! Initialize the poly_model_t
 
-    allocate(pm, SOURCE=poly_model_t(z, theta, dtheta, n_poly, Delta_d, Gamma_1, Omega_rot))
+    allocate(pm, SOURCE=poly_model_t(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot))
 
     ! Return a pointer
 
