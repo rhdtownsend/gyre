@@ -43,7 +43,7 @@ is used.  Allowable parameters are:
 :nml_n:`variables_set` (default :nml_v:`'GYRE'`)
   Dependent variables in oscillation equations; one of:
 
-  - :nml_v:`'GYRE'` : GYRE formulation, as desciribed in the :ref:`dimless-equations` section
+  - :nml_v:`'GYRE'` : GYRE formulation, as desciribed in the :ref:`dimless-form` section
   - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
   - :nml_v:`'JCD'` : Formulation following Jörgen Christensen-Dalsgaard (ADIPLS)
   - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for gravitational components, :nml_v:`'DZIEM'` for mechanical components)
@@ -51,32 +51,32 @@ is used.  Allowable parameters are:
 
 :nml_n:`alpha_grv` (default :nml_v:`1.`)
   Scaling factor for gravitational potential perturbations (see the
-  :math:`\alphagrv` physics switch in the :ref:`dimless-equations`
+  :math:`\alphagrv` physics switch in the :ref:`dimless-form`
   section)
 
 :nml_n:`alpha_thm` (defaualt :nml_v:`1.`)
   Scaling factor for the thermal timescale (see the :math:`\alphathm`
-  physics switch in the :ref:`dimless-equations` section)
+  physics switch in the :ref:`dimless-form` section)
 
 :nml_n:`alpha_hfl` (defaualt :nml_v:`1.`)
   Scaling factor for horizontal flux perturbations (see the :math:`\alphahfl`
-  term in the :ref:`dimless-equations` section)
+  term in the :ref:`dimless-form` section)
 
 :nml_n:`alpha_gam` (default :nml_v:`1.`)
   Scaling factor for g-mode isolation (see the :math:`\alphagam` term in
-  the :ref:`dimless-equations` section)
+  the :ref:`dimless-form` section)
 
 :nml_n:`alpha_pi` (default :nml_v:`1.`)
   Scaling factor for p-mode isolation (see the :math:`\alphapi` term in
-  the :ref:`dimless-equations` section)
+  the :ref:`dimless-form` section)
 
 :nml_n:`alpha_kap` (default :nml_v:`1.`)
   Scaling factor for opacity partial derivatives (see the
-  :math:`\alphakap` term in the :ref:`dimless-equations` section)
+  :math:`\alphakap` term in the :ref:`dimless-form` section)
 
 :nml_n:`alpha_rht` (default :nml_v:`0.`)
   Scaling factor for time-dependent term in radiative heat equation (see the
-  :math:`\alpharht` term in the :ref:`dimless-equations` section)
+  :math:`\alpharht` term in the :ref:`dimless-form` section)
 
 :nml_n:`inertia_norm` (default :nml_v:`'BOTH'`)
   Inertia normalization factor; one of

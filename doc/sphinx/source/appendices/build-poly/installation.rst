@@ -1,0 +1,8 @@
+.. _build-poly-install.rst
+
+Installation
+============
+
+The :program:`build_poly` executable is automatically compiled when
+GYRE is built, and installed in the :file:`{$GYRE_DIR}/bin` directory
+(see the :ref:`installation` chapter).

@@ -17,29 +17,25 @@ in each region. Here, the independent variable is
 
 .. math::
 
-   z = \left[ \frac{K_{1} \rho_{\rm c}^{(1-n_{1})/n_{1}} (n_{1} + 1)}{4 \pi G} \right]^{-1/2} \, r,
+   z = \left[ \frac{K_{1} (\rhoc t_{1})^{(1-n_{1})/n_{1}} (n_{1} + 1)}{4 \pi G} \right]^{-1/2} \, r,
 
-where :math:`\rho_{\rm c}` is the central density of the star. The
-dependent variable :math:`\theta_{i}` is related to the density, as
-discussed below.
-
-The structure of a composite polytrope is found by integrating the
-composite Lane-Emden equation
+where :math:`\rhoc` is the central density of the star; likewise, the
+dependent variable is
 
 .. math::
 
-   \frac{1}{z^{2}} \deriv{}{z} \left( z^{2} \deriv{\theta_{i}}{z} \right) = - B_{i} \theta_{i}^{n_{i}}
+   \theta_{i} = \left( \frac{1}{t_{i}} \frac{\rho_{i}}{\rhoc} \right)^{1/n_{i}},
 
-in each region. Here, the independent variable is
+where :math:`t_{i}` is a term introduced to allow for density
+discotinuities at the boundaries between regions. The quantity
+:math:`B_{i}` depends on :math:`K_{1}` and :math:`K_{i}` via
 
 .. math::
 
-   z = \left[ \frac{K_{1} \rho_{\rm c}^{(1-n_{1})/n_{1}} (n_{1} + 1)}{4 \pi G} \right]^{-1/2} \, r,
+   B_{i} = \frac{K_{1}}{K_{i}} \frac{n_{1}+1}{n_{i}+1} \frac{(\rhoc t_{1})^{(1-n_{1})/n_{1}}}{(\rhoc t_{i})^{(1-n_{i})/n_{i}}};
 
-where :math:`\rho_{\rm c}` is the central density of the star. The
-dependent variable :math:`\theta_{i}` is related to the density, as
-discussed in the :ref:`comp-ptrope-phys` section.
-
+clearly, :math:`B_{1} = 1`.
+ 
 Initial & Boundary Conditions
 -----------------------------
 
@@ -47,9 +43,9 @@ In the first region, the initial conditions are
 
 .. math::
 
-   \theta_{1}(0) = 1, \qquad \theta_{1}'(0) = 0
+   \theta_{1}(0) = 1, \qquad \theta_{1}'(0) = 0.
 
-and :math:`B_{1} = 1`. In the subsequent regions, the initial conditions are
+In the subsequent regions, the initial conditions are
 
 .. math::
 
@@ -59,7 +55,8 @@ and :math:`B_{1} = 1`. In the subsequent regions, the initial conditions are
    \frac{t_{i}}{t_{i-1}} \, \theta'_{i-1}(z_{i-1/2})
 
 where :math:`z_{i-1/2}` is the coordinate of the boundary between the
-:math:`i-1` and :math:`i` regions; moreover,
+:math:`i-1` and :math:`i` regions. Pressure continuity at this
+boundary requires that
 
 .. math::
 
@@ -73,13 +70,13 @@ The recurrence for :math:`t_{i}` is
 
    \ln t_{k} = \ln t_{i-1} + n_{i-1} \ln \theta_{i-1}(z_{i-1/2}) - n_{i} \ln \theta_{i}(z_{i-1/2}) + \Delta_{i-1/2},
 
-with :math:`t_{1} = 1` and
+where :math:`t_{1} = 1`, and
 
 .. math::
 
    \Delta_{i-1/2} = \ln \left[ \frac{\rho_{i}(z_{i-1/2})}{\rho_{i-1}(z_{i-1/2})} \right]
 
-quantifying the density jump at :math:`z_{i-1/2}`.
+quantifies the density jump at :math:`z_{i-1/2}`.
 
 The surface of the composite polytropic model, :math:`z=z_{\rm
 s}`, is defined implicitly by the boundary condition

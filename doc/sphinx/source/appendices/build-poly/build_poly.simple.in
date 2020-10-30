@@ -1,0 +1,12 @@
+&poly
+	n_poly = 3.0  ! Polytropic index of single region
+/
+
+&num
+	dz = 1E-2     ! Radial spacing of points
+	toler = 1E-10 ! Tolerance of integrator
+/
+
+&out
+	file = 'poly.simple.h5' ! Name of output file
+/

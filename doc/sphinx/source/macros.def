@@ -24,6 +24,8 @@ mz	\boldsymbol{0}
 ver	\mathbf{e}_{r}
 vv	\mathbf{v}
 vF	\mathbf{F}
+rhoc	\rho_{\rm c}
+Pc	P_{\rm c}
 vFrad	\vF_{\rm R}
 Fradr	F_{{\rm R},r}
 vFradh	\vF_{\rm R,h}

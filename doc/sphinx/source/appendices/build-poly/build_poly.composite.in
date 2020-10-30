@@ -1,0 +1,15 @@
+&poly
+	n_r = 2           ! Number of regions
+	n_poly = 3.0, 1.5 ! Polytropic indices of regions
+        z_b = 1.4         ! Radial coordinate of region boundaries
+        Delta_b = -0.5    ! Logarithmic density jump at region boundaries
+/
+
+&num
+	dz = 1E-2     ! Radial spacing of points
+	toler = 1E-10 ! Tolerance of integrator
+/
+
+&out
+	file = 'poly.composite.h5' ! Name of output file
+/

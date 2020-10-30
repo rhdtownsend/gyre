@@ -12,9 +12,9 @@ used for the calculations presented in :ads_citet:`townsend:2020`.
 Compiling
 =========
 
-The :program:`eval_lambda` executable is automatically compiled when
-GYRE is built, and installed in the :file:`{$GYRE_DIR}/bin` directory
-(see the :ref:`installation` chapter).
+:program:`eval_lambda` is automatically compiled when GYRE is built,
+and installed in the :file:`{$GYRE_DIR}/bin` directory (see the
+:ref:`installation` chapter).
 
 Running
 =======

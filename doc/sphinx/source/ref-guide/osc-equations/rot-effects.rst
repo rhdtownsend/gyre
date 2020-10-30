@@ -4,7 +4,7 @@ Rotation Effects
 ================
 
 The differential equations and boundary conditions laid out in the
-:ref:`dimless-equations` section are formulated for a non-rotating
+:ref:`dimless-form` section are formulated for a non-rotating
 star. Solving the oscillation equations for a rotating star is a
 challenging task, and a complete treatment lies beyond the scope of
 GYRE. However, GYRE does include two important modifications arising

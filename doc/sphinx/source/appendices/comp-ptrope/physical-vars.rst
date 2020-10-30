@@ -3,14 +3,19 @@
 Physical Variables
 ==================
 
-Once the :ref:`Lane-Emden equation <comp-ptrope-lane-emden>` has been solved, the density in each
+Once the :ref:`Lane-Emden equation <comp-ptrope-le>` has been solved, the density in each
 region can be evaluated by
 
 .. math::
 
-   \rho_{i} = \rho_{\rm c} t_{i} \theta_{i}^{n_{i}}.
+   \frac{\rho_{i}}{\rhoc} = t_{i} \theta_{i}^{n_{i}}.
 
-The pressure then follows from the :ref:`polytropic equation of state <comp-ptrope-eos>`.
+The pressure then follows from the :ref:`polytropic equation of state
+<comp-ptrope-eos>` as
+
+.. math::
+
+   \frac{P_{i}}{\Pc} = \frac{n_{1}+1}{n_{i}+1} \frac{t_{i}^{(1-n_{i})/n_{i}}}{B_{i}} \left( \frac{\rho_{i}}{\rhoc} \right)^{(n_{i} + 1)/n_{i}}.
 
 The interior mass :math:`m` is evaluated by introducing the auxillary
 quantity :math:`\mu`, which is defined in the first region by

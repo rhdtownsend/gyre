@@ -66,7 +66,7 @@ of the oscillation equations, with the goal of improving resolution
 where the displacement perturbation :math:`\vxi` is rapidly
 varying. Within the subinterval :math:`[x_{k},x_{k+1}]`, the
 :math:`y_{1}` and :math:`y_{2}` solutions (see the
-:ref:`dimless-equations` section) take the approximate form
+:ref:`dimless-form` section) take the approximate form
 
 .. math::
 
@@ -154,7 +154,7 @@ coefficient :math:`C`, the criterion for refinement of the subinterval
 where :math:`\wstr` is a user-definable weighting parameter. This
 criterion is applied separately to the :math:`V_2 \equiv V/x^{2}`,
 :math:`U`, :math:`A^{*}`, :math:`c_{1}` and :math:`\Gamma_{1}`
-coefficients (see the :ref:`dimless-equations` section).
+coefficients (see the :ref:`dimless-form` section).
 
 .. _central-criteria:
 

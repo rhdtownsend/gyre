@@ -20,7 +20,7 @@ parameters of the :nml_g:`poly` namelist group appearing in
      - :nml_n:`n_poly`
    * - :math:`z_{i-1/2}`
      - :nml_n:`xi_d`
-   * - :math:`Delta_{i-1/2}`
+   * - :math:`\Delta_{i-1/2}`
      - :nml_n:`Delta_d`
-   * - math:`\Gamma_1`
+   * - :math:`\Gamma_1`
      - :nml_n:`Gamma_1`

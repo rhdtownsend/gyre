@@ -1,7 +1,7 @@
-.. _dimless-equations:
+.. _dimless-form:
 
-Dimensionless Equations
-=======================
+Dimensionless Formulation
+=========================
 
 To improve numerical stability, GYRE solves the :ref:`sep-equations`
 by recasting them into a dimensionless form that traces its roots back 
