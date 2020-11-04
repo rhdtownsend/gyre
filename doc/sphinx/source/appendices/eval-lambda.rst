@@ -9,17 +9,17 @@ evaluates the eigenvalue :math:`\lambda` appearing in Laplace's tidal
 equations (see the :ref:`rot-effects` section). This executable is
 used for the calculations presented in :ads_citet:`townsend:2020`.
 
-Compiling
-=========
+Installation
+============
 
 :program:`eval_lambda` is automatically compiled when GYRE is built,
-and installed in the :file:`{$GYRE_DIR}/bin` directory (see the
+and installed in the :file:`{$GYRE_DIR}/bin` directory (see the main
 :ref:`installation` chapter).
 
 Running
 =======
 
-Unlike other GYRE executables, the parameters for
+Unlike most other GYRE executables, the parameters for
 :program:`eval_lambda` are supplied directly on the command line, with
 the syntax
 

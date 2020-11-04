@@ -62,7 +62,7 @@ Compile GYRE using the :command:`make` utility:
 
    make -j -C $GYRE_DIR
 
-(the :option:`-j` flags tells :command:`make` to use multiple cores, speeding up the build).
+(the :command:`-j` flags tells :command:`make` to use multiple cores, speeding up the build).
 
 Test
 ----

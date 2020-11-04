@@ -57,7 +57,7 @@ file above:
 * the :nml_g:`constants` namelist group is empty, telling GYRE to use default
   values for fundamental constants;
 * the :nml_g:`model` namelist group tells GYRE to read an evolutionary
-  model, in :ref:`MESA format <mesa-model-files>`, from the file
+  model, in :ref:`MESA format <mesa-file-format>`, from the file
   :file:`spb.mesa`;
 * the :nml_g:`mode` namelist group tells GYRE to search for
   quadrupole (:math:`\ell=2`) modes;
