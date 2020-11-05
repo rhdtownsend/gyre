@@ -86,7 +86,7 @@ html_theme_options = {
 master_doc = 'index'
 
 # Set logo
-html_logo = 'gyre-logo-200.png'
+html_logo = 'gyre-logo.png'
 
 # Set up Extlinks
 extlinks = {
