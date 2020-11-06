@@ -199,5 +199,4 @@ Stellar Structure
 
 .. rubric:: Footnotes
 
-.. [#only_evol] This option is only available when :nml_n:`model_type`
-                is :nml_v:`'EVOL'`
+.. [#only_evol] This option is only available when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`
