@@ -100,8 +100,8 @@ module gyre_wave
      procedure, public :: dzeta_dm
      procedure         :: dzeta_dm_kawaler_
      procedure, public :: dbeta_dx
-     procedure, public :: dtau_dx_ss
-     procedure, public :: dtau_dx_tr
+     procedure, public :: dtau_ss_dx
+     procedure, public :: dtau_tr_dx
      procedure, public :: Yt_1
      procedure, public :: Yt_2
      procedure, public :: I_0
@@ -127,7 +127,7 @@ module gyre_wave
      procedure, public :: tau_tr
      procedure, public :: omega_int
      procedure, public :: beta
-     procedure, public :: domega_rot
+     procedure, public :: dOmega_rot
      procedure, public :: eta
   end type wave_t
 
@@ -310,7 +310,7 @@ contains
     associate( &
          ml => this%cx%model() )
 
-      dfreq_rot = this%domega_rot()*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
+      dfreq_rot = this%dOmega_rot()*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
     
     end associate
 
@@ -1410,11 +1410,11 @@ contains
 
   !****
 
-  function dtau_dx_ss (this, k)
+  function dtau_ss_dx (this, k)
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: k
-    real(WP)                  :: dtau_dx_ss
+    real(WP)                  :: dtau_ss_dx
 
     complex(WP) :: lag_P
     complex(WP) :: lag_rho
@@ -1439,7 +1439,7 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
       U = ml%coeff(I_U, pt)
 
-      dtau_dx_ss = m*pt%x**2*AIMAG(lag_rho*CONJG(lag_P))*(U/(2._WP*c_1**2*V_2))
+      dtau_ss_dx = m*pt%x**2*AIMAG(lag_rho*CONJG(lag_P))*(U/(2._WP*c_1**2*V_2))
       
     end associate
 
@@ -1447,15 +1447,15 @@ contains
 
     return
 
-  end function dtau_dx_ss
+  end function dtau_ss_dx
 
   !****
 
-  function dtau_dx_tr (this, k)
+  function dtau_tr_dx (this, k)
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: k
-    real(WP)                  :: dtau_dx_tr
+    real(WP)                  :: dtau_tr_dx
 
     complex(WP) :: xi_r
     complex(WP) :: eul_P
@@ -1494,7 +1494,7 @@ contains
 
       omega_c = this%cx%omega_c(Omega_rot, this%st)
 
-      dtau_dx_tr = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._WP)*( &
+      dtau_tr_dx = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._WP)*( &
            lag_rho*CONJG(eul_P)/(c_1*V_2) + &
            eul_rho*CONJG(eul_phi) + &
            xi_r*CONJG(eul_rho)*pt%x/c_1))*(U/(2._WP*c_1))
@@ -1505,7 +1505,7 @@ contains
 
     return
     
-  end function dtau_dx_tr
+  end function dtau_tr_dx
 
   !****
 
@@ -2282,7 +2282,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, this%n_k
-       dtau_dx(k) = this%dtau_dx_ss(k)
+       dtau_dx(k) = this%dtau_ss_dx(k)
     end do
 
     tau_ss = integrate(this%gr%pt%x, dtau_dx)
@@ -2309,7 +2309,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, this%n_k
-       dtau_dx(k) = this%dtau_dx_tr(k)
+       dtau_dx(k) = this%dtau_tr_dx(k)
     end do
 
     tau_tr = integrate(this%gr%pt%x, dtau_dx)
@@ -2374,10 +2374,10 @@ contains
 
   !****
 
-  function domega_rot (this)
+  function dOmega_rot (this)
 
     class(wave_t), intent(in) :: this
-    complex(WP)               :: domega_rot
+    complex(WP)               :: dOmega_rot
 
     integer  :: k
     real(WP) :: dbeta_dx(this%n_k)
@@ -2401,13 +2401,13 @@ contains
        
     end do
 
-    domega_rot = integrate(this%gr%pt%x, dbeta_dx*Omega_rot)
+    dOmega_rot = integrate(this%gr%pt%x, dbeta_dx*Omega_rot)
 
     ! Finish
 
     return
 
-  end function domega_rot
+  end function dOmega_rot
 
   !****
 
