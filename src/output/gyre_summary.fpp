@@ -201,6 +201,10 @@ contains
 
        select case (this%items(i))
 
+       case ('n_j')
+
+          call wr%write('n_j', this%n_row)
+
        case ('freq_units')
 
           call wr%write('freq_units', this%ot_p%freq_units)
