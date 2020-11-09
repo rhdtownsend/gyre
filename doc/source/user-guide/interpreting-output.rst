@@ -43,7 +43,7 @@ simplify the analysis of summary and detail files. Detailed
 information about PyGYRE can be found in the `full documentation
 <https://pygyre.readthedocs.io/en/latest/>`__; here, we demonstrate
 how to use it to read and plot the output files from the
-:ref:`walkthrough`.
+:ref:`walkthrough` section.
 
 As a preliminary step, you'll need to install PyGYRE from the `Python
 Package Index (PyPI) <https://pypi.org/>`__. This can be done using

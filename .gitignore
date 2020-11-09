@@ -15,5 +15,6 @@ doc/*.blg
 work/*
 
 .DS_Store
+__pycache__
 
 regress

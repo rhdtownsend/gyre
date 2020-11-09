@@ -35,7 +35,7 @@ conservation) equations become
 
 .. math::
 
-   \trho' + \frac{1}{r^{2}} \deriv{}{r} \left( r^{2} \txir \right) - \frac{\ell(\ell+1)}{r} \rho \txih = 0,
+   \trho' + \frac{1}{r^{2}} \deriv{}{r} \left( \rho r^{2} \txir \right) - \frac{\ell(\ell+1)}{r} \rho \txih = 0,
 
 .. math::
 

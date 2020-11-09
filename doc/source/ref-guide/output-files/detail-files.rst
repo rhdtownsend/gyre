@@ -135,15 +135,15 @@ Classification & Validation
      - integer
      - azimuthal order
    * - :nml_v:`n_p`
-     - :math:`n_{\rm p}`
+     - :math:`\np`
      - integer
      - acoustic-wave winding number
    * - :nml_v:`n_g`
-     - :math:`n_{\rm g}`
+     - :math:`\ng`
      - integer
      - gravity-wave winding number
    * - :nml_v:`n_pg`
-     - :math:`n_{\rm pg}`
+     - :math:`\npg`
      - integer
      - radial order within the Eckart-Scuflaire-Osaki-Takata
        scheme (see :ads_citealp:`takata:2006b`)

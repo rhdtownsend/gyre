@@ -44,7 +44,6 @@ kapT	\kappa_{T}
 kaprho	\kappa_{\rho}
 kapS	\kappa_{S}
 kapad	\kappa_{\rm ad}
-npoly	n_{\rm poly}
 cm	{\rm cm}
 gram	{\rm g}
 erg	{\rm erg}
@@ -120,3 +119,6 @@ houghr	\Theta
 hought	\widehat{\Theta}
 houghp	\widetilde{\Theta}
 nreg	\mathcal{N}
+np	n_{\rm p}
+ng	n_{\rm g}
+npg	n_{\rm pg}

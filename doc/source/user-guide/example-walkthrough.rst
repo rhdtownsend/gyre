@@ -183,21 +183,10 @@ watch out for:
 * The number of iterations ``n_iter`` should be moderate; values above
   20 or so indicate that GYRE is having problems converging.
 
-* The mode radial order ``n_pg`` should be monotonic-increasing. Departures
-  from this behavior can happen for a number of reasons:
-
-  * Missing values can indicate that GYRE has skipped a mode in
-    frequency space; the fix is to use a finer frequency grid.
-
-  * Missing values together with duplicate and/or non-monotonic values
-    can indicate that GYRE isn't resolving the spatial structure of
-    eigenfunctions; the fix is to use a finer spatial grid.
-
-  * Missing values together with duplicate and/or non-monotonic values
-    can *also* incdicate problems with the input stellar model ---
-    for instance, incorrect values for the Brunt-Vaisala frequency
-    across density discontinuities; the fix is to stop expecting GYRE
-    to give sensible output when fed crap stellar models!
+* The mode radial order ``n_pg`` should be
+  monotonic-increasing. Departures from this behavior can happen for a
+  number of reasons, that are discussed in the :ref:`troubleshooting`
+  chapter.
 
 After processing the dipole modes, GYRE repeats the search steps for
 the quadropole modes. Once the overall run is complete, a number of

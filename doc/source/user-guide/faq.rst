@@ -66,7 +66,7 @@ What Does...
   when trying to find a complex root of the discriminant function. Try running
   with a different choice of :nml_n:`diff_scheme` parameter
   (:nml_v:`MAGNUS_GL2` seems to be the most robust), and/or using
-  :program:`gyre_contour` instead.
+  contour method instead (see the :ref:`non-ad-calcs` chapter).
 
 Why Does...
 ===========
