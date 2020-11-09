@@ -71,7 +71,15 @@ is the Lagrangian perturbation to the radiative luminosity. The radial part of t
 
    \tFradr' = \Fradr \left[
    -\frac{\tkappa'}{\kappa} - \frac{\trho'}{\rho} + 4 \frac{\tT'}{T}
-   + \frac{\sderiv{(\tT'/T)}{r}}{\sderiv{\ln T}{r}} \right],
+   + \frac{\sderiv{(\tT'/T)}{r}}{\sderiv{\ln T}{r}} \right];
+
+after a fair bit of algebra, this can be translated into an equivalent Lagrangian expression,
+
+.. math::
+
+   \delta\tFradr = \Fradr \left[
+   -\frac{\delta\tkappa}{\kappa} + 2 \frac{\txir}{r} - \ell(\ell+1) \frac{\txih}{r} + 4 \frac{\delta \tT}{T} + 
+   \frac{\sderiv{(\delta \tT/T)}{\ln r}}{\sderiv{\ln T}{\ln r}} \right].
 
 Finally, the thermodynamic, nuclear and opacity relations become
 
