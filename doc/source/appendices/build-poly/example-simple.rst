@@ -44,8 +44,8 @@ There is no screen output produced during the run, but at the end the
 :file:`poly.simple.h5` will be written to disk. This file, which is in
 :ref:`POLY format<poly-file-format>`, can be used as the input stellar
 model in a GYRE calculation; but it can also be explored in Python
-(see below) using the `read_poly` routine of the :ref:`GYRE Python
-module <python-support>`.
+(see :numref:`fig-poly-simple`) using the ``read_model`` function from
+:git:`PyGYRE <rhdtownsend/pygyre>`.
 
 .. _fig-poly-simple:
 

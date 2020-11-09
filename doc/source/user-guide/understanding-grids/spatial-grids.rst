@@ -218,7 +218,7 @@ The full set of parameters supported by the :nml_g:`grid` namelist
 group is listed in the :ref:`grid-params` section. However, the table
 below summarizes the mapping between the user-definable controls
 appearing in the expressions above, and the corresponding namelist
-parameters:
+parameters.
 
 .. list-table::
    :widths: 30 30 

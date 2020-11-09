@@ -6,17 +6,20 @@ Example Walkthrough
 
 This chapter provides a walkthrough of a example GYRE project, to
 illustrate the typical steps involved. For this example, we'll be
-focusing on finding eigenfrequencies and eigenfunctions of quadrupole
-(:math:`\ell=2`) gravity modes for a MESA model of slowly pulsating B (SPB) star.
+focusing on finding eigenfrequencies and eigenfunctions of diploe and
+quadrupole gravity modes for a MESA model of slowly pulsating B (SPB)
+star.
+
+.. _walkthrough-work:
 
 Making a Place to Work
 ======================
 
 When starting a new project, it's a good idea to create a dedicated
-working directory to contain the various input and output files that
-GYRE operates on. These commands will make a new directory beneath
-your home directory with the name :file:`work`, and then set this
-directory as the current working directory:
+work directory to contain the various input and output files that GYRE
+operates on. These commands will make a new directory beneath your
+home directory with the name :file:`work`, and then set this directory
+as the current working directory:
 
 .. substitution-prompt:: bash
 
@@ -29,7 +32,7 @@ Grabbing a Stellar Model
 The next step is to grab the stellar model. There are a number of
 example models provided in the :file:`${GYRE_DIR}/models` directory;
 the following commands will copy a MESA model for a :math:`5\,\Msun`
-SPB star into your working directory:
+SPB star into your work directory:
 
 .. substitution-prompt:: bash
 
@@ -40,7 +43,7 @@ Assembling a Namelist File
 
 Now comes the fun part: assembling an input file containing the various
 parameters which control a GYRE run. Using a text editor, create the
-file :file:`gyre.in` in your working directory with the following
+file :file:`gyre.in` in your work directory with the following
 content cut-and-pasted in:
 
 .. literalinclude:: example-walkthrough/gyre.in
@@ -59,7 +62,7 @@ file above:
 * the :nml_g:`model` namelist group tells GYRE to read an evolutionary
   model, in :ref:`MESA format <mesa-file-format>`, from the file
   :file:`spb.mesa`;
-* the :nml_g:`mode` namelist group tells GYRE to search for
+* the two :nml_g:`mode` namelist groups tells GYRE to search first for dipole (:math:`\ell=1`) and then 
   quadrupole (:math:`\ell=2`) modes;
 * the :nml_g:`osc` namelist group tells GYRE to apply a
   zero-pressure outer mechanical boundary condition in the oscillation
@@ -69,12 +72,12 @@ file above:
   modes;
 * the :nml_g:`grid` namelist group tells GYRE how to refine the model
   spatial grid;
-* the :nml_g:`ad_output` namelist group tells GYRE to write out
-  summary data to the file ``summary.txt``, and individual mode data
-  to files having the prefix ``mode.``;
+* the :nml_g:`ad_output` namelist group tells GYRE what adiabatic data
+  to write to which output files; summary data to the file
+  :file:`summary.h5`, and individual mode data to files having the
+  prefix ``mode.``;
 * the :nml_g:`nad_output` namelist group is empty, telling GYRE not to
-  write out any non-adiabatic data (see the
-  :ref:`non-ad-calcs` chapter for more info).
+  write any non-adiabatic data.
 
 Running GYRE
 ============
@@ -106,8 +109,8 @@ to the center (which is why GYRE decides not to add a central point).
    :start-after: Input filename
    :end-before: Mode Search
 
-GYRE then prepares to searching for modes with harmonic degree
-:math:`\ell=2` and azimuthal order :math:`m=0` (not specified in
+GYRE then prepares to search for modes with harmonic degree
+:math:`\ell=1` and azimuthal order :math:`m=0` (not specified in
 :file:`gyre.in`, but assumed by default), by building a frequency grid
 and a spatial grid:
 
@@ -167,7 +170,8 @@ The columns appearing are as follows:
 
 These values are printed to screen primarily to give an idea of GYRE's
 progress; more-detailed information about the modes found is given in
-the output files discussed below. Some things to watch out for:
+the output files, discussed in the following chapter. Some things to
+watch out for:
 
 * The convergence parameter ``chi``, defined as the ratio of
   discriminant values before and after the root finding, should small
@@ -179,7 +183,7 @@ the output files discussed below. Some things to watch out for:
 * The number of iterations ``n_iter`` should be moderate; values above
   20 or so indicate that GYRE is having problems converging.
 
-* The mode index ``n_pg`` should be monotonic-increasing. Departures
+* The mode radial order ``n_pg`` should be monotonic-increasing. Departures
   from this behavior can happen for a number of reasons:
 
   * Missing values can indicate that GYRE has skipped a mode in
@@ -195,47 +199,14 @@ the output files discussed below. Some things to watch out for:
     across density discontinuities; the fix is to stop expecting GYRE
     to give sensible output when fed crap stellar models!
 
-Interpreting Output Files
-=========================
+After processing the dipole modes, GYRE repeats the search steps for
+the quadropole modes. Once the overall run is complete, a number of
+output files are written:
 
-Overall properties of all modes found (radial orders,
-eigenfrequencies, etc.) are collected together in the summary file,
-which in this case has the name :file:`summary.txt`. For each mode
-GYRE also writes a detail file containing data (eigenfrequency,
-eigenfunctions, etc.) specific to the mode. In this case, the detail
-files have names of the form :file:`detail.{NNNNN}.txt`, where
-:file:`{NNNNN}` denotes a 5-digit index which increments (starting at
-:file:`00001`) for each mode found. Note that this index bears no
-relation to the radial order ``n_pg``; it merely serves as a unique
-label for the modes.
+* A summary file with the name :file:`summary.h5`
 
-Both the sumamry file and the detail files are text-based (it's possible
-to write HDF5-format files instead; see the :ref:`output-files`
-chapter for details). The command
+* For each mode found, a detail file with the name
+  :file:`detail.l{L}.n{N}.h5`, where :file:`{L}` and :file:`{N}` are
+  the harmonic degree and radial order of the mode, respectively.
 
-.. substitution-prompt:: bash
-
-   head summary.txt
-
-will print out the first 10 lines of the summary file, which should
-look something like this:
-
-.. literalinclude:: example-walkthrough/summary.txt
-   :language: console
-   :lines: 1-10
-
-The first three lines give column numbers, labels, and values for the
-scalar data --- here, the units ``freq_units`` of the frequency data
-in the file. The next two lines give column numbers and labels for the
-per-mode data; the ``Re(freq)`` and ``Im(freq)`` columnss contains the
-real and imaginary parts of the eigenfrequencies, units of cycles per
-day. The detail files have a similar layout, with scalar data followed
-by array data representing the eigenfunctions (one line per spatial
-grid point).
-
-The choice of which data appear in output files isn't hardwired, but
-rather determined by the :nml_n:`summary_item_list` and
-:nml_n:`mode_item_list` parameters of the :nml_g:`ad_output` and
-:nml_g:`nad_output` namelist groups. Changing these parameters allows
-you to tailor the files to contain exactly the data you need. For a
-full list of possible items, consult the :ref:`output-files` chapter.
+The following chapter discusses how to read and analyze these files.

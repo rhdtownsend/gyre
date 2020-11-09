@@ -58,8 +58,7 @@
 /
 
 &ad_output
-  summary_file = 'summary.txt'                 ! File name for summary file
-  summary_file_format = 'TXT'                  ! Format of summary file
+  summary_file = 'summary.h5'                  ! File name for summary file
   summary_item_list = 'l,n_pg,freq,freq_units' ! Items to appear in summary file
   freq_units = 'UHZ'                           ! Units of freq output items
 /

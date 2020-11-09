@@ -17,17 +17,18 @@ parameters are:
     Radiation constant :math:`a`
 
 :nml_n:`M_SUN`
-    Solar mass :math:`M_{\odot}`
+    Solar mass :math:`\Msun`
 
 :nml_n:`R_SUN`
-    Solar radius :math:`R_{\odot}`
+    Solar radius :math:`\Rsun`
 
 :nml_n:`L_SUN`
-    Solar luminosity :math:`L_{\odot}`
+    Solar luminosity :math:`\Lsun`
 
 :nml_n:`GYRE_DIR`
-    Top-level GYRE directory; overrides the ``GYRE_DIR``
+    Top-level GYRE directory; overrides the :envvar:`GYRE_DIR`
     environment variable
 
 All of these constants are in cgs units (where applicable), and the
-default values are defined in :repo:`src/common/gyre_constants.fpp`.
+default values are defined in
+:file:`{$GYRE_DIR}/src/common/gyre_constants.fpp`.

@@ -4,10 +4,10 @@ MESA File Format
 ================
 
 Files in MESA format store ASCII text data describing a MESA stellar
-model (note that MESA itself refers to these files as 'GYRE-format'
-files. To create one of these files, set the
+model. Note that MESA itself refers to these files as 'GYRE-format'
+files; to create one of these files in MESA, set the
 :nml_n:`pulse_data_format` parameter of the :nml_g:`controls` namelist
-group to the value :nml_v:`GYRE`).
+group to the value :nml_v:`GYRE`.
 
 There are a number of versions of the MESA format, distinguished by
 the initial header line:

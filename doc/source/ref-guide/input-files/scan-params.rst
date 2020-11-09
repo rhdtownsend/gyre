@@ -3,10 +3,10 @@
 Frequency Scan Parameters
 =========================
 
-The :nml_g:`scan` namelist group(s) defines frequency scan parameters;
+The :nml_g:`scan` namelist group(s) defines frequency grid parameters;
 the input file can contain one or more, and points defined by each
-:nml_g:`scan` namelist group are merged together. Allowable parameters
-are:
+(tag-matching) :nml_g:`scan` namelist group are merged
+together. Allowable parameters are:
 
 :nml_n:`grid_type` (default :nml_v:`'LINEAR'`)
   Distribution of frequency points; one of:
@@ -37,16 +37,16 @@ are:
   of read frequencies when :nml_n:`grid_type` is :nml_v:`'FILE'`
 
   - :nml_v:`'NONE'` : Dimensionless angular frequency
-  - :nml_v:`'HZ'` : linear frequency in Hz\ [#only_evol]_
-  - :nml_v:`'UHZ'` : linear frequency in μHz\ [#only_evol]_
-  - :nml_v:`'RAD_PER_SEC'` : angular frequency in radians per second\ [#only_evol]_
-  - :nml_v:`'CYC_PER_DAY'` : linear frequency in cycles per day\ [#only_evol]_
+  - :nml_v:`'HZ'` : linear frequency in Hz\ [#only-D]_
+  - :nml_v:`'UHZ'` : linear frequency in μHz\ [#only-D]_
+  - :nml_v:`'RAD_PER_SEC'` : angular frequency in radians per second\ [#only-D]_
+  - :nml_v:`'CYC_PER_DAY'` : linear frequency in cycles per day\ [#only-D]_
   - :nml_v:`'ACOUSTIC_DELTA'` : Fraction of the asymptotic acoustic large frequency separation :math:`\Delta \nu`
   - :nml_v:`'GRAVITY_DELTA'` : Fraction of the asymptotic inverse gravity period separation :math:`(\Delta P)^{-1}`
   - :nml_v:`'UPPER_DELTA'` : Greater of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
   - :nml_v:`'LOWER_DELTA'` : Lesser of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
-  - :nml_v:`'ACOUSTIC_CUTOFF'` : fraction of the acoustic cutoff frequency\ [#only_evol]_
-  - :nml_v:`'GRAVITY_CUTOFF'` : fraction of the gravity cutoff frequency\ [#only_evol]_
+  - :nml_v:`'ACOUSTIC_CUTOFF'` : fraction of the acoustic cutoff frequency\ [#only-D]_
+  - :nml_v:`'GRAVITY_CUTOFF'` : fraction of the gravity cutoff frequency\ [#only-D]_
   - :nml_v:`'ROSSBY_I'` : fraction of Rossby frequency (see equation :eq:`ross-freq`) at inner boundary
   - :nml_v:`'ROSSBY_O'` : fraction of Rossby frequency (see equation :eq:`ross-freq`) at outer boundary
 
@@ -79,7 +79,8 @@ are:
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match
 
+See the :ref:`freq-grids` section for further details.
+
 .. rubric:: Footnotes
 
-.. [#only_evol] This option is only available when :nml_n:`model_type` is :nml_v:`'EVOL'`
-.. [#only_contour] This option is only used with :program:`gyre_contour`
+.. [#only-D] This option is available only for stellar models with :ref:`D capability <model-caps>`

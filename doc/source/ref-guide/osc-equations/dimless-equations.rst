@@ -7,6 +7,8 @@ To improve numerical stability, GYRE solves the :ref:`sep-equations`
 by recasting them into a dimensionless form that traces its roots back 
 to :ads_citet:`dziembowski:1971`.
 
+.. _dimless-vars:
+
 Variables
 ---------
 
@@ -203,10 +205,11 @@ dimensionless oscillation equations are defined as follows:
 
    \begin{gather}
    V = -\deriv{\ln P}{\ln r} \qquad
+   V_{2} = x^{-2} V \qquad
    \As = \frac{1}{\Gamma_{1}} \deriv{\ln P}{\ln r} - \deriv{\ln \rho}{\ln r} \qquad
-   U = \deriv{\ln M_{r}}{\ln r} \qquad
-   c_1 = \frac{r^{3}}{R^{3}} \frac{M}{M_{r}} \\
+   U = \deriv{\ln M_{r}}{\ln r} \\
    %
+   c_1 = \frac{r^{3}}{R^{3}} \frac{M}{M_{r}} \qquad
    \fpigam =
    \begin{cases}
    \alphapi & \As > 0, x < x_{\rm atm} \\
@@ -226,7 +229,7 @@ dimensionless oscillation equations are defined as follows:
    \cepsad = \ceps \epsad \qquad
    \cepsS = \ceps \epsS \\
    %
-   \cdif = - 4 \nabad V \nabla + \nabad \left(V + \deriv{\ln \nabad}{\ln r} \right) \\
+   \cdif = - 4 \nabad V \nabla + \nabad \left(V + \deriv{\ln \nabad}{\ln x} \right) \\
    %
    \cthn = \frac{\cP}{a c \kappa T^{3}} \sqrt{\frac{GM}{R^{3}}} \qquad
    \dcthn = \deriv{\ln \cthn}{\ln r} \\
@@ -240,8 +243,10 @@ Physics Switches
 ----------------
 
 GYRE offers the capability to adjust the oscillation equations through
-a number of physics switches, which are controlled by parameters in
-the :nml_g:`osc` namelist group.
+a number of physics switches, controlled by parameters in the
+:nml_g:`osc` namelist group. The table below summarizes the mapping
+between the switches appearing in the expressions above, and the
+corresponding namelist parameters.
 
 .. list-table::
    :widths: 20 20 60

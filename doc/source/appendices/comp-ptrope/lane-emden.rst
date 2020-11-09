@@ -83,4 +83,4 @@ s}`, is defined implicitly by the boundary condition
 
 .. math::
 
-   \theta_{N}(z_{\rm s}) = 0.
+   \theta_{\nreg}(z_{\rm s}) = 0.

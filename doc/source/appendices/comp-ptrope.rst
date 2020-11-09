@@ -19,7 +19,6 @@ using the :program:`build_poly` executable.
   comp-ptrope/lane-emden.rst
   comp-ptrope/physical-vars.rst
   comp-ptrope/struct-coeffs.rst
-  comp-ptrope/namelist-pars.rst
 
 .. rubric:: Footnotes
 

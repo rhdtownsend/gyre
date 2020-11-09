@@ -1,4 +1,6 @@
 Msun	{\rm M}_{\odot}
+Rsun	{\rm R}_{\odot}
+Lsun	{\rm L}_{\odot}
 deriv	\frac{{\rm d}#1}{{\rm d}#2}
 sderiv	{\rm d}#1/{\rm d}#2
 nderiv	\frac{{\rm d}^{#3}#1}{{\rm d}#2^{#3}}
@@ -36,8 +38,8 @@ Lcon	L_{\rm C}
 epsnuc	\epsilon_{\rm n}
 epsT	\epsilon_{{\rm n},T}
 epsrho	\epsilon_{{\rm n},\rho}
-epsS	\epsilon_{S}
-epsad	\epsilon_{\rm ad}
+epsS	\epsilon_{{\rm n},S}
+epsad	\epsilon_{\rm n,ad}
 kapT	\kappa_{T}
 kaprho	\kappa_{\rho}
 kapS	\kappa_{S}
@@ -56,6 +58,7 @@ xir	\xi_{r}
 xit	\xi_{\theta}
 xip	\xi_{\phi}
 vxih	\vxi_{\rm h}
+txi	\tilde{\xi}
 txir	\tilde{\xi}_{r}
 txih	\tilde{\xi}_{\rm h}
 tS	\tilde{S}
@@ -63,6 +66,7 @@ tP	\tilde{P}
 tT	\tilde{T}
 trho	\tilde{\rho}
 tPhi	\tilde{\Phi}
+tL	\tilde{L}
 tLrad	\tilde{L}_{\rm R}
 tFradr	\tilde{F}_{{\rm R},r}
 tepsnuc	\tilde{\epsilon}_{\rm n}
@@ -90,7 +94,9 @@ wctr	w_{\rm ctr}
 As	A^{*}
 upsT	\upsilon_{T}
 nabad	\nabla_{\rm ad}
+dnabad	\partial\nabad
 cP	c_{P}
+cV	c_{V}
 Gammi	\Gamma_{1}
 cdif	c_{\rm dif}
 clum	c_{\rm lum}
@@ -113,3 +119,4 @@ sigmac	\sigma_{\rm c}
 houghr	\Theta
 hought	\widehat{\Theta}
 houghp	\widetilde{\Theta}
+nreg	\mathcal{N}

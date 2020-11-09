@@ -26,10 +26,10 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    user-guide/preliminaries.rst
    user-guide/quick-start.rst
    user-guide/example-walkthrough.rst
+   user-guide/interpreting-output.rst
    user-guide/gyre-fundamentals.rst
    user-guide/understanding-grids.rst
    user-guide/working-with-tags.rst
-   user-guide/interpreting-output.rst
    user-guide/non-ad-calculations.rst
    user-guide/including-rotation.rst
    user-guide/faq.rst

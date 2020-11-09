@@ -4,25 +4,25 @@
 Including Rotation
 ******************
 
-GYRE can partially include the Doppler and Coriolis effects arising
-from stellar rotation, as described in detail in the
-:ref:`rot-effects` section. Here, we briefly review the parameters
-that influence how these effects are calculated.
+This chapter briefly discusses how to include rotation effects in GYRE
+calculations. Further details of GYRE's treatment of rotation are
+presented in the :ref:`rot-effects` section.
 
 Setting the Rotation Rate
 -------------------------
 
-There are a number of different ways to define the rotation angular
-velocity :math:`\Omega`, via parameters in the :nml_g:`rot` namelist
-group.
+There are two different ways to define the rotation angular velocity
+:math:`\Omega`, via parameters in the :nml_g:`rot` namelist group.
 
-* If :nml_n:`Omega_rot_source` = :nml_v:`MODEL`, then :math:`\Omega`
-  is obtained from the stellar model (for those :ref:`model formats
-  <evol-models>` that include these data)
-
+* If :nml_n:`Omega_rot_source` = :nml_v:`MODEL`, then differential
+  rotation is assumed with a spatially varying :math:`\Omega`
+  obtained from the stellar model. If the model doesn't have this
+  capability (see the :ref:`model-caps` section), then :math:`\Omega`
+  is set to zero throughout the star.
+  
 * If :nml_n:`Omega_rot_source` = :nml_v:`UNIFORM`, then uniform
-  rotation is assumed, with the spatially constant :math:`\Omega` set
-  by the :nml_n:`Omega_rot` and :nml_n:`Omega_rot_units` parameters
+  rotation is assumed with a spatially constant :math:`\Omega` set
+  by the :nml_n:`Omega_rot` and :nml_n:`Omega_rot_units` parameters.
 
 Enabling Doppler Effects
 ------------------------
@@ -42,6 +42,3 @@ namelist group. The solution family is controlled by the
 :nml_n:`rossby` parameter of the :nml_g:`rot` namelist group; set to
 :nml_v:`.TRUE.` for the Rossby family, and to :nml_v:`.FALSE.` (the
 default) for the gravito-acoustic family.
-
-
-

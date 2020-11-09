@@ -57,14 +57,21 @@ and the peturbations to the nuclear energy generation rate and opacity can be ex
    \qquad
    \frac{\delta \kappa}{\kappa} = \kapad \frac{\delta P}{P} + \kapS \frac{\delta S}{\cP}.
 
-In these expressions, the thermodynamic partial derivatives are defined as
+In these expressions, Eulerian and Lagrangian perturbations to any
+scalar quantity :math:`f` are related via
+
+.. math::
+
+   \frac{\delta f}{f} = \frac{f'}{f} + \frac{\xir}{r} \deriv{\ln f}{\ln r}.
+
+Moreover, the thermodynamic partial derivatives are defined as
 
 .. math::
 
    \Gammi = \left( \pderiv{\ln P}{\ln \rho} \right)_{S}, \quad
    \upsT = \left( \pderiv{\ln \rho}{\ln T} \right)_{P}, \quad
    \cP = \left( \pderiv{S}{\ln T} \right)_{P}, \quad
-   \nabla_{\rm ad} = \left( \pderiv{\ln T}{\ln P} \right)_{S},
+   \nabad = \left( \pderiv{\ln T}{\ln P} \right)_{S},
 
 and the nuclear and opacity partials are
 
@@ -74,14 +81,18 @@ and the nuclear and opacity partials are
    \epsS = \cP \left( \pderiv{\ln \epsnuc}{S} \right)_{P}, \quad
    \kapad = \left( \pderiv{\ln \kappa}{\ln P} \right)_{\rm ad}, \quad
    \kapS = \cP \left( \pderiv{\ln \kappa}{S} \right)_{P}.
-   
-Moreover, Eulerian and Lagrangian perturbations to any scalar quantity
-:math:`f` are related via
+
+The latter can be calculated from corresponding density and
+temperature partials via
 
 .. math::
 
-   \frac{\delta f}{f} = \frac{f'}{f} + \frac{\xir}{r} \deriv{\ln f}{\ln r}.
-
+   \begin{gathered}
+   \kapad = \frac{\kaprho}{\Gammi} + \nabad \kapT, \qquad
+   \kapS = -\upsT \kaprho + \kapT, \\
+   \epsad = \frac{\epsrho}{\Gammi} + \nabad \epsT, \qquad
+   \epsS = -\upsT \epsrho + \epsT.
+   \end{gathered}
 
 .. rubric:: Footnotes
 

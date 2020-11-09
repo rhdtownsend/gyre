@@ -4,8 +4,8 @@ Grid Parameters
 ===============
 
 The :nml_g:`grid` namelist group defines the parameters used to set up
-the calculation grid; the input file can contain one or more, but only
-the last (matching) one is used. Allowable parameters are:
+the spatial grid; the input file can contain one or more, but only
+the last (tag-matching) one is used. Allowable parameters are:
 
 :nml_n:`x_i` (default based on model grid)
   Inner boundary coordinate of calculation grid
@@ -43,5 +43,6 @@ the last (matching) one is used. Allowable parameters are:
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match
 
-See :ref:`spatial-grids` for further details, in particular a
-discussion of how the weighting (:nml_n:`w_*`) parameters work.
+See the :ref:`spatial-grids` section for further details, in
+particular a discussion of how the weighting (:nml_n:`w_*`) parameters
+work.

@@ -4,7 +4,7 @@ Oscillation Parameters
 ======================
 
 The :nml_g:`osc` namelist group defines oscillation parameters; the
-input file can contain one or more, but only the last (matching) one
+input file can contain one or more, but only the last (tag-matching) one
 is used.  Allowable parameters are:
 
 :nml_n:`inner_bound` (default :nml_v:`'REGULAR'`)
@@ -25,7 +25,7 @@ is used.  Allowable parameters are:
   - :nml_v:`'GAMMA'` : Vanishing displacement and derivative at outer boundary, intended for use with :math:`\gamma` modes
 
 :nml_n:`outer_bound_cutoff` (default :nml_v:`''`)
-  Outer boundary conditions to use when evaluating cutoff frequencies (cf. :nml_n:`freq_units`); same options
+  Outer boundary conditions to use when evaluating cutoff frequencies (see :nml_n:`freq_units`); same options
   as :nml_n:`outer_bound`, and if left blank then takes its value from :nml_n:`outer_bound`
 
 :nml_n:`outer_bound_branch` (default :nml_v:`'E_NEG'`)
@@ -51,32 +51,31 @@ is used.  Allowable parameters are:
 
 :nml_n:`alpha_grv` (default :nml_v:`1.`)
   Scaling factor for gravitational potential perturbations (see the
-  :math:`\alphagrv` physics switch in the :ref:`dimless-form`
-  section)
+  :math:`\alphagrv` variable in the :ref:`physics-switches` section)
 
 :nml_n:`alpha_thm` (defaualt :nml_v:`1.`)
   Scaling factor for the thermal timescale (see the :math:`\alphathm`
-  physics switch in the :ref:`dimless-form` section)
+  variable in the :ref:`physics-switches` section)
 
 :nml_n:`alpha_hfl` (defaualt :nml_v:`1.`)
   Scaling factor for horizontal flux perturbations (see the :math:`\alphahfl`
-  term in the :ref:`dimless-form` section)
+  variable in the :ref:`physics-switches` section)
 
 :nml_n:`alpha_gam` (default :nml_v:`1.`)
   Scaling factor for g-mode isolation (see the :math:`\alphagam` term in
-  the :ref:`dimless-form` section)
+  variable in the :ref:`physics-switches` section)
 
 :nml_n:`alpha_pi` (default :nml_v:`1.`)
   Scaling factor for p-mode isolation (see the :math:`\alphapi` term in
-  the :ref:`dimless-form` section)
+  variable in the :ref:`physics-switches` section)
 
 :nml_n:`alpha_kap` (default :nml_v:`1.`)
-  Scaling factor for opacity partial derivatives (see the
-  :math:`\alphakap` term in the :ref:`dimless-form` section)
+  Scaling factor for opacity partial derivatives (see the :math:`\alphakap`
+  variable in the :ref:`physics-switches` section)
 
 :nml_n:`alpha_rht` (default :nml_v:`0.`)
   Scaling factor for time-dependent term in radiative heat equation (see the
-  :math:`\alpharht` term in the :ref:`dimless-form` section)
+  :math:`\alpharht` variable in the :ref:`physics-switches` section)
 
 :nml_n:`inertia_norm` (default :nml_v:`'BOTH'`)
   Inertia normalization factor; one of
@@ -88,8 +87,8 @@ is used.  Allowable parameters are:
 :nml_n:`time_factor` (default :nml_v:`'OSC'`)
   Time-dependence factor in pulsation equations; one of:
 
-  - :nml_v:`'OSC'` : Oscillatory, :math:`\propto \exp(-{\rm i} \omega t)`
-  - :nml_v:`'EXP'` : Exponential, :math:`\propto \exp(-\omega t)`
+  - :nml_v:`'OSC'` : Oscillatory, :math:`\propto \exp(-{\rm i} \sigma t)`
+  - :nml_v:`'EXP'` : Exponential, :math:`\propto \exp(-\sigma t)`
 
 :nml_n:`conv_scheme` (default :nml_v:`'FROZEN_PESNELL_1'``)
   Scheme for treating convection; one of:
@@ -110,9 +109,7 @@ is used.  Allowable parameters are:
   - :nml_v:`'KAWALER_GRAV'`: Evaluate using the g-mode part in eqn. (7) of :ads_citet:`kawaler:1985`
 
 :nml_n:`deps_scheme` (default :nml_v:`'MODEL'`)
-  Scheme for calculating burning partial derivatives
-  :math:`(\partial\ln\epsilon/\partial\ln T)_{\rho}` and
-  :math:`(\partial\ln\epsilon/\partial\ln\rho)_{T}`; one of:
+  Scheme for calculating nuclear energy generation partials :math:`\epsrho` and :math:`\epsT`; one of:
 
   - :nml_v:`'MODEL'` : Use values from model
   - :nml_v:`'FILE'` : Use complex (phase-lagged) values from separate file

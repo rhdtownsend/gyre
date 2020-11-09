@@ -5,7 +5,7 @@ Homogeneous Models
 
 Homogeneous models represent uniform-density stars in hydrostatic
 equilibrium; they are equivalent to polytropes with index
-:math:`\npoly=0`. Because their structure can be calculated
+:math:`n=0`. Because their structure can be calculated
 analytically, GYRE creates them on-the-fly without the need to read
 from an external file.
 

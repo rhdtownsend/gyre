@@ -4,10 +4,9 @@
 Working With Tags
 *****************
 
-Tags are a feature that allow a much greater degree of control over
-GYRE calculations. They are relatively simple to use, but can be quite
-powerful. The simplest way do demonstrate this is via a worked
-example.
+This chapter uses a worked example to demonstrate tags --- a simple
+yet powerful feature allowing a much greater degree of control over
+GYRE calculations.
 
 Example Tag Usage
 =================

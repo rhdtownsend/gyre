@@ -8,6 +8,10 @@
 /
 
 &mode
+  l = 1 ! Harmonic degree
+/
+
+&mode
   l = 2 ! Harmonic degree
 /
 
@@ -25,8 +29,8 @@
 &scan
   grid_type = 'INVERSE' ! Scan grid uniform in inverse frequency
   freq_min = 0.5        ! Minimum frequency to scan from
-  freq_max = 1.0        ! Maximum frequency to scan to
-  n_freq = 250          ! Number of frequency points in scan
+  freq_max = 1.5        ! Maximum frequency to scan to
+  n_freq = 100          ! Number of frequency points in scan
 /
 
 &grid
@@ -37,12 +41,11 @@
 
 
 &ad_output
-  summary_file = 'summary.txt'                 ! File name for summary file
-  summary_file_format = 'TXT'                  ! Format of summary file
+  summary_file = 'summary.h5'                  ! File name for summary file
   summary_item_list = 'l,n_pg,freq,freq_units' ! Items to appear in summary file
-  detail_template = 'detail.%J.txt'            ! File name template for detail files
-  detail_file_format = 'TXT'                   ! Format of detail files
-  detail_item_list = 'n_pg,x,xi_r,xi_h'        ! Items to appear in detail files
+  detail_template = 'detail.l%l.n%n.h5'        ! File name template for detail files
+  detail_item_list = 'l,n_pg,omega,x,xi_r,
+                      xi_h,c_1,As,V_2,Gamma_1' ! Items to appear in detail files
   freq_units = 'CYC_PER_DAY'                   ! Units of freq output items
 /
 

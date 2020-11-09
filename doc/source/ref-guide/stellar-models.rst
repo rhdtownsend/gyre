@@ -15,6 +15,7 @@ three possible choices for the :nml_n:`model_type` parameter of the
    stellar-models/evol-models.rst
    stellar-models/poly-models.rst
    stellar-models/hom-models.rst
+   stellar-models/model-caps.rst
    stellar-models/mesa-file-format.rst
    stellar-models/gsm-file-format.rst
    stellar-models/poly-file-format.rst

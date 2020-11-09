@@ -4,18 +4,28 @@
 Non-Adiabatic Calculations
 **************************
 
+This chapter introduces the various approaches GYRE offers for
+undertaking *non-adiabatic* calculations. These provide linear growth
+or damping rates to accompany the usual frequencies/periods of
+oscillation modes, and are therefore capable of predicting which
+mode(s) will be self-excited.
+
+.. note::
+   Not all types of stellar mode include the necessary data
+   (e.g., thermodynamic coefficients, opacity partial derivatives) to
+   undertake non-adiabatic calculations. The :ref:`model-caps` section
+   summarizes this information.
+
 Overview
 ========
 
-In addition to calculating the frequencies/periods of oscillation
-modes, GYRE can obtain the corresponding linear growth or damping
-rates. To do this, it includes *non-adiabatic* terms in the
-:ref:`oscillation equations <osc-equations>` describing the transfer of heat
-between neighboring fluid elements. With these terms, the equations
-and their solutions become complex quantities. The assumed time
-dependence for perturbations is :math:`\propto \exp (-\ii \sigma t)`
-(see the :ref:`linear-equations` section); therefore, the real part
-:math:`\sigmar` and imaginary part :math:`\sigmai` of the
+To include non-adiabatic effects, GYRE augments the linearized mass,
+momentum and Poisson equations with the linearized heat and radiative
+diffusion equations (see the :ref:`linear-equations` section for full
+details). With these additions, the equations and their solutions
+become complex quantities. The assumed time dependence for
+perturbations is :math:`\propto \exp (-\ii \sigma t)`; therefore, the
+real part :math:`\sigmar` and imaginary part :math:`\sigmai` of the
 eigenfrequency are related to the mode period :math:`\Pi` and growth
 e-folding time :math:`\tau`, respectively, via
 
@@ -24,14 +34,15 @@ e-folding time :math:`\tau`, respectively, via
    \Pi = \frac{2\pi}{\sigmar}, \qquad
    \tau = \frac{1}{\sigmai}.
 
-Non-adiabatic calculations proceed using the same general approach as
-in the adiabatic case, by searching for the roots of a discriminant
-function :math:`\Dfunc(\omega)` (see the :ref:`gyre-fundamentals`
-chapter for more details). However, a challenge is that there is no
-simple way to bracket roots in the complex plane. Instead, GYRE must
-generate initial trial roots that are close to the true roots, and
-then refine them iteratively. Currently, GYRE offers three methods for
-establishing the trial roots.
+Solving the non-adiabatic equations proceeds using the same general
+approach as in the adiabatic case, by searching for the roots of a
+discriminant function :math:`\Dfunc(\omega)` (see the
+:ref:`gyre-fundamentals` chapter for more details). However, a
+challenge is that there is no simple way to bracket roots in the
+complex plane. Instead, GYRE must generate initial trial roots that
+are close to the true roots, and then refine them
+iteratively. Currently, GYRE offers three methods for establishing the
+trial roots.
 
 Adiabatic Method
 ================

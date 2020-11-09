@@ -3,7 +3,7 @@
 File Formats
 ============
 
-The format of sumamry and mode files depends on the value of the
+The format of summary and mode files depends on the value of the
 :nml_n:`summary_file_format` and :nml_n:`mode_file_format` parameters
 in the :nml_g:`ad_output` and :nml_g:`nad_output` namelist groups (see
 the :ref:`output-params` section). Possible choices are:
@@ -14,15 +14,11 @@ the :ref:`output-params` section). Possible choices are:
 * :nml_v:`'TXT'` : A text format modeled after
   MESA's `profile file format <http://mesa.sourceforge.net/output.html>`__
 
-Each has advantages and disadvantages. HDF files store floating-point
-data at full precision, and are very compact; however, they require
-additional tools to read them (e.g., the `h5py <http://www.h5py.org/>`__
-Python package). TXT files, in contrast, are human-readable and
-therefore more accessible, but this comes at the price of larger files
-and the possible loss of precision in floating-point data.
-
-For both formats, the data stored in the files come in two flavors --
-scalars (a single value) and arrays (a sequence of values)
+For both formats, the data stored in the files come in two flavors ---
+scalars (a single value) and arrays (a sequence of values). Files in
+either format can be read in Python using the ``read_output`` using
+the ``read_model`` function from :git:`PyGYRE <rhdtownsend/pygyre>`
+(see the :ref:`interpreting-output` chapter for examples).
 
 .. _hdf-format:
 
@@ -41,11 +37,6 @@ GYRE's HDF-format output files adhere to the following conventions:
 * Complex values are written as a compound type, composed of a real
   component `re` and an imaginary component `im`; the types of
   these components are the same as for real values
-
-To simplify the process of reading HDF5 output produced by GYRE, the
-`gyre.py` Python module provides the `read_output` routine which can
-read both summary files and mode files (see the :ref:`python-support`
-section for more details).
 
 .. _txt-format:
 
