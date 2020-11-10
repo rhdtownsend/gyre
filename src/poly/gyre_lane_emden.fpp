@@ -52,7 +52,7 @@ module gyre_lane_emden
 
 contains
 
-  subroutine solve_lane_emden (n_poly, z_b, Delta_b, dz, tol, z, theta, dtheta)
+  subroutine solve_lane_emden (n_poly, z_b, Delta_b, dz, tol, z, theta, dtheta, n_r_out)
 
     real(WP), intent(in)               :: n_poly(:)
     real(WP), intent(in)               :: z_b(:)
@@ -62,11 +62,12 @@ contains
     real(WP), allocatable, intent(out) :: z(:)
     real(WP), allocatable, intent(out) :: theta(:)
     real(WP), allocatable, intent(out) :: dtheta(:)
+    integer, intent(out)               :: n_r_out
 
     real(WP), parameter :: X_BEG = sqrt(EPSILON(0._WP))
     integer, parameter  :: D_0 = 512
     integer, parameter  :: NEQ = 2
-    integer, parameter  :: NG = 1
+    integer, parameter  :: NG = 2
 
     integer               :: d
     integer               :: n
@@ -85,6 +86,10 @@ contains
     $CHECK_BOUNDS(SIZE(z_b),SIZE(n_poly)-1)
     $CHECK_BOUNDS(SIZE(Delta_b),SIZE(n_poly)-1)
 
+    if (SIZE(z_b) > 0) then
+       $ASSERT(z_b(1) > X_BEG,First boundary too close to origin)
+    endif
+
     ! Initialize arrays
 
     d = D_0
@@ -94,7 +99,7 @@ contains
 
     n = 0
 
-    ! Perform a series expansion out to x_beg
+    ! Perform a series expansion out to X_BEG
 
     dx = dz
 
@@ -124,18 +129,24 @@ contains
 
     end do expand_loop
 
-    ! Now continue by intergrating to each boundary point
+    ! Now continue by intergrating to each boundary point, or to the
+    ! surface
 
     n_r = SIZE(z_b) + 1
 
-    do i = 1, n_r-1
+    region_loop : do i = 1, n_r
 
        n_poly_m = n_poly(i)
-       x_m = z_b(i)
+
+       if (i < n_r) then
+          x_m = z_b(i)
+       else
+          x_m = HUGE(0._WP)
+       endif
 
        istate = 1
 
-       integrate_d_loop : do
+       integrate_loop : do
 
           ! Integrate one step
 
@@ -152,15 +163,20 @@ contains
 
           call LSODAR(lane_emden_rhs, [NEQ], y(:,n), x(n), x(n-1)+dx, 1, [0._WP,0._WP], [tol,tol], &
                1, istate, 0, rwork, SIZE(rwork), iwork, SIZE(iwork), lane_emden_jac, 1, &
-               lane_emden_constr_d, NG, jroot)
+               lane_emden_constr, NG, jroot)
 
           ! Check for success
 
           select case (istate)
           case (2)
           case (3)
-             $ASSERT(jroot(1)==1,Root not found)
-             exit integrate_d_loop
+             if (jroot(1) == 1) then
+                exit integrate_loop
+             elseif (jroot(2) == 1) then
+                exit region_loop
+             else
+                $ABORT(Root not found)
+             endif
           case default
              write(ERROR_UNIT, *) 'istate is ',istate
              write(ERROR_UNIT, *) 'Integration range x=',x(n-1)
@@ -171,7 +187,7 @@ contains
              $ABORT(Integration failed)
           end select
        
-       end do integrate_d_loop
+       end do integrate_loop
 
        ! Create the boundary double point
 
@@ -198,53 +214,13 @@ contains
 
        B_m = f*t_t**2*B_m
 
-    end do
-
-    ! Finish by integrating to the surface
-
-    n_poly_m = n_poly(n_r)
-
-    istate = 1
-
-    integrate_s_loop : do
-
-       ! Integrate one step
-
-       n = n + 1
-
-       if(n > d) then
-          d = 2*d
-          call reallocate(x, [d])
-          call reallocate(y, [2,d])
-       endif
-       
-       x(n) = x(n-1)
-       y(:,n) = y(:,n-1)
-       
-       call LSODAR(lane_emden_rhs, [NEQ], y(:,n), x(n), x(n-1)+dx, 1, [0._WP,0._WP], [tol,tol], &
-            1, istate, 0, rwork, SIZE(rwork), iwork, SIZE(iwork), lane_emden_jac, 1, &
-            lane_emden_constr_S, NG, jroot)
-
-       ! Check for success
-
-       select case (istate)
-       case (2)
-       case (3)
-          $ASSERT(jroot(1)==1,Root not found)
-          exit integrate_s_loop
-       case default
-          write(ERROR_UNIT, *) 'istate is ',istate
-          write(ERROR_UNIT, *) 'Integration range x=',x(n-1)
-          write(ERROR_UNIT, *) 'Starting location y=',y(:,n-1)
-          write(ERROR_UNIT, *) 'Relative tolerance =',0._WP
-          write(ERROR_UNIT, *) 'Absolute tolerance =',tol
-          write(ERROR_UNIT, *) 'Number of steps    =',n
-          $ABORT(Integration failed)
-       end select
-       
-    end do integrate_s_loop
+    end do region_loop
 
     y(1,n) = 0._WP
+
+    ! Record how many regions were actually encountered
+
+    n_r_out = i
 
     ! Set up return values
 
@@ -295,7 +271,7 @@ contains
     integer, intent(in)   :: nrowpd
     real(WP), intent(out) :: pd(nrowpd,neq)
 
-    ! Calculate the Jacobian matrix (segment I)
+    ! Calculate the Jacobian matrix
 
     pd(1,1) = 0._WP
     pd(1,2) = 1._WP
@@ -311,7 +287,7 @@ contains
 
 !****
 
-  subroutine lane_emden_constr_d (neq, x, y, ng, gout)
+  subroutine lane_emden_constr (neq, x, y, ng, gout)
 
     integer, intent(in)   :: neq
     real(WP), intent(in)  :: x
@@ -319,34 +295,15 @@ contains
     integer, intent(in)   :: ng
     real(WP), intent(out) :: gout(ng)
 
-    ! Calculate the constraint function (boundary)
+    ! Calculate the constraint function
 
-    gout(1) = x - x_m
-
-    ! Finish
-
-    return
-
-  end subroutine lane_emden_constr_d
-
-!****
-
-  subroutine lane_emden_constr_S (neq, x, y, ng, gout)
-
-    integer, intent(in)   :: neq
-    real(WP), intent(in)  :: x
-    real(WP), intent(in)  :: y(neq)
-    integer, intent(in)   :: ng
-    real(WP), intent(out) :: gout(ng)
-
-    ! Calculate the constraint function (surface)
-
-    gout(1) = y(1)
+    gout(1) = x - x_m ! Region boundary
+    gout(2) = y(1)    ! Surface
 
     ! Finish
 
     return
 
-  end subroutine lane_emden_constr_S
+  end subroutine lane_emden_constr
 
 end module gyre_lane_emden

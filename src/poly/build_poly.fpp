@@ -54,6 +54,7 @@ program build_poly
   real(WP), allocatable     :: z(:)
   real(WP), allocatable     :: theta(:)
   real(WP), allocatable     :: dtheta(:)
+  integer                   :: n_r_out
   type(hgroup_t)            :: hg
 
   namelist /poly/ n_r, n_poly, Gamma_1, z_b, Delta_b
@@ -101,7 +102,12 @@ program build_poly
 
   ! Solve the Lane-Emden equation
 
-  call solve_lane_emden(n_poly, z_b, Delta_b, dz, toler, z, theta, dtheta)
+  call solve_lane_emden(n_poly, z_b, Delta_b, dz, toler, z, theta, dtheta, n_r_out)
+
+  if (n_r_out < n_r) then
+     write(OUTPUT_UNIT, 100) 'Warning: only', n_r_out, 'of', n_r, 'regions used'
+100  format(A,1X,I0,1X,A,1X,I0,1X,A)
+  endif
 
   ! Write the model
 
