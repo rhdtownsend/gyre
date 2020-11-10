@@ -34,7 +34,7 @@ The interior mass then follows as
 
 .. math::
 
-   m = M \frac{\mu_{i}(z)}{\mu_{\rm s}},
+   M_{r} = M \frac{\mu_{i}(z)}{\mu_{\rm s}},
 
 where :math:`\mu_{\rm s} \equiv \mu_{\nreg}(z_{\rm s})`.
 

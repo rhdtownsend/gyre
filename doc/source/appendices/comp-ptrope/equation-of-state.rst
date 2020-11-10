@@ -10,7 +10,7 @@ polytropic equation of state
 
 .. math::
 
-   P = K_{i} \rho^{(n_{i} + 1)/n_{i}}
+   P_{i} = K_{i} \rho_{i}^{(n_{i} + 1)/n_{i}}
 
 where :math:`K_{i}` and the polytropic index :math:`n_{i}` are
 constant across the region (but may differ from one region
