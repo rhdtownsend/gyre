@@ -26,7 +26,7 @@ fig, ax = plt.subplots()
 ax.plot(tab['x'], tab['theta'], color=ORANGE, label=r'$\theta$')
 ax.plot(tab['x'], tab['rho/rho_c'], color=SKY_BLUE, label=r'$\rho/\rho_{\rm c}$')
 ax.plot(tab['x'], tab['P/P_c'], color=BLUE_GREEN, label=r'$P/P_{\rm c}$')
-ax.plot(tab['x'], tab['m/M'], color=BLACK, label=r'$m/M$')
+ax.plot(tab['x'], tab['M_r/M'], color=BLACK, label=r'$M_{r}/M$')
 
 ax.set_xlabel(r'$z/z_{\rm s}$')
 
