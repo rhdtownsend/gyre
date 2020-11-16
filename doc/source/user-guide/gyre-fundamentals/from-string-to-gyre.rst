@@ -1,9 +1,9 @@
-.. _from-string-to-gyre:
+.. _fund-gyre:
 
 From Stretched String to GYRE
 =============================
 
-The numerical technique demonstrated in the :ref:`stretched-string`
+The numerical technique demonstrated in the :ref:`fund-string`
 section provides a powerful analog to how GYRE solves the oscillation
 equations. The full gory details of GYRE's approach are laid out in
 :ads_citet:`townsend:2013`; in this section we briefly summarize it,
@@ -133,7 +133,7 @@ where the dimensionless frequency
 is the product of the star's dynamical timescale and the oscillation
 frequency :math:`\sigma`. (Internally, GYRE works extensively with
 such dimensionless quantities, as it improves the stability of the
-numerical algorithms). 
+numerical algorithms).
 
 Scanning for Eigenfrequencies
 -----------------------------

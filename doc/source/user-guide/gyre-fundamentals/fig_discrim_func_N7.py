@@ -72,7 +72,7 @@ ax.set_ylabel(r'$\mathcal{D}(\sigma)$')
 ax.set_xlim(sigma_min, sigma_max)
 ax.set_ylim(D_min, D_max)
 
-ax.grid(True, which='both')
+ax.grid(True, which='both', zorder=-1)
 
 ax.xaxis.set_major_locator(tkr.MultipleLocator(1))
 ax.xaxis.set_minor_locator(tkr.MultipleLocator(0.25))

@@ -94,30 +94,58 @@ When searching for root brackets, we have to evaluate the discriminant
 function a total of :math:`M` times. Therefore, as with the spatial grid,
 computational efficiency dictates that we want to make :math:`M` as
 small as possible. Again, however, things go wrong if :math:`M` is too
-small. :numref:`fig-discrim-brackets-M4` reprises
+small. :numref:`fig-discrim-brackets-low` reprises
 :numref:`fig-discrim-brackets`, but adopting a much coarser frequency
-grid with only :math:`M=4` points.
+grid with only :math:`M=5` points.
 
-.. _fig-discrim-brackets-M4:
+.. _fig-discrim-brackets-low:
 
-.. figure:: fig_discrim_brackets_M4.svg
+.. figure:: fig_discrim_brackets_low.svg
    :alt: Plot showing the discriminant function versus frequency, with root brackets indicated
    :align: center
 
    Plot of the discriminant values :math:`\{\Dfunc\}` on the discrete
-   frequency grid :math:`\{\sigma\}`, for the stretched-string BVP
-   with :math:`N=50` and :math:`M=4`. The orange halos indicate
-   adjacent points that bracket a root
-   :math:`\Dfunc=0`. (:download:`Source <fig_discrim_brackets_M4.py>`)
+   frequency grid :math:`\{\sigma\}` (distributed uniformly in
+   :math:`\sigma`), for the stretched-string BVP with :math:`N=50` and
+   :math:`M=5`. The orange-haloed segments highlight adjacent points
+   that bracket a root :math:`\Dfunc=0`. (:download:`Source
+   <fig_discrim_brackets_low.py>`)
 
-Clearly, only the lowest-frequency (:math:`n=1`) mode is found in the
-bracketing process; the rest are missed. This is admittedly an extreme
-example, but nicely demonstrates the consequences of too coarse a
-frequency grid, and gives us important lesson #3:
+Clearly, a pair of adjacent roots (corresponding to the :math:`n=3`
+and :math:`n=4` modes) is missed in the bracketing process, as a
+direct result of the too-coarse grid.
+
+Even when many points are included in the frequency grid, issues can
+still arise when the distribution of points doesn't match the
+distribution of roots. An example of this is provided in
+:numref:`fig-discrim-brackets-inv`, which reprises
+:numref:`fig-discrim-brackets` with the same number :math:`M=32` of
+points in the grid, but now distributed uniformly in
+:math:`\sigma^{-1}`.
+
+.. _fig-discrim-brackets-inv:
+
+.. figure:: fig_discrim_brackets_inv.svg
+   :alt: Plot showing the discriminant function versus frequency, with root brackets indicated
+   :align: center
+
+   Plot of the discriminant values :math:`\{\Dfunc\}` on the discrete
+   frequency grid :math:`\{\sigma\}` (distributed uniformly in
+   :math:`\sigma^{-1}`), for the stretched-string BVP with :math:`N=50` and
+   :math:`M=32`. The orange-haloed segments highlight adjacent points
+   that bracket a root :math:`\Dfunc=0`. (:download:`Source
+   <fig_discrim_brackets_inv.py>`)
+
+Now it's the roots corresponding to the :math:`n=4` and :math:`n=5`
+mode pair that are missed. As with the case in
+:numref:`fig-discrim-brackets-low`, the failure ultimately arises
+because the spacing between adjacent frequency grid points is (in at
+least some parts of the grid) larger than the spacing between adjacent
+roots. This can be summarized in important lesson #3:
 
 .. attention::
 
    The frequency resolution adopted in the root bracketing influences
    the completeness of the modes found. All modes will be found only
    when the grid spacing is smaller than the eigenfrequency separation
-   of adjacent modes.
+   of adjacent modes, across the full range of the grid.

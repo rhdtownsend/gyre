@@ -101,7 +101,7 @@ ax.legend()
 ax.set_xlim(0., 1.)
 ax.set_ylim(-1.1, 1.1)
 
-ax.grid(True, which='both')
+ax.grid(True, which='both', zorder=-1)
 
 ax.xaxis.set_major_locator(tkr.MultipleLocator(0.2))
 ax.xaxis.set_minor_locator(tkr.MultipleLocator(0.1))

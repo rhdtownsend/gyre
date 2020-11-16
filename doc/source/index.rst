@@ -33,6 +33,7 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    user-guide/non-ad-calculations.rst
    user-guide/including-rotation.rst
    user-guide/faq.rst
+   user-guide/troubleshooting.rst
    
 .. toctree::
    :caption: Reference Guide
@@ -49,7 +50,6 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    :caption: Appendices
    :name: appendices
 
-   appendices/troubleshooting.rst
    appendices/comp-ptrope.rst
    appendices/build-poly.rst
    appendices/eval-lambda.rst

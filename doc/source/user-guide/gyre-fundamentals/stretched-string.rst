@@ -1,4 +1,4 @@
-.. _stretched-string:
+.. _fund-string:
 
 The Stretched String Problem
 ============================
@@ -13,7 +13,7 @@ time :math:`t` is
 
 .. math::
 
-   \npderiv{y}{x}{2} = - \frac{1}{c^{2}} \npderiv{y}{t}{2},
+   \npderiv{y}{x}{2} = \frac{1}{c^{2}} \npderiv{y}{t}{2},
 
 with :math:`c \equiv (T/\rho)^{1/2}`. If the string is clamped at
 :math:`x=0` and :math:`x=L`, then the wave equation together with the boundary conditions
@@ -106,7 +106,7 @@ for :math:`\tilde{y}`,
 
 .. math::
 
-   \nderiv{\tilde{y}}{x}{2} = \frac{\sigma^{2}}{c^{2}} \tilde{y}.
+   \nderiv{\tilde{y}}{x}{2} = - \frac{\sigma^{2}}{c^{2}} \tilde{y}.
 
 Discretization
 --------------
@@ -137,7 +137,7 @@ equations
 
 .. math::
 
-   \frac{\tilde{y}_{k+1} - 2 \tilde{y}_{k} + \tilde{y}_{k-1}}{\Delta x^{2}} = \frac{\sigma^{2}}{c^{2}} \tilde{y}_{k}
+   \frac{\tilde{y}_{k+1} - 2 \tilde{y}_{k} + \tilde{y}_{k-1}}{\Delta x^{2}} = - \frac{\sigma^{2}}{c^{2}} \tilde{y}_{k}
    \qquad (2 \leq k \leq N-1).
 
 Together with the two boundary conditions
@@ -244,10 +244,10 @@ discriminant values. If :math:`\Dfunc_{j} \Dfunc_{j+1} < 0`, we know
 that a root of the discriminant function must lie in the interval
 :math:`(\sigma_{j},\sigma_{j+1})` --- we have *bracketed* a
 root. :numref:`fig-discrim-brackets` illustrates the process of
-bracket scanning for a frequency grid comprising :math:`M=32`
-uniformly spaced points, covering the same range as in
-:numref:`fig-discrim-func`. This figure highlights five brackets
-containing the five roots identified previously.
+bracket scanning for a frequency grid comprising :math:`M=32` points,
+distributed uniformly in :math:`\sigma` across the same range as
+plotted in :numref:`fig-discrim-func`. This figure highlights five
+brackets containing the five roots identified previously.
 
 .. _fig-discrim-brackets:
 
@@ -257,10 +257,11 @@ containing the five roots identified previously.
    :align: center
 
    Plot of the discriminant values :math:`\{\Dfunc\}` on the discrete
-   frequency grid :math:`\{\sigma\}`, for the stretched-string BVP
-   with :math:`N=50` and :math:`M=32`. The orange halos indicate
-   adjacent points that bracket a root
-   :math:`\Dfunc=0`. (:download:`Source <fig_discrim_brackets.py>`)
+   frequency grid :math:`\{\sigma\}` (distributed uniformly in
+   :math:`\sigma`), for the stretched-string BVP with :math:`N=50` and
+   :math:`M=32`. The orange-haloed segments highlight adjacent points
+   that bracket a root :math:`\Dfunc=0`. (:download:`Source
+   <fig_discrim_brackets.py>`)
 
 Once a bracket is established for a given root, it can be narrowed
 through a process of iterative refinement until the root is converged
@@ -318,4 +319,3 @@ for the first three modes (:math:`n=1,2,3`) given in
 :numref:`numerical-eigenfreqs`. Also shown are the corresponding
 analytic solutions given by equation :eq:`analytic-eigenfuncs`. The
 agreement between the two is good.
-
