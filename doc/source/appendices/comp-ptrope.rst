@@ -16,7 +16,8 @@ using the :program:`build_poly` executable.
   :maxdepth: 2
 
   comp-ptrope/equation-of-state.rst
-  comp-ptrope/lane-emden.rst
+  comp-ptrope/struct-equations.rst
+  comp-ptrope/solution-method.rst
   comp-ptrope/physical-vars.rst
   comp-ptrope/struct-coeffs.rst
 

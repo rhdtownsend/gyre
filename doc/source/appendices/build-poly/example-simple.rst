@@ -54,6 +54,6 @@ model in a GYRE calculation; but it can also be explored in Python
    :align: center
 
    Plot of the Lane-Emden solution variable :math:`\theta`, densty
-   :math:`\rho`, pressure :math:`P` and interior mass :math:`m` as a
+   :math:`\rho`, pressure :math:`P` and interior mass :math:`M_{r}` as a
    function of radial coordinate, for the simple
    polytrope. (:download:`Source <fig_poly_simple.py>`)

@@ -56,7 +56,7 @@ model in a GYRE calculation; but it can also be explored in Python
    :align: center
 
    Plot of the Lane-Emden solution variable :math:`\theta`, densty
-   :math:`\rho`, pressure :math:`P` and interior mass :math:`m` as a
+   :math:`\rho`, pressure :math:`P` and interior mass :math:`M_{r}` as a
    function of radial coordinate, for the composite polytrope. Note
    the density discontinuity, and the associated discontinuities in
    the gradients of the pressure and interior mass. (:download:`Source
