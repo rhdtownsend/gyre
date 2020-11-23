@@ -7,7 +7,7 @@ GYRE Fundamentals
 This chapter explains the fundamentals of how GYRE works. Although it
 aims to be user-friendly, GYRE is nevertheless a complex piece of
 software; thus, getting it to produce the 'best' results requires some
-degree of insight into the algorithms it uses to caclulate mode
+degree of insight into the algorithms it uses to calculate mode
 eigenfrequencies and eigenfunctions.
 
 .. toctree::

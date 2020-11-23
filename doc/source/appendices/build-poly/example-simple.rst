@@ -8,8 +8,8 @@ simple (i.e., single-region) :math:`n=3` polytrope, that for instance
 describes the structure of a radiation-pressure dominated, fully
 convective star.
 
-Asssembling a Namelist File
----------------------------
+Assembling a Namelist File
+--------------------------
 
 First, let's assemble a namelist file containing the various
 parameters which control a :program:`build_poly` run.  Using a text
@@ -53,7 +53,7 @@ model in a GYRE calculation; but it can also be explored in Python
    :alt: Plot showing the structure of the simple polytrope model
    :align: center
 
-   Plot of the Lane-Emden solution variable :math:`\theta`, densty
+   Plot of the Lane-Emden solution variable :math:`\theta`, density
    :math:`\rho`, pressure :math:`P` and interior mass :math:`M_{r}` as a
    function of radial coordinate, for the simple
    polytrope. (:download:`Source <fig_poly_simple.py>`)

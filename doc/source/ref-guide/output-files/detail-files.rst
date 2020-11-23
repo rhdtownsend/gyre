@@ -298,7 +298,7 @@ Energetics & Transport
      - :math:`E_{\rm g}`
      - real
      - gravity mode inertia [:math:`M R^{2}`]; evaluated by
-       integrating :math:`\sderiv{E}{x}` in regions wherre
+       integrating :math:`\sderiv{E}{x}` in regions where
        :math:`\varpi=-1`
    * - :nml_v:`E_norm`
      - :math:`E_{\rm norm}`

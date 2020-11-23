@@ -35,7 +35,7 @@ governing equations on a spatial grid
 :math:`\{x_{1},x_{2},\ldots,x_{N}\}`. However, a couple of important
 differences arise at this juncture. First, the system of oscillation
 equations are fourth order (sixth, in the non-adiabatic case). Rather
-than employing finte-difference approximations to high-order
+than employing finite-difference approximations to high-order
 differential operators, GYRE instead decomposes the problem into set
 of coupled first-order equations. This set is written generically as
 

@@ -1,4 +1,4 @@
-.. _build-poly-install.rst:
+.. _build-poly-install:
 
 Installation
 ============

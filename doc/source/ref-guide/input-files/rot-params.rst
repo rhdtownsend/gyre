@@ -14,7 +14,7 @@ one is used.  Allowable parameters are:
   - :nml_v:`'TAR'` : Use the traditional approximation of rotation
 
 :nml_n:`Omega_rot_source` (default :nml_v:`'MODEL'`)
-  Sourcce for rotational angular velocity :math:`\Omega`; one of:
+  Source for rotational angular velocity :math:`\Omega`; one of:
 
   - :nml_v:`'MODEL'` : Differential rotation, with a spatially varying :math:`\Omega`
     obtained from the stellar model

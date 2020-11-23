@@ -17,7 +17,7 @@ input file can contain only one. Allowable parameters are:
   Number of regions
 
 :nml_n:`n_poly` (default :nml_v:`0`)
-  Comma-sepratated list of length :nml_n:`n_r`, specifying polytropic indices for regions
+  Comma-separated list of length :nml_n:`n_r`, specifying polytropic indices for regions
 
 :nml_n:`z_b`
   Comma-separated list of length :nml_n:`n_r`-1, specifying radial coordinates of boundaries

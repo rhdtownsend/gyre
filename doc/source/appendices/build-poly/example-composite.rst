@@ -9,8 +9,8 @@ in the inner region, and :math:`n=1.5` in the outer region. At the
 boundary between the regions, located at radial coordinate
 :math:`z=1.4`, the logarithmic density jump is :math:`\Delta = -0.5`.
 
-Asssembling a Namelist File
----------------------------
+Assembling a Namelist File
+--------------------------
 
 Using a text editor, create the file :file:`build_poly.composite.in` with
 the following content cut-and-pasted in:
@@ -55,7 +55,7 @@ model in a GYRE calculation; but it can also be explored in Python
    :alt: Plot showing the structure of the simple polytrope model
    :align: center
 
-   Plot of the Lane-Emden solution variable :math:`\theta`, densty
+   Plot of the Lane-Emden solution variable :math:`\theta`, density
    :math:`\rho`, pressure :math:`P` and interior mass :math:`M_{r}` as a
    function of radial coordinate, for the composite polytrope. Note
    the density discontinuity, and the associated discontinuities in

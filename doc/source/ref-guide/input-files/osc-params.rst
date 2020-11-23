@@ -20,7 +20,7 @@ is used.  Allowable parameters are:
   - :nml_v:`'VACUUM'` : Zero surface pressure
   - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
   - :nml_v:`'UNNO'` : Formulation following :ads_citet:`unno:1989`
-  - :nml_v:`'JCD'` : Formulation following Jörgen Christensen-Dalsgaard (ADIPLS)
+  - :nml_v:`'JCD'` : Formulation following Jørgen Christensen-Dalsgaard (ADIPLS)
   - :nml_v:`'ISOTHERMAL'` : Formulation based on local dispersion analysis for isothermal atmosphere
   - :nml_v:`'GAMMA'` : Vanishing displacement and derivative at outer boundary, intended for use with :math:`\gamma` modes
 
@@ -30,7 +30,7 @@ is used.  Allowable parameters are:
 
 :nml_n:`outer_bound_branch` (default :nml_v:`'E_NEG'`)
   Dispersion relation solution branch to use for outer boundary
-  conditionss (when :nml_n:`outer_bound`\ =\ :nml_v:`'UNNO'`\ \|\ :nml_v:`'JCD'`\ \|\ :nml_v:`'ISOTHERMAL'`);
+  conditions (when :nml_n:`outer_bound`\ =\ :nml_v:`'UNNO'`\ \|\ :nml_v:`'JCD'`\ \|\ :nml_v:`'ISOTHERMAL'`);
   one of
 
   - :nml_v:`'E_NEG'` : Outward-decaying energy density
@@ -43,9 +43,9 @@ is used.  Allowable parameters are:
 :nml_n:`variables_set` (default :nml_v:`'GYRE'`)
   Dependent variables in oscillation equations; one of:
 
-  - :nml_v:`'GYRE'` : GYRE formulation, as desciribed in the :ref:`dimless-form` section
+  - :nml_v:`'GYRE'` : GYRE formulation, as described in the :ref:`dimless-form` section
   - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
-  - :nml_v:`'JCD'` : Formulation following Jörgen Christensen-Dalsgaard (ADIPLS)
+  - :nml_v:`'JCD'` : Formulation following Jørgen Christensen-Dalsgaard (ADIPLS)
   - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for gravitational components, :nml_v:`'DZIEM'` for mechanical components)
   - :nml_v:`'LAGP'` : Lagrangian pressure perturbation formulation
 
@@ -53,11 +53,11 @@ is used.  Allowable parameters are:
   Scaling factor for gravitational potential perturbations (see the
   :math:`\alphagrv` variable in the :ref:`physics-switches` section)
 
-:nml_n:`alpha_thm` (defaualt :nml_v:`1.`)
+:nml_n:`alpha_thm` (default :nml_v:`1.`)
   Scaling factor for the thermal timescale (see the :math:`\alphathm`
   variable in the :ref:`physics-switches` section)
 
-:nml_n:`alpha_hfl` (defaualt :nml_v:`1.`)
+:nml_n:`alpha_hfl` (default :nml_v:`1.`)
   Scaling factor for horizontal flux perturbations (see the :math:`\alphahfl`
   variable in the :ref:`physics-switches` section)
 

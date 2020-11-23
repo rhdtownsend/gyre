@@ -6,7 +6,7 @@ Example Walkthrough
 
 This chapter provides a walkthrough of a example GYRE project, to
 illustrate the typical steps involved. For this example, we'll be
-focusing on finding eigenfrequencies and eigenfunctions of diploe and
+focusing on finding eigenfrequencies and eigenfunctions of dipole and
 quadrupole gravity modes for a MESA model of slowly pulsating B (SPB)
 star.
 
@@ -189,7 +189,7 @@ watch out for:
   chapter.
 
 After processing the dipole modes, GYRE repeats the search steps for
-the quadropole modes. Once the overall run is complete, a number of
+the quadrupole modes. Once the overall run is complete, a number of
 output files are written:
 
 * A summary file with the name :file:`summary.h5`

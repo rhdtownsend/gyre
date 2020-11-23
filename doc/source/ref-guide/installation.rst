@@ -20,7 +20,7 @@ components:
   interface to LAPACK
 * The `HDF5 <https://www.hdfgroup.org/solutions/hdf5/>`__ data management library
 * The `crlibm <https://hal-ens-lyon.archives-ouvertes.fr/ensl-01529804>`__ correctly rounded math library
-* The :git:`crmath <rhdtownsend/crmath>` Fortrran 2003 interface to crlibm
+* The :git:`crmath <rhdtownsend/crmath>` Fortran 2003 interface to crlibm
 * An OpenMP-aware version of the :netlib:`ODEPACK <odepack>` differential equation library (optional)
 
 On Linux and MacOS platforms, these components are bundled together in
@@ -95,10 +95,10 @@ DEBUG
   Enable debugging mode (default ``no``)
 
 OMP
-  Enable OpenMP parallellization (default ``yes``)
+  Enable OpenMP parallelization (default ``yes``)
 
 MPI
-  Enable MPI parallelizatiomn (default ``no``)
+  Enable MPI parallelization (default ``no``)
 
 DOUBLE_PRECISION
   Use double precision floating point arithmetic (default ``yes``)

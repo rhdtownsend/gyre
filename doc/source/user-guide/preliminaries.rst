@@ -70,7 +70,7 @@ Related Links
 * The `MESA Stellar Evolution Code <mesa_>`__, which can generate
   stellar models readable by GYRE.
 
-Acknowledgements
+Acknowledgments
 ================
 
 GYRE has been developed with financial support from the following grants:
@@ -78,6 +78,6 @@ GYRE has been developed with financial support from the following grants:
 * NSF awards AST-0908688, AST-0904607, ACI-1339606, ACI-1663696, and AST-1716436;
 * NASA awards NNX14AB55G, NNX16AB97G, and 80NSSC20K0515.
 
-GYRE has also benefitted greatly from contributions (code, bug
+GYRE has also benefited greatly from contributions (code, bug
 reports, feature requests) from the academic community. Thanks, folks!
 

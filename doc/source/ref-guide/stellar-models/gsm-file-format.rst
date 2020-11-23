@@ -3,7 +3,7 @@
 GSM File Format
 ===============
 
-Files in GSM (GYRE Stellar Model) formast store HDF5 data describing a
+Files in GSM (GYRE Stellar Model) format store HDF5 data describing a
 stellar model. This format is intended as a portable,
 storage-efficient alternative to the :ref:`mesa-file-format`. It
 adheres to the following conventions:

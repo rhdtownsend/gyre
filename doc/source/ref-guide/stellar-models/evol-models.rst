@@ -27,7 +27,7 @@ in the table below.
      - HDF5 file describing an evolutionary model in B3 format. This
        format is for testing purposes only, and will eventually be
        superseded and/or removed
-   * - :nml_v:`'FAMD'L`
+   * - :nml_v:`'FAMDL'`
      - Text file describing an evolutionary model in FAMDL format, as
        specified in the :download:`CoRoT/ESTA File Formats
        <corot-esta-file-formats.pdf>` document

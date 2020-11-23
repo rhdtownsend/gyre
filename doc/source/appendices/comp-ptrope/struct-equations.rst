@@ -75,7 +75,7 @@ Continuity Relations
 At the boundary between adjacent regions, the pressure and interior
 mass must be continuous. If :math:`z_{i-1/2}` denotes the coordinate
 of the boundary between the :math:`i-1` and :math:`i` regions, then
-these continuinty relations are expressed as
+these continuity relations are expressed as
 
 .. math::
 

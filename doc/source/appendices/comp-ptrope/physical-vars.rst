@@ -17,7 +17,7 @@ The pressure then follows from the equation-of-state
 
    P_{i} = P_{1,0} \, \frac{n_{1}+1}{n_{i}+1} \, \frac{t_{i}^{2}}{B_{i}} \, \theta_{i}^{n_{i}+1}.
 
-The interior mass :math:`m` is evaluated by introducing the auxillary
+The interior mass :math:`m` is evaluated by introducing the auxiliary
 quantity :math:`\mu`, which is defined in the first region by
 
 .. math::

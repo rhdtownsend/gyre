@@ -37,7 +37,7 @@ Data items in the root HDF5 group are as follows:
      - :math:`n_{i}`
      - attribute
      - real (:code:`n_r`)
-     - poltropic indices of regions
+     - polytropic indices of regions
    * - :code:`z_b`
      - :math:`z_{i-1/2}`
      - attribute

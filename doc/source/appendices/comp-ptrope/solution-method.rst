@@ -12,7 +12,7 @@ The structure of a composite polytrope is specified completely by
 * a set of :math:`\nreg-1` boundary coordinates :math:`z_{i-1/2}`
 * a set of :math:`\nreg` density jumps :math:`\Delta_{i-1/2} \equiv \ln [\rho_{i}(z_{i-1/2})/\rho_{i-1}(z_{i-1/2}]`
 
-Alththough the normalizing densities :math:`\rho_{i,0}` have so far
+Although the normalizing densities :math:`\rho_{i,0}` have so far
 been left unspecified, it's convenient to choose them as the density
 at the beginning of their respective regions.
 

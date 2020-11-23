@@ -15,4 +15,4 @@ polytropic models are evaluated using
    c_1 = \frac{z^{3}}{z_{\rm s}^{3}} \frac{\mu_{\rm s}}{\mu_{i}},
    \end{gather}
 
-where :math:`\mu` is the auxillary mass variable introduced above.
+where :math:`\mu` is the auxiliary mass variable introduced above.
