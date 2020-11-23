@@ -3,6 +3,9 @@
 Evolutionary Models
 ===================
 
+Supported Formats
+-----------------
+
 Evolutionary models are read from a file created by a separate stellar
 evolution code. The format of this file is specified by the
 :nml_n:`file_format` parameter of the :nml_g:`model` namelist group
@@ -49,8 +52,23 @@ in the table below.
    * - :nml_v:`'WDEC'`
      - Text file describing an evolutionary model in WDEC format, as
        specified in :ads_citet:`bischoff-kim:2018`
+
+Interpolation
+-------------
   
-For all of these model formats, cubic spline interpolation is used to
-evaluate data between model grid points. The :nml_n:`deriv_type`
-parameter in the :nml_g:`model` namelist group controls how the spline
-derivatives are set up.
+Cubic spline interpolation is used to evaluate data between model grid
+points. The :nml_n:`deriv_type` parameter in the :nml_g:`model`
+namelist group controls how the spline derivatives are set up.
+
+.. _evol-models-double:
+
+Double Points
+-------------
+
+If a model contains a pair of adjacent points with the same radial
+coordinate :math:`r`, this pair is treated as a double point
+representing a discontinuity in the density and some other
+thermodynamic quantities (but not the pressure or temperature). GYRE
+does not attempt to interpolate across double points, but does handle
+them properly when solving the oscillation equations through the use
+of :ref:`jump conditions <dimless-form-jump>`.

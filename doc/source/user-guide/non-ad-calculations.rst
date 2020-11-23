@@ -44,6 +44,8 @@ are close to the true roots, and then refine them
 iteratively. Currently, GYRE offers three methods for establishing the
 trial roots.
 
+.. _non-ad-adiabatic:
+
 Adiabatic Method
 ================
 
@@ -99,6 +101,8 @@ As with the adiabatic method, you may also wish to use the following
 setting in the :nml_g:`num` namelist group:
 
 * :nml_n:`diff_scheme`\ =\ :nml_v:`'MAGNUS_GL2'`
+
+.. _non-ad-contour:
 
 Contour Method
 ==============

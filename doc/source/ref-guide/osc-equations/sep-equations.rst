@@ -19,7 +19,7 @@ linearized fluid equations can be expressed as
    \end{aligned}
 
 Here, :math:`\xir`, :math:`\xit` and :math:`\xip` are the radial,
-polar and azimithal components of the displacement perturbation vector
+polar and azimuthal components of the displacement perturbation vector
 :math:`\vxi`; :math:`Y^{m}_{\ell}` is the spherical harmonic with
 harmonic degree :math:`\ell` and azimuthal order :math:`m`; and again
 :math:`f` stands for any perturbable scalar. The displacement
@@ -29,8 +29,8 @@ perturbation vector is related to the velocity perturbation via
 
    \vv' = \pderiv{\vxi}{t}.
 
-Substituting the above solution forms into the
-:ref:`linear-equations`, the mechanical (mass and momentum
+Substituting the above solution forms into the :ref:`linearized
+equations <linear-equations>`, the mechanical (mass and momentum
 conservation) equations become
 
 .. math::

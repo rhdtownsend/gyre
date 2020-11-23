@@ -3,9 +3,9 @@
 Dimensionless Formulation
 =========================
 
-To improve numerical stability, GYRE solves the :ref:`sep-equations`
-by recasting them into a dimensionless form that traces its roots back 
-to :ads_citet:`dziembowski:1971`.
+To improve numerical stability, GYRE solves the :ref:`separated
+equations <sep-equations>` by recasting them into a dimensionless form
+that traces its roots back to :ads_citet:`dziembowski:1971`.
 
 .. _dimless-vars:
 
@@ -25,6 +25,8 @@ and the dependent variables :math:`\{y_{1},y_{2},\ldots,y_{6}\}` are
    y_{5} &= x^{2-\ell}\, \frac{\delta \tS}{c_{p}}, \\
    y_{6} &= x^{-1-\ell}\, \frac{\delta \tLrad}{L}.
    \end{align}
+
+.. _dimless-form-eqns:
 
 Oscillation Equations
 ---------------------
@@ -172,6 +174,8 @@ derived from a local dispersion analysis of an isothermal atmosphere.
 Finally, when :nml_n:`outer_bound`\ =\ :nml_v:`'GAMMA'`, the first
 condition is replaced by the outer mechanical boundary condition
 described by :ads_citet:`ong:2020`.
+
+.. _dimless-form-jump:
 
 Jump Conditions
 ---------------

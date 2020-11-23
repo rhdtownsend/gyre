@@ -19,7 +19,7 @@ at the beginning of their respective regions.
 Solution
 --------
 
-The :ref:`structure equations <comp-ptrope-struct>` may be solved as
+The :ref:`structure equations <comp-ptrope-eqns>` may be solved as
 an initial value problem. In the first region (:math:`i=1`) this IVP
 involves integrating the Lane-Emden equation :eq:`lane-emden` from the
 center :math:`z=0` to the first boundary :math:`z=z_{3/2}`, with the

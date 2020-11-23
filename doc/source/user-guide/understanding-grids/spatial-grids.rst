@@ -38,6 +38,8 @@ model grid. However, either or both can be overridden using the
 :nml_n:`x_i` and :nml_n:`x_o` parameters, respectively, of the
 :nml_g:`grid` namelist group.
 
+.. _spatial-grids-iter:
+
 Iterative Refinement
 --------------------
 
@@ -56,7 +58,7 @@ iteration, or if the number of completed iterations equals the value
 specified by the :nml_n:`n_iter_max` parameter of the :nml_g:`grid`
 namelist group.
 
-.. _wave-criterion:
+.. _spatial-grids-mech:
 
 Mechanical Criterion
 ~~~~~~~~~~~~~~~~~~~~
@@ -103,7 +105,7 @@ the criterion is applied for each frequency in the grid
 :math:`\{\omega_{1},\omega_{2},\ldots,\omega_{M}\}` (see the
 :ref:`freq-grids` section).
 
-.. _thermal-criterion:
+.. _spatial-grids-therm:
 
 Thermal Criterion
 ~~~~~~~~~~~~~~~~~
@@ -137,7 +139,7 @@ Because :math:`\tau` depends implicitly on the oscillation frequency,
 this criterion is applied for each frequency in the grid
 :math:`\{\omega_{1},\omega_{2},\ldots,\omega_{M}\}`.
 
-.. _structural-criteria:
+.. _spatial-grids-struct:
 
 Structural Criteria
 ~~~~~~~~~~~~~~~~~~~
@@ -156,7 +158,7 @@ criterion is applied separately to the :math:`V_2 \equiv V/x^{2}`,
 :math:`U`, :math:`A^{*}`, :math:`c_{1}` and :math:`\Gamma_{1}`
 coefficients (see the :ref:`dimless-form` section).
 
-.. _central-criteria:
+.. _spatial-grids-cent:
 
 Central Criteria
 ~~~~~~~~~~~~~~~~
@@ -180,7 +182,7 @@ or
    w_{\rm ctr} | \chi_{\rm r} | > 1
 
 where :math:`\chi` is the eigenvalue from the local analysis (see the
-:ref:`wave-criterion` section) corresponding to the solution that
+:ref:`spatial-grids-mech` section) corresponding to the solution that
 remains well-behaved at the origin, and :math:`w_{\rm ctr}` is a
 user-definable weighting parameter. The first criterion causes
 refinement if the subinterval is in a propagation zone, and the second
@@ -240,6 +242,8 @@ parameters.
      - :nml_n:`dx_max`
    * - :math:`\Delta x_{\rm min}`
      - :nml_n:`dx_min`
+
+.. _spatial-grids-rec:       
 
 Recommended Values
 ------------------

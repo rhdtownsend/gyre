@@ -1,4 +1,4 @@
-.. _comp-ptrope-phys:
+.. _comp-ptrope-vars:
 
 Physical Variables
 ==================

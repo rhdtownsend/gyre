@@ -26,6 +26,7 @@ Poisson's equation can be integrated once to yield
 where the second equality introduces the interior mass
 
 .. math::
+   :label: mass-eq
 
    M_{r} \equiv \int 4 \pi \rho r^{2} \, \diff{r}.
 

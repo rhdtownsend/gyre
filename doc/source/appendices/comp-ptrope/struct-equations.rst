@@ -1,4 +1,4 @@
-.. _comp-ptrope-struct:
+.. _comp-ptrope-eqns:
 
 Structure Equations
 ===================

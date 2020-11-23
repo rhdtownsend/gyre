@@ -15,7 +15,7 @@ model <comp-ptrope>`. This format adheres to the following conventions:
 Data items in the root HDF5 group are as follows:
 
 .. list-table::
-   :widths: 8 8 8 8 68
+   :widths: 10 10 15 20 45
    :header-rows: 1
 
    * - Data Item
@@ -24,12 +24,12 @@ Data items in the root HDF5 group are as follows:
      - Datatype
      - Definition
    * - :code:`n`
-     - :math:`n`
+     - :math:`N`
      - attribute
      - integer
      - number of grid points
    * - :code:`n_r`
-     - :math:`N`
+     - :math:`\nreg`
      - attribute
      - integer
      - number of regions
@@ -64,7 +64,7 @@ Data items in the root HDF5 group are as follows:
      - real (:code:`n`)
      - Lane-Emden variable
    * - :code:`dtheta`
-     - :math:`\sderiv{\theta}{z}`
+     - :math:`\theta'`
      - dataset
      - real (:code:`n`)
      - Derivative of Lane-Emden variable
