@@ -340,7 +340,11 @@ contains
 
        theta = this%in_theta(pt%s)%f(pt%x)
 
-       coeff = z**3*this%t(pt%s)*pow(theta, this%n_poly(pt%s))/this%mu_(pt)
+       if (this%n_poly(pt%s) /= 0._WP) then
+          coeff = z**3*this%t(pt%s)*pow(theta, this%n_poly(pt%s))/this%mu_(pt)
+       else
+          coeff = z**3*this%t(pt%s)/this%mu_(pt)
+       endif
 
     else
 
@@ -444,7 +448,11 @@ contains
        theta = this%in_theta(pt%s)%f(pt%x)
        dtheta = this%in_dtheta(pt%s)%f(pt%x)
 
-       dcoeff = -3._WP - z*dtheta/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/dtheta
+       if (this%n_poly(pt%s) /= 0._WP) then
+          dcoeff = -3._WP - z*dtheta/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/dtheta
+       else
+          dcoeff = -3._WP - z*dtheta/theta - this%B(pt%s)*z/dtheta
+       endif
 
     else
 
