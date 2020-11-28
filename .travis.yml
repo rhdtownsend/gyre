@@ -5,7 +5,7 @@ env:
   global:
     - MESASDK_URL=http://www.astro.wisc.edu/~townsend/resource/download/mesasdk/
     - MESASDK_VERSION=20.3.2
-    - MESASDK_TARFILE=mesasdk-x86_64-$MESASDK_VERSION.tar.gz
+    - MESASDK_TARFILE=mesasdk-x86_64-linux-$MESASDK_VERSION.tar.gz
     - MESASDK_ROOT=$HOME/mesasdk
 
 cache:
