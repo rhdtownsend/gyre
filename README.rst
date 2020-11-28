@@ -14,6 +14,9 @@ The GYRE Stellar Oscillation Code
 .. image:: https://img.shields.io/readthedocs/gyre
    :alt: Read the Docs
    :target: https://gyre.readthedocs.io/en/latest
+
+Overview
+========
 	    
 GYRE is a *stellar oscillation code*. Given an input stellar model,
 GYRE calculates the eigenfrequencies and eigenfunctions for the normal
