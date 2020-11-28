@@ -2,14 +2,21 @@
 The GYRE Stellar Oscillation Code
 #################################
 
-.. image:: https://img.shields.io/readthedocs/gyre
-   :alt: Read the Docs
-   :target: https://gyre.readthedocs.io/en/latest
-	    
 .. image:: https://img.shields.io/github/license/rhdtownsend/gyre
    :alt: GitHub
    :target: https://github.com/rhdtownsend/gyre
 
+.. image:: https://img.shields.io/github/v/release/rhdtownsend/gyre
+   :alt: GitHub release (latest by date)
+   :target: https://gyre.readthedocs.io/en/latest
+
+.. image:: https://img.shields.io/github/languages/top/rhdtownsend/gyre
+   :alt: GitHub top language
+
+.. image:: https://img.shields.io/readthedocs/gyre
+   :alt: Read the Docs
+   :target: https://gyre.readthedocs.io/en/latest
+	    
 GYRE is a *stellar oscillation code*. Given an input stellar model,
 GYRE calculates the eigenfrequencies and eigenfunctions for the normal
 oscillation modes of the model. These data can be put to a variety of
@@ -21,7 +28,7 @@ of *asteroseismology*.
 Documentation
 =============
 
-Full documentation for GYRE can be found at `https://gyre.readthedocs.io/en/latest`__.
+Full documentation for GYRE can be found at https://gyre.readthedocs.io/en/latest.
 
 Citing
 ======
