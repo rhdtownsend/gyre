@@ -99,8 +99,8 @@ is used.  Allowable parameters are:
     case 4 described by :ads_citet:`pesnell:1990`
 
 :nml_n:`zeta_scheme` (default :nml_v:`PESNELL`)
-  Scheme for evaluating frequency weight function
-  :math:`\sderiv{\zeta}{x}` and integral dimensionless eigenfrequency
+  Scheme for evaluating dimensionless frequency weight function
+  :math:`\sderiv{\zeta}{x}` and integral eigenfrequency
   :math:`\omega_{\rm int}`; one of:
 
   - :nml_v:`'PESNELL'` : Evaluate using eqn. (A5) of :ads_citet:`pesnell:1987`

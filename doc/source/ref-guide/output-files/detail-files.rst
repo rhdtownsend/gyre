@@ -150,8 +150,12 @@ Classification & Validation
    * - :nml_v:`omega_int`
      - :math:`\omega_{\rm int}`
      - complex
-     - dimensionless eigenfrequency from integral
-       evaluation controlled by :nml_n:`zeta_scheme` parameter
+     - dimensionless eigenfrequency; evaluated by
+       integrating :math:`\sderiv{\zeta}{x}`
+   * - :nml_v:`dzeta_dx`
+     - :math:`\sderiv{\zeta}{x}`
+     - complex(:nml_v:`n`)
+     - dimensionless frequency weight function; controlled by :nml_n:`zeta_scheme` parameter
    * - :nml_v:`Yt_1`
      - :math:`\mathcal{Y}_{1}`
      - complex(:nml_v:`n`)
@@ -378,6 +382,15 @@ Rotation
      - Symbol
      - Datatype
      - Description
+   * - :nml_v:`domega_rot`
+     - :math:`\delta \omega`
+     - real
+     - dimensionless first-order rotational splitting; evaluated using eqn. 3.355 of :ads_citet:`aerts:2010`
+   * - :nml_v:`dfreq_rot`
+     - ---
+     - real
+     - dimensioned first-order rotational splitting; units and reference frame controlled by
+       :nml_n:`freq_units` and :nml_n:`freq_frame` parameters
    * - :nml_v:`beta`
      - :math:`\beta`
      - real
@@ -448,66 +461,66 @@ Stellar Structure
      - :math:`\nabla`
      - real(:nml_v:`n`)
      - temperature gradient; defined in :ref:`struct-coeffs` section
-       :ref:`dimless-form` section {N}
+       :ref:`dimless-form` section
    * - :nml_v:`nabla_ad`\ [#only-N]_
      - :math:`\nabad`
      - real(:nml_v:`n`)
      - adiabatic temperature gradient; defined in
-       :ref:`linear-equations` section {N}
+       :ref:`linear-equations` section
    * - :nml_v:`dnabla_ad`\ [#only-N]_
      - :math:`\dnabad`
      - real(:nml_v:`n`)
-     - derivative of adiabatic temperature gradient {N}
+     - derivative of adiabatic temperature gradient
    * - :nml_v:`upsilon_T`\ [#only-N]_
      - :math:`\upsT`
      - real(:nml_v:`n`)
      - thermodynamic coefficient; defined in :ref:`linear-equations`
-       section {N}
+       section
    * - :nml_v:`c_lum`\ [#only-N]_
      - :math:`\clum`
      - real(:nml_v:`n`)
      - structure coefficient; defined in :ref:`struct-coeffs`
-       section {N}
+       section
    * - :nml_v:`c_rad`\ [#only-N]_
      - :math:`\crad`
      - real(:nml_v:`n`)
      - structure coefficient; defined in :ref:`struct-coeffs`
-       section {N}
+       section
    * - :nml_v:`c_thn`\ [#only-N]_
      - :math:`\cthn`
      - real(:nml_v:`n`)
      - structure coefficient; defined in :ref:`struct-coeffs`
-       section {N}
+       section
    * - :nml_v:`c_thk`\ [#only-N]_
      - :math:`\cthk`
      - real(:nml_v:`n`)
      - structure coefficient; defined in :ref:`struct-coeffs`
-       section {N}
+       section
    * - :nml_v:`c_eps`\ [#only-N]_
      - :math:`\ceps`
      - real(:nml_v:`n`)
      - structure coefficient; defined in :ref:`struct-coeffs`
-       section {N}
+       section
    * - :nml_v:`kap_rho`\ [#only-N]_
      - :math:`\kaprho`
      - real(:nml_v:`n`)
      - opacity partial; defined in :ref:`linear-equations`
-       section {N}
+       section
    * - :nml_v:`kap_T`\ [#only-N]_
      - :math:`\kapT`
      - real(:nml_v:`n`)
      - opacity partial; defined in :ref:`linear-equations`
-       section {N}
+       section
    * - :nml_v:`eps_rho`\ [#only-N]_
      - :math:`\epsrho`
      - real(:nml_v:`n`)
      - nuclear energy generation partial; defined in :ref:`linear-equations`
-       section {N}
+       section
    * - :nml_v:`eps_T`\ [#only-N]_
      - :math:`\epsT`
      - real(:nml_v:`n`)
      - nuclear energy generation partial; defined in :ref:`linear-equations`
-       section {N}
+       section
    * - :nml_v:`Omega_rot`
      - :math:`\Omega`
      - real(:nml_v:`n`)

@@ -59,6 +59,11 @@ GYRE remains under active development by the following team:
 * Joel Ong (Yale University)
 * Meng Sun (University of Wisconsin-Madison)
 
+Also, the following people have made valuable contributions toward testing GYRE:
+
+* Siemen Burssens (KU Leuven)
+* Timothy Van Reeth (KU Leven)
+
 Related Links
 =============
 

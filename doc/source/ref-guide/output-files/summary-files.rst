@@ -118,8 +118,8 @@ Classification & Validation
    * - :nml_v:`omega_int`
      - :math:`\omega_{\rm int}`
      - complex(:nml_v:`n_j`)
-     - dimensionless eigenfrequency from integral expression;
-       evaluation controlled by :nml_n:`zeta_scheme` parameter
+     - dimensionless eigenfrequency; evaluated by
+       integrating :math:`\sderiv{\zeta}{x}`
 
 Perturbations
 -------------
@@ -236,6 +236,15 @@ Rotation
      - Symbol
      - Datatype
      - Description
+   * - :nml_v:`domega_rot`
+     - :math:`\delta \omega`
+     - real(:nml_v:`n_j`)
+     - dimensionless first-order rotational splitting; evaluated using eqn. 3.355 of :ads_citet:`aerts:2010`
+   * - :nml_v:`dfreq_rot`
+     - ---
+     - real(:nml_v:`n_j`)
+     - dimensioned first-order rotational splitting; units and reference frame controlled by
+       :nml_n:`freq_units` and :nml_n:`freq_frame` parameters
    * - :nml_v:`beta`
      - :math:`\beta`
      - real(:nml_v:`n_j`)

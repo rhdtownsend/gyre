@@ -15,6 +15,12 @@ How Do I...
 ...compile GYRE?
   See the :ref:`install-compile` section.
 
+...compile a statically linked verion of GYRE?
+  Set the :envvar:`STATIC` environment variable to ``yes`` prior to
+  compilation. Note that this currently only works on Linux platforms,
+  and when then :envvar:`CRMATH` environment variable is set to
+  ``no``.
+
 .. _faq-multicore:
 
 ...run GYRE on multiple cores?
@@ -22,7 +28,7 @@ How Do I...
   processors in a shared-memory (multicore) computer through its use
   of :wiki:`OpenMP <OpenMP>`. This functionality should be enabled by
   default, but you can nevertheless force it by setting the :envvar:`OMP`
-  environment variable to `yes` prior to compilation. Then, set the
+  environment variable to ``yes`` prior to compilation. Then, set the
   :envvar:`OMP_NUM_THREADS` environment variable to the number of threads
   you want to use.
 
@@ -31,7 +37,7 @@ How Do I...
 ...run GYRE on a cluster?
   GYRE can take advantage of multiple nodes in a computer cluster
   through its use of :wiki:`MPI <Message Passing Interface>`. To enable this functionality,
-  set the :envvar:`MPI` environment variable to `yes` prior to
+  set the :envvar:`MPI` environment variable to ``yes`` prior to
   compilation. Note that you'll need to use a version of the
   `MESA Software Development Kit <mesa-sdk_>`__ built with MPI
   support for your cluster's specific networking technology (e.g.,
