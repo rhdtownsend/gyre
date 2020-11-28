@@ -16,7 +16,7 @@ install:
   - |
     if test ! -e $MESASDK_ROOT/bin/mesasdk_init.sh; then
       wget --user-agent="" $MESASDK_URL/$MESASDK_TARFILE
-      tar xvfz $MESASDK_TARFILE -C $HOME/cache
+      tar xfz $MESASDK_TARFILE -C $HOME/cache
     fi
   - . ${MESASDK_ROOT}/bin/mesasdk_init.sh
 
