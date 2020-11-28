@@ -1,5 +1,6 @@
 import pickle
 import ads
+import re
 from docutils.parsers.rst import nodes
 
 ## Role functions for citing ADS articles
@@ -12,6 +13,13 @@ def build_cite(rawtext, ref, lineno, inliner, options, template):
         prb = inliner.problematic(rawtext, rawtext, msg)
         return [prb], [msg]
 
+    year_str = re.findall(r'[0-9]+[A-Za-z]*', ref)
+
+    if len(year_str) > 0:
+        year = year_str[0]
+    else:
+        year = ads_data[ref].year
+        
     if len(ads_data[ref].author) == 1:
         author = format(ads_data[ref].author[0].split(',')[0])
     elif len(ads_data[ref].author) == 2:
@@ -20,7 +28,7 @@ def build_cite(rawtext, ref, lineno, inliner, options, template):
     else:
         author = '{:s} et al.'.format(ads_data[ref].author[0].split(',')[0])
 
-    citation = template.format(author, ads_data[ref].year)
+    citation = template.format(author, year)
     url = 'https://ui.adsabs.harvard.edu/abs/{:s}/abstract'.format(ads_data[ref].bibcode)
 
     node = nodes.reference(rawtext, citation, refuri=url, **options)
