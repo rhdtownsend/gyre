@@ -15,7 +15,7 @@ GYRE calculates the eigenfrequencies and eigenfunctions for the normal
 oscillation modes of the model. These data can be put to a variety of
 uses; the most common is to compare them against observed oscillation
 frequencies of a star, allowing constraints on the star's fundamental
-parameters (mass, radius, etc.)  to be established --- the discipline
+parameters (mass, radius, etc.)  to be established |---| the discipline
 of *asteroseismology*.
 
 Documentation
@@ -33,3 +33,4 @@ If you use GYRE in your research, please cite one or more of the relevant
 * `Townsend, Goldsten & Zweibel (2018) <https://ui.adsabs.harvard.edu/abs/2018MNRAS.475..879T/abstract>`__ outlines improvements to allow non-adiabatic calculations.
 * `Goldstein & Townsend (2020) <https://ui.adsabs.harvard.edu/abs/2020ApJ...899..116G/abstract>`__ describes the contour method for non-adiabatic calculations.
 
+.. |---| unicode:: U+2014
