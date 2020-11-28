@@ -2374,10 +2374,10 @@ contains
 
   !****
 
-  function dOmega_rot (this)
+  function domega_rot (this)
 
     class(wave_t), intent(in) :: this
-    complex(WP)               :: dOmega_rot
+    complex(WP)               :: domega_rot
 
     integer  :: k
     real(WP) :: dbeta_dx(this%n_k)
@@ -2401,13 +2401,13 @@ contains
        
     end do
 
-    dOmega_rot = integrate(this%gr%pt%x, dbeta_dx*Omega_rot)
+    domega_rot = integrate(this%gr%pt%x, dbeta_dx*Omega_rot)
 
     ! Finish
 
     return
 
-  end function dOmega_rot
+  end function domega_rot
 
   !****
 
