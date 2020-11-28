@@ -96,6 +96,8 @@ specified by the :nml_g:`scan` namelist group; this ensures that modes
 whose non-adiabatic frequencies fall just outside the frequency grid
 are still found.
 
+.. _non-ad-minmod:
+
 Minmod Method
 =============
 
