@@ -122,15 +122,14 @@ contains
     character(*), intent(in) :: branch
     complex(WP)              :: chi
 
-    character(:), allocatable :: branch_
-    complex(WP)               :: a_11
-    complex(WP)               :: a_12
-    complex(WP)               :: a_21
-    complex(WP)               :: a_22
-    complex(WP)               :: b
-    complex(WP)               :: c
-    complex(WP)               :: psi2
-    complex(WP)               :: psi
+    complex(WP) :: a_11
+    complex(WP) :: a_12
+    complex(WP) :: a_21
+    complex(WP) :: a_22
+    complex(WP) :: b
+    complex(WP) :: c
+    complex(WP) :: psi2
+    complex(WP) :: psi
 
     ! Calculate the atmospheric radial wavenumber (complex frequencies)
 
@@ -147,7 +146,7 @@ contains
 
     ! Adjust the sign of psi to choose the correct solution branch
 
-    select case (branch_)
+    select case (branch)
 
     case ('E_POS')
 
