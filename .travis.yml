@@ -1,0 +1,7 @@
+language: minimal
+install:
+  - wget --user-agent="" http://www.astro.wisc.edu/~townsend/resource/download/mesasdk/mesasdk-x86_64-linux-20.3.2.tar.gz
+  - tar xvfz mesasdk-x86_64-linux-20.3.2.tar.gz
+  - export MESASDK_ROOT=$PWD/mesasdk
+  - . ${MESASDK_ROOT}/bin/mesasdk_init.sh
+script: make && make test
