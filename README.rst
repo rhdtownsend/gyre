@@ -11,6 +11,9 @@ The GYRE Stellar Oscillation Code
 .. image:: https://img.shields.io/github/issues/rhdtownsend/gyre
    :alt: GitHub issues
    :target: https://github.com/rhdtownsend/gyre/issues
+.. image:: https://img.shields.io/travis/com/rhdtownsend/gyre
+   :alt: Travis (.com)
+   :target: https://travis-ci.com/github/rhdtownsend/gyre
 .. image:: https://img.shields.io/readthedocs/gyre
    :alt: Read the Docs
    :target: https://gyre.readthedocs.io/en/latest
