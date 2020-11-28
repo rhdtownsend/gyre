@@ -5,14 +5,11 @@ The GYRE Stellar Oscillation Code
 .. image:: https://img.shields.io/github/license/rhdtownsend/gyre
    :alt: GitHub
    :target: https://github.com/rhdtownsend/gyre
-
 .. image:: https://img.shields.io/github/v/release/rhdtownsend/gyre
    :alt: GitHub release (latest by date)
    :target: https://gyre.readthedocs.io/en/latest
-
 .. image:: https://img.shields.io/github/languages/top/rhdtownsend/gyre
    :alt: GitHub top language
-
 .. image:: https://img.shields.io/readthedocs/gyre
    :alt: Read the Docs
    :target: https://gyre.readthedocs.io/en/latest
