@@ -65,7 +65,7 @@ the following parameters in the :nml_g:`osc` namelist group:
 and the following parameters in the :nml_g:`num` namelist group:
 
 * :nml_n:`ad_search`\ =\ :nml_v:`'BRACKET'`\ [#default]_
-* :nml_n:`nad_search`\ =\ :nml_v:`'AD'`
+* :nml_n:`nad_search`\ =\ :nml_v:`'AD'`\ [#default]_
 
 You may also wish to use the following setting in the :nml_g:`num`
 namelist group:
@@ -75,6 +75,26 @@ namelist group:
 This tells GYRE to evaluate the finite-difference equations using the
 2nd order Magnus scheme; experience suggests that this gives the most
 reliable convergence for the root refinement.
+
+An example of the adiabatic method in action can be found in the
+:file:`{$GYRE_DIR}/test/nad/mesa/bcep/gyre.in` namelist input file,
+which is set up to find :math:`\ell=0,\ldots,3` modes of a
+:math:`20\,\Msun` :math:`\beta` Cephei model using the adiabatic
+method. The important parts are as follows:
+
+.. literalinclude:: non-ad-calculations/gyre.in
+   :language: console
+   :start-at: &osc
+   :end-before: &grid
+
+Note the :nml_n:`nonadiabatic` parameter in the :nml_g:`osc` namelist
+group, and the :nml_n:`diff_scheme` parameter in the :nml_g:`num`
+namelist group. The :nml_n:`restrict_roots`\ =\ :nml_v:`.FALSE.`
+setting, also in the :nml_g:`num` namelist group, tells GYRE not to
+reject any modes that have :math:`\sigmar` outside the frequency range
+specified by the :nml_g:`scan` namelist group; this ensures that modes
+whose non-adiabatic frequencies fall just outside the frequency grid
+are still found.
 
 Minmod Method
 =============
@@ -87,7 +107,7 @@ non-adiabatic problem. The method is described in full in
 significantly better than the adiabatic method, and is included in
 GYRE for the sake of completeness.
 
-To perform non-adiabatic calculations with the adiabatic method, set
+To perform non-adiabatic calculations with the minmod method, set
 the following parameters in the :nml_g:`osc` namelist group:
 
 * :nml_n:`nonadiabatic`\ =\ :nml_v:`.TRUE.`
@@ -101,6 +121,21 @@ As with the adiabatic method, you may also wish to use the following
 setting in the :nml_g:`num` namelist group:
 
 * :nml_n:`diff_scheme`\ =\ :nml_v:`'MAGNUS_GL2'`
+
+An example of the minmod method in action can be found in the
+:file:`{$GYRE_DIR}/test/nad/mesa/bcep-minmod/gyre.in` namelist input
+file, which is equivalent to
+:file:`{$GYRE_DIR}/test/nad/mesa/bcep/gyre.in` but using the
+minmod method. The important parts are as follows:
+
+.. literalinclude:: non-ad-calculations/gyre-minmod.in
+   :language: console
+   :start-at: &osc
+   :end-before: &grid
+
+Note the additional :nml_n:`nad_search`\ =\ :nml_v:`'MINMOD'` parameter
+in the :nml_g:`num` namelist group, which stipulates that the minmod
+method should be used.
 
 .. _non-ad-contour:
 
@@ -127,7 +162,7 @@ and the following parameters in the :nml_g:`num` namelist group:
 
 * :nml_n:`nad_search`\ =\ :nml_v:`'CONTOUR'`
 
-Finally, you must also ensure that at least one :nml_g:`scan` namelist
+You must also ensure that at least one :nml_g:`scan` namelist
 group with :nml_n:`axis`\ =\ :nml_v:`'REAL'` is present, and likewise
 at least one with :nml_n:`axis`\ =\ :nml_v:`'IMAG'`. Together, these
 groups define the real and imaginary axes of the discriminant grid in
@@ -139,6 +174,36 @@ Finally, as with the adiabatic method, you may also wish to use the
 following setting in the :nml_g:`num` namelist group:
 
 * :nml_n:`diff_scheme`\ =\ :nml_v:`'MAGNUS_GL2'`
+
+.. note::
+
+   Because g modes are spaced uniformly in period (in the asymptotic
+   limit of large radial order), it would seem sensible to set
+   :nml_n:`grid_type`\ =\ :nml_v:`'INVERSE'` in the :nml_g:`scan`
+   namelist group(s) that correspond to the real axis (i.e.,
+   :nml_n:`axis`\ =\ :nml_v:`'REAL'`). However, this typically results
+   in a mismatch between the resolution of the real and imaginary
+   axes, and the contour method doesn't perform well. A fix for this
+   issue will be forthcoming in the next release of GYRE, but in the
+   meantime it's probably best to avoid the contour method for g
+   modes.
+
+An example of the minmod method in action can be found in the
+:file:`{$GYRE_DIR}/test/nad/mesa/bcep-contour/gyre.in` namelist input
+file, which is equivalent to
+:file:`{$GYRE_DIR}/test/nad/mesa/bcep/gyre.in` but using the
+minmod method. The important parts are as follows:
+
+.. literalinclude:: non-ad-calculations/gyre-contour.in
+   :language: console
+   :start-at: &osc
+   :end-before: &grid
+
+Note the additional :nml_n:`nad_search`\ =\ :nml_v:`'CONTOUR'`
+parameter in the :nml_g:`num` namelist group, which stipulates that
+the contour method should be used; and, the fact that there are now
+two :nml_g:`scan` namelist groups, one with :nml_n:`axis`\ =\
+:nml_v:`'REAL'` and the other with :nml_n:`axis`\ =\ :nml_v:`'IMAG'`.
 
 .. rubric:: Footnotes
 

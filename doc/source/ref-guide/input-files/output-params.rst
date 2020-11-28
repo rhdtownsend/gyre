@@ -33,6 +33,8 @@ should contain exactly one of each. Allowable parameters are:
   - :nml_v:`'%j'` : Same as :nml_v:`'%J'`, but formatted in variable-width field
   - :nml_v:`'%L'` : Harmonic degree :math:`\ell`, formatted in fixed-width field
   - :nml_v:`'%l'` : Same as :nml_v:`'%L'`, but formatted in variable-width field
+  - :nml_v:`'%M'` : Azimuthal order :math:`m`, formatted in fixed-width field
+  - :nml_v:`'%m'` : Same as :nml_v:`'%M'`, but formatted in variable-width field
   - :nml_v:`'%N'` : Radial order :math:`n_{\rm pg}`, formatted in fixed-width field
   - :nml_v:`'%n'` : Same as :nml_v:`'%N'`, but formatted in variable-width field
   - :nml_v:`'%P'` : Acoustic wave winding number :math:`n_{\rm p}`, formatted in fixed-width field

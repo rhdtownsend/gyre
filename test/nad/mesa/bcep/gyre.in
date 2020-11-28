@@ -23,11 +23,11 @@
   l = 3
 /
 
-&osc
-  nonadiabatic = .TRUE.
+&rot
 /
 
-&rot
+&osc
+  nonadiabatic = .TRUE.
 /
 
 &num

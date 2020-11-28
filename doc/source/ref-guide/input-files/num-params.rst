@@ -48,7 +48,7 @@ used. Allowable fields are:
 :nml_n:`restrict_roots` (default :nml_v:`.TRUE.`)
   Flag to check each roots found lies within the bounds of the frequency scan
 
-:nml_n:`ad_search` (default :nml_v:`'SCAN'`)
+:nml_n:`ad_search` (default :nml_v:`'BRACKET'`)
   Initial search method for adiabatic calculations; one of
 
   - :nml_v:`'BRACKET'` : Bracket sign changes in the discriminant function 

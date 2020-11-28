@@ -23,12 +23,12 @@
   l = 3
 /
 
+&rot
+/
+
 &osc
   adiabatic = .FALSE.
   nonadiabatic = .TRUE.
-/
-
-&rot
 /
 
 &num

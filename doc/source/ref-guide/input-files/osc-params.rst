@@ -22,7 +22,7 @@ is used.  Allowable parameters are:
   - :nml_v:`'UNNO'` : Formulation following :ads_citet:`unno:1989`
   - :nml_v:`'JCD'` : Formulation following Jørgen Christensen-Dalsgaard (ADIPLS)
   - :nml_v:`'ISOTHERMAL'` : Formulation based on local dispersion analysis for isothermal atmosphere
-  - :nml_v:`'GAMMA'` : Vanishing displacement and derivative at outer boundary, intended for use with :math:`\gamma` modes
+  - :nml_v:`'GAMMA'` : Vanishing displacement and derivative at outer boundary, intended for use with :math:`\gamma` modes (isolated g modes; see :ads_citealp:`ong:2020`)
 
 :nml_n:`outer_bound_cutoff` (default :nml_v:`''`)
   Outer boundary conditions to use when evaluating cutoff frequencies (see :nml_n:`freq_units`); same options
@@ -126,7 +126,7 @@ is used.  Allowable parameters are:
   Reference fractional radius for photosphere, normalizations etc.
 
 :nml_n:`x_atm` (default :nml_v:`-1`, implying outer grid point)
-  Fractional radius for :math:`\pi/\gamma` crossover point in the convection zone — cf. :ads_citet:`ong:2020`
+  Fractional radius for convection-zone crossover point of :math:`\pi/\gamma` modes (isolated p and g modes; see :ads_citealp:`ong:2020`)
    
 :nml_n:`adiabatic` (default :nml_v:`.TRUE.`)
   Flag to perform adiabatic calculations
