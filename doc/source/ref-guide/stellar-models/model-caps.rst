@@ -76,7 +76,7 @@ model-type and file-format combination.
      - X
      - 
    * - POLY
-     - ---
+     - POLY
      -
      -
      -

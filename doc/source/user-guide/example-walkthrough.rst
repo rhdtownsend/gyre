@@ -106,7 +106,7 @@ to the center (which is why GYRE decides not to add a central point).
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
-   :start-after: Input filename
+   :start-at: Model Init
    :end-before: Mode Search
 
 GYRE then prepares to search for modes with harmonic degree
@@ -116,7 +116,7 @@ and a spatial grid:
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
-   :start-after: No need
+   :start-at: Mode Search
    :end-before: Starting search
 
 (The concepts of spatial and frequency grids are explored in greater
@@ -127,7 +127,7 @@ searching for changes in its sign:
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
-   :start-after: Segment 1
+   :start-at: Starting search
    :end-before: Root Solving
 
 Finally, for each bracket found GYRE uses a root solver to
@@ -136,7 +136,7 @@ a mode that GYRE has successfully found:
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
-   :start-after: Time elapsed
+   :start-at: Root Solving
 
 The columns appearing are as follows:
 
