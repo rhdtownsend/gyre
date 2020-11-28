@@ -12,8 +12,8 @@ cache:
     - $MESASDK_ROOT
 
 install:
-  - if test ! -e $MESASDK_TARFILE; then wget --user-agent="" $MESASDK_URL/$MESASDK_TARFILE
-  - if test ! -d $MESASDK_ROOT; then tar xvfz $MESASDK_TARFILE -C $HOME
+  - if test ! -e $MESASDK_TARFILE; then wget --user-agent="" $MESASDK_URL/$MESASDK_TARFILE; fi
+  - if test ! -d $MESASDK_ROOT; then tar xvfz $MESASDK_TARFILE -C $HOME; fi
   - . ${MESASDK_ROOT}/bin/mesasdk_init.sh
 
 script: make && make test
