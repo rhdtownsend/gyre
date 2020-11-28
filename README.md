@@ -10,4 +10,4 @@ parameters (mass, radius, etc.) to be established — the discipline of
 
 Full documentation for GYRE can be found on this website:
 
-(https://gyre.readthedocs.io/en/latest/)
+https://gyre.readthedocs.io/en/latest/
