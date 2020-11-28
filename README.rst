@@ -8,6 +8,8 @@ The GYRE Stellar Oscillation Code
 .. image:: https://img.shields.io/github/v/release/rhdtownsend/gyre
    :alt: GitHub release (latest by date)
    :target: https://gyre.readthedocs.io/en/latest
+.. image:: https://img.shields.io/github/issues/rhdtownsend/gyre
+   :alt: GitHub issues	    
 .. image:: https://img.shields.io/readthedocs/gyre
    :alt: Read the Docs
    :target: https://gyre.readthedocs.io/en/latest
