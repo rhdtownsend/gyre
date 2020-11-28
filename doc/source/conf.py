@@ -104,11 +104,6 @@ extlinks = {
     'repo': ('https://github.com/rhdtownsend/gyre/blob/{:s}/%s'.format(branch), '')
 }
 
-# Set substitutions for sphinx_substitution_extensions 
-substitutions = [
-    ('|release|', release)
-]
-
 # Set site-wide targets
 targets = {
     'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/{0:s}.tar.gz'.format(release),
@@ -118,6 +113,14 @@ targets = {
 }
 
 rst_prolog = '\n'.join(['.. _{:s}: {:s}'.format(x, targets[x]) for x in targets])
+
+# Add substitutions for sphinx_substitution_extensions
+
+rep_exts = {"release": release,
+            "author": author}
+
+for rep_ext_key, rep_ext_val in rep_exts.items():
+    rst_prolog += "\n.. |{:s}| replace:: {:s}".format(rep_ext_key, rep_ext_val)
 
 # Latex macros
 

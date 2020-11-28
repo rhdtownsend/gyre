@@ -39,7 +39,8 @@ Download
 Download the `GYRE source code <github-tarball_>`__, and unpack it
 from the command line using the :command:`tar` utility:
 
-.. substitution-prompt:: bash
+.. prompt:: bash
+   :substitutions:
 
    tar xf gyre-|release|.tar.gz
 
@@ -47,7 +48,8 @@ Set the :envvar:`GYRE_DIR` environment variable with the path to the
 newly created source directory; this can be achieved e.g. using the
 :command:`dirname` built-in command:
 
-.. substitution-prompt:: bash
+.. prompt:: bash
+   :substitutions:
 
    export GYRE_DIR=$(dirname gyre-|release|)
 
@@ -58,7 +60,7 @@ Compile
 
 Compile GYRE using the :command:`make` utility:
 
-.. substitution-prompt:: bash
+.. prompt:: bash
 
    make -j -C $GYRE_DIR
 
@@ -70,7 +72,7 @@ Test
 To check that GYRE has compiled correctly and gives reasonable
 results, you can run the calculation test suite via the command
 
-.. substitution-prompt:: bash
+.. prompt:: bash
 
    make -C $GYRE_DIR test
 
@@ -128,7 +130,7 @@ yet made it into a formal release. In such cases, you can check out
 GYRE directly from the :git:`rhdtownsend/gyre` git repository on
 :git:`GitHub <>`:
 
-.. substitution-prompt:: bash
+.. prompt:: bash
 
    git clone https://github.com/rhdtownsend/gyre.git
 

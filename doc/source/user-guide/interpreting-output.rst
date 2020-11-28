@@ -49,14 +49,14 @@ As a preliminary step, you'll need to install PyGYRE from the `Python
 Package Index (PyPI) <https://pypi.org/>`__. This can be done using
 the :command:`pip` command, via
 
-.. substitution-prompt:: bash
+.. prompt:: bash
 
    pip install pygyre
 
 If PyGYRE is already installed, you can upgrade to a more-recent
 version via
 
-.. substitution-prompt:: bash
+.. prompt:: bash
 
    pip install --upgrade pygyre
 

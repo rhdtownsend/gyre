@@ -21,7 +21,7 @@ operates on. These commands will make a new directory beneath your
 home directory with the name :file:`work`, and then set this directory
 as the current working directory:
 
-.. substitution-prompt:: bash
+.. prompt:: bash
 
    mkdir ~/work
    cd ~/work
@@ -34,7 +34,7 @@ example models provided in the :file:`${GYRE_DIR}/models` directory;
 the following commands will copy a MESA model for a :math:`5\,\Msun`
 SPB star into your work directory:
 
-.. substitution-prompt:: bash
+.. prompt:: bash
 
    cp $GYRE_DIR/models/mesa/spb/spb.mesa .
 
@@ -84,7 +84,7 @@ Running GYRE
 
 With the hard work done, it's now trivial to run GYRE:
 
-.. substitution-prompt:: bash
+.. prompt:: bash
 			 
    $GYRE_DIR/bin/gyre gyre.in
 

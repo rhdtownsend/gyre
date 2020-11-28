@@ -38,7 +38,7 @@ Running build_poly
 
 As before, to run :program:`build_poly` use the command
 
-.. substitution-prompt:: bash
+.. prompt:: bash
 			 
    $GYRE_DIR/bin/build_poly build_poly.composite.in
 

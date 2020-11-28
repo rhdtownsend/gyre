@@ -23,7 +23,7 @@ Unlike most other GYRE executables, the parameters for
 :program:`eval_lambda` are supplied directly on the command line, with
 the syntax
 
-.. substitution-prompt:: bash
+.. prompt:: bash
 
    ./eval_lambda l m q_min q_max n_q log_q rossby filename
 
