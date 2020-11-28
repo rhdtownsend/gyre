@@ -1,1 +1,2 @@
 *.inc linguist-language=Fortran
+docs linguist-documentation
