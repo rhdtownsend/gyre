@@ -1,8 +1,19 @@
 language: minimal
 sudo: required
+
+env:
+  - MESASDK_URL=http://www.astro.wisc.edu/~townsend/resource/download/mesasdk/
+  - MESASDK_VERSION=20.3.2
+  - MESASDK_TARFILE=mesasdk-x86_64-$MESASDK_VERSION.tar.gz
+  - MESASDK_ROOT=$HOME/mesasdk
+
+cache:
+  directories:
+    - $MESASDK_ROOT
+
 install:
-  - wget --user-agent="" http://www.astro.wisc.edu/~townsend/resource/download/mesasdk/mesasdk-x86_64-linux-20.3.2.tar.gz
-  - tar xvfz mesasdk-x86_64-linux-20.3.2.tar.gz
-  - export MESASDK_ROOT=$PWD/mesasdk
+  - if test ! -e $MESASDK_TARFILE; then wget --user-agent="" $MESASDK_URL/$MESASDK_TARFILE
+  - if test ! -d $MESASDK_ROOT; then tar xvfz $MESASDK_TARFILE -C $HOME
   - . ${MESASDK_ROOT}/bin/mesasdk_init.sh
+
 script: make && make test
