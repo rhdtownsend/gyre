@@ -7,7 +7,7 @@ The GYRE Stellar Oscillation Code
    :target: https://github.com/rhdtownsend/gyre/blob/master/COPYING
 .. image:: https://img.shields.io/github/v/release/rhdtownsend/gyre
    :alt: GitHub release (latest by date)
-   :target: https://gyre.readthedocs.io/en/latest
+   :target: https://github.com/rhdtownsend/gyre/releases/latest
 .. image:: https://img.shields.io/github/issues/rhdtownsend/gyre
    :alt: GitHub issues
    :target: https://github.com/rhdtownsend/gyre/issues

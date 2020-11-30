@@ -41,12 +41,12 @@
 
 
 &ad_output
-  summary_file = 'summary.h5'                  ! File name for summary file
-  summary_item_list = 'l,n_pg,freq,freq_units' ! Items to appear in summary file
-  detail_template = 'detail.l%l.n%n.h5'        ! File name template for detail files
+  summary_file = 'summary.h5'                         ! File name for summary file
+  summary_item_list = 'l,n_pg,freq,freq_units,E_norm' ! Items to appear in summary file
+  detail_template = 'detail.l%l.n%n.h5'        	      ! File name template for detail files
   detail_item_list = 'l,n_pg,omega,x,xi_r,
-                      xi_h,c_1,As,V_2,Gamma_1' ! Items to appear in detail files
-  freq_units = 'CYC_PER_DAY'                   ! Units of freq output items
+                      xi_h,c_1,As,V_2,Gamma_1' 	      ! Items to appear in detail files
+  freq_units = 'CYC_PER_DAY'                   	      ! Units of freq output items
 /
 
 &nad_output

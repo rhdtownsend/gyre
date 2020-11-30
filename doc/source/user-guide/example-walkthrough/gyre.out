@@ -17,11 +17,42 @@ Mode Search
 -----------
 
 Mode parameters
+   l : 1
+   m : 0
+
+Building frequency grid (REAL axis)
+   added scan interval :  0.5000E+00 ->  0.1500E+01 (100 points, INVERSE)
+
+Building spatial grid
+   Refined 0 subinterval(s) in iteration 1
+   Final grid has 1 segment(s) and 1814 point(s):
+      Segment 1 : x range 0.0000 -> 1.0000 (1 -> 1814)
+
+Starting search (adiabatic)
+
+Evaluating discriminant
+  Time elapsed :     0.845 s
+
+Root Solving
+   l    m    n_pg    n_p    n_g       Re(omega)       Im(omega)        chi n_iter
+   1    0      -9      0      9  0.50907836E+00  0.00000000E+00 0.6678E-14      7
+   1    0      -8      0      8  0.58398491E+00  0.00000000E+00 0.1352E-13      6
+   1    0      -7      0      7  0.66078111E+00  0.00000000E+00 0.1666E-13      7
+   1    0      -6      0      6  0.73734087E+00  0.00000000E+00 0.3141E-13      6
+   1    0      -5      0      5  0.89820448E+00  0.00000000E+00 0.1363E-13      6
+   1    0      -4      0      4  0.11322842E+01  0.00000000E+00 0.6270E-13      7
+   1    0      -3      0      3  0.13377876E+01  0.00000000E+00 0.6789E-13      6
+  Time elapsed :      0.424 s
+
+Mode Search
+-----------
+
+Mode parameters
    l : 2
    m : 0
 
-Building frequency grid
-   added scan interval :  0.5000E+00 ->  0.1000E+01 (250 points, INVERSE)
+Building frequency grid (REAL axis)
+   added scan interval :  0.5000E+00 ->  0.1500E+01 (100 points, INVERSE)
 
 Building spatial grid
    Refined 6 subinterval(s) in iteration 1
@@ -31,19 +62,21 @@ Building spatial grid
 
 Starting search (adiabatic)
 
-Root bracketing
-  Time elapsed :     1.926 s
+Evaluating discriminant
+  Time elapsed :     0.728 s
 
 Root Solving
    l    m    n_pg    n_p    n_g       Re(omega)       Im(omega)        chi n_iter
-   2    0     -16      0     16  0.51863360E+00  0.00000000E+00 0.2146E-13      6
-   2    0     -15      0     15  0.55636039E+00  0.00000000E+00 0.6402E-13      5
-   2    0     -14      0     14  0.59457063E+00  0.00000000E+00 0.7281E-13      7
-   2    0     -13      0     13  0.62301082E+00  0.00000000E+00 0.3057E-13      6
-   2    0     -12      0     12  0.67563432E+00  0.00000000E+00 0.1162E-12      6
-   2    0     -11      0     11  0.74334407E+00  0.00000000E+00 0.3407E-14      5
-   2    0     -10      0     10  0.79690602E+00  0.00000000E+00 0.6071E-13      6
-   2    0      -9      0      9  0.87152970E+00  0.00000000E+00 0.7861E-13      8
-   2    0      -8      0      8  0.99746970E+00  0.00000000E+00 0.1223E-12      6
-  Time elapsed :      0.557 s
+   2    0     -16      0     16  0.51863360E+00  0.00000000E+00 0.1733E-13      7
+   2    0     -15      0     15  0.55636039E+00  0.00000000E+00 0.1193E-13      5
+   2    0     -14      0     14  0.59457063E+00  0.00000000E+00 0.2694E-13      7
+   2    0     -13      0     13  0.62301082E+00  0.00000000E+00 0.4294E-13      7
+   2    0     -12      0     12  0.67563432E+00  0.00000000E+00 0.3675E-13      7
+   2    0     -11      0     11  0.74334407E+00  0.00000000E+00 0.6647E-14      6
+   2    0     -10      0     10  0.79690602E+00  0.00000000E+00 0.2893E-13      7
+   2    0      -9      0      9  0.87152970E+00  0.00000000E+00 0.2285E-13      7
+   2    0      -8      0      8  0.99746970E+00  0.00000000E+00 0.6653E-14      6
+   2    0      -7      0      7  0.11297111E+01  0.00000000E+00 0.2909E-13      7
+   2    0      -6      0      6  0.12531594E+01  0.00000000E+00 0.1250E-15      7
+  Time elapsed :      0.628 s
 
