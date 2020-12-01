@@ -143,6 +143,10 @@ program gyre_force
   call read_out_par(unit, 'ad', ot_p_ad)
   call read_out_par(unit, 'nad', ot_p_nad)
 
+  ! Check that GYRE_DIR is set
+
+  $ASSERT(GYRE_DIR /= '',The GYRE_DIR environment variable is not set)
+
   ! Initialize the model
 
   if (check_log_level('INFO')) then

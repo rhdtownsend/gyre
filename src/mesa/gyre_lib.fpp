@@ -241,6 +241,10 @@ contains
 
     $ASSERT(ASSOCIATED(ml_m),No model provided)
 
+    ! Check that GYRE_DIR is set
+
+    $ASSERT(GYRE_DIR /= '',The GYRE_DIR environment variable is not set)
+
     ! Allocate the context (will be initialized later on)
 
     allocate(cx)

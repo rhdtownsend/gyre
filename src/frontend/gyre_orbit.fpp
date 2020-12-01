@@ -131,6 +131,10 @@ program gyre_orbit
   $ASSERT(SIZE(or_p) >= 1,Must be at least one orbit parameter)
   $ASSERT(SIZE(td_p) == 1,Must be exactly one tide parameter)
 
+  ! Check that GYRE_DIR is set
+
+  $ASSERT(GYRE_DIR /= '',The GYRE_DIR environment variable is not set)
+
   ! Initialize the model
 
   if (check_log_level('INFO')) then
