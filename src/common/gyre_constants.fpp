@@ -63,6 +63,13 @@ module gyre_constants
 
   character(FILENAME_LEN), save, protected :: GYRE_DIR = ''
 
+  ! Interfaces
+
+  interface set_constant
+     module procedure set_constant_r_
+     module procedure set_constant_c_
+  end interface set_constant
+
   ! Access specifiers
 
   private
@@ -130,7 +137,7 @@ contains
 
   !****
 
-  subroutine set_constant (name, value)
+  subroutine set_constant_r_ (name, value)
 
     character(*), intent(in) :: name
     real(WP), intent(in)     :: value
@@ -158,6 +165,28 @@ contains
 
     return
 
-  end subroutine set_constant
+  end subroutine set_constant_r_
+
+  !****
+
+  subroutine set_constant_c_ (name, value)
+
+    character(*), intent(in) :: name
+    character(*), intent(in) :: value
+
+    ! Set the constant
+
+    select case (name)
+    case ('GYRE_DIR')
+       GYRE_DIR = value
+    case default
+       $ABORT(Invalid name)
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine set_constant_c_
 
 end module gyre_constants
