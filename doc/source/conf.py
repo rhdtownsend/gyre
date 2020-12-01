@@ -23,8 +23,8 @@ import sphinx_rtd_theme
 
 project = 'GYRE'
 author = 'Rich Townsend & The GYRE Team'
-version = "v6.0"
-release = "v6.0"
+version = "6.0"
+release = "6.0"
 branch = "master"
 copyright = '2020, Rich Townsend & The GYRE Team'
 
@@ -106,7 +106,7 @@ extlinks = {
 
 # Set site-wide targets
 targets = {
-    'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/{0:s}.tar.gz'.format(release),
+    'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/v{0:s}.tar.gz'.format(release),
     'gyre-forums': 'http://www.astro.wisc.edu/~townsend/gyre-forums/',
     'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
     'mesa': 'http://mesa.sourceforge.net/',
