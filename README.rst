@@ -16,7 +16,7 @@ The GYRE Stellar Oscillation Code
    :target: https://travis-ci.com/github/rhdtownsend/gyre
 .. image:: https://img.shields.io/readthedocs/gyre
    :alt: Read the Docs
-   :target: https://gyre.readthedocs.io/en/latest
+   :target: https://gyre.readthedocs.io/en/stable
 
 Overview
 ========
@@ -32,7 +32,7 @@ of *asteroseismology*.
 Documentation
 =============
 
-Full documentation for GYRE can be found at https://gyre.readthedocs.io/en/latest.
+Full documentation for GYRE can be found at https://gyre.readthedocs.io/en/stable.
 
 Citing
 ======
