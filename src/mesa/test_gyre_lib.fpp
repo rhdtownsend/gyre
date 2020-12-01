@@ -43,6 +43,8 @@ program test_gyre_lib
 
   call gyre_init('gyre.in')
 
+  call set_constant('GYRE_DIR', '../../..')
+
   ! Read the model
 
   call gyre_read_model('bcep.mesa')
