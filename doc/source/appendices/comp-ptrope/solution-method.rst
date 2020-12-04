@@ -47,7 +47,7 @@ with initial conditions established from the preceding region via
    \left.
    \begin{gathered}
    \theta_{i} = 1, \\
-   \theta'_{i} = \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i-1}^{n_{i-1}}}{\theta_{i}^{n_{i}}} \frac{t_{i}}{t_{i-1}} \, \theta'_{i-1}, \\
+   \theta'_{i} = \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i-1}^{n_{i-1}+1}}{\theta_{i}^{n_{i}+1}} \frac{t_{i}}{t_{i-1}} \, \theta'_{i-1}, \\
    B_{i} = \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i}^{n_{i}+1}}{\theta_{i-1}^{n_{i-1}+1}} \frac{t_{i}^{2}}{t_{i-1}^{2}} \, B_{i-1}, \\
    \ln t_{i} = \ln t_{i-1} + n_{i-1} \ln \theta_{i-1} - n_{i} \ln \theta_{i} + \Delta_{i-1/2}.
    \end{gathered}

@@ -82,7 +82,7 @@ these continuity relations are expressed as
    \left.
    \begin{gathered}
    B_{i} = \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i}^{n_{i}+1}}{\theta_{i-1}^{n_{i-1}+1}} \frac{\rho_{i,0}^{2}}{\rho_{i-1,0}^{2}} \, B_{i-1}, \\
-   \theta'_{i} = \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i-1}^{n_{i-1}}}{\theta_{i}^{n_{i}}} \frac{\rho_{i,0}}{\rho_{i-1,0}} \, \theta'_{i-1},
+   \theta'_{i} = \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i-1}^{n_{i-1}+1}}{\theta_{i}^{n_{i}+1}} \frac{\rho_{i,0}}{\rho_{i-1,0}} \, \theta'_{i-1},
    \end{gathered}
    \right\} \quad \text{at} \ z = z_{i-1/2}
 
