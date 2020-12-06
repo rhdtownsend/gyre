@@ -36,7 +36,7 @@ How Do I...
 
 ...run GYRE on a cluster?
   GYRE can take advantage of multiple nodes in a computer cluster
-  through its use of :wiki:`MPI <Message Passing Interface>`. To enable this functionality,
+  through its use of :wiki:`MPI <Message_Passing_Interface>`. To enable this functionality,
   set the :envvar:`MPI` environment variable to ``yes`` prior to
   compilation. Note that you'll need to use a version of the
   `MESA Software Development Kit <mesa-sdk_>`__ built with MPI
@@ -58,8 +58,8 @@ How Do I...
 ...access the documentation for older releases?
   Click on the 'v:...'  dropdown menu at the bottom of the left-hand
   panel. Note that this menu is only available when viewing the
-  `documentation <https://gyre.readthedocs.io/en/latest/_>`__ on `Read
-  the Docs <https://readthedocs.org/_>`__; it isn't available in a
+  `documentation <https://gyre.readthedocs.io/en/stable/>`__ on `Read
+  the Docs <https://readthedocs.org/>`__; it isn't available in a
   local build within the :file:`{$GYRE_DIR}/doc/sphinx` directory.
   Also, the legacy documentation is a work-in-progress, and remains
   incomplete.
@@ -79,6 +79,6 @@ Why Does...
 
 ...the error 'Illegal Instruction' arise on MacOS when running with large grid sizes?
   This behavior is typically caused by overflow of the OpenMP stack
-  (for more info see `here <http://stackoverflow.com/questions/13870564/gfortran-openmp-segmentation-fault-occurs-on-basic-do-loop>`__).
+  (for more info see `here <https://stackoverflow.com/questions/13870564/gfortran-openmp-segmentation-fault-occurs-on-basic-do-loop>`__).
   Try setting the :envvar:`OMP_STACKSIZE` environment variable to 500K or 1M.
 

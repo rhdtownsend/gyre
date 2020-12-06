@@ -266,8 +266,8 @@ brackets containing the five roots identified previously.
 Once a bracket is established for a given root, it can be narrowed
 through a process of iterative refinement until the root is converged
 upon. There are a variety of well-known root-finding algorithms that
-perform this refinement; the :wiki:`bisection method` is conceptually
-the simplest, but approaches such as :wiki:`Brent's method` can be
+perform this refinement; the :wiki:`bisection method <Bisection_method>` is conceptually
+the simplest, but approaches such as :wiki:`Brent's method <Brent's_method>` can be
 much more efficient. For the brackets plotted in
 :numref:`fig-discrim-brackets`, :numref:`numerical-eigenfreqs` compares
 the eigenfrequencies found using Python's
@@ -290,11 +290,12 @@ For each of the eigenfrequencies found, we reconstruct the
 corresponding eigenfunction by solving the linear system
 :eq:`linear-sys`. Because :math:`\det(\mS)` is now zero, this system
 is guaranteed to have a non-trivial solution. The solution vector
-:math:`\vu` resides in the :wiki:`null space` of :math:`\mS`, and we
-can use standard numerical techniques (e.g., :wiki:`singular value
-decomposition`) to evaluate it. Then, the :math:`k`'th element of
-:math:`\vu` corresponds to the eigenfunction sampled at the
-:math:`k`'th spatial grid point:
+:math:`\vu` resides in the :wiki:`null space <Null_space>` of
+:math:`\mS`, and we can use standard numerical techniques (e.g.,
+:wiki:`singular value decomposition <Singular_value_decomposition>`)
+to evaluate it.  Then, the :math:`k`'th element of :math:`\vu`
+corresponds to the eigenfunction sampled at the :math:`k`'th spatial
+grid point:
 
 .. math::
 

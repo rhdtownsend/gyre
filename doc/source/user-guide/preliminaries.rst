@@ -22,8 +22,8 @@ Obtaining GYRE
 The source code for GYRE is hosted in the :git:`rhdtownsend/gyre` git
 repository on :git:`GitHub <>`. GYRE is free software: you can
 redistribute it and/or modify it under the terms of the `GNU General
-Public License <http://www.gnu.org/licenses/gpl.html>`__ as published
-by the `Free Software Foundation <http://www.fsf.org/>`__, version 3.
+Public License <http://www.gnu.org/licenses/gpl-3.0.html>`__ as published
+by the `Free Software Foundation <https://www.fsf.org/>`__, version 3.
 
 .. _citing-gyre:
 

@@ -42,14 +42,14 @@ become progressively shifted toward lower frequencies; and, above
 
 To understand this behavior, recall that the determinant of an
 :math:`N \times N` matrix can be expressed (via :wiki:`Laplace
-expansion`) as the sum of `N` terms; and each term itself involves the
-product of :math:`N` matrix elements, picked so that each row/column
-is used only once in the construction of the term. With these points
-in mind, we can see from the definition :eq:`linear-sys` of
-:math:`\mS` that its determinant (i.e., the discriminant
-function) must be a polynomial in :math:`\sigma^{2}` of order
-:math:`N-2`; and as such, it can have at most :math:`N-2` (in this
-case, 5) roots. This leads us to important lesson #1:
+expansion <Laplace_expansion>`) as the sum of `N` terms; and each term
+itself involves the product of :math:`N` matrix elements, picked so
+that each row/column is used only once in the construction of the
+term. With these points in mind, we can see from the definition
+:eq:`linear-sys` of :math:`\mS` that its determinant (i.e., the
+discriminant function) must be a polynomial in :math:`\sigma^{2}` of
+order :math:`N-2`; and as such, it can have at most :math:`N-2` (in
+this case, 5) roots. This leads us to important lesson #1:
 
 .. attention::
 

@@ -4,7 +4,7 @@
 Composite Polytropes
 ********************
 
-Composite polytropes are an extension of standard :wiki:`polytrope`
+Composite polytropes are an extension of standard :wiki:`polytrope <Polytrope>`
 models for stellar structure, to allow for discontinuities in the
 density :math:`\rho` and/or the polytropic index :math:`n`.  This
 appendix lays out the mathematical formalism\ [#formalism]_

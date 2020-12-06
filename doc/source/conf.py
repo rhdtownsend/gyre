@@ -106,7 +106,7 @@ extlinks = {
 
 # Set site-wide targets
 targets = {
-    'github-tarball': 'https:///github.com/rhdtownsend/gyre/archive/v{0:s}.tar.gz'.format(release),
+    'github-tarball': 'https://codeload.github.com/rhdtownsend/gyre/tar.gz/v{0:s}'.format(release),
     'gyre-forums': 'http://www.astro.wisc.edu/~townsend/gyre-forums/',
     'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
     'mesa': 'http://mesa.sourceforge.net/',
