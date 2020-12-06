@@ -38,6 +38,7 @@ module gyre_cheb_fit
   ! Derived-type definitions
 
   type :: cheb_fit_t
+     real(WP), allocatable :: u(:)
      real(WP), allocatable :: f(:)
      real(WP), allocatable :: c(:)
      real(WP)              :: x_a
@@ -95,30 +96,24 @@ contains
     end interface
     type(cheb_fit_t)     :: cb
 
+    real(WP) :: u(n+1)
     real(WP) :: f(n+1)
     integer  :: j
     real(WP) :: x
-    real(WP) :: u
 
     ! Construct the cheb_fit_t of degree n, by sampling the function at
     ! the n+1 extremal points of T_n
 
+    u = u_ext_(n)
+
     do j = 1, n+1
 
-       if (j == 1) then
-          x = x_a
-       elseif (j == n+1) then
-          x = x_b
-       else
-          u = cos((j-1)*PI/n)
-          x = 0.5_WP*((1._WP+u)*x_a + (1._WP-u)*x_b)
-       endif
-
+       x = 0.5_WP*((1._WP+u(j))*x_a + (1._WP-u(j))*x_b)
        f(j) = func(x)
 
     end do
 
-    cb = cheb_fit_t_vals_(x_a, x_b, f)
+    cb = cheb_fit_t_vals_(x_a, x_b, f, u)
 
     ! Finish
 
@@ -190,18 +185,29 @@ contains
 
   !****
 
-  function cheb_fit_t_vals_ (x_a, x_b, f) result (cb)
+  function cheb_fit_t_vals_ (x_a, x_b, f, u) result (cb)
 
-    real(WP), intent(in) :: x_a
-    real(WP), intent(in) :: x_b
-    real(WP), intent(in) :: f(:)
-    type(cheb_fit_t)     :: cb
+    real(WP), intent(in)           :: x_a
+    real(WP), intent(in)           :: x_b
+    real(WP), intent(in)           :: f(:)
+    real(WP), intent(in), optional :: u(:)
+    type(cheb_fit_t)               :: cb
+
+    if (PRESENT(u)) then
+       $CHECK_BOUNDS(SIZE(u),SIZE(f))
+    endif
 
     ! Construct the cheb_fit_t of degree n, using the supplied function
     ! values at the extremal points of T_n
 
+    if (PRESENT(u)) then
+       cb%u = u
+    else
+       cb%u = u_ext_(SIZE(f)-1)
+    endif
+
     cb%f = f
-    cb%c = c_from_f(f)
+    cb%c = c_from_f_(f)
 
     cb%x_a = x_a
     cb%x_b = x_b
@@ -216,18 +222,29 @@ contains
 
   !****
 
-  function cheb_fit_t_coeffs_ (x_a, x_b, c) result (cb)
+  function cheb_fit_t_coeffs_ (x_a, x_b, c, u) result (cb)
 
-    real(WP), intent(in) :: x_a
-    real(WP), intent(in) :: x_b
-    real(WP), intent(in) :: c(:)
-    type(cheb_fit_t)     :: cb
+    real(WP), intent(in)           :: x_a
+    real(WP), intent(in)           :: x_b
+    real(WP), intent(in)           :: c(:)
+    real(WP), intent(in), optional :: u(:)
+    type(cheb_fit_t)               :: cb
+
+    if (PRESENT(u)) then
+       $CHECK_BOUNDS(SIZE(u),SIZE(c))
+    endif
 
     ! Construct the cheb_fit_t of degree n, using the supplied expansion
     ! coefficients
 
+    if (PRESENT(u)) then
+       cb%u = u
+    else
+       cb%u = u_ext_(SIZE(c)-1)
+    endif
+
     cb%c = c
-    cb%f = f_from_c(c)
+    cb%f = f_from_c_(c)
 
     cb%x_a = x_a
     cb%x_b = x_b
@@ -331,13 +348,7 @@ contains
 
     do j = 1, this%n+1
 
-       if (j == 1) then
-          u_j = 1._WP
-       elseif (j == this%n+1) then
-          u_j = -1._WP
-       else
-          u_j = cos((j-1)*PI/this%n)
-       endif
+       u_j = this%u(j)
 
        if (u == u_j) then
           f = this%f(j)
@@ -371,8 +382,10 @@ contains
 
   $EVAL(r,real)
   $EVAL(c,complex)
+
+  !****
   
-  function c_from_f (f) result (c)
+  function c_from_f_ (f) result (c)
 
     real(WP), intent(in) :: f(:)
     real(WP)             :: c(SIZE(f))
@@ -424,11 +437,11 @@ contains
 
     return
 
-  end function c_from_f
+  end function c_from_f_
 
   !****
 
-  function f_from_c (c) result (f)
+  function f_from_c_ (c) result (f)
 
     real(WP), intent(in) :: c(:)
     real(WP)             :: f(SIZE(c))
@@ -467,6 +480,35 @@ contains
 
     return
 
-  end function f_from_c
+  end function f_from_c_
+
+  !****
+
+  function u_ext_ (n) result (u)
+
+    integer, intent(in) :: n
+    real(WP)            :: u(n+1)
+
+    integer :: j
+
+    ! Evaluate the abcissa at the extremal points of T_n
+
+    do j = 1, n+1
+
+       if (j == 1) then
+          u(j) = 1._WP
+       elseif (j == n+1) then
+          u(j) = -1._WP
+       else
+          u(j) = cos((j-1)*PI/n)
+       endif
+
+    end do
+
+    ! Finish
+
+    return
+
+  end function u_ext_
 
 end module gyre_cheb_fit
