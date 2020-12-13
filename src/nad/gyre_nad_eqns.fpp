@@ -83,7 +83,8 @@ module gyre_nad_eqns
      real(WP)                   :: alpha_omg 
      real(WP)                   :: alpha_gam
      real(WP)                   :: alpha_pi
-     real(WP)                   :: alpha_kap
+     real(WP)                   :: alpha_kar
+     real(WP)                   :: alpha_kat
      real(WP)                   :: alpha_rht
      integer                    :: conv_scheme
    contains
@@ -129,7 +130,8 @@ contains
     eq%alpha_hfl = os_p%alpha_hfl
     eq%alpha_gam = os_p%alpha_gam
     eq%alpha_pi = os_p%alpha_pi
-    eq%alpha_kap = os_p%alpha_kap
+    eq%alpha_kar = os_p%alpha_kar
+    eq%alpha_kat = os_p%alpha_kat
     eq%alpha_rht = os_p%alpha_rht
        
     select case (os_p%time_factor)
@@ -307,7 +309,8 @@ contains
          alpha_omg => this%alpha_omg, &
          alpha_gam => this%alpha_gam, &
          alpha_pi => this%alpha_pi, &
-         alpha_kap => this%alpha_kap)
+         alpha_kar => this%alpha_kar, &
+         alpha_kat => this%alpha_kat)
 
       Omega_rot = this%cx%Omega_rot(pt)
       Omega_rot_i = this%cx%Omega_rot(pt_i)
@@ -337,8 +340,8 @@ contains
       c_eps_ad = c_eps*(nabla_ad*eps_T + eps_rho/Gamma_1)
       c_eps_S = c_eps*(eps_T - delta*eps_rho)
 
-      kap_ad = nabla_ad*kap_T + kap_rho/Gamma_1
-      kap_S = kap_T - delta*kap_rho
+      kap_ad = nabla_ad*alpha_kat*kap_T + alpha_kar*kap_rho/Gamma_1
+      kap_S = alpha_kat*kap_T - delta*alpha_kar*kap_rho
       
       c_dif = -4._WP*nabla_ad*V*nabla + nabla_ad*(dnabla_ad + V)
 
@@ -372,11 +375,11 @@ contains
       xA(4,5) = alpha_grv*(-U*delta)
       xA(4,6) = alpha_grv*(0._WP)
 
-      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._WP*(nabla_ad - nabla) + alpha_kap*kap_ad*V*nabla + c_dif)/f_rh
-      xA(5,2) = V*(lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla) - alpha_kap*kap_ad*V*nabla - c_dif)/f_rh
+      xA(5,1) = V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._WP*(nabla_ad - nabla) + kap_ad*V*nabla + c_dif)/f_rh
+      xA(5,2) = V*(lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla) - kap_ad*V*nabla - c_dif)/f_rh
       xA(5,3) = alpha_grv*(V*lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla))/f_rh
       xA(5,4) = alpha_grv*(V*nabla_ad)/f_rh
-      xA(5,5) = V*nabla*(4._WP*f_rh - alpha_kap*kap_S)/f_rh - df_rh - (l_i - 2._WP)
+      xA(5,5) = V*nabla*(4._WP*f_rh - kap_S)/f_rh - df_rh - (l_i - 2._WP)
       xA(5,6) = -V*nabla/(c_rad*f_rh)
 
       xA(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad
