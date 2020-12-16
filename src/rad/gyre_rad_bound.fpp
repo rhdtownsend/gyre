@@ -487,6 +487,8 @@ contains
          Gamma_1 => this%coeff(2,J_GAMMA_1), &
          alpha_omg => this%alpha_omg)
 
+      omega_c = omega
+
       ! Evaluate selected elements of the Jacobian matrix
 
       a_11 = V/Gamma_1 - 3._WP
