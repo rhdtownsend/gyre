@@ -59,7 +59,7 @@ following columns:
    * - 4
      - :math:`L_{r}`
      - real
-     - luminosity [:math:`\erg\,\second^{-1}`]
+     - interior luminosity [:math:`\erg\,\second^{-1}`]
    * - 5
      - :math:`P`
      - real
