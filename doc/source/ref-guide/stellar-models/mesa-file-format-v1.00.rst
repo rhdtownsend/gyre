@@ -53,9 +53,9 @@ following columns:
      - real
      - radial coordinate [:math:`\cm`]
    * - 3
-     - :math:`\frac{M_{r}}{M-M_{r}}`
+     - :math:`M_{r}`
      - real
-     - transformed interior mass
+     - interior mass [:math:`\gram`]
    * - 4
      - :math:`L_{r}`
      - real
