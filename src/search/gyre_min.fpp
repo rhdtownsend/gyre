@@ -1,7 +1,7 @@
-! Module   : gyre_root
+! Module   : gyre_min
 ! Purpose  : minimum finding algorithms
 !
-! Copyright 2018 Rich Townsend
+! Copyright 2018-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General

@@ -1,7 +1,7 @@
 ! Module   : gyre_bracket_search
 ! Purpose  : mode searching (real, bracketing)
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -26,7 +26,7 @@ module gyre_bracket_search
 
   use gyre_ad_bvp
   use gyre_bvp
-  use gyre_discrim_func
+  use gyre_discrim
   use gyre_ext
   use gyre_mode
   use gyre_num_par
@@ -57,11 +57,11 @@ contains
 
   subroutine bracket_search (bp, omega, omega_min, omega_max, nm_p, process_mode)
 
-    class(r_bvp_t), target, intent(inout) :: bp
-    real(WP), intent(in)                  :: omega(:)
-    real(WP), intent(in)                  :: omega_min
-    real(WP), intent(in)                  :: omega_max
-    type(num_par_t), intent(in)           :: nm_p
+    class(r_bvp_t), intent(inout) :: bp
+    real(WP), intent(in)          :: omega(:)
+    real(WP), intent(in)          :: omega_min
+    real(WP), intent(in)          :: omega_max
+    type(num_par_t), intent(in)   :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -73,8 +73,6 @@ contains
        end subroutine process_mode
     end interface
 
-    type(r_state_t)            :: st
-    type(r_discrim_func_t)     :: df
     real(WP), allocatable      :: omega_a(:)
     real(WP), allocatable      :: omega_b(:)
     type(r_ext_t), allocatable :: discrim_a(:)
@@ -84,20 +82,19 @@ contains
     integer                    :: c_rate
     integer                    :: n_iter
     integer                    :: i
-    type(r_ext_t)              :: omega_root
+    type(r_ext_t)              :: x_a
+    type(r_ext_t)              :: x_b
+    type(r_ext_t)              :: f_x_a
+    type(r_ext_t)              :: f_x_b
+    type(r_ext_t)              :: x_root
     integer                    :: status
     type(wave_t)               :: wv
     type(mode_t)               :: md
     type(r_ext_t)              :: chi
 
-    ! Set up the discriminant function
-
-    st = r_state_t()
-    df = r_discrim_func_t(bp, st, omega_min, omega_max)
-
     ! Find discriminant root brackets
 
-    call find_brackets_(df, omega, omega_a, omega_b, discrim_a, discrim_b)
+    call find_brackets_(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
 
     ! Process each bracket to find modes
 
@@ -119,8 +116,14 @@ contains
 
        n_iter = 0
 
-       call solve(df, r_ext_t(omega_a(i)), r_ext_t(omega_b(i)), r_ext_t(0._WP), nm_p, &
-                  omega_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, f_rx_a=discrim_a(i), f_rx_b=discrim_b(i))
+       x_a = r_ext_t(omega_a(i))
+       x_b = r_ext_t(omega_b(i))
+       f_x_a = discrim_a(i)
+       f_x_b = discrim_b(i)
+
+       call solve(eval_discrim_x_, x_a, x_b, r_ext_t(0._WP), nm_p, &
+                  x_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
+                  f_x_a=f_x_a, f_x_b=f_x_b)
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
           cycle mode_loop
@@ -130,13 +133,11 @@ contains
 
        j_m = j_m + 1
 
-       st = r_state_t(omega=real(omega_root))
-
        select type (bp)
        type is (ad_bvp_t)
-          wv = wave_t(bp, st, j_m)
+          wv = wave_t(bp, r_state_t(real(x_root)), j_m)
        type is (rad_bvp_t)
-          wv = wave_t(bp, st, j_m)
+          wv = wave_t(bp, r_state_t(real(x_root)), j_m)
        class default
           $ABORT(Invalid bp class)
        end select
@@ -146,7 +147,7 @@ contains
        ! Process it
 
        chi = abs(md%discrim)/max(abs(discrim_a(i)), abs(discrim_b(i)))
-       
+
        call process_mode(md, n_iter, chi)
 
     end do mode_loop
@@ -163,6 +164,40 @@ contains
     return
 
   contains
+
+    subroutine eval_discrim_x_ (x, discrim, status)
+
+      type(r_ext_t), intent(in)  :: x
+      type(r_ext_t), intent(out) :: discrim
+      integer, intent(out)       :: status
+
+      real(WP) :: omega
+
+      ! Evaluate the frequency from x
+
+      omega = real(x)
+
+      ! Evaluate the discriminant
+      
+      if (omega >= omega_min .AND. omega <= omega_max) then
+
+         call eval_discrim(bp, r_state_t(omega), discrim)
+
+         status = STATUS_OK
+
+      else
+
+         status = STATUS_OMEGA_DOMAIN
+
+      end if
+
+      ! Finish
+
+      return
+
+    end subroutine eval_discrim_x_
+
+    !****
 
     subroutine report_status_ (status, stage_str)
 
@@ -199,9 +234,9 @@ contains
 
   !****
 
-  subroutine find_brackets_ (df, omega, omega_a, omega_b, discrim_a, discrim_b)
+  subroutine find_brackets_ (bp, omega, omega_a, omega_b, discrim_a, discrim_b)
 
-    type(r_discrim_func_t), intent(inout)   :: df
+    class(r_bvp_t), intent(inout)           :: bp
     real(WP), intent(in)                    :: omega(:)
     real(WP), allocatable, intent(out)      :: omega_a(:)
     real(WP), allocatable, intent(out)      :: omega_b(:)
@@ -215,7 +250,6 @@ contains
     integer              :: c_rate
     integer              :: i
     type(r_ext_t)        :: discrim_i
-    integer              :: status
     real(WP)             :: discrim_f(SIZE(omega))
     integer              :: discrim_e(SIZE(omega))
     $if ($MPI)
@@ -242,7 +276,7 @@ contains
 
     discrim_loop: do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
-       call df%eval(r_ext_t(omega(i)), discrim_i, status)
+       call eval_discrim(bp, r_state_t(omega(i)), discrim_i)
 
        discrim_f(i) = FRACTION(discrim_i)
        discrim_e(i) = EXPONENT(discrim_i)

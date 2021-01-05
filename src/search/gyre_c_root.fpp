@@ -1,7 +1,7 @@
 ! Module   : gyre_c_root
-! Purpose  : root finding algorithms for discriminant functions (complex)
+! Purpose  : root finding algorithms (complex)
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,8 +23,6 @@ module gyre_c_root
 
   use core_kinds
 
-  use gyre_cimplex
-  use gyre_ext_func
   use gyre_ext
   use gyre_math
   use gyre_num_par
@@ -39,15 +37,18 @@ module gyre_c_root
   ! Interfaces
 
   interface solve
-     module procedure solve_
+     module procedure solve_c_
+     module procedure solve_cx_
   end interface solve
 
   interface narrow
-     module procedure narrow_
+     module procedure narrow_c_
+     module procedure narrow_cx_
   end interface narrow
 
   interface expand
-     module procedure expand_
+     module procedure expand_c_ 
+     module procedure expand_cx_ 
   end interface expand
 
   ! Access specifiers
@@ -60,81 +61,111 @@ module gyre_c_root
 
 contains
 
-  subroutine solve_ (cf, np, cx_a, cx_b, cx_tol, cx_root, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+  $define $SOLVE $sub
 
-    class(c_ext_func_t), intent(inout)  :: cf
-    class(num_par_t), intent(in)        :: np
-    type(c_ext_t), intent(in)           :: cx_a
-    type(c_ext_t), intent(in)           :: cx_b
-    type(r_ext_t), intent(in)           :: cx_tol
-    type(c_ext_t), intent(out)          :: cx_root
-    integer, intent(out)                :: status
-    integer, optional, intent(out)      :: n_iter
-    integer, optional, intent(in)       :: n_iter_max
-    logical, optional, intent(in)       :: relative_tol
-    type(c_ext_t), optional, intent(in) :: f_cx_a
-    type(c_ext_t), optional, intent(in) :: f_cx_b
+  $local $T $1
+  $local $TYPE_R $2
+  $local $TYPE_C $3
 
-    type(c_ext_t) :: a
-    type(c_ext_t) :: b
-    type(c_ext_t) :: f_a
-    type(c_ext_t) :: f_b
+  subroutine solve_${T}_ (eval_func, z_a, z_b, z_tol, nm_p, z_root, status, n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
 
-    ! Starting from the pair [cx_a,cx_b], find a root of the function
-    ! cf
+    interface
+       subroutine eval_func (z, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE_C, intent(in)  :: z
+         $TYPE_C, intent(out) :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE_C, intent(in)            :: z_a
+    $TYPE_C, intent(in)            :: z_b
+    $TYPE_R, intent(in)            :: z_tol
+    class(num_par_t), intent(in)   :: nm_p
+    $TYPE_C, intent(out)           :: z_root
+    integer, intent(out)           :: status
+    integer, optional, intent(out) :: n_iter
+    integer, optional, intent(in)  :: n_iter_max
+    logical, optional, intent(in)  :: relative_tol
+    $TYPE_C, optional, intent(in)  :: f_z_a
+    $TYPE_C, optional, intent(in)  :: f_z_b
 
-    a = cx_a
-    b = cx_b
+    $TYPE_C :: a
+    $TYPE_C :: b
+    $TYPE_C :: f_a
+    $TYPE_C :: f_b
 
-    if (PRESENT(f_cx_a)) then
-       f_a = f_cx_a
+    ! Starting from the pair [z_a,z_b], find a root of the function
+
+    a = z_a
+    b = z_b
+
+    if (PRESENT(f_z_a)) then
+       f_a = f_z_a
     else
-       call cf%eval(a, f_a, status)
+       call eval_func(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
-    if (PRESENT(f_cx_b)) then
-       f_b = f_cx_b
+    if (PRESENT(f_z_b)) then
+       f_b = f_z_b
     else
-       call cf%eval(b, f_b, status)
+       call eval_func(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
-    call narrow(cf, np, a, b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
+    call narrow_${T}_(eval_func, a, b, z_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
 
-    cx_root = b
+    z_root = b
 
     ! Finish
 
     return
 
-  end subroutine solve_
+  end subroutine solve_${T}_
+
+  $endsub
+
+  $SOLVE(c,real(WP),complex(WP))
+  $SOLVE(cx,type(r_ext_t),type(c_ext_t))
 
   !****
 
-  subroutine narrow_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+  $define $NARROW $sub
 
-    class(c_ext_func_t), intent(inout)     :: cf
-    class(num_par_t), intent(in)           :: np
-    type(c_ext_t), intent(inout)           :: cx_a
-    type(c_ext_t), intent(inout)           :: cx_b
-    type(r_ext_t), intent(in)              :: cx_tol
-    integer, intent(out)                   :: status
-    integer, optional, intent(out)         :: n_iter
-    integer, optional, intent(in)          :: n_iter_max
-    logical, optional, intent(in)          :: relative_tol
-    type(c_ext_t), optional, intent(inout) :: f_cx_a
-    type(c_ext_t), optional, intent(inout) :: f_cx_b
+  $local $T $1
+  $local $TYPE_R $2
+  $local $TYPE_C $3
 
-    ! Narrow the pair [cx_a,cx_b] toward a root of the function cf
+  subroutine narrow_${T}_ (eval_func, z_a, z_b, z_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
 
-    select case (np%c_root_solver)
+    interface
+       subroutine eval_func (z, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE_C, intent(in)  :: z
+         $TYPE_C, intent(out) :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE_C, intent(inout)           :: z_a
+    $TYPE_C, intent(inout)           :: z_b
+    $TYPE_R, intent(in)              :: z_tol
+    class(num_par_t), intent(in)     :: nm_p
+    integer, intent(out)             :: status
+    integer, optional, intent(out)   :: n_iter
+    integer, optional, intent(in)    :: n_iter_max
+    logical, optional, intent(in)    :: relative_tol
+    $TYPE_C, optional, intent(inout) :: f_z_a
+    $TYPE_C, optional, intent(inout) :: f_z_b
+
+    ! Narrow the pair [z_a,z_b] toward a root of the function
+
+    select case (nm_p%c_root_solver)
     case ('SECANT')
-       call narrow_secant_(cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+       call narrow_secant_${T}_(eval_func, z_a, z_b, z_tol, status, n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
     case ('RIDDERS')
-       call narrow_ridders_(cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
-    case ('SIMPLEX')
-       call narrow_simplex_(cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+       call narrow_ridders_${T}_(eval_func, z_a, z_b, z_tol, status, n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
     case default
        $ABORT(Invalid c_root_solver)
     end select
@@ -143,35 +174,53 @@ contains
 
     return
 
-  end subroutine narrow_
+  end subroutine narrow_${T}_
+
+  $endsub
+
+  $NARROW(c,real(WP),complex(WP))
+  $NARROW(cx,type(r_ext_t),type(c_ext_t))
 
   !****
 
-  subroutine narrow_secant_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
- 
-    class(c_ext_func_t), intent(inout)     :: cf
-    class(num_par_t), intent(in)           :: np
-    type(c_ext_t), intent(inout)           :: cx_a
-    type(c_ext_t), intent(inout)           :: cx_b
-    type(r_ext_t), intent(in)              :: cx_tol
-    integer, intent(out)                   :: status
-    integer, optional, intent(out)         :: n_iter
-    integer, optional, intent(in)          :: n_iter_max
-    logical, optional, intent(in)          :: relative_tol
-    type(c_ext_t), optional, intent(inout) :: f_cx_a
-    type(c_ext_t), optional, intent(inout) :: f_cx_b
+  $define $NARROW_SECANT $sub
 
-    logical       :: relative_tol_
-    type(c_ext_t) :: a
-    type(c_ext_t) :: b
-    type(c_ext_t) :: c
-    type(c_ext_t) :: f_a
-    type(c_ext_t) :: f_b
-    type(c_ext_t) :: f_c
-    integer       :: i_iter
-    type(c_ext_t) :: f_dz
-    type(c_ext_t) :: rho
-    type(r_ext_t) :: tol
+  $local $T $1
+  $local $TYPE_R $2
+  $local $TYPE_C $3
+
+  subroutine narrow_secant_${T}_ (eval_func, z_a, z_b, z_tol, status, n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
+ 
+    interface
+       subroutine eval_func (z, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE_C, intent(in)  :: z
+         $TYPE_C, intent(out) :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE_C, intent(inout)           :: z_a
+    $TYPE_C, intent(inout)           :: z_b
+    $TYPE_R, intent(in)              :: z_tol
+    integer, intent(out)             :: status
+    integer, optional, intent(out)   :: n_iter
+    integer, optional, intent(in)    :: n_iter_max
+    logical, optional, intent(in)    :: relative_tol
+    $TYPE_C, optional, intent(inout) :: f_z_a
+    $TYPE_C, optional, intent(inout) :: f_z_b
+
+    logical :: relative_tol_
+    $TYPE_C :: a
+    $TYPE_C :: b
+    $TYPE_C :: c
+    $TYPE_C :: f_a
+    $TYPE_C :: f_b
+    $TYPE_C :: f_c
+    integer :: i_iter
+    $TYPE_C :: f_dz
+    $TYPE_C :: rho
+    $TYPE_R :: tol
 
     if (PRESENT(relative_tol)) then
        relative_tol_ = relative_tol
@@ -179,25 +228,25 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    ! Narrow the pair [cx_a,cx_b] toward a root of the function cf
+    ! Narrow the pair [z_a,z_b] toward a root of the function !
     ! using the secant method
 
     ! Set up the initial state
 
-    a = cx_a
-    b = cx_b
+    a = z_a
+    b = z_b
 
-    if (PRESENT(f_cx_a)) then
-       f_a = f_cx_a
+    if (PRESENT(f_z_a)) then
+       f_a = f_z_a
     else
-       call cf%eval(a, f_a, status)
+       call eval_func(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
-    if (PRESENT(f_cx_b)) then
-       f_b = f_cx_b
+    if (PRESENT(f_z_b)) then
+       f_b = f_z_b
     else
-       call cf%eval(b, f_b, status)
+       call eval_func(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
@@ -251,15 +300,15 @@ contains
        f_a = f_b
 
        b = b - f_dz/rho
-       call cf%eval(b, f_b, status)
+       call eval_func(b, f_b, status)
        if (status /= STATUS_OK) exit iterate_loop
 
        ! Check for convergence
 
        if (relative_tol_) then
-          tol = (4._WP*EPSILON(0._WP) + cx_tol)*abs(b)
+          tol = (4._WP*EPSILON(0._WP) + z_tol)*abs(b)
        else
-          tol = 4._WP*EPSILON(0._WP)*abs(b) + cx_tol
+          tol = 4._WP*EPSILON(0._WP)*abs(b) + z_tol
        endif
 
        if (abs(b - a) <= tol) exit iterate_loop
@@ -268,48 +317,66 @@ contains
 
     ! Store the results
 
-    cx_a = a
-    cx_b = b
+    z_a = a
+    z_b = b
 
     if (PRESENT(n_iter)) n_iter = i_iter
 
-    if (PRESENT(f_cx_a)) f_cx_a = f_a
-    if (PRESENT(f_cx_b)) f_cx_b = f_b
+    if (PRESENT(f_z_a)) f_z_a = f_a
+    if (PRESENT(f_z_b)) f_z_b = f_b
 
     ! Finish
 
-  end subroutine narrow_secant_
+  end subroutine narrow_secant_${T}_
+
+  $endsub
+
+  $NARROW_SECANT(c,real(WP),complex(WP))
+  $NARROW_SECANT(cx,type(r_ext_t),type(c_ext_t))
 
   !****
 
-  subroutine narrow_ridders_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+  $define $NARROW_RIDDERS $sub
 
-    class(c_ext_func_t), intent(inout)     :: cf
-    class(num_par_t), intent(in)           :: np
-    type(c_ext_t), intent(inout)           :: cx_a
-    type(c_ext_t), intent(inout)           :: cx_b
-    type(r_ext_t), intent(in)              :: cx_tol
-    integer, intent(out)                   :: status
-    integer, optional, intent(out)         :: n_iter
-    integer, optional, intent(in)          :: n_iter_max
-    logical, optional, intent(in)          :: relative_tol
-    type(c_ext_t), optional, intent(inout) :: f_cx_a
-    type(c_ext_t), optional, intent(inout) :: f_cx_b
+  $local $T $1
+  $local $TYPE_R $2
+  $local $TYPE_C $3
 
-    logical       :: relative_tol_
-    type(c_ext_t) :: a
-    type(c_ext_t) :: b
-    type(c_ext_t) :: c
-    type(c_ext_t) :: f_a
-    type(c_ext_t) :: f_b
-    type(c_ext_t) :: f_c
-    integer       :: i_iter
-    type(c_ext_t) :: exp_Q_p
-    type(c_ext_t) :: exp_Q_m
-    type(c_ext_t) :: exp_Q
-    type(c_ext_t) :: f_dz
-    type(c_ext_t) :: rho
-    type(r_ext_t) :: tol
+  subroutine narrow_ridders_${T}_ (eval_func, z_a, z_b, z_tol, status, n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
+
+    interface
+       subroutine eval_func (z, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE_C, intent(in)  :: z
+         $TYPE_C, intent(out) :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE_C, intent(inout)           :: z_a
+    $TYPE_C, intent(inout)           :: z_b
+    $TYPE_R, intent(in)              :: z_tol
+    integer, intent(out)             :: status
+    integer, optional, intent(out)   :: n_iter
+    integer, optional, intent(in)    :: n_iter_max
+    logical, optional, intent(in)    :: relative_tol
+    $TYPE_C, optional, intent(inout) :: f_z_a
+    $TYPE_C, optional, intent(inout) :: f_z_b
+
+    logical :: relative_tol_
+    $TYPE_C :: a
+    $TYPE_C :: b
+    $TYPE_C :: c
+    $TYPE_C :: f_a
+    $TYPE_C :: f_b
+    $TYPE_C :: f_c
+    integer :: i_iter
+    $TYPE_C :: exp_Q_p
+    $TYPE_C :: exp_Q_m
+    $TYPE_C :: exp_Q
+    $TYPE_C :: f_dz
+    $TYPE_C :: rho
+    $TYPE_R :: tol
 
     if (PRESENT(relative_tol)) then
        relative_tol_ = relative_tol
@@ -317,28 +384,28 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    $ASSERT(cx_a /= cx_b,Invalid initial pair)
+    $ASSERT(z_a /= z_b,Invalid initial pair)
 
-    ! Narrow the pair [cx_a,cx_b] toward a root of the function cf
-    ! using a complex Ridders' method (with secant updates, rather
-    ! than regula falsi)
+    ! Narrow the pair [z_a,z_b] toward a root of the function using
+    ! a complex Ridders' method (with secant updates, rather than
+    ! regula falsi)
 
     ! Set up the initial state
 
-    a = cx_a
-    b = cx_b
+    a = z_a
+    b = z_b
 
-    if (PRESENT(f_cx_a)) then
-       f_a = f_cx_a
+    if (PRESENT(f_z_a)) then
+       f_a = f_z_a
     else
-       call cf%eval(a, f_a, status)
+       call eval_func(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
-    if (PRESENT(f_cx_b)) then
-       f_b = f_cx_b
+    if (PRESENT(f_z_b)) then
+       f_b = f_z_b
     else
-       call cf%eval(b, f_b, status)
+       call eval_func(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
@@ -378,7 +445,7 @@ contains
 
        c =  0.5_WP*(a + b)
 
-       call cf%eval(c, f_c, status)
+       call eval_func(c, f_c, status)
        if (status /= STATUS_OK) exit iterate_loop
 
        ! Solve for the re-scaling exponential
@@ -410,15 +477,15 @@ contains
        f_a = f_b
 
        b = b - f_dz/rho
-       call cf%eval(b, f_b, status)
+       call eval_func(b, f_b, status)
        if (status /= STATUS_OK) exit iterate_loop
 
        ! Check for convergence
 
        if (relative_tol_) then
-          tol = (4._WP*EPSILON(0._WP) + cx_tol)*abs(b)
+          tol = (4._WP*EPSILON(0._WP) + z_tol)*abs(b)
        else
-          tol = 4._WP*EPSILON(0._WP)*abs(b) + cx_tol
+          tol = 4._WP*EPSILON(0._WP)*abs(b) + z_tol
        endif
 
        if (abs(b - a) <= tol) exit iterate_loop
@@ -427,117 +494,63 @@ contains
 
     ! Store the results
 
-    cx_a = a
-    cx_b = b
+    z_a = a
+    z_b = b
 
     if (PRESENT(n_iter)) n_iter = i_iter
 
-    if (PRESENT(f_cx_a)) f_cx_a = f_a
-    if (PRESENT(f_cx_b)) f_cx_b = f_b
+    if (PRESENT(f_z_a)) f_z_a = f_a
+    if (PRESENT(f_z_b)) f_z_b = f_b
 
     ! Finish
 
     return
 
-  end subroutine narrow_ridders_
+  end subroutine narrow_ridders_${T}_
+
+  $endsub
+
+  $NARROW_RIDDERS(c,real(WP),complex(WP))
+  $NARROW_RIDDERS(cx,type(r_ext_t),type(c_ext_t))
 
   !****
 
-  subroutine narrow_simplex_ (cf, np, cx_a, cx_b, cx_tol, status, n_iter, n_iter_max, relative_tol, f_cx_a, f_cx_b)
+  $define $EXPAND $sub
 
-    class(c_ext_func_t), intent(inout)     :: cf
-    class(num_par_t), intent(in)           :: np
-    type(c_ext_t), intent(inout)           :: cx_a
-    type(c_ext_t), intent(inout)           :: cx_b
-    type(r_ext_t), intent(in)              :: cx_tol
-    integer, intent(out)                   :: status
-    integer, optional, intent(out)         :: n_iter
-    integer, optional, intent(in)          :: n_iter_max
-    logical, optional, intent(in)          :: relative_tol
-    type(c_ext_t), optional, intent(inout) :: f_cx_a
-    type(c_ext_t), optional, intent(inout) :: f_cx_b
+  $local $T $1
+  $local $TYPE_R $2
+  $local $TYPE_C $3
 
-    type(c_ext_t)   :: cx(3)
-    type(c_ext_t)   :: f_cx(3) 
-    type(cimplex_t) :: cm
-   
-    $ASSERT(cx_a /= cx_b,Invalid initial pair)
+  subroutine expand_${T}_ (eval_func, z_a, z_b, f_z_tol, status, clamp_a, clamp_b, relative_tol, f_z_a, f_z_b)
 
-    ! Narrow the pair [cx_a,cx_b] toward a root of the function cf
-    ! using the simplex algorithm to minimize |cf|
-
-    ! Set up the initial state
-
-    cx(1) = cx_a
-    cx(2) = cx_b
-    cx(3) = 0.5_WP*(cx(1) + cx(2)) + 0.5_WP*(cx(2) - cx(1))*CMPLX(0._WP, 1._WP, KIND=WP)
-
-    if (PRESENT(f_cx_a)) then
-       f_cx(1) = f_cx_a
-    else
-       call cf%eval(cx(1), f_cx(1), status)
-       if (status /= STATUS_OK) return
-    endif
-
-    if (PRESENT(f_cx_b)) then
-       f_cx(2) = f_cx_b
-    else
-       call cf%eval(cx(2), f_cx(2), status)
-       if (status /= STATUS_OK) return
-    endif
-
-    call cf%eval(cx(3), f_cx(3), status)
-    if (status /= STATUS_OK) return
-
-    ! Set up the cimplex_t
-
-    cm = cimplex_t(cf, cx, f_cx)
-
-    ! Refine it
-
-    call refine(cm, cx_tol, status, n_iter, n_iter_max, relative_tol)
-
-    ! Store the results
-
-    cx = cm%verts()
-    f_cx = cm%values()
-
-    cx_a = cx(2)
-    cx_b = cx(1)
-
-    if (PRESENT(f_cx_a)) f_cx_a = f_cx(2)
-    if (PRESENT(f_cx_b)) f_cx_b = f_cx(1)
-
-    ! Finish
-
-    return
-
-  end subroutine narrow_simplex_
-
-  !****
-
-  subroutine expand_ (cf, cx_a, cx_b, f_cx_tol, status, clamp_a, clamp_b, relative_tol, f_cx_a, f_cx_b)
-
-    class(c_ext_func_t), intent(inout)   :: cf
-    type(c_ext_t), intent(inout)         :: cx_a
-    type(c_ext_t), intent(inout)         :: cx_b
-    type(r_ext_t), intent(in)            :: f_cx_tol
-    integer, intent(out)                 :: status
-    type(c_ext_t), optional, intent(out) :: f_cx_a
-    type(c_ext_t), optional, intent(out) :: f_cx_b
-    logical, optional, intent(in)        :: clamp_a
-    logical, optional, intent(in)        :: clamp_b
-    logical, optional, intent(in)        :: relative_tol
+    interface
+       subroutine eval_func (z, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE_C, intent(in)  :: z
+         $TYPE_C, intent(out) :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE_C, intent(inout)         :: z_a
+    $TYPE_C, intent(inout)         :: z_b
+    $TYPE_R, intent(in)            :: f_z_tol
+    integer, intent(out)           :: status
+    $TYPE_C, optional, intent(out) :: f_z_a
+    $TYPE_C, optional, intent(out) :: f_z_b
+    logical, optional, intent(in)  :: clamp_a
+    logical, optional, intent(in)  :: clamp_b
+    logical, optional, intent(in)  :: relative_tol
 
     real(WP), parameter :: EXPAND_FACTOR = 1.6_WP
 
-    logical       :: relative_tol_
-    logical       :: clamp_a_
-    logical       :: clamp_b_
-    type(c_ext_t) :: f_a
-    type(c_ext_t) :: f_b
-    type(r_ext_t) :: tol
-    logical       :: move_a
+    logical :: relative_tol_
+    logical :: clamp_a_
+    logical :: clamp_b_
+    $TYPE_C :: f_a
+    $TYPE_C :: f_b
+    $TYPE_R :: tol
+    logical :: move_a
 
     if (PRESENT(clamp_a)) then
        clamp_a_ = clamp_a
@@ -559,15 +572,15 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    $ASSERT(cx_a /= cx_b,Invalid initial pair)
+    $ASSERT(z_a /= z_b,Invalid initial pair)
 
-    ! Expand the pair [cx_a,cx_b] until the difference between f(cx_a)
-    ! and f(cx_b) exceeds the tolerance
+    ! Expand the pair [z_a,z_b] until the difference between f(z_a)
+    ! and f(z_b) exceeds the tolerance
 
-    call cf%eval(cx_a, f_a, status)
+    call eval_func(z_a, f_a, status)
     if (status /= STATUS_OK) return
 
-    call cf%eval(cx_b, f_b, status)
+    call eval_func(z_b, f_b, status)
     if (status /= STATUS_OK) return
 
     status = STATUS_OK
@@ -575,9 +588,9 @@ contains
     expand_loop : do
 
        if (relative_tol_) then
-          tol = (4._WP*EPSILON(0._WP) + f_cx_tol)*MAX(abs(f_a), abs(f_b))
+          tol = (4._WP*EPSILON(0._WP) + f_z_tol)*max(abs(f_a), abs(f_b))
        else
-          tol = 4._WP*EPSILON(0._WP)*MAX(abs(f_a), abs(f_b)) + f_cx_tol
+          tol = 4._WP*EPSILON(0._WP)*max(abs(f_a), abs(f_b)) + f_z_tol
        endif
 
        if (abs(f_a - f_b) > tol) exit expand_loop
@@ -591,12 +604,12 @@ contains
        endif
 
        if (move_a) then
-          cx_a = cx_a + EXPAND_FACTOR*(cx_a - cx_b)
-          call cf%eval(cx_a, f_a, status)
+          z_a = z_a + EXPAND_FACTOR*(z_a - z_b)
+          call eval_func(z_a, f_a, status)
           if (status /= STATUS_OK) exit expand_loop
        else
-          cx_b = cx_b + EXPAND_FACTOR*(cx_b - cx_a)
-          call cf%eval(cx_b, f_b, status)
+          z_b = z_b + EXPAND_FACTOR*(z_b - z_a)
+          call eval_func(z_b, f_b, status)
           if (status /= STATUS_OK) exit expand_loop
        endif
 
@@ -604,13 +617,18 @@ contains
 
     ! Store f_a and f_b
 
-    if (PRESENT(f_cx_a)) f_cx_a = f_a
-    if (PRESENT(f_cx_b)) f_cx_b = f_b
+    if (PRESENT(f_z_a)) f_z_a = f_a
+    if (PRESENT(f_z_b)) f_z_b = f_b
 
     ! Finish
 
     return
 
-  end subroutine expand_
+  end subroutine expand_${T}_
+
+  $endsub
+
+  $EXPAND(c,real(WP),complex(WP))
+  $EXPAND(cx,type(r_ext_t),type(c_ext_t))
 
 end module gyre_c_root

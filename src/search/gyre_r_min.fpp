@@ -1,7 +1,7 @@
 ! Module   : gyre_r_min
 ! Purpose  : minimum finding algorithms (real)
 !
-! Copyright 2018-2020 Rich Townsend & The GYRE Team
+! Copyright 2018-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,7 +23,6 @@ module gyre_r_min
 
   use core_kinds
 
-  use gyre_ext_func
   use gyre_ext
   use gyre_math
   use gyre_num_par
@@ -38,11 +37,13 @@ module gyre_r_min
   ! Interfaces
 
   interface solve
-     module procedure solve_
+     module procedure solve_r_
+     module procedure solve_rx_
   end interface solve
 
   interface narrow
-     module procedure narrow_
+     module procedure narrow_r_
+     module procedure narrow_rx_
   end interface narrow
 
   ! Access specifiers
@@ -50,130 +51,178 @@ module gyre_r_min
   private
 
   public :: solve
-!  public :: narrow
 
 contains
 
-  subroutine solve_ (rf, rx_a, rx_b, rx_c, rx_tol, nm_p, rx_min, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b, f_rx_c)
+  $define $SOLVE $sub
 
-    class(r_ext_func_t), intent(inout)  :: rf
-    type(r_ext_t), intent(in)           :: rx_a
-    type(r_ext_t), intent(in)           :: rx_b
-    type(r_ext_t), intent(in)           :: rx_c
-    type(r_ext_t), intent(in)           :: rx_tol
-    type(r_ext_t), intent(out)          :: rx_min
-    class(num_par_t), intent(in)        :: nm_p
-    integer, intent(out)                :: status
-    integer, optional, intent(out)      :: n_iter
-    integer, optional, intent(in)       :: n_iter_max
-    logical, optional, intent(in)       :: relative_tol
-    type(r_ext_t), optional, intent(in) :: f_rx_a
-    type(r_ext_t), optional, intent(in) :: f_rx_b
-    type(r_ext_t), optional, intent(in) :: f_rx_c
+  $local $T $1
+  $local $TYPE $2
 
-    type(r_ext_t) :: a
-    type(r_ext_t) :: b
-    type(r_ext_t) :: c
-    type(r_ext_t) :: f_a
-    type(r_ext_t) :: f_b
-    type(r_ext_t) :: f_c
+  subroutine solve_${T}_ (eval_func, x_a, x_b, x_c, x_tol, nm_p, x_min, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
 
-    ! Starting from the bracket [rx_a,rx_b,rx_c], find a minimum of
-    ! the function rf
+    interface
+       subroutine eval_func (x, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE, intent(in)    :: x
+         $TYPE, intent(out)   :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE, intent(in)             :: x_a
+    $TYPE, intent(in)             :: x_b
+    $TYPE, intent(in)             :: x_c
+    $TYPE, intent(in)             :: x_tol
+    class(num_par_t), intent(in)  :: nm_p
+    $TYPE, intent(out)            :: x_min
+    integer, intent(out)          :: status
+    integer, optional, intent(out):: n_iter
+    integer, optional, intent(in) :: n_iter_max
+    logical, optional, intent(in) :: relative_tol
+    $TYPE, optional, intent(in)   :: f_x_a
+    $TYPE, optional, intent(in)   :: f_x_b
+    $TYPE, optional, intent(in)   :: f_x_c
 
-    a = rx_a
-    b = rx_b
-    c = rx_c
+    $TYPE :: a
+    $TYPE :: b
+    $TYPE :: c
+    $TYPE :: f_a
+    $TYPE :: f_b
+    $TYPE :: f_c
 
-    if (PRESENT(f_rx_a)) then
-       f_a = f_rx_a
+    ! Starting from the bracket [x_a,x_b,x_c], find a minimum of
+    ! the function
+
+    a = x_a
+    b = x_b
+    c = x_c
+
+    if (PRESENT(f_x_a)) then
+       f_a = f_x_a
     else
-       call rf%eval(a, f_a, status)
+       call eval_func(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
-    if (PRESENT(f_rx_b)) then
-       f_b = f_rx_b
+    if (PRESENT(f_x_b)) then
+       f_b = f_x_b
     else
-       call rf%eval(b, f_b, status)
+       call eval_func(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
-    if (PRESENT(f_rx_c)) then
-       f_c = f_rx_c
+    if (PRESENT(f_x_c)) then
+       f_c = f_x_c
     else
-       call rf%eval(c, f_c, status)
+       call eval_func(c, f_c, status)
        if (status /= STATUS_OK) return
     endif
 
-    call narrow_(rf, a, b, c, rx_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b, f_c)
+    call narrow_${T}_(eval_func, a, b, c, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b, f_c)
 
-    rx_min = b
+    x_min = b
 
     ! Finish
 
     return
 
-  end subroutine solve_
+  end subroutine solve_${T}_
+
+  $endsub
+
+  $SOLVE(r,real(WP))
+  $SOLVE(rx,type(r_ext_t))
 
   !****
 
-  subroutine narrow_ (rf, rx_a, rx_b, rx_c, rx_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b, f_rx_c)
+  $define $NARROW $sub
 
-    class(r_ext_func_t), intent(inout)     :: rf
-    type(r_ext_t), intent(inout)           :: rx_a
-    type(r_ext_t), intent(inout)           :: rx_b
-    type(r_ext_t), intent(inout)           :: rx_c
-    type(r_ext_t), intent(in)              :: rx_tol
-    class(num_par_t), intent(in)           :: nm_p
-    integer, intent(out)                   :: status
-    integer, optional, intent(out)         :: n_iter
-    integer, optional, intent(in)          :: n_iter_max
-    logical, optional, intent(in)          :: relative_tol
-    type(r_ext_t), optional, intent(inout) :: f_rx_a
-    type(r_ext_t), optional, intent(inout) :: f_rx_b
-    type(r_ext_t), optional, intent(inout) :: f_rx_c
+  $local $T $1
+  $local $TYPE $2
 
-    ! Narrow the bracket [rx_a,rx_b,rx_c] on a minimum of the function rf
+  subroutine narrow_${T}_ (eval_func, x_a, x_b, x_c, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
 
-    call narrow_bisect_(rf, rx_a, rx_b, rx_c, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b, f_rx_c)
+    interface
+       subroutine eval_func (x, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE, intent(in)    :: x
+         $TYPE, intent(out)   :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE, intent(inout)           :: x_a
+    $TYPE, intent(inout)           :: x_b
+    $TYPE, intent(inout)           :: x_c
+    $TYPE, intent(in)              :: x_tol
+    class(num_par_t), intent(in)   :: nm_p
+    integer, intent(out)           :: status
+    integer, optional, intent(out) :: n_iter
+    integer, optional, intent(in)  :: n_iter_max
+    logical, optional, intent(in)  :: relative_tol
+    $TYPE, optional, intent(inout) :: f_x_a
+    $TYPE, optional, intent(inout) :: f_x_b
+    $TYPE, optional, intent(inout) :: f_x_c
+
+    ! Narrow the bracket [x_a,x_b,x_c] on a minimum of the function
+
+    call narrow_bisect_${T}_(eval_func, x_a, x_b, x_c, x_tol, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
 
     ! Finish
 
     return
 
-  end subroutine narrow_
+  end subroutine narrow_${T}_
+
+  $endsub
+
+  $NARROW(r,real(WP))
+  $NARROW(rx,type(r_ext_t))
 
   !****
 
-  subroutine narrow_bisect_ (rf, rx_a, rx_b, rx_c, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b, f_rx_c)
+  $define $NARROW_BISECT $sub
 
-    class(r_ext_func_t), intent(inout)     :: rf
-    type(r_ext_t), intent(inout)           :: rx_a
-    type(r_ext_t), intent(inout)           :: rx_b
-    type(r_ext_t), intent(inout)           :: rx_c
-    type(r_ext_t), intent(in)              :: rx_tol
-    integer, intent(out)                   :: status
-    integer, optional, intent(out)         :: n_iter
-    integer, optional, intent(in)          :: n_iter_max
-    logical, optional, intent(in)          :: relative_tol
-    type(r_ext_t), optional, intent(inout) :: f_rx_a
-    type(r_ext_t), optional, intent(inout) :: f_rx_b
-    type(r_ext_t), optional, intent(inout) :: f_rx_c
+  $local $T $1
+  $local $TYPE $2
+
+  subroutine narrow_bisect_${T}_ (eval_func, x_a, x_b, x_c, x_tol, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
+
+    interface
+       subroutine eval_func (x, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE, intent(in)    :: x
+         $TYPE, intent(out)   :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE, intent(inout)           :: x_a
+    $TYPE, intent(inout)           :: x_b
+    $TYPE, intent(inout)           :: x_c
+    $TYPE, intent(in)              :: x_tol
+    integer, intent(out)           :: status
+    integer, optional, intent(out) :: n_iter
+    integer, optional, intent(in)  :: n_iter_max
+    logical, optional, intent(in)  :: relative_tol
+    $TYPE, optional, intent(inout) :: f_x_a
+    $TYPE, optional, intent(inout) :: f_x_b
+    $TYPE, optional, intent(inout) :: f_x_c
 
     real(WP), parameter :: R = 0.61803399_WP
 
-    logical       :: relative_tol_
-    type(r_ext_t) :: a
-    type(r_ext_t) :: b
-    type(r_ext_t) :: c
-    type(r_ext_t) :: d
-    type(r_ext_t) :: f_a
-    type(r_ext_t) :: f_b
-    type(r_ext_t) :: f_c
-    type(r_ext_t) :: f_d
-    integer       :: i_iter
-    type(r_ext_t) :: tol
+    logical :: relative_tol_
+    $TYPE   :: a
+    $TYPE   :: b
+    $TYPE   :: c
+    $TYPE   :: d
+    $TYPE   :: f_a
+    $TYPE   :: f_b
+    $TYPE   :: f_c
+    $TYPE   :: f_d
+    integer :: i_iter
+    $TYPE   :: tol
 
     if (PRESENT(relative_tol)) then
        relative_tol_ = relative_tol
@@ -181,33 +230,33 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    ! Narrow the bracket [rx_a,rx_b,rx_c] on a minimum of the function rf
+    ! Narrow the bracket [x_a,x_b,x_c] on a minimum of the function
     ! using a bisection method
 
     ! Set up the initial state
 
-    a = rx_a
-    b = rx_b
-    c = rx_c
+    a = x_a
+    b = x_b
+    c = x_c
 
-    if (PRESENT(f_rx_a)) then
-       f_a = f_rx_a
+    if (PRESENT(f_x_a)) then
+       f_a = f_x_a
     else
-       call rf%eval(a, f_a, status)
+       call eval_func(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
-    if (PRESENT(f_rx_b)) then
-       f_b = f_rx_b
+    if (PRESENT(f_x_b)) then
+       f_b = f_x_b
     else
-       call rf%eval(b, f_b, status)
+       call eval_func(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
-    if (PRESENT(f_rx_c)) then
-       f_c = f_rx_c
+    if (PRESENT(f_x_c)) then
+       f_c = f_x_c
     else
-       call rf%eval(c, f_c, status)
+       call eval_func(c, f_c, status)
        if (status /= STATUS_OK) return
     endif
 
@@ -240,9 +289,9 @@ contains
        ! Check for convegence
 
        if (relative_tol_) then
-          tol = (sqrt(EPSILON(0._WP)) + 0.5_WP*rx_tol)*(abs(a) + abs(c))
+          tol = (sqrt(EPSILON(0._WP)) + 0.5_WP*x_tol)*(abs(a) + abs(c))
        else
-          tol = sqrt(EPSILON(0._WP))*(abs(a) + abs(c)) + rx_tol
+          tol = sqrt(EPSILON(0._WP))*(abs(a) + abs(c)) + x_tol
        endif
 
        if (abs(c-a) <= tol) exit iterate_loop
@@ -255,7 +304,7 @@ contains
           
           d = (1._WP-R)*b + R*a
 
-          call rf%eval(d, f_d, status)
+          call eval_func(d, f_d, status)
           if (status /= STATUS_OK) return
 
           if (f_d < f_b) then
@@ -274,7 +323,7 @@ contains
 
           d = (1._WP-R)*b + R*c
 
-          call rf%eval(d, f_d, status)
+          call eval_func(d, f_d, status)
           if (status /= STATUS_OK) return
 
           if (f_d < f_b) then
@@ -293,22 +342,27 @@ contains
        
     ! Store the results
 
-    rx_a = a
-    rx_b = b
-    rx_c = c
+    x_a = a
+    x_b = b
+    x_c = c
 
     if (PRESENT(n_iter)) then
        n_iter = i_iter
     end if
 
-    if (PRESENT(f_rx_a)) f_rx_a = f_a
-    if (PRESENT(f_rx_b)) f_rx_b = f_b
-    if (PRESENT(f_rx_c)) f_rx_c = f_c
+    if (PRESENT(f_x_a)) f_x_a = f_a
+    if (PRESENT(f_x_b)) f_x_b = f_b
+    if (PRESENT(f_x_c)) f_x_c = f_c
 
     ! Finish
 
     return
 
-  end subroutine narrow_bisect_
+  end subroutine narrow_bisect_${T}_
+
+  $endsub
+
+  $NARROW_BISECT(r,real(WP))
+  $NARROW_BISECT(rx,type(r_ext_t))
 
 end module gyre_r_min

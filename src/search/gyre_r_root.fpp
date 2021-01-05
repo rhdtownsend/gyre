@@ -1,7 +1,7 @@
 ! Module   : gyre_r_root
-! Purpose  : root finding algorithms for discriminant functions (real)
+! Purpose  : root finding algorithms (real)
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,7 +23,6 @@ module gyre_r_root
 
   use core_kinds
 
-  use gyre_ext_func
   use gyre_ext
   use gyre_math
   use gyre_num_par
@@ -38,15 +37,18 @@ module gyre_r_root
   ! Interfaces
 
   interface solve
-     module procedure solve_
+     module procedure solve_r_
+     module procedure solve_rx_
   end interface solve
 
   interface narrow
-     module procedure narrow_
+     module procedure narrow_r_
+     module procedure narrow_rx_
   end interface narrow
 
   interface expand
-     module procedure expand_
+     module procedure expand_r_
+     module procedure expand_rx_
   end interface expand
 
   ! Access specifiers
@@ -59,77 +61,108 @@ module gyre_r_root
 
 contains
 
-  subroutine solve_ (rf, rx_a, rx_b, rx_tol, nm_p, rx_root, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
+  $define $SOLVE $sub
 
-    class(r_ext_func_t), intent(inout)  :: rf
-    type(r_ext_t), intent(in)           :: rx_a
-    type(r_ext_t), intent(in)           :: rx_b
-    type(r_ext_t), intent(in)           :: rx_tol
-    type(r_ext_t), intent(out)          :: rx_root
-    class(num_par_t), intent(in)        :: nm_p
-    integer, intent(out)                :: status
-    integer, optional, intent(out)      :: n_iter
-    integer, optional, intent(in)       :: n_iter_max
-    logical, optional, intent(in)       :: relative_tol
-    type(r_ext_t), optional, intent(in) :: f_rx_a
-    type(r_ext_t), optional, intent(in) :: f_rx_b
+  $local $T $1
+  $local $TYPE $2
 
-    type(r_ext_t) :: a
-    type(r_ext_t) :: b
-    type(r_ext_t) :: f_a
-    type(r_ext_t) :: f_b
+  subroutine solve_${T}_ (eval_func, x_a, x_b, x_tol, nm_p, x_root, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
 
-    ! Starting from the bracket [rx_a,rx_b], find a root of the
-    ! function rf
+    interface
+       subroutine eval_func (x, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE, intent(in)    :: x
+         $TYPE, intent(out)   :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE, intent(in)              :: x_a
+    $TYPE, intent(in)              :: x_b
+    $TYPE, intent(in)              :: x_tol
+    class(num_par_t), intent(in)   :: nm_p
+    $TYPE, intent(out)             :: x_root
+    integer, intent(out)           :: status
+    integer, optional, intent(out) :: n_iter
+    integer, optional, intent(in)  :: n_iter_max
+    logical, optional, intent(in)  :: relative_tol
+    $TYPE, optional, intent(in)    :: f_x_a
+    $TYPE, optional, intent(in)    :: f_x_b
 
-    a = rx_a
-    b = rx_b
+    $TYPE :: a
+    $TYPE :: b
+    $TYPE :: f_a
+    $TYPE :: f_b
 
-    if (PRESENT(f_rx_a)) then
-       f_a = f_rx_a
+    ! Starting from the bracket [x_a,x_b], find a root of the
+    ! function
+
+    a = x_a
+    b = x_b
+
+    if (PRESENT(f_x_a)) then
+       f_a = f_x_a
     else
-       call rf%eval(a, f_a, status)
+       call eval_func(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
-    if (PRESENT(f_rx_b)) then
-       f_b = f_rx_b
+    if (PRESENT(f_x_b)) then
+       f_b = f_x_b
     else
-       call rf%eval(b, f_b, status)
+       call eval_func(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
-    call narrow_(rf, a, b, rx_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
+    call narrow_${T}_(eval_func, a, b, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
 
-    rx_root = b
+    x_root = b
 
     ! Finish
 
     return
 
-  end subroutine solve_
+  end subroutine solve_${T}_
+
+  $endsub
+
+  $SOLVE(r,real(WP))
+  $SOLVE(rx,type(r_ext_t))
 
   !****
 
-  subroutine narrow_ (rf, rx_a, rx_b, rx_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
+  $define $NARROW $sub
 
-    class(r_ext_func_t), intent(inout)     :: rf
-    type(r_ext_t), intent(inout)           :: rx_a
-    type(r_ext_t), intent(inout)           :: rx_b
-    type(r_ext_t), intent(in)              :: rx_tol
-    class(num_par_t), intent(in)           :: nm_p
-    integer, intent(out)                   :: status
-    integer, optional, intent(out)         :: n_iter
-    integer, optional, intent(in)          :: n_iter_max
-    logical, optional, intent(in)          :: relative_tol
-    type(r_ext_t), optional, intent(inout) :: f_rx_a
-    type(r_ext_t), optional, intent(inout) :: f_rx_b
+  $local $T $1
+  $local $TYPE $2
 
-    ! Narrow the bracket [rx_a,rx_b] on a root of the function rf
+  subroutine narrow_${T}_ (eval_func, x_a, x_b, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
+
+    interface
+       subroutine eval_func (x, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE, intent(in)    :: x
+         $TYPE, intent(out)   :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE, intent(inout)           :: x_a
+    $TYPE, intent(inout)           :: x_b
+    $TYPE, intent(in)              :: x_tol
+    class(num_par_t), intent(in)   :: nm_p
+    integer, intent(out)           :: status
+    integer, optional, intent(out) :: n_iter
+    integer, optional, intent(in)  :: n_iter_max
+    logical, optional, intent(in)  :: relative_tol
+    $TYPE, optional, intent(inout) :: f_x_a
+    $TYPE, optional, intent(inout) :: f_x_b
+
+    ! Narrow the bracket [x_a,x_b] on a root of the function
 
     select case (nm_p%r_root_solver)
     case ('BRENT')
-       call narrow_brent_(rf, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
+       call narrow_brent_${T}_(eval_func, x_a, x_b, x_tol, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
     case default
        $ABORT(Invalid r_root_solver)
     end select
@@ -138,39 +171,57 @@ contains
 
     return
 
-  end subroutine narrow_
+  end subroutine narrow_${T}_
+
+  $endsub
+
+  $NARROW(r,real(WP))
+  $NARROW(rx,type(r_ext_t))
 
   !****
 
-  subroutine narrow_brent_ (rf, rx_a, rx_b, rx_tol, status, n_iter, n_iter_max, relative_tol, f_rx_a, f_rx_b)
+  $define $NARROW_BRENT $sub
 
-    class(r_ext_func_t), intent(inout)     :: rf
-    type(r_ext_t), intent(inout)           :: rx_a
-    type(r_ext_t), intent(inout)           :: rx_b
-    type(r_ext_t), intent(in)              :: rx_tol
-    integer, intent(out)                   :: status
-    integer, optional, intent(out)         :: n_iter
-    integer, optional, intent(in)          :: n_iter_max
-    logical, optional, intent(in)          :: relative_tol
-    type(r_ext_t), optional, intent(inout) :: f_rx_a
-    type(r_ext_t), optional, intent(inout) :: f_rx_b
+  $local $T $1
+  $local $TYPE $2
 
-    logical       :: relative_tol_
-    type(r_ext_t) :: a
-    type(r_ext_t) :: b
-    type(r_ext_t) :: c
-    type(r_ext_t) :: d
-    type(r_ext_t) :: e
-    type(r_ext_t) :: f_a
-    type(r_ext_t) :: f_b
-    type(r_ext_t) :: f_c
-    type(r_ext_t) :: tol
-    type(r_ext_t) :: m
-    type(r_ext_t) :: p
-    type(r_ext_t) :: q
-    type(r_ext_t) :: r
-    type(r_ext_t) :: s
-    integer       :: i_iter
+  subroutine narrow_brent_${T}_ (eval_func, x_a, x_b, x_tol, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
+
+    interface
+       subroutine eval_func (x, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE, intent(in)    :: x
+         $TYPE, intent(out)   :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE, intent(inout)           :: x_a
+    $TYPE, intent(inout)           :: x_b
+    $TYPE, intent(in)              :: x_tol
+    integer, intent(out)           :: status
+    integer, optional, intent(out) :: n_iter
+    integer, optional, intent(in)  :: n_iter_max
+    logical, optional, intent(in)  :: relative_tol
+    $TYPE, optional, intent(inout) :: f_x_a
+    $TYPE, optional, intent(inout) :: f_x_b
+
+    logical :: relative_tol_
+    $TYPE   :: a
+    $TYPE   :: b
+    $TYPE   :: c
+    $TYPE   :: d
+    $TYPE   :: e
+    $TYPE   :: f_a
+    $TYPE   :: f_b
+    $TYPE   :: f_c
+    $TYPE   :: tol
+    $TYPE   :: m
+    $TYPE   :: p
+    $TYPE   :: q
+    $TYPE   :: r
+    $TYPE   :: s
+    integer :: i_iter
 
     if (PRESENT(relative_tol)) then
        relative_tol_ = relative_tol
@@ -178,26 +229,26 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    ! Narrow the bracket [rx_a,rx_b] on a root of the function rf
+    ! Narrow the bracket [x_a,x_b] on a root of the function
     ! using Brent's method [based on the ALGOL 60 routine 'zero'
     ! published in [Bre1973]
 
     ! Set up the initial state
 
-    a = rx_a
-    b = rx_b
+    a = x_a
+    b = x_b
 
-    if (PRESENT(f_rx_a)) then
-       f_a = f_rx_a
+    if (PRESENT(f_x_a)) then
+       f_a = f_x_a
     else
-       call rf%eval(a, f_a, status)
+       call eval_func(a, f_a, status)
        if (status /= STATUS_OK) return
     endif
 
-    if (PRESENT(f_rx_b)) then
-       f_b = f_rx_b
+    if (PRESENT(f_x_b)) then
+       f_b = f_x_b
     else
-       call rf%eval(b, f_b, status)
+       call eval_func(b, f_b, status)
        if (status /= STATUS_OK) return
     endif
 
@@ -248,9 +299,9 @@ contains
        endif
 
        if (relative_tol_) then
-          tol = (2._WP*EPSILON(0._WP) + rx_tol)*abs(b)
+          tol = (2._WP*EPSILON(0._WP) + x_tol)*abs(b)
        else
-          tol = 2._WP*EPSILON(0._WP)*abs(b) + rx_tol
+          tol = 2._WP*EPSILON(0._WP)*abs(b) + x_tol
        endif
 
        m = 0.5_WP*(c - b)
@@ -326,49 +377,68 @@ contains
           endif
        endif
 
-       call rf%eval(b, f_b, status)
+       call eval_func(b, f_b, status)
        if (status /= STATUS_OK) exit iterate_loop
        
     end do iterate_loop
 
     ! Store the results
 
-    rx_a = a
-    rx_b = b
+    x_a = a
+    x_b = b
 
     if (PRESENT(n_iter)) then
        n_iter = i_iter
     end if
 
-    if (PRESENT(f_rx_a)) f_rx_a = f_a
-    if (PRESENT(f_rx_b)) f_rx_b = f_b
+    if (PRESENT(f_x_a)) f_x_a = f_a
+    if (PRESENT(f_x_b)) f_x_b = f_b
 
     ! Finish
 
     return
 
-  end subroutine narrow_brent_
+  end subroutine narrow_brent_${T}_
+
+  $endsub
+
+  $NARROW_BRENT(r,real(WP))
+  $NARROW_BRENT(rx,type(r_ext_t))
 
   !****
 
-  subroutine expand_ (rf, rx_a, rx_b, status, clamp_a, clamp_b, f_rx_a, f_rx_b, expand_factor)
+  $define $EXPAND $sub
 
-    class(r_ext_func_t), intent(inout)   :: rf
-    type(r_ext_t), intent(inout)         :: rx_a
-    type(r_ext_t), intent(inout)         :: rx_b
-    integer, intent(out)                 :: status
-    logical, optional, intent(in)        :: clamp_a
-    logical, optional, intent(in)        :: clamp_b
-    type(r_ext_t), optional, intent(out) :: f_rx_a
-    type(r_ext_t), optional, intent(out) :: f_rx_b
-    real(WP), optional, intent(in)       :: expand_factor
+  $local $T $1
+  $local $TYPE $2
 
-    logical       :: clamp_a_
-    logical       :: clamp_b_
-    real(WP)      :: expand_factor_
-    type(r_ext_t) :: f_a
-    type(r_ext_t) :: f_b
-    logical       :: move_a
+  subroutine expand_${T}_ (eval_func, x_a, x_b, status, clamp_a, clamp_b, f_x_a, f_x_b)
+
+    interface
+       subroutine eval_func (x, func, status)
+         use core_kinds
+         use gyre_ext
+         $TYPE, intent(in)    :: x
+         $TYPE, intent(out)   :: func
+         integer, intent(out) :: status
+       end subroutine eval_func
+    end interface
+    $TYPE, intent(inout)          :: x_a
+    $TYPE, intent(inout)          :: x_b
+    integer, intent(out)          :: status
+    logical, optional, intent(in) :: clamp_a
+    logical, optional, intent(in) :: clamp_b
+    $TYPE, optional, intent(out)  :: f_x_a
+    $TYPE, optional, intent(out)  :: f_x_b
+
+    real(WP), parameter :: EXPAND_FACTOR = 1.6_WP
+
+    logical :: clamp_a_
+    logical :: clamp_b_
+    $TYPE   :: expand_factor_
+    $TYPE   :: f_a
+    $TYPE   :: f_b
+    logical :: move_a
 
     if (PRESENT(clamp_a)) then
        clamp_a_ = clamp_a
@@ -382,25 +452,17 @@ contains
        clamp_b_ = .FALSE.
     endif
 
-    if (PRESENT(expand_factor)) then
-       expand_factor_ = expand_factor
-    else
-       expand_factor_ = 1.6_WP
-    endif
-
     $ASSERT(.NOT. (clamp_a_ .AND. clamp_b_),Cannot clamp both points)
 
-    $ASSERT(expand_factor_ > 1._WP,Invalid expand_factor)
+    $ASSERT(x_a /= x_b,Invalid initial bracket)
 
-    $ASSERT(rx_a /= rx_b,Invalid initial bracket)
+    ! Expand the bracket [x_a,x_b] until it contains a root of the
+    ! function
 
-    ! Expand the bracket [rx_a,rx_b] until it contains a root of the
-    ! function rf
-
-    call rf%eval(rx_a, f_a, status)
+    call eval_func(x_a, f_a, status)
     if (status /= STATUS_OK) return
 
-    call rf%eval(rx_b, f_b, status)
+    call eval_func(x_b, f_b, status)
     if (status /= STATUS_OK) return
 
     status = STATUS_OK
@@ -420,16 +482,16 @@ contains
 
        if (move_a) then
 
-          rx_a = rx_a + expand_factor_*(rx_a - rx_b)
+          x_a = x_a + EXPAND_FACTOR*(x_a - x_b)
 
-          call rf%eval(rx_a, f_a, status)
+          call eval_func(x_a, f_a, status)
           if (status /= STATUS_OK) exit expand_loop
 
        else
 
-          rx_b = rx_b + expand_factor_*(rx_b - rx_a)
+          x_b = x_b + EXPAND_FACTOR*(x_b - x_a)
 
-          call rf%eval(rx_b, f_b, status)
+          call eval_func(x_b, f_b, status)
           if (status /= STATUS_OK) exit expand_loop
 
        endif
@@ -438,13 +500,18 @@ contains
 
     ! Store the results
 
-    if (PRESENT(f_rx_a)) f_rx_a = f_a
-    if (PRESENT(f_rx_b)) f_rx_b = f_b
+    if (PRESENT(f_x_a)) f_x_a = f_a
+    if (PRESENT(f_x_b)) f_x_b = f_b
 
     ! Finish
 
     return
 
-  end subroutine expand_
+  end subroutine expand_${T}_
+
+  $endsub
+
+  $EXPAND(r,real(WP))
+  $EXPAND(rx,type(r_ext_t))
 
 end module gyre_r_root
