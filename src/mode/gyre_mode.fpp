@@ -1,7 +1,7 @@
 ! Module   : gyre_mode
 ! Purpose  : mode data
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -175,8 +175,8 @@ contains
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the inner boundary)
 
-       call find_turn(this%context(), this%grid(), r_state_t(REAL(this%omega)), this%os_p, &
-                      k_i, x_i)
+       call find_turn(this%context(), this%grid(), r_state_t(REAL(this%omega)), &
+            this%nm_p, this%os_p, k_i, x_i)
 
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface

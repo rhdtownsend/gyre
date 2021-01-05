@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_bvp
 ! Purpose  : nonadiabatic boundary value problem solver
 !
-! Copyright 2013-2019 Rich Townsend
+! Copyright 2013-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -53,6 +53,7 @@ module gyre_nad_bvp
      type(grid_t)             :: gr
      type(nad_trans_t)        :: tr
      type(mode_par_t)         :: md_p
+     type(num_par_t)          :: nm_p
      type(osc_par_t)          :: os_p
   end type nad_bvp_t
 
@@ -119,6 +120,7 @@ contains
     call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
+    bp%nm_p = nm_p
     bp%os_p = os_p
 
     ! Finish
@@ -219,7 +221,7 @@ contains
 
     discrim = bp%det()
 
-    wv = wave_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p, j)
+    wv = wave_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, j)
 
     ! Finish
 
