@@ -28,7 +28,7 @@ module gyre_minmod_search
   use gyre_discrim
   use gyre_ext
   use gyre_num_par
-  use gyre_min
+  use gyre_minim
   use gyre_prox_search
   use gyre_state
   use gyre_status
@@ -87,7 +87,7 @@ contains
     type(r_ext_t)              :: f_x_c
     integer                    :: i
     integer                    :: n_iter
-    type(r_ext_t)              :: x_min
+    type(r_ext_t)              :: x_minim
     integer                    :: status
 
     ! Find discriminant minmod brackets
@@ -114,9 +114,9 @@ contains
        f_x_b = discrim_b(i)
        f_x_c = discrim_c(i)
 
-       call solve(eval_discrim_x_, x_a, x_b, x_c, r_ext_t(0._WP), nm_p, &
-                  x_min, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
-                  f_x_a=f_x_a, f_x_b=f_x_b, f_x_c=f_x_c)
+       call solve_minim(eval_discrim_x_, x_a, x_b, x_c, r_ext_t(0._WP), nm_p, &
+            x_minim, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
+            f_x_a=f_x_a, f_x_b=f_x_b, f_x_c=f_x_c)
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
           cycle in_loop
@@ -124,7 +124,7 @@ contains
 
        j_m = j_m + 1
 
-       omega_in(i) = real(x_min)
+       omega_in(i) = real(x_minim)
        j_in(i) = j_m
 
     end do in_loop

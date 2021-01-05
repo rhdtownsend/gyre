@@ -199,8 +199,8 @@ contains
 
           apply_deflate = .TRUE.
 
-          call narrow(eval_discrim_z_, z_a, z_b, r_ext_t(0._WP), nm_p, &
-                      status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
+          call narrow_bracket(eval_discrim_z_, z_a, z_b, r_ext_t(0._WP), nm_p, &
+               status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
           if (status /= STATUS_OK) then
              call report_status_(status, 'deflate narrow')
              cycle in_loop
@@ -213,8 +213,8 @@ contains
              z_b = z_a*(1._WP + EPSILON(0._WP)*(z_a/abs(z_a)))
           endif
 
-          call expand(eval_discrim_z_, z_a, z_b, r_ext_t(0._WP), &
-                      status, f_z_a=f_z_a, f_z_b=f_z_b)
+          call expand_bracket(eval_discrim_z_, z_a, z_b, r_ext_t(0._WP), &
+               status, f_z_a=f_z_a, f_z_b=f_z_b)
           if (status /= STATUS_OK) then
              call report_status_(status, 'deflate re-expand')
              cycle in_loop
@@ -230,9 +230,9 @@ contains
 
        apply_deflate = .FALSE.
 
-       call solve(eval_discrim_z_, z_a, z_b, r_ext_t(0._WP), nm_p, &
-                  z_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
-                  f_z_a=f_z_a, f_z_b=f_z_b)
+       call solve_root(eval_discrim_z_, z_a, z_b, r_ext_t(0._WP), nm_p, &
+            z_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
+            f_z_a=f_z_a, f_z_b=f_z_b)
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
           cycle in_loop

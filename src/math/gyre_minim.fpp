@@ -1,4 +1,4 @@
-! Module   : gyre_min
+! Module   : gyre_minim
 ! Purpose  : minimum finding algorithms
 !
 ! Copyright 2018-2021 Rich Townsend & The GYRE Team
@@ -15,10 +15,10 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_min
+module gyre_minim
 
   ! Uses
 
-  use gyre_r_min
+  use gyre_r_minim
 
-end module gyre_min
+end module gyre_minim

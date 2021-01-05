@@ -1,5 +1,5 @@
 ! Module   : gyre_c_root
-! Purpose  : root finding algorithms (complex)
+! Purpose  : root finding algorithms (complex & c_ext_t)
 !
 ! Copyright 2013-2021 Rich Townsend & The GYRE Team
 !
@@ -36,28 +36,28 @@ module gyre_c_root
 
   ! Interfaces
 
-  interface solve
-     module procedure solve_c_
-     module procedure solve_cx_
-  end interface solve
+  interface solve_root
+     module procedure solve_root_c_
+     module procedure solve_root_cx_
+  end interface solve_root
 
-  interface narrow
-     module procedure narrow_c_
-     module procedure narrow_cx_
-  end interface narrow
+  interface narrow_bracket
+     module procedure narrow_bracket_c_
+     module procedure narrow_bracket_cx_
+  end interface narrow_bracket
 
-  interface expand
-     module procedure expand_c_ 
-     module procedure expand_cx_ 
-  end interface expand
+  interface expand_bracket
+     module procedure expand_bracket_c_ 
+     module procedure expand_bracket_cx_ 
+  end interface expand_bracket
 
   ! Access specifiers
 
   private
 
-  public :: solve
-  public :: narrow
-  public :: expand
+  public :: solve_root
+  public :: narrow_bracket
+  public :: expand_bracket
 
 contains
 
@@ -67,7 +67,7 @@ contains
   $local $TYPE_R $2
   $local $TYPE_C $3
 
-  subroutine solve_${T}_ (eval_func, z_a, z_b, z_tol, nm_p, z_root, status, n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
+  subroutine solve_root_${T}_ (eval_func, z_a, z_b, z_tol, nm_p, z_root, status, n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
 
     interface
        subroutine eval_func (z, func, status)
@@ -95,7 +95,7 @@ contains
     $TYPE_C :: f_a
     $TYPE_C :: f_b
 
-    ! Starting from the pair [z_a,z_b], find a root of the function
+    ! Starting from the bracket [z_a,z_b], find a root of the function
 
     a = z_a
     b = z_b
@@ -114,7 +114,7 @@ contains
        if (status /= STATUS_OK) return
     endif
 
-    call narrow_${T}_(eval_func, a, b, z_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
+    call narrow_bracket_${T}_(eval_func, a, b, z_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
 
     z_root = b
 
@@ -122,7 +122,7 @@ contains
 
     return
 
-  end subroutine solve_${T}_
+  end subroutine solve_root_${T}_
 
   $endsub
 
@@ -131,13 +131,13 @@ contains
 
   !****
 
-  $define $NARROW $sub
+  $define $NARROW_BRACKET $sub
 
   $local $T $1
   $local $TYPE_R $2
   $local $TYPE_C $3
 
-  subroutine narrow_${T}_ (eval_func, z_a, z_b, z_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
+  subroutine narrow_bracket_${T}_ (eval_func, z_a, z_b, z_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
 
     interface
        subroutine eval_func (z, func, status)
@@ -159,7 +159,7 @@ contains
     $TYPE_C, optional, intent(inout) :: f_z_a
     $TYPE_C, optional, intent(inout) :: f_z_b
 
-    ! Narrow the pair [z_a,z_b] toward a root of the function
+    ! Narrow the bracket [z_a,z_b] toward a root of the function
 
     select case (nm_p%c_root_solver)
     case ('SECANT')
@@ -174,12 +174,12 @@ contains
 
     return
 
-  end subroutine narrow_${T}_
+  end subroutine narrow_bracket_${T}_
 
   $endsub
 
-  $NARROW(c,real(WP),complex(WP))
-  $NARROW(cx,type(r_ext_t),type(c_ext_t))
+  $NARROW_BRACKET(c,real(WP),complex(WP))
+  $NARROW_BRACKET(cx,type(r_ext_t),type(c_ext_t))
 
   !****
 
@@ -228,7 +228,7 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    ! Narrow the pair [z_a,z_b] toward a root of the function !
+    ! Narrow the bracket [z_a,z_b] toward a root of the function !
     ! using the secant method
 
     ! Set up the initial state
@@ -384,9 +384,9 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    $ASSERT(z_a /= z_b,Invalid initial pair)
+    $ASSERT(z_a /= z_b,Invalid initial bracket)
 
-    ! Narrow the pair [z_a,z_b] toward a root of the function using
+    ! Narrow the bracket [z_a,z_b] toward a root of the function using
     ! a complex Ridders' method (with secant updates, rather than
     ! regula falsi)
 
@@ -515,13 +515,13 @@ contains
 
   !****
 
-  $define $EXPAND $sub
+  $define $EXPAND_BRACKET $sub
 
   $local $T $1
   $local $TYPE_R $2
   $local $TYPE_C $3
 
-  subroutine expand_${T}_ (eval_func, z_a, z_b, f_z_tol, status, clamp_a, clamp_b, relative_tol, f_z_a, f_z_b)
+  subroutine expand_bracket_${T}_ (eval_func, z_a, z_b, f_z_tol, status, clamp_a, clamp_b, relative_tol, f_z_a, f_z_b)
 
     interface
        subroutine eval_func (z, func, status)
@@ -572,9 +572,9 @@ contains
        relative_tol_ = .FALSE.
     endif
 
-    $ASSERT(z_a /= z_b,Invalid initial pair)
+    $ASSERT(z_a /= z_b,Invalid initial bracket)
 
-    ! Expand the pair [z_a,z_b] until the difference between f(z_a)
+    ! Expand the bracket [z_a,z_b] until the difference between f(z_a)
     ! and f(z_b) exceeds the tolerance
 
     call eval_func(z_a, f_a, status)
@@ -624,11 +624,11 @@ contains
 
     return
 
-  end subroutine expand_${T}_
+  end subroutine expand_bracket_${T}_
 
   $endsub
 
-  $EXPAND(c,real(WP),complex(WP))
-  $EXPAND(cx,type(r_ext_t),type(c_ext_t))
+  $EXPAND_BRACKET(c,real(WP),complex(WP))
+  $EXPAND_BRACKET(cx,type(r_ext_t),type(c_ext_t))
 
 end module gyre_c_root

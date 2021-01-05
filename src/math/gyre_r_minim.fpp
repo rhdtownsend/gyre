@@ -1,5 +1,5 @@
-! Module   : gyre_r_min
-! Purpose  : minimum finding algorithms (real)
+! Module   : gyre_r_minim
+! Purpose  : minimum finding algorithms (real & r_ext_t)
 !
 ! Copyright 2018-2021 Rich Townsend & The GYRE Team
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_r_min
+module gyre_r_minim
 
   ! Uses
 
@@ -36,30 +36,25 @@ module gyre_r_min
 
   ! Interfaces
 
-  interface solve
-     module procedure solve_r_
-     module procedure solve_rx_
-  end interface solve
-
-  interface narrow
-     module procedure narrow_r_
-     module procedure narrow_rx_
-  end interface narrow
+  interface solve_minim
+     module procedure solve_minim_r_
+     module procedure solve_minim_rx_
+  end interface solve_minim
 
   ! Access specifiers
 
   private
 
-  public :: solve
+  public :: solve_minim
 
 contains
 
-  $define $SOLVE $sub
+  $define $SOLVE_MINIM $sub
 
   $local $T $1
   $local $TYPE $2
 
-  subroutine solve_${T}_ (eval_func, x_a, x_b, x_c, x_tol, nm_p, x_min, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
+  subroutine solve_minim_${T}_ (eval_func, x_a, x_b, x_c, x_tol, nm_p, x_minim, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
 
     interface
        subroutine eval_func (x, func, status)
@@ -75,7 +70,7 @@ contains
     $TYPE, intent(in)             :: x_c
     $TYPE, intent(in)             :: x_tol
     class(num_par_t), intent(in)  :: nm_p
-    $TYPE, intent(out)            :: x_min
+    $TYPE, intent(out)            :: x_minim
     integer, intent(out)          :: status
     integer, optional, intent(out):: n_iter
     integer, optional, intent(in) :: n_iter_max
@@ -119,29 +114,29 @@ contains
        if (status /= STATUS_OK) return
     endif
 
-    call narrow_${T}_(eval_func, a, b, c, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b, f_c)
+    call narrow_bracket_${T}_(eval_func, a, b, c, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b, f_c)
 
-    x_min = b
+    x_minim = b
 
     ! Finish
 
     return
 
-  end subroutine solve_${T}_
+  end subroutine solve_minim_${T}_
 
   $endsub
 
-  $SOLVE(r,real(WP))
-  $SOLVE(rx,type(r_ext_t))
+  $SOLVE_MINIM(r,real(WP))
+  $SOLVE_MINIM(rx,type(r_ext_t))
 
   !****
 
-  $define $NARROW $sub
+  $define $NARROW_BRACKET $sub
 
   $local $T $1
   $local $TYPE $2
 
-  subroutine narrow_${T}_ (eval_func, x_a, x_b, x_c, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
+  subroutine narrow_bracket_${T}_ (eval_func, x_a, x_b, x_c, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
 
     interface
        subroutine eval_func (x, func, status)
@@ -165,7 +160,7 @@ contains
     $TYPE, optional, intent(inout) :: f_x_b
     $TYPE, optional, intent(inout) :: f_x_c
 
-    ! Narrow the bracket [x_a,x_b,x_c] on a minimum of the function
+    ! Narrow_Bracket the bracket [x_a,x_b,x_c] on a minimum of the function
 
     call narrow_bisect_${T}_(eval_func, x_a, x_b, x_c, x_tol, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
 
@@ -173,12 +168,12 @@ contains
 
     return
 
-  end subroutine narrow_${T}_
+  end subroutine narrow_bracket_${T}_
 
   $endsub
 
-  $NARROW(r,real(WP))
-  $NARROW(rx,type(r_ext_t))
+  $NARROW_BRACKET(r,real(WP))
+  $NARROW_BRACKET(rx,type(r_ext_t))
 
   !****
 
@@ -365,4 +360,4 @@ contains
   $NARROW_BISECT(r,real(WP))
   $NARROW_BISECT(rx,type(r_ext_t))
 
-end module gyre_r_min
+end module gyre_r_minim

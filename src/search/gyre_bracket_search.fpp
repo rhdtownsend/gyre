@@ -121,9 +121,9 @@ contains
        f_x_a = discrim_a(i)
        f_x_b = discrim_b(i)
 
-       call solve(eval_discrim_x_, x_a, x_b, r_ext_t(0._WP), nm_p, &
-                  x_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
-                  f_x_a=f_x_a, f_x_b=f_x_b)
+       call solve_root(eval_discrim_x_, x_a, x_b, r_ext_t(0._WP), nm_p, &
+            x_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
+            f_x_a=f_x_a, f_x_b=f_x_b)
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
           cycle mode_loop

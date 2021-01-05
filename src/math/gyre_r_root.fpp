@@ -36,37 +36,37 @@ module gyre_r_root
 
   ! Interfaces
 
-  interface solve
-     module procedure solve_r_
-     module procedure solve_rx_
-  end interface solve
+  interface solve_root
+     module procedure solve_root_r_
+     module procedure solve_root_rx_
+  end interface solve_root
 
-  interface narrow
-     module procedure narrow_r_
-     module procedure narrow_rx_
-  end interface narrow
+  interface narrow_bracket
+     module procedure narrow_bracket_r_
+     module procedure narrow_bracket_rx_
+  end interface narrow_bracket
 
-  interface expand
-     module procedure expand_r_
-     module procedure expand_rx_
-  end interface expand
+  interface expand_bracket
+     module procedure expand_bracket_r_
+     module procedure expand_bracket_rx_
+  end interface expand_bracket
 
   ! Access specifiers
 
   private
 
-  public :: solve
-  public :: expand
-  public :: narrow
+  public :: solve_root
+  public :: narrow_bracket
+  public :: expand_bracket
 
 contains
 
-  $define $SOLVE $sub
+  $define $SOLVE_ROOT $sub
 
   $local $T $1
   $local $TYPE $2
 
-  subroutine solve_${T}_ (eval_func, x_a, x_b, x_tol, nm_p, x_root, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
+  subroutine solve_root_${T}_ (eval_func, x_a, x_b, x_tol, nm_p, x_root, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
 
     interface
        subroutine eval_func (x, func, status)
@@ -94,8 +94,8 @@ contains
     $TYPE :: f_a
     $TYPE :: f_b
 
-    ! Starting from the bracket [x_a,x_b], find a root of the
-    ! function
+    ! Starting from the bracket [x_a,x_b], which must span a sign
+    ! change in the function, solve for a root of the function
 
     a = x_a
     b = x_b
@@ -114,7 +114,7 @@ contains
        if (status /= STATUS_OK) return
     endif
 
-    call narrow_${T}_(eval_func, a, b, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
+    call narrow_bracket_${T}_(eval_func, a, b, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_a, f_b)
 
     x_root = b
 
@@ -122,21 +122,21 @@ contains
 
     return
 
-  end subroutine solve_${T}_
+  end subroutine solve_root_${T}_
 
   $endsub
 
-  $SOLVE(r,real(WP))
-  $SOLVE(rx,type(r_ext_t))
+  $SOLVE_ROOT(r,real(WP))
+  $SOLVE_ROOT(rx,type(r_ext_t))
 
   !****
 
-  $define $NARROW $sub
+  $define $NARROW_BRACKET $sub
 
   $local $T $1
   $local $TYPE $2
 
-  subroutine narrow_${T}_ (eval_func, x_a, x_b, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
+  subroutine narrow_bracket_${T}_ (eval_func, x_a, x_b, x_tol, nm_p, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
 
     interface
        subroutine eval_func (x, func, status)
@@ -171,12 +171,12 @@ contains
 
     return
 
-  end subroutine narrow_${T}_
+  end subroutine narrow_bracket_${T}_
 
   $endsub
 
-  $NARROW(r,real(WP))
-  $NARROW(rx,type(r_ext_t))
+  $NARROW_BRACKET(r,real(WP))
+  $NARROW_BRACKET(rx,type(r_ext_t))
 
   !****
 
@@ -407,12 +407,12 @@ contains
 
   !****
 
-  $define $EXPAND $sub
+  $define $EXPAND_BRACKET $sub
 
   $local $T $1
   $local $TYPE $2
 
-  subroutine expand_${T}_ (eval_func, x_a, x_b, status, clamp_a, clamp_b, f_x_a, f_x_b)
+  subroutine expand_bracket_${T}_ (eval_func, x_a, x_b, status, clamp_a, clamp_b, f_x_a, f_x_b)
 
     interface
        subroutine eval_func (x, func, status)
@@ -435,7 +435,6 @@ contains
 
     logical :: clamp_a_
     logical :: clamp_b_
-    $TYPE   :: expand_factor_
     $TYPE   :: f_a
     $TYPE   :: f_b
     logical :: move_a
@@ -507,11 +506,11 @@ contains
 
     return
 
-  end subroutine expand_${T}_
+  end subroutine expand_bracket_${T}_
 
   $endsub
 
-  $EXPAND(r,real(WP))
-  $EXPAND(rx,type(r_ext_t))
+  $EXPAND_BRACKET(r,real(WP))
+  $EXPAND_BRACKET(rx,type(r_ext_t))
 
 end module gyre_r_root
