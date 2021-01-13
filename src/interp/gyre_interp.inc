@@ -1,7 +1,7 @@
 ! Module   : gyre_interp
 ! Purpose  : piecewise cubic interpolation (template)
 !
-! Copyright 2015-2018 Rich Townsend
+! Copyright 2015-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -16,7 +16,6 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 $define $MOD_DECL $sub
 
@@ -88,23 +87,6 @@ module gyre_${T}_interp
   end interface write
   $endif
 
-  $if ($MPI)
- interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-     module procedure bcast_2_
-     module procedure bcast_3_
-     module procedure bcast_4_
-  end interface bcast
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-     module procedure bcast_alloc_2_
-     module procedure bcast_alloc_3_
-     module procedure bcast_alloc_4_
-  end interface bcast_alloc
-  $endif
-
   ! Access specifiers
 
   private
@@ -114,10 +96,6 @@ module gyre_${T}_interp
   $if ($HDF5)
   public :: read
   public :: write
-  $endif
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
   $endif
 
   ! Procedures
@@ -244,42 +222,6 @@ contains
     return
 
   end subroutine write_
-
-  $endif
-
-  !****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (in, root_rank)
-
-    class(${T}_interp_t), intent(inout) :: in
-    integer, intent(in)                 :: root_rank
-
-    ! Broadcast the interp
-
-    call bcast(in%n, root_rank)
-
-    call bcast_alloc(in%x_, root_rank)
-    call bcast_alloc(in%f_, root_rank)
-    call bcast_alloc(in%df_dx_, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(${T}_interp_t),1)
-  $BCAST(type(${T}_interp_t),2)
-  $BCAST(type(${T}_interp_t),3)
-  $BCAST(type(${T}_interp_t),4)
-
-  $BCAST_ALLOC(type(${T}_interp_t),0)
-  $BCAST_ALLOC(type(${T}_interp_t),1)
-  $BCAST_ALLOC(type(${T}_interp_t),2)
-  $BCAST_ALLOC(type(${T}_interp_t),3)
-  $BCAST_ALLOC(type(${T}_interp_t),4)
 
   $endif
 

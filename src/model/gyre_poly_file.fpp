@@ -52,12 +52,12 @@ contains
 
     type(hgroup_t)              :: hg
     real(WP), allocatable       :: n_poly(:)
-    integer                     :: n_d
-    real(WP), allocatable       :: Delta_d(:)
+    integer                     :: n_r
+    real(WP), allocatable       :: Delta_b(:)
     real(WP)                    :: Gamma_1
-    real(WP), allocatable       :: xi(:)
-    real(WP), allocatable       :: Theta(:)
-    real(WP), allocatable       :: dTheta(:)
+    real(WP), allocatable       :: z(:)
+    real(WP), allocatable       :: theta(:)
+    real(WP), allocatable       :: dtheta(:)
     real(WP)                    :: Omega_rot
     type(poly_model_t), pointer :: pm
 
@@ -70,24 +70,24 @@ contains
 
     hg = hgroup_t(ml_p%file, OPEN_FILE)
 
-    call read_attr(hg, 'n_d', n_d)
+    call read_attr(hg, 'n_r', n_r)
 
     call read_attr_alloc(hg, 'n_poly', n_poly)
-    if (n_d > 0) then
-       call read_attr_alloc(hg, 'Delta_d', Delta_d)
+    if (n_r > 1) then
+       call read_attr_alloc(hg, 'Delta_b', Delta_b)
     else
-       allocate(Delta_d(0))
+       allocate(Delta_b(0))
     endif
     call read_attr(hg, 'Gamma_1', Gamma_1)
 
-    call read_dset_alloc(hg, 'xi', xi)
-    call read_dset_alloc(hg, 'Theta', Theta)
-    call read_dset_alloc(hg, 'dTheta', dTheta)
+    call read_dset_alloc(hg, 'z', z)
+    call read_dset_alloc(hg, 'theta', theta)
+    call read_dset_alloc(hg, 'dtheta', dtheta)
 
     call hg%final()
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Read', SIZE(xi), 'points'
+       write(OUTPUT_UNIT, 110) 'Read', SIZE(z), 'points'
 110    format(3X,A,1X,I0,1X,A)
     endif
 
@@ -97,7 +97,7 @@ contains
 
     ! Initialize the poly_model_t
 
-    allocate(pm, SOURCE=poly_model_t(xi, Theta, dTheta, n_poly, Delta_d, Gamma_1, Omega_rot))
+    allocate(pm, SOURCE=poly_model_t(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot))
 
     ! Return a pointer
 

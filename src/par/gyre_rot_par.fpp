@@ -16,14 +16,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_rot_par
 
   ! Uses
 
   use core_kinds
-  use core_parallel
 
   use gyre_constants
 
@@ -40,23 +38,8 @@ module gyre_rot_par
      character(64)   :: Omega_rot_units = 'NONE'
      character(2048) :: tag_list = ''
      logical         :: complex_lambda = .FALSE.
+     logical         :: rossby = .FALSE.
   end type rot_par_t
-
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
 
  ! Access specifiers
 
@@ -64,10 +47,6 @@ module gyre_rot_par
 
   public :: rot_par_t
   public :: read_rot_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -86,9 +65,10 @@ contains
     character(LEN(rt_p%Omega_rot_units))  :: Omega_rot_units
     character(LEN(rt_p%tag_list))         :: tag_list
     logical                               :: complex_lambda
+    logical                               :: rossby
 
     namelist /rot/ Omega_rot, coriolis_method, Omega_rot_source, Omega_rot_units, &
-         tag_list, complex_lambda
+         tag_list, complex_lambda, rossby
 
     ! Count the number of rot namelists
 
@@ -121,6 +101,7 @@ contains
        Omega_rot_units = rt_p(i)%Omega_rot_units
        tag_list = rt_p(i)%tag_list
        complex_lambda = rt_p(i)%complex_lambda
+       rossby = rt_p(i)%rossby
 
        ! Read the namelist
 
@@ -134,6 +115,7 @@ contains
        rt_p(i)%Omega_rot_units = Omega_rot_units
        rt_p(i)%tag_list = tag_list
        rt_p(i)%complex_lambda = complex_lambda
+       rt_p(i)%rossby = rossby
 
     end do read_loop
 
@@ -142,38 +124,5 @@ contains
     return
 
   end subroutine read_rot_par
-
-  !****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (rt_p, root_rank)
-
-    type(rot_par_t), intent(inout) :: rt_p
-    integer, intent(in)            :: root_rank
-
-    ! Broadcast the rot_par_t
-
-    call bcast(rt_p%Omega_rot, root_rank)
-
-    call bcast(rt_p%coriolis_method, root_rank)
-    call bcast(rt_p%Omega_rot_source, root_rank)
-    call bcast(rt_p%Omega_rot_units, root_rank)
-    call bcast(rt_p%tag_list, root_rank)
-
-    call bcast(rt_p%complex_lambda, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(rot_par_t),1)
-
-  $BCAST_ALLOC(type(rot_par_t),0)
-  $BCAST_ALLOC(type(rot_par_t),1)
-
-  $endif
 
 end module gyre_rot_par

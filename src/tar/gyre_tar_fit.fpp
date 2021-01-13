@@ -42,7 +42,7 @@ module gyre_tar_fit
   type :: tar_fit_t
      private
      type(cheb_fit_t) :: cf
-     real(WP)         :: nu_0
+     real(WP)         :: q_0
      integer, public  :: m
      integer, public  :: k
    contains
@@ -99,7 +99,7 @@ contains
 
        ! Gravito-inertial waves
 
-       tf%nu_0 = 0._WP
+       tf%q_0 = 0._WP
 
        tf%cf = cheb_fit_t(-1._WP, 1._WP, cheb_tol, f_grav_)
 
@@ -109,7 +109,7 @@ contains
 
        l = abs(m) + abs(k) - 1
 
-       tf%nu_0 = -REAL(l*(l+1), WP)/REAL(m, WP)
+       tf%q_0 = -REAL(l*(l+1), WP)/REAL(m, WP)
 
        if (m > 0) then
 
@@ -172,8 +172,8 @@ contains
 
          else
 
-            associate (nu => tan(HALFPI*x))
-              f = lambda(nu, m, k)/lambda_norm_grav_(nu, m, k)
+            associate (q => tan(HALFPI*x))
+              f = lambda(q, m, k)/lambda_norm_grav_(q, m, k)
             end associate
 
          endif
@@ -207,8 +207,8 @@ contains
 
       else
 
-         associate (nu => tan(HALFPI*x) + tf%nu_0)
-              f = lambda(nu, m, k)/lambda_norm_ross_(nu, m, k)
+         associate (q => tan(HALFPI*x) + tf%q_0)
+              f = lambda(q, m, k)/lambda_norm_ross_(q, m, k)
          end associate
 
       endif
@@ -233,7 +233,7 @@ contains
     call read_attr(hg, 'm', tf%m)
     call read_attr(hg, 'k', tf%k)
 
-    call read_attr(hg, 'nu_0', tf%nu_0)
+    call read_attr(hg, 'q_0', tf%q_0)
 
     hg_comp = hgroup_t(hg, 'cf')
     call read(hg_comp, tf%cf)
@@ -259,7 +259,7 @@ contains
     call write_attr(hg, 'm', tf%m)
     call write_attr(hg, 'k', tf%k)
 
-    call write_attr(hg, 'nu_0', tf%nu_0)
+    call write_attr(hg, 'q_0', tf%q_0)
 
     hg_comp = hgroup_t(hg, 'cf')
     call write(hg_comp, tf%cf)
@@ -275,10 +275,10 @@ contains
 
   !****
 
-  function lambda_r_ (this, nu) result (lambda)
+  function lambda_r_ (this, q) result (lambda)
 
     class(tar_fit_t), intent(in), target :: this
-    real(WP), intent(in)                 :: nu
+    real(WP), intent(in)                 :: q
     real(WP)                             :: lambda
 
     ! Evaluate the eigenvalue of Laplace's tidal equation (real)
@@ -287,25 +287,25 @@ contains
 
        ! Gravity waves
 
-       associate (x => atan(nu)/HALFPI)
-         lambda = this%cf%eval(x)*lambda_norm_grav_(nu, this%m, this%k)
+       associate (x => atan(q)/HALFPI)
+         lambda = this%cf%eval(x)*lambda_norm_grav_(q, this%m, this%k)
        end associate
 
     else
 
        ! Rossby waves
 
-       associate (x => atan(nu - this%nu_0)/HALFPI)
+       associate (x => atan(q - this%q_0)/HALFPI)
 
          if (this%m > 0) then
-            $ASSERT(nu <= this%nu_0,Invalid nu for Rossby waves)
+            $ASSERT(q <= this%q_0,Invalid q for Rossby waves)
          elseif (this%m < 0) then
-            $ASSERT(nu >= this%nu_0,Invalid nu for Rossby waves)
+            $ASSERT(q >= this%q_0,Invalid q for Rossby waves)
          else
             $ABORT(Invalid m for Rossby waves)
          endif
 
-         lambda = this%cf%eval(x)*lambda_norm_ross_(nu, this%m, this%k)
+         lambda = this%cf%eval(x)*lambda_norm_ross_(q, this%m, this%k)
 
        end associate
 
@@ -319,10 +319,10 @@ contains
 
   !****
 
-  function lambda_c_ (this, nu) result (lambda)
+  function lambda_c_ (this, q) result (lambda)
 
     class(tar_fit_t), intent(in) :: this
-    complex(WP), intent(in)      :: nu
+    complex(WP), intent(in)      :: q
     complex(WP)                  :: lambda
 
     ! Evaluate the eigenvalue of Laplace's tidal equation (complex)
@@ -331,25 +331,25 @@ contains
 
        ! Gravity waves
 
-       associate (x => atan(nu)/HALFPI)
-         lambda = this%cf%eval(x)*lambda_norm_grav_(REAL(nu), this%m, this%k)
+       associate (x => atan(q)/HALFPI)
+         lambda = this%cf%eval(x)*lambda_norm_grav_(REAL(q), this%m, this%k)
        end associate
 
     else
 
        ! Rossby waves
 
-       associate (x => atan(nu-this%nu_0)/HALFPI)
+       associate (x => atan(q-this%q_0)/HALFPI)
 
          if (this%m > 0) then
-            $ASSERT(REAL(nu) <= this%nu_0,Invalid nu for Rossby waves)
+            $ASSERT(REAL(q) <= this%q_0,Invalid q for Rossby waves)
          elseif (this%m < 0) then
-            $ASSERT(REAL(nu) >= this%nu_0,Invalid nu for Rossby waves)
+            $ASSERT(REAL(q) >= this%q_0,Invalid q for Rossby waves)
          else
             $ABORT(Invalid m for Rossby waves)
          endif
 
-         lambda = this%cf%eval(x)*lambda_norm_ross_(REAL(nu), this%m, this%k)
+         lambda = this%cf%eval(x)*lambda_norm_ross_(REAL(q), this%m, this%k)
 
        end associate
 
@@ -363,9 +363,9 @@ contains
 
   !****
 
-  function lambda_norm_grav_ (nu, m, k) result (lambda_norm)
+  function lambda_norm_grav_ (q, m, k) result (lambda_norm)
 
-    real(WP), intent(in) :: nu
+    real(WP), intent(in) :: q
     integer, intent(in)  :: m
     integer, intent(in)  :: k
     real(WP)             :: lambda_norm
@@ -382,7 +382,7 @@ contains
 
        l = abs(m) + k
 
-       lambda_norm = nu**2 + l*(l+1)
+       lambda_norm = q**2 + l*(l+1)
 
     else
 
@@ -398,9 +398,9 @@ contains
   
   !****
 
-  function lambda_norm_ross_ (nu, m, k) result (lambda_norm)
+  function lambda_norm_ross_ (q, m, k) result (lambda_norm)
 
-    real(WP), intent(in) :: nu
+    real(WP), intent(in) :: q
     integer, intent(in)  :: m
     integer, intent(in)  :: k
     real(WP)             :: lambda_norm
@@ -409,20 +409,20 @@ contains
 
     ! Evaluate the Rossby-wave eigenvalue normalization function
 
-    if (m*nu < 0._WP) then
+    if (m*q < 0._WP) then
 
        if (k < -1) then
           s = -k -1
           lambda_norm = REAL(m, WP)**2/(2*s+1)**2
        elseif (k == -1) then
-          lambda_norm = nu**2
+          lambda_norm = q**2
        else
           $ABORT(Invalid k for Rossby waves)
        endif
 
     else
 
-       $ABORT(Invalid m*nu for Rossby waves)
+       $ABORT(Invalid m*q for Rossby waves)
 
     endif
 

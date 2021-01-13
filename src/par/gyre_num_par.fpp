@@ -1,7 +1,7 @@
 ! Module   : gyre_num_par
 ! Purpose  : numerics parameters
 !
-! Copyright 2013-2018 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,6 +23,8 @@ module gyre_num_par
 
   use core_kinds
 
+  use gyre_constants
+
   ! No implicit typing
 
   implicit none
@@ -30,14 +32,17 @@ module gyre_num_par
   ! Derived-type definitions
 
   type :: num_par_t
-     integer         :: n_iter_max = 50
-     logical         :: deflate_roots = .TRUE.
-     logical         :: restrict_roots = .TRUE.
-     character(64)   :: diff_scheme = 'COLLOC_GL2'
-     character(64)   :: r_root_solver = 'BRENT'
-     character(64)   :: c_root_solver = 'RIDDERS'
-     character(64)   :: matrix_type = 'BLOCK'
-     character(2048) :: tag_list = ''
+     integer                 :: n_iter_max = 50
+     logical                 :: deflate_roots = .TRUE.
+     logical                 :: restrict_roots = .TRUE.
+     character(64)           :: diff_scheme = 'COLLOC_GL2'
+     character(64)           :: r_root_solver = 'BRENT'
+     character(64)           :: c_root_solver = 'RIDDERS'
+     character(64)           :: ad_search = 'BRACKET'
+     character(64)           :: nad_search = 'AD'
+     character(64)           :: matrix_type = 'BLOCK'
+     character(FILENAME_LEN) :: dump_contour_template = ''
+     character(2048)         :: tag_list = ''
   end type num_par_t
 
   ! Access specifiers
@@ -64,11 +69,16 @@ contains
     character(LEN(nm_p%diff_scheme))   :: diff_scheme
     character(LEN(nm_p%r_root_solver)) :: r_root_solver
     character(LEN(nm_p%c_root_solver)) :: c_root_solver
+    character(LEN(nm_p%ad_search))     :: ad_search
+    character(LEN(nm_p%nad_search))    :: nad_search
     character(LEN(nm_p%matrix_type))   :: matrix_type
+    character(FILENAME_LEN)            :: dump_contour_template
     character(LEN(nm_p%tag_list))      :: tag_list
 
     namelist /num/ n_iter_max, deflate_roots, restrict_roots, &
-         diff_scheme, r_root_solver, c_root_solver, matrix_type, tag_list
+         diff_scheme, r_root_solver, c_root_solver, &
+         ad_search, nad_search, dump_contour_template, &
+         matrix_type, tag_list
 
     ! Count the number of num namelists
 
@@ -101,7 +111,10 @@ contains
        diff_scheme = nm_p(i)%diff_scheme
        r_root_solver = nm_p(i)%r_root_solver
        c_root_solver = nm_p(i)%c_root_solver
+       ad_search = nm_p(i)%ad_search
+       nad_search = nm_p(i)%nad_search
        matrix_type = nm_p(i)%matrix_type
+       dump_contour_template = nm_p(i)%dump_contour_template
        tag_list = nm_p(i)%tag_list
 
        ! Read the namelist
@@ -116,7 +129,10 @@ contains
        nm_p(i)%diff_scheme = diff_scheme
        nm_p(i)%r_root_solver = r_root_solver
        nm_p(i)%c_root_solver = c_root_solver
+       nm_p(i)%ad_search = ad_search
+       nm_p(i)%nad_search = nad_search
        nm_p(i)%matrix_type = matrix_type
+       nm_p(i)%dump_contour_template = dump_contour_template
        nm_p(i)%tag_list = tag_list
 
     end do read_loop

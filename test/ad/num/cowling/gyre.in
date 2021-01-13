@@ -13,7 +13,7 @@
 /
 
 &osc
-  alpha_gr = 0.
+  alpha_grv = 0.
 /
 
 &rot

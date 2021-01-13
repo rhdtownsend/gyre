@@ -201,9 +201,9 @@ program gyre_force
 
      select case (fr_p_sel%force_type)
      case ('FIXED')
-        call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, omega)
+        call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', omega)
      case ('BINARY')
-        call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, Omega_orb)
+        call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', Omega_orb)
         omega = Omega_orb*fr_p_sel%k
      case default
         $ABORT(Invalid force_type)

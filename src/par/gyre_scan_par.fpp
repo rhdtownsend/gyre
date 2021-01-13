@@ -41,7 +41,7 @@ module gyre_scan_par
      character(64)           :: freq_frame = 'INERTIAL'
      character(64)           :: grid_type = 'LINEAR'
      character(64)           :: grid_frame = 'INERTIAL'
-     character(64)           :: axis = ''
+     character(64)           :: axis = 'REAL'
      character(FILENAME_LEN) :: file = ''
      character(2048)         :: tag_list = ''
   end type scan_par_t

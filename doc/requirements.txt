@@ -1,0 +1,5 @@
+Sphinx>=3.2.1
+sphinx-prompt>=1.1.0
+Sphinx-Substitution-Extensions>=2019.6.15.0
+ads>=0.12.3
+

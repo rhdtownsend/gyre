@@ -24,6 +24,7 @@ module gyre_util
   use core_kinds
   use core_parallel
   use core_memory
+  use core_string
 
   use gyre_constants
   use gyre_force_par
@@ -87,6 +88,7 @@ module gyre_util
   public :: split_list
   public :: join_fmts
   public :: sprint
+  public :: subst
   public :: rjust
   public :: integrate
   public :: integral
@@ -430,6 +432,32 @@ contains
     return
 
   end function sprint_
+
+  !****
+
+  function subst (string, pattern, i, format) result (new_string)
+
+    character(*), intent(in)  :: string
+    character(*), intent(in)  :: pattern
+    integer, intent(in)       :: i
+    character(*), intent(in)  :: format
+    character(:), allocatable :: new_string
+
+    character(64) :: substring
+
+    ! Write i into the substring buffer
+
+    write(substring, format) i
+
+    ! Do the replacement
+
+    new_string = replace(string, pattern, TRIM(substring), every=.TRUE.)
+
+    ! Finish
+
+    return
+
+  end function subst
 
   !****
 

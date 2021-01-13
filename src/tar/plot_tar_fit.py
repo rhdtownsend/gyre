@@ -14,11 +14,11 @@ import gyre_cheb_fit
 n = len(sys.argv)
 
 if n < 6:
-    raise Exception("Syntax: plot_tar_fit nu_min nu_max n_nu infile1 [infile2...] outfile")
+    raise Exception("Syntax: plot_tar_fit q_min q_max n_q infile1 [infile2...] outfile")
 
-nu_min = float(sys.argv[1])
-nu_max = float(sys.argv[2])
-n_nu = int(sys.argv[3])
+q_min = float(sys.argv[1])
+q_max = float(sys.argv[2])
+n_q = int(sys.argv[3])
 infiles = sys.argv[4:n-1]
 outfile = sys.argv[n-1]
 
@@ -26,7 +26,7 @@ outfile = sys.argv[n-1]
 
 fig, ax = plt.subplots()
 
-ax.set_xlabel('nu')
+ax.set_xlabel('q')
 ax.set_ylabel('lambda')
 
 ax.set_yscale('log')
@@ -41,12 +41,12 @@ for infile in infiles:
 
     # Calculate data
 
-    nu = np.linspace(nu_min, nu_max, n_nu)
+    q = np.linspace(q_min, q_max, n_q)
     lam = np.vectorize(tf.lam)
 
     # Plot the data
 
-    ax.plot(nu, lam(nu), label='m={:d}, k={:d}'.format(tf.m, tf.k))
+    ax.plot(q, lam(q), label='m={:d}, k={:d}'.format(tf.m, tf.k))
 
 # Write out the figure
 

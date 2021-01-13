@@ -16,7 +16,6 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_orbit_par
 
@@ -41,32 +40,12 @@ module gyre_orbit_par
      character(64) :: Omega_orb_units = 'NONE'
   end type orbit_par_t
 
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
-
  ! Access specifiers
 
   private
 
   public :: orbit_par_t
   public :: read_orbit_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -148,39 +127,5 @@ contains
     return
 
   end subroutine read_orbit_par
-
-  !****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (or_p, root_rank)
-
-    type(orbit_par_t), intent(inout) :: or_p
-    integer, intent(in)             :: root_rank
-
-    ! Broadcast the orbit_par_t
-
-    call bcast(or_p%Omega_orb, root_rank)
-    call bcast(or_p%q, root_rank)
-    call bcast(or_p%e, root_rank)
-    call bcast(or_p%t_0, root_rank)
-    call bcast(or_p%sync_fraction, root_rank)
-
-    call bcast(or_p%sync_rot, root_rank)
-   
-    call bcast(or_p%Omega_orb_units, root_rank)
-   
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(orbit_par_t),1)
-
-  $BCAST_ALLOC(type(orbit_par_t),0)
-  $BCAST_ALLOC(type(orbit_par_t),1)
-
-  $endif
 
 end module gyre_orbit_par

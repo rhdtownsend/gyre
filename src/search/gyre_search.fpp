@@ -1,7 +1,7 @@
 ! Module   : gyre_search
 ! Purpose  : mode searching
 !
-! Copyright 2013-2015 Rich Townsend
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -19,7 +19,9 @@ module gyre_search
 
   ! Uses
 
-  use gyre_r_search
-  use gyre_c_search
+  use gyre_prox_search
+  use gyre_bracket_search
+  use gyre_minmod_search
+  use gyre_contour_search
 
 end module gyre_search

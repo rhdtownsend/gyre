@@ -1,7 +1,7 @@
 ! Program  : build_poly
-! Purpose  : build a polytrope, possibly with disctontinuities
+! Purpose  : build a composite polytrope
 !
-! Copyright 2015-2017 Rich Townsend
+! Copyright 2015-2020 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -41,46 +41,56 @@ program build_poly
 
   ! Variables
 
-  character(:), allocatable :: in_filename
+  character(:), allocatable :: filename
   integer                   :: unit
-  integer                   :: n_d
+  integer                   :: n_r
   real(WP), allocatable     :: n_poly(:)
   real(WP)                  :: Gamma_1
-  real(WP), allocatable     :: xi_d(:)
-  real(WP), allocatable     :: Delta_d(:)
-  real(WP)                  :: dxi
+  real(WP), allocatable     :: z_b(:)
+  real(WP), allocatable     :: Delta_b(:)
+  real(WP)                  :: dz
   real(WP)                  :: toler
-  character(FILENAME_LEN)   :: filename
-  real(WP), allocatable     :: xi(:)
-  real(WP), allocatable     :: Theta(:)
-  real(WP), allocatable     :: dTheta(:)
+  character(FILENAME_LEN)   :: file
+  real(WP), allocatable     :: z(:)
+  real(WP), allocatable     :: theta(:)
+  real(WP), allocatable     :: dtheta(:)
+  integer                   :: n_r_out
   type(hgroup_t)            :: hg
 
-  namelist /poly/ n_d, n_poly, Gamma_1, xi_d, Delta_d
-  namelist /num/ dxi, toler
-  namelist /out/ filename
+  namelist /poly/ n_r, n_poly, Gamma_1, z_b, Delta_b
+  namelist /num/ dz, toler
+  namelist /out/ file
+
+  ! Read command-line arguments
+
+  $ASSERT(n_arg() == 1,Syntax: build_poly <filename>)
+
+  call get_arg(1, filename)
+
+  ! Set defaults
+
+  allocate(n_poly(D))
+  allocate(z_b(D))
+  allocate(Delta_b(D))
+
+  n_r = 1
+  Gamma_1 = 5._WP/3._WP
+
+  n_poly(1) = 0._WP
+
+  dz = 0.01
+  toler = 1E-10
 
   ! Read parameters
 
-  $ASSERT(n_arg() == 1,Syntax: build_poly_disc in_filename)
-
-  call get_arg(1, in_filename)
-
-  open(NEWUNIT=unit, FILE=in_filename, STATUS='OLD')
-
-  allocate(n_poly(D))
-  allocate(xi_d(D))
-  allocate(Delta_d(D))
-
-  n_d = 0
-  Gamma_1 = 5._WP/3._WP
+  open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
   rewind(unit)
   read(unit, NML=poly)
 
-  call reallocate(n_poly, [n_d+1])
-  call reallocate(xi_d, [n_d])
-  call reallocate(Delta_d, [n_d])
+  call reallocate(n_poly, [n_r])
+  call reallocate(z_b, [n_r-1])
+  call reallocate(Delta_b, [n_r-1])
 
   rewind(unit)
   read(unit, NML=num)
@@ -90,25 +100,30 @@ program build_poly
 
   close(unit)
 
-  ! Solve the discontinuous Lane-Emden equation
+  ! Solve the Lane-Emden equation
 
-  call solve_lane_emden(n_poly, xi_d, Delta_d, dxi, toler, xi, Theta, dTheta)
+  call solve_lane_emden(n_poly, z_b, Delta_b, dz, toler, z, theta, dtheta, n_r_out)
+
+  if (n_r_out < n_r) then
+     write(OUTPUT_UNIT, 100) 'Warning: only', n_r_out, 'of', n_r, 'regions used'
+100  format(A,1X,I0,1X,A,1X,I0,1X,A)
+  endif
 
   ! Write the model
 
-  hg = hgroup_t(filename, CREATE_FILE)
+  hg = hgroup_t(file, CREATE_FILE)
 
-  call write_attr(hg, 'n', SIZE(xi))
-  call write_attr(hg, 'n_d', n_d)
+  call write_attr(hg, 'n', SIZE(z))
+  call write_attr(hg, 'n_r', n_r)
   call write_attr(hg, 'n_poly', n_poly)
-  if (n_d > 0) then
-     call write_attr(hg, 'Delta_d', Delta_d)
+  if (n_r > 1) then
+     call write_attr(hg, 'Delta_b', Delta_b)
   endif
   call write_attr(hg, 'Gamma_1', Gamma_1)
 
-  call write_dset(hg, 'xi', xi)
-  call write_dset(hg, 'Theta', Theta)
-  call write_dset(hg, 'dTheta', dTheta)
+  call write_dset(hg, 'z', z)
+  call write_dset(hg, 'theta', theta)
+  call write_dset(hg, 'dtheta', dtheta)
 
   call hg%final()
 

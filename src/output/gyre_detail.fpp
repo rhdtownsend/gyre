@@ -22,7 +22,6 @@ module gyre_detail
   ! Uses
 
   use core_kinds
-  use core_string
 
   use gyre_context
   use gyre_constants
@@ -109,21 +108,21 @@ contains
 
     detail_file = this%ot_p%detail_template
 
-    detail_file = subst_(detail_file, '%J', wv%j, '(I5.5)')
-    detail_file = subst_(detail_file, '%L', wv%l, '(I3.3)')
-    detail_file = subst_(detail_file, '%M', wv%m, '(SP,I3.2)')
-    detail_file = subst_(detail_file, '%j', wv%j, '(I0)')
-    detail_file = subst_(detail_file, '%l', wv%l, '(I0)')
-    detail_file = subst_(detail_file, '%m', wv%m, '(SP,I0)')
+    detail_file = subst(detail_file, '%J', wv%j, '(I5.5)')
+    detail_file = subst(detail_file, '%L', wv%l, '(I3.3)')
+    detail_file = subst(detail_file, '%M', wv%m, '(SP,I3.2)')
+    detail_file = subst(detail_file, '%j', wv%j, '(I0)')
+    detail_file = subst(detail_file, '%l', wv%l, '(I0)')
+    detail_file = subst(detail_file, '%m', wv%m, '(SP,I0)')
 
     select type (wv)
     class is (mode_t)
-       detail_file = subst_(detail_file, '%N', wv%n_pg, '(SP,I6.5)')
-       detail_file = subst_(detail_file, '%n', wv%n_pg, '(SP,I0)')
-       detail_file = subst_(detail_file, '%P', wv%n_p, '(SP,I6.5)')
-       detail_file = subst_(detail_file, '%p', wv%n_p, '(SP,I0)')
-       detail_file = subst_(detail_file, '%G', wv%n_g, '(SP,I6.5)')
-       detail_file = subst_(detail_file, '%g', wv%n_g, '(SP,I0)')
+       detail_file = subst(detail_file, '%N', wv%n_pg, '(SP,I6.5)')
+       detail_file = subst(detail_file, '%n', wv%n_pg, '(SP,I0)')
+       detail_file = subst(detail_file, '%P', wv%n_p, '(SP,I6.5)')
+       detail_file = subst(detail_file, '%p', wv%n_p, '(SP,I0)')
+       detail_file = subst(detail_file, '%G', wv%n_g, '(SP,I6.5)')
+       detail_file = subst(detail_file, '%g', wv%n_g, '(SP,I0)')
     end select
 
     ! Open the file
@@ -348,8 +347,8 @@ contains
     $WRITE_POINTS(dzeta_dx,wv%dzeta_dx(k))
     $WRITE_POINTS(dzeta_dm,wv%dzeta_dm(k))
     $WRITE_POINTS(dbeta_dx,wv%dbeta_dx(k))
-    $WRITE_POINTS(dtau_dx_ss,wv%dtau_dx_ss(k))
-    $WRITE_POINTS(dtau_dx_tr,wv%dtau_dx_tr(k))
+    $WRITE_POINTS(dtau_ss_dx,wv%dtau_ss_dx(k))
+    $WRITE_POINTS(dtau_tr_dx,wv%dtau_tr_dx(k))
     $WRITE_POINTS(Yt_1,wv%Yt_1(k))
     $WRITE_POINTS(Yt_2,wv%Yt_2(k))
     $WRITE_POINTS(I_0,wv%I_0(k))
@@ -509,7 +508,7 @@ contains
     $WRITE_POINTS(Gamma_1,ml%coeff(I_GAMMA_1, gr%pt(k)))
     $WRITE_POINTS(nabla,ml%coeff(I_NABLA, gr%pt(k)))
     $WRITE_POINTS(nabla_ad,ml%coeff(I_NABLA_AD, gr%pt(k)))
-    $WRITE_POINTS(dnabla_ad,ml,dcoeff(I_NABLA_AD, gr%pt(k)))
+    $WRITE_POINTS(dnabla_ad,ml%dcoeff(I_NABLA_AD, gr%pt(k)))
     $WRITE_POINTS(delta,ml%coeff(I_DELTA, gr%pt(k)))
     $WRITE_POINTS(c_lum,ml%coeff(I_C_LUM, gr%pt(k)))
     $WRITE_POINTS(c_rad,ml%coeff(I_C_RAD, gr%pt(k)))
@@ -589,31 +588,5 @@ contains
     return
 
   end subroutine write_evol_model_
-
-  !****
-
-  function subst_ (string, pattern, i, format) result (new_string)
-
-    character(*), intent(in)  :: string
-    character(*), intent(in)  :: pattern
-    integer, intent(in)       :: i
-    character(*), intent(in)  :: format
-    character(:), allocatable :: new_string
-
-    character(64) :: substring
-
-    ! Write i into the substring buffer
-
-    write(substring, format) i
-
-    ! Do the replacement
-
-    new_string = replace(string, pattern, TRIM(substring), every=.TRUE.)
-
-    ! Finish
-
-    return
-
-  end function subst_
 
 end module gyre_detail

@@ -49,7 +49,6 @@ module gyre_context
 
   integer, parameter :: MODEL_DEPS_SOURCE = 1
   integer, parameter :: FILE_DEPS_SOURCE = 2
-  integer, parameter :: UNIFORM_DEPS_SOURCE = 3
 
   integer, parameter :: MODEL_OMEGA_ROT_SOURCE = 1
   integer, parameter :: UNIFORM_OMEGA_ROT_SOURCE = 2
@@ -66,8 +65,6 @@ module gyre_context
      integer                     :: Omega_rot_source
      real(WP)                    :: Omega_rot_
      integer                     :: deps_source
-     real(WP)                    :: eps_rho_
-     real(WP)                    :: eps_T_
      logical                     :: complex_lambda
      type(c_interp_t)            :: in_eps_rho
      type(c_interp_t)            :: in_eps_T
@@ -151,10 +148,6 @@ contains
     case ('FILE')
        call read_deps_(ml, os_p, cx%in_eps_rho, cx%in_eps_T)
        cx%deps_source = FILE_DEPS_SOURCE
-    case ('UNIFORM')
-       cx%eps_T_ = os_p%eps_T
-       cx%eps_rho_ = os_p%eps_rho
-       cx%deps_source = UNIFORM_DEPS_SOURCE
     case default
        $ABORT(Invalid deps_source)
     end select
@@ -413,10 +406,6 @@ contains
 
        eps_rho = this%in_eps_rho%f(omega)
 
-    case (UNIFORM_DEPS_SOURCE)
-
-       eps_rho = this%eps_rho_
-
     case default
 
        $ABORT(Invalid deps_source)
@@ -468,10 +457,6 @@ contains
        omega = MIN(MAX($OMEGA, omega_min), omega_max)
 
        eps_T = this%in_eps_T%f(omega)
-
-    case (UNIFORM_DEPS_SOURCE)
-
-       eps_T = this%eps_T_
 
     case default
 

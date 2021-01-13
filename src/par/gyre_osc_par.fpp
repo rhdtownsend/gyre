@@ -16,14 +16,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-$include 'core_parallel.inc'
 
 module gyre_osc_par
 
   ! Uses
 
   use core_kinds
-  use core_parallel
 
   use gyre_constants
 
@@ -36,18 +34,18 @@ module gyre_osc_par
   type :: osc_par_t
      real(WP)                :: x_ref = 1._WP
      real(WP)                :: x_atm = -1._WP
-     real(WP)                :: alpha_gr = 1._WP
-     real(WP)                :: alpha_th = 1._WP
-     real(WP)                :: alpha_hf = 1._WP
-     real(WP)                :: alpha_gm = 1._WP
+     real(WP)                :: alpha_grv = 1._WP
+     real(WP)                :: alpha_thm = 1._WP
+     real(WP)                :: alpha_hfl = 1._WP
+     real(WP)                :: alpha_gam = 1._WP
      real(WP)                :: alpha_pi = 1._WP
-     real(WP)                :: eps_rho = 0._WP
-     real(WP)                :: eps_T = 0._WP
+     real(WP)                :: alpha_kap = 1._WP
+     real(WP)                :: alpha_rht = 0._WP
      character(64)           :: variables_set = 'GYRE'
      character(64)           :: inner_bound = 'REGULAR'
      character(64)           :: outer_bound = 'VACUUM'
-     character(64)           :: outer_bound_for_cutoff = 'UNNO'
-     character(64)           :: outer_branch = 'E_NEG'
+     character(64)           :: outer_bound_cutoff = ''
+     character(64)           :: outer_bound_branch = 'E_NEG'
      character(64)           :: inertia_norm = 'BOTH'
      character(64)           :: time_factor = 'OSC'
      character(64)           :: conv_scheme = 'FROZEN_PESNELL_1'
@@ -59,25 +57,8 @@ module gyre_osc_par
      logical                 :: adiabatic = .TRUE.
      logical                 :: nonadiabatic = .FALSE.
      logical                 :: quasiad_eigfuncs = .FALSE.
-     logical                 :: eddington_approx = .FALSE.
      logical                 :: reduce_order = .TRUE.
   end type osc_par_t
-
-  ! Interfaces
-
-  $if ($MPI)
-
-  interface bcast
-     module procedure bcast_0_
-     module procedure bcast_1_
-  end interface bcast
-
-  interface bcast_alloc
-     module procedure bcast_alloc_0_
-     module procedure bcast_alloc_1_
-  end interface bcast_alloc
-
-  $endif
 
  ! Access specifiers
 
@@ -85,10 +66,6 @@ module gyre_osc_par
 
   public :: osc_par_t
   public :: read_osc_par
-  $if ($MPI)
-  public :: bcast
-  public :: bcast_alloc
-  $endif
 
   ! Procedures
 
@@ -105,18 +82,18 @@ contains
     integer                               :: i
     real(WP)                              :: x_ref
     real(WP)                              :: x_atm
-    real(WP)                              :: alpha_gr
-    real(WP)                              :: alpha_th
-    real(WP)                              :: alpha_hf
-    real(WP)                              :: alpha_gm
+    real(WP)                              :: alpha_grv
+    real(WP)                              :: alpha_thm
+    real(WP)                              :: alpha_hfl
+    real(WP)                              :: alpha_gam
     real(WP)                              :: alpha_pi
-    real(WP)                              :: eps_rho
-    real(WP)                              :: eps_T
+    real(WP)                              :: alpha_kap
+    real(WP)                              :: alpha_rht
     character(LEN(os_p%variables_set))    :: variables_set
     character(LEN(os_p%inner_bound))      :: inner_bound
     character(LEN(os_p%outer_bound))      :: outer_bound
-    character(LEN(os_p%outer_bound))      :: outer_bound_for_cutoff 
-    character(LEN(os_p%outer_branch))     :: outer_branch
+    character(LEN(os_p%outer_bound))      :: outer_bound_cutoff 
+    character(LEN(os_p%outer_bound))      :: outer_bound_branch
     character(LEN(os_p%inertia_norm))     :: inertia_norm
     character(LEN(os_p%time_factor))      :: time_factor
     character(LEN(os_p%conv_scheme))      :: conv_scheme
@@ -128,15 +105,15 @@ contains
     logical                               :: adiabatic
     logical                               :: nonadiabatic
     logical                               :: quasiad_eigfuncs
-    logical                               :: eddington_approx
     logical                               :: reduce_order
 
-    namelist /osc/ x_ref, x_atm, alpha_gr, alpha_th, alpha_hf, alpha_gm, alpha_pi, &
-         eps_rho, eps_T, inner_bound, outer_bound, &
-         outer_bound_for_cutoff, outer_branch, variables_set, inertia_norm, time_factor, &
+    namelist /osc/ x_ref, x_atm, alpha_grv, alpha_thm, alpha_hfl, &
+         alpha_gam, alpha_pi, alpha_kap, alpha_rht, &
+         inner_bound, outer_bound, outer_bound_cutoff, outer_bound_branch, &
+         variables_set, inertia_norm, time_factor, &
          conv_scheme, zeta_scheme, deps_source, deps_file, deps_file_format, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
-         eddington_approx, reduce_order
+         reduce_order
 
     ! Count the number of osc namelists
 
@@ -165,18 +142,18 @@ contains
 
        x_ref = os_p(i)%x_ref
        x_atm = os_p(i)%x_atm
-       alpha_gr = os_p(i)%alpha_gr
-       alpha_th = os_p(i)%alpha_th
-       alpha_hf = os_p(i)%alpha_hf
-       alpha_gm = os_p(i)%alpha_gm
+       alpha_grv = os_p(i)%alpha_grv
+       alpha_thm = os_p(i)%alpha_thm
+       alpha_hfl = os_p(i)%alpha_hfl
+       alpha_gam = os_p(i)%alpha_gam
        alpha_pi = os_p(i)%alpha_pi
-       eps_rho = os_p(i)%eps_rho
-       eps_T = os_p(i)%eps_T
+       alpha_kap = os_p(i)%alpha_kap
+       alpha_rht = os_p(i)%alpha_rht
        variables_set = os_p(i)%variables_set
        inner_bound = os_p(i)%inner_bound
        outer_bound = os_p(i)%outer_bound
-       outer_bound_for_cutoff = os_p(i)%outer_bound_for_cutoff
-       outer_branch = os_p(i)%outer_branch
+       outer_bound_cutoff = os_p(i)%outer_bound_cutoff
+       outer_bound_branch = os_p(i)%outer_bound_branch
        inertia_norm = os_p(i)%inertia_norm
        time_factor = os_p(i)%time_factor
        conv_scheme = os_p(i)%conv_scheme
@@ -188,7 +165,6 @@ contains
        adiabatic = os_p(i)%adiabatic
        nonadiabatic = os_p(i)%nonadiabatic
        quasiad_eigfuncs = os_p(i)%quasiad_eigfuncs
-       eddington_approx = os_p(i)%eddington_approx
        reduce_order = os_p(i)%reduce_order
 
        ! Read the namelist
@@ -199,18 +175,18 @@ contains
 
        os_p(i)%x_ref = x_ref
        os_p(i)%x_atm = x_atm
-       os_p(i)%alpha_gr = alpha_gr
-       os_p(i)%alpha_th = alpha_th
-       os_p(i)%alpha_hf = alpha_hf
-       os_p(i)%alpha_gm = alpha_gm
+       os_p(i)%alpha_grv = alpha_grv
+       os_p(i)%alpha_thm = alpha_thm
+       os_p(i)%alpha_hfl = alpha_hfl
+       os_p(i)%alpha_gam = alpha_gam
        os_p(i)%alpha_pi = alpha_pi
-       os_p(i)%eps_rho = eps_rho
-       os_p(i)%eps_T = eps_T
+       os_p(i)%alpha_kap = alpha_kap
+       os_p(i)%alpha_rht = alpha_rht
        os_p(i)%variables_set = variables_set
        os_p(i)%inner_bound = inner_bound
        os_p(i)%outer_bound = outer_bound
-       os_p(i)%outer_bound_for_cutoff = outer_bound_for_cutoff
-       os_p(i)%outer_branch = outer_branch
+       os_p(i)%outer_bound_cutoff = outer_bound_cutoff
+       os_p(i)%outer_bound_branch = outer_bound_branch
        os_p(i)%inertia_norm = inertia_norm
        os_p(i)%time_factor = time_factor
        os_p(i)%conv_scheme = conv_scheme
@@ -222,7 +198,6 @@ contains
        os_p(i)%adiabatic = adiabatic
        os_p(i)%nonadiabatic = nonadiabatic
        os_p(i)%quasiad_eigfuncs = quasiad_eigfuncs
-       os_p(i)%eddington_approx = eddington_approx
        os_p(i)%reduce_order = reduce_order
 
     end do read_loop
@@ -232,57 +207,5 @@ contains
     return
 
   end subroutine read_osc_par
-
-  !****
-
-  $if ($MPI)
-
-  subroutine bcast_0_ (os_p, root_rank)
-
-    type(osc_par_t), intent(inout) :: os_p
-    integer, intent(in)            :: root_rank
-
-    ! Broadcast the osc_par_t
-
-    call bcast(os_p%x_ref, root_rank)
-    call bcast(os_p%x_atm, root_rank)
-    call bcast(os_p%alpha_gr, root_rank)
-    call bcast(os_p%alpha_th, root_rank)
-    call bcast(os_p%alpha_hf, root_rank)
-    call bcast(os_p%alpha_gm, root_rank)
-    call bcast(os_p%alpha_pi, root_rank)
-    call bcast(os_p%eps_rho, root_rank)
-    call bcast(os_p%eps_T, root_rank)
-
-    call bcast(os_p%variables_set, root_rank)
-    call bcast(os_p%inner_bound, root_rank)
-    call bcast(os_p%outer_bound, root_rank)
-    call bcast(os_p%outer_bound_for_cutoff, root_rank)
-    call bcast(os_p%inertia_norm, root_rank)
-    call bcast(os_p%time_factor, root_rank)
-    call bcast(os_p%conv_scheme, root_rank)
-    call bcast(os_p%deps_source, root_rank)
-    call bcast(os_p%deps_file, root_rank)
-    call bcast(os_p%deps_file_format, root_rank)
-    call bcast(os_p%tag_list, root_rank)
-
-    call bcast(os_p%adiabatic, root_rank)
-    call bcast(os_p%nonadiabatic, root_rank)
-    call bcast(os_p%quasiad_eigfuncs, root_rank)
-    call bcast(os_p%eddington_approx, root_rank)
-    call bcast(os_p%reduce_order, root_rank)
-
-    ! Finish
-
-    return
-
-  end subroutine bcast_0_
-
-  $BCAST(type(osc_par_t),1)
-
-  $BCAST_ALLOC(type(osc_par_t),0)
-  $BCAST_ALLOC(type(osc_par_t),1)
-
-  $endif
 
 end module gyre_osc_par

@@ -1,0 +1,124 @@
+Msun	{\rm M}_{\odot}
+Rsun	{\rm R}_{\odot}
+Lsun	{\rm L}_{\odot}
+deriv	\frac{{\rm d}#1}{{\rm d}#2}
+sderiv	{\rm d}#1/{\rm d}#2
+nderiv	\frac{{\rm d}^{#3}#1}{{\rm d}#2^{#3}}
+pderiv	\frac{\partial#1}{\partial#2}
+spderiv	\partial#1/\partial#2
+npderiv	\frac{\partial^{#3}#1}{\partial#2^{#3}}
+diff	{\rm d}#1
+ii	{\rm i}
+nablah	\nabla_{\rm h}
+Dfunc	\mathcal{D}
+Dfuncr	\Dfunc_{\rm R}
+Dfunci	\Dfunc_{\rm I}
+vu	\mathbf{u}
+vty	\tilde{\mathbf{y}}
+mS	\boldsymbol{\mathsf{S}}
+mA	\boldsymbol{\mathsf{A}}
+mY	\boldsymbol{\mathsf{Y}}
+mB	\boldsymbol{\mathsf{B}}
+mBin	\boldsymbol{\mathsf{B}}_{\rm in}
+mBout	\boldsymbol{\mathsf{B}}_{\rm out}
+mI	\boldsymbol{\mathsf{I}}
+mz	\boldsymbol{0}
+ver	\mathbf{e}_{r}
+vv	\mathbf{v}
+vF	\mathbf{F}
+rhoc	\rho_{\rm c}
+Pc	P_{\rm c}
+vFrad	\vF_{\rm R}
+Fradr	F_{{\rm R},r}
+vFradh	\vF_{\rm R,h}
+vFcon	\vF_{\rm C}
+Fconr	F_{{\rm C},r}
+Lrad	L_{\rm R}
+Lcon	L_{\rm C}
+epsnuc	\epsilon_{\rm n}
+epsT	\epsilon_{{\rm n},T}
+epsrho	\epsilon_{{\rm n},\rho}
+epsS	\epsilon_{{\rm n},S}
+epsad	\epsilon_{\rm n,ad}
+kapT	\kappa_{T}
+kaprho	\kappa_{\rho}
+kapS	\kappa_{S}
+kapad	\kappa_{\rm ad}
+cm	{\rm cm}
+gram	{\rm g}
+erg	{\rm erg}
+dyne	{\rm dyn}
+second	{\rm s}
+kelvin	{\rm K}
+radian	{\rm rad}
+barye	{\rm Ba}
+vxi	\boldsymbol{\xi}
+xir	\xi_{r}
+xit	\xi_{\theta}
+xip	\xi_{\phi}
+vxih	\vxi_{\rm h}
+txi	\tilde{\xi}
+txir	\tilde{\xi}_{r}
+txih	\tilde{\xi}_{\rm h}
+tS	\tilde{S}
+tP	\tilde{P}
+tT	\tilde{T}
+trho	\tilde{\rho}
+tPhi	\tilde{\Phi}
+tL	\tilde{L}
+tLrad	\tilde{L}_{\rm R}
+tFradr	\tilde{F}_{{\rm R},r}
+tepsnuc	\tilde{\epsilon}_{\rm n}
+tkappa	\tilde{\kappa}
+tf	\tilde{f}
+subin	#1_{\rm i}
+subout	#1_{\rm o}
+nin	\subin{n}
+nout	\subout{n}
+neq	n_{\rm e}
+xin	\subin{x}
+xout	\subout{x}
+alphathm	\alpha_{\rm thm}
+alphagrv	\alpha_{\rm grv}
+alphahfl	\alpha_{\rm hfl}
+alpharht	\alpha_{\rm rht}
+alphagam	\alpha_{\gamma}
+alphapi	\alpha_{\pi}
+alphakap	\alpha_{\kappa}
+wosc	w_{\rm osc}
+wexp	w_{\rm exp}
+wthm	w_{\rm thm}
+wstr	w_{\rm str}
+wctr	w_{\rm ctr}
+As	A^{*}
+upsT	\upsilon_{T}
+nabad	\nabla_{\rm ad}
+dnabad	\partial\nabad
+cP	c_{P}
+cV	c_{V}
+Gammi	\Gamma_{1}
+cdif	c_{\rm dif}
+clum	c_{\rm lum}
+crad	c_{\rm rad}
+dcrad	\partial\crad
+cthn	c_{\rm thn}
+dcthn	\partial\cthn
+cthk	c_{\rm thk}
+ceps	c_{\epsilon}
+cepsad	c_{\epsilon,{\rm ad}}
+cepsS	c_{\epsilon,S}
+frht	f_{\rm rht}
+dfrht	\partial\frht
+elli	\ell_{\rm i}
+fpigam	f_{\pi\gamma}
+sigmar	\sigma_{\rm R}
+sigmai	\sigma_{\rm I}
+omegac	\omega_{\rm c}
+sigmac	\sigma_{\rm c}
+houghr	\Theta
+hought	\widehat{\Theta}
+houghp	\widetilde{\Theta}
+nreg	\mathcal{N}
+np	n_{\rm p}
+ng	n_{\rm g}
+npg	n_{\rm pg}

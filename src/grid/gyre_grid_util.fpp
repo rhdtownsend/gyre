@@ -45,7 +45,7 @@ module gyre_grid_util
      type(context_t), pointer  :: cx
      class(r_state_t), pointer :: st
      integer                   :: s
-     real (WP)                 :: alpha_gm
+     real (WP)                 :: alpha_gam
      real (WP)                 :: alpha_pi
    contains
      procedure :: eval_c_
@@ -87,7 +87,7 @@ contains
     k_turn = gr%n_k
     x_turn = HUGE(0._WP)
 
-    gamma_b = gamma_(cx, cx%point_i(), st, os_p%alpha_gm, os_p%alpha_pi)
+    gamma_b = gamma_(cx, cx%point_i(), st, os_p%alpha_gam, os_p%alpha_pi)
 
     if (gamma_b <= 0._WP) then
 
@@ -105,7 +105,7 @@ contains
           ! Check for a sign change in gamma
 
           gamma_a = gamma_b
-          gamma_b = gamma_(cx, gr%pt(k+1), st, os_p%alpha_gm, os_p%alpha_pi)
+          gamma_b = gamma_(cx, gr%pt(k+1), st, os_p%alpha_gam, os_p%alpha_pi)
 
           if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
 
@@ -129,7 +129,7 @@ contains
                    gf%cx => cx
                    gf%s = pt_a%s
                    gf%st => st
-                   gf%alpha_gm = os_p%alpha_gm
+                   gf%alpha_gam = os_p%alpha_gam
                    gf%alpha_pi = os_p%alpha_pi
 
                    x_turn = gf%root(pt_a%x, pt_b%x, 0._WP)
@@ -158,12 +158,12 @@ contains
 
   !****
 
-  function gamma_ (cx, pt, st, alpha_gm, alpha_pi) result (gamma)
+  function gamma_ (cx, pt, st, alpha_gam, alpha_pi) result (gamma)
 
     type(context_t), intent(in)  :: cx
     type(point_t), intent(in)    :: pt
     class(r_state_t), intent(in) :: st
-    real(WP), intent(in)         :: alpha_gm
+    real(WP), intent(in)         :: alpha_gam
     real(WP), intent(in)         :: alpha_pi
     real(WP)                     :: gamma
 
@@ -202,8 +202,8 @@ contains
 
          lambda = cx%lambda(Omega_rot, st)
 
-         g_4 = -4._WP*V/Gamma_1*c_1*alpha_gm
-         g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As*alpha_gm*alpha_pi + 4._WP*lambda
+         g_4 = -4._WP*V/Gamma_1*c_1*alpha_gam
+         g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As*alpha_gam*alpha_pi + 4._WP*lambda
          g_0 = -4._WP*lambda*As/c_1*alpha_pi
 
          if (g_0 /= 0._WP) then
@@ -236,7 +236,7 @@ contains
 
     pt = point_t(this%s, REAL(z))
 
-    gamma = gamma_(this%cx, pt, this%st, this%alpha_gm, this%alpha_pi)
+    gamma = gamma_(this%cx, pt, this%st, this%alpha_gam, this%alpha_pi)
 
     ! Finish
 

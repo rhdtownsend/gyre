@@ -29,6 +29,8 @@ module gyre_contour_map
 
   use gyre_contour_path
   use gyre_ext
+  use gyre_num_par
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -40,14 +42,17 @@ module gyre_contour_map
 
   type :: contour_map_t
      private
-     type(c_ext_t), allocatable :: f(:,:)
-     real(WP), allocatable      :: z_re(:)
-     real(WP), allocatable      :: z_im(:)
-     integer, public            :: n_re
-     integer, public            :: n_im
+     type(contour_path_t), allocatable :: cp_re(:)
+     type(contour_path_t), allocatable :: cp_im(:)
+     type(c_ext_t), allocatable        :: f(:,:)
+     real(WP), allocatable             :: z_re(:)
+     real(WP), allocatable             :: z_im(:)
+     integer, public                   :: n_re
+     integer, public                   :: n_im
    contains
-     private
-     procedure, public :: trace_paths
+     $if ($HDF5)
+     procedure, public :: dump
+     $endif
   end type contour_map_t
 
   ! Interfaces
@@ -56,31 +61,31 @@ module gyre_contour_map
      module procedure contour_map_t_
   end interface contour_map_t
   
-  $if ($HDF5)
-  interface write
-     module procedure write_
-  end interface write
-  $endif
-
   ! Access specifiers
 
   private
 
   public :: contour_map_t
-  $if ($HDF5)
-  public :: write
-  $endif
 
   ! Procedures
 
 contains
 
-  function contour_map_t_ (z_re, z_im, f) result (cm)
+  function contour_map_t_ (z_re, z_im, f, process_isect) result (cm)
 
     real(WP), intent(in) :: z_re(:)
     real(WP), intent(in) :: z_im(:)
     type(c_ext_t)        :: f(:,:)
     type(contour_map_t)  :: cm
+    interface
+       subroutine process_isect (omega_a_re, omega_b_re, omega_a_im, omega_b_im)
+         use core_kinds
+         complex(WP), intent(in) :: omega_a_re
+         complex(WP), intent(in) :: omega_b_re
+         complex(WP), intent(in) :: omega_a_im
+         complex(WP), intent(in) :: omega_b_im
+       end subroutine process_isect
+    end interface
 
     $CHECK_BOUNDS(SIZE(f, 1),SIZE(z_re))
     $CHECK_BOUNDS(SIZE(f, 2),SIZE(z_im))
@@ -94,6 +99,8 @@ contains
 
     cm%n_re = SIZE(z_re)
     cm%n_im = SIZE(z_im)
+
+    call trace_paths_(cm, process_isect)
     
     ! Finish
 
@@ -103,11 +110,9 @@ contains
 
   !****
 
-  subroutine trace_paths (this, cp_re, cp_im, process_isect)
+  subroutine trace_paths_ (cm, process_isect)
 
-    class(contour_map_t), intent(in)               :: this
-    type(contour_path_t), allocatable, intent(out) :: cp_re(:)
-    type(contour_path_t), allocatable, intent(out) :: cp_im(:)
+    class(contour_map_t), intent(inout) :: cm
     interface
        subroutine process_isect (z_a_re, z_b_re, z_a_im, z_b_im)
          use core_kinds
@@ -133,24 +138,24 @@ contains
     
     ! Loop through the cells, adding segments to the path lists
 
-    allocate(cp_re(D))
-    allocate(cp_im(D))
+    allocate(cm%cp_re(D))
+    allocate(cm%cp_im(D))
 
     n_cp_re = 0
     n_cp_im = 0
 
-    cell_x_loop : do i_re = 1, this%n_re-1
-       cell_y_loop : do i_im = 1, this%n_im-1
+    cell_x_loop : do i_re = 1, cm%n_re-1
+       cell_y_loop : do i_im = 1, cm%n_im-1
 
           ! Evaluate cell codes
 
-          code_re = cell_code_(real_part(this%f(i_re:i_re+1,i_im:i_im+1)))
-          code_im = cell_code_(imag_part(this%f(i_re:i_re+1,i_im:i_im+1)))
+          code_re = cell_code_(real_part(cm%f(i_re:i_re+1,i_im:i_im+1)))
+          code_im = cell_code_(imag_part(cm%f(i_re:i_re+1,i_im:i_im+1)))
 
           ! Add segments based on the codes
 
-          call add_segments_(code_re, cp_re, n_cp_re, z_a_re, z_b_re, 're')
-          call add_segments_(code_im, cp_im, n_cp_im, z_a_im, z_b_im, 'im')
+          call add_segments_(code_re, cm%cp_re, n_cp_re, z_a_re, z_b_re, 're')
+          call add_segments_(code_im, cm%cp_im, n_cp_im, z_a_im, z_b_im, 'im')
 
           ! Check whether an intersection is at all possible
 
@@ -159,7 +164,7 @@ contains
 
              ! Perform detailed intersection check
 
-             call check_isect(z_a_re, z_b_re, z_a_im, z_b_im, process_isect)
+             call check_isect_(z_a_re, z_b_re, z_a_im, z_b_im, process_isect)
 
           end if
 
@@ -168,8 +173,8 @@ contains
           
     ! Shrink the path lists
 
-    call reallocate(cp_re, [n_cp_re])
-    call reallocate(cp_im, [n_cp_im])
+    call reallocate(cm%cp_re, [n_cp_re])
+    call reallocate(cm%cp_im, [n_cp_im])
 
     ! Finish
 
@@ -340,8 +345,8 @@ contains
 
       ! Map the edges indices into unique tags
 
-      tag_a = edge_tag_(i_re, i_im, this%n_re, this%n_im, e_a)
-      tag_b = edge_tag_(i_re, i_im, this%n_re, this%n_im, e_b)
+      tag_a = edge_tag_(i_re, i_im, cm%n_re, cm%n_im, e_a)
+      tag_b = edge_tag_(i_re, i_im, cm%n_re, cm%n_im, e_b)
 
       ! See if the tags connect to existing paths
 
@@ -505,23 +510,23 @@ contains
 
       case (1)
 
-         f_a = this%f(i_re  ,i_im  )
-         f_b = this%f(i_re+1,i_im  )
+         f_a = cm%f(i_re  ,i_im  )
+         f_b = cm%f(i_re+1,i_im  )
 
       case (2)
 
-         f_a = this%f(i_re+1,i_im  )
-         f_b = this%f(i_re+1,i_im+1)
+         f_a = cm%f(i_re+1,i_im  )
+         f_b = cm%f(i_re+1,i_im+1)
 
       case (3)
 
-         f_a = this%f(i_re+1,i_im+1)
-         f_b = this%f(i_re  ,i_im+1)
+         f_a = cm%f(i_re+1,i_im+1)
+         f_b = cm%f(i_re  ,i_im+1)
 
       case (4)
 
-         f_a = this%f(i_re  ,i_im+1)
-         f_b = this%f(i_re  ,i_im  )
+         f_a = cm%f(i_re  ,i_im+1)
+         f_b = cm%f(i_re  ,i_im  )
 
       case default
 
@@ -545,23 +550,23 @@ contains
 
       case (1)
 
-         z = CMPLX((1._WP-w)*this%z_re(i_re) + w*this%z_re(i_re+1), &
-                   this%z_im(i_im), WP)
+         z = CMPLX((1._WP-w)*cm%z_re(i_re) + w*cm%z_re(i_re+1), &
+                   cm%z_im(i_im), WP)
 
       case (2)
          
-         z = CMPLX(this%z_re(i_re+1), &
-                  (1._WP-w)*this%z_im(i_im) + w*this%z_im(i_im+1), WP)
+         z = CMPLX(cm%z_re(i_re+1), &
+                  (1._WP-w)*cm%z_im(i_im) + w*cm%z_im(i_im+1), WP)
 
       case (3)
 
-         z = CMPLX((1._WP-w)*this%z_re(i_re+1) + w*this%z_re(i_re), &
-                   this%z_im(i_im+1), WP)
+         z = CMPLX((1._WP-w)*cm%z_re(i_re+1) + w*cm%z_re(i_re), &
+                   cm%z_im(i_im+1), WP)
 
       case (4)
          
-         z = CMPLX(this%z_re(i_re), &
-                  (1._WP-w)*this%z_im(i_im+1) + w*this%z_im(i_im), WP)
+         z = CMPLX(cm%z_re(i_re), &
+                  (1._WP-w)*cm%z_im(i_im+1) + w*cm%z_im(i_im), WP)
 
       case default
 
@@ -575,7 +580,7 @@ contains
 
     end function interp_point_
 
-  end subroutine trace_paths
+  end subroutine trace_paths_
 
   !****
 
@@ -705,7 +710,7 @@ contains
 
   !****
 
-  subroutine check_isect (z_a_re, z_b_re, z_a_im, z_b_im, process_isect)
+  subroutine check_isect_ (z_a_re, z_b_re, z_a_im, z_b_im, process_isect)
 
     complex(WP), intent(in)   :: z_a_re(:)
     complex(WP), intent(in)   :: z_b_re(:)
@@ -776,30 +781,71 @@ contains
 
     return
 
-  end subroutine check_isect
+  end subroutine check_isect_
 
   !****
 
   $if ($HDF5)
 
-  subroutine write_ (hg, cm)
+  subroutine dump (this, nm_p, i)
 
-    type(hgroup_t), intent(inout)   :: hg
-    type(contour_map_t), intent(in) :: cm
+    class(contour_map_t), intent(in) :: this
+    type(num_par_t), intent(in)      :: nm_p
+    integer, intent(in)              :: i
 
-    ! Write the contour_map_t
+    character(:), allocatable :: contour_file
+    type(hgroup_t)            :: hg
+    type(hgroup_t)            :: hg_cp
+    integer                   :: i_cp
 
-    call write_dset(hg, 'z_re', cm%z_re)
-    call write_dset(hg, 'z_im', cm%z_im)
+    ! Dump a contour map file
 
-    call write_dset(hg, 'f_f', fraction(cm%f))
-    call write_dset(hg, 'f_e', exponent(cm%f))
+    if (nm_p%dump_contour_template == '') return
+
+    ! Set up the filename
+
+    contour_file = nm_p%dump_contour_template
+
+    contour_file = subst(contour_file, '%I', i, '(I5.5)')
+    contour_file = subst(contour_file, '%i', i, '(I0)')
+
+    ! Open the file
+
+    hg = hgroup_t(contour_file, CREATE_FILE)
+
+    ! Write map data
+
+    call write_dset(hg, 'z_re', this%z_re)
+    call write_dset(hg, 'z_im', this%z_im)
+
+    call write_dset(hg, 'f_f', fraction(this%f))
+    call write_dset(hg, 'f_e', exponent(this%f))
+
+    ! Write path data
+    
+    call write_attr(hg, 'n_cp_re', SIZE(this%cp_re))
+
+    do i_cp = 1, SIZE(this%cp_re)
+       hg_cp = hgroup_t(hg, elem_group_name('path-re', [i_cp]))
+       call write(hg_cp, this%cp_re(i_cp))
+       call hg_cp%final()
+    end do
+
+    call write_attr(hg, 'n_cp_im', SIZE(this%cp_im))
+       
+    do i_cp = 1, SIZE(this%cp_im)
+       hg_cp = hgroup_t(hg, elem_group_name('path-im', [i_cp]))
+       call write(hg_cp, this%cp_im(i_cp))
+       call hg_cp%final()
+    end do
+          
+    call hg%final()
 
     ! Finish
 
     return
 
-  end subroutine write_
+  end subroutine dump
 
   $endif
 

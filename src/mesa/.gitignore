@@ -2,3 +2,7 @@
 *.o
 *.mod
 *.smod
+*.a
+.depend
+test_gyre_lib
+

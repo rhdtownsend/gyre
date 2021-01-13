@@ -2,54 +2,54 @@
 /
 
 &model
-	model_type = 'POLY'
+  model_type = 'POLY'
         file = 'poly.h5'
 /
 
 &mode
-	l = 1
-	m = -1
+  l = 1
+  m = -1
 /
 
 &mode
-	l = 1
-	m = 0
+  l = 1
+  m = 0
 /
 
 &mode
-	l = 1
-	m = 1
+  l = 1
+  m = 1
 /
 
 &osc
 /
 
 &rot
-	coriolis_method = 'NULL'
-	Omega_rot_source = 'UNIFORM'
-	Omega_rot = 0.2
-	Omega_rot_units = 'CRITICAL'
+  coriolis_method = 'NULL'
+  Omega_rot_source = 'UNIFORM'
+  Omega_rot = 0.2
+  Omega_rot_units = 'CRITICAL'
 /
 
 &num
-	diff_scheme = 'COLLOC_GL6'
+  diff_scheme = 'COLLOC_GL6'
 /
 
 &scan
-	grid_type = 'INVERSE'
-	freq_min = 0.25
-	freq_max = 1.0
-	n_freq = 50
-	freq_frame = 'COROT_O'
-	grid_frame = 'COROT_O'
+  grid_type = 'INVERSE'
+  freq_min = 0.25
+  freq_max = 1.0
+  n_freq = 50
+  freq_frame = 'COROT_O'
+  grid_frame = 'COROT_O'
 /
 
 &grid
 /
 
 &ad_output
-	summary_file = 'summary.h5'
-	summary_item_list = 'l,m,n_pg,n_p,n_g,omega'
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,m,n_pg,n_p,n_g,omega'
 /
 
 &nad_output

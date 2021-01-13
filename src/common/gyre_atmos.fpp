@@ -113,30 +113,23 @@ contains
 
   function atmos_chi_c_ (V, As, c_1, Gamma_1, omega, lambda, branch) result (chi)
 
-    real(WP), intent(in)               :: V
-    real(WP), intent(in)               :: As
-    real(WP), intent(in)               :: c_1
-    real(WP), intent(in)               :: Gamma_1
-    complex(WP), intent(in)            :: omega
-    complex(WP), intent(in)            :: lambda
-    character(*), intent(in), optional :: branch
-    complex(WP)                        :: chi
+    real(WP), intent(in)     :: V
+    real(WP), intent(in)     :: As
+    real(WP), intent(in)     :: c_1
+    real(WP), intent(in)     :: Gamma_1
+    complex(WP), intent(in)  :: omega
+    complex(WP), intent(in)  :: lambda
+    character(*), intent(in) :: branch
+    complex(WP)              :: chi
 
-    character(:), allocatable :: branch_
-    complex(WP)               :: a_11
-    complex(WP)               :: a_12
-    complex(WP)               :: a_21
-    complex(WP)               :: a_22
-    complex(WP)               :: b
-    complex(WP)               :: c
-    complex(WP)               :: psi2
-    complex(WP)               :: psi
-
-    if (PRESENT(branch)) then
-       branch_ = branch
-    else
-       branch_ = 'E_NEG'
-    endif
+    complex(WP) :: a_11
+    complex(WP) :: a_12
+    complex(WP) :: a_21
+    complex(WP) :: a_22
+    complex(WP) :: b
+    complex(WP) :: c
+    complex(WP) :: psi2
+    complex(WP) :: psi
 
     ! Calculate the atmospheric radial wavenumber (complex frequencies)
 
@@ -153,7 +146,7 @@ contains
 
     ! Adjust the sign of psi to choose the correct solution branch
 
-    select case (branch_)
+    select case (branch)
 
     case ('E_POS')
 

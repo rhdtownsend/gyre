@@ -7,11 +7,11 @@ import gyre_cheb_fit
 
 class TarFit:
 
-    def __init__ (self, m, k, nu_0, cf):
+    def __init__ (self, m, k, q_0, cf):
 
         self.m = m
         self.k = k
-        self.nu_0 = nu_0
+        self.q_0 = q_0
 
         self.cf = cf
 
@@ -22,33 +22,33 @@ class TarFit:
 
             m = f[group].attrs['m']
             k = f[group].attrs['k']
-            nu_0 = f[group].attrs['nu_0']
+            q_0 = f[group].attrs['q_0']
 
             cf = gyre_cheb_fit.ChebFit.load(filename, 'cf')
 
-        return cls(m, k, nu_0, cf)
+        return cls(m, k, q_0, cf)
 
-    def lam (self, nu):
+    def lam (self, q):
 
-        x = 2.*np.arctan(nu-self.nu_0)/np.pi
+        x = 2.*np.arctan(q-self.q_0)/np.pi
 
         if self.k >= 0:
 
-            lam = self.cf.eval(x)*self.lam_norm_grav(nu)
+            lam = self.cf.eval(x)*self.lam_norm_grav(q)
 
         else:
 
             if self.m > 0:
 
-                if nu <= self.nu_0:
-                    lam = self.cf.eval(x)*self.lam_norm_ross(nu)
+                if q <= self.q_0:
+                    lam = self.cf.eval(x)*self.lam_norm_ross(q)
                 else:
                     lam = float('nan')
 
             elif self.m < 0:
 
-                if nu >= self.nu_0:
-                    lam = self.cf.eval(x)*self.lam_norm_ross(nu)
+                if q >= self.q_0:
+                    lam = self.cf.eval(x)*self.lam_norm_ross(q)
                 else:
                     lam = float('nan')
 
@@ -58,19 +58,19 @@ class TarFit:
 
         return lam
 
-    def lam_norm_grav (self, nu):
+    def lam_norm_grav (self, q):
 
         l = np.abs(self.m) + self.k
 
-        return nu**2 + l*(l+1)
+        return q**2 + l*(l+1)
 
-    def lam_norm_ross (self, nu):
+    def lam_norm_ross (self, q):
 
         if self.k < -1:
             s = -self.k -1
             return float(self.m)**2/(2*s+1)**2
         elif self.k == -1:
-            return nu**2
+            return q**2
         else:
             raise Exception('Invalid k')
         
