@@ -847,8 +847,8 @@ contains
          c_1 => this%coeff(2,J_C_1), &
          Gamma_1 => this%coeff(2,J_GAMMA_1), &
          pt => this%pt(2), &
-         alpha_gr => this%alpha_gr, &
-         alpha_om => this%alpha_om)
+         alpha_grv => this%alpha_grv, &
+         alpha_omg => this%alpha_omg)
 
       Omega_rot = this%cx%Omega_rot(pt)
 
