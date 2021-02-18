@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_bvp
 ! Purpose  : radial adiabatic bounary value problem solver
 !
-! Copyright 2013-2019 Rich Townsend
+! Copyright 2013-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -56,6 +56,7 @@ module gyre_rad_bvp
      type(rad_trans_t)        :: tr
      type(qad_eval_t)         :: qe
      type(mode_par_t)         :: md_p
+     type(num_par_t)          :: nm_p
      type(osc_par_t)          :: os_p
   end type rad_bvp_t
 
@@ -138,6 +139,7 @@ contains
     endif
 
     bp%md_p = md_p
+    bp%nm_p = nm_p
     bp%os_p = os_p
 
     ! Finish
@@ -328,7 +330,7 @@ contains
 
     discrim = c_ext_t(bp%det())
 
-    wv = wave_t(st_c, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p, j)
+    wv = wave_t(st_c, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, j)
 
     ! Finish
 

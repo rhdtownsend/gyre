@@ -1,7 +1,7 @@
-! Module   : gyre_discrim_func
-! Purpose  : discriminant function
+! Module   : gyre_minim
+! Purpose  : minimum finding algorithms
 !
-! Copyright 2013-2017 Rich Townsend
+! Copyright 2018-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,12 +15,10 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_discrim_func
+module gyre_minim
 
   ! Uses
 
-  use gyre_r_discrim_func
-  use gyre_c_discrim_func
-  use gyre_m_discrim_func
+  use gyre_r_minim
 
-end module gyre_discrim_func
+end module gyre_minim

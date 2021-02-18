@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_util
 ! Purpose  : grid utilities
 !
-! Copyright 2016-2020 Rich Townsend & The GYRE Team
+! Copyright 2016-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -22,34 +22,23 @@ module gyre_grid_util
   ! Uses
 
   use core_kinds
-  use core_func
 
   use gyre_context
   use gyre_grid
   use gyre_model
+  use gyre_num_par
   use gyre_osc_par
   use gyre_point
+  use gyre_root
   use gyre_rot
-  use gyre_rot_factory
   use gyre_state
+  use gyre_status
   
   use ISO_FORTRAN_ENV
 
   ! No implicit typing
 
   implicit none
-
-  ! Derived-type definitions (used internally for root-finding)
-
-  type, extends (func_t) :: gamma_func_t
-     type(context_t), pointer  :: cx
-     class(r_state_t), pointer :: st
-     integer                   :: s
-     real (WP)                 :: alpha_gam
-     real (WP)                 :: alpha_pi
-   contains
-     procedure :: eval_c_
-  end type gamma_func_t
 
   ! Access specifiers
 
@@ -61,21 +50,22 @@ module gyre_grid_util
 
 contains
 
-  subroutine find_turn (cx, gr, st, os_p, k_turn, x_turn)
+  subroutine find_turn (cx, gr, st, nm_p, os_p, k_turn, x_turn)
 
     type(context_t), target, intent(in)  :: cx
     type(grid_t), intent(in)             :: gr
     class(r_state_t), target, intent(in) :: st
+    type(num_par_t), intent(in)          :: nm_p
     type(osc_par_t), intent(in)          :: os_p
     integer, intent(out)                 :: k_turn
     real(WP), intent(out)                :: x_turn
 
-    real(WP)           :: gamma_a
-    real(WP)           :: gamma_b
-    integer            :: k
-    type(gamma_func_t) :: gf
-    type(point_t)      :: pt_a
-    type(point_t)      :: pt_b
+    real(WP)      :: gamma_a
+    real(WP)      :: gamma_b
+    integer       :: k
+    type(point_t) :: pt_a
+    type(point_t) :: pt_b
+    integer       :: status
 
     $ASSERT_DEBUG(cx%point_i() == gr%pt_i(),Context and grid are not conformable)
     $ASSERT_DEBUG(cx%point_o() == gr%pt_o(),Context and grid are not conformable)
@@ -125,14 +115,8 @@ contains
                    x_turn = pt_b%x
 
                 else
-                   
-                   gf%cx => cx
-                   gf%s = pt_a%s
-                   gf%st => st
-                   gf%alpha_gam = os_p%alpha_gam
-                   gf%alpha_pi = os_p%alpha_pi
 
-                   x_turn = gf%root(pt_a%x, pt_b%x, 0._WP)
+                   call solve_root(eval_gamma_, pt_a%x, pt_b%x, 0._WP, nm_p, x_turn, status)
 
                 endif
 
@@ -153,6 +137,24 @@ contains
     ! Finish
 
     return
+
+  contains
+
+    subroutine eval_gamma_ (x, gamma, status)
+
+      real(WP), intent(in)  :: x
+      real(WP), intent(out) :: gamma
+      integer, intent(out)  :: status
+
+      ! Evaluate gamma
+
+      gamma = gamma_(cx, point_t(pt_a%s, x), st, os_p%alpha_gam, os_p%alpha_pi)
+
+      status = STATUS_OK
+
+      ! Finish
+
+    end subroutine eval_gamma_
 
   end subroutine find_turn
 
@@ -221,27 +223,5 @@ contains
     return
 
   end function gamma_
-
-  !****
-
-  function eval_c_ (this, z) result (gamma)
-
-    class(gamma_func_t), intent(inout) :: this
-    complex(WP), intent(in)            :: z
-    complex(WP)                        :: gamma
-
-    type(point_t) :: pt
-
-    ! Evaluate the gamma_func_t
-
-    pt = point_t(this%s, REAL(z))
-
-    gamma = gamma_(this%cx, pt, this%st, this%alpha_gam, this%alpha_pi)
-
-    ! Finish
-
-    return
-
-  end function eval_c_
 
 end module gyre_grid_util

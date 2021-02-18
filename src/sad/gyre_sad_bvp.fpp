@@ -1,7 +1,7 @@
 ! Module   : gyre_sad_bvp
 ! Purpose  : static adiabatic bounary value problem solver
 !
-! Copyright 2019 Rich Townsend
+! Copyright 2019-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -54,6 +54,7 @@ module gyre_sad_bvp
      type(grid_t)             :: gr
      type(sad_trans_t)        :: tr
      type(mode_par_t)         :: md_p
+     type(num_par_t)          :: nm_p
      type(osc_par_t)          :: os_p
   end type sad_bvp_t
 
@@ -130,7 +131,8 @@ contains
 
     bp%md_p = md_p
     bp%md_p%static = .TRUE.
-    
+
+    bp%nm_p = nm_p
     bp%os_p = os_p
 
     ! Finish
@@ -245,7 +247,7 @@ contains
 
     discrim = c_ext_t(bp%det())
 
-    wv = wave_t(st_c, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p, j)
+    wv = wave_t(st_c, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, j)
 
     ! Finish
 
