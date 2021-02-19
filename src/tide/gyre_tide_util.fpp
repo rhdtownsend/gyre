@@ -48,8 +48,6 @@ module gyre_tide_util
   public :: secular_G_3
   public :: secular_G_4
   public :: hansen_X
-  public :: hansen_X_tilde
-  public :: hansen_X_hat
 
   ! Procedures
 
@@ -274,126 +272,6 @@ contains
     end function hansen_X_f_
 
   end function hansen_X
-
-  !****
-
-  function hansen_X_tilde (e, n, m, k) result (X_tilde)
-
-    real(WP), intent(in) :: e
-    integer, intent(in)  :: n
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: X_tilde
-
-    real(WP) :: A
-    real(WP) :: S
-
-    $ASSERT(e >= 0,Invalid e)
-    $ASSERT(e < 1,Invalid e)
-
-    ! Evaluate the tilded Hansen coefficient \tilde{X}_nmk
-
-    if (e**2 > EPSILON(0._WP)) then
-
-       A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
-       S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
-
-       X_tilde = A*S*orbit_quad(hansen_X_tilde_f_, e, TOL)
-
-    else
-
-       if (abs(m - k) == 1) then
-          X_tilde = 0.5_WP*SIGN(1, m-k)
-       else
-          X_tilde = 0._WP
-       endif
-
-    endif
-
-    ! Finish
-
-    return
-
-  contains
-
-    function hansen_X_tilde_f_ (ua, Ma, e) result (f)
-
-      real(WP), intent(in) :: ua
-      real(WP), intent(in) :: Ma
-      real(WP), intent(in) :: e
-      real(WP)             :: f
-
-      ! Set up the integrand
-
-      f = sin(m*ua - k*Ma)*sin(ua)/(S*(1._WP + e*cos(ua))**(n+2))
-
-      ! Finish
-
-      return
-
-    end function hansen_X_tilde_f_
-
-  end function hansen_X_tilde
-
-  !****
-
-  function hansen_X_hat (e, n, m, k) result (X_hat)
-
-    real(WP), intent(in) :: e
-    integer, intent(in)  :: n
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: X_hat
-
-    real(WP) :: A
-    real(WP) :: S
-
-    $ASSERT(e >= 0,Invalid e)
-    $ASSERT(e < 1,Invalid e)
-
-    ! Evaluate the hatted Hansen coefficient \hat{X}_nmk
-
-    if (e**2 > EPSILON(0._WP)) then
-
-       A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
-       S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
-
-       X_hat = A*S*orbit_quad(hansen_X_hat_f_, e, TOL)
-
-    else
-
-       if (abs(m - k) == 1) then
-          X_hat = 0.5_WP
-       else
-          X_hat = 0._WP
-       endif
-
-    endif
-
-    ! Finish
-
-    return
-
-  contains
-
-    function hansen_X_hat_f_ (ua, Ma, e) result (f)
-
-      real(WP), intent(in) :: ua
-      real(WP), intent(in) :: Ma
-      real(WP), intent(in) :: e
-      real(WP)             :: f
-
-      ! Set up the integrand
-
-      f = cos(m*ua - k*Ma)*cos(ua)/(S*(1._WP + e*cos(ua))**(n+2))
-
-      ! Finish
-
-      return
-
-    end function hansen_X_hat_f_
-
-  end function hansen_X_hat
 
   !****
 

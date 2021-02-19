@@ -74,12 +74,8 @@ program eval_tidal_coeff
      f = secular_G_4(R_a, e, l, m, k)
   case ('X')
      f = hansen_X(e, l, m, k)
-  case ('X_hat')
-     f = hansen_X_hat(e, l, m, k)
-  case ('X_tilde')
-     f = hansen_X_tilde(e, l, m, k)
   case default
-     $ABORT(Invalid coeff; should be one of [c|G_1|G_2|G_3|G_4|X|X_hat|X_tilde])
+     $ABORT(Invalid coeff; should be one of [c|G_1|G_2|G_3|G_4|X])
   end select
 
   print *, f
