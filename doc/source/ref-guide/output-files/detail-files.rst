@@ -242,7 +242,7 @@ Perturbations
      - :math:`\delta\tS`
      - complex
      - Lagrangian specific entropy perturbation [:math:`\cP`]
-   * - :nml_v:`lag_S_ref`
+   * - :nml_v:`lag_L`
      - :math:`\delta\tLrad`
      - complex
      - Lagrangian radiative luminosity perturbation [:math:`L`]
