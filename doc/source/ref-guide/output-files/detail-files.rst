@@ -262,7 +262,7 @@ Perturbations
      - :math:`\delta\tP`
      - complex
      - Lagrangian total pressure perturbation [:math:`P`]
-   * - :nml_v:`eul_rho`
+   * - :nml_v:`lag_rho`
      - :math:`\delta\trho`
      - complex
      - Lagrangian density perturbation [:math:`\rho`]
