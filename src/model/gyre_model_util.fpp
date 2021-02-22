@@ -133,7 +133,7 @@ contains
           if (.NOT. missing_coeffs) then
              write(OUTPUT_UNIT, 100) 'Model lacks the following structure coefficients:'
 100          format(A)
-             missing_coeffs = .FALSE.
+             missing_coeffs = .TRUE.
           end if
 
           write(OUTPUT_UNIT, 110) model_coeff_name(i_req(j))
