@@ -69,7 +69,7 @@ module gyre_${T}_bvp
   ! Interfaces
 
   interface ${T}_bvp_t
-     module procedure ${T}_bvp_t
+     module procedure ${T}_bvp_t_
   end interface ${T}_bvp_t
 
   ! Access specifiers
@@ -77,7 +77,6 @@ module gyre_${T}_bvp
   private
 
   public :: ${T}_bvp_t
-  public :: ${T}_bvp_t_
 
 contains
 

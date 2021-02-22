@@ -119,7 +119,7 @@ contains
 
     ! Initialize the bvp_t
 
-    bp%r_bvp_t = r_bvp_t_(bd, df, nm_p) 
+    bp%r_bvp_t = r_bvp_t(bd, df, nm_p) 
 
     ! Other initializations
 
