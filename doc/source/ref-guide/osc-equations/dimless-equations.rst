@@ -60,14 +60,14 @@ The dimensionless oscillation equations are
    - \alphagrv \delta \, U y_{5}, \\
    %
    x \deriv{y_{5}}{x} &= 
-   \frac{V}{\frht} \left[ \nabad (U - c_{1}\omegac^{2}) - 4 (\nabad - \nabla) + \alphakap \kapad V \nabla + \cdif \right] y_{1} + \mbox{} \\
+   \frac{V}{\frht} \left[ \nabad (U - c_{1}\omegac^{2}) - 4 (\nabad - \nabla) + \ckapad V \nabla + \cdif \right] y_{1} + \mbox{} \\
    &
-   \frac{V}{\frht} \left[ \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} (\nabad - \nabla) - \alphakap \kapad V \nabla - \cdif \right] y_{2} + \mbox{} \\
+   \frac{V}{\frht} \left[ \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} (\nabad - \nabla) - \ckapad V \nabla - \cdif \right] y_{2} + \mbox{} \\
    &
    \alphagrv \frac{V}{\frht} \left[ \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} (\nabad - \nabla) \right] y_{3} +
    \alphagrv \frac{V \nabad}{\frht} y_{4} + \mbox{} \\
    &
-   \left[ \frac{V \nabla}{\frht} (4 \frht - \alphakap \kapS) + \dfrht + 2 - \ell \right] y_{5} -
+   \left[ \frac{V \nabla}{\frht} (4 \frht - \ckapS) + \dfrht + 2 - \ell \right] y_{5} -
    \frac{V \nabla}{\frht \crad} y_{6} \\
    %
    x \deriv{y_{6}}{x} &=
@@ -229,6 +229,9 @@ dimensionless oscillation equations are defined as follows:
    \frht = 1 - \alpharht \frac{\ii \omega \cthn}{4} \qquad
    \dfrht = - \alpharht \frac{\ii \omega \cthn \dcthn}{4 \frht} \\
    %
+   \ckapad = \frac{\alphakar \kaprho}{\Gamma_{1}} + \nabad \alphakat \kapT \qquad
+   \ckapS = - \upsT \alphakar \kaprho + \alphakat \kapT \\
+   %
    \ceps = x^{-3} \frac{4\pi r^{3} \rho \epsnuc}{L} \qquad
    \cepsad = \ceps \epsad \qquad
    \cepsS = \ceps \epsS \\
@@ -283,10 +286,14 @@ corresponding namelist parameters.
      - :nml_n:`alpha_pi`
      - Scaling factor for p-mode isolation. Set to 1 for normal behavior,
        and to 0 to isolate p modes as described by :ads_citet:`ong:2020`
-   * - :math:`\alphakap`
-     - :nml_n:`alpha_kap`
-     - Scaling factor for opacity partial derivatives. Set to 1 for normal
-       behavior, and to 0 to suppress the :math:`\kappa` mechanism
+   * - :math:`\alphakar`
+     - :nml_n:`alpha_kar`
+     - Scaling factor for opacity density partial derivative. Set to 1 for normal
+       behavior, and to 0 to suppress the density part of the :math:`\kappa` mechanism
+   * - :math:`\alphakat`
+     - :nml_n:`alpha_kat`
+     - Scaling factor for opacity temperature partial derivative. Set to 1 for normal
+       behavior, and to 0 to suppress the temperature part of the :math:`\kappa` mechanism
    * - :math:`\alpharht`
      - :nml_n:`alpha_rht`
      - Scaling factor for time-dependent term in the radiative heat
