@@ -231,7 +231,11 @@ program gyre_force
 
      else
 
-        gr = grid_t(cx, omega, gr_p_sel, os_p_sel)
+        if (gr_p_sel%file /= '') then
+           gr = grid_from_file(gr_p_sel%file)
+        else
+           gr = grid_t(cx, omega, gr_p_sel, os_p_sel)
+        endif
 
      end if
 
@@ -314,6 +318,8 @@ contains
        class default
           $ABORT(Invalid bp_ad class)
        end select
+
+       print *,'v_o:',v_o
          
        ! Solve for the wave function
 
@@ -434,6 +440,8 @@ contains
 
        Phi_force = -(2*md_p(i)%l+1)*eps_tide/sqrt(4._WP*PI)*tidal_c(R_pri/a, fr_p_sel%e, md_p(i)%l, md_p(i)%m, fr_p_sel%k)
 
+       print *,'Phi force:',Phi_force
+
     case default
 
        $ABORT(Invalid force_type)
@@ -446,4 +454,32 @@ contains
 
   end function Phi_force
 
+  !****
+
+  function grid_from_file (file) result (gr)
+
+     use core_hgroup
+
+     character(*), intent(in) :: file
+     type(grid_t)             :: gr
+
+     type(hgroup_t) :: hg
+     real(WP), allocatable :: x(:)
+
+     ! Create the grid from the file
+
+     hg = hgroup_t(file, OPEN_FILE)
+
+     call read_dset_alloc(hg, 'x', x)
+
+     call hg%final()
+
+     gr = grid_t(x)
+
+     ! Finish
+
+     return
+
+  end function grid_from_file
+  
 end program gyre_force
