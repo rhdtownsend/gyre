@@ -436,7 +436,7 @@ contains
 
        eps_tide = (R_pri/a)**3*(M_sec/M_pri)
 
-       Phi_force = -(2*md_p(i)%l+1)*eps_tide/sqrt(4._WP*PI)*tidal_c(R_pri/a, fr_p_sel%e, md_p(i)%l, md_p(i)%m, fr_p_sel%k)
+       Phi_force = -(2*md_p(i)%l+1)*eps_tide*tidal_c(R_pri/a, fr_p_sel%e, md_p(i)%l, md_p(i)%m, fr_p_sel%k)
 
     case default
 
