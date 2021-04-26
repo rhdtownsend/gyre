@@ -319,8 +319,6 @@ contains
           $ABORT(Invalid bp_ad class)
        end select
 
-       print *,'v_o:',v_o
-         
        ! Solve for the wave function
 
        st = r_state_t(omega(j))
@@ -439,8 +437,6 @@ contains
        eps_tide = (R_pri/a)**3*(M_sec/M_pri)
 
        Phi_force = -(2*md_p(i)%l+1)*eps_tide/sqrt(4._WP*PI)*tidal_c(R_pri/a, fr_p_sel%e, md_p(i)%l, md_p(i)%m, fr_p_sel%k)
-
-       print *,'Phi force:',Phi_force
 
     case default
 
