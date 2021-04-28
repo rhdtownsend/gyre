@@ -51,25 +51,25 @@ module gyre_wave
 
   type :: wave_t
      private
-     type(c_state_t)           :: st
-     type(context_t), pointer  :: cx => null()
-     type(grid_t), allocatable :: gr
-     type(mode_par_t), public  :: md_p
-     type(num_par_t), public   :: nm_p
-     type(osc_par_t), public   :: os_p
-     type(point_t)             :: pt_i
-     type(point_t)             :: pt_o
-     complex(WP), allocatable  :: y_c(:,:)
-     real(WP)                  :: E_scl2
-     type(c_ext_t), public     :: discrim
-     complex(WP), public       :: scl
-     complex(WP), public       :: omega
-     complex(WP), public       :: l_i
-     integer, public           :: n_k
-     integer, public           :: k_ref
-     integer, public           :: l
-     integer, public           :: m
-     integer, public           :: j
+     type(c_state_t)              :: st
+     type(context_t), allocatable :: cx
+     type(grid_t), allocatable    :: gr
+     type(mode_par_t), public     :: md_p
+     type(num_par_t), public      :: nm_p
+     type(osc_par_t), public      :: os_p
+     type(point_t)                :: pt_i
+     type(point_t)                :: pt_o
+     complex(WP), allocatable     :: y_c(:,:)
+     real(WP)                     :: E_scl2
+     type(c_ext_t), public        :: discrim
+     complex(WP), public          :: scl
+     complex(WP), public          :: omega
+     complex(WP), public          :: l_i
+     integer, public              :: n_k
+     integer, public              :: k_ref
+     integer, public              :: l
+     integer, public              :: m
+     integer, public              :: j
    contains
      private
      procedure, public :: state
@@ -156,16 +156,16 @@ contains
 
   function wave_t_ (st, y_c, discrim, cx, gr, md_p, nm_p, os_p, j) result (wv)
 
-    type(c_state_t), intent(in)          :: st
-    complex(WP), intent(in)              :: y_c(:,:)
-    type(c_ext_t), intent(in)            :: discrim
-    type(context_t), pointer, intent(in) :: cx
-    type(grid_t), intent(in)             :: gr
-    type(mode_par_t), intent(in)         :: md_p
-    type(num_par_t), intent(in)          :: nm_p
-    type(osc_par_t), intent(in)          :: os_p
-    integer, intent(in)                  :: j
-    type(wave_t)                         :: wv
+    type(c_state_t), intent(in)  :: st
+    complex(WP), intent(in)      :: y_c(:,:)
+    type(c_ext_t), intent(in)    :: discrim
+    type(context_t), intent(in)  :: cx
+    type(grid_t), intent(in)     :: gr
+    type(mode_par_t), intent(in) :: md_p
+    type(num_par_t), intent(in)  :: nm_p
+    type(osc_par_t), intent(in)  :: os_p
+    integer, intent(in)          :: j
+    type(wave_t)                 :: wv
 
     real(WP)    :: x_ref
 
@@ -175,7 +175,7 @@ contains
     ! Construct the wave_t
 
     wv%st = st
-    wv%cx => cx
+    allocate(wv%cx, SOURCE=cx)
     allocate(wv%gr, SOURCE=gr)
 
     wv%md_p = md_p
@@ -246,11 +246,11 @@ contains
   function context (this) result (cx)
 
     class(wave_t), intent(in) :: this
-    type(context_t), pointer  :: cx
+    type(context_t)           :: cx
 
     ! Return the wave's context
 
-    cx => this%cx
+    cx = this%cx
 
     ! Finish
 

@@ -259,13 +259,13 @@ contains
     class(summary_t), intent(inout) :: this
     class(wave_t), intent(in)       :: wv
 
-    type(context_t), pointer :: cx
-    class(model_t), pointer  :: ml
-    type(c_state_t)          :: st
-    type(grid_t)             :: gr
-    integer                  :: i
-    logical                  :: cached
-    logical, save            :: first = .TRUE.
+    type(context_t)         :: cx
+    class(model_t), pointer :: ml
+    type(c_state_t)         :: st
+    type(grid_t)            :: gr
+    integer                 :: i
+    logical                 :: cached
+    logical, save           :: first = .TRUE.
 
     ! Cache summary data
 
@@ -275,7 +275,7 @@ contains
 
     ! Cache the items
 
-    cx => wv%context()
+    cx = wv%context()
     ml => cx%model()
 
     st = wv%state()

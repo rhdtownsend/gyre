@@ -91,7 +91,7 @@ contains
     character(:), allocatable        :: detail_file
     class(writer_t), allocatable     :: wr
     character(ITEM_LEN), allocatable :: items(:)
-    type(context_t), pointer         :: cx
+    type(context_t)                  :: cx
     class(model_t), pointer          :: ml
     type(c_state_t)                  :: st
     type(grid_t)                     :: gr
@@ -142,7 +142,7 @@ contains
 
     ! Write the items
 
-    cx => wv%context()
+    cx = wv%context()
     ml => cx%model()
 
     st = wv%state()
@@ -441,13 +441,13 @@ contains
 
   subroutine write_context_ (item, ot_p, cx, gr, st, wr, written)
 
-    character(*), intent(in)              :: item
-    type(out_par_t), intent(in)           :: ot_p
-    class(context_t), pointer, intent(in) :: cx
-    type(grid_t), intent(in)              :: gr
-    type(c_state_t), intent(in)           :: st
-    class(writer_t), intent(inout)        :: wr
-    logical, intent(out)                  :: written
+    character(*), intent(in)       :: item
+    type(out_par_t), intent(in)    :: ot_p
+    class(context_t), intent(in)   :: cx
+    type(grid_t), intent(in)       :: gr
+    type(c_state_t), intent(in)    :: st
+    class(writer_t), intent(inout) :: wr
+    logical, intent(out)           :: written
 
     integer :: k
 
