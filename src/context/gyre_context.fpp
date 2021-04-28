@@ -83,6 +83,7 @@ module gyre_context
      procedure         :: l_e_c_
      generic, public   :: l_e => l_e_r_, l_e_c_
      procedure, public :: Omega_rot
+     procedure, public :: set_Omega_rot
      procedure         :: eps_rho_r_
      procedure         :: eps_rho_c_
      generic, public   :: eps_rho => eps_rho_r_, eps_rho_c_
@@ -370,6 +371,25 @@ contains
     return
 
   end function Omega_rot
+
+  !****
+
+  subroutine set_Omega_rot (this, Omega_rot)
+
+     class(context_t), intent(inout) :: this
+     real(WP), intent(in)            :: Omega_rot
+
+     ! Set Omega_rot. NOTE: THIS ROUTINE IS A TEMPORARY WORKAROUND FOR
+     ! THE CURRENT NON-MUTABILITY OF CONTEXT_T; IT NEEDS TO BE
+     ! REPLACED AT SOME POINT!
+
+     this%Omega_rot_ = Omega_rot
+
+     ! Finish
+
+     return
+
+  end subroutine set_Omega_rot
 
   !****
 
