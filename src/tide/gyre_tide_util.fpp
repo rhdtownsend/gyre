@@ -42,6 +42,7 @@ module gyre_tide_util
 
   private
 
+  public :: R_a
   public :: tidal_c
   public :: secular_G_1
   public :: secular_G_2
@@ -52,6 +53,23 @@ module gyre_tide_util
   ! Procedures
 
 contains
+
+  function tidal_R_a (Omega_orb, q) result (R_a)
+
+     real(WP), intent(in) :: R_a
+     real(WP), intent(in) :: q
+
+     ! Evaluate the ratio of the stellar radius to the semi-major axis
+
+     R_a = (Omega_orb**2/(1._WP + q))**(1._WP/3._WP)
+
+     ! Finish
+
+     return
+
+  end function tidal_R_a
+
+  !****
 
   function tidal_c (R_a, e, l, m, k) result (c)
 
