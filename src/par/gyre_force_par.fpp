@@ -30,9 +30,8 @@ module gyre_force_par
   ! Derived-type definitions
 
   type :: force_par_t
+     character(256)  :: scan_var = 'OMEGA'
      real(WP)        :: Phi = 0._WP
-     real(WP)        :: q = 1._WP
-     real(WP)        :: e = 0._WP
      integer         :: k = 1
      character(64)   :: force_type = 'FIXED'
      character(2048) :: tag_list = ''
@@ -59,13 +58,12 @@ contains
     integer                         :: n_fr_p
     integer                         :: i
     real(WP)                        :: Phi
-    real(WP)                        :: q
-    real(WP)                        :: e
     integer                         :: k
+    character(LEN(fr_p%scan_var))   :: scan_var
     character(LEN(fr_p%force_type)) :: force_type
     character(LEN(fr_p%tag_list))   :: tag_list
 
-    namelist /force/ Phi, q, e, k, force_type, tag_list
+    namelist /force/ Phi, k, scan_var, force_type, tag_list
 
     ! Count the number of force namelists
 
@@ -93,9 +91,8 @@ contains
        fr_p(i) = force_par_t()
 
        Phi = fr_p(i)%Phi
-       q = fr_p(i)%q
-       e = fr_p(i)%e
        k = fr_p(i)%k
+       scan_var = fr_p(i)%scan_var
        force_type = fr_p(i)%force_type
        tag_list = fr_p(i)%tag_list
 
@@ -106,9 +103,8 @@ contains
        ! Store read values
 
        fr_p(i)%Phi = Phi
-       fr_p(i)%q = q
-       fr_p(i)%e = e
        fr_p(i)%k = k
+       fr_p(i)%scan_var = scan_var
        fr_p(i)%force_type = force_type
        fr_p(i)%tag_list = tag_list
 
