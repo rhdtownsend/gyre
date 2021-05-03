@@ -1,7 +1,7 @@
 ! Module   : gyre_summary
 ! Purpose  : summary output
 !
-! Copyright 2020 Rich Townsend & The GYRE Team
+! Copyright 2020-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,6 +17,7 @@
 
 $include 'core.inc'
 $include 'gyre_output.inc'
+$include 'gyre_summary.inc'
   
 module gyre_summary
 
@@ -35,6 +36,7 @@ module gyre_summary
   use gyre_model
   use gyre_out_par
   use gyre_out_util
+  use gyre_resp
   use gyre_state
   use gyre_txt_writer
   use gyre_util
@@ -359,16 +361,6 @@ contains
 
        call sc%append(ot_p%freq_frame)
 
-    $define $CACHE_VALUE $sub
-    $local $NAME $1
-    $local $VALUE $2
-
-    case ($str($NAME))
-
-       call sc%append($VALUE)
-
-    $endsub
-       
     $CACHE_VALUE(x_ref,gr%pt(wv%k_ref)%x)
     $CACHE_VALUE(omega_int,wv%omega_int())
     $CACHE_VALUE(domega_rot,wv%domega_rot())
@@ -402,6 +394,10 @@ contains
        class is (mode_t)
 
           call cache_mode_(ot_p, wv, gr, sc, cached)
+
+       class is (resp_t)
+
+          call cache_resp_(ot_p, wv, gr, sc, cached)
 
        class default
 
@@ -448,6 +444,42 @@ contains
     return
 
   end subroutine cache_mode_
+
+  !****
+
+  subroutine cache_resp_ (ot_p, rs, gr, sc, cached)
+
+    type(out_par_t), intent(in)        :: ot_p
+    class(resp_t), intent(in)          :: rs
+    type(grid_t), intent(in)           :: gr
+    type(summary_col_t), intent(inout) :: sc
+    logical, intent(out)               :: cached
+
+    ! Cache the item from resp_t data
+
+    cached = .TRUE.
+
+    select case (sc%item)
+
+    $CACHE_VALUE(Omega_orb,rs%Omega_orb)
+    $CACHE_VALUE(k,rs%k)
+    $CACHE_VALUE(F,rs%F())
+    $CACHE_VALUE(J_dot,rs%J_dot())
+
+    $CACHE_VALUE(eul_psi_ref,rs%eul_psi(rs%k_ref))
+    $CACHE_VALUE(phi_2_ref,rs%phi_2(rs%k_ref))
+
+    case default
+
+       cached = .FALSE.
+
+    end select
+
+    ! Finish
+
+    return
+
+ end subroutine cache_resp_
 
   !****
 
@@ -506,8 +538,6 @@ contains
     integer, intent(in)                      :: l
     type(summary_col_t), intent(inout)       :: sc
     logical, intent(out)                     :: cached
-
-    integer :: k
 
     ! Cache the item from evol_model_t data
 

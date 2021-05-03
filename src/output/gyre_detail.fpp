@@ -1,7 +1,7 @@
 ! Module   : gyre_detail
 ! Purpose  : detailed output
 !
-! Copyright 2020 Rich Townsend & The GYRE Team
+! Copyright 2020-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -16,7 +16,8 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $include 'core.inc'
-  
+$include 'gyre_detail.inc'
+
 module gyre_detail
 
   ! Uses
@@ -33,6 +34,7 @@ module gyre_detail
   use gyre_model
   use gyre_out_par
   use gyre_out_util
+  use gyre_resp
   use gyre_state
   use gyre_txt_writer
   use gyre_util
@@ -312,16 +314,6 @@ contains
 
        call wr%write('x_ref', gr%pt(wv%k_ref)%x)
 
-    $define $WRITE_POINTS $sub
-    $local $NAME $1
-    $local $FUNC $2
-
-    case ($str($NAME))
-
-       call wr%write($str($NAME), [($FUNC, k=1,gr%n_k)])
-
-    $endsub
-
     $WRITE_POINTS(lambda,wv%lambda(k))
     $WRITE_POINTS(y_1,wv%y_i(1, k))
     $WRITE_POINTS(y_2,wv%y_i(2, k))
@@ -357,22 +349,12 @@ contains
     $WRITE_POINTS(alpha_1,wv%alpha_1(k))
     $WRITE_POINTS(prop_type,wv%prop_type(k))
 
-    $define $WRITE_REF $sub
-    $local $NAME $1
-    $local $FUNC $2
-
-    case ($str($NAME))
-
-       call wr%write($str($NAME), $FUNC(wv%k_ref))
-
-    $endsub
-
-    $WRITE_REF(xi_r_ref,wv%xi_r)
-    $WRITE_REF(xi_h_ref,wv%xi_h)
-    $WRITE_REF(eul_phi_ref,wv%eul_phi)
-    $WRITE_REF(deul_phi_ref,wv%deul_phi)
-    $WRITE_REF(lag_S_ref,wv%lag_S)
-    $WRITE_REF(lag_L_ref,wv%lag_L)
+    $WRITE_REF(xi_r_ref,wv%xi_r(wv%k_ref))
+    $WRITE_REF(xi_h_ref,wv%xi_h(wv%k_ref))
+    $WRITE_REF(eul_phi_ref,wv%eul_phi(wv%k_ref))
+    $WRITE_REF(deul_phi_ref,wv%deul_phi(wv%k_ref))
+    $WRITE_REF(lag_S_ref,wv%lag_S(wv%k_ref))
+    $WRITE_REF(lag_L_ref,wv%lag_L(wv%k_ref))
 
     case default
 
@@ -381,6 +363,10 @@ contains
        class is (mode_t)
 
           call write_mode_(item, ot_p, wv, gr, wr, written)
+
+       class is (resp_t)
+
+          call write_resp_(item, ot_p, wv, gr, wr, written)
 
        class default
 
@@ -436,6 +422,59 @@ contains
     return
 
   end subroutine write_mode_
+
+  !****
+
+  subroutine write_resp_ (item, ot_p, rs, gr, wr, written)
+
+    character(*), intent(in)       :: item
+    type(out_par_t), intent(in)    :: ot_p
+    class(resp_t), intent(in)      :: rs
+    type(grid_t), intent(in)       :: gr
+    class(writer_t), intent(inout) :: wr
+    logical, intent(out)           :: written
+
+    integer :: k
+
+    ! Write the item from resp_t data
+
+    written = .TRUE.
+
+    select case (item)
+
+    case ('Omega_orb')
+
+       call wr%write('Omega_orb', rs%Omega_orb)
+
+    case ('k')
+
+       call wr%write('k', rs%k)
+
+    case ('F')
+
+       call wr%write('F', rs%F())
+
+    case ('J_dot')
+
+       call wr%write('J_dot', rs%J_dot())
+
+    $WRITE_POINTS(eul_psi,rs%eul_psi(k))
+    $WRITE_POINTS(phi_2,rs%phi_2(k))
+
+    $WRITE_REF(eul_psi_ref,rs%eul_psi(rs%k_ref))
+    $WRITE_REF(phi_2_ref,rs%phi_2(rs%k_ref))
+
+    case default
+
+       written = .FALSE.
+
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine write_resp_
 
   !****
 
