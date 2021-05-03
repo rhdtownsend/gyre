@@ -90,7 +90,12 @@ program scan_overlap_res
       real(WP), allocatable    :: Omega_rot(:)
       complex(WP), allocatable :: xi_r(:)
       complex(WP), allocatable :: xi_h(:)
+      complex(WP), allocatable :: eul_phi(:)
       real(WP), allocatable    :: tau(:)
+      complex(WP), allocatable :: xi_r_res(:)
+      complex(WP), allocatable :: xi_h_res(:)
+      complex(WP), allocatable :: eul_phi_res(:)
+      real(WP), allocatable    :: tau_res(:)
       integer                  :: n
       integer                  :: n_pg
    end type response_t
@@ -543,7 +548,13 @@ contains
 
       allocate(rs%xi_r(n))
       allocate(rs%xi_h(n))
+      allocate(rs%eul_phi(n))
       allocate(rs%tau(n))
+ 
+      allocate(rs%xi_r_res(n))
+      allocate(rs%xi_h_res(n))
+      allocate(rs%eul_phi_res(n))
+      allocate(rs%tau_res(n))
 
       ! Set up Omega_orb and Omerga_rot
 
@@ -573,7 +584,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, n
-         call eval_response(sd, dd, rs%Omega_orb(j), rs%Omega_rot(j), md_p, or_p, ov_p, rs%xi_r(j), rs%xi_h(j), rs%tau(j))
+         call eval_response(sd, dd, rs%Omega_orb(j), rs%Omega_rot(j), md_p, or_p, ov_p, j, rs)
       end do
 
       ! Finish
@@ -584,7 +595,7 @@ contains
 
    !****
 
-   subroutine eval_response(sd, dd, Omega_orb, Omega_rot, md_p, or_p, ov_p, xi_r, xi_h, tau)
+   subroutine eval_response(sd, dd, Omega_orb, Omega_rot, md_p, or_p, ov_p, j, rs)
 
       type(summary_data_t), intent(in) :: sd
       type(detail_data_t), intent(in)  :: dd(:)
@@ -593,9 +604,8 @@ contains
       type(mode_par_t), intent(in)     :: md_p
       type(orbit_par_t), intent(in)    :: or_p
       type(overlap_par_t), intent(in)  :: ov_p
-      complex(WP), intent(out)         :: xi_r
-      complex(WP), intent(out)         :: xi_h
-      real(WP), intent(out)            :: tau
+      integer, intent(in)              :: j
+      type(response_t), intent(inout)  :: rs
 
       integer     :: n
       integer     :: i
@@ -611,12 +621,17 @@ contains
       complex(WP) :: Delta
       real(WP)    :: E
       complex(WP) :: A
+      complex(WP) :: dxi_r
+      complex(WP) :: dxi_h
+      complex(WP) :: deul_phi
+      real(WP)    :: dtau
 
-      ! Initialize the responses
+      ! Initialize the responses at this point
 
-      xi_r = 0._WP
-      xi_h = 0._WP
-      tau = 0._WP
+      rs%xi_r(j) = 0._WP
+      rs%xi_h(j) = 0._WP
+      rs%eul_phi(j) = 0._WP
+      rs%tau(j) = 0._WP
 
       ! Loop through the detail data, adding in contributions
 
@@ -673,15 +688,33 @@ contains
 
          A = 2._WP*eps*Q*X*W*Delta/E
 
-         ! Add in the contribution
+         ! Evaluate contributions
 
-         xi_r = xi_r + A*dd(i)%xi_r(n)
-         xi_h = xi_h + A*dd(i)%xi_h(n)
+         dxi_r = A*dd(i)%xi_r(n)
+         dxi_h = A*dd(i)%xi_h(n)
+         deul_phi = A*dd(i)%eul_phi(n)
 
          ! B+12, eqn C4 (with some transformation)
 
-         tau = tau + 8._WP*(or_p%q*R_a**(md_p%l+1)*W*X*Q*ABS(Delta))**2 * md_p%m*sigma*gamma/E
+         !dtau = 8._WP*(or_p%q*R_a**(md_p%l+1)*W*X*Q*ABS(Delta))**2 * md_p%m*sigma*gamma/E
+         dtau = 8._WP*or_p%q*R_a**(2*md_p%l+2)*W**2*X**2*Q**2 * md_p%m * omega**2*sigma*gamma/((omega**2 - sigma**2)**2 + 4*gamma**2*sigma**2) / E
 
+         ! Add them in
+
+         rs%xi_r(j) = rs%xi_r(j) + dxi_r
+         rs%xi_h(j) = rs%xi_h(j) + dxi_h
+         rs%eul_phi(j) = rs%eul_phi(j) + deul_phi
+         rs%tau(j) = rs%tau(j) + dtau
+         
+         if (dd(i)%n_pg == rs%n_pg) then
+
+            rs%xi_r_res(j) = dxi_r
+            rs%xi_h_res(j) = dxi_h
+            rs%eul_phi_res(j) = deul_phi
+            rs%tau_res(j) = dtau
+
+         endif
+         
       end do
 
       ! Finish
@@ -709,8 +742,13 @@ contains
 
       call write_dset(hg, 'xi_r', rs%xi_r)
       call write_dset(hg, 'xi_h', rs%xi_h)
-
+      call write_dset(hg, 'eul_phi', rs%eul_phi)
       call write_dset(hg, 'tau', rs%tau)
+      
+      call write_dset(hg, 'xi_r_res', rs%xi_r_res)
+      call write_dset(hg, 'xi_h_res', rs%xi_h_res)
+      call write_dset(hg, 'eul_phi_res', rs%eul_phi_res)
+      call write_dset(hg, 'tau_res', rs%tau_res)
       
       ! Finish
 
