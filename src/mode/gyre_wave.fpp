@@ -51,25 +51,25 @@ module gyre_wave
 
   type :: wave_t
      private
-     type(c_state_t)              :: st
-     type(context_t), allocatable :: cx
-     type(grid_t), allocatable    :: gr
-     type(mode_par_t), public     :: md_p
-     type(num_par_t), public      :: nm_p
-     type(osc_par_t), public      :: os_p
-     type(point_t)                :: pt_i
-     type(point_t)                :: pt_o
-     complex(WP), allocatable     :: y_c(:,:)
-     real(WP)                     :: E_scl2
-     type(c_ext_t), public        :: discrim
-     complex(WP), public          :: scl
-     complex(WP), public          :: omega
-     complex(WP), public          :: l_i
-     integer, public              :: n_k
-     integer, public              :: k_ref
-     integer, public              :: l
-     integer, public              :: m
-     integer, public              :: j
+     type(c_state_t)          :: st
+     type(context_t)          :: cx
+     type(grid_t)             :: gr
+     type(mode_par_t), public :: md_p
+     type(num_par_t), public  :: nm_p
+     type(osc_par_t), public  :: os_p
+     type(point_t)            :: pt_i
+     type(point_t)            :: pt_o
+     complex(WP), allocatable :: y_c(:,:)
+     real(WP)                 :: E_scl2
+     type(c_ext_t), public    :: discrim
+     complex(WP), public      :: scl
+     complex(WP), public      :: omega
+     complex(WP), public      :: l_i
+     integer, public          :: n_k
+     integer, public          :: k_ref
+     integer, public          :: l
+     integer, public          :: m
+     integer, public          :: j
    contains
      private
      procedure, public :: state
@@ -77,6 +77,7 @@ module gyre_wave
      procedure, public :: grid
      procedure, public :: freq
      procedure, public :: dfreq_rot
+     procedure, public :: x
      procedure, public :: y_i
      procedure, public :: xi_r
      procedure, public :: xi_h
@@ -175,8 +176,8 @@ contains
     ! Construct the wave_t
 
     wv%st = st
-    allocate(wv%cx, SOURCE=cx)
-    allocate(wv%gr, SOURCE=gr)
+    wv%cx = cx
+    wv%gr = gr
 
     wv%md_p = md_p
     wv%nm_p = nm_p
@@ -322,6 +323,24 @@ contains
 
   !****
 
+  function x (this, k)
+
+     class(wave_t), intent(in) :: this
+     integer, intent(in)       :: k
+     real(WP)                  :: x
+
+     ! Return the abscissa
+
+     x = this%gr%pt(k)%x
+
+     ! Finish
+
+     return
+
+  end function x
+
+  !****
+
   function y_i (this, i, k)
 
     class(wave_t), intent(in) :: this
@@ -347,21 +366,23 @@ contains
     integer, intent(in)       :: k
     complex(WP)               :: xi_r
 
+    real(WP)    :: x
     complex(WP) :: y_1
 
     ! Evaluate the radial displacement perturbation, in units of
     ! R_star
 
     associate ( &
-         pt => this%gr%pt(k), &
          l_i => this%l_i )
+
+      x = this%x(k)
 
       y_1 = this%y_i(1, k)
 
       if (l_i /= 1._WP) then
 
-         if (pt%x /= 0._WP) then
-            xi_r = y_1*pow(pt%x, l_i-1._WP)
+         if (x /= 0._WP) then
+            xi_r = y_1*pow(x, l_i-1._WP)
          else
             xi_r = 0._WP
          endif
