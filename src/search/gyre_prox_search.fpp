@@ -155,7 +155,7 @@ contains
     type(r_ext_t)            :: chi
 
     $CHECK_BOUNDS(SIZE(j_in),SIZE(omega_in_a))
-    $CHECK_BOUNDS(SIZE(omega_b),SIZE(omega_a))
+    $CHECK_BOUNDS(SIZE(omega_in_b),SIZE(omega_in_a))
 
     ! Initialize the frequency deflation array
 
