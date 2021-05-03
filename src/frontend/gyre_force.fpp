@@ -46,6 +46,7 @@ program gyre_force
   use gyre_orbit_par
   use gyre_osc_par
   use gyre_out_par
+  use gyre_resp
   use gyre_rot_par
   use gyre_sad_bvp
   use gyre_scan
@@ -361,11 +362,12 @@ contains
     real(WP), intent(in)              :: Omega_orb(:)
     real(WP), intent(in), allocatable :: Omega_rot(:)
 
-    integer         :: j
-    real(WP)        :: v_i(bp_ad%n_i)
-    real(WP)        :: v_o(bp_ad%n_o)
-    type(r_state_t) :: st
-    type(wave_t)    :: wv
+    integer          :: j
+    real(WP)         :: v_i(bp_ad%n_i)
+    real(WP)         :: v_o(bp_ad%n_o)
+    type(r_state_t)  :: st
+    type(wave_t)     :: wv
+    type(resp_t)     :: rs
 
     ! Scan over frequencies
 
@@ -393,7 +395,7 @@ contains
           $ABORT(Invalid bp_ad class)
        end select
 
-       ! Solve for the wave function
+       ! Solve for the wave function and response
 
        st = r_state_t(omega(j))
        
@@ -406,10 +408,12 @@ contains
           $ABORT(Invalid bp_ad class)
        end select
 
-       ! Cache/write the mode
+       rs = resp_t(wv, or_p_sel, Omega_orb(j), fr_p_sel%k)
+
+       ! Cache/write the response
     
-       call sm_ad%cache(wv)
-       call dt_ad%write(wv)
+       call sm_ad%cache(rs)
+       call dt_ad%write(rs)
 
     end do omega_loop
 
@@ -432,6 +436,7 @@ contains
     complex(WP)     :: v_o(bp_nad%n_o)
     type(c_state_t) :: st
     type(wave_t)    :: wv
+    type(resp_t)    :: rs
 
     ! Scan over frequencies
 
@@ -452,7 +457,7 @@ contains
        v_o = 0._WP
        v_o(2) = Phi_force(omega(j), Omega_orb(j))
          
-       ! Solve for the wave function
+       ! Solve for the wave function and response
 
        st = c_state_t(CMPLX(omega(j), KIND=WP))
        
@@ -463,10 +468,12 @@ contains
           $ABORT(Invalid bp_nad class)
        end select
 
-       ! Cache/write the mode
+       rs = resp_t(wv, or_p_sel, Omega_orb(j), fr_p_sel%k)
+
+       ! Cache/write the response
     
-       call sm_nad%cache(wv)
-       call dt_nad%write(wv)
+       call sm_nad%cache(rs)
+       call dt_nad%write(rs)
 
     end do omega_loop
 
