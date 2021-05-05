@@ -242,7 +242,7 @@ Perturbations
      - :math:`\delta\tS`
      - complex
      - Lagrangian specific entropy perturbation [:math:`\cP`]
-   * - :nml_v:`lag_S_ref`
+   * - :nml_v:`lag_L`
      - :math:`\delta\tLrad`
      - complex
      - Lagrangian radiative luminosity perturbation [:math:`L`]
@@ -262,7 +262,7 @@ Perturbations
      - :math:`\delta\tP`
      - complex
      - Lagrangian total pressure perturbation [:math:`P`]
-   * - :nml_v:`eul_rho`
+   * - :nml_v:`lag_rho`
      - :math:`\delta\trho`
      - complex
      - Lagrangian density perturbation [:math:`\rho`]
@@ -317,7 +317,8 @@ Energetics & Transport
    * - :nml_v:`H`
      - :math:`H`
      - real
-     - mode energy [:math:`G M^{2}/R`]
+     - mode energy [:math:`G M^{2}/R`]; evaluated as
+       :math:`\frac{1}{2} \omega^{2} E`
    * - :nml_v:`W`
      - :math:`W`
      - real
@@ -341,7 +342,8 @@ Energetics & Transport
    * - :nml_v:`dE_dx`
      - :math:`\sderiv{E}{x}`
      - real(:nml_v:`n`)
-     - differential inertia [:math:`M R^{2}`]
+     - differential inertia [:math:`M R^{2}`]; evaluated using eqn. 3.139 of
+       :ads_citet:`aerts:2010`
    * - :nml_v:`dW_dx`\ [#only-N]_
      - :math:`\sderiv{W}{x}`
      - real(:nml_v:`n`)

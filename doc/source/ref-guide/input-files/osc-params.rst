@@ -69,8 +69,12 @@ is used.  Allowable parameters are:
   Scaling factor for p-mode isolation (see the :math:`\alphapi` term in
   variable in the :ref:`physics-switches` section)
 
-:nml_n:`alpha_kap` (default :nml_v:`1.`)
-  Scaling factor for opacity partial derivatives (see the :math:`\alphakap`
+:nml_n:`alpha_kat` (default :nml_v:`1.`)
+  Scaling factor for opacity temperature partial derivative (see the :math:`\alphakat`
+  variable in the :ref:`physics-switches` section)
+
+:nml_n:`alpha_kar` (default :nml_v:`1.`)
+  Scaling factor for opacity density partial derivative (see the :math:`\alphakar`
   variable in the :ref:`physics-switches` section)
 
 :nml_n:`alpha_rht` (default :nml_v:`0.`)

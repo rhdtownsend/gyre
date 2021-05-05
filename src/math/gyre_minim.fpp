@@ -1,7 +1,7 @@
-! Module   : gyre_version
-! Purpose  : versioning info
+! Module   : gyre_minim
+! Purpose  : minimum finding algorithms
 !
-! Copyright 2013-2021 Rich Townsend & The GYRE Team
+! Copyright 2018-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,22 +15,10 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$include 'core.inc'
+module gyre_minim
 
-module gyre_version
+  ! Uses
 
-  ! No implicit typing
+  use gyre_r_minim
 
-  implicit none
-
-  ! Parameters
-
-  character(*), parameter :: VERSION = 'master'
-
-  ! Access specifiers
-
-  private
-
-  public :: version
-
-end module gyre_version
+end module gyre_minim

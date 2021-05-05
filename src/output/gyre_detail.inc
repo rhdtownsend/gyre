@@ -1,7 +1,7 @@
-! Module   : gyre_root
-! Purpose  : minimum finding algorithms
+! Incfile  : gyre_detail
+! Purpose  : support macros for gyre_detail
 !
-! Copyright 2018 Rich Townsend
+! Copyright 2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,10 +15,24 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module gyre_min
+$include 'core.inc'
+  
+$define $WRITE_POINTS $sub
+$local $NAME $1
+$local $FUNC $2
 
-  ! Uses
+case ($str($NAME))
 
-  use gyre_r_min
+   call wr%write($str($NAME), [($FUNC, k=1,gr%n_k)])
 
-end module gyre_min
+$endsub
+
+$define $WRITE_REF $sub
+$local $NAME $1
+$local $FUNC $2
+
+case ($str($NAME))
+
+   call wr%write($str($NAME), $FUNC)
+
+$endsub

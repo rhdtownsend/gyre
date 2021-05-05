@@ -25,6 +25,7 @@ program eval_tidal_coeff
   use core_system
 
   use gyre_math
+  use gyre_func
   use gyre_tide_util
 
   use ISO_FORTRAN_ENV
@@ -63,23 +64,23 @@ program eval_tidal_coeff
 
   select case (coeff)
   case ('c')
-     f = tidal_c(R_a, e, l, m, l)
+     f = tidal_c(R_a, e, l, m, k)
   case ('G_1')
-     f = secular_G_1(R_a, e, l, m, l)
+     f = secular_G_1(R_a, e, l, m, k)
   case ('G_2')
-     f = secular_G_2(R_a, e, l, m, l)
+     f = secular_G_2(R_a, e, l, m, k)
   case ('G_3')
-     f = secular_G_3(R_a, e, l, m, l)
+     f = secular_G_3(R_a, e, l, m, k)
   case ('G_4')
-     f = secular_G_4(R_a, e, l, m, l)
+     f = secular_G_4(R_a, e, l, m, k)
   case ('X')
      f = hansen_X(e, l, m, k)
-  case ('X_hat')
-     f = hansen_X_hat(e, l, m, k)
-  case ('X_tilde')
-     f = hansen_X_tilde(e, l, m, k)
+  case ('Y')
+     f = REAL(spherical_Y(l, m, HALFPI, 0._WP))
+  case ('Y*')
+     f = REAL(CONJG(spherical_Y(l, m, HALFPI, 0._WP)))
   case default
-     $ABORT(Invalid coeff; should be one of [c|G_1|G_2|G_3|G_4|X|X_hat|X_tilde])
+     $ABORT(Invalid coeff; should be one of [c|G_1|G_2|G_3|G_4|X|Y|Y*])
   end select
 
   print *, f

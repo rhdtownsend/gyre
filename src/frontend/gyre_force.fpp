@@ -43,8 +43,10 @@ program gyre_force
   use gyre_model_par
   use gyre_nad_bvp
   use gyre_num_par
+  use gyre_orbit_par
   use gyre_osc_par
   use gyre_out_par
+  use gyre_resp
   use gyre_rot_par
   use gyre_sad_bvp
   use gyre_scan
@@ -74,6 +76,7 @@ program gyre_force
   type(grid_par_t), allocatable  :: gr_p(:)
   type(scan_par_t), allocatable  :: sc_p(:)
   type(force_par_t), allocatable :: fr_p(:)
+  type(orbit_par_t), allocatable :: or_p(:)
   type(out_par_t)                :: ot_p_ad
   type(out_par_t)                :: ot_p_nad
   class(model_t), pointer        :: ml => null()
@@ -84,6 +87,7 @@ program gyre_force
   type(grid_par_t)               :: gr_p_sel
   type(scan_par_t), allocatable  :: sc_p_sel(:)
   type(force_par_t)              :: fr_p_sel
+  type(orbit_par_t)              :: or_p_sel
   type(context_t), pointer       :: cx => null()
   type(summary_t)                :: sm_ad
   type(summary_t)                :: sm_nad
@@ -91,6 +95,7 @@ program gyre_force
   type(detail_t)                 :: dt_nad
   real(WP), allocatable          :: omega(:)
   real(WP), allocatable          :: Omega_orb(:)
+  real(WP), allocatable          :: Omega_rot(:)
   type(grid_t)                   :: gr
   class(r_bvp_t), allocatable    :: bp_ad
   class(c_bvp_t), allocatable    :: bp_nad
@@ -140,6 +145,7 @@ program gyre_force
   call read_grid_par(unit, gr_p)
   call read_scan_par(unit, sc_p)
   call read_force_par(unit, fr_p)
+  call read_orbit_par(unit, or_p)
   call read_out_par(unit, 'ad', ot_p_ad)
   call read_out_par(unit, 'nad', ot_p_nad)
 
@@ -196,6 +202,7 @@ program gyre_force
      call select_par(gr_p, md_p(i)%tag, gr_p_sel)
      call select_par(sc_p, md_p(i)%tag, sc_p_sel)
      call select_par(fr_p, md_p(i)%tag, fr_p_sel)
+     call select_par(or_p, md_p(i)%tag, or_p_sel)
 
      ! Set up the context
 
@@ -203,15 +210,7 @@ program gyre_force
 
      ! Set up the frequency arrays
 
-     select case (fr_p_sel%force_type)
-     case ('FIXED')
-        call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', omega)
-     case ('BINARY')
-        call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', Omega_orb)
-        omega = Omega_orb*fr_p_sel%k
-     case default
-        $ABORT(Invalid force_type)
-     end select
+     call set_freqs(omega, Omega_orb, Omega_rot)
 
      if (SIZE(omega) == 0) then
 
@@ -231,7 +230,11 @@ program gyre_force
 
      else
 
-        gr = grid_t(cx, omega, gr_p_sel, os_p_sel)
+        if (gr_p_sel%file /= '') then
+           gr = grid_from_file(gr_p_sel%file)
+        else
+           gr = grid_t(cx, omega, gr_p_sel, os_p_sel)
+        endif
 
      end if
 
@@ -245,7 +248,7 @@ program gyre_force
            allocate(bp_ad, SOURCE=ad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         endif
            
-        call eval_wave_ad(omega, Omega_orb)
+        call eval_wave_ad(omega, Omega_orb, Omega_rot)
 
         deallocate(bp_ad)
 
@@ -259,7 +262,7 @@ program gyre_force
            allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         endif
            
-        call eval_wave_nad(omega, Omega_orb)
+        call eval_wave_nad(omega, Omega_orb, Omega_rot)
 
         deallocate(bp_nad)
 
@@ -284,16 +287,87 @@ program gyre_force
 
 contains
 
-  subroutine eval_wave_ad (omega, Omega_orb)
+  subroutine set_freqs(omega, Omega_orb, Omega_rot)
 
-    real(WP), intent(in) :: omega(:)
-    real(WP), intent(in) :: Omega_orb(:)
+     real(WP), allocatable, intent(out) :: omega(:)
+     real(WP), allocatable, intent(out) :: Omega_orb(:)
+     real(WP), allocatable, intent(out) :: Omega_rot(:)
 
-    integer         :: j
-    real(WP)        :: v_i(bp_ad%n_i)
-    real(WP)        :: v_o(bp_ad%n_o)
-    type(r_state_t) :: st
-    type(wave_t)    :: wv
+     ! Set up the frequency arrays -- omega (the forcing frequency),
+     ! Omega_orb (the orbital frequency) and Omega_rot (the rotation
+     ! frequency)
+
+     select case (fr_p_sel%force_type)
+
+     case ('FIXED')
+
+        call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', omega)
+
+        ! Omega_orb and Omega_rot not set
+
+     case ('BINARY')
+
+        select case (fr_p_sel%scan_var)
+
+        case ('OMEGA')
+
+           $ASSERT(fr_p_sel%k /= 0,Cannot scan over omega when k == 0)
+
+           call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', omega)
+
+           Omega_orb = omega/fr_p_sel%k
+
+           ! Omega_rot not set
+
+        case ('OMEGA_ORB')
+
+           call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', Omega_orb)
+
+           omega = fr_p_sel%k*Omega_orb
+
+           ! Omega_rot not set
+
+        case ('OMEGA_ROT')
+
+           call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', Omega_rot)
+
+           allocate(Omega_orb(SIZE(Omega_rot)))
+
+           Omega_orb = or_p_sel%Omega_orb/freq_scale(or_p_sel%Omega_orb_units, ml)
+           omega = fr_p_sel%k*Omega_orb
+
+        case default
+
+           $ABORT(Invalid scan_var)
+
+        end select
+
+     case default
+
+        $ABORT(Invalid force_type)
+
+     end select
+
+     ! Finish
+
+     return
+
+  end subroutine set_freqs
+
+  !****
+
+  subroutine eval_wave_ad (omega, Omega_orb, Omega_rot)
+
+    real(WP), intent(in)              :: omega(:)
+    real(WP), intent(in)              :: Omega_orb(:)
+    real(WP), intent(in), allocatable :: Omega_rot(:)
+
+    integer          :: j
+    real(WP)         :: v_i(bp_ad%n_i)
+    real(WP)         :: v_o(bp_ad%n_o)
+    type(r_state_t)  :: st
+    type(wave_t)     :: wv
+    type(resp_t)     :: rs
 
     ! Scan over frequencies
 
@@ -301,6 +375,12 @@ contains
 
        j_ad = j_ad + 1
 
+       ! If necessary, set the rotation rate
+
+       if (ALLOCATED(Omega_rot)) then
+          call cx%set_Omega_rot(Omega_rot(j))
+       end if
+          
        ! Set up the inhomogeneous boundary terms
 
        v_i = 0._WP
@@ -314,8 +394,8 @@ contains
        class default
           $ABORT(Invalid bp_ad class)
        end select
-         
-       ! Solve for the wave function
+
+       ! Solve for the wave function and response
 
        st = r_state_t(omega(j))
        
@@ -328,10 +408,12 @@ contains
           $ABORT(Invalid bp_ad class)
        end select
 
-       ! Cache/write the mode
+       rs = resp_t(wv, or_p_sel, Omega_orb(j), fr_p_sel%k)
+
+       ! Cache/write the response
     
-       call sm_ad%cache(wv)
-       call dt_ad%write(wv)
+       call sm_ad%cache(rs)
+       call dt_ad%write(rs)
 
     end do omega_loop
 
@@ -343,16 +425,18 @@ contains
 
   !****
 
-  subroutine eval_wave_nad (omega, Omega_orb)
+  subroutine eval_wave_nad (omega, Omega_orb, Omega_rot)
 
-    real(WP), intent(in) :: omega(:)
-    real(WP), intent(in) :: Omega_orb(:)
+    real(WP), intent(in)              :: omega(:)
+    real(WP), intent(in)              :: Omega_orb(:)
+    real(WP), allocatable, intent(in) :: Omega_rot(:)
 
     integer         :: j
     complex(WP)     :: v_i(bp_nad%n_i)
     complex(WP)     :: v_o(bp_nad%n_o)
     type(c_state_t) :: st
     type(wave_t)    :: wv
+    type(resp_t)    :: rs
 
     ! Scan over frequencies
 
@@ -360,6 +444,12 @@ contains
 
        j_nad = j_nad + 1
 
+       ! If necessary, set the rotation rate
+
+       if (ALLOCATED(Omega_rot)) then
+          call cx%set_Omega_rot(Omega_rot(j))
+       end if
+          
        ! Set up the inhomogeneous boundary terms
 
        v_i = 0._WP
@@ -367,7 +457,7 @@ contains
        v_o = 0._WP
        v_o(2) = Phi_force(omega(j), Omega_orb(j))
          
-       ! Solve for the wave function
+       ! Solve for the wave function and response
 
        st = c_state_t(CMPLX(omega(j), KIND=WP))
        
@@ -378,10 +468,12 @@ contains
           $ABORT(Invalid bp_nad class)
        end select
 
-       ! Cache/write the mode
+       rs = resp_t(wv, or_p_sel, Omega_orb(j), fr_p_sel%k)
+
+       ! Cache/write the response
     
-       call sm_nad%cache(wv)
-       call dt_nad%write(wv)
+       call sm_nad%cache(rs)
+       call dt_nad%write(rs)
 
     end do omega_loop
 
@@ -399,11 +491,7 @@ contains
     real(WP), intent(in) :: Omega_orb
     real(WP)             :: Phi_force
 
-    real(WP) :: M_pri
-    real(WP) :: M_sec
-    real(WP) :: R_pri
-    real(WP) :: P
-    real(WP) :: a
+    real(WP) :: R_a
     real(WP) :: eps_tide
 
     ! Evaluate the surface forcing potential at forcing frequency
@@ -417,22 +505,11 @@ contains
 
     case ('BINARY')
 
-       select type (ml)
-       class is (evol_model_t)
-          M_pri = ml%M_star
-          M_sec = fr_p_sel%q*M_pri
-          R_pri = ml%R_star
-       class default
-          $ABORT(Invalid model class)
-       end select
+       R_a = tidal_R_a(Omega_orb, or_p_sel%q)
 
-       P = 1._WP/(Omega_orb*freq_scale('HZ', cx, md_p(i), os_p_sel))
+       eps_tide = R_a**3*or_p_sel%q
 
-       a = (G_GRAVITY*(M_pri + M_sec)*P**2/(4.*PI**2))**(1._WP/3._WP)
-
-       eps_tide = (R_pri/a)**3*(M_sec/M_pri)
-
-       Phi_force = -(2*md_p(i)%l+1)*eps_tide/sqrt(4._WP*PI)*tidal_c(R_pri/a, fr_p_sel%e, md_p(i)%l, md_p(i)%m, fr_p_sel%k)
+       Phi_force = -(2*md_p(i)%l+1)*eps_tide*tidal_c(R_a, or_p_sel%e, md_p(i)%l, md_p(i)%m, fr_p_sel%k)
 
     case default
 
@@ -446,4 +523,32 @@ contains
 
   end function Phi_force
 
+  !****
+
+  function grid_from_file (file) result (gr)
+
+     use core_hgroup
+
+     character(*), intent(in) :: file
+     type(grid_t)             :: gr
+
+     type(hgroup_t) :: hg
+     real(WP), allocatable :: x(:)
+
+     ! Create the grid from the file
+
+     hg = hgroup_t(file, OPEN_FILE)
+
+     call read_dset_alloc(hg, 'x', x)
+
+     call hg%final()
+
+     gr = grid_t(x)
+
+     ! Finish
+
+     return
+
+  end function grid_from_file
+  
 end program gyre_force

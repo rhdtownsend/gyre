@@ -1,7 +1,7 @@
 ! Module   : gyre_contour_search
 ! Purpose  : mode searching (complex, contour)
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -28,7 +28,7 @@ module gyre_contour_search
 
   use gyre_bvp
   use gyre_contour_map
-  use gyre_discrim_func
+  use gyre_discrim
   use gyre_ext
   use gyre_num_par
   use gyre_prox_search
@@ -56,13 +56,13 @@ contains
 
   subroutine contour_search (bp, omega_re, omega_im, omega_min, omega_max, i, nm_p, process_mode)
 
-    class(c_bvp_t), target, intent(inout) :: bp
-    real(WP), intent(in)                  :: omega_re(:)
-    real(WP), intent(in)                  :: omega_im(:)
-    real(WP), intent(in)                  :: omega_min
-    real(WP), intent(in)                  :: omega_max
-    integer, intent(in)                   :: i
-    type(num_par_t), intent(in)           :: nm_p
+    class(c_bvp_t), intent(inout) :: bp
+    real(WP), intent(in)          :: omega_re(:)
+    real(WP), intent(in)          :: omega_im(:)
+    real(WP), intent(in)          :: omega_min
+    real(WP), intent(in)          :: omega_max
+    integer, intent(in)           :: i
+    type(num_par_t), intent(in)   :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -74,20 +74,13 @@ contains
        end subroutine process_mode
     end interface
 
-    type(c_state_t)          :: st
-    type(c_discrim_func_t)   :: df
     complex(WP), allocatable :: omega_in_a(:)
     complex(WP), allocatable :: omega_in_b(:)
     integer, allocatable     :: j_in(:)
 
-    ! Set up the discriminant function
-
-     st = c_state_t()
-     df = c_discrim_func_t(bp, st, omega_min, omega_max)
-
     ! Find contour intersections
 
-    call find_isects_(df, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, j_in)
+    call find_isects_(bp, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, j_in)
 
     ! Search for modes
 
@@ -101,9 +94,9 @@ contains
 
   !****
 
-  subroutine find_isects_ (df, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, j_in)
+  subroutine find_isects_ (bp, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, j_in)
 
-    type(c_discrim_func_t), intent(inout) :: df
+    class(c_bvp_t), intent(inout)         :: bp
     real(WP), intent(in)                  :: omega_re(:)
     real(WP), intent(in)                  :: omega_im(:)
     integer, intent(in)                   :: i
@@ -162,8 +155,7 @@ contains
 
        omega = CMPLX(omega_re(j_ri(1)), omega_im(j_ri(2)), KIND=WP)
 
-       call df%eval(c_ext_t(omega), discrim, status)
-       $ASSERT(status == STATUS_OK,Invalid status)
+       call eval_discrim(bp, c_state_t(omega, omega_r=omega_re(j_ri(1))), discrim)
 
        discrim_map_f(j_ri(1),j_ri(2)) = FRACTION(discrim)
        discrim_map_e(j_ri(1),j_ri(2)) = EXPONENT(discrim)
@@ -269,11 +261,10 @@ contains
       integer       :: status
       real(WP)      :: w
 
-      call df%eval(c_ext_t(omega_a), discrim_a, status)
-      $ASSERT(status == STATUS_OK,Invalid status)
+      ! Evaluate the discriminant at the segment endpoints
 
-      call df%eval(c_ext_t(omega_b), discrim_b, status)
-      $ASSERT(status == STATUS_OK,Invalid status)
+      call eval_discrim(bp, c_state_t(omega_a, omega_r=REAL(omega_a)), discrim_a)
+      call eval_discrim(bp, c_state_t(omega_b, omega_r=REAL(omega_b)), discrim_b)
       
       ! Look for the point on the segment where the real/imaginary
       ! part of the discriminant changes sign

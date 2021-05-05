@@ -43,6 +43,7 @@ module gyre_grid_par
      real(WP)        :: dx_max = HUGE(0._WP)
      integer         :: n_iter_max = 32
      logical         :: resolve_ctr = .TRUE.
+     character(128)  :: file = ''
      character(2048) :: tag_list = ''
   end type grid_par_t
 
@@ -75,11 +76,12 @@ contains
     real(WP)                      :: dx_max
     integer                       :: n_iter_max
     logical                       :: resolve_ctr
+    character(LEN(gr_p%file))     :: file
     character(LEN(gr_p%tag_list)) :: tag_list
 
     namelist /grid/ x_i, x_o, w_osc, w_exp, w_ctr, &
          w_thm, w_str, dx_min, dx_max, n_iter_max, &
-         resolve_ctr, tag_list
+         resolve_ctr, file, tag_list
 
     ! Count the number of grid namelists
 
@@ -117,6 +119,7 @@ contains
        dx_max = gr_p(i)%dx_max
        n_iter_max = gr_p(i)%n_iter_max
        resolve_ctr = gr_p(i)%resolve_ctr
+       file = gr_p(i)%file
        tag_list = gr_p(i)%tag_list
 
        ! Read the namelist
@@ -136,6 +139,7 @@ contains
        gr_p(i)%dx_max = dx_max
        gr_p(i)%n_iter_max = n_iter_max
        gr_p(i)%resolve_ctr = resolve_ctr
+       gr_p(i)%file = file
        gr_p(i)%tag_list = tag_list
 
     end do read_loop

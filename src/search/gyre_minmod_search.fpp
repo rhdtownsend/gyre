@@ -1,7 +1,7 @@
 ! Module   : gyre_minmod_search
 ! Purpose  : mode searching (complex, minmod)
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,10 +25,10 @@ module gyre_minmod_search
   use core_parallel
 
   use gyre_bvp
-  use gyre_discrim_func
+  use gyre_discrim
   use gyre_ext
   use gyre_num_par
-  use gyre_min
+  use gyre_minim
   use gyre_prox_search
   use gyre_state
   use gyre_status
@@ -54,11 +54,11 @@ contains
 
   subroutine minmod_search (bp, omega, omega_min, omega_max, nm_p, process_mode)
 
-    class(c_bvp_t), target, intent(inout) :: bp
-    real(WP), intent(in)                  :: omega(:)
-    real(WP), intent(in)                  :: omega_min
-    real(WP), intent(in)                  :: omega_max
-    type(num_par_t), intent(in)           :: nm_p
+    class(c_bvp_t), intent(inout) :: bp
+    real(WP), intent(in)          :: omega(:)
+    real(WP), intent(in)          :: omega_min
+    real(WP), intent(in)          :: omega_max
+    type(num_par_t), intent(in)   :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -70,8 +70,6 @@ contains
        end subroutine process_mode
     end interface
 
-    type(c_state_t)            :: st
-    type(m_discrim_func_t)     :: df
     real(WP), allocatable      :: omega_a(:)
     real(WP), allocatable      :: omega_b(:)
     real(WP), allocatable      :: omega_c(:)
@@ -81,21 +79,22 @@ contains
     integer                    :: n_in
     complex(WP), allocatable   :: omega_in(:)
     integer, allocatable       :: j_in(:)
+    type(r_ext_t)              :: x_a
+    type(r_ext_t)              :: x_b
+    type(r_ext_t)              :: x_c
+    type(r_ext_t)              :: f_x_a
+    type(r_ext_t)              :: f_x_b
+    type(r_ext_t)              :: f_x_c
     integer                    :: i
     integer                    :: n_iter
-    type(r_ext_t)              :: omega_m
+    type(r_ext_t)              :: x_minim
     integer                    :: status
-
-    ! Set up the discriminant function
-
-    st = c_state_t()
-    df = m_discrim_func_t(bp, st, omega_min, omega_max)
 
     ! Find discriminant minmod brackets
 
-    call find_brackets_(df, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
+    call find_brackets_(bp, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
 
-    ! Convert brackets into initial frequencies
+    ! Convert brackets into minmod frequencies
 
     n_in = SIZE(omega_a)
 
@@ -108,9 +107,16 @@ contains
 
        n_iter = 0
 
-       call solve(df, r_ext_t(omega_a(i)), r_ext_t(omega_b(i)), r_ext_t(omega_c(i)), r_ext_t(0._WP), nm_p, &
-                  omega_m, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
-                  f_rx_a=discrim_a(i), f_rx_b=discrim_b(i), f_rx_c=discrim_c(i))
+       x_a = r_ext_t(omega_a(i))
+       x_b = r_ext_t(omega_b(i))
+       x_c = r_ext_t(omega_c(i))
+       f_x_a = discrim_a(i)
+       f_x_b = discrim_b(i)
+       f_x_c = discrim_c(i)
+
+       call solve_minim(eval_discrim_x_, x_a, x_b, x_c, r_ext_t(0._WP), nm_p, &
+            x_minim, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
+            f_x_a=f_x_a, f_x_b=f_x_b, f_x_c=f_x_c)
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
           cycle in_loop
@@ -118,7 +124,7 @@ contains
 
        j_m = j_m + 1
 
-       omega_in(i) = real(omega_m)
+       omega_in(i) = real(x_minim)
        j_in(i) = j_m
 
     end do in_loop
@@ -132,6 +138,45 @@ contains
     return
 
   contains
+
+    subroutine eval_discrim_x_ (x, discrim, status)
+
+      type(r_ext_t), intent(in)  :: x
+      type(r_ext_t), intent(out) :: discrim
+      integer, intent(out)       :: status
+
+      real(WP)      :: omega_r
+      complex(WP)   :: omega
+      type(c_ext_t) :: discrim_c
+
+      ! Evaluate the frequency from x
+      
+      omega_r = real(x)
+      omega = CMPLX(omega_r, KIND=WP)
+
+      ! Evaluate the discriminant
+
+      if (omega_r >= omega_min .AND. omega_r <= omega_max) then
+
+         call eval_discrim(bp, c_state_t(omega, omega_r=omega_r), discrim_c)
+
+         discrim = abs(discrim_c)
+
+         status = STATUS_OK
+
+      else
+
+         status = STATUS_OMEGA_DOMAIN
+
+      endif
+      
+      ! Finish
+
+      return
+
+    end subroutine eval_discrim_x_
+
+    !****
 
     subroutine report_status_ (status, stage_str)
 
@@ -169,9 +214,9 @@ contains
 
   !****
 
-  subroutine find_brackets_ (df, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
+  subroutine find_brackets_ (bp, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
 
-    type(m_discrim_func_t), intent(inout)   :: df
+    class(c_bvp_t), intent(inout)           :: bp
     real(WP), intent(in)                    :: omega(:)
     real(WP), allocatable, intent(out)      :: omega_a(:)
     real(WP), allocatable, intent(out)      :: omega_b(:)
@@ -186,7 +231,7 @@ contains
     integer              :: c_end
     integer              :: c_rate
     integer              :: i
-    type(r_ext_t)        :: discrim_i
+    type(c_ext_t)        :: discrim_i
     integer              :: status
     real(WP)             :: discrim_f(SIZE(omega))
     integer              :: discrim_e(SIZE(omega))
@@ -214,10 +259,10 @@ contains
 
     discrim_loop: do i = i_part(MPI_RANK+1), i_part(MPI_RANK+2)-1
 
-       call df%eval(r_ext_t(omega(i)), discrim_i, status)
+       call eval_discrim(bp, c_state_t(CMPLX(omega(i), KIND=WP), omega_r=omega(i)), discrim_i)
 
-       discrim_f(i) = FRACTION(discrim_i)
-       discrim_e(i) = EXPONENT(discrim_i)
+       discrim_f(i) = FRACTION(abs(discrim_i))
+       discrim_e(i) = EXPONENT(abs(discrim_i))
 
        if (check_log_level('DEBUG')) then
           write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))

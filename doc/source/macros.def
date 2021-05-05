@@ -84,7 +84,8 @@ alphahfl	\alpha_{\rm hfl}
 alpharht	\alpha_{\rm rht}
 alphagam	\alpha_{\gamma}
 alphapi	\alpha_{\pi}
-alphakap	\alpha_{\kappa}
+alphakat	\alpha_{\kappa,T}
+alphakar	\alpha_{\kappa,\rho}
 wosc	w_{\rm osc}
 wexp	w_{\rm exp}
 wthm	w_{\rm thm}
@@ -104,6 +105,8 @@ dcrad	\partial\crad
 cthn	c_{\rm thn}
 dcthn	\partial\cthn
 cthk	c_{\rm thk}
+ckapad	c_{\kappa,{\rm ad}}
+ckapS	c_{\kappa,S}
 ceps	c_{\epsilon}
 cepsad	c_{\epsilon,{\rm ad}}
 cepsS	c_{\epsilon,S}

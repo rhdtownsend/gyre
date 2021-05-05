@@ -1,7 +1,7 @@
 ! Module   : gyre_prox_search
 ! Purpose  : mode searching (complex, proximity)
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,7 +25,7 @@ module gyre_prox_search
   use gyre_constants
 
   use gyre_bvp
-  use gyre_discrim_func
+  use gyre_discrim
   use gyre_ext
   use gyre_math
   use gyre_mode
@@ -115,13 +115,13 @@ contains
 
   subroutine prox_search_2_ (bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, nm_p, process_mode)
 
-    class(c_bvp_t), target, intent(inout) :: bp
-    complex(WP), intent(in)               :: omega_in_a(:)
-    complex(WP), intent(in)               :: omega_in_b(:)
-    integer, intent(in)                   :: j_in(:)
-    real(WP), intent(in)                  :: omega_min
-    real(WP), intent(in)                  :: omega_max
-    type(num_par_t), intent(in)           :: nm_p
+    class(c_bvp_t), intent(inout) :: bp
+    complex(WP), intent(in)       :: omega_in_a(:)
+    complex(WP), intent(in)       :: omega_in_b(:)
+    integer, intent(in)           :: j_in(:)
+    real(WP), intent(in)          :: omega_min
+    real(WP), intent(in)          :: omega_max
+    type(num_par_t), intent(in)   :: nm_p
     interface
        subroutine process_mode (md, n_iter, chi)
          use core_kinds
@@ -138,21 +138,18 @@ contains
     integer                  :: c_end
     integer                  :: c_rate
     integer                  :: i
-    type(c_ext_t)            :: omega_a
-    type(c_ext_t)            :: omega_b
-    real(WP)                 :: omega_r
     integer                  :: n_iter
     integer                  :: n_iter_def
-    type(c_state_t)          :: st
-    type(c_discrim_func_t)   :: df
-    type(c_state_t)          :: st_def
-    type(c_discrim_func_t)   :: df_def
-    integer                  :: status
+    real(WP)                 :: omega_r
     type(c_ext_t)            :: discrim_a
     type(c_ext_t)            :: discrim_b
-    type(c_ext_t)            :: discrim_a_rev
-    type(c_ext_t)            :: discrim_b_rev
-    type(c_ext_t)            :: omega_root
+    type(c_ext_t)            :: z_a
+    type(c_ext_t)            :: z_b
+    type(c_ext_t)            :: f_z_a
+    type(c_ext_t)            :: f_z_b
+    logical                  :: apply_deflate
+    integer                  :: status
+    type(c_ext_t)            :: z_root
     type(wave_t)             :: wv
     type(mode_t)             :: md
     type(r_ext_t)            :: chi
@@ -185,49 +182,39 @@ contains
 
        ! Set up the initial points
 
-       omega_a = c_ext_t(omega_in_a(i))
-       omega_b = c_ext_t(omega_in_b(i))
-       omega_r = real(0.5_WP*(omega_a + omega_b))
+       omega_r = real(0.5_WP*(omega_in_a(i) + omega_in_b(i)))
 
-       ! Set up the discriminant function
+       call eval_discrim(bp, c_state_t(omega_in_a(i), omega_r=omega_r), discrim_a)
+       call eval_discrim(bp, c_state_t(omega_in_b(i), omega_r=omega_r), discrim_b)
 
-       st = c_state_t(omega_r=omega_r)
-       df = c_discrim_func_t(bp, st, omega_min, omega_max)
+       z_a = c_ext_t(omega_in_a(i))
+       z_b = c_ext_t(omega_in_b(i))
+       f_z_a = discrim_a
+       f_z_b = discrim_b
 
-       call df%eval(omega_a, discrim_a, status)
-       if (status /= STATUS_OK) then
-          call report_status_(status, 'initial trial (a)')
-          cycle in_loop
-       endif
-          
-       call df%eval(omega_b, discrim_b, status)
-       if (status /= STATUS_OK) then
-          call report_status_(status, 'initial trial (b)')
-          cycle in_loop
-       endif
-          
        ! If necessary, do a preliminary root find using the deflated
        ! discriminant
 
        if (nm_p%deflate_roots) then
 
-          st_def = c_state_t(omega_r=omega_r)
-          df_def = c_discrim_func_t(bp, st, omega_min, omega_max, omega_def)
+          apply_deflate = .TRUE.
 
-          call narrow(df_def, nm_p, omega_a, omega_b, r_ext_t(0._WP), status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
+          call narrow_bracket(eval_discrim_z_, z_a, z_b, r_ext_t(0._WP), nm_p, &
+               status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
           if (status /= STATUS_OK) then
              call report_status_(status, 'deflate narrow')
              cycle in_loop
           endif
 
-          ! If necessary, reset omega_a and omega_b so they are not
+          ! If necessary, reset z_a and z_b so they are not
           ! coincident; and then save the revised discriminant values
 
-          if(omega_b == omega_a) then
-             omega_b = omega_a*(1._WP + EPSILON(0._WP)*(omega_a/abs(omega_a)))
+          if (z_b == z_a) then
+             z_b = z_a*(1._WP + EPSILON(0._WP)*(z_a/abs(z_a)))
           endif
 
-          call expand(df, omega_a, omega_b, r_ext_t(0._WP), status, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev) 
+          call expand_bracket(eval_discrim_z_, z_a, z_b, r_ext_t(0._WP), &
+               status, f_z_a=f_z_a, f_z_b=f_z_b)
           if (status /= STATUS_OK) then
              call report_status_(status, 'deflate re-expand')
              cycle in_loop
@@ -235,17 +222,17 @@ contains
 
        else
 
-          discrim_a_rev = discrim_a
-          discrim_b_rev = discrim_b
-
           n_iter_def = 0
 
        endif
 
        ! Find the discriminant root
 
-       call solve(df, nm_p, omega_a, omega_b, r_ext_t(0._WP), omega_root, status, &
-                  n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, f_cx_a=discrim_a_rev, f_cx_b=discrim_b_rev)
+       apply_deflate = .FALSE.
+
+       call solve_root(eval_discrim_z_, z_a, z_b, r_ext_t(0._WP), nm_p, &
+            z_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
+            f_z_a=f_z_a, f_z_b=f_z_b)
        if (status /= STATUS_OK) then
           call report_status_(status, 'solve')
           cycle in_loop
@@ -253,11 +240,9 @@ contains
 
        ! Construct the mode_t
 
-       st = c_state_t(omega=cmplx(omega_root), omega_r=omega_r)
-
        select type (bp)
        type is (nad_bvp_t)
-          wv = wave_t(bp, st, j_in(i))
+          wv = wave_t(bp, c_state_t(cmplx(z_root), omega_r=omega_r), j_in(i))
        class default
           $ABORT(Invalid bp class)
        end select
@@ -272,7 +257,7 @@ contains
 
        ! Store the frequency in the deflation array
 
-       omega_def = [omega_def,cmplx(omega_root)]
+       omega_def = [omega_def,cmplx(z_root)]
 
     end do in_loop
 
@@ -288,6 +273,44 @@ contains
     return
 
   contains
+
+    subroutine eval_discrim_z_ (z, discrim, status)
+
+      type(c_ext_t), intent(in)  :: z
+      type(c_ext_t), intent(out) :: discrim
+      integer, intent(out)       :: status
+
+      complex(WP) :: omega
+
+      ! Evaluate the frequency from z
+
+      omega = cmplx(z)
+
+      ! Evaluate the discriminant
+
+      if (REAL(omega) >= omega_min .AND. REAL(omega) <= omega_max) then
+
+         call eval_discrim(bp, c_state_t(omega, omega_r=omega_r), discrim)
+
+         if (apply_deflate) then
+            discrim = discrim*PRODUCT(omega/(omega - omega_def))
+         end if
+            
+         status = STATUS_OK
+
+      else
+
+         status = STATUS_OMEGA_DOMAIN
+
+      endif
+      
+      ! Finish
+
+      return
+
+    end subroutine eval_discrim_z_
+
+    !****
 
     subroutine report_status_ (status, stage_str)
 
@@ -311,8 +334,6 @@ contains
 
          write(OUTPUT_UNIT, 120) 'omega_in_a :', cmplx(omega_in_a(i))
          write(OUTPUT_UNIT, 120) 'omega_in_b :', cmplx(omega_in_b(i))
-         write(OUTPUT_UNIT, 120) 'omega_a    :', cmplx(omega_a)
-         write(OUTPUT_UNIT, 120) 'omega_b    :', cmplx(omega_b)
 120      format(3X,A,1X,2E24.16)
 
       end if

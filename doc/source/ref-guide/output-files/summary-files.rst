@@ -203,7 +203,8 @@ Energetics & Transport
    * - :nml_v:`H`
      - :math:`H`
      - real(:nml_v:`n_j`)
-     - mode energy [:math:`G M^{2}/R`]
+     - mode energy [:math:`G M^{2}/R`]; evaluated as
+       :math:`\frac{1}{2} \omega^{2} E`
    * - :nml_v:`W`\ [#only-N]_
      - :math:`W`
      - real(:nml_v:`n_j`)
