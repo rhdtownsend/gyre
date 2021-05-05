@@ -29,6 +29,7 @@ module gyre_hom_model
   use gyre_model
   use gyre_model_par
   use gyre_point
+  use gyre_util
 
   use ISO_FORTRAN_ENV
 
@@ -87,6 +88,11 @@ contains
 
     ! Construct the hom_model_t
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Constructing homogeneous model'
+100    format(A)
+    endif
+
     select case (ml_p%grid_type)
     case ('UNI')
        w = uni_weights(ml_p%n)
@@ -106,6 +112,13 @@ contains
 
     ml%s_i = ml%gr%s_i()
     ml%s_o = ml%gr%s_o()
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 110) 'Created', ml_p%n, 'points'
+110    format(3X,A,1X,I0,1X,A)
+       write(OUTPUT_UNIT, 120) 'Distribution', ml_p%grid_type
+120    format(3X,A,1X,A)
+    endif
 
     ! Finish
 
