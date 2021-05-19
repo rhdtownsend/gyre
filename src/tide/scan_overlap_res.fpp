@@ -696,8 +696,8 @@ contains
 
          ! B+12, eqn C4 (with some transformation)
 
-         !dtau = 8._WP*(or_p%q*R_a**(md_p%l+1)*W*X*Q*ABS(Delta))**2 * md_p%m*sigma*gamma/E
-         dtau = 8._WP*or_p%q*R_a**(2*md_p%l+2)*W**2*X**2*Q**2 * md_p%m * omega**2*sigma*gamma/((omega**2 - sigma**2)**2 + 4*gamma**2*sigma**2) / E
+         dtau = 8._WP*(or_p%q*R_a**(md_p%l+1)*W*X*Q*ABS(Delta))**2 * md_p%m*sigma*gamma/E
+         !dtau = 8._WP*or_p%q*R_a**(2*md_p%l+2)*W**2*X**2*Q**2 * md_p%m * omega**2*sigma*gamma/((omega**2 - sigma**2)**2 + 4*gamma**2*sigma**2) / E
 
          ! Add them in
 
