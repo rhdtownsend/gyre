@@ -409,7 +409,7 @@ contains
       A(6,6) = -1._WP - l_i
 
       B(1,1) = -A(1,2)
-      B(2,1) = -A(2,2) + V/Gamma_1 - 2._WP
+      B(2,1) = V/Gamma_1 - 2._WP
       B(3,1) = -A(3,2)
       B(4,1) = -A(4,2)
       B(5,1) = -A(5,2)
@@ -418,7 +418,7 @@ contains
       if (x > 0._WP) then
          if (As < 0._WP) then
             alpha_MLT = 1.8_WP
-            F = c_1*i_omega_c*(alpha_MLT*MIN(1._WP/V, 1._WP))**2*SQRT(-As/c_1)
+            F = i_omega_c*(alpha_MLT*MIN(1._WP/V, 1._WP))**2*SQRT(-c_1*As)
          else
             F = 0._WP
          endif
@@ -433,7 +433,7 @@ contains
       C(1,5) = F*A(1,5)
       C(1,6) = F*A(1,6)
 
-      D(1,1) = 1._WP - F*A(1,2)
+      D(1,1) = - 1._WP - F*A(1,2)
 
     end associate
 
