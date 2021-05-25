@@ -35,6 +35,7 @@ module gyre_prox_search
   use gyre_state
   use gyre_status
   use gyre_util
+  use gyre_vnad_bvp
   use gyre_wave
 
   use ISO_FORTRAN_ENV
@@ -242,6 +243,8 @@ contains
 
        select type (bp)
        type is (nad_bvp_t)
+          wv = wave_t(bp, c_state_t(cmplx(z_root), omega_r=omega_r), j_in(i))
+       type is (vnad_bvp_t)
           wv = wave_t(bp, c_state_t(cmplx(z_root), omega_r=omega_r), j_in(i))
        class default
           $ABORT(Invalid bp class)

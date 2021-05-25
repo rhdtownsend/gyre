@@ -467,6 +467,8 @@ contains
        select type (bp_nad)
        type is (nad_bvp_t)
           wv = wave_t(bp_nad, st, v_i, v_o, j_nad)
+       type is (vnad_bvp_t)
+          wv = wave_t(bp_nad, st, v_i, v_o, j_nad)
        class default
           $ABORT(Invalid bp_nad class)
        end select
