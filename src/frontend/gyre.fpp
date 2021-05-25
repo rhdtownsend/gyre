@@ -53,6 +53,7 @@ program gyre
   use gyre_summary
   use gyre_util
   use gyre_version
+  use gyre_vnad_bvp
 
   use ISO_FORTRAN_ENV
 
@@ -272,7 +273,11 @@ program gyre
 
      if (os_p_sel%nonadiabatic) then
 
-        allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+        if (os_p_sel%viscosity) then
+           allocate(bp_nad, SOURCE=vnad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+        else
+           allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+        endif
 
         if (check_log_level('INFO')) then
            write(OUTPUT_UNIT, 100) 'Starting search (non-adiabatic)'

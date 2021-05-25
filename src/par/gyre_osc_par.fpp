@@ -57,6 +57,7 @@ module gyre_osc_par
      character(2048)         :: tag_list = ''
      logical                 :: adiabatic = .TRUE.
      logical                 :: nonadiabatic = .FALSE.
+     logical                 :: viscosity = .FALSE.
      logical                 :: quasiad_eigfuncs = .FALSE.
      logical                 :: reduce_order = .TRUE.
   end type osc_par_t
@@ -106,6 +107,7 @@ contains
     character(LEN(os_p%tag_list))         :: tag_list
     logical                               :: adiabatic
     logical                               :: nonadiabatic
+    logical                               :: viscosity
     logical                               :: quasiad_eigfuncs
     logical                               :: reduce_order
 
@@ -114,7 +116,7 @@ contains
          inner_bound, outer_bound, outer_bound_cutoff, outer_bound_branch, &
          variables_set, inertia_norm, time_factor, &
          conv_scheme, zeta_scheme, deps_source, deps_file, deps_file_format, &
-         tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
+         tag_list, adiabatic, nonadiabatic, viscosity, quasiad_eigfuncs, &
          reduce_order
 
     ! Count the number of osc namelists
@@ -167,6 +169,7 @@ contains
        tag_list = os_p(i)%tag_list
        adiabatic = os_p(i)%adiabatic
        nonadiabatic = os_p(i)%nonadiabatic
+       viscosity = os_p(i)%viscosity
        quasiad_eigfuncs = os_p(i)%quasiad_eigfuncs
        reduce_order = os_p(i)%reduce_order
 
@@ -201,6 +204,7 @@ contains
        os_p(i)%tag_list = tag_list
        os_p(i)%adiabatic = adiabatic
        os_p(i)%nonadiabatic = nonadiabatic
+       os_p(i)%viscosity = viscosity
        os_p(i)%quasiad_eigfuncs = quasiad_eigfuncs
        os_p(i)%reduce_order = reduce_order
 

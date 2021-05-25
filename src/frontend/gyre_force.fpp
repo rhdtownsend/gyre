@@ -56,6 +56,7 @@ program gyre_force
   use gyre_tide_util
   use gyre_util
   use gyre_version
+  use gyre_vnad_bvp
   use gyre_wave
 
   use ISO_FORTRAN_ENV
@@ -258,6 +259,8 @@ program gyre_force
 
         if (md_p(i)%static) then
            $ABORT(Static nonadiabatic modes not currently implemented)
+        elseif (os_p_sel%viscosity) then
+           allocate(bp_nad, SOURCE=vnad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         else
            allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         endif
