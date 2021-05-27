@@ -42,6 +42,7 @@ module gyre_osc_par
      real(WP)                :: alpha_kar = 1._WP
      real(WP)                :: alpha_kat = 1._WP
      real(WP)                :: alpha_rht = 0._WP
+     real(WP)                :: alpha_trb = 0._WP
      character(64)           :: variables_set = 'GYRE'
      character(64)           :: inner_bound = 'REGULAR'
      character(64)           :: outer_bound = 'VACUUM'
@@ -57,7 +58,6 @@ module gyre_osc_par
      character(2048)         :: tag_list = ''
      logical                 :: adiabatic = .TRUE.
      logical                 :: nonadiabatic = .FALSE.
-     logical                 :: viscosity = .FALSE.
      logical                 :: quasiad_eigfuncs = .FALSE.
      logical                 :: reduce_order = .TRUE.
   end type osc_par_t
@@ -92,6 +92,7 @@ contains
     real(WP)                              :: alpha_kar
     real(WP)                              :: alpha_kat
     real(WP)                              :: alpha_rht
+    real(WP)                              :: alpha_trb
     character(LEN(os_p%variables_set))    :: variables_set
     character(LEN(os_p%inner_bound))      :: inner_bound
     character(LEN(os_p%outer_bound))      :: outer_bound
@@ -107,16 +108,15 @@ contains
     character(LEN(os_p%tag_list))         :: tag_list
     logical                               :: adiabatic
     logical                               :: nonadiabatic
-    logical                               :: viscosity
     logical                               :: quasiad_eigfuncs
     logical                               :: reduce_order
 
     namelist /osc/ x_ref, x_atm, alpha_grv, alpha_thm, alpha_hfl, &
-         alpha_gam, alpha_pi, alpha_kar, alpha_kat, alpha_rht, &
+         alpha_gam, alpha_pi, alpha_kar, alpha_kat, alpha_rht, alpha_trb, &
          inner_bound, outer_bound, outer_bound_cutoff, outer_bound_branch, &
          variables_set, inertia_norm, time_factor, &
          conv_scheme, zeta_scheme, deps_source, deps_file, deps_file_format, &
-         tag_list, adiabatic, nonadiabatic, viscosity, quasiad_eigfuncs, &
+         tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
          reduce_order
 
     ! Count the number of osc namelists
@@ -154,6 +154,7 @@ contains
        alpha_kar = os_p(i)%alpha_kar
        alpha_kat = os_p(i)%alpha_kat
        alpha_rht = os_p(i)%alpha_rht
+       alpha_trb = os_p(i)%alpha_trb
        variables_set = os_p(i)%variables_set
        inner_bound = os_p(i)%inner_bound
        outer_bound = os_p(i)%outer_bound
@@ -169,7 +170,6 @@ contains
        tag_list = os_p(i)%tag_list
        adiabatic = os_p(i)%adiabatic
        nonadiabatic = os_p(i)%nonadiabatic
-       viscosity = os_p(i)%viscosity
        quasiad_eigfuncs = os_p(i)%quasiad_eigfuncs
        reduce_order = os_p(i)%reduce_order
 
@@ -189,6 +189,7 @@ contains
        os_p(i)%alpha_kar = alpha_kar
        os_p(i)%alpha_kat = alpha_kat
        os_p(i)%alpha_rht = alpha_rht
+       os_p(i)%alpha_trb = alpha_trb
        os_p(i)%variables_set = variables_set
        os_p(i)%inner_bound = inner_bound
        os_p(i)%outer_bound = outer_bound
@@ -204,7 +205,6 @@ contains
        os_p(i)%tag_list = tag_list
        os_p(i)%adiabatic = adiabatic
        os_p(i)%nonadiabatic = nonadiabatic
-       os_p(i)%viscosity = viscosity
        os_p(i)%quasiad_eigfuncs = quasiad_eigfuncs
        os_p(i)%reduce_order = reduce_order
 

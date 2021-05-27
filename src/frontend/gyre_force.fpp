@@ -54,9 +54,9 @@ program gyre_force
   use gyre_state
   use gyre_summary
   use gyre_tide_util
+  use gyre_tnad_bvp
   use gyre_util
   use gyre_version
-  use gyre_vnad_bvp
   use gyre_wave
 
   use ISO_FORTRAN_ENV
@@ -259,8 +259,8 @@ program gyre_force
 
         if (md_p(i)%static) then
            $ABORT(Static nonadiabatic modes not currently implemented)
-        elseif (os_p_sel%viscosity) then
-           allocate(bp_nad, SOURCE=vnad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+        elseif (os_p_sel%alpha_trb > 0._WP) then
+           allocate(bp_nad, SOURCE=tnad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         else
            allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         endif
@@ -467,7 +467,7 @@ contains
        select type (bp_nad)
        type is (nad_bvp_t)
           wv = wave_t(bp_nad, st, v_i, v_o, j_nad)
-       type is (vnad_bvp_t)
+       type is (tnad_bvp_t)
           wv = wave_t(bp_nad, st, v_i, v_o, j_nad)
        class default
           $ABORT(Invalid bp_nad class)

@@ -1,7 +1,7 @@
-! Module   : gyre_vnad_bvp
-! Purpose  : viscous nonadiabatic boundary value problem solver
+! Module   : gyre_tnad_bvp
+! Purpose  : nonadiabatic (+turbulent convection) boundary value problem solver
 !
-! Copyright 2013-2021 Rich Townsend & The GYRE Team
+! Copyright 2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_vnad_bvp
+module gyre_tnad_bvp
 
   ! Uses
 
@@ -30,13 +30,15 @@ module gyre_vnad_bvp
   use gyre_grid_factory
   use gyre_model
   use gyre_mode_par
-  use gyre_vnad_bound
-  use gyre_vnad_diff
-  use gyre_vnad_trans
+  use gyre_nad_bound
+  use gyre_nad_eqns
+  use gyre_nad_trans
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
   use gyre_state
+  use gyre_tnad_diff
+  use gyre_tnad_eqns
   use gyre_wave
 
   use ISO_FORTRAN_ENV
@@ -47,21 +49,22 @@ module gyre_vnad_bvp
 
   ! Derived-type definitions
 
-  type, extends (c_bvp_t) :: vnad_bvp_t
+  type, extends (c_bvp_t) :: tnad_bvp_t
      private
      type(context_t), pointer :: cx => null()
      type(grid_t)             :: gr
-     type(vnad_trans_t)       :: tr
+     type(tnad_eqns_t)        :: eq
+     type(nad_trans_t)        :: tr
      type(mode_par_t)         :: md_p
      type(num_par_t)          :: nm_p
      type(osc_par_t)          :: os_p
-  end type vnad_bvp_t
+  end type tnad_bvp_t
 
   ! Interfaces
 
-  interface vnad_bvp_t
-     module procedure vnad_bvp_t_
-  end interface vnad_bvp_t
+  interface tnad_bvp_t
+     module procedure tnad_bvp_t_
+  end interface tnad_bvp_t
 
   interface wave_t
      module procedure wave_t_hom_
@@ -72,31 +75,31 @@ module gyre_vnad_bvp
 
   private
 
-  public :: vnad_bvp_t
+  public :: tnad_bvp_t
   public :: wave_t
 
   ! Procedures
 
 contains
 
-  function vnad_bvp_t_ (cx, gr, md_p, nm_p, os_p) result (bp)
+  function tnad_bvp_t_ (cx, gr, md_p, nm_p, os_p) result (bp)
 
     class(context_t), pointer, intent(in) :: cx
     type(grid_t), intent(in)              :: gr
     type(mode_par_t), intent(in)          :: md_p
     type(num_par_t), intent(in)           :: nm_p
     type(osc_par_t), intent(in)           :: os_p
-    type(vnad_bvp_t)                      :: bp
+    type(tnad_bvp_t)                      :: bp
     
-    type(vnad_bound_t)             :: bd
+    type(nad_bound_t)              :: bd
     integer                        :: k
-    type(vnad_diff_t), allocatable :: df(:)
+    type(tnad_diff_t), allocatable :: df(:)
 
-    ! Construct the vnad_bvp_t
+    ! Construct the tnad_bvp_t
 
     ! Initialize the boundary conditions
 
-    bd = vnad_bound_t(cx, md_p, os_p)
+    bd = nad_bound_t(cx, md_p, os_p)
 
     ! Initialize the difference equations
 
@@ -104,7 +107,7 @@ contains
 
     !$OMP PARALLEL DO
     do k = 1, gr%n_k-1
-       df(k) = vnad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+       df(k) = tnad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -116,7 +119,10 @@ contains
     bp%cx => cx
     bp%gr = gr
 
-    bp%tr = vnad_trans_t(cx, md_p, os_p)
+    bp%eq = tnad_eqns_t(cx, md_p, os_p)
+    call bp%eq%stencil(gr%pt)
+
+    bp%tr = nad_trans_t(cx, md_p, os_p)
     call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
@@ -127,13 +133,13 @@ contains
 
     return
 
-  end function vnad_bvp_t_
+  end function tnad_bvp_t_
 
   !****
 
   function wave_t_hom_ (bp, st, j) result (wv)
 
-    class(vnad_bvp_t), intent(inout) :: bp
+    class(tnad_bvp_t), intent(inout) :: bp
     type(c_state_t), intent(in)      :: st
     integer, intent(in)              :: j
     type(wave_t)                     :: wv
@@ -167,7 +173,7 @@ contains
 
   function wave_t_inhom_ (bp, st, z_i, z_o, j) result (wv)
 
-    class(vnad_bvp_t), intent(inout) :: bp
+    class(tnad_bvp_t), intent(inout) :: bp
     type(c_state_t), intent(in)      :: st
     complex(WP), intent(in)          :: z_i(:)
     complex(WP), intent(in)          :: z_o(:)
@@ -206,16 +212,29 @@ contains
 
   function wave_t_y_ (bp, st, y, j) result (wv)
 
-    class(vnad_bvp_t), intent(inout) :: bp
+    class(tnad_bvp_t), intent(inout) :: bp
     type(c_state_t), intent(in)      :: st
     complex(WP), intent(in)          :: y(:,:)
     integer, intent(in)              :: j
     type(wave_t)                     :: wv
 
+    integer       :: k
+    complex(WP)   :: y_c(bp%n_e,bp%n_k)
     type(c_ext_t) :: discrim
 
     $CHECK_BOUNDS(SIZE(y, 1),bp%n_e)
     $CHECK_BOUNDS(SIZE(y, 2),bp%n_k)
+
+    ! Subtract off the turbulent force variable
+
+    !$OMP PARALLEL DO
+    do k = 1, bp%gr%n_k
+
+       y_c(1,k) = y(1,k)
+       y_c(2,k) = y(2,k) - bp%eq%y_trb(k, st, y(:,k))
+       y_c(3:6,k) = y(3:6,k)
+
+    end do
 
     ! Construct the wave_t
 
@@ -229,4 +248,4 @@ contains
 
   end function wave_t_y_
 
-end module gyre_vnad_bvp
+end module gyre_tnad_bvp

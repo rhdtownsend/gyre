@@ -1,7 +1,7 @@
-! Incfile  : gyre_vnad_diff
-! Purpose  : viscous nonadiabatic difference equations
+! Incfile  : gyre_tnad_diff
+! Purpose  : nonadiabatic (+turbulent convection) difference equations
 !
-! Copyright 2016-2021 Rich Townsend & The GYRE Team
+! Copyright 2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_vnad_diff
+module gyre_tnad_diff
 
   ! Uses
 
@@ -31,8 +31,8 @@ module gyre_vnad_diff
   use gyre_math
   use gyre_mode_par
   use gyre_model
-  use gyre_vnad_eqns
-  use gyre_vnad_match
+  use gyre_tnad_eqns
+  use gyre_nad_match
   use gyre_num_par
   use gyre_osc_par
   use gyre_point
@@ -46,35 +46,35 @@ module gyre_vnad_diff
 
   ! Derived-type definitions
 
-  type, extends (c_diff_t) :: vnad_diff_t
+  type, extends (c_diff_t) :: tnad_diff_t
      private
      type(context_t), pointer     :: cx => null()
      class(c_diff_t), allocatable :: df
-     type(vnad_eqns_t)            :: eq
+     type(tnad_eqns_t)            :: eq
      real(WP)                     :: Omega_rot
      real(WP)                     :: dx
    contains
      private
      procedure, public :: build
-  end type vnad_diff_t
+  end type tnad_diff_t
 
   ! Interfaces
 
-  interface vnad_diff_t
-     module procedure vnad_diff_t_
-  end interface vnad_diff_t
+  interface tnad_diff_t
+     module procedure tnad_diff_t_
+  end interface tnad_diff_t
 
   ! Access specifiers
 
   private
 
-  public :: vnad_diff_t
+  public :: tnad_diff_t
 
   ! Procedures
 
 contains
 
-  function vnad_diff_t_ (cx, pt_a, pt_b, md_p, nm_p, os_p) result (df)
+  function tnad_diff_t_ (cx, pt_a, pt_b, md_p, nm_p, os_p) result (df)
 
     type(context_t), pointer, intent(in) :: cx
     type(point_t), intent(in)            :: pt_a
@@ -82,13 +82,13 @@ contains
     type(mode_par_t), intent(in)         :: md_p
     type(num_par_t), intent(in)          :: nm_p
     type(osc_par_t), intent(in)          :: os_p
-    type(vnad_diff_t)                    :: df
+    type(tnad_diff_t)                    :: df
 
-    type(vnad_eqns_t)       :: eq
+    type(tnad_eqns_t)       :: eq
     type(point_t)           :: pt_m
     class(model_t), pointer :: ml
 
-    ! Construct the vnad_diff_t
+    ! Construct the tnad_diff_t
 
     df%cx => cx
 
@@ -96,7 +96,7 @@ contains
 
        ! Regular subinterval; use difference equations
 
-       eq = vnad_eqns_t(cx, md_p, os_p)
+       eq = tnad_eqns_t(cx, md_p, os_p)
 
        select case (nm_p%diff_scheme)
        case ('TRAPZ')
@@ -126,7 +126,7 @@ contains
 
       ! Segment boundary; use match conditions
 
-      allocate(df%df, SOURCE=vnad_match_t(cx, pt_a, pt_b, md_p, os_p))
+      allocate(df%df, SOURCE=nad_match_t(cx, pt_a, pt_b, md_p, os_p))
 
     endif
 
@@ -136,7 +136,7 @@ contains
 
     return
 
-  end function vnad_diff_t_
+  end function tnad_diff_t_
 
   !****
 
@@ -145,7 +145,7 @@ contains
     use gyre_magnus_diff
     use gyre_colloc_diff
 
-    class(vnad_diff_t), intent(in) :: this
+    class(tnad_diff_t), intent(in) :: this
     class(c_state_t), intent(in)   :: st
     complex(WP), intent(out)       :: E_l(:,:)
     complex(WP), intent(out)       :: E_r(:,:)
@@ -198,4 +198,4 @@ contains
 
   end subroutine build
 
-end module gyre_vnad_diff
+end module gyre_tnad_diff

@@ -51,9 +51,9 @@ program gyre
   use gyre_scan_par
   use gyre_search
   use gyre_summary
+  use gyre_tnad_bvp
   use gyre_util
   use gyre_version
-  use gyre_vnad_bvp
 
   use ISO_FORTRAN_ENV
 
@@ -273,8 +273,8 @@ program gyre
 
      if (os_p_sel%nonadiabatic) then
 
-        if (os_p_sel%viscosity) then
-           allocate(bp_nad, SOURCE=vnad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+        if (os_p_sel%alpha_trb > 0._WP) then
+           allocate(bp_nad, SOURCE=tnad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         else
            allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
         endif

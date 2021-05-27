@@ -316,7 +316,6 @@ contains
       Omega_rot_i = this%cx%Omega_rot(pt_i)
 
       omega_c = this%cx%omega_c(Omega_rot, st)
-      omega_c = this%cx%omega_c(Omega_rot, st)
       i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_omg, KIND=WP))*omega_c
 
       lambda = this%cx%lambda(Omega_rot, st)
