@@ -462,7 +462,7 @@ contains
          
        ! Solve for the wave function and response
 
-       st = c_state_t(CMPLX(omega(j), KIND=WP))
+       st = c_state_t(CMPLX(omega(j), KIND=WP), omega(j))
        
        select type (bp_nad)
        type is (nad_bvp_t)
