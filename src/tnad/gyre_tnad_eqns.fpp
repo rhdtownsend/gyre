@@ -212,7 +212,7 @@ contains
     complex(WP) :: B(6,1)
     complex(WP) :: C(1,6)
     complex(WP) :: D
-         
+
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
@@ -336,6 +336,7 @@ contains
     real(WP)    :: Omega_rot
     real(WP)    :: Omega_rot_i
     complex(WP) :: omega_c
+    complex(WP) :: omega_c_r
     complex(WP) :: i_omega_c
     complex(WP) :: l_i
     real(WP)    :: H_r
@@ -361,6 +362,7 @@ contains
          Omega_rot_i = this%cx%Omega_rot(pt_i)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c_r = this%cx%omega_c(Omega_rot, st, use_omega_r=.TRUE.)
          i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_omg, KIND=WP))*omega_c
 
          l_i = this%cx%l_e(Omega_rot_i, st)
@@ -368,7 +370,7 @@ contains
          H_r = MIN(1._WP/V, 1._WP) ! = H_P/r
          tau_conv = SQRT(-c_1/As)
        
-         nu_trb = c_1*(H_r*alpha_trb)**2/(tau_conv*(1._WP + tau_conv*omega_c/TWOPI))
+         nu_trb = c_1*(H_r*alpha_trb)**2/(tau_conv*(1._WP + tau_conv*ABS(omega_c_r)/TWOPI))
 
          F_trb = i_omega_c*nu_trb
 
