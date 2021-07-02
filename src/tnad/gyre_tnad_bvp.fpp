@@ -240,7 +240,7 @@ contains
 
     discrim = bp%det()
 
-    wv = wave_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, j)
+    wv = wave_t(st, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, j)
 
     ! Finish
 
