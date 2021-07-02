@@ -1,7 +1,7 @@
 ! Module   : gyre_context 
 ! Purpose  : context (model, data, functions) for solving pulsation equations
 !
-! Copyright 2017-2020 Rich Townsend & The GYRE Team
+! Copyright 2017-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -231,16 +231,29 @@ contains
 
   !****
 
-  function omega_c_c_ (this, Omega_rot, st) result (omega_c)
+  function omega_c_c_ (this, Omega_rot, st, use_omega_r) result (omega_c)
 
-    class(context_t), intent(in) :: this
-    real(WP), intent(in)         :: Omega_rot
-    class(c_state_t), intent(in) :: st
-    complex(WP)                  :: omega_c
+    class(context_t), intent(in)  :: this
+    real(WP), intent(in)          :: Omega_rot
+    class(c_state_t), intent(in)  :: st
+    logical, intent(in), optional :: use_omega_r
+    complex(WP)                   :: omega_c
+
+    logical :: use_omega_r_
+
+    if (PRESENT(use_omega_r)) then
+       use_omega_r_ = use_omega_r
+    else
+       use_omega_r_ = .FALSE.
+    endif
 
     ! Evaluate the co-rotating frequency (complex)
 
-    omega_c = st%omega - this%m*Omega_rot
+    if (use_omega_r_) then
+       omega_c = st%omega_r - this%m*Omega_rot
+    else
+       omega_c = st%omega - this%m*Omega_rot
+    endif
 
     ! Finish
 
