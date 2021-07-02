@@ -1,7 +1,7 @@
 ! Program  : gyre_tide
 ! Purpose  : tidal response evaluation
 !
-! Copyright 2018-2020 Rich Townsend & The GYRE Team
+! Copyright 2018-2021 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,6 +23,7 @@ module gyre_tide
 
   use core_kinds
 
+  use gyre_bvp
   use gyre_constants
   use gyre_context
   use gyre_freq
@@ -43,6 +44,7 @@ module gyre_tide
   use gyre_state
   use gyre_tide_par
   use gyre_tide_util
+  use gyre_tnad_bvp
   use gyre_util
   use gyre_wave
 
@@ -104,7 +106,7 @@ contains
     integer                        :: m
     integer                        :: k
     type(grid_t)                   :: gr
-    type(nad_bvp_t)                :: bp_nad
+    class(c_bvp_t), allocatable    :: bp_nad
     type(sad_bvp_t)                :: bp_sad
     real(WP)                       :: c
     complex(WP)                    :: w_i_nad(3)
@@ -232,7 +234,12 @@ contains
 
           call system_clock(c_beg)
 
-          bp_nad = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
+          if (os_p%alpha_trb > 0._WP) then
+             allocate(bp_nad, SOURCE=tnad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p))
+          else
+             allocate(bp_nad, SOURCE=nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p))
+          endif
+
           bp_sad = sad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
 
           call system_clock(c_end)
@@ -270,7 +277,12 @@ contains
 
                    st_nad = c_state_t(CMPLX(omega(k), KIND=WP), omega(k))
 
-                   wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, 0)
+                   select type (bp_nad)
+                   type is (nad_bvp_t)
+                      wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, 0)
+                   type is (tnad_bvp_t)
+                      wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, 0)
+                   end select
 
                    call system_clock(c_end)
 
@@ -335,6 +347,8 @@ contains
              end if
 
           end do k_loop
+
+          deallocate(bp_nad)
 
        end do m_loop
 

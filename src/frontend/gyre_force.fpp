@@ -362,7 +362,7 @@ contains
   subroutine eval_wave_ad (omega, Omega_orb, Omega_rot)
 
     real(WP), intent(in)              :: omega(:)
-    real(WP), intent(in)              :: Omega_orb(:)
+    real(WP), intent(in), allocatable :: Omega_orb(:)
     real(WP), intent(in), allocatable :: Omega_rot(:)
 
     integer          :: j
@@ -391,9 +391,9 @@ contains
        
        select type (bp_ad)
        type is (sad_bvp_t)
-          v_o(1) = Phi_force(omega(j), Omega_orb(j))
+          v_o(1) = Phi_force(j, Omega_orb)
        type is (ad_bvp_t)
-          v_o(2) = Phi_force(omega(j), Omega_orb(j))
+          v_o(2) = Phi_force(j, Omega_orb)
        class default
           $ABORT(Invalid bp_ad class)
        end select
@@ -411,7 +411,11 @@ contains
           $ABORT(Invalid bp_ad class)
        end select
 
-       rs = resp_t(wv, or_p_sel, Omega_orb(j), fr_p_sel%k)
+       if (ALLOCATED(Omega_orb)) then
+          rs = resp_t(wv, or_p_sel, Omega_orb(j), fr_p_sel%k)
+       else
+          rs = resp_t(wv, or_p_sel, 0._WP, fr_p_sel%k)
+       end if
 
        ! Cache/write the response
     
@@ -431,7 +435,7 @@ contains
   subroutine eval_wave_nad (omega, Omega_orb, Omega_rot)
 
     real(WP), intent(in)              :: omega(:)
-    real(WP), intent(in)              :: Omega_orb(:)
+    real(WP), allocatable, intent(in) :: Omega_orb(:)
     real(WP), allocatable, intent(in) :: Omega_rot(:)
 
     integer         :: j
@@ -458,7 +462,7 @@ contains
        v_i = 0._WP
          
        v_o = 0._WP
-       v_o(2) = Phi_force(omega(j), Omega_orb(j))
+       v_o(2) = Phi_force(j, Omega_orb)
          
        ! Solve for the wave function and response
 
@@ -473,7 +477,11 @@ contains
           $ABORT(Invalid bp_nad class)
        end select
 
-       rs = resp_t(wv, or_p_sel, Omega_orb(j), fr_p_sel%k)
+       if (ALLOCATED(Omega_orb)) then
+          rs = resp_t(wv, or_p_sel, Omega_orb(j), fr_p_sel%k)
+       else
+          rs = resp_t(wv, or_p_sel, 0._WP, fr_p_sel%k)
+       endif
 
        ! Cache/write the response
     
@@ -490,17 +498,16 @@ contains
 
   !****
 
-  function Phi_force (omega, Omega_orb)
+  function Phi_force (j, Omega_orb)
 
-    real(WP), intent(in) :: omega
-    real(WP), intent(in) :: Omega_orb
-    real(WP)             :: Phi_force
+    integer, intent(in)               :: j
+    real(WP), allocatable, intent(in) :: Omega_orb(:)
+    real(WP)                          :: Phi_force
 
     real(WP) :: R_a
     real(WP) :: eps_tide
 
-    ! Evaluate the surface forcing potential at forcing frequency
-    ! omega (in units of GM/R)
+    ! Evaluate the surface forcing potential
 
     select case (fr_p_sel%force_type)
 
@@ -510,7 +517,7 @@ contains
 
     case ('BINARY')
 
-       R_a = tidal_R_a(Omega_orb, or_p_sel%q)
+       R_a = tidal_R_a(Omega_orb(j), or_p_sel%q)
 
        eps_tide = R_a**3*or_p_sel%q
 
