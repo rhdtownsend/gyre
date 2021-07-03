@@ -461,8 +461,8 @@ contains
 
     select case (sc%item)
 
-    $CACHE_VALUE(Omega_orb,rs%Omega_orb)
-    $CACHE_VALUE(k,rs%k)
+    $CACHE_VALUE(Omega_orb,rs%or_p%Omega_orb)
+    $CACHE_VALUE(k,rs%fr_p%k)
     $CACHE_VALUE(F,rs%F())
     $CACHE_VALUE(J_dot,rs%J_dot())
 

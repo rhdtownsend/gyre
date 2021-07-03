@@ -444,11 +444,11 @@ contains
 
     case ('Omega_orb')
 
-       call wr%write('Omega_orb', rs%Omega_orb)
+       call wr%write('Omega_orb', rs%or_p%Omega_orb)
 
     case ('k')
 
-       call wr%write('k', rs%k)
+       call wr%write('k', rs%fr_p%k)
 
     case ('F')
 

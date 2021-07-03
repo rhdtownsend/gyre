@@ -32,6 +32,7 @@ program gyre_force
   use gyre_evol_model
   use gyre_context
   use gyre_force_par
+  use gyre_force_util
   use gyre_freq_context
   use gyre_grid
   use gyre_grid_factory
@@ -365,12 +366,13 @@ contains
     real(WP), intent(in), allocatable :: Omega_orb(:)
     real(WP), intent(in), allocatable :: Omega_rot(:)
 
-    integer          :: j
-    real(WP)         :: v_i(bp_ad%n_i)
-    real(WP)         :: v_o(bp_ad%n_o)
-    type(r_state_t)  :: st
-    type(wave_t)     :: wv
-    type(resp_t)     :: rs
+    integer           :: j
+    type(orbit_par_t) :: or_p
+    real(WP)          :: v_i(bp_ad%n_i)
+    real(WP)          :: v_o(bp_ad%n_o)
+    type(r_state_t)   :: st
+    type(wave_t)      :: wv
+    type(resp_t)      :: rs
 
     ! Scan over frequencies
 
@@ -378,11 +380,17 @@ contains
 
        j_ad = j_ad + 1
 
-       ! If necessary, set the rotation rate
+       ! Set the rotation and orbital frequencies
 
        if (ALLOCATED(Omega_rot)) then
           call cx%set_Omega_rot(Omega_rot(j))
        end if
+
+       or_p = or_p_sel
+
+       if (ALLOCATED(Omega_orb)) then
+          or_p%Omega_orb = Omega_orb(j)
+       endif
           
        ! Set up the inhomogeneous boundary terms
 
@@ -391,9 +399,9 @@ contains
        
        select type (bp_ad)
        type is (sad_bvp_t)
-          v_o(1) = Phi_force(j, Omega_orb)
+          v_o(1) = (2*md_p(i)%l+1)*Phi_force(md_p(i), fr_p_sel, or_p)
        type is (ad_bvp_t)
-          v_o(2) = Phi_force(j, Omega_orb)
+          v_o(2) = (2*md_p(i)%l+1)*Phi_force(md_p(i), fr_p_sel, or_p)
        class default
           $ABORT(Invalid bp_ad class)
        end select
@@ -411,11 +419,7 @@ contains
           $ABORT(Invalid bp_ad class)
        end select
 
-       if (ALLOCATED(Omega_orb)) then
-          rs = resp_t(wv, or_p_sel, Omega_orb(j), fr_p_sel%k)
-       else
-          rs = resp_t(wv, or_p_sel, 0._WP, fr_p_sel%k)
-       end if
+       rs = resp_t(wv, fr_p_sel, or_p)
 
        ! Cache/write the response
     
@@ -438,12 +442,13 @@ contains
     real(WP), allocatable, intent(in) :: Omega_orb(:)
     real(WP), allocatable, intent(in) :: Omega_rot(:)
 
-    integer         :: j
-    complex(WP)     :: v_i(bp_nad%n_i)
-    complex(WP)     :: v_o(bp_nad%n_o)
-    type(c_state_t) :: st
-    type(wave_t)    :: wv
-    type(resp_t)    :: rs
+    integer           :: j
+    type(orbit_par_t) :: or_p
+    complex(WP)       :: v_i(bp_nad%n_i)
+    complex(WP)       :: v_o(bp_nad%n_o)
+    type(c_state_t)   :: st
+    type(wave_t)      :: wv
+    type(resp_t)      :: rs
 
     ! Scan over frequencies
 
@@ -451,18 +456,24 @@ contains
 
        j_nad = j_nad + 1
 
-       ! If necessary, set the rotation rate
+       ! Set the rotation and orbital frequencies
 
        if (ALLOCATED(Omega_rot)) then
           call cx%set_Omega_rot(Omega_rot(j))
        end if
+
+       or_p = or_p_sel
+
+       if (ALLOCATED(Omega_orb)) then
+          or_p%Omega_orb = Omega_orb(j)
+       endif
           
        ! Set up the inhomogeneous boundary terms
 
        v_i = 0._WP
          
        v_o = 0._WP
-       v_o(2) = Phi_force(j, Omega_orb)
+       v_o(2) = (2*md_p(i)%l+1)*Phi_force(md_p(i), fr_p_sel, or_p)
          
        ! Solve for the wave function and response
 
@@ -477,11 +488,7 @@ contains
           $ABORT(Invalid bp_nad class)
        end select
 
-       if (ALLOCATED(Omega_orb)) then
-          rs = resp_t(wv, or_p_sel, Omega_orb(j), fr_p_sel%k)
-       else
-          rs = resp_t(wv, or_p_sel, 0._WP, fr_p_sel%k)
-       endif
+       rs = resp_t(wv, fr_p_sel, or_p)
 
        ! Cache/write the response
     
@@ -495,45 +502,6 @@ contains
     return
 
   end subroutine eval_wave_nad
-
-  !****
-
-  function Phi_force (j, Omega_orb)
-
-    integer, intent(in)               :: j
-    real(WP), allocatable, intent(in) :: Omega_orb(:)
-    real(WP)                          :: Phi_force
-
-    real(WP) :: R_a
-    real(WP) :: eps_tide
-
-    ! Evaluate the surface forcing potential
-
-    select case (fr_p_sel%force_type)
-
-    case ('FIXED')
-
-       Phi_force = -(2*md_p(i)%l+1)*fr_p_sel%Phi
-
-    case ('BINARY')
-
-       R_a = tidal_R_a(Omega_orb(j), or_p_sel%q)
-
-       eps_tide = R_a**3*or_p_sel%q
-
-       Phi_force = -(2*md_p(i)%l+1)*eps_tide*tidal_c(R_a, or_p_sel%e, md_p(i)%l, md_p(i)%m, fr_p_sel%k)
-
-    case default
-
-       $ABORT(Invalid force_type)
-
-    end select
-
-    ! Finish
-
-    return
-
-  end function Phi_force
 
   !****
 
