@@ -25,6 +25,8 @@ module gyre_resp
   use core_kinds
   use core_memory
 
+  use gyre_force_par
+  use gyre_force_util
   use gyre_orbit_par
   use gyre_point
   use gyre_tide_util
@@ -40,9 +42,8 @@ module gyre_resp
 
   type, extends (wave_t) :: resp_t
      private
+     type(force_par_t), public :: fr_p
      type(orbit_par_t), public :: or_p
-     real(WP), public          :: Omega_orb
-     integer, public           :: k
    contains
      private
      procedure, public :: eul_phi
@@ -73,24 +74,20 @@ module gyre_resp
 
 contains
 
-  function resp_t_ (wv, or_p, Omega_orb, k) result (rs)
+  function resp_t_ (wv, fr_p, or_p) result (rs)
 
      type(wave_t), intent(in)      :: wv
+     type(force_par_t), intent(in) :: fr_p
      type(orbit_par_t), intent(in) :: or_p
-     real(WP), intent(in)          :: Omega_orb
-     integer, intent(in)           :: k
      type(resp_t)                  :: rs
 
      ! Construct the resp_t
 
      rs%wave_t = wv
 
+     rs%fr_p = fr_p
      rs%or_p = or_p
      
-     rs%Omega_orb = Omega_orb
-     
-     rs%k = k
-
      ! Finish
 
      return
@@ -152,21 +149,11 @@ contains
      ! perturbation, in units of G M_star / R_star
 
      associate ( &
-          Omega_orb => this%Omega_orb, &
-          q => this%or_p%q, &
-          e => this%or_p%e, &
-          l => this%l, &
-          m => this%m)
+          md_p => this%md_p, &
+          fr_p => this%fr_p, &
+          or_p => this%or_p)
 
-       R_a = tidal_R_a(Omega_orb, q)
-
-       c = tidal_c(R_a, e, l, m, this%k)
-
-       eps_tide = R_a**3*q
-
-       x = this%x(k)
-
-       phi_2 = -eps_tide*c*x**l
+       phi_2 = Phi_force(md_p, fr_p, or_p)
 
      end associate
 
@@ -183,35 +170,9 @@ contains
      class(resp_t), intent(in) :: this
      complex(WP)               :: F
 
-     real(WP)    :: R_a
-     real(WP)    :: c
-     real(WP)    :: eps_tide
-     real(WP)    :: x
-     complex(WP) :: eul_psi
-
      ! Evaluate the surface response function
 
-     associate ( &
-          Omega_orb => this%Omega_orb, &
-          q => this%or_p%q, &
-          e => this%or_p%e, &
-          l => this%l, &
-          m => this%m, &
-          k => this%k)
-
-       R_a = tidal_R_a(Omega_orb, q)
-
-       c = tidal_c(R_a, e, l, m, k)
-
-       eps_tide = R_a**3*q
-
-       eul_psi = this%eul_psi(this%n_k)
-
-       x = this%x(this%n_k)
-
-       F = -0.5_WP*(eul_psi/(eps_tide*c) + x**l)
-
-     end associate
+     F = 0.5*this%eul_phi(this%n_k)/Phi_force(this%md_p, this%fr_p, this%or_p)
 
      ! Finish
 
@@ -233,12 +194,12 @@ contains
      ! Evaluate the external torque, in units of G*M_star**2/R_star
 
      associate ( &
-          Omega_orb => this%Omega_orb, &
+          Omega_orb => this%or_p%Omega_orb, &
           q => this%or_p%q, &
           e => this%or_p%e, &
-          l => this%l, &
-          m => this%m, &
-          k => this%k)
+          l => this%md_p%l, &
+          m => this%md_p%m, &
+          k => this%fr_p%k)
 
        R_a = tidal_R_a(Omega_orb, q)
 
