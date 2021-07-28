@@ -203,7 +203,7 @@ contains
        outer_bound = os_p%outer_bound
     endif
 
-    select case (os_p%outer_bound)
+    select case (outer_bound)
 
     case ('VACUUM')
 
