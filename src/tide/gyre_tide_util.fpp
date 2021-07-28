@@ -49,6 +49,7 @@ module gyre_tide_util
   public :: secular_G_3
   public :: secular_G_4
   public :: hansen_X
+  public :: hansen_X_QP
 
   ! Procedures
 
@@ -294,6 +295,66 @@ contains
 
   !****
 
+  function hansen_X_QP (e, n, m, k) result (X)
+
+    real(WP), intent(in) :: e
+    integer, intent(in)  :: n
+    integer, intent(in)  :: m
+    integer, intent(in)  :: k
+    real(WP)             :: X
+
+    real(WP) :: A
+    real(WP) :: S
+
+    $ASSERT(e >= 0,Invalid e)
+    $ASSERT(e < 1,Invalid e)
+
+    ! Evaluate the Hansen coefficient X_nmk
+
+    if (e**2 > EPSILON(0._WP)) then
+
+       A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
+       S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
+
+       X = REAL(A*S*orbit_quad_QP(hansen_X_f_, REAL(e, QP), REAL(TOL, QP)), WP)
+
+    else
+
+       if (m == k) then
+          X = 1._WP
+       else
+          X = 0._WP
+       endif
+
+    endif
+
+    ! Finish
+
+    return
+
+  contains
+
+    function hansen_X_f_ (ua, Ma, e) result (f)
+
+      real(QP), intent(in) :: ua
+      real(QP), intent(in) :: Ma
+      real(QP), intent(in) :: e
+      real(QP)             :: f
+
+      ! Set up the integrand
+
+      f = cos(m*ua - k*Ma)/(S*(1._QP + e*cos(ua))**(n+2))
+
+      ! Finish
+
+      return
+
+    end function hansen_X_f_
+
+  end function hansen_X_QP
+
+  !****
+
   function orbit_quad (f, e, tol) result (I)
 
     interface
@@ -378,6 +439,8 @@ contains
 
        dI_conv = MAX(tol, 2._WP*EPSILON(0._WP))
 
+       !print *,N,I,dI,dI_conv
+
        if (abs(dI) < dI_conv) exit refine_loop
 
     end do refine_loop
@@ -391,5 +454,108 @@ contains
     return
 
   end function orbit_quad
+
+  !****
+
+  function orbit_quad_QP (f, e, tol) result (I)
+
+    interface
+       function f (ua, Ma, e)
+         use core_kinds
+         real(QP), intent(in) :: ua
+         real(QP), intent(in) :: Ma
+         real(QP), intent(in) :: e
+         real(QP)             :: f
+       end function f
+    end interface
+    real(QP), intent(in) :: e
+    real(QP), intent(in) :: tol
+    real(QP)             :: I
+
+    integer, parameter :: N_MAX = 2**24
+    real(QP), parameter :: PI = ACOS(-1._QP)
+
+    integer  :: N
+    real(QP) :: e_fac
+    real(QP) :: S
+    integer  :: j
+    real(QP) :: ua
+    real(QP) :: Ea
+    real(QP) :: Ma
+    real(QP) :: dI
+    real(QP) :: dI_conv
+
+    ! Perform "orbital quadrature" on the function f(ua, Ma, e, l, m,
+    ! k). This involves calculating the integral I = int(f(ua),
+    ! ua->0,2pi), where ua is the true anomaly.  Along with ua, the
+    ! corresponding mean anomaly Ma(ua) is passed into f
+    !
+    ! This implementation assumes that f(ua) is an even function,
+    ! scaled to order-unity
+
+    ! Set up initial values
+
+    N = 1
+
+    I = PI*(f(0._QP, 0._QP, e) + f(PI, PI, e))/2
+
+    ! Refine the quadrature by repeatedly doubling N
+
+    e_fac = sqrt((1._QP - e)*(1._QP + e))
+
+    refine_loop : do
+
+       ! Update the value of the quadrature
+
+       S = 0._QP
+
+       !$OMP PARALLEL DO REDUCTION(+:S) PRIVATE(ua,Ea,Ma) SCHEDULE(static, 4)
+       update_loop : do j = 1, N
+
+          ! Add contributions to the sum
+
+          ua = PI*(2*j-1.5_QP)/(2*N)
+          Ea = atan2(e_fac*sin(ua), e + cos(ua))
+          Ma = Ea - e*sin(Ea)
+          S = S + f(ua, Ma, e)
+
+          ua = PI*(2*j-1.0_QP)/(2*N)
+          Ea = atan2(e_fac*sin(ua), e + cos(ua))
+          Ma = Ea - e*sin(Ea)
+          S = S + f(ua, Ma, e)
+
+          ua = PI*(2*j-0.5_QP)/(2*N)
+          Ea = atan2(e_fac*sin(ua), e + cos(ua))
+          Ma = Ea - e*sin(Ea)
+          S = S + f(ua, Ma, e)
+
+       end do update_loop
+
+       dI = PI*S/(4*N) - 0.75_QP*I
+       I = I + dI
+
+       N = 4*N
+
+       ! Check for convergence
+
+       $ASSERT(N <= N_MAX,Too many iterations)
+
+       dI_conv = MAX(tol, 2._QP*EPSILON(0._QP))
+
+       !print *,N,I,dI,dI_conv
+
+       if (abs(dI) < dI_conv) exit refine_loop
+
+    end do refine_loop
+
+    ! Double I (since we only integrate from 0 to pi)
+
+    I = 2*I
+
+    ! Finish
+
+    return
+
+  end function orbit_quad_QP
 
 end module gyre_tide_util

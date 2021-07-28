@@ -75,6 +75,8 @@ program eval_tidal_coeff
      f = secular_G_4(R_a, e, l, m, k)
   case ('X')
      f = hansen_X(e, l, m, k)
+  case ('X_QP')
+     f = hansen_X_QP(e, l, m, k)
   case ('Y')
      f = REAL(spherical_Y(l, m, HALFPI, 0._WP))
   case ('Y*')
