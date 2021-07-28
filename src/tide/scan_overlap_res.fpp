@@ -30,6 +30,7 @@ program scan_overlap_res
 
    use gyre_constants
    use gyre_func
+   use gyre_interp
    use gyre_math
    use gyre_mode_par
    use gyre_tide_util
@@ -55,20 +56,21 @@ program scan_overlap_res
       character(32)  :: scan_var = ''
       integer        :: scan_n_pg_min = -1
       integer        :: scan_n_pg_max = -1
+      integer        :: sum_n_pg_min = -1
+      integer        :: sum_n_pg_max = -1
       real(WP)       :: del_gam  = 0.1_WP
       real(WP)       :: del_eps = 1.01_WP
       real(WP)       :: gamma_min = 0._WP
       logical        :: exclude_center = .FALSE.
       character(256) :: summary_file = ''
       character(256) :: detail_template = ''
-      integer        :: detail_n_pg_min = -1
-      integer        :: detail_n_pg_max = 1
       character(256) :: output_file = ''
    end type overlap_par_t
 
    type summary_data_t
       complex(WP), allocatable :: omega(:)
       integer, allocatable     :: n_pg(:)
+      integer, allocatable     :: j(:)
       integer                  :: n
    end type summary_data_t
 
@@ -80,6 +82,7 @@ program scan_overlap_res
       complex(WP), allocatable :: eul_phi(:)
       real(WP)                 :: E
       integer                  :: n_pg
+      integer                  :: j
       integer                  :: n
    end type detail_data_t
 
@@ -91,10 +94,12 @@ program scan_overlap_res
       complex(WP), allocatable :: xi_r(:)
       complex(WP), allocatable :: xi_h(:)
       complex(WP), allocatable :: eul_phi(:)
+      complex(WP), allocatable :: F(:)
       real(WP), allocatable    :: tau(:)
       complex(WP), allocatable :: xi_r_res(:)
       complex(WP), allocatable :: xi_h_res(:)
       complex(WP), allocatable :: eul_phi_res(:)
+      complex(WP), allocatable :: F_res(:)
       real(WP), allocatable    :: tau_res(:)
       integer                  :: n
       integer                  :: n_pg
@@ -145,7 +150,7 @@ program scan_overlap_res
 
    ! Read data from the detail files
 
-   call read_detail_data(ov_p, md_p(1), dd)
+   call read_detail_data(ov_p, md_p(1), sd, dd)
 
    ! Allocate space for results
 
@@ -263,18 +268,18 @@ contains
       character(32)  :: scan_var
       integer        :: scan_n_pg_min
       integer        :: scan_n_pg_max
+      integer        :: sum_n_pg_min
+      integer        :: sum_n_pg_max
       real(WP)       :: del_gam
       real(WP)       :: del_eps
       real(WP)       :: gamma_min
       logical        :: exclude_center
       character(256) :: summary_file
       character(256) :: detail_template
-      integer        :: detail_n_pg_min
-      integer        :: detail_n_pg_max
       character(256) :: output_file
 
-      namelist /overlap/ scan_var, scan_n_pg_min, scan_n_pg_max, del_gam, del_eps, gamma_min, &
-           exclude_center, summary_file, detail_template, detail_n_pg_min, detail_n_pg_max, output_file
+      namelist /overlap/ scan_var, scan_n_pg_min, scan_n_pg_max, sum_n_pg_min, sum_n_pg_max, &
+           del_gam, del_eps, gamma_min, exclude_center, summary_file, detail_template, output_file
 
       ! Count the number of overlap namelists
 
@@ -302,14 +307,14 @@ contains
       scan_var = ov_p%scan_var
       scan_n_pg_min = ov_p%scan_n_pg_min
       scan_n_pg_max = ov_p%scan_n_pg_max
+      sum_n_pg_min = ov_p%sum_n_pg_min
+      sum_n_pg_max = ov_p%sum_n_pg_max
       del_gam = ov_p%del_gam
       del_eps = ov_p%del_eps
       gamma_min = ov_p%gamma_min
       exclude_center = ov_p%exclude_center
       summary_file = ov_p%summary_file
       detail_template = ov_p%detail_template
-      detail_n_pg_min = ov_p%detail_n_pg_min
-      detail_n_pg_max = ov_p%detail_n_pg_max
       output_file = ov_p%output_file
 
       ! Read the namelist
@@ -321,14 +326,14 @@ contains
       ov_p%scan_var = scan_var
       ov_p%scan_n_pg_min = scan_n_pg_min
       ov_p%scan_n_pg_max = scan_n_pg_max
+      ov_p%sum_n_pg_min = sum_n_pg_min
+      ov_p%sum_n_pg_max = sum_n_pg_max
       ov_p%del_gam = del_gam 
       ov_p%del_eps = del_eps
       ov_p%gamma_min = gamma_min
       ov_p%exclude_center = exclude_center
       ov_p%summary_file = summary_file
       ov_p%detail_template = detail_template
-      ov_p%detail_n_pg_min = detail_n_pg_min
-      ov_p%detail_n_pg_max = detail_n_pg_max
       ov_p%output_file = output_file
 
       ! Finish
@@ -344,23 +349,110 @@ contains
       type(overlap_par_t), intent(in)   :: ov_p
       type(summary_data_t), intent(out) :: sd
 
-      type(hgroup_t) :: hg
+      type(hgroup_t)           :: hg
+      integer, allocatable     :: n_pg(:)
+      integer, allocatable     :: j(:)
+      complex(WP), allocatable :: omega(:)
+      logical, allocatable     :: mask(:)
+      integer, allocatable     :: i_srt(:)
+      integer                  :: n
+      integer                  :: i
+      integer, allocatable     :: n_pg_dd(:)
+      complex(WP), allocatable :: omega_dd(:)
+      type(r_interp_t)         :: omega_in
+      integer                  :: k
 
       ! Read the summary data
 
+      print *,'Read summary:', ov_p%summary_file
+
       hg = hgroup_t(ov_p%summary_file, OPEN_FILE)
 
-      call read_dset_alloc(hg, 'omega', sd%omega)
-      call read_dset_alloc(hg, 'n_pg', sd%n_pg)
+      call read_dset_alloc(hg, 'n_pg', n_pg)
+      call read_dset_alloc(hg, 'j', j)
+      call read_dset_alloc(hg, 'omega', omega)
 
       call hg%final()
 
-      sd%n = SIZE(sd%omega)
+      ! Perform a bit of quality-control on the data
 
-      ! Check that it spans the n_pg range of the detail files
+      ! Limit data to the range indicated by sum_n_pg_[min/max]
 
-      $ASSERT(MINVAL(sd%n_pg) <= ov_p%detail_n_pg_min,summary file does not span n_pg of detail files)
-      $ASSERT(MAXVAL(sd%n_pg) >= ov_p%detail_n_pg_max,summary file does not span n_pg of detail files)
+      mask = n_pg >= ov_p%sum_n_pg_min .AND. n_pg <= ov_p%sum_n_pg_max
+
+      n_pg = PACK(n_pg, mask)
+      j = PACK(j, mask)
+      omega = PACK(omega, mask)
+
+      n = SIZE(n_pg)
+
+      print *,'  ...limited to', n
+
+      ! Sort
+
+      i_srt = sort_indices(n_pg)
+
+      n_pg =  n_pg(i_srt)
+      j = j(i_srt)
+      omega = omega(i_srt)
+
+      print *,'  ...sorted'
+
+      ! Set up de-duplicated arrays
+
+      deallocate(mask)
+      allocate(mask(n))
+
+      do i = 1, n
+         mask(i) = COUNT(n_pg == n_pg(i)) == 1
+      enddo
+
+      n_pg_dd = PACK(n_pg, mask)
+      omega_dd = PACK(omega, mask)
+
+      print *,'  ...created dup-free', SIZE(n_pg_dd)
+
+      ! Set up an interpolating function for the de-duped data
+
+      omega_in = r_interp_t(REAL(n_pg_dd, KIND=WP), omega_dd%re, 'MONO')
+
+      print *,'  ...created fit spline'
+
+      ! Now populate sd using data arrays with duplicates resolved
+      ! using the interpolating function
+
+      i_srt = unique_indices(n_pg)
+
+      sd%n_pg = n_pg(i_srt)
+
+      sd%n = SIZE(sd%n_pg)
+
+      allocate(sd%j(sd%n))
+      allocate(sd%omega(sd%n))
+
+      do i = 1, sd%n
+
+         if (COUNT(n_pg == sd%n_pg(i)) > 1) then
+            k = MINLOC(ABS(omega_in%f(REAL(sd%n_pg(i), KIND=WP)) - omega%re), DIM=1)
+         else
+            k = FINDLOC(n_pg, sd%n_pg(i), DIM=1)
+         endif
+
+         sd%j(i) = j(k)
+         sd%omega(i) = omega(k)
+
+      end do
+
+      print *,'  ...populated with dup res', sd%n
+
+      ! Check for missing modes
+
+      do i = 2, sd%n
+         if (sd%n_pg(i) /= sd%n_pg(i-1)+1) then
+            print *,'n_pg jumps from ', sd%n_pg(i-1), ' to ', sd%n_pg(i)
+            $ABORT(Missing modes)
+         endif
+      enddo
 
       ! Finish
 
@@ -370,10 +462,11 @@ contains
 
    !****
 
-   subroutine read_detail_data(ov_p, md_p, dd)
+   subroutine read_detail_data(ov_p, md_p, sd, dd)
 
       type(overlap_par_t), intent(in)               :: ov_p
       type(mode_par_t), intent(in)                  :: md_p
+      type(summary_data_t), intent(in)              :: sd
       type(detail_data_t), allocatable, intent(out) :: dd(:)
 
       integer                   :: n
@@ -384,26 +477,24 @@ contains
 
       ! Read the detail data
 
-      n = ov_p%detail_n_pg_max - ov_p%detail_n_pg_min + 1
+      allocate(dd(sd%n))
 
-      allocate(dd(n))
-
-      do i = 1, n
-
-         n_pg = ov_p%detail_n_pg_min + i - 1
+      do i = 1, sd%n
 
          ! Set up the filename
 
          detail_file = ov_p%detail_template
 
+         detail_file = subst(detail_file, '%J', sd%j(i), '(I5.5)')
          detail_file = subst(detail_file, '%L', md_p%l, '(I3.3)')
          detail_file = subst(detail_file, '%M', md_p%m, '(SP,I3.2)')
+         detail_file = subst(detail_file, '%j', sd%j(i), '(I0)')
          detail_file = subst(detail_file, '%l', md_p%l, '(I0)')
          detail_file = subst(detail_file, '%m', md_p%m, '(SP,I0)')
-         detail_file = subst(detail_file, '%N', n_pg, '(SP,I6.5)')
-         detail_file = subst(detail_file, '%n', n_pg, '(SP,I0)')
 
          ! Read the data
+
+         print *,'Read detail:', detail_file
 
          hg = hgroup_t(detail_file, OPEN_FILE)
 
@@ -549,11 +640,13 @@ contains
       allocate(rs%xi_r(n))
       allocate(rs%xi_h(n))
       allocate(rs%eul_phi(n))
+      allocate(rs%F(n))
       allocate(rs%tau(n))
  
       allocate(rs%xi_r_res(n))
       allocate(rs%xi_h_res(n))
       allocate(rs%eul_phi_res(n))
+      allocate(rs%F_res(n))
       allocate(rs%tau_res(n))
 
       ! Set up Omega_orb and Omerga_rot
@@ -609,7 +702,6 @@ contains
 
       integer     :: n
       integer     :: i
-      integer     :: i_sd
       real(WP)    :: omega
       real(WP)    :: gamma
       real(WP)    :: R_a
@@ -624,6 +716,7 @@ contains
       complex(WP) :: dxi_r
       complex(WP) :: dxi_h
       complex(WP) :: deul_phi
+      complex(WP) :: dF
       real(WP)    :: dtau
 
       ! Initialize the responses at this point
@@ -631,25 +724,17 @@ contains
       rs%xi_r(j) = 0._WP
       rs%xi_h(j) = 0._WP
       rs%eul_phi(j) = 0._WP
+      rs%F(j) = 0._WP
       rs%tau(j) = 0._WP
 
-      ! Loop through the detail data, adding in contributions
+      ! Loop through the summary/detail data, adding in contributions
 
       n = dd(1)%n
 
-      do i = 1, SIZE(dd)
+      do i = 1, sd%n
 
-         ! Look up the detail frequency in the summary data
-
-         i_sd = FINDLOC(sd%n_pg, dd(i)%n_pg, DIM=1)
-
-         if (i_sd == 0) then
-            print *,'dd(i)%n_pg:', dd(i)%n_pg
-            $ABORT(Unable to find mode in summary file)
-         endif
-
-         omega = sd%omega(i_sd)%re
-         gamma = -sd%omega(i_sd)%im
+         omega = sd%omega(i)%re
+         gamma = -sd%omega(i)%im
 
          ! Calculate the orbital separation parameter
 
@@ -694,6 +779,8 @@ contains
          dxi_h = A*dd(i)%xi_h(n)
          deul_phi = A*dd(i)%eul_phi(n)
 
+         dF = -Q*Delta*dd(i)%eul_phi(n)/E
+
          ! B+12, eqn C4 (with some transformation)
 
          dtau = 8._WP*(or_p%q*R_a**(md_p%l+1)*W*X*Q*ABS(Delta))**2 * md_p%m*sigma*gamma/E
@@ -705,6 +792,7 @@ contains
          rs%xi_h(j) = rs%xi_h(j) + dxi_h
          rs%eul_phi(j) = rs%eul_phi(j) + deul_phi
          rs%tau(j) = rs%tau(j) + dtau
+         rs%F(j) = rs%F(j) + dF
          
          if (dd(i)%n_pg == rs%n_pg) then
 
@@ -712,9 +800,10 @@ contains
             rs%xi_h_res(j) = dxi_h
             rs%eul_phi_res(j) = deul_phi
             rs%tau_res(j) = dtau
+            rs%F_res(j) = dF
 
          endif
-         
+
       end do
 
       ! Finish
@@ -743,6 +832,7 @@ contains
       call write_dset(hg, 'xi_r', rs%xi_r)
       call write_dset(hg, 'xi_h', rs%xi_h)
       call write_dset(hg, 'eul_phi', rs%eul_phi)
+      call write_dset(hg, 'F', rs%F)
       call write_dset(hg, 'tau', rs%tau)
       
       call write_dset(hg, 'xi_r_res', rs%xi_r_res)
