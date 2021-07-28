@@ -140,11 +140,6 @@ contains
      integer, intent(in)       :: k
      complex(WP)               :: phi_2
 
-     real(WP) :: R_a
-     real(WP) :: c
-     real(WP) :: eps_tide
-     real(WP) :: x
-
      ! Evaluate the Eulerian secondary gravitational potential
      ! perturbation, in units of G M_star / R_star
 
