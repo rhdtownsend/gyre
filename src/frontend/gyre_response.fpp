@@ -63,7 +63,10 @@ program gyre_response
   type(tide_par_t), allocatable  :: td_p(:)
   class(model_t), pointer        :: ml => null()
   integer                        :: n_or_p
+  integer                        :: k_min
+  integer                        :: k_max
   complex(WP), allocatable       :: xi_r(:,:,:)
+  complex(WP), allocatable       :: xi_h(:,:,:)
   complex(WP), allocatable       :: lag_L(:,:,:)
   integer                        :: i
   integer                        :: l
@@ -142,8 +145,18 @@ program gyre_response
 
   ! Allocate displacement and luminosity perturbations arrays
 
-  allocate(xi_r(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,0:td_p(1)%k_max))
-  allocate(lag_L(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,0:td_p(1)%k_max))
+  k_max = td_p(1)%k_max
+
+  if (td_p(1)%combine_k) then
+     k_min = MAX(0, td_p(1)%k_min)
+  else
+     k_min = td_p(1)%k_min
+  endif
+
+  allocate(xi_r(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,k_min:k_max))
+  allocate(xi_h(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,k_min:k_max))
+
+  allocate(lag_L(0:td_p(1)%l_max,-td_p(1)%l_max:td_p(1)%l_max,k_min:k_max))
 
   ! Loop over orbital parameters
 
@@ -154,6 +167,8 @@ program gyre_response
      ! Initialize the perturbation arrays
 
      xi_r = 0._WP
+     xi_h = 0._WP
+
      lag_L = 0._WP
 
      ! Add in contributions from each tidal component
@@ -191,9 +206,11 @@ program gyre_response
      call write_attr(hg, 'sync_fraction', or_p(i)%sync_fraction)
 
      call write_attr(hg, 'l_max', td_p(1)%l_max)
-     call write_attr(hg, 'k_max', td_p(1)%k_max)
+     call write_attr(hg, 'k_min', k_min)
+     call write_attr(hg, 'k_max', k_max)
 
      call write_dset(hg, 'xi_r', xi_r)
+     call write_dset(hg, 'xi_h', xi_h)
      call write_dset(hg, 'lag_L', lag_L)
 
      call hg%final()
@@ -224,6 +241,7 @@ contains
     ! Store the displacement
 
     xi_r(l,m,k) = wv%xi_r(wv%k_ref)
+    xi_h(l,m,k) = wv%xi_h(wv%k_ref)
 
     ! Store the luminosity perturbation
 
