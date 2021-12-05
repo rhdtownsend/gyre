@@ -128,7 +128,7 @@ program gyre_response
   $ASSERT(SIZE(rt_p) == 1,Must be exactly one rot parameter)
   $ASSERT(SIZE(nm_p) == 1,Must be exactly one num parameter)
   $ASSERT(SIZE(gr_p) == 1,Must be exactly one grid parameter)
-  $ASSERT(SIZE(or_p) == 1,Must be exactly one orbit parameter)
+  $ASSERT(SIZE(or_p) >= 1,Must be at least one orbit parameter)
   $ASSERT(SIZE(td_p) == 1,Must be exactly one tide parameter)
 
   ! Check that GYRE_DIR is set
