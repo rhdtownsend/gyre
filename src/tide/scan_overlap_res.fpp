@@ -416,7 +416,7 @@ contains
 
       omega_in = r_interp_t(REAL(n_pg_dd, KIND=WP), omega_dd%re, 'MONO')
 
-      print *,'  ...created fit spline'
+      print *,'  ...created fit spline', MINVAL(n_pg_dd), MAXVAL(n_pg_dd)
 
       ! Now populate sd using data arrays with duplicates resolved
       ! using the interpolating function
