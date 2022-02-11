@@ -59,6 +59,8 @@ used. Allowable fields are:
   - :nml_v:`'AD'` : Use adiabatic eigenfrequencies
   - :nml_v:`'MINMOD'` : Find minima in the modulus of the discriminant function, along the real-:math:`\omega` axis
   - :nml_v:`'CONTOUR'` : Find intersections between real and imaginary zero-contours of the discriminant function
+
+  See the :ref:`non-ad-calcs` chapter for more details about these search methods.
     
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match
