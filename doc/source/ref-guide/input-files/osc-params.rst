@@ -94,7 +94,7 @@ is used.  Allowable parameters are:
   - :nml_v:`'OSC'` : Oscillatory, :math:`\propto \exp(-{\rm i} \sigma t)`
   - :nml_v:`'EXP'` : Exponential, :math:`\propto \exp(-\sigma t)`
 
-:nml_n:`conv_scheme` (default :nml_v:`'FROZEN_PESNELL_1'``)
+:nml_n:`conv_scheme` (default :nml_v:`'FROZEN_PESNELL_1'`)
   Scheme for treating convection; one of:
 
   - :nml_v:`'FROZEN_PESNELL_1'` : Freeze convective heating altogether;
