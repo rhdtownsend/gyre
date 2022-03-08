@@ -1,7 +1,7 @@
 ! Module   : gyre_grid
 ! Purpose  : segmented grids
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -35,7 +35,7 @@ module gyre_grid
 
   type :: grid_t
      type(point_t), allocatable :: pt(:)
-     integer                    :: n_k
+     integer                    :: n
    contains
      private
      procedure, public :: pt_i
@@ -46,8 +46,8 @@ module gyre_grid
      procedure, public :: s_x
      procedure, public :: x_i
      procedure, public :: x_o
-     procedure, public :: k_s_i
-     procedure, public :: k_s_o
+     procedure, public :: j_s_i
+     procedure, public :: j_s_o
   end type grid_t
 
   ! Interfaces
@@ -73,44 +73,44 @@ contains
     real(WP), intent(in) :: x(:)
     type(grid_t)         :: gr
 
-    integer :: n_k
+    integer :: n
     integer :: s
-    integer :: k
+    integer :: j
 
     ! Construct a grid_t from the input abscissae x (with segment
     ! boundaries delineated by double points)
 
-    n_k = SIZE(x)
+    n = SIZE(x)
 
-    if (n_k > 0) then
+    if (n > 0) then
 
-       $ASSERT_DEBUG(ALL(x(2:) >= x(:n_k-1)),Non-monotonic data)
+       $ASSERT_DEBUG(ALL(x(2:) >= x(:n-1)),Non-monotonic data)
        
-       allocate(gr%pt(n_k))
+       allocate(gr%pt(n))
 
        s = 1
 
        gr%pt(1)%x = x(1)
        gr%pt(1)%s = s
 
-       do k = 2, n_k
+       do j = 2, n
 
-          if (x(k) == x(k-1)) then
+          if (x(j) == x(j-1)) then
              s = s + 1
           endif
           
-          gr%pt(k)%x = x(k)
-          gr%pt(k)%s = s
+          gr%pt(j)%x = x(j)
+          gr%pt(j)%s = s
 
        end do
 
     end if
 
-    gr%n_k = n_k
+    gr%n = n
 
     ! Check for degenerate segments
 
-    check_loop : do s = 1, gr%pt(n_k)%s
+    check_loop : do s = 1, gr%pt(n)%s
        $ASSERT(COUNT(gr%pt%s == s) >= 2,Degenerate segment)
     end do check_loop
 
@@ -156,7 +156,7 @@ contains
     ! Create the grid_t
 
     gr%pt = [pt_i,pt_int,pt_o]
-    gr%n_k = SIZE(gr%pt)
+    gr%n = SIZE(gr%pt)
 
     ! Finish
 
@@ -172,40 +172,40 @@ contains
     logical, intent(in)      :: refine(:)
     type(grid_t)             :: gr
 
-    integer  :: n_k_base
-    integer  :: n_k
-    integer  :: k
+    integer  :: n_base
+    integer  :: n
+    integer  :: j_base
     integer  :: j
 
-    $CHECK_BOUNDS(SIZE(refine),gr_base%n_k-1)
+    $CHECK_BOUNDS(SIZE(refine),gr_base%n-1)
 
     ! Construct a grid_t by refining gr_base, with additional points
     ! added to the middle of subintervals where refine == .TRUE.
 
-    n_k_base = gr_base%n_k
-    n_k = n_k_base + COUNT(refine)
+    n_base = gr_base%n
+    n = n_base + COUNT(refine)
 
-    allocate(gr%pt(n_k))
+    allocate(gr%pt(n))
 
-    k = 1
+    j = 1
 
-    sub_loop : do j = 1, n_k_base-1
+    sub_loop : do j_base = 1, n_base-1
 
-       associate (pt_a => gr_base%pt(j), &
-                  pt_b => gr_base%pt(j+1))
+       associate (pt_a => gr_base%pt(j_base), &
+                  pt_b => gr_base%pt(j_base+1))
 
-         gr%pt(k) = pt_a
+         gr%pt(j) = pt_a
 
-         k = k + 1
+         j = j + 1
 
-         if (refine(j)) then
+         if (refine(j_base)) then
 
             $ASSERT(pt_a%s == pt_b%s,Attempt to add points at segment boundary)
 
-            gr%pt(k)%s = pt_a%s
-            gr%pt(k)%x = 0.5_WP*(pt_a%x + pt_b%x)
+            gr%pt(j)%s = pt_a%s
+            gr%pt(j)%x = 0.5_WP*(pt_a%x + pt_b%x)
 
-            k = k + 1
+            j = j + 1
 
          endif
 
@@ -213,9 +213,9 @@ contains
 
     end do sub_loop
 
-    gr%pt(k) = gr_base%pt(n_k_base)
+    gr%pt(j) = gr_base%pt(n_base)
 
-    gr%n_k = n_k
+    gr%n = n
 
     ! Finish
 
@@ -249,7 +249,7 @@ contains
 
     ! Return the outermost point of the grid
 
-    pt_o = this%pt(this%n_k)
+    pt_o = this%pt(this%n)
 
     ! Finish
 
@@ -334,8 +334,8 @@ contains
     integer :: s_a
     integer :: s_b
     integer :: ds
-    integer :: k_i
-    integer :: k_o
+    integer :: j_i
+    integer :: j_o
 
     if (PRESENT(back)) then
        back_ = back
@@ -350,21 +350,21 @@ contains
     ! the grid
 
     if (back_) then
-       s_a = this%pt(this%n_k)%s
+       s_a = this%pt(this%n)%s
        s_b = this%pt(1)%s
        ds = -1
     else
        s_a = this%pt(1)%s
-       s_b = this%pt(this%n_k)%s
+       s_b = this%pt(this%n)%s
        ds = 1
     endif
 
     seg_loop : do s = s_a, s_b, ds
 
-       k_i = this%k_s_i(s)
-       k_o = this%k_s_o(s)
+       j_i = this%j_s_i(s)
+       j_o = this%j_s_o(s)
          
-       if (x >= this%pt(k_i)%x .AND. x <= this%pt(k_o)%x) exit seg_loop
+       if (x >= this%pt(j_i)%x .AND. x <= this%pt(j_o)%x) exit seg_loop
        
     end do seg_loop
 
@@ -418,48 +418,48 @@ contains
 
   !****
 
-  function k_s_i (this, s) result (k_i)
+  function j_s_i (this, s) result (j_i)
 
     class(grid_t), intent(in) :: this
     integer, intent(in)       :: s
-    integer                   :: k_i
+    integer                   :: j_i
 
     $ASSERT_DEBUG(s >= this%s_i(),Invalid segment)
     $ASSERT_DEBUG(s <= this%s_o(),Invalid segment)
 
     ! Return the index of the innermost point in segment s
 
-    do k_i = 1, this%n_k
-       if (this%pt(k_i)%s == s) exit
+    do j_i = 1, this%n
+       if (this%pt(j_i)%s == s) exit
     end do
 
     ! Finish
 
     return
 
-  end function k_s_i
+ end function j_s_i
 
   !****
 
-  function k_s_o (this, s) result (k_o)
+  function j_s_o (this, s) result (j_o)
 
     class(grid_t), intent(in) :: this
     integer, intent(in)       :: s
-    integer                   :: k_o
+    integer                   :: j_o
 
     $ASSERT_DEBUG(s >= this%s_i(),Invalid segment)
     $ASSERT_DEBUG(s <= this%s_o(),Invalid segment)
 
     ! Return the index of the outermost point in segment s
 
-    do k_o = this%n_k, 1, -1
-       if (this%pt(k_o)%s == s) exit
+    do j_o = this%n, 1, -1
+       if (this%pt(j_o)%s == s) exit
     end do
 
     ! Finish
 
     return
 
-  end function k_s_o
+ end function j_s_o
 
 end module gyre_grid

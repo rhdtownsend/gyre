@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_util
 ! Purpose  : grid utilities
 !
-! Copyright 2016-2021 Rich Townsend & The GYRE Team
+! Copyright 2016-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -50,19 +50,19 @@ module gyre_grid_util
 
 contains
 
-  subroutine find_turn (cx, gr, st, nm_p, os_p, k_turn, x_turn)
+  subroutine find_turn (cx, gr, st, nm_p, os_p, j_turn, x_turn)
 
     type(context_t), target, intent(in)  :: cx
     type(grid_t), intent(in)             :: gr
     class(r_state_t), target, intent(in) :: st
     type(num_par_t), intent(in)          :: nm_p
     type(osc_par_t), intent(in)          :: os_p
-    integer, intent(out)                 :: k_turn
+    integer, intent(out)                 :: j_turn
     real(WP), intent(out)                :: x_turn
 
     real(WP)      :: gamma_a
     real(WP)      :: gamma_b
-    integer       :: k
+    integer       :: j
     type(point_t) :: pt_a
     type(point_t) :: pt_b
     integer       :: status
@@ -74,7 +74,7 @@ contains
     ! turning point, where the local solution for state st first
     ! becomes propagative
 
-    k_turn = gr%n_k
+    j_turn = gr%n
     x_turn = HUGE(0._WP)
 
     gamma_b = gamma_(cx, cx%point_i(), st, os_p%alpha_gam, os_p%alpha_pi)
@@ -84,25 +84,25 @@ contains
        ! Inner point is already propagative
 
        associate (pt_i => cx%point_i())
-         k_turn = 1
+         j_turn = 1
          x_turn = pt_i%x
        end associate
 
     else
 
-       turn_loop : do k = 1, gr%n_k-1
+       turn_loop : do j = 1, gr%n-1
 
           ! Check for a sign change in gamma
 
           gamma_a = gamma_b
-          gamma_b = gamma_(cx, gr%pt(k+1), st, os_p%alpha_gam, os_p%alpha_pi)
+          gamma_b = gamma_(cx, gr%pt(j+1), st, os_p%alpha_gam, os_p%alpha_pi)
 
           if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
 
-             k_turn = k
+             j_turn = j
              
-             pt_a = gr%pt(k)
-             pt_b = gr%pt(k+1)
+             pt_a = gr%pt(j)
+             pt_b = gr%pt(j+1)
              
              if (pt_a%s == pt_b%s) then
 

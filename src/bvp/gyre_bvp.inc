@@ -1,7 +1,7 @@
 ! Incfile  : gyre_bvp
 ! Purpose  : parametric boundary value problems (template)
 !
-! Copyright 2013-2019 Rich Townsend
+! Copyright 2013-2022 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -50,7 +50,7 @@ module gyre_${T}_bvp
      class(${T}_diff_t), allocatable   :: df(:)
      class(${T}_bound_t), allocatable  :: bd
      class(${T}_sysmtx_t), allocatable :: sm
-     integer, public                   :: n_k
+     integer, public                   :: n
      integer, public                   :: n_e
      integer, public                   :: n_i
      integer, public                   :: n_o
@@ -87,14 +87,14 @@ contains
     type(num_par_t), intent(in)      :: nm_p
     type(${T}_bvp_t)                 :: bp
 
-    integer :: n_k
+    integer :: n
     integer :: n_e
     integer :: n_i
     integer :: n_o
 
     ! Perform basic validations
 
-    n_k = SIZE(df) + 1
+    n = SIZE(df) + 1
     n_e = bd%n_e
 
     n_i = bd%n_i
@@ -106,13 +106,13 @@ contains
 
     ! Construct the bvp_t
 
-    allocate(bp%df(n_k-1), SOURCE=df)
+    allocate(bp%df(n-1), SOURCE=df)
 
     allocate(bp%bd, SOURCE=bd)
 
-    allocate(bp%sm, SOURCE=${T}_sysmtx_t(n_k-1, n_e, n_i, n_o, nm_p))
+    allocate(bp%sm, SOURCE=${T}_sysmtx_t(n-1, n_e, n_i, n_o, nm_p))
 
-    bp%n_k = n_k
+    bp%n = n
     bp%n_e = n_e
     bp%n_i = n_i
     bp%n_o = n_o
@@ -139,7 +139,7 @@ contains
     $TYPE(WP)        :: scl_i(this%n_i)
     $TYPE(WP)        :: scl_o(this%n_o)
     type(${T}_ext_t) :: scl
-    integer          :: k
+    integer          :: j
     
     ! Build the bvp for the specified state
 
@@ -154,9 +154,9 @@ contains
     ! Set up difference equations
 
     !$OMP PARALLEL DO PRIVATE (E_l, E_r, scl) SCHEDULE (DYNAMIC)
-    sub_loop : do k = 1, this%n_k-1
-       call this%df(k)%build(st, E_l, E_r, scl)
-       call this%sm%set_E(k, E_l, E_r, scl)
+    sub_loop : do j = 1, this%n-1
+       call this%df(j)%build(st, E_l, E_r, scl)
+       call this%sm%set_E(j, E_l, E_r, scl)
     end do sub_loop
 
     ! Reset the factored flag
@@ -211,9 +211,9 @@ contains
   function soln_vec_hom (this) result (y)
 
     class(${T}_bvp_t), intent(inout) :: this
-    $TYPE(WP)                        :: y(this%n_e,this%n_k)
+    $TYPE(WP)                        :: y(this%n_e,this%n)
 
-    $TYPE(WP) :: u(this%n_e*this%n_k)
+    $TYPE(WP) :: u(this%n_e*this%n)
 
     $ASSERT_DEBUG(this%factored,Matrix has not been factorized)
 
@@ -236,9 +236,9 @@ contains
     class(${T}_bvp_t), intent(inout) :: this
     $TYPE(WP), intent(in)            :: z_i(:)
     $TYPE(WP), intent(in)            :: z_o(:)
-    $TYPE(WP)                        :: y(this%n_e,this%n_k)
+    $TYPE(WP)                        :: y(this%n_e,this%n)
 
-    $TYPE(WP) :: u(this%n_e*this%n_k)
+    $TYPE(WP) :: u(this%n_e*this%n)
 
     $CHECK_BOUNDS(SIZE(z_i),this%n_i)
     $CHECK_BOUNDS(SIZE(z_o),this%n_o)
@@ -263,13 +263,13 @@ contains
 
     class(${T}_bvp_t), intent(inout) :: this
     $TYPE(WP), intent(in)            :: y(:,:)
-    $TYPE(WP)                        :: dz(this%n_e,this%n_k)
+    $TYPE(WP)                        :: dz(this%n_e,this%n)
 
-    $TYPE(WP) :: u(this%n_e*this%n_k)
-    $TYPE(WP) :: dv(this%n_e*this%n_k)
+    $TYPE(WP) :: u(this%n_e*this%n)
+    $TYPE(WP) :: dv(this%n_e*this%n)
 
     $CHECK_BOUNDS(SIZE(y,1),this%n_e)
-    $CHECK_BOUNDS(SIZE(y,2),this%n_k)
+    $CHECK_BOUNDS(SIZE(y,2),this%n)
 
     $ASSERT_DEBUG(.NOT. this%factored,Matrix has already been factorized)
 
@@ -295,13 +295,13 @@ contains
     $TYPE(WP), intent(in)            :: y(:,:)
     $TYPE(WP), intent(in)            :: z_i(:)
     $TYPE(WP), intent(in)            :: z_o(:)
-    $TYPE(WP)                        :: dz(this%n_e,this%n_k)
+    $TYPE(WP)                        :: dz(this%n_e,this%n)
 
-    $TYPE(WP) :: u(this%n_e*this%n_k)
-    $TYPE(WP) :: dv(this%n_e*this%n_k)
+    $TYPE(WP) :: u(this%n_e*this%n)
+    $TYPE(WP) :: dv(this%n_e*this%n)
 
     $CHECK_BOUNDS(SIZE(y,1),this%n_e)
-    $CHECK_BOUNDS(SIZE(y,2),this%n_k)
+    $CHECK_BOUNDS(SIZE(y,2),this%n)
 
     $CHECK_BOUNDS(SIZE(z_i),this%n_i)
     $CHECK_BOUNDS(SIZE(z_o),this%n_o)

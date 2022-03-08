@@ -1,7 +1,7 @@
 ! Module   : gyre_evol_model
 ! Purpose  : stellar evolutionary model
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -169,8 +169,8 @@ contains
     real(WP), allocatable :: coeff_(:)
     real(WP)              :: coeff_0
     integer               :: s
-    integer               :: k_i
-    integer               :: k_o
+    integer               :: j_i
+    integer               :: j_o
 
     $ASSERT_DEBUG(.NOT. this%committed,Cannot define coefficient after committing model)
 
@@ -210,7 +210,7 @@ contains
 
     endif
 
-    $CHECK_BOUNDS(SIZE(coeff_),this%gr%n_k)
+    $CHECK_BOUNDS(SIZE(coeff_),this%gr%n)
 
     ! If necessary, repair data at segment boundaries
 
@@ -225,13 +225,13 @@ contains
 
        ! Set up the interpolant
 
-       k_i = this%gr%k_s_i(s)
-       k_o = this%gr%k_s_o(s)
+       j_i = this%gr%j_s_i(s)
+       j_o = this%gr%j_s_o(s)
 
-       if (this%gr%pt(k_i)%x == 0._WP) then
-          this%in(i,s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type, df_dx_a=0._WP)
+       if (this%gr%pt(j_i)%x == 0._WP) then
+          this%in(i,s) = r_interp_t(this%gr%pt(j_i:j_o)%x, coeff_(j_i:j_o), this%deriv_type, df_dx_a=0._WP)
        else
-          this%in(i,s) = r_interp_t(this%gr%pt(k_i:k_o)%x, coeff_(k_i:k_o), this%deriv_type)
+          this%in(i,s) = r_interp_t(this%gr%pt(j_i:j_o)%x, coeff_(j_i:j_o), this%deriv_type)
        endif
 
     end do seg_loop
@@ -254,8 +254,8 @@ contains
     integer :: s_i
     integer :: s_o
     integer :: s
-    integer :: k_i
-    integer :: k_o
+    integer :: j_i
+    integer :: j_o
     
     ! Repair coefficient data at segment boundaries, via linear
     ! interpolation from the segment interior
@@ -265,17 +265,17 @@ contains
 
     seg_loop : do s = s_i, s_o
 
-       k_i = gr%k_s_i(s)
-       k_o = gr%k_s_o(s)
+       j_i = gr%j_s_i(s)
+       j_o = gr%j_s_o(s)
          
-         if (s > s_i .AND. k_i + 2 <= k_o) then
-            coeff(k_i) = coeff(k_i+1) + (gr%pt(k_i)%x - gr%pt(k_i+1)%x)*(coeff(k_i+2) - coeff(k_i+1))/&
-                 (gr%pt(k_i+2)%x - gr%pt(k_i+1)%x)
+         if (s > s_i .AND. j_i + 2 <= j_o) then
+            coeff(j_i) = coeff(j_i+1) + (gr%pt(j_i)%x - gr%pt(j_i+1)%x)*(coeff(j_i+2) - coeff(j_i+1))/&
+                 (gr%pt(j_i+2)%x - gr%pt(j_i+1)%x)
          endif
                
-         if (s < s_o .AND. k_o - 2 >= k_i) then
-            coeff(k_o) = coeff(k_o-1) + (gr%pt(k_o)%x - gr%pt(k_o-1)%x)*(coeff(k_o-1) - coeff(k_o-2))/ &
-                 (gr%pt(k_o-1)%x - gr%pt(k_o-2)%x)
+         if (s < s_o .AND. j_o - 2 >= j_i) then
+            coeff(j_o) = coeff(j_o-1) + (gr%pt(j_o)%x - gr%pt(j_o-1)%x)*(coeff(j_o-1) - coeff(j_o-2))/ &
+                 (gr%pt(j_o-1)%x - gr%pt(j_o-2)%x)
          endif
 
     end do seg_loop
@@ -293,12 +293,12 @@ contains
     class(evol_model_t), intent(inout) :: this
 
     integer  :: s
-    integer  :: k_i
-    integer  :: k_o
-    real(WP) :: x(this%gr%n_k)
-    real(WP) :: c_1(this%gr%n_k)
-    real(WP) :: U(this%gr%n_k)
-    real(WP) :: dc_1_dx(this%gr%n_k)
+    integer  :: j_i
+    integer  :: j_o
+    real(WP) :: x(this%gr%n)
+    real(WP) :: c_1(this%gr%n)
+    real(WP) :: U(this%gr%n)
+    real(WP) :: dc_1_dx(this%gr%n)
 
     ! Commit the model
 
@@ -498,9 +498,9 @@ contains
     real(WP)      :: I
     integer       :: s
     type(point_t) :: pt
-    integer       :: k_i
-    integer       :: k_o
-    integer       :: k
+    integer       :: j_i
+    integer       :: j_o
+    integer       :: j
     real(WP)      :: V_2
     real(WP)      :: c_1
     real(WP)      :: Gamma_1
@@ -521,18 +521,18 @@ contains
 
        pt%s = s
 
-       k_i = gr%k_s_i(s)
-       k_o = gr%k_s_o(s)
+       j_i = gr%j_s_i(s)
+       j_o = gr%j_s_o(s)
 
-       cell_loop : do k = k_i, k_o-1
+       cell_loop : do j = j_i, j_o-1
 
-          pt%x = 0.5*(gr%pt(k)%x + gr%pt(k+1)%x)
+          pt%x = 0.5*(gr%pt(j)%x + gr%pt(j+1)%x)
 
           V_2 = this%coeff(I_V_2, pt)
           c_1 = this%coeff(I_C_1, pt)
           Gamma_1 = this%coeff(I_GAMMA_1, pt)
 
-          I = I + sqrt(c_1*V_2/Gamma_1)*(gr%pt(k+1)%x - gr%pt(k)%x)
+          I = I + sqrt(c_1*V_2/Gamma_1)*(gr%pt(j+1)%x - gr%pt(j)%x)
 
        end do cell_loop
 
@@ -560,9 +560,9 @@ contains
     real(WP)      :: I
     integer       :: s
     type(point_t) :: pt
-    integer       :: k_i
-    integer       :: k_o
-    integer       :: k
+    integer       :: j_i
+    integer       :: j_o
+    integer       :: j
     real(WP)      :: As
     real(WP)      :: c_1
 
@@ -582,17 +582,17 @@ contains
 
        pt%s = s
 
-       k_i = gr%k_s_i(s)
-       k_o = gr%k_s_o(s)
+       j_i = gr%j_s_i(s)
+       j_o = gr%j_s_o(s)
 
-       cell_loop : do k = k_i, k_o-1
+       cell_loop : do j = j_i, j_o-1
 
-          pt%x = 0.5*(gr%pt(k)%x + gr%pt(k+1)%x)
+          pt%x = 0.5*(gr%pt(j)%x + gr%pt(j+1)%x)
 
           As = this%coeff(I_AS, pt)
           c_1 = this%coeff(I_C_1, pt)
 
-          I = I + (sqrt(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(k+1)%x - gr%pt(k)%x)
+          I = I + (sqrt(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(j+1)%x - gr%pt(j)%x)
 
        end do cell_loop
 

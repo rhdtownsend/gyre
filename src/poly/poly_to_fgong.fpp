@@ -1,7 +1,7 @@
 ! Program  : poly_to_fgong
 ! Purpose  : convert a polytrope to FGONG format
 !
-! Copyright 2015-2020 Rich Townsend & The GYRE Team
+! Copyright 2015-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -61,11 +61,11 @@ program poly_to_fgong
   real(WP), allocatable   :: M_r(:)
   real(WP), allocatable   :: P(:)
   real(WP), allocatable   :: rho(:)
-  integer                 :: n_k
+  integer                 :: n
   real(WP), allocatable   :: glob(:)
   real(WP), allocatable   :: var(:,:)
   integer                 :: unit
-  integer                 :: k
+  integer                 :: j
 
   ! Read parameters
 
@@ -90,26 +90,26 @@ program poly_to_fgong
   gr = ml%grid()
 
   if (drop_outer) then
-     gr = grid_t(gr%pt(:gr%n_k-1)%x)
+     gr = grid_t(gr%pt(:gr%n-1)%x)
   endif
 
   ! Extract data from the model
 
   ! Dimensionless structure variables
 
-  allocate(V_2(gr%n_k))
-  allocate(As(gr%n_k))
-  allocate(U(gr%n_k))
-  allocate(c_1(gr%n_k))
-  allocate(Gamma_1(gr%n_k))
+  allocate(V_2(gr%n))
+  allocate(As(gr%n))
+  allocate(U(gr%n))
+  allocate(c_1(gr%n))
+  allocate(Gamma_1(gr%n))
 
-  do k = 1, gr%n_k
-     associate (pt => gr%pt(k))
-       V_2(k) = ml%coeff(I_V_2, pt)
-       As(k) = ml%coeff(I_AS, pt)
-       U(k) = ml%coeff(I_U, pt)
-       c_1(k) = ml%coeff(I_C_1, pt)
-       Gamma_1(k) = ml%coeff(I_GAMMA_1, pt)
+  do j = 1, gr%n
+     associate (pt => gr%pt(j))
+       V_2(j) = ml%coeff(I_V_2, pt)
+       As(j) = ml%coeff(I_AS, pt)
+       U(j) = ml%coeff(I_U, pt)
+       c_1(j) = ml%coeff(I_C_1, pt)
+       Gamma_1(j) = ml%coeff(I_GAMMA_1, pt)
      end associate
   end do
 
@@ -128,10 +128,10 @@ program poly_to_fgong
 
   ! Store into var array
 
-  n_k = gr%n_k
+  n = gr%n
 
   allocate(glob(ICONST))
-  allocate(var(IVAR,n_k))
+  allocate(var(IVAR,n))
 
   glob(1) = M_SUN
   glob(2) = R_SUN
@@ -154,7 +154,7 @@ program poly_to_fgong
   var(15,:) = As
   var(16,:) = 0._WP
 
-  var = var(:,n_k:1:-1)
+  var = var(:,n:1:-1)
 
   ! Write out the FGONG file
 
@@ -166,14 +166,14 @@ program poly_to_fgong
   write(unit, 100) 'Fum'
 100 format(A)
 
-  write(unit, 110) n_k, ICONST, IVAR, IVERS
+  write(unit, 110) n, ICONST, IVAR, IVERS
 110 format(4I10)
 
   write(unit, 120) glob
 120  format(1P,5(1X,E26.18E3))
 
-  do k = 1, n_k
-     write(unit, 120) var(:,k)
+  do j = 1, n
+     write(unit, 120) var(:,j)
   end do
 
   close(unit)

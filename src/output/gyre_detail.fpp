@@ -110,10 +110,10 @@ contains
 
     detail_file = this%ot_p%detail_template
 
-    detail_file = subst(detail_file, '%J', wv%j, '(I5.5)')
+    detail_file = subst(detail_file, '%ID', wv%id, '(I5.5)')
     detail_file = subst(detail_file, '%L', wv%l, '(I3.3)')
     detail_file = subst(detail_file, '%M', wv%m, '(SP,I3.2)')
-    detail_file = subst(detail_file, '%j', wv%j, '(I0)')
+    detail_file = subst(detail_file, '%id', wv%id, '(I0)')
     detail_file = subst(detail_file, '%l', wv%l, '(I0)')
     detail_file = subst(detail_file, '%m', wv%m, '(SP,I0)')
 
@@ -186,7 +186,7 @@ contains
     class(writer_t), intent(inout) :: wr
     logical, intent(out)           :: written
 
-    integer :: k
+    integer :: j
 
     ! Write the item from wave_t data
 
@@ -196,11 +196,11 @@ contains
 
     case ('n')
 
-       call wr%write('n', wv%n_k)
+       call wr%write('n', wv%n)
 
-    case ('j')
+    case ('id')
 
-       call wr%write('j', wv%j)
+       call wr%write('id', wv%id)
 
     case ('l')
 
@@ -312,49 +312,49 @@ contains
 
     case ('x_ref')
 
-       call wr%write('x_ref', gr%pt(wv%k_ref)%x)
+       call wr%write('x_ref', gr%pt(wv%j_ref)%x)
 
-    $WRITE_POINTS(lambda,wv%lambda(k))
-    $WRITE_POINTS(y_1,wv%y_i(1, k))
-    $WRITE_POINTS(y_2,wv%y_i(2, k))
-    $WRITE_POINTS(y_3,wv%y_i(3, k))
-    $WRITE_POINTS(y_4,wv%y_i(4, k))
-    $WRITE_POINTS(y_5,wv%y_i(5, k))
-    $WRITE_POINTS(y_6,wv%y_i(6, k))
-    $WRITE_POINTS(xi_r,wv%xi_r(k))
-    $WRITE_POINTS(xi_h,wv%xi_h(k))
-    $WRITE_POINTS(eul_phi,wv%eul_phi(k))
-    $WRITE_POINTS(deul_phi,wv%deul_phi(k))
-    $WRITE_POINTS(eul_P,wv%eul_P(k))
-    $WRITE_POINTS(eul_rho,wv%eul_rho(k))
-    $WRITE_POINTS(eul_T,wv%eul_T(k))
-    $WRITE_POINTS(lag_P,wv%lag_P(k))
-    $WRITE_POINTS(lag_rho,wv%lag_rho(k))
-    $WRITE_POINTS(lag_T,wv%lag_T(k))
-    $WRITE_POINTS(lag_S,wv%lag_S(k))
-    $WRITE_POINTS(lag_L,wv%lag_L(k))
-    $WRITE_POINTS(dE_dx,wv%dE_dx(k))
-    $WRITE_POINTS(dW_dx,wv%dW_dx(k))
-    $WRITE_POINTS(dW_eps_dx,wv%dW_eps_dx(k))
-    $WRITE_POINTS(dzeta_dx,wv%dzeta_dx(k))
-    $WRITE_POINTS(dzeta_dm,wv%dzeta_dm(k))
-    $WRITE_POINTS(dbeta_dx,wv%dbeta_dx(k))
-    $WRITE_POINTS(dtau_ss_dx,wv%dtau_ss_dx(k))
-    $WRITE_POINTS(dtau_tr_dx,wv%dtau_tr_dx(k))
-    $WRITE_POINTS(Yt_1,wv%Yt_1(k))
-    $WRITE_POINTS(Yt_2,wv%Yt_2(k))
-    $WRITE_POINTS(I_0,wv%I_0(k))
-    $WRITE_POINTS(I_1,wv%I_1(k))
-    $WRITE_POINTS(alpha_0,wv%alpha_0(k))
-    $WRITE_POINTS(alpha_1,wv%alpha_1(k))
-    $WRITE_POINTS(prop_type,wv%prop_type(k))
+    $WRITE_POINTS(lambda,wv%lambda(j))
+    $WRITE_POINTS(y_1,wv%y_i(1, j))
+    $WRITE_POINTS(y_2,wv%y_i(2, j))
+    $WRITE_POINTS(y_3,wv%y_i(3, j))
+    $WRITE_POINTS(y_4,wv%y_i(4, j))
+    $WRITE_POINTS(y_5,wv%y_i(5, j))
+    $WRITE_POINTS(y_6,wv%y_i(6, j))
+    $WRITE_POINTS(xi_r,wv%xi_r(j))
+    $WRITE_POINTS(xi_h,wv%xi_h(j))
+    $WRITE_POINTS(eul_phi,wv%eul_phi(j))
+    $WRITE_POINTS(deul_phi,wv%deul_phi(j))
+    $WRITE_POINTS(eul_P,wv%eul_P(j))
+    $WRITE_POINTS(eul_rho,wv%eul_rho(j))
+    $WRITE_POINTS(eul_T,wv%eul_T(j))
+    $WRITE_POINTS(lag_P,wv%lag_P(j))
+    $WRITE_POINTS(lag_rho,wv%lag_rho(j))
+    $WRITE_POINTS(lag_T,wv%lag_T(j))
+    $WRITE_POINTS(lag_S,wv%lag_S(j))
+    $WRITE_POINTS(lag_L,wv%lag_L(j))
+    $WRITE_POINTS(dE_dx,wv%dE_dx(j))
+    $WRITE_POINTS(dW_dx,wv%dW_dx(j))
+    $WRITE_POINTS(dW_eps_dx,wv%dW_eps_dx(j))
+    $WRITE_POINTS(dzeta_dx,wv%dzeta_dx(j))
+    $WRITE_POINTS(dzeta_dm,wv%dzeta_dm(j))
+    $WRITE_POINTS(dbeta_dx,wv%dbeta_dx(j))
+    $WRITE_POINTS(dtau_ss_dx,wv%dtau_ss_dx(j))
+    $WRITE_POINTS(dtau_tr_dx,wv%dtau_tr_dx(j))
+    $WRITE_POINTS(Yt_1,wv%Yt_1(j))
+    $WRITE_POINTS(Yt_2,wv%Yt_2(j))
+    $WRITE_POINTS(I_0,wv%I_0(j))
+    $WRITE_POINTS(I_1,wv%I_1(j))
+    $WRITE_POINTS(alpha_0,wv%alpha_0(j))
+    $WRITE_POINTS(alpha_1,wv%alpha_1(j))
+    $WRITE_POINTS(prop_type,wv%prop_type(j))
 
-    $WRITE_REF(xi_r_ref,wv%xi_r(wv%k_ref))
-    $WRITE_REF(xi_h_ref,wv%xi_h(wv%k_ref))
-    $WRITE_REF(eul_phi_ref,wv%eul_phi(wv%k_ref))
-    $WRITE_REF(deul_phi_ref,wv%deul_phi(wv%k_ref))
-    $WRITE_REF(lag_S_ref,wv%lag_S(wv%k_ref))
-    $WRITE_REF(lag_L_ref,wv%lag_L(wv%k_ref))
+    $WRITE_REF(xi_r_ref,wv%xi_r(wv%j_ref))
+    $WRITE_REF(xi_h_ref,wv%xi_h(wv%j_ref))
+    $WRITE_REF(eul_phi_ref,wv%eul_phi(wv%j_ref))
+    $WRITE_REF(deul_phi_ref,wv%deul_phi(wv%j_ref))
+    $WRITE_REF(lag_S_ref,wv%lag_S(wv%j_ref))
+    $WRITE_REF(lag_L_ref,wv%lag_L(wv%j_ref))
 
     case default
 
@@ -434,7 +434,7 @@ contains
     class(writer_t), intent(inout) :: wr
     logical, intent(out)           :: written
 
-    integer :: k
+    integer :: j
 
     ! Write the item from resp_t data
 
@@ -458,11 +458,11 @@ contains
 
        call wr%write('J_dot', rs%J_dot())
 
-    $WRITE_POINTS(eul_psi,rs%eul_psi(k))
-    $WRITE_POINTS(phi_2,rs%phi_2(k))
+    $WRITE_POINTS(eul_psi,rs%eul_psi(j))
+    $WRITE_POINTS(phi_2,rs%phi_2(j))
 
-    $WRITE_REF(eul_psi_ref,rs%eul_psi(rs%k_ref))
-    $WRITE_REF(phi_2_ref,rs%phi_2(rs%k_ref))
+    $WRITE_REF(eul_psi_ref,rs%eul_psi(rs%j_ref))
+    $WRITE_REF(phi_2_ref,rs%phi_2(rs%j_ref))
 
     case default
 
@@ -488,7 +488,7 @@ contains
     class(writer_t), intent(inout) :: wr
     logical, intent(out)           :: written
 
-    integer :: k
+    integer :: j
 
     ! Write the item from context_t data
 
@@ -496,9 +496,9 @@ contains
 
     select case (item)
 
-    $WRITE_POINTS(eps_rho,cx%eps_rho(st, gr%pt(k)))
-    $WRITE_POINTS(eps_T,cx%eps_T(st, gr%pt(k)))
-    $WRITE_POINTS(Omega_rot,cx%Omega_rot(gr%pt(k)))
+    $WRITE_POINTS(eps_rho,cx%eps_rho(st, gr%pt(j)))
+    $WRITE_POINTS(eps_T,cx%eps_T(st, gr%pt(j)))
+    $WRITE_POINTS(Omega_rot,cx%Omega_rot(gr%pt(j)))
 
     case default
 
@@ -524,7 +524,7 @@ contains
     class(writer_t), intent(inout)      :: wr
     logical, intent(out)                :: written
 
-    integer :: k
+    integer :: j
 
     ! Write the item from model_t data
 
@@ -540,22 +540,22 @@ contains
 
        call wr%write('Delta_g', ml%Delta_g(gr%x_i(), gr%x_o(), l*(l+1._WP)))
 
-    $WRITE_POINTS(V_2,ml%coeff(I_V_2, gr%pt(k)))
-    $WRITE_POINTS(As,ml%coeff(I_AS, gr%pt(k)))
-    $WRITE_POINTS(U,ml%coeff(I_U, gr%pt(k)))
-    $WRITE_POINTS(c_1,ml%coeff(I_C_1, gr%pt(k)))
-    $WRITE_POINTS(Gamma_1,ml%coeff(I_GAMMA_1, gr%pt(k)))
-    $WRITE_POINTS(nabla,ml%coeff(I_NABLA, gr%pt(k)))
-    $WRITE_POINTS(nabla_ad,ml%coeff(I_NABLA_AD, gr%pt(k)))
-    $WRITE_POINTS(dnabla_ad,ml%dcoeff(I_NABLA_AD, gr%pt(k)))
-    $WRITE_POINTS(delta,ml%coeff(I_DELTA, gr%pt(k)))
-    $WRITE_POINTS(c_lum,ml%coeff(I_C_LUM, gr%pt(k)))
-    $WRITE_POINTS(c_rad,ml%coeff(I_C_RAD, gr%pt(k)))
-    $WRITE_POINTS(c_thn,ml%coeff(I_C_THN, gr%pt(k)))
-    $WRITE_POINTS(c_thk,ml%coeff(I_C_THK, gr%pt(k)))
-    $WRITE_POINTS(c_eps,ml%coeff(I_C_EPS, gr%pt(k)))
-    $WRITE_POINTS(kap_rho,ml%coeff(I_KAP_RHO, gr%pt(k)))
-    $WRITE_POINTS(kap_T,ml%coeff(I_KAP_T, gr%pt(k)))
+    $WRITE_POINTS(V_2,ml%coeff(I_V_2, gr%pt(j)))
+    $WRITE_POINTS(As,ml%coeff(I_AS, gr%pt(j)))
+    $WRITE_POINTS(U,ml%coeff(I_U, gr%pt(j)))
+    $WRITE_POINTS(c_1,ml%coeff(I_C_1, gr%pt(j)))
+    $WRITE_POINTS(Gamma_1,ml%coeff(I_GAMMA_1, gr%pt(j)))
+    $WRITE_POINTS(nabla,ml%coeff(I_NABLA, gr%pt(j)))
+    $WRITE_POINTS(nabla_ad,ml%coeff(I_NABLA_AD, gr%pt(j)))
+    $WRITE_POINTS(dnabla_ad,ml%dcoeff(I_NABLA_AD, gr%pt(j)))
+    $WRITE_POINTS(delta,ml%coeff(I_DELTA, gr%pt(j)))
+    $WRITE_POINTS(c_lum,ml%coeff(I_C_LUM, gr%pt(j)))
+    $WRITE_POINTS(c_rad,ml%coeff(I_C_RAD, gr%pt(j)))
+    $WRITE_POINTS(c_thn,ml%coeff(I_C_THN, gr%pt(j)))
+    $WRITE_POINTS(c_thk,ml%coeff(I_C_THK, gr%pt(j)))
+    $WRITE_POINTS(c_eps,ml%coeff(I_C_EPS, gr%pt(j)))
+    $WRITE_POINTS(kap_rho,ml%coeff(I_KAP_RHO, gr%pt(j)))
+    $WRITE_POINTS(kap_T,ml%coeff(I_KAP_T, gr%pt(j)))
 
     case default
        
@@ -591,7 +591,7 @@ contains
     class(writer_t), intent(inout)           :: wr
     logical, intent(out)                     :: written
 
-    integer :: k
+    integer :: j
     
     ! Write the item from evol_model_t data
 
@@ -611,10 +611,10 @@ contains
 
        call wr%write('L_star', ml%L_star)
 
-    $WRITE_POINTS(M_r,ml%M_r(gr%pt(k)))
-    $WRITE_POINTS(P,ml%P(gr%pt(k)))
-    $WRITE_POINTS(rho,ml%rho(gr%pt(k)))
-    $WRITE_POINTS(T,ml%T(gr%pt(k)))
+    $WRITE_POINTS(M_r,ml%M_r(gr%pt(j)))
+    $WRITE_POINTS(P,ml%P(gr%pt(j)))
+    $WRITE_POINTS(rho,ml%rho(gr%pt(j)))
+    $WRITE_POINTS(T,ml%T(gr%pt(j)))
 
     case default
 

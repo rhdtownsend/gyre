@@ -101,12 +101,12 @@ contains
     real(WP), intent(in) :: Omega_rot
     type(poly_model_t)   :: ml
 
-    integer  :: n_k
+    integer  :: n_p
     real(WP) :: x(SIZE(z))
-    integer  :: k_i
-    integer  :: k_o
-    integer  :: k_i_prev
-    integer  :: k_o_prev
+    integer  :: j_i
+    integer  :: j_o
+    integer  :: j_i_prev
+    integer  :: j_o_prev
     integer  :: s
     integer  :: i
     real(WP) :: v_o_prev
@@ -123,9 +123,9 @@ contains
 
     ! Create the grid
 
-    n_k = SIZE(z)
+    n_p = SIZE(z)
 
-    ml%z_s = z(n_k)
+    ml%z_s = z(n_p)
 
     x = z/ml%z_s
 
@@ -156,32 +156,32 @@ contains
     ml%t(ml%s_i) = 1._WP
     ml%B(ml%s_i) = 1._WP
 
-    k_i = ml%gr%k_s_i(ml%s_i)
-    k_o = ml%gr%k_s_o(ml%s_i)
+    j_i = ml%gr%j_s_i(ml%s_i)
+    j_o = ml%gr%j_s_o(ml%s_i)
 
     seg_data_loop : do s = ml%s_i+1, ml%s_o
 
-       k_i_prev = k_i
-       k_o_prev = k_o
+       j_i_prev = j_i
+       j_o_prev = j_o
 
-       k_i = ml%gr%k_s_i(s)
-       k_o = ml%gr%k_s_o(s)
+       j_i = ml%gr%j_s_i(s)
+       j_o = ml%gr%j_s_o(s)
 
        i = s - ml%s_i + 1
 
-       v_o_prev = z(k_o_prev)**2*dtheta(k_o_prev)
+       v_o_prev = z(j_o_prev)**2*dtheta(j_o_prev)
 
        ml%mu_i(s) = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
-       ml%t(s) = ml%t(s-1)*exp(ml%n_poly(s-1)*log(theta(k_o_prev)) + Delta_b(i-1))
+       ml%t(s) = ml%t(s-1)*exp(ml%n_poly(s-1)*log(theta(j_o_prev)) + Delta_b(i-1))
 
-       ml%v_i(s) = z(k_i)**2*dtheta(k_i)
+       ml%v_i(s) = z(j_i)**2*dtheta(j_i)
 
-       ml%B(s) = (dtheta(k_i)/dtheta(k_o_prev))*(ml%t(s)/ml%t(s-1))*ml%B(s-1)
+       ml%B(s) = (dtheta(j_i)/dtheta(j_o_prev))*(ml%t(s)/ml%t(s-1))*ml%B(s-1)
 
     end do seg_data_loop
 
-    v_o_prev = z(k_o)**2*dtheta(k_o)
+    v_o_prev = z(j_o)**2*dtheta(j_o)
 
     ml%mu_s = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
@@ -189,25 +189,25 @@ contains
 
     seg_spline_loop : do s = ml%s_i, ml%s_o
 
-       k_i = ml%gr%k_s_i(s)
-       k_o = ml%gr%k_s_o(s)
+       j_i = ml%gr%j_s_i(s)
+       j_o = ml%gr%j_s_o(s)
 
        if (ml%n_poly(s) /= 0._WP) then
 
-          where (z(k_i:k_o) /= 0._WP)
-             d2theta(k_i:k_o) = -2._WP*dtheta(k_i:k_o)/z(k_i:k_o) - ml%B(s)*pow(theta(k_i:k_o), ml%n_poly(s))
+          where (z(j_i:j_o) /= 0._WP)
+             d2theta(j_i:j_o) = -2._WP*dtheta(j_i:j_o)/z(j_i:j_o) - ml%B(s)*pow(theta(j_i:j_o), ml%n_poly(s))
           elsewhere
-             d2theta(k_i:k_o) = -1._WP/3._WP
+             d2theta(j_i:j_o) = -1._WP/3._WP
           end where
 
        else
 
-          d2theta(k_i:k_o) = -1._WP/3._WP
+          d2theta(j_i:j_o) = -1._WP/3._WP
 
        endif
 
-       ml%in_theta(s) = r_interp_t(x(k_i:k_o), theta(k_i:k_o), dtheta(k_i:k_o)*ml%z_s)
-       ml%in_dtheta(s) = r_interp_t(x(k_i:k_o), dtheta(k_i:k_o), d2theta(k_i:k_o)*ml%z_s)
+       ml%in_theta(s) = r_interp_t(x(j_i:j_o), theta(j_i:j_o), dtheta(j_i:j_o)*ml%z_s)
+       ml%in_dtheta(s) = r_interp_t(x(j_i:j_o), dtheta(j_i:j_o), d2theta(j_i:j_o)*ml%z_s)
 
     end do seg_spline_loop
 
@@ -622,9 +622,9 @@ contains
     real(WP)      :: I
     integer       :: s
     type(point_t) :: pt
-    integer       :: k_i
-    integer       :: k_o
-    integer       :: k
+    integer       :: j_i
+    integer       :: j_o
+    integer       :: j
     real(WP)      :: V_2
     real(WP)      :: c_1
     real(WP)      :: Gamma_1
@@ -645,18 +645,18 @@ contains
 
        pt%s = s
 
-       k_i = gr%k_s_i(s)
-       k_o = gr%k_s_o(s)
+       j_i = gr%j_s_i(s)
+       j_o = gr%j_s_o(s)
 
-       cell_loop : do k = k_i, k_o-1
+       cell_loop : do j = j_i, j_o-1
 
-          pt%x = 0.5*(gr%pt(k)%x + gr%pt(k+1)%x)
+          pt%x = 0.5*(gr%pt(j)%x + gr%pt(j+1)%x)
 
           V_2 = this%coeff(I_V_2, pt)
           c_1 = this%coeff(I_C_1, pt)
           Gamma_1 = this%coeff(I_GAMMA_1, pt)
 
-          I = I + sqrt(c_1*V_2/Gamma_1)*(gr%pt(k+1)%x - gr%pt(k)%x)
+          I = I + sqrt(c_1*V_2/Gamma_1)*(gr%pt(j+1)%x - gr%pt(j)%x)
 
        end do cell_loop
 
@@ -684,9 +684,9 @@ contains
     real(WP)      :: I
     integer       :: s
     type(point_t) :: pt
-    integer       :: k_i
-    integer       :: k_o
-    integer       :: k
+    integer       :: j_i
+    integer       :: j_o
+    integer       :: j
     real(WP)      :: As
     real(WP)      :: c_1
 
@@ -706,17 +706,17 @@ contains
 
        pt%s = s
 
-       k_i = gr%k_s_i(s)
-       k_o = gr%k_s_o(s)
+       j_i = gr%j_s_i(s)
+       j_o = gr%j_s_o(s)
 
-       cell_loop : do k = k_i, k_o-1
+       cell_loop : do j = j_i, j_o-1
 
-          pt%x = 0.5*(gr%pt(k)%x + gr%pt(k+1)%x)
+          pt%x = 0.5*(gr%pt(j)%x + gr%pt(j+1)%x)
 
           As = this%coeff(I_AS, pt)
           c_1 = this%coeff(I_C_1, pt)
 
-          I = I + (sqrt(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(k+1)%x - gr%pt(k)%x)
+          I = I + (sqrt(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(j+1)%x - gr%pt(j)%x)
 
        end do cell_loop
 

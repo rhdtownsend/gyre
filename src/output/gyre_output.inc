@@ -1,7 +1,7 @@
 ! Incfile  : gyre_output
 ! Purpose  : macros for output module
 !
-! Copyright 2017-2019 Rich Townsend
+! Copyright 2017-2022 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -40,8 +40,8 @@ $local $FUNC $4
  
 case ($str($NAME))
 
-   do k = 1, gr%n_k
-      data_$T(k) = $VAR%$FUNC
+   do p = 1, gr%n_p
+      data_$T(p) = $VAR%$FUNC
    end do
    
    call wr%write($str($NAME), data_$T)
@@ -55,7 +55,7 @@ $local $FUNC $2
  
 case ($str($NAME))
 
-   call wr%write($str($NAME), wv%$FUNC(wv%k_ref))
+   call wr%write($str($NAME), wv%$FUNC(wv%p_ref))
 
 $endsub
 
