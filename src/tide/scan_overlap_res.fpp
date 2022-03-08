@@ -368,7 +368,7 @@ contains
 
       hg = hgroup_t(ov_p%summary_file, OPEN_FILE)
 
-      call read_dset_alloc(hg, 'n_pg', n_pg)
+      call read_dset_alloc(hg, 'n_pg_ad', n_pg)
       call read_dset_alloc(hg, 'j', j)
       call read_dset_alloc(hg, 'omega', omega)
 
