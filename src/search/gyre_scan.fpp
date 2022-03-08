@@ -1,7 +1,7 @@
 ! Module   : gyre_scan
 ! Purpose  : frequency scanning routines
 !
-! Copyright 2013-2020 The GYRE Team
+! Copyright 2013-2022 The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -289,10 +289,10 @@ contains
     type(mode_par_t), intent(in) :: md_p
     type(osc_par_t), intent(in)  :: os_p
 
-    real(WP) :: omega_c(gr%n_k)
-    real(WP) :: omega_c_prev(gr%n_k)
+    real(WP) :: omega_c(gr%n_p)
+    real(WP) :: omega_c_prev(gr%n_p)
     integer  :: j
-    integer  :: k
+    integer  :: p
 
     ! Check the frequency scan to remove any points with leaky
     ! boundary conditions
@@ -305,8 +305,8 @@ contains
     if (SIZE(omega) >= 1) then
 
        !$OMP PARALLEL DO
-       do k = 1, gr%n_k
-          omega_c(k) = omega(1) - md_p%m*cx%Omega_rot(gr%pt(k))
+       do p = 1, gr%n_p
+          omega_c(p) = omega(1) - md_p%m*cx%Omega_rot(gr%pt(p))
        end do
 
        $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
@@ -316,8 +316,8 @@ contains
           omega_c_prev = omega_c
 
           !$OMP PARALLEL DO
-          do k = 1, gr%n_k
-             omega_c(k) = omega(j) - md_p%m*cx%Omega_rot(gr%pt(k))
+          do p = 1, gr%n_p
+             omega_c(p) = omega(j) - md_p%m*cx%Omega_rot(gr%pt(p))
           end do
 
           $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)

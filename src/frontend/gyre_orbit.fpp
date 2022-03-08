@@ -1,7 +1,7 @@
 ! Program  : gyre_orbit
 ! Purpose  : secular orbital evolution code
 !
-! Copyright 2018-2020 Rich Townsend & The GYRE Team
+! Copyright 2018-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -277,7 +277,7 @@ contains
 
        ! Evaluate the response function
  
-       F = -0.5_WP*(sqrt(4._WP*PI)*wv%eul_phi(wv%n_k)/(eps_tide*c) + 1._WP)
+       F = -0.5_WP*(sqrt(4._WP*PI)*wv%eul_phi(wv%n_p)/(eps_tide*c) + 1._WP)
 
        ! Evaluate the summation weight
 

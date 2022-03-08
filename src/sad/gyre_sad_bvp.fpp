@@ -1,7 +1,7 @@
 ! Module   : gyre_sad_bvp
 ! Purpose  : static adiabatic bounary value problem solver
 !
-! Copyright 2019-2021 Rich Townsend & The GYRE Team
+! Copyright 2019-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -92,7 +92,7 @@ contains
     type(point_t)                 :: pt_i
     type(point_t)                 :: pt_o
     type(sad_bound_t)             :: bd
-    integer                       :: k
+    integer                       :: p
     type(sad_diff_t), allocatable :: df(:)
 
     ! Construct the sad_bvp_t
@@ -110,11 +110,11 @@ contains
 
     ! Initialize the difference equations
 
-    allocate(df(gr%n_k-1))
+    allocate(df(gr%n_p-1))
 
     !$OMP PARALLEL DO
-    do k = 1, gr%n_k-1
-       df(k) = sad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+    do p = 1, gr%n_p-1
+       df(p) = sad_diff_t(cx, gr%pt(p), gr%pt(p+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -150,8 +150,8 @@ contains
     integer, intent(in)             :: j
     type(wave_t)                    :: wv
 
-    real(WP) :: y(2,bp%n_k)
-    integer  :: k
+    real(WP) :: y(2,bp%n_p)
+    integer  :: p
 
     ! Calculate the solution vector
 
@@ -163,8 +163,8 @@ contains
     ! Convert to canonical form
 
     !$OMP PARALLEL DO
-    do k = 1, bp%n_k
-       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
+    do p = 1, bp%n_p
+       call bp%tr%trans_vars(y(:,p), p, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
@@ -188,8 +188,8 @@ contains
     integer, intent(in)             :: j
     type(wave_t)                    :: wv
 
-    real(WP) :: y(2,bp%n_k)
-    integer  :: k
+    real(WP) :: y(2,bp%n_p)
+    integer  :: p
 
     $CHECK_BOUNDS(SIZE(z_i),bp%n_i)
     $CHECK_BOUNDS(SIZE(z_o),bp%n_o)
@@ -204,8 +204,8 @@ contains
     ! Convert to canonical form
 
     !$OMP PARALLEL DO
-    do k = 1, bp%n_k
-       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
+    do p = 1, bp%n_p
+       call bp%tr%trans_vars(y(:,p), p, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
@@ -228,7 +228,7 @@ contains
     integer, intent(in)             :: j
     type(wave_t)                    :: wv
 
-    complex(WP)     :: y_c(6,bp%n_k)
+    complex(WP)     :: y_c(6,bp%n_p)
     type(c_state_t) :: st_c
     type(c_ext_t)   :: discrim
 

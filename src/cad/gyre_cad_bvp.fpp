@@ -1,7 +1,7 @@
-! Module   : gyre_ad_bvp
+! Module   : gyre_cad_bvp
 ! Purpose  : adiabatic bounary value problem solver (complex variables)
 !
-! Copyright 2013-2020 Rich Townsend
+! Copyright 2013-2022 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -90,7 +90,7 @@ contains
     type(cad_bvp_t)                      :: bp
 
     type(cad_bound_t)             :: bd
-    integer                       :: k
+    integer                       :: p
     type(cad_diff_t), allocatable :: df(:)
     type(osc_par_t)               :: qad_os_p
 
@@ -102,11 +102,11 @@ contains
 
     ! Initialize the difference equations
 
-    allocate(df(gr%n_k-1))
+    allocate(df(gr%n_p-1))
 
     !$OMP PARALLEL DO
-    do k = 1, gr%n_k-1
-       df(k) = cad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+    do p = 1, gr%n_p-1
+       df(k) = cad_diff_t(cx, gr%pt(p), gr%pt(p+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -139,7 +139,7 @@ contains
     integer, intent(in)            :: j
     type(wave_t)                   :: wv
 
-    real(WP)        :: y(4,bp%n_k)
+    real(WP)        :: y(4,bp%n_p)
     integer         :: k
 
     ! Calculate the homogeneous solution vector
@@ -152,7 +152,7 @@ contains
     ! Convert to canonical form
 
     !$OMP PARALLEL DO
-    do k = 1, bp%n_k
+    do k = 1, bp%n_p
        call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
     end do
 
@@ -177,8 +177,8 @@ contains
     integer, intent(in)             :: j
     type(wave_t)                    :: wv
 
-    complex(WP) :: y(4,bp%n_k)
-    integer     :: k
+    complex(WP) :: y(4,bp%n_p)
+    integer     :: p
 
     $CHECK_BOUNDS(SIZE(z_i),bp%n_i)
     $CHECK_BOUNDS(SIZE(z_o),bp%n_o)
@@ -193,8 +193,8 @@ contains
     ! Convert to canonical form
 
     !$OMP PARALLEL DO
-    do k = 1, bp%n_k
-       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
+    do p = 1, bp%n_p
+       call bp%tr%trans_vars(y(:,p), p, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
@@ -218,11 +218,11 @@ contains
     type(wave_t)                    :: wv
 
     type(c_state_t) :: st_c
-    complex(WP)     :: y_c(6,bp%n_k)
+    complex(WP)     :: y_c(6,bp%n_p)
     type(c_ext_t)   :: discrim
 
     $CHECK_BOUNDS(SIZE(y, 1),bp%n_e)
-    $CHECK_BOUNDS(SIZE(y, 2),bp%n_k)
+    $CHECK_BOUNDS(SIZE(y, 2),bp%n_p)
 
     ! Set up complex eigenfunctions
 

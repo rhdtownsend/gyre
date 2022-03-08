@@ -50,9 +50,9 @@ program poly_to_txt
   real(WP), allocatable   :: U(:)
   real(WP), allocatable   :: c_1(:)
   real(WP), allocatable   :: Gamma_1(:)
-  integer                 :: n_k
+  integer                 :: n_p
   integer                 :: unit
-  integer                 :: k
+  integer                 :: p
 
   ! Read parameters
 
@@ -73,26 +73,26 @@ program poly_to_txt
   gr = ml%grid()
 
   if (drop_outer) then
-     gr = grid_t(gr%pt(:gr%n_k-1)%x)
+     gr = grid_t(gr%pt(:gr%n_p-1)%x)
   endif
 
   ! Extract data from the model
 
   ! Dimensionless structure variables
 
-  allocate(V_2(gr%n_k))
-  allocate(As(gr%n_k))
-  allocate(U(gr%n_k))
-  allocate(c_1(gr%n_k))
-  allocate(Gamma_1(gr%n_k))
+  allocate(V_2(gr%n_p))
+  allocate(As(gr%n_p))
+  allocate(U(gr%n_p))
+  allocate(c_1(gr%n_p))
+  allocate(Gamma_1(gr%n_p))
 
-  do k = 1, gr%n_k
-     associate (pt => gr%pt(k))
-       V_2(k) = ml%coeff(I_V_2, pt)
-       As(k) = ml%coeff(I_AS, pt)
-       U(k) = ml%coeff(I_U, pt)
-       c_1(k) = ml%coeff(I_C_1, pt)
-       Gamma_1(k) = ml%coeff(I_GAMMA_1, pt)
+  do p = 1, gr%n_p
+     associate (pt => gr%pt(p))
+       V_2(p) = ml%coeff(I_V_2, pt)
+       As(p) = ml%coeff(I_AS, pt)
+       U(p) = ml%coeff(I_U, pt)
+       c_1(p) = ml%coeff(I_C_1, pt)
+       Gamma_1(p) = ml%coeff(I_GAMMA_1, pt)
      end associate
   end do
 
@@ -103,8 +103,8 @@ program poly_to_txt
   write(unit, 100) 'x V_2 As U c_1 Gamma_1'
 100 format(A)
 
-  do k = 1, gr%n_k
-     write(unit, 110) gr%pt(k)%x, V_2(k), As(k), U(k), c_1(k), Gamma_1(k)
+  do p = 1, gr%n_p
+     write(unit, 110) gr%pt(p)%x, V_2(p), As(p), U(p), c_1(p), Gamma_1(p)
 110  format(6(1X,E26.18E3))
   end do
 

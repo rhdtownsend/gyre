@@ -361,7 +361,7 @@ contains
 
        call sc%append(ot_p%freq_frame)
 
-    $CACHE_VALUE(x_ref,gr%pt(wv%k_ref)%x)
+    $CACHE_VALUE(x_ref,gr%pt(wv%p_ref)%x)
     $CACHE_VALUE(omega_int,wv%omega_int())
     $CACHE_VALUE(domega_rot,wv%domega_rot())
     $CACHE_VALUE(eta,wv%eta())
@@ -380,12 +380,12 @@ contains
     $CACHE_VALUE(tau_ss,wv%tau_ss())
     $CACHE_VALUE(tau_tr,wv%tau_tr())
     $CACHE_VALUE(beta,wv%beta())
-    $CACHE_VALUE(xi_r_ref,wv%xi_r(wv%k_ref))
-    $CACHE_VALUE(xi_h_ref,wv%xi_h(wv%k_ref))
-    $CACHE_VALUE(eul_phi_ref,wv%eul_phi(wv%k_ref))
-    $CACHE_VALUE(deul_phi_ref,wv%deul_phi(wv%k_ref))
-    $CACHE_VALUE(lag_S_ref,wv%lag_S(wv%k_ref))
-    $CACHE_VALUE(lag_L_ref,wv%lag_L(wv%k_ref))
+    $CACHE_VALUE(xi_r_ref,wv%xi_r(wv%p_ref))
+    $CACHE_VALUE(xi_h_ref,wv%xi_h(wv%p_ref))
+    $CACHE_VALUE(eul_phi_ref,wv%eul_phi(wv%p_ref))
+    $CACHE_VALUE(deul_phi_ref,wv%deul_phi(wv%p_ref))
+    $CACHE_VALUE(lag_S_ref,wv%lag_S(wv%p_ref))
+    $CACHE_VALUE(lag_L_ref,wv%lag_L(wv%p_ref))
 
     case default
 
@@ -429,7 +429,7 @@ contains
 
     select case (sc%item)
 
-    $CACHE_VALUE(n_p,md%n_p)
+    $CACHE_VALUE(n_p,md%n_p_)
     $CACHE_VALUE(n_g,md%n_g)
     $CACHE_VALUE(n_pg,md%n_pg)
 
@@ -466,8 +466,8 @@ contains
     $CACHE_VALUE(F,rs%F())
     $CACHE_VALUE(J_dot,rs%J_dot())
 
-    $CACHE_VALUE(eul_psi_ref,rs%eul_psi(rs%k_ref))
-    $CACHE_VALUE(phi_2_ref,rs%phi_2(rs%k_ref))
+    $CACHE_VALUE(eul_psi_ref,rs%eul_psi(rs%p_ref))
+    $CACHE_VALUE(phi_2_ref,rs%phi_2(rs%p_ref))
 
     case default
 

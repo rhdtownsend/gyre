@@ -1,7 +1,7 @@
 ! Program  : gyre_response
 ! Purpose  : tidal response code
 !
-! Copyright 2019-2020 Rich Townsend & The GYRE Team
+! Copyright 2019-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -240,12 +240,12 @@ contains
 
     ! Store the displacement
 
-    xi_r(l,m,k) = wv%xi_r(wv%k_ref)
-    xi_h(l,m,k) = wv%xi_h(wv%k_ref)
+    xi_r(l,m,k) = wv%xi_r(wv%p_ref)
+    xi_h(l,m,k) = wv%xi_h(wv%p_ref)
 
     ! Store the luminosity perturbation
 
-    lag_L(l,m,k) = wv%lag_L(wv%k_ref)
+    lag_L(l,m,k) = wv%lag_L(wv%p_ref)
 
     ! Finish
 

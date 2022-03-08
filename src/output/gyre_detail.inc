@@ -1,7 +1,7 @@
 ! Incfile  : gyre_detail
 ! Purpose  : support macros for gyre_detail
 !
-! Copyright 2021 Rich Townsend & The GYRE Team
+! Copyright 2021-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,7 +23,7 @@ $local $FUNC $2
 
 case ($str($NAME))
 
-   call wr%write($str($NAME), [($FUNC, k=1,gr%n_k)])
+   call wr%write($str($NAME), [($FUNC, p=1,gr%n_p)])
 
 $endsub
 

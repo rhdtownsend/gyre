@@ -1,7 +1,7 @@
 ! Module   : gyre_wave
 ! Purpose  : wave function data
 !
-! Copyright 2013-2021 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -65,8 +65,8 @@ module gyre_wave
      complex(WP), public      :: scl
      complex(WP), public      :: omega
      complex(WP), public      :: l_i
-     integer, public          :: n_k
-     integer, public          :: k_ref
+     integer, public          :: n_p
+     integer, public          :: p_ref
      integer, public          :: l
      integer, public          :: m
      integer, public          :: j
@@ -168,10 +168,10 @@ contains
     integer, intent(in)          :: j
     type(wave_t)                 :: wv
 
-    real(WP)    :: x_ref
+    real(WP) :: x_ref
 
     $CHECK_BOUNDS(SIZE(y_c, 1),6)
-    $CHECK_BOUNDS(SIZE(y_c, 2),gr%n_k)
+    $CHECK_BOUNDS(SIZE(y_c, 2),gr%n_p)
 
     ! Construct the wave_t
 
@@ -195,10 +195,12 @@ contains
       wv%l_i = cx%l_e(cx%Omega_rot(pt_i), st)
     end associate
 
-    wv%n_k = gr%n_k
+    wv%n_p = gr%n_p
 
     wv%l = md_p%l
     wv%m = md_p%m
+    !wv%k = md_p%k
+    
     wv%j = j
 
     ! Locate the reference point
@@ -208,7 +210,7 @@ contains
 
     x_ref = MIN(MAX(os_p%x_ref, wv%pt_i%x), wv%pt_o%x)
 
-    wv%k_ref = MINLOC(abs(gr%pt%x - x_ref), DIM=1)
+    wv%p_ref = MINLOC(abs(gr%pt%x - x_ref), DIM=1)
 
     ! Cache the ratio E/|scl|**2, to avoid having to perform (expensive)
     ! E integrations in the future
@@ -323,15 +325,15 @@ contains
 
   !****
 
-  function x (this, k)
+  function x (this, p)
 
      class(wave_t), intent(in) :: this
-     integer, intent(in)       :: k
+     integer, intent(in)       :: p
      real(WP)                  :: x
 
      ! Return the abscissa
 
-     x = this%gr%pt(k)%x
+     x = this%gr%pt(p)%x
 
      ! Finish
 
@@ -341,16 +343,16 @@ contains
 
   !****
 
-  function y_i (this, i, k)
+  function y_i (this, i, p)
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: i
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: y_i
 
     ! Evaluate y(i)
 
-    y_i = this%scl*this%y_c(i, k)
+    y_i = this%scl*this%y_c(i, p)
 
     ! Finish
 
@@ -360,10 +362,10 @@ contains
 
   !****
 
-  function xi_r (this, k)
+  function xi_r (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: xi_r
 
     real(WP)    :: x
@@ -375,9 +377,9 @@ contains
     associate ( &
          l_i => this%l_i )
 
-      x = this%x(k)
+      x = this%x(p)
 
-      y_1 = this%y_i(1, k)
+      y_1 = this%y_i(1, p)
 
       if (l_i /= 1._WP) then
 
@@ -403,10 +405,10 @@ contains
 
   !****
 
-  function xi_h (this, k)
+  function xi_h (this, p)
     
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: xi_h
 
     complex(WP) :: y_2
@@ -425,10 +427,10 @@ contains
 
        associate ( &
             ml => this%cx%model(), &
-            pt => this%gr%pt(k), &
+            pt => this%gr%pt(p), &
             l_i => this%l_i)
 
-         y_3 = this%y_i(3, k)
+         y_3 = this%y_i(3, p)
 
          Omega_rot = this%cx%Omega_rot(pt)
 
@@ -439,7 +441,7 @@ contains
             ! undefined. Instead, use the continuity equation under
             ! the assumption of incompressibility
 
-            y_4 = this%y_i(4, k)
+            y_4 = this%y_i(4, p)
 
             U = ml%coeff(I_U, pt)
 
@@ -463,7 +465,7 @@ contains
 
             ! Non-static modes
 
-            y_2 = this%y_i(2, k)
+            y_2 = this%y_i(2, p)
 
             c_1 = ml%coeff(I_C_1, pt)
 
@@ -501,10 +503,10 @@ contains
 
   !****
 
-  function eul_phi (this, k)
+  function eul_phi (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: eul_phi
 
     complex(WP) :: y_3
@@ -515,10 +517,10 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k), &
+         pt => this%gr%pt(p), &
          l_i => this%l_i )
 
-      y_3 = this%y_i(3, k)
+      y_3 = this%y_i(3, p)
 
       c_1 = ml%coeff(I_C_1, pt)
 
@@ -546,10 +548,10 @@ contains
 
   !****
 
-  function deul_phi (this, k)
+  function deul_phi (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: deul_phi
 
     complex(WP) :: y_4
@@ -560,10 +562,10 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k), &
+         pt => this%gr%pt(p), &
          l_i => this%l_i )
 
-      y_4 = this%y_i(4, k)
+      y_4 = this%y_i(4, p)
 
       c_1 = ml%coeff(I_C_1, pt)
 
@@ -591,10 +593,10 @@ contains
 
   !****
 
-  function lag_S (this, k)
+  function lag_S (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: lag_S
 
     complex(WP) :: y_5
@@ -603,10 +605,10 @@ contains
     ! of c_p
 
     associate ( &
-         pt => this%gr%pt(k), &
+         pt => this%gr%pt(p), &
          l_i => this%l_i )
 
-      y_5 = this%y_i(5, k)
+      y_5 = this%y_i(5, p)
 
       if (pt%x /= 0._WP) then
          lag_S = y_5*pow(pt%x, l_i-2._WP)
@@ -624,10 +626,10 @@ contains
 
   !****
 
-  function lag_L (this, k)
+  function lag_L (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: lag_L
 
     complex(WP) :: y_6
@@ -636,10 +638,10 @@ contains
     ! units of L_star
 
     associate ( &
-         pt => this%gr%pt(k), &
+         pt => this%gr%pt(p), &
          l_i => this%l_i )
 
-      y_6 = this%y_i(6, k)
+      y_6 = this%y_i(6, p)
 
       if (pt%x /= 0._WP) then
          lag_L = y_6*pow(pt%x, l_i+1._WP)
@@ -657,10 +659,10 @@ contains
 
   !****
 
-  function eul_P (this, k)
+  function eul_P (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: eul_P
 
     complex(WP) :: xi_r
@@ -671,10 +673,10 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      xi_r = this%xi_r(k)
-      lag_P = this%lag_P(k)
+      xi_r = this%xi_r(p)
+      lag_P = this%lag_P(p)
 
       V_2 = ml%coeff(I_V_2, pt)
 
@@ -690,10 +692,10 @@ contains
   
   !****
 
-  function lag_P (this, k)
+  function lag_P (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: lag_P
 
     complex(WP) :: y_1
@@ -704,11 +706,11 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k), &
+         pt => this%gr%pt(p), &
          l_i => this%l_i )
 
-      y_1 = this%y_i(1, k)
-      y_2 = this%y_i(2, k)
+      y_1 = this%y_i(1, p)
+      y_2 = this%y_i(2, p)
 
       V_2 = ml%coeff(I_V_2, pt)
 
@@ -736,10 +738,10 @@ contains
 
   !****
 
-  function eul_rho (this, k)
+  function eul_rho (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: eul_rho
 
     complex(WP) :: xi_r
@@ -752,10 +754,10 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      xi_r = this%xi_r(k)
-      lag_rho = this%lag_rho(k)
+      xi_r = this%xi_r(p)
+      lag_rho = this%lag_rho(p)
 
       U = ml%coeff(I_U, pt)
       dU =ml%dcoeff(I_U, pt)
@@ -778,10 +780,10 @@ contains
 
   !****
 
-  function lag_rho (this, k)
+  function lag_rho (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: lag_rho
 
     complex(WP) :: lag_P
@@ -794,10 +796,10 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      lag_P = this%lag_P(k)
-      lag_S = this%lag_S(k)
+      lag_P = this%lag_P(p)
+      lag_S = this%lag_S(p)
 
       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
       delta = ml%coeff(I_DELTA, pt)
@@ -814,10 +816,10 @@ contains
 
   !****
 
-  function eul_T (this, k)
+  function eul_T (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: eul_T
 
     complex(WP) :: xi_r
@@ -829,10 +831,10 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      xi_r = this%xi_r(k)
-      lag_T = this%lag_T(k)
+      xi_r = this%xi_r(p)
+      lag_T = this%lag_T(p)
 
       V_2 = ml%coeff(I_V_2, pt)
       nabla = ml%coeff(I_NABLA, pt)
@@ -849,10 +851,10 @@ contains
 
   !****
 
-  function lag_T (this, k)
+  function lag_T (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: lag_T
 
     complex(WP) :: lag_P
@@ -864,10 +866,10 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      lag_P = this%lag_P(k)
-      lag_S = this%lag_S(k)
+      lag_P = this%lag_P(p)
+      lag_S = this%lag_S(p)
 
       nabla_ad = ml%coeff(I_NABLA_AD, pt)
       
@@ -883,10 +885,10 @@ contains
 
   !****
 
-  function lambda (this, k)
+  function lambda (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: lambda
 
     real(WP) :: Omega_rot
@@ -894,7 +896,7 @@ contains
     ! Evaluate the angular eigenvalue
 
     associate ( &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
       
       Omega_rot = this%cx%Omega_rot(pt)
     
@@ -910,10 +912,10 @@ contains
     
   !****
 
-  function dE_dx (this, k)
+  function dE_dx (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     real(WP)                  :: dE_dx
 
     complex(WP) :: xi_r
@@ -927,12 +929,12 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      xi_r = this%xi_r(k)
-      xi_h = this%xi_h(k)
+      xi_r = this%xi_r(p)
+      xi_h = this%xi_h(p)
 
-      lambda = this%lambda(k)
+      lambda = this%lambda(p)
 
       U = ml%coeff(I_U, pt)
       c_1 = ml%coeff(I_C_1, pt)
@@ -949,12 +951,12 @@ contains
 
   !****
 
-  function dW_dx (this, k)
+  function dW_dx (this, p)
 
     use gyre_evol_model
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     real(WP)                  :: dW_dx
 
     real(WP)    :: t_dyn
@@ -977,10 +979,10 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      lag_T = this%lag_T(k)
-      lag_S = this%lag_S(k)
+      lag_T = this%lag_T(p)
+      lag_S = this%lag_S(p)
     
       c_thk = ml%coeff(I_C_THK, pt)
 
@@ -996,12 +998,12 @@ contains
 
   !****
 
-  function dW_eps_dx (this, k)
+  function dW_eps_dx (this, p)
 
     use gyre_evol_model
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     real(WP)                  :: dW_eps_dx
 
     real(WP)    :: t_dyn
@@ -1028,10 +1030,10 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      lag_rho = this%lag_rho(k)
-      lag_T = this%lag_T(k)
+      lag_rho = this%lag_rho(p)
+      lag_T = this%lag_T(p)
 
       c_eps = ml%coeff(I_C_EPS, pt)
       
@@ -1052,23 +1054,23 @@ contains
 
   !****
 
-  function dzeta_dx (this, k)
+  function dzeta_dx (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: dzeta_dx
 
     ! Calculate the dimensionless frequency weight function.
     
     select case (this%os_p%zeta_scheme)
     case ('PESNELL')
-       dzeta_dx = this%dzeta_dx_pesnell_(k)
+       dzeta_dx = this%dzeta_dx_pesnell_(p)
     case ('KAWALER_GRAV')
-       dzeta_dx = this%dzeta_dx_kawaler_grav_(k)
+       dzeta_dx = this%dzeta_dx_kawaler_grav_(p)
     case ('KAWALER')
-       dzeta_dx = this%dzeta_dx_kawaler_(k)
+       dzeta_dx = this%dzeta_dx_kawaler_(p)
     case ('DUPRET')
-       dzeta_dx = this%dzeta_dx_dupret_(k)
+       dzeta_dx = this%dzeta_dx_dupret_(p)
     case default
        $ABORT(Invalid zeta_scheme)
     end select
@@ -1081,10 +1083,10 @@ contains
     
   !****
 
-  function dzeta_dx_pesnell_ (this, k) result (dzeta_dx)
+  function dzeta_dx_pesnell_ (this, p) result (dzeta_dx)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: dzeta_dx
 
     complex(WP) :: xi_r
@@ -1106,16 +1108,16 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      xi_r = this%xi_r(k)
-      xi_h = this%xi_h(k)
-      eul_phi = this%eul_phi(k)
-      eul_rho = this%eul_rho(k)
-      lag_rho = this%lag_rho(k)
-      lag_P = this%lag_P(k)
+      xi_r = this%xi_r(p)
+      xi_h = this%xi_h(p)
+      eul_phi = this%eul_phi(p)
+      eul_rho = this%eul_rho(p)
+      lag_rho = this%lag_rho(p)
+      lag_P = this%lag_P(p)
 
-      lambda = this%lambda(k)
+      lambda = this%lambda(p)
 
       V_2 = ml%coeff(I_V_2, pt)
       U = ml%coeff(I_U, pt)
@@ -1138,10 +1140,10 @@ contains
 
   !****
 
-  function dzeta_dx_kawaler_ (this, k) result (dzeta_dx)
+  function dzeta_dx_kawaler_ (this, p) result (dzeta_dx)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: dzeta_dx
 
     complex(WP) :: xi_r
@@ -1164,12 +1166,12 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      xi_r = this%xi_r(k)
-      eul_P = this%eul_P(k)
-      eul_phi = this%eul_phi(k)
-      deul_phi = this%deul_phi(k)
+      xi_r = this%xi_r(p)
+      eul_P = this%eul_P(p)
+      eul_phi = this%eul_phi(p)
+      deul_phi = this%deul_phi(p)
 
       V_2 = ml%coeff(I_V_2, pt)
       As = ml%coeff(I_AS, pt)
@@ -1177,7 +1179,7 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
       
-      lambda = this%lambda(k)
+      lambda = this%lambda(p)
 
       x4_V = pt%x**2/V_2
 
@@ -1195,10 +1197,10 @@ contains
 
   !****
 
-  function dzeta_dx_kawaler_grav_ (this, k) result (dzeta_dx)
+  function dzeta_dx_kawaler_grav_ (this, p) result (dzeta_dx)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: dzeta_dx
 
     complex(WP) :: xi_r
@@ -1222,12 +1224,12 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      xi_r = this%xi_r(k)
-      eul_P = this%eul_P(k)
-      eul_phi = this%eul_phi(k)
-      deul_phi = this%deul_phi(k)
+      xi_r = this%xi_r(p)
+      eul_P = this%eul_P(p)
+      eul_phi = this%eul_phi(p)
+      deul_phi = this%deul_phi(p)
 
       V_2 = ml%coeff(I_V_2, pt)
       As = ml%coeff(I_AS, pt)
@@ -1235,7 +1237,7 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
       
-      lambda = this%lambda(k)
+      lambda = this%lambda(p)
 
       x4_V = pt%x**2/V_2
 
@@ -1251,10 +1253,10 @@ contains
 
   !****
 
-  function dzeta_dx_dupret_ (this, k) result (dzeta_dx)
+  function dzeta_dx_dupret_ (this, p) result (dzeta_dx)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: dzeta_dx
 
     complex(WP) :: xi_r
@@ -1276,13 +1278,13 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      xi_r = this%xi_r(k)
-      eul_phi = this%eul_phi(k)
-      eul_rho = this%eul_rho(k)
-      lag_rho = this%lag_rho(k)
-      lag_P = this%lag_P(k)
+      xi_r = this%xi_r(p)
+      eul_phi = this%eul_phi(p)
+      eul_rho = this%eul_rho(p)
+      lag_rho = this%lag_rho(p)
+      lag_P = this%lag_P(p)
 
       V_2 = ml%coeff(I_V_2, pt)
       V = V_2*pt%x**2
@@ -1308,17 +1310,17 @@ contains
   
   !****
 
-  function dzeta_dm (this, k)
+  function dzeta_dm (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: dzeta_dm
 
     ! Calculate the dimensionless frequency weight function.
     
     select case (this%os_p%zeta_scheme)
     case ('KAWALER')
-       dzeta_dm = this%dzeta_dm_kawaler_(k)
+       dzeta_dm = this%dzeta_dm_kawaler_(p)
     case default
        $ABORT(Invalid zeta_scheme)
     end select
@@ -1331,10 +1333,10 @@ contains
     
   !****
 
-  function dzeta_dm_kawaler_ (this, k) result (dzeta_dm)
+  function dzeta_dm_kawaler_ (this, p) result (dzeta_dm)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: dzeta_dm
 
     complex(WP) :: xi_r
@@ -1356,12 +1358,12 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      xi_r = this%xi_r(k)
-      eul_P = this%eul_P(k)
-      eul_phi = this%eul_phi(k)
-      deul_phi = this%deul_phi(k)
+      xi_r = this%xi_r(p)
+      eul_P = this%eul_P(p)
+      eul_phi = this%eul_phi(p)
+      deul_phi = this%deul_phi(p)
 
       V_2 = ml%coeff(I_V_2, pt)
       As = ml%coeff(I_AS, pt)
@@ -1369,7 +1371,7 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
       
-      lambda = this%lambda(k)
+      lambda = this%lambda(p)
 
       if (pt%x /= 0) then
          dzeta_dm = CONJG(eul_P)*eul_P/(V_2*Gamma_1*c_1) + &
@@ -1389,10 +1391,10 @@ contains
 
   !****
 
-  function dbeta_dx (this, k)
+  function dbeta_dx (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     real(WP)                  :: dbeta_dx
 
     complex(WP) :: xi_r
@@ -1408,17 +1410,17 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      xi_r = this%xi_r(k)
-      xi_h = this%xi_h(k)
+      xi_r = this%xi_r(p)
+      xi_h = this%xi_h(p)
 
       U = ml%coeff(I_U, pt)
       c_1 = ml%coeff(I_C_1, pt)
 
       ! Question: should the following be lambda or l(l+1)?
 
-      lambda = this%lambda(k)
+      lambda = this%lambda(p)
 
       E = this%E()
 
@@ -1435,10 +1437,10 @@ contains
 
   !****
 
-  function dtau_ss_dx (this, k)
+  function dtau_ss_dx (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     real(WP)                  :: dtau_ss_dx
 
     complex(WP) :: lag_P
@@ -1453,12 +1455,12 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k), &
+         pt => this%gr%pt(p), &
          m => this%m )
 
-      lag_P = this%lag_P(k)
+      lag_P = this%lag_P(p)
 
-      lag_rho = this%lag_rho(k)
+      lag_rho = this%lag_rho(p)
 
       V_2 = ml%coeff(I_V_2, pt)
       c_1 = ml%coeff(I_C_1, pt)
@@ -1476,10 +1478,10 @@ contains
 
   !****
 
-  function dtau_tr_dx (this, k)
+  function dtau_tr_dx (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     real(WP)                  :: dtau_tr_dx
 
     complex(WP) :: xi_r
@@ -1499,17 +1501,17 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k), &
+         pt => this%gr%pt(p), &
          m => this%m )
 
-      xi_r = this%xi_r(k)
+      xi_r = this%xi_r(p)
 
-      eul_P = this%eul_P(k)
+      eul_P = this%eul_P(p)
 
-      lag_rho = this%lag_rho(k)
-      eul_rho = this%eul_rho(k)
+      lag_rho = this%lag_rho(p)
+      eul_rho = this%eul_rho(p)
 
-      eul_phi = this%eul_phi(k)
+      eul_phi = this%eul_phi(p)
 
       V_2 = ml%coeff(I_V_2, pt)
       c_1 = ml%coeff(I_C_1, pt)
@@ -1534,10 +1536,10 @@ contains
 
   !****
 
-  function Yt_1 (this, k)
+  function Yt_1 (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: Yt_1
 
     complex(WP) :: y_1
@@ -1550,11 +1552,11 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
-      y_1 = this%y_i(1, k)
-      y_3 = this%y_i(3, k)
-      y_4 = this%y_i(4, k)
+      y_1 = this%y_i(1, p)
+      y_3 = this%y_i(3, p)
+      y_4 = this%y_i(4, p)
 
       J = 1._WP - ml%coeff(I_U, pt)/3._WP
 
@@ -1570,10 +1572,10 @@ contains
 
   !****
 
-  function Yt_2 (this, k)
+  function Yt_2 (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: Yt_2
 
     complex(WP) :: y_1
@@ -1582,8 +1584,8 @@ contains
     ! Evaluate the Takata Y_2 function. This expression is equivalent to 
     ! eqn. (70) of [Takata:2006b], divided by V
 
-    y_1 = this%y_i(1, k)
-    y_2 = this%y_i(2, k)
+    y_1 = this%y_i(1, p)
+    y_2 = this%y_i(2, p)
 
     Yt_2 = y_2 - y_1
 
@@ -1595,10 +1597,10 @@ contains
 
   !****
 
-  function I_0 (this, k)
+  function I_0 (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: I_0
 
     complex(WP) :: y_1
@@ -1611,11 +1613,11 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k), &
+         pt => this%gr%pt(p), &
          l_i => this%l_i )
 
-      y_1 = this%y_i(1, k)
-      y_4 = this%y_i(4, k)
+      y_1 = this%y_i(1, p)
+      y_4 = this%y_i(4, p)
 
       U = ml%coeff(I_U, pt)
       c_1 = ml%coeff(I_C_1, pt)
@@ -1636,10 +1638,10 @@ contains
 
   !****
 
-  function I_1 (this, k)
+  function I_1 (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     complex(WP)               :: I_1
 
     complex(WP) :: y_1
@@ -1656,13 +1658,13 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k), &
+         pt => this%gr%pt(p), &
          l_i => this%l_i )
 
-      y_1 = this%y_i(1, k)
-      y_2 = this%y_i(2, k)
-      y_3 = this%y_i(3, k)
-      y_4 = this%y_i(4, k)
+      y_1 = this%y_i(1, p)
+      y_2 = this%y_i(2, p)
+      y_3 = this%y_i(3, p)
+      y_4 = this%y_i(4, p)
 
       U = ml%coeff(I_U, pt)
       c_1 = ml%coeff(I_C_1, pt)
@@ -1688,10 +1690,10 @@ contains
 
   !****
 
-  function alpha_0 (this, k)
+  function alpha_0 (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     real(WP)                  :: alpha_0
 
     real(WP)    :: U
@@ -1705,7 +1707,7 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k))
+         pt => this%gr%pt(p))
 
       U = ml%coeff(I_U, pt)
       c_1 = ml%coeff(I_C_1, pt)
@@ -1727,10 +1729,10 @@ contains
 
   !****
 
-  function alpha_1 (this, k)
+  function alpha_1 (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     real(WP)                  :: alpha_1
 
     real(WP)    :: alpha_0
@@ -1750,9 +1752,9 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k))
+         pt => this%gr%pt(p))
 
-      alpha_0 = this%alpha_0(k)
+      alpha_0 = this%alpha_0(p)
 
       V = ml%coeff(I_V_2, pt)*pt%x**2
       U = ml%coeff(I_U, pt)
@@ -1786,10 +1788,10 @@ contains
 
   !****
 
-  function prop_type (this, k)
+  function prop_type (this, p)
 
     class(wave_t), intent(in) :: this
-    integer, intent(in)       :: k
+    integer, intent(in)       :: p
     integer                   :: prop_type
 
     real(WP) :: V
@@ -1809,7 +1811,7 @@ contains
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(k) )
+         pt => this%gr%pt(p) )
 
       if (ml%is_vacuum(pt)) then
 
@@ -1827,7 +1829,7 @@ contains
 
          Omega_rot = this%cx%Omega_rot(pt)
 
-         lambda = REAL(this%lambda(k))
+         lambda = REAL(this%lambda(p))
 
          omega_c = REAL(this%cx%omega_c(Omega_rot, this%st))
 
@@ -1878,10 +1880,10 @@ contains
     ! T_eff. This expression is based on the standard definition of
     ! effective temperature
 
-    associate (k => this%k_ref)
+    associate (p => this%p_ref)
 
-      xi_r = this%xi_r(k)
-      lag_L = this%lag_L(k)
+      xi_r = this%xi_r(p)
+      lag_L = this%lag_L(p)
 
       lag_T_eff = 0.25_WP*(lag_L - 2._WP*xi_r)
 
@@ -1910,13 +1912,13 @@ contains
     ! expression is based on eqn. (24) of [Dupret:2002b]
 
     associate ( &
-         k => this%k_ref, &
+         p => this%p_ref, &
          ml => this%cx%model(), &
-         pt => this%gr%pt(this%k_ref), &
+         pt => this%gr%pt(this%p_ref), &
          omega => this%st%omega )
 
-      xi_r = this%xi_r(k)
-      deul_phi = this%deul_phi(k)
+      xi_r = this%xi_r(p)
+      deul_phi = this%deul_phi(p)
 
       c_1 = ml%coeff(I_C_1, pt)
       U = ml%coeff(I_U, pt)
@@ -1943,9 +1945,9 @@ contains
     ! Evaluate the non-adiabatic f_T parameter. This is expression is
     ! based on eqn. (5) of [Dupret:2003]
 
-    associate (k => this%k_ref)
+    associate (p => this%p_ref)
 
-      C_T = this%lag_T_eff()/this%xi_r(k)
+      C_T = this%lag_T_eff()/this%xi_r(p)
 
       f_T = abs(C_T)
 
@@ -1969,9 +1971,9 @@ contains
     ! Evaluate the non-adiabatic f_g parameter. This is expression is
     ! based on eqn. (6) of [Dupret:2003]
 
-    associate (k => this%k_ref)
+    associate (p => this%p_ref)
 
-      C_g = this%lag_g_eff()/this%xi_r(k)
+      C_g = this%lag_g_eff()/this%xi_r(p)
 
       f_g = -abs(C_g)
 
@@ -1995,9 +1997,9 @@ contains
     ! Calculate the non-adiabatic psi_T parameter, in radians. This is
     ! expression is based on eqn. (5) of [Dup2003]
 
-    associate (k => this%k_ref)
+    associate (p => this%p_ref)
 
-      C_T = this%lag_T_eff()/this%xi_r(k)
+      C_T = this%lag_T_eff()/this%xi_r(p)
 
       psi_T = atan2(AIMAG(C_T), REAL(C_T))
 
@@ -2035,8 +2037,8 @@ contains
     real(WP)                      :: E
 
     logical  :: use_cache_
-    integer  :: k
-    real(WP) :: dE_dx(this%n_k)
+    integer  :: p
+    real(WP) :: dE_dx(this%n_p)
 
     ! Calculate the inertia, in units of M_star R_star**2
 
@@ -2053,8 +2055,8 @@ contains
     else
 
        !$OMP PARALLEL DO
-       do k = 1, this%n_k
-          dE_dx(k) = this%dE_dx(k)
+       do p = 1, this%n_p
+          dE_dx(p) = this%dE_dx(p)
        end do
 
        E = integrate(this%gr%pt%x, dE_dx)
@@ -2074,18 +2076,18 @@ contains
     class(wave_t), intent(in) :: this
     real(WP)                  :: E_p
 
-    integer  :: k
-    real(WP) :: dE_dx(this%n_k)
+    integer  :: p
+    real(WP) :: dE_dx(this%n_p)
 
     ! Calculate the inertia in acoustic-wave propagation regions, in
     ! units of M_star R_star**2
 
     !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       if (this%prop_type(k) == 1) then
-          dE_dx(k) = this%dE_dx(k)
+    do p = 1, this%n_p
+       if (this%prop_type(p) == 1) then
+          dE_dx(p) = this%dE_dx(p)
        else
-          dE_dx(k) = 0._WP
+          dE_dx(p) = 0._WP
        endif
     end do
 
@@ -2104,18 +2106,18 @@ contains
     class(wave_t), intent(in) :: this
     real(WP)                  :: E_g
 
-    integer  :: k
-    real(WP) :: dE_dx(this%n_k)
+    integer  :: p
+    real(WP) :: dE_dx(this%n_p)
 
     ! Calculate the inertia in gravity-wave propagation regions, in
     ! units of M_star R_star**2
 
     !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       if (this%prop_type(k) == -1) then
-          dE_dx(k) = this%dE_dx(k)
+    do p = 1, this%n_p
+       if (this%prop_type(p) == -1) then
+          dE_dx(p) = this%dE_dx(p)
        else
-          dE_dx(k) = 0._WP
+          dE_dx(p) = 0._WP
        endif
     end do
 
@@ -2143,14 +2145,14 @@ contains
     ! Calculate the normalized inertia. This expression is based on
     ! eqn. (3.140) of [Aer2010]
 
-    associate (k => this%k_ref)
+    associate (p => this%p_ref)
 
       E = this%E()
 
-      xi_r = this%xi_r(k)
-      xi_h = this%xi_h(k)
+      xi_r = this%xi_r(p)
+      xi_h = this%xi_h(p)
 
-      lambda = this%lambda(k)
+      lambda = this%lambda(p)
 
       select case (this%os_p%inertia_norm)
       case ('RADIAL')
@@ -2185,8 +2187,8 @@ contains
     class(wave_t), intent(in) :: this
     real(WP)                  :: E_ratio
 
-    integer  :: k
-    real(WP) :: dE_dx(this%n_k)
+    integer  :: p
+    real(WP) :: dE_dx(this%n_p)
     real(WP) :: E_above
     real(WP) :: E_below
 
@@ -2194,21 +2196,21 @@ contains
     ! reference point
 
     !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       dE_dx(k) = this%dE_dx(k)
+    do p = 1, this%n_p
+       dE_dx(p) = this%dE_dx(p)
     end do
 
-    if (this%k_ref < this%n_k) then
-       associate (k_a => this%k_ref, k_b => this%n_k)
-         E_above = integrate(this%gr%pt(k_a:k_b)%x, dE_dx(k_a:k_b))
+    if (this%p_ref < this%n_p) then
+       associate (p_a => this%p_ref, p_b => this%n_p)
+         E_above = integrate(this%gr%pt(p_a:p_b)%x, dE_dx(p_a:p_b))
        end associate
     else
        E_above = 0._WP
     endif
 
-    if (this%k_ref > 1) then
-       associate (k_a => 1, k_b => this%k_ref)
-         E_below = integrate(this%gr%pt(k_a:k_b)%x, dE_dx(k_a:k_b))
+    if (this%p_ref > 1) then
+       associate (p_a => 1, p_b => this%p_ref)
+         E_below = integrate(this%gr%pt(p_a:p_b)%x, dE_dx(p_a:p_b))
        end associate
     else
        E_below = 0._WP
@@ -2247,14 +2249,14 @@ contains
     class(wave_t), intent(in) :: this
     real(WP)                  :: W
 
-    integer  :: k
-    real(WP) :: dW_dx(this%n_k)
+    integer  :: p
+    real(WP) :: dW_dx(this%n_p)
     
     ! Calculate the total work, in units of G M_star**2/R_star
 
     !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       dW_dx(k) = this%dW_dx(k)
+    do p = 1, this%n_p
+       dW_dx(p) = this%dW_dx(p)
     end do
 
     W = integrate(this%gr%pt%x, dW_dx)
@@ -2272,15 +2274,15 @@ contains
     class(wave_t), intent(in) :: this
     real(WP)                  :: W_eps
     
-    integer  :: k
-    real(WP) :: dW_eps_dx(this%n_k)
+    integer  :: p
+    real(WP) :: dW_eps_dx(this%n_p)
     
     ! Calculate the total work associated with nuclear processes, in
     ! units of G M_star**2/R_star
 
     !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       dW_eps_dx(k) = this%dW_eps_dx(k)
+    do p = 1, this%n_p
+       dW_eps_dx(p) = this%dW_eps_dx(p)
     end do
 
     W_eps = integrate(this%gr%pt%x, dW_eps_dx)
@@ -2298,16 +2300,16 @@ contains
     class(wave_t), intent(in) :: this
     real(WP)                  :: tau_ss
 
-    integer  :: k
-    real(WP) :: dtau_dx(this%n_k)
+    integer  :: p
+    real(WP) :: dtau_dx(this%n_p)
     
     ! Evaluate the steady-state total torque, in units of G
     ! M_star**2/R_star. This expression is based on eqn. (18) of
     ! [Townsend:2018]
 
     !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       dtau_dx(k) = this%dtau_ss_dx(k)
+    do p = 1, this%n_p
+       dtau_dx(p) = this%dtau_ss_dx(p)
     end do
 
     tau_ss = integrate(this%gr%pt%x, dtau_dx)
@@ -2325,16 +2327,16 @@ contains
     class(wave_t), intent(in) :: this
     real(WP)                  :: tau_tr
 
-    integer  :: k
-    real(WP) :: dtau_dx(this%n_k)
+    integer  :: p
+    real(WP) :: dtau_dx(this%n_p)
     
     ! Evaluate the transient total torque, in units of G
     ! M_star**2/R_star. This expression is based on eqn. (18) of
     ! [Townsend:2018]
 
     !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       dtau_dx(k) = this%dtau_tr_dx(k)
+    do p = 1, this%n_p
+       dtau_dx(p) = this%dtau_tr_dx(p)
     end do
 
     tau_tr = integrate(this%gr%pt%x, dtau_dx)
@@ -2352,14 +2354,14 @@ contains
     class(wave_t), intent(in) :: this
     complex(WP)               :: omega_int
 
-    integer     :: k
-    complex(WP) :: dzeta_dx(this%n_k)
+    integer     :: p
+    complex(WP) :: dzeta_dx(this%n_p)
 
     ! Calculate the dimensionless frequency from the zeta integral
 
     !OMP PARALLEL DO
-    do k = 1, this%n_k
-       dzeta_dx(k) = this%dzeta_dx(k)
+    do p = 1, this%n_p
+       dzeta_dx(p) = this%dzeta_dx(p)
     end do
 
     omega_int = sqrt(integrate(this%gr%pt%x, dzeta_dx))
@@ -2377,16 +2379,16 @@ contains
     class(wave_t), intent(in) :: this
     real(WP)                  :: beta
 
-    integer  :: k
-    real(WP) :: dbeta_dx(this%n_k)
+    integer  :: p
+    real(WP) :: dbeta_dx(this%n_p)
      
     ! Calculate the rotational splitting factor. This is based on
     ! equation (3.357) of [Aer2010]; the Ledoux constant follows from
     ! equation (3.361) [ibid] as C_nl = 1 - beta
 
     !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       dbeta_dx(k) = this%dbeta_dx(k)
+    do p = 1, this%n_p
+       dbeta_dx(p) = this%dbeta_dx(p)
     end do
 
     beta = integrate(this%gr%pt%x, dbeta_dx)
@@ -2404,23 +2406,23 @@ contains
     class(wave_t), intent(in) :: this
     complex(WP)               :: domega_rot
 
-    integer  :: k
-    real(WP) :: dbeta_dx(this%n_k)
-    real(WP) :: Omega_rot(this%n_k)
+    integer  :: p
+    real(WP) :: dbeta_dx(this%n_p)
+    real(WP) :: Omega_rot(this%n_p)
 
     ! Calculate the rotational splitting between modes of adjacent
     ! m. This is based on eqn. 3.355 of [Aer2010].
 
     !$OMP PARALLEL DO
-    do k = 1, this%n_k
+    do p = 1, this%n_p
 
-       dbeta_dx(k) = this%dbeta_dx(k)
+       dbeta_dx(p) = this%dbeta_dx(p)
 
        associate ( &
             ml => this%cx%model(), &
-            pt => this%gr%pt(k))
+            pt => this%gr%pt(p))
 
-         Omega_rot(k) = this%cx%Omega_rot(pt)
+         Omega_rot(p) = this%cx%Omega_rot(pt)
 
        end associate
        
@@ -2441,15 +2443,15 @@ contains
     class(wave_t), intent(in) :: this
     real(WP)                  :: eta
 
-    integer  :: k
-    real(WP) :: dW_dx(this%n_k)
+    integer  :: p
+    real(WP) :: dW_dx(this%n_p)
     real(WP) :: D
 
     ! Calculate the normalized growth rate defined (as eta') by [Stel1978]
 
     !$OMP PARALLEL DO
-    do k = 1, this%n_k
-       dW_dx(k) = this%dW_dx(k)
+    do p = 1, this%n_p
+       dW_dx(p) = this%dW_dx(p)
     end do
 
     D = integrate(this%gr%pt%x, abs(dW_dx))

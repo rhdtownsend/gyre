@@ -1,7 +1,7 @@
 ! Module   : gyre_grid_factory
 ! Purpose  : factory procedures for grid_t type
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -128,17 +128,17 @@ contains
 
     if (check_log_level('INFO')) then
 
-       write(OUTPUT_UNIT, 120) 'Final grid has', gr%s_o()-gr%s_i()+1, 'segment(s) and', gr%n_k, 'point(s):'
+       write(OUTPUT_UNIT, 120) 'Final grid has', gr%s_o()-gr%s_i()+1, 'segment(s) and', gr%n_p, 'point(s):'
 120    format(3X,A,1X,I0,1X,A,1X,I0,1X,A)
        
        seg_loop : do s = gr%s_i(), gr%s_o()
 
           associate( &
-               k_i => gr%k_s_i(s), &
-               k_o => gr%k_s_o(s))
+               p_i => gr%p_s_i(s), &
+               p_o => gr%p_s_o(s))
 
-            write(OUTPUT_UNIT, 130) 'Segment', s, ': x range', gr%pt(k_i)%x, '->', gr%pt(k_o)%x, &
-                 '(', k_i, '->', k_o, ')'
+            write(OUTPUT_UNIT, 130) 'Segment', s, ': x range', gr%pt(p_i)%x, '->', gr%pt(p_o)%x, &
+                 '(', p_i, '->', p_o, ')'
 130         format(6X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4,1X,A,I0,1X,A,1X,I0,A)
 
           end associate
@@ -162,22 +162,22 @@ contains
     type(osc_par_t), intent(in)   :: os_p
     type(grid_t), intent(inout)   :: gr
 
-    integer              :: n_k
+    integer              :: n_p
     integer              :: i_iter
     logical, allocatable :: refine(:)
-    integer              :: k
+    integer              :: p
     integer              :: i
     real(WP)             :: dx
     logical, allocatable :: refine_new(:)
-    integer              :: k_new
+    integer              :: p_new
 
     ! Add points globally
 
     ! Initialize the refine array
 
-    n_k = gr%n_k
+    n_p = gr%n_p
 
-    refine = gr%pt(2:)%s == gr%pt(:n_k-1)%s
+    refine = gr%pt(2:)%s == gr%pt(:n_p-1)%s
 
     ! Iterate until no more points need be added
     
@@ -186,14 +186,14 @@ contains
        ! Loop through grid subintervals
 
        !$OMP PARALLEL DO PRIVATE (dx, i) SCHEDULE (DYNAMIC)
-       sub_loop : do k = 1, n_k-1
+       sub_loop : do p = 1, n_p-1
 
           ! Check/update if the subinterval should be considered for refinement
 
-          if (refine(k)) then
+          if (refine(p)) then
 
-             associate (pt_a => gr%pt(k), &
-                        pt_b => gr%pt(k+1))
+             associate (pt_a => gr%pt(p), &
+                        pt_b => gr%pt(p+1))
 
                dx = pt_b%x - pt_a%x
 
@@ -206,27 +206,27 @@ contains
 
                        if (pt_a%x /= 0._WP) then
 
-                          refine(k) = refine_mech_(cx, pt_a, pt_b, omega, gr_p, os_p) .OR. &
+                          refine(p) = refine_mech_(cx, pt_a, pt_b, omega, gr_p, os_p) .OR. &
                                       refine_therm_(cx, pt_a, pt_b, omega, gr_p) .OR. &
                                       refine_struct_(cx, pt_a, pt_b, gr_p) .OR. &
                                       dx > gr_p%dx_max
 
                        else
 
-                          refine(k) = refine_center_(cx, pt_a, pt_b, omega, gr_p) .OR. &
+                          refine(p) = refine_center_(cx, pt_a, pt_b, omega, gr_p) .OR. &
                                       dx > gr_p%dx_max
 
                        end if
 
                      end associate
 
-                     if (refine(k)) exit spec_loop
+                     if (refine(p)) exit spec_loop
 
                   end do spec_loop
 
                else
 
-                  refine(k) = .FALSE.
+                  refine(p) = .FALSE.
 
                endif
 
@@ -251,25 +251,25 @@ contains
 
        ! Update the refine array
 
-       allocate(refine_new(n_k + COUNT(refine) - 1))
+       allocate(refine_new(n_p + COUNT(refine) - 1))
 
-       k_new = 1
+       p_new = 1
 
-       do k = 1, n_k-1
+       do p = 1, n_p-1
 
-          refine_new(k_new) = refine(k)
-          k_new = k_new + 1
+          refine_new(p_new) = refine(p)
+          p_new = p_new + 1
 
-          if (refine(k)) then
+          if (refine(p)) then
 
-             refine_new(k_new) = refine(k)
-             k_new = k_new + 1
+             refine_new(p_new) = refine(p)
+             p_new = p_new + 1
 
           endif
 
        end do
 
-       n_k = n_k + COUNT(refine)
+       n_p = n_p + COUNT(refine)
 
        call MOVE_ALLOC(refine_new, refine)
 

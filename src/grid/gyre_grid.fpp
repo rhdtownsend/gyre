@@ -1,7 +1,7 @@
 ! Module   : gyre_grid
 ! Purpose  : segmented grids
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -35,7 +35,7 @@ module gyre_grid
 
   type :: grid_t
      type(point_t), allocatable :: pt(:)
-     integer                    :: n_k
+     integer                    :: n_p
    contains
      private
      procedure, public :: pt_i
@@ -46,8 +46,8 @@ module gyre_grid
      procedure, public :: s_x
      procedure, public :: x_i
      procedure, public :: x_o
-     procedure, public :: k_s_i
-     procedure, public :: k_s_o
+     procedure, public :: p_s_i
+     procedure, public :: p_s_o
   end type grid_t
 
   ! Interfaces
@@ -73,44 +73,44 @@ contains
     real(WP), intent(in) :: x(:)
     type(grid_t)         :: gr
 
-    integer :: n_k
+    integer :: n_p
     integer :: s
-    integer :: k
+    integer :: p
 
     ! Construct a grid_t from the input abscissae x (with segment
     ! boundaries delineated by double points)
 
-    n_k = SIZE(x)
+    n_p = SIZE(x)
 
-    if (n_k > 0) then
+    if (n_p > 0) then
 
-       $ASSERT_DEBUG(ALL(x(2:) >= x(:n_k-1)),Non-monotonic data)
+       $ASSERT_DEBUG(ALL(x(2:) >= x(:n_p-1)),Non-monotonic data)
        
-       allocate(gr%pt(n_k))
+       allocate(gr%pt(n_p))
 
        s = 1
 
        gr%pt(1)%x = x(1)
        gr%pt(1)%s = s
 
-       do k = 2, n_k
+       do p = 2, n_p
 
-          if (x(k) == x(k-1)) then
+          if (x(p) == x(p-1)) then
              s = s + 1
           endif
           
-          gr%pt(k)%x = x(k)
-          gr%pt(k)%s = s
+          gr%pt(p)%x = x(p)
+          gr%pt(p)%s = s
 
        end do
 
     end if
 
-    gr%n_k = n_k
+    gr%n_p = n_p
 
     ! Check for degenerate segments
 
-    check_loop : do s = 1, gr%pt(n_k)%s
+    check_loop : do s = 1, gr%pt(n_p)%s
        $ASSERT(COUNT(gr%pt%s == s) >= 2,Degenerate segment)
     end do check_loop
 
@@ -156,7 +156,7 @@ contains
     ! Create the grid_t
 
     gr%pt = [pt_i,pt_int,pt_o]
-    gr%n_k = SIZE(gr%pt)
+    gr%n_p = SIZE(gr%pt)
 
     ! Finish
 
@@ -172,40 +172,40 @@ contains
     logical, intent(in)      :: refine(:)
     type(grid_t)             :: gr
 
-    integer  :: n_k_base
-    integer  :: n_k
-    integer  :: k
+    integer  :: n_p_base
+    integer  :: n_p
+    integer  :: p
     integer  :: j
 
-    $CHECK_BOUNDS(SIZE(refine),gr_base%n_k-1)
+    $CHECK_BOUNDS(SIZE(refine),gr_base%n_p-1)
 
     ! Construct a grid_t by refining gr_base, with additional points
     ! added to the middle of subintervals where refine == .TRUE.
 
-    n_k_base = gr_base%n_k
-    n_k = n_k_base + COUNT(refine)
+    n_p_base = gr_base%n_p
+    n_p = n_p_base + COUNT(refine)
 
-    allocate(gr%pt(n_k))
+    allocate(gr%pt(n_p))
 
-    k = 1
+    p = 1
 
-    sub_loop : do j = 1, n_k_base-1
+    sub_loop : do j = 1, n_p_base-1
 
        associate (pt_a => gr_base%pt(j), &
                   pt_b => gr_base%pt(j+1))
 
-         gr%pt(k) = pt_a
+         gr%pt(p) = pt_a
 
-         k = k + 1
+         p = p + 1
 
          if (refine(j)) then
 
             $ASSERT(pt_a%s == pt_b%s,Attempt to add points at segment boundary)
 
-            gr%pt(k)%s = pt_a%s
-            gr%pt(k)%x = 0.5_WP*(pt_a%x + pt_b%x)
+            gr%pt(p)%s = pt_a%s
+            gr%pt(p)%x = 0.5_WP*(pt_a%x + pt_b%x)
 
-            k = k + 1
+            p = p + 1
 
          endif
 
@@ -213,9 +213,9 @@ contains
 
     end do sub_loop
 
-    gr%pt(k) = gr_base%pt(n_k_base)
+    gr%pt(p) = gr_base%pt(n_p_base)
 
-    gr%n_k = n_k
+    gr%n_p = n_p
 
     ! Finish
 
@@ -249,7 +249,7 @@ contains
 
     ! Return the outermost point of the grid
 
-    pt_o = this%pt(this%n_k)
+    pt_o = this%pt(this%n_p)
 
     ! Finish
 
@@ -334,8 +334,8 @@ contains
     integer :: s_a
     integer :: s_b
     integer :: ds
-    integer :: k_i
-    integer :: k_o
+    integer :: p_i
+    integer :: p_o
 
     if (PRESENT(back)) then
        back_ = back
@@ -350,21 +350,21 @@ contains
     ! the grid
 
     if (back_) then
-       s_a = this%pt(this%n_k)%s
+       s_a = this%pt(this%n_p)%s
        s_b = this%pt(1)%s
        ds = -1
     else
        s_a = this%pt(1)%s
-       s_b = this%pt(this%n_k)%s
+       s_b = this%pt(this%n_p)%s
        ds = 1
     endif
 
     seg_loop : do s = s_a, s_b, ds
 
-       k_i = this%k_s_i(s)
-       k_o = this%k_s_o(s)
+       p_i = this%p_s_i(s)
+       p_o = this%p_s_o(s)
          
-       if (x >= this%pt(k_i)%x .AND. x <= this%pt(k_o)%x) exit seg_loop
+       if (x >= this%pt(p_i)%x .AND. x <= this%pt(p_o)%x) exit seg_loop
        
     end do seg_loop
 
@@ -418,48 +418,48 @@ contains
 
   !****
 
-  function k_s_i (this, s) result (k_i)
+  function p_s_i (this, s) result (p_i)
 
     class(grid_t), intent(in) :: this
     integer, intent(in)       :: s
-    integer                   :: k_i
+    integer                   :: p_i
 
     $ASSERT_DEBUG(s >= this%s_i(),Invalid segment)
     $ASSERT_DEBUG(s <= this%s_o(),Invalid segment)
 
     ! Return the index of the innermost point in segment s
 
-    do k_i = 1, this%n_k
-       if (this%pt(k_i)%s == s) exit
+    do p_i = 1, this%n_p
+       if (this%pt(p_i)%s == s) exit
     end do
 
     ! Finish
 
     return
 
-  end function k_s_i
+ end function p_s_i
 
   !****
 
-  function k_s_o (this, s) result (k_o)
+  function p_s_o (this, s) result (p_o)
 
     class(grid_t), intent(in) :: this
     integer, intent(in)       :: s
-    integer                   :: k_o
+    integer                   :: p_o
 
     $ASSERT_DEBUG(s >= this%s_i(),Invalid segment)
     $ASSERT_DEBUG(s <= this%s_o(),Invalid segment)
 
     ! Return the index of the outermost point in segment s
 
-    do k_o = this%n_k, 1, -1
-       if (this%pt(k_o)%s == s) exit
+    do p_o = this%n_p, 1, -1
+       if (this%pt(p_o)%s == s) exit
     end do
 
     ! Finish
 
     return
 
-  end function k_s_o
+ end function p_s_o
 
 end module gyre_grid

@@ -1,7 +1,7 @@
 ! Program  : gyre_tide
 ! Purpose  : tidal response evaluation
 !
-! Copyright 2018-2021 Rich Townsend & The GYRE Team
+! Copyright 2018-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -383,18 +383,18 @@ contains
       integer                     :: tide_type
 
       type(r_state_t) :: st
-      integer         :: k
+      integer         :: p
       real(WP)        :: Omega_rot
-      real(WP)        :: omega_c(gr%n_k)
+      real(WP)        :: omega_c(gr%n_p)
 
       ! Check co-rotating frequencies
 
       st = r_state_t(omega)
 
       !$OMP PARALLEL DO PRIVATE (Omega_rot)
-      do k = 1, gr%n_k
-         Omega_rot = cx%Omega_rot(gr%pt(k))
-         omega_c(k) = cx%omega_c(Omega_rot, st)
+      do p = 1, gr%n_p
+         Omega_rot = cx%Omega_rot(gr%pt(p))
+         omega_c(p) = cx%omega_c(Omega_rot, st)
       end do
 
       if (ALL(abs(omega_c) > omega_static)) then

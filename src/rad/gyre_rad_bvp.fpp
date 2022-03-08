@@ -1,7 +1,7 @@
 ! Module   : gyre_rad_bvp
 ! Purpose  : radial adiabatic bounary value problem solver
 !
-! Copyright 2013-2021 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -94,7 +94,7 @@ contains
     type(point_t)                 :: pt_i
     type(point_t)                 :: pt_o
     type(rad_bound_t)             :: bd
-    integer                       :: k
+    integer                       :: p
     type(rad_diff_t), allocatable :: df(:)
     type(osc_par_t)               :: qad_os_p
 
@@ -113,11 +113,11 @@ contains
 
     ! Initialize the difference equations
 
-    allocate(df(gr%n_k-1))
+    allocate(df(gr%n_p-1))
 
     !$OMP PARALLEL DO
-    do k = 1, gr%n_k-1
-       df(k) = rad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+    do p = 1, gr%n_p-1
+       df(p) = rad_diff_t(cx, gr%pt(p), gr%pt(p+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -157,8 +157,8 @@ contains
     integer, intent(in)             :: j
     type(wave_t)                    :: wv
 
-    real(WP) :: y(2,bp%n_k)
-    integer  :: k
+    real(WP) :: y(2,bp%n_p)
+    integer  :: p
 
     ! Calculate the solution vector
 
@@ -170,8 +170,8 @@ contains
     ! Convert to canonical form
 
     !$OMP PARALLEL DO
-    do k = 1, bp%n_k
-       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
+    do p = 1, bp%n_p
+       call bp%tr%trans_vars(y(:,p), p, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
@@ -195,8 +195,8 @@ contains
     integer, intent(in)             :: j
     type(wave_t)                    :: wv
 
-    real(WP) :: y(2,bp%n_k)
-    integer  :: k
+    real(WP) :: y(2,bp%n_p)
+    integer  :: p
 
     $CHECK_BOUNDS(SIZE(z_i),bp%n_i)
     $CHECK_BOUNDS(SIZE(z_o),bp%n_o)
@@ -211,8 +211,8 @@ contains
     ! Convert to canonical form
 
     !$OMP PARALLEL DO
-    do k = 1, bp%n_k
-       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
+    do p = 1, bp%n_p
+       call bp%tr%trans_vars(y(:,p), p, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
@@ -236,19 +236,19 @@ contains
     type(wave_t)                    :: wv
 
     class(model_t), pointer :: ml
-    integer                 :: k
+    integer                 :: p
     real(WP)                :: U
-    real(WP)                :: c_1(bp%n_k)
-    real(WP)                :: y_4(bp%n_k)
-    real(WP)                :: deul_phi(bp%n_k)
+    real(WP)                :: c_1(bp%n_p)
+    real(WP)                :: y_4(bp%n_p)
+    real(WP)                :: deul_phi(bp%n_p)
     integer                 :: s
-    integer                 :: k_i
-    integer                 :: k_o
+    integer                 :: p_i
+    integer                 :: p_o
     type(r_interp_t)        :: in
-    real(WP)                :: eul_phi(bp%n_k)
-    real(WP)                :: y_3(bp%n_k)
-    real(WP)                :: y_g(4,bp%n_k)
-    complex(WP)             :: y_c(6,bp%n_k)
+    real(WP)                :: eul_phi(bp%n_p)
+    real(WP)                :: y_3(bp%n_p)
+    real(WP)                :: y_g(4,bp%n_p)
+    complex(WP)             :: y_c(6,bp%n_p)
     type(c_state_t)         :: st_c
     type(c_ext_t)           :: discrim
 
@@ -257,23 +257,23 @@ contains
     ml => bp%cx%model()
 
     !$OMP PARALLEL DO PRIVATE (U)
-    do k = 1, bp%n_k
+    do p = 1, bp%n_p
 
-       associate ( pt => bp%gr%pt(k) )
+       associate ( pt => bp%gr%pt(p) )
 
          U = ml%coeff(I_U, pt)
-         c_1(k) = ml%coeff(I_C_1, pt)
+         c_1(p) = ml%coeff(I_C_1, pt)
 
          ! Evaluate y_4
          
-         y_4(k) = -U*y(1,k)
+         y_4(p) = -U*y(1,p)
 
          ! Evaluate the Eulerian potential gradient (gravity) perturbation
 
          if (pt%x /= 0._WP) then
-            deul_phi(k) = y_4(k)/(c_1(k)*pt%x)
+            deul_phi(p) = y_4(p)/(c_1(p)*pt%x)
          else
-            deul_phi(k) = 0._WP
+            deul_phi(p) = 0._WP
          end if
 
        end associate
@@ -286,19 +286,19 @@ contains
 
     seg_loop : do s = bp%gr%s_i(), bp%gr%s_o()
 
-       k_i = bp%gr%k_s_i(s)
-       k_o = bp%gr%k_s_o(s)
+       p_i = bp%gr%p_s_i(s)
+       p_o = bp%gr%p_s_o(s)
 
-       in = r_interp_t(bp%gr%pt(k_i:k_o)%x, deul_phi(k_i:k_o), 'MONO')
+       in = r_interp_t(bp%gr%pt(p_i:p_o)%x, deul_phi(p_i:p_o), 'MONO')
        
-       eul_phi(k_i:k_o) = in%int_f()
+       eul_phi(p_i:p_o) = in%int_f()
 
     end do seg_loop
 
     ! Adjust the potential perturbation so that it satisfies the
     ! surface boundary condition
     
-    eul_phi = eul_phi - eul_phi(bp%n_k) - y_4(bp%n_k)
+    eul_phi = eul_phi - eul_phi(bp%n_p) - y_4(bp%n_p)
 
     ! Set up y_3 based on it
 

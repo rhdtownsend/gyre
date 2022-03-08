@@ -1,7 +1,7 @@
 ! Module   : gyre_nad_bvp
 ! Purpose  : nonadiabatic boundary value problem solver
 !
-! Copyright 2013-2021 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -89,7 +89,7 @@ contains
     type(nad_bvp_t)                       :: bp
 
     type(nad_bound_t)             :: bd
-    integer                       :: k
+    integer                       :: p
     type(nad_diff_t), allocatable :: df(:)
 
     ! Construct the nad_bvp_t
@@ -100,11 +100,11 @@ contains
 
     ! Initialize the difference equations
 
-    allocate(df(gr%n_k-1))
+    allocate(df(gr%n_p-1))
 
     !$OMP PARALLEL DO
-    do k = 1, gr%n_k-1
-       df(k) = nad_diff_t(cx, gr%pt(k), gr%pt(k+1), md_p, nm_p, os_p)
+    do p = 1, gr%n_p-1
+       df(p) = nad_diff_t(cx, gr%pt(p), gr%pt(p+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -138,8 +138,8 @@ contains
     integer, intent(in)               :: j
     type(wave_t)                      :: wv
 
-    complex(WP) :: y(6,bp%n_k)
-    integer     :: k
+    complex(WP) :: y(6,bp%n_p)
+    integer     :: p
 
     ! Calculate the homogeneous solution vector
 
@@ -149,8 +149,8 @@ contains
     y = bp%soln_vec_hom()
 
     !$OMP PARALLEL DO
-    do k = 1, bp%n_k
-       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
+    do p = 1, bp%n_p
+       call bp%tr%trans_vars(y(:,p), p, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
@@ -174,8 +174,8 @@ contains
     integer, intent(in)             :: j
     type(wave_t)                    :: wv
 
-    complex(WP) :: y(6,bp%n_k)
-    integer     :: k
+    complex(WP) :: y(6,bp%n_p)
+    integer     :: p
 
     $CHECK_BOUNDS(SIZE(z_i),bp%n_i)
     $CHECK_BOUNDS(SIZE(z_o),bp%n_o)
@@ -188,8 +188,8 @@ contains
     y = bp%soln_vec_inhom(z_i, z_o)
 
     !$OMP PARALLEL DO
-    do k = 1, bp%n_k
-       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
+    do p = 1, bp%n_p
+       call bp%tr%trans_vars(y(:,p), p, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
@@ -215,7 +215,7 @@ contains
     type(c_ext_t) :: discrim
 
     $CHECK_BOUNDS(SIZE(y, 1),bp%n_e)
-    $CHECK_BOUNDS(SIZE(y, 2),bp%n_k)
+    $CHECK_BOUNDS(SIZE(y, 2),bp%n_p)
 
     ! Construct the wave_t
 
