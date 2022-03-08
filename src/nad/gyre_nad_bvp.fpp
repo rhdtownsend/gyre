@@ -89,7 +89,7 @@ contains
     type(nad_bvp_t)                       :: bp
 
     type(nad_bound_t)             :: bd
-    integer                       :: p
+    integer                       :: j
     type(nad_diff_t), allocatable :: df(:)
 
     ! Construct the nad_bvp_t
@@ -100,11 +100,11 @@ contains
 
     ! Initialize the difference equations
 
-    allocate(df(gr%n_p-1))
+    allocate(df(gr%n-1))
 
     !$OMP PARALLEL DO
-    do p = 1, gr%n_p-1
-       df(p) = nad_diff_t(cx, gr%pt(p), gr%pt(p+1), md_p, nm_p, os_p)
+    do j = 1, gr%n-1
+       df(j) = nad_diff_t(cx, gr%pt(j), gr%pt(j+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -131,15 +131,15 @@ contains
 
   !****
 
-  function wave_t_hom_ (bp, st, j) result (wv)
+  function wave_t_hom_ (bp, st, id) result (wv)
 
     class(nad_bvp_t), intent(inout)   :: bp
     type(c_state_t), intent(in)       :: st
-    integer, intent(in)               :: j
+    integer, intent(in)               :: id
     type(wave_t)                      :: wv
 
-    complex(WP) :: y(6,bp%n_p)
-    integer     :: p
+    complex(WP) :: y(6,bp%n)
+    integer     :: j
 
     ! Calculate the homogeneous solution vector
 
@@ -149,13 +149,13 @@ contains
     y = bp%soln_vec_hom()
 
     !$OMP PARALLEL DO
-    do p = 1, bp%n_p
-       call bp%tr%trans_vars(y(:,p), p, st, from=.FALSE.)
+    do j = 1, bp%n
+       call bp%tr%trans_vars(y(:,j), j, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
 
-    wv = wave_t_y_(bp, st, y, j)
+    wv = wave_t_y_(bp, st, y, id)
 
     ! Finish
 
@@ -165,17 +165,17 @@ contains
   
   !****
 
-  function wave_t_inhom_ (bp, st, z_i, z_o, j) result (wv)
+  function wave_t_inhom_ (bp, st, z_i, z_o, id) result (wv)
 
     class(nad_bvp_t), intent(inout) :: bp
     type(c_state_t), intent(in)     :: st
     complex(WP), intent(in)         :: z_i(:)
     complex(WP), intent(in)         :: z_o(:)
-    integer, intent(in)             :: j
+    integer, intent(in)             :: id
     type(wave_t)                    :: wv
 
-    complex(WP) :: y(6,bp%n_p)
-    integer     :: p
+    complex(WP) :: y(6,bp%n)
+    integer     :: j
 
     $CHECK_BOUNDS(SIZE(z_i),bp%n_i)
     $CHECK_BOUNDS(SIZE(z_o),bp%n_o)
@@ -188,13 +188,13 @@ contains
     y = bp%soln_vec_inhom(z_i, z_o)
 
     !$OMP PARALLEL DO
-    do p = 1, bp%n_p
-       call bp%tr%trans_vars(y(:,p), p, st, from=.FALSE.)
+    do j = 1, bp%n
+       call bp%tr%trans_vars(y(:,j), j, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
 
-    wv = wave_t_y_(bp, st, y, j)
+    wv = wave_t_y_(bp, st, y, id)
 
     ! Finish
 
@@ -204,24 +204,24 @@ contains
 
   !****
 
-  function wave_t_y_ (bp, st, y, j) result (wv)
+  function wave_t_y_ (bp, st, y, id) result (wv)
 
     class(nad_bvp_t), intent(inout) :: bp
     type(c_state_t), intent(in)     :: st
     complex(WP), intent(in)         :: y(:,:)
-    integer, intent(in)             :: j
+    integer, intent(in)             :: id
     type(wave_t)                    :: wv
 
     type(c_ext_t) :: discrim
 
     $CHECK_BOUNDS(SIZE(y, 1),bp%n_e)
-    $CHECK_BOUNDS(SIZE(y, 2),bp%n_p)
+    $CHECK_BOUNDS(SIZE(y, 2),bp%n)
 
     ! Construct the wave_t
 
     discrim = bp%det()
 
-    wv = wave_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, j)
+    wv = wave_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id)
 
     ! Finish
 

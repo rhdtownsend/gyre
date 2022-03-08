@@ -103,10 +103,10 @@ contains
 
     integer  :: n_p
     real(WP) :: x(SIZE(z))
-    integer  :: p_i
-    integer  :: p_o
-    integer  :: p_i_prev
-    integer  :: p_o_prev
+    integer  :: j_i
+    integer  :: j_o
+    integer  :: j_i_prev
+    integer  :: j_o_prev
     integer  :: s
     integer  :: i
     real(WP) :: v_o_prev
@@ -156,32 +156,32 @@ contains
     ml%t(ml%s_i) = 1._WP
     ml%B(ml%s_i) = 1._WP
 
-    p_i = ml%gr%p_s_i(ml%s_i)
-    p_o = ml%gr%p_s_o(ml%s_i)
+    j_i = ml%gr%j_s_i(ml%s_i)
+    j_o = ml%gr%j_s_o(ml%s_i)
 
     seg_data_loop : do s = ml%s_i+1, ml%s_o
 
-       p_i_prev = p_i
-       p_o_prev = p_o
+       j_i_prev = j_i
+       j_o_prev = j_o
 
-       p_i = ml%gr%p_s_i(s)
-       p_o = ml%gr%p_s_o(s)
+       j_i = ml%gr%j_s_i(s)
+       j_o = ml%gr%j_s_o(s)
 
        i = s - ml%s_i + 1
 
-       v_o_prev = z(p_o_prev)**2*dtheta(p_o_prev)
+       v_o_prev = z(j_o_prev)**2*dtheta(j_o_prev)
 
        ml%mu_i(s) = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
-       ml%t(s) = ml%t(s-1)*exp(ml%n_poly(s-1)*log(theta(p_o_prev)) + Delta_b(i-1))
+       ml%t(s) = ml%t(s-1)*exp(ml%n_poly(s-1)*log(theta(j_o_prev)) + Delta_b(i-1))
 
-       ml%v_i(s) = z(p_i)**2*dtheta(p_i)
+       ml%v_i(s) = z(j_i)**2*dtheta(j_i)
 
-       ml%B(s) = (dtheta(p_i)/dtheta(p_o_prev))*(ml%t(s)/ml%t(s-1))*ml%B(s-1)
+       ml%B(s) = (dtheta(j_i)/dtheta(j_o_prev))*(ml%t(s)/ml%t(s-1))*ml%B(s-1)
 
     end do seg_data_loop
 
-    v_o_prev = z(p_o)**2*dtheta(p_o)
+    v_o_prev = z(j_o)**2*dtheta(j_o)
 
     ml%mu_s = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
@@ -189,25 +189,25 @@ contains
 
     seg_spline_loop : do s = ml%s_i, ml%s_o
 
-       p_i = ml%gr%p_s_i(s)
-       p_o = ml%gr%p_s_o(s)
+       j_i = ml%gr%j_s_i(s)
+       j_o = ml%gr%j_s_o(s)
 
        if (ml%n_poly(s) /= 0._WP) then
 
-          where (z(p_i:p_o) /= 0._WP)
-             d2theta(p_i:p_o) = -2._WP*dtheta(p_i:p_o)/z(p_i:p_o) - ml%B(s)*pow(theta(p_i:p_o), ml%n_poly(s))
+          where (z(j_i:j_o) /= 0._WP)
+             d2theta(j_i:j_o) = -2._WP*dtheta(j_i:j_o)/z(j_i:j_o) - ml%B(s)*pow(theta(j_i:j_o), ml%n_poly(s))
           elsewhere
-             d2theta(p_i:p_o) = -1._WP/3._WP
+             d2theta(j_i:j_o) = -1._WP/3._WP
           end where
 
        else
 
-          d2theta(p_i:p_o) = -1._WP/3._WP
+          d2theta(j_i:j_o) = -1._WP/3._WP
 
        endif
 
-       ml%in_theta(s) = r_interp_t(x(p_i:p_o), theta(p_i:p_o), dtheta(p_i:p_o)*ml%z_s)
-       ml%in_dtheta(s) = r_interp_t(x(p_i:p_o), dtheta(p_i:p_o), d2theta(p_i:p_o)*ml%z_s)
+       ml%in_theta(s) = r_interp_t(x(j_i:j_o), theta(j_i:j_o), dtheta(j_i:j_o)*ml%z_s)
+       ml%in_dtheta(s) = r_interp_t(x(j_i:j_o), dtheta(j_i:j_o), d2theta(j_i:j_o)*ml%z_s)
 
     end do seg_spline_loop
 
@@ -622,9 +622,9 @@ contains
     real(WP)      :: I
     integer       :: s
     type(point_t) :: pt
-    integer       :: p_i
-    integer       :: p_o
-    integer       :: p
+    integer       :: j_i
+    integer       :: j_o
+    integer       :: j
     real(WP)      :: V_2
     real(WP)      :: c_1
     real(WP)      :: Gamma_1
@@ -645,18 +645,18 @@ contains
 
        pt%s = s
 
-       p_i = gr%p_s_i(s)
-       p_o = gr%p_s_o(s)
+       j_i = gr%j_s_i(s)
+       j_o = gr%j_s_o(s)
 
-       cell_loop : do p = p_i, p_o-1
+       cell_loop : do j = j_i, j_o-1
 
-          pt%x = 0.5*(gr%pt(p)%x + gr%pt(p+1)%x)
+          pt%x = 0.5*(gr%pt(j)%x + gr%pt(j+1)%x)
 
           V_2 = this%coeff(I_V_2, pt)
           c_1 = this%coeff(I_C_1, pt)
           Gamma_1 = this%coeff(I_GAMMA_1, pt)
 
-          I = I + sqrt(c_1*V_2/Gamma_1)*(gr%pt(p+1)%x - gr%pt(p)%x)
+          I = I + sqrt(c_1*V_2/Gamma_1)*(gr%pt(j+1)%x - gr%pt(j)%x)
 
        end do cell_loop
 
@@ -684,9 +684,9 @@ contains
     real(WP)      :: I
     integer       :: s
     type(point_t) :: pt
-    integer       :: p_i
-    integer       :: p_o
-    integer       :: p
+    integer       :: j_i
+    integer       :: j_o
+    integer       :: j
     real(WP)      :: As
     real(WP)      :: c_1
 
@@ -706,17 +706,17 @@ contains
 
        pt%s = s
 
-       p_i = gr%p_s_i(s)
-       p_o = gr%p_s_o(s)
+       j_i = gr%j_s_i(s)
+       j_o = gr%j_s_o(s)
 
-       cell_loop : do p = p_i, p_o-1
+       cell_loop : do j = j_i, j_o-1
 
-          pt%x = 0.5*(gr%pt(p)%x + gr%pt(p+1)%x)
+          pt%x = 0.5*(gr%pt(j)%x + gr%pt(j+1)%x)
 
           As = this%coeff(I_AS, pt)
           c_1 = this%coeff(I_C_1, pt)
 
-          I = I + (sqrt(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(p+1)%x - gr%pt(p)%x)
+          I = I + (sqrt(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(j+1)%x - gr%pt(j)%x)
 
        end do cell_loop
 

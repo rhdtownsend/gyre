@@ -277,7 +277,7 @@ contains
 
        ! Evaluate the response function
  
-       F = -0.5_WP*(sqrt(4._WP*PI)*wv%eul_phi(wv%n_p)/(eps_tide*c) + 1._WP)
+       F = -0.5_WP*(sqrt(4._WP*PI)*wv%eul_phi(wv%n)/(eps_tide*c) + 1._WP)
 
        ! Evaluate the summation weight
 

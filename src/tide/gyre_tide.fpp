@@ -383,18 +383,18 @@ contains
       integer                     :: tide_type
 
       type(r_state_t) :: st
-      integer         :: p
+      integer         :: j
       real(WP)        :: Omega_rot
-      real(WP)        :: omega_c(gr%n_p)
+      real(WP)        :: omega_c(gr%n)
 
       ! Check co-rotating frequencies
 
       st = r_state_t(omega)
 
       !$OMP PARALLEL DO PRIVATE (Omega_rot)
-      do p = 1, gr%n_p
-         Omega_rot = cx%Omega_rot(gr%pt(p))
-         omega_c(p) = cx%omega_c(Omega_rot, st)
+      do j = 1, gr%n
+         Omega_rot = cx%Omega_rot(gr%pt(j))
+         omega_c(j) = cx%omega_c(Omega_rot, st)
       end do
 
       if (ALL(abs(omega_c) > omega_static)) then

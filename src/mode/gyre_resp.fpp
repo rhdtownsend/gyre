@@ -96,16 +96,16 @@ contains
 
   !****
 
-  function eul_phi (this, p)
+  function eul_phi (this, j)
 
      class(resp_t), intent(in) :: this
-     integer, intent(in)       :: p
+     integer, intent(in)       :: j
      complex(WP)               :: eul_phi
 
      ! Evaluate the Eulerian self gravitational potential
      ! perturbation, in units of G M_star / R_star
 
-     eul_phi = this%eul_psi(p) - this%phi_2(p)
+     eul_phi = this%eul_psi(j) - this%phi_2(j)
 
      ! Finish
 
@@ -115,16 +115,16 @@ contains
 
   !****
 
-  function eul_psi (this, p)
+  function eul_psi (this, j)
 
      class(resp_t), intent(in) :: this
-     integer, intent(in)       :: p
+     integer, intent(in)       :: j
      complex(WP)               :: eul_psi
 
      ! Evaluate the Eulerian total gravitational potential
      ! perturbation, in units of G M_star / R_star
 
-     eul_psi = this%wave_t%eul_phi(p)
+     eul_psi = this%wave_t%eul_phi(j)
 
      ! Finish
 
@@ -134,10 +134,10 @@ contains
 
   !****
 
-  function phi_2 (this, p)
+  function phi_2 (this, j)
 
      class(resp_t), intent(in) :: this
-     integer, intent(in)       :: p
+     integer, intent(in)       :: j
      complex(WP)               :: phi_2
 
      ! Evaluate the Eulerian secondary gravitational potential
@@ -148,7 +148,7 @@ contains
           fr_p => this%fr_p, &
           or_p => this%or_p)
 
-       phi_2 = Phi_force(md_p, fr_p, or_p)
+       phi_2 = Phi_force(md_p, fr_p, or_p)!*(r/R)**l !XXXXX FIX ME XXXXX
 
      end associate
 
@@ -167,7 +167,7 @@ contains
 
      ! Evaluate the surface response function
 
-     F = 0.5*this%eul_phi(this%n_p)/Phi_force(this%md_p, this%fr_p, this%or_p)
+     F = 0.5*this%eul_phi(this%n)/Phi_force(this%md_p, this%fr_p, this%or_p)
 
      ! Finish
 
@@ -200,7 +200,7 @@ contains
 
        G_4 = secular_G_4(R_a, e, l, m, k)
 
-       x = this%x(this%n_p)
+       x = this%x(this%n)
 
        J_dot = -2._WP*CMPLX(0._WP, 1._WP, KIND=WP)*q**2*(R_a)**(l+4)*x**(l+1)*G_4*this%F()
 

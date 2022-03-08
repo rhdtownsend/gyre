@@ -23,7 +23,7 @@ $local $FUNC $2
 
 case ($str($NAME))
 
-   call wr%write($str($NAME), [($FUNC, p=1,gr%n_p)])
+   call wr%write($str($NAME), [($FUNC, j=1,gr%n)])
 
 $endsub
 

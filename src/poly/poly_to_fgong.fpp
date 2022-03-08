@@ -59,13 +59,13 @@ program poly_to_fgong
   real(WP), allocatable   :: c_1(:)
   real(WP), allocatable   :: Gamma_1(:)
   real(WP), allocatable   :: M_r(:)
-  real(WP), allocatable   :: Pr(:)
+  real(WP), allocatable   :: P(:)
   real(WP), allocatable   :: rho(:)
-  integer                 :: n_p
+  integer                 :: n
   real(WP), allocatable   :: glob(:)
   real(WP), allocatable   :: var(:,:)
   integer                 :: unit
-  integer                 :: p
+  integer                 :: j
 
   ! Read parameters
 
@@ -90,26 +90,26 @@ program poly_to_fgong
   gr = ml%grid()
 
   if (drop_outer) then
-     gr = grid_t(gr%pt(:gr%n_p-1)%x)
+     gr = grid_t(gr%pt(:gr%n-1)%x)
   endif
 
   ! Extract data from the model
 
   ! Dimensionless structure variables
 
-  allocate(V_2(gr%n_p))
-  allocate(As(gr%n_p))
-  allocate(U(gr%n_p))
-  allocate(c_1(gr%n_p))
-  allocate(Gamma_1(gr%n_p))
+  allocate(V_2(gr%n))
+  allocate(As(gr%n))
+  allocate(U(gr%n))
+  allocate(c_1(gr%n))
+  allocate(Gamma_1(gr%n))
 
-  do p = 1, gr%n_p
-     associate (pt => gr%pt(p))
-       V_2(p) = ml%coeff(I_V_2, pt)
-       As(p) = ml%coeff(I_AS, pt)
-       U(p) = ml%coeff(I_U, pt)
-       c_1(p) = ml%coeff(I_C_1, pt)
-       Gamma_1(p) = ml%coeff(I_GAMMA_1, pt)
+  do j = 1, gr%n
+     associate (pt => gr%pt(j))
+       V_2(j) = ml%coeff(I_V_2, pt)
+       As(j) = ml%coeff(I_AS, pt)
+       U(j) = ml%coeff(I_U, pt)
+       c_1(j) = ml%coeff(I_C_1, pt)
+       Gamma_1(j) = ml%coeff(I_GAMMA_1, pt)
      end associate
   end do
 
@@ -121,17 +121,17 @@ program poly_to_fgong
   M_r = M_SUN*(pt%x**3/c_1)
   $endif
   
-  Pr = (G_GRAVITY*M_SUN**2/(4._WP*PI*R_SUN**4))* &
-       (U/(c_1**2*V_2))
+  P = (G_GRAVITY*M_SUN**2/(4._WP*PI*R_SUN**4))* &
+      (U/(c_1**2*V_2))
 
   rho = (M_SUN/(4._WP*PI*R_SUN**3))*(U/c_1)
 
   ! Store into var array
 
-  n_p = gr%n_p
+  n = gr%n
 
   allocate(glob(ICONST))
-  allocate(var(IVAR,n_p))
+  allocate(var(IVAR,n))
 
   glob(1) = M_SUN
   glob(2) = R_SUN
@@ -146,7 +146,7 @@ program poly_to_fgong
   endwhere
 
   var(3,:) = 0._WP
-  var(4,:) = Pr
+  var(4,:) = P
   var(5,:) = rho
   var(6:9,:) = 0._WP
   var(10,:) = Gamma_1
@@ -154,7 +154,7 @@ program poly_to_fgong
   var(15,:) = As
   var(16,:) = 0._WP
 
-  var = var(:,n_p:1:-1)
+  var = var(:,n:1:-1)
 
   ! Write out the FGONG file
 
@@ -166,14 +166,14 @@ program poly_to_fgong
   write(unit, 100) 'Fum'
 100 format(A)
 
-  write(unit, 110) n_p, ICONST, IVAR, IVERS
+  write(unit, 110) n, ICONST, IVAR, IVERS
 110 format(4I10)
 
   write(unit, 120) glob
 120  format(1P,5(1X,E26.18E3))
 
-  do p = 1, n_p
-     write(unit, 120) var(:,p)
+  do j = 1, n
+     write(unit, 120) var(:,j)
   end do
 
   close(unit)

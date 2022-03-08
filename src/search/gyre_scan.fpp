@@ -117,7 +117,7 @@ contains
     real(WP)                :: omega_g_max
     real(WP)                :: omega_g
     real(WP), allocatable   :: omega_i(:)
-    integer                 :: j
+    integer                 :: i
 
     ! Build the frequency scan as a grid
 
@@ -169,22 +169,22 @@ contains
 
           allocate(omega_i(sc_p%n_freq))
 
-          do j = 1, sc_p%n_freq
+          do i = 1, sc_p%n_freq
 
              ! Grid frame
 
              select case(sc_p%grid_type)
              case('LINEAR')
-                omega_g = ((sc_p%n_freq-j)*omega_g_min + (j-1)*omega_g_max)/(sc_p%n_freq-1)
+                omega_g = ((sc_p%n_freq-i)*omega_g_min + (i-1)*omega_g_max)/(sc_p%n_freq-1)
              case('INVERSE')
-                omega_g = (sc_p%n_freq-1)/((sc_p%n_freq-j)/omega_g_min + (j-1)/omega_g_max)
+                omega_g = (sc_p%n_freq-1)/((sc_p%n_freq-i)/omega_g_min + (i-1)/omega_g_max)
              case default
                 $ABORT(Invalid grid_type)
              end select
 
              ! Inertial frame
 
-             omega_i(j) = omega_g - freq_shift(sc_p%grid_frame, cx, md_p)
+             omega_i(i) = omega_g - freq_shift(sc_p%grid_frame, cx, md_p)
 
           end do
 
@@ -227,7 +227,7 @@ contains
     integer                 :: unit
     integer                 :: n_freq
     real(WP), allocatable   :: freq(:)
-    integer                 :: j
+    integer                 :: i
     real(WP), allocatable   :: omega_i(:)
     
     ! Build the frequency scan from file
@@ -253,8 +253,8 @@ contains
 
     rewind(unit)
 
-    read_loop : do j = 1, n_freq
-       read(unit, *) freq(j)
+    read_loop : do i = 1, n_freq
+       read(unit, *) freq(i)
     end do read_loop
 
     close(unit)
@@ -289,10 +289,10 @@ contains
     type(mode_par_t), intent(in) :: md_p
     type(osc_par_t), intent(in)  :: os_p
 
-    real(WP) :: omega_c(gr%n_p)
-    real(WP) :: omega_c_prev(gr%n_p)
+    real(WP) :: omega_c(gr%n)
+    real(WP) :: omega_c_prev(gr%n)
     integer  :: j
-    integer  :: p
+    integer  :: i
 
     ! Check the frequency scan to remove any points with leaky
     ! boundary conditions
@@ -305,19 +305,19 @@ contains
     if (SIZE(omega) >= 1) then
 
        !$OMP PARALLEL DO
-       do p = 1, gr%n_p
-          omega_c(p) = omega(1) - md_p%m*cx%Omega_rot(gr%pt(p))
+       do j = 1, gr%n
+          omega_c(j) = omega(1) - md_p%m*cx%Omega_rot(gr%pt(j))
        end do
 
        $ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP),Critical layer encountered)
 
-       do j = 2, SIZE(omega)
+       do i = 2, SIZE(omega)
 
           omega_c_prev = omega_c
 
           !$OMP PARALLEL DO
-          do p = 1, gr%n_p
-             omega_c(p) = omega(j) - md_p%m*cx%Omega_rot(gr%pt(p))
+          do j = 1, gr%n
+             omega_c(j) = omega(i) - md_p%m*cx%Omega_rot(gr%pt(j))
           end do
 
           $ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)),Transition between prograde and retrograde)

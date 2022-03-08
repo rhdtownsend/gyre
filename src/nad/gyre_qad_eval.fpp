@@ -47,7 +47,7 @@ module gyre_qad_eval
      type(context_t), pointer :: cx => null()
      type(nad_eqns_t)         :: eq
      type(grid_t)             :: gr
-     integer, public          :: n_p
+     integer, public          :: n
    contains
      private
      procedure, public :: y_qad
@@ -89,7 +89,7 @@ contains
     qe%cx => cx
     qe%gr = gr
 
-    qe%n_p = gr%n_p
+    qe%n = gr%n
 
     ! Finish
 
@@ -104,17 +104,17 @@ contains
     class(qad_eval_t), intent(inout) :: this
     class(c_state_t), intent(in)     :: st
     real(WP), intent(in)             :: y_ad(:,:)
-    complex(WP)                      :: y_qad(6,this%n_p)
+    complex(WP)                      :: y_qad(6,this%n)
 
-    integer         :: p
+    integer         :: j
     integer         :: s
     complex(WP)     :: xA(6,6)
-    complex(WP)     :: xA_5(6,this%n_p)
-    complex(WP)     :: xA_6(6,this%n_p)
-    complex(WP)     :: dy_6(this%n_p)
+    complex(WP)     :: xA_5(6,this%n)
+    complex(WP)     :: xA_6(6,this%n)
+    complex(WP)     :: dy_6(this%n)
 
     $CHECK_BOUNDS(SIZE(y_ad, 1),4)
-    $CHECK_BOUNDS(SIZE(y_ad, 2),this%n_p)
+    $CHECK_BOUNDS(SIZE(y_ad, 2),this%n)
 
     ! Construct quasi-adiabatic eigenfunctions y_qad from adiabatic
     ! eigenfrequency omega_ad and eigenfunctions y_ad
@@ -127,12 +127,12 @@ contains
     ! corresponding to the energy conservation and transport equations
 
     !$OMP PARALLEL DO PRIVATE (xA)
-    do p = 1, this%n_p
+    do j = 1, this%n
 
-       xA = this%eq%xA(p, st)
+       xA = this%eq%xA(j, st)
 
-       xA_5(:,p) = xA(5,:)
-       xA_6(:,p) = xA(6,:)
+       xA_5(:,j) = xA(5,:)
+       xA_6(:,j) = xA(6,:)
 
     end do
 
@@ -148,8 +148,8 @@ contains
     ! eigenfunction, segment-by-segment
     
     seg_loop : do s = this%gr%s_i(), this%gr%s_o()
-       associate (p_i => this%gr%p_s_i(s), p_o => this%gr%p_s_o(s))
-         dy_6(p_i:p_o) = this%gr%pt(p_i:p_o)%x*deriv(this%gr%pt(p_i:p_o)%x, REAL(y_qad(6,p_i:p_o), WP), 'MONO')
+       associate (j_i => this%gr%j_s_i(s), j_o => this%gr%j_s_o(s))
+         dy_6(j_i:j_o) = this%gr%pt(j_i:j_o)%x*deriv(this%gr%pt(j_i:j_o)%x, REAL(y_qad(6,j_i:j_o), WP), 'MONO')
        end associate
     end do seg_loop
 

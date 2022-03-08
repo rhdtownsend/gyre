@@ -46,7 +46,7 @@ module gyre_mode
 
   type, extends (wave_t) :: mode_t
      integer :: n_pg 
-     integer :: n_p_
+     integer :: n_p
      integer :: n_g
    contains
      private
@@ -89,7 +89,7 @@ contains
     ! Normalize so that y_1 at the reference point is purely real, and
     ! the total inertia E is unity
 
-    y_1_ref = md%y_i(1, md%p_ref)
+    y_1_ref = md%y_i(1, md%j_ref)
 
     if (abs(y_1_ref) > TINY(0._WP)) then
        f_phase = CONJG(y_1_ref)/abs(y_1_ref)
@@ -115,11 +115,11 @@ contains
 
     class(mode_t), intent(inout) :: this
 
-    integer  :: p
-    real(WP) :: y_1(this%n_p)
-    real(WP) :: y_2(this%n_p)
-    integer  :: p_i
-    integer  :: p_o
+    integer  :: j
+    real(WP) :: y_1(this%n)
+    real(WP) :: y_2(this%n)
+    integer  :: j_i
+    integer  :: j_o
     real(WP) :: x_i
     integer  :: n_c
     integer  :: n_a
@@ -134,31 +134,31 @@ contains
        ! noisy near-zero solutions at the origin)
 
        !$OMP PARALLEL DO
-       do p = 1, this%n_p
-          y_1(p) = REAL(this%y_i(1, p))
-          y_2(p) = REAL(this%y_i(2, p))
+       do j = 1, this%n
+          y_1(j) = REAL(this%y_i(1, j))
+          y_2(j) = REAL(this%y_i(2, j))
        end do
 
-       p_i = this%n_p
+       j_i = this%n
 
-       mono_loop : do p = 2, this%n_p-1
-          if ((y_1(p) >= y_1(p-1) .AND. y_1(p+1) >= y_1(p)) .OR. &
-              (y_1(p) <= y_1(p-1) .AND. y_1(p+1) <= y_1(p))) then
-             p_i = p
+       mono_loop : do j = 2, this%n-1
+          if ((y_1(j) >= y_1(j-1) .AND. y_1(j+1) >= y_1(j)) .OR. &
+              (y_1(j) <= y_1(j-1) .AND. y_1(j+1) <= y_1(j))) then
+             j_i = j
              exit mono_loop
           endif
        end do mono_loop
 
        ! Count winding numbers
 
-       call count_windings_(y_1(p_i:), y_2(p_i:), n_c, n_a)
+       call count_windings_(y_1(j_i:), y_2(j_i:), n_c, n_a)
 
        ! Classify (the additional 1 is for the node at the center)
 
-       this%n_p_ = n_a + n_c + 1
+       this%n_p = n_a + n_c + 1
        this%n_g = 0
 
-       this%n_pg = this%n_p_ - this%n_g
+       this%n_pg = this%n_p - this%n_g
 
     elseif (this%l == 1 .AND. .NOT. this%os_p%alpha_grv == 0._WP) then
 
@@ -167,37 +167,37 @@ contains
        ! Set up the Takata Y^a_1 and Y^a_2 functions
 
        !$OMP PARALLEL DO
-       do p = 1, this%n_p
-          y_1(p) = REAL(this%Yt_1(p))
-          y_2(p) = REAL(this%Yt_2(p))
+       do j = 1, this%n
+          y_1(j) = REAL(this%Yt_1(j))
+          y_2(j) = REAL(this%Yt_2(j))
        end do
 
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the inner boundary)
 
        call find_turn(this%context(), this%grid(), r_state_t(REAL(this%omega)), &
-            this%nm_p, this%os_p, p_i, x_i)
+            this%nm_p, this%os_p, j_i, x_i)
 
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface
 
-       if (y_1(this%n_p) == 0._WP) then
-          p_o = this%n_p-1
+       if (y_1(this%n) == 0._WP) then
+          j_o = this%n-1
        else
-          p_o = this%n_p
+          j_o = this%n
        endif
        
-       call count_windings_(y_1(p_i:p_o), y_2(p_i:p_o), n_c, n_a)
+       call count_windings_(y_1(j_i:j_o), y_2(j_i:j_o), n_c, n_a)
 
        ! Classify
 
-       this%n_p_ = n_a
+       this%n_p = n_a
        this%n_g = n_c
 
-       if (this%n_p_ >= this%n_g) then
-          this%n_pg = this%n_p_ - this%n_g + 1
+       if (this%n_p >= this%n_g) then
+          this%n_pg = this%n_p - this%n_g + 1
        else
-          this%n_pg = this%n_p_ - this%n_g
+          this%n_pg = this%n_p - this%n_g
        endif
 
     else
@@ -205,32 +205,32 @@ contains
        ! Other modes
 
        !$OMP PARALLEL DO
-       do p = 1, this%n_p
-          y_1(p) = REAL(this%y_i(1, p))
-          y_2(p) = REAL(this%y_i(2, p) + this%y_i(3, p))
+       do j = 1, this%n
+          y_1(j) = REAL(this%y_i(1, j))
+          y_2(j) = REAL(this%y_i(2, j) + this%y_i(3, j))
        end do
 
        ! Handle special case where the inner boundary y_1 = 0 is
        ! appled off-center -- don't count the node there
 
        if (this%os_p%inner_bound == 'ZERO_R') then
-          p_i = 2
+          j_i = 2
        else
-          p_i = 1
+          j_i = 1
        endif
 
-       p_o = this%n_p
+       j_o = this%n
 
        ! Count winding numbers
 
-       call count_windings_(y_1(p_i:p_o), y_2(p_i:p_o), n_c, n_a)
+       call count_windings_(y_1(j_i:j_o), y_2(j_i:j_o), n_c, n_a)
 
        ! Classify
 
-       this%n_p_ = n_a
+       this%n_p = n_a
        this%n_g = n_c
 
-       this%n_pg = this%n_p_ - this%n_g
+       this%n_pg = this%n_p - this%n_g
 
     endif
 
@@ -248,7 +248,7 @@ contains
       integer, intent(out)           :: n_a
       real(WP), optional, intent(in) :: x(:)
 
-      integer  :: k
+      integer  :: j
       real(WP) :: y_2_cross
 
       $CHECK_BOUNDS(SIZE(y_2),SIZE(y_1))
@@ -262,36 +262,36 @@ contains
       n_c = 0
       n_a = 0
 
-      do p = 1,SIZE(y_1)-1
+      do j = 1,SIZE(y_1)-1
 
          ! Look for a node in y_1
 
-         if (y_1(p) >= 0._WP .AND. y_1(p+1) < 0._WP) then
+         if (y_1(j) >= 0._WP .AND. y_1(j+1) < 0._WP) then
 
             ! Solve for the crossing ordinate
 
-            y_2_cross = y_2(p) - y_1(p)*(y_2(p+1) - y_2(p))/(y_1(p+1) - y_1(p))
+            y_2_cross = y_2(j) - y_1(j)*(y_2(j+1) - y_2(j))/(y_1(j+1) - y_1(j))
 
             if(y_2_cross >= 0._WP) then
                n_a = n_a + 1
-               if(PRESENT(x)) print *,'A node:',x(p),x(p+1)
+               if(PRESENT(x)) print *,'A node:',x(j),x(j+1)
             else
                n_c = n_c + 1
-               if(PRESENT(x)) print *,'C node:',x(p),x(p+1)
+               if(PRESENT(x)) print *,'C node:',x(j),x(j+1)
             endif
 
-         elseif (y_1(p) <= 0._WP .AND. y_1(p+1) > 0._WP) then
+         elseif (y_1(j) <= 0._WP .AND. y_1(j+1) > 0._WP) then
 
             ! Solve for the crossing ordinate
 
-            y_2_cross = y_2(p) - y_1(p)*(y_2(p+1) - y_2(p))/(y_1(p+1) - y_1(p))
+            y_2_cross = y_2(j) - y_1(j)*(y_2(j+1) - y_2(j))/(y_1(j+1) - y_1(j))
 
             if (y_2_cross <= 0._WP) then
                n_a = n_a + 1
-               if(PRESENT(x)) print *,'A node:',x(p),x(p+1)
+               if(PRESENT(x)) print *,'A node:',x(j),x(j+1)
             else
                n_c = n_c + 1
-               if(PRESENT(x)) print *,'C node:',x(p),x(p+1)
+               if(PRESENT(x)) print *,'C node:',x(j),x(j+1)
             endif
 
          endif

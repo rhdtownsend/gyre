@@ -90,7 +90,7 @@ contains
     type(cad_bvp_t)                      :: bp
 
     type(cad_bound_t)             :: bd
-    integer                       :: p
+    integer                       :: j
     type(cad_diff_t), allocatable :: df(:)
     type(osc_par_t)               :: qad_os_p
 
@@ -102,11 +102,11 @@ contains
 
     ! Initialize the difference equations
 
-    allocate(df(gr%n_p-1))
+    allocate(df(gr%n-1))
 
     !$OMP PARALLEL DO
-    do p = 1, gr%n_p-1
-       df(k) = cad_diff_t(cx, gr%pt(p), gr%pt(p+1), md_p, nm_p, os_p)
+    do j = 1, gr%n-1
+       df(j) = cad_diff_t(cx, gr%pt(j), gr%pt(j+1), md_p, nm_p, os_p)
     end do
 
     ! Initialize the bvp_t
@@ -132,15 +132,15 @@ contains
 
   !****
 
-  function wave_t_hom_ (bp, st, j) result (wv)
+  function wave_t_hom_ (bp, st, id) result (wv)
 
     class(ad_bvp_t), intent(inout) :: bp
     type(r_state_t), intent(in)    :: st
-    integer, intent(in)            :: j
+    integer, intent(in)            :: id
     type(wave_t)                   :: wv
 
-    real(WP)        :: y(4,bp%n_p)
-    integer         :: k
+    real(WP) :: y(4,bp%n_p)
+    integer  :: j
 
     ! Calculate the homogeneous solution vector
 
@@ -152,13 +152,13 @@ contains
     ! Convert to canonical form
 
     !$OMP PARALLEL DO
-    do k = 1, bp%n_p
-       call bp%tr%trans_vars(y(:,k), k, st, from=.FALSE.)
+    do j = 1, bp%n
+       call bp%tr%trans_vars(y(:,j), j, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
 
-    wv = wave_t_y_(bp, st, y, j)
+    wv = wave_t_y_(bp, st, y, id)
 
     ! Finish
 
@@ -168,17 +168,17 @@ contains
 
   !****
 
-  function wave_t_inhom_ (bp, st, z_i, z_o, j) result (wv)
+  function wave_t_inhom_ (bp, st, z_i, z_o, id) result (wv)
 
     class(cad_bvp_t), intent(inout) :: bp
     type(c_state_t), intent(in)     :: st
     complex(WP), intent(in)         :: z_i(:)
     complex(WP), intent(in)         :: z_o(:)
-    integer, intent(in)             :: j
+    integer, intent(in)             :: id
     type(wave_t)                    :: wv
 
     complex(WP) :: y(4,bp%n_p)
-    integer     :: p
+    integer     :: j
 
     $CHECK_BOUNDS(SIZE(z_i),bp%n_i)
     $CHECK_BOUNDS(SIZE(z_o),bp%n_o)
@@ -193,13 +193,13 @@ contains
     ! Convert to canonical form
 
     !$OMP PARALLEL DO
-    do p = 1, bp%n_p
-       call bp%tr%trans_vars(y(:,p), p, st, from=.FALSE.)
+    do j = 1, bp%n
+       call bp%tr%trans_vars(y(:,j), j, st, from=.FALSE.)
     end do
 
     ! Construct the wave_t
 
-    wv = wave_t_y_(bp, st, y, j)
+    wv = wave_t_y_(bp, st, y, id)
 
     ! Finish
 
@@ -209,12 +209,12 @@ contains
 
   !****
 
-  function wave_t_y_ (bp, st, y, j) result (wv)
+  function wave_t_y_ (bp, st, y, id) result (wv)
 
     class(cad_bvp_t), intent(inout) :: bp
     type(c_state_t), intent(in)     :: st
     complex(WP), intent(in)         :: y(:,:)
-    integer, intent(in)             :: j
+    integer, intent(in)             :: id
     type(wave_t)                    :: wv
 
     type(c_state_t) :: st_c
@@ -235,7 +235,7 @@ contains
 
     discrim = c_ext_t(bp%det())
 
-    wv = wave_t(st_c, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p, j)
+    wv = wave_t(st_c, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%os_p, id)
 
     ! Finish
 

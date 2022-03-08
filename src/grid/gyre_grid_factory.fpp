@@ -128,17 +128,17 @@ contains
 
     if (check_log_level('INFO')) then
 
-       write(OUTPUT_UNIT, 120) 'Final grid has', gr%s_o()-gr%s_i()+1, 'segment(s) and', gr%n_p, 'point(s):'
+       write(OUTPUT_UNIT, 120) 'Final grid has', gr%s_o()-gr%s_i()+1, 'segment(s) and', gr%n, 'point(s):'
 120    format(3X,A,1X,I0,1X,A,1X,I0,1X,A)
        
        seg_loop : do s = gr%s_i(), gr%s_o()
 
           associate( &
-               p_i => gr%p_s_i(s), &
-               p_o => gr%p_s_o(s))
+               j_i => gr%j_s_i(s), &
+               j_o => gr%j_s_o(s))
 
-            write(OUTPUT_UNIT, 130) 'Segment', s, ': x range', gr%pt(p_i)%x, '->', gr%pt(p_o)%x, &
-                 '(', p_i, '->', p_o, ')'
+            write(OUTPUT_UNIT, 130) 'Segment', s, ': x range', gr%pt(j_i)%x, '->', gr%pt(j_o)%x, &
+                 '(', j_i, '->', j_o, ')'
 130         format(6X,A,1X,I0,1X,A,1X,F6.4,1X,A,1X,F6.4,1X,A,I0,1X,A,1X,I0,A)
 
           end associate
@@ -162,22 +162,22 @@ contains
     type(osc_par_t), intent(in)   :: os_p
     type(grid_t), intent(inout)   :: gr
 
-    integer              :: n_p
+    integer              :: n
     integer              :: i_iter
     logical, allocatable :: refine(:)
-    integer              :: p
+    integer              :: j
     integer              :: i
     real(WP)             :: dx
     logical, allocatable :: refine_new(:)
-    integer              :: p_new
+    integer              :: j_new
 
     ! Add points globally
 
     ! Initialize the refine array
 
-    n_p = gr%n_p
+    n = gr%n
 
-    refine = gr%pt(2:)%s == gr%pt(:n_p-1)%s
+    refine = gr%pt(2:)%s == gr%pt(:n-1)%s
 
     ! Iterate until no more points need be added
     
@@ -186,14 +186,14 @@ contains
        ! Loop through grid subintervals
 
        !$OMP PARALLEL DO PRIVATE (dx, i) SCHEDULE (DYNAMIC)
-       sub_loop : do p = 1, n_p-1
+       sub_loop : do j = 1, n-1
 
           ! Check/update if the subinterval should be considered for refinement
 
-          if (refine(p)) then
+          if (refine(j)) then
 
-             associate (pt_a => gr%pt(p), &
-                        pt_b => gr%pt(p+1))
+             associate (pt_a => gr%pt(j), &
+                        pt_b => gr%pt(j+1))
 
                dx = pt_b%x - pt_a%x
 
@@ -206,27 +206,27 @@ contains
 
                        if (pt_a%x /= 0._WP) then
 
-                          refine(p) = refine_mech_(cx, pt_a, pt_b, omega, gr_p, os_p) .OR. &
+                          refine(j) = refine_mech_(cx, pt_a, pt_b, omega, gr_p, os_p) .OR. &
                                       refine_therm_(cx, pt_a, pt_b, omega, gr_p) .OR. &
                                       refine_struct_(cx, pt_a, pt_b, gr_p) .OR. &
                                       dx > gr_p%dx_max
 
                        else
 
-                          refine(p) = refine_center_(cx, pt_a, pt_b, omega, gr_p) .OR. &
+                          refine(j) = refine_center_(cx, pt_a, pt_b, omega, gr_p) .OR. &
                                       dx > gr_p%dx_max
 
                        end if
 
                      end associate
 
-                     if (refine(p)) exit spec_loop
+                     if (refine(j)) exit spec_loop
 
                   end do spec_loop
 
                else
 
-                  refine(p) = .FALSE.
+                  refine(j) = .FALSE.
 
                endif
 
@@ -251,25 +251,25 @@ contains
 
        ! Update the refine array
 
-       allocate(refine_new(n_p + COUNT(refine) - 1))
+       allocate(refine_new(n + COUNT(refine) - 1))
 
-       p_new = 1
+       j_new = 1
 
-       do p = 1, n_p-1
+       do j = 1, n-1
 
-          refine_new(p_new) = refine(p)
-          p_new = p_new + 1
+          refine_new(j_new) = refine(j)
+          j_new = j_new + 1
 
-          if (refine(p)) then
+          if (refine(j)) then
 
-             refine_new(p_new) = refine(p)
-             p_new = p_new + 1
+             refine_new(j_new) = refine(j)
+             j_new = j_new + 1
 
           endif
 
        end do
 
-       n_p = n_p + COUNT(refine)
+       n = n + COUNT(refine)
 
        call MOVE_ALLOC(refine_new, refine)
 
@@ -302,7 +302,7 @@ contains
     real(WP)        :: Gamma_1
     real(WP)        :: Omega_rot
     real(WP)        :: Omega_rot_i
-    integer         :: j
+    integer         :: i
     type(r_state_t) :: st
     real(WP)        :: omega_c
     real(WP)        :: lambda
@@ -352,9 +352,9 @@ contains
 
        refine = .FALSE.
 
-       omega_loop : do j = 1, SIZE(omega)
+       omega_loop : do i = 1, SIZE(omega)
 
-          st = r_state_t(omega(j))
+          st = r_state_t(omega(i))
 
           omega_c = cx%omega_c(Omega_rot, st)
 
@@ -433,7 +433,7 @@ contains
     real(WP)        :: c_thk
     real(WP)        :: Omega_rot
     real(WP)        :: tau
-    integer         :: j
+    integer         :: i
     type(r_state_t) :: st
     real(WP)        :: omega_c
     real(WP)        :: dlnx
@@ -473,9 +473,9 @@ contains
 
        refine = .FALSE.
 
-       omega_loop : do j = 1, SIZE(omega)
+       omega_loop : do i = 1, SIZE(omega)
 
-          st = r_state_t(omega(j))
+          st = r_state_t(omega(i))
 
           omega_c = cx%omega_c(Omega_rot, st)
 
@@ -585,7 +585,7 @@ contains
     real(WP)        :: Gamma_1
     real(WP)        :: Omega_rot
     real(WP)        :: Omega_rot_i
-    integer         :: j
+    integer         :: i
     type(r_state_t) :: st
     real(WP)        :: omega_c
     real(WP)        :: lambda
@@ -631,9 +631,9 @@ contains
 
        refine = .FALSE.
 
-       omega_loop : do j = 1, SIZE(omega)
+       omega_loop : do i = 1, SIZE(omega)
 
-          st = r_state_t(omega(j))
+          st = r_state_t(omega(i))
 
           omega_c = cx%omega_c(Omega_rot, st)
 
