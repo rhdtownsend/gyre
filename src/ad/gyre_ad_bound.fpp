@@ -871,10 +871,10 @@ contains
       !B(1,3) = 0._WP
       !B(1,4) = 0._WP
 
-      B(2,1) = alpha_gr*(0._WP)
-      B(2,2) = alpha_gr*(0._WP)
-      B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-      B(2,4) = alpha_gr*(1._WP)
+      B(2,1) = alpha_grv*(0._WP)
+      B(2,2) = alpha_grv*(0._WP)
+      B(2,3) = alpha_grv*(l_e + 1._WP) + (1._WP - alpha_grv)
+      B(2,4) = alpha_grv*(1._WP)
 
       scl = 1._WP
 
