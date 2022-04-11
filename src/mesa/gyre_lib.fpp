@@ -237,7 +237,7 @@ contains
     integer                       :: n_ad
     integer                       :: d_ad
     complex(WP), allocatable      :: omega_ad(:)
-    integer, allocatable          :: j_ad(:)
+    integer, allocatable          :: id_ad(:)
 
     $ASSERT(ASSOCIATED(ml_m),No model provided)
 
@@ -296,7 +296,7 @@ contains
           n_ad = 0
 
           allocate(omega_ad(d_ad))
-          allocate(j_ad(d_ad))
+          allocate(id_ad(d_ad))
 
           if (md_p_m(i)%l == 0 .AND. os_p_sel%reduce_order) then
              allocate(bp_ad, SOURCE=rad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
@@ -333,7 +333,7 @@ contains
           case ('AD')
 
              $ASSERT(os_p_sel%adiabatic,No adiabatic modes to start from)
-             call prox_search(bp_nad, omega_ad(:n_ad), j_ad(:n_ad), omega_min, omega_max, nm_p_sel, process_mode_nad)
+             call prox_search(bp_nad, omega_ad(:n_ad), id_ad(:n_ad), omega_min, omega_max, nm_p_sel, process_mode_nad)
 
           case ('MINMOD')
 
@@ -361,7 +361,7 @@ contains
 
        if (os_p_sel%adiabatic) then
           deallocate(omega_ad)
-          deallocate(j_ad)
+          deallocate(id_ad)
        endif
 
        ! Loop around
@@ -395,11 +395,11 @@ contains
          if (n_ad > d_ad) then
             d_ad = 2*d_ad
             call reallocate(omega_ad, [d_ad])
-            call reallocate(j_ad, [d_ad])
+            call reallocate(id_ad, [d_ad])
          endif
 
          omega_ad(n_ad) = md%omega
-         j_ad(n_ad) = md%j
+         id_ad(n_ad) = md%id
 
       else
 

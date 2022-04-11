@@ -101,8 +101,8 @@ program gyre_force
   type(grid_t)                   :: gr
   class(r_bvp_t), allocatable    :: bp_ad
   class(c_bvp_t), allocatable    :: bp_nad
-  integer                        :: j_ad
-  integer                        :: j_nad
+  integer                        :: id_ad
+  integer                        :: id_nad
 
   ! Read command-line arguments
 
@@ -177,8 +177,8 @@ program gyre_force
 
   ! Loop through md_p
 
-  j_ad = 0
-  j_nad = 0
+  id_ad = 0
+  id_nad = 0
 
   md_p_loop : do i = 1, SIZE(md_p)
 
@@ -378,7 +378,7 @@ contains
 
     omega_loop : do j = 1, SIZE(omega)
 
-       j_ad = j_ad + 1
+       id_ad = id_ad + 1
 
        ! Set the rotation and orbital frequencies
 
@@ -412,9 +412,9 @@ contains
        
        select type (bp_ad)
        type is (sad_bvp_t)
-          wv = wave_t(bp_ad, st, v_i, v_o, j_ad)
+          wv = wave_t(bp_ad, st, v_i, v_o, id_ad)
        type is (ad_bvp_t)
-          wv = wave_t(bp_ad, st, v_i, v_o, j_ad)
+          wv = wave_t(bp_ad, st, v_i, v_o, id_ad)
        class default
           $ABORT(Invalid bp_ad class)
        end select
@@ -454,7 +454,7 @@ contains
 
     omega_loop : do j = 1, SIZE(omega)
 
-       j_nad = j_nad + 1
+       id_nad = id_nad + 1
 
        ! Set the rotation and orbital frequencies
 
@@ -481,9 +481,9 @@ contains
        
        select type (bp_nad)
        type is (nad_bvp_t)
-          wv = wave_t(bp_nad, st, v_i, v_o, j_nad)
+          wv = wave_t(bp_nad, st, v_i, v_o, id_nad)
        type is (tnad_bvp_t)
-          wv = wave_t(bp_nad, st, v_i, v_o, j_nad)
+          wv = wave_t(bp_nad, st, v_i, v_o, id_nad)
        class default
           $ABORT(Invalid bp_nad class)
        end select
