@@ -32,6 +32,7 @@ module gyre_mode_par
   type :: mode_par_t
      integer       :: l = 0
      integer       :: m = 0
+     integer       :: k = 0
      integer       :: n_pg_min = -HUGE(0)
      integer       :: n_pg_max = HUGE(0)
      logical       :: static = .FALSE.
@@ -58,12 +59,13 @@ contains
     integer                  :: i
     integer                  :: l
     integer                  :: m
+    integer                  :: k
     integer                  :: n_pg_min
     integer                  :: n_pg_max
     logical                  :: static
     character(LEN(md_p%tag)) :: tag
  
-    namelist /mode/ l, m, n_pg_min, n_pg_max, static, tag
+    namelist /mode/ l, m, k, n_pg_min, n_pg_max, static, tag
 
     ! Count the number of mode namelists
 
@@ -92,6 +94,7 @@ contains
 
        l = md_p(i)%l
        m = md_p(i)%m
+       k = md_p(i)%k
        n_pg_min = md_p(i)%n_pg_min
        n_pg_max = md_p(i)%n_pg_max
        static = md_p(i)%static
@@ -105,6 +108,7 @@ contains
 
        md_p(i)%l = l
        md_p(i)%m = m
+       md_p(i)%k = k
        md_p(i)%n_pg_min = n_pg_min
        md_p(i)%n_pg_max = n_pg_max
        md_p(i)%static = static
