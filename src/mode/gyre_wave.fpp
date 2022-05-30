@@ -69,6 +69,7 @@ module gyre_wave
      integer, public          :: j_ref
      integer, public          :: l
      integer, public          :: m
+     integer, public          :: k
      integer, public          :: id
    contains
      private
@@ -199,7 +200,7 @@ contains
 
     wv%l = md_p%l
     wv%m = md_p%m
-    !wv%k = md_p%k
+    wv%k = md_p%k
     
     wv%id = id
 
