@@ -77,7 +77,7 @@ ifeq (${DEBUG},yes)
   FFLAGS:=${FFLAGS} -fcheck=all -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0 -ggdb
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG -DGFORTRAN_PR_69185 -DGFORTRAN_PR_49636
 else
-  FFLAGS:=${FFLAGS} -O2 -march=native
+  FFLAGS:=${FFLAGS} -O2
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=INFO -DGFORTRAN_PR_49636
 endif
 
@@ -105,7 +105,10 @@ endif
 ifeq ($(PORTABLE),yes)
   F9XFLAGS:=${F9XFLAGS} -ffp-contract=off
   F77FLAGS:=${F9XFLAGS} -ffp-contract=off
-endif			
+else
+  F9XFLAGS:=${F9XFLAGS} -march=native
+  F77FLAGS:=${F77FLAGS} -march=native
+endif
 
 ifeq ($(HDF5),yes)
   LDFLAGS:=${LDFLAGS} `hdf5_link`
