@@ -47,16 +47,24 @@ version_check () {
 
 }
 
-# Check for existance of mesasdk_version (and not mesasdk_version.sh that older sdk's shipped)
+# Check for existance of madsdk_version or mesasdk_version (and not mesasdk_version.sh that older sdk's shipped)
 
-if ! command -v mesasdk_version >/dev/null 2>&1; then
-    echo 'failed'
-    exit 0
+ver_com=
+
+for com in madsdk_version mesasdk_version; do
+    if command -v $com >/dev/null 2>&1; then
+	ver_com=$com
+    fi
+done
+
+if [[ -z $ver_com ]]; then
+   echo 'SDK not installed'
+   exit 0
 fi
 
 # Get the installed SDK version number
 
-sdk_version=$(mesasdk_version | awk 'BEGIN {FS="-"}; {print $NF}')
+sdk_version=$($ver_com | awk 'BEGIN {FS="-"}; {print $NF}')
 
 # Convert old style (digits only) to new style (digits and dots)
 # by prepending 0.
@@ -77,7 +85,7 @@ case $? in
 	echo 'passed'
 	;;
     2)
-	echo 'failed'
+	echo 'SDK too old'
 	;;
 esac
 
