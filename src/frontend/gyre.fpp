@@ -343,8 +343,6 @@ program gyre
 
   ! Finish
 
-  close(unit)
-
   call final_parallel()
 
 contains
