@@ -1,7 +1,7 @@
-! Program  : gyre_tide_util
-! Purpose  : tide-related utility functions
+! Program  : gyre_tidal_coeff
+! Purpose  : tide-related coefficient evaluation
 !
-! Copyright 2018-2020 Rich Townsend & The GYRE Team
+! Copyright 2018-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,15 +17,18 @@
 
 $include 'core.inc'
 
-module gyre_tide_util
+module gyre_tidal_coeff
 
   ! Uses
 
   use core_kinds
 
   use gyre_constants
+  use gyre_freq
   use gyre_func
   use gyre_math
+  use gyre_model
+  use gyre_orbit_par
   use gyre_util
 
   use ISO_FORTRAN_ENV
@@ -42,8 +45,10 @@ module gyre_tide_util
 
   private
 
+  public :: tidal_Omega_orb
   public :: tidal_R_a
   public :: tidal_c
+  public :: tidal_Psi_o
   public :: secular_G_1
   public :: secular_G_2
   public :: secular_G_3
@@ -55,38 +60,66 @@ module gyre_tide_util
 
 contains
 
-  function tidal_R_a (Omega_orb, q) result (R_a)
+  function tidal_Omega_orb (ml, or_p) result (Omega_orb)
 
-     real(WP), intent(in) :: Omega_orb
-     real(WP), intent(in) :: q
-     real(WP)             :: R_a
+    class(model_t), pointer, intent(in) :: ml
+    type(orbit_par_t), intent(in)       :: or_p
+    real(WP)                            :: Omega_orb
 
-     ! Evaluate the ratio of the stellar radius to the semi-major axis
+    ! Evaluate the dimensionless orbital frequency
 
-     R_a = (Omega_orb**2/(1._WP + q))**(1._WP/3._WP)
+    Omega_orb = or_p%Omega_orb/freq_scale(or_p%Omega_orb_units, ml)
 
-     ! Finish
+    ! Finish
 
-     return
+    return
+
+  end function tidal_Omega_orb
+
+  !****
+
+  function tidal_R_a (ml, or_p) result (R_a)
+
+    class(model_t), pointer, intent(in) :: ml
+    type(orbit_par_t), intent(in)       :: or_p
+    real(WP)                            :: R_a
+
+    real(WP) :: Omega_orb
+
+    ! Evaluate the ratio of the stellar radius to the semi-major axis
+
+    Omega_orb = tidal_Omega_orb(ml, or_p)
+
+    R_a = (Omega_orb**2/(1._WP + or_p%q))**(1._WP/3._WP)
+
+    ! Finish
+
+    return
 
   end function tidal_R_a
 
   !****
 
-  function tidal_c (R_a, e, l, m, k) result (c)
+  function tidal_c (ml, or_p, l, m, k) result (c)
 
-    real(WP), intent(in) :: R_a
-    real(WP), intent(in) :: e
-    integer, intent(in)  :: l
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: c
+    class(model_t), pointer, intent(in) :: ml
+    type(orbit_par_t), intent(in)       :: or_p
+    integer, intent(in)                 :: l
+    integer, intent(in)                 :: m
+    integer, intent(in)                 :: k
+    real(WP)                            :: c
+
+    real(WP) :: R_a
+    real(WP) :: X
 
     ! Evaluate the tidal potential coefficient. This differs from the
     ! definition e.g. in eq. (5) of [Willems:2010aa], due to the
     ! different spherical harmonic definition
 
-    c = (4._WP*PI/(2*l+1))*R_a**(l-2)*REAL(CONJG(spherical_Y(l, m, HALFPI, 0._WP)))*hansen_X(e, -(l+1), -m, -k)
+    R_a = tidal_R_a(ml, or_p)
+    X = hansen_X(or_p, -(l+1), -m, -k)
+
+    c = (4._WP*PI/(2*l+1))*R_a**(l-2)*REAL(CONJG(spherical_Y(l, m, HALFPI, 0._WP)))*X
 
     ! Finish
 
@@ -96,14 +129,45 @@ contains
 
   !****
 
-  function secular_G_1 (R_a, e, l, m, k) result (G_1)
+  function tidal_Psi_o (ml, or_p, l, m, k) result (Psi_o)
 
-    real(WP), intent(in) :: R_a
-    real(WP), intent(in) :: e
-    integer, intent(in)  :: l
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: G_1
+    class(model_t), pointer, intent(in) :: ml
+    type(orbit_par_t), intent(in)       :: or_p
+    integer, intent(in)                 :: l
+    integer, intent(in)                 :: m
+    integer, intent(in)                 :: k
+    real(WP)                            :: Psi_o
+
+    real(WP) :: R_a
+    real(WP) :: eps_tide
+    real(WP) :: c
+
+    ! Evaluate the surface forcing potential (at x=1), in units of
+    ! G*M/R
+
+    R_a = tidal_R_a(ml, or_p)
+    eps_tide = R_a**3*or_p%q
+
+    c = tidal_c(ml, or_p, l, m, k)
+
+    Psi_o = -eps_tide/sqrt(4._WP*PI)*c
+
+    ! Finish
+
+    return
+
+  end function tidal_Psi_o
+
+  !****
+
+  function secular_G_1 (ml, or_p, l, m, k) result (G_1)
+
+    class(model_t), pointer, intent(in) :: ml
+    type(orbit_par_t), intent(in)       :: or_p
+    integer, intent(in)                 :: l
+    integer, intent(in)                 :: m
+    integer, intent(in)                 :: k
+    real(WP)                            :: G_1
 
     real(WP) :: c
     real(WP) :: Y
@@ -114,18 +178,20 @@ contains
 
     ! Evaluate the secular evolution coefficient
 
-    c = tidal_c(R_a, e, l, m, k)
+    c = tidal_c(ml, or_p, l, m, k)
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
-    X_1m1 = hansen_X(e, -(l+1), -m-1, -k)
-    X_1p1 = hansen_X(e, -(l+1), -m+1, -k)
+    X_1m1 = hansen_X(or_p, -(l+1), -m-1, -k)
+    X_1p1 = hansen_X(or_p, -(l+1), -m+1, -k)
 
-    X_2m1 = hansen_X(e, -(l+2), -m-1, -k)
-    X_2p1 = hansen_X(e, -(l+2), -m+1, -k)
+    X_2m1 = hansen_X(or_p, -(l+2), -m-1, -k)
+    X_2p1 = hansen_X(or_p, -(l+2), -m+1, -k)
 
-    G_1 = c*Y* &
-         (0.5_WP*(l+1)*(X_2m1 + X_2p1) + 0.5_WP*m*(X_2m1 - X_2p1) + &
-          0.5_WP*m/(1._WP - e**2)*(X_1m1 - X_1p1))*sqrt(1._WP - e**2)/e
+    associate (e => or_p%e)
+      G_1 = c*Y* &
+           (0.5_WP*(l+1)*(X_2m1 + X_2p1) + 0.5_WP*m*(X_2m1 - X_2p1) + &
+           0.5_WP*m/(1._WP - e**2)*(X_1m1 - X_1p1))*sqrt(1._WP - e**2)/e
+    end associate
 
     ! Finish
 
@@ -135,14 +201,14 @@ contains
   
   !****
 
-  function secular_G_2 (R_a, e, l, m, k) result (G_2)
+  function secular_G_2 (ml, or_p, l, m, k) result (G_2)
 
-    real(WP), intent(in) :: R_a
-    real(WP), intent(in) :: e
-    integer, intent(in)  :: l
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: G_2
+    class(model_t), pointer, intent(in) :: ml
+    type(orbit_par_t), intent(in)       :: or_p
+    integer, intent(in)                 :: l
+    integer, intent(in)                 :: m
+    integer, intent(in)                 :: k
+    real(WP)                            :: G_2
 
     real(WP) :: c
     real(WP) :: Y
@@ -152,16 +218,18 @@ contains
 
     ! Evaluate the secular evolution coefficient
 
-    c = tidal_c(R_a, e, l, m, k)
+    c = tidal_c(ml, or_p, l, m, k)
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
-    X_2m1 = hansen_X(e, -(l+2), -m-1, -k)
-    X_2p1 = hansen_X(e, -(l+2), -m+1, -k)
+    X_2m1 = hansen_X(or_p, -(l+2), -m-1, -k)
+    X_2p1 = hansen_X(or_p, -(l+2), -m+1, -k)
 
-    X_3 = hansen_X(e, -(l+3), -m, -k)
+    X_3 = hansen_X(or_p, -(l+3), -m, -k)
 
-    G_2 = -2._WP*c*Y* &
-         (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3)/sqrt(1._WP - e**2)
+    associate (e => or_p%e)
+      G_2 = -2._WP*c*Y* &
+           (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3)/sqrt(1._WP - e**2)
+    end associate
 
     ! Finish
 
@@ -171,14 +239,14 @@ contains
 
   !****
 
-  function secular_G_3 (R_a, e, l, m, k) result (G_3)
+  function secular_G_3 (ml, or_p, l, m, k) result (G_3)
 
-    real(WP), intent(in) :: R_a
-    real(WP), intent(in) :: e
-    integer, intent(in)  :: l
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: G_3
+    class(model_t), pointer, intent(in) :: ml
+    type(orbit_par_t), intent(in)       :: or_p
+    integer, intent(in)                 :: l
+    integer, intent(in)                 :: m
+    integer, intent(in)                 :: k
+    real(WP)                            :: G_3
 
     real(WP) :: c
     real(WP) :: Y
@@ -189,18 +257,20 @@ contains
 
     ! Evaluate the secular evolution coefficient
 
-    c = tidal_c(R_a, e, l, m, k)
+    c = tidal_c(ml, or_p, l, m, k)
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
-    X_1 = hansen_X(e, -(l+1), -m, -k)
+    X_1 = hansen_X(or_p, -(l+1), -m, -k)
 
-    X_2m1 = hansen_X(e, -(l+2), -m-1, -k)
-    X_2p1 = hansen_X(e, -(l+2), -m+1, -k)
+    X_2m1 = hansen_X(or_p, -(l+2), -m-1, -k)
+    X_2p1 = hansen_X(or_p, -(l+2), -m+1, -k)
 
-    X_3 = hansen_X(e, -(l+3), -m, -k)
+    X_3 = hansen_X(or_p, -(l+3), -m, -k)
 
-    G_3 = -c*Y* &
-         (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3 - m*X_1)*sqrt(1._WP - e**2)/e
+    associate (e => or_p%e)
+      G_3 = -c*Y* &
+           (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3 - m*X_1)*sqrt(1._WP - e**2)/e
+    end associate
 
     ! Finish
 
@@ -210,20 +280,22 @@ contains
 
   !****
 
-  function secular_G_4 (R_a, e, l, m, k) result (G_4)
+  function secular_G_4 (ml, or_p, l, m, k) result (G_4)
 
-    real(WP), intent(in) :: R_a
-    real(WP), intent(in) :: e
-    integer, intent(in)  :: l
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: G_4
+    class(model_t), pointer, intent(in) :: ml
+    type(orbit_par_t), intent(in)       :: or_p
+    integer, intent(in)                 :: l
+    integer, intent(in)                 :: m
+    integer, intent(in)                 :: k
+    real(WP)                            :: G_4
 
+    real(WP) :: R_a
     real(WP) :: c
 
     ! Evaluate the secular evolution coefficient
 
-    c = tidal_c(R_a, e, l, m, k)
+    R_a = tidal_R_a(ml, or_p)
+    c = tidal_c(ml, or_p, l, m, k)
 
     G_4 = m*(2*l+1)/(4*PI)*(R_a)**(-l+2)*c**2
 
@@ -235,38 +307,39 @@ contains
 
   !****
 
-  function hansen_X (e, n, m, k) result (X)
+  function hansen_X (or_p, n, m, k) result (X)
 
-    real(WP), intent(in) :: e
-    integer, intent(in)  :: n
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: X
+    type(orbit_par_t), intent(in) :: or_p
+    integer, intent(in)           :: n
+    integer, intent(in)           :: m
+    integer, intent(in)           :: k
+    real(WP)                      :: X
 
     real(WP) :: A
     real(WP) :: S
 
-    $ASSERT(e >= 0,Invalid e)
-    $ASSERT(e < 1,Invalid e)
-
     ! Evaluate the Hansen coefficient X_nmk
 
-    if (e**2 > EPSILON(0._WP)) then
+    associate (e => or_p%e)
 
-       A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
-       S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
+      if (e**2 > EPSILON(0._WP)) then
 
-       X = A*S*orbit_quad(hansen_X_f_, e, TOL)
+         A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
+         S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
 
-    else
+         X = A*S*orbit_quad(hansen_X_f_, e, TOL)
 
-       if (m == k) then
-          X = 1._WP
-       else
-          X = 0._WP
-       endif
+      else
 
-    endif
+         if (m == k) then
+            X = 1._WP
+         else
+            X = 0._WP
+         endif
+
+      endif
+
+    end associate
 
     ! Finish
 
@@ -295,38 +368,39 @@ contains
 
   !****
 
-  function hansen_X_QP (e, n, m, k) result (X)
+  function hansen_X_QP (or_p, n, m, k) result (X)
 
-    real(WP), intent(in) :: e
-    integer, intent(in)  :: n
-    integer, intent(in)  :: m
-    integer, intent(in)  :: k
-    real(WP)             :: X
+    type(orbit_par_t), intent(in) :: or_p
+    integer, intent(in)           :: n
+    integer, intent(in)           :: m
+    integer, intent(in)           :: k
+    real(WP)                      :: X
 
     real(WP) :: A
     real(WP) :: S
 
-    $ASSERT(e >= 0,Invalid e)
-    $ASSERT(e < 1,Invalid e)
-
     ! Evaluate the Hansen coefficient X_nmk
 
-    if (e**2 > EPSILON(0._WP)) then
+    associate (e => or_p%e)
 
-       A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
-       S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
+      if (e**2 > EPSILON(0._WP)) then
 
-       X = REAL(A*S*orbit_quad_QP(hansen_X_f_, REAL(e, QP), REAL(TOL, QP)), WP)
+         A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
+         S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
 
-    else
+         X = REAL(A*S*orbit_quad_QP(hansen_X_f_, REAL(e, QP), REAL(TOL, QP)), WP)
 
-       if (m == k) then
-          X = 1._WP
-       else
-          X = 0._WP
-       endif
+      else
 
-    endif
+         if (m == k) then
+            X = 1._WP
+         else
+            X = 0._WP
+         endif
+
+      endif
+
+    end associate
 
     ! Finish
 
@@ -558,4 +632,4 @@ contains
 
   end function orbit_quad_QP
 
-end module gyre_tide_util
+end module gyre_tidal_coeff

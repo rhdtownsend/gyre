@@ -1,7 +1,7 @@
 ! Module   : gyre_tide_par
 ! Purpose  : tidal parameters
 !
-! Copyright 2018-2020 Rich Townsend & The GYRE Team
+! Copyright 2018-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -30,15 +30,15 @@ module gyre_tide_par
   ! Derived-type definitions
 
   type :: tide_par_t
-     real(WP) :: omega_static = 0._WP
-     integer  :: l_ref = 0
-     integer  :: m_ref = 0
-     integer  :: l_max = 4
-     integer  :: m_min = -HUGE(0)
-     integer  :: m_max = HUGE(0)
-     integer  :: k_min = -20
-     integer  :: k_max = 20
-     logical  :: combine_k = .TRUE.
+     real(WP)      :: Psi_o_thresh = 0._WP
+     real(WP)      :: omega_c_thresh = 0._WP
+     integer       :: l_min = 2
+     integer       :: l_max = 4
+     integer       :: m_min = -HUGE(0)
+     integer       :: m_max = HUGE(0)
+     integer       :: k_min = -10
+     integer       :: k_max = 10
+     character(64) :: tag = ''
   end type tide_par_t
 
  ! Access specifiers
@@ -59,18 +59,17 @@ contains
 
     integer  :: n_td_p
     integer  :: i
-    real(WP) :: omega_static
-    integer  :: l_ref
-    integer  :: m_ref
+    real(WP) :: Psi_o_thresh
+    real(WP) :: omega_c_thresh
+    integer  :: l_min
     integer  :: l_max
     integer  :: m_min
     integer  :: m_max
     integer  :: k_min
     integer  :: k_max
-    logical  :: combine_k
 
-    namelist /tide/ omega_static, l_ref, m_ref, l_max, m_min, m_max, &
-         k_min, k_max, combine_k
+    namelist /tide/ Psi_o_thresh, omega_c_thresh, &
+         l_min, l_max, m_min, m_max, k_min, k_max
 
     ! Count the number of tide namelists
 
@@ -97,17 +96,15 @@ contains
 
        td_p(i) = tide_par_t()
 
-       omega_static = td_p(i)%omega_static
+       Psi_o_thresh = td_p(i)%Psi_o_thresh
+       omega_c_thresh = td_p(i)%omega_c_thresh
 
-       l_ref = td_p(i)%l_ref
-       m_ref = td_p(i)%m_ref
+       l_min = td_p(i)%l_min
        l_max = td_p(i)%l_max
        m_min = td_p(i)%m_min
        m_max = td_p(i)%m_max
        k_min = td_p(i)%k_min
        k_max = td_p(i)%k_max
-
-       combine_k = td_p(i)%combine_k
 
        ! Read the namelist
 
@@ -115,17 +112,15 @@ contains
 
        ! Store read values
 
-       td_p(i)%omega_static = omega_static
+       td_p(i)%Psi_o_thresh = Psi_o_thresh
+       td_p(i)%omega_c_thresh = omega_c_thresh
 
-       td_p(i)%l_ref = l_ref
-       td_p(i)%m_ref = m_ref
+       td_p(i)%l_min = l_min
        td_p(i)%l_max = l_max
        td_p(i)%m_min = m_min
        td_p(i)%m_max = m_max
        td_p(i)%k_min = k_min
        td_p(i)%k_max = k_max
-
-       td_p(i)%combine_k = combine_k
 
     end do read_loop
 

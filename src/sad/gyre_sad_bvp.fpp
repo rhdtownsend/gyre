@@ -65,7 +65,6 @@ module gyre_sad_bvp
   end interface sad_bvp_t
 
   interface wave_t
-     module procedure wave_t_hom_
      module procedure wave_t_inhom_
   end interface wave_t
 
@@ -130,8 +129,6 @@ contains
     call bp%tr%stencil(gr%pt)
 
     bp%md_p = md_p
-    bp%md_p%static = .TRUE.
-
     bp%nm_p = nm_p
     bp%os_p = os_p
 
@@ -140,42 +137,6 @@ contains
     return
 
   end function sad_bvp_t_
-
-  !****
-
-  function wave_t_hom_ (bp, st, id) result (wv)
-
-    class(sad_bvp_t), intent(inout) :: bp
-    type(r_state_t), intent(in)     :: st
-    integer, intent(in)             :: id
-    type(wave_t)                    :: wv
-
-    real(WP) :: y(2,bp%n)
-    integer  :: j
-
-    ! Calculate the solution vector
-
-    call bp%build(st)
-    call bp%factor()
-
-    y = bp%soln_vec_hom()
-
-    ! Convert to canonical form
-
-    !$OMP PARALLEL DO
-    do j = 1, bp%n
-       call bp%tr%trans_vars(y(:,j), j, st, from=.FALSE.)
-    end do
-
-    ! Construct the wave_t
-
-    wv = wave_t_y_(bp, st, y, id)
-
-    ! Finish
-
-    return
-
-  end function wave_t_hom_
 
   !****
 
@@ -247,7 +208,7 @@ contains
 
     discrim = c_ext_t(bp%det())
 
-    wv = wave_t(st_c, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id)
+    wv = wave_t(st_c, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, static=.TRUE.)
 
     ! Finish
 

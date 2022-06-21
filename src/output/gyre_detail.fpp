@@ -1,7 +1,7 @@
 ! Module   : gyre_detail
 ! Purpose  : detailed output
 !
-! Copyright 2020-2021 Rich Townsend & The GYRE Team
+! Copyright 2020-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -125,6 +125,9 @@ contains
        detail_file = subst(detail_file, '%p', wv%n_p, '(SP,I0)')
        detail_file = subst(detail_file, '%G', wv%n_g, '(SP,I6.5)')
        detail_file = subst(detail_file, '%g', wv%n_g, '(SP,I0)')
+    class is (resp_t)
+       detail_file = subst(detail_file, '%K', wv%k, '(SP,I3.2)')
+       detail_file = subst(detail_file, '%k', wv%k, '(SP,I0)')
     end select
 
     ! Open the file
@@ -349,12 +352,12 @@ contains
     $WRITE_POINTS(alpha_1,wv%alpha_1(j))
     $WRITE_POINTS(prop_type,wv%prop_type(j))
 
-    $WRITE_REF(xi_r_ref,wv%xi_r(wv%j_ref))
-    $WRITE_REF(xi_h_ref,wv%xi_h(wv%j_ref))
-    $WRITE_REF(eul_phi_ref,wv%eul_phi(wv%j_ref))
-    $WRITE_REF(deul_phi_ref,wv%deul_phi(wv%j_ref))
-    $WRITE_REF(lag_S_ref,wv%lag_S(wv%j_ref))
-    $WRITE_REF(lag_L_ref,wv%lag_L(wv%j_ref))
+    $WRITE_VALUE(xi_r_ref,wv%xi_r(wv%j_ref))
+    $WRITE_VALUE(xi_h_ref,wv%xi_h(wv%j_ref))
+    $WRITE_VALUE(eul_phi_ref,wv%eul_phi(wv%j_ref))
+    $WRITE_VALUE(deul_phi_ref,wv%deul_phi(wv%j_ref))
+    $WRITE_VALUE(lag_S_ref,wv%lag_S(wv%j_ref))
+    $WRITE_VALUE(lag_L_ref,wv%lag_L(wv%j_ref))
 
     case default
 
@@ -442,27 +445,21 @@ contains
 
     select case (item)
 
-    case ('Omega_orb')
-
-       call wr%write('Omega_orb', rs%or_p%Omega_orb)
-
     case ('k')
 
-       call wr%write('k', rs%fr_p%k)
+       call wr%write('k', rs%k)
 
-    case ('F')
+    $WRITE_POINTS(Psi,rs%Psi(j))
 
-       call wr%write('F', rs%F())
-
-    case ('J_dot')
-
-       call wr%write('J_dot', rs%J_dot())
-
-    $WRITE_POINTS(eul_psi,rs%eul_psi(j))
-    $WRITE_POINTS(phi_2,rs%phi_2(j))
-
-    $WRITE_REF(eul_psi_ref,rs%eul_psi(rs%j_ref))
-    $WRITE_REF(phi_2_ref,rs%phi_2(rs%j_ref))
+    $WRITE_VALUE(Omega_orb, rs%Omega_orb())
+    $WRITE_VALUE(R_a, rs%R_a())
+    $WRITE_VALUE(c, rs%c())
+    $WRITE_VALUE(Psi_o, rs%Psi_o())
+    $WRITE_VALUE(G_1, rs%G_1())
+    $WRITE_VALUE(G_2, rs%G_2())
+    $WRITE_VALUE(G_3, rs%G_3())
+    $WRITE_VALUE(G_4, rs%G_4())
+    $WRITE_VALUE(Psi_ref,rs%Psi(rs%j_ref))
 
     case default
 

@@ -45,7 +45,7 @@ module gyre_bracket_search
 
   ! Module variables
 
-  integer, save :: j_m = 0
+  integer, save :: id_m = 0
 
   ! Access specifiers
 
@@ -131,13 +131,13 @@ contains
 
        ! Construct the mode_t
 
-       j_m = j_m + 1
+       id_m = id_m + 1
 
        select type (bp)
        type is (ad_bvp_t)
-          wv = wave_t(bp, r_state_t(real(x_root)), j_m)
+          wv = wave_t(bp, r_state_t(real(x_root)), id_m)
        type is (rad_bvp_t)
-          wv = wave_t(bp, r_state_t(real(x_root)), j_m)
+          wv = wave_t(bp, r_state_t(real(x_root)), id_m)
        class default
           $ABORT(Invalid bp class)
        end select

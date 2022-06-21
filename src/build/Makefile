@@ -6,7 +6,7 @@
 TARGETS=gyre poly_to_fgong poly_to_txt eval_lambda
 
 ifeq ($(TIDES),yes)
-  TARGETS:=${TARGETS} gyre_force gyre_response gyre_orbit
+  TARGETS:=${TARGETS} gyre_tides
 endif
 
 ODEPACK=$(shell which odepack_link > /dev/null 2>& 1 && echo "yes" || echo "no")

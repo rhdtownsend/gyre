@@ -69,7 +69,7 @@ module gyre_wave
      integer, public          :: j_ref
      integer, public          :: l
      integer, public          :: m
-     integer, public          :: k
+     logical, public          :: static
      integer, public          :: id
    contains
      private
@@ -156,18 +156,19 @@ module gyre_wave
 
 contains
 
-  function wave_t_ (st, y_c, discrim, cx, gr, md_p, nm_p, os_p, id) result (wv)
+  function wave_t_ (st, y_c, discrim, cx, gr, md_p, nm_p, os_p, id, static) result (wv)
 
-    type(c_state_t), intent(in)  :: st
-    complex(WP), intent(in)      :: y_c(:,:)
-    type(c_ext_t), intent(in)    :: discrim
-    type(context_t), intent(in)  :: cx
-    type(grid_t), intent(in)     :: gr
-    type(mode_par_t), intent(in) :: md_p
-    type(num_par_t), intent(in)  :: nm_p
-    type(osc_par_t), intent(in)  :: os_p
-    integer, intent(in)          :: id
-    type(wave_t)                 :: wv
+    type(c_state_t), intent(in)   :: st
+    complex(WP), intent(in)       :: y_c(:,:)
+    type(c_ext_t), intent(in)     :: discrim
+    type(context_t), intent(in)   :: cx
+    type(grid_t), intent(in)      :: gr
+    type(mode_par_t), intent(in)  :: md_p
+    type(num_par_t), intent(in)   :: nm_p
+    type(osc_par_t), intent(in)   :: os_p
+    integer, intent(in)           :: id
+    logical, intent(in), optional :: static
+    type(wave_t)                  :: wv
 
     real(WP) :: x_ref
 
@@ -200,9 +201,14 @@ contains
 
     wv%l = md_p%l
     wv%m = md_p%m
-    wv%k = md_p%k
     
     wv%id = id
+
+    if (PRESENT(static)) then
+       wv%static = static
+    else
+       wv%static = .FALSE.
+    end if
 
     ! Locate the reference point
 
@@ -435,9 +441,9 @@ contains
 
          Omega_rot = this%cx%Omega_rot(pt)
 
-         if (this%md_p%static) then
+         if (this%static) then
 
-            ! Static modes require a slightly different approach to
+            ! Static cases require a slightly different approach to
             ! evaluate xi_h, since (y_2+y_3)/(c_1*omega_c**2) = 0/0 is
             ! undefined. Instead, use the continuity equation under
             ! the assumption of incompressibility
@@ -2039,6 +2045,7 @@ contains
 
     logical  :: use_cache_
     integer  :: j
+    real(WP) :: x(this%n)
     real(WP) :: dE_dx(this%n)
 
     ! Calculate the inertia, in units of M_star R_star**2
@@ -2057,10 +2064,11 @@ contains
 
        !$OMP PARALLEL DO
        do j = 1, this%n
+          x(j) = this%gr%pt(j)%x
           dE_dx(j) = this%dE_dx(j)
        end do
 
-       E = integrate(this%gr%pt%x, dE_dx)
+       E = integrate(x, dE_dx)
 
     end if
 

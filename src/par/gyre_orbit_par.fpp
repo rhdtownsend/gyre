@@ -1,7 +1,7 @@
 ! Module   : gyre_orbit_par
 ! Purpose  : orbit parameters
 !
-! Copyright 2018-2020 Rich Townsend & The GYRE Team
+! Copyright 2018-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -35,8 +35,6 @@ module gyre_orbit_par
      real(WP)        :: q = 1._WP
      real(WP)        :: e = 0.5_WP
      real(WP)        :: t_0 = 0._WP
-     real(WP)        :: sync_fraction = 0._WP
-     logical         :: sync_rot = .FALSE.
      character(64)   :: Omega_orb_units = 'NONE'
      character(2048) :: tag_list = ''
   end type orbit_par_t
@@ -63,13 +61,10 @@ contains
     real(WP)                             :: q
     real(WP)                             :: e
     real(WP)                             :: t_0
-    real(WP)                             :: sync_fraction
-    logical                              :: sync_rot
     character(LEN(or_p%Omega_orb_units)) :: Omega_orb_units
     character(LEN(or_p%tag_list))        :: tag_list
 
-    namelist /orbit/ Omega_orb, q, e, t_0, sync_fraction, sync_rot, &
-         Omega_orb_units, tag_list
+    namelist /orbit/ Omega_orb, q, e, t_0, Omega_orb_units, tag_list
 
     ! Count the number of orbit namelists
 
@@ -100,9 +95,6 @@ contains
        q = or_p(i)%q
        e = or_p(i)%e
        t_0 = or_p(i)%t_0
-       sync_fraction = or_p(i)%sync_fraction
-
-       sync_rot = or_p(i)%sync_rot
 
        Omega_orb_units = or_p(i)%Omega_orb_units
        tag_list = or_p(i)%tag_list
@@ -117,9 +109,6 @@ contains
        or_p(i)%q = q
        or_p(i)%e = e
        or_p(i)%t_0 = t_0
-       or_p(i)%sync_fraction = sync_fraction
-
-       or_p(i)%sync_rot = sync_rot
 
        or_p(i)%Omega_orb_units = Omega_orb_units
        or_p(i)%tag_list = tag_list

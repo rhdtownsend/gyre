@@ -27,12 +27,12 @@ case ($str($NAME))
 
 $endsub
 
-$define $WRITE_REF $sub
+$define $WRITE_VALUE $sub
 $local $NAME $1
-$local $FUNC $2
+$local $VALUE $2
 
 case ($str($NAME))
 
-   call wr%write($str($NAME), $FUNC)
+   call wr%write($str($NAME), $VALUE)
 
 $endsub

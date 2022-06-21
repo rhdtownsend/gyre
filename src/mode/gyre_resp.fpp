@@ -1,5 +1,5 @@
 ! Module   : gyre_resp
-! Purpose  : force-oscillation response data
+! Purpose  : response data for a single tidal component
 !
 ! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
@@ -25,11 +25,11 @@ module gyre_resp
   use core_kinds
   use core_memory
 
-  use gyre_force_par
-  use gyre_force_util
+  use gyre_context
+  use gyre_model
   use gyre_orbit_par
-  use gyre_point
-  use gyre_tide_util
+  use gyre_tidal_coeff
+  use gyre_tide_par
   use gyre_wave
 
   use ISO_FORTRAN_ENV
@@ -42,15 +42,21 @@ module gyre_resp
 
   type, extends (wave_t) :: resp_t
      private
-     type(force_par_t), public :: fr_p
      type(orbit_par_t), public :: or_p
+     type(tide_par_t), public  :: td_p
+     integer, public           :: k
    contains
      private
-     procedure, public :: eul_phi
-     procedure, public :: eul_psi
-     procedure, public :: phi_2
-     procedure, public :: F
-     procedure, public :: J_dot
+     procedure, public :: Omega_orb
+     procedure, public :: R_a
+     procedure, public :: c
+     procedure, public :: Psi_o
+     procedure, public :: G_1
+     procedure, public :: G_2
+     procedure, public :: G_3
+     procedure, public :: G_4
+     procedure, public :: eul_Phi
+     procedure, public :: Psi
   end type resp_t
 
   ! Interfaces
@@ -74,29 +80,217 @@ module gyre_resp
 
 contains
 
-  function resp_t_ (wv, fr_p, or_p) result (rs)
+  function resp_t_ (wv, or_p, td_p, k) result (rs)
 
-     type(wave_t), intent(in)      :: wv
-     type(force_par_t), intent(in) :: fr_p
-     type(orbit_par_t), intent(in) :: or_p
-     type(resp_t)                  :: rs
+    type(wave_t), intent(in)      :: wv
+    type(orbit_par_t), intent(in) :: or_p
+    type(tide_par_t), intent(in)  :: td_p
+    integer, intent(in)           :: k
+    type(resp_t)                  :: rs
 
-     ! Construct the resp_t
+    ! Construct the resp_t
 
-     rs%wave_t = wv
+    rs%wave_t = wv
 
-     rs%fr_p = fr_p
-     rs%or_p = or_p
-     
-     ! Finish
+    rs%or_p = or_p
+    rs%td_p = td_p
 
-     return
+    rs%k = k
+
+    ! Finish
+
+    return
 
   end function resp_t_
 
   !****
 
-  function eul_phi (this, j)
+  function Omega_orb (this)
+
+    class(resp_t), intent(in) :: this
+    real(WP)                  :: Omega_orb
+
+    type(context_t) :: cx
+
+    ! Evaluate the dimensionless orbital frequency
+
+    cx = this%context()
+
+    associate (ml => cx%model())
+      Omega_orb = tidal_Omega_orb(ml, this%or_p)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function Omega_orb
+
+  !****
+
+  function R_a (this)
+
+    class(resp_t), intent(in) :: this
+    real(WP)                  :: R_a
+
+    type(context_t) :: cx
+
+    ! Evaluate the ratio of the stellar radius to the semi-major axis
+
+    cx = this%context()
+
+    associate (ml => cx%model())
+      R_a = tidal_R_a(ml, this%or_p)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function R_a
+
+  !****
+
+  function c (this)
+
+    class(resp_t), intent(in) :: this
+    real(WP)                  :: c
+
+    type(context_t) :: cx
+
+    ! Evaluate the tidal potential coefficient
+
+    cx = this%context()
+
+    associate (ml => cx%model())
+      c = tidal_c(ml, this%or_p, this%l, this%m, this%k)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function c
+
+  !****
+
+  function Psi_o (this)
+
+    class(resp_t), intent(in) :: this
+    real(WP)                  :: Psi_o
+
+    type(context_t) :: cx
+
+    ! Evaluate the Eulerian secondary gravitational potential
+    ! perturbation at the outer boundary, in units of G M_star / R_star
+
+    cx = this%context()
+
+    associate (ml => cx%model())
+      Psi_o = tidal_Psi_o(ml, this%or_p, this%l, this%m, this%k)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function Psi_o
+
+  !****
+
+  function G_1 (this)
+
+    class(resp_t), intent(in) :: this
+    real(WP)                  :: G_1
+
+    type(context_t) :: cx
+
+    ! Evaluate the secular evolution coefficient
+
+    cx = this%context()
+
+    associate (ml => cx%model())
+      G_1 = secular_G_1(ml, this%or_p, this%l, this%m, this%k)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function G_1
+
+  !****
+
+  function G_2 (this)
+
+    class(resp_t), intent(in) :: this
+    real(WP)                  :: G_2
+
+    type(context_t) :: cx
+
+    ! Evaluate the secular evolution coefficient
+
+    cx = this%context()
+
+    associate (ml => cx%model())
+      G_2 = secular_G_1(ml, this%or_p, this%l, this%m, this%k)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function G_2
+
+  !****
+
+  function G_3 (this)
+
+    class(resp_t), intent(in) :: this
+    real(WP)                  :: G_3
+
+    type(context_t) :: cx
+
+    ! Evaluate the secular evolution coefficient
+
+    cx = this%context()
+
+    associate (ml => cx%model())
+      G_3 = secular_G_1(ml, this%or_p, this%l, this%m, this%k)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function G_3
+
+  !****
+
+  function G_4 (this)
+
+    class(resp_t), intent(in) :: this
+    real(WP)                  :: G_4
+
+    type(context_t) :: cx
+
+    ! Evaluate the secular evolution coefficient
+
+    cx = this%context()
+
+    associate (ml => cx%model())
+      G_4 = secular_G_1(ml, this%or_p, this%l, this%m, this%k)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function G_4
+
+  !****
+
+  function eul_Phi (this, j)
 
      class(resp_t), intent(in) :: this
      integer, intent(in)       :: j
@@ -105,112 +299,36 @@ contains
      ! Evaluate the Eulerian self gravitational potential
      ! perturbation, in units of G M_star / R_star
 
-     eul_phi = this%eul_psi(j) - this%phi_2(j)
+     eul_phi = this%wave_t%eul_Phi(j) - this%Psi(j)
 
      ! Finish
 
      return
 
-  end function eul_phi
+  end function eul_Phi
 
   !****
 
-  function eul_psi (this, j)
+  function Psi (this, j)
 
      class(resp_t), intent(in) :: this
      integer, intent(in)       :: j
-     complex(WP)               :: eul_psi
+     complex(WP)               :: Psi
 
-     ! Evaluate the Eulerian total gravitational potential
-     ! perturbation, in units of G M_star / R_star
-
-     eul_psi = this%wave_t%eul_phi(j)
-
-     ! Finish
-
-     return
-
-  end function eul_psi
-
-  !****
-
-  function phi_2 (this, j)
-
-     class(resp_t), intent(in) :: this
-     integer, intent(in)       :: j
-     complex(WP)               :: phi_2
+     real(WP) :: x
 
      ! Evaluate the Eulerian secondary gravitational potential
      ! perturbation, in units of G M_star / R_star
 
-     associate ( &
-          md_p => this%md_p, &
-          fr_p => this%fr_p, &
-          or_p => this%or_p)
+     x = this%x(j)
 
-       phi_2 = Phi_force(md_p, fr_p, or_p)!*(r/R)**l !XXXXX FIX ME XXXXX
-
-     end associate
+     Psi = this%Psi_o()*x**this%l
 
      ! Finish
 
      return
 
-  end function phi_2
-
-  !****
-
-  function F (this)
-
-     class(resp_t), intent(in) :: this
-     complex(WP)               :: F
-
-     ! Evaluate the surface response function
-
-     F = 0.5*this%eul_phi(this%n)/Phi_force(this%md_p, this%fr_p, this%or_p)
-
-     ! Finish
-
-     return
-
-  end function F
-
-  !****
-
-  function J_dot (this)
-
-     class(resp_t), intent(in) :: this
-     complex(WP)               :: J_dot
-
-     real(WP) :: R_a
-     real(WP) :: G_4
-     real(WP) :: x
-
-     ! Evaluate the external torque, in units of G*M_star**2/R_star
-
-     associate ( &
-          Omega_orb => this%or_p%Omega_orb, &
-          q => this%or_p%q, &
-          e => this%or_p%e, &
-          l => this%md_p%l, &
-          m => this%md_p%m, &
-          k => this%fr_p%k)
-
-       R_a = tidal_R_a(Omega_orb, q)
-
-       G_4 = secular_G_4(R_a, e, l, m, k)
-
-       x = this%x(this%n)
-
-       J_dot = -2._WP*CMPLX(0._WP, 1._WP, KIND=WP)*q**2*(R_a)**(l+4)*x**(l+1)*G_4*this%F()
-
-     end associate
-
-     ! Finish
-
-     return
-
-  end function J_dot
+  end function Psi
 
   !****
 

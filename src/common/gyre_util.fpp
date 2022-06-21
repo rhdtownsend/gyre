@@ -27,7 +27,6 @@ module gyre_util
   use core_string
 
   use gyre_constants
-  use gyre_force_par
   use gyre_grid_par
   use gyre_math
   use gyre_mode_par
@@ -50,14 +49,12 @@ module gyre_util
   ! Interfaces
 
   interface select_par
-     module procedure select_par_fr_1_
      module procedure select_par_gr_1_
      module procedure select_par_nm_1_
      module procedure select_par_or_1_
      module procedure select_par_os_1_
      module procedure select_par_rt_1_
      module procedure select_par_sc_1_
-     module procedure select_par_fr_v_
      module procedure select_par_gr_v_
      module procedure select_par_nm_v_
      module procedure select_par_or_v_
@@ -233,7 +230,6 @@ contains
 
   $endsub
 
-  $SELECT_PAR_1(fr,force_par_t)
   $SELECT_PAR_1(gr,grid_par_t)
   $SELECT_PAR_1(nm,num_par_t)
   $SELECT_PAR_1(or,orbit_par_t)
@@ -291,7 +287,6 @@ contains
 
   $endsub
 
-  $SELECT_PAR_V(fr,tag,force_par_t,&force)
   $SELECT_PAR_V(gr,tag,grid_par_t,&grid)
   $SELECT_PAR_V(nm,tag,num_par_t,&num)
   $SELECT_PAR_V(or,tag,orbit_par_t,&orbit)

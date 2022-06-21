@@ -1,7 +1,7 @@
 ! Module   : gyre_prox_search
 ! Purpose  : mode searching (complex, proximity)
 !
-! Copyright 2013-2021 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -59,11 +59,11 @@ module gyre_prox_search
 
 contains
 
-  subroutine prox_search_1_ (bp, omega_in, j_in, omega_min, omega_max, nm_p, process_mode)
+  subroutine prox_search_1_ (bp, omega_in, id_in, omega_min, omega_max, nm_p, process_mode)
 
     class(c_bvp_t), target, intent(inout) :: bp
     complex(WP), intent(in)               :: omega_in(:)
-    integer, intent(in)                   :: j_in(:)
+    integer, intent(in)                   :: id_in(:)
     real(WP), intent(in)                  :: omega_min
     real(WP), intent(in)                  :: omega_max
     type(num_par_t), intent(in)           :: nm_p
@@ -84,7 +84,7 @@ contains
     complex(WP)              :: domega
     integer                  :: i
 
-    $CHECK_BOUNDS(SIZE(j_in),SIZE(omega_in))
+    $CHECK_BOUNDS(SIZE(id_in),SIZE(omega_in))
 
     ! Convert initial frequencies into pairs
 
@@ -104,7 +104,7 @@ contains
 
     ! Search for modes
     
-    call prox_search_2_(bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, nm_p, process_mode)
+    call prox_search_2_(bp, omega_in_a, omega_in_b, id_in, omega_min, omega_max, nm_p, process_mode)
 
     ! Finish
 
@@ -114,12 +114,12 @@ contains
 
   !****
 
-  subroutine prox_search_2_ (bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, nm_p, process_mode)
+  subroutine prox_search_2_ (bp, omega_in_a, omega_in_b, id_in, omega_min, omega_max, nm_p, process_mode)
 
     class(c_bvp_t), intent(inout) :: bp
     complex(WP), intent(in)       :: omega_in_a(:)
     complex(WP), intent(in)       :: omega_in_b(:)
-    integer, intent(in)           :: j_in(:)
+    integer, intent(in)           :: id_in(:)
     real(WP), intent(in)          :: omega_min
     real(WP), intent(in)          :: omega_max
     type(num_par_t), intent(in)   :: nm_p
@@ -155,7 +155,7 @@ contains
     type(mode_t)             :: md
     type(r_ext_t)            :: chi
 
-    $CHECK_BOUNDS(SIZE(j_in),SIZE(omega_in_a))
+    $CHECK_BOUNDS(SIZE(id_in),SIZE(omega_in_a))
     $CHECK_BOUNDS(SIZE(omega_in_b),SIZE(omega_in_a))
 
     ! Initialize the frequency deflation array
@@ -243,9 +243,9 @@ contains
 
        select type (bp)
        type is (nad_bvp_t)
-          wv = wave_t(bp, c_state_t(cmplx(z_root), omega_r=omega_r), j_in(i))
+          wv = wave_t(bp, c_state_t(cmplx(z_root), omega_r=omega_r), id_in(i))
        type is (tnad_bvp_t)
-          wv = wave_t(bp, c_state_t(cmplx(z_root), omega_r=omega_r), j_in(i))
+          wv = wave_t(bp, c_state_t(cmplx(z_root), omega_r=omega_r), id_in(i))
        class default
           $ABORT(Invalid bp class)
        end select

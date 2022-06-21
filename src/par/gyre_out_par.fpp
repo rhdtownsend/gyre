@@ -1,7 +1,7 @@
 ! Module   : gyre_out_par
 ! Purpose  : output parameters
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -91,7 +91,10 @@ contains
                           detail_template, detail_file_format, detail_item_list, detail_filter_list, &
                           contour_template, contour_paths, label
 
-    namelist /tide_output/ summary_file
+    namelist /tides_output/ freq_units, freq_frame, &
+                            summary_file, summary_file_format, summary_item_list, summary_filter_list, &
+                            detail_template, detail_file_format, detail_item_list, detail_filter_list, &
+                            label
 
     ! Count the number of output namelists
 
@@ -105,8 +108,8 @@ contains
           read(unit, NML=ad_output, END=100)
        case ('nad')
           read(unit, NML=nad_output, END=100)
-       case ('tide')
-          read(unit, NML=tide_output, END=100)
+       case ('tides')
+          read(unit, NML=tides_output, END=100)
        case default
           $ABORT(Invalid stage)
        end select
@@ -146,8 +149,8 @@ contains
        read(unit, NML=ad_output)
     case ('nad')
        read(unit, NML=nad_output)
-    case ('tide')
-       read(unit, NML=tide_output)
+    case ('tides')
+       read(unit, NML=tides_output)
     case default
        $ABORT(Invalid stage)
     end select
