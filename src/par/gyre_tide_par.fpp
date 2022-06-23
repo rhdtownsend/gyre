@@ -57,19 +57,20 @@ contains
     integer, intent(in)                        :: unit
     type(tide_par_t), allocatable, intent(out) :: td_p(:)
 
-    integer  :: n_td_p
-    integer  :: i
-    real(WP) :: Psi_o_thresh
-    real(WP) :: omega_c_thresh
-    integer  :: l_min
-    integer  :: l_max
-    integer  :: m_min
-    integer  :: m_max
-    integer  :: k_min
-    integer  :: k_max
+    integer                  :: n_td_p
+    integer                  :: i
+    real(WP)                 :: Psi_o_thresh
+    real(WP)                 :: omega_c_thresh
+    integer                  :: l_min
+    integer                  :: l_max
+    integer                  :: m_min
+    integer                  :: m_max
+    integer                  :: k_min
+    integer                  :: k_max
+    character(LEN(td_p%tag)) :: tag
 
     namelist /tide/ Psi_o_thresh, omega_c_thresh, &
-         l_min, l_max, m_min, m_max, k_min, k_max
+         l_min, l_max, m_min, m_max, k_min, k_max, tag
 
     ! Count the number of tide namelists
 
@@ -106,6 +107,8 @@ contains
        k_min = td_p(i)%k_min
        k_max = td_p(i)%k_max
 
+       tag = td_p(i)%tag
+
        ! Read the namelist
 
        read(unit, NML=tide)
@@ -121,6 +124,8 @@ contains
        td_p(i)%m_max = m_max
        td_p(i)%k_min = k_min
        td_p(i)%k_max = k_max
+
+       td_p(i)%tag = tag
 
     end do read_loop
 
