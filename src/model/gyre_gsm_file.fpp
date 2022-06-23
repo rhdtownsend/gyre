@@ -239,7 +239,7 @@ contains
 110    format(3X,A,1X,A)
     endif
 
-    hg = hgroup_t(file, OPEN_FILE)
+    hg = hgroup_t(file, OPEN_FILE_RO)
 
     ! Read the header and determine the version
 

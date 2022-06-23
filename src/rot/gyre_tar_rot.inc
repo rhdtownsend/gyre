@@ -1,7 +1,7 @@
 ! Incfile  : gyre_tar_rot
 ! Purpose  : rotational effects (traditional approximation of rotation, template)
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -95,7 +95,7 @@ contains
     write(filename, 100) md_p%m, k
 100 format(SP,'tar_fit.m',I0,'.k',I0,'.h5')
 
-    hg = hgroup_t(TRIM(GYRE_DIR)//'/data/tar/'//TRIM(filename), OPEN_FILE)
+    hg = hgroup_t(TRIM(GYRE_DIR)//'/data/tar/'//TRIM(filename), OPEN_FILE_RO)
     call read(hg, rt%tf)
     call hg%final()
 

@@ -1,7 +1,7 @@
 ! Module   : gyre_b3_file
 ! Purpose  : read B3 files
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -101,7 +101,7 @@ contains
 100    format(A,1X,A)
     endif
 
-    hg = hgroup_t(ml_p%file, OPEN_FILE)
+    hg = hgroup_t(ml_p%file, OPEN_FILE_RO)
 
     ! Read the header
 

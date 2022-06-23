@@ -42,7 +42,8 @@ module core_hgroup
   ! Parameters
 
   integer, parameter :: CREATE_FILE = 1
-  integer, parameter :: OPEN_FILE = 2
+  integer, parameter :: OPEN_FILE_RO = 2
+  integer, parameter :: OPEN_FILE_RW = 3
 
   ! Derived-type definitions
 
@@ -343,7 +344,8 @@ module core_hgroup
   private
 
   public :: CREATE_FILE
-  public :: OPEN_FILE
+  public :: OPEN_FILE_RO
+  public :: OPEN_FILE_RW
   public :: hgroup_t
   public :: read_attr
   public :: read_dset
@@ -384,7 +386,9 @@ contains
     select case(access_type)
     case(CREATE_FILE)
        $HDF5_CALL(h5fcreate_f, file_name, H5F_ACC_TRUNC_F, file_id)
-    case(OPEN_FILE)
+    case(OPEN_FILE_RO)
+       $HDF5_CALL(h5fopen_f, file_name, H5F_ACC_RDONLY_F, file_id)
+    case(OPEN_FILE_RW)
        $HDF5_CALL(h5fopen_f, file_name, H5F_ACC_RDWR_F, file_id)
     case default
        $ABORT(Invalid access_type)

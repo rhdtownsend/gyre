@@ -1,7 +1,7 @@
 ! Module   : gyre_poly_file
 ! Purpose  : read POLY files
 !
-! Copyright 2013-2020 Rich Townsend & The MESA Team
+! Copyright 2013-2022 Rich Townsend & The MESA Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -68,7 +68,7 @@ contains
 100    format(A,1X,A)
     endif
 
-    hg = hgroup_t(ml_p%file, OPEN_FILE)
+    hg = hgroup_t(ml_p%file, OPEN_FILE_RO)
 
     call read_attr(hg, 'n_r', n_r)
 
