@@ -43,6 +43,7 @@ program gyre_tides
   use gyre_search
   use gyre_summary
   use gyre_tide_par
+  use gyre_tidal_coeff
   use gyre_tidal_resp
   use gyre_util
   use gyre_version
@@ -149,21 +150,6 @@ program gyre_tides
 
   td_p_loop : do i = 1, SIZE(td_p)
 
-     if (check_log_level('INFO')) then
-
-        write(OUTPUT_UNIT, 100) form_header('Response Evaluation', '-')
-
-        write(OUTPUT_UNIT, 100) 'Expansion parameters'
-
-        write(OUTPUT_UNIT, 130) 'l_[min,max] :', td_p(i)%l_min, td_p(i)%l_max
-        write(OUTPUT_UNIT, 130) 'm_[min,max] :', MAX(-td_p(i)%l_max, td_p(i)%m_min), MIN(td_p(i)%l_max, td_p(i)%m_max)
-        write(OUTPUT_UNIT, 130) 'k_[min,max] :', td_p(i)%k_min, td_p(i)%k_max
-130     format(3X,A,1X,I0,1X,I0)
-
-        write(OUTPUT_UNIT, *)
-
-     endif
-
      ! Select parameters according to tags
 
      call select_par(os_p, td_p(i)%tag, os_p_sel)
@@ -171,6 +157,31 @@ program gyre_tides
      call select_par(nm_p, td_p(i)%tag, nm_p_sel)
      call select_par(gr_p, td_p(i)%tag, gr_p_sel)
      call select_par(or_p, td_p(i)%tag, or_p_sel)
+
+     if (check_log_level('INFO')) then
+
+        write(OUTPUT_UNIT, 100) form_header('Response Evaluation', '-')
+
+        write(OUTPUT_UNIT, 100) 'Orbit parameters'
+
+        write(OUTPUT_UNIT, 130) 'Omega_orb :', tidal_Omega_orb(ml, or_p_sel)
+        write(OUTPUT_UNIT, 135) 'q         :', or_p_sel%q
+        write(OUTPUT_UNIT, 135) 'e         :', or_p_sel%e
+130     format(3X,A,1X,E11.4)
+135     format(3X,A,1X,F5.3)
+
+        write(OUTPUT_UNIT, *)
+
+        write(OUTPUT_UNIT, 100) 'Expansion parameters'
+
+        write(OUTPUT_UNIT, 140) 'l_[min,max] :', td_p(i)%l_min, td_p(i)%l_max
+        write(OUTPUT_UNIT, 140) 'm_[min,max] :', MAX(-td_p(i)%l_max, td_p(i)%m_min), MIN(td_p(i)%l_max, td_p(i)%m_max)
+        write(OUTPUT_UNIT, 140) 'k_[min,max] :', td_p(i)%k_min, td_p(i)%k_max
+140     format(3X,A,1X,I0,1X,I0)
+
+        write(OUTPUT_UNIT, *)
+
+     endif
 
      ! Solve for the partial tidal responses
 
