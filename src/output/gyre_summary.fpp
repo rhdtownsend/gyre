@@ -464,6 +464,8 @@ contains
     $CACHE_VALUE(k,rs%k)
 
     $CACHE_VALUE(Omega_orb, rs%Omega_orb())
+    $CACHE_VALUE(q, rs%or_p%q)
+    $CACHE_VALUE(e, rs%or_p%e)
     $CACHE_VALUE(R_a, rs%R_a())
     $CACHE_VALUE(c, rs%c())
     $CACHE_VALUE(Psi_o, rs%Psi_o())

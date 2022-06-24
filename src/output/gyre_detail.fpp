@@ -452,6 +452,8 @@ contains
     $WRITE_POINTS(Psi,rs%Psi(j))
 
     $WRITE_VALUE(Omega_orb, rs%Omega_orb())
+    $WRITE_VALUE(q, rs%or_p%q)
+    $WRITE_VALUE(e, rs%or_p%e)
     $WRITE_VALUE(R_a, rs%R_a())
     $WRITE_VALUE(c, rs%c())
     $WRITE_VALUE(Psi_o, rs%Psi_o())
