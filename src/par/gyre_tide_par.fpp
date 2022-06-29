@@ -30,7 +30,7 @@ module gyre_tide_par
   ! Derived-type definitions
 
   type :: tide_par_t
-     real(WP)      :: Psi_o_thresh = 0._WP
+     real(WP)      :: Phi_T_thresh = 0._WP
      real(WP)      :: omega_c_thresh = 0._WP
      integer       :: l_min = 2
      integer       :: l_max = 4
@@ -59,7 +59,7 @@ contains
 
     integer                  :: n_td_p
     integer                  :: i
-    real(WP)                 :: Psi_o_thresh
+    real(WP)                 :: Phi_T_thresh
     real(WP)                 :: omega_c_thresh
     integer                  :: l_min
     integer                  :: l_max
@@ -69,7 +69,7 @@ contains
     integer                  :: k_max
     character(LEN(td_p%tag)) :: tag
 
-    namelist /tide/ Psi_o_thresh, omega_c_thresh, &
+    namelist /tide/ Phi_T_thresh, omega_c_thresh, &
          l_min, l_max, m_min, m_max, k_min, k_max, tag
 
     ! Count the number of tide namelists
@@ -97,7 +97,7 @@ contains
 
        td_p(i) = tide_par_t()
 
-       Psi_o_thresh = td_p(i)%Psi_o_thresh
+       Phi_T_thresh = td_p(i)%Phi_T_thresh
        omega_c_thresh = td_p(i)%omega_c_thresh
 
        l_min = td_p(i)%l_min
@@ -115,7 +115,7 @@ contains
 
        ! Store read values
 
-       td_p(i)%Psi_o_thresh = Psi_o_thresh
+       td_p(i)%Phi_T_thresh = Phi_T_thresh
        td_p(i)%omega_c_thresh = omega_c_thresh
 
        td_p(i)%l_min = l_min

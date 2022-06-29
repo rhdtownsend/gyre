@@ -26,6 +26,7 @@ module gyre_tidal_coeff
   use gyre_constants
   use gyre_freq
   use gyre_func
+  use gyre_grid
   use gyre_math
   use gyre_model
   use gyre_orbit_par
@@ -45,10 +46,10 @@ module gyre_tidal_coeff
 
   private
 
+  public :: tidal_Phi_T
   public :: tidal_Omega_orb
   public :: tidal_R_a
   public :: tidal_c
-  public :: tidal_Psi_o
   public :: secular_G_1
   public :: secular_G_2
   public :: secular_G_3
@@ -59,6 +60,37 @@ module gyre_tidal_coeff
   ! Procedures
 
 contains
+
+  function tidal_Phi_T (ml, or_p, x, l, m, k) result (Phi_T)
+
+    class(model_t), pointer, intent(in) :: ml
+    type(orbit_par_t), intent(in)       :: or_p
+    real(WP), intent(in)                :: x
+    integer, intent(in)                 :: l
+    integer, intent(in)                 :: m
+    integer, intent(in)                 :: k
+    real(WP)                            :: Phi_T
+
+    real(WP) :: R_a
+    real(WP) :: eps_T
+    real(WP) :: c
+
+    ! Evaluate the tidal forcing potential Phi_T at x, in units of G*M/R
+
+    R_a = tidal_R_a(ml, or_p)
+    eps_T = R_a**3*or_p%q
+
+    c = tidal_c(ml, or_p, l, m, k)
+
+    Phi_T = -eps_T/sqrt(4._WP*PI)*c*x**l
+
+    ! Finish
+
+    return
+
+  end function tidal_Phi_T
+
+  !****
 
   function tidal_Omega_orb (ml, or_p) result (Omega_orb)
 
@@ -126,37 +158,6 @@ contains
     return
 
   end function tidal_c
-
-  !****
-
-  function tidal_Psi_o (ml, or_p, l, m, k) result (Psi_o)
-
-    class(model_t), pointer, intent(in) :: ml
-    type(orbit_par_t), intent(in)       :: or_p
-    integer, intent(in)                 :: l
-    integer, intent(in)                 :: m
-    integer, intent(in)                 :: k
-    real(WP)                            :: Psi_o
-
-    real(WP) :: R_a
-    real(WP) :: eps_tide
-    real(WP) :: c
-
-    ! Evaluate the surface forcing potential (at x=1), in units of
-    ! G*M/R
-
-    R_a = tidal_R_a(ml, or_p)
-    eps_tide = R_a**3*or_p%q
-
-    c = tidal_c(ml, or_p, l, m, k)
-
-    Psi_o = -eps_tide/sqrt(4._WP*PI)*c
-
-    ! Finish
-
-    return
-
-  end function tidal_Psi_o
 
   !****
 
@@ -480,7 +481,8 @@ contains
 
        S = 0._WP
 
-       !$OMP PARALLEL DO REDUCTION(+:S) PRIVATE(ua,Ea,Ma) SCHEDULE(static, 4)
+       ! Parallelization disabled for now to give reproducible results
+       ! !$OMP PARALLEL DO REDUCTION(+:S) PRIVATE(ua,Ea,Ma) SCHEDULE(static, 4)
        update_loop : do j = 1, N
 
           ! Add contributions to the sum
@@ -512,8 +514,6 @@ contains
        $ASSERT(N <= N_MAX,Too many iterations)
 
        dI_conv = MAX(tol, 2._WP*EPSILON(0._WP))
-
-       !print *,N,I,dI,dI_conv
 
        if (abs(dI) < dI_conv) exit refine_loop
 
@@ -615,8 +615,6 @@ contains
        $ASSERT(N <= N_MAX,Too many iterations)
 
        dI_conv = MAX(tol, 2._QP*EPSILON(0._QP))
-
-       !print *,N,I,dI,dI_conv
 
        if (abs(dI) < dI_conv) exit refine_loop
 

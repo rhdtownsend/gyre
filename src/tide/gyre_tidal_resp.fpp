@@ -98,8 +98,9 @@ contains
     type(grid_t)                  :: gr
     type(mode_par_t), allocatable :: md_p(:,:)
     type(context_t), pointer      :: cx(:,:)
-    real(WP), allocatable         :: Psi_o(:,:,:)
+    real(WP), allocatable         :: Phi_T(:,:,:)
     integer, allocatable          :: tide_type(:,:,:)
+    type(point_t)                 :: pt_o
     integer                       :: l
     integer                       :: m
     integer                       :: k
@@ -126,7 +127,9 @@ contains
 
     ! Set up tidal params, contexts, grid, etc
 
-    call setup_tides_(ml, gr_p, or_p, os_p, rt_p, td_p, omega, gr, cx, md_p, Psi_o, tide_type)
+    call setup_tides_(ml, gr_p, or_p, os_p, rt_p, td_p, omega, gr, cx, md_p, Phi_T, tide_type)
+
+    pt_o = gr%pt_o()
 
     ! Use the grid_specs to create the grid, filtering out non-dynamic/mixed tides
 
@@ -161,12 +164,12 @@ contains
              select case(tide_type(l,m,k))
              case (DYNAMIC_TIDE,MIXED_TIDE)
 
-                if (ABS(Psi_o(l,m,k)) > td_p%Psi_o_thresh) then
+                if (ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh) then
 
                    w_i_nad = 0._WP
 
                    w_o_nad = 0._WP
-                   w_o_nad(2) = (2*l+1)*Psi_o(l,m,k)
+                   w_o_nad(2) = (2*l+1)*(ml%coeff(I_C_1, pt_o)/pt_o%x**2)*Phi_T(l,m,k)
 
                    st_nad = c_state_t(CMPLX(omega(k), KIND=WP), omega(k))
 
@@ -187,12 +190,12 @@ contains
 
              case (STATIC_TIDE)
 
-                if (ABS(Psi_o(l,m,k)) > td_p%Psi_o_thresh) then
+                if (ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh) then
 
                    w_i_sad = 0._WP
 
                    w_o_sad = 0._WP
-                   w_o_sad(1) = (2*l+1)*Psi_o(l,m,k)
+                   w_o_sad(1) = (2*l+1)*(ml%coeff(I_C_1, pt_o)/pt_o%x**2)*Phi_T(l,m,k)
 
                    st_sad = r_state_t(omega(k))
 
@@ -255,7 +258,8 @@ contains
 
   !****
 
-  subroutine setup_tides_ (ml, gr_p, or_p, os_p, rt_p, td_p, omega, gr, cx, md_p, Psi_o, tide_type)
+  subroutine setup_tides_ (ml, gr_p, or_p, os_p, rt_p, td_p, &
+                           omega, gr, cx, md_p, Phi_T, tide_type)
 
     class(model_t), pointer, intent(in)        :: ml
     type(grid_par_t), intent(in)               :: gr_p
@@ -267,10 +271,10 @@ contains
     type(grid_t)                               :: gr
     type(context_t), pointer, intent(out)      :: cx(:,:)
     type(mode_par_t), allocatable, intent(out) :: md_p(:,:)
-    real(WP), allocatable, intent(out)         :: Psi_o(:,:,:)
+    real(WP), allocatable, intent(out)         :: Phi_T(:,:,:)
     integer, allocatable, intent(out)          :: tide_type(:,:,:)
 
-    type(grid_t)                   :: ml_gr
+    type(point_t)                  :: pt_o
     integer                        :: l_min
     integer                        :: l_max
     integer                        :: m_min
@@ -284,9 +288,12 @@ contains
     integer                        :: m
     integer                        :: k
 
-    ! Extract the model grid (used for tide classification)
+    ! Set up the scaffold grid (used for tide classification and bc
+    ! setting)
 
-    ml_gr = ml%grid()
+    gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
+
+    pt_o = gr%pt_o()
 
     ! Initialize arrays
 
@@ -304,7 +311,7 @@ contains
     allocate(md_p(l_min:l_max,m_min:m_max))
     allocate(cx(l_min:l_max,m_min:m_max))
 
-    allocate(Psi_o(l_min:l_max,m_min:m_max,k_min:k_max))
+    allocate(Phi_T(l_min:l_max,m_min:m_max,k_min:k_max))
     allocate(tide_type(l_min:l_max,m_min:m_max,k_min:k_max))
 
     allocate(gs(l_min:l_max,m_min:m_max,k_min:k_max))
@@ -331,18 +338,19 @@ contains
 
           k_loop : do k = k_min, k_max
 
-             Psi_o(l,m,k) = tidal_Psi_o(ml, or_p, l, m, k)
-             tide_type(l,m,k) = classify_tide_(cx(l,m), ml_gr, td_p, omega(k))
+             Phi_T(l,m,k) = tidal_Phi_T(ml, or_p, pt_o%x, l, m, k)
+             tide_type(l,m,k) = classify_tide_(cx(l,m), gr, td_p, omega(k))
 
-             gs_mask(l,m,k) = (tide_type(l,m,k) == DYNAMIC_TIDE .OR. tide_type(l,m,k) == MIXED_TIDE) .AND. &
-                              Psi_o(l,m,k) > td_p%Psi_o_thresh
+             gs_mask(l,m,k) = (tide_type(l,m,k) == DYNAMIC_TIDE .OR. &
+                               tide_type(l,m,k) == MIXED_TIDE) .AND. &
+                              ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh
 
              if (gs_mask(l,m,k)) then
                 gs(l,m,k) = grid_spec_t(cx(l,m), [omega(k)])
              end if
 
              if (check_log_level('DEBUG')) then
-                write(OUTPUT_UNIT, *) 'tide type:', l, m, k, tide_type(l,m,k), Psi_o(l,m,k)
+                write(OUTPUT_UNIT, *) 'tide type:', l, m, k, tide_type(l,m,k), Phi_T(l,m,k)
              endif
 
           end do k_loop
@@ -352,7 +360,11 @@ contains
 
     ! Set up the grid
 
-    gr = grid_t(PACK(gs, MASK=gs_mask), gr_p, os_p)
+    if (COUNT(gs_mask) > 0) then
+       gr = grid_t(PACK(gs, MASK=gs_mask), gr_p, os_p)
+    else
+       gr = ml%grid()
+    end if
 
     ! Finish
 

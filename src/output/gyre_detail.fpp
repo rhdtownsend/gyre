@@ -449,19 +449,20 @@ contains
 
        call wr%write('k', rs%k)
 
-    $WRITE_POINTS(Psi,rs%Psi(j))
+    $WRITE_POINTS(eul_Psi,rs%eul_Psi(j))
+    $WRITE_POINTS(Phi_T,rs%Phi_T(j))
 
+    $WRITE_VALUE(eul_Psi_ref,rs%eul_Psi(rs%j_ref))
+    $WRITE_VALUE(Phi_T_ref,rs%Phi_T(rs%j_ref))
     $WRITE_VALUE(Omega_orb, rs%Omega_orb())
     $WRITE_VALUE(q, rs%or_p%q)
     $WRITE_VALUE(e, rs%or_p%e)
     $WRITE_VALUE(R_a, rs%R_a())
     $WRITE_VALUE(c, rs%c())
-    $WRITE_VALUE(Psi_o, rs%Psi_o())
     $WRITE_VALUE(G_1, rs%G_1())
     $WRITE_VALUE(G_2, rs%G_2())
     $WRITE_VALUE(G_3, rs%G_3())
     $WRITE_VALUE(G_4, rs%G_4())
-    $WRITE_VALUE(Psi_ref,rs%Psi(rs%j_ref))
 
     case default
 

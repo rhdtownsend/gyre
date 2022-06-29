@@ -47,16 +47,16 @@ module gyre_resp
      integer, public           :: k
    contains
      private
+     procedure, public :: eul_Phi
+     procedure, public :: eul_Psi
+     procedure, public :: Phi_T
      procedure, public :: Omega_orb
      procedure, public :: R_a
      procedure, public :: c
-     procedure, public :: Psi_o
      procedure, public :: G_1
      procedure, public :: G_2
      procedure, public :: G_3
      procedure, public :: G_4
-     procedure, public :: eul_Phi
-     procedure, public :: Psi
   end type resp_t
 
   ! Interfaces
@@ -102,6 +102,69 @@ contains
     return
 
   end function resp_t_
+
+  !****
+
+  function eul_Phi (this, j)
+
+    class(resp_t), intent(in) :: this
+    integer, intent(in)       :: j
+    complex(WP)               :: eul_Phi
+
+    ! Evaluate the Eulerian self gravitational potential
+    ! perturbation, in units of G M_star / R_star
+
+    eul_Phi = this%eul_Psi(j) - this%Phi_T(j)
+
+    ! Finish
+
+    return
+
+  end function eul_Phi
+
+  !****
+
+  function eul_Psi (this, j)
+
+    class(resp_t), intent(in) :: this
+    integer, intent(in)       :: j
+    complex(WP)               :: eul_Psi
+
+    ! Evaluate the Eulerian total gravitational potential
+    ! perturbation, in units of G M_star / R_star
+
+    eul_Psi = this%wave_t%eul_Phi(j)
+
+    ! Finish
+
+    return
+
+  end function eul_Psi
+
+  !****
+
+  function Phi_T (this, j)
+
+    class(resp_t), intent(in) :: this
+    integer, intent(in)       :: j
+    real(WP)                  :: Phi_T
+
+    type(context_t) :: cx
+
+    ! Evaluate the tidal potential, in units of G M_star / R_star
+
+    cx = this%context()
+
+    associate (ml => cx%model(),&
+               x => this%x(j))
+      Phi_T = tidal_Phi_T(ml, this%or_p, x, this%l, this%m, this%k)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function Phi_T
 
   !****
 
@@ -171,30 +234,6 @@ contains
     return
 
   end function c
-
-  !****
-
-  function Psi_o (this)
-
-    class(resp_t), intent(in) :: this
-    real(WP)                  :: Psi_o
-
-    type(context_t) :: cx
-
-    ! Evaluate the Eulerian secondary gravitational potential
-    ! perturbation at the outer boundary, in units of G M_star / R_star
-
-    cx = this%context()
-
-    associate (ml => cx%model())
-      Psi_o = tidal_Psi_o(ml, this%or_p, this%l, this%m, this%k)
-    end associate
-
-    ! Finish
-
-    return
-
-  end function Psi_o
 
   !****
 
@@ -287,48 +326,6 @@ contains
     return
 
   end function G_4
-
-  !****
-
-  function eul_Phi (this, j)
-
-     class(resp_t), intent(in) :: this
-     integer, intent(in)       :: j
-     complex(WP)               :: eul_phi
-
-     ! Evaluate the Eulerian self gravitational potential
-     ! perturbation, in units of G M_star / R_star
-
-     eul_phi = this%wave_t%eul_Phi(j) - this%Psi(j)
-
-     ! Finish
-
-     return
-
-  end function eul_Phi
-
-  !****
-
-  function Psi (this, j)
-
-     class(resp_t), intent(in) :: this
-     integer, intent(in)       :: j
-     complex(WP)               :: Psi
-
-     real(WP) :: x
-
-     ! Evaluate the Eulerian secondary gravitational potential
-     ! perturbation, in units of G M_star / R_star
-
-     x = this%x(j)
-
-     Psi = this%Psi_o()*x**this%l
-
-     ! Finish
-
-     return
-
-  end function Psi
 
   !****
 

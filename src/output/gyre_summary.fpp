@@ -463,17 +463,17 @@ contains
 
     $CACHE_VALUE(k,rs%k)
 
+    $CACHE_VALUE(eul_Psi_ref,rs%eul_Psi(rs%j_ref))
+    $CACHE_VALUE(Phi_T_ref,rs%Phi_T(rs%j_ref))
     $CACHE_VALUE(Omega_orb, rs%Omega_orb())
     $CACHE_VALUE(q, rs%or_p%q)
     $CACHE_VALUE(e, rs%or_p%e)
     $CACHE_VALUE(R_a, rs%R_a())
     $CACHE_VALUE(c, rs%c())
-    $CACHE_VALUE(Psi_o, rs%Psi_o())
     $CACHE_VALUE(G_1, rs%G_1())
     $CACHE_VALUE(G_2, rs%G_2())
     $CACHE_VALUE(G_3, rs%G_3())
     $CACHE_VALUE(G_4, rs%G_4())
-    $CACHE_VALUE(Psi_ref,rs%Psi(rs%j_ref))
 
     case default
 
