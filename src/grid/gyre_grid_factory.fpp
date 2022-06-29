@@ -22,6 +22,7 @@ module gyre_grid_factory
   ! Uses
 
   use core_kinds
+  use core_hgroup
 
   use gyre_context
   use gyre_grid
@@ -118,7 +119,11 @@ contains
 
     ! Create the scaffold grid
 
-    gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
+    if (gr_p%file /= '') then
+       gr = grid_from_file_(gr_p%file, gr_p%file_format, gr_p%x_i, gr_p%x_o)
+    else
+       gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
+    end if
 
     ! Add points
 
@@ -690,5 +695,69 @@ contains
     return
 
   end function refine_center_
+
+  !****
+
+  function grid_from_file_ (file, file_format, x_i, x_o) result (gr)
+
+    character(*), intent(in) :: file
+    character(*), intent(in) :: file_format
+    real(WP), intent(in)     :: x_i
+    real(WP), intent(in)     :: x_o
+    type(grid_t)             :: gr
+
+    type(hgroup_t)        :: hg
+    real(WP), allocatable :: x(:)
+    integer               :: unit
+    integer               :: n
+    integer               :: i
+
+    ! Read the grid abscissa from a file
+
+    select case (file_format)
+    case('DETAIL')
+
+       hg = hgroup_t(file, OPEN_FILE_RO)
+       call read_dset_alloc(hg, 'x', x)
+       call hg%final()
+
+    case('TEXT')
+
+       open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+
+       n = 0
+
+       count_loop : do
+          read(unit, *, end=100)
+          n = n + 1
+       end do count_loop
+
+100    continue
+
+       rewind(unit)
+
+       allocate(x(n))
+
+       read_loop : do i = 1, n
+          read(unit, *) x(i)
+       end do read_loop
+
+       close(unit)
+
+    case default
+
+       $ABORT(Invalid file_type)
+
+    end select
+
+    ! Set up the grid
+
+    gr = grid_t(grid_t(x), x_i, x_o)
+
+    ! Finish
+
+    return
+
+  end function grid_from_file_
 
 end module gyre_grid_factory

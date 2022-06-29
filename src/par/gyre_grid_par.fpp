@@ -23,7 +23,7 @@ module gyre_grid_par
 
   use core_kinds
 
-  use gyre_math
+  use gyre_constants
 
   ! No implicit typing
 
@@ -32,19 +32,20 @@ module gyre_grid_par
   ! Derived-type definitions
 
   type :: grid_par_t
-     real(WP)        :: x_i = -HUGE(0._WP)
-     real(WP)        :: x_o = HUGE(0._WP)
-     real(WP)        :: w_osc = 0._WP
-     real(WP)        :: w_exp = 0._WP
-     real(WP)        :: w_ctr = 0._WP
-     real(WP)        :: w_thm = 0._WP
-     real(WP)        :: w_str = 0._WP
-     real(WP)        :: dx_min = sqrt(EPSILON(0._WP))
-     real(WP)        :: dx_max = HUGE(0._WP)
-     integer         :: n_iter_max = 32
-     logical         :: resolve_ctr = .TRUE.
-     character(128)  :: file = ''
-     character(2048) :: tag_list = ''
+     real(WP)                :: x_i = -HUGE(0._WP)
+     real(WP)                :: x_o = HUGE(0._WP)
+     real(WP)                :: w_osc = 0._WP
+     real(WP)                :: w_exp = 0._WP
+     real(WP)                :: w_ctr = 0._WP
+     real(WP)                :: w_thm = 0._WP
+     real(WP)                :: w_str = 0._WP
+     real(WP)                :: dx_min = sqrt(EPSILON(0._WP))
+     real(WP)                :: dx_max = HUGE(0._WP)
+     integer                 :: n_iter_max = 32
+     logical                 :: resolve_ctr = .TRUE.
+     character(FILENAME_LEN) :: file = ''
+     character(128)          :: file_format = ''
+     character(2048)         :: tag_list = ''
   end type grid_par_t
 
   ! Access specifiers
@@ -63,25 +64,26 @@ contains
     integer, intent(in)                        :: unit
     type(grid_par_t), allocatable, intent(out) :: gr_p(:)
 
-    integer                       :: n_gr_p
-    integer                       :: i
-    real(WP)                      :: x_i
-    real(WP)                      :: x_o
-    real(WP)                      :: w_osc
-    real(WP)                      :: w_exp
-    real(WP)                      :: w_ctr
-    real(WP)                      :: w_thm
-    real(WP)                      :: w_str
-    real(WP)                      :: dx_min
-    real(WP)                      :: dx_max
-    integer                       :: n_iter_max
-    logical                       :: resolve_ctr
-    character(LEN(gr_p%file))     :: file
-    character(LEN(gr_p%tag_list)) :: tag_list
+    integer                          :: n_gr_p
+    integer                          :: i
+    real(WP)                         :: x_i
+    real(WP)                         :: x_o
+    real(WP)                         :: w_osc
+    real(WP)                         :: w_exp
+    real(WP)                         :: w_ctr
+    real(WP)                         :: w_thm
+    real(WP)                         :: w_str
+    real(WP)                         :: dx_min
+    real(WP)                         :: dx_max
+    integer                          :: n_iter_max
+    logical                          :: resolve_ctr
+    character(LEN(gr_p%file))        :: file
+    character(LEN(gr_p%file_format)) :: file_format
+    character(LEN(gr_p%tag_list))    :: tag_list
 
     namelist /grid/ x_i, x_o, w_osc, w_exp, w_ctr, &
          w_thm, w_str, dx_min, dx_max, n_iter_max, &
-         resolve_ctr, file, tag_list
+         resolve_ctr, file, file_format, tag_list
 
     ! Count the number of grid namelists
 
@@ -117,9 +119,12 @@ contains
        w_str = gr_p(i)%w_str
        dx_min = gr_p(i)%dx_min
        dx_max = gr_p(i)%dx_max
+
        n_iter_max = gr_p(i)%n_iter_max
        resolve_ctr = gr_p(i)%resolve_ctr
+
        file = gr_p(i)%file
+       file_format = gr_p(i)%file_format
        tag_list = gr_p(i)%tag_list
 
        ! Read the namelist
@@ -137,9 +142,12 @@ contains
        gr_p(i)%w_str = w_str
        gr_p(i)%dx_min = dx_min
        gr_p(i)%dx_max = dx_max
+
        gr_p(i)%n_iter_max = n_iter_max
        gr_p(i)%resolve_ctr = resolve_ctr
+
        gr_p(i)%file = file
+       gr_p(i)%file_format = file_format
        gr_p(i)%tag_list = tag_list
 
     end do read_loop
