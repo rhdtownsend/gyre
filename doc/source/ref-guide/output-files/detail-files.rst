@@ -547,7 +547,7 @@ Stellar Structure
 Tidal Response
 --------------
 
-Note that these items are available only when using :program:`gyre-tides`.
+Note that these items are available only when using :program:`gyre_tides`.
 
 .. list-table::
    :header-rows: 1

@@ -7,7 +7,7 @@ The data written to summary files are controlled by the
 :nml_n:`summary_item_list` parameters of the :nml_g:`ad_output` and
 :nml_g:`nad_output` namelist groups (:program:`gyre` adiabatic and
 nonadiabatic calculations, respectively) and the :nml_g:`tides_output`
-namelist group (:program:`gyre-tides` calculations). These parameters
+namelist group (:program:`gyre_tides` calculations). These parameters
 specify (via comma-separated list) the items to be written to the
 corresponding summary file; the following subsections describe the
 items that may appear, grouped together by functional area. For each
@@ -293,7 +293,7 @@ Stellar Structure
 Tidal Response
 --------------
 
-Note that these items are available only when using :program:`gyre-tides`.
+Note that these items are available only when using :program:`gyre_tides`.
 
 .. list-table::
    :header-rows: 1

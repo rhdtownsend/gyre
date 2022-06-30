@@ -31,8 +31,8 @@ in a valid input file.
 
    * - Description
      - Namelist group name
-     - For gyre
-     - For gyre_tides
+     - :program:`gyre`
+     - :program:`gyre_tides`
    * - :ref:`constants`
      - :nml_g:`constants`
      - 1
