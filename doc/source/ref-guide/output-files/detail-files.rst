@@ -206,11 +206,11 @@ Perturbations
      - :math:`\txi_{\rm h,ref}`
      - complex
      - radial displacement perturbation at reference location [:math:`R`]
-   * - :nml_v:`eul_phi_ref`
+   * - :nml_v:`eul_Phi_ref`
      - :math:`\tPhi'_{\rm ref}`
      - complex
      - Eulerian potential perturbation at reference location [:math:`GM/R`]
-   * - :nml_v:`deul_phi_ref`
+   * - :nml_v:`deul_Phi_ref`
      - :math:`(\sderiv{\tPhi'}{x})_{\rm ref}`
      - complex
      - Eulerian potential gradient perturbation at reference location [:math:`GM/R^{2}`]
@@ -224,51 +224,51 @@ Perturbations
      - Lagrangian radiative luminosity perturbation at reference location [:math:`L`]
    * - :nml_v:`xi_r`
      - :math:`\txir`
-     - complex
+     - complex(:nml_v:`n`)
      - radial displacement perturbation [:math:`R`]
    * - :nml_v:`xi_h`
      - :math:`\txih`
-     - complex
+     - complex(:nml_v:`n`)
      - radial displacement perturbation [:math:`R`]
-   * - :nml_v:`eul_phi`
+   * - :nml_v:`eul_Phi`
      - :math:`\tPhi'`
-     - complex
+     - complex(:nml_v:`n`)
      - Eulerian potential perturbation [:math:`GM/R`]
-   * - :nml_v:`deul_phi`
+   * - :nml_v:`deul_Phi`
      - :math:`\sderiv{\tPhi'}{x}`
-     - complex
+     - complex(:nml_v:`n`)
      - Eulerian potential gradient perturbation [:math:`GM/R^{2}`]
    * - :nml_v:`lag_S`
      - :math:`\delta\tS`
-     - complex
+     - complex(:nml_v:`n`)
      - Lagrangian specific entropy perturbation [:math:`\cP`]
    * - :nml_v:`lag_L`
      - :math:`\delta\tLrad`
-     - complex
+     - complex(:nml_v:`n`)
      - Lagrangian radiative luminosity perturbation [:math:`L`]
    * - :nml_v:`eul_P`
      - :math:`\tP'`
-     - complex
+     - complex(:nml_v:`n`)
      - Eulerian total pressure perturbation [:math:`P`]
    * - :nml_v:`eul_rho`
      - :math:`\trho'`
-     - complex
+     - complex(:nml_v:`n`)
      - Eulerian density perturbation [:math:`\rho`]
    * - :nml_v:`eul_T`
      - :math:`\tT'`
-     - complex
+     - complex(:nml_v:`n`)
      - Eulerian temperature perturbation [:math:`T`]
    * - :nml_v:`lag_P`
      - :math:`\delta\tP`
-     - complex
+     - complex(:nml_v:`n`)
      - Lagrangian total pressure perturbation [:math:`P`]
    * - :nml_v:`lag_rho`
      - :math:`\delta\trho`
-     - complex
+     - complex(:nml_v:`n`)
      - Lagrangian density perturbation [:math:`\rho`]
    * - :nml_v:`lag_T`
      - :math:`\delta\tT`
-     - complex
+     - complex(:nml_v:`n`)
      - Lagrangian temperature perturbation [:math:`T`]
 
 Energetics & Transport
@@ -544,6 +544,77 @@ Stellar Structure
      - real(:nml_v:`n`)
      - temperature [:math:`\kelvin`]
        
+Tidal Response
+--------------
+
+Note that these items are available only when using :program:`gyre-tides`.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 15 10 10 65
+
+   * - Item
+     - Symbol
+     - Datatype
+     - Description
+   * - :nml_v:`k`
+     - :math:`k`
+     - integer
+     - Fourier harmonic
+   * - :nml_v:`eul_Psi_ref`
+     - :math:`\tPsi'_{\rm ref}`
+     - complex
+     - Eulerian total potential perturbation at reference location [:math:`GM/R`]
+   * - :nml_v:`Phi_T_ref`
+     - :math:`\tPhi_{\rm T, ref}`
+     - real
+     - tidal potential at reference location [:math:`GM/R`]
+   * - :nml_v:`Omega_orb`
+     - :math:`\Omega_{\rm orb}`
+     - real
+     - orbital angular frequency; units and reference frame controlled by
+       :nml_n:`freq_units` and :nml_n:`freq_frame` parameters
+   * - :nml_v:`q`
+     - :math:`q`
+     - real
+     - ratio of secondary mass to primary mass
+   * - :nml_v:`e`
+     - :math:`e`
+     - real
+     - orbital eccentricity
+   * - :nml_v:`R_a`
+     - :math:`R/a`
+     - real
+     - ratio of primary radius to orbital semi-major axis
+   * - :nml_v:`c`
+     - :math:`c_{\ell,m,k}`
+     - real
+     - tidal expansion coefficient
+   * - :nml_v:`G_1`
+     - :math:`G_{1;\ell,m,k}`
+     - real
+     - secular orbital evolution coefficient
+   * - :nml_v:`G_2`
+     - :math:`G_{2;\ell,m,k}`
+     - real
+     - secular orbital evolution coefficient
+   * - :nml_v:`G_3`
+     - :math:`G_{3;\ell,m,k}`
+     - real
+     - secular orbital evolution coefficient
+   * - :nml_v:`G_4`
+     - :math:`G_{4;\ell,m,k}`
+     - real
+     - secular orbital evolution coefficient
+   * - :nml_v:`eul_Psi`
+     - :math:`\tPsi'`
+     - complex(:nml_v:`n`)
+     - Eulerian total potential perturbation [:math:`GM/R`]
+   * - :nml_v:`Phi_T`
+     - :math:`\tPhi_{{\rm T}}`
+     - real(:nml_v:`n`)
+     - tidal potential [:math:`GM/R`]
+
 .. rubric:: Footnotes
 
 .. [#only-N] This option is available only for stellar models with :ref:`N capability <model-caps>`
