@@ -82,8 +82,8 @@ module gyre_wave
      procedure, public :: y_i
      procedure, public :: xi_r
      procedure, public :: xi_h
-     procedure, public :: eul_phi
-     procedure, public :: deul_phi
+     procedure, public :: eul_Phi
+     procedure, public :: deul_Phi
      procedure, public :: lag_S
      procedure, public :: lag_L
      procedure, public :: eul_P
@@ -510,11 +510,11 @@ contains
 
   !****
 
-  function eul_phi (this, j)
+  function eul_Phi (this, j)
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: eul_phi
+    complex(WP)               :: eul_Phi
 
     complex(WP) :: y_3
     real(WP)    :: c_1
@@ -534,14 +534,14 @@ contains
       if (l_i /= 0._WP) then
 
          if (pt%x /= 0._WP) then
-            eul_phi = y_3*pow(pt%x, l_i)/c_1
+            eul_Phi = y_3*pow(pt%x, l_i)/c_1
          else
-            eul_phi = 0._WP
+            eul_Phi = 0._WP
          endif
 
       else
 
-         eul_phi = y_3/c_1
+         eul_Phi = y_3/c_1
 
       endif
 
@@ -551,15 +551,15 @@ contains
 
     return
 
-  end function eul_phi
+  end function eul_Phi
 
   !****
 
-  function deul_phi (this, j)
+  function deul_Phi (this, j)
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: deul_phi
+    complex(WP)               :: deul_Phi
 
     complex(WP) :: y_4
     real(WP)    :: c_1
@@ -579,14 +579,14 @@ contains
       if (l_i /= 1._WP) then
 
          if (pt%x /= 0._WP) then
-            deul_phi = y_4*pow(pt%x, l_i-1._WP)/c_1
+            deul_Phi = y_4*pow(pt%x, l_i-1._WP)/c_1
          else
-            deul_phi = 0._WP
+            deul_Phi = 0._WP
          end if
        
       else
 
-         deul_phi = y_4/c_1
+         deul_Phi = y_4/c_1
 
       end if
 
@@ -596,7 +596,7 @@ contains
 
     return
 
-  end function deul_phi
+  end function deul_Phi
 
   !****
 
@@ -1098,7 +1098,7 @@ contains
 
     complex(WP) :: xi_r
     complex(WP) :: xi_h
-    complex(WP) :: eul_phi
+    complex(WP) :: eul_Phi
     complex(WP) :: eul_rho
     complex(WP) :: lag_rho
     complex(WP) :: lag_P
@@ -1119,7 +1119,7 @@ contains
 
       xi_r = this%xi_r(j)
       xi_h = this%xi_h(j)
-      eul_phi = this%eul_phi(j)
+      eul_Phi = this%eul_Phi(j)
       eul_rho = this%eul_rho(j)
       lag_rho = this%lag_rho(j)
       lag_P = this%lag_P(j)
@@ -1134,7 +1134,7 @@ contains
 
       dzeta_dx = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)) + &
                  2._WP*REAL(lambda*CONJG(xi_r)*xi_h/c_1*(pt%x**2*U/c_1)) + &
-                 CONJG(eul_rho)*eul_phi*(pt%x**2*U/c_1) + &
+                 CONJG(eul_rho)*eul_Phi*(pt%x**2*U/c_1) + &
                  abs(xi_r)**2*(U-4._WP)/c_1*(pt%x**2*U/c_1)
 
     end associate
@@ -1155,8 +1155,8 @@ contains
 
     complex(WP) :: xi_r
     complex(WP) :: eul_P
-    complex(WP) :: eul_phi
-    complex(WP) :: deul_phi
+    complex(WP) :: eul_Phi
+    complex(WP) :: deul_Phi
     complex(WP) :: lambda
     real(WP)    :: V_2
     real(WP)    :: U
@@ -1177,8 +1177,8 @@ contains
 
       xi_r = this%xi_r(j)
       eul_P = this%eul_P(j)
-      eul_phi = this%eul_phi(j)
-      deul_phi = this%deul_phi(j)
+      eul_Phi = this%eul_Phi(j)
+      deul_Phi = this%deul_Phi(j)
 
       V_2 = ml%coeff(I_V_2, pt)
       As = ml%coeff(I_AS, pt)
@@ -1192,7 +1192,7 @@ contains
 
       dzeta_dx = CONJG(eul_P)*eul_P*(U*x4_V/(Gamma_1*c_1**2)) + &
                  CONJG(xi_r)*xi_r*(pt%x**2*U*As/c_1**2) - &
-                 CONJG(pt%x*deul_phi + lambda*eul_phi)*(pt%x*deul_phi + lambda*eul_phi)
+                 CONJG(pt%x*deul_Phi + lambda*eul_Phi)*(pt%x*deul_Phi + lambda*eul_Phi)
            
     end associate
 
@@ -1212,8 +1212,8 @@ contains
 
     complex(WP) :: xi_r
     complex(WP) :: eul_P
-    complex(WP) :: eul_phi
-    complex(WP) :: deul_phi
+    complex(WP) :: eul_Phi
+    complex(WP) :: deul_Phi
     complex(WP) :: lambda
     real(WP)    :: V_2
     real(WP)    :: U
@@ -1235,8 +1235,8 @@ contains
 
       xi_r = this%xi_r(j)
       eul_P = this%eul_P(j)
-      eul_phi = this%eul_phi(j)
-      deul_phi = this%deul_phi(j)
+      eul_Phi = this%eul_Phi(j)
+      deul_Phi = this%deul_Phi(j)
 
       V_2 = ml%coeff(I_V_2, pt)
       As = ml%coeff(I_AS, pt)
@@ -1267,7 +1267,7 @@ contains
     complex(WP)               :: dzeta_dx
 
     complex(WP) :: xi_r
-    complex(WP) :: eul_phi
+    complex(WP) :: eul_Phi
     complex(WP) :: eul_rho
     complex(WP) :: lag_rho
     complex(WP) :: lag_P
@@ -1288,7 +1288,7 @@ contains
          pt => this%gr%pt(j) )
 
       xi_r = this%xi_r(j)
-      eul_phi = this%eul_phi(j)
+      eul_Phi = this%eul_Phi(j)
       eul_rho = this%eul_rho(j)
       lag_rho = this%lag_rho(j)
       lag_P = this%lag_P(j)
@@ -1304,7 +1304,7 @@ contains
 
       dzeta_dx = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)) + &
                  2._WP*REAL(lag_rho*CONJG(xi_r)*(pt%x/c_1)*(pt%x**2*U/c_1)) + &
-                 CONJG(eul_rho)*eul_phi*(pt%x**2*U/c_1) - &
+                 CONJG(eul_rho)*eul_Phi*(pt%x**2*U/c_1) - &
                  abs(xi_r)**2*(-V/Gamma_1-As)/c_1*(pt%x**2*U/c_1)
 
     end associate
@@ -1348,8 +1348,8 @@ contains
 
     complex(WP) :: xi_r
     complex(WP) :: eul_P
-    complex(WP) :: eul_phi
-    complex(WP) :: deul_phi
+    complex(WP) :: eul_Phi
+    complex(WP) :: deul_Phi
     complex(WP) :: lambda
     real(WP)    :: V_2
     real(WP)    :: U
@@ -1369,8 +1369,8 @@ contains
 
       xi_r = this%xi_r(j)
       eul_P = this%eul_P(j)
-      eul_phi = this%eul_phi(j)
-      deul_phi = this%deul_phi(j)
+      eul_Phi = this%eul_Phi(j)
+      deul_Phi = this%deul_Phi(j)
 
       V_2 = ml%coeff(I_V_2, pt)
       As = ml%coeff(I_AS, pt)
@@ -1383,7 +1383,7 @@ contains
       if (pt%x /= 0) then
          dzeta_dm = CONJG(eul_P)*eul_P/(V_2*Gamma_1*c_1) + &
                     CONJG(xi_r)*xi_r*(As/c_1) - &
-                    CONJG(pt%x*deul_phi + lambda*eul_phi)*(pt%x*deul_phi + lambda*eul_phi)*(c_1/(U*pt%x**2))
+                    CONJG(pt%x*deul_Phi + lambda*eul_Phi)*(pt%x*deul_Phi + lambda*eul_Phi)*(c_1/(U*pt%x**2))
       else
          dzeta_dm = 0._WP
       endif
@@ -1495,7 +1495,7 @@ contains
     complex(WP) :: eul_P
     complex(WP) :: eul_rho
     complex(WP) :: lag_rho
-    complex(WP) :: eul_phi
+    complex(WP) :: eul_Phi
     real(WP)    :: V_2
     real(WP)    :: U
     real(WP)    :: c_1
@@ -1518,7 +1518,7 @@ contains
       lag_rho = this%lag_rho(j)
       eul_rho = this%eul_rho(j)
 
-      eul_phi = this%eul_phi(j)
+      eul_Phi = this%eul_Phi(j)
 
       V_2 = ml%coeff(I_V_2, pt)
       c_1 = ml%coeff(I_C_1, pt)
@@ -1530,7 +1530,7 @@ contains
 
       dtau_tr_dx = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._WP)*( &
            lag_rho*CONJG(eul_P)/(c_1*V_2) + &
-           eul_rho*CONJG(eul_phi) + &
+           eul_rho*CONJG(eul_Phi) + &
            xi_r*CONJG(eul_rho)*pt%x/c_1))*(U/(2._WP*c_1))
            
     end associate
@@ -1910,7 +1910,7 @@ contains
     complex(WP)               :: lag_g_eff
 
     complex(WP) :: xi_r
-    complex(WP) :: deul_phi
+    complex(WP) :: deul_Phi
     real(WP)    :: c_1
     real(WP)    :: U
 
@@ -1925,12 +1925,12 @@ contains
          omega => this%st%omega )
 
       xi_r = this%xi_r(j)
-      deul_phi = this%deul_phi(j)
+      deul_Phi = this%deul_Phi(j)
 
       c_1 = ml%coeff(I_C_1, pt)
       U = ml%coeff(I_U, pt)
 
-      lag_g_eff = (c_1/pt%x)*deul_phi + (U - (2._WP + c_1*omega**2))*xi_r/pt%x
+      lag_g_eff = (c_1/pt%x)*deul_Phi + (U - (2._WP + c_1*omega**2))*xi_r/pt%x
 
     end associate
 
