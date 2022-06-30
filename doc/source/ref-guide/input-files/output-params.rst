@@ -3,10 +3,11 @@
 Output Parameters
 =================
 
-The :nml_g:`ad_output` and :nml_g:`nad_output` namelist groups
-determine the output produced at the end of a run, from the adiabatic
-and non-adiabatic calculation stages, respectively; the input file
-should contain exactly one of each. Allowable parameters are:
+The :nml_g:`ad_output, :nml_g:`nad_output` and :nml_g:`tides_output`
+namelist groups determine the output produced at the end of a run (the
+first two for the adiabatic and non-adiabatic calculation stages of
+:program:`gyre`; the third for :program:`gyre_tides`). Parameters are
+as follows:
 
 :nml_n:`summary_file` (default :nml_v:`''`)
   Name of summary file

@@ -3,10 +3,8 @@
 Frequency Scan Parameters
 =========================
 
-The :nml_g:`scan` namelist group(s) defines frequency grid parameters;
-the input file can contain one or more, and points defined by each
-(tag-matching) :nml_g:`scan` namelist group are merged
-together. Allowable parameters are:
+The :nml_g:`scan` namelist group defines frequency grid parameters, as
+follows:
 
 :nml_n:`grid_type` (default :nml_v:`'LINEAR'`)
   Distribution of frequency points; one of:
@@ -79,7 +77,10 @@ together. Allowable parameters are:
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match
 
-See the :ref:`freq-grids` section for further details.
+An input file can contain one or more :nml_g:`scan` namelist group;
+the points defined by each (tag-matching) group are merged together to
+build the frequency grid. See the :ref:`freq-grids` section for
+further details.
 
 .. rubric:: Footnotes
 

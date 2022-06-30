@@ -3,9 +3,7 @@
 Oscillation Parameters
 ======================
 
-The :nml_g:`osc` namelist group defines oscillation parameters; the
-input file can contain one or more, but only the last (tag-matching) one
-is used.  Allowable parameters are:
+The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
 
 :nml_n:`inner_bound` (default :nml_v:`'REGULAR'`)
   Inner boundary conditions; one of:

@@ -3,9 +3,8 @@
 Rotation Parameters
 ===================
 
-The :nml_g:`rot` namelist group defines rotational parameters; the
-input file can contain one or more, but only the last (tag-matching)
-one is used.  Allowable parameters are:
+The :nml_g:`rot` namelist group defines rotational parameters, as
+follows:
 
 :nml_n:`coriolis_method` (default :nml_v:`'NULL'`)
   Method used to treat the Coriolis force; one of:

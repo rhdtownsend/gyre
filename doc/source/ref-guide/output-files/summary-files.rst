@@ -284,8 +284,60 @@ Stellar Structure
      - real(:nml_v:`n_j`)
      - asymptotic g-mode inverse period separation [:math:`\sqrt{GM/R^{3}}`]
 
+Tides
+-----
+
+Note that these items are available only when using :program:`gyre-tides`.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 15 10 10 65
+
+   * - Item
+     - Symbol
+     - Datatype
+     - Description
+   * - :nml_v:`Omega_orb`
+     - :math:`\Omega_{\rm orb}`
+     - real(:nml_v:`n_j`)
+     - orbital angular frequency; units controlled by :nml_n:`freq_units`[:math:`\gram`] parameter
+   * - :nml_v:`q`
+     - :math:`q`
+     - real(:nml_v:`n_j`)
+     - ratio of secondary mass to primary mass
+   * - :nml_v:`e`
+     - :math:`e`
+     - real(:nml_v:`e`)
+     - orbital eccentricity
+   * - :nml_v:`k`
+     - :math:`k`
+     - Fourier harmonic
+   * - :nml_v:`c`
+     - :math:`c_{\ell,m,k}`
+     - tidal expansion coefficient
+   * - :nml_v:`Phi_T_ref`
+     - :math:`\tilde{Phi}_{{\rm T};\ell,m,k}`
+     - forcing potential at reference location [:math:`GM/R`]
+   * - :nml_v:`eul_Psi_ref`
+     - :math:`\tPsi'_{\rm ref}`
+     - complex(:nml_v:`n_j`)
+     - Eulerian total potential perturbation at reference location [:math:`GM/R`]
+   * - :nml_v:`G_1`
+     - :math:`G_{1,\ell,m,k}`
+     - secular evolution coefficient
+   * - :nml_v:`G_2`
+     - :math:`G_{2,\ell,m,k}`
+     - secular evolution coefficient
+   * - :nml_v:`G_3`
+     - :math:`G_{3,\ell,m,k}`
+     - secular evolution coefficient
+   * - :nml_v:`G_4`
+     - :math:`G_{4,\ell,m,k}`
+     - secular evolution coefficient
+
 .. rubric:: Footnotes
 
-.. [#only-N] This option is available only for stellar models with :ref:`N capability <model-caps>`
+.. [#only-N] This item is available only for stellar models with :ref:`N capability <model-caps>`
 
-.. [#only-D] This option is available only for stellar models with :ref:`D capability <model-caps>`
+.. [#only-D] This item is available only for stellar models with :ref:`D capability <model-caps>`
+

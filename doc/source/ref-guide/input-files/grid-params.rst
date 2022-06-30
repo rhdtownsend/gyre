@@ -4,8 +4,15 @@ Grid Parameters
 ===============
 
 The :nml_g:`grid` namelist group defines the parameters used to set up
-the spatial grid; the input file can contain one or more, but only
-the last (tag-matching) one is used. Allowable parameters are:
+the spatial grid, as follows:
+
+:nml_n:`grid_source` (default :nml_v:`MODEL`)
+  Source for skeleton grid; one of:
+
+  - :nml_v:`'MODEL'` : Obtained from the stellar model
+  - :nml_v:`'DETAIL_FILE` : Read from a detail file, which must contain
+    the :nml_v:`x` item
+  - :nml_v:`'TEXT_FILE` : Read from a text file, with one :math:`x` per line
 
 :nml_n:`x_i` (default based on model grid)
   Inner boundary coordinate of calculation grid
@@ -39,6 +46,11 @@ the last (tag-matching) one is used. Allowable parameters are:
 
 :nml_n:`resolve_ctr` (default :nml_v:`.TRUE.`)
   Flag to resolve central evanescent region
+
+:nml_n:`file` (default :nml_v:`''`)
+   Name of file containing skeleton grid data (when
+   :nml_n:`grid_source`\ =\ :nml_v:`'DETAIL_FILE'` or
+   :nml_v:`'TEXT_FILE'`)
 
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match
