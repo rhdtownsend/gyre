@@ -26,6 +26,7 @@ module gyre_resp
   use core_memory
 
   use gyre_context
+  use gyre_freq_context
   use gyre_model
   use gyre_orbit_par
   use gyre_tidal_coeff
@@ -168,19 +169,27 @@ contains
 
   !****
 
-  function Omega_orb (this)
+  function Omega_orb (this, freq_units, freq_frame)
 
-    class(resp_t), intent(in) :: this
-    real(WP)                  :: Omega_orb
+    class(resp_t), intent(in)          :: this
+    character(*), intent(in)           :: freq_units
+    character(*), optional, intent(in) :: freq_frame
+    real(WP)                           :: Omega_orb
 
     type(context_t) :: cx
 
-    ! Evaluate the dimensionless orbital frequency
+    ! Evaluate the orbital frequency
 
     cx = this%context()
 
     associate (ml => cx%model())
-      Omega_orb = tidal_Omega_orb(ml, this%or_p)
+
+      if (PRESENT(freq_frame)) then
+         Omega_orb = (tidal_Omega_orb(ml, this%or_p) + freq_shift(freq_frame, cx, this%md_p))*freq_scale(freq_units, cx, this%md_p, this%os_p)
+      else
+         Omega_orb = tidal_Omega_orb(ml, this%or_p)*freq_scale(freq_units, cx, this%md_p, this%os_p)
+      end if
+
     end associate
 
     ! Finish
