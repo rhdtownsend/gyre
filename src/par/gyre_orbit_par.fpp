@@ -33,7 +33,7 @@ module gyre_orbit_par
   type :: orbit_par_t
      real(WP)        :: Omega_orb = 1._WP
      real(WP)        :: q = 1._WP
-     real(WP)        :: e = 0.5_WP
+     real(WP)        :: e = 0._WP
      real(WP)        :: t_0 = 0._WP
      character(64)   :: Omega_orb_units = 'NONE'
      character(2048) :: tag_list = ''
