@@ -32,6 +32,7 @@ module gyre_tide_par
   type :: tide_par_t
      real(WP)      :: Phi_T_thresh = 0._WP
      real(WP)      :: omega_c_thresh = 0._WP
+     real(WP)      :: alpha_frq = 1._WP
      integer       :: l_min = 2
      integer       :: l_max = 4
      integer       :: m_min = -HUGE(0)
@@ -61,6 +62,7 @@ contains
     integer                  :: i
     real(WP)                 :: Phi_T_thresh
     real(WP)                 :: omega_c_thresh
+    real(WP)                 :: alpha_frq
     integer                  :: l_min
     integer                  :: l_max
     integer                  :: m_min
@@ -69,7 +71,7 @@ contains
     integer                  :: k_max
     character(LEN(td_p%tag)) :: tag
 
-    namelist /tide/ Phi_T_thresh, omega_c_thresh, &
+    namelist /tide/ Phi_T_thresh, omega_c_thresh, alpha_frq, &
          l_min, l_max, m_min, m_max, k_min, k_max, tag
 
     ! Count the number of tide namelists
@@ -99,6 +101,7 @@ contains
 
        Phi_T_thresh = td_p(i)%Phi_T_thresh
        omega_c_thresh = td_p(i)%omega_c_thresh
+       alpha_frq = td_p(i)%alpha_frq
 
        l_min = td_p(i)%l_min
        l_max = td_p(i)%l_max
@@ -117,6 +120,7 @@ contains
 
        td_p(i)%Phi_T_thresh = Phi_T_thresh
        td_p(i)%omega_c_thresh = omega_c_thresh
+       td_p(i)%alpha_frq = alpha_frq
 
        td_p(i)%l_min = l_min
        td_p(i)%l_max = l_max

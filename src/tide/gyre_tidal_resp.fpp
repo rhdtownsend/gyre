@@ -322,7 +322,7 @@ contains
     Omega_orb = tidal_Omega_orb(ml, or_p)
 
     omega_loop : do k = k_min, k_max
-       omega(k) = k*Omega_orb
+       omega(k) = td_p%alpha_frq*k*Omega_orb
     end do omega_loop
 
     ! Set up other tide params
