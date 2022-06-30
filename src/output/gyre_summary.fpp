@@ -203,9 +203,9 @@ contains
 
        select case (this%items(i))
 
-       case ('n_j')
+       case ('n_row')
 
-          call wr%write('n_j', this%n_row)
+          call wr%write('n_row', this%n_row)
 
        case ('freq_units')
 
@@ -382,8 +382,8 @@ contains
     $CACHE_VALUE(beta,wv%beta())
     $CACHE_VALUE(xi_r_ref,wv%xi_r(wv%j_ref))
     $CACHE_VALUE(xi_h_ref,wv%xi_h(wv%j_ref))
-    $CACHE_VALUE(eul_phi_ref,wv%eul_phi(wv%j_ref))
-    $CACHE_VALUE(deul_phi_ref,wv%deul_phi(wv%j_ref))
+    $CACHE_VALUE(eul_Phi_ref,wv%eul_Phi(wv%j_ref))
+    $CACHE_VALUE(deul_Phi_ref,wv%deul_Phi(wv%j_ref))
     $CACHE_VALUE(lag_S_ref,wv%lag_S(wv%j_ref))
     $CACHE_VALUE(lag_L_ref,wv%lag_L(wv%j_ref))
 
@@ -465,7 +465,7 @@ contains
 
     $CACHE_VALUE(eul_Psi_ref,rs%eul_Psi(rs%j_ref))
     $CACHE_VALUE(Phi_T_ref,rs%Phi_T(rs%j_ref))
-    $CACHE_VALUE(Omega_orb, rs%Omega_orb())
+    $CACHE_VALUE(Omega_orb, rs%Omega_orb(ot_p%freq_units, ot_p%freq_frame))
     $CACHE_VALUE(q, rs%or_p%q)
     $CACHE_VALUE(e, rs%or_p%e)
     $CACHE_VALUE(R_a, rs%R_a())

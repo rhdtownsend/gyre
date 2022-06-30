@@ -326,8 +326,8 @@ contains
     $WRITE_POINTS(y_6,wv%y_i(6, j))
     $WRITE_POINTS(xi_r,wv%xi_r(j))
     $WRITE_POINTS(xi_h,wv%xi_h(j))
-    $WRITE_POINTS(eul_phi,wv%eul_phi(j))
-    $WRITE_POINTS(deul_phi,wv%deul_phi(j))
+    $WRITE_POINTS(eul_Phi,wv%eul_Phi(j))
+    $WRITE_POINTS(deul_Phi,wv%deul_Phi(j))
     $WRITE_POINTS(eul_P,wv%eul_P(j))
     $WRITE_POINTS(eul_rho,wv%eul_rho(j))
     $WRITE_POINTS(eul_T,wv%eul_T(j))
@@ -354,8 +354,8 @@ contains
 
     $WRITE_VALUE(xi_r_ref,wv%xi_r(wv%j_ref))
     $WRITE_VALUE(xi_h_ref,wv%xi_h(wv%j_ref))
-    $WRITE_VALUE(eul_phi_ref,wv%eul_phi(wv%j_ref))
-    $WRITE_VALUE(deul_phi_ref,wv%deul_phi(wv%j_ref))
+    $WRITE_VALUE(eul_Phi_ref,wv%eul_Phi(wv%j_ref))
+    $WRITE_VALUE(deul_Phi_ref,wv%deul_Phi(wv%j_ref))
     $WRITE_VALUE(lag_S_ref,wv%lag_S(wv%j_ref))
     $WRITE_VALUE(lag_L_ref,wv%lag_L(wv%j_ref))
 
@@ -454,7 +454,7 @@ contains
 
     $WRITE_VALUE(eul_Psi_ref,rs%eul_Psi(rs%j_ref))
     $WRITE_VALUE(Phi_T_ref,rs%Phi_T(rs%j_ref))
-    $WRITE_VALUE(Omega_orb, rs%Omega_orb())
+    $WRITE_VALUE(Omega_orb, rs%Omega_orb(ot_p%freq_units, ot_p%freq_frame))
     $WRITE_VALUE(q, rs%or_p%q)
     $WRITE_VALUE(e, rs%or_p%e)
     $WRITE_VALUE(R_a, rs%R_a())
