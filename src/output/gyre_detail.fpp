@@ -297,6 +297,10 @@ contains
 
        call wr%write('W_eps', wv%W_eps())
 
+    case ('Q')
+
+       call wr%write('Q', wv%Q())
+
     case ('tau_ss')
 
        call wr%write('tau_ss', wv%tau_ss())
@@ -339,6 +343,7 @@ contains
     $WRITE_POINTS(dE_dx,wv%dE_dx(j))
     $WRITE_POINTS(dW_dx,wv%dW_dx(j))
     $WRITE_POINTS(dW_eps_dx,wv%dW_eps_dx(j))
+    $WRITE_POINTS(dQ_dx,wv%dQ_dx(j))
     $WRITE_POINTS(dzeta_dx,wv%dzeta_dx(j))
     $WRITE_POINTS(dzeta_dm,wv%dzeta_dm(j))
     $WRITE_POINTS(dbeta_dx,wv%dbeta_dx(j))

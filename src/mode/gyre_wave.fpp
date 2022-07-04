@@ -96,6 +96,7 @@ module gyre_wave
      procedure, public :: dE_dx
      procedure, public :: dW_dx
      procedure, public :: dW_eps_dx
+     procedure, public :: dQ_dx
      procedure, public :: dzeta_dx
      procedure         :: dzeta_dx_pesnell_
      procedure         :: dzeta_dx_kawaler_
@@ -127,6 +128,7 @@ module gyre_wave
      procedure, public :: H
      procedure, public :: W
      procedure, public :: W_eps
+     procedure, public :: Q
      procedure, public :: tau_ss
      procedure, public :: tau_tr
      procedure, public :: omega_int
@@ -1002,6 +1004,43 @@ contains
     return
 
   end function dW_dx
+
+  !****
+
+  function dQ_dx (this, j)
+
+    class(wave_t), intent(in) :: this
+    integer, intent(in)       :: j
+    complex(WP)               :: dQ_dx
+
+    complex(WP) :: xi_r
+    complex(WP) :: xi_h
+    real(WP)    :: U
+    real(WP)    :: c_1
+
+    ! Evaluate the differential overlap. This expression is based on
+    ! the first line of eqn. (9) of [Burkart:2012]
+
+    associate ( &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j), &
+         l => this%l)
+
+      xi_r = this%xi_r(j)
+      xi_h = this%xi_h(j)
+
+      U = ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
+
+      dQ_dx = l*(xi_r + (l+1)*xi_h)*U*pt%x**(l+1)/(4*PI*c_1)
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function dQ_dx
 
   !****
 
@@ -2301,6 +2340,31 @@ contains
     return
 
   end function W_eps
+
+  !****
+
+  function Q (this)
+
+    class(wave_t), intent(in) :: this
+    complex(WP)               :: Q
+
+    integer     :: j
+    complex(WP) :: dQ_dx(this%n)
+    
+    ! Calculate the overlap integral
+
+    !$OMP PARALLEL DO
+    do j = 1, this%n
+       dQ_dx(j) = REAL(this%dQ_dx(j), WP)
+    end do
+
+    Q = integrate(this%gr%pt%x, dQ_dx%re) + CMPLX(0._WP, 1._WP, KIND=WP)*integrate(this%gr%pt%x, dQ_dx%im)
+
+    ! Finish
+
+    return
+
+  end function Q
 
   !****
 
