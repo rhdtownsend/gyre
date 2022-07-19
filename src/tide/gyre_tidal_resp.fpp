@@ -131,8 +131,6 @@ contains
 
     pt_o = gr%pt_o()
 
-    ! Use the grid_specs to create the grid, filtering out non-dynamic/mixed tides
-
     ! Loop over l, m and k, solving for the tidal response
 
     id_m = id_m + 1
