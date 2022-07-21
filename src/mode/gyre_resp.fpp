@@ -281,7 +281,7 @@ contains
     cx = this%context()
 
     associate (ml => cx%model())
-      G_2 = secular_G_1(ml, this%or_p, this%l, this%m, this%k)
+      G_2 = secular_G_2(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
@@ -304,7 +304,7 @@ contains
     cx = this%context()
 
     associate (ml => cx%model())
-      G_3 = secular_G_1(ml, this%or_p, this%l, this%m, this%k)
+      G_3 = secular_G_3(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
@@ -327,7 +327,7 @@ contains
     cx = this%context()
 
     associate (ml => cx%model())
-      G_4 = secular_G_1(ml, this%or_p, this%l, this%m, this%k)
+      G_4 = secular_G_4(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
