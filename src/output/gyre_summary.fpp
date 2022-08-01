@@ -288,6 +288,9 @@ contains
        call cache_wave_(this%ot_p, wv, gr, this%sc(i), cached)
        if (cached) cycle item_loop
 
+       call cache_context_(this%ot_p, cx, gr, wv%j_ref, this%sc(i), cached)
+       if (cached) cycle item_loop
+
        call cache_model_(this%ot_p, ml, gr, wv%l, this%sc(i), cached)
        if (cached) cycle item_loop
 
@@ -486,7 +489,38 @@ contains
 
     return
 
- end subroutine cache_resp_
+  end subroutine cache_resp_
+
+  !****
+
+  subroutine cache_context_ (ot_p, cx, gr, j_ref, sc, cached)
+
+    type(out_par_t), intent(in)        :: ot_p
+    class(context_t), intent(in)       :: cx
+    type(grid_t), intent(in)           :: gr
+    integer, intent(in)                :: j_ref
+    type(summary_col_t), intent(inout) :: sc
+    logical, intent(out)               :: cached
+
+    ! Cache the item from context_t data
+
+    cached = .TRUE.
+
+    select case (sc%item)
+
+    $CACHE_VALUE(Omega_rot_ref,cx%Omega_rot(gr%pt(j_ref)))
+
+    case default
+       
+       cached = .FALSE.
+
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine cache_context_
 
   !****
 
