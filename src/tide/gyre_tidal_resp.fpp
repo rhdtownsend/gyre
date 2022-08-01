@@ -100,6 +100,7 @@ contains
     type(context_t), pointer      :: cx(:,:)
     real(WP), allocatable         :: Phi_T(:,:,:)
     integer, allocatable          :: tide_type(:,:,:)
+    real(WP)                      :: Phi_T_max
     type(point_t)                 :: pt_o
     integer                       :: l
     integer                       :: m
@@ -128,6 +129,8 @@ contains
     ! Set up tidal params, contexts, grid, etc
 
     call setup_tides_(ml, gr_p, or_p, os_p, rt_p, td_p, omega, gr, cx, md_p, Phi_T, tide_type)
+
+    Phi_T_max = MAXVAL(ABS(Phi_T))
 
     pt_o = gr%pt_o()
 
@@ -162,7 +165,8 @@ contains
              select case(tide_type(l,m,k))
              case (DYNAMIC_TIDE,MIXED_TIDE)
 
-                if (ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh) then
+                if (ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_abs .AND. &
+                    ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_rel*Phi_T_max) then
 
                    w_i_nad = 0._WP
 
@@ -188,7 +192,8 @@ contains
 
              case (STATIC_TIDE)
 
-                if (ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh) then
+                if (ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_abs .AND. &
+                    ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_rel*Phi_T_max) then
 
                    w_i_sad = 0._WP
 
@@ -280,11 +285,12 @@ contains
     integer                        :: k_min
     integer                        :: k_max
     real(WP)                       :: Omega_orb
-    type(grid_spec_t), allocatable :: gs(:,:,:)
-    logical, allocatable           :: gs_mask(:,:,:)
     integer                        :: l
     integer                        :: m
     integer                        :: k
+    real(WP)                       :: Phi_T_max
+    type(grid_spec_t), allocatable :: gs(:,:,:)
+    logical, allocatable           :: gs_mask(:,:,:)
 
     ! Set up the scaffold grid (used for tide classification and bc
     ! setting)
@@ -312,9 +318,6 @@ contains
     allocate(Phi_T(l_min:l_max,m_min:m_max,k_min:k_max))
     allocate(tide_type(l_min:l_max,m_min:m_max,k_min:k_max))
 
-    allocate(gs(l_min:l_max,m_min:m_max,k_min:k_max))
-    allocate(gs_mask(l_min:l_max,m_min:m_max,k_min:k_max))
-
     ! Set up the forcing frequency
 
     Omega_orb = tidal_Omega_orb(ml, or_p)
@@ -325,7 +328,7 @@ contains
 
     ! Set up other tide params
 
-    gs_mask = .FALSE.
+    Phi_T = 0._WP
 
     l_loop : do l = l_min, l_max
        m_loop : do m = MAX(-l, td_p%m_min), MIN(l, td_p%m_max)
@@ -339,14 +342,6 @@ contains
              Phi_T(l,m,k) = tidal_Phi_T(ml, or_p, pt_o%x, l, m, k)
              tide_type(l,m,k) = classify_tide_(cx(l,m), gr, td_p, omega(k))
 
-             gs_mask(l,m,k) = (tide_type(l,m,k) == DYNAMIC_TIDE .OR. &
-                               tide_type(l,m,k) == MIXED_TIDE) .AND. &
-                              ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh
-
-             if (gs_mask(l,m,k)) then
-                gs(l,m,k) = grid_spec_t(cx(l,m), [omega(k)])
-             end if
-
              if (check_log_level('DEBUG')) then
                 write(OUTPUT_UNIT, *) 'tide type:', l, m, k, tide_type(l,m,k), Phi_T(l,m,k)
              endif
@@ -356,7 +351,31 @@ contains
        end do m_loop
     end do l_loop
 
-    ! Set up the grid
+    Phi_T_max = MAXVAL(ABS(Phi_T))
+
+    ! Set up the grid using grid specs
+
+    allocate(gs(l_min:l_max,m_min:m_max,k_min:k_max))
+    allocate(gs_mask(l_min:l_max,m_min:m_max,k_min:k_max))
+
+    gs_mask = .FALSE.
+
+    gs_l_loop : do l = l_min, l_max
+       gs_m_loop : do m = MAX(-l, td_p%m_min), MIN(l, td_p%m_max)
+          gs_k_loop : do k = k_min, k_max
+
+             gs_mask(l,m,k) = (tide_type(l,m,k) == DYNAMIC_TIDE .OR. &
+                               tide_type(l,m,k) == MIXED_TIDE) .AND. &
+                              ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_abs .AND. &
+                              ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_rel*Phi_T_max
+
+             if (gs_mask(l,m,k)) then
+                gs(l,m,k) = grid_spec_t(cx(l,m), [omega(k)])
+             end if
+
+          end do gs_k_loop
+       end do gs_m_loop
+    end do gs_l_loop
 
     if (COUNT(gs_mask) > 0) then
        gr = grid_t(PACK(gs, MASK=gs_mask), gr_p, os_p)
