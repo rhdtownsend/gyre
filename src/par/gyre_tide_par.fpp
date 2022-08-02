@@ -30,8 +30,8 @@ module gyre_tide_par
   ! Derived-type definitions
 
   type :: tide_par_t
-     real(WP)      :: Phi_T_thresh_abs = 0._WP
-     real(WP)      :: Phi_T_thresh_rel = 0._WP
+     real(WP)      :: y_T_thresh_abs = 0._WP
+     real(WP)      :: y_T_thresh_rel = 0._WP
      real(WP)      :: omega_c_thresh = 0._WP
      real(WP)      :: alpha_frq = 1._WP
      integer       :: l_min = 2
@@ -61,8 +61,8 @@ contains
 
     integer                  :: n_td_p
     integer                  :: i
-    real(WP)                 :: Phi_T_thresh_abs
-    real(WP)                 :: Phi_T_thresh_rel
+    real(WP)                 :: y_T_thresh_abs
+    real(WP)                 :: y_T_thresh_rel
     real(WP)                 :: omega_c_thresh
     real(WP)                 :: alpha_frq
     integer                  :: l_min
@@ -73,7 +73,7 @@ contains
     integer                  :: k_max
     character(LEN(td_p%tag)) :: tag
 
-    namelist /tide/ Phi_T_thresh_abs, Phi_T_thresh_rel, omega_c_thresh, alpha_frq, &
+    namelist /tide/ y_T_thresh_abs, y_T_thresh_rel, omega_c_thresh, alpha_frq, &
          l_min, l_max, m_min, m_max, k_min, k_max, tag
 
     ! Count the number of tide namelists
@@ -101,8 +101,8 @@ contains
 
        td_p(i) = tide_par_t()
 
-       Phi_T_thresh_abs = td_p(i)%Phi_T_thresh_abs
-       Phi_T_thresh_rel = td_p(i)%Phi_T_thresh_rel
+       y_T_thresh_abs = td_p(i)%y_T_thresh_abs
+       y_T_thresh_rel = td_p(i)%y_T_thresh_rel
        omega_c_thresh = td_p(i)%omega_c_thresh
        alpha_frq = td_p(i)%alpha_frq
 
@@ -121,8 +121,8 @@ contains
 
        ! Store read values
 
-       td_p(i)%Phi_T_thresh_abs = Phi_T_thresh_abs
-       td_p(i)%Phi_T_thresh_rel = Phi_T_thresh_rel
+       td_p(i)%y_T_thresh_abs = y_T_thresh_abs
+       td_p(i)%y_T_thresh_rel = y_T_thresh_rel
        td_p(i)%omega_c_thresh = omega_c_thresh
        td_p(i)%alpha_frq = alpha_frq
 
