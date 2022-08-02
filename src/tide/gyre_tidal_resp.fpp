@@ -98,10 +98,8 @@ contains
     type(grid_t)                  :: gr
     type(mode_par_t), allocatable :: md_p(:,:)
     type(context_t), pointer      :: cx(:,:)
-    real(WP), allocatable         :: Phi_T(:,:,:)
+    real(WP), allocatable         :: y_T(:,:,:)
     integer, allocatable          :: tide_type(:,:,:)
-    real(WP)                      :: Phi_T_max
-    type(point_t)                 :: pt_o
     integer                       :: l
     integer                       :: m
     integer                       :: k
@@ -113,7 +111,6 @@ contains
     real(WP)                      :: w_o_sad(1)
     type(c_state_t)               :: st_nad
     type(r_state_t)               :: st_sad
-    type(r_state_t)               :: st_null
     type(wave_t)                  :: wv
     type(resp_t)                  :: rs
 
@@ -128,11 +125,7 @@ contains
 
     ! Set up tidal params, contexts, grid, etc
 
-    call setup_tides_(ml, gr_p, or_p, os_p, rt_p, td_p, omega, gr, cx, md_p, Phi_T, tide_type)
-
-    Phi_T_max = MAXVAL(ABS(Phi_T))
-
-    pt_o = gr%pt_o()
+    call setup_tides_(ml, gr_p, or_p, os_p, rt_p, td_p, omega, gr, cx, md_p, y_T, tide_type)
 
     ! Loop over l, m and k, solving for the tidal response
 
@@ -160,18 +153,17 @@ contains
 
              ! Evaluate the response
 
-             call system_clock(c_beg)
+             if (ABS(y_T(l,m,k)) > 0._WP) then
 
-             select case(tide_type(l,m,k))
-             case (DYNAMIC_TIDE,MIXED_TIDE)
+                call system_clock(c_beg)
 
-                if (ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_abs .AND. &
-                    ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_rel*Phi_T_max) then
+                select case(tide_type(l,m,k))
+                case (DYNAMIC_TIDE,MIXED_TIDE)
 
                    w_i_nad = 0._WP
 
                    w_o_nad = 0._WP
-                   w_o_nad(2) = (2*l+1)*(ml%coeff(I_C_1, pt_o)/pt_o%x**2)*Phi_T(l,m,k)
+                   w_o_nad(2) = (2*l+1)*y_T(l,m,k)
 
                    st_nad = c_state_t(CMPLX(omega(k), KIND=WP), omega(k))
 
@@ -182,55 +174,38 @@ contains
                       wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, id_m)
                    end select
 
-                else
-
-                   st_null = r_state_t(omega(k))
-
-                   wv = null_wave_t_(st_null, cx(l,m), gr, md_p(l,m), nm_p, os_p, id_m, .FALSE.)
-
-                end if
-
-             case (STATIC_TIDE)
-
-                if (ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_abs .AND. &
-                    ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_rel*Phi_T_max) then
+                case (STATIC_TIDE)
 
                    w_i_sad = 0._WP
 
                    w_o_sad = 0._WP
-                   w_o_sad(1) = (2*l+1)*(ml%coeff(I_C_1, pt_o)/pt_o%x**2)*Phi_T(l,m,k)
+                   w_o_sad(1) = (2*l+1)*y_T(l,m,k)
 
                    st_sad = r_state_t(omega(k))
 
                    wv = wave_t(bp_sad, st_sad, w_i_sad, w_o_sad, id_m)
 
-                else
+                case default
 
-                   st_null = r_state_t(omega(k))
+                   $ABORT(invalid tide_type)
 
-                   wv = null_wave_t_(st_null, cx(l,m), gr, md_p(l,m), nm_p, os_p, id_m, .TRUE.)
+                end select
 
-                end if
+                rs = resp_t(wv, or_p, td_p, k)
 
-             case default
+                call system_clock(c_end)
+                c_solve = c_solve + (c_end - c_beg)
 
-                $ABORT(invalid tide_type)
+                ! Process the response
 
-             end select
+                call system_clock(c_beg)
 
-             rs = resp_t(wv, or_p, td_p, k)
+                call process_resp(rs)
 
-             call system_clock(c_end)
-             c_solve = c_solve + (c_end - c_beg)
+                call system_clock(c_end)
+                c_proc = c_proc + (c_end - c_beg)
 
-             ! Process the response
-
-             call system_clock(c_beg)
-
-             call process_resp(rs)
-
-             call system_clock(c_end)
-             c_proc = c_proc + (c_end - c_beg)
+             end if
 
           end do k_loop
 
@@ -262,7 +237,7 @@ contains
   !****
 
   subroutine setup_tides_ (ml, gr_p, or_p, os_p, rt_p, td_p, &
-                           omega, gr, cx, md_p, Phi_T, tide_type)
+                           omega, gr, cx, md_p, y_T, tide_type)
 
     class(model_t), pointer, intent(in)        :: ml
     type(grid_par_t), intent(in)               :: gr_p
@@ -274,7 +249,7 @@ contains
     type(grid_t)                               :: gr
     type(context_t), pointer, intent(out)      :: cx(:,:)
     type(mode_par_t), allocatable, intent(out) :: md_p(:,:)
-    real(WP), allocatable, intent(out)         :: Phi_T(:,:,:)
+    real(WP), allocatable, intent(out)         :: y_T(:,:,:)
     integer, allocatable, intent(out)          :: tide_type(:,:,:)
 
     type(point_t)                  :: pt_o
@@ -288,7 +263,7 @@ contains
     integer                        :: l
     integer                        :: m
     integer                        :: k
-    real(WP)                       :: Phi_T_max
+    real(WP)                       :: y_T_max
     type(grid_spec_t), allocatable :: gs(:,:,:)
     logical, allocatable           :: gs_mask(:,:,:)
 
@@ -315,7 +290,7 @@ contains
     allocate(md_p(l_min:l_max,m_min:m_max))
     allocate(cx(l_min:l_max,m_min:m_max))
 
-    allocate(Phi_T(l_min:l_max,m_min:m_max,k_min:k_max))
+    allocate(y_T(l_min:l_max,m_min:m_max,k_min:k_max))
     allocate(tide_type(l_min:l_max,m_min:m_max,k_min:k_max))
 
     ! Set up the forcing frequency
@@ -328,7 +303,7 @@ contains
 
     ! Set up other tide params
 
-    Phi_T = 0._WP
+    y_T = 0._WP
 
     l_loop : do l = l_min, l_max
        m_loop : do m = MAX(-l, td_p%m_min), MIN(l, td_p%m_max)
@@ -339,11 +314,12 @@ contains
 
           k_loop : do k = k_min, k_max
 
-             Phi_T(l,m,k) = tidal_Phi_T(ml, or_p, pt_o%x, l, m, k)
+             y_T(l,m,k) = pt_o%x**(-l)*ml%coeff(I_C_1, pt_o)*tidal_Phi_T(ml, or_p, pt_o%x, l, m, k)
+
              tide_type(l,m,k) = classify_tide_(cx(l,m), gr, td_p, omega(k))
 
              if (check_log_level('DEBUG')) then
-                write(OUTPUT_UNIT, *) 'tide type:', l, m, k, tide_type(l,m,k), Phi_T(l,m,k)
+                write(OUTPUT_UNIT, *) 'tide type:', l, m, k, tide_type(l,m,k), y_T(l,m,k)
              endif
 
           end do k_loop
@@ -351,7 +327,14 @@ contains
        end do m_loop
     end do l_loop
 
-    Phi_T_max = MAXVAL(ABS(Phi_T))
+    y_T_max = MAXVAL(ABS(y_T))
+
+    ! Zero y_T where it falls below the threshold
+
+    where (ABS(y_T) <= td_p%y_T_thresh_abs .OR. &
+           ABS(y_T) <= td_p%y_T_thresh_rel*y_T_max)
+       y_T = 0._WP
+    end where
 
     ! Set up the grid using grid specs
 
@@ -366,8 +349,7 @@ contains
 
              gs_mask(l,m,k) = (tide_type(l,m,k) == DYNAMIC_TIDE .OR. &
                                tide_type(l,m,k) == MIXED_TIDE) .AND. &
-                              ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_abs .AND. &
-                              ABS(Phi_T(l,m,k)) > td_p%Phi_T_thresh_rel*Phi_T_max
+                              ABS(y_T(l,m,k)) > 0._WP
 
              if (gs_mask(l,m,k)) then
                 gs(l,m,k) = grid_spec_t(cx(l,m), [omega(k)])
@@ -427,43 +409,5 @@ contains
     return
 
   end function classify_tide_
-
-  !****
-
-  function null_wave_t_ (st, cx, gr, md_p, nm_p, os_p, id, static) result (wv)
-
-    type(r_state_t), intent(in)          :: st
-    type(context_t), pointer, intent(in) :: cx
-    type(grid_t), intent(in)             :: gr
-    type(mode_par_t), intent(in)         :: md_p
-    type(num_par_t), intent(in)          :: nm_p
-    type(osc_par_t), intent(in)          :: os_p
-    integer, intent(in)                  :: id
-    logical, intent(in)                  :: static
-    type(wave_t)                         :: wv
-
-    complex(WP)     :: y_c(6,gr%n)
-    type(c_state_t) :: st_c
-    type(c_ext_t)   :: discrim
-
-    ! Create a null (zero-amplitudes) wave_t
-
-    ! Set up complex eigenfunctions
-
-    st_c = c_state_t(CMPLX(st%omega, KIND=WP), st%omega)
-
-    y_c = 0._WP
-
-    ! Construct the wave_t
-
-    discrim = c_ext_t(0._WP)
-
-    wv = wave_t(st_c, y_c, discrim, cx, gr, md_p, nm_p, os_p, id, static)
-
-    ! Finish
-
-    return
-
-  end function null_wave_t_
 
 end module gyre_tidal_resp
