@@ -47,6 +47,7 @@ module gyre_tidal_coeff
   private
 
   public :: tidal_Phi_T
+  public :: tidal_dPhi_T
   public :: tidal_Omega_orb
   public :: tidal_R_a
   public :: tidal_c
@@ -89,6 +90,38 @@ contains
     return
 
   end function tidal_Phi_T
+
+  !****
+
+  function tidal_dPhi_T (ml, or_p, x, l, m, k) result (dPhi_T)
+
+    class(model_t), pointer, intent(in) :: ml
+    type(orbit_par_t), intent(in)       :: or_p
+    real(WP), intent(in)                :: x
+    integer, intent(in)                 :: l
+    integer, intent(in)                 :: m
+    integer, intent(in)                 :: k
+    real(WP)                            :: dPhi_T
+
+    real(WP) :: R_a
+    real(WP) :: eps_T
+    real(WP) :: c
+
+    ! Evaluate the tidal forcing potential gradient dPhi_T/dx at x, in
+    ! units of G*M/R
+
+    R_a = tidal_R_a(ml, or_p)
+    eps_T = R_a**3*or_p%q
+
+    c = tidal_c(ml, or_p, l, m, k)
+
+    dPhi_T = -eps_T/sqrt(4._WP*PI)*c*l*x**(l-1)
+
+    ! Finish
+
+    return
+
+  end function tidal_dPhi_T
 
   !****
 

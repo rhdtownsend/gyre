@@ -51,6 +51,9 @@ module gyre_resp
      procedure, public :: eul_Phi
      procedure, public :: eul_Psi
      procedure, public :: Phi_T
+     procedure, public :: deul_Phi
+     procedure, public :: deul_Psi
+     procedure, public :: dPhi_T
      procedure, public :: Omega_orb
      procedure, public :: R_a
      procedure, public :: c
@@ -166,6 +169,70 @@ contains
     return
 
   end function Phi_T
+
+  !****
+
+  function deul_Phi (this, j)
+
+    class(resp_t), intent(in) :: this
+    integer, intent(in)       :: j
+    complex(WP)               :: deul_Phi
+
+    ! Evaluate the Eulerian potential gradient (gravity) perturbation,
+    ! in units of G M_star / R_star**2
+
+    deul_Phi = this%deul_Psi(j) - this%dPhi_T(j)
+
+    ! Finish
+
+    return
+
+  end function deul_Phi
+
+  !****
+
+  function deul_Psi (this, j)
+
+    class(resp_t), intent(in) :: this
+    integer, intent(in)       :: j
+    complex(WP)               :: deul_Psi
+
+    ! Evaluate the Eulerian total potential gradient (gravity)
+    ! potential perturbation, in units of G M_star / R_star**2
+
+    deul_Psi = this%wave_t%deul_Phi(j)
+
+    ! Finish
+
+    return
+
+  end function deul_Psi
+
+  !****
+
+  function dPhi_T (this, j)
+
+    class(resp_t), intent(in) :: this
+    integer, intent(in)       :: j
+    real(WP)                  :: dPhi_T
+
+    type(context_t) :: cx
+
+    ! Evaluate the tidal potential gradient (gravity), in units of G
+    ! M_star / R_star**2
+
+    cx = this%context()
+
+    associate (ml => cx%model(),&
+               x => this%x(j))
+      dPhi_T = tidal_dPhi_T(ml, this%or_p, x, this%l, this%m, this%k)
+    end associate
+
+    ! Finish
+
+    return
+
+  end function dPhi_T
 
   !****
 
