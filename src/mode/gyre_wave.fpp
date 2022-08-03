@@ -2355,10 +2355,10 @@ contains
 
     !$OMP PARALLEL DO
     do j = 1, this%n
-       dQ_dx(j) = REAL(this%dQ_dx(j), WP)
+       dQ_dx(j) = this%dQ_dx(j)
     end do
 
-    Q = integrate(this%gr%pt%x, dQ_dx%re) + CMPLX(0._WP, 1._WP, KIND=WP)*integrate(this%gr%pt%x, dQ_dx%im)
+    Q = integrate(this%gr%pt%x, dQ_dx)
 
     ! Finish
 
