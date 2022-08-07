@@ -64,13 +64,13 @@ contains
 
   function tidal_Phi_T (ml, or_p, x, l, m, k) result (Phi_T)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(orbit_par_t), intent(in)       :: or_p
-    real(WP), intent(in)                :: x
-    integer, intent(in)                 :: l
-    integer, intent(in)                 :: m
-    integer, intent(in)                 :: k
-    real(WP)                            :: Phi_T
+    class(model_t), intent(in)    :: ml
+    type(orbit_par_t), intent(in) :: or_p
+    real(WP), intent(in)          :: x
+    integer, intent(in)           :: l
+    integer, intent(in)           :: m
+    integer, intent(in)           :: k
+    real(WP)                      :: Phi_T
 
     real(WP) :: R_a
     real(WP) :: eps_T
@@ -95,13 +95,13 @@ contains
 
   function tidal_dPhi_T (ml, or_p, x, l, m, k) result (dPhi_T)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(orbit_par_t), intent(in)       :: or_p
-    real(WP), intent(in)                :: x
-    integer, intent(in)                 :: l
-    integer, intent(in)                 :: m
-    integer, intent(in)                 :: k
-    real(WP)                            :: dPhi_T
+    class(model_t), intent(in)    :: ml
+    type(orbit_par_t), intent(in) :: or_p
+    real(WP), intent(in)          :: x
+    integer, intent(in)           :: l
+    integer, intent(in)           :: m
+    integer, intent(in)           :: k
+    real(WP)                      :: dPhi_T
 
     real(WP) :: R_a
     real(WP) :: eps_T
@@ -127,9 +127,9 @@ contains
 
   function tidal_Omega_orb (ml, or_p) result (Omega_orb)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(orbit_par_t), intent(in)       :: or_p
-    real(WP)                            :: Omega_orb
+    class(model_t), intent(in)    :: ml
+    type(orbit_par_t), intent(in) :: or_p
+    real(WP)                      :: Omega_orb
 
     ! Evaluate the dimensionless orbital frequency
 
@@ -145,9 +145,9 @@ contains
 
   function tidal_R_a (ml, or_p) result (R_a)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(orbit_par_t), intent(in)       :: or_p
-    real(WP)                            :: R_a
+    class(model_t), intent(in)    :: ml
+    type(orbit_par_t), intent(in) :: or_p
+    real(WP)                      :: R_a
 
     real(WP) :: Omega_orb
 
@@ -167,12 +167,12 @@ contains
 
   function tidal_c (ml, or_p, l, m, k) result (c)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(orbit_par_t), intent(in)       :: or_p
-    integer, intent(in)                 :: l
-    integer, intent(in)                 :: m
-    integer, intent(in)                 :: k
-    real(WP)                            :: c
+    class(model_t), intent(in)    :: ml
+    type(orbit_par_t), intent(in) :: or_p
+    integer, intent(in)           :: l
+    integer, intent(in)           :: m
+    integer, intent(in)           :: k
+    real(WP)                      :: c
 
     real(WP) :: R_a
     real(WP) :: X
@@ -196,12 +196,12 @@ contains
 
   function secular_G_1 (ml, or_p, l, m, k) result (G_1)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(orbit_par_t), intent(in)       :: or_p
-    integer, intent(in)                 :: l
-    integer, intent(in)                 :: m
-    integer, intent(in)                 :: k
-    real(WP)                            :: G_1
+    class(model_t), intent(in)    :: ml
+    type(orbit_par_t), intent(in) :: or_p
+    integer, intent(in)           :: l
+    integer, intent(in)           :: m
+    integer, intent(in)           :: k
+    real(WP)                      :: G_1
 
     real(WP) :: c
     real(WP) :: Y
@@ -237,12 +237,12 @@ contains
 
   function secular_G_2 (ml, or_p, l, m, k) result (G_2)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(orbit_par_t), intent(in)       :: or_p
-    integer, intent(in)                 :: l
-    integer, intent(in)                 :: m
-    integer, intent(in)                 :: k
-    real(WP)                            :: G_2
+    class(model_t), intent(in)    :: ml
+    type(orbit_par_t), intent(in) :: or_p
+    integer, intent(in)           :: l
+    integer, intent(in)           :: m
+    integer, intent(in)           :: k
+    real(WP)                      :: G_2
 
     real(WP) :: c
     real(WP) :: Y
@@ -275,12 +275,12 @@ contains
 
   function secular_G_3 (ml, or_p, l, m, k) result (G_3)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(orbit_par_t), intent(in)       :: or_p
-    integer, intent(in)                 :: l
-    integer, intent(in)                 :: m
-    integer, intent(in)                 :: k
-    real(WP)                            :: G_3
+    class(model_t), intent(in)    :: ml
+    type(orbit_par_t), intent(in) :: or_p
+    integer, intent(in)           :: l
+    integer, intent(in)           :: m
+    integer, intent(in)           :: k
+    real(WP)                      :: G_3
 
     real(WP) :: c
     real(WP) :: Y
@@ -316,12 +316,12 @@ contains
 
   function secular_G_4 (ml, or_p, l, m, k) result (G_4)
 
-    class(model_t), pointer, intent(in) :: ml
-    type(orbit_par_t), intent(in)       :: or_p
-    integer, intent(in)                 :: l
-    integer, intent(in)                 :: m
-    integer, intent(in)                 :: k
-    real(WP)                            :: G_4
+    class(model_t), intent(in)    :: ml
+    type(orbit_par_t), intent(in) :: or_p
+    integer, intent(in)           :: l
+    integer, intent(in)           :: m
+    integer, intent(in)           :: k
+    real(WP)                      :: G_4
 
     real(WP) :: R_a
     real(WP) :: c
