@@ -276,7 +276,7 @@ contains
 
     ! Evaluate the logarithmic derivative of the As coefficient
     
-    dcoeff = -this%dcoeff_V_2_(pt)*pt%x**2/this%Gamma_1
+    dcoeff = -(this%dcoeff_V_2_(pt)*pt%x**2 + 2._WP*this%coeff_V_2_(pt)*pt%x)/this%Gamma_1
 
     ! Finish
 
