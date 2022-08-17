@@ -83,7 +83,7 @@ contains
 
     c = tidal_c(ml, or_p, l, m, k)
 
-    Phi_T = -eps_T/sqrt(4._WP*PI)*c*x**l
+    Phi_T = -eps_T*c*x**l
 
     ! Finish
 
@@ -115,7 +115,7 @@ contains
 
     c = tidal_c(ml, or_p, l, m, k)
 
-    dPhi_T = -eps_T/sqrt(4._WP*PI)*c*l*x**(l-1)
+    dPhi_T = -eps_T*c*l*x**(l-1)
 
     ! Finish
 
