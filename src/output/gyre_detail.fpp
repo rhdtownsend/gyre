@@ -464,11 +464,11 @@ contains
     $WRITE_VALUE(q, rs%or_p%q)
     $WRITE_VALUE(e, rs%or_p%e)
     $WRITE_VALUE(R_a, rs%R_a())
-    $WRITE_VALUE(c, rs%c())
-    $WRITE_VALUE(G_1, rs%G_1())
-    $WRITE_VALUE(G_2, rs%G_2())
-    $WRITE_VALUE(G_3, rs%G_3())
-    $WRITE_VALUE(G_4, rs%G_4())
+    $WRITE_VALUE(A, rs%A())
+    $WRITE_VALUE(B_1, rs%B_1())
+    $WRITE_VALUE(B_2, rs%B_2())
+    $WRITE_VALUE(B_3, rs%B_3())
+    $WRITE_VALUE(B_4, rs%B_4())
 
     case default
 

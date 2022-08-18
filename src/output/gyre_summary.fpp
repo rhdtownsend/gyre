@@ -473,11 +473,11 @@ contains
     $CACHE_VALUE(q, rs%or_p%q)
     $CACHE_VALUE(e, rs%or_p%e)
     $CACHE_VALUE(R_a, rs%R_a())
-    $CACHE_VALUE(c, rs%c())
-    $CACHE_VALUE(G_1, rs%G_1())
-    $CACHE_VALUE(G_2, rs%G_2())
-    $CACHE_VALUE(G_3, rs%G_3())
-    $CACHE_VALUE(G_4, rs%G_4())
+    $CACHE_VALUE(A, rs%A())
+    $CACHE_VALUE(B_1, rs%B_1())
+    $CACHE_VALUE(B_2, rs%B_2())
+    $CACHE_VALUE(B_3, rs%B_3())
+    $CACHE_VALUE(B_4, rs%B_4())
 
     case default
 

@@ -56,11 +56,11 @@ module gyre_resp
      procedure, public :: dPhi_T
      procedure, public :: Omega_orb
      procedure, public :: R_a
-     procedure, public :: c
-     procedure, public :: G_1
-     procedure, public :: G_2
-     procedure, public :: G_3
-     procedure, public :: G_4
+     procedure, public :: A
+     procedure, public :: B_1
+     procedure, public :: B_2
+     procedure, public :: B_3
+     procedure, public :: B_4
   end type resp_t
 
   ! Interfaces
@@ -290,118 +290,118 @@ contains
 
   !****
 
-  function c (this)
+  function A (this)
 
     class(resp_t), intent(in) :: this
-    real(WP)                  :: c
+    real(WP)                  :: A
 
     type(context_t) :: cx
 
-    ! Evaluate the tidal potential coefficient
+    ! Evaluate the tidal potential coefficient A_lmk
 
     cx = this%context()
 
     associate (ml => cx%model())
-      c = tidal_c(ml, this%or_p, this%l, this%m, this%k)
+      A = tidal_A(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
 
     return
 
-  end function c
+  end function A
 
   !****
 
-  function G_1 (this)
+  function B_1 (this)
 
     class(resp_t), intent(in) :: this
-    real(WP)                  :: G_1
+    real(WP)                  :: B_1
 
     type(context_t) :: cx
 
-    ! Evaluate the secular evolution coefficient
+    ! Evaluate the secular evolution coefficient B^(1)_lmk
 
     cx = this%context()
 
     associate (ml => cx%model())
-      G_1 = secular_G_1(ml, this%or_p, this%l, this%m, this%k)
+      B_1 = tidal_B_1(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
 
     return
 
-  end function G_1
+  end function B_1
 
   !****
 
-  function G_2 (this)
+  function B_2 (this)
 
     class(resp_t), intent(in) :: this
-    real(WP)                  :: G_2
+    real(WP)                  :: B_2
 
     type(context_t) :: cx
 
-    ! Evaluate the secular evolution coefficient
+    ! Evaluate the secular evolution coefficient B^(2)_lmk
 
     cx = this%context()
 
     associate (ml => cx%model())
-      G_2 = secular_G_2(ml, this%or_p, this%l, this%m, this%k)
+      B_2 = tidal_B_2(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
 
     return
 
-  end function G_2
+  end function B_2
 
   !****
 
-  function G_3 (this)
+  function B_3 (this)
 
     class(resp_t), intent(in) :: this
-    real(WP)                  :: G_3
+    real(WP)                  :: B_3
 
     type(context_t) :: cx
 
-    ! Evaluate the secular evolution coefficient
+    ! Evaluate the secular evolution coefficient B^(3)_lmk
 
     cx = this%context()
 
     associate (ml => cx%model())
-      G_3 = secular_G_3(ml, this%or_p, this%l, this%m, this%k)
+      B_3 = tidal_B_3(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
 
     return
 
-  end function G_3
+  end function B_3
 
   !****
 
-  function G_4 (this)
+  function B_4 (this)
 
     class(resp_t), intent(in) :: this
-    real(WP)                  :: G_4
+    real(WP)                  :: B_4
 
     type(context_t) :: cx
 
-    ! Evaluate the secular evolution coefficient
+    ! Evaluate the secular evolution coefficient B^(4)_lmk
 
     cx = this%context()
 
     associate (ml => cx%model())
-      G_4 = secular_G_4(ml, this%or_p, this%l, this%m, this%k)
+      B_4 = tidal_B_4(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
 
     return
 
-  end function G_4
+  end function B_4
 
   !****
 

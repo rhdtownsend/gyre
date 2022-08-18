@@ -50,11 +50,11 @@ module gyre_tidal_coeff
   public :: tidal_dPhi_T
   public :: tidal_Omega_orb
   public :: tidal_R_a
-  public :: tidal_c
-  public :: secular_G_1
-  public :: secular_G_2
-  public :: secular_G_3
-  public :: secular_G_4
+  public :: tidal_A
+  public :: tidal_B_1
+  public :: tidal_B_2
+  public :: tidal_B_3
+  public :: tidal_B_4
   public :: hansen_X
   public :: hansen_X_QP
 
@@ -74,16 +74,16 @@ contains
 
     real(WP) :: R_a
     real(WP) :: eps_T
-    real(WP) :: c
+    real(WP) :: A
 
     ! Evaluate the tidal forcing potential Phi_T at x, in units of G*M/R
 
     R_a = tidal_R_a(ml, or_p)
     eps_T = R_a**3*or_p%q
 
-    c = tidal_c(ml, or_p, l, m, k)
+    A = tidal_A(ml, or_p, l, m, k)
 
-    Phi_T = -eps_T*c*x**l
+    Phi_T = -eps_T*A*x**l
 
     ! Finish
 
@@ -105,7 +105,7 @@ contains
 
     real(WP) :: R_a
     real(WP) :: eps_T
-    real(WP) :: c
+    real(WP) :: A
 
     ! Evaluate the tidal forcing potential gradient dPhi_T/dx at x, in
     ! units of G*M/R
@@ -113,9 +113,9 @@ contains
     R_a = tidal_R_a(ml, or_p)
     eps_T = R_a**3*or_p%q
 
-    c = tidal_c(ml, or_p, l, m, k)
+    A = tidal_A(ml, or_p, l, m, k)
 
-    dPhi_T = -eps_T*c*l*x**(l-1)
+    dPhi_T = -eps_T*A*l*x**(l-1)
 
     ! Finish
 
@@ -165,54 +165,50 @@ contains
 
   !****
 
-  function tidal_c (ml, or_p, l, m, k) result (c)
+  function tidal_A (ml, or_p, l, m, k) result (A)
 
     class(model_t), intent(in)    :: ml
     type(orbit_par_t), intent(in) :: or_p
     integer, intent(in)           :: l
     integer, intent(in)           :: m
     integer, intent(in)           :: k
-    real(WP)                      :: c
+    real(WP)                      :: A
 
     real(WP) :: R_a
     real(WP) :: X
 
-    ! Evaluate the tidal potential coefficient. This differs from the
-    ! definition e.g. in eq. (5) of [Willems:2010aa], due to the
-    ! different spherical harmonic definition
+    ! Evaluate the tidal potential coefficient A_lmk
 
     R_a = tidal_R_a(ml, or_p)
     X = hansen_X(or_p, -(l+1), -m, -k)
 
-    c = (4._WP*PI/(2*l+1))*R_a**(l-2)*REAL(CONJG(spherical_Y(l, m, HALFPI, 0._WP)))*X
+    A = (4._WP*PI/(2*l+1))*R_a**(l-2)*REAL(CONJG(spherical_Y(l, m, HALFPI, 0._WP)))*X
 
     ! Finish
 
     return
-
-  end function tidal_c
+    
+  end function tidal_A
 
   !****
 
-  function secular_G_1 (ml, or_p, l, m, k) result (G_1)
+  function tidal_B_1 (ml, or_p, l, m, k) result (B_1)
 
     class(model_t), intent(in)    :: ml
     type(orbit_par_t), intent(in) :: or_p
     integer, intent(in)           :: l
     integer, intent(in)           :: m
     integer, intent(in)           :: k
-    real(WP)                      :: G_1
+    real(WP)                      :: B_1
 
-    real(WP) :: c
     real(WP) :: Y
     real(WP) :: X_1m1
     real(WP) :: X_1p1
     real(WP) :: X_2m1
     real(WP) :: X_2p1
 
-    ! Evaluate the secular evolution coefficient
+    ! Evaluate the secular evolution coefficient B^(1)_lmk
 
-    c = tidal_c(ml, or_p, l, m, k)
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
     X_1m1 = hansen_X(or_p, -(l+1), -m-1, -k)
@@ -222,7 +218,7 @@ contains
     X_2p1 = hansen_X(or_p, -(l+2), -m+1, -k)
 
     associate (e => or_p%e)
-      G_1 = c*Y* &
+      B_1 = Y* &
            (0.5_WP*(l+1)*(X_2m1 + X_2p1) + 0.5_WP*m*(X_2m1 - X_2p1) + &
            0.5_WP*m/(1._WP - e**2)*(X_1m1 - X_1p1))*sqrt(1._WP - e**2)/e
     end associate
@@ -231,28 +227,26 @@ contains
 
     return
 
-  end function secular_G_1
+  end function tidal_B_1
   
   !****
 
-  function secular_G_2 (ml, or_p, l, m, k) result (G_2)
+  function tidal_B_2 (ml, or_p, l, m, k) result (B_2)
 
     class(model_t), intent(in)    :: ml
     type(orbit_par_t), intent(in) :: or_p
     integer, intent(in)           :: l
     integer, intent(in)           :: m
     integer, intent(in)           :: k
-    real(WP)                      :: G_2
+    real(WP)                      :: B_2
 
-    real(WP) :: c
     real(WP) :: Y
     real(WP) :: X_2m1
     real(WP) :: X_2p1
     real(WP) :: X_3
 
-    ! Evaluate the secular evolution coefficient
+    ! Evaluate the secular evolution coefficient B^(2)_lmk
 
-    c = tidal_c(ml, or_p, l, m, k)
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
     X_2m1 = hansen_X(or_p, -(l+2), -m-1, -k)
@@ -261,7 +255,7 @@ contains
     X_3 = hansen_X(or_p, -(l+3), -m, -k)
 
     associate (e => or_p%e)
-      G_2 = -2._WP*c*Y* &
+      B_2 = -2._WP*Y* &
            (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3)/sqrt(1._WP - e**2)
     end associate
 
@@ -269,29 +263,27 @@ contains
 
     return
 
-  end function secular_G_2
+  end function tidal_B_2
 
   !****
 
-  function secular_G_3 (ml, or_p, l, m, k) result (G_3)
+  function tidal_B_3 (ml, or_p, l, m, k) result (B_3)
 
     class(model_t), intent(in)    :: ml
     type(orbit_par_t), intent(in) :: or_p
     integer, intent(in)           :: l
     integer, intent(in)           :: m
     integer, intent(in)           :: k
-    real(WP)                      :: G_3
+    real(WP)                      :: B_3
 
-    real(WP) :: c
     real(WP) :: Y
     real(WP) :: X_1
     real(WP) :: X_2m1
     real(WP) :: X_2p1
     real(WP) :: X_3
 
-    ! Evaluate the secular evolution coefficient
+    ! Evaluate the secular evolution coefficient B^(3)_lmk
 
-    c = tidal_c(ml, or_p, l, m, k)
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
     X_1 = hansen_X(or_p, -(l+1), -m, -k)
@@ -302,7 +294,7 @@ contains
     X_3 = hansen_X(or_p, -(l+3), -m, -k)
 
     associate (e => or_p%e)
-      G_3 = -c*Y* &
+      B_3 = -Y* &
            (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3 - m*X_1)*sqrt(1._WP - e**2)/e
     end associate
 
@@ -310,34 +302,34 @@ contains
 
     return
 
-  end function secular_G_3
+  end function tidal_B_3
 
   !****
 
-  function secular_G_4 (ml, or_p, l, m, k) result (G_4)
+  function tidal_B_4 (ml, or_p, l, m, k) result (B_4)
 
     class(model_t), intent(in)    :: ml
     type(orbit_par_t), intent(in) :: or_p
     integer, intent(in)           :: l
     integer, intent(in)           :: m
     integer, intent(in)           :: k
-    real(WP)                      :: G_4
+    real(WP)                      :: B_4
 
     real(WP) :: R_a
-    real(WP) :: c
+    real(WP) :: A
 
-    ! Evaluate the secular evolution coefficient
+    ! Evaluate the secular evolution coefficient B^(4)_lmk
 
     R_a = tidal_R_a(ml, or_p)
-    c = tidal_c(ml, or_p, l, m, k)
+    A = tidal_A(ml, or_p, l, m, k)
 
-    G_4 = m*(2*l+1)/(4*PI)*(R_a)**(-l+2)*c**2
+    B_4 = m*(2*l+1)/(4*PI)*(R_a)**(-l+2)*A**2
 
     ! Finish
 
     return
 
-  end function secular_G_4
+  end function tidal_B_4
 
   !****
 
@@ -349,7 +341,6 @@ contains
     integer, intent(in)           :: k
     real(WP)                      :: X
 
-    real(WP) :: A
     real(WP) :: S
 
     ! Evaluate the Hansen coefficient X_nmk
@@ -358,10 +349,9 @@ contains
 
       if (e**2 > EPSILON(0._WP)) then
 
-         A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
          S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
 
-         X = A*S*orbit_quad(hansen_X_f_, e, TOL)
+         X = (1._WP - e**2)**(n+1.5_WP)/TWOPI*S*orbit_quad(hansen_X_f_, e, TOL)
 
       else
 
@@ -410,7 +400,6 @@ contains
     integer, intent(in)           :: k
     real(WP)                      :: X
 
-    real(WP) :: A
     real(WP) :: S
 
     ! Evaluate the Hansen coefficient X_nmk
@@ -419,10 +408,9 @@ contains
 
       if (e**2 > EPSILON(0._WP)) then
 
-         A = (1._WP - e**2)**(n+1.5_WP)/TWOPI
          S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
 
-         X = REAL(A*S*orbit_quad_QP(hansen_X_f_, REAL(e, QP), REAL(TOL, QP)), WP)
+         X = (1._WP - e**2)**(n+1.5_WP)/TWOPI*REAL(orbit_quad_QP(hansen_X_f_, REAL(e, QP), REAL(TOL, QP)), WP)
 
       else
 
