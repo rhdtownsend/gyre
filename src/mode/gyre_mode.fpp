@@ -31,6 +31,8 @@ module gyre_mode
   use gyre_grid_util
   use gyre_math
   use gyre_mode_par
+  use gyre_model
+  use gyre_oni_model
   use gyre_osc_par
   use gyre_state
   use gyre_util
@@ -115,14 +117,16 @@ contains
 
     class(mode_t), intent(inout) :: this
 
-    integer  :: j
-    real(WP) :: y_1(this%n)
-    real(WP) :: y_2(this%n)
-    integer  :: j_i
-    integer  :: j_o
-    real(WP) :: x_i
-    integer  :: n_c
-    integer  :: n_a
+    integer                 :: j
+    real(WP)                :: y_1(this%n)
+    real(WP)                :: y_2(this%n)
+    integer                 :: j_i
+    integer                 :: j_o
+    real(WP)                :: x_i
+    integer                 :: n_c
+    integer                 :: n_a
+    class(model_t), pointer :: ml
+    type(grid_t)            :: gr
 
     ! Classify the mode based on its eigenfunctions
 
@@ -173,10 +177,31 @@ contains
        end do
 
        ! Find the inner turning point (this is to deal with noisy
-       ! near-zero solutions at the inner boundary)
+       ! near-zero solutions at the inner boundary). Special case for
+       ! oni_model_t models
 
-       call find_turn(this%context(), this%grid(), r_state_t(REAL(this%omega)), &
-            this%nm_p, this%os_p, j_i, x_i)
+       ml => this%model()
+
+       select type(ml)
+       class is (oni_model_t)
+
+          j_i = 0
+          x_i = HUGE(0._WP)
+
+          turn_loop: do j = 1, this%n
+             if (this%x(j) > 0._WP) then
+                j_i = j
+                x_i = this%x(j)
+                exit turn_loop
+             end if
+          end do turn_loop
+
+       class default
+
+          call find_turn(this%context(), this%grid(), r_state_t(REAL(this%omega)), &
+               this%nm_p, this%os_p, j_i, x_i)
+
+       end select
 
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface

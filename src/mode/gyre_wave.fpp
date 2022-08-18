@@ -75,6 +75,7 @@ module gyre_wave
      private
      procedure, public :: state
      procedure, public :: context
+     procedure, public :: model
      procedure, public :: grid
      procedure, public :: freq
      procedure, public :: dfreq_rot
@@ -269,6 +270,23 @@ contains
     return
 
   end function context
+
+  !****
+
+  function model (this) result (ml)
+
+    class(wave_t), intent(in) :: this
+    class(model_t), pointer   :: ml
+
+    ! Return the wave's model
+
+    ml => this%cx%model()
+
+    ! Finish
+
+    return
+
+  end function model
 
   !****
 
