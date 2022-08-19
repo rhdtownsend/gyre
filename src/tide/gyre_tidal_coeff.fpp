@@ -323,7 +323,7 @@ contains
     R_a = tidal_R_a(ml, or_p)
     A = tidal_A(ml, or_p, l, m, k)
 
-    B_4 = m*(2*l+1)/(4*PI)*(R_a)**(-l+2)*A**2
+    B_4 = m*(2*l+1)/(4*PI)*(R_a)**(-l+2)*A
 
     ! Finish
 
