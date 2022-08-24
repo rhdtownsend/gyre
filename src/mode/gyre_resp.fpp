@@ -56,11 +56,11 @@ module gyre_resp
      procedure, public :: dPhi_T
      procedure, public :: Omega_orb
      procedure, public :: R_a
-     procedure, public :: A
-     procedure, public :: B_1
-     procedure, public :: B_2
-     procedure, public :: B_3
-     procedure, public :: B_4
+     procedure, public :: cbar
+     procedure, public :: Gbar_1
+     procedure, public :: Gbar_2
+     procedure, public :: Gbar_3
+     procedure, public :: Gbar_4
   end type resp_t
 
   ! Interfaces
@@ -290,118 +290,118 @@ contains
 
   !****
 
-  function A (this)
+  function cbar (this)
 
     class(resp_t), intent(in) :: this
-    real(WP)                  :: A
-
+    real(WP)                  :: cbar
+    
     type(context_t) :: cx
 
-    ! Evaluate the tidal potential coefficient A_lmk
+    ! Evaluate the tidal potential coefficient cbar_lmk
 
     cx = this%context()
 
     associate (ml => cx%model())
-      A = tidal_A(ml, this%or_p, this%l, this%m, this%k)
+      cbar = tidal_cbar(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
 
     return
 
-  end function A
+  end function cbar
 
   !****
 
-  function B_1 (this)
+  function Gbar_1 (this)
 
     class(resp_t), intent(in) :: this
-    real(WP)                  :: B_1
+    real(WP)                  :: Gbar_1
 
     type(context_t) :: cx
 
-    ! Evaluate the secular evolution coefficient B^(1)_lmk
+    ! Evaluate the secular evolution coefficient Gbar^(1)_lmk
 
     cx = this%context()
 
     associate (ml => cx%model())
-      B_1 = tidal_B_1(ml, this%or_p, this%l, this%m, this%k)
+      Gbar_1 = tidal_Gbar_1(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
 
     return
 
-  end function B_1
+  end function Gbar_1
 
   !****
 
-  function B_2 (this)
+  function Gbar_2 (this)
 
     class(resp_t), intent(in) :: this
-    real(WP)                  :: B_2
+    real(WP)                  :: Gbar_2
 
     type(context_t) :: cx
 
-    ! Evaluate the secular evolution coefficient B^(2)_lmk
+    ! Evaluate the secular evolution coefficient Gbar^(2)_lmk
 
     cx = this%context()
 
     associate (ml => cx%model())
-      B_2 = tidal_B_2(ml, this%or_p, this%l, this%m, this%k)
+      Gbar_2 = tidal_Gbar_2(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
 
     return
 
-  end function B_2
+  end function Gbar_2
 
   !****
 
-  function B_3 (this)
+  function Gbar_3 (this)
 
     class(resp_t), intent(in) :: this
-    real(WP)                  :: B_3
+    real(WP)                  :: Gbar_3
 
     type(context_t) :: cx
 
-    ! Evaluate the secular evolution coefficient B^(3)_lmk
+    ! Evaluate the secular evolution coefficient Gbar^(3)_lmk
 
     cx = this%context()
 
     associate (ml => cx%model())
-      B_3 = tidal_B_3(ml, this%or_p, this%l, this%m, this%k)
+      Gbar_3 = tidal_Gbar_3(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
 
     return
 
-  end function B_3
+  end function Gbar_3
 
   !****
 
-  function B_4 (this)
+  function Gbar_4 (this)
 
     class(resp_t), intent(in) :: this
-    real(WP)                  :: B_4
+    real(WP)                  :: Gbar_4
 
     type(context_t) :: cx
 
-    ! Evaluate the secular evolution coefficient B^(4)_lmk
+    ! Evaluate the secular evolution coefficient Gbar^(4)_lmk
 
     cx = this%context()
 
     associate (ml => cx%model())
-      B_4 = tidal_B_4(ml, this%or_p, this%l, this%m, this%k)
+      Gbar_4 = tidal_Gbar_4(ml, this%or_p, this%l, this%m, this%k)
     end associate
 
     ! Finish
 
     return
 
-  end function B_4
+  end function Gbar_4
 
   !****
 
