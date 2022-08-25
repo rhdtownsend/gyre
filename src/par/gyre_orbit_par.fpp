@@ -34,7 +34,6 @@ module gyre_orbit_par
      real(WP)        :: Omega_orb = 1._WP
      real(WP)        :: q = 1._WP
      real(WP)        :: e = 0._WP
-     real(WP)        :: t_0 = 0._WP
      character(64)   :: Omega_orb_units = 'NONE'
      character(2048) :: tag_list = ''
   end type orbit_par_t
@@ -60,11 +59,10 @@ contains
     real(WP)                             :: Omega_orb
     real(WP)                             :: q
     real(WP)                             :: e
-    real(WP)                             :: t_0
     character(LEN(or_p%Omega_orb_units)) :: Omega_orb_units
     character(LEN(or_p%tag_list))        :: tag_list
 
-    namelist /orbit/ Omega_orb, q, e, t_0, Omega_orb_units, tag_list
+    namelist /orbit/ Omega_orb, q, e, Omega_orb_units, tag_list
 
     ! Count the number of orbit namelists
 
@@ -94,7 +92,6 @@ contains
        Omega_orb = or_p(i)%Omega_orb
        q = or_p(i)%q
        e = or_p(i)%e
-       t_0 = or_p(i)%t_0
 
        Omega_orb_units = or_p(i)%Omega_orb_units
        tag_list = or_p(i)%tag_list
@@ -108,7 +105,6 @@ contains
        or_p(i)%Omega_orb = Omega_orb
        or_p(i)%q = q
        or_p(i)%e = e
-       or_p(i)%t_0 = t_0
 
        or_p(i)%Omega_orb_units = Omega_orb_units
        or_p(i)%tag_list = tag_list
