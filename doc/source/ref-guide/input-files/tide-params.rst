@@ -5,11 +5,14 @@ Tide Parameters
 
 The :nml_g:`tide` namelist group defines tidal parameters, as follows:
 
-:nml_n:`Phi_T_thresh` (default :nml_v:`0.`)
-  Threshold on tidal potential :math:`Phi_{\rm T}` for a component tide to contribute to tidal forcing
+:nml_n:`y_T_thresh_abs` (default :nml_v:`0.`)
+  Absolute threshold on dimensionless tidal potential :math:`y_{\rm T}` for a component tide to contribute to tidal forcing
 
-:nml_n:`omega_c_thresh` (default :nml_v:`0.`) Threshold on
-  dimensionless co-rotatign frequency :math:`\omega_{\rm c}` for a
+:nml_n:`y_T_thresh_rel` (default :nml_v:`0.`)
+  Relative threshold on dimensionless tidal potential :math:`y_{\rm T}` for a component tide to contribute to tidal forcing
+
+:nml_n:`omega_c_thresh` (default :nml_v:`0.`)
+  Threshold on dimensionless co-rotatign frequency :math:`\omega_{\rm c}` for a
   component tide to be treated as dynamic (rather than static)
 
 :nml_n:`alpha_frq` (default :nml_v:`1.`)
@@ -35,7 +38,3 @@ The :nml_g:`tide` namelist group defines tidal parameters, as follows:
 
 :nml_n:`tag`
   Tag for controlling selection of other parameters
-
-.. rubric:: Footnotes
-
-.. [#only-D] This option is available only for stellar models with :ref:`D capability <model-caps>`
