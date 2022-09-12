@@ -154,7 +154,7 @@ contains
 
        ! Evaluate the dimensionless pressure
 
-       alpha(k) = -z(k)*(m(k+1) - m(k))*(x(k)**2 - x(k+1)**2)/(2._WP*(x(k+1)**3 - x(k)**3))
+       alpha(k) = z(k)*(m(k+1) - m(k))*(x(k+1)**2 - x(k)**2)/(2._WP*(x(k+1)**3 - x(k)**3))
 
        if (x(k) /= 0._WP) then
 
@@ -282,7 +282,7 @@ contains
 
          ! Evaluate the dimensionless pressure
  
-         y = (1._WP - w_m1)*this%y(k) + w_m1*this%y(k+1) + (w_2 - w_m1)*this%alpha(k)
+         y = (1._WP - w_m1)*this%y(k) + w_m1*this%y(k+1) - (w_2 - w_m1)*this%alpha(k)
 
          ! Evaluate the coefficient
 
