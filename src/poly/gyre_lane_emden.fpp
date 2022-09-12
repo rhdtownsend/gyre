@@ -74,7 +74,10 @@ contains
     real(WP), allocatable :: x(:)
     real(WP), allocatable :: y(:,:)
     real(WP)              :: dx
+    real(WP)              :: x_exp
+    real(WP)              :: y_exp(2)
     integer               :: n_r
+    logical               :: first
     integer               :: i
     integer               :: istate
     real(WP)              :: rwork(22+NEQ*MAX(16,NEQ+9)+3*NG)
@@ -106,26 +109,37 @@ contains
     n_poly_m = n_poly(1)
     B_m = 1._WP
 
+    x_exp = 0._WP
+
     expand_loop : do
-
-       ! If necessary, expand arrays
-
-       n = n + 1
-
-       if(n > d) then
-          d = 2*d
-          call reallocate(x, [d])
-          call reallocate(y, [2,d])
-       endif
 
        ! Use a forth-order expansion of the Lane-Emden solutions
 
-       x(n) = dx*(n-1)
+       y_exp(1) = 1._WP - x_exp**2/6._WP + n_poly_m*x_exp**4/120._WP
+       y_exp(2) = -x_exp/3._WP + n_poly_m*x_exp**3/30._WP
 
-       y(1,n) = 1._WP - x(n)**2/6._WP + n_poly_m*x(n)**4/120._WP
-       y(2,n) = -x(n)/3._WP + n_poly_m*x(n)**3/30._WP
+       if (x_exp < X_BEG) then
 
-       if(x(n) > X_BEG) exit expand_loop
+          ! If necessary, expand arrays
+
+          n = n + 1
+
+          if(n > d) then
+             d = 2*d
+             call reallocate(x, [d])
+             call reallocate(y, [2,d])
+          endif
+
+          x(n) = x_exp
+          y(:,n) = y_exp
+
+       else
+
+          exit expand_loop
+
+       end if
+
+       x_exp = MIN(x_exp+dx, X_BEG)
 
     end do expand_loop
 
@@ -133,6 +147,8 @@ contains
     ! surface
 
     n_r = SIZE(z_b) + 1
+
+    first = .TRUE.
 
     region_loop : do i = 1, n_r
 
@@ -158,8 +174,14 @@ contains
              call reallocate(y, [2,d])
           endif
 
-          x(n) = x(n-1)
-          y(:,n) = y(:,n-1)
+          if (first) then
+             x(n) = x_exp
+             y(:,n) = y_exp
+             first = .FALSE.
+          else
+             x(n) = x(n-1)
+             y(:,n) = y(:,n-1)
+          end if
 
           call LSODAR(lane_emden_rhs, [NEQ], y(:,n), x(n), x(n-1)+dx, 1, [0._WP,0._WP], [tol,tol], &
                1, istate, 0, rwork, SIZE(rwork), iwork, SIZE(iwork), lane_emden_jac, 1, &
