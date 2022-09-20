@@ -3,7 +3,7 @@
 
 # Variables
 
-TARGETS=gyre gyre_tides poly_to_fgong poly_to_txt eval_lambda
+TARGETS=gyre gyre_tides poly_to_fgong poly_to_txt poly_to_parfait eval_lambda
 
 ODEPACK=$(shell which odepack_link > /dev/null 2>& 1 && echo "yes" || echo "no")
 

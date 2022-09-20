@@ -26,14 +26,16 @@ module gyre_mode
   use core_parallel
 
   use gyre_context
+  use gyre_constants
   use gyre_ext
   use gyre_grid
   use gyre_grid_util
   use gyre_math
   use gyre_mode_par
   use gyre_model
-  use gyre_oni_model
   use gyre_osc_par
+  use gyre_parfait_model
+  use gyre_point
   use gyre_state
   use gyre_util
   use gyre_wave
@@ -178,23 +180,14 @@ contains
 
        ! Find the inner turning point (this is to deal with noisy
        ! near-zero solutions at the inner boundary). Special case for
-       ! oni_model_t models
+       ! parfait_model_t models
 
        ml => this%model()
 
        select type(ml)
-       class is (oni_model_t)
+       class is (parfait_model_t)
 
-          j_i = 0
-          x_i = HUGE(0._WP)
-
-          turn_loop: do j = 1, this%n
-             if (this%x(j) > 0._WP) then
-                j_i = j
-                x_i = this%x(j)
-                exit turn_loop
-             end if
-          end do turn_loop
+          call find_turn_parfait_(ml, this%grid(), REAL(this%omega), this%l, j_i, x_i)
 
        class default
 
@@ -328,6 +321,37 @@ contains
       return
 
     end subroutine count_windings_
+
+    !****
+
+    subroutine find_turn_parfait_(ml, gr, omega, l, j_i, x_i)
+
+      class(parfait_model_t), pointer :: ml
+      type(grid_t), intent(in)        :: gr
+      real(WP), intent(in)            :: omega
+      integer, intent(in)             :: l
+      integer, intent(out)            :: j_i
+      real(WP), intent(out)           :: x_i
+
+      integer :: j
+
+      ! For parfailt_model_t models, all segments are formally
+      ! convective so there is no inner turning point. Instead, just
+      ! set the point to have x > 0
+
+      do j = 1, gr%n
+         if (gr%pt(j)%x > 0._WP) then
+            j_i = j
+            x_i = gr%pt(j)%x
+            exit
+         end if
+      end do
+
+      ! Finish
+
+      return
+
+    end subroutine find_turn_parfait_
 
   end subroutine classify_
 

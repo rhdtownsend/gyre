@@ -1,5 +1,5 @@
-! Module   : gyre_oni_model
-! Purpose  : stellar onion (piecewise constant density) model
+! Module   : gyre_parfait_model
+! Purpose  : stellar parf (piecewise analytic representation) model
 !
 ! Copyright 2022 Rich Townsend & The GYRE Team
 !
@@ -17,7 +17,7 @@
 
 $include 'core.inc'
 
-module gyre_oni_model
+module gyre_parfait_model
 
   ! Uses
 
@@ -38,7 +38,7 @@ module gyre_oni_model
 
   ! Derived-type definitions
 
-  type, extends (model_t) :: oni_model_t
+  type, extends (model_t) :: parfait_model_t
      private
      type(grid_t)          :: gr
      real(WP), allocatable :: m(:)
@@ -46,9 +46,7 @@ module gyre_oni_model
      real(WP), allocatable :: y(:)
      real(WP), allocatable :: z(:)
      real(WP), allocatable :: alpha(:)
-     real(WP), public      :: M_star
-     real(WP), public      :: R_star
-     real(WP)              :: Gamma_1
+     real(WP), allocatable :: Gamma_1(:)
      real(WP)              :: Omega_rot
      integer               :: s_i
      integer               :: s_o
@@ -59,47 +57,43 @@ module gyre_oni_model
      procedure         :: coeff_As_
      procedure         :: coeff_U_
      procedure         :: coeff_c_1_
+     procedure         :: coeff_Gamma_1_
      procedure, public :: dcoeff
      procedure         :: dcoeff_V_2_
      procedure         :: dcoeff_As_
      procedure         :: dcoeff_U_
      procedure         :: dcoeff_c_1_
-     procedure, public :: M_r
-     procedure, public :: P
-     procedure, public :: rho
      procedure, public :: is_defined
      procedure, public :: is_vacuum
      procedure, public :: Delta_p
      procedure, public :: Delta_g
      procedure, public :: grid
-  end type oni_model_t
+  end type parfait_model_t
 
   ! Interfaces
 
-  interface oni_model_t
-     module procedure oni_model_t_
-  end interface oni_model_t
+  interface parfait_model_t
+     module procedure parfait_model_t_
+  end interface parfait_model_t
 
   ! Access specifiers
 
   private
 
-  public :: oni_model_t
+  public :: parfait_model_t
 
   ! Procedures
 
 contains
 
-  function oni_model_t_ (M_r, r, Gamma_1) result (ml)
+  function parfait_model_t_ (x, m, Gamma_1) result (ml)
 
-    real(WP), intent(in) :: M_r(:)
-    real(WP), intent(in) :: r(:)
-    real(WP), intent(in) :: Gamma_1
-    type(oni_model_t)    :: ml
+    real(WP), intent(in)  :: x(:)
+    real(WP), intent(in)  :: m(:)
+    real(WP), intent(in)  :: Gamma_1(:)
+    type(parfait_model_t) :: ml
 
     integer               :: n
-    real(WP), allocatable :: m(:)
-    real(WP), allocatable :: x(:)
     real(WP), allocatable :: y(:)
     real(WP), allocatable :: z(:)
     real(WP), allocatable :: alpha(:)
@@ -107,34 +101,25 @@ contains
     real(WP)              :: beta
     real(WP), allocatable :: gr_x(:)
 
-    $CHECK_BOUNDS(SIZE(M_r), SIZE(r))
+    $CHECK_BOUNDS(SIZE(m), SIZE(x))
+    $CHECK_BOUNDS(SIZE(Gamma_1), SIZE(x)-1)
 
-    ! Construct the oni_model_t
+    ! Construct the parfait_model_t
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Constructing onion (piecewise constant density) model'
+       write(OUTPUT_UNIT, 100) 'Constructing parfait (piecewise analytic representation) model'
 100    format(A)
     endif
 
     ! Sanity checks
 
-    n = SIZE(r)
+    n = SIZE(x)
 
-    $ASSERT(ALL(M_r(2:) >= M_r(:n-1)),Non-monotonic mass coordinate)
-    $ASSERT(ALL(r(2:) > r(:n-1)),Non-monotonic radial coordinate)
+    $ASSERT(x(1) == 0._WP,Radius coordinate must begin at center)
+    $ASSERT(m(1) == 0._WP,Mass coordinate must begin at center)
 
-    $ASSERT(M_r(1) == 0._WP,Missing center)
-    $ASSERT(r(1) == 0._WP,Missing center)
-
-    ! Set stellar parameters
-
-    ml%M_star = M_r(n)
-    ml%R_star = r(n)
-
-    ! Set up the dimensionless mass and radius coordinates
-
-    m = M_r/ml%M_star
-    x = r/ml%R_star
+    $ASSERT(ALL(x(2:n) > x(:n-1)),Non-monotonic radius coordinate)
+    $ASSERT(ALL(m(2:n) > m(:n-1)),Non-monotonic mass coordinate)
 
     ! Integrate the dimensionless equation of hydrostatic equibrium,
     ! downward from the surface
@@ -148,15 +133,16 @@ contains
 
     y_loop : do k = n-1, 1, -1
 
-       ! Evaluate the dimensionless density
+       ! Evaluate the dimensionless density z
 
        z(k) = 3._WP*(m(k+1) - m(k))/(4._WP*PI*(x(k+1)**3 - x(k)**3))
 
-       ! Evaluate the dimensionless pressure
+       ! Evaluate the dimensionless pressure y. alpha is a helper
+       ! array used later to evaluate y between grid points
 
        alpha(k) = z(k)*(m(k+1) - m(k))*(x(k+1)**2 - x(k)**2)/(2._WP*(x(k+1)**3 - x(k)**3))
 
-       if (x(k) /= 0._WP) then
+       if (k > 1) then
 
           beta = -z(k)*(m(k+1)*x(k)**3 - m(k)*x(k+1)**3)*(x(k)**(-1) - x(k+1)**(-1))/(x(k+1)**3 - x(k)**3)
 
@@ -178,6 +164,8 @@ contains
     ml%z = z
     ml%alpha = alpha
 
+    ml%Gamma_1 = Gamma_1
+
     ! Set up the grid
 
     allocate(gr_x(2*n-2))
@@ -190,8 +178,6 @@ contains
     ml%gr = grid_t(gr_x)
 
     ! Other stuff
-
-    ml%Gamma_1 = Gamma_1
 
     ml%Omega_rot = 0._WP
 
@@ -207,16 +193,16 @@ contains
 
     return
 
-  end function oni_model_t_
+  end function parfait_model_t_
 
   !****
 
   function coeff (this, i, pt)
 
-    class(oni_model_t), intent(in) :: this
-    integer, intent(in)            :: i
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: coeff
+    class(parfait_model_t), intent(in) :: this
+    integer, intent(in)                :: i
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: coeff
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
     $ASSERT_DEBUG(this%is_defined(i),Undefined coefficient)
@@ -235,7 +221,7 @@ contains
     case (I_C_1)
        coeff = this%coeff_c_1_(pt)
     case (I_GAMMA_1)
-       coeff = this%Gamma_1
+       coeff = this%coeff_Gamma_1_(pt)
     case (I_OMEGA_ROT)
        coeff = this%Omega_rot
     end select
@@ -250,9 +236,9 @@ contains
 
   function coeff_V_2_ (this, pt) result (coeff)
 
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: coeff
+    class(parfait_model_t), intent(in) :: this
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: coeff
 
     real(WP) :: w_m1
     real(WP) :: w_2
@@ -262,36 +248,36 @@ contains
 
     ! Evaluate the V_2 coefficient
 
-    if (pt%x == 0._WP) then
+    associate (k => pt%s)
 
-       coeff = this%z(1)/(this%coeff_c_1_(pt)*this%y(1))
+      ! Set up weight functions
 
-    else
+      if (k > 1) then
 
-       associate(k => pt%s)
+         w_m1 = (pt%x**(-1) - this%x(k)**(-1))/(this%x(k+1)**(-1) - this%x(k)**(-1))
 
-         ! Set up weight functions
+      else
 
-         if (this%x(k) == 0._WP) then
+         if (pt%x > 0._WP) then
             w_m1 = 1._WP
          else
-            w_m1 = (pt%x**(-1) - this%x(k)**(-1))/(this%x(k+1)**(-1) - this%x(k)**(-1))
+            w_m1 = 0._WP
          endif
-         
-         w_2 = (pt%x**2 - this%x(k)**2)/(this%x(k+1)**2 - this%x(k)**2)
 
-         ! Evaluate the dimensionless pressure
+      endif
+         
+      w_2 = (pt%x**2 - this%x(k)**2)/(this%x(k+1)**2 - this%x(k)**2)
+
+      ! Evaluate the dimensionless pressure
  
-         y = (1._WP - w_m1)*this%y(k) + w_m1*this%y(k+1) - (w_2 - w_m1)*this%alpha(k)
+      y = (1._WP - w_m1)*this%y(k) + w_m1*this%y(k+1) - (w_2 - w_m1)*this%alpha(k)
 
-         ! Evaluate the coefficient
+      ! Evaluate the coefficient
 
-         coeff = this%z(k)/(this%coeff_c_1_(pt)*y)
+      coeff = this%z(k)/(this%coeff_c_1_(pt)*y)
 
-       end associate
+    end associate
 
-    end if
-         
     ! Finish
 
     return
@@ -302,15 +288,15 @@ contains
 
   function coeff_As_ (this, pt) result (coeff)
 
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: coeff
+    class(parfait_model_t), intent(in) :: this
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: coeff
 
     $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),As evaluation at vacuum point)
 
     ! Evaluate the As coefficient
 
-    coeff = -this%coeff_V_2_(pt)*pt%x**2/this%Gamma_1
+    coeff = -this%coeff_V_2_(pt)*pt%x**2/this%coeff_Gamma_1_(pt)
 
     ! Finish
 
@@ -322,13 +308,13 @@ contains
 
   function coeff_U_ (this, pt) result (coeff)
 
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: coeff
+    class(parfait_model_t), intent(in) :: this
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: coeff
 
     ! Evaluate the U coefficient
 
-    associate(k => pt%s)
+    associate (k => pt%s)
 
       coeff = 4._WP*PI*this%coeff_c_1_(pt)*this%z(k)
 
@@ -344,20 +330,20 @@ contains
 
   function coeff_c_1_ (this, pt) result (coeff)
 
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: coeff
+    class(parfait_model_t), intent(in) :: this
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: coeff
 
     real(WP) :: w_3
     real(WP) :: m
 
     ! Evaluate the c_1 coefficient
 
-    if (pt%x /= 0._WP) then
+    associate (k => pt%s)
 
-       associate(k => pt%s)
+      if (k > 1) then
 
-         ! Set up weight functions
+         ! Set up weight function
 
          w_3 = (pt%x**3 - this%x(k)**3)/(this%x(k+1)**3 - this%x(k)**3)
 
@@ -369,13 +355,13 @@ contains
 
          coeff = pt%x**3/m
 
-       end associate
+      else
 
-    else
+         coeff = 3._WP/(4._WP*PI*this%z(1))
 
-       coeff = this%x(2)**3/this%m(2)
+      end if
 
-    end if
+    end associate
 
     ! Finish
 
@@ -385,12 +371,33 @@ contains
 
   !****
 
+  function coeff_Gamma_1_ (this, pt) result (coeff)
+
+    class(parfait_model_t), intent(in) :: this
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: coeff
+
+    ! Evaluate the Gamma_1 coefficient
+
+    associate (k => pt%s)
+
+      coeff = this%Gamma_1(k)
+
+    end associate
+    ! Finish
+
+    return
+
+  end function coeff_Gamma_1_
+
+  !****
+
   function dcoeff (this, i, pt)
 
-    class(oni_model_t), intent(in) :: this
-    integer, intent(in)            :: i
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: dcoeff
+    class(parfait_model_t), intent(in) :: this
+    integer, intent(in)                :: i
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: dcoeff
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
     $ASSERT_DEBUG(this%is_defined(i),Undefined coefficient)
@@ -424,9 +431,9 @@ contains
 
   function dcoeff_V_2_ (this, pt) result (dcoeff)
 
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: dcoeff
+    class(parfait_model_t), intent(in) :: this
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: dcoeff
 
     ! Evaluate the logarithmic derivative of the V_2 coefficient
 
@@ -442,13 +449,13 @@ contains
 
   function dcoeff_As_ (this, pt) result (dcoeff)
 
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: dcoeff
+    class(parfait_model_t), intent(in) :: this
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: dcoeff
 
     ! Evaluate the logarithmic derivative of the As coefficient
 
-    dcoeff = -(this%dcoeff_V_2_(pt)*pt%x**2 + 2._WP*this%coeff_V_2_(pt)*pt%x)/this%Gamma_1
+    dcoeff = -(this%dcoeff_V_2_(pt)*pt%x**2 + 2._WP*this%coeff_V_2_(pt)*pt%x)/this%coeff_Gamma_1_(pt)
 
     ! Finish
 
@@ -460,9 +467,9 @@ contains
 
   function dcoeff_U_ (this, pt) result (dcoeff)
 
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: dcoeff
+    class(parfait_model_t), intent(in) :: this
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: dcoeff
 
     ! Evaluate the logarithmic derivative of the U coefficient, using
     ! eqn. (21) of Takata (2006) with dlnrho/dlnr = 0
@@ -479,9 +486,9 @@ contains
 
   function dcoeff_c_1_ (this, pt) result (dcoeff)
 
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: dcoeff
+    class(parfait_model_t), intent(in) :: this
+    type(point_t), intent(in)          :: pt
+    real(WP)                           :: dcoeff
 
     ! Evaluate the logarithmic derivative of the c_1 coefficient,
     ! using eqn. (20) of Takata (2006)
@@ -496,66 +503,11 @@ contains
 
   !****
 
-  function M_r (this, pt)
-
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: M_r
-
-    ! Evaluate the fractional mass coordinate
-
-    M_r = this%M_star*(pt%x**3/this%coeff(I_C_1, pt))
-
-    ! Finish
-
-    return
-
-  end function M_r
-    
-  !****
-
-  function P (this, pt)
-
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: P
-
-    ! Evaluate the total pressure
-
-    P = (G_GRAVITY*this%M_star**2/(4._WP*PI*this%R_star**4))* &
-        (this%coeff(I_U, pt)/(this%coeff(I_C_1, pt)**2*this%coeff(I_V_2, pt)))
-
-    ! Finish
-
-    return
-
-  end function P
-    
-  !****
-
-  function rho (this, pt)
-
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    real(WP)                       :: rho
-
-    ! Evaluate the density
-
-    rho = (this%M_star/(4._WP*PI*this%R_star**3))*(this%coeff(I_U, pt)/this%coeff(I_C_1, pt))
-
-    ! Finish
-
-    return
-
-  end function rho
-    
-  !****
-
   function is_defined (this, i)
 
-    class(oni_model_t), intent(in) :: this
-    integer, intent(in)            :: i
-    logical                        :: is_defined
+    class(parfait_model_t), intent(in) :: this
+    integer, intent(in)                :: i
+    logical                            :: is_defined
 
     $ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST,Invalid index)
 
@@ -578,9 +530,9 @@ contains
 
   function is_vacuum (this, pt)
 
-    class(oni_model_t), intent(in) :: this
-    type(point_t), intent(in)      :: pt
-    logical                        :: is_vacuum
+    class(parfait_model_t), intent(in) :: this
+    type(point_t), intent(in)          :: pt
+    logical                            :: is_vacuum
 
     $ASSERT_DEBUG(pt%s >= this%s_i .AND. pt%s <= this%s_o,Invalid segment)
 
@@ -598,14 +550,14 @@ contains
 
   function Delta_p (this, x_i, x_o)
 
-    class(oni_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x_i
-    real(WP), intent(in)           :: x_o
-    real(WP)                       :: Delta_p
+    class(parfait_model_t), intent(in) :: this
+    real(WP), intent(in)               :: x_i
+    real(WP), intent(in)               :: x_o
+    real(WP)                           :: Delta_p
 
     ! Evaluate the dimensionless p-mode frequency separation
 
-    Delta_p = 0.5_WP/(sqrt(2._WP/this%Gamma_1)*(asin(x_o)-asin(x_i)))
+    $ABORT(Not yet implemented)
 
     ! Finish
 
@@ -617,15 +569,15 @@ contains
 
   function Delta_g (this, x_i, x_o, lambda)
 
-    class(oni_model_t), intent(in) :: this
-    real(WP), intent(in)           :: x_i
-    real(WP), intent(in)           :: x_o
-    real(WP), intent(in)           :: lambda
-    real(WP)                       :: Delta_g
+    class(parfait_model_t), intent(in) :: this
+    real(WP), intent(in)               :: x_i
+    real(WP), intent(in)               :: x_o
+    real(WP), intent(in)               :: lambda
+    real(WP)                           :: Delta_g
 
     ! Evaluate the dimensionless g-mode inverse period separation
 
-    Delta_g = 0._WP
+    $ABORT(Not yet implemented)
 
     ! Finish
 
@@ -637,8 +589,8 @@ contains
 
   function grid (this) result (gr)
 
-    class(oni_model_t), intent(in) :: this
-    type(grid_t)                   :: gr
+    class(parfait_model_t), intent(in) :: this
+    type(grid_t)                      :: gr
 
     ! Return the grid
 
@@ -650,4 +602,4 @@ contains
 
   end function grid
 
-end module gyre_oni_model
+end module gyre_parfait_model
