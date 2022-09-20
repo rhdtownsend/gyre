@@ -202,6 +202,7 @@ contains
     integer, intent(in)           :: k
     real(WP)                      :: Gbar_1
 
+    real(WP) :: cbar
     real(WP) :: Y
     real(WP) :: X_1m1
     real(WP) :: X_1p1
@@ -209,6 +210,8 @@ contains
     real(WP) :: X_2p1
 
     ! Evaluate the secular evolution coefficient Gbar^(1)_lmk
+
+    cbar = tidal_cbar(ml, or_p, l, m, k)
 
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
@@ -219,7 +222,7 @@ contains
     X_2p1 = hansen_X(or_p, -(l+2), -m+1, -k)
 
     associate (e => or_p%e)
-      Gbar_1 = Y* &
+      Gbar_1 = cbar*Y* &
            (0.5_WP*(l+1)*(X_2m1 + X_2p1) + 0.5_WP*m*(X_2m1 - X_2p1) + &
            0.5_WP*m/(1._WP - e**2)*(X_1m1 - X_1p1))*sqrt(1._WP - e**2)/e
     end associate
@@ -241,12 +244,15 @@ contains
     integer, intent(in)           :: k
     real(WP)                      :: Gbar_2
 
+    real(WP) :: cbar
     real(WP) :: Y
     real(WP) :: X_2m1
     real(WP) :: X_2p1
     real(WP) :: X_3
 
     ! Evaluate the secular evolution coefficient Gbar^(2)_lmk
+
+    cbar = tidal_cbar(ml, or_p, l, m, k)
 
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
@@ -256,7 +262,7 @@ contains
     X_3 = hansen_X(or_p, -(l+3), -m, -k)
 
     associate (e => or_p%e)
-      Gbar_2 = -2._WP*Y* &
+      Gbar_2 = -2._WP*cbar*Y* &
            (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3)/sqrt(1._WP - e**2)
     end associate
 
@@ -277,6 +283,7 @@ contains
     integer, intent(in)           :: k
     real(WP)                      :: Gbar_3
 
+    real(WP) :: cbar
     real(WP) :: Y
     real(WP) :: X_1
     real(WP) :: X_2m1
@@ -284,6 +291,8 @@ contains
     real(WP) :: X_3
 
     ! Evaluate the secular evolution coefficient Gbar^(3)_lmk
+
+    cbar = tidal_cbar(ml, or_p, l, m, k)
 
     Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
 
@@ -295,7 +304,7 @@ contains
     X_3 = hansen_X(or_p, -(l+3), -m, -k)
 
     associate (e => or_p%e)
-      Gbar_3 = -Y* &
+      Gbar_3 = -cbar*Y* &
            (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3 - m*X_1)*sqrt(1._WP - e**2)/e
     end associate
 
@@ -316,16 +325,16 @@ contains
     integer, intent(in)           :: k
     real(WP)                      :: Gbar_4
 
-    real(WP) :: Y
-    real(WP) :: X_1
+    real(WP) :: cbar
+    real(WP) :: R_a
 
     ! Evaluate the secular evolution coefficient Gbar^(4)_lmk
 
-    Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
+    cbar = tidal_cbar(ml, or_p, l, m, k)
 
-    X_1 = hansen_X(or_p, -(l+1), -m, -k)
+    R_a = tidal_R_a(ml, or_p)
 
-    Gbar_4 = m*Y*X_1
+    Gbar_4 = m*(2*l+1)/(4._WP*PI)*R_a**(2-l)*cbar**2
 
     ! Finish
 
