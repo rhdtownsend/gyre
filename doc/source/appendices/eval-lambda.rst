@@ -91,7 +91,7 @@ The output file created by :program:`eval_lambda` is in GYRE's
 :code:`k` (integer scalar)
   Meridional order :math:`k` (see :ads_citealp:`townsend:2003a`)
 
-:code:`l` (integer scalar)
+:code:`m` (integer scalar)
   Azimuthal order :math:`m`
 
 :code:`rossby` (logical scalar)
