@@ -41,11 +41,11 @@ module gyre_parfait_model
   type, extends (model_t) :: parfait_model_t
      private
      type(grid_t)          :: gr
-     real(WP), allocatable :: m(:)
      real(WP), allocatable :: x(:)
      real(WP), allocatable :: y(:)
      real(WP), allocatable :: z(:)
-     real(WP), allocatable :: alpha(:)
+     real(WP), allocatable :: a(:)
+     real(WP), allocatable :: d(:)
      real(WP), allocatable :: Gamma_1(:)
      real(WP)              :: Omega_rot
      integer               :: s_i
@@ -86,28 +86,30 @@ module gyre_parfait_model
 
 contains
 
-  function parfait_model_t_ (x, m, Gamma_1) result (ml)
+  function parfait_model_t_ (x, d, Gamma_1, y_c, z_s) result (ml)
 
     real(WP), intent(in)  :: x(:)
-    real(WP), intent(in)  :: m(:)
+    real(WP), intent(in)  :: d(:)
     real(WP), intent(in)  :: Gamma_1(:)
+    real(WP), intent(in)  :: y_c
+    real(WP), intent(in)  :: z_s
     type(parfait_model_t) :: ml
 
     integer               :: n
     real(WP), allocatable :: y(:)
     real(WP), allocatable :: z(:)
-    real(WP), allocatable :: alpha(:)
+    real(WP), allocatable :: a(:)
     integer               :: k
-    real(WP)              :: beta
+    real(WP)              :: b
     real(WP), allocatable :: gr_x(:)
 
-    $CHECK_BOUNDS(SIZE(m), SIZE(x))
+    $CHECK_BOUNDS(SIZE(d), SIZE(x)-1)
     $CHECK_BOUNDS(SIZE(Gamma_1), SIZE(x)-1)
 
     ! Construct the parfait_model_t
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Constructing parfait (piecewise analytic representation) model'
+       write(OUTPUT_UNIT, 100) 'Constructing parfait model'
 100    format(A)
     endif
 
@@ -115,54 +117,46 @@ contains
 
     n = SIZE(x)
 
-    $ASSERT(x(1) == 0._WP,Radius coordinate must begin at center)
-    $ASSERT(m(1) == 0._WP,Mass coordinate must begin at center)
-
     $ASSERT(ALL(x(2:n) > x(:n-1)),Non-monotonic radius coordinate)
-    $ASSERT(ALL(m(2:n) > m(:n-1)),Non-monotonic mass coordinate)
 
-    ! Integrate the dimensionless equation of hydrostatic equibrium,
-    ! downward from the surface
+    ! Integrate the dimensionless mass equation outward
 
     allocate(y(n))
 
-    y(n) = 0._WP
+    y(1) = y_c
 
-    allocate(z(n-1))
-    allocate(alpha(n-1))
-
-    y_loop : do k = n-1, 1, -1
-
-       ! Evaluate the dimensionless density z
-
-       z(k) = 3._WP*(m(k+1) - m(k))/(4._WP*PI*(x(k+1)**3 - x(k)**3))
-
-       ! Evaluate the dimensionless pressure y. alpha is a helper
-       ! array used later to evaluate y between grid points
-
-       alpha(k) = z(k)*(m(k+1) - m(k))*(x(k+1)**2 - x(k)**2)/(2._WP*(x(k+1)**3 - x(k)**3))
-
-       if (k > 1) then
-
-          beta = -z(k)*(m(k+1)*x(k)**3 - m(k)*x(k+1)**3)*(x(k)**(-1) - x(k+1)**(-1))/(x(k+1)**3 - x(k)**3)
-
-          y(k) = y(k+1) + alpha(k) + beta
-
-       else
-
-          y(k) = y(k+1) + alpha(k)
-
-       end if
-
+    y_loop: do k = 1, n-1
+       y(k+1) = y(k) + 4._WP*PI*(x(k+1)**3 - x(k)**3)*d(k)/3._WP
     end do y_loop
+
+    ! Integrate the dimensionless hydrostatic equilibrium equation inward
+
+    allocate(z(n))
+    allocate(a(n-1))
+
+    z(n) = z_s
+
+    z_loop: do k = n-1, 1, -1
+
+       a(k) = 2._WP*PI*(x(k+1)**2 - x(k)**2)*d(k)**2/3._WP
+
+       if (x(k) > 0._WP) then
+          b = (x(k)**(-1) - x(k+1)**(-1))*(x(k+1)**3*y(k) - x(k)**3*y(k+1))/(x(k+1)**3 - x(k)**3)*d(k)
+       else
+          b = 0._WP
+       end if
+       
+       z(k) = z(k+1) + a(k) + b
+
+    end do z_loop
 
     ! Store data
 
-    ml%m = m
     ml%x = x
     ml%y = y
     ml%z = z
-    ml%alpha = alpha
+    ml%a = a
+    ml%d = d
 
     ml%Gamma_1 = Gamma_1
 
@@ -242,7 +236,7 @@ contains
 
     real(WP) :: w_m1
     real(WP) :: w_2
-    real(WP) :: y
+    real(WP) :: z
 
     $ASSERT_DEBUG(.NOT. this%is_vacuum(pt),V_2 evaluation at vacuum point)
 
@@ -270,11 +264,11 @@ contains
 
       ! Evaluate the dimensionless pressure
  
-      y = (1._WP - w_m1)*this%y(k) + w_m1*this%y(k+1) - (w_2 - w_m1)*this%alpha(k)
+      z = (1._WP - w_m1)*this%z(k) + w_m1*this%z(k+1) + (w_m1 - w_2)*this%a(k)
 
       ! Evaluate the coefficient
 
-      coeff = this%z(k)/(this%coeff_c_1_(pt)*y)
+      coeff = this%d(k)/(this%coeff_c_1_(pt)*z)
 
     end associate
 
@@ -316,7 +310,7 @@ contains
 
     associate (k => pt%s)
 
-      coeff = 4._WP*PI*this%coeff_c_1_(pt)*this%z(k)
+      coeff = 4._WP*PI*this%coeff_c_1_(pt)*this%d(k)
 
     end associate
 
@@ -341,7 +335,7 @@ contains
 
     associate (k => pt%s)
 
-      if (k > 1) then
+      if (this%x(k) > 0._WP) then
 
          ! Set up weight function
 
@@ -349,7 +343,7 @@ contains
 
          ! Evaluate the dimensionless mass
 
-         m = (1._WP - w_3)*this%m(k) + w_3*this%m(k+1)
+         m = (1._WP - w_3)*this%y(k) + w_3*this%y(k+1)
 
          ! Evaluate the coefficient
 
@@ -357,7 +351,7 @@ contains
 
       else
 
-         coeff = 3._WP/(4._WP*PI*this%z(1))
+         coeff = 3._WP/(4._WP*PI*this%d(1))
 
       end if
 

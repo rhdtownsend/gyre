@@ -51,8 +51,10 @@ contains
     class(model_t), pointer, intent(out) :: ml
 
     type(hgroup_t)                 :: hg
+    real(WP)                       :: y_c
+    real(WP)                       :: z_s
     real(WP), allocatable          :: x(:)
-    real(WP), allocatable          :: m(:)
+    real(WP), allocatable          :: d(:)
     real(WP), allocatable          :: Gamma_1(:)
     type(parfait_model_t), pointer :: pm
 
@@ -65,8 +67,11 @@ contains
 
     hg = hgroup_t(ml_p%file, OPEN_FILE_RO)
 
+    call read_attr(hg, 'y_c', y_c)
+    call read_attr(hg, 'z_s', z_s)
+
     call read_dset_alloc(hg, 'x', x)
-    call read_dset_alloc(hg, 'm', m)
+    call read_dset_alloc(hg, 'd', d)
 
     call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
 
@@ -79,7 +84,7 @@ contains
 
     ! Initialize the parfait_model_t
 
-    allocate(pm, SOURCE=parfait_model_t(x, m, Gamma_1))
+    allocate(pm, SOURCE=parfait_model_t(x, d, Gamma_1, y_c, z_s))
 
     ! Return a pointer
 
