@@ -829,9 +829,18 @@ contains
       lag_S = this%lag_S(j)
 
       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
-      delta = ml%coeff(I_DELTA, pt)
 
-      lag_rho = lag_P/Gamma_1 - delta*lag_S
+      if (lag_S /= 0._WP) then
+
+         delta = ml%coeff(I_DELTA, pt)
+
+         lag_rho = lag_P/Gamma_1 - delta*lag_S
+
+      else
+
+         lag_rho = lag_P/Gamma_1
+
+      end if
 
     end associate
 
@@ -2447,6 +2456,14 @@ contains
 
     integer     :: j
     complex(WP) :: dzeta_dx(this%n)
+    complex(WP) :: zeta
+    integer     :: s
+    integer     :: j_l
+    integer     :: j_r
+    complex(WP) :: xi_r
+    real(WP)    :: U_l
+    real(WP)    :: U_r
+    real(WP)    :: c_1
 
     ! Calculate the dimensionless frequency from the zeta integral
 
@@ -2455,7 +2472,54 @@ contains
        dzeta_dx(j) = this%dzeta_dx(j)
     end do
 
-    omega_int = sqrt(integrate(this%gr%pt%x, dzeta_dx))
+    zeta = integrate(this%gr%pt%x, dzeta_dx)
+
+    ! Add on corrections associated with discontinuities
+
+    select case (this%os_p%zeta_scheme)
+    case ('KAWALER_GRAV','KAWALER','DUPRET')
+
+       do s = this%gr%s_i(), this%gr%s_o()-1
+
+          j_l = this%gr%j_s_o(s)
+          j_r = this%gr%j_s_i(s+1)
+
+          associate(                    &
+               ml => this%cx%model(),   &
+               pt_l => this%gr%pt(j_l), &
+               pt_r => this%gr%pt(j_r) )
+
+            xi_r = this%xi_r(j_l)
+
+            U_l = ml%coeff(I_U, pt_l)
+            U_r = ml%coeff(I_U, pt_r)
+
+            c_1 = ml%coeff(I_C_1, pt_l)
+
+            zeta = zeta - CONJG(xi_r)*xi_r*pt_l%x**3*(U_r - U_l)/c_1**2
+
+          end associate
+
+       end do
+
+       associate(                   &
+            ml => this%cx%model(),  &
+            pt => this%gr%pt_o() )
+
+         xi_r = this%xi_r(this%n)
+
+         U_l = ml%coeff(I_U, pt)
+         U_r = 0._WP
+
+         c_1 = ml%coeff(I_C_1, pt)
+
+         zeta = zeta - CONJG(xi_r)*xi_r*pt%x**3*(U_r - U_l)/c_1**2
+
+       end associate
+
+    end select
+
+    omega_int = sqrt(zeta)
 
     ! Finish
 
