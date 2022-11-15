@@ -692,22 +692,33 @@ contains
     integer, intent(in)       :: j
     complex(WP)               :: eul_P
 
-    complex(WP) :: xi_r
-    complex(WP) :: lag_P
-    real(WP)    :: V_2
+    complex(WP) :: y_2
+    complex(WP) :: V_2
 
     ! Evaluate the Eulerian pressure perturbation, in units of P
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
+         pt => this%gr%pt(j), &
+         l_i => this%l_i )
 
-      xi_r = this%xi_r(j)
-      lag_P = this%lag_P(j)
+      y_2 = this%y_i(2, j)
 
       V_2 = ml%coeff(I_V_2, pt)
 
-      eul_P = lag_P + V_2*pt%x*xi_r
+      if (l_i /= 0._WP) then
+
+         if (pt%x /= 0._WP) then
+            eul_P = V_2*y_2*pow(pt%x, l_i)
+         else
+            eul_P = 0._WP
+         end if
+
+      else
+
+         eul_P = V_2*y_2
+
+      endif
 
     end associate
 
