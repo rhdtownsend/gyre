@@ -46,7 +46,7 @@ EXPERIMENTAL?=no
 MINIMUM_VERSION = 20.3.2
 
 ifneq ($(MAKECMDGOALS),clean)
-  ifneq ($(shell ./check_sdk_version $(MINIMUM_VERSION)),passed)
+  ifneq ($(shell ${GYRE_DIR}/src/build/check_sdk_version $(MINIMUM_VERSION)),passed)
     $(error Your MESASDK is too old please update to version $(MINIMUM_VERSION) or newer)
   endif
 endif
