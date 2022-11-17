@@ -12,7 +12,7 @@ The :nml_g:`tide` namelist group defines tidal parameters, as follows:
   Relative threshold on dimensionless tidal potential :math:`y_{\rm T}` for a component tide to contribute to tidal forcing
 
 :nml_n:`omega_c_thresh` (default :nml_v:`0.`)
-  Threshold on dimensionless co-rotatign frequency :math:`\omega_{\rm c}` for a
+  Threshold on dimensionless co-rotating frequency :math:`\omega_{\rm c}` for a
   component tide to be treated as dynamic (rather than static)
 
 :nml_n:`alpha_frq` (default :nml_v:`1.`)
