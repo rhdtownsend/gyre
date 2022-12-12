@@ -84,7 +84,7 @@ contains
 
     ! Initialize the parfait_model_t
 
-    allocate(pm, SOURCE=parfait_model_t(x, d, Gamma_1, y_c, z_s))
+    allocate(pm, SOURCE=parfait_model_t(x, d, Gamma_1, y_c, z_s, ml_p))
 
     ! Return a pointer
 

@@ -27,6 +27,7 @@ module gyre_parfait_model
   use gyre_grid
   use gyre_math
   use gyre_model
+  use gyre_model_par
   use gyre_point
   use gyre_util
 
@@ -48,6 +49,9 @@ module gyre_parfait_model
      real(WP), allocatable :: d(:)
      real(WP), allocatable :: Gamma_1(:)
      real(WP)              :: Omega_rot
+     real(WP)              :: beta_m
+     real(WP)              :: beta_p
+     logical               :: force_linear
      integer               :: s_i
      integer               :: s_o
    contains
@@ -86,14 +90,15 @@ module gyre_parfait_model
 
 contains
 
-  function parfait_model_t_ (x, d, Gamma_1, y_c, z_s) result (ml)
+  function parfait_model_t_ (x, d, Gamma_1, y_c, z_s, ml_p) result (ml)
 
-    real(WP), intent(in)  :: x(:)
-    real(WP), intent(in)  :: d(:)
-    real(WP), intent(in)  :: Gamma_1(:)
-    real(WP), intent(in)  :: y_c
-    real(WP), intent(in)  :: z_s
-    type(parfait_model_t) :: ml
+    real(WP), intent(in)          :: x(:)
+    real(WP), intent(in)          :: d(:)
+    real(WP), intent(in)          :: Gamma_1(:)
+    real(WP), intent(in)          :: y_c
+    real(WP), intent(in)          :: z_s
+    type(model_par_t), intent(in) :: ml_p
+    type(parfait_model_t)         :: ml
 
     integer               :: n
     real(WP), allocatable :: y(:)
@@ -160,6 +165,13 @@ contains
 
     ml%Gamma_1 = Gamma_1
 
+    ml%Omega_rot = 0._WP
+
+    ml%beta_m = ml_p%beta_m
+    ml%beta_p = ml_p%beta_p
+
+    ml%force_linear = ml_p%force_linear
+
     ! Set up the grid
 
     allocate(gr_x(2*n-2))
@@ -172,8 +184,6 @@ contains
     ml%gr = grid_t(gr_x)
 
     ! Other stuff
-
-    ml%Omega_rot = 0._WP
 
     ml%s_i = ml%gr%s_i()
     ml%s_o = ml%gr%s_o()
@@ -235,6 +245,7 @@ contains
     real(WP)                           :: coeff
 
     real(WP) :: w_m1
+    real(WP) :: w_1
     real(WP) :: w_2
     real(WP) :: z
 
@@ -260,11 +271,20 @@ contains
 
       endif
          
+      w_1 = (pt%x - this%x(k))/(this%x(k+1) - this%x(k))
       w_2 = (pt%x**2 - this%x(k)**2)/(this%x(k+1)**2 - this%x(k)**2)
 
       ! Evaluate the dimensionless pressure
- 
-      z = (1._WP - w_m1)*this%z(k) + w_m1*this%z(k+1) + (w_m1 - w_2)*this%a(k)
+
+      if (this%force_linear) then
+         z = (1._WP - w_1)*this%z(k) + w_1*this%z(k+1)
+      else
+         z = (1._WP - w_m1)*this%z(k) + w_m1*this%z(k+1) + (w_m1 - w_2)*this%a(k)
+      end if
+
+      ! Scale the value using beta_p
+
+      z = (this%beta_p + (1._WP - this%beta_p)*pt%x)*z
 
       ! Evaluate the coefficient
 
@@ -328,6 +348,7 @@ contains
     type(point_t), intent(in)          :: pt
     real(WP)                           :: coeff
 
+    real(WP) :: w_1
     real(WP) :: w_3
     real(WP) :: m
 
@@ -337,13 +358,22 @@ contains
 
       if (this%x(k) > 0._WP) then
 
-         ! Set up weight function
+         ! Set up weight functions
 
+         w_1 = (pt%x - this%x(k))/(this%x(k+1) - this%x(k))
          w_3 = (pt%x**3 - this%x(k)**3)/(this%x(k+1)**3 - this%x(k)**3)
 
          ! Evaluate the dimensionless mass
 
-         m = (1._WP - w_3)*this%y(k) + w_3*this%y(k+1)
+         if (this%force_linear) then
+            m = (1._WP - w_1)*this%y(k) + w_1*this%y(k+1)
+         else
+            m = (1._WP - w_3)*this%y(k) + w_3*this%y(k+1)
+         end if
+
+         ! Scale the values using beta_m
+
+         m = (this%beta_m + (1._WP - this%beta_m)*pt%x)*m
 
          ! Evaluate the coefficient
 
