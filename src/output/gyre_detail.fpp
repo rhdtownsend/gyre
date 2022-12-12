@@ -309,6 +309,10 @@ contains
 
        call wr%write('tau_tr', wv%tau_tr())
 
+    case ('zeta')
+
+       call wr%write('zeta', wv%beta())
+
     case ('beta')
 
        call wr%write('beta', wv%beta())

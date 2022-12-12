@@ -59,6 +59,7 @@ module gyre_wave
      type(osc_par_t), public  :: os_p
      type(point_t)            :: pt_i
      type(point_t)            :: pt_o
+     logical                  :: fix_surf
      complex(WP), allocatable :: y_c(:,:)
      real(WP)                 :: E_scl2
      type(c_ext_t), public    :: discrim
@@ -79,6 +80,7 @@ module gyre_wave
      procedure, public :: grid
      procedure, public :: freq
      procedure, public :: dfreq_rot
+     procedure, public :: omega_int
      procedure, public :: x
      procedure, public :: y_i
      procedure, public :: xi_r
@@ -132,7 +134,7 @@ module gyre_wave
      procedure, public :: Q
      procedure, public :: tau_ss
      procedure, public :: tau_tr
-     procedure, public :: omega_int
+     procedure, public :: zeta
      procedure, public :: beta
      procedure, public :: dOmega_rot
      procedure, public :: eta
@@ -226,6 +228,15 @@ contains
     ! E integrations in the future
 
     wv%E_scl2 = wv%E(use_cache=.FALSE.)/abs(wv%scl)**2
+
+    ! Determine whether integral expressions will need a surface fix-up
+    ! (due to having a vacuum outer boundary condition but non-vacuum
+    ! outer point)
+
+    associate( &
+         ml => cx%model() )
+      wv%fix_surf = os_p%outer_bound == 'VACUUM' .AND. .NOT. ml%is_vacuum(wv%pt_o)
+    end associate
 
     ! Finish
 
@@ -349,6 +360,23 @@ contains
     end associate
 
   end function dfreq_rot
+
+  !****
+
+  function omega_int (this)
+
+    class(wave_t), intent(in) :: this
+    complex(WP)               :: omega_int
+
+    ! Calculate the dimensionless frequency from the zeta integral
+
+    omega_int = sqrt(this%zeta()/this%E())
+
+    ! Finish
+
+    return
+
+  end function omega_int
 
   !****
 
@@ -2460,14 +2488,13 @@ contains
 
   !****
 
-  function omega_int (this)
+  function zeta (this)
 
     class(wave_t), intent(in) :: this
-    complex(WP)               :: omega_int
+    complex(WP)               :: zeta
 
     integer     :: j
     complex(WP) :: dzeta_dx(this%n)
-    complex(WP) :: zeta
     integer     :: s
     integer     :: j_l
     integer     :: j_r
@@ -2475,8 +2502,8 @@ contains
     real(WP)    :: U_l
     real(WP)    :: U_r
     real(WP)    :: c_1
-
-    ! Calculate the dimensionless frequency from the zeta integral
+     
+    ! Calculate the zeta integral
 
     !OMP PARALLEL DO
     do j = 1, this%n
@@ -2489,6 +2516,8 @@ contains
 
     select case (this%os_p%zeta_scheme)
     case ('KAWALER_GRAV','KAWALER','DUPRET')
+
+       ! Discontinuties at double points
 
        do s = this%gr%s_i(), this%gr%s_o()-1
 
@@ -2513,30 +2542,34 @@ contains
 
        end do
 
-       associate(                   &
-            ml => this%cx%model(),  &
-            pt => this%gr%pt_o() )
+       ! Surface fix-up
 
-         xi_r = this%xi_r(this%n)
+       if (this%fix_surf) then
 
-         U_l = ml%coeff(I_U, pt)
-         U_r = 0._WP
+          associate(                   &
+               ml => this%cx%model(),  &
+               pt => this%gr%pt_o() )
 
-         c_1 = ml%coeff(I_C_1, pt)
+            xi_r = this%xi_r(this%n)
 
-         zeta = zeta - CONJG(xi_r)*xi_r*pt%x**3*(U_r - U_l)/c_1**2
+            U_l = ml%coeff(I_U, pt)
+            U_r = 0._WP
 
-       end associate
+            c_1 = ml%coeff(I_C_1, pt)
+
+            zeta = zeta - CONJG(xi_r)*xi_r*pt%x**3*(U_r - U_l)/c_1**2
+
+          end associate
+
+       end if
 
     end select
-
-    omega_int = sqrt(zeta)
 
     ! Finish
 
     return
 
-  end function omega_int
+  end function zeta
 
   !****
 

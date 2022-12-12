@@ -383,6 +383,7 @@ contains
     $CACHE_VALUE(Q,wv%Q())
     $CACHE_VALUE(tau_ss,wv%tau_ss())
     $CACHE_VALUE(tau_tr,wv%tau_tr())
+    $CACHE_VALUE(zeta,wv%zeta())
     $CACHE_VALUE(beta,wv%beta())
     $CACHE_VALUE(xi_r_ref,wv%xi_r(wv%j_ref))
     $CACHE_VALUE(xi_h_ref,wv%xi_h(wv%j_ref))
