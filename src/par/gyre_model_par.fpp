@@ -39,8 +39,6 @@ module gyre_model_par
      real(WP)                :: x_i = 0._WP
      real(WP)                :: x_o = 1._WP
      real(WP)                :: s = 1._WP
-     real(WP)                :: beta_m = 1._WP
-     real(WP)                :: beta_p = 1._WP
      character(256)          :: model_type = 'HOM'
      character(256)          :: grid_type = 'UNI'
      character(256)          :: file_format = ''
@@ -50,7 +48,6 @@ module gyre_model_par
      integer                 :: n = 10
      logical                 :: add_center = .TRUE.
      logical                 :: repair_As = .FALSE.
-     logical                 :: force_linear = .FALSE.
   end type model_par_t
    
  ! Access specifiers
@@ -86,11 +83,10 @@ contains
     integer                          :: n
     logical                          :: add_center
     logical                          :: repair_As
-    logical                          :: force_linear
 
-    namelist /model/ Gamma_1, dx_snap, x_i, x_o, s, beta_m, beta_p, &
+    namelist /model/ Gamma_1, dx_snap, x_i, x_o, s, &
                      model_type, grid_type, file_format, data_format, deriv_type, &
-                     file, n, add_center, repair_As, force_linear
+                     file, n, add_center, repair_As
     
     ! Count the number of model namelists
 
@@ -120,8 +116,6 @@ contains
     x_i = ml_p%x_i
     x_o = ml_p%x_o
     s = ml_p%s
-    beta_m = ml_p%beta_m
-    beta_p = ml_p%beta_p
     model_type = ml_p%model_type
     grid_type = ml_p%grid_type
     file_format = ml_p%file_format
@@ -131,7 +125,6 @@ contains
     n = ml_p%n
     add_center = ml_p%add_center
     repair_As = ml_p%repair_As
-    force_linear = ml_p%force_linear
 
     ! Read the namelist
     
@@ -144,8 +137,6 @@ contains
     ml_p%x_i = x_i
     ml_p%x_o = x_o
     ml_p%s = s
-    ml_p%beta_m = beta_m
-    ml_p%beta_p = beta_p
     ml_p%model_type = model_type
     ml_p%grid_type = grid_type
     ml_p%file_format = file_format
@@ -155,7 +146,6 @@ contains
     ml_p%n = n
     ml_p%add_center = add_center
     ml_p%repair_As = repair_As
-    ml_p%force_linear = force_linear
 
     ! Finish
 
