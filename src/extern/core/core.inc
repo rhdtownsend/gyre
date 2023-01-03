@@ -12,7 +12,7 @@ $define $ABORT $sub
     write(UNIT=ERROR_UNIT, FMT=*) $str(ABORT at line $line_num $context_doc)
   $endif
 
-  stop 'Program aborted'
+  error stop 'Program aborted'
 
 $endsub
 
@@ -66,12 +66,12 @@ $define $ASSERT $sub
     if(.NOT. ($CONDITION)) then
       write(UNIT=ERROR_UNIT, FMT=*) $str(ASSERT ''$CONDITION'' failed at line $line_num $context_doc:)
       write(UNIT=ERROR_UNIT, FMT=*) $str($MESSAGE)
-      stop
+      error stop
     endif
   $else
     if(.NOT. $CONDITION) then
       write(UNIT=ERROR_UNIT, FMT=*) $str(ASSERT ''$CONDITION'' failed at line $line_num $context_doc)
-      stop
+      error stop
     endif
   $endif
 
@@ -103,7 +103,7 @@ $define $CHECK_BOUNDS $sub
     write(UNIT=ERROR_UNIT, FMT=*) $str($SIZE_A :), $SIZE_A
     write(UNIT=ERROR_UNIT, FMT=*) $str($SIZE_B :), $SIZE_B
     write(UNIT=ERROR_UNIT, FMT=*) $str(CHECK_BOUNDS $SIZE_A==$SIZE_B failed at line $line_num $context_doc)
-    stop
+    error stop
   endif
 
   $endif
