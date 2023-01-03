@@ -72,8 +72,6 @@ contains
     real(WP)                         :: x_i
     real(WP)                         :: x_o
     real(WP)                         :: s
-    real(WP)                         :: beta_m
-    real(WP)                         :: beta_p
     character(LEN(ml_p%model_type))  :: model_type
     character(LEN(ml_p%grid_type))   :: grid_type
     character(LEN(ml_p%file_format)) :: file_format
