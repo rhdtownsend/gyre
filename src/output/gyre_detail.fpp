@@ -143,7 +143,7 @@ contains
     
     ! Split the item list
 
-    items = split_list(this%ot_p%detail_item_list, ',')
+    items = split_list(this%ot_p%detail_item_list, ',', unique=.TRUE.)
 
     ! Write the items
 

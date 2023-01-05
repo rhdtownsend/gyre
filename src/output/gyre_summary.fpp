@@ -126,7 +126,7 @@ contains
     ! Split up the items list, and separate it into
     ! global and column items
 
-    items = split_list(ot_p%summary_item_list, ',')
+    items = split_list(ot_p%summary_item_list, ',', unique=.TRUE.)
 
     n = SIZE(items)
 

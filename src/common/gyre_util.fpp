@@ -25,6 +25,7 @@ module gyre_util
   use core_parallel
   use core_memory
   use core_string
+  use core_order
 
   use gyre_constants
   use gyre_grid_par
@@ -296,10 +297,11 @@ contains
 
   !****
 
-  function split_list (list, delim) result (elems)
+  function split_list (list, delim, unique) result (elems)
 
     character(*), intent(in)          :: list
     character(1), intent(in)          :: delim
+    logical, intent(in), optional     :: unique
     character(LEN(list)), allocatable :: elems(:)
 
     character(LEN(list)) :: list_
@@ -350,6 +352,14 @@ contains
     ! Reallocate elems to the correct length
 
     call reallocate(elems, [n])
+
+    ! If necessary, subset to unique items
+
+    if (PRESENT(unique)) then
+       if (unique) then
+          elems = elems(unique_indices(elems))
+       end if
+    end if
 
     ! Finish
 
