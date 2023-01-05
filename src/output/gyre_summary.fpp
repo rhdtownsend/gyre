@@ -139,9 +139,9 @@ contains
     item_loop : do i = 1, n
 
        select case (items(i))
-       case ('freq_units')
-          global = .TRUE.
-       case ('freq_frame')
+       case ('n_row', 'freq_units', 'freq_frame', &
+             'G_GRAVITY', 'C_LIGHT', 'A_RADIATION', &
+             'M_SUN', 'R_SUN', 'L_SUN')
           global = .TRUE.
        case default
           global = .FALSE.
@@ -203,17 +203,15 @@ contains
 
        select case (this%items(i))
 
-       case ('n_row')
-
-          call wr%write('n_row', this%n_row)
-
-       case ('freq_units')
-
-          call wr%write('freq_units', this%ot_p%freq_units)
-
-       case ('freq_frame')
-
-          call wr%write('freq_frame', this%ot_p%freq_frame)
+       $WRITE_VALUE(n_row,this%n_row)
+       $WRITE_VALUE(freq_units,this%ot_p%freq_units)
+       $WRITE_VALUE(freq_frame,this%ot_p%freq_frame)
+       $WRITE_VALUE(G_GRAVITY,G_GRAVITY)
+       $WRITE_VALUE(C_LIGHT,C_LIGHT)
+       $WRITE_VALUE(A_RADIATION,A_RADIATION)
+       $WRITE_VALUE(M_SUN,M_SUN)
+       $WRITE_VALUE(R_SUN,R_SUN)
+       $WRITE_VALUE(L_SUN,L_SUN)
 
        end select
 
@@ -327,43 +325,16 @@ contains
     cached = .TRUE.
 
     select case (sc%item)
-
-    case ('id')
-
-       call sc%append(wv%id)
-
-    case ('l')
-
-       call sc%append(wv%l)
-
-    case ('l_i')
-
-       call sc%append(wv%l_i)
-
-    case ('m')
-
-       call sc%append(wv%m)
-
-    case ('omega')
-
-       call sc%append(wv%omega)
-
-    case ('freq')
-
-       call sc%append(wv%freq(ot_p%freq_units, ot_p%freq_frame))
-
-    case ('dfreq_rot')
-
-       call sc%append(wv%dfreq_rot(ot_p%freq_units))
-
-    case ('freq_units')
-
-       call sc%append(ot_p%freq_units)
-
-    case ('freq_frame')
-
-       call sc%append(ot_p%freq_frame)
-
+       
+    $CACHE_VALUE(id,wv%id)
+    $CACHE_VALUE(l,wv%l)
+    $CACHE_VALUE(l_i,wv%l_i)
+    $CACHE_VALUE(m,wv%m)
+    $CACHE_VALUE(omega,wv%omega)
+    $CACHE_VALUE(freq,wv%freq(ot_p%freq_units, ot_p%freq_frame))
+    $CACHE_VALUE(dfreq_rot,wv%dfreq_rot(ot_p%freq_units))
+    $CACHE_VALUE(freq_units,ot_p%freq_units)
+    $CACHE_VALUE(freq_frame,ot_p%freq_frame)
     $CACHE_VALUE(x_ref,gr%pt(wv%j_ref)%x)
     $CACHE_VALUE(omega_int,wv%omega_int())
     $CACHE_VALUE(domega_rot,wv%domega_rot())
@@ -466,10 +437,9 @@ contains
 
     select case (sc%item)
 
-    $CACHE_VALUE(k,rs%k)
-
     $CACHE_VALUE(eul_Psi_ref,rs%eul_Psi(rs%j_ref))
     $CACHE_VALUE(Phi_T_ref,rs%Phi_T(rs%j_ref))
+    $CACHE_VALUE(k,rs%k)
     $CACHE_VALUE(Omega_orb, rs%Omega_orb(ot_p%freq_units, ot_p%freq_frame))
     $CACHE_VALUE(q, rs%or_p%q)
     $CACHE_VALUE(e, rs%or_p%e)
@@ -540,13 +510,8 @@ contains
 
     select case (sc%item)
 
-    case ('Delta_p')
-
-       call sc%append(ml%Delta_p(gr%x_i(), gr%x_o()))
-
-    case ('Delta_g')
-
-       call sc%append(ml%Delta_g(gr%x_i(), gr%x_o(), l*(l+1._WP)))
+    $CACHE_VALUE(Delta_p,ml%Delta_p(gr%x_i(), gr%x_o()))
+    $CACHE_VALUE(Delta_g,ml%Delta_g(gr%x_i(), gr%x_o(), l*(l+1._WP)))
 
     case default
        
@@ -587,17 +552,9 @@ contains
 
     select case (sc%item)
        
-    case ('M_star')
-
-       call sc%append(ml%M_star)
-
-    case ('R_star')
-
-       call sc%append(ml%R_star)
-
-    case ('L_star')
-
-       call sc%append(ml%L_star)
+    $CACHE_VALUE(M_star,ml%M_star)
+    $CACHE_VALUE(R_star,ml%R_star)
+    $CACHE_VALUE(L_star,ml%L_star)
 
     case default
 

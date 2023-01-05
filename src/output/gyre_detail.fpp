@@ -155,6 +155,9 @@ contains
 
     item_loop : do i = 1, SIZE(items)
 
+       call write_const_(items(i), wr, written)
+       if (written) cycle item_loop
+
        call write_wave_(items(i), this%ot_p, wv, gr, wr, written)
        if (written) cycle item_loop
 
@@ -180,6 +183,40 @@ contains
 
   !****
 
+  subroutine write_const_ (item, wr, written)
+
+    character(*), intent(in)       :: item
+    class(writer_t), intent(inout) :: wr
+    logical, intent(out)           :: written
+     
+    ! Write the item from constants data
+
+    written = .TRUE.
+
+    select case (item)
+
+    $WRITE_VALUE(G_GRAVITY,G_GRAVITY)
+    $WRITE_VALUE(C_LIGHT,C_LIGHT)
+    $WRITE_VALUE(A_RADIATION,A_RADIATION)
+    $WRITE_VALUE(M_SUN,M_SUN)
+    $WRITE_VALUE(R_SUN,R_SUN)
+    $WRITE_VALUE(L_SUN,L_SUN)
+    $WRITE_VALUE(GYTRE_DIR,GYRE_DIR)
+
+    case default
+
+       written = .FALSE.
+         
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine write_const_
+
+  !****
+
   subroutine write_wave_ (item, ot_p, wv, gr, wr, written)
 
     character(*), intent(in)       :: item
@@ -196,134 +233,6 @@ contains
     written = .TRUE.
 
     select case (item)
-
-    case ('n')
-
-       call wr%write('n', wv%n)
-
-    case ('id')
-
-       call wr%write('id', wv%id)
-
-    case ('l')
-
-       call wr%write('l', wv%l)
-
-    case ('l_i')
-
-       call wr%write('l_i', wv%l_i)
-
-    case ('m')
-
-       call wr%write('m', wv%m)
-
-    case ('omega')
-
-       call wr%write('omega', wv%omega)
-
-    case ('omega_int')
-
-       call wr%write('omega_int', wv%omega_int())
-
-    case ('domega_rot')
-
-       call wr%write('domega_rot', wv%domega_rot())
-
-    case ('freq')
-
-       call wr%write('freq', wv%freq(ot_p%freq_units, ot_p%freq_frame))
-
-    case ('dfreq_rot')
-
-       call wr%write('dfreq_rot', wv%dfreq_rot(ot_p%freq_units))
-
-    case ('freq_units')
-
-       call wr%write('freq_units', ot_p%freq_units)
-
-    case ('freq_frame')
-
-       call wr%write('freq_frame', ot_p%freq_frame)
-
-    case ('eta')
-
-       call wr%write('eta', wv%eta())
-
-    case ('f_T')
-
-       call wr%write('f_T', wv%f_T())
-
-    case ('f_g')
-
-       call wr%write('f_g', wv%f_g())
-
-    case ('psi_T')
-
-       call wr%write('psi_T', wv%psi_T())
-
-    case ('psi_g')
-
-       call wr%write('psi_g', wv%psi_g())
-
-    case ('E')
-
-       call wr%write('E', wv%E())
-
-    case ('E_p')
-
-       call wr%write('E_p', wv%E_p())
-
-    case ('E_g')
-
-       call wr%write('E_g', wv%E_g())
-
-    case ('E_norm')
-
-       call wr%write('E_norm', wv%E_norm())
-
-    case ('E_ratio')
-
-       call wr%write('E_ratio', wv%E_ratio())
-
-    case ('H')
-
-       call wr%write('H', wv%H())
-
-    case ('W')
-
-       call wr%write('W', wv%W())
-
-    case ('W_eps')
-
-       call wr%write('W_eps', wv%W_eps())
-
-    case ('Q')
-
-       call wr%write('Q', wv%Q())
-
-    case ('tau_ss')
-
-       call wr%write('tau_ss', wv%tau_ss())
-
-    case ('tau_tr')
-
-       call wr%write('tau_tr', wv%tau_tr())
-
-    case ('zeta')
-
-       call wr%write('zeta', wv%beta())
-
-    case ('beta')
-
-       call wr%write('beta', wv%beta())
-
-    case ('x')
-
-       call wr%write('x', gr%pt%x)
-
-    case ('x_ref')
-
-       call wr%write('x_ref', gr%pt(wv%j_ref)%x)
 
     $WRITE_POINTS(lambda,wv%lambda(j))
     $WRITE_POINTS(y_1,wv%y_i(1, j))
@@ -361,6 +270,38 @@ contains
     $WRITE_POINTS(alpha_1,wv%alpha_1(j))
     $WRITE_POINTS(prop_type,wv%prop_type(j))
 
+    $WRITE_VALUE(n,wv%n)
+    $WRITE_VALUE(id,wv%id)
+    $WRITE_VALUE(l,wv%l)
+    $WRITE_VALUE(l_i,wv%l_i)
+    $WRITE_VALUE(m,wv%m)
+    $WRITE_VALUE(omega,wv%omega)
+    $WRITE_VALUE(omega_int,wv%omega_int())
+    $WRITE_VALUE(domega_rot,wv%domega_rot())
+    $WRITE_VALUE(freq,wv%freq(ot_p%freq_units, ot_p%freq_frame))
+    $WRITE_VALUE(dfreq_rot,wv%dfreq_rot(ot_p%freq_units))
+    $WRITE_VALUE(freq_units,ot_p%freq_units)
+    $WRITE_VALUE(freq_frame,ot_p%freq_frame)
+    $WRITE_VALUE(eta,wv%eta())
+    $WRITE_VALUE(f_T,wv%f_T())
+    $WRITE_VALUE(f_g,wv%f_g())
+    $WRITE_VALUE(psi_T,wv%psi_T())
+    $WRITE_VALUE(psi_g,wv%psi_g())
+    $WRITE_VALUE(E,wv%E())
+    $WRITE_VALUE(E_p,wv%E_p())
+    $WRITE_VALUE(E_g,wv%E_g())
+    $WRITE_VALUE(E_norm,wv%E_norm())
+    $WRITE_VALUE(E_ratio,wv%E_ratio())
+    $WRITE_VALUE(H,wv%H())
+    $WRITE_VALUE(W,wv%W())
+    $WRITE_VALUE(W_eps,wv%W_eps())
+    $WRITE_VALUE(Q,wv%Q())
+    $WRITE_VALUE(tau_ss,wv%tau_ss())
+    $WRITE_VALUE(tau_tr,wv%tau_tr())
+    $WRITE_VALUE(zeta,wv%beta())
+    $WRITE_VALUE(beta,wv%beta())
+    $WRITE_VALUE(x,gr%pt%x)
+    $WRITE_VALUE(x_ref,gr%pt(wv%j_ref)%x)
     $WRITE_VALUE(xi_r_ref,wv%xi_r(wv%j_ref))
     $WRITE_VALUE(xi_h_ref,wv%xi_h(wv%j_ref))
     $WRITE_VALUE(eul_Phi_ref,wv%eul_Phi(wv%j_ref))
@@ -411,17 +352,9 @@ contains
 
     select case (item)
 
-    case ('n_p')
-
-       call wr%write('n_p', md%n_p)
-
-    case ('n_g')
-
-       call wr%write('n_g', md%n_g)
-
-    case ('n_pg')
-
-       call wr%write('n_pg', md%n_pg)
+    $WRITE_VALUE(n_p,md%n_p)
+    $WRITE_VALUE(n_g,md%n_g)
+    $WRITE_VALUE(n_pg,md%n_pg)
 
     case default
 
@@ -454,13 +387,10 @@ contains
 
     select case (item)
 
-    case ('k')
-
-       call wr%write('k', rs%k)
-
     $WRITE_POINTS(eul_Psi,rs%eul_Psi(j))
     $WRITE_POINTS(Phi_T,rs%Phi_T(j))
 
+    $WRITE_VALUE(k, rs%k)
     $WRITE_VALUE(eul_Psi_ref,rs%eul_Psi(rs%j_ref))
     $WRITE_VALUE(Phi_T_ref,rs%Phi_T(rs%j_ref))
     $WRITE_VALUE(Omega_orb, rs%Omega_orb(ot_p%freq_units, ot_p%freq_frame))
@@ -541,14 +471,6 @@ contains
 
     select case (item)
 
-    case ('Delta_p')
-
-       call wr%write('Delta_p', ml%Delta_p(gr%x_i(), gr%x_o()))
-
-    case ('Delta_g')
-
-       call wr%write('Delta_g', ml%Delta_g(gr%x_i(), gr%x_o(), l*(l+1._WP)))
-
     $WRITE_POINTS(V_2,ml%coeff(I_V_2, gr%pt(j)))
     $WRITE_POINTS(As,ml%coeff(I_AS, gr%pt(j)))
     $WRITE_POINTS(U,ml%coeff(I_U, gr%pt(j)))
@@ -565,6 +487,9 @@ contains
     $WRITE_POINTS(c_eps,ml%coeff(I_C_EPS, gr%pt(j)))
     $WRITE_POINTS(kap_rho,ml%coeff(I_KAP_RHO, gr%pt(j)))
     $WRITE_POINTS(kap_T,ml%coeff(I_KAP_T, gr%pt(j)))
+
+    $WRITE_VALUE(Delta_p,ml%Delta_p(gr%x_i(), gr%x_o()))
+    $WRITE_VALUE(Delta_g,ml%Delta_g(gr%x_i(), gr%x_o(), l*(l+1._WP)))
 
     case default
        
@@ -608,22 +533,14 @@ contains
 
     select case (item)
        
-    case ('M_star')
-
-       call wr%write('M_star', ml%M_star)
-
-    case ('R_star')
-
-       call wr%write('R_star', ml%R_star)
-
-    case ('L_star')
-
-       call wr%write('L_star', ml%L_star)
-
     $WRITE_POINTS(M_r,ml%M_r(gr%pt(j)))
     $WRITE_POINTS(P,ml%P(gr%pt(j)))
     $WRITE_POINTS(rho,ml%rho(gr%pt(j)))
     $WRITE_POINTS(T,ml%T(gr%pt(j)))
+
+    $WRITE_VALUE(M_star,ml%M_star)
+    $WRITE_VALUE(R_star,ml%R_star)
+    $WRITE_VALUE(L_star,ml%L_star)
 
     case default
 
