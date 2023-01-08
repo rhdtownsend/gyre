@@ -5,10 +5,11 @@ Example Walkthrough
 *******************
 
 This chapter provides a walkthrough of a example GYRE project, to
-illustrate the typical steps involved. For this example, we'll be
-focusing on finding eigenfrequencies and eigenfunctions of dipole and
-quadrupole gravity modes for a MESA model of slowly pulsating B (SPB)
-star.
+illustrate the typical steps involved. For this example, we'll focus
+on using :program:`gyre` (the :ref:`frontend <frontends>`
+focused on stellar oscillations) to find eigenfrequencies and
+eigenfunctions of dipole and quadrupole gravity modes for a MESA model
+of slowly pulsating B (SPB) star.
 
 .. _walkthrough-work:
 
@@ -16,7 +17,7 @@ Making a Place to Work
 ======================
 
 When starting a new project, it's a good idea to create a dedicated
-work directory to contain the various input and output files that GYRE
+work directory to contain the various input and output files that :program:`gyre`
 operates on. These commands will make a new directory beneath your
 home directory with the name :file:`work`, and then set this directory
 as the current working directory:
@@ -42,59 +43,55 @@ Assembling a Namelist File
 ==========================
 
 Now comes the fun part: assembling an input file containing the various
-parameters which control a GYRE run. Using a text editor, create the
+parameters which control a :program:`gyre` run. Using a text editor, create the
 file :file:`gyre.in` in your work directory with the following
 content cut-and-pasted in:
 
 .. literalinclude:: example-walkthrough/gyre.in
 
-This file is an example of a Fortran 'namelist' file, containing
-multiple namelist groups. Each group begins with the line
-:nml_g:`name` (where ``name`` is the name of the group); a list of
-parameter-value pairs then follows, and the group ends with a slash
-``/``. Detailed information on the namelist groups expected in GYRE's
-input files can be found in the :ref:`namelist-input-files` chapter;
-for now, let's just focus on some of the more-important aspects of the
-file above:
+This file is in namelist format, containing multiple namelist
+groups. Detailed information on the groups can be found in the
+:ref:`namelist-input-files` chapter; for now, let's just focus on some
+of the more-important aspects of the file above:
 
-* the :nml_g:`constants` namelist group is empty, telling GYRE to use default
+* the :nml_g:`constants` namelist group is empty, telling :program:`gyre` to use default
   values for fundamental constants;
-* the :nml_g:`model` namelist group tells GYRE to read an evolutionary
+* the :nml_g:`model` namelist group tells :program:`gyre` to read an evolutionary
   model, in :ref:`MESA format <mesa-file-format>`, from the file
   :file:`spb.mesa`;
-* the two :nml_g:`mode` namelist groups tells GYRE to search first for dipole (:math:`\ell=1`) and then 
+* the two :nml_g:`mode` namelist groups tells :program:`gyre` to search first for dipole (:math:`\ell=1`) and then 
   quadrupole (:math:`\ell=2`) modes;
-* the :nml_g:`osc` namelist group tells GYRE to apply a
+* the :nml_g:`osc` namelist group tells :program:`gyre` to apply a
   zero-pressure outer mechanical boundary condition in the oscillation
   equations;
-* the :nml_g:`scan` namelist group tells GYRE to scan a region of
+* the :nml_g:`scan` namelist group tells :program:`gyre` to scan a region of
   dimensionless angular frequency space typically occupied by gravity
   modes;
-* the :nml_g:`grid` namelist group tells GYRE how to refine the model
+* the :nml_g:`grid` namelist group tells :program:`gyre` how to refine the model
   spatial grid;
-* the :nml_g:`ad_output` namelist group tells GYRE what adiabatic data
+* the :nml_g:`ad_output` namelist group tells :program:`gyre` what adiabatic data
   to write to which output files; summary data to the file
   :file:`summary.h5`, and individual mode data to files having the
   prefix ``mode.``;
-* the :nml_g:`nad_output` namelist group is empty, telling GYRE not to
+* the :nml_g:`nad_output` namelist group is empty, telling :program:`gyre` not to
   write any non-adiabatic data.
 
-Running GYRE
+Running gyre
 ============
 
-With the hard work done, it's now trivial to run GYRE:
+With the hard work done, it's now trivial to run :program:`gyre`:
 
 .. prompt:: bash
 			 
    $GYRE_DIR/bin/gyre gyre.in
 
-As the code runs (on multiple cores, if you have a multi-core machine;
+As the frontend runs (on multiple cores, if you have a multi-core machine;
 see the :ref:`FAQ <faq-multicore>` for more details), it will print lots of data
 to the screen. Let's break down this output, chunk by chunk.
 
-First, GYRE prints out its version number, tells us (in OpenMP
-threads) how many cores it is running on, and indicates which file it
-is reading parameters from (here, :file:`gyre.in`):
+First, :program:`gyre` prints out its version number, tells us (in
+OpenMP threads) how many cores it is running on, and indicates which
+file it is reading parameters from (here, :file:`gyre.in`):
 
 .. code-block:: console
 
@@ -104,16 +101,17 @@ is reading parameters from (here, :file:`gyre.in`):
    OpenMP Threads   : 4
    Input filename   : gyre.in
 
-Next, GYRE loads the stellar model from the file :file:`spb.mesa`. This
-model comprises 1814 points and extends from the surface all the way
-to the center (which is why GYRE decides not to add a central point).
+Next, :program:`gyre` loads the stellar model from the file
+:file:`spb.mesa`. This model comprises 1814 points and extends from
+the surface all the way to the center (which is why :program:`gyre` decides not
+to add a central point).
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
    :start-at: Model Init
    :end-before: Mode Search
 
-GYRE then prepares to search for modes with harmonic degree
+:program:`gyre` then prepares to search for modes with harmonic degree
 :math:`\ell=1` and azimuthal order :math:`m=0` (not specified in
 :file:`gyre.in`, but assumed by default), by building a frequency grid
 and a spatial grid:
@@ -124,9 +122,9 @@ and a spatial grid:
    :end-before: Starting search
 
 (The concepts of spatial and frequency grids are explored in greater
-detail in the :ref:`gyre-fundamentals` and :ref:`understanding-grids`
-chapters). Next, GYRE attempts to bracket roots of the discriminant
-function (again, see the :ref:`gyre-fundamentals` chapter) by
+detail in the :ref:`numerical` and :ref:`understanding-grids`
+chapters). Next, :program:`gyre` attempts to bracket roots of the discriminant
+function (again, see the :ref:`numerical` chapter) by
 searching for changes in its sign:
 
 .. literalinclude:: example-walkthrough/gyre.out
@@ -134,9 +132,9 @@ searching for changes in its sign:
    :start-at: Starting search
    :end-before: Root Solving
 
-Finally, for each bracket found GYRE uses a root solver to
+Finally, for each bracket found :program:`gyre` uses a root solver to
 converge to the eigenfrequency. Each row of output here corresponds to
-a mode that GYRE has successfully found:
+a mode that :program:`gyre` has successfully found:
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
@@ -172,10 +170,8 @@ The columns appearing are as follows:
 ``n_iter``
   number of iterations required for convergence
 
-These values are printed to screen primarily to give an idea of GYRE's
-progress; more-detailed information about the modes found is given in
-the output files, discussed in the following chapter. Some things to
-watch out for:
+These values are printed to screen primarily to give an idea of
+:program:`gyre`'s progress. Some things to watch out for:
 
 * The convergence parameter ``chi``, defined as the ratio of
   discriminant values before and after the root finding, should small
@@ -185,14 +181,14 @@ watch out for:
   the discretization scheme.
 
 * The number of iterations ``n_iter`` should be moderate; values above
-  20 or so indicate that GYRE is having problems converging.
+  20 or so indicate that :program:`gyre` is having problems converging.
 
 * The mode radial order ``n_pg`` should be
   monotonic-increasing. Departures from this behavior can happen for a
   number of reasons, that are discussed in the :ref:`troubleshooting`
   chapter.
 
-After processing the dipole modes, GYRE repeats the search steps for
+After processing the dipole modes, :program:`gyre` repeats the search steps for
 the quadrupole modes. Once the overall run is complete, a number of
 output files are written:
 
@@ -202,4 +198,6 @@ output files are written:
   :file:`detail.l{L}.n{N}.h5`, where :file:`{L}` and :file:`{N}` are
   the harmonic degree and radial order of the mode, respectively.
 
-The following chapter discusses how to read and analyze these files.
+The :ref:`output-files` chapter discusses how to read and analyze
+these files.
+  

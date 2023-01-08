@@ -11,13 +11,13 @@ GYRE calculations.
 Example Tag Usage
 =================
 
-Consider calculating the eigenfrequencies of a red giant branch (RGB)
-stellar model. Because non-radial p-modes in the convective envelope
-couple with high-order g-modes in the radiative core, the frequency
-spacing of the non-radial modes is *much* smaller than that of the
-radial modes. In such cases, we ideally want to use a coarse frequency
-scan for the radial modes and a fine frequency scan for the non-radial
-modes.
+Consider applying :program:`gyre` to calculate the eigenfrequencies of
+a red giant branch (RGB) stellar model. Because non-radial p-modes in
+the convective envelope couple with high-order g-modes in the
+radiative core, the frequency spacing of the non-radial modes is
+*much* smaller than that of the radial modes. In such cases, we
+ideally want to use a coarse frequency scan for the radial modes and a
+fine frequency scan for the non-radial modes.
 
 The following input file, which is designed to work with the :math:`2\,\Msun` RGB
 model in :file:`${GYRE_DIR}/models/mesa/rgb/rgb.mesa`, achieves this
@@ -26,8 +26,9 @@ goal using tags:
 .. literalinclude:: working-with-tags/gyre.in
 
 Observe that each :nml_g:`mode` namelist groups has a :nml_n:`tag`
-parameter. When processing a given :nml_g:`mode`, GYRE pairs it up
-with other namelist groups that match one of the following criteria:
+parameter. When processing a given :nml_g:`mode`, :program:`gyre`
+pairs it up with other namelist groups that match one of the following
+criteria:
 
 * The namelist group doesn't have a :nml_n:`tag_list` parameter;
 * The namelist does have a :nml_n:`tag_list` parameter, *and* the

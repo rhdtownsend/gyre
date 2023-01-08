@@ -3,25 +3,25 @@
 Frequency Grids
 ===============
 
-GYRE evaluates its discriminant function :math:`\Dfunc(\omega)` on a
-grid :math:`\{\omega_{1},\omega_{2},\ldots,\omega_{M}\}` in the
+The :ref:`gyre frontend <frontends-gyre>` evaluates its
+discriminant function :math:`\Dfunc(\omega)` on a grid
+:math:`\{\omega_{1},\omega_{2},\ldots,\omega_{M}\}` in the
 dimensionless frequency, and scans for changes in the sign of
-:math:`\Dfunc(\omega)` that are indicative of a bracketed root. The
+:math:`\Dfunc(\omega)` that are indicative of a bracketed root.  The
 computational cost of a calculation scales with the total number of
 points :math:`M` in this grid, while the grid's resolution --- i.e.,
 the spacing between adjacent points --- impacts the completeness of
-the modes found by GYRE (see the :ref:`numerical-limits` section for a
-discussion of these behaviors).
+the modes found by :program:`gyre`. (See the :ref:`numerical-limits`
+section for a discussion of these behaviors).
 
-GYRE constructs a fresh frequency grid for each combination of
-harmonic degree :math:`\ell` and azimuthal order :math:`m` specified
-in the :nml_g:`mode` namelist groups (see the
-:ref:`namelist-input-files` chapter for more details). This is done
-under the control of the :nml_g:`scan` namelist groups; there must be
-at least one of these, subject to the tag matching rules (see the
-:ref:`working-with-tags` chapter). Each :nml_g:`scan` group creates a
-separate frequency grid; these are then combined and the discriminant
-function is evaluated on the merged grid.
+A fresh frequency grid is constructed for each iteration of the main
+computation loop (see the flow-chart in the :ref:`gyre frontend
+<frontends-gyre>` section). This is done under the control of the
+:nml_g:`scan` namelist groups; there must be at least one of these,
+subject to the tag matching rules (see the :ref:`working-with-tags`
+chapter). Each :nml_g:`scan` group creates a separate frequency grid;
+these are then combined and the discriminant function is evaluated on
+the merged grid.
 
 Grid Types
 ----------
@@ -35,9 +35,9 @@ are currently three options:
 Linear Grid
 ~~~~~~~~~~~
 
-When :nml_nv:`grid_type = 'LINEAR'`, GYRE first evaluates a sequence
-of dimensionless angular frequencies in the grid reference frame
-according to the formula
+When :nml_nv:`grid_type = 'LINEAR'`, :program:`gyre` first evaluates a
+sequence of dimensionless angular frequencies in the grid reference
+frame according to the formula
 
 .. math::
 
@@ -94,7 +94,7 @@ shift depends on the :nml_n:`freq_min_frame` and
 Inverse Grid
 ~~~~~~~~~~~~
 
-When :nml_nv:`grid_type = 'INVERSE'`, GYRE first evaluates a sequence
+When :nml_nv:`grid_type = 'INVERSE'`, :program:`gyre` first evaluates a sequence
 of dimensionless angular frequencies in the grid reference frame
 according to the formula
 
@@ -108,7 +108,7 @@ The grid creation then proceeds as described above in the :ref:`linear-freq-grid
 File Grid
 ~~~~~~~~~
 
-When :nml_nv:`grid_type = 'FILE'`, GYRE first reads a sequence of
+When :nml_nv:`grid_type = 'FILE'`, :program:`gyre` first reads a sequence of
 dimensioned frequencies :math:`\{f_{1},f_{2},\ldots,f_{M}\}` from an
 external file named by the :nml_n:`grid_file` parameter. This file is
 a single-column ASCII table; the number of points :math:`M` is
@@ -181,11 +181,11 @@ you want. Choosing good values for these parameters requires some
 degree of judgment, but here are some suggestions:
 
 * The number of points in the frequency grid should be a factor of
-  2--3 larger than the number of modes you expect GYRE will find. This
-  is to ensure that the frequency spacing of the grid is everywhere
-  smaller than the anticipated eigenfrequency spacing between adjacent
-  modes (see the :ref:`numerical-limits` section for further
-  discussion).
+  2--3 larger than the number of modes you expect :program:`gyre` will
+  find. This is to ensure that the frequency spacing of the grid is
+  everywhere smaller than the anticipated eigenfrequency spacing
+  between adjacent modes (see the :ref:`numerical-limits` section for
+  further discussion).
 
 * The distribution of points in the frequency grid should follow
   anticipated distribution of mode frequencies; this again is to

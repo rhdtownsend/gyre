@@ -3,7 +3,7 @@
 Output Parameters
 =================
 
-The :nml_g:`ad_output, :nml_g:`nad_output` and :nml_g:`tides_output`
+The :nml_g:`ad_output`, :nml_g:`nad_output` and :nml_g:`tides_output`
 namelist groups determine the output produced at the end of a run (the
 first two for the adiabatic and non-adiabatic calculation stages of
 :program:`gyre`; the third for :program:`gyre_tides`). Parameters are

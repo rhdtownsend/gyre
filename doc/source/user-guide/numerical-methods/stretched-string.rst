@@ -1,15 +1,14 @@
-.. _fund-string:
+.. _numerical-string:
 
 The Stretched String Problem
 ============================
 
-We'll start our discussion of GYRE by considering the analogous (but
-much simpler) problem of finding normal-mode eigenfrequencies and
-eigenfunctions for waves on a stretched string clamped at both
-ends. Let the string have mass per unit length :math:`\rho` and
-tension :math:`T`; then, the wave equation describing the transverse
-string displacement :math:`y(x,t)` at spatial position :math:`x` and
-time :math:`t` is
+We'll start our discussion of numerical methods by considering the
+problem of finding normal-mode eigenfrequencies and eigenfunctions for
+waves on a stretched string clamped at both ends. Let the string have
+mass per unit length :math:`\rho` and tension :math:`T`; then, the
+wave equation describing the transverse string displacement
+:math:`y(x,t)` at spatial position :math:`x` and time :math:`t` is
 
 .. math::
 

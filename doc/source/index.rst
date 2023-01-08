@@ -10,6 +10,11 @@ frequencies of a star, allowing constraints on the star's fundamental
 parameters (mass, radius, etc.)  to be established --- the discipline
 of *asteroseismology*.
 
+GYRE also supports other, related kinds of calculation. One example is
+evaluating the response of a star to tidal forcing by an orbiting
+companion; because this is an instance of *forced* stellar oscillations,
+similar numerical techniques can be brought to bear.
+
 About this Manual
 =================
 
@@ -26,8 +31,9 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    user-guide/preliminaries.rst
    user-guide/quick-start.rst
    user-guide/example-walkthrough.rst
+   user-guide/frontends.rst
+   user-guide/numerical-methods.rst
    user-guide/interpreting-output.rst
-   user-guide/gyre-fundamentals.rst
    user-guide/understanding-grids.rst
    user-guide/working-with-tags.rst
    user-guide/non-ad-calculations.rst

@@ -4,28 +4,30 @@
 Interpreting Output Files
 *************************
 
-This chapter reviews the summary and detail output files written
-during a GYRE run, and demonstrates how to read and plot them in
-`Python <https://www.python.org>`__. Further information about these
-files is provided in the :ref:`output-files` chapter.
+This chapter reviews the summary and detail output files written by
+the GYRE :ref:`frontends <frontends>`, and demonstrates how to read
+and plot them in `Python <https://www.python.org>`__. Further
+information about these files is provided in the :ref:`output-files`
+chapter.
 
 File Categories
 ===============
 
 Summary files collect together global properties, such as
-eigenfrequencies and radial orders, of all modes found. By contrast, a
-detail file stores spatial quantities, such as eigenfunctions and
-differential inertias, for an individual mode. The choice of which
-specific data actually appear in output files isn't hardwired, but
-rather determined by the :nml_n:`summary_item_list` and
-:nml_n:`mode_item_list` parameters of the :nml_g:`ad_output` and
-:nml_g:`nad_output` namelist groups. Changing these parameters allows
-you to tailor the files to contain exactly the data you need.
+eigenfrequencies and radial orders, of all solutions (modes,
+responses, etc.) found. By contrast, detail files store spatial
+quantities, such as eigenfunctions and differential inertias, for an
+individual solution. The choice of which specific data actually appear
+in output files isn't hardwired, but rather determined by the
+:nml_n:`summary_item_list` and :nml_n:`mode_item_list` parameters of
+the :ref:`output namelist groups <output-params>`. Changing these
+parameters allows you to tailor the files to contain exactly the data
+you need.
 
 File Formats
 ============
 
-Summary and detail files are written by GYRE in either TXT or HDF
+Summary and detail files are written in either TXT or HDF
 format. Files in the TXT format are human-readable, and can be
 reviewed on-screen or in a text editor; whereas files in the HDF
 format are intended to be accessed through a suitable `HDF5
@@ -63,10 +65,11 @@ version via
 Analyzing a Summary File
 ========================
 
-With PyGYRE installed, change into your :ref:`work directory
-<walkthrough-work>` and fire up your preferred interactive Python
-environment (e.g., `Jupyter <https://jupyter.org/>`__). Import PyGYRE
-and the other modules needed for plotting:
+To analyze the output files written by :program:`gyre` during the
+:ref:`walkthrough <walkthrough>`, change into your :ref:`work
+directory <walkthrough-work>` and fire up your preferred interactive
+Python environment (e.g., `Jupyter <https://jupyter.org/>`__). Import
+PyGYRE and the other modules needed for plotting:
 
 .. code::
 
@@ -77,11 +80,11 @@ and the other modules needed for plotting:
   import numpy as np
 
 (you may want to directly cut and paste this code). Next, read the
-summary file in the work directory into the variable `s`:
+summary file into the variable `s`:
 
 .. code::
 
-   # Read data from a GYRE summary file
+   # Read data from a gyre summary file
 
    s = pg.read_output('summary.h5')
 
@@ -268,6 +271,3 @@ short radial wavelengths seen there in :numref:`fig-disp-eigfunc`.
    :math:`S_{\ell}^{2}` are gravity (acoustic) propagation regions;
    other regions are evanescent. (:download:`Source
    <interpreting-output/fig_prop_diag.py>`)
-   
-
-

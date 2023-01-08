@@ -150,12 +150,15 @@ Classification & Validation
    * - :nml_v:`omega_int`
      - :math:`\omega_{\rm int}`
      - complex
-     - dimensionless eigenfrequency; evaluated by
-       integrating :math:`\sderiv{\zeta}{x}`
+     - dimensionless eigenfrequency; evaluated as `\omega_{\rm int} = \sqrt{\zeta/E}`
    * - :nml_v:`dzeta_dx`
      - :math:`\sderiv{\zeta}{x}`
      - complex(:nml_v:`n`)
      - dimensionless frequency weight function; controlled by :nml_n:`zeta_scheme` parameter
+   * - :nml_v:`zeta`
+     - :math:`\zeta`
+     - complex
+     - integral of :math:`\sderiv{\zeta}{x}` with respect to :math:`x`
    * - :nml_v:`Yt_1`
      - :math:`\mathcal{Y}_{1}`
      - complex(:nml_v:`n`)
@@ -384,6 +387,14 @@ Rotation
      - Symbol
      - Datatype
      - Description
+   * - :nml_v:`Omega_rot_ref`
+     - :math:`\Omega_{\rm ref}`
+     - real
+     - rotation angular frequency at reference location[:math:`\sqrt{GM/R^{3}}`]
+   * - :nml_v:`Omega_rot`
+     - :math:`\Omega`
+     - real(:nml_v:`n`)
+     - rotation angular frequency [:math:`\sqrt{GM/R^{3}}`]
    * - :nml_v:`domega_rot`
      - :math:`\delta \omega`
      - real
@@ -523,10 +534,6 @@ Stellar Structure
      - real(:nml_v:`n`)
      - nuclear energy generation partial; defined in :ref:`linear-equations`
        section
-   * - :nml_v:`Omega_rot`
-     - :math:`\Omega`
-     - real(:nml_v:`n`)
-     - rotation angular frequency [:math:`\sqrt{GM/R^{3}}`]
    * - :nml_v:`M_r`\ [#only-D]_
      - :math:`M_r`
      - real(:nml_v:`n`)
@@ -569,6 +576,14 @@ Note that these items are available only when using :program:`gyre_tides`.
      - :math:`\tPhi_{\rm T, ref}`
      - real
      - tidal potential at reference location [:math:`GM/R`]
+   * - :nml_v:`eul_Psi`
+     - :math:`\tPsi'`
+     - complex(:nml_v:`n`)
+     - Eulerian total potential perturbation [:math:`GM/R`]
+   * - :nml_v:`Phi_T`
+     - :math:`\tPhi_{{\rm T}}`
+     - real(:nml_v:`n`)
+     - tidal potential [:math:`GM/R`]
    * - :nml_v:`Omega_orb`
      - :math:`\Omega_{\rm orb}`
      - real
@@ -586,34 +601,26 @@ Note that these items are available only when using :program:`gyre_tides`.
      - :math:`R/a`
      - real
      - ratio of primary radius to orbital semi-major axis
-   * - :nml_v:`c`
-     - :math:`c_{\ell,m,k}`
+   * - :nml_v:`cbar`
+     - :math:`\bar{c}_{\ell,m,k}`
      - real
-     - tidal expansion coefficient
-   * - :nml_v:`G_1`
-     - :math:`G_{1;\ell,m,k}`
+     - tidal expansion coefficient; see eqn. A1 of Sun et al. (2023)
+   * - :nml_v:`Gbar_1`
+     - :math:`\bar{G}^{(1)}_{\ell,m,k}`
      - real
-     - secular orbital evolution coefficient
-   * - :nml_v:`G_2`
-     - :math:`G_{2;\ell,m,k}`
+     - secular orbital evolution coefficient; equivalent to :math:`G^{(1)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+   * - :nml_v:`Gbar_2`
+     - :math:`\bar{G}^{(2)}_{\ell,m,k}`
      - real
-     - secular orbital evolution coefficient
-   * - :nml_v:`G_3`
-     - :math:`G_{3;\ell,m,k}`
+     - secular orbital evolution coefficient; equivalent to :math:`G^{(2)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+   * - :nml_v:`Gbar_3`
+     - :math:`\bar{G}^{(3)}_{\ell,m,k}`
      - real
-     - secular orbital evolution coefficient
-   * - :nml_v:`G_4`
-     - :math:`G_{4;\ell,m,k}`
+     - secular orbital evolution coefficient; equivalent to :math:`G^{(3)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+   * - :nml_v:`Gbar_4`
+     - :math:`\bar{G}^{(4)}_{\ell,m,k}`
      - real
-     - secular orbital evolution coefficient
-   * - :nml_v:`eul_Psi`
-     - :math:`\tPsi'`
-     - complex(:nml_v:`n`)
-     - Eulerian total potential perturbation [:math:`GM/R`]
-   * - :nml_v:`Phi_T`
-     - :math:`\tPhi_{{\rm T}}`
-     - real(:nml_v:`n`)
-     - tidal potential [:math:`GM/R`]
+     - secular orbital evolution coefficient; equivalent to :math:`G^{(4)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
 
 .. rubric:: Footnotes
 

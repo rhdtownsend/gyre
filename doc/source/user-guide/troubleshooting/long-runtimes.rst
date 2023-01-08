@@ -18,7 +18,7 @@ found, and :math:`C_{\rm b}` and :math:`C_{\rm s}` are constants. The
 first (:math:`C_{\rm b}`) term represents the time take to bracket
 roots of the discriminant function, and the second (:math:`C_{\rm s}`)
 the time taken to solve for these roots (see the
-:ref:`gyre-fundamentals` chapter for details).
+:ref:`numerical` chapter for details).
 
 The key to ensuring reasonable runtimes lies in judicious choice of
 parameters in the :nml_g:`scan` namelist group(s). The :nml_n:`n_freq`

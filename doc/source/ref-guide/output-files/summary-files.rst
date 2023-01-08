@@ -243,6 +243,10 @@ Rotation
      - Symbol
      - Datatype
      - Description
+   * - :nml_v:`Omega_rot_ref`
+     - :math:`\Omega_{\rm ref}`
+     - real(:nml_v:`n_row`)
+     - rotation angular frequency at reference location[:math:`\sqrt{GM/R^{3}}`]
    * - :nml_v:`domega_rot`
      - :math:`\delta \omega`
      - real(:nml_v:`n_row`)
@@ -312,7 +316,7 @@ Note that these items are available only when using :program:`gyre_tides`.
      - complex(:nml_v:`n_row`)
      - Eulerian total potential perturbation at reference location [:math:`GM/R`]
    * - :nml_v:`Phi_T_ref`
-     - :math:`\tPhi_{{\rm T}, ref}`
+     - :math:`\tPhi_{\rm T, ref}`
      - real(:nml_v:`n_row`)
      - tidal potential at reference location [:math:`GM/R`]
    * - :nml_v:`Omega_orb`
@@ -331,27 +335,27 @@ Note that these items are available only when using :program:`gyre_tides`.
    * - :nml_v:`R_a`
      - :math:`R/a`
      - real(:nml_v:`n_row`)
-     - ratio of primary radius to orbital semi-major axis
-   * - :nml_v:`c`
-     - :math:`c_{\ell,m,k}`
+     - ratio of primary radius to orbital semi-major axis 
+   * - :nml_v:`cbar`
+     - :math:`\bar{c}_{\ell,m,k}`
      - real(:nml_v:`n_row`)
-     - tidal expansion coefficient
-   * - :nml_v:`G_1`
-     - :math:`G_{1;\ell,m,k}`
+     - tidal expansion coefficient; see eqn. A1 of Sun et al. (2023)
+   * - :nml_v:`Gbar_1`
+     - :math:`\bar{G}^{(1)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)
-     - secular orbital evolution coefficient
-   * - :nml_v:`G_2`
-     - :math:`G_{2;\ell,m,k}`
+     - secular orbital evolution coefficient; equivalent to :math:`G^{(1)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+   * - :nml_v:`Gbar_2`
+     - :math:`\bar{G}^{(2)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)
-     - secular orbital evolution coefficient
-   * - :nml_v:`G_3`
-     - :math:`G_{3;\ell,m,k}`
+     - secular orbital evolution coefficient; equivalent to :math:`G^{(2)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+   * - :nml_v:`Gbar_3`
+     - :math:`\bar{G}^{(3)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)
-     - secular orbital evolution coefficient
-   * - :nml_v:`G_4`
-     - :math:`G_{4;\ell,m,k}`
+     - secular orbital evolution coefficient; equivalent to :math:`G^{(3)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+   * - :nml_v:`Gbar_4`
+     - :math:`\bar{G}^{(4)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)
-     - secular orbital evolution coefficient
+     - secular orbital evolution coefficient; equivalent to :math:`G^{(4)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
 
 .. rubric:: Footnotes
 

@@ -37,7 +37,7 @@ e-folding time :math:`\tau`, respectively, via
 Solving the non-adiabatic equations proceeds using the same general
 approach as in the adiabatic case, by searching for the roots of a
 discriminant function :math:`\Dfunc(\omega)` (see the
-:ref:`gyre-fundamentals` chapter for more details). However, a
+:ref:`numerical` chapter for more details). However, a
 challenge is that there is no simple way to bracket roots in the
 complex plane. Instead, GYRE must generate initial trial roots that
 are close to the true roots, and then refine them

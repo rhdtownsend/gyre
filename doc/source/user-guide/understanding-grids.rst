@@ -4,9 +4,9 @@
 Understanding Grids
 *******************
 
-This chapter describes how GYRE sets up its frequency and spatial
-grids, and discusses some strategies for ensuring these grids are
-optimal.
+This chapter describes how the GYRE :ref:`frontends <frontends>` set
+up frequency and spatial grids, and discusses some strategies for
+ensuring these grids are optimal.
 
 .. toctree::
 

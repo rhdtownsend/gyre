@@ -3,27 +3,27 @@
 Spatial Grids
 =============
 
-GYRE discretizes the oscillation equations on a spatial grid
-:math:`\{x_{1},x_{2},\ldots,x_{N}\}` in the dimensionless radial
-coordinate :math:`x \equiv r/R`. The computational cost of a
-calculation scales with the total number of points :math:`N` in this
-grid, while the grid's resolution --- i.e., the spacing between
-adjacent points --- impacts both the number of modes that can be found
-by GYRE, and the accuracy of these modes (see the
-:ref:`numerical-limits` section for a discussion of these behaviors in
-the context of the stretched string BVP).
+The various GYRE :ref:`frontends <frontends>` all discretize their
+equations on a spatial grid :math:`\{x_{1},x_{2},\ldots,x_{N}\}` in
+the dimensionless radial coordinate :math:`x \equiv r/R`. The
+computational cost of a calculation scales with the total number of
+points :math:`N` in this grid, while the grid's resolution --- i.e.,
+the spacing between adjacent points --- impacts both the accuracy of
+solutions, and in the case of the :program:`gyre` frontend, the number
+of solutions that can be found number. (The :ref:`numerical-limits`
+section discusses these behaviors in the context of the stretched
+string BVP).
 
 Scaffold Grid
 -------------
 
-GYRE constructs a fresh spatial grid for each combination of harmonic
-degree :math:`\ell` and azimuthal order :math:`m` specified in the
-:nml_g:`mode` namelist groups (see the :ref:`namelist-input-files`
-chapter for more details). This is done under the control of the
-:nml_g:`grid` namelist group, of which there must be at least one
-(subject to the tag matching rules; see the :ref:`working-with-tags`
-chapter). If there is more than one matching :nml_g:`grid` namelist
-group, then the final one is used.
+A fresh spatial grid is constructed for each iteration of the main
+computation loop (see the flow-charts in the :ref:`frontends`
+chapter). This is done under the control of the :nml_g:`grid` namelist
+groups; there must be at least one of these, subject to the tag
+matching rules (see the :ref:`working-with-tags` chapter). If there is
+more than one matching :nml_g:`grid` namelist group, then the final
+one is used.
 
 Each grid begins as a *scaffold grid*, comprising the following:
 
@@ -43,11 +43,11 @@ model grid. However, either or both can be overridden using the
 Iterative Refinement
 --------------------
 
-GYRE refines a scaffold grid through a sequence of iterations. During
-a given iteration, each subinterval :math:`[x_{k},x_{k+1}]` is
-assessed against various criteria (discussed in greater detail
-below). If any criteria match, then the subinterval is refined by
-bisection, inserting an additional point at the midpoint
+Scaffold grids are refined via a sequence of iterations. During a
+given iteration, each subinterval :math:`[x_{k},x_{k+1}]` is assessed
+against various criteria (discussed in greater detail below). If any
+criteria match, then the subinterval is refined by bisection,
+inserting an additional point at the midpoint
 
 .. math::
 

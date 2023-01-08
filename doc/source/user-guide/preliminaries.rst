@@ -37,6 +37,8 @@ relevant 'instrument' papers:
 * :ads_citet:`townsend:2018` outlines improvements to allow :ref:`non-adiabatic calculations <non-ad-calcs>`.
 * :ads_citet:`goldstein:2020` describes the :ref:`contour method <non-ad-contour>` for
   non-adiabatic calculations.
+* :ads_citet:`sun:2023` introduces the :ref:`gyre_tides frontend
+  <frontends-gyre_tides>` for evaluating tidal responses.
 
 If you find yourself using GYRE on a regular basis, you might consider
 contributing to the project to ensure its long-term success. Options include
@@ -54,10 +56,14 @@ GYRE remains under active development by the following team:
 
 * `Rich Townsend <http://www.astro.wisc.edu/~townsend>`__ (University of Wisconsin-Madison); project leader
 * `Warrick Ball <https://www.birmingham.ac.uk/staff/profiles/physics/ball-warrick.aspx>`__ (University of Birmingham)
-* Jacqueline Goldstein (University of Wisconsin-Madison)
-* Aaron Lopez (University of Wisconsin-Madison)  
 * Joel Ong (Yale University)
-* Meng Sun (University of Wisconsin-Madison)
+* Zhao Guo (Cambridge Unviersity)
+* Meng Sun (Northwestern University)
+
+Former developers include:
+
+* Jacqueline Goldstein (MIT)
+* Aaron Lopez
 
 Also, the following people have made valuable contributions toward testing GYRE:
 

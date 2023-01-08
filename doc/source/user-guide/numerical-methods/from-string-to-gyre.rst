@@ -1,19 +1,19 @@
-.. _fund-gyre:
+.. _numerical-gyre:
 
-From Stretched String to GYRE
+From Stretched String to gyre
 =============================
 
-The numerical technique demonstrated in the :ref:`fund-string`
-section provides a powerful analog to how GYRE solves the oscillation
-equations. The full gory details of GYRE's approach are laid out in
-:ads_citet:`townsend:2013`; in this section we briefly summarize it,
-highlighting similarities and differences with the stretched-string
-problem.
+The numerical technique demonstrated in the :ref:`numerical-string`
+section provides a powerful analog to how :program:`gyre` solves the
+oscillation equations. The full gory details of :program:`gyre`'s
+approach are laid out in :ads_citet:`townsend:2013`; in this section
+we briefly summarize it, highlighting similarities and differences
+with the stretched-string problem.
 	   
 Separation
 ----------
 
-Similar to the stretched-string problem, GYRE
+Similar to the stretched-string problem, :program:`gyre`
 begins by separating variables in space and time. For the radial
 displacement perturbation :math:`\xir`, trial solutions take the
 form
@@ -30,13 +30,13 @@ eqn. :eq:`var-separation`, an additional spherical harmonic term
 Discretization
 --------------
 
-As with the stretched-string problem, GYRE then discretizes the
+As with the stretched-string problem, :program:`gyre` then discretizes the
 governing equations on a spatial grid
 :math:`\{x_{1},x_{2},\ldots,x_{N}\}`. However, a couple of important
 differences arise at this juncture. First, the system of oscillation
 equations are fourth order (sixth, in the non-adiabatic case). Rather
 than employing finite-difference approximations to high-order
-differential operators, GYRE instead decomposes the problem into set
+differential operators, :program:`gyre` instead decomposes the problem into set
 of coupled first-order equations. This set is written generically as
 
 .. math::
@@ -49,7 +49,7 @@ adiabatic case, :math:`\neq=4`; in the non-adiabatic case,
 :math:`\neq=6`.
 
 Second, while this equation could be discretized using a simple
-finite-difference approximation to the left-hand side, GYRE offers
+finite-difference approximation to the left-hand side, :program:`gyre` offers
 more-sophisticated approaches with higher orders of accuracy. These
 include the Magnus schemes described in :ads_citet:`townsend:2013`,
 and implicit Runge-Kutta schemes mentioned in
@@ -117,7 +117,7 @@ block-staircase matrix with components
 
 As before, the linear system :eq:`linear-sys` has non-trivial
 solutions only when the determinant of :math:`\mS` vanishes. Thus,
-GYRE finds eigenvalues of the oscillation equation by solving the
+:program:`gyre` finds eigenvalues of the oscillation equation by solving the
 characteristic equation
 
 .. math::
@@ -131,14 +131,14 @@ where the dimensionless frequency
    \omega \equiv \sqrt{\frac{R^{3}}{GM}} \, \sigma,
 
 is the product of the star's dynamical timescale and the oscillation
-frequency :math:`\sigma`. (Internally, GYRE works extensively with
+frequency :math:`\sigma`. (Internally, :program:`gyre` works extensively with
 such dimensionless quantities, as it improves the stability of the
 numerical algorithms).
 
 Scanning for Eigenfrequencies
 -----------------------------
 
-In the adiabatic case, GYRE searches for roots of the discriminant
+In the adiabatic case, :program:`gyre` searches for roots of the discriminant
 function :math:`\Dfunc` using the same bracketing and refinement
 strategies as the stretched-string problem.
 
@@ -146,6 +146,6 @@ In the non-adiabatic case, a complication is that the discriminant
 function and the dimensionless frequency are both complex
 quantities. Solving the characteristic equation in the complex plane
 is computationally challenging because there is no equivalent to
-bracketing and refinement. GYRE implements a couple of different
+bracketing and refinement. :program:`gyre` implements a couple of different
 approaches to the problem, as discussed in the :ref:`non-ad-calcs`
 chapter.

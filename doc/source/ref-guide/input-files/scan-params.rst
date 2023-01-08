@@ -54,16 +54,13 @@ follows:
 :nml_n:`freq_max_units` (default :nml_v:`''`)
   Units of :nml_n:`freq_max`; same options as :nml_n:`freq_units` and overrides it if set
 
-:nml_n:`freq_min_frame` (default :nml_v:`'INERTIAL'`)
-  Reference frame in which :nml_n:`freq_min`, when :nml_n:`grid_type`
+:nml_n:`freq_frame` (default :nml_v:`'INERTIAL'`)
+  Reference frame in which :nml_n:`freq_min` and :nml_n:`freq_max` are defined, when :nml_n:`grid_type`
   is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`; one of:
 
    - :nml_v:`'INERTIAL'` : Inertial frame
    - :nml_v:`'COROT_I'` : Co-rotating frame at inner boundary
    - :nml_v:`'COROT_O'` : Co-rotating frame at outer boundary
-
-:nml_n:`freq_max_frame` (default :nml_v:`'INERTIAL'`)
-  Frame of :nml_n:`freq_max`; same options as :nml_n:`freq_min_frame`
 
 :nml_n:`file`
   File to read frequencies from, when :nml_n:`grid_type` is :nml_v:`'FILE'`
