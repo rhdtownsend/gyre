@@ -25,18 +25,20 @@ matching rules (see the :ref:`working-with-tags` chapter). If there is
 more than one matching :nml_g:`grid` namelist group, then the final
 one is used.
 
-Each grid begins as a *scaffold grid*, comprising the following:
+Each grid begins as a *scaffold grid*, comprising the following points:
 
 * an inner point :math:`\xin`;
 * an outer point :math:`\xout`;
-* the subset of points of the input model grid satisfying :math:`\xin <
-  x < \xout`
+* the subset of points of the source grid satisfying :math:`\xin < x <
+  \xout`
 
-By default, :math:`\xin` and :math:`\xout` are obtained from the input
-model grid as well, meaning that the scaffold grid is identical to the
-model grid. However, either or both can be overridden using the
-:nml_n:`x_i` and :nml_n:`x_o` parameters, respectively, of the
-:nml_g:`grid` namelist group.
+The source grid can be either the input model grid, or a grid read
+from file; this choice is determined by the :nml_n:`scaffold_src`
+parameter of the :nml_g:`grid` namelist group. By default,
+:math:`\xin` and :math:`\xout` are obtained from the source grid as
+well (as its inner-most and outer-most point). However, either or
+both can be overridden using the :nml_n:`x_i` and :nml_n:`x_o`
+parameters.
 
 .. _spatial-grids-iter:
 

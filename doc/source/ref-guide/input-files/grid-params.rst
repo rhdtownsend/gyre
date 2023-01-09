@@ -6,13 +6,12 @@ Grid Parameters
 The :nml_g:`grid` namelist group defines the parameters used to set up
 the spatial grid, as follows:
 
-:nml_n:`grid_source` (default :nml_v:`MODEL`)
-  Source for skeleton grid; one of:
+:nml_n:`scaffold_src` (default :nml_v:`'MODEL'`)
+  Source for scaffold grid; one of:
 
   - :nml_v:`'MODEL'` : Obtained from the stellar model
-  - :nml_v:`'DETAIL_FILE` : Read from a detail file, which must contain
-    the :nml_v:`x` item
-  - :nml_v:`'TEXT_FILE` : Read from a text file, with one :math:`x` per line
+  - :nml_v:`'FILE'` : Read from a file (see the :nml_v:`file` and
+    :nml_v:`file_format` parameters)
 
 :nml_n:`x_i` (default based on model grid)
   Inner boundary coordinate of calculation grid
@@ -48,9 +47,16 @@ the spatial grid, as follows:
   Flag to resolve central evanescent region
 
 :nml_n:`file` (default :nml_v:`''`)
-   Name of file containing skeleton grid data (when
-   :nml_n:`grid_source`\ =\ :nml_v:`'DETAIL_FILE'` or
-   :nml_v:`'TEXT_FILE'`)
+   Name of file containing scaffold grid data (when
+   :nml_n:`scaffold_src`\ =\ :nml_v:`'FILE'`)
+
+:nml_n:`file_format` (default :nml_v:`''`)
+   Format of file containing scaffold grid data (when
+   :nml_n:`scaffold_src`\ =\ :nml_v:`'FILE'`); one of:
+
+   - :nml_v:`'TEXT'`: text file with one abscissa value per line
+   - :nml_v:`'DETAIL'`: :ref:`detail <detail-files>` file with
+     abscissa values provided in :nml_v:`x` dataset
 
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match

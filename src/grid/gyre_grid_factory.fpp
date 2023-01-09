@@ -23,6 +23,7 @@ module gyre_grid_factory
 
   use core_kinds
   use core_hgroup
+  use core_order
 
   use gyre_context
   use gyre_grid
@@ -119,11 +120,30 @@ contains
 
     ! Create the scaffold grid
 
-    if (gr_p%file /= '') then
-       gr = grid_from_file_(gr_p%file, gr_p%file_format, gr_p%x_i, gr_p%x_o)
-    else
+    select case (gr_p%scaffold_src)
+
+    case ('MODEL')
+
        gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
-    end if
+
+       if (check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 110) 'Scaffold grid from model'
+110       format(3X,A)
+       end if
+
+    case ('FILE')
+
+       gr = grid_from_file_(gr_p%file, gr_p%file_format, ml%grid(), gr_p%x_i, gr_p%x_o)
+
+       if (check_log_level('INFO')) then
+          write(OUTPUT_UNIT, 110) 'Scaffold grid from file '//TRIM(gr_p%file)
+       end if
+
+    case default
+
+       $ABORT(Invalid scaffold_src)
+
+    end select
 
     ! Add points
 
@@ -698,10 +718,11 @@ contains
 
   !****
 
-  function grid_from_file_ (file, file_format, x_i, x_o) result (gr)
+  function grid_from_file_ (file, file_format, gr_ml, x_i, x_o) result (gr)
 
     character(*), intent(in) :: file
     character(*), intent(in) :: file_format
+    type(grid_t)             :: gr_ml
     real(WP), intent(in)     :: x_i
     real(WP), intent(in)     :: x_o
     type(grid_t)             :: gr
@@ -711,6 +732,12 @@ contains
     integer               :: unit
     integer               :: n
     integer               :: i
+    integer               :: n_s
+    real(WP), allocatable :: x_b(:)
+    integer               :: s
+    integer               :: j_s_i
+    integer               :: j_s_o
+    logical, allocatable  :: mask(:)
 
     ! Read the grid abscissa from a file
 
@@ -750,6 +777,50 @@ contains
 
     end select
 
+    ! Now construct a grid that's "compatible" with the model
+
+    ! First, eliminate any duplicates in x
+
+    x = x(unique_indices(x))
+
+    n = SIZE(x)
+
+    ! Extract segment boundaries from the model grid
+
+    n_s = gr_ml%s_o() - gr_ml%s_i() + 1
+
+    allocate(x_b(2*n_s))
+
+    i = 1
+
+    seg_loop: do s = gr_ml%s_i(), gr_ml%s_o()
+
+       j_s_i = gr_ml%j_s_i(s)
+       j_s_o = gr_ml%j_s_o(s)
+
+       x_b(i  ) = gr_ml%pt(j_s_i)%x
+       x_b(i+1) = gr_ml%pt(j_s_o)%x
+
+       i = i + 2
+
+    end do seg_loop
+
+    ! Remove points from x that are already in x_b
+
+    allocate(mask(n))
+
+    do i = 1, n
+       mask(i) = .NOT. ANY(x(i) == x_b)
+    end do
+
+    x = PACK(x, mask)
+
+    ! Merge the two abscissae
+
+    x = [x, x_b]
+
+    x = x(sort_indices(x))
+    
     ! Set up the grid
 
     gr = grid_t(grid_t(x), x_i, x_o)
