@@ -1,5 +1,5 @@
-gyre [6.0]
-----------
+gyre [master]
+-------------
 
 OpenMP Threads   : 4
 Input filename   : gyre.in
@@ -24,6 +24,7 @@ Building frequency grid (REAL axis)
    added scan interval :  0.5000E+00 ->  0.1500E+01 (100 points, INVERSE)
 
 Building spatial grid
+   Scaffold grid from model
    Refined 0 subinterval(s) in iteration 1
    Final grid has 1 segment(s) and 1814 point(s):
       Segment 1 : x range 0.0000 -> 1.0000 (1 -> 1814)
@@ -31,7 +32,7 @@ Building spatial grid
 Starting search (adiabatic)
 
 Evaluating discriminant
-  Time elapsed :     0.845 s
+  Time elapsed :     0.886 s
 
 Root Solving
    l    m    n_pg    n_p    n_g       Re(omega)       Im(omega)        chi n_iter
@@ -42,7 +43,7 @@ Root Solving
    1    0      -5      0      5  0.89820448E+00  0.00000000E+00 0.1363E-13      6
    1    0      -4      0      4  0.11322842E+01  0.00000000E+00 0.6270E-13      7
    1    0      -3      0      3  0.13377876E+01  0.00000000E+00 0.6789E-13      6
-  Time elapsed :      0.424 s
+  Time elapsed :      0.382 s
 
 Mode Search
 -----------
@@ -55,6 +56,7 @@ Building frequency grid (REAL axis)
    added scan interval :  0.5000E+00 ->  0.1500E+01 (100 points, INVERSE)
 
 Building spatial grid
+   Scaffold grid from model
    Refined 6 subinterval(s) in iteration 1
    Refined 0 subinterval(s) in iteration 2
    Final grid has 1 segment(s) and 1820 point(s):
@@ -63,7 +65,7 @@ Building spatial grid
 Starting search (adiabatic)
 
 Evaluating discriminant
-  Time elapsed :     0.728 s
+  Time elapsed :     0.731 s
 
 Root Solving
    l    m    n_pg    n_p    n_g       Re(omega)       Im(omega)        chi n_iter
@@ -78,5 +80,5 @@ Root Solving
    2    0      -8      0      8  0.99746970E+00  0.00000000E+00 0.6653E-14      6
    2    0      -7      0      7  0.11297111E+01  0.00000000E+00 0.2909E-13      7
    2    0      -6      0      6  0.12531594E+01  0.00000000E+00 0.1250E-15      7
-  Time elapsed :      0.628 s
+  Time elapsed :      0.590 s
 
