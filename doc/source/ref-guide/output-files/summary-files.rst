@@ -337,23 +337,23 @@ Note that these items are available only when using :program:`gyre_tides`.
      - real(:nml_v:`n_row`)
      - ratio of primary radius to orbital semi-major axis 
    * - :nml_v:`cbar`
-     - :math:`\bar{c}_{\ell,m,k}`
+     - :math:`\cbar_{\ell,m,k}`
      - real(:nml_v:`n_row`)
      - tidal expansion coefficient; see eqn. A1 of Sun et al. (2023)
    * - :nml_v:`Gbar_1`
-     - :math:`\bar{G}^{(1)}_{\ell,m,k}`
+     - :math:`\Gbar^{(1)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)
      - secular orbital evolution coefficient; equivalent to :math:`G^{(1)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
    * - :nml_v:`Gbar_2`
-     - :math:`\bar{G}^{(2)}_{\ell,m,k}`
+     - :math:`\Gbar^{(2)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)
      - secular orbital evolution coefficient; equivalent to :math:`G^{(2)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
    * - :nml_v:`Gbar_3`
-     - :math:`\bar{G}^{(3)}_{\ell,m,k}`
+     - :math:`\Gbar^{(3)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)
      - secular orbital evolution coefficient; equivalent to :math:`G^{(3)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
    * - :nml_v:`Gbar_4`
-     - :math:`\bar{G}^{(4)}_{\ell,m,k}`
+     - :math:`\Gbar^{(4)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)
      - secular orbital evolution coefficient; equivalent to :math:`G^{(4)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
 

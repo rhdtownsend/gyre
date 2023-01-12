@@ -3,9 +3,10 @@
 Duplicated Modes
 ================
 
-Sometimes two modes with the same :math:`\npg` are found during a
-calculation. This violates the expectation that :math:`\npg` be
-monotonic-increasing, and can happen for a few reasons.
+Sometimes two oscillation modes with the same :math:`\npg` are found
+during a :program:`gyre` calculation. This violates the expectation
+that :math:`\npg` be monotonic-increasing, and can happen for a few
+reasons.
 
 Bad Stellar Model
 -----------------
@@ -17,7 +18,7 @@ also be spotted because their radial order is very different from the
 adjacent-in-frequency modes.
 
 Bogus modes arise because the input stellar model doesn't conserve
-mass. GYRE assumes that the density :math:`\rho` and interior mass
+mass. GYRE` assumes that the density :math:`\rho` and interior mass
 :math:`M_{r}` are related by equation :eq:`mass-eq`. Given that there
 are many different ways to discretize this equation, there is a
 certain amount of numerical 'slop' that arises when going from

@@ -36,31 +36,31 @@ Solution Data
    * - :nml_v:`x`
      - :math:`x`
      - real(:nml_n:`n`)
-     - independent variable; defined in :ref:`dimless-vars` section 
+     - independent variable; defined in :ref:`osc-dimless-vars` section 
    * - :nml_v:`y_1`
      - :math:`y_{1}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`dimless-vars` section
+     - dependent variable; defined in :ref:`osc-dimless-vars` section
    * - :nml_v:`y_2`
      - :math:`y_{2}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`dimless-vars` section
+     - dependent variable; defined in :ref:`osc-dimless-vars` section
    * - :nml_v:`y_3`
      - :math:`y_{3}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`dimless-vars` section
+     - dependent variable; defined in :ref:`osc-dimless-vars` section
    * - :nml_v:`y_4`
      - :math:`y_{4}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`dimless-vars` section
+     - dependent variable; defined in :ref:`osc-dimless-vars` section
    * - :nml_v:`y_5`
      - :math:`y_{5}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`dimless-vars` section
+     - dependent variable; defined in :ref:`osc-dimless-vars` section
    * - :nml_v:`y_6`
      - :math:`y_{6}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`dimless-vars` section
+     - dependent variable; defined in :ref:`osc-dimless-vars` section
 
 Observables
 -----------
@@ -453,33 +453,33 @@ Stellar Structure
    * - :nml_v:`V_2`
      - :math:`V_2`
      - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`struct-coeffs` section
+     - structure coefficient; defined in :ref:`osc-struct-coeffs` section
    * - :nml_v:`As`
      - :math:`A^{*}`
      - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`struct-coeffs` section
+     - structure coefficient; defined in :ref:`osc-struct-coeffs` section
    * - :nml_v:`U`
      - :math:`U`
      - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`struct-coeffs` section
+     - structure coefficient; defined in :ref:`osc-struct-coeffs` section
    * - :nml_v:`c_1`
      - :math:`c_{1}`
      - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`struct-coeffs` section
+     - structure coefficient; defined in :ref:`osc-struct-coeffs` section
    * - :nml_v:`Gamma_1`
      - :math:`\Gammi`
      - real(:nml_v:`n`)
-     - adiabatic exponent; defined in :ref:`linear-equations` section
+     - adiabatic exponent; defined in :ref:`osc-linear-eqns` section
    * - :nml_v:`nabla`\ [#only-N]_
      - :math:`\nabla`
      - real(:nml_v:`n`)
-     - temperature gradient; defined in :ref:`struct-coeffs` section
-       :ref:`dimless-form` section
+     - temperature gradient; defined in :ref:`osc-struct-coeffs` section
+       :ref:`osc-dimless-form` section
    * - :nml_v:`nabla_ad`\ [#only-N]_
      - :math:`\nabad`
      - real(:nml_v:`n`)
      - adiabatic temperature gradient; defined in
-       :ref:`linear-equations` section
+       :ref:`osc-linear-eqns` section
    * - :nml_v:`dnabla_ad`\ [#only-N]_
      - :math:`\dnabad`
      - real(:nml_v:`n`)
@@ -487,52 +487,52 @@ Stellar Structure
    * - :nml_v:`upsilon_T`\ [#only-N]_
      - :math:`\upsT`
      - real(:nml_v:`n`)
-     - thermodynamic coefficient; defined in :ref:`linear-equations`
+     - thermodynamic coefficient; defined in :ref:`osc-linear-eqns`
        section
    * - :nml_v:`c_lum`\ [#only-N]_
      - :math:`\clum`
      - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`struct-coeffs`
+     - structure coefficient; defined in :ref:`osc-struct-coeffs`
        section
    * - :nml_v:`c_rad`\ [#only-N]_
      - :math:`\crad`
      - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`struct-coeffs`
+     - structure coefficient; defined in :ref:`osc-struct-coeffs`
        section
    * - :nml_v:`c_thn`\ [#only-N]_
      - :math:`\cthn`
      - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`struct-coeffs`
+     - structure coefficient; defined in :ref:`osc-struct-coeffs`
        section
    * - :nml_v:`c_thk`\ [#only-N]_
      - :math:`\cthk`
      - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`struct-coeffs`
+     - structure coefficient; defined in :ref:`osc-struct-coeffs`
        section
    * - :nml_v:`c_eps`\ [#only-N]_
      - :math:`\ceps`
      - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`struct-coeffs`
+     - structure coefficient; defined in :ref:`osc-struct-coeffs`
        section
    * - :nml_v:`kap_rho`\ [#only-N]_
      - :math:`\kaprho`
      - real(:nml_v:`n`)
-     - opacity partial; defined in :ref:`linear-equations`
+     - opacity partial; defined in :ref:`osc-linear-eqns`
        section
    * - :nml_v:`kap_T`\ [#only-N]_
      - :math:`\kapT`
      - real(:nml_v:`n`)
-     - opacity partial; defined in :ref:`linear-equations`
+     - opacity partial; defined in :ref:`osc-linear-eqns`
        section
    * - :nml_v:`eps_rho`\ [#only-N]_
      - :math:`\epsrho`
      - real(:nml_v:`n`)
-     - nuclear energy generation partial; defined in :ref:`linear-equations`
+     - nuclear energy generation partial; defined in :ref:`osc-linear-eqns`
        section
    * - :nml_v:`eps_T`\ [#only-N]_
      - :math:`\epsT`
      - real(:nml_v:`n`)
-     - nuclear energy generation partial; defined in :ref:`linear-equations`
+     - nuclear energy generation partial; defined in :ref:`osc-linear-eqns`
        section
    * - :nml_v:`M_r`\ [#only-D]_
      - :math:`M_r`
@@ -602,23 +602,23 @@ Note that these items are available only when using :program:`gyre_tides`.
      - real
      - ratio of primary radius to orbital semi-major axis
    * - :nml_v:`cbar`
-     - :math:`\bar{c}_{\ell,m,k}`
+     - :math:`\cbar_{\ell,m,k}`
      - real
      - tidal expansion coefficient; see eqn. A1 of Sun et al. (2023)
    * - :nml_v:`Gbar_1`
-     - :math:`\bar{G}^{(1)}_{\ell,m,k}`
+     - :math:`\Gbar^{(1)}_{\ell,m,k}`
      - real
      - secular orbital evolution coefficient; equivalent to :math:`G^{(1)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
    * - :nml_v:`Gbar_2`
-     - :math:`\bar{G}^{(2)}_{\ell,m,k}`
+     - :math:`\Gbar^{(2)}_{\ell,m,k}`
      - real
      - secular orbital evolution coefficient; equivalent to :math:`G^{(2)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
    * - :nml_v:`Gbar_3`
-     - :math:`\bar{G}^{(3)}_{\ell,m,k}`
+     - :math:`\Gbar^{(3)}_{\ell,m,k}`
      - real
      - secular orbital evolution coefficient; equivalent to :math:`G^{(3)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
    * - :nml_v:`Gbar_4`
-     - :math:`\bar{G}^{(4)}_{\ell,m,k}`
+     - :math:`\Gbar^{(4)}_{\ell,m,k}`
      - real
      - secular orbital evolution coefficient; equivalent to :math:`G^{(4)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
 

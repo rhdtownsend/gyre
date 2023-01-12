@@ -93,13 +93,9 @@ First, :program:`gyre` prints out its version number, tells us (in
 OpenMP threads) how many cores it is running on, and indicates which
 file it is reading parameters from (here, :file:`gyre.in`):
 
-.. code-block:: console
-
-   gyre [master]
-   -------------
-
-   OpenMP Threads   : 4
-   Input filename   : gyre.in
+.. literalinclude:: example-walkthrough/gyre.out
+   :language: console
+   :end-before: Model Init
 
 Next, :program:`gyre` loads the stellar model from the file
 :file:`spb.mesa`. This model comprises 1814 points and extends from

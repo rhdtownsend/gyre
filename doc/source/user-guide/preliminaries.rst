@@ -34,9 +34,9 @@ If you use GYRE in your research, please cite one or more of the
 relevant 'instrument' papers:
 
 * :ads_citet:`townsend:2013` describes the basic operation of the code;
-* :ads_citet:`townsend:2018` outlines improvements to allow :ref:`non-adiabatic calculations <non-ad-calcs>`.
-* :ads_citet:`goldstein:2020` describes the :ref:`contour method <non-ad-contour>` for
-  non-adiabatic calculations.
+* :ads_citet:`townsend:2018` outlines extensions to :ref:`non-adiabatic oscillation <non-ad-osc>`.
+* :ads_citet:`goldstein:2020` describes the :ref:`contour method <non-ad-contour>` for finding
+  non-adiabatic modes.
 * :ads_citet:`sun:2023` introduces the :ref:`gyre_tides frontend
   <frontends-gyre_tides>` for evaluating tidal responses.
 

@@ -3,19 +3,19 @@
 Missing Modes
 =============
 
-For adiabatic calculations the radial order :math:`\npg` of modes
-found, as GYRE processes a single :nml_g:`mode` namelist group, should
-be monotonic-increasing\ [#dipole]_. Departures from this behavior can
+For adiabatic oscillation calculations using :program:`gyre`, the
+radial order :math:`\npg` of modes found should be
+monotonic-increasing\ [#dipole]_. Departures from this behavior can
 occur for a number of reasons.
 
 Insufficient Frequency Resolution
 ---------------------------------
 
 If the :ref:`frequency grid <freq-grids>` has insufficient resolution,
-then GYRE can skip modes during the bracketing phase, as discussed in
-the :ref:`numerical-limits` section. The signature of insufficient
-frequency resolution is that an even number of consecutive modes is missed ---
-most often, an adjacent pair of modes.
+then :program:`gyre` can skip modes during the bracketing phase, as
+discussed in the :ref:`numerical-limits` section. The signature of
+insufficient frequency resolution is that an even number of
+consecutive modes is missed --- most often, an adjacent pair of modes.
 
 To fix this problem, first check that the distribution of points in
 the frequency grids matches (approximately) the expected distribution of
@@ -68,7 +68,7 @@ gradually increasing both :nml_n:`w_osc` and :nml_n:`w_ctr`.
 Non-adiabatic Effects
 ---------------------
 
-When undertaking :ref:`non-adiabatic calculations <non-ad-calcs>`,
+When undertaking :ref:`non-adiabatic calculations <non-ad-osc>`,
 modes can be mis-classified or completely missed. The former situation
 arises because the expectation of monotonic-increasing :math:`\npg`
 formally applies only to adiabatic oscillations; while it can also
@@ -78,7 +78,7 @@ manually by determining which adiabatic mode the problematic
 non-adiabatic mode corresponds to.
 
 Missing modes occur for a different reason: if a mode has a large
-growth rate, then the usual :ref:`adiabatic method <non-ad-adiabatic>`
+growth rate, then the usual :ref:`adiabatic method <non-ad-ad>`
 for establishing initial trial roots can fail to find it. In such
 cases, the alternative :ref:`contour method <non-ad-contour>` performs
 very well.

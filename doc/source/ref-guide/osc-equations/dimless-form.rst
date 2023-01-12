@@ -1,13 +1,14 @@
-.. _dimless-form:
+.. _osc-dimless-form:
 
 Dimensionless Formulation
 =========================
 
-To improve numerical stability, GYRE solves the :ref:`separated
-equations <sep-equations>` by recasting them into a dimensionless form
-that traces its roots back to :ads_citet:`dziembowski:1971`.
+To improve numerical stability, :program:`gyre` solves the
+:ref:`separated equations <osc-sep-eqns>` by recasting them into a
+dimensionless form that traces its roots back to
+:ads_citet:`dziembowski:1971`.
 
-.. _dimless-vars:
+.. _osc-dimless-vars:
 
 Variables
 ---------
@@ -16,6 +17,7 @@ The independent variable is the fractional radius :math:`x \equiv r/R`
 and the dependent variables :math:`\{y_{1},y_{2},\ldots,y_{6}\}` are
 
 .. math::
+   :label: e:dimless
 
    \begin{align}
    y_{1} &= x^{2 - \ell}\, \frac{\txir}{r}, \\
@@ -26,7 +28,7 @@ and the dependent variables :math:`\{y_{1},y_{2},\ldots,y_{6}\}` are
    y_{6} &= x^{-1-\ell}\, \frac{\delta \tLrad}{L}.
    \end{align}
 
-.. _dimless-form-eqns:
+.. _osc-dimless-eqns:
 
 Oscillation Equations
 ---------------------
@@ -83,7 +85,7 @@ The dimensionless oscillation equations are
 These equations are derived from the separated equations, but with the
 insertion of 'switch' terms (denoted :math:`\alpha`) that allow
 certain pieces of physics to be altered. See the
-:ref:`physics-switches` section for more details
+:ref:`osc-physics-switches` section for more details
 
 For non-radial adiabatic calculations, the last two equations above
 are set aside and the :math:`y_{5}` terms dropped from the first four
@@ -101,6 +103,8 @@ replaced by
    x \deriv{y_{2}}{x} &= 
    \left( c_{1} \omega^{2} + U - \As \right) y_{1} + \left( 3 - U + \As \right) y_{2}.
    \end{align}
+
+.. _osc-dimless-bc:
 
 Boundary Conditions
 -------------------
@@ -147,6 +151,7 @@ When :nml_n:`outer_bound`\ =\ :nml_v:`'VACUUM'`, GYRE applies vacuum surface
 pressure conditions at the outer boundary:
 
 .. math::
+   :label: e:outer-bc
 
    \begin{align}
    y_{1} - y_{2} &= 0 \\
@@ -175,7 +180,7 @@ Finally, when :nml_n:`outer_bound`\ =\ :nml_v:`'GAMMA'`, the first
 condition is replaced by the outer mechanical boundary condition
 described by :ads_citet:`ong:2020`.
 
-.. _dimless-form-jump:
+.. _osc-dimless-jump:
 
 Jump Conditions
 ---------------
@@ -197,7 +202,7 @@ Here, + (-) superscripts indicate quantities evaluated on the inner
 :math:`y_{6}` remain continuous across discontinuites, and therefore
 don't need these superscripts.
 
-.. _struct-coeffs:
+.. _osc-struct-coeffs:
 
 Structure Coefficients
 ----------------------
@@ -244,7 +249,7 @@ dimensionless oscillation equations are defined as follows:
    \cthk = x^{-3} \frac{4\pi r^{3} \cP T \rho}{L} \sqrt{\frac{GM}{R^{3}}}
    \end{gather}
 
-.. _physics-switches:
+.. _osc-physics-switches:
 
 Physics Switches
 ----------------

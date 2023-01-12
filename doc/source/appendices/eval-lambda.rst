@@ -6,7 +6,7 @@ Evaluating Tidal Eigenvalues
 
 This appendix describes the :program:`eval_lambda` executable, which
 evaluates the eigenvalue :math:`\lambda` appearing in Laplace's tidal
-equations (see the :ref:`rot-effects` section). This executable is
+equations (see the :ref:`osc-rot` section). This executable is
 used for the calculations presented in :ads_citet:`townsend:2020`.
 
 Installation

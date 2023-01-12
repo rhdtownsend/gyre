@@ -1,4 +1,4 @@
-.. _osc-eqs-fluid:
+.. _osc-fluid-eqns:
 
 Fluid Equations
 ===============

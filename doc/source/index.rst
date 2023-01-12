@@ -36,8 +36,7 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    user-guide/interpreting-output.rst
    user-guide/understanding-grids.rst
    user-guide/working-with-tags.rst
-   user-guide/non-ad-calculations.rst
-   user-guide/including-rotation.rst
+   user-guide/advanced-usage.rst
    user-guide/faq.rst
    user-guide/troubleshooting.rst
    
@@ -51,6 +50,7 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    ref-guide/output-files.rst
    ref-guide/stellar-models.rst
    ref-guide/osc-equations.rst
+   ref-guide/tidal-equations.rst
 
 .. toctree::
    :caption: Appendices

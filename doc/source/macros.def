@@ -59,12 +59,15 @@ xip	\xi_{\phi}
 vxih	\vxi_{\rm h}
 txi	\tilde{\xi}
 txir	\tilde{\xi}_{r}
+txirlmk	\tilde{\xi}_{r;\ell,m,k}
 txih	\tilde{\xi}_{\rm h}
+txihlmk	\tilde{\xi}_{\rm h;\ell,m,k}
 tS	\tilde{S}
 tP	\tilde{P}
 tT	\tilde{T}
 trho	\tilde{\rho}
 tPhi	\tilde{\Phi}
+tPhiT	\tilde{\Phi}_{\rm T}
 tPsi	\tilde{\Psi}
 tL	\tilde{L}
 tLrad	\tilde{L}_{\rm R}
@@ -72,6 +75,7 @@ tFradr	\tilde{F}_{{\rm R},r}
 tepsnuc	\tilde{\epsilon}_{\rm n}
 tkappa	\tilde{\kappa}
 tf	\tilde{f}
+tflmk	\tilde{f}_{\ell,m,k}
 subin	#1_{\rm i}
 subout	#1_{\rm o}
 nin	\subin{n}
@@ -127,3 +131,9 @@ nreg	\mathcal{N}
 np	n_{\rm p}
 ng	n_{\rm g}
 npg	n_{\rm pg}
+PhiT	\Phi_{\rm T}
+PhiTlmk	\Phi_{{\rm T};\ell,m,k}
+epsT	\varepsilon_{\rm T}
+cbar	\overline{c}
+Gbar	\overline{G}
+Oorb	\Omega_{\rm orb}

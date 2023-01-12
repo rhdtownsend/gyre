@@ -45,8 +45,8 @@ follows:
   - :nml_v:`'LOWER_DELTA'` : Lesser of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
   - :nml_v:`'ACOUSTIC_CUTOFF'` : fraction of the acoustic cutoff frequency\ [#only-D]_
   - :nml_v:`'GRAVITY_CUTOFF'` : fraction of the gravity cutoff frequency\ [#only-D]_
-  - :nml_v:`'ROSSBY_I'` : fraction of Rossby frequency (see equation :eq:`ross-freq`) at inner boundary
-  - :nml_v:`'ROSSBY_O'` : fraction of Rossby frequency (see equation :eq:`ross-freq`) at outer boundary
+  - :nml_v:`'ROSSBY_I'` : fraction of Rossby frequency (see equation :eq:`e:ross-freq`) at inner boundary
+  - :nml_v:`'ROSSBY_O'` : fraction of Rossby frequency (see equation :eq:`e:ross-freq`) at outer boundary
 
 :nml_n:`freq_min_units` (default :nml_v:`''`)
   Units of :nml_n:`freq_min`; same options as :nml_n:`freq_units` and overrides it if set

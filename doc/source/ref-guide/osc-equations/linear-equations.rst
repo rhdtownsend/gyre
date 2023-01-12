@@ -1,4 +1,4 @@
-.. _linear-equations:
+.. _osc-linear-eqns:
 
 Linearized Equations
 ====================
@@ -12,6 +12,7 @@ the static equilibrium state as
    \rho' + \nabla \cdot ( \rho \vv' ) = 0,
 
 .. math::
+   :label: e:osc-lin-mom
 
    \rho \pderiv{\vv'}{t} = - \nabla P' - \rho' \nabla P - \rho \nabla \Phi'.
 
@@ -23,25 +24,26 @@ equilibrium quantity).  Likewise, Poisson's equation becomes
    \nabla^{2} \Phi' = 4 \pi G \rho'
 
 Applying a Lagrangian (fixed mass element, denoted by a
-:math:`\delta`) perturbation to the heat equation, and neglecting\ [#freeze]_ the
-convective heating term :math:`\delta (\rho^{-1} \nabla \cdot
-\vFcon)`, it linearizes about the equilibrium state as
+:math:`\delta`) perturbation to the heat equation, it linearizes about
+the equilibrium state as
 
 .. math::
 
    T \pderiv{\delta S}{t} = \delta \epsnuc - 
-   \frac{1}{\rho} \nabla \cdot \left[ \vFrad' + \vxi (\nabla \cdot \vFrad) \right].
+   \delta \left( \frac{1}{\rho} \nabla \cdot \vFrad \right),
 
-Likewise applying an Eulerian perturbation to the radiative diffusion equation,
+where the heating term :math:`\delta (\rho^{-1} \nabla \cdot \vFcon)`
+has been dropped\ [#freeze]_ due to the continued lack of a workable theory for
+pulsation-convection coupling. Likewise applying a
+Lagrangian perturbation to the radiative diffusion equation,
 
 .. math::
 
-   \vFrad' = \Fradr \left[
-   \left(  - \frac{\kappa'}{\kappa} - \frac{\rho'}{\rho} + 4 \frac{T'}{T} \right) \ver
-   + \frac{\nabla (T'/T)}{\sderiv{\ln T}{r}} \right]
+   \delta \vFrad =
+   \left( 4 \frac{\delta T}{T} - \frac{\delta \rho}{\rho} - \frac{\delta \kappa}{\kappa} \right) \vFrad +
+   \frac{\delta(\nabla \ln T)}{\sderiv{\ln T}{r}} \Fradr.
 
-where :math:`\ver` is the radial unit vector. The thermodynamic
-relations linearize to
+The thermodynamic relations linearize to
 
 .. math::
 

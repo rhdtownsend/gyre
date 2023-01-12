@@ -136,15 +136,15 @@ In the expressions above, terms of the form :math:`f/\widehat{f}` are used
 to transform a dimensioned frequency :math:`f` into a dimensionless
 one :math:`\omega`. The scale factor :math:`\widehat{f}` depends on the
 :nml_n:`freq_units` parameter. Thus, for example, if
-:nml_nv:`freq_units = 'UHZ`, then :math:`f` is treated as a linear
+:nml_nv:`freq_units = 'UHZ'`, then :math:`f` is treated as a linear
 frequency expressed in :math:`{\rm \mu Hz}`, and the scale factor is set by
 
 .. math::
 
-   \widehat{f} = \sqrt{\frac{GM}{R^{3}}} \frac{1\,{\rm \mu Hz}}{2\pi} 
+   \widehat{f} = \sqrt{\frac{GM}{R^{3}}} \frac{1}{2\pi\,{\rm \mu Hz}}
 
-(the factor of :math:`2\pi` converts from linear to angular
-frequency).
+(the factor of :math:`2\pi` comes from the transformation between linear
+and angular frequency).
 
 The full set of values supported by the :nml_n:`freq_units` parameter
 is listed in the :ref:`scan-params` section.

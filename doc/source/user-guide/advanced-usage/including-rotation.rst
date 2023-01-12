@@ -1,12 +1,11 @@
-.. _including-rotation:
+.. _rotation:
 
-******************
 Including Rotation
-******************
+==================
 
-This chapter briefly discusses how to include rotation effects in GYRE
+This section discusses how to the effects of rotation in GYRE
 calculations. Further details of GYRE's treatment of rotation are
-presented in the :ref:`rot-effects` section.
+presented in the :ref:`osc-eqns` and :ref:`tidal-eqns` chapters.
 
 Setting the Rotation Rate
 -------------------------

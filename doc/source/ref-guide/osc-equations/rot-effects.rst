@@ -1,14 +1,16 @@
-.. _rot-effects:
+.. _osc-rot:
 
 Rotation Effects
 ================
 
-The differential equations and boundary conditions laid out in the
-:ref:`dimless-form` section are formulated for a non-rotating
-star. Solving the oscillation equations for a rotating star is a
+The oscillation equations and boundary conditions laid out in the
+:ref:`osc-dimless-form` section are formulated for a non-rotating
+star. Solving the corresponding equations for a rotating star is a
 challenging task, and a complete treatment lies beyond the scope of
-GYRE. However, GYRE does include two important modifications arising
-from rotation.
+:program:`gyre`. However, :program:`gyre` does include two important
+modifications arising from rotation.
+
+.. _osc-rot-doppler:
 
 Doppler Shift
 -------------
@@ -16,8 +18,9 @@ Doppler Shift
 The lowest-order effect of rotation appears in the Doppler shift that
 arises when transforming between the inertial reference frame and the
 local co-rotating reference frame. To incorporate this effect in the
-oscillation equations, all instances of the inertial-frame frequency
-:math:`\sigma` are replaced by the co-rotating frequency
+:ref:`oscillation equations <osc-sep-eqns>`, all instances of the
+inertial-frame frequency :math:`\sigma` are replaced by the
+co-rotating frequency
 
 .. math::
 
@@ -29,8 +32,12 @@ shellular rotation (see, e.g., :ads_citealp:`meynet:1997`), both
 :math:`\Omega` and :math:`\sigmac` are functions of radial coordinate
 :math:`r`.
 
+.. _osc-rot-coriolis:
+
 Coriolis Force
 --------------
+
+.. _osc-rot-tar:
 
 The Traditional Approximation of Rotation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -46,11 +53,11 @@ community (see, e.g., :ads_citealp:`bildsten:1996`;
 :ads_citealp:`lee:1997`; :ads_citealp:`townsend:2003a`;
 :ads_citealp:`bouabid:2013`; :ads_citealp:`townsend:2020`).
 
-Within the TAR, the solution forms given in equation :eq:`sol-forms`
-are replaced by
+Within the TAR, the solution forms given in equation
+:eq:`e:osc-sol-forms` are replaced by
 
 .. math::
-   :label: sol-forms-hough
+   :label: e:osc-sol-forms-hough
 
    \begin{aligned}
    \xir(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \txir(r) \, \houghr(\theta) \, \exp(\ii m \phi -\ii \sigma t) \right], \\
@@ -80,7 +87,7 @@ behavior of the eigenfunctions and eigenvalue in the limit :math:`\Omega
 \rightarrow 0`. For the gravito-acoustic family,
 
 .. math::
-   :label: hough-lim-ga
+   :label: e:hough-lim-ga
 
    \left.
    \begin{aligned}
@@ -93,13 +100,13 @@ behavior of the eigenfunctions and eigenvalue in the limit :math:`\Omega
    \text{as } \Omega \rightarrow 0.
 
 and :math:`\lambda \rightarrow \ell(\ell+1)`. With these expressions,
-the solution forms in equation :eq:`sol-forms-hough` reduce to those
-given in equation :eq:`sol-forms`.
+the solution forms in equation :eq:`e:osc-sol-forms-hough` reduce to those
+given in equation :eq:`e:osc-sol-forms`.
 
 Conversely, for the Rossby family
 
 .. math::
-   :label: hough-lim-ross
+   :label: e:hough-lim-ross
 
    \left.
    \begin{aligned}
@@ -115,7 +122,7 @@ and :math:`\lambda \rightarrow 0`. Moreover, Rossby-mode
 eigenfrequencies also show the limiting behavior
 
 .. math::
-   :label: ross-freq
+   :label: e:ross-freq
 
    \sigmac = \frac{2 m \Omega}{\ell(\ell+1)}
    \quad
@@ -146,5 +153,5 @@ function of radial coordinate, so too are :math:`q` and
                    number in the TAR; however, it can still be used to
                    identify Hough functions by considering their
                    behavior in the limit :math:`\Omega \rightarrow 0`,
-                   as given in eqns :eq:`hough-lim-ga` and
-                   :eq:`hough-lim-ross`.
+                   as given in eqns. :eq:`e:hough-lim-ga` and
+                   :eq:`e:hough-lim-ross`.

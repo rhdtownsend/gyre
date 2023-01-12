@@ -41,7 +41,7 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
 :nml_n:`variables_set` (default :nml_v:`'GYRE'`)
   Dependent variables in oscillation equations; one of:
 
-  - :nml_v:`'GYRE'` : GYRE formulation, as described in the :ref:`dimless-form` section
+  - :nml_v:`'GYRE'` : GYRE formulation, as described in the :ref:`osc-dimless-form` section
   - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
   - :nml_v:`'JCD'` : Formulation following Jørgen Christensen-Dalsgaard (ADIPLS)
   - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for gravitational components, :nml_v:`'DZIEM'` for mechanical components)
@@ -49,35 +49,35 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
 
 :nml_n:`alpha_grv` (default :nml_v:`1.`)
   Scaling factor for gravitational potential perturbations (see the
-  :math:`\alphagrv` variable in the :ref:`physics-switches` section)
+  :math:`\alphagrv` variable in the :ref:`osc-physics-switches` section)
 
 :nml_n:`alpha_thm` (default :nml_v:`1.`)
   Scaling factor for the thermal timescale (see the :math:`\alphathm`
-  variable in the :ref:`physics-switches` section)
+  variable in the :ref:`osc-physics-switches` section)
 
 :nml_n:`alpha_hfl` (default :nml_v:`1.`)
   Scaling factor for horizontal flux perturbations (see the :math:`\alphahfl`
-  variable in the :ref:`physics-switches` section)
+  variable in the :ref:`osc-physics-switches` section)
 
 :nml_n:`alpha_gam` (default :nml_v:`1.`)
   Scaling factor for g-mode isolation (see the :math:`\alphagam` term in
-  variable in the :ref:`physics-switches` section)
+  variable in the :ref:`osc-physics-switches` section)
 
 :nml_n:`alpha_pi` (default :nml_v:`1.`)
   Scaling factor for p-mode isolation (see the :math:`\alphapi` term in
-  variable in the :ref:`physics-switches` section)
+  variable in the :ref:`osc-physics-switches` section)
 
 :nml_n:`alpha_kar` (default :nml_v:`1.`)
   Scaling factor for opacity density partial derivative (see the :math:`\alphakar`
-  variable in the :ref:`physics-switches` section)
+  variable in the :ref:`osc-physics-switches` section)
 
 :nml_n:`alpha_kat` (default :nml_v:`1.`)
   Scaling factor for opacity temperature partial derivative (see the :math:`\alphakat`
-  variable in the :ref:`physics-switches` section)
+  variable in the :ref:`osc-physics-switches` section)
 
 :nml_n:`alpha_rht` (default :nml_v:`0.`)
   Scaling factor for time-dependent term in radiative heat equation (see the
-  :math:`\alpharht` variable in the :ref:`physics-switches` section)
+  :math:`\alpharht` variable in the :ref:`osc-physics-switches` section)
 
 :nml_n:`inertia_norm` (default :nml_v:`'BOTH'`)
   Inertia normalization factor; one of

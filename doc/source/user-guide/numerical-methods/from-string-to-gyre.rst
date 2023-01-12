@@ -147,5 +147,5 @@ function and the dimensionless frequency are both complex
 quantities. Solving the characteristic equation in the complex plane
 is computationally challenging because there is no equivalent to
 bracketing and refinement. :program:`gyre` implements a couple of different
-approaches to the problem, as discussed in the :ref:`non-ad-calcs`
-chapter.
+approaches to the problem, as discussed in the :ref:`non-ad-osc`
+section.

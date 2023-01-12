@@ -3,7 +3,7 @@
 Structure Coefficients
 ======================
 
-The :ref:`structure coefficients <struct-coeffs>` for composite
+The :ref:`structure coefficients <osc-struct-coeffs>` for composite
 polytropic models are evaluated using
 
 .. math::

@@ -1,4 +1,4 @@
-.. _sep-equations:
+.. _osc-sep-eqns:
 
 Separated Equations
 ===================
@@ -6,10 +6,10 @@ Separated Equations
 With a separation of variables in spherical-polar coordinates
 :math:`(r,\theta,\phi)`, and assuming an oscillatory time (:math:`t`)
 dependence with angular frequency :math:`\sigma`, solutions to the
-linearized fluid equations can be expressed as
+:ref:`linearized equations <osc-linear-eqns>` can be expressed as
 
 .. math::
-   :label: sol-forms
+   :label: e:osc-sol-forms
 
    \begin{aligned}
    \xir(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \txir(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right], \\
@@ -29,9 +29,8 @@ perturbation vector is related to the velocity perturbation via
 
    \vv' = \pderiv{\vxi}{t}.
 
-Substituting the above solution forms into the :ref:`linearized
-equations <linear-equations>`, the mechanical (mass and momentum
-conservation) equations become
+Substituting the above solution forms into the linearized equations,
+the mechanical (mass and momentum conservation) equations become
 
 .. math::
 
