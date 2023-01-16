@@ -55,7 +55,7 @@ program eval_tidal_coeff
 
   ! Get arguments
 
-  if (n_arg() /= 6) stop '** syntax: eval_tidal_coeff coeff R_a e [n|l] m k'
+  if (n_arg() /= 6) stop '** syntax: eval_tidal_coeff [cbar|Gbar_{1..4}|X|X_QP|Y|Y*] coeff R_a e [n|l] m k'
 
   call get_arg(1, coeff)
   call get_arg(2, R_a)
