@@ -27,7 +27,7 @@ Truncating the Sums
 Although the sums appearing in eqn. (:eq:`e:tidal-pot`) are
 formally infinite, the terms with large :math:`\ell` and/or
 :math:`|k|` typically produce a negligible
-resoponse. :program:`gyre_tides` offers a couple of approaches for
+response. :program:`gyre_tides` offers a couple of approaches for
 truncating the sums by dropping these terms. The simplest is to set
 limits on the maximum values of the indices, through the
 :nml_n:`l_max`, :nml_n:`k_min` and :nml_n:`k_max` parameters of the
@@ -76,7 +76,7 @@ Output Files
 
 :program:`gyre_tides` writes response data to summary and detail
 files. One detail file is created for each partial potential
-evalulated, and the summary file collects together global data for all
+evaluated, and the summary file collects together global data for all
 partial potentials across all :nml_g:`tide` namelist groups. The
 :nml_v:`id` output item can be used to determine which group a given
 response belongs to.

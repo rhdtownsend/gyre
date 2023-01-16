@@ -15,7 +15,7 @@ How Do I...
 ...compile GYRE?
   See the :ref:`install-compile` section.
 
-...compile a statically linked verion of GYRE?
+...compile a statically linked version of GYRE?
   Set the :envvar:`STATIC` environment variable to ``yes`` prior to
   compilation. Note that this currently only works on Linux platforms,
   and when then :envvar:`CRMATH` environment variable is set to

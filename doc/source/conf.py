@@ -42,6 +42,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.extlinks',
     'sphinx.ext.intersphinx',
+    'sphinxcontrib.spelling',
     'sphinx-prompt',
     'sphinx_substitution_extensions',
     'ads_cite',
@@ -166,3 +167,5 @@ intersphinx_mapping = {
 # Equation number formatting
 math_eqref_format = '{number}'
                        
+# Spelling
+spelling_word_list_filename='spelling_wordlist.txt'

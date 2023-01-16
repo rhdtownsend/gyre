@@ -20,8 +20,8 @@ Data items in the root HDF5 group are as follows:
 
    * - Data Item
      - Variable
-     - Objtype
-     - Datatype
+     - Object type
+     - Data type
      - Definition
    * - :code:`n`
      - :math:`N`

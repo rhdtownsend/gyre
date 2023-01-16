@@ -38,7 +38,7 @@ version via
 Analyzing a Summary File
 ========================
 
-To analyze the summnary file written by :program:`gyre` during the
+To analyze the summary file written by :program:`gyre` during the
 :ref:`example walkthrough <walkthrough>`, change into your :ref:`work
 directory <walkthrough-work>` and fire up your preferred interactive
 Python environment (e.g., `Jupyter <https://jupyter.org/>`__). Import

@@ -5,7 +5,7 @@ Homogeneous Models
 
 Setting the :nml_n:`model_type` parameter of the :nml_g:`model`
 namelist group to :nml_v:`'HOM'` tells the frontend to create a
-homogeneous (uniform density) stelllar model, equivalent to a
+homogeneous (uniform density) stellar model, equivalent to a
 polytrope with index :math:`n=0`. Because the structure of these model
 can be computed analytically, there is no need to read from an
 external file.

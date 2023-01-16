@@ -51,7 +51,8 @@ The thermodynamic relations linearize to
    \qquad
    \frac{\delta T}{T} = \nabad \frac{\delta P}{P} + \frac{\delta S}{\cP},
 
-and the peturbations to the nuclear energy generation rate and opacity can be expressed as
+and the perturbations to the nuclear energy generation rate and
+opacity can be expressed as
 
 .. math::
 

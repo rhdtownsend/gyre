@@ -9,8 +9,8 @@ Data items in the root HDF5 group of version-1.10 GSM-format files are as follow
 
    * - Item
      - Symbol
-     - Objtype
-     - Datatype
+     - Object type
+     - Data type
      - Definition
    * - :code:`n`
      - :math:`n`

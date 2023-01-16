@@ -57,7 +57,7 @@ GYRE remains under active development by the following team:
 * `Rich Townsend <http://www.astro.wisc.edu/~townsend>`__ (University of Wisconsin-Madison); project leader
 * `Warrick Ball <https://www.birmingham.ac.uk/staff/profiles/physics/ball-warrick.aspx>`__ (University of Birmingham)
 * Joel Ong (Yale University)
-* Zhao Guo (Cambridge Unviersity)
+* Zhao Guo (Cambridge University)
 * Meng Sun (Northwestern University)
 
 Former developers include:

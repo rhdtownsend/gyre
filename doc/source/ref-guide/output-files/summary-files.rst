@@ -8,7 +8,7 @@ eigenfrequencies and radial orders, of all solutions (modes, tidal
 responses, etc.) found during a run. The specific data written to a
 summary file are controlled by the :nml_n:`summary_item_list`
 parameters of the :nml_g:`ad_output` and :nml_g:`nad_output` namelist
-groups (:program:`gyre` adiabatic and nonadiabatic calculations,
+groups (:program:`gyre` adiabatic and non-adiabatic calculations,
 respectively) and the :nml_g:`tides_output` namelist group
 (:program:`gyre_tides` calculations). These parameters specify the
 items to be written, via a comma-separated list.
@@ -201,7 +201,7 @@ Energetics & Transport
      - :math:`E_{\rm g}`
      - real(:nml_v:`n_row`)
      - gravity mode inertia [:math:`M R^{2}`]; evaluated by
-       integrating :math:`\sderiv{E}{x}` in regions wherre
+       integrating :math:`\sderiv{E}{x}` in regions where
        :math:`\varpi=-1`
    * - :nml_v:`E_norm`
      - :math:`E_{\rm norm}`

@@ -199,7 +199,7 @@ momentum and energy by applying the jump conditions
 
 Here, + (-) superscripts indicate quantities evaluated on the inner
 (outer) side of the discontinuity. :math:`y_{1}`, :math:`y_{3}` and
-:math:`y_{6}` remain continuous across discontinuites, and therefore
+:math:`y_{6}` remain continuous across discontinuities, and therefore
 don't need these superscripts.
 
 .. _osc-struct-coeffs:

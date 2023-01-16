@@ -7,7 +7,7 @@ Tidal Equations
 This chapter outlines how the tidal equations (solved by the
 :program:`gyre_tides` frontend) are obtained. Given that many of the
 derivations parallel those in the :ref:`osc-eqns` chapter, the
-focus here is on the apsects unique to tides.
+focus here is on the aspects unique to tides.
 
 .. toctree::
 

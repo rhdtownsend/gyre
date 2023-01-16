@@ -5,7 +5,7 @@ Dimensionless Formulation
 
 The dimensionless formulation of the tidal equations is almost
 identical to the :ref:`corresponding formulation <osc-dimless-form>`
-of the :ref:`oscillation equations <osc-sep-eqns>`, differening only
+of the :ref:`oscillation equations <osc-sep-eqns>`, differing only
 in the definition of a couple of variables and a single boundary
 condition.
 

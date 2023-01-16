@@ -8,7 +8,7 @@ differential inertias, for an individual solution (mode, tidal
 response, etc.) found during a run. The specific data written to
 detail files are controlled by the :nml_n:`detail_item_list`
 parameters of the :nml_g:`ad_output` and :nml_g:`nad_output` namelist
-groups (:program:`gyre` adiabatic and nonadiabatic calculations,
+groups (:program:`gyre` adiabatic and non-adiabatic calculations,
 respectively) and the :nml_g:`tides_output` namelist group
 (:program:`gyre_tides` calculations). These parameters specify the
 items to be written, via a comma-separated list.
