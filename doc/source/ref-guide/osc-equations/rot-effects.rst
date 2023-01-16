@@ -18,9 +18,8 @@ Doppler Shift
 The lowest-order effect of rotation appears in the Doppler shift that
 arises when transforming between the inertial reference frame and the
 local co-rotating reference frame. To incorporate this effect in the
-:ref:`oscillation equations <osc-sep-eqns>`, all instances of the
-inertial-frame frequency :math:`\sigma` are replaced by the
-co-rotating frequency
+oscillation equations, all instances of the inertial-frame frequency
+:math:`\sigma` are replaced by the co-rotating frequency
 
 .. math::
 
@@ -44,17 +43,18 @@ The Traditional Approximation of Rotation
 
 Higher-order effects of rotation arise through the Coriolis force,
 which appears in the linearized momentum equation to correct for the
-non-inertial nature of the co-rotating reference frame. GYRE
-incorporates an approximate treatment of the Coriolis force based on
-the `traditional approximation of rotation` (TAR), which was first
-introduced by Eckart (1960; `Hydrodynamics of Oceans and Atmospheres`)
-and has since then been used extensively within the pulsation
-community (see, e.g., :ads_citealp:`bildsten:1996`;
-:ads_citealp:`lee:1997`; :ads_citealp:`townsend:2003a`;
-:ads_citealp:`bouabid:2013`; :ads_citealp:`townsend:2020`).
+non-inertial nature of the co-rotating reference
+frame. :program:`gyre` incorporates an approximate treatment of the
+Coriolis force based on the `traditional approximation of rotation`
+(TAR), which was first introduced by Eckart (1960; `Hydrodynamics of
+Oceans and Atmospheres`) and has since then been used extensively
+within the pulsation community (see, e.g.,
+:ads_citealp:`bildsten:1996`; :ads_citealp:`lee:1997`;
+:ads_citealp:`townsend:2003a`; :ads_citealp:`bouabid:2013`;
+:ads_citealp:`townsend:2020`).
 
-Within the TAR, the solution forms given in equation
-:eq:`e:osc-sol-forms` are replaced by
+Within the TAR, the solution forms given in
+eqn. (:eq:`e:osc-sol-forms`) are replaced by
 
 .. math::
    :label: e:osc-sol-forms-hough
@@ -71,7 +71,7 @@ functions :math:`\houghr`, :math:`\hought` and :math:`\houghp` are the
 eigenfunctions obtained by solving Laplace's tidal equations (TEs), a
 second-order system of differential equations and boundary conditions
 in the polar (:math:`\theta`) coordinate. Together with the associated
-eigenvalue :math:`\lambda`, depend on the harmonic degree
+eigenvalue :math:`\lambda`, they depend on the harmonic degree
 :math:`\ell`\ [#harmonic-deg]_ and azimuthal order :math:`m`, and the
 spin parameter
 
@@ -100,8 +100,8 @@ behavior of the eigenfunctions and eigenvalue in the limit :math:`\Omega
    \text{as } \Omega \rightarrow 0.
 
 and :math:`\lambda \rightarrow \ell(\ell+1)`. With these expressions,
-the solution forms in equation :eq:`e:osc-sol-forms-hough` reduce to those
-given in equation :eq:`e:osc-sol-forms`.
+the solution forms (:eq:`e:osc-sol-forms-hough`) reduce to those given
+in eqn. (:eq:`e:osc-sol-forms`).
 
 Conversely, for the Rossby family
 
@@ -153,5 +153,5 @@ function of radial coordinate, so too are :math:`q` and
                    number in the TAR; however, it can still be used to
                    identify Hough functions by considering their
                    behavior in the limit :math:`\Omega \rightarrow 0`,
-                   as given in eqns. :eq:`e:hough-lim-ga` and
-                   :eq:`e:hough-lim-ross`.
+                   as given in eqns. (:eq:`e:hough-lim-ga`) and
+                   (:eq:`e:hough-lim-ross`).

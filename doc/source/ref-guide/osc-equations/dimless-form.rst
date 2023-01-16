@@ -42,13 +42,13 @@ The dimensionless oscillation equations are
    \left( \frac{V}{\Gammi} - 1 - \ell \right) y_{1} +
    \left( \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} - \alphagam \frac{V}{\Gammi} \right) y_{2} +
    \alphagrv \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} y_{3} +
-   \delta y_{5}, \\
+   \delta \, y_{5}, \\
    %
    x \deriv{y_{2}}{x} &=
    \left( c_{1} \omegac^{2} - \fpigam \As \right) y_{1} +
    \left( 3 - U + \As - \ell \right) y_{2} -
    \alphagrv y_{4} +
-   \delta y_{5}, \\
+   \delta \, y_{5}, \\
    %
    x \deriv{y_{3}}{x} &= 
    \alphagrv \left( 3 - U - \ell \right) y_{3} +
@@ -238,8 +238,8 @@ dimensionless oscillation equations are defined as follows:
    \ckapS = - \upsT \alphakar \kaprho + \alphakat \kapT \\
    %
    \ceps = x^{-3} \frac{4\pi r^{3} \rho \epsnuc}{L} \qquad
-   \cepsad = \ceps \epsad \qquad
-   \cepsS = \ceps \epsS \\
+   \cepsad = \ceps \epsnucad \qquad
+   \cepsS = \ceps \epsnucS \\
    %
    \cdif = - 4 \nabad V \nabla + \nabad \left(V + \deriv{\ln \nabad}{\ln x} \right) \\
    %

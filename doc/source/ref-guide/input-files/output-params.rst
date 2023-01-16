@@ -30,8 +30,8 @@ as follows:
   Name template of detail files. Names are generated using the following pattern
   substitutions:
 
-  - :nml_v:`'%J'` : Unique mode index :math:`j`, formatted in fixed-width field
-  - :nml_v:`'%j'` : Same as :nml_v:`'%J'`, but formatted in variable-width field
+  - :nml_v:`'%ID'` : Unique mode index, formatted in fixed-width field
+  - :nml_v:`'%id'` : Same as :nml_v:`'%ID'`, but formatted in variable-width field
   - :nml_v:`'%L'` : Harmonic degree :math:`\ell`, formatted in fixed-width field
   - :nml_v:`'%l'` : Same as :nml_v:`'%L'`, but formatted in variable-width field
   - :nml_v:`'%M'` : Azimuthal order :math:`m`, formatted in fixed-width field

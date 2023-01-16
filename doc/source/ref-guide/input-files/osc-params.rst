@@ -111,7 +111,7 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
   - :nml_v:`'KAWALER_GRAV'`: Evaluate using the g-mode part in eqn. (7) of :ads_citet:`kawaler:1985`
 
 :nml_n:`deps_scheme` (default :nml_v:`'MODEL'`)
-  Scheme for calculating nuclear energy generation partials :math:`\epsrho` and :math:`\epsT`; one of:
+  Scheme for calculating nuclear energy generation partials :math:`\epsnucrho` and :math:`\epsnucT`; one of:
 
   - :nml_v:`'MODEL'` : Use values from model
   - :nml_v:`'FILE'` : Use complex (phase-lagged) values from separate file

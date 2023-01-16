@@ -4,9 +4,10 @@ Model Capabilities
 ==================
 
 Which data items are included in a given stellar model dictates what
-sorts of GYRE calculation can be performed on that model. To this end,
-the different model types and file formats can be classified according
-to their `capabilities` (labeled using a single letter):
+sorts of calculation can be performed on that model by the
+frontends. To this end, the different model types and file formats can
+be classified according to their `capabilities` (labeled using a
+single letter):
 
 N
   The model supports non-adiabatic calculations.
@@ -56,15 +57,15 @@ model-type and file-format combination.
      - X
      - X
    * - EVOL
-     - MESA
-     - X
-     - X
-     - X
-   * - EVOL
      - LOSC
      -
      - X
      - 
+   * - EVOL
+     - MESA
+     - X
+     - X
+     - X
    * - EVOL
      - OSC
      - X

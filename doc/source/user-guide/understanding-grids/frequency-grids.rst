@@ -3,8 +3,8 @@
 Frequency Grids
 ===============
 
-The :ref:`gyre frontend <frontends-gyre>` evaluates its
-discriminant function :math:`\Dfunc(\omega)` on a grid
+The :program:`gyre` frontend evaluates its discriminant function
+:math:`\Dfunc(\omega)` on a grid
 :math:`\{\omega_{1},\omega_{2},\ldots,\omega_{M}\}` in the
 dimensionless frequency, and scans for changes in the sign of
 :math:`\Dfunc(\omega)` that are indicative of a bracketed root.  The
@@ -15,7 +15,7 @@ the modes found by :program:`gyre`. (See the :ref:`numerical-limits`
 section for a discussion of these behaviors).
 
 A fresh frequency grid is constructed for each iteration of the main
-computation loop (see the flow-chart in the :ref:`gyre frontend
+computation loop (see the flow-chart in the :ref:`gyre
 <frontends-gyre>` section). This is done under the control of the
 :nml_g:`scan` namelist groups; there must be at least one of these,
 subject to the tag matching rules (see the :ref:`working-with-tags`
@@ -41,8 +41,8 @@ frame according to the formula
 
 .. math::
 
-   \omega^{\rm g}_{j} = \frac{1}{M-1} \left[ (M - j)\, \omega^{\rm g}_{\rm min}  + (j - 1) \, \omega^{\rm g}_{\rm max} \right]
-   \qquad j = 1,2,\ldots,M.
+   \omega^{\rm g}_{i} = \frac{1}{M-1} \left[ (M - i)\, \omega^{\rm g}_{\rm min}  + (i - 1) \, \omega^{\rm g}_{\rm max} \right]
+   \qquad i = 1,2,\ldots,M.
 
 (here, the superscript 'g' indicates that these are frequencies in the
 grid reference frame). Then, it transforms from the grid frame to the
@@ -50,7 +50,7 @@ inertial reference frame via
 
 .. math::
 
-   \omega_{j} = \omega^{\rm g}_{j} + \Delta \omega
+   \omega_{i} = \omega^{\rm g}_{i} + \Delta \omega
 
 where :math:`\Delta\omega` is the frequency shift that transforms from
 the grid frame to the inertial frame. The actual value of this shift
@@ -77,16 +77,16 @@ evaluated via
 
 .. math::
 
-   \omega^{\rm g}_{\rm  min} = \frac{f_{\rm min}}{\widehat{f}_{\rm min}} - \delta \omega,
+   \omega^{\rm g}_{\rm  min} = \frac{f_{\rm min}}{\widehat{f}_{\rm min}} + \delta \omega - \Delta \omega,
    \qquad \qquad
-   \omega^{\rm g}_{\rm max} = \frac{f_{\rm max}}{\widehat{f}_{\rm max}} - \delta \omega,
+   \omega^{\rm g}_{\rm max} = \frac{f_{\rm max}}{\widehat{f}_{\rm max}} + \delta \omega - \Delta \omega,
 
-where :math:`f_{\rm min,max}` are user-definable, :math:`\widehat{f}_{\rm
-min,max}` will be discussed below in the :ref:`freq-units` section, and :math:`\delta\omega` is the
-frequency shift that transforms from the frame in which :math:`f_{\rm
-min,max}` are defined to inertial frame. The actual value of this
-shift depends on the :nml_n:`freq_min_frame` and
-:nml_n:`freq_max_frame` parameters, which behave analogously to the
+where :math:`f_{\rm min,max}` are user-definable,
+:math:`\widehat{f}_{\rm min,max}` will be discussed below in the
+:ref:`freq-units` section, and :math:`\delta\omega` is the frequency
+shift that transforms from the frame in which :math:`f_{\rm min,max}`
+are defined to the inertial frame. The actual value of this shift depends
+on the :nml_n:`freq_frame` parameter, which behaves analogously to the
 :nml_n:`grid_frame` parameter discussed above.
 
 .. _inverse-freq-grid:
@@ -100,8 +100,8 @@ according to the formula
 
 .. math::
 
-   \omega_{{\rm g},j} = (M-1) \left[ \frac{(M - j)}{\omega^{\rm g}_{\rm min}}  + \frac{(j - 1)}{\omega^{\rm g}_{\rm max}} \right]^{-1}
-   \qquad j = 1,2,\ldots,M.
+   \omega^{\rm g}_{i} = (M-1) \left[ \frac{(M - i)}{\omega^{\rm g}_{\rm min}}  + \frac{(i - 1)}{\omega^{\rm g}_{\rm max}} \right]^{-1}
+   \qquad i = 1,2,\ldots,M.
 
 The grid creation then proceeds as described above in the :ref:`linear-freq-grid` section.
 
@@ -117,15 +117,14 @@ transforms these frequencies via
 
 .. math::
 
-   \omega_{j} = \frac{f_{j}}{\widehat{f}} - \delta \omega,
+   \omega_{i} = \frac{f_{j}}{\widehat{f}} + \delta \omega,
 
 where :math:`\widehat{f}` will be discussed below in the
 :ref:`freq-units` section, and :math:`\delta\omega` is the frequency
 shift that transforms from the frame in which :math:`f` is defined to
-inertial frame. The actual value of this shift depends on the
-:nml_n:`freq_frame` and parameter, which behave analogously to the
-:nml_n:`grid_frame` parameter discussed above in the
-:ref:`linear-freq-grid` section.
+the inertial frame. The actual value of this shift depends on the
+:nml_n:`freq_frame` parameter, which behaves analogously to the
+:nml_n:`grid_frame` parameter discussed above.
 
 .. _freq-units:
 

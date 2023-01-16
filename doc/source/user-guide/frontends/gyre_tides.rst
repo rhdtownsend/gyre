@@ -18,10 +18,10 @@ processing each in turn.
 For a given group, :program:`gyre_tides` evaluates the response to
 partial tidal potentials spanning a range of harmonic degrees
 :math:`\ell`, azimuthal orders :math:`m` and Fourier harmonics
-:math:`k` (see eqn. 8 of :ads_citealp:`sun:2023`). With each partial
-potential, the response wavefunctions and other data are optionally
-written to a :ref:`detail file <detail-files>`.  At the end of the
-run, response data from all partial responses (across all
+:math:`k` (see the :ref:`tidal-linear-eqns` section). With each
+partial potential, the response wavefunctions and other data are
+optionally written to a :ref:`detail file <detail-files>`.  At the end
+of the run, response data from all partial responses (across all
 :nml_g:`tide` groups) are optionally written to a :ref:`summary file
 <summary-files>`.
 
@@ -59,7 +59,7 @@ should appear in namelist input files for :program:`gyre_tides`.
    * - :ref:`rot-params`
      - :nml_g:`rot`
      - :math:`\geq 1`\ [#last]_
-   * - :ref:`tide-params`
+   * - :ref:`tidal-params`
      - :nml_g:`tide`
      - :math:`\geq 1`
        

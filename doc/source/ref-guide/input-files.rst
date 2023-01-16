@@ -26,5 +26,5 @@ follows, and the group ends with a slash ``/``.
    input-files/output-params
    input-files/rot-params
    input-files/scan-params
-   input-files/tide-params
+   input-files/tidal-params
 

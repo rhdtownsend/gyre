@@ -5,11 +5,11 @@ Example Walkthrough
 *******************
 
 This chapter provides a walkthrough of a example GYRE project, to
-illustrate the typical steps involved. For this example, we'll focus
-on using :program:`gyre` (the :ref:`frontend <frontends>`
-focused on stellar oscillations) to find eigenfrequencies and
-eigenfunctions of dipole and quadrupole gravity modes for a MESA model
-of slowly pulsating B (SPB) star.
+illustrate the typical steps involved. For this example, we'll use
+:program:`gyre` (the :ref:`frontend <frontends>` focused on stellar
+oscillations) to find eigenfrequencies and eigenfunctions of dipole
+and quadrupole gravity modes for a MESA model of slowly pulsating B
+(SPB) star.
 
 .. _walkthrough-work:
 
@@ -135,6 +135,7 @@ a mode that :program:`gyre` has successfully found:
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
    :start-at: Root Solving
+   :end-before: Mode Search	      
 
 The columns appearing are as follows:
 
@@ -171,7 +172,7 @@ These values are printed to screen primarily to give an idea of
 
 * The convergence parameter ``chi``, defined as the ratio of
   discriminant values before and after the root finding, should small
-  (on the order of 1E-9 to 1E-13). If it is significantly larger than
+  (on the order of 1E-9 to 1E-15). If it is significantly larger than
   this, the mode may not be properly converged; and if it is
   significantly smaller than this, there may be numerical issues with
   the discretization scheme.

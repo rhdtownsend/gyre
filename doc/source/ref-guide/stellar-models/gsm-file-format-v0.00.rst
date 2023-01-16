@@ -108,12 +108,12 @@ Data items in the root HDF5 group of version-0.00 GSM-format files are as follow
      - real (:code:`n`)
      - total energy generation rate [:math:`\erg\,\second^{-1}\,\gram^{-1}`]
    * - :code:`epsilon_T`
-     - :math:`\epsnuc\,\epsT`
+     - :math:`\epsnuc\,\epsnucT`
      - dataset
      - real (:code:`n`)
      - nuclear energy generation partial [:math:`\erg\,\second^{-1}\,\gram^{-1}`]
    * - :code:`epsilon_rho`
-     - :math:`\epsnuc\,\epsrho`
+     - :math:`\epsnuc\,\epsnucrho`
      - dataset
      - real (:code:`n`)
      - nuclear energy generation partial [:math:`\erg\,\second^{-1}\,\gram^{-1}`]

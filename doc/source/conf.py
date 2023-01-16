@@ -41,6 +41,7 @@ extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.mathjax',
     'sphinx.ext.extlinks',
+    'sphinx.ext.intersphinx',
     'sphinx-prompt',
     'sphinx_substitution_extensions',
     'ads_cite',
@@ -94,7 +95,6 @@ html_logo = 'gyre-logo.png'
 # Set up Extlinks
 extlinks = {
     'wiki': ('https://en.wikipedia.org/wiki/%s', ''),
-    'ads': ('https://ui.adsabs.harvard.edu/abs/%s/abstract', ''),
     'netlib': ('https://www.netlib.org/%s', ''),
     'git': ('https://github.com/%s', ''),
     'repo': ('https://github.com/rhdtownsend/gyre/blob/{:s}/%s'.format(branch), '')
@@ -144,12 +144,6 @@ for key, value in macros.items():
     else:
         mathjax_macros[key] = value
 
-#mathjax2_config = {                  
-#    'TeX': { 
-#        'Macros': mathjax_macros
-#    }
-#}
-
 mathjax3_config = {                  
     'tex': { 
         'macros': mathjax_macros
@@ -158,3 +152,17 @@ mathjax3_config = {
 
 # Enable email obfuscation
 email_automode = True
+
+# Intersphinx mapping
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/doc/stable', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy', None),
+    'matplotlib': ('https://matplotlib.org/stable', None),
+    'astropy': ('https://docs.astropy.org/en/latest', None),
+    'pygyre': ('https://pygyre.readthedocs.io/en/latest', None)
+}
+
+# Equation number formatting
+math_eqref_format = '{number}'
+                       

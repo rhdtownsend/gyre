@@ -30,11 +30,11 @@ and Poisson's equation
 
 Here, :math:`\rho`, :math:`P`, :math:`T`, :math:`S` and :math:`\vv`
 are the fluid density, pressure, temperature, specific entropy and
-velocity; :math:`\Phi` is the gravitational potential; :math:`\epsnuc`
-is the specific nuclear energy generation rate; and :math:`\vFrad` and
-:math:`\vFcon` are the radiative and convective energy fluxes. An
-explicit expression for the radiative flux is provided by the
-radiative diffusion equation,
+velocity; :math:`\Phi` is the self-gravitational potential;
+:math:`\epsnuc` is the specific nuclear energy generation rate; and
+:math:`\vFrad` and :math:`\vFcon` are the radiative and convective
+energy fluxes. An explicit expression for the radiative flux is
+provided by the radiative diffusion equation,
 
 .. math::
 

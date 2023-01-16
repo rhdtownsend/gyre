@@ -68,8 +68,8 @@ and so
    k L = n \pi
 
 where :math:`n` is a non-zero integer (we exclude :math:`n=0` because
-it leads to the trivial solution :math:`y(x,t)=0`). Combining this
-with the dispersion relation, we find that the normal-mode
+it corresponds to the trivial solution :math:`y(x,t)=0`). Combining
+this with the dispersion relation, we find that the normal-mode
 eigenfrequencies of the stretched-string BVP are
 
 .. math::
@@ -82,9 +82,9 @@ and the corresponding eigenfunctions are
 .. math::
    :label: analytic-eigenfuncs
 
-   y(x,t) = B \sin \left( \frac{n \pi x}{L} \right) \exp ( - \ii \sigma t).
+   y_{n}(x,t) = B \sin \left( \frac{n \pi x}{L} \right) \exp ( - \ii \sigma t).
 
-The index :math:`n` uniquely labels the modes, and :math:`y(x,t)`
+The index :math:`n` uniquely labels the modes, and :math:`y_{n}(x,t)`
 exhibits :math:`n-1` nodes in the open interval :math:`x \in (0,L)`.
 
 Separation
@@ -121,23 +121,23 @@ For simplicity let's assume the grid is uniform, so that
 
 .. math::
 
-   x_{k+1} - x_{k} \equiv \Delta x = \frac{L}{N-1}
-   \qquad (1 \leq k \leq N-1).
+   x_{j+1} - x_{j} \equiv \Delta x = \frac{L}{N-1}
+   \qquad (1 \leq j \leq N-1).
 
 Then, the second derivative of :math:`\tilde{y}` can be approximated to second order in :math:`\Delta x` as
 
 .. math::
 
-   \left. \nderiv{\tilde{y}}{x}{2} \right|_{x=x_{k}} \approx \frac{\tilde{y}_{k+1} - 2 \tilde{y}_{k} + \tilde{y}_{k-1}}{\Delta x^{2}}
-   \qquad (2 \leq k \leq N-1).
+   \left. \nderiv{\tilde{y}}{x}{2} \right|_{x=x_{j}} \approx \frac{\tilde{y}_{j+1} - 2 \tilde{y}_{j} + \tilde{y}_{j-1}}{\Delta x^{2}}
+   \qquad (2 \leq j \leq N-1).
    
 This allows us to replace the ODE with :math:`N-2` difference
 equations
 
 .. math::
 
-   \frac{\tilde{y}_{k+1} - 2 \tilde{y}_{k} + \tilde{y}_{k-1}}{\Delta x^{2}} = - \frac{\sigma^{2}}{c^{2}} \tilde{y}_{k}
-   \qquad (2 \leq k \leq N-1).
+   \frac{\tilde{y}_{j+1} - 2 \tilde{y}_{j} + \tilde{y}_{j-1}}{\Delta x^{2}} = - \frac{\sigma^{2}}{c^{2}} \tilde{y}_{j}
+   \qquad (2 \leq j \leq N-1).
 
 Together with the two boundary conditions
 
@@ -193,7 +193,7 @@ Here we've introduced
 
 as the sound crossing time of a single cell.
 
-Equation :eq:`linear-sys` is a :wiki:`homogeneous linear system
+Equation (:eq:`linear-sys`) is a :wiki:`homogeneous linear system
 <System_of_linear_equations#Homogeneous_systems>`, meaning that it
 has non-trivial solutions :math:`\vu` only when the determinant of
 :math:`\mS` vanishes. With this in mind, we formulate the
@@ -239,9 +239,9 @@ First, we evaluate a set of :math:`M` values
 discriminant function sampled on the discrete frequency grid
 :math:`\{\sigma_{1},\sigma_{2},\ldots,\sigma_{M}\}`. Then, we scan
 through these data looking for sign changes between adjacent
-discriminant values. If :math:`\Dfunc_{j} \Dfunc_{j+1} < 0`, we know
+discriminant values. If :math:`\Dfunc_{i} \Dfunc_{i+1} < 0`, we know
 that a root of the discriminant function must lie in the interval
-:math:`(\sigma_{j},\sigma_{j+1})` --- we have *bracketed* a
+:math:`(\sigma_{i},\sigma_{i+1})` --- we have *bracketed* a
 root. :numref:`fig-discrim-brackets` illustrates the process of
 bracket scanning for a frequency grid comprising :math:`M=32` points,
 distributed uniformly in :math:`\sigma` across the same range as
@@ -270,8 +270,8 @@ the simplest, but approaches such as :wiki:`Brent's method <Brent's_method>` can
 much more efficient. For the brackets plotted in
 :numref:`fig-discrim-brackets`, :numref:`numerical-eigenfreqs` compares
 the eigenfrequencies found using Python's
-:py:func:`scipy.optimize.brentq` function, against the analytic values
-predicted by equation :eq:`analytic-eigenfreqs`.
+:external:py:func:`scipy.optimize.brentq` function, against the analytic values
+predicted by eqn. (:eq:`analytic-eigenfreqs`).
 
 .. _numerical-eigenfreqs:
 
@@ -287,18 +287,18 @@ Eigenfunction Reconstruction
 
 For each of the eigenfrequencies found, we reconstruct the
 corresponding eigenfunction by solving the linear system
-:eq:`linear-sys`. Because :math:`\det(\mS)` is now zero, this system
+(:eq:`linear-sys`). Because :math:`\det(\mS)` is now zero, this system
 is guaranteed to have a non-trivial solution. The solution vector
 :math:`\vu` resides in the :wiki:`null space <Null_space>` of
 :math:`\mS`, and we can use standard numerical techniques (e.g.,
 :wiki:`singular value decomposition <Singular_value_decomposition>`)
-to evaluate it.  Then, the :math:`k`'th element of :math:`\vu`
-corresponds to the eigenfunction sampled at the :math:`k`'th spatial
+to evaluate it.  Then, the :math:`j`'th element of :math:`\vu`
+corresponds to the eigenfunction sampled at the :math:`j`'th spatial
 grid point:
 
 .. math::
 
-   (\vu)_{k} = \tilde{y}_{k} \equiv \tilde{y}(x_{k})
+   (\vu)_{j} = \tilde{y}_{j} \equiv \tilde{y}(x_{j})
 
 .. _fig-eigenfuncs:
 
@@ -317,5 +317,5 @@ grid point:
 :numref:`fig-eigenfuncs` plots the eigenfunctions found in this way
 for the first three modes (:math:`n=1,2,3`) given in
 :numref:`numerical-eigenfreqs`. Also shown are the corresponding
-analytic solutions given by equation :eq:`analytic-eigenfuncs`. The
+analytic solutions given by eqn. (:eq:`analytic-eigenfuncs`). The
 agreement between the two is good.

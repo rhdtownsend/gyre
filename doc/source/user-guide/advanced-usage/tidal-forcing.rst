@@ -3,15 +3,90 @@
 Tidal Forcing
 =============
 
-This section discusses how to evaluate stellar response(s) to tidal
-forcing using the :program:`gyre_tides` frontend. These data can be
-used to synthesize a light curve for a tidally distorted star; they
-can also allow the secular rates-of-change of orbital elements to be
-calculated.
+This section discusses how to evaluate the stellar response (fluid
+displacements and perturbations) to tidal forcing, using the
+:program:`gyre_tides` frontend. The response data can be used to
+calculate the secular rates-of-change of orbital elements, or to
+synthesize a light curve for a tidally distorted star.
 
-.. note::
-   Not all types of stellar mode include the necessary data
-   (e.g., thermodynamic coefficients, opacity partial derivatives) to
-   undertake non-adiabatic calculations. The :ref:`model-caps` section
-   summarizes this information.
+Overview
+--------
+
+As discussed in the :ref:`tidal-eqns` chapter, the tidal gravitational
+potential (:eq:`e:tidal-pot`) of an orbiting companion can be
+expressed as a superposition of partial potentials of differing
+harmonic degree :math:`\ell`, azimuthal order :math:`m` and Fourier
+harmonic :math:`k`. For each :nml_g:`tide` namelist group appearing in
+its namelist input file, :program:`gyre_tides` solves for the response of the star
+to these partial potentials with a separate calculation for every
+combination of :math:`\{\ell,m,k\}`.
+
+Truncating the Sums
+-------------------
+
+Although the sums appearing in eqn. (:eq:`e:tidal-pot`) are
+formally infinite, the terms with large :math:`\ell` and/or
+:math:`|k|` typically produce a negligible
+resoponse. :program:`gyre_tides` offers a couple of approaches for
+truncating the sums by dropping these terms. The simplest is to set
+limits on the maximum values of the indices, through the
+:nml_n:`l_max`, :nml_n:`k_min` and :nml_n:`k_max` parameters of the
+:nml_g:`tide` namelist group.
+
+A slightly more sophisticated approach is to set these parameters to
+large-ish values (say, a few hundred), and then also set one or both
+of the :nml_n:`y_T_thresh_abs` and :nml_n:`y_T_thresh_rel`
+parameters. These establish a threshold on the magnitude of
+:math:`\yT` (see eqn. :eq:`e:y_T`) for a given partial potential to be
+included in calculations; if it does not meet this threshold, it is
+ignored.
+
+Optimizing Grids
+----------------
+
+During the :ref:`iterative refinement <spatial-grids-iter>` process
+used in setting up spatial grids, the refinement criteria are
+evaluated for every partial tide under consideration. If the
+co-rotating forcing frequency :math:`\sigmac`
+(eqn. :eq:`e:tidal-sigmac`) of a specific partial potential is small
+compared to the dynamical frequency of the star, many levels of
+refinement will occur. While this is exactly what one wants in
+oscillation calculations (because low-frequency modes have short
+spatial wavelengths), it often isn't necessary in tidal calculations
+because the response of a star to low-frequency forcing is the
+long-wavelength equilibrium tide.
+
+One way of preventing over-refinement due to low-frequency partial
+potentials is to set the :nml_n:`omega_c_thresh` parameter in the
+:nml_g:`tide` namelist group. This establishes a threshold on the
+dimensionless frequency :math:`\omegac \equiv \sigmac \,
+\sqrt{R^{3}/GM}`; partial potentials with :math:`|\omegac|` below this
+threshold are treated as static tides (:math:`\omegac=0`), and are not
+considered during the iterative refinement process.
+
+An alternative approach is to avoid iterative refinement altogether,
+instead obtaining the spatial grid from an external file (see the
+:nml_v:`'FILE'` option of the :nml_n:`scaffold_src` parameter, in the
+:ref:`grid-params` section). This is the most flexible approach, but
+creating a grid that will adequately resolve the response to each
+partial potential requires some care.
+
+Output Files
+------------
+
+:program:`gyre_tides` writes response data to summary and detail
+files. One detail file is created for each partial potential
+evalulated, and the summary file collects together global data for all
+partial potentials across all :nml_g:`tide` namelist groups. The
+:nml_v:`id` output item can be used to determine which group a given
+response belongs to.
+
+The following Python code demonstrates how the summary data might be
+used to evaluate the secular rates-of-change of orbital semi-major
+axis, eccentricity, and argument of periastron, and the stellar
+torque. The expression for :code:`e_dot` mirrors eqn. (23) of
+:ads_citet:`sun:2023`, and for :code:`J_dot` eqn. (25) `ibid.`
+
+.. literalinclude:: secular-rates.py
+		    
 

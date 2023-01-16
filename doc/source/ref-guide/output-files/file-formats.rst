@@ -3,8 +3,8 @@
 File Formats
 ============
 
-The format of summary and mode files depends on the value of the
-:nml_n:`summary_file_format` and :nml_n:`mode_file_format` parameters
+The format of summary and detail files depends on the value of the
+:nml_n:`summary_file_format` and :nml_n:`detail_file_format` parameters
 in the :nml_g:`ad_output` and :nml_g:`nad_output` namelist groups (see
 the :ref:`output-params` section). Possible choices are:
 
@@ -16,16 +16,17 @@ the :ref:`output-params` section). Possible choices are:
 
 For both formats, the data stored in the files come in two flavors ---
 scalars (a single value) and arrays (a sequence of values). Files in
-either format can be read in Python using the ``read_output`` using
-the ``read_model`` function from :git:`PyGYRE <rhdtownsend/pygyre>`
-(see the :ref:`interpreting-output` chapter for examples).
+either format can be read in Python using the
+:external:py:func:`pygyre.read_output` function from :git:`PyGYRE
+<rhdtownsend/pygyre>` (see the :ref:`interpreting-output` chapter for
+examples).
 
 .. _hdf-format:
 
 HDF Format
 ----------
 
-GYRE's HDF-format output files adhere to the following conventions:
+HDF-format output files adhere to the following conventions:
 
 * All data objects are attached to the root HDF5 group (`/`)
 * Attributes are used to store scalar data
@@ -43,7 +44,7 @@ GYRE's HDF-format output files adhere to the following conventions:
 TXT Format
 ----------
 
-GYRE's TXT-format files adhere to the following conventions:
+TXT-format files adhere to the following conventions:
 
 * The first three lines contain the scalar data:
 

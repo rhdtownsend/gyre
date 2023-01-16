@@ -3,15 +3,19 @@
 Summary Files
 =============
 
-The data written to summary files are controlled by the
-:nml_n:`summary_item_list` parameters of the :nml_g:`ad_output` and
-:nml_g:`nad_output` namelist groups (:program:`gyre` adiabatic and
-nonadiabatic calculations, respectively) and the :nml_g:`tides_output`
-namelist group (:program:`gyre_tides` calculations). These parameters
-specify (via comma-separated list) the items to be written to the
-corresponding summary file; the following subsections describe the
-items that may appear, grouped together by functional area. For each
-item, the corresponding math symbol is given (if there is one),
+*Summary* files collect together global properties, such as
+eigenfrequencies and radial orders, of all solutions (modes, tidal
+responses, etc.) found during a run. The specific data written to a
+summary file are controlled by the :nml_n:`summary_item_list`
+parameters of the :nml_g:`ad_output` and :nml_g:`nad_output` namelist
+groups (:program:`gyre` adiabatic and nonadiabatic calculations,
+respectively) and the :nml_g:`tides_output` namelist group
+(:program:`gyre_tides` calculations). These parameters specify the
+items to be written, via a comma-separated list.
+
+The following subsections describe the items that may appear in
+:nml_n:`summary_item_list`, grouped together by functional area. For
+each item, the corresponding math symbol is given (if there is one),
 together with the datatype, and a brief description. Units (where
 applicable) are indicated in brackets [].
 
@@ -30,7 +34,7 @@ Solution Data
      - :math:`N_{\rm row}`
      - integer
      - number of rows in summary file, each corresponding to a mode found
-       (:program:`gyre`) or a tidal responses calculated (:program:`gyre_tides`)
+       (:program:`gyre`) or a tidal response evaluated (:program:`gyre_tides`)
    * - :nml_v:`omega`
      - :math:`\omega`
      - complex(:nml_v:`n_row`)
@@ -124,8 +128,11 @@ Classification & Validation
    * - :nml_v:`omega_int`
      - :math:`\omega_{\rm int}`
      - complex(:nml_v:`n_row`)
-     - dimensionless eigenfrequency; evaluated by
-       integrating :math:`\sderiv{\zeta}{x}`
+     - dimensionless eigenfrequency; evaluated as `\omega_{\rm int} = \sqrt{\zeta/E}`
+   * - :nml_v:`zeta`
+     - :math:`\zeta`
+     - complex
+     - integral of :math:`\sderiv{\zeta}{x}` with respect to :math:`x`
 
 Perturbations
 -------------
@@ -280,7 +287,7 @@ Stellar Structure
    * - :nml_v:`R_star`\ [#only-D]_
      - :math:`R`
      - real(:nml_v:`n_row`)
-     - stellar radiua [:math:`\cm`]
+     - stellar radius [:math:`\cm`]
    * - :nml_v:`L_star`\ [#only-D]_
      - :math:`L`
      - real(:nml_v:`n_row`)
@@ -339,7 +346,7 @@ Note that these items are available only when using :program:`gyre_tides`.
    * - :nml_v:`cbar`
      - :math:`\cbar_{\ell,m,k}`
      - real(:nml_v:`n_row`)
-     - tidal expansion coefficient; see eqn. A1 of Sun et al. (2023)
+     - tidal expansion coefficient; see eqn. A1 of :ads_citet:`sun:2023`
    * - :nml_v:`Gbar_1`
      - :math:`\Gbar^{(1)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)

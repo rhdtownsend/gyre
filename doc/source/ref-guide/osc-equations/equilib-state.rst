@@ -3,7 +3,7 @@
 Equilibrium State
 =================
 
-In the static equilibrium state the fluid velocity :math:`\vv`
+In a static equilibrium state the fluid velocity :math:`\vv`
 vanishes. The momentum equation then becomes the hydrostatic
 equilibrium equation
 

@@ -5,8 +5,12 @@ GSM File Format
 
 Files in GSM (GYRE Stellar Model) format store HDF5 data describing a
 stellar model. This format is intended as a portable,
-storage-efficient alternative to the :ref:`mesa-file-format`. It
-adheres to the following conventions:
+storage-efficient alternative to the :ref:`mesa-file-format`. To
+create one of these files in MESA (from revision 21.12.1 onward), set
+the :nml_n:`pulse_data_format` parameter of the :nml_g:`controls`
+namelist group to the value :nml_v:`'GSM'`.
+
+The GSM format adheres to the following conventions:
 
 * All data objects are attached to the root HDF5 group (`/`)
 * Real values are written with type `H5T_IEEE_F64LE` when GYRE is

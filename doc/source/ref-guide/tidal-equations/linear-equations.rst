@@ -5,14 +5,14 @@ Linearized Equations
 
 The linearized tidal equations are similar to the :ref:`linearized
 oscillation equations <osc-linear-eqns>`, but include an extra term in
-the momentum equation :eq:`e:osc-lin-mom` representing the
+the momentum equation (:eq:`e:osc-lin-mom`) representing the
 tidal force exerted by the companion:
 
 .. math::
 
    \rho \pderiv{\vv'}{t} = - \nabla P' - \rho' \nabla P - \rho \nabla \Phi' - \rho \nabla \PhiT.
 
-The tidal potential :math:`\PhiT` is expressed as a superposition
+The tidal gravitational potential :math:`\PhiT` is expressed as a superposition
 
 .. math::
    :label: e:tidal-pot
@@ -30,7 +30,9 @@ of partial tidal potentials defined by
   \left( \frac{r}{R} \right)^{\ell} Y^{m}_{\ell}(\theta, \phi) \,
   \exp(- \ii k \Oorb t).
 
-Here,
+(the summation over :math:`\ell` and :math:`m` comes from a multipolar
+space expansion of the potential, and the summation over :math:`k`
+from a Fourier time expansion). Here,
    
 .. math::
 
@@ -41,3 +43,4 @@ companion's mass :math:`q M`, semi-major axis :math:`a` and orbital
 angular frequency :math:`\Oorb`. These expressions, and the definition
 of the tidal expansion coefficients :math:`\cbar_{\ell,m,k}`, are presented in
 greater detail in :ads_citet:`sun:2023`.
+

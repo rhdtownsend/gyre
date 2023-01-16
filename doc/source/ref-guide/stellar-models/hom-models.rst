@@ -3,14 +3,14 @@
 Homogeneous Models
 ==================
 
-Homogeneous models represent uniform-density stars in hydrostatic
-equilibrium; they are equivalent to polytropes with index
-:math:`n=0`. Because their structure can be calculated
-analytically, GYRE creates them on-the-fly without the need to read
-from an external file.
+Setting the :nml_n:`model_type` parameter of the :nml_g:`model`
+namelist group to :nml_v:`'HOM'` tells the frontend to create a
+homogeneous (uniform density) stelllar model, equivalent to a
+polytrope with index :math:`n=0`. Because the structure of these model
+can be computed analytically, there is no need to read from an
+external file.
 
-To use a homogeneous model with GYRE, set the :nml_n:`model_type`
-parameter in the :nml_g:`model` namelist group to :nml_v:`'HOM'`, and
-set the :nml_n:`Gamma_1`, :nml_n:`n`, :nml_n:`s` and
-:nml_n:`grid_type` parameters to suitable values (see the
-:ref:`model-params` section for more details).
+The :nml_n:`Gamma_1` parameter of the :nml_g:`model` namelist group
+controls the first adiabatic index of the model, while the :nml_n:`n`,
+:nml_n:`s` and :nml_n:`grid_type` parameters control the model
+grid. See the :ref:`model-params` section for further details.

@@ -55,7 +55,7 @@ and the peturbations to the nuclear energy generation rate and opacity can be ex
 
 .. math::
 
-   \frac{\delta \epsnuc}{\epsnuc} = \epsad \frac{\delta P}{P} + \epsS \frac{\delta S}{\cP},
+   \frac{\delta \epsnuc}{\epsnuc} = \epsnucad \frac{\delta P}{P} + \epsnucS \frac{\delta S}{\cP},
    \qquad
    \frac{\delta \kappa}{\kappa} = \kapad \frac{\delta P}{P} + \kapS \frac{\delta S}{\cP}.
 
@@ -79,8 +79,8 @@ and the nuclear and opacity partials are
 
 .. math::
 
-   \epsad = \left( \pderiv{\ln \epsnuc}{\ln P} \right)_{\rm ad}, \quad
-   \epsS = \cP \left( \pderiv{\ln \epsnuc}{S} \right)_{P}, \quad
+   \epsnucad = \left( \pderiv{\ln \epsnuc}{\ln P} \right)_{\rm ad}, \quad
+   \epsnucS = \cP \left( \pderiv{\ln \epsnuc}{S} \right)_{P}, \quad
    \kapad = \left( \pderiv{\ln \kappa}{\ln P} \right)_{\rm ad}, \quad
    \kapS = \cP \left( \pderiv{\ln \kappa}{S} \right)_{P}.
 
@@ -92,8 +92,8 @@ temperature partials via
    \begin{gathered}
    \kapad = \frac{\kaprho}{\Gammi} + \nabad \kapT, \qquad
    \kapS = -\upsT \kaprho + \kapT, \\
-   \epsad = \frac{\epsrho}{\Gammi} + \nabad \epsT, \qquad
-   \epsS = -\upsT \epsrho + \epsT.
+   \epsnucad = \frac{\epsnucrho}{\Gammi} + \nabad \epsnucT, \qquad
+   \epsnucS = -\upsT \epsnucrho + \epsnucT.
    \end{gathered}
 
 .. rubric:: Footnotes

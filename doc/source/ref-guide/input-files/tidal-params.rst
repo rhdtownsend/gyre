@@ -1,19 +1,19 @@
-.. _tide-params:
+.. _tidal-params:
 
-Tide Parameters
-===============
+Tidal Parameters
+================
 
 The :nml_g:`tide` namelist group defines tidal parameters, as follows:
 
 :nml_n:`y_T_thresh_abs` (default :nml_v:`0.`)
-  Absolute threshold on dimensionless tidal potential :math:`y_{\rm T}` for a component tide to contribute to tidal forcing
+  Absolute threshold on dimensionless tidal potential :math:`y_{\rm T}` for a partial tide to contribute
 
 :nml_n:`y_T_thresh_rel` (default :nml_v:`0.`)
-  Relative threshold on dimensionless tidal potential :math:`y_{\rm T}` for a component tide to contribute to tidal forcing
+  Relative threshold on dimensionless tidal potential :math:`y_{\rm T}` for a partial tide to contribute
 
 :nml_n:`omega_c_thresh` (default :nml_v:`0.`)
   Threshold on dimensionless co-rotating frequency :math:`\omega_{\rm c}` for a
-  component tide to be treated as dynamic (rather than static)
+  partial tide to be treated as dynamic (rather than static)
 
 :nml_n:`alpha_frq` (default :nml_v:`1.`)
   Scaling parameter :math:`\alphafrq` for tidal forcing frequency

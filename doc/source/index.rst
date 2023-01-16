@@ -11,9 +11,9 @@ parameters (mass, radius, etc.)  to be established --- the discipline
 of *asteroseismology*.
 
 GYRE also supports other, related kinds of calculation. One example is
-evaluating the response of a star to tidal forcing by an orbiting
-companion; because this is an instance of *forced* stellar oscillations,
-similar numerical techniques can be brought to bear.
+evaluating the response of a star to tidal disturbances produced by an
+orbiting companion; because this is an instance of *forced* stellar
+oscillations, similar numerical techniques can be brought to bear.
 
 About this Manual
 =================

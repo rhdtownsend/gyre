@@ -5,10 +5,10 @@ From Stretched String to gyre
 
 The numerical technique demonstrated in the :ref:`numerical-string`
 section provides a powerful analog to how :program:`gyre` solves the
-oscillation equations. The full gory details of :program:`gyre`'s
-approach are laid out in :ads_citet:`townsend:2013`; in this section
-we briefly summarize it, highlighting similarities and differences
-with the stretched-string problem.
+oscillation equations. The full details of :program:`gyre`'s approach
+are laid out in :ads_citet:`townsend:2013`; in this section we briefly
+summarize it, highlighting similarities and differences with the
+stretched-string problem.
 	   
 Separation
 ----------
@@ -20,51 +20,52 @@ form
 
 .. math::
 
-  \xir(r,\theta,\phi;t) = \operatorname{Re} \left[ \sqrt{4\pi} \, \txir(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right],
-   
-In addition to the same sinusoidal time dependence as in
-eqn. :eq:`var-separation`, an additional spherical harmonic term
-:math:`Y^{m}_{\ell}` appears because we are separating in three
-(spherical) spatial coordinates rather than one. 
+  \xir(r,\theta,\phi;t) = \operatorname{Re} \left[ \sqrt{4\pi} \, \txir(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right]
+
+(this is taken from the :ref:`osc-sep-eqns` section). In addition to
+the same sinusoidal time dependence as in eqn. (:eq:`var-separation`), a
+spherical harmonic term :math:`Y^{m}_{\ell}` appears because we are
+separating in three (spherical) spatial coordinates rather than one.
 
 Discretization
 --------------
 
-As with the stretched-string problem, :program:`gyre` then discretizes the
-governing equations on a spatial grid
-:math:`\{x_{1},x_{2},\ldots,x_{N}\}`. However, a couple of important
-differences arise at this juncture. First, the system of oscillation
+As with the stretched-string problem, :program:`gyre` discretizes the
+ODE governing :math:`\txir(r)` and related quantities on a spatial
+grid :math:`\{x_{1},x_{2},\ldots,x_{N}\}`. However, a couple of
+important differences arise at this juncture. First, the oscillation
 equations are fourth order (sixth, in the non-adiabatic case). Rather
 than employing finite-difference approximations to high-order
-differential operators, :program:`gyre` instead decomposes the problem into set
-of coupled first-order equations. This set is written generically as
+differential operators, :program:`gyre` instead decomposes the problem
+into a system of coupled first-order equations. This system is written
+generically as
 
 .. math::
 
-   x \deriv{\vty}{x} = \mA \, \vty
+   x \deriv{\vty}{x} = \mA \, \vty,
 
 where :math:`\vty` is a vector of :math:`\neq` dependent variables, and
 :math:`\mA` is a :math:`\neq \times \neq` Jacobian matrix. In the
 adiabatic case, :math:`\neq=4`; in the non-adiabatic case,
 :math:`\neq=6`.
 
-Second, while this equation could be discretized using a simple
-finite-difference approximation to the left-hand side, :program:`gyre` offers
-more-sophisticated approaches with higher orders of accuracy. These
-include the Magnus schemes described in :ads_citet:`townsend:2013`,
-and implicit Runge-Kutta schemes mentioned in
-:ads_citet:`townsend:2018`. The choice of scheme is set by the
-:nml_n:`diff_scheme` parameter of the :nml_g:`num` namelist
-group. The discretization leads to difference equations of the form
+Second, while the above equation system can be discretized using a
+simple finite-difference approximation to the left-hand side,
+:program:`gyre` offers more-sophisticated approaches with higher
+orders of accuracy. These include the Magnus schemes described in
+:ads_citet:`townsend:2013`, and implicit Runge-Kutta schemes mentioned
+in :ads_citet:`townsend:2018`. The choice of scheme is set by the
+:nml_n:`diff_scheme` parameter of the :nml_g:`num` namelist group. The
+discretization leads to difference equations of the form
 
 .. math::
 
-   \vty_{k+1} = \mY_{k+1;k} \, \vty_{k},
+   \vty_{j+1} = \mY_{j+1;j} \, \vty_{j},
 
 relating the dependent variable vector at adjacent grid points. The
-:math:`\neq \times \neq` fundamental solution matrix :math:`\mY_{k+1,k}`
+:math:`\neq \times \neq` fundamental solution matrix :math:`\mY_{j+1,j}`
 is evaluated from the value(s) of :math:`\mA` within the interval
-:math:`[x_{k},x_{k+1}]` using the discretization scheme.
+:math:`[x_{j},x_{j+1}]` using the discretization scheme.
 
 There are :math:`N-1` of these sets of difference equations. They are
 augmented with the boundary conditions
@@ -86,9 +87,9 @@ and :math:`\neq N` unknowns.
 Linear System
 -------------
 
-The linear system can be written in the same form :eq:`linear-sys` as
-with the stretched-string problem. However, now :math:`\vu` is the
-vector with components
+The linear system can be written in the same form
+(cf. eqn. :eq:`linear-sys`) as with the stretched-string problem
+. However, now :math:`\vu` is the vector with components
 
 .. math::
 
@@ -115,7 +116,7 @@ block-staircase matrix with components
    \mz & \mz & \cdots & \mz & \subout{\mB}
    \end{pmatrix}.
 
-As before, the linear system :eq:`linear-sys` has non-trivial
+As before, the linear system (:eq:`linear-sys`) has non-trivial
 solutions only when the determinant of :math:`\mS` vanishes. Thus,
 :program:`gyre` finds eigenvalues of the oscillation equation by solving the
 characteristic equation
@@ -131,9 +132,10 @@ where the dimensionless frequency
    \omega \equiv \sqrt{\frac{R^{3}}{GM}} \, \sigma,
 
 is the product of the star's dynamical timescale and the oscillation
-frequency :math:`\sigma`. (Internally, :program:`gyre` works extensively with
-such dimensionless quantities, as it improves the stability of the
-numerical algorithms).
+frequency :math:`\sigma`. (Internally, :program:`gyre` works
+extensively with such :ref:`dimensionless quantities
+<osc-dimless-form>`, as it improves the stability of the numerical
+algorithms).
 
 Scanning for Eigenfrequencies
 -----------------------------

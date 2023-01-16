@@ -109,10 +109,10 @@ following columns:
      - real
      - total energy generation rate [:math:`\erg\,\second^{-1}\,\gram^{-1}`]
    * - 18
-     - :math:`\epsnuc\,\epsT`
+     - :math:`\epsnuc\,\epsnucT`
      - real
      - nuclear energy generation partial [:math:`\erg\,\second^{-1}\,\gram^{-1}`]
    * - 19
-     - :math:`\epsnuc\,\epsrho`
+     - :math:`\epsnuc\,\epsnucrho`
      - real
      - nuclear energy generation partial [:math:`\erg\,\second^{-1}\,\gram^{-1}`]

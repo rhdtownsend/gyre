@@ -4,43 +4,16 @@
 Interpreting Output Files
 *************************
 
-This chapter reviews the summary and detail output files written by
-the GYRE :ref:`frontends <frontends>`, and demonstrates how to read
-and plot them in `Python <https://www.python.org>`__. Further
-information about these files is provided in the :ref:`output-files`
-chapter.
-
-File Categories
-===============
-
-Summary files collect together global properties, such as
-eigenfrequencies and radial orders, of all solutions (modes,
-responses, etc.) found. By contrast, detail files store spatial
-quantities, such as eigenfunctions and differential inertias, for an
-individual solution. The choice of which specific data actually appear
-in output files isn't hardwired, but rather determined by the
-:nml_n:`summary_item_list` and :nml_n:`mode_item_list` parameters of
-the :ref:`output namelist groups <output-params>`. Changing these
-parameters allows you to tailor the files to contain exactly the data
-you need.
-
-File Formats
-============
-
-Summary and detail files are written in either TXT or HDF
-format. Files in the TXT format are human-readable, and can be
-reviewed on-screen or in a text editor; whereas files in the HDF
-format are intended to be accessed through a suitable `HDF5
-<https://support.hdfgroup.org/HDF5/whatishdf5.html>`__
-interface. Unless there's a good reason to use TXT format, HDF format
-is preferable; it's portable between different platforms, and takes up
-significantly less disk space
+This chapter demonstrates using `Python <https://www.python.org>`__ to
+read and plot the summary and detail output files written by the GYRE
+:ref:`frontends <frontends>`. Further information about these files is
+provided in the :ref:`output-files` chapter.
 
 PyGYRE
 ======
 
-:git:`PyGYRE <rhdtownsend/pygyre>` is a Python package, maintained
-separately from GYRE, providing a set of routines that greatly
+:git:`PyGYRE <rhdtownsend/pygyre>` is a Python package maintained
+separately from GYRE, that provides a set of routines that greatly
 simplify the analysis of summary and detail files. Detailed
 information about PyGYRE can be found in the `full documentation
 <https://pygyre.readthedocs.io/en/latest/>`__; here, we demonstrate
@@ -49,7 +22,7 @@ how to use it to read and plot the output files from the
 
 As a preliminary step, you'll need to install PyGYRE from the `Python
 Package Index (PyPI) <https://pypi.org/>`__. This can be done using
-the :command:`pip` command, via
+the :command:`pip` command,
 
 .. prompt:: bash
 
@@ -65,8 +38,8 @@ version via
 Analyzing a Summary File
 ========================
 
-To analyze the output files written by :program:`gyre` during the
-:ref:`walkthrough <walkthrough>`, change into your :ref:`work
+To analyze the summnary file written by :program:`gyre` during the
+:ref:`example walkthrough <walkthrough>`, change into your :ref:`work
 directory <walkthrough-work>` and fire up your preferred interactive
 Python environment (e.g., `Jupyter <https://jupyter.org/>`__). Import
 PyGYRE and the other modules needed for plotting:
@@ -88,10 +61,10 @@ summary file into the variable `s`:
 
    s = pg.read_output('summary.h5')
 
-The ``pg.read_output`` function is able to read both TXT- and HDF-format
-files, returning the data in a ``Table`` object (from the `Astropy
-<https://www.astropy.org/>`__ project). To inspecting the data on-screen,
-simply evaluate the table:
+The :external:py:func:`pygyre.read_output` function is able to read
+files in both :ref:`TXT and HDF formats <file-formats>`, returning the data in an
+:external:py:class:`astropy.table.Table` object. To inspect the data
+on-screen, simply evaluate the table:
 
 .. code::
 
@@ -117,8 +90,7 @@ Next, plot the frequencies against radial orders via
    plt.ylabel('Frequency (cyc/day)')
 
 (the values in the ``freq`` column are complex, and we plot the real
-part). The plot should look something along the lines of
-:numref:`fig-freq`.
+part). The plot should look something like :numref:`fig-freq`.
 
 .. _fig-freq:
 
@@ -126,6 +98,8 @@ part). The plot should look something along the lines of
    :alt: Plot showing mode frequency versus radial order
    :align: center
 
+   The frequency :math:`\nu` of :math:`\ell=1` and :math:`\ell=2`
+   modes, plotted against their radial order :math:`\npg`.
    (:download:`Source <interpreting-output/fig_freq.py>`)
 
 The straight line connecting the two curves occurs because we are
@@ -148,7 +122,7 @@ them, the table rows can be grouped by harmonic degree:
 
    plt.legend()
 
-The resulting plot, in :numref:`fig-freq-grouped` looks much better.
+The resulting plot, in :numref:`fig-freq-grouped`, looks much better.
    
 .. _fig-freq-grouped:
 
@@ -156,15 +130,17 @@ The resulting plot, in :numref:`fig-freq-grouped` looks much better.
    :alt: Plot showing mode frequency versus radial order
    :align: center
 
+   The frequency `\nu` of :math:`\ell=1` and :math:`\ell=2`
+   modes, grouped by :math:`\ell` and plotted against their radial order :math:`\npg`.
    (:download:`Source <interpreting-output/fig_freq_grouped.py>`)
 
 Analyzing a Detail File
 =======================
 
 Now let's take a look at one of the detail files, for the mode with
-:math:`\ell=1` and :math:`n_{\rm pg}=-7`. As with the summary file,
-``pg.read_output`` can be used to read the file data into a ``Table``
-object:
+:math:`\ell=1` and :math:`\npg=-7`. As with the summary file,
+:external:py:func:`pygyre.read_output` can be used to read the file
+data into an :external:py:class:`astropy.table.Table` object:
 
 .. code::
    
@@ -210,15 +186,15 @@ these data). Plot the two eigenfunctions using the code
    pg}=-7` mode, plotted against the fractional radius :math:`x`.
    (:download:`Source <interpreting-output/fig_disp_eigfunc.py>`)
 
-The plot should look something along the lines of
-:numref:`fig-disp-eigfunc`. From this figure , we see that the radial
-wavelengths of the eigenfunctions become very short around a
-fractional radius :math:`x \approx 0.125`. To figure out why this is, we
-can take a look at the star's propagation diagram:
+The plot should look something like :numref:`fig-disp-eigfunc`. From
+this figure , we see that the radial wavelengths of the eigenfunctions
+become very short around a fractional radius :math:`x \approx
+0.125`. To figure out why this is, we can take a look at the star's
+propagation diagram:
 
 .. code::
 
-   # Evaluate characteristic frequencies
+   # Evaluate dimensionless characteristic frequencies
 
    l = d.meta['l']
    omega = d.meta['omega']
@@ -249,7 +225,7 @@ can take a look at the star's propagation diagram:
 
 Note how we access the mode harmonic degree ``l`` and dimensionless
 eigenfrequency ``omega`` through the table metadata dict
-``d.meta``. The resulting plot (cf. :numref:`fig-prop-diag`) reveals
+``d.meta``. The resulting plot (:numref:`fig-prop-diag`) reveals
 that the Brunt-Väisälä frequency squared is large around :math:`x
 \approx 0.125`; this feature is a consequence of the molecular weight
 gradient zone outside the star's convective core, and results in the

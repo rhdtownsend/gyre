@@ -3,7 +3,7 @@
 Non-Adiabatic Oscillations
 ==========================
 
-This section discusses how to undertake *non-adibatic* oscillation
+This section discusses how to undertake *non-adiabatic* oscillation
 calculations using the :program:`gyre` frontend. Asteroseismic studies
 typically rely on adiabatic calculations, because the frequencies of
 oscillation modes are the primary focus. However, for heat-driven
@@ -90,11 +90,11 @@ method. The important parts are as follows:
 Note the :nml_n:`nonadiabatic` parameter in the :nml_g:`osc` namelist
 group, and the :nml_n:`diff_scheme` parameter in the :nml_g:`num`
 namelist group. The :nml_n:`restrict_roots`\ =\ :nml_v:`.FALSE.`
-setting, also in the :nml_g:`num` namelist group, tells GYRE not to
-reject any modes that have :math:`\sigmar` outside the frequency range
-specified by the :nml_g:`scan` namelist group; this ensures that modes
-whose non-adiabatic frequencies fall just outside the frequency grid
-are still found.
+setting, also in the :nml_g:`num` namelist group, tells
+:program:`gyre` not to reject any modes that have :math:`\sigmar`
+outside the frequency range specified by the :nml_g:`scan` namelist
+group; this ensures that modes whose non-adiabatic frequencies fall
+just outside the frequency grid are still found.
 
 .. _non-ad-minmod:
 

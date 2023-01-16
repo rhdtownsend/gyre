@@ -36,10 +36,10 @@ Fconr	F_{{\rm C},r}
 Lrad	L_{\rm R}
 Lcon	L_{\rm C}
 epsnuc	\epsilon_{\rm n}
-epsT	\epsilon_{{\rm n},T}
-epsrho	\epsilon_{{\rm n},\rho}
-epsS	\epsilon_{{\rm n},S}
-epsad	\epsilon_{\rm n,ad}
+epsnucT	\epsilon_{{\rm n},T}
+epsnucrho	\epsilon_{{\rm n},\rho}
+epsnucS	\epsilon_{{\rm n},S}
+epsnucad	\epsilon_{\rm n,ad}
 kapT	\kappa_{T}
 kaprho	\kappa_{\rho}
 kapS	\kappa_{S}
@@ -133,7 +133,10 @@ ng	n_{\rm g}
 npg	n_{\rm pg}
 PhiT	\Phi_{\rm T}
 PhiTlmk	\Phi_{{\rm T};\ell,m,k}
+tPhiTlmk	\tilde{\Phi}_{{\rm T};\ell,m,k}
 epsT	\varepsilon_{\rm T}
 cbar	\overline{c}
 Gbar	\overline{G}
 Oorb	\Omega_{\rm orb}
+half	\mspace{-1mu}1\mspace{-1.5mu}/2
+yT	y_{\rm T}

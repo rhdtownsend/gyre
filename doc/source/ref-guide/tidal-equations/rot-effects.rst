@@ -13,5 +13,6 @@ the fact that the :ref:`traditional approximation of rotation
 <tidal-sep-eqns>` is replaced by the co-rotating forcing frequency
 
 .. math::
+   :label: e:tidal-sigmac
 
-   \sigmac \equiv m \Oorb - m \Omega.
+   \sigmac \equiv k \Oorb - m \Omega.

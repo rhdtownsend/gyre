@@ -10,7 +10,7 @@ computational cost of a calculation scales with the total number of
 points :math:`N` in this grid, while the grid's resolution --- i.e.,
 the spacing between adjacent points --- impacts both the accuracy of
 solutions, and in the case of the :program:`gyre` frontend, the number
-of solutions that can be found number. (The :ref:`numerical-limits`
+of solutions that can be found. (The :ref:`numerical-limits`
 section discusses these behaviors in the context of the stretched
 string BVP).
 
@@ -46,14 +46,14 @@ Iterative Refinement
 --------------------
 
 Scaffold grids are refined via a sequence of iterations. During a
-given iteration, each subinterval :math:`[x_{k},x_{k+1}]` is assessed
+given iteration, each subinterval :math:`[x_{j},x_{j+1}]` is assessed
 against various criteria (discussed in greater detail below). If any
 criteria match, then the subinterval is refined by bisection,
 inserting an additional point at the midpoint
 
 .. math::
 
-   x_{k+1/2} = \frac{x_{k} + x_{k+1}}{2}.
+   x_{j+\half} = \frac{x_{j} + x_{j+1}}{2}.
 
 The sequence terminates if no refinements occur during a given
 iteration, or if the number of completed iterations equals the value
@@ -68,17 +68,17 @@ Mechanical Criterion
 The wave criterion involves a local analysis of the mechanical parts
 of the oscillation equations, with the goal of improving resolution
 where the displacement perturbation :math:`\vxi` is rapidly
-varying. Within the subinterval :math:`[x_{k},x_{k+1}]`, the
+varying. Within the subinterval :math:`[x_{j},x_{j+1}]`, the
 :math:`y_{1}` and :math:`y_{2}` solutions (see the
 :ref:`osc-dimless-form` section) take the approximate form
 
 .. math::
 
-   y_{1,2}(x) \sim \exp [ \chi \, (\ln x - \ln x_{k+1/2}) ],
+   y_{1,2}(x) \sim \exp [ \chi \, (\ln x - \ln x_{j+\half}) ],
 
 where :math:`\chi` is one of the two eigenvalues of the mechanical
 (upper-left) :math:`2 \times 2` submatrix of the full Jacobian matrix
-:math:`\mA`, evaluated at the midpoint :math:`x_{k+1/2}`.
+:math:`\mA`, evaluated at the midpoint :math:`x_{j+\half}`.
 
 In propagation zones the imaginary part :math:`\chi_{\rm i}` of the
 eigenvalue gives the local wavenumber in :math:`\ln x` space, and
@@ -92,7 +92,7 @@ subinterval is
 
 .. math::
 
-   ( \ln x_{k+1} - \ln x_{k} ) \, \max (\wosc |\chi_{\rm i}|, \wexp |\chi_{\rm r}|) > 2 \pi,
+   ( \ln x_{j+1} - \ln x_{j} ) \, \max (\wosc |\chi_{\rm i}|, \wexp |\chi_{\rm r}|) > 2 \pi,
 
 where :math:`\wosc` and :math:`\wexp` are user-definable weighting
 parameters. This causes refinement if the subinterval width (in
@@ -116,24 +116,24 @@ Similar to the wave criterion discussed above, the thermal criterion
 involves a local analysis of the energetic parts of the oscillation
 equation, with the goal of improving resolution where the thermal
 timescale is very long and perturbations are almost adiabatic. Within
-the subinterval :math:`[x_{k},x_{k+1}]`, the :math:`y_{5}` and
+the subinterval :math:`[x_{j},x_{j+1}]`, the :math:`y_{5}` and
 :math:`y_{6}` perturbation take the approximate form
 
 .. math::
 
-   y_{5,6}(x) \sim \exp [ \pm \tau \, (\ln x - \ln x_{k+1/2}) ],
+   y_{5,6}(x) \sim \exp [ \pm \tau \, (\ln x - \ln x_{j+\half}) ],
 
 where :math:`\pm\tau` are the eigenvalues of the matrix formed from
 the energetic (bottom-right) :math:`2 \times 2` submatrix of the full
 Jacobian matrix :math:`\mA`, evaluated at the midpoint
-:math:`x_{k+1/2}`.
+:math:`x_{j+\half}`.
 
 Based on this analysis, the criterion for refinement of the
 subinterval is
 
 .. math::
 
-   ( \ln x_{k+1} - \ln x_{k} ) \, \wthm |\tau| > 1,
+   ( \ln x_{j+1} - \ln x_{j} ) \, \wthm |\tau| > 1,
 
 where :math:`\wthm` is a user-definable weighting parameter.
 
@@ -149,16 +149,16 @@ Structural Criteria
 The structural criteria have the goal of improving resolution where
 the stellar structure coefficients are changing rapidly. For a given
 coefficient :math:`C`, the criterion for refinement of the subinterval
-:math:`[x_{k},x_{k+1}]` is
+:math:`[x_{j},x_{j+1}]` is
 
 .. math::
 
-   ( \ln x_{k+1} - \ln x_{k} ) \, \wstr \left| \pderiv{\ln C}{\ln x} \right| > 1,
+   ( \ln x_{j+1} - \ln x_{j} ) \, \wstr \left| \pderiv{\ln C}{\ln x} \right| > 1,
 
 where :math:`\wstr` is a user-definable weighting parameter. This
 criterion is applied separately to the :math:`V_2 \equiv V/x^{2}`,
 :math:`U`, :math:`A^{*}`, :math:`c_{1}` and :math:`\Gamma_{1}`
-coefficients (see the :ref:`osc-dimless-form` section).
+coefficients (see the :ref:`osc-struct-coeffs` section).
 
 .. _spatial-grids-cent:
 
@@ -166,9 +166,9 @@ Central Criteria
 ~~~~~~~~~~~~~~~~
 
 All of the above criteria depend on the logarithmic subinterval width
-:math:`(\ln x_{k+1} - \ln x_{k})`, and cannot be applied to the first
+:math:`(\ln x_{j+1} - \ln x_{j})`, and cannot be applied to the first
 subinterval :math:`[x_{1},x_{2}]` if it extends to the center of the
-star :math:`x = 0`. In such cases, the :nml_n:`resolve_ctr` parameter
+star, :math:`x = 0`. In such cases, the :nml_n:`resolve_ctr` parameter
 of the :nml_g:`grid` namelist group determines whether the subinterval
 is refined. If set to :nml_v:`.FALSE.`, then no refinement occurs;
 while if set to :nml_v:`.TRUE.`, then the refinement criteria are
@@ -199,18 +199,18 @@ Limiting Controls
 -----------------
 
 A couple of additional controls affect the iterative refinement
-described above. Refinement of the :math:`[x_{k},x_{k+1}]` subinterval
+described above. Refinement of the :math:`[x_{j},x_{j+1}]` subinterval
 *always* occurs if
 
 .. math::
 
-   x_{k+1} - x_{k} > \Delta x_{\rm max},
+   x_{j+1} - x_{j} > \Delta x_{\rm max},
 
 and *never* occurs if
 
 .. math::
 
-   x_{k+1} - x_{k} < \Delta x_{\rm min},
+   x_{j+1} - x_{j} < \Delta x_{\rm min},
 
 where both :math:`\Delta x_{\rm max}` and :math:`\Delta x_{\rm min}`
 are user-definable.

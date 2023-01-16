@@ -3,17 +3,19 @@
 Dimensionless Formulation
 =========================
 
-The dimensionless formulation of the :ref:`tidal equations
-<tidal-sep-eqns>` is almost identical to the :ref:`corresponding
-formulation <osc-dimless-form>` of the :ref:`oscillation equations
-<osc-sep-eqns>`, differening only in the definition of a couple of
-variables and a single boundary condition.
+The dimensionless formulation of the tidal equations is almost
+identical to the :ref:`corresponding formulation <osc-dimless-form>`
+of the :ref:`oscillation equations <osc-sep-eqns>`, differening only
+in the definition of a couple of variables and a single boundary
+condition.
 
 Variables
 ---------
 
-The definitions of the :math:`y_{3}` and `y_{4}` dependent variables,
-given in eqn. :eq:`e:dimless`, are replaced by
+The definitions of the :math:`y_{3}` and :math:`y_{4}` dependent variables,
+given in eqn. (:eq:`e:dimless`), are replaced by
+
+.. math::
 
    \begin{align}
    y_{3} &= x^{2-\ell}\, \frac{\tPsi'}{gr}, \\
@@ -24,12 +26,15 @@ Boundary Conditions
 -------------------
 
 The outer potential boundary condition, the second line of
-eqn. :eq:`e:outer-bc`, is replaced by
+eqn. (:eq:`e:outer-bc`), is replaced by
 
-   \alphagrv U y_{1} + (\alphagrv \ell + 1) y_{3} + \alphagrv y_{4} = (2\ell+1) y_{\rm T},
+.. math::
+
+   \alphagrv U y_{1} + (\alphagrv \ell + 1) y_{3} + \alphagrv y_{4} = (2\ell+1) \yT,
 
 where
 
 .. math::
+   :label: e:y_T
 
-   y_{T} \equiv x^{2 - \ell} \frac{\tPhilmk'}{gr}.
+   \yT \equiv x^{2 - \ell} \frac{\tPhiTlmk}{gr}.

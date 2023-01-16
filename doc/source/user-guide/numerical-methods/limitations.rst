@@ -46,7 +46,7 @@ expansion <Laplace_expansion>`) as the sum of `N` terms; and each term
 itself involves the product of :math:`N` matrix elements, picked so
 that each row/column is used only once in the construction of the
 term. With these points in mind, we can see from the definition
-:eq:`linear-sys` of :math:`\mS` that its determinant (i.e., the
+(:eq:`linear-sys`) of :math:`\mS` that its determinant (i.e., the
 discriminant function) must be a polynomial in :math:`\sigma^{2}` of
 order :math:`N-2`; and as such, it can have at most :math:`N-2` (in
 this case, 5) roots. This leads us to important lesson #1:
@@ -55,7 +55,7 @@ this case, 5) roots. This leads us to important lesson #1:
 
    The number of points adopted in the discretization limits the
    number of modes that can be found. With a spatial grid of
-   :math:`N` points, there are only (of order) :math:`N` distinct
+   :math:`N` points, there are only :math:`\sim N` distinct
    numerical solutions.
 
 .. _fig-eigenfuncs-N7:

@@ -3,14 +3,18 @@
 Evolutionary Models
 ===================
 
+Setting the :nml_n:`model_type` parameter of the :nml_g:`model`
+namelist group to :nml_v:`'EVOL'` tells the frontend to read the
+equilibrium stellar model from a file created by a stellar evolution
+code (e.g., `MESA <mesa_>`__).
+
 Supported Formats
 -----------------
 
-Evolutionary models are read from a file created by a separate stellar
-evolution code. The format of this file is specified by the
-:nml_n:`file_format` parameter of the :nml_g:`model` namelist group
-(see the :ref:`model-params` section). Possible choices are summarized
-in the table below.
+The format of the model file is specified by the :nml_n:`file_format`
+parameter of the :nml_g:`model` namelist group (see the
+:ref:`model-params` section). Possible choices are summarized in the
+table below.
 
 .. list-table::
    :widths: 20 80
@@ -69,6 +73,6 @@ If a model contains a pair of adjacent points with the same radial
 coordinate :math:`r`, this pair is treated as a double point
 representing a discontinuity in the density and some other
 thermodynamic quantities (but not the pressure or temperature). GYRE
-does not attempt to interpolate across double points, but does handle
-them properly when solving the oscillation equations through the use
-of :ref:`jump conditions <osc-dimless-jump>`.
+does not attempt to interpolate across double points, but instead
+handles them properly when solving equations through the use of
+:ref:`jump conditions <osc-dimless-jump>`.

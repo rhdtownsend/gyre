@@ -5,10 +5,8 @@ Stellar Models
 **************
 
 This chapter documents the different types of stellar models that can
-be used with GYRE to specify the equilibrium stellar
-configuration. Models fall into three categories, corresponding to the
-three possible choices for the :nml_n:`model_type` parameter of the
-:nml_g:`model` namelist group (see the :ref:`model-params` section):
+be used with :ref:`GYRE frontends <frontends>` to specify the
+equilibrium stellar configuration.
 
 .. toctree::
 

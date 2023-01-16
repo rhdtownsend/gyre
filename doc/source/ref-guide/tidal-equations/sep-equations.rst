@@ -3,9 +3,9 @@
 Separated Equations
 ===================
 
-Because the tidal potential :eq:`e:tidal-pot` superposes many
+Because the tidal potential (:eq:`e:tidal-pot`) superposes many
 different spherical harmonics, the separation of variables
-:eq:`e:osc-sol-forms` applied to the oscillation equations must
+(:eq:`e:osc-sol-forms`) applied to the oscillation equations must
 be replaced by the more-general expressions
 
 .. math::
@@ -18,13 +18,13 @@ be replaced by the more-general expressions
    f'(r,\theta,\phi;t) &= \sum_{\ell,m,k} \tflmk'(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii k \Oorb t)
    \end{aligned}
 
-(here, the notationl for the sums has been abbreviated). Substituting
-these solution forms into the :ref:`linearized equations
+(the notation for the sums has been abbreviated). Substituting these
+solution forms into the :ref:`linearized equations
 <tidal-linear-eqns>`, and taking advantage of the orthonormality of
 the spherical harmonics, leads to a set of differential equations for
 each combination of :math:`l`, :math:`m` and :math:`k`. A given set
 resembles the corresponding :ref:`oscillation equations
-<osc-sep-eqns>`, with just a couple of changes:
+<osc-sep-eqns>`, with just a couple changes:
 
 - Rather than being an eigenvalue parameter, the oscillation frequency
   is set by :math:`\sigma = k \Oorb`, representing the forcing

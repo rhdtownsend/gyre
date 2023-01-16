@@ -3,16 +3,21 @@
 Detail Files
 ============
 
-The data written to a detail file are controlled by the
-:nml_n:`detail_item_list` parameter of the :nml_g:`ad_output` namelist
-group (for adiabatic calculations) and the :nml_g:`nad_output`
-namelist group (for nonadiabatic calculations). This parameter is a
-comma-separated list of items to appear in the summary file; the
-following subsections describe the items that may appear, grouped
-together by functional area. For each item, the corresponding math
-symbol is given (if there is one), together with the datatype, and a
-brief description. Units (where applicable) are indicated in brackets
-[].
+Detail files store spatial quantities, such as eigenfunctions and
+differential inertias, for an individual solution (mode, tidal
+response, etc.) found during a run. The specific data written to
+detail files are controlled by the :nml_n:`detail_item_list`
+parameters of the :nml_g:`ad_output` and :nml_g:`nad_output` namelist
+groups (:program:`gyre` adiabatic and nonadiabatic calculations,
+respectively) and the :nml_g:`tides_output` namelist group
+(:program:`gyre_tides` calculations). These parameters specify the
+items to be written, via a comma-separated list.
+
+The following subsections describe the items that may appear in
+:nml_n:`detail_item_list`, grouped together by functional area. For
+each item, the corresponding math symbol is given (if there is one),
+together with the datatype, and a brief description. Units (where
+applicable) are indicated in brackets [].
 
 Solution Data
 -------------
@@ -32,35 +37,40 @@ Solution Data
    * - :nml_v:`omega`
      - :math:`\omega`
      - complex
-     - dimensionless eigenfrequency
+     - dimensionless eigenfrequency (:program:`gyre`) or forcing frequency (:program:`gyre_tides`)
    * - :nml_v:`x`
      - :math:`x`
      - real(:nml_n:`n`)
-     - independent variable; defined in :ref:`osc-dimless-vars` section 
+     - independent variable :math:`x = r/R`
    * - :nml_v:`y_1`
      - :math:`y_{1}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`osc-dimless-vars` section
+     - dependent variable
    * - :nml_v:`y_2`
      - :math:`y_{2}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`osc-dimless-vars` section
+     - dependent variable
    * - :nml_v:`y_3`
      - :math:`y_{3}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`osc-dimless-vars` section
+     - dependent variable
    * - :nml_v:`y_4`
      - :math:`y_{4}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`osc-dimless-vars` section
+     - dependent variable
    * - :nml_v:`y_5`
      - :math:`y_{5}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`osc-dimless-vars` section
+     - dependent variable
    * - :nml_v:`y_6`
      - :math:`y_{6}`
      - complex(:nml_n:`n`)
-     - dependent variable; defined in :ref:`osc-dimless-vars` section
+     - dependent variable
+
+The definitions of the dependent variables :math:`\{y_{1},\ldots,y_{6}\}` are
+provided in the :ref:`osc-eqns` chapter (for :program:`gyre`) and in
+the :ref:`tidal-eqns` chapter (for :program:`gyre_tides`).
+
 
 Observables
 -----------
@@ -118,8 +128,8 @@ Classification & Validation
      - Symbol
      - Datatype
      - Description
-   * - :nml_v:`j`
-     - :math:`j`
+   * - :nml_v:`id`
+     - ---
      - integer
      - unique mode index
    * - :nml_v:`l`
@@ -604,7 +614,7 @@ Note that these items are available only when using :program:`gyre_tides`.
    * - :nml_v:`cbar`
      - :math:`\cbar_{\ell,m,k}`
      - real
-     - tidal expansion coefficient; see eqn. A1 of Sun et al. (2023)
+     - tidal expansion coefficient; see eqn. A1 of :ads_citet:`sun:2023`
    * - :nml_v:`Gbar_1`
      - :math:`\Gbar^{(1)}_{\ell,m,k}`
      - real
