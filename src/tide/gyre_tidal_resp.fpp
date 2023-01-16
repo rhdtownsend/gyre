@@ -123,6 +123,12 @@ contains
 
     call system_clock(count_rate=c_rate)
 
+    ! Check that the NULL coriolis method is being used
+
+    if (rt_p%coriolis_method /= 'NULL') then
+       $ABORT(Only the NULL coriolis method can be used)
+    end if
+
     ! Set up tidal params, contexts, grid, etc
 
     call setup_tides_(ml, gr_p, or_p, os_p, rt_p, td_p, omega, gr, cx, md_p, y_T, tide_type)
