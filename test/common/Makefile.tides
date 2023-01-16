@@ -1,5 +1,5 @@
 # File     : Makefile
-# Purpose  : makefile for standard ad subdir
+# Purpose  : makefile for standard tides subdir
 
 # Rules
 
@@ -7,7 +7,7 @@ test :
 	@./test.sh
 
 build_ref :
-	./gyre gyre.in; \
+	./gyre_tides gyre_tides.in; \
         for file in summary*.h5; do \
 	    if h5diff -q $$file ref/$$file; then \
                 rm $$file; \

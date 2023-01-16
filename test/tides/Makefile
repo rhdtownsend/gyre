@@ -1,9 +1,9 @@
 # File     : Makefile
-# Purpose  : makefile for test subdir
+# Purpose  : makefile for test/tides subdir
 
 # Variables
 
-SUBDIRS=ad nad tides
+SUBDIRS=mesa
 
 # Rules
 
