@@ -22,7 +22,7 @@ be replaced by the more-general expressions
 solution forms into the :ref:`linearized equations
 <tidal-linear-eqns>`, and taking advantage of the orthonormality of
 the spherical harmonics, leads to a set of differential equations for
-each combination of :math:`l`, :math:`m` and :math:`k`. A given set
+each combination of :math:`\ell`, :math:`m` and :math:`k`. A given set
 resembles the corresponding :ref:`oscillation equations
 <osc-sep-eqns>`, with just a couple changes:
 

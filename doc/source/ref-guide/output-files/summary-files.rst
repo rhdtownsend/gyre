@@ -131,7 +131,7 @@ Classification & Validation
      - dimensionless eigenfrequency; evaluated as `\omega_{\rm int} = \sqrt{\zeta/E}`
    * - :nml_v:`zeta`
      - :math:`\zeta`
-     - complex
+     - complex(:nml_v:`n_row`)
      - integral of :math:`\sderiv{\zeta}{x}` with respect to :math:`x`
 
 Perturbations
