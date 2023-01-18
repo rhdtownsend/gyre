@@ -103,7 +103,7 @@ contains
 
     x = r/R_star
 
-    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), M_r)
+    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x, M_r)
   
     ! Calculate dimensionless structure data
 
