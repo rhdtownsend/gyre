@@ -32,6 +32,7 @@ module gyre_model_factory
   use gyre_fgong_file
   use gyre_losc_file
   use gyre_mesa_file
+  use gyre_parfait_file
   use gyre_osc_file
   use gyre_wdec_file
   $if ($HDF5)
@@ -111,6 +112,10 @@ contains
        $else
        $ABORT(No HDF5 support, therefore cannot read POLY files)
        $endif
+
+    case ('PARFAIT')
+
+       call read_parfait_model(ml_p, ml)
 
     case ('HOM')
 
