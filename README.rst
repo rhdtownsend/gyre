@@ -43,5 +43,6 @@ If you use GYRE in your research, please cite one or more of the relevant
 * `Townsend & Teitler (2013) <https://ui.adsabs.harvard.edu/abs/2013MNRAS.435.3406T/abstract>`__ describes the basic operation of the code;
 * `Townsend, Goldstein & Zweibel (2018) <https://ui.adsabs.harvard.edu/abs/2018MNRAS.475..879T/abstract>`__ outlines improvements to allow non-adiabatic calculations.
 * `Goldstein & Townsend (2020) <https://ui.adsabs.harvard.edu/abs/2020ApJ...899..116G/abstract>`__ describes the contour method for non-adiabatic calculations.
+* `Sun, Townsend & Guo (2023) <https://ui.adsabs.harvard.edu/abs/2023arXiv230106599S/abstract>`__  introduces the gyre_tides frontend for evaluating tidal responses.
 
 .. |---| unicode:: U+2014
