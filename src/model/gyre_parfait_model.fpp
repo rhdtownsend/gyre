@@ -124,7 +124,8 @@ contains
 
     $ASSERT(ALL(x(2:n) > x(:n-1)),Non-monotonic radius coordinate)
 
-    ! Integrate the dimensionless mass equation outward
+    ! Integrate the dimensionless mass equation outward. Here, x=r/R,
+    ! y=m/M, and d=rho*(R**3/M)
 
     allocate(y(n))
 
@@ -134,7 +135,8 @@ contains
        y(k+1) = y(k) + 4._WP*PI*(x(k+1)**3 - x(k)**3)*d(k)/3._WP
     end do y_loop
 
-    ! Integrate the dimensionless hydrostatic equilibrium equation inward
+    ! Integrate the dimensionless hydrostatic equilibrium equation
+    ! inward. Here, z=P/(G*M**2/R**4)
 
     allocate(z(n))
     allocate(a(n-1))
