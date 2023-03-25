@@ -2148,10 +2148,10 @@ contains
     logical, intent(in), optional :: use_cache
     real(WP)                      :: E
 
-    logical  :: use_cache_
-    integer  :: j
-    real(WP) :: x(this%n)
-    real(WP) :: dE_dx(this%n)
+    logical               :: use_cache_
+    integer               :: j
+    real(WP), allocatable :: x(:)
+    real(WP), allocatable :: dE_dx(:)
 
     ! Calculate the inertia, in units of M_star R_star**2
 
@@ -2166,6 +2166,9 @@ contains
        E = this%E_scl2*abs(this%scl)**2
 
     else
+
+       allocate(x(this%n))
+       allocate(dE_dx(this%n))
 
        !$OMP PARALLEL DO
        do j = 1, this%n
