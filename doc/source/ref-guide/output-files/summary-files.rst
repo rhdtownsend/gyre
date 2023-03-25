@@ -35,6 +35,10 @@ Solution Data
      - integer
      - number of rows in summary file, each corresponding to a mode found
        (:program:`gyre`) or a tidal response evaluated (:program:`gyre_tides`)
+   * - :nml_v:`n`
+     - :math:`N`
+     - integer(:nml_v:`n_row`)
+     - number of spatial grid points
    * - :nml_v:`omega`
      - :math:`\omega`
      - complex(:nml_v:`n_row`)

@@ -326,6 +326,7 @@ contains
 
     select case (sc%item)
        
+    $CACHE_VALUE(n,wv%n)
     $CACHE_VALUE(id,wv%id)
     $CACHE_VALUE(l,wv%l)
     $CACHE_VALUE(l_i,wv%l_i)
