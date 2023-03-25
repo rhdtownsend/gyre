@@ -298,7 +298,7 @@ contains
     $WRITE_VALUE(Q,wv%Q())
     $WRITE_VALUE(tau_ss,wv%tau_ss())
     $WRITE_VALUE(tau_tr,wv%tau_tr())
-    $WRITE_VALUE(zeta,wv%beta())
+    $WRITE_VALUE(zeta,wv%zeta())
     $WRITE_VALUE(beta,wv%beta())
     $WRITE_VALUE(x,gr%pt%x)
     $WRITE_VALUE(x_ref,gr%pt(wv%j_ref)%x)
