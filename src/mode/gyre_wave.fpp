@@ -82,6 +82,9 @@ module gyre_wave
      procedure, public :: dfreq_rot
      procedure, public :: omega_int
      procedure, public :: x
+     procedure, public :: dx_min
+     procedure, public :: dx_max
+     procedure, public :: dx_rms
      procedure, public :: y_i
      procedure, public :: xi_r
      procedure, public :: xi_h
@@ -395,6 +398,69 @@ contains
      return
 
   end function x
+
+  !****
+
+  function dx_min (this)
+
+     class(wave_t), intent(in) :: this
+     real(WP)                  :: dx_min
+
+     real(WP) :: dx(this%n-1)
+
+     ! Return the minimum abscissa spacing
+
+     dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
+
+     dx_min = MINVAL(dx, MASK=dx/=0._WP)
+
+     ! Finish
+
+     return
+
+  end function dx_min
+
+  !****
+
+  function dx_max (this)
+
+     class(wave_t), intent(in) :: this
+     real(WP)                  :: dx_max
+
+     real(WP) :: dx(this%n-1)
+
+     ! Return the maximum abscissa spacing
+
+     dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
+
+     dx_max = MAXVAL(dx, MASK=dx/=0._WP)
+
+     ! Finish
+
+     return
+
+  end function dx_max
+
+  !****
+
+  function dx_rms (this)
+
+     class(wave_t), intent(in) :: this
+     real(WP)                  :: dx_rms
+
+     real(WP) :: dx(this%n-1)
+
+     ! Return the root-mean-square abscissa spacing
+
+     dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
+
+     dx_rms = sqrt(SUM(dx**2, MASK=dx/=0._WP)/COUNT(dx/=0._WP))
+
+     ! Finish
+
+     return
+
+  end function dx_rms
 
   !****
 

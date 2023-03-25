@@ -42,6 +42,22 @@ Solution Data
      - :math:`x`
      - real(:nml_n:`n`)
      - independent variable :math:`x = r/R`
+   * - :nml_v:`dx_min`
+     - :math:`\Delta x_{\rm min}`
+     - real
+     - minimum spacing of spatial grid
+   * - :nml_v:`dx_max`
+     - :math:`\Delta x_{\rm max}`
+     - real
+     - maximum spacing of spatial grid
+   * - :nml_v:`dx_rms`
+     - :math:`\Delta x_{\rm rms}`
+     - real
+     - root-mean-square spacing of spatial grid
+   * - :nml_v:`x_ref`
+     - :math:`x_{\rm ref}`
+     - real
+     - fractional radius of reference location
    * - :nml_v:`y_1`
      - :math:`y_{1}`
      - complex(:nml_n:`n`)
@@ -207,10 +223,6 @@ Perturbations
      - Symbol
      - Datatype
      - Description
-   * - :nml_v:`x_ref`
-     - :math:`x_{\rm ref}`
-     - real
-     - fractional radius of reference location
    * - :nml_v:`xi_r_ref`
      - :math:`\txi_{r,{\rm ref}}`
      - complex
