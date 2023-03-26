@@ -1366,7 +1366,7 @@ contains
 
       dzeta_dx = ABS(eul_P)**2*(U*x4_V/(Gamma_1*c_1**2)) + &
                  ABS(xi_r)**2*(pt%x**2*U*As/c_1**2) - &
-                 (ABS(pt%x*deul_Phi)**2*pt%x + lambda*ABS(eul_Phi)**2)
+                 (ABS(deul_Phi)**2*pt%x + lambda*ABS(eul_Phi)**2)
 
     end associate
 
