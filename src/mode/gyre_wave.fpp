@@ -2574,7 +2574,7 @@ contains
      
     ! Calculate the zeta integral
 
-    !OMP PARALLEL DO
+    !$OMP PARALLEL DO
     do j = 1, this%n
        dzeta_dx(j) = this%dzeta_dx(j)
     end do
