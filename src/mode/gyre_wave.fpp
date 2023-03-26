@@ -105,6 +105,7 @@ module gyre_wave
      procedure, public :: dQ_dx
      procedure, public :: dzeta_dx
      procedure         :: dzeta_dx_pesnell_
+     procedure         :: dzeta_dx_unno_
      procedure         :: dzeta_dx_kawaler_
      procedure         :: dzeta_dx_kawaler_grav_
      procedure         :: dzeta_dx_dupret_
@@ -1243,6 +1244,8 @@ contains
     select case (this%os_p%zeta_scheme)
     case ('PESNELL')
        dzeta_dx = this%dzeta_dx_pesnell_(j)
+    case ('UNNO')
+       dzeta_dx = this%dzeta_dx_unno_(j)
     case ('KAWALER_GRAV')
        dzeta_dx = this%dzeta_dx_kawaler_grav_(j)
     case ('KAWALER')
@@ -1315,6 +1318,63 @@ contains
     return
 
   end function dzeta_dx_pesnell_
+
+  !****
+
+  function dzeta_dx_unno_ (this, j) result (dzeta_dx)
+
+    class(wave_t), intent(in) :: this
+    integer, intent(in)       :: j
+    complex(WP)               :: dzeta_dx
+
+    complex(WP) :: xi_r
+    complex(WP) :: eul_P
+    complex(WP) :: eul_Phi
+    complex(WP) :: deul_Phi
+    complex(WP) :: lambda
+    real(WP)    :: V_2
+    real(WP)    :: U
+    real(WP)    :: As
+    real(WP)    :: c_1
+    real(WP)    :: Gamma_1
+    real(WP)    :: x4_V
+
+    ! Calculate the dimensionless frequency weight function.  This is
+    ! based on the integrand in the right-hand side of equation
+    ! (14.19) of [Unno:1989]; note that that equation was derived for
+    ! adiabatic pulsation, and the simple extension to non-adiabatic
+    ! pulsation implemented here may not be quite correct
+
+    associate ( &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j) )
+
+      xi_r = this%xi_r(j)
+      eul_P = this%eul_P(j)
+      eul_Phi = this%eul_Phi(j)
+      deul_Phi = this%deul_Phi(j)
+
+      V_2 = ml%coeff(I_V_2, pt)
+      As = ml%coeff(I_AS, pt)
+      U = ml%coeff(I_U, pt)
+      c_1 = ml%coeff(I_C_1, pt)
+      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+
+      lambda = this%lambda(j)
+
+      x4_V = pt%x**2/V_2
+
+      dzeta_dx = ABS(eul_P)**2*(U*x4_V/(Gamma_1*c_1**2)) + &
+                 ABS(xi_r)**2*(pt%x**2*U*As/c_1**2) - &
+                 (ABS(pt%x*deul_Phi)**2*pt%x + lambda*ABS(eul_Phi)**2)
+
+    end associate
+
+    ! Finish
+
+    return
+
+  end function dzeta_dx_unno_
 
   !****
 
@@ -2571,6 +2631,7 @@ contains
     real(WP)    :: U_l
     real(WP)    :: U_r
     real(WP)    :: c_1
+    complex(WP) :: eul_Phi
      
     ! Calculate the zeta integral
 
@@ -2584,7 +2645,7 @@ contains
     ! Add on corrections associated with discontinuities
 
     select case (this%os_p%zeta_scheme)
-    case ('KAWALER_GRAV','KAWALER','DUPRET')
+    case ('UNNO','KAWALER_GRAV','KAWALER','DUPRET')
 
        ! Discontinuties at double points
 
@@ -2629,6 +2690,21 @@ contains
             zeta = zeta - CONJG(xi_r)*xi_r*pt%x**3*(U_r - U_l)/c_1**2
 
           end associate
+
+          ! Add the extra surface term from equation (14.19) of
+          ! [Unno:1989]
+
+          if (this%os_p%zeta_scheme == 'UNNO') then
+
+             associate(pt => this%gr%pt_o())
+
+               eul_Phi = this%eul_Phi(this%n)
+
+               zeta = zeta - (this%l+1)*pt%x*ABS(eul_Phi)**2
+
+             end associate
+
+          end if
 
        end if
 
