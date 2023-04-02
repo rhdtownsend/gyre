@@ -1366,7 +1366,7 @@ contains
 
       dzeta_dx = ABS(eul_P)**2*(U*x4_V/(Gamma_1*c_1**2)) + &
                  ABS(xi_r)**2*(pt%x**2*U*As/c_1**2) - &
-                 (ABS(deul_Phi)**2*pt%x + lambda*ABS(eul_Phi)**2)
+                 (ABS(deul_Phi)**2*pt%x**2 + lambda*ABS(eul_Phi)**2)
 
     end associate
 
@@ -2672,9 +2672,12 @@ contains
 
        end do
 
-       ! Surface fix-up
+       ! Surface fix-ups
 
        if (this%fix_surf) then
+
+          ! Add the term that comes from the surface density
+          ! discontinuity
 
           associate(                   &
                ml => this%cx%model(),  &
@@ -2691,8 +2694,7 @@ contains
 
           end associate
 
-          ! Add the extra surface term from equation (14.19) of
-          ! [Unno:1989]
+          ! Add the term from equation (14.19) of [Unno:1989]
 
           if (this%os_p%zeta_scheme == 'UNNO') then
 
