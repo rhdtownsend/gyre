@@ -100,15 +100,16 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
   - :nml_v:`'FROZEN_PESNELL_4'` : Freeze Lagrangian perturbation of convective luminosity;
     case 4 described by :ads_citet:`pesnell:1990`
 
-:nml_n:`zeta_scheme` (default :nml_v:`PESNELL`)
+:nml_n:`zeta_scheme` (default :nml_v:`'UNNO'`)
   Scheme for evaluating dimensionless frequency weight function
   :math:`\sderiv{\zeta}{x}` and integral eigenfrequency
   :math:`\omega_{\rm int}`; one of:
 
   - :nml_v:`'PESNELL'` : Evaluate using eqn. (A5) of :ads_citet:`pesnell:1987`
-  - :nml_v:`'DUPRET'` : Evaluate using eqn. (1.71) of Dupret (2002, PhD thesis)
+  - :nml_v:`'UNNO'`: Evaluate using eqn. (14.19) of :ads_citet:`unno:1989`
   - :nml_v:`'KAWALER'` : Evaluate using eqn. (7) of :ads_citet:`kawaler:1985`
   - :nml_v:`'KAWALER_GRAV'`: Evaluate using the g-mode part in eqn. (7) of :ads_citet:`kawaler:1985`
+  - :nml_v:`'DUPRET'` : Evaluate using eqn. (1.71) of Dupret (2002, PhD thesis)
 
 :nml_n:`deps_scheme` (default :nml_v:`'MODEL'`)
   Scheme for calculating nuclear energy generation partials :math:`\epsnucrho` and :math:`\epsnucT`; one of:
