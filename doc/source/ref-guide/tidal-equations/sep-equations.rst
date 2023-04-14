@@ -13,7 +13,7 @@ be replaced by the more-general expressions
 
    \begin{aligned}
    \xir(r,\theta,\phi;t) &= \sum_{\ell,m,k} \txirlmk(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii k \Oorb t), \\
-   \xit(r,\theta,\phi;t) &= \sum_{\ell,m,k} \txihlmk(r) \, \pderiv{}{\theta} Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \Oorb t), \\
+   \xit(r,\theta,\phi;t) &= \sum_{\ell,m,k} \txihlmk(r) \, \pderiv{}{\theta} Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii k \Oorb t), \\
    \xip(r,\theta,\phi;t) &= \sum_{\ell,m,k} \txihlmk(r) \, \frac{\ii m}{\sin\theta} Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii k \Oorb t), \\
    f'(r,\theta,\phi;t) &= \sum_{\ell,m,k} \tflmk'(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii k \Oorb t)
    \end{aligned}
