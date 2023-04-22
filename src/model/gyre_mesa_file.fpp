@@ -43,6 +43,7 @@ module gyre_mesa_file
   integer, parameter :: N_COLS_V0_01 = 18
   integer, parameter :: N_COLS_V0_19 = 18
   integer, parameter :: N_COLS_V1_0X = 18
+  integer, parameter :: N_COLS_V1_20 = 19
 
   ! Access specifiers
 
@@ -100,6 +101,8 @@ contains
        n_cols = N_COLS_V0_19
     case (100,101)
        n_cols = N_COLS_V1_0X
+    case (120)
+       n_cols = N_COLS_V1_20
     case default
        $ABORT(Unrecognized MESA file version)
     end select
@@ -164,6 +167,7 @@ contains
     real(WP), allocatable       :: eps(:)
     real(WP), allocatable       :: eps_rho(:)
     real(WP), allocatable       :: eps_T(:)
+    real(WP), allocatable       :: eps_grav(:)
     real(WP), allocatable       :: kap(:)
     real(WP), allocatable       :: kap_rho(:)
     real(WP), allocatable       :: kap_T(:)
@@ -180,6 +184,7 @@ contains
     real(WP), allocatable       :: c_thn(:)
     real(WP), allocatable       :: c_thk(:)
     real(WP), allocatable       :: c_eps(:)
+    real(WP), allocatable       :: c_egv(:)
 
     ! Extract data from the global and point arrays
 
@@ -196,6 +201,8 @@ contains
        call extract_data_v0_19_()
     case (100,101)
        call extract_data_v1_0X_()
+    case (120)
+       call extract_data_v1_20_()
     case default
        $ABORT(Unrecognized MESA memory version)
     end select
@@ -236,12 +243,19 @@ contains
     c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
     c_thk = 4._WP*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
 
+    allocate(c_egv(n))
+
     select case (version)
     case (101)
        c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
+       c_egv = 0._WP
+    case (120)
+       c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
+       c_egv = 4._WP*PI*rho*eps_grav*R_star**3/L_star
     case default
        ! Note: technically incorrect because eps in versions < 1.01 includes eps_grav
        c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
+       c_egv = 0._WP
     end select
 
     Omega_rot = Omega_rot*sqrt(R_star**3/(G_GRAVITY*M_star))
@@ -266,6 +280,7 @@ contains
     call em%define(I_C_THN, c_thn)
     call em%define(I_C_THK, c_thk)
     call em%define(I_C_EPS, c_eps)
+    call em%define(I_C_EGV, c_egv)
 
     call em%define(I_EPS_RHO, eps_rho)
     call em%define(I_EPS_T, eps_T)
@@ -442,6 +457,57 @@ contains
       return
 
     end subroutine extract_data_v1_0X_
+
+    subroutine extract_data_v1_20_ ()
+
+      real(WP), allocatable :: eps_eps_rho(:)
+      real(WP), allocatable :: eps_eps_T(:)
+      real(WP), allocatable :: kap_kap_T(:)
+      real(WP), allocatable :: kap_kap_rho(:)
+
+      $CHECK_BOUNDS(SIZE(point_data, 1),N_COLS_V1_20)
+
+      ! Extract data from the version-1.0X point array
+
+      r = point_data(1,:)
+      M_r = point_data(2,:)
+      L_r = point_data(3,:)
+      P = point_data(4,:)
+      T = point_data(5,:)
+      rho = point_data(6,:)
+      nabla = point_data(7,:)
+      N2 = point_data(8,:)
+      Gamma_1 = point_data(9,:)
+      nabla_ad = point_data(10,:)
+      delta = point_data(11,:)
+      kap = point_data(12,:)
+      kap_kap_T = point_data(13,:)
+      kap_kap_rho = point_data(14,:)
+      eps = point_data(15,:)
+      eps_eps_T = point_data(16,:)
+      eps_eps_rho = point_data(17,:)
+      eps_grav = point_data(18,:)
+      Omega_rot = point_data(19,:)
+
+      allocate(eps_rho(n))
+      allocate(eps_T(n))
+
+      where (eps /= 0._WP)
+         eps_rho = eps_eps_rho/eps
+         eps_T = eps_eps_T/eps
+      elsewhere
+         eps_rho = 0._WP
+         eps_T = 0._WP
+      end where
+
+      kap_T = kap_kap_T/kap
+      kap_rho = kap_kap_rho/kap
+
+      ! Finish
+
+      return
+
+    end subroutine extract_data_v1_20_
 
   end subroutine init_mesa_model
 
