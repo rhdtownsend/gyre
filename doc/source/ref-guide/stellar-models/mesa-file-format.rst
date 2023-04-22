@@ -18,3 +18,4 @@ the initial header line:
    mesa-file-format-v0.19
    mesa-file-format-v1.00
    mesa-file-format-v1.01
+   mesa-file-format-v1.20

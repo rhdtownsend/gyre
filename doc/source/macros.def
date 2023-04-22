@@ -40,6 +40,7 @@ epsnucT	\epsilon_{{\rm n},T}
 epsnucrho	\epsilon_{{\rm n},\rho}
 epsnucS	\epsilon_{{\rm n},S}
 epsnucad	\epsilon_{\rm n,ad}
+epsgrav	\epsilon_{\rm grav}
 kapT	\kappa_{T}
 kaprho	\kappa_{\rho}
 kapS	\kappa_{S}

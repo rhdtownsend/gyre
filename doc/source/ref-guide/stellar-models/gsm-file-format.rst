@@ -26,3 +26,4 @@ There are a number of versions of the GSM format, distinguished by the
    gsm-file-format-v0.00
    gsm-file-format-v1.00
    gsm-file-format-v1.10
+   gsm-file-format-v1.20
