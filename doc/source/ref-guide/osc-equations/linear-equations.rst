@@ -14,7 +14,7 @@ the static equilibrium state as
 .. math::
    :label: e:osc-lin-mom
 
-   \rho \pderiv{\vv'}{t} = - \nabla P' - \rho' \nabla P - \rho \nabla \Phi'.
+   \rho \pderiv{\vv'}{t} = - \nabla P' - \rho' \nabla \Phi - \rho \nabla \Phi'.
 
 (in these expressions, the absence of a prime denotes an
 equilibrium quantity).  Likewise, Poisson's equation becomes

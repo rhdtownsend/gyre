@@ -38,7 +38,7 @@ the mechanical (mass and momentum conservation) equations become
 
 .. math::
 
-   -\sigma^{2} \rho \txir = - \deriv{\tP'}{r} - \frac{\trho'}{\rho} \deriv{\Phi}{r} - \rho \deriv{\tPhi'}{r},
+   -\sigma^{2} \rho \txir = - \deriv{\tP'}{r} - \trho' \deriv{\Phi}{r} - \rho \deriv{\tPhi'}{r},
 
 .. math::
 
