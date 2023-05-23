@@ -78,6 +78,10 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
 :nml_n:`alpha_rht` (default :nml_v:`0.`)
   Scaling factor for time-dependent term in radiative heat equation (see the
   :math:`\alpharht` variable in the :ref:`osc-physics-switches` section)
+  
+:nml_n:`alpha_egv` (default :nml_v:`0.`)
+  Scaling factor for the gravitational heating rate :math:`\epsgrav` terms (see the
+  :math:`\alphaegv` variable in the :ref:`osc-physics-switches` section)
 
 :nml_n:`inertia_norm` (default :nml_v:`'BOTH'`)
   Inertia normalization factor; one of

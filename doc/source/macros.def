@@ -93,6 +93,7 @@ alphapi	\alpha_{\pi}
 alphakat	\alpha_{\kappa,T}
 alphakar	\alpha_{\kappa,\rho}
 alphafrq	\alpha_{\rm frq}
+alphaegv	\alpha_{egv}
 wosc	w_{\rm osc}
 wexp	w_{\rm exp}
 wthm	w_{\rm thm}
@@ -117,6 +118,7 @@ ckapS	c_{\kappa,S}
 ceps	c_{\epsilon}
 cepsad	c_{\epsilon,{\rm ad}}
 cepsS	c_{\epsilon,S}
+cegv	c_{egv}
 frht	f_{\rm rht}
 dfrht	\partial\frht
 elli	\ell_{\rm i}

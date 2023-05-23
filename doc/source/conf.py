@@ -95,10 +95,10 @@ html_logo = 'gyre-logo.png'
 
 # Set up Extlinks
 extlinks = {
-    'wiki': ('https://en.wikipedia.org/wiki/%s', ''),
-    'netlib': ('https://www.netlib.org/%s', ''),
-    'git': ('https://github.com/%s', ''),
-    'repo': ('https://github.com/rhdtownsend/gyre/blob/{:s}/%s'.format(branch), '')
+    'wiki': ('https://en.wikipedia.org/wiki/%s', None),
+    'netlib': ('https://www.netlib.org/%s', None),
+    'git': ('https://github.com/%s', None),
+    'repo': ('https://github.com/rhdtownsend/gyre/blob/{:s}/%s'.format(branch), None)
 }
 
 # Set site-wide targets

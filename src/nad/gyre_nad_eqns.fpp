@@ -387,12 +387,12 @@ contains
       xA(5,5) = V*nabla*(4._WP*f_rh - c_kap_S)/f_rh - df_rh - (l_i - 2._WP)
       xA(5,6) = -V*nabla/(c_rad*f_rh)
 
-      xA(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad + alpha_egv*c_egv*nabla_ad*V ! added c_egv here
-      xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term - alpha_egv*c_egv*nabla_ad*V ! added c_egv here
+      xA(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad - alpha_egv*c_egv*nabla_ad*V ! added c_egv here
+      xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term + alpha_egv*c_egv*nabla_ad*V ! added c_egv here
       xA(6,3) = alpha_grv*conv_term
       xA(6,4) = alpha_grv*(0._WP)
       if (x > 0._WP) then
-         xA(6,5) = c_eps_S - alpha_hfl*lambda*c_rad/(nabla*V) + alpha_thm*i_omega_c*c_thk - alpha_egv*c_egv ! added c_egv here
+         xA(6,5) = c_eps_S - alpha_hfl*lambda*c_rad/(nabla*V) + alpha_thm*i_omega_c*c_thk + alpha_egv*c_egv ! added c_egv here
       else
          xA(6,5) = -alpha_hfl*HUGE(0._WP)
       endif
