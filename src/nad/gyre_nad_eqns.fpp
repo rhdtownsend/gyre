@@ -63,7 +63,7 @@ module gyre_nad_eqns
   integer, parameter :: J_DC_THN = 15
   integer, parameter :: J_C_THK = 16
   integer, parameter :: J_C_EPS = 17
-  integer, parameter :: J_C_EGV = 18 ! Added this here and shifted the numbers accordingly
+  integer, parameter :: J_C_EGV = 18
   integer, parameter :: J_KAP_RHO = 19
   integer, parameter :: J_KAP_T = 20
 
@@ -87,7 +87,7 @@ module gyre_nad_eqns
      real(WP)                   :: alpha_kar
      real(WP)                   :: alpha_kat
      real(WP)                   :: alpha_rht
-     real(WP)                   :: alpha_egv ! added this switch here
+     real(WP)                   :: alpha_egv
      integer                    :: conv_scheme
    contains
      private
@@ -135,7 +135,7 @@ contains
     eq%alpha_kar = os_p%alpha_kar
     eq%alpha_kat = os_p%alpha_kat
     eq%alpha_rht = os_p%alpha_rht
-    eq%alpha_egv = os_p%alpha_egv ! added this line for switch
+    eq%alpha_egv = os_p%alpha_egv
        
     select case (os_p%time_factor)
     case ('OSC')
@@ -186,7 +186,7 @@ contains
 
     call check_model(ml, [ &
          I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
-         I_C_LUM,I_C_RAD,I_C_THN,I_C_THK,I_C_EPS,I_C_EGV, & ! added I_C_EGV here
+         I_C_LUM,I_C_RAD,I_C_THN,I_C_THK,I_C_EPS,I_C_EGV, &
          I_KAP_RHO,I_KAP_T])
 
     n_s = SIZE(pt)
@@ -214,7 +214,7 @@ contains
        this%coeff(i,J_C_THN) = ml%coeff(I_C_THN, pt(i))
        this%coeff(i,J_DC_THN) = ml%dcoeff(I_C_THN, pt(i))
        this%coeff(i,J_C_THK) = ml%coeff(I_C_THK, pt(i))
-       this%coeff(i,J_C_EPS) = ml%coeff(I_C_EPS, pt(i)) ! added this line to get the coefficient
+       this%coeff(i,J_C_EPS) = ml%coeff(I_C_EPS, pt(i))
        this%coeff(i, J_C_EGV) = ml%coeff(I_C_EGV, pt(i))
        this%coeff(i,J_KAP_RHO) = ml%coeff(I_KAP_RHO, pt(i))
        this%coeff(i,J_KAP_T) = ml%coeff(I_KAP_T, pt(i))
@@ -300,7 +300,7 @@ contains
          dc_thn => this%coeff(i,J_DC_THN), &
          c_thk => this%coeff(i,J_C_THK), &
          c_eps => this%coeff(i,J_C_EPS), &
-         c_egv => this%coeff(i,J_C_EGV), & ! added this association
+         c_egv => this%coeff(i,J_C_EGV), &
          kap_rho => this%coeff(i,J_KAP_RHO), &
          kap_T => this%coeff(i,J_KAP_T), &
          pt => this%pt(i), &
@@ -316,7 +316,7 @@ contains
          alpha_pi => this%alpha_pi, &
          alpha_kar => this%alpha_kar, &
          alpha_kat => this%alpha_kat, &
-         alpha_egv => this%alpha_egv) ! added egv switch here
+         alpha_egv => this%alpha_egv)
 
       Omega_rot = this%cx%Omega_rot(pt)
       Omega_rot_i = this%cx%Omega_rot(pt_i)
@@ -387,12 +387,12 @@ contains
       xA(5,5) = V*nabla*(4._WP*f_rh - c_kap_S)/f_rh - df_rh - (l_i - 2._WP)
       xA(5,6) = -V*nabla/(c_rad*f_rh)
 
-      xA(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad - alpha_egv*c_egv*nabla_ad*V ! added c_egv here
-      xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term + alpha_egv*c_egv*nabla_ad*V ! added c_egv here
+      xA(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad - alpha_egv*c_egv*nabla_ad*V
+      xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term + alpha_egv*c_egv*nabla_ad*V
       xA(6,3) = alpha_grv*conv_term
       xA(6,4) = alpha_grv*(0._WP)
       if (x > 0._WP) then
-         xA(6,5) = c_eps_S - alpha_hfl*lambda*c_rad/(nabla*V) + alpha_thm*i_omega_c*c_thk + alpha_egv*c_egv ! added c_egv here
+         xA(6,5) = c_eps_S - alpha_hfl*lambda*c_rad/(nabla*V) + alpha_thm*i_omega_c*c_thk + alpha_egv*c_egv
       else
          xA(6,5) = -alpha_hfl*HUGE(0._WP)
       endif

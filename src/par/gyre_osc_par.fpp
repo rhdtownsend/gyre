@@ -41,7 +41,7 @@ module gyre_osc_par
      real(WP)                :: alpha_pi = 1._WP
      real(WP)                :: alpha_kar = 1._WP
      real(WP)                :: alpha_kat = 1._WP
-     real(WP)                :: alpha_egv = 1._WP ! added alpha_egv
+     real(WP)                :: alpha_egv = 1._WP
      real(WP)                :: alpha_rht = 0._WP
      real(WP)                :: alpha_trb = 0._WP
      character(64)           :: variables_set = 'GYRE'
@@ -94,7 +94,7 @@ contains
     real(WP)                              :: alpha_kat
     real(WP)                              :: alpha_rht
     real(WP)                              :: alpha_trb
-    real(WP)                              :: alpha_egv ! added alpha_egv
+    real(WP)                              :: alpha_egv
     character(LEN(os_p%variables_set))    :: variables_set
     character(LEN(os_p%inner_bound))      :: inner_bound
     character(LEN(os_p%outer_bound))      :: outer_bound
@@ -114,7 +114,7 @@ contains
     logical                               :: reduce_order
 
     namelist /osc/ x_ref, x_atm, alpha_grv, alpha_thm, alpha_hfl, &
-         alpha_gam, alpha_pi, alpha_kar, alpha_kat, alpha_rht, alpha_trb, alpha_egv, & ! added alpha_egv
+         alpha_gam, alpha_pi, alpha_kar, alpha_kat, alpha_rht, alpha_trb, alpha_egv, &
          inner_bound, outer_bound, outer_bound_cutoff, outer_bound_branch, &
          variables_set, inertia_norm, time_factor, &
          conv_scheme, zeta_scheme, deps_source, deps_file, deps_file_format, &
@@ -157,7 +157,7 @@ contains
        alpha_kat = os_p(i)%alpha_kat
        alpha_rht = os_p(i)%alpha_rht
        alpha_trb = os_p(i)%alpha_trb
-       alpha_egv = os_p(i)%alpha_egv ! added alpha_egv
+       alpha_egv = os_p(i)%alpha_egv
        variables_set = os_p(i)%variables_set
        inner_bound = os_p(i)%inner_bound
        outer_bound = os_p(i)%outer_bound
@@ -193,7 +193,7 @@ contains
        os_p(i)%alpha_kat = alpha_kat
        os_p(i)%alpha_rht = alpha_rht
        os_p(i)%alpha_trb = alpha_trb
-       os_p(i)%alpha_egv = alpha_egv ! added alpha_egv
+       os_p(i)%alpha_egv = alpha_egv
        os_p(i)%variables_set = variables_set
        os_p(i)%inner_bound = inner_bound
        os_p(i)%outer_bound = outer_bound
