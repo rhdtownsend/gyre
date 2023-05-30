@@ -73,12 +73,13 @@ The dimensionless oscillation equations are
    \frac{V \nabla}{\frht \crad} y_{6} \\
    %
    x \deriv{y_{6}}{x} &=
-   \left[ \alphahfl \ell(\ell+1) \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad \right] y_{1} + \mbox{} \\
+   \left[ \alphahfl \ell(\ell+1) \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad - \alphaegv c_{egv} \nabad V \right] y_{1} + \mbox{} \\
    &
-   \left[ V \cepsad - \ell(\ell+1) \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right) \right] y_{2} + \mbox{} \\
+   \left[ V \cepsad - \ell(\ell+1) \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right) + \alphaegv c_{egv} \nabad V \right] y_{2} + \mbox{} \\
    &
-   \alphagrv \left[ \ell(\ell+1) \crad \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right] y_{3} +
-   \left[ \cepsS - \alphahfl \frac{\ell(\ell+1)\crad}{\nabla V} + \ii \alphathm \omegac \cthk \right] y_{5} -
+   \alphagrv \left[ \ell(\ell+1) \crad \frac{3 + \dcrad}{c_{1}\omegac^{2}} \right] y_{3} + \mbox{} \\
+   &
+   \left[ \cepsS - \alphahfl \frac{\ell(\ell+1)\crad}{\nabla V} + \ii \alphathm \omegac \cthk + \alphaegv c_{egv} \right] y_{5} -
    \left[ 1 + \ell \right] y_{6}.
    \end{align}
 
@@ -247,6 +248,7 @@ dimensionless oscillation equations are defined as follows:
    \dcthn = \deriv{\ln \cthn}{\ln r} \\
    %
    \cthk = x^{-3} \frac{4\pi r^{3} \cP T \rho}{L} \sqrt{\frac{GM}{R^{3}}}
+   \cegv = x^{-3} \frac{4\pi r^{3} \rho \epsgrav}{L}
    \end{gather}
 
 .. _osc-physics-switches:
@@ -305,3 +307,7 @@ corresponding namelist parameters.
        equation (see :ads_citealp:`unno:1966`). Set to 1 to include this
        term (Unno calls this the Eddington approximation), and to 0 to
        ignore the term
+   * - :math:`\alphaegv`
+     - :nml_n:`alpha_egv`
+     - Scaling factor for the gravitational heating rate terms.
+       Set to 1 to include these terms (default), and to 0 to suppress it.
