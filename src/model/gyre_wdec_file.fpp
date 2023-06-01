@@ -67,7 +67,7 @@ contains
     real(WP), allocatable       :: T(:) 
     real(WP), allocatable       :: Gamma_1(:)
     real(WP), allocatable       :: nabla_ad(:)
-    real(WP), allocatable       :: delta(:)
+    real(WP), allocatable       :: ups_T(:)
     real(WP), allocatable       :: nabla(:)
     real(WP), allocatable       :: B(:)
     real(WP), allocatable       :: kap(:)
@@ -140,7 +140,7 @@ contains
 
     Gamma_1 = point_data(9,:)/(1._WP - point_data(10,:)*point_data(16,:))
     nabla_ad = point_data(16,:)
-    delta = point_data(10,:)/point_data(9,:)
+    ups_T = point_data(10,:)/point_data(9,:)
 
     nabla = point_data(15,:)
     B = point_data(19,:)
@@ -178,11 +178,11 @@ contains
        c_lum = 4._WP*PI*rho(1)*eps(1)*R_star**3/L_star
     end where
 
-    As = V_2*x**2*delta*(nabla_ad - nabla + B)
+    As = V_2*x**2*ups_T*(nabla_ad - nabla + B)
 
     beta_rad = A_RADIATION*T**4/(3._WP*P)
 
-    c_P = P*delta/(rho*T*nabla_ad)
+    c_P = P*ups_T/(rho*T*nabla_ad)
 
     c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
     c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
@@ -203,7 +203,7 @@ contains
     call em%define(I_C_1, c_1)
 
     call em%define(I_GAMMA_1, Gamma_1)
-    call em%define(I_DELTA, delta)
+    call em%define(I_UPS_T, ups_T)
     call em%define(I_NABLA_AD, nabla_ad)
     call em%define(I_NABLA, nabla)
     call em%define(I_BETA_RAD, beta_rad)

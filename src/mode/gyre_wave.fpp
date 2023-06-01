@@ -922,7 +922,7 @@ contains
     complex(WP) :: lag_P
     complex(WP) :: lag_S
     real(WP)    :: Gamma_1
-    real(WP)    :: delta
+    real(WP)    :: ups_T
 
     ! Evaluate the Lagrangian density perturbation, in units of
     ! rho. This expression implements eqn. (13.83) of [Unno:1989]
@@ -938,9 +938,9 @@ contains
 
       if (lag_S /= 0._WP) then
 
-         delta = ml%coeff(I_DELTA, pt)
+         ups_T = ml%coeff(I_UPS_T, pt)
 
-         lag_rho = lag_P/Gamma_1 - delta*lag_S
+         lag_rho = lag_P/Gamma_1 - ups_T*lag_S
 
       else
 

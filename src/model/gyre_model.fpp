@@ -36,7 +36,7 @@ module gyre_model
   integer, parameter :: I_U = 3
   integer, parameter :: I_C_1 = 4
   integer, parameter :: I_GAMMA_1 = 5
-  integer, parameter :: I_DELTA = 6
+  integer, parameter :: I_UPS_T = 6
   integer, parameter :: I_NABLA_AD = 7
   integer, parameter :: I_NABLA = 8
   integer, parameter :: I_BETA_RAD = 9
@@ -144,7 +144,7 @@ module gyre_model
   public :: I_U
   public :: I_C_1
   public :: I_GAMMA_1
-  public :: I_DELTA
+  public :: I_UPS_T
   public :: I_NABLA_AD
   public :: I_NABLA
   public :: I_BETA_RAD

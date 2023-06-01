@@ -249,7 +249,7 @@ contains
        coeff = this%coeff_c_1_(pt)
     case (I_GAMMA_1)
        coeff = this%Gamma_1
-    case (I_DELTA)
+    case (I_UPS_T)
        coeff = 1._WP
     case (I_NABLA_AD)
        coeff = 0.4_WP
@@ -411,7 +411,7 @@ contains
        dcoeff = this%dcoeff_c_1_(pt)
     case (I_GAMMA_1)
        dcoeff = 0._WP
-    case (I_DELTA)
+    case (I_UPS_T)
        dcoeff = 0._WP
     case (I_NABLA_AD)
        dcoeff = 0._WP
@@ -577,7 +577,7 @@ contains
     ! Return the definition status of the i'th coefficient
 
     select case (i)
-    case (I_V_2, I_AS, I_U, I_C_1, I_GAMMA_1, I_DELTA, I_NABLA_AD, I_OMEGA_ROT)
+    case (I_V_2, I_AS, I_U, I_C_1, I_GAMMA_1, I_UPS_T, I_NABLA_AD, I_OMEGA_ROT)
        is_defined = .TRUE.
     case default
        is_defined = .FALSE.
