@@ -51,7 +51,7 @@ module gyre_nad_eqns
   integer, parameter :: J_U = 3
   integer, parameter :: J_C_1 = 4
   integer, parameter :: J_GAMMA_1 = 5
-  integer, parameter :: J_DELTA = 6
+  integer, parameter :: J_UPS_T = 6
   integer, parameter :: J_NABLA_AD = 7
   integer, parameter :: J_DNABLA_AD = 8
   integer, parameter :: J_NABLA = 9
@@ -185,7 +185,7 @@ contains
     ml => this%cx%model()
 
     call check_model(ml, [ &
-         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_DELTA, &
+         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_UPS_T, &
          I_C_LUM,I_C_RAD,I_C_THN,I_C_THK,I_C_EPS,I_C_EGV, &
          I_KAP_RHO,I_KAP_T])
 
@@ -206,7 +206,7 @@ contains
        this%coeff(i,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt(i))
        this%coeff(i,J_DNABLA_AD) = ml%dcoeff(I_NABLA_AD, pt(i))
        this%coeff(i,J_NABLA) = ml%coeff(I_NABLA, pt(i))
-       this%coeff(i,J_DELTA) = ml%coeff(I_DELTA, pt(i))
+       this%coeff(i,J_UPS_T) = ml%coeff(I_UPS_T, pt(i))
        this%coeff(i,J_C_LUM) = ml%coeff(I_C_LUM, pt(i))
        this%coeff(i,J_DC_LUM) = ml%dcoeff(I_C_LUM, pt(i))
        this%coeff(i,J_C_RAD) = ml%coeff(I_C_RAD, pt(i))
@@ -291,7 +291,7 @@ contains
          nabla_ad => this%coeff(i,J_NABLA_AD), &
          dnabla_ad => this%coeff(i,J_DNABLA_AD), &
          nabla => this%coeff(i,J_NABLA), &
-         delta => this%coeff(i,J_DELTA), &
+         ups_T => this%coeff(i,J_UPS_T), &
          c_lum => this%coeff(i,J_C_LUM), &
          dc_lum => this%coeff(i,J_DC_LUM), &
          c_rad => this%coeff(i,J_C_RAD), &
@@ -343,10 +343,10 @@ contains
       eps_T = this%cx%eps_T(st, pt)
 
       c_eps_ad = c_eps*(nabla_ad*eps_T + eps_rho/Gamma_1)
-      c_eps_S = c_eps*(eps_T - delta*eps_rho)
+      c_eps_S = c_eps*(eps_T - ups_T*eps_rho)
 
       c_kap_ad = nabla_ad*alpha_kat*kap_T + alpha_kar*kap_rho/Gamma_1
-      c_kap_S = alpha_kat*kap_T - delta*alpha_kar*kap_rho
+      c_kap_S = alpha_kat*kap_T - ups_T*alpha_kar*kap_rho
       
       c_dif = -4._WP*nabla_ad*V*nabla + nabla_ad*(dnabla_ad + V)
 
@@ -356,14 +356,14 @@ contains
       xA(1,2) = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1*alpha_gam
       xA(1,3) = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
       xA(1,4) = alpha_grv*(0._WP)
-      xA(1,5) = delta
+      xA(1,5) = ups_T
       xA(1,6) = 0._WP
 
       xA(2,1) = c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._WP, As > 0._WP)
       xA(2,2) = As - U + 3._WP - l_i
       xA(2,3) = alpha_grv*(0._WP)
       xA(2,4) = alpha_grv*(-1._WP)
-      xA(2,5) = delta
+      xA(2,5) = ups_T
       xA(2,6) = 0._WP
 
       xA(3,1) = alpha_grv*(0._WP)
@@ -377,7 +377,7 @@ contains
       xA(4,2) = alpha_grv*(U*V/Gamma_1)
       xA(4,3) = alpha_grv*(lambda)
       xA(4,4) = alpha_grv*(-U - l_i + 2._WP)
-      xA(4,5) = alpha_grv*(-U*delta)
+      xA(4,5) = alpha_grv*(-U*ups_T)
       xA(4,6) = alpha_grv*(0._WP)
 
       xA(5,1) = V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_kap_ad*V*nabla + c_dif)/f_rh

@@ -60,9 +60,9 @@ module gyre_nad_bound
   integer, parameter :: J_GAMMA_1 = 5
   integer, parameter :: J_NABLA_AD = 6
   integer, parameter :: J_C_THN = 7
-  integer, parameter :: J_DELTA = 8
+  integer, parameter :: J_UPS_T = 8
 
-  integer, parameter :: J_LAST = J_DELTA
+  integer, parameter :: J_LAST = J_UPS_T
 
   ! Derived-type definitions
 

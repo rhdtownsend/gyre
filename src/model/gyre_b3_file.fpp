@@ -79,7 +79,7 @@ contains
     real(WP), allocatable       :: eps_T(:)
     real(WP), allocatable       :: Gamma_1(:)
     real(WP), allocatable       :: nabla_ad(:)
-    real(WP), allocatable       :: delta(:)
+    real(WP), allocatable       :: ups_T(:)
     real(WP), allocatable       :: x(:)
     real(WP), allocatable       :: V_2(:)
     real(WP), allocatable       :: As(:)
@@ -156,8 +156,8 @@ contains
     eps = eps*1.E4_WP
     
     Gamma_1 = chi_rho*c_p/c_V
-    delta = chi_T/chi_rho
-    nabla_ad = p*delta/(rho*T*c_p)
+    ups_T = chi_T/chi_rho
+    nabla_ad = p*ups_T/(rho*T*c_p)
 
     ! Snap grid points
 
@@ -208,7 +208,7 @@ contains
     call em%define(I_C_1, c_1)
 
     call em%define(I_GAMMA_1, Gamma_1)
-    call em%define(I_DELTA, delta)
+    call em%define(I_UPS_T, ups_T)
     call em%define(I_NABLA_AD, nabla_ad)
     call em%define(I_NABLA, nabla)
     call em%define(I_BETA_RAD, beta_rad)

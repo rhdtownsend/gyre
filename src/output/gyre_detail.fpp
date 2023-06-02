@@ -482,7 +482,7 @@ contains
     $WRITE_POINTS(nabla,ml%coeff(I_NABLA, gr%pt(j)))
     $WRITE_POINTS(nabla_ad,ml%coeff(I_NABLA_AD, gr%pt(j)))
     $WRITE_POINTS(dnabla_ad,ml%dcoeff(I_NABLA_AD, gr%pt(j)))
-    $WRITE_POINTS(delta,ml%coeff(I_DELTA, gr%pt(j)))
+    $WRITE_POINTS(upsilon_T,ml%coeff(I_UPS_T, gr%pt(j)))
     $WRITE_POINTS(c_lum,ml%coeff(I_C_LUM, gr%pt(j)))
     $WRITE_POINTS(c_rad,ml%coeff(I_C_RAD, gr%pt(j)))
     $WRITE_POINTS(c_thn,ml%coeff(I_C_THN, gr%pt(j)))

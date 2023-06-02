@@ -42,13 +42,13 @@ The dimensionless oscillation equations are
    \left( \frac{V}{\Gammi} - 1 - \ell \right) y_{1} +
    \left( \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} - \alphagam \frac{V}{\Gammi} \right) y_{2} +
    \alphagrv \frac{\ell(\ell+1)}{c_{1} \omegac^{2}} y_{3} +
-   \delta \, y_{5}, \\
+   \upsT \, y_{5}, \\
    %
    x \deriv{y_{2}}{x} &=
    \left( c_{1} \omegac^{2} - \fpigam \As \right) y_{1} +
    \left( 3 - U + \As - \ell \right) y_{2} -
    \alphagrv y_{4} +
-   \delta \, y_{5}, \\
+   \upsT \, y_{5}, \\
    %
    x \deriv{y_{3}}{x} &= 
    \alphagrv \left( 3 - U - \ell \right) y_{3} +
@@ -59,7 +59,7 @@ The dimensionless oscillation equations are
    \alphagrv \frac{V}{\Gammi} U y_{2} +
    \alphagrv \ell(\ell+1) y_{3} -
    \alphagrv (U + \ell - 2) y_{4}
-   - \alphagrv \delta \, U y_{5}, \\
+   - \alphagrv \upsT \, U y_{5}, \\
    %
    x \deriv{y_{5}}{x} &= 
    \frac{V}{\frht} \left[ \nabad (U - c_{1}\omegac^{2}) - 4 (\nabad - \nabla) + \ckapad V \nabla + \cdif \right] y_{1} + \mbox{} \\

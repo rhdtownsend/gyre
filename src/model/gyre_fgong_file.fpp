@@ -71,7 +71,7 @@ contains
     real(WP), allocatable       :: T(:) 
     real(WP), allocatable       :: Gamma_1(:)
     real(WP), allocatable       :: nabla_ad(:)
-    real(WP), allocatable       :: delta(:)
+    real(WP), allocatable       :: ups_T(:)
     real(WP), allocatable       :: beta_rad(:)
     real(WP), allocatable       :: V_2(:)
     real(WP), allocatable       :: As(:)
@@ -154,7 +154,7 @@ contains
 
     Gamma_1 = var(10,:)
     nabla_ad = var(11,:)
-    delta = var(12,:)
+    ups_T = var(12,:)
 
     As = var(15,:)
 
@@ -194,7 +194,7 @@ contains
     call em%define(I_C_1, c_1)
 
     call em%define(I_GAMMA_1, Gamma_1)
-    call em%define(I_DELTA, delta)
+    call em%define(I_UPS_T, ups_T)
     call em%define(I_NABLA_AD, nabla_ad)
 
     call em%define(I_BETA_RAD, beta_rad)

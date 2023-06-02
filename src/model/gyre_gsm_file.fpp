@@ -66,7 +66,7 @@ contains
     real(WP), allocatable       :: N2(:)
     real(WP), allocatable       :: Gamma_1(:)
     real(WP), allocatable       :: nabla_ad(:)
-    real(WP), allocatable       :: delta(:)
+    real(WP), allocatable       :: ups_T(:)
     real(WP), allocatable       :: nabla(:)
     real(WP), allocatable       :: kap(:)
     real(WP), allocatable       :: kap_rho(:)
@@ -97,7 +97,7 @@ contains
     ! Read data from the GSM-format file
 
     call read_gsm_data(ml_p%file, M_star, R_star, L_star, r, M_r, L_r, P, rho, T, &
-                       N2, Gamma_1, nabla_ad, delta, nabla,  &
+                       N2, Gamma_1, nabla_ad, ups_T, nabla,  &
                        kap, kap_rho, kap_T, eps, eps_eps_rho, eps_eps_T, eps_grav, &
                        Omega_rot)
 
@@ -133,7 +133,7 @@ contains
 
     beta_rad = A_RADIATION*T**4/(3._WP*P)
 
-    c_P = P*delta/(rho*T*nabla_ad)
+    c_P = P*ups_T/(rho*T*nabla_ad)
 
     c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
     c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
@@ -164,7 +164,7 @@ contains
     call em%define(I_C_1, c_1)
 
     call em%define(I_GAMMA_1, Gamma_1)
-    call em%define(I_DELTA, delta)
+    call em%define(I_UPS_T, ups_T)
     call em%define(I_NABLA_AD, nabla_ad)
     call em%define(I_NABLA, nabla)
     call em%define(I_BETA_RAD, beta_rad)
@@ -203,7 +203,7 @@ contains
   !****
 
   subroutine read_gsm_data (file, M_star, R_star, L_star, r, M_r, L_r, P, rho, T, &
-                            N2, Gamma_1, nabla_ad, delta, nabla,  &
+                            N2, Gamma_1, nabla_ad, ups_T, nabla,  &
                             kap, kap_rho, kap_T, eps, eps_eps_rho, eps_eps_T, eps_grav, &
                             Omega_rot)
 
@@ -220,7 +220,7 @@ contains
     real(WP), allocatable, intent(out) :: N2(:)
     real(WP), allocatable, intent(out) :: Gamma_1(:)
     real(WP), allocatable, intent(out) :: nabla_ad(:)
-    real(WP), allocatable, intent(out) :: delta(:)
+    real(WP), allocatable, intent(out) :: ups_T(:)
     real(WP), allocatable, intent(out) :: nabla(:)
     real(WP), allocatable, intent(out) :: kap(:)
     real(WP), allocatable, intent(out) :: kap_rho(:)
@@ -303,7 +303,7 @@ contains
       call read_dset_alloc(hg, 'N2', N2)
       call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
       call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
-      call read_dset_alloc(hg, 'delta', delta)
+      call read_dset_alloc(hg, 'delta', ups_T)
       call read_dset_alloc(hg, 'nabla', nabla)
       call read_dset_alloc(hg, 'kappa', kap)
       call read_dset_alloc(hg, 'kappa_rho', kap_rho)
@@ -339,7 +339,7 @@ contains
       call read_dset_alloc(hg, 'N2', N2)
       call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
       call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
-      call read_dset_alloc(hg, 'delta', delta)
+      call read_dset_alloc(hg, 'delta', ups_T)
       call read_dset_alloc(hg, 'nabla', nabla)
       call read_dset_alloc(hg, 'kap', kap)
       call read_dset_alloc(hg, 'kap_rho', kap_kap_rho)
@@ -376,7 +376,7 @@ contains
       call read_dset_alloc(hg, 'N2', N2)
       call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
       call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
-      call read_dset_alloc(hg, 'delta', delta)
+      call read_dset_alloc(hg, 'delta', ups_T)
       call read_dset_alloc(hg, 'nabla', nabla)
       call read_dset_alloc(hg, 'kap', kap)
       call read_dset_alloc(hg, 'kap_kap_rho', kap_kap_rho)
@@ -413,7 +413,7 @@ contains
       call read_dset_alloc(hg, 'N2', N2)
       call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
       call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
-      call read_dset_alloc(hg, 'delta', delta)
+      call read_dset_alloc(hg, 'delta', ups_T)
       call read_dset_alloc(hg, 'nabla', nabla)
       call read_dset_alloc(hg, 'kap', kap)
       call read_dset_alloc(hg, 'kap_kap_rho', kap_kap_rho)
