@@ -46,7 +46,7 @@ extensions = [
     'sphinx-prompt',
     'sphinx_substitution_extensions',
     'ads_cite',
-    'nml_roles',
+    'nml_roles'
 ]
 
 
