@@ -2435,8 +2435,8 @@ contains
     real(WP) :: E_above
     real(WP) :: E_below
 
-    ! Calculate the ratio of the inertias above and below the
-    ! reference point
+    ! Calculate the ratio of the inertia above the reference point, to
+    ! the combined (above/below) inertia
 
     !$OMP PARALLEL DO
     do j = 1, this%n
