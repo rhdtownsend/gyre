@@ -337,8 +337,7 @@ Energetics & Transport
    * - :nml_v:`E_ratio`
      -
      - real
-     - ratio of mode inertias inertia inside/outside reference
-       location
+     - ratio of mode inertias inside/outside reference location
    * - :nml_v:`H`
      - :math:`H`
      - real
