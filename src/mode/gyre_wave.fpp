@@ -105,7 +105,6 @@ module gyre_wave
      procedure, public :: dQ_dx
      procedure, public :: dzeta_dx
      procedure         :: dzeta_dx_pesnell_
-     procedure         :: dzeta_dx_unno_
      procedure         :: dzeta_dx_kawaler_
      procedure         :: dzeta_dx_kawaler_grav_
      procedure         :: dzeta_dx_dupret_
@@ -1244,12 +1243,10 @@ contains
     select case (this%os_p%zeta_scheme)
     case ('PESNELL')
        dzeta_dx = this%dzeta_dx_pesnell_(j)
-    case ('UNNO')
-       dzeta_dx = this%dzeta_dx_unno_(j)
-    case ('KAWALER_GRAV')
-       dzeta_dx = this%dzeta_dx_kawaler_grav_(j)
     case ('KAWALER')
        dzeta_dx = this%dzeta_dx_kawaler_(j)
+    case ('KAWALER_GRAV')
+       dzeta_dx = this%dzeta_dx_kawaler_grav_(j)
     case ('DUPRET')
        dzeta_dx = this%dzeta_dx_dupret_(j)
     case default
@@ -1321,63 +1318,6 @@ contains
 
   !****
 
-  function dzeta_dx_unno_ (this, j) result (dzeta_dx)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(WP)               :: dzeta_dx
-
-    complex(WP) :: xi_r
-    complex(WP) :: eul_P
-    complex(WP) :: eul_Phi
-    complex(WP) :: deul_Phi
-    complex(WP) :: lambda
-    real(WP)    :: V_2
-    real(WP)    :: U
-    real(WP)    :: As
-    real(WP)    :: c_1
-    real(WP)    :: Gamma_1
-    real(WP)    :: x4_V
-
-    ! Calculate the dimensionless frequency weight function.  This is
-    ! based on the integrand in the right-hand side of equation
-    ! (14.19) of [Unno:1989]; note that that equation was derived for
-    ! adiabatic pulsation, and the simple extension to non-adiabatic
-    ! pulsation implemented here may not be quite correct
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      xi_r = this%xi_r(j)
-      eul_P = this%eul_P(j)
-      eul_Phi = this%eul_Phi(j)
-      deul_Phi = this%deul_Phi(j)
-
-      V_2 = ml%coeff(I_V_2, pt)
-      As = ml%coeff(I_AS, pt)
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
-
-      lambda = this%lambda(j)
-
-      x4_V = pt%x**2/V_2
-
-      dzeta_dx = ABS(eul_P)**2*(U*x4_V/(Gamma_1*c_1**2)) + &
-                 ABS(xi_r)**2*(pt%x**2*U*As/c_1**2) - &
-                 (ABS(deul_Phi)**2*pt%x**2 + lambda*ABS(eul_Phi)**2)
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dzeta_dx_unno_
-
-  !****
-
   function dzeta_dx_kawaler_ (this, j) result (dzeta_dx)
 
     class(wave_t), intent(in) :: this
@@ -1388,19 +1328,21 @@ contains
     complex(WP) :: eul_P
     complex(WP) :: eul_Phi
     complex(WP) :: deul_Phi
-    complex(WP) :: lambda
     real(WP)    :: V_2
     real(WP)    :: U
     real(WP)    :: As
     real(WP)    :: c_1
     real(WP)    :: Gamma_1
+    real(WP)    :: Omega_rot
+    complex(WP) :: l_e
     real(WP)    :: x4_V
 
     ! Calculate the dimensionless frequency weight function.  This is
-    ! based on the derivative of equation (7) of [Kawaler:1985] with
-    ! respect to x; note that that equation was derived for adiabatic
-    ! pulsation, and the simple extension to non-adiabatic pulsation
-    ! implemented here may not be quite correct
+    ! based on the derivative of equation (7) of [Kawaler:1985] (as
+    ! corrected by [Townsend:2024]) with respect to x; note that that
+    ! equation was derived for adiabatic pulsation, and the simple
+    ! extension to non-adiabatic pulsation implemented here may not be
+    ! quite correct
 
     associate ( &
          ml => this%cx%model(), &
@@ -1417,13 +1359,15 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
       
-      lambda = this%lambda(j)
+      Omega_rot = this%cx%Omega_rot(pt)
+
+      l_e = this%cx%l_e(Omega_rot, this%st)
 
       x4_V = pt%x**2/V_2
 
-      dzeta_dx = CONJG(eul_P)*eul_P*(U*x4_V/(Gamma_1*c_1**2)) + &
-                 CONJG(xi_r)*xi_r*(pt%x**2*U*As/c_1**2) - &
-                 CONJG(pt%x*deul_Phi + lambda*eul_Phi)*(pt%x*deul_Phi + lambda*eul_Phi)
+      dzeta_dx = abs(eul_P)**2*(U*x4_V/(Gamma_1*c_1**2)) + &
+                 abs(xi_r)**2*(pt%x**2*U*As/c_1**2) - &
+                 abs(pt%x*deul_Phi + (l_e+1._WP)*eul_Phi)**2
            
     end associate
 
@@ -1445,7 +1389,6 @@ contains
     complex(WP) :: eul_P
     complex(WP) :: eul_Phi
     complex(WP) :: deul_Phi
-    complex(WP) :: lambda
     real(WP)    :: V_2
     real(WP)    :: U
     real(WP)    :: As
@@ -1455,10 +1398,11 @@ contains
 
     ! Calculate the gravitational part of the dimensionless frequency
     ! weight function.  This is based on the derivative of the N term
-    ! in equation (7) of [Kawaler:1985] with respect to x; note that
-    ! that equation was derived for adiabatic pulsation, and the
-    ! simple extension to non-adiabatic pulsation implemented here may
-    ! not be quite correct
+    ! in equation (7) of [Kawaler:1985] (as corrected by
+    ! [Townsend:2024]) with respect to x; note that that equation was
+    ! derived for adiabatic pulsation, and the simple extension to
+    ! non-adiabatic pulsation implemented here may not be quite
+    ! correct
 
     associate ( &
          ml => this%cx%model(), &
@@ -1475,11 +1419,9 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
       
-      lambda = this%lambda(j)
-
       x4_V = pt%x**2/V_2
 
-      dzeta_dx = CONJG(xi_r)*xi_r*(pt%x**2*U*As/c_1**2)
+      dzeta_dx = abs(xi_r)**2*(pt%x**2*U*As/c_1**2)
            
     end associate
 
@@ -1587,6 +1529,8 @@ contains
     real(WP)    :: As
     real(WP)    :: c_1
     real(WP)    :: Gamma_1
+    real(WP)    :: Omega_rot
+    complex(WP) :: l_e
 
     ! Calculate the dimensionless frequency weight function.  This is
     ! based on the derivative of equation (7) of [Kawaler:1985] with
@@ -1609,12 +1553,14 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
       
-      lambda = this%lambda(j)
+      Omega_rot = this%cx%Omega_rot(pt)
+
+      l_e = this%cx%l_e(Omega_rot, this%st)
 
       if (pt%x /= 0) then
-         dzeta_dm = CONJG(eul_P)*eul_P/(V_2*Gamma_1*c_1) + &
-                    CONJG(xi_r)*xi_r*(As/c_1) - &
-                    CONJG(pt%x*deul_Phi + lambda*eul_Phi)*(pt%x*deul_Phi + lambda*eul_Phi)*(c_1/(U*pt%x**2))
+         dzeta_dm = abs(eul_P)**2/(V_2*Gamma_1*c_1) + &
+                    abs(xi_r)**2*(As/c_1) - &
+                    abs(pt%x*deul_Phi + (l_e+1._WP)*eul_Phi)**2*(c_1/(U*pt%x**2))
       else
          dzeta_dm = 0._WP
       endif
@@ -2645,7 +2591,7 @@ contains
     ! Add on corrections associated with discontinuities
 
     select case (this%os_p%zeta_scheme)
-    case ('UNNO','KAWALER_GRAV','KAWALER','DUPRET')
+    case ('KAWALER','KAWALER_GRAV','DUPRET')
 
        ! Discontinuties at double points
 
@@ -2693,20 +2639,6 @@ contains
             zeta = zeta - CONJG(xi_r)*xi_r*pt%x**3*(U_r - U_l)/c_1**2
 
           end associate
-
-          ! Add the term from equation (14.19) of [Unno:1989]
-
-          if (this%os_p%zeta_scheme == 'UNNO') then
-
-             associate(pt => this%gr%pt_o())
-
-               eul_Phi = this%eul_Phi(this%n)
-
-               zeta = zeta - (this%l+1)*pt%x*ABS(eul_Phi)**2
-
-             end associate
-
-          end if
 
        end if
 

@@ -52,7 +52,7 @@ module gyre_osc_par
      character(64)           :: inertia_norm = 'BOTH'
      character(64)           :: time_factor = 'OSC'
      character(64)           :: conv_scheme = 'FROZEN_PESNELL_1'
-     character(64)           :: zeta_scheme = 'UNNO'
+     character(64)           :: zeta_scheme = 'KAWALER'
      character(64)           :: deps_source = 'MODEL'
      character(FILENAME_LEN) :: deps_file = ''
      character(256)          :: deps_file_format = ''
