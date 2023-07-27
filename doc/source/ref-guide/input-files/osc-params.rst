@@ -104,7 +104,7 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
   - :nml_v:`'FROZEN_PESNELL_4'` : Freeze Lagrangian perturbation of convective luminosity;
     case 4 described by :ads_citet:`pesnell:1990`
 
-:nml_n:`zeta_scheme` (default :nml_v:`'UNNO'`)
+:nml_n:`zeta_scheme` (default :nml_v:`'KAWALER'`)
   Scheme for evaluating dimensionless frequency weight function
   :math:`\sderiv{\zeta}{x}` and integral eigenfrequency
   :math:`\omega_{\rm int}`; one of:
