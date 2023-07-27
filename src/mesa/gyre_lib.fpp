@@ -85,8 +85,17 @@ module gyre_lib
 
   public :: mode_t
   public :: grid_t
+  public :: model_par_t
+  public :: mode_par_t
+  public :: osc_par_t
+  public :: rot_par_t
+  public :: num_par_t
+  public :: grid_par_t
+  public :: scan_par_t
   public :: gyre_init
   public :: gyre_final
+  public :: gyre_get_par
+  public :: gyre_set_par
   public :: gyre_set_constant
   public :: gyre_read_model
   public :: gyre_set_model
@@ -152,6 +161,64 @@ contains
     return
 
   end subroutine gyre_final
+
+  !****
+
+  subroutine gyre_get_par (model_par, mode_par, osc_par, rot_par, &
+       num_par, grid_par, scan_par)
+
+     type(model_par_t), intent(out), optional             :: model_par
+     type(mode_par_t), allocatable, intent(out), optional :: mode_par(:)
+     type(osc_par_t), allocatable, intent(out), optional  :: osc_par(:)
+     type(rot_par_t), allocatable, intent(out), optional  :: rot_par(:)
+     type(num_par_t), allocatable, intent(out), optional  :: num_par(:)
+     type(grid_par_t), allocatable, intent(out), optional :: grid_par(:)
+     type(scan_par_t), allocatable, intent(out), optional :: scan_par(:)
+
+     ! Get parameter set(s)
+
+     if (PRESENT(model_par)) model_par = ml_p_m
+     if (PRESENT(mode_par)) mode_par = md_p_m
+     if (PRESENT(model_par)) osc_par = os_p_m
+     if (PRESENT(rot_par)) rot_par = rt_p_m
+     if (PRESENT(num_par)) num_par = nm_p_m
+     if (PRESENT(grid_par)) grid_par = gr_p_m
+     if (PRESENT(scan_par)) scan_par = sc_p_m
+
+     ! Finish
+
+     return
+
+  end subroutine gyre_get_par
+
+  !****
+
+  subroutine gyre_set_par (model_par, mode_par, osc_par, rot_par, &
+       num_par, grid_par, scan_par)
+
+     type(model_par_t), intent(in), optional :: model_par
+     type(mode_par_t), intent(in), optional  :: mode_par(:)
+     type(osc_par_t), intent(in), optional   :: osc_par(:)
+     type(rot_par_t), intent(in), optional   :: rot_par(:)
+     type(num_par_t), intent(in), optional   :: num_par(:)
+     type(grid_par_t), intent(in), optional  :: grid_par(:)
+     type(scan_par_t), intent(in), optional  :: scan_par(:)
+
+     ! Get parameter set(s)
+
+     if (PRESENT(model_par)) ml_p_m = model_par
+     if (PRESENT(mode_par)) md_p_m = mode_par
+     if (PRESENT(model_par)) os_p_m = osc_par
+     if (PRESENT(rot_par)) rt_p_m = rot_par
+     if (PRESENT(num_par)) nm_p_m = num_par
+     if (PRESENT(grid_par)) gr_p_m = grid_par
+     if (PRESENT(scan_par)) sc_p_m = scan_par
+
+     ! Finish
+
+     return
+
+  end subroutine gyre_set_par
 
   !****
 

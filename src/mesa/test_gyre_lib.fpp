@@ -1,7 +1,7 @@
 ! Program  : test_gyre_lib
 ! Purpose  : test gyre_lib for memory leaks and other issues
 !
-! Copyright 2013 Rich Townsend
+! Copyright 2013-2023 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -34,10 +34,11 @@ program test_gyre_lib
 
   ! Variables
 
-  real(WP) :: rpar(1)
-  integer  :: ipar(1)
-  integer  :: i
-  integer  :: rss
+  real(WP)                      :: rpar(1)
+  integer                       :: ipar(1)
+  integer                       :: i
+  type(scan_par_t), allocatable :: sc_p(:)
+  integer                       :: rss
   
   ! Initialize
 
@@ -51,12 +52,29 @@ program test_gyre_lib
 
   ! Repeatedy find modes
 
-  do i = 1,5000
+  do i = 1,10
+
+     ! Adjust the frequency range
+
+     call gyre_get_par(scan_par=sc_p)
+
+     sc_p(1)%freq_min = sc_p(1)%freq_min + 0.5_WP
+     sc_p(1)%freq_max = sc_p(1)%freq_max + 0.5_WP
+
+     call gyre_set_par(scan_par=sc_p)
+
+     ! Run
+     
      call gyre_get_modes(0, user_sub, ipar, rpar)
      call gyre_get_modes(1, user_sub, ipar, rpar)
      call gyre_get_modes(2, user_sub, ipar, rpar)
-     print *,'Iteration:',i
+
+     ! Get  print out memory usage
+     
      call EXECUTE_COMMAND_LINE('ps -o comm,rss | grep test_gyre_lib')
+
+     print *,'Iteration:',i
+
   end do
 
   ! Finish
@@ -74,7 +92,7 @@ contains
     
     ! Print out mode data
 
-    print *, md%n_pg, md%omega
+    print *, md%l, md%n_pg, md%omega
 
     ! Finish
 
