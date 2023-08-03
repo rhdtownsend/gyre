@@ -41,7 +41,7 @@ module gyre_osc_par
      real(WP)                :: alpha_pi = 1._WP
      real(WP)                :: alpha_kar = 1._WP
      real(WP)                :: alpha_kat = 1._WP
-     real(WP)                :: alpha_egv = 1._WP
+     real(WP)                :: alpha_egv = 0._WP
      real(WP)                :: alpha_rht = 0._WP
      real(WP)                :: alpha_trb = 0._WP
      character(64)           :: variables_set = 'GYRE'
