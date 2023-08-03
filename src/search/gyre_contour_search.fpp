@@ -44,7 +44,7 @@ module gyre_contour_search
 
   ! Module variables
 
-  integer, save :: j_m = 0
+  integer, save :: id_m = 0
 
   ! Access specifiers
 
@@ -76,15 +76,15 @@ contains
 
     complex(WP), allocatable :: omega_in_a(:)
     complex(WP), allocatable :: omega_in_b(:)
-    integer, allocatable     :: j_in(:)
+    integer, allocatable     :: id_in(:)
 
     ! Find contour intersections
 
-    call find_isects_(bp, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, j_in)
+    call find_isects_(bp, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, id_in)
 
     ! Search for modes
 
-    call prox_search(bp, omega_in_a, omega_in_b, j_in, omega_min, omega_max, nm_p, process_mode)
+    call prox_search(bp, omega_in_a, omega_in_b, id_in, omega_min, omega_max, nm_p, process_mode)
 
     ! Finish
 
@@ -94,7 +94,7 @@ contains
 
   !****
 
-  subroutine find_isects_ (bp, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, j_in)
+  subroutine find_isects_ (bp, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, id_in)
 
     class(c_bvp_t), intent(inout)         :: bp
     real(WP), intent(in)                  :: omega_re(:)
@@ -103,7 +103,7 @@ contains
     type(num_par_t), intent(in)           :: nm_p
     complex(WP), allocatable, intent(out) :: omega_in_a(:)
     complex(WP), allocatable, intent(out) :: omega_in_b(:)
-    integer, allocatable, intent(out)     :: j_in(:)
+    integer, allocatable, intent(out)     :: id_in(:)
 
     integer                           :: n_omega_re
     integer                           :: n_omega_im
@@ -196,13 +196,13 @@ contains
 
     allocate(omega_in_a(d_in))
     allocate(omega_in_b(d_in))
-    allocate(j_in(d_in))
+    allocate(id_in(d_in))
 
     cm = contour_map_t(omega_re, omega_im, discrim_map, process_isect_)
 
     omega_in_a = omega_in_a(:n_in)
     omega_in_b = omega_in_b(:n_in)
-    j_in = j_in(:n_in)
+    id_in = id_in(:n_in)
 
     ! Dump the map
 
@@ -231,15 +231,15 @@ contains
          d_in = 2*d_in
          call reallocate(omega_in_a, [d_in])
          call reallocate(omega_in_b, [d_in])
-         call reallocate(j_in, [d_in])
+         call reallocate(id_in, [d_in])
       endif
 
-       j_m = j_m + 1
+       id_m = id_m + 1
 
       omega_in_a(n_in) = omega_init_(omega_a_re, omega_b_re, 'im')
       omega_in_b(n_in) = omega_init_(omega_a_im, omega_b_im, 're')
 
-      j_in(n_in) = j_m
+      id_in(n_in) = id_m
     
       ! Finish
 

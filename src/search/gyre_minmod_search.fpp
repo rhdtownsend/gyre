@@ -42,7 +42,7 @@ module gyre_minmod_search
 
   ! Module variables
 
-  integer, save :: j_m = 0
+  integer, save :: id_m = 0
 
   ! Access specifiers
 
@@ -78,7 +78,7 @@ contains
     type(r_ext_t), allocatable :: discrim_c(:)
     integer                    :: n_in
     complex(WP), allocatable   :: omega_in(:)
-    integer, allocatable       :: j_in(:)
+    integer, allocatable       :: id_in(:)
     type(r_ext_t)              :: x_a
     type(r_ext_t)              :: x_b
     type(r_ext_t)              :: x_c
@@ -99,7 +99,7 @@ contains
     n_in = SIZE(omega_a)
 
     allocate(omega_in(n_in))
-    allocate(j_in(n_in))
+    allocate(id_in(n_in))
 
     in_loop : do i = 1, n_in
 
@@ -122,16 +122,16 @@ contains
           cycle in_loop
        endif
 
-       j_m = j_m + 1
+       id_m = id_m + 1
 
        omega_in(i) = real(x_minim)
-       j_in(i) = j_m
+       id_in(i) = id_m
 
     end do in_loop
 
     ! Search for modes
 
-    call prox_search(bp, omega_in, j_in, omega_min, omega_max, nm_p, process_mode)
+    call prox_search(bp, omega_in, id_in, omega_min, omega_max, nm_p, process_mode)
 
     ! Finish
 
