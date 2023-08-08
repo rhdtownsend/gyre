@@ -1339,7 +1339,7 @@ contains
 
     ! Calculate the dimensionless frequency weight function.  This is
     ! based on the derivative of equation (7) of [Kawaler:1985] (as
-    ! corrected by [Townsend:2024]) with respect to x; note that that
+    ! corrected by [Townsend:2023]) with respect to x; note that that
     ! equation was derived for adiabatic pulsation, and the simple
     ! extension to non-adiabatic pulsation implemented here may not be
     ! quite correct
@@ -1398,8 +1398,7 @@ contains
 
     ! Calculate the gravitational part of the dimensionless frequency
     ! weight function.  This is based on the derivative of the N term
-    ! in equation (7) of [Kawaler:1985] (as corrected by
-    ! [Townsend:2024]) with respect to x; note that that equation was
+    ! in equation (7) of [Kawaler:1985]; note that that equation was
     ! derived for adiabatic pulsation, and the simple extension to
     ! non-adiabatic pulsation implemented here may not be quite
     ! correct
