@@ -132,7 +132,7 @@ Classification & Validation
    * - :nml_v:`omega_int`
      - :math:`\omega_{\rm int}`
      - complex(:nml_v:`n_row`)
-     - dimensionless eigenfrequency; evaluated as `\omega_{\rm int} = \sqrt{\zeta/E}`
+     - dimensionless eigenfrequency; evaluated as :math:`\omega_{\rm int} = \sqrt{\zeta/E}`
    * - :nml_v:`zeta`
      - :math:`\zeta`
      - complex(:nml_v:`n_row`)

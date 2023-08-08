@@ -175,7 +175,7 @@ Classification & Validation
    * - :nml_v:`omega_int`
      - :math:`\omega_{\rm int}`
      - complex
-     - dimensionless eigenfrequency; evaluated as `\omega_{\rm int} = \sqrt{\zeta/E}`
+     - dimensionless eigenfrequency; evaluated as :math:`\omega_{\rm int} = \sqrt{\zeta/E}`
    * - :nml_v:`dzeta_dx`
      - :math:`\sderiv{\zeta}{x}`
      - complex(:nml_v:`n`)
