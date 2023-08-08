@@ -61,9 +61,9 @@ of the more-important aspects of the file above:
   :file:`spb.mesa`;
 * the two :nml_g:`mode` namelist groups tells :program:`gyre` to search first for dipole (:math:`\ell=1`) and then 
   quadrupole (:math:`\ell=2`) modes;
-* the :nml_g:`osc` namelist group tells :program:`gyre` to apply a
-  zero-pressure outer mechanical boundary condition in the oscillation
-  equations;
+* the :nml_g:`osc` namelist group tells :program:`gyre` to assume,
+  when setting up the outer boundary conditions in the oscillation
+  equations, that the density vanishes at the stellar surface;
 * the :nml_g:`scan` namelist group tells :program:`gyre` to scan a region of
   dimensionless angular frequency space typically occupied by gravity
   modes;

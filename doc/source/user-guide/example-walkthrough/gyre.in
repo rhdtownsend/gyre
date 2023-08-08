@@ -16,7 +16,7 @@
 /
 
 &osc
-  outer_bound = 'VACUUM' ! Use a zero-pressure outer mechanical boundary condition
+  outer_bound = 'VACUUM' ! Assume the density vanishes at the stellar surface
 /
 
 &rot

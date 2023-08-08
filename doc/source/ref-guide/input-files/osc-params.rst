@@ -44,7 +44,7 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
   - :nml_v:`'GYRE'` : GYRE formulation, as described in the :ref:`osc-dimless-form` section
   - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
   - :nml_v:`'JCD'` : Formulation following Jørgen Christensen-Dalsgaard (ADIPLS)
-  - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for gravitational components, :nml_v:`'DZIEM'` for mechanical components)
+  - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for :math:`y_{3,4}`, :nml_v:`'DZIEM'` for :math:`y_{1,2}`)
   - :nml_v:`'LAGP'` : Lagrangian pressure perturbation formulation
 
 :nml_n:`alpha_grv` (default :nml_v:`1.`)
