@@ -43,7 +43,7 @@ EXPERIMENTAL?=no
 
 # Check SDK version
 
-MINIMUM_VERSION = 20.3.2
+MINIMUM_VERSION = 23.7.2
 
 ifneq ($(MAKECMDGOALS),clean)
   ifneq ($(shell ./check_sdk_version $(MINIMUM_VERSION)),passed)
@@ -74,7 +74,7 @@ ifeq (${FPE},yes)
 endif
 
 ifeq (${DEBUG},yes)
-  FFLAGS:=${FFLAGS} -fcheck=all -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0 -ggdb
+  FFLAGS:=${FFLAGS} -Og -fcheck=all -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0 -ggdb
   FPX3FLAGS:=${FPX3FLAGS} -DLOG_LEVEL=DEBUG -DGFORTRAN_PR_69185 -DGFORTRAN_PR_49636
 else
   FFLAGS:=${FFLAGS} -O2
@@ -95,13 +95,6 @@ ifeq (${STATIC},yes)
   F77FLAGS:=${F77FLAGS} -static
 endif
 
-ifeq ($(CRMATH),yes)
-  export MESASDK_MATH_SLOT=crmath
-  LDFLAGS:=${LDFLAGS} `crmath_link` `crlibm_link`
-else
-  export MESASDK_MATH_SLOT=default
-endif
-
 ifeq ($(PORTABLE),yes)
   F9XFLAGS:=${F9XFLAGS} -ffp-contract=off
   F77FLAGS:=${F9XFLAGS} -ffp-contract=off
@@ -110,8 +103,19 @@ else
   F77FLAGS:=${F77FLAGS} -march=native
 endif
 
+ifeq ($(CRMATH),yes)
+  export MESASDK_MATH_SLOT=crmath
+  LDFLAGS:=${LDFLAGS} `crmath_link` `crlibm_link`
+else
+  export MESASDK_MATH_SLOT=default
+endif
+
 ifeq ($(HDF5),yes)
   LDFLAGS:=${LDFLAGS} `hdf5_link`
+endif
+
+ifeq ($(shell uname -s),Linux)
+  LDFLAGS:=${LDFLAGS} -Wl,--no-warn-execstack
 endif
 
 # Rules
