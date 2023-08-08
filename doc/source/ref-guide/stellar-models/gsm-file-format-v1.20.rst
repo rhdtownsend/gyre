@@ -128,7 +128,7 @@ Data items in the root HDF5 group of version-1.20 GSM-format files are as follow
      - real (:code:`n`)
      - gravothermal energy release rate [:math:`\erg\,\second^{-1}\,\gram^{-1}`]
    * - :code:`Omega_rot`
-     - :math:`\Omega_{\rm rot}`
+     - :math:`\Orot`
      - dataset
      - real (:code:`n`)
-     - rotation angular velocity [:math:`\radian\,\second^{-1}`]
+     - rotation angular frequency [:math:`\radian\,\second^{-1}`]

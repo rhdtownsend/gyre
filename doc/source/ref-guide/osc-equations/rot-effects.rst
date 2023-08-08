@@ -3,53 +3,83 @@
 Rotation Effects
 ================
 
-The oscillation equations and boundary conditions laid out in the
-:ref:`osc-dimless-form` section are formulated for a non-rotating
-star. Solving the corresponding equations for a rotating star is a
-challenging task, and a complete treatment lies beyond the scope of
-:program:`gyre`. However, :program:`gyre` does include two important
-modifications arising from rotation.
+The oscillation equations presented in the preceding sections are
+formulated for a non-rotating star. The corresponding equations for a
+rotating star are significantly more complicated, and a complete
+treatment of rotation lies beyond the scope of GYRE. However, GYRE can
+include two important effects arising from rotation.
 
 .. _osc-rot-doppler:
 
 Doppler Shift
 -------------
 
-The lowest-order effect of rotation appears in the Doppler shift that
-arises when transforming between the inertial reference frame and the
-local co-rotating reference frame. To incorporate this effect in the
-oscillation equations, all instances of the inertial-frame frequency
-:math:`\sigma` are replaced by the co-rotating frequency
+A lowest-order effect of rotation arises in the Doppler shift from
+transforming between the inertial reference frame and the local
+co-rotating reference frame. To incorporate this effect in the
+:ref:`separated equations <osc-sep-eqns>`, all instances of the
+inertial-frame frequency :math:`\sigma` are replaced by the
+co-rotating frequency
+
+.. math::
+   :label: e:sigmac
+
+   \sigmac \equiv \sigma - m \Orot,
+
+where :math:`m` is the azimuthal order of the mode and :math:`\Orot`
+is the rotation angular frequency. GYRE assumes shellular rotation
+(see, e.g., :ads_citealp:`meynet:1997`), and so the latter can in
+principle be a function of radial coordinate :math:`r`. The
+corresponding modifications to the :ref:`dimensionless formulation
+<osc-dimless-form>` involve replacing the dimensionless inertial-frame
+frequency :math:`\omega` with the dimensionless co-rotating frequency
 
 .. math::
 
-   \sigmac \equiv \sigma - m \Omega,
+   \omegac \equiv \omega - m \Orot \sqrt{\frac{R^{3}}{GM}}.
 
-where :math:`m` is the azimuthal order of the mode and :math:`\Omega`
-is the rotation angular frequency. Because GYRE assumes so-called
-shellular rotation (see, e.g., :ads_citealp:`meynet:1997`), both
-:math:`\Omega` and :math:`\sigmac` are functions of radial coordinate
-:math:`r`.
+.. _osc-rot-coriolis-p:
 
-.. _osc-rot-coriolis:
+Perturbative Coriolis Force Treatment
+-------------------------------------
 
-Coriolis Force
---------------
+Another lowest-order effect of rotation arises from the Coriolis
+force. For slow rotation, this effect can be determined through a
+perturbation expansion technique (see, e.g., section 19.2 of
+:ads_citealp:`unno:1989`). To first order in :math:`\Orot`, the
+frequency of a mode is shifted by the amount
 
-.. _osc-rot-tar:
+.. math::
 
-The Traditional Approximation of Rotation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   \Delta \sigma = m \int_{0}^{R} \Orot \, \deriv{\beta}{r} \diff{r},
 
-Higher-order effects of rotation arise through the Coriolis force,
-which appears in the linearized momentum equation to correct for the
-non-inertial nature of the co-rotating reference
-frame. :program:`gyre` incorporates an approximate treatment of the
-Coriolis force based on the `traditional approximation of rotation`
-(TAR), which was first introduced by Eckart (1960; `Hydrodynamics of
-Oceans and Atmospheres`) and has since then been used extensively
-within the pulsation community (see, e.g.,
-:ads_citealp:`bildsten:1996`; :ads_citealp:`lee:1997`;
+where the rotation splitting kernel is
+
+.. math::
+
+   \deriv{\beta}{r} =
+   \frac{\left\{ \txir^{2} + [\ell(\ell+1) - 1] \txih^{2} - 2 \txir \txih \right\} \rho r^{2}}
+   {\int_{0}^{R} \left\{ \txir^{2} + \ell(\ell+1) \txih^{2} \right\} \rho r^{2} \diff{r}}
+
+In this latter expression, the eigenfunctions :math:`\txir` and
+:math:`\txih` are evaluated from solutions to the oscillation
+equations without rotation. Therefore, the expression above for
+:math:`\Delta \sigma` can be applied as a post-calculation correction
+to non-rotating eigenfrequencies.
+
+.. _osc-rot-coriolis-np:
+
+Non-Perturbative Coriolis Force Treatment
+-----------------------------------------
+
+The perturbation expansion technique above breaks down when
+:math:`\Orot/\sigmac \gtrsim 1`. To deal with such cases, the
+:program:`gyre` frontend [#gyre-tides]_ can incorporate a
+non-perturbative treatment of the Coriolis force based on the
+'traditional approximation of rotation' (TAR). The TAR was first
+introduced by Eckart (1960; `Hydrodynamics of Oceans and Atmospheres`)
+and has since been used extensively within the pulsation community
+(see, e.g., :ads_citealp:`bildsten:1996`; :ads_citealp:`lee:1997`;
 :ads_citealp:`townsend:2003a`; :ads_citealp:`bouabid:2013`;
 :ads_citealp:`townsend:2020`).
 
@@ -66,24 +96,25 @@ eqn. (:eq:`e:osc-sol-forms`) are replaced by
    f'(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \tf'(r) \, \houghr(\theta) \, \exp(\ii m \phi -\ii \sigma t) \right]
    \end{aligned}
 
-(cf. equations 1-3 of :ads_citealp:`townsend:2020`). Here, the Hough
-functions :math:`\houghr`, :math:`\hought` and :math:`\houghp` are the
-eigenfunctions obtained by solving Laplace's tidal equations (TEs), a
-second-order system of differential equations and boundary conditions
-in the polar (:math:`\theta`) coordinate. Together with the associated
-eigenvalue :math:`\lambda`, they depend on the harmonic degree
-:math:`\ell`\ [#harmonic-deg]_ and azimuthal order :math:`m`, and the
-spin parameter
+Here, the Hough functions :math:`\houghr`, :math:`\hought` and
+:math:`\houghp` are the eigenfunctions obtained by solving Laplace's
+tidal equations (TEs), a second-order system of differential equations
+and boundary conditions in the polar (:math:`\theta`) coordinate (see
+:ads_citealt:`townsend:2020`). Together with the associated eigenvalue
+:math:`\lambda`, they depend on the harmonic degree :math:`\ell`\
+[#harmonic-deg]_ and azimuthal order :math:`m`, and the spin parameter
 
 .. math::
 
-   q \equiv \frac{2 \Omega}{\sigmac}.
+   q \equiv \frac{2 \Orot}{\sigmac}.
+
+.. _osc-rot-solfam:
 
 Solution Families
-~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^
 
 Solutions to the TEs can be grouped into two families based on the
-behavior of the eigenfunctions and eigenvalue in the limit :math:`\Omega
+behavior of the eigenfunctions and eigenvalue in the limit :math:`\Orot
 \rightarrow 0`. For the gravito-acoustic family,
 
 .. math::
@@ -97,7 +128,7 @@ behavior of the eigenfunctions and eigenvalue in the limit :math:`\Omega
    \end{aligned}
    \right\}
    \quad
-   \text{as } \Omega \rightarrow 0.
+   \text{as } \Orot \rightarrow 0.
 
 and :math:`\lambda \rightarrow \ell(\ell+1)`. With these expressions,
 the solution forms (:eq:`e:osc-sol-forms-hough`) reduce to those given
@@ -116,7 +147,7 @@ Conversely, for the Rossby family
    \end{aligned}
    \right\}
    \quad
-   \text{as } \Omega \rightarrow 0.
+   \text{as } \Orot \rightarrow 0.
 
 and :math:`\lambda \rightarrow 0`. Moreover, Rossby-mode
 eigenfrequencies also show the limiting behavior
@@ -124,34 +155,41 @@ eigenfrequencies also show the limiting behavior
 .. math::
    :label: e:ross-freq
 
-   \sigmac = \frac{2 m \Omega}{\ell(\ell+1)}
+   \sigmac = \frac{2 m \Orot}{\ell(\ell+1)}
    \quad
-   \text{as } \Omega \rightarrow 0,
+   \text{as } \Orot \rightarrow 0,
 
 which is independent of the stellar structure.
 
-Incorporating the TAR
-~~~~~~~~~~~~~~~~~~~~~
+Implementing the TAR
+^^^^^^^^^^^^^^^^^^^^
 
-To incorporate the TAR in the oscillation equations, all instances of
-the term :math:`\ell(\ell+1)` are replaced by the TE eigenvalue
-:math:`\lambda`. Then, all instances of the harmonic degree
-:math:`\ell` are replaced by :math:`\elli`, an effective harmonic
+To implement the TAR in the :ref:`separated equations
+<osc-sep-eqns>` and :ref:`boundary conditions <osc-bound-conds>`,
+all instances of the term :math:`\ell(\ell+1)` are replaced by the TE
+eigenvalue :math:`\lambda`. Then, all instances of the harmonic degree
+:math:`\ell` are replaced by :math:`\elle`, an effective harmonic
 degree found by solving
 
 .. math::
 
-   \elli(\elli+1) = \lambda
+   \elle(\elle+1) = \lambda.
 
-`at the inner boundary` (remember, because :math:`\sigmac` is a
-function of radial coordinate, so too are :math:`q` and
-:math:`\lambda`).
+Similar steps are taken in the :ref:`dimensionless formulation
+<osc-dimless-form>`, but in the definitions of the dependent variables
+:math:`\{y_{1},y_{2},\ldots,y_{6}\}`, :math:`\ell` is replaced by
+:math:`\elli`, the effective harmonic degree evaluated at the inner
+boundary.
 
 .. rubric:: Footnotes
+
+.. [#gyre-tides] Currently the TAR cannot be used with the
+		 :program:`gyre_tides` frontend, because it doesn't play well with
+		 forcing by the tidal potential :math:`\PhiT`.
 
 .. [#harmonic-deg] The harmonic degree isn't formally a 'good' quantum
                    number in the TAR; however, it can still be used to
                    identify Hough functions by considering their
-                   behavior in the limit :math:`\Omega \rightarrow 0`,
+                   behavior in the limit :math:`\Orot \rightarrow 0`,
                    as given in eqns. (:eq:`e:hough-lim-ga`) and
                    (:eq:`e:hough-lim-ross`).

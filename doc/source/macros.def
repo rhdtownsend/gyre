@@ -93,7 +93,8 @@ alphapi	\alpha_{\pi}
 alphakat	\alpha_{\kappa,T}
 alphakar	\alpha_{\kappa,\rho}
 alphafrq	\alpha_{\rm frq}
-alphaegv	\alpha_{egv}
+alphaegv	\alpha_{\rm egv}
+alphatrb	\alpha_{\rm trb}
 wosc	w_{\rm osc}
 wexp	w_{\rm exp}
 wthm	w_{\rm thm}
@@ -122,6 +123,7 @@ cegv	c_{egv}
 frht	f_{\rm rht}
 dfrht	\partial\frht
 elli	\ell_{\rm i}
+elle	\ell_{\rm e}
 fpigam	f_{\pi\gamma}
 sigmar	\sigma_{\rm R}
 sigmai	\sigma_{\rm I}
@@ -141,5 +143,8 @@ epsT	\varepsilon_{\rm T}
 cbar	\overline{c}
 Gbar	\overline{G}
 Oorb	\Omega_{\rm orb}
+Orot	\Omega_{\rm rot}
 half	\mspace{-1mu}1\mspace{-1.5mu}/2
 yT	y_{\rm T}
+tconv	\tau_{\rm conv}
+sigsb	\sigma_{\rm SB}

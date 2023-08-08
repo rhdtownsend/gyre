@@ -47,9 +47,9 @@ The fluid equations are augmented by the thermodynamic relationships
 between the four state variables (:math:`P`, :math:`T`, :math:`\rho`
 and :math:`S`). Only two of these are required to uniquely specify the
 state (we assume that the composition remains fixed over an
-oscillation cycle). In GYRE, :math:`P` and :math:`S` are adopted as
-these primary variables\ [#choice]_, and the other two are presumed to be
-derivable from them:
+oscillation cycle). In GYRE, :math:`P` and :math:`S` are
+adopted as these primary variables\ [#choice]_, and the other two are
+presumed to be derivable from them:
 
 .. math::
 

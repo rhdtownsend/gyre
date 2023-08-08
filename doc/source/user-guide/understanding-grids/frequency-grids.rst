@@ -60,16 +60,16 @@ depends on the :nml_n:`grid_frame` parameter:
   \omega = 0`; the grid frame and the inertial frame coincide.
 
 * When :nml_n:`grid_frame = 'COROT_I'`, the shift is :math:`\Delta
-  \omega = m \, \Omega_{\rm i}`, where :math:`\Omega_{\rm i}` is the
-  dimensionless rotation angular velocity at the inner boundary of the
-  spatial grid; the grid frame coincides with the local co-rotating frame at
-  that boundary.
+  \omega = m \, \Orot^{\rm i} \sqrt{R^{3}/GM}`, where
+  :math:`\Orot^{\rm i}` is the rotation angular frequency at the
+  inner boundary of the spatial grid; the grid frame coincides with
+  the local co-rotating frame at that boundary.
 
 * When :nml_n:`grid_frame = 'COROT_O'`, the shift is :math:`\Delta
-  \omega = m \, \Omega_{\rm o}`, where :math:`\Omega_{\rm o}` is the
-  dimensionless rotation angular velocity at the outer boundary of the
-  spatial grid; the grid frame coincides with the local co-rotating frame at
-  that boundary.
+  \omega = m \, \Orot^{\rm o} \sqrt{R^{3}/GM}`, where
+  :math:`\Orot^{\rm o}` is the rotation angular frequency at the outer
+  boundary of the spatial grid; the grid frame coincides with the
+  local co-rotating frame at that boundary.
 
 The range spanned by the frequency grid, in the grid frame, is set by
 :math:`\omega^{\rm g}_{\rm min}` and :math:`\omega^{\rm g}_{\rm max}`. These are

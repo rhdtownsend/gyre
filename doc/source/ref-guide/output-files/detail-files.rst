@@ -83,10 +83,9 @@ Solution Data
      - complex(:nml_n:`n`)
      - dependent variable
 
-The definitions of the dependent variables :math:`\{y_{1},\ldots,y_{6}\}` are
-provided in the :ref:`osc-eqns` chapter (for :program:`gyre`) and in
-the :ref:`tidal-eqns` chapter (for :program:`gyre_tides`).
-
+The definitions of the dependent variables
+:math:`\{y_{1},\ldots,y_{6}\}` are provided in the :ref:`osc-eqns`
+chapter.
 
 Observables
 -----------
@@ -409,15 +408,15 @@ Rotation
      - Datatype
      - Description
    * - :nml_v:`Omega_rot_ref`
-     - :math:`\Omega_{\rm ref}`
+     - :math:`\Omega_{\rm rot,ref}`
      - real
      - rotation angular frequency at reference location[:math:`\sqrt{GM/R^{3}}`]
    * - :nml_v:`Omega_rot`
-     - :math:`\Omega`
+     - :math:`\Orot`
      - real(:nml_v:`n`)
      - rotation angular frequency [:math:`\sqrt{GM/R^{3}}`]
    * - :nml_v:`domega_rot`
-     - :math:`\delta \omega`
+     - :math:`\Delta \omega`
      - real
      - dimensionless first-order rotational splitting; evaluated using eqn. 3.355 of :ads_citet:`aerts:2010`
    * - :nml_v:`dfreq_rot`
@@ -606,7 +605,7 @@ Note that these items are available only when using :program:`gyre_tides`.
      - real(:nml_v:`n`)
      - tidal potential [:math:`GM/R`]
    * - :nml_v:`Omega_orb`
-     - :math:`\Omega_{\rm orb}`
+     - :math:`\Oorb`
      - real
      - orbital angular frequency; units and reference frame controlled by
        :nml_n:`freq_units` and :nml_n:`freq_frame` parameters

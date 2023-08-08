@@ -99,8 +99,8 @@ temperature partials via
 
 .. rubric:: Footnotes
 
-.. [#freeze] This is known as the *frozen convection*
+.. [#freeze] This is known as a *frozen convection*
              approximation. GYRE offers multiple ways to freeze
-             convection (see the :ref:`osc-params` section); the one
-             here is the default.
+             convection; see the :ref:`osc-conv` section for further
+             details.
    

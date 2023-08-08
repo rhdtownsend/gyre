@@ -75,4 +75,4 @@ representing a discontinuity in the density and some other
 thermodynamic quantities (but not the pressure or temperature). GYRE
 does not attempt to interpolate across double points, but instead
 handles them properly when solving equations through the use of
-:ref:`jump conditions <osc-dimless-jump>`.
+:ref:`internal boundary conditions <osc-bound-conds>`.

@@ -15,15 +15,14 @@ the right. After reading the :ref:`namelist input file
 :program:`gyre_tides` loops over :nml_g:`tide` namelist groups,
 processing each in turn.
 
-For a given group, :program:`gyre_tides` evaluates the response to
-partial tidal potentials spanning a range of harmonic degrees
-:math:`\ell`, azimuthal orders :math:`m` and Fourier harmonics
-:math:`k` (see the :ref:`tidal-linear-eqns` section). With each
-partial potential, the response wavefunctions and other data are
-optionally written to a :ref:`detail file <detail-files>`.  At the end
-of the run, response data from all partial responses (across all
-:nml_g:`tide` groups) are optionally written to a :ref:`summary file
-<summary-files>`.
+For a given group, :program:`gyre_tides` solves for the response of
+the star to the superposition of partial tidal potentials
+:math:`\PhiTlmk` (see the :ref:`osc-tidal` section). The response
+wavefunctions and other data associated with an individual partial
+potential are optionally written to a :ref:`detail file
+<detail-files>`.  At the end of the run, response data from all
+partial potentials (across all :nml_g:`tide` groups) are optionally
+written to a :ref:`summary file <summary-files>`.
 
 The table below lists which namelist groups, and in what number,
 should appear in namelist input files for :program:`gyre_tides`.

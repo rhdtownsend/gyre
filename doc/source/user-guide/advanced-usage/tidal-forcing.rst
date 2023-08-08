@@ -12,34 +12,39 @@ synthesize a light curve for a tidally distorted star.
 Overview
 --------
 
-As discussed in the :ref:`tidal-eqns` chapter, the tidal gravitational
+As discussed in the :ref:`osc-tidal` section, the tidal gravitational
 potential (:eq:`e:tidal-pot`) of an orbiting companion can be
-expressed as a superposition of partial potentials of differing
-harmonic degree :math:`\ell`, azimuthal order :math:`m` and Fourier
-harmonic :math:`k`. For each :nml_g:`tide` namelist group appearing in
-its namelist input file, :program:`gyre_tides` solves for the response of the star
-to these partial potentials with a separate calculation for every
-combination of :math:`\{\ell,m,k\}`.
+expressed as a superposition of partial potentials
+:math:`\PhiTlmk`. For a given :nml_g:`tide` namelist group appearing
+in the namelist input file, :program:`gyre_tides` solves for the
+response of the star to each term in the superposition.
 
 Truncating the Sums
 -------------------
 
-Although the sums appearing in eqn. (:eq:`e:tidal-pot`) are
-formally infinite, the terms with large :math:`\ell` and/or
-:math:`|k|` typically produce a negligible
+Although the sums appearing in eqn. (:eq:`e:tidal-pot`) are formally
+infinite, the terms with large harmonic degree :math:`\ell` and/or
+orbital harmonic :math:`k` typically produce a negligible
 response. :program:`gyre_tides` offers a couple of approaches for
 truncating the sums by dropping these terms. The simplest is to set
 limits on the maximum values of the indices, through the
 :nml_n:`l_max`, :nml_n:`k_min` and :nml_n:`k_max` parameters of the
-:nml_g:`tide` namelist group.
+:nml_g:`tide` namelist group (if desired, minimum values can also be
+set using the corresponding :nml_n:`l_min` and :nml_n:`k_min`
+parameters).
 
 A slightly more sophisticated approach is to set these parameters to
 large-ish values (say, a few hundred), and then also set one or both
 of the :nml_n:`y_T_thresh_abs` and :nml_n:`y_T_thresh_rel`
 parameters. These establish a threshold on the magnitude of
-:math:`\yT` (see eqn. :eq:`e:y_T`) for a given partial potential to be
-included in calculations; if it does not meet this threshold, it is
-ignored.
+
+.. math::
+
+   \yT \equiv \frac{\tPhiTlmk}{GM/R}
+
+for a given tidal partial potential :math:`\tPhiTlmk` (see
+eqn. :eq:`e:tidal-part-pot`) to be included in calculations; if
+:math:`|\yT|` does not meet this threshold, it is ignored.
 
 Optimizing Grids
 ----------------
@@ -47,14 +52,19 @@ Optimizing Grids
 During the :ref:`iterative refinement <spatial-grids-iter>` process
 used in setting up spatial grids, the refinement criteria are
 evaluated for every partial tide under consideration. If the
-co-rotating forcing frequency :math:`\sigmac`
-(eqn. :eq:`e:tidal-sigmac`) of a specific partial potential is small
-compared to the dynamical frequency of the star, many levels of
-refinement will occur. While this is exactly what one wants in
-oscillation calculations (because low-frequency modes have short
-spatial wavelengths), it often isn't necessary in tidal calculations
-because the response of a star to low-frequency forcing is the
-long-wavelength equilibrium tide.
+co-rotating forcing frequency
+
+.. math::
+
+   \sigmac \equiv k \Oorb - m \Orot
+
+associated with a specific partial tidal potential is small compared
+to the dynamical frequency of the star, many levels of refinement will
+occur. While this is exactly what one wants in oscillation
+calculations (because low-frequency modes have short spatial
+wavelengths), it often isn't necessary in tidal calculations because
+the response of a star to low-frequency forcing is the long-wavelength
+equilibrium tide.
 
 One way of preventing over-refinement due to low-frequency partial
 potentials is to set the :nml_n:`omega_c_thresh` parameter in the

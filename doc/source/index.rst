@@ -50,7 +50,6 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    ref-guide/output-files.rst
    ref-guide/stellar-models.rst
    ref-guide/osc-equations.rst
-   ref-guide/tidal-equations.rst
 
 .. toctree::
    :caption: Appendices

@@ -117,6 +117,6 @@ following columns:
      - real
      - nuclear energy generation partial [:math:`\erg\,\second^{-1}\,\gram^{-1}`]
    * - 19
-     - :math:`\Omega_{\rm rot}`
+     - :math:`\Orot`
      - real
-     - rotation angular velocity [:math:`\radian\,\second^{-1}`]
+     - rotation angular frequency [:math:`\radian\,\second^{-1}`]

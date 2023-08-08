@@ -13,11 +13,11 @@ follows:
   - :nml_v:`'TAR'` : Use the traditional approximation of rotation
 
 :nml_n:`Omega_rot_source` (default :nml_v:`'MODEL'`)
-  Source for rotational angular velocity :math:`\Omega`; one of:
+  Source for rotational angular frequency :math:`\Orot`; one of:
 
-  - :nml_v:`'MODEL'` : Differential rotation, with a spatially varying :math:`\Omega`
+  - :nml_v:`'MODEL'` : Differential rotation, with a spatially varying :math:`\Orot`
     obtained from the stellar model
-  - :nml_v:`'UNIFORM'` : Uniform rotation, with a spatially constant :math:`\Omega` set
+  - :nml_v:`'UNIFORM'` : Uniform rotation, with a spatially constant :math:`\Orot` set
     by the :nml_n:`Omega_rot` and :nml_n:`Omega_rot_units` parameters
 
 :nml_n:`Omega_rot` (default :nml_v:`0`)
