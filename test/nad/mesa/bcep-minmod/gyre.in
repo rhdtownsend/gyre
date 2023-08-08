@@ -55,5 +55,5 @@
 
 &nad_output
   summary_file = 'summary.h5'
-  summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+  summary_item_list = 'l,n_pg,n_p,n_g,omega'
 /
