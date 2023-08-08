@@ -15,14 +15,6 @@ evaluating the response of a star to tidal disturbances produced by an
 orbiting companion; because this is an instance of *forced* stellar
 oscillations, similar numerical techniques can be brought to bear.
 
-About this Manual
-=================
-
-This manual is divided into two main parts: the :ref:`user-guide`,
-which covers basic installation and usage of GYRE, and the
-:ref:`ref-guide`, which documents all of GYRE's options in
-detail. Supplementary material can be found in the :ref:`appendices`.
-
 .. toctree::
    :caption: User Guide
    :name: user-guide
@@ -58,4 +50,3 @@ detail. Supplementary material can be found in the :ref:`appendices`.
    appendices/comp-ptrope.rst
    appendices/build-poly.rst
    appendices/eval-lambda.rst
-   

@@ -14,7 +14,7 @@ parameters, as follows:
 
   - :nml_v:`'NONE'` : Dimensionless angular frequency
   - :nml_v:`'HZ'` : Linear frequency in Hz\ [#only-D]_
-  - :nml_v:`'UHZ'` : Linear frequency in μHz\ [#only-D]_
+  - :nml_v:`'UHZ'` : Linear frequency in :math:`\mu`\ Hz\ [#only-D]_
   - :nml_v:`'RAD_PER_SEC'` : Angular frequency in radians per second\ [#only-D]_
   - :nml_v:`'CYC_PER_DAY'` : Linear frequency in cycles per day\ [#only-D]_
   - :nml_v:`'CRITICAL'` : Fraction of the Roche critical rate\ [#only-D]_

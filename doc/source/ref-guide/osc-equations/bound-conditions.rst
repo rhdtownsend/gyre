@@ -16,11 +16,11 @@ regularity conditions
 
 .. math::
 
-   \begin{align}
+   \begin{aligned}
    \txir - \ell \txih = 0, \\
    \ell \tPhi' - r \deriv{\tPhi'}{r} = 0, \\
    \delta \tS = 0.
-   \end{align}
+   \end{aligned}
    
 Sometimes it's desirable that the inner boundary is instead placed at
 :math:`r > 0` --- for instance, to excise the stellar core from
@@ -94,11 +94,11 @@ resulting in
 
 .. math::
 
-   \begin{align}
+   \begin{aligned}
    \tP^{\prime +} - \tP^{\prime -} &= \deriv{\Phi}{r} \left( \rho^{+} - \rho^{-} \right) \txir, \\
    \left. \deriv{\tPhi'}{r} \right|^{+} - \left. \deriv{\tPhi'}{r} \right|^{-} &= - 4 \pi G \left( \rho^{+} - \rho^{-} \right) \txir, \\
    \tT^{\prime +} - \tT^{\prime -} &= 0.
-   \end{align}
+   \end{aligned}
    
 Here, + (-) superscripts indicate quantities evaluated on the inner
 (outer) side of the discontinuity.

@@ -47,7 +47,7 @@ as follows:
   Format of detail files; one of
 
   - :nml_n:`'HDF'` : HDF5 file
-  - :nml_v:`'TXT'` : text file
+  - :nml_v:`'TXT'` : Text file
 
 :nml_n:`detail_item_list` (default :nml_v:`'l,n_pg,omega,freq,x,xi_r,xi_h'`)
   Comma-separated list of output items to write to detail files; see the
@@ -61,18 +61,18 @@ as follows:
   Units of :nml_v:`freq` output item; one of:
 
   - :nml_v:`'NONE'` : Dimensionless angular frequency
-  - :nml_v:`'HZ'` : linear frequency in Hz\ [#only-D]_
-  - :nml_v:`'UHZ'` : linear frequency in μHz\ [#only-D]_
-  - :nml_v:`'RAD_PER_SEC'` : angular frequency in radians per second\ [#only-D]_
-  - :nml_v:`'CYC_PER_DAY'` : linear frequency in cycles per day\ [#only-D]_
+  - :nml_v:`'HZ'` : Linear frequency in Hz\ [#only-D]_
+  - :nml_v:`'UHZ'` : Linear frequency in :math:`\mu`\ Hz\ [#only-D]_
+  - :nml_v:`'RAD_PER_SEC'` : Angular frequency in radians per second\ [#only-D]_
+  - :nml_v:`'CYC_PER_DAY'` : Linear frequency in cycles per day\ [#only-D]_
   - :nml_v:`'ACOUSTIC_DELTA'` : Fraction of the asymptotic acoustic large frequency separation :math:`\Delta \nu`
   - :nml_v:`'GRAVITY_DELTA'` : Fraction of the asymptotic inverse gravity period separation :math:`(\Delta P)^{-1}`
   - :nml_v:`'UPPER_DELTA'` : Greater of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
   - :nml_v:`'LOWER_DELTA'` : Lesser of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
-  - :nml_v:`'ACOUSTIC_CUTOFF'` : fraction of the acoustic cutoff frequency\ [#only-D]_
-  - :nml_v:`'GRAVITY_CUTOFF'` : fraction of the gravity cutoff frequency\ [#only-D]_
-  - :nml_v:`'ROSSBY_I'` : fraction of Rossby frequency at inner boundary
-  - :nml_v:`'ROSSBY_O'` : fraction of Rossby frequency at outer boundary
+  - :nml_v:`'ACOUSTIC_CUTOFF'` : Fraction of the acoustic cutoff frequency\ [#only-D]_
+  - :nml_v:`'GRAVITY_CUTOFF'` : Fraction of the gravity cutoff frequency\ [#only-D]_
+  - :nml_v:`'ROSSBY_I'` : Fraction of Rossby frequency at inner boundary
+  - :nml_v:`'ROSSBY_O'` : Fraction of Rossby frequency at outer boundary
 
 :nml_n:`freq_frame` (default :nml_v:`INERTIAL`)
   Frame of :nml_v:`freq` output item; one of:

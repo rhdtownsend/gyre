@@ -15,7 +15,7 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
 :nml_n:`outer_bound` (default :nml_v:`'VACUUM'`)
   Outer boundary conditions; one of:
 
-  - :nml_v:`'VACUUM'` : Vanishing surface densiy
+  - :nml_v:`'VACUUM'` : Vanishing surface density
   - :nml_v:`'DZIEM'` : Formulation following :ads_citet:`dziembowski:1971`
   - :nml_v:`'UNNO'` : Formulation following :ads_citet:`unno:1989`
   - :nml_v:`'JCD'` : Formulation following Jørgen Christensen-Dalsgaard (ADIPLS)

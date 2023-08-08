@@ -20,14 +20,14 @@ The independent variable is the fractional radius :math:`x \equiv r/R`
 .. math::
    :label: e:dimless-vars
 
-   \begin{align}
+   \begin{aligned}
    y_{1} &= x^{2 - \ell}\, \frac{\txir}{r}, \\
    y_{2} &= x^{2-\ell}\, \frac{\tP'}{\rho g r}, \\
    y_{3} &= x^{2-\ell}\, \frac{\tPhi'}{gr}, \\
    y_{4} &= x^{2-\ell}\, \frac{1}{g} \deriv{\tPhi'}{r}, \\
    y_{5} &= x^{2-\ell}\, \frac{\delta \tS}{c_{p}}, \\
    y_{6} &= x^{-1-\ell}\, \frac{\delta \tLrad}{L}.
-   \end{align}
+   \end{aligned}
 
 .. _osc-dimless-eqns:
 
@@ -39,7 +39,7 @@ The dimensionless oscillation equations are
 .. math::
    :label: e:dimless-eqns
 
-   \begin{align}
+   \begin{aligned}
    x \deriv{y_{1}}{x} &=
    \left( \frac{V}{\Gammi} - 1 - \ell \right) y_{1} +
    \left( \frac{\ell(\ell+1)}{c_{1} \omega^{2}} - \alphagam \frac{V}{\Gammi} \right) y_{2} +
@@ -83,7 +83,7 @@ The dimensionless oscillation equations are
    &
    \left[ \cepsS - \alphahfl \frac{\ell(\ell+1)\crad}{\nabla V} + \ii \alphathm \omega \cthk + \alphaegv c_{egv} \right] y_{5} -
    \left[ 1 + \ell \right] y_{6},
-   \end{align}
+   \end{aligned}
 
 where the dimensionless oscillation frequency is introduced as
 
@@ -107,13 +107,13 @@ replaced by
 
 .. math::
 
-   \begin{align}
+   \begin{aligned}
    x \deriv{y_{1}}{x} &=
    \left( \frac{V}{\Gammi} - 1 \right) y_{1} - \frac{V}{\Gamma_{1}} y_{2}, \\
    %
    x \deriv{y_{2}}{x} &= 
    \left( c_{1} \omega^{2} + U - \As \right) y_{1} + \left( 3 - U + \As \right) y_{2}.
-   \end{align}
+   \end{aligned}
 
 .. _osc-dimless-bc:
 
@@ -128,11 +128,11 @@ regularity-enforcing conditions at the inner boundary:
 
 .. math::
 
-   \begin{align}
+   \begin{aligned}
    c_{1} \omega^{2} y_{1} - \ell y_{2} - \alphagrv \ell y_{3} &= 0, \\
    \alphagrv \ell y_{3} - (2\alphagrv - 1) y_{4} &= 0, \\
    y_{5} &= 0.
-   \end{align}
+   \end{aligned}
 
 (these are the dimensionless equivalents to the expressions appearing
 in the :ref:`osc-bound-conds` section).
@@ -143,10 +143,10 @@ conditions,
 
 .. math::
    
-   \begin{align}
+   \begin{aligned}
    y_{1} &= 0, \\
    y_{4} &= 0.
-   \end{align}
+   \end{aligned}
 
 Likewise, when :nml_n:`inner_bound`\ =\ :nml_v:`'ZERO_H'`, the first and
 second conditions are replaced with zero horizontal displacement
@@ -154,10 +154,10 @@ conditions,
 
 .. math::
 
-   \begin{align}
+   \begin{aligned}
    y_{2} - y_{3} &= 0, \\
    y_{4} &= 0.
-   \end{align}
+   \end{aligned}
 
 Outer Boundary
 ^^^^^^^^^^^^^^
@@ -167,11 +167,11 @@ outer boundary conditions
 
 .. math::
 
-   \begin{align}
+   \begin{aligned}
    y_{1} - y_{2} &= 0 \\
    \alphagrv U y_{1} + (\alphagrv \ell + 1) y_{3} + \alphagrv y_{4} &= 0 \\
    (2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} + 4 \frht y_{5} - y_{6} &= 0
-   \end{align}
+   \end{aligned}
 
 (these are the dimensionless equivalents to the expressions appearing
 in the :ref:`osc-bound-conds` section).
@@ -203,12 +203,12 @@ Across density discontinuities, GYRE applies the boundary conditions
 
 .. math::
    
-   \begin{align}
+   \begin{aligned}
    U^{+} y_{2}^{+} - U^{-} y_{2}^{-} &= y_{1} (U^{+} - U^{-}) \\
    y_{4}^{+} - y_{4}^{-} &= -y_{1} (U^{+} - U^{-}) \\
    y_{5}^{+} - y_{5}^{-} &= - V^{+} \nabad^{+} (y_{2}^{+} - y_{1}) +
    V^{-} \nabad^{-} (y_{2}^{-} - y_{1})
-   \end{align}
+   \end{aligned}
 
 (these are the dimensionless equivalents to the expressions appearing
 in the :ref:`osc-bound-conds` section). Here, + (-) superscripts
@@ -228,7 +228,7 @@ defined as follows:
 
 .. math::
 
-   \begin{gather}
+   \begin{gathered}
    V = -\deriv{\ln P}{\ln r} \qquad
    V_{2} = x^{-2} V \qquad
    \As = \frac{1}{\Gamma_{1}} \deriv{\ln P}{\ln r} - \deriv{\ln \rho}{\ln r} \qquad
@@ -264,7 +264,7 @@ defined as follows:
    %
    \cthk = x^{-3} \frac{4\pi r^{3} \cP T \rho}{L} \sqrt{\frac{GM}{R^{3}}}
    \cegv = x^{-3} \frac{4\pi r^{3} \rho \epsgrav}{L}
-   \end{gather}
+   \end{gathered}
 
 .. _osc-physics-switches:
 

@@ -4,7 +4,7 @@ Missing Modes
 =============
 
 For adiabatic oscillation calculations using :program:`gyre`, the
-radial order :math:`\npg` of modes found should be
+radial order :math:`\numpg` of modes found should be
 monotonic-increasing\ [#dipole]_. Departures from this behavior can
 occur for a number of reasons.
 
@@ -70,7 +70,7 @@ Non-adiabatic Effects
 
 When undertaking :ref:`non-adiabatic calculations <non-ad-osc>`,
 modes can be mis-classified or completely missed. The former situation
-arises because the expectation of monotonic-increasing :math:`\npg`
+arises because the expectation of monotonic-increasing :math:`\numpg`
 formally applies only to adiabatic oscillations; while it can also
 work reasonably well for weakly non-adiabatic cases, there are no
 guarantees. If mis-classification does occur, then it must be fixed
@@ -86,6 +86,6 @@ very well.
 .. rubric:: Footnotes
 
 .. [#dipole] The sole exception is :math:`\ell=1` modes, where
-             :math:`\npg=0` is skipped due to the way the
+             :math:`\numpg=0` is skipped due to the way the
              :ads_citealt:`takata:2006b` classification scheme is set
              up.

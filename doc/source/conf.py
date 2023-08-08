@@ -43,6 +43,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.intersphinx',
     'sphinxcontrib.spelling',
+    'sphinxcontrib.cairosvgconverter',
     'sphinx-prompt',
     'sphinx_substitution_extensions',
     'ads_cite',
@@ -125,11 +126,11 @@ rep_exts = {"release": release,
 for rep_ext_key, rep_ext_val in rep_exts.items():
     rst_prolog += "\n.. |{:s}| replace:: {:s}".format(rep_ext_key, rep_ext_val)
 
-# Latex macros
+# Mathjax & Latex macros
 
 macros = {}
 
-with open('macros.def') as f:
+with open('macros.def', encoding='utf-8') as f:
     line = f.readline()
     while line:
         key, value = line.rstrip().split('\t')
@@ -137,18 +138,31 @@ with open('macros.def') as f:
         line = f.readline()
 
 mathjax_macros = {}
+latex_preamble = ''
 
 for key, value in macros.items():
     argnums = re.findall('#(\d)', value)
     if argnums:
-        mathjax_macros[key] = [value, int(max(argnums))]
+        n_args = int(max(argnums))
+        mathjax_macros[key] = [value, n_args]
+        latex_preamble += f'\\newcommand{{\\{key}}}[{n_args}]{{{value}}}\n'
     else:
         mathjax_macros[key] = value
+        latex_preamble += f'\\newcommand{{\\{key}}}{{{value}}}\n'
 
+#mathjax_config = {                  
+#    'TeX': { 
+#        'Macros': mathjax_macros
+#    }
+#}
 mathjax3_config = {                  
     'tex': { 
         'macros': mathjax_macros
     }
+}
+
+latex_elements = {
+    'preamble': latex_preamble
 }
 
 # Enable email obfuscation

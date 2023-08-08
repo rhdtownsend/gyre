@@ -160,15 +160,15 @@ Classification & Validation
      - integer
      - azimuthal order
    * - :nml_v:`n_p`
-     - :math:`\np`
+     - :math:`\nump`
      - integer
      - acoustic-wave winding number
    * - :nml_v:`n_g`
-     - :math:`\ng`
+     - :math:`\numg`
      - integer
      - gravity-wave winding number
    * - :nml_v:`n_pg`
-     - :math:`\npg`
+     - :math:`\numpg`
      - integer
      - radial order within the Eckart-Scuflaire-Osaki-Takata
        scheme (see :ads_citealp:`takata:2006b`)
@@ -545,12 +545,12 @@ Stellar Structure
      - opacity partial; defined in :ref:`osc-linear-eqns`
        section
    * - :nml_v:`eps_rho`\ [#only-N]_
-     - :math:`\epsrho`
+     - :math:`\epsnucrho`
      - real(:nml_v:`n`)
      - nuclear energy generation partial; defined in :ref:`osc-linear-eqns`
        section
    * - :nml_v:`eps_T`\ [#only-N]_
-     - :math:`\epsT`
+     - :math:`\epsnucT`
      - real(:nml_v:`n`)
      - nuclear energy generation partial; defined in :ref:`osc-linear-eqns`
        section

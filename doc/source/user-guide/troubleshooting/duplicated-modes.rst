@@ -3,16 +3,16 @@
 Duplicated Modes
 ================
 
-Sometimes two oscillation modes with the same :math:`\npg` are found
+Sometimes two oscillation modes with the same :math:`\numpg` are found
 during a :program:`gyre` calculation. This violates the expectation
-that :math:`\npg` be monotonic-increasing, and can happen for a few
+that :math:`\numpg` be monotonic-increasing, and can happen for a few
 reasons.
 
 Bad Stellar Model
 -----------------
 
 If the input stellar doesn't conserve mass properly, then one or more
-bogus (unphysical) modes can appear with the same :math:`\npg` as an
+bogus (unphysical) modes can appear with the same :math:`\numpg` as an
 existing mode, but a significantly different frequency. Such modes can
 also be spotted because their radial order is very different from the
 adjacent-in-frequency modes.
@@ -45,6 +45,6 @@ Non-adiabatic Effects
 
 When non-adiabatic effects cause a mode to be mis-classified (as
 discussed in the :ref:`troubleshoot-miss` section), often the incorrect
-:math:`\npg` value duplicates that of another mode. As before, a
+:math:`\numpg` value duplicates that of another mode. As before, a
 mis-classification must be fixed manually by determining which
 adiabatic mode the problematic non-adiabatic mode corresponds to.

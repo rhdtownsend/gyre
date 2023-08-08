@@ -44,10 +44,10 @@ generically as
 
    x \deriv{\vty}{x} = \mA \, \vty,
 
-where :math:`\vty` is a vector of :math:`\neq` dependent variables, and
-:math:`\mA` is a :math:`\neq \times \neq` Jacobian matrix. In the
-adiabatic case, :math:`\neq=4`; in the non-adiabatic case,
-:math:`\neq=6`.
+where :math:`\vty` is a vector of :math:`\neqn` dependent variables, and
+:math:`\mA` is a :math:`\neqn \times \neqn` Jacobian matrix. In the
+adiabatic case, :math:`\neqn=4`; in the non-adiabatic case,
+:math:`\neqn=6`.
 
 Second, while the above equation system can be discretized using a
 simple finite-difference approximation to the left-hand side,
@@ -63,7 +63,7 @@ discretization leads to difference equations of the form
    \vty_{j+1} = \mY_{j+1;j} \, \vty_{j},
 
 relating the dependent variable vector at adjacent grid points. The
-:math:`\neq \times \neq` fundamental solution matrix :math:`\mY_{j+1,j}`
+:math:`\neqn \times \neqn` fundamental solution matrix :math:`\mY_{j+1,j}`
 is evaluated from the value(s) of :math:`\mA` within the interval
 :math:`[x_{j},x_{j+1}]` using the discretization scheme.
 
@@ -76,13 +76,13 @@ augmented with the boundary conditions
    \qquad\qquad
    \subout{\mB} \, \vty_{N} = 0,
 
-where :math:`\subin{\mB}` is a :math:`\nin \times \neq` matrix
+where :math:`\subin{\mB}` is a :math:`\nin \times \neqn` matrix
 representing the :math:`\nin` inner boundary conditions, and
-:math:`\subout{\mB}` is a :math:`\nout \times \neq` matrix representing
+:math:`\subout{\mB}` is a :math:`\nout \times \neqn` matrix representing
 the outer boundary conditions (note that :math:`\nin + \nout =
-\neq`). Together, the difference equations and boundary conditions
-comprise a linear system of :math:`\neq\,N` algebraic equations
-and :math:`\neq N` unknowns.
+\neqn`). Together, the difference equations and boundary conditions
+comprise a linear system of :math:`\neqn\,N` algebraic equations
+and :math:`\neqn N` unknowns.
 
 Linear System
 -------------
@@ -102,7 +102,7 @@ The linear system can be written in the same form
    \vty_{N}
   \end{pmatrix}
 
-and the system matrix :math:`\mS` is an :math:`\neq N \times \neq N`
+and the system matrix :math:`\mS` is an :math:`\neq N \times \neqn N`
 block-staircase matrix with components
 
 .. math::

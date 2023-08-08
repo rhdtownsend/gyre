@@ -99,7 +99,7 @@ part). The plot should look something like :numref:`fig-freq`.
    :align: center
 
    The frequency :math:`\nu` of :math:`\ell=1` and :math:`\ell=2`
-   modes, plotted against their radial order :math:`\npg`.
+   modes, plotted against their radial order :math:`\numpg`.
    (:download:`Source <interpreting-output/fig_freq.py>`)
 
 The straight line connecting the two curves occurs because we are
@@ -131,14 +131,14 @@ The resulting plot, in :numref:`fig-freq-grouped`, looks much better.
    :align: center
 
    The frequency `\nu` of :math:`\ell=1` and :math:`\ell=2`
-   modes, grouped by :math:`\ell` and plotted against their radial order :math:`\npg`.
+   modes, grouped by :math:`\ell` and plotted against their radial order :math:`\numpg`.
    (:download:`Source <interpreting-output/fig_freq_grouped.py>`)
 
 Analyzing a Detail File
 =======================
 
 Now let's take a look at one of the detail files, for the mode with
-:math:`\ell=1` and :math:`\npg=-7`. As with the summary file,
+:math:`\ell=1` and :math:`\numpg=-7`. As with the summary file,
 :external:py:func:`pygyre.read_output` can be used to read the file
 data into an :external:py:class:`astropy.table.Table` object:
 

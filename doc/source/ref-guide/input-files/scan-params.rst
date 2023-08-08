@@ -35,10 +35,10 @@ follows:
   of read frequencies when :nml_n:`grid_type` is :nml_v:`'FILE'`
 
   - :nml_v:`'NONE'` : Dimensionless angular frequency
-  - :nml_v:`'HZ'` : linear frequency in Hz\ [#only-D]_
-  - :nml_v:`'UHZ'` : linear frequency in μHz\ [#only-D]_
-  - :nml_v:`'RAD_PER_SEC'` : angular frequency in radians per second\ [#only-D]_
-  - :nml_v:`'CYC_PER_DAY'` : linear frequency in cycles per day\ [#only-D]_
+  - :nml_v:`'HZ'` : Linear frequency in Hz\ [#only-D]_
+  - :nml_v:`'UHZ'` : Linear frequency in :math:`\mu`\ Hz\ [#only-D]_
+  - :nml_v:`'RAD_PER_SEC'` : Angular frequency in radians per second\ [#only-D]_
+  - :nml_v:`'CYC_PER_DAY'` : Linear frequency in cycles per day\ [#only-D]_
   - :nml_v:`'ACOUSTIC_DELTA'` : Fraction of the asymptotic acoustic large frequency separation :math:`\Delta \nu`
   - :nml_v:`'GRAVITY_DELTA'` : Fraction of the asymptotic inverse gravity period separation :math:`(\Delta P)^{-1}`
   - :nml_v:`'UPPER_DELTA'` : Greater of :math:`\Delta \nu` and :math:`(\Delta P)^{-1}`
