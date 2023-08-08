@@ -58,8 +58,11 @@ GYRE remains under active development by the following team:
 * `Warrick Ball <https://www.birmingham.ac.uk/staff/profiles/physics/ball-warrick.aspx>`__ (University of Birmingham)
 * `Earl Bellinger <https://earlbellinger.com/>`__ (MPIA Garching)
 * Zhao Guo (Cambridge University)
-* Joel Ong (Yale University)
+* Mathias Michielsen (KU-Leuven)
+* Joel Ong (University of Hawaii-Manoa)
+* `Jarret Rosenberg <https://www.physics.wisc.edu/directory/rosenberg-jarrett/>`__ (University of Wisconsin-Madison)
 * Meng Sun (Northwestern University)
+* Vincent Vanlaer (KU-Leuven)
 
 Former developers include:
 
