@@ -25,7 +25,7 @@ module gyre_version
 
   ! Parameters
 
-  character(*), parameter :: VERSION = 'master'
+  character(*), parameter :: VERSION = '7.1'
 
   ! Access specifiers
 
