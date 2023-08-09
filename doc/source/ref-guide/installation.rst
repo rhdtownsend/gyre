@@ -36,22 +36,22 @@ Building GYRE
 Download
 --------
 
-Download the `GYRE source code <github-tarball_>`__, and unpack it
+Download the `GYRE source code <tarball_>`__, and unpack it
 from the command line using the :command:`tar` utility:
 
 .. prompt:: bash
    :substitutions:
 
-   tar xf gyre-|release|.tar.gz
+   tar xf gyre-|version|.tar.gz
 
 Set the :envvar:`GYRE_DIR` environment variable with the path to the
-newly created source directory; this can be achieved e.g. using the
-:command:`dirname` built-in command:
+newly created source directory; this can be achieved, e.g., using the
+:command:`realpath` command\ [#realpath]_:
 
 .. prompt:: bash
    :substitutions:
 
-   export GYRE_DIR=$(dirname gyre-|release|)
+   export GYRE_DIR_DIR=$(realpath gyre-|version|)
 
 .. _install-compile:
 
@@ -136,3 +136,11 @@ GYRE directly from the :git:`rhdtownsend/gyre` git repository on
 
 However, a word of caution: GYRE is under constant development, and
 features in the main (``master``) branch can change without warning.
+
+.. rubric:: footnote
+
+.. [#realpath] The :command:`realpath` command is included in the GNU
+               `CoreUtils <https://www.gnu.org/software/coreutils/>`__
+               package. Mac OS users can install CoreUtils using
+               `MacPorts <https://www.macports.org/>`__ or `Homebrew
+               <https://brew.sh/>`__.

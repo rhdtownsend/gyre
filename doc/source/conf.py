@@ -23,10 +23,9 @@ import sphinx_rtd_theme
 
 project = 'GYRE'
 author = 'Rich Townsend & The GYRE Team'
-version = "master"
-release = "master"
-branch = "master"
-copyright = '2020, Rich Townsend & The GYRE Team'
+version = 'dev'
+branch = 'master'
+copyright = '2023, Rich Townsend & The GYRE Team'
 
 
 # -- General configuration ---------------------------------------------------
@@ -104,13 +103,13 @@ extlinks = {
 
 # Set site-wide targets
 
-if release == 'master':
-    tarball = 'master'
+if version == 'dev':
+    tarball = 'http://user.astro.wisc.edu/~townsend/resource/download/nightly/gyre-dev.tar.gz'
 else:
-    tarball = 'v{0:s}'.format(release)
+    tarball = f'https://github.com/rhdtownsend/gyre/releases/download/v{version}/gyre-{version}.tar.gz'
 
 targets = {
-    'github-tarball': 'https://codeload.github.com/rhdtownsend/gyre/tar.gz/{0:s}'.format(tarball),
+    'tarball': tarball,
     'gyre-forums': 'http://www.astro.wisc.edu/~townsend/gyre-forums/',
     'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
     'mesa': 'http://mesa.sourceforge.net/',
@@ -120,7 +119,7 @@ rst_prolog = '\n'.join(['.. _{:s}: {:s}'.format(x, targets[x]) for x in targets]
 
 # Add substitutions for sphinx_substitution_extensions
 
-rep_exts = {"release": release,
+rep_exts = {"version": version,
             "author": author}
 
 for rep_ext_key, rep_ext_val in rep_exts.items():
