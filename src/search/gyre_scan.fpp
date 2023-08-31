@@ -87,9 +87,9 @@ contains
 
     end do sc_p_loop
 
-    ! Sort the frequencies
+    ! Sort and uniquify the frequencies
 
-    omega = omega(sort_indices(omega))
+    omega = omega(unique_indices(omega))
 
     if (check_log_level('INFO') .AND. COUNT(sc_p%axis == axis) > 0) then
        write(OUTPUT_UNIT, *)
