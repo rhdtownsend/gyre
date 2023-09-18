@@ -262,7 +262,7 @@ defined as follows:
    \cthn = \frac{\cP}{a c \kappa T^{3}} \sqrt{\frac{GM}{R^{3}}} \qquad
    \dcthn = \deriv{\ln \cthn}{\ln r} \\
    %
-   \cthk = x^{-3} \frac{4\pi r^{3} \cP T \rho}{L} \sqrt{\frac{GM}{R^{3}}}
+   \cthk = x^{-3} \frac{4\pi r^{3} \cP T \rho}{L} \sqrt{\frac{GM}{R^{3}}} \qquad
    \cegv = x^{-3} \frac{4\pi r^{3} \rho \epsgrav}{L}
    \end{gathered}
 
