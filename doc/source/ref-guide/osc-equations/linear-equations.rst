@@ -9,7 +9,7 @@ the static equilibrium state as
 
 .. math::
 
-   \rho' + \nabla \cdot ( \rho \vv' ) = 0,
+   \pderiv{\rho'}{t} + \nabla \cdot ( \rho \vv' ) = 0,
 
 .. math::
    :label: e:osc-lin-mom
