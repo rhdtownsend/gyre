@@ -89,7 +89,9 @@ contains
 
     ! Sort and uniquify the frequencies
 
-    omega = omega(unique_indices(omega))
+    if (SIZE(omega) > 0) then
+       omega = omega(unique_indices(omega))
+    end if
 
     if (check_log_level('INFO') .AND. COUNT(sc_p%axis == axis) > 0) then
        write(OUTPUT_UNIT, *)
