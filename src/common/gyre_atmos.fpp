@@ -227,12 +227,12 @@ contains
     ! Evaluate the atmospheric cutoff frequencies from the supplied coefficients
 
     a = -4._WP*V/Gamma_1*c_1**2
-    b = ((As - V/Gamma_1 - 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda)*c_1
+    b = ((As - V/Gamma_1 + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda)*c_1
     c = -4._WP*lambda*As
 
     omega_cutoff_lo = sqrt((-b + sqrt(b**2 - 4._WP*a*c))/(2._WP*a))
     omega_cutoff_hi = sqrt((-b - sqrt(b**2 - 4._WP*a*c))/(2._WP*a))
-    
+
     $ASSERT(omega_cutoff_hi >= omega_cutoff_lo,Incorrect cutoff frequency ordering)
 
     ! Finish
