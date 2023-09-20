@@ -75,13 +75,13 @@ The dimensionless oscillation equations are
    \frac{V \nabla}{\frht \crad} y_{6} \\
    %
    x \deriv{y_{6}}{x} &=
-   \left[ \alphahfl \ell(\ell+1) \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad - \alphaegv c_{egv} \nabad V \right] y_{1} + \mbox{} \\
+   \left[ \alphahfl \ell(\ell+1) \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad - \alphaegv \cegv \nabad V \right] y_{1} + \mbox{} \\
    &
-   \left[ V \cepsad - \ell(\ell+1) \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omega^{2}} \right) + \alphaegv c_{egv} \nabad V \right] y_{2} + \mbox{} \\
+   \left[ V \cepsad - \ell(\ell+1) \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omega^{2}} \right) + \alphaegv \cegv \nabad V \right] y_{2} + \mbox{} \\
    &
    \alphagrv \left[ \ell(\ell+1) \crad \frac{3 + \dcrad}{c_{1}\omega^{2}} \right] y_{3} + \mbox{} \\
    &
-   \left[ \cepsS - \alphahfl \frac{\ell(\ell+1)\crad}{\nabla V} + \ii \alphathm \omega \cthk + \alphaegv c_{egv} \right] y_{5} -
+   \left[ \cepsS - \alphahfl \frac{\ell(\ell+1)\crad}{\nabla V} + \ii \alphathm \omega \cthk + \alphaegv \cegv \right] y_{5} -
    \left[ 1 + \ell \right] y_{6},
    \end{aligned}
 

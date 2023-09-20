@@ -119,7 +119,7 @@ ckapS	c_{\kappa,S}
 ceps	c_{\epsilon}
 cepsad	c_{\epsilon,{\rm ad}}
 cepsS	c_{\epsilon,S}
-cegv	c_{egv}
+cegv	c_{\rm egv}
 frht	f_{\rm rht}
 dfrht	\partial\frht
 elli	\ell_{\rm i}
