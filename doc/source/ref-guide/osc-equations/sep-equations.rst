@@ -33,6 +33,7 @@ Substituting the above solution forms into the linearized equations,
 the mechanical (mass and momentum conservation) equations become
 
 .. math::
+   :label: e:osc-sep-cont
 
    \trho' + \frac{1}{r^{2}} \deriv{}{r} \left( \rho r^{2} \txir \right) - \frac{\ell(\ell+1)}{r} \rho \txih = 0,
 
@@ -47,6 +48,7 @@ the mechanical (mass and momentum conservation) equations become
 Likewise, Poisson's equation becomes
 
 .. math::
+   :label: e:osc-sep-poisson
 
    \frac{1}{r^{2}} \deriv{}{r} \left( r^{2} \deriv{\tPhi'}{r} \right) - \frac{\ell(\ell+1)}{r^{2}} \txih = 4 \pi G \trho'
 

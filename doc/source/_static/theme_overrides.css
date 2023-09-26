@@ -11,3 +11,8 @@
       overflow: visible !important;
    }
 }
+
+/* equation number alignment */
+.eqno {
+    float: right;
+}

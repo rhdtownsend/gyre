@@ -85,7 +85,7 @@ html_theme_options = {
 }
 
 # CSS
-html_css_files = ["_static/theme_overrides.css"] # override wide tables in RTD theme
+html_css_files = ["theme_overrides.css"] 
 
 # Set master doc
 master_doc = 'index'

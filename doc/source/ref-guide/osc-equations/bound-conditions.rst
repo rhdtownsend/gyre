@@ -86,25 +86,30 @@ Internal Boundaries
 
 Internal boundaries arise when the density and other related
 quantities show a radial discontinuity within the star. Across such a
-discontinuity :math:`\txir`, :math:`\delta \tP` and :math:`\delta
-\tFradr` must remain continuous\ [#continuous]_. Internal boundary
-conditions on other perturbations follow from integrating the
-:ref:`separated equations <osc-sep-eqns>` across the discontinuity,
-resulting in
+discontinuity :math:`\txir`, :math:`\delta \tP`, :math:`\delta \tPhi`
+and :math:`\delta \tT` must remain continuous\
+[#continuous]_. Internal boundary conditions on other perturbations
+are given by
 
 .. math::
 
    \begin{aligned}
    \tP^{\prime +} - \tP^{\prime -} &= \deriv{\Phi}{r} \left( \rho^{+} - \rho^{-} \right) \txir, \\
-   \left. \deriv{\tPhi'}{r} \right|^{+} - \left. \deriv{\tPhi'}{r} \right|^{-} &= - 4 \pi G \left( \rho^{+} - \rho^{-} \right) \txir, \\
-   \tT^{\prime +} - \tT^{\prime -} &= 0.
+   \left. \frac{\delta \tS}{\cP} \right|^{+} - \left. \frac{\delta \tS}{\cP} \right|^{-} &= - \left( \nabad^{+} - \nabad^{-} \right) \frac{\delta \tP}{P}, \\
+   \left. \deriv{\tPhi'}{r} \right|^{+} - \left. \deriv{\tPhi'}{r} \right|^{-} &= - 4 \pi G \left( \rho^{+} - \rho^{-} \right) \txir. \\
    \end{aligned}
    
 Here, + (-) superscripts indicate quantities evaluated on the inner
-(outer) side of the discontinuity.
+(outer) side of the discontinuity. The first of these conditions
+arises from applying equation (:eq:`e:osc-eul-lag`) to the pressure
+perturbations on either side of the discontinuity; the second from
+evaluating the linearized equation-of-state on either side of the
+discontinuity; and the third from integrating the separated continuity
+and Poisson equations (:eq:`e:osc-sep-cont` and
+:eq:`e:osc-sep-poisson`, respectively) across the discontinuity.
 
 .. rubric:: Footnotes
 
 .. [#continuous] This is to ensure that the fluid doesn't 'tear', and
-                 that pressure forces and radiative heating remain
-                 finite.
+                 that pressure, potential and temperature gradients are
+		 continuous.

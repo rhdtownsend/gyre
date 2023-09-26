@@ -64,6 +64,7 @@ In these expressions, Eulerian and Lagrangian perturbations to any
 scalar quantity :math:`f` are related via
 
 .. math::
+   :label: e:osc-eul-lag
 
    \frac{\delta f}{f} = \frac{f'}{f} + \frac{\xir}{r} \deriv{\ln f}{\ln r}.
 
