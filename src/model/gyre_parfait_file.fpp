@@ -93,11 +93,12 @@ contains
     type(hgroup_t) :: hg
     character(16)  :: type
     integer        :: version
+    integer        :: N
 
     ! Read data from the PARFAIT-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from GSM file', TRIM(file)
+       write(OUTPUT_UNIT, 100) 'Reading from PARFAIT file'
 100    format(A)
        write(OUTPUT_UNIT, 110) 'File name', TRIM(file)
 110    format(3X,A,1X,A)
@@ -105,7 +106,7 @@ contains
 
     hg = hgroup_t(file, OPEN_FILE_RO)
 
-    ! Read the header and determine the version
+    ! Read the header
 
     call read_attr(hg, 'type', type)
 
@@ -120,6 +121,8 @@ contains
 120    format(3X,A,1X,F4.2,1X,A)
     endif
 
+    call read_attr(hg, 'N', N)
+
     ! Read the data
 
     select case (version)
@@ -131,6 +134,11 @@ contains
 
     call hg%final()
 
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 130) 'Read', N, 'shells'
+130    format(3X,A,1X,I0,1X,A)
+    endif
+
     ! Finish
 
     return
@@ -139,11 +147,7 @@ contains
 
     subroutine read_parfait_data_v1_00_ ()
 
-      integer :: N
-
       ! Read data from the version-1.00 file
-
-      call read_attr(hg, 'N', N)
 
       call read_attr(hg, 'y_c', y_c)
       call read_attr(hg, 'z_s', z_s)

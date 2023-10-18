@@ -115,7 +115,11 @@ contains
 
     case ('PARFAIT')
 
+       $if($HDF5)
        call read_parfait_model(ml_p, ml)
+       $else
+       $ABORT(No HDF5 support, therefore cannot read POLY files)
+       $endif
 
     case ('HOM')
 

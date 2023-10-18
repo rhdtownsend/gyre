@@ -238,7 +238,7 @@ contains
     ! Read data from the GSM-format file
 
     if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from GSM file', TRIM(file)
+       write(OUTPUT_UNIT, 100) 'Reading from GSM file'
 100    format(A)
        write(OUTPUT_UNIT, 110) 'File name', TRIM(file)
 110    format(3X,A,1X,A)
@@ -246,9 +246,7 @@ contains
 
     hg = hgroup_t(file, OPEN_FILE_RO)
 
-    ! Read the header and determine the version
-
-    call read_attr(hg, 'n', n)
+    ! Read the header
 
     if (attr_exists(hg, 'version')) then
        call read_attr(hg, 'version', version)
@@ -256,14 +254,16 @@ contains
        version = 0
     endif
 
-    call read_attr(hg, 'M_star', M_star)
-    call read_attr(hg, 'R_star', R_star)
-    call read_attr(hg, 'L_star', L_star)
-
     if (check_log_level('INFO')) then
        write(OUTPUT_UNIT, 120) 'File version', version/100._WP
 120    format(3X,A,1X,F4.2,1X,A)
     endif
+
+    call read_attr(hg, 'n', n)
+
+    call read_attr(hg, 'M_star', M_star)
+    call read_attr(hg, 'R_star', R_star)
+    call read_attr(hg, 'L_star', L_star)
 
     ! Read the data
 
@@ -281,6 +281,11 @@ contains
     end select
 
     call hg%final()
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 130) 'Read', n, 'points'
+130    format(3X,A,1X,I0,1X,A)
+    endif
 
     ! Finish
 

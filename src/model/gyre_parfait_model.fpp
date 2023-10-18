@@ -113,11 +113,6 @@ contains
 
     ! Construct the parfait_model_t
 
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Constructing parfait model'
-100    format(A)
-    endif
-
     ! Sanity checks
 
     n = SIZE(x)
@@ -189,11 +184,6 @@ contains
 
     ml%s_i = ml%gr%s_i()
     ml%s_o = ml%gr%s_o()
-
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Created', n, 'points'
-110    format(3X,A,1X,I0,1X,A)
-    endif
 
     ! Finish
 
