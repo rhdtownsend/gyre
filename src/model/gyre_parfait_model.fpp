@@ -554,7 +554,9 @@ contains
 
     ! Return whether the point is a vacuum
 
-    is_vacuum = (1._WP - pt%x**2) == 0._WP
+    associate (k => pt%s)
+      is_vacuum = this%d(k) == 0._WP
+    end associate
 
     ! Finish
 
