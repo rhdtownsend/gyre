@@ -1,0 +1,40 @@
+&constants
+/
+
+&model
+  model_type = 'PARFAIT'
+  file = '5msun.parfait'
+/
+
+&mode
+  l = 1
+/
+
+&osc
+/
+
+&rot
+/
+
+&num
+  diff_scheme = 'COLLOC_GL2'
+/
+
+&scan
+  grid_type = 'LINEAR'
+  freq_min = 1.5
+  freq_max = 5.0
+  n_freq = 25
+/
+
+&grid
+  dx_max = 0.01
+/
+
+&ad_output
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,n_pg,n_p,n_g,omega,omega_int'
+/
+
+&nad_output
+/

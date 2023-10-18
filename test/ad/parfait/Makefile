@@ -1,9 +1,9 @@
 # File     : Makefile
-# Purpose  : makefile for test/ad subdir
+# Purpose  : makefile for parfait subdir
 
 # Variables
 
-SUBDIRS=num poly fgong losc mesa parfait
+SUBDIRS=5msun
 
 # Rules
 
