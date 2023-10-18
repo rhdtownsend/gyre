@@ -1,7 +1,7 @@
 ! Module   : gyre_parfait_file
 ! Purpose  : read PARFAIT model files
 !
-! Copyright 2022 Rich Townsend & The GYRE Team
+! Copyright 2022-2023 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -50,7 +50,6 @@ contains
     type(model_par_t), intent(in)        :: ml_p
     class(model_t), pointer, intent(out) :: ml
 
-    type(hgroup_t)                 :: hg
     real(WP)                       :: y_c
     real(WP)                       :: z_s
     real(WP), allocatable          :: x(:)
@@ -58,29 +57,9 @@ contains
     real(WP), allocatable          :: Gamma_1(:)
     type(parfait_model_t), pointer :: pm
 
-    ! Read the PARFAIT-format file
+    ! Read data from the PARFAIT-format file
 
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from PARFAIT file', TRIM(ml_p%file)
-100    format(A,1X,A)
-    endif
-
-    hg = hgroup_t(ml_p%file, OPEN_FILE_RO)
-
-    call read_attr(hg, 'y_c', y_c)
-    call read_attr(hg, 'z_s', z_s)
-
-    call read_dset_alloc(hg, 'x', x)
-    call read_dset_alloc(hg, 'd', d)
-
-    call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
-
-    call hg%final()
-
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 110) 'Read', SIZE(x), 'points'
-110    format(3X,A,1X,I0,1X,A)
-    endif
+    call read_parfait_data(ml_p%file, y_c, z_s, x, d, Gamma_1)
 
     ! Initialize the parfait_model_t
 
@@ -99,5 +78,90 @@ contains
     return
 
   end subroutine read_parfait_model
+
+  !****
+
+  subroutine read_parfait_data (file, y_c, z_s, x, d, Gamma_1)
+
+    character(*), intent(in)           :: file
+    real(WP), intent(out)              :: y_c
+    real(WP), intent(out)              :: z_s
+    real(WP), allocatable, intent(out) :: x(:)
+    real(WP), allocatable, intent(out) :: d(:)
+    real(WP), allocatable, intent(out) :: Gamma_1(:)
+
+    type(hgroup_t) :: hg
+    character(16)  :: type
+    integer        :: version
+
+    ! Read data from the PARFAIT-format file
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 100) 'Reading from GSM file', TRIM(file)
+100    format(A)
+       write(OUTPUT_UNIT, 110) 'File name', TRIM(file)
+110    format(3X,A,1X,A)
+    endif
+
+    hg = hgroup_t(file, OPEN_FILE_RO)
+
+    ! Read the header and determine the version
+
+    call read_attr(hg, 'type', type)
+
+    if (type /= 'PARFAIT') then
+       $ABORT(File type mismatch)
+    end if
+    
+    call read_attr(hg, 'version', version)
+
+    if (check_log_level('INFO')) then
+       write(OUTPUT_UNIT, 120) 'File version', version/100._WP
+120    format(3X,A,1X,F4.2,1X,A)
+    endif
+
+    ! Read the data
+
+    select case (version)
+    case (100)
+       call read_parfait_data_v1_00_()
+    case default
+       $ABORT(Unrecognized PARFAIT file version)
+    end select
+
+    call hg%final()
+
+    ! Finish
+
+    return
+
+  contains
+
+    subroutine read_parfait_data_v1_00_ ()
+
+      integer :: N
+
+      ! Read data from the version-1.00 file
+
+      call read_attr(hg, 'N', N)
+
+      call read_attr(hg, 'y_c', y_c)
+      call read_attr(hg, 'z_s', z_s)
+
+      allocate(x(N+1))
+      allocate(d(N))
+      allocate(Gamma_1(N))
+
+      call read_dset(hg, 'x', x)
+      call read_dset(hg, 'd', d)
+      call read_dset(hg, 'Gamma_1', Gamma_1)
+
+      ! Finish
+
+      return
+
+    end subroutine read_parfait_data_v1_00_
+
+  end subroutine read_parfait_data
 
 end module gyre_parfait_file

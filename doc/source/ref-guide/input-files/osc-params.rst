@@ -111,7 +111,7 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
   :math:`\omega_{\rm int}`; one of:
 
   - :nml_v:`'PESNELL'` : Evaluate using eqn. (A5) of :ads_citet:`pesnell:1987`
-  - :nml_v:`'KAWALER'` : Evaluate using eqn. (7) of :ads_citet:`kawaler:1985`, as corrected by :ads_citet:`townsend:2023`
+  - :nml_v:`'KAWALER'` : Evaluate using eqn. (7) of :ads_citet:`kawaler:1985`, as corrected by :ads_citet:`townsend:2023a`
   - :nml_v:`'KAWALER_GRAV'`: Evaluate using the g-mode part in eqn. (7) of :ads_citet:`kawaler:1985`
   - :nml_v:`'DUPRET'` : Evaluate using eqn. (1.71) of Dupret (2002, PhD thesis)
 

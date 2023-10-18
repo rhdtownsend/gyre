@@ -39,6 +39,7 @@ relevant 'instrument' papers:
   non-adiabatic modes;
 * :ads_citet:`sun:2023` introduces the :ref:`gyre_tides frontend
   <frontends-gyre_tides>` for evaluating tidal responses.
+* :ads_citet:`townsend:2023b` introduces the concept of parfait models.
 
 If you find yourself using GYRE on a regular basis, you might consider
 contributing to the project to ensure its long-term success. Options include
@@ -58,6 +59,7 @@ GYRE remains under active development by the following team:
 * `Warrick Ball <https://www.birmingham.ac.uk/staff/profiles/physics/ball-warrick.aspx>`__ (University of Birmingham)
 * `Earl Bellinger <https://earlbellinger.com/>`__ (MPIA Garching)
 * Zhao Guo (Cambridge University)
+* Rianna Kuenzi (University of Wisconsin-Madison)
 * Mathias Michielsen (KU-Leuven)
 * Joel Ong (University of Hawaii-Manoa)
 * `Jarret Rosenberg <https://www.physics.wisc.edu/directory/rosenberg-jarrett/>`__ (University of Wisconsin-Madison)
