@@ -27,6 +27,7 @@ module gyre_freq
   use gyre_evol_model
   use gyre_math
   use gyre_model
+  use gyre_parfaitd_model
 
   use ISO_FORTRAN_ENV
 
@@ -90,6 +91,8 @@ contains
     select type (ml)
     class is (evol_model_t)
        scale = freq_scale_evol_model_(units, ml)
+    class is (parfaitd_model_t)
+       scale = freq_scale_parfaitd_model_(units, ml)
     class default
        scale = freq_scale(units)
     end select
@@ -126,5 +129,32 @@ contains
     return
 
   end function freq_scale_evol_model_
+  
+  !****
+
+  function freq_scale_parfaitd_model_ (units, ml) result (scale)
+
+    character(*), intent(in)           :: units
+    type(parfaitd_model_t), intent(in) :: ml
+    real(WP)                           :: scale
+
+    select case (units)
+    case ('HZ')
+       scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)/TWOPI
+    case ('UHZ')
+       scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*1E6_WP/TWOPI
+    case ('RAD_PER_SEC')
+       scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)
+    case ('CYC_PER_DAY')
+       scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*86400._WP/TWOPI
+    case default
+       scale = freq_scale(units)
+    end select
+
+    ! Finish
+
+    return
+
+  end function freq_scale_parfaitd_model_
   
 end module gyre_freq

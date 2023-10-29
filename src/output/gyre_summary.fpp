@@ -36,6 +36,7 @@ module gyre_summary
   use gyre_model
   use gyre_out_par
   use gyre_out_util
+  use gyre_parfaitd_model
   use gyre_resp
   use gyre_state
   use gyre_txt_writer
@@ -525,6 +526,10 @@ contains
 
           call cache_evol_model_(ot_p, ml, gr, l, sc, cached)
 
+       class is (parfaitd_model_t)
+
+          call cache_parfaitd_model_(ot_p, ml, gr, l, sc, cached)
+
        class default
 
           cached = .FALSE.
@@ -571,6 +576,38 @@ contains
     return
 
   end subroutine cache_evol_model_
+
+  !****
+
+  subroutine cache_parfaitd_model_ (ot_p, ml, gr, l, sc, cached)
+
+    type(out_par_t), intent(in)                  :: ot_p
+    class(parfaitd_model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)                     :: gr
+    integer, intent(in)                          :: l
+    type(summary_col_t), intent(inout)           :: sc
+    logical, intent(out)                         :: cached
+
+    ! Cache the item from parfaitd_model_t data
+
+    cached = .TRUE.
+
+    select case (sc%item)
+       
+    $CACHE_VALUE(M_star,ml%M_star)
+    $CACHE_VALUE(R_star,ml%R_star)
+
+    case default
+
+       cached = .FALSE.
+
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine cache_parfaitd_model_
 
   !****
 

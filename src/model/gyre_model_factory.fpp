@@ -1,7 +1,7 @@
 ! Module   : gyre_model_factory
 ! Purpose  : factory procedures for model_t
 !
-! Copyright 2016-2020 Rich Townsend & The GYRE Team
+! Copyright 2016-2023 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -33,6 +33,7 @@ module gyre_model_factory
   use gyre_losc_file
   use gyre_mesa_file
   use gyre_parfait_file
+  use gyre_parfaitd_file
   use gyre_osc_file
   use gyre_wdec_file
   $if ($HDF5)
@@ -118,7 +119,15 @@ contains
        $if($HDF5)
        call read_parfait_model(ml_p, ml)
        $else
-       $ABORT(No HDF5 support, therefore cannot read POLY files)
+       $ABORT(No HDF5 support, therefore cannot read PARFAIT files)
+       $endif
+
+    case ('PARFAITD')
+
+       $if($HDF5)
+       call read_parfaitd_model(ml_p, ml)
+       $else
+       $ABORT(No HDF5 support, therefore cannot read PARFAITD files)
        $endif
 
     case ('HOM')

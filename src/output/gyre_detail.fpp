@@ -34,6 +34,7 @@ module gyre_detail
   use gyre_model
   use gyre_out_par
   use gyre_out_util
+  use gyre_parfaitd_model
   use gyre_resp
   use gyre_state
   use gyre_txt_writer
@@ -502,6 +503,10 @@ contains
 
           call write_evol_model_(item, ot_p, ml, gr, l, wr, written)
 
+       class is (parfaitd_model_t)
+
+          call write_parfaitd_model_(item, ot_p, ml, gr, l, wr, written)
+
        class default
 
           written = .FALSE.
@@ -556,5 +561,44 @@ contains
     return
 
   end subroutine write_evol_model_
+
+  !****
+
+  subroutine write_parfaitd_model_ (item, ot_p, ml, gr, l, wr, written)
+
+    character(*), intent(in)                     :: item
+    type(out_par_t), intent(in)                  :: ot_p
+    class(parfaitd_model_t), pointer, intent(in) :: ml
+    type(grid_t), intent(in)                     :: gr
+    integer, intent(in)                          :: l
+    class(writer_t), intent(inout)               :: wr
+    logical, intent(out)                         :: written
+
+    integer :: j
+    
+    ! Write the item from parfaitd_model_t data
+
+    written = .TRUE.
+
+    select case (item)
+       
+    $WRITE_POINTS(M_r,ml%M_r(gr%pt(j)))
+    $WRITE_POINTS(P,ml%P(gr%pt(j)))
+    $WRITE_POINTS(rho,ml%rho(gr%pt(j)))
+
+    $WRITE_VALUE(M_star,ml%M_star)
+    $WRITE_VALUE(R_star,ml%R_star)
+
+    case default
+
+       written = .FALSE.
+
+    end select
+
+    ! Finish
+
+    return
+
+  end subroutine write_parfaitd_model_
 
 end module gyre_detail
