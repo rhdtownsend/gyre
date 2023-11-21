@@ -1,5 +1,5 @@
-! Program  : build_poly
-! Purpose  : build a composite polytrope
+! Program : build_poly
+! Purpose : build a composite polytrope
 !
 ! Copyright 2015-2020 Rich Townsend & The GYRE Team
 !
@@ -21,13 +21,13 @@ program build_poly
 
   ! Uses
 
-  use core_kinds
-  use gyre_constants
-  use core_hgroup
-  use core_system
-  use core_memory
+  use kinds_m
+  use constants_m
+  use hgroup_m
+  use system_m
+  use memory_m
 
-  use gyre_lane_emden
+  use lane_emden_m
 
   use ISO_FORTRAN_ENV
 

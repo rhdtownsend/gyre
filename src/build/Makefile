@@ -23,7 +23,7 @@ all :
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../extern/astro:../common:../math:../par:../diff:../bvp:../interp:../model:../matrix:../search:../context:../ext:../frontend:../ad:../rad:../nad:../tnad:../sad:../rot:../tar:../tide:../mode:../grid:../frontend:../output:../poly
+SUBDIRS=../core:../extern/astro:../common:../math:../par:../diff:../bvp:../interp:../model:../matrix:../search:../context:../ext:../frontend:../ad:../rad:../nad:../tnad:../sad:../rot:../tar:../tide:../mode:../grid:../frontend:../output:../poly
 
 include Make.inc
 
@@ -34,13 +34,13 @@ core_parallel.o : F9XFLAGS:=${F9XFLAGS} -std=legacy
 endif
 
 ifeq ($(CRMATH),yes)
-gyre_math.fpp: gyre_math_crmath.fpp
+math_m.fpp: math_crmath_m.fpp
 	@ln -sf $< $@
 else
-gyre_math.fpp: gyre_math_intrinsic.fpp
+math_m.fpp: math_intrinsic_m.fpp
 	@ln -sf $< $@
 endif
 
-.INTERMEDIATE: gyre_math.fpp
+.INTERMEDIATE: math_m.fpp
 
-.depend: gyre_math.fpp
+.depend: math_m.fpp

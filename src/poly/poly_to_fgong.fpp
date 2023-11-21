@@ -1,5 +1,5 @@
-! Program  : poly_to_fgong
-! Purpose  : convert a polytrope to FGONG format
+! Program : poly_to_fgong
+! Purpose : convert a polytrope to FGONG format
 !
 ! Copyright 2015-2022 Rich Townsend & The GYRE Team
 !
@@ -21,16 +21,16 @@ program poly_to_fgong
 
   ! Uses
 
-  use core_kinds
-  use core_system
+  use kinds_m
+  use system_m
 
-  use gyre_constants
-  use gyre_grid
-  use gyre_math
-  use gyre_model
-  use gyre_model_par
-  use gyre_poly_file
-  use gyre_poly_model
+  use constants_m
+  use grid_m
+  use math_m
+  use model_m
+  use model_par_m
+  use poly_file_m
+  use poly_model_m
 
   use ISO_FORTRAN_ENV
 

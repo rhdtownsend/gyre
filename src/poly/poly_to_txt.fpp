@@ -1,5 +1,5 @@
-! Program  : poly_to_txt
-! Purpose  : convert a polytrope to a simple txt format
+! Program : poly_to_txt
+! Purpose : convert a polytrope to a simple txt format
 !
 ! Copyright 2019 Rich Townsend & The GYRE Team
 !
@@ -21,14 +21,14 @@ program poly_to_txt
 
   ! Uses
 
-  use core_kinds
-  use core_system
+  use kinds_m
+  use system_m
 
-  use gyre_grid
-  use gyre_model
-  use gyre_model_par
-  use gyre_poly_file
-  use gyre_poly_model
+  use grid_m
+  use model_m
+  use model_par_m
+  use poly_file_m
+  use poly_model_m
 
   use ISO_FORTRAN_ENV
 

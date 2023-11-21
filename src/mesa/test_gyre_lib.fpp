@@ -21,10 +21,10 @@ program test_gyre_lib
 
   ! Uses
 
-  use core_kinds
-  use gyre_constants
+  use kinds_m
+  use constants_m
 
-  use gyre_lib
+  use gyre_lib_m
 
   use ISO_FORTRAN_ENV
 
@@ -42,13 +42,13 @@ program test_gyre_lib
   
   ! Initialize
 
-  call gyre_init('gyre.in')
+  call init('gyre.in')
 
   call set_constant('GYRE_DIR', '../../..')
 
   ! Read the model
 
-  call gyre_read_model('bcep.mesa')
+  call read_model('bcep.mesa')
 
   ! Repeatedy find modes
 
@@ -56,18 +56,18 @@ program test_gyre_lib
 
      ! Adjust the frequency range
 
-     call gyre_get_par(scan_par=sc_p)
+     call get_par(scan_par=sc_p)
 
      sc_p(1)%freq_min = sc_p(1)%freq_min + 0.5_WP
      sc_p(1)%freq_max = sc_p(1)%freq_max + 0.5_WP
 
-     call gyre_set_par(scan_par=sc_p)
+     call set_par(scan_par=sc_p)
 
      ! Run
      
-     call gyre_get_modes(0, user_sub, ipar, rpar)
-     call gyre_get_modes(1, user_sub, ipar, rpar)
-     call gyre_get_modes(2, user_sub, ipar, rpar)
+     call get_modes(0, user_sub, ipar, rpar)
+     call get_modes(1, user_sub, ipar, rpar)
+     call get_modes(2, user_sub, ipar, rpar)
 
      ! Get  print out memory usage
      
@@ -83,8 +83,9 @@ contains
 
   subroutine user_sub (md, ipar, rpar, retcode)
 
-    use core_kinds
-    use gyre_mode
+    use kinds_m
+    use mode_m
+    
     type(mode_t), intent(in) :: md
     integer, intent(inout)   :: ipar(:)
     real(WP), intent(inout)  :: rpar(:)

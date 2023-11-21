@@ -1,5 +1,5 @@
-! Program  : gyre_map
-! Purpose  : discriminant mapping code
+! Program : gyre_map
+! Purpose : discriminant mapping code
 !
 ! Copyright 2013-2019 Rich Townsend & The GYRE Team
 !
@@ -21,34 +21,34 @@ program gyre_map
 
   ! Uses
 
-  use core_kinds, only : WP
-  use core_hgroup
-  use core_order
-  use core_parallel
-  use core_system
+  use kinds_m
+  use hgroup_m
+  use order_m
+  use parallel_m
+  use system_m
 
-  use gyre_bvp
-  use gyre_constants
-  use gyre_context
-  use gyre_discrim_func
-  use gyre_ext
-  use gyre_grid
-  use gyre_grid_factory
-  use gyre_grid_par
-  use gyre_mode
-  use gyre_mode_par
-  use gyre_model
-  use gyre_model_factory
-  use gyre_model_par
-  use gyre_nad_bvp
-  use gyre_num_par
-  use gyre_osc_par
-  use gyre_scan_par, only : scan_par_t
-  use gyre_scan
-  use gyre_state
-  use gyre_status
-  use gyre_util
-  use gyre_version
+  use bvp_m
+  use constants_m
+  use context_m
+  use discrim_func_m
+  use ext_m
+  use grid_m
+  use grid_factory_m
+  use grid_par_m
+  use mode_m
+  use mode_par_m
+  use model_m
+  use model_factory_m
+  use model_par_m
+  use nad_bvp_m
+  use num_par_m
+  use osc_par_m
+  use scan_par_m, only : scan_par_t
+  use scan_m
+  use state_m
+  use status_m
+  use util_m
+  use version_m
 
   use ISO_FORTRAN_ENV
 

@@ -1,5 +1,5 @@
-! Program  : gyre_tides
-! Purpose  : stellar tides code
+! Program : gyre_tides
+! Purpose : stellar tides code
 !
 ! Copyright 2019-2022 Rich Townsend & The GYRE Team
 !
@@ -21,32 +21,32 @@ program gyre_tides
 
   ! Uses
 
-  use core_kinds, only : WP
-  use core_hgroup
-  use core_parallel
-  use core_system
+  use kinds_m, only : WP
+  use hgroup_m
+  use parallel_m
+  use system_m
 
-  use gyre_constants
-  use gyre_detail
-  use gyre_func
-  use gyre_grid_par
-  use gyre_math
-  use gyre_model
-  use gyre_model_factory
-  use gyre_model_par
-  use gyre_num_par
-  use gyre_orbit_par
-  use gyre_osc_par
-  use gyre_out_par
-  use gyre_resp
-  use gyre_rot_par
-  use gyre_search
-  use gyre_summary
-  use gyre_tide_par
-  use gyre_tidal_coeff
-  use gyre_tidal_resp
-  use gyre_util
-  use gyre_version
+  use constants_m
+  use detail_m
+  use func_m
+  use grid_par_m
+  use math_m
+  use model_m
+  use model_factory_m
+  use model_par_m
+  use num_par_m
+  use orbit_par_m
+  use osc_par_m
+  use out_par_m
+  use resp_m
+  use rot_par_m
+  use search_m
+  use summary_m
+  use tide_par_m
+  use tidal_coeff_m
+  use tidal_resp_m
+  use util_m
+  use version_m
 
   use ISO_FORTRAN_ENV
 
@@ -78,7 +78,7 @@ program gyre_tides
 
   ! Read command-line arguments
 
-  $ASSERT(n_arg() == 1,Syntax: gyre_tide <filename>)
+  $ASSERT(n_arg() == 1,Syntax: gyre_tides <filename>)
 
   call get_arg(1, filename)
 

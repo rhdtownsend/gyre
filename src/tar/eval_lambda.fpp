@@ -21,14 +21,14 @@ program eval_lambda
 
   ! Uses
 
-  use core_kinds
-  use core_hgroup
-  use core_system
-  use core_parallel
+  use kinds_m
+  use hgroup_m
+  use system_m
+  use parallel_m
 
-  use gyre_constants
-  use gyre_math
-  use gyre_tar_eigen
+  use constants_m
+  use math_m
+  use tar_eigen_m
 
   use ISO_FORTRAN_ENV
 

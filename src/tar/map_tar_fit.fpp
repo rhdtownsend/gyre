@@ -1,5 +1,5 @@
-! Program  : map_tar_fit
-! Purpose  : maps of tar_fits in the complex plane
+! Program : map_tar_fit
+! Purpose : maps of tar_fits in the complex plane
 !
 ! Copyright 2017-2020 Rich Townsend & The GYRE Team
 !
@@ -21,12 +21,12 @@ program map_tar_fit
 
   ! Uses
 
-  use core_kinds
-  use core_hgroup
-  use core_system
+  use kinds_m
+  use hgroup_m
+  use system_m
 
-  use gyre_constants
-  use gyre_tar_fit
+  use constants_m
+  use tar_fit_m
 
   use ISO_FORTRAN_ENV
   
@@ -69,7 +69,7 @@ program map_tar_fit
 
   ! Read the tar_fit_t
 
-  hg = hgroup_t(in_file, OPEN_FILE)
+  hg = hgroup_t(in_file, OPEN_FILE_RO)
   call read(hg, tf)
   call hg%final()
 

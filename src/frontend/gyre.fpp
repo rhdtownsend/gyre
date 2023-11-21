@@ -1,5 +1,5 @@
-! Program  : gyre
-! Purpose  : oscillation code
+! Program : gyre
+! Purpose : oscillation code
 !
 ! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !
@@ -21,39 +21,39 @@ program gyre
 
   ! Uses
 
-  use core_kinds, only : WP
-  use core_memory
-  use core_parallel
-  use core_system
+  use kinds_m, only : WP
+  use memory_m
+  use parallel_m
+  use system_m
 
-  use gyre_ad_bvp
-  use gyre_bvp
-  use gyre_constants
-  use gyre_context
-  use gyre_detail
-  use gyre_ext
-  use gyre_grid
-  use gyre_grid_factory
-  use gyre_grid_par
-  use gyre_math
-  use gyre_mode
-  use gyre_mode_par
-  use gyre_model
-  use gyre_model_factory
-  use gyre_model_par
-  use gyre_nad_bvp
-  use gyre_num_par
-  use gyre_osc_par
-  use gyre_out_par
-  use gyre_rad_bvp
-  use gyre_rot_par
-  use gyre_scan
-  use gyre_scan_par
-  use gyre_search
-  use gyre_summary
-  use gyre_tnad_bvp
-  use gyre_util
-  use gyre_version
+  use ad_bvp_m
+  use bvp_m
+  use constants_m
+  use context_m
+  use detail_m
+  use ext_m
+  use grid_m
+  use grid_factory_m
+  use grid_par_m
+  use math_m
+  use mode_m
+  use mode_par_m
+  use model_m
+  use model_factory_m
+  use model_par_m
+  use nad_bvp_m
+  use num_par_m
+  use osc_par_m
+  use out_par_m
+  use rad_bvp_m
+  use rot_par_m
+  use scan_m
+  use scan_par_m
+  use search_m
+  use summary_m
+  use tnad_bvp_m
+  use util_m
+  use version_m
 
   use ISO_FORTRAN_ENV
 

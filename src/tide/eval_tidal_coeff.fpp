@@ -1,5 +1,5 @@
-! Program  : eval_tidal_coeff
-! Purpose  : evaluate tidal coupling coefficients
+! Program : eval_tidal_coeff
+! Purpose : evaluate tidal coupling coefficients
 !
 ! Copyright 2020-2022 Rich Townsend & The GYRE Team
 !
@@ -21,15 +21,15 @@ program eval_tidal_coeff
 
   ! Uses
 
-  use core_kinds
-  use core_system
+  use kinds_m
+  use system_m
 
-  use gyre_hom_model
-  use gyre_math
-  use gyre_model_par
-  use gyre_orbit_par
-  use gyre_func
-  use gyre_tidal_coeff
+  use hom_model_m
+  use math_m
+  use model_par_m
+  use orbit_par_m
+  use func_m
+  use tidal_coeff_m
 
   use ISO_FORTRAN_ENV
 

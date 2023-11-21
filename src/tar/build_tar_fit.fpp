@@ -1,5 +1,5 @@
-! Program  : build_tar_fit
-! Purpose  : build tar_fit_t types and write to file
+! Program : build_tar_fit
+! Purpose : build tar_fit_t types and write to file
 !
 ! Copyright 2016-2020 Rich Townsend & The GYRE Team
 !
@@ -21,13 +21,13 @@ program build_tar_fit
 
   ! Uses
 
-  use core_kinds
-  use gyre_constants
-  use core_hgroup
-  use core_system
+  use kinds_m
+  use constants_m
+  use hgroup_m
+  use system_m
 
-  use gyre_math
-  use gyre_tar_fit
+  use math_m
+  use tar_fit_m
 
   use ISO_FORTRAN_ENV
 

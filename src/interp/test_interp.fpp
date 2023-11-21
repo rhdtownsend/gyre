@@ -2,9 +2,9 @@ $include 'core.inc'
 
 program test_interp
 
-  use core_kinds
+  use kinds_m
   
-  use gyre_interp
+  use interp_m
 
   real(WP), parameter :: x_a = -3._WP
   real(WP), parameter :: x_b = 3._WP
@@ -42,5 +42,3 @@ program test_interp
   ! Finish
 
 end program test_interp
-
-  
