@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+#
+# Wrapper around the fypp Fortran pre-processor, that writes dependency
+# information to STDOUT
+
+import re
+import os
+import sys
+sys.path.insert(0, '{:s}/lib/python'.format(os.environ.get('MESASDK_ROOT')))
+
+import fypp
+
+incfiles = {}
+
+class BuilderDeps (fypp.Builder):
+
+    def __init__(self):
+        super().__init__()
+        self.handle_include = self.handle_include_and_add_deps
+
+    def handle_include_and_add_deps (self, span, fname):
+        if span is not None:
+            if fname in incfiles:
+                incfiles[fname] += [span]
+            else:
+                incfiles[fname] = [span]
+        super().handle_include(span, fname)
+
+def run_fypp_deps():
+
+    options = fypp.FyppOptions()
+    optparser = fypp.get_option_parser()
+    opts, leftover = optparser.parse_args(values=options)
+    infile = leftover[0] if len(leftover) > 0 else '-'
+    outfile = leftover[1] if len(leftover) > 1 else '-'
+
+    try:
+        tool = fypp.Fypp(opts, builder_factory=BuilderDeps)
+        tool.process_file(infile, outfile)
+        print('{:s} : {:s} {:s}'.format(outfile, infile, ' '.join(incfiles.keys())))
+    except fypp.FyppStopRequest as exc:
+        sys.stderr.write(fypp._formatted_exception(exc))
+        sys.exit(fypp.USER_ERROR_EXIT_CODE)
+    except fypp.FyppFatalError as exc:
+        sys.stderr.write(fypp._formatted_exception(exc))
+        sys.exit(fypp.ERROR_EXIT_CODE)
+
+if __name__ == '__main__':
+    sys.exit(run_fypp_deps())

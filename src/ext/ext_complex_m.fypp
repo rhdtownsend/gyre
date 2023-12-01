@@ -1,0 +1,920 @@
+! Module  : ext_complex_m
+! Purpose : extented-exponent arithmetic (complex)
+!
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'core.inc'
+
+module ext_complex_m
+
+   ! Uses
+
+   use kinds_m
+
+   use ext_real_m
+   use math_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Parameter definitions
+
+   real(WP), parameter :: RADIX_WP = REAL(RADIX(1._WP), WP)
+
+   ! Derived-type definitions
+
+   type ext_ct
+      private
+      complex(WP) :: f ! Fractional part
+      integer     :: e ! Exponent
+   contains
+      procedure       :: op_minus_cx_
+      generic, public :: operator(-) => op_minus_cx_
+      #:for O, N in zip(('+', '-', '*', '/', '==', '/='), &
+                        ('plus', 'minus', 'times', 'divide', 'eq', 'neq'))
+         procedure             :: op_${N}$_cx_cx_
+         procedure             :: op_${N}$_cx_rx_
+         procedure, pass(that) :: op_${N}$_rx_cx_
+         procedure             :: op_${N}$_cx_r_
+         procedure, pass(that) :: op_${N}$_r_cx_
+         procedure             :: op_${N}$_cx_c_
+         procedure, pass(that) :: op_${N}$_c_cx_
+         generic, public       :: operator(${O}$) => op_${N}$_cx_cx_, op_${N}$_cx_rx_, op_${N}$_rx_cx_, &
+            &                                        op_${N}$_cx_r_, op_${N}$_r_cx_, &
+            &                                        op_${N}$_cx_c_, op_${N}$_c_cx_
+      #:endfor
+   end type ext_ct
+
+   type, abstract :: func_ext_ct
+   contains
+      procedure(eval_), deferred :: eval
+   end type func_ext_ct
+
+   ! Interface blocks
+
+   interface ext_ct
+      module procedure ext_ct_r_
+      module procedure ext_ct_r_i_
+      module procedure ext_ct_c_
+      module procedure ext_ct_rx_
+      module procedure ext_ct_rx_ix_
+   end interface ext_ct
+
+   interface ext_rt
+      module procedure ext_rt_cx_
+   end interface ext_rt
+
+   interface real
+      module procedure real_
+   end interface real
+
+   interface cmplx
+      module procedure cmplx_
+   end interface cmplx
+
+   interface valid
+      module procedure valid_
+   end interface valid
+
+   interface conjg
+      module procedure conjg_
+   end interface conjg
+
+   interface real_part
+      module procedure real_part_
+   end interface real_part
+
+   interface imag_part
+      module procedure imag_part_
+   end interface imag_part
+
+   interface product
+      module procedure product_
+   end interface product
+
+   interface exp
+      module procedure exp_
+   end interface exp
+
+   interface sqrt
+      module procedure sqrt_
+   end interface sqrt
+
+   interface abs
+      module procedure abs_
+   end interface abs
+
+   interface fraction
+      module procedure fraction_
+   end interface fraction
+
+   interface exponent
+      module procedure exponent_
+   end interface exponent
+
+   interface scale
+      module procedure scale_
+   end interface scale
+
+   abstract interface
+      subroutine eval_(this, cx, f_cx, status)
+         import ext_ct
+         import func_ext_ct
+         class(func_ext_ct), intent(inout) :: this
+         type(ext_ct), intent(in)          :: cx
+         type(ext_ct), intent(out)         :: f_cx
+         integer, intent(out)              :: status
+      end subroutine eval_
+   end interface
+
+   ! Access specifiers
+
+   public :: ext_ct
+   public :: ext_rt
+   public :: real
+   public :: cmplx
+   public :: real_part
+   public :: imag_part
+   public :: valid
+   public :: conjg
+   public :: product
+   public :: abs
+   public :: exp
+   public :: sqrt
+   public :: fraction
+   public :: exponent
+   public :: scale
+
+   ! Default access
+
+   private
+
+contains
+
+   elemental function ext_ct_r_(r) result(cx)
+
+      real(WP), intent(in) :: r
+      type(ext_ct)         :: cx
+
+      ! Construct the ext_ct from the real r
+
+      call split_(CMPLX(r, KIND=WP), cx%f, cx%e)
+
+      ! Finish
+
+      return
+
+   end function ext_ct_r_
+
+   !****
+
+   elemental function ext_ct_r_i_(r, i) result(cx)
+
+      real(WP), intent(in) :: r
+      real(WP), intent(in) :: i
+      type(ext_ct)         :: cx
+
+      ! Construct the ext_ct from the real/imaginary pair r, i
+
+      call split_(CMPLX(r, i, KIND=WP), cx%f, cx%e)
+
+      ! Finish
+
+      return
+
+   end function ext_ct_r_i_
+
+   !****
+
+   elemental function ext_ct_c_(c) result(cx)
+
+      complex(WP), intent(in) :: c
+      type(ext_ct)           :: cx
+
+      ! Construct the ext_ct from the complex c
+
+      call split_(c, cx%f, cx%e)
+
+      ! Finish
+
+      return
+
+   end function ext_ct_c_
+
+   !****
+
+   elemental function ext_ct_rx_(rx) result(cx)
+
+      type(ext_rt), intent(in) :: rx
+      type(ext_ct)             :: cx
+
+      ! Construct the ext_ct from the ext_rt rx
+
+      call split_(CMPLX(FRACTION(rx), KIND=WP), cx%f, cx%e)
+      cx = scale(cx, EXPONENT(rx))
+
+      ! Finish
+
+      return
+
+   end function ext_ct_rx_
+
+   !****
+
+   elemental function ext_ct_rx_ix_(rx, ix) result(cx)
+
+      type(ext_rt), intent(in) :: rx
+      type(ext_rt), intent(in) :: ix
+      type(ext_ct)             :: cx
+
+      ! Construct the ext_ct from the ext_rt real/imaginary pair rx,
+      ! ix
+
+      cx = ext_ct(rx) + ext_ct(0._WP, 1._WP)*ext_ct(ix)
+
+      ! Finish
+
+      return
+
+   end function ext_ct_rx_ix_
+
+   !****
+
+   elemental function op_plus_cx_cx_(this, that) result(cx)
+
+      class(ext_ct), intent(in) :: this
+      class(ext_ct), intent(in) :: that
+      type(ext_ct)              :: cx
+
+      complex(WP) :: f
+      integer     :: e
+
+      ! Evaluate the plus operator
+
+      if (this%f == 0._WP) then
+
+         cx%f = that%f
+         cx%e = that%e
+
+      elseif (that%f == 0._WP) then
+
+         cx%f = this%f
+         cx%e = this%e
+
+      else
+
+         if (this%e > that%e) then
+            f = this%f + cmplx(ext_ct(that%f, that%e - this%e))
+            e = this%e
+         else
+            f = cmplx(ext_ct(this%f, this%e - that%e)) + that%f
+            e = that%e
+         endif
+
+         call split_(f, cx%f, cx%e)
+         cx%e = cx%e + e
+
+      endif
+
+      ! Finish
+
+      return
+
+   end function op_plus_cx_cx_
+
+   !****
+
+   elemental function op_minus_cx_(this) result(cx)
+
+      class(ext_ct), intent(in) :: this
+      type(ext_ct)              :: cx
+
+      ! Evaluate the unary minus operator
+
+      cx%f = -this%f
+      cx%e = this%e
+
+      ! Finish
+
+      return
+
+   end function op_minus_cx_
+
+   !****
+
+   elemental function op_minus_cx_cx_(this, that) result(cx)
+
+      class(ext_ct), intent(in) :: this
+      class(ext_ct), intent(in) :: that
+      type(ext_ct)              :: cx
+
+      complex(WP) :: f
+      integer     :: e
+
+      ! Evaluate the minus operator
+
+      if (this%f == 0._WP) then
+
+         cx%f = -that%f
+         cx%e = that%e
+
+      elseif (that%f == 0._WP) then
+
+         cx%f = this%f
+         cx%e = this%e
+
+      else
+
+         if (this%e > that%e) then
+            f = this%f - cmplx(ext_ct(that%f, that%e - this%e))
+            e = this%e
+         else
+            f = cmplx(ext_ct(this%f, this%e - that%e)) - that%f
+            e = that%e
+         endif
+
+         call split_(f, cx%f, cx%e)
+         cx = scale(cx, e)
+
+      endif
+
+      ! Finish
+
+      return
+
+   end function op_minus_cx_cx_
+
+   !****
+
+   elemental function op_times_cx_cx_(this, that) result(cx)
+
+      class(ext_ct), intent(in) :: this
+      class(ext_ct), intent(in) :: that
+      type(ext_ct)              :: cx
+
+      complex(WP) :: f
+      integer     :: e
+
+      ! Evaluate the times operator
+
+      if (this%f == 0._WP .OR. that%f == 0._WP) then
+
+         cx = ext_ct(0._WP)
+
+      else
+
+         f = this%f*that%f
+         e = this%e + that%e
+
+         call split_(f, cx%f, cx%e)
+         cx = scale(cx, e)
+
+      endif
+
+      ! Finish
+
+      return
+
+   end function op_times_cx_cx_
+
+   !****
+
+   elemental function op_divide_cx_cx_(this, that) result(cx)
+
+      class(ext_ct), intent(in) :: this
+      class(ext_ct), intent(in) :: that
+      type(ext_ct)              :: cx
+
+      complex(WP) :: f
+      integer     :: e
+
+      ! Evaluate the divide operator
+
+      if (this%f == 0._WP .AND. that%f /= 0._WP) then
+
+         cx = ext_ct(0._WP)
+
+      else
+
+         f = this%f/that%f
+         e = this%e - that%e
+
+         call split_(f, cx%f, cx%e)
+         cx = scale(cx, e)
+
+      endif
+
+      ! Finish
+
+      return
+
+   end function op_divide_cx_cx_
+
+   !****
+
+   elemental function op_eq_cx_cx_(this, that) result(eq)
+
+      class(ext_ct), intent(in) :: this
+      class(ext_ct), intent(in) :: that
+      logical                   :: eq
+
+      ! Evaluate the equality operator
+
+      eq = this%e == that%e .AND. this%f == that%f
+
+      ! Finish
+
+      return
+
+   end function op_eq_cx_cx_
+
+   !****
+
+   elemental function op_neq_cx_cx_(this, that) result(neq)
+
+      class(ext_ct), intent(in) :: this
+      class(ext_ct), intent(in) :: that
+      logical                   :: neq
+
+      ! Evaluate the inequality operator
+
+      neq = .NOT. this == that
+
+      ! Finish
+
+      return
+
+   end function op_neq_cx_cx_
+
+   !****
+
+   #:for O, N, T in zip(('+', '-', '*', '/', '==', '/='), &
+                        ('plus', 'minus', 'times', 'divide', 'eq', 'neq'), &
+                        ('type(ext_ct)',)*4+('logical',)*2)
+
+      elemental function op_${N}$_cx_rx_(this, that) result(${N}$)
+
+         class(ext_ct), intent(in) :: this
+         class(ext_rt), intent(in) :: that
+         ${T}$                     :: ${N}$
+
+         ! Evaluate the operator to mixed ext_ct/ext_rt types
+
+         ${N}$ = this ${O}$ ext_ct(that)
+
+         ! Finish
+
+         return
+
+      end function op_${N}$_cx_rx_
+
+      elemental function op_${N}$_rx_cx_(this, that) result(${N}$)
+
+         class(ext_rt), intent(in) :: this
+         class(ext_ct), intent(in) :: that
+         ${T}$                      :: ${N}$
+
+         ! Evaluate the operator to mixed ext_rt/ext_ct types
+
+         ${N}$ = ext_ct(this) ${O}$ that
+
+         ! Finish
+
+         return
+
+      end function op_${N}$_rx_cx_
+
+      elemental function op_${N}$_cx_c_(this, that) result(${N}$)
+
+         class(ext_ct), intent(in) :: this
+         complex(WP), intent(in)    :: that
+         ${T}$                      :: ${N}$
+
+         ! Evaluate the operator to mixed ext_ct/complex types
+
+         ${N}$ = this ${O}$ ext_ct(that)
+
+         ! Finish
+
+         return
+
+      end function op_${N}$_cx_c_
+
+      elemental function op_${N}$_c_cx_(this, that) result(${N}$)
+
+         complex(WP), intent(in)    :: this
+         class(ext_ct), intent(in) :: that
+         ${T}$                      :: ${N}$
+
+         ! Evaluate the operator to mixed complex/ext_ct types
+
+         ${N}$ = ext_ct(this) ${O}$ that
+
+         ! Finish
+
+         return
+
+      end function op_${N}$_c_cx_
+
+      elemental function op_${N}$_cx_r_(this, that) result(${N}$)
+
+         class(ext_ct), intent(in) :: this
+         real(WP), intent(in)       :: that
+         ${T}$                      :: ${N}$
+
+         ! Evaluate the operator to mixed ext_ct/real types
+
+         ${N}$ = this ${O}$ ext_ct(that)
+
+         ! Finish
+
+         return
+
+      end function op_${N}$_cx_r_
+
+      elemental function op_${N}$_r_cx_(this, that) result(${N}$)
+
+         real(WP), intent(in)       :: this
+         class(ext_ct), intent(in) :: that
+         ${T}$                      :: ${N}$
+
+         ! Evaluate the operator to mixed real/ext_ct types
+
+         ${N}$ = ext_ct(this) ${O}$ that
+
+         ! Finish
+
+         return
+
+      end function op_${N}$_r_cx_
+
+   #:endfor
+
+   !****
+
+   elemental function ext_rt_cx_(cx) result(rx)
+
+      type(ext_ct), intent(in) :: cx
+      type(ext_rt)             :: rx
+
+      ! Construct the ext_rt from the ext_ct
+
+      rx = ext_rt(REAL(cx%f))
+      rx = scale(rx, cx%e)
+
+      ! Finish
+
+      return
+
+   end function ext_rt_cx_
+
+   !****
+
+   elemental function real_(cx) result(r)
+
+      type(ext_ct), intent(in) :: cx
+      real(WP)                 :: r
+
+      ! Convert cx to real
+
+      r = REAL(cmplx(cx))
+
+      ! Finish
+
+      return
+
+   end function real_
+
+   !****
+
+   elemental function cmplx_(cx) result(c)
+
+      type(ext_ct), intent(in) :: cx
+      complex(WP)              :: c
+
+      integer :: e_min
+
+      ! Convert cx to complex
+
+      if (cx%f /= 0._WP) then
+
+         e_min = MINEXPONENT(0._WP)
+
+         if (cx%e >= e_min) then
+            c = cx%f*RADIX_WP**cx%e
+         else
+            c = (cx%f*RADIX_WP**MAX(cx%e-e_min, -DIGITS(0._WP)-1))*RADIX_WP**e_min
+         endif
+
+      else
+
+         c = 0._WP
+
+      endif
+
+      ! Finish
+
+      return
+
+   end function cmplx_
+
+   !****
+
+   elemental function real_part_(cx) result(rx)
+
+      type(ext_ct), intent(in) :: cx
+      type(ext_rt)             :: rx
+
+      ! Extract the real part of cx
+
+      rx = scale(ext_rt(REAL(cx%f)), cx%e)
+
+      ! Finish
+
+      return
+
+   end function real_part_
+
+   !****
+
+   elemental function imag_part_(cx) result(rx)
+
+      type(ext_ct), intent(in) :: cx
+      type(ext_rt)             :: rx
+
+      ! Extract the imaginary part of cx
+
+      rx = scale(ext_rt(AIMAG(cx%f)), cx%e)
+
+      ! Finish
+
+      return
+
+   end function imag_part_
+
+   !****
+
+   elemental function valid_(cx) result(valid)
+
+      type(ext_ct), intent(in) :: cx
+      logical                  :: valid
+
+      ! Determine if cx is valid
+
+      valid = abs(REAL(cx%f)) >= RADIX_WP**(-1) .AND. abs(REAL(cx%f)) < 1._WP
+
+      ! Finish
+
+      return
+
+   end function valid_
+
+   !****
+
+   elemental function conjg_(cx) result(conjg_cx)
+
+      type(ext_ct), intent(in) :: cx
+      type(ext_ct)             :: conjg_cx
+
+      ! Calculate the complex conjugate of cx
+
+      conjg_cx%f = CONJG(cx%f)
+      conjg_cx%e = cx%e
+
+      ! Finish
+
+      return
+
+   end function conjg_
+
+   !****
+
+   function product_(cx) result(prod_cx)
+
+      type(ext_ct), intent(in) :: cx(:)
+      type(ext_ct)             :: prod_cx
+
+      integer     :: i
+      complex(WP) :: f
+      integer     :: e
+
+      ! Calculate the product of the elements of cx
+
+      prod_cx%f = 1._WP
+      prod_cx%e = SUM(cx%e)
+
+      do i = 1,SIZE(cx)
+
+         call split_(prod_cx%f*cx(i)%f, f, e)
+
+         prod_cx%f = f
+         prod_cx = scale(prod_cx, e)
+
+      end do
+
+      ! Finish
+
+      return
+
+   end function product_
+
+   !****
+
+   elemental function abs_(cx) result(abs_cx)
+
+      type(ext_ct), intent(in) :: cx
+      type(ext_rt)             :: abs_cx
+
+      ! Calculate the absolute value of cx
+
+      abs_cx = ext_rt(abs(cx%f))
+      abs_cx = scale(abs_cx, cx%e)
+
+      ! Finish
+
+      return
+
+   end function abs_
+
+   !****
+
+   elemental function exp_(cx) result(exp_cx)
+
+      type(ext_ct), intent(in) :: cx
+      type(ext_ct)             :: exp_cx
+
+      type(ext_rt) :: exp_ex
+
+      ! Calculate the exponential of cx
+
+      exp_ex = exp(ext_rt(cx))
+
+      exp_cx%f = FRACTION(exp_ex)*exp((0._WP,1._WP)*AIMAG(cmplx(cx)))
+      exp_cx%e = EXPONENT(exp_ex)
+
+      ! Finish
+
+      return
+
+   end function exp_
+
+   !****
+
+   elemental function sqrt_(cx) result(sqrt_cx)
+
+      type(ext_ct), intent(in) :: cx
+      type(ext_ct)             :: sqrt_cx
+
+      ! Calculate the square root of cx
+
+      sqrt_cx = ext_ct(sqrt(cx%f))
+
+      if (MOD(cx%e, 2) == 0) then
+         sqrt_cx = scale(sqrt_cx, cx%e/2)
+      else
+         sqrt_cx = scale(sqrt_cx, (cx%e-1)/2)*sqrt(2._WP)
+      endif
+
+      ! Finish
+
+      return
+
+   end function sqrt_
+
+   !****
+
+   elemental function fraction_(cx) result(fraction_cx)
+
+      type(ext_ct), intent(in) :: cx
+      complex(WP)              :: fraction_cx
+
+      ! Return the fraction part of cx
+
+      fraction_cx = cx%f
+
+      ! Finish
+
+      return
+
+   end function fraction_
+
+   !****
+
+   elemental function exponent_(cx) result(exponent_cx)
+
+      type(ext_ct), intent(in) :: cx
+      integer                  :: exponent_cx
+
+      ! Return the exponent part of cx
+
+      exponent_cx = cx%e
+
+      ! Finish
+
+      return
+
+   end function exponent_
+
+   !****
+
+   elemental function scale_(cx, de) result(scale_cx)
+
+      class(ext_ct), intent(in) :: cx
+      integer, intent(in)        :: de
+      type(ext_ct)              :: scale_cx
+
+      ! Scale cx by RADIX_WP**de
+
+      scale_cx%f = cx%f
+
+      if (scale_cx%f /= 0._WP) then
+         scale_cx%e = cx%e + de
+      else
+         scale_cx%e = 0
+      endif
+
+      ! Finish
+
+      return
+
+   end function scale_
+
+   !****
+
+   elemental subroutine split_(c, f, e)
+
+      complex(WP), intent(in)  :: c
+      complex(WP), intent(out) :: f
+      integer, intent(out)     :: e
+
+      real(WP)    :: c_r
+      real(WP)    :: c_i
+      real(WP)    :: f_r
+      real(WP)    :: f_i
+      integer     :: e_r
+      integer     :: e_i
+      integer     :: e_ref
+
+      ! Spit c into fraction and exponent parts
+
+      c_r = REAL(c)
+      c_i = AIMAG(c)
+
+      f_r = FRACTION(c_r)
+      f_i = FRACTION(c_i)
+
+      if (f_r == 0._WP .AND. f_i == 0._WP) then
+
+         f = 0._WP
+         e = 0
+
+      else
+
+         e_r = EXPONENT(c_r)
+         e_i = EXPONENT(c_i)
+
+         e_ref = MAXVAL([e_r,e_i], MASK=[f_r,f_i] /= 0._WP)
+
+         if (f_r /= 0._WP) then
+            if (e_r - e_ref < MINEXPONENT(0._WP)) then
+               f_r = 0
+            else
+               f_r = f_r*RADIX_WP**(e_r - e_ref)
+            endif
+         endif
+
+         if (f_i /= 0._WP) then
+            if (e_i - e_ref < MINEXPONENT(0._WP)) then
+               f_i = 0
+            else
+               f_i = f_i*RADIX_WP**(e_i - e_ref)
+            endif
+         endif
+
+         f = CMPLX(f_r, f_i, WP)
+         e = e_ref
+
+      endif
+
+      ! Finish
+
+      return
+
+   end subroutine split_
+
+end module ext_complex_m

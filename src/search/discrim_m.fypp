@@ -1,0 +1,77 @@
+! Module  : discrim_m
+! Purpose : discriminant evaluation
+!
+! Copyright 2021 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'core.inc'
+
+module discrim_m
+
+   ! Uses
+
+   use kinds_m
+
+   use bvp_m
+   use ext_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Interfaces
+
+   #:for S in DTYPE_SUFFIXES
+      interface eval_discrim
+         module procedure eval_discrim_${S}$_
+      end interface eval_discrim
+   #:endfor
+
+   ! Access specifiers
+
+   public :: eval_discrim
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for S in DTYPE_SUFFIXES
+   
+      subroutine eval_discrim_${S}$_(bp, st, discrim)
+
+         class(bvp_${S}$), intent(inout) :: bp
+         class(state_${S}$), intent(in)  :: st
+         type(ext_${S}$)                 :: discrim
+
+         ! Evaluate the discriminant
+
+         call bp%build(st)
+         call bp%factor()
+
+         discrim = bp%det()
+
+         ! Finish
+
+         return
+
+      end subroutine eval_discrim_${S}$_
+
+   #:endfor
+
+end module discrim_m

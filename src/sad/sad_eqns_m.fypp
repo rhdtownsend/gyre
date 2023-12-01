@@ -1,0 +1,215 @@
+! Module  : sad_eqns_m
+! Purpose : static adiabatic differential equations
+!
+! Copyright 2019 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'core.inc'
+
+module sad_eqns_m
+
+   ! Uses
+
+   use kinds_m
+
+   use context_m
+   use eqns_m
+   use model_m
+   use model_util_m
+   use mode_par_m
+   use osc_par_m
+   use point_m
+   use sad_trans_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Parameter definitions
+
+   integer, parameter :: J_V = 1
+   integer, parameter :: J_AS = 2
+   integer, parameter :: J_U = 3
+   integer, parameter :: J_GAMMA_1 = 4
+
+   integer, parameter :: J_LAST = J_GAMMA_1
+
+   ! Derived-type definitions
+
+   type, extends(eqns_rt) :: sad_eqns_t
+      private
+      type(context_t), pointer   :: cx => null()
+      type(point_t), allocatable :: pt(:)
+      type(sad_trans_t)          :: tr
+      real(WP), allocatable      :: coeff(:,:)
+      integer                    :: l
+   contains
+      private
+      procedure, public :: stencil
+      procedure, public :: A
+      procedure, public :: xA
+   end type sad_eqns_t
+
+   ! Interfaces
+
+   interface sad_eqns_t
+      module procedure sad_eqns_t_
+   end interface sad_eqns_t
+
+   ! Access specifiers
+
+   public :: sad_eqns_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function sad_eqns_t_(cx, md_p, os_p) result(eq)
+
+      class(context_t), pointer, intent(in) :: cx
+      type(mode_par_t), intent(in)          :: md_p
+      type(osc_par_t), intent(in)           :: os_p
+      type(sad_eqns_t)                      :: eq
+
+      ! Construct the sad_eqns_t
+
+      eq%cx => cx
+
+      eq%tr = sad_trans_t(cx, md_p, os_p)
+
+      eq%l = md_p%l
+
+      eq%n_e = 2
+
+      ! Finish
+
+      return
+
+   end function sad_eqns_t_
+
+   !****
+
+   subroutine stencil(this, pt)
+
+      class(sad_eqns_t), intent(inout) :: this
+      type(point_t), intent(in)        :: pt(:)
+
+      class(model_t), pointer :: ml
+      integer :: n_s
+      integer :: i
+
+      ! Calculate coefficients at the stencil points
+
+      ml => this%cx%model()
+
+      call check_model(ml, [I_V_2,I_AS,I_U,I_GAMMA_1])
+
+      n_s = SIZE(pt)
+
+      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+      allocate(this%coeff(n_s,J_LAST))
+
+      do i = 1, n_s
+
+         @:ASSERT(.NOT. ml%is_vacuum(pt(i)), 'attempt to stencil at vacuum point')
+
+         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
+         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
+         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
+         this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
+
+      end do
+
+      ! Set up stencil for the tr component
+
+      call this%tr%stencil(pt)
+
+      ! Store the stencil points for on-the-fly evaluations
+
+      this%pt = pt
+
+      ! Finish
+
+      return
+
+   end subroutine stencil
+
+   !****
+
+   function A (this, i, st)
+
+      class(sad_eqns_t), intent(in) :: this
+      integer, intent(in)           :: i
+      class(state_rt), intent(in)   :: st
+      real(WP)                      :: A(this%n_e,this%n_e)
+
+      ! Evaluate the RHS matrix
+
+      A = this%xA(i, st)/this%pt(i)%x
+
+      ! Finish
+
+      return
+
+   end function A
+
+   !****
+
+   function xA (this, i, st)
+
+      class(sad_eqns_t), intent(in) :: this
+      integer, intent(in)           :: i
+      class(state_rt), intent(in)   :: st
+      real(WP)                      :: xA(this%n_e,this%n_e)
+
+      real(WP) :: l
+      real(WP) :: lambda
+
+      ! Evaluate the log(x)-space RHS matrix
+
+      associate ( &
+         V => this%coeff(i,J_V), &
+         As => this%coeff(i,J_AS), &
+         U => this%coeff(i,J_U), &
+         Gamma_1 => this%coeff(i,J_GAMMA_1))
+
+         l = this%l
+         lambda = l*(l+1._WP)
+
+         ! Set up the matrix
+
+         xA(1,1) = 3._WP - U - l
+         xA(1,2) = 1._WP
+
+         xA(2,1) = lambda - As*U - U*V/Gamma_1
+         xA(2,2) = - U - l + 2._WP
+
+      end associate
+
+      ! Apply the variables transformation
+
+      call this%tr%trans_eqns(xA, i, st)
+
+      ! Finish
+
+      return
+
+   end function xA
+
+end module sad_eqns_m

@@ -1,0 +1,214 @@
+! Module  : math_intrinsic_m
+! Purpose : core math functions (intrinsic version)
+!
+! Copyright 2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'core.inc'
+
+module math_m
+
+   ! Uses
+
+   use kinds_m
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Module variables
+
+   real(WP), save, protected :: PI
+   real(WP), save, protected :: TWOPI
+   real(WP), save, protected :: HALFPI
+
+   real(WP), save, protected :: DEG_TO_RAD
+   real(WP), save, protected :: RAD_TO_DEG
+
+   ! Interfaces
+
+   #:for S_X in FLOAT_SUFFIXES
+
+      #:for S_Y in FLOAT_SUFFIXES
+         interface pow
+            module procedure pow_${S_X}$_${S_Y}$_
+         end interface pow
+      #:endfor
+
+      interface cospi
+         module procedure cospi_${S_X}$_
+      end interface cospi
+
+      interface sinpi
+         module procedure sinpi_${S_X}$_
+      end interface sinpi
+
+      interface tanpi
+         module procedure tanpi_${S_X}$_
+      end interface tanpi
+
+      interface acospi
+         module procedure acospi_${S_X}$_
+      end interface acospi
+
+      interface asinpi
+         module procedure asinpi_${S_X}$_
+      end interface asinpi
+
+      interface atanpi
+         module procedure atanpi_${S_X}$_
+      end interface atanpi
+
+   #:endfor
+
+   ! Access specifiers
+
+   public :: PI
+   public :: HALFPI
+   public :: TWOPI
+   public :: DEG_TO_RAD
+   public :: RAD_TO_DEG
+   public :: init_math
+   public :: pow
+   public :: cospi
+   public :: sinpi
+   public :: tanpi
+   public :: acospi
+   public :: asinpi
+   public :: atanpi
+
+   ! Default access
+
+   private
+
+contains
+
+   subroutine init_math()
+
+      PI = acos(-1._WP)
+      TWOPI = 2._WP*PI
+      HALFPI = 0.5_WP*PI
+
+      DEG_TO_RAD = PI/180._WP
+      RAD_TO_DEG = 1._WP/DEG_TO_RAD
+
+   end subroutine init_math
+
+   !****
+
+   #:for T_X, S_X in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
+
+      #:for T_Y, S_Y in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
+
+         #:if T_X == 'real(WP)'
+            #:if T_Y == 'real(WP)'
+               #:set T = 'real(WP)'
+            #:elif T_Y == 'complex(WP)'
+               #:set T = 'complex(WP)'
+            #:else
+               #:stop f'invalid type {T_Y}'
+            #:endif
+         #:elif T_X == 'complex(WP)'
+            #:if T_Y == 'real(WP)'
+               #:set T = 'complex(WP)'
+            #:elif T_Y == 'complex(WP)'
+               #:set T = 'complex(WP)'
+            #:else
+               #:stop f'invalid type {T_Y}'
+            #:endif
+         #:else
+            #:stop f'invalid type {T_X}'
+         #:endif
+
+         elemental function pow_${S_X}$_${S_Y}$_(x, y) result(pow_x)
+
+            ${T_X}$, intent(in) :: x
+            ${T_Y}$, intent(in) :: y
+            ${T}$               :: pow_x
+
+            pow_x = x**y
+
+         end function pow_${S_X}$_${S_Y}$_
+
+      #:endfor
+
+      !****
+         
+      elemental function cospi_${S_X}$_(x) result(cospi_x)
+
+         ${T_X}$, intent(in) :: x
+         ${T_X}$             :: cospi_x
+
+         cospi_x = COS(x*PI)
+
+      end function cospi_${S_X}$_
+
+      !****
+
+      elemental function sinpi_${S_X}$_(x) result(sinpi_x)
+
+         ${T_X}$, intent(in) :: x
+         ${T_X}$             :: sinpi_x
+
+         sinpi_x = SIN(x*PI)
+
+      end function sinpi_${S_X}$_
+
+      !****
+
+      elemental function tanpi_${S_X}$_(x) result(tanpi_x)
+
+         ${T_X}$, intent(in) :: x
+         ${T_X}$             :: tanpi_x
+
+         tanpi_x = TAN(x*PI)
+
+      end function tanpi_${S_X}$_
+
+      !****
+
+      elemental function acospi_${S_X}$_(x) result(acospi_x)
+
+         ${T_X}$, intent(in) :: x
+         ${T_X}$             :: acospi_x
+
+         acospi_x = ACOS(x)/PI
+
+      end function acospi_${S_X}$_
+
+      !****
+   
+      elemental function asinpi_${S_X}$_(x) result(asinpi_x)
+
+         ${T_X}$, intent(in) :: x
+         ${T_X}$             :: asinpi_x
+
+         asinpi_x = ASIN(x)/PI
+
+      end function asinpi_${S_X}$_
+
+      !****
+
+      elemental function atanpi_${S_X}$_(x) result(atanpi_x)
+
+         ${T_X}$, intent(in) :: x
+         ${T_X}$             :: atanpi_x
+
+         atanpi_x = ATAN(x)/PI
+
+      end function atanpi_${S_X}$_
+
+   #:endfor
+   
+end module math_m

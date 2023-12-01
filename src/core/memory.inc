@@ -1,93 +1,59 @@
-! Incfile : core_memory
-! Purpose : memory management fpx3 macros
+#! Include : memory
+#! Purpose : memory management macros
 
-$include 'core.inc'
+#:include 'core.inc'
 
-$perl
-xmacro 'COPY_ARRAY', sub {
-  my @a = @_; @a = get_args() unless @a;
-  die("Invalid number of arguments:".scalar @a) unless scalar @a == 1;
-  my $rank = shift @a;
-  my $output = '';
-  for(my $i = 0; $i < 2**$rank; $i++) {
-    my @spec_left;
-    my @spec_right;
-    for(my $j = 0; $j < $rank; $j++) {
-      my $k = $j + 1;
-      if($i & 2**$j) {
-        push @spec_left, "i_c($k):";
-        push @spec_right, "i_b($k):";
-      }
-      else {
-        push @spec_left, ":i_a($k)";
-        push @spec_right, ":i_a($k)";
-      }
-    }
-    $output .= "array_new(".join(',', @spec_left).") = array(".join(',', @spec_right).")\n";
-  }
-  return $output;
-};
-$endperl
+#!!
+#! Reallocate an array
+#!!
 
-$define $REALLOCATE $sub
+#:def REALLOCATE(type, suffix, rank)
 
-$if ($sub_arg_num eq 3)
-$local $INFIX $1_$3
-$local $ARRAY_TYPE $2
-$local $ARRAY_RANK $3
-$else
-$local $INFIX $2
-$local $ARRAY_TYPE $1
-$local $ARRAY_RANK $2
-$endif
+   #:if type == 'character(*)'
+     #:set type_new = 'character(LEN(array))'
+   #:else
+     #:set type_new = type
+   #:endif
 
-$local $ARRAY_NEW_TYPE $eval($ARRAY_TYPE eq 'character(*)' ? 'character(LEN(array))' : $ARRAY_TYPE)
+   subroutine reallocate_${suffix}$_${rank}$_(array, shape, stat)
 
-subroutine reallocate_${INFIX}_ (array, shape_new, start)
+      ${type}$, allocatable, intent(inout) :: array${ARRAY_SPEC(rank)}$
+      integer, intent(in)                  :: shape(:)
+      integer, intent(out), optional       :: stat
+      
+      ${type_new}$, allocatable :: array_new${ARRAY_SPEC(rank)}$
+      integer, allocatable      :: i_a(:)
+      integer, allocatable      :: i_b(:)
+      integer, allocatable      :: i_c(:)
 
-  $ARRAY_TYPE, allocatable, intent(inout) :: array$ARRAY_SPEC($ARRAY_RANK)
-  integer, intent(in)                     :: shape_new(:)
-  integer, intent(in), optional           :: start(:)
+      @:ASSERT_DEBUG(SIZE(shape) == ${rank}$, 'rank mismatch')
 
-  $ARRAY_NEW_TYPE, allocatable :: array_new$ARRAY_SPEC($ARRAY_RANK)
-  integer                      :: i_a($ARRAY_RANK)
-  integer                      :: i_b($ARRAY_RANK)
-  integer                      :: i_c($ARRAY_RANK)
+      ! Allocate the new array
 
-  $ASSERT_DEBUG(SIZE(shape_new) == $ARRAY_RANK,Dimension mismatch)
+      i_a = LBOUND(array)
+      i_b = i_a + shape - 1
 
-  if(PRESENT(start)) then
-     $ASSERT_DEBUG(SIZE(start) == $ARRAY_RANK,Dimension mismatch)
-  end if
-    
-  ! Set up the reallocation indices
+      if (PRESENT(stat)) then
+         allocate(array_new${ARRAY_SPEC(rank, 'i_a({0:d}):i_b({0:d})')}$, STAT=stat)
+         if (stat /= 0) return
+      else
+         allocate(array_new${ARRAY_SPEC(rank, 'i_a({0:d}):i_b({0:d})')}$)
+      endif
 
-  if(PRESENT(start)) then
-     i_a = start - 1
-  else
-     i_a = MIN(SHAPE(array), shape_new)
-  endif
+      ! Copy the data from old to new
 
-  i_b = MAX(i_a, i_a+SHAPE(array)-shape_new) + 1
-  i_c = MAX(i_a, i_a+shape_new-SHAPE(array)) + 1
+      i_c = MIN(i_b, UBOUND(array))
 
-  ! Allocate the new array
+      array_new${ARRAY_SPEC(rank, 'i_a({0:d}):i_c({0:d})')}$ = array${ARRAY_SPEC(rank, 'i_a({0:d}):i_c({0:d})')}$
 
-  allocate(array_new($ARRAY_EXPAND(shape_new,$ARRAY_RANK)))
+      ! Move the allocation
 
-  ! Copy the data from old to new
+      call MOVE_ALLOC(array_new, array)
 
-  $COPY_ARRAY($ARRAY_RANK)
+      ! Finish
 
-  ! Move the allocation
+      return
 
-  call MOVE_ALLOC(array_new, array)
+   end subroutine reallocate_${suffix}$_${rank}$_
 
-  ! Finish
-
-  return
-
-end subroutine reallocate_${INFIX}_
-
-$endsub
-
+#:enddef

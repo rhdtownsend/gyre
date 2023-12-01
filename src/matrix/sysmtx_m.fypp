@@ -1,0 +1,147 @@
+! Module  : sysmtx_m
+! Purpose : system matrix
+!
+! Copyright 2013-214 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'core.inc'
+
+module sysmtx_m
+
+   ! Uses
+
+   use kinds_m
+
+   use ext_m
+
+   ! No implicit typing
+
+   implicit none
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, abstract :: sysmtx_${S}$
+         integer :: n   ! Number of equation blocks
+         integer :: n_e ! Number of equations per block
+         integer :: n_i ! Number of inner boundary conditions
+         integer :: n_o ! Number of outer boundary conditions
+      contains
+         procedure(set_B_${S}$_), deferred          :: set_B_i
+         procedure(set_B_${S}$_), deferred          :: set_B_o
+         procedure(set_E_${S}$_), deferred          :: set_E
+         procedure(factor_${S}$_), deferred         :: factor
+         procedure(det_${S}$_), deferred            :: det
+         procedure(soln_vec_hom_${S}$_), deferred   :: soln_vec_hom
+         procedure(soln_vec_inhom_${S}$_), deferred :: soln_vec_inhom
+         procedure(resd_vec_hom_${S}$_), deferred   :: resd_vec_hom
+         procedure(resd_vec_inhom_${S}$_), deferred :: resd_vec_inhom
+         procedure(dump_${S}$_), deferred           :: dump
+      end type sysmtx_${S}$
+
+      ! Interfaces
+
+      abstract interface
+
+         subroutine set_B_${S}$_(this, B, scl)
+            use kinds_m
+            use ext_m
+            import sysmtx_${S}$
+            class(sysmtx_${S}$), intent(inout) :: this
+            ${T}$, intent(in)                  :: B(:,:)
+            ${T}$, intent(in)                  :: scl(:)
+         end subroutine set_B_${S}$_
+
+         subroutine set_E_${S}$_(this, k, E_l, E_r, scl)
+            use kinds_m
+            use ext_m
+            import sysmtx_${S}$
+            class(sysmtx_${S}$), intent(inout) :: this
+            integer, intent(in)                :: k
+            ${T}$, intent(in)                  :: E_l(:,:)
+            ${T}$, intent(in)                  :: E_r(:,:)
+            type(ext_${S}$), intent(in)        :: scl
+         end subroutine set_E_${S}$_
+
+         function det_${S}$_(this) result(det)
+            use ext_m
+            import sysmtx_${S}$
+            class(sysmtx_${S}$), intent(in) :: this
+            type(ext_${S}$)                 :: det
+         end function det_${S}$_
+
+         subroutine factor_${S}$_(this)
+            import sysmtx_${S}$
+            class(sysmtx_${S}$), intent(inout) :: this
+         end subroutine factor_${S}$_
+
+         function soln_vec_hom_${S}$_(this) result(u)
+            use kinds_m
+            use ext_m
+            import sysmtx_${S}$
+            class(sysmtx_${S}$), intent(in) :: this
+            ${T}$                           :: u(this%n_e*(this%n+1))
+         end function soln_vec_hom_${S}$_
+
+         function soln_vec_inhom_${S}$_(this, v_i, v_o) result(u)
+            use kinds_m
+            use ext_m
+            import sysmtx_${S}$
+            class(sysmtx_${S}$), intent(in) :: this
+            ${T}$, intent(in)               :: v_i(:)
+            ${T}$, intent(in)               :: v_o(:)
+            ${T}$                           :: u(this%n_e*(this%n+1))
+         end function soln_vec_inhom_${S}$_
+
+         function resd_vec_hom_${S}$_(this, u) result(dv)
+            use kinds_m
+            use ext_m
+            import sysmtx_${S}$
+            class(sysmtx_${S}$), intent(in) :: this
+            ${T}$, intent(in)               :: u(:)
+            ${T}$                           :: dv(this%n_e*(this%n+1))
+         end function resd_vec_hom_${S}$_
+
+         function resd_vec_inhom_${S}$_(this, u, v_i, v_o) result(dv)
+            use kinds_m
+            use ext_m
+            import sysmtx_${S}$
+            class(sysmtx_${S}$), intent(in) :: this
+            ${T}$, intent(in)               :: u(:)
+            ${T}$, intent(in)               :: v_i(:)
+            ${T}$, intent(in)               :: v_o(:)
+            ${T}$                           :: dv(this%n_e*(this%n+1))
+         end function resd_vec_inhom_${S}$_
+
+         subroutine dump_${S}$_(this, hg)
+            use hgroup_m
+            import sysmtx_${S}$
+            class(sysmtx_${S}$), intent(in) :: this
+            type(hgroup_t), intent(inout)   :: hg
+         end subroutine dump_${S}$_
+
+      end interface
+
+      ! Access specifiers
+
+      public :: sysmtx_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+      
+end module sysmtx_m

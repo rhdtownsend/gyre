@@ -1,170 +1,114 @@
-! Incfile : core
-! Purpose : fpx3 macros
+#! Include : forum
+#! Purpose : common fypp macros used throughout GYRE
 
-$define $ABORT $sub
+#!!! Type and suffix definitions
 
-  $local $MESSAGE $1
+#:set INT_TYPES = ['integer']
+#:set INT_SUFFIXES = ['i']
 
-  $if($MESSAGE)
-    write(UNIT=ERROR_UNIT, FMT=*) $str(ABORT at line $line_num $context_doc:)
-    write(UNIT=ERROR_UNIT, FMT=*) $str($MESSAGE)
-  $else
-    write(UNIT=ERROR_UNIT, FMT=*) $str(ABORT at line $line_num $context_doc)
-  $endif
+#:set REAL_TYPES = ['real(WP)']
+#:set REAL_SUFFIXES = ['r']
 
-  error stop 'Program aborted'
+#:set COMPLEX_TYPES = ['complex(WP)']
+#:set COMPLEX_SUFFIXES = ['c']
 
-$endsub
+#:set FLOAT_TYPES = REAL_TYPES + COMPLEX_TYPES
+#:set FLOAT_SUFFIXES = REAL_SUFFIXES + COMPLEX_SUFFIXES
 
-!****
+#:set EXT_REAL_TYPES = ['type(ext_rt)']
+#:set EXT_REAL_SUFFIXES = ['xr']
 
-$define $ABORT_DEBUG $sub
+#:set EXT_COMPLEX_TYPES = ['type(ext_ct)']
+#:set EXT_COMPLEX_SUFFIXES = ['xc']
 
-  $local $MESSAGE $1
+#:set EXT_FLOAT_TYPES = EXT_REAL_TYPES + EXT_COMPLEX_TYPES
+#:set EXT_FLOAT_SUFFIXES = EXT_REAL_SUFFIXES + EXT_COMPLEX_SUFFIXES
 
-  $if($DEBUG)
-    $ABORT($MESSAGE)
-  $endif
+#:set CHAR_TYPES = ['character(*)']
+#:set CHAR_SUFFIXES = ['a']
 
-$endsub
+#:set LOGICAL_TYPES = ['logical']
+#:set LOGICAL_SUFFIXES = ['l']
 
-!****
+#:set NUM_TYPES = INT_TYPES + REAL_TYPES + COMPLEX_TYPES
+#:set NUM_SUFFIXES = INT_SUFFIXES + REAL_SUFFIXES + COMPLEX_SUFFIXES
 
-$define $WARN $sub
+#:set MATH_TYPES = NUM_TYPES + LOGICAL_TYPES
+#:set MATH_SUFFIXES = NUM_SUFFIXES + LOGICAL_SUFFIXES
 
-  $local $MESSAGE $1
+#:set DTYPE_BASE_TYPES = ['real(WP)', 'complex(WP)']
+#:set DTYPE_SUFFIXES = ['rt', 'ct']
 
-  $if($MESSAGE)
-    write(UNIT=ERROR_UNIT, FMT=*) $str(INFO at line $line_num $context_doc:)
-    write(UNIT=ERROR_UNIT, FMT=*) $str($MESSAGE)
-  $else
-    write(UNIT=ERROR_UNIT, FMT=*) $str(INFO at line $line_num $context_doc)
-  $endif
+#:set PAR_NAMES = ['grid', 'num', 'orbit', 'osc', 'rot', 'scan']
+#:set PAR_TYPES = [f'type({name}_par_t)' for name in PAR_NAMES]
+#:set PAR_SUFFIXES = ['gr', 'nm', 'or', 'os', 'rt', 'sc']
 
-$endsub
+#!!! Macro definitions
 
-!****
+#!!
+#! Print out a warning
+#!!
 
-$define $WARN_DEBUG $sub
+#:def WARN(message=None)
+  #:if message
+    write(UNIT=ERROR_UNIT, FMT=*) 'INFO at line ${_LINE_}$ of ${_FILE_}$'
+    write(UNIT=ERROR_UNIT, FMT=*) ${message}$
+  #:else
+    write(UNIT=ERROR_UNIT, FMT=*) 'INFO at line ${_LINE_}$ of ${_FILE_}$'
+  #:endif
+#:enddef
 
-  $local $MESSAGE $1
+#!!
+#! Abort execution
+#!!
 
-  $if($DEBUG)
-    $WARN($MESSAGE)
-  $endif
+#:def ABORT(message=None)
+   write(UNIT=ERROR_UNIT, FMT=*) 'ABORT at line ${_LINE_}$ of ${_FILE_}$'
+   #:if message
+      write(UNIT=ERROR_UNIT, FMT=*) ${message}$
+   #:endif
+   error stop
+#:enddef
 
-$endsub
+#!!
+#! Assert that cond is satisfied
+#!!
 
-!****
+#:def ASSERT(cond, message=None)
+   if (.NOT. (${cond}$)) then
+      #:set cond_str = cond.replace("'", "''")
+      #:if message
+         @:ABORT('assertion ${cond_str}$ failed with message '//${message}$//'"')
+      #:else
+         @:ABORT('assertion ${cond_str}$ failed')
+      #:endif
+   end if
+#:enddef
 
-$define $ASSERT $sub
+#!!
+#! Same as ASSERT, but only if DEBUG is set
+#!!
 
-  $local $CONDITION $1
-  $local $MESSAGE $2
+#:def ASSERT_DEBUG(cond, message=None)
+   #:if defined('DEBUG')
+      @:ASSERT(${cond}$, ${message}$)
+   #:endif
+#:enddef
 
-  $if($MESSAGE)
-    if(.NOT. ($CONDITION)) then
-      write(UNIT=ERROR_UNIT, FMT=*) $str(ASSERT ''$CONDITION'' failed at line $line_num $context_doc:)
-      write(UNIT=ERROR_UNIT, FMT=*) $str($MESSAGE)
-      error stop
-    endif
-  $else
-    if(.NOT. $CONDITION) then
-      write(UNIT=ERROR_UNIT, FMT=*) $str(ASSERT ''$CONDITION'' failed at line $line_num $context_doc)
-      error stop
-    endif
-  $endif
+#!!
+#! Used for bounds checking
+#!!
 
-$endsub
+#:def CHECK_BOUNDS(x, y)
+   @:ASSERT_DEBUG(${x}$ == ${y}$, 'bounds mismatch')
+#:enddef
 
-!****
+#!!
+#! Create a deferred shape array specification list
+#!!
 
-$define $ASSERT_DEBUG $sub
-
-  $local $CONDITION $1
-  $local $MESSAGE $2
-
-  $if($DEBUG)
-    $ASSERT($CONDITION,$MESSAGE)
-  $endif
-
-$endsub
-
-!****
-
-$define $CHECK_BOUNDS $sub
-
-  $local $SIZE_A $1
-  $local $SIZE_B $2
-
-  $if($DEBUG)
-
-  if($SIZE_A/= $SIZE_B) then
-    write(UNIT=ERROR_UNIT, FMT=*) $str($SIZE_A :), $SIZE_A
-    write(UNIT=ERROR_UNIT, FMT=*) $str($SIZE_B :), $SIZE_B
-    write(UNIT=ERROR_UNIT, FMT=*) $str(CHECK_BOUNDS $SIZE_A==$SIZE_B failed at line $line_num $context_doc)
-    error stop
-  endif
-
-  $endif
-
-$endsub
-
-!****
-
-$perl
-xmacro 'ARRAY_SPEC', sub {
-  my @a = @_; @a = get_args() unless @a;
-  die("Invalid number of arguments:".scalar @a) unless (scalar @a == 1 || scalar @a == 2);
-  if($a[0] > 0) {
-    my @dim_spec = ();
-    for(my $i=1; $i <= $a[0]; $i++) {
-      if(defined($a[1])) {
-	push @dim_spec, "SIZE($a[1],$i)";
-      }
-      else {
-	push @dim_spec, ":";
-      }
-    }
-    return "(".join(",", @dim_spec).")";
-  }
-  else {
-    return "";
-  }
-};
-$endperl
-
-!****
-
-$perl
-xmacro 'ARRAY_EXPAND', sub {
-  my @a = @_; @a = get_args() unless @a;
-  die("Invalid number of arguments:".scalar @a) unless (scalar @a == 2 || scalar @a == 3);
-  my @elems = ();
-  if(scalar @a == 3) {
-      for(my $i=1; $i <= $a[2]; $i++) {
-	  push @elems, "$a[0]($i):$a[1]($i)";
-      }
-  } else {
-      for(my $i=1; $i <= $a[1]; $i++) {
-	  push @elems, "$a[0]($i)";
-      }
-  }
-  return join(",", @elems);
-};
-$endperl
-
-!****
-
-$perl
-xmacro 'ARRAY_FIRST', sub {
-  my @a = @_; @a = get_args() unless @a;
-  die("Invalid number of arguments") if scalar @a != 2;
-  if($a[1] > 0) {
-      return $a[0]."(".join(",", ("1") x $a[1]).")";
-  }
-  else {
-      return $a[0];
-  }
-};
-$endperl
+#:def ARRAY_SPEC(rank, str=':')
+   #:if rank > 0
+      $:'(' + ','.join([str.format(i) for i in range(1, rank+1)]) + ')'
+   #:endif
+#:enddef

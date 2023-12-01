@@ -1,0 +1,128 @@
+! Module  : rot_par_m
+! Purpose : rotation parameters
+!
+! Copyright 2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'core.inc'
+
+module rot_par_m
+
+   ! Uses
+
+   use kinds_m
+
+   use constants_m
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Derived-type definitions
+
+   type :: rot_par_t
+      real(WP)        :: Omega_rot = 0._WP
+      character(64)   :: coriolis_method = 'NULL'
+      character(64)   :: Omega_rot_source = 'MODEL'
+      character(64)   :: Omega_rot_units = 'NONE'
+      character(2048) :: tag_list = ''
+      logical         :: complex_lambda = .FALSE.
+      logical         :: rossby = .FALSE.
+   end type rot_par_t
+
+   ! Access specifiers
+
+   public :: rot_par_t
+   public :: read_rot_par
+
+   ! Default access
+
+   private
+
+contains
+
+   subroutine read_rot_par(unit, rt_p)
+
+      integer, intent(in)                       :: unit
+      type(rot_par_t), allocatable, intent(out) :: rt_p(:)
+
+      integer                               :: n_rt_p
+      integer                               :: i
+      real(WP)                              :: Omega_rot
+      character(LEN(rt_p%coriolis_method))  :: coriolis_method
+      character(LEN(rt_p%Omega_rot_source)) :: Omega_rot_source
+      character(LEN(rt_p%Omega_rot_units))  :: Omega_rot_units
+      character(LEN(rt_p%tag_list))         :: tag_list
+      logical                               :: complex_lambda
+      logical                               :: rossby
+
+      namelist /rot/ Omega_rot, coriolis_method, Omega_rot_source, Omega_rot_units, &
+         tag_list, complex_lambda, rossby
+
+      ! Count the number of rot namelists
+
+      rewind(unit)
+
+      n_rt_p = 0
+
+      count_loop : do
+         read(unit, NML=rot, END=100)
+         n_rt_p = n_rt_p + 1
+      end do count_loop
+
+100   continue
+
+      ! Read rotation parameters
+
+      rewind(unit)
+
+      allocate(rt_p(n_rt_p))
+
+      read_loop : do i = 1,n_rt_p
+
+         ! Set default values
+
+         rt_p(i) = rot_par_t()
+
+         Omega_rot = rt_p(i)%Omega_rot
+         coriolis_method = rt_p(i)%coriolis_method
+         Omega_rot_source = rt_p(i)%Omega_rot_source
+         Omega_rot_units = rt_p(i)%Omega_rot_units
+         tag_list = rt_p(i)%tag_list
+         complex_lambda = rt_p(i)%complex_lambda
+         rossby = rt_p(i)%rossby
+
+         ! Read the namelist
+
+         read(unit, NML=rot)
+
+         ! Store read values
+
+         rt_p(i)%Omega_rot = Omega_rot
+         rt_p(i)%coriolis_method = coriolis_method
+         rt_p(i)%Omega_rot_source = Omega_rot_source
+         rt_p(i)%Omega_rot_units = Omega_rot_units
+         rt_p(i)%tag_list = tag_list
+         rt_p(i)%complex_lambda = complex_lambda
+         rt_p(i)%rossby = rossby
+
+      end do read_loop
+
+      ! Finish
+
+      return
+
+   end subroutine read_rot_par
+
+end module rot_par_m

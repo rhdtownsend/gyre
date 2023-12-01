@@ -1,7 +1,7 @@
 ! Incfile : parallel
 ! Purpose : parallel support fpx3 macros
 
-$include 'core.inc'
+#:include 'core.inc'
 
 $define $BCAST_1 $sub
 

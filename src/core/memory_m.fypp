@@ -1,0 +1,45 @@
+! Module  : memory_m
+! Purpose : memory management
+
+#:include 'core.inc'
+#:include 'memory.inc'
+
+module memory_m
+
+   ! Uses
+
+   use kinds_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Interfaces
+
+   #:for S in MATH_SUFFIXES+CHAR_SUFFIXES
+      #:for R in range(1, 5)
+
+         interface reallocate
+            module procedure reallocate_${S}$_${R}$_
+         end interface reallocate
+
+      #:endfor
+   #:endfor
+
+   ! Access specifiers
+
+   public :: reallocate
+
+   ! Default access
+
+contains
+
+   #:for T, S in zip(MATH_TYPES+CHAR_TYPES, MATH_SUFFIXES+CHAR_SUFFIXES)
+      #:for R in range(1, 5)
+         $:REALLOCATE(T, S, R)
+      #:endfor
+   #:endfor
+
+end module memory_m

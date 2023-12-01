@@ -1,0 +1,345 @@
+! Module  : minim_m
+! Purpose : minimum finding algorithms
+!
+! Copyright 2018-2021 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'core.inc'
+
+module minim_m
+
+   ! Uses
+
+   use kinds_m
+
+   use ext_m
+   use math_m
+   use num_par_m
+   use status_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Interfaces
+
+   #:for S in REAL_SUFFIXES+EXT_REAL_SUFFIXES
+      interface solve_minim
+         module procedure solve_minim_${S}$_
+      end interface solve_minim
+   #:endfor
+
+   ! Access specifiers
+
+   public :: solve_minim
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(REAL_TYPES+EXT_REAL_TYPES, REAL_SUFFIXES+EXT_REAL_SUFFIXES)
+
+      subroutine solve_minim_${S}$_(eval_func, x_a, x_b, x_c, x_tol, nm_p, x_minim, status, &
+         n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
+
+         interface
+            subroutine eval_func (x, func, status)
+               use kinds_m
+               use ext_m
+               ${T}$, intent(in)    :: x
+               ${T}$, intent(out)   :: func
+               integer, intent(out) :: status
+            end subroutine eval_func
+         end interface
+         ${T}$, intent(in)              :: x_a
+         ${T}$, intent(in)              :: x_b
+         ${T}$, intent(in)              :: x_c
+         ${T}$, intent(in)              :: x_tol
+         class(num_par_t), intent(in)   :: nm_p
+         ${T}$, intent(out)             :: x_minim
+         integer, intent(out)           :: status
+         integer, optional, intent(out) :: n_iter
+         integer, optional, intent(in)  :: n_iter_max
+         logical, optional, intent(in)  :: relative_tol
+         ${T}$, optional, intent(in)    :: f_x_a
+         ${T}$, optional, intent(in)    :: f_x_b
+         ${T}$, optional, intent(in)    :: f_x_c
+
+         ${T}$ :: a
+         ${T}$ :: b
+         ${T}$ :: c
+         ${T}$ :: f_a
+         ${T}$ :: f_b
+         ${T}$ :: f_c
+
+         ! Starting from the bracket [x_a,x_b,x_c], find a minimum of
+         ! the function
+
+         a = x_a
+         b = x_b
+         c = x_c
+
+         if (PRESENT(f_x_a)) then
+            f_a = f_x_a
+         else
+            call eval_func(a, f_a, status)
+            if (status /= STATUS_OK) return
+         endif
+
+         if (PRESENT(f_x_b)) then
+            f_b = f_x_b
+         else
+            call eval_func(b, f_b, status)
+            if (status /= STATUS_OK) return
+         endif
+
+         if (PRESENT(f_x_c)) then
+            f_c = f_x_c
+         else
+            call eval_func(c, f_c, status)
+            if (status /= STATUS_OK) return
+         endif
+
+         call narrow_bracket_${S}$_(eval_func, a, b, c, x_tol, nm_p, status, &
+            n_iter, n_iter_max, relative_tol, f_a, f_b, f_c)
+
+         x_minim = b
+
+         ! Finish
+
+         return
+
+      end subroutine solve_minim_${S}$_
+
+      !****
+
+      subroutine narrow_bracket_${S}$_(eval_func, x_a, x_b, x_c, x_tol, nm_p, status, &
+         n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
+
+         interface
+            subroutine eval_func (x, func, status)
+               use kinds_m
+               use ext_m
+               ${T}$, intent(in)    :: x
+               ${T}$, intent(out)   :: func
+               integer, intent(out) :: status
+            end subroutine eval_func
+         end interface
+         ${T}$, intent(inout)           :: x_a
+         ${T}$, intent(inout)           :: x_b
+         ${T}$, intent(inout)           :: x_c
+         ${T}$, intent(in)              :: x_tol
+         class(num_par_t), intent(in)   :: nm_p
+         integer, intent(out)           :: status
+         integer, optional, intent(out) :: n_iter
+         integer, optional, intent(in)  :: n_iter_max
+         logical, optional, intent(in)  :: relative_tol
+         ${T}$, optional, intent(inout) :: f_x_a
+         ${T}$, optional, intent(inout) :: f_x_b
+         ${T}$, optional, intent(inout) :: f_x_c
+
+         ! Narrow the bracket [x_a,x_b,x_c] on a minimum of the function
+
+         call narrow_bisect_${S}$_(eval_func, x_a, x_b, x_c, x_tol, status, &
+            n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
+
+         ! Finish
+
+         return
+
+      end subroutine narrow_bracket_${S}$_
+
+      !****
+
+      subroutine narrow_bisect_${S}$_(eval_func, x_a, x_b, x_c, x_tol, status, &
+         n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_c)
+
+         interface
+            subroutine eval_func (x, func, status)
+               use kinds_m
+               use ext_m
+               ${T}$, intent(in)  :: x
+               ${T}$, intent(out) :: func
+               integer, intent(out)  :: status
+            end subroutine eval_func
+         end interface
+         ${T}$, intent(inout)           :: x_a
+         ${T}$, intent(inout)           :: x_b
+         ${T}$, intent(inout)           :: x_c
+         ${T}$, intent(in)              :: x_tol
+         integer, intent(out)           :: status
+         integer, optional, intent(out) :: n_iter
+         integer, optional, intent(in)  :: n_iter_max
+         logical, optional, intent(in)  :: relative_tol
+         ${T}$, optional, intent(inout) :: f_x_a
+         ${T}$, optional, intent(inout) :: f_x_b
+         ${T}$, optional, intent(inout) :: f_x_c
+
+         real(WP), parameter :: R = 0.61803399_WP
+
+         logical :: relative_tol_
+         ${T}$   :: a
+         ${T}$   :: b
+         ${T}$   :: c
+         ${T}$   :: d
+         ${T}$   :: f_a
+         ${T}$   :: f_b
+         ${T}$   :: f_c
+         ${T}$   :: f_d
+         integer :: i_iter
+         ${T}$   :: tol
+
+         if (PRESENT(relative_tol)) then
+            relative_tol_ = relative_tol
+         else
+            relative_tol_ = .FALSE.
+         endif
+
+         ! Narrow the bracket [x_a,x_b,x_c] on a minimum of the function
+         ! using a bisection method
+
+         ! Set up the initial state
+
+         a = x_a
+         b = x_b
+         c = x_c
+
+         if (PRESENT(f_x_a)) then
+            f_a = f_x_a
+         else
+            call eval_func(a, f_a, status)
+            if (status /= STATUS_OK) return
+         endif
+
+         if (PRESENT(f_x_b)) then
+            f_b = f_x_b
+         else
+            call eval_func(b, f_b, status)
+            if (status /= STATUS_OK) return
+         endif
+
+         if (PRESENT(f_x_c)) then
+            f_c = f_x_c
+         else
+            call eval_func(c, f_c, status)
+            if (status /= STATUS_OK) return
+         endif
+
+         ! Confirm that the bracket is properly ordered and contains a
+         ! minimum
+
+         @:ASSERT(b > a, 'invalid bracket')
+         @:ASSERT(c > b, 'invalid bracket')
+
+         @:ASSERT((f_a > f_b) .AND. (f_c > f_b), 'minimum is not bracketed')
+
+         ! Iterate until convergence to the desired tolerance, or the
+         ! maximum number of iterations is exceeded
+
+         i_iter = 0
+
+         status = STATUS_OK
+
+         iterate_loop : do
+
+            i_iter = i_iter + 1
+
+            if (PRESENT(n_iter_max)) then
+               if (i_iter > n_iter_max) then
+                  status = STATUS_ITER_MAX
+                  exit iterate_loop
+               endif
+            endif
+
+            ! Check for convegence
+
+            if (relative_tol_) then
+               tol = (sqrt(EPSILON(0._WP)) + 0.5_WP*x_tol)*(abs(a) + abs(c))
+            else
+               tol = sqrt(EPSILON(0._WP))*(abs(a) + abs(c)) + x_tol
+            endif
+
+            if (abs(c-a) <= tol) exit iterate_loop
+
+            ! Create a new point, and update the bracket accordingly
+
+            if (b-a > c-b) then
+
+               ! New point in left interval
+
+               d = (1._WP-R)*b + R*a
+
+               call eval_func(d, f_d, status)
+               if (status /= STATUS_OK) return
+
+               if (f_d < f_b) then
+                  c = b
+                  b = d
+                  f_c = f_b
+                  f_b = f_d
+               else
+                  a = d
+                  f_a = f_d
+               endif
+
+            else
+
+               ! New point in right interval
+
+               d = (1._WP-R)*b + R*c
+
+               call eval_func(d, f_d, status)
+               if (status /= STATUS_OK) return
+
+               if (f_d < f_b) then
+                  a = b
+                  b = d
+                  f_a = f_b
+                  f_b = f_d
+               else
+                  c = d
+                  f_c = f_d
+               endif
+
+            end if
+
+         end do iterate_loop
+
+         ! Store the results
+
+         x_a = a
+         x_b = b
+         x_c = c
+
+         if (PRESENT(n_iter)) then
+            n_iter = i_iter
+         end if
+
+         if (PRESENT(f_x_a)) f_x_a = f_a
+         if (PRESENT(f_x_b)) f_x_b = f_b
+         if (PRESENT(f_x_c)) f_x_c = f_c
+
+         ! Finish
+
+         return
+
+      end subroutine narrow_bisect_${S}$_
+
+   #:endfor
+
+end module minim_m

@@ -1,0 +1,83 @@
+! Module  : writer_m
+! Purpose : write data (interface)
+!
+! Copyright 2013 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'core.inc'
+
+module writer_m
+
+   ! Uses
+
+   use kinds_m
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Derived-type definitions
+
+   type, abstract :: writer_t
+   contains
+      procedure(final), deferred :: final
+      procedure(count), deferred :: count
+      #:for R in (0, 1)
+         #:for S in NUM_SUFFIXES+CHAR_SUFFIXES
+            procedure(write_${S}$_${R}$_), deferred :: write_${S}$_${R}$
+         #:endfor
+      #:endfor
+      generic, public :: write => ${','.join([f'write_{S}_{R}' for R in (0, 1) for S in NUM_SUFFIXES+CHAR_SUFFIXES])}$
+   end type writer_t
+
+   ! Interfaces
+
+   abstract interface
+
+      subroutine final (this)
+         import writer_t
+         class(writer_t), intent(inout) :: this
+      end subroutine final
+
+      function count (this)
+         import writer_t
+         class(writer_t), intent(in) :: this
+         integer                     :: count
+      end function count
+
+      #:for R in (0, 1)
+         #:for T, S in zip(NUM_TYPES+CHAR_TYPES, NUM_SUFFIXES+CHAR_SUFFIXES)
+
+            subroutine write_${S}$_${R}$_(this, name, data)
+               use kinds_m
+               import writer_t
+               class(writer_t), intent(inout) :: this
+               character(*), intent(in)       :: name
+               ${T}$, intent(in)              :: data${ARRAY_SPEC(R)}$
+            end subroutine write_${S}$_${R}$_
+            
+         #:endfor
+      #:endfor
+            
+   end interface
+
+   ! Access specifiers
+
+   public :: writer_t
+
+   ! Default access
+
+   private
+
+end module writer_m

@@ -1,0 +1,334 @@
+! Module  : contour_path_m
+! Purpose : contour paths
+!
+! Copyright 2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'core.inc'
+#:include 'memory.inc'
+
+module contour_path_m
+
+   ! Uses
+
+   use kinds_m
+   use memory_m
+   use hgroup_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Derived-type definitions
+
+   type :: contour_path_t
+      private
+      complex(WP), allocatable :: z(:)
+      integer                  :: head_tag
+      integer                  :: tail_tag
+      integer                  :: n
+   contains
+      private
+      procedure, public :: add_point
+      procedure, public :: get_point
+      procedure, public :: check_tag
+   end type contour_path_t
+
+   ! Interfaces
+
+   interface contour_path_t
+      module procedure contour_path_t_point_
+      module procedure contour_path_t_merge_
+   end interface contour_path_t
+
+   interface reallocate
+      module procedure reallocate_contour_path_t_1_
+   end interface reallocate
+
+   interface write
+      module procedure write_
+   end interface write
+
+   ! Access specifiers
+
+   public :: contour_path_t
+   public :: write
+   public :: reallocate
+
+   ! Default access
+
+   private
+
+contains
+
+   function contour_path_t_point_(z, tag) result(cp)
+
+      complex(WP), intent(in) :: z
+      integer, intent(in)     :: tag
+      type(contour_path_t)    :: cp
+
+      integer, parameter :: D = 128
+
+      ! Construct the contour_path_t from the supplied initial point
+
+      allocate(cp%z(D))
+
+      cp%z(1) = z
+
+      cp%head_tag = tag
+      cp%tail_tag = tag
+
+      cp%n = 1
+
+      ! Finish
+
+      return
+
+   end function contour_path_t_point_
+
+   !****
+
+   function contour_path_t_merge_(cp_a, cp_b, tail_a, head_b) result(cp)
+
+      type(contour_path_t), intent(in) :: cp_a
+      type(contour_path_t), intent(in) :: cp_b
+      logical, intent(in), optional    :: tail_a
+      logical, intent(in), optional    :: head_b
+      type(contour_path_t)             :: cp
+
+      logical :: tail_a_
+      logical :: head_b_
+      integer :: d
+
+      if (PRESENT(tail_a)) then
+         tail_a_ = tail_a
+      else
+         tail_a_ = .FALSE.
+      endif
+
+      if (PRESENT(head_b)) then
+         head_b_ = head_b
+      else
+         head_b_ = .FALSE.
+      endif
+
+      ! Construct the contour_path_t by merging cp_a and cp_b
+
+      d = SIZE(cp_a%z) + SIZE(cp_b%z)
+
+      allocate(cp%z(d))
+
+      associate (n_a => cp_a%n, &
+         n_b => cp_b%n)
+
+         if (tail_a_) then
+
+            if (head_b_) then
+
+               ! Connect the head of cp_b to the tail of cp_a
+
+               cp%z(1:n_b) = cp_b%z(1:n_b)
+               cp%z(n_b+1:n_b+n_a) = cp_a%z(1:n_a)
+
+               cp%head_tag = cp_a%head_tag
+               cp%tail_tag = cp_b%tail_tag
+
+            else
+
+               ! Connect the tail of cp_b to the tail of cp_a, reversing cp_b
+
+               cp%z(1:n_b) = cp_b%z(n_b:1:-1)
+               cp%z(n_b+1:n_b+n_a) = cp_a%z(1:n_a)
+
+               cp%head_tag = cp_a%head_tag
+               cp%tail_tag = cp_b%head_tag
+
+            endif
+
+         else
+
+            if (head_b_) then
+
+               ! Connect the head of cp_b to the head of cp_a, reversing cp_b
+
+               cp%z(1:n_a) = cp_a%z(1:n_a)
+               cp%z(n_a+1:n_a+n_b) = cp_b%z(n_b:1:-1)
+
+               cp%head_tag = cp_b%tail_tag
+               cp%tail_tag = cp_a%tail_tag
+
+            else
+
+               ! Connect the tail of cp_b to the head of cp_a
+
+               cp%z(1:n_a) = cp_a%z(1:n_a)
+               cp%z(n_a+1:n_a+n_b) = cp_b%z(1:n_b)
+
+               cp%head_tag = cp_b%head_tag
+               cp%tail_tag = cp_a%tail_tag
+
+            endif
+
+         end if
+
+      end associate
+
+      cp%n = cp_a%n + cp_b%n
+
+      ! Finish
+
+      return
+
+   end function contour_path_t_merge_
+
+   !****
+
+   subroutine add_point(this, z, tag, tail)
+
+      class(contour_path_t), intent(inout) :: this
+      complex(WP), intent(in)              :: z
+      integer, intent(in)                  :: tag
+      logical, intent(in), optional        :: tail
+
+      logical :: tail_
+      integer :: d
+
+      if (PRESENT(tail)) then
+         tail_ = tail
+      else
+         tail_ = .FALSE.
+      endif
+
+      ! If necessary, expand the array
+
+      d = SIZE(this%z)
+
+      if (this%n >= d) then
+         call reallocate(this%z, [2*d])
+      endif
+
+      ! Add the point
+
+      if (tail_) then
+
+         this%z(2:this%n+1) = this%z(1:this%n)
+         this%z(1) = z
+
+         this%tail_tag = tag
+
+      else
+
+         this%z(this%n+1) = z
+
+         this%head_tag = tag
+
+      endif
+
+      this%n = this%n + 1
+
+      ! Finish
+
+      return
+
+   end subroutine add_point
+
+   !****
+
+   function get_point(this, tail) result(z)
+
+      class(contour_path_t), intent(in) :: this
+      logical, intent(in), optional     :: tail
+      complex(WP)                       :: z
+
+      logical :: tail_
+
+      if (PRESENT(tail)) then
+         tail_ = tail
+      else
+         tail_ = .FALSE.
+      endif
+
+      ! Get the point at the head or tail
+
+      if (tail_) then
+         z = this%z(1)
+      else
+         z = this%z(this%n)
+      endif
+
+      ! Finish
+
+      return
+
+   end function get_point
+
+   !****
+
+   function check_tag(this, tag, tail)
+
+      class(contour_path_t), intent(in) :: this
+      integer, intent(in)               :: tag
+      logical, intent(in), optional     :: tail
+      logical                           :: check_tag
+
+      logical :: tail_
+
+      if (PRESENT(tail)) then
+         tail_ = tail
+      else
+         tail_ = .FALSE.
+      endif
+
+      ! Check whether the tag is at the head (or tail) of the path
+
+      if (tail_) then
+         check_tag = tag == this%tail_tag
+      else
+         check_tag = tag == this%head_tag
+      endif
+
+      ! Finish
+
+      return
+
+   end function check_tag
+
+   !****
+
+   subroutine write_(hg, cp)
+
+      type(hgroup_t), intent(inout)    :: hg
+      type(contour_path_t), intent(in) :: cp
+
+      ! Write the contour_path type
+
+      call write_attr(hg, 'head_tag', cp%head_tag)
+      call write_attr(hg, 'tail_tag', cp%tail_tag)
+      call write_attr(hg, 'n', cp%n)
+
+      call write_dset(hg, 'z', cp%z(1:cp%n))
+
+      ! Finish
+
+      return
+
+   end subroutine write_
+
+   !****
+
+   $:REALLOCATE('type(contour_path_t)', 'contour_path_t', 1)
+
+end module contour_path_m
