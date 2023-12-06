@@ -990,7 +990,7 @@ contains
 
       ! Determine the file type for reals
 
-      file_type_id = H5T_IEEE_F32LE
+      file_type_id = H5T_IEEE_F64LE
 
       ! Finish
 
