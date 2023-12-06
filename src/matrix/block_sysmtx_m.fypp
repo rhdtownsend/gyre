@@ -258,33 +258,33 @@ contains
                   call XGETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
                   @:ASSERT(info >= 0, 'negative return from XGETRF')
 
-                  call XLASWP(n_e, M_E, 2*n_e, 1, n_e, ipiv, 1)
-                  call XTRSM('L', 'L', 'N', 'U', n_e, n_e, &
-!                     ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
-                     ONE, M_U(:n_e,:), n_e, M_E(:n_e,:), n_e)
-                  call XGEMM('N', 'N', n_e, n_e, n_e, -ONE, &
-!                     M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, ONE, &
-!                     M_E(n_e+1,1), 2*n_e)
-                     M_U(n_e+1:,:), n_e, M_E(:n_e,:), n_e, ONE, &
-                     M_E(n_e+1:,:), n_e)
+                  call XLASWP_inplace(n_e, M_E(1,1), 2*n_e, 1, n_e, ipiv, 1)
+                  call XTRSM_inplace('L', 'L', 'N', 'U', n_e, n_e, &
+                     ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
+!                     ONE, M_U(:n_e,:), n_e, M_E(:n_e,:), n_e)
+                  call XGEMM_inplace('N', 'N', n_e, n_e, n_e, -ONE, &
+                     M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, ONE, &
+                     M_E(n_e+1,1), 2*n_e)
+!                     M_U(n_e+1:,:), n_e, M_E(:n_e,:), n_e, ONE, &
+!                     M_E(n_e+1:,:), n_e)
 
-                  call XTRSM('L', 'U', 'N', 'N', n_e, n_e, &
-!                     ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
-                     ONE, M_U(:n_e,:), n_e, M_E(:n_e,:), n_e)
+                  call XTRSM_inplace('L', 'U', 'N', 'N', n_e, n_e, &
+                     ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
+!                     ONE, M_U(:n_e,:), n_e, M_E(:n_e,:), n_e)
 
-                  call XLASWP(n_e, M_G, 2*n_e, 1, n_e, ipiv, 1)
-                  call XTRSM('L', 'L', 'N', 'U', n_e, n_e, &
-                     ONE, M_U(:n_e,:), n_e, M_G(:n_e,:), n_e)
-!                     ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
-                  call XGEMM('N', 'N', n_e, n_e, n_e, -ONE, &
-!                     M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, ONE, &
-!                     M_G(n_e+1,1), 2*n_e)
-                     M_U(n_e+1:,:), n_e, M_G(:n_e,:), n_e, ONE, &
-                     M_G(n_e+1:,:), n_e)
+                  call XLASWP_inplace(n_e, M_G(1,1), 2*n_e, 1, n_e, ipiv, 1)
+                  call XTRSM_inplace('L', 'L', 'N', 'U', n_e, n_e, &
+                     ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
+!                     ONE, M_U(:n_e,:), n_e, M_G(:n_e,:), n_e)
+                  call XGEMM_inplace('N', 'N', n_e, n_e, n_e, -ONE, &
+                     M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, ONE, &
+                     M_G(n_e+1,1), 2*n_e)
+!                     M_U(n_e+1:,:), n_e, M_G(:n_e,:), n_e, ONE, &
+!                     M_G(n_e+1:,:), n_e)
 
-                  call XTRSM('L', 'U', 'N', 'N', n_e, n_e, &
-!                     ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
-                     ONE, M_U(:n_e,:), n_e, M_G(:n_e,:), n_e)
+                  call XTRSM_inplace('L', 'U', 'N', 'N', n_e, n_e, &
+                     ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
+!                     ONE, M_U(:n_e,:), n_e, M_G(:n_e,:), n_e)
 
                   ! Store results
 
@@ -426,7 +426,7 @@ contains
          integer  :: i_s
          real(WP) :: M_s
          integer  :: i
-         ${T}$    :: u_bound(2*this%n_e,1)
+         ${T}$    :: u_bound(2*this%n_e)
 
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) >= 1; if nul(S) =
@@ -455,9 +455,9 @@ contains
                call sing_decompose(M, sigma, sU, sV_H)
 
                #:if T == 'real(WP)'
-                  u_bound(:,1) = sV_H(2*n_e,:)
+                  u_bound = sV_H(2*n_e,:)
                #:elif T == 'complex(WP)'
-                  u_bound(:,1) = CONJG(sV_H(2*n_e,:))
+                  u_bound = CONJG(sV_H(2*n_e,:))
                #:else
                   #:stop f'invalid type {T}'
                #:endif
@@ -482,13 +482,13 @@ contains
                   end if
                end do sing_loop
 
-               u_bound(:i_s-1,1) = -M(:i_s-1,i_s)
+               u_bound(:i_s-1) = -M(:i_s-1,i_s)
 
-               call XTRSM('L', 'U', 'N', 'N', i_s-1, 1, &
-                  ONE, M, 2*n_e, u_bound, 2*n_e)
+               call XTRSM_inplace('L', 'U', 'N', 'N', i_s-1, 1, &
+                  ONE, M(1,1), 2*n_e, u_bound(1), 2*n_e)
                
-               u_bound(i_s,1) = 1._WP
-               u_bound(i_s+1:,1) = 0._WP
+               u_bound(i_s) = 1._WP
+               u_bound(i_s+1:) = 0._WP
 
             endif
 
@@ -496,7 +496,7 @@ contains
 
          ! Backsubstitute to reconstruct the full solution vector
 
-         call this%backsub_(u_bound(:,1), u)
+         call this%backsub_(u_bound, u)
 
          ! Finish
 
@@ -618,8 +618,8 @@ contains
 
                   u(i_b:i_b+n_e-1) = ZERO
 
-                  call XGEMV('N', n_e, n_e, -ONE, this%E_l(:,:,k+l), n_e, u(i_a:i_a+n_e-1), 1, ZERO, u(i_b:i_b+n_e-1), 1)
-                  call XGEMV('N', n_e, n_e, -ONE, this%E_r(:,:,k+l), n_e, u(i_c:i_c+n_e-1), 1, ONE, u(i_b:i_b+n_e-1), 1)
+                  call XGEMV_inplace('N', n_e, n_e, -ONE, this%E_l(1,1,k+l), n_e, u(i_a), 1, ZERO, u(i_b), 1)
+                  call XGEMV_inplace('N', n_e, n_e, -ONE, this%E_r(1,1,k+l), n_e, u(i_c), 1, ONE, u(i_b), 1)
 
                end do backsub_loop
 

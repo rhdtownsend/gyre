@@ -22,6 +22,7 @@ module magnus_diff_m
    ! Uses
    
    use kinds_m
+   use clinalg_m
 
    use diff_m
    use eqns_m
@@ -188,39 +189,31 @@ contains
 
          ! Build the difference equations
 
-         #:if T == 'real(WP)'
-            #:set P = 'D'
-         #:elif T == 'complex(WP)'
-            #:set P = 'Z'
-         #:else
-            #:stop f'invalid type {T}'
-         #:endif
-   
          if (UPWIND) then
 
             ! Use 'upwinding' for stability
 
             do i = 1, this%n_e
-               call ${P}$COPY(this%n_e, V_r(1,i), 1, V_pos(1,i), 1)
+               call XCOPY_inplace(this%n_e, V_r(1,i), 1, V_pos(1,i), 1)
                if (REAL(lambda(i)) >= 0._WP) then
-                  call ${P}$SCAL(this%n_e, exp(-lambda(i)*this%dx), V_pos(1,i), 1)
+                  call XSCAL_inplace(this%n_e, exp(-lambda(i)*this%dx), V_pos(1,i), 1)
                endif
             end do
 
             do i = 1, this%n_e
-               call ${P}$COPY(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
+               call XCOPY_inplace(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
                if (REAL(lambda(i)) < 0._WP) then
-                  call ${P}$SCAL(this%n_e, exp(lambda(i)*this%dx), V_neg(1,i), 1)
+                  call XSCAL_inplace(this%n_e, exp(lambda(i)*this%dx), V_neg(1,i), 1)
                endif
             end do
 
-            call ${P}$GEMM('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(-1._WP, KIND=WP), &
-               V_neg, this%n_e, V_l, this%n_e, CMPLX(0._WP, KIND=WP), &
-               E_l_, this%n_e)
+            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(-1._WP, KIND=WP), &
+               V_neg(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._WP, KIND=WP), &
+               E_l_(1,1), this%n_e)
 
-            call ${P}$GEMM('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._WP, KIND=WP), &
-               V_pos, this%n_e, V_l, this%n_e, CMPLX(0._WP, KIND=WP), &
-               E_r_, this%n_e)
+            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._WP, KIND=WP), &
+               V_pos(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._WP, KIND=WP), &
+               E_r_(1,1), this%n_e)
 
             scl = exp(ext_${S}$(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*this%dx))
 
@@ -229,13 +222,13 @@ contains
             ! Use the [TowTei2013] expression (their eqns. 4, 16, 18)
 
             do i = 1, this%n_e
-               call ${P}$COPY(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
-               call ${P}$SCAL(this%n_e, exp(lambda(i)*this%dx), V_neg(1,i), 1)
+               call XCOPY_inplace(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
+               call XSCAL_inplace(this%n_e, exp(lambda(i)*this%dx), V_neg(1,i), 1)
             end do
 
-            call ${P}$GEMM('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._WP, KIND=WP), &
-               V_neg, this%n_e, V_l, this%n_e, CMPLX(0._WP, KIND=WP), &
-               E_l_, this%n_e)
+            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._WP, KIND=WP), &
+               V_neg(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._WP, KIND=WP), &
+               E_l_(1,1), this%n_e)
 
             do i = 1, this%n_e
                E_r_(:,i) = 0._WP
