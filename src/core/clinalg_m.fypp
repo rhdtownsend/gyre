@@ -406,30 +406,32 @@ module clinalg_m
       end subroutine DSTEMR
    end interface XSTEMR
 
-   interface XLASWP
+   !**** in-place LAPACK/BLAS routines
+
+   interface XLASWP_inplace
       subroutine DLASWP(N, A, LDA, K1, K2, IPIV, INCX)
          use kinds_m
          integer, intent(in) :: N, LDA, K1, K2, INCX
          integer, intent(in) :: IPIV(*)
-         real(DP), intent(inout) :: A(LDA,*)
+         real(DP), intent(inout) :: A
       end subroutine DLASWP
       subroutine ZLASWP(N, A, LDA, K1, K2, IPIV, INCX)
          use kinds_m
          integer, intent(in) :: N, LDA, K1, K2, INCX
          integer, intent(in) :: IPIV(*)
-         complex(DP), intent(inout) :: A(LDA,*)
+         complex(DP), intent(inout) :: A
       end subroutine ZLASWP
-   end interface XLASWP
+   end interface XLASWP_inplace
       
-   interface XGEMM
+   interface XGEMM_inplace
       subroutine DGEMM(TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, &
          BETA, C, LDC)
          use kinds_m
          character(1), intent(in) :: TRANSA, TRANSB
          integer, intent(in) :: M, N, K, LDA, LDB, LDC
          real(DP), intent(in) :: ALPHA, BETA
-         real(DP), intent(in) :: A(LDA,*), B(LDB,*)
-         real(DP), intent(inout) :: C(LDC,*)
+         real(DP), intent(in) :: A, B
+         real(DP), intent(inout) :: C
       end subroutine DGEMM
       subroutine ZGEMM(TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, &
          BETA, C, LDC)
@@ -437,48 +439,78 @@ module clinalg_m
          character(1), intent(in) :: TRANSA, TRANSB
          integer, intent(in) :: M, N, K, LDA, LDB, LDC
          complex(DP), intent(in) :: ALPHA, BETA
-         complex(DP), intent(in) :: A(LDA,*), B(LDB,*)
-         complex(DP), intent(inout) :: C(LDC,*)
+         complex(DP), intent(in) :: A, B
+         complex(DP), intent(inout) :: C
       end subroutine ZGEMM
-   end interface XGEMM
+   end interface XGEMM_inplace
 
-   interface XGEMV
+   interface XGEMV_inplace
       subroutine DGEMV(TRANS, M, N, ALPHA, A, LDA, X, INCX, BETA, Y, INCY)
          use kinds_m
          character(1), intent(in) :: TRANS
          integer, intent(in) :: M, N, LDA, INCX, INCY
          real(DP), intent(in) :: ALPHA, BETA
-         real(DP), intent(in) :: A(LDA,*), X(*)
-         real(DP), intent(inout) :: Y(*)
+         real(DP), intent(in) :: A, X
+         real(DP), intent(inout) :: Y
       end subroutine DGEMV
       subroutine ZGEMV(TRANS, M, N, ALPHA, A, LDA, X, INCX, BETA, Y, INCY)
          use kinds_m
          character(1), intent(in) :: TRANS
          integer, intent(in) :: M, N, LDA, INCX, INCY
          complex(DP), intent(in) :: ALPHA, BETA
-         complex(DP), intent(in) :: A(LDA,*), X(*)
-         complex(DP), intent(inout) :: Y(*)
+         complex(DP), intent(in) :: A, X
+         complex(DP), intent(inout) :: Y
       end subroutine ZGEMV
-   end interface XGEMV
+   end interface XGEMV_inplace
 
-   interface XTRSM
+   interface XTRSM_inplace
       subroutine DTRSM(SIDE, UPLO, TRANSA, DIAG, M, N, ALPHA, A, LDA, B, LDB)
          use kinds_m
          character(1), intent(in) :: DIAG, SIDE, TRANSA, UPLO
          integer, intent(in) :: LDA, LDB
          real(DP), intent(in) :: ALPHA
-         real(DP), intent(in) :: A(LDA,*)
-         real(DP), intent(inout) :: B(LDB,*)
+         real(DP), intent(in) :: A
+         real(DP), intent(inout) :: B
       end subroutine DTRSM
       subroutine ZTRSM(SIDE, UPLO, TRANSA, DIAG, M, N, ALPHA, A, LDA, B, LDB)
          use kinds_m
          character(1), intent(in) :: DIAG, SIDE, TRANSA, UPLO
          integer, intent(in) :: LDA, LDB
          complex(DP), intent(in) :: ALPHA
-         complex(DP), intent(in) :: A(LDA,*)
-         complex(DP), intent(inout) :: B(LDB,*)
+         complex(DP), intent(in) :: A
+         complex(DP), intent(inout) :: B
       end subroutine ZTRSM
-   end interface XTRSM
+   end interface XTRSM_inplace
+
+   interface XSCAL_inplace
+      subroutine DSCAL(N, DA, DX, INCX)
+         use kinds_m
+         integer, intent(in) :: N, INCX
+         real(DP), intent(in) :: DA
+         real(DP), intent(inout) :: DX
+      end subroutine DSCAL
+      subroutine ZSCAL(N, DA, DX, INCX)
+         use kinds_m
+         integer, intent(in) :: N, INCX
+         complex(DP), intent(in) :: DA
+         complex(DP), intent(inout) :: DX
+      end subroutine ZSCAL
+   end interface XSCAL_inplace
+
+   interface XCOPY_inplace
+      subroutine DCOPY(N, DX, INCX, DY, INCY)
+         use kinds_m
+         integer, intent(in) :: N, INCX, INCY
+         real(DP), intent(in) :: DX
+         real(DP), intent(out) :: DY
+      end subroutine DCOPY
+      subroutine ZCOPY(N, DX, INCX, DY, INCY)
+         use kinds_m
+         integer, intent(in) :: N, INCX, INCY
+         complex(DP), intent(in) :: DX
+         complex(DP), intent(out) :: DY
+      end subroutine ZCOPY
+   end interface XCOPY_inplace
 
    ! Access specifiers
 
@@ -495,10 +527,12 @@ module clinalg_m
    public :: XSTEVR
    public :: XLAMCH
    public :: XSTEMR
-   public :: XLASWP
-   public :: XGEMM
-   public :: XGEMV
-   public :: XTRSM
+   public :: XLASWP_inplace
+   public :: XGEMM_inplace
+   public :: XGEMV_inplace
+   public :: XTRSM_inplace
+   public :: XSCAL_inplace
+   public :: XCOPY_inplace
 
    ! Default access
 
