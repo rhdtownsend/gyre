@@ -29,7 +29,14 @@ class BuilderDeps (fypp.Builder):
 def run_fypp_deps():
 
     options = fypp.FyppOptions()
+    options.depfile = None
+    
     optparser = fypp.get_option_parser()
+
+    msg = 'write dependency information to file'
+    optparser.add_option('-d', '--depfile', dest='depfile',
+                      default=options.depfile, help=msg)
+    
     opts, leftover = optparser.parse_args(values=options)
     infile = leftover[0] if len(leftover) > 0 else '-'
     outfile = leftover[1] if len(leftover) > 1 else '-'
@@ -37,7 +44,9 @@ def run_fypp_deps():
     try:
         tool = fypp.Fypp(opts, builder_factory=BuilderDeps)
         tool.process_file(infile, outfile)
-        print('{:s} : {:s} {:s}'.format(outfile, infile, ' '.join(incfiles.keys())))
+        if options.depfile is not None:
+            with open(options.depfile, 'w') as f:
+                f.write('{:s} {:s} : {:s} {:s}\n'.format(outfile, options.depfile, infile, ' '.join(incfiles.keys())))
     except fypp.FyppStopRequest as exc:
         sys.stderr.write(fypp._formatted_exception(exc))
         sys.exit(fypp.USER_ERROR_EXIT_CODE)

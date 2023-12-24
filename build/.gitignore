@@ -2,5 +2,4 @@
 *.o
 *.mod
 *.smod
-.*.d
-.*.dpp
+.depend
