@@ -88,7 +88,7 @@ END{
 
     ## Rule 5: the anchor of a source file depends on the anchor of
     ## all the non-intrinsic modules it uses
-    split("", filuniq, ":")
+    split("", filuniq)
     for (i in usedmod){
 	if ((i in mod) && mod[i]){
 	    for (j=1;j<=usedmod[i];j++){

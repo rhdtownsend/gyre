@@ -1,36 +1,80 @@
 # File     : Make.inc
 # Purpose  : standard makefile rules, targets
 
+#########
+# Checks
+#########
+
+MINIMUM_VERSION = 23.7.2
+
+ifneq ($(MAKECMDGOALS),clean)
+
+  VERSION_CHECK = $(shell ./check_sdk_version $(MINIMUM_VERSION))
+
+  ifneq ($(VERSION_CHECK),passed)
+    ifeq ($(VERSION_CHECK),SDK too old)
+      $(error Your MESA SDK installation is too old; please update to version $(MINIMUM_VERSION) or newer)
+    else ifeq ($(VERSION_CHECK),SDK not installed)
+      $(error MESA SDK is either not installed or not properly initialized)
+    else
+      $(error Could not determine MESA SDK availability)
+    endif
+  endif
+
+endif
+
 ############
 # Variables
 ############
 
-SRC_DIRS = $(addprefix ../src/, ad bvp cad common context core diff	\
-   ext extern frontend/gyre grid interp math math/crmath matrix mode	\
-   model nad output par poly rad rot sad search tar tide tnad)
+ifeq ($(shell uname -s),Darwin)
+  LIB_SUFFIX = .dylib
+else			   
+  LIB_SUFFIX = .so
+endif
 
 DEPEND_DIR = .depend
 
-ALL_TARGETS = $(EXEC_TARGETS) $(LIB_TARGETS)
+BIN_FILES = $(BIN_TARGETS)
+LIB_FILES = $(addsuffix $(LIB_SUFFIX),$(LIB_TARGETS))
 
-ALL_SRCS = $(foreach target,$(ALL_TARGETS),$($(target)_SRCS))
+ALL_SRCS = $(foreach target,$(BIN_TARGETS) $(LIB_TARGETS),$($(target)_SRCS) $($(target)_USES))
 
 ALL_DPPS = $(addprefix $(DEPEND_DIR)/,$(ALL_SRCS:%.fypp=%.dpp))
-ALL_DEPS = $(addprefix $(DEPEND_DIR)/,$(ALL_TARGETS:%=%.dep))
+ALL_DEPS = $(addprefix $(DEPEND_DIR)/,$(BIN_TARGETS:%=%.dep) $(LIB_TARGETS:%=%.dep))
 
-##########
-# Targets
-##########
+all : $(BIN_FILES) $(LIB_FILES)
 
-all: $(ALL_TARGETS)
+install : bin-install lib-install inc-install
+
+bin-install : $(BIN_FILES)
+	@for file in $^; do \
+	    echo CP $${file} ${BIN_DIR}; \
+	    cp $${file} ${BIN_DIR}; \
+	done
+
+lib-install : $(LIB_FILES)
+	@for file in $^; do \
+	    echo CP $${file} ${LIB_DIR}; \
+	    cp $${file} ${LIB_DIR}; \
+	done
+
+inc-install : $(INC_FILES)
+	@for file in $^; do \
+	    echo CP $${file} ${INC_DIR}; \
+	    cp $${file} ${INC_DIR}; \
+	done
 
 $(DEPEND_DIR) :
-	mkdir -p $(DEPEND_DIR)
+	mkdir -p $@
 
-clean :
-	rm -f $(ALL_TARGETS) $(DEPEND_DIR)/* *.f90 *.mod *.smod *.o 
+clean : almostclean
+	rm -f $(DEPEND_DIR)/*
 
-.PHONY: clean
+almostclean :
+	rm -f $(BIN_FILES) $(LIB_FILES) *.f90 *.mod *.smod *.o 
+
+.PHONY: all clean almostclean
 
 .SUFFIXES:
 
@@ -39,6 +83,7 @@ clean :
 ########
 
 vpath %.fypp $(SRC_DIRS)
+vpath %.inc $(SRC_DIRS)
 
 #################
 # Preproccessing
@@ -53,9 +98,9 @@ FPPFLAGS := $(FPPFLAGS) \
             $(foreach opt,DEBUG OMP FPE IEEE,$(if $(filter yes,$($(opt))),-D$(opt)=1,-D$(opt)=0))
 
 ifeq ($(DEBUG),yes)
-  FPPFLAGS := $(FPPFLAGS) -DLOG_LEVEL=\'DEBUG\' -DGFORTRAN_PR_69185 -DGFORTRAN_PR_49636
+  FPPFLAGS := $(FPPFLAGS) -DLOG_LEVEL=\'DEBUG\'
 else
-  FPPFLAGS := $(FPPFLAGS) -DLOG_LEVEL=\'INFO\' -DGFORTRAN_PR_49636
+  FPPFLAGS := $(FPPFLAGS) -DLOG_LEVEL=\'INFO\'
 endif
 
 # Rules
@@ -65,7 +110,7 @@ endif
 
 $(ALL_DPPS) : 
 
-# Extra dependencies
+# Include generated dependencies from .dpp files
 
 ifneq ($(MAKECMDGOALS),clean)
   -include $(ALL_DPPS)
@@ -118,7 +163,7 @@ $(ALL_DEPS) : $(DEPEND_DIR)/%.dep : | $(DEPEND_DIR)
 	@echo MAKEDEP $*
 	@$(MAKEDEP) $^ > $@
 
-# Extra dependencies
+# Include generated dependencies from .dep files
 
 ifneq ($(MAKECMDGOALS),clean)
   -include $(ALL_DEPS)
@@ -129,11 +174,11 @@ endif
 ##########
 
 ifeq ($(shell uname -s),Darwin)
-  LIB_LDFLAGS = -shared -install_name ${GYRE_DIR}/lib/$@
-  EXEC_LDFLAGS = 
+  LIB_LDFLAGS = -shared -install_name $(LIB_DIR)/$@
+  BIN_LDFLAGS = -Wl,
 else			   
-  LIB_LDFLAGS = -Wl,--no-warn-execstack -shared -Wl,-rpath -Wl,${GYRE_DIR}/lib
-  EXEC_LDFLAGS = -Wl,--no-warn-execstack -Wl,-rpath -Wl,${GYRE_DIR}/lib
+  LIB_LDFLAGS = -Wl,--no-warn-execstack -shared -Wl,-rpath -Wl,$(LIB_DIR)
+  BIN_LDFLAGS = -Wl,--no-warn-execstack -Wl,-rpath -Wl,$(LIB_DIR)
 endif
 
 LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link`
@@ -148,13 +193,13 @@ endif
 
 # Rules
 
-$(LIB_TARGETS) :
+$(BIN_FILES) :
+	@echo LD $@
+	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(BIN_LDFLAGS)
+
+$(LIB_FILES) :
 	@echo LD-LIB $@
 	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(LIB_LDFLAGS)
-
-$(EXEC_TARGETS) : 
-	@echo LD $@
-	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(EXEC_LDFLAGS)
 
 #######################
 # Secondary Expansions
@@ -162,6 +207,8 @@ $(EXEC_TARGETS) :
 
 .SECONDEXPANSION :
 
-$(ALL_TARGETS) : $$(subst .fypp,.o,$$($$@_SRCS))
+$(BIN_FILES) : % : $$(subst .fypp,.o,$$($$*_SRCS)) $$(addsuffix $(LIB_SUFFIX),$$($$*_LIBS))
 
-$(ALL_DEPS) : $(DEPEND_DIR)/%.dep : $$(subst .fypp,.f90,$$($$*_SRCS))
+$(LIB_FILES) : %$(LIB_SUFFIX) : $$(subst .fypp,.o,$$($$*_SRCS)) $$(addsuffix $(LIB_SUFFIX),$$($$*_LIBS))
+
+$(ALL_DEPS) : $(DEPEND_DIR)/%.dep : $$(subst .fypp,.f90,$$($$*_SRCS) $$($$*_USES))
