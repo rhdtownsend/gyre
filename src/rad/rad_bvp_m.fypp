@@ -100,7 +100,7 @@ contains
 
       ! Construct the rad_bvp_t
 
-      if (os_p%alpha_grv /= 1._WP) then
+      if (os_p%alpha_grv /= 1._RD) then
          @:WARN('alpha_grv is ignored in 2nd-order radial equations')
       endif
 
@@ -157,7 +157,7 @@ contains
       integer, intent(in)             :: id
       type(wave_t)                    :: wv
 
-      real(WP) :: y(2,bp%n)
+      real(RD) :: y(2,bp%n)
       integer  :: j
 
       ! Calculate the solution vector
@@ -190,12 +190,12 @@ contains
 
       class(rad_bvp_t), intent(inout) :: bp
       type(state_rt), intent(in)      :: st
-      real(WP), intent(in)            :: z_i(:)
-      real(WP), intent(in)            :: z_o(:)
+      real(RD), intent(in)            :: z_i(:)
+      real(RD), intent(in)            :: z_o(:)
       integer, intent(in)             :: id
       type(wave_t)                    :: wv
 
-      real(WP) :: y(2,bp%n)
+      real(RD) :: y(2,bp%n)
       integer  :: j
 
       @:CHECK_BOUNDS(SIZE(z_i), bp%n_i)
@@ -231,24 +231,24 @@ contains
 
       class(rad_bvp_t), intent(inout) :: bp
       type(state_rt), intent(in)      :: st
-      real(WP), intent(in)            :: y(:,:)
+      real(RD), intent(in)            :: y(:,:)
       integer, intent(in)             :: id
       type(wave_t)                    :: wv
 
       class(model_t), pointer :: ml
       integer                 :: j
-      real(WP)                :: U
-      real(WP)                :: c_1(bp%n)
-      real(WP)                :: y_4(bp%n)
-      real(WP)                :: deul_phi(bp%n)
+      real(RD)                :: U
+      real(RD)                :: c_1(bp%n)
+      real(RD)                :: y_4(bp%n)
+      real(RD)                :: deul_phi(bp%n)
       integer                 :: s
       integer                 :: j_i
       integer                 :: j_o
       type(interp_rt)         :: in
-      real(WP)                :: eul_phi(bp%n)
-      real(WP)                :: y_3(bp%n)
-      real(WP)                :: y_g(4,bp%n)
-      complex(WP)             :: y_c(6,bp%n)
+      real(RD)                :: eul_phi(bp%n)
+      real(RD)                :: y_3(bp%n)
+      real(RD)                :: y_g(4,bp%n)
+      complex(RD)             :: y_c(6,bp%n)
       type(state_ct)          :: st_c
       type(ext_ct)            :: discrim
 
@@ -270,10 +270,10 @@ contains
 
             ! Evaluate the Eulerian potential gradient (gravity) perturbation
 
-            if (pt%x /= 0._WP) then
+            if (pt%x /= 0._RD) then
                deul_phi(j) = y_4(j)/(c_1(j)*pt%x)
             else
-               deul_phi(j) = 0._WP
+               deul_phi(j) = 0._RD
             end if
 
          end associate
@@ -313,7 +313,7 @@ contains
 
       ! Set up complex eigenfunctions
 
-      st_c = state_ct(CMPLX(st%omega, KIND=WP), st%omega)
+      st_c = state_ct(CMPLX(st%omega, KIND=RD), st%omega)
 
       if (bp%os_p%quasiad_eigfuncs) then
 
@@ -322,7 +322,7 @@ contains
       else
 
          y_c(1:4,:) = y_g
-         y_c(5:6,:) = 0._WP
+         y_c(5:6,:) = 0._RD
 
       endif
 

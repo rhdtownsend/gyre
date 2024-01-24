@@ -85,7 +85,7 @@ contains
       function l_e_${S}$_(this, Omega_rot, omega) result(l_e)
 
          class(null_rot_${S}$), intent(in) :: this
-         real(WP), intent(in)              :: Omega_rot
+         real(RD), intent(in)              :: Omega_rot
          ${T}$, intent(in)                 :: omega
          ${T}$                             :: l_e
 
@@ -104,7 +104,7 @@ contains
       function lambda_${S}$_(this, Omega_rot, omega) result(lambda)
 
          class(null_rot_${S}$), intent(in) :: this
-         real(WP), intent(in)              :: Omega_rot
+         real(RD), intent(in)              :: Omega_rot
          ${T}$, intent(in)                 :: omega
          ${T}$                             :: lambda
 

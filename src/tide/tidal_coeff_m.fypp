@@ -40,7 +40,7 @@ module tidal_coeff_m
 
    ! Parameters
 
-   real(WP), parameter :: TOL = 1E-12_WP
+   real(RD), parameter :: TOL = 1E-12_RD
 
    ! Access specifiers
 
@@ -66,15 +66,15 @@ contains
 
       class(model_t), intent(in)    :: ml
       type(orbit_par_t), intent(in) :: or_p
-      real(WP), intent(in)          :: x
+      real(RD), intent(in)          :: x
       integer, intent(in)           :: l
       integer, intent(in)           :: m
       integer, intent(in)           :: k
-      real(WP)                      :: Phi_T
+      real(RD)                      :: Phi_T
 
-      real(WP) :: R_a
-      real(WP) :: eps_T
-      real(WP) :: cbar
+      real(RD) :: R_a
+      real(RD) :: eps_T
+      real(RD) :: cbar
 
       ! Evaluate the tidal forcing potential Phi_T at x, in units of G*M/R
 
@@ -97,15 +97,15 @@ contains
 
       class(model_t), intent(in)    :: ml
       type(orbit_par_t), intent(in) :: or_p
-      real(WP), intent(in)          :: x
+      real(RD), intent(in)          :: x
       integer, intent(in)           :: l
       integer, intent(in)           :: m
       integer, intent(in)           :: k
-      real(WP)                      :: dPhi_T
+      real(RD)                      :: dPhi_T
 
-      real(WP) :: R_a
-      real(WP) :: eps_T
-      real(WP) :: cbar
+      real(RD) :: R_a
+      real(RD) :: eps_T
+      real(RD) :: cbar
 
       ! Evaluate the tidal forcing potential gradient dPhi_T/dx at x, in
       ! units of G*M/R
@@ -129,7 +129,7 @@ contains
 
       class(model_t), intent(in)    :: ml
       type(orbit_par_t), intent(in) :: or_p
-      real(WP)                      :: Omega_orb
+      real(RD)                      :: Omega_orb
 
       ! Evaluate the dimensionless orbital frequency
 
@@ -147,15 +147,15 @@ contains
 
       class(model_t), intent(in)    :: ml
       type(orbit_par_t), intent(in) :: or_p
-      real(WP)                      :: R_a
+      real(RD)                      :: R_a
 
-      real(WP) :: Omega_orb
+      real(RD) :: Omega_orb
 
       ! Evaluate the ratio of the stellar radius to the semi-major axis
 
       Omega_orb = tidal_Omega_orb(ml, or_p)
 
-      R_a = (Omega_orb**2/(1._WP + or_p%q))**(1._WP/3._WP)
+      R_a = (Omega_orb**2/(1._RD + or_p%q))**(1._RD/3._RD)
 
       ! Finish
 
@@ -172,10 +172,10 @@ contains
       integer, intent(in)           :: l
       integer, intent(in)           :: m
       integer, intent(in)           :: k
-      real(WP)                      :: cbar
+      real(RD)                      :: cbar
 
-      real(WP) :: R_a
-      real(WP) :: X_1
+      real(RD) :: R_a
+      real(RD) :: X_1
 
       ! Evaluate the tidal potential coefficient cbar_lmk
 
@@ -183,7 +183,7 @@ contains
 
       X_1 = hansen_X(or_p, -(l+1), -m, -k)
 
-      cbar = (4._WP*PI/(2*l+1))*R_a**(l-2)*REAL(CONJG(spherical_Y(l, m, HALFPI, 0._WP)))*X_1
+      cbar = (4._RD*PI/(2*l+1))*R_a**(l-2)*REAL(CONJG(spherical_Y(l, m, HALFPI, 0._RD)))*X_1
 
       ! Finish
 
@@ -200,20 +200,20 @@ contains
       integer, intent(in)           :: l
       integer, intent(in)           :: m
       integer, intent(in)           :: k
-      real(WP)                      :: Gbar_1
+      real(RD)                      :: Gbar_1
 
-      real(WP) :: cbar
-      real(WP) :: Y
-      real(WP) :: X_1m1
-      real(WP) :: X_1p1
-      real(WP) :: X_2m1
-      real(WP) :: X_2p1
+      real(RD) :: cbar
+      real(RD) :: Y
+      real(RD) :: X_1m1
+      real(RD) :: X_1p1
+      real(RD) :: X_2m1
+      real(RD) :: X_2p1
 
       ! Evaluate the secular evolution coefficient Gbar^(1)_lmk
 
       cbar = tidal_cbar(ml, or_p, l, m, k)
 
-      Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
+      Y = REAL(spherical_Y(l, m, HALFPI, 0._RD))
 
       X_1m1 = hansen_X(or_p, -(l+1), -m-1, -k)
       X_1p1 = hansen_X(or_p, -(l+1), -m+1, -k)
@@ -223,8 +223,8 @@ contains
 
       associate (e => or_p%e)
          Gbar_1 = cbar*Y* &
-            (0.5_WP*(l+1)*(X_2m1 + X_2p1) + 0.5_WP*m*(X_2m1 - X_2p1) + &
-            0.5_WP*m/(1._WP - e**2)*(X_1m1 - X_1p1))*sqrt(1._WP - e**2)/e
+            (0.5_RD*(l+1)*(X_2m1 + X_2p1) + 0.5_RD*m*(X_2m1 - X_2p1) + &
+            0.5_RD*m/(1._RD - e**2)*(X_1m1 - X_1p1))*sqrt(1._RD - e**2)/e
       end associate
 
       ! Finish
@@ -242,19 +242,19 @@ contains
       integer, intent(in)           :: l
       integer, intent(in)           :: m
       integer, intent(in)           :: k
-      real(WP)                      :: Gbar_2
+      real(RD)                      :: Gbar_2
 
-      real(WP) :: cbar
-      real(WP) :: Y
-      real(WP) :: X_2m1
-      real(WP) :: X_2p1
-      real(WP) :: X_3
+      real(RD) :: cbar
+      real(RD) :: Y
+      real(RD) :: X_2m1
+      real(RD) :: X_2p1
+      real(RD) :: X_3
 
       ! Evaluate the secular evolution coefficient Gbar^(2)_lmk
 
       cbar = tidal_cbar(ml, or_p, l, m, k)
 
-      Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
+      Y = REAL(spherical_Y(l, m, HALFPI, 0._RD))
 
       X_2m1 = hansen_X(or_p, -(l+2), -m-1, -k)
       X_2p1 = hansen_X(or_p, -(l+2), -m+1, -k)
@@ -262,8 +262,8 @@ contains
       X_3 = hansen_X(or_p, -(l+3), -m, -k)
 
       associate (e => or_p%e)
-         Gbar_2 = -2._WP*cbar*Y* &
-            (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3)/sqrt(1._WP - e**2)
+         Gbar_2 = -2._RD*cbar*Y* &
+            (0.5_RD*(l+1)*e*(X_2m1 - X_2p1) + m*(1._RD - e**2)*X_3)/sqrt(1._RD - e**2)
       end associate
 
       ! Finish
@@ -281,20 +281,20 @@ contains
       integer, intent(in)           :: l
       integer, intent(in)           :: m
       integer, intent(in)           :: k
-      real(WP)                      :: Gbar_3
+      real(RD)                      :: Gbar_3
 
-      real(WP) :: cbar
-      real(WP) :: Y
-      real(WP) :: X_1
-      real(WP) :: X_2m1
-      real(WP) :: X_2p1
-      real(WP) :: X_3
+      real(RD) :: cbar
+      real(RD) :: Y
+      real(RD) :: X_1
+      real(RD) :: X_2m1
+      real(RD) :: X_2p1
+      real(RD) :: X_3
 
       ! Evaluate the secular evolution coefficient Gbar^(3)_lmk
 
       cbar = tidal_cbar(ml, or_p, l, m, k)
 
-      Y = REAL(spherical_Y(l, m, HALFPI, 0._WP))
+      Y = REAL(spherical_Y(l, m, HALFPI, 0._RD))
 
       X_1 = hansen_X(or_p, -(l+1), -m, -k)
 
@@ -305,7 +305,7 @@ contains
 
       associate (e => or_p%e)
          Gbar_3 = -cbar*Y* &
-            (0.5_WP*(l+1)*e*(X_2m1 - X_2p1) + m*(1._WP - e**2)*X_3 - m*X_1)*sqrt(1._WP - e**2)/e
+            (0.5_RD*(l+1)*e*(X_2m1 - X_2p1) + m*(1._RD - e**2)*X_3 - m*X_1)*sqrt(1._RD - e**2)/e
       end associate
 
       ! Finish
@@ -323,10 +323,10 @@ contains
       integer, intent(in)           :: l
       integer, intent(in)           :: m
       integer, intent(in)           :: k
-      real(WP)                      :: Gbar_4
+      real(RD)                      :: Gbar_4
 
-      real(WP) :: cbar
-      real(WP) :: R_a
+      real(RD) :: cbar
+      real(RD) :: R_a
 
       ! Evaluate the secular evolution coefficient Gbar^(4)_lmk
 
@@ -334,7 +334,7 @@ contains
 
       R_a = tidal_R_a(ml, or_p)
 
-      Gbar_4 = m*(2*l+1)/(4._WP*PI)*R_a**(2-l)*cbar**2
+      Gbar_4 = m*(2*l+1)/(4._RD*PI)*R_a**(2-l)*cbar**2
 
       ! Finish
 
@@ -350,26 +350,26 @@ contains
       integer, intent(in)           :: n
       integer, intent(in)           :: m
       integer, intent(in)           :: k
-      real(WP)                      :: X
+      real(RD)                      :: X
 
-      real(WP) :: S
+      real(RD) :: S
 
       ! Evaluate the Hansen coefficient X_nmk
 
       associate (e => or_p%e)
 
-         if (e**2 > EPSILON(0._WP)) then
+         if (e**2 > EPSILON(0._RD)) then
 
-            S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
+            S = MAX((1._RD - e)**(-n-2), (1._RD + e)**(-n-2))
 
-            X = (1._WP - e**2)**(n+1.5_WP)/TWOPI*S*orbit_quad(hansen_X_f_, e, TOL)
+            X = (1._RD - e**2)**(n+1.5_RD)/TWOPI*S*orbit_quad(hansen_X_f_, e, TOL)
 
          else
 
             if (m == k) then
-               X = 1._WP
+               X = 1._RD
             else
-               X = 0._WP
+               X = 0._RD
             endif
 
          endif
@@ -384,14 +384,14 @@ contains
 
       function hansen_X_f_(ua, Ma, e) result(f)
 
-         real(WP), intent(in) :: ua
-         real(WP), intent(in) :: Ma
-         real(WP), intent(in) :: e
-         real(WP)             :: f
+         real(RD), intent(in) :: ua
+         real(RD), intent(in) :: Ma
+         real(RD), intent(in) :: e
+         real(RD)             :: f
 
          ! Set up the integrand
 
-         f = cos(m*ua - k*Ma)/(S*(1._WP + e*cos(ua))**(n+2))
+         f = cos(m*ua - k*Ma)/(S*(1._RD + e*cos(ua))**(n+2))
 
          ! Finish
 
@@ -409,26 +409,26 @@ contains
       integer, intent(in)           :: n
       integer, intent(in)           :: m
       integer, intent(in)           :: k
-      real(WP)                      :: X
+      real(RD)                      :: X
 
-      real(WP) :: S
+      real(RD) :: S
 
       ! Evaluate the Hansen coefficient X_nmk
 
       associate (e => or_p%e)
 
-         if (e**2 > EPSILON(0._WP)) then
+         if (e**2 > EPSILON(0._RD)) then
 
-            S = MAX((1._WP - e)**(-n-2), (1._WP + e)**(-n-2))
+            S = MAX((1._RD - e)**(-n-2), (1._RD + e)**(-n-2))
 
-            X = (1._WP - e**2)**(n+1.5_WP)/TWOPI*REAL(orbit_quad_QP(hansen_X_f_, REAL(e, QP), REAL(TOL, QP)), WP)
+            X = (1._RD - e**2)**(n+1.5_RD)/TWOPI*REAL(orbit_quad_QP(hansen_X_f_, REAL(e, QP), REAL(TOL, QP)), RD)
 
          else
 
             if (m == k) then
-               X = 1._WP
+               X = 1._RD
             else
-               X = 0._WP
+               X = 0._RD
             endif
 
          endif
@@ -467,27 +467,27 @@ contains
       interface
          function f (ua, Ma, e)
             use kinds_m
-            real(WP), intent(in) :: ua
-            real(WP), intent(in) :: Ma
-            real(WP), intent(in) :: e
-            real(WP)             :: f
+            real(RD), intent(in) :: ua
+            real(RD), intent(in) :: Ma
+            real(RD), intent(in) :: e
+            real(RD)             :: f
          end function f
       end interface
-      real(WP), intent(in) :: e
-      real(WP), intent(in) :: tol
-      real(WP)             :: I
+      real(RD), intent(in) :: e
+      real(RD), intent(in) :: tol
+      real(RD)             :: I
 
       integer, parameter :: N_MAX = 2**24
 
       integer  :: N
-      real(WP) :: e_fac
-      real(WP) :: S
+      real(RD) :: e_fac
+      real(RD) :: S
       integer  :: j
-      real(WP) :: ua
-      real(WP) :: Ea
-      real(WP) :: Ma
-      real(WP) :: dI
-      real(WP) :: dI_conv
+      real(RD) :: ua
+      real(RD) :: Ea
+      real(RD) :: Ma
+      real(RD) :: dI
+      real(RD) :: dI_conv
 
       ! Perform "orbital quadrature" on the function f(ua, Ma, e, l, m,
       ! k). This involves calculating the integral I = int(f(ua),
@@ -501,17 +501,17 @@ contains
 
       N = 1
 
-      I = PI*(f(0._WP, 0._WP, e) + f(PI, PI, e))/2
+      I = PI*(f(0._RD, 0._RD, e) + f(PI, PI, e))/2
 
       ! Refine the quadrature by repeatedly doubling N
 
-      e_fac = sqrt((1._WP - e)*(1._WP + e))
+      e_fac = sqrt((1._RD - e)*(1._RD + e))
 
       refine_loop : do
 
          ! Update the value of the quadrature
 
-         S = 0._WP
+         S = 0._RD
 
          ! Parallelization disabled for now to give reproducible results
          ! !$OMP PARALLEL DO REDUCTION(+:S) PRIVATE(ua,Ea,Ma) SCHEDULE(static, 4)
@@ -519,24 +519,24 @@ contains
 
             ! Add contributions to the sum
 
-            ua = PI*(2*j-1.5_WP)/(2*N)
+            ua = PI*(2*j-1.5_RD)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
             Ma = Ea - e*sin(Ea)  
             S = S + f(ua, Ma, e)
 
-            ua = PI*(2*j-1.0_WP)/(2*N)
+            ua = PI*(2*j-1.0_RD)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
             Ma = Ea - e*sin(Ea)  
             S = S + f(ua, Ma, e)
 
-            ua = PI*(2*j-0.5_WP)/(2*N)
+            ua = PI*(2*j-0.5_RD)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
             Ma = Ea - e*sin(Ea)  
             S = S + f(ua, Ma, e)
 
          end do update_loop
 
-         dI = PI*S/(4*N) - 0.75_WP*I
+         dI = PI*S/(4*N) - 0.75_RD*I
          I = I + dI
 
          N = 4*N
@@ -545,7 +545,7 @@ contains
 
          @:ASSERT(N <= N_MAX, 'too many iterations')
 
-         dI_conv = MAX(tol, 2._WP*EPSILON(0._WP))
+         dI_conv = MAX(tol, 2._RD*EPSILON(0._RD))
 
          if (abs(dI) < dI_conv) exit refine_loop
 

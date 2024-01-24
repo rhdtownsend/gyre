@@ -59,12 +59,12 @@ module wave_m
      type(point_t)            :: pt_i
      type(point_t)            :: pt_o
      logical                  :: fix_surf
-     complex(WP), allocatable :: y_c(:,:)
-     real(WP)                 :: E_scl2
+     complex(RD), allocatable :: y_c(:,:)
+     real(RD)                 :: E_scl2
      type(ext_ct), public     :: discrim
-     complex(WP), public      :: scl
-     complex(WP), public      :: omega
-     complex(WP), public      :: l_i
+     complex(RD), public      :: scl
+     complex(RD), public      :: omega
+     complex(RD), public      :: l_i
      integer, public          :: n
      integer, public          :: j_ref
      integer, public          :: l
@@ -166,7 +166,7 @@ contains
   function wave_t_(st, y_c, discrim, cx, gr, md_p, nm_p, os_p, id, static) result(wv)
 
     type(state_ct), intent(in)    :: st
-    complex(WP), intent(in)       :: y_c(:,:)
+    complex(RD), intent(in)       :: y_c(:,:)
     type(ext_ct), intent(in)      :: discrim
     type(context_t), intent(in)   :: cx
     type(grid_t), intent(in)      :: gr
@@ -177,7 +177,7 @@ contains
     logical, intent(in), optional :: static
     type(wave_t)                  :: wv
 
-    real(WP) :: x_ref
+    real(RD) :: x_ref
 
     @:CHECK_BOUNDS(SIZE(y_c, 1), 6)
     @:CHECK_BOUNDS(SIZE(y_c, 2), gr%n)
@@ -197,7 +197,7 @@ contains
     wv%omega = st%omega
     wv%discrim = discrim
 
-    wv%scl = 1._WP
+    wv%scl = 1._RD
 
     associate (ml => cx%model(), &
                pt_i => cx%point_i())
@@ -325,7 +325,7 @@ contains
     class(wave_t), intent(in)          :: this
     character(*), intent(in)           :: freq_units
     character(*), optional, intent(in) :: freq_frame
-    complex(WP)                        :: freq
+    complex(RD)                        :: freq
 
     ! Calculate the frequency
 
@@ -352,7 +352,7 @@ contains
 
     class(wave_t), intent(in) :: this
     character(*), intent(in)  :: freq_units
-    real(WP)                  :: dfreq_rot
+    real(RD)                  :: dfreq_rot
 
     associate( &
          ml => this%cx%model() )
@@ -368,7 +368,7 @@ contains
   function omega_int (this)
 
     class(wave_t), intent(in) :: this
-    complex(WP)               :: omega_int
+    complex(RD)               :: omega_int
 
     ! Calculate the dimensionless frequency from the zeta integral
 
@@ -386,7 +386,7 @@ contains
 
      class(wave_t), intent(in) :: this
      integer, intent(in)       :: j
-     real(WP)                  :: x
+     real(RD)                  :: x
 
      ! Return the abscissa
 
@@ -403,15 +403,15 @@ contains
   function dx_min (this)
 
      class(wave_t), intent(in) :: this
-     real(WP)                  :: dx_min
+     real(RD)                  :: dx_min
 
-     real(WP) :: dx(this%n-1)
+     real(RD) :: dx(this%n-1)
 
      ! Return the minimum abscissa spacing
 
      dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
 
-     dx_min = MINVAL(dx, MASK=dx/=0._WP)
+     dx_min = MINVAL(dx, MASK=dx/=0._RD)
 
      ! Finish
 
@@ -424,15 +424,15 @@ contains
   function dx_max (this)
 
      class(wave_t), intent(in) :: this
-     real(WP)                  :: dx_max
+     real(RD)                  :: dx_max
 
-     real(WP) :: dx(this%n-1)
+     real(RD) :: dx(this%n-1)
 
      ! Return the maximum abscissa spacing
 
      dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
 
-     dx_max = MAXVAL(dx, MASK=dx/=0._WP)
+     dx_max = MAXVAL(dx, MASK=dx/=0._RD)
 
      ! Finish
 
@@ -445,15 +445,15 @@ contains
   function dx_rms (this)
 
      class(wave_t), intent(in) :: this
-     real(WP)                  :: dx_rms
+     real(RD)                  :: dx_rms
 
-     real(WP) :: dx(this%n-1)
+     real(RD) :: dx(this%n-1)
 
      ! Return the root-mean-square abscissa spacing
 
      dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
 
-     dx_rms = sqrt(SUM(dx**2, MASK=dx/=0._WP)/COUNT(dx/=0._WP))
+     dx_rms = sqrt(SUM(dx**2, MASK=dx/=0._RD)/COUNT(dx/=0._RD))
 
      ! Finish
 
@@ -468,7 +468,7 @@ contains
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: i
     integer, intent(in)       :: j
-    complex(WP)               :: y_i
+    complex(RD)               :: y_i
 
     ! Evaluate y(i)
 
@@ -486,10 +486,10 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: xi_r
+    complex(RD)               :: xi_r
 
-    real(WP)    :: x
-    complex(WP) :: y_1
+    real(RD)    :: x
+    complex(RD) :: y_1
 
     ! Evaluate the radial displacement perturbation, in units of
     ! R_star
@@ -501,12 +501,12 @@ contains
 
       y_1 = this%y_i(1, j)
 
-      if (l_i /= 1._WP) then
+      if (l_i /= 1._RD) then
 
-         if (x /= 0._WP) then
-            xi_r = y_1*pow(x, l_i-1._WP)
+         if (x /= 0._RD) then
+            xi_r = y_1*pow(x, l_i-1._RD)
          else
-            xi_r = 0._WP
+            xi_r = 0._RD
          endif
        
       else
@@ -529,16 +529,16 @@ contains
     
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: xi_h
+    complex(RD)               :: xi_h
 
-    complex(WP) :: y_2
-    complex(WP) :: y_3
-    complex(WP) :: y_4
-    real(WP)    :: U
-    real(WP)    :: c_1 
-    real(WP)    :: Omega_rot
-    complex(WP) :: omega_c
-    complex(WP) :: lambda
+    complex(RD) :: y_2
+    complex(RD) :: y_3
+    complex(RD) :: y_4
+    real(RD)    :: U
+    real(RD)    :: c_1 
+    real(RD)    :: Omega_rot
+    complex(RD) :: omega_c
+    complex(RD) :: lambda
 
     ! Evaluate the horizontal displacement perturbation, in units of
     ! R_star
@@ -567,17 +567,17 @@ contains
 
             lambda = this%cx%lambda(Omega_rot, this%st)
 
-            if (l_i /= 1._WP) then
+            if (l_i /= 1._RD) then
 
-               if (pt%x /= 0._WP) then
-                  xi_h = -((4._WP-U)*y_3+y_4)*pow(pt%x, l_i-1._WP)/lambda
+               if (pt%x /= 0._RD) then
+                  xi_h = -((4._RD-U)*y_3+y_4)*pow(pt%x, l_i-1._RD)/lambda
                else
-                  xi_h = 0._WP
+                  xi_h = 0._RD
                end if
 
             else
                
-               xi_h = -((4._WP-U)*y_3+y_4)/lambda
+               xi_h = -((4._RD-U)*y_3+y_4)/lambda
 
             endif
 
@@ -591,12 +591,12 @@ contains
 
             omega_c = this%cx%omega_c(Omega_rot, this%st)
 
-            if (l_i /= 1._WP) then
+            if (l_i /= 1._RD) then
 
-               if (pt%x /= 0._WP) then
-                  xi_h = (y_2+y_3)*pow(pt%x, l_i-1._WP)/(c_1*omega_c**2)
+               if (pt%x /= 0._RD) then
+                  xi_h = (y_2+y_3)*pow(pt%x, l_i-1._RD)/(c_1*omega_c**2)
                else
-                  xi_h = 0._WP
+                  xi_h = 0._RD
                end if
                
             else
@@ -611,7 +611,7 @@ contains
 
     else
 
-       xi_h = 0._WP
+       xi_h = 0._RD
 
     end if
 
@@ -627,10 +627,10 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: eul_Phi
+    complex(RD)               :: eul_Phi
 
-    complex(WP) :: y_3
-    real(WP)    :: c_1
+    complex(RD) :: y_3
+    real(RD)    :: c_1
     
     ! Evaluate the Eulerian gravitational potential perturbation, in
     ! units of G M_star / R_star
@@ -644,12 +644,12 @@ contains
 
       c_1 = ml%coeff(I_C_1, pt)
 
-      if (l_i /= 0._WP) then
+      if (l_i /= 0._RD) then
 
-         if (pt%x /= 0._WP) then
+         if (pt%x /= 0._RD) then
             eul_Phi = y_3*pow(pt%x, l_i)/c_1
          else
-            eul_Phi = 0._WP
+            eul_Phi = 0._RD
          endif
 
       else
@@ -672,10 +672,10 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: deul_Phi
+    complex(RD)               :: deul_Phi
 
-    complex(WP) :: y_4
-    real(WP)    :: c_1
+    complex(RD) :: y_4
+    real(RD)    :: c_1
     
     ! Evaluate the Eulerian potential gradient (gravity) perturbation,
     ! in units of G M_star / R_star**2
@@ -689,12 +689,12 @@ contains
 
       c_1 = ml%coeff(I_C_1, pt)
 
-      if (l_i /= 1._WP) then
+      if (l_i /= 1._RD) then
 
-         if (pt%x /= 0._WP) then
-            deul_Phi = y_4*pow(pt%x, l_i-1._WP)/c_1
+         if (pt%x /= 0._RD) then
+            deul_Phi = y_4*pow(pt%x, l_i-1._RD)/c_1
          else
-            deul_Phi = 0._WP
+            deul_Phi = 0._RD
          end if
        
       else
@@ -717,9 +717,9 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: lag_S
+    complex(RD)               :: lag_S
 
-    complex(WP) :: y_5
+    complex(RD) :: y_5
 
     ! Evaluate the Lagrangian specific entropy perturbation, in units
     ! of c_p
@@ -730,10 +730,10 @@ contains
 
       y_5 = this%y_i(5, j)
 
-      if (pt%x /= 0._WP) then
-         lag_S = y_5*pow(pt%x, l_i-2._WP)
+      if (pt%x /= 0._RD) then
+         lag_S = y_5*pow(pt%x, l_i-2._RD)
       else
-         lag_S = 0._WP
+         lag_S = 0._RD
       endif
 
     end associate
@@ -750,9 +750,9 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: lag_L
+    complex(RD)               :: lag_L
 
-    complex(WP) :: y_6
+    complex(RD) :: y_6
 
     ! Evaluate the Lagrangian radiative luminosity perturbation, in
     ! units of L_star
@@ -763,10 +763,10 @@ contains
 
       y_6 = this%y_i(6, j)
 
-      if (pt%x /= 0._WP) then
-         lag_L = y_6*pow(pt%x, l_i+1._WP)
+      if (pt%x /= 0._RD) then
+         lag_L = y_6*pow(pt%x, l_i+1._RD)
       else
-         lag_L = 0._WP
+         lag_L = 0._RD
       endif
 
     end associate
@@ -783,10 +783,10 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: eul_P
+    complex(RD)               :: eul_P
 
-    complex(WP) :: y_2
-    complex(WP) :: V_2
+    complex(RD) :: y_2
+    complex(RD) :: V_2
 
     ! Evaluate the Eulerian pressure perturbation, in units of P
 
@@ -799,12 +799,12 @@ contains
 
       V_2 = ml%coeff(I_V_2, pt)
 
-      if (l_i /= 0._WP) then
+      if (l_i /= 0._RD) then
 
-         if (pt%x /= 0._WP) then
+         if (pt%x /= 0._RD) then
             eul_P = V_2*y_2*pow(pt%x, l_i)
          else
-            eul_P = 0._WP
+            eul_P = 0._RD
          end if
 
       else
@@ -827,11 +827,11 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: lag_P
+    complex(RD)               :: lag_P
 
-    complex(WP) :: y_1
-    complex(WP) :: y_2
-    real(WP)    :: V_2
+    complex(RD) :: y_1
+    complex(RD) :: y_2
+    real(RD)    :: V_2
 
     ! Evaluate the Lagrangian pressure perturbation, in units of P
 
@@ -845,12 +845,12 @@ contains
 
       V_2 = ml%coeff(I_V_2, pt)
 
-      if (l_i /= 0._WP) then
+      if (l_i /= 0._RD) then
 
-         if (pt%x /= 0._WP) then
+         if (pt%x /= 0._RD) then
             lag_P = V_2*(y_2 - y_1)*pow(pt%x, l_i)
          else
-            lag_P = 0._WP
+            lag_P = 0._RD
          end if
 
       else
@@ -873,13 +873,13 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: eul_rho
+    complex(RD)               :: eul_rho
 
-    complex(WP) :: xi_r
-    complex(WP) :: lag_rho
-    real(WP)    :: U
-    real(WP)    :: dU
-    real(WP)    :: D
+    complex(RD) :: xi_r
+    complex(RD) :: lag_rho
+    real(RD)    :: U
+    real(RD)    :: dU
+    real(RD)    :: D
 
     ! Evaluate the Eulerian density perturbation, in units of rho
 
@@ -893,9 +893,9 @@ contains
       U = ml%coeff(I_U, pt)
       dU =ml%dcoeff(I_U, pt)
 
-      D = dU + U - 3._WP
+      D = dU + U - 3._RD
 
-      if (pt%x /= 0._WP) then
+      if (pt%x /= 0._RD) then
          eul_rho = lag_rho - D*xi_r/pt%x
       else
          eul_rho = lag_rho
@@ -915,12 +915,12 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: lag_rho
+    complex(RD)               :: lag_rho
 
-    complex(WP) :: lag_P
-    complex(WP) :: lag_S
-    real(WP)    :: Gamma_1
-    real(WP)    :: ups_T
+    complex(RD) :: lag_P
+    complex(RD) :: lag_S
+    real(RD)    :: Gamma_1
+    real(RD)    :: ups_T
 
     ! Evaluate the Lagrangian density perturbation, in units of
     ! rho. This expression implements eqn. (13.83) of [Unno:1989]
@@ -934,7 +934,7 @@ contains
 
       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
-      if (lag_S /= 0._WP) then
+      if (lag_S /= 0._RD) then
 
          ups_T = ml%coeff(I_UPS_T, pt)
 
@@ -960,12 +960,12 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: eul_T
+    complex(RD)               :: eul_T
 
-    complex(WP) :: xi_r
-    complex(WP) :: lag_T
-    real(WP)    :: V_2
-    real(WP)    :: nabla
+    complex(RD) :: xi_r
+    complex(RD) :: lag_T
+    real(RD)    :: V_2
+    real(RD)    :: nabla
 
     ! Evaluate the Lagrangian temperature perturbation, in units of T
 
@@ -995,11 +995,11 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: lag_T
+    complex(RD)               :: lag_T
 
-    complex(WP) :: lag_P
-    complex(WP) :: lag_S
-    real(WP)    :: nabla_ad
+    complex(RD) :: lag_P
+    complex(RD) :: lag_S
+    real(RD)    :: nabla_ad
 
     ! Evaluate the Lagrangian temperature perturbation, in units of
     ! T. This expression implements eqn. (13.84) of [Unno:1989]
@@ -1029,9 +1029,9 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: lambda
+    complex(RD)               :: lambda
 
-    real(WP) :: Omega_rot
+    real(RD) :: Omega_rot
 
     ! Evaluate the angular eigenvalue
 
@@ -1056,13 +1056,13 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    real(WP)                  :: dE_dx
+    real(RD)                  :: dE_dx
 
-    complex(WP) :: xi_r
-    complex(WP) :: xi_h
-    complex(WP) :: lambda
-    real(WP)    :: U
-    real(WP)    :: c_1
+    complex(RD) :: xi_r
+    complex(RD) :: xi_h
+    complex(RD) :: lambda
+    real(RD)    :: U
+    real(RD)    :: c_1
 
     ! Evaluate the differential inertia, in units of M_star
     ! R_star**2. This expression is based on eqn. (3.139) of [Aerts:2010]
@@ -1097,13 +1097,13 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    real(WP)                  :: dW_dx
+    real(RD)                  :: dW_dx
 
-    real(WP)    :: t_dyn
-    real(WP)    :: t_kh
-    complex(WP) :: lag_T
-    complex(WP) :: lag_S
-    real(WP)    :: c_thk
+    real(RD)    :: t_dyn
+    real(RD)    :: t_kh
+    complex(RD) :: lag_T
+    complex(RD) :: lag_S
+    real(RD)    :: c_thk
 
     ! Evaluate the differential work, in units of G M_star**2/R_star.
     ! This expression is based on eqn. (25.9) of [Unno:1989]
@@ -1113,8 +1113,8 @@ contains
        t_dyn = sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
        t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
     class default
-       t_dyn = 1._WP
-       t_kh = 1._WP
+       t_dyn = 1._RD
+       t_kh = 1._RD
     end select
 
     associate ( &
@@ -1142,12 +1142,12 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: dQ_dx
+    complex(RD)               :: dQ_dx
 
-    complex(WP) :: xi_r
-    complex(WP) :: xi_h
-    real(WP)    :: U
-    real(WP)    :: c_1
+    complex(RD) :: xi_r
+    complex(RD) :: xi_h
+    real(RD)    :: U
+    real(RD)    :: c_1
 
     ! Evaluate the differential overlap. This expression is based on
     ! the first line of eqn. (9) of [Burkart:2012]
@@ -1181,16 +1181,16 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    real(WP)                  :: dW_eps_dx
+    real(RD)                  :: dW_eps_dx
 
-    real(WP)    :: t_dyn
-    real(WP)    :: t_kh
-    complex(WP) :: lag_rho
-    complex(WP) :: lag_T
-    real(WP)    :: c_eps
-    complex(WP) :: eps_rho
-    complex(WP) :: eps_T
-    real(WP)    :: omega_r
+    real(RD)    :: t_dyn
+    real(RD)    :: t_kh
+    complex(RD) :: lag_rho
+    complex(RD) :: lag_T
+    real(RD)    :: c_eps
+    complex(RD) :: eps_rho
+    complex(RD) :: eps_T
+    real(RD)    :: omega_r
 
     ! Evaluate the differential work associated with nuclear
     ! processes, in units of G M_star**2/R_star.  This expression is
@@ -1201,8 +1201,8 @@ contains
        t_dyn = sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
        t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
     class default
-       t_dyn = 1._WP
-       t_kh = 1._WP
+       t_dyn = 1._RD
+       t_kh = 1._RD
     end select
 
     associate ( &
@@ -1235,7 +1235,7 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: dzeta_dx
+    complex(RD)               :: dzeta_dx
 
     ! Calculate the dimensionless frequency weight function.
     
@@ -1264,19 +1264,19 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: dzeta_dx
+    complex(RD)               :: dzeta_dx
 
-    complex(WP) :: xi_r
-    complex(WP) :: xi_h
-    complex(WP) :: eul_Phi
-    complex(WP) :: eul_rho
-    complex(WP) :: lag_rho
-    complex(WP) :: lag_P
-    complex(WP) :: lambda
-    real(WP)    :: V_2
-    real(WP)    :: U
-    real(WP)    :: c_1
-    real(WP)    :: x4_V
+    complex(RD) :: xi_r
+    complex(RD) :: xi_h
+    complex(RD) :: eul_Phi
+    complex(RD) :: eul_rho
+    complex(RD) :: lag_rho
+    complex(RD) :: lag_P
+    complex(RD) :: lambda
+    real(RD)    :: V_2
+    real(RD)    :: U
+    real(RD)    :: c_1
+    real(RD)    :: x4_V
 
     ! Calculate the dimensionless frequency weight function.  This is
     ! based on the derivative of equation (A5) of [Pesnell:1987] with
@@ -1303,9 +1303,9 @@ contains
       x4_V = pt%x**2/V_2
 
       dzeta_dx = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)) + &
-                 2._WP*REAL(lambda*CONJG(xi_r)*xi_h/c_1*(pt%x**2*U/c_1)) + &
+                 2._RD*REAL(lambda*CONJG(xi_r)*xi_h/c_1*(pt%x**2*U/c_1)) + &
                  CONJG(eul_rho)*eul_Phi*(pt%x**2*U/c_1) + &
-                 abs(xi_r)**2*(U-4._WP)/c_1*(pt%x**2*U/c_1)
+                 abs(xi_r)**2*(U-4._RD)/c_1*(pt%x**2*U/c_1)
 
     end associate
 
@@ -1321,20 +1321,20 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: dzeta_dx
+    complex(RD)               :: dzeta_dx
 
-    complex(WP) :: xi_r
-    complex(WP) :: eul_P
-    complex(WP) :: eul_Phi
-    complex(WP) :: deul_Phi
-    real(WP)    :: V_2
-    real(WP)    :: U
-    real(WP)    :: As
-    real(WP)    :: c_1
-    real(WP)    :: Gamma_1
-    real(WP)    :: Omega_rot
-    complex(WP) :: l_e
-    real(WP)    :: x4_V
+    complex(RD) :: xi_r
+    complex(RD) :: eul_P
+    complex(RD) :: eul_Phi
+    complex(RD) :: deul_Phi
+    real(RD)    :: V_2
+    real(RD)    :: U
+    real(RD)    :: As
+    real(RD)    :: c_1
+    real(RD)    :: Gamma_1
+    real(RD)    :: Omega_rot
+    complex(RD) :: l_e
+    real(RD)    :: x4_V
 
     ! Calculate the dimensionless frequency weight function.  This is
     ! based on the derivative of equation (7) of [Kawaler:1985] (as
@@ -1366,7 +1366,7 @@ contains
 
       dzeta_dx = abs(eul_P)**2*(U*x4_V/(Gamma_1*c_1**2)) + &
                  abs(xi_r)**2*(pt%x**2*U*As/c_1**2) - &
-                 abs(pt%x*deul_Phi + (l_e+1._WP)*eul_Phi)**2
+                 abs(pt%x*deul_Phi + (l_e+1._RD)*eul_Phi)**2
            
     end associate
 
@@ -1382,18 +1382,18 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: dzeta_dx
+    complex(RD)               :: dzeta_dx
 
-    complex(WP) :: xi_r
-    complex(WP) :: eul_P
-    complex(WP) :: eul_Phi
-    complex(WP) :: deul_Phi
-    real(WP)    :: V_2
-    real(WP)    :: U
-    real(WP)    :: As
-    real(WP)    :: c_1
-    real(WP)    :: Gamma_1
-    real(WP)    :: x4_V
+    complex(RD) :: xi_r
+    complex(RD) :: eul_P
+    complex(RD) :: eul_Phi
+    complex(RD) :: deul_Phi
+    real(RD)    :: V_2
+    real(RD)    :: U
+    real(RD)    :: As
+    real(RD)    :: c_1
+    real(RD)    :: Gamma_1
+    real(RD)    :: x4_V
 
     ! Calculate the gravitational part of the dimensionless frequency
     ! weight function.  This is based on the derivative of the N term
@@ -1435,20 +1435,20 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: dzeta_dx
+    complex(RD)               :: dzeta_dx
 
-    complex(WP) :: xi_r
-    complex(WP) :: eul_Phi
-    complex(WP) :: eul_rho
-    complex(WP) :: lag_rho
-    complex(WP) :: lag_P
-    real(WP)    :: V_2
-    real(WP)    :: V
-    real(WP)    :: U
-    real(WP)    :: As
-    real(WP)    :: c_1
-    real(WP)    :: Gamma_1
-    real(WP)    :: x4_V
+    complex(RD) :: xi_r
+    complex(RD) :: eul_Phi
+    complex(RD) :: eul_rho
+    complex(RD) :: lag_rho
+    complex(RD) :: lag_P
+    real(RD)    :: V_2
+    real(RD)    :: V
+    real(RD)    :: U
+    real(RD)    :: As
+    real(RD)    :: c_1
+    real(RD)    :: Gamma_1
+    real(RD)    :: x4_V
 
     ! Calculate the dimensionless frequency weight function.  This is
     ! based on the derivative of equation (1.71) of [Dupret:2002a]
@@ -1474,7 +1474,7 @@ contains
       x4_V = pt%x**2/V_2
 
       dzeta_dx = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)) + &
-                 2._WP*REAL(lag_rho*CONJG(xi_r)*(pt%x/c_1)*(pt%x**2*U/c_1)) + &
+                 2._RD*REAL(lag_rho*CONJG(xi_r)*(pt%x/c_1)*(pt%x**2*U/c_1)) + &
                  CONJG(eul_rho)*eul_Phi*(pt%x**2*U/c_1) - &
                  abs(xi_r)**2*(-V/Gamma_1-As)/c_1*(pt%x**2*U/c_1)
 
@@ -1492,7 +1492,7 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: dzeta_dm
+    complex(RD)               :: dzeta_dm
 
     ! Calculate the dimensionless frequency weight function.
     
@@ -1515,20 +1515,20 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: dzeta_dm
+    complex(RD)               :: dzeta_dm
 
-    complex(WP) :: xi_r
-    complex(WP) :: eul_P
-    complex(WP) :: eul_Phi
-    complex(WP) :: deul_Phi
-    complex(WP) :: lambda
-    real(WP)    :: V_2
-    real(WP)    :: U
-    real(WP)    :: As
-    real(WP)    :: c_1
-    real(WP)    :: Gamma_1
-    real(WP)    :: Omega_rot
-    complex(WP) :: l_e
+    complex(RD) :: xi_r
+    complex(RD) :: eul_P
+    complex(RD) :: eul_Phi
+    complex(RD) :: deul_Phi
+    complex(RD) :: lambda
+    real(RD)    :: V_2
+    real(RD)    :: U
+    real(RD)    :: As
+    real(RD)    :: c_1
+    real(RD)    :: Gamma_1
+    real(RD)    :: Omega_rot
+    complex(RD) :: l_e
 
     ! Calculate the dimensionless frequency weight function.  This is
     ! based on the derivative of equation (7) of [Kawaler:1985] with
@@ -1558,9 +1558,9 @@ contains
       if (pt%x /= 0) then
          dzeta_dm = abs(eul_P)**2/(V_2*Gamma_1*c_1) + &
                     abs(xi_r)**2*(As/c_1) - &
-                    abs(pt%x*deul_Phi + (l_e+1._WP)*eul_Phi)**2*(c_1/(U*pt%x**2))
+                    abs(pt%x*deul_Phi + (l_e+1._RD)*eul_Phi)**2*(c_1/(U*pt%x**2))
       else
-         dzeta_dm = 0._WP
+         dzeta_dm = 0._RD
       endif
            
     end associate
@@ -1577,14 +1577,14 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    real(WP)                  :: dbeta_dx
+    real(RD)                  :: dbeta_dx
 
-    complex(WP) :: xi_r
-    complex(WP) :: xi_h
-    real(WP)    :: U
-    real(WP)    :: c_1
-    complex(WP) :: lambda
-    real(WP)    :: E
+    complex(RD) :: xi_r
+    complex(RD) :: xi_h
+    real(RD)    :: U
+    real(RD)    :: c_1
+    complex(RD) :: lambda
+    real(RD)    :: E
     
     ! Calculate the (unnormalized) rotation splitting kernel. This is
     ! based on the derivative of equation 3.357 of [Aerts:2010] with
@@ -1606,8 +1606,8 @@ contains
 
       E = this%E()
 
-      dbeta_dx = REAL((abs(xi_r)**2 + (lambda-1._WP)*abs(xi_h)**2 - &
-                       2._WP*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
+      dbeta_dx = REAL((abs(xi_r)**2 + (lambda-1._RD)*abs(xi_h)**2 - &
+                       2._RD*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
 
     end associate
 
@@ -1623,13 +1623,13 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    real(WP)                  :: dtau_ss_dx
+    real(RD)                  :: dtau_ss_dx
 
-    complex(WP) :: lag_P
-    complex(WP) :: lag_rho
-    real(WP)    :: V_2
-    real(WP)    :: c_1
-    real(WP)    :: U
+    complex(RD) :: lag_P
+    complex(RD) :: lag_rho
+    real(RD)    :: V_2
+    real(RD)    :: c_1
+    real(RD)    :: U
     
     ! Evaluate the steady-state differential torque, in units of G
     ! M_star**2/R_star. This expression is based on eqn. (13) of
@@ -1648,7 +1648,7 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
       U = ml%coeff(I_U, pt)
 
-      dtau_ss_dx = m*pt%x**2*AIMAG(lag_rho*CONJG(lag_P))*(U/(2._WP*c_1**2*V_2))
+      dtau_ss_dx = m*pt%x**2*AIMAG(lag_rho*CONJG(lag_P))*(U/(2._RD*c_1**2*V_2))
       
     end associate
 
@@ -1664,18 +1664,18 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    real(WP)                  :: dtau_tr_dx
+    real(RD)                  :: dtau_tr_dx
 
-    complex(WP) :: xi_r
-    complex(WP) :: eul_P
-    complex(WP) :: eul_rho
-    complex(WP) :: lag_rho
-    complex(WP) :: eul_Phi
-    real(WP)    :: V_2
-    real(WP)    :: U
-    real(WP)    :: c_1
-    real(WP)    :: Omega_rot
-    complex(WP) :: omega_c
+    complex(RD) :: xi_r
+    complex(RD) :: eul_P
+    complex(RD) :: eul_rho
+    complex(RD) :: lag_rho
+    complex(RD) :: eul_Phi
+    real(RD)    :: V_2
+    real(RD)    :: U
+    real(RD)    :: c_1
+    real(RD)    :: Omega_rot
+    complex(RD) :: omega_c
 
     ! Evaluate the transient differential torque, in units of G
     ! M_star**2/R_star. This expression is based on eqn. (14) of
@@ -1703,10 +1703,10 @@ contains
 
       omega_c = this%cx%omega_c(Omega_rot, this%st)
 
-      dtau_tr_dx = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._WP)*( &
+      dtau_tr_dx = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._RD)*( &
            lag_rho*CONJG(eul_P)/(c_1*V_2) + &
            eul_rho*CONJG(eul_Phi) + &
-           xi_r*CONJG(eul_rho)*pt%x/c_1))*(U/(2._WP*c_1))
+           xi_r*CONJG(eul_rho)*pt%x/c_1))*(U/(2._RD*c_1))
            
     end associate
 
@@ -1722,12 +1722,12 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: Yt_1
+    complex(RD)               :: Yt_1
 
-    complex(WP) :: y_1
-    complex(WP) :: y_3
-    complex(WP) :: y_4
-    real(WP)    :: Jt
+    complex(RD) :: y_1
+    complex(RD) :: y_3
+    complex(RD) :: y_4
+    real(RD)    :: Jt
 
     ! Evaluate the Takata Y_1 function. This expression is equivalent to
     ! eqn. (69) of [Takata:2006b], divided by x**(2-l)
@@ -1740,9 +1740,9 @@ contains
       y_3 = this%y_i(3, j)
       y_4 = this%y_i(4, j)
 
-      Jt = 1._WP - ml%coeff(I_U, pt)/3._WP
+      Jt = 1._RD - ml%coeff(I_U, pt)/3._RD
 
-      Yt_1 = Jt*y_1 + (y_3 - y_4)/3._WP
+      Yt_1 = Jt*y_1 + (y_3 - y_4)/3._RD
 
     end associate
 
@@ -1758,10 +1758,10 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: Yt_2
+    complex(RD)               :: Yt_2
 
-    complex(WP) :: y_1
-    complex(WP) :: y_2
+    complex(RD) :: y_1
+    complex(RD) :: y_2
 
     ! Evaluate the Takata Y_2 function. This expression is equivalent to 
     ! eqn. (70) of [Takata:2006b], divided by V
@@ -1783,12 +1783,12 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: I_0
+    complex(RD)               :: I_0
 
-    complex(WP) :: y_1
-    complex(WP) :: y_4
-    real(WP)    :: U
-    real(WP)    :: c_1
+    complex(RD) :: y_1
+    complex(RD) :: y_4
+    real(RD)    :: U
+    real(RD)    :: c_1
     
     ! Evaluate the I_0 integral, which should be zero for radial
     ! cases. This expression is based on eqn. (42) of [Takata:2006a]
@@ -1804,10 +1804,10 @@ contains
       U = ml%coeff(I_U, pt)
       c_1 = ml%coeff(I_C_1, pt)
 
-      if (pt%x /= 0._WP) then
-         I_0 = pow(pt%x, l_i+1._WP)*(U*y_1 + y_4)/c_1
+      if (pt%x /= 0._RD) then
+         I_0 = pow(pt%x, l_i+1._RD)*(U*y_1 + y_4)/c_1
       else
-         I_0 = 0._WP
+         I_0 = 0._RD
       endif
 
     end associate
@@ -1824,16 +1824,16 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    complex(WP)               :: I_1
+    complex(RD)               :: I_1
 
-    complex(WP) :: y_1
-    complex(WP) :: y_2
-    complex(WP) :: y_3
-    complex(WP) :: y_4
-    real(WP)    :: U
-    real(WP)    :: c_1
-    real(WP)    :: Omega_rot
-    complex(WP) :: omega_c
+    complex(RD) :: y_1
+    complex(RD) :: y_2
+    complex(RD) :: y_3
+    complex(RD) :: y_4
+    real(RD)    :: U
+    real(RD)    :: c_1
+    real(RD)    :: Omega_rot
+    complex(RD) :: omega_c
 
     ! Evaluate the I_0 integral, which should be zero for dipole
     ! cases. This expression is based on eqn. (43) of [Takata:2006a]
@@ -1855,11 +1855,11 @@ contains
 
       omega_c = this%cx%omega_c(Omega_rot, this%st)
 
-      if (pt%x /= 0._WP) then
-         I_1 = pow(pt%x, l_i+2._WP)*(c_1*omega_c**2*U*y_1 - U*y_2 - &
-               (c_1*omega_c**2 + 2._WP)*y_3 + (c_1*omega_c**2 - 1._WP)*y_4)/c_1**2
+      if (pt%x /= 0._RD) then
+         I_1 = pow(pt%x, l_i+2._RD)*(c_1*omega_c**2*U*y_1 - U*y_2 - &
+               (c_1*omega_c**2 + 2._RD)*y_3 + (c_1*omega_c**2 - 1._RD)*y_4)/c_1**2
       else
-         I_1 = 0._WP
+         I_1 = 0._RD
       endif
 
     end associate
@@ -1876,13 +1876,13 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    real(WP)                  :: alpha_0
+    real(RD)                  :: alpha_0
 
-    real(WP)    :: U
-    real(WP)    :: c_1
-    real(WP)    :: Omega_rot
-    complex(WP) :: omega_c
-    complex(WP) :: lambda
+    real(RD)    :: U
+    real(RD)    :: c_1
+    real(RD)    :: Omega_rot
+    complex(RD) :: omega_c
+    complex(RD) :: lambda
 
     ! Evaluate the alpha_0 excitation parameter defined in equation
     ! (26.10) of Unno et al. (2017)
@@ -1899,7 +1899,7 @@ contains
       omega_c = this%cx%omega_c(Omega_rot, this%st)
       lambda = this%cx%lambda(Omega_rot, this%st)
 
-      alpha_0 = 4._WP - U - abs(lambda)/(c_1*abs(omega_c)**2) + c_1*abs(omega_c)**2
+      alpha_0 = 4._RD - U - abs(lambda)/(c_1*abs(omega_c)**2) + c_1*abs(omega_c)**2
 
     end associate
 
@@ -1915,19 +1915,19 @@ contains
 
     class(wave_t), intent(in) :: this
     integer, intent(in)       :: j
-    real(WP)                  :: alpha_1
+    real(RD)                  :: alpha_1
 
-    real(WP)    :: alpha_0
-    real(WP)    :: V
-    real(WP)    :: U
-    real(WP)    :: c_1
-    real(WP)    :: Gamma_1
-    real(WP)    :: nabla_ad
-    real(WP)    :: kap_T
-    real(WP)    :: kap_rho
-    real(WP)    :: Omega_rot
-    complex(WP) :: omega_c
-    complex(WP) :: lambda
+    real(RD)    :: alpha_0
+    real(RD)    :: V
+    real(RD)    :: U
+    real(RD)    :: c_1
+    real(RD)    :: Gamma_1
+    real(RD)    :: nabla_ad
+    real(RD)    :: kap_T
+    real(RD)    :: kap_rho
+    real(RD)    :: Omega_rot
+    complex(RD) :: omega_c
+    complex(RD) :: lambda
 
     ! Evaluate the alpha_1 excitation parameter defined in equation
     ! (26.12) of Unno et al. (2017)
@@ -1953,11 +1953,11 @@ contains
       omega_c = this%cx%omega_c(Omega_rot, this%st)
       lambda = this%cx%lambda(Omega_rot, this%st)
 
-      if (V /= 0._WP) then
-         alpha_1 = 4._WP - 1._WP/nabla_ad - kap_T - kap_rho/(nabla_ad*Gamma_1) + &
-                   (1._WP - abs(lambda)/(c_1*abs(omega_c)**2*V))*(c_1*abs(omega_c)**2 - U)/(nabla_ad*alpha_0)
+      if (V /= 0._RD) then
+         alpha_1 = 4._RD - 1._RD/nabla_ad - kap_T - kap_rho/(nabla_ad*Gamma_1) + &
+                   (1._RD - abs(lambda)/(c_1*abs(omega_c)**2*V))*(c_1*abs(omega_c)**2 - U)/(nabla_ad*alpha_0)
       else
-         alpha_1 = SIGN(HUGE(0._WP), (c_1*abs(omega_c)**2 - U)/(nabla_ad*alpha_0))
+         alpha_1 = SIGN(HUGE(0._RD), (c_1*abs(omega_c)**2 - U)/(nabla_ad*alpha_0))
       endif
          
     end associate
@@ -1976,18 +1976,18 @@ contains
     integer, intent(in)       :: j
     integer                   :: prop_type
 
-    real(WP) :: V
-    real(WP) :: As
-    real(WP) :: U
-    real(WP) :: c_1
-    real(WP) :: Gamma_1
-    real(WP) :: Omega_rot
-    real(WP) :: lambda
-    real(WP) :: omega_c
-    real(WP) :: g_4
-    real(WP) :: g_2
-    real(WP) :: g_0
-    real(WP) :: gamma
+    real(RD) :: V
+    real(RD) :: As
+    real(RD) :: U
+    real(RD) :: c_1
+    real(RD) :: Gamma_1
+    real(RD) :: Omega_rot
+    real(RD) :: lambda
+    real(RD) :: omega_c
+    real(RD) :: g_4
+    real(RD) :: g_2
+    real(RD) :: g_0
+    real(RD) :: gamma
 
     ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
@@ -2015,15 +2015,15 @@ contains
 
          omega_c = REAL(this%cx%omega_c(Omega_rot, this%st))
 
-         g_4 = -4._WP*V/Gamma_1*c_1
-         g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda
-         g_0 = -4._WP*lambda*As/c_1
+         g_4 = -4._RD*V/Gamma_1*c_1
+         g_2 = (As - V/Gamma_1 - U + 4._RD)**2 + 4._RD*V/Gamma_1*As + 4._RD*lambda
+         g_0 = -4._RD*lambda*As/c_1
        
          gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
 
          ! Use the sign of gamma to set up prop_type
          
-         if (gamma > 0._WP) then
+         if (gamma > 0._RD) then
 
             prop_type = 0
 
@@ -2052,10 +2052,10 @@ contains
   function lag_T_eff (this)
 
     class(wave_t), intent(in) :: this
-    complex(WP)               :: lag_T_eff
+    complex(RD)               :: lag_T_eff
 
-    complex(WP) :: xi_r
-    complex(WP) :: lag_L
+    complex(RD) :: xi_r
+    complex(RD) :: lag_L
 
     ! Calculate the effective temperature perturbation at x_ref
     ! (assumed to correspond to the photosphere), in units of
@@ -2067,7 +2067,7 @@ contains
       xi_r = this%xi_r(j)
       lag_L = this%lag_L(j)
 
-      lag_T_eff = 0.25_WP*(lag_L - 2._WP*xi_r)
+      lag_T_eff = 0.25_RD*(lag_L - 2._RD*xi_r)
 
     end associate
 
@@ -2082,12 +2082,12 @@ contains
   function lag_g_eff (this)
 
     class(wave_t), intent(in) :: this
-    complex(WP)               :: lag_g_eff
+    complex(RD)               :: lag_g_eff
 
-    complex(WP) :: xi_r
-    complex(WP) :: deul_Phi
-    real(WP)    :: c_1
-    real(WP)    :: U
+    complex(RD) :: xi_r
+    complex(RD) :: deul_Phi
+    real(RD)    :: c_1
+    real(RD)    :: U
 
     ! Calculate the effective gravity perturbation at x_ref (assumed
     ! to correspond to the photosphere), in units of the gravity. This
@@ -2105,7 +2105,7 @@ contains
       c_1 = ml%coeff(I_C_1, pt)
       U = ml%coeff(I_U, pt)
 
-      lag_g_eff = (c_1/pt%x)*deul_Phi + (U - (2._WP + c_1*omega**2))*xi_r/pt%x
+      lag_g_eff = (c_1/pt%x)*deul_Phi + (U - (2._RD + c_1*omega**2))*xi_r/pt%x
 
     end associate
 
@@ -2120,9 +2120,9 @@ contains
   function f_T (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: f_T
+    real(RD)                  :: f_T
 
-    complex(WP) :: C_T
+    complex(RD) :: C_T
 
     ! Evaluate the non-adiabatic f_T parameter. This is expression is
     ! based on eqn. (5) of [Dupret:2003]
@@ -2146,9 +2146,9 @@ contains
   function f_g (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: f_g
+    real(RD)                  :: f_g
 
-    complex(WP) :: C_g
+    complex(RD) :: C_g
 
     ! Evaluate the non-adiabatic f_g parameter. This is expression is
     ! based on eqn. (6) of [Dupret:2003]
@@ -2172,9 +2172,9 @@ contains
   function psi_T (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: psi_T
+    real(RD)                  :: psi_T
 
-    complex(WP) :: C_T
+    complex(RD) :: C_T
 
     ! Calculate the non-adiabatic psi_T parameter, in radians. This is
     ! expression is based on eqn. (5) of [Dup2003]
@@ -2198,7 +2198,7 @@ contains
   function psi_g (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: psi_g
+    real(RD)                  :: psi_g
 
     ! Calculate the non-adiabatic psi_g parameter, in radians
 
@@ -2216,12 +2216,12 @@ contains
 
     class(wave_t), intent(in)     :: this
     logical, intent(in), optional :: use_cache
-    real(WP)                      :: E
+    real(RD)                      :: E
 
     logical               :: use_cache_
     integer               :: j
-    real(WP), allocatable :: x(:)
-    real(WP), allocatable :: dE_dx(:)
+    real(RD), allocatable :: x(:)
+    real(RD), allocatable :: dE_dx(:)
 
     ! Calculate the inertia, in units of M_star R_star**2
 
@@ -2261,10 +2261,10 @@ contains
   function E_p (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: E_p
+    real(RD)                  :: E_p
 
     integer  :: j
-    real(WP) :: dE_dx(this%n)
+    real(RD) :: dE_dx(this%n)
 
     ! Calculate the inertia in acoustic-wave propagation regions, in
     ! units of M_star R_star**2
@@ -2274,7 +2274,7 @@ contains
        if (this%prop_type(j) == 1) then
           dE_dx(j) = this%dE_dx(j)
        else
-          dE_dx(j) = 0._WP
+          dE_dx(j) = 0._RD
        endif
     end do
 
@@ -2291,10 +2291,10 @@ contains
   function E_g (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: E_g
+    real(RD)                  :: E_g
 
     integer  :: j
-    real(WP) :: dE_dx(this%n)
+    real(RD) :: dE_dx(this%n)
 
     ! Calculate the inertia in gravity-wave propagation regions, in
     ! units of M_star R_star**2
@@ -2304,7 +2304,7 @@ contains
        if (this%prop_type(j) == -1) then
           dE_dx(j) = this%dE_dx(j)
        else
-          dE_dx(j) = 0._WP
+          dE_dx(j) = 0._RD
        endif
     end do
 
@@ -2321,13 +2321,13 @@ contains
   function E_norm (this)
  
     class(wave_t), intent(in) :: this
-    real(WP)                  :: E_norm
+    real(RD)                  :: E_norm
 
-    real(WP)    :: E
-    complex(WP) :: xi_r
-    complex(WP) :: xi_h
-    complex(WP) :: lambda
-    real(WP)    :: A2
+    real(RD)    :: E
+    complex(RD) :: xi_r
+    complex(RD) :: xi_h
+    complex(RD) :: lambda
+    real(RD)    :: A2
 
     ! Calculate the normalized inertia. This expression is based on
     ! eqn. (3.140) of [Aer2010]
@@ -2352,7 +2352,7 @@ contains
          @:ABORT('Invalid inertia_norm')
       end select
 
-      if (A2 == 0._WP) then
+      if (A2 == 0._RD) then
          @:WARN('Amplitude at x_ref is zero; not normalizing inertia')
          E_norm = E
       else
@@ -2372,12 +2372,12 @@ contains
   function E_ratio (this)
  
     class(wave_t), intent(in) :: this
-    real(WP)                  :: E_ratio
+    real(RD)                  :: E_ratio
 
     integer  :: j
-    real(WP) :: dE_dx(this%n)
-    real(WP) :: E_above
-    real(WP) :: E_below
+    real(RD) :: dE_dx(this%n)
+    real(RD) :: E_above
+    real(RD) :: E_below
 
     ! Calculate the ratio of the inertia above the reference point, to
     ! the combined (above/below) inertia
@@ -2392,7 +2392,7 @@ contains
          E_above = integrate(this%gr%pt(j_a:j_b)%x, dE_dx(j_a:j_b))
        end associate
     else
-       E_above = 0._WP
+       E_above = 0._RD
     endif
 
     if (this%j_ref > 1) then
@@ -2400,7 +2400,7 @@ contains
          E_below = integrate(this%gr%pt(j_a:j_b)%x, dE_dx(j_a:j_b))
        end associate
     else
-       E_below = 0._WP
+       E_below = 0._RD
     endif
 
     E_ratio = E_above/(E_below + E_above)
@@ -2416,12 +2416,12 @@ contains
   function H (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: H
+    real(RD)                  :: H
 
     ! Calculate the total energy (i.e., twice the volume-integrated
     ! kinetic energy), in units of G M_star**2 / R_star
 
-    H = 0.5_WP*REAL(this%st%omega)**2*this%E()
+    H = 0.5_RD*REAL(this%st%omega)**2*this%E()
 
     ! Finish
 
@@ -2434,10 +2434,10 @@ contains
   function W (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: W
+    real(RD)                  :: W
 
     integer  :: j
-    real(WP) :: dW_dx(this%n)
+    real(RD) :: dW_dx(this%n)
     
     ! Calculate the total work, in units of G M_star**2/R_star
 
@@ -2459,10 +2459,10 @@ contains
   function W_eps (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: W_eps
+    real(RD)                  :: W_eps
     
     integer  :: j
-    real(WP) :: dW_eps_dx(this%n)
+    real(RD) :: dW_eps_dx(this%n)
     
     ! Calculate the total work associated with nuclear processes, in
     ! units of G M_star**2/R_star
@@ -2485,10 +2485,10 @@ contains
   function Q (this)
 
     class(wave_t), intent(in) :: this
-    complex(WP)               :: Q
+    complex(RD)               :: Q
 
     integer     :: j
-    complex(WP) :: dQ_dx(this%n)
+    complex(RD) :: dQ_dx(this%n)
     
     ! Calculate the overlap integral
 
@@ -2510,10 +2510,10 @@ contains
   function tau_ss (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: tau_ss
+    real(RD)                  :: tau_ss
 
     integer  :: j
-    real(WP) :: dtau_dx(this%n)
+    real(RD) :: dtau_dx(this%n)
     
     ! Evaluate the steady-state total torque, in units of G
     ! M_star**2/R_star. This expression is based on eqn. (18) of
@@ -2537,10 +2537,10 @@ contains
   function tau_tr (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: tau_tr
+    real(RD)                  :: tau_tr
 
     integer  :: j
-    real(WP) :: dtau_dx(this%n)
+    real(RD) :: dtau_dx(this%n)
     
     ! Evaluate the transient total torque, in units of G
     ! M_star**2/R_star. This expression is based on eqn. (18) of
@@ -2564,18 +2564,18 @@ contains
   function zeta (this)
 
     class(wave_t), intent(in) :: this
-    complex(WP)               :: zeta
+    complex(RD)               :: zeta
 
     integer     :: j
-    complex(WP) :: dzeta_dx(this%n)
+    complex(RD) :: dzeta_dx(this%n)
     integer     :: s
     integer     :: j_l
     integer     :: j_r
-    complex(WP) :: xi_r
-    real(WP)    :: U_l
-    real(WP)    :: U_r
-    real(WP)    :: c_1
-    complex(WP) :: eul_Phi
+    complex(RD) :: xi_r
+    real(RD)    :: U_l
+    real(RD)    :: U_r
+    real(RD)    :: c_1
+    complex(RD) :: eul_Phi
      
     ! Calculate the zeta integral
 
@@ -2630,7 +2630,7 @@ contains
             xi_r = this%xi_r(this%n)
 
             U_l = ml%coeff(I_U, pt)
-            U_r = 0._WP
+            U_r = 0._RD
 
             c_1 = ml%coeff(I_C_1, pt)
 
@@ -2653,10 +2653,10 @@ contains
   function beta (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: beta
+    real(RD)                  :: beta
 
     integer  :: j
-    real(WP) :: dbeta_dx(this%n)
+    real(RD) :: dbeta_dx(this%n)
      
     ! Calculate the rotational splitting factor. This is based on
     ! equation (3.357) of [Aer2010]; the Ledoux constant follows from
@@ -2680,11 +2680,11 @@ contains
   function domega_rot (this)
 
     class(wave_t), intent(in) :: this
-    complex(WP)               :: domega_rot
+    complex(RD)               :: domega_rot
 
     integer  :: j
-    real(WP) :: dbeta_dx(this%n)
-    real(WP) :: Omega_rot(this%n)
+    real(RD) :: dbeta_dx(this%n)
+    real(RD) :: Omega_rot(this%n)
 
     ! Calculate the rotational splitting between modes of adjacent
     ! m. This is based on eqn. 3.355 of [Aer2010].
@@ -2717,11 +2717,11 @@ contains
   function eta (this)
 
     class(wave_t), intent(in) :: this
-    real(WP)                  :: eta
+    real(RD)                  :: eta
 
     integer  :: j
-    real(WP) :: dW_dx(this%n)
-    real(WP) :: D
+    real(RD) :: dW_dx(this%n)
+    real(RD) :: D
 
     ! Calculate the normalized growth rate defined (as eta') by [Stel1978]
 
@@ -2732,10 +2732,10 @@ contains
 
     D = integrate(this%gr%pt%x, abs(dW_dx))
 
-    if (D /= 0._WP) then
+    if (D /= 0._RD) then
        eta = integrate(this%gr%pt%x, dW_dx)/D
     else
-       eta = 0._WP
+       eta = 0._RD
     endif
 
     ! Finish

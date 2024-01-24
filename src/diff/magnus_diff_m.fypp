@@ -44,16 +44,16 @@ module magnus_diff_m
    integer, parameter :: GL4_SCHEME = 2
    integer, parameter :: GL6_SCHEME = 3
 
-   real(WP), parameter :: GL2_C_I(1) = [0.5_WP]
+   real(RD), parameter :: GL2_C_I(1) = [0.5_RD]
 
-   real(WP), parameter :: GL4_C_I(2) = [ &
-      0.5_WP-sqrt(3._WP)/6._WP, &
-      0.5_WP+sqrt(3._WP)/6._WP]
+   real(RD), parameter :: GL4_C_I(2) = [ &
+      0.5_RD-sqrt(3._RD)/6._RD, &
+      0.5_RD+sqrt(3._RD)/6._RD]
 
-   real(WP), parameter :: GL6_C_I(3) = [ &
-      0.5_WP-sqrt(15._WP)/10._WP, &
-      0.5_WP, &
-      0.5_WP+sqrt(15._WP)/10._WP]
+   real(RD), parameter :: GL6_C_I(3) = [ &
+      0.5_RD-sqrt(15._RD)/10._RD, &
+      0.5_RD, &
+      0.5_RD+sqrt(15._RD)/10._RD]
 
    #:for S in DTYPE_SUFFIXES
 
@@ -62,7 +62,7 @@ module magnus_diff_m
       type, extends(diff_${S}$) :: magnus_diff_${S}$
          private
          class(eqns_${S}$), allocatable :: eq
-         real(WP)                       :: dx
+         real(RD)                       :: dx
          integer                        :: scheme
       contains
          private
@@ -100,7 +100,7 @@ contains
          character(*), intent(in)      :: scheme
          type(magnus_diff_${S}$)       :: df
 
-         real(WP), allocatable      :: c_i(:)
+         real(RD), allocatable      :: c_i(:)
          type(point_t), allocatable :: pt(:)
 
          @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
@@ -153,14 +153,14 @@ contains
          logical, parameter :: UPWIND = .TRUE.
 
          ${T}$       :: dOmega(this%n_e,this%n_e)
-         complex(WP) :: lambda(this%n_e)
-         complex(WP) :: V_l(this%n_e,this%n_e)
-         complex(WP) :: V_r(this%n_e,this%n_e)
+         complex(RD) :: lambda(this%n_e)
+         complex(RD) :: V_l(this%n_e,this%n_e)
+         complex(RD) :: V_r(this%n_e,this%n_e)
          integer     :: i
-         complex(WP) :: V_pos(this%n_e,this%n_e)
-         complex(WP) :: V_neg(this%n_e,this%n_e)
-         complex(WP) :: E_l_(this%n_e,this%n_e)
-         complex(WP) :: E_r_(this%n_e,this%n_e)
+         complex(RD) :: V_pos(this%n_e,this%n_e)
+         complex(RD) :: V_neg(this%n_e,this%n_e)
+         complex(RD) :: E_l_(this%n_e,this%n_e)
+         complex(RD) :: E_r_(this%n_e,this%n_e)
 
          @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
          @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
@@ -195,27 +195,27 @@ contains
 
             do i = 1, this%n_e
                call XCOPY_inplace(this%n_e, V_r(1,i), 1, V_pos(1,i), 1)
-               if (REAL(lambda(i)) >= 0._WP) then
+               if (REAL(lambda(i)) >= 0._RD) then
                   call XSCAL_inplace(this%n_e, exp(-lambda(i)*this%dx), V_pos(1,i), 1)
                endif
             end do
 
             do i = 1, this%n_e
                call XCOPY_inplace(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
-               if (REAL(lambda(i)) < 0._WP) then
+               if (REAL(lambda(i)) < 0._RD) then
                   call XSCAL_inplace(this%n_e, exp(lambda(i)*this%dx), V_neg(1,i), 1)
                endif
             end do
 
-            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(-1._WP, KIND=WP), &
-               V_neg(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._WP, KIND=WP), &
+            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(-1._RD, KIND=RD), &
+               V_neg(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._RD, KIND=RD), &
                E_l_(1,1), this%n_e)
 
-            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._WP, KIND=WP), &
-               V_pos(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._WP, KIND=WP), &
+            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._RD, KIND=RD), &
+               V_pos(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._RD, KIND=RD), &
                E_r_(1,1), this%n_e)
 
-            scl = exp(ext_${S}$(SUM(lambda, MASK=REAL(lambda) >= 0._WP)*this%dx))
+            scl = exp(ext_${S}$(SUM(lambda, MASK=REAL(lambda) >= 0._RD)*this%dx))
 
          else
 
@@ -226,23 +226,23 @@ contains
                call XSCAL_inplace(this%n_e, exp(lambda(i)*this%dx), V_neg(1,i), 1)
             end do
 
-            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._WP, KIND=WP), &
-               V_neg(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._WP, KIND=WP), &
+            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._RD, KIND=RD), &
+               V_neg(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._RD, KIND=RD), &
                E_l_(1,1), this%n_e)
 
             do i = 1, this%n_e
-               E_r_(:,i) = 0._WP
-               E_r_(i,i) = -1._WP
+               E_r_(:,i) = 0._RD
+               E_r_(i,i) = -1._RD
             end do
 
-            scl = ext_${S}$(1._WP)
+            scl = ext_${S}$(1._RD)
 
          endif
 
-         #:if T == 'real(WP)'
+         #:if T == 'real(RD)'
             E_l = REAL(E_l_)
             E_r = REAL(E_r_)
-         #:elif T == 'complex(WP)'
+         #:elif T == 'complex(RD)'
             E_l = E_l_
             E_r = E_r_
          #:else
@@ -303,10 +303,10 @@ contains
          ! and 253; note that the 12 in the denominator of their expression
          ! for alpha_2 is erroneous)
 
-         dalpha(:,:,1) = 0.5_WP*(A(:,:,1) + A(:,:,2))
-         dalpha(:,:,2) = sqrt(3._WP)*(A(:,:,2) - A(:,:,1))
+         dalpha(:,:,1) = 0.5_RD*(A(:,:,1) + A(:,:,2))
+         dalpha(:,:,2) = sqrt(3._RD)*(A(:,:,2) - A(:,:,1))
 
-         dOmega = dalpha(:,:,1) - this%dx*commutator(dalpha(:,:,1), dalpha(:,:,2))/12._WP
+         dOmega = dalpha(:,:,1) - this%dx*commutator(dalpha(:,:,1), dalpha(:,:,2))/12._RD
 
          ! Finish
 
@@ -338,7 +338,7 @@ contains
          ! and 257)
 
          dalpha(:,:,1) = A(:,:,2)
-         dalpha(:,:,2) = sqrt(15._WP)*(A(:,:,3) - A(:,:,1))/3
+         dalpha(:,:,2) = sqrt(15._RD)*(A(:,:,3) - A(:,:,1))/3
          dalpha(:,:,3) = 10*(A(:,:,3) - 2*A(:,:,2) + A(:,:,1))/3
 
          dC(:,:,1) = this%dx*commutator(dalpha(:,:,1), dalpha(:,:,2))

@@ -44,16 +44,16 @@ program build_poly
    character(:), allocatable :: filename
    integer                   :: unit
    integer                   :: n_r
-   real(WP), allocatable     :: n_poly(:)
-   real(WP)                  :: Gamma_1
-   real(WP), allocatable     :: z_b(:)
-   real(WP), allocatable     :: Delta_b(:)
-   real(WP)                  :: dz
-   real(WP)                  :: toler
+   real(RD), allocatable     :: n_poly(:)
+   real(RD)                  :: Gamma_1
+   real(RD), allocatable     :: z_b(:)
+   real(RD), allocatable     :: Delta_b(:)
+   real(RD)                  :: dz
+   real(RD)                  :: toler
    character(FILENAME_LEN)   :: file
-   real(WP), allocatable     :: z(:)
-   real(WP), allocatable     :: theta(:)
-   real(WP), allocatable     :: dtheta(:)
+   real(RD), allocatable     :: z(:)
+   real(RD), allocatable     :: theta(:)
+   real(RD), allocatable     :: dtheta(:)
    integer                   :: n_r_out
    type(hgroup_t)            :: hg
 
@@ -74,9 +74,9 @@ program build_poly
    allocate(Delta_b(D))
 
    n_r = 1
-   Gamma_1 = 5._WP/3._WP
+   Gamma_1 = 5._RD/3._RD
 
-   n_poly(1) = 0._WP
+   n_poly(1) = 0._RD
 
    dz = 0.01
    toler = 1E-10

@@ -32,8 +32,8 @@ module scan_par_m
    ! Derived-type definitions
 
    type :: scan_par_t
-      real(WP)                :: freq_min = 1._WP
-      real(WP)                :: freq_max = 10._WP
+      real(RD)                :: freq_min = 1._RD
+      real(RD)                :: freq_max = 10._RD
       integer                 :: n_freq = 10
       character(64)           :: freq_units = 'NONE'
       character(64)           :: freq_min_units = ''
@@ -64,8 +64,8 @@ contains
 
       integer                             :: n_sc_p
       integer                             :: i
-      real(WP)                            :: freq_min
-      real(WP)                            :: freq_max
+      real(RD)                            :: freq_min
+      real(RD)                            :: freq_max
       integer                             :: n_freq
       character(LEN(sc_p%freq_units))     :: freq_units
       character(LEN(sc_p%freq_min_units)) :: freq_min_units

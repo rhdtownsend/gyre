@@ -52,7 +52,7 @@ module rad_match_m
       private
       type(context_t), pointer :: cx => null()
       type(rad_trans_t)        :: tr
-      real(WP), allocatable    :: coeff(:,:)
+      real(RD), allocatable    :: coeff(:,:)
    contains
       private
       procedure         :: stencil_
@@ -137,8 +137,8 @@ contains
 
       class(rad_match_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: E_l(:,:)
-      real(WP), intent(out)          :: E_r(:,:)
+      real(RD), intent(out)          :: E_l(:,:)
+      real(RD), intent(out)          :: E_r(:,:)
       type(ext_rt), intent(out)      :: scl
 
       @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
@@ -157,21 +157,21 @@ contains
 
          ! Evaluate the match conditions (y_1 continuous, y_2 not)
 
-         E_l(1,1) = -1._WP
-         E_l(1,2) = 0._WP
+         E_l(1,1) = -1._RD
+         E_l(1,2) = 0._RD
 
          E_l(2,1) = U_l
          E_l(2,2) = -U_l
 
          !
 
-         E_r(1,1) = 1._WP
-         E_r(1,2) = 0._WP
+         E_r(1,1) = 1._RD
+         E_r(1,2) = 0._RD
 
          E_r(2,1) = -U_r
          E_r(2,2) = U_r
 
-         scl = ext_rt(1._WP)
+         scl = ext_rt(1._RD)
 
       end associate
 

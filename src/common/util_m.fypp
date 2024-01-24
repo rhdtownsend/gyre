@@ -436,7 +436,7 @@ contains
 
       function integrate_${S}$_(x, y, mask) result(int_y)
 
-         real(WP), intent(in)          :: x(:)
+         real(RD), intent(in)          :: x(:)
          ${T}$, intent(in)             :: y(:)
          logical, optional, intent(in) :: mask(:)
          ${T}$                         :: int_y
@@ -455,9 +455,9 @@ contains
          n = SIZE(x)
 
          if (PRESENT(mask)) then
-            int_y = SUM(0.5_WP*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)), MASK=mask(2:) .AND. mask(:n-1))
+            int_y = SUM(0.5_RD*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)), MASK=mask(2:) .AND. mask(:n-1))
          else
-            int_y = SUM(0.5_WP*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)))
+            int_y = SUM(0.5_RD*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)))
          endif
 
          ! Finish
@@ -470,7 +470,7 @@ contains
 
       function integral_${S}$_(x, y) result(int_y)
 
-         real(WP), intent(in) :: x(:)
+         real(RD), intent(in) :: x(:)
          ${T}$, intent(in)    :: y(:)
          ${T}$                :: int_y(SIZE(x))
 
@@ -483,10 +483,10 @@ contains
 
          n = SIZE(x)
 
-         int_y(1) = 0._WP
+         int_y(1) = 0._RD
 
          int_loop : do i = 2, n
-            int_y(i) = int_y(i-1) + 0.5_WP*(y(i) + y(i-1))*(x(i) - x(i-1))
+            int_y(i) = int_y(i-1) + 0.5_RD*(y(i) + y(i-1))*(x(i) - x(i-1))
          end do int_loop
 
          ! Finish

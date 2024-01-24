@@ -103,15 +103,15 @@ contains
 
       class(qad_eval_t), intent(inout) :: this
       class(state_ct), intent(in)      :: st
-      real(WP), intent(in)             :: y_ad(:,:)
-      complex(WP)                      :: y_qad(6,this%n)
+      real(RD), intent(in)             :: y_ad(:,:)
+      complex(RD)                      :: y_qad(6,this%n)
 
       integer         :: j
       integer         :: s
-      complex(WP)     :: xA(6,6)
-      complex(WP)     :: xA_5(6,this%n)
-      complex(WP)     :: xA_6(6,this%n)
-      complex(WP)     :: dy_6(this%n)
+      complex(RD)     :: xA(6,6)
+      complex(RD)     :: xA_5(6,this%n)
+      complex(RD)     :: xA_6(6,this%n)
+      complex(RD)     :: dy_6(this%n)
 
       @:CHECK_BOUNDS(SIZE(y_ad, 1), 4)
       @:CHECK_BOUNDS(SIZE(y_ad, 2), this%n)
@@ -138,10 +138,10 @@ contains
 
       ! Evaluate the luminosity perturbation eigenfunction
 
-      where (this%gr%pt%x /= 0._WP)
+      where (this%gr%pt%x /= 0._RD)
          y_qad(6,:) = -(xA_5(1,:)*y_qad(1,:) + xA_5(2,:)*y_qad(2,:) + xA_5(3,:)*y_qad(3,:) + xA_5(4,:)*y_qad(4,:))/xA_5(6,:)
       elsewhere
-         y_qad(6,:) = 0._WP
+         y_qad(6,:) = 0._RD
       end where
 
       ! Evaluate the gradient of the luminosity perturbation
@@ -149,17 +149,17 @@ contains
 
       seg_loop : do s = this%gr%s_i(), this%gr%s_o()
          associate (j_i => this%gr%j_s_i(s), j_o => this%gr%j_s_o(s))
-            dy_6(j_i:j_o) = this%gr%pt(j_i:j_o)%x*deriv(this%gr%pt(j_i:j_o)%x, REAL(y_qad(6,j_i:j_o), WP), 'MONO')
+            dy_6(j_i:j_o) = this%gr%pt(j_i:j_o)%x*deriv(this%gr%pt(j_i:j_o)%x, REAL(y_qad(6,j_i:j_o), RD), 'MONO')
          end associate
       end do seg_loop
 
       ! Evaluate the entropy perturbation eigenfunction
 
-      where (this%gr%pt%x /= 0._WP)
+      where (this%gr%pt%x /= 0._RD)
          y_qad(5,:) = (dy_6 - (xA_6(1,:)*y_qad(1,:) + xA_6(2,:)*y_qad(2,:) + xA_6(3,:)*y_qad(3,:) + &
             xA_6(4,:)*y_qad(4,:) + xA_6(6,:)*y_qad(6,:)))/xA_6(5,:)
       elsewhere
-         y_qad(5,:) = 0._WP
+         y_qad(5,:) = 0._RD
       end where
 
       ! Finish

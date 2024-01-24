@@ -63,10 +63,10 @@ contains
 
       integer                     :: unit
       integer                     :: n
-      real(WP)                    :: global_data(3)
+      real(RD)                    :: global_data(3)
       integer                     :: version
       integer                     :: n_cols
-      real(WP), allocatable       :: point_data(:,:)
+      real(RD), allocatable       :: point_data(:,:)
       integer                     :: k
       integer                     :: k_chk
       type(evol_model_t), pointer :: em
@@ -87,7 +87,7 @@ contains
       read(unit, *) n, global_data, version
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 120) 'File version', version/100._WP
+         write(OUTPUT_UNIT, 120) 'File version', version/100._RD
 120      format(3X,A,1X,F4.2,1X,A)
       endif
 
@@ -144,47 +144,47 @@ contains
    subroutine init_mesa_model(ml_p, global_data, point_data, version, em)
 
       type(model_par_t), intent(in)            :: ml_p
-      real(WP), intent(in)                     :: global_data(:)
-      real(WP), intent(in)                     :: point_data(:,:)
+      real(RD), intent(in)                     :: global_data(:)
+      real(RD), intent(in)                     :: point_data(:,:)
       integer, intent(in)                      :: version
       type(evol_model_t), pointer, intent(out) :: em
 
-      real(WP)                    :: M_star
-      real(WP)                    :: R_star
-      real(WP)                    :: L_star
+      real(RD)                    :: M_star
+      real(RD)                    :: R_star
+      real(RD)                    :: L_star
       integer                     :: n
-      real(WP), allocatable       :: r(:)
-      real(WP), allocatable       :: M_r(:)
-      real(WP), allocatable       :: L_r(:)
-      real(WP), allocatable       :: P(:)
-      real(WP), allocatable       :: rho(:)
-      real(WP), allocatable       :: T(:)
-      real(WP), allocatable       :: N2(:)
-      real(WP), allocatable       :: Gamma_1(:)
-      real(WP), allocatable       :: nabla_ad(:)
-      real(WP), allocatable       :: ups_T(:)
-      real(WP), allocatable       :: nabla(:)
-      real(WP), allocatable       :: eps(:)
-      real(WP), allocatable       :: eps_rho(:)
-      real(WP), allocatable       :: eps_T(:)
-      real(WP), allocatable       :: eps_grav(:)
-      real(WP), allocatable       :: kap(:)
-      real(WP), allocatable       :: kap_rho(:)
-      real(WP), allocatable       :: kap_T(:)
-      real(WP), allocatable       :: Omega_rot(:)
-      real(WP), allocatable       :: x(:)
-      real(WP), allocatable       :: V_2(:)
-      real(WP), allocatable       :: As(:)
-      real(WP), allocatable       :: U(:)
-      real(WP), allocatable       :: c_1(:)
-      real(WP), allocatable       :: beta_rad(:)
-      real(WP), allocatable       :: c_P(:)
-      real(WP), allocatable       :: c_lum(:)
-      real(WP), allocatable       :: c_rad(:)
-      real(WP), allocatable       :: c_thn(:)
-      real(WP), allocatable       :: c_thk(:)
-      real(WP), allocatable       :: c_eps(:)
-      real(WP), allocatable       :: c_egv(:)
+      real(RD), allocatable       :: r(:)
+      real(RD), allocatable       :: M_r(:)
+      real(RD), allocatable       :: L_r(:)
+      real(RD), allocatable       :: P(:)
+      real(RD), allocatable       :: rho(:)
+      real(RD), allocatable       :: T(:)
+      real(RD), allocatable       :: N2(:)
+      real(RD), allocatable       :: Gamma_1(:)
+      real(RD), allocatable       :: nabla_ad(:)
+      real(RD), allocatable       :: ups_T(:)
+      real(RD), allocatable       :: nabla(:)
+      real(RD), allocatable       :: eps(:)
+      real(RD), allocatable       :: eps_rho(:)
+      real(RD), allocatable       :: eps_T(:)
+      real(RD), allocatable       :: eps_grav(:)
+      real(RD), allocatable       :: kap(:)
+      real(RD), allocatable       :: kap_rho(:)
+      real(RD), allocatable       :: kap_T(:)
+      real(RD), allocatable       :: Omega_rot(:)
+      real(RD), allocatable       :: x(:)
+      real(RD), allocatable       :: V_2(:)
+      real(RD), allocatable       :: As(:)
+      real(RD), allocatable       :: U(:)
+      real(RD), allocatable       :: c_1(:)
+      real(RD), allocatable       :: beta_rad(:)
+      real(RD), allocatable       :: c_P(:)
+      real(RD), allocatable       :: c_lum(:)
+      real(RD), allocatable       :: c_rad(:)
+      real(RD), allocatable       :: c_thn(:)
+      real(RD), allocatable       :: c_thk(:)
+      real(RD), allocatable       :: c_eps(:)
+      real(RD), allocatable       :: c_egv(:)
 
       ! Extract data from the global and point arrays
 
@@ -211,7 +211,7 @@ contains
 
       x = r/R_star
 
-      call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x, M_r)
+      call snap_points(MAX(ml_p%dx_snap, EPSILON(0._RD)), x, M_r)
 
       ! Calculate dimensionless structure data
 
@@ -221,41 +221,41 @@ contains
       allocate(c_1(n))
       allocate(c_lum(n))
 
-      where (x /= 0._WP)
+      where (x /= 0._RD)
          V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
          As = r**3*N2/(G_GRAVITY*M_r)
-         U = 4._WP*PI*rho*r**3/M_r
+         U = 4._RD*PI*rho*r**3/M_r
          c_1 = (r/R_star)**3/(M_r/M_star)
          c_lum = (L_r/L_star)/x**3
       elsewhere
-         V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
-         As = 0._WP
-         U = 3._WP
-         c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
-         c_lum = 4._WP*PI*rho(1)*eps(1)*R_star**3/L_star
+         V_2 = 4._RD*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._RD*P(1))
+         As = 0._RD
+         U = 3._RD
+         c_1 = 3._RD*(M_star/R_star**3)/(4._RD*PI*rho)
+         c_lum = 4._RD*PI*rho(1)*eps(1)*R_star**3/L_star
       end where
 
-      beta_rad = A_RADIATION*T**4/(3._WP*P)
+      beta_rad = A_RADIATION*T**4/(3._RD*P)
 
       c_P = P*ups_T/(rho*T*nabla_ad)
 
-      c_rad = 16._WP*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._WP*kap*rho*L_star)
+      c_rad = 16._RD*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._RD*kap*rho*L_star)
       c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
-      c_thk = 4._WP*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
+      c_thk = 4._RD*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
 
       allocate(c_egv(n))
 
       select case (version)
       case (101)
-         c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
-         c_egv = 0._WP
+         c_eps = 4._RD*PI*rho*eps*R_star**3/L_star
+         c_egv = 0._RD
       case (120)
-         c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
-         c_egv = 4._WP*PI*rho*eps_grav*R_star**3/L_star
+         c_eps = 4._RD*PI*rho*eps*R_star**3/L_star
+         c_egv = 4._RD*PI*rho*eps_grav*R_star**3/L_star
       case default
          ! Note: technically incorrect because eps in versions < 1.01 includes eps_grav
-         c_eps = 4._WP*PI*rho*eps*R_star**3/L_star
-         c_egv = 0._WP
+         c_eps = 4._RD*PI*rho*eps*R_star**3/L_star
+         c_egv = 0._RD
       end select
 
       Omega_rot = Omega_rot*sqrt(R_star**3/(G_GRAVITY*M_star))
@@ -300,8 +300,8 @@ contains
 
       subroutine extract_data_v0_01_()
 
-         real(WP), allocatable :: eps_eps_rho(:)
-         real(WP), allocatable :: eps_eps_T(:)
+         real(RD), allocatable :: eps_eps_rho(:)
+         real(RD), allocatable :: eps_eps_T(:)
          integer               :: k
 
          @:CHECK_BOUNDS(SIZE(point_data, 1), N_COLS_V0_01)
@@ -309,7 +309,7 @@ contains
          ! Extract data from the version-0.01 point array
 
          r = point_data(1,:)
-         M_r = point_data(2,:)/(1._WP+point_data(2,:))*M_star
+         M_r = point_data(2,:)/(1._RD+point_data(2,:))*M_star
          L_r = point_data(3,:)
          P = point_data(4,:)
          T = point_data(5,:)
@@ -328,13 +328,13 @@ contains
          nabla_ad = p*ups_T/(rho*T*point_data(10,:))
 
          allocate(Omega_rot(n))
-         Omega_rot = 0._WP
+         Omega_rot = 0._RD
 
          ! Evaluate eps_rho and eps_T from eps_eps_*
 
          k = MAXLOC(abs(eps_eps_T), DIM=1)
 
-         if (abs(eps_eps_T(k)) >= 1E-3_WP*abs(eps(k))) then
+         if (abs(eps_eps_T(k)) >= 1E-3_RD*abs(eps(k))) then
 
             ! Note: technically incorrect because eps in versions < 1.01 includes eps_grav
 
@@ -361,15 +361,15 @@ contains
 
       subroutine extract_data_v0_19_()
 
-         real(WP), allocatable :: eps_eps_rho(:)
-         real(WP), allocatable :: eps_eps_T(:)
+         real(RD), allocatable :: eps_eps_rho(:)
+         real(RD), allocatable :: eps_eps_T(:)
 
          @:CHECK_BOUNDS(SIZE(point_data, 1), N_COLS_V0_19)
 
          ! Extract data from the version-0.19 point array
 
          r = point_data(1,:)
-         M_r = point_data(2,:)/(1._WP+point_data(2,:))*M_star
+         M_r = point_data(2,:)/(1._RD+point_data(2,:))*M_star
          L_r = point_data(3,:)
          P = point_data(4,:)
          T = point_data(5,:)
@@ -392,12 +392,12 @@ contains
          allocate(eps_rho(n))
          allocate(eps_T(n))
 
-         where (eps /= 0._WP)
+         where (eps /= 0._RD)
             eps_rho = eps_eps_rho/eps
             eps_T = eps_eps_T/eps
          elsewhere
-            eps_rho = 0._WP
-            eps_T = 0._WP
+            eps_rho = 0._RD
+            eps_T = 0._RD
          end where
 
          ! Finish
@@ -408,10 +408,10 @@ contains
 
       subroutine extract_data_v1_0X_()
 
-         real(WP), allocatable :: eps_eps_rho(:)
-         real(WP), allocatable :: eps_eps_T(:)
-         real(WP), allocatable :: kap_kap_T(:)
-         real(WP), allocatable :: kap_kap_rho(:)
+         real(RD), allocatable :: eps_eps_rho(:)
+         real(RD), allocatable :: eps_eps_T(:)
+         real(RD), allocatable :: kap_kap_T(:)
+         real(RD), allocatable :: kap_kap_rho(:)
 
          @:CHECK_BOUNDS(SIZE(point_data, 1), N_COLS_V1_0X)
 
@@ -441,12 +441,12 @@ contains
          allocate(eps_rho(n))
          allocate(eps_T(n))
 
-         where (eps /= 0._WP)
+         where (eps /= 0._RD)
             eps_rho = eps_eps_rho/eps
             eps_T = eps_eps_T/eps
          elsewhere
-            eps_rho = 0._WP
-            eps_T = 0._WP
+            eps_rho = 0._RD
+            eps_T = 0._RD
          end where
 
          kap_T = kap_kap_T/kap
@@ -460,10 +460,10 @@ contains
 
       subroutine extract_data_v1_20_()
 
-         real(WP), allocatable :: eps_eps_rho(:)
-         real(WP), allocatable :: eps_eps_T(:)
-         real(WP), allocatable :: kap_kap_T(:)
-         real(WP), allocatable :: kap_kap_rho(:)
+         real(RD), allocatable :: eps_eps_rho(:)
+         real(RD), allocatable :: eps_eps_T(:)
+         real(RD), allocatable :: kap_kap_T(:)
+         real(RD), allocatable :: kap_kap_rho(:)
 
          @:CHECK_BOUNDS(SIZE(point_data, 1), N_COLS_V1_20)
 
@@ -492,12 +492,12 @@ contains
          allocate(eps_rho(n))
          allocate(eps_T(n))
 
-         where (eps /= 0._WP)
+         where (eps /= 0._RD)
             eps_rho = eps_eps_rho/eps
             eps_T = eps_eps_T/eps
          elsewhere
-            eps_rho = 0._WP
-            eps_T = 0._WP
+            eps_rho = 0._RD
+            eps_T = 0._RD
          end where
 
          kap_T = kap_kap_T/kap

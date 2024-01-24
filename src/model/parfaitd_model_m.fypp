@@ -39,8 +39,8 @@ module parfaitd_model_m
 
    type, extends(parfait_model_t) :: parfaitd_model_t
       private
-      real(WP), public :: M_star
-      real(WP), public :: R_star
+      real(RD), public :: M_star
+      real(RD), public :: R_star
    contains
       private
       procedure, public :: M_r
@@ -67,8 +67,8 @@ contains
    function parfaitd_model_t_(ml_in, M_star, R_star) result(ml)
 
       type(parfait_model_t), intent(in) :: ml_in
-      real(WP), intent(in)              :: M_star
-      real(WP), intent(in)              :: R_star
+      real(RD), intent(in)              :: M_star
+      real(RD), intent(in)              :: R_star
       type(parfaitd_model_t)            :: ml
 
       ! Construct the parfaitd_model_t
@@ -90,7 +90,7 @@ contains
 
       class(parfaitd_model_t), intent(in) :: this
       type(point_t), intent(in)           :: pt
-      real(WP)                            :: M_r
+      real(RD)                            :: M_r
 
       ! Evaluate the fractional mass coordinate
 
@@ -108,11 +108,11 @@ contains
 
       class(parfaitd_model_t), intent(in) :: this
       type(point_t), intent(in)           :: pt
-      real(WP)                            :: P
+      real(RD)                            :: P
 
       ! Evaluate the total pressure
 
-      P = (G_GRAVITY*this%M_star**2/(4._WP*PI*this%R_star**4))* &
+      P = (G_GRAVITY*this%M_star**2/(4._RD*PI*this%R_star**4))* &
          (this%coeff(I_U, pt)/(this%coeff(I_C_1, pt)**2*this%coeff(I_V_2, pt)))
 
       ! Finish
@@ -127,11 +127,11 @@ contains
 
       class(parfaitd_model_t), intent(in) :: this
       type(point_t), intent(in)           :: pt
-      real(WP)                            :: rho
+      real(RD)                            :: rho
 
       ! Evaluate the density
 
-      rho = (this%M_star/(4._WP*PI*this%R_star**3))*(this%coeff(I_U, pt)/this%coeff(I_C_1, pt))
+      rho = (this%M_star/(4._RD*PI*this%R_star**3))*(this%coeff(I_U, pt)/this%coeff(I_C_1, pt))
 
       ! Finish
 

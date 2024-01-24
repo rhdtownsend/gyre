@@ -51,14 +51,14 @@ contains
       class(model_t), pointer, intent(out) :: ml
 
       type(hgroup_t)              :: hg
-      real(WP), allocatable       :: n_poly(:)
+      real(RD), allocatable       :: n_poly(:)
       integer                     :: n_r
-      real(WP), allocatable       :: Delta_b(:)
-      real(WP)                    :: Gamma_1
-      real(WP), allocatable       :: z(:)
-      real(WP), allocatable       :: theta(:)
-      real(WP), allocatable       :: dtheta(:)
-      real(WP)                    :: Omega_rot
+      real(RD), allocatable       :: Delta_b(:)
+      real(RD)                    :: Gamma_1
+      real(RD), allocatable       :: z(:)
+      real(RD), allocatable       :: theta(:)
+      real(RD), allocatable       :: dtheta(:)
+      real(RD)                    :: Omega_rot
       type(poly_model_t), pointer :: pm
 
       ! Read the POLY-format file
@@ -93,7 +93,7 @@ contains
 
       ! Set up Omega_rot
 
-      Omega_rot = 0._WP
+      Omega_rot = 0._RD
 
       ! Initialize the poly_model_t
 

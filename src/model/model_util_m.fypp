@@ -51,13 +51,13 @@ contains
 
    subroutine snap_points(dx_snap, x, m)
 
-      real(WP), intent(in)              :: dx_snap
-      real(WP), intent(inout)           :: x(:)
-      real(WP), optional, intent(inout) :: m(:)
+      real(RD), intent(in)              :: dx_snap
+      real(RD), intent(inout)           :: x(:)
+      real(RD), optional, intent(inout) :: m(:)
 
       integer  :: i
-      real(WP) :: x_snap
-      real(WP) :: m_snap
+      real(RD) :: x_snap
+      real(RD) :: m_snap
 
       if (PRESENT(m)) then
          @:CHECK_BOUNDS(SIZE(m), SIZE(x))
@@ -67,12 +67,12 @@ contains
 
       ! Central point
 
-      if (x(1) > 0._WP .AND. x(1) < dx_snap) then
+      if (x(1) > 0._RD .AND. x(1) < dx_snap) then
 
-         x(1) = 0._WP
+         x(1) = 0._RD
 
          if (PRESENT(m)) then
-            m(1) = 0._WP
+            m(1) = 0._RD
          endif
 
          if (check_log_level('INFO')) then
@@ -86,13 +86,13 @@ contains
 
       snap_loop : do i = 2, SIZE(x)-1
 
-         if (x(i+1) - x(i) > 0._WP .AND. x(i+1) - x(i) < dx_snap) then
+         if (x(i+1) - x(i) > 0._RD .AND. x(i+1) - x(i) < dx_snap) then
 
-            x_snap = 0.5_WP*(x(i+1) + x(i))
+            x_snap = 0.5_RD*(x(i+1) + x(i))
             x(i:i+1) = x_snap
 
             if (PRESENT(m)) then
-               m_snap = 0.5_WP*(m(i+1) + m(i))
+               m_snap = 0.5_RD*(m(i+1) + m(i))
                m(i:i+1) = m_snap
             endif
 

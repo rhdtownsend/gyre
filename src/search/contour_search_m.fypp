@@ -58,10 +58,10 @@ contains
    subroutine contour_search (bp, omega_re, omega_im, omega_min, omega_max, i, nm_p, process_mode)
 
       class(bvp_ct), intent(inout) :: bp
-      real(WP), intent(in)         :: omega_re(:)
-      real(WP), intent(in)         :: omega_im(:)
-      real(WP), intent(in)         :: omega_min
-      real(WP), intent(in)         :: omega_max
+      real(RD), intent(in)         :: omega_re(:)
+      real(RD), intent(in)         :: omega_im(:)
+      real(RD), intent(in)         :: omega_min
+      real(RD), intent(in)         :: omega_max
       integer, intent(in)          :: i
       type(num_par_t), intent(in)  :: nm_p
       interface
@@ -75,8 +75,8 @@ contains
          end subroutine process_mode
       end interface
 
-      complex(WP), allocatable :: omega_in_a(:)
-      complex(WP), allocatable :: omega_in_b(:)
+      complex(RD), allocatable :: omega_in_a(:)
+      complex(RD), allocatable :: omega_in_b(:)
       integer, allocatable     :: id_in(:)
 
       ! Find contour intersections
@@ -98,12 +98,12 @@ contains
    subroutine find_isects_(bp, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, id_in)
 
       class(bvp_ct), intent(inout)          :: bp
-      real(WP), intent(in)                  :: omega_re(:)
-      real(WP), intent(in)                  :: omega_im(:)
+      real(RD), intent(in)                  :: omega_re(:)
+      real(RD), intent(in)                  :: omega_im(:)
       integer, intent(in)                   :: i
       type(num_par_t), intent(in)           :: nm_p
-      complex(WP), allocatable, intent(out) :: omega_in_a(:)
-      complex(WP), allocatable, intent(out) :: omega_in_b(:)
+      complex(RD), allocatable, intent(out) :: omega_in_a(:)
+      complex(RD), allocatable, intent(out) :: omega_in_b(:)
       integer, allocatable, intent(out)     :: id_in(:)
 
       integer                   :: n_omega_re
@@ -114,11 +114,11 @@ contains
       integer                   :: c_rate
       integer                   :: k
       integer                   :: j_ri(2)
-      complex(WP)               :: omega
+      complex(RD)               :: omega
       type(ext_ct)              :: discrim
       integer                   :: i_percent
       integer                   :: status
-      complex(WP), allocatable  :: discrim_map_f(:,:)
+      complex(RD), allocatable  :: discrim_map_f(:,:)
       integer, allocatable      :: discrim_map_e(:,:)
       type(ext_ct), allocatable :: discrim_map(:,:)
       type(contour_map_t)       :: cm
@@ -146,7 +146,7 @@ contains
 
          j_ri = index_nd(k, [n_omega_re,n_omega_im])
 
-         omega = CMPLX(omega_re(j_ri(1)), omega_im(j_ri(2)), KIND=WP)
+         omega = CMPLX(omega_re(j_ri(1)), omega_im(j_ri(2)), KIND=RD)
 
          call eval_discrim(bp, state_ct(omega, omega_r=omega_re(j_ri(1))), discrim)
 
@@ -154,7 +154,7 @@ contains
          discrim_map_e(j_ri(1),j_ri(2)) = EXPONENT(discrim)
 
          if (check_log_level('DEBUG')) then
-            i_percent = FLOOR(100._WP*k/(n_omega_re*n_omega_im))
+            i_percent = FLOOR(100._RD*k/(n_omega_re*n_omega_im))
             if (i_percent > n_percent) then
                write(OUTPUT_UNIT, 110) 'Percent complete: ', i_percent
 110            format(A,1X,I0)
@@ -169,7 +169,7 @@ contains
       call SYSTEM_CLOCK(c_end)
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
 120      format(2X,A,F10.3,1X,A/)
       endif
 
@@ -200,10 +200,10 @@ contains
 
       subroutine process_isect_(omega_a_re, omega_b_re, omega_a_im, omega_b_im)
 
-         complex(WP), intent(in) :: omega_a_re
-         complex(WP), intent(in) :: omega_b_re
-         complex(WP), intent(in) :: omega_a_im
-         complex(WP), intent(in) :: omega_b_im
+         complex(RD), intent(in) :: omega_a_re
+         complex(RD), intent(in) :: omega_b_re
+         complex(RD), intent(in) :: omega_a_im
+         complex(RD), intent(in) :: omega_b_im
 
          ! Process the intersection
 
@@ -233,15 +233,15 @@ contains
 
       function omega_init_(omega_a, omega_b, part) result(omega_init)
 
-         complex(WP), intent(in)  :: omega_a
-         complex(WP), intent(in)  :: omega_b
+         complex(RD), intent(in)  :: omega_a
+         complex(RD), intent(in)  :: omega_b
          character(*), intent(in) :: part
-         complex(WP)              :: omega_init
+         complex(RD)              :: omega_init
 
          type(ext_ct) :: discrim_a
          type(ext_ct) :: discrim_b
          integer      :: status
-         real(WP)     :: w
+         real(RD)     :: w
 
          ! Evaluate the discriminant at the segment endpoints
 
@@ -260,7 +260,7 @@ contains
             @:ABORT('Invalid part')
          end select
 
-         omega_init = (1._WP-w)*omega_a + w*omega_b
+         omega_init = (1._RD-w)*omega_a + w*omega_b
 
          ! Finish
 

@@ -33,16 +33,16 @@ program eval_lambda
 
    integer                   :: m
    integer                   :: l
-   real(WP)                  :: q_min
-   real(WP)                  :: q_max
+   real(RD)                  :: q_min
+   real(RD)                  :: q_max
    integer                   :: n_q
    logical                   :: log_q
    logical                   :: rossby
    character(:), allocatable :: filename
 
    integer               :: k
-   real(WP), allocatable :: q(:)
-   real(WP), allocatable :: lam(:)
+   real(RD), allocatable :: q(:)
+   real(RD), allocatable :: lam(:)
    integer               :: i
    type(hgroup_t)        :: hg
 

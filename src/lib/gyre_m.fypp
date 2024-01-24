@@ -21,7 +21,7 @@ module gyre_m
 
    ! Modules that will ultimately come from ForUM
 
-   use kinds_m, only : WP
+   use kinds_m, only : RD
    use hgroup_m
    use memory_m
    use system_m

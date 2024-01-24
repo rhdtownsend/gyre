@@ -113,7 +113,7 @@ contains
 
       class(resp_t), intent(in) :: this
       integer, intent(in)       :: j
-      complex(WP)               :: eul_Phi
+      complex(RD)               :: eul_Phi
 
       ! Evaluate the Eulerian self gravitational potential
       ! perturbation, in units of G M_star / R_star
@@ -132,7 +132,7 @@ contains
 
       class(resp_t), intent(in) :: this
       integer, intent(in)       :: j
-      complex(WP)               :: eul_Psi
+      complex(RD)               :: eul_Psi
 
       ! Evaluate the Eulerian total gravitational potential
       ! perturbation, in units of G M_star / R_star
@@ -151,7 +151,7 @@ contains
 
       class(resp_t), intent(in) :: this
       integer, intent(in)       :: j
-      real(WP)                  :: Phi_T
+      real(RD)                  :: Phi_T
 
       type(context_t) :: cx
 
@@ -176,7 +176,7 @@ contains
 
       class(resp_t), intent(in) :: this
       integer, intent(in)       :: j
-      complex(WP)               :: deul_Phi
+      complex(RD)               :: deul_Phi
 
       ! Evaluate the Eulerian potential gradient (gravity) perturbation,
       ! in units of G M_star / R_star**2
@@ -195,7 +195,7 @@ contains
 
       class(resp_t), intent(in) :: this
       integer, intent(in)       :: j
-      complex(WP)               :: deul_Psi
+      complex(RD)               :: deul_Psi
 
       ! Evaluate the Eulerian total potential gradient (gravity)
       ! potential perturbation, in units of G M_star / R_star**2
@@ -214,7 +214,7 @@ contains
 
       class(resp_t), intent(in) :: this
       integer, intent(in)       :: j
-      real(WP)                  :: dPhi_T
+      real(RD)                  :: dPhi_T
 
       type(context_t) :: cx
 
@@ -241,7 +241,7 @@ contains
       class(resp_t), intent(in)          :: this
       character(*), intent(in)           :: freq_units
       character(*), optional, intent(in) :: freq_frame
-      real(WP)                           :: Omega_orb
+      real(RD)                           :: Omega_orb
 
       type(context_t) :: cx
 
@@ -271,7 +271,7 @@ contains
    function R_a(this)
 
       class(resp_t), intent(in) :: this
-      real(WP)                  :: R_a
+      real(RD)                  :: R_a
 
       type(context_t) :: cx
 
@@ -294,7 +294,7 @@ contains
    function cbar (this)
 
       class(resp_t), intent(in) :: this
-      real(WP)                  :: cbar
+      real(RD)                  :: cbar
 
       type(context_t) :: cx
 
@@ -317,7 +317,7 @@ contains
    function Gbar_1(this)
 
       class(resp_t), intent(in) :: this
-      real(WP)                  :: Gbar_1
+      real(RD)                  :: Gbar_1
 
       type(context_t) :: cx
 
@@ -340,7 +340,7 @@ contains
    function Gbar_2(this)
 
       class(resp_t), intent(in) :: this
-      real(WP)                  :: Gbar_2
+      real(RD)                  :: Gbar_2
 
       type(context_t) :: cx
 
@@ -363,7 +363,7 @@ contains
    function Gbar_3(this)
 
       class(resp_t), intent(in) :: this
-      real(WP)                  :: Gbar_3
+      real(RD)                  :: Gbar_3
 
       type(context_t) :: cx
 
@@ -386,7 +386,7 @@ contains
    function Gbar_4(this)
 
       class(resp_t), intent(in) :: this
-      real(WP)                  :: Gbar_4
+      real(RD)                  :: Gbar_4
 
       type(context_t) :: cx
 

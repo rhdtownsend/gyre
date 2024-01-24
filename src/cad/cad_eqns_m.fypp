@@ -56,9 +56,9 @@ module cad_eqns_m
       type(context_t), pointer   :: cx => null()
       type(point_t), allocatable :: pt(:)
       type(ad_trans_t)           :: tr
-      real(WP), allocatable      :: coeff(:,:)
-      real(WP)                   :: alpha_gr
-      real(WP)                   :: alpha_om
+      real(RD), allocatable      :: coeff(:,:)
+      real(RD)                   :: alpha_gr
+      real(RD)                   :: alpha_om
    contains
       private
       procedure, public :: stencil
@@ -96,16 +96,16 @@ contains
       eq%tr = ad_trans_t(cx, md_p, os_p)
 
       if (os_p%cowling_approx) then
-         eq%alpha_gr = 0._WP
+         eq%alpha_gr = 0._RD
       else
-         eq%alpha_gr = 1._WP
+         eq%alpha_gr = 1._RD
       endif
 
       select case (os_p%time_factor)
       case ('OSC')
-         eq%alpha_om = 1._WP
+         eq%alpha_om = 1._RD
       case ('EXP')
-         eq%alpha_om = -1._WP
+         eq%alpha_om = -1._RD
       case default
          @:ABORT('invalid time_factor')
       end select
@@ -173,7 +173,7 @@ contains
       class(cad_eqns_t), intent(in) :: this
       integer, intent(in)           :: i
       class(state_ct), intent(in)   :: st
-      complex(WP)                   :: A(this%n_e,this%n_e)
+      complex(RD)                   :: A(this%n_e,this%n_e)
 
       ! Evaluate the RHS matrix
 
@@ -192,13 +192,13 @@ contains
       class(ad_eqns_t), intent(in) :: this
       integer, intent(in)          :: i
       class(state_ct), intent(in)  :: st
-      complex(WP)                  :: xA(this%n_e,this%n_e)
+      complex(RD)                  :: xA(this%n_e,this%n_e)
 
-      real(WP)    :: Omega_rot
-      real(WP)    :: Omega_rot_i
-      complex(WP) :: omega_c
-      complex(WP) :: lambda
-      complex(WP) :: l_i
+      real(RD)    :: Omega_rot
+      real(RD)    :: Omega_rot_i
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_i
 
       ! Evaluate the log(x)-space RHS matrix
 
@@ -223,25 +223,25 @@ contains
 
          ! Set up the matrix
 
-         xA(1,1) = V/Gamma_1 - 1._WP - l_i
+         xA(1,1) = V/Gamma_1 - 1._RD - l_i
          xA(1,2) = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
          xA(1,3) = alpha_gr*(lambda/(c_1*alpha_om*omega_c**2))
-         xA(1,4) = alpha_gr*(0._WP)
+         xA(1,4) = alpha_gr*(0._RD)
 
          xA(2,1) = c_1*alpha_om*omega_c**2 - As
-         xA(2,2) = As - U + 3._WP - l_i
-         xA(2,3) = alpha_gr*(0._WP)
-         xA(2,4) = alpha_gr*(-1._WP)
+         xA(2,2) = As - U + 3._RD - l_i
+         xA(2,3) = alpha_gr*(0._RD)
+         xA(2,4) = alpha_gr*(-1._RD)
 
-         xA(3,1) = alpha_gr*(0._WP)
-         xA(3,2) = alpha_gr*(0._WP)
-         xA(3,3) = alpha_gr*(3._WP - U - l_i)
-         xA(3,4) = alpha_gr*(1._WP)
+         xA(3,1) = alpha_gr*(0._RD)
+         xA(3,2) = alpha_gr*(0._RD)
+         xA(3,3) = alpha_gr*(3._RD - U - l_i)
+         xA(3,4) = alpha_gr*(1._RD)
 
          xA(4,1) = alpha_gr*(U*As)
          xA(4,2) = alpha_gr*(U*V/Gamma_1)
          xA(4,3) = alpha_gr*(lambda)
-         xA(4,4) = alpha_gr*(-U - l_i + 2._WP)
+         xA(4,4) = alpha_gr*(-U - l_i + 2._RD)
 
       end associate
 

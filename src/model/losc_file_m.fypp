@@ -56,19 +56,19 @@ contains
     integer                     :: unit
     character(256)              :: line
     integer                     :: n
-    real(WP)                    :: glob(3)
-    real(WP), allocatable       :: var(:,:)
+    real(RD)                    :: glob(3)
+    real(RD), allocatable       :: var(:,:)
     integer                     :: i
     integer                     :: k
-    real(WP)                    :: M_star
-    real(WP)                    :: R_star
-    real(WP), allocatable       :: x(:)
-    real(WP), allocatable       :: V_2(:)
-    real(WP), allocatable       :: As(:) 
-    real(WP), allocatable       :: U(:)
-    real(WP), allocatable       :: c_1(:)
-    real(WP), allocatable       :: Gamma_1(:) 
-    real(WP), allocatable       :: Omega_rot(:)
+    real(RD)                    :: M_star
+    real(RD)                    :: R_star
+    real(RD), allocatable       :: x(:)
+    real(RD), allocatable       :: V_2(:)
+    real(RD), allocatable       :: As(:) 
+    real(RD), allocatable       :: U(:)
+    real(RD), allocatable       :: c_1(:)
+    real(RD), allocatable       :: Gamma_1(:) 
+    real(RD), allocatable       :: Omega_rot(:)
     type(evol_model_t), pointer :: em
 
     ! Open the LOSC-format file
@@ -126,31 +126,31 @@ contains
 
     allocate(V_2(n))
 
-    where (x /= 0._WP)
+    where (x /= 0._RD)
        V_2 = G_GRAVITY*var(4,:)*var(2,:)*R_star**2/var(3,:)
     elsewhere
-       V_2 = 4._WP*PI*G_GRAVITY*var(4,:)**2*R_star**2/(3._WP*var(3,:))
+       V_2 = 4._RD*PI*G_GRAVITY*var(4,:)**2*R_star**2/(3._RD*var(3,:))
     endwhere
        
     As = -var(6,:)*var(1,:)**2
-    U = 4._WP*PI*var(4,:)/var(2,:)
+    U = 4._RD*PI*var(4,:)/var(2,:)
     c_1 = M_star/(R_star**3*var(2,:))
 
     Gamma_1 = var(5,:)
 
     ! Snap grid points
 
-    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x)
+    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._RD)), x)
 
     ! Calculate dimensionless structure data
 
     allocate(Omega_rot(n))
 
-    Omega_rot = 0._WP
+    Omega_rot = 0._RD
 
     ! Initialize the evol_model_t
 
-    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, 0._WP, ml_p))
+    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, 0._RD, ml_p))
 
     call em%define(I_V_2, V_2)
     call em%define(I_AS, As)

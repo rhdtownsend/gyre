@@ -58,50 +58,50 @@ contains
 
    function atmos_chi_r_(V, As, c_1, Gamma_1, omega, lambda) result(chi)
 
-      real(WP), intent(in) :: V
-      real(WP), intent(in) :: As
-      real(WP), intent(in) :: c_1
-      real(WP), intent(in) :: Gamma_1
-      real(WP), intent(in) :: omega
-      real(WP), intent(in) :: lambda
-      real(WP)             :: chi
+      real(RD), intent(in) :: V
+      real(RD), intent(in) :: As
+      real(RD), intent(in) :: c_1
+      real(RD), intent(in) :: Gamma_1
+      real(RD), intent(in) :: omega
+      real(RD), intent(in) :: lambda
+      real(RD)             :: chi
 
-      real(WP)      :: a_11
-      real(WP)      :: a_12
-      real(WP)      :: a_21
-      real(WP)      :: a_22
-      real(WP)      :: b
-      real(WP)      :: c
-      real(WP)      :: psi2
+      real(RD)      :: a_11
+      real(RD)      :: a_12
+      real(RD)      :: a_21
+      real(RD)      :: a_22
+      real(RD)      :: b
+      real(RD)      :: c
+      real(RD)      :: psi2
       logical, save :: warned = .FALSE.
 
       ! Calculate the atmospheric radial wavenumber (real frequencies)
 
-      a_11 = V/Gamma_1 - 3._WP
+      a_11 = V/Gamma_1 - 3._RD
       a_12 = lambda/(c_1*omega**2) - V/Gamma_1
       a_21 = c_1*omega**2 - As
-      a_22 = As + 1._WP
+      a_22 = As + 1._RD
 
       b = -(a_11 + a_22)
       c = a_11*a_22 - a_12*a_21
 
-      psi2 = b**2 - 4._WP*c
+      psi2 = b**2 - 4._RD*c
 
-      if (psi2 < 0._WP) then
+      if (psi2 < 0._RD) then
 
          if (.NOT. warned) then
             @:WARN('Discarding imaginary part of atmospheric radial wavenumber')
             warned = .TRUE.
          endif
 
-         chi = -b/2._WP
+         chi = -b/2._RD
 
       else
 
-         if (b >= 0._WP) then
-            chi = (- b - sqrt(psi2))/2._WP
+         if (b >= 0._RD) then
+            chi = (- b - sqrt(psi2))/2._RD
          else
-            chi = 2._WP*c/(- b + sqrt(psi2))
+            chi = 2._RD*c/(- b + sqrt(psi2))
          endif
 
       endif
@@ -116,35 +116,35 @@ contains
 
    function atmos_chi_c_(V, As, c_1, Gamma_1, omega, lambda, branch) result(chi)
 
-      real(WP), intent(in)     :: V
-      real(WP), intent(in)     :: As
-      real(WP), intent(in)     :: c_1
-      real(WP), intent(in)     :: Gamma_1
-      complex(WP), intent(in)  :: omega
-      complex(WP), intent(in)  :: lambda
+      real(RD), intent(in)     :: V
+      real(RD), intent(in)     :: As
+      real(RD), intent(in)     :: c_1
+      real(RD), intent(in)     :: Gamma_1
+      complex(RD), intent(in)  :: omega
+      complex(RD), intent(in)  :: lambda
       character(*), intent(in) :: branch
-      complex(WP)              :: chi
+      complex(RD)              :: chi
 
-      complex(WP) :: a_11
-      complex(WP) :: a_12
-      complex(WP) :: a_21
-      complex(WP) :: a_22
-      complex(WP) :: b
-      complex(WP) :: c
-      complex(WP) :: psi2
-      complex(WP) :: psi
+      complex(RD) :: a_11
+      complex(RD) :: a_12
+      complex(RD) :: a_21
+      complex(RD) :: a_22
+      complex(RD) :: b
+      complex(RD) :: c
+      complex(RD) :: psi2
+      complex(RD) :: psi
 
       ! Calculate the atmospheric radial wavenumber (complex frequencies)
 
-      a_11 = V/Gamma_1 - 3._WP
+      a_11 = V/Gamma_1 - 3._RD
       a_12 = lambda/(c_1*omega**2) - V/Gamma_1
       a_21 = c_1*omega**2 - As
-      a_22 = As + 1._WP
+      a_22 = As + 1._RD
 
       b = -(a_11 + a_22)
       c = a_11*a_22 - a_12*a_21
 
-      psi2 = b**2 - 4._WP*c
+      psi2 = b**2 - 4._RD*c
       psi = sqrt(psi2)
 
       ! Adjust the sign of psi to choose the correct solution branch
@@ -155,37 +155,37 @@ contains
 
          ! Outwardly-growing energy density
 
-         if (REAL(psi) < 0._WP) psi = -psi
+         if (REAL(psi) < 0._RD) psi = -psi
 
       case ('E_NEG')
 
          ! Outwardly-decaying energy density
 
-         if (REAL(psi) > 0._WP) psi = -psi
+         if (REAL(psi) > 0._RD) psi = -psi
 
       case ('F_POS')
 
          ! Outward energy flux
 
-         if (AIMAG((psi - a_11)*CONJG(omega)) < 0._WP) psi = -psi
+         if (AIMAG((psi - a_11)*CONJG(omega)) < 0._RD) psi = -psi
 
       case ('F_NEG')
 
          ! Inward energy flux
 
-         if (AIMAG((psi - a_11)*CONJG(omega)) > 0._WP) psi = -psi
+         if (AIMAG((psi - a_11)*CONJG(omega)) > 0._RD) psi = -psi
 
       case ('V_POS')
 
          ! Outward phase velocity
 
-         if (AIMAG(psi)/REAL(omega) < 0._WP) psi = -psi
+         if (AIMAG(psi)/REAL(omega) < 0._RD) psi = -psi
 
       case ('V_NEG')
 
          ! Inward phase velocity
 
-         if (AIMAG(psi)/REAL(omega) > 0._WP) psi = -psi
+         if (AIMAG(psi)/REAL(omega) > 0._RD) psi = -psi
 
       case default
 
@@ -195,13 +195,13 @@ contains
 
       ! Set up chi
 
-      if (SIGN(1._WP, REAL(psi)) == SIGN(1._WP, REAL(b))) then
+      if (SIGN(1._RD, REAL(psi)) == SIGN(1._RD, REAL(b))) then
 
-         chi = -2._WP*c/(b + psi)
+         chi = -2._RD*c/(b + psi)
 
       else
 
-         chi = (- b + psi)/2._WP
+         chi = (- b + psi)/2._RD
 
       endif
 
@@ -215,26 +215,26 @@ contains
 
    subroutine eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, lambda, omega_cutoff_lo, omega_cutoff_hi)
 
-      real(WP), intent(in)  :: V
-      real(WP), intent(in)  :: As
-      real(WP), intent(in)  :: c_1
-      real(WP), intent(in)  :: Gamma_1
-      real(WP), intent(in)  :: lambda
-      real(WP), intent(out) :: omega_cutoff_lo
-      real(WP), intent(out) :: omega_cutoff_hi
+      real(RD), intent(in)  :: V
+      real(RD), intent(in)  :: As
+      real(RD), intent(in)  :: c_1
+      real(RD), intent(in)  :: Gamma_1
+      real(RD), intent(in)  :: lambda
+      real(RD), intent(out) :: omega_cutoff_lo
+      real(RD), intent(out) :: omega_cutoff_hi
 
-      real(WP) :: a
-      real(WP) :: b
-      real(WP) :: c
+      real(RD) :: a
+      real(RD) :: b
+      real(RD) :: c
 
       ! Evaluate the atmospheric cutoff frequencies from the supplied coefficients
 
-      a = -4._WP*V/Gamma_1*c_1**2
-      b = ((As - V/Gamma_1 + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda)*c_1
-      c = -4._WP*lambda*As
+      a = -4._RD*V/Gamma_1*c_1**2
+      b = ((As - V/Gamma_1 + 4._RD)**2 + 4._RD*V/Gamma_1*As + 4._RD*lambda)*c_1
+      c = -4._RD*lambda*As
 
-      omega_cutoff_lo = sqrt((-b + sqrt(b**2 - 4._WP*a*c))/(2._WP*a))
-      omega_cutoff_hi = sqrt((-b - sqrt(b**2 - 4._WP*a*c))/(2._WP*a))
+      omega_cutoff_lo = sqrt((-b + sqrt(b**2 - 4._RD*a*c))/(2._RD*a))
+      omega_cutoff_hi = sqrt((-b - sqrt(b**2 - 4._RD*a*c))/(2._RD*a))
 
       @:ASSERT(omega_cutoff_hi >= omega_cutoff_lo, 'Incorrect cutoff frequency ordering')
 
@@ -250,10 +250,10 @@ contains
 
       class(model_t), intent(in) :: ml
       type(point_t), intent(in)  :: pt
-      real(WP), intent(out)      :: V
-      real(WP), intent(out)      :: As
-      real(WP), intent(out)      :: c_1
-      real(WP), intent(out)      :: Gamma_1
+      real(RD), intent(out)      :: V
+      real(RD), intent(out)      :: As
+      real(RD), intent(out)      :: c_1
+      real(RD), intent(out)      :: Gamma_1
 
       ! Evaluate atmosphere coefficients ([Unn1989] formulation)
 
@@ -274,16 +274,16 @@ contains
 
       class(model_t), intent(in) :: ml
       type(point_t), intent(in)  :: pt
-      real(WP), intent(out)      :: V
-      real(WP), intent(out)      :: As
-      real(WP), intent(out)      :: c_1
-      real(WP), intent(out)      :: Gamma_1
+      real(RD), intent(out)      :: V
+      real(RD), intent(out)      :: As
+      real(RD), intent(out)      :: c_1
+      real(RD), intent(out)      :: Gamma_1
 
       ! Evaluate atmosphere coefficients for an isothermal, massless
       ! atmosphere
 
       V = ml%coeff(I_V_2, pt)*pt%x**2
-      As = ml%coeff(I_V_2, pt)*pt%x**2*(1._WP-1._WP/ml%coeff(I_GAMMA_1, pt))
+      As = ml%coeff(I_V_2, pt)*pt%x**2*(1._RD-1._RD/ml%coeff(I_GAMMA_1, pt))
       c_1 = ml%coeff(I_C_1, pt)
       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 

@@ -71,10 +71,10 @@ module nad_bound_m
       type(context_t), pointer  :: cx => null()
       type(point_t)             :: pt(2)
       type(nad_trans_t)         :: tr
-      real(WP), allocatable     :: coeff(:,:)
-      real(WP)                  :: alpha_grv
-      real(WP)                  :: alpha_rht
-      complex(WP)               :: alpha_omg
+      real(RD), allocatable     :: coeff(:,:)
+      real(RD)                  :: alpha_grv
+      real(RD)                  :: alpha_rht
+      complex(RD)               :: alpha_omg
       integer                   :: type_i
       integer                   :: type_o
       character(:), allocatable :: branch_o
@@ -131,13 +131,13 @@ contains
 
       select case (os_p%inner_bound)
       case ('REGULAR')
-         @:ASSERT(pt_i%x == 0._WP, 'boundary condition invalid for x /= 0')
+         @:ASSERT(pt_i%x == 0._RD, 'boundary condition invalid for x /= 0')
          bd%type_i = REGULAR_TYPE
       case ('ZERO_R')
-         @:ASSERT(pt_i%x /= 0._WP, 'boundary condition invalid for x == 0')
+         @:ASSERT(pt_i%x /= 0._RD, 'boundary condition invalid for x == 0')
          bd%type_i = ZERO_R_TYPE
       case ('ZERO_H')
-         @:ASSERT(pt_i%x /= 0._WP, 'boundary condition invalid for x == 0')
+         @:ASSERT(pt_i%x /= 0._RD, 'boundary condition invalid for x == 0')
          bd%type_i = ZERO_H_TYPE
       case default
          @:ABORT('invalid inner_bound')
@@ -179,9 +179,9 @@ contains
 
       select case (os_p%time_factor)
       case ('OSC')
-         bd%alpha_omg = 1._WP
+         bd%alpha_omg = 1._RD
       case ('EXP')
-         bd%alpha_omg = (0._WP, 1._WP)
+         bd%alpha_omg = (0._RD, 1._RD)
       case default
          @:ABORT('invalid time_factor')
       end select
@@ -275,8 +275,8 @@ contains
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
       ! Evaluate the inner boundary conditions
 
@@ -307,12 +307,12 @@ contains
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
-      real(WP)    :: Omega_rot
-      complex(WP) :: omega_c
-      complex(WP) :: l_i
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: l_i
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -338,25 +338,25 @@ contains
          B(1,1) = c_1*alpha_omg*omega_c**2
          B(1,2) = -l_i
          B(1,3) = alpha_grv*(-l_i)
-         B(1,4) = alpha_grv*(0._WP)
-         B(1,5) = 0._WP
-         B(1,6) = 0._WP
+         B(1,4) = alpha_grv*(0._RD)
+         B(1,5) = 0._RD
+         B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(0._WP)
-         B(2,2) = alpha_grv*(0._WP)
+         B(2,1) = alpha_grv*(0._RD)
+         B(2,2) = alpha_grv*(0._RD)
          B(2,3) = alpha_grv*(l_i)
-         B(2,4) = alpha_grv*(-1._WP) + (1._WP - alpha_grv)
-         B(2,5) = alpha_grv*(0._WP)
-         B(2,6) = alpha_grv*(0._WP)
+         B(2,4) = alpha_grv*(-1._RD) + (1._RD - alpha_grv)
+         B(2,5) = alpha_grv*(0._RD)
+         B(2,6) = alpha_grv*(0._RD)
 
-         B(3,1) = 0._WP
-         B(3,2) = 0._WP
-         B(3,3) = alpha_grv*(0._WP)
-         B(3,4) = alpha_grv*(0._WP)
-         B(3,5) = 1._WP
-         B(3,6) = 0._WP
+         B(3,1) = 0._RD
+         B(3,2) = 0._RD
+         B(3,3) = alpha_grv*(0._RD)
+         B(3,4) = alpha_grv*(0._RD)
+         B(3,5) = 1._RD
+         B(3,6) = 0._RD
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -372,8 +372,8 @@ contains
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -388,28 +388,28 @@ contains
 
          ! Set up the boundary conditions
 
-         B(1,1) = 1._WP
-         B(1,2) = 0._WP
-         B(1,3) = alpha_grv*(0._WP)
-         B(1,4) = alpha_grv*(0._WP)
-         B(1,5) = 0._WP
-         B(1,6) = 0._WP
+         B(1,1) = 1._RD
+         B(1,2) = 0._RD
+         B(1,3) = alpha_grv*(0._RD)
+         B(1,4) = alpha_grv*(0._RD)
+         B(1,5) = 0._RD
+         B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(0._WP)
-         B(2,2) = alpha_grv*(0._WP)
-         B(2,3) = alpha_grv*(0._WP)
-         B(2,4) = alpha_grv*(1._WP) + (1._WP - alpha_grv)
-         B(2,5) = alpha_grv*(0._WP)
-         B(2,6) = alpha_grv*(0._WP)
+         B(2,1) = alpha_grv*(0._RD)
+         B(2,2) = alpha_grv*(0._RD)
+         B(2,3) = alpha_grv*(0._RD)
+         B(2,4) = alpha_grv*(1._RD) + (1._RD - alpha_grv)
+         B(2,5) = alpha_grv*(0._RD)
+         B(2,6) = alpha_grv*(0._RD)
 
-         B(3,1) = 0._WP
-         B(3,2) = 0._WP
-         B(3,3) = alpha_grv*(0._WP)
-         B(3,4) = alpha_grv*(0._WP)
-         B(3,5) = 1._WP
-         B(3,6) = 0._WP
+         B(3,1) = 0._RD
+         B(3,2) = 0._RD
+         B(3,3) = alpha_grv*(0._RD)
+         B(3,4) = alpha_grv*(0._RD)
+         B(3,5) = 1._RD
+         B(3,6) = 0._RD
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -425,8 +425,8 @@ contains
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -441,28 +441,28 @@ contains
 
          ! Set up the boundary conditions
 
-         B(1,1) = 0._WP
-         B(1,2) = 1._WP
-         B(1,3) = alpha_grv*(1._WP)
-         B(1,4) = alpha_grv*(0._WP)
-         B(1,5) = 0._WP
-         B(1,6) = 0._WP
+         B(1,1) = 0._RD
+         B(1,2) = 1._RD
+         B(1,3) = alpha_grv*(1._RD)
+         B(1,4) = alpha_grv*(0._RD)
+         B(1,5) = 0._RD
+         B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(0._WP)
-         B(2,2) = alpha_grv*(0._WP)
-         B(2,3) = alpha_grv*(0._WP)
-         B(2,4) = alpha_grv*(1._WP) + (1._WP - alpha_grv)
-         B(2,5) = alpha_grv*(0._WP)
-         B(2,6) = alpha_grv*(0._WP)
+         B(2,1) = alpha_grv*(0._RD)
+         B(2,2) = alpha_grv*(0._RD)
+         B(2,3) = alpha_grv*(0._RD)
+         B(2,4) = alpha_grv*(1._RD) + (1._RD - alpha_grv)
+         B(2,5) = alpha_grv*(0._RD)
+         B(2,6) = alpha_grv*(0._RD)
 
-         B(3,1) = 0._WP
-         B(3,2) = 0._WP
-         B(3,3) = alpha_grv*(0._WP)
-         B(3,4) = alpha_grv*(0._WP)
-         B(3,5) = 1._WP
-         B(3,6) = 0._WP
+         B(3,1) = 0._RD
+         B(3,2) = 0._RD
+         B(3,3) = alpha_grv*(0._RD)
+         B(3,4) = alpha_grv*(0._RD)
+         B(3,5) = 1._RD
+         B(3,6) = 0._RD
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -478,8 +478,8 @@ contains
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
       ! Evaluate the outer boundary conditions
 
@@ -514,14 +514,14 @@ contains
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
-      real(WP)    :: Omega_rot
-      complex(WP) :: omega_c
-      complex(WP) :: i_omega_c
-      complex(WP) :: l_e
-      complex(WP) :: f_rht
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: l_e
+      complex(RD) :: f_rht
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -543,36 +543,36 @@ contains
          Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
-         i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_omg, KIND=WP))*omega_c
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          l_e = this%cx%l_e(Omega_rot, st)
 
-         f_rht = 1._WP - 0.25_WP*alpha_rht*i_omega_c*c_thn
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
 
          ! Set up the boundary conditions
 
-         B(1,1) = 1._WP
-         B(1,2) = -1._WP
-         B(1,3) = alpha_grv*(0._WP)
-         B(1,4) = alpha_grv*(0._WP)
-         B(1,5) = 0._WP
-         B(1,6) = 0._WP
+         B(1,1) = 1._RD
+         B(1,2) = -1._RD
+         B(1,3) = alpha_grv*(0._RD)
+         B(1,4) = alpha_grv*(0._RD)
+         B(1,5) = 0._RD
+         B(1,6) = 0._RD
 
          B(2,1) = alpha_grv*(U)
-         B(2,2) = alpha_grv*(0._WP)
-         B(2,3) = alpha_grv*(l_e + 1._WP) + (1._WP - alpha_grv)
-         B(2,4) = alpha_grv*(1._WP)
-         B(2,5) = alpha_grv*(0._WP)
-         B(2,6) = alpha_grv*(0._WP)
+         B(2,2) = alpha_grv*(0._RD)
+         B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
+         B(2,4) = alpha_grv*(1._RD)
+         B(2,5) = alpha_grv*(0._RD)
+         B(2,6) = alpha_grv*(0._RD)
 
-         B(3,1) = 2._WP - 4._WP*nabla_ad*V
-         B(3,2) = 4._WP*nabla_ad*V
-         B(3,3) = alpha_grv*(0._WP)
-         B(3,4) = alpha_grv*(0._WP)
-         B(3,5) = 4._WP*f_rht
-         B(3,6) = -1._WP
+         B(3,1) = 2._RD - 4._RD*nabla_ad*V
+         B(3,2) = 4._RD*nabla_ad*V
+         B(3,3) = alpha_grv*(0._RD)
+         B(3,4) = alpha_grv*(0._RD)
+         B(3,5) = 4._RD*f_rht
+         B(3,6) = -1._RD
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -588,15 +588,15 @@ contains
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
-      real(WP)    :: Omega_rot
-      complex(WP) :: omega_c
-      complex(WP) :: i_omega_c
-      complex(WP) :: lambda
-      complex(WP) :: l_e
-      complex(WP) :: f_rht
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
+      complex(RD) :: f_rht
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -618,37 +618,37 @@ contains
          Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
-         i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_omg, KIND=WP))*omega_c
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)
          l_e = this%cx%l_e(Omega_rot, st)
 
-         f_rht = 1._WP - 0.25_WP*alpha_rht*i_omega_c*c_thn
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
 
          ! Set up the boundary conditions
 
-         B(1,1) = 1._WP + (lambda/(c_1*alpha_omg*omega_c**2) - 4._WP - c_1*alpha_omg*omega_c**2)/V
-         B(1,2) = -1._WP
-         B(1,3) = alpha_grv*((lambda/(c_1*alpha_omg*omega_c**2) - l_e - 1._WP)/V)
-         B(1,4) = alpha_grv*(0._WP)
-         B(1,5) = 0._WP
-         B(1,6) = 0._WP
+         B(1,1) = 1._RD + (lambda/(c_1*alpha_omg*omega_c**2) - 4._RD - c_1*alpha_omg*omega_c**2)/V
+         B(1,2) = -1._RD
+         B(1,3) = alpha_grv*((lambda/(c_1*alpha_omg*omega_c**2) - l_e - 1._RD)/V)
+         B(1,4) = alpha_grv*(0._RD)
+         B(1,5) = 0._RD
+         B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(0._WP)
-         B(2,2) = alpha_grv*(0._WP)
-         B(2,3) = alpha_grv*(l_e + 1._WP) + (1._WP - alpha_grv)
-         B(2,4) = alpha_grv*(1._WP)
-         B(2,5) = alpha_grv*(0._WP)
-         B(2,6) = alpha_grv*(0._WP)
+         B(2,1) = alpha_grv*(0._RD)
+         B(2,2) = alpha_grv*(0._RD)
+         B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
+         B(2,4) = alpha_grv*(1._RD)
+         B(2,5) = alpha_grv*(0._RD)
+         B(2,6) = alpha_grv*(0._RD)
 
-         B(3,1) = 2._WP - 4._WP*nabla_ad*V
-         B(3,2) = 4._WP*nabla_ad*V
-         B(3,3) = alpha_grv*(0._WP)
-         B(3,4) = alpha_grv*(0._WP)
-         B(3,5) = 4._WP*f_rht
-         B(3,6) = -1._WP
+         B(3,1) = 2._RD - 4._RD*nabla_ad*V
+         B(3,2) = 4._RD*nabla_ad*V
+         B(3,3) = alpha_grv*(0._RD)
+         B(3,4) = alpha_grv*(0._RD)
+         B(3,5) = 4._RD*f_rht
+         B(3,6) = -1._RD
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -664,26 +664,26 @@ contains
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
-      real(WP)    :: Omega_rot
-      complex(WP) :: omega_c
-      complex(WP) :: i_omega_c
-      complex(WP) :: lambda
-      complex(WP) :: l_e
-      complex(WP) :: f_rht
-      complex(WP) :: a_11
-      complex(WP) :: a_12
-      complex(WP) :: a_13
-      complex(WP) :: a_14
-      complex(WP) :: a_21
-      complex(WP) :: a_22
-      complex(WP) :: a_23
-      complex(WP) :: a_24
-      complex(WP) :: chi
-      complex(WP) :: G_1
-      complex(WP) :: G_2
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
+      complex(RD) :: f_rht
+      complex(RD) :: a_11
+      complex(RD) :: a_12
+      complex(RD) :: a_13
+      complex(RD) :: a_14
+      complex(RD) :: a_21
+      complex(RD) :: a_22
+      complex(RD) :: a_23
+      complex(RD) :: a_24
+      complex(RD) :: chi
+      complex(RD) :: G_1
+      complex(RD) :: G_2
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -709,24 +709,24 @@ contains
          Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
-         i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_omg, KIND=WP))*omega_c
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)
          l_e = this%cx%l_e(Omega_rot, st)
 
-         f_rht = 1._WP - 0.25_WP*alpha_rht*i_omega_c*c_thn
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
 
          ! Evaluate selected elements of the Jacobian matrix
 
-         a_11 = V/Gamma_1 - 3._WP
+         a_11 = V/Gamma_1 - 3._RD
          a_12 = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1
          a_13 = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
-         a_14 = alpha_grv*(0._WP)
+         a_14 = alpha_grv*(0._RD)
 
          a_21 = c_1*alpha_omg*omega_c**2 - As
-         a_22 = As + 1._WP
-         a_23 = alpha_grv*(0._WP)
-         a_24 = alpha_grv*(-1._WP)
+         a_22 = As + 1._RD
+         a_23 = alpha_grv*(0._RD)
+         a_24 = alpha_grv*(-1._RD)
 
          ! Evaluate the eigenvalue for the wave we want to keep
 
@@ -734,8 +734,8 @@ contains
 
          ! Evaluate selected elements of the left eigenvectors
 
-         G_1 = (l_e*H_(-l_e, chi) + (l_e+1._WP)*H_(l_e+1._WP, chi))/(2._WP*l_e + 1._WP)
-         G_2 = (H_(-l_e, chi) - H_(l_e+1._WP, chi))/(2._WP*l_e + 1._WP)
+         G_1 = (l_e*H_(-l_e, chi) + (l_e+1._RD)*H_(l_e+1._RD, chi))/(2._RD*l_e + 1._RD)
+         G_2 = (H_(-l_e, chi) - H_(l_e+1._RD, chi))/(2._RD*l_e + 1._RD)
 
          ! Set up the boundary conditions
 
@@ -743,24 +743,24 @@ contains
          B(1,2) = a_12
          B(1,3) = -alpha_grv*G_1
          B(1,4) = alpha_grv*G_2
-         B(1,5) = 0._WP
-         B(1,6) = 0._WP
+         B(1,5) = 0._RD
+         B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(0._WP)
-         B(2,2) = alpha_grv*(0._WP)
-         B(2,3) = alpha_grv*(l_e + 1._WP) + (1._WP - alpha_grv)
-         B(2,4) = alpha_grv*(1._WP)
-         B(2,5) = alpha_grv*(0._WP)
-         B(2,6) = alpha_grv*(0._WP)
+         B(2,1) = alpha_grv*(0._RD)
+         B(2,2) = alpha_grv*(0._RD)
+         B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
+         B(2,4) = alpha_grv*(1._RD)
+         B(2,5) = alpha_grv*(0._RD)
+         B(2,6) = alpha_grv*(0._RD)
 
-         B(3,1) = 2._WP - 4._WP*nabla_ad*V
-         B(3,2) = 4._WP*nabla_ad*V
-         B(3,3) = alpha_grv*(0._WP)
-         B(3,4) = alpha_grv*(0._WP)
-         B(3,5) = 4._WP*f_rht
-         B(3,6) = -1._WP
+         B(3,1) = 2._RD - 4._RD*nabla_ad*V
+         B(3,2) = 4._RD*nabla_ad*V
+         B(3,3) = alpha_grv*(0._RD)
+         B(3,4) = alpha_grv*(0._RD)
+         B(3,5) = 4._RD*f_rht
+         B(3,6) = -1._RD
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -772,14 +772,14 @@ contains
 
       function H_(l, chi) result(H)
 
-         complex(WP), intent(in) :: l
-         complex(WP), intent(in) :: chi
-         complex(WP)             :: H
+         complex(RD), intent(in) :: l
+         complex(RD), intent(in) :: chi
+         complex(RD)             :: H
 
          ! Evaluate the H function defined in leaky boundary condition
          ! notes
 
-         H = ((a_11 - chi)*(a_13 - a_14*(1._WP-l)) + a_12*(a_23 - a_24*(1._WP-l))) / &
+         H = ((a_11 - chi)*(a_13 - a_14*(1._RD-l)) + a_12*(a_23 - a_24*(1._RD-l))) / &
             (chi + l - a_11 - a_12)
 
          ! Finish
@@ -796,18 +796,18 @@ contains
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
-      real(WP)    :: Omega_rot
-      complex(WP) :: omega_c
-      complex(WP) :: i_omega_c
-      complex(WP) :: lambda
-      complex(WP) :: l_e
-      complex(WP) :: f_rht
-      complex(WP) :: chi
-      complex(WP) :: b_11
-      complex(WP) :: b_12
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
+      complex(RD) :: f_rht
+      complex(RD) :: chi
+      complex(RD) :: b_11
+      complex(RD) :: b_12
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -832,42 +832,42 @@ contains
          Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
-         i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_omg, KIND=WP))*omega_c
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)
          l_e = this%cx%l_e(Omega_rot, st)
 
-         f_rht = 1._WP - 0.25_WP*alpha_rht*i_omega_c*c_thn
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
 
          chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, lambda, branch)
 
-         b_11 = V/Gamma_1 - 3._WP
+         b_11 = V/Gamma_1 - 3._RD
          b_12 = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1
 
          ! Set up the boundary conditions
 
          B(1,1) = chi - b_11
          B(1,2) = -b_12
-         B(1,3) = alpha_grv*((lambda/(c_1*alpha_omg*omega_c**2) - l_e - 1._WP)*b_12/(V/Gamma_1 + As))
-         B(1,4) = alpha_grv*(0._WP)
-         B(1,5) = 0._WP
-         B(1,6) = 0._WP
+         B(1,3) = alpha_grv*((lambda/(c_1*alpha_omg*omega_c**2) - l_e - 1._RD)*b_12/(V/Gamma_1 + As))
+         B(1,4) = alpha_grv*(0._RD)
+         B(1,5) = 0._RD
+         B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(0._WP)
-         B(2,2) = alpha_grv*(0._WP)
-         B(2,3) = alpha_grv*(l_e + 1._WP) + (1._WP - alpha_grv)
-         B(2,4) = alpha_grv*(1._WP)
-         B(2,5) = alpha_grv*(0._WP)
-         B(2,6) = alpha_grv*(0._WP)
+         B(2,1) = alpha_grv*(0._RD)
+         B(2,2) = alpha_grv*(0._RD)
+         B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
+         B(2,4) = alpha_grv*(1._RD)
+         B(2,5) = alpha_grv*(0._RD)
+         B(2,6) = alpha_grv*(0._RD)
 
-         B(3,1) = 2._WP - 4._WP*nabla_ad*V
-         B(3,2) = 4._WP*nabla_ad*V
-         B(3,3) = alpha_grv*(0._WP)
-         B(3,4) = alpha_grv*(0._WP)
-         B(3,5) = 4._WP*f_rht
-         B(3,6) = -1._WP
+         B(3,1) = 2._RD - 4._RD*nabla_ad*V
+         B(3,2) = 4._RD*nabla_ad*V
+         B(3,3) = alpha_grv*(0._RD)
+         B(3,4) = alpha_grv*(0._RD)
+         B(3,5) = 4._RD*f_rht
+         B(3,6) = -1._RD
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 

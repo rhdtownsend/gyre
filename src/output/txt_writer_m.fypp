@@ -265,7 +265,7 @@ contains
 
       class(txt_writer_t), intent(inout) :: this
       character(*), intent(in)           :: name
-      complex(WP), intent(in)            :: data
+      complex(RD), intent(in)            :: data
 
       integer :: d
 
@@ -307,7 +307,7 @@ contains
 
       class(txt_writer_t), intent(inout) :: this
       character(*), intent(in)           :: name
-      complex(WP), intent(in)            :: data(:)
+      complex(RD), intent(in)            :: data(:)
 
       integer :: d
       integer :: k

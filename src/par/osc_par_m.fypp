@@ -32,18 +32,18 @@ module osc_par_m
    ! Derived-type definitions
 
    type :: osc_par_t
-      real(WP)                :: x_ref = 1._WP
-      real(WP)                :: x_atm = -1._WP
-      real(WP)                :: alpha_grv = 1._WP
-      real(WP)                :: alpha_thm = 1._WP
-      real(WP)                :: alpha_hfl = 1._WP
-      real(WP)                :: alpha_gam = 1._WP
-      real(WP)                :: alpha_pi = 1._WP
-      real(WP)                :: alpha_kar = 1._WP
-      real(WP)                :: alpha_kat = 1._WP
-      real(WP)                :: alpha_egv = 0._WP
-      real(WP)                :: alpha_rht = 0._WP
-      real(WP)                :: alpha_trb = 0._WP
+      real(RD)                :: x_ref = 1._RD
+      real(RD)                :: x_atm = -1._RD
+      real(RD)                :: alpha_grv = 1._RD
+      real(RD)                :: alpha_thm = 1._RD
+      real(RD)                :: alpha_hfl = 1._RD
+      real(RD)                :: alpha_gam = 1._RD
+      real(RD)                :: alpha_pi = 1._RD
+      real(RD)                :: alpha_kar = 1._RD
+      real(RD)                :: alpha_kat = 1._RD
+      real(RD)                :: alpha_egv = 0._RD
+      real(RD)                :: alpha_rht = 0._RD
+      real(RD)                :: alpha_trb = 0._RD
       character(64)           :: variables_set = 'GYRE'
       character(64)           :: inner_bound = 'REGULAR'
       character(64)           :: outer_bound = 'VACUUM'
@@ -83,18 +83,18 @@ contains
 
       integer                               :: n_os_p
       integer                               :: i
-      real(WP)                              :: x_ref
-      real(WP)                              :: x_atm
-      real(WP)                              :: alpha_grv
-      real(WP)                              :: alpha_thm
-      real(WP)                              :: alpha_hfl
-      real(WP)                              :: alpha_gam
-      real(WP)                              :: alpha_pi
-      real(WP)                              :: alpha_kar
-      real(WP)                              :: alpha_kat
-      real(WP)                              :: alpha_rht
-      real(WP)                              :: alpha_trb
-      real(WP)                              :: alpha_egv
+      real(RD)                              :: x_ref
+      real(RD)                              :: x_atm
+      real(RD)                              :: alpha_grv
+      real(RD)                              :: alpha_thm
+      real(RD)                              :: alpha_hfl
+      real(RD)                              :: alpha_gam
+      real(RD)                              :: alpha_pi
+      real(RD)                              :: alpha_kar
+      real(RD)                              :: alpha_kat
+      real(RD)                              :: alpha_rht
+      real(RD)                              :: alpha_trb
+      real(RD)                              :: alpha_egv
       character(LEN(os_p%variables_set))    :: variables_set
       character(LEN(os_p%inner_bound))      :: inner_bound
       character(LEN(os_p%outer_bound))      :: outer_bound

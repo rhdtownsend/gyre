@@ -64,7 +64,7 @@ contains
    function grid_t_context_(cx, omega, gr_p, os_p) result(gr)
 
       type(context_t), pointer, intent(in) :: cx
-      real(WP), intent(in)                 :: omega(:)
+      real(RD), intent(in)                 :: omega(:)
       type(grid_par_t), intent(in)         :: gr_p
       type(osc_par_t), intent(in)          :: os_p
       type(grid_t)                         :: gr
@@ -192,7 +192,7 @@ contains
       logical, allocatable :: refine(:)
       integer              :: j
       integer              :: i
-      real(WP)             :: dx
+      real(RD)             :: dx
       logical, allocatable :: refine_new(:)
       integer              :: j_new
 
@@ -229,7 +229,7 @@ contains
                         associate (cx => gs(i)%cx, &
                            omega => gs(i)%omega)
 
-                           if (pt_a%x /= 0._WP) then
+                           if (pt_a%x /= 0._RD) then
 
                               refine(j) = refine_mech_(cx, pt_a, pt_b, omega, gr_p, os_p) .OR. &
                                  refine_therm_(cx, pt_a, pt_b, omega, gr_p) .OR. &
@@ -313,39 +313,39 @@ contains
       type(context_t), intent(in)  :: cx
       type(point_t), intent(in)    :: pt_a
       type(point_t), intent(in)    :: pt_b
-      real(WP), intent(in)         :: omega(:)
+      real(RD), intent(in)         :: omega(:)
       type(grid_par_t), intent(in) :: gr_p
       type(osc_par_t), intent(in)  :: os_p
       logical                      :: refine
 
       type(point_t)  :: pt
-      real(WP)       :: dlnx
-      real(WP)       :: V
-      real(WP)       :: As
-      real(WP)       :: U
-      real(WP)       :: c_1
-      real(WP)       :: Gamma_1
-      real(WP)       :: Omega_rot
-      real(WP)       :: Omega_rot_i
+      real(RD)       :: dlnx
+      real(RD)       :: V
+      real(RD)       :: As
+      real(RD)       :: U
+      real(RD)       :: c_1
+      real(RD)       :: Gamma_1
+      real(RD)       :: Omega_rot
+      real(RD)       :: Omega_rot_i
       integer        :: i
       type(state_rt) :: st
-      real(WP)       :: omega_c
-      real(WP)       :: lambda
-      real(WP)       :: l_i
-      real(WP)       :: c_0
-      real(WP)       :: c_2
-      real(WP)       :: c_4
-      real(WP)       :: psi2
-      real(WP)       :: chi_r
-      real(WP)       :: chi_r_p
-      real(WP)       :: chi_r_m
-      real(WP)       :: chi_i
+      real(RD)       :: omega_c
+      real(RD)       :: lambda
+      real(RD)       :: l_i
+      real(RD)       :: c_0
+      real(RD)       :: c_2
+      real(RD)       :: c_4
+      real(RD)       :: psi2
+      real(RD)       :: chi_r
+      real(RD)       :: chi_r_p
+      real(RD)       :: chi_r_m
+      real(RD)       :: chi_i
 
       ! Determine whether the subinterval [pt_a,pt_b] warrants
       ! refinement, via a local analysis of the mechanical parts of the
       ! oscillation equations
 
-      if (gr_p%w_osc == 0._WP .AND. gr_p%w_exp == 0._WP) then
+      if (gr_p%w_osc == 0._RD .AND. gr_p%w_exp == 0._RD) then
 
          ! No refinement necessary
 
@@ -356,7 +356,7 @@ contains
          ! Evaluate coefficients at the midpoint
 
          pt%s = pt_a%s
-         pt%x = 0.5_WP*(pt_a%x + pt_b%x)
+         pt%x = 0.5_RD*(pt_a%x + pt_b%x)
 
          dlnx = LOG(pt_b%x) - LOG(pt_a%x)
 
@@ -388,11 +388,11 @@ contains
 
             ! Calculate the propagation discriminant psi2
 
-            c_4 = -4._WP*V/Gamma_1*c_1*os_p%alpha_gam
-            c_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As*os_p%alpha_gam*os_p%alpha_pi + 4._WP*lambda
-            c_0 = -4._WP*lambda*As/c_1*os_p%alpha_pi
+            c_4 = -4._RD*V/Gamma_1*c_1*os_p%alpha_gam
+            c_2 = (As - V/Gamma_1 - U + 4._RD)**2 + 4._RD*V/Gamma_1*As*os_p%alpha_gam*os_p%alpha_pi + 4._RD*lambda
+            c_0 = -4._RD*lambda*As/c_1*os_p%alpha_pi
 
-            if (c_0 /= 0._WP) then
+            if (c_0 /= 0._RD) then
                psi2 = (c_4*omega_c**4 + c_2*omega_c**2 + c_0)/omega_c**2
             else
                psi2 = c_4*omega_c**2 + c_2
@@ -401,24 +401,24 @@ contains
             ! Evaluate real and imaginary parts of the mechanical
             ! eigenvalue
 
-            if (psi2 < 0._WP) then
+            if (psi2 < 0._RD) then
 
                ! Propagation zone
 
-               chi_r = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i)
+               chi_r = 0.5_RD*(As + V/Gamma_1 - U + 2._RD - 2._RD*l_i)
 
-               chi_i = 0.5_WP*sqrt(-psi2)
+               chi_i = 0.5_RD*sqrt(-psi2)
 
             else
 
                ! Evanescent zone; pick the steeper solution
 
-               chi_r_p = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(psi2))
-               chi_r_m = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i - sqrt(psi2))
+               chi_r_p = 0.5_RD*(As + V/Gamma_1 - U + 2._RD - 2._RD*l_i + sqrt(psi2))
+               chi_r_m = 0.5_RD*(As + V/Gamma_1 - U + 2._RD - 2._RD*l_i - sqrt(psi2))
 
                chi_r = MERGE(chi_r_p, chi_r_m, abs(chi_r_p) > abs(chi_r_m))
 
-               chi_i = 0._WP
+               chi_i = 0._RD
 
             endif
 
@@ -447,27 +447,27 @@ contains
       type(context_t), intent(in)  :: cx
       type(point_t), intent(in)    :: pt_a
       type(point_t), intent(in)    :: pt_b
-      real(WP), intent(in)         :: omega(:)
+      real(RD), intent(in)         :: omega(:)
       type(grid_par_t), intent(in) :: gr_p
       logical                      :: refine
 
       type(point_t)  :: pt
-      real(WP)       :: V
-      real(WP)       :: nabla
-      real(WP)       :: c_rad
-      real(WP)       :: c_thk
-      real(WP)       :: Omega_rot
-      real(WP)       :: tau
+      real(RD)       :: V
+      real(RD)       :: nabla
+      real(RD)       :: c_rad
+      real(RD)       :: c_thk
+      real(RD)       :: Omega_rot
+      real(RD)       :: tau
       integer        :: i
       type(state_rt) :: st
-      real(WP)       :: omega_c
-      real(WP)       :: dlnx
+      real(RD)       :: omega_c
+      real(RD)       :: dlnx
 
       ! Determine whether the subinterval [pt_a,pt_b] warrants
       ! refinement, via a local analysis of the thermal parts of the
       ! oscillation equations
 
-      if (gr_p%w_thm == 0._WP) then
+      if (gr_p%w_thm == 0._RD) then
 
          ! No refinement necessary
 
@@ -478,7 +478,7 @@ contains
          ! Evaluate coefficients at the midpoint
 
          pt%s = pt_a%s
-         pt%x = 0.5_WP*(pt_a%x + pt_b%x)
+         pt%x = 0.5_RD*(pt_a%x + pt_b%x)
 
          dlnx = LOG(pt_b%x) - LOG(pt_a%x)
 
@@ -536,17 +536,17 @@ contains
       logical                      :: refine
 
       type(point_t) :: pt
-      real(WP)      :: dV_2
-      real(WP)      :: dAs
-      real(WP)      :: dU
-      real(WP)      :: dc_1
-      real(WP)      :: dGamma_1
-      real(WP)      :: dlnx
+      real(RD)      :: dV_2
+      real(RD)      :: dAs
+      real(RD)      :: dU
+      real(RD)      :: dc_1
+      real(RD)      :: dGamma_1
+      real(RD)      :: dlnx
 
       ! Determine whether the subinterval [pt_a,pt_b] warrants
       ! refinement, via a local structure gradient analysis
 
-      if (gr_p%w_str == 0._WP) then
+      if (gr_p%w_str == 0._RD) then
 
          ! No refinement necessary
 
@@ -557,7 +557,7 @@ contains
          ! Evaluate coefficients at the midpoint
 
          pt%s = pt_a%s
-         pt%x = 0.5_WP*(pt_a%x + pt_b%x)
+         pt%x = 0.5_RD*(pt_a%x + pt_b%x)
 
          dlnx = LOG(pt_b%x) - LOG(pt_a%x)
 
@@ -573,13 +573,13 @@ contains
 
          ! Decide on refinement
 
-         if (pt_a%x /= 0._WP) then
+         if (pt_a%x /= 0._RD) then
 
-            refine = dlnx*gr_p%w_str*abs(dV_2) > 1._WP .OR. &
-               dlnx*gr_p%w_str*abs(dAs) > 1._WP .OR. &
-               dlnx*gr_p%w_str*abs(dU) > 1._WP .OR. &
-               dlnx*gr_p%w_str*abs(dc_1) > 1._WP .OR. &
-               dlnx*gr_p%w_str*abs(dGamma_1) > 1._WP
+            refine = dlnx*gr_p%w_str*abs(dV_2) > 1._RD .OR. &
+               dlnx*gr_p%w_str*abs(dAs) > 1._RD .OR. &
+               dlnx*gr_p%w_str*abs(dU) > 1._RD .OR. &
+               dlnx*gr_p%w_str*abs(dc_1) > 1._RD .OR. &
+               dlnx*gr_p%w_str*abs(dGamma_1) > 1._RD
 
          endif
 
@@ -598,35 +598,35 @@ contains
       type(context_t), intent(in)  :: cx
       type(point_t), intent(in)    :: pt_a
       type(point_t), intent(in)    :: pt_b
-      real(WP), intent(in)         :: omega(:)
+      real(RD), intent(in)         :: omega(:)
       type(grid_par_t), intent(in) :: gr_p
       logical                      :: refine
 
       type(point_t)  :: pt
-      real(WP)       :: V
-      real(WP)       :: As
-      real(WP)       :: U
-      real(WP)       :: c_1
-      real(WP)       :: Gamma_1
-      real(WP)       :: Omega_rot
-      real(WP)       :: Omega_rot_i
+      real(RD)       :: V
+      real(RD)       :: As
+      real(RD)       :: U
+      real(RD)       :: c_1
+      real(RD)       :: Gamma_1
+      real(RD)       :: Omega_rot
+      real(RD)       :: Omega_rot_i
       integer        :: i
       type(state_rt) :: st
-      real(WP)       :: omega_c
-      real(WP)       :: lambda
-      real(WP)       :: l_i
-      real(WP)       :: c_0
-      real(WP)       :: c_2
-      real(WP)       :: c_4
-      real(WP)       :: psi2
-      real(WP)       :: chi_r
-      real(WP)       :: chi_i
+      real(RD)       :: omega_c
+      real(RD)       :: lambda
+      real(RD)       :: l_i
+      real(RD)       :: c_0
+      real(RD)       :: c_2
+      real(RD)       :: c_4
+      real(RD)       :: psi2
+      real(RD)       :: chi_r
+      real(RD)       :: chi_i
 
       ! Determine whether the (center) subinterval [pt_a,pt_b] warrants
       ! refinement, via a local analysis of the mechanical parts of the
       ! oscillation equations
 
-      if (.NOT. gr_p%resolve_ctr .OR. gr_p%w_ctr == 0._WP) then
+      if (.NOT. gr_p%resolve_ctr .OR. gr_p%w_ctr == 0._RD) then
 
          ! No refinement necessary
 
@@ -637,7 +637,7 @@ contains
          ! Evaluate coefficients at the cell midpoint
 
          pt%s = pt_a%s
-         pt%x = 0.5_WP*(pt_a%x + pt_b%x)
+         pt%x = 0.5_RD*(pt_a%x + pt_b%x)
 
          associate (ml => cx%model())
 
@@ -667,11 +667,11 @@ contains
 
             ! Calculate the propagation discriminant psi2
 
-            c_4 = -4._WP*V/Gamma_1*c_1
-            c_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As + 4._WP*lambda
-            c_0 = -4._WP*lambda*As/c_1
+            c_4 = -4._RD*V/Gamma_1*c_1
+            c_2 = (As - V/Gamma_1 - U + 4._RD)**2 + 4._RD*V/Gamma_1*As + 4._RD*lambda
+            c_0 = -4._RD*lambda*As/c_1
 
-            if (c_0 /= 0._WP) then
+            if (c_0 /= 0._RD) then
                psi2 = (c_4*omega_c**4 + c_2*omega_c**2 + c_0)/omega_c**2
             else
                psi2 = c_4*omega_c**2 + c_2
@@ -680,29 +680,29 @@ contains
             ! Evaluate real and imaginary parts of the mechanical
             ! eigenvalue
 
-            if (psi2 < 0._WP) then
+            if (psi2 < 0._RD) then
 
                ! Propagation zone
 
-               chi_r = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i)
+               chi_r = 0.5_RD*(As + V/Gamma_1 - U + 2._RD - 2._RD*l_i)
 
-               chi_i = 0.5_WP*sqrt(-psi2)
+               chi_i = 0.5_RD*sqrt(-psi2)
 
             else
 
                ! Evanescent zone; pick the non-diverging solution
 
-               chi_r = 0.5_WP*(As + V/Gamma_1 - U + 2._WP - 2._WP*l_i + sqrt(psi2))
+               chi_r = 0.5_RD*(As + V/Gamma_1 - U + 2._RD - 2._RD*l_i + sqrt(psi2))
 
-               chi_i = 0._WP
+               chi_i = 0._RD
 
             endif
 
             ! Update refine
 
             refine = refine .OR. &
-               chi_i /= 0._WP .OR. &
-               gr_p%w_ctr*abs(chi_r) > 1._WP
+               chi_i /= 0._RD .OR. &
+               gr_p%w_ctr*abs(chi_r) > 1._RD
 
             if (refine) exit omega_loop
 
@@ -723,17 +723,17 @@ contains
       character(*), intent(in) :: file
       character(*), intent(in) :: file_format
       type(grid_t)             :: gr_ml
-      real(WP), intent(in)     :: x_i
-      real(WP), intent(in)     :: x_o
+      real(RD), intent(in)     :: x_i
+      real(RD), intent(in)     :: x_o
       type(grid_t)             :: gr
 
       type(hgroup_t)        :: hg
-      real(WP), allocatable :: x(:)
+      real(RD), allocatable :: x(:)
       integer               :: unit
       integer               :: n
       integer               :: i
       integer               :: n_s
-      real(WP), allocatable :: x_b(:)
+      real(RD), allocatable :: x_b(:)
       integer               :: s
       integer               :: j_s_i
       integer               :: j_s_o

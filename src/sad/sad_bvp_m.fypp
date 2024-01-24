@@ -96,7 +96,7 @@ contains
 
       ! Construct the sad_bvp_t
 
-      if (os_p%alpha_grv /= 1._WP) then
+      if (os_p%alpha_grv /= 1._RD) then
          @:WARN('alpha_grv is ignored in static equations')
       endif
 
@@ -144,12 +144,12 @@ contains
 
       class(sad_bvp_t), intent(inout) :: bp
       type(state_rt), intent(in)      :: st
-      real(WP), intent(in)            :: z_i(:)
-      real(WP), intent(in)            :: z_o(:)
+      real(RD), intent(in)            :: z_i(:)
+      real(RD), intent(in)            :: z_o(:)
       integer, intent(in)             :: id
       type(wave_t)                    :: wv
 
-      real(WP) :: y(2,bp%n)
+      real(RD) :: y(2,bp%n)
       integer  :: j
 
       @:CHECK_BOUNDS(SIZE(z_i), bp%n_i)
@@ -185,24 +185,24 @@ contains
 
       class(sad_bvp_t), intent(inout) :: bp
       type(state_rt), intent(in)      :: st
-      real(WP), intent(in)            :: y(:,:)
+      real(RD), intent(in)            :: y(:,:)
       integer, intent(in)             :: id
       type(wave_t)                    :: wv
 
-      complex(WP)    :: y_c(6,bp%n)
+      complex(RD)    :: y_c(6,bp%n)
       type(state_ct) :: st_c
       type(ext_ct)   :: discrim
 
       ! Set up complex eigenfunctions
 
-      st_c = state_ct(CMPLX(st%omega, KIND=WP), st%omega)
+      st_c = state_ct(CMPLX(st%omega, KIND=RD), st%omega)
 
       y_c(1,:) = -y(1,:)
       y_c(2,:) = -y(1,:)
       y_c(3,:) = y(1,:)
       y_c(4,:) = y(2,:)
-      y_c(5,:) = 0._WP
-      y_c(6,:) = 0._WP
+      y_c(5,:) = 0._RD
+      y_c(6,:) = 0._RD
 
       ! Construct the wave_t
 

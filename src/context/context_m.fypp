@@ -63,7 +63,7 @@ module context_m
       type(point_t)              :: pt_o
       integer                    :: m
       integer                    :: Omega_rot_source
-      real(WP)                   :: Omega_rot_
+      real(RD)                   :: Omega_rot_
       integer                    :: deps_source
       logical                    :: complex_lambda
       type(interp_ct)            :: in_eps_rho
@@ -206,9 +206,9 @@ contains
    function omega_c_r_(this, Omega_rot, st) result(omega_c)
 
       class(context_t), intent(in) :: this
-      real(WP), intent(in)         :: Omega_rot
+      real(RD), intent(in)         :: Omega_rot
       class(state_rt), intent(in)  :: st
-      real(WP)                     :: omega_c
+      real(RD)                     :: omega_c
 
       ! Evaluate the co-rotating frequency (real)
 
@@ -225,10 +225,10 @@ contains
    function omega_c_c_(this, Omega_rot, st, use_omega_r) result(omega_c)
 
       class(context_t), intent(in)  :: this
-      real(WP), intent(in)          :: Omega_rot
+      real(RD), intent(in)          :: Omega_rot
       class(state_ct), intent(in)   :: st
       logical, intent(in), optional :: use_omega_r
-      complex(WP)                   :: omega_c
+      complex(RD)                   :: omega_c
 
       logical :: use_omega_r_
 
@@ -257,13 +257,13 @@ contains
    function lambda_r_(this, Omega_rot, st) result(lambda)
 
       class(context_t), intent(in) :: this
-      real(WP), intent(in)         :: Omega_rot
+      real(RD), intent(in)         :: Omega_rot
       class(state_rt), intent(in)  :: st
-      real(WP)                     :: lambda
+      real(RD)                     :: lambda
 
       ! Evaluate the angular eigenvalue (real)
 
-      lambda = REAL(this%rt%lambda(Omega_rot, CMPLX(st%omega, KIND=WP)))
+      lambda = REAL(this%rt%lambda(Omega_rot, CMPLX(st%omega, KIND=RD)))
 
       ! Finish
 
@@ -276,9 +276,9 @@ contains
    function lambda_c_(this, Omega_rot, st) result(lambda)
 
       class(context_t), intent(in) :: this
-      real(WP), intent(in)         :: Omega_rot
+      real(RD), intent(in)         :: Omega_rot
       class(state_ct), intent(in)  :: st
-      complex(WP)                  :: lambda
+      complex(RD)                  :: lambda
 
       ! Evaluate the angular eigenvalue (complex)
 
@@ -288,7 +288,7 @@ contains
 
       else
 
-         lambda = this%rt%lambda(Omega_rot, CMPLX(st%omega_r, KIND=WP))
+         lambda = this%rt%lambda(Omega_rot, CMPLX(st%omega_r, KIND=RD))
 
       endif
 
@@ -303,13 +303,13 @@ contains
    function l_e_r_(this, Omega_rot, st) result(l_e)
 
       class(context_t), intent(in) :: this
-      real(WP), intent(in)         :: Omega_rot
+      real(RD), intent(in)         :: Omega_rot
       class(state_rt), intent(in)  :: st
-      real(WP)                     :: l_e
+      real(RD)                     :: l_e
 
       ! Evaluate the effective harmonic degree (real)
 
-      l_e = REAL(this%rt%l_e(Omega_rot, CMPLX(st%omega, KIND=WP)))
+      l_e = REAL(this%rt%l_e(Omega_rot, CMPLX(st%omega, KIND=RD)))
 
       ! Finish
 
@@ -322,9 +322,9 @@ contains
    function l_e_c_(this, Omega_rot, st) result(l_e)
 
       class(context_t), intent(in) :: this
-      real(WP), intent(in)         :: Omega_rot
+      real(RD), intent(in)         :: Omega_rot
       class(state_ct), intent(in)  :: st
-      complex(WP)                  :: l_e
+      complex(RD)                  :: l_e
 
       ! Evaluate the effective harmonic degree (complex)
 
@@ -334,7 +334,7 @@ contains
 
       else
 
-         l_e = this%rt%l_e(Omega_rot, CMPLX(st%omega_r, KIND=WP))
+         l_e = this%rt%l_e(Omega_rot, CMPLX(st%omega_r, KIND=RD))
 
       endif
 
@@ -350,7 +350,7 @@ contains
 
       class(context_t), intent(in) :: this
       type(point_t), intent(in)    :: pt
-      real(WP)                     :: Omega_rot
+      real(RD)                     :: Omega_rot
 
       ! Evaluate Omega_rot
 
@@ -381,7 +381,7 @@ contains
    subroutine set_Omega_rot (this, Omega_rot)
 
       class(context_t), intent(inout) :: this
-      real(WP), intent(in)            :: Omega_rot
+      real(RD), intent(in)            :: Omega_rot
 
       ! Set Omega_rot. NOTE: THIS ROUTINE IS A TEMPORARY WORKAROUND FOR
       ! THE CURRENT NON-MUTABILITY OF CONTEXT_T; IT NEEDS TO BE
@@ -407,9 +407,9 @@ contains
             type(point_t), intent(in)       :: pt
             ${T}$                           :: ${N}$
 
-            real(WP) :: omega_min
-            real(WP) :: omega_max
-            real(WP) :: omega
+            real(RD) :: omega_min
+            real(RD) :: omega_max
+            real(RD) :: omega
 
             ! Evaluate the ${N$} derivative
 
@@ -424,9 +424,9 @@ contains
                omega_min = this%in_${N}$%x_min()
                omega_max = this%in_${N}$%x_min()
 
-               #:if T == 'real(WP)'
+               #:if T == 'real(RD)'
                   omega = MIN(MAX(st%omega, omega_min), omega_max)
-               #:elif T == 'complex(WP)'
+               #:elif T == 'complex(RD)'
                   omega = MIN(MAX(st%omega_r, omega_min), omega_max)
                #:else
                   #:stop f'invalid type {T}'
@@ -486,15 +486,15 @@ contains
 
       integer                  :: unit
       integer                  :: n
-      real(WP), allocatable    :: period(:)
-      real(WP), allocatable    :: A_norm(:)
-      real(WP), allocatable    :: B_norm(:)
-      real(WP), allocatable    :: A_phase(:)
-      real(WP), allocatable    :: B_phase(:)
+      real(RD), allocatable    :: period(:)
+      real(RD), allocatable    :: A_norm(:)
+      real(RD), allocatable    :: B_norm(:)
+      real(RD), allocatable    :: A_phase(:)
+      real(RD), allocatable    :: B_phase(:)
       integer                  :: i
-      real(WP), allocatable    :: omega(:)
-      complex(WP), allocatable :: eps_rho(:)
-      complex(WP), allocatable :: eps_T(:)
+      real(RD), allocatable    :: omega(:)
+      complex(RD), allocatable :: eps_rho(:)
+      complex(RD), allocatable :: eps_T(:)
       integer, allocatable     :: j(:)
 
       ! Read epsilon partials data from a file in the format used in the
@@ -539,7 +539,7 @@ contains
 
       ! Convert periods to dimensionless frequencies
 
-      omega = 1._WP/(period*freq_scale('HZ', ml))
+      omega = 1._RD/(period*freq_scale('HZ', ml))
 
       ! Reverse the phase sign because Wolf et al assume a time
       ! depenence of exp(i omega t), rather than GYRE's exp(-i omega t)
@@ -549,8 +549,8 @@ contains
 
       ! Calculate complex eps_* terms
 
-      eps_rho = A_norm*exp((0._WP,1._WP)*A_phase)
-      eps_T = B_norm*exp((0._WP,1._WP)*A_phase)
+      eps_rho = A_norm*exp((0._RD,1._RD)*A_phase)
+      eps_T = B_norm*exp((0._RD,1._RD)*A_phase)
 
       ! Sort in order of increasing omega
 

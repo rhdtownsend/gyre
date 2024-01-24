@@ -84,7 +84,7 @@ contains
          case ('COLLOC_GL6')
             allocate(df, SOURCE=colloc_diff_${S}$(eq, pt_a, pt_b, 'GL6'))
          case ('TRAPZ')
-            allocate(df, SOURCE=trapz_diff_${S}$(eq, pt_a, pt_b, SPREAD(0.5_WP, DIM=1, NCOPIES=eq%n_e)))
+            allocate(df, SOURCE=trapz_diff_${S}$(eq, pt_a, pt_b, SPREAD(0.5_RD, DIM=1, NCOPIES=eq%n_e)))
          case ('MIRK')
             allocate(df, SOURCE=mirk_diff_${S}$(eq, pt_a, pt_b))
          case default

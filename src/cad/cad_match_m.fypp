@@ -53,7 +53,7 @@ module cad_match_m
       private
       type(context_t), pointer :: cx => null()
       type(cad_trans_t)        :: tr
-      real(WP), allocatable    :: coeff(:,:)
+      real(RD), allocatable    :: coeff(:,:)
    contains
       private
       procedure         :: stencil_
@@ -141,8 +141,8 @@ contains
 
       class(cad_match_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: E_l(:,:)
-      complex(WP), intent(out)       :: E_r(:,:)
+      complex(RD), intent(out)       :: E_l(:,:)
+      complex(RD), intent(out)       :: E_r(:,:)
       type(c_ext_t), intent(out)     :: scl
 
       @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
@@ -162,49 +162,49 @@ contains
          ! Evaluate the match conditions (y_1, y_3 continuous, y_2, y_4
          ! not)
 
-         E_l(1,1) = -1._WP
-         E_l(1,2) = 0._WP
-         E_l(1,3) = 0._WP
-         E_l(1,4) = 0._WP
+         E_l(1,1) = -1._RD
+         E_l(1,2) = 0._RD
+         E_l(1,3) = 0._RD
+         E_l(1,4) = 0._RD
 
          E_l(2,1) = U_l
          E_l(2,2) = -U_l
-         E_l(2,3) = 0._WP
-         E_l(2,4) = 0._WP
+         E_l(2,3) = 0._RD
+         E_l(2,4) = 0._RD
 
-         E_l(3,1) = 0._WP
-         E_l(3,2) = 0._WP
-         E_l(3,3) = -1._WP
-         E_l(3,4) = 0._WP
+         E_l(3,1) = 0._RD
+         E_l(3,2) = 0._RD
+         E_l(3,3) = -1._RD
+         E_l(3,4) = 0._RD
 
          E_l(4,1) = -U_l
-         E_l(4,2) = 0._WP
-         E_l(4,3) = 0._WP
-         E_l(4,4) = -1._WP
+         E_l(4,2) = 0._RD
+         E_l(4,3) = 0._RD
+         E_l(4,4) = -1._RD
 
          !
 
-         E_r(1,1) = 1._WP
-         E_r(1,2) = 0._WP
-         E_r(1,3) = 0._WP
-         E_r(1,4) = 0._WP
+         E_r(1,1) = 1._RD
+         E_r(1,2) = 0._RD
+         E_r(1,3) = 0._RD
+         E_r(1,4) = 0._RD
 
          E_r(2,1) = -U_r
          E_r(2,2) = U_r
-         E_r(2,3) = 0._WP
-         E_r(2,4) = 0._WP
+         E_r(2,3) = 0._RD
+         E_r(2,4) = 0._RD
 
-         E_r(3,1) = 0._WP
-         E_r(3,2) = 0._WP
-         E_r(3,3) = 1._WP
-         E_r(3,4) = 0._WP
+         E_r(3,1) = 0._RD
+         E_r(3,2) = 0._RD
+         E_r(3,3) = 1._RD
+         E_r(3,4) = 0._RD
 
          E_r(4,1) = U_r
-         E_r(4,2) = 0._WP
-         E_r(4,3) = 0._WP
-         E_r(4,4) = 1._WP
+         E_r(4,2) = 0._RD
+         E_r(4,3) = 0._RD
+         E_r(4,4) = 1._RD
 
-         scl = ext_rt(1._WP)
+         scl = ext_rt(1._RD)
 
       end associate
 

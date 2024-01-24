@@ -144,7 +144,7 @@ contains
       integer, intent(in)              :: id
       type(wave_t)                     :: wv
 
-      complex(WP) :: y(6,bp%n)
+      complex(RD) :: y(6,bp%n)
       integer     :: j
 
       ! Calculate the homogeneous solution vector
@@ -175,12 +175,12 @@ contains
 
       class(tnad_bvp_t), intent(inout) :: bp
       type(state_ct), intent(in)       :: st
-      complex(WP), intent(in)          :: z_i(:)
-      complex(WP), intent(in)          :: z_o(:)
+      complex(RD), intent(in)          :: z_i(:)
+      complex(RD), intent(in)          :: z_o(:)
       integer, intent(in)              :: id
       type(wave_t)                     :: wv
 
-      complex(WP) :: y(6,bp%n)
+      complex(RD) :: y(6,bp%n)
       integer     :: j
 
       @:CHECK_BOUNDS(SIZE(z_i), bp%n_i)
@@ -214,12 +214,12 @@ contains
 
       class(tnad_bvp_t), intent(inout) :: bp
       type(state_ct), intent(in)       :: st
-      complex(WP), intent(in)          :: y(:,:)
+      complex(RD), intent(in)          :: y(:,:)
       integer, intent(in)              :: id
       type(wave_t)                     :: wv
 
       integer      :: j
-      complex(WP)  :: y_c(bp%n_e,bp%n)
+      complex(RD)  :: y_c(bp%n_e,bp%n)
       type(ext_ct) :: discrim
 
       @:CHECK_BOUNDS(SIZE(y, 1), bp%n_e)

@@ -515,7 +515,7 @@ contains
             ('kap_rho', 'ml%coeff(I_KAP_RHO, gr%pt(j))'), &
             ('kap_T', 'ml%coeff(I_KAP_T, gr%pt(j))'), &
             ('Delta_p', 'ml%Delta_p(gr%x_i(), gr%x_o())'), &
-            ('Delta_g', 'ml%Delta_g(gr%x_i(), gr%x_o(), l*(l+1._WP))'))
+            ('Delta_g', 'ml%Delta_g(gr%x_i(), gr%x_o(), l*(l+1._RD))'))
             case ('${N}$')
                call wr%write('${N}$', [(${E}$, j=1,gr%n)])
          #:endfor

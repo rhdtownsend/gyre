@@ -50,11 +50,11 @@ contains
       type(model_par_t), intent(in)        :: ml_p
       class(model_t), pointer, intent(out) :: ml
 
-      real(WP)                       :: y_c
-      real(WP)                       :: z_s
-      real(WP), allocatable          :: x(:)
-      real(WP), allocatable          :: d(:)
-      real(WP), allocatable          :: Gamma_1(:)
+      real(RD)                       :: y_c
+      real(RD)                       :: z_s
+      real(RD), allocatable          :: x(:)
+      real(RD), allocatable          :: d(:)
+      real(RD), allocatable          :: Gamma_1(:)
       type(parfait_model_t), pointer :: pm
 
       ! Read data from the PARFAIT-format file
@@ -84,11 +84,11 @@ contains
    subroutine read_parfait_data (file, y_c, z_s, x, d, Gamma_1)
 
       character(*), intent(in)           :: file
-      real(WP), intent(out)              :: y_c
-      real(WP), intent(out)              :: z_s
-      real(WP), allocatable, intent(out) :: x(:)
-      real(WP), allocatable, intent(out) :: d(:)
-      real(WP), allocatable, intent(out) :: Gamma_1(:)
+      real(RD), intent(out)              :: y_c
+      real(RD), intent(out)              :: z_s
+      real(RD), allocatable, intent(out) :: x(:)
+      real(RD), allocatable, intent(out) :: d(:)
+      real(RD), allocatable, intent(out) :: Gamma_1(:)
 
       type(hgroup_t) :: hg
       character(16)  :: type
@@ -117,7 +117,7 @@ contains
       call read_attr(hg, 'version', version)
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 120) 'File version', version/100._WP
+         write(OUTPUT_UNIT, 120) 'File version', version/100._RD
 120      format(3X,A,1X,F4.2,1X,A)
       endif
 

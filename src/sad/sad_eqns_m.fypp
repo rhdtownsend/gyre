@@ -55,7 +55,7 @@ module sad_eqns_m
       type(context_t), pointer   :: cx => null()
       type(point_t), allocatable :: pt(:)
       type(sad_trans_t)          :: tr
-      real(WP), allocatable      :: coeff(:,:)
+      real(RD), allocatable      :: coeff(:,:)
       integer                    :: l
    contains
       private
@@ -157,7 +157,7 @@ contains
       class(sad_eqns_t), intent(in) :: this
       integer, intent(in)           :: i
       class(state_rt), intent(in)   :: st
-      real(WP)                      :: A(this%n_e,this%n_e)
+      real(RD)                      :: A(this%n_e,this%n_e)
 
       ! Evaluate the RHS matrix
 
@@ -176,10 +176,10 @@ contains
       class(sad_eqns_t), intent(in) :: this
       integer, intent(in)           :: i
       class(state_rt), intent(in)   :: st
-      real(WP)                      :: xA(this%n_e,this%n_e)
+      real(RD)                      :: xA(this%n_e,this%n_e)
 
-      real(WP) :: l
-      real(WP) :: lambda
+      real(RD) :: l
+      real(RD) :: lambda
 
       ! Evaluate the log(x)-space RHS matrix
 
@@ -190,15 +190,15 @@ contains
          Gamma_1 => this%coeff(i,J_GAMMA_1))
 
          l = this%l
-         lambda = l*(l+1._WP)
+         lambda = l*(l+1._RD)
 
          ! Set up the matrix
 
-         xA(1,1) = 3._WP - U - l
-         xA(1,2) = 1._WP
+         xA(1,1) = 3._RD - U - l
+         xA(1,2) = 1._RD
 
          xA(2,1) = lambda - As*U - U*V/Gamma_1
-         xA(2,2) = - U - l + 2._WP
+         xA(2,2) = - U - l + 2._RD
 
       end associate
 

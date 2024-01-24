@@ -254,7 +254,7 @@ contains
          do j = MAX(i_0-this%n_ul, 1), j_0-1
             i_b = 2*this%n_ul + 1 + i_0 - j
             j_b = j
-            this%A_b(i_b, j_b) = 0._WP
+            this%A_b(i_b, j_b) = 0._RD
          end do
 
          do j = j_0, j_0+SIZE(R)-1
@@ -266,7 +266,7 @@ contains
          do j = j_0+SIZE(R), MIN(i_0+this%n_ul, this%n_e*(this%n+1))
             i_b = 2*this%n_ul + 1 + i_0 - j
             j_b = j
-            this%A_b(i_b, j_b) = 0._WP
+            this%A_b(i_b, j_b) = 0._RD
          end do
 
          ! Finish
@@ -339,7 +339,7 @@ contains
 
          integer  :: i
          integer  :: j
-         real(WP) :: scl
+         real(RD) :: scl
          integer  :: i_b
          integer  :: j_b
 
@@ -347,7 +347,7 @@ contains
 
          do i = 1, this%n_e*(this%n+1)
 
-            scl = 0._WP
+            scl = 0._RD
 
             do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
                i_b = 2*this%n_ul + 1 + i - j
@@ -421,7 +421,7 @@ contains
          ${T}$                                :: u(this%n_e*(this%n+1))
 
          integer              :: i_s
-         real(WP)             :: A_s
+         real(RD)             :: A_s
          integer              :: i
          ${T}$, allocatable   :: A_b(:,:)
          ${T}$, allocatable   :: B(:,:)
@@ -439,7 +439,7 @@ contains
             ! block (this will be taken to be the singular element)
 
             i_s = 0
-            A_s = HUGE(0._WP)
+            A_s = HUGE(0._RD)
 
             sing_loop : do i = n_e*n+1, n_e*(n+1)
                if (abs(this%A_b(2*n_ul+1,i)) < A_s) then
@@ -456,11 +456,11 @@ contains
             allocate(ipiv(i_s-1))
 
             A_b(:2*n_ul+1,:) = this%A_b(:2*n_ul+1,:i_s-1)
-            A_b(2*n_ul+2:,:) = 0._WP
+            A_b(2*n_ul+2:,:) = 0._RD
 
             n2 = MIN(2*n_ul, i_s-1)
 
-            B(:i_s-n2-1,1) = 0._WP
+            B(:i_s-n2-1,1) = 0._RD
             B(i_s-n2:,1) = -this%A_b(2*n_ul+1-n2:2*n_ul,i_s)
 
             do j = 1,i_s-1
@@ -478,8 +478,8 @@ contains
 
          ! Fill in the remaining components of the solution vector
 
-         u(i_s) = 1._WP
-         u(i_s+1:) = 0._WP
+         u(i_s) = 1._RD
+         u(i_s+1:) = 0._RD
 
          ! Finish
 
@@ -514,7 +514,7 @@ contains
             ! Set up the banded system
 
             B(:n_i,1) = v_i/this%scl_i
-            B(n_i+1:n_i+n*n_e,1) = 0._WP
+            B(n_i+1:n_i+n*n_e,1) = 0._RD
             B(n_i+n*n_e+1:,1) = v_o/this%scl_o
 
             ! Solve for u

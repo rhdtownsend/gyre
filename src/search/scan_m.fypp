@@ -57,7 +57,7 @@ contains
       type(osc_par_t), intent(in)        :: os_p
       type(scan_par_t), intent(in)       :: sc_p(:)
       character(*), intent(in)           :: axis
-      real(WP), allocatable, intent(out) :: omega(:)
+      real(RD), allocatable, intent(out) :: omega(:)
 
       integer :: i
 
@@ -111,14 +111,14 @@ contains
       type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
       type(scan_par_t), intent(in)         :: sc_p
-      real(WP), allocatable, intent(inout) :: omega(:)
+      real(RD), allocatable, intent(inout) :: omega(:)
 
-      real(WP)                :: omega_i_min
-      real(WP)                :: omega_i_max
-      real(WP)                :: omega_g_min
-      real(WP)                :: omega_g_max
-      real(WP)                :: omega_g
-      real(WP), allocatable   :: omega_i(:)
+      real(RD)                :: omega_i_min
+      real(RD)                :: omega_i_max
+      real(RD)                :: omega_g_min
+      real(RD)                :: omega_g_max
+      real(RD)                :: omega_g
+      real(RD), allocatable   :: omega_i(:)
       integer                 :: i
 
       ! Build the frequency scan as a grid
@@ -224,13 +224,13 @@ contains
       type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
       type(scan_par_t), intent(in)         :: sc_p
-      real(WP), allocatable, intent(inout) :: omega(:)
+      real(RD), allocatable, intent(inout) :: omega(:)
 
       integer                 :: unit
       integer                 :: n_freq
-      real(WP), allocatable   :: freq(:)
+      real(RD), allocatable   :: freq(:)
       integer                 :: i
-      real(WP), allocatable   :: omega_i(:)
+      real(RD), allocatable   :: omega_i(:)
 
       ! Build the frequency scan from file
 
@@ -287,12 +287,12 @@ contains
 
       class(context_t), intent(in) :: cx
       type(grid_t), intent(in)     :: gr
-      real(WP), intent(inout)      :: omega(:)
+      real(RD), intent(inout)      :: omega(:)
       type(mode_par_t), intent(in) :: md_p
       type(osc_par_t), intent(in)  :: os_p
 
-      real(WP) :: omega_c(gr%n)
-      real(WP) :: omega_c_prev(gr%n)
+      real(RD) :: omega_c(gr%n)
+      real(RD) :: omega_c_prev(gr%n)
       integer  :: j
       integer  :: i
 
@@ -311,7 +311,7 @@ contains
             omega_c(j) = omega(1) - md_p%m*cx%Omega_rot(gr%pt(j))
          end do
 
-         @:ASSERT(ALL(omega_c > 0._WP) .OR. ALL(omega_c < 0._WP), 'critical layer encountered')
+         @:ASSERT(ALL(omega_c > 0._RD) .OR. ALL(omega_c < 0._RD), 'critical layer encountered')
 
          do i = 2, SIZE(omega)
 
@@ -322,7 +322,7 @@ contains
                omega_c(j) = omega(i) - md_p%m*cx%Omega_rot(gr%pt(j))
             end do
 
-            @:ASSERT(ALL(SIGN(1._WP, omega_c) == SIGN(1._WP, omega_c_prev)), 'transition between prograde and retrograde')
+            @:ASSERT(ALL(SIGN(1._RD, omega_c) == SIGN(1._RD, omega_c_prev)), 'transition between prograde and retrograde')
 
          end do
 

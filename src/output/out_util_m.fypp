@@ -61,9 +61,9 @@ contains
 
          select case (filters(i))
          case ('stable')
-            filter_wave = filter_wave .OR. AIMAG(wv%omega) <= 0._WP
+            filter_wave = filter_wave .OR. AIMAG(wv%omega) <= 0._RD
          case ('unstable')
-            filter_wave = filter_wave .OR. AIMAG(wv%omega) > 0._WP
+            filter_wave = filter_wave .OR. AIMAG(wv%omega) > 0._RD
          case default
             @:ABORT('unrecognized filter in filter list')
          end select

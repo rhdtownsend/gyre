@@ -41,7 +41,7 @@ module rot_m
             use kinds_m
             import rot_${S}$
             class(rot_${S}$), intent(in) :: this
-            real(WP), intent(in)         :: Omega_rot
+            real(RD), intent(in)         :: Omega_rot
             ${T}$, intent(in)            :: omega
             ${T}$                        :: l_e
          end function l_e_${S}$_
@@ -50,7 +50,7 @@ module rot_m
             use kinds_m
             import rot_${S}$
             class(rot_${S}$), intent(in) :: this
-            real(WP), intent(in)         :: Omega_rot
+            real(RD), intent(in)         :: Omega_rot
             ${T}$, intent(in)            :: omega
             ${T}$                        :: lambda
          end function lambda_${S}$_

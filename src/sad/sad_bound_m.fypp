@@ -55,7 +55,7 @@ module sad_bound_m
       private
       type(context_t), pointer :: cx => null()
       type(sad_trans_t)        :: tr
-      real(WP), allocatable    :: coeff(:,:)
+      real(RD), allocatable    :: coeff(:,:)
       integer                  :: type_i
       integer                  :: type_o
       integer                  :: l
@@ -107,7 +107,7 @@ contains
 
       select case (os_p%inner_bound)
       case ('REGULAR')
-         @:ASSERT(pt_i%x == 0._WP, 'boundary condition invalid for x /= 0')
+         @:ASSERT(pt_i%x == 0._RD, 'boundary condition invalid for x /= 0')
          bd%type_i = REGULAR_TYPE
       case default
          @:ABORT('invalid inner_bound')
@@ -188,8 +188,8 @@ contains
 
       class(sad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -221,10 +221,10 @@ contains
 
       class(sad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
-      real(WP) :: l
+      real(RD) :: l
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -238,9 +238,9 @@ contains
       ! Set up the boundary conditions
 
       B(1,1) = l
-      B(1,2) = -1._WP
+      B(1,2) = -1._RD
 
-      scl = 1._WP
+      scl = 1._RD
 
       ! Finish
 
@@ -254,8 +254,8 @@ contains
 
       class(sad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -287,8 +287,8 @@ contains
 
       class(sad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
       integer :: l
 
@@ -306,10 +306,10 @@ contains
 
          ! Set up the boundary conditions
 
-         B(1,1) = l + 1._WP - U
-         B(1,2) = 1._WP
+         B(1,1) = l + 1._RD - U
+         B(1,2) = 1._RD
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 

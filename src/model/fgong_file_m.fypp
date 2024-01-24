@@ -58,26 +58,26 @@ contains
       integer                     :: ivar
       integer                     :: ivers
       character(:), allocatable   :: data_format
-      real(WP), allocatable       :: glob(:)
-      real(WP), allocatable       :: var(:,:)
+      real(RD), allocatable       :: glob(:)
+      real(RD), allocatable       :: var(:,:)
       integer                     :: i
-      real(WP)                    :: M_star
-      real(WP)                    :: R_star
-      real(WP)                    :: L_star
-      real(WP), allocatable       :: x(:)
-      real(WP), allocatable       :: m(:)
-      real(WP), allocatable       :: P(:)
-      real(WP), allocatable       :: rho(:) 
-      real(WP), allocatable       :: T(:) 
-      real(WP), allocatable       :: Gamma_1(:)
-      real(WP), allocatable       :: nabla_ad(:)
-      real(WP), allocatable       :: ups_T(:)
-      real(WP), allocatable       :: beta_rad(:)
-      real(WP), allocatable       :: V_2(:)
-      real(WP), allocatable       :: As(:)
-      real(WP), allocatable       :: U(:)
-      real(WP), allocatable       :: c_1(:)
-      real(WP), allocatable       :: Omega_rot(:)
+      real(RD)                    :: M_star
+      real(RD)                    :: R_star
+      real(RD)                    :: L_star
+      real(RD), allocatable       :: x(:)
+      real(RD), allocatable       :: m(:)
+      real(RD), allocatable       :: P(:)
+      real(RD), allocatable       :: rho(:) 
+      real(RD), allocatable       :: T(:) 
+      real(RD), allocatable       :: Gamma_1(:)
+      real(RD), allocatable       :: nabla_ad(:)
+      real(RD), allocatable       :: ups_T(:)
+      real(RD), allocatable       :: beta_rad(:)
+      real(RD), allocatable       :: V_2(:)
+      real(RD), allocatable       :: As(:)
+      real(RD), allocatable       :: U(:)
+      real(RD), allocatable       :: c_1(:)
+      real(RD), allocatable       :: Omega_rot(:)
       type(evol_model_t), pointer :: em
 
       ! Open the FGONG-format file
@@ -160,7 +160,7 @@ contains
 
       ! Snap grid points
 
-      call snap_points(MAX(ml_p%dx_snap, EPSILON(0._WP)), x, m)
+      call snap_points(MAX(ml_p%dx_snap, EPSILON(0._RD)), x, m)
 
       ! Calculate dimensionless structure data
 
@@ -168,21 +168,21 @@ contains
       allocate(U(n))
       allocate(c_1(n))
 
-      where (x /= 0._WP)
+      where (x /= 0._RD)
          V_2 = G_GRAVITY*(m*M_star)*rho/(P*x**3*R_star)
-         U = 4._WP*PI*rho*(x*R_star)**3/(m*M_star)
+         U = 4._RD*PI*rho*(x*R_star)**3/(m*M_star)
          c_1 = x**3/m
       elsewhere
-         V_2 = 4._WP*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._WP*P(1))
-         U = 3._WP
-         c_1 = 3._WP*(M_star/R_star**3)/(4._WP*PI*rho)
+         V_2 = 4._RD*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._RD*P(1))
+         U = 3._RD
+         c_1 = 3._RD*(M_star/R_star**3)/(4._RD*PI*rho)
       end where
 
       allocate(Omega_rot(n))
 
-      Omega_rot = 0._WP
+      Omega_rot = 0._RD
 
-      beta_rad = A_RADIATION*T**4/(3._WP*P)
+      beta_rad = A_RADIATION*T**4/(3._RD*P)
 
       ! Initialize the evol_model_t
 

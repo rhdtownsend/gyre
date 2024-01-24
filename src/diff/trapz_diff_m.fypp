@@ -44,9 +44,9 @@ module trapz_diff_m
       type, extends(diff_${S}$) :: trapz_diff_${S}$
          private
          class(eqns_${S}$), allocatable :: eq
-         real(WP), allocatable          :: w(:)
-         real(WP)                       :: dx
-         real(WP)                       :: x_m
+         real(RD), allocatable          :: w(:)
+         real(RD)                       :: dx
+         real(RD)                       :: x_m
       contains
          private
          procedure, public :: build => build_${S}$_
@@ -77,7 +77,7 @@ contains
          class(eqns_${S}$), intent(in) :: eq
          type(point_t), intent(in)     :: pt_a
          type(point_t), intent(in)     :: pt_b
-         real(WP), intent(in)          :: w(:)
+         real(RD), intent(in)          :: w(:)
          type(trapz_diff_${S}$)        :: df
 
          @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
@@ -89,7 +89,7 @@ contains
          df%w = w
 
          df%dx = pt_b%x - pt_a%x
-         df%x_m = 0.5_WP*(pt_a%x + pt_b%x)
+         df%x_m = 0.5_RD*(pt_a%x + pt_b%x)
 
          allocate(df%eq, SOURCE=eq)
 
@@ -128,10 +128,10 @@ contains
 
          ! Build the difference equations
 
-         E_l = -this%x_m*identity_matrix(this%n_e) - this%dx*MATMUL(diagonal_matrix(1._WP-this%w), xA(:,:,1))
+         E_l = -this%x_m*identity_matrix(this%n_e) - this%dx*MATMUL(diagonal_matrix(1._RD-this%w), xA(:,:,1))
          E_r =  this%x_m*identity_matrix(this%n_e) - this%dx*MATMUL(diagonal_matrix(      this%w), xA(:,:,2))
 
-         scl = ext_${S}$(1._WP)
+         scl = ext_${S}$(1._RD)
 
          ! Finish
 

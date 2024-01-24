@@ -139,7 +139,7 @@ contains
       integer, intent(in)            :: id
       type(wave_t)                   :: wv
 
-      real(WP) :: y(4,bp%n_p)
+      real(RD) :: y(4,bp%n_p)
       integer  :: j
 
       ! Calculate the homogeneous solution vector
@@ -172,12 +172,12 @@ contains
 
       class(cad_bvp_t), intent(inout) :: bp
       type(state_ct), intent(in)      :: st
-      complex(WP), intent(in)         :: z_i(:)
-      complex(WP), intent(in)         :: z_o(:)
+      complex(RD), intent(in)         :: z_i(:)
+      complex(RD), intent(in)         :: z_o(:)
       integer, intent(in)             :: id
       type(wave_t)                    :: wv
 
-      complex(WP) :: y(4,bp%n_p)
+      complex(RD) :: y(4,bp%n_p)
       integer     :: j
 
       @:CHECK_BOUNDS(SIZE(z_i), bp%n_i)
@@ -213,12 +213,12 @@ contains
 
       class(cad_bvp_t), intent(inout) :: bp
       type(state_ct), intent(in)      :: st
-      complex(WP), intent(in)         :: y(:,:)
+      complex(RD), intent(in)         :: y(:,:)
       integer, intent(in)             :: id
       type(wave_t)                    :: wv
 
       type(state_ct) :: st_c
-      complex(WP)     :: y_c(6,bp%n_p)
+      complex(RD)     :: y_c(6,bp%n_p)
       type(c_ext_t)   :: discrim
 
       @:CHECK_BOUNDS(SIZE(y, 1), bp%n_e)
@@ -226,10 +226,10 @@ contains
 
       ! Set up complex eigenfunctions
 
-      st_c = state_ct(CMPLX(st%omega, KIND=WP), st%omega)
+      st_c = state_ct(CMPLX(st%omega, KIND=RD), st%omega)
 
       y_c(1:4,:) = y
-      y_c(5:6,:) = 0._WP
+      y_c(5:6,:) = 0._RD
 
       ! Construct the wave type
 

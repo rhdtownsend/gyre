@@ -82,8 +82,8 @@ contains
     type(wave_t), intent(in) :: wv
     type(mode_t)             :: md
 
-    complex(WP) :: y_1_ref
-    complex(WP) :: f_phase
+    complex(RD) :: y_1_ref
+    complex(RD) :: f_phase
 
     ! Construct the mode_t
 
@@ -94,10 +94,10 @@ contains
 
     y_1_ref = md%y_i(1, md%j_ref)
 
-    if (abs(y_1_ref) > TINY(0._WP)) then
+    if (abs(y_1_ref) > TINY(0._RD)) then
        f_phase = CONJG(y_1_ref)/abs(y_1_ref)
     else
-       f_phase = 1._WP
+       f_phase = 1._RD
     endif
 
     md%scl = md%scl/sqrt(md%E())*f_phase
@@ -119,11 +119,11 @@ contains
     class(mode_t), intent(inout) :: this
 
     integer                 :: j
-    real(WP)                :: y_1(this%n)
-    real(WP)                :: y_2(this%n)
+    real(RD)                :: y_1(this%n)
+    real(RD)                :: y_2(this%n)
     integer                 :: j_i
     integer                 :: j_o
-    real(WP)                :: x_i
+    real(RD)                :: x_i
     integer                 :: n_c
     integer                 :: n_a
     class(model_t), pointer :: ml
@@ -165,7 +165,7 @@ contains
 
        this%n_pg = this%n_p - this%n_g
 
-    elseif (this%l == 1 .AND. .NOT. this%os_p%alpha_grv == 0._WP) then
+    elseif (this%l == 1 .AND. .NOT. this%os_p%alpha_grv == 0._RD) then
 
        ! Dipole modes (non-Cowling)
 
@@ -194,7 +194,7 @@ contains
        ! Count winding numbers, taking care to avoid counting nodes at
        ! the center and surface
 
-       if (y_1(this%n) == 0._WP) then
+       if (y_1(this%n) == 0._RD) then
           j_o = this%n-1
        else
           j_o = this%n
@@ -255,14 +255,14 @@ contains
 
     subroutine count_windings_(y_1, y_2, n_c, n_a, x)
 
-      real(WP), intent(in)           :: y_1(:)
-      real(WP), intent(in)           :: y_2(:)
+      real(RD), intent(in)           :: y_1(:)
+      real(RD), intent(in)           :: y_2(:)
       integer, intent(out)           :: n_c
       integer, intent(out)           :: n_a
-      real(WP), optional, intent(in) :: x(:)
+      real(RD), optional, intent(in) :: x(:)
 
       integer  :: j
-      real(WP) :: y_2_cross
+      real(RD) :: y_2_cross
 
       @:CHECK_BOUNDS(SIZE(y_2), SIZE(y_1))
 
@@ -279,13 +279,13 @@ contains
 
          ! Look for a node in y_1
 
-         if (y_1(j) >= 0._WP .AND. y_1(j+1) < 0._WP) then
+         if (y_1(j) >= 0._RD .AND. y_1(j+1) < 0._RD) then
 
             ! Solve for the crossing ordinate
 
             y_2_cross = y_2(j) - y_1(j)*(y_2(j+1) - y_2(j))/(y_1(j+1) - y_1(j))
 
-            if(y_2_cross >= 0._WP) then
+            if(y_2_cross >= 0._RD) then
                n_a = n_a + 1
                if(PRESENT(x)) print *,'A node:',x(j),x(j+1)
             else
@@ -293,13 +293,13 @@ contains
                if(PRESENT(x)) print *,'C node:',x(j),x(j+1)
             endif
 
-         elseif (y_1(j) <= 0._WP .AND. y_1(j+1) > 0._WP) then
+         elseif (y_1(j) <= 0._RD .AND. y_1(j+1) > 0._RD) then
 
             ! Solve for the crossing ordinate
 
             y_2_cross = y_2(j) - y_1(j)*(y_2(j+1) - y_2(j))/(y_1(j+1) - y_1(j))
 
-            if (y_2_cross <= 0._WP) then
+            if (y_2_cross <= 0._RD) then
                n_a = n_a + 1
                if(PRESENT(x)) print *,'A node:',x(j),x(j+1)
             else
@@ -323,10 +323,10 @@ contains
 
       class(parfait_model_t), pointer :: ml
       type(grid_t), intent(in)        :: gr
-      real(WP), intent(in)            :: omega
+      real(RD), intent(in)            :: omega
       integer, intent(in)             :: l
       integer, intent(out)            :: j_i
-      real(WP), intent(out)           :: x_i
+      real(RD), intent(out)           :: x_i
 
       integer :: j
 
@@ -335,7 +335,7 @@ contains
       ! set the point to have x > 0
 
       do j = 1, gr%n
-         if (gr%pt(j)%x > 0._WP) then
+         if (gr%pt(j)%x > 0._RD) then
             j_i = j
             x_i = gr%pt(j)%x
             exit

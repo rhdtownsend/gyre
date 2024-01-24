@@ -30,10 +30,10 @@ module tide_par_m
    ! Derived-type definitions
 
    type :: tide_par_t
-      real(WP)      :: y_T_thresh_abs = 0._WP
-      real(WP)      :: y_T_thresh_rel = 0._WP
-      real(WP)      :: omega_c_thresh = 0._WP
-      real(WP)      :: alpha_frq = 1._WP
+      real(RD)      :: y_T_thresh_abs = 0._RD
+      real(RD)      :: y_T_thresh_rel = 0._RD
+      real(RD)      :: omega_c_thresh = 0._RD
+      real(RD)      :: alpha_frq = 1._RD
       integer       :: l_min = 2
       integer       :: l_max = 4
       integer       :: m_min = -HUGE(0)
@@ -61,10 +61,10 @@ contains
 
       integer                  :: n_td_p
       integer                  :: i
-      real(WP)                 :: y_T_thresh_abs
-      real(WP)                 :: y_T_thresh_rel
-      real(WP)                 :: omega_c_thresh
-      real(WP)                 :: alpha_frq
+      real(RD)                 :: y_T_thresh_abs
+      real(RD)                 :: y_T_thresh_rel
+      real(RD)                 :: omega_c_thresh
+      real(RD)                 :: alpha_frq
       integer                  :: l_min
       integer                  :: l_max
       integer                  :: m_min

@@ -34,7 +34,7 @@ program test_gyre_lib
 
   ! Variables
 
-  real(WP)                      :: rpar(1)
+  real(RD)                      :: rpar(1)
   integer                       :: ipar(1)
   integer                       :: i
   type(scan_par_t), allocatable :: sc_p(:)
@@ -58,8 +58,8 @@ program test_gyre_lib
 
      call get_par(scan_par=sc_p)
 
-     sc_p(1)%freq_min = sc_p(1)%freq_min + 0.5_WP
-     sc_p(1)%freq_max = sc_p(1)%freq_max + 0.5_WP
+     sc_p(1)%freq_min = sc_p(1)%freq_min + 0.5_RD
+     sc_p(1)%freq_max = sc_p(1)%freq_max + 0.5_RD
 
      call set_par(scan_par=sc_p)
 
@@ -88,7 +88,7 @@ contains
     
     type(mode_t), intent(in) :: md
     integer, intent(inout)   :: ipar(:)
-    real(WP), intent(inout)  :: rpar(:)
+    real(RD), intent(inout)  :: rpar(:)
     integer, intent(out)     :: retcode
     
     ! Print out mode data

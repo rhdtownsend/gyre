@@ -58,10 +58,10 @@ contains
       type(num_par_t), intent(in)         :: nm_p
       type(osc_par_t), intent(in)         :: os_p
       integer, intent(out)                :: j_turn
-      real(WP), intent(out)               :: x_turn
+      real(RD), intent(out)               :: x_turn
 
-      real(WP)      :: gamma_a
-      real(WP)      :: gamma_b
+      real(RD)      :: gamma_a
+      real(RD)      :: gamma_b
       integer       :: j
       type(point_t) :: pt_a
       type(point_t) :: pt_b
@@ -75,11 +75,11 @@ contains
       ! becomes propagative
 
       j_turn = gr%n
-      x_turn = HUGE(0._WP)
+      x_turn = HUGE(0._RD)
 
       gamma_b = gamma_(cx, cx%point_i(), st, os_p%alpha_gam, os_p%alpha_pi)
 
-      if (gamma_b <= 0._WP) then
+      if (gamma_b <= 0._RD) then
 
          ! Inner point is already propagative
 
@@ -97,7 +97,7 @@ contains
             gamma_a = gamma_b
             gamma_b = gamma_(cx, gr%pt(j+1), st, os_p%alpha_gam, os_p%alpha_pi)
 
-            if (gamma_a > 0._WP .AND. gamma_b <= 0._WP) then
+            if (gamma_a > 0._RD .AND. gamma_b <= 0._RD) then
 
                j_turn = j
 
@@ -106,17 +106,17 @@ contains
 
                if (pt_a%s == pt_b%s) then
 
-                  if (abs(gamma_a) < EPSILON(0._WP)*abs(gamma_b)) then
+                  if (abs(gamma_a) < EPSILON(0._RD)*abs(gamma_b)) then
 
                      x_turn = pt_a%x
 
-                  elseif (abs(gamma_b) < EPSILON(0._WP)*abs(gamma_a)) then
+                  elseif (abs(gamma_b) < EPSILON(0._RD)*abs(gamma_a)) then
 
                      x_turn = pt_b%x
 
                   else
 
-                     call solve_root(eval_gamma_, pt_a%x, pt_b%x, 0._WP, nm_p, x_turn, status)
+                     call solve_root(eval_gamma_, pt_a%x, pt_b%x, 0._RD, nm_p, x_turn, status)
 
                   endif
 
@@ -142,8 +142,8 @@ contains
 
       subroutine eval_gamma_(x, gamma, status)
 
-         real(WP), intent(in)  :: x
-         real(WP), intent(out) :: gamma
+         real(RD), intent(in)  :: x
+         real(RD), intent(out) :: gamma
          integer, intent(out)  :: status
 
          ! Evaluate gamma
@@ -165,21 +165,21 @@ contains
       type(context_t), intent(in) :: cx
       type(point_t), intent(in)   :: pt
       class(state_rt), intent(in) :: st
-      real(WP), intent(in)        :: alpha_gam
-      real(WP), intent(in)        :: alpha_pi
-      real(WP)                    :: gamma
+      real(RD), intent(in)        :: alpha_gam
+      real(RD), intent(in)        :: alpha_pi
+      real(RD)                    :: gamma
 
-      real(WP) :: V
-      real(WP) :: As
-      real(WP) :: U
-      real(WP) :: c_1
-      real(WP) :: Gamma_1
-      real(WP) :: Omega_rot
-      real(WP) :: omega_c
-      real(WP) :: lambda
-      real(WP) :: g_4
-      real(WP) :: g_2
-      real(WP) :: g_0
+      real(RD) :: V
+      real(RD) :: As
+      real(RD) :: U
+      real(RD) :: c_1
+      real(RD) :: Gamma_1
+      real(RD) :: Omega_rot
+      real(RD) :: omega_c
+      real(RD) :: lambda
+      real(RD) :: g_4
+      real(RD) :: g_2
+      real(RD) :: g_0
 
       ! Calculate the propagation discriminant gamma (< 0 : propagation,
       ! > 0 : evanescence)
@@ -188,7 +188,7 @@ contains
 
          if (ml%is_vacuum(pt)) then
 
-            gamma = HUGE(0._WP)
+            gamma = HUGE(0._RD)
 
          else
 
@@ -204,11 +204,11 @@ contains
 
             lambda = cx%lambda(Omega_rot, st)
 
-            g_4 = -4._WP*V/Gamma_1*c_1*alpha_gam
-            g_2 = (As - V/Gamma_1 - U + 4._WP)**2 + 4._WP*V/Gamma_1*As*alpha_gam*alpha_pi + 4._WP*lambda
-            g_0 = -4._WP*lambda*As/c_1*alpha_pi
+            g_4 = -4._RD*V/Gamma_1*c_1*alpha_gam
+            g_2 = (As - V/Gamma_1 - U + 4._RD)**2 + 4._RD*V/Gamma_1*As*alpha_gam*alpha_pi + 4._RD*lambda
+            g_0 = -4._RD*lambda*As/c_1*alpha_pi
 
-            if (g_0 /= 0._WP) then
+            if (g_0 /= 0._RD) then
                gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
             else
                gamma = g_4*omega_c**2 + g_2

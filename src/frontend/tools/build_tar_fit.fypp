@@ -39,7 +39,7 @@ program build_tar_fit
 
    integer                   :: m
    integer                   :: k
-   real(WP)                  :: cheb_tol
+   real(RD)                  :: cheb_tol
    character(:), allocatable :: filename
 
    type(tar_fit_t) :: tf

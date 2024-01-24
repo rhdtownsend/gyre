@@ -49,13 +49,13 @@ contains
       type(model_par_t), intent(in)        :: ml_p
       class(model_t), pointer, intent(out) :: ml
 
-      real(WP)                        :: y_c
-      real(WP)                        :: z_s
-      real(WP), allocatable           :: x(:)
-      real(WP), allocatable           :: d(:)
-      real(WP), allocatable           :: Gamma_1(:)
-      real(WP)                        :: M_star
-      real(WP)                        :: R_star
+      real(RD)                        :: y_c
+      real(RD)                        :: z_s
+      real(RD), allocatable           :: x(:)
+      real(RD), allocatable           :: d(:)
+      real(RD), allocatable           :: Gamma_1(:)
+      real(RD)                        :: M_star
+      real(RD)                        :: R_star
       type(parfaitd_model_t), pointer :: pm
 
       ! Read data from the PARFAITD-format file
@@ -86,13 +86,13 @@ contains
    subroutine read_parfaitd_data(file, y_c, z_s, x, d, Gamma_1, M_star, R_star)
 
       character(*), intent(in)           :: file
-      real(WP), intent(out)              :: y_c
-      real(WP), intent(out)              :: z_s
-      real(WP), allocatable, intent(out) :: x(:)
-      real(WP), allocatable, intent(out) :: d(:)
-      real(WP), allocatable, intent(out) :: Gamma_1(:)
-      real(WP), intent(out)              :: M_star
-      real(WP), intent(out)              :: R_star
+      real(RD), intent(out)              :: y_c
+      real(RD), intent(out)              :: z_s
+      real(RD), allocatable, intent(out) :: x(:)
+      real(RD), allocatable, intent(out) :: d(:)
+      real(RD), allocatable, intent(out) :: Gamma_1(:)
+      real(RD), intent(out)              :: M_star
+      real(RD), intent(out)              :: R_star
 
       type(hgroup_t) :: hg
       character(16)  :: type
@@ -121,7 +121,7 @@ contains
       call read_attr(hg, 'version', version)
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 120) 'File version', version/100._WP
+         write(OUTPUT_UNIT, 120) 'File version', version/100._RD
 120      format(3X,A,1X,F4.2,1X,A)
       endif
 

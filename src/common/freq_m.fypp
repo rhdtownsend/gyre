@@ -55,7 +55,7 @@ contains
    function freq_scale_(units) result(scale)
 
       character(*), intent(in) :: units
-      real(WP)                 :: scale
+      real(RD)                 :: scale
 
       ! Evaluate the multiplicative scale for converting dimensionless
       ! angular frequencies to dimensioned frequencies (as specified by
@@ -63,9 +63,9 @@ contains
 
       select case (units)
       case ('NONE')
-         scale = 1._WP
+         scale = 1._RD
       case ('CRITICAL')
-         scale = sqrt(27._WP/8._WP)
+         scale = sqrt(27._RD/8._RD)
       case default
          @:ABORT('Invalid frequency units')
       end select
@@ -82,7 +82,7 @@ contains
 
       character(*), intent(in)   :: units
       class(model_t), intent(in) :: ml
-      real(WP)                   :: scale
+      real(RD)                   :: scale
 
       ! Evaluate the multiplicative scale for converting dimensionless
       ! angular frequencies to dimensioned frequencies (as specified by
@@ -109,17 +109,17 @@ contains
 
       character(*), intent(in)       :: units
       type(evol_model_t), intent(in) :: ml
-      real(WP)                       :: scale
+      real(RD)                       :: scale
 
       select case (units)
       case ('HZ')
          scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)/TWOPI
       case ('UHZ')
-         scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*1E6_WP/TWOPI
+         scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*1E6_RD/TWOPI
       case ('RAD_PER_SEC')
          scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)
       case ('CYC_PER_DAY')
-         scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*86400._WP/TWOPI
+         scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*86400._RD/TWOPI
       case default
          scale = freq_scale(units)
       end select
@@ -136,17 +136,17 @@ contains
 
       character(*), intent(in)           :: units
       type(parfaitd_model_t), intent(in) :: ml
-      real(WP)                           :: scale
+      real(RD)                           :: scale
 
       select case (units)
       case ('HZ')
          scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)/TWOPI
       case ('UHZ')
-         scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*1E6_WP/TWOPI
+         scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*1E6_RD/TWOPI
       case ('RAD_PER_SEC')
          scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)
       case ('CYC_PER_DAY')
-         scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*86400._WP/TWOPI
+         scale = sqrt(G_GRAVITY*ml%M_star/ml%R_star**3)*86400._RD/TWOPI
       case default
          scale = freq_scale(units)
       end select

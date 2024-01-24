@@ -58,16 +58,16 @@ program gyre
    type(summary_t)               :: sm_nad
    type(detail_t)                :: dt_ad
    type(detail_t)                :: dt_nad
-   real(WP), allocatable         :: omega_re(:)
-   real(WP), allocatable         :: omega_im(:)
-   real(WP)                      :: omega_min
-   real(WP)                      :: omega_max
+   real(RD), allocatable         :: omega_re(:)
+   real(RD), allocatable         :: omega_im(:)
+   real(RD)                      :: omega_min
+   real(RD)                      :: omega_max
    type(grid_t)                  :: gr
    class(bvp_rt), allocatable    :: bp_ad
    class(bvp_ct), allocatable    :: bp_nad
    integer                       :: n_ad
    integer                       :: d_ad
-   complex(WP), allocatable      :: omega_ad(:)
+   complex(RD), allocatable      :: omega_ad(:)
    integer, allocatable          :: id_ad(:)
 
    ! Read command-line arguments
@@ -189,8 +189,8 @@ program gyre
          omega_min = MINVAL(omega_re)
          omega_max = MAXVAL(omega_re)
       else
-         omega_min = -HUGE(0._WP)
-         omega_max = HUGE(0._WP)
+         omega_min = -HUGE(0._RD)
+         omega_max = HUGE(0._RD)
       endif
 
       call check_scan(cx, gr, omega_re, md_p(i), os_p_sel)
@@ -242,7 +242,7 @@ program gyre
 
       if (os_p_sel%nonadiabatic) then
 
-         if (os_p_sel%alpha_trb > 0._WP) then
+         if (os_p_sel%alpha_trb > 0._RD) then
             allocate(bp_nad, SOURCE=tnad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
          else
             allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))

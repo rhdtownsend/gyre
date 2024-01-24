@@ -64,7 +64,7 @@ contains
       type(context_t)                     :: cx
 
       type(rot_par_t) :: rt_p_
-      real(WP)        :: scale
+      real(RD)        :: scale
 
       ! Construct the context_t
 

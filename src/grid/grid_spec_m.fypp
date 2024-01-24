@@ -35,7 +35,7 @@ module grid_spec_m
 
    type :: grid_spec_t
       type(context_t), pointer :: cx
-      real(WP), allocatable    :: omega(:)
+      real(RD), allocatable    :: omega(:)
    end type grid_spec_t
 
    ! Access specifiers

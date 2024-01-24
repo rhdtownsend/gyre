@@ -57,7 +57,7 @@ module rad_trans_m
    type :: rad_trans_t
       private
       type(context_t), pointer :: cx => null()
-      real(WP), allocatable    :: coeff(:,:)
+      real(RD), allocatable    :: coeff(:,:)
       integer                  :: set
       integer                  :: n_e
    contains
@@ -151,8 +151,8 @@ contains
 
       do i = 1, n_s
          if (ml%is_vacuum(pt(i))) then
-            this%coeff(i,J_V_2) = HUGE(0._WP)
-            this%coeff(i,J_DV_2) = HUGE(0._WP)
+            this%coeff(i,J_V_2) = HUGE(0._RD)
+            this%coeff(i,J_DV_2) = HUGE(0._RD)
          else
             this%coeff(i,J_V_2) = ml%coeff(I_V_2, pt(i))
             this%coeff(i,J_DV_2) = ml%dcoeff(I_V_2, pt(i))
@@ -172,15 +172,15 @@ contains
    subroutine trans_eqns(this, xA, i, st, from)
 
       class(rad_trans_t), intent(in) :: this
-      real(WP), intent(inout)        :: xA(:,:)
+      real(RD), intent(inout)        :: xA(:,:)
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
       logical  :: from_
-      real(WP) :: G(this%n_e,this%n_e)
-      real(WP) :: H(this%n_e,this%n_e)
-      real(WP) :: dH(this%n_e,this%n_e)
+      real(RD) :: G(this%n_e,this%n_e)
+      real(RD) :: H(this%n_e,this%n_e)
+      real(RD) :: dH(this%n_e,this%n_e)
 
       @:CHECK_BOUNDS(SIZE(xA, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(xA, 2), this%n_e)
@@ -225,14 +225,14 @@ contains
    subroutine trans_cond(this, C, i, st, from)
 
       class(rad_trans_t), intent(in) :: this
-      real(WP), intent(inout)        :: C(:,:)
+      real(RD), intent(inout)        :: C(:,:)
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
       logical  :: from_
-      real(WP) :: G(this%n_e,this%n_e)
-      real(WP) :: H(this%n_e,this%n_e)
+      real(RD) :: G(this%n_e,this%n_e)
+      real(RD) :: H(this%n_e,this%n_e)
 
       @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
 
@@ -279,14 +279,14 @@ contains
    subroutine trans_vars(this, y, i, st, from)
 
       class(rad_trans_t), intent(in) :: this
-      real(WP), intent(inout)        :: y(:)
+      real(RD), intent(inout)        :: y(:)
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
       logical  :: from_
-      real(WP) :: G(this%n_e,this%n_e)
-      real(WP) :: H(this%n_e,this%n_e)
+      real(RD) :: G(this%n_e,this%n_e)
+      real(RD) :: H(this%n_e,this%n_e)
 
       @:CHECK_BOUNDS(SIZE(y), this%n_e)
 
@@ -335,7 +335,7 @@ contains
       class(rad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: G(this%n_e,this%n_e)
+      real(RD)                       :: G(this%n_e,this%n_e)
 
       ! Evaluate the transformation matrix to convert variables from
       ! GYRE's canonical form
@@ -362,9 +362,9 @@ contains
       class(rad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: G(this%n_e,this%n_e)
+      real(RD)                       :: G(this%n_e,this%n_e)
 
-      real(WP) :: omega_c
+      real(RD) :: omega_c
 
       ! Evaluate the transformation matrix to convert JCD variables
       ! from GYRE's canonical form
@@ -377,11 +377,11 @@ contains
 
          ! Set up the matrix
 
-         G(1,1) = 1._WP
-         G(1,2) = 0._WP
+         G(1,1) = 1._RD
+         G(1,2) = 0._RD
 
-         G(2,1) = 0._WP
-         G(2,2) = 1._WP/(c_1*omega_c**2)
+         G(2,1) = 0._RD
+         G(2,2) = 1._RD/(c_1*omega_c**2)
 
       end associate
 
@@ -398,7 +398,7 @@ contains
       class(rad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: G(this%n_e,this%n_e)
+      real(RD)                       :: G(this%n_e,this%n_e)
 
       ! Evaluate the transformation matrix to convert LAGP variables
       ! from GYRE's canonical form
@@ -408,8 +408,8 @@ contains
 
          ! Set up the matrix
 
-         G(1,1) = 1._WP
-         G(1,2) = 0._WP
+         G(1,1) = 1._RD
+         G(1,2) = 0._RD
 
          G(2,1) = -V_2
          G(2,2) = V_2
@@ -429,7 +429,7 @@ contains
       class(rad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: H(this%n_e,this%n_e)
+      real(RD)                       :: H(this%n_e,this%n_e)
 
       ! Evaluate the transformation matrix to convert variables to
       ! canonical form
@@ -456,9 +456,9 @@ contains
       class(rad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: H(this%n_e,this%n_e)
+      real(RD)                       :: H(this%n_e,this%n_e)
 
-      real(WP) :: omega_c
+      real(RD) :: omega_c
 
       ! Evaluate the transformation matrix to convert JCD variables
       ! to GYRE's canonical form
@@ -471,10 +471,10 @@ contains
 
          ! Set up the matrix
 
-         H(1,1) = 1._WP
-         H(1,2) = 0._WP
+         H(1,1) = 1._RD
+         H(1,2) = 0._RD
 
-         H(2,1) = 0._WP
+         H(2,1) = 0._RD
          H(2,2) = c_1*omega_c**2
 
       end associate
@@ -492,7 +492,7 @@ contains
       class(rad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: H(this%n_e,this%n_e)
+      real(RD)                       :: H(this%n_e,this%n_e)
 
       ! Evaluate the transformation matrix to convert LAGP variables
       ! to GYRE's canonical form
@@ -502,11 +502,11 @@ contains
 
          ! Set up the matrix
 
-         H(1,1) = 1._WP
-         H(1,2) = 0._WP
+         H(1,1) = 1._RD
+         H(1,2) = 0._RD
 
-         H(2,1) = 1._WP
-         H(2,2) = 1._WP/V_2
+         H(2,1) = 1._RD
+         H(2,2) = 1._RD/V_2
 
       end associate
 
@@ -523,7 +523,7 @@ contains
       class(rad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: dH(this%n_e,this%n_e)
+      real(RD)                       :: dH(this%n_e,this%n_e)
 
       ! Evaluate the derivative x dH/dx of the transformation matrix H
 
@@ -549,9 +549,9 @@ contains
       class(rad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: dH(this%n_e,this%n_e)
+      real(RD)                       :: dH(this%n_e,this%n_e)
 
-      real(WP) :: omega_c
+      real(RD) :: omega_c
 
       ! Evaluate the derivative x dH/dx of the JCD-variables
       ! transformation matrix H
@@ -565,10 +565,10 @@ contains
 
          ! Set up the matrix
 
-         dH(1,1) = 0._WP
-         dH(1,2) = 0._WP
+         dH(1,1) = 0._RD
+         dH(1,2) = 0._RD
 
-         dH(2,1) = 0._WP
+         dH(2,1) = 0._RD
          dH(2,2) = c_1*dc_1*omega_c**2
 
       end associate
@@ -586,7 +586,7 @@ contains
       class(rad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: dH(this%n_e,this%n_e)
+      real(RD)                       :: dH(this%n_e,this%n_e)
 
       ! Evaluate the derivative x dH/dx of the LAGP-variables
       ! transformation matrix H
@@ -597,10 +597,10 @@ contains
 
          ! Set up the matrix
 
-         dH(1,1) = 0._WP
-         dH(1,2) = 0._WP
+         dH(1,1) = 0._RD
+         dH(1,2) = 0._RD
 
-         dH(2,1) = 0._WP
+         dH(2,1) = 0._RD
          dH(2,2) = -dV_2/V_2
 
       end associate

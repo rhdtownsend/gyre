@@ -33,13 +33,13 @@ module ext_real_m
 
    ! Parameter definitions
 
-   real(WP), parameter :: RADIX_WP = REAL(RADIX(1._WP), WP)
+   real(RD), parameter :: RADIX_RD = REAL(RADIX(1._RD), RD)
 
    ! Derived-type definitions
 
    type ext_rt
       private
-      real(WP) :: f ! Fractional part
+      real(RD) :: f ! Fractional part
       integer  :: e ! Exponent
    contains
       private
@@ -144,7 +144,7 @@ contains
 
    elemental function ext_rt_r_(r) result(rx)
 
-      real(WP), intent(in) :: r
+      real(RD), intent(in) :: r
       type(ext_rt)         :: rx
 
       ! Construct the ext_rt from the real r
@@ -161,7 +161,7 @@ contains
 
    elemental function ext_rt_c_(c) result(rx)
 
-      complex(WP), intent(in) :: c
+      complex(RD), intent(in) :: c
       type(ext_rt)            :: rx
 
       ! Construct the ext_rt from the complex c
@@ -182,17 +182,17 @@ contains
       class(ext_rt), intent(in) :: that
       type(ext_rt)              :: rx
 
-      real(WP) :: f
+      real(RD) :: f
       integer  :: e
 
       ! Evaluate the plus operator
 
-      if (this%f == 0._WP) then
+      if (this%f == 0._RD) then
 
          rx%f = that%f
          rx%e = that%e
 
-      elseif (that%f == 0._WP) then
+      elseif (that%f == 0._RD) then
 
          rx%f = this%f
          rx%e = this%e
@@ -244,17 +244,17 @@ contains
       class(ext_rt), intent(in) :: that
       type(ext_rt)              :: rx
 
-      real(WP) :: f
+      real(RD) :: f
       integer  :: e
 
       ! Evaluate the minus operator
 
-      if (this%f == 0._WP) then
+      if (this%f == 0._RD) then
 
          rx%f = -that%f
          rx%e = that%e
 
-      elseif (that%f == 0._WP) then
+      elseif (that%f == 0._RD) then
 
          rx%f = this%f
          rx%e = this%e
@@ -288,14 +288,14 @@ contains
       class(ext_rt), intent(in) :: that
       type(ext_rt)              :: rx
 
-      real(WP) :: f
+      real(RD) :: f
       integer  :: e
 
       ! Evaluate the times operator
 
-      if (this%f == 0._WP .OR. that%f == 0._WP) then
+      if (this%f == 0._RD .OR. that%f == 0._RD) then
 
-         rx = ext_rt(0._WP)
+         rx = ext_rt(0._RD)
 
       else
 
@@ -321,14 +321,14 @@ contains
       class(ext_rt), intent(in) :: that
       type(ext_rt)              :: rx
 
-      real(WP) :: f
+      real(RD) :: f
       integer  :: e
 
       ! Evaluate the divide operator
 
-      if (this%f == 0._WP .AND. that%f /= 0._WP) then
+      if (this%f == 0._RD .AND. that%f /= 0._RD) then
 
-         rx = ext_rt(0._WP)
+         rx = ext_rt(0._RD)
 
       else
 
@@ -390,28 +390,28 @@ contains
       class(ext_rt), intent(in) :: that
       logical                   :: lt
 
-      real(WP) :: this_s
-      real(WP) :: that_s
+      real(RD) :: this_s
+      real(RD) :: that_s
 
       ! Evaluate the less-than operator
 
-      if (this%f == 0._WP .OR. that%f == 0._WP) then
+      if (this%f == 0._RD .OR. that%f == 0._RD) then
 
          lt = this%f < that%f
 
       else
 
-         this_s = SIGN(1._WP, this%f)
-         that_s = SIGN(1._WP, that%f)
+         this_s = SIGN(1._RD, this%f)
+         that_s = SIGN(1._RD, that%f)
 
          if (this_s == that_s) then
-            if (this_s > 0._WP) then
+            if (this_s > 0._RD) then
                lt = (this%e < that%e .OR. (this%e == that%e .AND. this%f < that%f))
             else
                lt = (this%e > that%e .OR. (this%e == that%e .AND. this%f < that%f))
             endif
          else
-            lt = this_s < 0._WP
+            lt = this_s < 0._RD
          endif
 
       endif
@@ -485,7 +485,7 @@ contains
       elemental function op_${N}$_rx_r_(this, that) result(${N}$)
 
          class(ext_rt), intent(in) :: this
-         real(WP), intent(in)      :: that
+         real(RD), intent(in)      :: that
          ${T}$                     :: ${N}$
 
          ! Evaluate the operator to mixed ext_rt/real types
@@ -502,7 +502,7 @@ contains
 
       elemental function op_${N}$_r_rx_(this, that) result(${N}$)
 
-         real(WP), intent(in)      :: this
+         real(RD), intent(in)      :: this
          class(ext_rt), intent(in) :: that
          ${T}$                     :: ${N}$
 
@@ -523,25 +523,25 @@ contains
    elemental function real_(rx) result(r)
 
       type(ext_rt), intent(in) :: rx
-      real(WP)                 :: r
+      real(RD)                 :: r
 
       integer :: e_min
 
       ! Convert the ext_rt to real
 
-      if (rx%f /= 0._WP) then
+      if (rx%f /= 0._RD) then
 
-         e_min = MINEXPONENT(0._WP)
+         e_min = MINEXPONENT(0._RD)
 
          if (rx%e >= e_min) then
-            r = rx%f*RADIX_WP**rx%e
+            r = rx%f*RADIX_RD**rx%e
          else
-            r = (rx%f*RADIX_WP**MAX(rx%e-e_min, -DIGITS(0._WP)-1))*RADIX_WP**e_min
+            r = (rx%f*RADIX_RD**MAX(rx%e-e_min, -DIGITS(0._RD)-1))*RADIX_RD**e_min
          endif
 
       else
 
-         r = 0._WP
+         r = 0._RD
 
       endif
 
@@ -560,7 +560,7 @@ contains
 
       ! Determine if rx is valid
 
-      valid = abs(rx%f) >= RADIX_WP**(-1) .AND. abs(rx%f) < 1._WP
+      valid = abs(rx%f) >= RADIX_RD**(-1) .AND. abs(rx%f) < 1._RD
 
       ! Finish
 
@@ -576,11 +576,11 @@ contains
       type(ext_rt)             :: prod_rx
 
       integer  :: i
-      real(WP) :: g
+      real(RD) :: g
 
       ! Calculate the product of the elements of rx
 
-      prod_rx%f = 1._WP
+      prod_rx%f = 1._RD
       prod_rx%e = SUM(rx%e)
 
       do i = 1,SIZE(rx)
@@ -623,15 +623,15 @@ contains
       type(ext_rt), intent(in) :: rx
       type(ext_rt)             :: exp_rx
 
-      real(WP) :: g
+      real(RD) :: g
       integer  :: e
 
       ! Calculate the exponential of rx
 
-      g = real(rx)/log(RADIX_WP)
+      g = real(rx)/log(RADIX_RD)
       e = FLOOR(g)
 
-      call split_(pow(RADIX_WP, g-e), exp_rx%f, exp_rx%e)
+      call split_(pow(RADIX_RD, g-e), exp_rx%f, exp_rx%e)
       exp_rx = scale(exp_rx, e)
 
       ! Finish
@@ -654,7 +654,7 @@ contains
       if (MOD(rx%e, 2) == 0) then
          sqrt_rx = scale(sqrt_rx, rx%e/2)
       else
-         sqrt_rx = scale(sqrt_rx, (rx%e-1)/2)*sqrt(2._WP)
+         sqrt_rx = scale(sqrt_rx, (rx%e-1)/2)*sqrt(2._RD)
       endif
 
       ! Finish
@@ -668,7 +668,7 @@ contains
    elemental function fraction_(rx) result(fraction_rx)
 
       type(ext_rt), intent(in) :: rx
-      real(WP)                  :: fraction_rx
+      real(RD)                  :: fraction_rx
 
       ! Return the fraction part of rx
 
@@ -705,15 +705,15 @@ contains
       type(ext_rt), intent(in) :: rx_b
       type(ext_rt)             :: max_rx
 
-      real(WP) :: rx_a_s
-      real(WP) :: rx_b_s
+      real(RD) :: rx_a_s
+      real(RD) :: rx_b_s
 
       ! Return the maximum of rx_a and rx_b
 
-      rx_a_s = SIGN(1._WP, rx_a%f)
-      rx_b_s = SIGN(1._WP, rx_b%f)
+      rx_a_s = SIGN(1._RD, rx_a%f)
+      rx_b_s = SIGN(1._RD, rx_b%f)
 
-      if (rx_a_s > 0._WP .AND. rx_b_s > 0._WP) then
+      if (rx_a_s > 0._RD .AND. rx_b_s > 0._RD) then
          if (rx_a%e > rx_b%e) then
             max_rx = rx_a
          elseif (rx_b%e > rx_a%e) then
@@ -722,7 +722,7 @@ contains
             max_rx%f = MAX(rx_a%f, rx_b%f)
             max_rx%e = rx_a%e
          endif
-      elseif (rx_a_s < 0._WP .AND. rx_b_s < 0._WP) then
+      elseif (rx_a_s < 0._RD .AND. rx_b_s < 0._RD) then
          if (rx_a%e > rx_b%e) then
             max_rx = rx_b
          elseif (rx_b%e > rx_a%e) then
@@ -732,7 +732,7 @@ contains
             max_rx%e = rx_a%e
          endif
       else
-         if (rx_a_s > 0._WP) then
+         if (rx_a_s > 0._RD) then
             max_rx = rx_a
          else
             max_rx = rx_b
@@ -771,11 +771,11 @@ contains
       integer, intent(in)       :: de
       type(ext_rt)              :: scale_rx
 
-      ! Scale rx by RADIX_WP**de
+      ! Scale rx by RADIX_RD**de
 
       scale_rx%f = rx%f
 
-      if (scale_rx%f /= 0._WP) then
+      if (scale_rx%f /= 0._RD) then
          scale_rx%e = rx%e + de
       else
          scale_rx%e = 0
@@ -791,8 +791,8 @@ contains
 
    elemental subroutine split_(x, f, e)
 
-      real(WP), intent(in)  :: x
-      real(WP), intent(out) :: f
+      real(RD), intent(in)  :: x
+      real(RD), intent(out) :: f
       integer, intent(out)  :: e
 
       ! Spit x into fraction and exponent parts

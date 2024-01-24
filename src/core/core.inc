@@ -6,10 +6,10 @@
 #:set INT_TYPES = ['integer']
 #:set INT_SUFFIXES = ['i']
 
-#:set REAL_TYPES = ['real(WP)']
+#:set REAL_TYPES = ['real(RD)']
 #:set REAL_SUFFIXES = ['r']
 
-#:set COMPLEX_TYPES = ['complex(WP)']
+#:set COMPLEX_TYPES = ['complex(RD)']
 #:set COMPLEX_SUFFIXES = ['c']
 
 #:set FLOAT_TYPES = REAL_TYPES + COMPLEX_TYPES
@@ -36,7 +36,7 @@
 #:set MATH_TYPES = NUM_TYPES + LOGICAL_TYPES
 #:set MATH_SUFFIXES = NUM_SUFFIXES + LOGICAL_SUFFIXES
 
-#:set DTYPE_BASE_TYPES = ['real(WP)', 'complex(WP)']
+#:set DTYPE_BASE_TYPES = ['real(RD)', 'complex(RD)']
 #:set DTYPE_SUFFIXES = ['rt', 'ct']
 
 #:set PAR_NAMES = ['grid', 'num', 'orbit', 'osc', 'rot', 'scan']

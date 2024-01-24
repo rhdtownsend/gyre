@@ -36,11 +36,11 @@ module cheb_fit_m
    ! Derived-type definitions
 
    type :: cheb_fit_t
-      real(WP), allocatable :: u(:)
-      real(WP), allocatable :: f(:)
-      real(WP), allocatable :: c(:)
-      real(WP)              :: x_a
-      real(WP)              :: x_b
+      real(RD), allocatable :: u(:)
+      real(RD), allocatable :: f(:)
+      real(RD), allocatable :: c(:)
+      real(RD)              :: x_a
+      real(RD)              :: x_b
       integer               :: n
    contains 
       private
@@ -80,22 +80,22 @@ contains
 
    function cheb_fit_t_func_(x_a, x_b, n, func) result(cb)
 
-      real(WP), intent(in) :: x_a
-      real(WP), intent(in) :: x_b
+      real(RD), intent(in) :: x_a
+      real(RD), intent(in) :: x_b
       integer, intent(in)  :: n
       interface
          function func (x)
             use kinds_m
-            real(WP), intent(in) :: x
-            real(WP)             :: func
+            real(RD), intent(in) :: x
+            real(RD)             :: func
          end function func
       end interface
       type(cheb_fit_t)     :: cb
 
-      real(WP) :: u(n+1)
-      real(WP) :: f(n+1)
+      real(RD) :: u(n+1)
+      real(RD) :: f(n+1)
       integer  :: j
-      real(WP) :: x
+      real(RD) :: x
 
       ! Construct the cheb_fit_t of degree n, by sampling the function at
       ! the n+1 extremal points of T_n
@@ -104,7 +104,7 @@ contains
 
       do j = 1, n+1
 
-         x = 0.5_WP*((1._WP+u(j))*x_a + (1._WP-u(j))*x_b)
+         x = 0.5_RD*((1._RD+u(j))*x_a + (1._RD-u(j))*x_b)
          f(j) = func(x)
 
       end do
@@ -121,25 +121,25 @@ contains
 
    function cheb_fit_t_tol_(x_a, x_b, tol, func) result(cb)
 
-      real(WP), intent(in) :: x_a
-      real(WP), intent(in) :: x_b
-      real(WP), intent(in) :: tol
+      real(RD), intent(in) :: x_a
+      real(RD), intent(in) :: x_b
+      real(RD), intent(in) :: tol
       interface
          function func (x)
             use kinds_m
-            real(WP), intent(in) :: x
-            real(WP)             :: func
+            real(RD), intent(in) :: x
+            real(RD)             :: func
          end function func
       end interface
       type(cheb_fit_t)     :: cb
 
       integer, parameter  :: N_0 = 16
       integer, parameter  :: M = 8
-      real(WP), parameter :: EPS = EPSILON(1._WP)
+      real(RD), parameter :: EPS = EPSILON(1._RD)
 
       integer  :: n
       integer  :: j
-      real(WP) :: toler
+      real(RD) :: toler
 
       ! Construct a cheb_fit_t by choosing an n such that all high-order
       ! (neglected) coefficients are below a (relative) tolerance toler
@@ -155,7 +155,7 @@ contains
 
          cb = cheb_fit_t_func_(x_a, x_b, n, func)
 
-         toler = (tol + 2._WP*sqrt(REAL(n, WP))*EPS)*MAXVAL(abs(cb%c))
+         toler = (tol + 2._RD*sqrt(REAL(n, RD))*EPS)*MAXVAL(abs(cb%c))
 
          do j = n+1, 1, -1
             if (abs(cb%c(j)) > toler) then
@@ -183,10 +183,10 @@ contains
 
    function cheb_fit_t_vals_(x_a, x_b, f, u) result(cb)
 
-      real(WP), intent(in)           :: x_a
-      real(WP), intent(in)           :: x_b
-      real(WP), intent(in)           :: f(:)
-      real(WP), intent(in), optional :: u(:)
+      real(RD), intent(in)           :: x_a
+      real(RD), intent(in)           :: x_b
+      real(RD), intent(in)           :: f(:)
+      real(RD), intent(in), optional :: u(:)
       type(cheb_fit_t)               :: cb
 
       if (PRESENT(u)) then
@@ -220,10 +220,10 @@ contains
 
    function cheb_fit_t_coeffs_(x_a, x_b, c, u) result(cb)
 
-      real(WP), intent(in)           :: x_a
-      real(WP), intent(in)           :: x_b
-      real(WP), intent(in)           :: c(:)
-      real(WP), intent(in), optional :: u(:)
+      real(RD), intent(in)           :: x_a
+      real(RD), intent(in)           :: x_b
+      real(RD), intent(in)           :: c(:)
+      real(RD), intent(in), optional :: u(:)
       type(cheb_fit_t)               :: cb
 
       if (PRESENT(u)) then
@@ -260,9 +260,9 @@ contains
       type(hgroup_t), intent(inout) :: hg
       type(cheb_fit_t), intent(out) :: cb
 
-      real(WP)              :: x_a
-      real(WP)              :: x_b
-      real(WP), allocatable :: f(:)
+      real(RD)              :: x_a
+      real(RD)              :: x_b
+      real(RD), allocatable :: f(:)
 
       ! Read the cheb_fit_t
 
@@ -313,8 +313,8 @@ contains
          ${T}$    :: s_n
          ${T}$    :: s_d
          integer  :: j
-         real(WP) :: u_j
-         real(WP) :: w
+         real(RD) :: u_j
+         real(RD) :: w
 
          ! Evaluate the cheb_fit_t at x, using the second Barycentric
          ! interpolation formula given in eqn. 5.11 of Trefethen
@@ -325,15 +325,15 @@ contains
          ! 128, 265-300).
 
          if (x == this%x_a) then
-            u = 1._WP
+            u = 1._RD
          elseif (x == this%x_b) then
-            u = -1._WP
+            u = -1._RD
          else
-            u = (2._WP*x - (this%x_a + this%x_b))/(this%x_a - this%x_b)
+            u = (2._RD*x - (this%x_a + this%x_b))/(this%x_a - this%x_b)
          endif
 
-         s_n = 0._WP
-         s_d = 0._WP
+         s_n = 0._RD
+         s_d = 0._RD
 
          do j = 1, this%n+1
 
@@ -347,9 +347,9 @@ contains
             ! Calculate weights w =lambda / [2**(n-1)/n]
 
             if (j == 1 .OR. j == this%n+1) then
-               w = 0.5_WP*(-1._WP)**(j-1)
+               w = 0.5_RD*(-1._RD)**(j-1)
             else
-               w = (-1._WP)**(j-1)
+               w = (-1._RD)**(j-1)
             endif
 
             ! Update the numerator and denominator sums
@@ -373,14 +373,14 @@ contains
 
    function c_from_f_(f) result(c)
 
-      real(WP), intent(in) :: f(:)
-      real(WP)             :: c(SIZE(f))
+      real(RD), intent(in) :: f(:)
+      real(RD)             :: c(SIZE(f))
 
       integer  :: n
       integer  :: k
       integer  :: j
-      real(WP) :: v
-      real(WP) :: w
+      real(RD) :: v
+      real(RD) :: w
 
       ! Calculate the Chebyshev expansion coefficients c from the
       ! function f sampled at the extremal points of T_n, by taking the
@@ -392,19 +392,19 @@ contains
 
       do k = 1, n+1
 
-         c(k) = 0._WP
+         c(k) = 0._RD
 
          do j = 1, n+1
 
             if (j == 1) then
-               v = 1._WP
-               w = 0.5_WP
+               v = 1._RD
+               w = 0.5_RD
             elseif (j == n+1) then
-               v = (-1._WP)**(k-1)
-               w = 0.5_WP
+               v = (-1._RD)**(k-1)
+               w = 0.5_RD
             else
                v = cos((j-1)*(k-1)*PI/n)
-               w = 1._WP
+               w = 1._RD
             endif
 
             c(k) = c(k) + w*v*f(j)
@@ -414,7 +414,7 @@ contains
          if (k == 1 .OR. k == n+1) then
             c(k) = c(k)/n
          else
-            c(k) = 2._WP*c(k)/n
+            c(k) = 2._RD*c(k)/n
          end if
 
       end do
@@ -429,13 +429,13 @@ contains
 
    function f_from_c_(c) result(f)
 
-      real(WP), intent(in) :: c(:)
-      real(WP)             :: f(SIZE(c))
+      real(RD), intent(in) :: c(:)
+      real(RD)             :: f(SIZE(c))
 
       integer  :: n
       integer  :: j
       integer  :: k
-      real(WP) :: v
+      real(RD) :: v
 
       ! Calculate the function f sampled at the extremal points of T_n,
       ! from the Chebyshev expansion coefficients c
@@ -444,14 +444,14 @@ contains
 
       do j = 1, n+1
 
-         f(j) = 0._WP
+         f(j) = 0._RD
 
          do k = 1, n+1
 
             if (k == 1) then
-               v = 1._WP
+               v = 1._RD
             elseif (k == n+1) then
-               v = (-1._WP)**(j-1)
+               v = (-1._RD)**(j-1)
             else
                v = cos((j-1)*(k-1)*PI/n)
             endif
@@ -473,7 +473,7 @@ contains
    function u_ext_(n) result(u)
 
       integer, intent(in) :: n
-      real(WP)            :: u(n+1)
+      real(RD)            :: u(n+1)
 
       integer :: j
 
@@ -482,9 +482,9 @@ contains
       do j = 1, n+1
 
          if (j == 1) then
-            u(j) = 1._WP
+            u(j) = 1._RD
          elseif (j == n+1) then
-            u(j) = -1._WP
+            u(j) = -1._RD
          else
             u(j) = cos((j-1)*PI/n)
          endif

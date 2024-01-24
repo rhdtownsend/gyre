@@ -59,9 +59,9 @@ module tnad_eqns_m
       type(context_t), pointer   :: cx => null()
       type(point_t), allocatable :: pt(:)
       type(nad_trans_t)          :: tr
-      real(WP), allocatable      :: coeff(:,:)
-      real(WP)                   :: alpha_omg 
-      real(WP)                   :: alpha_trb
+      real(RD), allocatable      :: coeff(:,:)
+      real(RD)                   :: alpha_omg 
+      real(RD)                   :: alpha_trb
    contains
       private
       procedure, public :: stencil
@@ -109,9 +109,9 @@ contains
 
       select case (os_p%time_factor)
       case ('OSC')
-         eq%alpha_omg = 1._WP
+         eq%alpha_omg = 1._RD
       case ('EXP')
-         eq%alpha_omg = -1._WP
+         eq%alpha_omg = -1._RD
       case default
          @:ABORT('Invalid time_factor')
       end select
@@ -184,7 +184,7 @@ contains
       class(tnad_eqns_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
-      complex(WP)                    :: A(this%n_e,this%n_e)
+      complex(RD)                    :: A(this%n_e,this%n_e)
 
       ! Evaluate the RHS matrix
 
@@ -203,15 +203,15 @@ contains
       class(tnad_eqns_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
-      complex(WP)                    :: xA(this%n_e,this%n_e)
+      complex(RD)                    :: xA(this%n_e,this%n_e)
 
-      complex(WP) :: A(6,6)
-      real(WP)    :: Omega_rot_i
-      complex(WP) :: l_i
-      complex(WP) :: F_trb
-      complex(WP) :: B(6,1)
-      complex(WP) :: C(1,6)
-      complex(WP) :: D
+      complex(RD) :: A(6,6)
+      real(RD)    :: Omega_rot_i
+      complex(RD) :: l_i
+      complex(RD) :: F_trb
+      complex(RD) :: B(6,1)
+      complex(RD) :: C(1,6)
+      complex(RD) :: D
 
       ! Evaluate the log(x)-space RHS matrix
 
@@ -237,20 +237,20 @@ contains
          F_trb = this%F_trb(i, st)
 
          B(1,1) = -A(1,2)
-         B(2,1) = V/Gamma_1 - 2._WP
+         B(2,1) = V/Gamma_1 - 2._RD
          B(3,1) = -A(3,2)
          B(4,1) = -A(4,2)
          B(5,1) = -A(5,2)
          B(6,1) = -A(6,2)
 
-         C(1,1) = F_trb*((l_i - 1._WP) + A(1,1))
+         C(1,1) = F_trb*((l_i - 1._RD) + A(1,1))
          C(1,2) = F_trb*A(1,2)
          C(1,3) = F_trb*A(1,3)
          C(1,4) = F_trb*A(1,4)
          C(1,5) = F_trb*A(1,5)
          C(1,6) = F_trb*A(1,6)
 
-         D = - 1._WP - F_trb*A(1,2)
+         D = - 1._RD - F_trb*A(1,2)
 
          ! Eliminate y_trb to find xA
 
@@ -275,15 +275,15 @@ contains
       class(tnad_eqns_t), intent(inout) :: this
       integer, intent(in)               :: i
       class(state_ct), intent(in)       :: st
-      complex(WP), intent(in)           :: y(:)
-      complex(WP)                       :: y_trb
+      complex(RD), intent(in)           :: y(:)
+      complex(RD)                       :: y_trb
 
-      complex(WP) :: A(6,6)
-      real(WP)    :: Omega_rot_i
-      complex(WP) :: l_i
-      complex(WP) :: F_trb
-      complex(WP) :: C(6)
-      complex(WP) :: D
+      complex(RD) :: A(6,6)
+      real(RD)    :: Omega_rot_i
+      complex(RD) :: l_i
+      complex(RD) :: F_trb
+      complex(RD) :: C(6)
+      complex(RD) :: D
 
       @:CHECK_BOUNDS(SIZE(y), 6)
 
@@ -305,14 +305,14 @@ contains
 
          F_trb = this%F_trb(i, st)
 
-         C(1) = F_trb*((l_i - 1._WP) + A(1,1))
+         C(1) = F_trb*((l_i - 1._RD) + A(1,1))
          C(2) = F_trb*A(1,2)
          C(3) = F_trb*A(1,3)
          C(4) = F_trb*A(1,4)
          C(5) = F_trb*A(1,5)
          C(6) = F_trb*A(1,6)
 
-         D = - 1._WP - F_trb*A(1,2)
+         D = - 1._RD - F_trb*A(1,2)
 
          y_trb = -DOT_PRODUCT(C, y)/D
 
@@ -331,17 +331,17 @@ contains
       class(tnad_eqns_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
-      complex(WP)                    :: F_trb
+      complex(RD)                    :: F_trb
 
-      real(WP)    :: Omega_rot
-      real(WP)    :: Omega_rot_i
-      complex(WP) :: omega_c
-      complex(WP) :: omega_c_r
-      complex(WP) :: i_omega_c
-      complex(WP) :: l_i
-      real(WP)    :: H_r
-      real(WP)    :: tau_conv
-      complex(WP) :: nu_trb
+      real(RD)    :: Omega_rot
+      real(RD)    :: Omega_rot_i
+      complex(RD) :: omega_c
+      complex(RD) :: omega_c_r
+      complex(RD) :: i_omega_c
+      complex(RD) :: l_i
+      real(RD)    :: H_r
+      real(RD)    :: tau_conv
+      complex(RD) :: nu_trb
 
       ! Evaluate the turbulent viscosity factor i*sigma*nu/(g r)
 
@@ -356,27 +356,27 @@ contains
          alpha_omg => this%alpha_omg, &
          alpha_trb => this%alpha_trb)
 
-         if (pt%x > 0._WP .AND. As < 0._WP) then
+         if (pt%x > 0._RD .AND. As < 0._RD) then
 
             Omega_rot = this%cx%Omega_rot(pt)
             Omega_rot_i = this%cx%Omega_rot(pt_i)
 
             omega_c = this%cx%omega_c(Omega_rot, st)
             omega_c_r = this%cx%omega_c(Omega_rot, st, use_omega_r=.TRUE.)
-            i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_omg, KIND=WP))*omega_c
+            i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
             l_i = this%cx%l_e(Omega_rot_i, st)
 
-            H_r = MIN(1._WP/V, 1._WP) ! = H_P/r
+            H_r = MIN(1._RD/V, 1._RD) ! = H_P/r
             tau_conv = SQRT(-c_1/As)
 
-            nu_trb = c_1*(H_r*alpha_trb)**2/(tau_conv*(1._WP + tau_conv*ABS(omega_c_r)/TWOPI))
+            nu_trb = c_1*(H_r*alpha_trb)**2/(tau_conv*(1._RD + tau_conv*ABS(omega_c_r)/TWOPI))
 
             F_trb = i_omega_c*nu_trb
 
          else
 
-            F_trb = 0._WP
+            F_trb = 0._RD
 
          endif
 

@@ -34,13 +34,13 @@ module ext_complex_m
 
    ! Parameter definitions
 
-   real(WP), parameter :: RADIX_WP = REAL(RADIX(1._WP), WP)
+   real(RD), parameter :: RADIX_RD = REAL(RADIX(1._RD), RD)
 
    ! Derived-type definitions
 
    type ext_ct
       private
-      complex(WP) :: f ! Fractional part
+      complex(RD) :: f ! Fractional part
       integer     :: e ! Exponent
    contains
       procedure       :: op_minus_cx_
@@ -168,12 +168,12 @@ contains
 
    elemental function ext_ct_r_(r) result(cx)
 
-      real(WP), intent(in) :: r
+      real(RD), intent(in) :: r
       type(ext_ct)         :: cx
 
       ! Construct the ext_ct from the real r
 
-      call split_(CMPLX(r, KIND=WP), cx%f, cx%e)
+      call split_(CMPLX(r, KIND=RD), cx%f, cx%e)
 
       ! Finish
 
@@ -185,13 +185,13 @@ contains
 
    elemental function ext_ct_r_i_(r, i) result(cx)
 
-      real(WP), intent(in) :: r
-      real(WP), intent(in) :: i
+      real(RD), intent(in) :: r
+      real(RD), intent(in) :: i
       type(ext_ct)         :: cx
 
       ! Construct the ext_ct from the real/imaginary pair r, i
 
-      call split_(CMPLX(r, i, KIND=WP), cx%f, cx%e)
+      call split_(CMPLX(r, i, KIND=RD), cx%f, cx%e)
 
       ! Finish
 
@@ -203,7 +203,7 @@ contains
 
    elemental function ext_ct_c_(c) result(cx)
 
-      complex(WP), intent(in) :: c
+      complex(RD), intent(in) :: c
       type(ext_ct)           :: cx
 
       ! Construct the ext_ct from the complex c
@@ -225,7 +225,7 @@ contains
 
       ! Construct the ext_ct from the ext_rt rx
 
-      call split_(CMPLX(FRACTION(rx), KIND=WP), cx%f, cx%e)
+      call split_(CMPLX(FRACTION(rx), KIND=RD), cx%f, cx%e)
       cx = scale(cx, EXPONENT(rx))
 
       ! Finish
@@ -245,7 +245,7 @@ contains
       ! Construct the ext_ct from the ext_rt real/imaginary pair rx,
       ! ix
 
-      cx = ext_ct(rx) + ext_ct(0._WP, 1._WP)*ext_ct(ix)
+      cx = ext_ct(rx) + ext_ct(0._RD, 1._RD)*ext_ct(ix)
 
       ! Finish
 
@@ -261,17 +261,17 @@ contains
       class(ext_ct), intent(in) :: that
       type(ext_ct)              :: cx
 
-      complex(WP) :: f
+      complex(RD) :: f
       integer     :: e
 
       ! Evaluate the plus operator
 
-      if (this%f == 0._WP) then
+      if (this%f == 0._RD) then
 
          cx%f = that%f
          cx%e = that%e
 
-      elseif (that%f == 0._WP) then
+      elseif (that%f == 0._RD) then
 
          cx%f = this%f
          cx%e = this%e
@@ -323,17 +323,17 @@ contains
       class(ext_ct), intent(in) :: that
       type(ext_ct)              :: cx
 
-      complex(WP) :: f
+      complex(RD) :: f
       integer     :: e
 
       ! Evaluate the minus operator
 
-      if (this%f == 0._WP) then
+      if (this%f == 0._RD) then
 
          cx%f = -that%f
          cx%e = that%e
 
-      elseif (that%f == 0._WP) then
+      elseif (that%f == 0._RD) then
 
          cx%f = this%f
          cx%e = this%e
@@ -367,14 +367,14 @@ contains
       class(ext_ct), intent(in) :: that
       type(ext_ct)              :: cx
 
-      complex(WP) :: f
+      complex(RD) :: f
       integer     :: e
 
       ! Evaluate the times operator
 
-      if (this%f == 0._WP .OR. that%f == 0._WP) then
+      if (this%f == 0._RD .OR. that%f == 0._RD) then
 
-         cx = ext_ct(0._WP)
+         cx = ext_ct(0._RD)
 
       else
 
@@ -400,14 +400,14 @@ contains
       class(ext_ct), intent(in) :: that
       type(ext_ct)              :: cx
 
-      complex(WP) :: f
+      complex(RD) :: f
       integer     :: e
 
       ! Evaluate the divide operator
 
-      if (this%f == 0._WP .AND. that%f /= 0._WP) then
+      if (this%f == 0._RD .AND. that%f /= 0._RD) then
 
-         cx = ext_ct(0._WP)
+         cx = ext_ct(0._RD)
 
       else
 
@@ -502,7 +502,7 @@ contains
       elemental function op_${N}$_cx_c_(this, that) result(${N}$)
 
          class(ext_ct), intent(in) :: this
-         complex(WP), intent(in)    :: that
+         complex(RD), intent(in)    :: that
          ${T}$                      :: ${N}$
 
          ! Evaluate the operator to mixed ext_ct/complex types
@@ -517,7 +517,7 @@ contains
 
       elemental function op_${N}$_c_cx_(this, that) result(${N}$)
 
-         complex(WP), intent(in)    :: this
+         complex(RD), intent(in)    :: this
          class(ext_ct), intent(in) :: that
          ${T}$                      :: ${N}$
 
@@ -534,7 +534,7 @@ contains
       elemental function op_${N}$_cx_r_(this, that) result(${N}$)
 
          class(ext_ct), intent(in) :: this
-         real(WP), intent(in)       :: that
+         real(RD), intent(in)       :: that
          ${T}$                      :: ${N}$
 
          ! Evaluate the operator to mixed ext_ct/real types
@@ -549,7 +549,7 @@ contains
 
       elemental function op_${N}$_r_cx_(this, that) result(${N}$)
 
-         real(WP), intent(in)       :: this
+         real(RD), intent(in)       :: this
          class(ext_ct), intent(in) :: that
          ${T}$                      :: ${N}$
 
@@ -588,7 +588,7 @@ contains
    elemental function real_(cx) result(r)
 
       type(ext_ct), intent(in) :: cx
-      real(WP)                 :: r
+      real(RD)                 :: r
 
       ! Convert cx to real
 
@@ -605,25 +605,25 @@ contains
    elemental function cmplx_(cx) result(c)
 
       type(ext_ct), intent(in) :: cx
-      complex(WP)              :: c
+      complex(RD)              :: c
 
       integer :: e_min
 
       ! Convert cx to complex
 
-      if (cx%f /= 0._WP) then
+      if (cx%f /= 0._RD) then
 
-         e_min = MINEXPONENT(0._WP)
+         e_min = MINEXPONENT(0._RD)
 
          if (cx%e >= e_min) then
-            c = cx%f*RADIX_WP**cx%e
+            c = cx%f*RADIX_RD**cx%e
          else
-            c = (cx%f*RADIX_WP**MAX(cx%e-e_min, -DIGITS(0._WP)-1))*RADIX_WP**e_min
+            c = (cx%f*RADIX_RD**MAX(cx%e-e_min, -DIGITS(0._RD)-1))*RADIX_RD**e_min
          endif
 
       else
 
-         c = 0._WP
+         c = 0._RD
 
       endif
 
@@ -676,7 +676,7 @@ contains
 
       ! Determine if cx is valid
 
-      valid = abs(REAL(cx%f)) >= RADIX_WP**(-1) .AND. abs(REAL(cx%f)) < 1._WP
+      valid = abs(REAL(cx%f)) >= RADIX_RD**(-1) .AND. abs(REAL(cx%f)) < 1._RD
 
       ! Finish
 
@@ -710,12 +710,12 @@ contains
       type(ext_ct)             :: prod_cx
 
       integer     :: i
-      complex(WP) :: f
+      complex(RD) :: f
       integer     :: e
 
       ! Calculate the product of the elements of cx
 
-      prod_cx%f = 1._WP
+      prod_cx%f = 1._RD
       prod_cx%e = SUM(cx%e)
 
       do i = 1,SIZE(cx)
@@ -764,7 +764,7 @@ contains
 
       exp_ex = exp(ext_rt(cx))
 
-      exp_cx%f = FRACTION(exp_ex)*exp((0._WP,1._WP)*AIMAG(cmplx(cx)))
+      exp_cx%f = FRACTION(exp_ex)*exp((0._RD,1._RD)*AIMAG(cmplx(cx)))
       exp_cx%e = EXPONENT(exp_ex)
 
       ! Finish
@@ -787,7 +787,7 @@ contains
       if (MOD(cx%e, 2) == 0) then
          sqrt_cx = scale(sqrt_cx, cx%e/2)
       else
-         sqrt_cx = scale(sqrt_cx, (cx%e-1)/2)*sqrt(2._WP)
+         sqrt_cx = scale(sqrt_cx, (cx%e-1)/2)*sqrt(2._RD)
       endif
 
       ! Finish
@@ -801,7 +801,7 @@ contains
    elemental function fraction_(cx) result(fraction_cx)
 
       type(ext_ct), intent(in) :: cx
-      complex(WP)              :: fraction_cx
+      complex(RD)              :: fraction_cx
 
       ! Return the fraction part of cx
 
@@ -838,11 +838,11 @@ contains
       integer, intent(in)        :: de
       type(ext_ct)              :: scale_cx
 
-      ! Scale cx by RADIX_WP**de
+      ! Scale cx by RADIX_RD**de
 
       scale_cx%f = cx%f
 
-      if (scale_cx%f /= 0._WP) then
+      if (scale_cx%f /= 0._RD) then
          scale_cx%e = cx%e + de
       else
          scale_cx%e = 0
@@ -858,14 +858,14 @@ contains
 
    elemental subroutine split_(c, f, e)
 
-      complex(WP), intent(in)  :: c
-      complex(WP), intent(out) :: f
+      complex(RD), intent(in)  :: c
+      complex(RD), intent(out) :: f
       integer, intent(out)     :: e
 
-      real(WP)    :: c_r
-      real(WP)    :: c_i
-      real(WP)    :: f_r
-      real(WP)    :: f_i
+      real(RD)    :: c_r
+      real(RD)    :: c_i
+      real(RD)    :: f_r
+      real(RD)    :: f_i
       integer     :: e_r
       integer     :: e_i
       integer     :: e_ref
@@ -878,9 +878,9 @@ contains
       f_r = FRACTION(c_r)
       f_i = FRACTION(c_i)
 
-      if (f_r == 0._WP .AND. f_i == 0._WP) then
+      if (f_r == 0._RD .AND. f_i == 0._RD) then
 
-         f = 0._WP
+         f = 0._RD
          e = 0
 
       else
@@ -888,25 +888,25 @@ contains
          e_r = EXPONENT(c_r)
          e_i = EXPONENT(c_i)
 
-         e_ref = MAXVAL([e_r,e_i], MASK=[f_r,f_i] /= 0._WP)
+         e_ref = MAXVAL([e_r,e_i], MASK=[f_r,f_i] /= 0._RD)
 
-         if (f_r /= 0._WP) then
-            if (e_r - e_ref < MINEXPONENT(0._WP)) then
+         if (f_r /= 0._RD) then
+            if (e_r - e_ref < MINEXPONENT(0._RD)) then
                f_r = 0
             else
-               f_r = f_r*RADIX_WP**(e_r - e_ref)
+               f_r = f_r*RADIX_RD**(e_r - e_ref)
             endif
          endif
 
-         if (f_i /= 0._WP) then
-            if (e_i - e_ref < MINEXPONENT(0._WP)) then
+         if (f_i /= 0._RD) then
+            if (e_i - e_ref < MINEXPONENT(0._RD)) then
                f_i = 0
             else
-               f_i = f_i*RADIX_WP**(e_i - e_ref)
+               f_i = f_i*RADIX_RD**(e_i - e_ref)
             endif
          endif
 
-         f = CMPLX(f_r, f_i, WP)
+         f = CMPLX(f_r, f_i, RD)
          e = e_ref
 
       endif

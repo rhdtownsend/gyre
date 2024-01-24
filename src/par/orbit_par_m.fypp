@@ -30,9 +30,9 @@ module orbit_par_m
    ! Derived-type definitions
 
    type :: orbit_par_t
-      real(WP)        :: Omega_orb = 1._WP
-      real(WP)        :: q = 1._WP
-      real(WP)        :: e = 0._WP
+      real(RD)        :: Omega_orb = 1._RD
+      real(RD)        :: q = 1._RD
+      real(RD)        :: e = 0._RD
       character(64)   :: Omega_orb_units = 'NONE'
       character(2048) :: tag_list = ''
    end type orbit_par_t
@@ -55,9 +55,9 @@ contains
 
       integer                              :: n_or_p
       integer                              :: i
-      real(WP)                             :: Omega_orb
-      real(WP)                             :: q
-      real(WP)                             :: e
+      real(RD)                             :: Omega_orb
+      real(RD)                             :: q
+      real(RD)                             :: e
       character(LEN(or_p%Omega_orb_units)) :: Omega_orb_units
       character(LEN(or_p%tag_list))        :: tag_list
 

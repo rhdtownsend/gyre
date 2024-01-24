@@ -119,15 +119,15 @@ contains
    subroutine trans_eqns(this, xA, i, st, from)
 
       class(sad_trans_t), intent(in) :: this
-      real(WP), intent(inout)        :: xA(:,:)
+      real(RD), intent(inout)        :: xA(:,:)
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
       logical  :: from_
-      real(WP) :: G(this%n_e,this%n_e)
-      real(WP) :: H(this%n_e,this%n_e)
-      real(WP) :: dH(this%n_e,this%n_e)
+      real(RD) :: G(this%n_e,this%n_e)
+      real(RD) :: H(this%n_e,this%n_e)
+      real(RD) :: dH(this%n_e,this%n_e)
 
       @:CHECK_BOUNDS(SIZE(xA, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(xA, 2), this%n_e)
@@ -170,14 +170,14 @@ contains
    subroutine trans_cond(this, C, i, st, from)
 
       class(sad_trans_t), intent(in) :: this
-      real(WP), intent(inout)        :: C(:,:)
+      real(RD), intent(inout)        :: C(:,:)
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
       logical  :: from_
-      real(WP) :: G(this%n_e,this%n_e)
-      real(WP) :: H(this%n_e,this%n_e)
+      real(RD) :: G(this%n_e,this%n_e)
+      real(RD) :: H(this%n_e,this%n_e)
 
       @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
 
@@ -220,14 +220,14 @@ contains
    subroutine trans_vars(this, y, i, st, from)
 
       class(sad_trans_t), intent(in) :: this
-      real(WP), intent(inout)        :: y(:)
+      real(RD), intent(inout)        :: y(:)
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
       logical  :: from_
-      real(WP) :: G(this%n_e,this%n_e)
-      real(WP) :: H(this%n_e,this%n_e)
+      real(RD) :: G(this%n_e,this%n_e)
+      real(RD) :: H(this%n_e,this%n_e)
 
       @:CHECK_BOUNDS(SIZE(y), this%n_e)
 
@@ -272,7 +272,7 @@ contains
       class(sad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: G(this%n_e,this%n_e)
+      real(RD)                       :: G(this%n_e,this%n_e)
 
       ! Evaluate the transformation matrix to convert variables from
       ! GYRE's canonical form
@@ -295,7 +295,7 @@ contains
       class(sad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: H(this%n_e,this%n_e)
+      real(RD)                       :: H(this%n_e,this%n_e)
 
       ! Evaluate the transformation matrix to convert variables to
       ! canonical form
@@ -318,7 +318,7 @@ contains
       class(sad_trans_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
-      real(WP)                       :: dH(this%n_e,this%n_e)
+      real(RD)                       :: dH(this%n_e,this%n_e)
 
       ! Evaluate the derivative x dH/dx of the transformation matrix H
 

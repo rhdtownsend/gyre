@@ -32,7 +32,7 @@ module rot_par_m
    ! Derived-type definitions
 
    type :: rot_par_t
-      real(WP)        :: Omega_rot = 0._WP
+      real(RD)        :: Omega_rot = 0._RD
       character(64)   :: coriolis_method = 'NULL'
       character(64)   :: Omega_rot_source = 'MODEL'
       character(64)   :: Omega_rot_units = 'NONE'
@@ -59,7 +59,7 @@ contains
 
       integer                               :: n_rt_p
       integer                               :: i
-      real(WP)                              :: Omega_rot
+      real(RD)                              :: Omega_rot
       character(LEN(rt_p%coriolis_method))  :: coriolis_method
       character(LEN(rt_p%Omega_rot_source)) :: Omega_rot_source
       character(LEN(rt_p%Omega_rot_units))  :: Omega_rot_units

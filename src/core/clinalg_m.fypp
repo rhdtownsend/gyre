@@ -304,8 +304,8 @@ module clinalg_m
          integer, intent(out) :: INFO, ILO, IHI
          real(SP), intent(out) :: ABNRM
          real(SP), intent(out) :: SCALE(*), RCONDE(*), RCONDV(*), RWORK(*)
-         complex(WP), intent(inout) :: A(LDA,*)
-         complex(WP), intent(out) :: VL(LDVL,*), VR(LDVR,*), W(*), WORK(*)
+         complex(RD), intent(inout) :: A(LDA,*)
+         complex(RD), intent(out) :: VL(LDVL,*), VR(LDVR,*), W(*), WORK(*)
       end subroutine CGEEVX
       subroutine ZGEEVX (BALANC, JOBVL, JOBVR, SENSE, N, A, LDA, W, VL, LDVL, VR, LDVR, ILO, IHI, SCALE, ABNRM, &
          RCONDE, RCONDV, WORK, LWORK, RWORK, INFO)
@@ -542,11 +542,11 @@ contains
 
    function xlamch(x, cmach)
 
-      real(WP), intent(in)     :: x
+      real(RD), intent(in)     :: x
       character(*), intent(in) :: cmach
-      real(WP)                 :: xlamch
+      real(RD)                 :: xlamch
 
-      real(WP), external :: DLAMCH
+      real(RD), external :: DLAMCH
 
       xlamch = DLAMCH(cmach)
 

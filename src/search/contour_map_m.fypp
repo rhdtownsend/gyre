@@ -43,8 +43,8 @@ module contour_map_m
       type(contour_path_t), allocatable :: cp_re(:)
       type(contour_path_t), allocatable :: cp_im(:)
       type(ext_ct), allocatable         :: f(:,:)
-      real(WP), allocatable             :: z_re(:)
-      real(WP), allocatable             :: z_im(:)
+      real(RD), allocatable             :: z_re(:)
+      real(RD), allocatable             :: z_im(:)
       integer, public                   :: n_re
       integer, public                   :: n_im
    contains
@@ -69,17 +69,17 @@ contains
 
    function contour_map_t_(z_re, z_im, f, process_isect) result(cm)
 
-      real(WP), intent(in) :: z_re(:)
-      real(WP), intent(in) :: z_im(:)
+      real(RD), intent(in) :: z_re(:)
+      real(RD), intent(in) :: z_im(:)
       type(ext_ct)         :: f(:,:)
       type(contour_map_t)  :: cm
       interface
          subroutine process_isect (omega_a_re, omega_b_re, omega_a_im, omega_b_im)
             use kinds_m
-            complex(WP), intent(in) :: omega_a_re
-            complex(WP), intent(in) :: omega_b_re
-            complex(WP), intent(in) :: omega_a_im
-            complex(WP), intent(in) :: omega_b_im
+            complex(RD), intent(in) :: omega_a_re
+            complex(RD), intent(in) :: omega_b_re
+            complex(RD), intent(in) :: omega_a_im
+            complex(RD), intent(in) :: omega_b_im
          end subroutine process_isect
       end interface
 
@@ -112,10 +112,10 @@ contains
       interface
          subroutine process_isect (z_a_re, z_b_re, z_a_im, z_b_im)
             use kinds_m
-            complex(WP), intent(in) :: z_a_re
-            complex(WP), intent(in) :: z_b_re
-            complex(WP), intent(in) :: z_a_im
-            complex(WP), intent(in) :: z_b_im
+            complex(RD), intent(in) :: z_a_re
+            complex(RD), intent(in) :: z_b_re
+            complex(RD), intent(in) :: z_a_im
+            complex(RD), intent(in) :: z_b_im
          end subroutine process_isect
       end interface
 
@@ -127,10 +127,10 @@ contains
       integer                  :: i_im
       integer                  :: code_re
       integer                  :: code_im
-      complex(WP), allocatable :: z_a_re(:)
-      complex(WP), allocatable :: z_b_re(:)
-      complex(WP), allocatable :: z_a_im(:)
-      complex(WP), allocatable :: z_b_im(:)
+      complex(RD), allocatable :: z_a_re(:)
+      complex(RD), allocatable :: z_b_re(:)
+      complex(RD), allocatable :: z_a_im(:)
+      complex(RD), allocatable :: z_b_im(:)
 
       ! Loop through the cells, adding segments to the path lists
 
@@ -183,14 +183,14 @@ contains
          integer, intent(in)                              :: code
          type(contour_path_t), allocatable, intent(inout) :: cp(:)
          integer, intent(inout)                           :: n_cp
-         complex(WP), allocatable, intent(out)            :: z_a(:)
-         complex(WP), allocatable, intent(out)            :: z_b(:)
+         complex(RD), allocatable, intent(out)            :: z_a(:)
+         complex(RD), allocatable, intent(out)            :: z_b(:)
          character(*), intent(in)                         :: part
 
-         complex(WP)   :: z_a_1
-         complex(WP)   :: z_a_2
-         complex(WP)   :: z_b_1
-         complex(WP)   :: z_b_2
+         complex(RD)   :: z_a_1
+         complex(RD)   :: z_a_2
+         complex(RD)   :: z_b_1
+         complex(RD)   :: z_b_2
 
          ! Add segments based on the code
 
@@ -324,8 +324,8 @@ contains
          integer, intent(in)                              :: e_b
          type(contour_path_t), allocatable, intent(inout) :: cp(:)
          integer, intent(inout)                           :: n_cp
-         complex(WP), intent(out)                         :: z_a
-         complex(WP), intent(out)                         :: z_b
+         complex(RD), intent(out)                         :: z_a
+         complex(RD), intent(out)                         :: z_b
          character(*), intent(in)                         :: part
 
          integer              :: tag_a
@@ -433,20 +433,20 @@ contains
          integer, intent(in)                              :: e_b_2
          type(contour_path_t), allocatable, intent(inout) :: cp(:)
          integer, intent(inout)                           :: n_cp
-         complex(WP), intent(out)                         :: z_a_1
-         complex(WP), intent(out)                         :: z_b_1
-         complex(WP), intent(out)                         :: z_a_2
-         complex(WP), intent(out)                         :: z_b_2
+         complex(RD), intent(out)                         :: z_a_1
+         complex(RD), intent(out)                         :: z_b_1
+         complex(RD), intent(out)                         :: z_a_2
+         complex(RD), intent(out)                         :: z_b_2
          character(*), intent(in)                         :: part
 
          type(contour_path_t), allocatable :: cp_alt(:)
          integer                           :: n_cp_alt
-         complex(WP)                       :: z_a_1_alt
-         complex(WP)                       :: z_b_1_alt
-         complex(WP)                       :: z_a_2_alt
-         complex(WP)                       :: z_b_2_alt
-         real(WP)                          :: l
-         real(WP)                          :: l_alt
+         complex(RD)                       :: z_a_1_alt
+         complex(RD)                       :: z_b_1_alt
+         complex(RD)                       :: z_a_2_alt
+         complex(RD)                       :: z_b_2_alt
+         real(RD)                          :: l
+         real(RD)                          :: l_alt
 
          ! Handle the case where there are two segments and two possible
          ! configurations
@@ -494,11 +494,11 @@ contains
 
          integer, intent(in)      :: e
          character(*), intent(in) :: part
-         complex(WP)              :: z
+         complex(RD)              :: z
 
          type(ext_ct) :: f_a
          type(ext_ct) :: f_b
-         real(WP)     :: w
+         real(RD)     :: w
 
          ! Interpolate the contour intersection with edge e
 
@@ -539,30 +539,30 @@ contains
             @:ABORT('invalid part')
          end select
 
-         @:ASSERT_DEBUG(w >= 0._WP)
-         @:ASSERT_DEBUG(w <= 1._WP)
+         @:ASSERT_DEBUG(w >= 0._RD)
+         @:ASSERT_DEBUG(w <= 1._RD)
 
          select case (e)
 
          case (1)
 
-            z = CMPLX((1._WP-w)*cm%z_re(i_re) + w*cm%z_re(i_re+1), &
-               cm%z_im(i_im), WP)
+            z = CMPLX((1._RD-w)*cm%z_re(i_re) + w*cm%z_re(i_re+1), &
+               cm%z_im(i_im), RD)
 
          case (2)
 
             z = CMPLX(cm%z_re(i_re+1), &
-               (1._WP-w)*cm%z_im(i_im) + w*cm%z_im(i_im+1), WP)
+               (1._RD-w)*cm%z_im(i_im) + w*cm%z_im(i_im+1), RD)
 
          case (3)
 
-            z = CMPLX((1._WP-w)*cm%z_re(i_re+1) + w*cm%z_re(i_re), &
-               cm%z_im(i_im+1), WP)
+            z = CMPLX((1._RD-w)*cm%z_re(i_re+1) + w*cm%z_re(i_re), &
+               cm%z_im(i_im+1), RD)
 
          case (4)
 
             z = CMPLX(cm%z_re(i_re), &
-               (1._WP-w)*cm%z_im(i_im+1) + w*cm%z_im(i_im), WP)
+               (1._RD-w)*cm%z_im(i_im+1) + w*cm%z_im(i_im), RD)
 
          case default
 
@@ -592,10 +592,10 @@ contains
 
       code = 0
 
-      if (f(1,1) > 0._WP) code = code + 1
-      if (f(2,1) > 0._WP) code = code + 2
-      if (f(2,2) > 0._WP) code = code + 4
-      if (f(1,2) > 0._WP) code = code + 8
+      if (f(1,1) > 0._RD) code = code + 1
+      if (f(2,1) > 0._RD) code = code + 2
+      if (f(2,2) > 0._RD) code = code + 4
+      if (f(1,2) > 0._RD) code = code + 8
 
       ! Finish
 
@@ -708,27 +708,27 @@ contains
 
    subroutine check_isect_(z_a_re, z_b_re, z_a_im, z_b_im, process_isect)
 
-      complex(WP), intent(in) :: z_a_re(:)
-      complex(WP), intent(in) :: z_b_re(:)
-      complex(WP), intent(in) :: z_a_im(:)
-      complex(WP), intent(in) :: z_b_im(:)
+      complex(RD), intent(in) :: z_a_re(:)
+      complex(RD), intent(in) :: z_b_re(:)
+      complex(RD), intent(in) :: z_a_im(:)
+      complex(RD), intent(in) :: z_b_im(:)
       interface
          subroutine process_isect (z_a_re, z_b_re, z_a_im, z_b_im)
             use kinds_m
-            complex(WP), intent(in) :: z_a_re
-            complex(WP), intent(in) :: z_b_re
-            complex(WP), intent(in) :: z_a_im
-            complex(WP), intent(in) :: z_b_im
+            complex(RD), intent(in) :: z_a_re
+            complex(RD), intent(in) :: z_b_re
+            complex(RD), intent(in) :: z_a_im
+            complex(RD), intent(in) :: z_b_im
          end subroutine process_isect
       end interface
 
       integer  :: i_re
       integer  :: i_im
-      real(WP) :: M(2,2)
-      real(WP) :: R(2)
-      real(WP) :: D
-      real(WP) :: w_re
-      real(WP) :: w_im
+      real(RD) :: M(2,2)
+      real(RD) :: R(2)
+      real(RD) :: D
+      real(RD) :: w_re
+      real(RD) :: w_im
 
       @:CHECK_BOUNDS(SIZE(z_a_re), SIZE(z_b_re))
       @:CHECK_BOUNDS(SIZE(z_a_im), SIZE(z_b_im))
@@ -752,15 +752,15 @@ contains
 
             D = M(1,1)*M(2,2) - M(1,2)*M(2,1)
 
-            if (D /= 0._WP) then
+            if (D /= 0._RD) then
 
                ! Lines intersect
 
                w_re = (M(2,2)*R(1) - M(1,2)*R(2))/D
                w_im = (M(1,1)*R(2) - M(2,1)*R(1))/D
 
-               if (w_re >= 0._WP .AND. w_re <= 1._WP .AND. &
-                  w_im >= 0._WP .AND. w_im <= 1._WP) then
+               if (w_re >= 0._RD .AND. w_re <= 1._RD .AND. &
+                  w_im >= 0._RD .AND. w_im <= 1._RD) then
 
                   ! Lines intersect within their endpoints
 

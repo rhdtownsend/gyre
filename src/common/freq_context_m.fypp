@@ -67,7 +67,7 @@ contains
       class(context_t), intent(in) :: cx
       type(mode_par_t), intent(in) :: md_p
       type(osc_par_t), intent(in)  :: os_p
-      real(WP)                     :: scale
+      real(RD)                     :: scale
 
       class(model_t), pointer :: ml => null()
       type(point_t)           :: pt_i
@@ -84,17 +84,17 @@ contains
 
       select case (units)
       case ('ACOUSTIC_DELTA')
-         scale = 1._WP/(TWOPI*ml%Delta_p(pt_i%x, pt_o%x))
+         scale = 1._RD/(TWOPI*ml%Delta_p(pt_i%x, pt_o%x))
       case ('GRAVITY_DELTA')
-         scale = 1._WP/(TWOPI*ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP)))
+         scale = 1._RD/(TWOPI*ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._RD)))
       case ('UPPER_DELTA')
-         scale = 1._WP/(TWOPI*MAX(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))))
+         scale = 1._RD/(TWOPI*MAX(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._RD))))
       case ('LOWER_DELTA')
-         scale = 1._WP/(TWOPI*MIN(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._WP))))
+         scale = 1._RD/(TWOPI*MIN(ml%Delta_p(pt_i%x, pt_o%x), ml%Delta_g(pt_i%x, pt_o%x, md_p%l*(md_p%l+1._RD))))
       case ('ROSSBY_I')
-         scale = -md_p%l*(md_p%l+1)/(2._WP*md_p%m*cx%Omega_rot(pt_i))
+         scale = -md_p%l*(md_p%l+1)/(2._RD*md_p%m*cx%Omega_rot(pt_i))
       case ('ROSSBY_O')
-         scale = -md_p%l*(md_p%l+1)/(2._WP*md_p%m*cx%Omega_rot(pt_o))
+         scale = -md_p%l*(md_p%l+1)/(2._RD*md_p%m*cx%Omega_rot(pt_o))
       case default
          select type (ml)
          class is (evol_model_t)
@@ -119,18 +119,18 @@ contains
       type(point_t), intent(in)      :: pt
       type(mode_par_t), intent(in)   :: md_p
       type(osc_par_t), intent(in)    :: os_p
-      real(WP)                       :: scale
+      real(RD)                       :: scale
 
-      real(WP) :: omega_cutoff_lo
-      real(WP) :: omega_cutoff_hi
+      real(RD) :: omega_cutoff_lo
+      real(RD) :: omega_cutoff_hi
 
       select case (units)
       case ('ACOUSTIC_CUTOFF')
          call eval_cutoff_freqs(ml, pt, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
-         scale = 1._WP/omega_cutoff_hi
+         scale = 1._RD/omega_cutoff_hi
       case ('GRAVITY_CUTOFF')
          call eval_cutoff_freqs(ml, pt, md_p, os_p, omega_cutoff_lo, omega_cutoff_hi)
-         scale = 1._WP/omega_cutoff_lo
+         scale = 1._RD/omega_cutoff_lo
       case default
          scale = freq_scale(units, ml)
       end select
@@ -148,7 +148,7 @@ contains
       character(*), intent(in)     :: frame
       class(context_t), intent(in) :: cx
       type(mode_par_t), intent(in) :: md_p
-      real(WP)                     :: shift
+      real(RD)                     :: shift
 
       type(point_t) :: pt_i
       type(point_t) :: pt_o
@@ -162,7 +162,7 @@ contains
 
       select case (frame)
       case ('INERTIAL')
-         shift = 0._WP
+         shift = 0._RD
       case ('COROT_I')
          shift = -md_p%m*cx%Omega_rot(pt_i)
       case ('COROT_O')
@@ -185,14 +185,14 @@ contains
       type(point_t), intent(in)    :: pt
       type(mode_par_t), intent(in) :: md_p
       type(osc_par_t), intent(in)  :: os_p
-      real(WP), intent(out)        :: omega_cutoff_lo
-      real(WP), intent(out)        :: omega_cutoff_hi
+      real(RD), intent(out)        :: omega_cutoff_lo
+      real(RD), intent(out)        :: omega_cutoff_hi
 
       character(LEN(os_p%outer_bound)) :: outer_bound
-      real(WP)                         :: V
-      real(WP)                         :: As
-      real(WP)                         :: c_1
-      real(WP)                         :: Gamma_1
+      real(RD)                         :: V
+      real(RD)                         :: As
+      real(RD)                         :: c_1
+      real(RD)                         :: Gamma_1
       logical, save                    :: warned = .FALSE.
 
       ! Evaluate the cutoff frequencies
@@ -216,17 +216,17 @@ contains
       case ('ISOTHERMAL')
 
          call eval_atmos_coeffs_isothrm(ml, pt, V, As, c_1, Gamma_1)
-         call eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+         call eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, md_p%l*(md_p%l+1._RD), omega_cutoff_lo, omega_cutoff_hi)
 
       case ('UNNO')
 
          call eval_atmos_coeffs_unno(ml, pt, V, As, c_1, Gamma_1)
-         call eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+         call eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, md_p%l*(md_p%l+1._RD), omega_cutoff_lo, omega_cutoff_hi)
 
       case ('JCD')
 
          call eval_atmos_coeffs_isothrm(ml, pt, V, As, c_1, Gamma_1)
-         call eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, md_p%l*(md_p%l+1._WP), omega_cutoff_lo, omega_cutoff_hi)
+         call eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, md_p%l*(md_p%l+1._RD), omega_cutoff_lo, omega_cutoff_hi)
 
       case default
 

@@ -110,8 +110,8 @@ contains
 
       class(sad_diff_t), intent(in) :: this
       class(state_rt), intent(in)   :: st
-      real(WP), intent(out)         :: E_l(:,:)
-      real(WP), intent(out)         :: E_r(:,:)
+      real(RD), intent(out)         :: E_l(:,:)
+      real(RD), intent(out)         :: E_r(:,:)
       type(ext_rt), intent(out)     :: scl
 
       @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)

@@ -44,40 +44,40 @@ module colloc_diff_m
    integer, parameter :: GL4_SCHEME = 2
    integer, parameter :: GL6_SCHEME = 3
 
-   real(WP), parameter :: GL2_C_I(1) = [0.5_WP]
+   real(RD), parameter :: GL2_C_I(1) = [0.5_RD]
 
-   real(WP), parameter :: GL4_A_IJ(2,2) = RESHAPE([ &
-      0.25_WP, &
-      0.25_WP+sqrt(3._WP)/6._WP, &
-      0.25_WP-sqrt(3._WP)/6._WP, &
-      0.25_WP], &
+   real(RD), parameter :: GL4_A_IJ(2,2) = RESHAPE([ &
+      0.25_RD, &
+      0.25_RD+sqrt(3._RD)/6._RD, &
+      0.25_RD-sqrt(3._RD)/6._RD, &
+      0.25_RD], &
       [2,2])
-   real(WP), parameter :: GL4_B_I(2) = [ &
-      0.5_WP, &
-      0.5_WP]
-   real(WP), parameter :: GL4_C_I(2) = [ &
-      0.5_WP-sqrt(3._WP)/6._WP, &
-      0.5_WP+sqrt(3._WP)/6._WP]
+   real(RD), parameter :: GL4_B_I(2) = [ &
+      0.5_RD, &
+      0.5_RD]
+   real(RD), parameter :: GL4_C_I(2) = [ &
+      0.5_RD-sqrt(3._RD)/6._RD, &
+      0.5_RD+sqrt(3._RD)/6._RD]
 
-   real(WP), parameter :: GL6_A_IJ(3,3) = RESHAPE([ &
-      5._WP/36._WP, &
-      5._WP/36._WP+sqrt(15._WP)/24._WP, &
-      5._WP/36._WP+sqrt(15._WP)/30._WP, &
-      2._WP/9._WP-sqrt(15._WP)/15._WP, &
-      2._WP/9._WP, &
-      2._WP/9._WP+sqrt(15._WP)/15._WP, &
-      5._WP/36._WP-sqrt(15._WP)/30._WP, &
-      5._WP/36._WP-sqrt(15._WP)/24._WP, &
-      5._WP/36._WP], &
+   real(RD), parameter :: GL6_A_IJ(3,3) = RESHAPE([ &
+      5._RD/36._RD, &
+      5._RD/36._RD+sqrt(15._RD)/24._RD, &
+      5._RD/36._RD+sqrt(15._RD)/30._RD, &
+      2._RD/9._RD-sqrt(15._RD)/15._RD, &
+      2._RD/9._RD, &
+      2._RD/9._RD+sqrt(15._RD)/15._RD, &
+      5._RD/36._RD-sqrt(15._RD)/30._RD, &
+      5._RD/36._RD-sqrt(15._RD)/24._RD, &
+      5._RD/36._RD], &
       [3,3])
-   real(WP), parameter :: GL6_B_I(3) = [ &
-      5._WP/18._WP, &
-      4._WP/9._WP, &
-      5._WP/18._WP]
-   real(WP), parameter :: GL6_C_I(3) = [ &
-      0.5_WP-sqrt(15._WP)/10._WP, &
-      0.5_WP, &
-      0.5_WP+sqrt(15._WP)/10._WP]
+   real(RD), parameter :: GL6_B_I(3) = [ &
+      5._RD/18._RD, &
+      4._RD/9._RD, &
+      5._RD/18._RD]
+   real(RD), parameter :: GL6_C_I(3) = [ &
+      0.5_RD-sqrt(15._RD)/10._RD, &
+      0.5_RD, &
+      0.5_RD+sqrt(15._RD)/10._RD]
 
    #:for S in DTYPE_SUFFIXES
 
@@ -86,7 +86,7 @@ module colloc_diff_m
       type, extends(diff_${S}$) :: colloc_diff_${S}$
          private
          class(eqns_${S}$), allocatable :: eq
-         real(WP)                       :: dx
+         real(RD)                       :: dx
          integer                        :: n_s
          integer                        :: scheme
          logical                        :: reverse
@@ -127,7 +127,7 @@ contains
          character(*), intent(in)      :: scheme
          type(colloc_diff_${S}$)       :: df
 
-         real(WP), allocatable      :: c_i(:)
+         real(RD), allocatable      :: c_i(:)
          type(point_t), allocatable :: pt(:)
 
          @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
@@ -151,7 +151,7 @@ contains
             @:ABORT('invalid scheme')
          end select
 
-         df%reverse = pt_a%x >= 0.5_WP
+         df%reverse = pt_a%x >= 0.5_RD
 
          allocate(pt(df%n_s))
 
@@ -231,14 +231,14 @@ contains
          ! Build the GL2 difference equations
 
          if (this%reverse) then
-            E_l = 0.5_WP*this%dx*A - identity_matrix(this%n_e)
-            E_r = 0.5_WP*this%dx*A + identity_matrix(this%n_e)
+            E_l = 0.5_RD*this%dx*A - identity_matrix(this%n_e)
+            E_r = 0.5_RD*this%dx*A + identity_matrix(this%n_e)
          else
-            E_l = 0.5_WP*this%dx*A + identity_matrix(this%n_e)
-            E_r = 0.5_WP*this%dx*A - identity_matrix(this%n_e)
+            E_l = 0.5_RD*this%dx*A + identity_matrix(this%n_e)
+            E_r = 0.5_RD*this%dx*A - identity_matrix(this%n_e)
          endif
 
-         scl = ext_${S}$(1._WP)
+         scl = ext_${S}$(1._RD)
 
          ! Finish
 
@@ -262,7 +262,7 @@ contains
             call this%build_irk_${S}$_(st, GL4_A_IJ, GL4_B_I, E_l, E_r)
          endif
 
-         scl = ext_${S}$(1._WP)
+         scl = ext_${S}$(1._RD)
 
          ! Finish
 
@@ -286,7 +286,7 @@ contains
             call this%build_irk_${S}$_(st, GL6_A_IJ, GL6_B_I, E_l, E_r)
          endif
 
-         scl = ext_${S}$(1._WP)
+         scl = ext_${S}$(1._RD)
 
          ! Finish
 
@@ -298,8 +298,8 @@ contains
 
          class(colloc_diff_${S}$), intent(in) :: this
          class(state_${S}$), intent(in)       :: st
-         real(WP), intent(in)                 :: a_ij(:,:)
-         real(WP), intent(in)                 :: b_i(:)
+         real(RD), intent(in)                 :: a_ij(:,:)
+         real(RD), intent(in)                 :: b_i(:)
          ${T}$, intent(out)                   :: E_a(:,:)
          ${T}$, intent(out)                   :: E_b(:,:)
 

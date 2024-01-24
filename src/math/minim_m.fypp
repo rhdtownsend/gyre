@@ -190,7 +190,7 @@ contains
          ${T}$, optional, intent(inout) :: f_x_b
          ${T}$, optional, intent(inout) :: f_x_c
 
-         real(WP), parameter :: R = 0.61803399_WP
+         real(RD), parameter :: R = 0.61803399_RD
 
          logical :: relative_tol_
          ${T}$   :: a
@@ -269,9 +269,9 @@ contains
             ! Check for convegence
 
             if (relative_tol_) then
-               tol = (sqrt(EPSILON(0._WP)) + 0.5_WP*x_tol)*(abs(a) + abs(c))
+               tol = (sqrt(EPSILON(0._RD)) + 0.5_RD*x_tol)*(abs(a) + abs(c))
             else
-               tol = sqrt(EPSILON(0._WP))*(abs(a) + abs(c)) + x_tol
+               tol = sqrt(EPSILON(0._RD))*(abs(a) + abs(c)) + x_tol
             endif
 
             if (abs(c-a) <= tol) exit iterate_loop
@@ -282,7 +282,7 @@ contains
 
                ! New point in left interval
 
-               d = (1._WP-R)*b + R*a
+               d = (1._RD-R)*b + R*a
 
                call eval_func(d, f_d, status)
                if (status /= STATUS_OK) return
@@ -301,7 +301,7 @@ contains
 
                ! New point in right interval
 
-               d = (1._WP-R)*b + R*c
+               d = (1._RD-R)*b + R*c
 
                call eval_func(d, f_d, status)
                if (status /= STATUS_OK) return

@@ -39,7 +39,7 @@ module tar_fit_m
    type :: tar_fit_t
       private
       type(cheb_fit_t) :: cf
-      real(WP)         :: q_0
+      real(RD)         :: q_0
       integer, public  :: m
       integer, public  :: k
    contains
@@ -79,7 +79,7 @@ contains
 
       integer, intent(in)  :: m
       integer, intent(in)  :: k
-      real(WP), intent(in) :: cheb_tol
+      real(RD), intent(in) :: cheb_tol
       type(tar_fit_t)      :: tf
 
       integer :: l
@@ -93,9 +93,9 @@ contains
 
          ! Gravito-inertial waves
 
-         tf%q_0 = 0._WP
+         tf%q_0 = 0._RD
 
-         tf%cf = cheb_fit_t(-1._WP, 1._WP, cheb_tol, f_grav_)
+         tf%cf = cheb_fit_t(-1._RD, 1._RD, cheb_tol, f_grav_)
 
       else
 
@@ -103,15 +103,15 @@ contains
 
          l = abs(m) + abs(k) - 1
 
-         tf%q_0 = -REAL(l*(l+1), WP)/REAL(m, WP)
+         tf%q_0 = -REAL(l*(l+1), RD)/REAL(m, RD)
 
          if (m > 0) then
 
-            tf%cf = cheb_fit_t(-1._WP, 0._WP, cheb_tol, f_ross_)
+            tf%cf = cheb_fit_t(-1._RD, 0._RD, cheb_tol, f_ross_)
 
          elseif (m < 0) then
 
-            tf%cf = cheb_fit_t(0._WP, 1._WP, cheb_tol, f_ross_)
+            tf%cf = cheb_fit_t(0._RD, 1._RD, cheb_tol, f_ross_)
 
          else
 
@@ -129,38 +129,38 @@ contains
 
       function f_grav_(x) result(f)
 
-         real(WP), intent(in) :: x
-         real(WP)             :: f
+         real(RD), intent(in) :: x
+         real(RD)             :: f
 
          ! Calculate the gravity-wave eigenvalue function
 
          if (m == 0 .AND. k == 0) then
 
-            f = 1._WP
+            f = 1._RD
 
          else
 
-            if (x == -1._WP) then
+            if (x == -1._RD) then
 
                if (m <= 0) then
                   if (k == 0) then
-                     f = 0._WP
+                     f = 0._RD
                   else
-                     f = (2._WP*(k-1) + 1._WP)**2
+                     f = (2._RD*(k-1) + 1._RD)**2
                   endif
                elseif (m > 0) then
-                  f = (2._WP*(k+1) + 1._WP)**2
+                  f = (2._RD*(k+1) + 1._RD)**2
                endif
 
-            elseif (x == 1._WP) then
+            elseif (x == 1._RD) then
 
                if (m < 0) then
-                  f = (2._WP*(k+1) + 1._WP)**2
+                  f = (2._RD*(k+1) + 1._RD)**2
                else
                   if (k == 0) then
-                     f = 0._WP
+                     f = 0._RD
                   else
-                     f = (2._WP*(k-1) + 1._WP)**2
+                     f = (2._RD*(k-1) + 1._RD)**2
                   endif
                endif
 
@@ -184,22 +184,22 @@ contains
 
       function f_ross_(x) result(f)
 
-         real(WP), intent(in) :: x
-         real(WP)             :: f
+         real(RD), intent(in) :: x
+         real(RD)             :: f
 
          ! Calculate the Rossby-wave eigenvaule function
 
-         if (x == 0._WP) then
+         if (x == 0._RD) then
 
-            f = 0._WP
+            f = 0._RD
 
-         elseif (m > 0 .AND. x == -1._WP) then
+         elseif (m > 0 .AND. x == -1._RD) then
 
-            f = 1._WP
+            f = 1._RD
 
-         elseif (m < 0 .AND. x == 1._WP) then
+         elseif (m < 0 .AND. x == 1._RD) then
 
-            f = 1._WP
+            f = 1._RD
 
          else
 
@@ -270,8 +270,8 @@ contains
    function lambda_r_(this, q) result(lambda)
 
       class(tar_fit_t), intent(in), target :: this
-      real(WP), intent(in)                 :: q
-      real(WP)                             :: lambda
+      real(RD), intent(in)                 :: q
+      real(RD)                             :: lambda
 
       ! Evaluate the eigenvalue of Laplace's tidal equation (real)
 
@@ -314,8 +314,8 @@ contains
    function lambda_c_(this, q) result(lambda)
 
       class(tar_fit_t), intent(in) :: this
-      complex(WP), intent(in)      :: q
-      complex(WP)                  :: lambda
+      complex(RD), intent(in)      :: q
+      complex(RD)                  :: lambda
 
       ! Evaluate the eigenvalue of Laplace's tidal equation (complex)
 
@@ -357,10 +357,10 @@ contains
 
    function lambda_norm_grav_(q, m, k) result(lambda_norm)
 
-      real(WP), intent(in) :: q
+      real(RD), intent(in) :: q
       integer, intent(in)  :: m
       integer, intent(in)  :: k
-      real(WP)             :: lambda_norm
+      real(RD)             :: lambda_norm
 
       integer :: l
 
@@ -368,7 +368,7 @@ contains
 
       if (m == 0 .AND. k == 0) then
 
-         lambda_norm = 0._WP
+         lambda_norm = 0._RD
 
       elseif (k >= 0) then
 
@@ -392,20 +392,20 @@ contains
 
    function lambda_norm_ross_(q, m, k) result(lambda_norm)
 
-      real(WP), intent(in) :: q
+      real(RD), intent(in) :: q
       integer, intent(in)  :: m
       integer, intent(in)  :: k
-      real(WP)             :: lambda_norm
+      real(RD)             :: lambda_norm
 
       integer :: s
 
       ! Evaluate the Rossby-wave eigenvalue normalization function
 
-      if (m*q < 0._WP) then
+      if (m*q < 0._RD) then
 
          if (k < -1) then
             s = -k -1
-            lambda_norm = REAL(m, WP)**2/(2*s+1)**2
+            lambda_norm = REAL(m, RD)**2/(2*s+1)**2
          elseif (k == -1) then
             lambda_norm = q**2
          else

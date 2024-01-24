@@ -31,12 +31,12 @@ module math_m
 
    ! Module variables
 
-   real(WP), save, protected :: PI
-   real(WP), save, protected :: TWOPI
-   real(WP), save, protected :: HALFPI
+   real(RD), save, protected :: PI
+   real(RD), save, protected :: TWOPI
+   real(RD), save, protected :: HALFPI
 
-   real(WP), save, protected :: DEG_TO_RAD
-   real(WP), save, protected :: RAD_TO_DEG
+   real(RD), save, protected :: DEG_TO_RAD
+   real(RD), save, protected :: RAD_TO_DEG
 
    ! Interfaces
 
@@ -93,12 +93,12 @@ contains
 
       call crmath_init()
 
-      PI = acos(-1._WP)
-      TWOPI = 2._WP*PI
-      HALFPI = 0.5_WP*PI
+      PI = acos(-1._RD)
+      TWOPI = 2._RD*PI
+      HALFPI = 0.5_RD*PI
 
-      DEG_TO_RAD = PI/180._WP
-      RAD_TO_DEG = 1._WP/DEG_TO_RAD
+      DEG_TO_RAD = PI/180._RD
+      RAD_TO_DEG = 1._RD/DEG_TO_RAD
 
    end subroutine init_math
 
@@ -108,19 +108,19 @@ contains
 
       #:for T_Y, S_Y in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
 
-         #:if T_X == 'real(WP)'
-            #:if T_Y == 'real(WP)'
-               #:set T = 'real(WP)'
-            #:elif T_Y == 'complex(WP)'
-               #:set T = 'complex(WP)'
+         #:if T_X == 'real(RD)'
+            #:if T_Y == 'real(RD)'
+               #:set T = 'real(RD)'
+            #:elif T_Y == 'complex(RD)'
+               #:set T = 'complex(RD)'
             #:else
                #:stop f'invalid type {T_Y}'
             #:endif
-         #:elif T_X == 'complex(WP)'
-            #:if T_Y == 'real(WP)'
-               #:set T = 'complex(WP)'
-            #:elif T_Y == 'complex(WP)'
-               #:set T = 'complex(WP)'
+         #:elif T_X == 'complex(RD)'
+            #:if T_Y == 'real(RD)'
+               #:set T = 'complex(RD)'
+            #:elif T_Y == 'complex(RD)'
+               #:set T = 'complex(RD)'
             #:else
                #:stop f'invalid type {T_Y}'
             #:endif
@@ -136,8 +136,8 @@ contains
 
             ! Evaluate x**y
 
-            if (x == 0._WP) then
-               pow_xy = 0._WP
+            if (x == 0._RD) then
+               pow_xy = 0._RD
             else
                pow_xy = exp(log(x)*y)
             end if

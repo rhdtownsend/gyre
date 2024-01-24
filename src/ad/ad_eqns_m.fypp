@@ -56,12 +56,12 @@ module ad_eqns_m
       type(context_t), pointer   :: cx => null()
       type(point_t), allocatable :: pt(:)
       type(ad_trans_t)           :: tr
-      real(WP), allocatable      :: coeff(:,:)
-      real(WP)                   :: x_atm
-      real(WP)                   :: alpha_grv
-      real(WP)                   :: alpha_omg
-      real(WP)                   :: alpha_gam
-      real(WP)                   :: alpha_pi
+      real(RD), allocatable      :: coeff(:,:)
+      real(RD)                   :: x_atm
+      real(RD)                   :: alpha_grv
+      real(RD)                   :: alpha_omg
+      real(RD)                   :: alpha_gam
+      real(RD)                   :: alpha_pi
    contains
       private
       procedure, public :: stencil
@@ -105,16 +105,16 @@ contains
       eq%alpha_pi = os_p%alpha_pi
 
       eq%x_atm = os_p%x_atm
-      if (eq%x_atm < 0._WP) then
+      if (eq%x_atm < 0._RD) then
          pt_o = cx%point_o()
          eq%x_atm = pt_o%x
       end if
 
       select case (os_p%time_factor)
       case ('OSC')
-         eq%alpha_omg = 1._WP
+         eq%alpha_omg = 1._RD
       case ('EXP')
-         eq%alpha_omg = -1._WP
+         eq%alpha_omg = -1._RD
       case default
          @:ABORT('invalid time_factor')
       end select
@@ -182,7 +182,7 @@ contains
       class(ad_eqns_t), intent(in) :: this
       integer, intent(in)          :: i
       class(state_rt), intent(in)  :: st
-      real(WP)                     :: A(this%n_e,this%n_e)
+      real(RD)                     :: A(this%n_e,this%n_e)
 
       ! Evaluate the RHS matrix
 
@@ -201,13 +201,13 @@ contains
       class(ad_eqns_t), intent(in) :: this
       integer, intent(in)          :: i
       class(state_rt), intent(in)  :: st
-      real(WP)                     :: xA(this%n_e,this%n_e)
+      real(RD)                     :: xA(this%n_e,this%n_e)
 
-      real(WP) :: Omega_rot
-      real(WP) :: Omega_rot_i
-      real(WP) :: omega_c
-      real(WP) :: lambda
-      real(WP) :: l_i
+      real(RD) :: Omega_rot
+      real(RD) :: Omega_rot_i
+      real(RD) :: omega_c
+      real(RD) :: lambda
+      real(RD) :: l_i
 
       ! Evaluate the log(x)-space RHS matrix
 
@@ -236,25 +236,25 @@ contains
 
          ! Set up the matrix
 
-         xA(1,1) = V/Gamma_1 - 1._WP - l_i
+         xA(1,1) = V/Gamma_1 - 1._RD - l_i
          xA(1,2) = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1*alpha_gam
          xA(1,3) = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
-         xA(1,4) = alpha_grv*(0._WP)
+         xA(1,4) = alpha_grv*(0._RD)
 
-         xA(2,1) = c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._WP, As > 0._WP)
-         xA(2,2) = As - U + 3._WP - l_i
-         xA(2,3) = alpha_grv*(0._WP)
-         xA(2,4) = alpha_grv*(-1._WP)
+         xA(2,1) = c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._RD, As > 0._RD)
+         xA(2,2) = As - U + 3._RD - l_i
+         xA(2,3) = alpha_grv*(0._RD)
+         xA(2,4) = alpha_grv*(-1._RD)
 
-         xA(3,1) = alpha_grv*(0._WP)
-         xA(3,2) = alpha_grv*(0._WP)
-         xA(3,3) = alpha_grv*(3._WP - U - l_i)
-         xA(3,4) = alpha_grv*(1._WP)
+         xA(3,1) = alpha_grv*(0._RD)
+         xA(3,2) = alpha_grv*(0._RD)
+         xA(3,3) = alpha_grv*(3._RD - U - l_i)
+         xA(3,4) = alpha_grv*(1._RD)
 
          xA(4,1) = alpha_grv*(U*As)
          xA(4,2) = alpha_grv*(U*V/Gamma_1)
          xA(4,3) = alpha_grv*(lambda)
-         xA(4,4) = alpha_grv*(-U - l_i + 2._WP)
+         xA(4,4) = alpha_grv*(-U - l_i + 2._RD)
 
       end associate
 

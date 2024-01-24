@@ -42,8 +42,8 @@ module hom_model_m
    type, extends(model_t) :: hom_model_t
       private
       type(grid_t) :: gr
-      real(WP)     :: Gamma_1
-      real(WP)     :: Omega_rot
+      real(RD)     :: Gamma_1
+      real(RD)     :: Omega_rot
       integer      :: s_i
       integer      :: s_o
    contains
@@ -84,7 +84,7 @@ contains
       type(model_par_t), intent(in) :: ml_p
       type(hom_model_t)             :: ml
 
-      real(WP), allocatable :: w(:)
+      real(RD), allocatable :: w(:)
 
       ! Construct the hom_model_t
 
@@ -108,7 +108,7 @@ contains
 
       ml%Gamma_1 = ml_p%Gamma_1
 
-      ml%Omega_rot = 0._WP
+      ml%Omega_rot = 0._RD
 
       ml%s_i = ml%gr%s_i()
       ml%s_o = ml%gr%s_o()
@@ -133,7 +133,7 @@ contains
       class(hom_model_t), intent(in) :: this
       integer, intent(in)            :: i
       type(point_t), intent(in)      :: pt
-      real(WP)                       :: coeff
+      real(RD)                       :: coeff
 
       @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'invalid index')
       @:ASSERT_DEBUG(this%is_defined(i), 'undefined coefficient')
@@ -148,15 +148,15 @@ contains
       case (I_AS)
          coeff = this%coeff_As_(pt)
       case (I_U)
-         coeff = 3._WP
+         coeff = 3._RD
       case (I_C_1)
-         coeff = 1._WP
+         coeff = 1._RD
       case (I_GAMMA_1)
          coeff = this%Gamma_1
       case (I_UPS_T)
-         coeff = 1._WP
+         coeff = 1._RD
       case (I_NABLA_AD)
-         coeff = 0.4_WP
+         coeff = 0.4_RD
       case (I_OMEGA_ROT)
          coeff = this%Omega_rot
       end select
@@ -173,13 +173,13 @@ contains
 
       class(hom_model_t), intent(in) :: this
       type(point_t), intent(in)      :: pt
-      real(WP)                       :: coeff
+      real(RD)                       :: coeff
 
       @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'V_2 evaluation at vacuum point')
 
       ! Evaluate the V_2 coefficient
 
-      coeff = 2._WP/(1._WP - pt%x**2)
+      coeff = 2._RD/(1._RD - pt%x**2)
 
       ! Finish
 
@@ -193,7 +193,7 @@ contains
 
       class(hom_model_t), intent(in) :: this
       type(point_t), intent(in)      :: pt
-      real(WP)                       :: coeff
+      real(RD)                       :: coeff
 
       @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'As evaluation at vacuum point')
 
@@ -214,7 +214,7 @@ contains
       class(hom_model_t), intent(in) :: this
       integer, intent(in)            :: i
       type(point_t), intent(in)      :: pt
-      real(WP)                       :: dcoeff
+      real(RD)                       :: dcoeff
 
       @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'invalid index')
       @:ASSERT_DEBUG(this%is_defined(i), 'undefined coefficient')
@@ -229,17 +229,17 @@ contains
       case (I_AS)
          dcoeff = this%dcoeff_As_(pt)
       case (I_U)
-         dcoeff = 0._WP
+         dcoeff = 0._RD
       case (I_C_1)
-         dcoeff = 0._WP
+         dcoeff = 0._RD
       case (I_GAMMA_1)
-         dcoeff = 0._WP
+         dcoeff = 0._RD
       case (I_UPS_T)
-         dcoeff = 0._WP
+         dcoeff = 0._RD
       case (I_NABLA_AD)
-         dcoeff = 0._WP
+         dcoeff = 0._RD
       case (I_OMEGA_ROT)
-         dcoeff = 0._WP
+         dcoeff = 0._RD
       end select
 
       ! Finish
@@ -254,11 +254,11 @@ contains
 
       class(hom_model_t), intent(in) :: this
       type(point_t), intent(in)      :: pt
-      real(WP)                       :: dcoeff
+      real(RD)                       :: dcoeff
 
       ! Evaluate the logarithmic derivative of the V_2 coefficient
 
-      dcoeff = 2.*WP*pt%x**2/(1._WP - pt%x**2)
+      dcoeff = 2.*RD*pt%x**2/(1._RD - pt%x**2)
 
       ! Finish
 
@@ -272,11 +272,11 @@ contains
 
       class(hom_model_t), intent(in) :: this
       type(point_t), intent(in)      :: pt
-      real(WP)                       :: dcoeff
+      real(RD)                       :: dcoeff
 
       ! Evaluate the logarithmic derivative of the As coefficient
 
-      dcoeff = -(this%dcoeff_V_2_(pt)*pt%x**2 + 2._WP*this%coeff_V_2_(pt)*pt%x)/this%Gamma_1
+      dcoeff = -(this%dcoeff_V_2_(pt)*pt%x**2 + 2._RD*this%coeff_V_2_(pt)*pt%x)/this%Gamma_1
 
       ! Finish
 
@@ -321,7 +321,7 @@ contains
 
       ! Return whether the point is a vacuum
 
-      is_vacuum = (1._WP - pt%x**2) == 0._WP
+      is_vacuum = (1._RD - pt%x**2) == 0._RD
 
       ! Finish
 
@@ -334,13 +334,13 @@ contains
    function Delta_p(this, x_i, x_o)
 
       class(hom_model_t), intent(in) :: this
-      real(WP), intent(in)           :: x_i
-      real(WP), intent(in)           :: x_o
-      real(WP)                       :: Delta_p
+      real(RD), intent(in)           :: x_i
+      real(RD), intent(in)           :: x_o
+      real(RD)                       :: Delta_p
 
       ! Evaluate the dimensionless p-mode frequency separation
 
-      Delta_p = 0.5_WP/(sqrt(2._WP/this%Gamma_1)*(asin(x_o)-asin(x_i)))
+      Delta_p = 0.5_RD/(sqrt(2._RD/this%Gamma_1)*(asin(x_o)-asin(x_i)))
 
       ! Finish
 
@@ -353,14 +353,14 @@ contains
    function Delta_g(this, x_i, x_o, lambda)
 
       class(hom_model_t), intent(in) :: this
-      real(WP), intent(in)           :: x_i
-      real(WP), intent(in)           :: x_o
-      real(WP), intent(in)           :: lambda
-      real(WP)                       :: Delta_g
+      real(RD), intent(in)           :: x_i
+      real(RD), intent(in)           :: x_o
+      real(RD), intent(in)           :: lambda
+      real(RD)                       :: Delta_g
 
       ! Evaluate the dimensionless g-mode inverse period separation
 
-      Delta_g = 0._WP
+      Delta_g = 0._RD
 
       ! Finish
 

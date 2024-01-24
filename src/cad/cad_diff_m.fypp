@@ -111,8 +111,8 @@ contains
 
       class(cad_diff_t), intent(in) :: this
       class(state_ct), intent(in)   :: st
-      complex(WP), intent(out)      :: E_l(:,:)
-      complex(WP), intent(out)      :: E_r(:,:)
+      complex(RD), intent(out)      :: E_l(:,:)
+      complex(RD), intent(out)      :: E_r(:,:)
       type(ext_ct), intent(out)     :: scl
 
       @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)

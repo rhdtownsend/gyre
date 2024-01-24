@@ -56,8 +56,8 @@ module rad_eqns_m
      type(context_t), pointer   :: cx => null()
      type(point_t), allocatable :: pt(:)
      type(rad_trans_t)          :: tr
-     real(WP), allocatable      :: coeff(:,:)
-     real(WP)                   :: alpha_omg
+     real(RD), allocatable      :: coeff(:,:)
+     real(RD)                   :: alpha_omg
    contains
      private
      procedure, public :: stencil
@@ -96,9 +96,9 @@ contains
 
     select case (os_p%time_factor)
     case ('OSC')
-       eq%alpha_omg = 1._WP
+       eq%alpha_omg = 1._RD
     case ('EXP')
-       eq%alpha_omg = -1._WP
+       eq%alpha_omg = -1._RD
     case default
        @:ABORT('invalid time_factor')
     end select
@@ -166,7 +166,7 @@ contains
     class(rad_eqns_t), intent(in) :: this
     integer, intent(in)           :: i
     class(state_rt), intent(in)   :: st
-    real(WP)                      :: A(this%n_e,this%n_e)
+    real(RD)                      :: A(this%n_e,this%n_e)
     
     ! Evaluate the RHS matrix
 
@@ -185,9 +185,9 @@ contains
     class(rad_eqns_t), intent(in) :: this
     integer, intent(in)           :: i
     class(state_rt), intent(in)   :: st
-    real(WP)                      :: xA(this%n_e,this%n_e)
+    real(RD)                      :: xA(this%n_e,this%n_e)
 
-    real(WP) :: omega_c
+    real(RD) :: omega_c
     
     ! Evaluate the log(x)-space RHS matrix
 
@@ -204,11 +204,11 @@ contains
 
       ! Set up the matrix
 
-      xA(1,1) = V/Gamma_1 - 1._WP
+      xA(1,1) = V/Gamma_1 - 1._RD
       xA(1,2) = -V/Gamma_1
       
       xA(2,1) = c_1*alpha_omg*omega_c**2 + U - As
-      xA(2,2) = As - U + 3._WP
+      xA(2,2) = As - U + 3._RD
 
     end associate
 

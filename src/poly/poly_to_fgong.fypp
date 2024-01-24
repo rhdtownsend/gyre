@@ -53,17 +53,17 @@ program poly_to_fgong
    type(model_par_t)       :: ml_p
    class(model_t), pointer :: ml
    type(grid_t)            :: gr
-   real(WP), allocatable   :: V_2(:)
-   real(WP), allocatable   :: As(:)
-   real(WP), allocatable   :: U(:)
-   real(WP), allocatable   :: c_1(:)
-   real(WP), allocatable   :: Gamma_1(:)
-   real(WP), allocatable   :: M_r(:)
-   real(WP), allocatable   :: P(:)
-   real(WP), allocatable   :: rho(:)
+   real(RD), allocatable   :: V_2(:)
+   real(RD), allocatable   :: As(:)
+   real(RD), allocatable   :: U(:)
+   real(RD), allocatable   :: c_1(:)
+   real(RD), allocatable   :: Gamma_1(:)
+   real(RD), allocatable   :: M_r(:)
+   real(RD), allocatable   :: P(:)
+   real(RD), allocatable   :: rho(:)
    integer                 :: n
-   real(WP), allocatable   :: glob(:)
-   real(WP), allocatable   :: var(:,:)
+   real(RD), allocatable   :: glob(:)
+   real(RD), allocatable   :: var(:,:)
    integer                 :: unit
    integer                 :: j
 
@@ -121,10 +121,10 @@ program poly_to_fgong
    M_r = M_SUN*(pt%x**3/c_1)
    $endif
 
-   P = (G_GRAVITY*M_SUN**2/(4._WP*PI*R_SUN**4))* &
+   P = (G_GRAVITY*M_SUN**2/(4._RD*PI*R_SUN**4))* &
       (U/(c_1**2*V_2))
 
-   rho = (M_SUN/(4._WP*PI*R_SUN**3))*(U/c_1)
+   rho = (M_SUN/(4._RD*PI*R_SUN**3))*(U/c_1)
 
    ! Store into var array
 
@@ -135,24 +135,24 @@ program poly_to_fgong
 
    glob(1) = M_SUN
    glob(2) = R_SUN
-   glob(3:) = 0._WP
+   glob(3:) = 0._RD
 
    var(1,:) = gr%pt%x*R_SUN
 
-   where (M_r /= 0._WP)
+   where (M_r /= 0._RD)
       var(2,:) = log(M_r/M_SUN)
    elsewhere
-      var(2,:) = log(1E-38_WP)
+      var(2,:) = log(1E-38_RD)
    endwhere
 
-   var(3,:) = 0._WP
+   var(3,:) = 0._RD
    var(4,:) = P
    var(5,:) = rho
-   var(6:9,:) = 0._WP
+   var(6:9,:) = 0._RD
    var(10,:) = Gamma_1
-   var(11:14,:) = 0._WP
+   var(11:14,:) = 0._RD
    var(15,:) = As
-   var(16,:) = 0._WP
+   var(16,:) = 0._RD
 
    var = var(:,n:1:-1)
 

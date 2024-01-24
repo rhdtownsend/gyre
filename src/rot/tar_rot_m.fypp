@@ -118,13 +118,13 @@ contains
       function l_e_${S}$_(this, Omega_rot, omega) result(l_e)
 
          class(tar_rot_${S}$), intent(in) :: this
-         real(WP), intent(in)             :: Omega_rot
+         real(RD), intent(in)             :: Omega_rot
          ${T}$, intent(in)                :: omega
          ${T}$                            :: l_e
 
          ! Evaluate the effective harmonic degree
 
-         l_e = 0.5_WP*(-1._WP + sqrt(1._WP + 4._WP*this%lambda(Omega_rot, omega)))
+         l_e = 0.5_RD*(-1._RD + sqrt(1._RD + 4._RD*this%lambda(Omega_rot, omega)))
 
          ! Finish
 
@@ -137,7 +137,7 @@ contains
       function lambda_${S}$_(this, Omega_rot, omega) result(lambda)
 
          class(tar_rot_${S}$), intent(in) :: this
-         real(WP), intent(in)             :: Omega_rot
+         real(RD), intent(in)             :: Omega_rot
          ${T}$, intent(in)                :: omega
          ${T}$                            :: lambda
 
@@ -145,7 +145,7 @@ contains
 
          ! Evaluate the angular eigenvalue
 
-         nu = 2._WP*Omega_rot/(omega - this%m*Omega_rot)
+         nu = 2._RD*Omega_rot/(omega - this%m*Omega_rot)
 
          lambda = this%tf%lambda(nu)
 

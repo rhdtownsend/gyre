@@ -94,21 +94,21 @@ contains
       type(rot_par_t), intent(in)         :: rt_p
       type(tide_par_t), intent(in)        :: td_p
 
-      real(WP), allocatable         :: omega(:)
+      real(RD), allocatable         :: omega(:)
       type(grid_t)                  :: gr
       type(mode_par_t), allocatable :: md_p(:,:)
       type(context_t), pointer      :: cx(:,:)
-      real(WP), allocatable         :: y_T(:,:,:)
+      real(RD), allocatable         :: y_T(:,:,:)
       integer, allocatable          :: tide_type(:,:,:)
       integer                       :: l
       integer                       :: m
       integer                       :: k
       class(bvp_ct), allocatable    :: bp_nad
       type(sad_bvp_t)               :: bp_sad
-      complex(WP)                   :: w_i_nad(3)
-      complex(WP)                   :: w_o_nad(3)
-      real(WP)                      :: w_i_sad(1)
-      real(WP)                      :: w_o_sad(1)
+      complex(RD)                   :: w_i_nad(3)
+      complex(RD)                   :: w_o_nad(3)
+      real(RD)                      :: w_i_sad(1)
+      real(RD)                      :: w_o_sad(1)
       type(state_ct)                :: st_nad
       type(state_rt)                :: st_sad
       type(wave_t)                  :: wv
@@ -144,7 +144,7 @@ contains
 
             call system_clock(c_beg)
 
-            if (os_p%alpha_trb > 0._WP) then
+            if (os_p%alpha_trb > 0._RD) then
                allocate(bp_nad, SOURCE=tnad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p))
             else
                allocate(bp_nad, SOURCE=nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p))
@@ -159,19 +159,19 @@ contains
 
                ! Evaluate the response
 
-               if (ABS(y_T(l,m,k)) > 0._WP) then
+               if (ABS(y_T(l,m,k)) > 0._RD) then
 
                   call system_clock(c_beg)
 
                   select case(tide_type(l,m,k))
                   case (DYNAMIC_TIDE,MIXED_TIDE)
 
-                     w_i_nad = 0._WP
+                     w_i_nad = 0._RD
 
-                     w_o_nad = 0._WP
+                     w_o_nad = 0._RD
                      w_o_nad(2) = (2*l+1)*y_T(l,m,k)
 
-                     st_nad = state_ct(CMPLX(omega(k), KIND=WP), omega(k))
+                     st_nad = state_ct(CMPLX(omega(k), KIND=RD), omega(k))
 
                      select type (bp_nad)
                      type is (nad_bvp_t)
@@ -182,9 +182,9 @@ contains
 
                   case (STATIC_TIDE)
 
-                     w_i_sad = 0._WP
+                     w_i_sad = 0._RD
 
-                     w_o_sad = 0._WP
+                     w_o_sad = 0._RD
                      w_o_sad(1) = (2*l+1)*y_T(l,m,k)
 
                      st_sad = state_rt(omega(k))
@@ -251,11 +251,11 @@ contains
       type(osc_par_t), intent(in)                :: os_p
       type(rot_par_t), intent(in)                :: rt_p
       type(tide_par_t), intent(in)               :: td_p
-      real(WP), allocatable, intent(out)         :: omega(:)
+      real(RD), allocatable, intent(out)         :: omega(:)
       type(grid_t)                               :: gr
       type(context_t), pointer, intent(out)      :: cx(:,:)
       type(mode_par_t), allocatable, intent(out) :: md_p(:,:)
-      real(WP), allocatable, intent(out)         :: y_T(:,:,:)
+      real(RD), allocatable, intent(out)         :: y_T(:,:,:)
       integer, allocatable, intent(out)          :: tide_type(:,:,:)
 
       type(point_t)                  :: pt_o
@@ -265,11 +265,11 @@ contains
       integer                        :: m_max
       integer                        :: k_min
       integer                        :: k_max
-      real(WP)                       :: Omega_orb
+      real(RD)                       :: Omega_orb
       integer                        :: l
       integer                        :: m
       integer                        :: k
-      real(WP)                       :: y_T_max
+      real(RD)                       :: y_T_max
       type(grid_spec_t), allocatable :: gs(:,:,:)
       logical, allocatable           :: gs_mask(:,:,:)
 
@@ -309,7 +309,7 @@ contains
 
       ! Set up other tide params
 
-      y_T = 0._WP
+      y_T = 0._RD
 
       l_loop : do l = l_min, l_max
          m_loop : do m = MAX(-l, td_p%m_min), MIN(l, td_p%m_max)
@@ -339,7 +339,7 @@ contains
 
       where (ABS(y_T) <= td_p%y_T_thresh_abs .OR. &
          ABS(y_T) <= td_p%y_T_thresh_rel*y_T_max)
-         y_T = 0._WP
+         y_T = 0._RD
       end where
 
       ! Set up the grid using grid specs
@@ -355,7 +355,7 @@ contains
 
                gs_mask(l,m,k) = (tide_type(l,m,k) == DYNAMIC_TIDE .OR. &
                   tide_type(l,m,k) == MIXED_TIDE) .AND. &
-                  ABS(y_T(l,m,k)) > 0._WP
+                  ABS(y_T(l,m,k)) > 0._RD
 
                if (gs_mask(l,m,k)) then
                   gs(l,m,k) = grid_spec_t(cx(l,m), [omega(k)])
@@ -384,13 +384,13 @@ contains
       type(context_t), intent(in)  :: cx
       type(grid_t), intent(in)     :: gr
       type(tide_par_t), intent(in) :: td_p
-      real(WP), intent(in)         :: omega
+      real(RD), intent(in)         :: omega
       integer                      :: tide_type
 
       type(state_rt) :: st
       integer        :: j
-      real(WP)       :: Omega_rot
-      real(WP)       :: omega_c(gr%n)
+      real(RD)       :: Omega_rot
+      real(RD)       :: omega_c(gr%n)
 
       ! Check co-rotating frequencies
 

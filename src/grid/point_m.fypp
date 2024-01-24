@@ -31,7 +31,7 @@ module point_m
 
    type :: point_t
       integer  :: s
-      real(WP) :: x
+      real(RD) :: x
    contains
       private
       procedure       :: op_eq_

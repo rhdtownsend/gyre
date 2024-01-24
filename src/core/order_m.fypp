@@ -409,9 +409,9 @@ contains
 
    subroutine locate_uniform_(x_0, dx, x_loc, i_loc)
 
-      real(WP), intent(in) :: x_0
-      real(WP), intent(in) :: dx
-      real(WP), intent(in) :: x_loc
+      real(RD), intent(in) :: x_0
+      real(RD), intent(in) :: dx
+      real(RD), intent(in) :: x_loc
       integer, intent(out) :: i_loc
 
       ! Determine i_loc so that x_0 + (i_loc-1)*dx <= x_loc < x_0 + i_loc*dx

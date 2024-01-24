@@ -39,8 +39,8 @@ module cfunc_m
       use kinds_m
       import cfunc_t
       class(cfunc_t), intent(inout) :: this
-      complex(WP), intent(in)       :: z
-      complex(WP)                   :: f_z
+      complex(RD), intent(in)       :: z
+      complex(RD)                   :: f_z
     end function eval_c_
   end interface
 
@@ -57,13 +57,13 @@ contains
     function eval_r_(this, x) result(f_x)
 
     class(cfunc_t), intent(inout) :: this
-    real(WP), intent(in)          :: x
-    real(WP)                      :: f_x
+    real(RD), intent(in)          :: x
+    real(RD)                      :: f_x
 
     ! Evaluate the real function based on the complex function
     ! this%eval(z)
 
-    f_x = REAL(this%eval(CMPLX(x, KIND=WP)), WP)
+    f_x = REAL(this%eval(CMPLX(x, KIND=RD)), RD)
 
     ! Finish
 
@@ -76,19 +76,19 @@ contains
   subroutine expand_bracket_(this, x_a, x_b, f_x_a, f_x_b, clamp_a, clamp_b)
 
     class(cfunc_t), intent(inout)   :: this
-    real(WP), intent(inout)         :: x_a
-    real(WP), intent(inout)         :: x_b
-    real(WP), intent(out), optional :: f_x_a
-    real(WP), intent(out), optional :: f_x_b
+    real(RD), intent(inout)         :: x_a
+    real(RD), intent(inout)         :: x_b
+    real(RD), intent(out), optional :: f_x_a
+    real(RD), intent(out), optional :: f_x_b
     logical, intent(in), optional   :: clamp_a
     logical, intent(in), optional   :: clamp_b
 
-    real(WP), parameter :: EXPAND_FACTOR = 1.6_WP
+    real(RD), parameter :: EXPAND_FACTOR = 1.6_RD
 
     logical  :: clamp_a_
     logical  :: clamp_b_
-    real(WP) :: f_a
-    real(WP) :: f_b
+    real(RD) :: f_a
+    real(RD) :: f_b
     logical  :: move_a
 
     if(PRESENT(clamp_a)) then
@@ -114,8 +114,8 @@ contains
 
     expand_loop : do
 
-       if((f_a > 0._WP .AND. f_b < 0._WP) .OR. &
-          (f_a < 0._WP .AND. f_b > 0._WP)) exit expand_loop
+       if((f_a > 0._RD .AND. f_b < 0._RD) .OR. &
+          (f_a < 0._RD .AND. f_b > 0._RD)) exit expand_loop
 
        if(clamp_a_) then
           move_a = .FALSE.
@@ -151,32 +151,32 @@ contains
   subroutine narrow_bracket_(this, x_a, x_b, x_tol, f_x_a, f_x_b, n_iter, relative_tol)
 
     class(cfunc_t), intent(inout)     :: this
-    real(WP), intent(inout)           :: x_a
-    real(WP), intent(inout)           :: x_b
-    real(WP), intent(in)              :: x_tol
-    real(WP), optional, intent(inout) :: f_x_a
-    real(WP), optional, intent(inout) :: f_x_b
+    real(RD), intent(inout)           :: x_a
+    real(RD), intent(inout)           :: x_b
+    real(RD), intent(in)              :: x_tol
+    real(RD), optional, intent(inout) :: f_x_a
+    real(RD), optional, intent(inout) :: f_x_b
     integer, optional, intent(inout)  :: n_iter
     logical, optional, intent(in)     :: relative_tol
 
-    real(WP), parameter :: EPS = EPSILON(0._WP)
+    real(RD), parameter :: EPS = EPSILON(0._RD)
 
     integer  :: n_iter_
     logical  :: relative_tol_
-    real(WP) :: a
-    real(WP) :: b
-    real(WP) :: c
-    real(WP) :: d
-    real(WP) :: e
-    real(WP) :: f_a
-    real(WP) :: f_b
-    real(WP) :: f_c
-    real(WP) :: tol
-    real(WP) :: m
-    real(WP) :: p
-    real(WP) :: q
-    real(WP) :: r
-    real(WP) :: s
+    real(RD) :: a
+    real(RD) :: b
+    real(RD) :: c
+    real(RD) :: d
+    real(RD) :: e
+    real(RD) :: f_a
+    real(RD) :: f_b
+    real(RD) :: f_c
+    real(RD) :: tol
+    real(RD) :: m
+    real(RD) :: p
+    real(RD) :: q
+    real(RD) :: r
+    real(RD) :: s
     integer  :: i
 
     if(PRESENT(n_iter)) then
@@ -218,7 +218,7 @@ contains
 
     ! Check that a root does indeed lie within the bracket
 
-    @:ASSERT((f_a >= 0._WP .AND. f_b <= 0._WP) .OR. (f_a <= 0._WP .AND. f_b >= 0._WP), 'Root is not bracketed')
+    @:ASSERT((f_a >= 0._RD .AND. f_b <= 0._RD) .OR. (f_a <= 0._RD .AND. f_b >= 0._RD), 'Root is not bracketed')
 
     ! Iterate until the correction drops below the threshold, or the
     ! maximum number of iterations is exceeded
@@ -344,19 +344,19 @@ contains
   function root_r_(this, x_a, x_b, x_tol, f_x_a, f_x_b, n_iter, relative_tol) result(x)
 
     class(cfunc_t), intent(inout)    :: this
-    real(WP), intent(in)             :: x_a
-    real(WP), intent(in)             :: x_b
-    real(WP), intent(in)             :: x_tol
-    real(WP), optional, intent(in)   :: f_x_a
-    real(WP), optional, intent(in)   :: f_x_b
+    real(RD), intent(in)             :: x_a
+    real(RD), intent(in)             :: x_b
+    real(RD), intent(in)             :: x_tol
+    real(RD), optional, intent(in)   :: f_x_a
+    real(RD), optional, intent(in)   :: f_x_b
     integer, optional, intent(inout) :: n_iter
     logical, optional, intent(in)    :: relative_tol
-    real(WP)                         :: x
+    real(RD)                         :: x
 
-    real(WP) :: a
-    real(WP) :: b
-    real(WP) :: f_a
-    real(WP) :: f_b
+    real(RD) :: a
+    real(RD) :: b
+    real(RD) :: f_a
+    real(RD) :: f_b
 
     ! Find a root of the real function this%eval(x)
 
@@ -390,29 +390,29 @@ contains
   function root_c_(this, z_a, z_b, z_tol, f_z_a, f_z_b, n_iter, relative_tol) result(z)
 
     class(cfunc_t), intent(inout)     :: this
-    complex(WP), intent(in)           :: z_a
-    complex(WP), intent(in)           :: z_b
-    real(WP), intent(in)              :: z_tol
-    complex(WP), optional, intent(in) :: f_z_a
-    complex(WP), optional, intent(in) :: f_z_b
+    complex(RD), intent(in)           :: z_a
+    complex(RD), intent(in)           :: z_b
+    real(RD), intent(in)              :: z_tol
+    complex(RD), optional, intent(in) :: f_z_a
+    complex(RD), optional, intent(in) :: f_z_b
     integer, optional, intent(inout)  :: n_iter
     logical, optional, intent(in)     :: relative_tol
-    complex(WP)                       :: z
+    complex(RD)                       :: z
 
-    real(WP), parameter :: EPS = EPSILON(0._WP)
+    real(RD), parameter :: EPS = EPSILON(0._RD)
 
     integer     :: n_iter_
     logical     :: relative_tol_
-    complex(WP) :: a
-    complex(WP) :: b
-    complex(WP) :: c
-    complex(WP) :: f_a
-    complex(WP) :: f_b
-    complex(WP) :: f_c
+    complex(RD) :: a
+    complex(RD) :: b
+    complex(RD) :: c
+    complex(RD) :: f_a
+    complex(RD) :: f_b
+    complex(RD) :: f_c
     integer     :: i
-    complex(WP) :: f_dz
-    complex(WP) :: rho
-    real(WP)    :: tol
+    complex(RD) :: f_dz
+    complex(RD) :: rho
+    real(RD)    :: tol
 
     if(PRESENT(n_iter)) then
        n_iter_ = n_iter
@@ -471,7 +471,7 @@ contains
 
        ! Check for a singular correction
 
-       if(ABS(b*rho) < 8._WP*EPS*ABS(f_dz)) then
+       if(ABS(b*rho) < 8._RD*EPS*ABS(f_dz)) then
           @:ABORT('Singular correction in secant')
        endif
 
@@ -486,12 +486,12 @@ contains
        ! Check for convergence
 
        if(relative_tol_) then
-          tol = (4._WP*EPS + z_tol)*ABS(b)
+          tol = (4._RD*EPS + z_tol)*ABS(b)
        else
-          tol = 4._WP*EPS*ABS(b) + z_tol
+          tol = 4._RD*EPS*ABS(b) + z_tol
        endif
 
-       if((ABS(b - a) <= tol .OR. f_b == 0._WP)) exit iterate_loop
+       if((ABS(b - a) <= tol .OR. f_b == 0._RD)) exit iterate_loop
 
     end do iterate_loop
 
@@ -514,12 +514,12 @@ contains
   function minimum_r_(this, x_a, x_b, x_c, x_tol, relative_tol) result(x)
 
     class(cfunc_t), intent(inout) :: this
-    real(WP), intent(in)          :: x_a
-    real(WP), intent(in)          :: x_b
-    real(WP), intent(in)          :: x_c
-    real(WP), intent(in)          :: x_tol
+    real(RD), intent(in)          :: x_a
+    real(RD), intent(in)          :: x_b
+    real(RD), intent(in)          :: x_c
+    real(RD), intent(in)          :: x_tol
     logical, intent(in), optional :: relative_tol
-    real(WP)                      :: x
+    real(RD)                      :: x
 
     ! Find a local minimum of the real function this%eval(x)
     
@@ -536,12 +536,12 @@ contains
   function maximum_r_(this, x_a, x_b, x_c, x_tol, relative_tol) result(x)
 
     class(cfunc_t), intent(inout) :: this
-    real(WP), intent(in)          :: x_a
-    real(WP), intent(in)          :: x_b
-    real(WP), intent(in)          :: x_c
-    real(WP), intent(in)          :: x_tol
+    real(RD), intent(in)          :: x_a
+    real(RD), intent(in)          :: x_b
+    real(RD), intent(in)          :: x_c
+    real(RD), intent(in)          :: x_tol
     logical, intent(in), optional :: relative_tol
-    real(WP)                      :: x
+    real(RD)                      :: x
 
     ! Find a local maximum of the real function this%eval(x)
     
@@ -558,26 +558,26 @@ contains
   function extremum_(rf, x_a, x_b, x_c, x_tol, minimum, relative_tol) result(x)
 
     class(cfunc_t), intent(inout) :: rf
-    real(WP), intent(in)          :: x_a
-    real(WP), intent(in)          :: x_b
-    real(WP), intent(in)          :: x_c
-    real(WP), intent(in)          :: x_tol
+    real(RD), intent(in)          :: x_a
+    real(RD), intent(in)          :: x_b
+    real(RD), intent(in)          :: x_c
+    real(RD), intent(in)          :: x_tol
     logical, intent(in)           :: minimum
     logical, intent(in), optional :: relative_tol
-    real(WP)                      :: x
+    real(RD)                      :: x
 
-    real(WP), parameter :: EPS = EPSILON(0._WP)
-    real(WP), parameter :: R = 0.61803399_WP
-    real(WP), parameter :: C = 1._WP - R
+    real(RD), parameter :: EPS = EPSILON(0._RD)
+    real(RD), parameter :: R = 0.61803399_RD
+    real(RD), parameter :: C = 1._RD - R
 
     logical  :: relative_tol_
-    real(WP) :: x_0
-    real(WP) :: x_1
-    real(WP) :: x_2
-    real(WP) :: x_3
-    real(WP) :: f_1
-    real(WP) :: f_2
-    real(WP) :: tol
+    real(RD) :: x_0
+    real(RD) :: x_1
+    real(RD) :: x_2
+    real(RD) :: x_3
+    real(RD) :: f_1
+    real(RD) :: f_2
+    real(RD) :: tol
 
     if(PRESENT(relative_tol)) then
        relative_tol_ = relative_tol
@@ -603,15 +603,15 @@ contains
 
     ! Iterate until convergence
 
-    f_1 = rf%eval(x_1)*MERGE(1._WP, -1._WP, minimum)
-    f_2 = rf%eval(x_2)*MERGE(1._WP, -1._WP, minimum)
+    f_1 = rf%eval(x_1)*MERGE(1._RD, -1._RD, minimum)
+    f_2 = rf%eval(x_2)*MERGE(1._RD, -1._RD, minimum)
 
     iterate_loop : do
 
        ! Check for a converged bracket
 
        if(relative_tol_) then
-          tol = (SQRT(EPS) + 0.5_WP*x_tol)*(ABS(x_1) + ABS(x_2))
+          tol = (SQRT(EPS) + 0.5_RD*x_tol)*(ABS(x_1) + ABS(x_2))
        else
           tol = SQRT(EPS)*(ABS(x_1) + ABS(x_2)) + x_tol
        endif
@@ -622,10 +622,10 @@ contains
 
        if (f_2 < f_1) then
           call shft3_(x_0, x_1, x_2, R*x_2+C*x_3)
-          call shft2_(f_1, f_2, rf%eval(x_2)*MERGE(1._WP, -1._WP, minimum))
+          call shft2_(f_1, f_2, rf%eval(x_2)*MERGE(1._RD, -1._RD, minimum))
        else
           call shft3_(x_3, x_2, x_1, R*x_1+C*x_0)
-          call shft2_(f_2, f_1, rf%eval(x_1)*MERGE(1._WP, -1._WP, minimum))
+          call shft2_(f_2, f_1, rf%eval(x_1)*MERGE(1._RD, -1._RD, minimum))
        end if
 
     end do iterate_loop
@@ -646,9 +646,9 @@ contains
 
     subroutine shft2_(a, b, c)
 
-      real(WP), intent(out)   :: a
-      real(WP), intent(inout) :: b
-      real(WP), intent(in)    :: c
+      real(RD), intent(out)   :: a
+      real(RD), intent(inout) :: b
+      real(RD), intent(in)    :: c
 
       ! Shift b to a and c to b
 
@@ -663,10 +663,10 @@ contains
 
     subroutine shft3_(a, b, c, d)
 
-      real(WP), intent(out)   :: a 
-      real(WP), intent(inout) :: b 
-      real(WP), intent(inout) :: c
-      real(WP), intent(in)    :: d
+      real(RD), intent(out)   :: a 
+      real(RD), intent(inout) :: b 
+      real(RD), intent(inout) :: c
+      real(RD), intent(in)    :: d
 
       ! Shift b to a, c to b and d to c
 

@@ -6,27 +6,27 @@ program test_interp
   
   use interp_m
 
-  real(WP), parameter :: x_a = -3._WP
-  real(WP), parameter :: x_b = 3._WP
+  real(RD), parameter :: x_a = -3._RD
+  real(RD), parameter :: x_b = 3._RD
   integer, parameter  :: n = 20
   integer, parameter  :: m = 100
 
   type(r_interp_t) :: in
-  real(WP)         :: x(n)
-  real(WP)         :: y(n)
-  real(WP)         :: dy_dx_a
-  real(WP)         :: dy_dx_b
-  real(WP)         :: xx
+  real(RD)         :: x(n)
+  real(RD)         :: y(n)
+  real(RD)         :: dy_dx_a
+  real(RD)         :: dy_dx_b
+  real(RD)         :: xx
 
   ! Set up x and y
 
   do i = 1, n
      x(i) = ((n-i)*x_a + (i-1)*x_b)/(n-1)
-     y(i) = 3._WP*x(i)**3 - x(i) + 4._WP
+     y(i) = 3._RD*x(i)**3 - x(i) + 4._RD
   end do
 
-  dy_dx_a = 9._WP*x(1)**2 - 1._WP
-  dy_dx_b = 9._WP*x(n)**2 - 1._WP
+  dy_dx_a = 9._RD*x(1)**2 - 1._RD
+  dy_dx_b = 9._RD*x(n)**2 - 1._RD
 
   ! Set up the interpolant
 

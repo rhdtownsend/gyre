@@ -59,9 +59,9 @@ contains
    subroutine bracket_search(bp, omega, omega_min, omega_max, nm_p, process_mode)
 
       class(bvp_rt), intent(inout) :: bp
-      real(WP), intent(in)         :: omega(:)
-      real(WP), intent(in)         :: omega_min
-      real(WP), intent(in)         :: omega_max
+      real(RD), intent(in)         :: omega(:)
+      real(RD), intent(in)         :: omega_min
+      real(RD), intent(in)         :: omega_max
       type(num_par_t), intent(in)  :: nm_p
       interface
          subroutine process_mode (md, n_iter, chi)
@@ -74,8 +74,8 @@ contains
          end subroutine process_mode
       end interface
 
-      real(WP), allocatable     :: omega_a(:)
-      real(WP), allocatable     :: omega_b(:)
+      real(RD), allocatable     :: omega_a(:)
+      real(RD), allocatable     :: omega_b(:)
       type(ext_rt), allocatable :: discrim_a(:)
       type(ext_rt), allocatable :: discrim_b(:)
       integer                   :: c_beg
@@ -122,7 +122,7 @@ contains
          f_x_a = discrim_a(i)
          f_x_b = discrim_b(i)
 
-         call solve_root(eval_discrim_x_, x_a, x_b, ext_rt(0._WP), nm_p, &
+         call solve_root(eval_discrim_x_, x_a, x_b, ext_rt(0._RD), nm_p, &
             x_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
             f_x_a=f_x_a, f_x_b=f_x_b)
          if (status /= STATUS_OK) then
@@ -156,7 +156,7 @@ contains
       call SYSTEM_CLOCK(c_end)
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+         write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
 130      format(2X,A,1X,F10.3,1X,A/)
       endif
 
@@ -172,7 +172,7 @@ contains
          type(ext_rt), intent(out) :: discrim
          integer, intent(out)       :: status
 
-         real(WP) :: omega
+         real(RD) :: omega
 
          ! Evaluate the frequency from x
 
@@ -238,9 +238,9 @@ contains
    subroutine find_brackets_(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
 
       class(bvp_rt), intent(inout)           :: bp
-      real(WP), intent(in)                   :: omega(:)
-      real(WP), allocatable, intent(out)     :: omega_a(:)
-      real(WP), allocatable, intent(out)     :: omega_b(:)
+      real(RD), intent(in)                   :: omega(:)
+      real(RD), allocatable, intent(out)     :: omega_a(:)
+      real(RD), allocatable, intent(out)     :: omega_b(:)
       type(ext_rt), allocatable, intent(out) :: discrim_a(:)
       type(ext_rt), allocatable, intent(out) :: discrim_b(:)
 
@@ -250,7 +250,7 @@ contains
       integer      :: c_rate
       integer      :: i
       type(ext_rt) :: discrim_i
-      real(WP)     :: discrim_f(SIZE(omega))
+      real(RD)     :: discrim_f(SIZE(omega))
       integer      :: discrim_e(SIZE(omega))
       type(ext_rt) :: discrim(SIZE(omega))
       integer      :: n_brack
@@ -286,7 +286,7 @@ contains
       call SYSTEM_CLOCK(c_end)
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
 120      format(2X,A,F10.3,1X,A/)
       endif
 
@@ -296,7 +296,7 @@ contains
 
       bracket_loop : do i = 1, n_omega-1
 
-         if (discrim(i)*discrim(i+1) <= ext_rt(0._WP)) then
+         if (discrim(i)*discrim(i+1) <= ext_rt(0._RD)) then
             n_brack = n_brack + 1
             i_brack(n_brack) = i
          end if

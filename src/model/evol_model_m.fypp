@@ -45,9 +45,9 @@ module evol_model_m
       type(grid_t)                 :: gr
       type(interp_rt), allocatable :: in(:,:)
       logical, allocatable         :: in_def(:)
-      real(WP), public             :: M_star
-      real(WP), public             :: R_star
-      real(WP), public             :: L_star
+      real(RD), public             :: M_star
+      real(RD), public             :: R_star
+      real(RD), public             :: L_star
       logical                      :: add_center
       logical                      :: repair_As
       integer                      :: s_i
@@ -89,10 +89,10 @@ contains
 
    function evol_model_t_(x, M_star, R_star, L_star, ml_p) result(ml)
 
-      real(WP), intent(in)          :: x(:)
-      real(WP), intent(in)          :: M_star
-      real(WP), intent(in)          :: R_star
-      real(WP), intent(in)          :: L_star
+      real(RD), intent(in)          :: x(:)
+      real(RD), intent(in)          :: M_star
+      real(RD), intent(in)          :: R_star
+      real(RD), intent(in)          :: L_star
       type(model_par_t), intent(in) :: ml_p
       type(evol_model_t)            :: ml
 
@@ -102,9 +102,9 @@ contains
 
       if (ml_p%add_center) then
 
-         if (x(1) /= 0._WP) then
+         if (x(1) /= 0._RD) then
 
-            ml%gr = grid_t([0._WP,x])
+            ml%gr = grid_t([0._RD,x])
             ml%add_center = .TRUE.
 
             if (check_log_level('INFO')) then
@@ -164,10 +164,10 @@ contains
 
       class(evol_model_t), intent(inout) :: this
       integer, intent(in)                :: i
-      real(WP), intent(in)               :: coeff(:)
+      real(RD), intent(in)               :: coeff(:)
 
-      real(WP), allocatable :: coeff_(:)
-      real(WP)              :: coeff_0
+      real(RD), allocatable :: coeff_(:)
+      real(RD)              :: coeff_0
       integer               :: s
       integer               :: j_i
       integer               :: j_o
@@ -185,11 +185,11 @@ contains
          select case (i)
          case (I_U)
 
-            coeff_0 = 3._WP
+            coeff_0 = 3._RD
 
          case (I_AS)
 
-            coeff_0 = 0._WP
+            coeff_0 = 0._RD
 
          case default
 
@@ -228,8 +228,8 @@ contains
          j_i = this%gr%j_s_i(s)
          j_o = this%gr%j_s_o(s)
 
-         if (this%gr%pt(j_i)%x == 0._WP) then
-            this%in(i,s) = interp_rt(this%gr%pt(j_i:j_o)%x, coeff_(j_i:j_o), this%deriv_type, df_dx_a=0._WP)
+         if (this%gr%pt(j_i)%x == 0._RD) then
+            this%in(i,s) = interp_rt(this%gr%pt(j_i:j_o)%x, coeff_(j_i:j_o), this%deriv_type, df_dx_a=0._RD)
          else
             this%in(i,s) = interp_rt(this%gr%pt(j_i:j_o)%x, coeff_(j_i:j_o), this%deriv_type)
          endif
@@ -249,7 +249,7 @@ contains
    subroutine repair_coeff_(gr, coeff)
 
       type(grid_t), intent(in) :: gr
-      real(WP), intent(inout)  :: coeff(:)
+      real(RD), intent(inout)  :: coeff(:)
 
       integer :: s_i
       integer :: s_o
@@ -295,10 +295,10 @@ contains
       integer  :: s
       integer  :: j_i
       integer  :: j_o
-      real(WP) :: x(this%gr%n)
-      real(WP) :: c_1(this%gr%n)
-      real(WP) :: U(this%gr%n)
-      real(WP) :: dc_1_dx(this%gr%n)
+      real(RD) :: x(this%gr%n)
+      real(RD) :: c_1(this%gr%n)
+      real(RD) :: U(this%gr%n)
+      real(RD) :: dc_1_dx(this%gr%n)
 
       ! Commit the model
 
@@ -319,7 +319,7 @@ contains
       class(evol_model_t), intent(in) :: this
       integer, intent(in)             :: i
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: coeff
+      real(RD)                        :: coeff
 
       @:ASSERT_DEBUG(this%committed, 'Cannot evaluate coefficient before committing model')
 
@@ -347,7 +347,7 @@ contains
       class(evol_model_t), intent(in) :: this
       integer, intent(in)             :: i
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: dcoeff
+      real(RD)                        :: dcoeff
 
       @:ASSERT_DEBUG(this%committed, 'Cannot evaluate coefficient before committing model')
 
@@ -359,8 +359,8 @@ contains
       ! Evaluate the logarithmic derivative of the i'th coefficient
 
       associate (s => pt%s, x => pt%x)
-         if (x == 0._WP) then
-            dcoeff = 0._WP
+         if (x == 0._RD) then
+            dcoeff = 0._RD
          else
             dcoeff = x*this%in(i,s)%df_dx(x)/this%in(i,s)%f(x)
          end if
@@ -378,7 +378,7 @@ contains
 
       class(evol_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: M_r
+      real(RD)                        :: M_r
 
       ! Evaluate the fractional mass coordinate
 
@@ -396,11 +396,11 @@ contains
 
       class(evol_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: P
+      real(RD)                        :: P
 
       ! Evaluate the total pressure
 
-      P = (G_GRAVITY*this%M_star**2/(4._WP*PI*this%R_star**4))* &
+      P = (G_GRAVITY*this%M_star**2/(4._RD*PI*this%R_star**4))* &
          (this%coeff(I_U, pt)/(this%coeff(I_C_1, pt)**2*this%coeff(I_V_2, pt)))
 
       ! Finish
@@ -415,11 +415,11 @@ contains
 
       class(evol_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: rho
+      real(RD)                        :: rho
 
       ! Evaluate the density
 
-      rho = (this%M_star/(4._WP*PI*this%R_star**3))*(this%coeff(I_U, pt)/this%coeff(I_C_1, pt))
+      rho = (this%M_star/(4._RD*PI*this%R_star**3))*(this%coeff(I_U, pt)/this%coeff(I_C_1, pt))
 
       ! Finish
 
@@ -433,11 +433,11 @@ contains
 
       class(evol_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: T
+      real(RD)                        :: T
 
       ! Evaluate the temperature
 
-      T = (3._WP*this%coeff(I_BETA_RAD, pt)*this%P(pt)/A_RADIATION)**0.25_WP
+      T = (3._RD*this%coeff(I_BETA_RAD, pt)*this%P(pt)/A_RADIATION)**0.25_RD
 
       ! Finish
 
@@ -477,7 +477,7 @@ contains
 
       ! Return whether the point is a vacuum
 
-      is_vacuum = this%coeff(I_U,pt) == 0._WP
+      is_vacuum = this%coeff(I_U,pt) == 0._RD
 
       ! Finish
 
@@ -490,20 +490,20 @@ contains
    function Delta_p(this, x_i, x_o)
 
       class(evol_model_t), intent(in) :: this
-      real(WP), intent(in)            :: x_i
-      real(WP), intent(in)            :: x_o
-      real(WP)                        :: Delta_p
+      real(RD), intent(in)            :: x_i
+      real(RD), intent(in)            :: x_o
+      real(RD)                        :: Delta_p
 
       type(grid_t)  :: gr
-      real(WP)      :: I
+      real(RD)      :: I
       integer       :: s
       type(point_t) :: pt
       integer       :: j_i
       integer       :: j_o
       integer       :: j
-      real(WP)      :: V_2
-      real(WP)      :: c_1
-      real(WP)      :: Gamma_1
+      real(RD)      :: V_2
+      real(RD)      :: c_1
+      real(RD)      :: Gamma_1
 
       ! Evaluate the dimensionless g-mode inverse period separation,
       ! using a midpoint quadrature rule since the integrand can
@@ -515,7 +515,7 @@ contains
 
       ! Now evaluate the integrand segment by segment
 
-      I = 0._WP
+      I = 0._RD
 
       seg_loop : do s = gr%s_i(), gr%s_o()
 
@@ -538,7 +538,7 @@ contains
 
       end do seg_loop
 
-      Delta_p = 0.5_WP/I
+      Delta_p = 0.5_RD/I
 
       ! Finish
 
@@ -551,20 +551,20 @@ contains
    function Delta_g(this, x_i, x_o, lambda)
 
       class(evol_model_t), intent(in) :: this
-      real(WP), intent(in)            :: x_i
-      real(WP), intent(in)            :: x_o
-      real(WP), intent(in)            :: lambda
-      real(WP)                        :: Delta_g
+      real(RD), intent(in)            :: x_i
+      real(RD), intent(in)            :: x_o
+      real(RD), intent(in)            :: lambda
+      real(RD)                        :: Delta_g
 
       type(grid_t)  :: gr
-      real(WP)      :: I
+      real(RD)      :: I
       integer       :: s
       type(point_t) :: pt
       integer       :: j_i
       integer       :: j_o
       integer       :: j
-      real(WP)      :: As
-      real(WP)      :: c_1
+      real(RD)      :: As
+      real(RD)      :: c_1
 
       ! Evaluate the dimensionless g-mode inverse period separation,
       ! using a midpoint quadrature rule since the integrand can diverge
@@ -576,7 +576,7 @@ contains
 
       ! Now evaluate the integrand segment by segment
 
-      I = 0._WP
+      I = 0._RD
 
       seg_loop : do s = gr%s_i(), gr%s_o()
 
@@ -592,13 +592,13 @@ contains
             As = this%coeff(I_AS, pt)
             c_1 = this%coeff(I_C_1, pt)
 
-            I = I + (sqrt(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(j+1)%x - gr%pt(j)%x)
+            I = I + (sqrt(MAX(As/c_1, 0._RD))/pt%x)*(gr%pt(j+1)%x - gr%pt(j)%x)
 
          end do cell_loop
 
       end do seg_loop
 
-      Delta_g = sqrt(lambda)/(2._WP*PI**2)*I
+      Delta_g = sqrt(lambda)/(2._RD*PI**2)*I
 
       ! Finish
 

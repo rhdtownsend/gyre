@@ -205,7 +205,7 @@ contains
 
          class(block_sysmtx_${S}$), intent(inout) :: this
 
-         ${T}$, parameter :: ONE = 1._WP
+         ${T}$, parameter :: ONE = 1._RD
 
          integer :: l
          integer :: k
@@ -244,12 +244,12 @@ contains
                   ! Wright 1994)
 
                   M_G(:n_e,:) = this%E_l(:,:,k)
-                  M_G(n_e+1:,:) = 0._WP
+                  M_G(n_e+1:,:) = 0._RD
 
                   M_U(:n_e,:) = this%E_r(:,:,k)
                   M_U(n_e+1:,:) = this%E_l(:,:,k+l)
 
-                  M_E(:n_e,:) = 0._WP
+                  M_E(:n_e,:) = 0._RD
                   M_E(n_e+1:,:) = this%E_r(:,:,k+l)
 
                   ! Calculate the LU factorization of M_U, and use it to reduce
@@ -261,30 +261,22 @@ contains
                   call XLASWP_inplace(n_e, M_E(1,1), 2*n_e, 1, n_e, ipiv, 1)
                   call XTRSM_inplace('L', 'L', 'N', 'U', n_e, n_e, &
                      ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
-!                     ONE, M_U(:n_e,:), n_e, M_E(:n_e,:), n_e)
                   call XGEMM_inplace('N', 'N', n_e, n_e, n_e, -ONE, &
                      M_U(n_e+1,1), 2*n_e, M_E(1,1), 2*n_e, ONE, &
                      M_E(n_e+1,1), 2*n_e)
-!                     M_U(n_e+1:,:), n_e, M_E(:n_e,:), n_e, ONE, &
-!                     M_E(n_e+1:,:), n_e)
 
                   call XTRSM_inplace('L', 'U', 'N', 'N', n_e, n_e, &
                      ONE, M_U(1,1), 2*n_e, M_E(1,1), 2*n_e)
-!                     ONE, M_U(:n_e,:), n_e, M_E(:n_e,:), n_e)
 
                   call XLASWP_inplace(n_e, M_G(1,1), 2*n_e, 1, n_e, ipiv, 1)
                   call XTRSM_inplace('L', 'L', 'N', 'U', n_e, n_e, &
                      ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
-!                     ONE, M_U(:n_e,:), n_e, M_G(:n_e,:), n_e)
                   call XGEMM_inplace('N', 'N', n_e, n_e, n_e, -ONE, &
                      M_U(n_e+1,1), 2*n_e, M_G(1,1), 2*n_e, ONE, &
                      M_G(n_e+1,1), 2*n_e)
-!                     M_U(n_e+1:,:), n_e, M_G(:n_e,:), n_e, ONE, &
-!                     M_G(n_e+1:,:), n_e)
 
                   call XTRSM_inplace('L', 'U', 'N', 'N', n_e, n_e, &
                      ONE, M_U(1,1), 2*n_e, M_G(1,1), 2*n_e)
-!                     ONE, M_U(:n_e,:), n_e, M_G(:n_e,:), n_e)
 
                   ! Store results
 
@@ -324,7 +316,7 @@ contains
 
          class(block_sysmtx_${S}$), intent(inout) :: this
 
-         real(WP) :: scl
+         real(RD) :: scl
          integer  :: i
          integer  :: k
 
@@ -379,9 +371,9 @@ contains
 
             M(:n_i,:n_e) = this%B_i
             M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
-            M(n_i+n_e+1:,:n_e) = 0._WP
+            M(n_i+n_e+1:,:n_e) = 0._RD
 
-            M(:n_i,n_e+1:) = 0._WP
+            M(:n_i,n_e+1:) = 0._RD
             M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
             M(n_i+n_e+1:,n_e+1:) = this%B_o
 
@@ -414,17 +406,17 @@ contains
          ${T}$                                 :: u(this%n_e*(this%n+1))
 
          logical, parameter :: USE_SVD = .TRUE.
-         ${T}$, parameter   :: ZERO = 0._WP
-         ${T}$, parameter   :: ONE = 1._WP
+         ${T}$, parameter   :: ZERO = 0._RD
+         ${T}$, parameter   :: ONE = 1._RD
 
          ${T}$    :: M(2*this%n_e,2*this%n_e)
-         real(WP) :: sigma(2*this%n_e)
+         real(RD) :: sigma(2*this%n_e)
          ${T}$    :: sU(2*this%n_e,2*this%n_e)
          ${T}$    :: sV_H(2*this%n_e,2*this%n_e)
          integer  :: ipiv(2*this%n_e)
          integer  :: info
          integer  :: i_s
-         real(WP) :: M_s
+         real(RD) :: M_s
          integer  :: i
          ${T}$    :: u_bound(2*this%n_e)
 
@@ -440,9 +432,9 @@ contains
 
             M(:n_i,:n_e) = this%B_i
             M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
-            M(n_i+n_e+1:,:n_e) = 0._WP
+            M(n_i+n_e+1:,:n_e) = 0._RD
 
-            M(:n_i,n_e+1:) = 0._WP
+            M(:n_i,n_e+1:) = 0._RD
             M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
             M(n_i+n_e+1:,n_e+1:) = this%B_o
 
@@ -454,9 +446,9 @@ contains
 
                call sing_decompose(M, sigma, sU, sV_H)
 
-               #:if T == 'real(WP)'
+               #:if T == 'real(RD)'
                   u_bound = sV_H(2*n_e,:)
-               #:elif T == 'complex(WP)'
+               #:elif T == 'complex(RD)'
                   u_bound = CONJG(sV_H(2*n_e,:))
                #:else
                   #:stop f'invalid type {T}'
@@ -473,7 +465,7 @@ contains
                ! block (this will be taken to be the singular element)
 
                i_s = 0
-               M_s = HUGE(0._WP)
+               M_s = HUGE(0._RD)
 
                sing_loop : do i = n_e+1, 2*n_e
                   if (abs(M(i,i)) < M_s) then
@@ -487,8 +479,8 @@ contains
                call XTRSM_inplace('L', 'U', 'N', 'N', i_s-1, 1, &
                   ONE, M(1,1), 2*n_e, u_bound(1), 2*n_e)
                
-               u_bound(i_s) = 1._WP
-               u_bound(i_s+1:) = 0._WP
+               u_bound(i_s) = 1._RD
+               u_bound(i_s+1:) = 0._RD
 
             endif
 
@@ -535,14 +527,14 @@ contains
 
             M(:n_i,:n_e) = this%B_i
             M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
-            M(n_i+n_e+1:,:n_e) = 0._WP
+            M(n_i+n_e+1:,:n_e) = 0._RD
 
-            M(:n_i,n_e+1:) = 0._WP
+            M(:n_i,n_e+1:) = 0._RD
             M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
             M(n_i+n_e+1:,n_e+1:) = this%B_o
 
             B(:n_i,1) = v_i/this%scl_i
-            B(n_i+1:n_i+n_e,1) = 0._WP
+            B(n_i+1:n_i+n_e,1) = 0._RD
             B(n_i+n_e+1:,1) = v_o/this%scl_o
 
             ! Solve for the solution at the two boundaries using LU
@@ -576,8 +568,8 @@ contains
          ${T}$, intent(in)                     :: u_bound(:)
          ${T}$, intent(out)                    :: u(:)
 
-         ${T}$, parameter :: ZERO = 0._WP
-         ${T}$, parameter :: ONE = 1._WP
+         ${T}$, parameter :: ZERO = 0._RD
+         ${T}$, parameter :: ONE = 1._RD
 
          integer :: l
          integer :: k

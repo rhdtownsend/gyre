@@ -40,7 +40,7 @@ module interp_m
 
       type interp_${S}$
          private
-         real(WP), allocatable :: x_(:)     ! Abscissa
+         real(RD), allocatable :: x_(:)     ! Abscissa
          ${T}$, allocatable    :: f_(:)     ! Ordinate
          ${T}$, allocatable    :: df_dx_(:) ! First derivatives
          ${T}$, allocatable    :: int_f_(:) ! First integrals
@@ -92,13 +92,13 @@ contains
 
       function interp_${S}$_(x, f, df_dx) result(in)
 
-         real(WP), intent(in) :: x(:)
+         real(RD), intent(in) :: x(:)
          ${T}$, intent(in)    :: f(:)
          ${T}$, intent(in)    :: df_dx(:)
          type(interp_${S}$)   :: in
 
          integer  :: i
-         real(WP) :: h
+         real(RD) :: h
 
          @:CHECK_BOUNDS(SIZE(f), SIZE(x))
          @:CHECK_BOUNDS(SIZE(df_dx), SIZE(x))
@@ -120,16 +120,16 @@ contains
 
          allocate(in%int_f_(in%n))
 
-         in%int_f_(1) = 0._WP
+         in%int_f_(1) = 0._RD
 
          x_loop : do i = 1, in%n-1
 
             h = x(i+1) - x(i)
 
-            in%int_f_(i+1) = in%int_f_(i) - f(i  )*(dphi_dt_(0._WP, -1) - dphi_dt_(1._WP, -1))*h + &
-               &                            f(i+1)*(dphi_dt_(1._WP, -1) - dphi_dt_(0._WP, -1))*h + &
-               &                        df_dx(i  )*(dpsi_dt_(0._WP, -1) - dpsi_dt_(1._WP, -1))*h**2 + &
-               &                        df_dx(i+1)*(dpsi_dt_(1._WP, -1) - dpsi_dt_(0._WP, -1))*h**2
+            in%int_f_(i+1) = in%int_f_(i) - f(i  )*(dphi_dt_(0._RD, -1) - dphi_dt_(1._RD, -1))*h + &
+               &                            f(i+1)*(dphi_dt_(1._RD, -1) - dphi_dt_(0._RD, -1))*h + &
+               &                        df_dx(i  )*(dpsi_dt_(0._RD, -1) - dpsi_dt_(1._RD, -1))*h**2 + &
+               &                        df_dx(i+1)*(dpsi_dt_(1._RD, -1) - dpsi_dt_(0._RD, -1))*h**2
 
          end do x_loop
 
@@ -143,7 +143,7 @@ contains
 
       function interp_${S}$_eval_derivs_(x, f, deriv_type, df_dx_a, df_dx_b) result(in)
 
-         real(WP), intent(in)        :: x(:)
+         real(RD), intent(in)        :: x(:)
          ${T}$, intent(in)           :: f(:)
          character(*), intent(in)    :: deriv_type
          ${T}$, optional, intent(in) :: df_dx_a
@@ -170,7 +170,7 @@ contains
          type(hgroup_t), intent(inout)   :: hg
          type(interp_${S}$), intent(out) :: in
 
-         real(WP), allocatable :: x(:)
+         real(RD), allocatable :: x(:)
          ${T}$, allocatable    :: f(:)
          ${T}$, allocatable    :: df_dx(:)
 
@@ -214,7 +214,7 @@ contains
       function x_${S}$_(this) result(x)
 
          class(interp_${S}$), intent(in) :: this
-         real(WP)                        :: x(this%n)
+         real(RD)                        :: x(this%n)
 
          ! Return the abscissa points
 
@@ -229,7 +229,7 @@ contains
       function x_min_${S}$_(this) result(x_min)
 
          class(interp_${S}$), intent(in) :: this
-         real(WP)                        :: x_min
+         real(RD)                        :: x_min
 
          ! Return the minimum abscissa point
 
@@ -246,7 +246,7 @@ contains
       function x_max_${S}$_(this) result(x_max)
 
          class(interp_${S}$), intent(in) :: this
-         real(WP)                        :: x_max
+         real(RD)                        :: x_max
 
          ! Return the maximum abscissa point
 
@@ -263,7 +263,7 @@ contains
       function f_${S}$_1_(this, x) result(f)
 
          class(interp_${S}$), intent(in) :: this
-         real(WP), intent(in)            :: x
+         real(RD), intent(in)            :: x
          ${T}$                           :: f
 
          ! Interpolate f at a single point
@@ -281,7 +281,7 @@ contains
       function f_${S}$_v_(this, x) result(f)
 
          class(interp_${S}$), intent(in) :: this
-         real(WP), intent(in)            :: x(:)
+         real(RD), intent(in)            :: x(:)
          ${T}$                           :: f(SIZE(x))
 
          ! Interpolate f at a vector of points
@@ -314,14 +314,14 @@ contains
       function df_dx_${S}$_1_(this, x, n) result(df_dx)
 
          class(interp_${S}$), intent(in) :: this
-         real(WP), intent(in)            :: x
+         real(RD), intent(in)            :: x
          integer, optional, intent(in)   :: n
          ${T}$                           :: df_dx
 
          integer  :: n_
          integer  :: i
-         real(WP) :: h
-         real(WP) :: w
+         real(RD) :: h
+         real(RD) :: w
 
          if (PRESENT(n)) then
             n_ = n
@@ -346,9 +346,9 @@ contains
 
          ! Do the interpolation
 
-         df_dx = (-1._WP)**n_ *     this%f_(i  )*dphi_dt_(1._WP-w, n_)/h**n_ + &
+         df_dx = (-1._RD)**n_ *     this%f_(i  )*dphi_dt_(1._RD-w, n_)/h**n_ + &
             &                       this%f_(i+1)*dphi_dt_(      w, n_)/h**n_ - &
-            &    (-1._WP)**n_ * this%df_dx_(i  )*dpsi_dt_(1._WP-w, n_)/h**(n_-1) + &
+            &    (-1._RD)**n_ * this%df_dx_(i  )*dpsi_dt_(1._RD-w, n_)/h**(n_-1) + &
             &                   this%df_dx_(i+1)*dpsi_dt_(      w, n_)/h**(n_-1)
 
          ! Finish
@@ -362,15 +362,15 @@ contains
       function df_dx_${S}$_v_(this, x, n) result(df_dx)
 
          class(interp_${S}$), intent(in) :: this
-         real(WP), intent(in)            :: x(:)
+         real(RD), intent(in)            :: x(:)
          integer, optional, intent(in)   :: n
          ${T}$                           :: df_dx(SIZE(x))
 
          integer  :: n_
          integer  :: i
          integer  :: j
-         real(WP) :: h
-         real(WP) :: w
+         real(RD) :: h
+         real(RD) :: w
 
          if (PRESENT(n)) then
             n_ = n
@@ -397,9 +397,9 @@ contains
 
             ! Do the interpolation
 
-            df_dx(j) = (-1._WP)**n_ *     this%f_(i  )*dphi_dt_(1._WP-w, n_)/h**n_ + &
+            df_dx(j) = (-1._RD)**n_ *     this%f_(i  )*dphi_dt_(1._RD-w, n_)/h**n_ + &
                &                          this%f_(i+1)*dphi_dt_(w      , n_)/h**n_ - &
-               &       (-1._WP)**n_ * this%df_dx_(i  )*dpsi_dt_(1._WP-w, n_)/h**(n_-1) + &
+               &       (-1._RD)**n_ * this%df_dx_(i  )*dpsi_dt_(1._RD-w, n_)/h**(n_-1) + &
                &                      this%df_dx_(i+1)*dpsi_dt_(w      , n_)/h**(n_-1)
 
          end do x_loop
@@ -449,12 +449,12 @@ contains
       function int_f_${S}$_1_(this, x) result(int_f)
 
          class(interp_${S}$), intent(in) :: this
-         real(WP), intent(in)            :: x
+         real(RD), intent(in)            :: x
          ${T}$                           :: int_f
 
          integer  :: i
-         real(WP) :: h
-         real(WP) :: w
+         real(RD) :: h
+         real(RD) :: w
 
          ! Interpolate the integral of f at a single point
 
@@ -472,10 +472,10 @@ contains
 
          ! Do the interpolation
 
-         int_f = this%int_f_(i) - this%f_(i  )*(dphi_dt_(1._WP-w, -1) - dphi_dt_(1._WP, -1))*h + &
-            &                     this%f_(i+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._WP, -1))*h + &
-            &                 this%df_dx_(i  )*(dpsi_dt_(1._WP-w, -1) - dpsi_dt_(1._WP, -1))*h**2 + &
-            &                 this%df_dx_(i+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._WP, -1))*h**2
+         int_f = this%int_f_(i) - this%f_(i  )*(dphi_dt_(1._RD-w, -1) - dphi_dt_(1._RD, -1))*h + &
+            &                     this%f_(i+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._RD, -1))*h + &
+            &                 this%df_dx_(i  )*(dpsi_dt_(1._RD-w, -1) - dpsi_dt_(1._RD, -1))*h**2 + &
+            &                 this%df_dx_(i+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._RD, -1))*h**2
 
          ! Finish
 
@@ -488,13 +488,13 @@ contains
       function int_f_${S}$_v_(this, x) result(int_f)
 
          class(interp_${S}$), intent(in) :: this
-         real(WP), intent(in)            :: x(:)
+         real(RD), intent(in)            :: x(:)
          ${T}$                           :: int_f(SIZE(x))
 
          integer  :: i
          integer  :: j
-         real(WP) :: h
-         real(WP) :: w
+         real(RD) :: h
+         real(RD) :: w
 
          ! Interpolate the integral of f at a vector of points
 
@@ -514,10 +514,10 @@ contains
 
             ! Do the interpolation
 
-            int_f(j) = this%int_f_(i) - this%f_(i  )*(dphi_dt_(1._WP-w, -1) - dphi_dt_(1._WP, -1))*h + &
-               &                        this%f_(i+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._WP, -1))*h + &
-               &                    this%df_dx_(i  )*(dpsi_dt_(1._WP-w, -1) - dpsi_dt_(1._WP, -1))*h**2 + &
-               &                    this%df_dx_(i+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._WP, -1))*h**2
+            int_f(j) = this%int_f_(i) - this%f_(i  )*(dphi_dt_(1._RD-w, -1) - dphi_dt_(1._RD, -1))*h + &
+               &                        this%f_(i+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._RD, -1))*h + &
+               &                    this%df_dx_(i  )*(dpsi_dt_(1._RD-w, -1) - dpsi_dt_(1._RD, -1))*h**2 + &
+               &                    this%df_dx_(i+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._RD, -1))*h**2
 
          end do x_loop
 
@@ -550,25 +550,25 @@ contains
       
    function dphi_dt_(t, n) result(dphi_dt)
 
-      real(WP), intent(in) :: t
+      real(RD), intent(in) :: t
       integer, intent(in)  :: n
-      real(WP)             :: dphi_dt
+      real(RD)             :: dphi_dt
 
       ! Evaluate the n'th derivative of the phi basis function
 
       select case (n)
       case (-1)
-         dphi_dt = t**3 - t**4/2._WP
+         dphi_dt = t**3 - t**4/2._RD
       case (0)
-         dphi_dt = 3._WP*t**2 - 2._WP*t**3
+         dphi_dt = 3._RD*t**2 - 2._RD*t**3
       case (1)
-         dphi_dt = 6._WP*t - 6._WP*t**2
+         dphi_dt = 6._RD*t - 6._RD*t**2
       case (2)
-         dphi_dt = 6._WP - 12._WP*t
+         dphi_dt = 6._RD - 12._RD*t
       case (3)
-         dphi_dt = -12._WP
+         dphi_dt = -12._RD
       case (4:)
-         dphi_dt = 0._WP
+         dphi_dt = 0._RD
       case default
          @:ABORT('invalid n')
       end select
@@ -583,25 +583,25 @@ contains
 
    function dpsi_dt_(t, n) result(dpsi_dt)
 
-      real(WP), intent(in) :: t
+      real(RD), intent(in) :: t
       integer, intent(in)  :: n
-      real(WP)             :: dpsi_dt
+      real(RD)             :: dpsi_dt
 
       ! Evaluate the n'th derivative of the psi basis function
 
       select case (n)
       case (-1)
-         dpsi_dt = t**4/4._WP - t**3/3._WP
+         dpsi_dt = t**4/4._RD - t**3/3._RD
       case (0)
          dpsi_dt = t**3 - t**2
       case (1)
-         dpsi_dt = 3._WP*t**2 - 2._WP*t
+         dpsi_dt = 3._RD*t**2 - 2._RD*t
       case (2)
-         dpsi_dt = 6._WP*t - 2._WP
+         dpsi_dt = 6._RD*t - 2._RD
       case (3)
-         dpsi_dt = 6._WP
+         dpsi_dt = 6._RD
       case (4:)
-         dpsi_dt = 0._WP
+         dpsi_dt = 0._RD
       case default
          @:ABORT('invalid n')
       end select

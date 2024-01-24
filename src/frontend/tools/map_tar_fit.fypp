@@ -36,11 +36,11 @@ program map_tar_fit
 
    ! Variables
 
-   real(WP)                  :: q_re_min
-   real(WP)                  :: q_re_max
+   real(RD)                  :: q_re_min
+   real(RD)                  :: q_re_max
    integer                   :: n_q_re
-   real(WP)                  :: q_im_min
-   real(WP)                  :: q_im_max
+   real(RD)                  :: q_im_min
+   real(RD)                  :: q_im_max
    integer                   :: n_q_im
    character(:), allocatable :: in_file
    character(:), allocatable :: out_file
@@ -49,10 +49,10 @@ program map_tar_fit
    type(tar_fit_t)          :: tf
    integer                  :: i
    integer                  :: j
-   real(WP), allocatable    :: q_re(:)
-   real(WP), allocatable    :: q_im(:)
-   complex(WP)              :: q
-   complex(WP), allocatable :: lambda(:,:)
+   real(RD), allocatable    :: q_re(:)
+   real(RD), allocatable    :: q_im(:)
+   complex(RD)              :: q
+   complex(RD), allocatable :: lambda(:,:)
 
    ! Read parameters
 
@@ -84,7 +84,7 @@ program map_tar_fit
 
    re_loop : do i = 1, n_q_re
       im_loop : do j = 1, n_q_im
-         q = CMPLX(q_re(i), q_im(j), WP)
+         q = CMPLX(q_re(i), q_im(j), RD)
          lambda(i,j) = tf%lambda(q)
       end do im_loop
    end do re_loop

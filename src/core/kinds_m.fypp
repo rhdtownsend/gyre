@@ -16,7 +16,7 @@ module kinds_m
    integer, parameter :: DP = KIND(0.D0)
    integer, parameter :: QP = SELECTED_REAL_KIND(32)
 
-   integer, parameter :: WP = DP
+   integer, parameter :: RD = DP
 
    ! Acess specifiers
 
@@ -24,7 +24,7 @@ module kinds_m
    public :: I8
    public :: SP
    public :: DP
-   public :: WP
+   public :: RD
    public :: QP
 
    ! Default access

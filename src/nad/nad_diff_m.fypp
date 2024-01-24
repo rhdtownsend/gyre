@@ -51,8 +51,8 @@ module nad_diff_m
       type(context_t), pointer    :: cx => null()
       class(diff_ct), allocatable :: df
       type(nad_eqns_t)            :: eq
-      real(WP)                    :: Omega_rot
-      real(WP)                    :: dx
+      real(RD)                    :: Omega_rot
+      real(RD)                    :: dx
    contains
       private
       procedure, public :: build
@@ -98,7 +98,7 @@ contains
 
          select case (nm_p%diff_scheme)
          case ('TRAPZ')
-            allocate(df%df, SOURCE=trapz_diff_ct(eq, pt_a, pt_b, [0.5_WP,0.5_WP,0.5_WP,0.5_WP,0._WP,1._WP]))
+            allocate(df%df, SOURCE=trapz_diff_ct(eq, pt_a, pt_b, [0.5_RD,0.5_RD,0.5_RD,0.5_RD,0._RD,1._RD]))
          case default
             allocate(df%df, SOURCE=diff_ct(eq, pt_a, pt_b, nm_p))
          end select
@@ -145,15 +145,15 @@ contains
 
       class(nad_diff_t), intent(in) :: this
       class(state_ct), intent(in)   :: st
-      complex(WP), intent(out)      :: E_l(:,:)
-      complex(WP), intent(out)      :: E_r(:,:)
+      complex(RD), intent(out)      :: E_l(:,:)
+      complex(RD), intent(out)      :: E_r(:,:)
       type(ext_ct), intent(out)     :: scl
 
       logical, parameter :: MAGNUS_EIGVAL_MASK(3) = [.FALSE.,.FALSE.,.TRUE.]
 
-      complex(WP) :: A(this%n_e,this%n_e)
-      complex(WP) :: lambda(3)
-      complex(WP) :: omega_c
+      complex(RD) :: A(this%n_e,this%n_e)
+      complex(RD) :: lambda(3)
+      complex(RD) :: omega_c
 
       @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)

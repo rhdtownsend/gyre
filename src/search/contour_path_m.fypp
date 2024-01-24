@@ -36,7 +36,7 @@ module contour_path_m
 
    type :: contour_path_t
       private
-      complex(WP), allocatable :: z(:)
+      complex(RD), allocatable :: z(:)
       integer                  :: head_tag
       integer                  :: tail_tag
       integer                  :: n
@@ -76,7 +76,7 @@ contains
 
    function contour_path_t_point_(z, tag) result(cp)
 
-      complex(WP), intent(in) :: z
+      complex(RD), intent(in) :: z
       integer, intent(in)     :: tag
       type(contour_path_t)    :: cp
 
@@ -199,7 +199,7 @@ contains
    subroutine add_point(this, z, tag, tail)
 
       class(contour_path_t), intent(inout) :: this
-      complex(WP), intent(in)              :: z
+      complex(RD), intent(in)              :: z
       integer, intent(in)                  :: tag
       logical, intent(in), optional        :: tail
 
@@ -251,7 +251,7 @@ contains
 
       class(contour_path_t), intent(in) :: this
       logical, intent(in), optional     :: tail
-      complex(WP)                       :: z
+      complex(RD)                       :: z
 
       logical :: tail_
 

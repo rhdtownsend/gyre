@@ -64,8 +64,8 @@ module summary_m
 
    type :: summary_col_t
       integer, allocatable             :: data_i(:)
-      real(WP), allocatable            :: data_r(:)
-      complex(WP), allocatable         :: data_c(:)
+      real(RD), allocatable            :: data_r(:)
+      complex(RD), allocatable         :: data_c(:)
       character(DATA_LEN), allocatable :: data_a(:)
       character(ITEM_LEN)              :: item
       integer                          :: type = 0
@@ -537,7 +537,7 @@ contains
 
          #:for N, E in ( &
             ('Delta_p', 'ml%Delta_p(gr%x_i(), gr%x_o())'), &
-            ('Delta_g', 'ml%Delta_g(gr%x_i(), gr%x_o(), l*(l+1._WP))'))
+            ('Delta_g', 'ml%Delta_g(gr%x_i(), gr%x_o(), l*(l+1._RD))'))
             case ('${N}$')
                call sc%append(${E}$)
          #:endfor

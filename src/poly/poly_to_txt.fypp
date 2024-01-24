@@ -45,11 +45,11 @@ program poly_to_txt
   type(model_par_t)       :: ml_p
   class(model_t), pointer :: ml
   type(grid_t)            :: gr
-  real(WP), allocatable   :: V_2(:)
-  real(WP), allocatable   :: As(:)
-  real(WP), allocatable   :: U(:)
-  real(WP), allocatable   :: c_1(:)
-  real(WP), allocatable   :: Gamma_1(:)
+  real(RD), allocatable   :: V_2(:)
+  real(RD), allocatable   :: As(:)
+  real(RD), allocatable   :: U(:)
+  real(RD), allocatable   :: c_1(:)
+  real(RD), allocatable   :: Gamma_1(:)
   integer                 :: n
   integer                 :: unit
   integer                 :: j

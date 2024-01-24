@@ -70,7 +70,7 @@ contains
 
    function grid_t_x_(x) result(gr)
 
-      real(WP), intent(in) :: x(:)
+      real(RD), intent(in) :: x(:)
       type(grid_t)         :: gr
 
       integer :: n
@@ -125,12 +125,12 @@ contains
    function grid_t_nest_(gr_base, x_i, x_o) result(gr)
 
       type(grid_t), intent(in) :: gr_base
-      real(WP), intent(in)     :: x_i
-      real(WP), intent(in)     :: x_o
+      real(RD), intent(in)     :: x_i
+      real(RD), intent(in)     :: x_o
       type(grid_t)             :: gr
 
-      real(WP)                   :: x_i_
-      real(WP)                   :: x_o_
+      real(RD)                   :: x_i_
+      real(RD)                   :: x_o_
       type(point_t)              :: pt_i
       type(point_t)              :: pt_o
       type(point_t), allocatable :: pt_int(:)
@@ -203,7 +203,7 @@ contains
                @:ASSERT(pt_a%s == pt_b%s, 'attempt to add points at segment boundary')
 
                gr%pt(j)%s = pt_a%s
-               gr%pt(j)%x = 0.5_WP*(pt_a%x + pt_b%x)
+               gr%pt(j)%x = 0.5_RD*(pt_a%x + pt_b%x)
 
                j = j + 1
 
@@ -262,7 +262,7 @@ contains
    function pt_x(this, x, back) result(pt)
 
       class(grid_t), intent(in)     :: this
-      real(WP), intent(in)          :: x
+      real(RD), intent(in)          :: x
       logical, intent(in), optional :: back
       type(point_t)                 :: pt
 
@@ -326,7 +326,7 @@ contains
    function s_x(this, x, back) result(s)
 
       class(grid_t), intent(in)     :: this
-      real(WP), intent(in)          :: x
+      real(RD), intent(in)          :: x
       logical, intent(in), optional :: back
       integer                       :: s
 
@@ -379,7 +379,7 @@ contains
    function x_i(this)
 
       class(grid_t), intent(in) :: this
-      real(WP)                  :: x_i
+      real(RD)                  :: x_i
 
       type(point_t) :: pt_i
 
@@ -400,7 +400,7 @@ contains
    function x_o(this)
 
       class(grid_t), intent(in) :: this
-      real(WP)                  :: x_o
+      real(RD)                  :: x_o
 
       type(point_t) :: pt_o
 

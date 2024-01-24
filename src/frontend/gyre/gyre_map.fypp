@@ -75,17 +75,17 @@ program gyre_map
   type(scan_par_t), allocatable :: sc_p_re_sel(:)
   type(scan_par_t), allocatable :: sc_p_im_sel(:)
   type(context_t), pointer      :: cx => null()
-  real(WP), allocatable         :: omega_re(:)
-  real(WP), allocatable         :: omega_im(:)
-  real(WP)                      :: omega_min
-  real(WP)                      :: omega_max
+  real(RD), allocatable         :: omega_re(:)
+  real(RD), allocatable         :: omega_im(:)
+  real(RD)                      :: omega_min
+  real(RD)                      :: omega_max
   type(grid_t)                  :: gr
   type(nad_bvp_t), target       :: bp
   integer                       :: n_omega_re
   integer                       :: n_omega_im
   type(c_discrim_func_t)        :: df
   type(c_state_t)               :: st
-  complex(WP), allocatable      :: discrim_map_f(:,:)
+  complex(RD), allocatable      :: discrim_map_f(:,:)
   integer, allocatable          :: discrim_map_e(:,:)
   integer, allocatable          :: k_part(:)
   integer                       :: k
@@ -93,7 +93,7 @@ program gyre_map
   $if ($MPI)
   integer                       :: p
   $endif
-  complex(WP)                   :: omega
+  complex(RD)                   :: omega
   type(c_ext_t)                 :: discrim
   integer                       :: status
   integer                       :: i_percent
@@ -194,8 +194,8 @@ program gyre_map
      omega_min = MINVAL(omega_re)
      omega_max = MAXVAL(omega_re)
   else
-     omega_min = -HUGE(0._WP)
-     omega_max = HUGE(0._WP)
+     omega_min = -HUGE(0._RD)
+     omega_max = HUGE(0._RD)
   endif
 
   ! Create the grid
@@ -208,7 +208,7 @@ program gyre_map
 
   ! Set up the discriminant function
 
-  st = c_state_t(omega=0._WP, omega_r=0._WP)
+  st = c_state_t(omega=0._RD, omega_r=0._RD)
   df = c_discrim_func_t(bp, st, omega_min, omega_max)
 
   ! Map the discriminant
@@ -233,10 +233,10 @@ program gyre_map
 
      i = index_nd(k, [n_omega_re,n_omega_im])
 
-     omega = CMPLX(omega_re(i(1)), omega_im(i(2)), KIND=WP)
+     omega = CMPLX(omega_re(i(1)), omega_im(i(2)), KIND=RD)
 
      if (MPI_RANK == 0) then
-        i_percent = FLOOR(100._WP*REAL(k-k_part(MPI_RANK+1))/REAL(k_part(MPI_RANK+2)-k_part(MPI_RANK+1)-1))
+        i_percent = FLOOR(100._RD*REAL(k-k_part(MPI_RANK+1))/REAL(k_part(MPI_RANK+2)-k_part(MPI_RANK+1)-1))
         if (i_percent > n_percent) then
            print *,'Percent complete: ', i_percent
            n_percent = i_percent
@@ -296,8 +296,8 @@ contains
 
     integer                             :: n_sc_p
     integer                             :: i
-    real(WP)                            :: freq_min
-    real(WP)                            :: freq_max
+    real(RD)                            :: freq_min
+    real(RD)                            :: freq_max
     integer                             :: n_freq
     character(LEN(sc_p%freq_min_units)) :: freq_min_units
     character(LEN(sc_p%freq_max_units)) :: freq_max_units
@@ -342,8 +342,8 @@ contains
 
     read_loop : do i = 1, n_sc_p
 
-       freq_min = 1._WP
-       freq_max = 10._WP
+       freq_min = 1._RD
+       freq_max = 10._RD
        n_freq = 10
           
        freq_min_units = 'NONE'

@@ -65,9 +65,9 @@ module cad_bound_m
       type(context_t), pointer :: cx => null()
       type(point_t)            :: pt(2)
       type(ad_trans_t)         :: tr
-      real(WP), allocatable    :: coeff(:,:)
-      real(WP)                 :: alpha_gr
-      real(WP)                 :: alpha_om
+      real(RD), allocatable    :: coeff(:,:)
+      real(RD)                 :: alpha_gr
+      real(RD)                 :: alpha_om
       integer                  :: type_i
       integer                  :: type_o
    contains 
@@ -123,13 +123,13 @@ contains
 
       select case (os_p%inner_bound)
       case ('REGULAR')
-         @:ASSERT(pt_i%x == 0._WP, 'boundary condition invalid for x /= 0')
+         @:ASSERT(pt_i%x == 0._RD, 'boundary condition invalid for x /= 0')
          bd%type_i = REGULAR_TYPE
       case ('ZERO_R')
-         @:ASSERT(pt_i%x /= 0._WP, 'boundary condition invalid for x == 0')
+         @:ASSERT(pt_i%x /= 0._RD, 'boundary condition invalid for x == 0')
          bd%type_i = ZERO_R_TYPE
       case ('ZERO_H')
-         @:ASSERT(pt_i%x /= 0._WP, 'boundary condition invalid for x == 0')
+         @:ASSERT(pt_i%x /= 0._RD, 'boundary condition invalid for x == 0')
          bd%type_i = ZERO_H_TYPE
       case default
          @:ABORT('invalid inner_bound')
@@ -161,16 +161,16 @@ contains
       end select
 
       if (os_p%cowling_approx) then
-         bd%alpha_gr = 0._WP
+         bd%alpha_gr = 0._RD
       else
-         bd%alpha_gr = 1._WP
+         bd%alpha_gr = 1._RD
       endif
 
       select case (os_p%time_factor)
       case ('OSC')
-         bd%alpha_om = 1._WP
+         bd%alpha_om = 1._RD
       case ('EXP')
-         bd%alpha_om = -1._WP
+         bd%alpha_om = -1._RD
       case default
          @:ABORT('invalid time_factor')
       end select
@@ -258,8 +258,8 @@ contains
 
       class(cad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
       ! Evaluate the inner boundary conditions
 
@@ -290,12 +290,12 @@ contains
 
       class(cad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
-      real(WP)    :: Omega_rot
-      complex(WP) :: omega_c
-      complex(WP) :: l_i
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: l_i
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -321,14 +321,14 @@ contains
          B(1,1) = c_1*alpha_om*omega_c**2
          B(1,2) = -l_i
          B(1,3) = alpha_gr*(-l_i)
-         B(1,4) = alpha_gr*(0._WP)
+         B(1,4) = alpha_gr*(0._RD)
 
-         B(2,1) = alpha_gr*(0._WP)
-         B(2,2) = alpha_gr*(0._WP)
+         B(2,1) = alpha_gr*(0._RD)
+         B(2,2) = alpha_gr*(0._RD)
          B(2,3) = alpha_gr*(l_i)
-         B(2,4) = alpha_gr*(-1._WP) + (1._WP - alpha_gr)
+         B(2,4) = alpha_gr*(-1._RD) + (1._RD - alpha_gr)
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -344,8 +344,8 @@ contains
 
       class(cad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -360,17 +360,17 @@ contains
 
          ! Set up the boundary conditions
 
-         B(1,1) = 1._WP
-         B(1,2) = 0._WP
-         B(1,3) = alpha_gr*(0._WP)
-         B(1,4) = alpha_gr*(0._WP)
+         B(1,1) = 1._RD
+         B(1,2) = 0._RD
+         B(1,3) = alpha_gr*(0._RD)
+         B(1,4) = alpha_gr*(0._RD)
 
-         B(2,1) = alpha_gr*(0._WP)
-         B(2,2) = alpha_gr*(0._WP)
-         B(2,3) = alpha_gr*(0._WP)
-         B(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
+         B(2,1) = alpha_gr*(0._RD)
+         B(2,2) = alpha_gr*(0._RD)
+         B(2,3) = alpha_gr*(0._RD)
+         B(2,4) = alpha_gr*(1._RD) + (1._RD - alpha_gr)
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -386,8 +386,8 @@ contains
 
       class(cad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -402,17 +402,17 @@ contains
 
          ! Set up the boundary conditions
 
-         B(1,1) = 0._WP
-         B(1,2) = 1._WP
-         B(1,3) = alpha_gr*(1._WP)
-         B(1,4) = alpha_gr*(0._WP)
+         B(1,1) = 0._RD
+         B(1,2) = 1._RD
+         B(1,3) = alpha_gr*(1._RD)
+         B(1,4) = alpha_gr*(0._RD)
 
-         B(2,1) = alpha_gr*(0._WP)
-         B(2,2) = alpha_gr*(0._WP)
-         B(2,3) = alpha_gr*(0._WP)
-         B(2,4) = alpha_gr*(1._WP) + (1._WP - alpha_gr)
+         B(2,1) = alpha_gr*(0._RD)
+         B(2,2) = alpha_gr*(0._RD)
+         B(2,3) = alpha_gr*(0._RD)
+         B(2,4) = alpha_gr*(1._RD) + (1._RD - alpha_gr)
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -428,8 +428,8 @@ contains
 
       class(cad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
       ! Evaluate the outer boundary conditions
 
@@ -462,11 +462,11 @@ contains
 
       class(cad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
-      real(WP)    :: Omega_rot
-      complex(WP) :: l_e
+      real(RD)    :: Omega_rot
+      complex(RD) :: l_e
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -486,17 +486,17 @@ contains
 
          ! Set up the boundary conditions
 
-         B(1,1) = 1._WP
-         B(1,2) = -1._WP
-         B(1,3) = alpha_gr*(0._WP)
-         B(1,4) = alpha_gr*(0._WP)
+         B(1,1) = 1._RD
+         B(1,2) = -1._RD
+         B(1,3) = alpha_gr*(0._RD)
+         B(1,4) = alpha_gr*(0._RD)
 
          B(2,1) = alpha_gr*(U)
-         B(2,2) = alpha_gr*(0._WP)
-         B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-         B(2,4) = alpha_gr*(1._WP)
+         B(2,2) = alpha_gr*(0._RD)
+         B(2,3) = alpha_gr*(l_e + 1._RD) + (1._RD - alpha_gr)
+         B(2,4) = alpha_gr*(1._RD)
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -512,13 +512,13 @@ contains
 
       class(cad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
-      real(WP)    :: Omega_rot
-      complex(WP) :: omega_c
-      complex(WP) :: lambda
-      complex(WP) :: l_e
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -543,17 +543,17 @@ contains
 
          ! Set up the boundary conditions
 
-         B(1,1) = 1._WP + (lambda/(c_1*alpha_om*omega_c**2) - 4._WP - c_1*alpha_om*omega_c**2)/V
-         B(1,2) = -1._WP
-         B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)/V)
-         B(1,4) = alpha_gr*(0._WP)
+         B(1,1) = 1._RD + (lambda/(c_1*alpha_om*omega_c**2) - 4._RD - c_1*alpha_om*omega_c**2)/V
+         B(1,2) = -1._RD
+         B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._RD)/V)
+         B(1,4) = alpha_gr*(0._RD)
 
-         B(2,1) = alpha_gr*(0._WP)
-         B(2,2) = alpha_gr*(0._WP)
-         B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-         B(2,4) = alpha_gr*(1._WP)
+         B(2,1) = alpha_gr*(0._RD)
+         B(2,2) = alpha_gr*(0._RD)
+         B(2,3) = alpha_gr*(l_e + 1._RD) + (1._RD - alpha_gr)
+         B(2,4) = alpha_gr*(1._RD)
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -569,22 +569,22 @@ contains
 
       class(cad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
-      real(WP)    :: Omega_rot
-      complex(WP) :: omega_c
-      complex(WP) :: lambda
-      complex(WP) :: l_e
-      complex(WP) :: beta
-      complex(WP) :: b_11
-      complex(WP) :: b_12
-      complex(WP) :: b_13
-      complex(WP) :: b_21
-      complex(WP) :: b_22
-      complex(WP) :: b_23
-      complex(WP) :: alpha_1
-      complex(WP) :: alpha_2
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
+      complex(RD) :: beta
+      complex(RD) :: b_11
+      complex(RD) :: b_12
+      complex(RD) :: b_13
+      complex(RD) :: b_21
+      complex(RD) :: b_22
+      complex(RD) :: b_23
+      complex(RD) :: alpha_1
+      complex(RD) :: alpha_2
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -612,12 +612,12 @@ contains
 
          beta = atmos_beta(V, As, U, c_1, Gamma_1, omega_c, lambda)
 
-         b_11 = V/Gamma_1 - 3._WP
+         b_11 = V/Gamma_1 - 3._RD
          b_12 = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
          b_13 = alpha_gr*(V/Gamma_1)
 
          b_21 = c_1*alpha_om*omega_c**2 - As
-         b_22 = 1._WP + As
+         b_22 = 1._RD + As
          b_23 = alpha_gr*(-As)
 
          alpha_1 = (b_12*b_23 - b_13*(b_22+l_e))/((b_11+l_e)*(b_22+l_e) - b_12*b_21)
@@ -628,14 +628,14 @@ contains
          B(1,1) = beta - b_11
          B(1,2) = -b_12
          B(1,3) = alpha_gr*(-(alpha_1*(beta - b_11) - alpha_2*b_12 + b_12))
-         B(1,4) = alpha_gr*(0._WP)
+         B(1,4) = alpha_gr*(0._RD)
 
-         B(2,1) = alpha_gr*(0._WP)
-         B(2,2) = alpha_gr*(0._WP)
-         B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-         B(2,4) = alpha_gr*(1._WP)
+         B(2,1) = alpha_gr*(0._RD)
+         B(2,2) = alpha_gr*(0._RD)
+         B(2,3) = alpha_gr*(l_e + 1._RD) + (1._RD - alpha_gr)
+         B(2,4) = alpha_gr*(1._RD)
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -651,16 +651,16 @@ contains
 
       class(cad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
-      complex(WP), intent(out)       :: B(:,:)
-      complex(WP), intent(out)       :: scl(:)
+      complex(RD), intent(out)       :: B(:,:)
+      complex(RD), intent(out)       :: scl(:)
 
-      real(WP)    :: Omega_rot
-      complex(WP) :: omega_c
-      complex(WP) :: lambda
-      complex(WP) :: l_e
-      complex(WP) :: beta
-      complex(WP) :: b_11
-      complex(WP) :: b_12
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
+      complex(RD) :: beta
+      complex(RD) :: b_11
+      complex(RD) :: b_12
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -688,22 +688,22 @@ contains
 
          beta = atmos_beta(V, As, U, c_1, Gamma_1, omega_c, lambda)
 
-         b_11 = V/Gamma_1 - 3._WP
+         b_11 = V/Gamma_1 - 3._RD
          b_12 = lambda/(c_1*alpha_om*omega_c**2) - V/Gamma_1
 
          ! Set up the boundary conditions
 
          B(1,1) = beta - b_11
          B(1,2) = -b_12
-         B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._WP)*b_12/(V/Gamma_1 + As))
-         B(1,4) = alpha_gr*(0._WP)
+         B(1,3) = alpha_gr*((lambda/(c_1*alpha_om*omega_c**2) - l_e - 1._RD)*b_12/(V/Gamma_1 + As))
+         B(1,4) = alpha_gr*(0._RD)
 
-         B(2,1) = alpha_gr*(0._WP)
-         B(2,2) = alpha_gr*(0._WP)
-         B(2,3) = alpha_gr*(l_e + 1._WP) + (1._WP - alpha_gr)
-         B(2,4) = alpha_gr*(1._WP)
+         B(2,1) = alpha_gr*(0._RD)
+         B(2,2) = alpha_gr*(0._RD)
+         B(2,3) = alpha_gr*(l_e + 1._RD) + (1._RD - alpha_gr)
+         B(2,4) = alpha_gr*(1._RD)
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 

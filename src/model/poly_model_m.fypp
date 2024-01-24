@@ -43,15 +43,15 @@ module poly_model_m
       type(grid_t)                 :: gr
       type(interp_rt), allocatable :: in_theta(:)
       type(interp_rt), allocatable :: in_dtheta(:)
-      real(WP), allocatable        :: n_poly(:)
-      real(WP), allocatable        :: mu_i(:)
-      real(WP), allocatable        :: v_i(:)
-      real(WP), allocatable        :: t(:)
-      real(WP), allocatable        :: B(:)
-      real(WP)                     :: mu_s
-      real(WP)                     :: z_s
-      real(WP)                     :: Gamma_1
-      real(WP)                     :: Omega_rot
+      real(RD), allocatable        :: n_poly(:)
+      real(RD), allocatable        :: mu_i(:)
+      real(RD), allocatable        :: v_i(:)
+      real(RD), allocatable        :: t(:)
+      real(RD), allocatable        :: B(:)
+      real(RD)                     :: mu_s
+      real(RD)                     :: z_s
+      real(RD)                     :: Gamma_1
+      real(RD)                     :: Omega_rot
       integer                      :: s_i
       integer                      :: s_o
    contains
@@ -92,25 +92,25 @@ contains
 
    function poly_model_t_(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot) result(ml)
 
-      real(WP), intent(in) :: z(:)
-      real(WP), intent(in) :: theta(:)
-      real(WP), intent(in) :: dtheta(:)
-      real(WP), intent(in) :: n_poly(:)
-      real(WP), intent(in) :: Delta_b(:)
-      real(WP), intent(in) :: Gamma_1
-      real(WP), intent(in) :: Omega_rot
+      real(RD), intent(in) :: z(:)
+      real(RD), intent(in) :: theta(:)
+      real(RD), intent(in) :: dtheta(:)
+      real(RD), intent(in) :: n_poly(:)
+      real(RD), intent(in) :: Delta_b(:)
+      real(RD), intent(in) :: Gamma_1
+      real(RD), intent(in) :: Omega_rot
       type(poly_model_t)   :: ml
 
       integer  :: n_p
-      real(WP) :: x(SIZE(z))
+      real(RD) :: x(SIZE(z))
       integer  :: j_i
       integer  :: j_o
       integer  :: j_i_prev
       integer  :: j_o_prev
       integer  :: s
       integer  :: i
-      real(WP) :: v_o_prev
-      real(WP) :: d2theta(SIZE(z))
+      real(RD) :: v_o_prev
+      real(RD) :: d2theta(SIZE(z))
 
       @:CHECK_BOUNDS(SIZE(theta), SIZE(z))
       @:CHECK_BOUNDS(SIZE(dtheta), SIZE(z))
@@ -151,10 +151,10 @@ contains
 
       ! Set up per-segment mu_i, v_i, t and B data
 
-      ml%mu_i(ml%s_i) = 0._WP
-      ml%v_i(ml%s_i) = 0._WP
-      ml%t(ml%s_i) = 1._WP
-      ml%B(ml%s_i) = 1._WP
+      ml%mu_i(ml%s_i) = 0._RD
+      ml%v_i(ml%s_i) = 0._RD
+      ml%t(ml%s_i) = 1._RD
+      ml%B(ml%s_i) = 1._RD
 
       j_i = ml%gr%j_s_i(ml%s_i)
       j_o = ml%gr%j_s_o(ml%s_i)
@@ -192,17 +192,17 @@ contains
          j_i = ml%gr%j_s_i(s)
          j_o = ml%gr%j_s_o(s)
 
-         if (ml%n_poly(s) /= 0._WP) then
+         if (ml%n_poly(s) /= 0._RD) then
 
-            where (z(j_i:j_o) /= 0._WP)
-               d2theta(j_i:j_o) = -2._WP*dtheta(j_i:j_o)/z(j_i:j_o) - ml%B(s)*pow(theta(j_i:j_o), ml%n_poly(s))
+            where (z(j_i:j_o) /= 0._RD)
+               d2theta(j_i:j_o) = -2._RD*dtheta(j_i:j_o)/z(j_i:j_o) - ml%B(s)*pow(theta(j_i:j_o), ml%n_poly(s))
             elsewhere
-               d2theta(j_i:j_o) = -1._WP/3._WP
+               d2theta(j_i:j_o) = -1._RD/3._RD
             end where
 
          else
 
-            d2theta(j_i:j_o) = -1._WP/3._WP
+            d2theta(j_i:j_o) = -1._RD/3._RD
 
          endif
 
@@ -229,7 +229,7 @@ contains
       class(poly_model_t), intent(in) :: this
       integer, intent(in)             :: i
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: coeff
+      real(RD)                        :: coeff
 
       @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'Invalid index')
       @:ASSERT_DEBUG(this%is_defined(i), 'Undefined coefficient')
@@ -250,9 +250,9 @@ contains
       case (I_GAMMA_1)
          coeff = this%Gamma_1
       case (I_UPS_T)
-         coeff = 1._WP
+         coeff = 1._RD
       case (I_NABLA_AD)
-         coeff = 0.4_WP
+         coeff = 0.4_RD
       case (I_OMEGA_ROT)
          coeff = this%Omega_rot
       end select
@@ -269,28 +269,28 @@ contains
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: coeff
+      real(RD)                        :: coeff
 
-      real(WP) :: z
-      real(WP) :: theta
-      real(WP) :: dtheta
+      real(RD) :: z
+      real(RD) :: theta
+      real(RD) :: dtheta
 
       @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'V_2 evaluation at vacuum point')
 
       ! Evaluate the V_2 coefficient
 
-      if (pt%x /= 0._WP) then
+      if (pt%x /= 0._RD) then
 
          z = pt%x*this%z_s
 
          theta = this%in_theta(pt%s)%f(pt%x)
          dtheta = this%in_dtheta(pt%s)%f(pt%x)
 
-         coeff = -(this%n_poly(pt%s) + 1._WP)*this%z_s**2*dtheta/(theta*z)
+         coeff = -(this%n_poly(pt%s) + 1._RD)*this%z_s**2*dtheta/(theta*z)
 
       else
 
-         coeff = (this%n_poly(pt%s) + 1._WP)*this%z_s**2/3._WP
+         coeff = (this%n_poly(pt%s) + 1._RD)*this%z_s**2/3._RD
 
       endif
 
@@ -306,14 +306,14 @@ contains
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: coeff
+      real(RD)                        :: coeff
 
       @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'As evaluation at vacuum point')
 
       ! Evaluate the As coefficient
 
       coeff = this%coeff_V_2_(pt)*pt%x**2 * &
-         (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._WP) - 1._WP/this%Gamma_1)
+         (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/this%Gamma_1)
 
       ! Finish
 
@@ -327,20 +327,20 @@ contains
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: coeff
+      real(RD)                        :: coeff
 
-      real(WP) :: z
-      real(WP) :: theta
+      real(RD) :: z
+      real(RD) :: theta
 
       ! Evaluate the U coefficient
 
-      if (pt%x /= 0._WP) then
+      if (pt%x /= 0._RD) then
 
          z = pt%x*this%z_s
 
          theta = this%in_theta(pt%s)%f(pt%x)
 
-         if (this%n_poly(pt%s) /= 0._WP) then
+         if (this%n_poly(pt%s) /= 0._RD) then
             coeff = z**3*this%t(pt%s)*pow(theta, this%n_poly(pt%s))/this%mu_(pt)
          else
             coeff = z**3*this%t(pt%s)/this%mu_(pt)
@@ -348,7 +348,7 @@ contains
 
       else
 
-         coeff = 3._WP
+         coeff = 3._RD
 
       endif
 
@@ -364,17 +364,17 @@ contains
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: coeff
+      real(RD)                        :: coeff
 
       ! Evaluate the c_1 coefficient
 
-      if (pt%x /= 0._WP) then
+      if (pt%x /= 0._RD) then
 
          coeff = pt%x**3/(this%mu_(pt)/this%mu_s)
 
       else
 
-         coeff = 3._WP*this%mu_s/this%z_s**3
+         coeff = 3._RD*this%mu_s/this%z_s**3
 
       endif
 
@@ -391,7 +391,7 @@ contains
       class(poly_model_t), intent(in) :: this
       integer, intent(in)             :: i
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: dcoeff
+      real(RD)                        :: dcoeff
 
       @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'Invalid index')
       @:ASSERT_DEBUG(this%is_defined(i), 'Undefined coefficient')
@@ -410,13 +410,13 @@ contains
       case (I_C_1)
          dcoeff = this%dcoeff_c_1_(pt)
       case (I_GAMMA_1)
-         dcoeff = 0._WP
+         dcoeff = 0._RD
       case (I_UPS_T)
-         dcoeff = 0._WP
+         dcoeff = 0._RD
       case (I_NABLA_AD)
-         dcoeff = 0._WP
+         dcoeff = 0._RD
       case (I_OMEGA_ROT)
-         dcoeff = 0._WP
+         dcoeff = 0._RD
       end select
 
       ! Finish
@@ -431,32 +431,32 @@ contains
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: dcoeff
+      real(RD)                        :: dcoeff
 
-      real(WP) :: z
-      real(WP) :: theta
-      real(WP) :: dtheta
+      real(RD) :: z
+      real(RD) :: theta
+      real(RD) :: dtheta
 
       @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'dV_2 evaluation at vacuum point')
 
       ! Evaluate the logarithmic derivative of the V_2 coefficient
 
-      if (pt%x /= 0._WP) then
+      if (pt%x /= 0._RD) then
 
          z = pt%x*this%z_s
 
          theta = this%in_theta(pt%s)%f(pt%x)
          dtheta = this%in_dtheta(pt%s)%f(pt%x)
 
-         if (this%n_poly(pt%s) /= 0._WP) then
-            dcoeff = -3._WP - z*dtheta/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/dtheta
+         if (this%n_poly(pt%s) /= 0._RD) then
+            dcoeff = -3._RD - z*dtheta/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/dtheta
          else
-            dcoeff = -3._WP - z*dtheta/theta - this%B(pt%s)*z/dtheta
+            dcoeff = -3._RD - z*dtheta/theta - this%B(pt%s)*z/dtheta
          endif
 
       else
 
-         dcoeff = 0._WP
+         dcoeff = 0._RD
 
       endif
 
@@ -472,14 +472,14 @@ contains
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: dcoeff
+      real(RD)                        :: dcoeff
 
       @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'dAs evaluation at vacuum point')
 
       ! Evaluate the logarithmic derivative of the As coefficient
 
       dcoeff = this%dcoeff_V_2_(pt)*pt%x**2 * &
-         (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._WP) - 1._WP/this%Gamma_1)
+         (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/this%Gamma_1)
 
       ! Finish
 
@@ -493,28 +493,28 @@ contains
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: dcoeff
+      real(RD)                        :: dcoeff
 
-      real(WP) :: z
-      real(WP) :: theta
-      real(WP) :: dtheta
+      real(RD) :: z
+      real(RD) :: theta
+      real(RD) :: dtheta
 
       @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'dU evaluation at vacuum point')
 
       ! Evaluate the logarithmic derivative of the U coefficient
 
-      if (pt%x /= 0._WP) then
+      if (pt%x /= 0._RD) then
 
          z = pt%x*this%z_s
 
          theta = this%in_theta(pt%s)%f(pt%x)
          dtheta = this%in_dtheta(pt%s)%f(pt%x)
 
-         dcoeff = 3._WP + this%n_poly(pt%s)*z*dtheta/theta - this%coeff_U_(pt)
+         dcoeff = 3._RD + this%n_poly(pt%s)*z*dtheta/theta - this%coeff_U_(pt)
 
       else
 
-         dcoeff = 0._WP
+         dcoeff = 0._RD
 
       endif
 
@@ -530,11 +530,11 @@ contains
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: dcoeff
+      real(RD)                        :: dcoeff
 
       ! Evaluate the logarithmic derivative of the c_1 coefficient
 
-      dcoeff = 3._WP - this%coeff_U_(pt)
+      dcoeff = 3._RD - this%coeff_U_(pt)
 
       ! Finish
 
@@ -548,9 +548,9 @@ contains
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
-      real(WP)                        :: mu
+      real(RD)                        :: mu
 
-      real(WP) :: v
+      real(RD) :: v
 
       ! Evaluate the mass coordinate mu
 
@@ -601,7 +601,7 @@ contains
 
       ! Return whether the point is a vacuum
 
-      is_vacuum = this%in_theta(pt%s)%f(pt%x) == 0._WP
+      is_vacuum = this%in_theta(pt%s)%f(pt%x) == 0._RD
 
       ! Finish
 
@@ -614,20 +614,20 @@ contains
    function Delta_p (this, x_i, x_o)
 
       class(poly_model_t), intent(in) :: this
-      real(WP), intent(in)            :: x_i
-      real(WP), intent(in)            :: x_o
-      real(WP)                        :: Delta_p
+      real(RD), intent(in)            :: x_i
+      real(RD), intent(in)            :: x_o
+      real(RD)                        :: Delta_p
 
       type(grid_t)  :: gr
-      real(WP)      :: I
+      real(RD)      :: I
       integer       :: s
       type(point_t) :: pt
       integer       :: j_i
       integer       :: j_o
       integer       :: j
-      real(WP)      :: V_2
-      real(WP)      :: c_1
-      real(WP)      :: Gamma_1
+      real(RD)      :: V_2
+      real(RD)      :: c_1
+      real(RD)      :: Gamma_1
 
       ! Evaluate the dimensionless g-mode inverse period separation,
       ! using a midpoint quadrature rule since the integrand typically
@@ -639,7 +639,7 @@ contains
 
       ! Now evaluate the integrand segment by segment
 
-      I = 0._WP
+      I = 0._RD
 
       seg_loop : do s = gr%s_i(), gr%s_o()
 
@@ -662,7 +662,7 @@ contains
 
       end do seg_loop
 
-      Delta_p = 0.5_WP/I
+      Delta_p = 0.5_RD/I
 
       ! Finish
 
@@ -675,20 +675,20 @@ contains
    function Delta_g (this, x_i, x_o, lambda)
 
       class(poly_model_t), intent(in) :: this
-      real(WP), intent(in)            :: x_i
-      real(WP), intent(in)            :: x_o
-      real(WP), intent(in)            :: lambda
-      real(WP)                        :: Delta_g
+      real(RD), intent(in)            :: x_i
+      real(RD), intent(in)            :: x_o
+      real(RD), intent(in)            :: lambda
+      real(RD)                        :: Delta_g
 
       type(grid_t)  :: gr
-      real(WP)      :: I
+      real(RD)      :: I
       integer       :: s
       type(point_t) :: pt
       integer       :: j_i
       integer       :: j_o
       integer       :: j
-      real(WP)      :: As
-      real(WP)      :: c_1
+      real(RD)      :: As
+      real(RD)      :: c_1
 
       ! Evaluate the dimensionless g-mode inverse period separation,
       ! using a midpoint quadrature rule since the integrand typically
@@ -700,7 +700,7 @@ contains
 
       ! Now evaluate the integrand segment by segment
 
-      I = 0._WP
+      I = 0._RD
 
       seg_loop : do s = gr%s_i(), gr%s_o()
 
@@ -716,13 +716,13 @@ contains
             As = this%coeff(I_AS, pt)
             c_1 = this%coeff(I_C_1, pt)
 
-            I = I + (sqrt(MAX(As/c_1, 0._WP))/pt%x)*(gr%pt(j+1)%x - gr%pt(j)%x)
+            I = I + (sqrt(MAX(As/c_1, 0._RD))/pt%x)*(gr%pt(j+1)%x - gr%pt(j)%x)
 
          end do cell_loop
 
       end do seg_loop
 
-      Delta_g = sqrt(lambda)/(2._WP*PI**2)*I
+      Delta_g = sqrt(lambda)/(2._RD*PI**2)*I
 
       ! Finish
 

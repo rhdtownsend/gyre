@@ -76,18 +76,18 @@ module nad_eqns_m
       type(context_t), pointer   :: cx => null()
       type(point_t), allocatable :: pt(:)
       type(nad_trans_t)          :: tr
-      real(WP), allocatable      :: coeff(:,:)
-      real(WP)                   :: x_atm
-      real(WP)                   :: alpha_grv
-      real(WP)                   :: alpha_thm
-      real(WP)                   :: alpha_hfl
-      real(WP)                   :: alpha_omg 
-      real(WP)                   :: alpha_gam
-      real(WP)                   :: alpha_pi
-      real(WP)                   :: alpha_kar
-      real(WP)                   :: alpha_kat
-      real(WP)                   :: alpha_rht
-      real(WP)                   :: alpha_egv
+      real(RD), allocatable      :: coeff(:,:)
+      real(RD)                   :: x_atm
+      real(RD)                   :: alpha_grv
+      real(RD)                   :: alpha_thm
+      real(RD)                   :: alpha_hfl
+      real(RD)                   :: alpha_omg 
+      real(RD)                   :: alpha_gam
+      real(RD)                   :: alpha_pi
+      real(RD)                   :: alpha_kar
+      real(RD)                   :: alpha_kat
+      real(RD)                   :: alpha_rht
+      real(RD)                   :: alpha_egv
       integer                    :: conv_scheme
    contains
       private
@@ -139,9 +139,9 @@ contains
 
       select case (os_p%time_factor)
       case ('OSC')
-         eq%alpha_omg = 1._WP
+         eq%alpha_omg = 1._RD
       case ('EXP')
-         eq%alpha_omg = -1._WP
+         eq%alpha_omg = -1._RD
       case default
          @:ABORT('invalid time_factor')
       end select
@@ -156,7 +156,7 @@ contains
       end select
 
       eq%x_atm = os_p%x_atm
-      if (eq%x_atm < 0._WP) then
+      if (eq%x_atm < 0._RD) then
          pt_o = cx%point_o()
          eq%x_atm = pt_o%x
       end if
@@ -242,7 +242,7 @@ contains
       class(nad_eqns_t), intent(in) :: this
       integer, intent(in)           :: i
       class(state_ct), intent(in)   :: st
-      complex(WP)                   :: A(this%n_e,this%n_e)
+      complex(RD)                   :: A(this%n_e,this%n_e)
 
       ! Evaluate the RHS matrix
 
@@ -261,24 +261,24 @@ contains
       class(nad_eqns_t), intent(in) :: this
       integer, intent(in)           :: i
       class(state_ct), intent(in)   :: st
-      complex(WP)                   :: xA(this%n_e,this%n_e)
+      complex(RD)                   :: xA(this%n_e,this%n_e)
 
-      real(WP)    :: Omega_rot
-      real(WP)    :: Omega_rot_i
-      complex(WP) :: omega_c
-      complex(WP) :: i_omega_c
-      complex(WP) :: lambda
-      complex(WP) :: l_i
-      complex(WP) :: f_rh
-      complex(WP) :: df_rh
-      complex(WP) :: conv_term
-      complex(WP) :: eps_rho
-      complex(WP) :: eps_T
-      complex(WP) :: c_eps_ad
-      complex(WP) :: c_eps_S
-      real(WP)    :: c_kap_ad
-      real(WP)    :: c_kap_S
-      real(WP)    :: c_dif
+      real(RD)    :: Omega_rot
+      real(RD)    :: Omega_rot_i
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_i
+      complex(RD) :: f_rh
+      complex(RD) :: df_rh
+      complex(RD) :: conv_term
+      complex(RD) :: eps_rho
+      complex(RD) :: eps_T
+      complex(RD) :: c_eps_ad
+      complex(RD) :: c_eps_S
+      real(RD)    :: c_kap_ad
+      real(RD)    :: c_kap_S
+      real(RD)    :: c_dif
 
       ! Evaluate the log(x)-space RHS matrix
 
@@ -322,19 +322,19 @@ contains
          Omega_rot_i = this%cx%Omega_rot(pt_i)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
-         i_omega_c = (0._WP,1._WP)*sqrt(CMPLX(alpha_omg, KIND=WP))*omega_c
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)
          l_i = this%cx%l_e(Omega_rot_i, st)
 
-         f_rh = 1._WP - 0.25_WP*alpha_rht*i_omega_c*c_thn
-         df_rh = -0.25_WP*alpha_rht*i_omega_c*c_thn*dc_thn/f_rh
+         f_rh = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
+         df_rh = -0.25_RD*alpha_rht*i_omega_c*c_thn*dc_thn/f_rh
 
          select case (this%conv_scheme)
          case (P1_CONV_SCHEME)
-            conv_term = lambda*c_rad*(3._WP + dc_rad)/(c_1*alpha_omg*omega_c**2)
+            conv_term = lambda*c_rad*(3._RD + dc_rad)/(c_1*alpha_omg*omega_c**2)
          case (P4_CONV_SCHEME)
-            conv_term = lambda*(c_lum*(3._WP + dc_lum) - (c_lum - c_rad))/(c_1*alpha_omg*omega_c**2)
+            conv_term = lambda*(c_lum*(3._RD + dc_lum) - (c_lum - c_rad))/(c_1*alpha_omg*omega_c**2)
          case default
             @:ABORT('invalid conv_scheme')
          end select
@@ -348,55 +348,55 @@ contains
          c_kap_ad = nabla_ad*alpha_kat*kap_T + alpha_kar*kap_rho/Gamma_1
          c_kap_S = alpha_kat*kap_T - ups_T*alpha_kar*kap_rho
 
-         c_dif = -4._WP*nabla_ad*V*nabla + nabla_ad*(dnabla_ad + V)
+         c_dif = -4._RD*nabla_ad*V*nabla + nabla_ad*(dnabla_ad + V)
 
          ! Set up the matrix
 
-         xA(1,1) = V/Gamma_1 - 1._WP - l_i
+         xA(1,1) = V/Gamma_1 - 1._RD - l_i
          xA(1,2) = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1*alpha_gam
          xA(1,3) = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
-         xA(1,4) = alpha_grv*(0._WP)
+         xA(1,4) = alpha_grv*(0._RD)
          xA(1,5) = ups_T
-         xA(1,6) = 0._WP
+         xA(1,6) = 0._RD
 
-         xA(2,1) = c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._WP, As > 0._WP)
-         xA(2,2) = As - U + 3._WP - l_i
-         xA(2,3) = alpha_grv*(0._WP)
-         xA(2,4) = alpha_grv*(-1._WP)
+         xA(2,1) = c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._RD, As > 0._RD)
+         xA(2,2) = As - U + 3._RD - l_i
+         xA(2,3) = alpha_grv*(0._RD)
+         xA(2,4) = alpha_grv*(-1._RD)
          xA(2,5) = ups_T
-         xA(2,6) = 0._WP
+         xA(2,6) = 0._RD
 
-         xA(3,1) = alpha_grv*(0._WP)
-         xA(3,2) = alpha_grv*(0._WP)
-         xA(3,3) = alpha_grv*(3._WP - U - l_i)
-         xA(3,4) = alpha_grv*(1._WP)
-         xA(3,5) = alpha_grv*(0._WP)
-         xA(3,6) = alpha_grv*(0._WP)
+         xA(3,1) = alpha_grv*(0._RD)
+         xA(3,2) = alpha_grv*(0._RD)
+         xA(3,3) = alpha_grv*(3._RD - U - l_i)
+         xA(3,4) = alpha_grv*(1._RD)
+         xA(3,5) = alpha_grv*(0._RD)
+         xA(3,6) = alpha_grv*(0._RD)
 
          xA(4,1) = alpha_grv*(U*As)
          xA(4,2) = alpha_grv*(U*V/Gamma_1)
          xA(4,3) = alpha_grv*(lambda)
-         xA(4,4) = alpha_grv*(-U - l_i + 2._WP)
+         xA(4,4) = alpha_grv*(-U - l_i + 2._RD)
          xA(4,5) = alpha_grv*(-U*ups_T)
-         xA(4,6) = alpha_grv*(0._WP)
+         xA(4,6) = alpha_grv*(0._RD)
 
-         xA(5,1) = V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._WP*(nabla_ad - nabla) + c_kap_ad*V*nabla + c_dif)/f_rh
+         xA(5,1) = V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._RD*(nabla_ad - nabla) + c_kap_ad*V*nabla + c_dif)/f_rh
          xA(5,2) = V*(lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla) - c_kap_ad*V*nabla - c_dif)/f_rh
          xA(5,3) = alpha_grv*(V*lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla))/f_rh
          xA(5,4) = alpha_grv*(V*nabla_ad)/f_rh
-         xA(5,5) = V*nabla*(4._WP*f_rh - c_kap_S)/f_rh - df_rh - (l_i - 2._WP)
+         xA(5,5) = V*nabla*(4._RD*f_rh - c_kap_S)/f_rh - df_rh - (l_i - 2._RD)
          xA(5,6) = -V*nabla/(c_rad*f_rh)
 
-         xA(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._WP)*c_rad - V*c_eps_ad - alpha_egv*c_egv*nabla_ad*V
+         xA(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._RD)*c_rad - V*c_eps_ad - alpha_egv*c_egv*nabla_ad*V
          xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term + alpha_egv*c_egv*nabla_ad*V
          xA(6,3) = alpha_grv*conv_term
-         xA(6,4) = alpha_grv*(0._WP)
-         if (x > 0._WP) then
+         xA(6,4) = alpha_grv*(0._RD)
+         if (x > 0._RD) then
             xA(6,5) = c_eps_S - alpha_hfl*lambda*c_rad/(nabla*V) + alpha_thm*i_omega_c*c_thk + alpha_egv*c_egv
          else
-            xA(6,5) = -alpha_hfl*HUGE(0._WP)
+            xA(6,5) = -alpha_hfl*HUGE(0._RD)
          endif
-         xA(6,6) = -1._WP - l_i
+         xA(6,6) = -1._RD - l_i
 
       end associate
 

@@ -56,9 +56,9 @@ contains
    subroutine minmod_search(bp, omega, omega_min, omega_max, nm_p, process_mode)
 
       class(bvp_ct), intent(inout) :: bp
-      real(WP), intent(in)         :: omega(:)
-      real(WP), intent(in)         :: omega_min
-      real(WP), intent(in)         :: omega_max
+      real(RD), intent(in)         :: omega(:)
+      real(RD), intent(in)         :: omega_min
+      real(RD), intent(in)         :: omega_max
       type(num_par_t), intent(in)  :: nm_p
       interface
          subroutine process_mode (md, n_iter, chi)
@@ -71,14 +71,14 @@ contains
          end subroutine process_mode
       end interface
 
-      real(WP), allocatable     :: omega_a(:)
-      real(WP), allocatable     :: omega_b(:)
-      real(WP), allocatable     :: omega_c(:)
+      real(RD), allocatable     :: omega_a(:)
+      real(RD), allocatable     :: omega_b(:)
+      real(RD), allocatable     :: omega_c(:)
       type(ext_rt), allocatable :: discrim_a(:)
       type(ext_rt), allocatable :: discrim_b(:)
       type(ext_rt), allocatable :: discrim_c(:)
       integer                   :: n_in
-      complex(WP), allocatable  :: omega_in(:)
+      complex(RD), allocatable  :: omega_in(:)
       integer, allocatable      :: id_in(:)
       type(ext_rt)              :: x_a
       type(ext_rt)              :: x_b
@@ -115,7 +115,7 @@ contains
          f_x_b = discrim_b(i)
          f_x_c = discrim_c(i)
 
-         call solve_minim(eval_discrim_x_, x_a, x_b, x_c, ext_rt(0._WP), nm_p, &
+         call solve_minim(eval_discrim_x_, x_a, x_b, x_c, ext_rt(0._RD), nm_p, &
             x_minim, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
             f_x_a=f_x_a, f_x_b=f_x_b, f_x_c=f_x_c)
          if (status /= STATUS_OK) then
@@ -146,14 +146,14 @@ contains
          type(ext_rt), intent(out) :: discrim
          integer, intent(out)      :: status
 
-         real(WP)     :: omega_r
-         complex(WP)  :: omega
+         real(RD)     :: omega_r
+         complex(RD)  :: omega
          type(ext_ct) :: discrim_c
 
          ! Evaluate the frequency from x
 
          omega_r = real(x)
-         omega = CMPLX(omega_r, KIND=WP)
+         omega = CMPLX(omega_r, KIND=RD)
 
          ! Evaluate the discriminant
 
@@ -218,10 +218,10 @@ contains
    subroutine find_brackets_(bp, omega, omega_a, omega_b, omega_c, discrim_a, discrim_b, discrim_c)
 
       class(bvp_ct), intent(inout)           :: bp
-      real(WP), intent(in)                   :: omega(:)
-      real(WP), allocatable, intent(out)     :: omega_a(:)
-      real(WP), allocatable, intent(out)     :: omega_b(:)
-      real(WP), allocatable, intent(out)     :: omega_c(:)
+      real(RD), intent(in)                   :: omega(:)
+      real(RD), allocatable, intent(out)     :: omega_a(:)
+      real(RD), allocatable, intent(out)     :: omega_b(:)
+      real(RD), allocatable, intent(out)     :: omega_c(:)
       type(ext_rt), allocatable, intent(out) :: discrim_a(:)
       type(ext_rt), allocatable, intent(out) :: discrim_b(:)
       type(ext_rt), allocatable, intent(out) :: discrim_c(:)
@@ -233,7 +233,7 @@ contains
       integer              :: i
       type(ext_ct)         :: discrim_i
       integer              :: status
-      real(WP)             :: discrim_f(SIZE(omega))
+      real(RD)             :: discrim_f(SIZE(omega))
       integer              :: discrim_e(SIZE(omega))
       type(ext_rt)         :: discrim(SIZE(omega))
       integer              :: n_brack
@@ -252,7 +252,7 @@ contains
 
       discrim_loop: do i = 1, n_omega
 
-         call eval_discrim(bp, state_ct(CMPLX(omega(i), KIND=WP), omega_r=omega(i)), discrim_i)
+         call eval_discrim(bp, state_ct(CMPLX(omega(i), KIND=RD), omega_r=omega(i)), discrim_i)
 
          discrim_f(i) = FRACTION(abs(discrim_i))
          discrim_e(i) = EXPONENT(abs(discrim_i))
@@ -269,7 +269,7 @@ contains
       call SYSTEM_CLOCK(c_end)
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, WP)/c_rate, 's'
+         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
 120      format(2X,A,F10.3,1X,A/)
       endif
 

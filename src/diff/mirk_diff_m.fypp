@@ -39,7 +39,7 @@ module mirk_diff_m
 
    ! Parameter definitions
 
-   real(WP), parameter :: C_I(3) = [0._WP,0.5_WP,1._WP]
+   real(RD), parameter :: C_I(3) = [0._RD,0.5_RD,1._RD]
 
    #:for S in DTYPE_SUFFIXES
 
@@ -48,7 +48,7 @@ module mirk_diff_m
       type, extends(diff_${S}$) :: mirk_diff_${S}$
          private
          class(eqns_${S}$), allocatable :: eq
-         real(WP)                       :: dx
+         real(RD)                       :: dx
          logical                        :: origin
       contains
          private
@@ -99,7 +99,7 @@ contains
 
          call df%eq%stencil(pt)
 
-         df%origin = pt_a%x == 0._WP
+         df%origin = pt_a%x == 0._RD
 
          df%n_e = eq%n_e
 
@@ -136,7 +136,7 @@ contains
             E_l = -identity_matrix(this%n_e)
             E_r =  identity_matrix(this%n_e)
 
-            scl = ext_${S}$(1._WP)
+            scl = ext_${S}$(1._RD)
 
          else
 
@@ -148,12 +148,12 @@ contains
 
             ! Build the difference equations
 
-            E_l = -identity_matrix(this%n_e) - this%dx*A(:,:,1)/6._WP - &
-               this%dx*A(:,:,2)/3._WP - this%dx**2*MATMUL(A(:,:,2), A(:,:,1))/12._WP
-            E_r =  identity_matrix(this%n_e) - this%dx*A(:,:,3)/6._WP - &
-               this%dx*A(:,:,2)/3._WP + this%dx**2*MATMUL(A(:,:,2), A(:,:,3))/12._WP
+            E_l = -identity_matrix(this%n_e) - this%dx*A(:,:,1)/6._RD - &
+               this%dx*A(:,:,2)/3._RD - this%dx**2*MATMUL(A(:,:,2), A(:,:,1))/12._RD
+            E_r =  identity_matrix(this%n_e) - this%dx*A(:,:,3)/6._RD - &
+               this%dx*A(:,:,2)/3._RD + this%dx**2*MATMUL(A(:,:,2), A(:,:,3))/12._RD
 
-            scl = ext_${S}$(1._WP)
+            scl = ext_${S}$(1._RD)
 
          endif
 

@@ -64,8 +64,8 @@ module rad_bound_m
       private
       type(context_t), pointer :: cx => null()
       type(rad_trans_t)        :: tr
-      real(WP), allocatable    :: coeff(:,:)
-      real(WP)                 :: alpha_omg
+      real(RD), allocatable    :: coeff(:,:)
+      real(RD)                 :: alpha_omg
       integer                  :: type_i
       integer                  :: type_o
    contains 
@@ -120,10 +120,10 @@ contains
 
       select case (os_p%inner_bound)
       case ('REGULAR')
-         @:ASSERT(pt_i%x == 0._WP, 'boundary condition invalid for x /= 0')
+         @:ASSERT(pt_i%x == 0._RD, 'boundary condition invalid for x /= 0')
          bd%type_i = REGULAR_TYPE
       case ('ZERO_R')
-         @:ASSERT(pt_i%x /= 0._WP, 'boundary condition invalid for x == 0')
+         @:ASSERT(pt_i%x /= 0._RD, 'boundary condition invalid for x == 0')
          bd%type_i = ZERO_R_TYPE
       case default
          @:ABORT('invalid inner_bound')
@@ -162,9 +162,9 @@ contains
 
       select case (os_p%time_factor)
       case ('OSC')
-         bd%alpha_omg = 1._WP
+         bd%alpha_omg = 1._RD
       case ('EXP')
-         bd%alpha_omg = -1._WP
+         bd%alpha_omg = -1._RD
       case default
          @:ABORT('invalid time_factor')
       end select
@@ -247,8 +247,8 @@ contains
 
       class(rad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -282,10 +282,10 @@ contains
 
       class(rad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
-      real(WP) :: omega_c
+      real(RD) :: omega_c
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -304,9 +304,9 @@ contains
          ! Set up the boundary conditions
 
          B(1,1) = c_1*alpha_omg*omega_c**2
-         B(1,2) = 0._WP
+         B(1,2) = 0._RD
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -322,8 +322,8 @@ contains
 
       class(rad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -335,10 +335,10 @@ contains
 
       ! Set up the boundary conditions
 
-      B(1,1) = 1._WP
-      B(1,2) = 0._WP
+      B(1,1) = 1._RD
+      B(1,2) = 0._RD
 
-      scl = 1._WP
+      scl = 1._RD
 
       ! Finish
 
@@ -352,8 +352,8 @@ contains
 
       class(rad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -393,8 +393,8 @@ contains
 
       class(rad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -405,10 +405,10 @@ contains
 
       ! Set up the boundary conditions
 
-      B(1,1) = 1._WP
-      B(1,2) = -1._WP
+      B(1,1) = 1._RD
+      B(1,2) = -1._RD
 
-      scl = 1._WP
+      scl = 1._RD
 
       ! Finish
 
@@ -422,10 +422,10 @@ contains
 
       class(rad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
-      real(WP) :: omega_c
+      real(RD) :: omega_c
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -444,10 +444,10 @@ contains
 
          ! Set up the boundary conditions
 
-         B(1,1) = 1 - (4._WP + c_1*alpha_omg*omega_c**2)/V
-         B(1,2) = -1._WP
+         B(1,1) = 1 - (4._RD + c_1*alpha_omg*omega_c**2)/V
+         B(1,2) = -1._RD
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -463,13 +463,13 @@ contains
 
       class(rad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
-      real(WP) :: omega_c
-      real(WP) :: a_11
-      real(WP) :: a_12
-      real(WP) :: chi
+      real(RD) :: omega_c
+      real(RD) :: a_11
+      real(RD) :: a_12
+      real(RD) :: chi
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -491,19 +491,19 @@ contains
 
          ! Evaluate selected elements of the Jacobian matrix
 
-         a_11 = V/Gamma_1 - 3._WP
+         a_11 = V/Gamma_1 - 3._RD
          a_12 = -V/Gamma_1
 
          ! Evaluate the eigenvalue for the wave we want to keep
 
-         chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, 0._WP)
+         chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, 0._RD)
 
          ! Set up the boundary conditions
 
          B(1,1) = -(chi - a_11)
          B(1,2) = a_12
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 
@@ -519,13 +519,13 @@ contains
 
       class(rad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
-      real(WP), intent(out)          :: B(:,:)
-      real(WP), intent(out)          :: scl(:)
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
 
-      real(WP) :: omega_c
-      real(WP) :: chi
-      real(WP) :: b_11
-      real(WP) :: b_12
+      real(RD) :: omega_c
+      real(RD) :: chi
+      real(RD) :: b_11
+      real(RD) :: b_12
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -545,9 +545,9 @@ contains
 
          omega_c = omega
 
-         chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, 0._WP)
+         chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, 0._RD)
 
-         b_11 = V/Gamma_1 - 3._WP
+         b_11 = V/Gamma_1 - 3._RD
          b_12 = -V/Gamma_1
 
          ! Set up the boundary conditions
@@ -555,7 +555,7 @@ contains
          B(1,1) = chi - b_11
          B(1,2) = -b_12
 
-         scl = 1._WP
+         scl = 1._RD
 
       end associate
 

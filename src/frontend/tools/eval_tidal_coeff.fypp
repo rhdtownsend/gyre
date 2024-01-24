@@ -40,8 +40,8 @@ program eval_tidal_coeff
    ! Variables
 
    character(:), allocatable :: coeff
-   real(WP)                  :: R_a
-   real(WP)                  :: e
+   real(RD)                  :: R_a
+   real(RD)                  :: e
    integer                   :: l
    integer                   :: m
    integer                   :: k
@@ -49,9 +49,9 @@ program eval_tidal_coeff
    type(model_par_t) :: ml_p
    type(hom_model_t) :: ml
    type(orbit_par_t) :: or_p
-   real(WP)          :: q
-   real(WP)          :: Omega_orb
-   real(WP)          :: f
+   real(RD)          :: q
+   real(RD)          :: Omega_orb
+   real(RD)          :: f
 
    ! Get arguments
 
@@ -74,8 +74,8 @@ program eval_tidal_coeff
 
    ml = hom_model_t(ml_p)
 
-   q = 1._WP
-   Omega_orb = sqrt(R_a**3*(1._WP + q))
+   q = 1._RD
+   Omega_orb = sqrt(R_a**3*(1._RD + q))
 
    or_p = orbit_par_t(Omega_orb=Omega_orb, q=q, e=e)
 
@@ -97,9 +97,9 @@ program eval_tidal_coeff
    case ('X_QP')
       f = hansen_X_QP(or_p, l, m, k)
    case ('Y')
-      f = REAL(spherical_Y(l, m, HALFPI, 0._WP))
+      f = REAL(spherical_Y(l, m, HALFPI, 0._RD))
    case ('Y*')
-      f = REAL(CONJG(spherical_Y(l, m, HALFPI, 0._WP)))
+      f = REAL(CONJG(spherical_Y(l, m, HALFPI, 0._RD)))
    case default
       @:ABORT('invalid coeff; should be one of [c|G_1|G_2|G_3|G_4|X|Y|Y*]')
    end select

@@ -78,7 +78,7 @@ module model_m
          class(model_t), intent(in) :: this
          integer, intent(in)        :: i
          type(point_t), intent(in)  :: pt
-         real(WP)                   :: coeff
+         real(RD)                   :: coeff
       end function coeff_
 
       function dcoeff_(this, i, pt) result(dcoeff)
@@ -88,7 +88,7 @@ module model_m
          class(model_t), intent(in) :: this
          integer, intent(in)        :: i
          type(point_t), intent(in)  :: pt
-         real(WP)                   :: dcoeff
+         real(RD)                   :: dcoeff
       end function dcoeff_
 
       function is_defined_(this, i) result(is_defined)
@@ -110,19 +110,19 @@ module model_m
          use kinds_m
          import model_t
          class(model_t), intent(in) :: this
-         real(WP), intent(in)       :: x_i
-         real(WP), intent(in)       :: x_o
-         real(WP)                   :: Delta_p
+         real(RD), intent(in)       :: x_i
+         real(RD), intent(in)       :: x_o
+         real(RD)                   :: Delta_p
       end function Delta_p_
 
       function Delta_g_(this, x_i, x_o, lambda) result(Delta_g)
          use kinds_m
          import model_t
          class(model_t), intent(in) :: this
-         real(WP), intent(in)       :: x_i
-         real(WP), intent(in)       :: x_o
-         real(WP), intent(in)       :: lambda
-         real(WP)                   :: Delta_g
+         real(RD), intent(in)       :: x_i
+         real(RD), intent(in)       :: x_o
+         real(RD), intent(in)       :: lambda
+         real(RD)                   :: Delta_g
       end function Delta_g_
 
       function grid_(this) result(grid)
