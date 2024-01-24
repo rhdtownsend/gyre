@@ -22,6 +22,7 @@ module gyre_m
    ! Modules that will ultimately come from ForUM
 
    use kinds_m, only : WP
+   use hgroup_m
    use memory_m
    use system_m
 
@@ -76,6 +77,7 @@ module gyre_m
    use ext_m
    use math_m
    use search_m
+   use tar_eigen_m
    use tidal_coeff_m
    use tidal_context_m
    use tidal_resp_m

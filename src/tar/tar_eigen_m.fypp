@@ -30,7 +30,7 @@ module tar_eigen_m
    use ISO_FORTRAN_ENV
 
    #:if IEEE
-   use IEEE_ARITHMETIC
+      use IEEE_ARITHMETIC
    #:endif
 
    ! No implicit typing

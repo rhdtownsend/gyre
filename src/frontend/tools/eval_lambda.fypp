@@ -21,13 +21,7 @@ program eval_lambda
 
    ! Uses
 
-   use kinds_m
-   use hgroup_m
-   use system_m
-
-   use constants_m
-   use math_m
-   use tar_eigen_m
+   use gyre_m
 
    use ISO_FORTRAN_ENV
 
@@ -66,8 +60,6 @@ program eval_lambda
    call get_arg(8, filename)
 
    ! Initialize
-
-   call init_parallel()
 
    call init_math()
 

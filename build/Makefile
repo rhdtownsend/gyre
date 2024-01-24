@@ -36,7 +36,7 @@ BIN_TARGETS = gyre gyre_tides
 LIB_TARGETS = libgyre
 
 ifeq ($(TOOLS),yes)
-#  BIN_TARGETS := $(BIN_TARGETS) build_poly
+  BIN_TARGETS := $(BIN_TARGETS) eval_lambda
 endif
 
 # Source file lists & related variables
@@ -52,6 +52,10 @@ gyre_LIBS = libgyre
 gyre_tides_SRCS = gyre_tides.fypp
 gyre_tides_USES = gyre_m.fypp
 gyre_tides_LIBS = libgyre
+
+eval_lambda_SRCS = eval_lambda.fypp
+eval_lambda_USES = gyre_m.fypp
+eval_lambda_LIBS = libgyre
 
 libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    ad_eqns_m.fypp ad_match_m.fypp ad_trans_m.fypp amdl_file_m.fypp	\
@@ -93,9 +97,9 @@ libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
 # Directories
 
 SRC_DIRS = $(addprefix ../src/, ad bvp cad common context core diff	\
-   ext extern frontend/gyre grid interp lib math math/intrinsic		\
-   matrix mode model nad output par poly rad rot sad search tar tide	\
-   tnad)
+   ext extern frontend/gyre frontend/tools grid interp lib math		\
+   math/intrinsic matrix mode model nad output par poly rad rot sad	\
+   search tar tide tnad)
 
 # Include standard rules
 
