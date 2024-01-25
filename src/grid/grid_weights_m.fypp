@@ -179,10 +179,10 @@ contains
 
    contains
 
-      subroutine geom_func_(x, geom_func, status)
+      subroutine geom_func_(g, f, status)
 
-         real(RD), intent(in)  :: x
-         real(RD), intent(out) :: geom_func
+         real(RD), intent(in)  :: g
+         real(RD), intent(out) :: f
          integer, intent(out)  :: status
 
          ! Calcuate the discriminant for the geometric growth factor
@@ -190,17 +190,17 @@ contains
          if (MOD(n, 2) == 0) then
 
             if (1._RD+g > pow(HUGE(0._RD), 1._RD/m)) then
-               geom_func = - (2._RD + g)
+               f = - (2._RD + g)
             else
-               geom_func = (2._RD + s*(n-1)*g)/(1._RD + g)**m - (2._RD + g)
+               f = (2._RD + s*(n-1)*g)/(1._RD + g)**m - (2._RD + g)
             endif
 
          else
 
             if (1._RD+g > pow(HUGE(0._RD), 1._RD/m)) then
-               geom_func = -2._RD
+               f = -2._RD
             else
-               geom_func = (2._RD + s*(n-1)*g)/(1._RD + g)**m - 2._RD
+               f = (2._RD + s*(n-1)*g)/(1._RD + g)**m - 2._RD
             endif
 
          endif
