@@ -96,8 +96,14 @@ libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
 
 SRC_DIRS = $(addprefix ../src/, ad bvp cad common context diff ext	\
    extern frontend/gyre frontend/tools grid include interp lib math	\
-   math/intrinsic matrix mode model nad output par poly rad rot sad	\
-   search tar tide tnad) ../include
+   matrix mode model nad output par poly rad rot sad search tar tide	\
+   tnad) ../include
+
+ifeq ($(CRMATH),yes)
+   SRC_DIRS := $(SRC_DIRS) ../src/math/crmath
+else
+   SRC_DIRS := $(SRC_DIRS) ../src/math/intrinsic
+endif
 
 MOD_PATH = ../include
 
