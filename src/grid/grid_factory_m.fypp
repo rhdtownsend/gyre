@@ -15,15 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module grid_factory_m
 
    ! Uses
 
-   use kinds_m
-   use hgroup_m
-   use order_m
+   use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO, sort_indices, unique_indices
 
    use context_m
    use grid_m
@@ -727,7 +725,7 @@ contains
       real(RD), intent(in)     :: x_o
       type(grid_t)             :: gr
 
-      type(hgroup_t)        :: hg
+      type(hdf5io_t)        :: hi
       real(RD), allocatable :: x(:)
       integer               :: unit
       integer               :: n
@@ -744,9 +742,9 @@ contains
       select case (file_format)
       case('DETAIL')
 
-         hg = hgroup_t(file, OPEN_FILE_RO)
-         call read_dset_alloc(hg, 'x', x)
-         call hg%final()
+         hi = hdf5io_t(file, OPEN_FILE_RO)
+         call hi%alloc_read_dset('x', x)
+         call hi%final()
 
       case('TEXT')
 

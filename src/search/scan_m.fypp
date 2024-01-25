@@ -15,14 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module scan_m
 
    ! Uses
 
-   use kinds_m
-   use order_m
+   use forum_m, only: RD, unique_indices
 
    use context_m
    use freq_context_m

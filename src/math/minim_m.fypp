@@ -15,13 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module minim_m
 
    ! Uses
 
-   use kinds_m
+   use forum_m, only: RD
 
    use ext_m
    use math_m
@@ -59,7 +59,7 @@ contains
 
          interface
             subroutine eval_func (x, func, status)
-               use kinds_m
+               use forum_m, only: RD
                use ext_m
                ${T}$, intent(in)    :: x
                ${T}$, intent(out)   :: func
@@ -133,7 +133,7 @@ contains
 
          interface
             subroutine eval_func (x, func, status)
-               use kinds_m
+               use forum_m, only: RD
                use ext_m
                ${T}$, intent(in)    :: x
                ${T}$, intent(out)   :: func
@@ -171,11 +171,11 @@ contains
 
          interface
             subroutine eval_func (x, func, status)
-               use kinds_m
+               use forum_m, only: RD
                use ext_m
-               ${T}$, intent(in)  :: x
-               ${T}$, intent(out) :: func
-               integer, intent(out)  :: status
+               ${T}$, intent(in)    :: x
+               ${T}$, intent(out)   :: func
+               integer, intent(out) :: status
             end subroutine eval_func
          end interface
          ${T}$, intent(inout)           :: x_a

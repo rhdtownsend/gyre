@@ -15,16 +15,15 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module block_sysmtx_m
 
    ! Uses
 
-   use kinds_m
-   use clinalg_m
-   use hgroup_m
+   use forum_m, only: RD, hdf5io_t
 
+   use blas_lapack_m
    use ext_m
    use linalg_m
    use math_m
@@ -709,29 +708,29 @@ contains
 
       !****
 
-      subroutine dump_${S}$_(this, hg)
+      subroutine dump_${S}$_(this, hi)
 
          class(block_sysmtx_${S}$), intent(in) :: this
-         type(hgroup_t), intent(inout)          :: hg
+         type(hdf5io_t), intent(inout)         :: hi
 
          ! Dump the block_sysmtx_t to the hgroup
 
-         call write_attr(hg, 'n', this%n)
-         call write_attr(hg, 'n_e', this%n_e)
-         call write_attr(hg, 'n_i', this%n_i)
-         call write_attr(hg, 'n_o', this%n_o)
+         call hi%write_attr('n', this%n)
+         call hi%write_attr('n_e', this%n_e)
+         call hi%write_attr('n_i', this%n_i)
+         call hi%write_attr('n_o', this%n_o)
 
-         call write_dset(hg, 'B_i', this%B_i)
-         call write_dset(hg, 'scl_i', this%scl_i)
+         call hi%write_dset('B_i', this%B_i)
+         call hi%write_dset('scl_i', this%scl_i)
 
-         call write_dset(hg, 'B_o', this%B_o)
-         call write_dset(hg, 'scl_o', this%scl_o)
+         call hi%write_dset('B_o', this%B_o)
+         call hi%write_dset('scl_o', this%scl_o)
 
-         call write_dset(hg, 'E_l', this%E_l)
-         call write_dset(hg, 'E_r', this%E_r)
+         call hi%write_dset('E_l', this%E_l)
+         call hi%write_dset('E_r', this%E_r)
 
-         call write_dset(hg, 'scl_f', FRACTION(this%scl))
-         call write_dset(hg, 'scl_e', EXPONENT(this%scl))
+         call hi%write_dset('scl_f', FRACTION(this%scl))
+         call hi%write_dset('scl_e', EXPONENT(this%scl))
 
          ! Finish
 

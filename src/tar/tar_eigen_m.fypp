@@ -15,13 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module tar_eigen_m
 
    ! Uses
 
-   use kinds_m
+   use forum_m, only: RD
 
    use math_m
 
@@ -36,6 +36,10 @@ module tar_eigen_m
    ! No implicit typing
 
    implicit none
+
+   ! Parameter definitions
+ 
+   integer, parameter :: RQ = SELECTED_REAL_KIND(32)
 
    ! Access specifiers
 
@@ -371,16 +375,16 @@ contains
       #:endif
       real(RD) :: lambda_est
       logical  :: parity
-      real(QP) :: A_1(n)
-      real(QP) :: A_2n(n)
-      real(QP) :: A_2d(n)
-      real(QP) :: A_3n(n)
-      real(QP) :: A_3d(n)
-      real(QP) :: A_4n(n)
-      real(QP) :: A_4d(n)
-      real(QP) :: A_5(n)
-      real(QP) :: A_D(n)
-      real(QP) :: A_E(n)
+      real(RQ) :: A_1(n)
+      real(RQ) :: A_2n(n)
+      real(RQ) :: A_2d(n)
+      real(RQ) :: A_3n(n)
+      real(RQ) :: A_3d(n)
+      real(RQ) :: A_4n(n)
+      real(RQ) :: A_4d(n)
+      real(RQ) :: A_5(n)
+      real(RQ) :: A_D(n)
+      real(RQ) :: A_E(n)
 
       ! Calculate the index-k eigenvalue of the A-matrix with fixed
       ! dimension n, using bisection routines at quad-precision
@@ -417,13 +421,13 @@ contains
       ! Calculate the eigenvalue, taking special care to handle cases
       ! where elements of A are infinite
 
-      if (A_5(1) == 0._QP) then
+      if (A_5(1) == 0._RQ) then
 
          ! A(1,1) infinite, causing a +inf eigenvalue
 
          lambda = bisect_lambda_(A_D(2:), A_E(2:), lambda_est)
 
-      elseif (A_2d(1) == 0._QP .AND. A_2n(1) /= 0._QP) then
+      elseif (A_2d(1) == 0._RQ .AND. A_2n(1) /= 0._RQ) then
 
          ! A(1,1) infinite, causing a -inf eigenvalue
 
@@ -449,15 +453,15 @@ contains
 
       function bisect_lambda_(A_D, A_E, lambda_est) result(lambda)
 
-         real(QP), intent(in) :: A_D(:)
-         real(QP), intent(in) :: A_E(:)
+         real(RQ), intent(in) :: A_D(:)
+         real(RQ), intent(in) :: A_E(:)
          real(RD), intent(in) :: lambda_est
          real(RD)             :: lambda
 
-         real(QP) :: lambda_a
-         real(QP) :: lambda_b
-         real(QP) :: lambda_m
-         real(QP) :: dlambda
+         real(RQ) :: lambda_a
+         real(RQ) :: lambda_b
+         real(RQ) :: lambda_m
+         real(RQ) :: dlambda
          integer  :: P_a
          integer  :: P_b
          integer  :: P_m
@@ -498,7 +502,7 @@ contains
 
             ! Expand the bracket
 
-            lambda_m = 0.5_QP*(lambda_a + lambda_b)
+            lambda_m = 0.5_RQ*(lambda_a + lambda_b)
             dlambda = lambda_b - lambda_a
 
             lambda_a = lambda_a - 0.5_RD*dlambda
@@ -519,7 +523,7 @@ contains
 
             ! Set up the midpoint
 
-            lambda_m = 0.5_QP*(lambda_a + lambda_b)
+            lambda_m = 0.5_RQ*(lambda_a + lambda_b)
 
             ! Calculate P at the midpoint
 
@@ -548,14 +552,14 @@ contains
 
       function bisect_P_(A_D, A_E, lambda) result(P)
 
-         real(QP), intent(in) :: A_D(:)
-         real(QP), intent(in) :: A_E(:)
-         real(QP), intent(in) :: lambda
+         real(RQ), intent(in) :: A_D(:)
+         real(RQ), intent(in) :: A_E(:)
+         real(RQ), intent(in) :: lambda
          integer              :: P
 
-         real(QP), parameter :: RELFEH = EPSILON(0._QP)
+         real(RQ), parameter :: RELFEH = EPSILON(0._RQ)
 
-         real(QP) :: q(SIZE(A_D))
+         real(RQ) :: q(SIZE(A_D))
          integer  :: i
 
          @:CHECK_BOUNDS(SIZE(A_E), SIZE(A_D))
@@ -569,14 +573,14 @@ contains
          q(1) = A_D(1) - lambda
 
          do i = 2, SIZE(A_D)
-            if (q(i-1) /= 0._QP) then
+            if (q(i-1) /= 0._RQ) then
                q(i) = (A_D(i) - lambda) - A_E(i-1)**2/q(i-1)
             else
                q(i) = (A_D(i) - lambda) - abs(A_E(i-1))/RELFEH
             endif
          end do
 
-         P = COUNT(q < 0._QP)
+         P = COUNT(q < 0._RQ)
 
          ! Finish
 
@@ -648,23 +652,23 @@ contains
          integer, intent(in)  :: s
          real(RD)             :: lambda
 
-         real(QP) :: w
-         real(QP) :: I2
-         real(QP) :: I4
-         real(QP) :: alpha_0
-         real(QP) :: alpha_1
-         real(QP) :: alpha_2
-         real(QP) :: alpha_3
-         real(QP) :: alpha
+         real(RQ) :: w
+         real(RQ) :: I2
+         real(RQ) :: I4
+         real(RQ) :: alpha_0
+         real(RQ) :: alpha_1
+         real(RQ) :: alpha_2
+         real(RQ) :: alpha_3
+         real(RQ) :: alpha
 
          ! Calculate the (m, s) gravity-wave Hough eigenvalue lambda,
          ! using the third-order perturbation expansion by Townsend (in
          ! prep)
 
-         w = 1._QP/REAL(q, QP)
+         w = 1._RQ/REAL(q, RQ)
 
-         I2 = 0.5_QP*(2*s+1)
-         I4 = 0.75_QP*(2*s*(s+1) + 1)
+         I2 = 0.5_RQ*(2*s+1)
+         I4 = 0.75_RQ*(2*s*(s+1) + 1)
 
          alpha_0 = 2*s + 1
          alpha_1 = m/alpha_0
@@ -688,18 +692,18 @@ contains
          integer, intent(in)  :: m
          real(RD)             :: lambda
 
-         real(QP) :: w
-         real(QP) :: alpha_0
-         real(QP) :: alpha_1
-         real(QP) :: alpha
+         real(RQ) :: w
+         real(RQ) :: alpha_0
+         real(RQ) :: alpha_1
+         real(RQ) :: alpha
 
          ! Calculate the (m) Kelvin-wave Hough eigenvalue lambda, using
          ! the first-order perturbation expansion by Townsend (in prep)
 
-         w = 1._QP/REAL(q, QP)
+         w = 1._RQ/REAL(q, RQ)
 
          alpha_0 = abs(m)
-         alpha_1 = -0.25_QP
+         alpha_1 = -0.25_RQ
 
          alpha = alpha_0 + alpha_1*w
 
@@ -718,19 +722,19 @@ contains
          integer, intent(in)  :: s
          real(RD)             :: lambda
 
-         real(QP) :: w
-         real(QP) :: alpha_0
-         real(QP) :: alpha_1
-         real(QP) :: alpha
+         real(RQ) :: w
+         real(RQ) :: alpha_0
+         real(RQ) :: alpha_1
+         real(RQ) :: alpha
 
          ! Calculate the (m, s) Rossby-wave Hough eigenvalue lambda,
          ! using the first-order perturbation expansion by Townsend (in
          ! prep)
 
-         w = 1._QP/REAL(q, QP)
+         w = 1._RQ/REAL(q, RQ)
 
-         alpha_0 = REAL(m, QP)/(2*s+1)
-         alpha_1 = REAL(-1 - 4*(1+m**2)*s*(s+1), QP)/(2*s+1)**3
+         alpha_0 = REAL(m, RQ)/(2*s+1)
+         alpha_1 = REAL(-1 - 4*(1+m**2)*s*(s+1), RQ)/(2*s+1)**3
 
          alpha = alpha_0 + alpha_1*w
 
@@ -746,7 +750,7 @@ contains
 
    !****
 
-   #:for T, S in zip(REAL_TYPES+['real(QP)',], REAL_SUFFIXES+['q',])
+   #:for T, S in zip(REAL_TYPES+['real(RQ)',], REAL_SUFFIXES+['q',])
 
       subroutine assemble_A_${S}$_(q, m, n, parity, A_1, A_2n, A_2d, A_3n, A_3d, A_4n, A_4d, A_5, A_D, A_E)
 

@@ -15,15 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module contour_search_m
 
    ! Uses
 
-   use kinds_m
-   use memory_m
-   use order_m
+   use forum_m, only: RD, reallocate
 
    use bvp_m
    use contour_map_m
@@ -66,7 +64,6 @@ contains
       type(num_par_t), intent(in)  :: nm_p
       interface
          subroutine process_mode (md, n_iter, chi)
-            use kinds_m
             use ext_m
             use mode_m
             type(mode_t), intent(in) :: md
@@ -112,8 +109,8 @@ contains
       integer                   :: c_beg
       integer                   :: c_end
       integer                   :: c_rate
-      integer                   :: k
-      integer                   :: j_ri(2)
+      integer                   :: j_re
+      integer                   :: j_im
       complex(RD)               :: omega
       type(ext_ct)              :: discrim
       integer                   :: i_percent
@@ -142,27 +139,27 @@ contains
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      discrim_loop: do k = 1, n_omega_re*n_omega_im
+      discrim_im_loop: do j_im = 1, n_omega_im
+         discrim_re_loop: do j_re = 1, n_omega_re
 
-         j_ri = index_nd(k, [n_omega_re,n_omega_im])
+            omega = CMPLX(omega_re(j_re), omega_im(j_im), KIND=RD)
 
-         omega = CMPLX(omega_re(j_ri(1)), omega_im(j_ri(2)), KIND=RD)
+            call eval_discrim(bp, state_ct(omega, omega_r=omega_re(j_re)), discrim)
 
-         call eval_discrim(bp, state_ct(omega, omega_r=omega_re(j_ri(1))), discrim)
+            discrim_map_f(j_re,j_im) = FRACTION(discrim)
+            discrim_map_e(j_re,j_im) = EXPONENT(discrim)
 
-         discrim_map_f(j_ri(1),j_ri(2)) = FRACTION(discrim)
-         discrim_map_e(j_ri(1),j_ri(2)) = EXPONENT(discrim)
+            if (check_log_level('DEBUG')) then
+               i_percent = FLOOR(100._RD*((j_im-1)*n_omega_re+j_re)/(n_omega_re*n_omega_im))
+               if (i_percent > n_percent) then
+                  write(OUTPUT_UNIT, 110) 'Percent complete: ', i_percent
+110               format(A,1X,I0)
+                  n_percent = i_percent
+               end if
+            endif
 
-         if (check_log_level('DEBUG')) then
-            i_percent = FLOOR(100._RD*k/(n_omega_re*n_omega_im))
-            if (i_percent > n_percent) then
-               write(OUTPUT_UNIT, 110) 'Percent complete: ', i_percent
-110            format(A,1X,I0)
-               n_percent = i_percent
-            end if
-         endif
-
-      end do discrim_loop
+         end do discrim_re_loop
+      end do discrim_im_loop
 
       discrim_map = scale(ext_ct(discrim_map_f), discrim_map_e)
 

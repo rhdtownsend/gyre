@@ -15,11 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 program eval_lambda
 
    ! Uses
+
+   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
 
    use gyre_m
 
@@ -44,7 +46,7 @@ program eval_lambda
    real(RD), allocatable :: q(:)
    real(RD), allocatable :: lam(:)
    integer               :: i
-   type(hgroup_t)        :: hg
+   type(hdf5io_t)        :: hi
 
    ! Read parameters
 
@@ -111,14 +113,14 @@ program eval_lambda
 
    ! Write out results
 
-   hg = hgroup_t(filename, CREATE_FILE)
-   call write_attr(hg, 'l', l)
-   call write_attr(hg, 'm', m)
-   call write_attr(hg, 'k', k)
-   call write_dset(hg, 'rossby', rossby)
-   call write_dset(hg, 'q', q)
-   call write_dset(hg, 'lambda', lam)
-   call hg%final()
+   hi = hdf5io_t(filename, CREATE_FILE)
+   call hi%write_attr('l', l)
+   call hi%write_attr('m', m)
+   call hi%write_attr('k', k)
+   call hi%write_dset('rossby', rossby)
+   call hi%write_dset('q', q)
+   call hi%write_dset('lambda', lam)
+   call hi%final()
 
    ! Finish
 

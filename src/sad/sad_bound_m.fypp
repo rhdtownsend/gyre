@@ -1,7 +1,7 @@
 ! Module  : sad_bound_m
 ! Purpose : static adiabatic boundary conditions
 !
-! Copyright 2019 Rich Townsend
+! Copyright 2019-2024 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,13 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module sad_bound_m
 
    ! Uses
 
-   use kinds_m
+   use forum_m, only: RD
 
    use atmos_m
    use bound_m

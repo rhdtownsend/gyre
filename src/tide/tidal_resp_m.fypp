@@ -15,13 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module tidal_resp_m
 
    ! Uses
 
-   use kinds_m
+   use forum_m, only: RD, ID
 
    use bvp_m
    use constants_m
@@ -114,8 +114,8 @@ contains
       type(wave_t)                  :: wv
       type(resp_t)                  :: rs
 
-      integer(I8) :: c_beg, c_end, c_rate
-      integer(I8) :: c_bvp, c_solve, c_proc
+      integer(ID) :: c_beg, c_end, c_rate
+      integer(ID) :: c_bvp, c_solve, c_proc
 
       c_bvp = 0
       c_solve = 0

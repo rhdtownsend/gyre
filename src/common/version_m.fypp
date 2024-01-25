@@ -15,7 +15,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module version_m
 
@@ -23,7 +23,7 @@ module version_m
 
    implicit none
 
-   ! Parameters
+   ! Parameter definitions
 
    character(*), parameter :: VERSION = 'dev'
 

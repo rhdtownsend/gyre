@@ -15,14 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module tar_fit_m
 
    ! Uses
 
-   use kinds_m
-   use hgroup_m
+   use forum_m, only: RD, hdf5io_t
 
    use cheb_fit_m
    use math_m
@@ -215,23 +214,23 @@ contains
 
    !****
 
-   subroutine read_(hg, tf)
+   subroutine read_(hi, tf)
 
-      type(hgroup_t), intent(inout) :: hg
+      type(hdf5io_t), intent(inout) :: hi
       type(tar_fit_t), intent(out)  :: tf
 
-      type(hgroup_t) :: hg_comp
+      type(hdf5io_t) :: hi_comp
 
       ! Read the tar_fit_t
 
-      call read_attr(hg, 'm', tf%m)
-      call read_attr(hg, 'k', tf%k)
+      call hi%read_attr('m', tf%m)
+      call hi%read_attr('k', tf%k)
 
-      call read_attr(hg, 'q_0', tf%q_0)
+      call hi%read_attr('q_0', tf%q_0)
 
-      hg_comp = hgroup_t(hg, 'cf')
-      call read(hg_comp, tf%cf)
-      call hg_comp%final()
+      hi_comp = hdf5io_t(hi, 'cf')
+      call read(hi_comp, tf%cf)
+      call hi_comp%final()
 
       ! Finish
 
@@ -241,23 +240,23 @@ contains
 
    !****
 
-   subroutine write_(hg, tf)
+   subroutine write_(hi, tf)
 
-      type(hgroup_t), intent(inout) :: hg
+      type(hdf5io_t), intent(inout) :: hi
       type(tar_fit_t), intent(in)   :: tf
 
-      type(hgroup_t) :: hg_comp
+      type(hdf5io_t) :: hi_comp
 
       ! Write the tar_fit_t
 
-      call write_attr(hg, 'm', tf%m)
-      call write_attr(hg, 'k', tf%k)
+      call hi%write_attr('m', tf%m)
+      call hi%write_attr('k', tf%k)
 
-      call write_attr(hg, 'q_0', tf%q_0)
+      call hi%write_attr('q_0', tf%q_0)
 
-      hg_comp = hgroup_t(hg, 'cf')
-      call write(hg_comp, tf%cf)
-      call hg_comp%final()
+      hi_comp = hdf5io_t(hi, 'cf')
+      call write(hi_comp, tf%cf)
+      call hi_comp%final()
 
       ! Finish
 

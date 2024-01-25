@@ -15,13 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module tidal_coeff_m
 
    ! Uses
 
-   use kinds_m
+   use forum_m, only: RD
 
    use constants_m
    use freq_m
@@ -38,7 +38,9 @@ module tidal_coeff_m
 
    implicit none
 
-   ! Parameters
+   ! Parameter definitions
+
+   integer, parameter  :: RQ = SELECTED_REAL_KIND(32)
 
    real(RD), parameter :: TOL = 1E-12_RD
 
@@ -54,7 +56,7 @@ module tidal_coeff_m
    public :: tidal_Gbar_3
    public :: tidal_Gbar_4
    public :: hansen_X
-   public :: hansen_X_QP
+   public :: hansen_X_RQ
 
    ! Default accesss
 
@@ -403,7 +405,7 @@ contains
 
    !****
 
-   function hansen_X_QP(or_p, n, m, k) result(X)
+   function hansen_X_RQ(or_p, n, m, k) result(X)
 
       type(orbit_par_t), intent(in) :: or_p
       integer, intent(in)           :: n
@@ -421,7 +423,7 @@ contains
 
             S = MAX((1._RD - e)**(-n-2), (1._RD + e)**(-n-2))
 
-            X = (1._RD - e**2)**(n+1.5_RD)/TWOPI*REAL(orbit_quad_QP(hansen_X_f_, REAL(e, QP), REAL(TOL, QP)), RD)
+            X = (1._RD - e**2)**(n+1.5_RD)/TWOPI*REAL(orbit_quad_RQ(hansen_X_f_, REAL(e, RQ), REAL(TOL, RQ)), RD)
 
          else
 
@@ -443,14 +445,14 @@ contains
 
       function hansen_X_f_(ua, Ma, e) result(f)
 
-         real(QP), intent(in) :: ua
-         real(QP), intent(in) :: Ma
-         real(QP), intent(in) :: e
-         real(QP)             :: f
+         real(RQ), intent(in) :: ua
+         real(RQ), intent(in) :: Ma
+         real(RQ), intent(in) :: e
+         real(RQ)             :: f
 
          ! Set up the integrand
 
-         f = cos(m*ua - k*Ma)/(S*(1._QP + e*cos(ua))**(n+2))
+         f = cos(m*ua - k*Ma)/(S*(1._RQ + e*cos(ua))**(n+2))
 
          ! Finish
 
@@ -458,7 +460,7 @@ contains
 
       end function hansen_X_f_
 
-   end function hansen_X_QP
+   end function hansen_X_RQ
 
    !****
 
@@ -466,7 +468,7 @@ contains
 
       interface
          function f (ua, Ma, e)
-            use kinds_m
+            use forum_m, only: RD
             real(RD), intent(in) :: ua
             real(RD), intent(in) :: Ma
             real(RD), intent(in) :: e
@@ -563,33 +565,33 @@ contains
 
    !****
 
-   function orbit_quad_QP(f, e, tol) result(I)
+   function orbit_quad_RQ(f, e, tol) result(I)
 
       interface
          function f (ua, Ma, e)
-            use kinds_m
-            real(QP), intent(in) :: ua
-            real(QP), intent(in) :: Ma
-            real(QP), intent(in) :: e
-            real(QP)             :: f
+            integer, parameter   :: RQ = SELECTED_REAL_KIND(32)
+            real(RQ), intent(in) :: ua
+            real(RQ), intent(in) :: Ma
+            real(RQ), intent(in) :: e
+            real(RQ)             :: f
          end function f
       end interface
-      real(QP), intent(in) :: e
-      real(QP), intent(in) :: tol
-      real(QP)             :: I
+      real(RQ), intent(in) :: e
+      real(RQ), intent(in) :: tol
+      real(RQ)             :: I
 
       integer, parameter :: N_MAX = 2**24
-      real(QP), parameter :: PI = ACOS(-1._QP)
+      real(RQ), parameter :: PI = ACOS(-1._RQ)
 
       integer  :: N
-      real(QP) :: e_fac
-      real(QP) :: S
+      real(RQ) :: e_fac
+      real(RQ) :: S
       integer  :: j
-      real(QP) :: ua
-      real(QP) :: Ea
-      real(QP) :: Ma
-      real(QP) :: dI
-      real(QP) :: dI_conv
+      real(RQ) :: ua
+      real(RQ) :: Ea
+      real(RQ) :: Ma
+      real(RQ) :: dI
+      real(RQ) :: dI_conv
 
       ! Perform "orbital quadrature" on the function f(ua, Ma, e, l, m,
       ! k). This involves calculating the integral I = int(f(ua),
@@ -603,41 +605,41 @@ contains
 
       N = 1
 
-      I = PI*(f(0._QP, 0._QP, e) + f(PI, PI, e))/2
+      I = PI*(f(0._RQ, 0._RQ, e) + f(PI, PI, e))/2
 
       ! Refine the quadrature by repeatedly doubling N
 
-      e_fac = sqrt((1._QP - e)*(1._QP + e))
+      e_fac = sqrt((1._RQ - e)*(1._RQ + e))
 
       refine_loop : do
 
          ! Update the value of the quadrature
 
-         S = 0._QP
+         S = 0._RQ
 
          !$OMP PARALLEL DO REDUCTION(+:S) PRIVATE(ua,Ea,Ma) SCHEDULE(static, 4)
          update_loop : do j = 1, N
 
             ! Add contributions to the sum
 
-            ua = PI*(2*j-1.5_QP)/(2*N)
+            ua = PI*(2*j-1.5_RQ)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
             Ma = Ea - e*sin(Ea)
             S = S + f(ua, Ma, e)
 
-            ua = PI*(2*j-1.0_QP)/(2*N)
+            ua = PI*(2*j-1.0_RQ)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
             Ma = Ea - e*sin(Ea)
             S = S + f(ua, Ma, e)
 
-            ua = PI*(2*j-0.5_QP)/(2*N)
+            ua = PI*(2*j-0.5_RQ)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
             Ma = Ea - e*sin(Ea)
             S = S + f(ua, Ma, e)
 
          end do update_loop
 
-         dI = PI*S/(4*N) - 0.75_QP*I
+         dI = PI*S/(4*N) - 0.75_RQ*I
          I = I + dI
 
          N = 4*N
@@ -646,7 +648,7 @@ contains
 
          @:ASSERT(N <= N_MAX, 'too many iterations')
 
-         dI_conv = MAX(tol, 2._QP*EPSILON(0._QP))
+         dI_conv = MAX(tol, 2._RQ*EPSILON(0._RQ))
 
          if (abs(dI) < dI_conv) exit refine_loop
 
@@ -660,6 +662,6 @@ contains
 
       return
 
-   end function orbit_quad_QP
+   end function orbit_quad_RQ
 
 end module tidal_coeff_m

@@ -15,14 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module gsm_file_m
 
    ! Uses
 
-   use kinds_m
-   use hgroup_m
+   use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO
 
    use constants_m
    use evol_model_m
@@ -230,7 +229,7 @@ contains
       real(RD), allocatable, intent(out) :: eps_grav(:)
       real(RD), allocatable, intent(out) :: Omega_rot(:)
 
-      type(hgroup_t) :: hg
+      type(hdf5io_t) :: hi
       integer        :: n
       integer        :: version
 
@@ -243,12 +242,12 @@ contains
 110      format(3X,A,1X,A)
       endif
 
-      hg = hgroup_t(file, OPEN_FILE_RO)
+      hi = hdf5io_t(file, OPEN_FILE_RO)
 
       ! Read the header
 
-      if (attr_exists(hg, 'version')) then
-         call read_attr(hg, 'version', version)
+      if (hi%attr_exists('version')) then
+         call hi%read_attr('version', version)
       else
          version = 0
       endif
@@ -258,11 +257,11 @@ contains
 120      format(3X,A,1X,F4.2,1X,A)
       endif
 
-      call read_attr(hg, 'n', n)
+      call hi%read_attr('n', n)
 
-      call read_attr(hg, 'M_star', M_star)
-      call read_attr(hg, 'R_star', R_star)
-      call read_attr(hg, 'L_star', L_star)
+      call hi%read_attr('M_star', M_star)
+      call hi%read_attr('R_star', R_star)
+      call hi%read_attr('L_star', L_star)
 
       ! Read the data
 
@@ -279,7 +278,7 @@ contains
          @:ABORT('Unrecognized GSM file version')
       end select
 
-      call hg%final()
+      call hi%final()
 
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 130) 'Read', n, 'points'
@@ -298,24 +297,24 @@ contains
 
          ! Read data from the version-0.00 file
 
-         call read_dset_alloc(hg, 'r', r)
-         call read_dset_alloc(hg, 'w', w)
-         call read_dset_alloc(hg, 'L_r', L_r)
-         call read_dset_alloc(hg, 'p', P)
-         call read_dset_alloc(hg, 'rho', rho)
-         call read_dset_alloc(hg, 'T', T)
-         call read_dset_alloc(hg, 'N2', N2)
-         call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
-         call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
-         call read_dset_alloc(hg, 'delta', ups_T)
-         call read_dset_alloc(hg, 'nabla', nabla)
-         call read_dset_alloc(hg, 'kappa', kap)
-         call read_dset_alloc(hg, 'kappa_rho', kap_rho)
-         call read_dset_alloc(hg, 'kappa_T', kap_T)
-         call read_dset_alloc(hg, 'epsilon', eps)
-         call read_dset_alloc(hg, 'epsilon_rho', eps_eps_rho)
-         call read_dset_alloc(hg, 'epsilon_T', eps_eps_T)
-         call read_dset_alloc(hg, 'Omega_rot', Omega_rot)
+         call hi%alloc_read_dset('r', r)
+         call hi%alloc_read_dset('w', w)
+         call hi%alloc_read_dset('L_r', L_r)
+         call hi%alloc_read_dset('p', P)
+         call hi%alloc_read_dset('rho', rho)
+         call hi%alloc_read_dset('T', T)
+         call hi%alloc_read_dset('N2', N2)
+         call hi%alloc_read_dset('Gamma_1', Gamma_1)
+         call hi%alloc_read_dset('nabla_ad', nabla_ad)
+         call hi%alloc_read_dset('delta', ups_T)
+         call hi%alloc_read_dset('nabla', nabla)
+         call hi%alloc_read_dset('kappa', kap)
+         call hi%alloc_read_dset('kappa_rho', kap_rho)
+         call hi%alloc_read_dset('kappa_T', kap_T)
+         call hi%alloc_read_dset('epsilon', eps)
+         call hi%alloc_read_dset('epsilon_rho', eps_eps_rho)
+         call hi%alloc_read_dset('epsilon_T', eps_eps_T)
+         call hi%alloc_read_dset('Omega_rot', Omega_rot)
 
          M_r = w/(1._RD+w)*M_star
 
@@ -334,24 +333,24 @@ contains
 
          ! Read data from the version-1.00 file
 
-         call read_dset_alloc(hg, 'r', r)
-         call read_dset_alloc(hg, 'M_r', M_r)
-         call read_dset_alloc(hg, 'L_r', L_r)
-         call read_dset_alloc(hg, 'P', P)
-         call read_dset_alloc(hg, 'rho', rho)
-         call read_dset_alloc(hg, 'T', T)
-         call read_dset_alloc(hg, 'N2', N2)
-         call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
-         call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
-         call read_dset_alloc(hg, 'delta', ups_T)
-         call read_dset_alloc(hg, 'nabla', nabla)
-         call read_dset_alloc(hg, 'kap', kap)
-         call read_dset_alloc(hg, 'kap_rho', kap_kap_rho)
-         call read_dset_alloc(hg, 'kap_T', kap_kap_T)
-         call read_dset_alloc(hg, 'eps', eps)
-         call read_dset_alloc(hg, 'eps_rho', eps_eps_rho)
-         call read_dset_alloc(hg, 'eps_T', eps_eps_T)
-         call read_dset_alloc(hg, 'Omega_rot', Omega_rot)
+         call hi%alloc_read_dset('r', r)
+         call hi%alloc_read_dset('M_r', M_r)
+         call hi%alloc_read_dset('L_r', L_r)
+         call hi%alloc_read_dset('P', P)
+         call hi%alloc_read_dset('rho', rho)
+         call hi%alloc_read_dset('T', T)
+         call hi%alloc_read_dset('N2', N2)
+         call hi%alloc_read_dset('Gamma_1', Gamma_1)
+         call hi%alloc_read_dset('nabla_ad', nabla_ad)
+         call hi%alloc_read_dset('delta', ups_T)
+         call hi%alloc_read_dset('nabla', nabla)
+         call hi%alloc_read_dset('kap', kap)
+         call hi%alloc_read_dset('kap_rho', kap_kap_rho)
+         call hi%alloc_read_dset('kap_T', kap_kap_T)
+         call hi%alloc_read_dset('eps', eps)
+         call hi%alloc_read_dset('eps_rho', eps_eps_rho)
+         call hi%alloc_read_dset('eps_T', eps_eps_T)
+         call hi%alloc_read_dset('Omega_rot', Omega_rot)
 
          kap_rho = kap_kap_rho/kap
          kap_T = kap_kap_T/kap
@@ -371,24 +370,24 @@ contains
 
          ! Read data from the version-1.10 file
 
-         call read_dset_alloc(hg, 'r', r)
-         call read_dset_alloc(hg, 'M_r', M_r)
-         call read_dset_alloc(hg, 'L_r', L_r)
-         call read_dset_alloc(hg, 'P', P)
-         call read_dset_alloc(hg, 'rho', rho)
-         call read_dset_alloc(hg, 'T', T)
-         call read_dset_alloc(hg, 'N2', N2)
-         call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
-         call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
-         call read_dset_alloc(hg, 'delta', ups_T)
-         call read_dset_alloc(hg, 'nabla', nabla)
-         call read_dset_alloc(hg, 'kap', kap)
-         call read_dset_alloc(hg, 'kap_kap_rho', kap_kap_rho)
-         call read_dset_alloc(hg, 'kap_kap_T', kap_kap_T)
-         call read_dset_alloc(hg, 'eps', eps)
-         call read_dset_alloc(hg, 'eps_eps_rho', eps_eps_rho)
-         call read_dset_alloc(hg, 'eps_eps_T', eps_eps_T)
-         call read_dset_alloc(hg, 'Omega_rot', Omega_rot)
+         call hi%alloc_read_dset('r', r)
+         call hi%alloc_read_dset('M_r', M_r)
+         call hi%alloc_read_dset('L_r', L_r)
+         call hi%alloc_read_dset('P', P)
+         call hi%alloc_read_dset('rho', rho)
+         call hi%alloc_read_dset('T', T)
+         call hi%alloc_read_dset('N2', N2)
+         call hi%alloc_read_dset('Gamma_1', Gamma_1)
+         call hi%alloc_read_dset('nabla_ad', nabla_ad)
+         call hi%alloc_read_dset('delta', ups_T)
+         call hi%alloc_read_dset('nabla', nabla)
+         call hi%alloc_read_dset('kap', kap)
+         call hi%alloc_read_dset('kap_kap_rho', kap_kap_rho)
+         call hi%alloc_read_dset('kap_kap_T', kap_kap_T)
+         call hi%alloc_read_dset('eps', eps)
+         call hi%alloc_read_dset('eps_eps_rho', eps_eps_rho)
+         call hi%alloc_read_dset('eps_eps_T', eps_eps_T)
+         call hi%alloc_read_dset('Omega_rot', Omega_rot)
 
          kap_rho = kap_kap_rho/kap
          kap_T = kap_kap_T/kap
@@ -408,26 +407,26 @@ contains
 
          ! Read data from the version-1.20 file
 
-         call read_dset_alloc(hg, 'r', r)
-         call read_dset_alloc(hg, 'M_r', M_r)
-         call read_dset_alloc(hg, 'L_r', L_r)
-         call read_dset_alloc(hg, 'P', P)
-         call read_dset_alloc(hg, 'rho', rho)
-         call read_dset_alloc(hg, 'T', T)
-         call read_dset_alloc(hg, 'N2', N2)
-         call read_dset_alloc(hg, 'Gamma_1', Gamma_1)
-         call read_dset_alloc(hg, 'nabla_ad', nabla_ad)
-         call read_dset_alloc(hg, 'delta', ups_T)
-         call read_dset_alloc(hg, 'nabla', nabla)
-         call read_dset_alloc(hg, 'kap', kap)
-         call read_dset_alloc(hg, 'kap_kap_rho', kap_kap_rho)
-         call read_dset_alloc(hg, 'kap_kap_T', kap_kap_T)
-         call read_dset_alloc(hg, 'eps', eps)
-         call read_dset_alloc(hg, 'eps_eps_rho', eps_eps_rho)
-         call read_dset_alloc(hg, 'eps_eps_T', eps_eps_T)
-         call read_dset_alloc(hg, 'eps_eps_T', eps_eps_T)
-         call read_dset_alloc(hg, 'eps_grav', eps_grav)
-         call read_dset_alloc(hg, 'Omega_rot', Omega_rot)
+         call hi%alloc_read_dset('r', r)
+         call hi%alloc_read_dset('M_r', M_r)
+         call hi%alloc_read_dset('L_r', L_r)
+         call hi%alloc_read_dset('P', P)
+         call hi%alloc_read_dset('rho', rho)
+         call hi%alloc_read_dset('T', T)
+         call hi%alloc_read_dset('N2', N2)
+         call hi%alloc_read_dset('Gamma_1', Gamma_1)
+         call hi%alloc_read_dset('nabla_ad', nabla_ad)
+         call hi%alloc_read_dset('delta', ups_T)
+         call hi%alloc_read_dset('nabla', nabla)
+         call hi%alloc_read_dset('kap', kap)
+         call hi%alloc_read_dset('kap_kap_rho', kap_kap_rho)
+         call hi%alloc_read_dset('kap_kap_T', kap_kap_T)
+         call hi%alloc_read_dset('eps', eps)
+         call hi%alloc_read_dset('eps_eps_rho', eps_eps_rho)
+         call hi%alloc_read_dset('eps_eps_T', eps_eps_T)
+         call hi%alloc_read_dset('eps_eps_T', eps_eps_T)
+         call hi%alloc_read_dset('eps_grav', eps_grav)
+         call hi%alloc_read_dset('Omega_rot', Omega_rot)
 
          kap_rho = kap_kap_rho/kap
          kap_T = kap_kap_T/kap

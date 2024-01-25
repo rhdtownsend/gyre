@@ -15,15 +15,9 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module sysmtx_m
-
-   ! Uses
-
-   use kinds_m
-
-   use ext_m
 
    ! No implicit typing
 
@@ -56,7 +50,7 @@ module sysmtx_m
       abstract interface
 
          subroutine set_B_${S}$_(this, B, scl)
-            use kinds_m
+            use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
             class(sysmtx_${S}$), intent(inout) :: this
@@ -65,7 +59,7 @@ module sysmtx_m
          end subroutine set_B_${S}$_
 
          subroutine set_E_${S}$_(this, k, E_l, E_r, scl)
-            use kinds_m
+            use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
             class(sysmtx_${S}$), intent(inout) :: this
@@ -88,7 +82,7 @@ module sysmtx_m
          end subroutine factor_${S}$_
 
          function soln_vec_hom_${S}$_(this) result(u)
-            use kinds_m
+            use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
             class(sysmtx_${S}$), intent(in) :: this
@@ -96,7 +90,7 @@ module sysmtx_m
          end function soln_vec_hom_${S}$_
 
          function soln_vec_inhom_${S}$_(this, v_i, v_o) result(u)
-            use kinds_m
+            use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
             class(sysmtx_${S}$), intent(in) :: this
@@ -106,7 +100,7 @@ module sysmtx_m
          end function soln_vec_inhom_${S}$_
 
          function resd_vec_hom_${S}$_(this, u) result(dv)
-            use kinds_m
+            use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
             class(sysmtx_${S}$), intent(in) :: this
@@ -115,7 +109,7 @@ module sysmtx_m
          end function resd_vec_hom_${S}$_
 
          function resd_vec_inhom_${S}$_(this, u, v_i, v_o) result(dv)
-            use kinds_m
+            use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
             class(sysmtx_${S}$), intent(in) :: this
@@ -125,11 +119,11 @@ module sysmtx_m
             ${T}$                           :: dv(this%n_e*(this%n+1))
          end function resd_vec_inhom_${S}$_
 
-         subroutine dump_${S}$_(this, hg)
-            use hgroup_m
+         subroutine dump_${S}$_(this, hi)
+            use forum_m, only: hdf5io_t
             import sysmtx_${S}$
             class(sysmtx_${S}$), intent(in) :: this
-            type(hgroup_t), intent(inout)   :: hg
+            type(hdf5io_t), intent(inout)   :: hi
          end subroutine dump_${S}$_
 
       end interface

@@ -15,30 +15,23 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module grid_weights_m
 
    ! Uses
 
-   use kinds_m
-   use cfunc_m
+   use forum_m, only: RD
 
    use grid_m
    use math_m
-
+   use num_par_m
+   use root_m
+   use status_m
+   
    ! No implicit typing
 
    implicit none
-
-   ! Derived-type definitions (used internally for root-finding)
-
-   type, extends(cfunc_t) :: geom_cfunc_t
-      real(RD) :: s
-      integer  :: n
-   contains
-      procedure :: eval_c_ => eval_geom_cfunc_
-   end type geom_cfunc_t
 
    ! Interfaces
 
@@ -111,7 +104,7 @@ contains
       real(RD)           :: g_a
       real(RD)           :: g_b
       real(RD)           :: g
-      type(geom_cfunc_t) :: gf
+      integer            :: status
       real(RD)           :: dw
       integer            :: k
 
@@ -129,13 +122,10 @@ contains
 
          m = n/2-1
 
-         gf%n = n
-         gf%s = s
-
          g_a = EPSILON(0._RD)
          g_b = (s*(n-1)-2*m-1)/m
 
-         g = gf%root(g_a, g_b, 0._RD)
+         call solve_root(geom_func_, g_a, g_b, 0._RD, num_par_t(), g, status)
 
          ! Set up weights for the inner part of the interval
 
@@ -160,13 +150,10 @@ contains
 
          m = (n-1)/2
 
-         gf%n = n
-         gf%s = s
-
          g_a = EPSILON(0._RD)
          g_b = (s*(n-1)-2*m)/(m*(m-1))
 
-         g = gf%root(g_a, g_b, 0._RD)
+         call solve_root(geom_func_, g_a, g_b, 0._RD, num_par_t(), g, status)
 
          ! Set up the inner part of the interval
 
@@ -190,50 +177,43 @@ contains
 
       return
 
+   contains
+
+      subroutine geom_func_(x, geom_func, status)
+
+         real(RD), intent(in)  :: x
+         real(RD), intent(out) :: geom_func
+         integer, intent(out)  :: status
+
+         ! Calcuate the discriminant for the geometric growth factor
+
+         if (MOD(n, 2) == 0) then
+
+            if (1._RD+g > pow(HUGE(0._RD), 1._RD/m)) then
+               geom_func = - (2._RD + g)
+            else
+               geom_func = (2._RD + s*(n-1)*g)/(1._RD + g)**m - (2._RD + g)
+            endif
+
+         else
+
+            if (1._RD+g > pow(HUGE(0._RD), 1._RD/m)) then
+               geom_func = -2._RD
+            else
+               geom_func = (2._RD + s*(n-1)*g)/(1._RD + g)**m - 2._RD
+            endif
+
+         endif
+
+         ! Finish
+
+         status = STATUS_OK
+
+         return
+
+      end subroutine geom_func_
+
    end function geo_weights
-
-   !****
-
-   function eval_geom_cfunc_(this, z) result(f_z)
-
-      class(geom_cfunc_t), intent(inout) :: this
-      complex(RD), intent(in)           :: z
-      complex(RD)                       :: f_z
-
-      real(RD) :: g
-      integer  :: m
-
-      ! Calcuate the discriminant for the geometric growth factor
-
-      g = REAL(z)
-
-      if (MOD(this%n, 2) == 0) then
-
-         m = this%n/2-1
-
-         if (1._RD+g > pow(HUGE(0._RD), 1._RD/m)) then
-            f_z = - (2._RD + g)
-         else
-            f_z = (2._RD + this%s*(this%n-1)*g)/(1._RD + g)**m - (2._RD + g)
-         endif
-
-      else
-
-         m = (this%n-1)/2
-
-         if(1._RD+g > pow(HUGE(0._RD), 1._RD/m)) then
-            f_z = -2._RD
-         else
-            f_z = (2._RD + this%s*(this%n-1)*g)/(1._RD + g)**m - 2._RD
-         endif
-
-      endif
-
-      ! Finish
-
-      return
-
-   end function eval_geom_cfunc_
 
    !****
 

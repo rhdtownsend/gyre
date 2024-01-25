@@ -15,14 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module tar_rot_m
 
    ! Uses
    
-   use kinds_m
-   use hgroup_m
+   use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO
 
    use constants_m
    use math_m
@@ -81,7 +80,7 @@ contains
 
          integer                 :: k
          character(FILENAME_LEN) :: filename
-         type(hgroup_t)          :: hg
+         type(hdf5io_t)          :: hi
 
          ! Construct the tar_rot_t
 
@@ -96,9 +95,9 @@ contains
          write(filename, 100) md_p%m, k
 100      format(SP,'tar_fit.m',I0,'.k',I0,'.h5')
 
-         hg = hgroup_t(TRIM(GYRE_DIR)//'/data/tar/'//TRIM(filename), OPEN_FILE_RO)
-         call read(hg, rt%tf)
-         call hg%final()
+         hi = hdf5io_t(TRIM(GYRE_DIR)//'/data/tar/'//TRIM(filename), OPEN_FILE_RO)
+         call read(hi, rt%tf)
+         call hi%final()
 
          !$OMP END CRITICAL
 

@@ -15,16 +15,16 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module prox_search_m
 
    ! Uses
 
-   use kinds_m
-   use constants_m
+   use forum_m, only: RD
 
    use bvp_m
+   use constants_m
    use discrim_m
    use ext_m
    use math_m
@@ -69,7 +69,6 @@ contains
       type(num_par_t), intent(in)          :: nm_p
       interface
          subroutine process_mode (md, n_iter, chi)
-            use kinds_m
             use ext_m
             use mode_m
             type(mode_t), intent(in) :: md
@@ -125,7 +124,6 @@ contains
       type(num_par_t), intent(in)  :: nm_p
       interface
          subroutine process_mode (md, n_iter, chi)
-            use kinds_m
             use ext_m
             use mode_m
             type(mode_t), intent(in) :: md

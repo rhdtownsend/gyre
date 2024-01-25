@@ -15,14 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module poly_file_m
 
    ! Uses
 
-   use kinds_m
-   use hgroup_m
+   use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO
 
    use model_m
    use model_par_m
@@ -50,7 +49,7 @@ contains
       type(model_par_t), intent(in)        :: ml_p
       class(model_t), pointer, intent(out) :: ml
 
-      type(hgroup_t)              :: hg
+      type(hdf5io_t)              :: hi
       real(RD), allocatable       :: n_poly(:)
       integer                     :: n_r
       real(RD), allocatable       :: Delta_b(:)
@@ -68,23 +67,23 @@ contains
 100      format(A,1X,A)
       endif
 
-      hg = hgroup_t(ml_p%file, OPEN_FILE_RO)
+      hi = hdf5io_t(ml_p%file, OPEN_FILE_RO)
 
-      call read_attr(hg, 'n_r', n_r)
+      call hi%read_attr('n_r', n_r)
 
-      call read_attr_alloc(hg, 'n_poly', n_poly)
+      call hi%alloc_read_attr('n_poly', n_poly)
       if (n_r > 1) then
-         call read_attr_alloc(hg, 'Delta_b', Delta_b)
+         call hi%alloc_read_attr('Delta_b', Delta_b)
       else
          allocate(Delta_b(0))
       endif
-      call read_attr(hg, 'Gamma_1', Gamma_1)
+      call hi%read_attr('Gamma_1', Gamma_1)
 
-      call read_dset_alloc(hg, 'z', z)
-      call read_dset_alloc(hg, 'theta', theta)
-      call read_dset_alloc(hg, 'dtheta', dtheta)
+      call hi%alloc_read_dset('z', z)
+      call hi%alloc_read_dset('theta', theta)
+      call hi%alloc_read_dset('dtheta', dtheta)
 
-      call hg%final()
+      call hi%final()
 
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 110) 'Read', SIZE(z), 'points'

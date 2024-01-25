@@ -15,15 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module cheb_fit_m
 
    ! Uses
 
-   use kinds_m
-   use hgroup_m
-   use memory_m
+   use forum_m, only: RD, hdf5io_t
 
    use math_m
 
@@ -85,7 +83,7 @@ contains
       integer, intent(in)  :: n
       interface
          function func (x)
-            use kinds_m
+            use forum_m, only: RD
             real(RD), intent(in) :: x
             real(RD)             :: func
          end function func
@@ -126,7 +124,7 @@ contains
       real(RD), intent(in) :: tol
       interface
          function func (x)
-            use kinds_m
+            use forum_m, only: RD
             real(RD), intent(in) :: x
             real(RD)             :: func
          end function func
@@ -255,9 +253,9 @@ contains
 
    !****
 
-   subroutine read_(hg, cb)
+   subroutine read_(hi, cb)
 
-      type(hgroup_t), intent(inout) :: hg
+      type(hdf5io_t), intent(inout) :: hi
       type(cheb_fit_t), intent(out) :: cb
 
       real(RD)              :: x_a
@@ -266,10 +264,10 @@ contains
 
       ! Read the cheb_fit_t
 
-      call read_attr(hg, 'x_a', x_a)
-      call read_attr(hg, 'x_b', x_b)
+      call hi%read_attr('x_a', x_a)
+      call hi%read_attr('x_b', x_b)
 
-      call read_dset_alloc(hg, 'f', f)
+      call hi%alloc_read_dset('f', f)
 
       cb = cheb_fit_t_vals_(x_a, x_b, f)
 
@@ -281,17 +279,17 @@ contains
 
    !****
 
-   subroutine write_(hg, cb)
+   subroutine write_(hi, cb)
 
-      type(hgroup_t), intent(inout) :: hg
+      type(hdf5io_t), intent(inout) :: hi
       type(cheb_fit_t), intent(in)  :: cb
 
       ! Write the cheb_fit_t
 
-      call write_attr(hg, 'x_a', cb%x_a)
-      call write_attr(hg, 'x_b', cb%x_b)
+      call hi%write_attr('x_a', cb%x_a)
+      call hi%write_attr('x_b', cb%x_b)
 
-      call write_dset(hg, 'f', cb%f)
+      call hi%write_dset('f', cb%f)
 
       ! Finish
 

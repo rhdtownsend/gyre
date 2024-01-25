@@ -15,14 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module hdf_writer_m
 
    ! Uses
 
-   use kinds_m
-   use hgroup_m
+   use forum_m, only: RD, hdf5io_t, CREATE_FILE
 
    use writer_m
 
@@ -34,7 +33,7 @@ module hdf_writer_m
 
    type, extends (writer_t) :: hdf_writer_t
       private
-      type(hgroup_t) :: hg
+      type(hdf5io_t) :: hi
       integer        :: c
    contains
       private
@@ -71,9 +70,9 @@ contains
 
       ! Construct the hdf_writer type
 
-      wr%hg = hgroup_t(file_name, CREATE_FILE)
+      wr%hi = hdf5io_t(file_name, CREATE_FILE)
 
-      call write_attr(wr%hg, 'label', label)
+      call wr%hi%write_attr('label', label)
 
       wr%c = 0
 
@@ -91,7 +90,7 @@ contains
 
       ! Finalize the hdf_writer
 
-      call this%hg%final()
+      call this%hi%final()
 
       ! Finish
 
@@ -130,9 +129,9 @@ contains
             ! Write the data
 
             #:if R > 0
-               call write_dset(this%hg, name, data)
+               call this%hi%write_dset(name, data)
             #:else
-               call write_attr(this%hg, name, data)
+               call this%hi%write_attr(name, data)
             #:endif
 
             this%c = this%c + 1

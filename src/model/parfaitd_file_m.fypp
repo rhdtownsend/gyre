@@ -15,14 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module parfaitd_file_m
 
    ! Uses
 
-   use kinds_m
-   use hgroup_m
+   use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO
 
    use model_m
    use model_par_m
@@ -94,7 +93,7 @@ contains
       real(RD), intent(out)              :: M_star
       real(RD), intent(out)              :: R_star
 
-      type(hgroup_t) :: hg
+      type(hdf5io_t) :: hi
       character(16)  :: type
       integer        :: version
       integer        :: N
@@ -108,27 +107,27 @@ contains
 110      format(3X,A,1X,A)
       endif
 
-      hg = hgroup_t(file, OPEN_FILE_RO)
+      hi = hdf5io_t(file, OPEN_FILE_RO)
 
       ! Read the header
 
-      call read_attr(hg, 'type', type)
+      call hi%read_attr('type', type)
 
       if (type /= 'PARFAITD') then
          @:ABORT('file type mismatch')
       end if
 
-      call read_attr(hg, 'version', version)
+      call hi%read_attr('version', version)
 
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 120) 'File version', version/100._RD
 120      format(3X,A,1X,F4.2,1X,A)
       endif
 
-      call read_attr(hg, 'N', N)
+      call hi%read_attr('N', N)
 
-      call read_attr(hg, 'M_star', M_star)
-      call read_attr(hg, 'R_star', R_star)
+      call hi%read_attr('M_star', M_star)
+      call hi%read_attr('R_star', R_star)
 
       ! Read the data
 
@@ -139,7 +138,7 @@ contains
          @:ABORT('unrecognized PARFAITD file version')
       end select
 
-      call hg%final()
+      call hi%final()
 
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 130) 'Read', N, 'shells'
@@ -156,16 +155,16 @@ contains
 
          ! Read data from the version-1.00 file
 
-         call read_attr(hg, 'y_c', y_c)
-         call read_attr(hg, 'z_s', z_s)
+         call hi%read_attr('y_c', y_c)
+         call hi%read_attr('z_s', z_s)
 
          allocate(x(N+1))
          allocate(d(N))
          allocate(Gamma_1(N))
 
-         call read_dset(hg, 'x', x)
-         call read_dset(hg, 'd', d)
-         call read_dset(hg, 'Gamma_1', Gamma_1)
+         call hi%read_dset('x', x)
+         call hi%read_dset('d', d)
+         call hi%read_dset('Gamma_1', Gamma_1)
 
          ! Finish
 

@@ -15,7 +15,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module rot_m
 
@@ -38,7 +38,7 @@ module rot_m
       abstract interface
 
          function l_e_${S}$_(this, Omega_rot, omega) result(l_e)
-            use kinds_m
+            use forum_m, only: RD
             import rot_${S}$
             class(rot_${S}$), intent(in) :: this
             real(RD), intent(in)         :: Omega_rot
@@ -47,7 +47,7 @@ module rot_m
          end function l_e_${S}$_
 
          function lambda_${S}$_(this, Omega_rot, omega) result(lambda)
-            use kinds_m
+            use forum_m, only: RD
             import rot_${S}$
             class(rot_${S}$), intent(in) :: this
             real(RD), intent(in)         :: Omega_rot

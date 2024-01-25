@@ -15,16 +15,9 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module gyre_m
-
-   ! Modules that will ultimately come from ForUM
-
-   use kinds_m, only : RD
-   use hgroup_m
-   use memory_m
-   use system_m
 
    ! BVPs
 
@@ -46,7 +39,7 @@ module gyre_m
    use model_m
    use model_factory_m
 
-   ! Parameters
+   ! Calculation parameters
    
    use grid_par_m
    use mode_par_m

@@ -15,16 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module util_m
 
    ! Uses
 
-   use kinds_m
-   use memory_m
-   use string_m
-   use order_m
+   use forum_m, only: RD, replace, unique_indices, reallocate
 
    use constants_m
    use grid_par_m
@@ -86,6 +83,7 @@ module util_m
    public :: rjust
    public :: integrate
    public :: integral
+   public :: elem_group_name
 
    ! Default access
 
@@ -496,5 +494,53 @@ contains
       end function integral_${S}$_
 
    #:endfor
+
+   !****
+      
+   function elem_group_name(prefix, indices) result(group_name)
+
+      character(*), intent(in)  :: prefix
+      integer, intent(in)       :: indices(:)
+      character(:), allocatable :: group_name
+
+      integer                   :: n_indices
+      character(:), allocatable :: name_format
+      integer                   :: name_len
+      integer                   :: i
+
+      ! Set up an array-element group name
+
+      n_indices = SIZE(indices)
+
+      select case(n_indices)
+      case(0)
+         name_format = '(A,''()'')'
+      case(1)
+         name_format = '(A,''('',I0,'')'')'
+      case default
+         name_format = '(A,''('''//REPEAT('I0,'',''', n_indices-1)//'I0,'')'')'
+      end select
+
+      name_len = LEN_TRIM(prefix) + n_indices + 1
+
+      do i = 1,SIZE(indices)
+         if(indices(i) < 0) then
+            name_len = name_len + FLOOR(LOG10(REAL(ABS(indices(i))))) + 2
+         elseif(indices(i) > 0) then
+            name_len = name_len + FLOOR(LOG10(REAL(indices(i)))) + 1
+         else
+            name_len = name_len + 1
+         endif
+      end do
+
+      allocate(character(name_len) :: group_name)
+
+      write(group_name, name_format) TRIM(prefix), indices
+
+      ! Finish
+
+      return
+
+   end function elem_group_name
 
 end module util_m

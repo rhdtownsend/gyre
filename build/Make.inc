@@ -43,6 +43,10 @@ ALL_SRCS = $(foreach target,$(BIN_TARGETS) $(LIB_TARGETS),$($(target)_SRCS) $($(
 ALL_DPPS = $(addprefix $(DEPEND_DIR)/,$(ALL_SRCS:%.fypp=%.dpp))
 ALL_DEPS = $(addprefix $(DEPEND_DIR)/,$(BIN_TARGETS:%=%.dep) $(LIB_TARGETS:%=%.dep))
 
+##########
+# Targets
+##########
+
 all : $(BIN_FILES) $(LIB_FILES)
 
 install : bin-install lib-install inc-install
@@ -113,7 +117,7 @@ $(ALL_DPPS) :
 # Include generated dependencies from .dpp files
 
 ifneq ($(MAKECMDGOALS),clean)
-  -include $(ALL_DPPS)
+  include $(ALL_DPPS)
 endif
 
 ############
@@ -125,7 +129,7 @@ endif
 FC = gfortran
 MAKEDEP = awk -f makedepf08.awk
 
-FFLAGS := $(FFLAGS) $(addprefix -I,$(MODPATH)) -std=f2018 \
+FFLAGS := $(FFLAGS) $(addprefix -I,$(MOD_PATH)) -std=f2018 \
           -finit-real=snan -fbacktrace -fmax-errors=25 -fPIC
 
 ifeq ($(FPE),yes)
@@ -160,13 +164,13 @@ $(DEPEND_DIR)/%.anc : %.f90 | $(DEPEND_DIR)
 	@touch $@
 
 $(ALL_DEPS) : $(DEPEND_DIR)/%.dep : | $(DEPEND_DIR)
-	@echo MAKEDEP $*
+	@echo MAKEDEP $* 
 	@$(MAKEDEP) $^ > $@
 
 # Include generated dependencies from .dep files
 
 ifneq ($(MAKECMDGOALS),clean)
-  -include $(ALL_DEPS)
+  include $(ALL_DEPS)
 endif
 
 ##########
@@ -181,7 +185,7 @@ else
   BIN_LDFLAGS = -Wl,--no-warn-execstack -Wl,-rpath -Wl,$(LIB_DIR)
 endif
 
-LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link`
+LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` -L$(LIB_DIR) -lforum
 
 ifeq ($(CRMATH),yes)
   export MESASDK_MATH_SLOT=crmath

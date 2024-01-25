@@ -15,16 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module interp_m
 
    ! Uses
 
-   use kinds_m
-   use hgroup_m
-   use linalg_m
-   use order_m
+   use forum_m, only: RD, hdf5io_t, locate
 
    use deriv_m
 
@@ -165,9 +162,9 @@ contains
 
       !****
 
-      subroutine read_${S}$_(hg, in)
+      subroutine read_${S}$_(hi, in)
 
-         type(hgroup_t), intent(inout)   :: hg
+         type(hdf5io_t), intent(inout)   :: hi
          type(interp_${S}$), intent(out) :: in
 
          real(RD), allocatable :: x(:)
@@ -176,9 +173,9 @@ contains
 
          ! Read the interp type
 
-         call read_dset_alloc(hg, 'x', x)
-         call read_dset_alloc(hg, 'f', f)
-         call read_dset_alloc(hg, 'df_dx', df_dx)
+         call hi%alloc_read_dset('x', x)
+         call hi%alloc_read_dset('f', f)
+         call hi%alloc_read_dset('df_dx', df_dx)
 
          in = interp_${S}$(x, f, df_dx)
 
@@ -190,18 +187,18 @@ contains
 
       !****
 
-      subroutine write_${S}$_(hg, in)
+      subroutine write_${S}$_(hi, in)
 
-         type(hgroup_t), intent(inout)  :: hg
+         type(hdf5io_t), intent(inout)  :: hi
          type(interp_${S}$), intent(in) :: in
 
          ! Write the interp type
 
-         call write_attr(hg, 'n', in%n)
+         call hi%write_attr('n', in%n)
 
-         call write_dset(hg, 'x', in%x_)
-         call write_dset(hg, 'f', in%f_)
-         call write_dset(hg, 'df_dx', in%df_dx_)
+         call hi%write_dset('x', in%x_)
+         call hi%write_dset('f', in%f_)
+         call hi%write_dset('df_dx', in%df_dx_)
 
          ! Finish
 

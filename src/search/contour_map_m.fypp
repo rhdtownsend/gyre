@@ -15,15 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module contour_map_m
 
    ! Uses
 
-   use kinds_m
-   use memory_m
-   use hgroup_m
+   use forum_m, only: RD, hdf5io_t, CREATE_FILE
 
    use contour_path_m
    use ext_m
@@ -75,7 +73,7 @@ contains
       type(contour_map_t)  :: cm
       interface
          subroutine process_isect (omega_a_re, omega_b_re, omega_a_im, omega_b_im)
-            use kinds_m
+            use forum_m, only: RD
             complex(RD), intent(in) :: omega_a_re
             complex(RD), intent(in) :: omega_b_re
             complex(RD), intent(in) :: omega_a_im
@@ -111,7 +109,7 @@ contains
       class(contour_map_t), intent(inout) :: cm
       interface
          subroutine process_isect (z_a_re, z_b_re, z_a_im, z_b_im)
-            use kinds_m
+            use forum_m, only: RD
             complex(RD), intent(in) :: z_a_re
             complex(RD), intent(in) :: z_b_re
             complex(RD), intent(in) :: z_a_im
@@ -714,7 +712,7 @@ contains
       complex(RD), intent(in) :: z_b_im(:)
       interface
          subroutine process_isect (z_a_re, z_b_re, z_a_im, z_b_im)
-            use kinds_m
+            use forum_m, only: RD
             complex(RD), intent(in) :: z_a_re
             complex(RD), intent(in) :: z_b_re
             complex(RD), intent(in) :: z_a_im
@@ -788,8 +786,8 @@ contains
       integer, intent(in)              :: i
 
       character(:), allocatable :: contour_file
-      type(hgroup_t)            :: hg
-      type(hgroup_t)            :: hg_cp
+      type(hdf5io_t)            :: hi
+      type(hdf5io_t)            :: hi_cp
       integer                   :: i_cp
 
       ! Dump a contour map file
@@ -805,35 +803,35 @@ contains
 
       ! Open the file
 
-      hg = hgroup_t(contour_file, CREATE_FILE)
+      hi = hdf5io_t(contour_file, CREATE_FILE)
 
       ! Write map data
 
-      call write_dset(hg, 'z_re', this%z_re)
-      call write_dset(hg, 'z_im', this%z_im)
+      call hi%write_dset('z_re', this%z_re)
+      call hi%write_dset('z_im', this%z_im)
 
-      call write_dset(hg, 'f_f', fraction(this%f))
-      call write_dset(hg, 'f_e', exponent(this%f))
+      call hi%write_dset('f_f', fraction(this%f))
+      call hi%write_dset('f_e', exponent(this%f))
 
       ! Write path data
 
-      call write_attr(hg, 'n_cp_re', SIZE(this%cp_re))
+      call hi%write_attr('n_cp_re', SIZE(this%cp_re))
 
       do i_cp = 1, SIZE(this%cp_re)
-         hg_cp = hgroup_t(hg, elem_group_name('path-re', [i_cp]))
-         call write(hg_cp, this%cp_re(i_cp))
-         call hg_cp%final()
+         hi_cp = hdf5io_t(hi, elem_group_name('path-re', [i_cp]))
+         call write(hi_cp, this%cp_re(i_cp))
+         call hi_cp%final()
       end do
 
-      call write_attr(hg, 'n_cp_im', SIZE(this%cp_im))
+      call hi%write_attr('n_cp_im', SIZE(this%cp_im))
 
       do i_cp = 1, SIZE(this%cp_im)
-         hg_cp = hgroup_t(hg, elem_group_name('path-im', [i_cp]))
-         call write(hg_cp, this%cp_im(i_cp))
-         call hg_cp%final()
+         hi_cp = hdf5io_t(hi, elem_group_name('path-im', [i_cp]))
+         call write(hi_cp, this%cp_im(i_cp))
+         call hi_cp%final()
       end do
 
-      call hg%final()
+      call hi%final()
 
       ! Finish
 

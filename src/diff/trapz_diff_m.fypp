@@ -15,14 +15,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module trapz_diff_m
 
    ! Uses
    
-   use kinds_m
-   use clinalg_m
+   use forum_m, only: RD
 
    use diff_m
    use eqns_m

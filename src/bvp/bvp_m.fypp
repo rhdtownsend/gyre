@@ -15,63 +15,63 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 module bvp_m
 
-  ! Uses
+   ! Uses
 
-  use kinds_m
+   use forum_m, only: RD
 
-  use bound_m
-  use diff_m
-  use ext_m
-  use num_par_m
-  use state_m
-  use status_m
-  use sysmtx_m
-  use sysmtx_factory_m
+   use bound_m
+   use diff_m
+   use ext_m
+   use num_par_m
+   use state_m
+   use status_m
+   use sysmtx_m
+   use sysmtx_factory_m
 
-  use ISO_FORTRAN_ENV
+   use ISO_FORTRAN_ENV
 
-  ! No implicit typing
+   ! No implicit typing
 
-  implicit none
+   implicit none
 
-  #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-     ! Derived-type definitions
+      ! Derived-type definitions
 
-     type :: bvp_${S}$
-        private
-        class(diff_${S}$), allocatable   :: df(:)
-        class(bound_${S}$), allocatable  :: bd
-        class(sysmtx_${S}$), allocatable :: sm
-        integer, public                  :: n
-        integer, public                  :: n_e
-        integer, public                  :: n_i
-        integer, public                  :: n_o
-        logical                          :: factored
-     contains 
-        private
-        procedure, public :: build => build_${S}$_
-        procedure, public :: factor => factor_${S}$_
-        procedure, public :: det => det_${S}$_
-        procedure, public :: soln_vec_hom => soln_vec_hom_${S}$_
-        procedure, public :: soln_vec_inhom => soln_vec_inhom_${S}$_
-        procedure, public :: resd_vec_hom => resd_vec_hom_${S}$_
-        procedure, public :: resd_vec_inhom => resd_vec_inhom_${S}$_
-     end type bvp_${S}$
+      type :: bvp_${S}$
+         private
+         class(diff_${S}$), allocatable   :: df(:)
+         class(bound_${S}$), allocatable  :: bd
+         class(sysmtx_${S}$), allocatable :: sm
+         integer, public                  :: n
+         integer, public                  :: n_e
+         integer, public                  :: n_i
+         integer, public                  :: n_o
+         logical                          :: factored
+      contains 
+         private
+         procedure, public :: build => build_${S}$_
+         procedure, public :: factor => factor_${S}$_
+         procedure, public :: det => det_${S}$_
+         procedure, public :: soln_vec_hom => soln_vec_hom_${S}$_
+         procedure, public :: soln_vec_inhom => soln_vec_inhom_${S}$_
+         procedure, public :: resd_vec_hom => resd_vec_hom_${S}$_
+         procedure, public :: resd_vec_inhom => resd_vec_inhom_${S}$_
+      end type bvp_${S}$
 
-     ! Interfaces
+      ! Interfaces
 
-     interface bvp_${S}$
-        module procedure bvp_${S}$_
-     end interface bvp_${S}$
+      interface bvp_${S}$
+         module procedure bvp_${S}$_
+      end interface bvp_${S}$
 
-     ! Access specifiers
+      ! Access specifiers
 
-     public :: bvp_${S}$
+      public :: bvp_${S}$
 
    #:endfor
 
