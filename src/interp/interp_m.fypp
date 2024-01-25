@@ -315,10 +315,13 @@ contains
          integer, optional, intent(in)   :: n
          ${T}$                           :: df_dx
 
-         integer  :: n_
-         integer  :: i
-         real(RD) :: h
-         real(RD) :: w
+         integer       :: n_
+         integer, save :: i = 1
+         integer       :: j
+         real(RD)      :: h
+         real(RD)      :: w
+
+         !$OMP THREADPRIVATE (i)
 
          if (PRESENT(n)) then
             n_ = n
@@ -331,22 +334,22 @@ contains
 
          ! Set up the bracketing index
 
-         i = 1
-
          call locate(this%x_, x, i)
-         @:ASSERT(i > 0 .AND. i < this%n, 'out-of-bounds interpolation')
+         @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+         j = MIN(i, this%n-1)
 
          ! Set up the interpolation weights
 
-         h = this%x_(i+1) - this%x_(i)
-         w = (x - this%x_(i))/h
+         h = this%x_(j+1) - this%x_(j)
+         w = (x - this%x_(j))/h
 
          ! Do the interpolation
 
-         df_dx = (-1._RD)**n_ *     this%f_(i  )*dphi_dt_(1._RD-w, n_)/h**n_ + &
-            &                       this%f_(i+1)*dphi_dt_(      w, n_)/h**n_ - &
-            &    (-1._RD)**n_ * this%df_dx_(i  )*dpsi_dt_(1._RD-w, n_)/h**(n_-1) + &
-            &                   this%df_dx_(i+1)*dpsi_dt_(      w, n_)/h**(n_-1)
+         df_dx = (-1._RD)**n_ *     this%f_(j  )*dphi_dt_(1._RD-w, n_)/h**n_ + &
+            &                       this%f_(j+1)*dphi_dt_(      w, n_)/h**n_ - &
+            &    (-1._RD)**n_ * this%df_dx_(j  )*dpsi_dt_(1._RD-w, n_)/h**(n_-1) + &
+            &                   this%df_dx_(j+1)*dpsi_dt_(      w, n_)/h**(n_-1)
 
          ! Finish
 
@@ -363,11 +366,14 @@ contains
          integer, optional, intent(in)   :: n
          ${T}$                           :: df_dx(SIZE(x))
 
-         integer  :: n_
-         integer  :: i
-         integer  :: j
-         real(RD) :: h
-         real(RD) :: w
+         integer        :: n_
+         integer, save  :: i = 1
+         integer        :: j
+         integer        :: k
+         real(RD)       :: h
+         real(RD)       :: w
+
+         !$OMP THREADPRIVATE (i)
 
          if (PRESENT(n)) then
             n_ = n
@@ -378,26 +384,26 @@ contains
          ! Interpolate the first derivative of f, or the n'th derivative if
          ! n is present, at a vector of points
 
-         i = 1
-
-         x_loop : do j = 1,SIZE(x)
+         x_loop : do k = 1,SIZE(x)
 
             ! Update the bracketing index
 
-            call locate(this%x_, x(j), i)
-            @:ASSERT(i > 0 .AND. i < this%n, 'out-of-bounds interpolation')
+            call locate(this%x_, x(k), i)
+            @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+            j = MIN(i, this%n-1)
 
             ! Set up the interpolation weights
 
-            h = this%x_(i+1) - this%x_(i)
-            w = (x(j) - this%x_(i))/h
+            h = this%x_(j+1) - this%x_(j)
+            w = (x(k) - this%x_(j))/h
 
             ! Do the interpolation
 
-            df_dx(j) = (-1._RD)**n_ *     this%f_(i  )*dphi_dt_(1._RD-w, n_)/h**n_ + &
-               &                          this%f_(i+1)*dphi_dt_(w      , n_)/h**n_ - &
-               &       (-1._RD)**n_ * this%df_dx_(i  )*dpsi_dt_(1._RD-w, n_)/h**(n_-1) + &
-               &                      this%df_dx_(i+1)*dpsi_dt_(w      , n_)/h**(n_-1)
+            df_dx(j) = (-1._RD)**n_ *     this%f_(j  )*dphi_dt_(1._RD-w, n_)/h**n_ + &
+               &                          this%f_(j+1)*dphi_dt_(w      , n_)/h**n_ - &
+               &       (-1._RD)**n_ * this%df_dx_(j  )*dpsi_dt_(1._RD-w, n_)/h**(n_-1) + &
+               &                      this%df_dx_(j+1)*dpsi_dt_(w      , n_)/h**(n_-1)
 
          end do x_loop
 
@@ -449,30 +455,33 @@ contains
          real(RD), intent(in)            :: x
          ${T}$                           :: int_f
 
-         integer  :: i
-         real(RD) :: h
-         real(RD) :: w
+         integer, save :: i
+         integer       :: j
+         real(RD)      :: h
+         real(RD)      :: w
+
+         !$OMP THREADPRIVATE (i)
 
          ! Interpolate the integral of f at a single point
 
          ! Set up the bracketing index
 
-         i = 1
-
          call locate(this%x_, x, i)
-         @:ASSERT(i > 0 .AND. i < this%n, 'out-of-bounds interpolation')
+         @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+         j = MIN(i, this%n-1)
 
          ! Set up the interpolation weights
 
-         h = this%x_(i+1) - this%x_(i)
-         w = (x - this%x_(i))/h
+         h = this%x_(j+1) - this%x_(j)
+         w = (x - this%x_(j))/h
 
          ! Do the interpolation
 
-         int_f = this%int_f_(i) - this%f_(i  )*(dphi_dt_(1._RD-w, -1) - dphi_dt_(1._RD, -1))*h + &
-            &                     this%f_(i+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._RD, -1))*h + &
-            &                 this%df_dx_(i  )*(dpsi_dt_(1._RD-w, -1) - dpsi_dt_(1._RD, -1))*h**2 + &
-            &                 this%df_dx_(i+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._RD, -1))*h**2
+         int_f = this%int_f_(i) - this%f_(j  )*(dphi_dt_(1._RD-w, -1) - dphi_dt_(1._RD, -1))*h + &
+            &                     this%f_(j+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._RD, -1))*h + &
+            &                 this%df_dx_(j  )*(dpsi_dt_(1._RD-w, -1) - dpsi_dt_(1._RD, -1))*h**2 + &
+            &                 this%df_dx_(j+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._RD, -1))*h**2
 
          ! Finish
 
@@ -488,33 +497,36 @@ contains
          real(RD), intent(in)            :: x(:)
          ${T}$                           :: int_f(SIZE(x))
 
-         integer  :: i
-         integer  :: j
-         real(RD) :: h
-         real(RD) :: w
+         integer, save  :: i = 1
+         integer        :: j
+         integer        :: k
+         real(RD)       :: h
+         real(RD)       :: w
+
+         !$OMP THREADPRIVATE (i)
 
          ! Interpolate the integral of f at a vector of points
 
-         i = 1
-
-         x_loop : do j = 1,SIZE(x)
+         x_loop : do k = 1,SIZE(x)
 
             ! Update the bracketing index
 
-            call locate(this%x_, x(j), i)
-            @:ASSERT(i > 0 .AND. i < this%n, 'out-of-bounds interpolation')
+            call locate(this%x_, x(k), i)
+            @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+            j = MIN(i, this%n-1)
 
             ! Set up the interpolation weights
 
-            h = this%x_(i+1) - this%x_(i)
-            w = (x(j) - this%x_(i))/h
+            h = this%x_(j+1) - this%x_(j)
+            w = (x(k) - this%x_(j))/h
 
             ! Do the interpolation
 
-            int_f(j) = this%int_f_(i) - this%f_(i  )*(dphi_dt_(1._RD-w, -1) - dphi_dt_(1._RD, -1))*h + &
-               &                        this%f_(i+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._RD, -1))*h + &
-               &                    this%df_dx_(i  )*(dpsi_dt_(1._RD-w, -1) - dpsi_dt_(1._RD, -1))*h**2 + &
-               &                    this%df_dx_(i+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._RD, -1))*h**2
+            int_f(j) = this%int_f_(i) - this%f_(j  )*(dphi_dt_(1._RD-w, -1) - dphi_dt_(1._RD, -1))*h + &
+               &                        this%f_(j+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._RD, -1))*h + &
+               &                    this%df_dx_(j  )*(dpsi_dt_(1._RD-w, -1) - dpsi_dt_(1._RD, -1))*h**2 + &
+               &                    this%df_dx_(j+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._RD, -1))*h**2
 
          end do x_loop
 
