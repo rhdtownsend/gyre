@@ -122,23 +122,6 @@ module blas_lapack_m
       end subroutine ZGBTRS
    end interface XGBTRS
 
-   interface XGESV
-      subroutine DGESV(N, NRHS, A, LDA, IPIV, B, LDB, INFO)
-         use forum_m, only: RD
-         integer, intent(in)     :: LDA, LDB, NRHS, N
-         integer, intent(out)    :: INFO
-         integer, intent(out)    :: IPIV(*)
-         real(RD), intent(inout) :: A(LDA,*), B(LDB,*)
-      end subroutine DGESV
-      subroutine ZGESV(N, NRHS, A, LDA, IPIV, B, LDB, INFO)
-         use forum_m, only: RD
-         integer, intent(in)        :: LDA, LDB, NRHS, N
-         integer, intent(out)       :: INFO
-         integer, intent(out)       :: IPIV(*)
-         complex(RD), intent(inout) :: A(LDA,*), B(LDB,*)
-      end subroutine ZGESV
-   end interface XGESV
-
    interface XGESVX
       subroutine DGESVX(FACT, TRANS, N, NRHS, A, LDA, AF, LDAF, IPIV, &
          EQUED, R, C, B, LDB, X, LDX, RCOND, FERR, BERR, &
@@ -187,31 +170,6 @@ module blas_lapack_m
       end subroutine ZGEEV
    end interface XGEEV
 
-   interface XGEEVX
-      subroutine DGEEVX(BALANC, JOBVL, JOBVR, SENSE, N, A, LDA, WR, WI, VL, LDVL, VR, LDVR, ILO, IHI, SCALE, &
-         ABNRM, RCONDE, RCONDV, WORK, LWORK, IWORK, INFO)
-         use forum_m, only: RD
-         character(1), intent(in) :: BALANC, JOBVL, JOBVR, SENSE
-         integer, intent(in)      :: N, LDA, LDVL, LDVR, LWORK
-         integer, intent(out)     :: INFO, ILO, IHI, IWORK(*)
-         real(RD), intent(out)    :: ABNRM
-         real(RD), intent(out)    :: SCALE(*), RCONDE(*), RCONDV(*)
-         real(RD), intent(inout)  :: A(LDA,*)
-         real(RD), intent(out)    :: VL(LDVL,*), VR(LDVR,*), WR(*), WI(*), WORK(*)
-      end subroutine DGEEVX
-      subroutine ZGEEVX(BALANC, JOBVL, JOBVR, SENSE, N, A, LDA, W, VL, LDVL, VR, LDVR, ILO, IHI, SCALE, ABNRM, &
-         RCONDE, RCONDV, WORK, LWORK, RWORK, INFO)
-         use forum_m, only: RD
-         character(1), intent(in)   :: BALANC, JOBVL, JOBVR, SENSE
-         integer, intent(in)        :: N, LDA, LDVL, LDVR, LWORK
-         integer, intent(out)       :: INFO, ILO, IHI
-         real(RD), intent(out)      :: ABNRM
-         real(RD), intent(out)      :: SCALE(*), RCONDE(*), RCONDV(*), RWORK(*)
-         complex(RD), intent(inout) :: A(LDA,*)
-         complex(RD), intent(out)   :: VL(LDVL,*), VR(LDVR,*), W(*), WORK(*)
-      end subroutine ZGEEVX
-   end interface XGEEVX
-
    interface XGESVD
       subroutine DGESVD(JOBU, JOBVT, M, N, A, LDA, S, U, LDU, VT, LDVT, WORK, LWORK, INFO)
          use forum_m, only: RD
@@ -232,42 +190,6 @@ module blas_lapack_m
          complex(RD), intent(out)   :: U(LDU,*), VT(LDVT,*), WORK(*)
       end subroutine ZGESVD
    end interface XGESVD
-
-   interface XSTEVR
-      subroutine DSTEVR(JOBZ, RANGE, N, D, E, VL, VU, IL, IU, ABSTOL, &
-         M, W, Z, LDZ, ISUPPZ, WORK, LWORK, IWORK,                    &
-         LIWORK, INFO)
-         use forum_m, only: RD
-         character(1), intent(in)      :: JOBZ, RANGE
-         integer, intent(in)           :: N, IL, IU, LDZ, LWORK, LIWORK
-         integer, intent(out)          :: M
-         integer, intent(out), target  :: ISUPPZ(*)
-         real(RD), intent(in)          :: ABSTOL, VL, VU
-         integer, intent(out)          :: IWORK(*)
-         integer, intent(out)          :: INFO
-         real(RD), intent(inout)       :: D(*), E(*)
-         real(RD), intent(out)         :: WORK(*), W(*)
-         real(RD), intent(out), target :: Z(LDZ,*)
-      end subroutine DSTEVR
-   end interface XSTEVR
-
-   interface XSTEMR
-      subroutine DSTEMR (JOBZ, RANGE, N, D, E, VL, VU, IL, IU, &
-         M, W, Z, LDZ, NZC, ISUPPZ, TRYRAC, WORK, LWORK, &
-         IWORK, LIWORK, INFO )
-         use forum_m, only: RD
-         character(1), intent(in) :: JOBZ, RANGE
-         integer, intent(in)      :: N, IL, IU, LDZ, NZC, LWORK, LIWORK
-         integer, intent(out)     :: M
-         integer, intent(out)     :: ISUPPZ(*)
-         real(RD), intent(in)     :: VL, VU
-         integer, intent(out)     :: IWORK(*)
-         integer, intent(out)     :: INFO
-         real(RD), intent(inout)  :: D(*), E(*)
-         real(RD), intent(out)    :: WORK(*), W(*)
-         logical, intent(inout)   :: TRYRAC
-      end subroutine DSTEMR
-   end interface XSTEMR
 
    interface XLASWP_inplace
       subroutine DLASWP(N, A, LDA, K1, K2, IPIV, INCX)
@@ -382,14 +304,10 @@ module blas_lapack_m
    public :: XGETRS
    public :: XGBTRF
    public :: XGBTRS
-   public :: XGESV
    public :: XGESVX
    public :: XGEEV
-   public :: XGEEVX
    public :: XGESVD
-   public :: XSTEVR
    public :: XLAMCH
-   public :: XSTEMR
    public :: XLASWP_inplace
    public :: XGEMM_inplace
    public :: XGEMV_inplace
