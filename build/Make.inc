@@ -33,6 +33,10 @@ else
    LIB_SUFFIX = .so
 endif
 
+BIN_DIR ?= ../bin
+LIB_DIR ?= ../lib
+INC_DIR ?= ../include
+
 DEPEND_DIR = .depend
 
 BIN_FILES = $(BIN_TARGETS)
@@ -49,25 +53,13 @@ ALL_DEPS = $(addprefix $(DEPEND_DIR)/,$(BIN_TARGETS:%=%.dep) $(LIB_TARGETS:%=%.d
 
 all : $(BIN_FILES) $(LIB_FILES)
 
-install : bin-install lib-install inc-install
+install : $(addprefix $(BIN_DIR)/,$(BIN_FILES)) \
+          $(addprefix $(LIB_DIR)/,$(LIB_FILES)) \
+	  $(addprefix $(INC_DIR)/,$(INC_FILES))
 
-bin-install : $(BIN_FILES)
-	@for file in $^; do \
-	    echo CP $${file} ${BIN_DIR}; \
-	    cp $${file} ${BIN_DIR}; \
-	done
-
-lib-install : $(LIB_FILES)
-	@for file in $^; do \
-	    echo CP $${file} ${LIB_DIR}; \
-	    cp $${file} ${LIB_DIR}; \
-	done
-
-inc-install : $(INC_FILES)
-	@for file in $^; do \
-	    echo CP $${file} ${INC_DIR}; \
-	    cp $${file} ${INC_DIR}; \
-	done
+$(BIN_DIR)/% $(LIB_DIR)/% $(INC_DIR)/% : %
+	@echo CP $* $@
+	@cp $< $@
 
 $(DEPEND_DIR) :
 	mkdir -p $@
@@ -78,7 +70,7 @@ clean : almostclean
 almostclean :
 	rm -f $(BIN_FILES) $(LIB_FILES) *.f90 *.mod *.smod *.o 
 
-.PHONY: all clean almostclean
+.PHONY: all install clean almostclean
 
 .SUFFIXES:
 
@@ -100,6 +92,7 @@ FPP = ./fypp_deps
 FPPFLAGS := $(FPPFLAGS) \
 	    --line-numbering \
             $(addprefix -I,$(SRC_DIRS)) \
+	    $(addprefix -I,$(INC_DIR)) \
             $(foreach opt,DEBUG OMP FPE IEEE,$(if $(filter yes,$($(opt))),-D$(opt)=1,-D$(opt)=0))
 
 ifeq ($(DEBUG),yes)
@@ -118,7 +111,7 @@ $(ALL_DPPS) :
 # Include generated dependencies from .dpp files
 
 ifneq ($(MAKECMDGOALS),clean)
-   include $(ALL_DPPS)
+   -include $(ALL_DPPS)
 endif
 
 ############
@@ -130,7 +123,7 @@ endif
 FC = gfortran
 MAKEDEP = awk -f makedepf08.awk
 
-FFLAGS := $(FFLAGS) $(addprefix -I,$(MOD_PATH)) -std=f2018 \
+FFLAGS := $(FFLAGS) -I$(INC_DIR) -std=f2018 \
           -finit-real=snan -fbacktrace -fmax-errors=25 -fPIC
 
 ifeq ($(FPE),yes)
@@ -171,7 +164,7 @@ $(ALL_DEPS) : $(DEPEND_DIR)/%.dep : | $(DEPEND_DIR)
 # Include generated dependencies from .dep files
 
 ifneq ($(MAKECMDGOALS),clean)
-   include $(ALL_DEPS)
+   -include $(ALL_DEPS)
 endif
 
 ##########

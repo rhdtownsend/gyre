@@ -36,7 +36,7 @@ BIN_TARGETS = gyre gyre_tides
 LIB_TARGETS = libgyre
 
 ifeq ($(TOOLS),yes)
-  BIN_TARGETS := $(BIN_TARGETS) eval_lambda
+  BIN_TARGETS := $(BIN_TARGETS) eval_lambda eval_tidal_coeff
 endif
 
 # Source file lists & related variables
@@ -57,6 +57,10 @@ eval_lambda_SRCS = eval_lambda.fypp
 eval_lambda_USES = gyre_m.fypp
 eval_lambda_LIBS = libgyre
 
+eval_tidal_coeff_SRCS = eval_tidal_coeff.fypp
+eval_tidal_coeff_USES = gyre_m.fypp
+eval_tidal_coeff_LIBS = libgyre
+
 libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    ad_eqns_m.fypp ad_match_m.fypp ad_trans_m.fypp amdl_file_m.fypp	\
    atmos_m.fypp b3_file_m.fypp band_sysmtx_m.fypp blas_lapack_m.fypp	\
@@ -66,13 +70,13 @@ libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    deriv_m.fypp detail_m.fypp diff_factory_m.fypp diff_m.fypp		\
    discrim_m.fypp eqns_m.fypp evol_model_m.fypp ext_complex_m.fypp	\
    ext_m.fypp ext_real_m.fypp famdl_file_m.fypp fgong_file_m.fypp	\
-   freq_context_m.fypp freq_m.fypp func_m.fypp gyre_m.fypp		\
-   grid_factory_m.fypp grid_m.fypp grid_par_m.fypp grid_spec_m.fypp	\
-   grid_util_m.fypp grid_weights_m.fypp gsm_file_m.fypp			\
-   hdf_writer_m.fypp hom_model_m.fypp interp_m.fypp linalg_m.fypp	\
-   losc_file_m.fypp math_m.fypp magnus_diff_m.fypp mesa_file_m.fypp	\
-   minim_m.fypp minmod_search_m.fypp mirk_diff_m.fypp mode_m.fypp	\
-   mode_par_m.fypp model_factory_m.fypp model_m.fypp model_par_m.fypp	\
+   freq_context_m.fypp freq_m.fypp gyre_m.fypp grid_factory_m.fypp	\
+   grid_m.fypp grid_par_m.fypp grid_spec_m.fypp grid_util_m.fypp	\
+   grid_weights_m.fypp gsm_file_m.fypp hdf_writer_m.fypp		\
+   hom_model_m.fypp interp_m.fypp linalg_m.fypp losc_file_m.fypp	\
+   math_m.fypp magnus_diff_m.fypp mesa_file_m.fypp minim_m.fypp		\
+   minmod_search_m.fypp mirk_diff_m.fypp mode_m.fypp mode_par_m.fypp	\
+   model_factory_m.fypp model_m.fypp model_par_m.fypp			\
    model_util_m.fypp nad_bound_m.fypp nad_bvp_m.fypp nad_diff_m.fypp	\
    nad_eqns_m.fypp nad_match_m.fypp nad_trans_m.fypp null_rot_m.fypp	\
    num_par_m.fypp orbit_par_m.fypp osc_file_m.fypp osc_par_m.fypp	\
@@ -84,20 +88,20 @@ libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    root_m.fypp rot_factory_m.fypp rot_m.fypp rot_par_m.fypp		\
    sad_bound_m.fypp sad_bvp_m.fypp sad_diff_m.fypp sad_eqns_m.fypp	\
    sad_match_m.fypp sad_trans_m.fypp scan_m.fypp scan_par_m.fypp	\
-   search_m.fypp state_m.fypp status_m.fypp summary_m.fypp		\
-   sysmtx_factory_m.fypp sysmtx_m.fypp tar_eigen_m.fypp			\
-   tar_fit_m.fypp tar_rot_m.fypp tidal_coeff_m.fypp tidal_resp_m.fypp	\
-   tidal_context_m.fypp tide_par_m.fypp tnad_bvp_m.fypp			\
-   tnad_diff_m.fypp tnad_eqns_m.fypp trapz_diff_m.fypp			\
-   txt_writer_m.fypp util_m.fypp version_m.fypp wave_m.fypp		\
-   wdec_file_m.fypp writer_m.fypp
+   search_m.fypp special_m.fypp state_m.fypp status_m.fypp		\
+   summary_m.fypp sysmtx_factory_m.fypp sysmtx_m.fypp			\
+   tar_eigen_m.fypp tar_fit_m.fypp tar_rot_m.fypp tidal_coeff_m.fypp	\
+   tidal_resp_m.fypp tidal_context_m.fypp tide_par_m.fypp		\
+   tnad_bvp_m.fypp tnad_diff_m.fypp tnad_eqns_m.fypp			\
+   trapz_diff_m.fypp txt_writer_m.fypp util_m.fypp version_m.fypp	\
+   wave_m.fypp wdec_file_m.fypp writer_m.fypp
 
 # Directories
 
 SRC_DIRS = $(addprefix ../src/, ad bvp cad common context diff ext	\
    extern frontend/gyre frontend/tools grid include interp lib math	\
    matrix mode model nad output par poly rad rot sad search tar tide	\
-   tnad) ../include
+   tnad)
 
 ifeq ($(CRMATH),yes)
    SRC_DIRS := $(SRC_DIRS) ../src/math/crmath
