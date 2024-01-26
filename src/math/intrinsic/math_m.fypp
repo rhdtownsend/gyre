@@ -32,7 +32,7 @@ module math_m
    real(RD), save, protected :: PI
    real(RD), save, protected :: TWOPI
    real(RD), save, protected :: HALFPI
-
+   real(RD), save, protected :: GOLDEN_R
    real(RD), save, protected :: DEG_TO_RAD
    real(RD), save, protected :: RAD_TO_DEG
 
@@ -77,6 +77,7 @@ module math_m
    public :: PI
    public :: HALFPI
    public :: TWOPI
+   public :: GOLDEN_R
    public :: DEG_TO_RAD
    public :: RAD_TO_DEG
    public :: init_math
@@ -99,6 +100,8 @@ contains
       PI = acos(-1._RD)
       TWOPI = 2._RD*PI
       HALFPI = 0.5_RD*PI
+
+      GOLDEN_R = 0.5_RD*(1._RD + sqrt(5._RD))
 
       DEG_TO_RAD = PI/180._RD
       RAD_TO_DEG = 1._RD/DEG_TO_RAD

@@ -475,8 +475,6 @@ contains
          ${T}$, optional, intent(out)  :: f_x_a
          ${T}$, optional, intent(out)  :: f_x_b
 
-         real(RD), parameter :: EXPAND_FACTOR = 1.6_RD
-
          logical  :: clamp_a_
          logical  :: clamp_b_
          ${T}$ :: f_a
@@ -525,14 +523,14 @@ contains
 
             if (move_a) then
 
-               x_a = x_a + EXPAND_FACTOR*(x_a - x_b)
+               x_a = x_a + GOLDEN_R*(x_a - x_b)
 
                call eval_func(x_a, f_a, status)
                if (status /= STATUS_OK) exit expand_loop
 
             else
 
-               x_b = x_b + EXPAND_FACTOR*(x_b - x_a)
+               x_b = x_b + GOLDEN_R*(x_b - x_a)
 
                call eval_func(x_b, f_b, status)
                if (status /= STATUS_OK) exit expand_loop
@@ -936,8 +934,6 @@ contains
          logical, optional, intent(in) :: clamp_b
          logical, optional, intent(in) :: relative_tol
 
-         real(RD), parameter :: EXPAND_FACTOR = 1.6_RD
-
          logical :: relative_tol_
          logical :: clamp_a_
          logical :: clamp_b_
@@ -998,11 +994,11 @@ contains
             endif
 
             if (move_a) then
-               z_a = z_a + EXPAND_FACTOR*(z_a - z_b)
+               z_a = z_a + GOLDEN_R*(z_a - z_b)
                call eval_func(z_a, f_a, status)
                if (status /= STATUS_OK) exit expand_loop
             else
-               z_b = z_b + EXPAND_FACTOR*(z_b - z_a)
+               z_b = z_b + GOLDEN_R*(z_b - z_a)
                call eval_func(z_b, f_b, status)
                if (status /= STATUS_OK) exit expand_loop
             endif

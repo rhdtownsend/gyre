@@ -190,8 +190,6 @@ contains
          ${T}$, optional, intent(inout) :: f_x_b
          ${T}$, optional, intent(inout) :: f_x_c
 
-         real(RD), parameter :: R = 0.61803399_RD
-
          logical :: relative_tol_
          ${T}$   :: a
          ${T}$   :: b
@@ -282,7 +280,7 @@ contains
 
                ! New point in left interval
 
-               d = (1._RD-R)*b + R*a
+               d = (1._RD-GOLDEN_R)*b + GOLDEN_R*a
 
                call eval_func(d, f_d, status)
                if (status /= STATUS_OK) return
@@ -301,7 +299,7 @@ contains
 
                ! New point in right interval
 
-               d = (1._RD-R)*b + R*c
+               d = (1._RD-GOLDEN_R)*b + GOLDEN_R*c
 
                call eval_func(d, f_d, status)
                if (status /= STATUS_OK) return
