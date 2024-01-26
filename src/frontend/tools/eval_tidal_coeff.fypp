@@ -1,7 +1,7 @@
 ! Program : eval_tidal_coeff
 ! Purpose : evaluate tidal coupling coefficients
 !
-! Copyright 2020-2022 Rich Townsend & The GYRE Team
+! Copyright 2020-2024 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -21,15 +21,9 @@ program eval_tidal_coeff
 
    ! Uses
 
-   use kinds_m
-   use system_m
+   use forum_m, only: RD, n_arg, get_arg
 
-   use hom_model_m
-   use math_m
-   use model_par_m
-   use orbit_par_m
-   use func_m
-   use tidal_coeff_m
+   use gyre_m
 
    use ISO_FORTRAN_ENV
 
@@ -46,16 +40,16 @@ program eval_tidal_coeff
    integer                   :: m
    integer                   :: k
 
-   type(model_par_t) :: ml_p
-   type(hom_model_t) :: ml
-   type(orbit_par_t) :: or_p
-   real(RD)          :: q
-   real(RD)          :: Omega_orb
-   real(RD)          :: f
+   type(model_par_t)       :: ml_p
+   class(model_t), pointer :: ml => null()
+   type(orbit_par_t)       :: or_p
+   real(RD)                :: q
+   real(RD)                :: Omega_orb
+   real(RD)                :: f
 
    ! Get arguments
 
-   @:ASSERT(n_arg() /= 6, 'Syntax: eval_tidal_coeff [cbar|Gbar_{1..4}|X|X_QP|Y|Y*] coeff R_a e [n|l] m k')
+   @:ASSERT(n_arg() /= 6, 'Syntax: eval_tidal_coeff [cbar|Gbar_{1..4}|X|X_quad|Y|Y*] coeff R_a e [n|l] m k')
 
    call get_arg(1, coeff)
    call get_arg(2, R_a)
@@ -72,7 +66,7 @@ program eval_tidal_coeff
 
    ml_p = model_par_t()
 
-   ml = hom_model_t(ml_p)
+   ml => model_t(ml_p)
 
    q = 1._RD
    Omega_orb = sqrt(R_a**3*(1._RD + q))
@@ -94,8 +88,8 @@ program eval_tidal_coeff
       f = tidal_Gbar_4(ml, or_p, l, m, k)
    case ('X')
       f = hansen_X(or_p, l, m, k)
-   case ('X_QP')
-      f = hansen_X_QP(or_p, l, m, k)
+   case ('X_quad')
+      f = hansen_X_RQ(or_p, l, m, k)
    case ('Y')
       f = REAL(spherical_Y(l, m, HALFPI, 0._RD))
    case ('Y*')
